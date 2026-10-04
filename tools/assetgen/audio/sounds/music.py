@@ -15,7 +15,6 @@ Key centre: D minor (Hollowmere's lament); dawn resolves to D major.
 from __future__ import annotations
 
 import functools
-import math
 
 import numpy as np
 
@@ -264,7 +263,7 @@ def menu(seed, variant, sr):
         phrases = 1 if r.random() < 0.5 else 2
         for _ in range(phrases):
             idx = int(r.integers(7, len(_D_MINOR)))
-            for k in range(int(r.integers(3, 6))):
+            for _k in range(int(r.integers(3, 6))):
                 cands = [j for j in range(max(0, idx - 3), min(len(_D_MINOR), idx + 2))]
                 w = np.array([3.0 if _D_MINOR[j] % 12 in chord_tones else 1.0 for j in cands])
                 w *= np.array([1.6 if j < idx else 1.0 for j in cands])          # tend to fall

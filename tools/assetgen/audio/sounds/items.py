@@ -102,7 +102,7 @@ def _casing(sr, r, gain):
     """Brass casing landing (two bounces)."""
     y = _buf(0.4, sr)
     f = dsp.vary(r, 4300.0, 0.15)
-    for i, (t, g) in enumerate(((0.0, 1.0), (r.uniform(0.05, 0.1), 0.4), (r.uniform(0.12, 0.18), 0.15))):
+    for _i, (t, g) in enumerate(((0.0, 1.0), (r.uniform(0.05, 0.1), 0.4), (r.uniform(0.12, 0.18), 0.15))):
         c = dsp.impact(sr, r, "pipe", f, 0.3, contact_ms=0.05, t60=0.25, click=0.4)
         dsp.place(y, c, dsp.ns(t, sr), g)
     return y * gain
@@ -122,7 +122,7 @@ def gun_reload(seed, variant, sr):
     for _ in range(int(r.integers(4, 7))):
         dsp.place(y, _casing(sr, r, r.uniform(0.25, 0.55)), dsp.ns(te + r.uniform(0.25, 0.55), sr))
     t = te + r.uniform(0.75, 0.9)
-    for i in range(int(r.integers(4, 7))):
+    for _i in range(int(r.integers(4, 7))):
         dsp.place(y, _slide(sr, r, 0.06, 2000.0, 8000.0), dsp.ns(t, sr), 0.18)
         dsp.place(y, _click(sr, r, 3800.0, 0.04), dsp.ns(t + 0.05, sr), r.uniform(0.35, 0.55))
         t += r.uniform(0.2, 0.27)
@@ -249,7 +249,7 @@ def drink_gulp(seed, variant, sr):
     r = dsp.rng(seed, "gulp")
     y = _buf(1.6, sr)
     t = 0.02
-    for i in range(int(r.integers(2, 4))):
+    for _i in range(int(r.integers(2, 4))):
         g = dsp.thud(sr, r, dsp.vary(r, 170.0, 0.15), 0.12, contact_ms=dsp.vary(r, 12.0, 0.2), t60=0.04, noise=0.4,
                      noise_lp=800.0, knock=0.5, knock_f=dsp.vary(r, 380.0, 0.2))
         dsp.place(y, g, dsp.ns(t, sr), 0.7)

@@ -106,7 +106,7 @@ def tether_alarm(seed, variant, sr):
     r = dsp.rng(seed, "alarm")
     y = _buf(1.8, sr)
     t = 0.0
-    for i in range(4):
+    for _i in range(4):
         for k, f in enumerate((1865.0, 1397.0)):
             dsp.place(y, _beep(sr, r, f, 0.1, harsh=0.6), dsp.ns(t + 0.13 * k, sr))
         t += 0.42

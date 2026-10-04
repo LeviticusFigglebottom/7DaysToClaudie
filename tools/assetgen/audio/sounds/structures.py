@@ -251,7 +251,7 @@ def door_locked_rattle(seed, variant, sr):
     r = dsp.rng(seed, "locked")
     y = _buf(1.0, sr)
     t = 0.0
-    for i in range(int(r.integers(3, 6))):
+    for _i in range(int(r.integers(3, 6))):
         dsp.place(y, _latch(sr, r), dsp.ns(t, sr), r.uniform(0.6, 1.0))
         knock = dsp.impact(sr, r, "wood_hollow", dsp.vary(r, 130.0, 0.15), 0.25, contact_ms=1.5, t60=0.12, click=0.2)
         dsp.place(y, knock, dsp.ns(t + r.uniform(0.003, 0.012), sr), r.uniform(0.3, 0.6))

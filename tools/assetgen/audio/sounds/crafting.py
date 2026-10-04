@@ -34,7 +34,7 @@ def craft_twist(seed, variant, sr):
     r = dsp.rng(seed, "twist")
     y = _buf(1.2, sr)
     t = 0.0
-    for i in range(int(r.integers(3, 5))):
+    for _i in range(int(r.integers(3, 5))):
         d = r.uniform(0.18, 0.3)
         dsp.place(y, _fibre_rub(sr, r, d, r.uniform(40, 90), r.uniform(140, 320)), dsp.ns(t, sr), r.uniform(0.6, 1.0))
         t += d + r.uniform(0.02, 0.08)

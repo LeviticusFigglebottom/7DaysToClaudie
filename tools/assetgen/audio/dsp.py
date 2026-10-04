@@ -1434,7 +1434,7 @@ def chorus(x, sr: int, r: np.random.Generator, voices: int = 3, depth_ms: float 
     x = mono(x)
     n = len(x)
     out = x * (1.0 - mix)
-    for v in range(voices):
+    for _v in range(voices):
         lfo = 0.6 * np.sin(TAU * phase(rate * r.uniform(0.7, 1.4), n, sr, r.random())) + \
             0.4 * smooth_noise(n, sr, r, rate * 2)
         out += vdelay(x, sr, (base_ms + depth_ms * lfo) / 1000.0) * (mix / voices) * 1.4
@@ -1552,7 +1552,7 @@ def make_ir(sr: int, room: str = "house", r: np.random.Generator | None = None, 
     pre = p["pre"] if pre_ms is None else pre_ms
     L = ns(length if length else max(rts) * 1.1 + pre / 1000.0, sr)
     chans = []
-    for ch in range(2 if stereo_ else 1):
+    for _ch in range(2 if stereo_ else 1):
         t = np.arange(L) / sr
         dense = r.standard_normal(L)
         sparse = velvet(L, sr, r, p["dens"]) * math.sqrt(sr / p["dens"]) * 0.7

@@ -96,9 +96,9 @@ def _forest_floor(seed, sr):
                        body_f=dsp.vary(r, 1400.0, 0.3), body_amt=0.5, bright=4500.0, tail=0.25, force=0.45)
         dsp.place(tex, tw, dsp.ns(r.choice([r.uniform(0.004, 0.02), toe + r.uniform(0.0, 0.02)]), sr))
     heel = _heel(sr, r, 90.0, 9.0, 0.09, 0.35, 700.0, force=1.0)
-    y = heel * 0.85
+    y = heel * 0.6
     y = dsp.fit(y, n)
-    y += dsp.normalize(tex) * 0.55
+    y += dsp.normalize(tex) * 0.65
     dsp.place(y, _heel(sr, r, 120.0, 7.0, 0.06, 0.35, 800.0, force=0.35 * ta * 2), dsp.ns(toe, sr))
     return y
 
@@ -114,8 +114,8 @@ def _grass(seed, sr):
     swish = dsp.band_noise(n, sr, r, 1800.0, 10000.0, slope_db_oct=-1.0) * env * flutter
     blades = dsp.clicks(n, sr, r, env * 5000.0, 2500.0, 10000.0, q=1.6, alpha=2.5, groups=6)
     heel = _heel(sr, r, 85.0, 11.0, 0.08, 0.25, 500.0, force=0.9)
-    y = dsp.fit(heel, n)
-    y += dsp.normalize(swish) * 0.5 + dsp.normalize(blades) * 0.3
+    y = dsp.fit(heel, n) * 0.7
+    y += dsp.normalize(swish) * 0.6 + dsp.normalize(blades) * 0.35
     dsp.place(y, _heel(sr, r, 110.0, 9.0, 0.05, 0.25, 600.0, force=0.3), dsp.ns(toe, sr))
     return y
 
@@ -204,7 +204,7 @@ def _metal(seed, sr):
     dsp.place(y, _heel(sr, r, 110.0, 6.0, 0.05, 0.2, 700.0, force=0.5), 0)
     # loose plate rattle: a few quick secondary contacts
     t = r.uniform(0.012, 0.03)
-    for i in range(int(r.integers(1, 4))):
+    for _i in range(int(r.integers(1, 4))):
         rat = dsp.impact(sr, r, modes_=plate, contact_ms=0.5, damp=2.5, click=0.4, noise=0.4, dur=0.3)
         dsp.place(y, rat, dsp.ns(t, sr), r.uniform(0.1, 0.25))
         t += r.uniform(0.012, 0.035)
@@ -252,52 +252,52 @@ def _carpet(seed, sr):
 
 @sound("sfx/footstep_forest_floor", variants=8, seed=1001, peak_db=-9.6)
 def footstep_forest_floor(seed, variant, sr):
-    return _forest_floor(seed, sr)
+    return dsp.hp(_forest_floor(seed, sr), sr, 50.0)
 
 
 @sound("sfx/footstep_grass", variants=8, seed=1002, peak_db=-11.6)
 def footstep_grass(seed, variant, sr):
-    return _grass(seed, sr)
+    return dsp.hp(_grass(seed, sr), sr, 50.0)
 
 
 @sound("sfx/footstep_dirt", variants=8, seed=1003, peak_db=-11.6)
 def footstep_dirt(seed, variant, sr):
-    return _dirt(seed, sr)
+    return dsp.hp(_dirt(seed, sr), sr, 50.0)
 
 
 @sound("sfx/footstep_gravel", variants=8, seed=1004, peak_db=-8.7)
 def footstep_gravel(seed, variant, sr):
-    return _gravel(seed, sr)
+    return dsp.hp(_gravel(seed, sr), sr, 50.0)
 
 
 @sound("sfx/footstep_wood_floor", variants=8, seed=1005, peak_db=-9.2)
 def footstep_wood_floor(seed, variant, sr):
-    return _wood_floor(seed, sr)
+    return dsp.hp(_wood_floor(seed, sr), sr, 50.0)
 
 
 @sound("sfx/footstep_concrete", variants=8, seed=1006, peak_db=-8.8)
 def footstep_concrete(seed, variant, sr):
-    return _concrete(seed, sr)
+    return dsp.hp(_concrete(seed, sr), sr, 50.0)
 
 
 @sound("sfx/footstep_water", variants=8, seed=1007, peak_db=-10.2)
 def footstep_water(seed, variant, sr):
-    return _water(seed, sr)
+    return dsp.hp(_water(seed, sr), sr, 50.0)
 
 
 @sound("sfx/footstep_leaves", variants=8, seed=1008, peak_db=-6.9)
 def footstep_leaves(seed, variant, sr):
-    return _leaves(seed, sr)
+    return dsp.hp(_leaves(seed, sr), sr, 50.0)
 
 
 @sound("sfx/footstep_carpet", variants=8, seed=1009, peak_db=-13.4)
 def footstep_carpet(seed, variant, sr):
-    return _carpet(seed, sr)
+    return dsp.hp(_carpet(seed, sr), sr, 50.0)
 
 
 @sound("sfx/footstep_metal", variants=8, seed=1010, peak_db=-9.2)
 def footstep_metal(seed, variant, sr):
-    return _metal(seed, sr)
+    return dsp.hp(_metal(seed, sr), sr, 50.0)
 
 
 def _landing(seed, sr, hard):

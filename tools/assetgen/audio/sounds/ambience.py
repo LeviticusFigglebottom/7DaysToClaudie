@@ -276,14 +276,13 @@ def forest_night(seed, variant, sr):
     """Forest at night: low wind, sparse late-season crickets, a distant owl, the odd twig snapping."""
     L = 60.0
     n = dsp.ns(L, sr)
-    r = dsp.rng(seed, "fnight")
     g = _gust(n, sr, dsp.rng(seed, "g"), 0.04, 0.3, 0.15, 1.6) * 0.75
     wind = _st(_wind(n, sr, dsp.rng(seed, "wl"), g, lo=200.0, hi=900.0, needles=0.08),
                _wind(n, sr, dsp.rng(seed, "wr"), np.roll(g, dsp.ns(1.5, sr)), lo=200.0, hi=900.0, needles=0.08))
     y = 0.8 * dsp.normalize(wind)
     ev = _canvas(n)
     rc = dsp.rng(seed, "crickets")
-    for k in range(3):
+    for _k in range(3):
         cr = _cricket(sr, rc, L, rc.uniform(4100, 5200), rc.uniform(0.55, 1.1), int(rc.integers(3, 6)))
         cr *= _lfo(n, sr, rc, 0.08, 0.0, 1.0) ** 2                      # crickets pause and resume
         cr = _distant(cr, sr, rc.uniform(8, 30))
@@ -589,7 +588,7 @@ def the_hum(seed, variant, sr):
     metl = np.zeros(n)
     metr = np.zeros(n)
     tt = np.arange(n) / sr
-    for k in range(5):
+    for _k in range(5):
         base = rm.uniform(150.0, 420.0)
         sw = _lfo(n, sr, rm, rm.uniform(0.03, 0.08)) ** 3
         for i, ra in enumerate(ratios):
@@ -626,7 +625,7 @@ def cave_drips(seed, variant, sr):
     y = 0.5 * dsp.normalize(tone) + 0.06 * dsp.normalize(air_)
     ev = _canvas(n)
     rd = dsp.rng(seed, "drips")
-    for k in range(4):                                     # several drip points, each with its own rhythm/pitch
+    for _k in range(4):                                     # several drip points, each with its own rhythm/pitch
         period = rd.uniform(1.1, 4.5)
         f = dsp.loguni(rd, 900.0, 2600.0)
         pan = rd.uniform(-0.9, 0.9)
