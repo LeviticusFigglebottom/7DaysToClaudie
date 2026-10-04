@@ -1,0 +1,30 @@
+{
+  "wall": [
+    "plaster_white",
+    "plaster_grey",
+    "paint_mustard",
+    "paint_sage",
+    "paint_slate_blue",
+    "wallpaper_floral_rose",
+    "wallpaper_stripe_green",
+    "wallpaper_damask_brown",
+    "wood_paneling_dark",
+    "tile_bathroom_white",
+    "tile_kitchen_check",
+    "siding_white",
+    "siding_pale_blue",
+    "siding_barn_red",
+    "brick_red",
+    "concrete_block"
+  ],
+  "floor": [
+    "wood_oak",
+    "wood_pine",
+    "carpet_brown",
+    "carpet_blue_worn",
+    "linoleum_check",
+    "linoleum_beige",
+    "tile_white_small",
+    "concrete"
+  ]
+}
