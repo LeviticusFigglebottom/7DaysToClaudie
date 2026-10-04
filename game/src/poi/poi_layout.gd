@@ -248,6 +248,23 @@ func _compile_vertical(lay: Dictionary) -> void:
 			continue
 		var at3: Array = h.get("at", [0, 0])
 		holes.append({"level": int(h.get("level", 1)), "cell": Vector2i(int(at3[0]), int(at3[1]))})
+	for l: Dictionary in ladders:
+		l["landing"] = _ladder_landing(l)
+
+
+## Where a ladder's climber steps off upstairs: the hatch cell itself has no floor, so the
+## neighbouring room cell away from the wall the ladder leans on (or either side of it).
+func _ladder_landing(l: Dictionary) -> Vector2i:
+	var up: int = int(l["level"]) + 1
+	var c: Vector2i = l["cell"]
+	var away: Vector2i = -DIRS[int(l["side"])]
+	var open: Dictionary = stairwell_cells(up)
+	for d: Vector2i in [away, Vector2i(away.y, away.x), Vector2i(-away.y, -away.x)]:
+		if is_room(room_at(up, c + d)) and not open.has(c + d):
+			return c + d
+	if levels.has(up):
+		err("ladder at %s (level %d) has no floor beside its hatch on level %d" % [c, int(l["level"]), up])
+	return c
 
 
 ## Normalises a placed entry. "at": [c, r] = centre of that cell (plus optional "offset":

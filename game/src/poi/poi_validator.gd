@@ -81,11 +81,12 @@ func _neighbors(li: int, c: Vector2i, keys: Dictionary) -> Array:
 		elif int(s["level"]) + 1 == li and s["landing"] == c:
 			out.append([li - 1, s["cell"]])
 	for l: Dictionary in layout.ladders:
-		if l["cell"] == c:
-			if int(l["level"]) == li:
-				out.append([li + 1, c])
-			elif int(l["level"]) + 1 == li:
-				out.append([li - 1, c])
+		var lc: Vector2i = l["cell"]
+		var land: Vector2i = l.get("landing", lc)
+		if int(l["level"]) == li and lc == c:
+			out.append([li + 1, land])
+		elif int(l["level"]) + 1 == li and land == c:
+			out.append([li - 1, lc])
 	for h: Dictionary in layout.holes:
 		if int(h["level"]) == li and h["cell"] == c:
 			out.append([li - 1, c])

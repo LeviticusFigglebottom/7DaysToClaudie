@@ -9,6 +9,6 @@
   "crouch_eye_height": 1.0,
   "interact_range": 2.6,
   "carry_logs_max": 2,
-  "noise": {"walk": 6.0, "sprint": 14.0, "crouch": 2.0, "jump_land": 10.0},
+  "noise": {"walk": 6.0, "sprint": 14.0, "crouch": 2.0, "jump_land": 10.0, "vault": 8.0},
   "start_kit": {"lighter": 1, "ration_bar": 2, "water_bottle_clean": 1, "cloth": 2, "field_manual": 1, "tether": 1}
 }
