@@ -41,6 +41,8 @@ var _near_root: Node3D
 var _center := Vector2i(999999, 999999)
 var _deltas: Dictionary = {}
 var _dirty_saves: Dictionary = {}
+## Hybrid SDF volume (tunnels / mining) for columns dug past what the heightmap can express.
+var volume: VolumeTerrain
 var _update_accum: float = 0.0
 
 
@@ -75,6 +77,11 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	_fallback_material = _far_material
 	_build_grid()
 	_build_far_tiles()
+	volume = VolumeTerrain.new()
+	volume.name = "Volume"
+	add_child(volume)
+	volume.setup(self)
+	volume.column_activated.connect(_on_volume_column)
 
 
 func _make_region_material(rt: RegionTerrain) -> ShaderMaterial:
@@ -204,8 +211,11 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 	var step: float = LOD_STEPS[lod]
 	var skirt: float = [1.0, 2.5, 6.0][lod]
 	var job := {"key": key, "lod": lod, "origin": origin, "step": step, "skirt": skirt, "mesh": null}
+	var hole: Callable = Callable()
+	if volume != null and not volume.columns.is_empty() and _chunk_has_volume(key):
+		hole = volume.is_volume_column
 	var fn := func() -> void:
-		job["mesh"] = TerrainMesher.build_chunk(origin, CHUNK, step, height_at, skirt)
+		job["mesh"] = TerrainMesher.build_chunk(origin, CHUNK, step, height_at, skirt, Callable(), hole)
 	if synchronous:
 		fn.call()
 		_apply_mesh(job)
@@ -271,12 +281,13 @@ func _set_collision(ch: Chunk, on: bool) -> void:
 	var vc: int = int(CHUNK) + 1
 	shape.map_width = vc
 	shape.map_depth = vc
-	shape.map_data = TerrainMesher.collision_heights(origin, CHUNK, 1.0, height_at)
+	shape.map_data = TerrainMesher.collision_heights(origin, CHUNK, 1.0, _collision_height if _chunk_has_volume(ch.key) else height_at)
 	var body := StaticBody3D.new()
 	body.name = "Col_%d_%d" % [ch.key.x, ch.key.y]
 	body.collision_layer = COLLISION_LAYER
 	body.collision_mask = 0
 	body.set_meta(&"terrain", true)
+	body.set_meta(&"damage_receiver", self)
 	var cs := CollisionShape3D.new()
 	cs.shape = shape
 	# HeightMapShape3D is centred on its origin.
@@ -333,6 +344,78 @@ func _far_color(rt: RegionTerrain, x: float, z: float) -> Color:
 	elif b == "birch_grove":
 		col = col.lerp(Color(0.25, 0.27, 0.12), 0.3)
 	return col
+
+
+# --- Volume hand-off -------------------------------------------------------------------------------
+
+## Heightfield height (what the volume initialises from; ignores volume edits).
+func base_height_at(x: float, z: float) -> float:
+	return height_at(x, z)
+
+
+func _chunk_has_volume(key: Vector2i) -> bool:
+	if volume == null or volume.columns.is_empty():
+		return false
+	var per: int = int(CHUNK / VolumeTerrain.SIZE)
+	for dz: int in per:
+		for dx: int in per:
+			if volume.columns.has(Vector2i(key.x * per + dx, key.y * per + dz)):
+				return true
+	return false
+
+
+## Heightmap collision sinks out of the way where the volume owns the ground.
+func _collision_height(x: float, z: float) -> float:
+	var h: float = height_at(x, z)
+	return h - 40.0 if volume.is_volume_column(x - 0.01, z - 0.01) and volume.is_volume_column(x + 0.01, z + 0.01) else h
+
+
+func _on_volume_column(col: Vector2i) -> void:
+	var key: Vector2i = chunk_of(col.x * VolumeTerrain.SIZE + 1.0, col.y * VolumeTerrain.SIZE + 1.0)
+	var ch: Chunk = _chunks.get(key)
+	if ch != null:
+		_request_mesh(key, maxi(ch.lod, 0), true)
+		if ch.has_collision:
+			_set_collision(ch, false)
+			_set_collision(ch, true)
+
+
+## Tool hits on the ground: shovels dig the heightmap; past its depth limit, into steep faces or
+## inside an existing tunnel the SDF volume takes over (pickaxes always cut the volume).
+func take_damage(info: DamageInfo) -> void:
+	var dig: float = float(info.tool_power.get("dig", 0.0))
+	var mine: float = float(info.tool_power.get("mine", 0.0))
+	if dig <= 0.0 and mine <= 0.0:
+		return
+	var p: Vector3 = info.hit_pos
+	var n: Vector3 = normal_at(p.x, p.z)
+	var collider: Node = info.collider as Node
+	var in_volume: bool = collider != null and collider.has_meta(&"volume")
+	var rt: RegionTerrain = region_terrain_at(p.x, p.z)
+	var at_limit: bool = false
+	if rt != null:
+		var base: HeightField = _base_heights(rt)
+		at_limit = height_at(p.x, p.z) <= base.sample(p.x, p.z) - MAX_DIG_DEPTH + 0.05
+	var moved: float = 0.0
+	if in_volume or mine > 0.0 or at_limit or n.y < 0.6:
+		var center: Vector3 = p + info.direction.normalized() * 0.35
+		moved = volume.edit_sphere(center, 0.9 if mine <= 0.0 else 0.75, 0.9 * maxf(dig, mine))
+	else:
+		moved = modify(p, 1.1, 0.3 * dig, "dig")
+	if moved <= 0.01:
+		return
+	Audio.play_3d(&"sfx/dig_shovel", p, {"volume_db": -3.0})
+	FxLibrary.burst(self, "dirt", p, n, 0.8)
+	if Stimuli.current != null:
+		Stimuli.current.emit_sound(p, 12.0, &"dig", info.source_id)
+	if Game.session != null:
+		Game.session.heat.add(p, float(Content.config(&"heat").get("sources", {}).get("dig" if mine <= 0.0 else "mine", 0.5)))
+		var ps: PlayerState = Game.session.players.get(info.source_id)
+		if ps != null:
+			var rng: RandomNumberGenerator = Game.session.rng.stream("dig")
+			if rng.randf() < 0.18 + (0.4 if mine > 0.0 else 0.0):
+				Game.execute(&"world.pickup_item", {"player": String(ps.id), "item": "stone", "count": 1})
+			ps.progression.add_xp(1)
 
 
 # --- Digging ------------------------------------------------------------------------------------
@@ -440,6 +523,8 @@ func _record_delta(rt: RegionTerrain, key: Vector2i) -> void:
 
 ## Writes edited chunk deltas into the session (called on Events.game_saving).
 func save_into(ws: WorldState) -> void:
+	if volume != null:
+		volume.save_into(ws)
 	for k: String in _dirty_saves:
 		if _deltas.has(k):
 			ws.chunk_blobs[k] = (_deltas[k] as PackedFloat32Array).to_byte_array().compress(FileAccess.COMPRESSION_ZSTD)
@@ -471,3 +556,5 @@ func load_from(ws: WorldState) -> void:
 					var base: HeightField = _base_cache[rt.region_id]
 					hf.heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
 		_deltas[key_s] = delta
+	if volume != null:
+		volume.load_from(ws)

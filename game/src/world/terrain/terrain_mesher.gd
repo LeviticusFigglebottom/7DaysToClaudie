@@ -7,7 +7,9 @@ extends RefCounted
 ## Builds an ArrayMesh for a square chunk at `origin` (world XZ of the chunk's min corner),
 ## `size` metres, vertex step `step` metres. Vertices are chunk-local (node sits at origin).
 ## colors: optional Callable(x, z) -> Color baked into COLOR (far tiles).
-static func build_chunk(origin: Vector2, size: float, step: float, height_fn: Callable, skirt: float, colors: Callable = Callable()) -> ArrayMesh:
+## hole_fn: optional Callable(x, z) -> bool; quads whose centre it marks are left out (columns
+## handed over to the SDF volume terrain).
+static func build_chunk(origin: Vector2, size: float, step: float, height_fn: Callable, skirt: float, colors: Callable = Callable(), hole_fn: Callable = Callable()) -> ArrayMesh:
 	var res: int = int(round(size / step))
 	var vcount: int = res + 1
 	# Sample heights on a padded grid (+1 ring) for normals.
@@ -42,8 +44,11 @@ static func build_chunk(origin: Vector2, size: float, step: float, height_fn: Ca
 	var idx := PackedInt32Array()
 	idx.resize(res * res * 6)
 	var w: int = 0
+	var holes: bool = hole_fn.is_valid()
 	for j: int in res:
 		for i: int in res:
+			if holes and bool(hole_fn.call(origin.x + (i + 0.5) * step, origin.y + (j + 0.5) * step)):
+				continue
 			var a: int = j * vcount + i
 			var b: int = a + 1
 			var c: int = a + vcount
@@ -56,6 +61,7 @@ static func build_chunk(origin: Vector2, size: float, step: float, height_fn: Ca
 				idx[w] = a; idx[w + 1] = b; idx[w + 2] = c
 				idx[w + 3] = b; idx[w + 4] = d; idx[w + 5] = c
 			w += 6
+	idx.resize(w)
 	if skirt > 0.0:
 		_add_skirt(verts, normals, cols, idx, vcount, skirt, use_colors)
 	var arrays: Array = []

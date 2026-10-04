@@ -170,23 +170,24 @@ func update_now() -> void:
 	sky_mat.set_shader_parameter("cloud_wind", wd * (0.002 + 0.006 * float(w["wind"])))
 	sky_mat.set_shader_parameter("aurora", hum_intensity)
 	# Ambient: bright by day, near-black at night (light sources must matter).
-	env.ambient_light_energy = lerpf(0.035, 0.85, day) * (1.0 - 0.25 * overcast)
+	env.ambient_light_energy = lerpf(0.035, 1.05, day) * (1.0 - 0.25 * overcast)
 	env.ambient_light_sky_contribution = 0.85
 	env.background_energy_multiplier = lerpf(0.25, 1.0, day)
 	# Fog: weather + early-morning valley mist.
-	var morning_mist: float = smoothstep(4.0, 6.0, hour) * (1.0 - smoothstep(7.5, 10.0, hour)) * 0.004
-	var fog_d: float = float(w["fog_density"]) + morning_mist
+	# A thin valley mist at dawn that burns off by mid-morning (weather fog adds on top).
+	var morning_mist: float = smoothstep(4.0, 6.0, hour) * (1.0 - smoothstep(7.0, 9.5, hour)) * 0.0012
+	var fog_d: float = float(w["fog_density"]) * 0.6 + morning_mist
 	env.fog_density = fog_d
 	var fog_col: Color = horizon.lerp(sun_col * 0.7, golden * 0.35)
 	env.fog_light_color = fog_col
 	env.fog_light_energy = lerpf(0.06, 1.0, day)
 	env.fog_sun_scatter = 0.25 * day
-	env.volumetric_fog_density = float(w["volumetric_density"]) + morning_mist * 3.0 + 0.004
+	env.volumetric_fog_density = float(w["volumetric_density"]) * 0.5 + morning_mist * 2.0 + 0.0015
 	env.volumetric_fog_albedo = Color(0.88, 0.9, 0.92)
 	env.volumetric_fog_emission = Color(0.02, 0.06, 0.04) * hum_intensity
 	env.volumetric_fog_emission_energy = hum_intensity * 0.4
 	env.volumetric_fog_ambient_inject = lerpf(0.05, 0.4, day)
-	env.tonemap_exposure = lerpf(1.25, 1.0, day)
+	env.tonemap_exposure = lerpf(1.25, 1.1, day)
 	# Globals for every shader.
 	RenderingServer.global_shader_parameter_set(&"hm_wind", Vector4(wd.x, wd.y, float(w["wind"]), 0.3 + 0.5 * float(w["wind"])))
 	RenderingServer.global_shader_parameter_set(&"hm_wetness", float(w.get("wetness", 0.0)))

@@ -1,6 +1,6 @@
 class_name FlowField
 extends RefCounted
-## Horde navigation for the Hum (ADR-0013): one integrated travel-cost field over a square grid
+## Horde navigation for the Hum (ADR-0011): one integrated travel-cost field over a square grid
 ## around the base, shared by every attacker (no per-zombie pathfinding). Each Hollowed walks
 ## downhill to the lowest-cost neighbour. Player structures are passable at a cost proportional
 ## to their remaining hit points, so the horde converges on the weakest (or most damaged) part
