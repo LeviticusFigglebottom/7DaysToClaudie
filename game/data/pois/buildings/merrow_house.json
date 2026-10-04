@@ -299,7 +299,8 @@
             2,
             2
           ],
-          "rot": 0
+          "rot": 0,
+          "route_ok": true
         },
         {
           "prop": "kitchen_chair",

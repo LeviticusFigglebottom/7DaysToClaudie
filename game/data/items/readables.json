@@ -12,7 +12,6 @@
     {"id": "note_hardware_inventory", "name": "Back-Room Inventory", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "hardware_inventory"},
     {"id": "note_okafor_letter", "name": "Unsent Letter", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "okafor_letter"},
     {"id": "pharmacy_key", "name": "Dispensary Key", "description": "Small brass key on a lanyard marked RX.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]},
-    {"id": "evidence_locker_key", "name": "Evidence Locker Key", "description": "Tagged 'EVIDENCE — DO NOT REMOVE'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]},
-    {"id": "gun_cabinet_key", "name": "Gun Cabinet Key", "description": "Small brass key on a loop of baling twine, smelling of gun oil.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]}
+    {"id": "evidence_locker_key", "name": "Evidence Locker Key", "description": "Tagged 'EVIDENCE — DO NOT REMOVE'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]}
   ]
 }
