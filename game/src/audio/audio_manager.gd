@@ -8,6 +8,9 @@ const AUDIO_ROOT: String = "res://assets/generated/audio"
 
 ## sound id -> Array[AudioStream] (variants)
 var _cache: Dictionary = {}
+## Bus 3D sounds play through by default; AmbienceDirector switches it to the interior/cave
+## reverb buses by where the listener stands (cheap global reverb zones).
+var sfx_bus: StringName = &"SFX"
 var _pool_2d: Array[AudioStreamPlayer] = []
 var _rng := RandomNumberGenerator.new()
 
@@ -121,7 +124,7 @@ func play_3d(sound_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Node3
 		return null
 	var p := Sound3D.new()
 	p.stream = s
-	p.bus = StringName(str(opts.get("bus", "SFX")))
+	p.bus = StringName(str(opts.get("bus", sfx_bus)))
 	p.volume_db = float(opts.get("volume_db", 0.0))
 	p.unit_size = float(opts.get("unit_size", 6.0))
 	p.max_distance = float(opts.get("max_distance", 90.0))

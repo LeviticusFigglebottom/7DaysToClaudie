@@ -9,8 +9,13 @@ import bpy
 def export_glb(path: str, objects: list[bpy.types.Object] | None = None, *, animations: bool = False,
                skins: bool = False) -> None:
     pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
+    # Objects removed with bpy.data.objects.remove() leave stale entries until the view layer
+    # is refreshed; selecting over them crashes the exporter.
+    bpy.context.view_layer.update()
     if objects is not None:
         for o in bpy.context.view_layer.objects:
+            if o is None:
+                continue
             o.select_set(False)
         for o in objects:
             o.select_set(True)

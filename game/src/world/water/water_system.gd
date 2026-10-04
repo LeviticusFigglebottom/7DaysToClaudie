@@ -197,6 +197,15 @@ func water_level_at(x: float, z: float) -> float:
 	return -INF
 
 
+## "lake", "river" or "" — what kind of water is at (x, z) (ambience, fishing later).
+func kind_at(pos: Vector3) -> String:
+	var p := Vector2(pos.x, pos.z)
+	for l: Dictionary in _lakes:
+		if (l["bounds"] as Rect2).has_point(p) and Geometry2D.is_point_in_polygon(p, l["poly"]):
+			return "lake"
+	return "river" if water_level_at(pos.x, pos.z) > -INF else ""
+
+
 ## Depth of water above the ground at a position (0 if dry).
 func depth_at(pos: Vector3) -> float:
 	var lvl: float = water_level_at(pos.x, pos.z)

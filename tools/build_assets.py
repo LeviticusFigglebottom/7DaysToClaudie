@@ -52,6 +52,9 @@ def _write_imports(task: Task) -> None:
         elif kind == "wav" or (kind is None and ext == ".wav"):
             godot_import.wav(path, **cfg)
         elif kind == "scene" or (kind is None and ext in (".glb", ".gltf")):
+            # Vegetation ships hand-made LODs (and alpha cards that auto-LOD would collapse).
+            if rel.startswith(("models/trees/", "models/plants/")):
+                cfg.setdefault("lods", False)
             godot_import.scene(path, **cfg)
 
 
