@@ -1,0 +1,278 @@
+{
+  "_doc": "Region D6 Larch Hollow (M1 start). World coordinates (this region spans x -512..512, z 1536..2560). Features are applied by TerrainComposer on top of the macro terrain + world rivers/roads/lakes. See docs/REGIONS.md for the feature vocabulary.",
+  "id": "d6_larch_hollow",
+  "cell": "D6",
+  "name": "Larch Hollow",
+  "default_biome": "conifer_forest",
+  "detail_noise": {
+    "layers": [
+      {
+        "frequency": 0.0042,
+        "octaves": 3,
+        "amplitude": 7.5
+      },
+      {
+        "frequency": 0.016,
+        "octaves": 4,
+        "amplitude": 2.4
+      },
+      {
+        "frequency": 0.07,
+        "octaves": 2,
+        "amplitude": 0.35
+      }
+    ]
+  },
+  "features": [
+    {
+      "type": "lake",
+      "id": "larch_pond",
+      "name": "Larch Pond",
+      "ellipse": [
+        -262,
+        1916,
+        72,
+        48,
+        20
+      ],
+      "level": "auto",
+      "depth": 4.5,
+      "shore": 14.0,
+      "irregularity": 0.22
+    },
+    {
+      "type": "cliff",
+      "id": "larkspur_cliffs",
+      "points": [
+        [
+          -412,
+          2010
+        ],
+        [
+          -428,
+          2130
+        ],
+        [
+          -436,
+          2250
+        ],
+        [
+          -420,
+          2370
+        ],
+        [
+          -398,
+          2470
+        ]
+      ],
+      "height": 20.0,
+      "side": "west",
+      "face_width": 9.0,
+      "falloff": 70.0
+    },
+    {
+      "type": "hill",
+      "pos": [
+        338,
+        2186
+      ],
+      "radius": 130,
+      "height": 24.0
+    },
+    {
+      "type": "hill",
+      "pos": [
+        388,
+        2436
+      ],
+      "radius": 170,
+      "height": 14.0
+    },
+    {
+      "type": "hill",
+      "pos": [
+        -330,
+        1640
+      ],
+      "radius": 140,
+      "height": 16.0
+    },
+    {
+      "type": "road",
+      "id": "logging_road_west",
+      "surface": "gravel",
+      "width": 5.0,
+      "shoulder": 1.5,
+      "points": [
+        [
+          -32,
+          2010
+        ],
+        [
+          -82,
+          1916
+        ],
+        [
+          -152,
+          1836
+        ],
+        [
+          -212,
+          1756
+        ],
+        [
+          -312,
+          1686
+        ],
+        [
+          -412,
+          1656
+        ],
+        [
+          -512,
+          1646
+        ]
+      ]
+    },
+    {
+      "type": "path",
+      "id": "drop_trail",
+      "surface": "dirt",
+      "width": 2.2,
+      "points": [
+        [
+          -292,
+          2296
+        ],
+        [
+          -230,
+          2302
+        ],
+        [
+          -170,
+          2318
+        ],
+        [
+          -110,
+          2324
+        ],
+        [
+          -62,
+          2316
+        ]
+      ]
+    },
+    {
+      "type": "framework",
+      "id": "pell_crossing",
+      "framework": "pell_crossing",
+      "origin": [
+        -112,
+        2004
+      ],
+      "rotation": 0
+    },
+    {
+      "type": "poi",
+      "id": "okafor_farm",
+      "poi": "okafor_farmhouse",
+      "origin": [
+        -196,
+        1990
+      ],
+      "rotation": 90,
+      "biome": "meadow"
+    },
+    {
+      "type": "biome",
+      "biome": "birch_grove",
+      "circle": [
+        -262,
+        1916
+      ],
+      "radius": 170,
+      "blend": 40
+    },
+    {
+      "type": "biome",
+      "biome": "meadow",
+      "circle": [
+        -60,
+        2100
+      ],
+      "radius": 175,
+      "blend": 50
+    },
+    {
+      "type": "biome",
+      "biome": "meadow",
+      "circle": [
+        -190,
+        1990
+      ],
+      "radius": 70,
+      "blend": 30
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        -292,
+        2296
+      ],
+      "radius": 16
+    },
+    {
+      "type": "spawn",
+      "id": "drop_site",
+      "pos": [
+        -292,
+        2296
+      ],
+      "yaw": 60,
+      "props": [
+        {
+          "prop": "supply_canister",
+          "offset": [
+            2.0,
+            0.0,
+            1.0
+          ],
+          "rot": 30
+        }
+      ]
+    },
+    {
+      "type": "frontier",
+      "id": "larkspur_sealed_cave",
+      "pos": [
+        -418,
+        2176
+      ],
+      "kind": "cave",
+      "leads_to": "c6_larkspur_ridge",
+      "note": "Collapsed cave mouth in the cliff; opens in M2."
+    },
+    {
+      "type": "frontier",
+      "id": "cordon_south",
+      "pos": [
+        -90,
+        2560
+      ],
+      "kind": "road",
+      "leads_to": "d7_waystation_9",
+      "note": "Route 9 south to Waystation 9 and the Cordon."
+    },
+    {
+      "type": "frontier",
+      "id": "route9_east",
+      "pos": [
+        512,
+        1866
+      ],
+      "kind": "road",
+      "leads_to": "e6_mile_12",
+      "note": "Route 9 east to Mile 12."
+    }
+  ]
+}

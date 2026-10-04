@@ -19,6 +19,7 @@ var local_player_id: StringName = &"p:1"
 var world: WorldState
 var horde: HordeMemory
 var heat: HeatMap
+var weather: WeatherState
 var stats: Dictionary = {"zombies_killed": 0, "hums_survived": 0, "trees_felled": 0, "pois_cleared": 0}
 
 
@@ -56,6 +57,7 @@ func _init_systems() -> void:
 	horde = HordeMemory.new()
 	heat = HeatMap.new()
 	heat.configure(Content.config(&"heat"))
+	weather = WeatherState.new()
 
 
 func mode_config() -> Dictionary:
@@ -84,7 +86,7 @@ func to_dict() -> Dictionary:
 		"game_mode": String(game_mode), "created": created_unix, "play_seconds": play_seconds,
 		"clock": clock.to_dict(), "ids": ids.to_dict(), "rng": rng.to_dict(), "players": ps,
 		"local_player": String(local_player_id), "world": world.to_dict(), "horde": horde.to_dict(),
-		"heat": heat.to_dict(), "stats": stats,
+		"heat": heat.to_dict(), "weather": weather.to_dict(), "stats": stats,
 	}
 
 
@@ -108,5 +110,6 @@ static func from_dict(d: Dictionary) -> GameSession:
 	s.world.from_dict(d.get("world", {}))
 	s.horde.from_dict(d.get("horde", {}))
 	s.heat.from_dict(d.get("heat", {}))
+	s.weather.from_dict(d.get("weather", {}))
 	s.stats.merge(d.get("stats", {}), true)
 	return s

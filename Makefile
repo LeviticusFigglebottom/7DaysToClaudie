@@ -16,7 +16,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean
 
@@ -105,3 +105,6 @@ clean: ## Remove build output (keeps .tools and generated assets)
 preview: import ## Render generated models in-engine for visual QA: make preview MODELS="rocks/boulder_a rocks/boulder_b" [PREVIEW_ARGS="--grid"]
 	@mkdir -p $(ROOT)/build/previews
 	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/preview_asset.gd -- --out $(ROOT)/build/previews $(PREVIEW_ARGS) $(MODELS) 2>&1 | grep -E "PREVIEW|ERROR|SCRIPT ERROR" || true
+
+check: ## Fast compile check of every script (no gameplay)
+	@$(GODOT_HEADLESS) -s res://src/tools/cli/check_scripts.gd 2>&1 | grep -E "check\]|SCRIPT ERROR|Parse Error|Compile Error|at: " | grep -v "^$$" | head -60

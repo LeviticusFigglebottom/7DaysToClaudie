@@ -1,0 +1,795 @@
+{
+  "_doc": "Hollowmere main map. Coordinates are world metres: X east, Z south, origin = centre of region D4. Regions are 1024 m squares on a 7x7 grid (cols A..G west->east, rows 1..7 north->south). Macro terrain (corner_heights + world rivers/lakes/roads) is shared by all regions so features stay continuous across borders; regions add local detail (regions/<id>/region.json). See docs/REGIONS.md.",
+  "id": "hollowmere",
+  "name": "Hollowmere Valley",
+  "seed": 4471,
+  "region_size": 1024,
+  "cols": 7,
+  "rows": 7,
+  "sea_level": 0.0,
+  "macro": {
+    "_doc": "Elevation (m) at region corners, 8x8, rows north->south, cols west->east. Bicubic-interpolated, plus macro noise.",
+    "corner_heights": [
+      [
+        300,
+        900,
+        1300,
+        1550,
+        1380,
+        1100,
+        800,
+        700
+      ],
+      [
+        120,
+        520,
+        760,
+        900,
+        720,
+        620,
+        520,
+        460
+      ],
+      [
+        18,
+        210,
+        270,
+        185,
+        170,
+        300,
+        380,
+        360
+      ],
+      [
+        4,
+        125,
+        112,
+        100,
+        112,
+        262,
+        330,
+        300
+      ],
+      [
+        4,
+        112,
+        106,
+        101,
+        116,
+        232,
+        262,
+        240
+      ],
+      [
+        4,
+        102,
+        118,
+        84,
+        96,
+        142,
+        112,
+        100
+      ],
+      [
+        4,
+        92,
+        112,
+        78,
+        88,
+        72,
+        62,
+        60
+      ],
+      [
+        4,
+        72,
+        76,
+        58,
+        62,
+        56,
+        50,
+        50
+      ]
+    ],
+    "noise": {
+      "frequency": 0.0011,
+      "octaves": 5,
+      "amplitude": 38.0,
+      "ridged_amplitude": 22.0,
+      "mountain_boost": 2.6
+    }
+  },
+  "rivers": [
+    {
+      "id": "tamsin",
+      "name": "Tamsin River",
+      "points": [
+        [
+          150,
+          420
+        ],
+        [
+          170,
+          700
+        ],
+        [
+          140,
+          1000
+        ],
+        [
+          120,
+          1300
+        ],
+        [
+          128,
+          1536
+        ],
+        [
+          116,
+          1656
+        ],
+        [
+          148,
+          1776
+        ],
+        [
+          188,
+          1866
+        ],
+        [
+          178,
+          1956
+        ],
+        [
+          138,
+          2036
+        ],
+        [
+          118,
+          2116
+        ],
+        [
+          148,
+          2216
+        ],
+        [
+          188,
+          2296
+        ],
+        [
+          148,
+          2396
+        ],
+        [
+          88,
+          2476
+        ],
+        [
+          48,
+          2560
+        ],
+        [
+          20,
+          2800
+        ],
+        [
+          0,
+          3100
+        ],
+        [
+          -10,
+          3584
+        ]
+      ],
+      "width": [
+        14,
+        26
+      ],
+      "depth": 2.6,
+      "bank": 7.0,
+      "level": [
+        95.0,
+        56.0
+      ]
+    }
+  ],
+  "lakes": [
+    {
+      "id": "hollowmere_lake",
+      "name": "Hollowmere Lake",
+      "level": 95.0,
+      "depth": 34.0,
+      "shore": 24.0,
+      "polygon": [
+        [
+          -900,
+          -380
+        ],
+        [
+          -420,
+          -520
+        ],
+        [
+          120,
+          -470
+        ],
+        [
+          620,
+          -360
+        ],
+        [
+          880,
+          -80
+        ],
+        [
+          760,
+          260
+        ],
+        [
+          360,
+          420
+        ],
+        [
+          150,
+          430
+        ],
+        [
+          -200,
+          380
+        ],
+        [
+          -640,
+          300
+        ],
+        [
+          -960,
+          60
+        ]
+      ]
+    }
+  ],
+  "roads": [
+    {
+      "id": "route9",
+      "name": "Route 9",
+      "surface": "asphalt",
+      "width": 8.0,
+      "shoulder": 2.5,
+      "points": [
+        [
+          -90,
+          3584
+        ],
+        [
+          -86,
+          3000
+        ],
+        [
+          -82,
+          2660
+        ],
+        [
+          -92,
+          2560
+        ],
+        [
+          -82,
+          2436
+        ],
+        [
+          -62,
+          2316
+        ],
+        [
+          -40,
+          2236
+        ],
+        [
+          -32,
+          2190
+        ],
+        [
+          -32,
+          2010
+        ],
+        [
+          0,
+          1975
+        ],
+        [
+          48,
+          1966
+        ],
+        [
+          128,
+          1961
+        ],
+        [
+          228,
+          1951
+        ],
+        [
+          308,
+          1916
+        ],
+        [
+          512,
+          1866
+        ],
+        [
+          900,
+          1800
+        ]
+      ],
+      "bridges": [
+        {
+          "from": [
+            136,
+            1960
+          ],
+          "to": [
+            222,
+            1952
+          ],
+          "deck": "auto"
+        }
+      ]
+    }
+  ],
+  "regions": [
+    {
+      "cell": "A1",
+      "id": "a1_greywater_headland",
+      "name": "Greywater Headland",
+      "biome": "rocky_slope",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Sea cliffs and stacks at the mouth of the sound.",
+      "frontier": "sea"
+    },
+    {
+      "cell": "B1",
+      "id": "b1_kestrel_peaks",
+      "name": "Kestrel Peaks",
+      "biome": "rocky_slope",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Snowfields and knife ridges."
+    },
+    {
+      "cell": "C1",
+      "id": "c1_corvane_ridge",
+      "name": "Corvane Ridge",
+      "biome": "rocky_slope",
+      "danger": 5,
+      "status": "planned",
+      "summary": "Mine ventilation shafts; upper cave entrances.",
+      "frontier": "cave"
+    },
+    {
+      "cell": "D1",
+      "id": "d1_whitecap_summit",
+      "name": "Whitecap Summit",
+      "biome": "rocky_slope",
+      "danger": 5,
+      "status": "planned",
+      "summary": "Relay station on the highest peak \u2014 the valley's landmark."
+    },
+    {
+      "cell": "E1",
+      "id": "e1_glacier_basin",
+      "name": "Glacier Basin",
+      "biome": "rocky_slope",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Frozen tarns under the glacier."
+    },
+    {
+      "cell": "F1",
+      "id": "f1_hightimber",
+      "name": "Hightimber",
+      "biome": "conifer_forest",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Snowy subalpine forest."
+    },
+    {
+      "cell": "G1",
+      "id": "g1_northern_pass",
+      "name": "Northern Pass",
+      "biome": "rocky_slope",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Sealed rail tunnel out of the valley.",
+      "frontier": "rail_tunnel"
+    },
+    {
+      "cell": "A2",
+      "id": "a2_saltreach",
+      "name": "Saltreach",
+      "biome": "riverbank",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Fishing village on the sound."
+    },
+    {
+      "cell": "B2",
+      "id": "b2_old_growth",
+      "name": "Old Growth",
+      "biome": "conifer_forest",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Giant firs and cedars; Ashen hunting grounds."
+    },
+    {
+      "cell": "C2",
+      "id": "c2_corvane_mine",
+      "name": "Corvane Deep Mine",
+      "biome": "rocky_slope",
+      "danger": 5,
+      "status": "planned",
+      "summary": "Mine works, tailings ponds, main cave entrance (story-critical).",
+      "frontier": "underground"
+    },
+    {
+      "cell": "D2",
+      "id": "d2_harrow_heights",
+      "name": "Harrow Heights",
+      "biome": "conifer_forest",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Residential hills above Harrow; water tower."
+    },
+    {
+      "cell": "E2",
+      "id": "e2_selk_dam",
+      "name": "Selk Dam",
+      "biome": "rocky_slope",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Hydro dam, reservoir and power house."
+    },
+    {
+      "cell": "F2",
+      "id": "f2_ashen_highcamp",
+      "name": "Ashen Highcamp",
+      "biome": "conifer_forest",
+      "danger": 5,
+      "status": "planned",
+      "summary": "Main Ashen village in the burnt highlands."
+    },
+    {
+      "cell": "G2",
+      "id": "g2_burnwood_east",
+      "name": "Burnwood East",
+      "biome": "conifer_forest",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Burnt forest; blocked eastern highway.",
+      "frontier": "highway"
+    },
+    {
+      "cell": "A3",
+      "id": "a3_greywater_shore",
+      "name": "Greywater Shore",
+      "biome": "riverbank",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Tidal marsh inlets."
+    },
+    {
+      "cell": "B3",
+      "id": "b3_fernmere",
+      "name": "Fernmere",
+      "biome": "conifer_forest",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Wet fern forest and small lakes."
+    },
+    {
+      "cell": "C3",
+      "id": "c3_mere_west_shore",
+      "name": "Mere West Shore",
+      "biome": "birch_grove",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Lakeside cabins and campground."
+    },
+    {
+      "cell": "D3",
+      "id": "d3_harrow",
+      "name": "Harrow",
+      "biome": "town",
+      "danger": 4,
+      "status": "planned",
+      "summary": "The valley's main town on the lake's north shore."
+    },
+    {
+      "cell": "E3",
+      "id": "e3_harrow_mill",
+      "name": "Harrow Mill & Railyard",
+      "biome": "town",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Sawmill, rail yard, fuel depot."
+    },
+    {
+      "cell": "F3",
+      "id": "f3_burnwood",
+      "name": "Burnwood",
+      "biome": "conifer_forest",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Burnt forest, Ashen territory."
+    },
+    {
+      "cell": "G3",
+      "id": "g3_ember_ridge",
+      "name": "Ember Ridge",
+      "biome": "rocky_slope",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Burnt cliffs; Ashen watch posts."
+    },
+    {
+      "cell": "A4",
+      "id": "a4_sound_narrows",
+      "name": "Sound Narrows",
+      "biome": "riverbank",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Wrecked ferry in the narrows."
+    },
+    {
+      "cell": "B4",
+      "id": "b4_westwood",
+      "name": "Westwood",
+      "biome": "conifer_forest",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Dense forest."
+    },
+    {
+      "cell": "C4",
+      "id": "c4_hollowmere_west",
+      "name": "Hollowmere West",
+      "biome": "riverbank",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Lake, islands."
+    },
+    {
+      "cell": "D4",
+      "id": "d4_hollowmere_lake",
+      "name": "Hollowmere Lake",
+      "biome": "riverbank",
+      "danger": 3,
+      "status": "planned",
+      "summary": "The lake; Lantern Island field lab."
+    },
+    {
+      "cell": "E4",
+      "id": "e4_hollowmere_east",
+      "name": "Hollowmere East",
+      "biome": "birch_grove",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Boathouses, east shore."
+    },
+    {
+      "cell": "F4",
+      "id": "f4_ashen_lowcamp",
+      "name": "Ashen Lowcamp",
+      "biome": "conifer_forest",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Secondary Ashen camp; effigy fields."
+    },
+    {
+      "cell": "G4",
+      "id": "g4_burnwood_south",
+      "name": "Burnwood South",
+      "biome": "conifer_forest",
+      "danger": 4,
+      "status": "planned",
+      "summary": "Collapsed bridge east.",
+      "frontier": "bridge"
+    },
+    {
+      "cell": "A5",
+      "id": "a5_greywater_point",
+      "name": "Greywater Point",
+      "biome": "rocky_slope",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Lighthouse."
+    },
+    {
+      "cell": "B5",
+      "id": "b5_cedar_hollow",
+      "name": "Cedar Hollow",
+      "biome": "conifer_forest",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Trapper cabins."
+    },
+    {
+      "cell": "C5",
+      "id": "c5_kettle_hills",
+      "name": "Kettle Hills",
+      "biome": "conifer_forest",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Rolling forest, kettle ponds."
+    },
+    {
+      "cell": "D5",
+      "id": "d5_tamsin_gorge",
+      "name": "Tamsin Gorge",
+      "biome": "rocky_slope",
+      "danger": 2,
+      "status": "planned",
+      "summary": "River gorge below the lake; old logging bridge."
+    },
+    {
+      "cell": "E5",
+      "id": "e5_bramble_flats",
+      "name": "Bramble Flats",
+      "biome": "meadow",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Meadows and an abandoned ranch."
+    },
+    {
+      "cell": "F5",
+      "id": "f5_sallow_fen_north",
+      "name": "Sallow Fen North",
+      "biome": "riverbank",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Swamp."
+    },
+    {
+      "cell": "G5",
+      "id": "g5_sallow_fen_east",
+      "name": "Sallow Fen East",
+      "biome": "riverbank",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Flooded lowlands.",
+      "frontier": "flood"
+    },
+    {
+      "cell": "A6",
+      "id": "a6_driftwood_beach",
+      "name": "Driftwood Beach",
+      "biome": "riverbank",
+      "danger": 1,
+      "status": "planned",
+      "summary": "Driftwood-strewn beach."
+    },
+    {
+      "cell": "B6",
+      "id": "b6_lowland_timber",
+      "name": "Lowland Timber",
+      "biome": "conifer_forest",
+      "danger": 1,
+      "status": "planned",
+      "summary": "Logging cut-blocks and a camp."
+    },
+    {
+      "cell": "C6",
+      "id": "c6_larkspur_ridge",
+      "name": "Larkspur Ridge",
+      "biome": "rocky_slope",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Cliffs; sealed cave passage.",
+      "frontier": "cave"
+    },
+    {
+      "cell": "D6",
+      "id": "d6_larch_hollow",
+      "name": "Larch Hollow",
+      "biome": "conifer_forest",
+      "danger": 1,
+      "status": "built",
+      "milestone": "M1",
+      "summary": "Start region: larch and fir forest, the Tamsin River, Larch Pond and the town of Pell's Crossing."
+    },
+    {
+      "cell": "E6",
+      "id": "e6_mile_12",
+      "name": "Mile 12",
+      "biome": "meadow",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Highway gas station cluster and motel."
+    },
+    {
+      "cell": "F6",
+      "id": "f6_sallow_fen",
+      "name": "Sallow Fen",
+      "biome": "riverbank",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Swamp core."
+    },
+    {
+      "cell": "G6",
+      "id": "g6_fen_edge",
+      "name": "Fen Edge",
+      "biome": "riverbank",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Edge of the fen.",
+      "frontier": "flood"
+    },
+    {
+      "cell": "A7",
+      "id": "a7_cordon_west",
+      "name": "Cordon West",
+      "biome": "meadow",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Cordon wall and watchtowers.",
+      "frontier": "cordon"
+    },
+    {
+      "cell": "B7",
+      "id": "b7_cordon_firebreak",
+      "name": "Cordon Firebreak",
+      "biome": "meadow",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Burned strip along the wall."
+    },
+    {
+      "cell": "C7",
+      "id": "c7_cordon_gate_west",
+      "name": "Cordon Gate West",
+      "biome": "meadow",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Abandoned processing camp."
+    },
+    {
+      "cell": "D7",
+      "id": "d7_waystation_9",
+      "name": "Waystation 9",
+      "biome": "meadow",
+      "danger": 1,
+      "status": "planned",
+      "summary": "Program trader hub at the river culvert in the Cordon wall.",
+      "frontier": "cordon"
+    },
+    {
+      "cell": "E7",
+      "id": "e7_cordon_firebreak_east",
+      "name": "Cordon Firebreak East",
+      "biome": "meadow",
+      "danger": 2,
+      "status": "planned",
+      "summary": "Drone wrecks."
+    },
+    {
+      "cell": "F7",
+      "id": "f7_cordon_marsh",
+      "name": "Cordon Marsh",
+      "biome": "riverbank",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Marshy Cordon section."
+    },
+    {
+      "cell": "G7",
+      "id": "g7_cordon_east",
+      "name": "Cordon East",
+      "biome": "meadow",
+      "danger": 3,
+      "status": "planned",
+      "summary": "Cordon wall.",
+      "frontier": "cordon"
+    }
+  ]
+}
