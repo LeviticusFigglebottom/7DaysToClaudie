@@ -1,0 +1,60 @@
+# Roadmap
+
+Status legend: ✅ done · 🟡 in progress · ⬜ planned. Each milestone lists its acceptance criteria.
+Keep this file current at the end of every session.
+
+## M0 — Tooling, pipeline skeleton, CI ✅
+- ✅ Pinned toolchain (`tools/versions.env`): Godot 4.7.2 (Forward+, Jolt), Blender 5.2.2 LTS, Python venv.
+- ✅ `make setup / assets / import / validate / test / run / preview / screenshots / ci`.
+- ✅ Asset orchestrator: incremental by input hash, parallel, batched Blender, deterministic UIDs,
+  `.import` sidecars, determinism check.
+- ✅ Data-driven ContentDB with validation; GUT tests; GitHub Actions CI.
+- ✅ Core models: inventory, crafting, loot, survival, structure graph, clock/Hum schedule,
+  progression, heat map, horde memory, save system (versioned, migrations, chunk blobs).
+
+## M1 — Vertical slice 🟡
+**Acceptance**: from a clean clone (`make setup assets`) the slice is playable start to finish —
+wake at the drop site, gather, craft a stone axe, build a lean-to shelter, explore Pell's Crossing
+and clear at least one authored building along its route, survive a night and a Hum night
+(slice mode: Hum on night 3), then save and reload. All visuals use generated assets.
+
+- 🟡 Region D6 *Larch Hollow*: terrain (heightmap chunks + LOD + digging), river, pond, cliffs,
+  forest scatter, Pell's Crossing town framework with 6 buildings.
+- 🟡 Player controller, interaction, gathering, stamina, damage, death/respawn.
+- 🟡 Survival stats in play (needs, temperature, bleeding, infection hook) + tether vitals.
+- 🟡 Diegetic salvage roll inventory + hand crafting; campfire/workbench station crafting.
+- 🟡 Tree chopping (physics fall, stumps, logs), log carrying, log building (snap + freeform),
+  blueprints, structural integrity + collapse, structure damage + fracture debris.
+- 🟡 Terrain digging (heightmap) + smooth SDF volume chunks (tunnel prototype).
+- 🟡 Hollow, Lurcher, Keener (+ Dragger via dismemberment): sleepers, wanderers, day/night speeds,
+  perception through stimulus fields, heat summons.
+- 🟡 Day/night, weather (clear/overcast/mist/rain/storm), seasons hook.
+- 🟡 One Hum night with sector waves, weak-point flow field, horde memory report + forecast.
+- 🟡 Save/load (sleep in shelter, quicksave, autosave on Hum end).
+- 🟡 Debug tools: free cam, spawn menu, time/weather, AI overlay, POI route visualizer, perf overlay,
+  seed viewer, structural view.
+- 🟡 Audio: 3D occlusion, reverb zones, ambient beds, creature cues.
+
+## M2 — Factions, caves, companion, economy ⬜
+- The Ashen: camps, routines, scouts that observe, morale/fear of fire, raids, effigies.
+- Corvane cave network (SDF volumes, darkness, key items, mine levels) + region C2/C6 entrances.
+- Companion Ezra Vane: follow/gather/guard/fetch orders.
+- Full perk trees, forge/chemistry bench/grill, more schematics and journals.
+- Waystation 9 trader, contracts (clear/fetch/defend), reputation tiers, scrip economy.
+- 10+ more POIs (church, school, motel, gas station, bar, clinic, mine office...), Mile 12 framework.
+- Wildlife; Blister and Husk Hollowed; Hollowed hounds.
+
+## M3 — RWG, biomes, seasons, base tech ⬜
+- Randomized world generation (macro terrain + erosion, biomes, rivers/lakes, roads, towns from
+  frameworks, wilderness POIs, caves, trader placement), background thread + progress UI + cache.
+- Burnt forest, snow, swamp, scrub biomes; full seasons (snow cover, frozen water, temperature).
+- Structural tiers: stone, metal; repair/upgrade tools; Rammer breakers that tear through walls.
+- Farming, rain collection, traps (spike pits, deadfalls), electricity (generator, wiring, lights,
+  motion turrets).
+- Main-map regions: Mile 12, Tamsin Gorge, Harrow (partial).
+
+## M4+ — Novel systems in full, vehicles, co-op, the rest of the valley ⬜
+- The Bloom infection mutations/madness; two-faction ecology & territory map; the Hollowing.
+- Traversal: ziplines, rope descents, wing-sail glider; salvaged ATV.
+- Co-op (host-authoritative, command replication — see ADR-0003).
+- Remaining main-map regions, story arc to the Root, polish, accessibility, localization.
