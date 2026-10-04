@@ -1,0 +1,15 @@
+{
+  "_doc": "Destructible POI kit pieces (walls, doors, boards). Building interiors use these hp/material values; see docs/POI_AUTHORING.md.",
+  "defs": [
+    {"id": "kit_wall_frame", "name": "Framed Wall", "kind": "wall", "material": "wood", "hp": 700, "mass": 300, "grounded": true, "max_span": 3.0, "model": "kit/wall_1m", "size": [1.0, 2.8, 0.16], "damage_mult": {"blunt": 0.8, "slash": 0.5, "fire": 1.5, "zombie": 0.6}, "flammable": true},
+    {"id": "kit_wall_frame_weak", "name": "Water-Damaged Wall", "kind": "wall", "material": "wood", "hp": 220, "mass": 250, "grounded": true, "max_span": 2.0, "model": "kit/wall_1m_worn", "size": [1.0, 2.8, 0.16], "damage_mult": {"blunt": 1.2, "slash": 0.8, "zombie": 1.0}, "flammable": true},
+    {"id": "kit_wall_brick", "name": "Brick Wall", "kind": "wall", "material": "stone", "hp": 2400, "mass": 900, "grounded": true, "max_span": 2.5, "model": "kit/wall_1m_brick", "size": [1.0, 2.8, 0.24], "damage_mult": {"blunt": 0.5, "slash": 0.1, "fire": 0.0, "zombie": 0.3}},
+    {"id": "kit_floor_wood", "name": "Wood Floor", "kind": "floor", "material": "wood", "hp": 500, "mass": 120, "grounded": false, "max_span": 4.0, "model": "kit/floor_1m", "size": [1.0, 0.2, 1.0], "damage_mult": {"blunt": 0.9, "zombie": 0.7}, "flammable": true},
+    {"id": "kit_floor_rotten", "name": "Rotten Floor", "kind": "floor", "material": "wood", "hp": 60, "mass": 100, "grounded": false, "max_span": 2.0, "model": "kit/floor_1m_rotten", "size": [1.0, 0.2, 1.0], "damage_mult": {"blunt": 1.5, "zombie": 1.0}, "flammable": true},
+    {"id": "kit_door_wood", "name": "Wooden Door", "kind": "door", "material": "wood", "hp": 260, "mass": 30, "grounded": false, "model": "kit/door_wood", "size": [0.9, 2.05, 0.05], "damage_mult": {"blunt": 1.0, "slash": 0.8, "zombie": 1.0}, "flammable": true},
+    {"id": "kit_door_metal", "name": "Steel Door", "kind": "door", "material": "metal", "hp": 1600, "mass": 80, "grounded": false, "model": "kit/door_metal", "size": [0.9, 2.05, 0.06], "damage_mult": {"blunt": 0.4, "slash": 0.1, "zombie": 0.35}},
+    {"id": "kit_boards", "name": "Boarded Planks", "kind": "barricade", "material": "wood", "hp": 140, "mass": 15, "grounded": false, "model": "kit/boards", "size": [1.0, 1.2, 0.06], "damage_mult": {"blunt": 1.2, "slash": 1.0, "zombie": 1.2}, "flammable": true},
+    {"id": "kit_barricade_furniture", "name": "Furniture Barricade", "kind": "barricade", "material": "wood", "hp": 320, "mass": 120, "grounded": true, "model": "kit/barricade_furniture", "size": [1.6, 1.4, 0.8], "damage_mult": {"blunt": 1.0, "slash": 0.7, "zombie": 0.8}, "flammable": true},
+    {"id": "kit_window_glass", "name": "Window", "kind": "window", "material": "glass", "hp": 10, "mass": 5, "grounded": false, "model": "kit/window_glass", "size": [1.0, 1.2, 0.04], "damage_mult": {"blunt": 3.0, "slash": 3.0, "ballistic": 3.0}}
+  ]
+}

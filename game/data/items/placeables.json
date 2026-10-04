@@ -1,0 +1,5 @@
+{
+  "defs": [
+    {"id": "can_chime", "name": "Can Chime", "description": "Cans on a cord. Strung across a gap, it rattles when something walks through.", "category": "trap", "stack_max": 5, "carry_max": 5, "bulk": 0.3, "value": 3, "equip": {"slot": "hand", "kind": "placeable", "structure": "can_chime_trap"}}
+  ]
+}

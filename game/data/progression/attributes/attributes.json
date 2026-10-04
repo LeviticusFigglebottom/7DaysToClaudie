@@ -1,0 +1,9 @@
+{
+  "defs": [
+    {"id": "sinew", "name": "Sinew", "description": "Strength in the arms and back. Felling, carrying, heavy weapons.", "max_level": 10, "color": "#b5654a", "per_level": {"melee_damage_mult": 0.03, "carry_bulk": 2.0}},
+    {"id": "grit", "name": "Grit", "description": "Endurance and hardness. Health, stamina, shrugging off cold and wounds.", "max_level": 10, "color": "#8a7a4a", "per_level": {"max_health": 5.0, "stamina_regen_mult": 0.03}},
+    {"id": "keen", "name": "Keen", "description": "Eyes and instinct. Spotting sleepers, finding the good loot, aiming.", "max_level": 10, "color": "#4a7a8a", "per_level": {"loot_quality_bonus": 0.05, "ranged_damage_mult": 0.03}},
+    {"id": "quiet", "name": "Quiet", "description": "Moving unheard. Sneaking, speed, the dark as an ally.", "max_level": 10, "color": "#5a5a7a", "per_level": {"noise_mult": -0.03, "move_speed_mult": 0.01}},
+    {"id": "wits", "name": "Wits", "description": "Hands and head. Crafting quality, building, medicine.", "max_level": 10, "color": "#6a8a5a", "per_level": {"craft_quality": 0.2, "structure_hp_mult": 0.03}}
+  ]
+}

@@ -1,0 +1,4 @@
+# Asset pipeline Python dependencies (pinned). Installed into .tools/venv by tools/setup/install_python.sh
+numpy==2.4.6
+scipy==1.17.1
+Pillow==12.3.0

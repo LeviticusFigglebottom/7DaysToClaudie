@@ -1,0 +1,75 @@
+extends Control
+## Boot scene + main menu.
+##
+## Command line (after `--`):  --new-game [--mode slice|survival] [--seed N] [--skip-intro]
+##                             --load <slot>    --continue
+## e.g. godot --path game -- --new-game --mode slice --skip-intro
+
+@onready var _list: VBoxContainer = %Buttons
+@onready var _status: Label = %Status
+
+
+func _ready() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if _handle_cli(args):
+		return
+	_build_menu()
+
+
+func _handle_cli(args: PackedStringArray) -> bool:
+	if args.has("--new-game"):
+		var opts: Dictionary = {"game_mode": _arg_value(args, "--mode", "survival")}
+		var seed_s: String = _arg_value(args, "--seed", "")
+		if seed_s != "":
+			opts["seed"] = int(seed_s)
+		opts["skip_intro"] = args.has("--skip-intro")
+		Game.start_new_game.call_deferred(opts)
+		return true
+	if args.has("--load"):
+		Game.load_game.call_deferred(_arg_value(args, "--load", "slot1"))
+		return true
+	if args.has("--continue"):
+		var slots: Array[Dictionary] = SaveSystem.list_slots()
+		if not slots.is_empty():
+			Game.load_game.call_deferred(str(slots[0]["slot"]))
+			return true
+	return false
+
+
+static func _arg_value(args: PackedStringArray, key: String, default: String) -> String:
+	var i: int = args.find(key)
+	return args[i + 1] if i >= 0 and i + 1 < args.size() else default
+
+
+func _build_menu() -> void:
+	for c: Node in _list.get_children():
+		c.queue_free()
+	var slots: Array[Dictionary] = SaveSystem.list_slots()
+	if not slots.is_empty():
+		_add_button("Continue (Day %d)" % int(slots[0].get("day", 1)), func() -> void: Game.load_game(str(slots[0]["slot"])))
+	_add_button("New Game — Hollowmere", func() -> void: Game.start_new_game({"game_mode": "survival"}))
+	_add_button("New Game — Vertical Slice (Hum on night 3)", func() -> void: Game.start_new_game({"game_mode": "slice"}))
+	var rwg := _add_button("Random World (M3)", func() -> void: pass)
+	rwg.disabled = true
+	for s: Dictionary in slots:
+		_add_button("Load %s — Day %d" % [s.get("slot", "?"), int(s.get("day", 1))], func() -> void: Game.load_game(str(s["slot"])))
+	_add_button("Graphics: %s" % Settings.graphics_preset, _cycle_graphics)
+	_add_button("Quit", func() -> void: get_tree().quit())
+	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
+
+
+func _add_button(text: String, cb: Callable) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(420, 44)
+	b.pressed.connect(cb)
+	_list.add_child(b)
+	return b
+
+
+func _cycle_graphics() -> void:
+	var order: PackedStringArray = Settings.PRESET_ORDER
+	var i: int = (order.find(Settings.graphics_preset) + 1) % order.size()
+	Settings.set_graphics_preset(order[i])
+	_build_menu()

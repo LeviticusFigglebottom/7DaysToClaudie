@@ -1,0 +1,68 @@
+class_name WorldState
+extends RefCounted
+## Authoritative ledger of everything the player changed in the world (serializable).
+## The world is regenerated deterministically from its seed + region data; only *differences*
+## are stored here, keyed by deterministic ids (ADR-0003, ADR-0005).
+
+## piece id -> {def, pos:[3], rot:[4] (quat xyzw), hp, grounded, links:{id: rel}, owner}
+var structures: Dictionary = {}
+## blueprint instance id -> {def, pos:[3], rot:[4], delivered:{item:n}, placed:[piece index]}
+var blueprints: Dictionary = {}
+## container id -> {opened: bool, items: [stack dicts] | null (= not rolled yet)}
+var containers: Dictionary = {}
+## poi instance id -> {visited, cleared, dead: [sleeper ids], broken: [piece ids], doors: {id: state}, traps: {id: state}}
+var pois: Dictionary = {}
+## chunk key -> {tree index (String): {state: "stump", day}}
+var trees: Dictionary = {}
+## dropped item / loose log entities: id -> {kind: "item"|"log", stack?, pos:[3], rot:[4]}
+var loose: Dictionary = {}
+## chunk key -> PackedByteArray (terrain height deltas / volume densities), saved as chunks/<key>.bin
+var chunk_blobs: Dictionary = {}
+## Story / tutorial flags.
+var flags: Dictionary = {}
+
+
+func container_state(id: StringName) -> Dictionary:
+	return containers.get(String(id), {})
+
+
+func set_container_items(id: StringName, inv: Inventory, opened: bool = true) -> void:
+	var items: Array = []
+	for s: ItemStack in inv.stacks:
+		items.append(s.to_dict())
+	containers[String(id)] = {"opened": opened, "items": items}
+
+
+func poi_state(id: StringName) -> Dictionary:
+	var key: String = String(id)
+	if not pois.has(key):
+		pois[key] = {"visited": false, "cleared": false, "dead": [], "broken": [], "doors": {}, "traps": {}}
+	return pois[key]
+
+
+func tree_state(chunk_key: String, index: int) -> Dictionary:
+	return (trees.get(chunk_key, {}) as Dictionary).get(str(index), {})
+
+
+func set_tree_state(chunk_key: String, index: int, state: Dictionary) -> void:
+	if not trees.has(chunk_key):
+		trees[chunk_key] = {}
+	trees[chunk_key][str(index)] = state
+
+
+func to_dict() -> Dictionary:
+	return {
+		"structures": structures, "blueprints": blueprints, "containers": containers, "pois": pois,
+		"trees": trees, "loose": loose, "flags": flags, "chunk_keys": chunk_blobs.keys(),
+	}
+
+
+## Blobs are attached separately by SaveSystem.
+func from_dict(d: Dictionary) -> void:
+	structures = d.get("structures", {})
+	blueprints = d.get("blueprints", {})
+	containers = d.get("containers", {})
+	pois = d.get("pois", {})
+	trees = d.get("trees", {})
+	loose = d.get("loose", {})
+	flags = d.get("flags", {})

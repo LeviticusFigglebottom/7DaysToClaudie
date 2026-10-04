@@ -1,0 +1,34 @@
+# --- Godot ---
+.godot/
+*.translation
+export.cfg
+export_credentials.cfg
+/game/android/
+# Godot-generated sidecars for generated assets are themselves generated:
+/game/assets/generated/
+
+# --- Toolchain (installed by `make setup`) ---
+/.tools/
+
+# --- Build / scratch output ---
+/build/
+/out/
+/screenshots/
+*.tmp
+*.part
+
+# --- Python ---
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# --- Blender ---
+*.blend1
+*.blend@
+
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

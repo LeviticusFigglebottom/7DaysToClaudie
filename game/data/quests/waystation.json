@@ -1,0 +1,8 @@
+{
+  "_doc": "M2: Waystation contracts. Defined now so POIs can expose quest hooks; runtime lands in M2.",
+  "defs": [
+    {"id": "clear_merrow_house", "name": "Clear the Merrow House", "type": "clear", "tier": 1, "objectives": [{"type": "clear_poi", "target": "merrow_house"}], "rewards": {"scrip": 40, "xp": 200}},
+    {"id": "fetch_dispensary", "name": "Antifungal Recovery", "type": "fetch", "tier": 2, "objectives": [{"type": "fetch", "target": "antifungal", "count": 3}], "rewards": {"scrip": 90, "xp": 350}},
+    {"id": "ranger_samples", "name": "The Cold Box", "type": "story", "tier": 3, "objectives": [{"type": "fetch", "target": "bloom_sample", "count": 1}], "rewards": {"scrip": 150, "xp": 600}}
+  ]
+}

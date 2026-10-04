@@ -1,0 +1,24 @@
+{
+  "defs": [
+    {"id": "kitchen_cabinet", "name": "Kitchen Cabinet", "loot_table": "kitchen_cabinet", "slots": 6, "search_time": 1.2, "noise": 4},
+    {"id": "fridge", "name": "Refrigerator", "loot_table": "fridge", "slots": 6, "search_time": 1.0, "noise": 5},
+    {"id": "medicine_cabinet", "name": "Medicine Cabinet", "loot_table": "medicine_cabinet", "slots": 4, "search_time": 1.0, "noise": 3},
+    {"id": "nightstand", "name": "Nightstand", "loot_table": "nightstand", "slots": 4, "search_time": 1.2, "noise": 3},
+    {"id": "dresser", "name": "Dresser", "loot_table": "dresser", "slots": 8, "search_time": 2.0, "noise": 4},
+    {"id": "desk", "name": "Desk", "loot_table": "desk", "slots": 6, "search_time": 1.6, "noise": 3},
+    {"id": "toolbox", "name": "Toolbox", "loot_table": "toolbox", "slots": 6, "search_time": 1.4, "noise": 6},
+    {"id": "hardware_shelf", "name": "Hardware Shelf", "loot_table": "hardware_shelf", "slots": 8, "search_time": 2.2, "noise": 5},
+    {"id": "grocery_shelf", "name": "Grocery Shelf", "loot_table": "grocery_shelf", "slots": 8, "search_time": 2.0, "noise": 4},
+    {"id": "pharmacy_shelf", "name": "Pharmacy Shelf", "loot_table": "pharmacy_shelf", "slots": 8, "search_time": 2.0, "noise": 3},
+    {"id": "dispensary_safe", "name": "Dispensary Safe", "loot_table": "dispensary", "slots": 8, "search_time": 2.5, "noise": 6, "locked": true},
+    {"id": "cash_register", "name": "Cash Register", "loot_table": "cash_register", "slots": 2, "search_time": 1.0, "noise": 7},
+    {"id": "weapons_locker", "name": "Weapons Locker", "loot_table": "weapons_locker", "slots": 8, "search_time": 2.5, "noise": 8, "locked": true},
+    {"id": "duffel_bag", "name": "Duffel Bag", "loot_table": "duffel_bag", "slots": 10, "search_time": 2.0, "noise": 2},
+    {"id": "trash_pile", "name": "Trash Pile", "loot_table": "trash_pile", "slots": 4, "search_time": 1.8, "noise": 5},
+    {"id": "cardboard_box", "name": "Cardboard Box", "loot_table": "cardboard_box", "slots": 4, "search_time": 1.2, "noise": 3},
+    {"id": "bookshelf", "name": "Bookshelf", "loot_table": "bookshelf", "slots": 4, "search_time": 2.0, "noise": 2},
+    {"id": "car_trunk", "name": "Car Trunk", "loot_table": "car_trunk", "slots": 6, "search_time": 2.2, "noise": 9},
+    {"id": "supply_drop", "name": "Program Supply Canister", "loot_table": "supply_drop", "slots": 10, "search_time": 1.5, "noise": 4},
+    {"id": "zombie_corpse", "name": "Remains", "loot_table": "zombie_corpse", "slots": 4, "search_time": 1.5, "noise": 2}
+  ]
+}

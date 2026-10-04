@@ -1,0 +1,11 @@
+{
+  "_doc": "Attention system. Noisy activity adds heat to 64 m cells; thresholds summon scouts/Keeners/packs.",
+  "cell_size": 64.0,
+  "decay_per_hour": 14.0,
+  "thresholds": [
+    {"at": 35.0, "kind": "scout", "cooldown_hours": 2.0},
+    {"at": 75.0, "kind": "keener", "cooldown_hours": 6.0},
+    {"at": 120.0, "kind": "pack", "cooldown_hours": 8.0}
+  ],
+  "sources": {"chop": 0.6, "dig": 0.5, "mine": 1.0, "gunshot": 14.0, "campfire_per_hour": 4.0, "forge_per_hour": 18.0, "build": 0.3, "scream": 30.0, "explosion": 40.0}
+}

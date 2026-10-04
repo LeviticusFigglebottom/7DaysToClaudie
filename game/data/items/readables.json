@@ -1,0 +1,14 @@
+{
+  "defs": [
+    {"id": "schematic_spike_barrier", "name": "Schematic: Stake Barricade", "description": "A survivor's sketch of sharpened-log barricades.", "category": "schematic", "stack_max": 1, "bulk": 0.01, "value": 15, "teaches": {"blueprint": "spike_barrier"}},
+    {"id": "schematic_log_cabin", "name": "Schematic: Trapper's Cabin", "description": "Pencil plans for a one-room log cabin, notched corners and all.", "category": "schematic", "stack_max": 1, "bulk": 0.01, "value": 20, "teaches": {"blueprint": "log_cabin_small"}},
+    {"id": "schematic_can_chime", "name": "Schematic: Can Chime", "description": "How to string cans so nothing walks up on you quietly.", "category": "schematic", "stack_max": 1, "bulk": 0.01, "value": 8, "teaches": {"recipe": "can_chime"}},
+    {"id": "journal_timber_trade", "name": "Timber & Trade Monthly", "description": "A logging trade journal. Dog-eared pages on felling and joinery.", "category": "magazine", "stack_max": 1, "bulk": 0.05, "value": 6, "teaches": {"skill": "joinery", "points": 1}},
+    {"id": "journal_field_medicine", "name": "Backcountry Medicine Quarterly", "description": "Wilderness first-aid digest.", "category": "magazine", "stack_max": 1, "bulk": 0.05, "value": 6, "teaches": {"skill": "field_medicine", "points": 1}},
+    {"id": "note_merrow_fridge", "name": "Note on the Fridge", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "merrow_fridge"},
+    {"id": "note_pharmacy_ledger", "name": "Dispensary Ledger Page", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "pharmacy_ledger"},
+    {"id": "note_ranger_log", "name": "Ranger Station Logbook", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "ranger_log"},
+    {"id": "pharmacy_key", "name": "Dispensary Key", "description": "Small brass key on a lanyard marked RX.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]},
+    {"id": "evidence_locker_key", "name": "Evidence Locker Key", "description": "Tagged 'EVIDENCE — DO NOT REMOVE'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]}
+  ]
+}

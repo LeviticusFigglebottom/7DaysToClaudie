@@ -1,0 +1,14 @@
+{
+  "_doc": "Hand recipes: lay the exact ingredients on the salvage roll's work slate.",
+  "defs": [
+    {"id": "cordage", "result": "cordage", "count": 1, "ingredients": {"plant_fiber": 3}, "time": 2.0, "category": "materials"},
+    {"id": "stone_axe", "result": "stone_axe", "ingredients": {"stick": 1, "stone": 1, "cordage": 1}, "time": 4.0, "category": "tools"},
+    {"id": "crude_spear", "result": "crude_spear", "ingredients": {"stick": 2, "cordage": 1}, "time": 3.0, "category": "weapons"},
+    {"id": "stone_club", "result": "stone_club", "ingredients": {"stick": 1, "stone": 2, "cordage": 1}, "time": 3.0, "category": "weapons"},
+    {"id": "torch", "result": "torch", "ingredients": {"stick": 1, "cloth": 1}, "time": 1.5, "category": "light"},
+    {"id": "cloth_bandage", "result": "cloth_bandage", "ingredients": {"cloth": 2}, "time": 1.5, "category": "medical"},
+    {"id": "yarrow_poultice", "result": "yarrow_poultice", "ingredients": {"yarrow": 2, "cloth": 1}, "time": 2.0, "category": "medical"},
+    {"id": "can_chime", "result": "can_chime", "ingredients": {"empty_can": 3, "cordage": 1}, "time": 2.0, "category": "traps", "unlock": "schematic"},
+    {"id": "bough_bundle", "result": "leaf_bundle", "ingredients": {"stick": 1, "plant_fiber": 1}, "time": 1.0, "category": "materials"}
+  ]
+}

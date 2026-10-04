@@ -1,0 +1,102 @@
+# Hollowmere — task runner. `make help` lists targets.
+# Toolchain is pinned in tools/versions.env and installed into .tools/ by `make setup`.
+# Override tool paths with e.g. `make test GODOT=/usr/bin/godot`.
+
+SHELL := /bin/bash
+ROOT := $(abspath .)
+GAME := $(ROOT)/game
+TOOLS_DIR := $(ROOT)/.tools
+
+GODOT ?= $(shell if [ -x $(TOOLS_DIR)/godot/godot ]; then echo $(TOOLS_DIR)/godot/godot; else command -v godot; fi)
+BLENDER ?= $(shell if [ -x $(TOOLS_DIR)/blender/blender ]; then echo $(TOOLS_DIR)/blender/blender; else command -v blender; fi)
+PYTHON ?= $(shell if [ -x $(TOOLS_DIR)/venv/bin/python ]; then echo $(TOOLS_DIR)/venv/bin/python; else command -v python3; fi)
+# Software-rendered display for screenshots/bakes on headless machines (Mesa lavapipe Vulkan).
+XVFB ?= xvfb-run -a -s "-screen 0 1920x1080x24"
+JOBS ?= $(shell nproc 2>/dev/null || echo 4)
+GODOT_HEADLESS := $(GODOT) --headless --path $(GAME)
+
+.PHONY: help setup setup-godot setup-blender setup-python fonts vendor-gut \
+        assets assets-force assets-list assets-clean assets-determinism bake \
+        import validate test test-unit test-integration run run-slice editor screenshots ci clean
+
+help: ## Show this help
+	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+setup: setup-godot setup-blender setup-python ## Install pinned Godot, Blender and the Python venv into .tools/
+
+setup-godot:
+	@tools/setup/install_godot.sh
+
+setup-blender:
+	@tools/setup/install_blender.sh
+
+setup-python:
+	@tools/setup/install_python.sh
+
+fonts: ## Re-fetch open-licensed fonts (pinned by SHA-256)
+	@python3 tools/setup/fetch_fonts.py
+
+vendor-gut: ## Re-vendor GUT at the pinned version
+	@python3 tools/setup/vendor_gut.py
+
+assets: ## Regenerate all procedural assets (incremental) + Godot bakes (icons, impostors)
+	@$(PYTHON) tools/build_assets.py --jobs $(JOBS) --blender "$(BLENDER)"
+	@$(MAKE) --no-print-directory import
+	@$(MAKE) --no-print-directory bake
+
+assets-force: ## Regenerate every asset from scratch
+	@$(PYTHON) tools/build_assets.py --force --jobs $(JOBS) --blender "$(BLENDER)"
+	@$(MAKE) --no-print-directory import
+	@$(MAKE) --no-print-directory bake
+
+assets-list: ## List asset tasks and their state
+	@$(PYTHON) tools/build_assets.py --list
+
+assets-clean: ## Delete game/assets/generated
+	@$(PYTHON) tools/build_assets.py --clean
+
+assets-determinism: ## Rebuild assets into a scratch dir and compare hashes with the manifest
+	@$(PYTHON) tools/build_assets.py --check-determinism --jobs $(JOBS) --blender "$(BLENDER)"
+
+bake: ## Godot-side bakes that need the renderer (item icons, tree impostors, region data)
+	@if [ -f $(GAME)/src/tools/cli/bake.gd ]; then $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/bake.gd; fi
+	@$(MAKE) --no-print-directory import
+
+import: ## Import project resources headless (required before tests on a fresh clone)
+	@mkdir -p $(ROOT)/build && $(GODOT_HEADLESS) --import > $(ROOT)/build/import.log 2>&1 || (cat $(ROOT)/build/import.log; exit 1)
+	@echo "[import] ok"
+
+validate: ## Validate content, asset references and POIs
+	@$(GODOT_HEADLESS) -s res://src/tools/cli/validate.gd -- $(VALIDATE_ARGS)
+
+test: ## Run all GUT tests headless (JUnit XML in build/test-results)
+	@mkdir -p $(ROOT)/build/test-results
+	@$(GODOT_HEADLESS) -s res://addons/gut/gut_cmdln.gd -gexit -gdisable_colors -gjunit_xml_file=$(ROOT)/build/test-results/gut.xml
+
+test-unit: ## Unit tests only
+	@$(GODOT_HEADLESS) -s res://addons/gut/gut_cmdln.gd -gexit -gdisable_colors -gdir=res://tests/unit -gconfig=
+
+test-integration: ## Integration tests only
+	@$(GODOT_HEADLESS) -s res://addons/gut/gut_cmdln.gd -gexit -gdisable_colors -gdir=res://tests/integration -gconfig=
+
+run: ## Run the game
+	@$(GODOT) --path $(GAME)
+
+run-slice: ## Start the vertical slice directly
+	@$(GODOT) --path $(GAME) -- --new-game --mode slice
+
+editor: ## Open the Godot editor
+	@$(GODOT) --path $(GAME) --editor
+
+screenshots: ## Capture the screenshot suite into build/screenshots (software Vulkan under Xvfb)
+	@mkdir -p $(ROOT)/build/screenshots
+	@$(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution 1600x900 -s res://src/tools/cli/screenshots.gd -- --out $(ROOT)/build/screenshots $(SHOTS_ARGS)
+
+ci: ## Everything CI runs: setup, assets, import, validate (strict), tests
+	@$(MAKE) --no-print-directory setup
+	@$(MAKE) --no-print-directory assets
+	@$(MAKE) --no-print-directory validate VALIDATE_ARGS=--strict-assets
+	@$(MAKE) --no-print-directory test
+
+clean: ## Remove build output (keeps .tools and generated assets)
+	rm -rf $(ROOT)/build $(GAME)/.godot

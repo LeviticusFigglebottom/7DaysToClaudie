@@ -1,0 +1,5 @@
+{
+  "defs": [
+    {"id": "repair_kit", "name": "Repair Kit", "description": "Scrap, tape and patience. Restores a tool or weapon.", "category": "tool", "stack_max": 5, "carry_max": 5, "bulk": 0.4, "value": 10, "tags": ["repair"]}
+  ]
+}

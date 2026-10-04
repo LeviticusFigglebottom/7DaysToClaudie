@@ -1,0 +1,21 @@
+{
+  "defs": [
+    {"id": "stick", "name": "Stick", "description": "A straight, dry branch. Kindling, handles, frames.", "category": "resource", "stack_max": 20, "carry_max": 30, "bulk": 0.3, "value": 1, "fuel": 40, "tags": ["wood", "fuel", "building"]},
+    {"id": "stone", "name": "Stone", "description": "Fist-sized river stone. Heavy, honest.", "category": "resource", "stack_max": 10, "carry_max": 15, "bulk": 0.8, "value": 1, "tags": ["stone", "building", "throwable"], "equip": {"slot": "hand", "kind": "throwable", "damage": 12, "damage_type": "blunt", "stamina": 6, "noise": 8}},
+    {"id": "plant_fiber", "name": "Plant Fiber", "description": "Stripped from fireweed and nettle stalks. Twist it into cordage.", "category": "resource", "stack_max": 30, "carry_max": 40, "bulk": 0.05, "value": 1, "tags": ["fiber"]},
+    {"id": "cordage", "name": "Cordage", "description": "Hand-twisted fiber cord. Binds blades to handles and logs to logs.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.1, "value": 3, "tags": ["fiber", "binding"]},
+    {"id": "leaf_bundle", "name": "Bough Bundle", "description": "Fir boughs tied in a bundle. Thatch, bedding, smoke.", "category": "resource", "stack_max": 15, "carry_max": 20, "bulk": 0.4, "value": 1, "fuel": 25, "tags": ["thatch", "fuel"]},
+    {"id": "log", "name": "Log", "description": "A limbed trunk section. Carried on the shoulder — two at most.", "category": "resource", "stack_max": 2, "carry_max": 2, "bulk": 0.0, "value": 4, "fuel": 600, "tags": ["wood", "building", "shoulder"]},
+    {"id": "wood_plank", "name": "Wood Plank", "description": "Rough-sawn plank.", "category": "resource", "stack_max": 20, "carry_max": 30, "bulk": 0.6, "value": 3, "fuel": 120, "tags": ["wood", "building"]},
+    {"id": "cloth", "name": "Cloth", "description": "Torn fabric. Bandages, torches, wicks.", "category": "resource", "stack_max": 20, "carry_max": 30, "bulk": 0.1, "value": 2, "fuel": 30, "tags": ["fabric"]},
+    {"id": "bone", "name": "Bone", "description": "Not all of them are animal.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.2, "value": 1, "tags": ["bone"]},
+    {"id": "nails", "name": "Nails", "description": "A fistful of galvanized nails. Worth more than money now.", "category": "resource", "stack_max": 100, "carry_max": 200, "bulk": 0.01, "value": 1, "tags": ["metal", "building"]},
+    {"id": "scrap_metal", "name": "Scrap Metal", "description": "Bent sheet and bracket offcuts.", "category": "resource", "stack_max": 30, "carry_max": 40, "bulk": 0.5, "value": 2, "tags": ["metal"]},
+    {"id": "duct_tape", "name": "Duct Tape", "description": "Half a roll.", "category": "resource", "stack_max": 10, "carry_max": 10, "bulk": 0.1, "value": 6, "tags": ["binding", "repair"]},
+    {"id": "empty_can", "name": "Empty Can", "description": "Rinsed out. Rattles.", "category": "junk", "stack_max": 20, "carry_max": 20, "bulk": 0.1, "value": 0, "tags": ["metal", "noise"]},
+    {"id": "glass_bottle", "name": "Glass Bottle", "description": "Empty bottle.", "category": "junk", "stack_max": 10, "carry_max": 10, "bulk": 0.3, "value": 1, "tags": ["glass"]},
+    {"id": "bloom_sample", "name": "Bloom Core Sample", "description": "A sealed vial of pale filament. The Program pays for these.", "category": "quest", "stack_max": 20, "carry_max": 20, "bulk": 0.05, "value": 25, "tags": ["bloom", "trade"]},
+    {"id": "bloom_mycelium", "name": "Bloom Mycelium", "description": "Pale threads pulled from a rooted Hollow at dawn. Handle with gloves.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.05, "value": 4, "tags": ["bloom"]},
+    {"id": "scrip", "name": "Program Scrip", "description": "Remand Program trade chits. Redeemable at any Waystation.", "category": "resource", "stack_max": 999, "carry_max": 0, "bulk": 0.0, "value": 1, "tags": ["currency"]}
+  ]
+}

@@ -1,0 +1,113 @@
+; Engine configuration file.
+; Hollowmere — Godot 4.7.2 (pinned in tools/versions.env)
+; Input actions are NOT defined here: they are data-driven (res://data/config/input_bindings.json)
+; and registered at startup by the Settings autoload, so they can be rebound and diffed.
+
+config_version=5
+
+[application]
+
+config/name="Hollowmere"
+config/description="Original first-person survival horror. See docs/DESIGN.md."
+config/version="0.1.0-m1"
+run/main_scene="res://src/app/main.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+config/icon="res://icon.svg"
+boot_splash/bg_color=Color(0.02, 0.02, 0.025, 1)
+boot_splash/show_image=false
+config/use_custom_user_dir=true
+config/custom_user_dir_name="hollowmere"
+
+[autoload]
+
+Log="*res://src/core/log.gd"
+Events="*res://src/core/events.gd"
+Content="*res://src/core/content/content_db.gd"
+Settings="*res://src/core/settings/settings.gd"
+Game="*res://src/core/game.gd"
+Audio="*res://src/audio/audio_manager.gd"
+DebugTools="*res://src/debug/debug_tools.gd"
+
+[debug]
+
+gdscript/warnings/untyped_declaration=1
+gdscript/warnings/inferred_declaration=0
+gdscript/warnings/unsafe_property_access=0
+gdscript/warnings/unsafe_method_access=0
+gdscript/warnings/unsafe_cast=0
+gdscript/warnings/unsafe_call_argument=0
+gdscript/warnings/integer_division=0
+gdscript/warnings/narrowing_conversion=0
+gdscript/warnings/return_value_discarded=0
+settings/stdout/print_fps=false
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="disabled"
+window/vsync/vsync_mode=1
+mouse_cursor/custom_image_hotspot=Vector2(0, 0)
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg", "res://addons/hollowmere_tools/plugin.cfg")
+
+[gui]
+
+theme/custom_font="res://assets/fonts/IBMPlexMono-Regular.ttf"
+
+[layer_names]
+
+3d_physics/layer_1="world"
+3d_physics/layer_2="structures"
+3d_physics/layer_3="props"
+3d_physics/layer_4="player"
+3d_physics/layer_5="enemies"
+3d_physics/layer_6="npcs"
+3d_physics/layer_7="items"
+3d_physics/layer_8="interact"
+3d_physics/layer_9="debris"
+3d_physics/layer_10="hitboxes"
+3d_physics/layer_11="triggers"
+3d_physics/layer_12="water"
+3d_physics/layer_13="vegetation"
+3d_physics/layer_14="projectiles"
+3d_physics/layer_15="sight_blockers"
+3d_render/layer_1="world"
+3d_render/layer_2="viewmodel"
+3d_render/layer_3="debug"
+3d_render/layer_4="ui3d"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+common/max_physics_steps_per_frame=6
+jolt_physics_3d/simulation/allow_sleep=true
+3d/default_gravity=9.81
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+textures/vram_compression/import_s3tc_bptc=true
+textures/default_filters/anisotropic_filtering_level=3
+anti_aliasing/quality/msaa_3d=0
+anti_aliasing/quality/screen_space_aa=1
+anti_aliasing/quality/use_taa=true
+anti_aliasing/quality/use_debanding=true
+lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
+lights_and_shadows/positional_shadow/soft_shadow_filter_quality=3
+lights_and_shadows/positional_shadow/atlas_size=4096
+global_illumination/sdfgi/probe_ray_count=2
+global_illumination/sdfgi/frames_to_converge=3
+environment/volumetric_fog/volume_size=96
+environment/volumetric_fog/volume_depth=96
+environment/volumetric_fog/use_filter=1
+environment/ssao/quality=2
+occlusion_culling/use_occlusion_culling=true
+mesh_lod/lod_change/threshold_pixels=1.5
+environment/defaults/default_clear_color=Color(0.02, 0.02, 0.025, 1)

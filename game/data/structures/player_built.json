@@ -1,0 +1,27 @@
+{
+  "_doc": "Player-built pieces. Log pieces are 4.0 m long, 0.34 m diameter; placed by BuildSnapper ('log' profile).",
+  "defs": [
+    {"id": "log_piece", "name": "Log", "kind": "log", "material": "log", "hp": 420, "mass": 80, "grounded": true, "max_span": 4.0, "vertical_loss": 0.035,
+     "model": "structures/log_piece", "fracture": "structures/log_piece_frac", "size": [4.0, 0.34, 0.34], "snap": "log", "cost": {"log": 1},
+     "upgrade": {"to": "log_piece_reinforced", "cost": {"cordage": 2, "nails": 6}}, "repair": {"cost": {"stick": 2}, "amount": 120},
+     "damage_mult": {"slash": 0.7, "blunt": 0.6, "fire": 1.8, "zombie": 1.0}, "flammable": true},
+    {"id": "log_piece_reinforced", "name": "Reinforced Log", "kind": "log", "material": "reinforced", "hp": 760, "mass": 85, "grounded": true, "max_span": 5.0, "vertical_loss": 0.03,
+     "model": "structures/log_piece_reinforced", "fracture": "structures/log_piece_frac", "size": [4.0, 0.34, 0.34], "snap": "log", "cost": {"log": 1, "cordage": 2, "nails": 6},
+     "repair": {"cost": {"stick": 2, "nails": 2}, "amount": 200}, "damage_mult": {"slash": 0.5, "blunt": 0.5, "fire": 1.4, "zombie": 0.8}, "flammable": true},
+    {"id": "campfire", "name": "Campfire", "kind": "station", "material": "stone", "hp": 150, "mass": 200, "model": "structures/campfire", "size": [1.4, 0.5, 1.4],
+     "cost": {"stone": 6, "stick": 4}, "provides": ["station:campfire", "light", "warmth"], "damage_mult": {"fire": 0.0}},
+    {"id": "lean_to", "name": "Lean-to Shelter", "kind": "shelter", "material": "stick", "hp": 160, "mass": 60, "model": "structures/lean_to", "size": [2.6, 1.9, 2.4],
+     "cost": {"stick": 10, "leaf_bundle": 6, "cordage": 2}, "provides": ["shelter", "sleep", "save_point"], "damage_mult": {"fire": 2.5}, "flammable": true},
+    {"id": "workbench", "name": "Workbench", "kind": "station", "material": "wood", "hp": 300, "mass": 120, "model": "structures/workbench", "size": [1.8, 0.95, 0.8],
+     "cost": {"log": 2, "stick": 6, "cordage": 2, "nails": 12}, "provides": ["station:workbench"], "flammable": true},
+    {"id": "spike_barrier", "name": "Stake Barricade", "kind": "defense", "material": "wood", "hp": 380, "mass": 160, "model": "structures/spike_barrier", "size": [3.6, 1.6, 1.2],
+     "cost": {"log": 2, "stick": 6, "cordage": 2}, "contact_damage": 14, "damage_mult": {"zombie": 0.9, "fire": 1.6}, "flammable": true},
+    {"id": "storage_crate", "name": "Storage Crate", "kind": "storage", "material": "wood", "hp": 200, "mass": 40, "model": "structures/storage_crate", "size": [1.0, 0.7, 0.7],
+     "cost": {"wood_plank": 6, "nails": 8}, "provides": ["storage:20"], "flammable": true},
+    {"id": "can_chime_trap", "name": "Can Chime", "kind": "defense", "material": "metal", "hp": 30, "mass": 2, "model": "structures/can_chime", "size": [2.0, 0.6, 0.1], "cost": {"can_chime": 1}, "provides": ["noise_trap"]},
+    {"id": "bedroll", "name": "Bough Bed", "kind": "shelter", "material": "stick", "hp": 60, "mass": 10, "model": "structures/bough_bed", "size": [0.9, 0.25, 2.0], "cost": {"leaf_bundle": 6, "stick": 4}, "provides": ["sleep", "save_point", "spawn_point"], "flammable": true},
+    {"id": "forge", "name": "Forge", "kind": "station", "material": "stone", "hp": 600, "mass": 400, "model": "structures/forge", "size": [1.4, 1.2, 1.2], "cost": {"stone": 30, "scrap_metal": 10}, "provides": ["station:forge"]},
+    {"id": "chemistry_bench", "name": "Chemistry Bench", "kind": "station", "material": "wood", "hp": 250, "mass": 120, "model": "structures/chemistry_bench", "size": [1.6, 1.0, 0.7], "cost": {"wood_plank": 8, "nails": 12, "glass_bottle": 4}, "provides": ["station:chemistry_bench"]},
+    {"id": "grill", "name": "Grill Rack", "kind": "station", "material": "metal", "hp": 200, "mass": 30, "model": "structures/grill", "size": [1.0, 0.8, 0.6], "cost": {"scrap_metal": 6, "stone": 6}, "provides": ["station:grill"]}
+  ]
+}

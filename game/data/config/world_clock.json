@@ -1,0 +1,10 @@
+{
+  "_doc": "Day/night cycle. day_length_minutes = real minutes per game day.",
+  "day_length_minutes": 40,
+  "sunrise_hour": 6.25,
+  "sunset_hour": 19.25,
+  "dusk_hour": 19.75,
+  "night_start_hour": 21.0,
+  "night_end_hour": 5.0,
+  "seasons": {"order": ["spring", "summer", "autumn", "winter"], "length_days": 12, "start": "autumn"}
+}

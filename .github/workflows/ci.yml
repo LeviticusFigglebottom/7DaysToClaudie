@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Assets, import, validate, tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages (headless Blender + software Vulkan for bakes)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q xvfb mesa-vulkan-drivers libvulkan1 libxi6 libxxf86vm1 libxfixes3 \
+            libxrender1 libgl1 libegl1 libxkbcommon0 libsm6 libxcursor1 libxinerama1 libxrandr2
+
+      - name: Cache pinned toolchain (.tools)
+        uses: actions/cache@v4
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('tools/versions.env', 'tools/requirements.txt') }}
+
+      - name: Cache generated assets (incremental via manifest)
+        uses: actions/cache@v4
+        with:
+          path: game/assets/generated
+          key: assets-${{ runner.os }}-${{ hashFiles('tools/assetgen/**', 'game/data/**', 'tools/versions.env') }}
+          restore-keys: assets-${{ runner.os }}-
+
+      - name: Setup toolchain
+        run: make setup
+
+      - name: Generate assets
+        run: make assets
+
+      - name: Validate content, assets, POIs
+        run: make validate VALIDATE_ARGS=--strict-assets
+
+      - name: Tests
+        run: make test
+
+      - name: Upload test results and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/test-results/
+            build/logs/
+            build/import.log

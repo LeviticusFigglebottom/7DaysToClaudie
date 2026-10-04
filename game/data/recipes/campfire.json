@@ -1,0 +1,8 @@
+{
+  "defs": [
+    {"id": "boil_water", "result": "water_bottle_clean", "ingredients": {"water_bottle_dirty": 1}, "station": "campfire", "time": 20.0, "category": "cooking"},
+    {"id": "roast_mushroom", "result": "cooked_mushroom", "ingredients": {"wild_mushroom": 1}, "station": "campfire", "time": 12.0, "category": "cooking"},
+    {"id": "heat_stew", "result": "hot_stew", "ingredients": {"canned_stew": 1}, "station": "campfire", "time": 15.0, "category": "cooking"},
+    {"id": "harden_spear", "result": "crude_spear", "ingredients": {"stick": 2, "cordage": 1}, "station": "campfire", "time": 10.0, "category": "weapons"}
+  ]
+}
