@@ -313,8 +313,8 @@ def plastic_molded(size: int, seed: int, out) -> None:
     _save(out, alb, height, rough, normal_strength=1.5, ao_strength=0.5)
 
 
-@texture("mattress_ticking", size=512, seed=397)
-def mattress_ticking(size: int, seed: int, out) -> None:
+@texture("ext_mattress_ticking", size=512, seed=397)
+def ext_mattress_ticking(size: int, seed: int, out) -> None:
     """Quilted mattress cover: diamond stitch quilting, faint woven stripes, tide-marked stains."""
     u, v = _uv(size)
     q = 4

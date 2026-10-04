@@ -139,7 +139,7 @@ MATS["denim_bloody"] = std("canvas_tarp", 5.0, tint="#46597a", layers={"wear": "
 MATS["bandage_bloody"] = std("canvas_tarp", 8.0, tint="#dcd6c8", layers={"wear": "blood_dried"}, wear_amount=0.75,
                              wear_uv_scale=3.0, grime_amount=0.4)
 MATS["nylon_navy"] = std("sleeping_bag_nylon", 2.0, tint="#2e3b5c", grime_amount=0.5, grime_color="#2a241c")
-MATS["mattress_ticking"] = std("mattress_ticking", 2.0, grime_amount=0.55, grime_color="#3a3226")
+MATS["ext_mattress_ticking"] = std("ext_mattress_ticking", 2.0, grime_amount=0.55, grime_color="#3a3226")
 MATS["foam_yellow"] = std("plastic_molded", 3.0, tint="#c9b26a", roughness_add=0.4, grime_amount=0.5)
 
 # --- Story ---------------------------------------------------------------------------------------
