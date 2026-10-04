@@ -1,0 +1,1120 @@
+{
+ "_doc": "Exterior props family materials (tools/assetgen/blender/lib/props_ext_matgen.py keeps this file consistent). Textures from tools/assetgen/textures/gen/props_exterior.py; 'moss' from rock.py. Vertex colour G drives the 'wear' layer (rust under paint, bare wood under paint, dried blood on cloth); B drives moss on wood.",
+ "materials": {
+  "ash_burnt": {
+   "shader": "std_surface",
+   "textures": "ash_burnt",
+   "params": {
+    "uv_scale": 1.5,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.3,
+    "grime_color": "#0a0909"
+   }
+  },
+  "bandage_bloody": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 8.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#dcd6c8",
+    "wear_amount": 0.75,
+    "wear_uv_scale": 3.0,
+    "grime_amount": 0.4
+   },
+   "layers": {
+    "wear": "blood_dried"
+   }
+  },
+  "bark_firewood": {
+   "shader": "std_surface",
+   "textures": "ash_burnt",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b48c6a",
+    "grime_amount": 0.35,
+    "grime_color": "#1a130d",
+    "moss_amount": 0.45,
+    "moss_uv_scale": 2.0
+   },
+   "layers": {
+    "moss": "moss"
+   }
+  },
+  "blood_dried": {
+   "shader": "std_surface",
+   "textures": "blood_dried",
+   "params": {
+    "uv_scale": 2.5,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.2
+   }
+  },
+  "book_blue": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#2f4664",
+    "grime_amount": 0.45
+   }
+  },
+  "book_brown": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#6a4a30",
+    "grime_amount": 0.45
+   }
+  },
+  "book_green": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#3c5a3c",
+    "grime_amount": 0.45
+   }
+  },
+  "book_red": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#7a2a24",
+    "grime_amount": 0.45
+   }
+  },
+  "brick_rubble": {
+   "shader": "std_surface",
+   "textures": "concrete_barrier",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b0654c",
+    "grime_amount": 0.5,
+    "grime_color": "#2e211a"
+   }
+  },
+  "can_alu": {
+   "shader": "std_surface",
+   "textures": "chrome_pitted",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#c9cbcc",
+    "grime_amount": 0.4
+   }
+  },
+  "can_blue": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#2f5486",
+    "wear_amount": 0.6,
+    "wear_uv_scale": 3.0,
+    "grime_amount": 0.4,
+    "grime_color": "#29241d"
+   },
+   "layers": {
+    "wear": "chrome_pitted"
+   }
+  },
+  "can_green": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#3f6b3a",
+    "wear_amount": 0.6,
+    "wear_uv_scale": 3.0,
+    "grime_amount": 0.4,
+    "grime_color": "#29241d"
+   },
+   "layers": {
+    "wear": "chrome_pitted"
+   }
+  },
+  "can_red": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#9c2a22",
+    "wear_amount": 0.6,
+    "wear_uv_scale": 3.0,
+    "grime_amount": 0.4,
+    "grime_color": "#29241d"
+   },
+   "layers": {
+    "wear": "chrome_pitted"
+   }
+  },
+  "candle_wax": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 4.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#e7dcc0",
+    "roughness_add": 0.15,
+    "grime_amount": 0.4
+   }
+  },
+  "canvas_denim": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#4a5f7d",
+    "grime_amount": 0.5,
+    "grime_color": "#29241c"
+   }
+  },
+  "canvas_grey": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#7e7a70",
+    "grime_amount": 0.5,
+    "grime_color": "#29241c"
+   }
+  },
+  "canvas_khaki": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#9c8b64",
+    "grime_amount": 0.5,
+    "grime_color": "#29241c"
+   }
+  },
+  "canvas_navy": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#33405a",
+    "grime_amount": 0.5,
+    "grime_color": "#29241c"
+   }
+  },
+  "canvas_olive": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#6a6d4c",
+    "grime_amount": 0.5,
+    "grime_color": "#29241c"
+   }
+  },
+  "car_burnt": {
+   "shader": "std_surface",
+   "textures": "car_rust",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#9a8a80",
+    "wear_amount": 0.5,
+    "wear_uv_scale": 1.0,
+    "grime_amount": 0.55,
+    "grime_color": "#0e0c0a"
+   },
+   "layers": {
+    "wear": "ash_burnt"
+   }
+  },
+  "car_paint_blue": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#3c5674",
+    "wear_amount": 0.66,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_mult": 1.0
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "car_paint_brown": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#6e4b33",
+    "wear_amount": 0.66,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_mult": 1.0
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "car_paint_green": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#4b5f4a",
+    "wear_amount": 0.66,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_mult": 1.0
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "car_paint_maroon": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#5e2426",
+    "wear_amount": 0.66,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_mult": 1.0
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "car_paint_red": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#8a2b22",
+    "wear_amount": 0.66,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_mult": 1.0
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "car_paint_tan": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b49a74",
+    "wear_amount": 0.66,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_mult": 1.0
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "car_paint_white": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#d8d6cf",
+    "wear_amount": 0.66,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_mult": 1.0
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "car_rust": {
+   "shader": "std_surface",
+   "textures": "car_rust",
+   "params": {
+    "uv_scale": 1.2,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.3,
+    "grime_color": "#1c140e"
+   }
+  },
+  "car_upholstery": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 4.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#6a5d50",
+    "wear_amount": 0.5,
+    "wear_uv_scale": 2.0,
+    "grime_amount": 0.5
+   },
+   "layers": {
+    "wear": "plastic_molded"
+   }
+  },
+  "cardboard": {
+   "shader": "std_surface",
+   "textures": "cardboard",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.45,
+    "grime_color": "#2e2418"
+   }
+  },
+  "cardboard_wet": {
+   "shader": "std_surface",
+   "textures": "cardboard",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#8d7c68",
+    "grime_amount": 0.65,
+    "grime_color": "#211a12",
+    "roughness_add": 0.04
+   }
+  },
+  "chainlink": {
+   "shader": "foliage",
+   "textures": "chainlink",
+   "params": {
+    "alpha_scissor": 0.38,
+    "translucency": 0.0,
+    "roughness": 0.9,
+    "normal_strength": 1.0,
+    "ao_strength": 0.4,
+    "spring_tint": "#ffffff",
+    "summer_tint": "#ffffff",
+    "autumn_tint": "#ffffff",
+    "winter_tint": "#ffffff",
+    "winter_leaf_loss": 0.0,
+    "sway_height": 1000.0,
+    "stiffness": 10.0,
+    "flutter_strength": 0.0
+   }
+  },
+  "chrome_pitted": {
+   "shader": "std_surface",
+   "textures": "chrome_pitted",
+   "params": {
+    "uv_scale": 2.5,
+    "vertex_ao_strength": 1.0,
+    "wear_amount": 0.55,
+    "wear_uv_scale": 1.5,
+    "grime_amount": 0.35
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "concrete_barrier": {
+   "shader": "std_surface",
+   "textures": "concrete_barrier",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.5,
+    "grime_color": "#3a362e"
+   }
+  },
+  "corpse_bone": {
+   "shader": "std_surface",
+   "textures": "concrete_barrier",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#e2d6b8",
+    "grime_amount": 0.6,
+    "grime_color": "#3a2e20",
+    "roughness_add": 0.02
+   }
+  },
+  "corpse_hair": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 12.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#3e3428",
+    "grime_amount": 0.3
+   }
+  },
+  "corpse_skin": {
+   "shader": "std_surface",
+   "textures": "corpse",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#a39380",
+    "grime_amount": 0.6,
+    "grime_color": "#1c1612",
+    "roughness_add": -0.05
+   }
+  },
+  "denim_bloody": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#46597a",
+    "wear_amount": 0.7,
+    "wear_uv_scale": 2.5,
+    "grime_amount": 0.55,
+    "grime_color": "#1d1712"
+   },
+   "layers": {
+    "wear": "blood_dried"
+   }
+  },
+  "flame_glow": {
+   "shader": "foliage",
+   "params": {
+    "tint": "#ffb04a",
+    "alpha_scissor": 0.0,
+    "translucency": 2.0,
+    "roughness": 0.9,
+    "spring_tint": "#ffffff",
+    "summer_tint": "#ffffff",
+    "autumn_tint": "#ffffff",
+    "winter_tint": "#ffffff",
+    "winter_leaf_loss": 0.0,
+    "sway_height": 1000.0,
+    "stiffness": 10.0,
+    "flutter_strength": 0.0,
+    "ao_strength": 0.0
+   }
+  },
+  "flannel_bloody": {
+   "shader": "std_surface",
+   "textures": "plaid_flannel",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "wear_amount": 0.7,
+    "wear_uv_scale": 2.5,
+    "grime_amount": 0.55,
+    "grime_color": "#1d1712"
+   },
+   "layers": {
+    "wear": "blood_dried"
+   }
+  },
+  "flannel_red": {
+   "shader": "std_surface",
+   "textures": "plaid_flannel",
+   "params": {
+    "uv_scale": 5.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.5,
+    "grime_color": "#211c16"
+   }
+  },
+  "foam_yellow": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#c9b26a",
+    "roughness_add": 0.4,
+    "grime_amount": 0.5
+   }
+  },
+  "glass_brown": {
+   "shader": "std_surface",
+   "textures": "window_grime",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b0743c",
+    "roughness_mult": 0.6,
+    "grime_amount": 0.3
+   }
+  },
+  "glass_clear": {
+   "shader": "std_surface",
+   "textures": "window_grime",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#e2ece8",
+    "roughness_mult": 0.6,
+    "grime_amount": 0.3
+   }
+  },
+  "glass_green": {
+   "shader": "std_surface",
+   "textures": "window_grime",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#7fae86",
+    "roughness_mult": 0.6,
+    "grime_amount": 0.3
+   }
+  },
+  "lamp_glow": {
+   "shader": "foliage",
+   "params": {
+    "tint": "#efe6cf",
+    "alpha_scissor": 0.0,
+    "translucency": 1.6,
+    "roughness": 0.4,
+    "spring_tint": "#ffffff",
+    "summer_tint": "#ffffff",
+    "autumn_tint": "#ffffff",
+    "winter_tint": "#ffffff",
+    "winter_leaf_loss": 0.0,
+    "sway_height": 1000.0,
+    "stiffness": 10.0,
+    "flutter_strength": 0.0,
+    "ao_strength": 0.0
+   }
+  },
+  "leather_dark": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#4a3426",
+    "roughness_add": 0.25,
+    "grime_amount": 0.5
+   }
+  },
+  "lens_amber": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b8661c",
+    "roughness_mult": 0.45,
+    "grime_amount": 0.3
+   }
+  },
+  "lens_clear": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b9bebc",
+    "roughness_mult": 0.35,
+    "grime_amount": 0.35
+   }
+  },
+  "lens_red": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#8c1712",
+    "roughness_mult": 0.45,
+    "grime_amount": 0.3
+   }
+  },
+  "mattress_ticking": {
+   "shader": "std_surface",
+   "textures": "mattress_ticking",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.55,
+    "grime_color": "#3a3226"
+   }
+  },
+  "metal_galvanized": {
+   "shader": "std_surface",
+   "textures": "metal_galvanized",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "wear_amount": 0.55,
+    "wear_uv_scale": 1.5,
+    "grime_amount": 0.45
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "nylon_navy": {
+   "shader": "std_surface",
+   "textures": "sleeping_bag_nylon",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#2e3b5c",
+    "grime_amount": 0.5,
+    "grime_color": "#2a241c"
+   }
+  },
+  "packing_tape": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b48c55",
+    "roughness_mult": 0.6
+   }
+  },
+  "paint_black": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#2a2a29",
+    "wear_amount": 0.68,
+    "wear_uv_scale": 1.4,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_add": 0.12
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "paint_blue": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#35506e",
+    "wear_amount": 0.68,
+    "wear_uv_scale": 1.4,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_add": 0.12
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "paint_green": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#3f5a3f",
+    "wear_amount": 0.68,
+    "wear_uv_scale": 1.4,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_add": 0.12
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "paint_grey": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#77797a",
+    "wear_amount": 0.68,
+    "wear_uv_scale": 1.4,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_add": 0.12
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "paint_olive": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#5a5a3c",
+    "wear_amount": 0.68,
+    "wear_uv_scale": 1.4,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_add": 0.12
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "paint_orange_wood": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#c4612c",
+    "wear_amount": 0.7,
+    "wear_uv_scale": 1.0,
+    "grime_amount": 0.45,
+    "grime_color": "#29241d",
+    "roughness_add": 0.2
+   },
+   "layers": {
+    "wear": "wood_weathered"
+   }
+  },
+  "paint_red": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#8e2a21",
+    "wear_amount": 0.68,
+    "wear_uv_scale": 1.4,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_add": 0.12
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "paint_red_sign": {
+   "shader": "std_surface",
+   "textures": "paint_red_sign",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.3
+   }
+  },
+  "paint_white": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#d6d3ca",
+    "wear_amount": 0.68,
+    "wear_uv_scale": 1.4,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_add": 0.12
+   },
+   "layers": {
+    "wear": "car_rust"
+   }
+  },
+  "paint_white_wood": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#e3dfd4",
+    "wear_amount": 0.72,
+    "wear_uv_scale": 1.0,
+    "grime_amount": 0.5,
+    "grime_color": "#29241d",
+    "roughness_add": 0.25
+   },
+   "layers": {
+    "wear": "wood_weathered"
+   }
+  },
+  "paper_pages": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#d9d0ba",
+    "roughness_add": 0.3,
+    "grime_amount": 0.5
+   }
+  },
+  "paper_trash": {
+   "shader": "std_surface",
+   "textures": "paper_trash",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.4,
+    "grime_color": "#3a3226"
+   }
+  },
+  "plaster_rubble": {
+   "shader": "std_surface",
+   "textures": "concrete_barrier",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#e4dfd4",
+    "grime_amount": 0.5,
+    "grime_color": "#4a443a"
+   }
+  },
+  "plastic_bag_black": {
+   "shader": "std_surface",
+   "textures": "plastic_bag",
+   "params": {
+    "uv_scale": 2.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#3a3a3d",
+    "grime_amount": 0.3
+   }
+  },
+  "plastic_bag_green": {
+   "shader": "std_surface",
+   "textures": "plastic_bag",
+   "params": {
+    "uv_scale": 2.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#5a7550",
+    "grime_amount": 0.3
+   }
+  },
+  "plastic_black": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#2c2c2b",
+    "grime_amount": 0.35,
+    "roughness_add": 0.08
+   }
+  },
+  "plastic_blue": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#3b5f86",
+    "grime_amount": 0.6,
+    "grime_color": "#2b261e"
+   }
+  },
+  "plastic_grey": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#8a8a86",
+    "grime_amount": 0.6,
+    "grime_color": "#2b261e"
+   }
+  },
+  "plastic_orange": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#c6652a",
+    "grime_amount": 0.6,
+    "grime_color": "#2b261e"
+   }
+  },
+  "plastic_red": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#94342a",
+    "grime_amount": 0.6,
+    "grime_color": "#2b261e"
+   }
+  },
+  "plastic_white": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#d9d6cd",
+    "grime_amount": 0.6,
+    "grime_color": "#2b261e"
+   }
+  },
+  "plastic_yellow": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#c9a332",
+    "grime_amount": 0.6,
+    "grime_color": "#2b261e"
+   }
+  },
+  "plywood_marks": {
+   "shader": "std_surface",
+   "textures": "plywood_marks",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.4,
+    "grime_color": "#2a2219"
+   }
+  },
+  "rubber_black": {
+   "shader": "std_surface",
+   "textures": "tyre_rubber",
+   "params": {
+    "uv_scale": 4.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.3
+   }
+  },
+  "tarp_blue": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 0.7,
+    "vertex_ao_strength": 1.0,
+    "tint": "#3f6c9e",
+    "grime_amount": 0.55,
+    "grime_color": "#29241c",
+    "roughness_mult": 0.8
+   }
+  },
+  "tyre_rubber": {
+   "shader": "std_surface",
+   "textures": "tyre_rubber",
+   "params": {
+    "uv_scale": 2.5,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.3,
+    "grime_color": "#141210"
+   }
+  },
+  "underbody": {
+   "shader": "std_surface",
+   "textures": "car_rust",
+   "params": {
+    "uv_scale": 1.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#5a4c42",
+    "grime_amount": 0.6,
+    "grime_color": "#14100c"
+   }
+  },
+  "window_grime": {
+   "shader": "std_surface",
+   "textures": "window_grime",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.3,
+    "grime_color": "#4a463e"
+   }
+  },
+  "wood_charred": {
+   "shader": "std_surface",
+   "textures": "ash_burnt",
+   "params": {
+    "uv_scale": 1.5,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.3,
+    "grime_color": "#080707"
+   }
+  },
+  "wood_creosote": {
+   "shader": "std_surface",
+   "textures": "wood_weathered",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#6a4f3c",
+    "grime_amount": 0.5,
+    "grime_color": "#1b140f"
+   }
+  },
+  "wood_fresh": {
+   "shader": "std_surface",
+   "textures": "wood_weathered",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#d9b98e",
+    "moss_amount": 0.35,
+    "moss_uv_scale": 1.5,
+    "grime_amount": 0.4,
+    "grime_color": "#2a2118"
+   },
+   "layers": {
+    "moss": "moss"
+   }
+  },
+  "wood_stained": {
+   "shader": "std_surface",
+   "textures": "wood_weathered",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#a8805e",
+    "moss_amount": 0.5,
+    "moss_uv_scale": 1.5,
+    "grime_amount": 0.45,
+    "grime_color": "#231b14"
+   },
+   "layers": {
+    "moss": "moss"
+   }
+  },
+  "wood_weathered": {
+   "shader": "std_surface",
+   "textures": "wood_weathered",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "moss_amount": 0.55,
+    "moss_uv_scale": 1.5,
+    "grime_amount": 0.45,
+    "grime_color": "#231d17"
+   },
+   "layers": {
+    "moss": "moss"
+   }
+  }
+ }
+}
