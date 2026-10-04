@@ -54,6 +54,8 @@ static func kit_material(kind: String) -> ShaderMaterial:
 		m.set_shader_parameter("finish_albedo", alb)
 		m.set_shader_parameter("finish_normal", _tex(base + "normal.png"))
 		m.set_shader_parameter("finish_orm", _tex(base + "orm.png"))
+	# Wall finishes are authored to tile every 1 m, floor finishes every 2 m.
+	m.set_shader_parameter("texture_scale", 0.5 if kind == "floor" else 1.0)
 	if kind == "floor":
 		m.set_shader_parameter("is_floor", true)
 		var wall_alb: Texture = _tex("res://assets/generated/textures/kit_wall_finishes_albedo.png")

@@ -59,10 +59,10 @@
     "item_bottle_dirty":   {"shader": "std_surface", "textures": "item_glass", "params": {"uv_scale": 5.0, "tint": "#8f8c62", "roughness_mult": 1.2}},
     "item_rubber":         {"shader": "std_surface", "textures": "item_rubber", "params": {"uv_scale": 12.5, "normal_strength": 0.8}},
 
-    "item_glass_brown":    {"shader": "std_surface", "textures": "item_glass", "params": {"uv_scale": 5.0, "tint": "#5e3414", "normal_strength": 0.4}},
-    "item_glass_green":    {"shader": "std_surface", "textures": "item_glass", "params": {"uv_scale": 5.0, "tint": "#33613a", "normal_strength": 0.4}},
-    "item_glass_clear":    {"shader": "std_surface", "textures": "item_glass", "params": {"uv_scale": 5.0, "tint": "#c6d2d0", "normal_strength": 0.4}},
-    "item_glass_lens":     {"shader": "std_surface", "textures": "item_glass", "params": {"uv_scale": 5.0, "tint": "#8a9ca4", "roughness_mult": 0.5, "normal_strength": 0.2}},
+    "item_glass_brown":    {"shader": "std_glass", "textures": "item_glass", "params": {"uv_scale": 5.0, "tint": "#5e3414", "normal_strength": 0.4, "opacity": 0.6, "grime_amount": 0.15}},
+    "item_glass_green":    {"shader": "std_glass", "textures": "item_glass", "params": {"uv_scale": 5.0, "tint": "#33613a", "normal_strength": 0.4, "opacity": 0.55, "grime_amount": 0.15}},
+    "item_glass_clear":    {"shader": "std_glass", "textures": "item_glass", "params": {"uv_scale": 5.0, "tint": "#c6d2d0", "normal_strength": 0.4, "opacity": 0.35, "grime_amount": 0.15}},
+    "item_glass_lens":     {"shader": "std_glass", "textures": "item_glass", "params": {"uv_scale": 5.0, "tint": "#8a9ca4", "roughness_mult": 0.5, "normal_strength": 0.2, "opacity": 0.3}},
     "item_bloom_vial":     {"shader": "std_surface", "textures": "item_bloom_gel", "params": {"uv_scale": 20.0, "normal_strength": 0.5}},
 
     "item_canvas_olive":   {"shader": "std_surface", "textures": "item_canvas", "params": {"uv_scale": 8.3333, "tint": "#7d8a61", "normal_strength": 1.0, "grime_amount": 0.3, "grime_color": "#22201a"}},
@@ -118,7 +118,7 @@
     "item_plant_fiber":    {"shader": "foliage", "textures": "item_plant_fiber", "params": {"alpha_scissor": 0.45, "translucency": 0.3, "flutter_strength": 0.0, "roughness": 0.9, "ao_strength": 0.7}},
 
     "item_stem_green":     {"shader": "std_surface", "params": {"tint": "#56703a", "roughness_mult": 0.8, "metallic_mult": 0.0}},
-    "item_screen":         {"shader": "std_surface", "textures": "item_screen", "params": {"uv_scale": 1.0, "normal_strength": 0.3}},
+    "item_screen":         {"shader": "std_surface", "textures": "item_screen", "params": {"uv_scale": 1.0, "normal_strength": 0.3, "emission_color": "#6fe0b8", "emission_energy": 0.7}},
     "item_ghost":          {"shader": "std_surface", "params": {"tint": "#9cc2d6", "roughness_mult": 0.6, "metallic_mult": 0.0}}
   }
 }

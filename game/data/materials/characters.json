@@ -25,6 +25,6 @@
     "bloom_growth": {"shader": "std_surface", "textures": "bloom_growth", "params": {"uv_scale": 6.0, "vertex_ao_strength": 1.0, "normal_strength": 1.3}},
     "gore": {"shader": "std_surface", "textures": "gore", "params": {"uv_scale": 6.0, "vertex_ao_strength": 0.7, "normal_strength": 1.2}},
     "tether": {"shader": "std_surface", "textures": "tether", "params": {"uv_scale": 8.0, "vertex_ao_strength": 1.0}},
-    "tether_screen": {"shader": "std_surface", "textures": "tether_screen", "params": {"uv_scale": 1.0, "vertex_ao_strength": 0.0}}
+    "tether_screen": {"shader": "std_surface", "textures": "tether_screen", "params": {"uv_scale": 1.0, "vertex_ao_strength": 0.0, "emission_color": "#5fe0b0", "emission_energy": 0.6}}
   }
 }

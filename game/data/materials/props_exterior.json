@@ -501,6 +501,16 @@
     "wear": "blood_dried"
    }
   },
+  "ext_mattress_ticking": {
+   "shader": "std_surface",
+   "textures": "ext_mattress_ticking",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "grime_amount": 0.55,
+    "grime_color": "#3a3226"
+   }
+  },
   "flame_glow": {
    "shader": "foliage",
    "params": {
@@ -556,34 +566,37 @@
    }
   },
   "glass_brown": {
-   "shader": "std_surface",
+   "shader": "std_glass",
    "textures": "window_grime",
    "params": {
     "uv_scale": 3.0,
     "vertex_ao_strength": 1.0,
     "tint": "#b0743c",
+    "opacity": 0.55,
     "roughness_mult": 0.6,
     "grime_amount": 0.3
    }
   },
   "glass_clear": {
-   "shader": "std_surface",
+   "shader": "std_glass",
    "textures": "window_grime",
    "params": {
     "uv_scale": 3.0,
     "vertex_ao_strength": 1.0,
     "tint": "#e2ece8",
+    "opacity": 0.3,
     "roughness_mult": 0.6,
     "grime_amount": 0.3
    }
   },
   "glass_green": {
-   "shader": "std_surface",
+   "shader": "std_glass",
    "textures": "window_grime",
    "params": {
     "uv_scale": 3.0,
     "vertex_ao_strength": 1.0,
     "tint": "#7fae86",
+    "opacity": 0.5,
     "roughness_mult": 0.6,
     "grime_amount": 0.3
    }
@@ -618,46 +631,39 @@
    }
   },
   "lens_amber": {
-   "shader": "std_surface",
+   "shader": "std_glass",
    "textures": "plastic_molded",
    "params": {
     "uv_scale": 2.0,
     "vertex_ao_strength": 1.0,
     "tint": "#b8661c",
+    "opacity": 0.75,
     "roughness_mult": 0.45,
     "grime_amount": 0.3
    }
   },
   "lens_clear": {
-   "shader": "std_surface",
+   "shader": "std_glass",
    "textures": "plastic_molded",
    "params": {
     "uv_scale": 2.0,
     "vertex_ao_strength": 1.0,
     "tint": "#b9bebc",
+    "opacity": 0.45,
     "roughness_mult": 0.35,
     "grime_amount": 0.35
    }
   },
   "lens_red": {
-   "shader": "std_surface",
+   "shader": "std_glass",
    "textures": "plastic_molded",
    "params": {
     "uv_scale": 2.0,
     "vertex_ao_strength": 1.0,
     "tint": "#8c1712",
+    "opacity": 0.75,
     "roughness_mult": 0.45,
     "grime_amount": 0.3
-   }
-  },
-  "ext_mattress_ticking": {
-   "shader": "std_surface",
-   "textures": "ext_mattress_ticking",
-   "params": {
-    "uv_scale": 2.0,
-    "vertex_ao_strength": 1.0,
-    "grime_amount": 0.55,
-    "grime_color": "#3a3226"
    }
   },
   "metal_galvanized": {

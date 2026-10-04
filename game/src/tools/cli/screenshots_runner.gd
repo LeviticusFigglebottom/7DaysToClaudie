@@ -15,6 +15,8 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "valley_aerial", "pos": Vector3(-150, 140.0, 2420), "look": Vector3(-60, 0, 2050), "hour": 17.5, "weather": "clear"},
 	{"name": "night_forest", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 1.5, 2280), "hour": 23.0, "weather": "clear", "light": true},
 	{"name": "base_building", "pos": Vector3(-272, 2.2, 2304), "look": Vector3(-262, 0.5, 2296), "hour": 11.0, "weather": "clear", "build": true},
+	{"name": "first_person_axe", "pos": Vector3(-286, 0.0, 2300), "look": Vector3(-270, 1.2, 2296), "hour": 11.0, "weather": "clear", "fp": "stone_axe"},
+	{"name": "hollow_closeup", "pos": Vector3(-286, 1.6, 2300), "look": Vector3(-283, 1.2, 2299), "hour": 10.0, "weather": "overcast", "enemy": "hollow"},
 	{"name": "hum_night", "pos": Vector3(-272, 2.2, 2304), "look": Vector3(-262, 0.5, 2296), "hour": 22.5, "weather": "clear", "hum": true, "light": true},
 ]
 
@@ -115,8 +117,16 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		l.shadow_enabled = true
 		cam.add_child(l)
 		l.position = Vector3(0.3, -0.3, -0.5)
+	if shot.has("enemy"):
+		# A dormant body standing at the look point, facing the camera (character model QA).
+		var at := Vector3(look.x, w.call(&"height_at", look.x, look.z), look.z)
+		var yaw: float = atan2(pos.x - at.x, pos.z - at.z)
+		w.get(&"ai").call(&"spawn", StringName(str(shot["enemy"])), at, {"yaw": yaw, "pose": "stand", "sleeper": "qa", "id": "qa:%s" % shot["name"]})
 	cam.global_position = pos
 	cam.look_at(look, Vector3.UP)
+	if shot.has("fp"):
+		_hold_item(p, StringName(str(shot["fp"])), look)
+		p.camera.make_current()
 	await _wait_streamed(w)
 	await _wait(_settle)
 	var img: Image = get_viewport().get_texture().get_image()
@@ -125,6 +135,18 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	print("SHOT %s" % path)
 	for c: Node in cam.get_children():
 		c.queue_free()
+	cam.make_current()
+	Game.local_player().equipped_slot = -1
+
+
+## Equips an item in toolbelt slot 0 and turns the player (camera) toward `look`.
+func _hold_item(p: Player, item: StringName, look: Vector3) -> void:
+	var ps: PlayerState = Game.local_player()
+	ps.inventory.add_item(item, 1)
+	ps.toolbelt[0] = item
+	ps.equipped_slot = 0
+	var dir: Vector3 = look - p.camera.global_position
+	p.rotation.y = atan2(-dir.x, -dir.z)
 
 
 var _built: bool = false

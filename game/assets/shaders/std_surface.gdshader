@@ -37,6 +37,10 @@ uniform float grime_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float grime_height = 0.6;
 
 uniform float variation_strength = 0.08;
+
+// Self-lit surfaces (device screens, indicator LEDs): emission = colour x energy x albedo.
+uniform vec4 emission_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
+uniform float emission_energy = 0.0;
 instance uniform float instance_variation = 0.5;
 
 global uniform float hm_wetness;
@@ -105,6 +109,9 @@ void fragment() {
 	rough = mix(rough, 0.7, snow);
 
 	ALBEDO = clamp(alb, vec3(0.0), vec3(1.0));
+	if (emission_energy > 0.0) {
+		EMISSION = emission_color.rgb * emission_energy * clamp(alb, vec3(0.0), vec3(1.0));
+	}
 	ROUGHNESS = rough;
 	METALLIC = metal;
 	AO = ao * vao;

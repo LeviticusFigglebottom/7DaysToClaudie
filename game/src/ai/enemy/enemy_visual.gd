@@ -34,6 +34,14 @@ var _stumps: Dictionary = {}
 var _bob_t: float = 0.0
 
 
+## Godot replaces "." in node names on import ("body_upper_arm.L" -> "body_upper_arm_L"); map
+## the side suffix back so lookups can use the Blender names from docs/CHARACTERS.md.
+static func canonical_name(nm: String) -> String:
+	if nm.length() > 2 and (nm.ends_with("_L") or nm.ends_with("_R")):
+		return nm.substr(0, nm.length() - 2) + "." + nm.right(1)
+	return nm
+
+
 static func model_path(id: String) -> String:
 	return "res://assets/generated/models/%s.glb" % id
 
@@ -48,7 +56,7 @@ func build(p_model_id: String, height_scale: float) -> void:
 		anim = _root.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		skeleton = _root.find_child("Skeleton3D", true, false) as Skeleton3D
 		for n: Node in _root.find_children("*", "MeshInstance3D", true, false):
-			var nm: String = String(n.name)
+			var nm: String = canonical_name(String(n.name))
 			_segments[nm] = n
 			if nm.begins_with("stump_"):
 				(n as MeshInstance3D).visible = false

@@ -48,9 +48,9 @@
       "notes": "grey porch paint (porch steps / deck / posts): kit_trim textures tinted"
     },
     "glass": {
-      "shader": "std_surface", "textures": "glass",
-      "params": {"uv_scale": 1.0, "normal_strength": 0.4, "vertex_ao_strength": 0.5},
-      "notes": "glass_albedo is RGBA (alpha = 0.2 clean .. 0.9 grime). std_surface is opaque: switch to a transparent glass shader (blend_mix, ALPHA = albedo.a, cull_disabled or the double-sided panes already in the meshes). UV0 spans each lite 0..1 (edge grime follows the frame)."
+      "shader": "std_glass", "textures": "glass",
+      "params": {"uv_scale": 1.0, "normal_strength": 0.4, "use_texture_alpha": true},
+      "notes": "glass_albedo is RGBA (alpha = 0.2 clean .. 0.9 grime), read by std_glass. UV0 spans each lite 0..1 (edge grime follows the frame)."
     },
     "concrete": {
       "shader": "std_surface", "textures": "concrete",
