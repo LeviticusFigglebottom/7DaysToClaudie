@@ -18,5 +18,7 @@ def tasks() -> list[Task]:
             m = importlib.import_module(f"{blender_catalogs.__name__}.{mod.name}")
             out += m.tasks()
         except Exception:  # noqa: BLE001
-            print(f"[models] WARNING: skipping blender_catalogs/{mod.name}.py:\n{traceback.format_exc()}", file=sys.stderr)
+            from .core.registry import LOAD_ERRORS
+            LOAD_ERRORS.append(f"models/{mod.name}: {traceback.format_exc().strip().splitlines()[-1]}")
+            print(f"[models] ERROR: skipping blender_catalogs/{mod.name}.py:\n{traceback.format_exc()}", file=sys.stderr)
     return out

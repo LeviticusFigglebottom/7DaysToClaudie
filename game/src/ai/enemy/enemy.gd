@@ -61,6 +61,8 @@ var _yaw_target: float = 0.0
 var _shape: CollisionShape3D
 var _corpse_t: float = 0.0
 var _looted: bool = false
+var _voice_t: float = 0.0
+var _step_t: float = 0.0
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -143,6 +145,8 @@ func _physics_process(delta: float) -> void:
 	var dist: float = global_position.distance_to(p.global_position) if p != null else 9999.0
 	_attack_cd = maxf(0.0, _attack_cd - delta)
 	_scream_cd = maxf(0.0, _scream_cd - delta)
+	if dist < 45.0:
+		_vocalize(delta, dist)
 	_state_t += delta
 	_perc_t -= delta
 	if _perc_t <= 0.0:
@@ -301,10 +305,34 @@ func _speed(running: bool) -> float:
 	return s
 
 
+## Idle groans, sleeping breaths, lurcher panting, shuffling feet and the dragger's scrape.
+func _vocalize(delta: float, dist: float) -> void:
+	_voice_t -= delta
+	if _voice_t <= 0.0:
+		_voice_t = _rng.randf_range(5.0, 12.0)
+		var id: StringName = &""
+		match state:
+			State.SLEEP:
+				id = &"voice/hollow_sleep_breath" if dist < 14.0 else &""
+			State.IDLE, State.WANDER, State.INVESTIGATE, State.HORDE:
+				id = &"voice/lurcher_pant" if def.archetype == "feral" else &"voice/hollow_groan_idle"
+			State.CHASE:
+				id = &"voice/lurcher_pant" if def.archetype == "feral" else &"voice/hollow_attack"
+				_voice_t *= 0.5
+		if id != &"":
+			Audio.play_3d(id, global_position + Vector3.UP * (0.4 if crawling else 1.6), {"volume_db": -4.0, "max_distance": 45.0})
+	var sp: float = Vector2(velocity.x, velocity.z).length()
+	if sp > 0.2 and is_on_floor():
+		_step_t -= delta * sp
+		if _step_t <= 0.0:
+			_step_t = 0.9 if not crawling else 1.3
+			Audio.play_3d(&"voice/dragger_drag" if crawling else &"sfx/zombie_footstep_shuffle", global_position, {"volume_db": -10.0, "max_distance": 30.0})
+
+
 # --- Senses ----------------------------------------------------------------------------------
 
 func _perceive(p: Player, dist: float) -> void:
-	if p == null or Stimuli.current == null or not p.state.stats.alive:
+	if p == null or Stimuli.current == null or not p.state.stats.alive or DebugTools.is_on(&"invisible"):
 		return
 	var st: Stimuli = Stimuli.current
 	var night: bool = is_night()
@@ -338,7 +366,7 @@ func _perceive(p: Player, dist: float) -> void:
 		if state in [State.IDLE, State.WANDER, State.INVESTIGATE, State.HORDE]:
 			_set_state(State.CHASE)
 			if first:
-				Audio.play_3d(&"voice/zombie_alert", global_position + Vector3.UP * 1.6, {"volume_db": 0.0})
+				Audio.play_3d(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", global_position + Vector3.UP * 1.6, {"volume_db": 0.0})
 				Events.enemy_alerted.emit(entity_id, global_position)
 		return
 	# Hearing.
@@ -460,7 +488,9 @@ func take_damage(info: DamageInfo) -> void:
 			if _rng.randf() < chance:
 				_sever(limb, info)
 	FxLibrary.burst(get_parent(), "blood", info.hit_pos, -info.direction if info.direction != Vector3.ZERO else Vector3.UP, 0.8)
-	Audio.play_3d(&"sfx/hit_flesh", info.hit_pos, {"volume_db": -3.0})
+	Audio.play_3d(&"sfx/blade_hit_flesh" if info.type in [&"slash", &"pierce"] else &"sfx/hit_flesh", info.hit_pos, {"volume_db": -3.0})
+	if health > 0.0 and _rng.randf() < 0.6:
+		Audio.play_3d(&"voice/zombie_pain", global_position + Vector3.UP * 1.6, {"volume_db": -3.0})
 	if health <= 0.0 or (severed.has("head")):
 		_die(info)
 		return

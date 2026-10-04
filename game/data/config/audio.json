@@ -1,13 +1,98 @@
 {
   "_doc": "Bus layout built at runtime by the Audio autoload. Reverb buses are targeted by ReverbZone areas.",
   "buses": [
-    {"name": "SFX", "send": "Master"},
-    {"name": "Ambience", "send": "Master", "volume_db": -2.0},
-    {"name": "Music", "send": "Master", "volume_db": -6.0},
-    {"name": "UI", "send": "Master", "volume_db": -4.0},
-    {"name": "Voice", "send": "SFX"},
-    {"name": "ReverbInterior", "send": "SFX", "effects": [{"type": "reverb", "room_size": 0.35, "damping": 0.6, "wet": 0.22, "dry": 1.0, "predelay_ms": 12}]},
-    {"name": "ReverbCave", "send": "SFX", "effects": [{"type": "reverb", "room_size": 0.85, "damping": 0.35, "wet": 0.45, "dry": 0.9, "predelay_ms": 60}]},
-    {"name": "MasterLimiter", "send": "Master", "effects": [{"type": "limiter", "ceiling_db": -0.5}]}
-  ]
+    {
+      "name": "SFX",
+      "send": "Master"
+    },
+    {
+      "name": "Ambience",
+      "send": "Master",
+      "volume_db": -2.0
+    },
+    {
+      "name": "Music",
+      "send": "Master",
+      "volume_db": -6.0
+    },
+    {
+      "name": "UI",
+      "send": "Master",
+      "volume_db": -4.0
+    },
+    {
+      "name": "Voice",
+      "send": "SFX"
+    },
+    {
+      "name": "ReverbInterior",
+      "send": "SFX",
+      "effects": [
+        {
+          "type": "reverb",
+          "room_size": 0.35,
+          "damping": 0.6,
+          "wet": 0.22,
+          "dry": 1.0,
+          "predelay_ms": 12
+        }
+      ]
+    },
+    {
+      "name": "ReverbCave",
+      "send": "SFX",
+      "effects": [
+        {
+          "type": "reverb",
+          "room_size": 0.85,
+          "damping": 0.35,
+          "wet": 0.45,
+          "dry": 0.9,
+          "predelay_ms": 60
+        }
+      ]
+    },
+    {
+      "name": "MasterLimiter",
+      "send": "Master",
+      "effects": [
+        {
+          "type": "limiter",
+          "ceiling_db": -0.5
+        }
+      ]
+    }
+  ],
+  "_aliases_doc": "Gameplay sound ids resolved to generated sound ids (tools/assetgen/audio/sounds). Lets code name events by meaning while several events share one recording.",
+  "aliases": {
+    "music/hum_wave": "voice/hollow_alert",
+    "sfx/blueprint_place": "sfx/item_place_mat",
+    "sfx/build_add_material": "sfx/item_place_mat",
+    "sfx/build_complete": "sfx/hammer_nail",
+    "sfx/campfire_loop": "sfx/fire_loop_small",
+    "sfx/can_chime": "sfx/metal_clang",
+    "sfx/dismember": "sfx/limb_sever",
+    "sfx/door_locked": "sfx/door_locked_rattle",
+    "sfx/door_open": "sfx/door_open_creak",
+    "sfx/door_unlock": "sfx/drawer_open",
+    "sfx/fire_ignite": "sfx/torch_ignite",
+    "sfx/hammer_repair": "sfx/hammer_nail",
+    "sfx/hammer_upgrade": "sfx/hammer_nail",
+    "sfx/hit_flesh": "sfx/blunt_hit_flesh",
+    "sfx/ladder_climb": "sfx/footstep_wood_floor",
+    "sfx/log_pickup": "sfx/stick_pickup",
+    "sfx/search_container": "sfx/search_rummage",
+    "sfx/structure_break_stone": "sfx/hit_stone",
+    "sfx/structure_collapse": "sfx/barricade_break",
+    "sfx/tree_fall_impact": "sfx/tree_fall_crash",
+    "sfx/zombie_hit_flesh": "sfx/blunt_hit_flesh",
+    "ui/page_turn": "sfx/book_page_turn",
+    "ui/roll_close": "sfx/canvas_unroll",
+    "ui/roll_open": "sfx/canvas_unroll",
+    "voice/zombie_alert": "voice/hollow_alert",
+    "voice/zombie_attack": "voice/hollow_attack",
+    "voice/zombie_death": "voice/hollow_death",
+    "voice/zombie_wake": "voice/hollow_groan_idle",
+    "voice/zombie_pain": "voice/hollow_pain"
+  }
 }

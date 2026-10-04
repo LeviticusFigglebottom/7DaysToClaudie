@@ -37,9 +37,15 @@ def file_sha256(path: pathlib.Path) -> str:
 
 def hash_inputs(files: list[pathlib.Path], params: dict) -> str:
     """Hash of source files (content) + params; changes when anything that affects output changes."""
+    from .paths import ROOT
     h = hashlib.sha256()
     for f in sorted(set(files)):
-        h.update(f.as_posix().encode())
+        # Repo-relative names keep hashes identical across clones, worktrees and CI checkouts.
+        try:
+            name = f.resolve().relative_to(ROOT).as_posix()
+        except ValueError:
+            name = f.as_posix()
+        h.update(name.encode())
         h.update(f.read_bytes() if f.exists() else b"<missing>")
     h.update(json.dumps(params, sort_keys=True, default=str).encode())
     return h.hexdigest()

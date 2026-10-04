@@ -29,6 +29,11 @@ func setup(w: Node) -> void:
 	Events.terrain_modified.connect(func(aabb: AABB) -> void: _mark(aabb.get_center()))
 
 
+func _exit_tree() -> void:
+	for k: Vector2i in _tiles.keys():
+		_free_tile(k)
+
+
 static func tile_of(p: Vector3) -> Vector2i:
 	return Vector2i(int(floor(p.x / TILE)), int(floor(p.z / TILE)))
 
@@ -85,16 +90,17 @@ func _bake(k: Vector2i) -> void:
 	if not _tiles.has(k):
 		return
 	var nm := NavigationMesh.new()
-	nm.agent_radius = 0.4
+	nm.agent_radius = 0.5
 	nm.agent_height = 1.75
-	nm.agent_max_climb = 0.45
+	nm.agent_max_climb = 0.5
 	nm.agent_max_slope = 46.0
 	nm.cell_size = 0.25
 	nm.cell_height = 0.25
 	nm.border_size = BORDER
 	nm.region_min_size = 4.0
-	var lo := Vector3(k.x * TILE, -1000.0, k.y * TILE)
-	nm.filter_baking_aabb = AABB(lo - Vector3(BORDER, 0, BORDER), Vector3(TILE + BORDER * 2.0, 3000.0, TILE + BORDER * 2.0))
+	# The bake is clipped to the tile itself; border_size lets Recast see the geometry around it so
+	# neighbouring tiles' edges line up exactly (no overlap) and stitch on the map.
+	nm.filter_baking_aabb = AABB(Vector3(k.x * TILE, -1000.0, k.y * TILE), Vector3(TILE, 3000.0, TILE))
 	var src := NavigationMeshSourceGeometryData3D.new()
 	_add_terrain(src, k)
 	_add_obstructions(src, k)

@@ -77,6 +77,16 @@ func stream(sound_id: StringName) -> AudioStream:
 func _variants(sound_id: StringName) -> Array:
 	if _cache.has(sound_id):
 		return _cache[sound_id]
+	var out: Array = _load_variants(sound_id)
+	if out.is_empty():
+		var alias: String = str((Content.config(&"audio").get("aliases", {}) as Dictionary).get(String(sound_id), ""))
+		if alias != "":
+			out = _load_variants(StringName(alias))
+	_cache[sound_id] = out
+	return out
+
+
+func _load_variants(sound_id: StringName) -> Array:
 	var out: Array = []
 	var base: String = AUDIO_ROOT.path_join(String(sound_id))
 	if ResourceLoader.exists(base + ".wav"):
@@ -86,7 +96,6 @@ func _variants(sound_id: StringName) -> Array:
 		if not ResourceLoader.exists(p):
 			break
 		out.append(load(p))
-	_cache[sound_id] = out
 	return out
 
 

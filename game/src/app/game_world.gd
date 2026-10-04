@@ -48,6 +48,14 @@ func _ready() -> void:
 	_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_world(dir), true, "world load")
 
 
+func _exit_tree() -> void:
+	if _load_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_load_task)
+		_load_task = -1
+	if Game.world == self:
+		Game.world = null
+
+
 func _process(_delta: float) -> void:
 	if _load_task >= 0:
 		ui.show_loading(_loader.stage, _loader.progress)
@@ -96,6 +104,11 @@ func _on_world_loaded() -> void:
 	_spawn_modules()
 	_spawn_player()
 	Events.game_saving.connect(_on_game_saving)
+	if DebugTools.enabled():
+		var dbg := DebugOverlay.new()
+		dbg.name = "Debug"
+		add_child(dbg)
+		dbg.setup(self)
 
 
 ## Optional modules: instantiated if their scripts exist (lets systems land incrementally).
@@ -210,7 +223,7 @@ func height_at(x: float, z: float) -> float:
 
 func _on_game_minutes(minutes: float) -> void:
 	var p: PlayerState = session.local_player()
-	if p == null or player == null or not is_ready:
+	if p == null or player == null or not is_ready or DebugTools.is_on(&"no_hunger"):
 		return
 	p.stats.tick_game(minutes, survival_env(player.global_position))
 

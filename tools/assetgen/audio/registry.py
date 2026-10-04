@@ -59,7 +59,9 @@ def load_all() -> dict[str, SoundDef]:
         try:
             importlib.import_module(f"{sounds.__name__}.{m.name}")
         except Exception:  # noqa: BLE001
-            print(f"[audio] WARNING: skipping audio/sounds/{m.name}.py:\n{traceback.format_exc()}", file=sys.stderr)
+            from ..core.registry import LOAD_ERRORS
+            LOAD_ERRORS.append(f"audio/{m.name}: {traceback.format_exc().strip().splitlines()[-1]}")
+            print(f"[audio] ERROR: skipping audio/sounds/{m.name}.py:\n{traceback.format_exc()}", file=sys.stderr)
     _LOADED = True
     return REGISTRY
 

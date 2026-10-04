@@ -19,6 +19,13 @@ var _vignette: ColorRect
 var _pause: Control
 var _modals: Array[StringName] = []
 var _wire_t: float = 0.0
+var _damage_flash: float = 0.0
+var roll: SalvageRoll
+var manual: FieldManual
+var tether: Tether
+var _overlay: ColorRect
+var _overlay_label: Label
+var _death_button: Button
 
 
 func _ready() -> void:
@@ -26,6 +33,13 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_loading()
 	_build_hud()
+	roll = SalvageRoll.new()
+	roll.name = "SalvageRoll"
+	add_child(roll)
+	manual = FieldManual.new()
+	manual.name = "FieldManual"
+	add_child(manual)
+	_build_overlay()
 	_build_pause()
 	Events.player_status_message.connect(message)
 	Events.player_damaged.connect(func(_id: StringName, amount: float, _src: Dictionary) -> void: _flash_damage(amount))
@@ -192,8 +206,8 @@ func _process(delta: float) -> void:
 	var concern: bool = s.health < 70.0 or s.stamina < s.max_stamina * 0.6 or s.fullness < 30.0 or s.hydration < 30.0
 	_vitals.modulate.a = lerpf(_vitals.modulate.a, 1.0 if concern else 0.15, minf(1.0, 3.0 * delta))
 	var vm: ShaderMaterial = _vignette.material
-	var dmg: float = maxf(0.0, float(vm.get_shader_parameter("damage")) - delta * 1.5)
-	vm.set_shader_parameter("damage", dmg)
+	_damage_flash = maxf(0.0, _damage_flash - delta * 1.5)
+	vm.set_shader_parameter("damage", _damage_flash)
 	vm.set_shader_parameter("low_health", clampf((35.0 - s.health) / 35.0, 0.0, 1.0))
 	vm.set_shader_parameter("cold", clampf((36.2 - s.body_temp) / 1.5, 0.0, 1.0))
 	# Hum countdown (only within the last day or during).
@@ -209,8 +223,7 @@ func _process(delta: float) -> void:
 
 
 func _flash_damage(amount: float) -> void:
-	var vm: ShaderMaterial = _vignette.material
-	vm.set_shader_parameter("damage", clampf(float(vm.get_shader_parameter("damage")) + amount / 30.0, 0.0, 1.0))
+	_damage_flash = clampf(_damage_flash + amount / 30.0, 0.0, 1.0)
 
 
 func message(text: String, kind: StringName = &"info") -> void:
@@ -302,3 +315,108 @@ func _cycle_gfx() -> void:
 	var order: PackedStringArray = Settings.PRESET_ORDER
 	Settings.set_graphics_preset(order[(order.find(Settings.graphics_preset) + 1) % order.size()])
 	message("Graphics: %s" % Settings.graphics_preset, &"info")
+
+
+# --- Diegetic UIs --------------------------------------------------------------------------
+
+func _unhandled_input(event: InputEvent) -> void:
+	var w: Node = Game.world
+	if w == null or not bool(w.get(&"is_ready")) or _pause.visible or _overlay.visible:
+		return
+	if event.is_action_pressed(&"inventory") and not roll.is_open() and not manual.is_open():
+		roll.open()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"guidebook") and not manual.is_open() and not roll.is_open():
+		manual.open()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"tracker"):
+		_ensure_tether()
+		if tether != null:
+			tether.toggle()
+		get_viewport().set_input_as_handled()
+
+
+func _ensure_tether() -> void:
+	if tether != null and is_instance_valid(tether):
+		return
+	var w: Node = Game.world
+	if w == null or w.get(&"player") == null or w.player == null:
+		return
+	tether = Tether.new()
+	tether.name = "Tether"
+	(w.player as Player).camera.add_child(tether)
+
+
+## Station crafting (campfire, workbench...) on the salvage roll's flap.
+func open_crafting(station_id: StringName, node: Node) -> void:
+	roll.open(&"station", station_id, node)
+
+
+## Containers (crates, cabinets, remains, storage) on the roll's flap.
+func open_container(node: Object) -> void:
+	roll.open(&"container", &"", node)
+
+
+func show_note(note_id: StringName) -> void:
+	if roll.is_open():
+		roll.close()
+	manual.show_note(note_id)
+
+
+func _build_overlay() -> void:
+	_overlay = ColorRect.new()
+	_overlay.color = Color(0, 0, 0, 0.0)
+	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_overlay.visible = false
+	add_child(_overlay)
+	_overlay_label = Label.new()
+	_overlay_label.set_anchors_preset(Control.PRESET_CENTER)
+	_overlay_label.position = Vector2(-300, -40)
+	_overlay_label.size = Vector2(600, 80)
+	_overlay_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_overlay_label.add_theme_font_size_override(&"font_size", 26)
+	_overlay_label.add_theme_color_override(&"font_color", Color(0.85, 0.82, 0.75))
+	_overlay.add_child(_overlay_label)
+	_death_button = Button.new()
+	_death_button.text = "Wake up"
+	_death_button.set_anchors_preset(Control.PRESET_CENTER)
+	_death_button.position = Vector2(-90, 60)
+	_death_button.size = Vector2(180, 44)
+	_death_button.visible = false
+	_death_button.pressed.connect(_on_wake_after_death)
+	_overlay.add_child(_death_button)
+
+
+func show_sleep(on: bool) -> void:
+	_overlay.visible = true
+	_death_button.visible = false
+	var tw: Tween = create_tween()
+	if on:
+		_overlay_label.text = "You sleep."
+		tw.tween_property(_overlay, "color:a", 0.96, 0.8)
+	else:
+		_overlay_label.text = ""
+		tw.tween_property(_overlay, "color:a", 0.0, 1.2)
+		tw.tween_callback(func() -> void: _overlay.visible = false)
+
+
+func show_death(cause: String) -> void:
+	_overlay.visible = true
+	_overlay.color = Color(0.08, 0.0, 0.0, 0.0)
+	var tw: Tween = create_tween()
+	tw.tween_property(_overlay, "color:a", 0.92, 2.0)
+	var why: String = {"zombie": "The Hollowed got you.", "bleeding": "You bled out.", "cold": "The cold took you.",
+		"starvation": "You starved.", "dehydration": "You died of thirst.", "fall": "You fell.", "tree": "The tree came down on you.",
+		"turned": "The Bloom took you. You are one of them now."}.get(cause, "You died.")
+	_overlay_label.text = why + "\nYour pack lies where you fell."
+	_death_button.visible = true
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _on_wake_after_death() -> void:
+	_death_button.visible = false
+	var tw: Tween = create_tween()
+	tw.tween_property(_overlay, "color:a", 0.0, 1.5)
+	tw.tween_callback(func() -> void: _overlay.visible = false)
+	if Game.world != null and Game.world.has_method(&"respawn"):
+		Game.world.call(&"respawn")

@@ -148,6 +148,15 @@ static func chunk_of(x: float, z: float) -> Vector2i:
 
 # --- Streaming --------------------------------------------------------------------------------
 
+## Joins in-flight mesh jobs so no worker touches freed data when the world goes away.
+func _exit_tree() -> void:
+	for key: Variant in _pending.keys():
+		var job: Dictionary = _pending[key]
+		if job.has("task"):
+			WorkerThreadPool.wait_for_task_completion(job["task"])
+	_pending.clear()
+
+
 func _process(delta: float) -> void:
 	if world == null or focus == null:
 		return

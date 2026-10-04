@@ -44,6 +44,12 @@ func _gamestage() -> int:
 	return p.progression.gamestage(Game.session.clock.day()) if p != null else 1
 
 
+func _exit_tree() -> void:
+	if _flow_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_flow_task)
+		_flow_task = -1
+
+
 ## The plan the next Hum will follow (deterministic), for warnings and the tether.
 func forecast() -> Dictionary:
 	var c: WorldClock = Game.session.clock

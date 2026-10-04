@@ -8,6 +8,11 @@ from typing import Callable
 from .paths import ASSETGEN
 
 
+#: Catalog / generator modules that failed to import ("family/module: error"). Other families still
+#: build, but the run reports these as failures and exits non-zero (no silently missing ids).
+LOAD_ERRORS: list[str] = []
+
+
 @dataclass
 class Task:
     """One unit of generation.

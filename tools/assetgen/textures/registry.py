@@ -68,7 +68,9 @@ def load_all() -> dict[str, TexDef]:
         try:
             importlib.import_module(f"{gen.__name__}.{m.name}")
         except Exception:  # noqa: BLE001
-            print(f"[textures] WARNING: skipping textures/gen/{m.name}.py:\n{traceback.format_exc()}", file=sys.stderr)
+            from ..core.registry import LOAD_ERRORS
+            LOAD_ERRORS.append(f"textures/{m.name}: {traceback.format_exc().strip().splitlines()[-1]}")
+            print(f"[textures] ERROR: skipping textures/gen/{m.name}.py:\n{traceback.format_exc()}", file=sys.stderr)
     _LOADED = True
     return REGISTRY
 

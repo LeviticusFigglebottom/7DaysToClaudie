@@ -1,4 +1,5 @@
 @tool
+class_name ContentDB
 extends Node
 ## Content database (autoload `Content`).
 ##
@@ -9,6 +10,9 @@ extends Node
 ## Packs: regions/expansions can ship their own `data/` folder and register it with
 ## `add_pack()` before `load_all()`; later packs may add new ids but not silently override
 ## (overrides must set "_override": true).
+
+## The live autoload, readable from worker threads (scene-tree lookups are main-thread only).
+static var instance: Node = null
 
 const KINDS: Dictionary = {
 	&"item": {"dir": "items", "script": preload("res://src/core/content/defs/item_def.gd")},
@@ -45,6 +49,7 @@ var _loaded: bool = false
 
 
 func _ready() -> void:
+	instance = self
 	load_all()
 
 

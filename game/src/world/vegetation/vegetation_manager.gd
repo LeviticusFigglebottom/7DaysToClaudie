@@ -77,6 +77,16 @@ func _scatter(key: Vector2i) -> Dictionary:
 	return VegetationScatter.scatter_chunk(key, rt, Game.session.world_seed, terrain.height_at, _water_fn())
 
 
+## Joins in-flight scatter jobs (they read content and terrain) before the world is freed.
+func _exit_tree() -> void:
+	for key: Vector2i in _pending.keys():
+		WorkerThreadPool.wait_for_task_completion(_pending[key]["task"])
+	_pending.clear()
+	if _far_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_far_task)
+		_far_task = -1
+
+
 # --- Streaming --------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
@@ -473,6 +483,28 @@ func _fell(key: Vector2i, inst: VegetationScatter.Instance, sp: SpeciesDef, info
 	if p != null:
 		p.progression.add_xp(int(Content.config(&"progression").get("xp", {}).get("fell_tree", 10)))
 	Events.tree_felled.emit(id, inst.pos)
+
+
+## Nearest loaded instance of a vegetation kind ("tree", "rock", ...): [chunk, Instance] or [].
+func nearest_instance(pos: Vector3, veg_kind: String, max_dist: float = 80.0) -> Array:
+	var best: Array = []
+	var best_d: float = max_dist
+	for key: Vector2i in _data:
+		for layer: String in ["tree", "medium", "ground"]:
+			for inst: VegetationScatter.Instance in (_data[key] as Dictionary).get(layer, []):
+				var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
+				if sp.veg_kind != veg_kind or _is_removed(key, inst.index):
+					continue
+				var d: float = inst.pos.distance_to(pos)
+				if d < best_d:
+					best_d = d
+					best = [key, inst]
+	return best
+
+
+## Collision body of a tree/boulder instance if it is currently pooled near the player.
+func body_for(key: Vector2i, inst: VegetationScatter.Instance) -> Node:
+	return _bodies.get(VegetationScatter.instance_id(key, inst.index))
 
 
 ## Collidable trees and boulders inside a rect (navigation obstructions).

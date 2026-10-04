@@ -135,7 +135,10 @@ def build(tasks: list[Task], *, force: bool, jobs: int, blender: str, quiet: boo
                 manifest.save(data)
     manifest.save(data)
     print(f"[assets] {len(todo) - len(failures)} built, {len(failures)} failed in {time.time() - start:.1f}s")
-    return 1 if failures else 0
+    from assetgen.core.registry import LOAD_ERRORS
+    for e in LOAD_ERRORS:
+        print(f"[assets] FAIL module did not load (its assets were skipped): {e}")
+    return 1 if failures or LOAD_ERRORS else 0
 
 
 def check_determinism(tasks: list[Task], jobs: int, blender: str) -> int:

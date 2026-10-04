@@ -251,10 +251,7 @@ class _Build:
 			"biome": str(f.get("biome", "town" if str(f["type"]) == "framework" else "meadow"))}
 
 	func _content() -> Node:
-		var ml: MainLoop = Engine.get_main_loop()
-		if ml is SceneTree:
-			return (ml as SceneTree).root.get_node_or_null("/root/Content")
-		return null
+		return ContentDB.instance
 
 	func _hills_and_cliffs() -> void:
 		for f: Dictionary in region.get("features", []):

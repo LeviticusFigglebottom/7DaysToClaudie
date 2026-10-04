@@ -8,7 +8,7 @@ export_credentials.cfg
 /game/assets/generated/
 
 # --- Toolchain (installed by `make setup`) ---
-/.tools/
+/.tools
 
 # --- Build / scratch output ---
 /build/
