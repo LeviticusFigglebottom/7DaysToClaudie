@@ -650,9 +650,9 @@
     "grime_amount": 0.3
    }
   },
-  "mattress_ticking": {
+  "ext_mattress_ticking": {
    "shader": "std_surface",
-   "textures": "mattress_ticking",
+   "textures": "ext_mattress_ticking",
    "params": {
     "uv_scale": 2.0,
     "vertex_ao_strength": 1.0,

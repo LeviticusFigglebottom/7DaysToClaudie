@@ -321,7 +321,7 @@ def barricade_mattress(ctx: K.Ctx) -> None:
             K.drop_to_ground(o)
             K.place(o, (0.6 - 1.1 * k, -1.2 - 0.3 * k, 0), (0, 0, 30 * k))
         K.crumple(m, 0.03, scale=2.0, seed=r.randint(0, 999))
-    ctx.add(m, "mattress_ticking", uv_scale=1.0, smooth=45, patches=0.0, edge=0.3)
+    ctx.add(m, "ext_mattress_ticking", uv_scale=1.0, smooth=45, patches=0.0, edge=0.3)
     if foam:
         ctx.add(foam, "foam_yellow", uv_scale=1.0, smooth=50, patches=0.0)
     for o in planks + [brace]:
