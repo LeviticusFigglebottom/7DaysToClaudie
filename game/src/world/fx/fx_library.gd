@@ -1,21 +1,23 @@
 class_name FxLibrary
 extends RefCounted
 ## One-shot particle bursts for impacts (chips, dust, sparks, blood, leaves). Each kind is data
-## below; meshes/materials are built once and shared. Uses generated FX textures when present
-## (assets/generated/textures/fx/<name>.png), plain shaded shapes otherwise.
+## below; meshes/materials are built once and shared. Uses the generated FX atlases/flipbooks
+## (assets/generated/textures/fx_*.png) when present, plain shaded shapes otherwise.
 
+## texture: generated FX atlas (textures/<name>.png); frames: [h, v] atlas cells; anim: play the
+## cells over the particle's life (flipbooks) instead of picking one at random.
 const KINDS: Dictionary = {
-	"wood": {"amount": 14, "life": 0.9, "speed": [2.0, 4.5], "spread": 55.0, "gravity": 9.8, "size": [0.025, 0.06], "color": Color(0.55, 0.4, 0.25), "shape": "box"},
-	"bark": {"amount": 8, "life": 1.2, "speed": [1.0, 2.5], "spread": 70.0, "gravity": 6.0, "size": [0.03, 0.07], "color": Color(0.24, 0.18, 0.13), "shape": "box"},
-	"leaves": {"amount": 18, "life": 3.0, "speed": [0.3, 1.2], "spread": 180.0, "gravity": 0.8, "size": [0.05, 0.09], "color": Color(0.2, 0.3, 0.1), "shape": "quad", "texture": "leaf"},
-	"dust": {"amount": 10, "life": 1.8, "speed": [0.4, 1.4], "spread": 180.0, "gravity": -0.2, "size": [0.4, 0.9], "color": Color(0.45, 0.42, 0.37, 0.35), "shape": "billboard", "texture": "smoke_puff"},
-	"dirt": {"amount": 16, "life": 0.9, "speed": [1.5, 3.5], "spread": 50.0, "gravity": 9.8, "size": [0.03, 0.08], "color": Color(0.3, 0.23, 0.16), "shape": "box"},
-	"stone": {"amount": 10, "life": 0.8, "speed": [2.5, 5.0], "spread": 45.0, "gravity": 9.8, "size": [0.02, 0.05], "color": Color(0.5, 0.5, 0.48), "shape": "box"},
-	"sparks": {"amount": 12, "life": 0.35, "speed": [3.0, 7.0], "spread": 40.0, "gravity": 4.0, "size": [0.01, 0.02], "color": Color(1.0, 0.7, 0.3), "shape": "box", "emissive": 6.0},
-	"blood": {"amount": 16, "life": 0.8, "speed": [1.5, 4.0], "spread": 35.0, "gravity": 9.8, "size": [0.02, 0.05], "color": Color(0.22, 0.02, 0.02), "shape": "box"},
+	"wood": {"amount": 14, "life": 0.9, "speed": [2.0, 4.5], "spread": 55.0, "gravity": 9.8, "size": [0.04, 0.08], "color": Color(0.9, 0.8, 0.65), "shape": "billboard", "texture": "fx_wood_chips", "frames": [4, 4]},
+	"bark": {"amount": 8, "life": 1.2, "speed": [1.0, 2.5], "spread": 70.0, "gravity": 6.0, "size": [0.04, 0.08], "color": Color(0.45, 0.36, 0.28), "shape": "billboard", "texture": "fx_wood_chips", "frames": [4, 4]},
+	"leaves": {"amount": 18, "life": 3.0, "speed": [0.3, 1.2], "spread": 180.0, "gravity": 0.8, "size": [0.05, 0.09], "color": Color(0.2, 0.3, 0.1), "shape": "quad"},
+	"dust": {"amount": 10, "life": 1.8, "speed": [0.4, 1.4], "spread": 180.0, "gravity": -0.2, "size": [0.5, 1.1], "color": Color(0.62, 0.58, 0.52, 0.45), "shape": "billboard", "texture": "fx_smoke_flipbook", "frames": [8, 8], "anim": true},
+	"dirt": {"amount": 16, "life": 0.9, "speed": [1.5, 3.5], "spread": 50.0, "gravity": 9.8, "size": [0.05, 0.1], "color": Color(1, 1, 1), "shape": "billboard", "texture": "fx_dirt_chunks", "frames": [4, 4]},
+	"stone": {"amount": 10, "life": 0.8, "speed": [2.5, 5.0], "spread": 45.0, "gravity": 9.8, "size": [0.03, 0.06], "color": Color(0.7, 0.7, 0.68), "shape": "billboard", "texture": "fx_dirt_chunks", "frames": [4, 4]},
+	"sparks": {"amount": 12, "life": 0.35, "speed": [3.0, 7.0], "spread": 40.0, "gravity": 4.0, "size": [0.02, 0.04], "color": Color(1.0, 0.7, 0.3), "shape": "billboard", "texture": "fx_spark", "emissive": 6.0},
+	"blood": {"amount": 14, "life": 0.8, "speed": [1.5, 4.0], "spread": 35.0, "gravity": 9.8, "size": [0.06, 0.14], "color": Color(1, 1, 1), "shape": "billboard", "texture": "fx_blood_spray", "frames": [4, 4]},
 	"gore": {"amount": 8, "life": 1.4, "speed": [2.0, 4.5], "spread": 50.0, "gravity": 9.8, "size": [0.04, 0.09], "color": Color(0.3, 0.06, 0.05), "shape": "box"},
-	"water": {"amount": 20, "life": 0.7, "speed": [1.5, 3.5], "spread": 30.0, "gravity": 9.8, "size": [0.02, 0.04], "color": Color(0.7, 0.75, 0.8, 0.6), "shape": "billboard", "texture": "splash"},
-	"splinters": {"amount": 22, "life": 1.1, "speed": [2.5, 6.0], "spread": 70.0, "gravity": 9.8, "size": [0.03, 0.12], "color": Color(0.5, 0.37, 0.24), "shape": "box"},
+	"water": {"amount": 16, "life": 0.7, "speed": [1.5, 3.5], "spread": 30.0, "gravity": 9.8, "size": [0.15, 0.3], "color": Color(0.85, 0.9, 0.95, 0.7), "shape": "billboard", "texture": "fx_splash", "frames": [4, 4]},
+	"splinters": {"amount": 22, "life": 1.1, "speed": [2.5, 6.0], "spread": 70.0, "gravity": 9.8, "size": [0.05, 0.14], "color": Color(0.95, 0.85, 0.7), "shape": "billboard", "texture": "fx_wood_chips", "frames": [4, 4]},
 }
 
 static var _draw: Dictionary = {}
@@ -68,6 +70,13 @@ static func _process_material(_kind: String, k: Dictionary, dir: Vector3, scale:
 	m.angle_max = 360.0
 	m.damping_min = 0.5
 	m.damping_max = 2.0
+	if k.has("frames"):
+		if bool(k.get("anim", false)):
+			m.anim_speed_min = 1.0
+			m.anim_speed_max = 1.0
+		else:
+			m.anim_offset_min = 0.0
+			m.anim_offset_max = 1.0
 	m.collision_mode = ParticleProcessMaterial.COLLISION_RIGID
 	m.collision_friction = 0.8
 	m.collision_bounce = 0.15
@@ -88,12 +97,18 @@ static func _mesh(kind: String, k: Dictionary) -> Mesh:
 	mat.albedo_color = k["color"]
 	mat.vertex_color_use_as_albedo = true
 	mat.roughness = 0.85
-	var tex_path: String = "res://assets/generated/textures/fx/%s.png" % str(k.get("texture", ""))
-	if k.has("texture") and ResourceLoader.exists(tex_path):
+	var tex_path: String = "res://assets/generated/textures/%s.png" % str(k.get("texture", ""))
+	var textured: bool = k.has("texture") and ResourceLoader.exists(tex_path)
+	if textured:
 		mat.albedo_texture = load(tex_path)
+		if k.has("frames"):
+			var fr: Array = k["frames"]
+			mat.particles_anim_h_frames = int(fr[0])
+			mat.particles_anim_v_frames = int(fr[1])
+			mat.particles_anim_loop = false
 	var shape: String = str(k["shape"])
 	if (k["color"] as Color).a < 1.0 or shape != "box":
-		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA if not textured or kind in ["dust", "water"] else BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	if k.has("emissive"):
 		mat.emission_enabled = true
 		mat.emission = k["color"]

@@ -108,8 +108,10 @@ linoleum_beige, tile_white_small, concrete`.
 * `traps`: `{"id": "chime1", "type": "can_chime", "at": [4, 6], "side": "S"}` — trip line across that
   edge; rattles loudly and wakes nearby sleepers.
 * `lights`: `{"at": [3, 3], "height": 0.9, "color": "#ffbb77", "energy": 0.8, "range": 5, "flicker": 0.3, "shadow": false}`.
-* `decals`: `{"decal": "blood_smear_a", "at": [2, 3], "side": "N", "height": 1.2, "size": [1.2, 1.0]}`
-  (`"side": "floor"` for floor decals).
+* `decals`: `{"decal": "blood_splatter_a", "at": [2, 3], "side": "N", "height": 1.2, "size": [1.2, 1.0]}`
+  (`"side": "floor"` for floor decals). Ids (textures `decal_<id>_albedo.png`): `blood_splatter_a..d`,
+  `blood_pool`, `blood_drip`, `blood_trail`, `blood_handprint`, `mold_patch`, `scorch`, `crack_wall`,
+  `bullet_holes`, `footprints_mud`, `grime_streaks`, `water_stain`, `survivor_marks_a..c`.
 
 ### route, loot room, shortcuts
 * `route`: ordered waypoints `{"at": [c, r], "level": 0, "label": "Front door barricaded"}`. The

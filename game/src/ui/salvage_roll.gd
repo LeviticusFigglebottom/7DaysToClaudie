@@ -124,8 +124,8 @@ func _build_scene() -> void:
 	fill.position = Vector3(0.6, 0.6, 0.6)
 	_vp.add_child(fill)
 	# The cloth roll and the flap.
-	_vp.add_child(_cloth(Vector2(0.98, 0.56), Vector3(0, 0, 0), "res://assets/generated/textures/ui/canvas_roll_albedo.png", Color(0.47, 0.4, 0.3)))
-	_vp.add_child(_cloth(Vector2(0.4, 0.44), Vector3(0.27, 0.004, 0.01), "res://assets/generated/textures/ui/paper_page_albedo.png", Color(0.86, 0.82, 0.72)))
+	_vp.add_child(_cloth(Vector2(0.98, 0.56), Vector3(0, 0, 0), "res://assets/generated/textures/ui_canvas.png", Color(0.47, 0.4, 0.3)))
+	_vp.add_child(_cloth(Vector2(0.4, 0.44), Vector3(0.27, 0.004, 0.01), "res://assets/generated/textures/ui_paper_page.png", Color(0.86, 0.82, 0.72)))
 	_items_root = Node3D.new()
 	_vp.add_child(_items_root)
 	_flap_root = Node3D.new()

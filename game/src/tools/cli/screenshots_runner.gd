@@ -43,6 +43,17 @@ func _wait(s: float) -> void:
 		await get_tree().process_frame
 
 
+## Waits (up to 4 min) until the vegetation around the player has streamed in.
+func _wait_streamed(w: Node) -> void:
+	var veg: Node = w.get(&"vegetation")
+	var t0: int = Time.get_ticks_msec()
+	while veg != null and not bool(veg.call(&"is_settled")):
+		if Time.get_ticks_msec() - t0 > 240000:
+			print("SHOT warning: vegetation still streaming after 240 s")
+			return
+		await get_tree().process_frame
+
+
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
 	game.call(&"start_new_game", {"game_mode": "slice", "skip_intro": true, "slot": "screens"})
@@ -106,6 +117,7 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		l.position = Vector3(0.3, -0.3, -0.5)
 	cam.global_position = pos
 	cam.look_at(look, Vector3.UP)
+	await _wait_streamed(w)
 	await _wait(_settle)
 	var img: Image = get_viewport().get_texture().get_image()
 	var path: String = _out.path_join("%s.png" % shot["name"])

@@ -1928,7 +1928,7 @@ def _save_strip(out, rows: list[np.ndarray]) -> None:
         T.save_rgb(path, strip)
 
 
-@texture("terrain_albedo_array", size=1024, seed=1, kind="array", import_kind="albedo", slices=len(LAYERS))
+@texture("terrain_albedo_array", size=1024, seed=1, kind="array", import_kind="albedo", slices=len(LAYERS), sources=["game/data/materials/terrain_layers.json"])
 def terrain_albedo_array(size: int, seed: int, out, slices: int) -> None:
     """RGB = albedo (sRGB), A = height 0..1 (for height-based blending)."""
     _check_contract()
@@ -1940,7 +1940,7 @@ def terrain_albedo_array(size: int, seed: int, out, slices: int) -> None:
     _save_strip(out, [rows[k] for k in LAYERS])
 
 
-@texture("terrain_normal_array", size=1024, seed=1, kind="array", import_kind="normal", slices=len(LAYERS))
+@texture("terrain_normal_array", size=1024, seed=1, kind="array", import_kind="normal", slices=len(LAYERS), sources=["game/data/materials/terrain_layers.json"])
 def terrain_normal_array(size: int, seed: int, out, slices: int) -> None:
     """Tangent-space normals, OpenGL convention (+Y up)."""
     _check_contract()
@@ -1948,7 +1948,7 @@ def terrain_normal_array(size: int, seed: int, out, slices: int) -> None:
     _save_strip(out, [rows[k] for k in LAYERS])
 
 
-@texture("terrain_orm_array", size=1024, seed=1, kind="array", import_kind="data", slices=len(LAYERS))
+@texture("terrain_orm_array", size=1024, seed=1, kind="array", import_kind="data", slices=len(LAYERS), sources=["game/data/materials/terrain_layers.json"])
 def terrain_orm_array(size: int, seed: int, out, slices: int) -> None:
     """R = AO, G = roughness, B = metallic (0)."""
     _check_contract()

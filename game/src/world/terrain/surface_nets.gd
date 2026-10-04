@@ -84,10 +84,11 @@ static func _quad(idx: PackedInt32Array, vi: PackedInt32Array, cells: int, q: Ar
 		if i < 0:
 			return
 		ids[k] = i
+	# Godot front faces are clockwise seen from the air side.
 	if flip:
-		idx.append_array([ids[0], ids[1], ids[2], ids[0], ids[2], ids[3]])
-	else:
 		idx.append_array([ids[0], ids[2], ids[1], ids[0], ids[3], ids[2]])
+	else:
+		idx.append_array([ids[0], ids[1], ids[2], ids[0], ids[2], ids[3]])
 
 
 ## Outward (toward air) normal from the cell's corner values.

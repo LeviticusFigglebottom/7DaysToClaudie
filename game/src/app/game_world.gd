@@ -163,6 +163,37 @@ func _find_spawn(id: String) -> Dictionary:
 	return {"pos": Vector3(0, terrain.height_at(0, 0), 0), "yaw": 0.0}
 
 
+## Set dressing named by the drop-site spawn feature (the Remand supply canister). It is pure
+## data, rebuilt on every load rather than saved. A prop id resolves through its PropDef when one
+## exists, otherwise to the generated item model `items/<id>`.
+func _place_spawn_props() -> void:
+	var spawn: Dictionary = _find_spawn("drop_site")
+	var base: Vector3 = spawn.get("pos", Vector3.ZERO)
+	for v: Variant in spawn.get("props", []):
+		var d: Dictionary = v
+		var id := StringName(str(d.get("prop", "")))
+		var model: String = "items/%s" % id
+		if Content.has_def(&"prop", id):
+			model = (Content.get_def(&"prop", id) as PropDef).model_for("worn")
+		var off: Array = d.get("offset", [0.0, 0.0, 0.0])
+		var at := Vector3(base.x + float(off[0]), 0.0, base.z + float(off[2]))
+		at.y = terrain.height_at(at.x, at.z) + float(off[1])
+		var body := StaticBody3D.new()
+		body.name = "SpawnProp_%s" % id
+		add_child(body)
+		body.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(float(d.get("rot", 0.0)))), at)
+		var mi := MeshInstance3D.new()
+		mi.mesh = ModelLibrary.mesh(model, "box")
+		body.add_child(mi)
+		var shape := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		var aabb: AABB = mi.mesh.get_aabb()
+		box.size = aabb.size
+		shape.shape = box
+		shape.position = aabb.get_center()
+		body.add_child(shape)
+
+
 func _give_start_kit(p: PlayerState) -> void:
 	var kit: Dictionary = Content.config(&"player").get("start_kit", {})
 	for k: Variant in kit.keys():
@@ -176,6 +207,7 @@ func _finish_spawn() -> void:
 	var ground: float = terrain.height_at(pos.x, pos.z)
 	if pos.y < ground + 0.2 or pos.y > ground + 30.0:
 		player.global_position = Vector3(pos.x, ground + 0.4, pos.z)
+	_place_spawn_props()
 	player.input_enabled = true
 	is_ready = true
 	ui.hide_loading()

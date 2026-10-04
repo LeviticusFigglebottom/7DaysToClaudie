@@ -36,18 +36,22 @@ class TexDef:
     import_kind: str = "albedo"
     slices: int = 1
     params: dict = field(default_factory=dict)
+    #: Extra input files (repo-relative) whose content changes must rebuild this texture,
+    #: e.g. data/materials/terrain_layers.json for the terrain arrays.
+    sources: list = field(default_factory=list)
 
 
 REGISTRY: dict[str, TexDef] = {}
 
 
 def texture(name: str, *, size: int = 1024, seed: int = 1, kind: str = "pbr", import_kind: str = "albedo",
-            slices: int = 1, **params):
+            slices: int = 1, sources: list[str] | None = None, **params):
     def deco(fn: Callable) -> Callable:
         if name in REGISTRY:
             raise ValueError(f"texture {name} registered twice")
         import inspect
-        REGISTRY[name] = TexDef(name, fn, pathlib.Path(inspect.getfile(fn)), size, seed, kind, import_kind, slices, params)
+        REGISTRY[name] = TexDef(name, fn, pathlib.Path(inspect.getfile(fn)), size, seed, kind, import_kind, slices, params,
+                                list(sources or []))
         return fn
     return deco
 

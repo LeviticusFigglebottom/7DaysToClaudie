@@ -40,7 +40,7 @@ func _ready() -> void:
 	book.anchor_top = 0.08
 	book.anchor_bottom = 0.92
 	var sb := StyleBoxTexture.new()
-	var tex_path: String = "res://assets/generated/textures/ui/paper_page_albedo.png"
+	var tex_path: String = "res://assets/generated/textures/ui_paper_page.png"
 	if ResourceLoader.exists(tex_path):
 		sb.texture = load(tex_path)
 		sb.content_margin_left = 40
