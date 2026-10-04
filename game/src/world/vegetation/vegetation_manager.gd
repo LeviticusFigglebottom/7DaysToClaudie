@@ -334,6 +334,10 @@ func _collect_far() -> void:
 				mat.set_shader_parameter("normal_atlas", nrm)
 			mat.set_shader_parameter("frames", ImpostorLibrary.FRAMES)
 			mat.set_shader_parameter("discard_rect", _near_rect())
+			if ImpostorLibrary.is_baked(sp):
+				var tints: Dictionary = ImpostorLibrary.season_tints(sp)
+				for k: String in tints:
+					mat.set_shader_parameter(k, tints[k])
 			_far_mats.append(mat)
 			var quad := QuadMesh.new()
 			quad.size = Vector2(1.0, 1.0)

@@ -13,6 +13,12 @@ uniform int frames = 8;
 uniform vec4 discard_rect = vec4(0.0);
 uniform float alpha_cut : hint_range(0.0, 1.0) = 0.42;
 uniform float roughness_value : hint_range(0.0, 1.0) = 0.92;
+// The atlas is baked in summer colours; these are the species' foliage tints (foliage.gdshader),
+// so the far canopy follows the season by the ratio season / summer.
+uniform vec4 spring_tint : source_color = vec4(1.0);
+uniform vec4 summer_tint : source_color = vec4(1.0);
+uniform vec4 autumn_tint : source_color = vec4(1.0);
+uniform vec4 winter_tint : source_color = vec4(1.0);
 
 global uniform vec4 hm_season;
 global uniform float hm_snow;
@@ -77,6 +83,9 @@ void fragment() {
 	}
 	NORMAL = normalize(n_frame.x * v_right + n_frame.y * v_up + n_frame.z * v_fwd);
 	vec3 albedo = c.rgb;
+	vec4 season = hm_season.x * spring_tint + hm_season.y * summer_tint + hm_season.z * autumn_tint + hm_season.w * winter_tint;
+	float wsum = max(0.001, hm_season.x + hm_season.y + hm_season.z + hm_season.w);
+	albedo *= clamp(season.rgb / wsum / max(summer_tint.rgb, vec3(0.05)), vec3(0.0), vec3(2.5));
 	// Snow on upward-facing parts of the canopy.
 	float snow = clamp(hm_snow * (n_frame.y * 1.6 + 0.2), 0.0, 1.0);
 	albedo = mix(albedo, vec3(0.86, 0.88, 0.9), snow * 0.8);

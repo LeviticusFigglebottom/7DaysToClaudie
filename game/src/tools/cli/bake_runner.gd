@@ -22,6 +22,10 @@ func _run() -> void:
 	var out_dir: String = ProjectSettings.globalize_path(ImpostorLibrary.DIR)
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	_setup()
+	# Neutral weather and summer foliage: the impostor shader re-tints by season at runtime.
+	RenderingServer.global_shader_parameter_set(&"hm_season", Vector4(0.0, 1.0, 0.0, 0.0))
+	RenderingServer.global_shader_parameter_set(&"hm_snow", 0.0)
+	RenderingServer.global_shader_parameter_set(&"hm_wetness", 0.0)
 	var baked: int = 0
 	for d: ContentDef in Content.all(&"species"):
 		var sp: SpeciesDef = d as SpeciesDef

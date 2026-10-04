@@ -68,6 +68,25 @@ static func size_for(sp: SpeciesDef) -> Vector2:
 	return dims
 
 
+## Seasonal foliage tints of a species ({"spring_tint": Color, ...}), read from the first
+## foliage ShaderMaterial on its model, so far impostors follow the near canopy. Empty if none.
+static func season_tints(sp: SpeciesDef) -> Dictionary:
+	if sp.models.is_empty() or not ModelLibrary.has_model(sp.models[0]):
+		return {}
+	var mesh: Mesh = ModelLibrary.mesh(sp.models[0])
+	for i: int in mesh.get_surface_count():
+		var mat := mesh.surface_get_material(i) as ShaderMaterial
+		if mat == null or mat.get_shader_parameter("autumn_tint") == null:
+			continue
+		var out: Dictionary = {}
+		for k: String in ["spring_tint", "summer_tint", "autumn_tint", "winter_tint"]:
+			var v: Variant = mat.get_shader_parameter(k)
+			if v is Color:
+				out[k] = v
+		return out
+	return {}
+
+
 static func _is_broadleaf(sp: SpeciesDef) -> bool:
 	return String(sp.id).contains("birch")
 
