@@ -98,6 +98,7 @@ def build(tasks: list[Task], *, force: bool, jobs: int, blender: str, quiet: boo
     py = [(t, h) for t, h in todo if t.fn is not None]
     bl = [(t, h) for t, h in todo if t.blender is not None]
     hashes = {t.name: h for t, h in todo}
+    last_save = [time.time()]
 
     def finish(task: Task, result: str) -> None:
         nonlocal done
@@ -134,8 +135,10 @@ def build(tasks: list[Task], *, force: bool, jobs: int, blender: str, quiet: boo
                     finish(t, res.get(t.name, "no result") if isinstance(res, dict) else str(res))
             else:
                 finish(owner, res)  # type: ignore[arg-type]
-            if done % 20 == 0:
+            # Save often so an interrupted build keeps what it finished.
+            if time.time() - last_save[0] > 5.0:
                 manifest.save(data)
+                last_save[0] = time.time()
     manifest.save(data)
     print(f"[assets] {len(todo) - len(failures)} built, {len(failures)} failed in {time.time() - start:.1f}s")
     from assetgen.core.registry import LOAD_ERRORS

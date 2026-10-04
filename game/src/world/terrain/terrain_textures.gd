@@ -18,9 +18,10 @@ static var _cached: TerrainTextures = null
 
 var layers: PackedStringArray = []
 var tiles := PackedFloat32Array()
-var albedo: Texture2DArray
-var normal: Texture2DArray
-var orm: Texture2DArray
+# TextureLayered: imported arrays are CompressedTexture2DArray, which is not a Texture2DArray.
+var albedo: TextureLayered
+var normal: TextureLayered
+var orm: TextureLayered
 var macro_variation: Texture2D
 var is_fallback: bool = false
 
@@ -91,12 +92,15 @@ func _build_fallback() -> void:
 		albs.append(a)
 		nrms.append(nimg)
 		orms.append(o)
-	albedo = Texture2DArray.new()
-	albedo.create_from_images(albs)
-	normal = Texture2DArray.new()
-	normal.create_from_images(nrms)
-	orm = Texture2DArray.new()
-	orm.create_from_images(orms)
+	var a_arr := Texture2DArray.new()
+	a_arr.create_from_images(albs)
+	var n_arr := Texture2DArray.new()
+	n_arr.create_from_images(nrms)
+	var o_arr := Texture2DArray.new()
+	o_arr.create_from_images(orms)
+	albedo = a_arr
+	normal = n_arr
+	orm = o_arr
 
 
 static func _noise_texture(size: int, seed: int) -> Texture2D:

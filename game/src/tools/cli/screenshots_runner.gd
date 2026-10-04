@@ -15,6 +15,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "valley_aerial", "pos": Vector3(-150, 140.0, 2420), "look": Vector3(-60, 0, 2050), "hour": 17.5, "weather": "clear"},
 	{"name": "night_forest", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 1.5, 2280), "hour": 23.0, "weather": "clear", "light": true},
 	{"name": "base_building", "pos": Vector3(-272, 2.2, 2304), "look": Vector3(-262, 0.5, 2296), "hour": 11.0, "weather": "clear", "build": true},
+	{"name": "diner_interior", "pos": Vector3(-49, 1.75, 2021), "look": Vector3(-60, 1.0, 2018), "hour": 14.0, "weather": "overcast"},
 	{"name": "first_person_axe", "pos": Vector3(-286, 0.0, 2300), "look": Vector3(-270, 1.2, 2296), "hour": 11.0, "weather": "clear", "fp": "stone_axe"},
 	{"name": "hollow_closeup", "pos": Vector3(-286, 1.6, 2300), "look": Vector3(-283, 1.2, 2299), "hour": 10.0, "weather": "overcast", "enemy": "hollow"},
 	{"name": "hum_night", "pos": Vector3(-272, 2.2, 2304), "look": Vector3(-262, 0.5, 2296), "hour": 22.5, "weather": "clear", "hum": true, "light": true},

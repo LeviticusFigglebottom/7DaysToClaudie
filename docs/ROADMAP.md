@@ -19,23 +19,36 @@ and clear at least one authored building along its route, survive a night and a 
 (slice mode: Hum on night 3), then save and reload. All visuals use generated assets.
 
 - 🟡 Region D6 *Larch Hollow*: terrain (heightmap chunks + LOD + digging), river, pond, cliffs,
-  forest scatter, Pell's Crossing town framework with 6 buildings.
-- 🟡 Player controller, interaction, gathering, stamina, damage, death/respawn.
-- 🟡 Survival stats in play (needs, temperature, bleeding, infection hook) + tether vitals.
-- 🟡 Diegetic salvage roll inventory + hand crafting; campfire/workbench station crafting.
-- 🟡 Tree chopping (physics fall, stumps, logs), log carrying, log building (snap + freeform),
+  forest scatter ✅; Pell's Crossing framework with 5 authored buildings (Mile 9 Diner, Pell
+  Pharmacy, Calder Hardware, Ranger Station, Merrow House) validated by `make validate` — in-game
+  visual QA of the town pending.
+- ✅ Player controller, interaction, gathering, stamina, damage, death/respawn; step-up onto
+  thresholds and vault/mantle through windows and over fences (tests/integration/test_traversal).
+- ✅ Survival stats in play (needs, temperature, bleeding, infection hook) + tether vitals.
+- ✅ Diegetic salvage roll inventory + hand crafting; campfire/workbench station crafting.
+- ✅ Tree chopping (physics fall, stumps, logs), log carrying, log building (snap + freeform),
   blueprints, structural integrity + collapse, structure damage + fracture debris.
-- 🟡 Terrain digging (heightmap) + smooth SDF volume chunks (tunnel prototype).
+- ✅ Terrain digging (heightmap) + smooth SDF volume chunks (tunnel prototype, unit-tested).
 - 🟡 Hollow, Lurcher, Keener (+ Dragger via dismemberment): sleepers, wanderers, day/night speeds,
-  perception through stimulus fields, heat summons.
-- 🟡 Day/night, weather (clear/overcast/mist/rain/storm), seasons hook.
-- 🟡 One Hum night with sector waves, weak-point flow field, horde memory report + forecast.
-- 🟡 Save/load (sleep in shelter, quicksave, autosave on Hum end).
-- 🟡 Debug tools: free cam, spawn menu, time/weather, AI overlay, POI route visualizer, perf overlay,
-  seed viewer, structural view.
-- 🟡 Audio: 3D occlusion, reverb zones, ambient beds, creature cues.
+  perception through stimulus fields, heat summons ✅; generated bodies/animations merged, visual QA
+  of the rigs in game pending.
+- ✅ Day/night, weather (clear/overcast/mist/rain/storm), seasons hook.
+- ✅ One Hum night with sector waves, weak-point flow field, horde memory report + forecast.
+- ✅ Save/load (sleep in shelter, quicksave, autosave on Hum end).
+- ✅ Debug tools: free cam, spawn menu, time/weather, AI overlay, POI route visualizer, perf overlay,
+  seed viewer, structural view (docs/DEBUG_TOOLS.md).
+- ✅ Audio: 3D occlusion, reverb zones (listener-based, TD-013), ambient beds, creature cues.
+- ✅ Generated asset families: vegetation, rocks, terrain/decal/FX/sky/UI textures, POI kit,
+  interior + exterior props, items/viewmodels/structures, characters + first-person arms.
+- ⬜ Human playthrough on a GPU machine against the acceptance criteria and the 60 FPS budget
+  (TD-003); `make bake` impostors from the real tree models (TD-005).
+
+Verified headless on every change: `make check`, `make test`, `make validate`, `make smoke` (the
+slice loop end to end: fell → carry → build → craft → night → Hum → save/load).
 
 ## M2 — Factions, caves, companion, economy ⬜
+- Okafor farmhouse (placed in D6, not authored): two storeys + cellar; needs cellar holes in the
+  terrain collision (TD-026).
 - The Ashen: camps, routines, scouts that observe, morale/fear of fire, raids, effigies.
 - Corvane cave network (SDF volumes, darkness, key items, mine levels) + region C2/C6 entrances.
 - Companion Ezra Vane: follow/gather/guard/fetch orders.

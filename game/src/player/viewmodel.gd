@@ -72,7 +72,8 @@ func show_item(item_id: StringName) -> void:
 	var vm_id: String = str(def.equip.get("viewmodel", "")) if def != null else ""
 	var vm_path: String = "res://assets/generated/models/viewmodels/%s.glb" % vm_id
 	var node: Node3D = null
-	if vm_id != "" and ResourceLoader.exists(vm_path):
+	var is_vm: bool = vm_id != "" and ResourceLoader.exists(vm_path)
+	if is_vm:
 		node = (load(vm_path) as PackedScene).instantiate() as Node3D
 		if _hand == null:
 			node.rotation_degrees = _rest_pose(node, def)
@@ -82,9 +83,12 @@ func show_item(item_id: StringName) -> void:
 	_set_layers(node)
 	_held = node
 	# Viewmodels are authored in the hand-socket frame (grip at the origin), so they sit in the
-	# hand at identity; plain item models keep their floating pose.
-	if _hand != null and vm_id != "" and ResourceLoader.exists(vm_path):
+	# hand at identity; plain item models (food, placeables) rest on the palm, scaled down.
+	if _hand != null:
 		_hand.add_child(node)
+		if not is_vm:
+			node.rotation_degrees = Vector3.ZERO
+			node.scale = Vector3.ONE * 0.8
 	else:
 		_item_root.add_child(node)
 
