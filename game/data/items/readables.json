@@ -8,7 +8,11 @@
     {"id": "note_merrow_fridge", "name": "Note on the Fridge", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "merrow_fridge"},
     {"id": "note_pharmacy_ledger", "name": "Dispensary Ledger Page", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "pharmacy_ledger"},
     {"id": "note_ranger_log", "name": "Ranger Station Logbook", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "ranger_log"},
+    {"id": "note_diner_specials", "name": "Specials Board", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "diner_specials"},
+    {"id": "note_hardware_inventory", "name": "Back-Room Inventory", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "hardware_inventory"},
+    {"id": "note_okafor_letter", "name": "Unsent Letter", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "okafor_letter"},
     {"id": "pharmacy_key", "name": "Dispensary Key", "description": "Small brass key on a lanyard marked RX.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]},
-    {"id": "evidence_locker_key", "name": "Evidence Locker Key", "description": "Tagged 'EVIDENCE — DO NOT REMOVE'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]}
+    {"id": "evidence_locker_key", "name": "Evidence Locker Key", "description": "Tagged 'EVIDENCE — DO NOT REMOVE'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]},
+    {"id": "gun_cabinet_key", "name": "Gun Cabinet Key", "description": "Small brass key on a loop of baling twine, smelling of gun oil.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"]}
   ]
 }

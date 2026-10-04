@@ -18,7 +18,7 @@ GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
 .PHONY: smoke check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake \
-        import validate test test-unit test-integration run run-slice editor screenshots ci clean
+        import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -108,6 +108,10 @@ clean: ## Remove build output (keeps .tools and generated assets)
 preview: import ## Render generated models in-engine for visual QA: make preview MODELS="rocks/boulder_a rocks/boulder_b" [PREVIEW_ARGS="--grid"]
 	@mkdir -p $(ROOT)/build/previews
 	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/preview_asset.gd -- --out $(ROOT)/build/previews $(PREVIEW_ARGS) $(MODELS) 2>&1 | grep -E "PREVIEW|ERROR|SCRIPT ERROR" || true
+
+poi-preview: ## Render POIs for layout QA (cut-away plans + exteriors): make poi-preview POI="mile9_diner pell_pharmacy" [POI_ARGS="--size 1600x900 --no-exterior"]
+	@mkdir -p $(ROOT)/build/poi_preview
+	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/poi_preview.gd -- --out $(ROOT)/build/poi_preview $(POI_ARGS) $(POI) 2>&1 | grep -E "POI_PREVIEW|ERROR|SCRIPT ERROR" || true
 
 check: ## Fast compile check of every script (no gameplay)
 	@$(GODOT_HEADLESS) -s res://src/tools/cli/check_scripts.gd 2>&1 | grep -E "check\]|SCRIPT ERROR|Parse Error|Compile Error|at: " | grep -v "^$$" | head -60
