@@ -4,15 +4,40 @@
   "interval_days": 7,
   "start_hour": 22.0,
   "end_hour": 4.0,
-  "warning_hours": [24, 6, 1],
-  "spawn_radius": [55.0, 85.0],
+  "warning_hours": [
+    24,
+    6,
+    1
+  ],
+  "spawn_radius": [
+    55.0,
+    85.0
+  ],
   "max_alive": 24,
   "base_search_radius": 40.0,
-  "flow_field": {"cell": 1.0, "radius": 72, "structure_cost_per_hp": 0.02, "slope_max_deg": 42.0},
-  "planner": {
-    "base_count": 12, "per_horde": 8, "per_gamestage": 0.4, "max_total": 90,
-    "mix": {"hollow": 0.72, "lurcher": 0.22, "keener": 0.06},
-    "waves": 4, "window_minutes": 300.0, "flank_bias": 1.6, "fast_clear_threshold": 0.45
+  "flow_field": {
+    "cell": 1.5,
+    "radius": 72,
+    "structure_cost_per_hp": 0.02,
+    "slope_max_deg": 42.0
   },
-  "memory": {"learning_rate": 0.5, "keep_reports": 12}
+  "planner": {
+    "base_count": 12,
+    "per_horde": 8,
+    "per_gamestage": 0.4,
+    "max_total": 90,
+    "mix": {
+      "hollow": 0.72,
+      "lurcher": 0.22,
+      "keener": 0.06
+    },
+    "waves": 4,
+    "window_minutes": 300.0,
+    "flank_bias": 1.6,
+    "fast_clear_threshold": 0.45
+  },
+  "memory": {
+    "learning_rate": 0.5,
+    "keep_reports": 12
+  }
 }

@@ -475,6 +475,27 @@ func _fell(key: Vector2i, inst: VegetationScatter.Instance, sp: SpeciesDef, info
 	Events.tree_felled.emit(id, inst.pos)
 
 
+## Collidable trees and boulders inside a rect (navigation obstructions).
+func obstacles_in_rect(r: Rect2) -> Array:
+	var out: Array = []
+	var c0 := Vector2i(int(floor(r.position.x / CHUNK)), int(floor(r.position.y / CHUNK)))
+	var c1 := Vector2i(int(floor(r.end.x / CHUNK)), int(floor(r.end.y / CHUNK)))
+	for cz: int in range(c0.y, c1.y + 1):
+		for cx: int in range(c0.x, c1.x + 1):
+			var key := Vector2i(cx, cz)
+			var layers: Dictionary = _data.get(key, {})
+			for layer: String in ["tree", "medium"]:
+				for inst: VegetationScatter.Instance in layers.get(layer, []):
+					if not r.has_point(Vector2(inst.pos.x, inst.pos.z)) or _is_removed(key, inst.index):
+						continue
+					var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
+					if not sp.collides:
+						continue
+					var rad: float = maxf(0.15, sp.trunk_radius * inst.scale) if sp.veg_kind == "tree" else maxf(0.3, sp.trunk_radius * inst.scale * 0.8)
+					out.append({"pos": inst.pos, "radius": rad})
+	return out
+
+
 # --- Harvesting ---------------------------------------------------------------------------------
 
 ## Nearest harvestable plant/stone/deadfall within reach of a ray (for the interaction system).
