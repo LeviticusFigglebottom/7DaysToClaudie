@@ -111,3 +111,30 @@ environment/ssao/quality=2
 occlusion_culling/use_occlusion_culling=true
 mesh_lod/lod_change/threshold_pixels=1.5
 environment/defaults/default_clear_color=Color(0.02, 0.02, 0.025, 1)
+
+[shader_globals]
+
+hm_wetness={
+"type": "float",
+"value": 0.0
+}
+hm_snow={
+"type": "float",
+"value": 0.0
+}
+hm_wind={
+"type": "vec4",
+"value": Vector4(1, 0, 0.3, 0.2)
+}
+hm_season={
+"type": "vec4",
+"value": Vector4(0, 0, 1, 0)
+}
+hm_player_pos={
+"type": "vec3",
+"value": Vector3(0, -1000, 0)
+}
+hm_bloom={
+"type": "float",
+"value": 0.0
+}

@@ -13,9 +13,10 @@ PYTHON ?= $(shell if [ -x $(TOOLS_DIR)/venv/bin/python ]; then echo $(TOOLS_DIR)
 # Software-rendered display for screenshots/bakes on headless machines (Mesa lavapipe Vulkan).
 XVFB ?= xvfb-run -a -s "-screen 0 1920x1080x24"
 JOBS ?= $(shell nproc 2>/dev/null || echo 4)
-GODOT_HEADLESS := $(GODOT) --headless --path $(GAME)
+LOCK := flock $(ROOT)/build/.godot.lock
+GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean
 
@@ -59,7 +60,7 @@ assets-determinism: ## Rebuild assets into a scratch dir and compare hashes with
 	@$(PYTHON) tools/build_assets.py --check-determinism --jobs $(JOBS) --blender "$(BLENDER)"
 
 bake: ## Godot-side bakes that need the renderer (item icons, tree impostors, region data)
-	@if [ -f $(GAME)/src/tools/cli/bake.gd ]; then $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/bake.gd; fi
+	@mkdir -p $(ROOT)/build; if [ -f $(GAME)/src/tools/cli/bake.gd ]; then $(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/bake.gd; fi
 	@$(MAKE) --no-print-directory import
 
 import: ## Import project resources headless (required before tests on a fresh clone)
@@ -90,7 +91,7 @@ editor: ## Open the Godot editor
 
 screenshots: ## Capture the screenshot suite into build/screenshots (software Vulkan under Xvfb)
 	@mkdir -p $(ROOT)/build/screenshots
-	@$(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution 1600x900 -s res://src/tools/cli/screenshots.gd -- --out $(ROOT)/build/screenshots $(SHOTS_ARGS)
+	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution 1600x900 -s res://src/tools/cli/screenshots.gd -- --out $(ROOT)/build/screenshots $(SHOTS_ARGS)
 
 ci: ## Everything CI runs: setup, assets, import, validate (strict), tests
 	@$(MAKE) --no-print-directory setup
@@ -100,3 +101,7 @@ ci: ## Everything CI runs: setup, assets, import, validate (strict), tests
 
 clean: ## Remove build output (keeps .tools and generated assets)
 	rm -rf $(ROOT)/build $(GAME)/.godot
+
+preview: import ## Render generated models in-engine for visual QA: make preview MODELS="rocks/boulder_a rocks/boulder_b" [PREVIEW_ARGS="--grid"]
+	@mkdir -p $(ROOT)/build/previews
+	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/preview_asset.gd -- --out $(ROOT)/build/previews $(PREVIEW_ARGS) $(MODELS) 2>&1 | grep -E "PREVIEW|ERROR|SCRIPT ERROR" || true

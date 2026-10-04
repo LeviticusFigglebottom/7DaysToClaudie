@@ -22,8 +22,15 @@ def load() -> dict:
 
 
 def save(data: dict) -> None:
+    """Atomic write (several builds may run concurrently; a reader never sees a partial file).
+    Merges with entries written by other processes since we loaded."""
+    import os
     MANIFEST.parent.mkdir(parents=True, exist_ok=True)
-    MANIFEST.write_text(json.dumps(data, indent=1, sort_keys=True) + "\n")
+    current = load()
+    current["tasks"].update(data["tasks"])
+    tmp = MANIFEST.with_suffix(f".tmp{os.getpid()}")
+    tmp.write_text(json.dumps(current, indent=1, sort_keys=True) + "\n")
+    os.replace(tmp, MANIFEST)
 
 
 def is_current(data: dict, name: str, input_hash: str, outputs: list[str]) -> bool:

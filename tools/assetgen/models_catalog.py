@@ -11,7 +11,12 @@ from .core.registry import Task
 def tasks() -> list[Task]:
     out: list[Task] = []
     from . import blender_catalogs
+    import sys
+    import traceback
     for mod in sorted(pkgutil.iter_modules(blender_catalogs.__path__), key=lambda m: m.name):
-        m = importlib.import_module(f"{blender_catalogs.__name__}.{mod.name}")
-        out += m.tasks()
+        try:
+            m = importlib.import_module(f"{blender_catalogs.__name__}.{mod.name}")
+            out += m.tasks()
+        except Exception:  # noqa: BLE001
+            print(f"[models] WARNING: skipping blender_catalogs/{mod.name}.py:\n{traceback.format_exc()}", file=sys.stderr)
     return out
