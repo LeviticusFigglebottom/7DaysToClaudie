@@ -286,7 +286,7 @@ def container_open_wood(seed, variant, sr):
     y = _buf(1.0, sr)
     dsp.place(y, dsp.impact(sr, r, "wood", dsp.vary(r, 380.0, 0.2), 0.12, contact_ms=0.8, t60=0.06, click=0.3), 0, 0.4)
     cd = r.uniform(0.35, 0.6)
-    cr = dsp.creak(sr, cd, r, [(0, 30.0), (cd * 0.5, r.uniform(90, 300)), (cd, 40.0)], [(0, 0), (0.05, 0.8), (cd, 0.3)],
+    cr = dsp.creak(sr, cd, r, [(0, 30.0), (cd * 0.5, r.uniform(90, 300)), (cd, 40.0)], [(0, 0), (0.05, 0.8), (cd * 0.85, 0.3), (cd, 0.0)],
                    res=_door_res(r, dsp.vary(r, 170.0, 0.2), r.random() < 0.5), jitter=0.15, pulse_ms=0.3)
     dsp.place(y, dsp.normalize(cr), dsp.ns(0.04, sr), 0.6)
     tk = dsp.ns(0.04 + cd, sr)
@@ -302,7 +302,7 @@ def container_open_metal(seed, variant, sr):
     y = _buf(1.2, sr)
     dsp.place(y, _latch(sr, r), 0, 0.8)
     cd = r.uniform(0.3, 0.5)
-    cr = dsp.creak(sr, cd, r, [(0, 200.0), (cd * 0.5, r.uniform(600, 1100)), (cd, 300.0)], [(0, 0), (0.04, 1.0), (cd, 0.2)],
+    cr = dsp.creak(sr, cd, r, [(0, 200.0), (cd * 0.5, r.uniform(600, 1100)), (cd, 300.0)], [(0, 0), (0.04, 1.0), (cd * 0.85, 0.2), (cd, 0.0)],
                    res=[(dsp.vary(r, 1400.0, 0.2), 25.0, 1.0), (dsp.vary(r, 2600.0, 0.2), 30.0, 0.7),
                         (dsp.vary(r, 4100.0, 0.2), 30.0, 0.4)], jitter=0.1, pulse_ms=0.15)
     dsp.place(y, dsp.normalize(cr), dsp.ns(0.06, sr), 0.4)

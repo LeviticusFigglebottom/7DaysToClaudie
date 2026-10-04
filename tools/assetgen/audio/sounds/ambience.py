@@ -120,6 +120,13 @@ def _leaves(n, sr, r, g, density=900.0):
     return _fold(y, n)
 
 
+def _note_env(m, sr, d, att=0.02, rel=0.04, end=0.8, shape="smooth"):
+    """Sustained call/note envelope: soft attack, held (slightly falling) body, soft release; zero after d."""
+    att = min(att, d * 0.4)
+    rel = min(rel, d * 0.4)
+    return dsp.curve([(0.0, 0.0), (att, 1.0), (max(att, d - rel), end), (d, 0.0)], m, sr, shape)
+
+
 def _thrush(sr, r):
     """Hermit-thrush-like phrase: a pure introductory whistle, then a tumbling flutey cascade higher up."""
     base = dsp.loguni(r, 1900.0, 3100.0)
@@ -136,7 +143,7 @@ def _thrush(sr, r):
     for t0, d, f0, f1, a in notes:
         m = dsp.ns(d + 0.03, sr)
         f = dsp.curve([(0, f0), (d, f1)], m, sr) * (1.0 + 0.012 * np.sin(dsp.TAU * dsp.phase(r.uniform(30, 55), m, sr)))
-        env = dsp.env_ar(m, sr, min(0.012, d * 0.3), d * 1.1)
+        env = _note_env(m, sr, d, 0.025 if d > 0.15 else 0.008, 0.05 if d > 0.15 else 0.012, 0.75)
         tone = (dsp.sine(f, m, sr) + 0.06 * dsp.sine(2 * f, m, sr)) * env
         dsp.place(y, tone, dsp.ns(t0, sr), a)
     return y
@@ -153,7 +160,7 @@ def _jay(sr, r):
         src = dsp.saw(f0 * (1 + 0.02 * dsp.smooth_noise(m, sr, r, 90.0)), m, sr)
         src = src * (0.6 + 0.4 * dsp.smooth_noise(m, sr, r, 110.0)) + 0.6 * dsp.band_noise(m, sr, r, 1200.0, 6000.0)
         y = dsp.bp(src, sr, 2300.0, 2.5) + 0.8 * dsp.bp(src, sr, 3700.0, 3.0) + 0.4 * dsp.bp(src, sr, 5200.0, 3.0)
-        y *= dsp.env_ar(m, sr, 0.012, d * 1.3) * dsp.curve([(0, 1), (d * 0.85, 1), (d, 0)], m, sr)
+        y *= _note_env(m, sr, d, 0.015, 0.06, 0.6)
         dsp.place(out, y, dsp.ns(t, sr))
         t += d + r.uniform(0.12, 0.3)
     return out
@@ -182,7 +189,7 @@ def _owl(sr, r):
         fc = dsp.curve([(0, f * 0.93), (d * 0.3, f), (d, f * 0.9)], m, sr, "smooth")
         if d > 0.5:
             fc = fc * (1.0 + 0.012 * np.sin(dsp.TAU * dsp.phase(11.0, m, sr)))
-        env = dsp.env_ar(m, sr, 0.05, d * 1.1) * dsp.curve([(0, 1), (d, 1), (d + 0.08, 0)], m, sr)
+        env = _note_env(m, sr, d + 0.06, 0.06, 0.12, 0.7)
         tone = dsp.sine(fc, m, sr) + 0.12 * dsp.sine(2 * fc, m, sr) + 0.04 * dsp.sine(3 * fc, m, sr)
         br = dsp.bp(dsp.white(m, r), sr, fc * 2, 4.0) * 0.15
         dsp.place(y, (tone + br) * env, dsp.ns(t0, sr))
@@ -224,7 +231,7 @@ def _groan(sr, r, dur, f=70.0):
     vow = [(0, dsp.pick(r, ["uh", "o", "a"])), (dur * 0.5, dsp.pick(r, ["a", "o", "oo"])), (dur, dsp.pick(r, ["u", "m"]))]
     amp = [(0, 0), (dur * 0.35, 1.0), (dur * 0.7, 0.7), (dur, 0)]
     v = dsp.voice(sr, dur, f0, vow, amp, r, oq=0.4, jitter=0.06, shimmer=0.15, sub=r.uniform(0.2, 0.5), rough=0.4,
-                  breath=0.1, tract=0.86, bw=1.6, os=1)
+                  breath=0.1, tract=0.86, bw=1.6, os=1, hop_ms=25.0)
     return dsp.normalize(v)
 
 
@@ -497,7 +504,7 @@ def _crow(sr, r):
         src = dsp.saw(f0 * (1 + 0.03 * dsp.smooth_noise(m, sr, r, 80.0)), m, sr) + 0.5 * dsp.band_noise(m, sr, r, 800.0, 5000.0)
         src *= 0.7 + 0.3 * dsp.smooth_noise(m, sr, r, 60.0)
         y = dsp.bp(src, sr, 1300.0, 3.0) + 0.7 * dsp.bp(src, sr, 2100.0, 4.0) + 0.3 * dsp.bp(src, sr, 3400.0, 4.0)
-        y *= dsp.env_ar(m, sr, 0.02, d) * dsp.curve([(0, 1), (d * 0.8, 1), (d, 0)], m, sr)
+        y *= _note_env(m, sr, d, 0.02, 0.07, 0.55)
         dsp.place(out, y, dsp.ns(t, sr))
         t += d + r.uniform(0.2, 0.4)
     return out
@@ -573,19 +580,25 @@ def the_hum(seed, variant, sr):
     drone = dsp.asym(drone / dsp.peak(drone), 1.6, 0.1)
     rumble = _pn(n, sr, r, -6.0, 18.0, 90.0) * breath ** 1.5
     mid = _ltv(_pn(n, sr, r, -3.0, 60.0, 2000.0), sr, "bp", 110.0 + 120.0 * breath, 2.0) * breath ** 2
-    bed = 1.0 * dsp.normalize(drone) + 0.8 * dsp.normalize(rumble) + 0.25 * dsp.normalize(mid)
-    y = _st(bed, np.roll(bed, dsp.ns(0.011, sr)))
+    low = 1.0 * dsp.normalize(drone) + 0.8 * dsp.normalize(rumble)          # sub stays mono (no cancellation)
+    mid2 = _ltv(_pn(n, sr, r, -3.0, 60.0, 2000.0), sr, "bp", 110.0 + 120.0 * breath, 2.0) * breath ** 2
+    y = _st(low + 0.25 * dsp.normalize(mid), low + 0.25 * dsp.normalize(mid2))
     # metallic singing: inharmonic partials swelling in and out, slowly drifting
     rm = dsp.rng(seed, "metal")
     ratios = [1.0, 2.756, 5.404, 8.933]
-    met = np.zeros((n, 2))
+    metl = np.zeros(n)
+    metr = np.zeros(n)
+    tt = np.arange(n) / sr
     for k in range(5):
         base = rm.uniform(150.0, 420.0)
         sw = _lfo(n, sr, rm, rm.uniform(0.03, 0.08)) ** 3
         for i, ra in enumerate(ratios):
             f = max(1, round(base * ra * L)) / L
-            tone = np.sin(dsp.TAU * f * np.arange(n) / sr + rm.uniform(0, 6.28)) * (0.6 ** i)
-            met += dsp.pan(tone * sw, rm.uniform(-0.8, 0.8)) * 0.6
+            tone = np.sin(dsp.TAU * f * tt + rm.uniform(0, 6.28)) * (0.6 ** i) * sw
+            a = (rm.uniform(-0.8, 0.8) + 1.0) * np.pi / 4.0
+            metl += tone * (0.6 * 1.4142 * np.cos(a))
+            metr += tone * (0.6 * 1.4142 * np.sin(a))
+    met = _st(metl, metr)
     # distant chorus of Hollowed
     ch = _canvas(n)
     rg = dsp.rng(seed, "chorus")

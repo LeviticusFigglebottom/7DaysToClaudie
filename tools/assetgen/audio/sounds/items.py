@@ -94,7 +94,7 @@ def _click(sr, r, f=3500.0, t60=0.04, gain=1.0):
 
 
 def _slide(sr, r, d, f_lo=1500.0, f_hi=8000.0):
-    return dsp.normalize(dsp.scrape(sr, d, r, [(0, 0), (d * 0.2, 1.0), (d, 0.2)], f_lo=f_lo, f_hi=f_hi, grit=0.3,
+    return dsp.normalize(dsp.scrape(sr, d, r, [(0, 0), (d * 0.2, 1.0), (d * 0.8, 0.25), (d, 0.0)], f_lo=f_lo, f_hi=f_hi, grit=0.3,
                                     res=[(dsp.vary(r, 2800.0, 0.2), 15.0, 0.6), (dsp.vary(r, 4600.0, 0.2), 18.0, 0.4)]))
 
 
@@ -152,7 +152,7 @@ def lighter_flick(seed, variant, sr):
     strikes = 1 if variant < 2 else 2
     for s_ in range(strikes):
         wd = r.uniform(0.035, 0.06)
-        wheel = dsp.scrape(sr, wd, r, [(0, 1.0), (wd, 0.2)], f_lo=2000.0, f_hi=12000.0, grit=1.5, grit_rate=4000.0,
+        wheel = dsp.scrape(sr, wd, r, [(0, 1.0), (wd * 0.7, 0.3), (wd, 0.0)], f_lo=2000.0, f_hi=12000.0, grit=1.5, grit_rate=4000.0,
                            rough_hz=300.0)
         dsp.place(y, dsp.normalize(wheel), dsp.ns(t, sr), 0.6)
         sparks = dsp.clicks(dsp.ns(0.06, sr), sr, r, 1500.0, 3000.0, 12000.0, q=3.0, alpha=1.5)
@@ -227,7 +227,7 @@ def eat_can(seed, variant, sr):
     t = 0.0
     for _ in range(2):
         d = r.uniform(0.18, 0.3)
-        sc = dsp.scrape(sr, d, r, [(0, 0), (0.03, 1.0), (d, 0.1)], f_lo=900.0, f_hi=7000.0, grit=0.4, grit_rate=500.0)
+        sc = dsp.scrape(sr, d, r, [(0, 0), (0.03, 1.0), (d * 0.85, 0.15), (d, 0.0)], f_lo=900.0, f_hi=7000.0, grit=0.4, grit_rate=500.0)
         ring = dsp.modal_bank(sc * 0.05, sr, can[0], can[1], can[2])
         dsp.place(y, dsp.normalize(sc) * 0.4 + dsp.normalize(ring) * 0.6, dsp.ns(t, sr), 0.8)
         t += d + r.uniform(0.05, 0.12)

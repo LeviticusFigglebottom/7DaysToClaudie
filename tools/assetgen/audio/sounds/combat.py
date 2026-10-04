@@ -352,6 +352,6 @@ def body_fall(seed, variant, sr):
     y += 0.15 * dsp.normalize(clo)
     if variant % 2 == 0:
         for _ in range(int(r.integers(2, 4))):
-            ck = dsp.impact(sr, r, "metal_bar", dsp.loguni(r, 1500.0, 3200.0), 0.25, contact_ms=0.25, click=0.3)
+            ck = dsp.impact(sr, r, "metal", dsp.loguni(r, 1500.0, 3200.0), 0.15, contact_ms=0.25, t60=0.08, click=0.3)
             dsp.place(y, ck, dsp.ns(t_torso + r.uniform(0.0, 0.15), sr), r.uniform(0.05, 0.12))
     return y

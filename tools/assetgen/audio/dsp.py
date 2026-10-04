@@ -704,9 +704,6 @@ def modal(n: int, sr: int, freqs, t60s, amps, phases=None) -> np.ndarray:
     return partials(n, sr, freqs, amps, t60s, phases)
 
 
-_PLATE_CACHE: dict = {}
-
-
 def _plate_ratios(aspect: float, count: int) -> np.ndarray:
     m = np.arange(1, 10)
     vals = (m[:, None] ** 2 + (m[None, :] / aspect) ** 2).ravel()
@@ -1300,7 +1297,7 @@ def glottal(f0, n: int, sr: int, r: np.random.Generator, *, oq=0.6, sq=2.5, jitt
 def voice(sr: int, dur: float, f0, vowel="a", amp=1.0, r: np.random.Generator | None = None, *, oq=0.6, sq=2.5,
           jitter: float = 0.012, shimmer: float = 0.04, sub=0.0, drift: float = 0.0, breath=0.04, asp=0.0,
           tract=1.0, bw=1.0, wander: float = 0.02, rough=0.0, rough_rate: float = 32.0, os: int = 2,
-          block: int = 64, tilt_db: float = 0.0) -> np.ndarray:
+          hop_ms: float = 8.0, tilt_db: float = 0.0) -> np.ndarray:
     """Voiced sound: glottal source (+ aspiration noise: `breath` steady, `asp` flow-modulated), optional
     roughness (random AM at rough_rate -> growl/rattle), through a formant cascade. amp (curve) shapes
     the source so formants ring naturally after stops."""
@@ -1318,7 +1315,7 @@ def voice(sr: int, dur: float, f0, vowel="a", amp=1.0, r: np.random.Generator | 
     if tilt_db:
         exc = hshelf(exc, sr, 2500.0, tilt_db)
     exc = exc * curve(amp, n, sr)
-    hop = max(32, ns(0.008, sr))
+    hop = max(32, ns(hop_ms / 1000.0, sr))
     F, B = formant_tracks(vowel, n, sr, tract=tract, bw=bw, wander=wander, r=r, hop=hop)
     return formant_filter(exc, sr, F, B, hop)
 
@@ -1456,12 +1453,17 @@ def tremolo(x, sr: int, rate, depth: float = 0.5, r: np.random.Generator | None 
 
 def vibrato(n: int, sr: int, rate: float = 5.0, depth_cents: float = 25.0, r: np.random.Generator | None = None,
             irregular: float = 0.3, onset: float = 0.0) -> np.ndarray:
-    """Pitch multiplier curve for vibrato (irregular rate/depth when r given; fades in over `onset` s)."""
-    ph = phase(rate * (1.0 + (irregular * 0.3 * smooth_noise(n, sr, r, 1.5) if r is not None else 0.0)), n, sr)
-    dep = depth_cents * (1.0 + (irregular * smooth_noise(n, sr, r, 1.0) if r is not None else 0.0))
+    """Pitch multiplier curve for vibrato (irregular rate/depth when r given; fades in over `onset` s).
+    Computed on a 32-sample control grid and interpolated (vibrato is a slow modulation)."""
+    step = 32
+    m = n // step + 2
+    csr = sr / step
+    ph = phase(rate * (1.0 + (irregular * 0.3 * smooth_noise(m, csr, r, 1.5) if r is not None else 0.0)), m, csr)
+    dep = depth_cents * (1.0 + (irregular * smooth_noise(m, csr, r, 1.0) if r is not None else 0.0))
     if onset > 0:
-        dep = dep * smoothstep(np.arange(n) / sr / onset)
-    return cents(dep * np.sin(TAU * ph))
+        dep = dep * smoothstep(np.arange(m) / csr / onset)
+    c = cents(dep * np.sin(TAU * ph))
+    return np.interp(np.arange(n), np.arange(m) * step, c)
 
 
 def drift(n: int, sr: int, r: np.random.Generator, depth_cents: float = 10.0, rate: float = 0.7,

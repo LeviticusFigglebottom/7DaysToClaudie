@@ -24,7 +24,7 @@ def _fibre_rub(sr, r, dur, rate_lo=120.0, rate_hi=420.0, amt=1.0):
                    res=[(dsp.vary(r, 1300.0, 0.2), 4.0, 1.0), (dsp.vary(r, 2600.0, 0.2), 5.0, 0.8),
                         (dsp.vary(r, 4800.0, 0.2), 6.0, 0.3)], jitter=0.35, pulse_ms=0.2, roughness=0.6, body=0.15,
                    bright=4000.0)
-    ru = dsp.rustle(sr, dur, r, [(0, 0), (dur * 0.2, 1.0), (dur, 0.2)], f_lo=1800.0, f_hi=9000.0, density=900.0,
+    ru = dsp.rustle(sr, dur, r, [(0, 0), (dur * 0.2, 1.0), (dur * 0.8, 0.3), (dur, 0.0)], f_lo=1800.0, f_hi=9000.0, density=900.0,
                     swish=0.6, swish_lo=1200.0)
     return amt * (dsp.normalize(cr) * 0.5 + dsp.normalize(ru) * 0.55)
 
@@ -48,7 +48,7 @@ def craft_tie(seed, variant, sr):
     r = dsp.rng(seed, "tie")
     y = _buf(1.0, sr)
     d1 = r.uniform(0.3, 0.45)
-    rub = dsp.scrape(sr, d1, r, [(0, 0), (0.05, 0.8), (d1 * 0.6, 1.0), (d1, 0.2)], f_lo=700.0, f_hi=6000.0, grit=0.5,
+    rub = dsp.scrape(sr, d1, r, [(0, 0), (0.05, 0.8), (d1 * 0.6, 1.0), (d1 * 0.9, 0.2), (d1, 0.0)], f_lo=700.0, f_hi=6000.0, grit=0.5,
                      grit_rate=800.0, rough_hz=70.0)
     dsp.place(y, dsp.normalize(rub), 0, 0.5)
     dsp.place(y, _fibre_rub(sr, r, d1 * 0.8, 60.0, 200.0, 0.6), dsp.ns(0.05, sr))

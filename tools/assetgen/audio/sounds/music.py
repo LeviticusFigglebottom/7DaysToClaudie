@@ -44,7 +44,7 @@ def _piano_note(midi: int, vq: int, dur_q: int, sr: int = SR) -> np.ndarray:
     amp = (0.3 + 0.7 * np.abs(np.sin(np.pi * k * x0))) / (1.0 + (k / (2.5 + 7.0 * vel)) ** 1.7)
     t2 = float(np.clip(13.0 * (f0 / 65.0) ** -0.55, 1.2, 13.0))
     t60_after = t2 / (1.0 + 0.09 * (k - 1) * (f0 / 261.6) ** 0.35)
-    t60_prompt = t60_after * 0.16
+    t60_prompt = t60_after * 0.4
     det = r.uniform(0.4, 1.6, len(k)) * (k < 14)
     freqs = np.concatenate([fn * dsp.cents(-det / 2), fn * dsp.cents(det / 2)])
     t60s = np.concatenate([t60_prompt, t60_after])
@@ -63,7 +63,8 @@ def _piano_note(midi: int, vq: int, dur_q: int, sr: int = SR) -> np.ndarray:
 
 
 def piano(sr, midi, vel, dur):
-    return _piano_note(int(midi), int(round(np.clip(vel, 0.05, 1.0) * 8)), int(round(dur * 4)), sr)
+    """Cached note (velocity quantized to 1/8, duration to 1/4 s); returns a private copy."""
+    return _piano_note(int(midi), int(round(np.clip(vel, 0.05, 1.0) * 8)), int(round(dur * 4)), sr).copy()
 
 
 def _pan_for(midi):
@@ -71,7 +72,14 @@ def _pan_for(midi):
 
 
 def strings(sr, r, notes, dur, *, attack=2.0, release=2.5, bright=0.45, detune=9.0, voices=4, vib=7.0, trem=0.0):
-    """String-ensemble pad over `notes` (midi list) held for dur s (+release). Returns stereo."""
+    """String-ensemble pad over `notes` (midi list) held for dur s (+release). Returns stereo.
+    Rendered at half rate (the bowed body is low-passed below ~4 kHz) and polyphase-upsampled."""
+    if sr % 2 == 0 and sr >= 32000:
+        n_out = dsp.ns(dur + release, sr)
+        half = strings(sr // 2, r, notes, dur, attack=attack, release=release, bright=bright, detune=detune,
+                       voices=voices, vib=vib, trem=trem)
+        from scipy import signal as _ss
+        return dsp.fit(_ss.resample_poly(half, 2, 1, axis=0), n_out)
     n = dsp.ns(dur + release, sr)
     out = np.zeros((n, 2))
     for m in notes:
@@ -83,10 +91,15 @@ def strings(sr, r, notes, dur, *, attack=2.0, release=2.5, bright=0.45, detune=9
             out += dsp.pan(s_, ((v / max(voices - 1, 1)) * 2 - 1) * 0.6 + r.uniform(-0.1, 0.1))
     t = np.arange(n) / sr
     env = dsp.smoothstep(t / attack) * np.where(t > dur, np.exp(-(t - dur) * 6.9 / release), 1.0)
-    cut = (700.0 + 2600.0 * bright) * (0.55 + 0.45 * env)
-    out = dsp.lp(out, sr, cut, q=0.6)
-    out = dsp.eq(out, sr, ("hp", 70.0), ("peak", 320.0, 2.5, 1.0), ("peak", 1250.0, 2.0, 1.2), ("peak", 2900.0, 1.5, 1.5),
-                 ("hs", 5500.0, -8.0))
+    # rosin/bow noise riding on the bowing, before the body
+    bow = np.stack([dsp.band_noise(n, sr, r, 1800.0, min(7000.0, 0.45 * sr)) for _ in range(2)], axis=1)
+    bow *= (0.6 + 0.4 * dsp.smooth_noise(n, sr, r, 3.0))[:, None]
+    out = out + 0.02 * bow * len(notes) ** 0.5
+    cut = (1400.0 + 3000.0 * bright) * (0.55 + 0.45 * env)
+    out = dsp.biquad(out, sr, "lp", cut, 0.6, block=256)
+    # violin-family body: air & wood modes, a dip, the bridge hill; vibrato sweeps harmonics across these peaks
+    out = dsp.eq(out, sr, ("hp", 70.0), ("peak", 280.0, 4.0, 2.0), ("peak", 460.0, 3.0, 2.5), ("peak", 1100.0, -3.0, 1.0),
+                 ("peak", 2600.0, 4.0, 1.4), ("peak", min(4200.0, 0.4 * sr), 2.0, 2.0), ("hs", min(5500.0, 0.3 * sr), -9.0))
     if trem:
         out = dsp.tremolo(out, sr, r.uniform(10.0, 12.0), trem, r, 0.3)
     return out * env[:, None] / (len(notes) * voices) ** 0.5
@@ -151,6 +164,15 @@ def _circ(fn, x, sr, pre=0.5):
     return dsp.circular(fn, x, sr, pre)
 
 
+def _up2_loop(x, n_out):
+    """2x polyphase upsampling of a loop with wrap-around padding (the result stays exactly periodic)."""
+    from scipy import signal as _ss
+    P = 256
+    xx = np.concatenate([x[-P:], x, x[:P]], axis=0)
+    y = _ss.resample_poly(xx, 2, 1, axis=0)
+    return y[2 * P:2 * P + n_out]
+
+
 # --------------------------------------------------------------------------------------------- loops
 
 @sound("music/dread_drone", seed=11001, loop=True, peak_db=-6.2)
@@ -160,25 +182,30 @@ def dread_drone(seed, variant, sr):
     L = 60.0
     n = dsp.ns(L, sr)
     r = dsp.rng(seed, "dread")
-    out = np.zeros((n, 2))
-    breath = 0.5 + 0.5 * _plfo(n, sr, dsp.rng(seed, "b"), 1.0 / 15.0) / 1.0
+    # saw layers are low-passed (< 2 kHz): render them at half rate, upsample circularly
+    hs = sr // 2 if sr % 2 == 0 else sr
+    nh = dsp.ns(L, hs)
+    out = np.zeros((nh, 2))
+    breath = 0.5 + 0.5 * _plfo(nh, hs, dsp.rng(seed, "b"), 1.0 / 15.0) / 1.0
     # drones
     for m, g, p in ((26, 1.0, -0.2), (33, 0.6, 0.25), (38, 0.35, 0.0)):
         f = float(dsp.midi_hz(m))
-        s_ = sum(_psaw(f * dsp.cents(c), n, sr, r, L, 4.0, 0.1) for c in (-6.0, 0.0, 5.0))
+        s_ = sum(_psaw(f * dsp.cents(c), nh, hs, r, L, 4.0, 0.1) for c in (-6.0, 0.0, 5.0))
         out += dsp.pan(s_ * g, p)
     cut = 140.0 + 260.0 * np.clip(breath, 0, 1)
-    out = _ploop_lp(out, sr, cut, 0.8)
+    out = _ploop_lp(out, hs, cut, 0.8)
     out = dsp.normalize(out)
     # string cluster D3 Eb3 A3 Bb3 swelling independently
-    cl = np.zeros((n, 2))
+    cl = np.zeros((nh, 2))
     for m in (50, 51, 57, 58):
         f = float(dsp.midi_hz(m))
-        sw = np.clip(0.5 + 0.9 * _plfo(n, sr, r, r.uniform(1 / 30.0, 1 / 18.0)), 0, 1) ** 2
-        v = sum(_psaw(f * dsp.cents(c), n, sr, r, L, 8.0, 0.3) for c in (-9.0, -3.0, 4.0, 10.0))
+        sw = np.clip(0.5 + 0.9 * _plfo(nh, hs, r, r.uniform(1 / 30.0, 1 / 18.0)), 0, 1) ** 2
+        v = sum(_psaw(f * dsp.cents(c), nh, hs, r, L, 8.0, 0.3) for c in (-9.0, -3.0, 4.0, 10.0))
         cl += dsp.pan(v * sw, r.uniform(-0.6, 0.6))
-    cl = _circ(lambda x: dsp.eq(dsp.lp(x, sr, 1400.0, 0.6), sr, ("hp", 120.0), ("peak", 900.0, 2.0, 1.0)), cl, sr)
+    cl = _circ(lambda x: dsp.eq(dsp.lp(x, hs, 1400.0, 0.6), hs, ("hp", 120.0), ("peak", 900.0, 2.0, 1.0)), cl, hs)
     out += 0.45 * dsp.normalize(cl)
+    if hs != sr:
+        out = _up2_loop(out, n)
     # bowed metal: noise-excited pipe modes, slow swells
     rm = dsp.rng(seed, "metal")
     md = dsp.modes("pipe", float(dsp.midi_hz(62)), rm, t60=3.0)
@@ -224,9 +251,9 @@ def menu(seed, variant, sr):
     span = L / len(_MENU_CHORDS)
     for i, (bass, pad) in enumerate(_MENU_CHORDS):
         t0 = i * span
-        st = strings(sr, r, pad, span + 1.0, attack=3.0, release=4.0, bright=0.35, voices=4)
-        dsp.loop_place(out, st * 0.55, dsp.ns(t0 - 1.0, sr) % n)
-        b = piano(sr, bass, 0.42, 7.0)
+        st = strings(sr, r, [bass + 12] + pad, span + 1.0, attack=3.0, release=4.0, bright=0.35, voices=4)
+        dsp.loop_place(out, st * 0.6, dsp.ns(t0 - 1.0, sr) % n)
+        b = piano(sr, bass, 0.42, 11.5)
         dsp.loop_place(out, dsp.pan(b, -0.35), dsp.ns(t0 + 0.05, sr) % n)
         if r.random() < 0.6:
             b2 = piano(sr, bass + 7, 0.3, 6.0)
@@ -310,7 +337,7 @@ def hum_start(seed, variant, sr):
         f0 = r.uniform(65.0, 120.0)
         v = dsp.voice(sr, d, [(0, f0), (d * 0.5, f0 * r.uniform(1.1, 1.4)), (d, f0 * 0.75)], [(0, "uh"), (d * 0.5, "a"), (d, "u")],
                       [(0, 0), (d * 0.5, 1.0), (d, 0)], r, oq=0.4, jitter=0.05, shimmer=0.12, sub=0.4, rough=0.4, breath=0.1,
-                      tract=0.86, bw=1.5, os=1)
+                      tract=0.86, bw=1.5, os=1, hop_ms=20.0)
         dsp.place(ch, dsp.lp(dsp.normalize(v), sr, 1500.0), dsp.ns(r.uniform(1.0, 3.5), sr), r.uniform(0.4, 1.0))
     chs = dsp.reverb(ch, sr, "valley", 1.0, seed=seed, stereo_=True, tail=False)
     out += 0.3 * dsp.normalize(chs)

@@ -93,7 +93,7 @@ def breath_exert(seed, variant, sr):
     r = dsp.rng(seed, "exert")
     y = _buf(1.2, sr)
     ind = r.uniform(0.18, 0.26)
-    inh = dsp.breath(sr, ind, [(0, "ih"), (ind, "uh")], [(0, 0), (ind * 0.7, 1.0), (ind, 0.3)], r, hiss=0.7, hiss_f=2400.0)
+    inh = dsp.breath(sr, ind, [(0, "ih"), (ind, "uh")], [(0, 0), (ind * 0.7, 1.0), (ind, 0.0)], r, hiss=0.7, hiss_f=2400.0)
     t = 0.0
     if variant in (0, 3):
         dsp.place(y, dsp.normalize(inh), 0, 0.3)
@@ -103,7 +103,7 @@ def breath_exert(seed, variant, sr):
         d = r.uniform(0.22, 0.32)
         if variant == 2:
             st = r.uniform(0.3, 0.4)
-            strain = dsp.voice(sr, st, [(0, 120.0), (st, 138.0)], "ng", [(0, 0), (0.04, 0.8), (st, 1.0)], r, oq=0.35, sq=3.0,
+            strain = dsp.voice(sr, st, [(0, 120.0), (st, 138.0)], "ng", [(0, 0), (0.04, 0.8), (st * 0.85, 1.0), (st, 0.0)], r, oq=0.35, sq=3.0,
                                jitter=0.03, shimmer=0.08, breath=0.05, rough=0.4)
             dsp.place(y, dsp.normalize(strain), dsp.ns(t, sr), 0.6)
             t += st

@@ -171,7 +171,7 @@ def hollow_sleep_breath(seed, variant, sr):
     pause = r.uniform(0.2, 0.45)
     de = r.uniform(1.4, 2.0)
     y = _buf(di + pause + de + 0.2, sr)
-    inh = dsp.breath(sr, di, [(0, "uh"), (di, "o")], [(0, 0), (di * 0.6, 1.0), (di, 0.2)], r, tract=0.85, bw=1.4, hiss=0.2,
+    inh = dsp.breath(sr, di, [(0, "uh"), (di, "o")], [(0, 0), (di * 0.6, 1.0), (di, 0.0)], r, tract=0.85, bw=1.4, hiss=0.2,
                      rattle=r.uniform(0.6, 0.85), rattle_hz=dsp.vary(r, 30.0, 0.2), wet=0.3)
     fry = dsp.voice(sr, di, [(0, 38.0), (di, 46.0)], "o", [(0, 0), (di * 0.6, 1.0), (di, 0)], r, oq=0.3, jitter=0.12, shimmer=0.3,
                     sub=0.5, breath=0.3, tract=0.85, bw=1.8)
@@ -203,8 +203,8 @@ def lurcher_screech(seed, variant, sr):
     f0 = dsp.curve(pts, n, sr, "smooth") * dsp.vibrato(n, sr, dsp.vary(r, 11.0, 0.2), r.uniform(60.0, 120.0), r, 0.6)
     amp = [(0, 0), (0.03, 1.0), (d * 0.7, 0.85), (d, 0)]
     vow = [(0, "ae"), (d * 0.5, "a"), (d, "e")]
-    a = dsp.voice(sr, d, f0, vow, amp, r, oq=0.35, sq=3.5, jitter=0.04, shimmer=0.12, sub=0.25, breath=0.15, asp=0.6,
-                  tract=1.12, bw=1.1, rough=0.5, rough_rate=dsp.vary(r, 70.0, 0.2), tilt_db=8.0, os=4)
+    a = dsp.voice(sr, d, f0, vow, amp, r, oq=0.35, sq=3.5, jitter=0.04, shimmer=0.12, sub=0.4, breath=0.15, asp=0.6,
+                  tract=1.12, bw=1.1, rough=0.75, rough_rate=dsp.vary(r, 70.0, 0.2), tilt_db=8.0, os=4)
     ratio = r.uniform(1.37, 1.52)
     b = dsp.voice(sr, d, f0 * ratio, vow, amp, r, oq=0.4, sq=3.0, jitter=0.06, shimmer=0.15, breath=0.1, tract=1.15,
                   rough=0.4, tilt_db=6.0, os=4)
@@ -261,24 +261,31 @@ def keener_scream(seed, variant, sr):
     base = base * brk
     amp = [(0, 0), (0.2, 0.55), (1.0, 0.9), (2.2, 1.0), (d - 0.5, 0.85), (d - 0.12, 0.4), (d, 0)]
     vow = [(0, "i"), (0.6, "e"), (1.5, "a"), (2.5, "o"), (d, "u")]
+    # vibrato that destabilizes into a warble around the climax / voice break
+    wob = dsp.curve([(0, 0.0), (0.7, 0.5), (tb - 0.4, 1.0), (tb + 0.4, 1.8), (d, 1.2)], n, sr, "smooth")
+    rasp = [(0, 0.0), (1.0, 0.05), (tb, 0.35), (d - 0.4, 0.5), (d, 0.3)]          # throat tearing as it goes on
     choir = np.zeros(n)
     for k, c in enumerate((0.0, -9.0, 8.0, -17.0, 19.0)):
-        f0 = base * dsp.cents(c + r.uniform(-3, 3)) * dsp.vibrato(n, sr, dsp.vary(r, 5.4, 0.1), r.uniform(55.0, 90.0), r, 0.5,
-                                                                    onset=0.7)
+        vib = dsp.vibrato(n, sr, dsp.vary(r, 5.4, 0.1), r.uniform(55.0, 90.0), r, 0.7, onset=0.7)
+        f0 = base * dsp.cents(c + r.uniform(-3, 3)) * vib ** wob
         v = dsp.voice(sr, d, f0, vow, amp, r, oq=0.5, sq=2.6, jitter=0.012, shimmer=0.05, breath=0.06, asp=0.3, tract=1.18,
-                      bw=1.0, wander=0.03, os=4, tilt_db=3.0)
+                      bw=1.0, wander=0.03, os=4, tilt_db=3.0, rough=rasp, rough_rate=dsp.vary(r, 55.0, 0.2))
         choir += dsp.normalize(v) * (1.0 if k == 0 else 0.6)
     under = dsp.voice(sr, d, base * 0.5 * dsp.drift(n, sr, r, 15.0, 1.0), [(0, "o"), (d, "u")],
                       [(0, 0), (1.0, 0.0), (1.6, 0.8), (d - 0.3, 0.6), (d, 0)], r, oq=0.4, jitter=0.03, sub=0.4, rough=0.3,
                       tract=0.95, bw=1.4)
-    y = dsp.normalize(choir) + 0.22 * dsp.normalize(under)
+    # a second throat a tritone above, creeping in late (wrong, dissonant)
+    trit = dsp.voice(sr, d, base * dsp.semis(6) * dsp.cents(r.uniform(-12, 12)) * dsp.vibrato(n, sr, 6.3, 70.0, r, 0.8),
+                     vow, [(0, 0), (1.3, 0.0), (2.2, 0.7), (d - 0.3, 0.5), (d, 0)], r, oq=0.45, jitter=0.02, breath=0.1,
+                     tract=1.2, os=4, tilt_db=2.0)
+    y = dsp.normalize(choir) + 0.22 * dsp.normalize(under) + 0.2 * dsp.normalize(trit)
     ring = dsp.bp(y, sr, dsp.curve([(0, 2600.0), (d, 3100.0)], n, sr), 14.0) + 0.6 * dsp.bp(y, sr, dsp.vary(r, 1400.0, 0.1), 10.0)
     y = y + 0.9 * dsp.normalize(ring) * dsp.peak(y)
     y = _hollow(y, sr, r, 0.3, delay=r.uniform(0.0018, 0.0026), fb=0.55)
     y = dsp.asym(y / dsp.peak(y), 1.8, 0.1)
     # intake before, sob after
     out = _buf(pre + d + 0.9, sr)
-    gasp = dsp.breath(sr, pre + 0.05, [(0, "i"), (pre, "ih")], [(0, 0), (pre * 0.7, 1.0), (pre + 0.05, 0.3)], r, tract=1.15,
+    gasp = dsp.breath(sr, pre + 0.05, [(0, "i"), (pre, "ih")], [(0, 0), (pre * 0.7, 1.0), (pre + 0.05, 0.0)], r, tract=1.15,
                       hiss=1.0, hiss_f=2800.0, wet=0.3)
     dsp.place(out, dsp.normalize(dsp.hp(gasp, sr, 500.0)), 0, 0.35)
     dsp.place(out, y, dsp.ns(pre, sr), 1.0)
