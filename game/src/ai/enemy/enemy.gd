@@ -102,7 +102,6 @@ func _ready() -> void:
 	add_child(visual)
 	var body: String = def.bodies[_rng.randi() % def.bodies.size()] if not def.bodies.is_empty() else ""
 	visual.build(body, _rng.randf_range(def.scale_range.x, def.scale_range.y))
-	visual.rotation.y = PI
 	agent = NavigationAgent3D.new()
 	agent.path_desired_distance = 0.8
 	agent.target_desired_distance = 1.0

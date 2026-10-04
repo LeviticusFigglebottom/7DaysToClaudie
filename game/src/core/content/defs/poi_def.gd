@@ -22,7 +22,7 @@ var budget: Dictionary = {}
 
 const LAYOUT_KEYS: PackedStringArray = ["style", "levels", "rooms", "openings", "stairs", "ladders", "props",
 	"sleepers", "traps", "route", "loot_room", "shortcuts", "lights", "decals", "notes", "scatter", "exterior",
-	"roof", "front", "origin", "quest_hooks"]
+	"roof", "front", "origin", "quest_hooks", "pickups", "holes"]
 
 
 func _fields() -> PackedStringArray:

@@ -13,7 +13,7 @@ extends RefCounted
 ##   5. pads for frameworks/POIs (flatten to their mean height + skirt)
 ##   6. biome map, splat weights (8-layer palette), vegetation mask
 
-const VERSION: int = 8
+const VERSION: int = 9
 const COARSE: float = 4.0
 const MACRO_STEP: float = 8.0
 const BORDER_FADE: float = 48.0
@@ -535,6 +535,8 @@ class _Build:
 				road_list.append({"id": str(f.get("id", "road")), "line": Polyline2.from_array(f["points"]),
 					"width": float(f.get("width", 5.0)), "shoulder": float(f.get("shoulder", 1.5)),
 					"surface": str(f.get("surface", "gravel")), "bridges": f.get("bridges", []), "world": false})
+			elif str(f.get("type", "")) == "framework":
+				_framework_roads(f)
 		var count: int = cn * cn
 		r_d = PackedFloat32Array()
 		r_d.resize(count)
@@ -569,6 +571,31 @@ class _Build:
 						r_d[ci] = dist
 						r_s[ci] = s0 + seg_len * t
 						r_idx[ci] = idx)
+
+	## Streets of a placed framework (FrameworkDef.roads, framework-local) become region roads.
+	func _framework_roads(f: Dictionary) -> void:
+		var content: Node = _content()
+		if content == null:
+			return
+		var fw: FrameworkDef = content.get_def(&"framework", StringName(str(f.get("framework", "")))) as FrameworkDef
+		if fw == null:
+			return
+		var o: Vector2 = _v2(f["origin"])
+		var rot: float = deg_to_rad(float(f.get("rotation", 0.0)))
+		var i: int = 0
+		for r: Variant in fw.roads:
+			if not r is Dictionary:
+				continue
+			var pts: Array = []
+			for p: Variant in (r as Dictionary).get("points", []):
+				var w: Vector2 = o + Vector2(float(p[0]), float(p[1])).rotated(rot)
+				pts.append([w.x, w.y])
+			if pts.size() < 2:
+				continue
+			road_list.append({"id": "%s_street%d" % [str(f.get("id", "fw")), i], "line": Polyline2.from_array(pts),
+				"width": float(r.get("width", 6.0)), "shoulder": float(r.get("shoulder", 1.0)),
+				"surface": str(r.get("surface", "asphalt")), "bridges": [], "world": false})
+			i += 1
 
 	## Road height profile along the centre line: terrain sampled every 4 m, smoothed; bridge spans
 	## are lifted to the deck height with ramps.
