@@ -1,0 +1,46 @@
+{
+  "_doc": "Terrain layer contract between tools/assetgen/textures/gen/terrain.py (generator) and the terrain shader. Slice i of every array = layers[i]; never reorder (append new layers at the end). tile_metres = real-world size of one texture repeat (UV = world_xz / tile_metres). The generator refuses to build the arrays if this file disagrees with it.",
+  "layers": ["forest_floor", "moss_ground", "grass_ground", "dirt", "mud", "gravel", "rock_cliff", "sand", "snow", "asphalt_cracked", "concrete_slab"],
+  "tile_metres": {
+    "forest_floor": 3.0,
+    "moss_ground": 2.5,
+    "grass_ground": 2.5,
+    "dirt": 2.5,
+    "mud": 3.0,
+    "gravel": 2.0,
+    "rock_cliff": 6.0,
+    "sand": 2.0,
+    "snow": 3.0,
+    "asphalt_cracked": 4.0,
+    "concrete_slab": 4.0
+  },
+  "textures": {
+    "albedo_height": "res://assets/generated/textures/terrain_albedo_array.png",
+    "normal": "res://assets/generated/textures/terrain_normal_array.png",
+    "orm": "res://assets/generated/textures/terrain_orm_array.png",
+    "macro_variation": "res://assets/generated/textures/terrain_macro_variation.png",
+    "detail_normal": "res://assets/generated/textures/terrain_detail_normal.png"
+  },
+  "channels": {
+    "terrain_albedo_array": "Texture2DArray, 1024^2 slices. RGB = albedo (sRGB, sample with source_color), A = height 0..1 normalised per layer (mean ~0.5) for height-based blending.",
+    "terrain_normal_array": "Texture2DArray, tangent-space normal, OpenGL convention (+Y = green up), linear. Decode n = rgb * 2 - 1.",
+    "terrain_orm_array": "Texture2DArray, linear. R = ambient occlusion, G = roughness, B = metallic (always 0).",
+    "terrain_macro_variation": "Texture2D, linear, tileable. R = brightness (0.5 neutral; suggest albedo *= mix(0.8, 1.2, R)), G = warm/cool hue shift (0.5 neutral), B = damp/patch mask 0..1 (darken + gloss, or drive moss/wet blends), A = mid-scale breakup noise for dissolving height blends.",
+    "terrain_detail_normal": "Texture2D, tangent-space normal (OpenGL), imported as normal map, tileable micro detail (grit, crumbs, creases). Blend over every layer near the camera (e.g. fade out by ~15 m)."
+  },
+  "macro_tile_metres": 128.0,
+  "detail_normal_tile_metres": 0.6,
+  "triplanar_layers": ["rock_cliff"],
+  "height_blend_contrast": {
+    "_doc": "Suggested sharpness of the height blend per layer (higher = crisper transition into neighbours).",
+    "forest_floor": 0.25, "moss_ground": 0.3, "grass_ground": 0.25, "dirt": 0.2, "mud": 0.15, "gravel": 0.35,
+    "rock_cliff": 0.4, "sand": 0.2, "snow": 0.3, "asphalt_cracked": 0.45, "concrete_slab": 0.5
+  },
+  "notes": {
+    "concrete_slab": "Saw-cut joints are baked on a 2 m grid aligned to the tile (joints at UV 0 and 0.5). Do not rotate/offset this layer with stochastic anti-tiling or the joints break.",
+    "asphalt_cracked": "Generic cracked town road (no lane markings: use decals). Tar crack-sealant bands are glossy (low roughness).",
+    "mud": "Standing water already sits in the deepest dents (flat normal, roughness ~0.05); the global hm_wetness can still darken/gloss the rest.",
+    "rock_cliff": "Water streaks run toward +V (down the texture rows); project with V pointing down the cliff.",
+    "snow": "Albedo is near-white (mean linear luminance 0.72); keep exposure/tonemapping in mind when blending."
+  }
+}
