@@ -1,0 +1,79 @@
+{
+  "_doc": "POI building kit materials (docs/POI_KIT.md). Models name them M_<id>. kit_wall / kit_floor carry per-instance finishes: their faces are side-tagged in UV2 (UVSide: u 0 = side A (-Y) / floor top, 1 = side B (+Y) / ceiling, 0.5 = ends, tops, reveals) and their vertex colour is neutral (1,0,0,1). Until the dedicated kit shaders exist they render with std_surface and a neutral plaster (kit_plaster). Wood textures run the grain along U; kit generators orient UV0 per part accordingly.",
+  "materials": {
+    "kit_wall": {
+      "shader": "std_surface", "textures": "kit_plaster",
+      "params": {"uv_scale": 1.0, "normal_strength": 1.0, "vertex_ao_strength": 1.0},
+      "notes": {
+        "target_shader": "kit wall shader: pick each side's finish from texture arrays by UV2.x, project in world space (1 m per tile), blend the decay overlay by per-instance decay",
+        "finish_arrays": ["kit_wall_finishes_albedo", "kit_wall_finishes_normal", "kit_wall_finishes_orm"],
+        "slice_order": "game/data/materials/kit_finishes.json#wall",
+        "tile_m": 1.0,
+        "decay_overlay": ["kit_decay_albedo (RGBA, alpha = coverage priority: show where alpha > 1 - decay)", "kit_decay_orm"],
+        "decay_tile_m": 2.0
+      }
+    },
+    "kit_floor": {
+      "shader": "std_surface", "textures": "kit_plaster",
+      "params": {"uv_scale": 1.0, "normal_strength": 1.0, "vertex_ao_strength": 1.0},
+      "notes": {
+        "target_shader": "kit floor shader: UV2.x 0 = floor finish (top), 1 = ceiling finish (bottom), 0.5 = slab edges; world-space projection",
+        "finish_arrays": ["kit_floor_finishes_albedo", "kit_floor_finishes_normal", "kit_floor_finishes_orm"],
+        "slice_order": "game/data/materials/kit_finishes.json#floor",
+        "tile_m": 2.0,
+        "ceiling": "use a wall finish slice (plaster_white) from the wall arrays for the bottom face",
+        "decay_overlay": ["kit_decay_albedo", "kit_decay_orm"],
+        "decay_tile_m": 2.0
+      }
+    },
+    "kit_trim": {
+      "shader": "std_surface", "textures": "kit_trim", "layers": {"wear": "wood_raw"},
+      "params": {"uv_scale": 1.0, "wear_amount": 0.3, "wear_uv_scale": 1.0, "grime_amount": 0.35, "normal_strength": 1.0}
+    },
+    "door_wood": {
+      "shader": "std_surface", "textures": "door_wood", "layers": {"wear": "wood_raw"},
+      "params": {"uv_scale": 1.0, "wear_amount": 0.25, "wear_uv_scale": 1.0, "grime_amount": 0.3, "normal_strength": 1.0}
+    },
+    "kit_stairs": {
+      "shader": "std_surface", "textures": "kit_stairs", "layers": {"wear": "wood_raw"},
+      "params": {"uv_scale": 1.0, "wear_amount": 0.3, "wear_uv_scale": 1.0, "grime_amount": 0.35, "normal_strength": 1.0}
+    },
+    "wood_raw": {
+      "shader": "std_surface", "textures": "wood_raw",
+      "params": {"uv_scale": 1.0, "grime_amount": 0.4, "normal_strength": 1.2}
+    },
+    "wood_painted": {
+      "shader": "std_surface", "textures": "kit_trim", "layers": {"wear": "wood_raw"},
+      "params": {"uv_scale": 1.0, "tint": "#a9ada9", "wear_amount": 0.35, "wear_uv_scale": 1.0, "grime_amount": 0.4, "normal_strength": 1.0},
+      "notes": "grey porch paint (porch steps / deck / posts): kit_trim textures tinted"
+    },
+    "glass": {
+      "shader": "std_surface", "textures": "glass",
+      "params": {"uv_scale": 1.0, "normal_strength": 0.4, "vertex_ao_strength": 0.5},
+      "notes": "glass_albedo is RGBA (alpha = 0.2 clean .. 0.9 grime). std_surface is opaque: switch to a transparent glass shader (blend_mix, ALPHA = albedo.a, cull_disabled or the double-sided panes already in the meshes). UV0 spans each lite 0..1 (edge grime follows the frame)."
+    },
+    "concrete": {
+      "shader": "std_surface", "textures": "concrete",
+      "params": {"uv_scale": 1.0, "grime_amount": 0.4, "normal_strength": 1.0}
+    },
+    "brick": {
+      "shader": "std_surface", "textures": "brick",
+      "params": {"uv_scale": 1.0, "grime_amount": 0.3, "normal_strength": 1.2},
+      "notes": "1 m tile = 5 bricks x 16 courses; chimney courses start at z = 0"
+    },
+    "metal_painted": {
+      "shader": "std_surface", "textures": "metal_painted",
+      "params": {"uv_scale": 1.0, "grime_amount": 0.3, "normal_strength": 1.0}
+    },
+    "metal_steel": {
+      "shader": "std_surface",
+      "params": {"tint": "#8a8c8e", "roughness_mult": 0.45, "metallic_mult": 1.0, "grime_amount": 0.4},
+      "notes": "untextured worn steel/brass hardware (knobs, hinges, nails, push bars)"
+    },
+    "kit_wall_inner": {
+      "shader": "std_surface", "textures": "kit_wall_inner",
+      "params": {"uv_scale": 1.0, "grime_amount": 0.5, "normal_strength": 1.2},
+      "notes": "broken plaster / lath / insulation: hole rims, wall cavities and fracture insides"
+    }
+  }
+}
