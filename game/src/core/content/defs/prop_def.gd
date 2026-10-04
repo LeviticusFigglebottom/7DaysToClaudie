@@ -16,7 +16,8 @@ var container: StringName = &""
 var light: Dictionary = {}
 var blocks_sight: bool = true
 var wall_mounted: bool = false
-## Room tags this prop suits (kitchen, bedroom, bath, living, office, store, garage, any).
+## Room tags this prop suits (kitchen, bedroom, bathroom, living, office, store, garage, basement,
+## diner, hallway, exterior, any). PoiBuilder.ROOM_TAGS maps POI room types onto these.
 var rooms: PackedStringArray = []
 
 

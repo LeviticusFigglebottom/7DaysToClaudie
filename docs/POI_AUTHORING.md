@@ -72,7 +72,10 @@ linoleum_beige, tile_white_small, concrete`.
 * Walls are generated automatically on every edge between different rooms and between a room
   and the outside. `"open_to": "HD"` removes walls to those rooms (open plan).
 * Room `type` drives clutter and ambience: `kitchen, living, bedroom, bath, hallway, office, store,
-  storage, garage, basement, diner, pharmacy, cells, loft`.
+  storage, garage, basement, diner, pharmacy, cells, loft`. Scatter clutter comes from props whose
+  `rooms` tags match; `PoiBuilder.ROOM_TAGS` maps types without their own tag (bath → bathroom,
+  storage → basement/garage/store, pharmacy → store/office, cells → office/basement, loft →
+  basement/garage).
 
 ### openings (on walls)
 `{"id": "front_door", "at": [3, 7], "side": "S", "type": "door", "state": "closed", "key": "", "level": 0}`
@@ -89,7 +92,9 @@ linoleum_beige, tile_white_small, concrete`.
 * `{"level": 0, "at": [6, 5], "dir": "N"}` — a straight flight occupying 4 cells from `at` toward
   `dir`, arriving on level+1 at the 5th cell. The builder opens the upper floor over the flight.
 * `{"level": 0, "at": [2, 2], "side": "W", "hatch": true}` — ladder against a wall up through a
-  hatch in the ceiling (climb by interacting). Hollowed do not climb ladders: lofts are refuges.
+  hatch in the ceiling (climb by interacting). Climbers step off upstairs onto the room cell beside
+  the hatch, away from the wall (or to either side); the validator errors if there is none.
+  Hollowed do not climb ladders: lofts are refuges.
 * `{"level": 1, "at": [4, 3]}` — broken floor: a one-way drop to the level below.
 
 ### props
@@ -116,7 +121,8 @@ linoleum_beige, tile_white_small, concrete`.
 ### route, loot room, shortcuts
 * `route`: ordered waypoints `{"at": [c, r], "level": 0, "label": "Front door barricaded"}`. The
   first waypoint should be outside (a `.` cell) at the intended entrance. The validator walks the
-  graph waypoint to waypoint: doors (not barricaded), breaches, open/broken windows, stairs, ladders
+  graph waypoint to waypoint: doors (not barricaded), breaches, open/broken windows (the player
+  vaults sills up to 1.3 m with Jump; Hollowed don't vault yet), stairs, ladders
   and drop holes count; keys count once their pickup is reachable. Intact glass and barricades do
   **not** count — the intended route must not require breaking things unless you add a breach.
 * `loot_room`: `{"room": "C", "level": -1}` — must be reachable and contain a container.

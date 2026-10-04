@@ -40,7 +40,7 @@ tools/assetgen/
     generators/*.py              Blender generators: build(params, outputs)
   blender_catalogs/*.py          task lists for the Blender generators (one per family)
   docs/                          documentation images generated from data (main-map sketch)
-game/data/materials/materials.json   material library definition (-> generated .tres)
+game/data/materials/<family>.json    material library, one file per family (-> generated .tres)
 game/assets/shaders/                 hand-written shaders (code, committed)
 game/src/tools/import/generated_scene_post_import.gd   M_<id> -> generated material swap
 ```
@@ -68,7 +68,15 @@ right import settings (VRAM compression, normal maps, audio loops, glTF post-imp
 * Export only through `lib.export.export_glb()` (fixed settings, no embedded images).
 * **Materials are named `M_<material_id>`** (use `lib.materials.assign*`). Godot swaps in
   `res://assets/generated/materials/<material_id>.tres`, defined in
-  `game/data/materials/materials.json`. Add new ids there (and textures in `textures/gen`).
+  `game/data/materials/<family>.json` (ids are global across files: prefix family-specific ids,
+  e.g. `furn_*`, `item_*`, `ext_*`; a duplicate id fails the build). Each entry is
+  `{shader, textures, layers?, params}`; shaders (`game/assets/shaders/`):
+  | shader | use | notable params |
+  |---|---|---|
+  | `std_surface` | opaque PBR for almost everything | `tint`, `uv_scale`, `roughness_mult/add`, wear/moss `layers` + `wear_amount`, `grime_amount`, `emission_color` + `emission_energy` (screens, LEDs) |
+  | `std_glass` | transparent glass / clear plastic (windows, bottles, lenses) | `opacity`, `use_texture_alpha` (grime in albedo alpha), `grime_amount`, `tint` |
+  | `foliage`, `bark` | vegetation (wind, seasons, translucency); `foliage` also lights flames and lamp globes from behind | `translucency`, `alpha_scissor` |
+  | `kit_wall` | POI walls/floors: per-instance finish slices (`docs/POI_KIT.md`) | set up by `PoiParts.kit_material` |
 * **Vertex colour `Color` (COLOR_0)** — always written via `lib.vcolor`:
   | channel | meaning |
   |---|---|
@@ -108,7 +116,7 @@ right import settings (VRAM compression, normal maps, audio loops, glTF post-imp
 ## Adding an asset (checklist)
 1. Write/extend a generator (`blender/generators/*.py`, `textures/gen/*.py` or `audio/sounds/*.py`).
 2. Register tasks (`blender_catalogs/*.py` for models; decorators for textures/sounds).
-3. New materials → `game/data/materials/materials.json`.
+3. New materials → `game/data/materials/<family>.json` (unique, family-prefixed ids).
 4. `python tools/build_assets.py --match <name>` then `make import` and `make preview MODELS=...`.
 5. Reference it from content (`game/data/**`) — `make validate` reports missing models.
 6. `make assets-determinism --match <name>` before committing a new generator.

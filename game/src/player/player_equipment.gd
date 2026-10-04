@@ -95,6 +95,8 @@ func primary() -> void:
 	var building: Node = Game.world.get(&"building") if Game.world != null else null
 	if building != null and building.call(&"handle_primary", player):
 		_cooldown = 0.35
+		if viewmodel != null:
+			viewmodel.play_action(&"fp_place", 0.35)
 		return
 	if def == null:
 		_punch()
@@ -117,7 +119,9 @@ func primary() -> void:
 func secondary() -> void:
 	var def: ItemDef = Content.item(current)
 	if def != null and def.is_consumable():
-		Game.execute(&"inventory.consume", {"player": player.state.id, "item": current})
+		var res: Dictionary = Game.execute(&"inventory.consume", {"player": player.state.id, "item": current})
+		if bool(res.get("ok", false)) and viewmodel != null:
+			viewmodel.play_action(&"fp_use")
 	elif def != null and str(def.equip.get("kind", "")) == "ranged":
 		_reload(def)
 
@@ -294,6 +298,8 @@ func _throw(def: ItemDef) -> void:
 		return
 	if not player.state.inventory.remove(current, 1):
 		return
+	if viewmodel != null:
+		viewmodel.play_action(&"fp_throw", 0.5)
 	_cooldown = 0.7
 	var proj: Node3D = load("res://src/combat/thrown_item.gd").new()
 	proj.set(&"item_id", current)
@@ -313,6 +319,8 @@ func toggle_light() -> void:
 	if def == null or not def.equip.has("light"):
 		return
 	_set_light(not _light_on)
+	if _light_on and viewmodel != null and "lighter" in (def.equip.get("tools", []) as Array):
+		viewmodel.play_action(&"fp_light")
 
 
 func _set_light(on: bool) -> void:

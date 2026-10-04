@@ -24,6 +24,7 @@ var _rest := Transform3D(Basis.from_euler(Vector3(deg_to_rad(8.0), deg_to_rad(-1
 var _t: float = 0.0
 var _prev_cam_basis := Basis()
 var _one_shot: bool = false
+var _hold: bool = false
 
 
 func _ready() -> void:
@@ -47,7 +48,7 @@ func _ready() -> void:
 			for a: StringName in LOOPING:
 				if _arms_anim.has_animation(a):
 					_arms_anim.get_animation(a).loop_mode = Animation.LOOP_LINEAR
-			_arms_anim.animation_finished.connect(func(_n: StringName) -> void: _one_shot = false)
+			_arms_anim.animation_finished.connect(func(_n: StringName) -> void: _one_shot = _hold)
 			_play(&"fp_idle")
 
 
@@ -123,11 +124,13 @@ func _play(anim_name: StringName, speed: float = 1.0, blend: float = 0.15) -> vo
 	_arms_anim.speed_scale = speed
 
 
-## Plays a one-shot arms action (fp_swing, fp_stab, fp_use, fp_raise_wrist...). Returns false if
-## the arms or the action are missing so callers can fall back.
-func play_action(anim_name: StringName, duration: float = 0.0) -> bool:
+## Plays a one-shot arms action (fp_swing, fp_stab, fp_use, fp_raise_wrist...); with `hold` the
+## arms stay on its last frame until the next action. Returns false if the arms or the action are
+## missing so callers can fall back.
+func play_action(anim_name: StringName, duration: float = 0.0, hold: bool = false) -> bool:
 	if _arms_anim == null or not _arms_anim.has_animation(anim_name):
 		return false
+	_hold = hold
 	var length: float = _arms_anim.get_animation(anim_name).length
 	_arms_anim.play(anim_name, 0.08)
 	_arms_anim.speed_scale = length / duration if duration > 0.05 else 1.0
@@ -166,7 +169,10 @@ func _process(delta: float) -> void:
 		sway = Vector3(-e.y * 0.6, e.x * 0.6, 0.0).limit_length(0.05)
 		_prev_cam_basis = cam.global_transform.basis
 	if _arms_anim != null and not _one_shot:
-		_play(&"fp_walk_bob" if speed > 0.6 else &"fp_idle", clampf(speed / 3.0, 0.6, 1.6) if speed > 0.6 else 1.0)
+		if player != null and player.equipment != null and player.equipment.carried_logs() > 0:
+			_play(&"fp_carry_log")
+		else:
+			_play(&"fp_walk_bob" if speed > 0.6 else &"fp_idle", clampf(speed / 3.0, 0.6, 1.6) if speed > 0.6 else 1.0)
 	var rig := Transform3D(Basis(), sway + (breathe if _arms != null else Vector3.ZERO))
 	if _recoil > 0.0:
 		_recoil = maxf(0.0, _recoil - delta * 6.0)

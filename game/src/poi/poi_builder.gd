@@ -546,6 +546,18 @@ func _props() -> void:
 
 
 ## Dense, room-appropriate clutter along walls (deterministic per instance), kept off the route.
+## POI room types -> the prop room tags whose clutter suits them (room types are finer or coarser
+## than the tags props carry; unknown types use their own name).
+const ROOM_TAGS: Dictionary = {
+	"bath": ["bathroom"],
+	"storage": ["basement", "garage", "store"],
+	"loft": ["basement", "garage"],
+	"pharmacy": ["store", "office"],
+	"cells": ["office", "basement"],
+	"diner": ["diner", "kitchen"],
+}
+
+
 func _scatter() -> void:
 	var sc: Dictionary = layout.style.get("scatter", {})
 	var density: float = float(sc.get("density", 0.35))
@@ -566,7 +578,10 @@ func _scatter() -> void:
 			if _route_cells.has(k) or _occupied.has(k) or well.has(c):
 				continue
 			var room: Dictionary = layout.room_def(li, layout.room_at(li, c))
-			var pool: Array = by_room.get(str(room.get("type", "any")), []) + by_room.get("any", [])
+			var room_type: String = str(room.get("type", "any"))
+			var pool: Array = by_room.get("any", []).duplicate()
+			for tag: String in ROOM_TAGS.get(room_type, [room_type]):
+				pool.append_array(by_room.get(tag, []))
 			if pool.is_empty():
 				continue
 			for side: int in 4:

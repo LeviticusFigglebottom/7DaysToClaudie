@@ -333,7 +333,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		_ensure_tether()
 		if tether != null:
 			tether.toggle()
+			_raise_wrist(tether.raised)
 		get_viewport().set_input_as_handled()
+
+
+## The first-person arms lift the left wrist to read the tether (held until it is lowered).
+func _raise_wrist(up: bool) -> void:
+	var w: Node = Game.world
+	if w == null or w.get(&"player") == null:
+		return
+	var vm: ViewModel = (w.player as Player).equipment.viewmodel
+	if vm != null:
+		vm.play_action(&"fp_raise_wrist" if up else &"fp_lower_wrist", 0.0, up)
 
 
 func _ensure_tether() -> void:
