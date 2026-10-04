@@ -33,30 +33,45 @@ func _ready() -> void:
 	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(_vp)
 	_build_screen()
-	var body := MeshInstance3D.new()
+	var shell := MeshInstance3D.new()
 	var box := BoxMesh.new()
-	box.size = Vector3(0.12, 0.08, 0.022)
-	var bm := StandardMaterial3D.new()
-	var bez: String = "res://assets/generated/textures/ui/tether_bezel_albedo.png"
-	if ResourceLoader.exists(bez):
-		bm.albedo_texture = load(bez)
-	else:
-		bm.albedo_color = Color(0.16, 0.17, 0.16)
-	bm.roughness = 0.7
-	box.material = bm
-	body.mesh = box
-	body.position = Vector3(0, 0, -0.012)
-	add_child(body)
+	box.size = Vector3(0.118, 0.082, 0.02)
+	var shell_mat := StandardMaterial3D.new()
+	shell_mat.albedo_color = Color(0.13, 0.14, 0.13)
+	shell_mat.roughness = 0.75
+	box.material = shell_mat
+	shell.mesh = box
+	shell.position = Vector3(0, 0, -0.012)
+	add_child(shell)
+	# Screen sits in the bezel's cut-out (x 0.135-0.865, y 0.12-0.80 of the bezel texture).
 	var screen := MeshInstance3D.new()
 	var q := QuadMesh.new()
-	q.size = Vector2(0.1, 0.0625)
+	q.size = Vector2(0.12 * 0.73, 0.08 * 0.68)
 	var sm := StandardMaterial3D.new()
 	sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	sm.albedo_texture = _vp.get_texture()
 	q.material = sm
 	screen.mesh = q
-	screen.position = Vector3(0, 0, 0.0)
+	screen.position = Vector3(0, 0.08 * (0.5 - 0.46), -0.0005)
 	add_child(screen)
+	var bezel := MeshInstance3D.new()
+	var bq := QuadMesh.new()
+	bq.size = Vector2(0.12, 0.08)
+	var bm := StandardMaterial3D.new()
+	var bez: String = "res://assets/generated/textures/ui_tether_bezel.png"
+	if ResourceLoader.exists(bez):
+		bm.albedo_texture = load(bez)
+		bm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+		bm.alpha_scissor_threshold = 0.5
+	else:
+		bm.albedo_color = Color(0.16, 0.17, 0.16)
+		bm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		bm.albedo_color.a = 0.0
+	bm.roughness = 0.7
+	bq.material = bm
+	bezel.mesh = bq
+	bezel.position = Vector3(0, 0, 0.0005)
+	add_child(bezel)
 	rotation = Vector3(deg_to_rad(8), deg_to_rad(18), deg_to_rad(-6))
 
 
@@ -65,7 +80,7 @@ func _build_screen() -> void:
 	(_root as ColorRect).color = Color(0.04, 0.07, 0.05)
 	_root.size = Vector2(SCREEN)
 	_vp.add_child(_root)
-	var lcd: String = "res://assets/generated/textures/ui/lcd_screen_albedo.png"
+	var lcd: String = "res://assets/generated/textures/ui_tether_screen.png"
 	if ResourceLoader.exists(lcd):
 		var bg := TextureRect.new()
 		bg.texture = load(lcd)

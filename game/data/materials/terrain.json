@@ -1,0 +1,16 @@
+{
+  "_doc": "Per-layer terrain materials (std_surface) for previews and props that sit on the ground (mounds, verges, road shoulders). Same pixels as the terrain array slices; uv_scale = 1 / tile_metres for metre-scaled UVs (see terrain_layers.json). The terrain itself uses the Texture2DArrays.",
+  "materials": {
+    "terrain_forest_floor": {"shader": "std_surface", "textures": "terrain_forest_floor", "params": {"uv_scale": 0.3333, "normal_strength": 1.0}},
+    "terrain_moss_ground": {"shader": "std_surface", "textures": "terrain_moss_ground", "params": {"uv_scale": 0.4, "normal_strength": 1.0}},
+    "terrain_grass_ground": {"shader": "std_surface", "textures": "terrain_grass_ground", "params": {"uv_scale": 0.4, "normal_strength": 1.0}},
+    "terrain_dirt": {"shader": "std_surface", "textures": "terrain_dirt", "params": {"uv_scale": 0.4, "normal_strength": 1.0}},
+    "terrain_mud": {"shader": "std_surface", "textures": "terrain_mud", "params": {"uv_scale": 0.3333, "normal_strength": 1.0}},
+    "terrain_gravel": {"shader": "std_surface", "textures": "terrain_gravel", "params": {"uv_scale": 0.5, "normal_strength": 1.0}},
+    "terrain_rock_cliff": {"shader": "std_surface", "textures": "terrain_rock_cliff", "layers": {"moss": "terrain_moss_ground"}, "params": {"uv_scale": 0.1667, "normal_strength": 1.0, "moss_amount": 0.0, "moss_uv_scale": 0.4}},
+    "terrain_sand": {"shader": "std_surface", "textures": "terrain_sand", "params": {"uv_scale": 0.5, "normal_strength": 1.0}},
+    "terrain_snow": {"shader": "std_surface", "textures": "terrain_snow", "params": {"uv_scale": 0.3333, "normal_strength": 1.0}},
+    "terrain_asphalt_cracked": {"shader": "std_surface", "textures": "terrain_asphalt_cracked", "params": {"uv_scale": 0.25, "normal_strength": 1.0}},
+    "terrain_concrete_slab": {"shader": "std_surface", "textures": "terrain_concrete_slab", "params": {"uv_scale": 0.25, "normal_strength": 1.0}}
+  }
+}

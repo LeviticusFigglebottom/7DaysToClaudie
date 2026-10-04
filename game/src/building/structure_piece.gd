@@ -252,9 +252,15 @@ func _make_flames() -> GPUParticles3D:
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.vertex_color_use_as_albedo = true
-	var flame: String = "res://assets/generated/textures/fx/flame.png"
+	var flame: String = "res://assets/generated/textures/fx_fire_flipbook.png"
 	if ResourceLoader.exists(flame):
 		mat.albedo_texture = load(flame)
+		mat.particles_anim_h_frames = 8
+		mat.particles_anim_v_frames = 8
+		mat.particles_anim_loop = true
+		m.anim_speed_min = 1.0
+		m.anim_speed_max = 1.0
+		m.anim_offset_max = 1.0
 	q.material = mat
 	p.draw_pass_1 = q
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

@@ -16,6 +16,19 @@ const COLLISION_RADIUS: float = 45.0
 const LOD_END: PackedFloat32Array = [55.0, 140.0, 330.0]
 const GROUND_END: float = 52.0
 const FADE: float = 8.0
+const MAX_JOBS: int = 3
+
+static var _ring: Array[Vector2i] = []
+
+
+## Chunk offsets within NEAR_CHUNKS sorted by distance from the centre chunk.
+static func _ring_order() -> Array[Vector2i]:
+	if _ring.is_empty():
+		for dz: int in range(-NEAR_CHUNKS, NEAR_CHUNKS + 1):
+			for dx: int in range(-NEAR_CHUNKS, NEAR_CHUNKS + 1):
+				_ring.append(Vector2i(dx, dz))
+		_ring.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.length_squared() < b.length_squared())
+	return _ring
 
 var world: Node
 var terrain: TerrainManager
@@ -114,21 +127,36 @@ func _update(pos: Vector3) -> void:
 		for key: Vector2i in _nodes.keys():
 			if absi(key.x - c.x) > NEAR_CHUNKS or absi(key.y - c.y) > NEAR_CHUNKS:
 				_free_nodes(key)
-	for dz: int in range(-NEAR_CHUNKS, NEAR_CHUNKS + 1):
-		for dx: int in range(-NEAR_CHUNKS, NEAR_CHUNKS + 1):
-			var key := Vector2i(c.x + dx, c.y + dz)
-			var want_ground: bool = absi(dx) <= GROUND_CHUNKS and absi(dz) <= GROUND_CHUNKS
-			if not _data.has(key):
-				if not _pending.has(key) and _rt_for_chunk(key) != null:
-					var job: Dictionary = {"key": key, "res": {}}
-					job["task"] = WorkerThreadPool.add_task(func() -> void: job["res"] = _scatter(key), false, "veg scatter")
-					_pending[key] = job
-				continue
-			var n: Dictionary = _nodes.get(key, {})
-			if n.is_empty():
-				_build_chunk(key, want_ground)
-			elif bool(n.get("ground", false)) != want_ground:
-				_set_ground(key, want_ground)
+	# Nearest chunks first; a few scatter jobs at a time so the ground under you fills in first.
+	for off: Vector2i in _ring_order():
+		var key := Vector2i(c.x + off.x, c.y + off.y)
+		var want_ground: bool = absi(off.x) <= GROUND_CHUNKS and absi(off.y) <= GROUND_CHUNKS
+		if not _data.has(key):
+			if not _pending.has(key) and _pending.size() < MAX_JOBS and _rt_for_chunk(key) != null:
+				var job: Dictionary = {"key": key, "res": {}}
+				job["task"] = WorkerThreadPool.add_task(func() -> void: job["res"] = _scatter(key), false, "veg scatter")
+				_pending[key] = job
+			continue
+		var n: Dictionary = _nodes.get(key, {})
+		if n.is_empty():
+			_build_chunk(key, want_ground)
+		elif bool(n.get("ground", false)) != want_ground:
+			_set_ground(key, want_ground)
+
+
+## True once every chunk within NEAR_CHUNKS of the player has its instances built and no scatter
+## job is in flight (visual QA and tests wait on this instead of a fixed delay).
+func is_settled() -> bool:
+	if not _pending.is_empty() or _far_task != -1 or world == null or world.player == null:
+		return false
+	var p: Vector3 = world.player.global_position
+	if TerrainManager.chunk_of(p.x, p.z) != _center:
+		return false
+	for off: Vector2i in _ring_order():
+		var key := Vector2i(_center.x + off.x, _center.y + off.y)
+		if not _nodes.has(key) and _rt_for_chunk(key) != null:
+			return false
+	return true
 
 
 func _collect() -> void:

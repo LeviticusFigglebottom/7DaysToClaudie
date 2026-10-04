@@ -11,7 +11,7 @@ import json
 import pathlib
 
 from ..core.godot_import import uid_for_res_path
-from ..core.paths import ASSETGEN, DATA, GAME, gen_path
+from ..core.paths import ROOT, ASSETGEN, DATA, GAME, gen_path
 from ..core.registry import Task
 from . import registry
 
@@ -35,6 +35,7 @@ def _texture_tasks() -> list[Task]:
     for name, d in sorted(registry.load_all().items()):
         outs, imports = registry.outputs_for(d)
         sources = [d.module_file, ASSETGEN / "textures" / "texlib.py", ASSETGEN / "textures" / "registry.py"]
+        sources += [ROOT / s for s in d.sources]
         params = {"texture": name, "size": d.size, "seed": d.seed, "kind": d.kind, "extra": d.params, "slices": d.slices}
         out.append(Task(name=f"tex:{name}", group="textures", outputs=outs, sources=sources, params=params,
                         fn=_run_texture, imports=imports))

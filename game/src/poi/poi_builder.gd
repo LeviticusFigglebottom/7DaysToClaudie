@@ -628,13 +628,13 @@ func _decals() -> void:
 	for d: Variant in layout.decals:
 		if not d is Dictionary:
 			continue
-		var path: String = "res://assets/generated/textures/decals/%s.png" % str(d.get("decal", ""))
+		var path: String = "res://assets/generated/textures/decal_%s_albedo.png" % str(d.get("decal", ""))
 		if not ResourceLoader.exists(path):
 			continue
 		var placed: Dictionary = layout._placed(d)
 		var dec := Decal.new()
 		dec.texture_albedo = load(path)
-		var npath: String = path.replace(".png", "_normal.png")
+		var npath: String = path.replace("_albedo.png", "_normal.png")
 		if ResourceLoader.exists(npath):
 			dec.texture_normal = load(npath)
 		var size: Array = d.get("size", [1.0, 1.0])

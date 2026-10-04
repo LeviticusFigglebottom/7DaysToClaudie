@@ -80,7 +80,8 @@ func _enter_tree():
 	_check_for_update.visible = false
 	_bottom_panel.add_child(_check_for_update)
 	var days_since = _check_for_update.update_detector.get_days_since_last_fetch()
-	if(days_since >= 1):
+	# Hollowmere local patch: never hit the network from headless imports/CI (see THIRD_PARTY.md).
+	if(days_since >= 1 and DisplayServer.get_name() != "headless"):
 		_check_for_update.update_detector.check_for_update_with_fetch(true)
 
 	_bottom_panel.set_interface(get_editor_interface())

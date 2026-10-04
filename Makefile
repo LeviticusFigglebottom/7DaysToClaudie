@@ -65,6 +65,9 @@ bake: ## Godot-side bakes that need the renderer (item icons, tree impostors, re
 
 import: ## Import project resources headless (required before tests on a fresh clone)
 	@mkdir -p $(ROOT)/build && $(GODOT_HEADLESS) --import > $(ROOT)/build/import.log 2>&1 || (cat $(ROOT)/build/import.log; exit 1)
+	@# Models imported before their material library existed keep placeholder materials: redo them.
+	@$(GODOT_HEADLESS) -s res://src/tools/cli/verify_imports.gd >> $(ROOT)/build/import.log 2>&1; \
+	if [ $$? -eq 2 ]; then $(GODOT_HEADLESS) --import >> $(ROOT)/build/import.log 2>&1 || (cat $(ROOT)/build/import.log; exit 1); fi
 	@echo "[import] ok"
 
 smoke: ## Headless end-to-end run of the slice (world, trees, building, crafting, AI, Hum, save/load)
