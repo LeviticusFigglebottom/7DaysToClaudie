@@ -28,7 +28,11 @@
         "uv_scale": 0.5,
         "normal_strength": 1.0,
         "variation_strength": 0.1,
-        "macro_variation": 0.45
+        "macro_variation": 0.45,
+        "patch_color": "#6b3518",
+        "patch_cover": 0.32,
+        "roughness_add": 0.12,
+        "metallic_mult": 0.8
       }
     },
     "roof_metal_red": {
@@ -38,7 +42,9 @@
         "uv_scale": 0.5,
         "normal_strength": 1.0,
         "variation_strength": 0.1,
-        "macro_variation": 0.45
+        "macro_variation": 0.45,
+        "patch_color": "#6b3518",
+        "patch_cover": 0.2
       }
     },
     "roof_cedar": {

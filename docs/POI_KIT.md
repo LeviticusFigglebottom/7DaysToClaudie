@@ -106,9 +106,18 @@ and panelling get a shader-drawn 11 cm baseboard.
 ## Roofs
 `RoofBuilder` uses `style.roof.material` (default `roof_shingle`) from
 `game/data/materials/roofs.json`: `roof_shingle`, `roof_shingle_brown`, `roof_metal`,
-`roof_metal_red`, `roof_cedar`, and `roof_tar` for flat roofs. Pitched-roof UVs are metres (U along
-the eave, V up the slope). The sets tile every 2 m and are drawn eave-down. `std_surface`'s
-`macro_variation` drifts their tone in world space.
+`roof_metal_red` and `roof_cedar`. Flat roofs use `style.roof.flat_material` (default `roof_tar`).
+* Pitched-roof UVs are metres (U along the ridge, V up the slope). The sets tile every 2 m and are
+  drawn eave-down.
+* A tile holds nothing distinctive, because it repeats across the whole roof. Two world-space
+  layers of `std_surface` carry the large scale:
+  * `macro_variation` drifts tone and dampness.
+  * `patch_cover`, `patch_color` and `patch_scale` lay ragged rust patches (metal roofs).
+* Pitched roofs get trim:
+  * fascia and rake boards (`kit_trim`) and a capped ridge;
+  * half-round gutters (`metal_painted`), unless `"gutters": false`.
+* Gable ends and parapets use the building's exterior finish and decay (kit wall shader).
+* `"parapet"` sets a flat roof's parapet height.
 
 ## Budgets
 Walls ≤ 200 tris (≤ 600 with openings + trim), floors ≤ 50, stairs ≤ 1.5k, doors ≤ 600.

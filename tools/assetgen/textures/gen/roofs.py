@@ -30,7 +30,9 @@ def _moss_lichen(n: int, seed: int, col: np.ndarray, height: np.ndarray, rough: 
     and spilling a little over the course below, and irregular lichen rosettes (grey-green, a few
     yellow) anywhere."""
     root = np.clip(ndimage.gaussian_filter(where.astype(np.float32), 5.0, mode="wrap") * 2.2, 0, 1)
-    clus = K._warp(K._sn(n, 1.8, seed), seed + 1, 18.0)
+    # Clusters at least 6 per tile: the 2 m tile repeats across a roof, and one or two big cushions
+    # per tile read as a lattice (std_surface's macro_variation drifts the cover over metres instead).
+    clus = K._warp(K._sn(n, 1.8, seed, fmin=6.0), seed + 1, 10.0)
     cush = T.smoothstep(0.58, 0.68, 0.7 * clus + 0.3 * K._sn(n, 0.7, seed + 2)) * root * amount
     cush = np.clip(cush, 0, 1)
     tips = K._sn(n, 0.3, seed + 3)
@@ -74,17 +76,13 @@ def _shingles(n: int, seed: int, palette: list, *, rows: int = 14, tabs: int = 7
     base = T.gradient(T.normalize(0.55 * tr + 0.45 * K._sn(n, 1.8, seed + 5)), palette)
     base *= (0.8 + 0.25 * gran + 0.22 * grit)[..., None]
     base = T.mix(base, T.hex_rgb("#8c877e")[None, None, :] * np.ones_like(base), sparkle * 0.35)
-    newer = (tr2 > 0.95).astype(np.float32)          # replaced tabs: darker, crisper
+    newer = (tr2 > 0.97).astype(np.float32)          # replaced tabs: a little darker, crisper
     faded = (tr2 < 0.05).astype(np.float32)          # sun-baked tabs that lost granules
-    base = T.mix(base, base * 0.72, newer)
+    base = T.mix(base, base * 0.86, newer)
     base = T.mix(base, base * 0.85 + T.hex_rgb("#6e675d")[None, None, :] * 0.25, faded)
     col = base
-    # Missing tabs show black felt and nail heads; curled tabs lift at the butt corners.
-    missing = (K._hash_arr(tid, seed + 6) < 0.018).astype(np.float32)
-    felt = T.gradient(K._sn(n, 0.6, seed + 7), [(0.0, "#141312"), (1.0, "#262422")])
-    nails = ((np.abs(vin - 0.62) < 0.05) & ((np.abs(gx - tw * 0.2) < 0.005) | (np.abs(gx - tw * 0.8) < 0.005))).astype(np.float32)
-    felt = T.mix(felt, T.hex_rgb("#5a5048")[None, None, :] * np.ones_like(felt), nails)
-    col = T.mix(col, felt, missing)
+    # No missing tabs: a black hole once per 2 m tile reads as a lattice across the roof. Curled
+    # tabs lift at the butt corners.
     curl = (K._hash_arr(tid, seed + 8) < 0.07).astype(np.float32)
     corner = np.maximum(1.0 - T.smoothstep(0.0, tw * 0.3, gx), 1.0 - T.smoothstep(0.0, tw * 0.3, tw - gx))
     lift = curl * corner * T.smoothstep(0.55, 1.0, vin)
@@ -95,17 +93,17 @@ def _shingles(n: int, seed: int, palette: list, *, rows: int = 14, tabs: int = 7
     # Algae streaks (Gloeocapsa) running down the slope.
     streak = T.smoothstep(0.55, 0.85, K._sn(n, 1.5, seed + 9, (16.0, 1.0))) * T.smoothstep(0.35, 0.75, K._sn(n, 2.2, seed + 10))
     col *= (1.0 - 0.38 * streak)[..., None]
-    height = 0.3 + 0.55 * vin + 0.06 * gran + 0.25 * lift - 0.45 * slot - 0.3 * missing * (1 - nails)
-    rough = np.clip(0.86 + 0.08 * (gran - 0.5) - 0.06 * newer + 0.05 * missing, 0, 1)
-    where = np.clip(T.smoothstep(0.7, 1.0, vin) + slot, 0, 1) * (1 - missing)
+    height = 0.3 + 0.55 * vin + 0.06 * gran + 0.25 * lift - 0.45 * slot
+    rough = np.clip(0.86 + 0.08 * (gran - 0.5) - 0.06 * newer, 0, 1)
+    where = np.clip(T.smoothstep(0.7, 1.0, vin) + slot, 0, 1)
     _moss_lichen(n, seed + 20, col, height, rough, where, moss)
     return _flip(np.clip(col, 0, 1), np.clip(height, 0, 1), rough)
 
 
 @texture("roof_shingle", size=1024, seed=7600, sources=SRC)
 def roof_shingle(size: int, seed: int, out) -> None:
-    """Weathered charcoal 3-tab asphalt shingles: speckled granules, replaced and missing tabs, curled
-    corners, algae streaks down the slope, moss along the butts and slots, lichen rosettes."""
+    """Weathered charcoal 3-tab asphalt shingles: speckled granules, replaced and sun-faded tabs,
+    curled corners, algae streaks down the slope, moss along the butts and slots, lichen rosettes."""
     alb, h, r, _ = _shingles(size, seed, [(0.0, "#2c2a28"), (0.5, "#3b3835"), (1.0, "#4d4843")], moss=0.6)
     T.save_pbr_set(out, alb, h, r, normal_strength=5.0, ao_strength=1.4)
 
@@ -123,12 +121,14 @@ def roof_shingle_brown(size: int, seed: int, out) -> None:
 
 def _corrugated(n: int, seed: int, paint: list | None):
     x, y = K._coords(n, TILE)
-    pitch = TILE / 26
+    # 27 corrugations (74 mm) and three 9-corrugation sheets per tile, so side laps line up across
+    # tile edges. No end laps: sheets run metres long, and a lap line every 2 m drew a grid.
+    pitch = TILE / 27
     wave = 0.5 + 0.5 * np.cos(2 * np.pi * x / pitch)       # crests at 1
     sheet_w = pitch * 9
     sx = x % sheet_w
     lap = (1.0 - T.smoothstep(0.0, pitch * 0.6, np.minimum(sx, sheet_w - sx))).astype(np.float32)
-    end_lap = (1.0 - T.smoothstep(0.0, 0.012, np.minimum(y % TILE, TILE - y % TILE))).astype(np.float32)
+    end_lap = np.zeros_like(lap)
     # Screws on every second crest of each purlin row (4 per tile), with a rust ring.
     rows_y = np.array([0.25, 0.75, 1.25, 1.75], np.float32)
     dy = K._wrapdist_x(y, rows_y, TILE)
@@ -144,24 +144,25 @@ def _corrugated(n: int, seed: int, paint: list | None):
     tails = np.maximum(tails, np.roll(tails, 1, 1) * 0.7)
     tails = np.maximum(tails, np.roll(tails, -1, 1) * 0.7)
     tails *= T.smoothstep(0.2, 0.6, K._sn(n, 1.2, seed + 1, (10.0, 1.0)))
-    rfield = K._warp(K._sn(n, 2.1, seed + 2), seed + 3, 24.0) + 0.08 * K._sn(n, 0.6, seed + 16)
-    rust_big = T.smoothstep(0.66, 0.69, rfield) + 0.3 * T.smoothstep(0.55, 0.69, rfield)   # crisp edge, stained halo
+    # Rust here is only what the fixings make: rings, tails and lap seams. Big patches would repeat
+    # every 2 m; std_surface's world-space patch layer (roofs.json) lays them over the whole roof.
     pits = T.smoothstep(0.62, 0.72, K._sn(n, 0.5, seed + 4))
-    rust = np.clip(rust_big + 0.6 * rust_big * pits + 0.8 * tails + 0.7 * ring + 0.35 * lap * T.smoothstep(0.4, 0.7, K._sn(n, 1.4, seed + 5)), 0, 1)
+    rust = np.clip(0.8 * tails + 0.7 * ring + 0.35 * lap * T.smoothstep(0.4, 0.7, K._sn(n, 1.4, seed + 5)), 0, 1)
     rcol = T.gradient(T.normalize(K._sn(n, 1.0, seed + 6) + 0.4 * pits), [(0.0, "#3f1f10"), (0.4, "#6b3518"), (0.75, "#8e4a22"), (1.0, "#a8642e")])
     f1, _, cid = T.worley(n, 220, seed + 7)
     spangle = K._hash_arr(cid, seed + 8)
     galv = T.gradient(T.normalize(0.85 * K._sn(n, 2.0, seed + 9) + 0.15 * spangle), [(0.0, "#7c8284"), (0.6, "#959b9c"), (1.0, "#adb2b1")])
-    oxide = T.smoothstep(0.6, 0.8, K._sn(n, 1.7, seed + 10)) * (1 - rust)
+    oxide = T.smoothstep(0.6, 0.8, K._sn(n, 1.7, seed + 10, fmin=4.0)) * (1 - rust)
     galv = T.mix(galv, T.hex_rgb("#c3c6c1")[None, None, :] * np.ones_like(galv), oxide * 0.6)
     metal = np.clip(0.85 - 0.6 * oxide, 0, 1)
     rough = np.clip(0.42 + 0.06 * spangle + 0.25 * oxide, 0, 1)
     col = galv
     if paint is not None:
-        pcol = T.gradient(T.normalize(0.7 * K._sn(n, 2.4, seed + 11) + 0.3 * K._sn(n, 0.8, seed + 12)), paint)
-        chalk = T.smoothstep(0.5, 0.9, K._sn(n, 2.6, seed + 13))       # sun-chalked, pinkish
+        pcol = T.gradient(T.normalize(0.7 * K._sn(n, 2.4, seed + 11, fmin=4.0) + 0.3 * K._sn(n, 0.8, seed + 12)), paint)
+        chalk = T.smoothstep(0.5, 0.9, K._sn(n, 2.6, seed + 13, fmin=3.0))       # sun-chalked, pinkish
         pcol = T.mix(pcol, pcol * 0.8 + T.hex_rgb("#b88a80")[None, None, :] * 0.3, chalk * 0.5)
-        flaked = T.smoothstep(0.66, 0.7, K._warp(K._sn(n, 1.6, seed + 14, (1.0, 2.5)), seed + 15, 10.0))
+        # Small chips only (at least 8 per tile); large peeling is the world-space patch layer's.
+        flaked = T.smoothstep(0.7, 0.73, K._warp(K._sn(n, 1.6, seed + 14, (1.0, 2.5), fmin=8.0), seed + 15, 6.0))
         painted = 1.0 - flaked
         col = T.mix(galv, pcol, painted)
         metal = metal * (1 - painted)
@@ -178,15 +179,15 @@ def _corrugated(n: int, seed: int, paint: list | None):
 
 @texture("roof_metal", size=1024, seed=7620, sources=SRC)
 def roof_metal(size: int, seed: int, out) -> None:
-    """Galvanised corrugated sheets: spangle, white oxide, rust patches and streaks bleeding down from
-    the screws, darker lap seams."""
+    """Galvanised corrugated sheets: spangle, white oxide, rust rings and streaks bleeding down from
+    the screws, darker lap seams (rust patches: std_surface's world-space patch layer)."""
     alb, h, r, m = _corrugated(size, seed, None)
     T.save_pbr_set(out, alb, h, r, metal=m, normal_strength=7.0, ao_strength=1.2)
 
 
 @texture("roof_metal_red", size=1024, seed=7630, sources=SRC)
 def roof_metal_red(size: int, seed: int, out) -> None:
-    """Barn-red painted corrugated metal, chalky and flaking to galvanised steel and rust."""
+    """Barn-red painted corrugated metal, chalky, chipped to galvanised steel, rust at the fixings."""
     alb, h, r, m = _corrugated(size, seed, [(0.0, "#5e221b"), (0.6, "#76302a"), (1.0, "#8c3d30")])
     T.save_pbr_set(out, alb, h, r, metal=m, normal_strength=7.0, ao_strength=1.2)
 
@@ -208,8 +209,7 @@ def roof_cedar(size: int, seed: int, out) -> None:
     ridges = K._sn(n, 1.4, seed + 3, (9.0, 1.0))
     tone = T.normalize(0.45 * pr + 0.35 * split + 0.2 * K._sn(n, 2.0, seed + 4))
     col = T.gradient(tone, [(0.0, "#5d5850"), (0.45, "#77726a"), (0.8, "#8f8a80"), (1.0, "#a39d91")])
-    fresh = (K._hash_arr(b["piece"], seed + 5) > 0.93).astype(np.float32)   # newer shakes still brown
-    col = T.mix(col, T.gradient(split, [(0.0, "#6b4a33"), (1.0, "#8e6646")]), fresh * 0.8)
+    # No brown replacement shakes: one or two per 2 m tile read as a lattice across the roof.
     wet = T.smoothstep(0.75, 1.0, vin)
     col *= (1.0 - 0.18 * wet)[..., None]
     shade = 1.0 - T.smoothstep(0.0, 0.14, vin)

@@ -36,9 +36,17 @@ POI interiors and exteriors were the weakest surfaces in the fidelity pass (ADR-
   block, which bleeds unrelated masks into each other.
 * **Roof coverings are generated sets** (`roofs.json`): asphalt shingles (two), corrugated metal (two),
   cedar shakes, and tar and gravel. They are chosen by `style.roof.material`.
-  * Pitched-roof UVs are metres with V up the slope, so the sets are drawn eave-down and flipped.
-  * A roof is one mesh with a 2 m texture, so `std_surface` gains an opt-in world-space
-    `macro_variation` that drifts its tone over metres.
+  * Pitched-roof UVs are metres, U along the ridge and V up the slope, so the sets are drawn
+    eave-down and flipped. Flat roofs are a tar-and-gravel membrane with metre UVs behind a parapet
+    in the exterior finish.
+  * Pitched roofs get painted fascia and rake boards, a capped ridge and half-round gutters
+    (`"gutters": false` for cabins and sheds). Gable ends are wound to face out: `kit_wall` culls
+    back faces.
+  * A roof is one mesh with a 2 m texture repeating many times, so a tile holds no single
+    distinctive feature (no missing tab, replaced shake, rust patch or big moss cushion). Two
+    opt-in, world-space `std_surface` layers carry the large scale instead: `macro_variation`
+    drifts tone and dampness over metres, and `patch_cover` lays ragged rust patches with a
+    stained halo on metal roofs.
 * **Roads get painted lines.**
   * `RoadMarkings` lays decals along every two-lane asphalt road (≥ 6 m) recorded in
     `RegionTerrain.roads`: a dashed yellow centre line (3 m on, 9 m off) and white edge lines in
@@ -63,6 +71,6 @@ POI interiors and exteriors were the weakest surfaces in the fidelity pass (ADR-
 − `kit_wall.gdshader` costs three more texture fetches per pixel; it only draws walls and floors.
 − The mask file names (`kit_decay_albedo/orm`) are kept for the builder and no longer describe
   their content.
-− Flat roofs (a box mesh with a flat colour) don't use `roof_tar` yet: `RoofBuilder._flat` needs
-  metre UVs first. Roofs still have no fascia, ridge caps or gutters (TECH_DEBT).
+− Roofs are still one gable or flat roof per level over its bounding rectangle (TD-008): no hips,
+  L-plans or porch roofs.
 − Meadow grass costs more triangles per instance; the grass-density setting still thins it.

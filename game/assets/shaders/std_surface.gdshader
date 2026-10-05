@@ -47,6 +47,12 @@ uniform float variation_strength = 0.08;
 // such as roofs: brightness and a damp, grimy cast drift over metres so the tile stops reading as a
 // grid.
 uniform float macro_variation = 0.0;
+// World-space weathering patches (0 = off), for the same big meshes: ragged rust (or other) patches
+// metres across, which a 2 m tile can't hold without repeating them. The tile keeps only small wear.
+uniform vec4 patch_color : source_color = vec4(0.42, 0.21, 0.09, 1.0);
+uniform float patch_cover : hint_range(0.0, 1.0) = 0.0;
+uniform float patch_roughness = 0.88;
+uniform float patch_scale = 0.18;
 
 // Self-lit surfaces (device screens, indicator LEDs): emission = colour x energy x albedo.
 uniform vec4 emission_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
@@ -192,6 +198,20 @@ void fragment() {
 		float mv = 0.55 * value_noise(wp * 0.21) + 0.3 * value_noise(wp * 0.53 + 3.7) + 0.15 * value_noise(wp * 1.37 + 9.1);
 		alb *= 1.0 + (mv - 0.5) * macro_variation;
 		alb = mix(alb, alb * vec3(0.8, 0.84, 0.7), smoothstep(0.55, 0.8, mv) * macro_variation);
+	}
+	if (patch_cover > 0.0) {
+		vec2 pp = (v_world_pos.xz + v_world_pos.yy * 0.7) * patch_scale;
+		float pn = 0.5 * value_noise(pp) + 0.25 * value_noise(pp * 2.3 + 1.9) + 0.15 * value_noise(pp * 5.1 + 4.2) + 0.1 * value_noise(pp * 11.3 + 7.7);
+		// The noise sum centres on 0.5 with a spread of ~0.13: this threshold covers about
+		// patch_cover of the surface.
+		float edge = 0.64 - 0.28 * patch_cover;
+		float m = smoothstep(edge, edge + 0.03, pn);
+		// A stained halo bleeds around each patch.
+		float halo = smoothstep(edge - 0.07, edge, pn) * (1.0 - m);
+		alb = mix(alb, alb * vec3(0.86, 0.74, 0.62), halo * 0.7);
+		alb = mix(alb, patch_color.rgb * (0.7 + 0.6 * value_noise(pp * 13.0 + 2.2)), m);
+		rough = mix(rough, patch_roughness, m);
+		metal = mix(metal, 0.0, m);
 	}
 
 	// Weather: rain darkens and glosses surfaces facing the sky; snow settles on top.
