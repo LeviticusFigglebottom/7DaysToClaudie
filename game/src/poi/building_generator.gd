@@ -832,6 +832,12 @@ func _bare_raw() -> Dictionary:
 
 func _furnish() -> void:
 	for r: Room in rooms:
+		# A ceiling fixture over the middle of most rooms (dead with the power, but it is there).
+		var mid: Vector2i = r.rect.get_center()
+		if r.purpose != "garage" and rng.randf() < 0.7 and not _stair_cell(r.level, mid) and r.rect.get_area() >= 4:
+			var cl: PropDef = _prop_def("ceiling_light")
+			if cl != null:
+				_add_prop(r, {"prop": "ceiling_light", "pos": [mid.x + 0.5, mid.y + 0.5]}, cl)
 		var list: Array = FURNITURE.get(r.purpose, [])
 		var placed_counters: Array = []
 		for item: Array in list:
