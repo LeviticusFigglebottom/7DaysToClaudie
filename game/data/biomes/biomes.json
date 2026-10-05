@@ -11,7 +11,7 @@
      "vegetation": {"meadow_grass": 38.0, "fireweed": 3.5, "yarrow_plant": 1.2, "paper_birch": 0.05, "loose_stone": 0.2, "granite_boulder": 0.03},
      "ground": ["grass", "dirt"], "ambience": "meadow", "temperature_offset": 0.5, "spawns": {"hollow": 10, "lurcher": 1, "rammer": 0.3}, "spawn_density": 0.7, "fog_tint": "#b0b6ac"},
     {"id": "riverbank", "name": "Riverbank", "description": "Gravel bars, willow scrub, sedge and horsetail, cold water.",
-     "vegetation": {"slough_sedge": 14.0, "horsetail": 4.0, "meadow_grass": 6.0, "pacific_willow": 1.4, "paper_birch": 0.5, "fireweed": 1.0,
+     "vegetation": {"slough_sedge": 14.0, "horsetail": 2.5, "meadow_grass": 6.0, "pacific_willow": 1.4, "paper_birch": 0.5, "fireweed": 1.0,
                     "loose_stone": 1.8, "granite_boulder": 0.2, "deadfall_branches": 0.4, "driftwood_log": 0.35, "forest_moss": 0.8},
      "ground": ["gravel", "mud", "grass"], "ambience": "river", "temperature_offset": -1.0, "spawns": {"hollow": 10}, "spawn_density": 0.6, "fog_tint": "#a0aab0"},
     {"id": "town", "name": "Town", "description": "Overgrown lots and cracked asphalt.",

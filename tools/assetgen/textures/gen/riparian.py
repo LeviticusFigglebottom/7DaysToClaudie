@@ -82,8 +82,8 @@ def _horsetail(p: V.Painter, rng, box) -> None:
     branchlets angled up and out (a bottle-brush)."""
     x0, y0, x1, y1 = box
     w, h = x1 - x0, y1 - y0
-    for i in range(16):
-        bx = x0 + w * 0.5 + rng.normal(0, w * 0.17)
+    for i in range(7):
+        bx = x0 + w * 0.5 + rng.normal(0, w * 0.14)
         hh = h * rng.uniform(0.55, 0.95)
         lean = rng.normal(0, 0.07)
         n = 11
@@ -93,17 +93,17 @@ def _horsetail(p: V.Painter, rng, box) -> None:
         stem_col = V._jit(rng, V._c("#6b8a35"), 0.08, 0.03)
         for k in range(n):
             nx_, ny_ = x + math.sin(lean) * seg, y - math.cos(lean) * seg
-            p.capsule((x, y), (nx_, ny_), 3.4 * (1 - 0.5 * k / n), 3.0 * (1 - 0.5 * (k + 1) / n), stem_col, stem_col, z, 0.6)
-            p.capsule((nx_, ny_ + 1.5), (nx_, ny_ - 1.5), 3.8 * (1 - 0.5 * k / n), 3.8 * (1 - 0.5 * k / n),
+            p.capsule((x, y), (nx_, ny_), 5.5 * (1 - 0.5 * k / n), 5.0 * (1 - 0.5 * (k + 1) / n), stem_col, stem_col, z, 0.6)
+            p.capsule((nx_, ny_ + 2.0), (nx_, ny_ - 2.0), 6.0 * (1 - 0.5 * k / n), 6.0 * (1 - 0.5 * k / n),
                       V._c("#2c3318"), V._c("#2c3318"), z + 0.5, 0.6)
             if 1 <= k < n - 1:
                 ln = seg * rng.uniform(1.6, 2.4) * (1.0 - 0.55 * k / n)
-                for j in range(7):
-                    a = (j / 7) * math.pi - math.pi * 0.5 + rng.uniform(-0.15, 0.15)
+                for j in range(9):
+                    a = (j / 9) * math.pi - math.pi * 0.5 + rng.uniform(-0.15, 0.15)
                     side = math.sin(a)
                     up = 0.55 + 0.25 * abs(math.cos(a))
                     tip = (nx_ + side * ln, ny_ - ln * up * 0.5)
-                    p.capsule((nx_, ny_), tip, 1.2, 0.6, V._jit(rng, V._c("#7a9a40"), 0.08), V._c("#8faa50"), z + 1.0, 0.5)
+                    p.capsule((nx_, ny_), tip, 2.2, 1.0, V._jit(rng, V._c("#6f9038"), 0.08), V._c("#86a24a"), z + 1.0, 0.5)
             x, y = nx_, ny_
 
 
@@ -112,8 +112,8 @@ def _willow(p: V.Painter, rng, box, cols, scale) -> None:
     w, h = x1 - x0, y1 - y0
     for t in range(3):
         base = (x0 + w * rng.uniform(0.42, 0.58), y1 - 4)
-        V.leaf_twig(p, rng, base, rng.uniform(-0.25, 0.25), h * rng.uniform(0.8, 0.95), leaf_len=h * 0.2,
-                    leaf_w=h * 0.032, n_leaves=16, cols=cols, twig_col=V._c("#6e5a32"), twig_r=3.0 * scale,
+        V.leaf_twig(p, rng, base, rng.uniform(-0.25, 0.25), h * rng.uniform(0.8, 0.95), leaf_len=h * 0.13,
+                    leaf_w=h * 0.022, n_leaves=24, cols=cols, twig_col=V._c("#6e5a32"), twig_r=3.0 * scale,
                     a=0.6, b=1.4, teeth=30, serr=0.06, hbase=t * 3.0, petiole=0.06, spread=(20, 45), droop=0.15,
                     side_twigs=3, holes_p=0.05, scale=scale, vein_col=V._c("#a8b48a"))
 

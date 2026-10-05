@@ -7,7 +7,7 @@ Origin = base centre on the ground. Foliage cards map into atlas rects passed in
 (textures/gen/vegetation.py LAYOUTS). Vertex colour: R = AO (darker low/inside), B = per-card
 variation, A = wind weight (0 at the ground -> 1 at tips); 1.0 for static wood.
 
-params.kind: sapling | huckleberry | fireweed | yarrow | fern | grass | mushroom | deadfall | moss | carpet
+params.kind: sapling | huckleberry | willow | fireweed | yarrow | fern | grass | mushroom | deadfall | moss | carpet
 """
 from __future__ import annotations
 
@@ -247,9 +247,11 @@ def build_huckleberry(p, lod):
 
     rng_c = common.rng(str(p["seed"]) + "c")
     stems = []
+    lean_lo, lean_hi = p.get("lean", (0.15, 0.6))
+    card_lo, card_hi = p.get("card_len", (0.38, 0.52))
     for i in range(int(p.get("stems", 6))):
         a = i * 2.39996 + rng.uniform(-0.3, 0.3)
-        lean = rng.uniform(0.15, 0.6)
+        lean = rng.uniform(lean_lo, lean_hi)
         L = H * rng.uniform(0.75, 1.05)
         pts = [Vector((math.cos(a) * 0.03, math.sin(a) * 0.03, -0.03))]
         d = Vector((math.cos(a) * math.sin(lean), math.sin(a) * math.sin(lean), math.cos(lean)))
@@ -274,12 +276,113 @@ def build_huckleberry(p, lod):
         d.z += rng_c.uniform(-0.3, 0.4)
         d.normalize()
         side = rot_axis(UP.cross(horiz(d)), d, rng_c.gauss(0.0, 0.6))
-        ln = H * rng_c.uniform(0.38, 0.52) * (1.25 if lod else 1.0)
+        ln = H * rng_c.uniform(card_lo, card_hi) * (1.25 if lod else 1.0)
         reg = regs[k % len(regs)]
         aval = ao_at(pos)
         card(mb, pos, d, side, ln, ln * _aspect(atlas, reg), atlas[reg], mat, segs=2 if lod == 0 else 1,
              droop=rng_c.uniform(0.05, 0.2), out=(pos - center).normalized(),
              col_fn=lambda s_, x, av=aval: (av, 0.0, rng_c.random(), lerp(0.4, 1.0, s_)), normal_fn=nfn)
+    return mb
+
+
+def _along(pts: list[Vector], s: float) -> tuple[Vector, Vector]:
+    """Point and tangent at fraction s (by segment count) of a polyline."""
+    i = min(int(s * (len(pts) - 1)), len(pts) - 2)
+    f = s * (len(pts) - 1) - i
+    return pts[i].lerp(pts[i + 1], f), (pts[i + 1] - pts[i]).normalized()
+
+
+def build_willow(p, lod):
+    """Pacific willow shrub: a vase of ascending stems that fork in their upper half, and twig cards
+    packed toward the stem tips, sweeping up and out from the shrub's axis with drooping ends.
+    It reads as one rounded mass of narrow leaves. (Cards spread at random angles along leaning
+    stems, as the huckleberry builder does, read as fern fronds at willow size.)"""
+    rng = common.rng(p["seed"])
+    rng_c = common.rng(str(p["seed"]) + "c")
+    atlas = p["atlas"]
+    mat = p["mat"]
+    stem_mat = p.get("stem_mat", mat)
+    regs = tuple(p.get("regs", ("willow_a", "willow_b")))
+    mb = MeshBuilder()
+    H = float(p.get("height", 2.5))
+    center = Vector((0, 0, H * 0.62))
+    stem_r = float(p.get("stem_scale", 1.0))
+
+    def nfn(pos, fn_):
+        o = pos - center
+        o = Vector((o.x, o.y, o.z * 0.7 + 0.25)).normalized()
+        f = fn_ if fn_.dot(o) >= 0 else -fn_
+        return (f * 0.4 + o * 0.6).normalized()
+
+    def ao_at(pos):
+        o = pos - center
+        r = math.sqrt(o.x * o.x + o.y * o.y) / (H * 0.45)
+        return max(0.3, min(1.0, 0.3 + 0.45 * r + 0.45 * (pos.z / H)))
+
+    lean_lo, lean_hi = p.get("lean", (0.1, 0.35))
+    branches = []
+    for i in range(int(p.get("stems", 9))):
+        a = i * 2.39996 + rng.uniform(-0.4, 0.4)
+        lean = rng.uniform(lean_lo, lean_hi)
+        L = H * rng.uniform(0.72, 1.0)
+        out = Vector((math.cos(a), math.sin(a), 0.0))
+        d = Vector((out.x * math.sin(lean), out.y * math.sin(lean), math.cos(lean)))
+        pts = [out * 0.05 + Vector((0.0, 0.0, -0.04))]
+        for j in range(1, 6):
+            # Stays ascending: willow stems bow outward a little, they don't arch over.
+            d = (d + Vector((rng.uniform(-0.09, 0.09), rng.uniform(-0.09, 0.09), 0.015)) + out * 0.03).normalized()
+            pts.append(pts[-1] + d * (L / 5))
+        branches.append((pts, 1.0))
+        for _ in range(rng.randint(1, 2)):
+            k0 = rng.randint(2, 3)
+            side = rot_axis(out, UP, rng.uniform(-0.9, 0.9))
+            fd = (d + side * rng.uniform(0.45, 0.8)).normalized()
+            fl = L * rng.uniform(0.35, 0.55)
+            fork = [pts[k0]]
+            for j in range(1, 4):
+                fd = (fd + Vector((rng.uniform(-0.1, 0.1), rng.uniform(-0.1, 0.1), 0.06))).normalized()
+                fork.append(fork[-1] + fd * (fl / 3))
+            branches.append((fork, 0.55))
+    # Basal shoots: short leafy whips around the stool fill the lower crown (willows resprout
+    # densely from the base; without them the shrub is a vase of bare sticks).
+    for i in range(int(p.get("shoots", 8))):
+        a = rng.uniform(0.0, math.tau)
+        lean = rng.uniform(0.35, 0.75)
+        L = H * rng.uniform(0.28, 0.5)
+        out = Vector((math.cos(a), math.sin(a), 0.0))
+        d = Vector((out.x * math.sin(lean), out.y * math.sin(lean), math.cos(lean)))
+        pts = [out * 0.07 + Vector((0.0, 0.0, -0.03))]
+        for j in range(1, 4):
+            d = (d + Vector((rng.uniform(-0.12, 0.12), rng.uniform(-0.12, 0.12), 0.05))).normalized()
+            pts.append(pts[-1] + d * (L / 3))
+        branches.append((pts, 0.4))
+    if lod == 0:
+        for pl, w in branches:
+            f0 = len(mb.faces)
+            r0 = 0.014 * stem_r * w
+            tube(mb, pl, [r0 * (1.0 - 0.75 * k / (len(pl) - 1)) for k in range(len(pl))], 4, stem_mat,
+                 u_repeats=1, tip=False, col_fn=lambda ii, s, aa, pp: (ao_at(pp) * 0.8, 0.0, 0.5, s * 0.6))
+            remap_uvs(mb, f0, len(mb.faces), atlas["stem"])
+    card_lo, card_hi = p.get("card_len", (0.18, 0.28))
+    n = int(p.get("clusters", 120))
+    if lod:
+        n = int(n * 0.45)
+    for k in range(n):
+        pl, w = branches[k % len(branches)]
+        # Leafy from low on the stems, denser toward the tips.
+        s = 1.0 - (rng_c.random() ** 1.35) * (0.85 if w == 1.0 else 0.8)
+        pos, t = _along(pl, s)
+        o = Vector((pos.x, pos.y, 0.0))
+        o = o.normalized() if o.length > 1e-3 else horiz(t)
+        d = (o * rng_c.uniform(0.3, 0.75) + t * 0.35 + UP * rng_c.uniform(0.55, 0.95)
+             + Vector((rng_c.uniform(-0.25, 0.25), rng_c.uniform(-0.25, 0.25), 0.0))).normalized()
+        side = rot_axis(horiz(d).cross(UP), d, rng_c.gauss(0.0, 0.7))
+        ln = H * rng_c.uniform(card_lo, card_hi) * (1.3 if lod else 1.0)
+        reg = regs[k % len(regs)]
+        aval = ao_at(pos)
+        card(mb, pos - d * ln * 0.1, d, side, ln, ln * _aspect(atlas, reg), atlas[reg], mat, segs=2 if lod == 0 else 1,
+             droop=rng_c.uniform(0.12, 0.32), out=(pos - center).normalized(),
+             col_fn=lambda s_, x, av=aval: (av, 0.0, rng_c.random(), lerp(0.45, 1.0, s_)), normal_fn=nfn)
     return mb
 
 
@@ -659,7 +762,7 @@ def build(params: dict, outputs: list[str]) -> None:
     name = params["name"]
     for lod, out in enumerate(outputs):
         res = {"fern": build_fern, "grass": build_grass, "fireweed": build_fireweed, "yarrow": build_yarrow,
-               "huckleberry": build_huckleberry, "sapling": build_sapling, "mushroom": build_mushroom,
+               "huckleberry": build_huckleberry, "willow": build_willow, "sapling": build_sapling, "mushroom": build_mushroom,
                "deadfall": build_deadfall, "moss": build_moss, "carpet": build_carpet}[kind](params, lod)
         if isinstance(res, MeshBuilder):
             objs = [res.build(name + ("" if lod == 0 else f"_lod{lod}"))]

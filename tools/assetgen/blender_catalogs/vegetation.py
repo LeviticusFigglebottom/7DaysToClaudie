@@ -98,10 +98,13 @@ PLANTS: dict[str, dict] = {
                       "tufts": 5, "spread": 0.4, "atlas": RIPARIAN, "mat": "riparian", "lods": 2},
     "horsetail_a": {"kind": "grass", "seed": 8303, "height": 0.6, "cards": [["horsetail", 1.0], ["horsetail", 0.8]],
                     "tufts": 7, "spread": 0.55, "atlas": RIPARIAN, "mat": "riparian", "lods": 2},
-    "willow_shrub_a": {"kind": "huckleberry", "seed": 8401, "height": 2.5, "stems": 10, "clusters": 60, "regs": ["willow_a", "willow_b"],
-                       "stem_scale": 1.8, "atlas": RIPARIAN, "mat": "willow", "stem_mat": "willow_stem", "lods": 2},
-    "willow_shrub_b": {"kind": "huckleberry", "seed": 8502, "height": 1.8, "stems": 8, "clusters": 44, "regs": ["willow_b", "willow_a"],
-                       "stem_scale": 1.5, "atlas": RIPARIAN, "mat": "willow", "stem_mat": "willow_stem", "lods": 2},
+    # Willows (build_willow): ascending stems forking near the top, twig cards massed toward the tips.
+    "willow_shrub_a": {"kind": "willow", "seed": 8401, "height": 2.6, "stems": 10, "shoots": 9, "clusters": 175,
+                       "regs": ["willow_a", "willow_b"], "lean": [0.06, 0.26], "card_len": [0.17, 0.26], "stem_scale": 1.8, "atlas": RIPARIAN, "mat": "willow",
+                       "stem_mat": "willow_stem", "lods": 2},
+    "willow_shrub_b": {"kind": "willow", "seed": 8502, "height": 1.9, "stems": 8, "shoots": 7, "clusters": 155,
+                       "regs": ["willow_b", "willow_a"], "lean": [0.1, 0.32], "card_len": [0.19, 0.28], "stem_scale": 1.5, "atlas": RIPARIAN, "mat": "willow",
+                       "stem_mat": "willow_stem", "lods": 2},
 }
 
 
