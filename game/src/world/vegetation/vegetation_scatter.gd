@@ -5,7 +5,8 @@ extends RefCounted
 ## addressed by (chunk, index) and saves only store differences (felled trees, harvested plants).
 ##
 ## Layers: "tree" (large, collidable, choppable), "medium" (bushes, saplings, boulders, deadfall
-## piles, fallen logs), "ground" (ferns, grass, flowers, mushrooms, moss, litter — dense, near only).
+## piles, fallen logs), "ground" (ferns, grass, flowers, mushrooms, moss, litter, herb carpets — dense,
+## near only).
 ##
 ## The medium and ground layers grow in patches: a low-frequency noise field scales the chance of
 ## placing anything (dense thickets and bare stretches instead of an even sprinkle), and each
@@ -18,10 +19,10 @@ const CHUNK: float = 64.0
 const LAYERS: Dictionary = {
 	"tree": {"cell": 4.0, "kinds": ["tree"]},
 	"medium": {"cell": 3.0, "kinds": ["bush", "rock", "deadfall"], "patch": 0.6, "patch_size": 36.0},
-	"ground": {"cell": 1.25, "kinds": ["fern", "grass", "flower", "mushroom", "moss", "litter"], "patch": 0.5, "patch_size": 18.0},
+	"ground": {"cell": 1.25, "kinds": ["fern", "grass", "flower", "mushroom", "moss", "litter", "herb"], "patch": 0.5, "patch_size": 18.0},
 }
 const MAX_SLOPE: Dictionary = {"tree": 34.0, "bush": 38.0, "rock": 60.0, "deadfall": 30.0, "fern": 40.0, "grass": 30.0, "flower": 30.0,
-	"mushroom": 35.0, "moss": 45.0, "litter": 32.0}
+	"mushroom": 35.0, "moss": 45.0, "litter": 32.0, "herb": 38.0}
 ## Kinds that lie on the ground follow its slope instead of standing upright.
 const HUGS_GROUND: PackedStringArray = ["moss", "litter"]
 

@@ -23,7 +23,7 @@ const GROUND_END: float = 52.0
 ## camera closely; each plant then shrinks away on its own in the shader (custom data).
 const GROUND_BLOCK: float = 32.0
 ## Ground kinds thinned by the grass density setting (ferns and moss carry the look and stay).
-const THINNED_KINDS: PackedStringArray = ["grass", "litter", "flower"]
+const THINNED_KINDS: PackedStringArray = ["grass", "litter", "flower", "herb"]
 ## Ground blocks whose centre is farther than this draw a species' cheaper "_lod1" model when it
 ## has one (ferns): the nearest such plant is then >= ~17 m away.
 const GROUND_LOD_SPLIT: float = 40.0

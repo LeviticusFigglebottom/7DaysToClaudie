@@ -20,6 +20,7 @@
     {"id": "loose_stone", "name": "Loose Stones", "kind": "rock", "models": ["rocks/pebble_cluster_a", "rocks/pebble_cluster_b"], "hp": 1, "yields": {"stone": [1, 2]}, "height": [0.2, 0.35], "collides": false, "lod_distances": [20, 40, 60, 60]},
     {"id": "deadfall_branches", "name": "Deadfall", "kind": "deadfall", "models": ["plants/deadfall_a", "plants/deadfall_b"], "hp": 1, "yields": {"stick": [2, 4]}, "height": [0.3, 0.6], "collides": false, "regrow_days": 2, "lod_distances": [25, 45, 70, 80]},
     {"id": "forest_moss", "name": "Moss", "kind": "moss", "models": ["plants/moss_mound_a", "plants/moss_mound_b"], "hp": 0, "height": [0.1, 0.25], "collides": false, "lod_distances": [30, 50, 60, 60]},
+    {"id": "forest_sorrel", "name": "Redwood Sorrel", "kind": "herb", "models": ["plants/sorrel_patch_a", "plants/sorrel_patch_b"], "hp": 0, "height": [0.08, 0.15], "collides": false, "lod_distances": [25, 45, 55, 55]},
     {"id": "forest_litter", "name": "Forest Litter", "kind": "litter", "models": ["plants/litter_a", "plants/litter_b"], "hp": 0, "height": [0.02, 0.1], "collides": false, "lod_distances": [20, 35, 50, 50]},
     {"id": "fallen_log", "name": "Fallen Log", "kind": "deadfall", "models": ["trees/fallen_log_a", "trees/fallen_log_b"], "hp": 0, "height": [0.6, 0.9], "trunk_radius": 0.4, "collides": true, "lod_distances": [40, 100, 200, 300]}
   ]

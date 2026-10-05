@@ -1,13 +1,13 @@
 """Understory plants: fir saplings, huckleberry bushes, fireweed, yarrow, sword ferns, grass
 clumps, shelf (bracket) fungus on a rotting wood chunk, deadfall stick piles and flat litter
-(twigs, cones, dead sprays), moss mounds.
+(twigs, cones, dead sprays), moss mounds, redwood sorrel carpets.
 
 build(params, outputs): outputs[0] = LOD0, optional outputs[1] = LOD1 (cheaper card set).
 Origin = base centre on the ground. Foliage cards map into atlas rects passed in params["atlas"]
 (textures/gen/vegetation.py LAYOUTS). Vertex colour: R = AO (darker low/inside), B = per-card
 variation, A = wind weight (0 at the ground -> 1 at tips); 1.0 for static wood.
 
-params.kind: sapling | huckleberry | fireweed | yarrow | fern | grass | mushroom | deadfall | moss
+params.kind: sapling | huckleberry | fireweed | yarrow | fern | grass | mushroom | deadfall | moss | carpet
 """
 from __future__ import annotations
 
@@ -443,6 +443,43 @@ def build_mushroom(p, lod):
 
 
 # ---------------------------------------------------------------------------------------------
+# Herb carpet (redwood sorrel)
+# ---------------------------------------------------------------------------------------------
+
+def build_carpet(p, lod):
+    """Low herb carpet: a few near-horizontal top-view cards just above the soil (what a player
+    looking down sees) plus crossed side cards of the same leaves on their stalks (what reads at
+    eye height and at grazing angles)."""
+    rng = common.rng(p["seed"])
+    atlas = p["atlas"]
+    mb = MeshBuilder()
+    size = float(p.get("size", 0.9))
+    h = float(p.get("height", 0.12))
+    m = p["mat"]
+    up_n = lambda q, fn_: Vector((0.0, 0.0, 1.0))
+    for k in range(int(p.get("tops", 3))):
+        c = Vector((rng.uniform(-0.18, 0.18) * size, rng.uniform(-0.18, 0.18) * size, h * rng.uniform(0.6, 1.0)))
+        a = rng.uniform(0.0, 2.0 * math.pi)
+        d = Vector((math.cos(a), math.sin(a), rng.uniform(-0.1, 0.1))).normalized()
+        side = Vector((-math.sin(a), math.cos(a), rng.uniform(-0.1, 0.1)))
+        sz = size * rng.uniform(0.7, 1.0)
+        card(mb, c - d * (sz * 0.5), d, side, sz, sz, atlas["sorrel_top"], m, segs=1, droop=0.0, out=UP,
+             col_fn=lambda q, x: (0.9, 0.0, rng.random(), 0.25), normal_fn=up_n)
+    nf = int(p.get("sides", 3))
+    a0 = rng.uniform(0.0, math.pi)
+    nfn = _dome_normal(Vector((0, 0, 0)), 0.6, 0.6)
+    for k in range(nf):
+        a = a0 + math.pi * k / nf
+        side = Vector((math.cos(a), math.sin(a), 0.0))
+        w = size * rng.uniform(0.6, 0.85)
+        ht = h * 1.6 * rng.uniform(0.85, 1.1)
+        card(mb, Vector((0.0, 0.0, -0.01)), UP, side, ht, w, atlas["sorrel_side"], m, segs=1, droop=0.0,
+             out=Vector((-side.y, side.x, 0.2)), col_fn=lambda q, x: (lerp(0.6, 0.95, q), 0.0, rng.random(), q * 0.5),
+             normal_fn=nfn)
+    return mb
+
+
+# ---------------------------------------------------------------------------------------------
 # Moss mound
 # ---------------------------------------------------------------------------------------------
 
@@ -614,7 +651,7 @@ def build(params: dict, outputs: list[str]) -> None:
     for lod, out in enumerate(outputs):
         res = {"fern": build_fern, "grass": build_grass, "fireweed": build_fireweed, "yarrow": build_yarrow,
                "huckleberry": build_huckleberry, "sapling": build_sapling, "mushroom": build_mushroom,
-               "deadfall": build_deadfall, "moss": build_moss}[kind](params, lod)
+               "deadfall": build_deadfall, "moss": build_moss, "carpet": build_carpet}[kind](params, lod)
         if isinstance(res, MeshBuilder):
             objs = [res.build(name + ("" if lod == 0 else f"_lod{lod}"))]
         elif isinstance(res, list):

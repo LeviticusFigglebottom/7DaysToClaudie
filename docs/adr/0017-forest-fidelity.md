@@ -25,9 +25,15 @@ fixes change budgets, shaders or the scatter layout that saves address, so they 
     because its indices address felled trees.
   * The medium and ground indices changed. Save version 2 therefore drops harvested-plant records
     and keeps stumps.
-* **New ground kinds** `moss` and `litter`. Moss mounds and twig-and-cone litter follow the
-  terrain slope (`VegetationScatter.ground_tilt`). Moss mounds use the terrain's moss texture
-  set, so they match the floor around them.
+* **New ground kinds** `moss`, `litter` and `herb`.
+  * Moss mounds and twig-and-cone litter follow the terrain slope
+    (`VegetationScatter.ground_tilt`). Moss mounds use the terrain's moss texture set, so they
+    match the floor around them.
+  * Herb carpets (redwood sorrel) are near-horizontal top-view cards plus crossed side cards,
+    about 13 triangles each, so they can fill the gaps between ferns cheaply.
+* **Foliage keeps its density with distance.** The `foliage` shader scales alpha up by the
+  texture's mip level before the alpha test (`mip_alpha_scale`, after Ben Golus). Mipmaps
+  average needle alpha towards the background, which used to thin distant crowns and ferns.
 * **Budgets rise where they show.**
   * Hollowed bodies go from 10k to 16k triangles; the head goes from 1.7k to 4.2k. At 1.7k the
     face decimated into jagged eye sockets.

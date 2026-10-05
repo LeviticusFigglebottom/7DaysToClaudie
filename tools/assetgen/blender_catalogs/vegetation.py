@@ -83,6 +83,9 @@ PLANTS: dict[str, dict] = {
     # Moss mounds over buried stones and rotted stumps (ground layer; the rim sinks into the floor).
     "moss_mound_a": {"kind": "moss", "seed": 7701, "radius": 0.6, "height": 0.1, "humps": 3, "mat": "moss_mound"},
     "moss_mound_b": {"kind": "moss", "seed": 7802, "radius": 0.95, "height": 0.15, "humps": 4, "mat": "moss_mound"},
+    # Redwood sorrel carpets between the ferns (ground layer).
+    "sorrel_patch_a": {"kind": "carpet", "seed": 7901, "size": 0.9, "height": 0.11, "tops": 3, "sides": 3, "atlas": _PL, "mat": "plants"},
+    "sorrel_patch_b": {"kind": "carpet", "seed": 8002, "size": 1.2, "height": 0.13, "tops": 4, "sides": 3, "atlas": _PL, "mat": "plants"},
 }
 
 

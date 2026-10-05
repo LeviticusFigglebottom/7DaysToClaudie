@@ -92,6 +92,10 @@ LAYOUTS: dict[str, dict[str, list[float]]] = {
         "huckle_d": [0.25, 0.25, 0.5, 0.5],
         "stem": [0.375, 0.5, 0.40625, 0.75],
         "stem_green": [0.40625, 0.5, 0.4375, 0.75],
+        # Redwood sorrel (Oxalis) carpet: a top-down patch for near-horizontal cards and a low
+        # side view of the same leaves on their stalks.
+        "sorrel_top": [0.5, 0.0, 1.0, 0.5],
+        "sorrel_side": [0.5, 0.5, 0.75, 0.75],
     },
 }
 
@@ -812,7 +816,7 @@ def bark_larch(size: int, seed: int, out) -> None:
     height = 0.62 * plate + topm * (0.085 * scale_h + 0.02 * lip) + 0.07 * coarse + 0.025 * fine
     height = T.normalize(T.blur(height, 0.6))
     plate_col = T.gradient(np.clip(0.4 * rnd + 0.35 * coarse + 0.25 * fine, 0, 1),
-                           [(0.0, "#56321f"), (0.4, "#71412a"), (0.75, "#855436"), (1.0, "#976a49")])
+                           [(0.0, "#523425"), (0.4, "#6a4532"), (0.75, "#7c573f"), (1.0, "#8d6b52")])
     # fresh, paler cinnamon under a lifted lip; shadow at the top of each scale
     plate_col = plate_col * (0.78 + 0.32 * ramp)[..., None]
     plate_col = T.mix(plate_col, np.ones_like(plate_col) * _c("#b37a50"), (lip * 0.5)[..., None][..., 0])
@@ -1484,7 +1488,8 @@ def yarrow_leaf(p: Painter, rng, base, ang, length, col, hbase=0.0):
 @texture("plants", size=2048, seed=5301, kind="pbr_alpha")
 def plants(size: int, seed: int, out) -> None:
     """Small plants atlas: fireweed stalks + leaf cluster, yarrow (side cards, top-view flower
-    heads, feathery leaves), huckleberry twigs with dark berries, woody and green stem strips."""
+    heads, feathery leaves), huckleberry twigs with dark berries, woody and green stem strips,
+    redwood sorrel (a top-down carpet and a side view)."""
     p = Painter(size)
     L = LAYOUTS["plants"]
     k = size / 2048.0
@@ -1551,6 +1556,43 @@ def plants(size: int, seed: int, out) -> None:
         p.rgb[y0:y1, x0:x1] = np.tile(strip, reps)[:h, :w]
         p.a[y0:y1, x0:x1] = 1.0
         p.ht[y0:y1, x0:x1] = 0.4 + 0.2 * np.tile(n, reps[:2])[:h, :w]
+    # redwood sorrel: trifoliate leaves of three notched, heart-shaped leaflets
+    sorrel = [_c("#4c7a2c"), _c("#578934"), _c("#43702a"), _c("#62913a"), _c("#6d9a40")]
+
+    def sorrel_leaf(r2, c, size_px, rot, hb, squash=1.0):
+        """One leaf from above: three obcordate leaflets radiating from the petiole top, each
+        drawn as two overlapping lobes so the tip has its notch. squash < 1 foreshortens the
+        leaflets vertically (seen from the side)."""
+        for li in range(3):
+            a = rot + li * 2.0944 + r2.uniform(-0.12, 0.12)
+            col = _jit(r2, sorrel[int(r2.integers(0, len(sorrel)))], 0.1, 0.05)
+            ln = size_px * r2.uniform(0.85, 1.1)
+            for lobe in (-1, 1):
+                aa = a + lobe * 0.2
+                tip = (c[0] + math.sin(aa) * ln, c[1] - math.cos(aa) * ln * squash)
+                p.blade(c, tip, ln * 0.6, col, np.clip(col * 0.8, 0, 1), a=1.7, b=0.35, h0=hb, hscale=0.25)
+            mid = (c[0] + math.sin(a) * ln * 0.8, c[1] - math.cos(a) * ln * 0.8 * squash)
+            p.capsule(c, mid, 0.7 * k, 0.4 * k, np.clip(col * 1.15, 0, 1), np.clip(col * 1.1, 0, 1), hb + 0.3, 0.3)
+
+    x0, y0, x1, y1, w, h = region("sorrel_top")
+    r2 = T.rng(seed + 501)
+    cx, cy = x0 + w * 0.5, y0 + h * 0.5
+    leaves = []
+    for j in range(270):
+        rr = (r2.random() ** 0.62) * w * 0.44       # denser towards the middle, thinning at the rim
+        ang = r2.uniform(0, 2 * math.pi)
+        leaves.append((r2.random(), (cx + math.cos(ang) * rr, cy + math.sin(ang) * rr), r2.uniform(38, 60) * k * (1.0 - 0.3 * rr / (w * 0.44))))
+    leaves.sort(key=lambda t: t[0])
+    for z, c, sz in leaves:
+        sorrel_leaf(r2, c, sz, r2.uniform(0, 2 * math.pi), z * 6.0)
+    x0, y0, x1, y1, w, h = region("sorrel_side")
+    r2 = T.rng(seed + 502)
+    for j in range(18):
+        bx = x0 + w * r2.uniform(0.1, 0.9)
+        top = (bx + r2.uniform(-12, 12) * k, y1 - h * r2.uniform(0.3, 0.62))
+        p.polyline([(bx, y1 - 2), ((bx + top[0]) * 0.5 + r2.uniform(-4, 4) * k, (y1 + top[1]) * 0.5), top],
+                   [1.6 * k, 1.4 * k, 1.2 * k], [_c("#8a6a4a"), _c("#7a8a4a"), _c("#6a8a3e")], j * 0.2, 0.4)
+        sorrel_leaf(r2, top, r2.uniform(34, 48) * k, r2.uniform(0, 2 * math.pi), 2.0 + j * 0.3, squash=0.35)
     p.set_clip(None)
     finish_foliage(p, out, rough=0.6, rough_var=0.1, normal_strength=2.0, alpha_boost=1.3, seed=seed)
 
