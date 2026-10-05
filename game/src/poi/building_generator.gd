@@ -420,6 +420,10 @@ func _house() -> bool:
 	var kitchen: Room = _room(0, Rect2i(day.position.x, 0, day.size.x, split), "K", "kitchen")
 	# Night side.
 	var night_rooms: Array[Room] = []
+	## [room, the room it opens off] for rooms that do not reach the hall (an en-suite, a linen room).
+	var inner: Array = []
+	# The night side's columns next to the hall, and the rest beyond them.
+	var nearx: int = night.position.x if night.position.x > hx else night.end.x
 	if not two:
 		var fs: int = rng.randi_range(maxi(3, d - 5), d - 3)
 		var front: Room = _room(0, Rect2i(night.position.x, fs, night.size.x, d - fs), "B", "bedroom")
@@ -427,9 +431,25 @@ func _house() -> bool:
 		if fs >= 5:
 			var bath_back: bool = rng.randf() < 0.5
 			var by: int = 0 if bath_back else fs - 2
-			night_rooms.append(_room(0, Rect2i(night.position.x, by, night.size.x, 2), "T", "bath"))
 			var cy: int = 2 if bath_back else 0
-			night_rooms.append(_room(0, Rect2i(night.position.x, cy, night.size.x, fs - 2), "C", ["kids", "bedroom", "study", "nursery"][rng.randi() % 4]))
+			var back_room: Room = _room(0, Rect2i(night.position.x, cy, night.size.x, fs - 2), "C", ["kids", "bedroom", "study", "nursery"][rng.randi() % 4])
+			if night.size.x >= 6:
+				# A 3 m bathroom by the hall and a linen room beyond it, off the back bedroom.
+				var near: Rect2i = Rect2i(nearx, by, 3, 2) if nearx == night.position.x else Rect2i(nearx - 3, by, 3, 2)
+				var far: Rect2i = Rect2i(night.position.x + 3, by, night.size.x - 3, 2) if nearx == night.position.x else Rect2i(night.position.x, by, night.size.x - 3, 2)
+				night_rooms.append(_room(0, near, "T", "bath"))
+				inner.append([_room(0, far, "U", "utility"), back_room])
+			else:
+				night_rooms.append(_room(0, Rect2i(night.position.x, by, night.size.x, 2), "T", "bath"))
+			night_rooms.append(back_room)
+		elif night.size.x >= 6:
+			# Too big for a bathroom alone: a back bedroom by the hall with its bathroom beyond it.
+			var bw: int = rng.randi_range(2, 3)
+			var bed_r: Rect2i = Rect2i(nearx, 0, night.size.x - bw, fs) if nearx == night.position.x else Rect2i(night.position.x + bw, 0, night.size.x - bw, fs)
+			var bath_r: Rect2i = Rect2i(night.end.x - bw, 0, bw, fs) if nearx == night.position.x else Rect2i(night.position.x, 0, bw, fs)
+			var back_bed: Room = _room(0, bed_r, "C", ["bedroom", "kids", "study"][rng.randi() % 3])
+			night_rooms.append(back_bed)
+			inner.append([_room(0, bath_r, "T", "bath"), back_bed])
 		else:
 			night_rooms.append(_room(0, Rect2i(night.position.x, 0, night.size.x, fs), "T", "bath"))
 	else:
@@ -453,6 +473,9 @@ func _house() -> bool:
 		_connect(living, kitchen, "open", "open", avoid)
 	for nr: Room in night_rooms:
 		if _connect(nr, hall, "door", "closed" if rng.randf() < 0.6 else "open", avoid).is_empty():
+			return false
+	for pair: Array in inner:
+		if _connect(pair[0] as Room, pair[1] as Room, "door", "closed" if rng.randf() < 0.5 else "open", avoid).is_empty():
 			return false
 	# Front door bolted from the inside (the shortcut out); the back door at the hall's far end.
 	street_door = _open(0, Vector2i(pc, d - 1), 2, "door", "locked_inside", {"id": "front_door"})

@@ -47,8 +47,8 @@ uniform float bloom_web_tile = 1.6;
 uniform float bloom_web_cover = 0.33;
 // Cream, not snow-white: a third of the ground in near-white threads brightened the dark litter
 // 2-2.3x and, under the cold sky light, the colonised floor read as old snow.
-uniform vec4 bloom_web_fresh : source_color = vec4(0.8, 0.78, 0.7, 1.0);
-uniform vec4 bloom_web_aged : source_color = vec4(0.62, 0.57, 0.46, 1.0);
+uniform vec4 bloom_web_fresh : source_color = vec4(0.74, 0.72, 0.64, 1.0);
+uniform vec4 bloom_web_aged : source_color = vec4(0.55, 0.5, 0.4, 1.0);
 uniform float bloom_glow_energy = 0.035;
 
 global uniform float hm_wetness;
@@ -147,7 +147,7 @@ void fragment() {
 		// The threads are hair-thin: with distance they sink into the litter, a faint pale veil (the
 		// floor 1.2-1.7x as bright as clean litter, not a sheet).
 		float far_w = smoothstep(1.5, 4.5, lod);
-		threads *= mix(1.0, 0.3, far_w);
+		threads *= mix(1.0, 0.25, far_w);
 		// The cottony mat, in the litter's hollows and only where the Bloom is strongest.
 		float cotton = smoothstep(0.62, 1.0, bf) * wm.b * smoothstep(0.4, 0.8, 1.0 - hgt) * 0.55;
 		// Rot drains some colour from what the web holds (no lighter, and only a quarter of the way to
@@ -156,13 +156,16 @@ void fragment() {
 		float lum = dot(alb, vec3(0.299, 0.587, 0.114));
 		alb = mix(alb, vec3(lum) * vec3(1.04, 1.0, 0.94), decay * 0.25);
 		vec3 wc = mix(bloom_web_fresh.rgb, bloom_web_aged.rgb, wm.g);
-		float body = mix(mix(0.5, 0.95, wm.a), 0.55, mid_w);
+		// Past a pixel per thread the web is a share of the footprint: kept thin, or a sunlit floor
+		// turns into a cream sheet that reads as snow (TD-062).
+		float body = mix(mix(0.5, 0.95, wm.a), 0.4, mid_w);
 		float web = clamp(max(threads * body, cotton), 0.0, 1.0);
 		alb = mix(alb, mix(wc, bloom_web_aged.rgb * 0.85, smoothstep(-0.05, 0.05, cotton - threads)), web);
 		vec3 wn = whiteout_top(textureGrad(bloom_web_normal, wuv, wdx, wdy).rgb * 2.0 - 1.0, gn);
 		nrm = normalize(mix(nrm, wn, threads * (1.0 - far_w) * 0.85));
-		orm.g = mix(orm.g, 0.58, web);
-		orm.r = mix(orm.r, 1.0, web * 0.5);
+		// Hyphae are matte; a glossier web caught the sky at grazing angles like frost.
+		orm.g = mix(orm.g, 0.82, web);
+		orm.r = mix(orm.r, 1.0, web * 0.25);
 		bloom_glow_m = threads * body + cotton * 0.4;
 	}
 
