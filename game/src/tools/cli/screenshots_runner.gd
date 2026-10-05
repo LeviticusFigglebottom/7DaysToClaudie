@@ -88,6 +88,10 @@ func _run() -> void:
 	cam.make_current()
 	var p: Player = w.player
 	p.input_enabled = false
+	# Time stands still between shots: streaming waits run up to 240 s, which at the default day
+	# length moved a "19.6 h" dusk shot an hour and a half into the night (and by a different
+	# amount every run).
+	(w.get(&"clock_driver") as WorldClockDriver).paused = true
 	for shot: Dictionary in SHOTS:
 		if not _only.is_empty() and not _only.has(str(shot["name"])):
 			continue
