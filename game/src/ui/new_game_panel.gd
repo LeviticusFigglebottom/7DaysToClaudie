@@ -44,8 +44,10 @@ func _ready() -> void:
 	_preset.item_selected.connect(func(_i: int) -> void: _reset_to_preset())
 	_add_pair(top, "Difficulty", _preset)
 	_seed = LineEdit.new()
-	_seed.text = "4471"
-	_seed.tooltip_text = "Scatter, loot rolls and Hum plans follow the seed; the map itself is handcrafted."
+	# A fresh seed per new game (ADR-0030): buildings are dressed per run from it, so the default
+	# run is a new one; type a seed to replay a run.
+	_seed.text = str(100000 + randi() % 900000)
+	_seed.tooltip_text = "Scatter, loot rolls, Hum plans and how every building is dressed (its rooms, wear and the houses on Larch Street) follow the seed; the map itself is handcrafted."
 	_add_pair(top, "World seed", _seed)
 	_preset_info = Label.new()
 	_preset_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

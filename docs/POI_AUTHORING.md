@@ -502,7 +502,7 @@ front toward `facing`. Streets are painted and graded into the terrain by the co
 
 Lot keys: `id, rect, zoning, facing, pick, tags`, and (ADR-0030) `tier` (`[lo, hi]` or a number,
 else the framework's `tier_range`), `pool` (`any`, `authored`, `generated`), `templates` (template
-ids it may generate) and `reserved` (a note: the lot stays empty for a building still to come). A
+ids it may generate; naming them makes the pool `generated` unless `pool` says otherwise) and `reserved` (a note: the lot stays empty for a building still to come). A
 lot **without a `pick`** holds what `LotPicker` chooses from the world seed: an authored building
 zoned and tiered for it that fits and is not already standing in this framework, or a generated
 building from a template zoned for it (filling the lot). Larch Street in Pell's Crossing is six

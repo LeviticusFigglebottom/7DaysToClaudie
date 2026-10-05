@@ -167,6 +167,8 @@ func _make(tdef: TemplateDef, seed: int, lot_size: Vector2i, def_id: String) -> 
 	var setback: int = rng.randi_range(t.setback.x, t.setback.y)
 	if lot != Vector2i.ZERO:
 		w = mini(w, lot.x - 2 * SIDE_YARD)
+		# A shallow lot takes a shorter front yard before a shallower house.
+		setback = clampi(lot.y - BACK_YARD - t.depth.x, t.setback.x, setback)
 		d = mini(d, lot.y - setback - BACK_YARD)
 		if w < t.width.x or d < t.depth.x:
 			return null
@@ -380,9 +382,12 @@ func _exterior(r: Room) -> Array:
 
 # --- Archetypes ------------------------------------------------------------------------------------
 
-## A hall from front to back between a day side and a night side (see the class doc).
+## A hall from front to back between a day side and a night side (see the class doc); a single
+## storey may instead have its hall across the middle (_house_across).
 func _house() -> bool:
 	var two: bool = t.storeys > 1
+	if not two and w >= 9 and d >= 7 and rng.randf() < 0.45:
+		return _house_across()
 	var hw: int = 2 if two else 1
 	if w < hw + 8 or d < (8 if two else 6):
 		return false
@@ -460,6 +465,46 @@ func _house() -> bool:
 		if not _upper(hx, hw, sc, pc):
 			return false
 	_pick_entry(back, [living, kitchen] + night_rooms)
+	return true
+
+
+## A hall across the middle of the house (the Merrow House's shape): kitchen, bathroom and a bedroom
+## behind it, the living room and a front bedroom before it; the front door opens into the living
+## room, the back door into the kitchen.
+func _house_across() -> bool:
+	_level(0)
+	var hb: int = rng.randi_range(3, d - 4)
+	var hall: Room = _room(0, Rect2i(0, hb, w, 1), "H", "hallway")
+	var kw: int = rng.randi_range(3, mini(5, w - 5))
+	var bw: int = w - kw - 2
+	var kitchen_left: bool = rng.randf() < 0.5
+	var kx: int = 0 if kitchen_left else w - kw
+	var tx: int = kw if kitchen_left else (w - kw - 2 if rng.randf() < 0.5 else 0)
+	var bx: int = (kw + 2 if kitchen_left else (0 if tx != 0 else 2))
+	var kitchen: Room = _room(0, Rect2i(kx, 0, kw, hb), "K", "kitchen")
+	var bath: Room = _room(0, Rect2i(tx, 0, 2, hb), "T", "bath")
+	var back_bed: Room = _room(0, Rect2i(bx, 0, bw, hb), "C", ["bedroom", "kids", "nursery", "study"][rng.randi() % 4])
+	var lw: int = rng.randi_range(4, w - 3)
+	var living_left: bool = rng.randf() < 0.5
+	var fy: int = hb + 1
+	var living: Room = _room(0, Rect2i(0 if living_left else w - lw, fy, lw, d - fy), "L", "living")
+	var front_bed: Room = _room(0, Rect2i(lw if living_left else 0, fy, w - lw, d - fy), "B", "bedroom")
+	if rng.randf() < 0.4:
+		if _connect(living, hall, "open", "open").is_empty():
+			return false
+		_connect(living, hall, "open", "open")
+	elif _connect(living, hall, "door", "open" if rng.randf() < 0.5 else "closed").is_empty():
+		return false
+	for r: Room in [kitchen, bath, back_bed, front_bed]:
+		if _connect(r, hall, "door" if r != kitchen or rng.randf() < 0.6 else "open", "closed" if rng.randf() < 0.6 else "open").is_empty():
+			return false
+	var fx: int = living.rect.position.x + rng.randi_range(1, living.rect.size.x - 2)
+	street_door = _open(0, Vector2i(fx, d - 1), 2, "door", "locked_inside", {"id": "front_door"})
+	exit_door = street_door
+	shortcut = str(exit_door["id"])
+	var back: Dictionary = _open(0, Vector2i(kitchen.rect.position.x + rng.randi_range(1, kw - 2), 0), 0, "door", "closed", {"id": "back_door"})
+	loot = front_bed if rng.randf() < 0.5 or back_bed.purpose == "study" else back_bed
+	_pick_entry(back, [living, kitchen, back_bed, front_bed])
 	return true
 
 
@@ -1097,6 +1142,11 @@ func _trap() -> void:
 	for r: Room in rooms:
 		if r.purpose == "hallway" and r.level == 0:
 			hall = r
+	if roll < 0.45 and hall != null and hall.rect.size.x > hall.rect.size.y:
+		# A hall across the house: two boards side by side along it.
+		var x0: int = rng.randi_range(1, maxi(1, hall.rect.size.x - 3))
+		traps.append({"id": "loose_boards", "type": "creaky_floor", "at": [x0, hall.rect.position.y], "size": [2, 1]})
+		return
 	if roll < 0.45 and hall != null:
 		var col: int = hall.rect.position.x
 		for c: Vector2i in [Vector2i(hall.rect.position.x, 0), Vector2i(hall.rect.end.x - 1, 0)]:

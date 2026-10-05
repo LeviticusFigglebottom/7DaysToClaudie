@@ -6,7 +6,8 @@ extends RefCounted
 ## this framework, whose footprint fits), or a generated ordinary building from a
 ## BuildingTemplateDef whose zoning matches. "pool" narrows that to "authored" or "generated",
 ## "templates" names the templates a lot may generate, "tier" ([lo, hi] or a number) overrides the
-## framework's tier_range, and "reserved" holds the lot empty for a building still to be authored
+## framework's tier_range (a lot that names templates generates unless its pool says otherwise),
+## and "reserved" holds the lot empty for a building still to be authored
 ## (the school, the fire station, the bank).
 ## Pure function of the framework, the placement id and the world seed: PoiManager (which places
 ## the buildings) and TerrainHoles (which cuts their cellars) resolve the same lots the same way.
@@ -67,7 +68,8 @@ static func _choose(fw: FrameworkDef, l: Dictionary, res: Dictionary, used: Dict
 		tr = Vector2i(int(lt[0]), int(lt[1]))
 	elif lt is float or lt is int:
 		tr = Vector2i(int(lt), int(lt))
-	var pool: String = str(l.get("pool", "any"))
+	# A lot that names its templates means generated buildings unless it says otherwise.
+	var pool: String = str(l.get("pool", "generated" if l.has("templates") else "any"))
 	var allowed: Array = l.get("templates", [])
 	var cands: Array = []
 	if pool != "generated":
