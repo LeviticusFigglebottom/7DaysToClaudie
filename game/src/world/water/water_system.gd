@@ -6,6 +6,12 @@ const RIVER_EXTRA: float = 3.0
 const LAKE_OFFSET: float = 3.5
 ## Cell size of the river segment index behind water_level_at().
 const GRID: float = 32.0
+## Distances (m) probed for the nearest forest when measuring a vertex's tree line, and the
+## canopy that counts as forest.
+const TREE_PROBES: PackedFloat32Array = [12.0, 24.0, 40.0, 60.0, 85.0, 120.0, 170.0]
+const FOREST_CANOPY: float = 0.35
+## Tree-line elevation (sine) with no forest in reach: distant hills and forest.
+const FAR_TREE_LINE: float = 0.035
 
 var world: Node
 var _lakes: Array[Dictionary] = []
@@ -16,10 +22,13 @@ var _rivers: Array[Dictionary] = []
 var _river_grid: Dictionary = {}
 var _lake_mat: ShaderMaterial
 var _river_mat: ShaderMaterial
+## Set by setup_world; null in tests, where water reflects a uniform tree line.
+var _terrain: TerrainManager
 
 
 func setup_world(w: Node) -> void:
 	world = w
+	_terrain = w.terrain
 	_lake_mat = _make_material(0.0)
 	_river_mat = _make_material(0.35)
 	var seen: Dictionary = {}
@@ -99,16 +108,15 @@ func _add_lake(wb: Dictionary) -> void:
 	var level: float = float(wb["level"])
 	var verts := PackedVector3Array()
 	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
 	for v: Vector2 in outline:
 		verts.append(Vector3(v.x, level, v.y))
 		uvs.append(v * 0.1)
-	# triangulate_polygon winding -> flip to Godot's clockwise front faces.
-	var fixed := PackedInt32Array()
-	for i: int in range(0, idx.size(), 3):
-		fixed.append(idx[i])
-		fixed.append(idx[i + 2])
-		fixed.append(idx[i + 1])
-	_add_mesh("Lake_" + str(wb["id"]), verts, uvs, fixed, _lake_mat, true)
+		cols.append(_tree_line(v.x, v.y, level))
+	# triangulate_polygon emits every triangle with a positive (x, z) cross product whatever the
+	# outline's winding, and that is clockwise seen from above: a front face, as is. (This used to
+	# be flipped, which turned every lake face down, and back-face culling hid it.)
+	_add_mesh("Lake_" + str(wb["id"]), verts, uvs, cols, idx, _lake_mat)
 	_lakes.append({"poly": poly, "level": level, "bounds": _bounds(poly)})
 
 
@@ -120,6 +128,7 @@ func _add_river_piece(wb: Dictionary) -> void:
 		return
 	var verts := PackedVector3Array()
 	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
 	var idx := PackedInt32Array()
 	var along: float = 0.0
 	for i: int in pts.size():
@@ -139,10 +148,15 @@ func _add_river_piece(wb: Dictionary) -> void:
 		var w: float = half * 2.0
 		uvs.append(Vector2(0.0, along / w))
 		uvs.append(Vector2(1.0, along / w))
+		var tl: Color = _tree_line(c.x, c.y, lvl)
+		cols.append(tl)
+		cols.append(tl)
 		if i > 0:
+			# Left bank is +nrm, i.e. counter-clockwise of the flow in (x, z): left, right, next
+			# left is clockwise seen from above, so the strip faces up.
 			var a: int = (i - 1) * 2
-			idx.append_array([a, a + 2, a + 1, a + 1, a + 2, a + 3])
-	_add_mesh("River_" + str(wb["id"]), verts, uvs, idx, _river_mat, false)
+			idx.append_array([a, a + 1, a + 2, a + 1, a + 3, a + 2])
+	_add_mesh("River_" + str(wb["id"]), verts, uvs, cols, idx, _river_mat)
 	var line := PackedVector2Array()
 	for p: Array in pts:
 		line.append(Vector2(float(p[0]), float(p[1])))
@@ -159,11 +173,12 @@ func _add_river_piece(wb: Dictionary) -> void:
 				(_river_grid[cell] as Array).append(Vector2i(ri, i))
 
 
-func _add_mesh(name_: String, verts: PackedVector3Array, uvs: PackedVector2Array, idx: PackedInt32Array, mat: Material, flip_check: bool) -> void:
+func _add_mesh(name_: String, verts: PackedVector3Array, uvs: PackedVector2Array, cols: PackedColorArray, idx: PackedInt32Array, mat: Material) -> void:
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = cols
 	var normals := PackedVector3Array()
 	normals.resize(verts.size())
 	normals.fill(Vector3.UP)
@@ -181,6 +196,35 @@ func _add_mesh(name_: String, verts: PackedVector3Array, uvs: PackedVector2Array
 	mi.material_override = mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
+
+
+## How high the far bank's trees stand over the water at (x, z), seen toward +X, +Z, -X and -Z
+## (the colour's r, g, b, a): the sine of the elevation of the nearest forest's crown tops, averaged
+## over three rays per direction. The water shader reflects them by the reflected ray's heading, so
+## a lake in the woods shows a tall dark band and a river through a meadow shows the sky.
+func _tree_line(x: float, z: float, level: float) -> Color:
+	if _terrain == null:
+		return Color(0.24, 0.24, 0.24, 0.24)
+	var out := Color()
+	for q: int in 4:
+		var acc: float = 0.0
+		for k: int in 3:
+			var ang: float = q * PI * 0.5 + (k - 1) * 0.4
+			var dir := Vector2(cos(ang), sin(ang))
+			var el: float = FAR_TREE_LINE
+			for d: float in TREE_PROBES:
+				var px: float = x + dir.x * d
+				var pz: float = z + dir.y * d
+				var c: float = _terrain.canopy_at(px, pz)
+				if c >= FOREST_CANOPY:
+					# Crown tops (canopy x canopy height is the crown mass) over the bank.
+					var top: float = c * TerrainManager.CANOPY_HEIGHT / TerrainManager.CROWN_MASS_HEIGHT
+					var rise: float = maxf(_terrain.height_at(px, pz) - level, 0.0)
+					el = maxf(el, sin(atan2(top + rise, d)))
+					break
+			acc += el
+		out[q] = acc / 3.0
+	return out
 
 
 static func _bounds(p: PackedVector2Array) -> Rect2:

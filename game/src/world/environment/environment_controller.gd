@@ -188,11 +188,13 @@ func update_now() -> void:
 	# A thin valley mist at dawn that burns off by mid-morning (weather fog adds on top).
 	var morning_mist: float = smoothstep(4.0, 6.0, hour) * (1.0 - smoothstep(7.0, 9.5, hour)) * 0.0012
 	var fog_d: float = float(w["fog_density"]) * 0.6 + morning_mist
-	var vol_d: float = float(w["volumetric_density"]) * 0.5 + morning_mist * 2.0 + 0.0015
+	# A light floor of haze keeps sun shafts in the canopy; on a clear noon it veils a pond's far
+	# shore by under a fifth.
+	var vol_d: float = float(w["volumetric_density"]) * 0.5 + morning_mist * 2.0 + 0.001
 	if not env.volumetric_fog_enabled:
 		# Low preset has no froxel fog: carry mist weather and dawn haze in the depth fog instead
 		# (they vanished entirely).
-		fog_d += (vol_d - 0.0015) * 0.12
+		fog_d += (vol_d - 0.001) * 0.12
 	env.fog_density = fog_d
 	var fog_col: Color = horizon.lerp(sun_col * 0.7, golden * 0.35)
 	env.fog_light_color = fog_col
@@ -211,6 +213,12 @@ func update_now() -> void:
 	RenderingServer.global_shader_parameter_set(&"hm_snow", float(w.get("snow_cover", w.get("snow", 0.0))))
 	RenderingServer.global_shader_parameter_set(&"hm_bloom", hum_intensity)
 	RenderingServer.global_shader_parameter_set(&"hm_season", _season_weights())
+	# The sky gradient as linear radiance, for surfaces that fake their own reflections (water).
+	var sky_e: float = env.background_energy_multiplier
+	var zl: Color = zenith.srgb_to_linear() * sky_e
+	var hl: Color = horizon.lerp(sun_col, golden * 0.3).srgb_to_linear() * sky_e
+	RenderingServer.global_shader_parameter_set(&"hm_sky_zenith", Vector4(zl.r, zl.g, zl.b, 1.0))
+	RenderingServer.global_shader_parameter_set(&"hm_sky_horizon", Vector4(hl.r, hl.g, hl.b, 1.0))
 	_last_snapshot = {"elev": elev, "day": day, "night": night, "cover": cover}
 
 

@@ -5,7 +5,7 @@
      "hp": 140, "yields": {"log": [2, 3], "stick": [2, 4], "leaf_bundle": [1, 2]}, "tool": "axe", "height": [18, 30], "trunk_radius": 0.32, "lod_distances": [45, 120, 280, 1400]},
     {"id": "hollow_larch", "name": "Hollow Larch", "kind": "tree", "models": ["trees/hollow_larch_a", "trees/hollow_larch_b", "trees/hollow_larch_c"], "stump_model": "trees/conifer_stump", "log_model": "trees/log_larch",
      "hp": 120, "yields": {"log": [2, 3], "stick": [2, 4]}, "tool": "axe", "height": [16, 26], "trunk_radius": 0.28, "lod_distances": [45, 120, 280, 1400]},
-    {"id": "paper_birch", "name": "Paper Birch", "kind": "tree", "models": ["trees/paper_birch_a", "trees/paper_birch_b", "trees/paper_birch_c"], "stump_model": "trees/birch_stump", "log_model": "trees/log_birch",
+    {"id": "paper_birch", "name": "Paper Birch", "kind": "tree", "deciduous": true, "models": ["trees/paper_birch_a", "trees/paper_birch_b", "trees/paper_birch_c"], "stump_model": "trees/birch_stump", "log_model": "trees/log_birch",
      "hp": 80, "yields": {"log": [1, 2], "stick": [3, 5]}, "tool": "axe", "height": [10, 17], "trunk_radius": 0.16, "lod_distances": [40, 110, 250, 1200]},
     {"id": "dead_snag", "name": "Dead Snag", "kind": "tree", "models": ["trees/dead_snag_a", "trees/dead_snag_b"], "stump_model": "trees/conifer_stump", "log_model": "trees/log_dead",
      "hp": 60, "yields": {"log": [1, 2], "stick": [4, 7]}, "tool": "axe", "height": [8, 16], "trunk_radius": 0.25, "lod_distances": [45, 120, 260, 1000]},

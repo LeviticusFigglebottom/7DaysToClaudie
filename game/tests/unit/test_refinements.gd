@@ -89,6 +89,43 @@ func test_river_grid_lookup() -> void:
 	ws.free()
 
 
+## The water shader culls back faces, so a surface wound the wrong way vanishes from above.
+func test_water_surfaces_face_up() -> void:
+	var ws := WaterSystem.new()
+	# Both outline windings, and rivers flowing both ways.
+	ws._add_lake({"id": "cw", "level": 2.0, "polygon": [[0.0, 0.0], [30.0, 0.0], [30.0, 20.0], [0.0, 20.0]]})
+	ws._add_lake({"id": "ccw", "level": 2.0, "polygon": [[0.0, 0.0], [0.0, 20.0], [30.0, 20.0], [30.0, 0.0]]})
+	ws._add_river_piece({"id": "south", "points": [[0.0, 0.0], [0.0, 40.0], [10.0, 80.0]], "widths": [8.0, 8.0, 8.0], "levels": [1.0, 1.0, 1.0]})
+	ws._add_river_piece({"id": "west", "points": [[0.0, 0.0], [-40.0, 5.0]], "widths": [8.0, 8.0], "levels": [1.0, 1.0]})
+	assert_eq(ws.get_child_count(), 4)
+	for mi: Node in ws.get_children():
+		var faces: PackedVector3Array = ((mi as MeshInstance3D).mesh as ArrayMesh).get_faces()
+		assert_gt(faces.size(), 0, "%s has triangles" % mi.name)
+		var down: int = 0
+		for i: int in range(0, faces.size(), 3):
+			# Plane(a, b, c) takes Godot's clockwise front-face convention.
+			if Plane(faces[i], faces[i + 1], faces[i + 2]).normal.y < 0.99:
+				down += 1
+		assert_eq(down, 0, "every %s triangle faces up" % mi.name)
+	ws.free()
+
+
+func test_far_canopy_from_biome_trees() -> void:
+	var canopy: Dictionary = TerrainManager.far_canopy(Content)
+	var conifer: Vector2 = canopy["conifer_forest"]
+	var birch: Vector2 = canopy["birch_grove"]
+	assert_gt(conifer.x, 0.9, "conifer forest: a closed, tall canopy")
+	assert_lt(conifer.y, 0.2, "mostly evergreen")
+	assert_between(birch.x, 0.4, conifer.x - 0.1, "birch groves are closed but lower")
+	assert_gt(birch.y, 0.7, "birch groves are mostly deciduous")
+	assert_lt((canopy["meadow"] as Vector2).x, 0.1, "meadows stay open")
+	# The shader's per-vertex decode (terrain_far.gdshader) recovers both values.
+	for c: Vector2 in [Vector2(0.0, 0.0), Vector2(1.0, 1.0), Vector2(0.4, 0.8667), Vector2(0.0667, 0.0)]:
+		var packed: float = roundf(TerrainManager.pack_canopy(c.x, c.y) * 255.0)
+		assert_almost_eq(floorf(packed / 16.0) / 15.0, c.x, 0.034, "cover %s" % c)
+		assert_almost_eq(fmod(packed, 16.0) / 15.0, c.y, 0.034, "deciduous %s" % c)
+
+
 func _env() -> Dictionary:
 	return {"ambient_c": 18.0, "wind": 0.1, "raining": false, "sheltered": false, "fire_warmth": 0.0, "sleeping": false, "exertion": 0.0}
 

@@ -1,6 +1,6 @@
 {
   "defs": [
-    {"id": "clear", "name": "Clear", "fog_density": 0.0008, "volumetric_density": 0.004, "wind": 0.2, "cloud_cover": 0.15, "temperature_offset": 1.0, "season_weights": {"spring": 3, "summer": 6, "autumn": 3, "winter": 2}, "duration_hours": [4, 12]},
+    {"id": "clear", "name": "Clear", "fog_density": 0.0008, "volumetric_density": 0.0025, "wind": 0.2, "cloud_cover": 0.15, "temperature_offset": 1.0, "season_weights": {"spring": 3, "summer": 6, "autumn": 3, "winter": 2}, "duration_hours": [4, 12]},
     {"id": "overcast", "name": "Overcast", "fog_density": 0.0014, "volumetric_density": 0.008, "wind": 0.35, "cloud_cover": 0.75, "temperature_offset": -1.0, "season_weights": {"spring": 4, "summer": 3, "autumn": 5, "winter": 4}, "duration_hours": [3, 10]},
     {"id": "mist", "name": "Valley Mist", "fog_density": 0.006, "volumetric_density": 0.035, "wind": 0.05, "cloud_cover": 0.6, "temperature_offset": -1.5, "noise_mask": 0.9, "season_weights": {"spring": 3, "summer": 1, "autumn": 5, "winter": 2}, "duration_hours": [2, 6]},
     {"id": "rain", "name": "Rain", "fog_density": 0.0028, "volumetric_density": 0.014, "rain": 0.6, "wind": 0.5, "cloud_cover": 0.95, "temperature_offset": -3.0, "noise_mask": 0.65, "season_weights": {"spring": 4, "summer": 2, "autumn": 5, "winter": 1}, "duration_hours": [2, 7]},

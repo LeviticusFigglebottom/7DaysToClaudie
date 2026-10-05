@@ -22,6 +22,12 @@ const LOD_STEPS: PackedFloat32Array = [1.0, 2.0, 4.0]
 const FAR_STEP: float = 16.0
 const MAX_DIG_DEPTH: float = 3.0
 const COLLISION_LAYER: int = 1
+## Far tiles of unbuilt regions rise up to this far over the ground where the forest is closed and
+## tall (the crown mass of grey firs).
+const CANOPY_HEIGHT: float = 17.0
+## Trees per 100 m² that close the canopy, and where a crown's mass sits as a share of tree height.
+const CLOSED_CANOPY_DENSITY: float = 3.0
+const CROWN_MASS_HEIGHT: float = 0.75
 
 var world: WorldDef
 ## region id -> RegionTerrain (detailed, 1 m)
@@ -32,8 +38,10 @@ var focus: Node3D
 var textures: TerrainTextures
 
 var _materials: Dictionary = {}
+## Biome id -> Vector2(canopy, deciduous share) (far_canopy); set in setup.
+var _canopy: Dictionary = {}
 var _far_material: ShaderMaterial
-var _fallback_material: ShaderMaterial
+var _fallback_material: Material
 var _chunks: Dictionary = {}
 var _pending: Dictionary = {}
 var _far_root: Node3D
@@ -74,8 +82,15 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	_far_material = ShaderMaterial.new()
 	_far_material.shader = load("res://assets/shaders/terrain_far.gdshader")
 	_far_material.set_shader_parameter("macro_variation", textures.macro_variation)
-	_fallback_material = _far_material
+	_far_material.set_shader_parameter("canopy_height", CANOPY_HEIGHT)
+	# Near chunks in no region at all (off the map). Not the far material: that one discards the
+	# whole near square.
+	var ground := StandardMaterial3D.new()
+	ground.albedo_color = Color(0.27, 0.24, 0.18)
+	ground.roughness = 0.95
+	_fallback_material = ground
 	_build_grid()
+	_canopy = far_canopy(ContentDB.instance)
 	_build_far_tiles()
 	volume = VolumeTerrain.new()
 	volume.name = "Volume"
@@ -122,6 +137,15 @@ func _terrain_for(x: float, z: float) -> RegionTerrain:
 	if col < 0 or row < 0 or col >= world.cols or row >= world.rows:
 		return null
 	return _grid[col + row * world.cols]
+
+
+## Forest canopy at world (x, z), 0..1 (see far_canopy): the biome's trees under the vegetation
+## mask, so roads, water and clearings read open. Thread-safe for reads.
+func canopy_at(x: float, z: float) -> float:
+	var rt: RegionTerrain = _terrain_for(x, z)
+	if rt == null:
+		return 0.0
+	return (_canopy.get(rt.biome_at(x, z), Vector2.ZERO) as Vector2).x * rt.veg_at(x, z)
 
 
 ## Terrain height at world (x, z). Thread-safe for reads.
@@ -255,6 +279,14 @@ func _material_for(key: Vector2i) -> Material:
 		var rt: RegionTerrain = regions[rid]
 		if rt.rect.has_point(center):
 			return _materials[rid]
+	# Within 416 m of a built region's edge the near square reaches unbuilt ones: texture their
+	# chunks from the coarse (16 m) splat, made on first use.
+	for rid: String in coarse:
+		var ct: RegionTerrain = coarse[rid]
+		if ct.rect.has_point(center):
+			if not _materials.has(rid):
+				_materials[rid] = _make_region_material(ct)
+			return _materials[rid]
 	return _fallback_material
 
 
@@ -312,11 +344,21 @@ func is_ready_around(pos: Vector3, radius: int = 1) -> bool:
 # --- Far tiles ----------------------------------------------------------------------------------
 
 func _build_far_tiles() -> void:
+	var built: Array[Rect2] = []
+	for rid: String in regions:
+		built.append(world.region_rect(rid))
 	for rid: String in world.regions:
 		var rect: Rect2 = world.region_rect(rid)
 		var rt: RegionTerrain = regions.get(rid, coarse.get(rid))
-		var color_fn := func(x: float, z: float) -> Color: return _far_color(rt, x, z)
-		var mesh: ArrayMesh = TerrainMesher.build_chunk(rect.position, rect.size.x, FAR_STEP, height_at, 12.0, color_fn)
+		# Built regions draw their own trees (impostors out to 1.2 km); the others get a canopy,
+		# raised into the mesh itself so its normals light the forest edges.
+		var grid: PackedVector2Array = _far_canopy_grid(rt, rect, {} if regions.has(rid) else _canopy, built)
+		var n: int = int(round(rect.size.x / FAR_STEP)) + 3
+		var at := func(x: float, z: float) -> Vector2:
+			return grid[clampi(int(round((z - rect.position.y) / FAR_STEP)) + 1, 0, n - 1) * n + clampi(int(round((x - rect.position.x) / FAR_STEP)) + 1, 0, n - 1)]
+		var height_fn := func(x: float, z: float) -> float: return height_at(x, z) + (at.call(x, z) as Vector2).x * CANOPY_HEIGHT
+		var color_fn := func(x: float, z: float) -> Color: return _far_color(rt, x, z, at.call(x, z))
+		var mesh: ArrayMesh = TerrainMesher.build_chunk(rect.position, rect.size.x, FAR_STEP, height_fn, 12.0, color_fn)
 		var mi := MeshInstance3D.new()
 		mi.name = "Far_" + rid
 		mi.mesh = mesh
@@ -326,9 +368,71 @@ func _build_far_tiles() -> void:
 		_far_root.add_child(mi)
 
 
-func _far_color(rt: RegionTerrain, x: float, z: float) -> Color:
+## {biome id: Vector2(canopy 0..1, deciduous share 0..1)} from the biomes' trees. Canopy is cover
+## (tree density over a closed canopy's) times crown height over CANOPY_HEIGHT: the far tile rises
+## canopy x CANOPY_HEIGHT, so birch groves stand lower than fir forest.
+static func far_canopy(db: Node) -> Dictionary:
+	var out: Dictionary = {}
+	if db == null:
+		return out
+	for b: ContentDef in db.all(&"biome"):
+		var veg: Dictionary = (b as BiomeDef).vegetation
+		var trees: float = 0.0
+		var leafy: float = 0.0
+		var tall: float = 0.0
+		for sid: Variant in veg:
+			var sp := db.get_def(&"species", StringName(sid)) as SpeciesDef
+			if sp == null or sp.veg_kind != "tree":
+				continue
+			var d: float = float(veg[sid])
+			trees += d
+			tall += d * (sp.height_range.x + sp.height_range.y) * 0.5
+			if sp.deciduous:
+				leafy += d
+		if trees <= 0.0:
+			out[str(b.id)] = Vector2.ZERO
+			continue
+		var crown: float = clampf(tall / trees * CROWN_MASS_HEIGHT / CANOPY_HEIGHT, 0.0, 1.0)
+		out[str(b.id)] = Vector2(clampf(trees / CLOSED_CANOPY_DENSITY, 0.0, 1.0) * crown, leafy / trees)
+	return out
+
+
+## Canopy (cover, deciduous share) on a far tile's padded vertex grid, (size / FAR_STEP + 3)². Cover
+## follows the biome's tree density and the vegetation mask (roads, water and clearings stay open),
+## and fades out near built regions, whose own trees take over. Quantised as the shader decodes it.
+func _far_canopy_grid(rt: RegionTerrain, rect: Rect2, canopy: Dictionary, built: Array[Rect2]) -> PackedVector2Array:
+	var n: int = int(round(rect.size.x / FAR_STEP)) + 3
+	var out := PackedVector2Array()
+	out.resize(n * n)
+	if canopy.is_empty() or rt == null:
+		return out
+	for j: int in n:
+		var z: float = rect.position.y + (j - 1) * FAR_STEP
+		for i: int in n:
+			var x: float = rect.position.x + (i - 1) * FAR_STEP
+			var c: Vector2 = canopy.get(rt.biome_at(x, z), Vector2.ZERO)
+			var cover: float = c.x * rt.veg_at(x, z)
+			for r: Rect2 in built:
+				cover *= smoothstep(48.0, 192.0, _rect_distance(r, x, z))
+			out[j * n + i] = Vector2(roundf(cover * 15.0) / 15.0, roundf(c.y * 15.0) / 15.0)
+	return out
+
+
+static func _rect_distance(r: Rect2, x: float, z: float) -> float:
+	var dx: float = maxf(maxf(r.position.x - x, x - r.end.x), 0.0)
+	var dz: float = maxf(maxf(r.position.y - z, z - r.end.y), 0.0)
+	return sqrt(dx * dx + dz * dz)
+
+
+## Far-tile vertex alpha: canopy cover in the high 4 bits, deciduous share in the low 4 (decoded per
+## vertex by terrain_far.gdshader).
+static func pack_canopy(cover: float, deciduous: float) -> float:
+	return (roundf(clampf(cover, 0.0, 1.0) * 15.0) * 16.0 + roundf(clampf(deciduous, 0.0, 1.0) * 15.0)) / 255.0
+
+
+func _far_color(rt: RegionTerrain, x: float, z: float, canopy: Vector2) -> Color:
 	if rt == null:
-		return Color(0.18, 0.2, 0.12)
+		return Color(0.18, 0.2, 0.12, 0.0)
 	var w: PackedFloat32Array = rt.splat_at(x, z)
 	var col := Color(0, 0, 0)
 	var total: float = 0.0
@@ -343,6 +447,7 @@ func _far_color(rt: RegionTerrain, x: float, z: float) -> Color:
 		col = col.lerp(Color(0.08, 0.12, 0.07), 0.55)
 	elif b == "birch_grove":
 		col = col.lerp(Color(0.25, 0.27, 0.12), 0.3)
+	col.a = pack_canopy(canopy.x, canopy.y)
 	return col
 
 

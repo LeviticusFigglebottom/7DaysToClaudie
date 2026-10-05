@@ -138,3 +138,11 @@ hm_bloom={
 "type": "float",
 "value": 0.0
 }
+hm_sky_zenith={
+"type": "vec4",
+"value": Vector4(0.04, 0.1, 0.27, 1)
+}
+hm_sky_horizon={
+"type": "vec4",
+"value": Vector4(0.37, 0.43, 0.51, 1)
+}

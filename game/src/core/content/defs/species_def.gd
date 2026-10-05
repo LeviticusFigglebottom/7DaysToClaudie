@@ -22,11 +22,13 @@ var trunk_radius: float = 0.3
 var lod_distances: PackedFloat32Array = [40.0, 110.0, 260.0, 1200.0]
 var collides: bool = true
 var regrow_days: float = 0.0
+## Leaves turn and fall with the seasons (trees): the far-terrain canopy tints by it.
+var deciduous: bool = false
 
 
 func _fields() -> PackedStringArray:
 	return ["kind", "models", "stump_model", "log_model", "hp", "yields", "tool", "height", "trunk_radius",
-		"lod_distances", "collides", "regrow_days"]
+		"lod_distances", "collides", "regrow_days", "deciduous"]
 
 
 func _parse(r: DefReader) -> void:
@@ -44,6 +46,7 @@ func _parse(r: DefReader) -> void:
 		lod_distances = PackedFloat32Array(ld)
 	collides = r.boolean("collides", veg_kind in ["tree", "rock", "deadfall"])
 	regrow_days = r.num("regrow_days", 0.0)
+	deciduous = r.boolean("deciduous", false)
 	if models.is_empty():
 		r.err("species needs at least one model")
 
