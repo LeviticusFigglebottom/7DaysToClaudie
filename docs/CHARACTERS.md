@@ -60,7 +60,8 @@ elongated jaw). All share **one skeleton layout** so every animation works on ev
   lower edge of view. Sleeves `M_cloth_jumpsuit` (Remand Program orange-grey jumpsuit), skin
   `M_skin_human`, wrist **tether** device on the left wrist (`M_tether`, screen `M_tether_screen`).
 * Socket empties: `socket_hand.R` (tool grip point: tools parent here), `socket_hand.L`.
-* Actions: `fp_idle`, `fp_walk_bob` (loop), `fp_swing` (overhead chop), `fp_swing_side`,
+* Actions: `fp_idle`, `fp_walk_bob` (loop), `fp_idle_grip`, `fp_walk_grip` (the same with the right
+  hand closed round a held tool; the viewmodel picks them while an item is held), `fp_swing` (overhead chop), `fp_swing_side`,
   `fp_stab`, `fp_throw`, `fp_raise_wrist` (look at tether, hold), `fp_lower_wrist`, `fp_use`
   (eat/drink to mouth), `fp_carry_log` (log on right shoulder), `fp_place`, `fp_light` (lighter flick),
   `fp_block`.

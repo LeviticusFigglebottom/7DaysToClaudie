@@ -7,7 +7,7 @@ extends Node3D
 ## Items use their viewmodel model (models/viewmodels/<id>.glb) or the plain item model.
 
 const ARMS_PATH: String = "res://assets/generated/models/characters/fp_arms.glb"
-const LOOPING: Array[StringName] = [&"fp_idle", &"fp_walk_bob", &"fp_carry_log"]
+const LOOPING: Array[StringName] = [&"fp_idle", &"fp_walk_bob", &"fp_idle_grip", &"fp_walk_grip", &"fp_carry_log"]
 
 var _item_root: Node3D
 var _rig: Node3D
@@ -187,7 +187,11 @@ func _process(delta: float) -> void:
 		if player != null and player.equipment != null and player.equipment.carried_logs() > 0:
 			_play(&"fp_carry_log")
 		else:
-			_play(&"fp_walk_bob" if speed > 0.6 else &"fp_idle", clampf(speed / 3.0, 0.6, 1.6) if speed > 0.6 else 1.0)
+			# A held item closes the hand round it (the *_grip variants of the same stance).
+			var grip: bool = _held != null and _arms_anim.has_animation(&"fp_idle_grip")
+			var walk: StringName = &"fp_walk_grip" if grip else &"fp_walk_bob"
+			var idle: StringName = &"fp_idle_grip" if grip else &"fp_idle"
+			_play(walk if speed > 0.6 else idle, clampf(speed / 3.0, 0.6, 1.6) if speed > 0.6 else 1.0)
 	var rig := Transform3D(Basis(), sway + (breathe if _arms != null else Vector3.ZERO))
 	if _recoil > 0.0:
 		_recoil = maxf(0.0, _recoil - delta * 6.0)

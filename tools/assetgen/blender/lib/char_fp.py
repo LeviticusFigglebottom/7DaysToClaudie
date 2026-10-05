@@ -389,6 +389,9 @@ def fp_actions(p: dict):
     # flat across the view, and the empty off-hand drops towards the frame edge.
     ready = {**base, "hand.R.roll": 55.0, "hand.R.pitch": 8.0, "hand.R.x": -0.02, "hand.R.z": -0.035,
              "hand.L.x": 0.02, "hand.L.z": -0.04}
+    # The same stance with a tool in the hand: the fingers close round the handle and the thumb
+    # wraps over them (the loose 0.45 grip left the fingers floating beside the handle).
+    ready_grip = {**ready, "grip.R": 0.92, "thumb.R": 0.8}
 
     def loop_sway(f, n, amp=1.0, bob=0.0):
         w = 2 * math.pi * f / n
@@ -504,6 +507,8 @@ def fp_actions(p: dict):
     return [
         ("fp_idle", 60, True, lambda f: idle(f)),
         ("fp_walk_bob", 30, True, lambda f: walk(f)),
+        ("fp_idle_grip", 60, True, lambda f: idle(f, stance=ready_grip)),
+        ("fp_walk_grip", 30, True, lambda f: walk(f, stance=ready_grip)),
         ("fp_swing", 24, False, swing_k.at),
         ("fp_swing_side", 22, False, side_k.at),
         ("fp_stab", 16, False, stab_k.at),

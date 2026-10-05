@@ -79,7 +79,7 @@ def build(params: dict, outputs: list[str]) -> None:
     s = model.s
     arms = []
     for sd in ("L", "R"):
-        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0021)), int(params.get("arm_tris", 3900)))
+        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0021)), int(params.get("arm_tris", 6000)))
         lab = _labels(model, o)
         M.assign_labels(o, lab, LABEL_MATERIALS)
         fa = model.fa[sd]
