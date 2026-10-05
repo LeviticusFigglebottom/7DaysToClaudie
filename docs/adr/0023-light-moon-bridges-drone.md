@@ -33,15 +33,20 @@ A second exterior fidelity pass found four things that broke the valley's logic 
   variant is dark unless it lists a light of its own. `light_for(condition)` resolves the variant the
   way `model_for` does (a missing destroyed model falls back to worn, and so does its light). Unknown
   light keys, powers or variants fail validation.
-* **Glow is emission, and it follows the light.** `std_surface` gets one minimal hunk:
-  * `light_source` (material): 1 glows only while lit (lamp globes, lenses, embers, stove mica),
-    showing its albedo when cold; 2 exists only while lit (flames collapse to nothing).
-  * `emission_flicker` (material): fire breathes, phased by world position so neighbouring candles
-    and coals don't pulse together.
-  * `light_lit` (instance uniform, **index 4**, after the four shared slots, which are unchanged):
-    1 on an instance whose light burns.
-  * Light sources glow in their emission colour whatever their albedo, so a cold ember is
-    charcoal.
+* **Glow is emission, and it follows the light.** `std_surface` gets one minimal hunk, and every
+  material that leaves `light_source` at 0 renders exactly as before:
+  * `light_source` (material `int`, 0..2): 1 glows only while lit (lamp globes, lenses, embers,
+    stove mica), showing its albedo when cold; 2 exists only while lit (flames: the vertex stage
+    collapses a cold one to a point, so it draws nothing).
+  * `emission_flicker` (material `float`): fire breathes. A sum of sines in the vertex stage,
+    phased by world position so neighbouring candles and coals don't pulse together, scales a new
+    varying (`v_emit`).
+  * `light_lit` (instance uniform, **index 4**, after the four shared slots, which are unchanged:
+    `instance_wear` 0, `instance_variation` 1, `bloom_glow` 2, `weather_exposure` 3): 1 on an
+    instance whose light burns.
+  * The emission line: a light source's emission is `emission_color × emission_energy × v_emit`
+    instead of `× albedo`, so it glows in its emission colour whatever its albedo, and a cold ember
+    is charcoal.
 * `PropLights` builds what a burning prop shows. PoiBuilder draws each lit prop on its own instance
   with `light_lit` set (batched props share one instance-uniform value), adds its light at the full
   offset (it used the height only) and, for fires, flipbook flames and a crackle. A campfire's coals
@@ -79,6 +84,11 @@ A second exterior fidelity pass found four things that broke the valley's logic 
   * It hides the stars behind it and sits in an aureole that widens in thin cloud.
   * Moonlight silvers the clouds, brightens the night sky and drowns the faint stars, most of all
     near the moon.
+* **The stars turn.** The star sphere wheels about the celestial pole (due north, at the latitude's
+  altitude) once a sidereal day: one turn a year more than the sun makes
+  (`EnvironmentController.star_basis()`). The star map is a 2:1 equirect whose stars are
+  pre-stretched in longitude (`sky.py`), so the shader wraps it once round the sky: it used to tile
+  it twice, which squeezed every star into a dash along its meridian.
 
 ### Bridges
 * `BridgeBuilder.plan()` is a pure function of the deck centreline (the road's own points between
@@ -89,7 +99,8 @@ A second exterior fidelity pass found four things that broke the valley's logic 
     the seat and the span end run **approach sections**: the same road between U-wing retaining
     walls that sink 4.6 m into the bank, holding the fill.
   * **Piers**: evenly spaced between the seats at ~22 m spans. The river profile (centreline, width
-    and level) says which stand in the water: those are wall piers with round cutwaters, turned to
+    and level) says which stand in the water, or in its flood channel (within 5 m of the edge on
+    ground less than 1 m above the level): those are wall piers with round cutwaters, turned to
     the current unless the crossing is skewed past 35°. The rest are two-column bents.
 * **The deck carries its own paint**: a double yellow no-passing line and white edge lines, worn
   through to the asphalt. RoadMarkings asks `BridgeBuilder.on_deck()` and keeps its decals off the
@@ -127,6 +138,13 @@ A second exterior fidelity pass found four things that broke the valley's logic 
 * **The tether lists every drop** with its distance, sector and state (inbound, falling, landed,
   opened), one to a line, paired up in short form past four. The Hum forecast moves down below
   them.
+
+### Visual QA
+`src/tools/cli/exterior_qa.gd` renders the moon full and new over Larch Pond and the drop-site
+clearing, the Route 9 bridge from the bank and along its deck at night in a hand light, the light
+props lit and destroyed side by side, and the drone hovering with a lift by day and at dusk.
+`--only` picks shots and `--stream-wait` caps the wait for vegetation (software Vulkan streams it
+slowly).
 
 ## Consequences
 + The valley's lighting tells its story: a lit window means somebody's candle; a smashed lantern,

@@ -115,8 +115,8 @@ Snapshot for the next session. Update it when the state changes; delete it once 
    disarm reach (`data/config/traps.json`), the sawmill's difficulty against its tier 4. Then do
    the dungeon gaps: Hollowed that respect creaky and weak floors, nav rebakes after a collapse
    (TD-037), seats and beds for posed sleepers (TD-039).
-5. Special Hollowed silhouettes and dedicated spit/charge animations (TD-027); a visible drone
-   for supply drops (TD-029).
+5. Special Hollowed silhouettes and dedicated spit/charge animations (TD-027). (Supply drops now
+   arrive by drone: ADR-0023.)
 6. Taller rooms and multi-wing roofs (TD-008, TD-038, TD-040), so churches, barns and mills
    stop reading as stacked boxes.
 7. M2 planning: factions, caves through the volume terrain, companion, economy, perk capstones

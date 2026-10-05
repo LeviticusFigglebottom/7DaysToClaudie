@@ -194,7 +194,7 @@ func test_the_drone_flies_the_lift_in_and_away() -> void:
 	assert_lt(ProgramDrone.doppler(Vector3(0, 0, 300), Vector3(0, 0, 30), lis, Vector3.ZERO), 0.95)
 	# The drone is gone once its flight is over.
 	d._process(f.t_end)
-	await wait_frames(2)
+	await wait_process_frames(2)
 	assert_false(is_instance_valid(d.drone) and d.drone != null and d.drone.is_inside_tree(), "the drone leaves")
 
 
