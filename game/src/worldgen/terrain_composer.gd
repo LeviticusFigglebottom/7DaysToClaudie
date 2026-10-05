@@ -49,6 +49,12 @@ static func input_hash(world: WorldDef, region_id: String, spacing: float) -> St
 
 ## Loads from the disk cache or composes (and caches) a region.
 static func get_or_compose(world: WorldDef, region_id: String, spacing: float = 1.0, progress: Callable = Callable()) -> RegionTerrain:
+	# Without content loaded (a bare `-s` tool), frameworks and POIs can't be resolved: the result
+	# lacks pads and streets. Cached under the real input hash, the game then loaded a town with
+	# no ground graded for it, so such a compose is never read from or written to the cache.
+	if ContentDB.instance == null:
+		push_warning("TerrainComposer: no content loaded; composing %s without frameworks or POIs, uncached" % region_id)
+		return compose(world, region_id, spacing, progress)
 	var h: String = input_hash(world, region_id, spacing)
 	var path: String = "user://cache/worlds/%s/%s_%d.bin" % [world.id, region_id, int(spacing * 100)]
 	var rt: RegionTerrain = RegionTerrain.load_cached(path, h)
