@@ -83,7 +83,9 @@ func plan(gamestage: int, rng: RandomNumberGenerator) -> Dictionary:
 	var pc: Dictionary = cfg.get("planner", {})
 	var total: int = int(pc.get("base_count", 10)) + int(float(pc.get("per_horde", 6)) * horde_index) \
 		+ int(float(pc.get("per_gamestage", 0.5)) * gamestage)
-	total = mini(total, int(pc.get("max_total", 80)))
+	# World setting: Hum horde size (the cap scales with it so large settings still grow).
+	var size: float = GameRules.current().num("hum_size")
+	total = mini(int(round(total * size)), int(float(pc.get("max_total", 80)) * maxf(1.0, size)))
 	var mix: Dictionary = (pc.get("mix", {"hollow": 0.72, "lurcher": 0.22, "keener": 0.06}) as Dictionary).duplicate()
 	var tactics: PackedStringArray = []
 

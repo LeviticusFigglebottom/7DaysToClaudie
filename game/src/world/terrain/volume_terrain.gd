@@ -162,7 +162,7 @@ func _remesh(key: Vector3i) -> void:
 	var c: VChunk = chunks[key]
 	var data: PackedFloat32Array = c.density.duplicate()
 	var job: Dictionary = {"key": key, "res": {}}
-	job["task"] = WorkerThreadPool.add_task(func() -> void: job["res"] = SurfaceNets.mesh(data, N, VOXEL), false, "volume mesh")
+	job["task"] = WorkerThreadPool.add_task(func() -> void: job["res"] = SurfaceNets.mesh(data, N, VOXEL), true, "volume mesh")
 	if _pending.has(key):
 		WorkerThreadPool.wait_for_task_completion(_pending[key]["task"])
 	_pending[key] = job

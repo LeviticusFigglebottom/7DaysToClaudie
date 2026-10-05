@@ -2,6 +2,8 @@ extends Control
 ## Boot scene + main menu.
 ##
 ## Command line (after `--`):  --new-game [--mode slice|survival] [--seed N] [--skip-intro]
+##                             [--preset drifter|survivor|remanded|hollowed|rooted]
+##                             [--rule key=value ...]   (any data/config/game_rules.json option)
 ##                             --load <slot>    --continue
 ## e.g. godot --path game -- --new-game --mode slice --skip-intro
 
@@ -24,6 +26,13 @@ func _handle_cli(args: PackedStringArray) -> bool:
 		if seed_s != "":
 			opts["seed"] = int(seed_s)
 		opts["skip_intro"] = args.has("--skip-intro")
+		opts["preset"] = _arg_value(args, "--preset", "survivor")
+		var rules: Dictionary = {}
+		for i: int in args.size() - 1:
+			if args[i] == "--rule" and args[i + 1].contains("="):
+				var kv: PackedStringArray = args[i + 1].split("=", true, 1)
+				rules[kv[0]] = kv[1]
+		opts["rules"] = rules
 		Game.start_new_game.call_deferred(opts)
 		return true
 	if args.has("--load"):
@@ -48,7 +57,7 @@ func _build_menu() -> void:
 	var slots: Array[Dictionary] = SaveSystem.list_slots()
 	if not slots.is_empty():
 		_add_button("Continue (Day %d)" % int(slots[0].get("day", 1)), func() -> void: Game.load_game(str(slots[0]["slot"])))
-	_add_button("New Game — Hollowmere", func() -> void: Game.start_new_game({"game_mode": "survival"}))
+	_add_button("New Game…", _open_new_game)
 	_add_button("New Game — Vertical Slice (Hum on night 3)", func() -> void: Game.start_new_game({"game_mode": "slice"}))
 	var rwg := _add_button("Random World (M3)", func() -> void: pass)
 	rwg.disabled = true
@@ -57,6 +66,18 @@ func _build_menu() -> void:
 	_add_button("Graphics: %s" % Settings.graphics_preset, _cycle_graphics)
 	_add_button("Quit", func() -> void: get_tree().quit())
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
+
+
+## World settings screen (difficulty preset + every game rule) before a new game.
+func _open_new_game() -> void:
+	var panel := NewGamePanel.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	add_child(panel)
+	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5
+	_list.visible = false
+	panel.closed.connect(func() -> void:
+		panel.queue_free()
+		_list.visible = true)
 
 
 func _add_button(text: String, cb: Callable) -> Button:

@@ -41,7 +41,7 @@ func _rng_for(d: int) -> RandomNumberGenerator:
 
 func _gamestage() -> int:
 	var p: PlayerState = Game.local_player()
-	return p.progression.gamestage(Game.session.clock.day()) if p != null else 1
+	return Game.session.gamestage(p)
 
 
 func _exit_tree() -> void:
@@ -124,7 +124,7 @@ func _process(delta: float) -> void:
 				_queue.append({"enemy": StringName(str(enemy_id)), "sector": int(w["sector"]), "role": str(w["role"])})
 		_wave_i += 1
 		Audio.play_2d(&"music/hum_wave", -6.0, &"Music")
-	var cap: int = int(_cfg.get("max_alive", 24))
+	var cap: int = GameRules.current().integer("hum_max_alive")
 	var spawned_now: int = 0
 	while not _queue.is_empty() and _alive_count() < cap and spawned_now < 3:
 		_spawn(_queue.pop_front())

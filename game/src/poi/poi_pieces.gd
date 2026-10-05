@@ -212,18 +212,22 @@ class LootProp:
 		if cdef.locked and not opened and not (key != "" and player.state.inventory.has(StringName(key))):
 			Audio.play_3d(&"sfx/door_locked", global_position, {"volume_db": -6.0})
 			return
-		if not opened:
+		var gen: int = _respawn_generation()
+		if not opened or gen >= 0:
 			opened = true
 			inventory = _new_inv()
+			gen = maxi(gen, 0)
 			var rng := RandomNumberGenerator.new()
-			rng.seed = Ids.hash64("loot:%d:%s" % [Game.session.world_seed, container_id])
-			var ctx := LootRoller.Context.new(tier + (1 if bonus else 0), player.state.progression.gamestage(Game.session.clock.day()), rng)
+			rng.seed = Ids.hash64("loot:%d:%s:%d" % [Game.session.world_seed, container_id, gen]) if gen > 0 \
+				else Ids.hash64("loot:%d:%s" % [Game.session.world_seed, container_id])
+			var ctx := LootRoller.Context.new(tier + (1 if bonus else 0), Game.session.gamestage(player.state), rng)
 			for s: ItemStack in LootRoller.roll(cdef.loot_table, ctx):
 				inventory.add(s)
 			if bonus:
 				for s2: ItemStack in LootRoller.roll(cdef.loot_table, ctx):
 					inventory.add(s2)
-			Game.session.world.set_container_items(container_id, inventory, true)
+			Game.session.world.set_container_items(container_id, inventory, true, Game.session.clock.day(), gen)
+			Events.container_looted.emit(player.state.id, container_id, tier)
 			if Stimuli.current != null and cdef.noise > 0.0:
 				Stimuli.current.emit_sound(global_position, cdef.noise, &"search", player.state.id)
 			Audio.play_3d(&"sfx/search_container", global_position, {"volume_db": -6.0})
@@ -235,6 +239,17 @@ class LootProp:
 
 	func on_contents_changed() -> void:
 		Game.session.world.set_container_items(container_id, inventory, true)
+
+	## Loot respawn (world setting loot_respawn_days): an emptied container restocks once that
+	## many days have passed since it was last rolled. Returns the next roll generation, or -1.
+	func _respawn_generation() -> int:
+		var days: int = GameRules.current().integer("loot_respawn_days")
+		if not opened or days <= 0 or (inventory != null and not inventory.stacks.is_empty()):
+			return -1
+		var st: Dictionary = Game.session.world.container_state(container_id)
+		if Game.session.clock.day() - int(st.get("rolled_day", 0)) < days:
+			return -1
+		return int(st.get("gen", 0)) + 1
 
 
 class Ladder:

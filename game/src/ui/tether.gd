@@ -178,6 +178,8 @@ func _hum_text() -> String:
 	var c: WorldClock = Game.session.clock
 	if c.is_horde_active():
 		return "!! THE HUM !!\nHold until 04:00."
+	if not c.hordes_enabled():
+		return "THE HUM: none (world setting)."
 	var hrs: float = c.hours_until_horde()
 	var ai: Node = Game.world.get(&"ai") if Game.world != null else null
 	var lines: PackedStringArray = ["NEXT HUM  day %d  (%dh)" % [c.next_horde_day(), int(hrs)]]

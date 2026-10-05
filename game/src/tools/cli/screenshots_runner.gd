@@ -119,10 +119,16 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		cam.add_child(l)
 		l.position = Vector3(0.3, -0.3, -0.5)
 	if shot.has("enemy"):
-		# A dormant body standing at the look point, facing the camera (character model QA).
+		# An awake body at the look point facing the camera, its brain paused so it holds its
+		# idle loop in place; framed from its own feet so slopes don't tilt the shot.
 		var at := Vector3(look.x, w.call(&"height_at", look.x, look.z), look.z)
 		var yaw: float = atan2(pos.x - at.x, pos.z - at.z)
-		w.get(&"ai").call(&"spawn", StringName(str(shot["enemy"])), at, {"yaw": yaw, "pose": "stand", "sleeper": "qa", "id": "qa:%s" % shot["name"]})
+		var e: Node = w.get(&"ai").call(&"spawn", StringName(str(shot["enemy"])), at, {"yaw": yaw, "id": "qa:%s" % shot["name"]})
+		if e != null:
+			e.set_physics_process(false)
+			(e.get(&"visual") as EnemyVisual).play(&"idle")
+		pos.y = at.y + float(shot.get("cam_height", 1.45))
+		look.y = at.y + float(shot.get("look_height", 1.15))
 	cam.global_position = pos
 	cam.look_at(look, Vector3.UP)
 	cam.fov = float(shot.get("fov", 70.0))

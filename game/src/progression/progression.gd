@@ -37,6 +37,7 @@ func xp_to_next() -> int:
 
 ## Adds XP; returns levels gained.
 func add_xp(amount: int) -> int:
+	amount = int(round(float(amount) * GameRules.current().num("xp_multiplier")))
 	if amount <= 0:
 		return 0
 	xp += amount
@@ -164,11 +165,6 @@ func _learn(id: StringName) -> void:
 	elif Content.has_def(&"blueprint", id):
 		known_blueprints[id] = true
 		learned.emit(&"blueprint", id)
-
-
-## Difficulty scaler used by loot and spawns (7DTD-style "gamestage").
-func gamestage(days_survived: int) -> int:
-	return maxi(1, level + int(float(days_survived) * float(_cfg.get("gamestage_per_day", 1.5))))
 
 
 func to_dict() -> Dictionary:

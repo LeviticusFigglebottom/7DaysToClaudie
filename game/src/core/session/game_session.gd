@@ -9,6 +9,8 @@ var world_id: StringName = &"hollowmere"
 var world_seed: int = 0
 ## Game mode preset id (data/config/game_modes.json): "survival", "slice", ...
 var game_mode: StringName = &"survival"
+## World settings (difficulty preset + customised options), saved with the session.
+var rules: GameRules
 var created_unix: int = 0
 var play_seconds: float = 0.0
 var clock: WorldClock
@@ -30,6 +32,7 @@ static func create_new(options: Dictionary = {}) -> GameSession:
 	s.world_seed = int(options.get("seed", 4471))
 	s.game_mode = StringName(str(options.get("game_mode", "survival")))
 	s.created_unix = int(Time.get_unix_time_from_system())
+	s.rules = GameRules.resolve(s.mode_config().get("rules", {}), StringName(str(options.get("preset", "survivor"))), options.get("rules", {}))
 	s._init_systems()
 	var mode: Dictionary = s.mode_config()
 	s.clock.set_time(int(mode.get("start_day", 1)), float(mode.get("start_hour", 7.5)))
@@ -40,16 +43,19 @@ static func create_new(options: Dictionary = {}) -> GameSession:
 
 
 func _init_systems() -> void:
+	if rules == null:
+		rules = GameRules.resolve(mode_config().get("rules", {}), &"survivor", {})
 	clock = WorldClock.new()
 	var horde_cfg: Dictionary = Content.config(&"horde").duplicate()
-	var mode: Dictionary = mode_config()
-	if mode.has("horde_first_day"):
-		horde_cfg["first_day"] = mode["horde_first_day"]
-	if mode.has("horde_interval_days"):
-		horde_cfg["interval_days"] = mode["horde_interval_days"]
-	var clock_cfg: Dictionary = Content.config(&"world_clock").duplicate()
-	if mode.has("day_length_minutes"):
-		clock_cfg["day_length_minutes"] = mode["day_length_minutes"]
+	horde_cfg["first_day"] = rules.integer("hum_first_day")
+	horde_cfg["interval_days"] = rules.integer("hum_every_days")
+	horde_cfg["variance_days"] = rules.integer("hum_variance_days")
+	horde_cfg["seed"] = world_seed
+	var clock_cfg: Dictionary = Content.config(&"world_clock").duplicate(true)
+	clock_cfg["day_length_minutes"] = rules.integer("day_length_minutes")
+	var seasons: Dictionary = clock_cfg.get("seasons", {})
+	seasons["start"] = rules.choice("start_season")
+	clock_cfg["seasons"] = seasons
 	clock.configure(clock_cfg, horde_cfg)
 	ids = IdAllocator.new()
 	rng = RngStreams.new(world_seed)
@@ -72,9 +78,14 @@ func days_survived() -> int:
 	return maxi(0, clock.day() - 1)
 
 
-func gamestage() -> int:
-	var p: PlayerState = local_player()
-	return p.progression.gamestage(days_survived()) if p != null else 1
+## How hard the world pushes back (7 Days' gamestage): player level plus days survived, both
+## scaled by the world settings. Drives spawn composition, Hum size and loot quality.
+func gamestage(p: PlayerState = null) -> int:
+	if p == null:
+		p = local_player()
+	var level: int = p.progression.level if p != null else 1
+	var gs: float = (float(level) + float(days_survived()) * rules.num("gamestage_days_weight")) * rules.num("gamestage_bonus")
+	return maxi(1, int(round(gs)))
 
 
 func to_dict() -> Dictionary:
@@ -83,7 +94,7 @@ func to_dict() -> Dictionary:
 		ps[String(pid)] = (players[pid] as PlayerState).to_dict()
 	return {
 		"world_mode": String(world_mode), "world_id": String(world_id), "seed": str(world_seed),
-		"game_mode": String(game_mode), "created": created_unix, "play_seconds": play_seconds,
+		"game_mode": String(game_mode), "rules": rules.to_dict(), "created": created_unix, "play_seconds": play_seconds,
 		"clock": clock.to_dict(), "ids": ids.to_dict(), "rng": rng.to_dict(), "players": ps,
 		"local_player": String(local_player_id), "world": world.to_dict(), "horde": horde.to_dict(),
 		"heat": heat.to_dict(), "weather": weather.to_dict(), "stats": stats,
@@ -98,6 +109,7 @@ static func from_dict(d: Dictionary) -> GameSession:
 	s.game_mode = StringName(str(d.get("game_mode", "survival")))
 	s.created_unix = int(d.get("created", 0))
 	s.play_seconds = float(d.get("play_seconds", 0.0))
+	s.rules = GameRules.from_dict(d.get("rules", {}), s.mode_config().get("rules", {}))
 	s._init_systems()
 	s.clock.from_dict(d.get("clock", {}))
 	s.ids.from_dict(d.get("ids", {}))

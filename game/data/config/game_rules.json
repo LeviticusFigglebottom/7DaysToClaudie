@@ -1,0 +1,59 @@
+{
+  "_doc": "World settings for a playthrough (7 Days to Die-style game options). Each option has a type (int/float/bool/enum), range or values, a default and a category; difficulty presets override defaults. A new game resolves: option defaults <- game mode rules (game_modes.json) <- preset <- the player's overrides. The resolved values are saved with the session and read through GameRules.current(). See docs/adr/0014-game-rules-and-gamestage.md.",
+  "categories": [
+    {"id": "world", "label": "World & time"},
+    {"id": "hollowed", "label": "The Hollowed"},
+    {"id": "hum", "label": "The Hum"},
+    {"id": "loot", "label": "Loot & progression"},
+    {"id": "survival", "label": "Survival"},
+    {"id": "death", "label": "Death"}
+  ],
+  "options": {
+    "day_length_minutes": {"category": "world", "type": "int", "min": 10, "max": 180, "step": 10, "default": 60, "label": "Day length (real minutes)"},
+    "start_season": {"category": "world", "type": "enum", "values": ["spring", "summer", "autumn", "winter"], "default": "autumn", "label": "Starting season"},
+    "player_harvest": {"category": "world", "type": "float", "min": 0.5, "max": 3.0, "step": 0.25, "default": 1.0, "label": "Chopping & digging speed"},
+
+    "enemy_speed_day": {"category": "hollowed", "type": "enum", "values": ["shamble", "walk", "jog", "run", "sprint"], "default": "walk", "label": "Hollowed speed by day"},
+    "enemy_speed_night": {"category": "hollowed", "type": "enum", "values": ["shamble", "walk", "jog", "run", "sprint"], "default": "run", "label": "Hollowed speed at night"},
+    "enemy_health": {"category": "hollowed", "type": "float", "min": 0.5, "max": 3.0, "step": 0.25, "default": 1.0, "label": "Hollowed toughness"},
+    "enemy_damage": {"category": "hollowed", "type": "float", "min": 0.25, "max": 3.0, "step": 0.25, "default": 1.0, "label": "Hollowed damage to you"},
+    "structure_damage": {"category": "hollowed", "type": "float", "min": 0.25, "max": 3.0, "step": 0.25, "default": 1.0, "label": "Hollowed damage to structures"},
+    "wanderer_density": {"category": "hollowed", "type": "float", "min": 0.0, "max": 3.0, "step": 0.25, "default": 1.0, "label": "Wanderer density"},
+    "sleeper_alertness": {"category": "hollowed", "type": "enum", "values": ["deep", "normal", "light"], "default": "normal", "label": "Sleepers wake"},
+    "special_hollowed": {"category": "hollowed", "type": "bool", "default": true, "label": "Special Hollowed (Blister, Husk, Rammer)"},
+    "infected_tiers": {"category": "hollowed", "type": "bool", "default": true, "label": "Seeded and Bloomed tiers"},
+    "gamestage_days_weight": {"category": "hollowed", "type": "float", "min": 0.0, "max": 4.0, "step": 0.25, "default": 1.5, "label": "Gamestage per day survived"},
+    "gamestage_bonus": {"category": "hollowed", "type": "float", "min": 0.5, "max": 2.0, "step": 0.1, "default": 1.0, "label": "Gamestage multiplier"},
+
+    "hum_first_day": {"category": "hum", "type": "int", "min": 1, "max": 28, "step": 1, "default": 7, "label": "First Hum on day"},
+    "hum_every_days": {"category": "hum", "type": "int", "min": 0, "max": 28, "step": 1, "default": 7, "label": "Hum every N days (0 = never)"},
+    "hum_variance_days": {"category": "hum", "type": "int", "min": 0, "max": 3, "step": 1, "default": 0, "label": "Hum day variance (± days)"},
+    "hum_size": {"category": "hum", "type": "float", "min": 0.25, "max": 3.0, "step": 0.25, "default": 1.0, "label": "Hum horde size"},
+    "hum_max_alive": {"category": "hum", "type": "int", "min": 8, "max": 64, "step": 4, "default": 24, "label": "Hum Hollowed alive at once"},
+    "enemy_speed_hum": {"category": "hum", "type": "enum", "values": ["shamble", "walk", "jog", "run", "sprint"], "default": "sprint", "label": "Hollowed speed during the Hum"},
+
+    "loot_abundance": {"category": "loot", "type": "float", "min": 0.25, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Loot abundance"},
+    "loot_respawn_days": {"category": "loot", "type": "int", "min": 0, "max": 60, "step": 5, "default": 0, "label": "Loot respawn (days, 0 = never)"},
+    "xp_multiplier": {"category": "loot", "type": "float", "min": 0.25, "max": 3.0, "step": 0.25, "default": 1.0, "label": "XP multiplier"},
+    "supply_drops": {"category": "loot", "type": "enum", "values": ["off", "after_hum", "weekly", "every_3_days"], "default": "after_hum", "label": "Remand supply drops"},
+    "supply_drop_markers": {"category": "loot", "type": "bool", "default": true, "label": "Mark supply drops on the tether"},
+
+    "needs_rate": {"category": "survival", "type": "float", "min": 0.25, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Hunger & thirst rate"},
+    "infection_rate": {"category": "survival", "type": "float", "min": 0.0, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Bloom infection rate"},
+
+    "death_penalty": {"category": "death", "type": "enum", "values": ["none", "xp_loss", "drop_pack", "drop_all", "permadeath"], "default": "drop_pack", "label": "On death"}
+  },
+  "presets": {
+    "drifter": {"label": "Drifter — gentle", "description": "Slow, soft Hollowed, small Hums, plenty of loot. Death costs nothing.",
+      "values": {"enemy_speed_night": "jog", "enemy_speed_hum": "run", "enemy_health": 0.75, "enemy_damage": 0.5, "structure_damage": 0.5, "hum_size": 0.5, "loot_abundance": 1.5, "xp_multiplier": 1.5, "needs_rate": 0.5, "infection_rate": 0.5, "death_penalty": "none", "gamestage_bonus": 0.8}},
+    "survivor": {"label": "Survivor — standard", "description": "The intended balance.", "values": {}},
+    "remanded": {"label": "Remanded — hard", "description": "Tougher Hollowed that jog by day, larger Hums, scarcer loot. Death drops everything.",
+      "values": {"enemy_speed_day": "jog", "enemy_health": 1.25, "enemy_damage": 1.5, "structure_damage": 1.25, "hum_size": 1.5, "loot_abundance": 0.75, "needs_rate": 1.25, "death_penalty": "drop_all", "gamestage_bonus": 1.2}},
+    "hollowed": {"label": "Hollowed — brutal", "description": "They run by day and sprint by night. A Hum every five days.",
+      "values": {"enemy_speed_day": "run", "enemy_speed_night": "sprint", "enemy_health": 1.5, "enemy_damage": 2.0, "structure_damage": 1.5, "wanderer_density": 1.5, "sleeper_alertness": "light", "hum_every_days": 5, "hum_size": 2.0, "loot_abundance": 0.5, "needs_rate": 1.5, "death_penalty": "drop_all", "gamestage_bonus": 1.4}},
+    "rooted": {"label": "Rooted — permadeath", "description": "Brutal, and one life. The save is deleted when you die.",
+      "values": {"enemy_speed_day": "run", "enemy_speed_night": "sprint", "enemy_health": 1.5, "enemy_damage": 2.0, "structure_damage": 1.5, "wanderer_density": 1.5, "sleeper_alertness": "light", "hum_every_days": 5, "hum_size": 2.0, "loot_abundance": 0.5, "needs_rate": 1.5, "death_penalty": "permadeath", "gamestage_bonus": 1.4}}
+  },
+  "speed_factors": {"_doc": "Hollowed speed options as multipliers of a type's own run speed (its walk speed is scaled alike).", "shamble": 0.45, "walk": 0.6, "jog": 0.8, "run": 1.0, "sprint": 1.25},
+  "sleeper_wake_factors": {"deep": 0.6, "normal": 1.0, "light": 1.5}
+}

@@ -220,7 +220,7 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 		fn.call()
 		_apply_mesh(job)
 		return
-	job["task"] = WorkerThreadPool.add_task(fn, false, "terrain chunk")
+	job["task"] = WorkerThreadPool.add_task(fn, true, "terrain chunk")
 	_pending[key] = job
 
 

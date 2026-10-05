@@ -116,10 +116,12 @@ func tick_game(minutes: float, env: Dictionary) -> void:
 	var exertion: float = float(env.get("exertion", 0.0))
 	var sleeping: bool = bool(env.get("sleeping", false))
 	var sleep_mult: float = _c("rest", "sleep_needs_mult", 0.45) if sleeping else 1.0
+	# World settings: hunger/thirst and Bloom infection pace.
+	var needs: float = GameRules.current().num("needs_rate")
 
-	fullness = maxf(0.0, fullness - _c("fullness", "decay_per_hour", 4.0) * hours * (1.0 + exertion * 0.6) * sleep_mult)
+	fullness = maxf(0.0, fullness - _c("fullness", "decay_per_hour", 4.0) * needs * hours * (1.0 + exertion * 0.6) * sleep_mult)
 	var hot: float = clampf((body_temp - 37.5) / 1.5, 0.0, 1.0)
-	hydration = maxf(0.0, hydration - _c("hydration", "decay_per_hour", 6.0) * hours * (1.0 + exertion * 0.5 + hot * 0.5) * sleep_mult)
+	hydration = maxf(0.0, hydration - _c("hydration", "decay_per_hour", 6.0) * needs * hours * (1.0 + exertion * 0.5 + hot * 0.5) * sleep_mult)
 	if sleeping:
 		rest = minf(100.0, rest + _c("rest", "sleep_restore_per_hour", 14.0) * hours)
 	else:
@@ -190,7 +192,7 @@ func _tick_infection(hours: float) -> void:
 	if infection < _c("infection", "dormant_below", 5.0):
 		infection = maxf(0.0, infection - _c("infection", "fight_off_per_hour", 0.5) * hours)
 	else:
-		infection = minf(100.0, infection + _c("infection", "growth_per_hour", 0.35) * hours)
+		infection = minf(100.0, infection + _c("infection", "growth_per_hour", 0.35) * GameRules.current().num("infection_rate") * hours)
 	if infection >= 100.0:
 		_die("turned")
 
@@ -212,7 +214,7 @@ func apply_damage(amount: float, cause: StringName = &"generic") -> float:
 func add_wound(bleed: float, infection_amount: float = 0.0) -> void:
 	bleeding = clampf(bleeding + bleed, 0.0, 1.0)
 	if infection_amount > 0.0:
-		infection = minf(100.0, infection + infection_amount)
+		infection = minf(100.0, infection + infection_amount * GameRules.current().num("infection_rate"))
 	_update_statuses()
 	changed.emit()
 

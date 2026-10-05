@@ -37,7 +37,7 @@ signal inventory_changed(owner_id: StringName)
 signal item_picked_up(owner_id: StringName, item_id: StringName, count: int)
 signal item_crafted(owner_id: StringName, recipe_id: StringName, item_id: StringName, count: int)
 signal container_opened(container_id: StringName)
-signal container_looted(container_id: StringName)
+signal container_looted(player_id: StringName, container_id: StringName, tier: int)
 
 # --- Building / world modification -------------------------------------------------------
 signal structure_placed(piece_id: StringName, def_id: StringName, position: Vector3)

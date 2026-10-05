@@ -329,18 +329,44 @@ func _on_player_died(cause: String) -> void:
 	var p: PlayerState = player.state
 	p.deaths += 1
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	# Everything carried stays where you fell, in a pack you can walk back to.
+	var penalty: String = session.rules.choice("death_penalty")
+	var note: String = _apply_death_penalty(p, penalty)
+	if penalty == "permadeath":
+		# One life: the run is over and its save goes with it.
+		SaveSystem.delete_slot(Game.current_slot)
+		if ui.has_method(&"show_death"):
+			ui.call(&"show_death", cause, note, true)
+		return
+	if ui.has_method(&"show_death"):
+		ui.call(&"show_death", cause, note, false)
+	else:
+		get_tree().create_timer(4.0).timeout.connect(respawn)
+
+
+## World setting death_penalty. Returns the line shown on the death screen.
+func _apply_death_penalty(p: PlayerState, penalty: String) -> String:
+	match penalty:
+		"none":
+			return "You keep everything you carried."
+		"xp_loss":
+			p.progression.xp = int(p.progression.xp * 0.5)
+			return "Half your progress toward the next level is lost."
+		"permadeath":
+			return "Your run is over."
+	# drop_pack keeps what is on the toolbelt; drop_all leaves everything where you fell.
+	var keep: Dictionary = {}
+	if penalty == "drop_pack":
+		for id: StringName in p.toolbelt:
+			if id != &"":
+				keep[id] = true
 	var pack: Array = []
 	for st: ItemStack in p.inventory.stacks:
-		if st.def() != null and not st.def().has_tag("no_drop"):
+		if st.def() != null and not st.def().has_tag("no_drop") and not keep.has(st.item_id):
 			pack.append(st)
 	for st: ItemStack in pack:
 		p.inventory.take_from(st, st.count)
 		ItemDrop.spawn(loose if loose != null else self, st, player.global_position + Vector3(randf_range(-0.6, 0.6), 0.8, randf_range(-0.6, 0.6)))
-	if ui.has_method(&"show_death"):
-		ui.call(&"show_death", cause)
-	else:
-		get_tree().create_timer(4.0).timeout.connect(respawn)
+	return "Your pack lies where you fell." if penalty == "drop_pack" else "Everything you carried lies where you fell."
 
 
 func respawn() -> void:

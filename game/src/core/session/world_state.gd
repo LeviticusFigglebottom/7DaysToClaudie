@@ -8,7 +8,8 @@ extends RefCounted
 var structures: Dictionary = {}
 ## blueprint instance id -> {def, pos:[3], rot:[4], delivered:{item:n}, placed:[piece index]}
 var blueprints: Dictionary = {}
-## container id -> {opened: bool, items: [stack dicts] | null (= not rolled yet)}
+## container id -> {opened: bool, items: [stack dicts] | null (= not rolled yet),
+##                   rolled_day: int, gen: int (loot respawns re-roll with gen + 1)}
 var containers: Dictionary = {}
 ## poi instance id -> {visited, cleared, dead: [sleeper ids], broken: [piece ids], doors: {id: state}, traps: {id: state}}
 var pois: Dictionary = {}
@@ -26,11 +27,14 @@ func container_state(id: StringName) -> Dictionary:
 	return containers.get(String(id), {})
 
 
-func set_container_items(id: StringName, inv: Inventory, opened: bool = true) -> void:
+func set_container_items(id: StringName, inv: Inventory, opened: bool = true, rolled_day: int = -1, gen: int = -1) -> void:
 	var items: Array = []
 	for s: ItemStack in inv.stacks:
 		items.append(s.to_dict())
-	containers[String(id)] = {"opened": opened, "items": items}
+	var prev: Dictionary = containers.get(String(id), {})
+	containers[String(id)] = {"opened": opened, "items": items,
+		"rolled_day": rolled_day if rolled_day >= 0 else int(prev.get("rolled_day", 0)),
+		"gen": gen if gen >= 0 else int(prev.get("gen", 0))}
 
 
 func poi_state(id: StringName) -> Dictionary:

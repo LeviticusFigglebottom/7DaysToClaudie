@@ -20,7 +20,11 @@ var season_length_days: int = 12
 var season_start_index: int = 2
 ## Horde ("the Hum") schedule.
 var horde_first_day: int = 7
+## 0 disables the Hum.
 var horde_interval_days: int = 7
+## Seeded ± jitter per Hum (game rule hum_variance_days), capped so Hums never reorder.
+var horde_variance_days: int = 0
+var horde_seed: int = 0
 var horde_start_hour: float = 22.0
 var horde_end_hour: float = 4.0
 var horde_warning_hours: PackedFloat32Array = [24.0, 6.0, 1.0]
@@ -40,8 +44,10 @@ func configure(clock_cfg: Dictionary, horde_cfg: Dictionary) -> void:
 		season_order = PackedStringArray(seasons["order"])
 	season_length_days = int(seasons.get("length_days", season_length_days))
 	season_start_index = maxi(0, season_order.find(str(seasons.get("start", "autumn"))))
-	horde_first_day = int(horde_cfg.get("first_day", horde_first_day))
-	horde_interval_days = maxi(1, int(horde_cfg.get("interval_days", horde_interval_days)))
+	horde_first_day = maxi(1, int(horde_cfg.get("first_day", horde_first_day)))
+	horde_interval_days = maxi(0, int(horde_cfg.get("interval_days", horde_interval_days)))
+	horde_variance_days = maxi(0, int(horde_cfg.get("variance_days", 0)))
+	horde_seed = int(horde_cfg.get("seed", 0))
 	horde_start_hour = float(horde_cfg.get("start_hour", horde_start_hour))
 	horde_end_hour = float(horde_cfg.get("end_hour", horde_end_hour))
 	if horde_cfg.has("warning_hours"):
@@ -126,16 +132,38 @@ func season_phase() -> float:
 
 # --- Hum schedule --------------------------------------------------------------------------
 
+func hordes_enabled() -> bool:
+	return horde_interval_days > 0
+
+
+## Day of the k-th Hum (0-based): first + k * interval, shifted by a seeded ± variance.
+func horde_day_of(k: int) -> int:
+	var d: int = horde_first_day + k * horde_interval_days
+	var v: int = mini(horde_variance_days, (horde_interval_days - 1) / 2)
+	if v > 0 and k > 0:
+		d += Ids.hash31("hum:%d:%d" % [horde_seed, k]) % (2 * v + 1) - v
+	return d
+
+
 func is_horde_day(d: int) -> bool:
-	return d >= horde_first_day and (d - horde_first_day) % horde_interval_days == 0
+	if not hordes_enabled() or d < horde_first_day:
+		return false
+	var k: int = int(round(float(d - horde_first_day) / float(horde_interval_days)))
+	for kk: int in [k - 1, k, k + 1]:
+		if kk >= 0 and horde_day_of(kk) == d:
+			return true
+	return false
 
 
+## First Hum day on or after from_day; -1 when the Hum is disabled.
 func next_horde_day(from_day: int = -1) -> int:
+	if not hordes_enabled():
+		return -1
 	var d: int = day() if from_day < 0 else from_day
-	if d <= horde_first_day:
-		return horde_first_day
-	var k: int = int(ceil(float(d - horde_first_day) / float(horde_interval_days)))
-	return horde_first_day + k * horde_interval_days
+	var k: int = maxi(0, int(floor(float(d - horde_first_day) / float(horde_interval_days))) - 1)
+	while horde_day_of(k) < d:
+		k += 1
+	return horde_day_of(k)
 
 
 ## True during the Hum window (start_hour on a horde day until end_hour the next morning).
@@ -149,6 +177,8 @@ func is_horde_active() -> bool:
 func hours_until_horde() -> float:
 	if is_horde_active():
 		return 0.0
+	if not hordes_enabled():
+		return INF
 	var d: int = day()
 	var hd: int = next_horde_day(d)
 	if hd == d and hour_f() >= horde_start_hour:

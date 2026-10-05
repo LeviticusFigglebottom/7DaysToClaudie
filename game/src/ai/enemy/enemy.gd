@@ -63,6 +63,12 @@ var _corpse_t: float = 0.0
 var _looted: bool = false
 var _voice_t: float = 0.0
 var _step_t: float = 0.0
+## World-setting and tier multipliers, fixed at spawn (GameRules + infected tier).
+var max_health: float = 100.0
+var damage_mult: float = 1.0
+var structure_mult: float = 1.0
+var _speed_scales: Dictionary = {"day": 1.0, "night": 1.0, "hum": 1.0}
+var _wake_factor: float = 1.0
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -70,7 +76,14 @@ func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary
 	def = p_def
 	director = p_director
 	_rng.seed = Ids.hash64("enemy:" + String(p_id))
-	health = def.health
+	var rules: GameRules = GameRules.current()
+	max_health = def.health * rules.num("enemy_health")
+	health = max_health
+	damage_mult = rules.num("enemy_damage")
+	structure_mult = rules.num("structure_damage")
+	for period: String in _speed_scales:
+		_speed_scales[period] = rules.speed_scale(period)
+	_wake_factor = rules.sleeper_wake_factor()
 	limb_hp = def.limbs.duplicate()
 	poi_id = StringName(str(opts.get("poi", "")))
 	sleeper_id = StringName(str(opts.get("sleeper", "")))
@@ -299,7 +312,7 @@ func _face(p: Vector3) -> void:
 
 
 func _speed(running: bool) -> float:
-	var s: float = def.speed_for(is_night(), running)
+	var s: float = def.speed_for(is_night(), running) * _speed_scales["hum" if horde else ("night" if is_night() else "day")]
 	if severed.has("leg_l") or severed.has("leg_r"):
 		s *= 0.6
 	return s
@@ -342,7 +355,7 @@ func _perceive(p: Player, dist: float) -> void:
 	var vis_mult: float = p.state.progression.modifier("visibility_mult")
 	var range_m: float = st.detection_range(base_sight, light, p.crouching, p.horizontal_speed(), own_light, vis_mult)
 	if state == State.SLEEP:
-		range_m *= 0.35
+		range_m *= 0.35 * _wake_factor
 	var sees: bool = false
 	if dist < range_m:
 		var to_p: Vector3 = (p.global_position - global_position)
@@ -370,7 +383,7 @@ func _perceive(p: Player, dist: float) -> void:
 				Events.enemy_alerted.emit(entity_id, global_position)
 		return
 	# Hearing.
-	var e: Stimuli.SoundEvent = st.loudest_heard(global_position, def.perc("hearing", 1.0) * (0.7 if state == State.SLEEP else 1.0), _heard_since, entity_id)
+	var e: Stimuli.SoundEvent = st.loudest_heard(global_position, def.perc("hearing", 1.0) * (0.7 * _wake_factor if state == State.SLEEP else 1.0), _heard_since, entity_id)
 	_heard_since = st.now()
 	if e != null:
 		if state == State.SLEEP:
@@ -433,7 +446,7 @@ func _deliver_hit(p: Player) -> void:
 		return
 	if global_position.distance_to(p.global_position) > def.atk("range", 1.5) + 0.45:
 		return
-	var dmg: float = def.atk("damage", 10.0) * (0.5 if severed.has("arm_l") and severed.has("arm_r") else 1.0)
+	var dmg: float = def.atk("damage", 10.0) * damage_mult * (0.5 if severed.has("arm_l") and severed.has("arm_r") else 1.0)
 	var info := DamageInfo.make(dmg, &"zombie", &"zombie", entity_id)
 	info.hit_pos = p.global_position + Vector3.UP * 1.3
 	info.source_pos = global_position
@@ -445,7 +458,7 @@ func _deliver_hit(p: Player) -> void:
 
 func _strike_structure() -> void:
 	visual.play(&"attack_structure", 1.0, 0.2, [&"attack_a"] as Array[StringName])
-	var info := DamageInfo.make(def.atk("structure_damage", 10.0), &"zombie", &"zombie", entity_id)
+	var info := DamageInfo.make(def.atk("structure_damage", 10.0) * structure_mult, &"zombie", &"zombie", entity_id)
 	info.hit_pos = break_target.global_position + Vector3.UP * 0.8
 	info.source_pos = global_position
 	info.direction = (break_target.global_position - global_position).normalized()
@@ -569,7 +582,7 @@ func interact(player: Player) -> void:
 		if def.loot_table != &"":
 			var ctx := LootRoller.Context.new()
 			ctx.tier = 1
-			ctx.gamestage = player.state.progression.gamestage(Game.session.clock.day())
+			ctx.gamestage = Game.session.gamestage(player.state)
 			ctx.rng = _rng
 			for s: ItemStack in LootRoller.roll(def.loot_table, ctx):
 				inventory.add(s)

@@ -137,7 +137,7 @@ func _update(pos: Vector3) -> void:
 		if not _data.has(key):
 			if not _pending.has(key) and _pending.size() < MAX_JOBS and _rt_for_chunk(key) != null:
 				var job: Dictionary = {"key": key, "res": {}}
-				job["task"] = WorkerThreadPool.add_task(func() -> void: job["res"] = _scatter(key), false, "veg scatter")
+				job["task"] = WorkerThreadPool.add_task(func() -> void: job["res"] = _scatter(key), true, "veg scatter")
 				_pending[key] = job
 			continue
 		var n: Dictionary = _nodes.get(key, {})
@@ -316,7 +316,9 @@ func _build_far_layer() -> void:
 	_far_chunks.resize(_far_jobs.size())
 	var jobs: Array = _far_jobs
 	var results: Array = _far_chunks
-	# Each element writes only its own slot of the pre-sized results array.
+	# Each element writes only its own slot of the pre-sized results array. Low priority: Godot
+	# caps low-priority work to a share of the pool, so the near chunks around the player (high
+	# priority scatter jobs, terrain meshing) never queue behind the far layer.
 	_far_task = WorkerThreadPool.add_group_task(func(i: int) -> void:
 		results[i] = _scatter_far_chunk(regions[jobs[i][0]], jobs[i][1], seed_v, height_fn, removed),
 		jobs.size(), -1, false, "far trees")

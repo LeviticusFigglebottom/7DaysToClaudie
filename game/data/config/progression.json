@@ -4,6 +4,5 @@
   "points_per_level": 1,
   "starting_points": 1,
   "attribute_cost_step": 3,
-  "gamestage_per_day": 1.5,
   "xp": {"kill_hollow": 40, "craft": 6, "loot_container": 4, "fell_tree": 10, "build_piece": 5, "clear_poi_per_tier": 150, "read_note": 15, "survive_hum": 500}
 }

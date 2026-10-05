@@ -75,6 +75,10 @@ CI (`.github/workflows/ci.yml`) runs setup → assets → validate → test.
 * **A region feature** (lake, cliff, road, POI, biome paint...): edit
   `game/world/main_map/regions/<region>/region.json`; inspect with
   `godot --headless --path game -s res://src/tools/cli/compose_region.gd -- <region>`.
+* **A world setting (game rule)**: add an option to `game/data/config/game_rules.json` (type,
+  range/values, default, category, label; presets may override it), then read it where it applies
+  with `GameRules.current().num/integer/flag/choice("id")` — never cache it beyond a spawn. The New
+  Game screen, saves and `--rule id=value` pick it up automatically (ADR-0014).
 * **A command**: register in the owning system's setup (`Game.register_command`), unregister in
   `_exit_tree`, validate everything from session state + args.
 

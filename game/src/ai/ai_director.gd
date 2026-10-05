@@ -115,7 +115,7 @@ func on_scream(keener: Enemy, count: int) -> void:
 
 func _gamestage() -> int:
 	var p: PlayerState = Game.local_player()
-	return p.progression.gamestage(Game.session.clock.day()) if p != null else 1
+	return Game.session.gamestage(p)
 
 
 # --- Population --------------------------------------------------------------------------------
@@ -167,8 +167,7 @@ func _wanted_wanderers(ppos: Vector3) -> int:
 	var base: float = 4.0 * density * (1.8 if night else 1.0)
 	if Game.session.clock.day() <= 1:
 		base *= 0.5
-	var mode: Dictionary = Game.session.mode_config()
-	base *= float(mode.get("wander_mult", 1.0))
+	base *= GameRules.current().num("wanderer_density")
 	return int(round(base))
 
 

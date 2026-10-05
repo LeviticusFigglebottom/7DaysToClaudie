@@ -18,3 +18,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0011](0011-horde-flow-field.md) | Hum pathing: weak-point flow field over structure costs | Accepted |
 | [0012](0012-stimulus-fields.md) | Shared perception through stimulus fields | Accepted |
 | [0013](0013-world-coordinates-regions.md) | World coordinates, regions and streaming | Accepted |
+| [0014](0014-game-rules-and-gamestage.md) | World settings (game rules), gamestage and difficulty scaling | Accepted |

@@ -14,11 +14,14 @@ class Context:
 	var gamestage: int = 1
 	var biome: StringName = &""
 	var rng: RandomNumberGenerator
+	## World setting loot_abundance: scales roll counts and stack sizes.
+	var abundance: float = 1.0
 
 	func _init(p_tier: int = 1, p_gamestage: int = 1, p_rng: RandomNumberGenerator = null) -> void:
 		tier = clampi(p_tier, 1, 5)
 		gamestage = maxi(1, p_gamestage)
 		rng = p_rng if p_rng != null else RandomNumberGenerator.new()
+		abundance = GameRules.current().num("loot_abundance")
 
 
 static func roll(table_id: StringName, ctx: Context) -> Array[ItemStack]:
@@ -47,6 +50,7 @@ static func _roll_into(table_id: StringName, ctx: Context, out: Array[ItemStack]
 	var rolls: int = Weighted.randi_range_v(t.rolls, ctx.rng)
 	if top:
 		rolls += int(floor(float(ctx.tier - 1) * float(cfg.get("extra_rolls_per_tier", 0.34))))
+		rolls = _scaled(rolls, ctx)
 	var eligible: Array[Dictionary] = []
 	var weights := PackedFloat32Array()
 	for e: Dictionary in t.entries:
@@ -65,8 +69,18 @@ static func _roll_into(table_id: StringName, ctx: Context, out: Array[ItemStack]
 			_roll_into(e["table"], ctx, out, depth + 1, false)
 		else:
 			var n: int = Weighted.randi_range_v(e["count"], ctx.rng)
+			if n > 1:
+				n = maxi(1, _scaled(n, ctx))
 			if n > 0:
 				out.append(ItemStack.make(e["item"], n, _quality(e["item"], ctx, int(e["quality_bias"]))))
+
+
+## n x abundance with the fraction rounded stochastically (0.75 x 3 rolls = 2 or 3).
+static func _scaled(n: int, ctx: Context) -> int:
+	if is_equal_approx(ctx.abundance, 1.0):
+		return n
+	var f: float = float(n) * ctx.abundance
+	return int(floor(f)) + (1 if ctx.rng.randf() < f - floor(f) else 0)
 
 
 ## Quality 1..6 for quality items; 0 otherwise. Distribution centre rises with tier & gamestage.

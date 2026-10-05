@@ -202,10 +202,12 @@ func _damage_for(def: ItemDef, pos: Vector3, dir: Vector3) -> DamageInfo:
 	info.stagger = float(def.equip.get("stagger", 0.3)) if def != null else 0.2
 	info.tool_power = (def.equip.get("tool_power", {}) as Dictionary).duplicate() if def != null else {}
 	# tool_power.wood = chopping strength (axes, machetes); tool_power.earth = digging (shovels).
+	# World setting player_harvest scales chopping and digging speed.
+	var harvest: float = GameRules.current().num("player_harvest")
 	if info.tool_power.has("wood"):
-		info.tool_power["chop"] = float(info.tool_power["wood"]) * (1.0 + p.modifier("chop_damage_mult"))
+		info.tool_power["chop"] = float(info.tool_power["wood"]) * (1.0 + p.modifier("chop_damage_mult")) * harvest
 	if info.tool_power.has("earth") or (def != null and def.provides_tool("shovel")):
-		info.tool_power["dig"] = float(info.tool_power.get("earth", 1.0))
+		info.tool_power["dig"] = float(info.tool_power.get("earth", 1.0)) * harvest
 	return info
 
 
