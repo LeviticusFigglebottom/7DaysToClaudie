@@ -13,6 +13,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "pond_dusk", "pos": Vector3(-200, 4.0, 1880), "look": Vector3(-262, 0, 1915), "hour": 19.6, "weather": "mist"},
 	{"name": "cliffs_overview", "pos": Vector3(-300, 40.0, 2130), "look": Vector3(-420, 10, 2220), "hour": 16.5, "weather": "clear"},
 	{"name": "river_bridge", "pos": Vector3(160, 8.0, 1935), "look": Vector3(185, 0, 1960), "hour": 9.0, "weather": "rain"},
+	{"name": "river_noon", "pos": Vector3(150, 1.7, 2075), "look": Vector3(118, 0.0, 2100), "hour": 13.0, "weather": "clear"},
 	{"name": "valley_aerial", "pos": Vector3(-150, 140.0, 2420), "look": Vector3(-60, 0, 2050), "hour": 17.5, "weather": "clear"},
 	{"name": "night_forest", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 1.5, 2280), "hour": 23.0, "weather": "clear", "light": true},
 	{"name": "base_building", "pos": Vector3(-296, 2.2, 2302), "look": Vector3(-286, 0.5, 2294), "hour": 11.0, "weather": "clear", "build": true},

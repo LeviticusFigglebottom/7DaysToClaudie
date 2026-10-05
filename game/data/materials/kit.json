@@ -9,8 +9,8 @@
         "finish_arrays": ["kit_wall_finishes_albedo", "kit_wall_finishes_normal", "kit_wall_finishes_orm"],
         "slice_order": "game/data/materials/kit_finishes.json#wall",
         "tile_m": 1.0,
-        "decay_overlay": ["kit_decay_albedo (RGBA, alpha = coverage priority: show where alpha > 1 - decay)", "kit_decay_orm"],
-        "decay_tile_m": 2.0
+        "decay_masks": ["kit_decay_albedo (RGBA coverage priorities: grime, water stains, mould, peel)", "kit_decay_orm (RGB detail: macro tone, grain, scuffs)"],
+        "decay_tile_m": 2.5
       }
     },
     "kit_floor": {
@@ -22,8 +22,8 @@
         "slice_order": "game/data/materials/kit_finishes.json#floor",
         "tile_m": 2.0,
         "ceiling": "use a wall finish slice (plaster_white) from the wall arrays for the bottom face",
-        "decay_overlay": ["kit_decay_albedo", "kit_decay_orm"],
-        "decay_tile_m": 2.0
+        "decay_masks": ["kit_decay_albedo", "kit_decay_orm"],
+        "decay_tile_m": 2.5
       }
     },
     "kit_trim": {

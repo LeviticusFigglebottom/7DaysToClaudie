@@ -87,8 +87,28 @@ Generated as Texture2DArrays (vertical strips, 1024² per slice):
 The slice order is defined in **`game/data/materials/kit_finishes.json`**
 (`{"wall": ["plaster_white", ...], "floor": ["wood_oak", ...]}`) and must never be reordered
 (POI specs refer to finishes by name; the builder maps names → slice indices).
-Also generated: `textures/kit_decay_{albedo,orm}.png` (tileable water stains / mould / grime used by
-the kit shaders as an overlay driven by per-instance `decay`).
+The finishes are clean apart from small chips: their 1–2 m tile would repeat any big feature.
+All wear is composed by `kit_wall.gdshader` in world space from two generated mask textures (the
+file names predate the masks; ADR-0019):
+* `textures/kit_decay_albedo.png`: RGBA coverage priorities, each uniform in [0,1], 2.5 m per tile:
+  R grime, G water stains (blots plus drips running down from them), B mould, A peeling.
+* `textures/kit_decay_orm.png`: RGB detail: R macro tone, G substrate grain and hairline cracks,
+  B scuff strokes.
+Both import as `mask` (BC7, linear). A layer shows where its priority exceeds `1 − coverage`.
+Coverage comes from the instance's `decay` (INSTANCE_CUSTOM.b, the building's `style.decay` with
+no per-piece jitter), from local height in the room (`VERTEX.y`: 0 on the slab, 2.8 under the
+ceiling), and from a coarse "zone" sample that makes some corners damp and others dry. Leaks start
+under the ceiling, grime collects low, mould grows along floors and ceilings, paint and wallpaper
+peel to their substrate (ceilings to the lath), and floors gather dust and scuffs. Exterior finishes
+(slices 11–15) get rain streaks and green algae instead. Interior faces of plaster, paint, wallpaper
+and panelling get a shader-drawn 11 cm baseboard.
+
+## Roofs
+`RoofBuilder` uses `style.roof.material` (default `roof_shingle`) from
+`game/data/materials/roofs.json`: `roof_shingle`, `roof_shingle_brown`, `roof_metal`,
+`roof_metal_red`, `roof_cedar`, and `roof_tar` for flat roofs. Pitched-roof UVs are metres (U along
+the eave, V up the slope). The sets tile every 2 m and are drawn eave-down. `std_surface`'s
+`macro_variation` drifts their tone in world space.
 
 ## Budgets
 Walls ≤ 200 tris (≤ 600 with openings + trim), floors ≤ 50, stairs ≤ 1.5k, doors ≤ 600.
