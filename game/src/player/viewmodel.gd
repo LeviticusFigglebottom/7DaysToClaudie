@@ -89,8 +89,19 @@ func show_item(item_id: StringName) -> void:
 		if not is_vm:
 			node.rotation_degrees = Vector3.ZERO
 			node.scale = Vector3.ONE * 0.8
+		else:
+			node.rotation_degrees = grip_rotation(def)
 	else:
 		_item_root.add_child(node)
+
+
+## Orientation of a viewmodel in the hand socket (equip.grip_rot, degrees). Tools stand on their
+## handle along the socket's +Y (towards the thumb); pointing items (barrel, beam) aim along +Z,
+## which is the back of the hand, so guns and lights turn +90 deg about Y to aim along the
+## fingers, and a spear turns its shaft forward.
+static func grip_rotation(def: ItemDef) -> Vector3:
+	var g: Array = def.equip.get("grip_rot", []) if def != null else []
+	return Vector3(float(g[0]), float(g[1]), float(g[2])) if g.size() == 3 else Vector3.ZERO
 
 
 ## Floating pose for a viewmodel when there are no arms. Viewmodels import facing the camera:

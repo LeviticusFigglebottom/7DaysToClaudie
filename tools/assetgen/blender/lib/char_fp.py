@@ -349,7 +349,7 @@ class FPRig:
 
     def evaluate(self, prm: dict):
         """prm: hand targets (hand.S.x/y/z offsets from rest wrist), hand orientation (hand.S.pitch,
-        yaw, roll in degrees, armature axes), elbow pole drop, grip.S (0 open..1 fist),
+        yaw, roll in degrees, armature axes; tilt = world-lateral forward/back, applied last), elbow pole drop, grip.S (0 open..1 fist),
         thumb.S (0..1 tuck), index.S (extra index curl, -1 points), arm sway offsets."""
         sk = self.sk
         Q = {n: np.eye(3) for n in sk.names}
@@ -360,7 +360,10 @@ class FPRig:
                                                       prm.get(f"elbow.{sd}.up", 0.0)]))
             sk.solve_two_bone(Q, f"upper_arm.{sd}", f"forearm.{sd}", tgt, pole, z_sign=-1.0)
             acc, _ = sk.fk(Q)
-            Rh = _R((0, 0, 1), prm.get(f"hand.{sd}.yaw", 0.0) * sx) @ _R((0, 1, 0), prm.get(f"hand.{sd}.roll", 0.0) * sx) @ \
+            # tilt: forward/back about the lateral axis applied last, so a thumb-up (rolled) grip
+            # chops in the view plane (pitch turns the hand in its pre-roll frame).
+            Rh = _R((1, 0, 0), prm.get(f"hand.{sd}.tilt", 0.0)) @ \
+                _R((0, 0, 1), prm.get(f"hand.{sd}.yaw", 0.0) * sx) @ _R((0, 1, 0), prm.get(f"hand.{sd}.roll", 0.0) * sx) @ \
                 _R((1, 0, 0), prm.get(f"hand.{sd}.pitch", 0.0))
             O = Rh @ sk.rest[f"hand.{sd}"]
             Q[f"hand.{sd}"] = acc[f"forearm.{sd}"].T @ O @ sk.rest[f"hand.{sd}"].T
@@ -381,6 +384,11 @@ def fp_actions(p: dict):
     """(name, frames, loop, generator(frame)->params)"""
     from .char_anim import Keys, ease, smooth_pulse
     base = {"grip.L": 0.30, "grip.R": 0.45, "thumb.L": 0.25, "thumb.R": 0.40}
+    # Tool-ready stance (idle, walk, overhead swing): the right hand rolls thumb-up so a held tool's
+    # handle (+Y of socket_hand.R runs towards the thumb) stands up and leans in instead of lying
+    # flat across the view, and the empty off-hand drops towards the frame edge.
+    ready = {**base, "hand.R.roll": 55.0, "hand.R.pitch": 8.0, "hand.R.x": -0.02, "hand.R.z": -0.035,
+             "hand.L.x": 0.02, "hand.L.z": -0.04}
 
     def loop_sway(f, n, amp=1.0, bob=0.0):
         w = 2 * math.pi * f / n
@@ -392,26 +400,37 @@ def fp_actions(p: dict):
             out[f"hand.{sd}.pitch"] = 1.5 * amp * math.sin(w + 0.5 + ph)
         return out
 
-    def idle(f, n=60):
-        return {**base, **loop_sway(f, n, 1.0)}
+    def swayed(f, n, amp, stance):
+        d = dict(stance)
+        for k, v in loop_sway(f, n, amp).items():
+            d[k] = d.get(k, 0.0) + v
+        return d
 
-    def walk(f, n=30):
+    def idle(f, n=60, stance=ready):
+        return swayed(f, n, 1.0, stance)
+
+    def walk(f, n=30, stance=ready):
         w = 2 * math.pi * f / n
-        d = {**base, **loop_sway(f, n, 0.5)}
+        d = swayed(f, n, 0.5, stance)
         for sd, sx, ph in (("L", 1.0, 0.0), ("R", -1.0, math.pi)):
             d[f"hand.{sd}.z"] = d.get(f"hand.{sd}.z", 0.0) - 0.014 * (0.5 + 0.5 * math.cos(2 * w)) + 0.004 * math.sin(w + ph)
             d[f"hand.{sd}.x"] = d.get(f"hand.{sd}.x", 0.0) + 0.010 * math.sin(w + ph)
             d[f"hand.{sd}.y"] = d.get(f"hand.{sd}.y", 0.0) + 0.012 * math.sin(w + ph)
         return d
 
-    swing_k = Keys(base, [
+    # Diagonal chop for the thumb-up grip: the head goes back over the right shoulder (still in
+    # view), the grip rolls in as it comes down so the axe crosses the screen side-on at impact
+    # (head at centre-left) and follows through low.
+    swing_k = Keys(ready, [
         (0, {"grip.R": 0.9}),
-        (7, {"grip.R": 1.0, "hand.R.x": -0.06, "hand.R.y": 0.30, "hand.R.z": 0.40, "hand.R.pitch": -70.0,
-             "elbow.R.up": 0.8, "hand.L.y": 0.03, "hand.L.z": -0.03}, "out"),
-        (10, {"grip.R": 1.0, "hand.R.x": 0.02, "hand.R.y": 0.05, "hand.R.z": 0.30, "hand.R.pitch": -20.0, "elbow.R.up": 0.6}, "in"),
-        (13, {"grip.R": 1.0, "hand.R.x": 0.08, "hand.R.y": -0.16, "hand.R.z": -0.10, "hand.R.pitch": 45.0,
-              "hand.L.z": -0.02}, "lin"),
-        (16, {"grip.R": 1.0, "hand.R.x": 0.07, "hand.R.y": -0.14, "hand.R.z": -0.14, "hand.R.pitch": 50.0}, "out"),
+        (7, {"grip.R": 1.0, "hand.R.x": -0.10, "hand.R.y": 0.0, "hand.R.z": 0.17, "hand.R.tilt": -40.0,
+             "hand.R.roll": 70.0, "elbow.R.up": 0.7, "hand.L.y": 0.03, "hand.L.z": -0.05}, "out"),
+        (10, {"grip.R": 1.0, "hand.R.x": -0.04, "hand.R.y": -0.03, "hand.R.z": 0.12, "hand.R.tilt": 0.0,
+              "hand.R.roll": 50.0, "elbow.R.up": 0.5}, "in"),
+        (13, {"grip.R": 1.0, "hand.R.x": 0.05, "hand.R.y": -0.07, "hand.R.z": 0.0, "hand.R.tilt": 35.0,
+              "hand.R.roll": 15.0, "hand.L.z": -0.04}, "lin"),
+        (16, {"grip.R": 1.0, "hand.R.x": 0.08, "hand.R.y": -0.05, "hand.R.z": -0.07, "hand.R.tilt": 45.0,
+              "hand.R.roll": 5.0}, "out"),
         (24, {"grip.R": 0.9}, "inout")])
     side_k = Keys(base, [
         (0, {"grip.R": 0.9}),
