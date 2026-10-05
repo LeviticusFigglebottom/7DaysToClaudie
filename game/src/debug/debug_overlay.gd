@@ -120,7 +120,7 @@ func _build_menu() -> void:
 	_row(v, [["God mode", _flag.bind(&"god_mode")], ["Invisible", _flag.bind(&"invisible")], ["No hunger", _flag.bind(&"no_hunger")]])
 	_row(v, [["AI overlay (F3)", _flag.bind(&"ai_overlay")], ["Perf (F4)", func() -> void: _perf.visible = DebugTools.toggle(&"perf_overlay")],
 		["Routes (F6)", _flag.bind(&"poi_routes")], ["Structure (F7)", _flag.bind(&"structure_view")]])
-	_row(v, [["Quicksave", func() -> void: Game.save_game("quicksave")], ["Screenshot", _screenshot]])
+	_row(v, [["Save", func() -> void: Game.save_game()], ["Screenshot", _screenshot]])
 	_section(v, "World")
 	_seed_label = Label.new()
 	_seed_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

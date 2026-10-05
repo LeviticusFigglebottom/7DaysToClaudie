@@ -20,6 +20,8 @@ var invert_y: bool = false
 var fov: float = 75.0
 var head_bob: float = 1.0
 var volumes: Dictionary = {"Master": 1.0, "SFX": 1.0, "Ambience": 0.9, "Music": 0.6, "UI": 0.8}
+var fullscreen: bool = false
+var vsync: bool = true
 
 var _cfg := ConfigFile.new()
 var _default_bindings: Dictionary = {}
@@ -145,6 +147,23 @@ func _apply_volumes() -> void:
 			AudioServer.set_bus_volume_db(idx, linear_to_db(maxf(0.0001, float(volumes[bus]))))
 
 
+# --- Display -------------------------------------------------------------------------------
+
+func set_display(p_fullscreen: bool, p_vsync: bool) -> void:
+	fullscreen = p_fullscreen
+	vsync = p_vsync
+	_apply_display()
+	save()
+
+
+func _apply_display() -> void:
+	# Headless runs (tests, CI, the smoke) have no window to change.
+	if DisplayServer.get_name() == "headless":
+		return
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED)
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
+
+
 # --- Persistence ---------------------------------------------------------------------------
 
 func save() -> void:
@@ -153,6 +172,8 @@ func save() -> void:
 	_cfg.set_value("gameplay", "fov", fov)
 	_cfg.set_value("gameplay", "head_bob", head_bob)
 	_cfg.set_value("audio", "volumes", volumes)
+	_cfg.set_value("display", "fullscreen", fullscreen)
+	_cfg.set_value("display", "vsync", vsync)
 	_cfg.save(SETTINGS_PATH)
 	settings_changed.emit()
 
@@ -165,7 +186,12 @@ func _load_user_settings() -> void:
 	invert_y = _cfg.get_value("gameplay", "invert_y", invert_y)
 	fov = _cfg.get_value("gameplay", "fov", fov)
 	head_bob = _cfg.get_value("gameplay", "head_bob", head_bob)
+	fullscreen = _cfg.get_value("display", "fullscreen", fullscreen)
+	vsync = _cfg.get_value("display", "vsync", vsync)
 	var v: Variant = _cfg.get_value("audio", "volumes", volumes)
 	if v is Dictionary:
 		volumes.merge(v, true)
 	_apply_volumes.call_deferred()
+	# Only touch the window when the player has chosen something (keeps --resolution runs as asked).
+	if _cfg.has_section("display"):
+		_apply_display.call_deferred()

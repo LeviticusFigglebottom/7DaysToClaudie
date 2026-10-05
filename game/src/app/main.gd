@@ -35,13 +35,16 @@ func _handle_cli(args: PackedStringArray) -> bool:
 		opts["rules"] = rules
 		Game.start_new_game.call_deferred(opts)
 		return true
+	# A load that fails leaves the menu up with the reason, not a blank screen.
 	if args.has("--load"):
-		Game.load_game.call_deferred(_arg_value(args, "--load", "slot1"))
+		_build_menu()
+		_load.call_deferred(_arg_value(args, "--load", "run1"))
 		return true
 	if args.has("--continue"):
 		var slots: Array[Dictionary] = SaveSystem.list_slots()
 		if not slots.is_empty():
-			Game.load_game.call_deferred(str(slots[0]["slot"]))
+			_build_menu()
+			_load.call_deferred(str(slots[0]["slot"]))
 			return true
 	return false
 
@@ -56,14 +59,17 @@ func _build_menu() -> void:
 		c.queue_free()
 	var slots: Array[Dictionary] = SaveSystem.list_slots()
 	if not slots.is_empty():
-		_add_button("Continue (Day %d)" % int(slots[0].get("day", 1)), func() -> void: Game.load_game(str(slots[0]["slot"])))
+		_add_button("Continue (Day %d)" % int(slots[0].get("day", 1)), _load.bind(str(slots[0]["slot"])))
 	_add_button("New Game…", _open_new_game)
 	_add_button("New Game — Vertical Slice (Hum on night 3)", func() -> void: Game.start_new_game({"game_mode": "slice"}))
 	var rwg := _add_button("Random World (M3)", func() -> void: pass)
 	rwg.disabled = true
 	for s: Dictionary in slots:
-		_add_button("Load %s — Day %d" % [s.get("slot", "?"), int(s.get("day", 1))], func() -> void: Game.load_game(str(s["slot"])))
-	_add_button("Graphics: %s" % Settings.graphics_preset, _cycle_graphics)
+		var label: String = "Load %s — Day %d" % [str(s.get("slot", "?")).capitalize(), int(s.get("day", 1))]
+		if str(s.get("preset", "")) != "":
+			label += " · %s" % str(s["preset"]).capitalize()
+		_add_button(label, _load.bind(str(s["slot"])))
+	_add_button("Options…", _open_options)
 	_add_button("Quit", func() -> void: get_tree().quit())
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
 
@@ -80,6 +86,21 @@ func _open_new_game() -> void:
 		_list.visible = true)
 
 
+## Loads a slot; a damaged or newer save says why here instead of failing silently.
+func _load(slot: String) -> void:
+	if not Game.load_game(slot):
+		_status.text = "Could not load %s: %s." % [slot, SaveSystem.last_error]
+
+
+func _open_options() -> void:
+	var panel := OptionsPanel.new()
+	add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.position = (get_viewport_rect().size - Vector2(620, 560)) * 0.5
+	_list.visible = false
+	panel.closed.connect(func() -> void: _list.visible = true)
+
+
 func _add_button(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
@@ -87,10 +108,3 @@ func _add_button(text: String, cb: Callable) -> Button:
 	b.pressed.connect(cb)
 	_list.add_child(b)
 	return b
-
-
-func _cycle_graphics() -> void:
-	var order: PackedStringArray = Settings.PRESET_ORDER
-	var i: int = (order.find(Settings.graphics_preset) + 1) % order.size()
-	Settings.set_graphics_preset(order[i])
-	_build_menu()

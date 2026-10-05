@@ -37,6 +37,12 @@ var _slots: Array = []
 var _flap_slots: Array = []
 var _hover: Dictionary = {}
 var _scroll: int = 0
+## Recipes in the current list (the scroll stops at the last page of them).
+var _recipe_count: int = 0
+## Pages of stacks: the cloth shows COLS x ROWS at a time; the mouse wheel over a grid turns it.
+var _page: int = 0
+var _flap_page: int = 0
+const RECIPE_ROWS: int = 11
 var _dirty: bool = true
 var _labels: Array[Label] = []
 
@@ -157,6 +163,8 @@ func open(p_mode: StringName = &"inventory", p_station: StringName = &"", p_cont
 	container = p_container
 	station_node = p_container if p_mode == &"station" else null
 	_scroll = 0
+	_page = 0
+	_flap_page = 0
 	_open = true
 	visible = true
 	_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
@@ -209,19 +217,25 @@ func _rebuild() -> void:
 	var p: PlayerState = _player()
 	if p == null:
 		return
-	_place_stacks(p.inventory.stacks, ORIGIN, _items_root, _slots, COLS)
+	_page = clampi(_page, 0, _pages(p.inventory.stacks.size(), COLS) - 1)
+	_place_stacks(p.inventory.stacks, ORIGIN, _items_root, _slots, COLS, _page)
 	if mode == &"container" and container != null and is_instance_valid(container):
 		var inv: Inventory = container.get(&"inventory")
 		if inv != null:
-			_place_stacks(inv.stacks, FLAP_ORIGIN + Vector3(0.02, 0.006, 0.0), _flap_root, _flap_slots, 4)
+			_flap_page = clampi(_flap_page, 0, _pages(inv.stacks.size(), 4) - 1)
+			_place_stacks(inv.stacks, FLAP_ORIGIN + Vector3(0.02, 0.006, 0.0), _flap_root, _flap_slots, 4, _flap_page)
 	_rebuild_recipes()
 
 
-func _place_stacks(stacks: Array[ItemStack], origin: Vector3, parent: Node3D, out: Array, cols: int) -> void:
-	for i: int in stacks.size():
-		if i >= cols * ROWS:
-			break
-		var s: ItemStack = stacks[i]
+static func _pages(n: int, cols: int) -> int:
+	return maxi(1, ceili(float(n) / float(cols * ROWS)))
+
+
+func _place_stacks(stacks: Array[ItemStack], origin: Vector3, parent: Node3D, out: Array, cols: int, page: int = 0) -> void:
+	var per_page: int = cols * ROWS
+	for k: int in range(page * per_page, mini(stacks.size(), (page + 1) * per_page)):
+		var i: int = k - page * per_page
+		var s: ItemStack = stacks[k]
 		var center: Vector3 = origin + Vector3((i % cols + 0.5) * SLOT, 0.006, (i / cols + 0.5) * SLOT)
 		var holder := Node3D.new()
 		holder.position = center
@@ -287,9 +301,11 @@ func _rebuild_recipes() -> void:
 		if a[1] != b[1]:
 			return a[1]
 		return String((a[0] as RecipeDef).display_name) < String((b[0] as RecipeDef).display_name))
+	_recipe_count = list.size()
+	_scroll = clampi(_scroll, 0, maxi(0, list.size() - RECIPE_ROWS))
 	var shown: int = 0
 	for i: int in range(_scroll, list.size()):
-		if shown >= 11:
+		if shown >= RECIPE_ROWS:
 			break
 		var r2: RecipeDef = list[i][0]
 		var ok: bool = list[i][1]
@@ -360,6 +376,9 @@ func _layout_overlay() -> void:
 	_title.text = "SALVAGE ROLL"
 	_title.position = _screen(ORIGIN + Vector3(0.0, 0.0, -0.035))
 	_bulk.text = "Pack %.1f / %.0f   ·   Shoulder: %d log%s" % [p.inventory.total_bulk(), p.inventory.max_bulk, p.inventory.count_of(&"log"), "" if p.inventory.count_of(&"log") == 1 else "s"]
+	var pages: int = _pages(p.inventory.stacks.size(), COLS)
+	if pages > 1:
+		_bulk.text += "   ·   page %d/%d (wheel over the cloth)" % [_page + 1, pages]
 	_bulk.position = _screen(ORIGIN + Vector3(0.0, 0.0, ROWS * SLOT + 0.02))
 	match mode:
 		&"container":
@@ -397,6 +416,11 @@ func _mat_point(mouse: Vector2) -> Vector3:
 		return Vector3.INF
 	var t: float = -from.y / dir.y
 	return from + dir * t
+
+
+static func _in_grid(mp: Vector3, origin: Vector3, cols: int) -> bool:
+	return mp != Vector3.INF and mp.x >= origin.x and mp.x <= origin.x + cols * SLOT \
+		and mp.z >= origin.z and mp.z <= origin.z + ROWS * SLOT
 
 
 func _update_hover() -> void:
@@ -448,19 +472,26 @@ func _gui_input(event: InputEvent) -> void:
 	var p: PlayerState = _player()
 	if event is InputEventMouseButton and event.pressed:
 		var mb: InputEventMouseButton = event
-		if mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_scroll += 1
-			_rebuild_recipes()
-		elif mb.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_scroll = maxi(0, _scroll - 1)
-			_rebuild_recipes()
+		if mb.button_index in [MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_UP]:
+			var step: int = 1 if mb.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1
+			var mp: Vector3 = _mat_point(get_local_mouse_position())
+			if _in_grid(mp, ORIGIN, COLS):
+				_page += step
+				_dirty = true
+			elif mode == &"container" and _in_grid(mp, FLAP_ORIGIN + Vector3(0.02, 0.0, 0.0), 4):
+				_flap_page += step
+				_dirty = true
+			else:
+				_scroll = clampi(_scroll + step, 0, maxi(0, _recipe_count - RECIPE_ROWS))
+				_rebuild_recipes()
 		elif _hover.has("stack"):
 			var s: ItemStack = _hover["stack"]
 			var flap: bool = bool(_hover["flap"])
 			if mb.button_index == MOUSE_BUTTON_LEFT:
 				_primary(p, s, flap)
 			elif mb.button_index == MOUSE_BUTTON_RIGHT and not flap:
-				Game.execute(&"inventory.drop", {"item": String(s.item_id), "count": s.count if mb.shift_pressed else 1})
+				Game.execute(&"inventory.drop", {"item": String(s.item_id), "count": s.count if mb.shift_pressed else 1,
+					"index": p.inventory.stacks.find(s)})
 			_dirty = true
 		accept_event()
 
@@ -487,7 +518,8 @@ func _primary(p: PlayerState, s: ItemStack, flap: bool) -> void:
 			var idx: int = inv.stacks.find(s)
 			Game.execute(&"container.take", {"container": container, "index": idx})
 		else:
-			Game.execute(&"container.put", {"container": container, "item": String(s.item_id), "count": s.count})
+			Game.execute(&"container.put", {"container": container, "item": String(s.item_id), "count": s.count,
+				"index": p.inventory.stacks.find(s)})
 		return
 	var d: ItemDef = s.def()
 	if d == null:

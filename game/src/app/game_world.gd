@@ -241,13 +241,13 @@ func _on_game_saving(_slot: String) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_ready:
 		return
-	if event.is_action_pressed(&"pause"):
-		ui.toggle_pause()
-	elif event.is_action_pressed(&"quicksave"):
-		Game.save_game("quicksave")
+	# Pause is handled by GameUI, which keeps receiving input while the tree is paused.
+	if event.is_action_pressed(&"quicksave"):
+		if not sleeping:
+			Game.save_game()
 	elif event.is_action_pressed(&"quickload"):
-		if SaveSystem.slot_exists("quicksave"):
-			Game.load_game("quicksave")
+		if SaveSystem.slot_exists(Game.current_slot) and player != null and player.state.stats.alive:
+			Game.load_game(Game.current_slot)
 	elif event.is_action_pressed(&"screenshot"):
 		var path: String = "user://screenshot_%d.png" % Time.get_unix_time_from_system()
 		get_viewport().get_texture().get_image().save_png(path)
@@ -334,8 +334,8 @@ func _on_woke(hours: float) -> void:
 	if ui.has_method(&"show_sleep"):
 		ui.call(&"show_sleep", false)
 	Events.player_slept.emit(player.state.id, hours)
-	Game.save_game("autosave")
-	Events.player_status_message.emit("Rested. Progress saved.", &"info")
+	if Game.autosave():
+		Events.player_status_message.emit("Rested. Progress saved.", &"info")
 
 
 func _on_player_died(cause: String) -> void:

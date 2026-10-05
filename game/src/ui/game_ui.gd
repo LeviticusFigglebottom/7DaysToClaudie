@@ -10,6 +10,11 @@ var _loading_bar: ProgressBar
 var _hud: Control
 var _crosshair: Control
 var _prompt: Label
+var _tool_hint: Label
+## Toolbelt strip: shown for a moment whenever the held item or the belt changes.
+var _belt: RichTextLabel
+var _belt_key: String = ""
+var _belt_t: float = 0.0
 var _hold: ProgressBar
 var _messages: VBoxContainer
 var _vitals: HBoxContainer
@@ -48,11 +53,23 @@ func _ready() -> void:
 	Events.player_damaged.connect(func(_id: StringName, amount: float, _src: Dictionary) -> void: _flash_damage(amount))
 	Events.horde_night_warning.connect(func(_d: int, h: float) -> void: message("The ground is humming. %d hour%s." % [int(h), "" if int(h) == 1 else "s"], &"warning"))
 	Events.horde_night_started.connect(func(_d: int) -> void: message("THE HUM HAS BEGUN.", &"danger"))
-	Events.horde_night_ended.connect(func(_d: int, _r: Dictionary) -> void: message("Dawn. The Hollowed root into the soil.", &"info"))
-	Events.game_saved.connect(func(slot: String, ok: bool) -> void: message(("Saved (%s)." % slot) if ok else "Save failed!", &"info" if ok else &"error"))
+	Events.horde_night_ended.connect(_on_hum_ended)
+	Events.game_saved.connect(func(_slot: String, ok: bool) -> void:
+		# Autosaves announce themselves in their own line ("Rested. Progress saved.").
+		if not ok or not Game.autosaving:
+			message("Saved." if ok else "Save failed!", &"info" if ok else &"error"))
 	Events.schematic_learned.connect(func(id: StringName) -> void: message("Learned: %s" % String(id).capitalize(), &"info"))
 	Events.player_leveled.connect(_on_leveled)
 	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void: message("A Program drone is overhead. Supplies are coming down.", &"level"))
+
+
+## Dawn after a Hum: the run is saved (a night survived is the progress most worth keeping).
+func _on_hum_ended(_day: int, _report: Dictionary) -> void:
+	var lp: PlayerState = Game.local_player()
+	if lp != null and lp.stats.alive and Game.autosave():
+		message("Dawn. The Hollowed root into the soil. Progress saved.", &"info")
+	else:
+		message("Dawn. The Hollowed root into the soil.", &"info")
 
 
 # --- Loading --------------------------------------------------------------------------------
@@ -135,6 +152,36 @@ func _build_hud() -> void:
 	_prompt.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_prompt.add_theme_constant_override(&"outline_size", 4)
 	_hud.add_child(_prompt)
+	_tool_hint = Label.new()
+	_tool_hint.anchor_left = 0.5
+	_tool_hint.anchor_right = 0.5
+	_tool_hint.anchor_top = 0.5
+	_tool_hint.anchor_bottom = 0.5
+	_tool_hint.position = Vector2(-400, 72)
+	_tool_hint.size = Vector2(800, 24)
+	_tool_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tool_hint.add_theme_font_size_override(&"font_size", 15)
+	_tool_hint.add_theme_color_override(&"font_color", Color(0.8, 0.78, 0.7, 0.9))
+	_tool_hint.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
+	_tool_hint.add_theme_constant_override(&"outline_size", 4)
+	_hud.add_child(_tool_hint)
+	_belt = RichTextLabel.new()
+	_belt.bbcode_enabled = true
+	_belt.fit_content = true
+	_belt.scroll_active = false
+	_belt.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_belt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_belt.anchor_left = 0.5
+	_belt.anchor_right = 0.5
+	_belt.anchor_top = 1.0
+	_belt.anchor_bottom = 1.0
+	_belt.position = Vector2(-450, -64)
+	_belt.size = Vector2(900, 30)
+	_belt.add_theme_font_size_override(&"normal_font_size", 15)
+	_belt.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.85))
+	_belt.add_theme_constant_override(&"outline_size", 4)
+	_belt.modulate.a = 0.0
+	_hud.add_child(_belt)
 	_hold = ProgressBar.new()
 	_hold.anchor_left = 0.5
 	_hold.anchor_right = 0.5
@@ -202,13 +249,18 @@ func _process(delta: float) -> void:
 		var ht: float = p.interaction.hold_t / maxf(p.interaction.hold_needed, 0.001) if p.interaction.hold_needed > 0.0 else 0.0
 		_hold.visible = ht > 0.0
 		_hold.value = ht * 100.0
+		var b: Node = w.get(&"building")
+		var place_why: String = str(b.call(&"placement_hint")) if b != null else ""
+		_tool_hint.text = place_why if place_why != "" else p.interaction.tool_hint
+	_update_belt(p.state, delta)
 	var s: SurvivalStats = p.state.stats
-	(_bars["health"] as ProgressBar).value = s.health
+	# Grit raises max health past 100: the bar shows the share of it.
+	(_bars["health"] as ProgressBar).value = s.health / maxf(1.0, s.max_health) * 100.0
 	(_bars["stamina"] as ProgressBar).value = s.stamina / maxf(1.0, s.max_stamina) * 100.0
 	(_bars["fullness"] as ProgressBar).value = s.fullness
 	(_bars["hydration"] as ProgressBar).value = s.hydration
 	# Vitals fade unless something is off (minimal HUD).
-	var concern: bool = s.health < 70.0 or s.stamina < s.max_stamina * 0.6 or s.fullness < 30.0 or s.hydration < 30.0
+	var concern: bool = s.health < s.max_health * 0.7 or s.stamina < s.max_stamina * 0.6 or s.fullness < 30.0 or s.hydration < 30.0
 	_vitals.modulate.a = lerpf(_vitals.modulate.a, 1.0 if concern else 0.15, minf(1.0, 3.0 * delta))
 	var vm: ShaderMaterial = _vignette.material
 	_damage_flash = maxf(0.0, _damage_flash - delta * 1.5)
@@ -227,24 +279,66 @@ func _process(delta: float) -> void:
 	_crosshair.visible = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 
 
+func _update_belt(ps: PlayerState, delta: float) -> void:
+	var parts: PackedStringArray = []
+	for i: int in ps.toolbelt.size():
+		var id: StringName = ps.toolbelt[i]
+		var d: ItemDef = Content.item(id) if id != &"" and ps.inventory.has(id) else null
+		var name_: String = d.display_name if d != null else "—"
+		if d != null and ps.inventory.count_of(id) > 1:
+			name_ += " ×%d" % ps.inventory.count_of(id)
+		if i == ps.equipped_slot and d != null:
+			parts.append("[color=#f2e6c4][b]%d %s[/b][/color]" % [i + 1, name_])
+		else:
+			parts.append("[color=#9a9282]%d %s[/color]" % [i + 1, name_])
+	var key: String = "   ".join(parts)
+	if key != _belt_key:
+		_belt_key = key
+		_belt.text = "[center]%s[/center]" % key
+		_belt_t = 2.5
+	_belt_t = maxf(0.0, _belt_t - delta)
+	_belt.modulate.a = clampf(_belt_t / 0.6, 0.0, 1.0)
+
+
 func _flash_damage(amount: float) -> void:
 	_damage_flash = clampf(_damage_flash + amount / 30.0, 0.0, 1.0)
 
 
 func message(text: String, kind: StringName = &"info") -> void:
+	# The same line again (a full pack, a locked door) refreshes the one on screen with a count
+	# instead of stacking copies.
+	for c: Node in _messages.get_children():
+		var old: Label = c as Label
+		if old != null and not old.is_queued_for_deletion() and str(old.get_meta(&"text", "")) == text:
+			var n: int = int(old.get_meta(&"count", 1)) + 1
+			old.set_meta(&"count", n)
+			old.text = "%s  ×%d" % [text, n]
+			old.modulate.a = 1.0
+			_fade_message(old)
+			return
 	var l := Label.new()
 	l.text = text
+	l.set_meta(&"text", text)
 	l.add_theme_color_override(&"font_color", {&"info": Color(0.85, 0.85, 0.8), &"warning": Color(0.95, 0.8, 0.45), &"danger": Color(0.95, 0.35, 0.3), &"error": Color(1, 0.4, 0.4), &"level": Color(0.62, 0.95, 0.66)}.get(kind, Color.WHITE))
 	l.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	l.add_theme_constant_override(&"outline_size", 4)
 	_messages.add_child(l)
+	_fade_message(l)
+	while _messages.get_child_count() > 6:
+		_messages.get_child(0).queue_free()
+		_messages.remove_child(_messages.get_child(0))
+
+
+func _fade_message(l: Label) -> void:
+	if l.has_meta(&"tween"):
+		var prev: Tween = l.get_meta(&"tween") as Tween
+		if prev != null and prev.is_valid():
+			prev.kill()
 	var tw: Tween = l.create_tween()
 	tw.tween_interval(4.0)
 	tw.tween_property(l, "modulate:a", 0.0, 1.2)
 	tw.tween_callback(l.queue_free)
-	while _messages.get_child_count() > 6:
-		_messages.get_child(0).queue_free()
-		_messages.remove_child(_messages.get_child(0))
+	l.set_meta(&"tween", tw)
 
 
 func _on_leveled(player_id: StringName, level: int) -> void:
@@ -311,17 +405,65 @@ func _build_pause() -> void:
 	title.add_theme_font_size_override(&"font_size", 40)
 	box.add_child(title)
 	for spec: Array in [["Resume", toggle_pause], ["Save", func() -> void: Game.save_game()],
-			["Load last save", func() -> void: Game.load_game(Game.current_slot)],
-			["Graphics preset", _cycle_gfx], ["Quit to menu", func() -> void: Game.quit_to_menu()]]:
+			["Load last save", _confirm_load], ["Options", _open_options],
+			["Save and quit to menu", _save_and_quit], ["Quit without saving", _confirm_quit]]:
 		var b := Button.new()
 		b.text = spec[0]
+		b.name = String(spec[0]).replace(" ", "_")
 		b.custom_minimum_size = Vector2(320, 40)
 		b.pressed.connect(spec[1])
 		box.add_child(b)
 
 
+## Actions that throw away unsaved progress ask twice: the first press re-labels the button.
+func _confirmed(button_name: String, question: String) -> bool:
+	var b: Button = _pause.find_child(button_name, true, false) as Button
+	if b == null:
+		return true
+	if b.has_meta(&"armed"):
+		return true
+	var text: String = b.text
+	b.text = question
+	b.set_meta(&"armed", true)
+	get_tree().create_timer(3.0, true, false, true).timeout.connect(func() -> void:
+		if is_instance_valid(b):
+			b.text = text
+			b.remove_meta(&"armed"))
+	return false
+
+
+func _confirm_load() -> void:
+	if _confirmed("Load_last_save", "Lose progress since the last save? Press again"):
+		Game.load_game(Game.current_slot)
+
+
+func _confirm_quit() -> void:
+	if _confirmed("Quit_without_saving", "Lose progress since the last save? Press again"):
+		Game.quit_to_menu()
+
+
+func _save_and_quit() -> void:
+	var lp: PlayerState = Game.local_player()
+	if lp != null and lp.stats.alive and not Game.save_game():
+		message("Save failed: still in the game.", &"error")
+		return
+	Game.quit_to_menu()
+
+
+func _open_options() -> void:
+	var panel := OptionsPanel.new()
+	add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.position = (get_viewport().get_visible_rect().size - Vector2(620, 560)) * 0.5
+	_pause.visible = false
+	panel.closed.connect(func() -> void: _pause.visible = true)
+
+
 func toggle_pause() -> void:
-	var on: bool = not _pause.visible
+	# Not while asleep or on the death screen: resuming would hand control back mid-sleep.
+	if _overlay.visible:
+		return
+	var on: bool = not _pause.visible and not _modals.has(&"pause")
 	if on and has_modal() and not _modals.has(&"pause"):
 		# Escape closes the top diegetic UI first.
 		var top: StringName = _modals.back()
@@ -333,20 +475,25 @@ func toggle_pause() -> void:
 	if on:
 		push_modal(&"pause")
 	else:
+		for c: Node in get_children():
+			if c is OptionsPanel:
+				c.queue_free()
 		pop_modal(&"pause")
-
-
-func _cycle_gfx() -> void:
-	var order: PackedStringArray = Settings.PRESET_ORDER
-	Settings.set_graphics_preset(order[(order.find(Settings.graphics_preset) + 1) % order.size()])
-	message("Graphics: %s" % Settings.graphics_preset, &"info")
 
 
 # --- Diegetic UIs --------------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
 	var w: Node = Game.world
-	if w == null or not bool(w.get(&"is_ready")) or _pause.visible or _overlay.visible:
+	if w == null or not bool(w.get(&"is_ready")):
+		return
+	# Handled here, not in GameWorld: this layer keeps processing while the tree is paused, so
+	# Escape also closes the pause menu.
+	if event.is_action_pressed(&"pause"):
+		get_viewport().set_input_as_handled()
+		toggle_pause()
+		return
+	if _pause.visible or _overlay.visible:
 		return
 	if event.is_action_pressed(&"inventory") and not roll.is_open() and not manual.is_open():
 		roll.open()

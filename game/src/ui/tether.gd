@@ -23,6 +23,11 @@ var _directives: Label
 var _hum: Label
 var _map: TextureRect
 var _map_region: String = ""
+## The region map is shaded on a worker thread (65k height samples hitched the frame the
+## tether opened in a new region); the texture is swapped in when it is done.
+var _map_task: int = -1
+var _map_img: Image = null
+var _map_pending: String = ""
 var _markers: Control
 var _refresh_t: float = 0.0
 
@@ -180,7 +185,8 @@ func _refresh() -> void:
 
 func _bar(f: float) -> String:
 	var n: int = int(round(clampf(f, 0.0, 1.0) * 10.0))
-	return "▮".repeat(n) + "▯".repeat(10 - n)
+	# Block glyphs the UI font (IBM Plex Mono) has; ▮/▯ rendered as empty boxes.
+	return "█".repeat(n) + "░".repeat(10 - n)
 
 
 func _record_text(p: PlayerState) -> String:
@@ -232,11 +238,31 @@ func _ensure_map() -> void:
 	var w: Node = Game.world
 	if w == null or w.player == null:
 		return
+	if _map_task != -1:
+		if not WorkerThreadPool.is_task_completed(_map_task):
+			return
+		WorkerThreadPool.wait_for_task_completion(_map_task)
+		_map_task = -1
+		if _map_img != null:
+			_map.texture = ImageTexture.create_from_image(_map_img)
+			_map_region = _map_pending
+		_map_img = null
 	var pp: Vector3 = (w.player as Node3D).global_position
 	var rt: RegionTerrain = (w.terrain as TerrainManager).region_terrain_at(pp.x, pp.z)
 	if rt == null or rt.region_id == _map_region:
 		return
-	_map_region = rt.region_id
+	_map_pending = rt.region_id
+	_map_task = WorkerThreadPool.add_task(_shade_map.bind(rt), false, "tether map")
+
+
+func _exit_tree() -> void:
+	if _map_task != -1:
+		WorkerThreadPool.wait_for_task_completion(_map_task)
+		_map_task = -1
+
+
+## Worker thread: reads the region's height and vegetation fields only, touches no nodes.
+func _shade_map(rt: RegionTerrain) -> void:
 	var img := Image.create(MAP_PX, MAP_PX, false, Image.FORMAT_RGB8)
 	var step: float = rt.rect.size.x / float(MAP_PX)
 	for y: int in MAP_PX:
@@ -264,7 +290,7 @@ func _ensure_map() -> void:
 			var px := Vector2i(int((float(a[0]) - rt.rect.position.x) / step), int((float(a[2] if a.size() > 2 else a[1]) - rt.rect.position.y) / step))
 			if px.x >= 0 and px.y >= 0 and px.x < MAP_PX and px.y < MAP_PX:
 				img.set_pixel(px.x, px.y, Color(0.75, 0.72, 0.6))
-	_map.texture = ImageTexture.create_from_image(img)
+	_map_img = img
 
 
 func _fill_poly(img: Image, rt: RegionTerrain, poly: Variant, col: Color) -> void:

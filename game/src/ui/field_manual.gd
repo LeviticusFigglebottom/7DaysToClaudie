@@ -313,10 +313,10 @@ func _record_list(p: PlayerState) -> void:
 	_entry("Level %d  ·  %d point%s to spend" % [pr.level, pr.skill_points, "" if pr.skill_points == 1 else "s"], "record", true)
 	for a: AttributeDef in _attributes():
 		_header("%s  %d / %d" % [a.display_name, pr.attr_level(a.id), a.max_level])
-		_entry("%s%s (train)" % ["▸ " if pr.can_raise_attribute(a.id) else "", a.display_name], a, pr.attr_level(a.id) < a.max_level)
+		_entry("%s%s (train)" % ["› " if pr.can_raise_attribute(a.id) else "", a.display_name], a, pr.attr_level(a.id) < a.max_level)
 		for pk: PerkDef in _perks_of(a.id):
 			var rank: int = pr.perk_rank(pk.id)
-			_entry("%s%s  %d/%d" % ["▸ " if pr.can_buy_perk(pk.id) else "", pk.display_name, rank, pk.max_rank()], pk, rank > 0 or pr.can_buy_perk(pk.id))
+			_entry("%s%s  %d/%d" % ["› " if pr.can_buy_perk(pk.id) else "", pk.display_name, rank, pk.max_rank()], pk, rank > 0 or pr.can_buy_perk(pk.id))
 
 
 ## "+3% melee damage, +2 pack space" for an effects dictionary (each value x `times`).

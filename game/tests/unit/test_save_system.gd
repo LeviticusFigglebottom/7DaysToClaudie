@@ -77,3 +77,68 @@ func test_unknown_items_are_dropped_not_fatal() -> void:
 	var restored: GameSession = GameSession.from_dict(JSON.parse_string(JSON.stringify(d)))
 	assert_eq(restored.local_player().inventory.count_of(&"item_removed_in_patch"), 0)
 	assert_eq(restored.local_player().inventory.count_of(&"stick"), 7)
+
+
+func test_chunk_keys_with_colons_use_safe_file_names() -> void:
+	var s: GameSession = _make_session()
+	s.world.chunk_blobs["t:-3_5"] = PackedByteArray([9, 8, 7])
+	s.world.chunk_blobs["v:1_-2_0"] = PackedByteArray([1])
+	assert_eq(SaveSystem.save_session(s, SLOT), OK)
+	for f: String in DirAccess.get_files_at(SaveSystem.slot_dir(SLOT).path_join("chunks")):
+		assert_false(f.contains(":"), "no ':' in %s (Windows can't store it)" % f)
+	var loaded: GameSession = SaveSystem.load_session(SLOT)
+	assert_eq(loaded.world.chunk_blobs.get("t:-3_5"), PackedByteArray([9, 8, 7]), "key restored with its ':'")
+	assert_eq(loaded.world.chunk_blobs.get("v:1_-2_0"), PackedByteArray([1]))
+
+
+func test_damaged_save_falls_back_to_the_previous_one() -> void:
+	var s: GameSession = _make_session()
+	assert_eq(SaveSystem.save_session(s, SLOT), OK)
+	# Simulate a swap interrupted after the old save was moved aside and the new one was lost.
+	var dir: String = SaveSystem.slot_dir(SLOT)
+	assert_eq(DirAccess.rename_absolute(dir, dir + ".old"), OK)
+	DirAccess.make_dir_recursive_absolute(dir)
+	var f := FileAccess.open(dir.path_join("session.json"), FileAccess.WRITE)
+	f.store_string("{ truncated")
+	f.close()
+	assert_true(SaveSystem.slot_exists(SLOT))
+	var loaded: GameSession = SaveSystem.load_session(SLOT)
+	assert_not_null(loaded, "the previous save loads")
+	assert_eq(loaded.clock.day(), s.clock.day())
+	assert_eq(SaveSystem.last_error, "")
+	SaveSystem.delete_slot(SLOT)
+	assert_false(DirAccess.dir_exists_absolute(dir + ".old"), "deleting a slot takes its backup too")
+
+
+func test_unreadable_save_reports_why() -> void:
+	var dir: String = SaveSystem.slot_dir(SLOT)
+	DirAccess.make_dir_recursive_absolute(dir)
+	var f := FileAccess.open(dir.path_join("session.json"), FileAccess.WRITE)
+	f.store_string("not json")
+	f.close()
+	assert_null(SaveSystem.load_session(SLOT))
+	assert_ne(SaveSystem.last_error, "")
+	assert_push_error_count(1, "the damaged slot is logged")
+
+
+func test_new_runs_get_their_own_slot() -> void:
+	var a: String = SaveSystem.new_run_slot()
+	assert_true(a.begins_with("run"))
+	var s: GameSession = _make_session()
+	assert_eq(SaveSystem.save_session(s, a), OK)
+	var b: String = SaveSystem.new_run_slot()
+	assert_ne(a, b, "a second run never reuses the first run's slot")
+	SaveSystem.delete_slot(a)
+
+
+func test_no_saving_while_dead() -> void:
+	var prev: GameSession = Game.session
+	var s: GameSession = _make_session()
+	Game.session = s
+	Game.current_slot = SLOT
+	s.local_player().stats.alive = false
+	assert_false(Game.save_game(), "a dead player's state is not saved")
+	assert_false(SaveSystem.slot_exists(SLOT))
+	s.local_player().stats.alive = true
+	assert_true(Game.save_game())
+	Game.session = prev

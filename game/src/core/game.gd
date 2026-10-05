@@ -20,6 +20,8 @@ var world: Node = null
 ## "offline" | "host" | "client" — only "client" lacks authority.
 var network_role: StringName = &"offline"
 var current_slot: String = "slot1"
+## True while autosave() runs, so listeners can stay quiet (the caller says it in its own words).
+var autosaving: bool = false
 ## Options for the next world entry (e.g. {"skip_intro": true}); consumed by GameWorld.
 var pending_options: Dictionary = {}
 
@@ -58,7 +60,8 @@ func new_session(options: Dictionary = {}) -> GameSession:
 
 func start_new_game(options: Dictionary = {}) -> void:
 	new_session(options)
-	current_slot = str(options.get("slot", "slot1"))
+	# Every run saves to its own slot (SaveSystem: one slot per run).
+	current_slot = str(options.get("slot", SaveSystem.new_run_slot()))
 	pending_options = options.duplicate()
 	pending_options["is_new_game"] = true
 	_change_scene(GAME_WORLD_SCENE)
@@ -67,7 +70,7 @@ func start_new_game(options: Dictionary = {}) -> void:
 func load_game(slot: String) -> bool:
 	var loaded: GameSession = SaveSystem.load_session(slot)
 	if loaded == null:
-		Events.player_status_message.emit("Could not load '%s'." % slot, &"error")
+		Events.player_status_message.emit("Could not load '%s': %s." % [slot, SaveSystem.last_error], &"error")
 		return false
 	session = loaded
 	current_slot = slot
@@ -82,6 +85,12 @@ func load_game(slot: String) -> bool:
 func save_game(slot: String = "") -> bool:
 	if session == null:
 		return false
+	# A dead player's state is mid-penalty (pack on the ground, permadeath slot deleted): saving
+	# now would freeze the death into the run or resurrect a permadeath run.
+	var lp: PlayerState = local_player()
+	if lp != null and not lp.stats.alive:
+		Events.player_status_message.emit("You can't save while dead.", &"warning")
+		return false
 	var s: String = slot if slot != "" else current_slot
 	Events.game_saving.emit(s)
 	var err: Error = SaveSystem.save_session(session, s)
@@ -91,6 +100,14 @@ func save_game(slot: String = "") -> bool:
 	else:
 		Log.error(&"save", "saving slot '%s' failed: %s" % [s, error_string(err)])
 	Events.game_saved.emit(s, ok)
+	return ok
+
+
+## A save the game makes on its own (waking, dawn after a Hum).
+func autosave() -> bool:
+	autosaving = true
+	var ok: bool = save_game()
+	autosaving = false
 	return ok
 
 
