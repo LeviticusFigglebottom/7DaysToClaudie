@@ -61,7 +61,8 @@ mounds at dawn. They despawned instead.
     veil fading only to 45 %, the deep wood's floor came out 2–2.3× as bright as clean litter
     with half its saturation, and under the cold sky light it read as old snow. The web is now
     cream, the litter keeps more of its colour, and the veil thins to 55 % opacity and fades to
-    30 %, so the floor is 1.2–1.7× as bright as clean litter.
+    30 %, so the floor is 1.2–1.7× as bright as clean litter. In full sun it still reads as a
+    cream veil past 2–3 m rather than as threads (TD-062).
 * **Bark (bark.gdshader).** Cords climb from the roots in the bark's UVs. They are periodic in V,
   so they run on across tiles, and fans open up the trunk.
   * How far they reach depends on the field at the tree's foot, the material's `bloom_affinity`
