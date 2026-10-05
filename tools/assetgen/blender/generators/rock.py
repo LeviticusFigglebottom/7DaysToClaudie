@@ -63,11 +63,13 @@ def _project(dirs: np.ndarray, planes, k: float, tmax: float) -> np.ndarray:
 
 
 def rock_block(name: str, p: dict, r, *, size, center=(0.0, 0.0, 0.0), subdiv=5, cuts=None, slab=False,
-               round_frac=None, noise_amp=0.035, grooves=1, extra_grooves=(), yaw=math.pi):
-    """extra_grooves: [(normal, offset, half_width, depth)] joint planes in block-local space."""
+               round_frac=None, noise_amp=0.035, grooves=1, extra_grooves=(), yaw=math.pi, tilt=0.12, lumps=0.0):
+    """extra_grooves: [(normal, offset, half_width, depth)] joint planes in block-local space.
+    lumps: amplitude (fraction of the smallest size) of a low-frequency swell that bends the flat
+    faces, so a boulder reads as weathered stone rather than a rounded box."""
     sx, sy, sz = (s * 0.5 for s in size)
     cuts = int(p.get("cuts", 5)) if cuts is None else cuts
-    planes = _planes(r, sx, sy, sz, cuts, slab=slab, yaw=yaw)
+    planes = _planes(r, sx, sy, sz, cuts, slab=slab, yaw=yaw, tilt=tilt)
     k = float(p.get("round", 0.12) if round_frac is None else round_frac) * min(sx, sy, sz) * 2.0 * 0.5
     bm = bmesh.new()
     bmesh.ops.create_icosphere(bm, subdivisions=subdiv, radius=1.0)
@@ -90,6 +92,8 @@ def rock_block(name: str, p: dict, r, *, size, center=(0.0, 0.0, 0.0), subdiv=5,
         n1 = noise.fractal(q, 0.55, 2.2, 5, noise_basis="PERLIN_ORIGINAL")
         n2 = noise.noise(q * 4.0, noise_basis="VORONOI_F2F1")
         disp = (n1 * 1.0 + n2 * 0.25) * noise_amp * min(sx, sy, sz) * 2.0
+        if lumps > 0.0:
+            disp += noise.noise(q * 0.45 + Vector((3.7, 1.3, 0.0))) * lumps * min(sx, sy, sz) * 2.0
         for gn, gh, gw, gd in gplanes:
             dist = abs(pos.dot(gn) - gh)
             if dist < gw * 2:
@@ -165,9 +169,12 @@ def _hull(obj, name, max_points=48):
 
 
 def build_boulder(p, name):
+    """Weathered granite boulder: a tilted block chipped by extra fracture planes, its faces bent by
+    a low swell. outputs[1] (optional) gets a decimated LOD1 for distant scatter."""
     r = common.rng(p["seed"])
     size = p.get("size", [1.8, 1.4, 1.2])
-    obj = rock_block(name, p, r, size=size, subdiv=5, grooves=int(p.get("grooves", 1)))
+    obj = rock_block(name, p, r, size=size, subdiv=6, grooves=int(p.get("grooves", 1)), tilt=0.3,
+                     noise_amp=0.03, lumps=float(p.get("lumps", 0.07)))
     _embed_and_cut(obj, float(p.get("embed", 0.18)))
     obj = _finish(obj, p, int(p.get("tris", 1500)), ao_dist=max(size) * 0.5)
     return [obj, _hull(obj, name + "-convcolonly", 48)]
@@ -243,3 +250,9 @@ def build(params: dict, outputs: list[str]) -> None:
     print(f"[rock] {name}: {common.triangle_count(objs[0])} tris")
     bpy.context.view_layer.update()   # drop stale entries of removed objects before export
     export.export_glb(outputs[0], objs)
+    if len(outputs) > 1:
+        # LOD1: the same rock decimated (vertex colours and UVs survive the collapse)
+        low = decimated_copy(objs[0], float(params.get("lod1_ratio", 0.3)), name + "_lod1")
+        print(f"[rock] {name}_lod1: {common.triangle_count(low)} tris")
+        bpy.context.view_layer.update()
+        export.export_glb(outputs[1], [low])

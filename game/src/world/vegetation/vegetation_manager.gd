@@ -231,12 +231,18 @@ func _build_chunk(key: Vector2i, ground: bool) -> void:
 			var sp: SpeciesDef = Content.get_def(&"species", StringName(parts[0])) as SpeciesDef
 			var variant: int = int(parts[1])
 			var insts: Array = groups[gk]
-			var lod_count: int = 3 if sp.veg_kind == "tree" else 1
-			for lod: int in lod_count:
-				var mesh: Mesh = _lod_mesh(sp, variant, lod)
-				var begin: float = 0.0 if lod == 0 else LOD_END[lod - 1]
-				var end: float = LOD_END[lod] if sp.veg_kind == "tree" else minf(float(sp.lod_distances[1]) * 2.0, 220.0)
-				holder.add_child(_mmi(mesh, insts, begin, end, sp.veg_kind != "rock" or lod > 0))
+			if sp.veg_kind == "tree":
+				for lod: int in 3:
+					holder.add_child(_mmi(_lod_mesh(sp, variant, lod), insts, 0.0 if lod == 0 else LOD_END[lod - 1], LOD_END[lod], true))
+				continue
+			var end: float = minf(float(sp.lod_distances[1]) * 2.0, 220.0)
+			# Boulders cast shadows (they sit in the light like the trees); loose pebbles don't.
+			var shadows: bool = sp.veg_kind != "rock" or sp.collides
+			if sp.veg_kind == "rock" and end > ROCK_LOD_SPLIT and ModelLibrary.has_model(sp.models[variant % sp.models.size()] + "_lod1"):
+				holder.add_child(_mmi(_lod_mesh(sp, variant, 0), insts, 0.0, ROCK_LOD_SPLIT, shadows))
+				holder.add_child(_mmi(_lod_mesh(sp, variant, 1), insts, ROCK_LOD_SPLIT, end, shadows))
+			else:
+				holder.add_child(_mmi(_lod_mesh(sp, variant, 0), insts, 0.0, end, shadows))
 	if ground:
 		_set_ground(key, true)
 
