@@ -97,7 +97,8 @@ editor: ## Open the Godot editor
 
 screenshots: ## Capture the screenshot suite into build/screenshots (software Vulkan under Xvfb)
 	@mkdir -p $(ROOT)/build/screenshots
-	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution 1600x900 -s res://src/tools/cli/screenshots.gd -- --out $(ROOT)/build/screenshots $(SHOTS_ARGS)
+	@# The watchdog ends a run whose engine shutdown hangs after "SHOT done" (it would hold the lock).
+	@$(LOCK) $(ROOT)/tools/qa_watchdog.sh "SHOT done" $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution 1600x900 -s res://src/tools/cli/screenshots.gd -- --out $(ROOT)/build/screenshots $(SHOTS_ARGS)
 
 ci: ## Everything CI runs: setup, assets, import, validate (strict), tests
 	@$(MAKE) --no-print-directory setup
