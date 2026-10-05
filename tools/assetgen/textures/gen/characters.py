@@ -73,6 +73,29 @@ def _veins(size, seed, scale_cells=60, width=1.2, warp=18.0):
     return np.clip(1.0 - dist / width, 0.0, 1.0) ** 1.5
 
 
+def _level_lines(n, width_px):
+    """1 on the median level set of n, falling to 0 at width_px pixels (uniform-width lines)."""
+    m = float(np.median(n))
+    gx = (np.roll(n, -1, 1) - np.roll(n, 1, 1)) * 0.5
+    gy = (np.roll(n, -1, 0) - np.roll(n, 1, 0)) * 0.5
+    d = np.abs(n - m) / (np.sqrt(gx * gx + gy * gy) + 1e-6)
+    return np.clip(1.0 - d / width_px, 0.0, 1.0).astype(np.float32)
+
+
+def _skin_micro(size, seed, *, cells=2600, pores=5200):
+    """Skin micro-relief: the fine polygonal crease net (dermatoglyphs), patches of roughly
+    parallel wrinkle lines, and pores. Returns (crease, wrinkle, pore) masks, 1 = in the feature."""
+    f1, f2, _ = T.worley(size, cells, seed, jitter=0.85)
+    fine = 1.0 - T.smoothstep(0.0, 1.6, f2 - f1)
+    wx = T.spectral(size, 2.0, seed + 1)
+    wy = T.spectral(size, 2.0, seed + 2)
+    n = T.warp(T.spectral(size, 1.6, seed + 3, anisotropy=(1.0, 5.0), fmin=6.0), wx, wy, size * 0.01)
+    wrinkle = _level_lines(n, 1.4) * T.smoothstep(0.45, 0.7, T.spectral(size, 2.0, seed + 5))
+    p1, _, _ = T.worley(size, pores, seed + 4, jitter=0.95)
+    pore = 1.0 - T.smoothstep(0.7, 1.7, p1)
+    return fine.astype(np.float32), wrinkle.astype(np.float32), pore.astype(np.float32)
+
+
 @texture("skin_hollow", size=1024, seed=301)
 def skin_hollow(size: int, seed: int, out) -> None:
     """Pale grey-green mottled dead skin: veins, bruising, sallow blotches, pores."""
@@ -97,13 +120,16 @@ def skin_hollow(size: int, seed: int, out) -> None:
     # faint darker halo around the veins (blood pooling under the skin)
     halo = T.blur(vein, 4.0)
     col = T.mix(col, _c("#6f786a") * np.ones_like(col), np.clip(halo * 1.5, 0, 1) * 0.35)
-    # pores / speckle
+    # pores / speckle, and the dried-out crease net of dead skin
     pores = T.smoothstep(0.80, 0.95, T.spectral(size, 0.3, seed + 8))
+    crease, wrinkle, pore = _skin_micro(size, seed + 20, cells=2200, pores=4200)
     col *= (1.0 - 0.10 * pores)[..., None]
     col *= (0.92 + 0.12 * fine)[..., None]
-    height = T.normalize(0.35 * mid + 0.25 * fine - 0.25 * pores + 0.35 * vein * patch)
-    rough = np.clip(0.62 + 0.12 * (1 - mottle) - 0.10 * vein + 0.06 * fine, 0.35, 0.9)
-    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=3.0)
+    col *= (1.0 - 0.04 * crease - 0.10 * wrinkle - 0.08 * pore)[..., None]
+    height = T.normalize(0.35 * mid + 0.25 * fine - 0.25 * pores + 0.35 * vein * patch
+                         - 0.05 * crease - 0.09 * wrinkle - 0.05 * pore)
+    rough = np.clip(0.62 + 0.12 * (1 - mottle) - 0.10 * vein + 0.06 * fine + 0.05 * wrinkle, 0.35, 0.9)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=3.5)
 
 
 @texture("skin_human", size=1024, seed=311)
@@ -120,9 +146,13 @@ def skin_human(size: int, seed: int, out) -> None:
     hairs = T.smoothstep(0.86, 0.97, T.spectral(size, 0.5, seed + 5, anisotropy=(7.0, 1.0)))
     col = T.mix(col, _c("#3a2a20") * np.ones_like(col), hairs * 0.35)
     col *= (0.94 + 0.08 * fine)[..., None]
-    height = T.normalize(0.4 * mid + 0.4 * fine - 0.2 * freck)
-    rough = np.clip(0.55 + 0.15 * grime + 0.05 * fine, 0.3, 0.9)
-    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.0)
+    # skin micro-relief: the fine crease net, deeper creases, pores (a slight redness in creases)
+    crease, wrinkle, pore = _skin_micro(size, seed + 20)
+    col = T.mix(col, col * np.array([0.93, 0.86, 0.84], np.float32), np.clip(0.4 * crease + wrinkle, 0, 1) * 0.35)
+    col *= (1.0 - 0.06 * pore)[..., None]
+    height = T.normalize(0.4 * mid + 0.4 * fine - 0.2 * freck - 0.04 * crease - 0.07 * wrinkle - 0.04 * pore)
+    rough = np.clip(0.55 + 0.15 * grime + 0.05 * fine + 0.04 * wrinkle, 0.3, 0.9)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.6)
 
 
 def _weave(size, count, seed, twill=False):
