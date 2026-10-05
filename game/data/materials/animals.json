@@ -1,0 +1,236 @@
+{
+ "_doc": "Wildlife materials (ADR-0027). Coats use the fur shader: vertex colour R = baked AO, G = the pale coat, B = the dark coat (the darkest point, the nose, is wet); base/pale/dark tint a neutral strand texture (animal_fur_short, animal_fur_soft, animal_feathers from tools/assetgen/textures/gen/animals.py). Birds flap in the vertex stage (wing_flap, UV2.x = span). Hooves, antlers and eyes use std_surface (metallic_mult 0: untextured ORM reads as white).",
+ "materials": {
+  "fur_deer": {
+   "shader": "fur",
+   "textures": "animal_fur_short",
+   "params": {
+    "uv_scale": 9.0,
+    "base_color": "#6c5440",
+    "pale_color": "#d9d2c4",
+    "dark_color": "#2a211b",
+    "grain": 0.7,
+    "normal_strength": 1.0,
+    "roughness": 0.9,
+    "sheen": 0.35,
+    "sheen_tint": 0.7,
+    "backlight_amount": 0.18,
+    "backlight_color": "#b0583a",
+    "nose_roughness": 0.2
+   }
+  },
+  "fur_deer_buck": {
+   "shader": "fur",
+   "textures": "animal_fur_short",
+   "params": {
+    "uv_scale": 9.0,
+    "base_color": "#5f4a39",
+    "pale_color": "#d6cfc0",
+    "dark_color": "#231c17",
+    "grain": 0.75,
+    "normal_strength": 1.1,
+    "roughness": 0.9,
+    "sheen": 0.32,
+    "sheen_tint": 0.7,
+    "backlight_amount": 0.16,
+    "backlight_color": "#b0583a",
+    "nose_roughness": 0.2
+   }
+  },
+  "fur_hare": {
+   "shader": "fur",
+   "textures": "animal_fur_soft",
+   "params": {
+    "uv_scale": 22.0,
+    "base_color": "#77634e",
+    "pale_color": "#e2dccf",
+    "dark_color": "#2e2620",
+    "grain": 0.8,
+    "normal_strength": 1.0,
+    "roughness": 0.95,
+    "sheen": 0.45,
+    "sheen_tint": 0.8,
+    "backlight_amount": 0.3,
+    "backlight_color": "#c26a4a",
+    "nose_roughness": 0.3
+   }
+  },
+  "feathers_songbird": {
+   "shader": "fur",
+   "textures": "animal_feathers",
+   "params": {
+    "uv_scale": 30.0,
+    "base_color": "#6e4e33",
+    "pale_color": "#d8c8ac",
+    "dark_color": "#2b2018",
+    "grain": 0.65,
+    "normal_strength": 0.8,
+    "roughness": 0.8,
+    "sheen": 0.25,
+    "sheen_tint": 0.5,
+    "backlight_amount": 0.2,
+    "backlight_color": "#8a5a3a",
+    "wing_flap": true,
+    "shoulder_x": 0.012,
+    "flap_degrees": 62.0
+   }
+  },
+  "feathers_crow": {
+   "shader": "fur",
+   "textures": "animal_feathers",
+   "params": {
+    "uv_scale": 16.0,
+    "base_color": "#18181c",
+    "pale_color": "#2c2c33",
+    "dark_color": "#0b0b0e",
+    "grain": 0.5,
+    "normal_strength": 0.9,
+    "roughness": 0.55,
+    "sheen": 0.3,
+    "sheen_tint": 0.2,
+    "backlight_amount": 0.05,
+    "backlight_color": "#202030",
+    "iridescence": "#3a3f7a",
+    "wing_flap": true,
+    "shoulder_x": 0.035,
+    "flap_degrees": 50.0
+   }
+  },
+  "hoof": {
+   "shader": "std_surface",
+   "textures": "animal_hoof",
+   "params": {
+    "uv_scale": 30.0,
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0
+   }
+  },
+  "antler": {
+   "shader": "std_surface",
+   "textures": "animal_antler",
+   "params": {
+    "uv_scale": 6.0,
+    "vertex_ao_strength": 1.0,
+    "normal_strength": 1.2,
+    "metallic_mult": 0.0
+   }
+  },
+  "eye_animal": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#150e0a",
+    "roughness_mult": 0.06,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.4
+   }
+  },
+  "nose_wet": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#1c1515",
+    "roughness_mult": 0.3,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 1.0
+   }
+  },
+  "beak": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#2a2522",
+    "roughness_mult": 0.45,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 1.0
+   }
+  },
+  "beak_crow": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#0c0c0e",
+    "roughness_mult": 0.35,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 1.0
+   }
+  },
+  "item_meat_raw": {
+   "shader": "std_surface",
+   "textures": "item_meat",
+   "params": {
+    "uv_scale": 6.0,
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0
+   }
+  },
+  "item_meat_raw_lean": {
+   "shader": "std_surface",
+   "textures": "item_meat",
+   "params": {
+    "uv_scale": 9.0,
+    "tint": "#d8b0a8",
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0
+   }
+  },
+  "item_meat_fat": {
+   "shader": "std_surface",
+   "textures": "item_meat",
+   "params": {
+    "uv_scale": 5.0,
+    "tint": "#f2e4d4",
+    "roughness_mult": 0.8,
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0,
+    "variation_strength": 0.0
+   }
+  },
+  "item_meat_cooked": {
+   "shader": "std_surface",
+   "textures": "item_meat_cooked",
+   "params": {
+    "uv_scale": 6.0,
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0
+   }
+  },
+  "item_hide_flesh": {
+   "shader": "std_surface",
+   "textures": "item_rawhide",
+   "params": {
+    "uv_scale": 3.0,
+    "tint": "#e0c8b4",
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0
+   }
+  },
+  "item_hide_hair": {
+   "shader": "std_surface",
+   "textures": "animal_fur_short",
+   "params": {
+    "uv_scale": 8.0,
+    "tint": "#b08a68",
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0
+   }
+  },
+  "item_pelt_hair": {
+   "shader": "std_surface",
+   "textures": "animal_fur_soft",
+   "params": {
+    "uv_scale": 6.0,
+    "tint": "#c4a888",
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0
+   }
+  },
+  "item_sinew": {
+   "shader": "std_surface",
+   "textures": "item_rawhide",
+   "params": {
+    "uv_scale": 20.0,
+    "tint": "#e8dcc4",
+    "roughness_mult": 0.7,
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0
+   }
+  }
+ }
+}

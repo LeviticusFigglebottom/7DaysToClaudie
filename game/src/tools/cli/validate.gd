@@ -35,6 +35,10 @@ func _check_assets(content: Node, strict: bool) -> void:
 	for p: PropDef in content.all(&"prop"):
 		for v: Variant in p.variants.values():
 			_need_model(str(v), "prop %s" % p.id, missing)
+	for w: WildlifeDef in content.all(&"wildlife"):
+		for m: Variant in w.models.keys():
+			_need_model(str(m), "wildlife %s" % w.id, missing)
+		_need_model(w.model, "wildlife %s" % w.id, missing)
 	for m: String in missing:
 		if strict:
 			_err("asset: " + m)

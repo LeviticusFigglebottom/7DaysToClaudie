@@ -1,0 +1,29 @@
+{
+  "_doc": "Bird flocks (ADR-0027, WildlifeDef kind flock): drawn as instances, they flush when you or a Hollowed come close or at a loud noise, and a flush is a sound the Hollowed hear (flush_loudness m): birds give your position away. Crows circle what flushed them, calling, before they settle (DESIGN §6's Murmurs, in small).",
+  "defs": [
+    {"id": "songbird_canopy", "name": "Songbirds", "description": "Thrushes and sparrows working the canopy, chattering.",
+     "kind": "flock", "model": "animals/songbird", "perch": "canopy",
+     "biomes": {"conifer_forest": 1.0, "birch_grove": 1.3, "riverbank": 1.0, "meadow": 0.2},
+     "density": 28.0, "edge": 1.3, "activity": {"dawn": 1.6, "day": 1.0, "dusk": 1.2, "night": 0.0},
+     "group": [5, 10], "size": [0.9, 1.1],
+     "flush_radius": 14.0, "flush_loudness": 38.0, "return_seconds": 70.0, "fly_speed": 7.0,
+     "senses": {"bolt_loudness": 20.0, "hollowed": 10.0},
+     "sounds": {"call": "wildlife/songbird_chatter", "alarm": "wildlife/songbird_alarm", "flush": "wildlife/wingbeats_small"}},
+    {"id": "songbird_ground", "name": "Ground-feeding Sparrows", "description": "A scatter of sparrows in the grass, picking at seed heads.",
+     "kind": "flock", "model": "animals/songbird", "perch": "ground",
+     "biomes": {"meadow": 1.0, "birch_grove": 0.6, "riverbank": 0.8, "town": 0.5},
+     "density": 14.0, "edge": 1.5, "activity": {"dawn": 1.4, "day": 1.0, "dusk": 0.8, "night": 0.0},
+     "group": [4, 9], "size": [0.9, 1.1],
+     "flush_radius": 11.0, "flush_loudness": 34.0, "return_seconds": 50.0, "fly_speed": 7.0,
+     "senses": {"bolt_loudness": 18.0, "hollowed": 9.0},
+     "sounds": {"call": "wildlife/songbird_chatter", "alarm": "wildlife/songbird_alarm", "flush": "wildlife/wingbeats_small"}},
+    {"id": "crow", "name": "Crows", "description": "Crows in the clearings and over Pell's Crossing. When they go up, everything for half a mile knows why.",
+     "kind": "flock", "model": "animals/crow", "perch": "ground",
+     "biomes": {"meadow": 1.0, "town": 2.4, "riverbank": 0.6, "birch_grove": 0.3},
+     "density": 10.0, "edge": 1.2, "activity": {"dawn": 1.3, "day": 1.0, "dusk": 1.3, "night": 0.0},
+     "group": [4, 9], "size": [0.92, 1.08],
+     "flush_radius": 24.0, "flush_loudness": 60.0, "circle_seconds": 24.0, "return_seconds": 90.0, "fly_speed": 9.0,
+     "senses": {"bolt_loudness": 18.0, "hollowed": 14.0},
+     "sounds": {"call": "wildlife/crow_caw", "alarm": "wildlife/crow_alarm", "flush": "wildlife/wingbeats_large"}}
+  ]
+}

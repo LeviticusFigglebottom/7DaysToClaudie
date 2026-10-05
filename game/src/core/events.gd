@@ -62,6 +62,13 @@ signal limb_severed(entity_id: StringName, limb: StringName, position: Vector3)
 ## Bloom leaves a fungal mound there (BloomMounds, ADR-0025).
 signal hollowed_rooted(entity_id: StringName, enemy_id: StringName, position: Vector3)
 
+# --- Wildlife (ADR-0027) --------------------------------------------------------------------
+## A flock went up (cause: person / hollowed / noise / hum); the flush is also a sound in the
+## stimulus field the Hollowed hear.
+signal birds_flushed(flock_id: StringName, wildlife_id: StringName, position: Vector3, cause: String)
+signal wildlife_killed(entity_id: StringName, wildlife_id: StringName, position: Vector3, killer: String)
+signal wildlife_butchered(player_id: StringName, wildlife_id: StringName, items: Dictionary)
+
 # --- POIs / quests -----------------------------------------------------------------------
 signal poi_entered(poi_instance_id: StringName)
 ## First time inside a POI in this run (saved with the POI state; not repeated after a load).

@@ -1,0 +1,29 @@
+{
+  "_doc": "Grazers (ADR-0027, WildlifeDef): herds of white-tailed deer at the forest's edge and in the meadows at dawn and dusk, and snowshoe hares in the brush. density = groups per km² at biome weight 1; anim_speed = the speed (m/s) each locomotion action shows at playback 1.0 (animal_anim.GAITS).",
+  "defs": [
+    {"id": "white_tailed_deer", "name": "White-tailed Deer", "description": "Does and fawns in small bands, a buck among them in the rut. They see you first.",
+     "kind": "grazer", "models": {"animals/deer_doe": 3, "animals/deer_buck": 1},
+     "biomes": {"meadow": 1.0, "birch_grove": 0.8, "riverbank": 0.6, "conifer_forest": 0.25, "town": 0.05, "rocky_slope": 0.1},
+     "density": 9.0, "edge": 2.5, "activity": {"dawn": 1.7, "day": 0.35, "dusk": 1.7, "night": 0.25},
+     "group": [2, 5], "size": [0.94, 1.06],
+     "speed": {"walk": 1.1, "trot": 3.2, "flee": 11.0}, "anim_speed": {"walk": 0.95, "trot": 2.7, "gallop": 9.0},
+     "senses": {"sight": 80.0, "hearing": 1.4, "smell": 90.0, "alert": 60.0, "flee": 32.0, "hollowed": 45.0, "bolt_loudness": 22.0},
+     "health": 70.0, "head_mult": 2.5,
+     "carcass": {"yields": {"raw_venison": [3, 5], "deer_hide": [1, 1], "bone": [2, 4], "sinew": [2, 3]}, "tools": ["knife", "axe"],
+                 "time": 4.5, "scent": 3.0, "lifetime": 900.0},
+     "sounds": {"alarm": "wildlife/deer_snort", "hurt": "wildlife/deer_bleat", "death": "wildlife/deer_bleat", "flee": "wildlife/hoof_run"},
+     "alarm_loudness": 18.0, "beds_at_night": true},
+    {"id": "snowshoe_hare", "name": "Snowshoe Hare", "description": "Sits tight in the brush until you're almost on it, then it's gone.",
+     "kind": "grazer", "models": {"animals/hare": 1},
+     "biomes": {"birch_grove": 1.0, "conifer_forest": 0.6, "meadow": 0.6, "riverbank": 0.8, "rocky_slope": 0.3},
+     "density": 16.0, "edge": 1.4, "activity": {"dawn": 1.4, "day": 0.5, "dusk": 1.4, "night": 1.0},
+     "group": [1, 1], "size": [0.92, 1.08],
+     "speed": {"walk": 1.2, "trot": 1.2, "flee": 9.0}, "anim_speed": {"walk": 1.1, "trot": 1.1, "gallop": 8.0},
+     "senses": {"sight": 30.0, "hearing": 1.6, "smell": 25.0, "alert": 20.0, "flee": 9.0, "hollowed": 20.0, "bolt_loudness": 14.0},
+     "health": 14.0, "head_mult": 2.0,
+     "carcass": {"yields": {"raw_hare": [1, 2], "hare_pelt": [1, 1], "bone": [0, 1], "sinew": [0, 1]}, "tools": ["knife", "axe"],
+                 "time": 2.0, "scent": 1.0, "lifetime": 600.0},
+     "sounds": {"alarm": "wildlife/hare_thump", "hurt": "wildlife/hare_squeal", "death": "wildlife/hare_squeal"},
+     "alarm_loudness": 0.0, "beds_at_night": false}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "_doc": "Game taken in the valley (ADR-0027): what a deer or a hare gives up to a knife or an axe (data/wildlife carcass yields), and what the fire makes of it.",
+  "defs": [
+    {"id": "raw_venison", "name": "Raw Venison", "description": "Dark, lean haunch meat. Cook it: the Bloom is in the deer too, they say.", "category": "food", "stack_max": 6, "carry_max": 6, "bulk": 0.5, "value": 3, "consume": {"fullness": 16, "health": -6}, "tags": ["meat", "raw"]},
+    {"id": "cooked_venison", "name": "Roast Venison", "description": "Charred outside, pink in the middle. The best thing you've eaten since the drop.", "category": "food", "stack_max": 6, "carry_max": 6, "bulk": 0.45, "value": 7, "consume": {"fullness": 40, "hydration": -3, "health": 5, "stamina": 10}, "tags": ["meat"]},
+    {"id": "raw_hare", "name": "Raw Hare", "description": "A skinned hare's hindquarters. Not much on it.", "category": "food", "stack_max": 6, "carry_max": 6, "bulk": 0.25, "value": 2, "consume": {"fullness": 9, "health": -5}, "tags": ["meat", "raw"]},
+    {"id": "cooked_hare", "name": "Roast Hare", "description": "Stringy and smoky. Worth the chase.", "category": "food", "stack_max": 6, "carry_max": 6, "bulk": 0.2, "value": 4, "consume": {"fullness": 22, "health": 3}, "tags": ["meat"]},
+    {"id": "deer_hide", "name": "Deer Hide", "description": "A green hide, rolled hair-in. Scrape it, cut it into strips, or wear it against the cold.", "category": "resource", "stack_max": 3, "carry_max": 4, "bulk": 1.2, "value": 6, "tags": ["hide"]},
+    {"id": "hare_pelt", "name": "Hare Pelt", "description": "Soft, thin, brown going white at the edges.", "category": "resource", "stack_max": 10, "carry_max": 10, "bulk": 0.15, "value": 2, "tags": ["hide", "fabric"]},
+    {"id": "sinew", "name": "Sinew", "description": "Back-strap tendon, dried in strands. Stronger than any cord you can twist from fireweed.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.03, "value": 2, "tags": ["binding", "sinew"]},
+    {"id": "rawhide_strips", "name": "Rawhide Strips", "description": "Hide cut in long strips. Wet it, wrap it, let it dry: it shrinks tight as iron.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.08, "value": 2, "tags": ["binding", "hide"]}
+  ]
+}
