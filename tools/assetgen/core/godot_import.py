@@ -34,7 +34,16 @@ def _write(path: pathlib.Path, importer: str, rtype: str, params: dict) -> None:
     lines = ["[remap]", "", f'importer="{importer}"', f'type="{rtype}"', f'uid="{uid_for_res_path(res)}"', "", "[params]", ""]
     for k, v in params.items():
         lines.append(f"{k}={_fmt(v)}")
-    pathlib.Path(str(path) + ".import").write_text("\n".join(lines) + "\n")
+    side = pathlib.Path(str(path) + ".import")
+    # A sidecar Godot has already completed (remap path, deps) with these same settings stays as it
+    # is: rewriting it drops the remap path, and if the source was imported in between (another
+    # build's `make import`) Godot sees an unchanged source and never restores it, so the resource
+    # fails to load. Godot still reimports a changed source by its own content hash.
+    if side.exists():
+        have = set(side.read_text().splitlines())
+        if all(line in have for line in lines if line):
+            return
+    side.write_text("\n".join(lines) + "\n")
 
 
 def _fmt(v: object) -> str:
