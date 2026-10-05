@@ -19,14 +19,37 @@ extends RefCounted
 ## upgraded step by step on load. Never edit an existing migration after release.
 
 const SAVE_ROOT: String = "user://saves"
-const CURRENT_VERSION: int = 2
+const CURRENT_VERSION: int = 3
 
 
 ## from_version -> Callable(Dictionary) -> Dictionary
 static func _builtin_migrations() -> Dictionary:
 	return {
 		1: _drop_harvested_plants,
+		2: _v2_to_v3,
 	}
+
+
+## 2 -> 3: POI piece ids (ADR-0018) and the riverbank biome's new scatter.
+## * POI piece states (containers, sleepers, traps, pickups) are keyed by authored ids now, no
+##   longer by their position in the POI's lists (TD-031); see _mark_poi_keys_legacy.
+## * The riverbank biome's medium/ground scatter changed, so harvested-plant instance indices
+##   point at other plants again: their records are dropped as in 1 -> 2 (stumps stay).
+static func _v2_to_v3(d: Dictionary) -> Dictionary:
+	return _drop_harvested_plants(_mark_poi_keys_legacy(d))
+
+
+## Which ids the old list positions map to depends on each building's layout, which only exists
+## once the world is built, so every POI state is tagged as legacy ("keys": 1) and PoiInstance
+## re-keys it from its layout the first time the building is built (every POI is built at world
+## load).
+static func _mark_poi_keys_legacy(d: Dictionary) -> Dictionary:
+	var world: Dictionary = (d.get("session", {}) as Dictionary).get("world", {})
+	var pois: Dictionary = world.get("pois", {})
+	for k: Variant in pois.keys():
+		if pois[k] is Dictionary and not (pois[k] as Dictionary).has("keys"):
+			(pois[k] as Dictionary)["keys"] = 1
+	return d
 
 
 ## 1 -> 2: the medium and ground vegetation layers were re-laid out (patches, moss, litter), so

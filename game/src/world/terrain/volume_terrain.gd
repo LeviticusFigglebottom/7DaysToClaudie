@@ -86,16 +86,41 @@ func _create_chunk(key: Vector3i) -> VChunk:
 	c.density.resize(SurfaceNets.size_for(N))
 	var origin := Vector3(key.x * SIZE, key.y * SIZE, key.z * SIZE)
 	var s: int = N + 3
+	# POI cellars (TD-026) stay open when a column over them turns into volume: the ground is
+	# the heightfield minus each cellar's box (footprint x from just under its floor upward),
+	# carved with the horizontal distance to the cellar outline so the surface lands on the
+	# cellar walls' centre line, as the cut heightmap does.
+	var holes: TerrainHoles = terrain.get(&"holes") as TerrainHoles
+	var carve: bool = holes != null and holes.intersects(Rect2(origin.x - VOXEL * 2.0, origin.z - VOXEL * 2.0, SIZE + VOXEL * 4.0, SIZE + VOXEL * 4.0))
 	for k: int in s:
 		var z: float = origin.z + (k - 1) * VOXEL
 		for i: int in s:
 			var x: float = origin.x + (i - 1) * VOXEL
 			var h: float = terrain.call(&"base_height_at", x, z)
+			var sd: float = INF
+			var floor_y: float = INF
+			if carve:
+				sd = holes.signed_distance(x, z)
+				var hole: TerrainHoles.Hole = holes.hole_at(x, z)
+				if hole == null and sd < CLAMP:
+					hole = _nearest_hole(holes, x, z)
+				if hole != null:
+					floor_y = hole.floor_y - 0.25
 			for j: int in s:
 				var y: float = origin.y + (j - 1) * VOXEL
-				c.density[(k * s + j) * s + i] = clampf(h - y, -CLAMP, CLAMP)
+				var dens: float = h - y
+				if floor_y != INF:
+					dens = minf(dens, maxf(sd, floor_y - y))
+				c.density[(k * s + j) * s + i] = clampf(dens, -CLAMP, CLAMP)
 	chunks[key] = c
 	return c
+
+
+static func _nearest_hole(holes: TerrainHoles, x: float, z: float) -> TerrainHoles.Hole:
+	for h: TerrainHoles.Hole in holes.holes:
+		if h.bounds.grow(CLAMP).has_point(Vector2(x, z)):
+			return h
+	return null
 
 
 ## Smooth sphere edit: amount > 0 removes material (dig), < 0 adds. Returns volume removed (m^3).

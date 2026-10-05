@@ -102,7 +102,9 @@ class Glob:
 		global_position = to
 
 	func _splash(at: Vector3) -> void:
-		var ground: float = Game.world.height_at(at.x, at.z) if Game.world != null else at.y
+		# ground_below: down in a POI cellar the puddle belongs on the cellar floor, not up at the
+		# surface height_at() reports over it (TD-026).
+		var ground: float = Game.world.ground_below(at) if Game.world != null else at.y
 		var puddle := Puddle.new()
 		puddle.params = params
 		puddle.source = source

@@ -217,9 +217,10 @@ func _give_start_kit(p: PlayerState) -> void:
 
 
 func _finish_spawn() -> void:
-	# Drop the player onto the ground (terrain collision now exists).
+	# Drop the player onto the ground (terrain collision now exists). A save made in a POI cellar
+	# keeps the player on the cellar floor: height_at() is the surface above it (TD-026).
 	var pos: Vector3 = player.global_position
-	var ground: float = terrain.height_at(pos.x, pos.z)
+	var ground: float = terrain.ground_below(pos)
 	if pos.y < ground + 0.2 or pos.y > ground + 30.0:
 		player.global_position = Vector3(pos.x, ground + 0.4, pos.z)
 	_place_spawn_props()
@@ -264,6 +265,13 @@ func player_node(_player_id: StringName) -> Player:
 
 func height_at(x: float, z: float) -> float:
 	return terrain.height_at(x, z) if terrain != null else 0.0
+
+
+## The ground under a point: a POI cellar's floor when the point is down in one, else the terrain
+## height (TerrainManager.ground_below). For fell-through-the-world checks and for settling
+## things where they are; height_at() stays the surface above a cellar.
+func ground_below(pos: Vector3) -> float:
+	return terrain.ground_below(pos) if terrain != null else 0.0
 
 
 # --- Survival ----------------------------------------------------------------------------------

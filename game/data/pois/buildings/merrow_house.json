@@ -1,23 +1,15 @@
 {
-  "_doc": "Tier-1 tutorial house on Mill Street. Route: front door barricaded from inside -> round the back -> in through the smashed kitchen window -> hallway (Dale) -> the kids' room (loot) -> unbolt the back door and leave. See docs/POI_AUTHORING.md.",
+  "_doc": "Tier-1 tutorial house on Mill Street. Route: front door barricaded from inside -> round the back -> in through the smashed kitchen window -> hallway (loose boards: crouch over them or Dad hears you) -> the kids' room (loot; opening its door wakes the neighbour in the open bedroom across the hall) -> slide the bolt on the back door and leave. See docs/POI_AUTHORING.md.",
   "defs": [
     {
       "id": "merrow_house",
       "name": "The Merrow House",
       "tier": 1,
-      "zoning": [
-        "residential"
-      ],
-      "footprint": [
-        22,
-        24
-      ],
-      "origin": [
-        5,
-        5
-      ],
+      "zoning": ["residential"],
+      "footprint": [22, 24],
+      "origin": [5, 5],
       "author": "Hollowmere team",
-      "story": "Dana Merrow left her kids a note on the fridge and went to find her husband at the Okafor farm. He came back first. The kids dragged the couch and the dresser against the front door and never opened it. When he finally got in through the kitchen window they slipped out the back, bolted it behind them and ran for the ranger station. He is still in the hallway, outside the room they hid in.",
+      "story": "Dana Merrow left her kids a note on the fridge and went to find her husband at the Okafor farm. He came back first. The kids dragged the couch and the dresser against the front door and never opened it. When he finally got in through the kitchen window they slipped out the back, bolted it behind them and ran for the ranger station. He is still in the hallway, outside the room they hid in. The neighbour who came to help is lying on the parents' bed, and the hall boards still groan the way they did when the kids crept past him.",
       "style": {
         "exterior": "siding_pale_blue",
         "interior": "plaster_white",
@@ -27,29 +19,10 @@
         "decay": 0.3,
         "damaged_walls": 0.03,
         "prop_condition": "worn",
-        "scatter": {
-          "density": 0.45
-        },
-        "roof": {
-          "type": "gable",
-          "axis": "x",
-          "pitch": 30,
-          "overhang": 0.45,
-          "color": "#3a3836"
-        },
-        "porch": {
-          "side": "S",
-          "from": 0,
-          "to": 6,
-          "depth": 2,
-          "steps": [
-            2
-          ]
-        },
-        "chimney": [
-          12,
-          2
-        ]
+        "scatter": {"density": 0.45},
+        "roof": {"type": "gable", "axis": "x", "pitch": 30, "overhang": 0.45, "color": "#3a3836"},
+        "porch": {"side": "S", "from": 0, "to": 6, "depth": 2, "steps": [2]},
+        "chimney": [12, 2]
       },
       "levels": [
         {
@@ -66,679 +39,106 @@
             "LLLLLLMMMMMM"
           ],
           "rooms": {
-            "K": {
-              "name": "Kitchen",
-              "type": "kitchen",
-              "wall": "tile_kitchen_check",
-              "floor": "linoleum_check"
-            },
-            "T": {
-              "name": "Bathroom",
-              "type": "bath",
-              "wall": "tile_bathroom_white",
-              "floor": "tile_white_small"
-            },
-            "C": {
-              "name": "Kids' room",
-              "type": "bedroom",
-              "wall": "wallpaper_floral_rose",
-              "floor": "carpet_blue_worn"
-            },
-            "H": {
-              "name": "Hallway",
-              "type": "hallway",
-              "wall": "wallpaper_stripe_green",
-              "floor": "wood_oak"
-            },
-            "L": {
-              "name": "Living room",
-              "type": "living",
-              "wall": "wallpaper_damask_brown",
-              "floor": "wood_oak",
-              "open_to": "H"
-            },
-            "M": {
-              "name": "Bedroom",
-              "type": "bedroom",
-              "wall": "paint_sage",
-              "floor": "carpet_brown"
-            }
+            "K": {"name": "Kitchen", "type": "kitchen", "wall": "tile_kitchen_check", "floor": "linoleum_check"},
+            "T": {"name": "Bathroom", "type": "bath", "wall": "tile_bathroom_white", "floor": "tile_white_small"},
+            "C": {"name": "Kids' room", "type": "bedroom", "wall": "wallpaper_floral_rose", "floor": "carpet_blue_worn"},
+            "H": {"name": "Hallway", "type": "hallway", "wall": "wallpaper_stripe_green", "floor": "wood_oak"},
+            "L": {"name": "Living room", "type": "living", "wall": "wallpaper_damask_brown", "floor": "wood_oak", "open_to": "H"},
+            "M": {"name": "Bedroom", "type": "bedroom", "wall": "paint_sage", "floor": "carpet_brown"}
           }
         }
       ],
       "openings": [
-        {
-          "id": "front_door",
-          "at": [
-            2,
-            8
-          ],
-          "side": "S",
-          "type": "door",
-          "state": "barricaded",
-          "barricade": "furniture"
-        },
-        {
-          "id": "front_window_l",
-          "at": [
-            4,
-            8
-          ],
-          "side": "S",
-          "type": "window2",
-          "state": "broken"
-        },
-        {
-          "id": "front_window_m",
-          "at": [
-            8,
-            8
-          ],
-          "side": "S",
-          "type": "window2",
-          "state": "boarded"
-        },
-        {
-          "id": "kitchen_window",
-          "at": [
-            3,
-            0
-          ],
-          "side": "N",
-          "type": "window",
-          "state": "broken"
-        },
-        {
-          "id": "back_door",
-          "at": [
-            1,
-            0
-          ],
-          "side": "N",
-          "type": "door",
-          "state": "locked_inside"
-        },
-        {
-          "id": "kitchen_arch",
-          "at": [
-            2,
-            4
-          ],
-          "side": "N",
-          "type": "open"
-        },
-        {
-          "id": "bath_door",
-          "at": [
-            5,
-            4
-          ],
-          "side": "N",
-          "type": "door",
-          "state": "closed"
-        },
-        {
-          "id": "kids_door",
-          "at": [
-            9,
-            4
-          ],
-          "side": "N",
-          "type": "door",
-          "state": "closed"
-        },
-        {
-          "id": "bedroom_door",
-          "at": [
-            7,
-            4
-          ],
-          "side": "S",
-          "type": "door",
-          "state": "open"
-        },
-        {
-          "id": "west_window",
-          "at": [
-            0,
-            2
-          ],
-          "side": "W",
-          "type": "window",
-          "state": "closed"
-        },
-        {
-          "id": "living_west_window",
-          "at": [
-            0,
-            6
-          ],
-          "side": "W",
-          "type": "window",
-          "state": "boarded"
-        },
-        {
-          "id": "kids_east_window",
-          "at": [
-            11,
-            1
-          ],
-          "side": "E",
-          "type": "window",
-          "state": "closed"
-        },
-        {
-          "id": "bed_east_window",
-          "at": [
-            11,
-            7
-          ],
-          "side": "E",
-          "type": "window",
-          "state": "closed"
-        },
-        {
-          "id": "bath_window",
-          "at": [
-            6,
-            0
-          ],
-          "side": "N",
-          "type": "window",
-          "state": "closed"
-        }
+        {"id": "front_door", "at": [2, 8], "side": "S", "type": "door", "state": "barricaded", "barricade": "furniture"},
+        {"id": "front_window_l", "at": [4, 8], "side": "S", "type": "window2", "state": "broken"},
+        {"id": "front_window_m", "at": [8, 8], "side": "S", "type": "window2", "state": "boarded"},
+        {"id": "kitchen_window", "at": [3, 0], "side": "N", "type": "window", "state": "broken"},
+        {"id": "back_door", "at": [1, 0], "side": "N", "type": "door", "state": "locked_inside"},
+        {"id": "kitchen_arch", "at": [2, 4], "side": "N", "type": "open"},
+        {"id": "bath_door", "at": [5, 4], "side": "N", "type": "door", "state": "closed"},
+        {"id": "kids_door", "at": [9, 4], "side": "N", "type": "door", "state": "closed"},
+        {"id": "bedroom_door", "at": [7, 4], "side": "S", "type": "door", "state": "open"},
+        {"id": "west_window", "at": [0, 2], "side": "W", "type": "window", "state": "closed"},
+        {"id": "living_west_window", "at": [0, 6], "side": "W", "type": "window", "state": "boarded"},
+        {"id": "kids_east_window", "at": [11, 1], "side": "E", "type": "window", "state": "closed"},
+        {"id": "bed_east_window", "at": [11, 7], "side": "E", "type": "window", "state": "closed"},
+        {"id": "bath_window", "at": [6, 0], "side": "N", "type": "window", "state": "closed"}
       ],
       "props": [
-        {
-          "prop": "fridge_old",
-          "at": [
-            4,
-            0
-          ],
-          "against": "N",
-          "container": "fridge"
-        },
-        {
-          "prop": "kitchen_counter",
-          "at": [
-            0,
-            1
-          ],
-          "against": "W",
-          "container": "kitchen_cabinet"
-        },
-        {
-          "prop": "kitchen_counter_sink",
-          "at": [
-            0,
-            2
-          ],
-          "against": "W"
-        },
-        {
-          "prop": "stove_old",
-          "at": [
-            0,
-            3
-          ],
-          "against": "W"
-        },
-        {
-          "prop": "kitchen_wall_cabinet",
-          "at": [
-            0,
-            1
-          ],
-          "against": "W",
-          "container": "kitchen_cabinet",
-          "height": 1.45
-        },
-        {
-          "prop": "kitchen_table",
-          "at": [
-            2,
-            2
-          ],
-          "rot": 0,
-          "route_ok": true
-        },
-        {
-          "prop": "kitchen_chair",
-          "at": [
-            2,
-            1
-          ],
-          "rot": 180
-        },
-        {
-          "prop": "kitchen_chair",
-          "at": [
-            3,
-            3
-          ],
-          "rot": 70,
-          "variant": "destroyed"
-        },
-        {
-          "prop": "trash_can_kitchen",
-          "at": [
-            4,
-            3
-          ],
-          "rot": 20
-        },
-        {
-          "prop": "lantern_camping",
-          "pos": [
-            2.2,
-            2.4
-          ],
-          "y": 0.78
-        },
-        {
-          "prop": "toilet",
-          "at": [
-            6,
-            0
-          ],
-          "against": "N"
-        },
-        {
-          "prop": "sink_pedestal",
-          "at": [
-            5,
-            0
-          ],
-          "against": "N"
-        },
-        {
-          "prop": "bathtub",
-          "at": [
-            5,
-            2
-          ],
-          "against": "W"
-        },
-        {
-          "prop": "medicine_cabinet",
-          "at": [
-            6,
-            1
-          ],
-          "against": "E",
-          "container": "medicine_cabinet",
-          "height": 1.3
-        },
-        {
-          "prop": "bed_single",
-          "at": [
-            11,
-            0
-          ],
-          "against": "E",
-          "rot": -90
-        },
-        {
-          "prop": "dresser",
-          "at": [
-            7,
-            0
-          ],
-          "against": "N",
-          "container": "dresser"
-        },
-        {
-          "prop": "nightstand",
-          "at": [
-            10,
-            0
-          ],
-          "against": "N",
-          "container": "nightstand"
-        },
-        {
-          "prop": "crib",
-          "at": [
-            7,
-            3
-          ],
-          "against": "W"
-        },
-        {
-          "prop": "rug_oval",
-          "at": [
-            9,
-            2
-          ]
-        },
-        {
-          "prop": "duffel_bag",
-          "at": [
-            10,
-            3
-          ],
-          "against": "S",
-          "container": "duffel_bag"
-        },
-        {
-          "prop": "couch",
-          "at": [
-            3,
-            7
-          ],
-          "rot": 180
-        },
-        {
-          "prop": "coffee_table",
-          "at": [
-            3,
-            6
-          ]
-        },
-        {
-          "prop": "tv_crt",
-          "at": [
-            3,
-            5
-          ],
-          "rot": 180
-        },
-        {
-          "prop": "armchair",
-          "at": [
-            0,
-            7
-          ],
-          "against": "W"
-        },
-        {
-          "prop": "bookshelf",
-          "at": [
-            5,
-            7
-          ],
-          "against": "E",
-          "container": "bookshelf"
-        },
-        {
-          "prop": "rug_rect",
-          "at": [
-            2,
-            6
-          ]
-        },
-        {
-          "prop": "floor_lamp",
-          "at": [
-            0,
-            5
-          ],
-          "against": "W"
-        },
-        {
-          "prop": "bed_double",
-          "at": [
-            10,
-            6
-          ],
-          "against": "E"
-        },
-        {
-          "prop": "nightstand",
-          "at": [
-            11,
-            8
-          ],
-          "against": "E",
-          "container": "nightstand"
-        },
-        {
-          "prop": "wardrobe",
-          "at": [
-            6,
-            6
-          ],
-          "against": "W",
-          "container": "dresser"
-        },
-        {
-          "prop": "dresser",
-          "at": [
-            10,
-            8
-          ],
-          "against": "S",
-          "container": "dresser"
-        },
-        {
-          "prop": "side_table",
-          "at": [
-            11,
-            4
-          ],
-          "against": "E"
-        },
-        {
-          "prop": "plaster_chunks",
-          "at": [
-            6,
-            4
-          ],
-          "route_ok": true
-        },
-        {
-          "prop": "glass_shards",
-          "at": [
-            3,
-            1
-          ],
-          "route_ok": true
-        },
-        {
-          "prop": "woodpile",
-          "pos": [
-            -1.5,
-            3.0
-          ],
-          "rot": 90
-        },
-        {
-          "prop": "wheelbarrow",
-          "pos": [
-            -2.0,
-            8.5
-          ],
-          "rot": 30
-        },
-        {
-          "prop": "fence_picket_2m",
-          "pos": [
-            -3.0,
-            11.0
-          ],
-          "rot": 0
-        },
-        {
-          "prop": "fence_picket_2m",
-          "pos": [
-            -1.0,
-            11.0
-          ],
-          "rot": 0
-        }
+        {"id": "kitchen_fridge", "prop": "fridge_old", "at": [4, 0], "against": "N", "container": "fridge"},
+        {"id": "kitchen_counter", "prop": "kitchen_counter", "at": [0, 1], "against": "W", "container": "kitchen_cabinet"},
+        {"id": "kitchen_sink", "prop": "kitchen_counter_sink", "at": [0, 2], "against": "W"},
+        {"id": "kitchen_stove", "prop": "stove_old", "at": [0, 3], "against": "W"},
+        {"id": "kitchen_wall_cabinet", "prop": "kitchen_wall_cabinet", "at": [0, 1], "against": "W", "container": "kitchen_cabinet", "height": 1.45},
+        {"prop": "kitchen_table", "at": [2, 2], "rot": 0, "route_ok": true},
+        {"prop": "kitchen_chair", "at": [2, 1], "rot": 180},
+        {"prop": "kitchen_chair", "at": [3, 3], "rot": 70, "variant": "destroyed"},
+        {"id": "kitchen_bin", "prop": "trash_can_kitchen", "at": [4, 3], "rot": 20},
+        {"prop": "lantern_camping", "pos": [2.2, 2.4], "y": 0.78},
+        {"prop": "toilet", "at": [6, 0], "against": "N"},
+        {"prop": "sink_pedestal", "at": [5, 0], "against": "N"},
+        {"prop": "bathtub", "at": [5, 2], "against": "W"},
+        {"id": "bathroom_medicine_cabinet", "prop": "medicine_cabinet", "at": [6, 1], "against": "E", "container": "medicine_cabinet", "height": 1.3},
+        {"prop": "bed_single", "at": [11, 0], "against": "E", "rot": -90},
+        {"id": "kids_dresser", "prop": "dresser", "at": [7, 0], "against": "N", "container": "dresser"},
+        {"id": "kids_nightstand", "prop": "nightstand", "at": [10, 0], "against": "N", "container": "nightstand"},
+        {"prop": "crib", "at": [7, 3], "against": "W"},
+        {"prop": "rug_oval", "at": [9, 2]},
+        {"id": "kids_duffel", "prop": "duffel_bag", "at": [10, 3], "against": "S", "container": "duffel_bag"},
+        {"prop": "couch", "at": [3, 7], "rot": 180},
+        {"prop": "coffee_table", "at": [3, 6]},
+        {"prop": "tv_crt", "at": [3, 5], "rot": 180},
+        {"prop": "armchair", "at": [0, 7], "against": "W"},
+        {"id": "living_room_bookshelf", "prop": "bookshelf", "at": [5, 7], "against": "E", "container": "bookshelf"},
+        {"prop": "rug_rect", "at": [2, 6]},
+        {"prop": "floor_lamp", "at": [0, 5], "against": "W"},
+        {"prop": "bed_double", "at": [10, 6], "against": "E"},
+        {"id": "bedroom_nightstand", "prop": "nightstand", "at": [11, 8], "against": "E", "container": "nightstand"},
+        {"id": "bedroom_wardrobe", "prop": "wardrobe", "at": [6, 6], "against": "W", "container": "dresser"},
+        {"id": "bedroom_dresser", "prop": "dresser", "at": [10, 8], "against": "S", "container": "dresser"},
+        {"prop": "side_table", "at": [11, 4], "against": "E"},
+        {"prop": "plaster_chunks", "at": [6, 4], "route_ok": true},
+        {"prop": "glass_shards", "at": [3, 1], "route_ok": true},
+        {"prop": "woodpile", "pos": [-1.5, 3.0], "rot": 90},
+        {"prop": "wheelbarrow", "pos": [-2.0, 8.5], "rot": 30},
+        {"prop": "fence_picket_2m", "pos": [-3.0, 11.0], "rot": 0},
+        {"prop": "fence_picket_2m", "pos": [-1.0, 11.0], "rot": 0}
       ],
       "notes": [
-        {
-          "note": "merrow_fridge",
-          "at": [
-            4,
-            1
-          ],
-          "y": 0.0
-        }
+        {"note": "merrow_fridge", "at": [4, 1], "y": 0.0}
       ],
       "sleepers": [
-        {
-          "id": "dad",
-          "at": [
-            8,
-            4
-          ],
-          "enemy": "hollow",
-          "pose": "stand",
-          "rot": 180
-        },
-        {
-          "id": "neighbour",
-          "at": [
-            9,
-            7
-          ],
-          "enemy": "hollow",
-          "pose": "lie",
-          "rot": 90
-        },
-        {
-          "id": "sitter",
-          "at": [
-            1,
-            6
-          ],
-          "enemy": "hollow",
-          "pose": "sit",
-          "rot": 90
-        }
+        {"id": "dad", "at": [8, 4], "enemy": "hollow", "pose": "stand", "rot": 180},
+        {"id": "neighbour", "group": "bedroom", "at": [9, 7], "enemy": "hollow", "pose": "lie", "rot": 90},
+        {"id": "sitter", "at": [1, 6], "enemy": "hollow", "pose": "sit", "rot": 90}
+      ],
+      "traps": [
+        {"id": "hall_boards", "type": "creaky_floor", "at": [3, 4], "size": [3, 1]}
+      ],
+      "triggers": [
+        {"id": "kids_door_opened", "group": "bedroom", "on": "opening", "opening": "kids_door", "delay": 0.4}
       ],
       "lights": [
-        {
-          "at": [
-            2,
-            2
-          ],
-          "height": 0.95,
-          "color": "#ffc27a",
-          "energy": 0.7,
-          "range": 5.0,
-          "flicker": 0.15
-        }
+        {"at": [2, 2], "height": 0.95, "color": "#ffc27a", "energy": 0.7, "range": 5.0, "flicker": 0.15}
       ],
       "decals": [
-        {
-          "decal": "blood_handprint",
-          "at": [
-            9,
-            4
-          ],
-          "side": "N",
-          "height": 1.1,
-          "size": [
-            0.5,
-            0.5
-          ]
-        },
-        {
-          "decal": "blood_trail",
-          "at": [
-            8,
-            4
-          ],
-          "side": "floor",
-          "size": [
-            0.8,
-            1.6
-          ]
-        },
-        {
-          "decal": "survivor_marks_a",
-          "at": [
-            9,
-            3
-          ],
-          "side": "S",
-          "height": 1.4,
-          "size": [
-            0.9,
-            0.9
-          ]
-        },
-        {
-          "decal": "water_stain",
-          "at": [
-            5,
-            1
-          ],
-          "side": "W",
-          "height": 1.8,
-          "size": [
-            1.0,
-            1.2
-          ]
-        }
+        {"decal": "blood_handprint", "at": [9, 4], "side": "N", "height": 1.1, "size": [0.5, 0.5]},
+        {"decal": "blood_trail", "at": [8, 4], "side": "floor", "size": [0.8, 1.6]},
+        {"decal": "survivor_marks_a", "at": [9, 3], "side": "S", "height": 1.4, "size": [0.9, 0.9]},
+        {"decal": "water_stain", "at": [5, 1], "side": "W", "height": 1.8, "size": [1.0, 1.2]}
       ],
       "route": [
-        {
-          "at": [
-            2,
-            11
-          ],
-          "label": "Front porch \u2014 the door won't give; something heavy is behind it"
-        },
-        {
-          "at": [
-            3,
-            -2
-          ],
-          "label": "Round the back: the kitchen window is smashed"
-        },
-        {
-          "at": [
-            2,
-            2
-          ],
-          "label": "Kitchen \u2014 Mom's note on the fridge"
-        },
-        {
-          "at": [
-            6,
-            4
-          ],
-          "label": "Hallway \u2014 Dad, still waiting outside their door"
-        },
-        {
-          "at": [
-            9,
-            2
-          ],
-          "label": "The kids' room (loot)"
-        },
-        {
-          "at": [
-            1,
-            1
-          ],
-          "label": "Unbolt the back door"
-        },
-        {
-          "at": [
-            1,
-            -2
-          ],
-          "label": "Out the back"
-        }
+        {"at": [2, 11], "label": "Front porch — the door won't give; something heavy is behind it"},
+        {"at": [3, -2], "label": "Round the back: the kitchen window is smashed"},
+        {"at": [2, 2], "label": "Kitchen — Mom's note on the fridge"},
+        {"at": [6, 4], "label": "Hallway — Dad, still waiting outside their door"},
+        {"at": [9, 2], "label": "The kids' room (loot)"},
+        {"at": [1, 1], "label": "Unbolt the back door"},
+        {"at": [1, -2], "label": "Out the back"}
       ],
-      "loot_room": {
-        "room": "C",
-        "level": 0
-      },
-      "shortcuts": [
-        {
-          "opening": "back_door"
-        }
-      ],
-      "budget": {
-        "lights": 3,
-        "enemies": 4
-      }
+      "loot_room": {"room": "C", "level": 0},
+      "shortcuts": [{"opening": "back_door"}],
+      "budget": {"lights": 3, "enemies": 4}
     }
   ]
 }

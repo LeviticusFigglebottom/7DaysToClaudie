@@ -11,8 +11,15 @@ var blueprints: Dictionary = {}
 ## container id -> {opened: bool, items: [stack dicts] | null (= not rolled yet),
 ##                   rolled_day: int, gen: int (loot respawns re-roll with gen + 1)}
 var containers: Dictionary = {}
-## poi instance id -> {visited, cleared, dead: [sleeper ids], broken: [piece ids], doors: {id: state}, traps: {id: state}}
+## poi instance id -> {visited, cleared, dead: [sleeper ids], broken: [piece ids], doors: {id: state},
+##   traps: {trap id: "triggered" (can chime) | "sprung" | "disarmed"}, hp: {piece id: hp},
+##   triggers: {trigger id: true} (fired ambush triggers, ADR-0018),
+##   keys: 2 = pieces keyed by authored ids (TD-031); 1 = a pre-v3 save still keyed by list
+##   position, which PoiInstance re-keys when the building is next built}
 var pois: Dictionary = {}
+
+## Current POI piece-key format (see `pois`).
+const POI_KEYS: int = 2
 ## chunk key -> {tree index (String): {state: "stump", day}}
 var trees: Dictionary = {}
 ## dropped item / loose log entities: id -> {kind: "item"|"log", stack?, pos:[3], rot:[4]}
@@ -42,8 +49,24 @@ func set_container_items(id: StringName, inv: Inventory, opened: bool = true, ro
 func poi_state(id: StringName) -> Dictionary:
 	var key: String = String(id)
 	if not pois.has(key):
-		pois[key] = {"visited": false, "cleared": false, "dead": [], "broken": [], "doors": {}, "traps": {}}
-	return pois[key]
+		pois[key] = {"visited": false, "cleared": false, "dead": [], "broken": [], "doors": {}, "traps": {}, "triggers": {},
+			"keys": POI_KEYS}
+	var st: Dictionary = pois[key]
+	# States saved before the dungeon mechanics have no trigger ledger yet.
+	if not st.has("triggers"):
+		st["triggers"] = {}
+	if not st.has("traps"):
+		st["traps"] = {}
+	return st
+
+
+## Moves a container's saved state to a new id (POI re-keying, TD-031). No-op when there is
+## nothing under the old id or the new id is already taken.
+func rekey_container(old_id: String, new_id: String) -> void:
+	if old_id == new_id or not containers.has(old_id) or containers.has(new_id):
+		return
+	containers[new_id] = containers[old_id]
+	containers.erase(old_id)
 
 
 func tree_state(chunk_key: String, index: int) -> Dictionary:

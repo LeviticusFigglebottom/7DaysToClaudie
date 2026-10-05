@@ -2,8 +2,11 @@ class_name PoiBuilder
 extends RefCounted
 ## Builds a PoiInstance from a compiled PoiLayout: kit walls/floors/posts batched into MultiMeshes
 ## with per-instance finishes (kit_wall shader), one merged collision shell, doors / windows /
-## barricades / ladders / pickups / trip lines as interactive pieces, stairs, porch, foundation,
-## generated roof, authored + scattered props (set dressing), lights and decals.
+## barricades / ladders / pickups as interactive pieces, stairs, porch, foundation, generated roof,
+## authored + scattered props (set dressing), lights and decals, and the dungeon mechanics
+## (ADR-0018): lock cues on locked doors (breakable padlocks), and the traps — can chimes, bear
+## traps, shotgun trip-wires, creaky floors, weak floors (their own kit floor batches so the slab
+## can fall away) and alarms.
 
 const WALL_T: float = 0.16
 
@@ -15,6 +18,17 @@ var _rng := RandomNumberGenerator.new()
 var _decay: float = 0.4
 var _route_cells: Dictionary = {}
 var _occupied: Dictionary = {}
+## Locked door opening id -> +1/-1: the wall side its lock cue faces (PoiValidator.lock_sides).
+var _lock_sides: Dictionary = {}
+## Barricaded door opening id -> +1/-1: the wall side its boards or furniture pile stand on
+## (_barricade_faces).
+var _barricade_sides: Dictionary = {}
+## Level-0 cells under the porch deck: yard items there stand on the deck, elsewhere on the pad.
+var _porch_cells: Dictionary = {}
+## Batch tag -> its MultiMeshInstance3D (pieces that change at runtime: weak floors).
+var _tagged: Dictionary = {}
+## Weak floor trap id -> {"piece": WeakFloor, "shape": CollisionShape3D}.
+var _weak: Dictionary = {}
 
 
 static func build(p_layout: PoiLayout, instance_id: StringName) -> PoiInstance:
@@ -37,6 +51,7 @@ func _build(instance_id: StringName) -> PoiInstance:
 	shell.set_meta(&"surface", "wood_floor")
 	root.add_child(shell)
 	root.shell = shell
+	_porch_cells = _porch_cell_set()
 	_route_cells = _route_corridor()
 	_walls()
 	_posts()
@@ -53,6 +68,7 @@ func _build(instance_id: StringName) -> PoiInstance:
 	_decals()
 	_traps()
 	_emit_batches()
+	_wire_weak_floors()
 	return root
 
 
@@ -64,9 +80,10 @@ func _roofed(_li: int) -> bool:
 	return str((layout.style.get("roof", {}) as Dictionary).get("type", "gable")) != "none"
 
 ## Batches a kit piece or model ("@model") instance. Indoor instances go in their own batch,
-## drawn with weather_exposure 0 so rain gloss and snow stay outside.
-func _add(piece: String, xf: Transform3D, custom: Color = Color(0, 0, 0, 0), indoor: bool = false) -> void:
-	var key: String = piece + ("|in" if indoor else "")
+## drawn with weather_exposure 0 so rain gloss and snow stay outside. A `tag` gives the piece a
+## batch of its own (found in _tagged) so it can be hidden or swapped at runtime.
+func _add(piece: String, xf: Transform3D, custom: Color = Color(0, 0, 0, 0), indoor: bool = false, tag: String = "") -> void:
+	var key: String = piece + ("|in" if indoor else "") + ("#" + tag if tag != "" else "")
 	if not _batches.has(key):
 		_batches[key] = {"xf": [], "c": []}
 	(_batches[key]["xf"] as Array).append(xf)
@@ -75,7 +92,9 @@ func _add(piece: String, xf: Transform3D, custom: Color = Color(0, 0, 0, 0), ind
 
 func _emit_batches() -> void:
 	for key: String in _batches:
-		var piece: String = key.trim_suffix("|in")
+		var tag: String = key.get_slice("#", 1) if key.contains("#") else ""
+		var base: String = key.get_slice("#", 0)
+		var piece: String = base.trim_suffix("|in")
 		var xfs: Array = _batches[key]["xf"]
 		var cs: Array = _batches[key]["c"]
 		var mm := MultiMesh.new()
@@ -87,11 +106,13 @@ func _emit_batches() -> void:
 			mm.set_instance_transform(i, xfs[i])
 			mm.set_instance_custom_data(i, cs[i])
 		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "MM_" + key.replace("/", "_").replace("@", "").replace("|", "_")
+		mmi.name = "MM_" + key.replace("/", "_").replace("@", "").replace("|", "_").replace("#", "_").replace(":", "_")
 		mmi.multimesh = mm
-		if key.ends_with("|in"):
+		if base.ends_with("|in"):
 			mmi.set_instance_shader_parameter(&"weather_exposure", 0.0)
 		root.add_child(mmi)
+		if tag != "":
+			_tagged[tag] = mmi
 
 
 func _box(size: Vector3, xf: Transform3D, body: CollisionObject3D = null) -> CollisionShape3D:
@@ -120,8 +141,12 @@ func _seed() -> float:
 	return _rng.randf()
 
 
+## The building's decay for one kit piece. Stains, peel, grime and mould come from continuous
+## world-space masks in kit_wall.gdshader with decay-driven thresholds, so every piece of a
+## building gets the same value: per-piece jitter cut those features off at every 1 m seam.
 func _decay_v() -> float:
-	return clampf(_decay + _rng.randf_range(-0.15, 0.2), 0.0, 1.0)
+	_rng.randf_range(-0.15, 0.2)  # keep the draw: later _rng sequences (seeds, scatter) must not shift
+	return clampf(_decay, 0.0, 1.0)
 
 
 ## Local transform of an edge's wall piece (length `span` edges, starting at edge cell `c`).
@@ -138,11 +163,80 @@ func _route_corridor() -> Dictionary:
 	var v := PoiValidator.new()
 	v.layout = layout
 	v._run()
+	_lock_sides = v.lock_sides
+	_barricade_sides = _barricade_faces(v)
 	for path: Array in v.paths:
 		for node: Variant in path:
 			if node is Array:
 				out[PoiValidator.node_key(node[0], node[1])] = true
 	return out
+
+
+## Which face of its wall each barricaded door's barricade stands on (+1 = the wall's "a" side,
+## local +Z; the PoiValidator.lock_sides convention). An authored "barricade_on" (the room char
+## it stands in, "." for outside) wins. Otherwise boards go on the face the door is approached
+## from (the side reachable without passing through it, as for lock cues): whoever nailed them
+## shut the room behind away, so they are seen from the way in, never from inside the sealed
+## room. A furniture pile stays where whoever held the room piled it: inside on exterior walls,
+## the "a" side on interior ones.
+func _barricade_faces(v: PoiValidator) -> Dictionary:
+	var out: Dictionary = {}
+	var raw: Dictionary = {}
+	for o: Variant in layout.def.layout.get("openings", []):
+		if o is Dictionary and (o as Dictionary).has("id"):
+			raw[str(o["id"])] = o
+	for op: Dictionary in layout.openings:
+		if str(op["state"]) != "barricaded" or not str(op["type"]).begins_with("door"):
+			continue
+		var w: Dictionary = layout.walls.get(PoiLayout.edge_key(op["level"], op["axis"], op["edge"]), {})
+		if w.is_empty():
+			continue
+		var boards: bool = str(op.get("barricade", "boards")) == "boards"
+		var on: String = str((raw.get(str(op["id"]), {}) as Dictionary).get("barricade_on", ""))
+		var face: float = 1.0
+		if on != "" and on == str(w["a"]):
+			face = 1.0
+		elif on != "" and on == str(w["b"]):
+			face = -1.0
+		elif bool(w["exterior"]):
+			var outside_sign: float = 1.0 if not layout.is_room(str(w["a"])) else -1.0
+			face = outside_sign if boards else -outside_sign
+		elif boards:
+			face = v._approach_side(op, v._keys_found)
+		out[str(op["id"])] = face
+	return out
+
+
+## Level-0 cells under the porch deck (mirrors _porch).
+func _porch_cell_set() -> Dictionary:
+	var out: Dictionary = {}
+	var porch: Dictionary = layout.style.get("porch", {})
+	if porch.is_empty() or layout.level_ids.is_empty():
+		return out
+	var li0: int = 0 if layout.levels.has(0) else layout.level_ids.front()
+	var lv: Dictionary = layout.levels[li0]
+	var side: int = PoiLayout.SIDES.get(str(porch.get("side", "S")), 2)
+	for i: int in range(int(porch.get("from", 0)), int(porch.get("to", 3)) + 1):
+		for k: int in int(porch.get("depth", 2)):
+			match side:
+				2:
+					out[Vector2i(i, int(lv["d"]) + k)] = true
+				0:
+					out[Vector2i(i, -1 - k)] = true
+				1:
+					out[Vector2i(int(lv["w"]) + k, i)] = true
+				_:
+					out[Vector2i(-1 - k, i)] = true
+	return out
+
+
+## Height an item placed on level `li` in `cell` stands at: level-0 items on yard cells off the
+## porch deck stand on the pad (y = 0); everything else on its level's floor (floor_height above
+## the pad on level 0, so yard props, pickups, bear traps and floor decals used to float).
+func _base_y(li: int, cell: Vector2i) -> float:
+	if li == 0 and not layout.is_room(layout.room_at(0, cell)) and not _porch_cells.has(cell):
+		return 0.0
+	return layout.level_y(li)
 
 
 # --- walls -----------------------------------------------------------------------------------
@@ -231,6 +325,12 @@ func _floors() -> void:
 	var hole_cells: Dictionary = {}
 	for h: Dictionary in layout.holes:
 		hole_cells[PoiValidator.node_key(h["level"], h["cell"])] = true
+	# Weak floors: a fallen one is just a hole; a standing one gets its own rotten slab batch, its
+	# broken twin (hidden) and a collision box it can switch off when it gives way.
+	var weak: Dictionary = layout.weak_floor_cells()
+	for wk: String in weak:
+		if root.trap_state(weak[wk]) == "sprung":
+			hole_cells[wk] = true
 	for li: int in layout.level_ids:
 		var well: Dictionary = layout.stairwell_cells(li)
 		var y: float = layout.level_y(li)
@@ -239,14 +339,21 @@ func _floors() -> void:
 			var run_start: int = -1
 			for c: int in int(lv["w"]) + 1:
 				var cell := Vector2i(c, r)
+				var nk: String = PoiValidator.node_key(li, cell)
+				var weak_tid: String = str(weak.get(nk, "")) if not hole_cells.has(nk) else ""
 				var ch: String = layout.room_at(li, cell) if c < int(lv["w"]) else "."
-				var solid: bool = layout.is_room(ch) and not well.has(cell) and not hole_cells.has(PoiValidator.node_key(li, cell))
+				var solid: bool = layout.is_room(ch) and not well.has(cell) and not hole_cells.has(nk) and weak_tid == ""
 				if layout.is_room(ch) and not well.has(cell):
 					var below: String = layout.room_at(li - 1, cell) if layout.levels.has(li - 1) else "."
 					var custom := Color(_finish(li, ch, "floor"), _finish(li - 1, below, "ceiling") if layout.is_room(below) else _finish(li, ch, "ceiling"), _decay_v(), _seed())
 					var p := Vector3(layout.origin.x + c + 0.5, y, layout.origin.y + r + 0.5)
-					_add("floor_1m_broken" if hole_cells.has(PoiValidator.node_key(li, cell)) else "floor_1m", Transform3D(Basis.IDENTITY, p), custom,
-						layout.is_room(layout.room_at(li + 1, cell)) if layout.levels.has(li + 1) else _roofed(li))
+					var indoor: bool = layout.is_room(layout.room_at(li + 1, cell)) if layout.levels.has(li + 1) else _roofed(li)
+					if weak_tid != "":
+						_add("floor_1m_rotten", Transform3D(Basis.IDENTITY, p), custom, indoor, "weak:" + weak_tid)
+						_add("floor_1m_broken", Transform3D(Basis.IDENTITY, p), custom, indoor, "weakx:" + weak_tid)
+						_weak[weak_tid] = {"shape": _box(Vector3(1.0, 0.2, 1.0), Transform3D(Basis.IDENTITY, p - Vector3.UP * 0.1))}
+					else:
+						_add("floor_1m_broken" if hole_cells.has(nk) else "floor_1m", Transform3D(Basis.IDENTITY, p), custom, indoor)
 					# Ceiling where nothing is built above.
 					var above: String = layout.room_at(li + 1, cell) if layout.levels.has(li + 1) else "."
 					if not layout.is_room(above):
@@ -312,27 +419,97 @@ func _openings() -> void:
 		if t.begins_with("door") and st != "missing":
 			var leaf: String = str(op.get("model", "door_exterior" if exterior else "door_interior"))
 			var hp: float = float(op["hp"]) if float(op["hp"]) > 0.0 else (900.0 if leaf == "door_metal" else (380.0 if exterior else 220.0))
+			var oid: String = str(op["id"])
 			if span == 1:
-				_door(op["id"], xf, Vector3(-0.43, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign)
+				var d1: PoiPieces.Door = _door(oid, xf, Vector3(-0.43, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign)
+				d1.opening_id = oid
+				_lock_cue(d1, op, inside_sign)
 			else:
-				_door(op["id"] + "_l", xf, Vector3(-0.85, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign)
-				_door(op["id"] + "_r", xf, Vector3(0.85, 0, 0), PI, leaf, st, str(op["key"]), hp, inside_sign)
+				var dl: PoiPieces.Door = _door(oid + "_l", xf, Vector3(-0.85, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign)
+				var dr: PoiPieces.Door = _door(oid + "_r", xf, Vector3(0.85, 0, 0), PI, leaf, st, str(op["key"]), hp, inside_sign)
+				dl.opening_id = oid
+				dr.opening_id = oid
+				dl.partner = dr
+				dr.partner = dl
+				# One lock on the left leaf, at the meeting stiles.
+				_lock_cue(dl, op, inside_sign)
+				dr.lock_kind = dl.lock_kind
 			if st == "barricaded":
-				_barricade(op["id"] + "_bar", xf, outside_sign if str(op.get("barricade", "boards")) == "boards" else -outside_sign,
-					"boards_door" if str(op.get("barricade", "boards")) == "boards" else "barricade_furniture", 260.0)
+				var boards: bool = str(op.get("barricade", "boards")) == "boards"
+				var bar_face: float = float(_barricade_sides.get(oid, outside_sign if boards else -outside_sign))
+				var bar: PoiPieces.Breakable = _barricade(oid + "_bar", xf, bar_face, "boards_door" if boards else "barricade_furniture", 260.0)
+				if bar != null:
+					bar.opening_id = oid
 		elif t.begins_with("window"):
 			var pane: String = "window_glass_1m" if span == 1 else "window_glass_2m"
 			var glass_state: String = root.piece_state(op["id"] + "_glass", "broken" if st in ["broken", "missing", "open"] else "closed")
 			if st != "missing" and st != "open":
-				_glass(op["id"] + "_glass", xf, pane, glass_state, float(spec["w"]), float(spec["h"]), float(spec["sill"]))
+				var g: PoiPieces.Breakable = _glass(op["id"] + "_glass", xf, pane, glass_state, float(spec["w"]), float(spec["h"]), float(spec["sill"]))
+				g.opening_id = str(op["id"])
 			if st == "boarded":
-				_barricade(op["id"] + "_boards", xf, outside_sign, "boards_window_1m" if span == 1 else "boards_window_2m", 150.0, float(spec["sill"]))
+				var boards: PoiPieces.Breakable = _barricade(op["id"] + "_boards", xf, outside_sign, "boards_window_1m" if span == 1 else "boards_window_2m", 150.0, float(spec["sill"]))
+				if boards != null:
+					boards.opening_id = str(op["id"])
 
 
-func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: String, st: String, key: String, hp: float, inside_sign: float) -> void:
+## Lock cue heights on the leaf (m): the hasp and chain above the knob (0.95), a sliding bolt
+## higher still, all at the latch edge (leaf x = 0.82, origin of the lock models).
+const LOCK_X: float = 0.82
+const LOCK_Y: Dictionary = {"padlock": 1.22, "chain": 1.02, "deadbolt": 1.25, "bolt": 1.48}
+
+
+## Lock cues (TD-034): a padlock and hasp, a chain or a deadbolt on the face a locked door is
+## approached from (where its key is used: PoiValidator.lock_sides), a sliding bolt on the inside
+## face of a locked_inside one. Padlocks and chains can be broken off (PoiPieces.LockBody). They
+## hang on the leaf at its latch edge, so they swing with it once open.
+func _lock_cue(d: PoiPieces.Door, op: Dictionary, inside_sign: float) -> void:
+	var kind: String = str(op.get("lock", ""))
+	var authored: String = str(op["state"])
+	if kind == "" or d.pivot == null or not authored in ["locked", "locked_inside"]:
+		return
+	var face: float = inside_sign if authored == "locked_inside" else float(_lock_sides.get(str(op["id"]), inside_sign))
+	var locked: bool = d.is_locked()
+	var model: String = ""
+	match kind:
+		"padlock":
+			model = "props/lock_padlock" if locked else "props/lock_hasp_open"
+		"chain":
+			model = "props/lock_chain" if locked else ""
+		"deadbolt":
+			model = "props/lock_deadbolt"
+		"bolt":
+			model = "props/lock_bolt"
+	d.lock_kind = kind
+	d.lock_open_model = "props/lock_hasp_open" if kind == "padlock" else ""
+	if model == "" or d.state == "broken":
+		return
+	var mi := MeshInstance3D.new()
+	mi.name = "Lock"
+	mi.mesh = PoiPieces.model_mesh(model, PoiPieces.model_size(model.trim_prefix("props/"), Vector3(0.18, 0.2, 0.05)), Color(0.33, 0.31, 0.28))
+	# The far face is a mirror image (z flipped): hasp plate on the leaf, staple toward the frame.
+	var y: float = float(LOCK_Y.get(kind, 1.2))
+	mi.transform = Transform3D(Basis.IDENTITY if face > 0.0 else Basis.from_scale(Vector3(1, 1, -1)), Vector3(LOCK_X, y, 0.02 * face))
+	d.pivot.add_child(mi)
+	d.lock_mesh = mi
+	if locked and kind in ["padlock", "chain"]:
+		var cfg: Dictionary = PoiPieces.cfg("padlock")
+		var lb := PoiPieces.LockBody.new()
+		lb.name = "LockBody_" + d.op_id
+		lb.door = d
+		lb.piece_id = d.op_id + "_lock"
+		lb.hp = root.piece_hp(lb.piece_id, float(cfg.get("chain_hp" if kind == "chain" else "hp", 60.0)))
+		# A generous box over the lock, standing proud of the leaf, so a swing at it lands on it.
+		var at: Vector3 = d.pivot.transform * Vector3(LOCK_X, y - 0.06, 0.07 * face)
+		PoiPieces._box_shape(lb, Vector3(0.22, 0.26, 0.12), Transform3D(Basis.IDENTITY, at))
+		d.add_child(lb)
+		d.lock_body = lb
+
+
+func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: String, st: String, key: String, hp: float, inside_sign: float) -> PoiPieces.Door:
 	var d := PoiPieces.Door.new()
 	d.poi = root
 	d.op_id = id
+	d.opening_id = PoiPieces.opening_of(id)
 	d.state = root.piece_state(id, st if st != "barricaded" else "closed")
 	d.key = key
 	d.hp = hp
@@ -352,9 +529,10 @@ func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: 
 	d.leaf_shape = _box(Vector3(0.82, 2.05, 0.05), d.pivot.transform * d.leaf_local, d)
 	d.leaf_shape.disabled = d.state == "broken"
 	root.add_child(d)
+	return d
 
 
-func _glass(id: String, wall_xf: Transform3D, pane: String, st: String, w: float, h: float, sill: float) -> void:
+func _glass(id: String, wall_xf: Transform3D, pane: String, st: String, w: float, h: float, sill: float) -> PoiPieces.Breakable:
 	var g := PoiPieces.Breakable.new()
 	g.poi = root
 	g.piece_id = id
@@ -369,11 +547,12 @@ func _glass(id: String, wall_xf: Transform3D, pane: String, st: String, w: float
 	if st != "broken":
 		_box(Vector3(w, h, 0.03), Transform3D(Basis.IDENTITY, Vector3(0, h * 0.5, 0)), g)
 	root.add_child(g)
+	return g
 
 
-func _barricade(id: String, wall_xf: Transform3D, side_sign: float, piece: String, hp: float, sill: float = 0.0) -> void:
+func _barricade(id: String, wall_xf: Transform3D, side_sign: float, piece: String, hp: float, sill: float = 0.0) -> PoiPieces.Breakable:
 	if root.piece_state(id, "intact") == "broken":
-		return
+		return null
 	var b := PoiPieces.Breakable.new()
 	b.poi = root
 	b.piece_id = id
@@ -390,6 +569,7 @@ func _barricade(id: String, wall_xf: Transform3D, side_sign: float, piece: Strin
 		size.x = 1.8
 	_box(size, Transform3D(Basis.IDENTITY, Vector3(0, size.y * 0.5, 0)), b)
 	root.add_child(b)
+	return b
 
 
 # --- exterior: foundation, porch, chimney ----------------------------------------------------
@@ -486,7 +666,9 @@ func _roof() -> void:
 		if float(cells.size()) < float(r.size.x * r.size.y) * 0.6:
 			t = "flat"
 		var rect := Rect2(Vector2(layout.origin.x + r.position.x, layout.origin.y + r.position.y), Vector2(r.size))
-		var built: Array = RoofBuilder.build(t, rect, y, roof)
+		# Gable ends and parapets wear the building's exterior finish and decay (ADR-0019).
+		var spec: Dictionary = roof.merged({"exterior": str(layout.style.get("exterior", "siding_white")), "decay": _decay})
+		var built: Array = RoofBuilder.build(t, rect, y, spec)
 		for item: Variant in built:
 			if item is MeshInstance3D or item is MultiMeshInstance3D:
 				root.add_child(item)
@@ -518,7 +700,10 @@ func _prop_xf(p: Dictionary, pd: PropDef) -> Transform3D:
 			"E":
 				pos.x = cell.x + 1.0 - WALL_T * 0.5 - depth * 0.5 - 0.01
 				rot = -90.0 if not p.has("rot") else rot
-	var y: float = layout.level_y(int(p["level"])) + float(p.get("y", 0.0))
+	# Free-standing props in the yard stand on the pad; wall-mounted ones hang at a height measured
+	# from the building's floor, whichever side of the wall they are on.
+	var li: int = int(p["level"])
+	var y: float = (layout.level_y(li) if pd.wall_mounted else _base_y(li, p["cell"])) + float(p.get("y", 0.0))
 	if pd.wall_mounted:
 		y += float(p.get("height", 1.4))
 	return Transform3D(Basis(Vector3.UP, deg_to_rad(rot)), Vector3(layout.origin.x + pos.x, y, layout.origin.y + pos.y))
@@ -542,7 +727,9 @@ func _props() -> void:
 			lp.poi = root
 			lp.prop = pd
 			lp.cdef = Content.get_def(&"container", cont) as ContainerDef
-			lp.container_id = StringName("c:%s:%d" % [root.instance_id, i])
+			# Keyed by the prop's authored id when it has one (TD-031), else its list index.
+			lp.container_id = StringName("c:%s:%s" % [root.instance_id, p["pkey"]])
+			lp.prop_key = str(p["pkey"])
 			lp.tier = layout.def.tier
 			lp.bonus = int(p["level"]) == lr_level and layout.room_at(p["level"], p["cell"]) == lr_char
 			lp.key = str(p.get("key", ""))
@@ -681,7 +868,7 @@ func _lights() -> void:
 func _pickups() -> void:
 	for i: int in layout.pickups.size():
 		var p: Dictionary = layout.pickups[i]
-		var pid: String = str(p.get("id", "pk%d" % i))
+		var pid: String = str(p["pid"])
 		if root.piece_state(pid, "") == "broken":
 			continue
 		var pk := PoiPieces.Pickup.new()
@@ -689,7 +876,9 @@ func _pickups() -> void:
 		pk.pickup_id = pid
 		pk.item = StringName(str(p.get("item", "")))
 		pk.count = int(p.get("count", 1))
-		pk.position = layout.local_pos(p["level"], p["pos"]) + Vector3.UP * float(p.get("y", 0.0))
+		var pk_pos: Vector3 = layout.local_pos(p["level"], p["pos"])
+		pk_pos.y = _base_y(int(p["level"]), p["cell"])
+		pk.position = pk_pos + Vector3.UP * float(p.get("y", 0.0))
 		pk.rotation.y = deg_to_rad(float(p.get("rot", 0.0)))
 		root.add_child(pk)
 
@@ -711,6 +900,7 @@ func _decals() -> void:
 		var pos: Vector3 = layout.local_pos(placed["level"], placed["pos"])
 		var side: String = str(d.get("side", "floor"))
 		if side == "floor":
+			pos.y = _base_y(int(placed["level"]), placed["cell"])
 			dec.size = Vector3(float(size[0]), 0.5, float(size[1]))
 			dec.position = pos + Vector3.UP * 0.1
 			dec.rotation.y = deg_to_rad(float(d.get("rot", _rng.randf() * 360.0)))
@@ -732,28 +922,301 @@ func _decals() -> void:
 func _traps() -> void:
 	for i: int in layout.traps.size():
 		var t: Dictionary = layout.traps[i]
-		var tid: String = str(t.get("id", "trap%d" % i))
-		var triggered: bool = (root.state.get("traps", {}) as Dictionary).has(tid)
-		var side: int = PoiLayout.SIDES.get(str(t.get("side", "S")), 2)
-		var cc: Vector3 = layout.cell_center(t["level"], t["cell"])
-		var toward := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
-		var p: Vector3 = cc + toward * 0.35
-		var model: String = "structures/can_chime"
+		var tid: String = str(t["tid"])
+		match str(t["type"]):
+			"can_chime":
+				_can_chime(t, tid)
+			"bear_trap":
+				_bear_trap(t, tid)
+			"shotgun":
+				_shotgun_trap(t, tid)
+			"creaky_floor":
+				_creaky_floor(t, tid)
+			"weak_floor":
+				_weak_floor(t, tid)
+			"alarm":
+				_alarm(t, tid)
+
+
+## Deterministic per instance and trap (a separate stream: the builder's own _rng must not shift).
+func _trap_rng(tid: String) -> RandomNumberGenerator:
+	var r := RandomNumberGenerator.new()
+	r.seed = Ids.hash64("trap:%s:%s" % [root.instance_id, tid])
+	return r
+
+
+func _register(piece: PoiPieces.Trap, t: Dictionary, tid: String) -> void:
+	piece.name = "Trap_" + tid
+	piece.poi = root
+	piece.trap_id = tid
+	piece.type = str(t["type"])
+	root.traps[tid] = piece
+
+
+## Geometry of an edge trap: the edge centre (POI-local, floor level), the direction across it
+## (from the "at" cell outwards) and along it.
+func _edge_frame(t: Dictionary) -> Dictionary:
+	var side: int = int(t["side_i"])
+	var cc: Vector3 = layout.cell_center(t["level"], t["cell"])
+	var across := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
+	var along := Vector3(absf(across.z), 0, absf(across.x))
+	return {"center": cc + across * 0.5, "across": across, "along": along, "cell_center": cc}
+
+
+func _can_chime(t: Dictionary, tid: String) -> void:
+	var triggered: bool = (root.state.get("traps", {}) as Dictionary).has(tid)
+	var side: int = PoiLayout.SIDES.get(str(t.get("side", "S")), 2)
+	var cc: Vector3 = layout.cell_center(t["level"], t["cell"])
+	var toward := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
+	var p: Vector3 = cc + toward * 0.35
+	var model: String = "structures/can_chime"
+	var mi := MeshInstance3D.new()
+	mi.mesh = ModelLibrary.mesh(model, "box")
+	mi.position = p + Vector3.UP * 0.3
+	mi.rotation.y = 0.0 if side in [0, 2] else PI * 0.5
+	root.add_child(mi)
+	if triggered:
+		return
+	var tl := PoiPieces.TripLine.new()
+	tl.poi = root
+	tl.trap_id = tid
+	tl.position = p
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(1.0, 0.6, 0.2) if side in [0, 2] else Vector3(0.2, 0.6, 1.0)
+	cs.shape = box
+	cs.position = Vector3(0, 0.3, 0)
+	tl.add_child(cs)
+	root.add_child(tl)
+
+
+## Steel jaws in the debris of a cell (or the yard): sensor on the pan, a crouch-interact box.
+func _bear_trap(t: Dictionary, tid: String) -> void:
+	var st: String = root.trap_state(tid)
+	if st == "disarmed":
+		return
+	var bt := PoiPieces.BearTrap.new()
+	_register(bt, t, tid)
+	var rng: RandomNumberGenerator = _trap_rng(tid)
+	# An authored "rot" wins; otherwise a deterministic random turn so no two sit square.
+	var yaw: float = deg_to_rad(float(t["rot"])) if bool(t.get("rot_set", false)) else rng.randf() * TAU
+	var bt_pos: Vector3 = layout.local_pos(t["level"], t["pos"])
+	bt_pos.y = _base_y(int(t["level"]), t["cell"])
+	bt.transform = Transform3D(Basis(Vector3.UP, yaw), bt_pos)
+	bt.mesh = MeshInstance3D.new()
+	bt.mesh.name = "Model"
+	bt.add_child(bt.mesh)
+	if st == "sprung":
+		bt.show_sprung()
+	else:
+		bt.mesh.mesh = PoiPieces.model_mesh("props/trap_bear", PoiPieces.model_size("trap_bear", Vector3(0.42, 0.1, 0.42)), Color(0.24, 0.21, 0.19))
+		var sensor: Area3D = bt.add_sensor(Vector3(0.44, 0.35, 0.36), Transform3D(Basis.IDENTITY, Vector3(0, 0.18, 0)),
+			PoiPieces.PLAYER_LAYER | PoiPieces.ENEMY_LAYER)
+		sensor.body_entered.connect(bt.on_body)
+	bt.add_interact_box(Vector3(0.5, 0.16, 0.5), Transform3D(Basis.IDENTITY, Vector3(0, 0.08, 0)))
+	root.add_child(bt)
+
+
+## A tripwire across the edge and a shotgun lashed to a chair inside the "at" cell's room, beside
+## the opening along the wall, its barrels across the doorway.
+func _shotgun_trap(t: Dictionary, tid: String) -> void:
+	var st: String = root.trap_state(tid)
+	var f: Dictionary = _edge_frame(t)
+	var li: int = int(t["level"])
+	var c: Vector2i = t["cell"]
+	var along: Vector3 = f["along"]
+	var across: Vector3 = f["across"]
+	var step := Vector2i(int(along.x), int(along.z))
+	# The gun goes into the neighbouring cell along the wall on the side with floor to stand on
+	# (a room cell, not the open well over a stair or hatch).
+	var sgn: float = 0.0
+	var well: Dictionary = layout.stairwell_cells(li)
+	for k: float in [1.0, -1.0]:
+		var nc: Vector2i = c + step * int(k)
+		var wall_between: Dictionary = layout.walls.get(PoiLayout.edge_key(li, "v" if step.x != 0 else "h", c + (step if k > 0.0 else Vector2i.ZERO)), {})
+		if layout.is_room(layout.room_at(li, nc)) and wall_between.is_empty() and not well.has(nc):
+			sgn = k
+			break
+	var centre: Vector3 = f["center"]
+	var s2: float = sgn if sgn != 0.0 else 1.0
+	var gun: Vector3 = centre - across * 0.42 + along * (0.78 * sgn) if sgn != 0.0 else centre - across * 0.8
+	var far_jamb: Vector3 = centre - along * (0.4 * s2)
+	var near_jamb: Vector3 = centre + along * (0.4 * s2)
+	var sg := PoiPieces.ShotgunTrap.new()
+	_register(sg, t, tid)
+	# Aimed across the doorway at its middle: whoever catches the wire is standing there when the
+	# cord pulls the trigger.
+	var aim: Vector3 = (centre - gun)
+	aim.y = 0.0
+	aim = aim.normalized()
+	sg.transform = Transform3D(Basis(Vector3.UP, atan2(aim.x, aim.z)), gun)
+	# Matches props/trap_shotgun_rig: barrels level over the seat front, muzzle 0.51 m up and 0.47 m
+	# ahead of the chair's centre; the trigger cord runs down to a nail in the front stretcher.
+	sg.muzzle = Vector3(0, 0.51, 0.47)
+	sg.aim = Vector3.BACK
+	var rig := MeshInstance3D.new()
+	rig.name = "Rig"
+	rig.mesh = PoiPieces.model_mesh("props/trap_shotgun_rig", PoiPieces.model_size("trap_shotgun_rig", Vector3(0.46, 0.9, 0.5)), Color(0.36, 0.27, 0.19))
+	sg.add_child(rig)
+	var body := StaticBody3D.new()
+	body.name = "RigBody"
+	body.collision_layer = 1 << 2
+	body.collision_mask = 0
+	PoiPieces._box_shape(body, Vector3(0.44, 0.9, 0.44), Transform3D(Basis.IDENTITY, Vector3(0, 0.45, 0)))
+	sg.add_child(body)
+	if st == "disarmed":
+		root.add_child(sg)
+		return
+	# The wire: jamb to jamb across the doorway at shin height, then up to the trigger guard.
+	var inv: Transform3D = sg.transform.affine_inverse()
+	var a: Vector3 = inv * (far_jamb + Vector3.UP * 0.16)
+	var b: Vector3 = inv * (near_jamb + Vector3.UP * 0.16)
+	var trig := Vector3(0.0, 0.2, 0.17)
+	var wire := Node3D.new()
+	wire.name = "Wires"
+	wire.add_child(_wire_mesh(a, b))
+	wire.add_child(_wire_mesh(b, trig))
+	sg.add_child(wire)
+	sg.wire = wire
+	if st == "armed":
+		var wlen: float = a.distance_to(b)
+		var wxf := Transform3D(Basis.looking_at((b - a).normalized(), Vector3.UP), (a + b) * 0.5)
+		var sensor: Area3D = sg.add_sensor(Vector3(0.3, 0.5, wlen), wxf, PoiPieces.PLAYER_LAYER | PoiPieces.ENEMY_LAYER)
+		sensor.body_entered.connect(sg.on_body)
+		sg.add_interact_box(Vector3(0.3, 0.3, wlen), wxf)
+	else:
+		wire.visible = false
+	root.add_child(sg)
+
+
+## A taut cord between two points (local to its parent): a thin box, dark and slightly glossy.
+func _wire_mesh(a: Vector3, b: Vector3) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = "Wire"
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.004, 0.004, a.distance_to(b))
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.16, 0.15, 0.13)
+	m.roughness = 0.55
+	bm.material = m
+	mi.mesh = bm
+	var dir: Vector3 = (b - a).normalized()
+	mi.transform = Transform3D(Basis.looking_at(dir, Vector3.UP if absf(dir.y) < 0.98 else Vector3.FORWARD), (a + b) * 0.5)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mi
+
+
+## Loose warped boards over each covered cell and a sensor over them all.
+func _creaky_floor(t: Dictionary, tid: String) -> void:
+	var cf := PoiPieces.CreakyFloor.new()
+	_register(cf, t, tid)
+	var cells: Array = t["cells"]
+	var c0: Vector2i = cells[0]
+	var origin: Vector3 = layout.cell_center(t["level"], c0) - Vector3(0.5, 0, 0.5)
+	cf.position = origin
+	var rng: RandomNumberGenerator = _trap_rng(tid)
+	var lo := Vector2i(1 << 20, 1 << 20)
+	var hi := Vector2i(-(1 << 20), -(1 << 20))
+	for c: Vector2i in cells:
+		lo = Vector2i(mini(lo.x, c.x), mini(lo.y, c.y))
+		hi = Vector2i(maxi(hi.x, c.x), maxi(hi.y, c.y))
 		var mi := MeshInstance3D.new()
-		mi.mesh = ModelLibrary.mesh(model, "box")
-		mi.position = p + Vector3.UP * 0.3
-		mi.rotation.y = 0.0 if side in [0, 2] else PI * 0.5
-		root.add_child(mi)
-		if triggered:
+		mi.mesh = PoiPieces.model_mesh("props/trap_creaky_boards", PoiPieces.model_size("trap_creaky_boards", Vector3(0.9, 0.03, 0.9)), Color(0.38, 0.3, 0.22))
+		mi.transform = Transform3D(Basis(Vector3.UP, PI * 0.5 * float(rng.randi_range(0, 3))), Vector3(c.x - c0.x + 0.5, 0.0, c.y - c0.y + 0.5))
+		cf.add_child(mi)
+	var size := Vector3(hi.x - lo.x + 1, 0.6, hi.y - lo.y + 1)
+	var sensor: Area3D = cf.add_sensor(size, Transform3D(Basis.IDENTITY, Vector3(size.x * 0.5, 0.3, size.z * 0.5)), PoiPieces.PLAYER_LAYER)
+	sensor.body_entered.connect(cf.on_enter)
+	sensor.body_exited.connect(cf.on_exit)
+	root.add_child(cf)
+
+
+## The rotten slab itself is a kit batch of its own (_floors); here its sensor and controller.
+func _weak_floor(t: Dictionary, tid: String) -> void:
+	var wf := PoiPieces.WeakFloor.new()
+	_register(wf, t, tid)
+	wf.position = layout.cell_center(t["level"], t["cell"])
+	if root.trap_state(tid) == "armed":
+		var sensor: Area3D = wf.add_sensor(Vector3(0.8, 0.5, 0.8), Transform3D(Basis.IDENTITY, Vector3(0, 0.25, 0)), PoiPieces.PLAYER_LAYER)
+		sensor.body_entered.connect(wf.on_body)
+	if _weak.has(tid):
+		_weak[tid]["piece"] = wf
+		wf.shape = _weak[tid]["shape"]
+	root.add_child(wf)
+
+
+func _wire_weak_floors() -> void:
+	for tid: String in _weak:
+		var wf: PoiPieces.WeakFloor = (_weak[tid] as Dictionary).get("piece")
+		if wf == null:
 			continue
-		var tl := PoiPieces.TripLine.new()
-		tl.poi = root
-		tl.trap_id = tid
-		tl.position = p
-		var cs := CollisionShape3D.new()
-		var box := BoxShape3D.new()
-		box.size = Vector3(1.0, 0.6, 0.2) if side in [0, 2] else Vector3(0.2, 0.6, 1.0)
-		cs.shape = box
-		cs.position = Vector3(0, 0.3, 0)
-		tl.add_child(cs)
-		root.add_child(tl)
+		wf.intact_mm = _tagged.get("weak:" + tid)
+		wf.broken_mm = _tagged.get("weakx:" + tid)
+		if wf.broken_mm != null:
+			wf.broken_mm.visible = false
+
+
+## Centre of an opening's edge span (POI-local, at its level's floor): 2 m openings span this
+## cell and the next one along the wall.
+func _opening_center(op: Dictionary) -> Vector3:
+	var e: Vector2i = op["edge"]
+	var w: float = float(op["width"])
+	var y: float = layout.level_y(int(op["level"]))
+	if str(op["axis"]) == "h":
+		return Vector3(layout.origin.x + e.x + w * 0.5, y, layout.origin.y + e.y)
+	return Vector3(layout.origin.x + e.x, y, layout.origin.y + e.y + w * 0.5)
+
+
+## A battery alarm on the header of the opening's frame, inside face (or a bell on a cord across
+## an open passage) and a sensor across the edge; opening or breaking the opening sets it off too
+## (PoiInstance._alarms_on).
+func _alarm(t: Dictionary, tid: String) -> void:
+	var st: String = root.trap_state(tid)
+	if st == "disarmed":
+		return
+	var f: Dictionary = _edge_frame(t)
+	var li: int = int(t["level"])
+	var wall: Dictionary = layout.walls.get(PoiLayout.edge_key(li, t["axis"], t["edge"]), {})
+	var op: Dictionary = wall.get("opening", {}) if not wall.is_empty() else {}
+	var op_type: String = str(op.get("type", "open"))
+	var style: String = str(t.get("style", "bell" if op.is_empty() or op_type in ["open", "breach", "half"] else "battery"))
+	var al := PoiPieces.AlarmTrap.new()
+	al.style = style
+	_register(al, t, tid)
+	var across: Vector3 = f["across"]
+	var along: Vector3 = f["along"]
+	var centre: Vector3 = _opening_center(op) if not op.is_empty() else (f["center"] as Vector3)
+	var spec: Dictionary = PoiParts.OPENINGS.get(op_type, PoiParts.OPENINGS["open"])
+	var width: float = float(op.get("width", 1))
+	# Facing back into the "at" room, on the inside face of the wall.
+	var face: Vector3 = -across
+	var mount: Vector3 = centre - across * (PoiBuilder.WALL_T * 0.5 + 0.005)
+	var top: float = float(spec["sill"]) + float(spec["h"]) if float(spec["h"]) > 0.0 and op_type != "open" else 2.1
+	var y: float = minf(top + 0.03, 2.55)
+	if style == "battery":
+		# Latch-side top corner of the frame, on the header.
+		mount += along * (float(spec["w"]) * 0.5 - 0.12)
+	else:
+		mount -= across * 0.12
+		y = 1.95
+	al.transform = Transform3D(Basis(Vector3.UP, atan2(face.x, face.z)), mount)
+	var mi := MeshInstance3D.new()
+	mi.name = "Model"
+	var model: String = "props/trap_alarm_box" if style == "battery" else "props/trap_alarm_bell"
+	mi.mesh = PoiPieces.model_mesh(model, PoiPieces.model_size(model.trim_prefix("props/"), Vector3(0.1, 0.16, 0.05)), Color(0.8, 0.78, 0.72))
+	mi.position = Vector3(0, y, 0)
+	al.add_child(mi)
+	var inv: Transform3D = al.transform.affine_inverse()
+	if style == "bell" and st == "armed":
+		# The cord: across the passage at shin height, then up the jamb to the bell.
+		var a: Vector3 = inv * (centre - along * (width * 0.5 - 0.05) - across * 0.1 + Vector3.UP * 0.2)
+		var b: Vector3 = inv * (centre + along * (width * 0.5 - 0.05) - across * 0.1 + Vector3.UP * 0.2)
+		al.add_child(_wire_mesh(a, b))
+		al.add_child(_wire_mesh(b, Vector3(0, y + 0.02, 0)))
+	if st == "armed":
+		var c_local: Vector3 = inv * (centre + Vector3.UP * 0.9)
+		# Local X runs along the wall (the alarm faces across it).
+		var sensor: Area3D = al.add_sensor(Vector3(width, 1.6, 0.3), Transform3D(Basis.IDENTITY, c_local), PoiPieces.PLAYER_LAYER)
+		sensor.body_entered.connect(al.on_body)
+		al.add_interact_box(Vector3(0.3, 0.35, 0.3), Transform3D(Basis.IDENTITY, mi.position + Vector3(0, 0.08, 0.08)))
+	root.add_child(al)

@@ -61,6 +61,9 @@ func spawn(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Enemy:
 		trng.seed = Ids.hash64("tier:%d:%s" % [Game.session.world_seed if Game.session != null else 0, id])
 		opts = opts.duplicate()
 		opts["tier"] = InfectedTiers.pick(gs + int(opts.get("tier_bonus", 0)), trng)
+	if bool(opts.get("guardian", false)):
+		opts = opts.duplicate()
+		opts["tier"] = guardian_tier(StringName(str(opts["tier"])))
 	var e := Enemy.new()
 	e.setup(id, def, self, opts)
 	e.name = String(id).replace(":", "_")
@@ -78,10 +81,27 @@ func spawn(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Enemy:
 
 
 ## Dormant sleeper placed by a POI (pose: lie/sit/stand/kneel/crouch). Harder buildings roll
-## their sleepers' infected tier at a higher gamestage.
-func spawn_sleeper(enemy_id: StringName, pos: Vector3, yaw: float, pose: String, poi_id: StringName, sleeper_id: StringName, poi_tier: int = 1) -> Enemy:
+## their sleepers' infected tier at a higher gamestage. extra (ADR-0018): "group" (ambush group),
+## "held" (dormant until the group's trigger fires), "guardian" (one infected tier up).
+func spawn_sleeper(enemy_id: StringName, pos: Vector3, yaw: float, pose: String, poi_id: StringName, sleeper_id: StringName,
+		poi_tier: int = 1, extra: Dictionary = {}) -> Enemy:
 	var bonus: int = int((InfectedTiers.cfg().get("sleeper_tier_bonus", {}) as Dictionary).get("per_poi_tier", 8)) * maxi(0, poi_tier - 1)
-	return spawn(enemy_id, pos, {"yaw": yaw, "pose": pose, "poi": poi_id, "sleeper": sleeper_id, "id": "sl:%s:%s" % [poi_id, sleeper_id], "tier_bonus": bonus})
+	var opts: Dictionary = {"yaw": yaw, "pose": pose, "poi": poi_id, "sleeper": sleeper_id, "id": "sl:%s:%s" % [poi_id, sleeper_id],
+		"tier_bonus": bonus}
+	for k: String in ["group", "held", "guardian"]:
+		if extra.has(k):
+			opts[k] = extra[k]
+	return spawn(enemy_id, pos, opts)
+
+
+## A guardian's infected tier: the rolled one, stepped up (normal -> Seeded -> Bloomed) by
+## data/config/traps.json guardian.tier_steps. The world setting that turns tiers off wins.
+static func guardian_tier(rolled: StringName) -> StringName:
+	if not GameRules.current().flag("infected_tiers"):
+		return rolled
+	var order: Array[StringName] = [&"normal", &"seeded", &"bloomed"]
+	var steps: int = int((Content.config(&"traps").get("guardian", {}) as Dictionary).get("tier_steps", 1))
+	return order[clampi(maxi(0, order.find(rolled)) + steps, 0, order.size() - 1)]
 
 
 ## What actually spawns for a request: authored sleepers keep their type; everything else must

@@ -9,7 +9,7 @@ Available in debug builds (and exports with the `debug_tools` feature). Implemen
 | **F2** | Free camera (WASD, mouse, Shift = fast, E/Q = up/down); terrain streams around the camera |
 | **F3** | AI overlay: per-Hollowed label (type, state, hp, awareness), line to its current target, Hum flow-field arrows around the base, heat-map cells |
 | **F4** | Performance overlay: FPS/frame time vs the 60 FPS budget, draw calls, primitives, objects, video/static memory, node count, physics/process time, Hollowed alive, graphics preset |
-| **F6** | POI route visualiser: the validator's walked route (green), numbered waypoints with labels, sleepers, loot-room cells, validation errors floating over the building |
+| **F6** | POI route visualiser: the validator's walked route (green), numbered waypoints with labels, loot-room cells, validation errors floating over the building, and the dungeon mechanics (ADR-0018): **sleepers** labelled `zz [group held] enemy` in their ambush group's colour (`G` = guardian, orange; ungrouped = pale blue; `held` while their trigger has not fired); **triggers** `T id -> group (enter K / open door / take key / search locker / trap id)` over what they watch, room triggers crossing every cell of their room, grey and `(fired)` once spent; **traps** in magenta (a bar across edge traps, crosses over cell traps) with `type id (armed / sprung / disarmed)`, greyed once sprung or disarmed |
 | **F7** | Structural view: stability % and hit points over every building piece within 40 m |
 | F5 / F9 | Quicksave / quickload · F12 screenshot (user://) |
 

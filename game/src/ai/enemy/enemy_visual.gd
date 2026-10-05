@@ -35,6 +35,9 @@ var _stumps: Dictionary = {}
 var _bob_t: float = 0.0
 const SENSE_SHADER: String = "res://assets/shaders/sleeper_sense.gdshader"
 static var _sense_material: ShaderMaterial = null
+## Warmer, stronger rim for a POI guardian (ADR-0018): Sleeper Sense tells the loot room's
+## keeper from the rest.
+static var _sense_guardian_material: ShaderMaterial = null
 
 
 ## Godot replaces "." in node names on import ("body_upper_arm.L" -> "body_upper_arm_L"); map
@@ -53,17 +56,29 @@ func set_bloom(glow: float) -> void:
 		(g as GeometryInstance3D).set_instance_shader_parameter(&"bloom_glow", glow)
 
 
-## Sleeper Sense outline (a shared see-through rim overlay) on or off.
-func set_sensed(on: bool) -> void:
+## Sleeper Sense outline (a shared see-through rim overlay) on or off; `guardian` uses the warm
+## guardian rim.
+func set_sensed(on: bool, guardian: bool = false) -> void:
 	if _root == null:
 		return
-	if on and _sense_material == null and ResourceLoader.exists(SENSE_SHADER):
-		_sense_material = ShaderMaterial.new()
-		_sense_material.shader = load(SENSE_SHADER)
+	var mat: ShaderMaterial = null
+	if on and ResourceLoader.exists(SENSE_SHADER):
+		if guardian:
+			if _sense_guardian_material == null:
+				_sense_guardian_material = ShaderMaterial.new()
+				_sense_guardian_material.shader = load(SENSE_SHADER)
+				_sense_guardian_material.set_shader_parameter(&"tint", Color(1.0, 0.58, 0.28))
+				_sense_guardian_material.set_shader_parameter(&"strength", 0.42)
+			mat = _sense_guardian_material
+		else:
+			if _sense_material == null:
+				_sense_material = ShaderMaterial.new()
+				_sense_material.shader = load(SENSE_SHADER)
+			mat = _sense_material
 	for g: Node in _root.find_children("*", "GeometryInstance3D", true, false):
-		(g as GeometryInstance3D).material_overlay = _sense_material if on else null
+		(g as GeometryInstance3D).material_overlay = mat
 	if _root is GeometryInstance3D:
-		(_root as GeometryInstance3D).material_overlay = _sense_material if on else null
+		(_root as GeometryInstance3D).material_overlay = mat
 
 
 static func model_path(id: String) -> String:

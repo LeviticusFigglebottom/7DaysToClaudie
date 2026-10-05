@@ -65,6 +65,8 @@ signal poi_entered(poi_instance_id: StringName)
 signal poi_discovered(poi_id: StringName)
 signal poi_exited(poi_instance_id: StringName)
 signal poi_cleared(poi_instance_id: StringName)
+## A POI trap taken apart (was armed) or salvaged (was sprung) through poi.disarm_trap.
+signal trap_disarmed(player_id: StringName, poi_instance_id: StringName, trap_type: StringName, was_armed: bool)
 signal note_found(note_id: StringName)
 signal schematic_learned(schematic_id: StringName)
 

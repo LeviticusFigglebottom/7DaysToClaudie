@@ -7,6 +7,7 @@ extends Node3D
 ## Placement frames: a placement origin is the pad corner; its rotation (degrees) turns the
 ## framework/POI plane the same way the composer did (Vector2.rotated), i.e. node yaw = -angle.
 ## Inside a framework, a lot's POI is centred in its rect with its front (+Z) toward `facing`.
+## Owns the poi.* commands (ADR-0003): poi.disarm_trap takes a POI trap apart for its parts.
 
 const SLEEPER_SPAWN: float = 46.0
 const SLEEPER_DESPAWN: float = 95.0
@@ -19,6 +20,7 @@ var _inside: Dictionary = {}
 
 func setup_world(w: Node) -> void:
 	world = w
+	Game.register_command(&"poi.disarm_trap", _cmd_disarm_trap)
 	for rid: String in (w.terrain as TerrainManager).regions:
 		var rt: RegionTerrain = w.terrain.regions[rid]
 		for pl: Dictionary in rt.placements:
@@ -171,3 +173,48 @@ func nav_roots_in_rect(r: Rect2) -> Array:
 func save_into(_session: GameSession) -> void:
 	# POI state dictionaries live in WorldState.pois already (mutated in place).
 	pass
+
+
+func _exit_tree() -> void:
+	if world != null:
+		Game.unregister_command(&"poi.disarm_trap")
+
+
+## {player?, poi: instance id, trap: trap id} — a crouched player within reach takes an armed trap
+## apart (or salvages a sprung one) and gets its parts (data/config/traps.json *_yield).
+func _cmd_disarm_trap(args: Dictionary) -> Dictionary:
+	if Game.session == null:
+		return {"ok": false, "error": "no session"}
+	var p: PlayerState = Game.session.players.get(StringName(str(args.get("player", Game.session.local_player_id))))
+	if p == null or not p.stats.alive:
+		return {"ok": false, "error": "no player"}
+	var inst: PoiInstance = instances.get(StringName(str(args.get("poi", ""))))
+	var tid: String = str(args.get("trap", ""))
+	if inst == null or inst.layout.trap(tid).is_empty():
+		return {"ok": false, "error": "no such trap"}
+	var piece: Node3D = inst.traps.get(tid) as Node3D
+	var node: Node3D = world.call(&"player_node", p.id) if world != null and world.has_method(&"player_node") else null
+	if node != null and piece != null:
+		if node.global_position.distance_to(piece.global_position) > float(Content.config(&"traps").get("disarm_reach", 3.0)):
+			return {"ok": false, "error": "out of reach"}
+		if inst.trap_state(tid) == "armed" and not bool(node.get(&"crouching")):
+			return {"ok": false, "error": "not crouching"}
+	var res: Dictionary = inst.disarm_trap(tid)
+	if not bool(res.get("ok", false)):
+		return res
+	var items: Dictionary = res.get("items", {})
+	var got: PackedStringArray = []
+	for k: Variant in items.keys():
+		var item := StringName(str(k))
+		var n: int = int(items[k])
+		var left: int = p.inventory.add_item(item, n)
+		if left > 0 and piece != null:
+			ItemDrop.spawn(world if world != null else self, ItemStack.make(item, left), piece.global_position + Vector3.UP * 0.4)
+		var d: ItemDef = Content.item(item)
+		got.append("%d %s" % [n, d.display_name if d != null else String(item)])
+	Events.inventory_changed.emit(p.id)
+	Events.trap_disarmed.emit(p.id, inst.instance_id, StringName(str(inst.layout.trap(tid).get("type", ""))), str(res.get("was", "")) == "armed")
+	var what: String = str((piece as PoiPieces.Trap).label) if piece is PoiPieces.Trap else "trap"
+	Events.player_status_message.emit(("%s %s" % ["Disarmed the" if str(res.get("was", "")) == "armed" else "Salvaged the", what]) +
+		((": " + ", ".join(got) + ".") if not got.is_empty() else "."), &"info")
+	return {"ok": true, "items": items}

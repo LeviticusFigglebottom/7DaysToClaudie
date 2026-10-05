@@ -7,7 +7,11 @@ extends Node3D
 ##    (1 m / 2 m / 4 m vertex step), skirts hide LOD cracks; meshes built on worker threads.
 ##  * far field: one coarse tile per region (16 m step) for the whole map, discarding inside the
 ##    near square so they never overlap.
-##  * collision: HeightMapShape3D for chunks within COLLISION_RADIUS of the focus.
+##  * collision: HeightMapShape3D for chunks within COLLISION_RADIUS of the focus (a trimesh
+##    where a POI cellar cuts the chunk: a heightmap can only drop whole quads).
+##  * cellars (TD-026): `holes` (TerrainHoles, derived from the POI placements at setup, never
+##    saved) are cut exactly out of the near meshes, their skirts and the collision, so a POI's
+##    below-ground rooms can be entered; the POI's cellar walls close the cut.
 ##  * digging: modifies the region height field; per-chunk deltas are saved as chunk blobs
 ##    ("t:<cx>_<cz>") so the composed world + deltas reproduce the edited terrain.
 
@@ -51,6 +55,8 @@ var _deltas: Dictionary = {}
 var _dirty_saves: Dictionary = {}
 ## Hybrid SDF volume (tunnels / mining) for columns dug past what the heightmap can express.
 var volume: VolumeTerrain
+## Cellar openings of the placed POIs (TD-026). Immutable after setup; read by mesh workers.
+var holes := TerrainHoles.new()
 var _update_accum: float = 0.0
 
 
@@ -90,6 +96,7 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	ground.roughness = 0.95
 	_fallback_material = ground
 	_build_grid()
+	holes = TerrainHoles.from_regions(regions)
 	_canopy = far_canopy(ContentDB.instance)
 	_build_far_tiles()
 	volume = VolumeTerrain.new()
@@ -238,8 +245,9 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 	var hole: Callable = Callable()
 	if volume != null and not volume.columns.is_empty() and _chunk_has_volume(key):
 		hole = volume.is_volume_column
+	var cut: Array[PackedVector2Array] = _cutters(key)
 	var fn := func() -> void:
-		job["mesh"] = TerrainMesher.build_chunk(origin, CHUNK, step, height_at, skirt, Callable(), hole)
+		job["mesh"] = TerrainMesher.build_chunk(origin, CHUNK, step, height_at, skirt, Callable(), hole, cut)
 	if synchronous:
 		fn.call()
 		_apply_mesh(job)
@@ -309,11 +317,7 @@ func _set_collision(ch: Chunk, on: bool) -> void:
 			ch.body = null
 		return
 	var origin := Vector2(ch.key.x * CHUNK, ch.key.y * CHUNK)
-	var shape := HeightMapShape3D.new()
-	var vc: int = int(CHUNK) + 1
-	shape.map_width = vc
-	shape.map_depth = vc
-	shape.map_data = TerrainMesher.collision_heights(origin, CHUNK, 1.0, _collision_height if _chunk_has_volume(ch.key) else height_at)
+	var cut: Array[PackedVector2Array] = _cutters(ch.key)
 	var body := StaticBody3D.new()
 	body.name = "Col_%d_%d" % [ch.key.x, ch.key.y]
 	body.collision_layer = COLLISION_LAYER
@@ -321,9 +325,23 @@ func _set_collision(ch: Chunk, on: bool) -> void:
 	body.set_meta(&"terrain", true)
 	body.set_meta(&"damage_receiver", self)
 	var cs := CollisionShape3D.new()
-	cs.shape = shape
-	# HeightMapShape3D is centred on its origin.
-	cs.position = Vector3(CHUNK * 0.5, 0.0, CHUNK * 0.5)
+	if cut.is_empty():
+		var shape := HeightMapShape3D.new()
+		var vc: int = int(CHUNK) + 1
+		shape.map_width = vc
+		shape.map_depth = vc
+		shape.map_data = TerrainMesher.collision_heights(origin, CHUNK, 1.0, _collision_height if _chunk_has_volume(ch.key) else height_at)
+		cs.shape = shape
+		# HeightMapShape3D is centred on its origin.
+		cs.position = Vector3(CHUNK * 0.5, 0.0, CHUNK * 0.5)
+	else:
+		# A cellar cuts this chunk: exact trimesh (same triangles and cut as the render mesh at
+		# 1 m); volume columns are left out instead of sunk.
+		var tri := ConcavePolygonShape3D.new()
+		tri.backface_collision = true
+		var hole: Callable = volume.is_volume_column if _chunk_has_volume(ch.key) else Callable()
+		tri.set_faces(TerrainMesher.surface_faces(origin, CHUNK, 1.0, height_at, hole, cut))
+		cs.shape = tri
 	body.add_child(cs)
 	body.position = Vector3(origin.x, 0.0, origin.y)
 	_near_root.add_child(body)
@@ -473,6 +491,32 @@ func _chunk_has_volume(key: Vector2i) -> bool:
 func _collision_height(x: float, z: float) -> float:
 	var h: float = height_at(x, z)
 	return h - 40.0 if volume.is_volume_column(x - 0.01, z - 0.01) and volume.is_volume_column(x + 0.01, z + 0.01) else h
+
+
+# --- POI cellars (TD-026) -------------------------------------------------------------------------
+
+## Cellar footprints (world-XZ convex pieces) that cut a near chunk.
+func _cutters(key: Vector2i) -> Array[PackedVector2Array]:
+	if holes == null or holes.is_empty():
+		return []
+	return holes.pieces_in(Rect2(key.x * CHUNK, key.y * CHUNK, CHUNK, CHUNK))
+
+
+## Whether (x, z) lies over a POI cellar, where the heightmap has been cut away.
+func in_cellar(x: float, z: float) -> bool:
+	return holes != null and holes.contains(x, z)
+
+
+## The ground under a point: the cellar floor when the point is down in a cut-out POI cellar
+## (anywhere under the ground floor's slab, fallen through the cellar floor included), else the
+## terrain height. height_at() keeps reporting the heightfield (ADR-0007); fell-through-the-world
+## checks and settling things where they are want this.
+func ground_below(pos: Vector3) -> float:
+	var h: float = height_at(pos.x, pos.z)
+	if holes == null or holes.is_empty():
+		return h
+	var hole: TerrainHoles.Hole = holes.hole_at(pos.x, pos.z)
+	return hole.floor_y if hole != null and pos.y < hole.ceiling_y else h
 
 
 func _on_volume_column(col: Vector2i) -> void:

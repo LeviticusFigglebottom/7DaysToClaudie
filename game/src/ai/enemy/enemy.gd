@@ -6,7 +6,9 @@ extends CharacterBody3D
 ## unless it can actually see, hear or smell them (ADR-0012).
 ##
 ## SLEEP sleepers lie/sit/stand dormant in POIs; noise, light and a close careless player build
-## `awareness` until they wake. WANDER/IDLE drift; INVESTIGATE walks to a sound or follows scent;
+## `awareness` until they wake. A *held* sleeper (a POI ambush group or guardian, ADR-0018)
+## ignores all of that: only gunfire, explosions or an alarm close by, a blow, or its group's
+## trigger (`ambush()`) wakes it. WANDER/IDLE drift; INVESTIGATE walks to a sound or follows scent;
 ## CHASE runs at what it saw; ATTACK/BREAK hit the player or whatever wall is in the way; HORDE
 ## follows the Hum flow field toward the base; SCREAM (Keener) summons the neighbourhood.
 ## Specials (EnemyDef.behavior): SPIT (Blister) lobs spore globs from range, CHARGE (Rammer)
@@ -44,6 +46,11 @@ var last_seen_time: float = -100.0
 var poi_id: StringName = &""
 var sleeper_id: StringName = &""
 var sleep_pose: String = "stand"
+## POI ambush group this sleeper belongs to ("" = none) and whether it is still held dormant
+## until a trigger of that group fires (ADR-0018). Guardians spawn one infected tier up.
+var group: StringName = &""
+var held: bool = false
+var guardian: bool = false
 var horde_sector: int = -1
 var horde: bool = false
 var break_target: Node3D = null
@@ -130,6 +137,9 @@ func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary
 	poi_id = StringName(str(opts.get("poi", "")))
 	sleeper_id = StringName(str(opts.get("sleeper", "")))
 	sleep_pose = str(opts.get("pose", "stand"))
+	group = StringName(str(opts.get("group", "")))
+	held = bool(opts.get("held", false))
+	guardian = bool(opts.get("guardian", false))
 	horde_sector = int(opts.get("horde_sector", -1))
 	horde = horde_sector >= 0
 	crawling = def.archetype == "crawler"
@@ -365,8 +375,11 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 			else:
 				_stuck_t = 0.0
 	rotation.y = lerp_angle(rotation.y, _yaw_target, minf(1.0, delta * 6.0))
-	if global_position.y < (Game.world.height_at(global_position.x, global_position.z) if Game.world != null else -INF) - 3.0:
-		global_position.y = Game.world.height_at(global_position.x, global_position.z) + 0.5
+	# Fell through the world: back onto the ground. ground_below() is the cellar floor for a body
+	# down in a POI cellar, which lies under height_at()'s surface (TD-026).
+	var ground: float = Game.world.ground_below(global_position) if Game.world != null else -INF
+	if global_position.y < ground - 3.0:
+		global_position.y = ground + 0.5
 		velocity = Vector3.ZERO
 
 
@@ -454,6 +467,9 @@ func _perceive(p: Player, dist: float) -> void:
 	if p == null or Stimuli.current == null or not p.state.stats.alive or DebugTools.is_on(&"invisible"):
 		return
 	var st: Stimuli = Stimuli.current
+	if state == State.SLEEP and held:
+		_perceive_held(st)
+		return
 	var night: bool = is_night()
 	var base_sight: float = def.perc("sight_night" if night else "sight_day", 15.0)
 	var light: float = st.light_at(p.global_position + Vector3.UP)
@@ -512,6 +528,23 @@ func _perceive(p: Player, dist: float) -> void:
 		awareness = maxf(0.0, awareness - 0.05)
 
 
+## A held (ambush) sleeper sees and hears nothing ordinary: only gunfire, explosions or an alarm
+## within the ambush wake radius (data/config/traps.json "ambush") rouses it early.
+func _perceive_held(st: Stimuli) -> void:
+	var cfg: Dictionary = Content.config(&"traps").get("ambush", {})
+	var kinds: Array = cfg.get("wake_kinds", ["gunshot", "explosion", "alarm"])
+	var radius: float = float(cfg.get("wake_radius", 14.0))
+	var heard: Stimuli.SoundEvent = null
+	for e: Stimuli.SoundEvent in st.sounds:
+		if e.seq <= _heard_seq or e.source_id == entity_id or not kinds.has(String(e.kind)):
+			continue
+		if e.pos.distance_to(global_position) <= radius:
+			heard = e
+	_heard_seq = st.last_seq()
+	if heard != null:
+		_wake(heard.pos, false)
+
+
 func _line_of_sight(p: Player) -> bool:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * (0.4 if crawling else 1.6), p.eye_position(), SIGHT_MASK)
@@ -521,6 +554,7 @@ func _line_of_sight(p: Player) -> bool:
 
 func _wake(toward: Vector3, saw: bool) -> void:
 	awareness = 1.0
+	held = false
 	target_pos = toward
 	if saw:
 		last_seen_time = _now()
@@ -532,11 +566,37 @@ func notice(pos: Vector3, alert: bool = true) -> void:
 	if state == State.DEAD:
 		return
 	if state == State.SLEEP:
+		# An ambush keeps still through other sleepers waking, screams and chimes.
+		if held:
+			return
 		_wake(pos, false)
 		return
 	target_pos = pos
 	if alert and state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
 		_set_state(State.INVESTIGATE)
+
+
+## A POI ambush springs (ADR-0018): the sleeper is released and wakes already knowing where the
+## intruder is (it heads straight into the chase once on its feet). Awake ones just turn on them.
+func ambush(target: Vector3) -> void:
+	if state == State.DEAD:
+		return
+	held = false
+	if state != State.SLEEP:
+		target_pos = target
+		last_seen_time = _now()
+		if state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+			_set_state(State.CHASE)
+		return
+	_wake(target, true)
+	Audio.play_3d(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", global_position + Vector3.UP * 1.6,
+		{"volume_db": 2.0})
+	Events.enemy_alerted.emit(entity_id, global_position)
+
+
+## Lets a held sleeper wake to ordinary noise and light again (its ambush was spent elsewhere).
+func release_hold() -> void:
+	held = false
 
 
 ## The Hum is over. Survivors drift away from the base to where it last drew them, and root into

@@ -58,7 +58,9 @@ func _physics_process(delta: float) -> void:
 				continue
 			var p: Vector3 = b.global_position
 			var near: bool = Vector2(p.x - center.x, p.z - center.z).length() < ACTIVE_RADIUS
-			var ground: float = terrain.height_at(p.x, p.z)
+			# The cellar floor for a log or drop down in a POI cellar (height_at() is the surface
+			# above it, and anything 1.5 m under that would be "rescued" up to the ground floor).
+			var ground: float = terrain.ground_below(p)
 			if near and b.freeze and terrain.is_ready_around(p, 0):
 				b.freeze = false
 			elif not near and not b.freeze:

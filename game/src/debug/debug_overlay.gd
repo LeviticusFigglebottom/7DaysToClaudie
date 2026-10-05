@@ -5,7 +5,8 @@ extends CanvasLayer
 ##   F2  free camera (WASD + mouse, Shift fast, E/Q up/down)
 ##   F3  AI overlay: state/awareness labels, targets, detection radius, Hum flow arrows, heat cells
 ##   F4  performance overlay: FPS, frame time, draw calls, primitives, memory, world stats
-##   F6  POI route visualiser: validator routes, waypoints, sleepers, loot rooms of nearby POIs
+##   F6  POI route visualiser: validator routes, waypoints, sleepers (with their ambush group),
+##       loot rooms, triggers (room outlines / labels, grey once fired), traps and their state
 ##   F7  structural view: per-piece stability and hit points
 
 const TELEPORTS: Array[Array] = [
@@ -24,6 +25,9 @@ var _labels: Node3D
 var _cam: Camera3D = null
 var _cam_pitch: float = 0.0
 var _t: float = 0.0
+## PoiInstance -> its PoiValidator (layouts never change at runtime; F6 used to revalidate every
+## nearby building five times a second).
+var _validators: Dictionary = {}
 
 
 func setup(w: Node) -> void:
@@ -393,6 +397,15 @@ func _draw_ai() -> bool:
 	return n > 0
 
 
+## Group colour for F6 labels (stable per group name).
+static func _group_color(g: String) -> Color:
+	if g == "":
+		return Color(0.6, 0.6, 1.0)
+	if g == PoiLayout.GUARDIAN_GROUP:
+		return Color(1.0, 0.55, 0.15)
+	return Color.from_hsv(float(absi(hash(g)) % 1000) / 1000.0, 0.65, 1.0)
+
+
 func _draw_routes() -> bool:
 	var pois: Node = world.get(&"pois")
 	if pois == null:
@@ -402,7 +415,9 @@ func _draw_routes() -> bool:
 	for inst: PoiInstance in (pois.get(&"instances") as Dictionary).values():
 		if inst.global_position.distance_to(p) > 120.0:
 			continue
-		var v: PoiValidator = PoiValidator.validate(inst.layout.def)
+		if not _validators.has(inst):
+			_validators[inst] = PoiValidator.validate(inst.layout.def)
+		var v: PoiValidator = _validators[inst]
 		var l: PoiLayout = inst.layout
 		for path: Array in v.paths:
 			var prev: Variant = null
@@ -416,17 +431,90 @@ func _draw_routes() -> bool:
 		for i: int in l.route.size():
 			var wpt: Dictionary = l.route[i]
 			_label(inst.to_global(l.local_pos(wpt["level"], wpt["pos"]) + Vector3.UP * 1.6), "%d %s" % [i, wpt.get("label", "")], Color(0.4, 1.0, 0.5), 36)
+		# Sleepers: group (ambush) colour, "held" while their trigger has not fired, G = guardian.
 		for s: Dictionary in l.sleepers:
-			_label(inst.to_global(l.local_pos(s["level"], s["pos"]) + Vector3.UP * 1.2), "zz %s" % s.get("enemy", "hollow"), Color(0.6, 0.6, 1.0), 32)
+			var g: String = str(s["group"])
+			var e: Enemy = inst.sleeper(str(s["sid"]))
+			var tag: String = ("G " if bool(s["guardian"]) else "") + (("[%s%s] " % [g, " held" if e != null and e.held else ""]) if g != "" else "")
+			_label(inst.to_global(l.local_pos(s["level"], s["pos"]) + Vector3.UP * 1.2), "zz %s%s" % [tag, s.get("enemy", "hollow")], _group_color(g), 32)
 		if not l.loot_room.is_empty():
 			for c: Vector2i in l.room_cells(int(l.loot_room.get("level", 0))):
 				if l.room_at(int(l.loot_room.get("level", 0)), c) == str(l.loot_room.get("room", "")):
 					var cc: Vector3 = inst.to_global(l.cell_center(int(l.loot_room.get("level", 0)), c) + Vector3.UP * 0.1)
 					_line(cc - Vector3(0.3, 0, 0), cc + Vector3(0.3, 0, 0), Color(1, 0.85, 0.2))
-		for e: String in v.errors:
-			_label(inst.global_position + Vector3.UP * 6.0, e, Color.RED, 32)
+		_draw_triggers(inst)
+		_draw_traps(inst)
+		for e2: String in v.errors:
+			_label(inst.global_position + Vector3.UP * 6.0, e2, Color.RED, 32)
 	_mesh.surface_end()
 	return true
+
+
+## Triggers: room triggers outline their room's cells in the group colour (grey once fired) with a
+## label; event triggers label the opening / pickup / container / trap they watch.
+func _draw_triggers(inst: PoiInstance) -> void:
+	var l: PoiLayout = inst.layout
+	for t: Dictionary in l.triggers:
+		var fired: bool = inst.is_trigger_fired(str(t["id"]))
+		var col: Color = Color(0.5, 0.5, 0.5) if fired else _group_color(str(t["group"]))
+		var text: String = "T %s -> %s%s" % [t["id"], t["group"], " (fired)" if fired else ""]
+		var at := Vector3.INF
+		match str(t["on"]):
+			"room":
+				var li: int = int(t["level"])
+				for c: Vector2i in l.room_cells(li):
+					if l.room_at(li, c) != str(t["room"]):
+						continue
+					var cc: Vector3 = inst.to_global(l.cell_center(li, c) + Vector3.UP * 0.05)
+					_line(cc + Vector3(-0.4, 0, -0.4), cc + Vector3(0.4, 0, 0.4), col)
+					if at == Vector3.INF:
+						at = cc
+				text += " (enter %s)" % t["room"]
+			"opening":
+				var op: Dictionary = l.opening(str(t["opening"]))
+				if not op.is_empty():
+					at = inst.to_global(l.cell_center(int(op["level"]), op["cell"]))
+				text += " (open %s)" % t["opening"]
+			"pickup":
+				for pk: Dictionary in l.pickups:
+					if str(pk["pid"]) == str(t["pickup"]):
+						at = inst.to_global(l.local_pos(pk["level"], pk["pos"]))
+				text += " (take %s)" % t["pickup"]
+			"container":
+				for pr: Dictionary in l.props:
+					if str(pr.get("id", "")) == str(t["prop"]):
+						at = inst.to_global(l.local_pos(pr["level"], pr["pos"]))
+				text += " (search %s)" % t["prop"]
+			"trap":
+				var tp: Dictionary = l.trap(str(t["trap"]))
+				if not tp.is_empty():
+					at = inst.to_global(l.local_pos(tp["level"], tp["pos"]))
+				text += " (trap %s)" % t["trap"]
+		if at != Vector3.INF:
+			_label(at + Vector3.UP * 2.0, text, col, 30)
+
+
+## Traps: magenta marks (a cross on cell traps' cells, a bar across edge traps) and a label with
+## type, id and state (armed / sprung / disarmed).
+func _draw_traps(inst: PoiInstance) -> void:
+	var l: PoiLayout = inst.layout
+	for t: Dictionary in l.traps:
+		var st: String = inst.trap_state(str(t["tid"]))
+		var col: Color = Color(1.0, 0.15, 0.9) if st == "armed" else Color(0.55, 0.45, 0.55)
+		var li: int = int(t["level"])
+		var at: Vector3 = inst.to_global(l.local_pos(li, t["pos"]))
+		if str(t["kind"]) == "edge":
+			var side: int = int(t["side_i"])
+			var across := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
+			var along := Vector3(absf(across.z), 0, absf(across.x))
+			var mid: Vector3 = inst.to_global(l.cell_center(li, t["cell"]) + across * 0.5 + Vector3.UP * 0.2)
+			_line(mid - along * 0.45, mid + along * 0.45, col)
+			at = mid
+		else:
+			for c: Vector2i in t["cells"]:
+				var cc: Vector3 = inst.to_global(l.cell_center(li, c) + Vector3.UP * 0.06)
+				_line(cc + Vector3(-0.35, 0, 0.35), cc + Vector3(0.35, 0, -0.35), col)
+		_label(at + Vector3.UP * 0.6, "%s %s (%s)" % [t["type"], t["tid"], st], col, 28)
 
 
 func _draw_structures() -> void:

@@ -26,6 +26,12 @@ meshing time and draw distance; a pure heightmap can't express overhangs or tunn
 * **Caves** (M2) are authored/generated directly as volume columns using the same chunks.
 * **Navigation** bakes from heightfield faces plus volume triangles (`faces_in_rect`), rebaked
   per 32 m tile on `Events.terrain_modified`.
+* **POI cellars** cut holes in the heightmap (TD-026): `TerrainHoles`, derived from the POI
+  placements at load and never saved, is subtracted exactly (clipped triangles, not whole quads)
+  from the near meshes at every LOD and their skirts, from the collision (a trimesh in the chunks a
+  cellar touches; a heightmap can only drop whole quads), from the navigation ground faces and from
+  volume columns initialised over a cellar. The POI's own cellar walls stand on the cut
+  (docs/POI_AUTHORING.md "Cellars and terrain").
 
 ## Consequences
 + Cheap, good-looking terrain everywhere; volumes only where the player (or a cave) needs them.
@@ -35,7 +41,9 @@ meshing time and draw distance; a pure heightmap can't express overhangs or tunn
 − GDScript meshing costs ~0.1–0.3 s per chunk on a worker; a GDExtension mesher is the upgrade
   path if mining becomes heavy (criteria in ADR-0004).
 − `height_at()` (AI, placement) reports the heightfield in volume columns; pits/tunnels are only
-  known to physics and the navmesh.
+  known to physics and the navmesh. Over a POI cellar it reports the surface too;
+  `ground_below()` knows the cellar floor.
+− A chunk with a cellar in it collides through a ~8k-triangle trimesh instead of a heightmap shape.
 
 ## Alternatives considered
 * Full voxel world (Zylann's godot_voxel style): best fidelity, but a C++ dependency/build and

@@ -128,6 +128,15 @@ func _add_terrain(src: NavigationMeshSourceGeometryData3D, k: Vector2i) -> void:
 	var x0: float = k.x * TILE - BORDER - TERRAIN_STEP
 	var z0: float = k.y * TILE - BORDER - TERRAIN_STEP
 	var count: int = int((TILE + BORDER * 2.0) / TERRAIN_STEP) + 2
+	# POI cellars (TD-026): the terrain is cut away over them, exactly as the collision is, so
+	# Recast walks the cellar floor parsed from the POI's colliders instead of the ground above.
+	var terrain: TerrainManager = world.get(&"terrain") as TerrainManager
+	if terrain != null and terrain.holes != null:
+		var cut: Array[PackedVector2Array] = terrain.holes.pieces_in(Rect2(x0, z0, count * TERRAIN_STEP, count * TERRAIN_STEP))
+		if not cut.is_empty():
+			var faces_cut: PackedVector3Array = TerrainMesher.surface_faces(Vector2(x0, z0), count * TERRAIN_STEP, TERRAIN_STEP, world.height_at, Callable(), cut)
+			src.add_faces(faces_cut, Transform3D(Basis.IDENTITY, Vector3(x0, 0.0, z0)))
+			return
 	var h := PackedFloat32Array()
 	h.resize((count + 1) * (count + 1))
 	for j: int in count + 1:

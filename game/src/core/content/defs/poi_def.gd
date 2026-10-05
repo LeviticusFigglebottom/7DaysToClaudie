@@ -2,7 +2,9 @@ class_name PoiDef
 extends ContentDef
 ## A point of interest (a building or a wilderness site) authored with the POI spec DSL
 ## (docs/POI_AUTHORING.md) and/or a hand-authored scene. The layout blocks are kept raw here
-## and compiled by PoiLayout (src/poi/poi_layout.gd) — content stays declarative.
+## and compiled by PoiLayout (src/poi/poi_layout.gd) — content stays declarative. Dungeon
+## mechanics (sleeper groups, triggers, traps, locks, guardians) are part of the layout and checked
+## by PoiValidator (ADR-0018).
 
 const ZONES: PackedStringArray = ["residential", "commercial", "civic", "industrial", "rural", "wilderness", "roadside"]
 
@@ -20,9 +22,10 @@ var layout: Dictionary = {}
 ## Performance budget overrides {draw_calls, triangles, lights, enemies}.
 var budget: Dictionary = {}
 
+## "triggers" wake sleeper groups as ambushes (ADR-0018, docs/POI_AUTHORING.md "Ambushes").
 const LAYOUT_KEYS: PackedStringArray = ["style", "levels", "rooms", "openings", "stairs", "ladders", "props",
 	"sleepers", "traps", "route", "loot_room", "shortcuts", "lights", "decals", "notes", "scatter", "exterior",
-	"roof", "front", "origin", "quest_hooks", "pickups", "holes"]
+	"roof", "front", "origin", "quest_hooks", "pickups", "holes", "triggers"]
 
 
 func _fields() -> PackedStringArray:

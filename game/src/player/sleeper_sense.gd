@@ -1,8 +1,9 @@
 class_name SleeperSense
 extends Node
 ## The Sleeper Sense perk (Keen): dormant Hollowed within `sleeper_sense_range` metres of the
-## player show a faint outline, through walls, so a room can be read before the door opens.
-## Pure presentation: it only toggles EnemyVisual.set_sensed().
+## player show a faint outline, through walls, so a room can be read before the door opens. Held
+## ambush groups show too (that is the perk's point), and a POI guardian (ADR-0018) gets the warm
+## guardian rim. Pure presentation: it only toggles EnemyVisual.set_sensed().
 
 const INTERVAL: float = 0.4
 
@@ -32,5 +33,5 @@ func _process(delta: float) -> void:
 			(e as Enemy).visual.set_sensed(false)
 	for e: Variant in now.keys():
 		if not _sensed.has(e):
-			(e as Enemy).visual.set_sensed(true)
+			(e as Enemy).visual.set_sensed(true, (e as Enemy).guardian)
 	_sensed = now

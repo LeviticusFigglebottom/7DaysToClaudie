@@ -1,0 +1,30 @@
+{
+  "_doc": "POI dungeon mechanics tuning (ADR-0018, docs/POI_AUTHORING.md). Distances in metres, times in seconds, noise = Stimuli loudness (metres at which a normal listener just hears it; >= 20 also feeds the heat map). Yields are items handed over by a crouched disarm (poi.disarm_trap); 'salvage' is what a sprung trap still gives.",
+  "ambush": {
+    "_doc": "Grouped (held) sleepers ignore ordinary noise, light and proximity until a trigger of their group fires; then they wake one after another, alerted to the player. Only these sound kinds within wake_radius wake them early.",
+    "stagger": [0.15, 0.6],
+    "wake_radius": 14.0,
+    "wake_kinds": ["gunshot", "explosion", "alarm"],
+    "cue_volume_db": 2.0
+  },
+  "guardian": {"_doc": "Guardians spawn this many infected tiers above their roll (normal -> Seeded -> Bloomed).", "tier_steps": 1},
+  "bear_trap": {
+    "damage": 25.0, "bleed": 0.35, "root_seconds": 2.5, "struggle_seconds": 0.45, "noise": 32.0, "alert_radius": 14.0,
+    "enemy_damage": 60.0,
+    "disarm_yield": {"scrap_metal": 2}, "salvage_yield": {"scrap_metal": 1}
+  },
+  "shotgun": {
+    "_doc": "Damage falls off linearly from 'damage' at 'near' to 0 at 'far' for bodies the cone of 'cone_deg' (half angle) from the muzzle touches (a body counts as 0.3 m wide, so point-blank it hits anyone in front of the barrels); the wire pulls the trigger pull_seconds after it is caught.",
+    "damage": 60.0, "near": 1.5, "far": 9.0, "cone_deg": 24.0, "bleed": 0.45, "noise": 120.0, "heat": 14.0, "pull_seconds": 0.1,
+    "enemy_damage": 150.0,
+    "disarm_yield": {"cordage": 1, "scrap_metal": 1}, "salvage_yield": {"cordage": 1}
+  },
+  "creaky_floor": {"stride": 0.75, "noise": 18.0, "crouch_noise": 3.0},
+  "weak_floor": {"delay": 0.5, "noise": 30.0},
+  "alarm": {
+    "seconds": 20.0, "noise": 55.0, "noise_interval": 1.0, "heat_per_second": 2.0,
+    "disarm_yield": {"scrap_metal": 1}
+  },
+  "padlock": {"_doc": "Breakable lock cues on locked doors: hit points per kind (deadbolts and bolts cannot be broken off; bash the door).", "hp": 60.0, "chain_hp": 90.0, "noise": 22.0},
+  "disarm_reach": 3.0
+}

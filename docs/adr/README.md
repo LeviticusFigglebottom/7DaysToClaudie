@@ -22,5 +22,6 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0015](0015-progression-rewards.md) | Progression that pays off: derived stats, XP sources, supply drops | Accepted |
 | [0016](0016-runs-fires-water-refinement.md) | One save per run; fires, water and repairs with a cost | Accepted |
 | [0017](0017-forest-fidelity.md) | Forest-level fidelity: per-plant ground fade, patchy scatter, bigger budgets, triplanar rock | Accepted |
+| [0018](0018-poi-dungeon-mechanics.md) | POI dungeon mechanics: ambush triggers, traps, lock cues, guardians, stable piece ids | Accepted |
 | [0019](0019-building-surfaces.md) | Built and open-ground surfaces: wear, roofs, roads, meadows, riverbanks | Accepted |
 | [0020](0020-water-and-distant-forest.md) | Water and the distant forest: visible water, tree-line reflections, far canopy | Accepted |
