@@ -100,8 +100,8 @@ were a room (TD-040). Stair flights and door leaves stood 8 cm into the walls be
   (and whether it is open to the roof). It splits the groups into rectangles and stacks a
   rectangle that repeats storey over storey into one box. It then merges the pair that wastes the
   least volume until 8 or fewer remain.
-* Each box stops 5 cm inside the walls' centre lines, so a yard inside an L or a courtyard keeps the outdoor
-  light, and so do the facades.
+* Each box stops 5 cm inside the walls' centre lines, so a yard inside an L or a courtyard keeps
+  the outdoor light, and so do the facades.
 * The probes stay in the `interior_probe` group (daylight-scaled by `EnvironmentController`) with
   `UPDATE_ONCE`.
 
