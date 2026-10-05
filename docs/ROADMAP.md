@@ -19,9 +19,13 @@ and clear at least one authored building along its route, survive a night and a 
 (slice mode: Hum on night 3), then save and reload. All visuals use generated assets.
 
 - 🟡 Region D6 *Larch Hollow*: terrain (heightmap chunks + LOD + digging), river, pond, cliffs,
-  forest scatter ✅; Pell's Crossing framework with 5 authored buildings (Mile 9 Diner, Pell
-  Pharmacy, Calder Hardware, Ranger Station, Merrow House) validated by `make validate` — in-game
-  visual QA of the town pending.
+  forest scatter ✅. 19 authored buildings validated by `make validate` (DESIGN §11):
+  * Pell's Crossing (10 buildings, with the church block on Church Lane).
+  * Three on Route 9: gas garage, clinic, motel.
+  * The Okafor farm: farmhouse and barn.
+  * Four in the wilderness: lookout, trapper's cabin, logging camp, sawmill.
+
+  Still pending: in-game visual QA of the town.
 - ✅ Player controller, interaction, gathering, stamina, damage, death/respawn; step-up onto
   thresholds and vault/mantle through windows and over fences (tests/integration/test_traversal).
 - ✅ Survival stats in play (needs, temperature, bleeding, infection hook) + tether vitals.
@@ -61,6 +65,19 @@ and clear at least one authored building along its route, survive a night and a 
 - ✅ Audio: 3D occlusion, reverb zones (listener-based, TD-013), ambient beds, creature cues.
 - ✅ Generated asset families: vegetation, rocks, terrain/decal/FX/sky/UI textures, POI kit,
   interior + exterior props, items/viewmodels/structures, characters + first-person arms.
+- ✅ POI dungeons (ADR-0018):
+  * Held sleeper groups that ambush on a trigger, and guardians on the loot.
+  * Typed traps a crouched player can disarm: bear trap, shotgun wire, creaky and weak floors,
+    alarm, can chime.
+  * Lock cues to beat or shoot off.
+  * Stable piece ids (save v3).
+  * Cellars cut out of the terrain, its collision and the navmesh (TD-026).
+- ✅ Surfaces, water and sky (ADR-0019, ADR-0020):
+  * Worn interiors composed in world space; trimmed roofs whose tiles don't repeat; painted
+    road lines; continuous meadows and planted riverbanks.
+  * Lakes and rivers drawn for the first time, mirroring the tree line actually around them.
+  * A forest canopy on distant hills.
+  * Shaded clouds with a cirrus veil.
 - ⬜ Human playthrough on a GPU machine against the acceptance criteria and the 60 FPS budget
   (TD-003); `make bake` impostors from the real tree models (TD-005).
 
@@ -68,15 +85,15 @@ Verified headless on every change: `make check`, `make test`, `make validate`, `
 slice loop end to end: fell → carry → build → craft → night → Hum → save/load).
 
 ## M2 — Factions, caves, companion, economy ⬜
-- Okafor farmhouse (placed in D6, not authored): two storeys + cellar; needs cellar holes in the
-  terrain collision (TD-026).
 - The Ashen: camps, routines, scouts that observe, morale/fear of fire, raids, effigies.
 - Corvane cave network (SDF volumes, darkness, key items, mine levels) + region C2/C6 entrances.
 - Companion Ezra Vane: follow/gather/guard/fetch orders.
 - Full perk trees (rank 4–5 capstones), forge/chemistry bench/grill, more schematics and
   journals (the joinery track has no recipes yet, TD-030); a visible Program drone for supply drops.
 - Waystation 9 trader, contracts (clear/fetch/defend), reputation tiers, scrip economy.
-- 10+ more POIs (church, school, motel, gas station, bar, clinic, mine office...), Mile 12 framework.
+- More POIs (school, mine office, rail depot, dam control house...) and the Mile 12 framework.
+  Church, motel, gas station, bar, clinic, post office, lookout, logging camp, sawmill and the
+  Okafor farm landed early, in M1.
 - Wildlife; Hollowed hounds (Blister, Husk and Rammer landed early, in M1).
 
 ## M3 — RWG, biomes, seasons, base tech ⬜

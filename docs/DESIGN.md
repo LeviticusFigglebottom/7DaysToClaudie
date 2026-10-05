@@ -244,19 +244,53 @@ The M1 terrain composer already takes features + seed, which is the same interfa
 POIs are authored with the **POI spec DSL** (ASCII floor plans + route/sleeper/loot/trap lists,
 `docs/POI_AUTHORING.md`) and compiled to scenes with metadata. Frameworks place them on lots.
 
-**M1 roster — Pell's Crossing (town framework `pell_crossing`)**:
+Every building is a small dungeon (ADR-0018): a validated route with a locked front and a
+shortcut out, held sleeper groups that ambush on a trigger (a room, a door, a pickup, a search or a
+trap), traps a careful player spots and disarms, lock cues that read at a glance, and a guardian on
+the loot. Below-ground rooms are real cellars cut out of the terrain (TD-026, ADR-0007).
+
+**M1 roster: 19 buildings in Larch Hollow (D6).**
+
+*Pell's Crossing (town framework `pell_crossing`)*
 
 | POI | Tier | Concept | Route sketch |
 |---|---|---|---|
-| The Merrow House | 1 | Small family home; the family barricaded the front door against their own father | Front door barricaded → around back through the kitchen → hallway sleepers → kids' room loot → back door shortcut |
-| Mile 9 Diner | 1 | Roadside diner, last-stand barricade around the counter | Broken front window → booths (sleepers sit) → kitchen through swinging doors → walk-in pantry loot → back exit |
-| Pell Pharmacy | 2 | Looted pharmacy with a locked dispensary | Front shutter down → loading bay → stockroom ambush → find dispensary key in the office → dispensary payoff → side door |
-| Calder Hardware & Feed | 2 | Hardware store; owner hid tools in the loft | Store floor (shelving maze, can-chime trap) → back room → ladder up through a hatch to the loft (nails, hatchet) → drop back down outside |
-| The Okafor Farmhouse | 3 | Two-storey farmhouse with root cellar | Porch → parlour (collapsed ceiling) → upstairs via stairs → bedroom hole drop into the cellar (sealed hatch) → cellar stash → hatch shortcut up to the kitchen |
-| Pell Ranger Station | 3 | Sheriff/ranger substation; last log of Deputy Hale | Fenced lot → side office (keys) → holding cells (sleepers) → evidence locker (revolver, cold box with a Bloom sample) → back door |
+| The Merrow House | 1 | Small family home; the family barricaded the front door against their own father | Barricaded front → round back through the kitchen → hallway sleepers (creaky boards) → kids' room ambush → back door shortcut |
+| Mile 9 Diner | 1 | Roadside diner, last-stand barricade around the counter | In over a booth → kitchen → pantry ambush when its door opens → walk-in loot (bear trap in the barricade gap) → back exit |
+| Pell Post Office | 1 | Post office opposite the church | Deadbolted front → 24-hour box lobby → pried box wall (bear trap) → postmaster's office (cage key) → basement → dock stair → registry cage ambush → unbolt the dock |
+| Lou's Trailer | 1 | Single-wide on blocks; a radio man who stayed on the air | Front bolted, back blocked → clawed bedroom wall → soft hallway → radio room (taking the key wakes Lou) → gun cabinet → unbolt the front |
+| Pell Pharmacy | 2 | Looted pharmacy with a locked dispensary | Shutter chained → loading bay → stockroom ambush → dispensary key in the office → dispensary (alarm on the door, guardian) → side door |
+| Calder Hardware & Feed | 2 | Hardware store; the owner hid tools in the loft | Shelving maze (can chime) → back-room ambush → ladder by a bear trap → loft guardian, weak floor → drop outside |
+| St. Ansel Church | 2 | The congregation still sits in the pews | Chained doors → churchyard to the vestry (bear trap) → nave (creaky aisle) → belfry for the pantry key → drop through the choir loft → fellowship-hall ambush → pantry guardian behind a shotgun |
+| Northwoods Tavern | 2 | Roadhouse on Route 9 | Front nailed → beer-hatch ladder to the keg cellar → trapdoor behind the bar (keys or the bottle chime wake the bar) → back stairs → Marnie's room (shotgun, guardian, safe) |
+| Pell Ranger Station | 3 | Ranger substation; last log of Deputy Hale | Fenced lot → office (creaky boards, keys) → evidence locker search wakes the cell block → deadbolted security door → shotgun on the evidence room → guardian |
+| Pell Grange Hall | 3 | The town's last shelter, a ward of cots | Barricaded front → stage door → hall of cots (chime ambush) → kitchen triage (bear trap) → sick-bay ambush → records room behind an alarm (guardian) → drop through the rotten balcony |
 
-**Planned (M2+)**: church, school, motel, gas station, bar, clinic, post office, fire lookout,
-logging camp, mine office, sawmill, rail depot, dam control house, lighthouse, fishing co-op,
+*Route 9*
+
+| POI | Tier | Concept | Route sketch |
+|---|---|---|---|
+| Cordon Gas & Garage | 2 | Gas station across from the diner; SICK INSIDE | Open bay → mechanic under the lift → inspection pit → knocked-out wall (chime, bear trap) into Dale's furnace cellar → hatch up to the office → shop |
+| Tamsin Valley Clinic | 2 | Small clinic turned Cordon Medical's isolation ward | Screening barriers → waiting room window → creaky landing to the ward (taking the drug-closet key wakes it; a rotten floor drops into x-ray) → Patient 1's films |
+| Timberline Motel | 3 | Roadside motel whose guests broke through their walls | Upper walkway (creaky) → master key on the cart → through the bathroom walls 8 → 7 → 6 → 5 → drop into room 1 → laundry ambush |
+
+*The Okafor farm (framework `farm_okafor`)*
+
+| POI | Tier | Concept | Route sketch |
+|---|---|---|---|
+| The Okafor Farmhouse | 3 | Two storeys and a root cellar; the family nailed Papa into his room | Boarded porch → parlour window (the rubble stirs) → creaky landing → spare-room floor into Papa's room → his clawed hole into the cellar ambush (Papa, guardian) → padlocked cold room behind a shotgun → hatch shortcut to the pantry |
+| The Okafor Barn | 2 | Dairy barn; something lived in the loft | Chained doors → torn workshop boards → aisle bear trap wakes the stalls → feed-room key behind a chime → tack-room ladder to the nest (guardian) → hayloft ambush, weak floor → hay drop |
+
+*Wilderness*
+
+| POI | Tier | Concept | Route sketch |
+|---|---|---|---|
+| Cedar Ridge Lookout | 1 | Fire lookout tower on the summit | Trail → stair house window → held group at the locked gate → woodshed for the spare key (bear trap) → ladder into the cab (Marnie rises) → bolted back door |
+| The Trapper's Cabin | 1 | One-room cabin, boarded from outside with a warning | Bear trap at the corner → clawed hole under the lean-to → held trio (journal, bolt or cache wakes them) → smokehouse key (second trap) → cache |
+| Tamsin Logging Camp | 2 | Camp house and office at the end of the logging road | Kitchen door → office keys wake the cookhouse → padlocked drying room (chime) → creaky bunkroom aisle → foreman's room (guardian) → bolted side door |
+| Larch Hollow Sawmill | 4 | A three-level mill on the pond: the valley's hardest building | Barred doors → log-haul stairs → deck boards wake the saw floor → offices for the keys → lunchroom ambush → one-way dust chute → basement ambush → payroll office behind a shotgun (husk guardian); a weak floor punishes greed |
+
+**Planned (M2+)**: school, mine office, rail depot, dam control house, lighthouse, fishing co-op,
 lab outpost, survivor compounds, Ashen camps, crashed Program supply drone, quarantine camp.
 
 ## 12. Audio & visual direction

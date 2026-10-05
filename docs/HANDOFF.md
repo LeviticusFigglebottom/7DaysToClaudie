@@ -42,13 +42,38 @@ Snapshot for the next session. Update it when the state changes; delete it once 
   kept.
 * Verified headless:
   * `make check`: all scripts compile.
-  * `make validate`: 0 errors.
-  * `make test`: 176 unit and integration tests, including POI routes, player traversal and
-    swimming, special Hollowed and hit zones, supply drops, progression, directives, saves (per-run
-    slots, recovery, Windows-safe chunk files), fire fuel, repairs and the horde's routing round
-    buildings.
+  * `make validate`: 0 errors, 0 warnings over 19 POIs and 2 frameworks.
+  * `make test`: 225 unit and integration tests. They cover:
+    * POI routes and dungeon mechanics (triggers, traps, locks, stable ids, stairwells,
+      placement);
+    * cellar holes;
+    * water surfaces;
+    * player traversal and swimming;
+    * special Hollowed and hit zones;
+    * supply drops, progression and directives;
+    * saves (v3 migration, per-run slots, recovery, Windows-safe chunk files);
+    * fire fuel, repairs and the horde's routing round buildings.
   * `make smoke`: the slice loop runs fell → carry → build → craft → night → Hum → XP, level,
     supply drop, spending points → save/load of all of it.
+* **POI dungeons** (ADR-0018, TD-026). Larch Hollow has 19 authored buildings (DESIGN §11):
+  * Pell's Crossing grew a church block: St. Ansel, the Northwoods Tavern, the post office, the
+    grange hall and a trailer.
+  * Route 9 has a gas garage, a clinic and the Timberline Motel.
+  * The Okafor farm has a farmhouse and a barn.
+  * The wilderness has a fire lookout, a trapper's cabin, a logging camp and the tier-4 sawmill.
+  * Every building is a dungeon: held sleeper groups that ambush on a trigger, guardians on the
+    loot, typed traps that a crouched player disarms, and lock cues that can be beaten off.
+  * Cellars are cut out of the terrain mesh, collision and navmesh.
+  * Piece states are keyed by stable ids (save version 3).
+  * Three new directives use these mechanics: disarm two traps, clear a tier-3 building, clear the
+    sawmill.
+* **Surfaces, water and sky** (ADR-0019, ADR-0020):
+  * Interiors wear in world space.
+  * Roofs have trim and tiles that don't repeat.
+  * Roads have lane lines; meadows are continuous; riverbanks are planted.
+  * Lakes and rivers are drawn at last. They had faced down since the first water commit.
+    They reflect the tree line that actually stands around them.
+  * Distant hills carry a forest canopy, and clouds are shaded.
 * `make bake` renders far-tree impostors from the real tree models (seasonal tint at runtime).
 * Visual QA: `make screenshots` (software Vulkan, about 1–4 min per shot) → `build/screenshots/`.
   * Places: the drop site, forest, Pell's Crossing road and street, the diner interior.
@@ -62,9 +87,13 @@ Snapshot for the next session. Update it when the state changes; delete it once 
    Pell's Crossing building along its route (vaulting the diner's booth window, the hardware
    store's ladder to the loft).
 2. Frame rate on target hardware (TD-003) and tuning of `data/config/graphics_presets.json`.
-3. Look and cost of the fidelity pass on a real GPU: ground-cover density against frame time
-   (thin with `grass_density`), the 16k Hollowed in a full Hum, triplanar rock, tree LOD pops
-   at chunk borders (TD-035).
+3. Look and cost of the fidelity passes on a real GPU:
+   * ground-cover density against frame time (thin with `grass_density`);
+   * the 16k Hollowed in a full Hum;
+   * triplanar rock;
+   * tree LOD pops at chunk borders (TD-035);
+   * the screen-reading water;
+   * the raised far canopy at the edge of the built region.
 4. Feel:
    * vault timing, FP arm poses (TD-025; the ready stance, diagonal chop and tool grip are new),
      Hollowed animation blending, audio mix (TD-013) and the stronger occlusion;
@@ -80,11 +109,13 @@ Snapshot for the next session. Update it when the state changes; delete it once 
    playtest numbers. Both are pure data.
 3. Hollowed vaulting/window navigation links and crowd avoidance (TD-011), so the town's window
    routes are dangerous both ways.
-4. Stable ids for POI props, sleepers and traps before any POI is re-authored (TD-031): saved loot
-   states are keyed by list position today.
+4. Play the new buildings' routes and tune them: ambush triggers and stagger, trap damage and
+   disarm reach (`data/config/traps.json`), the sawmill's difficulty against its tier 4. Then do
+   the dungeon gaps: Hollowed that respect creaky and weak floors, nav rebakes after a collapse
+   (TD-037), seats and beds for posed sleepers (TD-039).
 5. Special Hollowed silhouettes and dedicated spit/charge animations (TD-027); a visible drone
    for supply drops (TD-029).
-6. Author `okafor_farmhouse` (already placed in region D6) once POI cellars get terrain holes
-   (TD-026).
+6. Taller rooms and multi-wing roofs (TD-008, TD-038, TD-040), so churches, barns and mills
+   stop reading as stacked boxes.
 7. M2 planning: factions, caves through the volume terrain, companion, economy, perk capstones
    and the joinery track (TD-030).
