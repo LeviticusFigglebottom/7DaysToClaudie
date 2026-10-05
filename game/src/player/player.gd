@@ -53,15 +53,21 @@ func _ready() -> void:
 	floor_max_angle = deg_to_rad(46.0)
 	floor_snap_length = 0.45
 	collision_layer = 1 << 3
-	collision_mask = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 11)
+	collision_mask = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 12)
 	_base_fov = Settings.fov
 	camera.fov = _base_fov
+	# The options screen can change the field of view mid-game.
+	Settings.settings_changed.connect(_on_settings_changed)
 	add_to_group(&"player")
 	var sense := SleeperSense.new()
 	sense.name = "SleeperSense"
 	sense.player = self
 	add_child(sense)
 
+
+
+func _on_settings_changed() -> void:
+	_base_fov = Settings.fov
 
 func bind_state(p_state: PlayerState) -> void:
 	state = p_state

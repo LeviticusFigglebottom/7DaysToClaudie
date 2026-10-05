@@ -4,10 +4,16 @@ extends Node3D
 
 const RIVER_EXTRA: float = 3.0
 const LAKE_OFFSET: float = 3.5
+## Cell size of the river segment index behind water_level_at().
+const GRID: float = 32.0
 
 var world: Node
 var _lakes: Array[Dictionary] = []
 var _rivers: Array[Dictionary] = []
+## Grid cell -> Array of Vector2i(river index, segment index) whose wetted width reaches into the
+## cell. water_level_at() runs every physics frame for the player, for every Hollow's swim check
+## and along interaction rays; scanning every segment of every river each time was the cost.
+var _river_grid: Dictionary = {}
 var _lake_mat: ShaderMaterial
 var _river_mat: ShaderMaterial
 
@@ -141,6 +147,16 @@ func _add_river_piece(wb: Dictionary) -> void:
 	for p: Array in pts:
 		line.append(Vector2(float(p[0]), float(p[1])))
 	_rivers.append({"line": line, "widths": widths, "levels": levels, "bounds": _bounds(line).grow(40.0)})
+	var ri: int = _rivers.size() - 1
+	for i: int in line.size() - 1:
+		var half: float = maxf(float(widths[i]), float(widths[i + 1])) * 0.5
+		var r := Rect2(line[i], Vector2.ZERO).expand(line[i + 1]).grow(half)
+		for cz: int in range(floori(r.position.y / GRID), floori(r.end.y / GRID) + 1):
+			for cx: int in range(floori(r.position.x / GRID), floori(r.end.x / GRID) + 1):
+				var cell := Vector2i(cx, cz)
+				if not _river_grid.has(cell):
+					_river_grid[cell] = []
+				(_river_grid[cell] as Array).append(Vector2i(ri, i))
 
 
 func _add_mesh(name_: String, verts: PackedVector3Array, uvs: PackedVector2Array, idx: PackedInt32Array, mat: Material, flip_check: bool) -> void:
@@ -180,21 +196,17 @@ func water_level_at(x: float, z: float) -> float:
 	for l: Dictionary in _lakes:
 		if (l["bounds"] as Rect2).has_point(p) and Geometry2D.is_point_in_polygon(p, l["poly"]):
 			return float(l["level"])
-	for r: Dictionary in _rivers:
-		if not (r["bounds"] as Rect2).has_point(p):
-			continue
+	# The nearest river segment whose wetted half-width covers the point.
+	var best: float = INF
+	var level: float = -INF
+	for e: Vector2i in _river_grid.get(Vector2i(floori(x / GRID), floori(z / GRID)), []):
+		var r: Dictionary = _rivers[e.x]
 		var line: PackedVector2Array = r["line"]
-		var best: float = INF
-		var best_i: int = -1
-		for i: int in line.size() - 1:
-			var q: Vector2 = Geometry2D.get_closest_point_to_segment(p, line[i], line[i + 1])
-			var d: float = p.distance_to(q)
-			if d < best:
-				best = d
-				best_i = i
-		if best_i >= 0 and best < float(r["widths"][best_i]) * 0.5:
-			return float(r["levels"][best_i])
-	return -INF
+		var d: float = p.distance_to(Geometry2D.get_closest_point_to_segment(p, line[e.y], line[e.y + 1]))
+		if d < best and d < float(r["widths"][e.y]) * 0.5:
+			best = d
+			level = float(r["levels"][e.y])
+	return level
 
 
 ## "lake", "river" or "" — what kind of water is at (x, z) (ambience, fishing later).

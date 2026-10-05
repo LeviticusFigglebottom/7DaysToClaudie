@@ -23,7 +23,7 @@ static func spawn(parent: Node, p_mesh: Mesh, xform: Transform3D, p_size: Vector
 
 func _ready() -> void:
 	collision_layer = 1 << 8
-	collision_mask = (1 << 0) | (1 << 1) | (1 << 8)
+	collision_mask = (1 << 0) | (1 << 1) | (1 << 8) | (1 << 12)
 	mass = clampf(size.x * size.y * size.z * 400.0, 5.0, 120.0)
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh

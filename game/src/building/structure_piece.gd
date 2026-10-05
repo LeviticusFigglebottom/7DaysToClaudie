@@ -15,6 +15,9 @@ var hp_mult: float = 1.0
 var manager: Node
 var inventory: Inventory = null
 var lit: bool = false
+## Game minutes of burn left (fuel-burning stations: the campfire). BuildingManager burns it down
+## while lit and the fire goes out at zero.
+var fuel: float = 0.0
 
 var _mesh: MeshInstance3D
 var _light: FlickerLight = null
@@ -22,6 +25,10 @@ var _fire: GPUParticles3D = null
 var _loop: AudioStreamPlayer3D = null
 var _trap_area: Area3D = null
 var _trap_cooldown: float = 0.0
+var _spike_area: Area3D = null
+var _spike_t: float = 0.0
+## Seconds between spike hits on a Hollow that stays on (or keeps pushing into) the spikes.
+const SPIKE_INTERVAL: float = 1.2
 
 
 func setup(p_id: StringName, p_def: StructureDef, p_manager: Node, p_hp: float = -1.0, p_hp_mult: float = 1.0) -> void:
@@ -40,6 +47,8 @@ func _ready() -> void:
 	_build_visual()
 	_build_collision()
 	_apply_provides()
+	# Only traps tick; a wall of logs has nothing to do per frame.
+	set_process(_trap_area != null or _spike_area != null)
 
 
 func is_log() -> bool:
@@ -111,6 +120,28 @@ func station_id() -> StringName:
 	return &""
 
 
+func station_def() -> StationDef:
+	var sid: StringName = station_id()
+	return Content.get_def(&"station", sid) as StationDef if sid != &"" else null
+
+
+## A fire that needs feeding (campfire): fuel is tracked, it goes out when it runs dry.
+func burns_fuel() -> bool:
+	var sd: StationDef = station_def()
+	return sd != null and sd.needs_fuel and provides("light")
+
+
+func max_fuel() -> float:
+	var sd: StationDef = station_def()
+	return sd.max_fuel if sd != null else 0.0
+
+
+static func fuel_text(minutes: float) -> String:
+	if minutes >= 60.0:
+		return "%dh %02dm" % [int(minutes / 60.0), int(fmod(minutes, 60.0))]
+	return "%dm" % maxi(1, int(minutes))
+
+
 func storage_slots() -> int:
 	for p: String in def.provides:
 		if p.begins_with("storage:"):
@@ -132,8 +163,8 @@ func _apply_provides() -> void:
 		_trap_area = _make_trigger(Vector3(def.size.x, 1.2, 1.0))
 		_trap_area.body_entered.connect(_on_trap_body)
 	if def.contact_damage > 0.0:
-		var a: Area3D = _make_trigger(def.size + Vector3(0.6, 0.0, 0.6))
-		a.body_entered.connect(_on_spike_body)
+		_spike_area = _make_trigger(def.size + Vector3(0.6, 0.0, 0.6))
+		_spike_area.body_entered.connect(_on_spike_body)
 	if provides("light"):
 		var lit_state: bool = bool(Game.session.world.flags.get("lit:%s" % piece_id, false)) if Game.session != null else false
 		set_lit(lit_state)
@@ -155,6 +186,14 @@ func _make_trigger(size: Vector3) -> Area3D:
 
 func _process(delta: float) -> void:
 	_trap_cooldown = maxf(0.0, _trap_cooldown - delta)
+	if _spike_area != null:
+		_spike_t += delta
+		if _spike_t >= SPIKE_INTERVAL:
+			_spike_t = 0.0
+			# Entering hits at once; staying on the spikes keeps hurting.
+			for b: Node3D in _spike_area.get_overlapping_bodies():
+				if is_instance_valid(self) and hp > 0.0:
+					_on_spike_body(b)
 
 
 func _on_trap_body(body: Node) -> void:
@@ -272,12 +311,15 @@ func _make_flames() -> GPUParticles3D:
 	return p
 
 
-## Warmth in °C this piece adds at a position (lit fires only).
+## Warmth in °C this piece adds at a position (lit fires only), fading out to the station's
+## warmth radius.
 func warmth_at(pos: Vector3) -> float:
 	if not lit or not provides("warmth"):
 		return 0.0
+	var sd: StationDef = station_def()
+	var r: float = sd.warmth_radius if sd != null and sd.warmth_radius > 0.0 else 5.0
 	var d: float = global_position.distance_to(pos)
-	return 0.0 if d > 5.0 else 14.0 * (1.0 - d / 5.0)
+	return 0.0 if d > r else 14.0 * (1.0 - d / r)
 
 
 # --- Damage & interaction -------------------------------------------------------------------
@@ -287,7 +329,18 @@ func take_damage(info: DamageInfo) -> void:
 		manager.call(&"damage_piece", self, info)
 
 
+## Crouching with a hammer in hand turns every piece into "dismantle" (hold), so the normal
+## prompt (use, open, sleep) stays what a plain press does.
+static func _dismantling(player: Player) -> bool:
+	if not player.crouching:
+		return false
+	var held: ItemDef = Content.item(player.state.equipped_item())
+	return held != null and held.provides_tool("hammer")
+
+
 func interact_text(player: Player) -> String:
+	if _dismantling(player):
+		return "Dismantle %s (hold)" % def.display_name.to_lower()
 	if def.piece_kind == "log":
 		return ""
 	var parts: PackedStringArray = []
@@ -299,26 +352,39 @@ func interact_text(player: Player) -> String:
 		parts.append("Sleep")
 	if parts.is_empty():
 		return ""
+	if burns_fuel():
+		if not lit and fuel <= 0.0:
+			var item: StringName = BuildingManager.fuel_choice(player.state, self)
+			return "Add fuel (%s)" % Content.item(item).display_name if item != &"" else "Needs fuel: sticks, leaves or a log"
+		if not lit:
+			return ("Light fire" if _has_igniter(player) else "Light fire (needs a lighter)") + " · fuel %s" % fuel_text(fuel)
+		return "%s · burns %s · [G] add fuel" % [parts[0], fuel_text(fuel)]
 	if provides("light") and not lit:
 		return "Light fire" if _has_igniter(player) else "Light fire (needs a lighter)"
 	return parts[0]
 
 
-func interact_hold_time(_player: Player) -> float:
-	return 0.0
+func interact_hold_time(player: Player) -> float:
+	return 1.6 if _dismantling(player) else 0.0
 
 
 func _has_igniter(player: Player) -> bool:
-	return player.state.inventory.find_tool("lighter") != null or player.state.inventory.has(&"torch")
+	return has_igniter(player.state)
+
+
+static func has_igniter(p: PlayerState) -> bool:
+	return p.inventory.find_tool("lighter") != null or p.inventory.has(&"torch")
 
 
 func interact(player: Player) -> void:
+	if _dismantling(player):
+		Game.execute(&"build.dismantle", {"player": player.state.id, "piece": String(piece_id)})
+		return
+	if burns_fuel() and not lit and fuel <= 0.0:
+		Game.execute(&"build.add_fuel", {"player": player.state.id, "piece": String(piece_id)})
+		return
 	if provides("light") and not lit:
-		if _has_igniter(player):
-			set_lit(true)
-			Audio.play_3d(&"sfx/fire_ignite", global_position, {"volume_db": -2.0})
-		else:
-			Events.player_status_message.emit("You need something to light it with.", &"warning")
+		Game.execute(&"build.light", {"player": player.state.id, "piece": String(piece_id)})
 		return
 	if station_id() != &"":
 		var ui: Node = Game.world.get(&"ui") if Game.world != null else null

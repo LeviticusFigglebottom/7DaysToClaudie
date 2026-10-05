@@ -14,7 +14,7 @@ var species_id: StringName = &""
 
 func _ready() -> void:
 	collision_layer = 1 << 6
-	collision_mask = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 6)
+	collision_mask = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 6) | (1 << 12)
 	mass = 60.0
 	linear_damp = 0.3
 	angular_damp = 1.2

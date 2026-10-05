@@ -41,7 +41,12 @@ func setup(p_id: StringName, p_bp: BlueprintDef, p_manager: Node, p_delivered: D
 	bp = p_bp
 	manager = p_manager
 	delivered = p_delivered.duplicate()
-	placed = p_placed.duplicate()
+	# JSON brings slot indices back as floats; placed.has(int) must still find them after a load
+	# (otherwise every filled slot reappears and takes a second log).
+	placed = []
+	for v: Variant in p_placed:
+		if not placed.has(int(v)):
+			placed.append(int(v))
 
 
 func _ready() -> void:

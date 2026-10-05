@@ -146,10 +146,17 @@ func add_item(item_id: StringName, n: int = 1, quality: int = 0) -> int:
 
 ## Removes exactly n of item_id (lowest quality first, then most-damaged first). All-or-nothing.
 func remove(item_id: StringName, n: int = 1) -> bool:
-	if n <= 0:
-		return true
-	if count_of(item_id) < n:
-		return false
+	return n <= 0 or not take(item_id, n).is_empty()
+
+
+## Removes exactly n of item_id in the same order as remove() and returns what was removed as
+## stacks that keep their quality and durability (empty when there are fewer than n). Anything
+## that leaves the inventory whole (dropped, stashed) must use this or take_from(), never a copy
+## of first(): a copy of the best stack paid for with the worst one duplicates quality.
+func take(item_id: StringName, n: int) -> Array[ItemStack]:
+	var out: Array[ItemStack] = []
+	if n <= 0 or count_of(item_id) < n:
+		return out
 	var candidates: Array[ItemStack] = stacks.filter(func(s: ItemStack) -> bool: return s.item_id == item_id)
 	candidates.sort_custom(func(a: ItemStack, b: ItemStack) -> bool:
 		if a.quality != b.quality:
@@ -157,14 +164,14 @@ func remove(item_id: StringName, n: int = 1) -> bool:
 		return a.durability < b.durability)
 	var left: int = n
 	for s: ItemStack in candidates:
-		var take: int = mini(s.count, left)
-		s.count -= take
-		left -= take
+		var piece: ItemStack = s.split(mini(s.count, left))
+		out.append(piece)
+		left -= piece.count
 		if left == 0:
 			break
 	_compact()
 	changed.emit()
-	return true
+	return out
 
 
 ## Removes several requirements at once ({item: count}); all-or-nothing.

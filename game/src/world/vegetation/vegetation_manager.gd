@@ -44,6 +44,9 @@ var _far_mats: Array[ShaderMaterial] = []
 var _accum: float = 0.0
 var _col_accum: float = 0.0
 var _last_harvest: HarvestTarget = null
+## Chunk key -> its harvestable small plants and stones (the only instances the interaction ray
+## can pick), filtered once when the chunk's scatter arrives.
+var _pickable: Dictionary = {}
 ## Far layer: one group task over every 64 m chunk of every detailed region (one element each).
 var _far_task: int = -1
 var _far_jobs: Array = []
@@ -182,6 +185,22 @@ func _collect() -> void:
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
 			_data[key] = job["res"]
+			_pickable[key] = _harvestables(job["res"])
+
+
+## Small plants and stones with yields, filtered once per chunk instead of on every physics
+## frame (the ground layer holds thousands of grass tufts the ray can never pick).
+func _harvestables(layers: Dictionary) -> Array:
+	var out: Array = []
+	var ok: Dictionary = {}
+	for layer: String in ["medium", "ground"]:
+		for inst: VegetationScatter.Instance in layers.get(layer, []):
+			if not ok.has(inst.species):
+				var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
+				ok[inst.species] = sp != null and not sp.yields.is_empty() and sp.veg_kind != "tree" and sp.hp <= 40.0
+			if ok[inst.species]:
+				out.append(inst)
+	return out
 
 
 func _build_chunk(key: Vector2i, ground: bool) -> void:
@@ -285,6 +304,7 @@ func _free_nodes(key: Vector2i) -> void:
 		(entry["holder"] as Node).queue_free()
 	_nodes.erase(key)
 	_data.erase(key)
+	_pickable.erase(key)
 
 
 func _rebuild(key: Vector2i) -> void:
@@ -604,21 +624,16 @@ func pick_harvestable(from: Vector3, dir: Vector3, reach: float) -> Object:
 	for dz: int in range(-1, 2):
 		for dx: int in range(-1, 2):
 			var k := Vector2i(key.x + dx, key.y + dz)
-			var layers: Dictionary = _data.get(k, {})
-			for layer: String in ["medium", "ground"]:
-				for inst: VegetationScatter.Instance in layers.get(layer, []):
-					var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
-					if sp.yields.is_empty() or sp.veg_kind == "tree" or sp.hp > 40.0:
-						continue
-					var to: Vector3 = inst.pos + Vector3.UP * 0.25 - from
-					var t: float = to.dot(dir)
-					if t < 0.0 or t > reach:
-						continue
-					var d: float = (to - dir * t).length()
-					if d < best_d and not _is_removed(k, inst.index):
-						best_d = d
-						best = inst
-						best_key = k
+			for inst: VegetationScatter.Instance in _pickable.get(k, []):
+				var to: Vector3 = inst.pos + Vector3.UP * 0.25 - from
+				var t: float = to.dot(dir)
+				if t < 0.0 or t > reach:
+					continue
+				var d: float = (to - dir * t).length()
+				if d < best_d and not _is_removed(k, inst.index):
+					best_d = d
+					best = inst
+					best_key = k
 	if best == null:
 		return null
 	if _last_harvest != null and _last_harvest.same_as(best_key, best):
@@ -638,7 +653,11 @@ func harvest(key: Vector2i, inst: VegetationScatter.Instance, player: Player) ->
 		var r: Array = sp.yields[item]
 		var n: int = rng.randi_range(int(r[0]), int(r[1]))
 		if n > 0:
-			Game.execute(&"world.pickup_item", {"player": player.state.id, "item": item, "count": n})
+			var res: Dictionary = Game.execute(&"world.pickup_item", {"player": player.state.id, "item": item, "count": n})
+			# A full pack leaves the rest on the ground instead of destroying it.
+			var left: int = int(res.get("left", 0))
+			if left > 0:
+				ItemDrop.spawn(get_parent(), ItemStack.make(StringName(str(item)), left), inst.pos + Vector3.UP * 0.5)
 	_mark_removed(key, inst, "harvested", sp.regrow_days)
 	_rebuild(key)
 	Audio.play_3d(&"sfx/foliage_rustle" if sp.veg_kind != "rock" else &"sfx/stone_pickup", inst.pos, {"volume_db": -6.0})

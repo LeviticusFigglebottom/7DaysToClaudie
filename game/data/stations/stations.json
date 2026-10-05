@@ -1,6 +1,6 @@
 {
   "defs": [
-    {"id": "campfire", "name": "Campfire", "description": "Cooking, boiling, warmth — and a beacon to anything awake in the dark.", "structure": "campfire", "needs_fuel": true, "heat_per_minute": 0.07, "warmth_radius": 4.5},
+    {"id": "campfire", "name": "Campfire", "description": "Cooking, boiling, warmth — and a beacon to anything awake in the dark.", "structure": "campfire", "needs_fuel": true, "heat_per_minute": 0.07, "warmth_radius": 4.5, "start_fuel": 60, "max_fuel": 720},
     {"id": "workbench", "name": "Workbench", "description": "Saw planks, make repair kits, assemble traps.", "structure": "workbench", "needs_fuel": false},
     {"id": "forge", "name": "Forge", "description": "(M2) Smelt scrap into nails and blades. Loud and hot.", "structure": "forge", "needs_fuel": true, "heat_per_minute": 0.3, "warmth_radius": 3.0},
     {"id": "chemistry_bench", "name": "Chemistry Bench", "description": "(M2) Antifungals, accelerants, gunpowder.", "structure": "chemistry_bench"},

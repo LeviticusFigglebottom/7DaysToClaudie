@@ -18,6 +18,14 @@ var prompt: String = ""
 var hold_t: float = 0.0
 var hold_needed: float = 0.0
 var last_hit: Dictionary = {}
+## Context for the held tool on what is aimed at (a hammer on a building piece: its health and
+## what a strike does), shown under the prompt.
+var tool_hint: String = ""
+## What a running hold started on: looking at something else cancels it rather than finishing
+## the search on the new target.
+var _hold_target: Object = null
+## One reused instance, so the focus doesn't change every frame while you look at a stream.
+var _water := WaterSource.new()
 
 
 func _ready() -> void:
@@ -39,8 +47,9 @@ func _physics_process(delta: float) -> void:
 		else:
 			hold_needed = ht
 			hold_t = 0.0
+			_hold_target = target
 	if hold_needed > 0.0:
-		if target == null or not Input.is_action_pressed(&"interact"):
+		if target == null or target != _hold_target or not Input.is_action_pressed(&"interact"):
 			_cancel_hold()
 		else:
 			hold_t += delta
@@ -56,6 +65,7 @@ func _cancel_hold() -> void:
 		hold_progress.emit(0.0)
 	hold_needed = 0.0
 	hold_t = 0.0
+	_hold_target = null
 
 
 func _scan() -> void:
@@ -76,6 +86,9 @@ func _scan() -> void:
 		if veg != null:
 			var reach: float = from.distance_to(hit["position"]) if not hit.is_empty() else from.distance_to(to)
 			found = veg.call(&"pick_harvestable", from, (to - from).normalized(), reach + 0.3)
+	if found == null:
+		found = _water_on_ray(from, to, hit)
+	tool_hint = _tool_hint(hit)
 	var text: String = ""
 	if found != null:
 		text = str(found.call(&"interact_text", player))
@@ -85,6 +98,38 @@ func _scan() -> void:
 		target = found
 		prompt = text
 		focus_changed.emit(target, prompt)
+
+
+func _tool_hint(hit: Dictionary) -> String:
+	if hit.is_empty() or Game.world == null:
+		return ""
+	var held: ItemDef = Content.item(player.state.equipped_item())
+	if held == null or not held.provides_tool("hammer"):
+		return ""
+	var piece: StructurePiece = hit["collider"] as StructurePiece
+	var building: Node = Game.world.get(&"building")
+	if piece == null or building == null or not is_instance_valid(piece):
+		return ""
+	return str(building.call(&"hammer_hint", piece, player.state))
+
+
+## A lake or river surface along the look ray (before anything solid it hit), or null. Water has
+## no collider, so the ray is stepped against the water system's surface heights.
+func _water_on_ray(from: Vector3, to: Vector3, hit: Dictionary) -> WaterSource:
+	var water: Node = Game.world.get(&"water") if Game.world != null else null
+	if water == null:
+		return null
+	var end: Vector3 = hit["position"] if not hit.is_empty() else to
+	# Reach a little further down than up: you kneel to drink from a bank.
+	end += (end - from).normalized() * 0.6
+	var steps: int = maxi(2, int(from.distance_to(end) / 0.25))
+	for i: int in range(1, steps + 1):
+		var q: Vector3 = from.lerp(end, float(i) / float(steps))
+		var level: float = water.call(&"water_level_at", q.x, q.z)
+		if level != -INF and q.y <= level + 0.05:
+			_water.point = Vector3(q.x, level, q.z)
+			return _water
+	return null
 
 
 static func find_interactable(o: Object) -> Object:

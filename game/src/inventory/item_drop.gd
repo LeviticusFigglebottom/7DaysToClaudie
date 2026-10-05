@@ -19,7 +19,7 @@ static func spawn(parent: Node, p_stack: ItemStack, pos: Vector3, id: StringName
 
 func _ready() -> void:
 	collision_layer = 1 << 6
-	collision_mask = (1 << 0) | (1 << 1) | (1 << 2)
+	collision_mask = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 12)
 	mass = 1.0
 	add_to_group(&"item_drops")
 	var model: Node3D = ItemVisuals.make_model(stack.item_id)

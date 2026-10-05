@@ -14,6 +14,7 @@ func _ready() -> void:
 		&"world.pickup_item": _pickup_item, &"container.take": _container_take,
 		&"container.take_all": _container_take_all, &"container.put": _container_put,
 		&"progression.raise_attribute": _raise_attribute, &"progression.buy_perk": _buy_perk,
+		&"world.drink_water": _drink_water, &"world.fill_water": _fill_water,
 	}
 	for c: StringName in cmds:
 		Game.register_command(c, cmds[c])
@@ -22,7 +23,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	for c: StringName in [&"inventory.consume", &"inventory.drop", &"inventory.equip", &"inventory.craft", &"inventory.read",
 			&"world.pickup_stack", &"world.pickup_item", &"container.take", &"container.take_all", &"container.put",
-			&"progression.raise_attribute", &"progression.buy_perk"]:
+			&"progression.raise_attribute", &"progression.buy_perk", &"world.drink_water", &"world.fill_water"]:
 		Game.unregister_command(c)
 
 
@@ -64,23 +65,110 @@ func _consume(args: Dictionary) -> Dictionary:
 	return {"ok": true, "effects": fx}
 
 
+## The exact stack a UI action points at: args.index into the player's stacks (checked against
+## args.item when both are given), or null when no index was passed.
+static func _indexed_stack(p: PlayerState, args: Dictionary) -> ItemStack:
+	if not args.has("index"):
+		return null
+	var idx: int = int(args["index"])
+	if idx < 0 or idx >= p.inventory.stacks.size():
+		return null
+	var s: ItemStack = p.inventory.stacks[idx]
+	if args.has("item") and s.item_id != StringName(str(args["item"])):
+		return null
+	return s
+
+
+## Drops items: {player?, item, count, index?}. With an index the dropped items come from that
+## very stack (its quality and wear), otherwise the lowest-quality ones go first.
+## Stream water: thirst per mouthful, and a little sickness unless the gut is used to it.
+const STREAM_DRINK: Dictionary = {"hydration": 18.0, "health": -3.0}
+
+
+## {player?, pos: [x, y, z]} -> the water surface the player reaches there, or Vector3.INF.
+func _reachable_water(p: PlayerState, args: Dictionary) -> Vector3:
+	var water: Node = world.get(&"water") if world != null else null
+	var a: Array = args.get("pos", [])
+	if water == null or a.size() != 3:
+		return Vector3.INF
+	var at := Vector3(float(a[0]), float(a[1]), float(a[2]))
+	var level: float = water.call(&"water_level_at", at.x, at.z)
+	if level == -INF:
+		return Vector3.INF
+	var node: Node3D = world.player_node(p.id) if world.has_method(&"player_node") else null
+	var from: Vector3 = node.global_position if node != null else p.position
+	at.y = level
+	return at if from.distance_to(at) <= 4.0 else Vector3.INF
+
+
+func _drink_water(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player(args)
+	if p == null or not p.stats.alive:
+		return _fail("no player")
+	if _reachable_water(p, args) == Vector3.INF:
+		return _fail("no water in reach")
+	if p.stats.hydration >= 99.0:
+		return _fail("not thirsty")
+	var tmp := ItemDef.new()
+	tmp.consume = STREAM_DRINK.duplicate()
+	tmp.consume["health"] = float(STREAM_DRINK["health"]) * (1.0 - clampf(p.progression.modifier("food_poison_resist"), 0.0, 0.9))
+	p.stats.consume(tmp)
+	Audio.play_2d(&"sfx/drink_gulp", -4.0, &"SFX")
+	return {"ok": true, "effects": tmp.consume}
+
+
+## Fills every carried empty bottle that still fits in the pack (full ones weigh more).
+func _fill_water(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player(args)
+	if p == null or not p.stats.alive:
+		return _fail("no player")
+	var at: Vector3 = _reachable_water(p, args)
+	if at == Vector3.INF:
+		return _fail("no water in reach")
+	var filled: int = 0
+	while p.inventory.has(&"water_bottle_empty"):
+		p.inventory.remove(&"water_bottle_empty", 1)
+		if p.inventory.add_item(&"water_bottle_dirty", 1) > 0:
+			p.inventory.add_item(&"water_bottle_empty", 1)
+			break
+		filled += 1
+	if filled == 0:
+		Events.player_status_message.emit("No room to carry full bottles.", &"warning")
+		return _fail("no room")
+	Audio.play_3d(&"sfx/footstep_water", at, {"volume_db": -2.0})
+	Events.player_status_message.emit("Filled %d bottle%s. Boil it before you drink it." % [filled, "" if filled == 1 else "s"], &"info")
+	Events.inventory_changed.emit(p.id)
+	return {"ok": true, "filled": filled}
+
+
 func _drop(args: Dictionary) -> Dictionary:
 	var p: PlayerState = _player(args)
+	if p == null:
+		return _fail("no player")
 	var item_id := StringName(str(args.get("item", "")))
 	var n: int = int(args.get("count", 1))
-	if p == null or not p.inventory.has(item_id, n):
+	var src: ItemStack = _indexed_stack(p, args)
+	if args.has("index"):
+		if src == null or src.count < n:
+			return _fail("not carried")
+		item_id = src.item_id
+	if n <= 0 or not p.inventory.has(item_id, n):
 		return _fail("not carried")
 	var def: ItemDef = Content.item(item_id)
 	if def != null and def.has_tag("no_drop"):
 		return _fail("cannot drop")
-	var stack: ItemStack = p.inventory.first(item_id)
-	var out: ItemStack = stack.duplicate_stack()
-	out.count = n
-	p.inventory.remove(item_id, n)
-	if item_id == &"log" and world != null and world.get("building") != null:
-		world.building.drop_log(p)
+	var out: Array[ItemStack] = []
+	if src != null:
+		out.append(p.inventory.take_from(src, n))
 	else:
-		_drop_near(p, out)
+		out = p.inventory.take(item_id, n)
+	if item_id == &"log" and world != null and world.get("building") != null:
+		# Every carried log becomes its own loose log, stacked so they don't spawn inside each other.
+		for i: int in n:
+			world.building.drop_log(p, i)
+	else:
+		for st: ItemStack in out:
+			_drop_near(p, st)
 	Events.inventory_changed.emit(p.id)
 	return {"ok": true}
 
@@ -244,18 +332,36 @@ func _container_take_all(args: Dictionary) -> Dictionary:
 	return {"ok": moved > 0, "moved": moved}
 
 
+## Stashes items: {player?, container, item, count, index?}; the index picks the exact stack.
 func _container_put(args: Dictionary) -> Dictionary:
 	var p: PlayerState = _player(args)
 	var c: Object = args.get("container")
+	if p == null or c == null or not is_instance_valid(c):
+		return _fail("no container")
 	var item_id := StringName(str(args.get("item", "")))
 	var n: int = int(args.get("count", 1))
-	if p == null or c == null or not p.inventory.has(item_id, n):
+	var src: ItemStack = _indexed_stack(p, args)
+	if args.has("index"):
+		if src == null or src.count < n:
+			return _fail("not carried")
+		item_id = src.item_id
+	if n <= 0 or not p.inventory.has(item_id, n):
 		return _fail("not carried")
 	var inv: Inventory = c.get(&"inventory")
-	var stack: ItemStack = p.inventory.first(item_id).duplicate_stack()
-	stack.count = n
-	var left: int = inv.add(stack)
-	p.inventory.remove(item_id, n - left)
+	var left: int = 0
+	if src != null:
+		var piece: ItemStack = src.duplicate_stack()
+		piece.count = n
+		left = inv.add(piece)
+		p.inventory.take_from(src, n - left)
+	else:
+		# Whatever does not fit goes back to the player, quality and wear intact.
+		for st: ItemStack in p.inventory.take(item_id, n):
+			var rest: int = inv.add(st)
+			if rest > 0:
+				st.count = rest
+				p.inventory.add(st)
+				left += rest
 	Events.inventory_changed.emit(p.id)
 	if c.has_method(&"on_contents_changed"):
 		c.call(&"on_contents_changed")

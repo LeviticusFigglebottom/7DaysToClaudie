@@ -11,6 +11,10 @@ extends Node3D
 ##   build.place_log       {player, site?, slot? | pos:[3], rot:[4]} -> {ok, piece}
 ##   build.repair / build.upgrade {player, piece}
 ##   build.demolish        {player, site}                        (cancel a ghost, refunds deliveries)
+##   build.dismantle       {player, piece}                       (take a piece down for part of its cost)
+##   build.add_fuel        {player, piece, item?}                -> {ok, fuel}
+##   build.light           {player, piece}                       (needs fuel and a lighter or torch)
+##   build.place_item      {player, item, pos:[3], yaw}          (a placeable item: the can chime)
 
 const LOG_DEF: StringName = &"log_piece"
 const CELL: float = 4.0
@@ -33,7 +37,18 @@ var _log_target: Dictionary = {}
 var _bp_target: Dictionary = {}
 var _cells: Dictionary = {}
 
-const COMMANDS: Array[StringName] = [&"build.place_blueprint", &"build.deliver", &"build.place_log", &"build.repair", &"build.upgrade", &"build.demolish"]
+const COMMANDS: Array[StringName] = [&"build.place_blueprint", &"build.deliver", &"build.place_log", &"build.repair",
+	&"build.upgrade", &"build.demolish", &"build.dismantle", &"build.add_fuel", &"build.light", &"build.place_item"]
+## What a fire is fed with, in order, when the player doesn't hold a fuel item: kindling first,
+## logs last (they are walls too). Cloth only burns when held: it is bandages.
+const FUEL_ORDER: Array[StringName] = [&"stick", &"leaf_bundle", &"wood_plank", &"log"]
+## Pieces that burn fuel (id -> StructurePiece), so the burn tick doesn't walk every wall.
+var _fires: Dictionary = {}
+## A full-health piece struck once with a hammer is armed for reinforcing; a second strike on the
+## same piece within UPGRADE_CONFIRM seconds spends the materials (no accidental upgrades).
+const UPGRADE_CONFIRM: float = 3.0
+var _upgrade_armed: StringName = &""
+var _upgrade_armed_at: float = -100.0
 
 
 func setup_world(w: Node) -> void:
@@ -47,7 +62,13 @@ func setup_world(w: Node) -> void:
 	Game.register_command(&"build.repair", _cmd_repair)
 	Game.register_command(&"build.upgrade", _cmd_upgrade)
 	Game.register_command(&"build.demolish", _cmd_demolish)
+	Game.register_command(&"build.dismantle", _cmd_dismantle)
+	Game.register_command(&"build.add_fuel", _cmd_add_fuel)
+	Game.register_command(&"build.light", _cmd_light)
+	Game.register_command(&"build.place_item", _cmd_place_item)
 	Events.terrain_modified.connect(_on_terrain_modified)
+	if w.get(&"clock_driver") != null:
+		w.clock_driver.game_minutes_passed.connect(_burn_fires)
 	_restore(Game.session.world)
 
 
@@ -178,12 +199,13 @@ func _aimed_slot(player: Player) -> Dictionary:
 	return {}
 
 
-func drop_log(p: PlayerState) -> void:
+## Drops a carried log in front of the player; `nth` stacks several dropped at once upward.
+func drop_log(p: PlayerState, nth: int = 0) -> void:
 	var node: Player = world.player_node(p.id) if world != null else null
 	if node == null or world.get(&"loose") == null:
 		return
 	var fwd: Vector3 = -node.global_transform.basis.z
-	var pos: Vector3 = node.global_position + Vector3.UP * 1.3 + fwd * 1.0
+	var pos: Vector3 = node.global_position + Vector3.UP * (1.3 + 0.55 * nth) + fwd * 1.0
 	var yaw: float = node.global_rotation.y + PI * 0.5
 	var l: LogEntity = world.loose.spawn_log(pos, Basis(Vector3.UP, yaw))
 	l.linear_velocity = fwd * 1.5
@@ -196,6 +218,12 @@ func _physics_process(_delta: float) -> void:
 		preview.hide_preview()
 		return
 	var captured: bool = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	# [G] while looking at a fire feeds it (before G drops a carried log).
+	if captured and placing == null and Input.is_action_just_pressed(&"drop"):
+		var focus: StructurePiece = player.interaction.target as StructurePiece if player.interaction != null else null
+		if focus != null and focus.burns_fuel():
+			Game.execute(&"build.add_fuel", {"player": player.state.id, "piece": String(focus.piece_id)})
+			return
 	if placing != null:
 		if captured and Input.is_action_just_pressed(&"rotate_piece"):
 			_place_yaw += deg_to_rad(15.0)
@@ -288,7 +316,98 @@ func _blueprint_blocker(bp: BlueprintDef, xf: Transform3D) -> String:
 	for s: BlueprintSite in sites.values():
 		if s.global_position.distance_to(pos) < (r + _footprint_radius(s.bp)) * 0.6:
 			return "blocked"
+	var pois: Node = world.get(&"pois")
+	if pois != null and pois.call(&"poi_at", pos + Vector3.UP) != null:
+		return "inside a building"
+	var half: Vector2 = _footprint_half(bp)
+	var flat_p := Vector2(p.global_position.x - pos.x, p.global_position.z - pos.z).rotated(xf.basis.get_euler().y)
+	if absf(flat_p.x) < half.x + 0.3 and absf(flat_p.y) < half.y + 0.3 and absf(p.global_position.y - pos.y) < 2.0:
+		return "you are standing in the way"
+	return _footprint_obstacle(xf, half)
+
+
+## Half extents (x, z) of a blueprint's footprint in its own frame.
+func _footprint_half(bp: BlueprintDef) -> Vector2:
+	if bp.mode == "assembly":
+		var sd: StructureDef = Content.structure(bp.result)
+		return Vector2(sd.size.x, sd.size.z) * 0.5 if sd != null else Vector2(0.5, 0.5)
+	var h := Vector2(0.5, 0.5)
+	for pc: Dictionary in bp.pieces:
+		var at: Vector3 = pc["pos"]
+		h = Vector2(maxf(h.x, absf(at.x) + 0.3), maxf(h.y, absf(at.z) + 0.3))
+	return h
+
+
+## Trees, rocks and deadfall inside a footprint (vegetation has its own physics layer; the
+## terrain is left out so a slope never blocks).
+func _footprint_obstacle(xf: Transform3D, half: Vector2) -> String:
+	var box := BoxShape3D.new()
+	box.size = Vector3(half.x * 2.0 - 0.2, 1.6, half.y * 2.0 - 0.2)
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = box
+	q.transform = Transform3D(xf.basis, xf.origin + Vector3.UP * 1.2)
+	q.collision_mask = 1 << 12
+	if not get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty():
+		return "a tree or rock is in the way"
 	return ""
+
+
+## Why the current preview can't be placed, for the HUD ("" when it can or nothing is shown).
+func placement_hint() -> String:
+	var t: Dictionary = _bp_target if placing != null else _log_target
+	if t.is_empty() or bool(t.get("ok", true)):
+		return ""
+	return "Can't place: %s" % str(t.get("why", ""))
+
+
+## Sets down a carried placeable item (a can chime) where the player aims, across their line of
+## sight. The command spends the item and saves the piece like any other structure.
+func place_item_structure(player: Player, item_id: StringName) -> void:
+	var a: Dictionary = _aim(player, REACH, 1 | StructurePiece.LAYER)
+	var hit: Dictionary = a["hit"]
+	if hit.is_empty():
+		Events.player_status_message.emit("Aim at the ground to set it down.", &"warning")
+		return
+	var pos: Vector3 = hit["position"]
+	var res: Dictionary = Game.execute(&"build.place_item", {"player": player.state.id, "item": String(item_id),
+		"pos": [pos.x, pos.y, pos.z], "yaw": player.global_rotation.y})
+	if not bool(res.get("ok", false)):
+		Events.player_status_message.emit("Can't set it here: %s." % str(res.get("error", "blocked")), &"warning")
+
+
+func _cmd_place_item(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player_state(args)
+	var item := StringName(str(args.get("item", "")))
+	var idef: ItemDef = Content.item(item)
+	if p == null or idef == null or not p.inventory.has(item):
+		return _fail("not carried")
+	var sdef: StructureDef = Content.structure(StringName(str(idef.equip.get("structure", ""))))
+	if sdef == null:
+		return _fail("not placeable")
+	var a: Array = args.get("pos", [0, 0, 0])
+	var pos := Vector3(float(a[0]), float(a[1]), float(a[2]))
+	var node: Player = world.player_node(p.id)
+	if node != null and node.global_position.distance_to(pos) > MAX_PLACE_DIST:
+		return _fail("too far")
+	var n: Vector3 = (world.terrain as TerrainManager).normal_at(pos.x, pos.z)
+	if pos.y <= world.height_at(pos.x, pos.z) + 0.3 and rad_to_deg(n.angle_to(Vector3.UP)) > 35.0:
+		return _fail("too steep")
+	var wsys: Node = world.get(&"water")
+	if wsys != null and float(wsys.call(&"depth_at", pos)) > 0.25:
+		return _fail("in water")
+	for other: StructurePiece in pieces_in_radius(pos, 1.5):
+		if not other.is_log() and other.global_position.distance_to(pos) < 0.8:
+			return _fail("blocked")
+	p.inventory.remove(item, 1)
+	var id: StringName = Game.session.ids.next("s")
+	var xf := Transform3D(Basis(Vector3.UP, float(args.get("yaw", 0.0))), pos)
+	var mult: float = _hp_mult(p)
+	_add_piece(id, sdef, xf, sdef.hp * mult, true, mult)
+	p.progression.award("build_piece")
+	Audio.play_3d(&"sfx/item_place_mat", pos, {"volume_db": -4.0})
+	Events.inventory_changed.emit(p.id)
+	Events.structure_placed.emit(id, sdef.id, pos)
+	return {"ok": true, "piece": String(id)}
 
 
 func _log_free_basis(player: Player) -> Basis:
@@ -420,7 +539,9 @@ func _complete_assembly(site: BlueprintSite, p: PlayerState) -> void:
 	var id: StringName = Game.session.ids.next("s")
 	_remove_site(site.site_id)
 	var mult: float = _hp_mult(p)
-	_add_piece(id, def, xf, def.hp * mult, true, mult)
+	var built: StructurePiece = _add_piece(id, def, xf, def.hp * mult, true, mult)
+	if built.burns_fuel():
+		built.fuel = built.station_def().start_fuel
 	Audio.play_3d(&"sfx/build_complete", xf.origin, {"volume_db": -2.0})
 	p.progression.award("complete_blueprint")
 	Events.blueprint_completed.emit(site.site_id, def.id)
@@ -455,10 +576,18 @@ func _cmd_place_log(args: Dictionary) -> Dictionary:
 	var id: StringName = Game.session.ids.next("s")
 	var mult: float = _hp_mult(p)
 	_add_piece(id, def, xf, def.hp * mult, _log_grounded(xf), mult)
-	p.progression.award("build_piece")
 	Audio.play_3d(&"sfx/log_place", xf.origin, {"volume_db": -2.0})
 	if Stimuli.current != null:
 		Stimuli.current.emit_sound(xf.origin, 14.0, &"build", p.id)
+	# A log nothing holds up simply falls (and can be picked up again). Support is settled before
+	# anything is paid: a log that falls earns no XP, counts for no directive and leaves its
+	# blueprint slot open, so dropping the same log into thin air is not a farm.
+	var failed: Array[StringName] = graph.recompute([id])
+	if failed.has(id):
+		_collapse_unsupported(failed)
+		Events.player_status_message.emit("Nothing holds that log up.", &"warning")
+		return {"ok": true, "piece": String(id), "fell": true}
+	p.progression.award("build_piece")
 	if site != null:
 		site.mark_placed(slot)
 		Game.session.world.blueprints[String(site.site_id)] = site.to_dict()
@@ -467,8 +596,6 @@ func _cmd_place_log(args: Dictionary) -> Dictionary:
 			Events.blueprint_completed.emit(site.site_id, site.bp.id)
 			Audio.play_3d(&"sfx/build_complete", xf.origin, {"volume_db": -2.0})
 	Events.structure_placed.emit(id, def.id, xf.origin)
-	# A log nothing holds up simply falls (and can be picked up again).
-	var failed: Array[StringName] = graph.recompute([id])
 	if not failed.is_empty():
 		_collapse_unsupported(failed)
 	return {"ok": true, "piece": String(id)}
@@ -481,7 +608,7 @@ func _cmd_repair(args: Dictionary) -> Dictionary:
 		return _fail("no piece")
 	if piece.hp >= piece.max_hp() - 0.5:
 		return _fail("not damaged")
-	var cost: Dictionary = piece.def.repair.get("cost", {})
+	var cost: Dictionary = repair_cost(piece.def)
 	if not p.inventory.has_all(cost):
 		Events.player_status_message.emit("Repair needs %s." % _cost_text(cost), &"warning")
 		return _fail("missing materials")
@@ -547,12 +674,163 @@ func _cmd_demolish(args: Dictionary) -> Dictionary:
 	return {"ok": true}
 
 
+## What one hammer repair costs: the def's own repair cost, else a quarter of what it took to
+## build (at least one of each), so nothing is mended for free.
+static func repair_cost(def: StructureDef) -> Dictionary:
+	if def.repair.has("cost"):
+		return def.repair["cost"]
+	var out: Dictionary = {}
+	for k: Variant in def.cost.keys():
+		out[k] = maxi(1, int(ceil(float(def.cost[k]) * 0.25)))
+	return out
+
+
+## Half of a piece's build cost (rounded down), returned when it is dismantled whole. A log
+## comes back as the log itself.
+static func dismantle_refund(def: StructureDef) -> Dictionary:
+	if def.piece_kind == "log":
+		return {"log": 1}
+	var out: Dictionary = {}
+	for k: Variant in def.cost.keys():
+		var n: int = int(floor(float(def.cost[k]) * 0.5))
+		if n > 0:
+			out[k] = n
+	return out
+
+
+## The line under the crosshair while a hammer is aimed at a piece: its health and what the next
+## strike would do.
+func hammer_hint(piece: StructurePiece, p: PlayerState) -> String:
+	var t: String = "%s  %d / %d" % [piece.def.display_name, ceili(piece.hp), ceili(piece.max_hp())]
+	if piece.hp < piece.max_hp() - 0.5:
+		var cost: Dictionary = repair_cost(piece.def)
+		t += "  ·  [LMB] repair: %s%s" % [_cost_text(cost), "" if p.inventory.has_all(cost) else " (missing)"]
+	elif not piece.def.upgrade.is_empty():
+		t += "  ·  [LMB] twice to reinforce: %s" % _cost_text(piece.def.upgrade.get("cost", {}))
+	return t + "  ·  crouch + hold [E] to dismantle"
+
+
+func _cmd_dismantle(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player_state(args)
+	var piece: StructurePiece = pieces.get(StringName(str(args.get("piece", ""))))
+	if p == null or piece == null:
+		return _fail("no piece")
+	var held: ItemDef = Content.item(p.equipped_item())
+	if held == null or not held.provides_tool("hammer"):
+		return _fail("needs a hammer")
+	var node: Player = world.player_node(p.id) if world != null else null
+	if node != null and node.global_position.distance_to(piece.global_position) > REACH + 2.0:
+		return _fail("too far")
+	if piece.inventory != null and not piece.inventory.is_empty():
+		Events.player_status_message.emit("Empty it first.", &"warning")
+		return _fail("not empty")
+	var id: StringName = piece.piece_id
+	var def: StructureDef = piece.def
+	var at: Vector3 = piece.global_position + Vector3.UP * 0.6
+	# A battered piece gives back less: the refund scales with its remaining health.
+	var whole: float = clampf(piece.hp / maxf(1.0, piece.max_hp()), 0.0, 1.0)
+	for k: Variant in dismantle_refund(def).keys():
+		var n: int = int(round(float(dismantle_refund(def)[k]) * (1.0 if def.piece_kind == "log" else whole)))
+		if n <= 0:
+			continue
+		var left: int = p.inventory.add_item(StringName(str(k)), n)
+		if left > 0:
+			if StringName(str(k)) == &"log" and world.get(&"loose") != null:
+				world.loose.spawn_log(at, piece.global_transform.basis, &"")
+			else:
+				ItemDrop.spawn(world, ItemStack.make(StringName(str(k)), left), at)
+	_free_piece_node(id)
+	Game.session.world.containers.erase(String(id))
+	Audio.play_3d(&"sfx/hammer_nail", at, {"volume_db": -3.0})
+	Events.structure_destroyed.emit(id, def.id, at)
+	for cid: StringName in graph.remove_and_cascade(id):
+		_collapse_node(cid)
+	Events.inventory_changed.emit(p.id)
+	return {"ok": true}
+
+
 static func _cost_text(cost: Dictionary) -> String:
 	var parts: PackedStringArray = []
 	for k: Variant in cost.keys():
 		var d: ItemDef = Content.item(StringName(str(k)))
 		parts.append("%d %s" % [int(cost[k]), d.display_name if d != null else str(k)])
 	return ", ".join(parts)
+
+
+# --- Fires ---------------------------------------------------------------------------------------
+
+## The fuel item a player would put on `piece` now: the held item if it burns, else FUEL_ORDER.
+static func fuel_choice(p: PlayerState, _piece: StructurePiece = null) -> StringName:
+	var held: StringName = p.equipped_item()
+	if held != &"" and Content.item(held) != null and Content.item(held).fuel > 0.0 and p.inventory.has(held):
+		return held
+	for id: StringName in FUEL_ORDER:
+		if p.inventory.has(id):
+			return id
+	return &""
+
+
+## Game minutes one item keeps a fire going: its `fuel` is real seconds at the current day length.
+static func fuel_minutes(item: ItemDef) -> float:
+	var mps: float = Game.session.clock.minutes_per_real_second() if Game.session != null else 0.4
+	return item.fuel * mps
+
+
+func _cmd_add_fuel(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player_state(args)
+	var piece: StructurePiece = pieces.get(StringName(str(args.get("piece", ""))))
+	if p == null or piece == null or not piece.burns_fuel():
+		return _fail("not a fire")
+	var item: StringName = StringName(str(args["item"])) if args.has("item") else fuel_choice(p, piece)
+	var def: ItemDef = Content.item(item)
+	if def == null or def.fuel <= 0.0 or not p.inventory.has(item):
+		Events.player_status_message.emit("Nothing to burn: sticks, leaves or a log.", &"warning")
+		return _fail("no fuel")
+	if piece.fuel >= piece.max_fuel() - 1.0:
+		Events.player_status_message.emit("The fire can't take any more.", &"info")
+		return _fail("full")
+	p.inventory.remove(item, 1)
+	piece.fuel = minf(piece.max_fuel(), piece.fuel + fuel_minutes(def))
+	Audio.play_3d(&"sfx/log_drop" if item in [&"log", &"wood_plank"] else &"sfx/stick_pickup", piece.global_position, {"volume_db": -6.0})
+	Events.inventory_changed.emit(p.id)
+	return {"ok": true, "fuel": piece.fuel}
+
+
+func _cmd_light(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player_state(args)
+	var piece: StructurePiece = pieces.get(StringName(str(args.get("piece", ""))))
+	if p == null or piece == null or not piece.provides("light") or piece.lit:
+		return _fail("nothing to light")
+	if not StructurePiece.has_igniter(p):
+		Events.player_status_message.emit("You need something to light it with.", &"warning")
+		return _fail("no igniter")
+	if piece.burns_fuel() and piece.fuel <= 0.0:
+		return _fail("no fuel")
+	piece.set_lit(true)
+	Audio.play_3d(&"sfx/fire_ignite", piece.global_position, {"volume_db": -2.0})
+	return {"ok": true}
+
+
+## Lit fires burn their fuel down with game time (sleeping by one burns it too), add attention
+## to the heat map, and go out when they run dry.
+func _burn_fires(minutes: float) -> void:
+	for id: StringName in _fires.keys():
+		var piece: StructurePiece = _fires[id]
+		if not is_instance_valid(piece):
+			_fires.erase(id)
+			continue
+		if not piece.lit:
+			continue
+		piece.fuel -= minutes
+		var sd: StationDef = piece.station_def()
+		if sd != null and sd.heat_per_minute > 0.0:
+			Game.session.heat.add(piece.global_position, sd.heat_per_minute * minutes)
+		if piece.fuel <= 0.0:
+			piece.fuel = 0.0
+			piece.set_lit(false)
+			var pl: Player = world.player if world != null else null
+			if pl != null and pl.global_position.distance_to(piece.global_position) < 30.0:
+				Events.player_status_message.emit("The %s has burned out." % piece.def.display_name.to_lower(), &"info")
 
 
 # --- Pieces, support, damage ---------------------------------------------------------------------
@@ -569,6 +847,8 @@ func _spawn_piece(id: StringName, def: StructureDef, xf: Transform3D, hp: float,
 	add_child(piece)
 	piece.global_transform = xf
 	pieces[id] = piece
+	if piece.burns_fuel():
+		_fires[id] = piece
 	var c: Vector2i = cell_of(xf.origin)
 	if not _cells.has(c):
 		_cells[c] = []
@@ -602,6 +882,9 @@ func _free_piece_node(id: StringName) -> void:
 	if _cells.has(c):
 		(_cells[c] as Array).erase(id)
 	pieces.erase(id)
+	_fires.erase(id)
+	if piece.lit and Game.session != null:
+		Game.session.world.flags.erase("lit:%s" % id)
 	piece.queue_free()
 
 
@@ -613,7 +896,17 @@ func damage_piece(piece: StructurePiece, info: DamageInfo) -> void:
 		if piece.hp < piece.max_hp() - 0.5:
 			Game.execute(&"build.repair", args)
 		elif not piece.def.upgrade.is_empty():
-			Game.execute(&"build.upgrade", args)
+			var now: float = Time.get_ticks_msec() / 1000.0
+			if _upgrade_armed == piece.piece_id and now - _upgrade_armed_at <= UPGRADE_CONFIRM:
+				_upgrade_armed = &""
+				Game.execute(&"build.upgrade", args)
+			else:
+				_upgrade_armed = piece.piece_id
+				_upgrade_armed_at = now
+				var to: StructureDef = Content.structure(StringName(str(piece.def.upgrade.get("to", ""))))
+				Events.player_status_message.emit("Strike again to reinforce it into a %s (%s)." % [
+					to.display_name.to_lower() if to != null else "?", _cost_text(piece.def.upgrade.get("cost", {}))], &"info")
+				Audio.play_3d(&"sfx/hit_wood_structure", info.hit_pos, {"volume_db": -8.0})
 		else:
 			Audio.play_3d(&"sfx/hit_wood_structure", info.hit_pos, {"volume_db": -8.0})
 		return
@@ -739,7 +1032,12 @@ func _restore(ws: WorldState) -> void:
 			continue
 		var id := StringName(str(k))
 		var mult: float = float(e.get("hp_mult", 1.0))
-		_spawn_piece(id, def, _xf(e), float(e.get("hp", def.hp * mult)), mult)
+		var piece: StructurePiece = _spawn_piece(id, def, _xf(e), float(e.get("hp", def.hp * mult)), mult)
+		if piece.burns_fuel():
+			# Saves from before fuel existed: the fire keeps its kindling.
+			piece.fuel = float(e.get("fuel", piece.station_def().start_fuel))
+			if piece.lit and piece.fuel <= 0.0:
+				piece.set_lit(false)
 		graph.add_from_def(id, def, bool(e.get("grounded", true)))
 	for k: Variant in ws.structures.keys():
 		var id := StringName(str(k))
@@ -784,6 +1082,8 @@ func save_into(session: GameSession) -> void:
 			"grounded": gp.grounded if gp != null else true, "links": links}
 		if not is_equal_approx(p.hp_mult, 1.0):
 			out[String(id)]["hp_mult"] = p.hp_mult
+		if p.burns_fuel():
+			out[String(id)]["fuel"] = snappedf(p.fuel, 0.1)
 		if p.inventory != null:
 			session.world.set_container_items(id, p.inventory)
 	session.world.structures = out
