@@ -1,5 +1,5 @@
 {
-  "_doc": "Bus layout built at runtime by the Audio autoload. Reverb buses are targeted by ReverbZone areas.",
+  "_doc": "Bus layout built at runtime by the Audio autoload. Reverb buses are targeted by ReverbZone areas. Listing Master adds effects to the final mix (the limiter).",
   "buses": [
     {
       "name": "SFX",
@@ -53,8 +53,7 @@
       ]
     },
     {
-      "name": "MasterLimiter",
-      "send": "Master",
+      "name": "Master",
       "effects": [
         {
           "type": "limiter",

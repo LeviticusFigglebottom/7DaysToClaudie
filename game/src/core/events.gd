@@ -61,6 +61,8 @@ signal limb_severed(entity_id: StringName, limb: StringName, position: Vector3)
 
 # --- POIs / quests -----------------------------------------------------------------------
 signal poi_entered(poi_instance_id: StringName)
+## First time inside a POI in this run (saved with the POI state; not repeated after a load).
+signal poi_discovered(poi_id: StringName)
 signal poi_exited(poi_instance_id: StringName)
 signal poi_cleared(poi_instance_id: StringName)
 signal note_found(note_id: StringName)

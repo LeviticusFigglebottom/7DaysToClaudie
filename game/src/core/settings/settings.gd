@@ -22,6 +22,8 @@ var head_bob: float = 1.0
 var volumes: Dictionary = {"Master": 1.0, "SFX": 1.0, "Ambience": 0.9, "Music": 0.6, "UI": 0.8}
 var fullscreen: bool = false
 var vsync: bool = true
+## Exposure multiplier for the picture (options screen); nights stay dark, just less so.
+var brightness: float = 1.0
 
 var _cfg := ConfigFile.new()
 var _default_bindings: Dictionary = {}
@@ -171,6 +173,7 @@ func save() -> void:
 	_cfg.set_value("gameplay", "invert_y", invert_y)
 	_cfg.set_value("gameplay", "fov", fov)
 	_cfg.set_value("gameplay", "head_bob", head_bob)
+	_cfg.set_value("graphics", "brightness", brightness)
 	_cfg.set_value("audio", "volumes", volumes)
 	_cfg.set_value("display", "fullscreen", fullscreen)
 	_cfg.set_value("display", "vsync", vsync)
@@ -186,6 +189,7 @@ func _load_user_settings() -> void:
 	invert_y = _cfg.get_value("gameplay", "invert_y", invert_y)
 	fov = _cfg.get_value("gameplay", "fov", fov)
 	head_bob = _cfg.get_value("gameplay", "head_bob", head_bob)
+	brightness = _cfg.get_value("graphics", "brightness", brightness)
 	fullscreen = _cfg.get_value("display", "fullscreen", fullscreen)
 	vsync = _cfg.get_value("display", "vsync", vsync)
 	var v: Variant = _cfg.get_value("audio", "volumes", volumes)

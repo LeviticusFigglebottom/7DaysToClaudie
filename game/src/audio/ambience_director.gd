@@ -13,14 +13,13 @@ var world: Node
 var _beds: Dictionary = {}
 var _want: Dictionary = {}
 var _t: float = 0.0
-var _seen_pois: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
 	world = w
 	Events.horde_night_ended.connect(func(_d: int, _r: Dictionary) -> void: Audio.play_2d(&"music/dawn_relief", -4.0, &"Music"))
 	Events.player_died.connect(func(_id: StringName, _c: String) -> void: Audio.play_2d(&"music/death", -2.0, &"Music"))
-	Events.poi_entered.connect(_on_poi_entered)
+	Events.poi_discovered.connect(_on_poi_discovered)
 
 
 func _layer(id: StringName) -> AudioStreamPlayer:
@@ -70,10 +69,12 @@ func _choose() -> void:
 	var sheltered: bool = indoors or (building != null and bool(building.call(&"is_sheltered", p)))
 	_want = {}
 	# Base bed.
-	var bed: StringName = &"amb/forest_night" if clock.is_night() else &"amb/forest_day"
+	# Beds follow the light, not the rule clock: winter dusk comes before night_start_hour.
+	var dark: bool = clock.sun_elevation_deg() < -3.0
+	var bed: StringName = &"amb/forest_night" if dark else &"amb/forest_day"
 	var rt: RegionTerrain = (world.get(&"terrain") as TerrainManager).region_terrain_at(p.x, p.z)
 	if rt != null and rt.biome_at(p.x, p.z) == "town":
-		bed = &"amb/town" if not clock.is_night() else &"amb/forest_night"
+		bed = &"amb/town" if not dark else &"amb/forest_night"
 	var water: String = _water_near(p)
 	if water != "" and not indoors:
 		_want[&"amb/river" if water == "river" else &"amb/lake_shore"] = -8.0
@@ -111,8 +112,7 @@ func _water_near(p: Vector3) -> String:
 	return ""
 
 
-func _on_poi_entered(id: StringName) -> void:
-	if _seen_pois.has(id):
-		return
-	_seen_pois[id] = true
+## The discovery sting plays once per building per run (the visited flag is saved; a session-only
+## list replayed it after every load).
+func _on_poi_discovered(_id: StringName) -> void:
 	Audio.play_2d(&"music/discovery", -8.0, &"Music")

@@ -40,6 +40,9 @@ func _ready() -> void:
 		Settings.save())
 	for bus: String in BUSES:
 		_slider("%s volume" % bus, 0.0, 1.0, 0.05, float(Settings.volumes.get(bus, 1.0)), func(v: float) -> void: Settings.set_volume(bus, v))
+	_slider("Brightness", 0.7, 1.5, 0.05, Settings.brightness, func(v: float) -> void:
+		Settings.brightness = v
+		Settings.save())
 	var gfx := OptionButton.new()
 	for i: int in Settings.PRESET_ORDER.size():
 		gfx.add_item(Settings.PRESET_ORDER[i].capitalize(), i)

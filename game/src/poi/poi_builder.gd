@@ -58,17 +58,26 @@ func _build(instance_id: StringName) -> PoiInstance:
 
 # --- helpers ---------------------------------------------------------------------------------
 
-func _add(piece: String, xf: Transform3D, custom: Color = Color(0, 0, 0, 0)) -> void:
-	if not _batches.has(piece):
-		_batches[piece] = {"xf": [], "c": []}
-	(_batches[piece]["xf"] as Array).append(xf)
-	(_batches[piece]["c"] as Array).append(custom)
+## Whether the top of level `li` is roofed (a flat or pitched roof sits over every top level the
+## RoofBuilder sees; an open top floor is the exception authors mark with roof "none").
+func _roofed(_li: int) -> bool:
+	return str((layout.style.get("roof", {}) as Dictionary).get("type", "gable")) != "none"
+
+## Batches a kit piece or model ("@model") instance. Indoor instances go in their own batch,
+## drawn with weather_exposure 0 so rain gloss and snow stay outside.
+func _add(piece: String, xf: Transform3D, custom: Color = Color(0, 0, 0, 0), indoor: bool = false) -> void:
+	var key: String = piece + ("|in" if indoor else "")
+	if not _batches.has(key):
+		_batches[key] = {"xf": [], "c": []}
+	(_batches[key]["xf"] as Array).append(xf)
+	(_batches[key]["c"] as Array).append(custom)
 
 
 func _emit_batches() -> void:
-	for piece: String in _batches:
-		var xfs: Array = _batches[piece]["xf"]
-		var cs: Array = _batches[piece]["c"]
+	for key: String in _batches:
+		var piece: String = key.trim_suffix("|in")
+		var xfs: Array = _batches[key]["xf"]
+		var cs: Array = _batches[key]["c"]
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.use_custom_data = true
@@ -78,8 +87,10 @@ func _emit_batches() -> void:
 			mm.set_instance_transform(i, xfs[i])
 			mm.set_instance_custom_data(i, cs[i])
 		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "MM_" + piece.replace("/", "_").replace("@", "")
+		mmi.name = "MM_" + key.replace("/", "_").replace("@", "").replace("|", "_")
 		mmi.multimesh = mm
+		if key.ends_with("|in"):
+			mmi.set_instance_shader_parameter(&"weather_exposure", 0.0)
 		root.add_child(mmi)
 
 
@@ -234,7 +245,8 @@ func _floors() -> void:
 					var below: String = layout.room_at(li - 1, cell) if layout.levels.has(li - 1) else "."
 					var custom := Color(_finish(li, ch, "floor"), _finish(li - 1, below, "ceiling") if layout.is_room(below) else _finish(li, ch, "ceiling"), _decay_v(), _seed())
 					var p := Vector3(layout.origin.x + c + 0.5, y, layout.origin.y + r + 0.5)
-					_add("floor_1m_broken" if hole_cells.has(PoiValidator.node_key(li, cell)) else "floor_1m", Transform3D(Basis.IDENTITY, p), custom)
+					_add("floor_1m_broken" if hole_cells.has(PoiValidator.node_key(li, cell)) else "floor_1m", Transform3D(Basis.IDENTITY, p), custom,
+						layout.is_room(layout.room_at(li + 1, cell)) if layout.levels.has(li + 1) else _roofed(li))
 					# Ceiling where nothing is built above.
 					var above: String = layout.room_at(li + 1, cell) if layout.levels.has(li + 1) else "."
 					if not layout.is_room(above):
@@ -541,7 +553,7 @@ func _props() -> void:
 			_box(pd.size.max(Vector3(0.2, 0.2, 0.2)), Transform3D(Basis.IDENTITY, Vector3(0, pd.size.y * 0.5, 0)), lp)
 			root.add_child(lp)
 		else:
-			_add("@" + model, xf)
+			_add("@" + model, xf, Color(0, 0, 0, 0), layout.is_room(layout.room_at(p["level"], p["cell"])))
 			if pd.collision != "none":
 				_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, Vector3(0, pd.size.y * 0.5, 0)))
 		if not pd.light.is_empty() and bool(p.get("lit", false)):
@@ -599,7 +611,7 @@ func _scatter() -> void:
 					"against": PoiLayout.SIDE_NAMES[side], "rot": [0.0, -90.0, 180.0, 90.0][side] + _rng.randf_range(-25, 25)}
 				var xf: Transform3D = _prop_xf(entry, pd2)
 				var cond: String = "destroyed" if _rng.randf() < _decay * 0.3 else "worn"
-				_add("@" + pd2.model_for(cond), xf)
+				_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)
 				_occupied[k] = true
 				break
 
@@ -693,8 +705,11 @@ func _decals() -> void:
 			var toward := Vector3(PoiLayout.DIRS[s].x, 0, PoiLayout.DIRS[s].y)
 			var cell: Vector2i = placed["cell"]
 			var wall_p: Vector3 = layout.cell_center(placed["level"], cell) + toward * 0.5
-			dec.size = Vector3(float(size[0]), float(size[1]), 0.4)
-			dec.position = wall_p + Vector3.UP * float(d.get("height", 1.3)) - toward * 0.02
+			# A decal projects along its local Y and maps the texture on X/Z: width, a shallow
+			# depth, then height (height and depth were swapped, squashing the art to 0.4 m). The
+			# shallow box sits on the room-side face so it does not show through on the outside.
+			dec.size = Vector3(float(size[0]), 0.12, float(size[1]))
+			dec.position = wall_p + Vector3.UP * float(d.get("height", 1.3)) - toward * (WALL_T * 0.5)
 			dec.basis = Basis.looking_at(toward, Vector3.UP) * Basis(Vector3.RIGHT, PI * 0.5)
 		dec.cull_mask = 1
 		root.add_child(dec)

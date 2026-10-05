@@ -56,16 +56,28 @@ func _place_framework(pl: Dictionary) -> void:
 		var local_origin: Vector3 = center - b * Vector3(pd.footprint.x * 0.5, 0.0, pd.footprint.y * 0.5)
 		var xf: Transform3D = fxf * Transform3D(b, local_origin)
 		_place_poi(StringName(pick), StringName("%s/%s" % [pl["id"], l["id"]]), xf, Vector2(pd.footprint))
-	for fx: Variant in fw.fixtures:
-		var f: Dictionary = fx
+	for fi: int in fw.fixtures.size():
+		var f: Dictionary = fw.fixtures[fi]
 		var pdef: PropDef = Content.get_def(&"prop", StringName(str(f.get("prop", "")))) as PropDef
 		if pdef == null:
 			continue
 		var p: Array = f.get("pos", [0, 0])
 		var lp: Vector3 = fxf * Vector3(float(p[0]), 0.0, float(p[1]))
 		lp.y = world.height_at(lp.x, lp.z)
-		var body := StaticBody3D.new()
-		body.name = "Fixture_%s" % pdef.id
+		# Street fixtures with a container (dumpster, wrecks, mailbox) are searchable like any
+		# prop indoors: same LootProp, tier 1, its id from the framework and the fixture's own id.
+		var cdef: ContainerDef = Content.get_def(&"container", pdef.container) as ContainerDef if pdef.container != &"" else null
+		var body: StaticBody3D
+		if cdef != null:
+			var lpr := PoiPieces.LootProp.new()
+			lpr.prop = pdef
+			lpr.cdef = cdef
+			lpr.container_id = StringName("c:%s:%s" % [pl["id"], str(f.get("id", "fx%d" % fi))])
+			lpr.tier = 1
+			body = lpr
+		else:
+			body = StaticBody3D.new()
+		body.name = "Fixture_%s_%d" % [pdef.id, fi]
 		var mi := MeshInstance3D.new()
 		mi.mesh = ModelLibrary.mesh(pdef.model_for(str(f.get("variant", "worn"))), "box")
 		body.add_child(mi)
@@ -114,12 +126,15 @@ func _process(delta: float) -> void:
 		if inside != bool(_inside.get(id, false)):
 			_inside[id] = inside
 			if inside:
-				if not bool(inst.state.get("visited", false)):
+				var first: bool = not bool(inst.state.get("visited", false))
+				if first:
 					var p: PlayerState = Game.local_player()
 					if p != null:
 						p.progression.award("discover_poi", inst.tier)
 				inst.state["visited"] = true
 				Events.poi_entered.emit(id)
+				if first:
+					Events.poi_discovered.emit(id)
 			else:
 				Events.poi_exited.emit(id)
 

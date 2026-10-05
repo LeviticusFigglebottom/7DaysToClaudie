@@ -50,7 +50,9 @@ func _physics_process(delta: float) -> void:
 		var res2: Dictionary = space.intersect_ray(q2)
 		if not res2.is_empty() and (res2["position"] as Vector3).distance_to(res["position"]) > 1.0:
 			hits += 1
-	var target: float = clampf(float(hits) * 0.5, 0.0, 1.0)
+	# One wall muffles clearly (about 2 kHz, -6 dB), two walls nearly to a thud.
+	var target: float = 0.0 if hits == 0 else (0.7 if hits == 1 else 1.0)
 	_occ = lerpf(_occ, target, 0.5)
-	attenuation_filter_cutoff_hz = lerpf(OPEN_CUTOFF_HZ, OCCLUDED_CUTOFF_HZ, _occ)
-	volume_db = _base_volume - 6.0 * _occ
+	# Interpolated in octaves (the ear hears pitch logarithmically; a linear blend stayed bright).
+	attenuation_filter_cutoff_hz = OPEN_CUTOFF_HZ * pow(OCCLUDED_CUTOFF_HZ / OPEN_CUTOFF_HZ, _occ)
+	volume_db = _base_volume - 9.0 * _occ

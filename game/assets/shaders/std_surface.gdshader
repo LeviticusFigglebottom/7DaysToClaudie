@@ -50,6 +50,8 @@ uniform float bloom_skin : hint_range(0.0, 1.0) = 0.0;
 
 global uniform float hm_wetness;
 global uniform float hm_snow;
+// 0 for things under a roof (POI furniture batched as indoor): no rain gloss or snow on them.
+instance uniform float weather_exposure = 1.0;
 
 varying vec3 v_world_normal;
 varying vec3 v_world_pos;
@@ -108,10 +110,10 @@ void fragment() {
 	alb *= 1.0 + (instance_variation - 0.5) * variation_strength * 2.0;
 
 	// Weather: rain darkens and glosses surfaces facing the sky; snow settles on top.
-	float wet = hm_wetness * mix(0.45, 1.0, up);
+	float wet = hm_wetness * weather_exposure * mix(0.45, 1.0, up);
 	alb *= mix(1.0, 0.6, wet);
 	rough = mix(rough, 0.1, wet * 0.85);
-	float snow = hm_snow * smoothstep(0.55, 0.85, up);
+	float snow = hm_snow * weather_exposure * smoothstep(0.55, 0.85, up);
 	alb = mix(alb, vec3(0.86, 0.88, 0.92), snow);
 	rough = mix(rough, 0.7, snow);
 

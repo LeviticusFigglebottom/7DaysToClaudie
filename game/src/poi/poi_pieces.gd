@@ -221,12 +221,17 @@ class LootProp:
 			if key != "" and player.state.inventory.has(StringName(key)):
 				return "Unlock %s" % cdef.display_name
 			return "%s (locked)" % cdef.display_name
+		if opened and _respawn_generation() >= 0:
+			# Restocked under loot_respawn_days: say so (it used to keep reading "empty").
+			return "Search %s (restocked)" % cdef.display_name
 		if opened:
 			return "%s (empty)" % cdef.display_name if inventory == null or inventory.stacks.is_empty() else "Open %s" % cdef.display_name
 		return "Search %s" % cdef.display_name
 
 	func interact_hold_time(player: Player) -> float:
-		if cdef == null or opened or (cdef.locked and not (key != "" and player.state.inventory.has(StringName(key)))):
+		if cdef == null or (cdef.locked and not opened and not (key != "" and player.state.inventory.has(StringName(key)))):
+			return 0.0
+		if opened and _respawn_generation() < 0:
 			return 0.0
 		return cdef.search_time
 

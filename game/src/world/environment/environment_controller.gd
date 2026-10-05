@@ -122,9 +122,13 @@ func apply_graphics() -> void:
 	sun.directional_shadow_max_distance = float(Settings.gfx("shadow_distance", 130.0))
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if clock == null:
 		return
+	# The Hum's glow (aurora, green fog, Bloom veins) builds through the last three hours before
+	# it and peaks while it runs; it was never driven at all.
+	var hum_target: float = 1.0 if clock.is_horde_active() else 0.35 * (1.0 - smoothstep(0.0, 3.0, clock.hours_until_horde()))
+	hum_intensity = move_toward(hum_intensity, hum_target, delta * 0.05)
 	update_now()
 
 
@@ -141,6 +145,9 @@ func update_now() -> void:
 	_orient(moon, moon_dir)
 	var cover: float = float(w["cloud_cover"])
 	var day: float = smoothstep(-5.0, 12.0, elev)
+	# Ambient follows twilight down to -10 degrees: it used to hit its night floor at -5 while the
+	# sky still glowed, so the world went black under a bright dusk sky.
+	var dusk: float = smoothstep(-10.0, 12.0, elev)
 	var golden: float = (1.0 - smoothstep(4.0, 22.0, elev)) * smoothstep(-6.0, 1.0, elev)
 	var night: float = 1.0 - smoothstep(-12.0, 0.0, elev)
 	# Sun light.
@@ -170,7 +177,7 @@ func update_now() -> void:
 	sky_mat.set_shader_parameter("cloud_wind", wd * (0.002 + 0.006 * float(w["wind"])))
 	sky_mat.set_shader_parameter("aurora", hum_intensity)
 	# Ambient: bright by day, near-black at night (light sources must matter).
-	env.ambient_light_energy = lerpf(0.035, 1.05, day) * (1.0 - 0.25 * overcast)
+	env.ambient_light_energy = lerpf(0.035, 1.05, dusk) * (1.0 - 0.25 * overcast)
 	env.ambient_light_sky_contribution = 0.85
 	# Building interiors: a dim daylight fill from their interior probes (PoiBuilder), none at night.
 	var interior_fill: float = lerpf(0.0, 0.55, day) * (1.0 - 0.3 * overcast)
@@ -181,21 +188,27 @@ func update_now() -> void:
 	# A thin valley mist at dawn that burns off by mid-morning (weather fog adds on top).
 	var morning_mist: float = smoothstep(4.0, 6.0, hour) * (1.0 - smoothstep(7.0, 9.5, hour)) * 0.0012
 	var fog_d: float = float(w["fog_density"]) * 0.6 + morning_mist
+	var vol_d: float = float(w["volumetric_density"]) * 0.5 + morning_mist * 2.0 + 0.0015
+	if not env.volumetric_fog_enabled:
+		# Low preset has no froxel fog: carry mist weather and dawn haze in the depth fog instead
+		# (they vanished entirely).
+		fog_d += (vol_d - 0.0015) * 0.12
 	env.fog_density = fog_d
 	var fog_col: Color = horizon.lerp(sun_col * 0.7, golden * 0.35)
 	env.fog_light_color = fog_col
 	env.fog_light_energy = lerpf(0.06, 1.0, day)
 	env.fog_sun_scatter = 0.25 * day
-	env.volumetric_fog_density = float(w["volumetric_density"]) * 0.5 + morning_mist * 2.0 + 0.0015
+	env.volumetric_fog_density = vol_d
 	env.volumetric_fog_albedo = Color(0.88, 0.9, 0.92)
 	env.volumetric_fog_emission = Color(0.02, 0.06, 0.04) * hum_intensity
 	env.volumetric_fog_emission_energy = hum_intensity * 0.4
 	env.volumetric_fog_ambient_inject = lerpf(0.05, 0.4, day)
-	env.tonemap_exposure = lerpf(1.25, 1.1, day)
+	env.tonemap_exposure = lerpf(1.25, 1.1, day) * Settings.brightness
 	# Globals for every shader.
 	RenderingServer.global_shader_parameter_set(&"hm_wind", Vector4(wd.x, wd.y, float(w["wind"]), 0.3 + 0.5 * float(w["wind"])))
 	RenderingServer.global_shader_parameter_set(&"hm_wetness", float(w.get("wetness", 0.0)))
-	RenderingServer.global_shader_parameter_set(&"hm_snow", float(w.get("snow", 0.0)))
+	# Snow on surfaces is the accumulated cover, not the snowfall (it stays after the snow stops).
+	RenderingServer.global_shader_parameter_set(&"hm_snow", float(w.get("snow_cover", w.get("snow", 0.0))))
 	RenderingServer.global_shader_parameter_set(&"hm_bloom", hum_intensity)
 	RenderingServer.global_shader_parameter_set(&"hm_season", _season_weights())
 	_last_snapshot = {"elev": elev, "day": day, "night": night, "cover": cover}

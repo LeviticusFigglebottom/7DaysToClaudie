@@ -28,6 +28,8 @@ const vec3 PALETTE[16] = vec3[](
 	vec3(0.66, 0.54, 0.4), vec3(0.42, 0.44, 0.47), vec3(0.72, 0.7, 0.62), vec3(0.5, 0.45, 0.4));
 
 global uniform float hm_wetness;
+// 0 for pieces under a roof (PoiBuilder batches indoor floors separately): rain never reaches them.
+instance uniform float weather_exposure = 1.0;
 
 varying vec3 v_world;
 varying vec3 v_wn;
@@ -92,7 +94,7 @@ void fragment() {
 	ALBEDO = albedo;
 	AO = orm.r * COLOR.r;
 	AO_LIGHT_AFFECT = 0.4;
-	ROUGHNESS = clamp(orm.g - hm_wetness * 0.2 * float(is_floor), 0.05, 1.0);
+	ROUGHNESS = clamp(orm.g - hm_wetness * weather_exposure * 0.2 * float(is_floor), 0.05, 1.0);
 	METALLIC = orm.b;
 	NORMAL_MAP = nmap;
 	NORMAL_MAP_DEPTH = 0.8;

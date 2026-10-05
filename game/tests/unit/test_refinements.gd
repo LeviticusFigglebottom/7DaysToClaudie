@@ -150,3 +150,27 @@ func test_repair_kit_restores_the_most_worn_tool() -> void:
 	assert_false(bool(pa._repair({"player": String(p.id), "item": "repair_kit"})["ok"]), "no kit left")
 	pa.free()
 	Game.session = prev
+
+
+func test_weather_lengths_vary_and_snow_lingers() -> void:
+	var ws := WeatherState.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	var lengths: Dictionary = {}
+	for i: int in 12:
+		ws._start(&"rain", rng.randf())
+		lengths[int(ws.minutes_left)] = true
+	assert_gt(lengths.size(), 3, "rain does not always last exactly the same")
+	ws.force(&"snow")
+	for i: int in 8:
+		ws.tick(30.0, "winter", rng)
+	assert_gt(ws.snow_cover, 0.5, "snow settles while it falls")
+	ws.force(&"clear")
+	for i: int in 8:
+		ws.tick(30.0, "winter", rng)
+	assert_gt(float(ws.params()["snow_cover"]), 0.35, "and stays on the ground in winter after it stops")
+	var back := WeatherState.new()
+	back.from_dict(ws.to_dict())
+	assert_almost_eq(back.snow_cover, ws.snow_cover, 0.0001, "saved")
+	var wind: float = float(ws.params()["wind"])
+	assert_true(wind >= 0.0 and wind <= 1.0)

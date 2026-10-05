@@ -30,13 +30,18 @@ func _build_buses() -> void:
 	var cfg: Dictionary = Content.config(&"audio")
 	for b: Dictionary in cfg.get("buses", []):
 		var name: String = str(b.get("name", ""))
-		if name == "" or AudioServer.get_bus_index(name) >= 0:
+		if name == "":
 			continue
-		AudioServer.add_bus()
-		var idx: int = AudioServer.bus_count - 1
-		AudioServer.set_bus_name(idx, name)
-		AudioServer.set_bus_send(idx, StringName(str(b.get("send", "Master"))))
-		AudioServer.set_bus_volume_db(idx, float(b.get("volume_db", 0.0)))
+		var idx: int = AudioServer.get_bus_index(name)
+		if idx < 0:
+			AudioServer.add_bus()
+			idx = AudioServer.bus_count - 1
+			AudioServer.set_bus_name(idx, name)
+			AudioServer.set_bus_send(idx, StringName(str(b.get("send", "Master"))))
+			AudioServer.set_bus_volume_db(idx, float(b.get("volume_db", 0.0)))
+		elif AudioServer.get_bus_effect_count(idx) > 0:
+			# Already built (Master can be listed to give the final mix its effects, once).
+			continue
 		for fx: Dictionary in b.get("effects", []):
 			var effect: AudioEffect = _make_effect(fx)
 			if effect != null:
