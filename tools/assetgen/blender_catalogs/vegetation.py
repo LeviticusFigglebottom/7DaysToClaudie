@@ -59,6 +59,7 @@ PLANTS: dict[str, dict] = {
     "yarrow_a": {"kind": "yarrow", "seed": 6601, "height": 0.5, "stems": 5, "atlas": _PL, "mat": "plants"},
     "sword_fern_a": {"kind": "fern", "seed": 6701, "size": 0.95, "fronds": 26, "atlas": LAYOUTS["fern"], "mat": "fern", "lods": 2},
     "sword_fern_b": {"kind": "fern", "seed": 6802, "size": 0.68, "fronds": 18, "atlas": LAYOUTS["fern"], "mat": "fern", "lods": 2},
+    "sword_fern_c": {"kind": "fern", "seed": 6703, "size": 1.3, "fronds": 34, "atlas": LAYOUTS["fern"], "mat": "fern", "lods": 2},
     "grass_clump_a": {"kind": "grass", "seed": 6901, "height": 0.5, "cards": [["dense", 1.0], ["dense", 0.85], ["tall", 0.9], ["dense", 0.7]], "atlas": LAYOUTS["grass"], "mat": "grass"},
     "grass_clump_b": {"kind": "grass", "seed": 7002, "height": 0.65, "cards": [["tall", 1.0], ["tall", 0.85], ["dense", 0.7], ["tall", 0.75], ["dense", 0.6]], "atlas": LAYOUTS["grass"], "mat": "grass"},
     "grass_clump_c": {"kind": "grass", "seed": 7103, "height": 0.42, "cards": [["dry", 1.0], ["dry", 0.9], ["dense", 0.75], ["dry", 0.7]], "atlas": LAYOUTS["grass"], "mat": "grass"},
@@ -68,6 +69,16 @@ PLANTS: dict[str, dict] = {
                    "end": "wood_log_end_dead", "dead_sprays": 3, "atlas": _FIR, "spray_mat": "foliage_fir"},
     "deadfall_b": {"kind": "deadfall", "seed": 7402, "sticks": 22, "spread": 1.0, "pile_h": 0.45, "wood": "deadwood_static",
                    "end": "wood_log_end_dead", "dead_sprays": 4, "atlas": _FIR, "spray_mat": "foliage_fir"},
+    # Forest-floor litter: a flat scatter of thin twigs, fallen cones and dead sprays (ground layer).
+    "litter_a": {"kind": "deadfall", "seed": 7501, "sticks": 7, "spread": 0.7, "pile_h": 0.03, "stick_len": [0.15, 0.55],
+                 "stick_r": [0.004, 0.011], "sides": 4, "caps": False, "wood": "deadwood_static", "cones": 5,
+                 "cone_mat": "conifer_cone", "dead_sprays": 3, "spray_size": 0.6, "atlas": _FIR, "spray_mat": "foliage_fir"},
+    "litter_b": {"kind": "deadfall", "seed": 7602, "sticks": 10, "spread": 0.9, "pile_h": 0.04, "stick_len": [0.2, 0.7],
+                 "stick_r": [0.005, 0.013], "sides": 4, "caps": False, "wood": "deadwood_static", "cones": 3,
+                 "cone_mat": "conifer_cone", "dead_sprays": 4, "spray_size": 0.7, "atlas": _FIR, "spray_mat": "foliage_fir"},
+    # Moss mounds over buried stones and rotted stumps (ground layer; the rim sinks into the floor).
+    "moss_mound_a": {"kind": "moss", "seed": 7701, "radius": 0.6, "height": 0.1, "humps": 3, "mat": "moss_mound"},
+    "moss_mound_b": {"kind": "moss", "seed": 7802, "radius": 0.95, "height": 0.15, "humps": 4, "mat": "moss_mound"},
 }
 
 

@@ -64,6 +64,18 @@ func test_migration_chain_runs_in_order() -> void:
 	assert_true(out["session"]["v2_flag"])
 
 
+func test_v1_saves_keep_stumps_and_drop_harvested_plants() -> void:
+	var trees: Dictionary = {
+		"3_4": {"12": {"state": "stump", "day": 2}, "301": {"state": "harvested", "day": 3, "regrow": 0.0}},
+		"5_5": {"700": {"state": "harvested", "day": 1, "regrow": 2.0}},
+	}
+	var out: Dictionary = SaveSystem.migrate({"save_version": 1, "session": {"world": {"trees": trees}}})
+	assert_eq(int(out["save_version"]), SaveSystem.CURRENT_VERSION)
+	var got: Dictionary = out["session"]["world"]["trees"]
+	assert_eq(got.keys(), ["3_4"], "chunks left with nothing are dropped")
+	assert_eq((got["3_4"] as Dictionary).keys(), ["12"], "felled trees keep their stumps")
+
+
 func test_migration_refuses_newer_or_gapped_saves() -> void:
 	assert_eq(SaveSystem.migrate({"save_version": 99, "session": {}}, 1, {0: func(d: Dictionary) -> Dictionary: return d}), {})
 	assert_eq(SaveSystem.migrate({"save_version": 0, "session": {}}, 2, {0: func(d: Dictionary) -> Dictionary: return d}), {})

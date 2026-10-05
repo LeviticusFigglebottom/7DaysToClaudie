@@ -68,6 +68,8 @@
                  "spring_tint": [1.0, 1.0, 1.0, 1.0], "summer_tint": [1.0, 1.0, 1.0, 1.0],
                  "autumn_tint": [1.0, 0.95, 0.92, 1.0], "winter_tint": [0.85, 0.82, 0.8, 1.0]}},
     "mushroom": {"shader": "std_surface", "textures": "mushroom", "params": {"uv_scale": 1.0, "normal_strength": 1.0, "vertex_ao_strength": 0.9}},
+    "moss_mound": {"shader": "std_surface", "textures": "terrain_moss_ground", "params": {"uv_scale": 0.4, "normal_strength": 1.2, "vertex_ao_strength": 1.0}},
+    "conifer_cone": {"shader": "std_surface", "textures": "bark_dead", "params": {"uv_scale": 3.0, "normal_strength": 1.2, "tint": "#8f6c4e", "vertex_ao_strength": 1.0}},
     "wood_log_end": {"shader": "std_surface", "textures": "wood_log_end", "params": {"uv_scale": 1.0, "normal_strength": 1.0}},
     "wood_log_end_birch": {"shader": "std_surface", "textures": "wood_log_end_birch", "params": {"uv_scale": 1.0, "normal_strength": 1.0}},
     "wood_log_end_dead": {"shader": "std_surface", "textures": "wood_log_end_dead", "params": {"uv_scale": 1.0, "normal_strength": 1.2}},

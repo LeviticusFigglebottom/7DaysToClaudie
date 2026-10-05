@@ -58,6 +58,10 @@ varying vec3 v_world_pos;
 varying vec3 v_obj_pos;
 
 void vertex() {
+	// Ground cover (moss, litter) shrinks away by distance; see foliage.gdshader.
+	if (INSTANCE_CUSTOM.a < 0.0) {
+		VERTEX *= 1.0 - smoothstep(-INSTANCE_CUSTOM.a * 0.8, -INSTANCE_CUSTOM.a, distance(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD));
+	}
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_obj_pos = VERTEX;

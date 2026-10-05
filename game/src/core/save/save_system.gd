@@ -19,14 +19,31 @@ extends RefCounted
 ## upgraded step by step on load. Never edit an existing migration after release.
 
 const SAVE_ROOT: String = "user://saves"
-const CURRENT_VERSION: int = 1
+const CURRENT_VERSION: int = 2
 
 
 ## from_version -> Callable(Dictionary) -> Dictionary
 static func _builtin_migrations() -> Dictionary:
 	return {
-		# 1: func(d: Dictionary) -> Dictionary: ... (first real migration goes here)
+		1: _drop_harvested_plants,
 	}
+
+
+## 1 -> 2: the medium and ground vegetation layers were re-laid out (patches, moss, litter), so
+## the instance indices of harvested plants, stones and deadfall now point at other instances.
+## Their records are dropped (those plants are simply back); felled trees keep their stumps
+## because the tree layer, which comes first, is unchanged.
+static func _drop_harvested_plants(d: Dictionary) -> Dictionary:
+	var world: Dictionary = (d.get("session", {}) as Dictionary).get("world", {})
+	var trees: Dictionary = world.get("trees", {})
+	for ck: Variant in trees.keys():
+		var per_chunk: Dictionary = trees[ck]
+		for idx: Variant in per_chunk.keys():
+			if str((per_chunk[idx] as Dictionary).get("state", "")) != "stump":
+				per_chunk.erase(idx)
+		if per_chunk.is_empty():
+			trees.erase(ck)
+	return d
 
 
 static func slot_dir(slot: String) -> String:

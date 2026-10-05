@@ -2,7 +2,8 @@ class_name VegetationManager
 extends Node3D
 ## Renders and simulates vegetation from VegetationScatter (deterministic per chunk).
 ##  * near chunks (±NEAR_CHUNKS): MultiMesh per species/variant/LOD with visibility-range fades
-##  * ground cover (±GROUND_CHUNKS): ferns, grass, flowers, pebbles with short fade distance
+##  * ground cover (±GROUND_CHUNKS): ferns, grass, flowers, moss, litter in 32 m blocks; each plant
+##    shrinks away near the grass distance in the shader
 ##  * far layer: per-region camera-facing impostor MultiMeshes discarding inside the near square
 ##  * collision: pooled bodies for trees/boulders within COLLISION_RADIUS of the player
 ##  * chopping (take_damage with tool_power.chop) -> FallingTree -> logs + stump
@@ -14,7 +15,20 @@ const NEAR_CHUNKS: int = 3
 const GROUND_CHUNKS: int = 1
 const COLLISION_RADIUS: float = 45.0
 const LOD_END: PackedFloat32Array = [55.0, 140.0, 330.0]
+## Boulders with a "_lod1" model switch to it for chunks whose centre is farther than this (the
+## nearest decimated boulder is then >= ~45 m away).
+const ROCK_LOD_SPLIT: float = 90.0
 const GROUND_END: float = 52.0
+## Ground cover is batched in 32 m blocks (4 per chunk) so a block's visibility range follows the
+## camera closely; each plant then shrinks away on its own in the shader (custom data).
+const GROUND_BLOCK: float = 32.0
+## Ground kinds thinned by the grass density setting (ferns and moss carry the look and stay).
+const THINNED_KINDS: PackedStringArray = ["grass", "litter", "flower"]
+## Ground blocks whose centre is farther than this draw a species' cheaper "_lod1" model when it
+## has one (ferns): the nearest such plant is then >= ~17 m away.
+const GROUND_LOD_SPLIT: float = 40.0
+## Twig litter is invisible beyond a few tens of metres: it shrinks away sooner.
+const LITTER_END: float = 30.0
 const FADE: float = 8.0
 const MAX_JOBS: int = 3
 
@@ -236,17 +250,45 @@ func _set_ground(key: Vector2i, on: bool) -> void:
 	if not on:
 		return
 	var holder: Node3D = entry["holder"]
-	var groups: Dictionary = _group(key, (_data[key] as Dictionary).get("ground", []))
 	var density: float = float(Settings.gfx("grass_density", 0.8))
+	var fade_end: float = minf(GROUND_END, float(Settings.gfx("grass_distance", 60.0)))
+	var origin := Vector2(key.x * CHUNK, key.y * CHUNK)
+	var groups: Dictionary = {}
+	for inst: VegetationScatter.Instance in (_data[key] as Dictionary).get("ground", []):
+		if _is_removed(key, inst.index):
+			continue
+		var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
+		# Thin by a hash of the index, not by list order (that kept only the chunk's first rows).
+		if density < 1.0 and THINNED_KINDS.has(sp.veg_kind) and float(((inst.index * 2654435761) >> 16) & 0xFFFF) / 65536.0 >= density:
+			continue
+		var bx: int = clampi(int((inst.pos.x - origin.x) / GROUND_BLOCK), 0, 1)
+		var bz: int = clampi(int((inst.pos.z - origin.y) / GROUND_BLOCK), 0, 1)
+		var gk: String = "%s|%d|%d" % [inst.species, inst.variant, bx + bz * 2]
+		if not groups.has(gk):
+			groups[gk] = []
+		(groups[gk] as Array).append(inst)
 	for gk: String in groups:
 		var parts: PackedStringArray = gk.split("|")
 		var sp: SpeciesDef = Content.get_def(&"species", StringName(parts[0])) as SpeciesDef
-		var insts: Array = groups[gk]
-		if sp.veg_kind == "grass" and density < 1.0:
-			insts = insts.slice(0, int(insts.size() * density))
-		var mmi: MultiMeshInstance3D = _mmi(_lod_mesh(sp, int(parts[1]), 0), insts, 0.0, minf(GROUND_END, float(Settings.gfx("grass_distance", 60.0))), false)
-		holder.add_child(mmi)
-		(entry["ground_nodes"] as Array).append(mmi)
+		var variant: int = int(parts[1])
+		var shrink: float = minf(fade_end, LITTER_END) if sp.veg_kind == "litter" else fade_end
+		# Drawn while any plant of the block can be inside the fade distance (half a block diagonal).
+		var end: float = shrink + GROUND_BLOCK * 0.71
+		var mmis: Array[MultiMeshInstance3D] = []
+		if end > GROUND_LOD_SPLIT and ModelLibrary.has_model(sp.models[variant % sp.models.size()] + "_lod1"):
+			var near: MultiMeshInstance3D = _mmi(_lod_mesh(sp, variant, 0), groups[gk], 0.0, GROUND_LOD_SPLIT, false, shrink)
+			var far: MultiMeshInstance3D = _mmi(_lod_mesh(sp, variant, 1), groups[gk], GROUND_LOD_SPLIT, end, false, shrink)
+			# A dithered cross-fade between the two block LODs; the far end is the per-plant shrink.
+			near.visibility_range_end_margin = 6.0
+			near.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+			far.visibility_range_begin_margin = 6.0
+			far.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+			mmis = [near, far]
+		else:
+			mmis = [_mmi(_lod_mesh(sp, variant, 0), groups[gk], 0.0, end, false, shrink)]
+		for mmi: MultiMeshInstance3D in mmis:
+			holder.add_child(mmi)
+			(entry["ground_nodes"] as Array).append(mmi)
 
 
 func _group(key: Vector2i, insts: Array) -> Dictionary:
@@ -261,20 +303,26 @@ func _group(key: Vector2i, insts: Array) -> Dictionary:
 	return groups
 
 
-func _mmi(mesh: Mesh, insts: Array, begin: float, end: float, shadows: bool) -> MultiMeshInstance3D:
+## shrink_at > 0: ground cover; every instance shrinks away between 80 % and 100 % of that
+## distance in the shader (negative custom alpha), and the whole MultiMesh is cut at `end`
+## without a dither fade.
+func _mmi(mesh: Mesh, insts: Array, begin: float, end: float, shadows: bool, shrink_at: float = 0.0) -> MultiMeshInstance3D:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_custom_data = shrink_at > 0.0
 	mm.mesh = mesh
 	mm.instance_count = insts.size()
 	for i: int in insts.size():
 		mm.set_instance_transform(i, _xform(insts[i]))
+		if shrink_at > 0.0:
+			mm.set_instance_custom_data(i, Color(0.0, 0.0, 0.0, -shrink_at))
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	mmi.visibility_range_begin = begin
 	mmi.visibility_range_begin_margin = FADE if begin > 0.0 else 0.0
 	mmi.visibility_range_end = end
-	mmi.visibility_range_end_margin = FADE
-	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	mmi.visibility_range_end_margin = FADE if shrink_at <= 0.0 else 0.0
+	mmi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF if shrink_at <= 0.0 else GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mmi
 

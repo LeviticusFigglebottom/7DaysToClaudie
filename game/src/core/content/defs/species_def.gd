@@ -1,8 +1,9 @@
 class_name SpeciesDef
 extends ContentDef
-## A vegetation species (tree, bush, fern, grass, deadfall) used by scatter + chopping.
+## A vegetation species (tree, bush, fern, grass, deadfall, moss, litter...) used by scatter +
+## chopping. The kind picks the scatter layer (VegetationScatter.LAYERS).
 
-const VEG_KINDS: PackedStringArray = ["tree", "bush", "fern", "grass", "deadfall", "rock", "flower", "mushroom"]
+const VEG_KINDS: PackedStringArray = ["tree", "bush", "fern", "grass", "deadfall", "rock", "flower", "mushroom", "moss", "litter"]
 
 var veg_kind: String = "tree"
 ## Model ids for variants; LOD models follow "<id>_lod1", "<id>_lod2", impostor "<id>_imp".

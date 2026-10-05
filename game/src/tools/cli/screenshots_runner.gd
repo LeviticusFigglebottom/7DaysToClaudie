@@ -7,6 +7,7 @@ extends Node
 const SHOTS: Array[Dictionary] = [
 	{"name": "drop_site_morning", "pos": Vector3(-300, 2.0, 2302), "look": Vector3(-240, 0, 2296), "hour": 7.6, "weather": "clear"},
 	{"name": "forest_noon", "pos": Vector3(-201, 1.8, 2227), "look": Vector3(-160, 3, 2200), "hour": 12.5, "weather": "clear"},
+	{"name": "forest_floor", "pos": Vector3(-212, 1.7, 2236), "look": Vector3(-196, 0.0, 2224), "hour": 15.0, "weather": "overcast"},
 	{"name": "pell_crossing_road", "pos": Vector3(-30, 6.0, 2170), "look": Vector3(-60, 0, 2070), "hour": 15.0, "weather": "overcast"},
 	{"name": "pell_crossing_street", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-95, 2, 2064), "hour": 10.0, "weather": "clear"},
 	{"name": "pond_dusk", "pos": Vector3(-200, 4.0, 1880), "look": Vector3(-262, 0, 1915), "hour": 19.6, "weather": "mist"},

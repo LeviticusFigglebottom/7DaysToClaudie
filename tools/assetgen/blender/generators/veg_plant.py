@@ -1,12 +1,13 @@
 """Understory plants: fir saplings, huckleberry bushes, fireweed, yarrow, sword ferns, grass
-clumps, shelf (bracket) fungus on a rotting wood chunk, deadfall stick piles.
+clumps, shelf (bracket) fungus on a rotting wood chunk, deadfall stick piles and flat litter
+(twigs, cones, dead sprays), moss mounds.
 
 build(params, outputs): outputs[0] = LOD0, optional outputs[1] = LOD1 (cheaper card set).
 Origin = base centre on the ground. Foliage cards map into atlas rects passed in params["atlas"]
 (textures/gen/vegetation.py LAYOUTS). Vertex colour: R = AO (darker low/inside), B = per-card
 variation, A = wind weight (0 at the ground -> 1 at tips); 1.0 for static wood.
 
-params.kind: sapling | huckleberry | fireweed | yarrow | fern | grass | mushroom | deadfall
+params.kind: sapling | huckleberry | fireweed | yarrow | fern | grass | mushroom | deadfall | moss
 """
 from __future__ import annotations
 
@@ -430,24 +431,115 @@ def build_mushroom(p, lod):
 
 
 # ---------------------------------------------------------------------------------------------
+# Moss mound
+# ---------------------------------------------------------------------------------------------
+
+def build_moss(p, lod):
+    """Moss mound: a low, lumpy cushion of moss over a buried stone or a rotted stump. The outline
+    is irregular and oval, a few humps sit on a soft dome, and the rim runs into a skirt below the
+    ground so the mound grows out of the floor (and still meets it on uneven terrain) instead of
+    sitting on it like a lid. UVs are planar in metres (the moss texture tiles)."""
+    rng = common.rng(p["seed"])
+    noise.seed_set(int(p["seed"]) % 100000)
+    mb = MeshBuilder()
+    m = mb.mat(p["mat"])
+    R = float(p.get("radius", 0.7))
+    H = float(p.get("height", 0.14))
+    nr = 7 if lod == 0 else 3
+    ns = 26 if lod == 0 else 12
+    ox, oy = rng.uniform(0.0, 40.0), rng.uniform(0.0, 40.0)
+    sy = rng.uniform(0.62, 0.85)
+    # humps spread around the middle (not stacked on it, which makes a cone)
+    humps = []
+    nh = int(p.get("humps", 3))
+    a0 = rng.uniform(0.0, 2 * math.pi)
+    for k in range(nh):
+        a = a0 + 2 * math.pi * k / nh + rng.uniform(-0.5, 0.5)
+        d = rng.uniform(0.25, 0.55) * R
+        c = Vector((math.cos(a) * d, math.sin(a) * d * sy, 0.0))
+        humps.append((c, rng.uniform(0.22, 0.42) * R, rng.uniform(0.4, 1.0)))
+
+    def rim(a):
+        q = Vector((math.cos(a) * 1.2 + ox, math.sin(a) * 1.2 + oy, 0.7))
+        return R * (1.0 + 0.24 * noise.noise(q) + 0.08 * noise.noise(q * 3.1))
+
+    def height(x, y, s):
+        dome = H * max(0.0, 1.0 - s ** 2.6) ** 0.7
+        hump = sum(k * H * 0.45 * math.exp(-((x - c.x) ** 2 + (y - c.y) ** 2) / (rr * rr)) for c, rr, k in humps)
+        lump = noise.noise(Vector((x * 6.0 + ox, y * 6.0 + oy, 0.3))) * H * 0.22
+        return dome + (hump + lump) * (1.0 - s ** 3)
+
+    def col(s, x, y):
+        v = 0.5 + 0.5 * noise.noise(Vector((x * 2.0 + oy, y * 2.0 + ox, 1.7)))
+        return (lerp(1.0, 0.72, smooth(0.55, 1.0, s)), 0.0, v, 1.0)
+
+    rows = []
+    for i in range(nr + 1):
+        s = i / nr
+        row = []
+        for j in range(ns):
+            a = 2 * math.pi * j / ns
+            r = rim(a) * s
+            x, y = math.cos(a) * r, math.sin(a) * r * sy
+            row.append((mb.v((x, y, height(x, y, s) - 0.02 * s), col(s, x, y)), x, y))
+        rows.append(row)
+    # Skirt: steeply down into the ground just outside the rim.
+    skirt = []
+    for j in range(ns):
+        a = 2 * math.pi * j / ns
+        r = rim(a) * 1.07
+        x, y = math.cos(a) * r, math.sin(a) * r * sy
+        skirt.append((mb.v((x, y, -0.14), (0.6, 0.0, 0.5, 1.0)), x, y))
+    rows.append(skirt)
+    # Rows 0 is the centre (all at radius 0): a triangle fan, then quads, wound counter-clockwise
+    # seen from above so the faces point up.
+    c0 = rows[0][0]
+    for j in range(ns):
+        j2 = (j + 1) % ns
+        b, b2 = rows[1][j], rows[1][j2]
+        mb.f((c0[0], b[0], b2[0]), ((c0[1], c0[2]), (b[1], b[2]), (b2[1], b2[2])), m)
+    for i in range(1, len(rows) - 1):
+        for j in range(ns):
+            j2 = (j + 1) % ns
+            a0, a1, b0, b1 = rows[i][j], rows[i][j2], rows[i + 1][j], rows[i + 1][j2]
+            mb.f((a0[0], b0[0], b1[0], a1[0]), ((a0[1], a0[2]), (b0[1], b0[2]), (b1[1], b1[2]), (a1[1], a1[2])), m)
+    return mb
+
+
+# ---------------------------------------------------------------------------------------------
 # Deadfall: pile of dead sticks
 # ---------------------------------------------------------------------------------------------
+
+def _cone(mb, mat, base, d, length, r, rng, sides):
+    """A closed conifer cone lying on the ground: a short spindle, widest a third of the way
+    along, with a wobble in the radius that hints at the scales."""
+    n = 5
+    pts = [base + d * (length * k / (n - 1)) for k in range(n)]
+    prof = (0.45, 0.95, 1.0, 0.75, 0.3)
+    ph = rng.uniform(0.0, 6.28)
+    tube(mb, pts, [r * k for k in prof], sides, mat, u_repeats=1, tip=True, cap_start=True,
+         radius_fn=lambda i, s, a: 1.0 + 0.14 * math.sin(a * 3.0 + i * 2.3 + ph), up_hint=UP)
 
 def build_deadfall(p, lod):
     rng = common.rng(p["seed"])
     mb = MeshBuilder()
     noise.seed_set(int(p["seed"]) % 100000)
     spread = float(p.get("spread", 0.7))
+    pile_h = float(p.get("pile_h", 0.35))
+    l0, l1 = p.get("stick_len", (0.3, 1.1))
+    ra, rb = p.get("stick_r", (0.01, 0.032))
+    sides = int(p.get("sides", 5)) if lod == 0 else 3
+    caps = bool(p.get("caps", True))
     sticks = []
     for i in range(int(p.get("sticks", 16))):
-        L = rng.uniform(0.3, 1.1) * (1.4 if rng.random() < 0.15 else 1.0)
-        r0 = rng.uniform(0.01, 0.032) * (0.7 + 0.4 * L)
+        L = rng.uniform(l0, l1) * (1.4 if rng.random() < 0.15 else 1.0)
+        r0 = rng.uniform(ra, rb) * (0.7 + 0.4 * L)
         yaw = rng.uniform(0, math.pi)
         c = Vector((rng.gauss(0, spread * 0.35), rng.gauss(0, spread * 0.35), 0.0))
-        # higher sticks lean on the pile
+        # higher sticks lean on the pile (a flat scatter of litter barely tilts)
         layer = rng.random() ** 1.6
-        z0 = r0 + layer * float(p.get("pile_h", 0.35))
-        tilt = rng.uniform(-0.35, 0.35) * layer
+        z0 = r0 + layer * pile_h
+        tilt = rng.uniform(-0.35, 0.35) * layer * min(1.0, pile_h / 0.3)
         d = Vector((math.cos(yaw) * math.cos(tilt), math.sin(yaw) * math.cos(tilt), math.sin(tilt)))
         a = c - d * L * 0.5 + Vector((0, 0, z0))
         b = c + d * L * 0.5 + Vector((0, 0, z0))
@@ -461,9 +553,8 @@ def build_deadfall(p, lod):
         m2 = a.lerp(b, 0.66) + perp * bend[1] + Vector((0, 0, rng.uniform(-0.02, 0.02)))
         sticks.append((a, m1, m2, b, r0))
     for a, m1, m2, b, r0 in sticks:
-        m = m1
-        tube(mb, [a, m1, m2, b], [r0, r0 * 0.88, r0 * 0.72, r0 * 0.55], 5 if lod == 0 else 3, p["wood"], u_repeats=1, tip=False,
-             cap_end=True, cap_start=True, end_mat=p["end"],
+        tube(mb, [a, m1, m2, b], [r0, r0 * 0.88, r0 * 0.72, r0 * 0.55], sides, p["wood"], u_repeats=1, tip=not caps,
+             cap_end=caps, cap_start=caps, end_mat=p.get("end"),
              end_cap_uv=lambda aa, q: (0.5 + 0.497 * q * math.cos(aa), 0.5 + 0.497 * q * math.sin(aa)))
         if rng.random() < 0.7:   # forked twig
             s = rng.uniform(0.3, 0.7)
@@ -473,6 +564,14 @@ def build_deadfall(p, lod):
             t.z += rng.uniform(0.0, 0.4)
             q1 = q0 + t.normalized() * rng.uniform(0.15, 0.4)
             tube(mb, [q0, q1], [r0 * 0.5, r0 * 0.25], 3, p["wood"], u_repeats=1, tip=True)
+    # fallen cones among the litter
+    for k in range(int(p.get("cones", 0))):
+        a = rng.uniform(0, 2 * math.pi)
+        d = Vector((math.cos(a), math.sin(a), rng.uniform(-0.08, 0.08))).normalized()
+        L = rng.uniform(0.06, 0.1) * float(p.get("cone_size", 1.0))
+        r = L * rng.uniform(0.26, 0.32)
+        c = Vector((rng.gauss(0, spread * 0.4), rng.gauss(0, spread * 0.4), r * 0.8))
+        _cone(mb, p["cone_mat"], c - d * L * 0.5, d, L, r, rng, 6 if lod == 0 else 4)
     obj = mb.build(p["name"] + ("" if lod == 0 else "_lod1"))
     vcolor.bake_ao([obj], samples=16, distance=0.3)
     vcolor.bake_wear(obj, convex_threshold_deg=40.0, seed=int(p["seed"]))
@@ -485,9 +584,9 @@ def build_deadfall(p, lod):
         atlas = p["atlas"]
         for k in range(int(p["dead_sprays"])):
             a = rng.uniform(0, 2 * math.pi)
-            base = Vector((rng.gauss(0, spread * 0.3), rng.gauss(0, spread * 0.3), rng.uniform(0.05, 0.2)))
+            base = Vector((rng.gauss(0, spread * 0.3), rng.gauss(0, spread * 0.3), rng.uniform(0.05, 0.2) * min(1.0, pile_h / 0.3 + 0.1)))
             d = Vector((math.cos(a), math.sin(a), -0.1)).normalized()
-            ln = rng.uniform(0.35, 0.6)
+            ln = rng.uniform(0.35, 0.6) * float(p.get("spray_size", 1.0))
             card(mb2, base, d, Vector((-math.sin(a), math.cos(a), 0.05)), ln, ln * _aspect(atlas, "dead") * 0.5,
                  atlas["dead"], p["spray_mat"], segs=1, droop=0.1, out=UP,
                  col_fn=lambda s, x: (0.7, 0.0, 0.5, 0.2), normal_fn=lambda q, fn_: Vector((0, 0, 1)))
@@ -503,7 +602,7 @@ def build(params: dict, outputs: list[str]) -> None:
     for lod, out in enumerate(outputs):
         res = {"fern": build_fern, "grass": build_grass, "fireweed": build_fireweed, "yarrow": build_yarrow,
                "huckleberry": build_huckleberry, "sapling": build_sapling, "mushroom": build_mushroom,
-               "deadfall": build_deadfall}[kind](params, lod)
+               "deadfall": build_deadfall, "moss": build_moss}[kind](params, lod)
         if isinstance(res, MeshBuilder):
             objs = [res.build(name + ("" if lod == 0 else f"_lod{lod}"))]
         elif isinstance(res, list):

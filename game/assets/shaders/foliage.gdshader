@@ -22,7 +22,6 @@ uniform float stiffness = 1.0;
 uniform float flutter_strength = 1.0;
 uniform float ao_strength : hint_range(0.0, 1.0) = 0.85;
 uniform float normal_strength = 1.0;
-// Distance fade-in at the far LOD edge reduces popping (set by vegetation renderer).
 uniform float roughness = 0.75;
 
 global uniform vec4 hm_season;
@@ -33,6 +32,12 @@ varying vec3 v_world_normal;
 
 void vertex() {
 	vec3 origin = MODEL_MATRIX[3].xyz;
+	// Ground cover (VegetationManager's ground layer) carries its fade distance as a negative
+	// INSTANCE_CUSTOM.a and shrinks away plant by plant over the last fifth of it, so nothing pops
+	// out in whole blocks. Other MultiMeshes leave .a >= 0.
+	if (INSTANCE_CUSTOM.a < 0.0) {
+		VERTEX *= 1.0 - smoothstep(-INSTANCE_CUSTOM.a * 0.8, -INSTANCE_CUSTOM.a, distance(origin, CAMERA_POSITION_WORLD));
+	}
 	vec3 wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	VERTEX.xz += hm_plant_sway(VERTEX, origin, sway_height, stiffness, TIME);
 	VERTEX += hm_flutter(wpos, NORMAL, COLOR.a * flutter_strength, TIME);
