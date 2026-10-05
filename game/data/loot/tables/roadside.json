@@ -1,0 +1,36 @@
+{
+  "_doc": "Route 9 roadside loot (containers/roadside.json). Room-appropriate: a motel laundry holds clothes, a gas station safe holds the cash Dale kept back. Shared sub-tables from loot/tables/common.json.",
+  "defs": [
+    {"id": "road_auto_shelf", "rolls": [1, 3], "empty_chance": 0.3, "entries": [
+      {"item": "scrap_metal", "weight": 6, "count": [1, 3]}, {"item": "duct_tape", "weight": 4}, {"item": "cloth", "weight": 4, "count": [1, 3]},
+      {"item": "glass_bottle", "weight": 2}, {"item": "nails", "weight": 2, "count": [3, 8]}, {"item": "lighter", "weight": 1},
+      {"table": "tools_common", "weight": 1}]},
+    {"id": "road_vending", "rolls": [1, 3], "empty_chance": 0.2, "entries": [
+      {"item": "soda_can", "weight": 10, "count": [1, 3]}, {"item": "water_bottle_clean", "weight": 4}, {"item": "scrip", "weight": 3, "count": [2, 8]}]},
+    {"id": "road_ice_freezer", "rolls": [1, 2], "empty_chance": 0.45, "entries": [
+      {"item": "water_bottle_dirty", "weight": 6}, {"item": "water_bottle_clean", "weight": 4}, {"item": "soda_can", "weight": 3}]},
+    {"id": "road_newspaper_box", "rolls": [1, 1], "empty_chance": 0.5, "entries": [
+      {"item": "scrip", "weight": 8, "count": [1, 5]}, {"table": "reading", "weight": 2}]},
+    {"id": "road_housekeeping", "rolls": [1, 3], "empty_chance": 0.25, "entries": [
+      {"item": "cloth", "weight": 10, "count": [1, 4]}, {"item": "cloth_bandage", "weight": 2}, {"item": "painkillers", "weight": 1},
+      {"item": "duct_tape", "weight": 1}, {"item": "water_bottle_empty", "weight": 2}]},
+    {"id": "road_laundry", "rolls": [1, 2], "empty_chance": 0.35, "entries": [
+      {"item": "cloth", "weight": 12, "count": [1, 3]}, {"item": "scrip", "weight": 2, "count": [1, 4]}, {"item": "lighter", "weight": 1}]},
+    {"id": "road_med_cabinet", "rolls": [1, 3], "empty_chance": 0.25, "entries": [
+      {"table": "medical_basic", "weight": 10}, {"item": "cloth_bandage", "weight": 6, "count": [1, 2]}, {"item": "painkillers", "weight": 4},
+      {"item": "first_aid_kit", "weight": 2, "tier_min": 2}, {"item": "antifungal", "weight": 1, "tier_min": 2}]},
+    {"id": "road_locker", "rolls": [1, 2], "empty_chance": 0.35, "entries": [
+      {"item": "cloth", "weight": 5}, {"item": "scrip", "weight": 3, "count": [2, 10]}, {"item": "painkillers", "weight": 2},
+      {"item": "flashlight", "weight": 1}, {"item": "lighter", "weight": 2}, {"table": "food_canned", "weight": 2}, {"table": "reading", "weight": 2}]},
+    {"id": "road_cash_safe", "rolls": [2, 4], "empty_chance": 0.0, "entries": [
+      {"item": "scrip", "weight": 10, "count": [10, 40]}, {"item": "ammo_38", "weight": 3, "count": [3, 8]}, {"item": "painkillers", "weight": 2},
+      {"item": "first_aid_kit", "weight": 1}, {"item": "flashlight", "weight": 1}],
+     "guaranteed": [{"item": "scrip", "count": [10, 25]}]},
+    {"id": "road_motel_safe", "rolls": [3, 5], "empty_chance": 0.0, "entries": [
+      {"item": "scrip", "weight": 8, "count": [15, 60]}, {"item": "ammo_38", "weight": 5, "count": [4, 10]}, {"table": "weapons_rare", "weight": 3},
+      {"item": "first_aid_kit", "weight": 3}, {"item": "antifungal", "weight": 2, "tier_min": 2}, {"table": "reading", "weight": 2}],
+     "guaranteed": [{"item": "ammo_38", "count": [4, 8]}, {"item": "scrip", "count": [20, 40]}]},
+    {"id": "road_register", "rolls": [1, 2], "empty_chance": 0.4, "entries": [
+      {"item": "scrip", "weight": 8, "count": [2, 12]}, {"item": "lighter", "weight": 2}, {"table": "junk_common", "weight": 2}]}
+  ]
+}

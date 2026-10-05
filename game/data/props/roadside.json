@@ -1,0 +1,1937 @@
+{
+ "_doc": "Route 9 roadside props: Cordon Gas & Garage forecourt and garage, the Timberline Motel, the Tamsin Valley Clinic. Models: tools/assetgen/blender/generators/props_roadside.py (models/props/<id>[_worn|_destroyed].glb). size = Godot [width x, height y, depth z] of the solid body (it is the collision box and the procedural fallback). Wall-mounted props have their origin on the wall plane at the bottom centre: place them with an exact pos on the wall face and a rot (\"against\" leaves a gap of half their depth). Lettered faces come from the road_signs / road_signs_motel / road_spray atlases.",
+ "defs": [
+  {
+   "id": "road_fuel_pump",
+   "name": "Fuel Dispenser",
+   "description": "Two-sided 90s gasoline dispenser: totals and gallons LCDs, grade buttons, a hose looped to a nozzle on each side.",
+   "tags": [
+    "roadside",
+    "gas_station",
+    "breakable",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_fuel_pump",
+    "worn": "props/road_fuel_pump_worn",
+    "destroyed": "props/road_fuel_pump_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 450,
+   "size": [
+    1.22,
+    1.84,
+    0.56
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_fuel_pump_vintage",
+   "name": "Old Fuel Pump",
+   "description": "A 1960s pump Dale kept running for regular: rolling-number dials, chrome bezel, red paint gone pink.",
+   "tags": [
+    "roadside",
+    "gas_station",
+    "breakable",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_fuel_pump_vintage",
+    "worn": "props/road_fuel_pump_vintage_worn",
+    "destroyed": "props/road_fuel_pump_vintage_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.72,
+    1.75,
+    0.48
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_pump_island",
+   "name": "Pump Island",
+   "description": "Concrete pump island with a steel nosing, crash bollards, a waste bin and a squeegee bucket.",
+   "tags": [
+    "roadside",
+    "gas_station",
+    "concrete"
+   ],
+   "variants": {
+    "clean": "props/road_pump_island",
+    "worn": "props/road_pump_island_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    4.2,
+    0.93,
+    1.3
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_fuel_canopy",
+   "name": "Forecourt Canopy",
+   "description": "12 x 7 m forecourt canopy roof with the CORDON GAS & GARAGE fascia and recessed lights. Origin = fascia bottom; place with y = clear height (4.55 on CANOPY columns). No collision.",
+   "tags": [
+    "roadside",
+    "gas_station",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/road_fuel_canopy",
+    "worn": "props/road_fuel_canopy_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    12.0,
+    0.9,
+    7.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_canopy_column",
+   "name": "Canopy Column",
+   "description": "Canopy column on a yellow-capped crash pedestal with a rain downspout and an extinguisher bracket.",
+   "tags": [
+    "roadside",
+    "gas_station",
+    "structure",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_canopy_column",
+    "worn": "props/road_canopy_column_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.56,
+    4.72,
+    0.56
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_canopy_light",
+   "name": "Canopy Light",
+   "description": "Metal-halide forecourt fixture. Origin on the ceiling plane; hangs 0.18 m down.",
+   "tags": [
+    "roadside",
+    "gas_station",
+    "ceiling_mounted",
+    "light",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/road_canopy_light",
+    "worn": "props/road_canopy_light_worn",
+    "destroyed": "props/road_canopy_light_destroyed"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 25,
+   "size": [
+    0.54,
+    0.18,
+    0.54
+   ],
+   "light": {
+    "color": "#e6ecff",
+    "energy": 2.4,
+    "range": 11.0,
+    "flicker": 0.1,
+    "offset": [
+     0.0,
+     -0.15,
+     0.0
+    ]
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "exterior",
+    "garage"
+   ]
+  },
+  {
+   "id": "road_air_pump",
+   "name": "Air & Water Machine",
+   "description": "Coin-op air and water machine on a post, hoses on their hooks.",
+   "tags": [
+    "roadside",
+    "gas_station",
+    "breakable",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_air_pump",
+    "worn": "props/road_air_pump_worn",
+    "destroyed": "props/road_air_pump_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    0.44,
+    1.6,
+    0.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_ice_freezer",
+   "name": "Ice Merchandiser",
+   "description": "Outdoor chest freezer of bagged party ice, hasps and padlocks on its lids.",
+   "tags": [
+    "roadside",
+    "gas_station",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/road_ice_freezer",
+    "worn": "props/road_ice_freezer_worn",
+    "destroyed": "props/road_ice_freezer_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    1.5,
+    1.01,
+    0.75
+   ],
+   "container": "road_ice_freezer",
+   "blocks_sight": false,
+   "rooms": [
+    "exterior",
+    "store"
+   ]
+  },
+  {
+   "id": "road_vending_machine",
+   "name": "Soda Machine",
+   "description": "Tamsin Springs soda machine: lettered front, selection buttons, coin slot. Prying it open is loud.",
+   "tags": [
+    "roadside",
+    "breakable",
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_vending_machine",
+    "worn": "props/road_vending_machine_worn",
+    "destroyed": "props/road_vending_machine_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.95,
+    1.83,
+    0.82
+   ],
+   "container": "road_vending",
+   "rooms": [
+    "store",
+    "exterior",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_newspaper_box",
+   "name": "Newspaper Box",
+   "description": "Coin-op box of the Tamsin Valley Courier's last edition: ROUTE 9 CLOSED AT CORDON.",
+   "tags": [
+    "roadside",
+    "street",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/road_newspaper_box",
+    "worn": "props/road_newspaper_box_worn",
+    "destroyed": "props/road_newspaper_box_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    0.48,
+    1.22,
+    0.4
+   ],
+   "container": "road_newspaper_box",
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_sign_gas",
+   "name": "Gas Price Sign",
+   "description": "Twin-post roadside pylon: the CORDON brand cabinet over the price board -- CASH ONLY, 10 GAL MAX.",
+   "tags": [
+    "roadside",
+    "gas_station",
+    "sign",
+    "street"
+   ],
+   "variants": {
+    "clean": "props/road_sign_gas",
+    "worn": "props/road_sign_gas_worn",
+    "destroyed": "props/road_sign_gas_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.55,
+    6.25,
+    0.6
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_tire_rack",
+   "name": "Tire Rack",
+   "description": "Two-tier tube rack of used tyres.",
+   "tags": [
+    "roadside",
+    "garage",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_tire_rack",
+    "worn": "props/road_tire_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.8,
+    1.6,
+    0.5
+   ],
+   "rooms": [
+    "garage",
+    "workshop",
+    "store"
+   ]
+  },
+  {
+   "id": "road_tire_stack",
+   "name": "Stack of Tires",
+   "description": "Used tyres stacked flat, one still on its rim.",
+   "tags": [
+    "clutter",
+    "roadside",
+    "rubber"
+   ],
+   "variants": {
+    "clean": "props/road_tire_stack",
+    "worn": "props/road_tire_stack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.68,
+    0.8,
+    0.68
+   ],
+   "rooms": [
+    "garage",
+    "workshop",
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_lift_post",
+   "name": "Car Lift Post (power)",
+   "description": "Two-post lift column with its power unit, swing arms raised to 1.85 m and half the overhead beam. Pair it with road_lift_post_b turned 180 deg, 3.44 m away (post centres) along X.",
+   "tags": [
+    "roadside",
+    "garage",
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_lift_post",
+    "worn": "props/road_lift_post_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.54,
+    3.81,
+    0.5
+   ],
+   "rooms": [
+    "garage",
+    "workshop"
+   ]
+  },
+  {
+   "id": "road_lift_post_b",
+   "name": "Car Lift Post",
+   "description": "Second two-post lift column (no power unit); see road_lift_post.",
+   "tags": [
+    "roadside",
+    "garage",
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_lift_post_b",
+    "worn": "props/road_lift_post_b_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.54,
+    3.81,
+    0.5
+   ],
+   "rooms": [
+    "garage",
+    "workshop"
+   ]
+  },
+  {
+   "id": "road_tool_chest",
+   "name": "Rolling Tool Chest",
+   "description": "Red roller cabinet and top chest of drawers on casters.",
+   "tags": [
+    "roadside",
+    "garage",
+    "breakable",
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_tool_chest",
+    "worn": "props/road_tool_chest_worn",
+    "destroyed": "props/road_tool_chest_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    0.68,
+    1.39,
+    0.48
+   ],
+   "container": "toolbox",
+   "rooms": [
+    "garage",
+    "workshop"
+   ]
+  },
+  {
+   "id": "road_engine_hoist",
+   "name": "Engine Hoist",
+   "description": "Folding shop crane holding the V8 pulled out of a National Guard truck.",
+   "tags": [
+    "roadside",
+    "garage",
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_engine_hoist",
+    "worn": "props/road_engine_hoist_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.84,
+    2.0,
+    1.56
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "garage",
+    "workshop"
+   ]
+  },
+  {
+   "id": "road_oil_drum",
+   "name": "Oil Drum & Pump",
+   "description": "55-gallon motor-oil drum with a rotary hand pump over a drip can, on an old stain.",
+   "tags": [
+    "clutter",
+    "roadside",
+    "breakable",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_oil_drum",
+    "worn": "props/road_oil_drum_worn",
+    "destroyed": "props/road_oil_drum_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    0.6,
+    1.18,
+    0.6
+   ],
+   "rooms": [
+    "garage",
+    "workshop",
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_oil_shelf",
+   "name": "Motor Oil Shelf",
+   "description": "Steel shelving of quart bottles, gallon jugs, filters and spray cans.",
+   "tags": [
+    "roadside",
+    "garage",
+    "store",
+    "breakable",
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_oil_shelf",
+    "worn": "props/road_oil_shelf_worn",
+    "destroyed": "props/road_oil_shelf_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    1.2,
+    1.8,
+    0.42
+   ],
+   "container": "road_auto_shelf",
+   "rooms": [
+    "garage",
+    "workshop",
+    "store"
+   ]
+  },
+  {
+   "id": "road_rollup_door",
+   "name": "Roll-Up Bay Door (down)",
+   "description": "3 m corrugated bay door, down and padlocked at the floor. Origin on the wall line at the bottom centre of a 3-cell \"open\" opening; blocks it.",
+   "tags": [
+    "roadside",
+    "garage",
+    "door",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_rollup_door",
+    "worn": "props/road_rollup_door_worn",
+    "destroyed": "props/road_rollup_door_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 1200,
+   "size": [
+    3.16,
+    2.8,
+    0.16
+   ],
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "road_rollup_door_open",
+   "name": "Roll-Up Bay Door (up)",
+   "description": "The bay door rolled up into its hood: guides, header, pull rope. No collision.",
+   "tags": [
+    "roadside",
+    "garage",
+    "door",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_rollup_door_open",
+    "worn": "props/road_rollup_door_open_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.16,
+    0.4,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "road_workbench",
+   "name": "Garage Workbench",
+   "description": "Oil-soaked workbench with a vise, a bench grinder and a pegboard of tools.",
+   "tags": [
+    "roadside",
+    "garage",
+    "container",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/road_workbench",
+    "worn": "props/road_workbench_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.8,
+    0.91,
+    0.7
+   ],
+   "container": "toolbox",
+   "rooms": [
+    "garage",
+    "workshop"
+   ]
+  },
+  {
+   "id": "road_creeper",
+   "name": "Mechanic's Creeper",
+   "description": "Padded creeper on six casters.",
+   "tags": [
+    "clutter",
+    "roadside",
+    "garage"
+   ],
+   "variants": {
+    "clean": "props/road_creeper",
+    "worn": "props/road_creeper_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.44,
+    0.19,
+    1.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "garage",
+    "workshop"
+   ]
+  },
+  {
+   "id": "road_cooler",
+   "name": "Reach-In Cooler",
+   "description": "Three glass doors of warm soda and beer along the kiosk's back wall.",
+   "tags": [
+    "roadside",
+    "store",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/road_cooler",
+    "worn": "props/road_cooler_worn",
+    "destroyed": "props/road_cooler_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 350,
+   "size": [
+    2.3,
+    2.1,
+    0.8
+   ],
+   "container": "fridge",
+   "rooms": [
+    "store"
+   ]
+  },
+  {
+   "id": "road_sign_motel",
+   "name": "Timberline Motel Sign",
+   "description": "Twin-pole pylon: TIMBERLINE MOTEL with its bulb arrow, VACANCY / NO, COLOR TV, WEEKLY RATES.",
+   "tags": [
+    "roadside",
+    "motel",
+    "sign",
+    "street"
+   ],
+   "variants": {
+    "clean": "props/road_sign_motel",
+    "worn": "props/road_sign_motel_worn",
+    "destroyed": "props/road_sign_motel_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.4,
+    7.3,
+    0.7
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_motel_bed",
+   "name": "Motel Bed",
+   "description": "Queen bed under a quilted 90s spread, headboard bolted to the wall behind it (+Z back).",
+   "tags": [
+    "roadside",
+    "motel",
+    "breakable",
+    "fabric"
+   ],
+   "variants": {
+    "clean": "props/road_motel_bed",
+    "worn": "props/road_motel_bed_worn",
+    "destroyed": "props/road_motel_bed_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.68,
+    0.77,
+    2.15
+   ],
+   "rooms": [
+    "motel_room",
+    "bedroom"
+   ]
+  },
+  {
+   "id": "road_motel_nightstand",
+   "name": "Motel Nightstand",
+   "description": "Laminate nightstand with a bolted lamp, a push-button phone and the phone book.",
+   "tags": [
+    "roadside",
+    "motel",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/road_motel_nightstand",
+    "worn": "props/road_motel_nightstand_worn",
+    "destroyed": "props/road_motel_nightstand_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    0.55,
+    0.68,
+    0.42
+   ],
+   "container": "nightstand",
+   "rooms": [
+    "motel_room",
+    "bedroom"
+   ]
+  },
+  {
+   "id": "road_tv_dresser",
+   "name": "Dresser & TV",
+   "description": "Long motel dresser, a chained colour TV, ice bucket and the wall mirror above.",
+   "tags": [
+    "roadside",
+    "motel",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/road_tv_dresser",
+    "worn": "props/road_tv_dresser_worn",
+    "destroyed": "props/road_tv_dresser_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 220,
+   "size": [
+    1.5,
+    1.26,
+    0.5
+   ],
+   "container": "dresser",
+   "rooms": [
+    "motel_room",
+    "bedroom"
+   ]
+  },
+  {
+   "id": "road_housekeeping_cart",
+   "name": "Housekeeping Cart",
+   "description": "Maid's cart of towels, sheets, rolls and sprays with its trash and linen bags.",
+   "tags": [
+    "roadside",
+    "motel",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/road_housekeeping_cart",
+    "worn": "props/road_housekeeping_cart_worn",
+    "destroyed": "props/road_housekeeping_cart_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    1.7,
+    1.1,
+    0.5
+   ],
+   "container": "road_housekeeping",
+   "blocks_sight": false,
+   "rooms": [
+    "motel_room",
+    "hallway",
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_washer",
+   "name": "Coin-Op Washer",
+   "description": "Top-loading coin laundry washer.",
+   "tags": [
+    "roadside",
+    "motel",
+    "laundry",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/road_washer",
+    "worn": "props/road_washer_worn",
+    "destroyed": "props/road_washer_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    0.69,
+    1.12,
+    0.7
+   ],
+   "container": "road_laundry",
+   "rooms": [
+    "laundry",
+    "basement"
+   ]
+  },
+  {
+   "id": "road_dryer",
+   "name": "Coin-Op Dryer",
+   "description": "Front-loading coin laundry dryer with a porthole door.",
+   "tags": [
+    "roadside",
+    "motel",
+    "laundry",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/road_dryer",
+    "worn": "props/road_dryer_worn",
+    "destroyed": "props/road_dryer_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    0.69,
+    1.12,
+    0.7
+   ],
+   "container": "road_laundry",
+   "rooms": [
+    "laundry",
+    "basement"
+   ]
+  },
+  {
+   "id": "road_ice_machine",
+   "name": "Ice Machine",
+   "description": "Stainless cuber on its bin in the motel's ice alcove.",
+   "tags": [
+    "roadside",
+    "motel",
+    "machine"
+   ],
+   "variants": {
+    "clean": "props/road_ice_machine",
+    "worn": "props/road_ice_machine_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.76,
+    1.53,
+    0.78
+   ],
+   "rooms": [
+    "exterior",
+    "laundry",
+    "kitchen"
+   ]
+  },
+  {
+   "id": "road_walkway_post",
+   "name": "Walkway Post",
+   "description": "Steel post under the upper walkway's edge (2.95 m), scroll bracket at the top.",
+   "tags": [
+    "roadside",
+    "motel",
+    "structure",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_walkway_post",
+    "worn": "props/road_walkway_post_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.2,
+    2.95,
+    0.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_suitcase",
+   "name": "Suitcase",
+   "description": "Hard-shell 90s suitcase lying flat.",
+   "tags": [
+    "clutter",
+    "roadside",
+    "container",
+    "survivor"
+   ],
+   "variants": {
+    "clean": "props/road_suitcase",
+    "worn": "props/road_suitcase_worn"
+   },
+   "collision": "box",
+   "physics": "carry",
+   "hp": 60,
+   "size": [
+    0.66,
+    0.23,
+    0.44
+   ],
+   "container": "duffel_bag",
+   "blocks_sight": false,
+   "rooms": [
+    "motel_room",
+    "bedroom",
+    "hallway"
+   ]
+  },
+  {
+   "id": "road_exam_table",
+   "name": "Exam Table",
+   "description": "Padded teal examination table, backrest raised, paper run down it.",
+   "tags": [
+    "roadside",
+    "clinic",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/road_exam_table",
+    "worn": "props/road_exam_table_worn",
+    "destroyed": "props/road_exam_table_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.95,
+    1.05,
+    0.68
+   ],
+   "container": "medicine_cabinet",
+   "rooms": [
+    "clinic"
+   ]
+  },
+  {
+   "id": "road_medical_cabinet",
+   "name": "Supply Cabinet",
+   "description": "Glass-doored steel cabinet of labelled supply boxes and amber bottles.",
+   "tags": [
+    "roadside",
+    "clinic",
+    "breakable",
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_medical_cabinet",
+    "worn": "props/road_medical_cabinet_worn",
+    "destroyed": "props/road_medical_cabinet_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    0.9,
+    1.85,
+    0.42
+   ],
+   "container": "road_med_cabinet",
+   "rooms": [
+    "clinic",
+    "pharmacy"
+   ]
+  },
+  {
+   "id": "road_iv_stand",
+   "name": "IV Stand",
+   "description": "Rolling IV pole with a saline bag and tubing.",
+   "tags": [
+    "clutter",
+    "roadside",
+    "clinic",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_iv_stand",
+    "worn": "props/road_iv_stand_worn",
+    "destroyed": "props/road_iv_stand_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.54,
+    2.0,
+    0.54
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "clinic"
+   ]
+  },
+  {
+   "id": "road_wheelchair",
+   "name": "Wheelchair",
+   "description": "Chrome folding wheelchair with a black vinyl sling.",
+   "tags": [
+    "roadside",
+    "clinic",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_wheelchair",
+    "worn": "props/road_wheelchair_worn",
+    "destroyed": "props/road_wheelchair_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.66,
+    1.0,
+    1.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "clinic",
+    "hallway"
+   ]
+  },
+  {
+   "id": "road_xray_unit",
+   "name": "X-Ray Unit",
+   "description": "Radiographic table, floor rail and tube stand with its collimator and HV cables.",
+   "tags": [
+    "roadside",
+    "clinic",
+    "machine"
+   ],
+   "variants": {
+    "clean": "props/road_xray_unit",
+    "worn": "props/road_xray_unit_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.0,
+    2.22,
+    1.1
+   ],
+   "rooms": [
+    "clinic"
+   ]
+  },
+  {
+   "id": "road_waiting_chairs",
+   "name": "Waiting Room Chairs",
+   "description": "Three linked orange vinyl chairs on a steel beam.",
+   "tags": [
+    "roadside",
+    "clinic",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/road_waiting_chairs",
+    "worn": "props/road_waiting_chairs_worn",
+    "destroyed": "props/road_waiting_chairs_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    1.76,
+    0.9,
+    0.57
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "clinic",
+    "hallway",
+    "office"
+   ]
+  },
+  {
+   "id": "road_staff_locker",
+   "name": "Staff Lockers",
+   "description": "Bank of three louvred steel lockers with brass number plates.",
+   "tags": [
+    "roadside",
+    "clinic",
+    "breakable",
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/road_staff_locker",
+    "worn": "props/road_staff_locker_worn",
+    "destroyed": "props/road_staff_locker_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.9,
+    1.83,
+    0.47
+   ],
+   "container": "road_locker",
+   "rooms": [
+    "clinic",
+    "office",
+    "garage",
+    "workshop"
+   ]
+  },
+  {
+   "id": "road_sharps_bin",
+   "name": "Medical Waste Bin",
+   "description": "Red step-on waste can.",
+   "tags": [
+    "clutter",
+    "roadside",
+    "clinic"
+   ],
+   "variants": {
+    "clean": "props/road_sharps_bin",
+    "worn": "props/road_sharps_bin_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.34,
+    0.56,
+    0.37
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "clinic",
+    "bathroom"
+   ]
+  },
+  {
+   "id": "road_mop_bucket",
+   "name": "Mop Bucket",
+   "description": "Yellow mop bucket on casters with a wringer and a string mop.",
+   "tags": [
+    "clutter",
+    "roadside"
+   ],
+   "variants": {
+    "clean": "props/road_mop_bucket",
+    "worn": "props/road_mop_bucket_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.6,
+    0.6,
+    0.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "clinic",
+    "bathroom",
+    "store",
+    "laundry",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_xray_viewer",
+   "name": "X-Ray Lightbox",
+   "description": "Wall lightbox with Patient 1's chest films a week apart; the second one white with the Bloom.",
+   "tags": [
+    "roadside",
+    "sign",
+    "clinic"
+   ],
+   "variants": {
+    "clean": "props/road_xray_viewer",
+    "worn": "props/road_xray_viewer_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.98,
+    0.56,
+    0.08
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "clinic"
+   ]
+  },
+  {
+   "id": "road_eye_chart",
+   "name": "Eye Chart",
+   "description": "Snellen chart on a board.",
+   "tags": [
+    "roadside",
+    "sign",
+    "clinic"
+   ],
+   "variants": {
+    "clean": "props/road_eye_chart",
+    "worn": "props/road_eye_chart_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.3,
+    0.6,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "clinic"
+   ]
+  },
+  {
+   "id": "road_quarantine_notice",
+   "name": "Quarantine Notice",
+   "description": "Cordon Medical Authority quarantine notice, stapled and taped.",
+   "tags": [
+    "roadside",
+    "sign",
+    "clinic"
+   ],
+   "variants": {
+    "clean": "props/road_quarantine_notice",
+    "worn": "props/road_quarantine_notice_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.34,
+    0.51,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "clinic",
+    "office",
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_sign_clinic",
+   "name": "Clinic Sign",
+   "description": "TAMSIN VALLEY CLINIC fascia sign on standoffs (hang over the entrance).",
+   "tags": [
+    "roadside",
+    "sign",
+    "clinic"
+   ],
+   "variants": {
+    "clean": "props/road_sign_clinic",
+    "worn": "props/road_sign_clinic_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.04,
+    0.54,
+    0.15
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "road_plaque_office",
+   "name": "Office Sign",
+   "description": "Motel OFFICE board.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_plaque_office",
+    "worn": "props/road_plaque_office_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.9,
+    0.45,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "office"
+   ]
+  },
+  {
+   "id": "road_plaque_laundry",
+   "name": "Guest Laundry Sign",
+   "description": "GUEST LAUNDRY board.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_plaque_laundry",
+    "worn": "props/road_plaque_laundry_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.8,
+    0.4,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "laundry"
+   ]
+  },
+  {
+   "id": "road_plaque_rates",
+   "name": "Room Rates Board",
+   "description": "Room rates behind the motel counter.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_plaque_rates",
+    "worn": "props/road_plaque_rates_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.3,
+    0.6,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "office"
+   ]
+  },
+  {
+   "id": "road_plaque_staff",
+   "name": "Staff Only Sign",
+   "description": "STAFF ONLY door sign.",
+   "tags": [
+    "roadside",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/road_plaque_staff",
+    "worn": "props/road_plaque_staff_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.5,
+    0.25,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "clinic",
+    "office",
+    "store",
+    "hallway"
+   ]
+  },
+  {
+   "id": "road_plaque_ring_bell",
+   "name": "Ring Bell Sign",
+   "description": "PLEASE RING BELL FOR SERVICE strip.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_plaque_ring_bell",
+    "worn": "props/road_plaque_ring_bell_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.6,
+    0.2,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "office",
+    "store"
+   ]
+  },
+  {
+   "id": "road_plaque_exit",
+   "name": "Exit Sign",
+   "description": "Red EXIT sign with an arrow.",
+   "tags": [
+    "roadside",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/road_plaque_exit",
+    "worn": "props/road_plaque_exit_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.3,
+    0.3,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "clinic",
+    "store",
+    "office",
+    "hallway"
+   ]
+  },
+  {
+   "id": "road_plaque_clinic_hours",
+   "name": "Clinic Hours",
+   "description": "Clinic hours board: Dr. A. Voss, walk-ins welcome.",
+   "tags": [
+    "roadside",
+    "sign",
+    "clinic"
+   ],
+   "variants": {
+    "clean": "props/road_plaque_clinic_hours",
+    "worn": "props/road_plaque_clinic_hours_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.4,
+    0.4,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "clinic"
+   ]
+  },
+  {
+   "id": "road_room_number_1",
+   "name": "Room Number 1",
+   "description": "Brass door number plate 1.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_room_number_1"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.13,
+    0.13,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_room_number_2",
+   "name": "Room Number 2",
+   "description": "Brass door number plate 2.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_room_number_2"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.13,
+    0.13,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_room_number_3",
+   "name": "Room Number 3",
+   "description": "Brass door number plate 3.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_room_number_3"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.13,
+    0.13,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_room_number_4",
+   "name": "Room Number 4",
+   "description": "Brass door number plate 4.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_room_number_4"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.13,
+    0.13,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_room_number_5",
+   "name": "Room Number 5",
+   "description": "Brass door number plate 5.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_room_number_5"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.13,
+    0.13,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_room_number_6",
+   "name": "Room Number 6",
+   "description": "Brass door number plate 6.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_room_number_6"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.13,
+    0.13,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_room_number_7",
+   "name": "Room Number 7",
+   "description": "Brass door number plate 7.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_room_number_7"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.13,
+    0.13,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_room_number_8",
+   "name": "Room Number 8",
+   "description": "Brass door number plate 8.",
+   "tags": [
+    "roadside",
+    "sign",
+    "motel"
+   ],
+   "variants": {
+    "clean": "props/road_room_number_8"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.13,
+    0.13,
+    0.01
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "motel_room"
+   ]
+  },
+  {
+   "id": "road_plywood_sick_inside",
+   "name": "Plywood: SICK INSIDE / DO NOT OPEN",
+   "description": "Plywood sheet nailed flat, spray-painted 'SICK INSIDE / DO NOT OPEN'. Origin on the wall plane, bottom centre (2.44 x 1.22 m).",
+   "tags": [
+    "roadside",
+    "survivor",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/road_plywood_sick_inside",
+    "worn": "props/road_plywood_sick_inside_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.44,
+    1.22,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "any"
+   ]
+  },
+  {
+   "id": "road_plywood_no_gas",
+   "name": "Plywood: NO GAS / NO CASH",
+   "description": "Plywood sheet nailed flat, spray-painted 'NO GAS / NO CASH'. Origin on the wall plane, bottom centre (2.44 x 1.22 m).",
+   "tags": [
+    "roadside",
+    "survivor",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/road_plywood_no_gas",
+    "worn": "props/road_plywood_no_gas_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.44,
+    1.22,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "any"
+   ]
+  },
+  {
+   "id": "road_plywood_quarantine",
+   "name": "Plywood: QUARANTINE / KEEP OUT",
+   "description": "Plywood sheet nailed flat, spray-painted 'QUARANTINE / KEEP OUT'. Origin on the wall plane, bottom centre (2.44 x 1.22 m).",
+   "tags": [
+    "roadside",
+    "survivor",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/road_plywood_quarantine",
+    "worn": "props/road_plywood_quarantine_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.44,
+    1.22,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "any"
+   ]
+  },
+  {
+   "id": "road_plywood_use_bathrooms",
+   "name": "Plywood: USE BATHROOMS ->",
+   "description": "Plywood sheet nailed flat, spray-painted 'USE BATHROOMS ->'. Origin on the wall plane, bottom centre (2.44 x 1.22 m).",
+   "tags": [
+    "roadside",
+    "survivor",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/road_plywood_use_bathrooms",
+    "worn": "props/road_plywood_use_bathrooms_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.44,
+    1.22,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "any"
+   ]
+  },
+  {
+   "id": "road_plywood_stay_off_walkway",
+   "name": "Plywood: STAY OFF WALKWAY",
+   "description": "Plywood sheet nailed flat, spray-painted 'STAY OFF WALKWAY'. Origin on the wall plane, bottom centre (2.44 x 1.22 m).",
+   "tags": [
+    "roadside",
+    "survivor",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/road_plywood_stay_off_walkway",
+    "worn": "props/road_plywood_stay_off_walkway_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.44,
+    1.22,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "any"
+   ]
+  },
+  {
+   "id": "road_plywood_help_room6",
+   "name": "Plywood: HELP / ROOM 6",
+   "description": "Plywood sheet nailed flat, spray-painted 'HELP / ROOM 6'. Origin on the wall plane, bottom centre (2.44 x 1.22 m).",
+   "tags": [
+    "roadside",
+    "survivor",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/road_plywood_help_room6",
+    "worn": "props/road_plywood_help_room6_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.44,
+    1.22,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "any"
+   ]
+  },
+  {
+   "id": "road_plywood_dead_inside",
+   "name": "Plywood: DEAD INSIDE",
+   "description": "Plywood sheet nailed flat, spray-painted 'DEAD INSIDE'. Origin on the wall plane, bottom centre (2.44 x 1.22 m).",
+   "tags": [
+    "roadside",
+    "survivor",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/road_plywood_dead_inside",
+    "worn": "props/road_plywood_dead_inside_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.44,
+    1.22,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "any"
+   ]
+  },
+  {
+   "id": "road_plywood_gone_to_cordon",
+   "name": "Plywood: GONE TO / CORDON",
+   "description": "Plywood sheet nailed flat, spray-painted 'GONE TO / CORDON'. Origin on the wall plane, bottom centre (2.44 x 1.22 m).",
+   "tags": [
+    "roadside",
+    "survivor",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/road_plywood_gone_to_cordon",
+    "worn": "props/road_plywood_gone_to_cordon_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.44,
+    1.22,
+    0.02
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior",
+    "any"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,127 @@
+{
+ "_doc": "Keys and readable notes of the Route 9 roadside POIs. Models: tools/assetgen/blender_catalogs/props_roadside.py (item_paper generator) -> models/items/road/<id>.glb.",
+ "defs": [
+  {
+   "id": "note_road_jess_workbench",
+   "name": "Note on the Workbench",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "road_jess_workbench",
+   "model": "items/road/note_road_jess_workbench"
+  },
+  {
+   "id": "note_road_dale_ledger",
+   "name": "Cash Sales Ledger",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "road_dale_ledger",
+   "model": "items/road/note_road_dale_ledger"
+  },
+  {
+   "id": "note_road_courier",
+   "name": "Tamsin Valley Courier",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "road_courier",
+   "model": "items/road/note_road_courier"
+  },
+  {
+   "id": "note_road_voss_log",
+   "name": "Dr. Voss's Patient Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "road_voss_log",
+   "model": "items/road/note_road_voss_log"
+  },
+  {
+   "id": "note_road_cordon_memo",
+   "name": "Cordon Medical Directive",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "road_cordon_memo",
+   "model": "items/road/note_road_cordon_memo"
+  },
+  {
+   "id": "note_road_room6",
+   "name": "Note from Room 6",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "road_room6",
+   "model": "items/road/note_road_room6"
+  },
+  {
+   "id": "note_road_june_register",
+   "name": "Timberline Guest Register",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "road_june_register",
+   "model": "items/road/note_road_june_register"
+  },
+  {
+   "id": "road_key_cordon_stock",
+   "name": "Stockroom Key",
+   "description": "Brass key on a green CORDON fob stamped STOCK.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/road/road_key_cordon_stock"
+  },
+  {
+   "id": "road_key_cordon_safe",
+   "name": "Dale's Safe Key",
+   "description": "Steel safe key on Dale Cordon's lanyard, out of his coat pocket.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/road/road_key_cordon_safe"
+  },
+  {
+   "id": "road_key_clinic_drugs",
+   "name": "Drug Closet Key",
+   "description": "Spare narcotics key on a clinic lanyard. The tag says M. REYES, RN.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/road/road_key_clinic_drugs"
+  },
+  {
+   "id": "road_key_motel_master",
+   "name": "Timberline Master Key",
+   "description": "Brass master key on a red TIMBERLINE tag: the laundry door to the manager's apartment, and June's safe.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/road/road_key_motel_master"
+  }
+ ]
+}

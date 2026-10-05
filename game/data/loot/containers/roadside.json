@@ -1,0 +1,16 @@
+{
+  "_doc": "Route 9 roadside containers (gas station, motel, clinic). Tables in loot/tables/roadside.json. Noise is what a search sounds like to the Hollowed: prying a vending machine or a safe carries.",
+  "defs": [
+    {"id": "road_auto_shelf", "name": "Motor Oil Shelf", "loot_table": "road_auto_shelf", "slots": 8, "search_time": 2.0, "noise": 5},
+    {"id": "road_vending", "name": "Soda Machine", "loot_table": "road_vending", "slots": 6, "search_time": 2.6, "noise": 9},
+    {"id": "road_ice_freezer", "name": "Ice Freezer", "loot_table": "road_ice_freezer", "slots": 6, "search_time": 1.5, "noise": 4},
+    {"id": "road_newspaper_box", "name": "Newspaper Box", "loot_table": "road_newspaper_box", "slots": 2, "search_time": 1.0, "noise": 4},
+    {"id": "road_housekeeping", "name": "Housekeeping Cart", "loot_table": "road_housekeeping", "slots": 8, "search_time": 1.8, "noise": 3},
+    {"id": "road_laundry", "name": "Laundry Machine", "loot_table": "road_laundry", "slots": 4, "search_time": 1.2, "noise": 3},
+    {"id": "road_med_cabinet", "name": "Supply Cabinet", "loot_table": "road_med_cabinet", "slots": 6, "search_time": 1.6, "noise": 4},
+    {"id": "road_locker", "name": "Staff Locker", "loot_table": "road_locker", "slots": 4, "search_time": 1.4, "noise": 5},
+    {"id": "road_cash_safe", "name": "Station Safe", "loot_table": "road_cash_safe", "slots": 8, "search_time": 2.5, "noise": 6, "locked": true},
+    {"id": "road_motel_safe", "name": "Manager's Safe", "loot_table": "road_motel_safe", "slots": 10, "search_time": 2.5, "noise": 6, "locked": true},
+    {"id": "road_register", "name": "Register Drawer", "loot_table": "road_register", "slots": 3, "search_time": 1.0, "noise": 7}
+  ]
+}

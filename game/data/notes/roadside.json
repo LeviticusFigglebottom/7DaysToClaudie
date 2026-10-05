@@ -1,0 +1,54 @@
+{
+ "_doc": "Readables of the Route 9 roadside POIs (Cordon Gas & Garage, Tamsin Valley Clinic, Timberline Motel). Each advances the building's story and hints at its route. Items: items/roadside.json (note_<id>).",
+ "defs": [
+  {
+   "id": "road_jess_workbench",
+   "title": "Note on the Workbench",
+   "style": "handwritten",
+   "author": "Jess Cordon",
+   "body": "Dad --\nI boarded the shop doors. I'm sorry. Mrs. Kell and the two from the Buick and the trucker are still in there and they don't answer anymore, they just scratch at the glass.\nYou went down the pit to get through the old furnace cellar and up the office hatch, the way we brought the safe in last winter. That was three hours ago. Mind the crawl, you set your bear trap in it.\nThe stockroom key is under this note. The safe key is on your ring.\nI'm walking south to the Cordon. If you come back up the hatch, come and find me.\n-- J."
+  },
+  {
+   "id": "road_dale_ledger",
+   "title": "Cash Sales Ledger",
+   "style": "handwritten",
+   "author": "Dale Cordon",
+   "body": "CORDON GAS & GARAGE -- CASH SALES\n3/10  regular 10 gal ..... 12.79  (Buick, Oregon plates)\n3/10  regular 10 gal ..... 12.79  (M. Kell)\n3/11  diesel 25 gal ...... Guard convoy -- 'bill the County'\n3/11  ---- PUMPS DRY ----\n\n(Pencil, pressed hard:)\nCellar door sticks. Strung cans across the hole from the pit so I hear anything coming. The cough's in the shop now. Jess, don't open it.\nThe Guard boy they left behind is in the restroom. I put the padlock on it. He quit knocking Tuesday.\nWired the stockroom side door to a car battery and the shop bell. If it rings, it isn't Jess -- she knows to pull the wire first.\nIf I'm still down here the safe key is in my coat. The stockroom is the only room in this place with a lock that holds -- put Kell's girl in there when she started coughing. God forgive me."
+  },
+  {
+   "id": "road_courier",
+   "title": "Tamsin Valley Courier, March 11",
+   "style": "printed",
+   "author": "The Tamsin Valley Courier",
+   "body": "THE TAMSIN VALLEY COURIER -- Thursday, March 11 -- 50 cents\n\nROUTE 9 CLOSED AT CORDON\nGuard sets roadblock south of Pell's Crossing; 'temporary,' says County\n\nState health officials confirmed Wednesday that a respiratory illness first seen among Corvane Deep Mine crews has reached Pell's Crossing. Dr. Anneliese Voss of the Tamsin Valley Clinic, who reported the first cases in February, could not be reached for comment. A Cordon Medical Authority team has taken charge of the clinic.\n\nMotorists stranded by the closure are advised that fuel is available at Cordon Gas & Garage and rooms at the Timberline Motel, Mile 11, until further notice."
+  },
+  {
+   "id": "road_voss_log",
+   "title": "Dr. Voss's Patient Log",
+   "style": "handwritten",
+   "author": "Dr. Anneliese Voss",
+   "body": "Feb 21 -- C. Okafor (Corvane, crew 3). Dry cough three weeks, low fever. Film: patchy opacities, both lungs. Sent home on antibiotics.\nFeb 26 -- Okafor back, two more from crew 3. Same picture. Sputum has fine white threads in it. Not TB. Not anything I know.\nMar 2 -- PATIENT 1 (Okafor) admitted. Film on the lightbox. Wrote the County.\nMar 9 -- Pt 1 repeat film: white-out. Sleeps all day, paces all night. Does not know his name.\nMar 12 -- Cordon Medical here. They have taken the upstairs for an 'isolation ward' and requisitioned the narcotics for sedation. I gave Marta my spare drug-closet key and told her to keep it on her.\nMar 13 -- Their orderly, Pruitt, has shut himself in the drug closet with a guard's shotgun. He says he has wired it to the door and anyone who opens it without knocking gets both barrels. I believe him.\nMar 14 -- The humming started at dusk. Marta went up with the syringes and did not come down. I have locked myself in with the records.\nIf you are reading this, the closet key is on Marta, upstairs. The boards at the top of the stairs groan under anyone who walks them. Go up quietly, and go up ready."
+  },
+  {
+   "id": "road_cordon_memo",
+   "title": "Cordon Medical Field Directive",
+   "style": "typed",
+   "author": "Dr. H. Lindqvist, CMA",
+   "body": "CORDON MEDICAL AUTHORITY -- FIELD DIRECTIVE 7\nSite: Tamsin Valley Clinic.  Status: QUARANTINE.\n\n1. Symptomatic persons are to be held in the second-floor isolation ward. Restraints are authorized.\n2. Narcotic stock is requisitioned for sedation. The drug closet stays locked; the key is held by the ward nurse (M. Reyes) at all times.\n3. The front entrance is sealed. Staff enter by the rear ambulance door only, and it is to be kept bolted from inside.\n4. Do not respond to sound from the ward after dark.\n\nCopies: County Health Officer; Waystation 9."
+  },
+  {
+   "id": "road_room6",
+   "title": "Note Pinned in Room 6",
+   "style": "scrawl",
+   "author": "R. Bell",
+   "body": "To whoever --\nWe went through the bathroom walls, 8 to 7 to 6 to 5, so nobody has to set foot on that walkway again. Sallow from 7 is out there somewhere.\nThe Ortiz boy fell through the floor in 5 where the tub went. He's alive down in 1, we hear him, we can't reach him. Go down through 5 and get him.\nThe maid's master keys are on her cart outside 8. They open the laundry door through to June's place. June has the safe and Walt's gun and she won't answer.\nHELP US. Room 6.\n-- R. Bell"
+  },
+  {
+   "id": "road_june_register",
+   "title": "Timberline Guest Register",
+   "style": "handwritten",
+   "author": "June Pruett",
+   "body": "MAR 11 -- Rm 1 Hadley (2) / Rm 2 Brandt / Rm 3 Kowalski / Rm 4 Ames / Rm 5 Ortiz family (4) / Rm 6 Bell / Rm 7 D. Sallow, trucker, paid cash / Rm 8 the Lees.\nMAR 12 -- No vacancy. Walt hung the NO. Gave out every spare blanket we own.\nMAR 13 -- 7 coughing all night. Mr. Sallow won't open.\nMAR 14 -- 7's door open, Sallow gone, blood on the walkway. Upstairs won't come down. I can hear them knocking through the bathroom walls.\nMAR 15 -- Walt went to see about the laundry and didn't come back. The laundry is full of them. I pushed the soda machine against the office door and came in here with the safe and the gun.\nRosie left the master keys on her cart up by 8. If anyone gets them, I'm in here. Please knock first."
+  }
+ ]
+}
