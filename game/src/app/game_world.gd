@@ -21,6 +21,7 @@ var ui: GameUI
 ## Optional systems (registered by their modules as they come online).
 var water: Node = null
 var bridges: Node = null
+var road_markings: Node = null
 var vegetation: Node = null
 var pois: Node = null
 var building: Node = null
@@ -119,6 +120,7 @@ func _spawn_modules() -> void:
 	var mods: Array = [
 		["water", "res://src/world/water/water_system.gd"],
 		["bridges", "res://src/world/bridges.gd"],
+		["road_markings", "res://src/world/road_markings.gd"],
 		["vegetation", "res://src/world/vegetation/vegetation_manager.gd"],
 		["loose", "res://src/world/loose_items.gd"],
 		["building", "res://src/building/building_manager.gd"],
