@@ -119,16 +119,28 @@ def build_grass(p, lod):
         f = fn_ if fn_.dot(o) >= 0 else -fn_
         return (f * 0.35 + o * 0.65).normalized()
 
-    for i, (reg, sc) in enumerate(layout):
-        a = a0 + math.pi * i / n + rng.uniform(-0.2, 0.2)
-        side = Vector((math.cos(a), math.sin(a), 0.0))
-        tilt = Vector((-side.y, side.x, 0.0)) * rng.uniform(-0.25, 0.25)
-        ch = h * sc * rng.uniform(0.85, 1.1)
-        cw = ch * _aspect(atlas, reg)
-        base = Vector((rng.uniform(-0.05, 0.05), rng.uniform(-0.05, 0.05), -0.02))
-        d = (UP + tilt).normalized()
-        card(mb, base, d, side, ch, cw, atlas[reg], p["mat"], segs=2, droop=0.06, out=Vector((-side.y, side.x, 0.3)),
-             col_fn=lambda s, x: (lerp(0.55, 1.0, s), 0.0, rng.random(), lerp(0.0, 1.0, s)), normal_fn=nfn)
+    # A patch is several tufts spread over a disc (one scatter cell then reads as continuous
+    # grass instead of an isolated tuft on bare ground); a single tuft keeps tufts = 1.
+    tufts = int(p.get("tufts", 1))
+    spread = float(p.get("spread", 0.0))
+    for t in range(tufts):
+        if t == 0:
+            c0, ts = Vector((0.0, 0.0, 0.0)), 1.0
+        else:
+            ang = t * 2.39996 + rng.uniform(-0.4, 0.4)
+            rad = spread * math.sqrt((t - 0.5) / (tufts - 0.5)) * rng.uniform(0.8, 1.1)
+            c0, ts = Vector((math.cos(ang) * rad, math.sin(ang) * rad, 0.0)), rng.uniform(0.65, 1.0)
+        ta = rng.uniform(0, math.pi)
+        for i, (reg, sc) in enumerate(layout):
+            a = (a0 if t == 0 else ta) + math.pi * i / n + rng.uniform(-0.2, 0.2)
+            side = Vector((math.cos(a), math.sin(a), 0.0))
+            tilt = Vector((-side.y, side.x, 0.0)) * rng.uniform(-0.25, 0.25)
+            ch = h * sc * ts * rng.uniform(0.85, 1.1)
+            cw = ch * _aspect(atlas, reg)
+            base = c0 + Vector((rng.uniform(-0.05, 0.05), rng.uniform(-0.05, 0.05), -0.02))
+            d = (UP + tilt).normalized()
+            card(mb, base, d, side, ch, cw, atlas[reg], p["mat"], segs=2, droop=0.06, out=Vector((-side.y, side.x, 0.3)),
+                 col_fn=lambda s, x: (lerp(0.55, 1.0, s), 0.0, rng.random(), lerp(0.0, 1.0, s)), normal_fn=nfn)
     return mb
 
 
