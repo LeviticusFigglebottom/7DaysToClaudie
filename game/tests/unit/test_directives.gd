@@ -89,3 +89,15 @@ func test_all_done_after_the_last_chapter() -> void:
 		_finish_chapter(dr, ch)
 	assert_true(dr.all_done())
 	assert_true(dr.open().is_empty())
+
+
+func test_dungeon_directives() -> void:
+	var dr := Directives.new()
+	_finish_chapter(dr, 1)
+	dr.record("disarm_trap", &"bear_trap")
+	assert_false(dr.done.has(&"cordon_disarm"), "one trap is not two")
+	dr.record("disarm_trap", &"shotgun")
+	assert_true(dr.done.has(&"cordon_disarm"), "any two armed traps")
+	_finish_chapter(dr, 2)
+	assert_true(dr.record("clear_poi", &"merrow_house").is_empty(), "the Merrow house is not a tier-3 building")
+	assert_eq(dr.record("clear_poi", &"okafor_farmhouse").size(), 1, "the Okafor farmhouse is")

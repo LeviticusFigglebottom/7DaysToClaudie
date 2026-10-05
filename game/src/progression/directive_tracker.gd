@@ -26,6 +26,10 @@ func setup_world(w: Node) -> void:
 	Events.note_found.connect(func(_n: StringName) -> void: record("read_note"))
 	Events.player_leveled.connect(func(_pid: StringName, level: int) -> void: record("level", &"", level))
 	Events.player_slept.connect(func(_pid: StringName, _h: float) -> void: record("sleep"))
+	# Only traps taken apart while armed count: salvaging a sprung one is no feat.
+	Events.trap_disarmed.connect(func(pid: StringName, _poi: StringName, trap_type: StringName, was_armed: bool) -> void:
+		if was_armed and Game.session != null and pid == Game.session.local_player_id:
+			record("disarm_trap", trap_type))
 	# A loaded game may already meet a level goal in its open chapter.
 	if p != null:
 		record.call_deferred("level", &"", p.progression.level)

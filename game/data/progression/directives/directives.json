@@ -1,5 +1,5 @@
 {
-  "_doc": "Remand Program directives (our take on 7 Days challenges). Chapters open in order; only the open chapter's directives advance. event: fell_tree, craft, place_log, build, loot, kill, enter_poi, clear_poi, survive_hum, read_note, level, sleep, supply_drop. targets: ids that count (empty = any). min_tier (kill): normal/seeded/bloomed. count: times (for level: the level). reward: xp + items.",
+  "_doc": "Remand Program directives (our take on 7 Days challenges). Chapters open in order; only the open chapter's directives advance. event: fell_tree, craft, place_log, build, loot, kill, enter_poi, clear_poi, survive_hum, read_note, level, sleep, supply_drop, disarm_trap (armed traps taken apart). targets: ids that count (empty = any). min_tier (kill): normal/seeded/bloomed. count: times (for level: the level). reward: xp + items.",
   "defs": [
     {"id": "arrival_fell", "name": "Fell three trees", "description": "Timber is shelter, fire and walls. Swing at the trunk, then step clear of where it falls.",
      "chapter": 1, "chapter_name": "Arrival", "order": 1, "event": "fell_tree", "count": 3, "reward": {"xp": 60, "items": {"ration_bar": 1}}},
@@ -22,6 +22,8 @@
      "chapter": 2, "order": 4, "event": "read_note", "count": 2, "reward": {"xp": 80}},
     {"id": "cordon_clear", "name": "Clear a building", "description": "Every sleeper inside put down. The Program pays for cleared ground.",
      "chapter": 2, "order": 5, "event": "clear_poi", "reward": {"xp": 200, "items": {"first_aid_kit": 1}}},
+    {"id": "cordon_disarm", "name": "Disarm two traps", "description": "A wire across a doorway, jaws under the leaves, boards that groan. Crouch, look, and take it apart.",
+     "chapter": 2, "order": 6, "event": "disarm_trap", "count": 2, "reward": {"xp": 120, "items": {"nails": 10}}},
 
     {"id": "hold_logs", "name": "Set twenty logs", "description": "Walls that notch together hold. Walls that don't, fall on you.",
      "chapter": 3, "chapter_name": "Holding Ground", "order": 1, "event": "place_log", "count": 20, "reward": {"xp": 150, "items": {"nails": 20}}},
@@ -31,6 +33,9 @@
      "chapter": 3, "order": 3, "event": "supply_drop", "reward": {"xp": 100}},
     {"id": "hold_level", "name": "Reach level 7", "description": "Spend what you learn — the field manual's Record.",
      "chapter": 3, "order": 4, "event": "level", "count": 7, "reward": {"xp": 0, "items": {"repair_kit": 1}}},
+    {"id": "hold_tier3", "name": "Clear a hard building", "description": "The ranger station, the grange hall, the Timberline or the Okafor place. Whatever is held there is waiting for you.",
+     "chapter": 3, "order": 5, "event": "clear_poi", "targets": ["pell_ranger_station", "pell_grange_hall", "timberline_motel", "okafor_farmhouse"],
+     "reward": {"xp": 400, "items": {"first_aid_kit": 1}}},
 
     {"id": "bloom_infected", "name": "Put down a Seeded or Bloomed Hollowed", "description": "Pale threads under the skin. They hit harder and take longer to drop.",
      "chapter": 4, "chapter_name": "Into the Bloom", "order": 1, "event": "kill", "min_tier": "seeded", "reward": {"xp": 200}},
@@ -39,6 +44,8 @@
     {"id": "bloom_hums", "name": "Survive three more Hums", "description": "They remember what worked against them. So should you.",
      "chapter": 4, "order": 3, "event": "survive_hum", "count": 3, "reward": {"xp": 600, "items": {"antifungal": 2}}},
     {"id": "bloom_level", "name": "Reach level 12", "description": "Still here. The Program notes it.",
-     "chapter": 4, "order": 4, "event": "level", "count": 12, "reward": {"xp": 0, "items": {"first_aid_kit": 2, "ammo_38": 12}}}
+     "chapter": 4, "order": 4, "event": "level", "count": 12, "reward": {"xp": 0, "items": {"first_aid_kit": 2, "ammo_38": 12}}},
+    {"id": "bloom_sawmill", "name": "Clear the sawmill", "description": "Larch Hollow's mill, saw floor to sawdust cellar. The Program wants the payroll office opened.",
+     "chapter": 4, "order": 5, "event": "clear_poi", "targets": ["larch_hollow_sawmill"], "reward": {"xp": 800, "items": {"repair_kit": 1, "ammo_38": 12}}}
   ]
 }
