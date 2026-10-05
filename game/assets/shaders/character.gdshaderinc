@@ -9,7 +9,9 @@
 //   COLOR    R baked AO, G dirt / blood, B where the Bloom has spread
 // Patterns read the rest pose, so veins, mottling, seams and paint stay put on the skin and the
 // cloth as the limbs move (std_surface patterns from the skinned position and they slid: TD-027).
-// A mesh without these attributes reads zeros: no marks, nothing gated.
+// A mesh without these attributes reads zeros: nothing gated, but every distance is 0 (on a seam,
+// the trim, the paint), so its material sets seam_shade and stitch_amount to 0 and no trim or paint
+// (fp_sleeve).
 //
 // Instance uniforms keep std_surface's slots (instance_wear 0, instance_variation 1, bloom_glow 2,
 // weather_exposure 3): every material on one mesh instance must agree on each name's index, and a

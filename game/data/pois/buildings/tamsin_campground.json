@@ -1430,8 +1430,7 @@
      ],
      "enemy": "hollow",
      "pose": "sit",
-     "rot": 300,
-     "anchor": "floor"
+     "rot": 300
     },
     {
      "id": "ward_novak",

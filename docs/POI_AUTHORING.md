@@ -137,7 +137,12 @@ linoleum_beige, tile_white_small, concrete`.
 * `y` lifts a prop above its floor: the level's floor indoors and on the porch deck, the pad
   (ground) for level-0 props on yard cells off the porch. Yard pickups, bear traps and floor decals
   stand on the pad too; wall-mounted props hang at `height` above the building's floor wherever
-  they are.
+  they are. A negative `y` sinks a prop under the pad: Larch Pond Bait & Boat's docks and piles
+  stand in the pond that its `keep_water` placement leaves under it (ADR-0024).
+* **Shell props** stand in for walls and roofs the kit can't build (bark, pole and sod huts, a
+  park-model trailer, a fee station): one prop modelled as the walls and roof, with openings where
+  the plan's doors are, wrapped round a small kit room under `"roof": {"type": "none"}` (the Ashen
+  watch camp, Tamsin River Campground; TD-051).
 
 ### people and things
 * `sleepers`: `{"id": "s1", "at": [5, 2], "enemy": "hollow", "pose": "lie|sit|stand|kneel|crouch", "rot": 90, "group": "pantry", "guardian": false}`

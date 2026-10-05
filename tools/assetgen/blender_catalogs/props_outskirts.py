@@ -4,9 +4,8 @@ Campground (region D6).
 One task per prop id, one GLB per condition: models/props/<id>.glb (clean), <id>_worn.glb,
 <id>_destroyed.glb. Generators: blender/generators/props_outskirts.py (boathouse, campground) and
 props_outskirts_ashen.py (the watch camp, plus the plank door leaf models/kit/door_plank[_broken]
-its doorways hang); shared parts in blender/lib/props_outskirts_parts.py. The Hollowed Ashen's
-bodies (models/characters/ashen_a, ashen_b) come from blender/generators/character_ashen.py, which
-wraps character_body. Content defs: game/data/props/outskirts.json, game/data/enemies/outskirts.json;
+its doorways hang); shared parts in blender/lib/props_outskirts_parts.py. The camp's Hollowed wear
+the `ashen` population's bodies (characters.py, ADR-0028). Content defs: game/data/props/outskirts.json;
 materials: game/data/materials/props_outskirts.json; textures: textures/gen/outskirts.py.
 """
 from __future__ import annotations
@@ -80,41 +79,6 @@ KIT: dict[str, dict] = {
     "door_plank_broken": {"seed": 1291, "broken": True},
 }
 
-FUR = {"type": "jacket", "sleeve": 0.95, "hem": -0.16, "collar": True, "open_front": 0.09, "torn": 0.35, "flare": 0.02,
-       "neck_front": 0.04}
-BODIES: dict[str, dict] = {
-    # A watchman: gaunt, long matted hair, a hide coat open over a wool shirt, hide leggings and
-    # moccasins, the Bloom out of an old wound in the forearm.
-    "ashen_a": {
-        "seed": 1401, "height": 1.8, "sex": "m", "build": 0.3, "gaunt": 0.6, "hunch": 0.3, "head_tilt": 6.0,
-        "limp_side": "L", "claw": 0.6, "jaw_drop": 10.0, "mouth_open": 0.5, "eye_open": 0.5, "arm_raise": 0.2,
-        "raise_side": "R",
-        "outfit": {"tops": [{"type": "flannel", "sleeve": 0.92, "hem": -0.08, "collar": False, "torn": 0.3, "neck_front": 0.05},
-                            FUR],
-                   "pants": {"type": "denim", "belt": True, "torn": 0.35, "length": 0.92}},
-        "boots": {"L": True, "R": True, "height": 0.07},
-        "hair": {"style": "long", "hairline": 0.04, "patchy": 0.15, "locks": 14, "length": 0.095},
-        "wounds": [{"at": "fa", "side": "L", "t": 0.5, "dir": [0.3, 0.0, 1.0], "r": 0.022, "blood": 0.6,
-                    "bloom_spec": {"filaments": 5, "shelves": 2, "lumps": 5}}],
-        "blood": 0.25, "grime": 0.75,
-    },
-    # A woman of the camp in a wool tunic under a short hide cape, hair matted with ash, the fever's
-    # Bloom from the neck.
-    "ashen_b": {
-        "seed": 1402, "height": 1.66, "sex": "f", "build": 0.28, "gaunt": 0.5, "hunch": 0.2, "head_tilt": -9.0,
-        "limp_side": "R", "claw": 0.5, "jaw_drop": 8.0, "mouth_open": 0.4, "eye_open": 0.6,
-        "outfit": {"tops": [{"type": "tshirt", "sleeve": 0.9, "hem": -0.14, "torn": 0.3, "neck_front": 0.03},
-                            {"type": "jacket", "sleeve": 0.45, "hem": 0.05, "collar": True, "open_front": 0.07,
-                             "torn": 0.45, "flare": 0.015, "neck_front": 0.03}],
-                   "pants": {"type": "denim", "belt": False, "torn": 0.3, "length": 0.95}},
-        "boots": {"L": True, "R": True, "height": 0.07},
-        "hair": {"style": "long", "hairline": 0.05, "patchy": 0.2, "locks": 12, "length": 0.095},
-        "wounds": [{"at": "neck", "side": "R", "t": 0.4, "dir": [1.0, 0.0, 0.3], "r": 0.022, "blood": 0.5,
-                    "bloom_spec": {"filaments": 6, "shelves": 1, "lumps": 6}}],
-        "blood": 0.2, "grime": 0.7,
-    },
-}
-
 
 def outputs_for(pid: str, conds: list[str]) -> list[str]:
     return [f"models/props/{pid}{'' if c == C else '_' + c}.glb" for c in conds]
@@ -130,10 +94,4 @@ def tasks() -> list[Task]:
         p = {"prop": "door_plank", "conditions": [C], **params}
         out.append(Task(name=f"model:kit/{kid}", group="models", outputs=[f"models/kit/{kid}.glb"],
                         sources=blender_sources(ASH), params=p, blender=ASH))
-    body_sources = sorted(set(blender_sources("character_ashen")) | set(blender_sources("character_body")))
-    for key, p in BODIES.items():
-        rel = f"models/characters/{key}.glb"
-        out.append(Task(name=f"model:characters/{key}", group="models", outputs=[rel], sources=body_sources,
-                        params={"name": key, **p}, blender="character_ashen",
-                        imports={rel: {"type": "scene", "animation": True}}))
     return out

@@ -12,9 +12,7 @@ hi-vis vests with retroreflective tape, hard hats), `hollow_patient_a`, `hollow_
 wristbands, an IV), `hollow_nurse_a` (scrubs), `hollow_church_a`, `hollow_church_b` (Sunday shirt
 and tie, dress and cardigan), `hollow_logger_b` (flannel, canvas, suspenders), `hollow_hunter_a`
 (buffalo-check wool, blaze orange), `hollow_ashen_a`, `lurcher_ashen_a` (hides, furs, lichen
-paint). `ashen_a`, `ashen_b` (`generators/character_ashen.py`, the Ashen camp's `ashen_hollow`)
-are `character_body` bodies whose skin, cloth and hair are relabelled at export with the
-outskirts' Ashen materials (`std_surface`, TD-071). All share **one skeleton layout** so every
+paint; the Ashen watch camp's Hollowed wear them). All share **one skeleton layout** so every
 animation works on every body. Which body a
 Hollowed wears: its type's `bodies`, or the population of its sleeper post, building or region
 (`game/data/populations/`, `PopulationDef`); picked deterministically per Hollowed.

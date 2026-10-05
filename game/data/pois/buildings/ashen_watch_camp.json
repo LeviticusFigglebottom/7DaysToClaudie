@@ -1,5 +1,5 @@
 {
- "_doc": "Tier-2 Ashen watch camp at the treeline on the rise north of Route 9 (region D6), where the Bloom's deep larch wood ends. Mostly outdoors: a palisade of prop sections (2 m and 1 m) round a compound of yard cells, with three small kit rooms dressed by shell props (out_longhouse_shell, out_smoke_hut_shell, out_lean_to_shell: bark, pole and sod walls and roofs, lined inside, openings where the plan's doors are; style roof 'none') and a cache pit cut into the ground under the longhouse. The validator treats the yard as open: the palisade, the barred gate and the 1 m burnt breach are real only in game (prop collision). Route: the trail -> the barred gate -> round the palisade -> the breach with the bone chimes (alarm: wakes the camp) -> the burial platform for the cache key (taking it, or the jaws in the grass, wakes the watchers in the lean-to) -> the longhouse through its clawed east wall (entering wakes the sick) -> the hatch to the cache pit (the keeper guards the cache) -> the longhouse's bolted back door out through the palisade line. Sleepers are Ashen Hollowed (enemy ashen_hollow). See docs/POI_AUTHORING.md.",
+ "_doc": "Tier-2 Ashen watch camp at the treeline on the rise north of Route 9 (region D6), where the Bloom's deep larch wood ends. Mostly outdoors: a palisade of prop sections (2 m and 1 m) round a compound of yard cells, with three small kit rooms dressed by shell props (out_longhouse_shell, out_smoke_hut_shell, out_lean_to_shell: bark, pole and sod walls and roofs, lined inside, openings where the plan's doors are; style roof 'none') and a cache pit cut into the ground under the longhouse. The validator treats the yard as open: the palisade, the barred gate and the 1 m burnt breach are real only in game (prop collision). Route: the trail -> the barred gate -> round the palisade -> the breach with the bone chimes (alarm: wakes the camp) -> the burial platform for the cache key (taking it, or the jaws in the grass, wakes the watchers in the lean-to) -> the longhouse through its clawed east wall (entering wakes the sick) -> the hatch to the cache pit (the keeper guards the cache) -> the longhouse's bolted back door out through the palisade line. Sleepers are Hollows and a Lurcher dressed as the Ashen (population 'ashen', ADR-0028). See docs/POI_AUTHORING.md.",
  "defs": [
   {
    "id": "ashen_watch_camp",
@@ -18,6 +18,7 @@
    ],
    "author": "Hollowmere team",
    "story": "The Ashen kept a watch on this rise above Route 9 to see who came up from the Cordon gate: six watchers, a fire they never let die, and a pit full of what they took off the road. In March they caught a Remand salvager at the river and kept him in the cache pit to dig for them and read them the Program's papers. In May the fever came up from the campground with the trade goods. The Ashen did what the Ashen do: they barred their sick in the longhouse and stacked the pyre against its wall, strung the bone chimes across the burnt gap in the palisade and barred the gate. Nobody would light the pyre. The keeper went down into the pit to sit with the cache and the salvager until it was over, and the sick clawed their way out through the longhouse's east wall and lay down again where they had always slept. The old man they put up on the burial platform first still wears the cache key on a thong round its post.",
+   "population": "ashen",
    "style": {
     "exterior": "wood_paneling_dark",
     "interior": "wood_paneling_dark",
@@ -1173,7 +1174,7 @@
       13.55,
       4.6
      ],
-     "enemy": "ashen_hollow",
+     "enemy": "hollow",
      "pose": "lie",
      "rot": 0,
      "group": "sick"
@@ -1184,7 +1185,7 @@
       19.9,
       3.6
      ],
-     "enemy": "ashen_hollow",
+     "enemy": "hollow",
      "pose": "lie",
      "rot": 90,
      "group": "sick"
@@ -1195,7 +1196,7 @@
       16.4,
       6.45
      ],
-     "enemy": "ashen_hollow",
+     "enemy": "hollow",
      "pose": "lie",
      "rot": 90,
      "group": "sick"
@@ -1217,7 +1218,7 @@
       3.55,
       14.0
      ],
-     "enemy": "ashen_hollow",
+     "enemy": "hollow",
      "pose": "lie",
      "rot": 0,
      "group": "watch"
@@ -1228,7 +1229,7 @@
       3.55,
       16.05
      ],
-     "enemy": "ashen_hollow",
+     "enemy": "hollow",
      "pose": "lie",
      "rot": 180,
      "group": "watch"
@@ -1239,7 +1240,7 @@
       4.6,
       15.1
      ],
-     "enemy": "ashen_hollow",
+     "enemy": "hollow",
      "pose": "sit",
      "rot": 90,
      "group": "watch",
@@ -1251,7 +1252,7 @@
       24.6,
       14.3
      ],
-     "enemy": "ashen_hollow",
+     "enemy": "hollow",
      "pose": "sit",
      "rot": 45,
      "anchor": "floor"
@@ -1262,7 +1263,7 @@
       16.5,
       5.45
      ],
-     "enemy": "ashen_hollow",
+     "enemy": "hollow",
      "pose": "stand",
      "rot": -110,
      "level": -1,

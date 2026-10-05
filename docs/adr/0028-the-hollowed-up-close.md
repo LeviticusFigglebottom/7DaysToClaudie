@@ -56,9 +56,11 @@ The Hollowed are what the player looks at from arm's length, and they read as ma
     moves. That closes TD-027's sliding veins.
   * Marks are distances, not masks. A distance interpolates linearly across a triangle, so a 3 mm
     seam is a crisp anti-aliased line on triangles centimetres wide.
-  * A mesh without the layers reads zeros: nothing marked and nothing gated. Gibs get the
-    attributes from the body's rest pose before their origin moves, so a severed arm keeps its
-    veins.
+  * A mesh without the layers reads zeros. Nothing is gated, and wet and bruise are 0. But every
+    distance reads 0 too, which means on a seam, on the trim and on the paint. A material for such
+    a mesh turns those marks off: `seam_shade` and `stitch_amount` 0, and no `trim` or `paint`
+    (`fp_sleeve` does this). Gibs get the attributes from the body's rest pose before their origin
+    moves, so a severed arm keeps its veins.
 * **Tiers and bursts are gated geometry in one model.** Each vertex carries a gate code: 0 always,
   1 Seeded and up, 2 Bloomed only, 4 an intact pustule, 5 a burst crater. The vertex shader
   collapses gated-out geometry to a point, so it draws nothing and casts no shadow.
@@ -68,6 +70,7 @@ The Hollowed are what the player looks at from arm's length, and they read as ma
     `hollow_burst` when a body dies.
   * There is still one glb per body and no material swaps. The growths cost triangles even on
     normal-tier bodies (about 1.4k: 0.5k from Seeded up, 0.9k Bloomed only, inside the budget).
+    The Blister carries 3.5k of intact pustules and 0.85k of burst craters.
 * **Clothes as garments, chosen by data.**
   * `char_wardrobe.py` builds tops, pants, collars, belts, straps, ties and mantles. Each has its
     own cloth thickness, so a jacket stands off a shirt. Plackets, yokes and pockets are built
@@ -106,8 +109,11 @@ The Hollowed are what the player looks at from arm's length, and they read as ma
   gamestage, so the body changed between runs), and puts it back where it was spawned before the
   frame is taken. It logs the body the Hollowed wears and whether it is visible
   (`SHOT hollow_closeup: ... body characters/..., visible true`), and warns if the Hollowed is
-  gone. `EnemyVisual.build()` no longer leaves a body empty when a model has an import sidecar but
-  no imported scene (`load()` returns null): it builds the stand-in body. New shots:
+  gone. The old run's log was not kept, so its cause is inferred, not reproduced. The likeliest is
+  a body scene that did not load: `ResourceLoader.exists()` is true for any model with an import
+  sidecar, and the old `EnemyVisual.build()` called `instantiate()` on the null that `load()`
+  returned, which left the Hollowed with no body at all. `build()` now falls back to the stand-in
+  body. New shots:
   `special_hollowed_40m` (the three specials and a Hollow 40 m down a path),
   `population_lineup` (Hollows dressed by the clinic, the church, the Cordon garage and the
   trapper's cabin), `cordon_torch_night` (the tape and a Bloomed glow by torchlight) and

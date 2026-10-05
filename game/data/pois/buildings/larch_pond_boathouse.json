@@ -1784,6 +1784,7 @@
       1.7
      ],
      "enemy": "hollow",
+     "population": "loggers",
      "pose": "lie",
      "rot": 70,
      "group": "bay",
@@ -1796,6 +1797,7 @@
       5.75
      ],
      "enemy": "hollow",
+     "population": "loggers",
      "pose": "lie",
      "rot": -100,
      "group": "bay",

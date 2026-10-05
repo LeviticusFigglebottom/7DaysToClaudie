@@ -1,5 +1,5 @@
 {
- "_doc": "Outskirts materials (Larch Hollow, agent H2): the Ashen watch camp, Larch Pond Bait & Boat, Tamsin River Campground and the Hollowed Ashen's bodies. Built on the shared texture sets with tints (bark, weathered wood, leather, bone, cordage, nylon, canvas, car paint, terrain moss/dirt/gravel); only out_signs is new (textures/gen/outskirts.py, with the decals decal_out_ash_hand / decal_out_ash_ward). Ash: a light grime colour (grime_color) is the lichen-ash smeared over the Ashen's things and skin. Vertex colour G drives the wear layer, B moss.",
+ "_doc": "Outskirts materials (Larch Hollow, agent H2): the Ashen watch camp, Larch Pond Bait & Boat and Tamsin River Campground. Built on the shared texture sets with tints (bark, weathered wood, leather, bone, cordage, nylon, canvas, car paint, terrain moss/dirt/gravel); only out_signs is new (textures/gen/outskirts.py, with the decals decal_out_ash_hand / decal_out_ash_ward). Ash: a light grime colour (grime_color) is the lichen-ash smeared over the Ashen's things. Vertex colour G drives the wear layer, B moss.",
  "materials": {
   "out_bark_ash": {
    "shader": "std_surface",
@@ -470,85 +470,6 @@
     "vertex_ao_strength": 1.0,
     "tint": "#c9c3b8",
     "normal_strength": 1.1
-   }
-  },
-  "ashen_skin": {
-   "shader": "std_surface",
-   "textures": "skin_hollow",
-   "layers": {
-    "wear": "blood_grime"
-   },
-   "params": {
-    "uv_scale": 3.0,
-    "tint": "#d7d3cc",
-    "wear_amount": 0.5,
-    "wear_uv_scale": 3.0,
-    "vertex_ao_strength": 1.0,
-    "normal_strength": 1.0,
-    "variation_strength": 0.08,
-    "grime_amount": 0.55,
-    "grime_color": "#a7a29a",
-    "bloom_skin": 1.0
-   }
-  },
-  "ashen_hide": {
-   "shader": "std_surface",
-   "textures": "item_leather",
-   "layers": {
-    "wear": "blood_grime"
-   },
-   "params": {
-    "uv_scale": 4.0,
-    "tint": "#a8967c",
-    "wear_amount": 0.45,
-    "wear_uv_scale": 3.0,
-    "vertex_ao_strength": 1.0,
-    "grime_amount": 0.45,
-    "grime_color": "#b2ada5"
-   }
-  },
-  "ashen_leggings": {
-   "shader": "std_surface",
-   "textures": "item_leather",
-   "layers": {
-    "wear": "blood_grime"
-   },
-   "params": {
-    "uv_scale": 4.0,
-    "tint": "#6f5b46",
-    "wear_amount": 0.5,
-    "wear_uv_scale": 3.0,
-    "vertex_ao_strength": 1.0,
-    "grime_amount": 0.35,
-    "grime_color": "#2a2119"
-   }
-  },
-  "ashen_wool": {
-   "shader": "std_surface",
-   "textures": "wild_wool_blanket",
-   "layers": {
-    "wear": "blood_grime"
-   },
-   "params": {
-    "uv_scale": 4.0,
-    "tint": "#8d8579",
-    "wear_amount": 0.45,
-    "wear_uv_scale": 3.0,
-    "vertex_ao_strength": 1.0,
-    "grime_amount": 0.5,
-    "grime_color": "#b4afa6"
-   }
-  },
-  "ashen_hair": {
-   "shader": "std_surface",
-   "textures": "hair",
-   "params": {
-    "uv_scale": 6.0,
-    "tint": "#958f87",
-    "vertex_ao_strength": 1.0,
-    "normal_strength": 1.2,
-    "grime_amount": 0.4,
-    "grime_color": "#c9c4bb"
    }
   }
  }

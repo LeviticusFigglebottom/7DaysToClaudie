@@ -22,8 +22,8 @@ viewmodel support: `Z_CLIP_SCALE` in `vertex()` squeezes the depth towards the n
 (BaseMaterial3D `use_fov_override` / `use_z_clip_scale`). `FpMaterials` gives everything under the
 viewmodel such a material: BaseMaterial3Ds get the flags; ShaderMaterials (std_surface, std_glass,
 the character `skin` and `cloth` shaders) get a copy of their shader with the same lines added at
-the end of `vertex()`, cached per shader and per material, as surface overrides so shared meshes
-stay untouched. `viewmodel.json` sets `fov` (58°) and `z_clip_scale` (0.04); reading the tether
+the end of `vertex()` (cached per shader; each material's copy is kept on it), as surface overrides
+so shared meshes stay untouched. `viewmodel.json` sets `fov` (58°) and `z_clip_scale` (0.04); reading the tether
 narrows the FOV to 42° and `set_fov()` retunes every live material. Rejected: a second camera in a
 SubViewport composited over the view (a second shadow pass, its own environment, tonemap and fog to
 keep in step, transparency and TAA seams), and leaving the world FOV (stretching, clipping).
@@ -104,6 +104,15 @@ its bindings are flat rawhide strips wound over each other and crossed over the 
 round plant cord. The torch's burnt cap glows like coals while lit (`item_torch_ember`, a
 `light_source` material lit through the instance's `light_lit`) under a flame of fire-flipbook
 particles with embers, in world space so it trails; its light follows the flame in the left hand.
+
+### Visual QA
+`src/tools/cli/fp_preview.gd` renders the viewmodel in a lit clearing with no world load (seconds
+a shot): each hold class at rest, attacks frozen at their wind-up and contact frames, the guards,
+the uses (eat, drink, apply, throw), the torch by day and at night, the raised tether (the tether
+UI on the wrist screen, its layout only without a session), carrying a log and laying out a
+blueprint (`--only` picks shots; `--out`, `--size`). The screenshot suite adds
+`first_person_axe`, `first_person_axe_swing`, `first_person_torch`, `first_person_tether` (the
+live tether UI on the wrist), `first_person_spear` and `first_person_food` in the world.
 
 ## Consequences
 

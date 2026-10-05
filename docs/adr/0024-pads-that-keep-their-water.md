@@ -32,6 +32,19 @@
   `y = -0.6 - 0.12`. Its placement on the pond's west shore sets `"freeboard": 0.6`.
 * The change is the pad step only (`_pad_for`, `_apply_pads`, `_water_field`). No cache version
   bump: a region's cache key hashes region.json, which changes with the flag.
+* **The other two outskirts buildings need no engine change.** They are built from what the kit and
+  the prop pipeline already do (DESIGN §11):
+  * Walls and roofs the kit can't build (the Ashen longhouse, smoke hut and lean-to, the camp
+    host's park-model trailer, the fee station, the comfort station's roof) are shell props wrapped
+    round small kit rooms under `"roof": {"type": "none"}` (TD-051).
+  * The Ashen watch camp is mostly outdoors: its palisade, barred gate and burnt breach are prop
+    sections round a yard, so the validator sees open ground and the walls exist only in game.
+  * Trees and brush left standing inside the cleared pads are the vegetation models placed as
+    props (TD-052).
+  * The camp's Hollowed name the `ashen` population (ADR-0028) and are Hollows and a Lurcher in
+    hides and lichen paint. The stream's first cut had its own enemy (`ashen_hollow`) and bodies
+    (`std_surface` reskins of `character_body`); they were dropped so the Ashen exist once. The
+    boathouse's two mill hands name `loggers` on their sleeper entries.
 
 ## Consequences
 + Buildings can stand over water: boathouses, docks, mills on their races, bridge houses.
@@ -42,3 +55,5 @@
   The validator still treats yard cells over water as walkable ground (TD-049).
 - A keep_water pad that only grazes the water takes its height from those few wet samples: authors
   pick a placement where the water reaches well under the pad (`probe` the compose, REGIONS.md).
+- Only the placement's `freeboard` ties the water props to the water: placed with another one, or
+  without `keep_water`, they float or sink and nothing warns (TD-050).

@@ -132,6 +132,11 @@ func _scene() -> void:
 	_vm = (load("res://src/player/viewmodel.gd") as GDScript).new() as ViewModel
 	_vm.name = "ViewModel"
 	_cam.add_child(_vm)
+	# The tether UI on the wrist screen, beside the viewmodel as GameUI puts it. With no session it
+	# shows only its layout and caption: enough to see the screen read upright when raised.
+	var tether := Tether.new()
+	tether.name = "Tether"
+	_cam.add_child(tether)
 	_torch_light = OmniLight3D.new()
 	_torch_light.light_color = Color(1.0, 0.6, 0.29)
 	_torch_light.omni_range = 13.0
