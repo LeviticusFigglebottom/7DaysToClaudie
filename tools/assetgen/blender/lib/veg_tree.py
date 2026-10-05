@@ -61,6 +61,7 @@ class Branch:
     u_repeats: int = 1
     tip: bool = True
     moss: float = 0.0
+    broken: bool = False         # blunt broken end (flat cap in the bark material) instead of a tip
 
     @property
     def length(self) -> float:
@@ -228,7 +229,12 @@ def build_branch(mb: MeshBuilder, tree: Tree, b: Branch, lod: int) -> bool:
     def col(i, s, ang, p):
         c = fn0(i, s, ang, p)
         return (c[0] * lerp(0.92, 1.0, s), 0.0, c[2], lerp(b.wind0, b.wind1, s))
-    tube(mb, pts, radii, sides, b.mat, u_repeats=b.u_repeats, col_fn=col, tip=b.tip)
+    # A broken end shows bark-coloured splinters: a small disc of the bark texture, rotated per
+    # branch so neighbouring stubs don't repeat.
+    rot = (len(b.pts) * 0.37 + b.radii[0] * 91.0) % 1.0
+    tube(mb, pts, radii, sides, b.mat, u_repeats=b.u_repeats, col_fn=col, tip=b.tip and not b.broken,
+         cap_end=b.broken, end_mat=b.mat,
+         end_cap_uv=lambda a, q: (rot + 0.06 * q * math.cos(a), 0.5 + 0.06 * q * math.sin(a)))
     return True
 
 

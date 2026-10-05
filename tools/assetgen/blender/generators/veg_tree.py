@@ -51,7 +51,7 @@ def _wobble_table(seed: int, off: Vector, z_max: float, amp: float, freq: float,
 # Shared conifer pieces
 # ---------------------------------------------------------------------------------------------
 
-def conifer_trunk(rng, H, r_dbh, *, mat, lean_deg=0.0, flare=0.45, flare_h=0.55, nlobes=(5, 7), seed=0,
+def conifer_trunk(rng, H, r_dbh, *, mat, lean_deg=0.0, flare=0.62, flare_h=0.62, nlobes=(5, 7), seed=0,
                   top_r=0.012, z_end=None, wobble=0.05):
     """Straight tapering trunk with root flare. Returns (Stem, axis(z) -> Vector, radius(z))."""
     lean_dir = rng.uniform(0, 2 * math.pi)
@@ -88,8 +88,9 @@ def conifer_trunk(rng, H, r_dbh, *, mat, lean_deg=0.0, flare=0.45, flare_h=0.55,
     radii = [radius(z) for z in zs]
     n = rng.randint(*nlobes)
     a0 = rng.uniform(0, 2 * math.pi)
-    lobes = [(a0 + 2 * math.pi * i / n + rng.uniform(-0.35, 0.35), rng.uniform(0.18, 0.4)) for i in range(n)]
-    st = Stem(pts=pts, radii=radii, mat=mat, lobes=lobes, lobe_height=0.75,
+    # buttress lobes over the main roots: the trunk spreads into them over its first metre
+    lobes = [(a0 + 2 * math.pi * i / n + rng.uniform(-0.35, 0.35), rng.uniform(0.25, 0.5)) for i in range(n)]
+    st = Stem(pts=pts, radii=radii, mat=mat, lobes=lobes, lobe_height=0.9,
               u_repeats=max(1, round(2 * math.pi * r_dbh / 0.95)), noise_seed=seed, noise_amp=0.012)
     return st, axis, radius
 
@@ -101,17 +102,18 @@ def surface_roots(rng, lobes, r_dbh, axis, mat, count=5):
         L = r_dbh * rng.uniform(2.2, 3.6) * (0.8 + 0.6 * k)
         c = axis(0.0)
         c.z = 0.0
-        pts = [c + d * (0.3 * r_dbh) + Vector((0, 0, 0.75)),
-               c + d * (1.05 * r_dbh) + Vector((0, 0, 0.3)),
+        # out of the buttress, along the surface, then down into the soil (no tip left in the air)
+        pts = [c + d * (0.3 * r_dbh) + Vector((0, 0, 0.8)),
+               c + d * (1.05 * r_dbh) + Vector((0, 0, 0.32)),
                c + d * (1.5 * r_dbh) + Vector((0, 0, 0.1)),
-               c + d * (1.5 * r_dbh + 0.45 * L) + Vector((0, 0, 0.0)),
-               c + d * (1.5 * r_dbh + L) + Vector((0, 0, -0.16))]
+               c + d * (1.5 * r_dbh + 0.45 * L) + Vector((0, 0, 0.01)),
+               c + d * (1.5 * r_dbh + L) + Vector((0, 0, -0.3))]
         # gentle meander
         side = Vector((-d.y, d.x, 0.0))
         for i in range(2, 5):
             pts[i] = pts[i] + side * rng.uniform(-0.12, 0.12) * L
         s = 0.8 + 0.5 * k
-        radii = [0.4 * r_dbh * s, 0.34 * r_dbh * s, 0.24 * r_dbh * s, 0.13 * r_dbh * s, 0.05 * r_dbh * s]
+        radii = [0.48 * r_dbh * s, 0.4 * r_dbh * s, 0.29 * r_dbh * s, 0.16 * r_dbh * s, 0.07 * r_dbh * s]
         roots.append(Branch(pts=pts, radii=radii, mat=mat, wind0=0.0, wind1=0.0, sides=(5, 4, 0),
                             min_len_lod=(0.0, 0.0, 99.0), tip=True, moss=1.2))
     return roots
@@ -147,9 +149,11 @@ def dead_branches(rng, tree, axis, radius, z_lo, z_hi, count, mat, atlas_dead=Tr
             L = rng.uniform(0.5, max_len) * (0.5 + 0.5 * near)
             elev = rng.uniform(-0.55, 0.05)
             pts = conifer_branch_path(start, phi, L, elev, rng.uniform(0.0, 0.3), 0.0, rng, n=3, wander=0.15)
-            r0 = 0.014 + 0.012 * L
-            b = Branch(pts=pts, radii=[r0, r0 * 0.6, r0 * 0.3], mat=mat, wind0=0.08, wind1=0.35,
-                       sides=(3, 3, 0), min_len_lod=(0.0, 1.6, 99.0))
+            r0 = 0.018 + 0.013 * L
+            # most dead limbs have snapped somewhere along their length: a blunt end, not a spike
+            snapped = rng.random() < 0.6
+            b = Branch(pts=pts, radii=[r0 * 1.25, r0 * 0.7, r0 * (0.5 if snapped else 0.3)], mat=mat, wind0=0.08,
+                       wind1=0.35, sides=(4, 3, 0), min_len_lod=(0.0, 1.6, 99.0), broken=snapped)
             tree.branches.append(b)
             # a couple of dead twigs
             for j in range(rng.randint(1, 3)):
@@ -168,13 +172,14 @@ def dead_branches(rng, tree, axis, radius, z_lo, z_hi, count, mat, atlas_dead=Tr
                                           width=ln * 2.0, region="dead", droop=0.1, segs=1, wind0=0.3, wind1=0.6,
                                           prio=0.15, shade=0.8))
         else:
-            L = rng.uniform(0.08, 0.6) * rng.uniform(0.4, 1.0)
-            elev = rng.uniform(-0.45, 0.1)
+            # self-pruned stub: short and stout, a collar where it leaves the trunk, broken off blunt
+            L = rng.uniform(0.05, 0.4) * rng.uniform(0.4, 1.0)
+            elev = rng.uniform(-0.4, 0.08)
             d = Vector((math.cos(elev) * d0.x, math.cos(elev) * d0.y, math.sin(elev)))
-            r0 = rng.uniform(0.014, 0.04)
-            pts = [start, start + d * (r_t * 0.3 + L)]
-            tree.branches.append(Branch(pts=pts, radii=[r0, r0 * 0.6], mat=mat, wind0=0.02, wind1=0.05,
-                                        sides=(3, 0, 0), min_len_lod=(0.0, 99, 99)))
+            r0 = rng.uniform(0.018, 0.045)
+            pts = [start, start + d * (r_t * 0.3 + L * 0.3), start + d * (r_t * 0.3 + L)]
+            tree.branches.append(Branch(pts=pts, radii=[r0 * 1.7, r0, r0 * 0.82], mat=mat, wind0=0.02, wind1=0.05,
+                                        sides=(5, 0, 0), min_len_lod=(0.0, 99, 99), broken=True))
 
 
 # ---------------------------------------------------------------------------------------------
@@ -191,8 +196,10 @@ def build_fir(p: dict) -> Tree:
     dens = float(p.get("density", 1.35))   # candidates beyond the budget are trimmed by priority
     bark = "bark_grey_fir"
     st, axis, radius = conifer_trunk(rng, H, r_dbh, mat=bark, lean_deg=float(p.get("lean", 1.0)), seed=p["seed"])
+    # LOD0 budget: the full crown (every spray card) plus the broken stubs of the bare lower trunk
     tree = Tree(name=p["name"], stems=[st], foliage_mat="foliage_fir", atlas=atlas, height=H, crown_base=z_cb,
-                seed=int(p["seed"]), moss_dir=rng.uniform(0, 2 * math.pi), moss_height=rng.uniform(1.8, 3.2))
+                seed=int(p["seed"]), moss_dir=rng.uniform(0, 2 * math.pi), moss_height=rng.uniform(1.8, 3.2),
+                budgets=(10800, 3000, 800))
     tree.roots = surface_roots(rng, st.lobes, r_dbh, axis, bark, count=rng.randint(4, 6))
 
     def R(z):
@@ -760,7 +767,7 @@ def build_snag(p: dict) -> Tree:
         r0 = min(0.12, 0.03 + 0.026 * L)
         br = Branch(pts=pts, radii=[r0, r0 * 0.7, r0 * 0.48, r0 * (0.4 if broken else 0.2)], mat=bark, wind0=0.05,
                     wind1=0.25, tip=not broken, sides=(5 if L > 2 else 4, 3, 3 if L > 2.4 else 0),
-                    min_len_lod=(0.0, 0.9, 2.4))
+                    min_len_lod=(0.0, 0.9, 2.4), broken=broken)
         tree.branches.append(br)
         if not broken:
             for j in range(rng.randint(1, 3)):
