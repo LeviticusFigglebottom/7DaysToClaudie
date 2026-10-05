@@ -4,8 +4,11 @@ extends Control
 ## Command line (after `--`):  --new-game [--mode slice|survival] [--seed N] [--skip-intro]
 ##                             [--preset drifter|survivor|remanded|hollowed|rooted]
 ##                             [--rule key=value ...]   (any data/config/game_rules.json option)
+##                             [--world random [--world-seed N] [--world-preset id]
+##                              [--world-set key=value ...]]   (data/config/world_gen.json, ADR-0031)
 ##                             --load <slot>    --continue
 ## e.g. godot --path game -- --new-game --mode slice --skip-intro
+##      godot --path game -- --new-game --world random --world-seed 77 --world-set size=3
 
 @onready var _list: VBoxContainer = %Buttons
 @onready var _status: Label = %Status
@@ -33,6 +36,8 @@ func _handle_cli(args: PackedStringArray) -> bool:
 				var kv: PackedStringArray = args[i + 1].split("=", true, 1)
 				rules[kv[0]] = kv[1]
 		opts["rules"] = rules
+		if _arg_value(args, "--world", "main") == "random":
+			opts["world_gen"] = world_gen_from_args(args, int(opts.get("seed", randi() % 1000000)))
 		Game.start_new_game.call_deferred(opts)
 		return true
 	# A load that fails leaves the menu up with the reason, not a blank screen.
@@ -49,6 +54,19 @@ func _handle_cli(args: PackedStringArray) -> bool:
 	return false
 
 
+## A random world's settings from the command line: --world-seed, --world-preset, --world-set k=v.
+static func world_gen_from_args(args: PackedStringArray, default_seed: int) -> Dictionary:
+	var overrides: Dictionary = {}
+	for i: int in args.size() - 1:
+		if args[i] == "--world-set" and args[i + 1].contains("="):
+			var kv: PackedStringArray = args[i + 1].split("=", true, 1)
+			overrides[kv[0]] = kv[1]
+	var map_seed: int = int(_arg_value(args, "--world-seed", str(default_seed)))
+	var settings: RefCounted = (load("res://src/worldgen/rwg/world_gen_settings.gd") as GDScript).call(&"resolve",
+		StringName(_arg_value(args, "--world-preset", "standard")), overrides, map_seed)
+	return settings.call(&"to_dict")
+
+
 static func _arg_value(args: PackedStringArray, key: String, default: String) -> String:
 	var i: int = args.find(key)
 	return args[i + 1] if i >= 0 and i + 1 < args.size() else default
@@ -62,21 +80,24 @@ func _build_menu() -> void:
 		_add_button("Continue (Day %d)" % int(slots[0].get("day", 1)), _load.bind(str(slots[0]["slot"])))
 	_add_button("New Game…", _open_new_game)
 	_add_button("New Game — Vertical Slice (Hum on night 3)", func() -> void: Game.start_new_game({"game_mode": "slice"}))
-	var rwg := _add_button("Random World (M3)", func() -> void: pass)
-	rwg.disabled = true
+	_add_button("Random World…", _open_new_game.bind(true))
 	for s: Dictionary in slots:
 		var label: String = "Load %s — Day %d" % [str(s.get("slot", "?")).capitalize(), int(s.get("day", 1))]
 		if str(s.get("preset", "")) != "":
 			label += " · %s" % str(s["preset"]).capitalize()
+		if str(s.get("world_mode", "")) == "random":
+			label += " · Random world"
 		_add_button(label, _load.bind(str(s["slot"])))
 	_add_button("Options…", _open_options)
 	_add_button("Quit", func() -> void: get_tree().quit())
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
 
 
-## World settings screen (difficulty preset + every game rule) before a new game.
-func _open_new_game() -> void:
+## World settings screen (difficulty preset + every game rule) before a new game; `random` opens it
+## on its World tab with a random world chosen (ADR-0031).
+func _open_new_game(random: bool = false) -> void:
 	var panel := NewGamePanel.new()
+	panel.start_random = random
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	add_child(panel)
 	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5

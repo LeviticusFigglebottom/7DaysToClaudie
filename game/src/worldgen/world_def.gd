@@ -23,6 +23,22 @@ var roads: Array[Dictionary] = []
 ## region id -> summary dict (from world.json)
 var regions: Dictionary = {}
 var cells: Dictionary = {}
+## Spacing (m) of the macro elevation grid: region corners on the handcrafted map, a finer grid
+## for a generated world (ADR-0031: `macro.step`), whose ranges and valleys live in the grid.
+var macro_step: float = 1024.0
+## How world roads are graded: "region" (each region from its own composed ground, the handcrafted
+## map) or "world" (from macro + the world detail noise, identical in every region a road crosses,
+## so a generated world's roads meet at region borders without a step).
+var road_grade: String = "region"
+## The generator's record ({version, seed, settings, ...}) for a generated world; {} otherwise.
+var generator: Dictionary = {}
+## World-level biome map of a generated world: ids, cell size and one index per cell (row-major,
+## rows north to south); empty on the handcrafted map, whose regions paint their biomes.
+var biome_ids: PackedStringArray = []
+var biome_step: float = 0.0
+var biome_cols: int = 0
+var biome_rows: int = 0
+var biome_cells := PackedByteArray()
 
 ## Flattened corner grid for allocation-free bicubic sampling.
 var _corners := PackedFloat32Array()
@@ -31,6 +47,7 @@ var _corner_cols: int = 0
 var _noise := FastNoiseLite.new()
 var _ridge := FastNoiseLite.new()
 var _region_cache: Dictionary = {}
+var _region_cache_mutex := Mutex.new()
 
 
 static func load_from(path: String) -> WorldDef:
@@ -54,6 +71,22 @@ func _parse(d: Dictionary) -> void:
 	rows = int(d.get("rows", 7))
 	sea_level = float(d.get("sea_level", 0.0))
 	var macro: Dictionary = d.get("macro", {})
+	macro_step = float(macro.get("step", region_size))
+	road_grade = str(d.get("road_grade", "region"))
+	generator = d.get("generator", {})
+	var bm: Dictionary = d.get("biome_map", {})
+	if not bm.is_empty():
+		biome_ids = PackedStringArray(bm.get("ids", []))
+		biome_step = float(bm.get("step", 64.0))
+		biome_cols = int(bm.get("cols", 0))
+		biome_rows = int(bm.get("rows", 0))
+		# One character per cell ("0".."9", "a".."z" index into ids), one string per row.
+		for row: Variant in bm.get("rows_data", []):
+			for ch: int in str(row).to_ascii_buffer():
+				biome_cells.append(ch - 48 if ch < 58 else ch - 87)
+		if biome_cells.size() != biome_cols * biome_rows:
+			push_error("WorldDef: biome_map has %d cells, expected %d x %d" % [biome_cells.size(), biome_cols, biome_rows])
+			biome_cells = PackedByteArray()
 	corner_heights = macro.get("corner_heights", [])
 	_corner_rows = corner_heights.size()
 	_corner_cols = (corner_heights[0] as Array).size() if _corner_rows > 0 else 0
@@ -123,17 +156,42 @@ func region_at(x: float, z: float) -> String:
 	return str(cells.get("%s%d" % [char("A".unicode_at(0) + c), r + 1], ""))
 
 
+## A region's parsed region.json ({} when it has none). Cached; safe to call from several composer
+## threads at once (a generated world composes its regions in parallel).
 func region_data(region_id: String) -> Dictionary:
-	if _region_cache.has(region_id):
-		return _region_cache[region_id]
+	_region_cache_mutex.lock()
+	var cached: Variant = _region_cache.get(region_id)
+	_region_cache_mutex.unlock()
+	if cached != null:
+		return cached
 	var p: String = dir_path.path_join("regions").path_join(region_id).path_join("region.json")
 	var d: Dictionary = {}
 	if FileAccess.file_exists(p):
 		var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(p))
 		if v is Dictionary:
 			d = v
-	_region_cache[region_id] = d
+	_region_cache_mutex.lock()
+	if _region_cache.has(region_id):
+		d = _region_cache[region_id]
+	else:
+		_region_cache[region_id] = d
+	_region_cache_mutex.unlock()
 	return d
+
+
+## Biome id of the world biome map at (x, z) ("" without one: the handcrafted map).
+func biome_at(x: float, z: float) -> String:
+	if biome_cells.is_empty():
+		return ""
+	var wr: Rect2 = world_rect()
+	var c: int = clampi(int(floor((x - wr.position.x) / biome_step)), 0, biome_cols - 1)
+	var r: int = clampi(int(floor((z - wr.position.y) / biome_step)), 0, biome_rows - 1)
+	var i: int = biome_cells[r * biome_cols + c]
+	return biome_ids[i] if i < biome_ids.size() else ""
+
+
+func has_biome_map() -> bool:
+	return not biome_cells.is_empty()
 
 
 func is_region_built(region_id: String) -> bool:
@@ -159,8 +217,8 @@ func macro_height(x: float, z: float) -> float:
 func _corner_bicubic(x: float, z: float) -> float:
 	if _corners.is_empty():
 		return 0.0
-	var gx: float = (x + cols * 0.5 * region_size) / region_size
-	var gz: float = (z + rows * 0.5 * region_size) / region_size
+	var gx: float = (x + cols * 0.5 * region_size) / macro_step
+	var gz: float = (z + rows * 0.5 * region_size) / macro_step
 	var ix: int = int(floor(gx))
 	var iz: int = int(floor(gz))
 	var fx: float = gx - ix

@@ -130,6 +130,15 @@ func with_tag(kind: StringName, tag: String) -> Array:
 	return all(kind).filter(func(d: ContentDef) -> bool: return d.has_tag(tag))
 
 
+## Adds (or replaces, by id) a def made at runtime rather than read from a pack: a random world's
+## generated towns (ADR-0031). Registered by the world loader before anything reads it (worker
+## threads only read content), kept until replaced; load_all() drops them.
+func add_runtime_def(def: ContentDef) -> void:
+	if def == null or def.id == &"" or not _defs.has(def.kind):
+		return
+	(_defs[def.kind] as Dictionary)[def.id] = def
+
+
 func item(id: StringName) -> ItemDef:
 	return get_def(&"item", id) as ItemDef
 

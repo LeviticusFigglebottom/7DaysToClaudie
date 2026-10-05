@@ -109,7 +109,9 @@ func closest(p: Vector2) -> Vector3:
 	return Vector3(sqrt(best_d2), best_s, best_side)
 
 
-## Linear interpolation of a [start, end] value pair (or a single number) along the arc.
+## A value along the arc: a single number, a [start, end] pair interpolated linearly, or (ADR-0031,
+## a generated river's level and width) three or more values spaced evenly along the arc and
+## interpolated piecewise linearly between them.
 func value_at(values: Variant, s: float) -> float:
 	if values is float or values is int:
 		return float(values)
@@ -117,4 +119,8 @@ func value_at(values: Variant, s: float) -> float:
 	if arr.size() == 1:
 		return float(arr[0])
 	var t: float = 0.0 if total_length <= 0.0 else clampf(s / total_length, 0.0, 1.0)
-	return lerpf(float(arr[0]), float(arr[arr.size() - 1]), t)
+	if arr.size() == 2:
+		return lerpf(float(arr[0]), float(arr[1]), t)
+	var f: float = t * (arr.size() - 1)
+	var i: int = mini(int(f), arr.size() - 2)
+	return lerpf(float(arr[i]), float(arr[i + 1]), f - i)
