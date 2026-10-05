@@ -25,7 +25,8 @@ mounds at dawn. They despawned instead.
   * Nothing grows on water, roads, paths, pads or clearings: the field is scaled by the
     composer's vegetation mask.
   * Overlapping zones merge as a soft union, 1 − Π(1 − v).
-  * The whole field builds in about 0.3 s at world setup (TerrainManager), so it needs no cache.
+  * The whole field (Larch Hollow: 512 × 512 texels) builds in about 0.4 s at world setup
+    (TerrainManager), so it needs no cache.
 * **Published as shader globals, read the same on the CPU.**
   * `hm_bloom_map` is an R8 texture, sampled bilinearly. `hm_bloom_rect` maps the world onto it;
     it is zero when there is no field, so menus and previews show nothing. `hm_bloom_night` is the
@@ -72,10 +73,16 @@ mounds at dawn. They despawned instead.
   for the kind `fungus`. It is the last layer, so no tree, plant or stone index that saves address
   can move.
   * Its chance is the biome density at full strength × field^1.6. Nothing fruits below 0.12.
+    The mycelium feeds on roots: the chance rises up to 3.5× within 2.6 m of a trunk, and nothing
+    fruits inside a trunk's flare. In the deep wood that is up to about 250 clusters in a 64 m
+    chunk, and the layer adds about 6 ms to that chunk's scatter; chunks the field doesn't reach
+    skip it after a 4 m probe.
   * The species is `bloom_caps`: four generated clusters (`veg_fungus.py`) with real stems, caps
-    of revolution, gills and partial gills. Two are broken: a torn cap, a toppled mushroom and a
-    snapped cap lying gills-up. One fruits from a felt cushion. All carry baked vertex AO. LOD0 is
-    758–962 triangles, LOD1 170–282; caps under 4 cm across keep a plain underside.
+    of revolution, gills and partial gills: a tight cluster of every age, an old troop gone flat
+    and upturned, young bells along a buried root, and caps fruiting from a felt cushion. Each has
+    a broken piece: a snapped cap lying gills-up, or in the old troop a toppled mushroom and a cap
+    torn half away. All carry baked vertex AO. LOD0 is 758–962 triangles, LOD1 170–282; caps under
+    4 cm across keep a plain underside.
   * Clusters are honey-fungus sized (caps 3–13 cm across), so they read from 10–15 m. They are
     drawn as ground cover that shrinks away by 36 m. The `bloom_fungus` shader is
     double-sided: translucency through the thin margins and gills (vertex B), greyer gills (G)

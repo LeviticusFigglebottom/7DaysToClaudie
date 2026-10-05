@@ -270,11 +270,11 @@ the validator warns.
 
 | props with anchors | seats | beds |
 |---|---|---|
-| chairs (`kitchen_chair`, `chair_wood`, `office_chair`, `civic_folding_chair`, `armchair`, `recliner`, `road_wheelchair`) | 1 | |
+| chairs (`kitchen_chair`, `chair_wood`, `office_chair`, `civic_folding_chair`, `armchair`, `recliner`, `road_wheelchair`, `out_camp_chair`) | 1 | |
 | `civic_pew` 4, `couch` 3 (or one lying), `diner_booth` 2, `road_waiting_chairs` 3, `bench_park` 2, `picnic_table` 4, `wild_mess_bench` 3 each way | yes | |
 | stools (`diner_stool`, `civic_bar_stool`), `crate_wood`, `civic_beer_crates` (hunched, any way round), `toilet` | 1 | |
 | `bed_double`, `road_motel_bed`, `farm_quilt_bed`, `mattress_dirty` | (mattress: 2 sat legs out) | 2 |
-| `bed_single`, `civic_army_cot` and `wild_cot_canvas` (plus one sat on the rail), `sleeping_bag` (or sat up in it), `wild_bunk_steel` (lower and upper) | | 1–2 |
+| `bed_single`, `out_hide_bed`, `civic_army_cot` and `wild_cot_canvas` (plus one sat on the rail), `sleeping_bag` (or sat up in it), `wild_bunk_steel` (lower and upper) | | 1–2 |
 | `bathtub` | 1, sat legs out | |
 
 * `"anchor": "floor"` keeps a `sit`/`lie` sleeper on the floor (a Dragger, a body in the rubble,
@@ -455,9 +455,10 @@ a hall open to its rafters, a school gym, a fire station's apparatus bay.
   rises (any shape: leave cells for a gallery, a loft or a bell chamber). A `^` with no tall room
   under it, or above the room's `storeys`, is an error; a tall room with no `^` over it stays one
   storey (warning).
-* The tall room has no floor or ceiling between its storeys: its walls rise through the void
-  without a floor band, outside the siding and trims run on unbroken, and its ceiling is at its
-  top storey. Authored lights and `ceiling_mounted` fixtures without a `y` hang from that ceiling.
+* The tall room has no floor or ceiling between its storeys: its walls rise through the void (a
+  20 cm `wall_band_1m` closes the gap where a floor slab would sit, inside and out, so the finish,
+  siding and trims run on unbroken), and its ceiling is at its top storey. Authored lights without
+  a `height` and `ceiling_mounted` fixtures without a `y` hang from that ceiling.
 * `"open_roof": true` on any room whose top is under the roof (tall or not: a hayloft) leaves out
   its ceiling: it sees the roof's boards, rafters, ridge beam, wall plates and collar ties, and the
   walls between it and closed rooms beside it rise to the roof.
@@ -469,6 +470,9 @@ a hall open to its rafters, a school gym, a fire station's apparatus bay.
   Both are **one-way drops** onto the tall room's floor for the route, so a gap in a hayloft rail is
   a valid shortcut down; the validator errors when a drop strands the player. A passable opening
   in a wall onto the void (a door out of a `"gallery": false` room) drops the same way.
+* A stairwell (the hole a flight comes up through) beside the void gets no railing or fascia on
+  that edge, and the flight's banister is then the only guard: keep stairwells off the gallery
+  edge (TD-042).
 * Tall openings stand on the lower storey of a tall room's wall and fill the storey above it,
   which must be a wall with nothing else on it: `lancet`, `window_tall` (a 1 m sash 2.5 m high:
   gyms, mills, halls), `door2_tall` (2 m wide, 3.5 m high, a pair of board-and-batten barn doors).
@@ -484,8 +488,9 @@ a hall open to its rafters, a school gym, a fire station's apparatus bay.
   inside an L stays outdoors.
 * A school gym: a `hall` two storeys tall with `open_roof`, `window_tall` along both long walls, a
   balustrade gallery on the side the bleachers or the stage are on. A fire station: the bay above,
-  `door2_tall` doors on the apron side and a flat roof behind a parapet (`commercial` zoning, or an
-  override).
+  `door2_tall` doors on the apron side and a flat roof behind a parapet (`"type": "flat"` in
+  `style.roof`, or a `roofs` override on the bay's wing: `commercial` zoning flattens only the
+  annexes).
 
 ## Roofs
 `RoofPlanner` roofs the building's massing; `style.roof` holds the building's defaults and

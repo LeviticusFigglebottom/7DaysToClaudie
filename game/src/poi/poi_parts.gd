@@ -8,7 +8,8 @@ const KIT: String = "kit/"
 ## Opening geometry (metres): width, height, sill; "len" cells along the wall, "storeys" of wall the
 ## piece stands (two-storey pieces are 5.8 m tall: a tall room's wall), and the kit ids of the pane
 ## ("glass"), board-up ("boards") and door leaf ("leaf") that fill it. A lancet's "h" is to the
-## apex of its pointed arch ("spring": where the arch starts).
+## apex of its pointed arch ("spring": where the arch starts). "mirror_pair": the leaf is dressed on
+## one face only, so the right leaf of the pair is the left one mirrored (not turned half round).
 const OPENINGS: Dictionary = {
 	"door": {"model": "wall_1m_door", "w": 0.86, "h": 2.1, "sill": 0.0, "len": 1},
 	"door2": {"model": "wall_2m_door", "w": 1.7, "h": 2.1, "sill": 0.0, "len": 2},
@@ -22,7 +23,7 @@ const OPENINGS: Dictionary = {
 	"window_tall": {"model": "wall_1m_window_tall", "w": 0.76, "h": 2.5, "sill": 0.8, "len": 1, "storeys": 2,
 		"glass": "window_glass_tall", "boards": "boards_window_tall"},
 	"door2_tall": {"model": "wall_2m_door_tall", "w": 1.8, "h": 3.5, "sill": 0.0, "len": 2, "storeys": 2, "leaf": "door_barn_tall",
-		"leaf_size": [0.89, 3.45]},
+		"leaf_size": [0.89, 3.45], "mirror_pair": true},
 }
 ## Wall height of an opening piece: 2.8 m, or 5.8 m for a two-storey piece.
 static func piece_height(spec: Dictionary) -> float:

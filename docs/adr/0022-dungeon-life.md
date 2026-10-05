@@ -58,6 +58,10 @@ ADR-0018 made POIs into dungeons, but some of it was only staged for the player.
     `max_sink`.
   * **Beds:** the pelvis lies over the anchor, pressed `mattress_sink` into the bedding.
 
+  A test keeps the two sets of constants in step: with generated bodies, the animated hips bone
+  of each pose must end within 8 cm of its anchor, 4 to 20 cm above the seat or mattress. In the
+  shipped buildings it lands within 2.5 cm, 9 to 13 cm above.
+
   New in-place animations: `idle_sleep_seat`, `idle_sleep_hunch`, `idle_sleep_crouch` and
   `idle_sleep_kneel` (breathing loops), plus `wake_seat` and `wake_hunch`. The old floor `sit`
   pose keeps its hands above the floor and its arms out of long-armed bodies.
@@ -147,6 +151,13 @@ Every window that the validated route climbs in through from outside gets `route
 `RouteCues.build` adds them when a `PoiInstance` enters the tree. They are deterministic per
 building and window, and a cue whose model has not been generated yet is left out.
 
+The entry windows come from the route, not from a second validation. For each route leg that starts
+outside, `RouteCues.entry_windows` runs the validator's breadth-first search over its own graph
+(`PoiValidator._neighbors`, no keys), stops at the leg's first room and reads the window the path
+climbs through. The plan is cached per POI def. This runs as each building is built at world load:
+the validator's full search took 14 s for the 22 buildings (3.5 s for the sawmill alone), the
+early-exit search 0.7 s, with the same windows.
+
 ### Readable plans
 `make poi-preview` plans draw:
 * sleepers posed where they spawn: a disc per pose, a lying capsule head to feet, a facing tick,
@@ -172,3 +183,7 @@ building and window, and a cue whose model has not been generated yet is left ou
   props have no seat anchors until there are high- and low-seat poses (TD-046).
 - Authors place a seated sleeper roughly where it should sit. It moves up to `reach` onto the
   seat, and the preview plan draws the move.
+- The Hollowed only set traps off. They don't see or avoid them, a bear trap bites a Hollowed but
+  doesn't hold it, and a fall through a weak floor has no animation (TD-045).
+- Route cues are scenery for ground-floor entries. Upper-storey entries get no ladder cue, and the
+  curtain fits 1 m and 2 m windows only (TD-048).

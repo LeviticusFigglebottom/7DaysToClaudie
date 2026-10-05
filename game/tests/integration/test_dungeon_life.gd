@@ -310,6 +310,31 @@ func test_sleepers_pose_on_their_furniture_and_get_up_off_it() -> void:
 	assert_true(absf(local.x) > 1.09 * 0.5 or absf(local.z) > 2.06 * 0.5, "standing clear of the bed")
 
 
+func test_the_animated_hips_sit_on_the_seat_and_lie_on_the_bed() -> void:
+	# The pose constants in traps.json "sleepers" must match char_anim's (SEAT_H, SEAT_Y, LIE_Y,
+	# SIT_Y): with generated bodies, each pose's hips bone ends over its anchor, a hand's breadth above
+	# the seat, the tub floor or the mattress. The procedural stand-in body has no bones to measure.
+	var inst: PoiInstance = _build(_furnished([
+		{"id": "a", "pos": [1.0, 1.1], "enemy": "hollow", "pose": "sit"},
+		{"id": "s", "pos": [2.5, 1.1], "enemy": "hollow", "pose": "sit"},
+		{"id": "e", "pos": [4.5, 1.5], "enemy": "hollow", "pose": "lie"},
+		{"id": "h", "pos": [4.4, 3.4], "enemy": "hollow", "pose": "sit", "rot": 90}]))
+	inst.spawn_sleepers(_ai)
+	await _frames(20)
+	var measured: int = 0
+	for sid: String in ["a", "s", "e", "h"]:
+		var sk: Skeleton3D = inst.sleeper(sid).visual.skeleton
+		if sk == null or sk.find_bone("hips") < 0:
+			continue
+		var pt: Vector3 = inst.to_global(inst.seat_of(sid)["point"] as Vector3)
+		var hips: Vector3 = sk.global_transform * sk.get_bone_global_pose(sk.find_bone("hips")).origin
+		assert_lt(Vector2(hips.x - pt.x, hips.z - pt.z).length(), 0.08, "%s: hips over the anchor" % sid)
+		assert_between(hips.y - pt.y, 0.04, 0.2, "%s: hips just above the seat or mattress" % sid)
+		measured += 1
+	if measured == 0:
+		pass_test("stand-in bodies (no generated models yet): nothing to measure")
+
+
 func test_a_seated_sleeper_killed_asleep_stays_in_its_pose() -> void:
 	var inst: PoiInstance = _build(_furnished([{"id": "a", "pos": [1.0, 1.1], "enemy": "hollow", "pose": "sit"}]))
 	inst.spawn_sleepers(_ai)
@@ -609,3 +634,15 @@ func test_route_cues_mark_the_window_the_route_climbs_in_by() -> void:
 	(shut["openings"] as Array)[1]["cue"] = ["curtain"]
 	assert_eq((RouteCues.check(PoiLayout.compile(_def(shut)))["warnings"] as PackedStringArray).size(), 1,
 		"a curtain needs an open window to hang out of")
+
+
+func test_route_cues_find_the_shipped_entry_windows() -> void:
+	# RouteCues' early-exit search walks the shipped routes the way the validator's full one does:
+	# the diner is climbed into over a booth, the clinic by its waiting-room window, and a building
+	# entered by a door gets no window cues.
+	var want: Dictionary = {"mile9_diner": "booth_window_1", "merrow_house": "kitchen_window", "tamsin_clinic": "waiting_window_w"}
+	for id: String in want:
+		var layout := PoiLayout.compile(Content.get_def(&"poi", StringName(id)) as PoiDef)
+		assert_eq(RouteCues.entry_windows(layout).keys(), [want[id]], "%s is climbed into by %s" % [id, want[id]])
+	var by_door := PoiLayout.compile(Content.get_def(&"poi", &"pell_pharmacy") as PoiDef)
+	assert_true(RouteCues.entry_windows(by_door).is_empty(), "the pharmacy is walked into by a door")

@@ -33,11 +33,16 @@ were a room (TD-040). Stair flights and door leaves stood 8 cm into the walls be
   * `std_surface` only acts on negative values there, and instance uniform indices are unchanged.
 * **Two-storey openings** (`lancet`, `window_tall`, `door2_tall`) are single 5.8 m kit pieces.
   They are authored on the lower storey and fill the edge above, which must be a wall.
+  * The tall barn door leaf is dressed on one face (battens, Z braces, strap hinges). The right
+    leaf of a `door2_tall` pair is the left leaf mirrored (`PoiParts.OPENINGS` `mirror_pair`), not
+    turned half round, so both leaves show that face outside.
 * **Galleries.** An upper room beside a void gets a gallery edge instead of a wall: a fascia over
   the slab edge and a waist-high railing with a collision box. The railing is `balustrade` (turned
   balusters) or `rail` (rough timber). The room can opt out with `"gallery": false`, which builds
   a wall.
   * Only `open` (a gap: an authored drop) or `breach` (a broken railing) can go on a gallery edge.
+  * A stairwell (the hole a flight comes up through) beside the void gets neither railing nor
+    fascia on that edge: the flight's banister is the only guard there (TD-042).
 * **One room, whatever the height.** `PoiInstance.locate` resolves a point in a void to the tall
   room's floor cell. Room triggers, shelter, indoor checks and reverb therefore answer for the
   floor the room rises from. Ceiling fixtures (`ceiling_mounted` props) and authored lights hang
@@ -95,7 +100,7 @@ were a room (TD-040). Stair flights and door leaves stood 8 cm into the walls be
   (and whether it is open to the roof). It splits the groups into rectangles and stacks a
   rectangle that repeats storey over storey into one box. It then merges the pair that wastes the
   least volume until 8 or fewer remain.
-* Each box stops 5 cm inside the walls, so a yard inside an L or a courtyard keeps the outdoor
+* Each box stops 5 cm inside the walls' centre lines, so a yard inside an L or a courtyard keeps the outdoor
   light, and so do the facades.
 * The probes stay in the `interior_probe` group (daylight-scaled by `EnvironmentController`) with
   `UPDATE_ONCE`.
@@ -111,8 +116,9 @@ were a room (TD-040). Stair flights and door leaves stood 8 cm into the walls be
 * Five showcase buildings are retrofitted, and their piece ids are kept:
   * St. Ansel's: a double-height nave with a choir-loft gallery, a belfry tower with a steeple,
     and lancets.
-  * The Okafor barn: the threshing bay is open to the roof under a hayloft gallery, with a tall
-    hay door and a hay-chute drop.
+  * The Okafor barn: the threshing aisle rises two storeys, open to the roof, between hayloft
+    galleries with rough rails. It is entered by tall barn doors (`door2_tall`), the hay chute is a
+    gap in the east rail (a one-way drop), and the hay door moved to the back gable.
   * The sawmill: a two-storey saw floor.
   * The grange hall: open to the roof, with its balcony as a gallery.
   * The Okafor farmhouse: a summer-kitchen ell, so its roof and probes are an L.

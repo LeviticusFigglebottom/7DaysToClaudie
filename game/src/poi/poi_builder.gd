@@ -594,6 +594,14 @@ func _openings() -> void:
 				var hx: float = float(spec["w"]) * 0.5
 				var dl: PoiPieces.Door = _door(oid + "_l", xf, Vector3(-hx, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign, leaf_size)
 				var dr: PoiPieces.Door = _door(oid + "_r", xf, Vector3(hx, 0, 0), PI, leaf, st, str(op["key"]), hp, inside_sign, leaf_size)
+				if bool(spec.get("mirror_pair", false)) and not op.has("model"):
+					# A leaf dressed on one face (the barn door's battens, braces and strap hinges),
+					# turned half round on its pivot, showed its plain back outside: the right leaf's
+					# mesh is the left one mirrored instead (through its own plane; the collider is
+					# symmetric, and a broken leaf keeps the transform).
+					for c: Node in dr.pivot.get_children():
+						if c is MeshInstance3D:
+							(c as MeshInstance3D).transform = Transform3D(Basis.from_scale(Vector3(1, 1, -1)), Vector3.ZERO)
 				dl.opening_id = oid
 				dr.opening_id = oid
 				dl.partner = dr
@@ -899,7 +907,10 @@ func _ramp(a: Vector3, b: Vector3, width: float) -> void:
 ## each roofed for where it sits, joined along valleys and cut at taller walls. Gable ends and
 ## parapets wear the building's exterior finish and decay (ADR-0019).
 func _roof() -> void:
-	_wings = RoofPlanner.plan(layout)
+	# The chimney (_exterior, which runs first) may have planned it already; the plan is a pure
+	# function of the layout.
+	if _wings.is_empty():
+		_wings = RoofPlanner.plan(layout)
 	var ctx: Dictionary = {"exterior": str(layout.style.get("exterior", "siding_white")), "decay": _decay, "layout": layout,
 		"open_finish": {}, "partitions": []}
 	for w: RoofPlanner.Wing in _wings:

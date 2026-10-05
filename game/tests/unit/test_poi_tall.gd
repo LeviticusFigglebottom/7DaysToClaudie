@@ -166,6 +166,27 @@ func test_tall_openings_span_two_storeys() -> void:
 	assert_eq(_count(v2.errors, "tall opening 'lobby_tall'"), 1, "no wall above the one-storey lobby")
 
 
+func test_tall_door_pair_is_mirrored() -> void:
+	# The barn door is dressed on one face (battens, braces, strap hinges): the right leaf is the
+	# left one mirrored, not turned half round, so both show their dressed face outside.
+	var lay: Dictionary = _hall()
+	lay["openings"][0] = {"id": "doors_tall", "at": [1, 4], "side": "S", "type": "door2_tall", "state": "closed"}
+	var inst: PoiInstance = PoiBuilder.build(PoiLayout.compile(_def(lay)), &"test/tall_doors")
+	add_child_autofree(inst)
+	var dets: Dictionary = {}
+	for n: Node in inst.get_children():
+		if not n is PoiPieces.Door:
+			continue
+		var d: PoiPieces.Door = n
+		for c: Node in d.pivot.get_children():
+			if c is MeshInstance3D:
+				dets[d.op_id] = (d.pivot.transform.basis * (c as MeshInstance3D).transform.basis).determinant()
+				break
+	assert_gt(float(dets.get("doors_tall_l", 0.0)), 0.0, "the left leaf as modelled")
+	assert_lt(float(dets.get("doors_tall_r", 0.0)), 0.0, "the right leaf is the left one mirrored")
+	assert_gt(float(dets.get("lobby_door", 0.0)), 0.0, "single leaves are not mirrored")
+
+
 func test_locate_answers_for_the_whole_volume() -> void:
 	var inst: PoiInstance = PoiBuilder.build(PoiLayout.compile(_def(_hall())), &"test/tall")
 	add_child_autofree(inst)
