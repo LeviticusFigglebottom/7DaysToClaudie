@@ -697,8 +697,6 @@ func _check_triggers(seen: Dictionary) -> void:
 			_w("guardian '%s' is not in the loot room" % sl2["sid"])
 
 
-## Lock kinds sit on doors that are locked; and where each padlock hangs (the side the door is
-## approached from: reachable from outside without passing through it).
 ## ADR-0022: seated and lying sleepers land on a seat or bed in reach (SleeperAnchors: a warning
 ## for each one left on the floor without "anchor": "floor", an error for a pinned anchor that
 ## names no such prop), and authored window cues are valid (RouteCues).
@@ -710,6 +708,8 @@ func _check_dungeon_life() -> void:
 			_w(w)
 
 
+## Lock kinds sit on doors that are locked; and where each padlock hangs (the side the door is
+## approached from: reachable from outside without passing through it).
 func _check_locks(keys: Dictionary) -> void:
 	for op: Dictionary in layout.openings:
 		var lock: String = str(op.get("lock", ""))

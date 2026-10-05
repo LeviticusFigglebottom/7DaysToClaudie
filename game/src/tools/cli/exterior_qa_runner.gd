@@ -29,6 +29,10 @@ const SHOTS: Array[Dictionary] = [
 var _out: String = "res://../build/exterior_qa"
 var _temp: Array[Node] = []
 var _settle: float = 4.0
+## Longest wait for the vegetation round the camera to stream in. Software Vulkan saturates the
+## CPU and the scatter can take minutes, so a quick pass can cut it short (night shots barely
+## show it).
+var _stream_wait: float = 240.0
 var _only: PackedStringArray = []
 
 
@@ -42,6 +46,8 @@ func _ready() -> void:
 				_settle = float(args[i + 1])
 			"--only":
 				_only = args[i + 1].split(",")
+			"--stream-wait":
+				_stream_wait = float(args[i + 1])
 	DirAccess.make_dir_recursive_absolute(_out)
 	_run.call_deferred()
 
@@ -52,13 +58,14 @@ func _wait(s: float) -> void:
 		await get_tree().process_frame
 
 
-## Waits (up to 4 min) until the vegetation within two chunks of the camera has streamed in.
+## Waits (up to --stream-wait, 4 min by default) until the vegetation within two chunks of the
+## camera has streamed in.
 func _wait_streamed(w: Node) -> void:
 	var veg: Node = w.get(&"vegetation")
 	var t0: int = Time.get_ticks_msec()
 	while veg != null and not bool(veg.call(&"is_settled", 2)):
-		if Time.get_ticks_msec() - t0 > 240000:
-			print("QA warning: vegetation still streaming after 240 s")
+		if Time.get_ticks_msec() - t0 > int(_stream_wait * 1000.0):
+			print("QA warning: vegetation still streaming after %.0f s" % _stream_wait)
 			return
 		await get_tree().process_frame
 

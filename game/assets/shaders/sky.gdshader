@@ -135,8 +135,10 @@ void sky() {
 	// around the moon.
 	if (night_amount > 0.01 && up > 0.0) {
 		vec3 sdir = star_rotation * dir;
+		// The star map is a 2:1 equirect with its stars pre-stretched in longitude (sky.py), so it
+		// wraps once: tiling it twice squeezed every star into a dash along its meridian.
 		vec2 suv = vec2(atan(sdir.x, sdir.z) / 6.2831853 + 0.5, acos(clamp(sdir.y, -1.0, 1.0)) / 3.1415926);
-		vec3 stars = texture(star_tex, suv * vec2(2.0, 1.0)).rgb;
+		vec3 stars = texture(star_tex, suv).rgb;
 		float glare = moon_sky * smoothstep(0.86, 0.995, md);
 		float vis = star_visibility * (1.0 - glare) * (1.0 - moon_cover);
 		col += stars * night_amount * vis * (1.0 - cloud_alpha) * smoothstep(0.0, 0.25, up) * 1.4;

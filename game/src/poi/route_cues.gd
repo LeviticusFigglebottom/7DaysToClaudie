@@ -97,9 +97,9 @@ static func plan(layout: PoiLayout) -> Dictionary:
 
 
 ## Window openings the route climbs in through from outside: opening id -> true. Walks the route
-## legs that start outside the building with the validator's own graph (PoiValidator._bfs, without
-## keys: nobody brings the key in from the street), not the whole validation, which costs seconds
-## for the big buildings and this runs as each one is built at world load.
+## legs that start outside the building with the validator's own graph (without keys: nobody
+## brings the key in from the street), not the whole validation, which costs seconds for the big
+## buildings and this runs as each one is built at world load.
 static func entry_windows(layout: PoiLayout) -> Dictionary:
 	var v := PoiValidator.new()
 	v.layout = layout
@@ -111,10 +111,9 @@ static func entry_windows(layout: PoiLayout) -> Dictionary:
 		if not v._walkable(li, c):
 			continue
 		if prev is String or not layout.is_room(layout.room_at(int(prev[0]), prev[1])):
-			var seen: Dictionary = v._bfs([prev], {})
-			var k: String = PoiValidator.node_key(li, c)
-			if seen.has(k):
-				paths.append(v._reconstruct(seen, k))
+			var path: Array = _route_leg(v, layout, prev, PoiValidator.node_key(li, c))
+			if not path.is_empty():
+				paths.append(path)
 		prev = [li, c]
 	var out: Dictionary = {}
 	for path: Array in paths:
@@ -135,6 +134,46 @@ static func entry_windows(layout: PoiLayout) -> Dictionary:
 			var op: Dictionary = (layout.walls.get(PoiLayout.edge_key(li, e[0], e[1]), {}) as Dictionary).get("opening", {})
 			if not op.is_empty() and is_window(str(op["type"])):
 				out[str(op["id"])] = true
+	return out
+
+
+## The validator's shortest path from `start` ("out" or [level, cell]) to the node keyed `goal`
+## ([] when there is none). The same breadth-first search and neighbour order as PoiValidator._bfs,
+## so the same path, but it stops at the goal and pops by index: the full search (Array.pop_front
+## is linear) took seconds for the sawmill's yard legs at world load.
+static func _route_leg(v: PoiValidator, layout: PoiLayout, start: Variant, goal: String) -> Array:
+	var k0: String = "out" if start is String else PoiValidator.node_key(int(start[0]), start[1])
+	var seen: Dictionary = {k0: ["", start]}
+	if k0 == goal:
+		return [start]
+	var queue: Array = [start]
+	var head: int = 0
+	while head < queue.size():
+		var cur: Variant = queue[head]
+		head += 1
+		var cur_key: String = "out" if cur is String else PoiValidator.node_key(int(cur[0]), cur[1])
+		var nbrs: Array = _outside_cells(layout) if cur is String else v._neighbors(int(cur[0]), cur[1], {})
+		for n: Variant in nbrs:
+			var nk: String = "out" if n is String else PoiValidator.node_key(int(n[0]), n[1])
+			if seen.has(nk):
+				continue
+			seen[nk] = [cur_key, n]
+			if nk == goal:
+				return v._reconstruct(seen, nk)
+			queue.append(n)
+	return []
+
+
+## Where the validator's "out" node leads: every street cell of the ground floor's plan and the
+## ring around it (PoiValidator._bfs).
+static func _outside_cells(layout: PoiLayout) -> Array:
+	var out: Array = []
+	var lv: Dictionary = layout.levels.get(0, {})
+	for r: int in range(-1, int(lv.get("d", 0)) + 1):
+		for c: int in range(-1, int(lv.get("w", 0)) + 1):
+			var cc := Vector2i(c, r)
+			if layout.room_at(0, cc) == ".":
+				out.append([0, cc])
 	return out
 
 
