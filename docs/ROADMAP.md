@@ -48,6 +48,14 @@ and clear at least one authored building along its route, survive a night and a 
   * Lights burn down; hitboxes follow bones; damage direction and heartbeat.
   * An options screen and Esc that closes the pause menu.
   * Weather variety with lasting snow; dry interiors; rebalanced infection, bleeding, XP and loot.
+- ✅ Forest-level asset fidelity pass (ADR-0017):
+  * A lush, patchy forest floor: moss mounds, twig-and-cone litter, a third fern, denser
+    understory, multi-tuft meadow grass. Ground cover fades plant by plant instead of popping
+    in whole chunks.
+  * Deeper fir and larch bark; real moss fronds; broken stubs and stronger buttresses on trees.
+  * Chipped, triplanar-mapped boulders that cast shadows.
+  * 16k Hollowed with smooth faces; first-person hands that grip the tool.
+  * The Route 9 bridge over the Tamsin River.
 - ✅ Debug tools: free cam, spawn menu, time/weather, AI overlay, POI route visualizer, perf overlay,
   seed viewer, structural view (docs/DEBUG_TOOLS.md).
 - ✅ Audio: 3D occlusion, reverb zones (listener-based, TD-013), ambient beds, creature cues.

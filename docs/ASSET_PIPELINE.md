@@ -94,8 +94,10 @@ right import settings (VRAM compression, normal maps, audio loops, glTF post-imp
   foliage texture (`uv.planar_project(rect=...)`).
 * **Collision proxies**: extra objects named `<name>-convcolonly` (convex hull, preferred) or
   `<name>-colonly` (trimesh, static only). Boxes for furniture, hulls for rocks, none for grass.
-* **Budgets (triangles)**: small props ≤ 1.5k · furniture ≤ 3k · vehicles ≤ 8k · rocks ≤ 1.8k ·
-  trees LOD0 ≤ 9k (incl. cards), LOD1 ≤ 3k, LOD2 ≤ 800 · characters ≤ 10k.
+* **Budgets (triangles)**: small props ≤ 1.5k · furniture ≤ 3k · vehicles ≤ 8k · boulders ≤ 3k
+  (+ a decimated `_lod1`) · trees LOD0 ≤ 11k (incl. cards), LOD1 ≤ 3k, LOD2 ≤ 800 · Hollowed
+  bodies ≤ 16k (the face takes the largest share) · first-person arms ≤ 6k per arm · ground cover
+  (fern ≤ 850, litter ≤ 600, moss ≤ 400, grass patch ≤ 100).
 * **LODs**: Godot auto-generates mesh LODs on import. Vegetation ships explicit LODs as separate
   files: `<id>.glb`, `<id>_lod1.glb`, `<id>_lod2.glb` (impostors are baked in Godot by `make bake`).
 * **Condition variants** (props/kit): `<id>` (clean), `<id>_worn`, `<id>_destroyed` — or one model
