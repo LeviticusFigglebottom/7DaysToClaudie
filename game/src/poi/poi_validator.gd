@@ -14,9 +14,21 @@ extends RefCounted
 ##    traps, stair landings, holes), a gallery railing only lets anyone through where a gap is
 ##    authored, and that drop lands on the room's floor without stranding the player; roof
 ##    overrides name real wings,
-##  * the building fits its footprint, and the performance budget (lights, sleepers, pieces) holds.
+##  * the building fits its footprint, and the performance budget (lights, sleepers, pieces) holds;
+##  * alternatives (ADR-0030, PoiDressing): their structure, and EVERY option against the base (the
+##    authored defaults) plus every full combination (a deterministic sample when there are too
+##    many): each must keep the route, the loot room, the sleepers and the triggers valid, and every
+##    shortcut and every locked door the base can open must stay usable;
+##  * validate_all also generates and validates buildings from every template (BuildingGenerator)
+##    and resolves every framework lot without a pick (LotPicker).
 ## Node graph: (level, cell) room/outside cells; "out" = the yard. A tall room's void cells are
 ## never nodes: stepping into one lands on the floor it rises from.
+
+## New ADR-0030 scripts by path, so this compiles before the editor registers their class names.
+const Dressing := preload("res://src/poi/poi_dressing.gd")
+const Generator := preload("res://src/poi/building_generator.gd")
+const Lots := preload("res://src/poi/lot_picker.gd")
+const TemplateDef := preload("res://src/core/content/defs/building_template_def.gd")
 
 const PASSABLE_DOOR_STATES: PackedStringArray = ["closed", "open", "broken", "missing", "locked", "locked_inside"]
 const DEFAULT_BUDGET: Dictionary = {"lights": 10, "enemies": 14, "pieces": 2600, "props": 220}
@@ -47,7 +59,80 @@ static func validate(def: PoiDef) -> PoiValidator:
 	v.layout = PoiLayout.compile(def)
 	v.errors.append_array(v.layout.errors)
 	v._run()
+	if def.layout.has("alternatives"):
+		v._check_alternatives(def)
 	return v
+
+
+## Full combinations of alternatives tried beyond the single changes (Dressing.combinations).
+const COMBO_LIMIT: int = 16
+
+
+## ADR-0030: the alternatives block is well formed, and every option (each one changed alone from the
+## defaults, then full combinations) validates like the base. Errors and new warnings are reported
+## once each, tagged with the picks that showed them ("[alt bedroom=nursery, front=boarded]").
+func _check_alternatives(def: PoiDef) -> void:
+	var structure: PackedStringArray = Dressing.check(def)
+	for e: String in structure:
+		_e(e)
+	if not structure.is_empty():
+		return
+	var base_warn: Dictionary = {}
+	for wn: String in warnings:
+		base_warn[wn] = true
+	var base_use: Dictionary = _usable_exits()
+	var seen_e: Dictionary = {}
+	var seen_w: Dictionary = {}
+	var combos: Array[Dictionary] = Dressing.combinations(def, COMBO_LIMIT)
+	for i: int in range(1, combos.size()):
+		var picks: Dictionary = combos[i]
+		var vv := PoiValidator.new()
+		vv.layout = PoiLayout.compile(Dressing.resolve(def, picks))
+		vv.errors.append_array(vv.layout.errors)
+		vv._run()
+		vv._check_exits_kept(base_use)
+		var tag: String = "[alt %s] " % Dressing.describe(picks)
+		var head: String = "%s: " % layout.poi_id
+		for e2: String in vv.errors:
+			if not seen_e.has(e2):
+				seen_e[e2] = true
+				errors.append(head + tag + e2.trim_prefix(head))
+		for w2: String in vv.warnings:
+			if not base_warn.has(w2) and not seen_w.has(w2):
+				seen_w[w2] = true
+				warnings.append(head + tag + w2.trim_prefix(head))
+	stats["variants"] = combos.size()
+
+
+## Which exits work in this layout: shortcut opening id -> usable from its inside cell, and locked
+## door id -> its key can be found.
+func _usable_exits() -> Dictionary:
+	var out: Dictionary = {"shortcuts": {}, "locks": {}}
+	var keys: Dictionary = {}
+	var seen: Dictionary = _reach_all(keys)
+	for sc: Variant in layout.shortcuts:
+		var op_id: String = str((sc as Dictionary).get("opening", "")) if sc is Dictionary else str(sc)
+		var op: Dictionary = layout.opening(op_id)
+		if op.is_empty():
+			continue
+		out["shortcuts"][op_id] = seen.has(node_key(int(op["level"]), op["cell"])) and _opening_passable(op, op["cell"], keys)
+	for op2: Dictionary in layout.openings:
+		if str(op2["state"]) == "locked" and str(op2["key"]) != "":
+			out["locks"][str(op2["id"])] = keys.has(str(op2["key"]))
+	return out
+
+
+## A shortcut or a locked door the base can use must stay usable in every alternative (an option
+## that barricades the bolted way out, or drops the key, breaks the dungeon even when the route
+## itself still completes).
+func _check_exits_kept(base: Dictionary) -> void:
+	var now: Dictionary = _usable_exits()
+	for op_id: String in base["shortcuts"]:
+		if bool(base["shortcuts"][op_id]) and not bool((now["shortcuts"] as Dictionary).get(op_id, false)):
+			_e("shortcut '%s' can no longer be used from inside" % op_id)
+	for lock_id: String in base["locks"]:
+		if bool(base["locks"][lock_id]) and (now["locks"] as Dictionary).has(lock_id) and not bool(now["locks"][lock_id]):
+			_e("locked door '%s': its key can no longer be found" % lock_id)
 
 
 func ok() -> bool:
@@ -823,4 +908,56 @@ static func validate_all() -> Dictionary:
 			var need := Vector2(pd.footprint) if facing in ["S", "N"] else Vector2(pd.footprint.y, pd.footprint.x)
 			if need.x > rect.size.x + 0.01 or need.y > rect.size.y + 0.01:
 				errors.append("%s: poi '%s' footprint %s (facing %s) does not fit lot '%s' %s" % [fw.id, pick, pd.footprint, facing, l["id"], rect.size])
-	return {"errors": errors, "warnings": warnings, "summary": "%d POIs, %d frameworks checked" % [n, Content.all(&"framework").size()]}
+	var gen: Dictionary = validate_generated()
+	errors.append_array(gen["errors"])
+	warnings.append_array(gen["warnings"])
+	return {"errors": errors, "warnings": warnings, "summary": "%d POIs, %d frameworks, %d generated buildings checked" % [
+		n, Content.all(&"framework").size(), int(gen["count"])]}
+
+
+## World seeds the framework lots are resolved and generated with in `make validate`.
+const LOT_SEEDS: Array[int] = [4471, 1, 90210]
+## Buildings generated per template in `make validate` (the unit tests run 50).
+const GEN_SEEDS: int = 6
+
+
+## ADR-0030: buildings from every template (GEN_SEEDS seeds each) and from every framework lot
+## without a pick (LOT_SEEDS world seeds) generate and validate with no errors and no warnings;
+## every such lot resolves to something unless it is reserved.
+static func validate_generated() -> Dictionary:
+	var errors: PackedStringArray = []
+	var warnings: PackedStringArray = []
+	var count: int = 0
+	for t: TemplateDef in Content.all(&"building_template"):
+		for i: int in GEN_SEEDS:
+			var seed: int = Ids.hash64("validate:%s:%d" % [t.id, i])
+			var pd: PoiDef = Generator.generate(t, seed)
+			count += 1
+			_collect(pd, "template %s seed %d" % [t.id, i], errors, warnings)
+	for fw: FrameworkDef in Content.all(&"framework"):
+		for ws: int in LOT_SEEDS:
+			for res: Dictionary in Lots.resolve(fw, String(fw.id), ws):
+				var l: Dictionary = res["lot"]
+				match str(res["kind"]):
+					"empty":
+						if ws == LOT_SEEDS[0]:
+							warnings.append("%s: lot '%s' has no pick and nothing in the pool fits it (zoning %s, %s)" % [
+								fw.id, l.get("id"), l.get("zoning", []), res["size"]])
+					"generated":
+						count += 1
+						var gd: PoiDef = Lots.def_for(res)
+						_collect(gd, "%s lot %s world seed %d" % [fw.id, l.get("id"), ws], errors, warnings)
+						if gd != null and (gd.footprint.x > (res["size"] as Vector2i).x or gd.footprint.y > (res["size"] as Vector2i).y):
+							errors.append("%s: lot '%s' generated %s with footprint %s, larger than the lot %s" % [fw.id, l.get("id"), gd.id, gd.footprint, res["size"]])
+	return {"errors": errors, "warnings": warnings, "count": count}
+
+
+static func _collect(pd: PoiDef, what: String, errors: PackedStringArray, warnings: PackedStringArray) -> void:
+	if pd == null:
+		errors.append("generated %s: the generator made nothing" % what)
+		return
+	var v: PoiValidator = validate(pd)
+	for e: String in v.errors:
+		errors.append("generated %s: %s" % [what, e])
+	for w: String in v.warnings:
+		warnings.append("generated %s: %s" % [what, w])

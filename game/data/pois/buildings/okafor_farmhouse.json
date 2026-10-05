@@ -202,9 +202,9 @@
         {"prop": "ceiling_light", "pos": [5.5, 6.0], "y": 2.8, "level": 1},
         {"prop": "desk_small", "id": "sewing_table", "at": [1, 0], "against": "N", "level": 1},
         {"prop": "chair_wood", "pos": [1.5, 0.95], "rot": 180, "level": 1},
-        {"prop": "farm_hope_chest", "id": "sewing_hope_chest", "pos": [0.33, 1.6], "rot": 90, "level": 1},
-        {"prop": "clothes_pile", "pos": [2.6, 1.85], "rot": 30, "level": 1},
-        {"prop": "cardboard_box", "id": "sewing_scrap_box", "pos": [3.45, 0.42], "rot": 10, "level": 1},
+        {"prop": "farm_hope_chest", "id": "sewing_hope_chest", "pos": [0.33, 1.6], "rot": 90, "level": 1, "alt": "sewing_room:sewing"},
+        {"prop": "clothes_pile", "pos": [2.6, 1.85], "rot": 30, "level": 1, "alt": "sewing_room:sewing"},
+        {"prop": "cardboard_box", "id": "sewing_scrap_box", "pos": [3.45, 0.42], "rot": 10, "level": 1, "alt": "sewing_room:sewing"},
         {"prop": "farm_lantern", "pos": [1.05, 0.35], "y": 0.75, "level": 1},
         {"prop": "wardrobe", "id": "linen_press", "pos": [5.0, 0.42], "level": 1},
         {"prop": "cardboard_box", "id": "linen_box", "pos": [4.45, 1.5], "rot": 20, "level": 1},
@@ -270,7 +270,15 @@
         {"prop": "farm_oil_lamp", "pos": [14.2, 2.12], "y": 0.76},
         {"prop": "farm_washtub", "pos": [12.55, 0.55], "rot": 10},
         {"prop": "farm_butter_churn", "pos": [12.35, 3.62]},
-        {"prop": "bucket", "pos": [15.5, 3.62]}
+        {"prop": "bucket", "pos": [15.5, 3.62]},
+        {"prop": "bookshelf", "id": "study_books", "pos": [0.2, 1.55], "rot": 90, "level": 1, "alt": "sewing_room:study"},
+        {"prop": "books_scatter", "pos": [2.55, 1.9], "rot": 35, "level": 1, "alt": "sewing_room:study"},
+        {"prop": "out_lockbox", "id": "study_lockbox", "pos": [3.45, 0.35], "rot": 10, "level": 1, "alt": "sewing_room:study"},
+        {"prop": "cardboard_box", "id": "junk_box_west", "pos": [0.35, 1.45], "rot": 80, "level": 1, "alt": "sewing_room:junk"},
+        {"prop": "cardboard_box", "id": "junk_box_stacked", "pos": [0.35, 1.45], "y": 0.34, "rot": 95, "level": 1, "alt": "sewing_room:junk"},
+        {"prop": "crate_wood", "id": "junk_crate", "pos": [3.4, 0.4], "rot": 20, "level": 1, "alt": "sewing_room:junk"},
+        {"prop": "cardboard_box_open", "pos": [2.7, 2.1], "rot": 40, "level": 1, "alt": "sewing_room:junk"},
+        {"prop": "farm_milk_can", "pos": [3.55, 2.35], "level": 1, "alt": "sewing_room:junk"}
       ],
       "pickups": [
         {"id": "storeroom_key", "item": "farm_storeroom_key", "pos": [7.5, 7.48], "y": 0.62},
@@ -292,17 +300,20 @@
         {"id": "chidi_bed_sleeper", "pos": [10.2, 7.55], "enemy": "hollow", "pose": "lie", "rot": 90, "level": 1},
         {"id": "spare_room_stander", "pos": [7.05, 2.55], "enemy": "hollow", "pose": "stand", "rot": 160, "level": 1, "group": "spare"},
         {"id": "papa_room_dragger", "pos": [8.6, 3.05], "enemy": "dragger", "pose": "lie", "rot": 270, "anchor": "floor"},
-        {"id": "cellar_sleeper_a", "pos": [5.35, 1.45], "enemy": "hollow", "pose": "lie", "rot": 80, "level": -1, "group": "cellar", "anchor": "floor"},
-        {"id": "cellar_sleeper_b", "pos": [10.4, 2.4], "enemy": "hollow", "pose": "lie", "rot": 260, "level": -1, "group": "cellar", "anchor": "floor"},
+        {"id": "cellar_sleeper_a", "pos": [5.35, 1.45], "enemy": "hollow", "pose": "lie", "rot": 80, "level": -1, "group": "cellar", "anchor": "floor", "alt": "cellar:as_found"},
+        {"id": "cellar_sleeper_b", "pos": [10.4, 2.4], "enemy": "hollow", "pose": "lie", "rot": 260, "level": -1, "group": "cellar", "anchor": "floor", "alt": "cellar:as_found"},
         {"id": "cellar_lurcher", "pos": [7.6, 0.45], "enemy": "lurcher", "pose": "crouch", "rot": 120, "level": -1, "group": "cellar"},
         {"id": "papa", "pos": [8.45, 1.45], "enemy": "hollow", "pose": "stand", "rot": -90, "level": -1, "group": "cellar", "guardian": true},
-        {"id": "summer_kitchen_sitter", "pos": [13.62, 1.9], "enemy": "hollow", "pose": "sit", "rot": 90}
+        {"id": "summer_kitchen_sitter", "pos": [13.62, 1.9], "enemy": "hollow", "pose": "sit", "rot": 90},
+        {"id": "cellar_sleeper_a", "pos": [6.4, 0.5], "enemy": "hollow", "pose": "lie", "rot": 100, "level": -1, "group": "cellar", "anchor": "floor", "alt": "cellar:huddled"},
+        {"id": "cellar_sleeper_b", "pos": [5.45, 0.55], "enemy": "hollow", "pose": "crouch", "rot": 140, "level": -1, "group": "cellar", "alt": "cellar:huddled"}
       ],
       "traps": [
         {"id": "chime_back_door", "type": "can_chime", "at": [1, 0], "side": "N"},
         {"id": "creak_landing", "type": "creaky_floor", "at": [5, 5], "level": 1},
-        {"id": "weak_floor_chidi", "type": "weak_floor", "at": [7, 7], "level": 1},
-        {"id": "cold_room_gun", "type": "shotgun", "at": [9, 0], "side": "W", "level": -1}
+        {"id": "weak_floor_chidi", "type": "weak_floor", "at": [7, 7], "level": 1, "alt": "weak_floor:by_the_door"},
+        {"id": "cold_room_gun", "type": "shotgun", "at": [9, 0], "side": "W", "level": -1},
+        {"id": "weak_floor_chidi", "type": "weak_floor", "at": [9, 8], "level": 1, "alt": "weak_floor:under_the_window"}
       ],
       "triggers": [
         {"id": "wake_parlour", "group": "parlour", "on": "pickup", "pickup": "storeroom_key"},
@@ -349,6 +360,31 @@
       ],
       "loot_room": {"room": "M", "level": -1},
       "shortcuts": [{"opening": "pantry_door"}],
+      "alternatives": [
+        {"id": "sewing_room", "label": "What the little room at the top of the stairs was by the end",
+         "options": [
+           {"id": "sewing", "weight": 2},
+           {"id": "study", "label": "Papa's study", "rooms": [{"level": 1, "room": "S", "name": "Papa's study", "type": "office", "wall": "wood_paneling_dark", "floor": "wood_oak"}]},
+           {"id": "junk", "label": "The junk room", "rooms": [{"level": 1, "room": "S", "name": "Junk room", "type": "storage", "wall": "plaster_grey"}]}]},
+        {"id": "spare_room", "label": "The spare room under the leak",
+         "options": [
+           {"id": "grey", "weight": 2},
+           {"id": "striped", "rooms": [{"level": 1, "room": "T", "wall": "wallpaper_stripe_green"}]},
+           {"id": "mustard", "rooms": [{"level": 1, "room": "T", "wall": "paint_mustard", "floor": "wood_oak"}]}]},
+        {"id": "weak_floor", "label": "Where Chidi's floor has rotted through",
+         "options": [
+           {"id": "by_the_door", "weight": 2},
+           {"id": "under_the_window"}]},
+        {"id": "cellar", "label": "How the cellar ambush lies",
+         "options": [
+           {"id": "as_found", "weight": 2},
+           {"id": "huddled", "label": "Huddled by the ladder"}]},
+        {"id": "kitchen", "label": "The farm kitchen",
+         "options": [
+           {"id": "sage", "weight": 2},
+           {"id": "checked", "rooms": [{"room": "K", "wall": "tile_kitchen_check"}]},
+           {"id": "mustard", "rooms": [{"room": "K", "wall": "paint_mustard", "floor": "linoleum_beige"}]}]}
+      ],
       "budget": {"lights": 4, "enemies": 15}
     }
   ]

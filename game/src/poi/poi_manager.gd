@@ -9,6 +9,13 @@ extends Node3D
 ## Inside a framework, a lot's POI is centred in its rect with its front (+Z) toward `facing`.
 ## Owns the poi.* commands (ADR-0003): poi.disarm_trap takes a POI trap apart for its parts.
 ## A building whose weak floor gives way gets its nav tiles rebaked (ADR-0022).
+## ADR-0030: every building is dressed for its run before it is built (dress_for: alternatives
+## picked from the world seed and pinned in its saved state, per-run wear), and lots without an
+## authored pick hold what LotPicker chooses: an authored building from the pool or a generated one.
+
+## New ADR-0030 scripts by path, so this compiles before the editor registers their class names.
+const Dressing := preload("res://src/poi/poi_dressing.gd")
+const Lots := preload("res://src/poi/lot_picker.gd")
 
 const SLEEPER_SPAWN: float = 46.0
 const SLEEPER_DESPAWN: float = 95.0
@@ -43,22 +50,17 @@ func _place_framework(pl: Dictionary) -> void:
 		Log.warn("poi", "framework %s not found" % pl["def"])
 		return
 	var fxf: Transform3D = _placement_xf(pl)
-	for lot: Variant in fw.lots:
-		var l: Dictionary = lot
-		var pick: String = str(l.get("pick", ""))
-		if pick == "":
+	var seed: int = Game.session.world_seed if Game.session != null else 0
+	for res: Dictionary in Lots.resolve(fw, str(pl["id"]), seed):
+		var l: Dictionary = res["lot"]
+		if str(res["kind"]) in ["reserved", "empty"]:
 			continue
-		var rect: Array = l["rect"]
-		var center := Vector3(float(rect[0]) + float(rect[2]) * 0.5, 0.0, float(rect[1]) + float(rect[3]) * 0.5)
-		var yaw: float = {"S": 0.0, "E": PI * 0.5, "N": PI, "W": -PI * 0.5}.get(str(l.get("facing", "S")), 0.0)
-		var pd: PoiDef = Content.get_def(&"poi", StringName(pick)) as PoiDef
+		var pd: PoiDef = Lots.def_for(res)
 		if pd == null:
-			Log.warn("poi", "lot %s picks unknown poi %s" % [l.get("id"), pick])
+			Log.warn("poi", "lot %s: nothing to place (%s %s)" % [l.get("id"), res["kind"], res.get("def_id", res.get("template", ""))])
 			continue
-		var b := Basis(Vector3.UP, yaw)
-		var local_origin: Vector3 = center - b * Vector3(pd.footprint.x * 0.5, 0.0, pd.footprint.y * 0.5)
-		var xf: Transform3D = fxf * Transform3D(b, local_origin)
-		_place_poi(StringName(pick), StringName("%s/%s" % [pl["id"], l["id"]]), xf, Vector2(pd.footprint))
+		var xf: Transform3D = fxf * lot_xf(l, pd.footprint)
+		_place_poi(pd.id, StringName(str(res["instance"])), xf, Vector2(pd.footprint), pd)
 	for fi: int in fw.fixtures.size():
 		var f: Dictionary = fw.fixtures[fi]
 		var pdef: PropDef = Content.get_def(&"prop", StringName(str(f.get("prop", "")))) as PropDef
@@ -95,12 +97,47 @@ func _place_framework(pl: Dictionary) -> void:
 		body.global_transform = Transform3D(fxf.basis * Basis(Vector3.UP, deg_to_rad(float(f.get("rot", 0.0)))), lp)
 
 
-func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _pad: Vector2) -> PoiInstance:
-	var pd: PoiDef = Content.get_def(&"poi", def_id) as PoiDef
+## A lot's POI frame in its framework: the footprint centred in the rect, its front (+Z) toward
+## the lot's `facing`.
+static func lot_xf(l: Dictionary, footprint: Vector2i) -> Transform3D:
+	var rect: Array = l["rect"]
+	var center := Vector3(float(rect[0]) + float(rect[2]) * 0.5, 0.0, float(rect[1]) + float(rect[3]) * 0.5)
+	var yaw: float = {"S": 0.0, "E": PI * 0.5, "N": PI, "W": -PI * 0.5}.get(str(l.get("facing", "S")), 0.0)
+	var b := Basis(Vector3.UP, yaw)
+	return Transform3D(b, center - b * Vector3(footprint.x * 0.5, 0.0, footprint.y * 0.5))
+
+
+## The def as this run builds it at this placement (ADR-0030): per-run picks and wear for a world
+## dressed per run, the authored defaults and the old scatter for a legacy save. A run keeps the
+## picks it made the first time (pinned in the POI's saved state), even if content gains options.
+static func dress_for(pd: PoiDef, instance_id: StringName, session: GameSession) -> PoiDef:
+	var mode: int = Dressing.MODE_LEGACY
+	var world_seed: int = 0
+	var st: Dictionary = {}
+	if session != null:
+		mode = session.world.poi_dressing
+		world_seed = session.world_seed
+		st = session.world.poi_state(instance_id)
+	var seed: int = Dressing.dressing_seed(world_seed, instance_id, mode)
+	var picks: Dictionary = {}
+	if mode == Dressing.MODE_PER_RUN and Dressing.has_alternatives(pd):
+		picks = Dressing.roll(pd, seed)
+		var pinned: Dictionary = st.get("picks", {})
+		for g: Dictionary in Dressing.groups(pd):
+			var gid: String = str(g.get("id", ""))
+			if pinned.has(gid) and Dressing.option_ids(g).has(str(pinned[gid])):
+				picks[gid] = str(pinned[gid])
+		if session != null:
+			st["picks"] = picks.duplicate()
+	return Dressing.resolve(pd, picks, {"mode": mode, "seed": seed})
+
+
+func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _pad: Vector2, def: PoiDef = null) -> PoiInstance:
+	var pd: PoiDef = def if def != null else Content.get_def(&"poi", def_id) as PoiDef
 	if pd == null:
 		Log.warn("poi", "poi %s not found" % def_id)
 		return null
-	var layout := PoiLayout.compile(pd)
+	var layout := PoiLayout.compile(dress_for(pd, instance_id, Game.session))
 	for e: String in layout.errors:
 		Log.warn("poi", e)
 	var inst: PoiInstance = PoiBuilder.build(layout, instance_id)

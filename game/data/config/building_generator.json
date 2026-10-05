@@ -1,0 +1,6 @@
+{
+  "_doc": "Names for generated ordinary buildings (ADR-0030, BuildingGenerator): {family} in a template's names and stories draws from here.",
+  "families": ["Halvorsen", "Pruitt", "Lindqvist", "Abernathy", "Delgado", "Whitcomb", "Nakamura", "Ostrowski", "McAllister", "Brandvold",
+    "Tanaka", "Ferreira", "Kowalczyk", "Haverford", "Oyelaran", "Thibodeaux", "Sorensen", "Castellano", "Duquette", "Vreeland",
+    "Ashby", "Mbeki", "Gallagher", "Ruud", "Strand", "Pelletier", "Okonkwo", "Varga", "Hennessy", "Lindgren"]
+}

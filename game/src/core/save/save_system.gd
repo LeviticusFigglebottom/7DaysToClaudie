@@ -19,7 +19,7 @@ extends RefCounted
 ## upgraded step by step on load. Never edit an existing migration after release.
 
 const SAVE_ROOT: String = "user://saves"
-const CURRENT_VERSION: int = 4
+const CURRENT_VERSION: int = 5
 
 
 ## from_version -> Callable(Dictionary) -> Dictionary
@@ -28,7 +28,20 @@ static func _builtin_migrations() -> Dictionary:
 		1: _drop_harvested_plants,
 		2: _v2_to_v3,
 		3: _v3_to_v4,
+		4: _v4_to_v5,
 	}
+
+
+## 4 -> 5: buildings are dressed per run (ADR-0030): their alternatives, wear, scatter and decals
+## follow the world seed. A run saved before that was played in the authored buildings with the
+## instance-id scatter, so it keeps them: its world is marked legacy dressing (WorldState.poi_dressing).
+static func _v4_to_v5(d: Dictionary) -> Dictionary:
+	var session: Dictionary = d.get("session", {})
+	var world: Dictionary = session.get("world", {})
+	world["poi_dressing"] = 1
+	session["world"] = world
+	d["session"] = session
+	return d
 
 
 ## 3 -> 4: the world keeps the fungal mounds Hum survivors leave where they rooted (ADR-0025). Older

@@ -135,9 +135,11 @@
       ],
       "sleepers": [
         {"id": "bed_sleeper", "pos": [2.0, 1.2], "enemy": "hollow", "pose": "lie", "rot": 180},
-        {"id": "tub_sleeper", "pos": [4.6, 1.05], "enemy": "hollow", "pose": "sit", "rot": 90},
+        {"id": "tub_sleeper", "pos": [4.6, 1.05], "enemy": "hollow", "pose": "sit", "rot": 90, "alt": "bathroom:in_the_tub"},
         {"id": "lou", "pos": [7.4, 1.25], "enemy": "hollow", "pose": "sit", "rot": 180, "group": "radio"},
-        {"id": "kitchen_crouch", "pos": [9.6, 3.45], "enemy": "hollow", "pose": "crouch", "rot": 270, "group": "radio"}
+        {"id": "kitchen_crouch", "pos": [9.6, 3.45], "enemy": "hollow", "pose": "crouch", "rot": 270, "group": "radio"},
+        {"id": "tub_sleeper", "pos": [4.5, 1.5], "enemy": "hollow", "pose": "stand", "rot": 200, "alt": "bathroom:at_the_sink"},
+        {"id": "kitchen_second", "pos": [10.45, 2.45], "enemy": "hollow", "pose": "stand", "rot": 300, "group": "radio", "alt": "radio:company"}
       ],
       "lights": [
         {"pos": [14.0, 1.45], "height": 0.75, "color": "#fff0cf", "energy": 0.55, "range": 5.5, "flicker": 0.1},
@@ -166,7 +168,32 @@
       "shortcuts": [
         {"opening": "front_door"}
       ],
-      "budget": {"lights": 3, "enemies": 4}
+      "alternatives": [
+        {"id": "bedroom", "label": "The bedroom's panelling",
+         "options": [
+           {"id": "panelled", "weight": 2},
+           {"id": "slate", "rooms": [{"room": "M", "wall": "paint_slate_blue"}]},
+           {"id": "floral", "label": "His late wife's wallpaper", "rooms": [{"room": "M", "wall": "wallpaper_floral_rose", "floor": "carpet_brown"}]}]},
+        {"id": "bathroom", "label": "Who is in the bathroom",
+         "options": [
+           {"id": "in_the_tub", "weight": 2},
+           {"id": "at_the_sink"}]},
+        {"id": "radio", "label": "Lou's company when the key is taken (the radio ambush)",
+         "options": [
+           {"id": "alone", "weight": 2},
+           {"id": "company", "label": "A second listener in the kitchen"}]},
+        {"id": "living_room", "label": "The living room",
+         "options": [
+           {"id": "panelled", "weight": 2},
+           {"id": "sage", "rooms": [{"room": "L", "wall": "paint_sage"}]},
+           {"id": "striped", "rooms": [{"room": "L", "wall": "wallpaper_stripe_green", "floor": "carpet_blue_worn"}]}]},
+        {"id": "kitchen", "label": "The galley kitchen",
+         "options": [
+           {"id": "mustard", "weight": 2},
+           {"id": "checked", "rooms": [{"room": "K", "wall": "tile_kitchen_check"}]},
+           {"id": "white", "rooms": [{"room": "K", "wall": "plaster_white", "floor": "linoleum_beige"}]}]}
+      ],
+      "budget": {"lights": 3, "enemies": 5}
     }
   ]
 }

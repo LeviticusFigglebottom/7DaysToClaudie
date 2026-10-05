@@ -175,15 +175,20 @@
         {"note": "diner_specials", "pos": [8.4, 7.35], "y": 1.26}
       ],
       "sleepers": [
-        {"id": "regular_stool", "pos": [7.0, 8.35], "enemy": "hollow", "pose": "sit", "rot": 180},
-        {"id": "regular_booth", "pos": [4.35, 10.45], "enemy": "hollow", "pose": "sit", "rot": 90},
+        {"id": "regular_stool", "pos": [7.0, 8.35], "enemy": "hollow", "pose": "sit", "rot": 180, "alt": ["regulars:counter_and_booth", "regulars:crowded"]},
+        {"id": "regular_booth", "pos": [4.35, 10.45], "enemy": "hollow", "pose": "sit", "rot": 90, "alt": ["regulars:counter_and_booth", "regulars:crowded"]},
         {"id": "under_barricade", "pos": [1.4, 6.1], "enemy": "dragger", "pose": "lie", "rot": 60, "anchor": "floor"},
         {"id": "cook", "pos": [6.5, 1.25], "enemy": "hollow", "pose": "stand", "rot": 180},
         {"id": "pantry_trucker", "group": "pantry", "pos": [2.4, 1.35], "enemy": "hollow", "pose": "crouch", "rot": 90},
-        {"id": "pantry_waitress", "group": "pantry", "pos": [1.4, 3.5], "enemy": "hollow", "pose": "lie", "rot": 200, "anchor": "floor"}
+        {"id": "pantry_waitress", "group": "pantry", "pos": [1.4, 3.5], "enemy": "hollow", "pose": "lie", "rot": 200, "anchor": "floor"},
+        {"id": "regular_stool", "pos": [11.0, 8.35], "enemy": "hollow", "pose": "sit", "rot": 180, "alt": "regulars:far_end"},
+        {"id": "regular_booth", "pos": [14.35, 10.45], "enemy": "hollow", "pose": "sit", "rot": 90, "alt": "regulars:far_end"},
+        {"id": "regular_stool_2", "pos": [5.0, 8.35], "enemy": "hollow", "pose": "sit", "rot": 200, "alt": "regulars:crowded"},
+        {"id": "pantry_dishwasher", "group": "pantry", "pos": [2.5, 2.6], "enemy": "hollow", "pose": "stand", "rot": 60, "alt": "pantry:three"}
       ],
       "traps": [
-        {"id": "barricade_gap_trap", "type": "bear_trap", "pos": [3.6, 7.35], "rot": 0}
+        {"id": "barricade_gap_trap", "type": "bear_trap", "pos": [3.6, 7.35], "rot": 0, "alt": "bear_trap:counter_gap"},
+        {"id": "barricade_gap_trap", "type": "bear_trap", "pos": [3.3, 6.4], "rot": 35, "alt": "bear_trap:by_the_mattress"}
       ],
       "triggers": [
         {"id": "pantry_door_opened", "group": "pantry", "on": "opening", "opening": "pantry_door", "delay": 0.15}
@@ -212,7 +217,31 @@
       ],
       "loot_room": {"room": "P", "level": 0},
       "shortcuts": [{"opening": "delivery_door"}],
-      "budget": {"lights": 3, "enemies": 7}
+      "alternatives": [
+        {"id": "regulars", "label": "Where the regulars are waiting for service",
+         "options": [
+           {"id": "counter_and_booth", "weight": 2},
+           {"id": "far_end", "label": "At the far end of the counter and the last booth"},
+           {"id": "crowded", "label": "A third regular on the stools"}]},
+        {"id": "pantry", "label": "Who shut themselves in the walk-in (the pantry ambush)",
+         "options": [
+           {"id": "pair", "weight": 2},
+           {"id": "three", "label": "The dishwasher went in with them"}]},
+        {"id": "bear_trap", "label": "Where the trapper set his jaws in the barricade gap",
+         "options": [
+           {"id": "counter_gap", "weight": 2},
+           {"id": "by_the_mattress"}]},
+        {"id": "dining_room", "label": "The dining room paint",
+         "options": [
+           {"id": "slate", "weight": 2},
+           {"id": "sage", "rooms": [{"room": "D", "wall": "paint_sage"}]},
+           {"id": "mustard", "rooms": [{"room": "D", "wall": "paint_mustard", "floor": "linoleum_beige"}]}]},
+        {"id": "office", "label": "Rosa's office",
+         "options": [
+           {"id": "panelled", "weight": 2},
+           {"id": "plain", "rooms": [{"room": "O", "wall": "plaster_grey", "floor": "carpet_blue_worn"}]}]}
+      ],
+      "budget": {"lights": 3, "enemies": 9}
     }
   ]
 }

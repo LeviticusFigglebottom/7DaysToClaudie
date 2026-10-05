@@ -32,3 +32,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0025](0025-the-bloom-on-the-land.md) | The Bloom on the land: an authored infestation field, threads, web, fruit and mounds | Accepted |
 | [0028](0028-the-hollowed-up-close.md) | The Hollowed up close: skin and cloth shaders on rest-pose vertex data, garments, tier growths, special features, populations | Accepted |
 | [0029](0029-first-person.md) | First person: hold classes, a viewmodel field of view, arms that carry the tether, swings that land | Accepted |
+| [0030](0030-varied-interiors.md) | Varied interiors: per-run dressing, room alternatives, generated ordinary buildings, lots that pick | Accepted |

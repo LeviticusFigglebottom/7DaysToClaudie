@@ -16,6 +16,9 @@ extends RefCounted
 ##
 ## Immutable after construction; every query is safe from worker threads.
 
+## New ADR-0030 scripts by path, so this compiles before the editor registers their class names.
+const Lots := preload("res://src/poi/lot_picker.gd")
+
 ## Area below which a clipped piece is dropped (m^2): slivers from exact-edge contacts.
 const EPS_AREA: float = 1e-6
 ## Thickness of a kit floor slab (docs/POI_KIT.md: origin at its top, 0.2 m down).
@@ -86,10 +89,11 @@ static func placed_pois(placements: Array) -> Array[Dictionary]:
 				var fw: FrameworkDef = db.call(&"get_def", &"framework", StringName(str(p.get("def", "")))) as FrameworkDef
 				if fw == null:
 					continue
-				for lot: Variant in fw.lots:
-					var l: Dictionary = lot
-					var pick: String = str(l.get("pick", ""))
-					var lpd: PoiDef = db.call(&"get_def", &"poi", StringName(pick)) as PoiDef if pick != "" else null
+				# Lots without a pick hold what LotPicker chooses (ADR-0030), resolved as PoiManager does;
+				# generated buildings have no cellars, so only authored ones can cut a hole.
+				for res: Dictionary in Lots.resolve(fw, str(p.get("id", fw.id)), Lots.session_seed()):
+					var l: Dictionary = res["lot"]
+					var lpd: PoiDef = db.call(&"get_def", &"poi", res["def_id"]) as PoiDef if str(res["kind"]) == "authored" else null
 					if lpd == null:
 						continue
 					var rect: Array = l["rect"]

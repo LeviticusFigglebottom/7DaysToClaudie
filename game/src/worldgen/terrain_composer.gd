@@ -893,15 +893,22 @@ class _Build:
 					_:
 						_add(w, L_FOREST, 1.0)
 				if wk == 2 and wd < 6.0 + n1 * 3.0:
-					var sand_w: float = 1.0 - smoothstep(-2.0, 6.0, wd)
-					_add(w, L_SAND, sand_w * 1.5)
+					# Forest lakes and ponds have muddy, stony margins with the odd sandy cove: a sand
+					# ring all the way round read as a beach, and from the trees as a bleached halo.
+					var shore: float = 1.0 - smoothstep(-2.0, 6.0, wd)
+					var cove: float = smoothstep(0.6, 0.78, n2)
+					_add(w, L_SAND, shore * 1.5 * cove)
+					_add(w, L_MUD, shore * 1.2 * (1.0 - cove) * (0.45 + 0.55 * smoothstep(0.3, 0.65, n1)))
+					_add(w, L_GRAVEL, shore * 0.7 * (1.0 - cove))
 				if wd < 0.0:
 					w.fill(0.0)
 					_add(w, L_MUD, 0.7)
 					_add(w, L_GRAVEL, 0.5 + n2 * 0.5)
 				var veg: float = 1.0
 				if wd < 2.0:
-					veg = 0.0 if wd < 0.0 else smoothstep(0.0, 2.0, wd) * 0.6
+					# Sedges and horsetail grow right down to the waterline (and a little into it);
+					# thinning them over the last two metres left a bare ring round every shore.
+					veg = 0.0 if wd < -0.25 else 0.4 + 0.6 * smoothstep(-0.25, 2.0, wd)
 				# Roads.
 				var ri: int = r_idx[ci]
 				if ri < 0:

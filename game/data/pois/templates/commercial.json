@@ -1,0 +1,31 @@
+{
+  "_doc": "Generated ordinary shops and workshops (ADR-0030, BuildingGenerator): tier-1 filler for commercial and industrial lots without an authored pick. Slab-on-grade, flat or low roofs.",
+  "defs": [
+    {
+      "id": "corner_store", "name": "Corner store", "archetype": "store", "zoning": ["commercial", "residential", "roadside"], "tier": 1, "weight": 1,
+      "width": [10, 14], "depth": [10, 13], "storeys": 1, "porch": 0.0, "floor_height": 0.15, "setback": [3, 5],
+      "decay": [0.3, 0.6], "sleepers": [3, 4],
+      "exteriors": ["brick_red", "concrete_block", "siding_white", "siding_pale_blue"],
+      "roofs": [{"type": "flat", "weight": 3}, {"type": "shed", "pitch": [8, 12], "weight": 1}],
+      "roof_materials": ["roof_metal", "roof_metal_red"],
+      "names": ["{family}'s Corner Store", "{family} Grocery", "{family}'s Market"],
+      "stories": [
+        "{family}'s chained the front doors when the shelves ran low and sold out of the back. The stock room door has been shut since.",
+        "Looters came through the window at {family}'s and found the owner had beaten them to the canned goods."
+      ]
+    },
+    {
+      "id": "workshop", "name": "Workshop", "archetype": "workshop", "zoning": ["industrial", "commercial", "rural"], "tier": 1, "weight": 1,
+      "width": [9, 12], "depth": [10, 12], "storeys": 1, "porch": 0.0, "floor_height": 0.15, "setback": [4, 7],
+      "decay": [0.3, 0.65], "sleepers": [2, 3],
+      "exteriors": ["concrete_block", "siding_barn_red", "siding_white"],
+      "roofs": [{"type": "gable", "axis": "z", "pitch": [14, 22], "weight": 2, "gutters": false}, {"type": "shed", "pitch": [8, 12], "weight": 1}],
+      "roof_materials": ["roof_metal", "roof_metal_red"],
+      "names": ["{family} Small Engine", "{family} & Sons Repair", "{family}'s Garage"],
+      "stories": [
+        "{family} chained the bay doors and kept working on the generator in the back. Whatever he was fixing, he never finished.",
+        "The {family} boys holed up in the tool crib with a radio and a crate of shells."
+      ]
+    }
+  ]
+}

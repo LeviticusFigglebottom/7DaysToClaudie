@@ -24,11 +24,21 @@ var budget: Dictionary = {}
 ## Who its Hollowed were (a PopulationDef id, ADR-0028): the clinic's patients, the church's
 ## congregation. A sleeper entry's own "population" wins over it. "" = the enemy types' own bodies.
 var population: StringName = &""
+## Runtime only (ADR-0030), never read from JSON: how this def was dressed for one placed building
+## (PoiDressing.resolve): {"mode": PoiDressing.MODE_*, "seed": dressing seed, "picks": {group: option}}.
+## Empty on content defs: they compile as their authored defaults.
+var dressing: Dictionary = {}
+## Runtime only: the BuildingTemplateDef a generated building came from (BuildingGenerator), and its
+## generator seed. &"" for authored buildings.
+var template: StringName = &""
+var gen_seed: int = 0
 
 ## "triggers" wake sleeper groups as ambushes (ADR-0018, docs/POI_AUTHORING.md "Ambushes").
+## "alternatives" are weighted room dressings, door states and sleeper or trap spots picked per run
+## (ADR-0030, PoiDressing; docs/POI_AUTHORING.md "Alternatives").
 const LAYOUT_KEYS: PackedStringArray = ["style", "levels", "rooms", "openings", "stairs", "ladders", "props",
 	"sleepers", "traps", "route", "loot_room", "shortcuts", "lights", "decals", "notes", "scatter", "exterior",
-	"roof", "front", "origin", "quest_hooks", "pickups", "holes", "triggers"]
+	"roof", "front", "origin", "quest_hooks", "pickups", "holes", "triggers", "alternatives"]
 
 
 func _fields() -> PackedStringArray:

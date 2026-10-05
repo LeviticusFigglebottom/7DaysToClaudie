@@ -32,6 +32,7 @@ const KINDS: Dictionary = {
 	&"note": {"dir": "notes", "script": preload("res://src/core/content/defs/note_def.gd")},
 	&"poi": {"dir": "pois/buildings", "script": preload("res://src/core/content/defs/poi_def.gd")},
 	&"framework": {"dir": "pois/frameworks", "script": preload("res://src/core/content/defs/framework_def.gd")},
+	&"building_template": {"dir": "pois/templates", "script": preload("res://src/core/content/defs/building_template_def.gd")},
 	&"quest": {"dir": "quests", "script": preload("res://src/core/content/defs/quest_def.gd")},
 	&"prop": {"dir": "props", "script": preload("res://src/core/content/defs/prop_def.gd")},
 	&"population": {"dir": "populations", "script": preload("res://src/core/content/defs/population_def.gd")},

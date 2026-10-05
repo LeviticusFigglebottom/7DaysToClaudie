@@ -17,6 +17,11 @@ triggers, traps a careless player springs, lock cues on doors, a guardian on the
 [Ambushes](#ambushes-sleeper-groups-and-triggers), [Traps](#traps), [Locks](#locks) and
 [Designing a dungeon](#designing-a-dungeon).
 
+No two runs look alike (ADR-0030): every building is **dressed per run** from the world seed
+(furniture broken or missing, lights out, grime and marks, scatter), authors give rooms
+[alternatives](#alternatives-different-every-run) picked per run, and ordinary houses and shops on
+lots without a pick are [generated](#generated-buildings) from templates.
+
 ## Coordinates
 * Plan cell = **1 m**. Column = x (→), row = z (↓). Row 0 is the **back**, the last row the
   **front**; the building's front faces **+Z** (toward the street when placed).
@@ -38,6 +43,9 @@ triggers, traps a careless player springs, lock cues on doors, a guardian on the
   "lights": [...], "decals": [...], "route": [...], "loot_room": {...}, "shortcuts": [...], "budget": {...}
 }
 ```
+`"alternatives": [...]` (optional) varies the building per run: see
+[Alternatives](#alternatives-different-every-run).
+
 `"population": "clinic"` (optional) dresses the building's Hollowed as the people who were there
 (`game/data/populations/`, ADR-0028): the clinic's patients, St. Ansel's congregation, a Cordon
 crew. A sleeper entry may name its own `population` (a nurse among the patients); a region names
@@ -362,6 +370,9 @@ POI ships, never reorder its `props`, `sleepers`, `pickups` or `notes` without i
 (old saves are re-keyed by position the first time they load, ADR-0018).
 
 ## Checklist (enforced by the validator)
+0. (ADR-0030) Alternatives are well formed, and every option and combination passes 1–7 below and
+   keeps the base's shortcuts and keyed doors usable; generated buildings pass all of it with no
+   warnings.
 1. The route is completable start to finish, also once every weak floor has given way; the loot room
    is reachable and has a container; no fall strands the player.
 2. Sleepers stand in rooms, not on stairs or inside furniture, and are reachable. Nothing (sleeper,
@@ -385,6 +396,99 @@ faces the wrong way, the note in the fridge, the child's room the parents never 
 design the **route** as a sequence of beats (approach → blocked → detour → ambush → payoff →
 shortcut out) and only then lay out rooms around it.
 
+## Alternatives: different every run
+ADR-0030. A building keeps its plan, its route and its story, but each run picks how it is dressed.
+Give the def an `"alternatives"` list of groups; each group has weighted options and one is picked
+per run from the world seed (each group from its own stream):
+
+```json
+"alternatives": [
+  {"id": "back_bedroom", "label": "What the back bedroom is now",
+   "options": [
+     {"id": "bedroom", "weight": 2},
+     {"id": "nursery", "rooms": [{"room": "C", "name": "Nursery", "wall": "wallpaper_floral_rose", "floor": "carpet_blue_worn"}]},
+     {"id": "study", "rooms": [{"room": "C", "name": "Study", "type": "office", "wall": "wood_paneling_dark"}]}]},
+  {"id": "doors", "options": [
+     {"id": "as_left", "weight": 2},
+     {"id": "kicked_in", "openings": [{"id": "bedroom_door", "state": "broken"}]}]}
+],
+"props": [
+  {"id": "back_bed", "prop": "bed_double", "at": [10, 6], "against": "E", "alt": "back_bedroom:bedroom"},
+  {"prop": "crib", "at": [7, 3], "against": "W", "alt": "back_bedroom:nursery"},
+  {"id": "study_desk", "prop": "desk_small", "at": [7, 0], "against": "N", "alt": ["back_bedroom:study", "back_bedroom:nursery"]}
+]
+```
+* **Groups**: `id, label?, options` (two or more). **Options**: `id, label?, weight` (default 1, 0 =
+  never), `default` (the authored option; else the first), and what it changes:
+  * `rooms`: `[{"level", "room", ...}]` with `name, type, wall, floor, ceiling, open_to` (the
+    room's purpose and finish);
+  * `openings`: `[{"id", ...}]` with `state, key, lock, barricade, barricade_on, cue, model, hp`
+    (locked, barricaded, broken open, boarded);
+  * `style`: `exterior, interior, floor, ceiling, decay, damaged_walls, prop_condition, scatter,
+    lights_on`.
+* **`"alt": "group:option"`** (or a list) on any entry of `props, sleepers, traps, triggers,
+  pickups, notes, lights, decals, openings`: it exists only when that option is picked. Use it for
+  furniture sets, alternative sleeper spots and groups (one sleeper `id` may stand in different
+  places in different options; its dead state follows it), alternative trap spots, an extra
+  sleeper in an ambush, a knocked-through doorway.
+* Never: plans, `storeys`, `open_roof`, `gallery`, roofs. Walls, cellars and the terrain cut must
+  not move between runs (make a second def for a different plan).
+* **The default is the authored building.** A content def compiles as its defaults. When you
+  retrofit a shipped building, tag its existing entries with the default option where they are
+  and append the new ones at the end of each list: the default resolution must stay identical to
+  the old layout (legacy saves, the builder's draw order and unnamed props' keys depend on it).
+* **Validated in full.** `make validate` validates every option changed alone from the defaults,
+  then every full combination (a deterministic sample of 16 beyond the singles when there are
+  more). Each must keep the route, the loot room, sleepers and triggers valid, and every shortcut
+  and locked door the base can use must stay usable. Messages carry the picks:
+  `merrow_house: [alt doors=kicked_in, neighbour=both] ...`.
+* Keep the story true in every combination: vary what the story leaves open (which window, who sat
+  where, the wallpaper), not what it says.
+* `make poi-preview POI="merrow_house" POI_ARGS="--seed 7"` shows the building as the run with
+  world seed 7 dresses it (picks printed, files suffixed `_s7`).
+
+### Per-run wear
+Without anything authored, a run also wears every building (`PoiDressing._wear`): furniture without
+an authored `variant` may be broken or gone (decay-scaled; never containers, props with an `id`,
+seats and beds, lit props, wall-mounted or stacked props and what they stand on, `route_ok` debris
+or the yard), lights and `"lit"` props burn with `style.lights_on` (default 0.7; `"keep": true`
+pins one on), and the builder adds grime, stains, mould, cracks, marks and blood decals and draws
+its scatter from the run. Give a prop an `id` or a `variant` to keep it as authored.
+
+## Generated buildings
+ADR-0030. Ordinary houses, shops and workshops are generated from **templates**
+(`game/data/pois/templates/*.json`, `BuildingTemplateDef`) by `BuildingGenerator`: a template and a
+seed always give the same validated building, plan to roof.
+
+```json
+{"id": "bungalow", "name": "Bungalow", "archetype": "house", "zoning": ["residential"], "tier": 1, "weight": 3,
+ "width": [9, 13], "depth": [7, 10], "storeys": 1, "porch": 0.6, "floor_height": 0.6, "setback": [4, 7],
+ "decay": [0.22, 0.55], "sleepers": [2, 3], "chimney": 0.45,
+ "exteriors": ["siding_white", "siding_pale_blue", "brick_red"],
+ "roofs": [{"type": "gable", "pitch": [22, 34], "weight": 3}, {"type": "hip", "pitch": [20, 28]}],
+ "roof_materials": ["roof_shingle", "roof_cedar"],
+ "finishes": {"living": {"wall": ["wallpaper_damask_brown", "wood_paneling_dark"], "floor": ["wood_oak"]}},
+ "names": ["The {family} House"], "stories": ["The {family}s bolted the front door and went out the back."]}
+```
+| key | meaning |
+|---|---|
+| `archetype` | `house` (a hall front to back between a day side and a night side), `duplex` (two units, the party wall knocked through), `store` (sales floor, stock room, office, restroom), `workshop` (bay, office, tool crib) |
+| `zoning`, `tier`, `weight` | which lots may draw it, and how often among the candidates |
+| `width`, `depth` | plan size ranges (cells; x along the street) |
+| `storeys`, `upper` | 1 or 2; `"cape"` sets the upper floor back from the front (a storey and a half; the front rooms get a lean-to) |
+| `porch`, `chimney` | chances |
+| `floor_height`, `setback` | 0.6 porch house / 0.15 slab; front yard depth range (m) |
+| `decay`, `sleepers` | ranges |
+| `exteriors`, `roofs`, `roof_materials`, `finishes` | drawn per building (`finishes` per room purpose: `living, kitchen, bedroom, kids, nursery, bath, dining, study, office, storage, utility, store, garage, hallway`) |
+| `names`, `stories` | patterns; `{family}` draws from `data/config/building_generator.json` |
+
+Every generated building is a tier-1 dungeon-lite: a bolted front door (the shortcut out), a way in
+round the side or back (the back door, a smashed window, a clawed hole), the loot room with a small
+ambush on its door, a gentle trap (loose boards, jaws under the way in, a can chime), modest loot,
+fences, a mailbox and yard junk. The generator validates what it makes and retries until the
+validator reports nothing; `make validate` and `tests/unit/test_building_generator.gd` (50 seeds a
+template) prove it. Preview one with `make poi-preview POI="gen:bungalow:12"`.
+
 ## Frameworks
 `game/data/pois/frameworks/<id>.json`:
 ```json
@@ -395,6 +499,14 @@ shortcut out) and only then lay out rooms around it.
 ```
 Lot `rect` is `[x, z, w, d]` in framework space; the POI footprint is centred in the lot with its
 front toward `facing`. Streets are painted and graded into the terrain by the composer.
+
+Lot keys: `id, rect, zoning, facing, pick, tags`, and (ADR-0030) `tier` (`[lo, hi]` or a number,
+else the framework's `tier_range`), `pool` (`any`, `authored`, `generated`), `templates` (template
+ids it may generate) and `reserved` (a note: the lot stays empty for a building still to come). A
+lot **without a `pick`** holds what `LotPicker` chooses from the world seed: an authored building
+zoned and tiered for it that fits and is not already standing in this framework, or a generated
+building from a template zoned for it (filling the lot). Larch Street in Pell's Crossing is six
+such lots; the school, fire station and bank lots on its corner are `reserved`.
 
 ## Cellars and terrain
 Rooms on level −1 (and below) are cellars. At load the terrain is cut away under them (TD-026):

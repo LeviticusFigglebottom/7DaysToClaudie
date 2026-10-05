@@ -75,6 +75,9 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "outskirts_boathouse", "pos": Vector3(-337, 1.8, 1893), "look": Vector3(-324, 1.0, 1905), "hour": 17.4, "weather": "clear"},
 	{"name": "outskirts_ashen_camp", "pos": Vector3(409, 6.0, 1764), "look": Vector3(417, 0.5, 1740), "hour": 16.5, "weather": "overcast"},
 	{"name": "outskirts_campground", "pos": Vector3(338, 3.0, 1945), "look": Vector3(343, 0.8, 1966), "hour": 10.5, "weather": "clear"},
+	# ADR-0030: Larch Street, Pell's Crossing's residential side street of generated houses (different
+	# every run), looking north up it from the dead end towards the Grange Road corner.
+	{"name": "larch_street", "pos": Vector3(-69.0, 2.6, 2330.0), "look": Vector3(-84.0, 1.5, 2262.0), "hour": 10.5, "weather": "clear"},
 ]
 
 var _out: String = "res://../build/screenshots"

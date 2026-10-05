@@ -1,8 +1,8 @@
 {
-  "_doc": "Pell's Crossing — a crossroads hamlet where the Tamsin logging road meets Route 9 (region D6). Framework space: x east, z south; origin = pad corner at world (-112, 2004). Route 9 runs north-south just east of the pad (local x = 80); Mill Street joins it at local z = 62. Church Lane runs south from Mill Street (local x ~40) past the church and the post office (facing each other across it), the Northwoods Tavern (facing the highway) and the Grange Hall, and turns east to Route 9 at z ~181; the Cordon's checkpoint still stands across it south of the Grange. Lou's trailer sits on the north lot by the gravel road. See docs/POI_AUTHORING.md.",
+  "_doc": "Pell's Crossing — a crossroads hamlet where the Tamsin logging road meets Route 9 (region D6). Framework space: x east, z south; origin = pad corner at world (-112, 2004). Route 9 runs north-south just east of the pad (local x = 80); Mill Street joins it at local z = 62. Church Lane runs south from Mill Street (local x ~40) past the church and the post office (facing each other across it), the Northwoods Tavern (facing the highway) and the Grange Hall, and turns east to Route 9 at z ~181; the Cordon's checkpoint still stands across it south of the Grange. Lou's trailer sits on the north lot by the gravel road. Larch Street (ADR-0030) runs on south from the Grange Road corner between Church Lane and Route 9: a residential side street of six lots without an authored pick, so each run builds its own houses there (LotPicker, BuildingGenerator), and on its corner the third block, three lots held empty for the school, the fire station and the bank. See docs/POI_AUTHORING.md.",
   "defs": [
     {
-      "id": "pell_crossing", "name": "Pell's Crossing", "size": [76, 186], "tier_range": [1, 3],
+      "id": "pell_crossing", "name": "Pell's Crossing", "size": [76, 336], "tier_range": [1, 3],
       "lots": [
         {"id": "diner", "rect": [48, 4, 26, 24], "zoning": ["commercial", "roadside"], "facing": "E", "pick": "mile9_diner"},
         {"id": "pharmacy", "rect": [48, 32, 26, 24], "zoning": ["commercial"], "facing": "E", "pick": "pell_pharmacy"},
@@ -13,13 +13,23 @@
         {"id": "church", "rect": [3, 100, 33, 26], "zoning": ["civic"], "facing": "E", "pick": "st_ansel_church"},
         {"id": "post_office", "rect": [46, 102, 28, 24], "zoning": ["civic"], "facing": "W", "pick": "pell_post_office"},
         {"id": "tavern", "rect": [46, 130, 28, 28], "zoning": ["commercial", "roadside"], "facing": "E", "pick": "northwoods_tavern"},
-        {"id": "grange", "rect": [2, 134, 34, 30], "zoning": ["civic"], "facing": "E", "pick": "pell_grange_hall"}
+        {"id": "grange", "rect": [2, 134, 34, 30], "zoning": ["civic"], "facing": "E", "pick": "pell_grange_hall"},
+        {"id": "fire_station", "rect": [4, 188, 33, 28], "zoning": ["civic"], "facing": "E", "reserved": "Pell's Crossing volunteer fire station (the third block)", "tags": ["third_block"]},
+        {"id": "school", "rect": [44, 188, 25, 30], "zoning": ["civic"], "facing": "W", "reserved": "Pell's Crossing school (the third block)", "tags": ["third_block"]},
+        {"id": "bank", "rect": [44, 220, 19, 22], "zoning": ["commercial"], "facing": "W", "reserved": "Tamsin Valley Savings, Pell's Crossing branch (the third block)", "tags": ["third_block"]},
+        {"id": "larch_1", "rect": [14, 218, 23, 18], "zoning": ["residential"], "facing": "E", "tier": [1, 1], "tags": ["larch_street"]},
+        {"id": "larch_2", "rect": [14, 237, 23, 18], "zoning": ["residential"], "facing": "E", "tier": [1, 1], "tags": ["larch_street"]},
+        {"id": "larch_3", "rect": [14, 256, 23, 18], "zoning": ["residential"], "facing": "E", "tier": [1, 1], "tags": ["larch_street"]},
+        {"id": "larch_4", "rect": [14, 275, 23, 18], "zoning": ["residential"], "facing": "E", "tier": [1, 1], "tags": ["larch_street"]},
+        {"id": "larch_5", "rect": [14, 294, 23, 18], "zoning": ["residential"], "facing": "E", "tier": [1, 1], "tags": ["larch_street"]},
+        {"id": "larch_6", "rect": [14, 313, 23, 18], "zoning": ["residential"], "facing": "E", "tier": [1, 1], "tags": ["larch_street"]}
       ],
       "roads": [
         {"points": [[0, 62], [40, 62], [80, 62]], "width": 7.0, "surface": "asphalt", "shoulder": 1.0},
         {"points": [[40, 62], [40, 30], [41, 2]], "width": 4.5, "surface": "gravel", "shoulder": 0.8},
         {"_doc": "Church Lane", "points": [[40, 62], [40.5, 100], [40.5, 140], [40.5, 180]], "width": 6.0, "surface": "asphalt", "shoulder": 1.0},
-        {"_doc": "Grange Road, Church Lane to Route 9", "points": [[40.5, 180], [60, 181], [80, 181]], "width": 6.0, "surface": "asphalt", "shoulder": 1.0}
+        {"_doc": "Grange Road, Church Lane to Route 9", "points": [[40.5, 180], [60, 181], [80, 181]], "width": 6.0, "surface": "asphalt", "shoulder": 1.0},
+        {"_doc": "Larch Street, the residential side street south from the Grange Road corner (ADR-0030); a dead end short of Route 9", "points": [[40.5, 181], [40.5, 250], [40.5, 316]], "width": 5.5, "surface": "asphalt", "shoulder": 0.8}
       ],
       "fixtures": [
         {"prop": "road_sign_stop", "pos": [74, 66], "rot": 90},
@@ -105,7 +115,52 @@
         {"id": "checkpoint_sedan", "prop": "car_sedan_wreck", "pos": [45.6, 174.2], "rot": 35},
         {"id": "grange_pickup", "prop": "pickup_wreck", "pos": [24.0, 168.5], "rot": 86},
         {"prop": "utility_pole", "pos": [60, 177.4], "rot": 90},
-        {"prop": "road_sign_stop", "pos": [44.2, 177.0], "rot": 180}
+        {"prop": "road_sign_stop", "pos": [44.2, 177.0], "rot": 180},
+        {"_doc": "Larch Street (ADR-0030): hydrants, lamps and poles along the kerbs, a collection box on the corner, a board fence behind the houses, a wreck at the kerb, the dead end barred short of Route 9", "id": "larch_stop", "prop": "road_sign_stop", "pos": [37.4, 186.5], "rot": 0},
+        {"id": "larch_collection_box", "prop": "civic_collection_mailbox", "pos": [37.6, 215.2], "rot": 90},
+        {"prop": "fire_hydrant", "pos": [37.6, 227.0], "rot": 0},
+        {"prop": "fire_hydrant", "pos": [43.5, 266.0], "rot": 180},
+        {"prop": "fire_hydrant", "pos": [37.6, 303.5], "rot": 0},
+        {"prop": "street_lamp", "pos": [37.3, 245.5], "rot": 90},
+        {"prop": "street_lamp", "pos": [43.8, 285.0], "rot": -90},
+        {"prop": "street_lamp", "pos": [37.3, 322.0], "rot": 90},
+        {"prop": "utility_pole", "pos": [44.4, 252.0], "rot": 0},
+        {"prop": "utility_pole", "pos": [44.4, 296.0], "rot": 0},
+        {"id": "larch_sedan", "prop": "car_sedan_wreck", "pos": [38.9, 272.5], "rot": 176},
+        {"id": "larch_pickup", "prop": "pickup_wreck", "pos": [42.2, 233.0], "rot": 5},
+        {"prop": "sawhorse_barricade", "pos": [40.5, 318.6], "rot": 0},
+        {"prop": "sawhorse_barricade", "pos": [42.9, 318.2], "rot": 8},
+        {"prop": "jersey_barrier", "pos": [38.1, 319.0], "rot": -6},
+        {"id": "larch_trash_1", "prop": "trash_bag", "pos": [37.9, 236.4], "rot": 30},
+        {"id": "larch_trash_2", "prop": "trash_bag", "pos": [37.8, 292.6], "rot": 110},
+        {"prop": "bench_park", "pos": [43.6, 247.5], "rot": -90},
+        {"prop": "fence_wood_2m", "pos": [13.4, 220.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 222.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 224.0], "rot": 90, "variant": "destroyed"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 226.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 228.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 230.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 232.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 240.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 242.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 244.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 246.0], "rot": 90, "variant": "destroyed"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 260.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 262.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 264.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 266.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 268.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 280.0], "rot": 90, "variant": "destroyed"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 282.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 284.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 286.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 298.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 300.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 302.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 316.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 318.0], "rot": 90, "variant": "destroyed"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 320.0], "rot": 90, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [13.4, 322.0], "rot": 90, "variant": "worn"}
       ]
     }
   ]

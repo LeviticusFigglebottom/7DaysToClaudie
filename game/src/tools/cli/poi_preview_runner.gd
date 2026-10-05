@@ -19,7 +19,9 @@ extends Node
 ##                        their seats and beds), a close view of each seated or lying one
 ## and prints the validator stats line ("POI_PREVIEW <id> stats {...}") plus any errors/warnings.
 ## Options: --out DIR, --size WxH, --all (every POI), --no-exterior, --no-plans, --inside,
-## --sleepers [ids].
+## --sleepers [ids], --seed N (ADR-0030: dress each building as a run with world seed N builds it -
+## its alternatives, wear, scatter and decals; files get a _s<N> suffix). An id "gen:<template>:<n>"
+## previews the building that template generates from seed n.
 ## Kit pieces / props that have not been generated render as stand-in boxes.
 
 const CUT: float = 1.5
@@ -38,6 +40,8 @@ var _inside: bool = false
 ## --sleepers: spawn the sleepers and shoot the seated / lying ones (empty = every one, else ids).
 var _sleepers: bool = false
 var _sleeper_ids: PackedStringArray = []
+## --seed: the world seed a run would dress the buildings with (-1 = the authored defaults).
+var _seed: int = -1
 var _world: Node3D
 var _sun: DirectionalLight3D
 var _ground: MeshInstance3D
@@ -83,6 +87,9 @@ func _parse_args() -> void:
 				_plans = false
 			"--inside":
 				_inside = true
+			"--seed":
+				i += 1
+				_seed = int(a[i])
 			"--sleepers":
 				_sleepers = true
 				if i + 1 < a.size() and not a[i + 1].begins_with("--") and Content.get_def(&"poi", StringName(a[i + 1])) == null:
@@ -130,11 +137,16 @@ func _setup_environment() -> void:
 	_world.add_child(_ground)
 
 
-func _preview(id: String) -> void:
-	var pd: PoiDef = Content.get_def(&"poi", StringName(id)) as PoiDef
+func _preview(id_arg: String) -> void:
+	var pd: PoiDef = _resolve_def(id_arg)
 	if pd == null:
-		printerr("POI_PREVIEW unknown poi '%s'" % id)
+		printerr("POI_PREVIEW unknown poi '%s'" % id_arg)
 		return
+	var id: String = id_arg.replace(":", "_") + ("_s%d" % _seed if _seed >= 0 else "")
+	if _seed >= 0:
+		var session: GameSession = GameSession.create_new({"seed": _seed, "game_mode": "survival"})
+		pd = PoiManager.dress_for(pd, StringName("preview/%s" % id_arg), session)
+		print("POI_PREVIEW %s dressed for seed %d: %s" % [id, _seed, pd.dressing.get("picks", {})])
 	var v: PoiValidator = PoiValidator.validate(pd)
 	print("POI_PREVIEW %s stats %s" % [id, v.stats])
 	for e: String in v.errors:
@@ -193,6 +205,21 @@ func _preview(id: String) -> void:
 		await _sleeper_shots(id, inst)
 	inst.queue_free()
 	await _frames(2)
+
+
+## A content POI, or "gen:<template>:<n>": the building that template generates from seed n (ADR-0030).
+func _resolve_def(id: String) -> PoiDef:
+	if id.begins_with("gen:"):
+		var parts: PackedStringArray = id.split(":")
+		var t: Resource = Content.get_def(&"building_template", StringName(parts[1])) if parts.size() > 1 else null
+		if t == null:
+			return null
+		var gen: GDScript = load("res://src/poi/building_generator.gd")
+		var made: PoiDef = gen.call(&"generate", t, int(parts[2]) if parts.size() > 2 else 1) as PoiDef
+		if made != null:
+			print("POI_PREVIEW %s is '%s': %s" % [id, made.display_name, made.story])
+		return made
+	return Content.get_def(&"poi", StringName(id)) as PoiDef
 
 
 ## Eye-level views across the largest room of each level, corner to opposite corner and back: wall

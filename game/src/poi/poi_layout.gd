@@ -20,6 +20,9 @@ extends RefCounted
 ## of a wall unless that room says "gallery": false. Tall openings (lancet, window_tall, door2_tall)
 ## span two storeys of one wall.
 
+## New ADR-0030 scripts by path, so this compiles before the editor registers their class names.
+const Dressing := preload("res://src/poi/poi_dressing.gd")
+
 const STOREY: float = 3.0
 const WALL_H: float = 2.8
 const SIDES: Dictionary = {"N": 0, "E": 1, "S": 2, "W": 3}
@@ -96,9 +99,11 @@ var lights: Array = []
 var decals: Array = []
 
 
+## A def with alternatives (ADR-0030) compiles as its authored defaults unless it was resolved
+## first (PoiDressing.resolve: a placed building's per-run picks).
 static func compile(p_def: PoiDef) -> PoiLayout:
 	var l := PoiLayout.new()
-	l.def = p_def
+	l.def = Dressing.resolve(p_def) if p_def.layout.has("alternatives") else p_def
 	l.poi_id = p_def.id
 	l._compile()
 	return l

@@ -69,6 +69,16 @@ Snapshot for the next session. Update it when the state changes; delete it once 
   * Piece states are keyed by stable ids (save version 3).
   * Three new directives use these mechanics: disarm two traps, clear a tier-3 building, clear the
     sawmill.
+* **Varied interiors** (ADR-0030): no two runs dress a building alike.
+  * Per-run dressing from the world seed: furniture worn, broken or gone, lights out or burning,
+    grime, stains and survivors' marks, the clutter scatter. Saves from before v5 keep the
+    buildings they were played in (`WorldState.poi_dressing` = legacy).
+  * Room alternatives in the DSL, validated option by option and combination by combination: the
+    Merrow House, the Mile 9 Diner, the Okafor farmhouse and Lou's trailer have five groups each.
+  * Seven templates generate tier-1 houses, duplexes, corner stores and workshops; framework lots
+    without a pick choose from the pool or generate one. Pell's Crossing's Larch Street is six of
+    them, with the school, fire station and bank lots reserved on its corner.
+  * `make poi-preview POI="merrow_house gen:cape_cod:3" POI_ARGS="--seed 7"` shows a run's dressing.
 * **Surfaces, water and sky** (ADR-0019, ADR-0020):
   * Interiors wear in world space.
   * Roofs have trim and tiles that don't repeat.

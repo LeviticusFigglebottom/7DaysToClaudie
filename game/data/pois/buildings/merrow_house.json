@@ -109,8 +109,10 @@
       ],
       "sleepers": [
         {"id": "dad", "at": [8, 4], "enemy": "hollow", "pose": "stand", "rot": 180},
-        {"id": "neighbour", "group": "bedroom", "at": [9, 7], "enemy": "hollow", "pose": "lie", "rot": 90},
-        {"id": "sitter", "at": [1, 6], "enemy": "hollow", "pose": "sit", "rot": 90}
+        {"id": "neighbour", "group": "bedroom", "at": [9, 7], "enemy": "hollow", "pose": "lie", "rot": 90, "alt": ["neighbour:on_bed", "neighbour:both"]},
+        {"id": "sitter", "at": [1, 6], "enemy": "hollow", "pose": "sit", "rot": 90},
+        {"id": "neighbour", "group": "bedroom", "pos": [8.3, 7.4], "enemy": "hollow", "pose": "crouch", "rot": 70, "alt": "neighbour:by_wardrobe"},
+        {"id": "neighbours_wife", "group": "bedroom", "pos": [7.6, 5.6], "enemy": "hollow", "pose": "stand", "rot": 120, "alt": "neighbour:both"}
       ],
       "traps": [
         {"id": "hall_boards", "type": "creaky_floor", "at": [3, 4], "size": [3, 1]}
@@ -138,7 +140,34 @@
       ],
       "loot_room": {"room": "C", "level": 0},
       "shortcuts": [{"opening": "back_door"}],
-      "budget": {"lights": 3, "enemies": 4}
+      "alternatives": [
+        {"id": "parents_room", "label": "The parents' bedroom finish",
+         "options": [
+           {"id": "sage", "weight": 2},
+           {"id": "floral", "rooms": [{"room": "M", "wall": "wallpaper_floral_rose", "floor": "wood_oak"}]},
+           {"id": "panelled", "rooms": [{"room": "M", "wall": "wood_paneling_dark", "floor": "carpet_blue_worn"}]}]},
+        {"id": "neighbour", "label": "Where the neighbour who came to help lies in wait (the bedroom ambush)",
+         "options": [
+           {"id": "on_bed", "weight": 2},
+           {"id": "by_wardrobe"},
+           {"id": "both", "label": "He brought his wife"}]},
+        {"id": "kids_room", "label": "The kids' room (the loot room) finish",
+         "options": [
+           {"id": "rose", "weight": 2},
+           {"id": "slate", "rooms": [{"room": "C", "wall": "paint_slate_blue", "floor": "carpet_brown"}]},
+           {"id": "mustard", "rooms": [{"room": "C", "wall": "paint_mustard", "floor": "wood_pine"}]}]},
+        {"id": "living_room", "label": "The living room finish",
+         "options": [
+           {"id": "damask", "weight": 2},
+           {"id": "panelled", "rooms": [{"room": "L", "wall": "wood_paneling_dark", "floor": "carpet_brown"}]},
+           {"id": "striped", "rooms": [{"room": "L", "wall": "wallpaper_stripe_green"}]}]},
+        {"id": "doors", "label": "How Dad left the inside doors",
+         "options": [
+           {"id": "as_left", "weight": 2},
+           {"id": "shut", "openings": [{"id": "bedroom_door", "state": "closed"}, {"id": "bath_door", "state": "open"}]},
+           {"id": "kicked_in", "openings": [{"id": "bedroom_door", "state": "broken"}, {"id": "bath_door", "state": "broken"}]}]}
+      ],
+      "budget": {"lights": 3, "enemies": 5}
     }
   ]
 }

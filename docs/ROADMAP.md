@@ -26,6 +26,12 @@ and clear at least one authored building along its route, survive a night and a 
   * Four in the wilderness: lookout, trapper's cabin, logging camp, sawmill.
   * Three on the outskirts: Larch Pond Bait & Boat (a boathouse over the pond, ADR-0024), the
     Ashen watch camp, Tamsin River Campground.
+  * Varied interiors (ADR-0030): every building is dressed per run from the world seed (wear,
+    lights, decals, scatter); the Merrow House, the Mile 9 Diner, the Okafor farmhouse and Lou's
+    trailer have room alternatives (five groups each); seven templates generate ordinary houses,
+    shops and workshops; lots without a pick choose from the pool or generate; Pell's Crossing's
+    Larch Street holds six generated houses and three lots reserved for the school, fire station
+    and bank.
 
   Still pending: in-game visual QA of the town.
 - ✅ Player controller, interaction, gathering, stamina, damage, death/respawn; step-up onto
@@ -144,6 +150,8 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
 ## M3 — RWG, biomes, seasons, base tech ⬜
 - Randomized world generation (macro terrain + erosion, biomes, rivers/lakes, roads, towns from
   frameworks, wilderness POIs, caves, trader placement), background thread + progress UI + cache.
+  Frameworks already fill lots without a pick from zoning (LotPicker, generated buildings,
+  ADR-0030); RWG is ADR-0031.
 - Burnt forest, snow, swamp, scrub biomes; full seasons (snow cover, frozen water, temperature).
 - Structural tiers: stone, metal; repair/upgrade tools; Rammer breakers that tear through walls.
 - Farming, rain collection, traps (spike pits, deadfalls), electricity (generator, wiring, lights,

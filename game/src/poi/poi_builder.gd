@@ -13,6 +13,9 @@ extends RefCounted
 ## tall windows and tall doors; lights and ceiling fixtures under the real ceiling; one interior
 ## reflection probe per rectangle of rooms of one height; and the roof plan of RoofPlanner.
 
+## New ADR-0030 scripts by path, so this compiles before the editor registers their class names.
+const Dressing := preload("res://src/poi/poi_dressing.gd")
+
 const WALL_T: float = 0.16
 
 var layout: PoiLayout
@@ -54,8 +57,15 @@ func _build(instance_id: StringName) -> PoiInstance:
 	root = PoiInstance.new()
 	root.name = String(instance_id).replace("/", "_").replace(":", "_")
 	root.setup(layout, instance_id)
-	_rng.seed = Ids.hash64("poi:" + String(instance_id))
-	_rng2.seed = Ids.hash64("poi_tall:" + String(instance_id))
+	# Per-run dressing (ADR-0030): scatter, wall damage and decal turns follow the world seed too.
+	# Legacy saves (and bare content defs) keep the instance-id streams, so they look as they did.
+	var dress: Dictionary = layout.def.dressing
+	if int(dress.get("mode", 0)) == Dressing.MODE_PER_RUN:
+		_rng.seed = Ids.derive_seed(int(dress.get("seed", 0)), "build")
+		_rng2.seed = Ids.derive_seed(int(dress.get("seed", 0)), "build_tall")
+	else:
+		_rng.seed = Ids.hash64("poi:" + String(instance_id))
+		_rng2.seed = Ids.hash64("poi_tall:" + String(instance_id))
 	var style: Dictionary = layout.style
 	_decay = float(style.get("decay", 0.25 + 0.1 * layout.def.tier))
 	shell = StaticBody3D.new()
@@ -1249,8 +1259,11 @@ func _pickups() -> void:
 		root.add_child(pk)
 
 
+## Authored decals, then the per-run ones of a dressed building (Dressing.run_decals, ADR-0030).
 func _decals() -> void:
-	for d: Variant in layout.decals:
+	var all: Array = layout.decals.duplicate()
+	all.append_array(Dressing.run_decals(layout))
+	for d: Variant in all:
 		if not d is Dictionary:
 			continue
 		var path: String = "res://assets/generated/textures/decal_%s_albedo.png" % str(d.get("decal", ""))

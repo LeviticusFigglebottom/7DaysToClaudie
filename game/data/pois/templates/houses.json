@@ -1,0 +1,82 @@
+{
+  "_doc": "Generated ordinary houses (ADR-0030, BuildingGenerator): tier-1 filler for residential lots without an authored pick. Each template varies footprint, room arrangement, storeys, porch, roof, finishes and condition per seed. See docs/POI_AUTHORING.md 'Generated buildings'.",
+  "defs": [
+    {
+      "id": "bungalow", "name": "Bungalow", "archetype": "house", "zoning": ["residential"], "tier": 1, "weight": 3,
+      "width": [9, 13], "depth": [7, 10], "storeys": 1, "porch": 0.6, "floor_height": 0.6, "setback": [4, 7],
+      "decay": [0.22, 0.55], "sleepers": [2, 3], "chimney": 0.45,
+      "exteriors": ["siding_white", "siding_pale_blue", "siding_barn_red", "brick_red"],
+      "roofs": [{"type": "gable", "pitch": [22, 34], "weight": 3}, {"type": "hip", "pitch": [20, 28], "weight": 2}],
+      "roof_materials": ["roof_shingle", "roof_shingle_brown", "roof_metal", "roof_cedar"],
+      "finishes": {
+        "living": {"wall": ["wallpaper_damask_brown", "wallpaper_stripe_green", "wood_paneling_dark", "paint_sage"], "floor": ["wood_oak", "carpet_brown", "wood_pine"]},
+        "kids": {"wall": ["wallpaper_floral_rose", "paint_slate_blue", "paint_mustard"], "floor": ["carpet_blue_worn", "carpet_brown"]},
+        "nursery": {"wall": ["wallpaper_floral_rose", "paint_mustard"], "floor": ["carpet_blue_worn"]}
+      },
+      "names": ["The {family} House", "The {family} Place", "The {family} Bungalow"],
+      "stories": [
+        "The {family}s bolted the front door the night the Cordon closed the road and went out the back with what they could carry.",
+        "Somebody in the {family} house was bitten and nobody would say who. The front door is still bolted from the inside.",
+        "The {family}s waited for the transport to the Grange that never came, then the thing in the back bedroom stopped answering to its name."
+      ]
+    },
+    {
+      "id": "ranch_house", "name": "Ranch house", "archetype": "house", "zoning": ["residential", "rural"], "tier": 1, "weight": 2,
+      "width": [12, 15], "depth": [7, 9], "storeys": 1, "porch": 0.35, "floor_height": 0.6, "setback": [5, 8],
+      "decay": [0.2, 0.5], "sleepers": [2, 4], "chimney": 0.6,
+      "exteriors": ["siding_white", "brick_red", "siding_pale_blue"],
+      "roofs": [{"type": "hip", "pitch": [18, 24], "weight": 2}, {"type": "gable", "axis": "x", "pitch": [18, 26], "weight": 2}],
+      "roof_materials": ["roof_shingle", "roof_shingle_brown"],
+      "finishes": {
+        "living": {"wall": ["wood_paneling_dark", "paint_sage", "plaster_white"], "floor": ["carpet_brown", "wood_oak"]}
+      },
+      "names": ["The {family} Ranch", "The {family} House"],
+      "stories": [
+        "The {family}s nailed the front shut and lived out of the back rooms for a week. Then the noise in the hall started.",
+        "Mr. {family} kept saying the fever would break. The front door has been bolted from the inside ever since."
+      ]
+    },
+    {
+      "id": "two_storey", "name": "Two-storey house", "archetype": "house", "zoning": ["residential"], "tier": 1, "weight": 2,
+      "width": [10, 13], "depth": [8, 10], "storeys": 2, "upper": "full", "porch": 0.75, "floor_height": 0.6, "setback": [4, 7],
+      "decay": [0.25, 0.6], "sleepers": [3, 4], "chimney": 0.5,
+      "exteriors": ["siding_white", "siding_pale_blue", "siding_barn_red"],
+      "roofs": [{"type": "gable", "axis": "x", "pitch": [30, 40], "weight": 3}, {"type": "hip", "pitch": [26, 32], "weight": 1}],
+      "roof_materials": ["roof_shingle", "roof_shingle_brown", "roof_cedar"],
+      "finishes": {
+        "hallway": {"wall": ["wallpaper_stripe_green", "wallpaper_floral_rose", "wood_paneling_dark"], "floor": ["wood_oak"]}
+      },
+      "names": ["The {family} House", "The Old {family} Place"],
+      "stories": [
+        "Three generations of {family}s grew up here. The last of them locked themselves in upstairs and drew the bolt on the front door.",
+        "The {family}s took in the neighbours when the roads closed. Not everyone they let in stayed well."
+      ]
+    },
+    {
+      "id": "cape_cod", "name": "Cape Cod", "archetype": "house", "zoning": ["residential"], "tier": 1, "weight": 2,
+      "width": [10, 12], "depth": [9, 11], "storeys": 2, "upper": "cape", "porch": 0.4, "floor_height": 0.6, "setback": [4, 6],
+      "decay": [0.25, 0.55], "sleepers": [2, 4], "chimney": 0.7,
+      "exteriors": ["siding_white", "siding_pale_blue", "brick_red"],
+      "roofs": [{"type": "gable", "axis": "x", "pitch": [40, 48], "weight": 1}],
+      "roof_materials": ["roof_shingle", "roof_cedar", "roof_shingle_brown"],
+      "names": ["The {family} Cottage", "The {family} House"],
+      "stories": [
+        "Old Mrs. {family} would not leave her cottage for any Cordon bus. Her son came up from the Crossing to make her, and stayed.",
+        "The {family}s' cottage was the last on the street with its lights on. Then it was not."
+      ]
+    },
+    {
+      "id": "duplex", "name": "Duplex", "archetype": "duplex", "zoning": ["residential"], "tier": 1, "weight": 1.5,
+      "width": [12, 15], "depth": [8, 10], "storeys": 1, "porch": 0.5, "floor_height": 0.6, "setback": [4, 6],
+      "decay": [0.3, 0.6], "sleepers": [3, 4], "chimney": 0.0,
+      "exteriors": ["siding_pale_blue", "siding_white", "brick_red", "siding_barn_red"],
+      "roofs": [{"type": "gable", "axis": "x", "pitch": [22, 30], "weight": 2}, {"type": "hip", "pitch": [20, 26], "weight": 1}],
+      "roof_materials": ["roof_shingle", "roof_metal", "roof_shingle_brown"],
+      "names": ["The {family} Duplex", "{family} Rentals"],
+      "stories": [
+        "The {family}s rented both halves. When one side got sick the other side knocked through the party wall to look after them.",
+        "Something broke through the wall between the two flats of the {family} duplex. Both front doors are still bolted."
+      ]
+    }
+  ]
+}

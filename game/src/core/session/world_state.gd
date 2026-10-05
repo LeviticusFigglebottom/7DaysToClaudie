@@ -20,6 +20,11 @@ var pois: Dictionary = {}
 
 ## Current POI piece-key format (see `pois`).
 const POI_KEYS: int = 2
+## How this world dresses its buildings (ADR-0030, PoiDressing): 2 = per run (alternatives, wear,
+## scatter and decals follow the world seed); 1 = legacy (saves from before save v5: the authored
+## defaults and the instance-id scatter they were played with). A POI state may pin its picks
+## ("picks": {group: option}) the first time the building is built.
+var poi_dressing: int = 2
 ## chunk key -> {tree index (String): {state: "stump", day}}
 var trees: Dictionary = {}
 ## dropped item / loose log entities: id -> {kind: "item"|"log", stack?, pos:[3], rot:[4]}
@@ -86,6 +91,7 @@ func to_dict() -> Dictionary:
 	return {
 		"structures": structures, "blueprints": blueprints, "containers": containers, "pois": pois,
 		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "mounds": mounds, "chunk_keys": chunk_blobs.keys(),
+		"poi_dressing": poi_dressing,
 	}
 
 
@@ -100,3 +106,5 @@ func from_dict(d: Dictionary) -> void:
 	flags = d.get("flags", {})
 	drops = d.get("drops", {})
 	mounds = d.get("mounds", {})
+	# A world saved without the key predates per-run dressing (the v4 -> v5 migration sets it too).
+	poi_dressing = int(d.get("poi_dressing", 1))
