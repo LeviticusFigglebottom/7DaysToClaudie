@@ -40,9 +40,11 @@ func setup_world(w: Node) -> void:
 
 # --- Spawning --------------------------------------------------------------------------------
 
+## opts: id, yaw, target, tier, tier_bonus, pose/poi/sleeper (POI sleepers), authored (keep the
+## requested type even below its gamestage: sleepers, the debug spawn menu, QA shots).
 func spawn(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Enemy:
 	var gs: int = _gamestage()
-	enemy_id = allowed_enemy(enemy_id, gs, opts.has("sleeper"))
+	enemy_id = allowed_enemy(enemy_id, gs, opts.has("sleeper") or bool(opts.get("authored", false)))
 	var def: EnemyDef = Content.enemy(enemy_id)
 	if def == null:
 		Log.warn("ai", "unknown enemy %s" % enemy_id)

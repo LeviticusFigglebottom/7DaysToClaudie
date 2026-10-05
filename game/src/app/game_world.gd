@@ -27,6 +27,7 @@ var ai: Node = null
 var loose: Node = null
 var ambience: Node = null
 var supply_drops: Node = null
+var directives: Node = null
 var is_ready: bool = false
 var sleeping: bool = false
 
@@ -123,6 +124,7 @@ func _spawn_modules() -> void:
 		["ai", "res://src/ai/ai_director.gd"],
 		["ambience", "res://src/audio/ambience_director.gd"],
 		["supply_drops", "res://src/world/supply_drops.gd"],
+		["directives", "res://src/progression/directive_tracker.gd"],
 	]
 	for m: Array in mods:
 		if ResourceLoader.exists(m[1]):

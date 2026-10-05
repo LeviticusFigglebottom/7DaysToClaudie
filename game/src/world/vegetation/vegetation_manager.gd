@@ -149,12 +149,13 @@ func _update(pos: Vector3) -> void:
 
 ## True once every chunk within NEAR_CHUNKS of the player has its instances built and no scatter
 ## job is in flight (visual QA and tests wait on this instead of a fixed delay).
-func is_settled() -> bool:
-	return settle_report() == ""
+## `radius` (chunks) narrows the check to the inner rings; the far impostor layer covers the rest.
+func is_settled(radius: int = NEAR_CHUNKS) -> bool:
+	return settle_report(radius) == ""
 
 
 ## Why streaming is not settled yet ("" when it is): for QA logs.
-func settle_report() -> String:
+func settle_report(radius: int = NEAR_CHUNKS) -> String:
 	if world == null or world.player == null:
 		return "no player"
 	if _far_task != -1:
@@ -166,6 +167,8 @@ func settle_report() -> String:
 		return "recentring"
 	var missing: Array[Vector2i] = []
 	for off: Vector2i in _ring_order():
+		if absi(off.x) > radius or absi(off.y) > radius:
+			continue
 		var key := Vector2i(_center.x + off.x, _center.y + off.y)
 		if not _nodes.has(key) and _rt_for_chunk(key) != null:
 			missing.append(key)

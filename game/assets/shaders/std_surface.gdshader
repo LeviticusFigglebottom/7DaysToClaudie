@@ -43,8 +43,10 @@ uniform vec4 emission_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform float emission_energy = 0.0;
 instance uniform float instance_variation = 0.5;
 // Infected tiers (Seeded/Bloomed Hollowed, InfectedTiers): pale Bloom filaments glowing under the
-// skin, patterned in object space so they stay put on an animated body.
+// skin, patterned in object space. The instance sets how far the Bloom has gone (bloom_glow); the
+// material says where it can show (bloom_skin: Hollowed skin 1, fungal growths 0.8, cloth 0).
 instance uniform float bloom_glow = 0.0;
+uniform float bloom_skin : hint_range(0.0, 1.0) = 0.0;
 
 global uniform float hm_wetness;
 global uniform float hm_snow;
@@ -117,12 +119,24 @@ void fragment() {
 	if (emission_energy > 0.0) {
 		EMISSION = emission_color.rgb * emission_energy * clamp(alb, vec3(0.0), vec3(1.0));
 	}
-	if (bloom_glow > 0.001) {
-		vec3 q = v_obj_pos * 11.0;
-		float veins = abs(sin(q.x + 2.1 * sin(q.y * 1.7)) * sin(q.y * 1.3 + 2.3 * sin(q.z * 1.9)) * sin(q.z + 1.9 * sin(q.x * 1.3)));
-		float vein_mask = (1.0 - smoothstep(0.0, 0.09, veins)) * smoothstep(0.1, 0.6, bloom_glow + 0.2);
-		ALBEDO = mix(ALBEDO, ALBEDO * vec3(0.86, 0.95, 0.84), bloom_glow * 0.6);
-		EMISSION += vec3(0.55, 0.95, 0.62) * vein_mask * bloom_glow * 2.2;
+	float bg = bloom_glow * bloom_skin;
+	if (bg > 0.001) {
+		// Three warped sine sheets; a filament runs wherever one of them crosses zero (thin lines,
+		// ~7 cm apart, 1-2 cm wide), anti-aliased so they don't shimmer at a distance.
+		vec3 q = v_obj_pos * 16.0;
+		float s1 = abs(sin(q.x + 1.7 * sin(q.y * 0.9 + q.z * 0.4)));
+		float s2 = abs(sin(q.y * 0.8 + 1.9 * sin(q.z * 1.1 + q.x * 0.5)));
+		float s3 = abs(sin(q.z + 1.6 * sin(q.x * 0.7 + q.y * 0.6)));
+		float l = min(s1, min(s2, s3));
+		float w = 0.03 + 0.06 * bg;
+		float vein = 1.0 - smoothstep(w, w + fwidth(l) + 0.02, l);
+		// Filaments gather in patches instead of netting the whole body evenly.
+		vec3 c = v_obj_pos * 3.1;
+		float patches = smoothstep(-0.3, 0.7, sin(c.x + 1.3 * sin(c.y)) * sin(c.y * 1.2 + 0.7) + 0.5 * sin(c.z * 1.4 + 2.0 * sin(c.x)));
+		vein *= mix(0.2, 1.0, patches);
+		ALBEDO = mix(ALBEDO, ALBEDO * vec3(0.9, 0.96, 0.88), bg * 0.4);
+		ALBEDO = mix(ALBEDO, mix(ALBEDO, vec3(0.62, 0.76, 0.5), 0.4), vein * min(1.0, bg * 1.3));
+		EMISSION += vec3(0.42, 0.75, 0.38) * vein * bg * 0.5;
 	}
 	ROUGHNESS = rough;
 	METALLIC = metal;

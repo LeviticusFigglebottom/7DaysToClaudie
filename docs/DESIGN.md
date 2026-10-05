@@ -158,6 +158,13 @@ escalating responses to the player (watchers → raids → war parties).
   that unlock recipes at thresholds (`unlock: "skill:field_medicine:2"`).
 * **Gamestage** = (level + days survived × weight) × bonus (world settings), which scales loot
   quality, infected tiers, special Hollowed, Hum size and supply-drop tier.
+* **Program Directives** (the challenges): chaptered goals on the tether and in the Record tab.
+  1. *Arrival*: fell, axe, fire, lean-to, sleep.
+  2. *The Cordon*: search, enter, kill, read, clear.
+  3. *Holding Ground*: logs, the Hum, a supply drop, level 5.
+  4. *Into the Bloom*: Seeded or Bloomed kills, specials, more Hums, level 10.
+
+  Each pays XP and supplies; finishing a chapter opens the next.
 * **Remand supply drops** (the airdrop): after each Hum (default), weekly, every 3 days or
   never; a canister under a chute lands 110–300 m away with a red flare and smoke column, holds
   tiered supplies (ammo, tools, antifungal, schematics as the gamestage rises) and is marked on

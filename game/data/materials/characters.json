@@ -2,7 +2,7 @@
   "_doc": "Character materials (Hollowed bodies, gibs, first-person arms). Meshes use metre UVs; uv_scale = tiles per metre. Vertex colour: R = baked AO, G = dirt/blood mask (drives the 'wear' layer = blood_grime), B = Bloom growth mask (not consumed by std_surface yet). Integrator notes: skin_hollow / skin_human / bloom_growth / gore would benefit from subsurface scattering (std_surface has none); tether_screen should be emissive (dim green, ~1.5 energy); eyes_hollow wants a clear-coat/wet highlight; a dedicated character shader could use COLOR.b to spread Bloom veins/tint over skin.",
   "materials": {
     "skin_hollow": {"shader": "std_surface", "textures": "skin_hollow", "layers": {"wear": "blood_grime"},
-                    "params": {"uv_scale": 3.0, "wear_amount": 0.55, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "normal_strength": 1.0, "variation_strength": 0.06, "roughness_add": 0.0}},
+                    "params": {"uv_scale": 3.0, "wear_amount": 0.55, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "normal_strength": 1.0, "variation_strength": 0.06, "roughness_add": 0.0, "bloom_skin": 1.0}},
     "skin_human": {"shader": "std_surface", "textures": "skin_human", "layers": {"wear": "blood_grime"},
                    "params": {"uv_scale": 4.0, "wear_amount": 0.25, "wear_uv_scale": 4.0, "vertex_ao_strength": 1.0, "normal_strength": 0.8}},
     "cloth_denim": {"shader": "std_surface", "textures": "cloth_denim", "layers": {"wear": "blood_grime"},
@@ -22,7 +22,7 @@
     "hair": {"shader": "std_surface", "textures": "hair", "params": {"uv_scale": 6.0, "vertex_ao_strength": 1.0, "normal_strength": 1.2}},
     "teeth": {"shader": "std_surface", "textures": "teeth", "params": {"uv_scale": 20.0, "vertex_ao_strength": 0.8}},
     "eyes_hollow": {"shader": "std_surface", "textures": "eyes_hollow", "params": {"uv_scale": 1.0, "vertex_ao_strength": 0.6}},
-    "bloom_growth": {"shader": "std_surface", "textures": "bloom_growth", "params": {"uv_scale": 6.0, "vertex_ao_strength": 1.0, "normal_strength": 1.3}},
+    "bloom_growth": {"shader": "std_surface", "textures": "bloom_growth", "params": {"uv_scale": 6.0, "vertex_ao_strength": 1.0, "normal_strength": 1.3, "bloom_skin": 0.8}},
     "gore": {"shader": "std_surface", "textures": "gore", "params": {"uv_scale": 6.0, "vertex_ao_strength": 0.7, "normal_strength": 1.2}},
     "tether": {"shader": "std_surface", "textures": "tether", "params": {"uv_scale": 8.0, "vertex_ao_strength": 1.0}},
     "tether_screen": {"shader": "std_surface", "textures": "tether_screen", "params": {"uv_scale": 1.0, "vertex_ao_strength": 0.0, "emission_color": "#5fe0b0", "emission_energy": 0.6}}

@@ -13,6 +13,8 @@ var inventory: Inventory
 var toolbelt: Array[StringName] = []
 var equipped_slot: int = -1
 var progression: Progression
+## Remand Program directives (chaptered goals with rewards).
+var directives: Directives
 var spawn_point: Vector3 = Vector3.ZERO
 var has_spawn_point: bool = false
 var read_notes: Dictionary = {}
@@ -26,6 +28,7 @@ func _init() -> void:
 	inventory = Inventory.new(id, 0, float(pcfg.get("base_bulk", 40.0)), true)
 	progression = Progression.new()
 	progression.spent.connect(refresh_derived.bind(true))
+	directives = Directives.new()
 	toolbelt.resize(int(pcfg.get("toolbelt_slots", 6)))
 	toolbelt.fill(&"")
 	refresh_derived()
@@ -58,6 +61,7 @@ func to_dict() -> Dictionary:
 		"stats": stats.to_dict(), "inventory": inventory.to_dict(), "toolbelt": tb, "equipped": equipped_slot,
 		"progression": progression.to_dict(), "spawn": [spawn_point.x, spawn_point.y, spawn_point.z],
 		"has_spawn": has_spawn_point, "notes": read_notes.keys(), "deaths": deaths, "kills": kills,
+		"directives": directives.to_dict(),
 	}
 
 
@@ -84,4 +88,5 @@ func from_dict(d: Dictionary) -> void:
 		read_notes[StringName(str(n))] = true
 	deaths = int(d.get("deaths", 0))
 	kills = d.get("kills", {})
+	directives.from_dict(d.get("directives", {}))
 	refresh_derived()

@@ -25,6 +25,7 @@ const KINDS: Dictionary = {
 	&"blueprint": {"dir": "blueprints", "script": preload("res://src/core/content/defs/blueprint_def.gd")},
 	&"attribute": {"dir": "progression/attributes", "script": preload("res://src/core/content/defs/attribute_def.gd")},
 	&"perk": {"dir": "progression/perks", "script": preload("res://src/core/content/defs/perk_def.gd")},
+	&"directive": {"dir": "progression/directives", "script": preload("res://src/core/content/defs/directive_def.gd")},
 	&"species": {"dir": "vegetation", "script": preload("res://src/core/content/defs/species_def.gd")},
 	&"biome": {"dir": "biomes", "script": preload("res://src/core/content/defs/biome_def.gd")},
 	&"weather": {"dir": "weather", "script": preload("res://src/core/content/defs/weather_def.gd")},

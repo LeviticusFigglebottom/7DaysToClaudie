@@ -160,7 +160,7 @@ class Drop:
 	var crate: PoiPieces.LootProp
 	var _chute: Node3D
 	var _flare: FlickerLight
-	var _smoke: GPUParticles3D
+	var _smoke: CPUParticles3D
 	var _hiss: AudioStreamPlayer3D
 	var _sway: float = 0.0
 	var _fade: float = 1.0
@@ -308,47 +308,46 @@ class Drop:
 			root.add_child(riser)
 		return root
 
-	## A tall red smoke column you can see over the trees (none when headless).
-	func _make_smoke() -> GPUParticles3D:
+	## A tall red smoke column you can see over the trees. CPU particles: cheap at this count and
+	## the same on every renderer. None when headless.
+	func _make_smoke() -> CPUParticles3D:
 		if DisplayServer.get_name() == "headless":
 			return null
-		var p := GPUParticles3D.new()
-		p.amount = 36
+		var p := CPUParticles3D.new()
+		p.amount = 48
 		p.lifetime = 9.0
+		# A drop found already burning (or restored from a save) has its full column.
+		p.preprocess = 9.0
 		p.local_coords = false
 		p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		p.visibility_aabb = AABB(Vector3(-12, -2, -12), Vector3(24, 40, 24))
-		var m := ParticleProcessMaterial.new()
-		m.direction = Vector3.UP
-		m.spread = 10.0
-		m.initial_velocity_min = 1.8
-		m.initial_velocity_max = 2.8
-		m.gravity = Vector3(0.35, 0.25, 0.1)
-		m.damping_min = 0.1
-		m.damping_max = 0.3
-		m.scale_min = 1.2
-		m.scale_max = 2.2
+		p.direction = Vector3.UP
+		p.spread = 10.0
+		p.initial_velocity_min = 1.8
+		p.initial_velocity_max = 2.8
+		p.gravity = Vector3(0.35, 0.25, 0.1)
+		p.damping_min = 0.1
+		p.damping_max = 0.3
+		p.scale_amount_min = 1.0
+		p.scale_amount_max = 1.6
 		var grow := Curve.new()
+		grow.max_value = 3.0
 		grow.add_point(Vector2(0.0, 0.4))
 		grow.add_point(Vector2(1.0, 2.6))
-		var gt := CurveTexture.new()
-		gt.curve = grow
-		m.scale_curve = gt
-		m.anim_speed_min = 0.6
-		m.anim_speed_max = 0.9
+		p.scale_amount_curve = grow
+		p.anim_speed_min = 0.6
+		p.anim_speed_max = 0.9
 		var fade := Gradient.new()
 		fade.set_color(0, Color(1, 1, 1, 0.0))
 		fade.set_color(1, Color(1, 1, 1, 0.0))
 		fade.add_point(0.08, Color(1, 1, 1, 0.75))
 		fade.add_point(0.6, Color(1, 1, 1, 0.4))
-		var ft := GradientTexture1D.new()
-		ft.gradient = fade
-		m.color_ramp = ft
-		p.process_material = m
+		p.color_ramp = fade
 		var mat := StandardMaterial3D.new()
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 		mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		# Without this the billboard drops the per-particle scale and the puffs stay quad-sized.
+		mat.billboard_keep_scale = true
 		mat.vertex_color_use_as_albedo = true
 		mat.albedo_color = Color(0.92, 0.42, 0.3, 0.8)
 		var tex: String = "res://assets/generated/textures/fx_smoke_flipbook.png"
@@ -358,8 +357,8 @@ class Drop:
 			mat.particles_anim_v_frames = 8
 			mat.particles_anim_loop = true
 		var q := QuadMesh.new()
-		q.size = Vector2(1.0, 1.0)
+		q.size = Vector2(2.5, 2.5)
 		q.material = mat
-		p.draw_pass_1 = q
+		p.mesh = q
 		p.emitting = true
 		return p

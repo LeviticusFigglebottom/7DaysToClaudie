@@ -160,7 +160,7 @@ func _ahead(d: float) -> Vector3:
 func _spawn(id: StringName) -> void:
 	var ai: Node = world.get(&"ai")
 	if ai != null:
-		ai.call(&"spawn", id, _ahead(8.0), {"target": _player().global_position})
+		ai.call(&"spawn", id, _ahead(8.0), {"target": _player().global_position, "authored": true})
 
 
 func _spawn_pack() -> void:

@@ -73,7 +73,7 @@ right import settings (VRAM compression, normal maps, audio loops, glTF post-imp
   `{shader, textures, layers?, params}`; shaders (`game/assets/shaders/`):
   | shader | use | notable params |
   |---|---|---|
-  | `std_surface` | opaque PBR for almost everything | `tint`, `uv_scale`, `roughness_mult/add`, wear/moss `layers` + `wear_amount`, `grime_amount`, `emission_color` + `emission_energy` (screens, LEDs) |
+  | `std_surface` | opaque PBR for almost everything | `tint`, `uv_scale`, `roughness_mult/add`, wear/moss `layers` + `wear_amount`, `grime_amount`, `emission_color` + `emission_energy` (screens, LEDs), `bloom_skin` (where the infected-tier veins may show: Hollowed skin 1, growths 0.8) |
   | `std_glass` | transparent glass / clear plastic (windows, bottles, lenses) | `opacity`, `use_texture_alpha` (grime in albedo alpha), `grime_amount`, `tint` |
   | `foliage`, `bark` | vegetation (wind, seasons, translucency); `foliage` also lights flames and lamp globes from behind | `translucency`, `alpha_scissor` |
   | `kit_wall` | POI walls/floors: per-instance finish slices (`docs/POI_KIT.md`) | set up by `PoiParts.kit_material` |

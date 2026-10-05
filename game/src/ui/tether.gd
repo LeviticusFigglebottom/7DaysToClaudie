@@ -19,6 +19,7 @@ var _time: Label
 var _vitals: Label
 var _status: Label
 var _record: Label
+var _directives: Label
 var _hum: Label
 var _map: TextureRect
 var _map_region: String = ""
@@ -109,6 +110,9 @@ func _build_screen() -> void:
 	_root.add_child(_markers)
 	var cap := _lcd_label(Vector2(370, 322), 14)
 	cap.text = "LARCH HOLLOW  ·  CORDON SECTOR D6"
+	_directives = _lcd_label(Vector2(370, 342), 13)
+	_directives.size = Vector2(262, 56)
+	_directives.clip_text = true
 
 
 func _lcd_label(pos: Vector2, size: int) -> Label:
@@ -168,6 +172,7 @@ func _refresh() -> void:
 		flags.append("WET")
 	_status.text = "  ".join(flags) if not flags.is_empty() else "NOMINAL"
 	_record.text = _record_text(p)
+	_directives.text = _directives_text(p)
 	_hum.text = _hum_text()
 	_ensure_map()
 	_markers.queue_redraw()
@@ -191,6 +196,17 @@ func _record_text(p: PlayerState) -> String:
 			line += "\nDROP  %d m %s" % [int(Vector2(at.x - pp.x, at.z - pp.z).length()), HordeMemory.SECTOR_NAMES[HordeMemory.sector_of(pp, at)]]
 			break
 	return line
+
+
+## The open chapter's next two Program directives with their progress.
+func _directives_text(p: PlayerState) -> String:
+	var dr: Directives = p.directives
+	if dr.all_done():
+		return "DIRECTIVES  all complete"
+	var lines: PackedStringArray = ["DIRECTIVES · %s" % Directives.chapter_name(dr.chapter).to_upper()]
+	for d: DirectiveDef in dr.open().slice(0, 2):
+		lines.append("> %s  %s" % [d.display_name, d.goal_text(dr.count_of(d.id))])
+	return "\n".join(lines)
 
 
 func _hum_text() -> String:

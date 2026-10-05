@@ -33,6 +33,13 @@ Consistent play has to feel like it adds up.
   POIs. The loot tier is 2–5 from the gamestage. A drop persists in `WorldState.drops` and is
   cleared once it has been emptied and left behind. The landing is a 45 m noise stimulus, so the
   reward is contested.
+* **Program Directives** (the 7 Days "challenges"): typed content (`data/progression/directives`,
+  `DirectiveDef`, cross-references validated) in chapters that open in order: Arrival → The
+  Cordon → Holding Ground → Into the Bloom. Each directive is one gameplay event with optional
+  targets, a minimum infected tier for kills, and a count. Only the open chapter advances, so the
+  chain teaches the loop in order. `DirectiveTracker` feeds Events into `PlayerState.directives`
+  (saved with the player) and pays XP plus items. Level goals are re-checked when a chapter
+  opens or a game loads.
 * **Weapon stagger matters.** The damage needed to stagger is the enemy's `stagger_threshold` ×
   (1.3 − `DamageInfo.stagger`). The default 0.3 keeps the old behaviour. Heavy Hands adds to
   blunt stagger.

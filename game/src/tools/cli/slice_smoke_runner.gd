@@ -133,6 +133,8 @@ func _run() -> void:
 	ps.inventory.add_item(&"stone", 1)
 	ok(bool(game.execute(&"inventory.craft", {"recipe": "cordage"}).get("ok", false)), "crafted cordage")
 	ok(bool(game.execute(&"inventory.craft", {"recipe": "stone_axe"}).get("ok", false)), "crafted a stone axe")
+	ok(ps.directives.done.has(&"arrival_axe") and ps.directives.done.has(&"arrival_fire") and ps.directives.count_of(&"arrival_fell") >= 1,
+		"directives track play (axe, campfire, felling)")
 
 	# --- Survival over time -------------------------------------------------------------------------
 	var full0: float = ps.stats.fullness

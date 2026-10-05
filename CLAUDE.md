@@ -84,6 +84,9 @@ CI (`.github/workflows/ci.yml`) runs setup → assets → validate → test.
   `PlayerState.refresh_derived()`), and give it a label in `FieldManual.EFFECT_TEXT`. XP: add the
   source to `data/config/progression.json` `xp` and call `progression.award(source, times)`
   (ADR-0015).
+* **A directive (challenge)**: add a def to `game/data/progression/directives/` (chapter, order,
+  event from `DirectiveDef.EVENTS`, optional targets/min_tier, count, reward); a new event kind
+  also needs a hook in `DirectiveTracker.setup_world()`.
 * **A command**: register in the owning system's setup (`Game.register_command`), unregister in
   `_exit_tree`, validate everything from session state + args.
 
@@ -100,6 +103,10 @@ CI (`.github/workflows/ci.yml`) runs setup → assets → validate → test.
   import` runs `verify_imports.gd` to re-import such models.
 * `ResourceLoader.load(..., CACHE_MODE_IGNORE)` on scripts used by autoloads crashes the VM.
 * Software Vulkan (lavapipe) renders correctly but slowly (minutes per screenshot).
+* A Control already in the tree (e.g. anchoring itself in `_ready`) must use
+  `set_anchors_and_offsets_preset()`: plain `set_anchors_preset()` keeps the current (0x0) rect.
+* A lambda connected to a RefCounted's own signal must not capture that object (state ->
+  connection -> lambda -> state is a cycle that leaks); bind ids instead.
 
 ## Status
 See `docs/ROADMAP.md` (milestone checklists) and `docs/TECH_DEBT.md`. Visual QA images:

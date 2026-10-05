@@ -1,0 +1,44 @@
+{
+  "_doc": "Remand Program directives (our take on 7 Days challenges). Chapters open in order; only the open chapter's directives advance. event: fell_tree, craft, place_log, build, loot, kill, enter_poi, clear_poi, survive_hum, read_note, level, sleep, supply_drop. targets: ids that count (empty = any). min_tier (kill): normal/seeded/bloomed. count: times (for level: the level). reward: xp + items.",
+  "defs": [
+    {"id": "arrival_fell", "name": "Fell three trees", "description": "Timber is shelter, fire and walls. Swing at the trunk, then step clear of where it falls.",
+     "chapter": 1, "chapter_name": "Arrival", "order": 1, "event": "fell_tree", "count": 3, "reward": {"xp": 60, "items": {"ration_bar": 1}}},
+    {"id": "arrival_axe", "name": "Make a stone axe", "description": "A stone, a stick and cordage on the work slate. It bites deeper than your hatchet arm.",
+     "chapter": 1, "order": 2, "event": "craft", "targets": ["stone_axe"], "reward": {"xp": 40}},
+    {"id": "arrival_fire", "name": "Build a campfire", "description": "Lay the campfire from the field manual and feed it. Warmth, cooking, light — and a beacon.",
+     "chapter": 1, "order": 3, "event": "build", "targets": ["campfire"], "reward": {"xp": 60, "items": {"water_bottle_clean": 1}}},
+    {"id": "arrival_shelter", "name": "Raise a lean-to", "description": "A roof is a place to sleep, save and come back to.",
+     "chapter": 1, "order": 4, "event": "build", "targets": ["lean_to"], "reward": {"xp": 80, "items": {"cordage": 2}}},
+    {"id": "arrival_sleep", "name": "Sleep under your roof", "description": "Rest in your shelter. The Program logs your position while you sleep.",
+     "chapter": 1, "order": 5, "event": "sleep", "reward": {"xp": 40}},
+
+    {"id": "cordon_search", "name": "Search ten containers", "description": "Cupboards, glove boxes, cash registers. People left in a hurry.",
+     "chapter": 2, "chapter_name": "The Cordon", "order": 1, "event": "loot", "count": 10, "reward": {"xp": 120, "items": {"cloth_bandage": 2}}},
+    {"id": "cordon_enter", "name": "Go inside a building in Pell's Crossing", "description": "Listen at the door first. Sleepers don't stay asleep.",
+     "chapter": 2, "order": 2, "event": "enter_poi", "reward": {"xp": 60}},
+    {"id": "cordon_kill", "name": "Put down ten Hollowed", "description": "Head first. A Hollow without legs still crawls.",
+     "chapter": 2, "order": 3, "event": "kill", "count": 10, "reward": {"xp": 150, "items": {"ammo_38": 6}}},
+    {"id": "cordon_notes", "name": "Read two notes", "description": "Someone always writes it down. Find out what happened here.",
+     "chapter": 2, "order": 4, "event": "read_note", "count": 2, "reward": {"xp": 80}},
+    {"id": "cordon_clear", "name": "Clear a building", "description": "Every sleeper inside put down. The Program pays for cleared ground.",
+     "chapter": 2, "order": 5, "event": "clear_poi", "reward": {"xp": 200, "items": {"first_aid_kit": 1}}},
+
+    {"id": "hold_logs", "name": "Set twenty logs", "description": "Walls that notch together hold. Walls that don't, fall on you.",
+     "chapter": 3, "chapter_name": "Holding Ground", "order": 1, "event": "place_log", "count": 20, "reward": {"xp": 150, "items": {"nails": 20}}},
+    {"id": "hold_hum", "name": "Survive a Hum", "description": "When the ground hums, they come from every side. Be behind something by then.",
+     "chapter": 3, "order": 2, "event": "survive_hum", "reward": {"xp": 300, "items": {"antifungal": 1}}},
+    {"id": "hold_drop", "name": "Recover a supply drop", "description": "Follow the red smoke. So will they.",
+     "chapter": 3, "order": 3, "event": "supply_drop", "reward": {"xp": 100}},
+    {"id": "hold_level", "name": "Reach level 5", "description": "Spend what you learn — the field manual's Record.",
+     "chapter": 3, "order": 4, "event": "level", "count": 5, "reward": {"xp": 0, "items": {"repair_kit": 1}}},
+
+    {"id": "bloom_infected", "name": "Put down a Seeded or Bloomed Hollowed", "description": "Pale threads under the skin. They hit harder and take longer to drop.",
+     "chapter": 4, "chapter_name": "Into the Bloom", "order": 1, "event": "kill", "min_tier": "seeded", "reward": {"xp": 200}},
+    {"id": "bloom_special", "name": "Put down a Blister, Husk or Rammer", "description": "Keep your distance from the swollen ones, aim for the soft spots on the plated ones, and never stand between a Rammer and a wall.",
+     "chapter": 4, "order": 2, "event": "kill", "targets": ["blister", "husk", "rammer"], "reward": {"xp": 250, "items": {"painkillers": 2}}},
+    {"id": "bloom_hums", "name": "Survive three more Hums", "description": "They remember what worked against them. So should you.",
+     "chapter": 4, "order": 3, "event": "survive_hum", "count": 3, "reward": {"xp": 600, "items": {"antifungal": 2}}},
+    {"id": "bloom_level", "name": "Reach level 10", "description": "Still here. The Program notes it.",
+     "chapter": 4, "order": 4, "event": "level", "count": 10, "reward": {"xp": 0, "items": {"first_aid_kit": 2, "ammo_38": 12}}}
+  ]
+}

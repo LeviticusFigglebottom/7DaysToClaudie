@@ -683,7 +683,7 @@ func _sever(limb: String, info: DamageInfo) -> void:
 
 func _die(info: DamageInfo) -> void:
 	_set_state(State.DEAD)
-	killer = {"source": String(info.source_id), "cause": String(info.cause)}
+	killer = {"source": String(info.source_id), "cause": String(info.cause), "tier": String(tier)}
 	velocity = Vector3.ZERO
 	collision_layer = CORPSE_LAYER
 	collision_mask = 1

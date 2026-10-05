@@ -45,7 +45,8 @@ var _selected: Variant = null
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# In the tree already: plain set_anchors_preset() would keep the 0x0 rect (offsets follow).
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	var dim := ColorRect.new()
@@ -101,7 +102,8 @@ func _ready() -> void:
 	h.add_theme_constant_override(&"separation", 24)
 	v.add_child(h)
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(320, 0)
+	scroll.custom_minimum_size = Vector2(380, 0)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	h.add_child(scroll)
 	_list = VBoxContainer.new()
@@ -354,7 +356,27 @@ func _record_detail() -> void:
 		"",
 		"[color=#6a5a48]Experience comes from everything you live through: kills (Seeded and Bloomed pay more), searching, building, crafting, clearing buildings and, above all, the Hum. Attributes raise passive strengths and open perks; perks need their attribute at the level shown.[/color]",
 	]
+	lines.append_array(_directive_lines(p.directives))
 	_detail.text = "\n".join(lines)
+
+
+## The open chapter of Program directives: done ones ticked, open ones with progress and reward.
+func _directive_lines(dr: Directives) -> PackedStringArray:
+	var out: PackedStringArray = ["", "[b]Program directives[/b]  —  %s" % ("all complete" if dr.all_done() else Directives.chapter_name(dr.chapter))]
+	if dr.all_done():
+		return out
+	for d: DirectiveDef in Directives.chapter_defs(dr.chapter):
+		if dr.done.has(d.id):
+			out.append("[color=#3a5a2a]  ✓ %s[/color]" % d.display_name)
+			continue
+		var reward: PackedStringArray = []
+		if d.reward_xp > 0:
+			reward.append("%d XP" % d.reward_xp)
+		for k: Variant in d.reward_items.keys():
+			var idef: ItemDef = Content.item(StringName(str(k)))
+			reward.append("%d %s" % [int(d.reward_items[k]), idef.display_name if idef != null else str(k)])
+		out.append("  • %s  %s  [color=#6a5a48](%s)[/color]" % [d.display_name, d.goal_text(dr.count_of(d.id)), ", ".join(reward)])
+	return out
 
 
 func _attribute_detail(a: AttributeDef) -> void:

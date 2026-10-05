@@ -39,7 +39,7 @@ and clear at least one authored building along its route, survive a night and a 
   (ADR-0014).
 - ✅ Progression that pays off: every perk effect wired, Record tab for spending points, XP from
   looting/building/clearing/the Hum, level-up feedback, Remand supply drops, quality tiers,
-  Sleeper Sense (ADR-0015).
+  Sleeper Sense, Program Directives in four chapters (ADR-0015).
 - ✅ Save/load (sleep in shelter, quicksave, autosave on Hum end).
 - ✅ Debug tools: free cam, spawn menu, time/weather, AI overlay, POI route visualizer, perf overlay,
   seed viewer, structural view (docs/DEBUG_TOOLS.md).
