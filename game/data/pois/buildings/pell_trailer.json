@@ -1,0 +1,172 @@
+{
+  "_doc": "Tier-1 single-wide on blocks at the top of the gravel road (Pell's Crossing, lot 'yard_north', front faces south). Route: front door bolted -> round the back: the kitchen door blocked from inside -> in through the clawed-open far bedroom wall -> soft hallway floor -> radio room (Lou at the rig; the cabinet key taped to it wakes him and the kitchen) -> kitchen -> living room gun cabinet (loot) -> unbolt the front door. See docs/POI_AUTHORING.md.",
+  "defs": [
+    {
+      "id": "pell_trailer",
+      "name": "Lou's Trailer",
+      "tier": 1,
+      "zoning": ["residential"],
+      "footprint": [24, 14],
+      "origin": [4, 4],
+      "author": "Hollowmere team",
+      "story": "Lou Petrakis ran a ham station out of his single-wide at the top of the gravel road and logged everything the Cordon said in the clear: assembly at the Grange, transport for the uninfected only, and then from Waystation 9 that no transport was scheduled for Pell's Crossing at all. Nobody at the Grange answered his calls. He bolted the front door, piled the kitchen table against the back one, and sat up with the rig while something walked on the roof. It came in through the far bedroom wall in the end. The gun cabinet key is still taped to the radio.",
+      "style": {"exterior": "siding_pale_blue", "interior": "wood_paneling_dark", "floor": "carpet_brown", "ceiling": "plaster_white", "floor_height": 0.6, "decay": 0.5, "damaged_walls": 0.05, "prop_condition": "worn", "scatter": {"density": 0.45}, "roof": {"type": "gable", "axis": "x", "pitch": 9, "overhang": 0.25, "material": "roof_metal", "color": "#8a8d90", "gutters": false}, "porch": {"side": "S", "from": 12, "to": 15, "depth": 2, "steps": [13]}},
+      "levels": [
+        {
+          "level": 0,
+          "plan": [
+            "MMMMWWRRRKKKLLLL",
+            "MMMMWWRRRKKKLLLL",
+            "MMMMHHHHHKKKLLLL",
+            "MMMMHHHHHKKKLLLL"
+          ],
+          "rooms": {
+            "M": {"name": "Bedroom", "type": "bedroom", "wall": "wood_paneling_dark", "floor": "carpet_blue_worn"},
+            "W": {"name": "Bathroom", "type": "bath", "wall": "tile_bathroom_white", "floor": "linoleum_beige"},
+            "R": {"name": "Radio room", "type": "office", "wall": "wood_paneling_dark", "floor": "carpet_brown"},
+            "H": {"name": "Hallway", "type": "hallway", "wall": "wood_paneling_dark", "floor": "carpet_brown"},
+            "K": {"name": "Kitchen", "type": "kitchen", "wall": "paint_mustard", "floor": "linoleum_check", "open_to": "L"},
+            "L": {"name": "Living room", "type": "living", "wall": "wood_paneling_dark", "floor": "carpet_brown"}
+          }
+        }
+      ],
+      "openings": [
+        {"id": "front_door", "at": [13, 3], "side": "S", "type": "door", "state": "locked_inside"},
+        {"id": "back_door", "at": [10, 0], "side": "N", "type": "door", "state": "barricaded", "barricade": "furniture"},
+        {"id": "end_wall_breach", "at": [0, 2], "side": "W", "type": "breach"},
+        {"id": "bed_window_n", "at": [1, 0], "side": "N", "type": "window", "state": "broken"},
+        {"id": "bed_window_s", "at": [2, 3], "side": "S", "type": "window", "state": "boarded"},
+        {"id": "bath_window", "at": [5, 0], "side": "N", "type": "window", "state": "closed"},
+        {"id": "radio_window", "at": [8, 0], "side": "N", "type": "window", "state": "boarded"},
+        {"id": "hall_window", "at": [6, 3], "side": "S", "type": "window", "state": "closed"},
+        {"id": "kitchen_window", "at": [10, 3], "side": "S", "type": "window", "state": "boarded"},
+        {"id": "living_window_s", "at": [14, 3], "side": "S", "type": "window", "state": "closed"},
+        {"id": "living_window_n", "at": [13, 0], "side": "N", "type": "window", "state": "boarded"},
+        {"id": "living_window_e", "at": [15, 2], "side": "E", "type": "window", "state": "closed"},
+        {"id": "bed_door", "at": [3, 2], "side": "E", "type": "door", "state": "open"},
+        {"id": "bath_door", "at": [5, 1], "side": "S", "type": "door", "state": "closed"},
+        {"id": "radio_door", "at": [6, 1], "side": "S", "type": "door", "state": "closed"},
+        {"id": "kitchen_arch_1", "at": [8, 2], "side": "E", "type": "open"},
+        {"id": "kitchen_arch_2", "at": [8, 3], "side": "E", "type": "open"}
+      ],
+      "props": [
+        {"prop": "bed_double", "at": [2, 0], "against": "N", "variant": "destroyed"},
+        {"prop": "nightstand", "at": [3, 0], "offset": [0.15, 0], "against": "N", "id": "bed_nightstand"},
+        {"prop": "dresser", "at": [1, 3], "against": "S", "id": "bed_dresser", "variant": "worn"},
+        {"prop": "clothes_pile", "pos": [2.7, 3.2], "rot": 0},
+        {"prop": "plaster_chunks", "pos": [0.6, 2.4], "route_ok": true},
+        {"prop": "bloody_bandages", "pos": [1.2, 3.3], "rot": 60},
+        {"prop": "candle_cluster", "pos": [3.35, 0.3], "y": 0.62},
+        {"prop": "bathtub", "pos": [4.78, 0.42], "rot": 0, "variant": "worn"},
+        {"prop": "toilet", "at": [5, 1], "against": "E"},
+        {"prop": "medicine_cabinet", "at": [4, 1], "against": "W", "height": 1.3, "id": "bath_cabinet"},
+        {"prop": "desk_small", "at": [7, 0], "against": "N", "id": "rig_desk", "variant": "worn"},
+        {"prop": "civic_ham_radio", "pos": [7.25, 0.33], "y": 0.75, "rot": 0},
+        {"prop": "chair_wood", "pos": [7.35, 1.05], "rot": 170, "variant": "worn"},
+        {"prop": "metal_shelf", "at": [6, 0], "against": "W", "id": "radio_shelf", "container": "civic_mail_sorting"},
+        {"prop": "cardboard_box", "pos": [8.5, 1.5], "rot": 20, "id": "radio_box"},
+        {"prop": "candle_cluster", "pos": [7.85, 0.35], "y": 0.75, "lit": true},
+        {"prop": "books_scatter", "pos": [6.6, 1.5], "rot": 40},
+        {"prop": "paper_scatter", "pos": [6.4, 2.6], "rot": 10},
+        {"id": "stove_old_1", "prop": "stove_old", "at": [9, 0], "against": "N", "variant": "worn"},
+        {"id": "kitchen_counter_sink_1", "prop": "kitchen_counter_sink", "at": [11, 0], "against": "N"},
+        {"prop": "fridge_old", "at": [9, 1], "against": "W", "id": "kitchen_fridge"},
+        {"prop": "kitchen_wall_cabinet", "at": [9, 0], "against": "N", "height": 1.45, "id": "kitchen_cabinet"},
+        {"prop": "kitchen_chair", "pos": [11.4, 3.4], "rot": 110, "variant": "destroyed"},
+        {"prop": "trash_can_kitchen", "pos": [9.35, 3.6], "id": "kitchen_bin"},
+        {"prop": "dish_clutter", "pos": [11.5, 0.4], "y": 0.98, "rot": 0},
+        {"prop": "couch", "pos": [14.0, 0.52], "rot": 0, "variant": "worn"},
+        {"prop": "coffee_table", "pos": [14.0, 1.45], "rot": 0},
+        {"prop": "tv_crt", "pos": [12.45, 1.0], "rot": 90, "variant": "worn"},
+        {"prop": "armchair", "pos": [15.25, 2.85], "rot": -120},
+        {"prop": "weapons_locker", "at": [15, 1], "against": "E", "id": "gun_cabinet", "container": "civic_radio_cabinet", "key": "civic_radio_key"},
+        {"prop": "lantern_camping", "pos": [14.0, 1.45], "y": 0.45, "lit": true},
+        {"prop": "rug_rect", "pos": [13.9, 1.6]},
+        {"prop": "bottles_scatter", "pos": [12.6, 3.3], "rot": 30},
+        {"prop": "backpack_dropped", "pos": [15.4, 3.5], "rot": 210, "id": "living_pack"},
+        {"prop": "civic_antenna_mast", "pos": [17.6, 0.8], "rot": -20, "variant": "worn"},
+        {"prop": "car_sedan_wreck", "pos": [19.6, 4.6], "rot": -80, "id": "lous_car"},
+        {"prop": "propane_tank_small", "pos": [16.5, 1.9]},
+        {"prop": "propane_tank_small", "pos": [16.6, 2.6], "rot": 40},
+        {"prop": "woodpile", "pos": [6.5, -1.6], "rot": 0},
+        {"prop": "barrel_metal", "pos": [-1.4, -0.6]},
+        {"prop": "tire", "pos": [-1.6, 4.4], "rot": 20},
+        {"prop": "trash_bag", "pos": [11.8, -1.5], "rot": 10, "id": "yard_trash_1"},
+        {"prop": "trash_bag", "pos": [12.4, -1.3], "rot": -30, "id": "yard_trash_2"},
+        {"prop": "fence_wood_2m", "pos": [-3.0, -2.0], "rot": 0, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [-1.0, -2.0], "rot": 0, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [1.0, -2.0], "rot": 0, "variant": "destroyed"},
+        {"prop": "fence_wood_2m", "pos": [3.0, -2.0], "rot": 0, "variant": "worn"},
+        {"prop": "picnic_table", "pos": [4.0, 6.6], "rot": 8, "variant": "worn"},
+        {"prop": "oil_drum_fire", "pos": [6.6, 7.4]},
+        {"prop": "bicycle_rusty", "pos": [17.3, 4.7], "rot": 70},
+        {"prop": "crate_wood", "pos": [-1.3, 1.2], "rot": 20, "id": "yard_crate"},
+        {"prop": "plywood_leaning", "pos": [-0.45, 0.6], "rot": -90},
+        {"prop": "tire", "pos": [17.4, 3.4], "rot": 80},
+        {"prop": "tire", "pos": [17.5, 3.45], "y": 0.2, "rot": 10},
+        {"prop": "gas_can", "pos": [16.4, 0.4], "rot": 30},
+        {"prop": "pallet", "pos": [8.6, -1.5], "rot": 5},
+        {"prop": "crate_wood", "pos": [8.4, -1.5], "y": 0.14, "rot": 20, "id": "yard_crate_2"},
+        {"prop": "wheelbarrow", "pos": [1.8, -1.0], "rot": 95},
+        {"prop": "bucket", "pos": [13.2, -1.0]},
+        {"prop": "trash_pile", "pos": [14.8, -1.8], "rot": 40, "id": "yard_trash_pile"},
+        {"prop": "fence_wood_2m", "pos": [5.0, -2.0], "rot": 0, "variant": "worn"},
+        {"prop": "fence_wood_2m", "pos": [-4.0, -1.0], "rot": 90, "variant": "destroyed"},
+        {"prop": "sawhorse_barricade", "pos": [10.6, 5.6], "rot": 12, "variant": "worn"},
+        {"prop": "cans_scatter", "pos": [10.4, 1.6], "rot": 20},
+        {"prop": "duffel_bag", "pos": [0.6, 0.5], "rot": 80, "id": "bed_duffel"},
+        {"prop": "books_scatter", "pos": [2.8, 2.6], "rot": -30},
+        {"prop": "cardboard_box", "pos": [8.5, 3.4], "rot": -10, "id": "hall_box_1"},
+        {"prop": "cardboard_box", "pos": [8.55, 3.4], "y": 0.34, "rot": 15, "id": "hall_box_2"},
+        {"prop": "side_table", "pos": [15.4, 0.4], "rot": 0},
+        {"prop": "floor_lamp", "pos": [12.3, 0.4]}
+      ],
+      "pickups": [
+        {"id": "radio_key", "item": "civic_radio_key", "pos": [6.95, 0.42], "y": 0.98}
+      ],
+      "notes": [
+        {"note": "civic_radio_log", "pos": [7.6, 0.5], "y": 0.76}
+      ],
+      "traps": [
+        {"id": "cf_hallway", "type": "creaky_floor", "at": [4, 2], "size": [3, 2]}
+      ],
+      "triggers": [
+        {"id": "t_radio", "group": "radio", "on": "pickup", "pickup": "radio_key", "delay": 0.4}
+      ],
+      "sleepers": [
+        {"id": "bed_sleeper", "pos": [2.0, 1.2], "enemy": "hollow", "pose": "lie", "rot": 180},
+        {"id": "tub_sleeper", "pos": [4.8, 0.45], "enemy": "hollow", "pose": "lie", "rot": 90},
+        {"id": "lou", "pos": [7.4, 1.25], "enemy": "hollow", "pose": "sit", "rot": 180, "group": "radio"},
+        {"id": "kitchen_crouch", "pos": [9.6, 3.45], "enemy": "hollow", "pose": "crouch", "rot": 270, "group": "radio"}
+      ],
+      "lights": [
+        {"pos": [14.0, 1.45], "height": 0.75, "color": "#fff0cf", "energy": 0.55, "range": 5.5, "flicker": 0.1},
+        {"pos": [3.35, 0.3], "height": 0.85, "color": "#ffb35c", "energy": 0.35, "range": 3.0, "flicker": 0.55},
+        {"pos": [7.85, 0.35], "height": 0.98, "color": "#ffb35c", "energy": 0.3, "range": 3.0, "flicker": 0.5}
+      ],
+      "decals": [
+        {"decal": "blood_trail", "at": [0, 2], "side": "floor", "size": [0.8, 1.6], "rot": 90},
+        {"decal": "blood_handprint", "at": [-1, 2], "side": "E", "height": 1.0, "size": [0.4, 0.4]},
+        {"decal": "survivor_marks_a", "at": [13, 4], "side": "N", "height": 1.5, "size": [0.8, 0.7]},
+        {"decal": "bullet_holes", "at": [9, 2], "side": "W", "height": 1.3, "size": [0.8, 0.7]}
+      ],
+      "route": [
+        {"at": [13, 5], "label": "The deck - the front door is bolted from inside"},
+        {"at": [10, -2], "label": "Round the back - the kitchen door is blocked from inside"},
+        {"at": [-2, 2], "label": "The far end - something clawed through the bedroom wall"},
+        {"at": [1, 2], "label": "Bedroom"},
+        {"at": [6, 2], "label": "Hallway - the floor is soft and loud"},
+        {"at": [6, 1], "label": "Radio room - Lou at the rig, the cabinet key taped to it"},
+        {"at": [11, 2], "label": "Kitchen"},
+        {"at": [14, 2], "label": "Living room - the gun cabinet (loot)"},
+        {"at": [13, 3], "label": "Unbolt the front door"},
+        {"at": [13, 5], "label": "Out onto the deck"}
+      ],
+      "loot_room": {"room": "L", "level": 0},
+      "shortcuts": [
+        {"opening": "front_door"}
+      ],
+      "budget": {"lights": 3, "enemies": 4}
+    }
+  ]
+}

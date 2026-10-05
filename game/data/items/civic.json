@@ -1,0 +1,22 @@
+{
+  "_doc": "Keys and readable notes of the civic buildings of Pell's Crossing (St. Ansel's Church, Northwoods Tavern, post office, grange hall, the trailer). Note items are note_<note id> (notes/civic.json); models come from blender_catalogs/props_civic.py ITEMS (models/items/civic/<id>.glb).",
+  "defs": [
+    {"id": "civic_pantry_key", "name": "Pantry Key", "description": "Long iron key on a manila tag: 'PANTRY - St. A. - not to be lent'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/civic/civic_pantry_key"},
+    {"id": "civic_tavern_keys", "name": "Gus Lund's Keys", "description": "A ring of keys on a red lanyard: the kitchen, the apartment, the safe under the bed.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/civic/civic_tavern_keys"},
+    {"id": "civic_parcel_cage_key", "name": "Parcel Cage Key", "description": "Brass padlock key tagged 'REGISTERED - CAGE'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/civic/civic_parcel_cage_key"},
+    {"id": "civic_records_key", "name": "Records Room Key", "description": "Steel key tagged 'GRANGE OFFICE - RECORDS'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/civic/civic_records_key"},
+    {"id": "civic_radio_key", "name": "Gun Cabinet Key", "description": "A small key taped to the side of a ham radio, 'CABINET' written on the tape.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/civic/civic_records_key"},
+    {"id": "note_civic_haskett_daybook", "name": "St. Ansel's Daybook", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_haskett_daybook", "model": "items/civic/note_civic_haskett_daybook"},
+    {"id": "note_civic_haskett_last", "name": "Note on the Bell Frame", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_haskett_last", "model": "items/civic/note_civic_haskett_last"},
+    {"id": "note_civic_pantry_list", "name": "Pantry Sign-Out Sheet", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_pantry_list", "model": "items/civic/note_civic_pantry_list"},
+    {"id": "note_civic_tavern_tab", "name": "Northwoods Tab Book", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_tavern_tab", "model": "items/civic/note_civic_tavern_tab"},
+    {"id": "note_civic_lund_letter", "name": "Letter to Kari", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_lund_letter", "model": "items/civic/note_civic_lund_letter"},
+    {"id": "note_civic_convoy_manifest", "name": "Convoy Manifest", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_convoy_manifest", "model": "items/civic/note_civic_convoy_manifest"},
+    {"id": "note_civic_postmaster_log", "name": "Postmaster's Daybook", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_postmaster_log", "model": "items/civic/note_civic_postmaster_log"},
+    {"id": "note_civic_dead_letter", "name": "Undeliverable Letter", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_dead_letter", "model": "items/civic/note_civic_dead_letter"},
+    {"id": "note_civic_grange_log", "name": "Grange Shelter Log", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_grange_log", "model": "items/civic/note_civic_grange_log"},
+    {"id": "note_civic_ward_chart", "name": "Sick Bay Chart", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_ward_chart", "model": "items/civic/note_civic_ward_chart"},
+    {"id": "note_civic_evac_notice", "name": "Cordon Evacuation Notice", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_evac_notice", "model": "items/civic/note_civic_evac_notice"},
+    {"id": "note_civic_radio_log", "name": "Lou's Radio Log", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "civic_radio_log", "model": "items/civic/note_civic_radio_log"}
+  ]
+}

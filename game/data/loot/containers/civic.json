@@ -1,0 +1,19 @@
+{
+  "_doc": "Civic containers of Pell's Crossing (church, tavern, post office, grange hall, trailer). Tables in loot/tables/civic.json. Locked ones open with the key named on the placed prop (\"key\") or by force.",
+  "defs": [
+    {"id": "civic_alms_box", "name": "Alms Box", "loot_table": "civic_alms", "slots": 3, "search_time": 1.6, "noise": 5},
+    {"id": "civic_pantry_shelf", "name": "Pantry Shelf", "loot_table": "civic_pantry", "slots": 8, "search_time": 2.0, "noise": 4},
+    {"id": "civic_liquor_shelf", "name": "Back Bar", "loot_table": "civic_liquor", "slots": 6, "search_time": 1.8, "noise": 6},
+    {"id": "civic_keg", "name": "Keg", "loot_table": "civic_keg", "slots": 2, "search_time": 1.4, "noise": 6},
+    {"id": "civic_gun_safe", "name": "Gun Safe", "loot_table": "civic_gun_safe", "slots": 8, "search_time": 2.5, "noise": 8, "locked": true},
+    {"id": "civic_po_box", "name": "PO Boxes", "loot_table": "civic_po_box", "slots": 6, "search_time": 2.4, "noise": 4},
+    {"id": "civic_mail_sorting", "name": "Sorting Case", "loot_table": "civic_mail_sorting", "slots": 4, "search_time": 2.0, "noise": 2},
+    {"id": "civic_parcel_cage", "name": "Parcel Cage", "loot_table": "civic_parcels", "slots": 10, "search_time": 2.5, "noise": 6, "locked": true},
+    {"id": "civic_mail_bag", "name": "Mail Bag", "loot_table": "civic_mail_bag", "slots": 4, "search_time": 1.6, "noise": 2},
+    {"id": "civic_mailbox", "name": "Collection Box", "loot_table": "civic_mailbox", "slots": 4, "search_time": 2.0, "noise": 7},
+    {"id": "civic_relief_supplies", "name": "Relief Crate", "loot_table": "civic_relief", "slots": 8, "search_time": 2.0, "noise": 4},
+    {"id": "civic_coat_pockets", "name": "Coat Pockets", "loot_table": "civic_coat_pockets", "slots": 3, "search_time": 1.2, "noise": 1},
+    {"id": "civic_grange_safe", "name": "Grange Safe", "loot_table": "civic_grange_safe", "slots": 8, "search_time": 2.5, "noise": 6, "locked": true},
+    {"id": "civic_radio_cabinet", "name": "Gun Cabinet", "loot_table": "civic_radio_cabinet", "slots": 6, "search_time": 2.0, "noise": 5, "locked": true}
+  ]
+}
