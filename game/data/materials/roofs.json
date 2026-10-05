@@ -1,0 +1,65 @@
+{
+  "_doc": "Roof coverings (tools/assetgen/textures/gen/roofs.py). RoofBuilder (game/src/poi/roof_builder.gd) uses a POI's style.roof.material, default roof_shingle. Pitched-roof UVs are metres (U along the eave, V up the slope) and every set tiles at 2 m, hence uv_scale 0.5.",
+  "materials": {
+    "roof_shingle": {
+      "shader": "std_surface",
+      "textures": "roof_shingle",
+      "params": {
+        "uv_scale": 0.5,
+        "normal_strength": 1.0,
+        "variation_strength": 0.12,
+        "macro_variation": 0.45
+      }
+    },
+    "roof_shingle_brown": {
+      "shader": "std_surface",
+      "textures": "roof_shingle_brown",
+      "params": {
+        "uv_scale": 0.5,
+        "normal_strength": 1.0,
+        "variation_strength": 0.12,
+        "macro_variation": 0.45
+      }
+    },
+    "roof_metal": {
+      "shader": "std_surface",
+      "textures": "roof_metal",
+      "params": {
+        "uv_scale": 0.5,
+        "normal_strength": 1.0,
+        "variation_strength": 0.1,
+        "macro_variation": 0.45
+      }
+    },
+    "roof_metal_red": {
+      "shader": "std_surface",
+      "textures": "roof_metal_red",
+      "params": {
+        "uv_scale": 0.5,
+        "normal_strength": 1.0,
+        "variation_strength": 0.1,
+        "macro_variation": 0.45
+      }
+    },
+    "roof_cedar": {
+      "shader": "std_surface",
+      "textures": "roof_cedar",
+      "params": {
+        "uv_scale": 0.5,
+        "normal_strength": 1.0,
+        "variation_strength": 0.14,
+        "macro_variation": 0.45
+      }
+    },
+    "roof_tar": {
+      "shader": "std_surface",
+      "textures": "roof_tar",
+      "params": {
+        "uv_scale": 0.5,
+        "normal_strength": 1.0,
+        "variation_strength": 0.1,
+        "macro_variation": 0.45
+      }
+    }
+  }
+}

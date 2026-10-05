@@ -41,6 +41,10 @@ uniform float grime_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float grime_height = 0.6;
 
 uniform float variation_strength = 0.08;
+// World-space low-frequency variation (0 = off) for big single meshes with a short texture tile,
+// such as roofs: brightness and a damp, grimy cast drift over metres so the tile stops reading as a
+// grid.
+uniform float macro_variation = 0.0;
 
 // Self-lit surfaces (device screens, indicator LEDs): emission = colour x energy x albedo.
 uniform vec4 emission_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
@@ -61,6 +65,15 @@ varying vec3 v_world_normal;
 varying vec3 v_world_pos;
 varying vec3 v_obj_pos;
 varying vec3 v_obj_normal;
+
+float value_noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	vec4 h = fract(sin(vec4(dot(i, vec2(127.1, 311.7)), dot(i + vec2(1.0, 0.0), vec2(127.1, 311.7)),
+		dot(i + vec2(0.0, 1.0), vec2(127.1, 311.7)), dot(i + vec2(1.0, 1.0), vec2(127.1, 311.7)))) * 43758.5453);
+	return mix(mix(h.x, h.y, f.x), mix(h.z, h.w, f.x), f.y);
+}
 
 vec3 tri_weights(vec3 n) {
 	vec3 w = pow(abs(n), vec3(4.0));
@@ -172,6 +185,12 @@ void fragment() {
 	}
 
 	alb *= 1.0 + (instance_variation - 0.5) * variation_strength * 2.0;
+	if (macro_variation > 0.0) {
+		vec2 wp = v_world_pos.xz + v_world_pos.yy * 0.7;
+		float mv = 0.55 * value_noise(wp * 0.21) + 0.3 * value_noise(wp * 0.53 + 3.7) + 0.15 * value_noise(wp * 1.37 + 9.1);
+		alb *= 1.0 + (mv - 0.5) * macro_variation;
+		alb = mix(alb, alb * vec3(0.8, 0.84, 0.7), smoothstep(0.55, 0.8, mv) * macro_variation);
+	}
 
 	// Weather: rain darkens and glosses surfaces facing the sky; snow settles on top.
 	float wet = hm_wetness * weather_exposure * mix(0.45, 1.0, up);
