@@ -20,8 +20,10 @@ extends Node
 ## and prints the validator stats line ("POI_PREVIEW <id> stats {...}") plus any errors/warnings.
 ## Options: --out DIR, --size WxH, --all (every POI), --no-exterior, --no-plans, --inside,
 ## --sleepers [ids], --seed N (ADR-0030: dress each building as a run with world seed N builds it -
-## its alternatives, wear, scatter and decals; files get a _s<N> suffix). An id "gen:<template>:<n>"
-## previews the building that template generates from seed n.
+## its alternatives, wear, scatter and decals; files get a _s<N> suffix), --views front,back,aerial
+## (the exterior views to shoot). An id "gen:<template>:<n>" previews the building that template
+## generates from seed n; "lot:<framework>:<lot id>" the building a run with --seed puts on that lot
+## (LotPicker), dressed as that placement.
 ## Kit pieces / props that have not been generated render as stand-in boxes.
 
 const CUT: float = 1.5
@@ -42,6 +44,9 @@ var _sleepers: bool = false
 var _sleeper_ids: PackedStringArray = []
 ## --seed: the world seed a run would dress the buildings with (-1 = the authored defaults).
 var _seed: int = -1
+var _views: PackedStringArray = ["front", "back", "aerial"]
+## The placement id a "lot:" preview is dressed as (the game's "<framework>/<lot>").
+var _instance: String = ""
 var _world: Node3D
 var _sun: DirectionalLight3D
 var _ground: MeshInstance3D
@@ -90,6 +95,9 @@ func _parse_args() -> void:
 			"--seed":
 				i += 1
 				_seed = int(a[i])
+			"--views":
+				i += 1
+				_views = a[i].split(",", false)
 			"--sleepers":
 				_sleepers = true
 				if i + 1 < a.size() and not a[i + 1].begins_with("--") and Content.get_def(&"poi", StringName(a[i + 1])) == null:
@@ -145,7 +153,7 @@ func _preview(id_arg: String) -> void:
 	var id: String = id_arg.replace(":", "_") + ("_s%d" % _seed if _seed >= 0 else "")
 	if _seed >= 0:
 		var session: GameSession = GameSession.create_new({"seed": _seed, "game_mode": "survival"})
-		pd = PoiManager.dress_for(pd, StringName("preview/%s" % id_arg), session)
+		pd = PoiManager.dress_for(pd, StringName(_instance if _instance != "" else "preview/%s" % id_arg), session)
 		print("POI_PREVIEW %s dressed for seed %d: %s" % [id, _seed, pd.dressing.get("picks", {})])
 	var v: PoiValidator = PoiValidator.validate(pd)
 	print("POI_PREVIEW %s stats %s" % [id, v.stats])
@@ -166,6 +174,8 @@ func _preview(id_arg: String) -> void:
 		var radius: float = 0.5 * Vector3(ext.size.x, top + 2.0, ext.size.y).length()
 		var views: Dictionary = {"front": Vector3(-0.55, 0.5, 1.0), "back": Vector3(0.6, 0.55, -1.0), "aerial": Vector3(0.7, 1.5, 0.9)}
 		for view: String in views:
+			if not _views.has(view):
+				continue
 			var cam := Camera3D.new()
 			cam.fov = 45.0
 			_world.add_child(cam)
@@ -209,6 +219,21 @@ func _preview(id_arg: String) -> void:
 
 ## A content POI, or "gen:<template>:<n>": the building that template generates from seed n (ADR-0030).
 func _resolve_def(id: String) -> PoiDef:
+	_instance = ""
+	if id.begins_with("lot:"):
+		var lp: PackedStringArray = id.split(":")
+		var fw: FrameworkDef = Content.get_def(&"framework", StringName(lp[1])) as FrameworkDef if lp.size() > 2 else null
+		if fw == null:
+			return null
+		var lots: GDScript = load("res://src/poi/lot_picker.gd")
+		for res: Dictionary in lots.call(&"resolve", fw, lp[1], maxi(_seed, 0)):
+			if str((res["lot"] as Dictionary).get("id", "")) == lp[2]:
+				_instance = str(res["instance"])
+				var lot_def: PoiDef = lots.call(&"def_for", res) as PoiDef
+				print("POI_PREVIEW %s holds %s %s: '%s'" % [id, res["kind"], res.get("template", res.get("def_id", "")),
+					lot_def.display_name if lot_def != null else "nothing"])
+				return lot_def
+		return null
 	if id.begins_with("gen:"):
 		var parts: PackedStringArray = id.split(":")
 		var t: Resource = Content.get_def(&"building_template", StringName(parts[1])) if parts.size() > 1 else null
