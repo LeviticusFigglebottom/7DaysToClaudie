@@ -5,7 +5,8 @@ extends SceneTree
 ##   (= xvfb-run godot --path game --rendering-driver vulkan -s res://src/tools/cli/preview_asset.gd -- \
 ##        --out build/previews rocks/boulder_a ...)
 ## Options: --out DIR, --size WxH, --time HOUR (sun position), --dist MULT, --angle DEG, --grid (all
-## models side by side in one image named grid.png), --ground none|grass|dirt.
+## models side by side in one image named grid.png), --ground none|grass|dirt, --focus X,Y,Z,R (look
+## at that model-space point and frame a radius R instead of the whole model: a trunk base, a face).
 
 var _out_dir: String = "res://../build/previews"
 var _size := Vector2i(960, 540)
@@ -13,6 +14,8 @@ var _hour: float = 15.0
 var _dist_mult: float = 1.0
 var _angle: float = 35.0
 var _grid: bool = false
+var _ground: String = "dirt"
+var _focus := Vector4.ZERO
 var _models: PackedStringArray = []
 
 
@@ -53,6 +56,13 @@ func _parse_args() -> void:
 				_angle = float(a[i])
 			"--grid":
 				_grid = true
+			"--ground":
+				i += 1
+				_ground = a[i]
+			"--focus":
+				i += 1
+				var f: PackedStringArray = a[i].split(",")
+				_focus = Vector4(float(f[0]), float(f[1]), float(f[2]), float(f[3]))
 			_:
 				_models.append(a[i])
 		i += 1
@@ -87,12 +97,14 @@ func _setup_environment(world: Node3D) -> void:
 	var elev: float = clampf(sin((_hour - 6.0) / 13.0 * PI) * 55.0, 4.0, 70.0)
 	sun.rotation_degrees = Vector3(-elev, 35.0 + (_hour - 12.0) * 12.0, 0.0)
 	world.add_child(sun)
+	if _ground == "none":
+		return
 	var ground := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(200, 200)
 	ground.mesh = plane
 	var gm := StandardMaterial3D.new()
-	gm.albedo_color = Color(0.22, 0.21, 0.18)
+	gm.albedo_color = Color(0.17, 0.21, 0.11) if _ground == "grass" else Color(0.22, 0.21, 0.18)
 	gm.roughness = 0.95
 	ground.material_override = gm
 	world.add_child(ground)
@@ -124,6 +136,9 @@ func _camera_for(world: Node3D, box: AABB) -> Camera3D:
 	world.add_child(cam)
 	var center: Vector3 = box.get_center()
 	var radius: float = maxf(box.size.length() * 0.5, 0.15)
+	if _focus.w > 0.0:
+		center = Vector3(_focus.x, _focus.y, _focus.z)
+		radius = _focus.w
 	var dist: float = radius / tan(deg_to_rad(cam.fov * 0.5)) * 1.1 * _dist_mult
 	var a: float = deg_to_rad(_angle)
 	var dir := Vector3(sin(a), 0.42, cos(a)).normalized()
