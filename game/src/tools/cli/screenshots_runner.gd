@@ -23,6 +23,8 @@ const SHOTS: Array[Dictionary] = [
 		"lineup": [["blister", -2.3, "normal"], ["husk", 0.0, "seeded"], ["rammer", 2.5, "bloomed"]], "fov": 48.0, "cam_height": 1.55, "look_height": 1.15},
 	{"name": "supply_drop", "pos": Vector3(-306, 1.7, 2312), "look": Vector3(-296, 4.0, 2302), "hour": 17.8, "weather": "clear", "drop": true, "settle": 10.0},
 	{"name": "record_tab", "pos": Vector3(-296, 2.2, 2302), "look": Vector3(-286, 0.5, 2294), "hour": 11.0, "weather": "clear", "ui": "record"},
+	{"name": "options_menu", "pos": Vector3(-296, 2.2, 2302), "look": Vector3(-286, 0.5, 2294), "hour": 11.0, "weather": "clear", "ui": "options"},
+	{"name": "first_person_torch", "pos": Vector3(-286, 0.0, 2300), "look": Vector3(-276, 0.4, 2297), "hour": 21.8, "weather": "clear", "fp": "torch", "fp_light": true},
 ]
 
 var _out: String = "res://../build/screenshots"
@@ -151,7 +153,10 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 			_temp.append(drops.call(&"_spawn", &"qa_drop", g, 3, true))
 			drops.drops.erase(&"qa_drop")
 	if shot.has("ui"):
-		_show_record(w)
+		if str(shot["ui"]) == "options":
+			_show_options(w)
+		else:
+			_show_record(w)
 	if shot.has("enemy"):
 		# An awake body at the look point facing the camera, its brain paused so it holds its
 		# idle loop in place; framed from its own feet so slopes don't tilt the shot.
@@ -174,6 +179,9 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	if shot.has("fp"):
 		_hold_item(p, StringName(str(shot["fp"])), look)
 		p.camera.make_current()
+		if bool(shot.get("fp_light", false)):
+			p.equipment.call(&"_sync_equipped")
+			p.equipment.toggle_light()
 	await _wait_streamed(w)
 	await _wait(float(shot.get("settle", _settle)))
 	var img: Image = get_viewport().get_texture().get_image()
@@ -183,7 +191,12 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	if shot.has("ui"):
 		var ui: GameUI = w.get(&"ui") as GameUI
 		ui.manual.close()
+		for c: Node in ui.get_children():
+			if c is OptionsPanel:
+				c.queue_free()
 		ui.visible = false
+	if bool(shot.get("fp_light", false)) and p.equipment.has_light_on():
+		p.equipment.toggle_light()
 	for n: Node in _temp:
 		if is_instance_valid(n):
 			if n is Enemy:
@@ -214,6 +227,16 @@ func _show_record(w: Node) -> void:
 	ui.visible = true
 	ui.manual.open("record")
 	ui.manual.call(&"_select", Content.get_def(&"perk", &"timberwright"))
+
+
+## The options screen over the game view.
+func _show_options(w: Node) -> void:
+	var ui: GameUI = w.get(&"ui") as GameUI
+	ui.visible = true
+	var panel := OptionsPanel.new()
+	ui.add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.position = (ui.get_viewport().get_visible_rect().size - Vector2(620, 560)) * 0.5
 
 
 ## Equips an item in toolbelt slot 0 and turns the player (camera) toward `look`.

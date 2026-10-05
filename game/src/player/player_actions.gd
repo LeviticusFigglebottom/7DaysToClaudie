@@ -113,10 +113,6 @@ func _repair(args: Dictionary) -> Dictionary:
 	return {"ok": true, "item": String(target.item_id)}
 
 
-## Stream water: thirst per mouthful, and a little sickness unless the gut is used to it.
-const STREAM_DRINK: Dictionary = {"hydration": 18.0, "health": -3.0}
-
-
 ## {player?, pos: [x, y, z]} -> the water surface the player reaches there, or Vector3.INF.
 func _reachable_water(p: PlayerState, args: Dictionary) -> Vector3:
 	var water: Node = world.get(&"water") if world != null else null
@@ -140,10 +136,13 @@ func _drink_water(args: Dictionary) -> Dictionary:
 	if _reachable_water(p, args) == Vector3.INF:
 		return _fail("no water in reach")
 	if p.stats.hydration >= 99.0:
+		Events.player_status_message.emit("You're not thirsty.", &"info")
 		return _fail("not thirsty")
+	# Thirst per mouthful, and a little sickness unless the gut is used to it (survival.json).
+	var sw: Dictionary = Content.config(&"survival").get("stream_water", {"hydration": 18.0, "health": -3.0})
 	var tmp := ItemDef.new()
-	tmp.consume = STREAM_DRINK.duplicate()
-	tmp.consume["health"] = float(STREAM_DRINK["health"]) * (1.0 - clampf(p.progression.modifier("food_poison_resist"), 0.0, 0.9))
+	tmp.consume = sw.duplicate()
+	tmp.consume["health"] = float(sw.get("health", 0.0)) * (1.0 - clampf(p.progression.modifier("food_poison_resist"), 0.0, 0.9))
 	p.stats.consume(tmp)
 	Audio.play_2d(&"sfx/drink_gulp", -4.0, &"SFX")
 	return {"ok": true, "effects": tmp.consume}

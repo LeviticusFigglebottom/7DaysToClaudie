@@ -69,7 +69,13 @@ func _ready() -> void:
 
 
 ## Dawn after a Hum: the run is saved (a night survived is the progress most worth keeping).
+## Deferred: this handler connects before the Hum director's, which files the night's report and
+## releases the survivors in its own handler of the same signal.
 func _on_hum_ended(_day: int, _report: Dictionary) -> void:
+	_autosave_after_hum.call_deferred()
+
+
+func _autosave_after_hum() -> void:
 	var lp: PlayerState = Game.local_player()
 	if lp != null and lp.stats.alive and Game.autosave():
 		message("Dawn. The Hollowed root into the soil. Progress saved.", &"info")
@@ -193,7 +199,8 @@ func _build_hud() -> void:
 	_belt.anchor_right = 0.5
 	_belt.anchor_top = 1.0
 	_belt.anchor_bottom = 1.0
-	_belt.position = Vector2(-450, -64)
+	# Above the vitals bars (bottom left at -46) so long belts never run into them.
+	_belt.position = Vector2(-450, -96)
 	_belt.size = Vector2(900, 30)
 	_belt.add_theme_font_size_override(&"normal_font_size", 15)
 	_belt.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.85))

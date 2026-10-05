@@ -40,7 +40,14 @@ and clear at least one authored building along its route, survive a night and a 
 - ✅ Progression that pays off: every perk effect wired, Record tab for spending points, XP from
   looting/building/clearing/the Hum, level-up feedback, Remand supply drops, quality tiers,
   Sleeper Sense, Program Directives in four chapters (ADR-0015).
-- ✅ Save/load (sleep in shelter, quicksave, autosave on Hum end).
+- ✅ Save/load: one slot per run, saved on sleep, at dawn after a Hum and with F5 (F9 reloads),
+  `.old` recovery, portable chunk files (ADR-0016).
+- ✅ Second refinement pass (ADR-0016), from six audits:
+  * Hollowed use the navmesh, spawn validly, finish breaking in, and root after the Hum.
+  * Doors collide; stream water; fires burn fuel; an honest hammer with dismantling; swimming.
+  * Lights burn down; hitboxes follow bones; damage direction and heartbeat.
+  * An options screen and Esc that closes the pause menu.
+  * Weather variety with lasting snow; dry interiors; rebalanced infection, bleeding, XP and loot.
 - ✅ Debug tools: free cam, spawn menu, time/weather, AI overlay, POI route visualizer, perf overlay,
   seed viewer, structural view (docs/DEBUG_TOOLS.md).
 - ✅ Audio: 3D occlusion, reverb zones (listener-based, TD-013), ambient beds, creature cues.

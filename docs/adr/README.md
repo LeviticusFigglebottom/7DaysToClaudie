@@ -20,3 +20,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0013](0013-world-coordinates-regions.md) | World coordinates, regions and streaming | Accepted |
 | [0014](0014-game-rules-and-gamestage.md) | World settings (game rules), gamestage and difficulty scaling | Accepted |
 | [0015](0015-progression-rewards.md) | Progression that pays off: derived stats, XP sources, supply drops | Accepted |
+| [0016](0016-runs-fires-water-refinement.md) | One save per run; fires, water and repairs with a cost | Accepted |

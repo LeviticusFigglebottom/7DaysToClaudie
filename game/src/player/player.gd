@@ -22,9 +22,8 @@ var cfg: Dictionary = {}
 var crouching: bool = false
 var sprinting: bool = false
 ## Set when sprinting empties stamina: no sprinting again until it has recovered to
-## SPRINT_RECOVER (holding Shift at empty stamina used to stutter-sprint forever).
+## survival.json stamina.sprint_recover (holding Shift at empty stamina stutter-sprinted forever).
 var _sprint_locked: bool = false
-const SPRINT_RECOVER: float = 30.0
 ## Feet this far under the surface float the eyes just above it.
 const SWIM_DEPTH: float = 1.35
 var input_enabled: bool = true
@@ -129,7 +128,7 @@ func _physics_process(delta: float) -> void:
 	var speed: float = float(cfg.get("walk_speed", 3.4))
 	if stats.stamina <= 3.0:
 		_sprint_locked = true
-	elif _sprint_locked and stats.stamina >= SPRINT_RECOVER:
+	elif _sprint_locked and stats.stamina >= float(Content.config(&"survival").get("stamina", {}).get("sprint_recover", 30.0)):
 		_sprint_locked = false
 	sprinting = want_sprint and not crouching and not _sprint_locked
 	if sprinting:

@@ -18,19 +18,30 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     the Field Manual's Record tab.
   * **XP from everything you survive**, Remand supply drops, quality tiers, Sleeper Sense, and
     Program Directives (four chapters of challenges with rewards).
+* A second refinement pass (ADR-0016) fixed about 80 of some 90 findings from six audits (AI, UI/saves,
+  building/world, balance, player, environment). The rest are in TECH_DEBT TD-031..034. Most
+  visible in play:
+  * Hollowed path around buildings and through doorways (the navmesh was never queried).
+  * Doors have collision.
+  * You can drink from and fill bottles at streams; campfires need feeding.
+  * Swimming floats instead of sinking.
+  * Each run has its own save slot.
+  * There is an options screen.
 * Verified headless:
   * `make check`: all scripts compile.
   * `make validate`: 0 errors.
-  * `make test`: 149 unit and integration tests, including POI routes, player traversal, special
-    Hollowed, supply drops, progression and directives.
+  * `make test`: 172 unit and integration tests, including POI routes, player traversal and
+    swimming, special Hollowed and hit zones, supply drops, progression, directives, saves (per-run
+    slots, recovery, Windows-safe chunk files), fire fuel, repairs and the horde's routing round
+    buildings.
   * `make smoke`: the slice loop runs fell → carry → build → craft → night → Hum → XP, level,
     supply drop, spending points → save/load of all of it.
 * `make bake` renders far-tree impostors from the real tree models (seasonal tint at runtime).
 * Visual QA: `make screenshots` (software Vulkan, about 1–4 min per shot) → `build/screenshots/`.
   * Places: the drop site, forest, Pell's Crossing road and street, the diner interior.
-  * Views: the first-person stone axe and an awake Hollow close-up.
-  * Scenes: the special Hollowed lineup, a landed supply drop at dusk, the Record tab, a base,
-    and a Hum night.
+  * Views: the first-person stone axe, a lit torch at night, and an awake Hollow close-up.
+  * Scenes: the special Hollowed lineup, a landed supply drop at dusk, the Record tab, the
+    options screen, a base, and a Hum night.
   * Pick shots with `SHOTS_ARGS="--only a,b"`.
 
 ## Not verified yet (needs a GPU machine and a human)
@@ -39,7 +50,10 @@ Snapshot for the next session. Update it when the state changes; delete it once 
    store's ladder to the loft).
 2. Frame rate on target hardware (TD-003) and tuning of `data/config/graphics_presets.json`.
 3. Feel:
-   * vault timing, FP arm poses (TD-025), Hollowed animation blending, audio mix (TD-013);
+   * vault timing, FP arm poses (TD-025; the ready stance and diagonal chop are new),
+     Hollowed animation blending, audio mix (TD-013) and the stronger occlusion;
+   * the second pass's balance: fire fuel per log, stream water's health cost, the infection
+     fight-off line (12), bleeding, craft XP by category, perk values;
    * pacing of XP and levels at each preset;
    * whether a Rammer at gamestage 40 is fair against log walls.
 
@@ -50,9 +64,11 @@ Snapshot for the next session. Update it when the state changes; delete it once 
    playtest numbers. Both are pure data.
 3. Hollowed vaulting/window navigation links and crowd avoidance (TD-011), so the town's window
    routes are dangerous both ways.
-4. Special Hollowed silhouettes and dedicated spit/charge animations (TD-027); a visible drone
+4. Stable ids for POI props, sleepers and traps before any POI is re-authored (TD-031): saved loot
+   states are keyed by list position today.
+5. Special Hollowed silhouettes and dedicated spit/charge animations (TD-027); a visible drone
    for supply drops (TD-029).
-5. Author `okafor_farmhouse` (already placed in region D6) once POI cellars get terrain holes
+6. Author `okafor_farmhouse` (already placed in region D6) once POI cellars get terrain holes
    (TD-026).
-6. M2 planning: factions, caves through the volume terrain, companion, economy, perk capstones
+7. M2 planning: factions, caves through the volume terrain, companion, economy, perk capstones
    and the joinery track (TD-030).

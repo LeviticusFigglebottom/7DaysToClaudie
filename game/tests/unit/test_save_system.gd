@@ -142,3 +142,13 @@ func test_no_saving_while_dead() -> void:
 	s.local_player().stats.alive = true
 	assert_true(Game.save_game())
 	Game.session = prev
+
+
+func test_a_lone_backup_still_lists() -> void:
+	var s: GameSession = _make_session()
+	assert_eq(SaveSystem.save_session(s, SLOT), OK)
+	var dir: String = SaveSystem.slot_dir(SLOT)
+	assert_eq(DirAccess.rename_absolute(dir, dir + ".old"), OK, "only the backup is left")
+	var mine: Array = SaveSystem.list_slots().filter(func(m: Dictionary) -> bool: return m.get("slot") == SLOT)
+	assert_eq(mine.size(), 1, "listed under its own name")
+	assert_not_null(SaveSystem.load_session(SLOT), "and loadable")

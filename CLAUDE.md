@@ -109,6 +109,14 @@ CI (`.github/workflows/ci.yml`) runs setup → assets → validate → test.
   `set_anchors_and_offsets_preset()`: plain `set_anchors_preset()` keeps the current (0x0) rect.
 * A lambda connected to a RefCounted's own signal must not capture that object (state ->
   connection -> lambda -> state is a cycle that leaks); bind ids instead.
+* Physics layer N (project settings, 1-based) is bit `1 << (N - 1)`: vegetation is layer 13 =
+  `1 << 12`. The player's mask once used `1 << 11` (water) and walked through trees.
+* `get_meta(name, null)` still prints an error when the key is missing; check `has_meta()` first.
+  `JSON.parse_string()` prints an engine error on bad input, which fails a GUT test: parse with
+  a `JSON` instance wherever bad input is expected (saves).
+* A `Decal` projects along its local −Y and maps the texture on X/Z, so `size` is (width, depth,
+  height). Instance uniforms are per GeometryInstance: every instance in a MultiMesh shares one
+  value, so batch by value (PoiBuilder's indoor batches).
 
 ## Status
 See `docs/ROADMAP.md` (milestone checklists) and `docs/TECH_DEBT.md`. Visual QA images:
