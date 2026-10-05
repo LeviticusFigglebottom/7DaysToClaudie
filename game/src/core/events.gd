@@ -31,6 +31,9 @@ signal player_died(player_id: StringName, cause: String)
 signal player_slept(player_id: StringName, hours: float)
 signal player_entered_region(player_id: StringName, region_id: StringName)
 signal player_status_message(text: String, kind: StringName)
+signal player_leveled(player_id: StringName, level: int)
+## Points went into an attribute or perk (derived stats changed; Record tab and tether refresh).
+signal player_progressed(player_id: StringName)
 
 # --- Inventory / crafting / loot ---------------------------------------------------------
 signal inventory_changed(owner_id: StringName)
@@ -46,6 +49,9 @@ signal structure_destroyed(piece_id: StringName, def_id: StringName, position: V
 signal blueprint_completed(blueprint_id: StringName, def_id: StringName)
 signal terrain_modified(aabb: AABB)
 signal tree_felled(tree_id: StringName, position: Vector3)
+## A Remand Program supply canister was released over `position` (lands a little later).
+signal supply_drop_incoming(drop_id: StringName, position: Vector3)
+signal supply_drop_landed(drop_id: StringName, position: Vector3)
 
 # --- Combat / AI -------------------------------------------------------------------------
 signal enemy_spawned(entity_id: StringName, enemy_id: StringName, position: Vector3)

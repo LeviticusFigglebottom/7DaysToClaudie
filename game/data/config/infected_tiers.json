@@ -1,9 +1,9 @@
 {
-  "_doc": "Infected tiers (the 7 Days feral/radiated idea in our fiction): how far the Bloom has taken a Hollowed. Multipliers apply on top of the world settings. Tiers are rolled per spawn from the gamestage brackets below (highest bracket with gs <= gamestage), unless the world setting infected_tiers is off. Glow drives the std_surface bloom_glow instance uniform (pale filaments under the skin).",
+  "_doc": "Infected tiers (the 7 Days feral/radiated idea in our fiction): how far the Bloom has taken a Hollowed. Multipliers apply on top of the world settings. Tiers are rolled per spawn from the gamestage brackets below (highest bracket with gs <= gamestage), unless the world setting infected_tiers is off. Glow drives the std_surface bloom_glow instance uniform (pale filaments under the skin). loot_tier is the loot tier their remains roll at.",
   "tiers": {
-    "normal": {"label": "", "hp": 1.0, "damage": 1.0, "speed": 1.0, "structure": 1.0, "xp": 1.0, "regen": 0.0, "glow": 0.0},
-    "seeded": {"label": "Seeded", "hp": 1.6, "damage": 1.3, "speed": 1.12, "structure": 1.3, "xp": 1.8, "regen": 0.0, "glow": 0.35},
-    "bloomed": {"label": "Bloomed", "hp": 2.4, "damage": 1.6, "speed": 1.22, "structure": 1.6, "xp": 3.0, "regen": 3.0, "glow": 1.0,
+    "normal": {"label": "", "hp": 1.0, "damage": 1.0, "speed": 1.0, "structure": 1.0, "xp": 1.0, "regen": 0.0, "glow": 0.0, "loot_tier": 1},
+    "seeded": {"label": "Seeded", "hp": 1.6, "damage": 1.3, "speed": 1.12, "structure": 1.3, "xp": 1.8, "regen": 0.0, "glow": 0.35, "loot_tier": 2},
+    "bloomed": {"label": "Bloomed", "hp": 2.4, "damage": 1.6, "speed": 1.22, "structure": 1.6, "xp": 3.0, "regen": 3.0, "glow": 1.0, "loot_tier": 3,
                 "death_burst": {"radius": 3.0, "damage": 10, "infection": 10}}
   },
   "by_gamestage": [

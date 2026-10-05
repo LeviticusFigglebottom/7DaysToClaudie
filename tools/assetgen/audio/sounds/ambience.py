@@ -688,3 +688,10 @@ def fire_loop_small(seed, variant, sr):
 def fire_loop_torch(seed, variant, sr):
     """Handheld pitch torch: smaller, breathier flame fluttering in the air, fewer crackles, more sizzle."""
     return _fire_loop(seed, sr, 30.0, crackle=4.0, roar=0.45, hiss=0.4, size=0.45, flutter=0.35)
+
+
+@sound("sfx/flare_loop", seed=10014, loop=True, peak_db=-8.0)
+def flare_loop(seed, variant, sr):
+    """Program signal flare burning beside a landed supply canister: a hard, sputtering hiss with
+    little crackle, so it reads as chemical rather than wood fire when you track it by ear."""
+    return _fire_loop(seed, sr, 20.0, crackle=1.5, roar=0.12, hiss=1.0, size=0.3, flutter=0.55)

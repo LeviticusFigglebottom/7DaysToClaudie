@@ -30,6 +30,10 @@ var alive: bool = true
 ## Insulation from worn clothing in "degrees" of comfort.
 var insulation: float = 4.0
 
+## Progression bonuses (PlayerState.refresh_derived): Grit's extra health, Second Wind's regen.
+var max_health_bonus: float = 0.0
+var stamina_regen_mult: float = 1.0
+
 var _stamina_regen_block: float = 0.0
 var _statuses: Dictionary = {}
 var _cfg: Dictionary = {}
@@ -41,8 +45,21 @@ func _init() -> void:
 
 func reload_config() -> void:
 	_cfg = Content.config(&"survival")
-	max_health = _c("health", "max", 100.0)
+	max_health = _c("health", "max", 100.0) + max_health_bonus
 	max_stamina = _c("stamina", "max", 100.0)
+
+
+## Applies progression bonuses. `grow` (points just spent) also fills the newly added health, as
+## raising Grit should feel immediate; on load the saved health is kept as is.
+func set_bonuses(health_bonus: float, regen_mult: float, grow: bool = false) -> void:
+	var before: float = max_health
+	max_health_bonus = maxf(0.0, health_bonus)
+	stamina_regen_mult = maxf(0.1, regen_mult)
+	max_health = _c("health", "max", 100.0) + max_health_bonus
+	if grow and alive and max_health > before:
+		health += max_health - before
+	health = minf(health, max_health)
+	changed.emit()
 
 
 func _c(section: String, key: String, default: float) -> float:
@@ -88,7 +105,7 @@ func tick_realtime(dt: float, exertion: float = 0.0) -> void:
 			_stamina_regen_block -= used
 			t -= used
 		if t > 0.0:
-			var rate: float = _c("stamina", "regen_per_sec", 14.0)
+			var rate: float = _c("stamina", "regen_per_sec", 14.0) * stamina_regen_mult
 			if hydration < 15.0:
 				rate *= 0.5
 			stamina = minf(stamina_cap(), stamina + rate * t)

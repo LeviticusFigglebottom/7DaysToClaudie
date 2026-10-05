@@ -105,7 +105,13 @@ func _on_end(_d: int, _r: Dictionary) -> void:
 	var total: int = maxi(1, _spawned_total)
 	report["clear_time"] = clampf(float(alive) / float(total) + 0.2 * float(_queue.size()) / float(total), 0.0, 1.0)
 	Game.session.horde.record_night(report)
-	Game.session.stats["hums_survived"] = int(Game.session.stats.get("hums_survived", 0)) + 1
+	var survived: int = int(Game.session.stats.get("hums_survived", 0)) + 1
+	Game.session.stats["hums_survived"] = survived
+	# Everyone still standing at dawn earns it; each later Hum pays half again more.
+	for pid: StringName in Game.session.players:
+		var ps: PlayerState = Game.session.players[pid]
+		if ps.stats.alive:
+			ps.progression.award("survive_hum", 1.0 + 0.5 * float(survived - 1))
 	Events.player_status_message.emit("The Hum fades. %d of them came; %d lie still." % [_spawned_total, _sum(report["killed"])], &"info")
 	members.clear()
 	_queue.clear()

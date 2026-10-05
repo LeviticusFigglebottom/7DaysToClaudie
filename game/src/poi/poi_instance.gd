@@ -113,7 +113,7 @@ func _on_sleeper_died(_e: Enemy, sid: String) -> void:
 		Game.session.stats["pois_cleared"] = int(Game.session.stats.get("pois_cleared", 0)) + 1
 		var p: PlayerState = Game.local_player()
 		if p != null:
-			p.progression.add_xp(int(Content.config(&"progression").get("xp", {}).get("clear_poi_per_tier", 120)) * tier)
+			p.progression.award("clear_poi_per_tier", tier)
 		Events.poi_cleared.emit(instance_id)
 		Events.player_status_message.emit("%s cleared." % layout.def.display_name, &"info")
 

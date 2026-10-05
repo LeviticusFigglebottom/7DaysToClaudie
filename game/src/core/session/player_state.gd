@@ -25,8 +25,21 @@ func _init() -> void:
 	var pcfg: Dictionary = Content.config(&"player")
 	inventory = Inventory.new(id, 0, float(pcfg.get("base_bulk", 40.0)), true)
 	progression = Progression.new()
+	progression.spent.connect(refresh_derived.bind(true))
 	toolbelt.resize(int(pcfg.get("toolbelt_slots", 6)))
 	toolbelt.fill(&"")
+	refresh_derived()
+
+
+## Recomputes what attributes and perks change on the character: pack capacity (Sinew,
+## Packhorse), shoulder logs (Timberwright), max health (Grit) and stamina regen (Grit, Second
+## Wind). Derived values are never trusted from a save, so retuned perk data applies to old saves.
+## `grow`: points were just spent (new health is filled in).
+func refresh_derived(grow: bool = false) -> void:
+	var pcfg: Dictionary = Content.config(&"player")
+	inventory.max_bulk = float(pcfg.get("base_bulk", 40.0)) + progression.modifier("carry_bulk")
+	inventory.carry_bonus = {&"log": int(progression.modifier("log_carry"))}
+	stats.set_bonuses(progression.modifier("max_health"), 1.0 + progression.modifier("stamina_regen_mult"), grow)
 
 
 func equipped_item() -> StringName:
@@ -71,3 +84,4 @@ func from_dict(d: Dictionary) -> void:
 		read_notes[StringName(str(n))] = true
 	deaths = int(d.get("deaths", 0))
 	kills = d.get("kills", {})
+	refresh_derived()

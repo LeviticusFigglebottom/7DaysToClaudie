@@ -1,9 +1,18 @@
 {
-  "_doc": "Loot scaling. Quality centre = 1 + (tier-1)*quality_per_tier + gamestage*quality_per_gamestage + bias.",
+  "_doc": "Loot scaling. Quality centre = 1 + (tier-1)*quality_per_tier + gamestage*quality_per_gamestage + bias + the looter's loot_quality_bonus (Keen, Scavenger; whole points also lift the Q ceiling).",
   "empty_reduction_per_tier": 0.05,
   "extra_rolls_per_tier": 0.34,
   "quality_per_tier": 0.6,
   "quality_per_gamestage": 0.02,
   "quality_spread": 0.9,
-  "night_bonus": 0.0
+  "night_bonus": 0.0,
+  "_quality_doc": "Quality tiers 1..6: names and colours shown in the salvage roll. Q also scales weapon damage (0.85 + 0.1 Q) and durability (0.75 + 0.15 Q).",
+  "quality_tiers": [
+    {"name": "Scrap", "color": "#9a958c"},
+    {"name": "Worn", "color": "#c08a52"},
+    {"name": "Serviceable", "color": "#d8c35a"},
+    {"name": "Good", "color": "#7cc46a"},
+    {"name": "Fine", "color": "#5fa3d8"},
+    {"name": "Pristine", "color": "#b07ad8"}
+  ]
 }

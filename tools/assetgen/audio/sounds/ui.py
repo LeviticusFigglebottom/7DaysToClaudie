@@ -127,3 +127,19 @@ def learned(seed, variant, sr):
     sh = dsp.band_noise(n, sr, r, 4000.0, 12000.0) * dsp.env_ar(n, sr, 0.25, 1.2) * 0.02
     y = y + sh
     return dsp.reverb(y, sr, "hall", 0.25, seed=seed, tail=False)
+
+
+@sound("ui/level_up", variants=1, seed=8008, peak_db=-9.5)
+def level_up(seed, variant, sr):
+    """Level gained: a fuller cousin of "learned" - a four-note rising figure (D-A-D-F#) on mallets
+    over a low wooden D, with a longer brushed shimmer. Warm, not triumphant: you survived, that's all."""
+    r = dsp.rng(seed, "level_up")
+    y = _buf(3.4, sr)
+    dsp.place(y, _mallet(sr, r, 146.83, 2.6, bright=0.25, t60=1.9, wood=0.7), 0, 0.5)
+    for i, f in enumerate((293.66, 440.0, 587.33, 739.99)):
+        dsp.place(y, _mallet(sr, r, f, 2.0, bright=0.45, t60=1.4), dsp.ns(0.12 * i, sr), 0.5 - 0.05 * i)
+        dsp.place(y, _mallet(sr, r, f * 2, 1.2, bright=0.2, t60=0.9, wood=0.0), dsp.ns(0.12 * i + 0.01, sr), 0.1)
+    n = len(y)
+    sh = dsp.band_noise(n, sr, r, 4000.0, 12000.0) * dsp.env_ar(n, sr, 0.4, 1.8) * 0.025
+    y = y + sh
+    return dsp.reverb(y, sr, "hall", 0.28, seed=seed, tail=False)

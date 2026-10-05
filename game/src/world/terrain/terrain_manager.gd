@@ -415,7 +415,7 @@ func take_damage(info: DamageInfo) -> void:
 			var rng: RandomNumberGenerator = Game.session.rng.stream("dig")
 			if rng.randf() < 0.18 + (0.4 if mine > 0.0 else 0.0):
 				Game.execute(&"world.pickup_item", {"player": String(ps.id), "item": "stone", "count": 1})
-			ps.progression.add_xp(1)
+			ps.progression.award("dig")
 
 
 # --- Digging ------------------------------------------------------------------------------------

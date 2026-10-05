@@ -26,6 +26,7 @@ var building: Node = null
 var ai: Node = null
 var loose: Node = null
 var ambience: Node = null
+var supply_drops: Node = null
 var is_ready: bool = false
 var sleeping: bool = false
 
@@ -121,6 +122,7 @@ func _spawn_modules() -> void:
 		["pois", "res://src/poi/poi_manager.gd"],
 		["ai", "res://src/ai/ai_director.gd"],
 		["ambience", "res://src/audio/ambience_director.gd"],
+		["supply_drops", "res://src/world/supply_drops.gd"],
 	]
 	for m: Array in mods:
 		if ResourceLoader.exists(m[1]):
@@ -147,10 +149,17 @@ func _spawn_player() -> void:
 	player.bind_state(p)
 	player.input_enabled = false
 	player.died.connect(_on_player_died)
+	# Bound to the id, not the state: a lambda capturing `p` would form a reference cycle
+	# (state -> progression -> connection -> lambda -> state) and leak the whole player.
+	p.progression.leveled_up.connect(_on_player_leveled.bind(p.id))
 	terrain.focus = player
 	terrain.update_streaming(player.global_position, true)
 	if stimuli != null:
 		stimuli.recenter(player.global_position)
+
+
+func _on_player_leveled(level: int, player_id: StringName) -> void:
+	Events.player_leveled.emit(player_id, level)
 
 
 func _find_spawn(id: String) -> Dictionary:

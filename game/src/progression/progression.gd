@@ -6,6 +6,8 @@ extends RefCounted
 
 signal leveled_up(new_level: int)
 signal learned(kind: StringName, id: StringName)
+## Points went into an attribute or perk (derived player stats need recomputing).
+signal spent()
 
 var level: int = 1
 var xp: int = 0
@@ -51,6 +53,16 @@ func add_xp(amount: int) -> int:
 	return gained
 
 
+## XP for a named source from data/config/progression.json "xp" (kill, loot, build, survive the
+## Hum...), times `times` (POI tier, container tier). Returns levels gained.
+func award(source: String, times: float = 1.0) -> int:
+	var table: Dictionary = _cfg.get("xp", {})
+	if not table.has(source):
+		push_warning("Progression: unknown XP source '%s'" % source)
+		return 0
+	return add_xp(int(round(float(table[source]) * times)))
+
+
 func attr_level(id: StringName) -> int:
 	return int(attributes.get(id, 1))
 
@@ -65,8 +77,20 @@ func attribute_cost(id: StringName) -> int:
 
 
 func can_raise_attribute(id: StringName) -> bool:
+	return attribute_block_reason(id) == ""
+
+
+## Why an attribute can't be trained right now ("" = it can). Shown in the Record tab.
+func attribute_block_reason(id: StringName) -> String:
 	var a: AttributeDef = Content.get_def(&"attribute", id) as AttributeDef
-	return a != null and attr_level(id) < a.max_level and skill_points >= attribute_cost(id)
+	if a == null:
+		return "unknown attribute"
+	if attr_level(id) >= a.max_level:
+		return "at its peak"
+	var cost: int = attribute_cost(id)
+	if skill_points < cost:
+		return "needs %d point%s" % [cost, "" if cost == 1 else "s"]
+	return ""
 
 
 func raise_attribute(id: StringName) -> bool:
@@ -74,17 +98,29 @@ func raise_attribute(id: StringName) -> bool:
 		return false
 	skill_points -= attribute_cost(id)
 	attributes[id] = attr_level(id) + 1
+	spent.emit()
 	return true
 
 
 func can_buy_perk(id: StringName) -> bool:
+	return perk_block_reason(id) == ""
+
+
+## Why a perk's next rank can't be learned right now ("" = it can).
+func perk_block_reason(id: StringName) -> String:
 	var p: PerkDef = Content.get_def(&"perk", id) as PerkDef
 	if p == null:
-		return false
+		return "unknown perk"
 	var next_rank: int = perk_rank(id) + 1
-	if next_rank > p.max_rank() or skill_points < 1:
-		return false
-	return attr_level(p.attribute) >= int(p.ranks[next_rank - 1]["attr_level"])
+	if next_rank > p.max_rank():
+		return "fully learned"
+	var need: int = int(p.ranks[next_rank - 1]["attr_level"])
+	if attr_level(p.attribute) < need:
+		var a: AttributeDef = Content.get_def(&"attribute", p.attribute) as AttributeDef
+		return "needs %s %d" % [a.display_name if a != null else String(p.attribute), need]
+	if skill_points < 1:
+		return "needs 1 point"
+	return ""
 
 
 func buy_perk(id: StringName) -> bool:
@@ -95,6 +131,7 @@ func buy_perk(id: StringName) -> bool:
 	var p: PerkDef = Content.get_def(&"perk", id) as PerkDef
 	for u: String in p.ranks[perk_rank(id) - 1]["unlocks"]:
 		_learn(StringName(u))
+	spent.emit()
 	return true
 
 

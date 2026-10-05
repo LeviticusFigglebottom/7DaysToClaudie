@@ -13,6 +13,9 @@ var owner_id: StringName = &""
 var max_slots: int = 0
 var max_bulk: float = 0.0
 var enforce_carry_max: bool = false
+## Extra carry allowance per item id on top of ItemDef.carry_max (perks: Timberwright's third
+## log). Derived from progression, never saved (PlayerState.refresh_derived).
+var carry_bonus: Dictionary = {}
 var stacks: Array[ItemStack] = []
 
 
@@ -80,14 +83,23 @@ func find_tool(tool_kind: String) -> ItemStack:
 	return null
 
 
+## The most of `item_id` this inventory may hold (0 = unlimited by carry caps).
+func carry_limit(item_id: StringName) -> int:
+	var d: ItemDef = Content.item(item_id)
+	if d == null or not enforce_carry_max or d.carry_max <= 0:
+		return 0
+	return d.carry_max + int(carry_bonus.get(item_id, 0))
+
+
 ## How many of `stack` would fit right now (respects slots, bulk and carry caps).
 func capacity_for(stack: ItemStack) -> int:
 	var d: ItemDef = stack.def()
 	if d == null:
 		return 0
 	var limit: int = stack.count
-	if enforce_carry_max and d.carry_max > 0:
-		limit = mini(limit, d.carry_max - count_of(stack.item_id))
+	var cap: int = carry_limit(stack.item_id)
+	if cap > 0:
+		limit = mini(limit, cap - count_of(stack.item_id))
 	if max_bulk > 0.0 and d.bulk > 0.0:
 		limit = mini(limit, int(floor((max_bulk - total_bulk()) / d.bulk + 0.0001)))
 	if limit <= 0:

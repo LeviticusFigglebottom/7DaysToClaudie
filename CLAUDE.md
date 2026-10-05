@@ -79,6 +79,11 @@ CI (`.github/workflows/ci.yml`) runs setup → assets → validate → test.
   range/values, default, category, label; presets may override it), then read it where it applies
   with `GameRules.current().num/integer/flag/choice("id")` — never cache it beyond a spawn. The New
   Game screen, saves and `--rule id=value` pick it up automatically (ADR-0014).
+* **A perk effect / XP source**: put the effect key in a perk rank or attribute `per_level`, read
+  it with `progression.modifier(key)` where it applies (character-wide stats go in
+  `PlayerState.refresh_derived()`), and give it a label in `FieldManual.EFFECT_TEXT`. XP: add the
+  source to `data/config/progression.json` `xp` and call `progression.award(source, times)`
+  (ADR-0015).
 * **A command**: register in the owning system's setup (`Game.register_command`), unregister in
   `_exit_tree`, validate everything from session state + args.
 

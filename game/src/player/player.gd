@@ -57,6 +57,10 @@ func _ready() -> void:
 	_base_fov = Settings.fov
 	camera.fov = _base_fov
 	add_to_group(&"player")
+	var sense := SleeperSense.new()
+	sense.name = "SleeperSense"
+	sense.player = self
+	add_child(sense)
 
 
 func bind_state(p_state: PlayerState) -> void:

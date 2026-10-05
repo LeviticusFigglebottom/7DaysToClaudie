@@ -3,6 +3,7 @@ extends RefCounted
 ## Rolls loot tables deterministically given an RNG. Loot scales with:
 ##  - container/POI tier (1..5): fewer empty containers, more rolls, better quality;
 ##  - gamestage (player progression/days survived): higher quality ceiling;
+##  - the looter's loot_quality_bonus (Keen, Scavenger): quality centre and ceiling;
 ##  - entry tier gates (tier_min/tier_max) for rare items.
 ## Tuning lives in data/config/loot.json.
 
@@ -16,6 +17,9 @@ class Context:
 	var rng: RandomNumberGenerator
 	## World setting loot_abundance: scales roll counts and stack sizes.
 	var abundance: float = 1.0
+	## The looter's perk/attribute bonus (quality points added to the centre; whole points also
+	## lift the ceiling).
+	var quality_bonus: float = 0.0
 
 	func _init(p_tier: int = 1, p_gamestage: int = 1, p_rng: RandomNumberGenerator = null) -> void:
 		tier = clampi(p_tier, 1, 5)
@@ -90,10 +94,10 @@ static func _quality(item_id: StringName, ctx: Context, bias: int) -> int:
 		return 0
 	var cfg: Dictionary = Content.config(&"loot")
 	var centre: float = 1.0 + float(ctx.tier - 1) * float(cfg.get("quality_per_tier", 0.6)) \
-		+ float(ctx.gamestage) * float(cfg.get("quality_per_gamestage", 0.02)) + float(bias)
+		+ float(ctx.gamestage) * float(cfg.get("quality_per_gamestage", 0.02)) + float(bias) + ctx.quality_bonus
 	var spread: float = float(cfg.get("quality_spread", 0.9))
 	var q: float = centre + ctx.rng.randfn(0.0, spread)
-	var cap: int = clampi(2 + ctx.tier + int(ctx.gamestage / 20), 2, 6)
+	var cap: int = clampi(2 + ctx.tier + int(ctx.gamestage / 20) + int(ctx.quality_bonus), 2, 6)
 	return clampi(int(round(q)), 1, cap)
 
 

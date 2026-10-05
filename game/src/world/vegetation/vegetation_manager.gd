@@ -543,7 +543,7 @@ func _fell(key: Vector2i, inst: VegetationScatter.Instance, sp: SpeciesDef, info
 	Game.session.stats["trees_felled"] = int(Game.session.stats.get("trees_felled", 0)) + 1
 	var p: PlayerState = Game.local_player()
 	if p != null:
-		p.progression.add_xp(int(Content.config(&"progression").get("xp", {}).get("fell_tree", 10)))
+		p.progression.award("fell_tree")
 	Events.tree_felled.emit(id, inst.pos)
 
 

@@ -4,7 +4,7 @@ extends RefCounted
 ## The world is regenerated deterministically from its seed + region data; only *differences*
 ## are stored here, keyed by deterministic ids (ADR-0003, ADR-0005).
 
-## piece id -> {def, pos:[3], rot:[4] (quat xyzw), hp, grounded, links:{id: rel}, owner}
+## piece id -> {def, pos:[3], rot:[4] (quat xyzw), hp, hp_mult?, grounded, links:{id: rel}, owner}
 var structures: Dictionary = {}
 ## blueprint instance id -> {def, pos:[3], rot:[4], delivered:{item:n}, placed:[piece index]}
 var blueprints: Dictionary = {}
@@ -19,8 +19,10 @@ var trees: Dictionary = {}
 var loose: Dictionary = {}
 ## chunk key -> PackedByteArray (terrain height deltas / volume densities), saved as chunks/<key>.bin
 var chunk_blobs: Dictionary = {}
-## Story / tutorial flags.
+## Story / tutorial flags (also last_drop_day for SupplyDrops).
 var flags: Dictionary = {}
+## Remand supply drops still in the world: drop id -> {pos:[3], day, tier}.
+var drops: Dictionary = {}
 
 
 func container_state(id: StringName) -> Dictionary:
@@ -57,7 +59,7 @@ func set_tree_state(chunk_key: String, index: int, state: Dictionary) -> void:
 func to_dict() -> Dictionary:
 	return {
 		"structures": structures, "blueprints": blueprints, "containers": containers, "pois": pois,
-		"trees": trees, "loose": loose, "flags": flags, "chunk_keys": chunk_blobs.keys(),
+		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "chunk_keys": chunk_blobs.keys(),
 	}
 
 
@@ -70,3 +72,4 @@ func from_dict(d: Dictionary) -> void:
 	trees = d.get("trees", {})
 	loose = d.get("loose", {})
 	flags = d.get("flags", {})
+	drops = d.get("drops", {})

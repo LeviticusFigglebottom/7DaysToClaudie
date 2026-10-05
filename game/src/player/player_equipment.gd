@@ -193,13 +193,15 @@ func _damage_for(def: ItemDef, pos: Vector3, dir: Vector3) -> DamageInfo:
 		mult += p.modifier("blunt_damage_mult")
 	var stack: ItemStack = player.state.inventory.first(current) if def != null else null
 	if stack != null and stack.quality > 0:
-		mult *= 0.85 + 0.1 * stack.quality
+		mult *= ItemStack.quality_damage_mult(stack.quality)
 	var info := DamageInfo.make(base * mult, dtype, &"melee", player.state.id)
 	info.source_pos = player.global_position
 	info.hit_pos = pos
 	info.direction = dir
 	info.dismember = float(def.equip.get("dismember", 0.0)) if def != null else 0.0
 	info.stagger = float(def.equip.get("stagger", 0.3)) if def != null else 0.2
+	if dtype == &"blunt":
+		info.stagger += p.modifier("stagger_bonus")
 	info.tool_power = (def.equip.get("tool_power", {}) as Dictionary).duplicate() if def != null else {}
 	# tool_power.wood = chopping strength (axes, machetes); tool_power.earth = digging (shovels).
 	# World setting player_harvest scales chopping and digging speed.
@@ -264,7 +266,11 @@ func _fire(def: ItemDef) -> void:
 	if viewmodel != null:
 		viewmodel.play_recoil()
 	if not hit.is_empty():
-		var info := DamageInfo.make(def.equip_num("damage", 50.0) * (1.0 + player.state.progression.modifier("ranged_damage_mult")), &"ballistic", &"firearm", player.state.id)
+		var gun: ItemStack = player.state.inventory.first(current)
+		var dmg: float = def.equip_num("damage", 50.0) * (1.0 + player.state.progression.modifier("ranged_damage_mult"))
+		if gun != null and gun.quality > 0:
+			dmg *= ItemStack.quality_damage_mult(gun.quality)
+		var info := DamageInfo.make(dmg, &"ballistic", &"firearm", player.state.id)
 		info.hit_pos = hit["position"]
 		info.direction = dir
 		info.source_pos = cam.global_position

@@ -419,9 +419,10 @@ func _complete_assembly(site: BlueprintSite, p: PlayerState) -> void:
 	var xf: Transform3D = site.global_transform
 	var id: StringName = Game.session.ids.next("s")
 	_remove_site(site.site_id)
-	_add_piece(id, def, xf, def.hp, true)
+	var mult: float = _hp_mult(p)
+	_add_piece(id, def, xf, def.hp * mult, true, mult)
 	Audio.play_3d(&"sfx/build_complete", xf.origin, {"volume_db": -2.0})
-	p.progression.add_xp(int(Content.config(&"progression").get("xp", {}).get("build", 8)))
+	p.progression.award("complete_blueprint")
 	Events.blueprint_completed.emit(site.site_id, def.id)
 	Events.structure_placed.emit(id, def.id, xf.origin)
 
@@ -452,7 +453,9 @@ func _cmd_place_log(args: Dictionary) -> Dictionary:
 	p.inventory.remove(&"log", 1)
 	Events.inventory_changed.emit(p.id)
 	var id: StringName = Game.session.ids.next("s")
-	_add_piece(id, def, xf, def.hp, _log_grounded(xf))
+	var mult: float = _hp_mult(p)
+	_add_piece(id, def, xf, def.hp * mult, _log_grounded(xf), mult)
+	p.progression.award("build_piece")
 	Audio.play_3d(&"sfx/log_place", xf.origin, {"volume_db": -2.0})
 	if Stimuli.current != null:
 		Stimuli.current.emit_sound(xf.origin, 14.0, &"build", p.id)
@@ -511,8 +514,10 @@ func _cmd_upgrade(args: Dictionary) -> Dictionary:
 	var links: Dictionary = (graph.pieces[id] as StructureGraph.Piece).links.duplicate() if graph.has_piece(id) else {}
 	_free_piece_node(id)
 	graph.pieces.erase(id)
-	_spawn_piece(id, to, xf, to.hp)
+	var mult: float = _hp_mult(p)
+	_spawn_piece(id, to, xf, to.hp * mult, mult)
 	graph.add_from_def(id, to, grounded)
+	p.progression.award("upgrade_piece")
 	for nid: StringName in links:
 		if graph.has_piece(nid):
 			match links[nid]:
@@ -552,9 +557,14 @@ static func _cost_text(cost: Dictionary) -> String:
 
 # --- Pieces, support, damage ---------------------------------------------------------------------
 
-func _spawn_piece(id: StringName, def: StructureDef, xf: Transform3D, hp: float) -> StructurePiece:
+## Toughness multiplier a player's pieces get (Wits per level + Builder perk).
+static func _hp_mult(p: PlayerState) -> float:
+	return 1.0 + maxf(0.0, p.progression.modifier("structure_hp_mult")) if p != null else 1.0
+
+
+func _spawn_piece(id: StringName, def: StructureDef, xf: Transform3D, hp: float, hp_mult: float = 1.0) -> StructurePiece:
 	var piece := StructurePiece.new()
-	piece.setup(id, def, self, hp)
+	piece.setup(id, def, self, hp, hp_mult)
 	piece.name = String(id).replace(":", "_")
 	add_child(piece)
 	piece.global_transform = xf
@@ -567,8 +577,8 @@ func _spawn_piece(id: StringName, def: StructureDef, xf: Transform3D, hp: float)
 
 
 ## Adds a piece to the world and the support graph, linking it to the logs it touches.
-func _add_piece(id: StringName, def: StructureDef, xf: Transform3D, hp: float, grounded: bool) -> StructurePiece:
-	var piece: StructurePiece = _spawn_piece(id, def, xf, hp)
+func _add_piece(id: StringName, def: StructureDef, xf: Transform3D, hp: float, grounded: bool, hp_mult: float = 1.0) -> StructurePiece:
+	var piece: StructurePiece = _spawn_piece(id, def, xf, hp, hp_mult)
 	graph.add_from_def(id, def, grounded or def.piece_kind != "log")
 	if def.piece_kind == "log":
 		for other: StructurePiece in pieces_in_radius(xf.origin, 5.0):
@@ -728,7 +738,8 @@ func _restore(ws: WorldState) -> void:
 			Log.warn("building", "dropping structure %s: unknown def %s" % [k, e.get("def")])
 			continue
 		var id := StringName(str(k))
-		_spawn_piece(id, def, _xf(e), float(e.get("hp", def.hp)))
+		var mult: float = float(e.get("hp_mult", 1.0))
+		_spawn_piece(id, def, _xf(e), float(e.get("hp", def.hp * mult)), mult)
 		graph.add_from_def(id, def, bool(e.get("grounded", true)))
 	for k: Variant in ws.structures.keys():
 		var id := StringName(str(k))
@@ -771,6 +782,8 @@ func save_into(session: GameSession) -> void:
 		var o: Vector3 = p.global_position
 		out[String(id)] = {"def": String(p.def.id), "pos": [o.x, o.y, o.z], "rot": [q.x, q.y, q.z, q.w], "hp": p.hp,
 			"grounded": gp.grounded if gp != null else true, "links": links}
+		if not is_equal_approx(p.hp_mult, 1.0):
+			out[String(id)]["hp_mult"] = p.hp_mult
 		if p.inventory != null:
 			session.world.set_container_items(id, p.inventory)
 	session.world.structures = out

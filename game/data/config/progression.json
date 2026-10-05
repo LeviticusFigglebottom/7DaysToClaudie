@@ -4,5 +4,7 @@
   "points_per_level": 1,
   "starting_points": 1,
   "attribute_cost_step": 3,
-  "xp": {"kill_hollow": 40, "craft": 6, "loot_container": 4, "fell_tree": 10, "build_piece": 5, "clear_poi_per_tier": 150, "read_note": 15, "survive_hum": 500}
+  "_xp_doc": "XP per source (Progression.award). Kills pay each enemy def's own xp times its infected tier's xp multiplier. loot_container is x the container's tier, clear_poi_per_tier x the POI tier, discover_poi x the POI tier (first time inside), survive_hum x (1 + 0.5 per earlier Hum).",
+  "xp": {"craft": 6, "loot_container": 4, "fell_tree": 10, "build_piece": 5, "upgrade_piece": 8,
+         "complete_blueprint": 30, "dig": 1, "clear_poi_per_tier": 150, "read_note": 15, "discover_poi": 20, "survive_hum": 500}
 }

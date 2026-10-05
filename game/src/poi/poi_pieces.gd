@@ -171,6 +171,8 @@ class LootProp:
 	var key: String = ""
 	var inventory: Inventory = null
 	var opened: bool = false
+	## Restocks under the loot_respawn_days world setting (supply drops do not).
+	var respawns: bool = true
 
 	func _ready() -> void:
 		collision_layer = 1 << 2
@@ -221,12 +223,14 @@ class LootProp:
 			rng.seed = Ids.hash64("loot:%d:%s:%d" % [Game.session.world_seed, container_id, gen]) if gen > 0 \
 				else Ids.hash64("loot:%d:%s" % [Game.session.world_seed, container_id])
 			var ctx := LootRoller.Context.new(tier + (1 if bonus else 0), Game.session.gamestage(player.state), rng)
+			ctx.quality_bonus = player.state.progression.modifier("loot_quality_bonus")
 			for s: ItemStack in LootRoller.roll(cdef.loot_table, ctx):
 				inventory.add(s)
 			if bonus:
 				for s2: ItemStack in LootRoller.roll(cdef.loot_table, ctx):
 					inventory.add(s2)
 			Game.session.world.set_container_items(container_id, inventory, true, Game.session.clock.day(), gen)
+			player.state.progression.award("loot_container", tier)
 			Events.container_looted.emit(player.state.id, container_id, tier)
 			if Stimuli.current != null and cdef.noise > 0.0:
 				Stimuli.current.emit_sound(global_position, cdef.noise, &"search", player.state.id)
@@ -244,7 +248,7 @@ class LootProp:
 	## many days have passed since it was last rolled. Returns the next roll generation, or -1.
 	func _respawn_generation() -> int:
 		var days: int = GameRules.current().integer("loot_respawn_days")
-		if not opened or days <= 0 or (inventory != null and not inventory.stacks.is_empty()):
+		if not respawns or not opened or days <= 0 or (inventory != null and not inventory.stacks.is_empty()):
 			return -1
 		var st: Dictionary = Game.session.world.container_state(container_id)
 		if Game.session.clock.day() - int(st.get("rolled_day", 0)) < days:

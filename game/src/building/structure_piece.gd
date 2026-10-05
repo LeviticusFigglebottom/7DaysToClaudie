@@ -9,6 +9,9 @@ const LAYER: int = 1 << 1
 var piece_id: StringName = &""
 var def: StructureDef
 var hp: float = 0.0
+## The builder's toughness bonus when it was placed (Wits, Builder perk): max hp = def.hp x this.
+## Saved per piece, so it survives respec-free progression changes and loads unchanged.
+var hp_mult: float = 1.0
 var manager: Node
 var inventory: Inventory = null
 var lit: bool = false
@@ -21,11 +24,12 @@ var _trap_area: Area3D = null
 var _trap_cooldown: float = 0.0
 
 
-func setup(p_id: StringName, p_def: StructureDef, p_manager: Node, p_hp: float = -1.0) -> void:
+func setup(p_id: StringName, p_def: StructureDef, p_manager: Node, p_hp: float = -1.0, p_hp_mult: float = 1.0) -> void:
 	piece_id = p_id
 	def = p_def
 	manager = p_manager
-	hp = p_def.hp if p_hp < 0.0 else p_hp
+	hp_mult = maxf(0.1, p_hp_mult)
+	hp = max_hp() if p_hp < 0.0 else p_hp
 
 
 func _ready() -> void:
@@ -43,7 +47,7 @@ func is_log() -> bool:
 
 
 func max_hp() -> float:
-	return def.hp
+	return def.hp * hp_mult
 
 
 func _build_visual() -> void:

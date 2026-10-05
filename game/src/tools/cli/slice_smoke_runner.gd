@@ -176,6 +176,22 @@ func _run() -> void:
 		killed_total += int(v)
 	ok(killed_total >= killed, "report counts the kills (%d)" % killed_total)
 
+	# --- Progression and rewards ------------------------------------------------------------------
+	ok(ps.progression.level >= 2, "play earns levels (level %d, %d xp)" % [ps.progression.level, ps.progression.xp])
+	var drops: SupplyDrops = w.supply_drops as SupplyDrops
+	ok(drops != null and drops.drops.size() == 1, "a supply drop follows the Hum")
+	if drops != null:
+		for d: SupplyDrops.Drop in drops.drops.values():
+			d._process(60.0)
+			ok(d.landed and d.global_position.distance_to(ps.position) > 50.0, "the canister lands away from the player (%.0f m)" % d.global_position.distance_to(w.player.global_position))
+	ps.progression.skill_points += 2
+	var bulk0: float = ps.inventory.max_bulk
+	var rs: Dictionary = game.call(&"execute", &"progression.raise_attribute", {"attribute": "sinew"})
+	ok(bool(rs.get("ok", false)) and ps.inventory.max_bulk > bulk0, "trained Sinew (pack %.0f -> %.0f)" % [bulk0, ps.inventory.max_bulk])
+	var rp: Dictionary = game.call(&"execute", &"progression.buy_perk", {"perk": "packhorse"})
+	ok(bool(rp.get("ok", false)), "learned Packhorse")
+	var bulk_after: float = ps.inventory.max_bulk
+
 	# --- Save / load --------------------------------------------------------------------------------
 	var pieces_before: int = b.pieces.size()
 	var day_before: int = game.session.clock.day()
@@ -190,6 +206,9 @@ func _run() -> void:
 		ok(game.session.clock.day() == day_before, "clock restored")
 		ok(game.session.horde.horde_index == 1, "horde memory restored")
 		ok(w2.player.state.inventory.has(&"stone_axe"), "inventory restored")
+		var ps2: PlayerState = w2.player.state
+		ok(ps2.progression.perk_rank(&"packhorse") == 1 and is_equal_approx(ps2.inventory.max_bulk, bulk_after), "progression and carry capacity restored")
+		ok(w2.supply_drops != null and (w2.supply_drops as SupplyDrops).drops.size() == 1, "supply drop restored")
 	_finish()
 
 

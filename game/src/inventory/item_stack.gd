@@ -29,6 +29,22 @@ static func quality_durability_mult(q: int) -> float:
 	return 1.0 if q <= 0 else 0.75 + 0.15 * float(q)
 
 
+## Weapon damage factor for a quality tier (Q1 0.95 ... Q6 1.45).
+static func quality_damage_mult(q: int) -> float:
+	return 1.0 if q <= 0 else 0.85 + 0.1 * float(q)
+
+
+## Tier name and colour for quality 1..6 (data/config/loot.json "quality_tiers").
+static func quality_name(q: int) -> String:
+	var tiers: Array = Content.config(&"loot").get("quality_tiers", [])
+	return str((tiers[q - 1] as Dictionary).get("name", "Q%d" % q)) if q >= 1 and q <= tiers.size() else "Q%d" % q
+
+
+static func quality_color(q: int) -> Color:
+	var tiers: Array = Content.config(&"loot").get("quality_tiers", [])
+	return Color.html(str((tiers[q - 1] as Dictionary).get("color", "#ffffff"))) if q >= 1 and q <= tiers.size() else Color.WHITE
+
+
 func def() -> ItemDef:
 	return Content.item(item_id)
 

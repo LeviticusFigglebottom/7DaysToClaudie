@@ -114,6 +114,10 @@ func _process(delta: float) -> void:
 		if inside != bool(_inside.get(id, false)):
 			_inside[id] = inside
 			if inside:
+				if not bool(inst.state.get("visited", false)):
+					var p: PlayerState = Game.local_player()
+					if p != null:
+						p.progression.award("discover_poi", inst.tier)
 				inst.state["visited"] = true
 				Events.poi_entered.emit(id)
 			else:

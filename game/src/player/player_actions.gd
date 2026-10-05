@@ -13,6 +13,7 @@ func _ready() -> void:
 		&"inventory.craft": _craft, &"inventory.read": _read, &"world.pickup_stack": _pickup_stack,
 		&"world.pickup_item": _pickup_item, &"container.take": _container_take,
 		&"container.take_all": _container_take_all, &"container.put": _container_put,
+		&"progression.raise_attribute": _raise_attribute, &"progression.buy_perk": _buy_perk,
 	}
 	for c: StringName in cmds:
 		Game.register_command(c, cmds[c])
@@ -20,7 +21,8 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	for c: StringName in [&"inventory.consume", &"inventory.drop", &"inventory.equip", &"inventory.craft", &"inventory.read",
-			&"world.pickup_stack", &"world.pickup_item", &"container.take", &"container.take_all", &"container.put"]:
+			&"world.pickup_stack", &"world.pickup_item", &"container.take", &"container.take_all", &"container.put",
+			&"progression.raise_attribute", &"progression.buy_perk"]:
 		Game.unregister_command(c)
 
 
@@ -122,8 +124,7 @@ func _craft(args: Dictionary) -> Dictionary:
 	var res: Crafting.Result = Crafting.craft(r, p.inventory, station, Crafting.quality_for(r, skill))
 	if not res.ok:
 		return _fail(res.reason)
-	var xp: int = int(Content.config(&"progression").get("xp", {}).get("craft", 6))
-	p.progression.add_xp(xp)
+	p.progression.award("craft")
 	Audio.play_2d(&"ui/craft_success", -4.0)
 	Events.item_crafted.emit(p.id, r.id, r.result, r.result_count)
 	Events.inventory_changed.emit(p.id)
@@ -139,7 +140,7 @@ func _read(args: Dictionary) -> Dictionary:
 	if def.category == "note":
 		if not p.read_notes.has(def.note):
 			p.read_notes[def.note] = true
-			p.progression.add_xp(int(Content.config(&"progression").get("xp", {}).get("read_note", 15)))
+			p.progression.award("read_note")
 			Events.note_found.emit(def.note)
 		return {"ok": true, "note": String(def.note)}
 	var learned: Dictionary = p.progression.learn_from_item(def)
@@ -150,6 +151,41 @@ func _read(args: Dictionary) -> Dictionary:
 	Events.schematic_learned.emit(StringName(str(learned.get("id", ""))))
 	Events.inventory_changed.emit(p.id)
 	return {"ok": true, "learned": learned}
+
+
+## Spends points on an attribute level: {player?, attribute} -> {ok, level, points}.
+func _raise_attribute(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player(args)
+	if p == null:
+		return _fail("no player")
+	var id := StringName(str(args.get("attribute", "")))
+	var why: String = p.progression.attribute_block_reason(id)
+	if why != "":
+		return _fail(why)
+	p.progression.raise_attribute(id)
+	_progressed(p)
+	return {"ok": true, "level": p.progression.attr_level(id), "points": p.progression.skill_points}
+
+
+## Learns a perk's next rank: {player?, perk} -> {ok, rank, points}.
+func _buy_perk(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player(args)
+	if p == null:
+		return _fail("no player")
+	var id := StringName(str(args.get("perk", "")))
+	var why: String = p.progression.perk_block_reason(id)
+	if why != "":
+		return _fail(why)
+	p.progression.buy_perk(id)
+	_progressed(p)
+	return {"ok": true, "rank": p.progression.perk_rank(id), "points": p.progression.skill_points}
+
+
+func _progressed(p: PlayerState) -> void:
+	Audio.play_2d(&"ui/learned", -6.0)
+	Events.player_progressed.emit(p.id)
+	# Carry capacity may have grown.
+	Events.inventory_changed.emit(p.id)
 
 
 func _pickup_stack(args: Dictionary) -> Dictionary:

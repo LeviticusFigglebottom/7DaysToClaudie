@@ -650,7 +650,7 @@ func take_damage(info: DamageInfo) -> void:
 		target_pos = info.source_pos
 	if state == State.SLEEP:
 		_wake(info.source_pos, true)
-	elif amount >= float(def.beh("stagger_threshold", 18.0)) and state != State.STAGGER:
+	elif amount >= _stagger_threshold(info) and state != State.STAGGER:
 		_resume_state = State.CHASE if state in [State.ATTACK, State.CHASE, State.BREAK] else state
 		if _resume_state == State.SLEEP:
 			_resume_state = State.CHASE
@@ -658,6 +658,14 @@ func take_damage(info: DamageInfo) -> void:
 		_set_state(State.STAGGER)
 	elif state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
 		_set_state(State.CHASE)
+
+
+## Damage needed to stagger. Heavier weapons (DamageInfo.stagger) stagger with less: the
+## default 0.3 (also assumed when a source sets none) leaves the enemy's threshold as is, a
+## sledge (0.6) needs 70% of it, Heavy Hands lowers it further.
+func _stagger_threshold(info: DamageInfo) -> float:
+	var s: float = info.stagger if info.stagger > 0.0 else 0.3
+	return float(def.beh("stagger_threshold", 18.0)) * clampf(1.3 - s, 0.3, 1.0)
 
 
 func _sever(limb: String, info: DamageInfo) -> void:
@@ -724,8 +732,10 @@ func interact(player: Player) -> void:
 		inventory.max_slots = 6
 		if def.loot_table != &"":
 			var ctx := LootRoller.Context.new()
-			ctx.tier = 1
+			# Seeded and Bloomed remains carry better finds (the reward for fighting them).
+			ctx.tier = int(InfectedTiers.tier(tier).get("loot_tier", 1))
 			ctx.gamestage = Game.session.gamestage(player.state)
+			ctx.quality_bonus = player.state.progression.modifier("loot_quality_bonus")
 			ctx.rng = _rng
 			for s: ItemStack in LootRoller.roll(def.loot_table, ctx):
 				inventory.add(s)

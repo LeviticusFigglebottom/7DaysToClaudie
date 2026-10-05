@@ -1,9 +1,10 @@
 class_name FieldManual
 extends Control
 ## The Remand Program Field Manual (guidebook, B): a dog-eared printed booklet issued with the
-## tether. Blueprints to lay out (shelter, crafting, defence, walls), notes you have read, and
-## the program's survival pages. Choosing "Lay it out" hands the blueprint to the building
-## placement ghost and closes the book.
+## tether. Blueprints to lay out (shelter, crafting, defence, walls), your Record (level, XP,
+## gamestage; spend points on attributes and perks), notes you have read, and the program's
+## survival pages. Choosing "Lay it out" hands the blueprint to the building placement ghost and
+## closes the book; points are spent through the progression.* commands.
 
 const PAPER := Color(0.86, 0.82, 0.71)
 const INK := Color(0.15, 0.12, 0.09)
@@ -13,9 +14,26 @@ const TIPS: Array[Array] = [
 	["Hollowed", "By day they are slow and half blind. After dark they see without light and they run. Anything you carry that glows tells them where you are. Crouch, keep your lights off, and let the wind carry your scent away from them."],
 	["The Hum", "Every few nights the ground hums and the Hollowed answer from every side. They remember what killed them last time and where your walls held. Build where you can see them coming. Spikes slow them; logs make them work; nothing stops them forever."],
 	["Shelter", "A lean-to and a bough bed mark your place in the world: sleep there to rest, save, and wake there if the worst happens. Fire keeps you warm and dries you — and every Hollowed for half a kilometre can see it."],
-	["Building with logs", "Fell trees with an axe; carry two logs at most. Lay a blueprint from this manual and fill its ghost, or set logs freely: they notch onto each other (R turns the log, V stands it up or pitches it for a roof). A log needs something under it or beside it — what nothing holds up, falls."],
+	["Building with logs", "Fell trees with an axe; carry two logs (three once you learn Timberwright). Lay a blueprint from this manual and fill its ghost, or set logs freely: they notch onto each other (R turns the log, V stands it up or pitches it for a roof). A log needs something under it or beside it — what nothing holds up, falls."],
 	["Hammer", "A claw hammer repairs what the Hollowed break (sticks and nails), and reinforces logs once they are whole (cordage and nails)."],
+	["Your record", "Everything you survive teaches you something: Hollowed put down, places searched, logs set, things made, buildings cleared, a Hum lived through. Each level is a point to spend in the Record — on an attribute, or on a perk once its attribute is high enough. The Cordon notices too: the longer you last and the more you learn, the worse the Hollowed that come for you, and the better what you find."],
 ]
+## Attribute display order (the data is sorted by id).
+const ATTR_ORDER: PackedStringArray = ["sinew", "grit", "keen", "quiet", "wits"]
+## Perk/attribute effect keys -> [format, scale] for the Record tab.
+const EFFECT_TEXT: Dictionary = {
+	"melee_damage_mult": ["%+.0f%% melee damage", 100.0], "blunt_damage_mult": ["%+.0f%% blunt damage", 100.0],
+	"ranged_damage_mult": ["%+.0f%% firearm damage", 100.0], "chop_damage_mult": ["%+.0f%% chopping", 100.0],
+	"carry_bulk": ["%+.0f pack space", 1.0], "log_carry": ["%+.0f log on the shoulder", 1.0],
+	"max_health": ["%+.0f max health", 1.0], "stamina_regen_mult": ["%+.0f%% stamina recovery", 100.0],
+	"damage_resist": ["%+.0f%% damage resisted", 100.0], "bleed_resist": ["%+.0f%% bleeding resisted", 100.0],
+	"food_poison_resist": ["%+.0f%% food poisoning resisted", 100.0], "loot_quality_bonus": ["%+.2f loot quality", 1.0],
+	"search_speed_mult": ["%+.0f%% search speed", 100.0], "sleeper_sense_range": ["sense sleepers within %.0f m", 1.0],
+	"noise_mult": ["%+.0f%% noise", 100.0], "move_speed_mult": ["%+.0f%% move speed", 100.0],
+	"visibility_mult": ["%+.0f%% seen in the dark", 100.0], "sprint_cost_mult": ["%+.0f%% sprint cost", 100.0],
+	"craft_quality": ["%+.1f crafted quality", 1.0], "structure_hp_mult": ["%+.0f%% structure toughness", 100.0],
+	"stagger_bonus": ["%+.1f stagger (blunt)", 1.0], "heal_mult": ["%+.0f%% healing", 100.0],
+}
 
 var _open: bool = false
 var _tabs: HBoxContainer
@@ -70,7 +88,7 @@ func _ready() -> void:
 	_tabs = HBoxContainer.new()
 	_tabs.add_theme_constant_override(&"separation", 18)
 	v.add_child(_tabs)
-	for t: Array in [["build", "Blueprints"], ["notes", "Notes found"], ["tips", "Survival"]]:
+	for t: Array in [["build", "Blueprints"], ["record", "Record"], ["notes", "Notes found"], ["tips", "Survival"]]:
 		var b := Button.new()
 		b.text = t[1]
 		b.flat = true
@@ -107,6 +125,9 @@ func _ready() -> void:
 		if id == &"field_manual" and _open:
 			_open = false
 			visible = false)
+	Events.player_progressed.connect(func(_pid: StringName) -> void:
+		if _open and _tab == "record":
+			_refresh())
 
 
 func _set_tab(t: String) -> void:
@@ -179,11 +200,15 @@ func _refresh() -> void:
 				var n: NoteDef = Content.get_def(&"note", StringName(str(nid))) as NoteDef
 				if n != null:
 					_entry(n.title, n, true)
+		"record":
+			_record_list(p)
 		"tips":
 			for t: Array in TIPS:
 				_entry(t[0], t, true)
 	if _selected != null:
 		_select(_selected)
+	elif _tab == "record":
+		_select("record")
 
 
 func _header(text: String) -> void:
@@ -209,6 +234,7 @@ func _entry(text: String, payload: Variant, enabled: bool) -> void:
 func _select(payload: Variant) -> void:
 	_selected = payload
 	_action.visible = false
+	_action.disabled = false
 	if payload is BlueprintDef:
 		var bp: BlueprintDef = payload
 		var p: PlayerState = Game.local_player()
@@ -230,11 +256,163 @@ func _select(payload: Variant) -> void:
 		_detail.text = "[b][font_size=22]%s[/font_size][/b]\n[i]%s[/i]\n\n%s" % [n.title, n.author, n.body]
 	elif payload is Array:
 		_detail.text = "[b][font_size=22]%s[/font_size][/b]\n\n%s" % [payload[0], payload[1]]
+	elif payload is AttributeDef:
+		_attribute_detail(payload as AttributeDef)
+	elif payload is PerkDef:
+		_perk_detail(payload as PerkDef)
+	elif payload is String and payload == "record":
+		_record_detail()
 
 
 func _on_action() -> void:
+	if _selected is AttributeDef:
+		Game.execute(&"progression.raise_attribute", {"attribute": String((_selected as AttributeDef).id)})
+		return
+	if _selected is PerkDef:
+		Game.execute(&"progression.buy_perk", {"perk": String((_selected as PerkDef).id)})
+		return
 	if _selected is BlueprintDef:
 		var building: Node = Game.world.get(&"building") if Game.world != null else null
 		if building != null and bool(building.call(&"begin_placement", (_selected as BlueprintDef).id)):
 			close()
 			Events.player_status_message.emit("Place the %s — [LMB] place · [R] rotate · [X] cancel" % (_selected as BlueprintDef).display_name, &"info")
+
+
+# --- Record tab ---------------------------------------------------------------------------------
+
+func _attributes() -> Array[AttributeDef]:
+	var out: Array[AttributeDef] = []
+	for id: String in ATTR_ORDER:
+		var a: AttributeDef = Content.get_def(&"attribute", StringName(id)) as AttributeDef
+		if a != null:
+			out.append(a)
+	for a: AttributeDef in Content.all(&"attribute"):
+		if not out.has(a):
+			out.append(a)
+	return out
+
+
+func _perks_of(attr: StringName) -> Array[PerkDef]:
+	var out: Array[PerkDef] = []
+	for pk: PerkDef in Content.all(&"perk"):
+		if pk.attribute == attr:
+			out.append(pk)
+	out.sort_custom(func(a: PerkDef, b: PerkDef) -> bool:
+		var la: int = int(a.ranks[0]["attr_level"])
+		var lb: int = int(b.ranks[0]["attr_level"])
+		return la < lb if la != lb else String(a.id) < String(b.id))
+	return out
+
+
+func _record_list(p: PlayerState) -> void:
+	if p == null:
+		return
+	var pr: Progression = p.progression
+	_entry("Level %d  ·  %d point%s to spend" % [pr.level, pr.skill_points, "" if pr.skill_points == 1 else "s"], "record", true)
+	for a: AttributeDef in _attributes():
+		_header("%s  %d / %d" % [a.display_name, pr.attr_level(a.id), a.max_level])
+		_entry("%s%s (train)" % ["▸ " if pr.can_raise_attribute(a.id) else "", a.display_name], a, pr.attr_level(a.id) < a.max_level)
+		for pk: PerkDef in _perks_of(a.id):
+			var rank: int = pr.perk_rank(pk.id)
+			_entry("%s%s  %d/%d" % ["▸ " if pr.can_buy_perk(pk.id) else "", pk.display_name, rank, pk.max_rank()], pk, rank > 0 or pr.can_buy_perk(pk.id))
+
+
+## "+3% melee damage, +2 pack space" for an effects dictionary (each value x `times`).
+static func effects_text(effects: Dictionary, times: float = 1.0) -> String:
+	var parts: PackedStringArray = []
+	for k: String in effects:
+		var v: float = float(effects[k]) * times
+		if EFFECT_TEXT.has(k):
+			var f: Array = EFFECT_TEXT[k]
+			parts.append(str(f[0]) % (v * float(f[1])))
+		else:
+			parts.append("%s %+.2f" % [k.replace("_", " "), v])
+	return ", ".join(parts)
+
+
+func _record_detail() -> void:
+	var p: PlayerState = Game.local_player()
+	var s: GameSession = Game.session
+	if p == null or s == null:
+		return
+	var pr: Progression = p.progression
+	var st: Dictionary = s.stats
+	var gs: int = s.gamestage(p)
+	var lines: PackedStringArray = [
+		"[b][font_size=22]%s[/font_size][/b]" % p.display_name,
+		"Level [b]%d[/b]    XP %d / %d" % [pr.level, pr.xp, pr.xp_to_next()],
+		"Points to spend: [b]%d[/b]" % pr.skill_points,
+		"",
+		"Gamestage [b]%d[/b]  [color=#6a5a48](level + days survived × %.1f)[/color]" % [gs, s.rules.num("gamestage_days_weight")],
+		"[color=#6a5a48]The higher it is, the worse what hunts you — and the better what you find.[/color]",
+		"",
+		"Days survived: %d" % s.days_survived(),
+		"Hollowed put down: %d" % int(st.get("zombies_killed", 0)),
+		"Buildings cleared: %d" % int(st.get("pois_cleared", 0)),
+		"Hums survived: %d" % int(st.get("hums_survived", 0)),
+		"Trees felled: %d" % int(st.get("trees_felled", 0)),
+		"",
+		"[color=#6a5a48]Experience comes from everything you live through: kills (Seeded and Bloomed pay more), searching, building, crafting, clearing buildings and, above all, the Hum. Attributes raise passive strengths and open perks; perks need their attribute at the level shown.[/color]",
+	]
+	_detail.text = "\n".join(lines)
+
+
+func _attribute_detail(a: AttributeDef) -> void:
+	var p: PlayerState = Game.local_player()
+	if p == null:
+		return
+	var pr: Progression = p.progression
+	var lvl: int = pr.attr_level(a.id)
+	var lines: PackedStringArray = [
+		"[b][font_size=22]%s[/font_size][/b]   level %d / %d" % [a.display_name, lvl, a.max_level],
+		a.description, "",
+		"Each level: %s" % effects_text(a.per_level),
+	]
+	if lvl > 1:
+		lines.append("Now: %s" % effects_text(a.per_level, float(lvl - 1)))
+	var perks: PackedStringArray = []
+	for pk: PerkDef in _perks_of(a.id):
+		perks.append(pk.display_name)
+	if not perks.is_empty():
+		lines.append("\nPerks: %s" % ", ".join(perks))
+	var why: String = pr.attribute_block_reason(a.id)
+	if lvl < a.max_level:
+		lines.append("\nTraining to %d costs %d point%s (you have %d)." % [lvl + 1, pr.attribute_cost(a.id), "" if pr.attribute_cost(a.id) == 1 else "s", pr.skill_points])
+	_detail.text = "\n".join(lines)
+	_action.text = "Train %s" % a.display_name if why == "" else "Train %s — %s" % [a.display_name, why]
+	_action.disabled = why != ""
+	_action.visible = lvl < a.max_level
+
+
+func _perk_detail(pk: PerkDef) -> void:
+	var p: PlayerState = Game.local_player()
+	if p == null:
+		return
+	var pr: Progression = p.progression
+	var rank: int = pr.perk_rank(pk.id)
+	var attr: AttributeDef = Content.get_def(&"attribute", pk.attribute) as AttributeDef
+	var an: String = attr.display_name if attr != null else String(pk.attribute)
+	var lines: PackedStringArray = [
+		"[b][font_size=22]%s[/font_size][/b]   rank %d / %d   [color=#6a5a48](%s)[/color]" % [pk.display_name, rank, pk.max_rank(), an],
+		pk.description, "",
+	]
+	for i: int in pk.max_rank():
+		var rk: Dictionary = pk.ranks[i]
+		var text: String = str(rk.get("text", ""))
+		if text == "":
+			text = effects_text(rk["effects"])
+		var unlocks: Array = rk.get("unlocks", [])
+		if not unlocks.is_empty():
+			var names: PackedStringArray = []
+			for u: Variant in unlocks:
+				var bp: BlueprintDef = Content.get_def(&"blueprint", StringName(str(u))) as BlueprintDef
+				var rc: RecipeDef = Content.recipe(StringName(str(u)))
+				names.append(bp.display_name if bp != null else (Content.item(rc.result).display_name if rc != null and Content.item(rc.result) != null else str(u)))
+			text += "; learn %s" % ", ".join(names)
+		var col: String = "3a5a2a" if i < rank else ("2a2015" if pr.attr_level(pk.attribute) >= int(rk["attr_level"]) else "8a7a6a")
+		lines.append("[color=#%s]Rank %d  (%s %d)  —  %s%s[/color]" % [col, i + 1, an, int(rk["attr_level"]), text, "   ✓" if i < rank else ""])
+	_detail.text = "\n".join(lines)
+	var why: String = pr.perk_block_reason(pk.id)
+	_action.text = "Learn rank %d" % (rank + 1) if why == "" else "Learn rank %d — %s" % [rank + 1, why]
+	_action.disabled = why != ""
+	_action.visible = rank < pk.max_rank()

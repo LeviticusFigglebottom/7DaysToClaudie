@@ -1,7 +1,8 @@
 class_name LogEntity
 extends RigidBody3D
 ## A loose 4 m log in the world (from a felled tree, or dropped off the shoulder). Pick it up to
-## carry it (two at most), then place it freeform or into a blueprint ghost. Rolls on slopes.
+## carry it (two; three with Timberwright), then place it freeform or into a blueprint ghost.
+## Rolls on slopes.
 ## Persistent through LooseItems (WorldState.loose, kind "log").
 
 const LENGTH: float = 4.0
@@ -43,18 +44,19 @@ func _model_id() -> String:
 
 
 func interact_text(player: Player) -> String:
-	if player.state.inventory.count_of(&"log") >= _carry_max():
-		return "Shoulder full (%d logs)" % _carry_max()
+	if player.state.inventory.count_of(&"log") >= _carry_max(player):
+		return "Shoulder full (%d logs)" % _carry_max(player)
 	return "Pick up log"
 
 
-func _carry_max() -> int:
-	var def: ItemDef = Content.item(&"log")
-	return def.carry_max if def != null else 2
+## Shoulder capacity: the log item's carry_max plus perk bonuses (Timberwright).
+func _carry_max(player: Player) -> int:
+	var cap: int = player.state.inventory.carry_limit(&"log")
+	return cap if cap > 0 else 2
 
 
 func interact(player: Player) -> void:
-	if player.state.inventory.count_of(&"log") >= _carry_max():
+	if player.state.inventory.count_of(&"log") >= _carry_max(player):
 		return
 	var res: Dictionary = Game.execute(&"world.pickup_item", {"player": player.state.id, "item": "log", "count": 1})
 	if bool(res.get("ok", false)):

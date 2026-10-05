@@ -2,8 +2,9 @@ class_name Tether
 extends Node3D
 ## The tether (wrist tracker, T): a rugged Remand Program wrist unit raised into view without
 ## stopping you. Its screen (a SubViewport rendered onto the device) shows day/time/weather,
-## vitals and conditions, the Hum countdown and forecast (HumDirector's plan for the next Hum),
-## and a minimap of the region with you, your bed, your base and the places you've been.
+## vitals and conditions, your level / XP / gamestage, the Hum countdown and forecast
+## (HumDirector's plan for the next Hum), supply drops (when the world setting marks them) and a
+## minimap of the region with you, your bed, your base and the places you've been.
 
 const HIDDEN := Vector3(-0.2, -0.42, -0.34)
 const RAISED := Vector3(-0.085, -0.075, -0.3)
@@ -17,6 +18,7 @@ var _root: Control
 var _time: Label
 var _vitals: Label
 var _status: Label
+var _record: Label
 var _hum: Label
 var _map: TextureRect
 var _map_region: String = ""
@@ -91,6 +93,7 @@ func _build_screen() -> void:
 	_time = _lcd_label(Vector2(16, 10), 24)
 	_vitals = _lcd_label(Vector2(16, 52), 18)
 	_status = _lcd_label(Vector2(16, 200), 16)
+	_record = _lcd_label(Vector2(16, 230), 16)
 	_hum = _lcd_label(Vector2(16, 290), 16)
 	_hum.size = Vector2(340, 100)
 	_hum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -164,6 +167,7 @@ func _refresh() -> void:
 	if st.wetness > 0.3:
 		flags.append("WET")
 	_status.text = "  ".join(flags) if not flags.is_empty() else "NOMINAL"
+	_record.text = _record_text(p)
 	_hum.text = _hum_text()
 	_ensure_map()
 	_markers.queue_redraw()
@@ -172,6 +176,21 @@ func _refresh() -> void:
 func _bar(f: float) -> String:
 	var n: int = int(round(clampf(f, 0.0, 1.0) * 10.0))
 	return "▮".repeat(n) + "▯".repeat(10 - n)
+
+
+func _record_text(p: PlayerState) -> String:
+	var pr: Progression = p.progression
+	var line: String = "LV %d  XP %d/%d  GS %d" % [pr.level, pr.xp, pr.xp_to_next(), Game.session.gamestage(p)]
+	if pr.skill_points > 0:
+		line += "  +%d PT%s" % [pr.skill_points, "" if pr.skill_points == 1 else "S"]
+	var w: Node = Game.world
+	var drops: Node = w.get(&"supply_drops") if w != null else null
+	if drops != null and w.player != null:
+		var pp: Vector3 = (w.player as Node3D).global_position
+		for at: Vector3 in (drops.call(&"markers") as Array[Vector3]):
+			line += "\nDROP  %d m %s" % [int(Vector2(at.x - pp.x, at.z - pp.z).length()), HordeMemory.SECTOR_NAMES[HordeMemory.sector_of(pp, at)]]
+			break
+	return line
 
 
 func _hum_text() -> String:
@@ -273,6 +292,13 @@ func _draw_markers() -> void:
 				col = Color(0.9, 0.7, 0.4)
 			var mp: Vector2 = _to_map(rt, inst.global_position)
 			_markers.draw_rect(Rect2(mp - Vector2(3, 3), Vector2(6, 6)), col)
+	var drops: Node = w.get(&"supply_drops")
+	if drops != null:
+		var lim := Rect2(Vector2(6, 6), Vector2(MAP_PX - 12, MAP_PX - 12))
+		for at: Vector3 in (drops.call(&"markers") as Array[Vector3]):
+			# Off the map edge: pinned to the border in its direction.
+			var mp: Vector2 = _to_map(rt, at).clamp(lim.position, lim.end)
+			_markers.draw_colored_polygon(PackedVector2Array([mp + Vector2(0, -6), mp + Vector2(6, 0), mp + Vector2(0, 6), mp + Vector2(-6, 0)]), Color(1.0, 0.35, 0.2))
 	var me: Vector2 = _to_map(rt, pl.global_position)
 	var yaw: float = pl.global_rotation.y
 	var fwd := Vector2(-sin(yaw), -cos(yaw))

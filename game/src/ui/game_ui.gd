@@ -27,6 +27,8 @@ var _final_death: bool = false
 var _overlay: ColorRect
 var _overlay_label: Label
 var _death_button: Button
+## Highest level reached since the last announcement (several can arrive in one award).
+var _level_pending: int = 0
 
 
 func _ready() -> void:
@@ -49,6 +51,8 @@ func _ready() -> void:
 	Events.horde_night_ended.connect(func(_d: int, _r: Dictionary) -> void: message("Dawn. The Hollowed root into the soil.", &"info"))
 	Events.game_saved.connect(func(slot: String, ok: bool) -> void: message(("Saved (%s)." % slot) if ok else "Save failed!", &"info" if ok else &"error"))
 	Events.schematic_learned.connect(func(id: StringName) -> void: message("Learned: %s" % String(id).capitalize(), &"info"))
+	Events.player_leveled.connect(_on_leveled)
+	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void: message("A Program drone is overhead. Supplies are coming down.", &"level"))
 
 
 # --- Loading --------------------------------------------------------------------------------
@@ -230,7 +234,7 @@ func _flash_damage(amount: float) -> void:
 func message(text: String, kind: StringName = &"info") -> void:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_color_override(&"font_color", {&"info": Color(0.85, 0.85, 0.8), &"warning": Color(0.95, 0.8, 0.45), &"danger": Color(0.95, 0.35, 0.3), &"error": Color(1, 0.4, 0.4)}.get(kind, Color.WHITE))
+	l.add_theme_color_override(&"font_color", {&"info": Color(0.85, 0.85, 0.8), &"warning": Color(0.95, 0.8, 0.45), &"danger": Color(0.95, 0.35, 0.3), &"error": Color(1, 0.4, 0.4), &"level": Color(0.62, 0.95, 0.66)}.get(kind, Color.WHITE))
 	l.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	l.add_theme_constant_override(&"outline_size", 4)
 	_messages.add_child(l)
@@ -241,6 +245,26 @@ func message(text: String, kind: StringName = &"info") -> void:
 	while _messages.get_child_count() > 6:
 		_messages.get_child(0).queue_free()
 		_messages.remove_child(_messages.get_child(0))
+
+
+func _on_leveled(player_id: StringName, level: int) -> void:
+	if Game.session == null or player_id != Game.session.local_player_id:
+		return
+	if _level_pending == 0:
+		_announce_level.call_deferred()
+	_level_pending = maxi(_level_pending, level)
+
+
+## One message and one chime however many levels a single award crossed.
+func _announce_level() -> void:
+	var p: PlayerState = Game.local_player()
+	if p == null or _level_pending == 0:
+		_level_pending = 0
+		return
+	var pts: int = p.progression.skill_points
+	message("Level %d. %d point%s to spend — field manual (B), Record." % [_level_pending, pts, "" if pts == 1 else "s"], &"level")
+	Audio.play_2d(&"ui/level_up", -4.0)
+	_level_pending = 0
 
 
 # --- Modal stack / pause ---------------------------------------------------------------------

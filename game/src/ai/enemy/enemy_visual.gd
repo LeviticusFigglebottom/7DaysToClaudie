@@ -32,6 +32,8 @@ var _placeholder: bool = false
 var _segments: Dictionary = {}
 var _stumps: Dictionary = {}
 var _bob_t: float = 0.0
+const SENSE_SHADER: String = "res://assets/shaders/sleeper_sense.gdshader"
+static var _sense_material: ShaderMaterial = null
 
 
 ## Godot replaces "." in node names on import ("body_upper_arm.L" -> "body_upper_arm_L"); map
@@ -48,6 +50,19 @@ func set_bloom(glow: float) -> void:
 		return
 	for g: Node in _root.find_children("*", "GeometryInstance3D", true, false):
 		(g as GeometryInstance3D).set_instance_shader_parameter(&"bloom_glow", glow)
+
+
+## Sleeper Sense outline (a shared see-through rim overlay) on or off.
+func set_sensed(on: bool) -> void:
+	if _root == null:
+		return
+	if on and _sense_material == null and ResourceLoader.exists(SENSE_SHADER):
+		_sense_material = ShaderMaterial.new()
+		_sense_material.shader = load(SENSE_SHADER)
+	for g: Node in _root.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).material_overlay = _sense_material if on else null
+	if _root is GeometryInstance3D:
+		(_root as GeometryInstance3D).material_overlay = _sense_material if on else null
 
 
 static func model_path(id: String) -> String:

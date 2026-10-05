@@ -34,6 +34,12 @@ and clear at least one authored building along its route, survive a night and a 
   of the rigs in game pending.
 - ✅ Day/night, weather (clear/overcast/mist/rain/storm), seasons hook.
 - ✅ One Hum night with sector waves, weak-point flow field, horde memory report + forecast.
+- ✅ World settings (game rules) with five difficulty presets and a New Game screen; gamestage
+  scaling; special Hollowed (Blister, Husk, Rammer) and infected tiers (Seeded, Bloomed)
+  (ADR-0014).
+- ✅ Progression that pays off: every perk effect wired, Record tab for spending points, XP from
+  looting/building/clearing/the Hum, level-up feedback, Remand supply drops, quality tiers,
+  Sleeper Sense (ADR-0015).
 - ✅ Save/load (sleep in shelter, quicksave, autosave on Hum end).
 - ✅ Debug tools: free cam, spawn menu, time/weather, AI overlay, POI route visualizer, perf overlay,
   seed viewer, structural view (docs/DEBUG_TOOLS.md).
@@ -52,10 +58,11 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
 - The Ashen: camps, routines, scouts that observe, morale/fear of fire, raids, effigies.
 - Corvane cave network (SDF volumes, darkness, key items, mine levels) + region C2/C6 entrances.
 - Companion Ezra Vane: follow/gather/guard/fetch orders.
-- Full perk trees, forge/chemistry bench/grill, more schematics and journals.
+- Full perk trees (rank 4–5 capstones), forge/chemistry bench/grill, more schematics and
+  journals (the joinery track has no recipes yet, TD-030); a visible Program drone for supply drops.
 - Waystation 9 trader, contracts (clear/fetch/defend), reputation tiers, scrip economy.
 - 10+ more POIs (church, school, motel, gas station, bar, clinic, mine office...), Mile 12 framework.
-- Wildlife; Blister and Husk Hollowed; Hollowed hounds.
+- Wildlife; Hollowed hounds (Blister, Husk and Rammer landed early, in M1).
 
 ## M3 — RWG, biomes, seasons, base tech ⬜
 - Randomized world generation (macro terrain + erosion, biomes, rivers/lakes, roads, towns from

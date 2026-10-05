@@ -233,8 +233,11 @@ func _place_stacks(stacks: Array[ItemStack], origin: Vector3, parent: Node3D, ou
 		if s.count > 1 or s.def() != null and s.def().durability > 0.0:
 			var l := Label.new()
 			l.text = ("x%d" % s.count) if s.count > 1 else "%d%%" % int(100.0 * s.durability / maxf(1.0, s.def().durability * ItemStack.quality_durability_mult(s.quality)))
+			if s.quality > 0 and s.count <= 1:
+				l.text = "Q%d %s" % [s.quality, l.text]
 			l.add_theme_font_size_override(&"font_size", 13)
-			l.add_theme_color_override(&"font_color", Color(0.95, 0.93, 0.86))
+			# Quality items wear their tier colour (Scrap grey ... Pristine violet).
+			l.add_theme_color_override(&"font_color", ItemStack.quality_color(s.quality) if s.quality > 0 else Color(0.95, 0.93, 0.86))
 			l.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.85))
 			l.add_theme_constant_override(&"outline_size", 4)
 			l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -434,7 +437,7 @@ func _describe(s: ItemStack, in_flap: bool) -> void:
 		actions.append("[1-6] toolbelt")
 	if not in_flap:
 		actions.append("[RMB] drop")
-	var q: String = (" · quality %d" % s.quality) if s.quality > 0 else ""
+	var q: String = (" · %s (Q%d)" % [ItemStack.quality_name(s.quality), s.quality]) if s.quality > 0 else ""
 	_info.text = "[%s]%s  %s\n%s" % [d.display_name, q, "   ".join(actions), d.description]
 
 

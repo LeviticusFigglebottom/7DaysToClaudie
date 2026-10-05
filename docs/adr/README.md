@@ -19,3 +19,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0012](0012-stimulus-fields.md) | Shared perception through stimulus fields | Accepted |
 | [0013](0013-world-coordinates-regions.md) | World coordinates, regions and streaming | Accepted |
 | [0014](0014-game-rules-and-gamestage.md) | World settings (game rules), gamestage and difficulty scaling | Accepted |
+| [0015](0015-progression-rewards.md) | Progression that pays off: derived stats, XP sources, supply drops | Accepted |

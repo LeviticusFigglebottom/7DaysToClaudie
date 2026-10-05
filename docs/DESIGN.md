@@ -143,15 +143,32 @@ escalating responses to the player (watchers → raids → war parties).
 * **Attributes**: Sinew (strength, carrying, chopping), Grit (health, stamina, resistances),
   Keen (perception, loot quality, aim), Quiet (stealth, speed), Wits (crafting, building, medicine).
 * **Perks**: ranked, gated by attribute level (`data/progression/perks`), effects are named
-  modifiers consumed by systems (`Progression.modifier("chop_damage_mult")`).
+  modifiers consumed by systems (`Progression.modifier("chop_damage_mult")`). Every effect key
+  in the data is read somewhere: pack space, the third shoulder log, max health, stamina
+  recovery, loot quality, structure toughness, blunt stagger, Sleeper Sense (dormant Hollowed
+  outlined through walls), noise, speed, resistances, healing (ADR-0015).
+* **Spending**: the Field Manual's **Record** tab: level, XP, gamestage and run stats; train
+  attributes and learn perk ranks (each locked choice says why: "needs Sinew 3").
+* **XP** comes from everything you live through (`progression.json` `xp`): kills (Seeded ×1.8,
+  Bloomed ×3), searching containers (× tier), first entry into a building (× tier), clearing it
+  (× tier), logs set, upgrades, finished blueprints, crafting, felling, digging, reading notes,
+  and above all surviving the Hum (more for every Hum survived). Level-ups chime and say how many
+  points wait.
 * **Learn by reading**: schematics teach a recipe/blueprint; trade journals advance skill tracks
   that unlock recipes at thresholds (`unlock: "skill:field_medicine:2"`).
-* **Gamestage** = level + days survived × 1.5 — scales loot quality, Hum size and spawns.
+* **Gamestage** = (level + days survived × weight) × bonus (world settings), which scales loot
+  quality, infected tiers, special Hollowed, Hum size and supply-drop tier.
+* **Remand supply drops** (the airdrop): after each Hum (default), weekly, every 3 days or
+  never; a canister under a chute lands 110–300 m away with a red flare and smoke column, holds
+  tiered supplies (ammo, tools, antifungal, schematics as the gamestage rises) and is marked on
+  the tether. The landing is loud: the Hollowed come to look too.
+* **Quality tiers** Q1–Q6: Scrap, Worn, Serviceable, Good, Fine, Pristine (colours in the salvage
+  roll). Quality scales weapon damage and durability. Keen and Scavenger raise what you find.
 
 ## 8. Items, crafting, building
 
 * Items are data (`data/items`): stack/carry caps, bulk (encumbrance), quality, durability,
-  equip/consume blocks, teaches. Logs are carried on the shoulder (max 2, perk → 3).
+  equip/consume blocks, teaches. Logs are carried on the shoulder (max 2, Timberwright → 3).
 * **Hand crafting** on the salvage roll's work slate (exact ingredient match), **station** crafting
   at campfire/workbench (M1) and forge/chemistry bench/grill (M2).
 * **Building**: log pieces snap (stack, side-by-side, corner, pillar) or go freeform; blueprints
@@ -169,7 +186,8 @@ escalating responses to the player (watchers → raids → war parties).
 * **Remand Field Manual** (guidebook): survival tips, blueprints (place ghosts), recipes, notes you
   found, someone else's handwriting in the margins (lore).
 * **Tether** (wrist): raise your wrist for the GPS map (built from the real terrain), compass,
-  time, vitals (heart rate, body temp), objectives and the **Hum countdown/forecast**.
+  time, vitals (heart rate, body temp), level/XP/gamestage, supply-drop bearing and marker,
+  objectives and the **Hum countdown/forecast**.
 * **HUD**: minimal — interaction prompt, subtle stamina breath, damage vignette, cold frost,
   status pips only when critical, transient toolbelt strip when switching.
 
