@@ -84,13 +84,16 @@ nothing that varies may change a plan.
   ranch house, two-storey, cape cod, duplex, corner store, workshop.
 * `generate(template, seed, lot)` is a pure function of its inputs (one seeded stream; finishes per
   room from their own streams). It builds, in order: the plan (a hall from the front door to the
-  back between a day side and a night side, both drawn; two storeys widen the hall to two columns,
+  back between a day side and a night side, both drawn, or for a single storey a hall across the
+  middle as in the Merrow House; a night side too wide for a bathroom gets an en-suite off the back
+  bedroom or a linen room beside the bath; two storeys widen the hall to two columns,
   a flight rising in one from the back; a cape cod sets the upper floor back so the front rooms get
   a lean-to; a duplex's two units and their knocked-through party wall; a store's sales floor,
   stock room, office and restroom; a workshop's bay, office and tool crib), doors, the way in (the
   back door, a smashed side window or a clawed hole) and windows, the route (the bolted front, round
   to the way in, the loot room, out through the bolted door: the shortcut), then furniture off the
-  route corridor (the validator's own paths), a container in the loot room, 2–4 sleepers with one
+  route corridor (the validator's own paths) and a ceiling fixture in most rooms, a container in
+  the loot room, 2–4 sleepers with one
   small ambush (a body on the bed, one crouched, woken by the loot room door), one gentle trap,
   story decals, the porch, chimney, fences, mailbox, yard junk and a drive wreck, and the style.
 * It validates what it made and retries from a derived seed until the validator reports nothing
@@ -102,8 +105,9 @@ nothing that varies may change a plan.
 * A lot without a `pick` holds what `LotPicker.resolve(framework, placement, world seed)` chooses:
   an authored building zoned for it (not already standing in the framework, its footprint fitting)
   or a template zoned for it, weighted, deterministically from the world seed. `pool`
-  (`any|authored|generated`), `templates` and `tier` narrow it; `"reserved"` holds a lot empty for
-  a building still to be authored. Lot keys are checked (`FrameworkDef`).
+  (`any|authored|generated`), `templates` (naming them implies `generated`) and `tier` narrow it;
+  `"reserved"` holds a lot empty for a building still to be authored. Lot keys are checked
+  (`FrameworkDef`). On a shallow lot the generator shortens the front yard before the house.
 * PoiManager and TerrainHoles resolve lots the same way, so an authored building picked from the
   pool gets its cellar cut. A generated building fills its lot (footprint = lot, building set
   back from the street edge) and is named after the lot.
@@ -129,5 +133,9 @@ nothing that varies may change a plan.
 − An option cannot move a wall or change a plan (by design); alternative plans need separate defs.
 − Picks are pinned per run but generated buildings are not: a template edit changes the generated
   houses of a running save, orphaning their saved piece states (harmless, but visible) (TD-078).
-− Pell's Crossing's pad grew with the framework; the town's pad height is the mean over the larger
-  area (checked with compose_region; TD-079 if a later edit needs two pads).
+− Pell's Crossing's pad grew with the framework: the town's pad is the mean height over the larger
+  area, 0.48 m lower than before (86.66 m against 87.14 m), and the land falls away to the
+  south-west, so the extension's far corner stands on up to ~9 m of fill behind the last gardens
+  (composed and probed; TD-079).
+− New class names are referenced through `preload` constants in the files that use them, so the
+  code compiles before an editor import registers them.

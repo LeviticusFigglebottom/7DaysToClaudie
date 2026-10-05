@@ -28,6 +28,9 @@ const MAX_TRIES: int = 8
 const SIDE_YARD: int = 3
 const BACK_YARD: int = 4
 
+## The facing of a prop put with its back to the wall on each side (N, E, S, W): into the room. A
+## compiled prop always carries a "rot" (PoiLayout), so "against" places it but never turns it.
+const AGAINST_ROT: Array[float] = [0.0, -90.0, 180.0, 90.0]
 ## Furniture per room purpose: [prop id, placement, chance]. Placements: "wall" (back to a solid
 ## wall), "high" (wall-mounted over a wall slot), "table" (a table with a chair each side),
 ## "rug", "aisle" (free-standing shelving), "car" (a wreck in a bay).
@@ -946,7 +949,8 @@ func _place_wall(r: Room, pid: String) -> Dictionary:
 	var centre: Vector2 = Vector2(c0) + Vector2(0.5, 0.5) + Vector2(a0) * (float(along) - 1.0) * 0.5
 	for cc2: Vector2i in pick[2] as Array[Vector2i]:
 		occupied[_nk(r.level, cc2)] = true
-	var p: Dictionary = {"prop": pid, "pos": [snappedf(centre.x, 0.01), snappedf(centre.y, 0.01)], "against": PoiLayout.SIDE_NAMES[s0]}
+	var p: Dictionary = {"prop": pid, "pos": [snappedf(centre.x, 0.01), snappedf(centre.y, 0.01)], "against": PoiLayout.SIDE_NAMES[s0],
+		"rot": AGAINST_ROT[s0]}
 	return _add_prop(r, p, pd)
 
 
@@ -978,7 +982,8 @@ func _place_high(r: Room, pid: String, over: Array) -> void:
 		return
 	var pick: Array = cands[rng.randi() % cands.size()]
 	var c: Vector2i = pick[0]
-	_add_prop(r, {"prop": pid, "at": [c.x, c.y], "against": PoiLayout.SIDE_NAMES[int(pick[1])], "height": 1.45 if pid == "kitchen_wall_cabinet" else 1.3}, pd)
+	_add_prop(r, {"prop": pid, "at": [c.x, c.y], "against": PoiLayout.SIDE_NAMES[int(pick[1])], "rot": AGAINST_ROT[int(pick[1])],
+		"height": 1.45 if pid == "kitchen_wall_cabinet" else 1.3}, pd)
 
 
 ## A table on a free cell with a free cell each side for a chair (facing it).
