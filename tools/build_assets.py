@@ -189,6 +189,7 @@ def adopt(tasks: list) -> int:
         recorded: dict = entry.get("outputs", {})
         if all(gen_path(o).exists() and recorded.get(o) == file_sha256(gen_path(o)) for o in t.outputs):
             entry["hash"] = h
+            manifest.mark(data, t.name)
             adopted += 1
         else:
             skipped += 1
