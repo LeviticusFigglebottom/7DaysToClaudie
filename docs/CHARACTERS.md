@@ -60,7 +60,8 @@ Hollowed wears: its type's `bodies`, or the population of its sleeper post, buil
 * Budget ≤ 16k triangles per body (`char_build.BODY_BUDGET`), extras (nails, buttons, growths,
   plates, pustules) and stump caps included; the head keeps its ~4.2k (extras shrink the other
   segments first) so the face holds its shape at arm's length. Godot's import LODs reduce
-  distant bodies.
+  distant bodies. Measured: LOD0 15.27k-15.29k (plus 504 in the hidden stump caps), LOD1
+  5.9k-7.5k, LOD2 1.6k-3.5k, LOD3 0.3k-0.8k.
 
 ### Animations (actions, 30 fps, in-place — root motion not used)
 | action | frames | loop | notes |

@@ -94,6 +94,10 @@ func test_tether_ui_rides_the_wrist() -> void:
 	var t := Tether.new()
 	_player.camera.add_child(t)
 	assert_true(bool(t.get(&"_on_arms")), "the tether UI draws on the arms' wrist unit")
+	var screen: StandardMaterial3D = vm.get(&"_screen_mat") as StandardMaterial3D
+	assert_not_null(screen)
+	if screen != null:
+		assert_eq(screen.emission_operator, BaseMaterial3D.EMISSION_OP_MULTIPLY, "the screen glows with the UI's own colours, not white")
 	t.toggle()
 	vm.set_tether_raised(true)
 	assert_true(vm.tether_raised())

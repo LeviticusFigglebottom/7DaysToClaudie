@@ -66,13 +66,14 @@ and `cloth` shaders (ADR-0028: subsurface light, fabric sheen) through FP-only m
 **4. The tether is the unit on the wrist.** A rugged Program unit (76×52 mm, bevelled, bolted,
 rubber straps with a lock block, side buttons, a status LED, an antenna stub) sits over the back of
 the left wrist on the twist bone, so it turns with the wrist like a watch. Its landscape screen
-(1.56:1, the tether UI's 640×400) shows the live tether UI: `Tether` renders its SubViewport into the
-arms' screen when the arms exist (the floating device remains only for arms-less builds), refreshes
-it every 2 s while lowered so the screen glows dimly at the lower left, and live while raised. T
-raises the left wrist (`TetherRaise`: lowered, raising, raised, lowering on data timings) into each
-class's reading pose: the forearm across the view, the screen facing you, the viewmodel narrowed
-and the screen brightened. A light in the left hand passes to the right while you read. While the
-wrist is up you can't swing: the first press lowers it.
+(1.56:1, the tether UI's 640×400) shows the live tether UI: `Tether` renders its SubViewport into
+the arms' screen (as emission multiplied by the UI's colours, so the screen glows with them) when
+the arms exist (the floating device remains only for arms-less builds), refreshes it every 2 s while
+lowered so the screen glows dimly at the lower left, and live while raised. T raises the left wrist
+(`TetherRaise`: lowered, raising, raised, lowering on data timings) into each class's reading pose:
+the forearm across the view, the screen facing you, the viewmodel narrowed and the screen
+brightened. A light in the left hand passes to the right while you read. While the wrist is up you
+can't swing: the first press lowers it.
 
 **5. Motion.** `ViewModelMotion` (springs, node-free, deterministic) layers breathing, a sway that
 lags the view and rolls into turns, inertia against movement, a footstep bob tied to the player's
@@ -96,7 +97,8 @@ throwing) raises its hold's guard. A blow from within `guard.arc_deg` of where y
 item's `equip.block` or the hold's `block` share of its damage and of the wound it would open,
 costs stamina per blocked hit and per point absorbed, wears the weapon and jolts the guard; out of
 stamina, the guard is beaten down. You can't swing while guarding. This gives `fp_block` (TD-016)
-its gameplay; side swings are the machete's and knife's `slash`.
+its gameplay; side swings are the machete's and knife's `slash`. No parry window or reaction from
+the attacker yet (TD-075).
 
 **8. Tools at 40 cm.** The stone axe's head is knapped flint (`item_flint`, glassy, clouded, with
 chalky inclusions, flake-scar ripples, and translucent lighter edges revealed by the wear mask) and
@@ -128,13 +130,13 @@ live tether UI on the wrist), `first_person_spear` and `first_person_food` in th
   first arms built drew the player's hands in dead skin. `FPModel.eval_points` relabels it
   `fp_skin`; a new FP part must take an `fp_*` label of its own.
 * `viewmodel.json` is a declared source of `model:characters/fp_arms`, so a pose edit rebuilds
-  the arms (`make assets`), and the arms on disk can't lag the data (the test
-  `test_arms_carry_every_action` checks every hold, attack and use has its action).
+  the arms on the next `make assets`; `test_arms_carry_every_action` fails while the arms on disk
+  miss an action the data names.
 * Squeezed depth means screen-space effects (SSAO, SSR, the skin's screen-space subsurface blur)
   see the arms as nearer than they are; they are tuned to look right on the software renderer and
   need a check on GPUs (TD-074).
 * `fp_*` materials are FP-only, so the Hollowed's character materials can change freely.
 * Hold poses are baked: items of different sizes in one class share a grip, and nothing adapts at
-  runtime (TD-073).
+  runtime (TD-073). Only the stone axe and the torch got the close-range pass (TD-076).
 
 Supersedes the first-person parts of TD-016; resolves TD-025's FP wrists and FP skin shader.

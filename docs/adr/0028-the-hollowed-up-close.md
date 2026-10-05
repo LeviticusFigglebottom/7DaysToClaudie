@@ -71,6 +71,9 @@ The Hollowed are what the player looks at from arm's length, and they read as ma
   * There is still one glb per body and no material swaps. The growths cost triangles even on
     normal-tier bodies (about 1.4k: 0.5k from Seeded up, 0.9k Bloomed only, inside the budget).
     The Blister carries 3.5k of intact pustules and 0.85k of burst craters.
+  * Measured budgets (all 21 bodies): 15.27k-15.29k triangles at LOD0, gated geometry included,
+    plus 504 in the hidden stump caps, under `char_build.BODY_BUDGET` (15.8k). Godot's import
+    LODs bring a body to 5.9k-7.5k (LOD1), 1.6k-3.5k (LOD2) and 0.3k-0.8k (LOD3).
 * **Clothes as garments, chosen by data.**
   * `char_wardrobe.py` builds tops, pants, collars, belts, straps, ties and mantles. Each has its
     own cloth thickness, so a jacket stands off a shirt. Plackets, yokes and pockets are built

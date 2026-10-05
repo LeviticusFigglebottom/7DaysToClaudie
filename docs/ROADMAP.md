@@ -111,6 +111,17 @@ and clear at least one authored building along its route, survive a night and a 
   * Buildings dress their Hollowed (clinic patients, St. Ansel's congregation, Cordon crews,
     loggers, hunters, the Ashen).
   * Idle and limp variants, so a crowd doesn't move in step.
+- ✅ First person (ADR-0029):
+  * Hands and tools drawn with their own field of view and squeezed depth: nothing stretches at a
+    wide FOV, and a tool never sinks into the wall you stand against.
+  * A hold per item class, from data: one-handed tools low and angled, clubs and spears in both
+    hands, the torch up in the left hand, food, bottles, placeables, empty fists. Breathing, sway,
+    lag, a footstep bob and a lowered sprint on top.
+  * Remand sleeves rolled to the elbow over a labourer's forearms in skin, and the tether bolted to
+    the left wrist, raised with T to show the live tether UI.
+  * Swings with anticipation and follow-through that connect at their contact frame: hit-stop, a
+    camera kick, sparks or chips. A guard on Block, staggers, eating and drinking.
+  * A stone axe with a knapped flint head and rawhide bindings; a torch whose cap glows like coals.
 - ⬜ Human playthrough on a GPU machine against the acceptance criteria and the 60 FPS budget
   (TD-003); `make bake` impostors from the real tree models (TD-005).
 

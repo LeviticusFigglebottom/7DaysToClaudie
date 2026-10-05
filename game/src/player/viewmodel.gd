@@ -394,6 +394,8 @@ func attach_tether_screen(tex: Texture2D) -> bool:
 	m.albedo_color = Color(0.015, 0.02, 0.018)
 	m.emission_enabled = true
 	m.emission_texture = tex
+	# The UI is the light: multiply, or the default add puts white under it and the screen glares.
+	m.emission_operator = BaseMaterial3D.EMISSION_OP_MULTIPLY
 	m.emission = Color.WHITE
 	m.emission_energy_multiplier = _screen_energy(0.0)
 	m.roughness = 0.16
