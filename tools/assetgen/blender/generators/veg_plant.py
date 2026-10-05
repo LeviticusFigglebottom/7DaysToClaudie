@@ -131,15 +131,22 @@ def build_grass(p, lod):
             rad = spread * math.sqrt((t - 0.5) / (tufts - 0.5)) * rng.uniform(0.8, 1.1)
             c0, ts = Vector((math.cos(ang) * rad, math.sin(ang) * rad, 0.0)), rng.uniform(0.65, 1.0)
         ta = rng.uniform(0, math.pi)
+        # LOD1 (past ~40 m) keeps every other tuft and its two biggest cards: the patch keeps its
+        # footprint and silhouette at a quarter of the triangles. The draws above stay in sequence.
+        if lod > 0 and t % 2 == 1:
+            continue
         for i, (reg, sc) in enumerate(layout):
-            a = (a0 if t == 0 else ta) + math.pi * i / n + rng.uniform(-0.2, 0.2)
+            if lod > 0 and i >= 2:
+                continue
+            a = (a0 if t == 0 else ta) + math.pi * i / (2 if lod > 0 else n) + rng.uniform(-0.2, 0.2)
             side = Vector((math.cos(a), math.sin(a), 0.0))
             tilt = Vector((-side.y, side.x, 0.0)) * rng.uniform(-0.25, 0.25)
             ch = h * sc * ts * rng.uniform(0.85, 1.1)
             cw = ch * _aspect(atlas, reg)
             base = c0 + Vector((rng.uniform(-0.05, 0.05), rng.uniform(-0.05, 0.05), -0.02))
             d = (UP + tilt).normalized()
-            card(mb, base, d, side, ch, cw, atlas[reg], p["mat"], segs=2, droop=0.06, out=Vector((-side.y, side.x, 0.3)),
+            card(mb, base, d, side, ch, cw, atlas[reg], p["mat"], segs=2 if lod == 0 else 1, droop=0.06,
+                 out=Vector((-side.y, side.x, 0.3)),
                  col_fn=lambda s, x: (lerp(0.55, 1.0, s), 0.0, rng.random(), lerp(0.0, 1.0, s)), normal_fn=nfn)
     return mb
 
@@ -223,7 +230,9 @@ def build_huckleberry(p, lod):
     mb = MeshBuilder()
     H = float(p.get("height", 1.0))
     center = Vector((0, 0, H * 0.45))
-    regs = ("huckle_a", "huckle_b", "huckle_c", "huckle_d")
+    # Leaf-card regions and the stem strip in the atlas (willow shrubs reuse this builder).
+    regs = tuple(p.get("regs", ("huckle_a", "huckle_b", "huckle_c", "huckle_d")))
+    stem_r = float(p.get("stem_scale", 1.0))
 
     def nfn(pos, fn_):
         o = (pos - center)
@@ -250,8 +259,8 @@ def build_huckleberry(p, lod):
         stems.append(pts)
         if lod == 0:
             f0 = len(mb.faces)
-            tube(mb, pts, [0.012, 0.01, 0.008, 0.006, 0.004], 4, p.get("stem_mat", mat), u_repeats=1, tip=False,
-                 col_fn=lambda ii, s, aa, pp: (ao_at(pp) * 0.8, 0.0, 0.5, s * 0.6))
+            tube(mb, pts, [r * stem_r for r in (0.012, 0.01, 0.008, 0.006, 0.004)], 4, p.get("stem_mat", mat), u_repeats=1,
+                 tip=False, col_fn=lambda ii, s, aa, pp: (ao_at(pp) * 0.8, 0.0, 0.5, s * 0.6))
             remap_uvs(mb, f0, len(mb.faces), atlas["stem"])
     nclusters = int(p.get("clusters", 26)) if lod == 0 else int(p.get("clusters", 26) * 0.5)
     for k in range(nclusters):
@@ -266,7 +275,7 @@ def build_huckleberry(p, lod):
         d.normalize()
         side = rot_axis(UP.cross(horiz(d)), d, rng_c.gauss(0.0, 0.6))
         ln = H * rng_c.uniform(0.38, 0.52) * (1.25 if lod else 1.0)
-        reg = regs[k % 4]
+        reg = regs[k % len(regs)]
         aval = ao_at(pos)
         card(mb, pos, d, side, ln, ln * _aspect(atlas, reg), atlas[reg], mat, segs=2 if lod == 0 else 1,
              droop=rng_c.uniform(0.05, 0.2), out=(pos - center).normalized(),

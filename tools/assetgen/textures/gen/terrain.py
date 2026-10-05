@@ -1056,7 +1056,7 @@ def layer_moss_ground(n: int, seed: int) -> Layer:
 # --------------------------------------------------------------------------------------------------
 
 GRASS_DRY = [(0.0, "#c9b98c"), (0.3, "#b6a26c"), (0.55, "#9e8858"), (0.8, "#887660"), (1.0, "#6f604e")]
-GRASS_GREEN = [(0.0, "#879448"), (0.5, "#6a783c"), (1.0, "#4e5b2d")]
+GRASS_GREEN = [(0.0, "#a3b154"), (0.5, "#83933f"), (1.0, "#5f6e2e")]
 THATCH = [(0.0, "#8f7f60"), (0.5, "#776a51"), (1.0, "#5b5040")]
 SOIL_STOPS = [(0.0, "#3a2c20"), (0.35, "#4f3c2b"), (0.65, "#654e38"), (1.0, "#7d654a")]
 
@@ -1074,9 +1074,11 @@ def layer_grass_ground(n: int, seed: int) -> Layer:
     green = _ss(0.45, 0.8, _band(n, 4, 12, seed + 6, 1.2))
     tx, ty = _jittered(r, n, 10, 0.9, keep=0.7)
     # dead thatch (matted, partly buried)
-    _blades(G, r, 14000, None, (0.03, 0.09), (0.002, 0.0035), THATCH, age=age, mode="drape", lift=0.0008,
+    _blades(G, r, 10000, None, (0.03, 0.09), (0.002, 0.0035), THATCH, age=age, mode="drape", lift=0.0008,
             flow=flow, flow_amt=0.35, rough=(0.75, 0.9), K=2, bend=0.35)
-    _blades(G, r, 4500, green * 0.8 + 0.2, (0.04, 0.12), (0.0025, 0.004), GRASS_GREEN, age=age, flow=flow,
+    # A summer meadow: living green blades under the dry seed heads, so the ground beyond the grass
+    # scatter has the same olive-gold as the clumps instead of bare straw.
+    _blades(G, r, 14000, green * 0.5 + 0.5, (0.05, 0.15), (0.0025, 0.004), GRASS_GREEN, age=age, flow=flow,
             flow_amt=0.6, tufts=(tx, ty), tuft_amt=0.3, K=3, rough=(0.55, 0.75))
     rc, nl = 26, 7
     rx, ry = _points(r, n, rc)
@@ -1086,12 +1088,12 @@ def layer_grass_ground(n: int, seed: int) -> Layer:
             y=(ry[:, None] + np.sin(ra) * rl).ravel(), ang=ra.ravel())
     _leaves(G, r, 160, {"clover": 1}, density=green)
     env = _envelope(G, 3, 1.2)
-    _blades(G, r, 7500, None, (0.06, 0.22), (0.0025, 0.0045), GRASS_DRY, age=age, flow=flow, flow_amt=0.7,
+    _blades(G, r, 4000, None, (0.06, 0.22), (0.0025, 0.0045), GRASS_DRY, age=age, flow=flow, flow_amt=0.7,
             tufts=(tx, ty), tuft_amt=0.2, env=env, K=5)
     _leaves(G, r, 40, {"birch": 3, "aspen": 2, "willow": 1, "dead": 1}, noise=_spec(n, 1.6, seed + 7))
     _twigs(G, r, 8, (0.05, 0.2), (0.0015, 0.0035), TWIG_STOPS, branch=0.5)
     env = _envelope(G, 3, 1.2)
-    _blades(G, r, 2800, None, (0.08, 0.24), (0.0025, 0.004), GRASS_DRY, age=np.clip(age - 0.15, 0, 1), flow=flow,
+    _blades(G, r, 2000, None, (0.08, 0.24), (0.0025, 0.004), GRASS_DRY, age=np.clip(age - 0.15, 0, 1), flow=flow,
             flow_amt=0.75, env=env, K=5)
     h = G.H().copy()
     col = G.C().copy()
@@ -1666,10 +1668,11 @@ def layer_asphalt_cracked(n: int, seed: int) -> Layer:
     h = 0.0012 * expo * stone - 0.0012 * pores + 0.004 * _band(n, 2, 8, seed + 5, 2.0) + 0.0004 * _spec(n, 0.7, seed + 6)
     rough = 0.88 - 0.04 * expo + 0.05 * pores
     # cracks: long meandering cracks (some sealed with tar), alligator patches, hairlines
-    d_long = _crack_dist(n, 10, seed + 10, 45.0, keep=0.62, keep_freq=(2, 5))
+    # A few long cracks, not a network: a polygon net everywhere reads as dried mud, not road.
+    d_long = _crack_dist(n, 7, seed + 10, 45.0, keep=0.32, keep_freq=(2, 5))
     d_alli = _crack_dist(n, 650, seed + 20, 7.0)
-    alli_m = _ss(0.6, 0.7, _band(n, 2, 6, seed + 26, 1.5))
-    d_hair = _crack_dist(n, 110, seed + 30, 18.0, keep=0.45, keep_freq=(3, 8))
+    alli_m = _ss(0.72, 0.8, _band(n, 2, 6, seed + 26, 1.5))
+    d_hair = _crack_dist(n, 110, seed + 30, 18.0, keep=0.3, keep_freq=(3, 8))
     w_long = 0.6 + 1.1 * _spec(n, 1.8, seed + 31)
     sealed = _ss(0.42, 0.58, _band(n, 2, 5, seed + 40, 1.2))
     crack_long = _ss(w_long + 0.9, w_long - 0.4, d_long)

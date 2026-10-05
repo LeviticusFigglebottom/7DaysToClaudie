@@ -22,6 +22,10 @@
     {"id": "forest_moss", "name": "Moss", "kind": "moss", "models": ["plants/moss_mound_a", "plants/moss_mound_b"], "hp": 0, "height": [0.1, 0.25], "collides": false, "lod_distances": [30, 50, 60, 60]},
     {"id": "forest_sorrel", "name": "Redwood Sorrel", "kind": "herb", "models": ["plants/sorrel_patch_a", "plants/sorrel_patch_b"], "hp": 0, "height": [0.08, 0.15], "collides": false, "lod_distances": [25, 45, 55, 55]},
     {"id": "forest_litter", "name": "Forest Litter", "kind": "litter", "models": ["plants/litter_a", "plants/litter_b"], "hp": 0, "height": [0.02, 0.1], "collides": false, "lod_distances": [20, 35, 50, 50]},
-    {"id": "fallen_log", "name": "Fallen Log", "kind": "deadfall", "models": ["trees/fallen_log_a", "trees/fallen_log_b"], "hp": 0, "height": [0.6, 0.9], "trunk_radius": 0.4, "collides": true, "lod_distances": [40, 100, 200, 300]}
+    {"id": "fallen_log", "name": "Fallen Log", "kind": "deadfall", "models": ["trees/fallen_log_a", "trees/fallen_log_b"], "hp": 0, "height": [0.6, 0.9], "trunk_radius": 0.4, "collides": true, "lod_distances": [40, 100, 200, 300]},
+    {"id": "slough_sedge", "name": "Slough Sedge", "kind": "grass", "models": ["plants/sedge_clump_a", "plants/sedge_clump_b"], "hp": 5, "yields": {"plant_fiber": [2, 3]}, "height": [0.6, 1.0], "collides": false, "regrow_days": 3, "lod_distances": [20, 40, 60, 60]},
+    {"id": "horsetail", "name": "Horsetail", "kind": "grass", "models": ["plants/horsetail_a"], "height": [0.4, 0.7], "collides": false, "lod_distances": [20, 35, 50, 50]},
+    {"id": "pacific_willow", "name": "Pacific Willow", "kind": "bush", "models": ["plants/willow_shrub_a", "plants/willow_shrub_b"], "hp": 12, "yields": {"stick": [2, 4], "plant_fiber": [1, 2]}, "height": [1.6, 2.6], "collides": false, "regrow_days": 6, "lod_distances": [30, 60, 100, 120]},
+    {"id": "driftwood_log", "name": "Driftwood", "kind": "deadfall", "models": ["trees/driftwood_a", "trees/driftwood_b"], "hp": 0, "height": [0.3, 0.5], "trunk_radius": 0.25, "collides": true, "lod_distances": [40, 90, 160, 200]}
   ]
 }

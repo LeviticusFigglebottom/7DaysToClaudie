@@ -7,6 +7,7 @@ Model ids match game/data/vegetation/species.json.
 from __future__ import annotations
 
 from ..core.registry import Task, blender_sources
+from ..textures.gen.riparian import RIPARIAN
 from ..textures.gen.vegetation import LAYOUTS
 
 # id: params (species-specific knobs; see generators/veg_tree.py)
@@ -36,6 +37,9 @@ WOOD: dict[str, dict] = {
     "log_dead": {"kind": "log", "seed": 5604, "radius": 0.162, "length": 4.0, "bark": "bark_dead_static", "end": "wood_log_end_dead", "knots": 4},
     "fallen_log_a": {"kind": "fallen", "seed": 5701, "radius": 0.42, "length": 6.6, "sink": 0.3, "bark": "bark_fallen", "end": "wood_log_end_rotten"},
     "fallen_log_b": {"kind": "fallen", "seed": 5802, "radius": 0.36, "length": 5.3, "sink": 0.26, "bark": "bark_fallen", "end": "wood_log_end_rotten"},
+    # Stripped, bleached logs the river left on its gravel bars (moss mask unused by the material).
+    "driftwood_a": {"kind": "fallen", "seed": 5903, "radius": 0.27, "length": 4.8, "sink": 0.1, "bark": "driftwood", "end": "wood_log_end_dead"},
+    "driftwood_b": {"kind": "fallen", "seed": 6004, "radius": 0.2, "length": 3.3, "sink": 0.08, "bark": "driftwood", "end": "wood_log_end_dead"},
 }
 
 
@@ -60,13 +64,14 @@ PLANTS: dict[str, dict] = {
     "sword_fern_a": {"kind": "fern", "seed": 6701, "size": 0.95, "fronds": 26, "atlas": LAYOUTS["fern"], "mat": "fern", "lods": 2},
     "sword_fern_b": {"kind": "fern", "seed": 6802, "size": 0.68, "fronds": 18, "atlas": LAYOUTS["fern"], "mat": "fern", "lods": 2},
     "sword_fern_c": {"kind": "fern", "seed": 6703, "size": 1.3, "fronds": 34, "atlas": LAYOUTS["fern"], "mat": "fern", "lods": 2},
-    # Grass patches: several tufts over a ~1 m disc, so meadows read as continuous grass.
-    "grass_clump_a": {"kind": "grass", "seed": 6901, "height": 0.5, "cards": [["dense", 1.0], ["dense", 0.85], ["tall", 0.9], ["dense", 0.7]],
-                      "tufts": 5, "spread": 0.5, "atlas": LAYOUTS["grass"], "mat": "grass"},
-    "grass_clump_b": {"kind": "grass", "seed": 7002, "height": 0.65, "cards": [["tall", 1.0], ["tall", 0.85], ["dense", 0.7], ["tall", 0.75], ["dense", 0.6]],
-                      "tufts": 4, "spread": 0.45, "atlas": LAYOUTS["grass"], "mat": "grass"},
-    "grass_clump_c": {"kind": "grass", "seed": 7103, "height": 0.42, "cards": [["dry", 1.0], ["dry", 0.9], ["dense", 0.75], ["dry", 0.7]],
-                      "tufts": 5, "spread": 0.5, "atlas": LAYOUTS["grass"], "mat": "grass"},
+    # Grass patches: about a dozen tufts over a ~1.6 m disc. The ground layer places at most one
+    # plant per 1.25 m cell, so neighbouring patches overlap and a meadow reads as continuous grass.
+    "grass_clump_a": {"kind": "grass", "seed": 6901, "height": 0.55, "cards": [["dense", 1.0], ["dense", 0.85], ["tall", 0.9], ["dense", 0.7]],
+                      "tufts": 12, "spread": 0.8, "atlas": LAYOUTS["grass"], "mat": "grass", "lods": 2},
+    "grass_clump_b": {"kind": "grass", "seed": 7002, "height": 0.7, "cards": [["tall", 1.0], ["tall", 0.85], ["dense", 0.7], ["tall", 0.75], ["dense", 0.6]],
+                      "tufts": 10, "spread": 0.75, "atlas": LAYOUTS["grass"], "mat": "grass", "lods": 2},
+    "grass_clump_c": {"kind": "grass", "seed": 7103, "height": 0.45, "cards": [["dry", 1.0], ["dry", 0.9], ["dense", 0.75], ["dry", 0.7]],
+                      "tufts": 12, "spread": 0.8, "atlas": LAYOUTS["grass"], "mat": "grass", "lods": 2},
     "shelf_mushroom_a": {"kind": "mushroom", "seed": 7201, "length": 0.55, "radius": 0.11, "brackets": 4, "bracket_scale": 1.5, "mat": "mushroom",
                          "wood": "deadwood_static", "end": "wood_log_end_rotten"},
     "deadfall_a": {"kind": "deadfall", "seed": 7301, "sticks": 16, "spread": 0.8, "pile_h": 0.32, "wood": "deadwood_static",
@@ -86,6 +91,17 @@ PLANTS: dict[str, dict] = {
     # Redwood sorrel carpets between the ferns (ground layer).
     "sorrel_patch_a": {"kind": "carpet", "seed": 7901, "size": 0.9, "height": 0.11, "tops": 3, "sides": 3, "atlas": _PL, "mat": "plants"},
     "sorrel_patch_b": {"kind": "carpet", "seed": 8002, "size": 1.2, "height": 0.13, "tops": 4, "sides": 3, "atlas": _PL, "mat": "plants"},
+    # Riverbank (textures/gen/riparian.py): sedge fountains with rushes, horsetail stands, willow shrubs.
+    "sedge_clump_a": {"kind": "grass", "seed": 8101, "height": 0.85, "cards": [["sedge", 1.0], ["sedge", 0.85], ["sedge", 0.7]],
+                      "tufts": 6, "spread": 0.45, "atlas": RIPARIAN, "mat": "riparian", "lods": 2},
+    "sedge_clump_b": {"kind": "grass", "seed": 8202, "height": 0.95, "cards": [["sedge", 1.0], ["rush", 0.95], ["sedge", 0.8], ["rush", 0.8]],
+                      "tufts": 5, "spread": 0.4, "atlas": RIPARIAN, "mat": "riparian", "lods": 2},
+    "horsetail_a": {"kind": "grass", "seed": 8303, "height": 0.6, "cards": [["horsetail", 1.0], ["horsetail", 0.8]],
+                    "tufts": 7, "spread": 0.55, "atlas": RIPARIAN, "mat": "riparian", "lods": 2},
+    "willow_shrub_a": {"kind": "huckleberry", "seed": 8401, "height": 2.5, "stems": 10, "clusters": 60, "regs": ["willow_a", "willow_b"],
+                       "stem_scale": 1.8, "atlas": RIPARIAN, "mat": "willow", "stem_mat": "willow_stem", "lods": 2},
+    "willow_shrub_b": {"kind": "huckleberry", "seed": 8502, "height": 1.8, "stems": 8, "clusters": 44, "regs": ["willow_b", "willow_a"],
+                       "stem_scale": 1.5, "atlas": RIPARIAN, "mat": "willow", "stem_mat": "willow_stem", "lods": 2},
 }
 
 
