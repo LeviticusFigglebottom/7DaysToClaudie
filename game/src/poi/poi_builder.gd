@@ -570,6 +570,20 @@ const ROOM_TAGS: Dictionary = {
 	"pharmacy": ["store", "office"],
 	"cells": ["office", "basement"],
 	"diner": ["diner", "kitchen"],
+	# Room types of the wider POI roster: each also matches props tagged with its own name.
+	"church": ["church", "living"],
+	"bar": ["bar", "diner", "kitchen"],
+	"motel_room": ["motel_room", "bedroom", "bathroom"],
+	"classroom": ["classroom", "office"],
+	"clinic": ["clinic", "pharmacy", "office", "bathroom"],
+	"post_office": ["post_office", "office", "store"],
+	"hall": ["hall", "living", "office"],
+	"workshop": ["workshop", "garage", "basement"],
+	"mill": ["mill", "garage", "basement"],
+	"bunkhouse": ["bunkhouse", "bedroom", "basement"],
+	"barn": ["barn", "garage", "basement"],
+	"cellar": ["cellar", "basement"],
+	"lookout": ["lookout", "office"],
 }
 
 
