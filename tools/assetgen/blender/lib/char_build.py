@@ -19,18 +19,21 @@ from . import common, vcolor
 
 # Per segment: grid spacing (m), triangle budget, decimation parts.
 SEG_CFG = {
-    "body_head": {"h": 0.0028, "tris": 1700},
-    "body_torso": {"h": 0.0058, "tris": 2300},
-    "body_upper_arm.L": {"h": 0.0045, "tris": 320},
-    "body_upper_arm.R": {"h": 0.0045, "tris": 320},
-    "body_forearm.L": {"h": 0.0026, "tris": 760},
-    "body_forearm.R": {"h": 0.0026, "tris": 760},
-    "body_thigh.L": {"h": 0.0052, "tris": 420},
-    "body_thigh.R": {"h": 0.0052, "tris": 420},
-    "body_shin.L": {"h": 0.0036, "tris": 560},
-    "body_shin.R": {"h": 0.0036, "tris": 560},
+    "body_head": {"h": 0.0024, "tris": 4200},
+    "body_torso": {"h": 0.0048, "tris": 3600},
+    "body_upper_arm.L": {"h": 0.0040, "tris": 460},
+    "body_upper_arm.R": {"h": 0.0040, "tris": 460},
+    "body_forearm.L": {"h": 0.0024, "tris": 1250},
+    "body_forearm.R": {"h": 0.0024, "tris": 1250},
+    "body_thigh.L": {"h": 0.0048, "tris": 560},
+    "body_thigh.R": {"h": 0.0048, "tris": 560},
+    "body_shin.L": {"h": 0.0034, "tris": 760},
+    "body_shin.R": {"h": 0.0034, "tris": 760},
 }
-BODY_BUDGET = 9850          # hard cap per body (contract: <= 10k), incl. extras and stump caps
+# Hard cap per body (contract: <= 16k), incl. extras and stump caps. The face is what players see
+# from arm's length: it gets the biggest share (at 1.7k it decimated into jagged eye sockets).
+# Godot's import LODs bring distant bodies back down.
+BODY_BUDGET = 15800
 CAP_TRIS = 56
 
 
@@ -97,6 +100,13 @@ def _uv_segment(model, obj, seg: str):
 
             def box(C, z=an[2]):
                 return C[:, 2] < z + 0.01 * s
+        elif "forearm" in seg:
+            # the hand: fingers sit off the forearm axis, where the cylinder mapping smeared the
+            # skin into streaks along them; box projection keeps texels square
+            wr = sk.j[f"wrist.{side}"]
+
+            def box(C, wr=wr, ax=f.axis):
+                return (C - wr) @ ax > -0.005 * s
         U.project(obj, f.head, f.axis, -f.out, planar_threshold=0.85, box_mask=box)
 
 

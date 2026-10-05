@@ -29,7 +29,8 @@ elongated jaw). All share **one skeleton layout** so every animation works on ev
   `M_cloth_flannel`, `M_cloth_tshirt`, `M_cloth_jacket`, `M_cloth_hospital`, `M_leather_boot`,
   `M_hair`, `M_teeth`, `M_eyes_hollow` (milky), `M_bloom_growth` (fungal growth), `M_gore`.
   Vertex colour R = AO, G = dirt/blood mask, B = Bloom growth mask.
-* Budget ≤ 10k triangles per body.
+* Budget ≤ 16k triangles per body (`char_build.BODY_BUDGET`); the head gets ~4.2k so the face
+  holds its shape at arm's length. Godot's import LODs reduce distant bodies.
 
 ### Animations (actions, 30 fps, in-place — root motion not used)
 | action | frames | loop | notes |

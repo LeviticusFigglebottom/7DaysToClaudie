@@ -431,7 +431,7 @@ class BodyModel:
         prog.ellipsoid(wrist + ax * 0.030 * sc + lat * 0.022 * sc - back * 0.010 * sc, np.array([0.016, 0.012, 0.026]) * sc,
                        R=R, k=0.01 * s, label=L_SKIN)
         # fingers: (lateral offset, length, base radius)
-        fingers = [(0.027, 0.074, 0.0090), (0.009, 0.082, 0.0092), (-0.009, 0.077, 0.0088), (-0.026, 0.062, 0.0078)]
+        fingers = [(0.027, 0.074, 0.0098), (0.009, 0.082, 0.0101), (-0.009, 0.077, 0.0097), (-0.026, 0.062, 0.0086)]
         r = np.random.default_rng(int(self.p.get("seed", 1)) + (11 if side == "L" else 23))
         for fi, (lo, ln, rad) in enumerate(fingers):
             base = wrist + ax * (0.086 - 0.006 * abs(fi - 1.2)) * sc + lat * lo * sc + back * 0.001 * sc
