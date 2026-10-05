@@ -1,0 +1,905 @@
+{
+ "_doc": "Farm props (the Okafor farm, Larch Hollow): farmyard machinery and fixtures, barn stores and tack, farmhouse furnishings, root cellar. Models: tools/assetgen/blender/generators/props_farm.py (models/props/<id>[_worn|_destroyed].glb). size = [width x, height y, depth z] in metres (Godot axes, front +Z), origin at the bottom centre (depth-centred for wall-leaning props).",
+ "defs": [
+  {
+   "id": "farm_hay_bale_round",
+   "name": "Round Bale",
+   "description": "1.5 m round bale of grass hay lying on its belly, eight wraps of twine; the outside goes grey and mouldy over a winter.",
+   "tags": [
+    "family_farm",
+    "hay"
+   ],
+   "variants": {
+    "clean": "props/farm_hay_bale_round",
+    "worn": "props/farm_hay_bale_round_worn",
+    "destroyed": "props/farm_hay_bale_round_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    1.3,
+    1.3,
+    1.58
+   ],
+   "rooms": [
+    "exterior",
+    "barn"
+   ]
+  },
+  {
+   "id": "farm_fence_rail",
+   "name": "Post-and-Rail Fence",
+   "description": "3 m fence section: two hewn posts and three split cedar rails.",
+   "tags": [
+    "fence",
+    "wood",
+    "family_farm",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_fence_rail",
+    "worn": "props/farm_fence_rail_worn",
+    "destroyed": "props/farm_fence_rail_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    3.03,
+    1.3,
+    0.15
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "farm_fence_wire",
+   "name": "Barbed-Wire Fence",
+   "description": "3 m fence section: two round cedar posts and four strands of barbed wire.",
+   "tags": [
+    "fence",
+    "metal",
+    "family_farm"
+   ],
+   "variants": {
+    "clean": "props/farm_fence_wire",
+    "worn": "props/farm_fence_wire_worn",
+    "destroyed": "props/farm_fence_wire_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 80,
+   "size": [
+    3.13,
+    1.31,
+    0.15
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "farm_gate",
+   "name": "Field Gate",
+   "description": "Five-bar timber field gate (3 m) on strap hinges from a round gatepost. Worn: sagging. Destroyed: off its hinges.",
+   "tags": [
+    "fence",
+    "wood",
+    "family_farm",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_gate",
+    "worn": "props/farm_gate_worn",
+    "destroyed": "props/farm_gate_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 160,
+   "size": [
+    3.17,
+    1.55,
+    0.18
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "farm_tractor_wreck",
+   "name": "Tractor Wreck",
+   "description": "A 1950s row-crop tractor left to rust: lugged rear tyres, narrow front axle, long hood, stacks. The toolbox under the seat may still hold something.",
+   "tags": [
+    "vehicle",
+    "family_farm",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/farm_tractor_wreck",
+    "worn": "props/farm_tractor_wreck_worn",
+    "destroyed": "props/farm_tractor_wreck_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    1.99,
+    2.0,
+    3.1
+   ],
+   "container": "toolbox",
+   "rooms": [
+    "exterior",
+    "barn"
+   ]
+  },
+  {
+   "id": "farm_plough",
+   "name": "Moldboard Plough",
+   "description": "Two-bottom moldboard plough with rolling coulters and a gauge wheel, rusted where it was unhitched.",
+   "tags": [
+    "family_farm",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/farm_plough",
+    "worn": "props/farm_plough_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.83,
+    1.05,
+    2.13
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior",
+    "barn"
+   ]
+  },
+  {
+   "id": "farm_water_trough",
+   "name": "Stock Tank",
+   "description": "Oval galvanised stock tank (2.4 m) with green water and a skin of leaves.",
+   "tags": [
+    "family_farm",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/farm_water_trough",
+    "worn": "props/farm_water_trough_worn",
+    "destroyed": "props/farm_water_trough_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    2.44,
+    0.6,
+    0.82
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior",
+    "barn"
+   ]
+  },
+  {
+   "id": "farm_chicken_coop",
+   "name": "Hen House",
+   "description": "Barn-red board-and-batten hen house on legs: tin shed roof, nesting boxes, a cleated ramp to the pop hole.",
+   "tags": [
+    "family_farm",
+    "wood",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_chicken_coop",
+    "worn": "props/farm_chicken_coop_worn",
+    "destroyed": "props/farm_chicken_coop_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    1.91,
+    1.73,
+    1.95
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "farm_windmill_pump",
+   "name": "Windmill Pump",
+   "description": "Steel-lattice windmill over the farm well: 18-blade wheel and tail vane 8 m up, the pitcher pump on a plank cover at its foot.",
+   "tags": [
+    "family_farm",
+    "metal",
+    "landmark"
+   ],
+   "variants": {
+    "clean": "props/farm_windmill_pump",
+    "worn": "props/farm_windmill_pump_worn",
+    "destroyed": "props/farm_windmill_pump_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 1500,
+   "size": [
+    2.62,
+    8.62,
+    3.56
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "farm_grain_bin",
+   "name": "Grain Bin",
+   "description": "Corrugated steel grain bin (3.6 m across) with a cone roof, wall ladder, access door and unloading spout.",
+   "tags": [
+    "family_farm",
+    "metal",
+    "landmark"
+   ],
+   "variants": {
+    "clean": "props/farm_grain_bin",
+    "worn": "props/farm_grain_bin_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 2000,
+   "size": [
+    4.53,
+    4.99,
+    3.92
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "farm_wagon_wheel",
+   "name": "Wagon Wheel",
+   "description": "Twelve-spoke wooden wagon wheel with an iron tyre, leaning on a wall.",
+   "tags": [
+    "family_farm",
+    "wood",
+    "clutter"
+   ],
+   "variants": {
+    "clean": "props/farm_wagon_wheel",
+    "worn": "props/farm_wagon_wheel_worn",
+    "destroyed": "props/farm_wagon_wheel_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 80,
+   "size": [
+    1.13,
+    1.11,
+    0.32
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "barn",
+    "exterior"
+   ]
+  },
+  {
+   "id": "farm_hay_bale_square",
+   "name": "Hay Bale",
+   "description": "Small square bale of grass hay bound with two loops of twine. Old ones go grey and mouldy.",
+   "tags": [
+    "clutter",
+    "family_farm",
+    "hay",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_hay_bale_square",
+    "worn": "props/farm_hay_bale_square_worn",
+    "destroyed": "props/farm_hay_bale_square_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    0.94,
+    0.37,
+    0.48
+   ],
+   "rooms": [
+    "barn",
+    "loft",
+    "storage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "farm_feed_sacks",
+   "name": "Feed Sacks",
+   "description": "Three 50 lb feed sacks slumped together, kraft paper and burlap, sewn ends.",
+   "tags": [
+    "family_farm"
+   ],
+   "variants": {
+    "clean": "props/farm_feed_sacks",
+    "worn": "props/farm_feed_sacks_worn",
+    "destroyed": "props/farm_feed_sacks_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 40,
+   "size": [
+    0.76,
+    0.25,
+    0.89
+   ],
+   "rooms": [
+    "barn",
+    "storage",
+    "cellar"
+   ]
+  },
+  {
+   "id": "farm_feed_bin",
+   "name": "Feed Bin",
+   "description": "Barn-red board feed bin on skids with a sloping lid on strap hinges, oats inside.",
+   "tags": [
+    "family_farm",
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_feed_bin",
+    "worn": "props/farm_feed_bin_worn",
+    "destroyed": "props/farm_feed_bin_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.26,
+    0.81,
+    0.7
+   ],
+   "container": "farm_feed_bin",
+   "rooms": [
+    "barn",
+    "storage"
+   ]
+  },
+  {
+   "id": "farm_milk_can",
+   "name": "Milk Can",
+   "description": "Ten-gallon galvanised milk can with a mushroom lid.",
+   "tags": [
+    "clutter",
+    "family_farm",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/farm_milk_can",
+    "worn": "props/farm_milk_can_worn",
+    "destroyed": "props/farm_milk_can_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    0.43,
+    0.63,
+    0.33
+   ],
+   "rooms": [
+    "barn",
+    "kitchen",
+    "cellar",
+    "storage"
+   ]
+  },
+  {
+   "id": "farm_pitchfork",
+   "name": "Hay Fork",
+   "description": "Three-tine hay fork dropped on the floor.",
+   "tags": [
+    "clutter",
+    "family_farm"
+   ],
+   "variants": {
+    "clean": "props/farm_pitchfork",
+    "worn": "props/farm_pitchfork_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.45,
+    0.06,
+    0.12
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "barn",
+    "loft"
+   ]
+  },
+  {
+   "id": "farm_tool_rack",
+   "name": "Barn Tool Rack",
+   "description": "Peg board on two uprights against the wall: hay fork, bow rake, round-point shovel, scythe, a coil of rope and a hay hook.",
+   "tags": [
+    "family_farm",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/farm_tool_rack",
+    "worn": "props/farm_tool_rack_worn",
+    "destroyed": "props/farm_tool_rack_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    1.32,
+    1.85,
+    0.25
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "barn",
+    "workshop",
+    "garage"
+   ]
+  },
+  {
+   "id": "farm_saddle_stand",
+   "name": "Saddle on a Stand",
+   "description": "Western saddle over a blanket on a plank saddle stand: horn, cantle, fenders and wooden stirrups.",
+   "tags": [
+    "family_farm"
+   ],
+   "variants": {
+    "clean": "props/farm_saddle_stand",
+    "worn": "props/farm_saddle_stand_worn",
+    "destroyed": "props/farm_saddle_stand_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 100,
+   "size": [
+    0.79,
+    1.21,
+    0.62
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "barn"
+   ]
+  },
+  {
+   "id": "farm_stall_partition",
+   "name": "Stall Partition",
+   "description": "Horse-stall wall section (2 m): oak posts, kick boards chewed along the top, iron bars above.",
+   "tags": [
+    "family_farm",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/farm_stall_partition",
+    "worn": "props/farm_stall_partition_worn",
+    "destroyed": "props/farm_stall_partition_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    2.12,
+    2.32,
+    0.12
+   ],
+   "rooms": [
+    "barn"
+   ]
+  },
+  {
+   "id": "farm_tool_chest",
+   "name": "Tool Chest",
+   "description": "Dovetailed pine tool chest with iron corners, rope handles and a padlocked hasp.",
+   "tags": [
+    "family_farm",
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_tool_chest",
+    "worn": "props/farm_tool_chest_worn",
+    "destroyed": "props/farm_tool_chest_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    0.94,
+    0.45,
+    0.51
+   ],
+   "container": "toolbox",
+   "blocks_sight": false,
+   "rooms": [
+    "barn",
+    "workshop",
+    "garage"
+   ]
+  },
+  {
+   "id": "farm_lantern",
+   "name": "Hurricane Lantern",
+   "description": "Tin kerosene lantern with a glass globe and a wire guard.",
+   "tags": [
+    "clutter",
+    "light",
+    "family_farm"
+   ],
+   "variants": {
+    "clean": "props/farm_lantern",
+    "worn": "props/farm_lantern_worn",
+    "destroyed": "props/farm_lantern_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 20,
+   "size": [
+    0.2,
+    0.4,
+    0.18
+   ],
+   "light": {
+    "color": "#ffb46e",
+    "energy": 0.8,
+    "range": 6.0,
+    "flicker": 0.25,
+    "offset": [
+     0.0,
+     0.17,
+     0.0
+    ]
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "barn",
+    "loft",
+    "storage",
+    "cellar"
+   ]
+  },
+  {
+   "id": "farm_stove_castiron",
+   "name": "Cast-Iron Cookstove",
+   "description": "Wood cookstove: six lids, firebox, cream enamel oven door, water reservoir, warming closet and stovepipe; a kettle and a skillet still on top.",
+   "tags": [
+    "family_farm",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_stove_castiron",
+    "worn": "props/farm_stove_castiron_worn",
+    "destroyed": "props/farm_stove_castiron_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    1.29,
+    1.83,
+    0.91
+   ],
+   "container": "farm_stove",
+   "rooms": [
+    "kitchen"
+   ]
+  },
+  {
+   "id": "farm_butter_churn",
+   "name": "Butter Churn",
+   "description": "Stave-built dash churn with iron hoops and its dasher.",
+   "tags": [
+    "clutter",
+    "family_farm"
+   ],
+   "variants": {
+    "clean": "props/farm_butter_churn",
+    "worn": "props/farm_butter_churn_worn",
+    "destroyed": "props/farm_butter_churn_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    0.32,
+    0.76,
+    0.31
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "kitchen",
+    "cellar",
+    "storage"
+   ]
+  },
+  {
+   "id": "farm_washtub",
+   "name": "Washtub and Board",
+   "description": "Galvanised washtub with a washboard leaning in it and a cake of lye soap on the rim.",
+   "tags": [
+    "clutter",
+    "family_farm",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/farm_washtub",
+    "worn": "props/farm_washtub_worn",
+    "destroyed": "props/farm_washtub_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    0.75,
+    0.62,
+    0.63
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "kitchen",
+    "bathroom",
+    "cellar",
+    "storage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "farm_quilt_bed",
+   "name": "Iron Bed with Quilt",
+   "description": "White-painted iron double bed with brass finials, a ticking mattress and a hand-pieced patchwork quilt.",
+   "tags": [
+    "family_farm",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_quilt_bed",
+    "worn": "props/farm_quilt_bed_worn",
+    "destroyed": "props/farm_quilt_bed_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    1.48,
+    1.31,
+    2.06
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "bedroom"
+   ]
+  },
+  {
+   "id": "farm_hope_chest",
+   "name": "Hope Chest",
+   "description": "Cedar hope chest on bracket feet with raised front panels and brass fittings.",
+   "tags": [
+    "family_farm",
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_hope_chest",
+    "worn": "props/farm_hope_chest_worn",
+    "destroyed": "props/farm_hope_chest_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 180,
+   "size": [
+    1.12,
+    0.51,
+    0.55
+   ],
+   "container": "farm_hope_chest",
+   "blocks_sight": false,
+   "rooms": [
+    "bedroom"
+   ]
+  },
+  {
+   "id": "farm_oil_lamp",
+   "name": "Oil Lamp",
+   "description": "Kerosene table lamp: pressed-glass font, brass burner, tall glass chimney.",
+   "tags": [
+    "light",
+    "family_farm"
+   ],
+   "variants": {
+    "clean": "props/farm_oil_lamp",
+    "worn": "props/farm_oil_lamp_worn",
+    "destroyed": "props/farm_oil_lamp_destroyed"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 10,
+   "size": [
+    0.16,
+    0.45,
+    0.15
+   ],
+   "light": {
+    "color": "#ffc27a",
+    "energy": 0.55,
+    "range": 5.0,
+    "flicker": 0.15,
+    "offset": [
+     0.0,
+     0.29,
+     0.0
+    ]
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "kitchen",
+    "living",
+    "bedroom"
+   ]
+  },
+  {
+   "id": "farm_shell_box",
+   "name": "Shotgun Shells",
+   "description": "A torn-open box of 12-gauge shells, a few rolled out across the shelf.",
+   "tags": [
+    "clutter",
+    "story",
+    "family_farm"
+   ],
+   "variants": {
+    "clean": "props/farm_shell_box",
+    "worn": "props/farm_shell_box_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.23,
+    0.08,
+    0.16
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "living",
+    "bedroom",
+    "barn"
+   ]
+  },
+  {
+   "id": "farm_cellar_shelf",
+   "name": "Preserve Shelving",
+   "description": "Rough-sawn cellar shelving lined with home-canned peaches, beets, pickles and jam, stoneware crocks below.",
+   "tags": [
+    "family_farm",
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/farm_cellar_shelf",
+    "worn": "props/farm_cellar_shelf_worn",
+    "destroyed": "props/farm_cellar_shelf_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.18,
+    1.93,
+    0.42
+   ],
+   "container": "farm_pantry",
+   "rooms": [
+    "cellar",
+    "storage",
+    "kitchen"
+   ]
+  },
+  {
+   "id": "farm_preserve_jars",
+   "name": "Preserve Jars",
+   "description": "Quart and pint jars of preserves on the floor, one tipped over, a stoneware jug beside them.",
+   "tags": [
+    "clutter",
+    "family_farm"
+   ],
+   "variants": {
+    "clean": "props/farm_preserve_jars",
+    "worn": "props/farm_preserve_jars_worn",
+    "destroyed": "props/farm_preserve_jars_destroyed"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.47,
+    0.26,
+    0.25
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "cellar",
+    "kitchen",
+    "storage"
+   ]
+  },
+  {
+   "id": "farm_crate_potatoes",
+   "name": "Crate of Potatoes",
+   "description": "Slatted produce crate heaped with cellar potatoes.",
+   "tags": [
+    "family_farm",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/farm_crate_potatoes",
+    "worn": "props/farm_crate_potatoes_worn",
+    "destroyed": "props/farm_crate_potatoes_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    0.55,
+    0.3,
+    0.38
+   ],
+   "container": "farm_produce_crate",
+   "blocks_sight": false,
+   "rooms": [
+    "cellar",
+    "storage",
+    "barn"
+   ]
+  },
+  {
+   "id": "farm_crate_apples",
+   "name": "Crate of Apples",
+   "description": "Slatted produce crate of winter apples gone soft.",
+   "tags": [
+    "family_farm",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/farm_crate_apples",
+    "worn": "props/farm_crate_apples_worn",
+    "destroyed": "props/farm_crate_apples_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    0.55,
+    0.3,
+    0.38
+   ],
+   "container": "farm_produce_crate",
+   "blocks_sight": false,
+   "rooms": [
+    "cellar",
+    "storage"
+   ]
+  }
+ ]
+}

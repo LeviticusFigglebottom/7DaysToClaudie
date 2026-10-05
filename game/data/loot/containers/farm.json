@@ -1,0 +1,53 @@
+{
+ "_doc": "Farm containers (the Okafor farm). Loot tables in game/data/loot/tables/farm.json; props in game/data/props/farm.json.",
+ "defs": [
+  {
+   "id": "farm_feed_bin",
+   "name": "Feed Bin",
+   "loot_table": "farm_feed_bin",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 4
+  },
+  {
+   "id": "farm_pantry",
+   "name": "Preserve Shelves",
+   "loot_table": "farm_pantry",
+   "slots": 8,
+   "search_time": 2.0,
+   "noise": 5
+  },
+  {
+   "id": "farm_produce_crate",
+   "name": "Produce Crate",
+   "loot_table": "farm_produce",
+   "slots": 4,
+   "search_time": 1.2,
+   "noise": 2
+  },
+  {
+   "id": "farm_hope_chest",
+   "name": "Hope Chest",
+   "loot_table": "farm_hope_chest",
+   "slots": 8,
+   "search_time": 2.0,
+   "noise": 3
+  },
+  {
+   "id": "farm_stove",
+   "name": "Cookstove",
+   "loot_table": "farm_stove",
+   "slots": 4,
+   "search_time": 1.4,
+   "noise": 6
+  },
+  {
+   "id": "farm_strongbox",
+   "name": "Strongbox",
+   "loot_table": "farm_strongbox",
+   "slots": 8,
+   "search_time": 2.5,
+   "noise": 5
+  }
+ ]
+}

@@ -1,0 +1,92 @@
+{
+ "_doc": "Items of the Okafor farm: its keys, the cellar's food, and the readable notes (note_<note id>, see game/data/notes/farm.json). Models come from the farm family (tools/assetgen/blender_catalogs/props_farm.py ITEMS), hence the explicit 'model' ids.",
+ "defs": [
+  {
+   "id": "farm_preserves",
+   "name": "Jar of Preserves",
+   "description": "Ife Okafor's home-canned peaches. The seal held.",
+   "category": "food",
+   "stack_max": 5,
+   "carry_max": 10,
+   "bulk": 0.5,
+   "value": 6,
+   "model": "items/farm_jar_preserves",
+   "consume": {
+    "fullness": 22,
+    "hydration": 14,
+    "returns": "glass_bottle"
+   }
+  },
+  {
+   "id": "farm_potatoes",
+   "name": "Cellar Potatoes",
+   "description": "Soft and sprouting, but they're food. Better cooked.",
+   "category": "food",
+   "stack_max": 10,
+   "carry_max": 10,
+   "bulk": 0.3,
+   "value": 2,
+   "model": "items/farm_cellar_potatoes",
+   "consume": {
+    "fullness": 12,
+    "hydration": 2
+   }
+  },
+  {
+   "id": "farm_storeroom_key",
+   "name": "Store-Room Key",
+   "description": "Iron padlock key on a card tag, STORE ROOM in a careful hand.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_key_storeroom",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "farm_tackroom_key",
+   "name": "Tack-Room Key",
+   "description": "Brass key on a leather thong that smells of saddle soap.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_key_tackroom",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "note_farm_ife_journal",
+   "name": "Ife's Journal",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_journal",
+   "note": "farm_ife_journal"
+  },
+  {
+   "id": "note_farm_ife_storeroom",
+   "name": "Note for Chidi",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_page",
+   "note": "farm_ife_storeroom"
+  },
+  {
+   "id": "note_farm_milk_ledger",
+   "name": "Milk Ledger",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_ledger",
+   "note": "farm_milk_ledger"
+  }
+ ]
+}
