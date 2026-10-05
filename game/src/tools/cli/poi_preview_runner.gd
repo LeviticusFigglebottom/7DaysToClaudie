@@ -7,8 +7,9 @@ extends Node
 ##                        waypoints cyan with their index, authored props at their true size
 ##                        (gold = container, blue = solid, grey = no collision)
 ##   <id>_front.png, <id>_back.png, <id>_aerial.png   exterior perspective views
+##   <id>_inside_L<n>_a.png / _b.png   (--inside) eye-level views across the largest room of level n
 ## and prints the validator stats line ("POI_PREVIEW <id> stats {...}") plus any errors/warnings.
-## Options: --out DIR, --size WxH, --all (every POI), --no-exterior, --no-plans.
+## Options: --out DIR, --size WxH, --all (every POI), --no-exterior, --no-plans, --inside.
 ## Kit pieces / props that have not been generated render as stand-in boxes.
 
 const CUT: float = 1.5
@@ -20,6 +21,7 @@ var _size := Vector2i(1280, 720)
 var _ids: PackedStringArray = []
 var _exterior: bool = true
 var _plans: bool = true
+var _inside: bool = false
 var _world: Node3D
 var _sun: DirectionalLight3D
 var _ground: MeshInstance3D
@@ -63,6 +65,8 @@ func _parse_args() -> void:
 				_exterior = false
 			"--no-plans":
 				_plans = false
+			"--inside":
+				_inside = true
 			_:
 				for part: String in a[i].split(" ", false):
 					_ids.append(part)
@@ -162,8 +166,70 @@ func _preview(id: String) -> void:
 			_restore(restore)
 		for k2: int in markers:
 			(markers[k2] as Node3D).queue_free()
+	if _inside:
+		await _interiors(id, layout)
 	inst.queue_free()
 	await _frames(2)
+
+
+## Eye-level views across the largest room of each level, corner to opposite corner and back: wall
+## finishes, wear, baseboards, props and light as the player sees them.
+func _interiors(id: String, layout: PoiLayout) -> void:
+	_ground.visible = true
+	_sun.rotation_degrees = Vector3(-38.0, -35.0, 0.0)
+	for li: int in layout.level_ids:
+		var by_room: Dictionary = {}
+		for c: Vector2i in layout.room_cells(li):
+			var ch: String = layout.room_at(li, c)
+			if not by_room.has(ch):
+				by_room[ch] = []
+			(by_room[ch] as Array).append(c)
+		var best: String = ""
+		for ch: String in by_room:
+			if best == "" or (by_room[ch] as Array).size() > (by_room[best] as Array).size():
+				best = ch
+		if best == "":
+			continue
+		var cells: Array = by_room[best]
+		var lo := Vector2(1e9, 1e9)
+		var hi := Vector2(-1e9, -1e9)
+		for c: Vector2i in cells:
+			lo = lo.min(Vector2(c))
+			hi = hi.max(Vector2(c))
+		# The free room cells nearest the bounding-box corners (rooms need not be rectangles, and a
+		# camera inside a wardrobe shows nothing).
+		var taken: Dictionary = {}
+		for pr: Dictionary in layout.props:
+			if int(pr.get("level", 0)) == li and pr.has("cell"):
+				taken[pr["cell"]] = true
+		var free: Array = cells.filter(func(c: Vector2i) -> bool: return not taken.has(c))
+		if free.is_empty():
+			free = cells
+		var near_lo: Vector2i = free[0]
+		var near_hi: Vector2i = free[0]
+		for c: Vector2i in free:
+			if Vector2(c).distance_squared_to(lo) < Vector2(near_lo).distance_squared_to(lo):
+				near_lo = c
+			if Vector2(c).distance_squared_to(hi) < Vector2(near_hi).distance_squared_to(hi):
+				near_hi = c
+		var y: float = layout.level_y(li)
+		var pa: Vector3 = layout.cell_center(li, near_lo)
+		var pb: Vector3 = layout.cell_center(li, near_hi)
+		pa.y = y
+		pb.y = y
+		var into: Vector3 = (pb - pa).normalized()
+		for view: String in ["a", "b"]:
+			var from: Vector3 = pa if view == "a" else pb
+			var to: Vector3 = pb if view == "a" else pa
+			var cam := Camera3D.new()
+			cam.fov = 70.0
+			cam.near = 0.05
+			_world.add_child(cam)
+			cam.position = from - (into if view == "a" else -into) * 0.3 + Vector3.UP * 1.6
+			cam.look_at(to + Vector3.UP * 1.0)
+			cam.make_current()
+			await _shoot("%s_inside_L%d_%s" % [id, li, view])
+			cam.queue_free()
 
 
 ## Hides roofs and every piece/prop/node whose origin is above `cut` (rebuilding MultiMeshes);

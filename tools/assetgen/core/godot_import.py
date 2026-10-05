@@ -46,13 +46,14 @@ def _fmt(v: object) -> str:
 
 
 def texture(path: pathlib.Path, *, kind: str = "albedo", mipmaps: bool = True, size_limit: int = 0) -> None:
-    """kind: albedo | normal | data (roughness/AO/masks, linear) | ui (no compression, no mips)."""
+    """kind: albedo | normal | data (roughness/AO, linear) | mask (up to four unrelated linear channels:
+    BC7, because S3TC blends RGB channels within a block) | ui (no compression, no mips)."""
     if kind == "ui":
         params = {"compress/mode": 0, "mipmaps/generate": False}
     else:
         params = {
             "compress/mode": 2,  # VRAM compressed (BPTC/S3TC on desktop)
-            "compress/high_quality": kind == "normal",
+            "compress/high_quality": kind in ("normal", "mask"),
             "compress/normal_map": 1 if kind == "normal" else 2,  # 2 = disabled
             "mipmaps/generate": mipmaps,
             "process/size_limit": size_limit,

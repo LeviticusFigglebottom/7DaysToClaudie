@@ -4,8 +4,11 @@ Finish texture ARRAYS (Texture2DArray, vertical strip, 1024 px slices, slice ord
 game/data/materials/kit_finishes.json, never reorder):
   kit_wall_finishes_{albedo,normal,orm}   1 m per tile  (siding 10 cm exposure, 16 brick courses / m)
   kit_floor_finishes_{albedo,normal,orm}  2 m per tile
-Overlay: kit_decay_albedo (RGBA: stain / mould / grime colour, alpha = coverage priority: the overlay
-shows where alpha > 1 - decay) + kit_decay_orm, authored for ~2 m per tile.
+Decay masks (kit_wall.gdshader builds every stain, drip, grime gradient, mould colony and paint peel
+from them in world space, so the finishes themselves stay clean and tile without visible repeats):
+  kit_decay_albedo  RGBA uniform coverage priorities: grime, water stains + drips, mould, peel (2.5 m tile)
+  kit_decay_orm     RGB detail: macro tone, substrate grain + cracks, scuff strokes
+(The file names predate the masks; poi_parts.gd loads them by these names.)
 Standard PBR sets: kit_plaster (preview for kit_wall / kit_floor), kit_trim, door_wood, glass (RGBA),
 wood_raw, kit_stairs, concrete, brick, metal_painted, kit_wall_inner. Wood textures run the grain along U.
 
@@ -319,11 +322,11 @@ def _plaster_core(size: int, seed: int) -> tuple[np.ndarray, np.ndarray]:
 
 def plaster_white(size: int, seed: int) -> Finish:
     h, sand = _plaster_core(size, seed)
-    cr = _cracks(size, seed + 10, 7, 1.2, 0.18)
+    cr = _cracks(size, seed + 10, 7, 1.2, 0.1)
     tone = _sn(size, 2.2, seed + 11)
     col = T.gradient(tone, [(0.0, "#dcd6c9"), (0.5, "#e2ddd1"), (1.0, "#e8e4d9")])
     col *= (0.98 + 0.03 * sand)[..., None]
-    f, t = _flakes(size, seed + 12, 0.025)
+    f, t = _flakes(size, seed + 12, 0.006)  # large flaking comes from the decay masks
     flake = T.smoothstep(t - 0.008, t + 0.008, f)
     ring = T.smoothstep(t - 0.04, t - 0.008, f) * (1 - flake)
     col = T.mix(col, _col("#c3baa6") * np.ones_like(col), flake * 0.85)
@@ -337,10 +340,10 @@ def plaster_white(size: int, seed: int) -> Finish:
 def plaster_grey(size: int, seed: int) -> Finish:
     h, sand = _plaster_core(size, seed)
     patches = T.smoothstep(0.6, 0.66, _warp(_sn(size, 2.0, seed + 20), seed + 21, 20.0))  # newer repair patches
-    cr = _cracks(size, seed + 22, 6, 1.4, 0.22)
+    cr = _cracks(size, seed + 22, 6, 1.4, 0.12)
     tone = _sn(size, 1.9, seed + 23)
     col = T.gradient(tone, [(0.0, "#99958c"), (0.5, "#a39f96"), (1.0, "#ada99f")])
-    col = T.mix(col, _col("#b6b1a5") * np.ones_like(col), patches * 0.35)
+    col = T.mix(col, _col("#b6b1a5") * np.ones_like(col), patches * 0.2)
     col *= (0.94 + 0.1 * sand)[..., None]
     col *= (1.0 - 0.3 * cr)[..., None]
     col *= _grime(size, seed + 24, 0.08)[..., None]
@@ -356,6 +359,8 @@ def _painted_wall(size: int, seed: int, paint: list, peel_cov: float, older: str
     stipple = _sn(size, 0.55, seed + 30)
     fade = _sn(size, 2.6, seed + 31)
     col = T.gradient(T.normalize(0.75 * fade + 0.25 * stipple), paint)
+    # Only small chips here: the 1 m tile would repeat big peels; the shader peels at room scale.
+    peel_cov *= 0.15
     f, t1 = _flakes(size, seed + 32, peel_cov)
     t2 = float(np.quantile(f, 1.0 - peel_cov * 0.35))
     top_gone = T.smoothstep(t1 - 0.006, t1 + 0.006, f)
@@ -366,7 +371,7 @@ def _painted_wall(size: int, seed: int, paint: list, peel_cov: float, older: str
     col = T.mix(col, old, top_gone)
     col = T.mix(col, plaster, all_gone)
     col *= (1.0 - 0.18 * ring)[..., None]
-    cr = _cracks(size, seed + 35, 7, 1.1, 0.16)
+    cr = _cracks(size, seed + 35, 7, 1.1, 0.08)
     col *= (1.0 - 0.3 * cr)[..., None]
     col *= _grime(size, seed + 36, 0.07)[..., None]
     height = np.clip(0.45 + 0.3 * h + 0.06 * stipple - 0.05 * top_gone - 0.05 * all_gone + 0.07 * ring - 0.25 * cr, 0, 1)
@@ -397,13 +402,13 @@ def _wallpaper(size: int, seed: int, pattern_rgb: np.ndarray, pattern_h: np.ndar
     lift = (1.0 - T.smoothstep(0.0, 0.01, seams)) * T.smoothstep(0.6, 0.85, _sn(size, 2.2, seed + 41, (6.0, 1.0)))
     age = _sn(size, 2.4, seed + 42)
     fox = (T.smoothstep(0.8, 0.87, _sn(size, 1.1, seed + 43)) * 0.6).astype(np.float32)
-    f, t = _flakes(size, seed + 44, 0.03, cluster=1.2)
+    f, t = _flakes(size, seed + 44, 0.004, cluster=1.2)  # torn patches come from the decay masks
     tear = T.smoothstep(t - 0.004, t + 0.004, f)
     ring = T.smoothstep(t - 0.02, t - 0.004, f) * (1 - tear)
     col = pattern_rgb * (0.95 + 0.07 * paper)[..., None]
     yellow = _col("#c8b27a") * np.ones_like(col)
     col = T.mix(col, col * 0.78 + yellow * 0.22, T.smoothstep(0.3, 0.9, age) * 0.8)
-    col = T.mix(col, _col("#8c6a3e") * np.ones_like(col), fox * 0.3)
+    col = T.mix(col, _col("#8c6a3e") * np.ones_like(col), fox * 0.18)
     col *= (1.0 - 0.4 * seam_line - 0.1 * lift)[..., None]
     under = T.gradient(_sn(size, 1.6, seed + 45), [(0.0, "#a99f8b"), (0.6, "#c2b8a3"), (1.0, "#cfc5b0")])
     glue = T.smoothstep(0.5, 0.8, _sn(size, 1.2, seed + 47))
@@ -629,7 +634,7 @@ def tile_kitchen_check(size: int, seed: int) -> Finish:
     return _tiles(size, seed, 1.0, 10, 0.003, ["#e3dcc8", "#3c6450"], check=True, grout_col="#a59f90", gloss=0.12)
 
 
-def _siding(size: int, seed: int, paint: list, *, peel_cov: float = 0.16) -> Finish:
+def _siding(size: int, seed: int, paint: list, *, peel_cov: float = 0.025) -> Finish:
     x, y = _coords(size, 1.0)
     b = _boards(size, 1.0, 0.1, seed + 100, min_len=1.2, max_len=4.5)
     v = b["vin"]                     # 0 at the top of a board, 1 at its butt edge
@@ -663,7 +668,7 @@ def siding_pale_blue(size: int, seed: int) -> Finish:
 
 
 def siding_barn_red(size: int, seed: int) -> Finish:
-    return _siding(size, seed, [(0.0, "#6b2a22"), (0.6, "#7f3a2e"), (1.0, "#93503f")], peel_cov=0.12)
+    return _siding(size, seed, [(0.0, "#6b2a22"), (0.6, "#7f3a2e"), (1.0, "#93503f")], peel_cov=0.02)
 
 
 def _brick_layout(size: int, tile: float, per_row: int, courses: int, mortar: float, seed: int, jitter: float = 0.003):
@@ -726,7 +731,7 @@ def concrete_block(size: int, seed: int) -> Finish:
     agg = _sn(size, 0.6, seed + 122)
     paint = T.gradient(T.normalize(0.5 * _sn(size, 2.2, seed + 123) + 0.5 * agg), [(0.0, "#c9c4b6"), (1.0, "#dad5c8")])
     paint *= (0.97 + 0.04 * br)[..., None]
-    worn, ring = _peel(size, seed + 124, 0.08, sharp=0.02)
+    worn, ring = _peel(size, seed + 124, 0.015, sharp=0.02)
     raw = T.gradient(agg, [(0.0, "#7c7a74"), (1.0, "#9a978f")])
     col = T.mix(paint, raw, worn)
     col *= (1.0 - 0.35 * pores)[..., None]
@@ -809,7 +814,7 @@ def _carpet(size: int, seed: int, yarns: list[str], *, loop: bool, wear: float) 
     col = T.mix(col, col * 0.85 + _col("#8a857a") * 0.15, traffic * 0.8)
     st = T.smoothstep(0.86, 0.9, _warp(_sn(size, 1.9, seed + 217), seed + 218, 30.0))
     ring = T.smoothstep(0.85, 0.87, _warp(_sn(size, 1.9, seed + 217), seed + 218, 30.0)) * (1 - st)
-    col = T.mix(col, col * 0.7 + _col("#4a3520") * 0.1, st * 0.7)
+    col = T.mix(col, col * 0.7 + _col("#4a3520") * 0.1, st * 0.35)
     col *= (1.0 - 0.15 * ring)[..., None]
     col *= _grime(size, seed + 219, 0.12)[..., None]
     rows = (0.5 + 0.5 * np.cos(y * 2 * np.pi * 125)).astype(np.float32) if loop else 0.0
@@ -844,7 +849,7 @@ def linoleum_check(size: int, seed: int) -> Finish:
     tr = _hash_arr(tid, seed)
     col *= (0.95 + 0.08 * tr)[..., None]
     # broken / lifted tiles show black adhesive and the subfloor
-    broken = (_hash_arr(tid, seed + 2) < 0.08).astype(np.float32)
+    broken = (_hash_arr(tid, seed + 2) < 0.03).astype(np.float32)
     chip = T.smoothstep(0.55, 0.6, _warp(_sn(size, 1.5, seed + 222), seed + 223, 20.0)) * broken
     col = T.mix(col, _col("#2a2118") * np.ones_like(col), chip)
     scuff = T.smoothstep(0.8, 0.9, _sn(size, 0.8, seed + 224, (5.0, 1.0)))
@@ -876,7 +881,7 @@ def linoleum_beige(size: int, seed: int) -> Finish:
     col = T.mix(col, col * 0.8 + _col("#b39a5a") * 0.2, yellow)
     scuff = T.smoothstep(0.84, 0.92, _sn(size, 0.8, seed + 233, (6.0, 1.0)))
     col = T.mix(col, _col("#57504a") * np.ones_like(col), scuff * 0.3)
-    tear, ring = _peel(size, seed + 234, 0.015, sharp=0.01)
+    tear, ring = _peel(size, seed + 234, 0.004, sharp=0.01)
     col = T.mix(col, _col("#3a2c1e") * np.ones_like(col), tear)
     col *= _grime(size, seed + 235, 0.15)[..., None]
     height = np.clip(0.6 - 0.15 * faux - 0.3 * tear + 0.08 * ring + 0.02 * speck, 0, 1)
@@ -927,7 +932,7 @@ def tile_white_small(size: int, seed: int) -> Finish:
     gcol = T.mix(_col("#9a968b") * np.ones_like(base), _col("#4b473f") * np.ones_like(base), dirt)
     col = T.mix(base, gcol, grout)
     stain = T.smoothstep(0.78, 0.86, _warp(_sn(size, 1.8, seed + 241), seed + 242, 20.0))
-    col = T.mix(col, col * 0.75 + _col("#7a6440") * 0.25, stain * 0.5)
+    col = T.mix(col, col * 0.75 + _col("#7a6440") * 0.25, stain * 0.25)
     missing = (_hash_arr(cid, seed + 11) < 0.006).astype(np.float32) * (1 - grout)
     col = T.mix(col, _col("#3b362d") * np.ones_like(col), missing)
     col *= _grime(size, seed + 243, 0.12)[..., None]
@@ -945,7 +950,7 @@ def concrete(size: int, seed: int, tile: float = 2.0) -> Finish:
     col = T.gradient(tone, [(0.0, "#716e68"), (0.5, "#86837c"), (1.0, "#99968e")])
     stains = _warp(_sn(size, 1.6, seed + 255), seed + 256, 25.0)
     oil = T.smoothstep(0.88, 0.92, stains)
-    col = T.mix(col, _col("#3e3a34") * np.ones_like(col), oil * 0.6)
+    col = T.mix(col, _col("#3e3a34") * np.ones_like(col), oil * 0.35)
     damp = T.smoothstep(0.75, 0.88, _sn(size, 2.0, seed + 260))
     col *= (1.0 - 0.12 * damp)[..., None]
     cr = _cracks(size, seed + 257, 5, 1.2, 0.2)
@@ -1017,62 +1022,79 @@ def kit_floor_finishes_orm(size: int, seed: int, out, slices: int) -> None:
 
 
 # =================================================================================================
-# Decay overlay (RGBA colour + coverage priority) and its ORM
+# Decay masks (kit_wall.gdshader composes stains, grime, mould and peeling paint from these)
 # =================================================================================================
 
-def _decay(size: int, seed: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Returns (rgb, alpha, roughness, ao). Authored for ~2 m per tile. Alpha is the coverage priority:
-    grime first, then water stains (pale centres, concentric darker tide lines, drips running down),
-    mould colonies last."""
-    rgb = np.zeros((size, size, 3), np.float32) + _col("#5b4a36")
-    # 1) grime: broad soft dirt
-    g = _sn(size, 2.3, seed + 1)
-    rgb = T.mix(rgb, _col("#4a4237") * np.ones_like(rgb), T.smoothstep(0.3, 0.8, g))
-    alpha = (T.smoothstep(0.35, 0.9, g) * 0.5).astype(np.float32)
-    rough = np.full((size, size), 0.88, np.float32)
-    # 2) water stains: warped, vertically elongated blotches; each has its own appearance level
-    field = _warp(_sn(size, 2.1, seed + 2, (1.0, 0.55)), seed + 3, 40.0, beta=1.7)
-    field = _warp(field, seed + 4, 10.0, beta=1.2)
-    level = _sn(size, 2.8, seed + 5)
-    thr = 0.62
-    inside = T.smoothstep(thr - 0.004, thr + 0.004, field)
-    depth = np.clip((field - thr) / 0.12, 0, 1)
-    bands = 0.5 + 0.5 * np.cos((field - thr) * 2 * np.pi * 26.0)
-    tide = (1.0 - T.smoothstep(0.0, 0.012, field - thr)) * inside
-    rings = bands ** 6 * inside * (1.0 - depth) * 0.6
-    stain_col = T.gradient(T.normalize(_sn(size, 1.5, seed + 7)), [(0.0, "#a78a58"), (1.0, "#bba06c")])
-    rgb = T.mix(rgb, stain_col, inside)
-    rgb = T.mix(rgb, _col("#6b4e2a") * np.ones_like(rgb), np.clip(tide * 0.9 + rings, 0, 1))
-    stain_a = inside * (0.3 + 0.45 * level) * (0.55 + 0.45 * np.clip(tide + rings, 0, 1))
-    alpha = np.maximum(alpha, stain_a)
-    rough = np.where(inside > 0.5, 0.8, rough)
-    # drips running down from stains
-    drip = T.smoothstep(0.62, 0.9, _sn(size, 1.4, seed + 8, (16.0, 1.0))) * T.smoothstep(0.45, 0.6, field)
-    rgb = T.mix(rgb, _col("#7a5d36") * np.ones_like(rgb), drip * 0.7)
-    alpha = np.maximum(alpha, drip * 0.55)
-    # 3) mould colonies: dark speckle clusters with fuzzy halos, appear late
-    clus = _warp(_sn(size, 1.9, seed + 9), seed + 10, 25.0)
-    cl = T.smoothstep(0.64, 0.8, clus)
-    dots = T.smoothstep(0.6, 0.7, _sn(size, 0.25, seed + 11))
-    mould = np.clip(dots * cl * 1.5 + cl * 0.3, 0, 1)
-    mcol = T.gradient(_sn(size, 1.0, seed + 12), [(0.0, "#121410"), (0.6, "#22271b"), (1.0, "#39402a")])
-    rgb = T.mix(rgb, mcol, mould)
-    alpha = np.maximum(alpha, mould * (0.72 + 0.28 * cl))
-    rough = T.lerp(rough, 0.96, mould)
-    ao = 1.0 - 0.25 * mould
-    return np.clip(rgb, 0, 1), np.clip(alpha, 0, 1), np.clip(rough, 0, 1), np.clip(ao, 0, 1)
+DECAY_TILE_M = 2.5
 
 
-@texture("kit_decay", size=1024, seed=7300, kind="rgba")
-def kit_decay_albedo(size: int, seed: int, out) -> None:  # -> textures/kit_decay_albedo.png
-    rgb, a, _, _ = _decay(size, seed)
-    T.save_rgba(str(out) + "_albedo.png", np.concatenate([rgb, a[..., None]], -1))
+def _equalize(f: np.ndarray) -> np.ndarray:
+    """Rank transform to a uniform [0,1] distribution: a shader threshold t then reveals exactly 1 - t of
+    the area, so decay -> coverage stays predictable whatever the noise statistics."""
+    flat = f.ravel()
+    ranks = np.empty(flat.size, np.int64)
+    ranks[np.argsort(flat, kind="stable")] = np.arange(flat.size)
+    return (ranks.astype(np.float32) / (flat.size - 1)).reshape(f.shape)
 
 
-@texture("kit_decay_orm", size=1024, seed=7300, kind="single", import_kind="data")
-def kit_decay_orm(size: int, seed: int, out) -> None:
-    _, _, rough, ao = _decay(size, seed)
-    T.save_orm(str(out) + ".png", ao, rough, 0.0)
+def _run_down(src: np.ndarray, fall: float) -> np.ndarray:
+    """Propagates values down the image (+rows = down a wall), losing `fall` per pixel: a stain at value
+    v leaves a tail that stays above a threshold t for (v - t) / fall pixels. Periodic in rows."""
+    n = src.shape[0]
+    out = src.copy()
+    cur = src[-1].copy()
+    for _ in range(2):  # second lap carries tails across the wrap
+        for r in range(n):
+            cur = np.maximum(src[r], cur - fall)
+            out[r] = np.maximum(out[r], cur)
+    return out
+
+
+def _decay_masks(size: int, seed: int) -> np.ndarray:
+    """RGBA coverage priorities, each uniform in [0,1] (2.5 m per tile, +rows = down):
+    R grime (broad soft dirt), G water stains (vertically elongated blots with drip trails running down
+    from them), B mould (speckled colonies), A peeling (clustered flakes)."""
+    n = size
+    grime = 0.55 * _sn(n, 2.4, seed + 1) + 0.3 * _warp(_sn(n, 1.6, seed + 2), seed + 3, 20.0) + 0.15 * _sn(n, 0.9, seed + 4)
+    # Several blots of 0.3-1 m per tile (fmin drops the tile-sized swell), taller than wide.
+    blots = 0.8 * _sn(n, 2.0, seed + 5, (1.0, 0.6), fmin=3.0) + 0.2 * _sn(n, 1.6, seed + 15, fmin=6.0)
+    blots = _warp(blots, seed + 6, 30.0, beta=1.7)
+    blots = _equalize(_warp(blots, seed + 7, 8.0, beta=1.2))
+    # Drips: thin vertical runs that start inside the stronger stains and run down, each tail a little
+    # weaker than its source so longer drips appear as decay grows.
+    lines = T.smoothstep(0.68, 0.8, _sn(n, 1.5, seed + 8, (14.0, 1.0)))
+    tails = _run_down(np.where(blots > 0.55, blots, 0.0).astype(np.float32), 0.0007)
+    stains = np.maximum(blots, tails * lines * 0.995)
+    clusters = _warp(_sn(n, 1.9, seed + 9), seed + 10, 25.0)
+    mould = 0.62 * clusters + 0.38 * _sn(n, 0.3, seed + 11)
+    cl = _sn(n, 2.2, seed + 12)
+    fine = _warp(_sn(n, 1.25, seed + 13), seed + 14, 4.0, beta=1.5)
+    peel = fine + 0.9 * (cl - 0.5)
+    return np.stack([_equalize(grime), stains, _equalize(mould), _equalize(peel)], -1).astype(np.float32)
+
+
+def _decay_detail(size: int, seed: int) -> np.ndarray:
+    """RGB: R macro tone (sampled at ~1/12 scale to break the 1-2 m finish tiling), G fine substrate
+    grain + hairline cracks (exposed plaster, flake edges), B scuff strokes (floors, baseboards)."""
+    n = size
+    macro = T.normalize(0.7 * _sn(n, 2.0, seed + 21) + 0.3 * _sn(n, 1.4, seed + 22))
+    grain = T.normalize(0.6 * _sn(n, 0.45, seed + 23) + 0.4 * _sn(n, 1.1, seed + 24))
+    grain = np.clip(grain - 0.5 * _cracks(n, seed + 25, 12, 1.2, 0.35), 0, 1)
+    scuffs = np.maximum(T.smoothstep(0.8, 0.92, _sn(n, 0.9, seed + 26, (1.0, 9.0))),
+                        T.smoothstep(0.82, 0.93, _sn(n, 0.9, seed + 27, (9.0, 1.0))))
+    scuffs *= T.smoothstep(0.35, 0.7, _sn(n, 2.0, seed + 28))
+    return np.stack([macro, grain, scuffs], -1).astype(np.float32)
+
+
+# Masks: linear, BC7 ("mask" import) so four unrelated channels survive compression.
+@texture("kit_decay_albedo", size=1024, seed=7300, kind="single", import_kind="mask")
+def kit_decay_albedo(size: int, seed: int, out) -> None:  # -> textures/kit_decay_albedo.png (masks, not colour)
+    T.save_rgba(str(out) + ".png", _decay_masks(size, seed))
+
+
+@texture("kit_decay_orm", size=1024, seed=7310, kind="single", import_kind="mask")
+def kit_decay_orm(size: int, seed: int, out) -> None:  # -> textures/kit_decay_orm.png (detail, not ORM)
+    T.save_rgb(str(out) + ".png", _decay_detail(size, seed))
 
 
 # =================================================================================================
