@@ -26,7 +26,9 @@ uniform sampler2D wear_normal_tex : hint_normal, filter_linear_mipmap_anisotropi
 uniform sampler2D wear_orm_tex : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float wear_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float wear_uv_scale = 1.0;
-instance uniform float instance_wear = -1.0;
+// Instance uniforms pin their slots: kit_wall shares weather_exposure, and materials batched on one
+// instance must agree on each name's index (Godot reads one slot per index per instance).
+instance uniform float instance_wear : instance_index(0) = -1.0;
 
 // Moss / lichen on up-facing surfaces (mask: vertex B * up-facing).
 uniform sampler2D moss_albedo_tex : source_color, hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -49,17 +51,17 @@ uniform float macro_variation = 0.0;
 // Self-lit surfaces (device screens, indicator LEDs): emission = colour x energy x albedo.
 uniform vec4 emission_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform float emission_energy = 0.0;
-instance uniform float instance_variation = 0.5;
+instance uniform float instance_variation : instance_index(1) = 0.5;
 // Infected tiers (Seeded/Bloomed Hollowed, InfectedTiers): pale Bloom filaments glowing under the
 // skin, patterned in object space. The instance sets how far the Bloom has gone (bloom_glow); the
 // material says where it can show (bloom_skin: Hollowed skin 1, fungal growths 0.8, cloth 0).
-instance uniform float bloom_glow = 0.0;
+instance uniform float bloom_glow : instance_index(2) = 0.0;
 uniform float bloom_skin : hint_range(0.0, 1.0) = 0.0;
 
 global uniform float hm_wetness;
 global uniform float hm_snow;
 // 0 for things under a roof (POI furniture batched as indoor): no rain gloss or snow on them.
-instance uniform float weather_exposure = 1.0;
+instance uniform float weather_exposure : instance_index(3) = 1.0;
 
 varying vec3 v_world_normal;
 varying vec3 v_world_pos;

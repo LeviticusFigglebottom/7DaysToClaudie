@@ -70,7 +70,8 @@ const float FLOOR_PEEL[8] = float[](0.3, 0.35, 0.25, 0.4, 0.7, 0.8, 0.2, 0.0);
 
 global uniform float hm_wetness;
 // 0 for pieces under a roof (PoiBuilder batches indoor floors separately): rain never reaches them.
-instance uniform float weather_exposure = 1.0;
+// Same slot as std_surface's (furniture and fixtures share the indoor batches' instances).
+instance uniform float weather_exposure : instance_index(3) = 1.0;
 
 varying vec3 v_world;
 varying vec3 v_wn;
