@@ -47,7 +47,12 @@ game/src/tools/import/generated_scene_post_import.gd   M_<id> -> generated mater
 
 A **Task** owns a list of outputs. Its *input hash* = content of its source files + its params.
 `manifest.json` records the hash that produced each output (+ sha256 of outputs). A task rebuilds
-only when its hash changes or an output is missing. Blender tasks are batched per generator module
+only when its hash changes or an output is missing. A Blender model's sources are its runner, its
+generator and only the `blender/lib/` modules it imports, directly or through other libs (a static
+import scan), so editing `lib/char_fp.py` rebuilds the arms, not every family.
+`build_assets.py --adopt` re-keys the manifest to the current hashes for tasks whose outputs
+exist and still match their recorded sha256, without rebuilding (after a hashing change).
+Blender tasks are batched per generator module
 (one Blender process per batch). The orchestrator writes a Godot `.import` sidecar next to each
 output with a **deterministic UID** (FNV-1a of the `res://` path, Godot base-34 alphabet) and the
 right import settings (VRAM compression, normal maps, audio loops, glTF post-import script).

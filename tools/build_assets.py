@@ -9,6 +9,10 @@
   python tools/build_assets.py --check-determinism rebuild selected tasks into a scratch dir and
                                                    compare sha256 with the manifest
   python tools/build_assets.py --clean             delete game/assets/generated
+  python tools/build_assets.py --adopt             record current input hashes for selected tasks
+                                                   whose outputs exist unchanged (no rebuild); only
+                                                   after a pipeline change that alters hashes but
+                                                   not outputs
 
 Outputs go to game/assets/generated/ (gitignored) together with Godot .import sidecars that pin
 deterministic UIDs and import settings. Run from the repo root or anywhere (paths are absolute).
@@ -170,6 +174,29 @@ def check_determinism(tasks: list[Task], jobs: int, blender: str) -> int:
     return 1 if bad else 0
 
 
+def adopt(tasks: list) -> int:
+    """Re-keys the manifest to the current input hashes without rebuilding. Only tasks whose
+    outputs all exist and still match the sha256 recorded at their last build are adopted."""
+    from assetgen.core.hashing import file_sha256
+    from assetgen.core.paths import gen_path
+    data = manifest.load()
+    adopted = skipped = 0
+    for t in tasks:
+        entry = data["tasks"].get(t.name)
+        h = hash_inputs(t.sources, t.params)
+        if entry is None or entry.get("hash") == h:
+            continue
+        recorded: dict = entry.get("outputs", {})
+        if all(gen_path(o).exists() and recorded.get(o) == file_sha256(gen_path(o)) for o in t.outputs):
+            entry["hash"] = h
+            adopted += 1
+        else:
+            skipped += 1
+    manifest.save(data)
+    print(f"[assets] adopted {adopted} task hashes, {skipped} left to rebuild")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", help="comma-separated groups")
@@ -179,6 +206,7 @@ def main() -> int:
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--clean", action="store_true")
     ap.add_argument("--check-determinism", action="store_true")
+    ap.add_argument("--adopt", action="store_true")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2)))
     ap.add_argument("--blender", default=None)
     args = ap.parse_args()
@@ -203,6 +231,8 @@ def main() -> int:
         return 0
     if args.check_determinism:
         return check_determinism(tasks, args.jobs, blender)
+    if args.adopt:
+        return adopt(tasks)
     return build(tasks, force=args.force, jobs=args.jobs, blender=blender)
 
 

@@ -41,9 +41,51 @@ class Task:
         return gen_path(self.outputs[i])
 
 
+def _lib_imports(path: pathlib.Path, lib_dir: pathlib.Path) -> set[str]:
+    """Names of the shared lib modules `path` imports, in any form: `from lib import a, b as c`,
+    `from lib.a import x`, `import lib.a`, and (inside lib) `from . import a` / `from .a import x`."""
+    import ast
+    try:
+        tree = ast.parse(path.read_text())
+    except (OSError, SyntaxError):
+        return set()
+    in_lib = path.parent == lib_dir
+    found: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            mod = node.module or ""
+            if node.level == 0 and mod == "lib":
+                found.update(a.name for a in node.names)
+            elif node.level == 0 and mod.startswith("lib."):
+                found.add(mod.split(".")[1])
+            elif node.level == 1 and in_lib:
+                if mod:
+                    found.add(mod.split(".")[0])
+                else:
+                    found.update(a.name for a in node.names)
+        elif isinstance(node, ast.Import):
+            for a in node.names:
+                if a.name.startswith("lib."):
+                    found.add(a.name.split(".")[1])
+    return {m for m in found if (lib_dir / f"{m}.py").exists()}
+
+
 def blender_sources(module: str) -> list[pathlib.Path]:
-    """Source files for a Blender generator: the module + every shared bpy lib file + runner."""
+    """Source files for a Blender generator: the runner, the module and the shared bpy libs it
+    imports, followed transitively. Editing one lib rebuilds only the families that use it
+    (every lib used to count for every model: one tweak meant ~45 min of rebuilds, TD-020)."""
     base = ASSETGEN / "blender"
-    files = [base / "runner.py", base / "generators" / f"{module}.py"]
-    files += sorted((base / "lib").glob("*.py"))
-    return files
+    lib_dir = base / "lib"
+    roots = [base / "runner.py", base / "generators" / f"{module}.py"]
+    seen: set[str] = set()
+    todo: list[str] = []
+    for r in roots:
+        todo += sorted(_lib_imports(r, lib_dir))
+    while todo:
+        m = todo.pop()
+        if m in seen:
+            continue
+        seen.add(m)
+        todo += sorted(_lib_imports(lib_dir / f"{m}.py", lib_dir) - seen)
+    files = roots + [lib_dir / "__init__.py"] + [lib_dir / f"{m}.py" for m in sorted(seen)]
+    return [f for f in files if f.exists()]
