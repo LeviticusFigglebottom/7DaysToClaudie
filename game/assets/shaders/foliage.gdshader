@@ -23,6 +23,10 @@ uniform float flutter_strength = 1.0;
 uniform float ao_strength : hint_range(0.0, 1.0) = 0.85;
 uniform float normal_strength = 1.0;
 uniform float roughness = 0.75;
+// Alpha-tested needles and leaves thin out with distance because mipmaps average their alpha
+// towards the background; scaling alpha up by the mip level keeps crowns and ferns dense (after
+// Ben Golus, "Anti-aliased Alpha Test").
+uniform float mip_alpha_scale = 0.25;
 
 global uniform vec4 hm_season;
 global uniform float hm_wetness;
@@ -54,7 +58,11 @@ void fragment() {
 	float snow = hm_snow * smoothstep(0.3, 0.8, v_world_normal.y);
 	col = mix(col, vec3(0.85, 0.87, 0.9), snow);
 	ALBEDO = col * mix(1.0, COLOR.r, ao_strength);
-	ALPHA = a.a;
+	vec2 texel = UV * vec2(textureSize(albedo_tex, 0));
+	vec2 ddx = dFdx(texel);
+	vec2 ddy = dFdy(texel);
+	float mip = max(0.0, 0.5 * log2(max(dot(ddx, ddx), dot(ddy, ddy))));
+	ALPHA = min(1.0, a.a * (1.0 + mip * mip_alpha_scale));
 	ALPHA_SCISSOR_THRESHOLD = threshold;
 	NORMAL_MAP = texture(normal_tex, UV).rgb;
 	NORMAL_MAP_DEPTH = normal_strength;
