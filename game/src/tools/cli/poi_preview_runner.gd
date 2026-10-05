@@ -239,7 +239,7 @@ func _cut_above(inst: PoiInstance, cut: float) -> Array:
 	for c: Node in inst.get_children():
 		if c is MultiMeshInstance3D:
 			var mmi := c as MultiMeshInstance3D
-			if String(mmi.name).contains("Gables"):
+			if String(mmi.name).contains("Gables") or String(mmi.name).contains("Parapet"):
 				restore.append([mmi, mmi.visible])
 				mmi.visible = false
 				continue
@@ -346,11 +346,21 @@ func _build_markers(v: PoiValidator, layout: PoiLayout, inst: PoiInstance) -> Di
 				_marker(by_level[int(pl["level"])], SphereMesh.new(), Vector3.ONE * 0.3, layout.local_pos(pl["level"], pl["pos"]) + Vector3.UP * minf(float(l.get("height", 2.3)), 1.4), Color(1.0, 0.6, 0.15))
 	for t: Dictionary in layout.traps:
 		var li5: int = int(t["level"])
-		if by_level.has(li5):
-			var side: int = PoiLayout.SIDES.get(str(t.get("side", "S")), 2)
-			var toward := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
-			var size := Vector3(1.0, 0.15, 0.12) if side in [0, 2] else Vector3(0.12, 0.15, 1.0)
-			_marker(by_level[li5], BoxMesh.new(), size, layout.cell_center(li5, t["cell"]) + toward * 0.35 + Vector3.UP * 0.3, Color(1.0, 0.1, 0.9))
+		if not by_level.has(li5):
+			continue
+		if str(t.get("kind", "edge")) == "cell":
+			# Cell traps: a flat square on every cell they cover; a bear trap sits at its own spot.
+			if str(t["type"]) == "bear_trap":
+				_marker(by_level[li5], BoxMesh.new(), Vector3(0.5, 0.06, 0.5), layout.local_pos(li5, t["pos"]) + Vector3.UP * 0.05, Color(1.0, 0.1, 0.9))
+			else:
+				for c: Vector2i in t["cells"]:
+					_marker(by_level[li5], BoxMesh.new(), Vector3(0.8, 0.04, 0.8), layout.cell_center(li5, c) + Vector3.UP * 0.04, Color(1.0, 0.1, 0.9, 0.7))
+			continue
+		# Edge traps (wires, chimes, alarms): a bar along the edge they guard.
+		var side: int = int(t.get("side_i", 2))
+		var toward := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
+		var size := Vector3(1.0, 0.15, 0.12) if side in [0, 2] else Vector3(0.12, 0.15, 1.0)
+		_marker(by_level[li5], BoxMesh.new(), size, layout.cell_center(li5, t["cell"]) + toward * 0.45 + Vector3.UP * 0.3, Color(1.0, 0.1, 0.9))
 	return by_level
 
 

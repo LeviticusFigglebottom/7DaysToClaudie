@@ -11,6 +11,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "pell_crossing_road", "pos": Vector3(-30, 6.0, 2170), "look": Vector3(-60, 0, 2070), "hour": 15.0, "weather": "overcast"},
 	{"name": "pell_crossing_street", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-95, 2, 2064), "hour": 10.0, "weather": "clear"},
 	{"name": "pond_dusk", "pos": Vector3(-200, 4.0, 1880), "look": Vector3(-262, 0, 1915), "hour": 19.6, "weather": "mist"},
+	{"name": "pond_noon", "pos": Vector3(-204, 2.5, 1884), "look": Vector3(-262, 0, 1915), "hour": 12.5, "weather": "clear"},
 	{"name": "cliffs_overview", "pos": Vector3(-300, 40.0, 2130), "look": Vector3(-420, 10, 2220), "hour": 16.5, "weather": "clear"},
 	{"name": "river_bridge", "pos": Vector3(160, 8.0, 1935), "look": Vector3(185, 0, 1960), "hour": 9.0, "weather": "rain"},
 	{"name": "river_noon", "pos": Vector3(150, 1.7, 2075), "look": Vector3(118, 0.0, 2100), "hour": 13.0, "weather": "clear"},
