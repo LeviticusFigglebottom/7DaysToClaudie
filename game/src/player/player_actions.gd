@@ -14,7 +14,7 @@ func _ready() -> void:
 		&"world.pickup_item": _pickup_item, &"container.take": _container_take,
 		&"container.take_all": _container_take_all, &"container.put": _container_put,
 		&"progression.raise_attribute": _raise_attribute, &"progression.buy_perk": _buy_perk,
-		&"world.drink_water": _drink_water, &"world.fill_water": _fill_water,
+		&"world.drink_water": _drink_water, &"world.fill_water": _fill_water, &"inventory.repair": _repair,
 	}
 	for c: StringName in cmds:
 		Game.register_command(c, cmds[c])
@@ -23,7 +23,7 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	for c: StringName in [&"inventory.consume", &"inventory.drop", &"inventory.equip", &"inventory.craft", &"inventory.read",
 			&"world.pickup_stack", &"world.pickup_item", &"container.take", &"container.take_all", &"container.put",
-			&"progression.raise_attribute", &"progression.buy_perk", &"world.drink_water", &"world.fill_water"]:
+			&"progression.raise_attribute", &"progression.buy_perk", &"world.drink_water", &"world.fill_water", &"inventory.repair"]:
 		Game.unregister_command(c)
 
 
@@ -81,6 +81,38 @@ static func _indexed_stack(p: PlayerState, args: Dictionary) -> ItemStack:
 
 ## Drops items: {player?, item, count, index?}. With an index the dropped items come from that
 ## very stack (its quality and wear), otherwise the lowest-quality ones go first.
+## Spends a repair kit ({player?, item: kit id}) on the held tool or weapon when it is worn,
+## else on the most worn one carried. Restores it to its quality's full durability.
+func _repair(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player(args)
+	if p == null:
+		return _fail("no player")
+	var kit := StringName(str(args.get("item", "repair_kit")))
+	var kd: ItemDef = Content.item(kit)
+	if kd == null or not kd.has_tag("repair") or not p.inventory.has(kit):
+		return _fail("no repair kit")
+	var target: ItemStack = p.inventory.first(p.equipped_item()) if p.equipped_item() != &"" else null
+	if target == null or not target.is_damaged():
+		target = null
+		var worst: float = 1.0
+		for s: ItemStack in p.inventory.stacks:
+			if not s.is_damaged():
+				continue
+			var share: float = s.durability / maxf(1.0, s.def().durability * ItemStack.quality_durability_mult(s.quality))
+			if share < worst:
+				worst = share
+				target = s
+	if target == null:
+		Events.player_status_message.emit("Nothing you carry needs repairing.", &"info")
+		return _fail("nothing worn")
+	target.durability = target.def().durability * ItemStack.quality_durability_mult(target.quality)
+	p.inventory.remove(kit, 1)
+	Audio.play_2d(&"sfx/hammer_nail", -6.0, &"SFX")
+	Events.player_status_message.emit("%s repaired." % target.def().display_name, &"info")
+	Events.inventory_changed.emit(p.id)
+	return {"ok": true, "item": String(target.item_id)}
+
+
 ## Stream water: thirst per mouthful, and a little sickness unless the gut is used to it.
 const STREAM_DRINK: Dictionary = {"hydration": 18.0, "health": -3.0}
 
@@ -212,7 +244,9 @@ func _craft(args: Dictionary) -> Dictionary:
 	var res: Crafting.Result = Crafting.craft(r, p.inventory, station, Crafting.quality_for(r, skill))
 	if not res.ok:
 		return _fail(res.reason)
-	p.progression.award("craft")
+	# What it teaches depends on what it was: craft_<category> when the XP table lists it.
+	var src: String = "craft_%s" % r.category
+	p.progression.award(src if p.progression.has_xp_source(src) else "craft")
 	Audio.play_2d(&"ui/craft_success", -4.0)
 	Events.item_crafted.emit(p.id, r.id, r.result, r.result_count)
 	Events.inventory_changed.emit(p.id)

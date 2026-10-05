@@ -5,22 +5,22 @@
       {"attr_level": 3, "effects": {"chop_damage_mult": 0.2, "log_carry": 1}, "text": "+20% chopping, carry 3 logs"},
       {"attr_level": 5, "effects": {"chop_damage_mult": 0.3}, "text": "+30% chopping"}]},
     {"id": "heavy_hands", "name": "Heavy Hands", "description": "Blunt weapons hit harder and stagger more.", "attribute": "sinew", "ranks": [
-      {"attr_level": 1, "effects": {"blunt_damage_mult": 0.15, "stagger_bonus": 0.1}}, {"attr_level": 4, "effects": {"blunt_damage_mult": 0.15, "stagger_bonus": 0.1}}]},
+      {"attr_level": 1, "effects": {"blunt_damage_mult": 0.2, "stagger_bonus": 0.1}}, {"attr_level": 4, "effects": {"blunt_damage_mult": 0.2, "stagger_bonus": 0.15}}]},
     {"id": "packhorse", "name": "Packhorse", "description": "Carry more in the salvage roll.", "attribute": "sinew", "ranks": [
       {"attr_level": 2, "effects": {"carry_bulk": 8.0}}, {"attr_level": 5, "effects": {"carry_bulk": 10.0}}]},
     {"id": "thick_skin", "name": "Thick Skin", "description": "Take less damage and bleed less.", "attribute": "grit", "ranks": [
-      {"attr_level": 1, "effects": {"damage_resist": 0.06, "bleed_resist": 0.15}}, {"attr_level": 4, "effects": {"damage_resist": 0.06, "bleed_resist": 0.15}}]},
+      {"attr_level": 1, "effects": {"damage_resist": 0.08, "bleed_resist": 0.25}}, {"attr_level": 4, "effects": {"damage_resist": 0.08, "bleed_resist": 0.25}}]},
     {"id": "second_wind", "name": "Second Wind", "description": "Stamina recovers faster.", "attribute": "grit", "ranks": [
-      {"attr_level": 1, "effects": {"stamina_regen_mult": 0.15}}, {"attr_level": 3, "effects": {"stamina_regen_mult": 0.15}}]},
+      {"attr_level": 1, "effects": {"stamina_regen_mult": 0.2}}, {"attr_level": 3, "effects": {"stamina_regen_mult": 0.25}}]},
     {"id": "iron_gut", "name": "Iron Gut", "description": "Bad food and dirty water hurt less.", "attribute": "grit", "ranks": [{"attr_level": 2, "effects": {"food_poison_resist": 0.6}}]},
     {"id": "scavenger", "name": "Scavenger", "description": "Better loot, faster searching.", "attribute": "keen", "ranks": [
       {"attr_level": 1, "effects": {"loot_quality_bonus": 0.3, "search_speed_mult": 0.2}}, {"attr_level": 3, "effects": {"loot_quality_bonus": 0.3, "search_speed_mult": 0.2}}]},
     {"id": "sleeper_sense", "name": "Sleeper Sense", "description": "You feel them before you see them: dormant Hollowed are outlined faintly when close.", "attribute": "keen", "ranks": [{"attr_level": 2, "effects": {"sleeper_sense_range": 8.0}}]},
-    {"id": "steady_aim", "name": "Steady Aim", "description": "Firearms hit harder; less sway.", "attribute": "keen", "ranks": [{"attr_level": 1, "effects": {"ranged_damage_mult": 0.15}}, {"attr_level": 4, "effects": {"ranged_damage_mult": 0.15}}]},
+    {"id": "steady_aim", "name": "Steady Aim", "description": "Firearms hit harder; less sway.", "attribute": "keen", "ranks": [{"attr_level": 1, "effects": {"ranged_damage_mult": 0.2}}, {"attr_level": 4, "effects": {"ranged_damage_mult": 0.2}}]},
     {"id": "soft_step", "name": "Soft Step", "description": "Make less noise moving and crouching.", "attribute": "quiet", "ranks": [
-      {"attr_level": 1, "effects": {"noise_mult": -0.15}}, {"attr_level": 3, "effects": {"noise_mult": -0.15}}]},
-    {"id": "shadow_kin", "name": "Shadow Kin", "description": "The dark hides you better.", "attribute": "quiet", "ranks": [{"attr_level": 2, "effects": {"visibility_mult": -0.2}}]},
-    {"id": "light_foot", "name": "Light Foot", "description": "Sprinting costs less stamina.", "attribute": "quiet", "ranks": [{"attr_level": 1, "effects": {"sprint_cost_mult": -0.15}}, {"attr_level": 3, "effects": {"sprint_cost_mult": -0.15}}]},
+      {"attr_level": 1, "effects": {"noise_mult": -0.2}}, {"attr_level": 3, "effects": {"noise_mult": -0.2}}]},
+    {"id": "shadow_kin", "name": "Shadow Kin", "description": "The dark hides you better.", "attribute": "quiet", "ranks": [{"attr_level": 2, "effects": {"visibility_mult": -0.3}}]},
+    {"id": "light_foot", "name": "Light Foot", "description": "Sprinting costs less stamina.", "attribute": "quiet", "ranks": [{"attr_level": 1, "effects": {"sprint_cost_mult": -0.2}}, {"attr_level": 3, "effects": {"sprint_cost_mult": -0.2}}]},
     {"id": "handy", "name": "Handy", "description": "Crafted tools come out better; learn the workbench basics.", "attribute": "wits", "ranks": [
       {"attr_level": 1, "effects": {"craft_quality": 1.0}}, {"attr_level": 3, "effects": {"craft_quality": 1.0}}]},
     {"id": "field_medic", "name": "Field Medic", "description": "Healing items heal more.", "attribute": "wits", "ranks": [{"attr_level": 1, "effects": {"heal_mult": 0.25}}, {"attr_level": 3, "effects": {"heal_mult": 0.25}}]},

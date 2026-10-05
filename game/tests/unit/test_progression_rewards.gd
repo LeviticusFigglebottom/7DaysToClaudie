@@ -18,7 +18,7 @@ func test_attributes_and_perks_change_derived_stats() -> void:
 	assert_almost_eq(ps.stats.max_health, base_hp + 5.0, 0.001)
 	assert_almost_eq(ps.stats.health, 65.0, 0.001, "the new health is filled in")
 	assert_true(ps.progression.buy_perk(&"second_wind"))
-	assert_almost_eq(ps.stats.stamina_regen_mult, 1.0 + 0.03 + 0.15, 0.0001)
+	assert_almost_eq(ps.stats.stamina_regen_mult, 1.0 + 0.03 + 0.2, 0.0001)
 
 
 func test_stamina_recovers_faster_with_second_wind() -> void:

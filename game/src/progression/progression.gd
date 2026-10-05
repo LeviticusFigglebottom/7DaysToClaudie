@@ -55,6 +55,10 @@ func add_xp(amount: int) -> int:
 
 ## XP for a named source from data/config/progression.json "xp" (kill, loot, build, survive the
 ## Hum...), times `times` (POI tier, container tier). Returns levels gained.
+func has_xp_source(source: String) -> bool:
+	return (_cfg.get("xp", {}) as Dictionary).has(source)
+
+
 func award(source: String, times: float = 1.0) -> int:
 	var table: Dictionary = _cfg.get("xp", {})
 	if not table.has(source):

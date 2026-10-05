@@ -1,7 +1,7 @@
 {
   "_doc": "Loot scaling. Quality centre = 1 + (tier-1)*quality_per_tier + gamestage*quality_per_gamestage + bias + the looter's loot_quality_bonus (Keen, Scavenger; whole points also lift the Q ceiling).",
   "empty_reduction_per_tier": 0.05,
-  "extra_rolls_per_tier": 0.34,
+  "extra_rolls_per_tier": 0.5,
   "quality_per_tier": 0.6,
   "quality_per_gamestage": 0.02,
   "quality_spread": 0.9,

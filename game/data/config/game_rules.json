@@ -45,7 +45,7 @@
   },
   "presets": {
     "drifter": {"label": "Drifter — gentle", "description": "Slow, soft Hollowed, small Hums, plenty of loot. Death costs nothing.",
-      "values": {"enemy_speed_night": "jog", "enemy_speed_hum": "run", "enemy_health": 0.75, "enemy_damage": 0.5, "structure_damage": 0.5, "hum_size": 0.5, "loot_abundance": 1.5, "xp_multiplier": 1.5, "needs_rate": 0.5, "infection_rate": 0.5, "death_penalty": "none", "gamestage_bonus": 0.8}},
+      "values": {"enemy_speed_night": "jog", "enemy_speed_hum": "run", "enemy_health": 0.75, "enemy_damage": 0.5, "structure_damage": 0.5, "hum_size": 0.5, "loot_abundance": 1.5, "xp_multiplier": 1.5, "needs_rate": 0.5, "infection_rate": 0.5, "death_penalty": "none", "gamestage_bonus": 0.65}},
     "survivor": {"label": "Survivor — standard", "description": "The intended balance.", "values": {}},
     "remanded": {"label": "Remanded — hard", "description": "Tougher Hollowed that jog by day, larger Hums, scarcer loot. Death drops everything.",
       "values": {"enemy_speed_day": "jog", "enemy_health": 1.25, "enemy_damage": 1.5, "structure_damage": 1.25, "hum_size": 1.5, "loot_abundance": 0.75, "needs_rate": 1.25, "death_penalty": "drop_all", "gamestage_bonus": 1.2}},

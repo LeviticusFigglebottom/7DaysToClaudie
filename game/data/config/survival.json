@@ -1,5 +1,5 @@
 {
-  "_doc": "Survival tuning. Rates are per GAME hour unless noted (stamina: per real second).",
+  "_doc": "Survival tuning. Rates are per GAME hour unless noted (stamina: per real second; bleeding: per game minute). Infection below dormant_below is fought off (one or two bites fade); above it the Bloom grows until treated.",
   "health": {"max": 100, "regen_per_hour": 6.0, "regen_min_fullness": 50, "regen_min_hydration": 40},
   "stamina": {"max": 100, "regen_per_sec": 14.0, "regen_delay": 0.8, "sprint_per_sec": 9.0, "jump": 8.0, "max_penalty_hunger": 0.4, "max_penalty_fatigue": 0.35},
   "fullness": {"decay_per_hour": 4.0, "starving_damage_per_hour": 6.0},
@@ -10,10 +10,10 @@
     "comfort_low": 14.0, "comfort_high": 30.0, "wind_chill": 6.0, "wet_chill": 8.0, "shelter_bonus": 3.0,
     "wetting_per_hour": 0.8, "drying_per_hour": 0.35
   },
-  "bleeding": {"damage_per_min": 1.5, "clot_per_min": 0.02},
-  "infection": {"dormant_below": 5.0, "fight_off_per_hour": 0.5, "growth_per_hour": 0.35},
+  "bleeding": {"damage_per_min": 1.5, "clot_per_min": 0.005},
+  "infection": {"dormant_below": 12.0, "fight_off_per_hour": 1.0, "growth_per_hour": 0.25},
   "climate": {
     "_doc": "Ambient air temperature (C) by season: [night_min, day_max].",
-    "spring": [3.0, 15.0], "summer": [11.0, 26.0], "autumn": [1.0, 13.0], "winter": [-12.0, -1.0]
+    "spring": [3.0, 15.0], "summer": [11.0, 26.0], "autumn": [1.0, 13.0], "winter": [-6.0, 2.0]
   }
 }

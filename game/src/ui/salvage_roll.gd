@@ -455,6 +455,8 @@ func _describe(s: ItemStack, in_flap: bool) -> void:
 	else:
 		if d.is_consumable():
 			actions.append("[LMB] use")
+		elif d.has_tag("repair"):
+			actions.append("[LMB] repair the held or most worn tool")
 		elif d.category in ["note", "schematic", "magazine"]:
 			actions.append("[LMB] read")
 		elif not d.equip.is_empty():
@@ -526,6 +528,8 @@ func _primary(p: PlayerState, s: ItemStack, flap: bool) -> void:
 		return
 	if d.is_consumable():
 		Game.execute(&"inventory.consume", {"item": String(s.item_id)})
+	elif d.has_tag("repair"):
+		Game.execute(&"inventory.repair", {"item": String(s.item_id)})
 	elif d.category in ["note", "schematic", "magazine"]:
 		var res: Dictionary = Game.execute(&"inventory.read", {"item": String(s.item_id)})
 		if res.has("note"):

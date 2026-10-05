@@ -87,3 +87,66 @@ func test_river_grid_lookup() -> void:
 	assert_eq(ws.water_level_at(20.0, 9.0), -INF, "on the bank")
 	assert_eq(ws.water_level_at(500.0, 500.0), -INF, "far away")
 	ws.free()
+
+
+func _env() -> Dictionary:
+	return {"ambient_c": 18.0, "wind": 0.1, "raining": false, "sheltered": false, "fire_warmth": 0.0, "sleeping": false, "exertion": 0.0}
+
+
+## Ten game hours with food and water topped up (only the infection should change).
+func _ten_hours(s: SurvivalStats) -> void:
+	for i: int in 10:
+		s.fullness = 100.0
+		s.hydration = 100.0
+		s.rest = 100.0
+		s.tick_game(60.0, _env())
+
+
+func test_a_bite_fades_but_a_mauling_grows() -> void:
+	var s := SurvivalStats.new()
+	s.add_wound(0.0, 5.0)
+	_ten_hours(s)
+	assert_eq(s.infection, 0.0, "one bite is fought off within hours")
+	s.add_wound(0.0, 20.0)
+	_ten_hours(s)
+	assert_true(s.alive)
+	assert_gt(s.infection, 20.0, "four bites' worth keeps growing until treated")
+	s.consume(Content.item(&"antifungal"))
+	assert_lt(s.infection, 12.0, "antifungals bring it back under the dormant line")
+
+
+func test_bleeding_lasts_long_enough_to_matter() -> void:
+	var s := SurvivalStats.new()
+	s.add_wound(0.6, 0.0)
+	var hp: float = s.health
+	s.tick_game(30.0, _env())
+	assert_gt(s.bleeding, 0.0, "four wounds still bleed half an hour later")
+	assert_lt(s.health, hp - 15.0, "and it has cost real health")
+
+
+func test_crafting_xp_follows_the_recipe() -> void:
+	var pr := Progression.new()
+	assert_true(pr.has_xp_source("craft_tools"))
+	assert_gt(int(Content.config(&"progression")["xp"]["craft_tools"]), int(Content.config(&"progression")["xp"]["craft_materials"]),
+		"a stone axe teaches more than cordage")
+	assert_eq(int(Content.config(&"progression")["xp"]["dig"]), 0, "unlimited digging pays nothing")
+
+
+func test_repair_kit_restores_the_most_worn_tool() -> void:
+	var prev: GameSession = Game.session
+	var s: GameSession = GameSession.create_new({"seed": 7, "game_mode": "slice"})
+	Game.session = s
+	var p: PlayerState = s.local_player()
+	p.inventory.add_item(&"stone_axe", 1, 2)
+	p.inventory.add_item(&"repair_kit", 1)
+	var axe: ItemStack = p.inventory.first(&"stone_axe")
+	var full: float = axe.durability
+	axe.durability = 3.0
+	var pa := PlayerActions.new()
+	var res: Dictionary = pa._repair({"player": String(p.id), "item": "repair_kit"})
+	assert_true(bool(res["ok"]))
+	assert_almost_eq(axe.durability, full, 0.001, "back to its quality's full durability")
+	assert_false(p.inventory.has(&"repair_kit"), "the kit is spent")
+	assert_false(bool(pa._repair({"player": String(p.id), "item": "repair_kit"})["ok"]), "no kit left")
+	pa.free()
+	Game.session = prev

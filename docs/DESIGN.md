@@ -114,7 +114,9 @@ We propose five; **two ship in the M1 core loop**, the rest have hooks now.
 3. **The Bloom (infection as progression)** *(hook M1, full M4)* — bites raise infection; above
    thresholds the player gains night vision, scent-tracking and strength mutations, but suffers
    madness effects (phantom Hollowed, unreliable tether readouts, whispering audio) and, at 100,
-   turns. Antifungals push it back. Hook: `SurvivalStats.infection`, `hm_bloom` shader global.
+   turns. Antifungals push it back. A bite or two below the dormant line (12) is fought off in
+   hours; past it the Bloom grows until treated (`survival.json` `infection`). Hook:
+   `SurvivalStats.infection`, `hm_bloom` shader global.
 4. **Two-faction ecology** *(M2/M4)* — Ashen and Hollowed are hostile to each other. Lure a
    Keener into an Ashen camp; Ashen raid Hollowed nests and burn them; a territory influence map
    shifts over weeks. Hook: `EnemyDef.faction`, faction relation matrix (M2).
@@ -161,8 +163,8 @@ escalating responses to the player (watchers → raids → war parties).
 * **Program Directives** (the challenges): chaptered goals on the tether and in the Record tab.
   1. *Arrival*: fell, axe, fire, lean-to, sleep.
   2. *The Cordon*: search, enter, kill, read, clear.
-  3. *Holding Ground*: logs, the Hum, a supply drop, level 5.
-  4. *Into the Bloom*: Seeded or Bloomed kills, specials, more Hums, level 10.
+  3. *Holding Ground*: logs, the Hum, a supply drop, level 7.
+  4. *Into the Bloom*: Seeded or Bloomed kills, specials, more Hums, level 12.
 
   Each pays XP and supplies; finishing a chapter opens the next.
 * **Remand supply drops** (the airdrop): after each Hum (default), weekly, every 3 days or

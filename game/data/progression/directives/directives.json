@@ -29,8 +29,8 @@
      "chapter": 3, "order": 2, "event": "survive_hum", "reward": {"xp": 300, "items": {"antifungal": 1}}},
     {"id": "hold_drop", "name": "Recover a supply drop", "description": "Follow the red smoke. So will they.",
      "chapter": 3, "order": 3, "event": "supply_drop", "reward": {"xp": 100}},
-    {"id": "hold_level", "name": "Reach level 5", "description": "Spend what you learn — the field manual's Record.",
-     "chapter": 3, "order": 4, "event": "level", "count": 5, "reward": {"xp": 0, "items": {"repair_kit": 1}}},
+    {"id": "hold_level", "name": "Reach level 7", "description": "Spend what you learn — the field manual's Record.",
+     "chapter": 3, "order": 4, "event": "level", "count": 7, "reward": {"xp": 0, "items": {"repair_kit": 1}}},
 
     {"id": "bloom_infected", "name": "Put down a Seeded or Bloomed Hollowed", "description": "Pale threads under the skin. They hit harder and take longer to drop.",
      "chapter": 4, "chapter_name": "Into the Bloom", "order": 1, "event": "kill", "min_tier": "seeded", "reward": {"xp": 200}},
@@ -38,7 +38,7 @@
      "chapter": 4, "order": 2, "event": "kill", "targets": ["blister", "husk", "rammer"], "reward": {"xp": 250, "items": {"painkillers": 2}}},
     {"id": "bloom_hums", "name": "Survive three more Hums", "description": "They remember what worked against them. So should you.",
      "chapter": 4, "order": 3, "event": "survive_hum", "count": 3, "reward": {"xp": 600, "items": {"antifungal": 2}}},
-    {"id": "bloom_level", "name": "Reach level 10", "description": "Still here. The Program notes it.",
-     "chapter": 4, "order": 4, "event": "level", "count": 10, "reward": {"xp": 0, "items": {"first_aid_kit": 2, "ammo_38": 12}}}
+    {"id": "bloom_level", "name": "Reach level 12", "description": "Still here. The Program notes it.",
+     "chapter": 4, "order": 4, "event": "level", "count": 12, "reward": {"xp": 0, "items": {"first_aid_kit": 2, "ammo_38": 12}}}
   ]
 }
