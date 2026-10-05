@@ -45,7 +45,7 @@ composes it identically.
 | `lake` | `id, name, ellipse:[cx,cz,rx,rz,rot] or polygon, level:"auto"|m, depth, shore, irregularity` | carved basin + water surface |
 | `cliff` | `id, points, height, side, face_width, falloff` | rock face along a polyline (rock_cliff layer) |
 | `hill` | `pos, radius, height` | smooth bump |
-| `road` | `id, surface, width, shoulder, points, bridges?` | region road (graded profile, painted) |
+| `road` | `id, surface, width, shoulder, points, bridges?, markings?` | region road (graded profile, painted; asphalt ≥ 6 m gets lane lines unless `"markings": false`, e.g. lots and aprons) |
 | `path` | `id, surface, width, points` | footpath (painted, lightly graded) |
 | `framework` | `id, framework, origin:[x,z], rotation, skirt?` | flattened pad + streets + lots (docs/POI_AUTHORING.md) |
 | `poi` | `id, poi, origin, rotation, biome?` | standalone POI on a pad |

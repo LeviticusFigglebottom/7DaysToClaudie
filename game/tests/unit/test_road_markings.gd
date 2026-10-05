@@ -49,3 +49,17 @@ func test_no_paint_on_bridges_and_no_duplicates() -> void:
 	assert_eq(rm.count, n, "a road recorded by a second region adds nothing")
 	for d: Decal in rm.get_children():
 		assert_false(d.position.x > 41.0 and d.position.x < 69.0, "no decal on the deck at x %.1f" % d.position.x)
+
+
+func test_only_two_lane_asphalt_that_wants_lines() -> void:
+	var road: Dictionary = _road("route", 40.0)
+	assert_true(RoadMarkings.paints(road), "8 m asphalt is painted")
+	var lot: Dictionary = road.duplicate()
+	lot["markings"] = false
+	assert_false(RoadMarkings.paints(lot), "a parking lot opts out")
+	var lane: Dictionary = road.duplicate()
+	lane["width"] = 5.0
+	assert_false(RoadMarkings.paints(lane), "narrow lanes stay bare")
+	var track: Dictionary = road.duplicate()
+	track["surface"] = "gravel"
+	assert_false(RoadMarkings.paints(track), "gravel stays bare")

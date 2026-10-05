@@ -13,8 +13,12 @@ const MAT_DIR: String = "res://assets/generated/materials/%s.tres"
 
 
 static func build(kind: String, rect: Rect2, y: float, spec: Dictionary) -> Array:
-	if kind == "flat":
-		return _flat(rect, y, spec)
+	match kind:
+		"flat":
+			return _flat(rect, y, spec)
+		"none":
+			# An open top (a lookout's catwalk, a roofless ruin): authors mark it, nothing is built.
+			return []
 	return _gable(rect, y, spec)
 
 

@@ -52,8 +52,14 @@ func setup_world(w: Node) -> void:
 	for rid: String in terrain.regions:
 		var rt: RegionTerrain = terrain.regions[rid]
 		for r: Dictionary in rt.roads:
-			if str(r.get("surface", "")) == "asphalt" and float(r.get("width", 0.0)) >= MIN_WIDTH:
+			if paints(r):
 				_mark(r)
+
+
+## Whether a road gets lines: two-lane asphalt, unless it opts out with "markings": false (lots,
+## aprons, forecourts).
+static func paints(road: Dictionary) -> bool:
+	return str(road.get("surface", "")) == "asphalt" and float(road.get("width", 0.0)) >= MIN_WIDTH and bool(road.get("markings", true))
 
 
 ## Lays the lines of one road: dashes at a phase taken from its id (so towns' streets don't all

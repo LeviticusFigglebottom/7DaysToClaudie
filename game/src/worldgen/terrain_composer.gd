@@ -540,12 +540,13 @@ class _Build:
 	func _road_fields() -> void:
 		for r: Dictionary in world.roads:
 			road_list.append({"id": r["id"], "line": r["line"], "width": r["width"], "shoulder": r["shoulder"],
-				"surface": r["surface"], "bridges": r.get("bridges", []), "world": true})
+				"surface": r["surface"], "bridges": r.get("bridges", []), "world": true, "markings": bool(r.get("markings", true))})
 		for f: Dictionary in region.get("features", []):
 			if str(f.get("type", "")) == "road":
 				road_list.append({"id": str(f.get("id", "road")), "line": Polyline2.from_array(f["points"]),
 					"width": float(f.get("width", 5.0)), "shoulder": float(f.get("shoulder", 1.5)),
-					"surface": str(f.get("surface", "gravel")), "bridges": f.get("bridges", []), "world": false})
+					"surface": str(f.get("surface", "gravel")), "bridges": f.get("bridges", []), "world": false,
+					"markings": bool(f.get("markings", true))})
 			elif str(f.get("type", "")) == "framework":
 				_framework_roads(f)
 		var count: int = cn * cn
@@ -605,7 +606,7 @@ class _Build:
 				continue
 			road_list.append({"id": "%s_street%d" % [str(f.get("id", "fw")), i], "line": Polyline2.from_array(pts),
 				"width": float(r.get("width", 6.0)), "shoulder": float(r.get("shoulder", 1.0)),
-				"surface": str(r.get("surface", "asphalt")), "bridges": [], "world": false})
+				"surface": str(r.get("surface", "asphalt")), "bridges": [], "world": false, "markings": bool(r.get("markings", true))})
 			i += 1
 
 	## Road height profile along the centre line: terrain sampled every 4 m, smoothed; bridge spans
@@ -997,7 +998,7 @@ class _Build:
 				var p: Vector2 = line.point_at(k * float(r["step"]))
 				if margin.has_point(p):
 					pts.append([p.x, prof[k], p.y])
-			rt.roads.append({"id": r["id"], "surface": r["surface"], "width": r["width"], "points": pts})
+			rt.roads.append({"id": r["id"], "surface": r["surface"], "width": r["width"], "points": pts, "markings": r.get("markings", true)})
 			for span: Array in r["spans"]:
 				var a: Vector2 = line.point_at(float(span[0]))
 				var bpt: Vector2 = line.point_at(float(span[1]))

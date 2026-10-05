@@ -76,7 +76,8 @@ func _parse(d: Dictionary) -> void:
 			"depth": float(l.get("depth", 10.0)), "shore": float(l.get("shore", 20.0)), "bounds": b})
 	for r: Dictionary in d.get("roads", []):
 		roads.append({"id": str(r.get("id", "")), "line": Polyline2.from_array(r["points"]), "width": float(r.get("width", 7.0)),
-			"shoulder": float(r.get("shoulder", 2.0)), "surface": str(r.get("surface", "asphalt")), "bridges": r.get("bridges", [])})
+			"shoulder": float(r.get("shoulder", 2.0)), "surface": str(r.get("surface", "asphalt")), "bridges": r.get("bridges", []),
+			"markings": bool(r.get("markings", true))})
 	for r: Dictionary in d.get("regions", []):
 		regions[str(r["id"])] = r
 		cells[str(r["cell"])] = str(r["id"])
