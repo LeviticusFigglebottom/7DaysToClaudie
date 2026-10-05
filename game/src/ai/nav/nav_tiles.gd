@@ -103,6 +103,7 @@ func _bake(k: Vector2i) -> void:
 	nm.filter_baking_aabb = AABB(Vector3(k.x * TILE, -1000.0, k.y * TILE), Vector3(TILE, 3000.0, TILE))
 	var src := NavigationMeshSourceGeometryData3D.new()
 	_add_terrain(src, k)
+	_add_bridges(src, k)
 	_add_obstructions(src, k)
 	_add_pois(nm, src, k)
 	_busy += 1
@@ -149,6 +150,16 @@ func _add_terrain(src: NavigationMeshSourceGeometryData3D, k: Vector2i) -> void:
 			faces[f + 5] = c
 			f += 6
 	src.add_faces(faces, Transform3D.IDENTITY)
+
+
+## Bridge decks are walkable ground over the river (the terrain below is the riverbed).
+func _add_bridges(src: NavigationMeshSourceGeometryData3D, k: Vector2i) -> void:
+	var bridges: Node = world.get(&"bridges")
+	if bridges == null or not bridges.has_method(&"nav_faces_in_rect"):
+		return
+	var faces: PackedVector3Array = bridges.call(&"nav_faces_in_rect", Rect2(k.x * TILE - BORDER, k.y * TILE - BORDER, TILE + BORDER * 2.0, TILE + BORDER * 2.0))
+	if not faces.is_empty():
+		src.add_faces(faces, Transform3D.IDENTITY)
 
 
 func _add_obstructions(src: NavigationMeshSourceGeometryData3D, k: Vector2i) -> void:

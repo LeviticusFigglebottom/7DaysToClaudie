@@ -72,6 +72,9 @@ PROPS: dict[str, tuple[str, list[str], dict]] = {
     "bench_park": ("street", CWD, {"seed": 315}),
     "sawhorse_barricade": ("street", CWD, {"seed": 316}),
     "jersey_barrier": ("street", CWD, {"seed": 317}),
+    # Highway bridge kit, instanced along road bridge spans by the game (world/bridges.gd).
+    "bridge_deck": ("street", [C], {"seed": 321, "ao_dist": 1.5}),
+    "bridge_pier": ("street", [C], {"seed": 322, "ao_dist": 1.5}),
     "woodpile": ("street", CW, {"seed": 318}),
     "wheelbarrow": ("street", CW, {"seed": 319}),
     "well_pump": ("street", CW, {"seed": 320}),

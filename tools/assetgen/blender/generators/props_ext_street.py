@@ -1400,6 +1400,93 @@ def payphone(ctx: K.Ctx) -> None:
     ctx.col_box((-0.3, -0.36, 0), (0.3, 0.14, 1.84 if not ctx.destroyed else 1.6))
 
 
+# --------------------------------------------------------------------------------------------------
+# Highway bridge kit (Route 9 over the Tamsin River): instanced along a span by the game's BridgeBuilder
+# --------------------------------------------------------------------------------------------------
+
+BRIDGE_W = 9.0        # deck width (route 9 is 8 m + curbs); the game scales other widths across
+BRIDGE_SECTION = 8.0  # one deck section along X
+GIRDER_DEPTH = 0.9
+
+
+def _w_beam(name: str, length: float):
+    """Galvanized W-beam guardrail profile (two corrugations, ~0.31 m tall), extruded along X."""
+    prof = [(0.0, -0.155), (0.035, -0.12), (0.035, -0.065), (0.0, -0.03), (0.0, 0.03), (0.035, 0.065),
+            (0.035, 0.12), (0.0, 0.155), (-0.006, 0.155), (0.029, 0.12), (0.029, 0.065), (-0.006, 0.03),
+            (-0.006, -0.03), (0.029, -0.065), (0.029, -0.12), (-0.006, -0.155)]
+    return K.prism(name, [(-y, z) for y, z in prof], length, plane="YZ", offset=0.0)
+
+
+def bridge_deck(ctx: K.Ctx) -> None:
+    """One 8 m section of a 1990s two-lane highway bridge, origin at the road surface on the centre
+    line, length along X: asphalt wearing course on a cast-in-place concrete slab over three
+    painted steel plate girders, concrete curbs and galvanized W-beam guardrail on steel posts
+    every 2 m. Sections repeat end to end; the game adds piers and collision."""
+    ctx.ground_clamp = False
+    L, W = BRIDGE_SECTION, BRIDGE_W
+    curb = 0.45
+    road_w = W - 2 * curb
+    asph = K.box("asphalt", (L, road_w, 0.08), center=(0, 0, -0.04))
+    ctx.add(asph, "terrain_asphalt_cracked", uv_scale=1.0, patches=0.2, wear=0.3)
+    slab_t = 0.3
+    slab = K.box("slab", (L, W + 0.1, slab_t), center=(0, 0, -0.08 - slab_t / 2), bevel=0.02)
+    ctx.add(slab, "concrete", uv_scale=1.0, patches=0.5)
+    for sy in (-1, 1):
+        c = K.box("curb", (L, curb, 0.33), center=(0, sy * (W / 2 - curb / 2), 0.165 - 0.08), bevel=0.02)
+        ctx.add(c, "concrete_barrier", uv_scale=1.0, patches=0.5, moss=0.15)
+    # plate girders: web + flanges, painted steel streaked with rust
+    z_top = -0.08 - slab_t
+    for gy in (-W * 0.3, 0.0, W * 0.3):
+        web = K.box("web", (L, 0.022, GIRDER_DEPTH - 0.06), center=(0, gy, z_top - GIRDER_DEPTH / 2))
+        ctx.add(web, "metal_painted", uv_scale=1.0, patches=0.6, wear=0.8)
+        for fz in (z_top - 0.015, z_top - GIRDER_DEPTH + 0.015):
+            fl = K.box("flange", (L, 0.36, 0.03), center=(0, gy, fz))
+            ctx.add(fl, "metal_painted", uv_scale=1.0, patches=0.6, wear=0.9)
+        # bearing stiffeners every 2 m
+        for x in (-3.0, -1.0, 1.0, 3.0):
+            for sy in (-1, 1):
+                st = K.box("stiffener", (0.016, 0.16, GIRDER_DEPTH - 0.06), center=(x, gy + sy * 0.09, z_top - GIRDER_DEPTH / 2))
+                ctx.add(st, "metal_painted", uv_scale=1.0, patches=0.6, wear=0.8)
+    # cross-frame (diaphragm) at mid-section
+    for gy0, gy1 in ((-W * 0.3, 0.0), (0.0, W * 0.3)):
+        d = K.box("diaphragm", (0.02, abs(gy1 - gy0) - 0.03, GIRDER_DEPTH * 0.55), center=(0, (gy0 + gy1) / 2, z_top - GIRDER_DEPTH * 0.45))
+        ctx.add(d, "metal_painted", uv_scale=1.0, patches=0.6, wear=0.8)
+    # guardrail: posts every 2 m on the curbs, W-beam on blockouts facing the road
+    for sy in (-1, 1):
+        y_post = sy * (W / 2 - 0.2)
+        for x in (-3.0, -1.0, 1.0, 3.0):
+            post = K.box("post", (0.1, 0.15, 0.78), center=(x, y_post, 0.25 + 0.39))
+            ctx.add(post, "metal_galvanized", uv_scale=1.0, wear=0.6, patches=0.3)
+            blk = K.box("blockout", (0.08, 0.12, 0.3), center=(x, y_post - sy * 0.13, 0.25 + 0.55))
+            ctx.add(blk, "metal_galvanized", uv_scale=1.0, wear=0.6, patches=0.3)
+        rail = _w_beam("rail", L)
+        if sy > 0:
+            K.place(rail, (0, y_post - 0.23, 0.25 + 0.55), (0, 0, 180))
+        else:
+            K.place(rail, (0, y_post + 0.23, 0.25 + 0.55))
+        ctx.add(rail, "metal_galvanized", uv_scale=1.0, wear=0.5, patches=0.3, smooth=30)
+
+
+def bridge_pier(ctx: K.Ctx) -> None:
+    """Two-column concrete pier with a cap beam, origin at the road surface level so it shares the
+    deck's placement: the cap sits under the girders and the columns run 14 m down (the part below
+    the riverbed is hidden; the game picks pier spots where there is room)."""
+    ctx.ground_clamp = False
+    W = BRIDGE_W
+    z_cap = -0.08 - 0.3 - GIRDER_DEPTH
+    cap = K.box("cap", (1.3, W + 0.4, 1.0), center=(0, 0, z_cap - 0.5), bevel=0.04)
+    ctx.add(cap, "concrete", uv_scale=1.0, patches=0.7, low=0.0)
+    for gy in (-W * 0.3, 0.0, W * 0.3):
+        brg = K.box("bearing", (0.45, 0.45, 0.06), center=(0, gy, z_cap + 0.03))
+        ctx.add(brg, "metal_painted", uv_scale=1.0, wear=1.0)
+    for sy in (-1, 1):
+        col = K.cyl("column", 0.46, 14.0, segs=16, center=(0, sy * W * 0.27, z_cap - 1.0 - 7.0), cuts=6)
+        ctx.add(col, "concrete", uv="cyl", uv_scale=1.0, smooth=40, patches=0.7, moss=0.25)
+    # a web wall between the columns low down (river piers carry one against debris and ice)
+    wall = K.box("web_wall", (0.5, W * 0.54, 5.0), center=(0, 0, z_cap - 1.0 - 9.5))
+    ctx.add(wall, "concrete", uv_scale=1.0, patches=0.7, moss=0.3)
+
+
 BUILDERS = {
     "utility_pole": utility_pole,
     "street_lamp": street_lamp,
@@ -1422,6 +1509,8 @@ BUILDERS = {
     "shopping_cart": shopping_cart,
     "bicycle_rusty": bicycle_rusty,
     "payphone": payphone,
+    "bridge_deck": bridge_deck,
+    "bridge_pier": bridge_pier,
 }
 
 
