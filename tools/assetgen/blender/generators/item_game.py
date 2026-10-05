@@ -83,12 +83,12 @@ def deer_hide(p):
     for i in range(n_l):
         for j in range(n_a):
             uv = ((i / n_l * L * 3, j / n_a), ((i + 1) / n_l * L * 3, j / n_a), ((i + 1) / n_l * L * 3, (j + 1) / n_a), (i / n_l * L * 3, (j + 1) / n_a))
-            mb.face((rings[i][j], rings[i + 1][j], rings[i + 1][j + 1], rings[i][j + 1]), uv, "item_hide_flesh")
+            mb.face((rings[i][j], rings[i][j + 1], rings[i + 1][j + 1], rings[i + 1][j]), (uv[0], uv[3], uv[2], uv[1]), "item_hide_flesh")
     # the ends: a spiral of hair and hide
     for side, ring in ((-1, rings[0]), (1, rings[-1])):
         c = mb.vert((side * L / 2 + side * 0.004, 0.0, R))
         for j in range(n_a):
-            q = (ring[j], ring[j + 1], c) if side < 0 else (ring[j + 1], ring[j], c)
+            q = (ring[j + 1], ring[j], c) if side < 0 else (ring[j], ring[j + 1], c)
             mb.face(q, None, "item_hide_hair", True)
     obj = mb.build("hide", sharp_deg=None)
     tie = K.MB()

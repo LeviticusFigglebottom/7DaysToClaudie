@@ -77,6 +77,13 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "outskirts_campground", "pos": Vector3(338, 3.0, 1945), "look": Vector3(343, 0.8, 1966), "hour": 10.5, "weather": "clear"},
 	# ADR-0030: Larch Street, Pell's Crossing's residential side street of generated houses (different
 	# every run), looking north up it from the dead end towards the Grange Road corner.
+	# Wildlife (ADR-0027): a band of deer at the forest's edge at dawn, a hare in the brush, crows going up.
+	{"name": "deer_meadow_dawn", "pos": Vector3(-163, 1.4, 2156), "look": Vector3(-178, 0.7, 2163), "hour": 7.0, "weather": "clear",
+	 "wildlife": "white_tailed_deer", "count": 4, "anims": ["graze", "alert", "graze", "idle"], "fov": 42.0},
+	{"name": "hare_brush", "pos": Vector3(-210.5, 0.6, 2235), "look": Vector3(-207, 0.15, 2232), "hour": 17.8, "weather": "clear",
+	 "wildlife": "snowshoe_hare", "count": 1, "anims": ["alert"], "fov": 40.0},
+	{"name": "birds_lift_off", "pos": Vector3(-143, 1.2, 2117), "look": Vector3(-150, 2.2, 2108), "hour": 9.5, "weather": "overcast",
+	 "flock": "crow", "flush_after": 0.9, "fov": 60.0},
 	{"name": "larch_street", "pos": Vector3(-69.0, 2.6, 2330.0), "look": Vector3(-84.0, 1.5, 2262.0), "hour": 10.5, "weather": "clear"},
 ]
 
@@ -241,9 +248,17 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 			_hold.append([e, at])
 		pos.y = at.y + float(shot.get("cam_height", 1.45))
 		look.y = at.y + float(shot.get("look_height", 1.15))
+	if shot.has("wildlife"):
+		_place_band(w, shot, pos, look)
+	var flock: BirdFlock = null
+	if shot.has("flock"):
+		# unseen until the shot flushes them: the manager's own check would put them up early
+		DebugTools.set_flag(&"invisible", true)
+		flock = _place_flock(w, shot, look)
 	cam.global_position = pos
 	cam.look_at(look, Vector3.UP)
 	cam.fov = float(shot.get("fov", 70.0))
+
 	# The player's first-person arms sit where the QA camera is; show them only in FP shots.
 	var vm: Node3D = p.get_node_or_null(^"Head/Camera3D/ViewModel") as Node3D
 	if vm != null:
@@ -271,7 +286,18 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		_frame_tree(w, cam, shot)
 	if shot.has("seek"):
 		_seek_view(w, cam, shot)
-	await _wait(float(shot.get("settle", _settle)))
+	if flock != null:
+		await _wait(float(shot.get("settle", _settle)))
+		DebugTools.set_flag(&"invisible", false)
+		# stepped at a fixed rate: a software-rendered frame can last seconds
+		flock.set_process(false)
+		flock.flush(cam.global_position, "person")
+		for i: int in int(float(shot["flush_after"]) * 30.0):
+			flock.advance(1.0 / 30.0)
+		await get_tree().process_frame
+		await get_tree().process_frame
+	else:
+		await _wait(float(shot.get("settle", _settle)))
 	var img: Image = get_viewport().get_texture().get_image()
 	var path: String = _out.path_join("%s.png" % shot["name"])
 	img.save_png(path)
@@ -583,3 +609,46 @@ func _build_scene(w: Node, at: Vector3) -> void:
 		if piece.provides("light"):
 			piece.set_lit(true)
 	p.global_position = stand
+
+
+## A band of wild animals at the look point, side-on to the camera, their brains paused in the
+## actions the shot names (ADR-0027).
+func _place_band(w: Node, shot: Dictionary, pos: Vector3, look: Vector3) -> void:
+	var wm: WildlifeManager = w.get(&"wildlife") as WildlifeManager
+	var d := Content.get_def(&"wildlife", StringName(str(shot["wildlife"]))) as WildlifeDef
+	if wm == null or d == null:
+		print("SHOT warning: no wildlife for %s" % shot["name"])
+		return
+	var plan: Dictionary = {"id": StringName("qa:%s" % shot["name"]), "def": d.id, "pos": Vector2(look.x, look.z),
+		"count": int(shot.get("count", 1)), "seed": 77}
+	var herd: Array = wm.spawn_band(d, plan)
+	var side: float = atan2(look.x - pos.x, look.z - pos.z) + PI * 0.5
+	var anims: Array = shot.get("anims", ["idle"])
+	for i: int in herd.size():
+		var a: Animal = herd[i]
+		a.set_physics_process(false)
+		a.rotation.y = side + (PI if i % 2 == 1 else 0.0) + (float(i) - 1.5) * 0.25
+		var g := a.global_position
+		g.y = w.call(&"height_at", g.x, g.z)
+		a.global_position = g
+		var an: StringName = StringName(str(anims[i % anims.size()]))
+		if a.anim != null and a.anim.has_animation(an):
+			a.anim.play(an)
+			a.anim.seek(float(i) * 0.7, true)
+		_temp.append(a)
+		print("SHOT %s: %s %s at %s" % [shot["name"], a.model_id, an, a.global_position])
+
+
+## A flock perched round the look point; the shot flushes it towards the camera's far side.
+func _place_flock(w: Node, shot: Dictionary, look: Vector3) -> BirdFlock:
+	var wm: WildlifeManager = w.get(&"wildlife") as WildlifeManager
+	var d := Content.get_def(&"wildlife", StringName(str(shot["flock"]))) as WildlifeDef
+	if wm == null or d == null:
+		return null
+	var g := Vector3(look.x, w.call(&"height_at", look.x, look.z), look.z)
+	var f: BirdFlock = wm.spawn_flock(d, {"id": StringName("qa:%s" % shot["name"]), "def": d.id, "pos": Vector2(g.x, g.z),
+		"count": 8, "seed": 41})
+	if f != null:
+		_temp.append(f)
+	return f
+

@@ -101,6 +101,11 @@ func is_perched() -> bool:
 
 
 func _process(delta: float) -> void:
+	advance(delta)
+
+
+## One step of the flock's life (QA shots step it at a fixed rate).
+func advance(delta: float) -> void:
 	_t += delta
 	_state_t += delta
 	match state:

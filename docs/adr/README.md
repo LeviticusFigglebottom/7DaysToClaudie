@@ -30,6 +30,7 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0023](0023-light-moon-bridges-drone.md) | Lights that make sense, a real moon, bridges that follow the road, the Program's drone | Accepted |
 | [0024](0024-pads-that-keep-their-water.md) | Pads that keep their water: placements over a lake or river grade only dry ground, a freeboard over the water | Accepted |
 | [0025](0025-the-bloom-on-the-land.md) | The Bloom on the land: an authored infestation field, threads, web, fruit and mounds | Accepted |
+| [0027](0027-the-living-forest.md) | The living forest: generated quadrupeds and instanced birds, deterministic wildlife, flushes the Hollowed hear, hunting | Accepted |
 | [0028](0028-the-hollowed-up-close.md) | The Hollowed up close: skin and cloth shaders on rest-pose vertex data, garments, tier growths, special features, populations | Accepted |
 | [0029](0029-first-person.md) | First person: hold classes, a viewmodel field of view, arms that carry the tether, swings that land | Accepted |
 | [0030](0030-varied-interiors.md) | Varied interiors: per-run dressing, room alternatives, generated ordinary buildings, lots that pick | Accepted |

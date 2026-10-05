@@ -206,7 +206,7 @@
    "textures": "animal_fur_short",
    "params": {
     "uv_scale": 8.0,
-    "tint": "#b08a68",
+    "tint": "#8e6a4c",
     "vertex_ao_strength": 1.0,
     "metallic_mult": 0.0
    }
@@ -216,7 +216,7 @@
    "textures": "animal_fur_soft",
    "params": {
     "uv_scale": 6.0,
-    "tint": "#c4a888",
+    "tint": "#9a7a5a",
     "vertex_ao_strength": 1.0,
     "metallic_mult": 0.0
    }

@@ -8,7 +8,7 @@ extends Node3D
 ## It is also their senses (one context per frame: the player's visibility, the wind, awake
 ## Hollowed, the loudest recent sound) and the authority for butchering (`wildlife.butcher`).
 ## Nothing is saved: the plans re-roll the same, minus what this session has killed; a carcass
-## left behind is gone after a reload (TD-066).
+## left behind is gone after a reload (TD-065).
 
 const GRAZER_RING := Vector2(70.0, 230.0)
 const FLOCK_RING := Vector2(30.0, 160.0)
@@ -197,8 +197,9 @@ func _process(delta: float) -> void:
 	var was: bool = silent
 	silent = silence_due(clock)
 	if silent and not was:
-		for f: BirdFlock in flocks.values():
-			f.leave(p.global_position)
+		for fv: Variant in flocks.values():
+			if is_instance_valid(fv):
+				(fv as BirdFlock).leave(p.global_position)
 	_despawn(p.global_position)
 	if silent:
 		return
@@ -229,8 +230,9 @@ static func silence_due(clock: WorldClock) -> bool:
 
 func animals_of(plan_id: StringName) -> int:
 	var n: int = 0
-	for a: Animal in animals.values():
-		if is_instance_valid(a) and String(a.entity_id).begins_with(String(plan_id) + "#"):
+	var prefix: String = String(plan_id) + "#"
+	for id: StringName in animals.keys():
+		if String(id).begins_with(prefix) and is_instance_valid(animals[id]):
 			n += 1
 	return n
 
@@ -275,6 +277,8 @@ func spawn_flock(d: WildlifeDef, plan: Dictionary) -> BirdFlock:
 	var f := BirdFlock.new()
 	f.setup(plan["id"], d, self, perches, int(plan["seed"]))
 	f.name = String(plan["id"]).replace(":", "_")
+	# the node sits on its perches: the MultiMeshes' bounds are drawn round it
+	f.position = to_local(spot) if is_inside_tree() else spot
 	add_child(f)
 	flocks[f.flock_id] = f
 	return f
@@ -287,20 +291,20 @@ func _on_animal_died(a: Animal) -> void:
 
 func _despawn(ppos: Vector3) -> void:
 	for id: StringName in animals.keys():
-		var a: Animal = animals[id]
-		if not is_instance_valid(a):
+		if not is_instance_valid(animals[id]):
 			animals.erase(id)
 			continue
+		var a: Animal = animals[id]
 		var d: float = Vector2(a.global_position.x - ppos.x, a.global_position.z - ppos.z).length()
 		var rotted: bool = not a.is_alive() and a.carcass_age() > float(a.def.carcass.get("lifetime", 600.0))
 		if d > GRAZER_DESPAWN or rotted or (silent and a.is_alive() and d > 90.0):
 			animals.erase(id)
 			a.queue_free()
 	for id: StringName in flocks.keys():
-		var f: BirdFlock = flocks[id]
-		if not is_instance_valid(f):
+		if not is_instance_valid(flocks[id]):
 			flocks.erase(id)
 			continue
+		var f: BirdFlock = flocks[id]
 		var c: Vector3 = f.center()
 		if f.state == BirdFlock.State.GONE or Vector2(c.x - ppos.x, c.z - ppos.z).length() > FLOCK_DESPAWN:
 			flocks.erase(id)
@@ -314,9 +318,10 @@ func _check_flocks() -> void:
 	var people: Array = []
 	if ctx.has("person"):
 		people.append(ctx["person"])
-	for f: BirdFlock in flocks.values():
-		if not is_instance_valid(f) or not f.is_perched():
+	for fv: Variant in flocks.values():
+		if not is_instance_valid(fv) or not (fv as BirdFlock).is_perched():
 			continue
+		var f: BirdFlock = fv
 		var c: Vector3 = f.center()
 		var cause: String = WildlifeBrain.flush_cause(f.def, c, people, ctx.get("hollowed", [] as Array[Vector3]), ctx.get("loud", {}))
 		if cause != "":

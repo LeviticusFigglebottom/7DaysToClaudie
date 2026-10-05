@@ -128,6 +128,19 @@ and clear at least one authored building along its route, survive a night and a 
   * Swings with anticipation and follow-through that connect at their contact frame: hit-stop, a
     camera kick, sparks or chips. A guard on Block, staggers, eating and drinking.
   * A stone axe with a knapped flint head and rawhide bindings; a torch whose cap glows like coals.
+- ✅ The living forest (ADR-0027), landed early from M2:
+  * Generated deer (doe, antlered buck) and snowshoe hare on a quadruped rig built on the character
+    pipeline, with IK gaits (walk, trot, gallop, the hare's hop and bound), graze, alert, bedding
+    and death; songbirds and crows drawn as instances whose wings flap in the shader.
+  * Deterministic wildlife by biome and time of day (data/wildlife), with the Hollowed's senses:
+    sight by light and stance, scent downwind, noise. Herds graze, look up, bolt together and bed
+    down; the valley falls silent on a Hum night.
+  * Flocks flush for you, a Hollowed or a gunshot, and the flush is a sound the Hollowed hear;
+    crows circle and call over what put them up.
+  * Hunting: carcasses that bleed scent, butchering with a knife or an axe (`wildlife.butcher`),
+    venison, hare, hides, sinew; roasting and sinew cordage.
+  * Generated calls: snorts, bleats, hooves, the hare's thump and squeal, songbird chatter and
+    alarms, crow caws, wingbeats.
 - ⬜ Human playthrough on a GPU machine against the acceptance criteria and the 60 FPS budget
   (TD-003); `make bake` impostors from the real tree models (TD-005).
 
@@ -145,7 +158,8 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
 - More POIs (school, mine office, rail depot, dam control house...) and the Mile 12 framework.
   Church, motel, gas station, bar, clinic, post office, lookout, logging camp, sawmill and the
   Okafor farm landed early, in M1.
-- Wildlife; Hollowed hounds (Blister, Husk and Rammer landed early, in M1).
+- Wolves, Hollowed hounds and Murmurs that follow you (deer, hares, songbirds and crows landed early, in M1:
+  ADR-0027; Blister, Husk and Rammer too).
 
 ## M3 — RWG, biomes, seasons, base tech ⬜
 - Randomized world generation (macro terrain + erosion, biomes, rivers/lakes, roads, towns from
