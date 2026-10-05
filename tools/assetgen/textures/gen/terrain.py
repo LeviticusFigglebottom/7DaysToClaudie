@@ -1668,18 +1668,22 @@ def layer_asphalt_cracked(n: int, seed: int) -> Layer:
     h = 0.0012 * expo * stone - 0.0012 * pores + 0.004 * _band(n, 2, 8, seed + 5, 2.0) + 0.0004 * _spec(n, 0.7, seed + 6)
     rough = 0.88 - 0.04 * expo + 0.05 * pores
     # cracks: long meandering cracks (some sealed with tar), alligator patches, hairlines
-    # A few long cracks, not a network: a polygon net everywhere reads as dried mud, not road.
-    d_long = _crack_dist(n, 7, seed + 10, 45.0, keep=0.32, keep_freq=(2, 5))
+    # A few long cracks, not a network: a polygon net everywhere reads as dried mud, not road. The
+    # keep mask is low-frequency so a crack runs on for metres: cut into 30 cm pieces, the cracks
+    # and their tar read as scattered black dashes from standing height.
+    # (-1 px: the warp leaves pinholes in the 1 px line; widening it by one closes them.)
+    d_long = np.maximum(_crack_dist(n, 7, seed + 10, 45.0, keep=0.5, keep_freq=(1, 3)) - 1.0, 0.0)
     d_alli = _crack_dist(n, 650, seed + 20, 7.0)
     alli_m = _ss(0.72, 0.8, _band(n, 2, 6, seed + 26, 1.5))
     d_hair = _crack_dist(n, 110, seed + 30, 18.0, keep=0.3, keep_freq=(3, 8))
-    w_long = 0.6 + 1.1 * _spec(n, 1.8, seed + 31)
-    sealed = _ss(0.42, 0.58, _band(n, 2, 5, seed + 40, 1.2))
+    w_long = 1.0 + 1.4 * _spec(n, 1.8, seed + 31)
+    # Sealing crews ran whole cracks, so the tar covers long runs too: about a third of the tile.
+    sealed = _ss(0.52, 0.64, _band(n, 1, 1.5, seed + 40, 1.2))
     crack_long = _ss(w_long + 0.9, w_long - 0.4, d_long)
     crack_alli = _ss(1.2, 0.2, d_alli) * alli_m
     crack_hair = _ss(0.9, 0.0, d_hair) * 0.6
-    seal_w = 6.0 + 2.5 * _spec(n, 2.0, seed + 41)
-    seal = _ss(seal_w + 1.2, seal_w - 1.2, d_long) * sealed
+    seal_w = 8.0 + 4.0 * _spec(n, 2.0, seed + 41)
+    seal = _ss(seal_w + 3.0, seal_w - 2.0, d_long) * sealed
     crack = np.maximum(np.maximum(crack_long * (1 - sealed), crack_alli), crack_hair) * (1 - seal)
     fill = _ss(0.45, 0.7, _spec(n, 1.5, seed + 42))
     ccol = _cols(["#1d1c1b"])[0] * (1 - fill[..., None]) + _cols(["#544b40"])[0] * fill[..., None]
@@ -1694,10 +1698,12 @@ def layer_asphalt_cracked(n: int, seed: int) -> Layer:
     gcol = T.gradient(_spec(n, 0.8, seed + 44), [(0.0, "#3a4a1e"), (1.0, "#6a7a30")])
     col = col * (1 - green[..., None]) + gcol * green[..., None]
     h = h + 0.006 * green
-    # tar sealant overband: black, slightly raised, smooth, semi-glossy, worn at the edges
+    # tar sealant overband: slightly raised, smooth, semi-glossy, worn thin at the edges and over
+    # the aggregate. Years of sun have greyed it to just under the binder: the tile repeats every
+    # 4 m, so a near-black band reads as a grid of painted dashes down the road.
     swear = _ss(0.3, 0.6, _spec(n, 1.4, seed + 46))
-    seal = seal * (0.55 + 0.45 * swear)
-    scol = T.gradient(_spec(n, 1.6, seed + 45), [(0.0, "#161616"), (1.0, "#272624")])
+    seal = seal * (0.3 + 0.3 * swear) * (1 - 0.45 * expo)
+    scol = T.gradient(_spec(n, 1.6, seed + 45), [(0.0, "#2a2927"), (1.0, "#363431")])
     col = col * (1 - seal[..., None]) + scol * seal[..., None]
     h = h * (1 - seal) + (_blur(h, 3) + 0.0012) * seal
     rough = rough * (1 - seal) + 0.48 * seal
