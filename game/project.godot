@@ -110,6 +110,7 @@ environment/volumetric_fog/use_filter=1
 environment/ssao/quality=2
 occlusion_culling/use_occlusion_culling=true
 mesh_lod/lod_change/threshold_pixels=1.5
+limits/cluster_builder/max_clustered_elements=1024
 environment/defaults/default_clear_color=Color(0.02, 0.02, 0.025, 1)
 
 [shader_globals]

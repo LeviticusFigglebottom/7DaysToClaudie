@@ -195,12 +195,21 @@ void fragment() {
 		}
 
 		// Peeling: paint, paper, plaster or flooring gone in clusters, a shadow under the torn edge and
-		// a lifted lip around it.
-		float pc = peel_c * zone.a;
+		// a lifted lip around it. A metre-scale clump mask gathers the coverage (x0.25..x1.75, mean
+		// ~1) into damaged areas; spread evenly, the patches read as a speckle over every wall.
+		float clump = texture(decay_orm, dm * 0.55 + vec2(0.31, 0.17)).r;
+		float pc = peel_c * zone.a * (0.25 + 1.5 * smoothstep(0.3, 0.75, clump));
 		if (pc > 0.0005) {
 			float pp = mk.a;
-			if (exterior) {
-				// Siding paint fails along the boards.
+			if (exterior && wi <= 13) {
+				// Siding paint fails board by board: one priority per 10 cm board (kit.py _siding,
+				// rows on world y), stretched along it, worst at the butt edge where water sits. So
+				// the paint goes in strips that stop at the laps, not in blobs across them.
+				float yb = -v_world.y / 0.1;
+				float row = floor(yb);
+				pp = texture(decay_albedo, vec2(dm.x * 0.35 + row * 0.173, row * 0.041) + vec2(0.29, 0.07)).a;
+				pp += 0.06 * smoothstep(0.5, 1.0, fract(yb));
+			} else if (exterior) {
 				pp = texture(decay_albedo, vec2(dm.x * 0.35, dm.y * 1.6) + vec2(0.29, 0.07)).a;
 			}
 			float t = 1.0 - pc;

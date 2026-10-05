@@ -23,7 +23,8 @@ func _ready() -> void:
 	sky_mat = ShaderMaterial.new()
 	sky_mat.shader = load("res://assets/shaders/sky.gdshader")
 	sky.sky_material = sky_mat
-	sky.radiance_size = Sky.RADIANCE_SIZE_128
+	# Realtime skies always render a 256 radiance map (a smaller size is overridden, with a warning).
+	sky.radiance_size = Sky.RADIANCE_SIZE_256
 	sky.process_mode = Sky.PROCESS_MODE_REALTIME
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY

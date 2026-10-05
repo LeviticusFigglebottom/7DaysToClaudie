@@ -705,8 +705,10 @@ def _pickup(ctx: K.Ctx) -> None:
             if i == 0:
                 wheel_well(ctx, s * (S["W"] - 0.035), yc, axle_z, R + 0.015, 0.32, s)
             hub = (not ctx.worn) and not (s < 0 and i == 0)
+            # White steel wheels under the hubcaps; on the rotted wreck they have rusted through (a
+            # clean white disc in a rust-brown truck read as a sticker).
             wheel(ctx, s * S["track"], yc, axle_z, S, hubcap=hub, tyre=not burnt, flat=flat,
-                  rim_mat="car_rust" if burnt else "paint_white")
+                  rim_mat="car_rust" if burnt or ctx.worn else "paint_white")
     for s in (-1, 1):
         rail = K.box("frame", (0.08, 5.0, 0.16), center=(s * 0.5, 0.0, 0.45 + zoff))
         ctx.add(rail, "underbody", uv_scale=1.0, wear=0.0)

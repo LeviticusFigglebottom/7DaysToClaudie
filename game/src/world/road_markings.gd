@@ -106,6 +106,12 @@ func _decal(a: Vector3, b: Vector3, offset: float, col: Color) -> void:
 	var c: Vector3 = (a + b) * 0.5 + side * offset
 	if _on_bridge(c):
 		return
+	# Sit on the ground as built, not on the recorded profile: a framework pad graded after the
+	# road (Pell's Crossing's southern blocks over Route 9) can move the surface by more than the
+	# decal's 1.2 m box, and the paint vanished there.
+	var terrain: Node = world.get(&"terrain") if world != null else null
+	if terrain != null and terrain.has_method(&"height_at"):
+		c.y = float(terrain.call(&"height_at", c.x, c.z))
 	var key := Vector3i(roundi(c.x * 2.0), roundi(offset), roundi(c.z * 2.0))
 	if _placed.has(key):
 		return
