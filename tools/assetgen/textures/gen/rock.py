@@ -1,4 +1,4 @@
-"""Stone and earth surfaces: granite, mossy rock, river stone."""
+"""Stone surfaces: weathered granite (object moss lives in gen/moss.py)."""
 from __future__ import annotations
 
 import numpy as np
@@ -78,16 +78,3 @@ def rock_granite(size: int, seed: int, out) -> None:
 
 def _gc(h: str) -> np.ndarray:
     return T.hex_rgb(h)
-
-
-@texture("moss", size=1024, seed=21)
-def moss(size: int, seed: int, out) -> None:
-    clumps = T.spectral(size, 1.6, seed)
-    fine = T.spectral(size, 0.5, seed + 1)
-    f1, f2, _ = T.worley(size, 900, seed + 2)
-    tufts = 1.0 - T.normalize(f1)
-    height = T.normalize(0.45 * clumps + 0.35 * tufts + 0.2 * fine)
-    col = T.gradient(T.normalize(0.7 * clumps + 0.3 * fine), [(0.0, "#253012"), (0.45, "#3d4e1a"), (0.8, "#5a6c26"), (1.0, "#737836")])
-    col *= (0.75 + 0.35 * tufts)[..., None]
-    rough = np.full((size, size), 0.92, np.float32)
-    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=3.0, ao_strength=1.5)

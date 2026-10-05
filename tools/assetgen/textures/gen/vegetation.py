@@ -140,6 +140,30 @@ def aworley(size: int, points: int, seed: int, aspect: float = 1.0, jitter: floa
     return f1, f2, ids[idx[:, 0]].reshape(size, size)
 
 
+def worley_vec(size: int, points: int, seed: int, aspect: float = 1.0, warp=None):
+    """Tileable anisotropic Worley: (F1, F2, cell id, dx, dy) with dx/dy the pixel offset from the
+    nearest feature point (cells `aspect` times taller than wide). warp = (wx, wy) periodic pixel
+    displacements of the lookup (ragged, irregular cell edges)."""
+    from scipy.spatial import cKDTree
+    r = T.rng(seed)
+    pts = r.random((points, 2))
+    sx, sy = float(size), float(size) / aspect
+    tiled = np.concatenate([(pts + np.array([dx, dy])) * np.array([sx, sy]) for dx in (-1, 0, 1) for dy in (-1, 0, 1)])
+    ids = np.tile(np.arange(points), 9)
+    tree = cKDTree(tiled)
+    yy, xx = np.mgrid[0:size, 0:size].astype(np.float64)
+    if warp is not None:
+        xx = (xx + warp[0]) % size
+        yy = (yy + warp[1]) % size
+    q = np.stack([(xx.ravel() + 0.5), (yy.ravel() + 0.5) / aspect], -1)
+    d, idx = tree.query(q, k=2)
+    near = tiled[idx[:, 0]]
+    dx = (q[:, 0] - near[:, 0]).reshape(size, size).astype(np.float32)
+    dy = ((q[:, 1] - near[:, 1]) * aspect).reshape(size, size).astype(np.float32)
+    return (d[:, 0].reshape(size, size).astype(np.float32), d[:, 1].reshape(size, size).astype(np.float32),
+            ids[idx[:, 0]].reshape(size, size), dx, dy)
+
+
 def level_ridges(n: np.ndarray, half_width) -> np.ndarray:
     """0 on the median level set of `n` (furrows), rising to 1 at `half_width` pixels away
     (ridges). Distance is |n - m| / |grad n| so furrow width is uniform whatever the noise."""
@@ -698,49 +722,64 @@ def leaf_twig(p: Painter, rng, base, ang, length, *, leaf_len, leaf_w, n_leaves,
 
 @texture("bark_grey_fir", size=1024, seed=3101)
 def bark_grey_fir(size: int, seed: int, out) -> None:
-    """Douglas-fir-like bark: long corky ridges that vary in width, split and rejoin (thresholded
-    vertically stretched noise), deep dark-red furrows, wavy horizontal cracks across the ridges,
-    rough grey-brown ridge tops with sparse lichen."""
+    """Douglas-fir-like bark: thick corky ridges that split and rejoin, deep furrows whose walls
+    show layered cinnamon-brown cork, cross-fissures that cut the ridges into long blocks, and
+    weathered grey-brown scaly ridge crowns with sparse lichen."""
     wx = T.spectral(size, 2.2, seed + 1)
     wy = T.spectral(size, 2.2, seed + 2)
     wvar = T.spectral(size, 2.2, seed + 4)
     t = np.ones((size, size), np.float32)
     for k in range(2):
-        n1 = T.spectral(size, 2.0, seed + 13 + k, anisotropy=(6.0, 1.0), fmin=0.6)
-        n1 = T.warp(n1, wx, wy, size * 0.012)
-        t = np.minimum(t, level_ridges(n1, size * (0.016 + 0.026 * wvar) * (1.0 - 0.35 * k)))
-    t = T.blur(t, 1.2)
-    ridge = t ** 0.7
+        n1 = T.spectral(size, 2.0, seed + 13 + k, anisotropy=(5.0, 1.0), fmin=0.6)
+        n1 = T.warp(n1, wx, wy, size * 0.015)
+        t = np.minimum(t, level_ridges(n1, size * (0.026 + 0.034 * wvar) * (1.0 - 0.3 * k)))
+    t = T.blur(t, 1.0)
+    # cross-fissures: wavy, mostly horizontal, only through some ridges and only part-way down
+    hc = T.warp(T.spectral(size, 1.8, seed + 9, anisotropy=(1.0, 4.0), fmin=1.0), wx, wy, size * 0.012)
+    cross = (1.0 - level_ridges(hc, size * 0.007)) * T.smoothstep(0.52, 0.66, T.spectral(size, 2.0, seed + 10))
+    tt = t * (1.0 - 0.6 * cross * T.smoothstep(0.35, 0.8, t))
+    ridge = T.smoothstep(0.0, 0.8, tt) ** 0.8
+    # layered cork on the furrow walls: bands that follow the furrow (contours of t)
+    lay_n = T.spectral(size, 1.6, seed + 20)
+    bands = 0.5 + 0.5 * np.sin(tt * 2 * np.pi * 3.5 + lay_n * 4.0)
+    wall = T.smoothstep(0.08, 0.25, tt) * (1.0 - T.smoothstep(0.5, 0.75, tt))
+    # corky crowns: short horizontal checks and layered, crumbly cork (horizontal streak noise)
+    hs = T.spectral(size, 1.2, seed + 21, anisotropy=(1.0, 3.5))
+    chk_n = T.warp(T.spectral(size, 1.5, seed + 22, anisotropy=(1.0, 6.0), fmin=3.0), wx, wy, size * 0.006)
+    checks = (1.0 - level_ridges(chk_n, size * 0.0035)) * T.smoothstep(0.55, 0.7, T.spectral(size, 1.2, seed + 23))
+    flake = 1.0 - checks
+    fl_h = hs
     coarse = T.spectral(size, 2.4, seed + 5)
     mid = T.spectral(size, 1.4, seed + 6, anisotropy=(2.0, 1.0))
     fine = T.spectral(size, 0.9, seed + 7)
-    fib = T.spectral(size, 1.1, seed + 8, anisotropy=(10.0, 1.0))
-    hc = T.spectral(size, 1.7, seed + 9, anisotropy=(1.0, 6.0))
-    crack = 1.0 - T.smoothstep(0.0, 0.03, np.abs(hc - 0.5))
-    crack *= T.smoothstep(0.45, 0.62, T.spectral(size, 1.8, seed + 10)) * T.smoothstep(0.55, 0.85, t)
-    topm = T.smoothstep(0.6, 0.95, t)
-    height = 0.6 * ridge + topm * (0.1 * mid + 0.07 * fine) + 0.05 * fib * ridge + 0.1 * coarse
-    height = height - 0.16 * crack
+    top = T.smoothstep(0.5, 0.8, tt)
+    height = (0.72 * ridge + 0.03 * bands * wall + top * (0.05 * fl_h - 0.05 * checks + 0.05 * mid)
+              + 0.025 * fine + 0.06 * coarse)
     height = T.normalize(height)
-    top = T.gradient(np.clip(0.45 * coarse + 0.35 * mid + 0.2 * fine, 0, 1),
-                     [(0.0, "#352b25"), (0.35, "#4c4038"), (0.7, "#65584d"), (1.0, "#7e7368")])
-    soot = T.smoothstep(0.6, 0.85, T.spectral(size, 1.9, seed + 11))
-    top = top * (1.0 - 0.25 * soot)[..., None] * (0.85 + 0.3 * fine)[..., None]
-    flank = T.gradient(np.clip(t * 1.6 + (mid - 0.5) * 0.3, 0, 1),
-                       [(0.0, "#170b07"), (0.35, "#3a1c12"), (0.75, "#5a3121"), (1.0, "#5e3c2b")])
-    alb = T.mix(flank, top, T.smoothstep(0.55, 0.85, t))
-    alb = T.mix(alb, alb * 0.45, crack)
-    lich = T.smoothstep(0.8, 0.88, T.spectral(size, 1.0, seed + 12)) * topm
-    alb = T.mix(alb, np.ones_like(alb) * _c("#8b9077"), lich * 0.5)
-    rough = np.clip(0.9 + 0.06 * (1.0 - t) - 0.05 * lich, 0, 1)
-    ao = np.clip(T.cavity_ao(height, radius=10, strength=1.3) * (0.45 + 0.55 * t ** 0.7), 0, 1)
-    _save_set(out, alb, height, rough, normal_strength=7.0, ao=ao)
+    # colours
+    deep = T.gradient(np.clip(tt * 4.0, 0, 1), [(0.0, "#0d0806"), (1.0, "#22140e")])
+    cork = T.mix(np.ones_like(deep) * _c("#2b1911"), np.ones_like(deep) * _c("#5a3322"), bands)
+    cork = cork * (0.85 + 0.3 * lay_n)[..., None]
+    crown = T.gradient(np.clip(0.45 * coarse + 0.35 * mid + 0.2 * fine, 0, 1),
+                       [(0.0, "#352d28"), (0.35, "#4d433c"), (0.7, "#665a51"), (1.0, "#7c7066")])
+    crown = crown * (0.84 + 0.28 * fl_h)[..., None] * (1.0 - 0.45 * checks)[..., None]
+    soot = T.smoothstep(0.62, 0.86, T.spectral(size, 1.9, seed + 11))
+    crown = crown * (1.0 - 0.3 * soot)[..., None]
+    alb = T.mix(deep, cork, T.smoothstep(0.06, 0.22, tt))
+    alb = T.mix(alb, crown, T.smoothstep(0.48, 0.7, tt))
+    alb = T.mix(alb, alb * 0.5, cross * T.smoothstep(0.3, 0.7, t))
+    lich = T.smoothstep(0.78, 0.88, T.spectral(size, 1.0, seed + 12)) * top
+    alb = T.mix(alb, np.ones_like(alb) * _c("#8d9278"), lich * 0.55)
+    rough = np.clip(0.9 + 0.06 * (1.0 - tt) - 0.06 * lich, 0, 1)
+    ao = np.clip(T.cavity_ao(height, radius=12, strength=1.5) * (0.35 + 0.65 * tt ** 0.6), 0, 1)
+    _save_set(out, alb, height, rough, normal_strength=11.0, ao=ao)
 
 
 @texture("bark_larch", size=1024, seed=3201)
 def bark_larch(size: int, seed: int, out) -> None:
-    """Western-larch-like bark: large irregular 'puzzle' plates separated by deep dark furrows;
-    each plate is built of thin flaky cinnamon/red-brown scales, plate tops weathered grey-brown."""
+    """Western-larch-like bark: big irregular plates split by deep dark furrows; every plate is a
+    stack of thin exfoliating scales that overlap downwards like shingles (lifted, paler lower
+    edges, shadowed tops), cinnamon to red-brown, weathered grey-brown where exposed longest."""
     wx = T.spectral(size, 2.2, seed + 1)
     wy = T.spectral(size, 2.2, seed + 2)
     wvar = T.spectral(size, 2.0, seed + 3)
@@ -748,33 +787,44 @@ def bark_larch(size: int, seed: int, out) -> None:
     for k in range(2):
         n = T.spectral(size, 2.0, seed + 10 + k, anisotropy=(3.0, 1.0), fmin=0.8)
         n = T.warp(n, wx, wy, size * 0.015)
-        t = np.minimum(t, level_ridges(n, size * (0.011 + 0.012 * wvar)))
-    # cross furrows close the plates off (only where gated)
+        t = np.minimum(t, level_ridges(n, size * (0.014 + 0.014 * wvar)))
     nh = T.spectral(size, 2.0, seed + 20, anisotropy=(1.0, 2.2), fmin=0.9)
-    th = level_ridges(T.warp(nh, wx, wy, size * 0.01), size * 0.009)
+    th = level_ridges(T.warp(nh, wx, wy, size * 0.01), size * 0.011)
     gate = T.smoothstep(0.42, 0.6, T.spectral(size, 2.0, seed + 21))
     t = np.minimum(t, 1.0 - (1.0 - th) * gate)
-    t = T.blur(t, 1.0)
-    plate = T.smoothstep(0.0, 1.0, t)
-    g1, g2, gid = aworley(size, 1000, seed + 4, aspect=1.4)
-    sedge = T.smoothstep(0.0, size * 0.004, g2 - g1)
-    sh = _cell_rand(gid, 2.0)
+    t = T.blur(t, 1.2)
+    plate = T.smoothstep(0.0, 0.85, t) ** 0.75
+    # shingled scales
+    sw = (T.spectral(size, 1.6, seed + 30) - 0.5) * size * 0.03, (T.spectral(size, 1.6, seed + 31) - 0.5) * size * 0.03
+    f1, f2, cid, dx, dy = worley_vec(size, 900, seed + 4, aspect=1.6, warp=sw)
+    cell = size / math.sqrt(900)
+    ramp = np.clip(0.5 + dy / (cell * 1.3), 0.0, 1.0)            # rises towards each scale's lower edge
+    edge = T.smoothstep(0.0, size * 0.004, f2 - f1)                 # 0 right at a scale boundary
+    # break the outlines: only some boundaries are open, the rest are fused plate surface
+    open_b = T.smoothstep(0.35, 0.6, T.spectral(size, 1.4, seed + 32))
+    edge = 1.0 - (1.0 - edge) * open_b
+    rnd = _cell_rand(cid, 2.0)
+    scale_h = (0.55 * ramp + 0.45 * rnd) * edge
+    lip = (1.0 - edge) * (dy > 0)                                   # lower boundary: lifted lip
     fine = T.spectral(size, 0.9, seed + 5)
     coarse = T.spectral(size, 2.2, seed + 6)
-    topm = T.smoothstep(0.55, 0.9, t)
-    height = 0.6 * plate + topm * (0.1 * sh * sedge - 0.04 * (1.0 - sedge)) + 0.08 * coarse + 0.03 * fine
-    height = T.normalize(height)
-    plate_col = T.gradient(np.clip(0.45 * sh + 0.35 * coarse + 0.2 * fine, 0, 1),
-                           [(0.0, "#55301f"), (0.4, "#733d26"), (0.75, "#8b4f30"), (1.0, "#9e6640")])
-    weathered = T.gradient(np.clip(0.6 * coarse + 0.4 * fine, 0, 1), [(0.0, "#4b3f38"), (1.0, "#6d6058")])
+    topm = T.smoothstep(0.45, 0.85, t)
+    height = 0.62 * plate + topm * (0.085 * scale_h + 0.02 * lip) + 0.07 * coarse + 0.025 * fine
+    height = T.normalize(T.blur(height, 0.6))
+    plate_col = T.gradient(np.clip(0.4 * rnd + 0.35 * coarse + 0.25 * fine, 0, 1),
+                           [(0.0, "#56321f"), (0.4, "#71412a"), (0.75, "#855436"), (1.0, "#976a49")])
+    # fresh, paler cinnamon under a lifted lip; shadow at the top of each scale
+    plate_col = plate_col * (0.78 + 0.32 * ramp)[..., None]
+    plate_col = T.mix(plate_col, np.ones_like(plate_col) * _c("#b37a50"), (lip * 0.5)[..., None][..., 0])
+    plate_col = plate_col * (0.7 + 0.3 * edge)[..., None]
+    weathered = T.gradient(np.clip(0.6 * coarse + 0.4 * fine, 0, 1), [(0.0, "#4a3f38"), (1.0, "#6f625a")])
     wmask = T.smoothstep(0.45, 0.8, T.spectral(size, 1.7, seed + 7)) * topm
     plate_col = T.mix(plate_col, weathered, wmask * 0.7)
-    plate_col = plate_col * (0.78 + 0.22 * sedge)[..., None]
-    furrow = T.gradient(np.clip(t * 1.7, 0, 1), [(0.0, "#120905"), (0.6, "#341c12"), (1.0, "#53301f")])
-    alb = T.mix(furrow, plate_col, T.smoothstep(0.5, 0.85, t))
-    rough = np.clip(0.86 + 0.08 * (1.0 - t), 0, 1)
-    ao = np.clip(T.cavity_ao(height, radius=8, strength=1.3) * (0.45 + 0.55 * t ** 0.6), 0, 1)
-    _save_set(out, alb, height, rough, normal_strength=6.5, ao=ao)
+    furrow = T.gradient(np.clip(t * 1.8, 0, 1), [(0.0, "#100805"), (0.6, "#2e180f"), (1.0, "#4d2c1d")])
+    alb = T.mix(furrow, plate_col, T.smoothstep(0.42, 0.75, t))
+    rough = np.clip(0.86 + 0.08 * (1.0 - t) - 0.04 * lip, 0, 1)
+    ao = np.clip(T.cavity_ao(height, radius=9, strength=1.4) * (0.4 + 0.6 * t ** 0.6), 0, 1)
+    _save_set(out, alb, height, rough, normal_strength=10.0, ao=ao)
 
 
 @texture("bark_birch", size=1024, seed=3301)
