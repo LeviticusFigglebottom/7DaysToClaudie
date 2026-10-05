@@ -265,6 +265,8 @@ func height_at(x: float, z: float) -> float:
 # --- Survival ----------------------------------------------------------------------------------
 
 func _on_game_minutes(minutes: float) -> void:
+	if stimuli != null:
+		stimuli.apply_weather(session.weather.params())
 	var p: PlayerState = session.local_player()
 	if p == null or player == null or not is_ready or DebugTools.is_on(&"no_hunger"):
 		return

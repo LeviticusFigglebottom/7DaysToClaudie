@@ -313,6 +313,7 @@ func _throw(def: ItemDef) -> void:
 	proj.set(&"item_id", current)
 	proj.set(&"thrower", player.state.id)
 	proj.set(&"damage", def.equip_num("damage", 10.0))
+	proj.set(&"origin", player.global_position)
 	player.get_tree().current_scene.add_child(proj)
 	var cam: Camera3D = player.camera
 	proj.global_position = cam.global_position - cam.global_transform.basis.z * 0.6

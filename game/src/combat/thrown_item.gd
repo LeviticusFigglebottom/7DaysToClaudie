@@ -5,6 +5,8 @@ extends RigidBody3D
 var item_id: StringName = &"stone"
 var thrower: StringName = &""
 var damage: float = 10.0
+## Where it was thrown from: what a struck Hollow turns toward (and wakes facing).
+var origin := Vector3.ZERO
 var _armed: bool = true
 var _life: float = 0.0
 
@@ -37,6 +39,7 @@ func _on_hit(body: Node) -> void:
 	_armed = false
 	var info := DamageInfo.make(damage * clampf(linear_velocity.length() / 15.0, 0.3, 1.2), &"blunt", &"thrown", thrower)
 	info.hit_pos = global_position
+	info.source_pos = origin
 	info.direction = linear_velocity.normalized()
 	info.collider = body
 	info.stagger = 0.4

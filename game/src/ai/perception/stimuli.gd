@@ -24,6 +24,9 @@ class SoundEvent:
 	var kind: StringName
 	var source_id: StringName
 	var time: float
+	## Increasing id: listeners remember the last one they processed, so a sound is never heard
+	## twice (a time threshold double-counts events from the same frame).
+	var seq: int = 0
 
 var sounds: Array[SoundEvent] = []
 var scent := PackedFloat32Array()
@@ -33,10 +36,15 @@ var lights: Dictionary = {}
 var weather_noise_mask: float = 1.0
 var wind := Vector2(1, 0)
 var wind_strength: float = 0.3
+## Sight is not scaled by darkness: the Hollowed see without light after dark (DESIGN §6), their
+## day/night sight ranges encode that. Light still matters as nearby fires and the player's own.
 var ambient_light: float = 1.0
 var heat: HeatMap
 var _time: float = 0.0
 var _scent_accum: float = 0.0
+var _seq: int = 0
+## Fractional scent drift carried between updates (a 0.05-cell step would round to nothing).
+var _drift := Vector2.ZERO
 
 
 func _enter_tree() -> void:
@@ -73,18 +81,34 @@ func emit_sound(pos: Vector3, loudness: float, kind: StringName, source_id: Stri
 	e.kind = kind
 	e.source_id = source_id
 	e.time = _time
+	_seq += 1
+	e.seq = _seq
 	sounds.append(e)
 	if heat != null and loudness >= 20.0:
 		heat.add(pos, loudness / 20.0)
 
 
-## Most salient sound a listener at `pos` hears since `since` (null if none).
-## hearing: listener multiplier (EnemyDef perception.hearing). Ignores sounds from `ignore_id`.
-func loudest_heard(pos: Vector3, hearing: float, since: float, ignore_id: StringName = &"") -> SoundEvent:
+## Id of the newest sound so far (listeners pass it back as `after_seq`).
+func last_seq() -> int:
+	return _seq
+
+
+## Weather masks noise and drives scent drift (WeatherState.params()).
+func apply_weather(params: Dictionary) -> void:
+	weather_noise_mask = clampf(float(params.get("noise_mask", 1.0)), 0.2, 1.0)
+	var dir: Variant = params.get("wind_dir", Vector2(1, 0))
+	if dir is Vector2 and (dir as Vector2).length() > 0.01:
+		wind = (dir as Vector2).normalized()
+	wind_strength = clampf(float(params.get("wind", 0.3)), 0.0, 1.5)
+
+
+## Most salient sound a listener at `pos` hears among those newer than `after_seq` (null if
+## none). hearing: listener multiplier (EnemyDef perception.hearing). Ignores `ignore_id`'s sounds.
+func loudest_heard(pos: Vector3, hearing: float, after_seq: int, ignore_id: StringName = &"") -> SoundEvent:
 	var best: SoundEvent = null
 	var best_score: float = 0.0
 	for e: SoundEvent in sounds:
-		if e.time < since or (ignore_id != &"" and e.source_id == ignore_id):
+		if e.seq <= after_seq or (ignore_id != &"" and e.source_id == ignore_id):
 			continue
 		var d: float = e.pos.distance_to(pos)
 		var reach: float = e.loudness * hearing
@@ -165,12 +189,14 @@ func _update_scent(dt: float) -> void:
 	# Decay + diffusion + wind advection (semi-Lagrangian, nearest-cell).
 	var out := PackedFloat32Array()
 	out.resize(SCENT_N * SCENT_N)
-	var shift: Vector2 = wind * wind_strength * 1.2 * dt / SCENT_CELL
+	_drift += wind * wind_strength * 1.2 * dt / SCENT_CELL
+	var shift := Vector2i(int(_drift.x), int(_drift.y))
+	_drift -= Vector2(shift)
 	var decay: float = pow(0.5, dt / 90.0)
 	for y: int in range(1, SCENT_N - 1):
 		for x: int in range(1, SCENT_N - 1):
-			var sx: int = clampi(int(round(x - shift.x)), 1, SCENT_N - 2)
-			var sy: int = clampi(int(round(y - shift.y)), 1, SCENT_N - 2)
+			var sx: int = clampi(x - shift.x, 1, SCENT_N - 2)
+			var sy: int = clampi(y - shift.y, 1, SCENT_N - 2)
 			var i: int = sy * SCENT_N + sx
 			var v: float = scent[i] * 0.6 + (scent[i - 1] + scent[i + 1] + scent[i - SCENT_N] + scent[i + SCENT_N]) * 0.1
 			out[y * SCENT_N + x] = v * decay

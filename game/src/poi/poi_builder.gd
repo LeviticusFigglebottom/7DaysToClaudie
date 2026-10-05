@@ -327,6 +327,8 @@ func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: 
 	d.inside_sign = inside_sign
 	d.model_broken = PoiParts.KIT + leaf + "_broken"
 	d.transform = wall_xf
+	d.hp = root.piece_hp(id, hp)
+	d.flip = flip
 	d.pivot = Node3D.new()
 	d.pivot.position = hinge
 	d.pivot.rotation.y = flip
@@ -334,9 +336,9 @@ func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: 
 	var mi := MeshInstance3D.new()
 	mi.mesh = PoiParts.kit_mesh(leaf) if d.state != "broken" else PoiParts.kit_mesh(leaf + "_broken")
 	d.pivot.add_child(mi)
-	var cs: CollisionShape3D = _box(Vector3(0.82, 2.05, 0.05), Transform3D(Basis.IDENTITY, Vector3(0.41, 1.025, 0)), d)
-	cs.reparent(d.pivot, false)
-	cs.disabled = d.state == "broken"
+	d.leaf_local = Transform3D(Basis.IDENTITY, Vector3(0.41, 1.025, 0))
+	d.leaf_shape = _box(Vector3(0.82, 2.05, 0.05), d.pivot.transform * d.leaf_local, d)
+	d.leaf_shape.disabled = d.state == "broken"
 	root.add_child(d)
 
 
@@ -364,7 +366,7 @@ func _barricade(id: String, wall_xf: Transform3D, side_sign: float, piece: Strin
 	b.poi = root
 	b.piece_id = id
 	b.kind = "boards"
-	b.hp = hp
+	b.hp = root.piece_hp(id, hp)
 	var off := Vector3(0, sill, side_sign * (WALL_T * 0.5 + (0.45 if piece == "barricade_furniture" else 0.04)))
 	b.transform = wall_xf * Transform3D(Basis.IDENTITY if side_sign > 0.0 else Basis(Vector3.UP, PI), off)
 	var mi := MeshInstance3D.new()

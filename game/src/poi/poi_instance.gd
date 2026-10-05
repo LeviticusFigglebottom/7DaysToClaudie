@@ -10,6 +10,8 @@ var state: Dictionary = {}
 var shell: StaticBody3D
 var sleepers_spawned: bool = false
 var _sleepers: Dictionary = {}
+## Sleepers that woke and left with the player (sleeper id -> Enemy), now roaming.
+var _roaming: Dictionary = {}
 
 
 func setup(p_layout: PoiLayout, p_id: StringName) -> void:
@@ -40,6 +42,20 @@ func set_piece_state(piece_id: String, s: String) -> void:
 		(state["traps"] as Dictionary)[piece_id] = s
 	else:
 		(state["doors"] as Dictionary)[piece_id] = s
+
+
+## Remaining hit points of a damaged door or barricade (default when untouched), so a door
+## half beaten in stays half beaten after a reload.
+func piece_hp(piece_id: String, default: float) -> float:
+	return float((state.get("hp", {}) as Dictionary).get(piece_id, default))
+
+
+func set_piece_hp(piece_id: String, hp: float) -> void:
+	if state.is_empty():
+		return
+	var d: Dictionary = state.get("hp", {})
+	d[piece_id] = snappedf(hp, 0.1)
+	state["hp"] = d
 
 
 ## Point in world space -> (level, cell) or level -999 when outside every level band.
@@ -86,6 +102,11 @@ func spawn_sleepers(ai: Node) -> void:
 		var sid: String = str(s.get("id", "s%d" % i))
 		if dead.has(sid):
 			continue
+		# Still out hunting from the last visit: it is not back at its post yet.
+		var out: Enemy = _roaming.get(StringName(sid), null)
+		if is_instance_valid(out) and out.is_alive():
+			continue
+		_roaming.erase(StringName(sid))
 		var local: Vector3 = layout.local_pos(s["level"], s["pos"])
 		var e: Enemy = ai.call(&"spawn_sleeper", StringName(str(s.get("enemy", "hollow"))), to_global(local) + Vector3.UP * 0.05,
 			global_rotation.y + deg_to_rad(float(s.get("rot", 0.0))), str(s.get("pose", "stand")), instance_id, StringName(sid), layout.def.tier)
@@ -94,11 +115,20 @@ func spawn_sleepers(ai: Node) -> void:
 			e.died.connect(_on_sleeper_died.bind(sid))
 
 
+## Leaving the area puts dormant sleepers away. Awake ones that followed the player out are
+## handed to the director as ordinary wanderers instead of vanishing mid-chase; a kill still
+## counts for this building (the died hook stays), and the sleeper is not duplicated at its post
+## until the director has despawned it.
 func despawn_sleepers(ai: Node) -> void:
 	for sid: StringName in _sleepers:
 		var e: Enemy = _sleepers[sid]
-		if is_instance_valid(e) and e.is_alive():
+		if not is_instance_valid(e) or not e.is_alive():
+			continue
+		if e.state == Enemy.State.SLEEP:
 			ai.call(&"despawn", e)
+		else:
+			e.poi_id = &""
+			_roaming[sid] = e
 	_sleepers.clear()
 	sleepers_spawned = false
 

@@ -33,6 +33,18 @@ func _ready() -> void:
 	Events.horde_night_warning.connect(_on_warning)
 	Events.enemy_killed.connect(_on_enemy_killed)
 	Events.structure_destroyed.connect(_on_structure_destroyed)
+	Events.session_started.connect(_resume_if_inside)
+
+
+## A game loaded (or started) inside the Hum window would otherwise never see the start event:
+## pick the night back up, with the clock counted from 22:00 so overdue waves queue at once.
+func _resume_if_inside(_new_game: bool) -> void:
+	var c: WorldClock = Game.session.clock if Game.session != null else null
+	if c == null or active or not c.is_horde_active():
+		return
+	var d: int = c.day() if c.hour_f() >= c.horde_start_hour else c.day() - 1
+	_on_start(d)
+	_started_min = float(d - 1) * WorldClock.MIN_PER_DAY + c.horde_start_hour * 60.0
 
 
 func _rng_for(d: int) -> RandomNumberGenerator:
@@ -99,9 +111,7 @@ func _on_end(_d: int, _r: Dictionary) -> void:
 		var e: Enemy = members[id]["node"] if members[id].has("node") else null
 		if e != null and is_instance_valid(e) and e.is_alive():
 			alive += 1
-			e.horde = false
-			e.horde_sector = -1
-			e.notice(base)
+			e.release_from_horde()
 	var total: int = maxi(1, _spawned_total)
 	report["clear_time"] = clampf(float(alive) / float(total) + 0.2 * float(_queue.size()) / float(total), 0.0, 1.0)
 	Game.session.horde.record_night(report)
@@ -158,16 +168,22 @@ func _spawn(u: Dictionary) -> void:
 	var sector: int = int(u["sector"])
 	var rng: RandomNumberGenerator = Game.session.rng.stream("hum_spawn")
 	var r: Array = _cfg.get("spawn_radius", [55.0, 85.0])
-	var pos := Vector3.ZERO
-	for attempt: int in 8:
+	var pos := Vector3.INF
+	for attempt: int in 12:
 		var dir: Vector3 = HordeMemory.sector_dir(sector).rotated(Vector3.UP, rng.randf_range(-0.35, 0.35))
 		if str(u["role"]) == "flank":
 			dir = dir.rotated(Vector3.UP, 0.6 * (1.0 if rng.randf() < 0.5 else -1.0))
-		pos = base + dir * rng.randf_range(float(r[0]), float(r[1]))
-		pos.y = Game.world.height_at(pos.x, pos.z)
-		var wsys: Node = Game.world.get(&"water")
-		if wsys == null or float(wsys.call(&"depth_at", pos)) < 0.3:
+		# Later tries widen the arc; every try must pass the shared spawn rules (dry, not inside
+		# a building or the base, not on a cliff, never on top of the player).
+		dir = dir.rotated(Vector3.UP, rng.randf_range(-0.12, 0.12) * float(attempt))
+		var cand: Vector3 = base + dir * rng.randf_range(float(r[0]), float(r[1]))
+		cand.y = Game.world.height_at(cand.x, cand.z)
+		if ai == null or not ai.has_method(&"spawn_point_ok") or bool(ai.call(&"spawn_point_ok", cand)):
+			pos = cand
 			break
+	if pos == Vector3.INF:
+		_queue.append(u)  # try again next frame from a fresh angle
+		return
 	var e: Enemy = ai.call(&"spawn", u["enemy"], pos + Vector3.UP * 0.3, {"horde_sector": sector})
 	if e == null:
 		return
@@ -235,7 +251,11 @@ func _find_base() -> Vector3:
 func _on_enemy_killed(entity_id: StringName, _enemy_id: StringName, _pos: Vector3, killer: Dictionary) -> void:
 	if not active or not members.has(entity_id):
 		return
+	# A kill out on an approach marks that approach a killing field; one at the walls counts for
+	# the sector the attacker came from.
 	var s: int = int(members[entity_id]["sector"])
+	if _pos.distance_to(base) > 8.0:
+		s = HordeMemory.sector_of(base, _pos)
 	(report["killed"] as Array)[s] = int(report["killed"][s]) + 1
 	var cause: String = str(killer.get("cause", "melee"))
 	var causes: Dictionary = report["causes"]

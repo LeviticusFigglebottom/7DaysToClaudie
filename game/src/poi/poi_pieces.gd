@@ -15,6 +15,12 @@ class Door:
 	var inside_sign: float = 1.0
 	var model_broken: String = ""
 	var pivot: Node3D
+	## Hinge yaw when closed: PI for the right leaf of a double door (it hangs toward the centre).
+	var flip: float = 0.0
+	## The leaf's collision shape. It stays a direct child of this body (a shape under the plain
+	## pivot Node3D never registers with physics) and _apply() moves it with the hinge.
+	var leaf_shape: CollisionShape3D
+	var leaf_local := Transform3D.IDENTITY
 	var _open_amount: float = 0.0
 	var _target: float = 0.0
 
@@ -33,8 +39,15 @@ class Door:
 			_apply()
 
 	func _apply() -> void:
-		if pivot != null:
-			pivot.rotation.y = -_open_amount * PI * 0.55
+		if pivot == null:
+			return
+		# Both leaves of a double door swing to the same side of the wall.
+		pivot.rotation.y = flip + _open_amount * PI * 0.55 * (1.0 if flip != 0.0 else -1.0)
+		if leaf_shape != null:
+			leaf_shape.transform = pivot.transform * leaf_local
+
+	func is_broken() -> bool:
+		return state == "broken"
 
 	func is_locked() -> bool:
 		return state == "locked" or state == "locked_inside"
@@ -85,6 +98,8 @@ class Door:
 			return
 		var amount: float = float(info.tool_power.get("structure", info.amount))
 		hp -= amount
+		if poi != null and hp > 0.0:
+			poi.call(&"set_piece_hp", op_id, hp)
 		Audio.play_3d(&"sfx/hit_wood_structure", info.hit_pos, {"volume_db": -3.0})
 		FxLibrary.burst(get_parent(), "splinters", info.hit_pos, -info.direction, 0.4)
 		if Stimuli.current != null:
@@ -98,12 +113,10 @@ class Door:
 		FxLibrary.burst(get_parent(), "splinters", global_position + Vector3.UP, Vector3.UP, 1.5)
 		for c: Node in get_children():
 			if c is CollisionShape3D:
-				(c as CollisionShape3D).disabled = true
+				(c as CollisionShape3D).set_deferred(&"disabled", true)
 		if pivot != null:
 			for c2: Node in pivot.get_children():
-				if c2 is CollisionShape3D:
-					(c2 as CollisionShape3D).set_deferred(&"disabled", true)
-				elif c2 is MeshInstance3D and model_broken != "" and ModelLibrary.has_model(model_broken):
+				if c2 is MeshInstance3D and model_broken != "" and ModelLibrary.has_model(model_broken):
 					(c2 as MeshInstance3D).mesh = ModelLibrary.mesh(model_broken)
 				elif c2 is MeshInstance3D:
 					(c2 as MeshInstance3D).visible = false
@@ -129,12 +142,21 @@ class Breakable:
 		collision_mask = 0
 		set_meta(&"breakable", true)
 
+	func is_broken() -> bool:
+		return hp <= 0.0
+
 	func take_damage(info: DamageInfo) -> void:
+		# Already smashed: its shape is being disabled, but a second hit in the same frame (or a
+		# Hollow still pounding the frame) must not replay the break or count it again.
+		if hp <= 0.0:
+			return
 		var amount: float = float(info.tool_power.get("structure", info.amount))
 		if kind == "glass":
 			amount = 999.0
 		hp -= amount
 		if hp > 0.0:
+			if poi != null:
+				poi.call(&"set_piece_hp", piece_id, hp)
 			Audio.play_3d(&"sfx/hit_wood_structure", info.hit_pos, {"volume_db": -4.0})
 			FxLibrary.burst(get_parent(), "splinters", info.hit_pos, -info.direction, 0.3)
 			return

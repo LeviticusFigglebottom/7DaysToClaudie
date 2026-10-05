@@ -12,6 +12,10 @@ const DESPAWN_RANGE: float = 190.0
 const POP_INTERVAL: float = 5.0
 const MAX_CORPSES: int = 24
 const CORPSE_SECONDS: float = 300.0
+## Summoned/scripted spawns never appear closer than this to the player.
+const MIN_SPAWN_DIST: float = 35.0
+## Hard cap on awake non-sleeper Hollowed outside the Hum (Keener screams, heat responses).
+const MAX_ROAMING: int = 28
 
 var world: Node
 var hum: HumDirector
@@ -60,9 +64,11 @@ func spawn(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Enemy:
 	var e := Enemy.new()
 	e.setup(id, def, self, opts)
 	e.name = String(id).replace(":", "_")
-	add_child(e)
-	e.global_position = pos
+	# Placed before entering the tree: _ready() takes its home, wander anchor and facing from the
+	# transform it has then (placing afterwards left every body facing south, homed at the origin).
+	e.position = to_local(pos) if is_inside_tree() else pos
 	e.rotation.y = float(opts.get("yaw", _rng.randf() * TAU))
+	add_child(e)
 	if opts.has("target"):
 		e.notice(opts["target"])
 	enemies[id] = e
@@ -120,11 +126,13 @@ func _heat_response(t: Dictionary) -> void:
 		"pack":
 			group = [&"lurcher", &"hollow", &"hollow", &"hollow", &"hollow"]
 	var origin: Vector3 = _offscreen_point(target, 60.0, 90.0)
+	if origin == Vector3.INF or _roaming_count() >= MAX_ROAMING:
+		return
 	for id: StringName in group:
 		var def: EnemyDef = Content.enemy(id)
 		if def != null and def.gamestage_min > _gamestage():
 			id = &"hollow"
-		spawn(id, origin + Vector3(_rng.randf_range(-3, 3), 0.4, _rng.randf_range(-3, 3)), {"target": target + Vector3(_rng.randf_range(-6, 6), 0, _rng.randf_range(-6, 6))})
+		spawn(id, _ground(origin + Vector3(_rng.randf_range(-3, 3), 0.0, _rng.randf_range(-3, 3))), {"target": target + Vector3(_rng.randf_range(-6, 6), 0, _rng.randf_range(-6, 6))})
 	Log.info("ai", "heat response '%s' at %s (heat %.0f)" % [t["kind"], target, t["heat"]])
 
 
@@ -133,9 +141,31 @@ func on_scream(keener: Enemy, count: int) -> void:
 	for e: Enemy in enemies_in_radius(keener.global_position, float(keener.def.beh("scream_radius", 120.0))):
 		if e != keener and e.is_alive():
 			e.notice(keener.global_position)
+	# Each Keener can only call so many in total, and never past the roaming cap.
+	var budget: int = int(keener.get_meta(&"summon_budget", int(keener.def.beh("summon_budget", 6))))
+	count = mini(count, mini(budget, MAX_ROAMING - _roaming_count()))
+	if count <= 0:
+		return
+	keener.set_meta(&"summon_budget", budget - count)
 	for i: int in count:
 		var pos: Vector3 = _offscreen_point(keener.global_position, 40.0, 70.0)
-		spawn(&"hollow" if _rng.randf() < 0.75 or _gamestage() < 3 else &"lurcher", pos + Vector3.UP * 0.4, {"target": keener.global_position})
+		if pos == Vector3.INF:
+			continue
+		spawn(&"hollow" if _rng.randf() < 0.75 or _gamestage() < 3 else &"lurcher", _ground(pos), {"target": keener.global_position})
+
+
+## Awake Hollowed that are neither POI sleepers nor Hum members.
+func _roaming_count() -> int:
+	var n: int = 0
+	for e: Enemy in enemies.values():
+		if is_instance_valid(e) and e.is_alive() and e.poi_id == &"" and not e.horde:
+			n += 1
+	return n
+
+
+## A point lifted onto the ground under it (each group member stands on its own patch of slope).
+func _ground(p: Vector3) -> Vector3:
+	return Vector3(p.x, world.height_at(p.x, p.z) + 0.4, p.z)
 
 
 func _gamestage() -> int:
@@ -213,27 +243,49 @@ func _spawn_group(ppos: Vector3) -> void:
 		var def: EnemyDef = Content.enemy(id)
 		if def == null or def.gamestage_min > gs:
 			id = &"hollow"
-		spawn(id, pos + Vector3(_rng.randf_range(-4, 4), 0.4, _rng.randf_range(-4, 4)))
+		spawn(id, _ground(pos + Vector3(_rng.randf_range(-4, 4), 0.0, _rng.randf_range(-4, 4))))
 
 
-## A point on dry land at `min_d..max_d` from `center`, preferably behind the camera.
+## A point on dry land at `min_d..max_d` from `center`, out of the player's view (or INF).
 func _offscreen_point(center: Vector3, min_d: float, max_d: float) -> Vector3:
 	var p: Player = world.player
 	var fwd: Vector3 = -p.camera.global_transform.basis.z if p != null else Vector3.FORWARD
-	var wsys: Node = world.get(&"water")
-	for attempt: int in 12:
+	var flat_fwd := Vector3(fwd.x, 0, fwd.z).normalized()
+	for attempt: int in 16:
 		var ang: float = _rng.randf() * TAU
 		var dir := Vector3(sin(ang), 0, cos(ang))
-		if p != null and attempt < 8 and dir.dot(Vector3(fwd.x, 0, fwd.z).normalized()) > -0.2:
-			continue
 		var pos: Vector3 = center + dir * _rng.randf_range(min_d, max_d)
 		pos.y = world.height_at(pos.x, pos.z)
-		if world.terrain.region_terrain_at(pos.x, pos.z) == null:
+		if p != null and (pos - p.global_position).normalized().dot(flat_fwd) > -0.1 and attempt < 12:
 			continue
-		if wsys != null and wsys.has_method(&"depth_at") and float(wsys.call(&"depth_at", pos)) > 0.2:
-			continue
-		return pos
+		if spawn_point_ok(pos):
+			return pos
 	return Vector3.INF
+
+
+## Whether a Hollowed can appear at `pos`: inside the map, dry, not on a cliff, not inside a
+## building or someone's base, and not on top of the player.
+func spawn_point_ok(pos: Vector3) -> bool:
+	if world.terrain.region_terrain_at(pos.x, pos.z) == null:
+		return false
+	var p: Player = world.player
+	if p != null and Vector2(pos.x - p.global_position.x, pos.z - p.global_position.z).length() < MIN_SPAWN_DIST:
+		return false
+	var wsys: Node = world.get(&"water")
+	if wsys != null and wsys.has_method(&"depth_at") and float(wsys.call(&"depth_at", pos)) > 0.2:
+		return false
+	var e: float = 1.0
+	var slope: float = Vector2(world.height_at(pos.x + e, pos.z) - world.height_at(pos.x - e, pos.z),
+		world.height_at(pos.x, pos.z + e) - world.height_at(pos.x, pos.z - e)).length() / (2.0 * e)
+	if slope > 0.84:  # ~40 degrees
+		return false
+	var pois: Node = world.get(&"pois")
+	if pois != null and pois.has_method(&"poi_at") and pois.call(&"poi_at", pos + Vector3.UP) != null:
+		return false
+	var b: Node = world.get(&"building")
+	if b != null and b.has_method(&"pieces_in_radius") and not (b.call(&"pieces_in_radius", pos, 6.0) as Array).is_empty():
+		return false
+	return true
 
 
 # --- Queries ------------------------------------------------------------------------------------

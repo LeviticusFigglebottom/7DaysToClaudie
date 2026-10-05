@@ -58,8 +58,17 @@ var _attack_cd: float = 0.0
 var _scream_cd: float = 0.0
 var _stagger_t: float = 0.0
 var _hit_at: float = -1.0
-var _heard_since: float = 0.0
+var _heard_seq: int = 0
 var _stuck_t: float = 0.0
+## Navigation: the goal the agent's current path leads to, and time until a forced re-path.
+var _nav_goal := Vector3.INF
+var _nav_t: float = 0.0
+## Beyond collision range the body glides on the heightfield; no path queries out there.
+var _far: bool = false
+## No new stagger until this runs out (a fast weapon could otherwise stun-lock).
+var _stagger_lock: float = 0.0
+## After the Hum: seconds until this survivor roots into the soil (despawns) when unobserved.
+var _root_t: float = -1.0
 var _resume_state: State = State.IDLE
 var _yaw_target: float = 0.0
 var _shape: CollisionShape3D
@@ -113,7 +122,11 @@ func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary
 	_tier_burst = t.get("death_burst", {})
 	_spit_cd = _rng.randf_range(1.0, 3.0)
 	_charge_cd = _rng.randf_range(2.0, 4.0)
-	limb_hp = def.limbs.duplicate()
+	# Limbs scale with the body (difficulty, infected tier): a Bloomed head is not a Hollow's.
+	var hp_scale: float = max_health / maxf(1.0, def.health)
+	limb_hp = {}
+	for k: Variant in def.limbs.keys():
+		limb_hp[k] = float(def.limbs[k]) * hp_scale
 	poi_id = StringName(str(opts.get("poi", "")))
 	sleeper_id = StringName(str(opts.get("sleeper", "")))
 	sleep_pose = str(opts.get("pose", "stand"))
@@ -160,7 +173,7 @@ func _ready() -> void:
 	target_pos = global_position
 	_yaw_target = rotation.y
 	_perc_t = _rng.randf() * PERCEPTION_INTERVAL
-	_heard_since = _now()
+	_heard_seq = Stimuli.current.last_seq() if Stimuli.current != null else 0
 	_enter_anim()
 
 
@@ -192,6 +205,15 @@ func _physics_process(delta: float) -> void:
 	_scream_cd = maxf(0.0, _scream_cd - delta)
 	_spit_cd = maxf(0.0, _spit_cd - delta)
 	_charge_cd = maxf(0.0, _charge_cd - delta)
+	_stagger_lock = maxf(0.0, _stagger_lock - delta)
+	_far = dist > KINEMATIC_BEYOND
+	if _root_t > 0.0:
+		_root_t -= delta
+		if _root_t <= 0.0:
+			if dist > 25.0 and state not in [State.CHASE, State.ATTACK, State.CHARGE, State.SPIT] and director != null:
+				director.call(&"despawn", self)
+				return
+			_root_t = 20.0
 	if _regen > 0.0 and health < max_health:
 		health = minf(max_health, health + _regen * delta)
 	if dist < 45.0:
@@ -265,7 +287,10 @@ func _physics_process(delta: float) -> void:
 			elif _now() - last_seen_time > MEMORY_SECONDS:
 				_set_state(State.HORDE if horde else State.INVESTIGATE)
 		State.ATTACK:
-			_face(p.global_position if p != null else target_pos)
+			if p == null or not p.state.stats.alive:
+				_set_state(State.IDLE)
+				return
+			_face(p.global_position)
 			if _hit_at >= 0.0 and _state_t >= _hit_at:
 				_hit_at = -1.0
 				_deliver_hit(p)
@@ -275,9 +300,12 @@ func _physics_process(delta: float) -> void:
 				else:
 					_start_attack()
 		State.BREAK:
-			if break_target == null or not is_instance_valid(break_target) or break_target.is_queued_for_deletion():
+			var close: bool = p != null and _now() - last_seen_time < 1.0 and dist <= def.atk("range", 1.5) + 1.0
+			if break_target == null or not is_instance_valid(break_target) or break_target.is_queued_for_deletion() \
+					or _target_broken(break_target) or _state_t > 20.0 or close:
+				# Broken through (or given up, or the player is right here): back to the hunt.
 				break_target = null
-				_set_state(_resume_state)
+				_set_state(State.ATTACK if close else _resume_state)
 			else:
 				_face(break_target.global_position)
 				if _attack_cd <= 0.0:
@@ -349,16 +377,31 @@ func _blocking_structure() -> Node3D:
 	return null
 
 
+## Direction toward `to` along the navmesh (around houses, through doorways). The path is only
+## re-requested when the goal moves a metre or every half second (a query per enemy per frame
+## would be wasteful). Off the baked tiles, far away or once the path is done: straight line.
 func _move_dir(to: Vector3) -> Vector3:
-	var d: Vector3
-	agent.target_position = to
-	var path: PackedVector3Array = agent.get_current_navigation_path()
-	if not path.is_empty() and not agent.is_navigation_finished():
-		d = agent.get_next_path_position() - global_position
-	else:
-		d = to - global_position
+	var d: Vector3 = to - global_position
+	if not _far and agent != null and agent.is_inside_tree():
+		_nav_t -= get_physics_process_delta_time()
+		if _nav_goal == Vector3.INF or _nav_goal.distance_to(to) > 1.0 or _nav_t <= 0.0:
+			_nav_goal = to
+			_nav_t = 0.5
+			agent.target_position = to
+		if not agent.is_navigation_finished():
+			var step: Vector3 = agent.get_next_path_position() - global_position
+			if Vector2(step.x, step.z).length() > 0.05:
+				d = step
 	d.y = 0.0
 	return d.normalized() if d.length() > 0.05 else Vector3.ZERO
+
+
+## Whether a door/window/board/wall being torn at has already given way.
+static func _target_broken(n: Node) -> bool:
+	if n.has_method(&"is_broken"):
+		return bool(n.call(&"is_broken"))
+	var hp: Variant = n.get(&"hp")
+	return hp != null and float(hp) <= 0.0
 
 
 func _flat_dist(p: Vector3) -> float:
@@ -436,15 +479,16 @@ func _perceive(p: Player, dist: float) -> void:
 		if def.archetype == "screamer" and _scream_cd <= 0.0 and bool(def.beh("scream", false)) and state != State.SCREAM:
 			_scream()
 			return
-		if state in [State.IDLE, State.WANDER, State.INVESTIGATE, State.HORDE]:
+		if state in [State.IDLE, State.WANDER, State.INVESTIGATE, State.HORDE, State.BREAK]:
+			break_target = null
 			_set_state(State.CHASE)
 			if first:
 				Audio.play_3d(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", global_position + Vector3.UP * 1.6, {"volume_db": 0.0})
 				Events.enemy_alerted.emit(entity_id, global_position)
 		return
 	# Hearing.
-	var e: Stimuli.SoundEvent = st.loudest_heard(global_position, def.perc("hearing", 1.0) * (0.7 * _wake_factor if state == State.SLEEP else 1.0), _heard_since, entity_id)
-	_heard_since = st.now()
+	var e: Stimuli.SoundEvent = st.loudest_heard(global_position, def.perc("hearing", 1.0) * (0.7 * _wake_factor if state == State.SLEEP else 1.0), _heard_seq, entity_id)
+	_heard_seq = st.last_seq()
 	if e != null:
 		if state == State.SLEEP:
 			awareness += 0.5 if e.loudness < 25.0 else 1.0
@@ -492,6 +536,21 @@ func notice(pos: Vector3, alert: bool = true) -> void:
 		_set_state(State.INVESTIGATE)
 
 
+## The Hum is over. Survivors drift away from the base to where it last drew them, and root into
+## the soil (DESIGN §6) once nobody is near to see it; one already on the player keeps going.
+func release_from_horde() -> void:
+	horde = false
+	horde_sector = -1
+	_root_t = _rng.randf_range(60.0, 150.0)
+	if _resume_state == State.HORDE:
+		_resume_state = State.INVESTIGATE
+	if state in [State.HORDE, State.BREAK]:
+		break_target = null
+		target_pos = global_position + Vector3(_rng.randf_range(-25.0, 25.0), 0.0, _rng.randf_range(-25.0, 25.0))
+		home = target_pos
+		_set_state(State.INVESTIGATE)
+
+
 # --- Actions ---------------------------------------------------------------------------------
 
 func _start_attack() -> void:
@@ -505,6 +564,11 @@ func _deliver_hit(p: Player) -> void:
 	if p == null or not p.state.stats.alive:
 		return
 	if global_position.distance_to(p.global_position) > def.atk("range", 1.5) + 0.45:
+		return
+	# A swing only lands on what is in front of it and not behind a door that just shut.
+	var to_p: Vector3 = p.global_position - global_position
+	var fwd := Vector3(sin(rotation.y), 0.0, cos(rotation.y))
+	if fwd.dot(Vector3(to_p.x, 0.0, to_p.z).normalized()) < 0.3 or not _line_of_sight(p):
 		return
 	var dmg: float = def.atk("damage", 10.0) * damage_mult * (0.5 if severed.has("arm_l") and severed.has("arm_r") else 1.0)
 	var info := DamageInfo.make(dmg, &"zombie", &"zombie", entity_id)
@@ -562,7 +626,16 @@ func _fire_spit(p: Player) -> void:
 	var mouth: Vector3 = global_position + Vector3.UP * 1.55 + global_transform.basis.z * 0.25
 	# Lead the target a little: where they will be when the glob lands.
 	var lead: Vector3 = p.velocity * clampf(mouth.distance_to(p.global_position) / 13.0, 0.0, 1.2) * 0.6
-	Spores.spit(get_parent(), mouth, p.global_position + Vector3(lead.x, 0.3, lead.z), def.beh("spit", {}), entity_id)
+	Spores.spit(get_parent(), mouth, p.global_position + Vector3(lead.x, 0.3, lead.z), _scaled_spores(def.beh("spit", {})), entity_id)
+
+
+## Spore attack parameters with this body's damage multiplier (difficulty, infected tier).
+func _scaled_spores(params: Dictionary) -> Dictionary:
+	var out: Dictionary = params.duplicate()
+	for k: String in ["damage", "puddle_dps"]:
+		if out.has(k):
+			out[k] = float(out[k]) * damage_mult
+	return out
 
 
 func _can_charge(dist: float) -> bool:
@@ -650,13 +723,17 @@ func take_damage(info: DamageInfo) -> void:
 		target_pos = info.source_pos
 	if state == State.SLEEP:
 		_wake(info.source_pos, true)
-	elif amount >= _stagger_threshold(info) and state != State.STAGGER:
+	elif amount >= _stagger_threshold(info) and state != State.STAGGER and _stagger_lock <= 0.0:
 		_resume_state = State.CHASE if state in [State.ATTACK, State.CHASE, State.BREAK] else state
 		if _resume_state == State.SLEEP:
 			_resume_state = State.CHASE
-		_stagger_t = visual.play_once(&"stagger" if amount > 30.0 else (&"hit_front" if info.direction.dot(-global_transform.basis.z) < 0.0 else &"hit_back"), 1.0, [&"hit_front"] as Array[StringName])
+		# Bodies face +Z: a blow from the front travels against it (recoil backwards = hit_front).
+		var from_front: bool = info.direction.dot(global_transform.basis.z) < 0.0
+		_stagger_t = visual.play_once(&"stagger" if amount > 30.0 else (&"hit_front" if from_front else &"hit_back"), 1.0, [&"hit_front"] as Array[StringName])
+		_stagger_lock = _stagger_t + 0.6
 		_set_state(State.STAGGER)
-	elif state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+	elif state in [State.IDLE, State.WANDER, State.INVESTIGATE, State.BREAK]:
+		break_target = null
 		_set_state(State.CHASE)
 
 
@@ -691,7 +768,8 @@ func _die(info: DamageInfo) -> void:
 	box.size = Vector3(0.6, 0.3, 1.7)
 	_shape.shape = box
 	_shape.position = Vector3(0, 0.15, -0.6)
-	var back: bool = info.direction.dot(global_transform.basis.z) > 0.0
+	# Struck from the front, fall on the back; from behind, pitch forward onto the face.
+	var back: bool = info.direction.dot(global_transform.basis.z) < 0.0
 	visual.play_once(&"death_back" if back else &"death_front", 1.0, [&"death_front"] as Array[StringName])
 	visual.animate_placeholder(0.0, 0.0, true)
 	Audio.play_3d(&"voice/zombie_death", global_position + Vector3.UP, {"volume_db": -2.0})
@@ -705,7 +783,7 @@ func _die(info: DamageInfo) -> void:
 	if burst.is_empty():
 		burst = _tier_burst
 	if not burst.is_empty() and get_parent() != null:
-		Spores.burst(get_parent(), global_position, burst, entity_id)
+		Spores.burst(get_parent(), global_position, _scaled_spores(burst), entity_id)
 	Events.enemy_killed.emit(entity_id, def.id, global_position, killer)
 	died.emit(self)
 
@@ -756,6 +834,9 @@ var container_id: StringName:
 func _set_state(s: State) -> void:
 	if state == s:
 		return
+	if state == State.ATTACK:
+		# A swing interrupted (stagger, chase) must not land later without its animation.
+		_hit_at = -1.0
 	state = s
 	_state_t = 0.0
 	_enter_anim()
@@ -767,7 +848,14 @@ func _enter_anim() -> void:
 			visual.play(StringName("idle_sleep_" + sleep_pose), 1.0, 0.0, [&"idle_sleep_stand", &"idle"] as Array[StringName])
 			visual.animate_placeholder(0.0, 0.0, sleep_pose == "lie")
 		State.WAKING:
-			visual.play_once(&"wake_lie" if sleep_pose == "lie" else &"wake_sit", 1.0, [&"idle"] as Array[StringName])
+			# Standing, kneeling and crouching sleepers just straighten up (no sit-down first).
+			match sleep_pose:
+				"lie":
+					visual.play_once(&"wake_lie", 1.0, [&"idle"] as Array[StringName])
+				"sit":
+					visual.play_once(&"wake_sit", 1.0, [&"idle"] as Array[StringName])
+				_:
+					visual.play(&"idle", 1.0, 0.5)
 			visual.animate_placeholder(0.0, 0.0, false)
 
 
