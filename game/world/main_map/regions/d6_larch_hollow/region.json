@@ -173,15 +173,16 @@
       "rotation": 0
     },
     {
-      "type": "poi",
+      "type": "framework",
       "id": "okafor_farm",
-      "poi": "okafor_farmhouse",
+      "framework": "farm_okafor",
       "origin": [
-        -196,
-        1990
+        -198,
+        1972
       ],
-      "rotation": 90,
-      "biome": "meadow"
+      "rotation": 0,
+      "biome": "meadow",
+      "skirt": 12
     },
     {
       "type": "biome",
@@ -273,6 +274,424 @@
       "kind": "road",
       "leads_to": "e6_mile_12",
       "note": "Route 9 east to Mile 12."
+    },
+    {
+      "type": "road",
+      "id": "okafor_lane",
+      "surface": "gravel",
+      "width": 3.5,
+      "shoulder": 1.0,
+      "points": [
+        [
+          -162,
+          2006
+        ],
+        [
+          -140,
+          2006.5
+        ],
+        [
+          -126,
+          2006
+        ],
+        [
+          -110,
+          1999
+        ],
+        [
+          -95,
+          1984
+        ],
+        [
+          -82,
+          1966
+        ],
+        [
+          -73,
+          1952
+        ],
+        [
+          -67,
+          1944.2
+        ]
+      ]
+    },
+    {
+      "type": "poi",
+      "id": "cordon_gas",
+      "poi": "cordon_gas_garage",
+      "origin": [
+        6,
+        2020
+      ],
+      "rotation": 90,
+      "biome": "meadow"
+    },
+    {
+      "type": "poi",
+      "id": "tamsin_clinic",
+      "poi": "tamsin_clinic",
+      "origin": [
+        2,
+        2100
+      ],
+      "rotation": 90,
+      "biome": "meadow"
+    },
+    {
+      "type": "poi",
+      "id": "timberline_motel",
+      "poi": "timberline_motel",
+      "origin": [
+        -39.1,
+        2379.6
+      ],
+      "rotation": 99.5,
+      "biome": "meadow"
+    },
+    {
+      "type": "road",
+      "id": "timberline_drive_n",
+      "surface": "asphalt",
+      "width": 5.5,
+      "shoulder": 1.0,
+      "points": [
+        [
+          -73.0,
+          2382.0
+        ],
+        [
+          -61.1,
+          2384.0
+        ]
+      ]
+    },
+    {
+      "type": "road",
+      "id": "timberline_drive_s",
+      "surface": "asphalt",
+      "width": 5.5,
+      "shoulder": 1.0,
+      "points": [
+        [
+          -75.6,
+          2397.8
+        ],
+        [
+          -63.8,
+          2399.8
+        ]
+      ]
+    },
+    {
+      "type": "poi",
+      "id": "cedar_ridge_lookout",
+      "poi": "cedar_ridge_lookout",
+      "origin": [
+        343,
+        2202
+      ],
+      "rotation": 180,
+      "biome": "rocky_slope"
+    },
+    {
+      "type": "path",
+      "id": "cedar_ridge_trail",
+      "surface": "dirt",
+      "width": 1.8,
+      "points": [
+        [
+          262,
+          1936
+        ],
+        [
+          268,
+          1980
+        ],
+        [
+          282,
+          2030
+        ],
+        [
+          296,
+          2075
+        ],
+        [
+          286,
+          2105
+        ],
+        [
+          306,
+          2125
+        ],
+        [
+          322,
+          2150
+        ],
+        [
+          316,
+          2168
+        ],
+        [
+          328.5,
+          2180
+        ]
+      ]
+    },
+    {
+      "type": "poi",
+      "id": "tamsin_logging_camp",
+      "poi": "tamsin_logging_camp",
+      "origin": [
+        -414,
+        1712
+      ],
+      "rotation": 180,
+      "biome": "town"
+    },
+    {
+      "type": "road",
+      "id": "tamsin_camp_spur",
+      "surface": "gravel",
+      "width": 4.0,
+      "shoulder": 1.0,
+      "points": [
+        [
+          -431.5,
+          1654.5
+        ],
+        [
+          -431.5,
+          1670
+        ],
+        [
+          -431.5,
+          1687
+        ]
+      ]
+    },
+    {
+      "type": "poi",
+      "id": "larch_hollow_sawmill",
+      "poi": "larch_hollow_sawmill",
+      "origin": [
+        -181.5,
+        1895.2
+      ],
+      "rotation": 233,
+      "biome": "town"
+    },
+    {
+      "type": "road",
+      "id": "larch_mill_spur",
+      "surface": "gravel",
+      "width": 4.0,
+      "shoulder": 1.0,
+      "points": [
+        [
+          -153.2,
+          1837.4
+        ],
+        [
+          -162.2,
+          1844.3
+        ],
+        [
+          -171.8,
+          1851.6
+        ],
+        [
+          -179.0,
+          1857.0
+        ]
+      ]
+    },
+    {
+      "type": "poi",
+      "id": "trappers_cabin",
+      "poi": "trappers_cabin",
+      "origin": [
+        391,
+        2409
+      ],
+      "rotation": 90,
+      "biome": "meadow"
+    },
+    {
+      "type": "path",
+      "id": "lindqvist_trail",
+      "surface": "dirt",
+      "width": 1.4,
+      "points": [
+        [
+          375,
+          2419.5
+        ],
+        [
+          350,
+          2430
+        ],
+        [
+          320,
+          2432
+        ],
+        [
+          295,
+          2425
+        ],
+        [
+          270,
+          2405
+        ],
+        [
+          250,
+          2385
+        ],
+        [
+          230,
+          2372
+        ],
+        [
+          210,
+          2368
+        ]
+      ]
+    },
+    {
+      "type": "road",
+      "id": "cordon_gas_apron_1",
+      "surface": "asphalt",
+      "width": 5.5,
+      "shoulder": 0.6,
+      "points": [
+        [
+          -25.0,
+          2022
+        ],
+        [
+          -25.0,
+          2051
+        ]
+      ]
+    },
+    {
+      "type": "road",
+      "id": "cordon_gas_apron_2",
+      "surface": "asphalt",
+      "width": 5.5,
+      "shoulder": 0.6,
+      "points": [
+        [
+          -20.2,
+          2022
+        ],
+        [
+          -20.2,
+          2051
+        ]
+      ]
+    },
+    {
+      "type": "road",
+      "id": "cordon_gas_apron_3",
+      "surface": "asphalt",
+      "width": 5.5,
+      "shoulder": 0.6,
+      "points": [
+        [
+          -15.4,
+          2022
+        ],
+        [
+          -15.4,
+          2051
+        ]
+      ]
+    },
+    {
+      "type": "road",
+      "id": "cordon_gas_apron_4",
+      "surface": "asphalt",
+      "width": 5.5,
+      "shoulder": 0.6,
+      "points": [
+        [
+          -10.6,
+          2022
+        ],
+        [
+          -10.6,
+          2051
+        ]
+      ]
+    },
+    {
+      "type": "road",
+      "id": "tamsin_clinic_lot_1",
+      "surface": "asphalt",
+      "width": 5.5,
+      "shoulder": 0.6,
+      "points": [
+        [
+          -24.6,
+          2101
+        ],
+        [
+          -24.6,
+          2127
+        ]
+      ]
+    },
+    {
+      "type": "road",
+      "id": "tamsin_clinic_lot_2",
+      "surface": "asphalt",
+      "width": 5.5,
+      "shoulder": 0.6,
+      "points": [
+        [
+          -19.4,
+          2101
+        ],
+        [
+          -19.4,
+          2127
+        ]
+      ]
+    },
+    {
+      "type": "road",
+      "id": "timberline_lot_1",
+      "surface": "asphalt",
+      "width": 5.6,
+      "shoulder": 0.6,
+      "points": [
+        [
+          -55.44,
+          2380.93
+        ],
+        [
+          -59.44,
+          2404.63
+        ]
+      ]
+    },
+    {
+      "type": "road",
+      "id": "timberline_lot_2",
+      "surface": "asphalt",
+      "width": 5.6,
+      "shoulder": 0.6,
+      "points": [
+        [
+          -60.56,
+          2380.07
+        ],
+        [
+          -64.56,
+          2403.77
+        ]
+      ]
     }
   ]
 }
