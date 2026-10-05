@@ -1,5 +1,8 @@
 // Hollowmere sky: time-of-day gradient, sun disc + forward scattering, moon disc, stars,
 // a scrolling cloud layer (coverage driven by weather) and a faint Bloom aurora on Hum nights.
+// Clouds shade themselves cheaply: the density a step toward the sun says whether a point faces
+// the sun or sits behind the cloud's mass, and thick cores darken, so they read as volumes rather
+// than cut-outs. A thin, streaky cirrus veil sits above them on fair days.
 // LIGHT0 = sun, LIGHT1 = moon (DirectionalLight3D order in the scene).
 shader_type sky;
 render_mode use_half_res_pass;
@@ -23,6 +26,18 @@ uniform float cloud_scale = 0.35;
 uniform float moon_size = 0.9996;
 uniform float aurora = 0.0;
 
+float cloud_density(vec2 uv, vec2 drift) {
+	vec4 n = texture(cloud_tex, uv);
+	vec4 n2 = texture(cloud_tex, uv * 2.7 + vec2(0.37, 0.71) + drift * 1.6);
+	return n.r * 0.6 + n.g * 0.25 + n2.b * 0.15;
+}
+
+// The cloud's large-scale mass (no fine detail), for shading: lighting follows the big shapes.
+float cloud_mass(vec2 uv) {
+	vec4 n = texture(cloud_tex, uv);
+	return n.r * 0.75 + n.g * 0.25;
+}
+
 float hash12(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
 	p3 += dot(p3, p3.yzx + 33.33);
@@ -45,17 +60,29 @@ void sky() {
 	// Clouds (planar projection on a dome).
 	float cloud_alpha = 0.0;
 	if (up > 0.0) {
-		vec2 uv = dir.xz / (up + 0.18) * cloud_scale + TIME * cloud_wind;
-		vec4 n = texture(cloud_tex, uv);
-		vec4 n2 = texture(cloud_tex, uv * 2.7 + vec2(0.37, 0.71) + TIME * cloud_wind * 1.6);
-		float density = n.r * 0.6 + n.g * 0.25 + n2.b * 0.15;
+		vec2 drift = TIME * cloud_wind;
+		vec2 uv = dir.xz / (up + 0.18) * cloud_scale + drift;
+		float density = cloud_density(uv, drift);
 		float threshold = mix(0.78, 0.18, cloud_cover);
 		cloud_alpha = smoothstep(threshold, threshold + 0.22, density) * smoothstep(0.0, 0.12, up);
 		vec3 lit = mix(vec3(1.0), LIGHT0_COLOR * 0.9 + 0.1, 0.5) * mix(1.0, 0.45, cloud_darkness);
-		float silver = pow(max(sun_dot, 0.0), 12.0) * (1.0 - density) * 0.8;
-		vec3 cloud_col = mix(horizon_color.rgb * 1.05, lit, 0.55) * (0.65 + 0.35 * (1.0 - density)) + silver;
+		// More cloud toward the sun: this point is on the far, shaded side of the mass.
+		vec2 sun_step = normalize(LIGHT0_DIRECTION.xz + vec2(1e-4)) * 0.05;
+		float mass = cloud_mass(uv);
+		float toward = cloud_mass(uv + sun_step);
+		float core = smoothstep(threshold + 0.1, threshold + 0.45, mass);
+		float shade = clamp((toward - mass) * 7.0 + 0.2 + core * 0.5, 0.0, 1.0);
+		vec3 shadow_col = mix(horizon_color.rgb, zenith_color.rgb, 0.35) * mix(0.8, 0.45, cloud_darkness);
+		// A full deck is lit from above as one sheet: shading flattens as cover closes.
+		vec3 cloud_col = mix(lit, shadow_col, shade * mix(0.85, 0.4, smoothstep(0.6, 1.0, cloud_cover)));
+		cloud_col += LIGHT0_COLOR * pow(max(sun_dot, 0.0), 12.0) * (1.0 - core) * 0.9;
 		cloud_col = mix(cloud_col, sunset_color.rgb * 0.9, sunset_amount * 0.55);
 		cloud_col *= mix(1.0, 0.05, night_amount);
+		// Cirrus: thin streaks high above, faster and only on fair days.
+		vec2 cuv = dir.xz / (up + 0.06) * cloud_scale * 0.45 + drift * 2.2;
+		float streak = texture(cloud_tex, vec2(cuv.x * 0.35, cuv.y * 1.4) + vec2(0.13, 0.57)).g;
+		float cirrus = smoothstep(0.55, 0.9, streak) * (1.0 - cloud_cover) * 0.45 * smoothstep(0.02, 0.3, up);
+		col = mix(col, mix(lit, horizon_color.rgb, 0.3) * mix(1.0, 0.05, night_amount), cirrus);
 		col = mix(col, cloud_col, cloud_alpha);
 	}
 
