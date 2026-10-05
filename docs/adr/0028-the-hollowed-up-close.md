@@ -97,8 +97,21 @@ The Hollowed are what the player looks at from arm's length, and they read as ma
 * **Motion variety, additive.** `char_anim.py` gains `idle_b` (head loll), `idle_c` (twitches) and
   `walk_limp`. `EnemyVisual` maps `idle` and `walk_b` to a variant per Hollowed, chosen
   deterministically, so a crowd doesn't idle in step. The AI keeps asking for the same actions.
-* **First-person arms stay as they are.** `skin_human`, `cloth_jumpsuit` and the tether stay on
-  `std_surface` for the first-person pass. The libraries keep the API `char_fp.py` uses.
+* **First-person arms belong to ADR-0029.** Its `fp_skin` and `fp_sleeve` materials
+  (`data/materials/fp.json`) use these two shaders without the vertex layers, so they read zeros:
+  no marks and nothing gated. The older `skin_human` and `cloth_jumpsuit` stay on `std_surface`.
+  The libraries keep the API `char_fp.py` uses.
+* **QA shots that can't come back empty.** The old `hollow_closeup` showed no Hollowed. The shot
+  now spawns its Hollowed authored, at the normal tier (the tier used to be rolled from the
+  gamestage, so the body changed between runs), and puts it back where it was spawned before the
+  frame is taken. It logs the body the Hollowed wears and whether it is visible
+  (`SHOT hollow_closeup: ... body characters/..., visible true`), and warns if the Hollowed is
+  gone. `EnemyVisual.build()` no longer leaves a body empty when a model has an import sidecar but
+  no imported scene (`load()` returns null): it builds the stand-in body. New shots:
+  `special_hollowed_40m` (the three specials and a Hollow 40 m down a path),
+  `population_lineup` (Hollows dressed by the clinic, the church, the Cordon garage and the
+  trapper's cabin), `cordon_torch_night` (the tape and a Bloomed glow by torchlight) and
+  `clinic_waiting` (the clinic's waiting room with its own sleepers).
 
 ## Consequences
 + Faces, hands and clothes hold up at arm's length. Seams, hems and tape are crisp, veins stay put,

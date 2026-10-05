@@ -45,8 +45,10 @@ uniform float bloom_web_tile = 1.6;
 // Share of the tile the mask's threads cover (printed by the generator: keep in step). At full
 // strength they all show; the cottony mat (B) fills in further.
 uniform float bloom_web_cover = 0.33;
-uniform vec4 bloom_web_fresh : source_color = vec4(0.86, 0.86, 0.82, 1.0);
-uniform vec4 bloom_web_aged : source_color = vec4(0.69, 0.66, 0.57, 1.0);
+// Cream, not snow-white: a third of the ground in near-white threads brightened the dark litter
+// 2-2.3x and, under the cold sky light, the colonised floor read as old snow.
+uniform vec4 bloom_web_fresh : source_color = vec4(0.8, 0.78, 0.7, 1.0);
+uniform vec4 bloom_web_aged : source_color = vec4(0.62, 0.57, 0.46, 1.0);
 uniform float bloom_glow_energy = 0.035;
 
 global uniform float hm_wetness;
@@ -142,17 +144,19 @@ void fragment() {
 		float g = clamp(bf, 0.0, 1.0) * 3.0;
 		float share = mix(mix(wcv.r * clamp(g, 0.0, 1.0), wcv.g, clamp(g - 1.0, 0.0, 1.0)), wcv.b, clamp(g - 2.0, 0.0, 1.0));
 		float threads = mix(near_web, share, mid_w);
-		// The threads are hair-thin: with distance they sink into the litter, a faint pale veil.
+		// The threads are hair-thin: with distance they sink into the litter, a faint pale veil (the
+		// floor 1.2-1.7x as bright as clean litter, not a sheet).
 		float far_w = smoothstep(1.5, 4.5, lod);
-		threads *= mix(1.0, 0.45, far_w);
+		threads *= mix(1.0, 0.3, far_w);
 		// The cottony mat, in the litter's hollows and only where the Bloom is strongest.
 		float cotton = smoothstep(0.62, 1.0, bf) * wm.b * smoothstep(0.4, 0.8, 1.0 - hgt) * 0.55;
-		// Rot drains the colour from what the web holds (no lighter: bleached litter in shade is grey).
+		// Rot drains some colour from what the web holds (no lighter, and only a quarter of the way to
+		// grey: greyed litter turns the blue of snow in shade).
 		float decay = smoothstep(0.06, 0.65, bf);
 		float lum = dot(alb, vec3(0.299, 0.587, 0.114));
-		alb = mix(alb, vec3(lum) * vec3(1.04, 1.0, 0.94), decay * 0.5);
+		alb = mix(alb, vec3(lum) * vec3(1.04, 1.0, 0.94), decay * 0.25);
 		vec3 wc = mix(bloom_web_fresh.rgb, bloom_web_aged.rgb, wm.g);
-		float body = mix(mix(0.5, 0.95, wm.a), 0.75, mid_w);
+		float body = mix(mix(0.5, 0.95, wm.a), 0.55, mid_w);
 		float web = clamp(max(threads * body, cotton), 0.0, 1.0);
 		alb = mix(alb, mix(wc, bloom_web_aged.rgb * 0.85, smoothstep(-0.05, 0.05, cotton - threads)), web);
 		vec3 wn = whiteout_top(textureGrad(bloom_web_normal, wuv, wdx, wdy).rgb * 2.0 - 1.0, gn);

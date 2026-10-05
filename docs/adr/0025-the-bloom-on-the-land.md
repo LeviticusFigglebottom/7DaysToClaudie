@@ -50,12 +50,18 @@ mounds at dawn. They despawned instead.
     level the shaders read the share at the current growth from it, and fade it with distance
     (the threads are hair-thin). Far LODs use the same path and keep a faint pale cast.
 * **Ground (terrain.gdshader).** The ground has three layers:
-  * Rot bleaches and greys the litter.
-  * A white-grey web binds it. The tile is 1.6 m, made of cords from colony points on a jittered
+  * Rot drains some of the litter's colour, a quarter of the way to grey.
+  * A cream-white web binds it. The tile is 1.6 m, made of cords from colony points on a jittered
     grid, anastomoses and feathery fans.
   * In the strongest ground, a cottony mat fills the litter's hollows, where the blended layer
     height is low.
   * Web and mat are hidden on cliff faces and under snow.
+  * Beyond a few metres every pixel holds a share of threads, and a share of near-white threads
+    over dark litter brightens it a lot. With a white-grey web, litter greyed halfway and the
+    veil fading only to 45 %, the deep wood's floor came out 2–2.3× as bright as clean litter
+    with half its saturation, and under the cold sky light it read as old snow. The web is now
+    cream, the litter keeps more of its colour, and the veil thins to 55 % opacity and fades to
+    30 %, so the floor is 1.2–1.7× as bright as clean litter.
 * **Bark (bark.gdshader).** Cords climb from the roots in the bark's UVs. They are periodic in V,
   so they run on across tiles, and fans open up the trunk.
   * How far they reach depends on the field at the tree's foot, the material's `bloom_affinity`

@@ -6,8 +6,10 @@ extends RefCounted
 ## never sinks into a wall you stand against. This is Godot's own viewmodel technique
 ## (BaseMaterial3D use_fov_override / use_z_clip_scale): BaseMaterial3Ds get those flags, and
 ## ShaderMaterials (std_surface, std_glass...) get a copy of their shader with the same lines
-## added at the end of vertex(). Converted materials and shaders are cached, so swapping items
-## doesn't recompile anything; set_fov() retunes every live one (reading the tether narrows it).
+## added at the end of vertex(). Converted shaders are cached, and each converted material is kept
+## on its source (metadata), so swapping items doesn't recompile anything while a material made at
+## runtime (a torch flame per lighting, the tether screen) is freed with its node instead of piling
+## up in a static cache; set_fov() retunes every live one (reading the tether narrows it).
 
 ## Render layer 2 ("viewmodel" in project settings): other cameras can leave the arms out.
 const LAYER: int = 1 << 1
@@ -26,10 +28,13 @@ const FP_VERTEX: String = """
 
 static var fov: float = 58.0
 static var z_clip: float = 0.04
+## Metadata on a source material naming its first-person copy.
+const META: StringName = &"fp_material"
+
 ## source Shader -> first-person Shader (or the source itself when it couldn't be converted)
 static var _shaders: Dictionary = {}
-## source material -> first-person material
-static var _mats: Dictionary = {}
+## Every first-person material made, held weakly, for set_fov().
+static var _live: Array[WeakRef] = []
 ## The converted shaders (a set): only their materials take the fp_* uniforms.
 static var _converted: Dictionary = {}
 
@@ -70,10 +75,10 @@ static func apply(root: Node) -> void:
 static func fp_material(mat: Material) -> Material:
 	if mat == null:
 		return null
-	if _mats.has(mat):
-		return _mats[mat]
-	if _mats.values().has(mat):
+	if _is_fp(mat):
 		return mat
+	if mat.has_meta(META):
+		return mat.get_meta(META) as Material
 	var out: Material = mat
 	if mat is BaseMaterial3D:
 		var b: BaseMaterial3D = mat.duplicate()
@@ -91,8 +96,28 @@ static func fp_material(mat: Material) -> Material:
 			n.set_shader_parameter(&"fp_fov", fov)
 			n.set_shader_parameter(&"fp_z_clip_scale", z_clip)
 			out = n
-	_mats[mat] = out
+	if out != mat:
+		mat.set_meta(META, out)
+		if _live.size() > 256:
+			_prune()
+		_live.append(weakref(out))
 	return out
+
+
+## Already a first-person material (made by fp_material()).
+static func _is_fp(mat: Material) -> bool:
+	if mat is BaseMaterial3D:
+		return (mat as BaseMaterial3D).use_z_clip_scale
+	return mat is ShaderMaterial and _converted.has((mat as ShaderMaterial).shader)
+
+
+## Drops the weak references whose materials are gone.
+static func _prune() -> void:
+	var alive: Array[WeakRef] = []
+	for w: WeakRef in _live:
+		if w.get_ref() != null:
+			alive.append(w)
+	_live = alive
 
 
 ## The shader with the first-person lines at the end of vertex() (one is added when it has none).
@@ -150,7 +175,9 @@ static func _first_function(code: String) -> int:
 ## Retunes every first-person material to a new viewmodel field of view (degrees).
 static func set_fov(deg: float) -> void:
 	fov = deg
-	for m: Material in _mats.values():
+	_prune()
+	for w: WeakRef in _live:
+		var m: Material = w.get_ref() as Material
 		if m is BaseMaterial3D:
 			(m as BaseMaterial3D).fov_override = deg
 			(m as BaseMaterial3D).z_clip_scale = z_clip

@@ -102,3 +102,19 @@ func test_viewmodel_shader_lines() -> void:
 	var fm: Material = FpMaterials.fp_material(bm)
 	assert_true(fm is BaseMaterial3D and (fm as BaseMaterial3D).use_fov_override and (fm as BaseMaterial3D).use_z_clip_scale)
 	assert_eq(FpMaterials.fp_material(bm), fm, "converted once, then cached")
+	assert_eq(FpMaterials.fp_material(fm), fm, "a first-person material is left as it is")
+	var before: float = FpMaterials.fov
+	FpMaterials.set_fov(47.0)
+	assert_almost_eq((fm as BaseMaterial3D).fov_override, 47.0, 1e-4, "set_fov retunes live materials")
+	FpMaterials.set_fov(before)
+	# A material made at runtime (a torch flame per lighting) goes with its node: the cache
+	# doesn't keep its copy alive.
+	assert_null(_runtime_copy().get_ref(), "the copy is freed with its source")
+
+
+## Converts a material made here; its locals (and the VM's temporaries) go when this returns.
+func _runtime_copy() -> WeakRef:
+	var tmp := StandardMaterial3D.new()
+	var w: WeakRef = weakref(FpMaterials.fp_material(tmp))
+	assert_not_null(w.get_ref(), "converted")
+	return w

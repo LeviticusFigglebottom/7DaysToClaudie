@@ -358,8 +358,7 @@ func _footsteps(delta: float, speed: float) -> void:
 	if not is_on_floor() or speed < 0.4:
 		return
 	_step_dist += speed * delta
-	var stride: float = 0.75 if crouching else (1.3 if sprinting else 0.95)
-	if _step_dist < stride:
+	if _step_dist < _stride():
 		return
 	_step_dist = 0.0
 	step_count += 1
@@ -373,10 +372,14 @@ func _footsteps(delta: float, speed: float) -> void:
 	_emit_noise(loud, &"footstep")
 
 
+## Metres per footstep for the current gait.
+func _stride() -> float:
+	return 0.75 if crouching else (1.3 if sprinting else 0.95)
+
+
 ## 0..1 through the current footstep (0 = a foot just landed), for the first-person bob.
 func step_phase() -> float:
-	var stride: float = 0.75 if crouching else (1.3 if sprinting else 0.95)
-	return clampf(_step_dist / stride, 0.0, 1.0)
+	return clampf(_step_dist / _stride(), 0.0, 1.0)
 
 
 const SURFACE_SOUNDS: Dictionary = {

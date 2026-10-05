@@ -6,6 +6,7 @@ bones ua/fa/th/sh with side + t (fraction along the bone) + dir (lateral/out, al
 """
 from __future__ import annotations
 
+from ..core.paths import GAME
 from ..core.registry import Task, blender_sources
 
 FLANNEL_A = {"type": "flannel", "sleeve": 0.97, "hem": -0.10, "collar": True, "torn": 0.25, "neck_front": 0.05,
@@ -284,8 +285,12 @@ BODIES = {
         "limp_side": "L", "claw": 0.55, "jaw_drop": 11.0, "mouth_open": 0.5, "eye_open": 0.55, "lid_droop": 0.4,
         "nose_rot": 0.3,
         "outfit": {"tops": [{"type": "tshirt", "sleeve": 0.4, "hem": -0.05, "torn": 0.2, "neck_front": 0.02, "seed_off": 2.0},
+                            # With a 5 cm neckline, a 10 mm coat and a 5 mm flare, decimation kept ~2k
+                            # of the torso's triangles round the big collar and left the T-shirt in the
+                            # open front as facets up to 40 cm across. hollow_c's jacket proportions
+                            # (3 cm, the default thickness, 12 mm) mesh evenly (edges under 12 cm).
                             {"type": "hunter", "sleeve": 0.98, "hem": -0.17, "collar": True, "open_front": 0.04, "torn": 0.2,
-                             "flare": 0.005, "thickness": 0.010, "neck_front": 0.05,
+                             "flare": 0.012, "neck_front": 0.03,
                              "pockets": [{"side": "L", "x": 0.075, "y": 0.11, "w": 0.12, "h": 0.12},
                                          {"side": "R", "x": 0.075, "y": 0.11, "w": 0.12, "h": 0.12}]}],
                    "pants": {"type": "canvas", "belt": True, "torn": 0.25}},
@@ -435,6 +440,8 @@ def tasks() -> list[Task]:
                     blender="character_gibs", imports={rel: {"type": "scene"}}))
     rel = "models/characters/fp_arms.glb"
     out.append(Task(name="model:characters/fp_arms", group="models", outputs=[rel],
-                    sources=blender_sources("character_fp_arms"), params={"name": "fp_arms", "seed": 808, "height": 1.78},
+                    # The hold poses are baked into the arms' actions: a pose edit rebuilds them.
+                    sources=blender_sources("character_fp_arms") + [GAME / "data" / "config" / "viewmodel.json"],
+                    params={"name": "fp_arms", "seed": 808, "height": 1.78},
                     blender="character_fp_arms", imports={rel: {"type": "scene", "animation": True}}))
     return out
