@@ -79,6 +79,15 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     without a pick choose from the pool or generate one. Pell's Crossing's Larch Street is six of
     them, with the school, fire station and bank lots reserved on its corner.
   * `make poi-preview POI="merrow_house gen:cape_cod:3" POI_ARGS="--seed 7"` shows a run's dressing.
+* **The living forest** (ADR-0027): generated deer (doe and an antlered buck), snowshoe hares,
+  songbirds and crows, spawned deterministically by biome and time of day round the player.
+  * Herds graze, look up, bolt together (sight by light and stance, scent downwind, noise, the
+    Hollowed) and bed down at night; the valley falls silent before a Hum.
+  * Flocks flush for you, a Hollowed or a gunshot, and the flush is a sound the Hollowed hear;
+    crows circle and call over what put them up.
+  * Hunting: a carcass bleeds scent; `wildlife.butcher` with a knife or an axe gives venison or
+    hare, a hide or pelt, bone and sinew. World settings `wildlife` and `wildlife_density`.
+  * QA shots `deer_meadow_dawn`, `hare_brush`, `birds_lift_off`.
 * **Surfaces, water and sky** (ADR-0019, ADR-0020):
   * Interiors wear in world space.
   * Roofs have trim and tiles that don't repeat.
