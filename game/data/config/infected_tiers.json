@@ -1,0 +1,18 @@
+{
+  "_doc": "Infected tiers (the 7 Days feral/radiated idea in our fiction): how far the Bloom has taken a Hollowed. Multipliers apply on top of the world settings. Tiers are rolled per spawn from the gamestage brackets below (highest bracket with gs <= gamestage), unless the world setting infected_tiers is off. Glow drives the std_surface bloom_glow instance uniform (pale filaments under the skin).",
+  "tiers": {
+    "normal": {"label": "", "hp": 1.0, "damage": 1.0, "speed": 1.0, "structure": 1.0, "xp": 1.0, "regen": 0.0, "glow": 0.0},
+    "seeded": {"label": "Seeded", "hp": 1.6, "damage": 1.3, "speed": 1.12, "structure": 1.3, "xp": 1.8, "regen": 0.0, "glow": 0.35},
+    "bloomed": {"label": "Bloomed", "hp": 2.4, "damage": 1.6, "speed": 1.22, "structure": 1.6, "xp": 3.0, "regen": 3.0, "glow": 1.0,
+                "death_burst": {"radius": 3.0, "damage": 10, "infection": 10}}
+  },
+  "by_gamestage": [
+    {"gs": 1, "pick": {"normal": 1.0}},
+    {"gs": 15, "pick": {"normal": 0.88, "seeded": 0.12}},
+    {"gs": 30, "pick": {"normal": 0.7, "seeded": 0.26, "bloomed": 0.04}},
+    {"gs": 50, "pick": {"normal": 0.5, "seeded": 0.38, "bloomed": 0.12}},
+    {"gs": 80, "pick": {"normal": 0.3, "seeded": 0.45, "bloomed": 0.25}},
+    {"gs": 120, "pick": {"normal": 0.15, "seeded": 0.45, "bloomed": 0.4}}
+  ],
+  "sleeper_tier_bonus": {"_doc": "Authored sleepers keep their type but roll a tier at the POI's tier + this many gamestage points per POI tier.", "per_poi_tier": 8}
+}

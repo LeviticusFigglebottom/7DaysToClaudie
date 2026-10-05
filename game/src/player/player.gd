@@ -414,6 +414,9 @@ func take_damage(info: DamageInfo) -> void:
 	if info.type == &"zombie":
 		var bleed: float = float(info.tool_power.get("bleed", 0.15)) * (1.0 - clampf(state.progression.modifier("bleed_resist"), 0.0, 0.8))
 		state.stats.add_wound(bleed, float(info.tool_power.get("infection", 0.0)))
+	elif info.tool_power.has("infection"):
+		# Spores and other non-bite exposure: Bloom infection without a bleeding wound.
+		state.stats.add_wound(0.0, float(info.tool_power["infection"]))
 	_shake = clampf(amount * 0.015, 0.05, 0.4)
 	Audio.play_3d(&"voice/player_hurt", global_position, {"volume_db": -2.0, "occlusion": false})
 	Events.player_damaged.emit(state.id, amount, info.to_dict())

@@ -14,6 +14,8 @@ var _az: float = 35.0
 var _el: float = 12.0
 var _dist: float = 4.0
 var _look_y: float = 0.85
+## In-game body proportions (EnemyDef behavior.body_scale), e.g. --scale 1.45,1,1.35
+var _scale := Vector3.ONE
 
 
 func _initialize() -> void:
@@ -46,6 +48,10 @@ func _initialize() -> void:
 			"--dist":
 				i += 1
 				_dist = float(a[i])
+			"--scale":
+				i += 1
+				var sc: PackedStringArray = a[i].split(",")
+				_scale = Vector3(float(sc[0]), float(sc[1]), float(sc[2]))
 			"--look":
 				i += 1
 				_look_y = float(a[i])
@@ -107,6 +113,7 @@ func _run() -> void:
 			world.add_child(line)
 	var inst: Node3D = _load()
 	world.add_child(inst)
+	inst.scale = _scale
 	var cam := Camera3D.new()
 	cam.fov = 35.0
 	world.add_child(cam)

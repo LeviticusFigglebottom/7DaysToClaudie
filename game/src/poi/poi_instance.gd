@@ -88,7 +88,7 @@ func spawn_sleepers(ai: Node) -> void:
 			continue
 		var local: Vector3 = layout.local_pos(s["level"], s["pos"])
 		var e: Enemy = ai.call(&"spawn_sleeper", StringName(str(s.get("enemy", "hollow"))), to_global(local) + Vector3.UP * 0.05,
-			global_rotation.y + deg_to_rad(float(s.get("rot", 0.0))), str(s.get("pose", "stand")), instance_id, StringName(sid))
+			global_rotation.y + deg_to_rad(float(s.get("rot", 0.0))), str(s.get("pose", "stand")), instance_id, StringName(sid), layout.def.tier)
 		if e != null:
 			_sleepers[StringName(sid)] = e
 			e.died.connect(_on_sleeper_died.bind(sid))

@@ -42,16 +42,21 @@ uniform float variation_strength = 0.08;
 uniform vec4 emission_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform float emission_energy = 0.0;
 instance uniform float instance_variation = 0.5;
+// Infected tiers (Seeded/Bloomed Hollowed, InfectedTiers): pale Bloom filaments glowing under the
+// skin, patterned in object space so they stay put on an animated body.
+instance uniform float bloom_glow = 0.0;
 
 global uniform float hm_wetness;
 global uniform float hm_snow;
 
 varying vec3 v_world_normal;
 varying vec3 v_world_pos;
+varying vec3 v_obj_pos;
 
 void vertex() {
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	v_obj_pos = VERTEX;
 }
 
 void fragment() {
@@ -111,6 +116,13 @@ void fragment() {
 	ALBEDO = clamp(alb, vec3(0.0), vec3(1.0));
 	if (emission_energy > 0.0) {
 		EMISSION = emission_color.rgb * emission_energy * clamp(alb, vec3(0.0), vec3(1.0));
+	}
+	if (bloom_glow > 0.001) {
+		vec3 q = v_obj_pos * 11.0;
+		float veins = abs(sin(q.x + 2.1 * sin(q.y * 1.7)) * sin(q.y * 1.3 + 2.3 * sin(q.z * 1.9)) * sin(q.z + 1.9 * sin(q.x * 1.3)));
+		float vein_mask = (1.0 - smoothstep(0.0, 0.09, veins)) * smoothstep(0.1, 0.6, bloom_glow + 0.2);
+		ALBEDO = mix(ALBEDO, ALBEDO * vec3(0.86, 0.95, 0.84), bloom_glow * 0.6);
+		EMISSION += vec3(0.55, 0.95, 0.62) * vein_mask * bloom_glow * 2.2;
 	}
 	ROUGHNESS = rough;
 	METALLIC = metal;

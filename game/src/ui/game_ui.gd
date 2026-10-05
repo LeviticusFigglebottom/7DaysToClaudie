@@ -419,7 +419,7 @@ func show_death(cause: String, note: String = "Your pack lies where you fell.", 
 	tw.tween_property(_overlay, "color:a", 0.92, 2.0)
 	var why: String = {"zombie": "The Hollowed got you.", "bleeding": "You bled out.", "cold": "The cold took you.",
 		"starvation": "You starved.", "dehydration": "You died of thirst.", "fall": "You fell.", "tree": "The tree came down on you.",
-		"turned": "The Bloom took you. You are one of them now."}.get(cause, "You died.")
+		"turned": "The Bloom took you. You are one of them now.", "spores": "The spores filled your lungs."}.get(cause, "You died.")
 	_overlay_label.text = why + "\n" + note
 	_final_death = final
 	_death_button.text = "Return to the menu" if final else _death_button.text

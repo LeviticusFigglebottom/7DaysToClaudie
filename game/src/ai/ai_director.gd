@@ -41,12 +41,20 @@ func setup_world(w: Node) -> void:
 # --- Spawning --------------------------------------------------------------------------------
 
 func spawn(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Enemy:
+	var gs: int = _gamestage()
+	enemy_id = allowed_enemy(enemy_id, gs, opts.has("sleeper"))
 	var def: EnemyDef = Content.enemy(enemy_id)
 	if def == null:
 		Log.warn("ai", "unknown enemy %s" % enemy_id)
 		return null
 	_ids += 1
 	var id: StringName = StringName(str(opts.get("id", ""))) if opts.has("id") else StringName("e:%d" % _ids)
+	if not opts.has("tier"):
+		# Deterministic per entity (a sleeper is the same Bloomed brute every time you return).
+		var trng := RandomNumberGenerator.new()
+		trng.seed = Ids.hash64("tier:%d:%s" % [Game.session.world_seed if Game.session != null else 0, id])
+		opts = opts.duplicate()
+		opts["tier"] = InfectedTiers.pick(gs + int(opts.get("tier_bonus", 0)), trng)
 	var e := Enemy.new()
 	e.setup(id, def, self, opts)
 	e.name = String(id).replace(":", "_")
@@ -61,9 +69,24 @@ func spawn(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Enemy:
 	return e
 
 
-## Dormant sleeper placed by a POI (pose: lie/sit/stand/kneel/crouch).
-func spawn_sleeper(enemy_id: StringName, pos: Vector3, yaw: float, pose: String, poi_id: StringName, sleeper_id: StringName) -> Enemy:
-	return spawn(enemy_id, pos, {"yaw": yaw, "pose": pose, "poi": poi_id, "sleeper": sleeper_id, "id": "sl:%s:%s" % [poi_id, sleeper_id]})
+## Dormant sleeper placed by a POI (pose: lie/sit/stand/kneel/crouch). Harder buildings roll
+## their sleepers' infected tier at a higher gamestage.
+func spawn_sleeper(enemy_id: StringName, pos: Vector3, yaw: float, pose: String, poi_id: StringName, sleeper_id: StringName, poi_tier: int = 1) -> Enemy:
+	var bonus: int = int((InfectedTiers.cfg().get("sleeper_tier_bonus", {}) as Dictionary).get("per_poi_tier", 8)) * maxi(0, poi_tier - 1)
+	return spawn(enemy_id, pos, {"yaw": yaw, "pose": pose, "poi": poi_id, "sleeper": sleeper_id, "id": "sl:%s:%s" % [poi_id, sleeper_id], "tier_bonus": bonus})
+
+
+## What actually spawns for a request: authored sleepers keep their type; everything else must
+## meet the type's gamestage_min. Special Hollowed obey the world setting either way.
+static func allowed_enemy(enemy_id: StringName, gamestage: int, authored: bool) -> StringName:
+	var def: EnemyDef = Content.enemy(enemy_id)
+	if def == null:
+		return enemy_id
+	if bool(def.beh("special", false)) and not GameRules.current().flag("special_hollowed"):
+		return &"hollow"
+	if not authored and def.gamestage_min > gamestage:
+		return &"hollow"
+	return enemy_id
 
 
 func despawn(e: Enemy) -> void:

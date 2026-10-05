@@ -9,8 +9,12 @@ extends CharacterBody3D
 ## `awareness` until they wake. WANDER/IDLE drift; INVESTIGATE walks to a sound or follows scent;
 ## CHASE runs at what it saw; ATTACK/BREAK hit the player or whatever wall is in the way; HORDE
 ## follows the Hum flow field toward the base; SCREAM (Keener) summons the neighbourhood.
+## Specials (EnemyDef.behavior): SPIT (Blister) lobs spore globs from range, CHARGE (Rammer)
+## barrels at you or through a wall, `armor` (Husk) shrugs off everything but headshots, and
+## `death_burst` leaves a spore cloud. Infected tiers (Seeded, Bloomed) scale stats, regenerate
+## and glow (InfectedTiers, ADR-0014).
 
-enum State { SLEEP, WAKING, IDLE, WANDER, INVESTIGATE, CHASE, ATTACK, BREAK, SCREAM, STAGGER, HORDE, DEAD }
+enum State { SLEEP, WAKING, IDLE, WANDER, INVESTIGATE, CHASE, ATTACK, BREAK, SCREAM, STAGGER, HORDE, DEAD, SPIT, CHARGE }
 
 const LAYER: int = 1 << 4
 const CORPSE_LAYER: int = 1 << 7
@@ -69,6 +73,17 @@ var damage_mult: float = 1.0
 var structure_mult: float = 1.0
 var _speed_scales: Dictionary = {"day": 1.0, "night": 1.0, "hum": 1.0}
 var _wake_factor: float = 1.0
+## Infected tier (normal / seeded / bloomed) and what it adds.
+var tier: StringName = &"normal"
+var xp_mult: float = 1.0
+var _regen: float = 0.0
+var _glow: float = 0.0
+var _tier_burst: Dictionary = {}
+var _spit_cd: float = 0.0
+var _spit_done: bool = false
+var _charge_cd: float = 0.0
+var _charge_dir := Vector3.ZERO
+var _charge_hit: bool = false
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -84,6 +99,20 @@ func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary
 	for period: String in _speed_scales:
 		_speed_scales[period] = rules.speed_scale(period)
 	_wake_factor = rules.sleeper_wake_factor()
+	tier = StringName(str(opts.get("tier", "normal")))
+	var t: Dictionary = InfectedTiers.tier(tier)
+	max_health *= float(t.get("hp", 1.0))
+	health = max_health
+	damage_mult *= float(t.get("damage", 1.0))
+	structure_mult *= float(t.get("structure", 1.0))
+	for period: String in _speed_scales:
+		_speed_scales[period] = float(_speed_scales[period]) * float(t.get("speed", 1.0))
+	xp_mult = float(t.get("xp", 1.0))
+	_regen = float(t.get("regen", 0.0))
+	_glow = float(t.get("glow", 0.0))
+	_tier_burst = t.get("death_burst", {})
+	_spit_cd = _rng.randf_range(1.0, 3.0)
+	_charge_cd = _rng.randf_range(2.0, 4.0)
 	limb_hp = def.limbs.duplicate()
 	poi_id = StringName(str(opts.get("poi", "")))
 	sleeper_id = StringName(str(opts.get("sleeper", "")))
@@ -107,8 +136,8 @@ func _ready() -> void:
 	add_to_group(&"enemies")
 	_shape = CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
-	cap.radius = 0.3
-	cap.height = 0.7 if crawling else 1.75
+	cap.radius = float(def.beh("radius", 0.3))
+	cap.height = 0.7 if crawling else maxf(1.75, float(def.beh("height", 1.75)))
 	_shape.shape = cap
 	_shape.position = Vector3(0, cap.height * 0.5, 0)
 	add_child(_shape)
@@ -116,12 +145,15 @@ func _ready() -> void:
 	visual.name = "Visual"
 	add_child(visual)
 	var body: String = def.bodies[_rng.randi() % def.bodies.size()] if not def.bodies.is_empty() else ""
-	visual.build(body, _rng.randf_range(def.scale_range.x, def.scale_range.y))
+	var bs: Array = def.beh("body_scale", [1.0, 1.0, 1.0])
+	visual.build(body, _rng.randf_range(def.scale_range.x, def.scale_range.y), Vector3(float(bs[0]), float(bs[1]), float(bs[2])))
+	if _glow > 0.0:
+		visual.set_bloom(_glow)
 	agent = NavigationAgent3D.new()
 	agent.path_desired_distance = 0.8
 	agent.target_desired_distance = 1.0
 	agent.path_max_distance = 3.0
-	agent.radius = 0.35
+	agent.radius = maxf(0.35, cap.radius)
 	agent.height = 1.7
 	add_child(agent)
 	home = global_position
@@ -158,6 +190,10 @@ func _physics_process(delta: float) -> void:
 	var dist: float = global_position.distance_to(p.global_position) if p != null else 9999.0
 	_attack_cd = maxf(0.0, _attack_cd - delta)
 	_scream_cd = maxf(0.0, _scream_cd - delta)
+	_spit_cd = maxf(0.0, _spit_cd - delta)
+	_charge_cd = maxf(0.0, _charge_cd - delta)
+	if _regen > 0.0 and health < max_health:
+		health = minf(max_health, health + _regen * delta)
 	if dist < 45.0:
 		_vocalize(delta, dist)
 	_state_t += delta
@@ -175,6 +211,21 @@ func _physics_process(delta: float) -> void:
 				_set_state(State.CHASE)
 			elif state == State.STAGGER and _state_t > _stagger_t:
 				_set_state(_resume_state)
+		State.SPIT:
+			_face(p.global_position if p != null else target_pos)
+			if not _spit_done and _state_t >= 0.55:
+				_spit_done = true
+				_fire_spit(p)
+			elif _state_t > 1.3:
+				_set_state(State.CHASE)
+		State.CHARGE:
+			want = _charge_dir * float((def.beh("charge", {}) as Dictionary).get("speed", 8.0)) * _speed_scales["hum" if horde else ("night" if is_night() else "day")]
+			_yaw_target = atan2(_charge_dir.x, _charge_dir.z)
+			if p != null and not _charge_hit and dist < 1.9 and (p.global_position - global_position).normalized().dot(_charge_dir) > 0.3:
+				_charge_hit = true
+				_charge_impact_player(p)
+			if _charge_hit or _state_t > float((def.beh("charge", {}) as Dictionary).get("max_time", 2.4)):
+				_set_state(State.CHASE)
 		State.IDLE:
 			if _state_t > _rng.randf_range(4.0, 9.0):
 				target_pos = home + Vector3(_rng.randf_range(-12, 12), 0, _rng.randf_range(-12, 12))
@@ -200,7 +251,12 @@ func _physics_process(delta: float) -> void:
 			if p != null and _now() - last_seen_time < 1.0:
 				tgt = p.global_position
 				target_pos = tgt
-			if def.archetype == "screamer" and dist < float(def.beh("keeps_distance", 0.0)):
+			var seen: bool = p != null and _now() - last_seen_time < 1.0
+			if seen and _can_spit(dist):
+				_start_spit()
+			elif seen and _can_charge(dist):
+				_start_charge(p)
+			elif dist < float(def.beh("keeps_distance", 0.0)):
 				want = (global_position - tgt).normalized() * _speed(true) * Vector3(1, 0, 1)
 			else:
 				want = _move_dir(tgt) * _speed(true)
@@ -257,6 +313,10 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 		v.y = maxf(v.y, -1.0)
 	velocity = v
 	move_and_slide()
+	if state == State.CHARGE:
+		var wall: Node3D = _blocking_structure()
+		if wall != null:
+			_charge_impact_structure(wall)
 	if want.length() > 0.05:
 		_yaw_target = atan2(want.x, want.z)
 		# Walls in the way of something that wants in get torn down.
@@ -482,6 +542,75 @@ func _scream() -> void:
 		director.call(&"on_scream", self, int(def.beh("scream_summons", 3)))
 
 
+func _can_spit(dist: float) -> bool:
+	var spit: Dictionary = def.beh("spit", {})
+	return not spit.is_empty() and _spit_cd <= 0.0 and not crawling \
+		and dist >= float(spit.get("min_range", 4.0)) and dist <= float(spit.get("range", 15.0))
+
+
+func _start_spit() -> void:
+	_spit_cd = float((def.beh("spit", {}) as Dictionary).get("cooldown", 6.0)) * _rng.randf_range(0.85, 1.2)
+	_spit_done = false
+	_set_state(State.SPIT)
+	visual.play_once(&"scream", 1.2, [&"attack_a"] as Array[StringName])
+	Audio.play_3d(&"voice/zombie_alert", global_position + Vector3.UP * 1.5, {"volume_db": -1.0, "pitch": 1.35})
+
+
+func _fire_spit(p: Player) -> void:
+	if p == null or get_parent() == null:
+		return
+	var mouth: Vector3 = global_position + Vector3.UP * 1.55 + global_transform.basis.z * 0.25
+	# Lead the target a little: where they will be when the glob lands.
+	var lead: Vector3 = p.velocity * clampf(mouth.distance_to(p.global_position) / 13.0, 0.0, 1.2) * 0.6
+	Spores.spit(get_parent(), mouth, p.global_position + Vector3(lead.x, 0.3, lead.z), def.beh("spit", {}), entity_id)
+
+
+func _can_charge(dist: float) -> bool:
+	var ch: Dictionary = def.beh("charge", {})
+	return not ch.is_empty() and _charge_cd <= 0.0 and not crawling \
+		and dist >= float(ch.get("min_range", 5.0)) and dist <= float(ch.get("range", 15.0))
+
+
+func _start_charge(p: Player) -> void:
+	var ch: Dictionary = def.beh("charge", {})
+	_charge_cd = float(ch.get("cooldown", 9.0)) * _rng.randf_range(0.85, 1.2)
+	_charge_dir = Vector3(p.global_position.x - global_position.x, 0.0, p.global_position.z - global_position.z).normalized()
+	_charge_hit = false
+	_set_state(State.CHARGE)
+	Audio.play_3d(&"voice/zombie_alert", global_position + Vector3.UP * 2.0, {"volume_db": 4.0, "pitch": 0.6, "max_distance": 90.0})
+	if Stimuli.current != null:
+		Stimuli.current.emit_sound(global_position, 30.0, &"roar", entity_id)
+
+
+func _charge_impact_player(p: Player) -> void:
+	var ch: Dictionary = def.beh("charge", {})
+	var info := DamageInfo.make(float(ch.get("damage", 30.0)) * damage_mult, &"zombie", &"zombie", entity_id)
+	info.hit_pos = p.global_position + Vector3.UP * 1.2
+	info.source_pos = global_position
+	info.direction = _charge_dir
+	info.tool_power = {"bleed": def.atk("bleed", 0.2), "infection": def.atk("infection", 3.0)}
+	p.take_damage(info)
+	p.velocity += _charge_dir * float(ch.get("knockback", 7.0)) + Vector3.UP * 3.0
+	Audio.play_3d(&"sfx/land_hard", p.global_position, {"volume_db": 2.0})
+
+
+## A charge into a wall hits it with everything; the Rammer reels for a moment.
+func _charge_impact_structure(wall: Node3D) -> void:
+	var ch: Dictionary = def.beh("charge", {})
+	var info := DamageInfo.make(float(ch.get("structure_damage", 400.0)) * structure_mult, &"zombie", &"zombie", entity_id)
+	info.hit_pos = wall.global_position + Vector3.UP * 0.8
+	info.source_pos = global_position
+	info.direction = _charge_dir
+	if wall.has_method(&"take_damage"):
+		wall.call(&"take_damage", info)
+	if Stimuli.current != null:
+		Stimuli.current.emit_sound(info.hit_pos, 40.0, &"pound", entity_id)
+	Audio.play_3d(&"sfx/land_hard", info.hit_pos, {"volume_db": 6.0, "pitch": 0.7, "max_distance": 120.0})
+	_resume_state = State.CHASE
+	_stagger_t = visual.play_once(&"stagger", 1.0, [&"hit_front"] as Array[StringName])
+	_set_state(State.STAGGER)
+
+
 # --- Damage ----------------------------------------------------------------------------------
 
 func take_damage(info: DamageInfo) -> void:
@@ -492,6 +621,12 @@ func take_damage(info: DamageInfo) -> void:
 	if info.cause == &"tree":
 		mult = 1.0
 	var amount: float = info.amount * mult
+	var armor: Dictionary = def.beh("armor", {})
+	var armored: bool = not armor.is_empty() and not (armor.get("weak", ["head"]) as Array).has(limb)
+	if armored:
+		# Fungal plates: everything but the soft spots glances off (some types bite through).
+		var pierce: float = float((armor.get("pierce", {}) as Dictionary).get(String(info.type), 0.0))
+		amount *= 1.0 - float(armor.get("reduction", 0.6)) * (1.0 - pierce)
 	health -= amount
 	last_hit_cause = info.cause
 	if limb_hp.has(limb):
@@ -500,8 +635,11 @@ func take_damage(info: DamageInfo) -> void:
 			var chance: float = info.dismember + clampf(-float(limb_hp[limb]) / 40.0, 0.0, 0.4)
 			if _rng.randf() < chance:
 				_sever(limb, info)
-	FxLibrary.burst(get_parent(), "blood", info.hit_pos, -info.direction if info.direction != Vector3.ZERO else Vector3.UP, 0.8)
-	Audio.play_3d(&"sfx/blade_hit_flesh" if info.type in [&"slash", &"pierce"] else &"sfx/hit_flesh", info.hit_pos, {"volume_db": -3.0})
+	if armored:
+		Audio.play_3d(&"sfx/axe_chop_wood", info.hit_pos, {"volume_db": -4.0, "pitch": 0.8})
+	else:
+		FxLibrary.burst(get_parent(), "blood", info.hit_pos, -info.direction if info.direction != Vector3.ZERO else Vector3.UP, 0.8)
+		Audio.play_3d(&"sfx/blade_hit_flesh" if info.type in [&"slash", &"pierce"] else &"sfx/hit_flesh", info.hit_pos, {"volume_db": -3.0})
 	if health > 0.0 and _rng.randf() < 0.6:
 		Audio.play_3d(&"voice/zombie_pain", global_position + Vector3.UP * 1.6, {"volume_db": -3.0})
 	if health <= 0.0 or (severed.has("head")):
@@ -553,8 +691,13 @@ func _die(info: DamageInfo) -> void:
 		Game.session.stats["zombies_killed"] = int(Game.session.stats.get("zombies_killed", 0)) + 1
 		var pl: PlayerState = Game.session.players.get(info.source_id)
 		if pl != null:
-			pl.progression.add_xp(def.xp)
+			pl.progression.add_xp(int(round(def.xp * xp_mult)))
 			pl.kills[String(def.id)] = int(pl.kills.get(String(def.id), 0)) + 1
+	var burst: Dictionary = def.beh("death_burst", {})
+	if burst.is_empty():
+		burst = _tier_burst
+	if not burst.is_empty() and get_parent() != null:
+		Spores.burst(get_parent(), global_position, burst, entity_id)
 	Events.enemy_killed.emit(entity_id, def.id, global_position, killer)
 	died.emit(self)
 
@@ -619,7 +762,10 @@ func _enter_anim() -> void:
 
 
 func _update_anim(want: Vector3) -> void:
-	if state in [State.SLEEP, State.WAKING, State.ATTACK, State.SCREAM, State.STAGGER, State.DEAD, State.BREAK]:
+	if state in [State.SLEEP, State.WAKING, State.ATTACK, State.SCREAM, State.STAGGER, State.DEAD, State.BREAK, State.SPIT]:
+		return
+	if state == State.CHARGE:
+		visual.play(&"run", 1.5, 0.15, [&"walk"] as Array[StringName])
 		return
 	var sp: float = Vector2(velocity.x, velocity.z).length()
 	if crawling:

@@ -31,6 +31,13 @@
       "lurcher": 0.22,
       "keener": 0.06
     },
+    "_mix_by_gamestage": "Added to the mix once the gamestage reaches gs (all brackets up to it apply). Types still respect their gamestage_min and the special_hollowed world setting at spawn time.",
+    "mix_by_gamestage": [
+      {"gs": 12, "add": {"blister": 0.05}},
+      {"gs": 25, "add": {"husk": 0.06, "blister": 0.02}},
+      {"gs": 40, "add": {"rammer": 0.03}},
+      {"gs": 60, "add": {"husk": 0.04, "rammer": 0.03, "blister": 0.03}}
+    ],
     "waves": 4,
     "window_minutes": 300.0,
     "flank_bias": 1.6,

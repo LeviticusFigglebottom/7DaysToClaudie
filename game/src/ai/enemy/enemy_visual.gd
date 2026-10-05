@@ -42,13 +42,22 @@ static func canonical_name(nm: String) -> String:
 	return nm
 
 
+## Infected-tier glow (std_surface `bloom_glow` instance uniform) on every part of the body.
+func set_bloom(glow: float) -> void:
+	if _placeholder or _root == null:
+		return
+	for g: Node in _root.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).set_instance_shader_parameter(&"bloom_glow", glow)
+
+
 static func model_path(id: String) -> String:
 	return "res://assets/generated/models/%s.glb" % id
 
 
-func build(p_model_id: String, height_scale: float) -> void:
+## height_scale is uniform; body_scale widens/deepens a frame (Rammer bulk) on top of it.
+func build(p_model_id: String, height_scale: float, body_scale := Vector3.ONE) -> void:
 	model_id = p_model_id
-	scale = Vector3.ONE * height_scale
+	scale = body_scale * height_scale
 	var path: String = model_path(model_id)
 	if ResourceLoader.exists(path):
 		_root = (load(path) as PackedScene).instantiate() as Node3D

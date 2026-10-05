@@ -87,6 +87,12 @@ func plan(gamestage: int, rng: RandomNumberGenerator) -> Dictionary:
 	var size: float = GameRules.current().num("hum_size")
 	total = mini(int(round(total * size)), int(float(pc.get("max_total", 80)) * maxf(1.0, size)))
 	var mix: Dictionary = (pc.get("mix", {"hollow": 0.72, "lurcher": 0.22, "keener": 0.06}) as Dictionary).duplicate()
+	# Special Hollowed join the Hum as the gamestage rises.
+	for b: Variant in pc.get("mix_by_gamestage", []):
+		if int((b as Dictionary).get("gs", 0)) <= gamestage:
+			var add: Dictionary = (b as Dictionary).get("add", {})
+			for k: String in add:
+				mix[k] = float(mix.get(k, 0.0)) + float(add[k])
 	var tactics: PackedStringArray = []
 
 	# Escalation when the player cleared fast.
@@ -155,7 +161,7 @@ func plan(gamestage: int, rng: RandomNumberGenerator) -> Dictionary:
 		waves.append({"start_min": start, "sector": sector, "units": units, "role": role})
 	if tactics.is_empty():
 		tactics.append("The ground hums. They will come from every side.")
-	return {"total": total, "waves": waves, "focus_sector": focus, "avoid_sectors": avoid, "tactics": tactics}
+	return {"total": total, "mix": mix, "waves": waves, "focus_sector": focus, "avoid_sectors": avoid, "tactics": tactics}
 
 
 func to_dict() -> Dictionary:
