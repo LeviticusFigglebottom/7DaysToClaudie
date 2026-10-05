@@ -105,3 +105,12 @@ func test_refuses_a_full_height_wall() -> void:
 	_place(Vector3(0, 0, -4.9 + Player.RADIUS + 0.2), Vector3.FORWARD)
 	assert_false(_player._try_vault())
 	assert_false(_player.is_crouching(), "no crouch left behind by a refused vault")
+
+
+func test_floats_instead_of_sinking() -> void:
+	# Deep water off the edge of the floor box: the surface at y = 5.
+	_place(Vector3(100.0, 0.0, 0.0), Vector3.FORWARD)
+	for i: int in 240:
+		_player.in_water_depth = maxf(0.0, 5.0 - _player.global_position.y)
+		await get_tree().physics_frame
+	assert_almost_eq(_player.global_position.y, 5.0 - Player.SWIM_DEPTH, 0.3, "floats at swimming depth, eyes above water")

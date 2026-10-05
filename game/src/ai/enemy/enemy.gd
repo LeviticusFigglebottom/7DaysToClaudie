@@ -147,19 +147,22 @@ func _ready() -> void:
 	floor_max_angle = deg_to_rad(50.0)
 	floor_snap_length = 0.4
 	add_to_group(&"enemies")
-	_shape = CollisionShape3D.new()
-	var cap := CapsuleShape3D.new()
-	cap.radius = float(def.beh("radius", 0.3))
-	cap.height = 0.7 if crawling else maxf(1.75, float(def.beh("height", 1.75)))
-	_shape.shape = cap
-	_shape.position = Vector3(0, cap.height * 0.5, 0)
-	add_child(_shape)
 	visual = EnemyVisual.new()
 	visual.name = "Visual"
 	add_child(visual)
 	var body: String = def.bodies[_rng.randi() % def.bodies.size()] if not def.bodies.is_empty() else ""
 	var bs: Array = def.beh("body_scale", [1.0, 1.0, 1.0])
-	visual.build(body, _rng.randf_range(def.scale_range.x, def.scale_range.y), Vector3(float(bs[0]), float(bs[1]), float(bs[2])))
+	var size: float = _rng.randf_range(def.scale_range.x, def.scale_range.y)
+	visual.build(body, size, Vector3(float(bs[0]), float(bs[1]), float(bs[2])))
+	# The capsule is also what weapons hit: as tall as this body really is (a tall Hollow's head
+	# stuck out of a fixed 1.75 m capsule), lying down for crawlers.
+	_shape = CollisionShape3D.new()
+	var cap := CapsuleShape3D.new()
+	cap.radius = float(def.beh("radius", 0.3))
+	cap.height = maxf(1.75, float(def.beh("height", 1.75))) * size * float(bs[1])
+	_shape.shape = cap
+	add_child(_shape)
+	_fit_shape()
 	if _glow > 0.0:
 		visual.set_bloom(_glow)
 	agent = NavigationAgent3D.new()
@@ -753,9 +756,21 @@ func _sever(limb: String, info: DamageInfo) -> void:
 	Events.limb_severed.emit(entity_id, StringName(limb), info.hit_pos)
 	if limb.begins_with("leg") and bool(def.beh("crawl_on_leg_loss", true)) and not crawling:
 		crawling = true
-		var cap: CapsuleShape3D = _shape.shape
-		cap.height = 0.7
-		_shape.position = Vector3(0, 0.35, 0)
+		_fit_shape()
+
+
+## Upright capsule for a standing body; for a crawler a short one lying along its length, low to
+## the ground where its head and arms actually are.
+func _fit_shape() -> void:
+	var cap: CapsuleShape3D = _shape.shape
+	if crawling:
+		cap.radius = minf(cap.radius, 0.3)
+		cap.height = 1.3
+		_shape.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+		_shape.position = Vector3(0, cap.radius, 0.15)
+	else:
+		_shape.rotation = Vector3.ZERO
+		_shape.position = Vector3(0, cap.height * 0.5, 0)
 
 
 func _die(info: DamageInfo) -> void:
@@ -767,6 +782,7 @@ func _die(info: DamageInfo) -> void:
 	var box := BoxShape3D.new()
 	box.size = Vector3(0.6, 0.3, 1.7)
 	_shape.shape = box
+	_shape.rotation = Vector3.ZERO
 	_shape.position = Vector3(0, 0.15, -0.6)
 	# Struck from the front, fall on the back; from behind, pitch forward onto the face.
 	var back: bool = info.direction.dot(global_transform.basis.z) < 0.0

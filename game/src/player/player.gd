@@ -21,6 +21,12 @@ var state: PlayerState
 var cfg: Dictionary = {}
 var crouching: bool = false
 var sprinting: bool = false
+## Set when sprinting empties stamina: no sprinting again until it has recovered to
+## SPRINT_RECOVER (holding Shift at empty stamina used to stutter-sprint forever).
+var _sprint_locked: bool = false
+const SPRINT_RECOVER: float = 30.0
+## Feet this far under the surface float the eyes just above it.
+const SWIM_DEPTH: float = 1.35
 var input_enabled: bool = true
 var look_enabled: bool = true
 var in_water_depth: float = 0.0
@@ -121,15 +127,24 @@ func _physics_process(delta: float) -> void:
 	var carrying: int = equipment.carried_logs() if equipment != null else 0
 	var mods: Progression = state.progression
 	var speed: float = float(cfg.get("walk_speed", 3.4))
-	sprinting = want_sprint and not crouching and stats.stamina > 3.0
+	if stats.stamina <= 3.0:
+		_sprint_locked = true
+	elif _sprint_locked and stats.stamina >= SPRINT_RECOVER:
+		_sprint_locked = false
+	sprinting = want_sprint and not crouching and not _sprint_locked
 	if sprinting:
 		speed = float(cfg.get("sprint_speed", 6.2))
 	elif crouching:
 		speed = float(cfg.get("crouch_speed", 1.7))
 	speed *= 1.0 + mods.modifier("move_speed_mult")
 	speed *= 1.0 - 0.12 * carrying
+	var swimming: bool = in_water_depth > SWIM_DEPTH - 0.1
 	if in_water_depth > 0.5:
 		speed *= 0.55
+		# Water breaks a fall: a dive into the lake is not a drop onto its bed.
+		_fall_speed = 0.0
+	if swimming and stats.stamina <= 3.0:
+		speed *= 0.6
 	if stats.has_status(&"exhausted") or stats.health < 20.0:
 		speed *= 0.8
 	var wish: Vector3 = (transform.basis * Vector3(dir.x, 0.0, dir.y))
@@ -139,7 +154,7 @@ func _physics_process(delta: float) -> void:
 	var accel: float = 10.0 if on_floor else 2.5
 	velocity.x = lerpf(velocity.x, wish.x, minf(1.0, accel * delta))
 	velocity.z = lerpf(velocity.z, wish.z, minf(1.0, accel * delta))
-	if not on_floor:
+	if not on_floor and not swimming:
 		velocity.y -= 9.81 * delta
 		_fall_speed = minf(_fall_speed, velocity.y)
 	elif want_jump and _try_vault():
@@ -147,10 +162,14 @@ func _physics_process(delta: float) -> void:
 	elif want_jump and not crouching and stats.spend_stamina(float(Content.config(&"survival").get("stamina", {}).get("jump", 8.0))):
 		velocity.y = float(cfg.get("jump_velocity", 4.6))
 		_emit_noise(float(cfg.get("noise", {}).get("walk", 6.0)), &"jump")
-	if in_water_depth > 1.3:
-		# Swimming: buoyancy toward the surface, stamina drain.
-		velocity.y = lerpf(velocity.y, 1.2 if Input.is_action_pressed(&"jump") else 0.3, minf(1.0, 3.0 * delta))
-		stats.tick_realtime(delta, 6.0)
+	if swimming:
+		# Float at swimming depth (gravity is off in the water; it used to win and sink you to the
+		# bed at ~3 m/s). Jump climbs higher, onto a bank. Stroking costs stamina; treading less.
+		var rise: float = clampf((in_water_depth - SWIM_DEPTH) * 2.5, -1.5, 2.0)
+		if input_enabled and alive and Input.is_action_pressed(&"jump"):
+			rise = maxf(rise, 1.6)
+		velocity.y = lerpf(velocity.y, rise, minf(1.0, 6.0 * delta))
+		stats.tick_realtime(delta, 6.0 if dir.length() > 0.1 else 1.5)
 	if on_floor:
 		_try_step_up(delta)
 	move_and_slide()
@@ -158,7 +177,7 @@ func _physics_process(delta: float) -> void:
 	# Stamina.
 	var sprint_cost: float = float(Content.config(&"survival").get("stamina", {}).get("sprint_per_sec", 9.0)) * (1.0 + mods.modifier("sprint_cost_mult"))
 	var horizontal: float = Vector2(velocity.x, velocity.z).length()
-	if in_water_depth <= 1.3:
+	if not swimming:
 		stats.tick_realtime(delta, sprint_cost if sprinting and horizontal > 2.0 else 0.0)
 	_footsteps(delta, horizontal)
 	_head_motion(delta, horizontal)

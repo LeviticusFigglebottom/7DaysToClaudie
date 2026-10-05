@@ -17,6 +17,10 @@ var _swing_t: float = -1.0
 var _light: Light3D = null
 var _light_on: bool = false
 var viewmodel: ViewModel
+## A reload in progress: seconds left and the weapon it is for. The rounds go in when it
+## finishes; putting the gun away first cancels it (it used to load instantly).
+var _reload_left: float = -1.0
+var _reload_item: StringName = &""
 
 
 func _ready() -> void:
@@ -48,6 +52,12 @@ func _physics_process(delta: float) -> void:
 		primary()
 	if Input.is_action_just_pressed(&"block") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not _building_busy():
 		secondary()
+	if _light_on:
+		_burn_light(delta)
+	if _reload_left >= 0.0:
+		_reload_left -= delta
+		if _reload_left < 0.0:
+			_finish_reload()
 	if _swing_t >= 0.0:
 		_swing_t += delta
 		var def: ItemDef = Content.item(current)
@@ -83,6 +93,12 @@ func _sync_equipped() -> void:
 		return
 	current = item_id
 	_set_light(false)
+	# Changing what is in hand cancels a swing (its hit would land with the new item) and a
+	# reload, and takes a moment to raise the new item.
+	_swing_t = -1.0
+	_reload_left = -1.0
+	_reload_item = &""
+	_cooldown = 0.3
 	if viewmodel != null:
 		viewmodel.show_item(item_id)
 	equipped_changed.emit(item_id)
@@ -124,6 +140,9 @@ func secondary() -> void:
 			viewmodel.play_action(&"fp_use")
 	elif def != null and str(def.equip.get("kind", "")) == "ranged":
 		_reload(def)
+	elif def != null and bool(def.equip.get("throwable", false)) and _cooldown <= 0.0:
+		# Melee weapons marked throwable (the spear) are thrown with the secondary button.
+		_throw(def)
 
 
 func _punch() -> void:
@@ -284,33 +303,50 @@ func _fire(def: ItemDef) -> void:
 
 
 func _reload(def: ItemDef) -> void:
+	if _reload_left >= 0.0 or _rounds_to_load(def) <= 0:
+		return
+	_reload_left = def.equip_num("reload_time", 2.5)
+	_reload_item = current
+	_cooldown = _reload_left
+	Audio.play_3d(&"sfx/gun_reload", player.global_position, {"volume_db": -6.0, "occlusion": false})
+
+
+func _rounds_to_load(def: ItemDef) -> int:
 	var stack: ItemStack = player.state.inventory.first(current)
 	var ammo: StringName = StringName(str(def.equip.get("ammo", "")))
 	if stack == null or ammo == &"":
+		return 0
+	var need: int = int(def.equip.get("mag_size", 6)) - int(stack.data.get("loaded", 0))
+	return mini(need, player.state.inventory.count_of(ammo))
+
+
+func _finish_reload() -> void:
+	var def: ItemDef = Content.item(current)
+	if current != _reload_item or def == null:
 		return
-	var cap: int = int(def.equip.get("mag_size", 6))
-	var need: int = cap - int(stack.data.get("loaded", 0))
-	var have: int = player.state.inventory.count_of(ammo)
-	var n: int = mini(need, have)
+	_reload_item = &""
+	var n: int = _rounds_to_load(def)
 	if n <= 0:
 		return
-	player.state.inventory.remove(ammo, n)
+	var stack: ItemStack = player.state.inventory.first(current)
+	player.state.inventory.remove(StringName(str(def.equip.get("ammo", ""))), n)
 	stack.data["loaded"] = int(stack.data.get("loaded", 0)) + n
-	_cooldown = def.equip_num("reload_time", 2.5)
-	Audio.play_3d(&"sfx/gun_reload", player.global_position, {"volume_db": -6.0, "occlusion": false})
 	Events.inventory_changed.emit(player.state.id)
 
 
 func _throw(def: ItemDef) -> void:
 	if not player.state.stats.spend_stamina(def.equip_num("stamina", 6.0)):
 		return
-	if not player.state.inventory.remove(current, 1):
+	# The very item thrown (its quality and wear) is what lands and can be picked up again.
+	var thrown: Array[ItemStack] = player.state.inventory.take(current, 1)
+	if thrown.is_empty():
 		return
 	if viewmodel != null:
 		viewmodel.play_action(&"fp_throw", 0.5)
 	_cooldown = 0.7
 	var proj: Node3D = load("res://src/combat/thrown_item.gd").new()
 	proj.set(&"item_id", current)
+	proj.set(&"stack", thrown[0])
 	proj.set(&"thrower", player.state.id)
 	proj.set(&"damage", def.equip_num("damage", 10.0))
 	proj.set(&"origin", player.global_position)
@@ -326,6 +362,10 @@ func _throw(def: ItemDef) -> void:
 func toggle_light() -> void:
 	var def: ItemDef = Content.item(current)
 	if def == null or not def.equip.has("light"):
+		return
+	var held: ItemStack = _lit_stack()
+	if not _light_on and held != null and def.durability > 0.0 and held.durability <= 0.0:
+		Events.player_status_message.emit("The %s is dead." % def.display_name.to_lower(), &"warning")
 		return
 	_set_light(not _light_on)
 	if _light_on and viewmodel != null and "lighter" in (def.equip.get("tools", []) as Array):
@@ -378,3 +418,40 @@ func _set_light(on: bool) -> void:
 
 func has_light_on() -> bool:
 	return _light_on
+
+
+## The held light's own stack: the most used one of its kind (the one already burning).
+func _lit_stack() -> ItemStack:
+	var best: ItemStack = null
+	for s: ItemStack in player.state.inventory.stacks:
+		if s.item_id == current and (best == null or s.durability < best.durability):
+			best = s
+	return best
+
+
+## Lights burn their durability as seconds of light. Only the torch in hand burns: it is split
+## from a stack of fresh ones (they used to share one durability). A torch burns out and is gone,
+## a lighter runs dry and is thrown away, a flashlight's batteries die (a repair kit revives it).
+func _burn_light(delta: float) -> void:
+	var def: ItemDef = Content.item(current)
+	if def == null or def.durability <= 0.0:
+		return
+	var inv: Inventory = player.state.inventory
+	var stack: ItemStack = _lit_stack()
+	if stack == null:
+		_set_light(false)
+		return
+	if stack.count > 1:
+		stack = stack.split(1)
+		inv.stacks.append(stack)
+	stack.durability -= delta
+	if stack.durability > 0.0:
+		return
+	_set_light(false)
+	if current == &"flashlight":
+		stack.durability = 0.0
+		Events.player_status_message.emit("The flashlight's batteries are dead.", &"warning")
+	else:
+		inv.take_from(stack, 1)
+		Events.player_status_message.emit("The torch burns out." if current == &"torch" else "The %s is spent." % def.display_name.to_lower(), &"warning")
+	Events.inventory_changed.emit(player.state.id)

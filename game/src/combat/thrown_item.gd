@@ -3,6 +3,8 @@ extends RigidBody3D
 ## A thrown stone/spear: damages what it hits once, then becomes a pickup.
 
 var item_id: StringName = &"stone"
+## The thrown item itself (quality, durability); a plain one of item_id when unset.
+var stack: ItemStack = null
 var thrower: StringName = &""
 var damage: float = 10.0
 ## Where it was thrown from: what a struck Hollow turns toward (and wakes facing).
@@ -29,7 +31,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_life += delta
 	if _life > 3.0 and linear_velocity.length() < 0.3:
-		ItemDrop.spawn(get_tree().current_scene, ItemStack.make(item_id, 1), global_position)
+		ItemDrop.spawn(get_tree().current_scene, stack if stack != null else ItemStack.make(item_id, 1), global_position)
 		queue_free()
 
 
@@ -37,7 +39,9 @@ func _on_hit(body: Node) -> void:
 	if not _armed:
 		return
 	_armed = false
-	var info := DamageInfo.make(damage * clampf(linear_velocity.length() / 15.0, 0.3, 1.2), &"blunt", &"thrown", thrower)
+	var dtype: StringName = StringName(str(Content.item(item_id).equip.get("damage_type", "blunt"))) if Content.item(item_id) != null else &"blunt"
+	var q: float = ItemStack.quality_damage_mult(stack.quality) if stack != null else 1.0
+	var info := DamageInfo.make(damage * q * clampf(linear_velocity.length() / 15.0, 0.3, 1.2), dtype, &"thrown", thrower)
 	info.hit_pos = global_position
 	info.source_pos = origin
 	info.direction = linear_velocity.normalized()

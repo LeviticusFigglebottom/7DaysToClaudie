@@ -17,8 +17,9 @@ const STUMPS: Dictionary = {
 }
 const GIBS: Dictionary = {"head": "gib_head", "arm_l": "gib_arm_upper", "arm_r": "gib_arm_upper", "leg_l": "gib_leg_upper", "leg_r": "gib_leg_upper"}
 ## Limb -> bone used to locate hits.
+## The neck counts as torso: hits at the collar were landing as 2.2x headshots.
 const LIMB_BONES: Dictionary = {
-	"head": ["head", "neck"], "torso": ["chest", "spine", "hips"],
+	"head": ["head"], "torso": ["chest", "spine", "hips", "neck"],
 	"arm_l": ["upper_arm.L", "forearm.L", "hand.L"], "arm_r": ["upper_arm.R", "forearm.R", "hand.R"],
 	"leg_l": ["thigh.L", "shin.L", "foot.L"], "leg_r": ["thigh.R", "shin.R", "foot.R"],
 }
@@ -189,15 +190,23 @@ func animate_placeholder(delta: float, speed: float, lying: bool) -> void:
 ## Which limb a world-space hit point belongs to.
 func limb_at(world_pos: Vector3, owner_body: Node3D) -> String:
 	if skeleton != null:
+		# Distance to each bone as a segment (joint to the next joint), not to its joint alone: a hit
+		# mid-thigh is nearer the hip joint than the knee, and used to count as the torso.
 		var best: String = "torso"
 		var best_d: float = INF
+		var sx: Transform3D = skeleton.global_transform
 		for limb: String in LIMB_BONES:
 			for bone_name: String in LIMB_BONES[limb]:
 				var bi: int = skeleton.find_bone(bone_name)
 				if bi < 0:
 					continue
-				var bp: Vector3 = skeleton.global_transform * skeleton.get_bone_global_pose(bi).origin
-				var d: float = bp.distance_to(world_pos)
+				var pose: Transform3D = skeleton.get_bone_global_pose(bi)
+				var a: Vector3 = sx * pose.origin
+				var kids: PackedInt32Array = skeleton.get_bone_children(bi)
+				# A bone without children (head, hands, feet) reaches along its own axis.
+				var b: Vector3 = sx * skeleton.get_bone_global_pose(kids[0]).origin if not kids.is_empty() \
+					else sx * (pose.origin + pose.basis.y.normalized() * (0.22 if bone_name == "head" else 0.1))
+				var d: float = world_pos.distance_to(Geometry3D.get_closest_point_to_segment(world_pos, a, b))
 				if d < best_d:
 					best_d = d
 					best = limb

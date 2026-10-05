@@ -34,6 +34,11 @@ var _overlay_label: Label
 var _death_button: Button
 ## Highest level reached since the last announcement (several can arrive in one award).
 var _level_pending: int = 0
+## Where recent hits came from (world positions + fade time), drawn as red wedges at the screen
+## edge pointing at the attacker.
+var _hits: Array[Dictionary] = []
+var _wedges: Control
+var _heart: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -50,7 +55,7 @@ func _ready() -> void:
 	_build_overlay()
 	_build_pause()
 	Events.player_status_message.connect(message)
-	Events.player_damaged.connect(func(_id: StringName, amount: float, _src: Dictionary) -> void: _flash_damage(amount))
+	Events.player_damaged.connect(_on_player_damaged)
 	Events.horde_night_warning.connect(func(_d: int, h: float) -> void: message("The ground is humming. %d hour%s." % [int(h), "" if int(h) == 1 else "s"], &"warning"))
 	Events.horde_night_started.connect(func(_d: int) -> void: message("THE HUM HAS BEGUN.", &"danger"))
 	Events.horde_night_ended.connect(_on_hum_ended)
@@ -130,6 +135,19 @@ func _build_hud() -> void:
 	vm.shader = _vignette_shader()
 	_vignette.material = vm
 	_hud.add_child(_vignette)
+	_wedges = Control.new()
+	_wedges.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_wedges.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_wedges.draw.connect(_draw_wedges)
+	_hud.add_child(_wedges)
+	_heart = AudioStreamPlayer.new()
+	_heart.bus = &"SFX"
+	_heart.volume_db = -8.0
+	# Replays while the condition lasts (the generated beats are one-shots).
+	_heart.finished.connect(func() -> void:
+		if _heart.get_meta(&"id", &"") != &"":
+			_heart.play())
+	_hud.add_child(_heart)
 	_crosshair = ColorRect.new()
 	(_crosshair as ColorRect).color = Color(0.9, 0.9, 0.85, 0.55)
 	_crosshair.size = Vector2(3, 3)
@@ -253,7 +271,13 @@ func _process(delta: float) -> void:
 		var place_why: String = str(b.call(&"placement_hint")) if b != null else ""
 		_tool_hint.text = place_why if place_why != "" else p.interaction.tool_hint
 	_update_belt(p.state, delta)
+	if not _hits.is_empty():
+		for h: Dictionary in _hits:
+			h["t"] = float(h["t"]) - delta
+		_hits = _hits.filter(func(h: Dictionary) -> bool: return float(h["t"]) > 0.0)
+		_wedges.queue_redraw()
 	var s: SurvivalStats = p.state.stats
+	_update_heartbeat(s)
 	# Grit raises max health past 100: the bar shows the share of it.
 	(_bars["health"] as ProgressBar).value = s.health / maxf(1.0, s.max_health) * 100.0
 	(_bars["stamina"] as ProgressBar).value = s.stamina / maxf(1.0, s.max_stamina) * 100.0
@@ -298,6 +322,56 @@ func _update_belt(ps: PlayerState, delta: float) -> void:
 		_belt_t = 2.5
 	_belt_t = maxf(0.0, _belt_t - delta)
 	_belt.modulate.a = clampf(_belt_t / 0.6, 0.0, 1.0)
+
+
+func _on_player_damaged(_id: StringName, amount: float, src: Dictionary) -> void:
+	_flash_damage(amount)
+	var from: Array = src.get("from", [])
+	if from.size() == 3:
+		_hits.append({"pos": Vector3(float(from[0]), float(from[1]), float(from[2])), "t": 1.4})
+		if _hits.size() > 6:
+			_hits.pop_front()
+
+
+## Red wedges at the screen edge toward recent attackers, by the camera's yaw.
+func _draw_wedges() -> void:
+	var w: Node = Game.world
+	if w == null or w.get(&"player") == null or w.player == null:
+		return
+	var cam: Camera3D = (w.player as Player).camera
+	var c: Vector2 = _wedges.size * 0.5
+	var r: float = minf(c.x, c.y) * 0.62
+	for h: Dictionary in _hits:
+		var to: Vector3 = (h["pos"] as Vector3) - cam.global_position
+		var local: Vector3 = cam.global_transform.basis.inverse() * to
+		# Screen angle: straight ahead is up, behind is down.
+		var ang: float = atan2(local.x, -local.z)
+		var a: float = clampf(float(h["t"]) / 1.4, 0.0, 1.0)
+		var pts := PackedVector2Array()
+		for k: int in 9:
+			var t: float = ang - 0.32 + 0.64 * float(k) / 8.0
+			pts.append(c + Vector2(sin(t), -cos(t)) * r)
+		for k: int in range(8, -1, -1):
+			var t2: float = ang - 0.22 + 0.44 * float(k) / 8.0
+			pts.append(c + Vector2(sin(t2), -cos(t2)) * (r - 26.0))
+		_wedges.draw_colored_polygon(pts, Color(0.75, 0.05, 0.03, 0.55 * a))
+
+
+## A heartbeat under 30% health, faster under 15%.
+func _update_heartbeat(s: SurvivalStats) -> void:
+	var share: float = s.health / maxf(1.0, s.max_health)
+	var want: StringName = &"" if not s.alive or share >= 0.3 else (&"sfx/heartbeat_fast" if share < 0.15 else &"sfx/heartbeat_slow")
+	if want == &"":
+		if _heart.playing:
+			_heart.stop()
+		_heart.set_meta(&"id", &"")
+		return
+	if _heart.playing and _heart.get_meta(&"id", &"") == want:
+		return
+	_heart.stream = Audio.stream(want)
+	_heart.set_meta(&"id", want)
+	if _heart.stream != null:
+		_heart.play()
 
 
 func _flash_damage(amount: float) -> void:

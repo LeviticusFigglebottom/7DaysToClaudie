@@ -31,4 +31,7 @@ static func make(p_amount: float, p_type: StringName, p_cause: StringName, p_sou
 
 
 func to_dict() -> Dictionary:
-	return {"amount": amount, "type": String(type), "cause": String(cause), "source": String(source_id)}
+	var d: Dictionary = {"amount": amount, "type": String(type), "cause": String(cause), "source": String(source_id)}
+	if source_pos != Vector3.ZERO:
+		d["from"] = [source_pos.x, source_pos.y, source_pos.z]
+	return d

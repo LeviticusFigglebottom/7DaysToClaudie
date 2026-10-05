@@ -86,3 +86,28 @@ func test_blister_glob_lands_on_target_and_leaves_a_puddle() -> void:
 	assert_not_null(puddle, "the glob splashed")
 	if puddle != null:
 		assert_lt(Vector2(puddle.global_position.x - target.x, puddle.global_position.z - target.z).length(), 1.5)
+
+
+func test_hit_zones_follow_bone_segments() -> void:
+	_floor()
+	var e: Enemy = _enemy(&"hollow")
+	await get_tree().physics_frame
+	if e.visual.skeleton == null:
+		pending("character models not built")
+		return
+	assert_eq(e.visual.limb_at(_bone_pos(e, "neck"), e), "torso", "a hit at the collar is not a headshot")
+	assert_eq(e.visual.limb_at(_bone_pos(e, "head") + Vector3.UP * 0.1, e), "head")
+	var mid_thigh: Vector3 = _bone_pos(e, "thigh.L").lerp(_bone_pos(e, "shin.L"), 0.5)
+	assert_eq(e.visual.limb_at(mid_thigh, e), "leg_l", "mid-thigh is the leg, not the hips")
+
+
+func test_capsule_fits_the_body_and_crawlers_lie_down() -> void:
+	_floor()
+	var e: Enemy = _enemy(&"hollow")
+	var c: Enemy = _enemy(&"dragger")
+	await get_tree().physics_frame
+	var cap: CapsuleShape3D = e._shape.shape
+	assert_gt(cap.height, 1.6)
+	assert_almost_eq(e._shape.rotation.x, 0.0, 0.001, "walkers stand upright")
+	assert_almost_eq(c._shape.rotation.x, PI * 0.5, 0.001, "crawlers' capsules lie along the body")
+	assert_lt(c._shape.position.y, 0.5)
