@@ -9,6 +9,8 @@ uniform sampler2D albedo_tex : source_color, hint_default_white, filter_linear_m
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D orm_tex : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D moss_albedo_tex : source_color, hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
+// Moss fronds have their own relief: under a moss patch the bark furrows give way to it.
+uniform sampler2D moss_normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform vec4 tint : source_color = vec4(1.0);
 uniform vec2 uv_scale = vec2(1.0, 1.0);
 uniform float normal_strength = 1.2;
@@ -32,12 +34,14 @@ void fragment() {
 	vec3 alb = texture(albedo_tex, uv).rgb * tint.rgb;
 	vec3 orm = texture(orm_tex, uv).rgb;
 	float rough = orm.g;
+	vec3 nrm = texture(normal_tex, uv).rgb;
 	if (moss_amount > 0.001) {
 		vec3 ma = texture(moss_albedo_tex, uv * 0.7).rgb;
 		// Moss grows on the shaded/wet side and low on the trunk (COLOR.b from the generator).
 		float m = smoothstep(0.35, 0.7, COLOR.b * moss_amount + (ma.g - 0.3) * 0.5);
 		alb = mix(alb, ma, m);
 		rough = mix(rough, 0.95, m);
+		nrm = mix(nrm, texture(moss_normal_tex, uv * 0.7).rgb, m);
 	}
 	float wet = hm_wetness * 0.8;
 	alb *= mix(1.0, 0.55, wet);
@@ -47,6 +51,6 @@ void fragment() {
 	ALBEDO = alb * mix(1.0, COLOR.r, ao_strength);
 	ROUGHNESS = rough;
 	AO = orm.r;
-	NORMAL_MAP = texture(normal_tex, uv).rgb;
+	NORMAL_MAP = nrm;
 	NORMAL_MAP_DEPTH = normal_strength;
 }
