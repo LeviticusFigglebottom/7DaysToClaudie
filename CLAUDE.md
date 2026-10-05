@@ -102,7 +102,9 @@ CI (`.github/workflows/ci.yml`) runs setup → assets → validate → test.
 * A model imported before its material `.tres` existed keeps the placeholder material; `make
   import` runs `verify_imports.gd` to re-import such models.
 * `ResourceLoader.load(..., CACHE_MODE_IGNORE)` on scripts used by autoloads crashes the VM.
-* Software Vulkan (lavapipe) renders correctly but slowly (minutes per screenshot).
+* Software Vulkan (lavapipe) renders correctly but slowly (minutes per screenshot), and it saturates
+  the CPU: vegetation scatter (13 ms a chunk headless, full ring in ~4 s) can take minutes, so the
+  screenshot runner waits for the inner rings only.
 * A Control already in the tree (e.g. anchoring itself in `_ready`) must use
   `set_anchors_and_offsets_preset()`: plain `set_anchors_preset()` keeps the current (0x0) rect.
 * A lambda connected to a RefCounted's own signal must not capture that object (state ->
