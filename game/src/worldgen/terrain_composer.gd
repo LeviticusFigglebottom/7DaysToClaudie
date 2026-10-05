@@ -13,7 +13,7 @@ extends RefCounted
 ##   5. pads for frameworks/POIs (flatten to their mean height + skirt)
 ##   6. biome map, splat weights (8-layer palette), vegetation mask
 
-const VERSION: int = 9
+const VERSION: int = 10
 const COARSE: float = 4.0
 const MACRO_STEP: float = 8.0
 const BORDER_FADE: float = 48.0
@@ -29,6 +29,20 @@ static func input_hash(world: WorldDef, region_id: String, spacing: float) -> St
 	var rp: String = world.dir_path.path_join("regions").path_join(region_id).path_join("region.json")
 	if FileAccess.file_exists(rp):
 		ctx.update(FileAccess.get_file_as_bytes(rp))
+		# Frameworks and standalone POIs shape the terrain too (pads, streets): hash their files.
+		var region: Variant = JSON.parse_string(FileAccess.get_file_as_string(rp))
+		if region is Dictionary:
+			for f: Variant in (region as Dictionary).get("features", []):
+				if not f is Dictionary:
+					continue
+				var dep: String = ""
+				match str(f.get("type", "")):
+					"framework":
+						dep = "res://data/pois/frameworks/%s.json" % f.get("framework", "")
+					"poi":
+						dep = "res://data/pois/buildings/%s.json" % f.get("poi", "")
+				if dep != "" and FileAccess.file_exists(dep):
+					ctx.update(FileAccess.get_file_as_bytes(dep))
 	return ctx.finish().hex_encode()
 
 

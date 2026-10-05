@@ -48,6 +48,7 @@ func _build(instance_id: StringName) -> PoiInstance:
 	_props()
 	_scatter()
 	_lights()
+	_interior_probe()
 	_pickups()
 	_decals()
 	_traps()
@@ -599,6 +600,32 @@ func _scatter() -> void:
 				_add("@" + pd2.model_for(cond), xf)
 				_occupied[k] = true
 				break
+
+
+## SDFGI occludes the sky indoors, which leaves rooms near-black even at noon. An interior
+## reflection probe over the plan gives the building its own ambient fill (scaled with daylight by
+## EnvironmentController through the "interior_probe" group, so nights stay dark) and keeps sky
+## reflections off indoor floors. The box stops just inside the outer walls so facades keep the
+## outdoor lighting.
+func _interior_probe() -> void:
+	if layout.level_ids.is_empty():
+		return
+	var ext: Rect2 = layout.extent()
+	var lo: float = layout.level_y(layout.level_ids[0]) - 0.2
+	var hi: float = layout.level_y(layout.level_ids[-1]) + PoiLayout.STOREY
+	var probe := ReflectionProbe.new()
+	probe.name = "InteriorProbe"
+	probe.interior = true
+	probe.ambient_mode = ReflectionProbe.AMBIENT_COLOR
+	probe.ambient_color = Color(0.86, 0.83, 0.78)
+	probe.ambient_color_energy = 0.0
+	probe.size = Vector3(maxf(0.5, ext.size.x - 0.1), hi - lo, maxf(0.5, ext.size.y - 0.1))
+	probe.position = Vector3(ext.position.x + ext.size.x * 0.5, (lo + hi) * 0.5, ext.position.y + ext.size.y * 0.5)
+	probe.blend_distance = 0.3
+	probe.max_distance = maxf(probe.size.x, probe.size.z)
+	probe.update_mode = ReflectionProbe.UPDATE_ONCE
+	probe.add_to_group(&"interior_probe")
+	root.add_child(probe)
 
 
 func _light_at(pos: Vector3, l: Dictionary) -> void:

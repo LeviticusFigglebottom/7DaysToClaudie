@@ -34,7 +34,9 @@ BODIES = {
                              "tears": [{"at": "spine", "side": "R", "t": 0.6, "dir": [1.0, 0.0, 0.2], "r": 0.05}]}],
                    "pants": {"type": "denim", "belt": False, "torn": 0.3, "length": 0.97}},
         "boots": {"L": True, "R": True, "height": 0.12},
-        "hair": {"style": "long", "hairline": 0.055, "patchy": 0.25, "locks": 12, "length": 0.17},
+        # Hair locks are rigid with the head segment: keep them chin length (<= ~0.1 m) or they
+        # swing into the shoulders when the head bows (dormant poses, attacks).
+        "hair": {"style": "long", "hairline": 0.055, "patchy": 0.25, "locks": 12, "length": 0.095},
         "wounds": [{"at": "ua", "side": "R", "t": 0.18, "dir": [1.0, 0.0, 0.2], "r": 0.026, "blood": 1.0,
                     "bloom_spec": {"filaments": 5, "shelves": 3}},
                    {"at": "fa", "side": "L", "t": 0.55, "dir": [0.0, 0.0, 1.0], "r": 0.018, "blood": 0.8,
@@ -83,7 +85,7 @@ BODIES = {
                              "tears": [{"at": "spine", "side": "L", "t": 0.5, "dir": [1.0, 0.0, 0.0], "r": 0.07}]}],
                    "pants": {"type": "denim", "belt": False, "torn": 0.65, "length_L": 0.82, "length_R": 0.95}},
         "boots": {"L": False, "R": True, "height": 0.14},
-        "hair": {"style": "long", "hairline": 0.06, "patchy": 0.7, "locks": 9, "length": 0.16},
+        "hair": {"style": "long", "hairline": 0.06, "patchy": 0.7, "locks": 9, "length": 0.09},
         "wounds": [{"at": "spine", "side": "L", "t": 0.5, "dir": [1.0, 0.0, 0.0], "r": 0.04, "depth": 0.9, "blood": 1.0,
                     "bloom_spec": {"filaments": 7, "shelves": 4, "lumps": 9}},
                    {"at": "head", "side": "R", "dir": [0.55, -0.45, 0.7], "r": 0.016, "blood": 1.0,
@@ -121,7 +123,7 @@ BODIES = {
                              "neck_front": 0.05}],
                    "pants": {"type": "denim", "belt": True, "torn": 0.3}},
         "boots": {"L": True, "R": True, "height": 0.15},
-        "hair": {"style": "medium", "hairline": 0.06, "patchy": 0.6, "locks": 6, "length": 0.08},
+        "hair": {"style": "medium", "hairline": 0.06, "patchy": 0.6, "locks": 6, "length": 0.065},
         "bloom": [{"at": "head", "side": "L", "dir": [0.3, -0.5, 0.8], "r": 0.016, "filaments": 6, "shelves": 0,
                    "length": 0.05, "sag": 1.0}],
         "blood": 0.5, "grime": 0.45,

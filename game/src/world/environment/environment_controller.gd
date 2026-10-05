@@ -172,6 +172,10 @@ func update_now() -> void:
 	# Ambient: bright by day, near-black at night (light sources must matter).
 	env.ambient_light_energy = lerpf(0.035, 1.05, day) * (1.0 - 0.25 * overcast)
 	env.ambient_light_sky_contribution = 0.85
+	# Building interiors: a dim daylight fill from their interior probes (PoiBuilder), none at night.
+	var interior_fill: float = lerpf(0.0, 0.55, day) * (1.0 - 0.3 * overcast)
+	for probe: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+		(probe as ReflectionProbe).ambient_color_energy = interior_fill
 	env.background_energy_multiplier = lerpf(0.25, 1.0, day)
 	# Fog: weather + early-morning valley mist.
 	# A thin valley mist at dawn that burns off by mid-morning (weather fog adds on top).

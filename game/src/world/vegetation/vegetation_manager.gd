@@ -44,7 +44,10 @@ var _far_mats: Array[ShaderMaterial] = []
 var _accum: float = 0.0
 var _col_accum: float = 0.0
 var _last_harvest: HarvestTarget = null
+## Far layer: one group task over every 64 m chunk of every detailed region (one element each).
 var _far_task: int = -1
+var _far_jobs: Array = []
+var _far_chunks: Array = []
 var _far_result: Dictionary = {}
 
 
@@ -96,7 +99,7 @@ func _exit_tree() -> void:
 		WorkerThreadPool.wait_for_task_completion(_pending[key]["task"])
 	_pending.clear()
 	if _far_task >= 0:
-		WorkerThreadPool.wait_for_task_completion(_far_task)
+		WorkerThreadPool.wait_for_group_task_completion(_far_task)
 		_far_task = -1
 
 
@@ -147,16 +150,26 @@ func _update(pos: Vector3) -> void:
 ## True once every chunk within NEAR_CHUNKS of the player has its instances built and no scatter
 ## job is in flight (visual QA and tests wait on this instead of a fixed delay).
 func is_settled() -> bool:
-	if not _pending.is_empty() or _far_task != -1 or world == null or world.player == null:
-		return false
+	return settle_report() == ""
+
+
+## Why streaming is not settled yet ("" when it is): for QA logs.
+func settle_report() -> String:
+	if world == null or world.player == null:
+		return "no player"
+	if _far_task != -1:
+		return "far layer scattering"
+	if not _pending.is_empty():
+		return "%d scatter jobs pending" % _pending.size()
 	var p: Vector3 = world.player.global_position
 	if TerrainManager.chunk_of(p.x, p.z) != _center:
-		return false
+		return "recentring"
+	var missing: Array[Vector2i] = []
 	for off: Vector2i in _ring_order():
 		var key := Vector2i(_center.x + off.x, _center.y + off.y)
 		if not _nodes.has(key) and _rt_for_chunk(key) != null:
-			return false
-	return true
+			missing.append(key)
+	return "" if missing.is_empty() else "chunks not built: %s (data: %s)" % [missing, missing.map(func(k: Vector2i) -> bool: return _data.has(k))]
 
 
 func _collect() -> void:
@@ -290,37 +303,52 @@ func _build_far_layer() -> void:
 	var seed_v: int = Game.session.world_seed
 	var height_fn: Callable = terrain.height_at
 	var removed: Dictionary = _removed.duplicate(true)
-	_far_task = WorkerThreadPool.add_task(func() -> void: _far_result = _scatter_far(regions, seed_v, height_fn, removed), false, "far trees")
-
-
-static func _scatter_far(regions: Dictionary, seed_v: int, height_fn: Callable, removed: Dictionary) -> Dictionary:
-	var out: Dictionary = {}
+	_far_jobs.clear()
 	for rid: String in regions:
 		var rt: RegionTerrain = regions[rid]
-		var per_species: Dictionary = {}
 		var cx0: int = int(floor(rt.rect.position.x / CHUNK))
 		var cz0: int = int(floor(rt.rect.position.y / CHUNK))
 		var count: int = int(rt.rect.size.x / CHUNK)
 		for cz: int in range(cz0, cz0 + count):
 			for cx: int in range(cx0, cx0 + count):
-				var key := Vector2i(cx, cz)
-				var gone: Dictionary = removed.get(Ids.chunk_key(cx, cz), {})
-				var layers: Dictionary = VegetationScatter.scatter_chunk(key, rt, seed_v, height_fn, Callable(), 1)
-				for inst: VegetationScatter.Instance in layers.get("tree", []):
-					if gone.has(str(inst.index)):
-						continue
-					if not per_species.has(inst.species):
-						per_species[inst.species] = []
-					(per_species[inst.species] as Array).append(inst)
-		out[rid] = per_species
-	return out
+				_far_jobs.append([rid, Vector2i(cx, cz)])
+	_far_chunks.clear()
+	_far_chunks.resize(_far_jobs.size())
+	var jobs: Array = _far_jobs
+	var results: Array = _far_chunks
+	# Each element writes only its own slot of the pre-sized results array.
+	_far_task = WorkerThreadPool.add_group_task(func(i: int) -> void:
+		results[i] = _scatter_far_chunk(regions[jobs[i][0]], jobs[i][1], seed_v, height_fn, removed),
+		jobs.size(), -1, false, "far trees")
+
+
+## Trees of one chunk for the far layer (felled ones removed).
+static func _scatter_far_chunk(rt: RegionTerrain, key: Vector2i, seed_v: int, height_fn: Callable, removed: Dictionary) -> Array:
+	var gone: Dictionary = removed.get(Ids.chunk_key(key.x, key.y), {})
+	var keep: Array = []
+	var layers: Dictionary = VegetationScatter.scatter_chunk(key, rt, seed_v, height_fn, Callable(), 1)
+	for inst: VegetationScatter.Instance in layers.get("tree", []):
+		if not gone.has(str(inst.index)):
+			keep.append(inst)
+	return keep
 
 
 func _collect_far() -> void:
-	if _far_task < 0 or not WorkerThreadPool.is_task_completed(_far_task):
+	if _far_task < 0 or not WorkerThreadPool.is_group_task_completed(_far_task):
 		return
-	WorkerThreadPool.wait_for_task_completion(_far_task)
+	WorkerThreadPool.wait_for_group_task_completion(_far_task)
 	_far_task = -1
+	_far_result = {}
+	for i: int in _far_jobs.size():
+		var rid: String = _far_jobs[i][0]
+		if not _far_result.has(rid):
+			_far_result[rid] = {}
+		var per_species: Dictionary = _far_result[rid]
+		for inst: VegetationScatter.Instance in (_far_chunks[i] if _far_chunks[i] != null else []):
+			if not per_species.has(inst.species):
+				per_species[inst.species] = []
+			(per_species[inst.species] as Array).append(inst)
+	_far_chunks.clear()
 	for rid: String in _far_result:
 		var per_species: Dictionary = _far_result[rid]
 		for sp_id: StringName in per_species:

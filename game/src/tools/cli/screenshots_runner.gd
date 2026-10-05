@@ -6,7 +6,7 @@ extends Node
 
 const SHOTS: Array[Dictionary] = [
 	{"name": "drop_site_morning", "pos": Vector3(-300, 2.0, 2302), "look": Vector3(-240, 0, 2296), "hour": 7.6, "weather": "clear"},
-	{"name": "forest_noon", "pos": Vector3(-205, 1.8, 2230), "look": Vector3(-160, 3, 2200), "hour": 12.5, "weather": "clear"},
+	{"name": "forest_noon", "pos": Vector3(-201, 1.8, 2227), "look": Vector3(-160, 3, 2200), "hour": 12.5, "weather": "clear"},
 	{"name": "pell_crossing_road", "pos": Vector3(-30, 6.0, 2170), "look": Vector3(-60, 0, 2070), "hour": 15.0, "weather": "overcast"},
 	{"name": "pell_crossing_street", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-95, 2, 2064), "hour": 10.0, "weather": "clear"},
 	{"name": "pond_dusk", "pos": Vector3(-200, 4.0, 1880), "look": Vector3(-262, 0, 1915), "hour": 19.6, "weather": "mist"},
@@ -14,11 +14,11 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "river_bridge", "pos": Vector3(160, 8.0, 1935), "look": Vector3(185, 0, 1960), "hour": 9.0, "weather": "rain"},
 	{"name": "valley_aerial", "pos": Vector3(-150, 140.0, 2420), "look": Vector3(-60, 0, 2050), "hour": 17.5, "weather": "clear"},
 	{"name": "night_forest", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 1.5, 2280), "hour": 23.0, "weather": "clear", "light": true},
-	{"name": "base_building", "pos": Vector3(-272, 2.2, 2304), "look": Vector3(-262, 0.5, 2296), "hour": 11.0, "weather": "clear", "build": true},
+	{"name": "base_building", "pos": Vector3(-296, 2.2, 2302), "look": Vector3(-286, 0.5, 2294), "hour": 11.0, "weather": "clear", "build": true},
 	{"name": "diner_interior", "pos": Vector3(-49, 1.75, 2021), "look": Vector3(-60, 1.0, 2018), "hour": 14.0, "weather": "overcast"},
-	{"name": "first_person_axe", "pos": Vector3(-286, 0.0, 2300), "look": Vector3(-270, 1.2, 2296), "hour": 11.0, "weather": "clear", "fp": "stone_axe"},
-	{"name": "hollow_closeup", "pos": Vector3(-286, 1.6, 2300), "look": Vector3(-283, 1.2, 2299), "hour": 10.0, "weather": "overcast", "enemy": "hollow"},
-	{"name": "hum_night", "pos": Vector3(-272, 2.2, 2304), "look": Vector3(-262, 0.5, 2296), "hour": 22.5, "weather": "clear", "hum": true, "light": true},
+	{"name": "first_person_axe", "pos": Vector3(-286, 0.0, 2300), "look": Vector3(-276, 0.2, 2297), "hour": 11.0, "weather": "clear", "fp": "stone_axe"},
+	{"name": "hollow_closeup", "pos": Vector3(-287, 1.55, 2300), "look": Vector3(-285, 1.1, 2299.5), "hour": 11.0, "weather": "overcast", "enemy": "hollow", "fov": 45.0},
+	{"name": "hum_night", "pos": Vector3(-296, 2.2, 2302), "look": Vector3(-286, 0.5, 2294), "hour": 22.5, "weather": "clear", "hum": true, "light": true},
 ]
 
 var _out: String = "res://../build/screenshots"
@@ -52,7 +52,7 @@ func _wait_streamed(w: Node) -> void:
 	var t0: int = Time.get_ticks_msec()
 	while veg != null and not bool(veg.call(&"is_settled")):
 		if Time.get_ticks_msec() - t0 > 240000:
-			print("SHOT warning: vegetation still streaming after 240 s")
+			print("SHOT warning: vegetation still streaming after 240 s (%s)" % veg.call(&"settle_report"))
 			return
 		await get_tree().process_frame
 
@@ -125,6 +125,11 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		w.get(&"ai").call(&"spawn", StringName(str(shot["enemy"])), at, {"yaw": yaw, "pose": "stand", "sleeper": "qa", "id": "qa:%s" % shot["name"]})
 	cam.global_position = pos
 	cam.look_at(look, Vector3.UP)
+	cam.fov = float(shot.get("fov", 70.0))
+	# The player's first-person arms sit where the QA camera is; show them only in FP shots.
+	var vm: Node3D = p.get_node_or_null(^"Head/Camera3D/ViewModel") as Node3D
+	if vm != null:
+		vm.visible = shot.has("fp")
 	if shot.has("fp"):
 		_hold_item(p, StringName(str(shot["fp"])), look)
 		p.camera.make_current()
@@ -143,11 +148,14 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 ## Equips an item in toolbelt slot 0 and turns the player (camera) toward `look`.
 func _hold_item(p: Player, item: StringName, look: Vector3) -> void:
 	var ps: PlayerState = Game.local_player()
+	# Earlier shots may have left logs on the shoulder (carry pose); empty hands for this one.
+	ps.inventory.remove(&"log", ps.inventory.count_of(&"log"))
 	ps.inventory.add_item(item, 1)
 	ps.toolbelt[0] = item
 	ps.equipped_slot = 0
 	var dir: Vector3 = look - p.camera.global_position
 	p.rotation.y = atan2(-dir.x, -dir.z)
+	p.head.rotation.x = atan2(dir.y, Vector2(dir.x, dir.z).length())
 
 
 var _built: bool = false
