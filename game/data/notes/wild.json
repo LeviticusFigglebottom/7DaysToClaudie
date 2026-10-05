@@ -1,0 +1,68 @@
+{
+ "_doc": "Readable notes of the Larch Hollow wilderness sites (each has the item note_<id> in items/wild.json). Every note advances its site's story and points at the route: a key, a detour, a drop.",
+ "defs": [
+  {
+   "id": "wild_lookout_log",
+   "title": "Cedar Ridge Lookout — Daily Log",
+   "style": "handwritten",
+   "author": "M. Teal",
+   "body": "Aug 30. Smoke all down the Tamsin. Not fires, burning off. Plotted nine. District says stay at station.\nSep 2. Lights going out in Pell's Crossing, one house at a time, east to west. Bearings 214, 219, 223.\nSep 4. Ezra came up the switchbacks at dusk with a bite above his boot. Put him in the woodshed with the good blanket.\nSep 6. Ezra isn't Ezra. Nailed the stair house shut from inside, bolted the back, locked the gate behind me. The spare gate key still hangs on the woodshed nail. I couldn't go back down for it.\nSep 9. The ground hummed all night. Every light in the valley started walking toward my lantern. They broke the stair house window and came up as far as the gate. They're standing there now. They don't knock.\nSep 10. I plotted the bearings from the hum. Every line crosses at the Corvane mine. Every one.\nSep 11. The Program frequency answers in numbers. I write them down. — M.T."
+  },
+  {
+   "id": "wild_lookout_gate",
+   "title": "Card on the Stair Gate",
+   "style": "handwritten",
+   "author": "Cedar Ridge Lookout",
+   "body": "RELIEF CREW —\nGate stays locked. Spare key on the nail in the woodshed, left of the door.\nCome up by day and call out from the landing so I know you're you.\n— M.T.\n\n(Scratched into the paint beside it, later:) DON'T"
+  },
+  {
+   "id": "wild_camp_cook",
+   "title": "Cook's Order Pad",
+   "style": "handwritten",
+   "author": "Dee Pruitt, Camp 4 cookhouse",
+   "body": "Flour, 2 sacks. Lard, gone. Coffee, Walt says ration it.\nMoved the office keys to the pantry nail like Walt asked. The brass one's the office.\nThe boys in the bunkhouse stopped asking for supper Tuesday. Walt says leave the trays at the drying-room door and don't knock, and he's moved in with them to keep watch.\nIf you're crew: the kitchen door sticks. Shoulder it."
+  },
+  {
+   "id": "wild_camp_ledger",
+   "title": "Foreman's Ledger",
+   "style": "typed",
+   "author": "W. Brody, Tamsin Timber Camp 4",
+   "body": "PAYROLL HELD — 14 MEN — pending road.\nMoved to the safe in my room at the bunkhouse. I'm sleeping over there with the sick, somebody has to.\nQUARANTINE (bunkhouse): Halvorsen, Pike, Dumont, Dumont, Kees, Ruiz.\nDrying-room door is the only way in, front's barricaded. Key in this desk. Safe key on the iron ring in the records room.\n\nHandwritten under it: If the road opens, pay them anyway. Every one of them."
+  },
+  {
+   "id": "wild_camp_last",
+   "title": "Note in the Foreman's Room",
+   "style": "scrawl",
+   "author": "Walt",
+   "body": "They knew me right up till they didn't.\nKept them in. Front's barricaded, side door's bolted from in here, drying room's locked.\nIf I'm one of them now don't let me out either.\nPay the boys. — W."
+  },
+  {
+   "id": "wild_mill_watch",
+   "title": "Night Watch Log",
+   "style": "handwritten",
+   "author": "Larch Hollow Mill, night shift",
+   "body": "0150 Big doors barred from inside. Crew in the lunchroom upstairs.\n0215 Basement stairs barricaded after Kowalski went down for the fuses and didn't come up.\n0340 Something walking on the log deck. Haul chain's still running.\n0410 Gus says the only way to the office now is through the basement. Filer has the office key up in the filing room.\n0455 The headsaw is running. Gus is drawing them off the lunchroom. God help him."
+  },
+  {
+   "id": "wild_mill_filer",
+   "title": "Filer's Notebook",
+   "style": "handwritten",
+   "author": "R. Sato, head filer",
+   "body": "Headsaw benched and tensioned. Last one I'll do.\nOffice key's on my board by the grinder. Whoever goes for the payroll, take it. The safe key is in Pruett's desk next door, top drawer.\nThe basement stairs are barricaded below. Use the dust chute by the headrig, it drops you onto the waste conveyor. Soft landing, mostly.\nDon't make noise down there. They lie in the sawdust like they're sleeping."
+  },
+  {
+   "id": "wild_trapper_warning",
+   "title": "Warning on the Door",
+   "style": "scrawl",
+   "author": "the Rasks",
+   "body": "DONT OPEN\nHE TURNED. WE NAILED IT\nHE ASKED US TO\nGOD FORGIVE US\n— R. & J. Rask"
+  },
+  {
+   "id": "wild_trapper_journal",
+   "title": "Trapline Journal",
+   "style": "handwritten",
+   "author": "A. Lindqvist",
+   "body": "Nov 3. Two marten, one fox on the upper line. Something's been at the beaver sets. Not a bear.\nNov 6. It was a man. What used to be one. Lost the hand finding out. Wrapped it. The Rask boys are scared of me.\nNov 8. Fever. Put the good things in the cache box at the foot of the bunk. The key is where I keep everything I can't afford to lose: smokehouse, on the nail inside the door.\nNov 9. Sets are still out in the yard and along the path. Watch your feet, whoever you are.\nNov 10. Told the boys what to do. They're nailing the door now. Good boys."
+  }
+ ]
+}

@@ -1,0 +1,15 @@
+{
+  "_doc": "Containers of the Larch Hollow wilderness sites (logging camp, sawmill, fire lookout, trapper's cabin). Loot tables in loot/tables/wild.json. Locked ones need the 'key' named on the prop in the POI.",
+  "defs": [
+    {"id": "wild_locker", "name": "Crew Locker", "loot_table": "wild_locker", "slots": 6, "search_time": 1.6, "noise": 6},
+    {"id": "wild_footlocker", "name": "Footlocker", "loot_table": "wild_footlocker", "slots": 8, "search_time": 2.0, "noise": 3},
+    {"id": "wild_tool_chest", "name": "Logger's Tool Chest", "loot_table": "wild_tool_chest", "slots": 8, "search_time": 2.2, "noise": 6},
+    {"id": "wild_ammo_box", "name": "Ammo Can", "loot_table": "wild_ammo_box", "slots": 4, "search_time": 1.0, "noise": 3},
+    {"id": "wild_foreman_safe", "name": "Foreman's Safe", "loot_table": "wild_foreman_safe", "slots": 8, "search_time": 2.5, "noise": 6, "locked": true},
+    {"id": "wild_lookout_stores", "name": "Lookout Stores", "loot_table": "wild_lookout_stores", "slots": 6, "search_time": 1.6, "noise": 3},
+    {"id": "wild_mill_stores", "name": "Mill Stores", "loot_table": "wild_mill_stores", "slots": 8, "search_time": 2.0, "noise": 5},
+    {"id": "wild_cookhouse_stores", "name": "Cookhouse Stores", "loot_table": "wild_cookhouse_stores", "slots": 6, "search_time": 1.6, "noise": 4},
+    {"id": "wild_trapper_cache", "name": "Trapper's Cache", "loot_table": "wild_trapper_cache", "slots": 8, "search_time": 2.0, "noise": 3, "locked": true},
+    {"id": "wild_payroll_box", "name": "Payroll Box", "loot_table": "wild_payroll_box", "slots": 4, "search_time": 1.4, "noise": 4, "locked": true}
+  ]
+}

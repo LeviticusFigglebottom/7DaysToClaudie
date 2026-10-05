@@ -1,0 +1,180 @@
+{
+  "_doc": "Tier-1 trapper's cabin in the forest above the Tamsin (region D6). A 7x5 one-room board cabin with a lean-to, smokehouse, meat cache, smoking rack and outhouse in the yard (structure props). Route: the path from the river ends at the front door, boarded from outside with the Rasks' warning on it -> round the side, where the wall under the lean-to is clawed through (a bear trap on the corner) -> inside, the dragger by the hole and three more held where they fell (taking the journal, unbolting the back door or opening the cache wakes them) -> the cache at the foot of the bunk is locked -> slide the back door bolt (shortcut) -> the key on its nail at the smokehouse door (a second set in front of it) -> back in to open the cache. See docs/POI_AUTHORING.md.",
+  "defs": [
+    {
+      "id": "trappers_cabin",
+      "name": "Lindqvist's Trapline Cabin",
+      "tier": 1,
+      "zoning": ["wilderness"],
+      "footprint": [22, 18],
+      "origin": [0, 0],
+      "author": "Hollowmere team",
+      "story": "Arvid Lindqvist ran beaver and marten sets along the Tamsin from this one-room cabin for twenty-six winters. In November something that had been a man started robbing his sets; Arvid lost a hand finding out what it was. He put his good things in the cache box at the foot of his bunk, hung its key in the smokehouse where he kept everything he could not afford to lose, and when the fever came he told the Rask boys from down the river what to do. They nailed his door shut from outside and wrote on it. Later Jory Rask went back in through the wall under the lean-to, to bury him; he is still sitting at the table. Arvid's sets are still out in the yard and along the path, the way the journal says.",
+      "style": {
+        "exterior": "wood_paneling_dark",
+        "interior": "wood_paneling_dark",
+        "floor": "wood_pine",
+        "ceiling": "wood_paneling_dark",
+        "floor_height": 0.25,
+        "decay": 0.55,
+        "damaged_walls": 0.0,
+        "prop_condition": "worn",
+        "scatter": {
+          "density": 0.4
+        },
+        "roof": {
+          "type": "gable",
+          "axis": "x",
+          "pitch": 34,
+          "overhang": 0.55,
+          "material": "roof_cedar",
+          "gutters": false
+        }
+      },
+      "levels": [
+        {
+          "level": 0,
+          "plan": ["......................", "......................", "......................", "......................", "......................", "......................", ".......CCCCCCC........", ".......CCCCCCC........", ".......CCCCCCC........", ".......CCCCCCC........", ".......CCCCCCC........", "......................", "......................", "......................", "......................", "......................", "......................", "......................"],
+          "rooms": {
+            "C": {
+              "name": "Cabin",
+              "type": "cabin",
+              "wall": "wood_paneling_dark",
+              "floor": "wood_pine",
+              "ceiling": "wood_paneling_dark"
+            }
+          }
+        }
+      ],
+      "openings": [
+        {"id": "front_door", "at": [10, 10], "side": "S", "type": "door", "state": "barricaded"},
+        {"id": "win_front_w", "at": [8, 10], "side": "S", "type": "window", "state": "boarded"},
+        {"id": "win_front_e", "at": [12, 10], "side": "S", "type": "window", "state": "boarded"},
+        {"id": "win_east", "at": [13, 8], "side": "E", "type": "window", "state": "boarded"},
+        {"id": "win_back", "at": [12, 6], "side": "N", "type": "window", "state": "closed"},
+        {"id": "back_door", "at": [10, 6], "side": "N", "type": "door", "state": "locked_inside"},
+        {"id": "lean_to_hole", "at": [7, 8], "side": "W", "type": "breach"}
+      ],
+      "props": [
+        {"prop": "wild_cot_canvas", "pos": [13.5, 7.15], "rot": 90, "variant": "worn"},
+        {"prop": "wild_footlocker", "pos": [13.45, 8.68], "rot": -90, "variant": "clean", "id": "cache", "container": "wild_trapper_cache", "key": "wild_trapper_key"},
+        {"prop": "wild_wood_stove", "pos": [8.5, 6.5], "rot": 0, "variant": "worn"},
+        {"prop": "wild_firewood_stack", "pos": [7.3, 6.55], "rot": 90},
+        {"prop": "kitchen_table", "pos": [9.6, 8.7], "rot": 0, "variant": "worn", "route_ok": true},
+        {"prop": "chair_wood", "pos": [9.35, 9.5], "rot": 180, "variant": "worn"},
+        {"prop": "chair_wood", "pos": [10.6, 8.6], "rot": -90, "variant": "destroyed"},
+        {"prop": "wild_oil_lantern", "pos": [9.98, 8.55], "y": 0.76, "lit": true},
+        {"prop": "wild_enamel_dishes", "pos": [9.2, 8.55], "y": 0.76, "rot": 15},
+        {"prop": "wild_washstand", "pos": [11.5, 10.7], "rot": 180, "variant": "worn"},
+        {"prop": "candle_cluster", "pos": [11.32, 10.72], "y": 1.0, "lit": true},
+        {"prop": "wild_pelt_board", "pos": [7.085, 10.0], "rot": 90, "height": 1.1},
+        {"prop": "wild_gun_rack", "pos": [9.5, 6.085], "rot": 0, "height": 1.3, "variant": "worn", "id": "cabin_gun_rack"},
+        {"prop": "wild_caulk_boots", "pos": [12.3, 9.85], "rot": 30},
+        {"prop": "bucket", "pos": [7.5, 10.5]},
+        {"prop": "wild_leg_trap", "pos": [8.1, 7.75], "rot": 60, "variant": "worn"},
+        {"prop": "books_scatter", "pos": [10.7, 7.25], "rot": 20},
+        {"prop": "bloody_bandages", "pos": [12.4, 8.3], "rot": 110},
+        {"prop": "wild_ammo_box", "pos": [13.55, 9.75], "rot": -80, "id": "cabin_ammo"},
+        {"prop": "rug_oval", "pos": [10.4, 7.9], "rot": 90},
+        {"prop": "plaster_chunks", "pos": [7.6, 8.45], "rot": 90},
+        {"prop": "cans_scatter", "pos": [8.3, 10.2], "rot": 40},
+        {"prop": "wild_firewood_stack", "pos": [7.3, 7.45], "rot": 90},
+        {"prop": "duffel_bag", "pos": [12.55, 6.45], "rot": 5, "id": "arvid_duffel"},
+        {"prop": "metal_shelf", "pos": [11.5, 6.32], "rot": 0, "variant": "worn", "id": "cabin_shelf"},
+        {"prop": "bottles_scatter", "pos": [12.6, 9.2]},
+        {"prop": "trash_bag", "pos": [7.45, 10.45], "rot": 30, "id": "cabin_trash"},
+        {"prop": "crate_wood", "pos": [10.55, 10.6], "rot": -5, "id": "cabin_crate"},
+        {"prop": "wild_oil_lantern", "pos": [11.2, 8.9], "rot": 80, "variant": "destroyed"},
+        {"prop": "wild_crosscut_saw", "pos": [14.09, 8.0], "rot": 90, "height": 1.55, "variant": "worn"},
+        {"prop": "wild_lean_to", "pos": [5.8, 8.5], "rot": -90, "variant": "worn"},
+        {"prop": "wild_oil_lantern_hanging", "pos": [5.5, 9.7], "y": 1.85, "lit": true},
+        {"prop": "wild_chopping_block", "pos": [4.2, 12.5], "variant": "worn"},
+        {"prop": "wild_firewood_stack", "pos": [3.3, 11.4], "rot": 20},
+        {"prop": "wild_firewood_stack", "pos": [3.1, 12.25], "rot": -10},
+        {"prop": "woodpile", "pos": [2.2, 7.6], "rot": 90},
+        {"prop": "wild_smokehouse", "pos": [17.0, 3.9], "rot": 0, "variant": "worn"},
+        {"prop": "wild_meat_cache", "pos": [3.2, 3.0], "rot": 30, "variant": "worn"},
+        {"prop": "wild_outhouse", "pos": [19.6, 14.2], "rot": -90, "variant": "worn"},
+        {"prop": "wild_smoking_rack", "pos": [16.5, 9.0], "rot": 90, "variant": "worn"},
+        {"prop": "wild_canoe", "pos": [14.6, 15.0], "rot": 8, "variant": "worn"},
+        {"prop": "wild_leg_trap", "pos": [12.6, 12.3], "rot": -30, "variant": "worn"},
+        {"prop": "wild_leg_trap", "pos": [18.7, 6.9], "rot": 75, "variant": "worn"},
+        {"prop": "wild_leg_trap", "pos": [4.7, 4.9], "rot": 10},
+        {"prop": "corpse_remains", "pos": [5.2, 14.2], "rot": 120, "id": "path_corpse"},
+        {"prop": "barrel_metal", "pos": [14.5, 5.6], "variant": "worn"},
+        {"prop": "barrel_metal", "pos": [6.5, 5.5]},
+        {"prop": "wheelbarrow", "pos": [11.8, 3.4], "rot": 200, "variant": "worn"},
+        {"prop": "pallet", "pos": [13.0, 16.3], "rot": -6},
+        {"prop": "trash_pile", "pos": [19.3, 2.4], "rot": 40, "id": "yard_trash"},
+        {"prop": "bucket", "pos": [15.4, 6.0]},
+        {"prop": "wild_peavey", "pos": [8.4, 4.6], "rot": 70},
+        {"prop": "wild_firewood_stack", "pos": [15.6, 2.7], "rot": 90},
+        {"prop": "oil_drum_fire", "pos": [11.6, 14.4], "lit": true},
+        {"prop": "sleeping_bag", "pos": [13.2, 13.4], "rot": 80},
+        {"prop": "duffel_bag", "pos": [14.3, 12.9], "rot": 30, "id": "rask_duffel"},
+        {"prop": "camp_stove", "pos": [10.4, 13.6], "rot": 200},
+        {"prop": "cans_scatter", "pos": [11.0, 15.4], "rot": 10},
+        {"prop": "bottles_scatter", "pos": [12.4, 14.9]},
+        {"prop": "backpack_dropped", "pos": [9.4, 14.8], "rot": 150, "id": "rask_pack"},
+        {"prop": "chair_wood", "pos": [12.6, 15.9], "rot": 200, "variant": "worn"},
+        {"prop": "gas_can", "pos": [14.1, 14.1], "rot": 40},
+        {"prop": "plank_pile", "pos": [9.6, 2.9], "rot": 4},
+        {"prop": "plywood_leaning", "pos": [19.2, 4.2], "rot": -90},
+        {"prop": "crate_wood", "pos": [15.9, 5.95], "rot": 12, "id": "smokehouse_crate"},
+        {"prop": "propane_tank_small", "pos": [6.6, 4.9]},
+        {"prop": "bucket", "pos": [18.9, 5.0], "variant": "worn"},
+        {"prop": "wild_firewood_stack", "pos": [19.0, 9.5], "rot": 0},
+        {"prop": "wild_choker_cable", "pos": [8.9, 16.1], "rot": -20},
+        {"prop": "fence_post", "pos": [16.3, 12.4], "rot": 0},
+        {"prop": "fence_post", "pos": [19.6, 11.2], "rot": 0},
+        {"prop": "tire", "pos": [1.8, 14.8]}
+      ],
+      "pickups": [
+        {"id": "cache_key", "item": "wild_trapper_key", "pos": [16.55, 5.2], "y": 1.3}
+      ],
+      "notes": [
+        {"note": "wild_trapper_warning", "pos": [10.5, 11.1], "y": 1.45},
+        {"note": "wild_trapper_journal", "pos": [9.55, 8.62], "y": 0.77}
+      ],
+      "sleepers": [
+        {"id": "breach_dragger", "pos": [7.65, 9.65], "enemy": "dragger", "pose": "lie", "rot": -100},
+        {"id": "arvid", "pos": [12.55, 7.55], "enemy": "hollow", "pose": "lie", "rot": 10, "group": "cabin"},
+        {"id": "jory_rask", "pos": [9.35, 9.45], "enemy": "hollow", "pose": "sit", "rot": 180, "group": "cabin"},
+        {"id": "stove_lurcher", "pos": [8.6, 7.3], "enemy": "lurcher", "pose": "crouch", "rot": 170, "group": "cabin"}
+      ],
+      "decals": [
+        {"decal": "footprints_mud", "at": [6, 8], "side": "floor", "size": [1.2, 1.6], "rot": 90},
+        {"decal": "blood_trail", "at": [8, 8], "side": "floor", "size": [0.9, 2.0], "rot": 90},
+        {"decal": "blood_handprint", "at": [10, 10], "side": "S", "size": [0.4, 0.4], "height": 1.2},
+        {"decal": "survivor_marks_b", "at": [11, 6], "side": "N", "size": [0.8, 0.6], "height": 1.5},
+        {"decal": "blood_pool", "at": [12, 7], "side": "floor", "size": [1.2, 1.0]}
+      ],
+      "route": [
+        {"at": [10, 15], "label": "The path from the river ends at a cabin with its door boarded over"},
+        {"at": [10, 11], "label": "Front door nailed shut from outside: DONT OPEN"},
+        {"at": [5, 9], "label": "Round the side: the wall under the lean-to is clawed through"},
+        {"at": [8, 9], "label": "Inside: a dragger by the hole, the trapper and the Rask boy where they fell; the journal on the table"},
+        {"at": [12, 9], "label": "The cache box at the foot of the bunk is locked"},
+        {"at": [10, 5], "label": "Slide the back door's bolt and go out to the smokehouse"},
+        {"at": [16, 6], "label": "Smokehouse: the cache key on the nail by the door (mind the set in the grass)"},
+        {"at": [12, 8], "label": "Back in: open the cache"}
+      ],
+      "loot_room": {
+        "room": "C",
+        "level": 0
+      },
+      "shortcuts": [
+        {"opening": "back_door"}
+      ],
+      "traps": [
+        {"id": "corner_set", "type": "bear_trap", "pos": [6.4, 11.6], "rot": 35},
+        {"id": "smokehouse_set", "type": "bear_trap", "pos": [17.25, 6.15], "rot": 100}
+      ],
+      "triggers": [
+        {"id": "journal_taken", "group": "cabin", "on": "pickup", "pickup": "note_wild_trapper_journal", "delay": 0.6},
+        {"id": "cache_opened", "group": "cabin", "on": "container", "prop": "cache"},
+        {"id": "back_bolt_drawn", "group": "cabin", "on": "opening", "opening": "back_door", "delay": 0.3}
+      ]
+    }
+  ]
+}

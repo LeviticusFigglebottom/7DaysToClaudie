@@ -1,0 +1,186 @@
+{
+ "_doc": "Keys and note items of the Larch Hollow wilderness sites (cedar_ridge_lookout, tamsin_logging_camp, larch_hollow_sawmill, trappers_cabin). Models reuse the generated paper/logbook/key models.",
+ "defs": [
+  {
+   "id": "note_wild_lookout_log",
+   "name": "Cedar Ridge Lookout — Daily Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_ranger_log",
+   "note": "wild_lookout_log"
+  },
+  {
+   "id": "note_wild_lookout_gate",
+   "name": "Card on the Stair Gate",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_merrow_fridge",
+   "note": "wild_lookout_gate"
+  },
+  {
+   "id": "note_wild_camp_cook",
+   "name": "Cook's Order Pad",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_hardware_inventory",
+   "note": "wild_camp_cook"
+  },
+  {
+   "id": "note_wild_camp_ledger",
+   "name": "Foreman's Ledger",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_pharmacy_ledger",
+   "note": "wild_camp_ledger"
+  },
+  {
+   "id": "note_wild_camp_last",
+   "name": "Note in the Foreman's Room",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_merrow_fridge",
+   "note": "wild_camp_last"
+  },
+  {
+   "id": "note_wild_mill_watch",
+   "name": "Night Watch Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_hardware_inventory",
+   "note": "wild_mill_watch"
+  },
+  {
+   "id": "note_wild_mill_filer",
+   "name": "Filer's Notebook",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_ranger_log",
+   "note": "wild_mill_filer"
+  },
+  {
+   "id": "note_wild_trapper_warning",
+   "name": "Warning on the Door",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_okafor_letter",
+   "note": "wild_trapper_warning"
+  },
+  {
+   "id": "note_wild_trapper_journal",
+   "name": "Trapline Journal",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_ranger_log",
+   "note": "wild_trapper_journal"
+  },
+  {
+   "id": "wild_lookout_gate_key",
+   "name": "Stair Gate Key",
+   "description": "Spare key to the lookout's stair gate, on a loop of string.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/pharmacy_key",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "wild_camp_office_key",
+   "name": "Camp Office Key",
+   "description": "Brass key on a cookhouse tag.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/pharmacy_key",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "wild_bunkhouse_key",
+   "name": "Drying Room Key",
+   "description": "Iron key stamped D.R.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/evidence_locker_key",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "wild_foreman_safe_key",
+   "name": "Foreman's Safe Key",
+   "description": "A heavy iron key on the foreman's ring.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/evidence_locker_key",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "wild_mill_office_key",
+   "name": "Mill Office Key",
+   "description": "Office key from the filer's board, grimy with saw oil.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/pharmacy_key",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "wild_mill_safe_key",
+   "name": "Mill Safe Key",
+   "description": "From the mill manager's top drawer.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/evidence_locker_key",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "wild_trapper_key",
+   "name": "Cache Box Key",
+   "description": "Small key on a rawhide thong.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/pharmacy_key",
+   "tags": [
+    "key"
+   ]
+  }
+ ]
+}

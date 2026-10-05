@@ -1,0 +1,1231 @@
+{
+ "_doc": "Wilderness / industrial props (Larch Hollow logging camp, sawmill, fire lookout, trapper's cabin). Models: tools/assetgen/blender/generators/props_wild.py and props_wild_mill.py -> models/props/<id>[_worn|_destroyed].glb. size = [width x, height y, depth z] in metres (Godot axes, front +Z); the box collider is centred on the origin. Wall props (wall_mounted) have their origin on the wall plane: place them with 'pos' on the wall face and 'rot' (against-placement pushes them off the wall by half their depth). wild_radio_set and wild_enamel_dishes are table-top props (give 'y' = table height). Clutter-tagged props feed PoiBuilder's scatter for their room tags.",
+ "defs": [
+  {
+   "id": "wild_bunk_steel",
+   "name": "Steel Bunk",
+   "description": "Two-tier camp bunk, ticking mattresses and wool blankets.",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/wild_bunk_steel",
+    "worn": "props/wild_bunk_steel_worn",
+    "destroyed": "props/wild_bunk_steel_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    2.0,
+    1.73,
+    0.93
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "bunkhouse",
+    "bedroom"
+   ]
+  },
+  {
+   "id": "wild_wood_stove",
+   "name": "Box Stove",
+   "description": "Cast-iron box stove with a mica window and a pipe to the ceiling.",
+   "tags": [
+    "furniture",
+    "light",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_wood_stove",
+    "worn": "props/wild_wood_stove_worn",
+    "destroyed": "props/wild_wood_stove_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    0.79,
+    2.75,
+    0.57
+   ],
+   "light": {
+    "color": "#ff8a3c",
+    "energy": 0.9,
+    "range": 5.0,
+    "flicker": 0.45,
+    "offset": [
+     0.0,
+     0.42,
+     0.0
+    ]
+   },
+   "rooms": [
+    "bunkhouse",
+    "cabin",
+    "lookout",
+    "workshop",
+    "office"
+   ]
+  },
+  {
+   "id": "wild_cook_range",
+   "name": "Cookhouse Range",
+   "description": "Wood-fired range with a warming closet and a hot-water reservoir.",
+   "tags": [
+    "furniture",
+    "light",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_cook_range",
+    "worn": "props/wild_cook_range_worn",
+    "destroyed": "props/wild_cook_range_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 700,
+   "size": [
+    1.7,
+    2.75,
+    0.78
+   ],
+   "light": {
+    "color": "#ff8a3c",
+    "energy": 0.9,
+    "range": 5.0,
+    "flicker": 0.45,
+    "offset": [
+     0.0,
+     0.55,
+     0.0
+    ]
+   },
+   "rooms": [
+    "kitchen"
+   ]
+  },
+  {
+   "id": "wild_mess_table",
+   "name": "Mess Table",
+   "description": "Plank mess table on trestles, set with granite-ware.",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/wild_mess_table",
+    "worn": "props/wild_mess_table_worn",
+    "destroyed": "props/wild_mess_table_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    2.41,
+    0.78,
+    0.86
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "diner",
+    "kitchen",
+    "bunkhouse"
+   ]
+  },
+  {
+   "id": "wild_mess_bench",
+   "name": "Mess Bench",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/wild_mess_bench",
+    "worn": "props/wild_mess_bench_worn",
+    "destroyed": "props/wild_mess_bench_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 100,
+   "size": [
+    2.2,
+    0.45,
+    0.3
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "diner",
+    "kitchen",
+    "bunkhouse"
+   ]
+  },
+  {
+   "id": "wild_locker_steel",
+   "name": "Crew Lockers",
+   "description": "A bank of two louvred steel crew lockers.",
+   "tags": [
+    "furniture",
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_locker_steel",
+    "worn": "props/wild_locker_steel_worn",
+    "destroyed": "props/wild_locker_steel_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    0.76,
+    1.82,
+    0.47
+   ],
+   "container": "wild_locker",
+   "rooms": [
+    "bunkhouse",
+    "workshop",
+    "office"
+   ]
+  },
+  {
+   "id": "wild_footlocker",
+   "name": "Footlocker",
+   "description": "Painted plywood footlocker with brass corners.",
+   "tags": [
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/wild_footlocker",
+    "worn": "props/wild_footlocker_worn",
+    "destroyed": "props/wild_footlocker_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    0.93,
+    0.4,
+    0.46
+   ],
+   "container": "wild_footlocker",
+   "blocks_sight": false,
+   "rooms": [
+    "bunkhouse",
+    "cabin",
+    "lookout",
+    "bedroom"
+   ]
+  },
+  {
+   "id": "wild_tool_chest",
+   "name": "Logger's Tool Chest",
+   "description": "Iron-strapped board chest with a till of files and wedges.",
+   "tags": [
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/wild_tool_chest",
+    "worn": "props/wild_tool_chest_worn",
+    "destroyed": "props/wild_tool_chest_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.03,
+    0.46,
+    0.54
+   ],
+   "container": "wild_tool_chest",
+   "blocks_sight": false,
+   "rooms": [
+    "workshop",
+    "garage",
+    "mill"
+   ]
+  },
+  {
+   "id": "wild_ammo_box",
+   "name": "Ammo Can",
+   "description": "Army surplus ammo can.",
+   "tags": [
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_ammo_box",
+    "worn": "props/wild_ammo_box_worn",
+    "destroyed": "props/wild_ammo_box_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 80,
+   "size": [
+    0.3,
+    0.21,
+    0.16
+   ],
+   "container": "wild_ammo_box",
+   "blocks_sight": false,
+   "rooms": [
+    "lookout",
+    "cabin",
+    "office"
+   ]
+  },
+  {
+   "id": "wild_safe_floor",
+   "name": "Foreman's Safe",
+   "description": "Heavy floor safe with a combination dial and a spoked handle.",
+   "tags": [
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_safe_floor",
+    "worn": "props/wild_safe_floor_worn",
+    "destroyed": "props/wild_safe_floor_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 1800,
+   "size": [
+    0.65,
+    0.9,
+    0.66
+   ],
+   "container": "wild_foreman_safe",
+   "blocks_sight": false,
+   "rooms": [
+    "office"
+   ]
+  },
+  {
+   "id": "wild_cot_canvas",
+   "name": "Canvas Cot",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/wild_cot_canvas",
+    "worn": "props/wild_cot_canvas_worn",
+    "destroyed": "props/wild_cot_canvas_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 80,
+   "size": [
+    1.9,
+    0.44,
+    0.69
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "lookout",
+    "bunkhouse",
+    "cabin"
+   ]
+  },
+  {
+   "id": "wild_oil_lantern",
+   "name": "Kerosene Lantern",
+   "description": "Red tubular hurricane lantern.",
+   "tags": [
+    "light",
+    "survivor",
+    "clutter"
+   ],
+   "variants": {
+    "clean": "props/wild_oil_lantern",
+    "worn": "props/wild_oil_lantern_worn",
+    "destroyed": "props/wild_oil_lantern_destroyed"
+   },
+   "collision": "box",
+   "physics": "carry",
+   "hp": 15,
+   "size": [
+    0.17,
+    0.37,
+    0.16
+   ],
+   "light": {
+    "color": "#ffc27a",
+    "energy": 0.85,
+    "range": 6.0,
+    "flicker": 0.22,
+    "offset": [
+     0.0,
+     0.16,
+     0.0
+    ]
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "bunkhouse",
+    "cabin",
+    "lookout",
+    "workshop"
+   ]
+  },
+  {
+   "id": "wild_oil_lantern_hanging",
+   "name": "Hanging Lantern",
+   "description": "The same lantern on a wire and S-hook: origin at the lantern's base, place it with a 'y' offset.",
+   "tags": [
+    "light",
+    "survivor"
+   ],
+   "variants": {
+    "clean": "props/wild_oil_lantern_hanging",
+    "worn": "props/wild_oil_lantern_hanging_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.17,
+    0.71,
+    0.16
+   ],
+   "light": {
+    "color": "#ffc27a",
+    "energy": 0.85,
+    "range": 6.0,
+    "flicker": 0.22,
+    "offset": [
+     0.0,
+     0.16,
+     0.0
+    ]
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "any"
+   ]
+  },
+  {
+   "id": "wild_washstand",
+   "name": "Wash Stand",
+   "tags": [
+    "furniture",
+    "clutter"
+   ],
+   "variants": {
+    "clean": "props/wild_washstand",
+    "worn": "props/wild_washstand_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.64,
+    1.0,
+    0.42
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "bunkhouse",
+    "cabin"
+   ]
+  },
+  {
+   "id": "wild_enamel_dishes",
+   "name": "Enamel Dishes",
+   "description": "Granite-ware plates, cups and a coffee pot; a table-top prop (place with 'y').",
+   "tags": [
+    "tabletop"
+   ],
+   "variants": {
+    "clean": "props/wild_enamel_dishes",
+    "worn": "props/wild_enamel_dishes_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.44,
+    0.19,
+    0.35
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "kitchen",
+    "diner",
+    "bunkhouse"
+   ]
+  },
+  {
+   "id": "wild_firewood_stack",
+   "name": "Split Firewood",
+   "tags": [
+    "clutter",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_firewood_stack",
+    "worn": "props/wild_firewood_stack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.87,
+    0.41,
+    0.42
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "cabin",
+    "bunkhouse",
+    "kitchen",
+    "lookout",
+    "garage"
+   ]
+  },
+  {
+   "id": "wild_caulk_boots",
+   "name": "Calk Boots",
+   "tags": [
+    "clutter"
+   ],
+   "variants": {
+    "clean": "props/wild_caulk_boots",
+    "worn": "props/wild_caulk_boots_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.6,
+    0.37,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "bunkhouse",
+    "cabin",
+    "lookout"
+   ]
+  },
+  {
+   "id": "wild_fire_finder",
+   "name": "Fire Finder",
+   "description": "Osborne-type fire finder: map disc, azimuth ring and sights on a stand.",
+   "tags": [
+    "furniture"
+   ],
+   "variants": {
+    "clean": "props/wild_fire_finder",
+    "worn": "props/wild_fire_finder_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    0.88,
+    1.31,
+    0.88
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "lookout"
+   ]
+  },
+  {
+   "id": "wild_radio_set",
+   "name": "Base Station Radio",
+   "description": "Forestry transceiver, palm mic and power supply (table top: place with 'y').",
+   "tags": [
+    "electronics",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/wild_radio_set",
+    "worn": "props/wild_radio_set_worn",
+    "destroyed": "props/wild_radio_set_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    0.62,
+    0.17,
+    0.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "lookout",
+    "office"
+   ]
+  },
+  {
+   "id": "wild_lookout_tower",
+   "name": "Lookout Tower Frame",
+   "description": "Creosoted timber legs, girts and X-bracing of the Cedar Ridge tower; origin at the cab's centre on the ground.",
+   "tags": [
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/wild_lookout_tower"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    8.2,
+    9.0,
+    8.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_gun_rack",
+   "name": "Gun Rack",
+   "description": "Wall rack; clean holds a bolt rifle and a shotgun, worn only the shotgun.",
+   "tags": [
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/wild_gun_rack",
+    "worn": "props/wild_gun_rack_worn",
+    "destroyed": "props/wild_gun_rack_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    0.9,
+    1.25,
+    0.15
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "cabin",
+    "lookout",
+    "office"
+   ]
+  },
+  {
+   "id": "wild_leg_trap",
+   "name": "Leg-hold Trap",
+   "description": "Set (clean) or sprung (worn) leg-hold trap and chain.",
+   "tags": [
+    "clutter",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_leg_trap",
+    "worn": "props/wild_leg_trap_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.44,
+    0.06,
+    0.44
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "cabin",
+    "workshop",
+    "garage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_pelt_board",
+   "name": "Pelt Board",
+   "description": "Plank board with stretched pelts, traps and snare wire on nails.",
+   "tags": [
+    "decor"
+   ],
+   "variants": {
+    "clean": "props/wild_pelt_board",
+    "worn": "props/wild_pelt_board_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.6,
+    1.4,
+    0.14
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "cabin"
+   ]
+  },
+  {
+   "id": "wild_crosscut_saw",
+   "name": "Crosscut Saw",
+   "description": "Two-man felling saw teeth-up on pegs, a felling axe on nails below.",
+   "tags": [
+    "decor",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_crosscut_saw",
+    "worn": "props/wild_crosscut_saw_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.8,
+    0.6,
+    0.12
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "cabin",
+    "workshop",
+    "mill"
+   ]
+  },
+  {
+   "id": "wild_smoking_rack",
+   "name": "Smoking Rack",
+   "tags": [
+    "survivor"
+   ],
+   "variants": {
+    "clean": "props/wild_smoking_rack",
+    "worn": "props/wild_smoking_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.24,
+    1.6,
+    0.92
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_chopping_block",
+   "name": "Chopping Block",
+   "tags": [
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_chopping_block",
+    "worn": "props/wild_chopping_block_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.55,
+    0.5,
+    0.55
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_canoe",
+   "name": "Canoe",
+   "description": "Wood-and-canvas canoe (worn: overturned).",
+   "tags": [
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_canoe",
+    "worn": "props/wild_canoe_worn",
+    "destroyed": "props/wild_canoe_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    4.93,
+    0.45,
+    0.92
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_outhouse",
+   "name": "Outhouse",
+   "tags": [
+    "structure",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_outhouse",
+    "worn": "props/wild_outhouse_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.2,
+    2.3,
+    1.25
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_smokehouse",
+   "name": "Smokehouse",
+   "tags": [
+    "structure",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_smokehouse",
+    "worn": "props/wild_smokehouse_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.52,
+    2.6,
+    1.9
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_lean_to",
+   "name": "Lean-to",
+   "description": "Pole lean-to against a wall (back at -Z in Godot), stacked firewood under it.",
+   "tags": [
+    "structure",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_lean_to",
+    "worn": "props/wild_lean_to_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    4.4,
+    2.6,
+    2.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_meat_cache",
+   "name": "Raised Cache",
+   "description": "Plank cache on tin-wrapped stilts, a pole ladder leaning on it.",
+   "tags": [
+    "structure",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_meat_cache",
+    "worn": "props/wild_meat_cache_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.4,
+    4.0,
+    1.4
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_headrig_saw",
+   "name": "Band Headrig",
+   "description": "Band headrig; the toothed cutting span faces +Z (the carriage). The carriage's saw line sits 1.36 m in front of the headrig origin.",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_headrig_saw",
+    "worn": "props/wild_headrig_saw_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 2000,
+   "size": [
+    1.1,
+    2.8,
+    2.0
+   ],
+   "rooms": [
+    "mill"
+   ]
+  },
+  {
+   "id": "wild_log_carriage",
+   "name": "Log Carriage",
+   "description": "Carriage, track and a dogged log; the knees face -Z (the saw).",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_log_carriage",
+    "worn": "props/wild_log_carriage_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 2000,
+   "size": [
+    6.0,
+    1.45,
+    1.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill"
+   ]
+  },
+  {
+   "id": "wild_roller_conveyor",
+   "name": "Live Rolls",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_roller_conveyor",
+    "worn": "props/wild_roller_conveyor_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    2.0,
+    0.87,
+    0.92
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill"
+   ]
+  },
+  {
+   "id": "wild_waste_conveyor",
+   "name": "Waste Conveyor",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_waste_conveyor",
+    "worn": "props/wild_waste_conveyor_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    3.16,
+    0.8,
+    0.72
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill"
+   ]
+  },
+  {
+   "id": "wild_belt_drive",
+   "name": "Belt Drive",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_belt_drive",
+    "worn": "props/wild_belt_drive_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 800,
+   "size": [
+    1.5,
+    2.8,
+    0.64
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill"
+   ]
+  },
+  {
+   "id": "wild_edger",
+   "name": "Edger",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_edger",
+    "worn": "props/wild_edger_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 1500,
+   "size": [
+    2.6,
+    1.2,
+    1.86
+   ],
+   "rooms": [
+    "mill"
+   ]
+  },
+  {
+   "id": "wild_sawdust_pile",
+   "name": "Sawdust Heap",
+   "tags": [
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_sawdust_pile",
+    "worn": "props/wild_sawdust_pile_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.9,
+    0.6,
+    1.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill",
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_lumber_stack",
+   "name": "Stickered Lumber",
+   "tags": [
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_lumber_stack",
+    "worn": "props/wild_lumber_stack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.5,
+    0.56,
+    1.7
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill",
+    "exterior",
+    "garage"
+   ]
+  },
+  {
+   "id": "wild_log_deck",
+   "name": "Log Deck",
+   "tags": [
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/wild_log_deck",
+    "worn": "props/wild_log_deck_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    6.2,
+    1.8,
+    3.0
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_chain_hoist",
+   "name": "Chain Hoist",
+   "description": "Beam, trolley and hoist; origin on the floor, beam top at 2.8 m.",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_chain_hoist",
+    "worn": "props/wild_chain_hoist_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.4,
+    2.8,
+    0.25
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill",
+    "workshop"
+   ]
+  },
+  {
+   "id": "wild_filing_bench",
+   "name": "Saw Filer's Bench",
+   "tags": [
+    "furniture",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_filing_bench",
+    "worn": "props/wild_filing_bench_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.0,
+    1.35,
+    0.77
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill",
+    "workshop"
+   ]
+  },
+  {
+   "id": "wild_band_blade_coil",
+   "name": "Band Saw Blade",
+   "tags": [
+    "clutter",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_band_blade_coil",
+    "worn": "props/wild_band_blade_coil_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.69,
+    0.12,
+    0.69
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill",
+    "workshop"
+   ]
+  },
+  {
+   "id": "wild_saw_blade_circular",
+   "name": "Circle Saw Blade",
+   "tags": [
+    "clutter",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_saw_blade_circular",
+    "worn": "props/wild_saw_blade_circular_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.9,
+    0.87,
+    0.22
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill",
+    "workshop"
+   ]
+  },
+  {
+   "id": "wild_peavey",
+   "name": "Peavey",
+   "tags": [
+    "clutter"
+   ],
+   "variants": {
+    "clean": "props/wild_peavey",
+    "worn": "props/wild_peavey_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.58,
+    0.06,
+    0.24
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill",
+    "workshop",
+    "garage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_choker_cable",
+   "name": "Choker Cable",
+   "tags": [
+    "clutter",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_choker_cable"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.97,
+    0.07,
+    0.61
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mill",
+    "workshop",
+    "garage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "wild_skidder_wreck",
+   "name": "Skidder Wreck",
+   "description": "Articulated cable skidder gone to rust, blade down, tyres flat.",
+   "tags": [
+    "vehicle",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/wild_skidder_wreck",
+    "worn": "props/wild_skidder_wreck_worn"
+   },
+   "collision": "convex",
+   "physics": "static",
+   "size": [
+    2.7,
+    2.92,
+    7.4
+   ],
+   "rooms": [
+    "exterior"
+   ]
+  }
+ ]
+}
