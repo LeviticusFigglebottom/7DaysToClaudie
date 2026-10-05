@@ -19,7 +19,7 @@ extends RefCounted
 ## upgraded step by step on load. Never edit an existing migration after release.
 
 const SAVE_ROOT: String = "user://saves"
-const CURRENT_VERSION: int = 5
+const CURRENT_VERSION: int = 6
 
 
 ## from_version -> Callable(Dictionary) -> Dictionary
@@ -29,7 +29,21 @@ static func _builtin_migrations() -> Dictionary:
 		2: _v2_to_v3,
 		3: _v3_to_v4,
 		4: _v4_to_v5,
+		5: _v5_to_v6,
 	}
+
+
+## 5 -> 6: a run records which world it is played in (ADR-0031): the handcrafted map or a random
+## world's generator settings (GameSession.world_gen). Every older run is on the main map. The bump
+## also stops an older build from loading a random-world run as if it were the main map.
+static func _v5_to_v6(d: Dictionary) -> Dictionary:
+	var session: Dictionary = d.get("session", {})
+	if not session.has("world_gen"):
+		session["world_gen"] = {}
+	if str(session.get("world_mode", "")) == "":
+		session["world_mode"] = "main_map"
+	d["session"] = session
+	return d
 
 
 ## 4 -> 5: buildings are dressed per run (ADR-0030): their alternatives, wear, scatter and decals

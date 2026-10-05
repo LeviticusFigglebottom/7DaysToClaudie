@@ -1,0 +1,118 @@
+{
+  "_doc": "Random worlds (ADR-0031, docs/REGIONS.md 'Random worlds'). `options` are the settings the New Game screen's World tab shows (type int/float/enum, range or values, default, category, label), `presets` override their defaults, and a world is a pure function of (seed, resolved settings, RwgGenerator.VERSION). `tuning` holds the generator's numbers; `names` the place names it draws from. Read through WorldGenSettings (typed; unknown keys are errors, checked by `make validate`).",
+  "categories": [
+    {"id": "map", "label": "Map"},
+    {"id": "land", "label": "Land"},
+    {"id": "water", "label": "Water"},
+    {"id": "places", "label": "Towns and places"}
+  ],
+  "options": {
+    "size": {"category": "map", "type": "int", "min": 2, "max": 7, "step": 1, "default": 4, "label": "Size (1 km regions a side)"},
+    "terrain": {"category": "land", "type": "enum", "values": ["flat", "rolling", "hilly", "mountainous"], "default": "rolling", "label": "Terrain"},
+    "roughness": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.5, "label": "Roughness"},
+    "conifer": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.7, "label": "Conifer forest"},
+    "birch": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.35, "label": "Birch groves"},
+    "meadow": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.35, "label": "Meadows"},
+    "rocky": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.3, "label": "Rocky ground"},
+    "rivers": {"category": "water", "type": "enum", "values": ["none", "few", "some", "many"], "default": "some", "label": "Rivers"},
+    "lakes": {"category": "water", "type": "enum", "values": ["none", "few", "some", "many"], "default": "some", "label": "Lakes"},
+    "towns": {"category": "places", "type": "int", "min": 0, "max": 10, "step": 1, "default": 3, "label": "Towns"},
+    "town_size": {"category": "places", "type": "enum", "values": ["hamlets", "villages", "mixed", "towns"], "default": "mixed", "label": "Town size"},
+    "wilderness": {"category": "places", "type": "float", "min": 0.0, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Wilderness places"},
+    "roads": {"category": "places", "type": "enum", "values": ["sparse", "normal", "dense"], "default": "normal", "label": "Road density"}
+  },
+  "presets": {
+    "standard": {"label": "Standard", "description": "Rolling forest country, a few rivers and lakes, three towns of mixed size and the usual camps, cabins and lookouts between them.", "values": {}},
+    "small_valley": {"label": "Small valley (3 x 3)", "description": "A 3 km valley with two villages: quick to generate and to cross.", "values": {"size": 3, "towns": 2, "town_size": "villages", "lakes": "few"}},
+    "highlands": {"label": "Highlands", "description": "Mountain ranges and deep valleys, bare rock above the trees, few lakes and two small settlements on the valley floors.",
+      "values": {"terrain": "mountainous", "roughness": 0.7, "rocky": 0.7, "meadow": 0.15, "birch": 0.2, "lakes": "few", "rivers": "some", "towns": 2, "town_size": "hamlets", "wilderness": 1.25}},
+    "lakeland": {"label": "Lakeland", "description": "Low rolling country full of lakes and slow rivers, birch along the water.",
+      "values": {"terrain": "rolling", "roughness": 0.4, "lakes": "many", "rivers": "many", "birch": 0.6, "meadow": 0.4, "towns": 3}},
+    "settled": {"label": "Settled county", "description": "More towns and bigger ones, open farmland and a dense road net: more to loot, more of them.",
+      "values": {"terrain": "rolling", "towns": 6, "town_size": "towns", "roads": "dense", "meadow": 0.6, "conifer": 0.5, "wilderness": 0.75}},
+    "wild": {"label": "Wild country", "description": "One hamlet, a few tracks and a lot of forest between the camps.",
+      "values": {"terrain": "hilly", "towns": 1, "town_size": "hamlets", "roads": "sparse", "wilderness": 1.75, "conifer": 0.9, "meadow": 0.2}}
+  },
+  "tuning": {
+    "_doc": "Generator numbers. Lengths in metres. See RwgGenerator / RwgTerrain / RwgTowns.",
+    "macro_step": 32,
+    "biome_step": 64,
+    "region_margin": 72,
+    "terrain": {
+      "_doc": "Per terrain setting: base height, relief of the rolling noise, ridge (mountain range) strength, valley carving and the map's tilt (what drains rivers off one edge), all in metres or factors.",
+      "flat": {"base": 40, "relief": 22, "ridges": 0.0, "carve": 2.0, "tilt": 12},
+      "rolling": {"base": 60, "relief": 75, "ridges": 0.2, "carve": 4.5, "tilt": 26},
+      "hilly": {"base": 80, "relief": 130, "ridges": 0.45, "carve": 7.0, "tilt": 32},
+      "mountainous": {"base": 110, "relief": 230, "ridges": 1.0, "carve": 10.0, "tilt": 40}
+    },
+    "rivers": {
+      "_doc": "catchment: km² a river must drain at its mouth (a tributary 0.6 of that where it joins); head: km² where a traced river starts; count: most rivers per km² of map (none/few/some/many).",
+      "catchment": {"none": 0.0, "few": 0.6, "some": 0.3, "many": 0.15},
+      "head": 0.05,
+      "count": {"none": 0.0, "few": 0.07, "some": 0.16, "many": 0.32},
+      "min_length": 450,
+      "width": [6, 24],
+      "depth": [1.6, 2.6],
+      "bank": 6.0
+    },
+    "lakes": {
+      "_doc": "per_region: expected lakes per region; radius range of the basin.",
+      "per_region": {"none": 0.0, "few": 0.2, "some": 0.4, "many": 0.75},
+      "radius": [70, 190],
+      "depth": [5, 12],
+      "shore": 18
+    },
+    "towns": {
+      "_doc": "Town kinds: rows of streets with lots on both sides. lots: lots per side of a row street between cross streets; rows: parallel row streets; segments: stretches between cross streets.",
+      "mix": {"hamlets": {"hamlet": 1.0}, "villages": {"village": 1.0}, "mixed": {"hamlet": 1.0, "village": 1.2, "town": 0.6}, "towns": {"village": 0.6, "town": 1.0}},
+      "kinds": {
+        "hamlet": {"rows": 1, "segments": 1, "lots": [3, 4], "commercial": 1, "civic": 0},
+        "village": {"rows": 2, "segments": 1, "lots": [4, 5], "commercial": 2, "civic": 1},
+        "town": {"rows": 2, "segments": 2, "lots": [3, 4], "commercial": 4, "civic": 2}
+      },
+      "street": {"main": 8.0, "side": 6.0, "verge": 3.0, "margin": 6.0, "entry": 14.0},
+      "lot": {"residential": [20, 23], "commercial": [28, 28], "civic": [32, 32], "industrial": [26, 26], "main_depth": 32, "back_depth": 26},
+      "spacing": 650,
+      "max_relief": 9.0
+    },
+    "roads": {
+      "_doc": "Road classes and the network: extra: loops added beyond the spanning tree per density; grade: preferred and steepest grades; costs are relative.",
+      "highway": {"surface": "asphalt", "width": 8.0, "shoulder": 2.5},
+      "county": {"surface": "gravel", "width": 5.0, "shoulder": 1.5},
+      "track": {"surface": "dirt", "width": 3.5, "shoulder": 1.0},
+      "drive": {"surface": "asphalt", "width": 5.5, "shoulder": 0.8},
+      "extra": {"sparse": 0, "normal": 1, "dense": 3},
+      "exits": {"sparse": 1, "normal": 1, "dense": 2},
+      "grade": [0.07, 0.16],
+      "bridge_cost": 420.0,
+      "reuse": 0.4
+    },
+    "wilderness": {
+      "_doc": "Authored places outside towns. site: summit | forest | waterside | lake_shore | remote | roadside; per_region: expected count per region at density 1; max: per world; access: trail (footpath) | track (dirt road) | drive (short asphalt drive off the road); min_danger: 1 (start) .. 5 (far edge).",
+      "pool": [
+        {"poi": "cedar_ridge_lookout", "site": "summit", "per_region": 0.22, "max": 4, "access": "trail", "biome": "rocky_slope", "min_danger": 1},
+        {"poi": "trappers_cabin", "site": "forest", "per_region": 0.35, "max": 6, "access": "trail", "biome": "meadow", "min_danger": 1},
+        {"poi": "tamsin_logging_camp", "site": "forest", "per_region": 0.18, "max": 3, "access": "track", "biome": "town", "min_danger": 2},
+        {"poi": "tamsin_campground", "site": "waterside", "per_region": 0.14, "max": 2, "access": "track", "biome": "conifer_forest", "min_danger": 1},
+        {"poi": "larch_pond_boathouse", "site": "lake_shore", "per_region": 0.16, "max": 3, "access": "track", "biome": "town", "min_danger": 1, "keep_water": true, "skirt": 8},
+        {"poi": "larch_hollow_sawmill", "site": "waterside", "per_region": 0.08, "max": 1, "access": "track", "biome": "town", "min_danger": 3},
+        {"poi": "ashen_watch_camp", "site": "remote", "per_region": 0.1, "max": 2, "access": "trail", "biome": "rocky_slope", "min_danger": 3, "skirt": 12},
+        {"poi": "cordon_gas_garage", "site": "roadside", "per_region": 0.12, "max": 2, "access": "drive", "biome": "meadow", "min_danger": 1},
+        {"poi": "timberline_motel", "site": "roadside", "per_region": 0.08, "max": 1, "access": "drive", "biome": "meadow", "min_danger": 2},
+        {"poi": "mile9_diner", "site": "roadside", "per_region": 0.06, "max": 1, "access": "drive", "biome": "meadow", "min_danger": 1}
+      ],
+      "farmsteads": {"framework": "farm_okafor", "per_region": 0.1, "max": 2, "biome": "meadow", "min_danger": 2},
+      "spacing": 160,
+      "max_relief": 7.0
+    },
+    "drop_site": {"_doc": "Where a new player lands: away from towns and places, near (not on) a road, on gentle dry ground.", "town_distance": 380, "poi_distance": 160, "road_distance": [40, 220]},
+    "bloom": {"_doc": "Bloom patches (ADR-0025) in the far regions: per region at danger 3, 4 and 5.", "per_danger": [0, 0, 0.6, 1.2, 2.0], "radius": [40, 110]}
+  },
+  "names": {
+    "towns": ["Aldermoor", "Bracken Ford", "Caddis Hill", "Dunlow", "Elkwater", "Fallow", "Greywell", "Harrowgate", "Ivy Bend", "Juniper Flats", "Kestrel", "Lomond", "Marrow Creek", "Nettlefield", "Oxbow", "Pinecrest", "Quarry Hill", "Redfern", "Saltash", "Thistlewood", "Underhill", "Vale End", "Willowby", "Yarrow", "Ashby", "Coldbrook", "Hatchet Lake", "Millbank", "Stonecross", "Tanager"],
+    "regions": ["Hollow", "Ridge", "Flats", "Woods", "Bottoms", "Heights", "Fen", "Narrows", "Barrens", "Hills", "Reach", "Draw", "Gulch", "Bench", "Meadows", "Timber"],
+    "region_words": ["Black", "Bitter", "Cedar", "Cold", "Crow", "Deer", "Fern", "Fox", "Grey", "Hart", "Iron", "Lark", "Moss", "Owl", "Pike", "Raven", "Rush", "Sorrow", "Spruce", "Stag", "Thorn", "Wolf", "Ash", "Birch", "Elder", "Heron", "Otter", "Quill"],
+    "lakes": ["Mere", "Pond", "Lake", "Tarn"],
+    "rivers": ["River", "Creek", "Run", "Brook"]
+  }
+}

@@ -4,9 +4,14 @@ extends RefCounted
 ## Presentation (nodes) reads from it and sends intents through Game.execute(); everything
 ## here is plain data so it can be saved, migrated and (later) replicated to co-op peers.
 
+## "main_map" (the handcrafted Hollowmere Valley) or "random" (a generated world, ADR-0031).
 var world_mode: StringName = &"main_map"
 var world_id: StringName = &"hollowmere"
 var world_seed: int = 0
+## A random world's settings (WorldGenSettings.to_dict(): preset, map seed, values); {} on the main
+## map. The world is a pure function of them, so a loaded run regenerates (or reads from cache)
+## exactly the world it was played in.
+var world_gen: Dictionary = {}
 ## Game mode preset id (data/config/game_modes.json): "survival", "slice", ...
 var game_mode: StringName = &"survival"
 ## World settings (difficulty preset + customised options), saved with the session.
@@ -30,6 +35,7 @@ static func create_new(options: Dictionary = {}) -> GameSession:
 	s.world_mode = StringName(str(options.get("world_mode", "main_map")))
 	s.world_id = StringName(str(options.get("world_id", "hollowmere")))
 	s.world_seed = int(options.get("seed", 4471))
+	s._set_world_gen(options.get("world_gen", {}))
 	s.game_mode = StringName(str(options.get("game_mode", "survival")))
 	s.created_unix = int(Time.get_unix_time_from_system())
 	s.rules = GameRules.resolve(s.mode_config().get("rules", {}), StringName(str(options.get("preset", "survivor"))), options.get("rules", {}))
@@ -40,6 +46,22 @@ static func create_new(options: Dictionary = {}) -> GameSession:
 	p.id = s.local_player_id
 	s.players[p.id] = p
 	return s
+
+
+## A random world's settings: normalised through WorldGenSettings, the mode set and the id derived
+## (by script path: the session compiles before the editor registers the generator's classes).
+func _set_world_gen(gen: Variant) -> void:
+	if not gen is Dictionary or (gen as Dictionary).is_empty():
+		world_gen = {}
+		return
+	var settings: RefCounted = (load("res://src/worldgen/rwg/world_gen_settings.gd") as GDScript).call(&"from_dict", gen)
+	world_gen = settings.call(&"to_dict")
+	world_mode = &"random"
+	world_id = StringName(str((load("res://src/worldgen/rwg/rwg_generator.gd") as GDScript).call(&"world_id_for", settings)))
+
+
+func is_random_world() -> bool:
+	return world_mode == &"random" and not world_gen.is_empty()
 
 
 func _init_systems() -> void:
@@ -93,7 +115,7 @@ func to_dict() -> Dictionary:
 	for pid: StringName in players:
 		ps[String(pid)] = (players[pid] as PlayerState).to_dict()
 	return {
-		"world_mode": String(world_mode), "world_id": String(world_id), "seed": str(world_seed),
+		"world_mode": String(world_mode), "world_id": String(world_id), "seed": str(world_seed), "world_gen": world_gen,
 		"game_mode": String(game_mode), "rules": rules.to_dict(), "created": created_unix, "play_seconds": play_seconds,
 		"clock": clock.to_dict(), "ids": ids.to_dict(), "rng": rng.to_dict(), "players": ps,
 		"local_player": String(local_player_id), "world": world.to_dict(), "horde": horde.to_dict(),
@@ -106,6 +128,10 @@ static func from_dict(d: Dictionary) -> GameSession:
 	s.world_mode = StringName(str(d.get("world_mode", "main_map")))
 	s.world_id = StringName(str(d.get("world_id", "hollowmere")))
 	s.world_seed = int(str(d.get("seed", "0")))
+	s._set_world_gen(d.get("world_gen", {}))
+	# The saved id wins: it names the generated world on disk this run was played in, even if the
+	# generator has changed since (RwgWorlds reads that world before it regenerates anything).
+	s.world_id = StringName(str(d.get("world_id", s.world_id)))
 	s.game_mode = StringName(str(d.get("game_mode", "survival")))
 	s.created_unix = int(d.get("created", 0))
 	s.play_seconds = float(d.get("play_seconds", 0.0))

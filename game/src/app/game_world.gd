@@ -49,6 +49,12 @@ func _ready() -> void:
 	ui.show_loading("Entering the Cordon…", 0.0)
 	_loader = WorldLoader.new()
 	var dir: String = MAIN_WORLD_DIR
+	if session.is_random_world():
+		# A random world (ADR-0031): generated (or read from its cache) on the same worker thread.
+		var gen: Dictionary = session.world_gen.duplicate(true)
+		var saved_id: String = String(session.world_id)
+		_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_random_world(gen, saved_id), true, "world load")
+		return
 	_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_world(dir), true, "world load")
 
 
@@ -81,6 +87,8 @@ func _process(_delta: float) -> void:
 
 func _on_world_loaded() -> void:
 	world_def = _loader.world
+	if _loader.world_id != "":
+		session.world_id = StringName(_loader.world_id)
 	stimuli = Stimuli.new()
 	stimuli.name = "Stimuli"
 	stimuli.heat = session.heat

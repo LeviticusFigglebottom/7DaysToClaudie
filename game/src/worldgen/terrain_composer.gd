@@ -44,6 +44,10 @@ static func input_hash(world: WorldDef, region_id: String, spacing: float) -> St
 						dep = "res://data/pois/buildings/%s.json" % f.get("poi", "")
 				if dep != "" and FileAccess.file_exists(dep):
 					ctx.update(FileAccess.get_file_as_bytes(dep))
+	# A generated world's towns are frameworks of its own, written beside its world.json (ADR-0031).
+	var gen_fw: String = world.dir_path.path_join("frameworks.json")
+	if FileAccess.file_exists(gen_fw):
+		ctx.update(FileAccess.get_file_as_bytes(gen_fw))
 	return ctx.finish().hex_encode()
 
 
@@ -117,8 +121,13 @@ class _Build:
 	var pads: Array[Dictionary] = []
 	var clearings: Array[Dictionary] = []
 	var paints: Array[Dictionary] = []
+	## Axis-aligned bounds of each pad (grown 1.5 m), for _pad_at's early out.
+	var _pad_boxes: Array[Rect2] = []
 	var paths: Array[Dictionary] = []
 	var max_band: float = 0.0
+	## The world detail noise every region shares (and blends to at its borders).
+	var world_noise := FastNoiseLite.new()
+	const WORLD_NOISE_AMP: float = 2.5
 
 	func _init(p_world: WorldDef, p_region_id: String, p_spacing: float, p_progress: Callable) -> void:
 		world = p_world
@@ -132,6 +141,17 @@ class _Build:
 		cn = int(round(rect.size.x / cs)) + 1
 		cx0 = rect.position.x
 		cz0 = rect.position.y
+		world_noise.seed = world.seed + 101
+		world_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		world_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+		world_noise.fractal_octaves = 4
+		world_noise.frequency = 0.012
+
+	## The ground every region agrees on: macro elevation plus the shared world detail noise. A
+	## generated world grades its world roads from it (WorldDef.road_grade "world", ADR-0031), so a
+	## road crossing a region border has one profile on both sides.
+	func _reference_ground(x: float, z: float) -> float:
+		return world.macro_height(x, z) + world_noise.get_noise_2d(x, z) * WORLD_NOISE_AMP
 
 	func _report(stage: String, t: float) -> void:
 		if progress.is_valid():
@@ -197,13 +217,7 @@ class _Build:
 			noises.append(nz)
 			amps.append(float(lc.get("amplitude", 1.0)))
 		# Border samples use a world-level default (same in every region) so regions stitch.
-		var world_amp: float = 2.5
-		var world_noise := FastNoiseLite.new()
-		world_noise.seed = world.seed + 101
-		world_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-		world_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-		world_noise.fractal_octaves = 4
-		world_noise.frequency = 0.012
+		var world_amp: float = WORLD_NOISE_AMP
 		h.resize(n * n)
 		dnoise.resize(n * n)
 		var ratio: float = sp / MACRO_STEP
@@ -625,9 +639,10 @@ class _Build:
 		var count: int = int(ceil(line.total_length / step)) + 1
 		var prof := PackedFloat32Array()
 		prof.resize(count)
+		var by_world: bool = bool(r["world"]) and world.road_grade == "world"
 		for k: int in count:
 			var p: Vector2 = line.point_at(k * step)
-			prof[k] = _sample_or_macro(p.x, p.y)
+			prof[k] = _reference_ground(p.x, p.y) if by_world else _sample_or_macro(p.x, p.y)
 		# Smooth (moving average, 3 passes ~ gaussian, window ~ 36 m).
 		for pass_i: int in 3:
 			var cp: PackedFloat32Array = prof.duplicate()
@@ -789,7 +804,31 @@ class _Build:
 		for pad: Dictionary in pads:
 			if not biomes.has(pad["biome"]):
 				biomes.append(pad["biome"])
+		# A generated world's biome map (ADR-0031): each cell's id maps to an index of `biomes`.
+		var map_index := PackedInt32Array()
+		var use_map: bool = world.has_biome_map()
+		var wr: Rect2 = world.world_rect()
+		if use_map:
+			for bid: String in world.biome_ids:
+				if not biomes.has(bid):
+					biomes.append(bid)
+				map_index.append(biomes.find(bid))
 		rt.biome_ids = biomes
+		# Paints and pads by bounding box first: a sample outside every box skips the exact tests
+		# (same result, and most samples are outside most of them).
+		var paint_boxes: Array[Rect2] = []
+		for pt0: Dictionary in paints:
+			var reach: float = float(pt0["r"]) + float(pt0["blend"]) * 0.8 + 1.0
+			paint_boxes.append(Rect2((pt0["pos"] as Vector2) - Vector2(reach, reach), Vector2(reach, reach) * 2.0))
+		_pad_boxes.clear()
+		for pad0: Dictionary in pads:
+			var o0: Vector2 = pad0["origin"]
+			var s0: Vector2 = pad0["size"]
+			var r0: float = pad0["rot"]
+			var bb0 := Rect2(o0, Vector2.ZERO)
+			for c0: Vector2 in [Vector2(s0.x, 0.0), s0, Vector2(0.0, s0.y)]:
+				bb0 = bb0.expand(o0 + c0.rotated(r0))
+			_pad_boxes.append(bb0.grow(1.5))
 		var pal: PackedStringArray = rt.palette
 		var L_FOREST: int = pal.find("forest_floor")
 		var L_MOSS: int = pal.find("moss_ground")
@@ -815,12 +854,28 @@ class _Build:
 		var p2 := PackedFloat32Array()
 		p1.resize(cn * cn)
 		p2.resize(cn * cn)
+		# Biome-map edges wander by up to ~1.5 cells (two slow channels) so they read as stands and
+		# clearings rather than the map's squares.
+		var q1 := PackedFloat32Array()
+		var q2 := PackedFloat32Array()
+		var qn := FastNoiseLite.new()
+		if use_map:
+			q1.resize(cn * cn)
+			q2.resize(cn * cn)
+			qn.seed = world.seed + 303
+			qn.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+			qn.fractal_type = FastNoiseLite.FRACTAL_FBM
+			qn.fractal_octaves = 3
+			qn.frequency = 0.0075
 		for cz: int in cn:
 			for cx: int in cn:
 				var x: float = cx0 + cx * cs
 				var z: float = cz0 + cz * cs
 				p1[cz * cn + cx] = pn.get_noise_2d(x, z) * 0.5 + 0.5
 				p2[cz * cn + cx] = pn.get_noise_2d(x + 913.0, z - 377.0) * 0.5 + 0.5
+				if use_map:
+					q1[cz * cn + cx] = qn.get_noise_2d(x, z) * world.biome_step * 1.5
+					q2[cz * cn + cx] = qn.get_noise_2d(x - 1711.0, z + 529.0) * world.biome_step * 1.5
 		var w := PackedFloat32Array()
 		w.resize(8)
 		var ratio: float = sp / cs
@@ -849,7 +904,15 @@ class _Build:
 				var slope: float = rad_to_deg(atan(grad))
 				# Biome.
 				var bi: int = b_default
+				if use_map:
+					var bx: int = clampi(int(floor((x + _bl(q1, ci, fx, fz) - wr.position.x) / world.biome_step)), 0, world.biome_cols - 1)
+					var bz: int = clampi(int(floor((z + _bl(q2, ci, fx, fz) - wr.position.y) / world.biome_step)), 0, world.biome_rows - 1)
+					var mi: int = world.biome_cells[bz * world.biome_cols + bx]
+					if mi < map_index.size():
+						bi = map_index[mi]
 				for pidx: int in paints.size():
+					if not paint_boxes[pidx].has_point(Vector2(x, z)):
+						continue
 					var pt: Dictionary = paints[pidx]
 					var dd: float = Vector2(x, z).distance_to(pt["pos"]) + (n1 - 0.5) * float(pt["blend"]) * 1.6
 					if dd < float(pt["r"]):
@@ -967,6 +1030,8 @@ class _Build:
 
 	func _pad_at(x: float, z: float) -> int:
 		for pi: int in pads.size():
+			if pi < _pad_boxes.size() and not _pad_boxes[pi].has_point(Vector2(x, z)):
+				continue
 			var pad: Dictionary = pads[pi]
 			var lp: Vector2 = (Vector2(x, z) - (pad["origin"] as Vector2)).rotated(-float(pad["rot"]))
 			var size: Vector2 = pad["size"]
