@@ -607,7 +607,7 @@ def build_moss(p, lod):
     R = float(p.get("radius", 0.7))
     H = float(p.get("height", 0.14))
     nr = 7 if lod == 0 else 3
-    ns = 26 if lod == 0 else 12
+    ns = 44 if lod == 0 else 16
     ox, oy = rng.uniform(0.0, 40.0), rng.uniform(0.0, 40.0)
     sy = rng.uniform(0.62, 0.85)
     # humps spread around the middle (not stacked on it, which makes a cone)
@@ -621,8 +621,10 @@ def build_moss(p, lod):
         humps.append((c, rng.uniform(0.22, 0.42) * R, rng.uniform(0.4, 1.0)))
 
     def rim(a):
+        # Lobed and ragged, not a smooth oval: moss spreads in tongues over the litter, and a clean
+        # outline reads as a rug laid on the floor.
         q = Vector((math.cos(a) * 1.2 + ox, math.sin(a) * 1.2 + oy, 0.7))
-        return R * (1.0 + 0.24 * noise.noise(q) + 0.08 * noise.noise(q * 3.1))
+        return R * (1.0 + 0.22 * noise.noise(q) + 0.13 * noise.noise(q * 3.3) + 0.07 * noise.noise(q * 7.9))
 
     def height(x, y, s):
         dome = H * max(0.0, 1.0 - s ** 2.6) ** 0.7
@@ -631,8 +633,9 @@ def build_moss(p, lod):
         return dome + (hump + lump) * (1.0 - s ** 3)
 
     def col(s, x, y):
+        # The thin edge sinks into the floor's shade: occluded by the litter it creeps over.
         v = 0.5 + 0.5 * noise.noise(Vector((x * 2.0 + oy, y * 2.0 + ox, 1.7)))
-        return (lerp(1.0, 0.72, smooth(0.55, 1.0, s)), 0.0, v, 1.0)
+        return (lerp(1.0, 0.5, smooth(0.45, 1.0, s)), 0.0, v, 1.0)
 
     rows = []
     for i in range(nr + 1):
@@ -650,7 +653,7 @@ def build_moss(p, lod):
         a = 2 * math.pi * j / ns
         r = rim(a) * 1.07
         x, y = math.cos(a) * r, math.sin(a) * r * sy
-        skirt.append((mb.v((x, y, -0.14), (0.6, 0.0, 0.5, 1.0)), x, y))
+        skirt.append((mb.v((x, y, -0.14), (0.45, 0.0, 0.5, 1.0)), x, y))
     rows.append(skirt)
     # Rows 0 is the centre (all at radius 0): a triangle fan, then quads, wound counter-clockwise
     # seen from above so the faces point up.
