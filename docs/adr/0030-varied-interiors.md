@@ -136,6 +136,7 @@ nothing that varies may change a plan.
 − Pell's Crossing's pad grew with the framework: the town's pad is the mean height over the larger
   area, 0.48 m lower than before (86.66 m against 87.14 m), and the land falls away to the
   south-west, so the extension's far corner stands on up to ~9 m of fill behind the last gardens
-  (composed and probed; TD-079).
+  (composed and probed; TD-079). Its bank (up to 51°) stood across the drop trail, which now
+  skirts south of the pad to meet Route 9 below the dead end (walked: 24° at its steepest).
 − New class names are referenced through `preload` constants in the files that use them, so the
   code compiles before an editor import registers them.
