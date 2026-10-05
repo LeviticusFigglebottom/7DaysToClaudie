@@ -86,7 +86,7 @@ Door leaves are hinged on their **left** edge (seen from −Y): origin = bottom 
 | `window_glass_tall`, `window_glass_tall_broken` | `M_glass` | 6-over-6 double-hung sash for `wall_1m_window_tall` (broken: shards in the lower lites) |
 | `window_glass_lancet`, `window_glass_lancet_broken` | `M_glass` | glazed lancet sash with a centre bar and four cross bars (broken: the arch knocked out) |
 | `boards_window_tall`, `boards_window_lancet` | `M_wood_raw` | planks across the tall opening, nailed to the side A casing |
-| `door_barn_tall`, `door_barn_tall_broken` | `farm_wood_barn_red`, `kit_trim`, `metal_steel` | 0.89 × 3.45 board-and-batten leaf (a pair fills `wall_2m_door_tall`): white battens and Z braces, strap hinges, D-handles |
+| `door_barn_tall`, `door_barn_tall_broken` | `farm_wood_barn_red`, `kit_trim`, `metal_steel` | 0.89 × 3.45 board-and-batten leaf (a pair fills `wall_2m_door_tall`; the builder mirrors the right leaf so both show the dressed face outside): white battens and Z braces, strap hinges, D-handles |
 
 ### Galleries — material `M_kit_trim`, `M_kit_stairs` (balustrade), `M_wood_raw` (rail)
 Where an upper room looks over a tall room's open space. The edge runs along X centred on the
