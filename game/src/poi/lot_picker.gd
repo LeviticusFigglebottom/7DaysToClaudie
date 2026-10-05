@@ -4,7 +4,7 @@ extends RefCounted
 ## that building. A lot without one chooses, deterministically from the world seed and its
 ## placement, by zoning and tier: an authored building from the pool (one not already standing in
 ## this framework, whose footprint fits), or a generated ordinary building from a
-## TemplateDef whose zoning matches. "pool" narrows that to "authored" or "generated",
+## BuildingTemplateDef whose zoning matches. "pool" narrows that to "authored" or "generated",
 ## "templates" names the templates a lot may generate, "tier" ([lo, hi] or a number) overrides the
 ## framework's tier_range, and "reserved" holds the lot empty for a building still to be authored
 ## (the school, the fire station, the bank).

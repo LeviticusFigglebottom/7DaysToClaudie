@@ -1,13 +1,13 @@
 class_name BuildingGenerator
 extends RefCounted
-## Generated ordinary buildings (ADR-0030): a TemplateDef plus a seed becomes a complete,
+## Generated ordinary buildings (ADR-0030): a BuildingTemplateDef plus a seed becomes a complete,
 ## validated PoiDef - plan, rooms and finishes, doors and windows, stairs, furniture and loot, a few
 ## sleepers with one small ambush, a gentle trap, a dungeon-lite route with a bolted front and a way
 ## in, the porch, the yard and the roof - built from the existing kit by PoiBuilder like any
 ## authored building. These are the tier-1 "filler" houses, shops and workshops of a street; the
 ## authored set pieces stay the dungeons.
 ##
-## Archetypes (TemplateDef.archetype):
+## Archetypes (BuildingTemplateDef.archetype):
 ##  * house: a hall from the front door to the back, a day side (living room and kitchen) and a
 ##    night side (bedrooms and bath) on either side of it, both drawn per building. Two storeys
 ##    widen the hall to two columns: a flight rises in one from the back, the other stays a

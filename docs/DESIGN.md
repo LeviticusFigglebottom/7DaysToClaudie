@@ -298,6 +298,20 @@ the loot. Below-ground rooms are real cellars cut out of the terrain (TD-026, AD
 | Ashen Watch Camp | 2 | Mostly outdoor: a palisade camp of the Ashen at the treeline, taken by the fever | Barred gate → round the palisade to the burnt breach (bone chimes) → burial platform for the cache key (jaws in the grass; the key wakes the lean-to) → clawed longhouse wall → the sick round the hearth (ambush) → hatch to the cache pit (keeper, guardian) → the longhouse's bolted back door |
 | Tamsin River Campground | 2 | County campground on a gravel loop; the host kept a ward in the shower house | Fee station (cans on the door) → the loop past tents, an RV and fire rings (bear trap at site 5) → padlocked host trailer → shower house: the women's-side ward wakes when its door opens, Bev's keys in the utility room wake the chained men's side → the trailer: an alarm on the bedroom door, Gus on the lockbox (guardian) → bolted back door |
 
+**No two runs alike** (ADR-0030). As in 7 Days, a place should feel different every run:
+* every building is dressed per run from the world seed: which furniture is worn, broken or gone,
+  which lights still burn, where the grime, water stains, mould and survivors' marks are, the
+  clutter;
+* authored buildings give rooms **alternatives** picked per run: the back bedroom that is a nursery,
+  a study or a junk room, the wallpaper, which doors are shut or kicked in, where an ambush lies,
+  where the trapper set his jaws (the Merrow House, the Mile 9 Diner, the Okafor farmhouse and
+  Lou's trailer first); the validator proves every option and combination;
+* ordinary houses, duplexes, corner stores and workshops are **generated** from templates as
+  tier-1, dungeon-lite filler (a bolted front, a way in round the back, a small ambush on the loot
+  room), so a street of twelve reads as twelve houses; framework lots without an authored pick
+  choose from the pool or generate. Pell's Crossing's **Larch Street** is six such lots, with the
+  school, the fire station and the bank reserved on its corner.
+
 **Planned (M2+)**: school, mine office, rail depot, dam control house, lighthouse, fishing co-op,
 lab outpost, survivor compounds, Ashen camps, crashed Program supply drone, quarantine camp.
 
