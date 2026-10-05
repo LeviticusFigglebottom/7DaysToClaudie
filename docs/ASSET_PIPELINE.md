@@ -78,10 +78,12 @@ right import settings (VRAM compression, normal maps, audio loops, glTF post-imp
   `{shader, textures, layers?, params}`; shaders (`game/assets/shaders/`):
   | shader | use | notable params |
   |---|---|---|
-  | `std_surface` | opaque PBR for almost everything | `tint`, `uv_scale`, `roughness_mult/add`, wear/moss `layers` + `wear_amount`, `grime_amount`, `emission_color` + `emission_energy` (screens, LEDs), `bloom_skin` (where the infected-tier veins may show: Hollowed skin 1, growths 0.8) |
+  | `std_surface` | opaque PBR for almost everything | `tint`, `uv_scale`, `roughness_mult/add`, wear/moss `layers` + `wear_amount`, `grime_amount`, `emission_color` + `emission_energy` (screens, LEDs), `light_source` 1/2 + `emission_flicker` (lamp globes and embers that glow, flames that exist, only while the prop's light burns: ADR-0023), `bloom_skin` (where the infected-tier veins may show: Hollowed skin 1, growths 0.8) |
   | `std_glass` | transparent glass / clear plastic (windows, bottles, lenses) | `opacity`, `use_texture_alpha` (grime in albedo alpha), `grime_amount`, `tint` |
-  | `foliage`, `bark` | vegetation (wind, seasons, translucency); `foliage` also lights flames and lamp globes from behind | `translucency`, `alpha_scissor` |
+  | `retroreflector` | road delineators (bridge guardrail posts): a lobe returns light toward its source, so they flare in your own torch (ADR-0023) | `tint`, `retro` |
+  | `foliage`, `bark` | vegetation (wind, seasons, translucency); both answer the Bloom field (ADR-0025) | `translucency`, `alpha_scissor`; `bloom_wilt` + `bloom_wilt_tint`, `bloom_droop`, `bloom_thin` (plants wilt); `bloom_affinity`, `bloom_climb`, `bloom_uv_scale` + maps `bloom_mask_tex`/`bloom_normal_tex`/`bloom_cov_tex` (threads up the bark) |
   | `kit_wall` | POI walls/floors: per-instance finish slices (`docs/POI_KIT.md`) | set up by `PoiParts.kit_material` |
+  | `bloom_fungus` | the Bloom's fruiting bodies and mounds: double-sided, translucent margins and gills, faint night glow (ADR-0025) | `translucency`, `gill_tint`, `glow_energy`, `glow_gills`, `glow_felt` + `glow_from` |
 * **Vertex colour `Color` (COLOR_0)** — always written via `lib.vcolor`:
   | channel | meaning |
   |---|---|

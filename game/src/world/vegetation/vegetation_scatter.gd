@@ -6,12 +6,15 @@ extends RefCounted
 ##
 ## Layers: "tree" (large, collidable, choppable), "medium" (bushes, saplings, boulders, deadfall
 ## piles, fallen logs), "ground" (ferns, grass, flowers, mushrooms, moss, litter, herb carpets — dense,
-## near only).
+## near only), "bloom" (the Bloom's fruiting bodies, only where its field is strong; ADR-0025).
 ##
 ## The medium and ground layers grow in patches: a low-frequency noise field scales the chance of
 ## placing anything (dense thickets and bare stretches instead of an even sprinkle), and each
 ## species reads the field at its own offset, so ferns, moss and litter dominate different
 ## patches. The tree layer stays uniform: its instance indices address felled trees in saves.
+##
+## The bloom layer comes last, so it never moves another layer's indices: its chance follows the
+## Bloom's authored field (`bloom_fn`, deterministic per world) instead of a patch field.
 
 const CHUNK: float = 64.0
 ## patch = how strongly the patch field scales placement (0 = uniform; 0.5 = x0.5 .. x1.5);
@@ -20,9 +23,16 @@ const LAYERS: Dictionary = {
 	"tree": {"cell": 4.0, "kinds": ["tree"]},
 	"medium": {"cell": 3.0, "kinds": ["bush", "rock", "deadfall"], "patch": 0.6, "patch_size": 36.0},
 	"ground": {"cell": 1.25, "kinds": ["fern", "grass", "flower", "mushroom", "moss", "litter", "herb"], "patch": 0.5, "patch_size": 18.0},
+	# field: the Bloom field (0..1) is raised to this power to scale the chance, so caps crowd the
+	# heart of a zone and only straggle out along its edges; below `field_min` nothing fruits.
+	# near_tree: the chance rises up to this many times around a trunk's foot (the mycelium feeds
+	# on the roots), within `near_tree_m` metres.
+	"bloom": {"cell": 2.0, "kinds": ["fungus"], "field": 1.6, "field_min": 0.12, "near_tree": 2.5, "near_tree_m": 2.6},
 }
+## Layer order: instance indices run through the layers in this order (saves address them).
+const ORDER: Array[String] = ["tree", "medium", "ground", "bloom"]
 const MAX_SLOPE: Dictionary = {"tree": 34.0, "bush": 38.0, "rock": 60.0, "deadfall": 30.0, "fern": 40.0, "grass": 30.0, "flower": 30.0,
-	"mushroom": 35.0, "moss": 45.0, "litter": 32.0, "herb": 38.0}
+	"mushroom": 35.0, "moss": 45.0, "litter": 32.0, "herb": 38.0, "fungus": 40.0}
 ## Kinds that lie on the ground follow its slope instead of standing upright.
 const HUGS_GROUND: PackedStringArray = ["moss", "litter"]
 
@@ -40,19 +50,30 @@ class Instance:
 ## Returns {layer_name: Array[Instance]} for the chunk. height_fn(x, z) -> float.
 ## `layer_count` limits the work to the first N layers (1 = trees only, for far impostors); the
 ## layer order is fixed so instance indices are identical whichever count is requested.
-static func scatter_chunk(chunk: Vector2i, rt: RegionTerrain, world_seed: int, height_fn: Callable, water_fn: Callable = Callable(), layer_count: int = 3) -> Dictionary:
+## bloom_fn(x, z) -> 0..1 is the Bloom's authored field (TerrainManager.bloom_base_at); without it
+## the bloom layer is empty.
+static func scatter_chunk(chunk: Vector2i, rt: RegionTerrain, world_seed: int, height_fn: Callable, water_fn: Callable = Callable(), layer_count: int = 4, bloom_fn: Callable = Callable()) -> Dictionary:
 	var out: Dictionary = {}
 	var origin := Vector2(chunk.x * CHUNK, chunk.y * CHUNK)
 	var biome_tables: Dictionary = _biome_tables()
 	var index: int = 0
-	for layer: String in (["tree", "medium", "ground"] as Array[String]).slice(0, layer_count):
+	for layer: String in ORDER.slice(0, layer_count):
 		var spec: Dictionary = LAYERS[layer]
 		var cell: float = spec["cell"]
 		var kinds: Array = spec["kinds"]
+		var by_field: bool = spec.has("field")
+		var field_min: float = float(spec.get("field_min", 0.1))
+		# Most chunks hold no Bloom at all: skip the layer's thousand cells there.
+		if by_field and not (bloom_fn.is_valid() and _reaches(bloom_fn, origin, field_min * 0.75)):
+			var none: Array[Instance] = []
+			out[layer] = none
+			continue
 		var rng := RandomNumberGenerator.new()
 		rng.seed = Ids.derive_seed(world_seed, "veg:%s:%d_%d" % [layer, chunk.x, chunk.y])
 		var patchy: float = float(spec.get("patch", 0.0))
 		var field: FastNoiseLite = _patch_field(world_seed, layer, float(spec.get("patch_size", 30.0))) if patchy > 0.0 else null
+		# Trunks of this chunk on a 4 m grid, for layers that gather around them.
+		var trunks: Dictionary = _trunk_grid(out.get("tree", []), 4.0) if spec.has("near_tree") else {}
 		var list: Array[Instance] = []
 		var steps: int = int(CHUNK / cell)
 		for gz: int in steps:
@@ -70,6 +91,11 @@ static func scatter_chunk(chunk: Vector2i, rt: RegionTerrain, world_seed: int, h
 				var z: float = origin.y + (gz + jz) * cell
 				if not rt.rect.has_point(Vector2(x, z)):
 					continue
+				var bloom: float = 1.0
+				if by_field:
+					bloom = float(bloom_fn.call(x, z))
+					if bloom < field_min:
+						continue
 				var veg: float = rt.veg_at(x, z)
 				if veg <= 0.02:
 					continue
@@ -81,6 +107,14 @@ static func scatter_chunk(chunk: Vector2i, rt: RegionTerrain, world_seed: int, h
 				var p_place: float = total * cell * cell / 100.0
 				if field != null:
 					p_place *= 1.0 - patchy + 2.0 * patchy * smoothstep(0.3, 0.7, _field01(field, x, z))
+				if by_field:
+					p_place *= pow(bloom, float(spec["field"]))
+				if spec.has("near_tree"):
+					# Never inside a trunk or its root flare.
+					var near: Vector2 = _nearest_trunk(trunks, x, z, 4.0)
+					if near.x < near.y * 1.6 + 0.1:
+						continue
+					p_place *= 1.0 + float(spec["near_tree"]) * (1.0 - smoothstep(near.y * 1.6 + 0.3, float(spec["near_tree_m"]), near.x))
 				p_place = minf(1.0, p_place) * veg
 				if roll > p_place:
 					continue
@@ -112,6 +146,44 @@ static func scatter_chunk(chunk: Vector2i, rt: RegionTerrain, world_seed: int, h
 				index += 1
 		out[layer] = list
 	return out
+
+
+## True if `fn` (a field, 0..1) reaches `level` anywhere on a 4 m grid over the chunk at `origin`.
+## The Bloom field is smooth on that scale (2 m texels, metres-wide edge bands), so sampling a little
+## below the fruiting threshold only drops chunks where nothing could fruit.
+static func _reaches(fn: Callable, origin: Vector2, level: float) -> bool:
+	var n: int = int(CHUNK / 4.0)
+	for iz: int in n + 1:
+		for ix: int in n + 1:
+			if float(fn.call(origin.x + ix * 4.0, origin.y + iz * 4.0)) >= level:
+				return true
+	return false
+
+
+## Trunk positions and radii of a tree list, bucketed on a `cell` m grid: {Vector2i: [Vector3(x, z, r)]}.
+static func _trunk_grid(trees: Array, cell: float) -> Dictionary:
+	var grid: Dictionary = {}
+	for inst: Instance in trees:
+		var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
+		var r: float = (sp.trunk_radius if sp != null else 0.3) * inst.scale
+		var k := Vector2i(int(floor(inst.pos.x / cell)), int(floor(inst.pos.z / cell)))
+		if not grid.has(k):
+			grid[k] = []
+		(grid[k] as Array).append(Vector3(inst.pos.x, inst.pos.z, r))
+	return grid
+
+
+## (distance to the nearest trunk's centre, its radius), or (INF, 0) with none within a cell.
+static func _nearest_trunk(grid: Dictionary, x: float, z: float, cell: float) -> Vector2:
+	var best := Vector2(INF, 0.0)
+	var c := Vector2i(int(floor(x / cell)), int(floor(z / cell)))
+	for dz: int in range(-1, 2):
+		for dx: int in range(-1, 2):
+			for t: Vector3 in grid.get(Vector2i(c.x + dx, c.y + dz), []):
+				var d: float = Vector2(t.x - x, t.y - z).length()
+				if d < best.x:
+					best = Vector2(d, t.z)
+	return best
 
 
 ## Euler X/Z tilt (Basis.from_euler(Vector3(x, yaw, z)), YXZ order) that turns the model's up

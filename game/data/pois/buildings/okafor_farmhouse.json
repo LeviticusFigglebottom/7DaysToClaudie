@@ -1,5 +1,5 @@
 {
-  "_doc": "Tier-3 farmhouse at the head of Larch Hollow (framework farm_okafor, lot 'house', front faces the yard). Route: porch - front door and windows boarded over -> round the east side to the smashed parlour window -> parlour under the fallen bathroom: Papa's shell box and the store-room key (the rubble stirs) -> front hall, stairs up -> landing (creaky boards), Ife's room (journal), Chidi's room (her letter; the floor is weak over the parlour) -> spare room under the leaking roof: the floor gives into Papa's nailed-up room -> his bed shoved off the boards he clawed open -> drop into the root cellar (ambush: Papa and the others wake) -> padlocked cold room (shotgun on the door): Papa's strongbox, Ife's note -> up the ladder through the hatch into the bolted pantry -> draw the bolt (shortcut) -> kitchen -> out the back door. The kitchen's back door is open from the start but the pantry is bolted and the dining-room door piled shut: a dead end. Cellar terrain holes: docs/POI_AUTHORING.md 'Cellars and terrain'.",
+  "_doc": "Tier-3 farmhouse at the head of Larch Hollow (framework farm_okafor, lot 'house', front faces the yard). Route: porch - front door and windows boarded over -> round the east side to the smashed parlour window -> parlour under the fallen bathroom: Papa's shell box and the store-room key (the rubble stirs) -> front hall, stairs up -> landing (creaky boards), Ife's room (journal), Chidi's room (her letter; the floor is weak over the parlour) -> spare room under the leaking roof: the floor gives into Papa's nailed-up room -> his bed shoved off the boards he clawed open -> drop into the root cellar (ambush: Papa and the others wake) -> padlocked cold room (shotgun on the door): Papa's strongbox, Ife's note -> up the ladder through the hatch into the bolted pantry -> draw the bolt (shortcut) -> kitchen -> out the back door. The summer kitchen ell (one storey, off the east end, its own door to the yard) is a side room: its door into Papa's room is nailed shut too. The kitchen's back door is open from the start but the pantry is bolted and the dining-room door piled shut: a dead end. Cellar terrain holes: docs/POI_AUTHORING.md 'Cellars and terrain'.",
   "defs": [
     {
       "id": "okafor_farmhouse",
@@ -27,15 +27,15 @@
         {
           "level": 0,
           "plan": [
-            "KKKKPPBBBBBB",
-            "KKKKPPBBBBBB",
-            "KKKKKKBBBBBB",
-            "KKKKKKBBBBBB",
-            "DDDDHHHRRRRR",
-            "DDDDHHHRRRRR",
-            "DDDDHHHRRRRR",
-            "DDDDHHHRRRRR",
-            "DDDDHHHRRRRR"
+            "KKKKPPBBBBBBQQQQQ",
+            "KKKKPPBBBBBBQQQQQ",
+            "KKKKKKBBBBBBQQQQQ",
+            "KKKKKKBBBBBBQQQQQ",
+            "DDDDHHHRRRRR.....",
+            "DDDDHHHRRRRR.....",
+            "DDDDHHHRRRRR.....",
+            "DDDDHHHRRRRR.....",
+            "DDDDHHHRRRRR....."
           ],
           "rooms": {
             "K": {"name": "Kitchen", "type": "kitchen", "wall": "paint_sage", "floor": "linoleum_check"},
@@ -43,7 +43,8 @@
             "B": {"name": "Papa's room", "type": "bedroom", "wall": "paint_slate_blue", "floor": "wood_oak"},
             "D": {"name": "Dining room", "type": "living", "wall": "wallpaper_stripe_green", "floor": "wood_oak"},
             "H": {"name": "Front hall", "type": "hallway", "wall": "wallpaper_floral_rose", "floor": "wood_oak"},
-            "R": {"name": "Parlour", "type": "living", "wall": "wallpaper_damask_brown", "floor": "wood_oak"}
+            "R": {"name": "Parlour", "type": "living", "wall": "wallpaper_damask_brown", "floor": "wood_oak"},
+            "Q": {"name": "Summer kitchen", "type": "kitchen", "wall": "wood_paneling_dark", "floor": "wood_pine"}
           }
         },
         {
@@ -87,7 +88,7 @@
         {"id": "dining_front_window", "at": [1, 8], "side": "S", "type": "window2", "state": "boarded"},
         {"id": "dining_side_window", "at": [0, 6], "side": "W", "type": "window", "state": "closed"},
         {"id": "papa_back_window", "at": [9, 0], "side": "N", "type": "window", "state": "boarded"},
-        {"id": "papa_side_window", "at": [11, 2], "side": "E", "type": "window", "state": "boarded"},
+        {"id": "papa_side_window", "at": [7, 0], "side": "N", "type": "window", "state": "boarded"},
         {"id": "sewing_door", "at": [4, 2], "side": "W", "type": "door", "state": "closed", "level": 1},
         {"id": "linen_door", "at": [4, 2], "side": "N", "type": "door", "state": "open", "level": 1},
         {"id": "spare_door", "at": [5, 3], "side": "E", "type": "door", "state": "broken", "level": 1},
@@ -97,13 +98,18 @@
         {"id": "landing_window", "at": [5, 8], "side": "S", "type": "window", "state": "closed", "level": 1},
         {"id": "sewing_window", "at": [1, 0], "side": "N", "type": "window", "state": "closed", "level": 1},
         {"id": "spare_window", "at": [9, 0], "side": "N", "type": "window", "state": "broken", "level": 1},
-        {"id": "spare_side_window", "at": [11, 1], "side": "E", "type": "window", "state": "closed", "level": 1},
+        {"id": "spare_side_window", "at": [7, 0], "side": "N", "type": "window", "state": "closed", "level": 1},
         {"id": "bath_window", "at": [11, 4], "side": "E", "type": "window", "state": "closed", "level": 1},
         {"id": "ife_window", "at": [0, 5], "side": "W", "type": "window", "state": "closed", "level": 1},
         {"id": "ife_front_window", "at": [1, 8], "side": "S", "type": "window", "state": "boarded", "level": 1},
         {"id": "chidi_window", "at": [8, 8], "side": "S", "type": "window", "state": "closed", "level": 1},
         {"id": "chidi_side_window", "at": [11, 7], "side": "E", "type": "window", "state": "closed", "level": 1},
-        {"id": "cold_room_door", "at": [9, 0], "side": "W", "type": "door", "state": "locked", "key": "farm_storeroom_key", "level": -1}
+        {"id": "cold_room_door", "at": [9, 0], "side": "W", "type": "door", "state": "locked", "key": "farm_storeroom_key", "level": -1},
+        {"id": "summer_kitchen_door", "at": [13, 3], "side": "S", "type": "door", "state": "closed"},
+        {"id": "summer_kitchen_window", "at": [15, 3], "side": "S", "type": "window", "state": "closed"},
+        {"id": "summer_kitchen_end_window", "at": [16, 1], "side": "E", "type": "window", "state": "broken"},
+        {"id": "summer_kitchen_back_window", "at": [13, 0], "side": "N", "type": "window", "state": "boarded"},
+        {"id": "papa_kitchen_door", "at": [12, 2], "side": "W", "type": "door", "state": "barricaded", "barricade_on": "Q"}
       ],
       "stairs": [
         {"level": 0, "at": [4, 8], "dir": "N"}
@@ -252,7 +258,19 @@
         {"prop": "farm_crate_potatoes", "id": "cold_room_potatoes", "pos": [9.35, 1.7], "level": -1},
         {"prop": "farm_crate_apples", "id": "cold_room_apples", "pos": [9.98, 1.7], "rot": 4, "level": -1},
         {"prop": "farm_preserve_jars", "pos": [10.75, 1.72], "rot": 180, "level": -1},
-        {"prop": "farm_lantern", "pos": [9.4, 0.3], "variant": "destroyed", "level": -1}
+        {"prop": "farm_lantern", "pos": [9.4, 0.3], "variant": "destroyed", "level": -1},
+        {"prop": "farm_stove_castiron", "id": "summer_stove", "at": [16, 2], "against": "E", "offset": [0, 0.35]},
+        {"prop": "wild_firewood_stack", "pos": [16.55, 0.72], "rot": 90},
+        {"prop": "farm_cellar_shelf", "id": "summer_kitchen_shelf", "at": [15, 0], "against": "N"},
+        {"prop": "farm_crate_apples", "id": "summer_kitchen_crate", "pos": [14.2, 0.32], "rot": 4, "variant": "worn"},
+        {"prop": "kitchen_table", "pos": [14.5, 1.95]},
+        {"prop": "chair_wood", "pos": [13.62, 1.9], "rot": 90},
+        {"prop": "chair_wood", "pos": [14.95, 2.78], "rot": 165, "variant": "destroyed"},
+        {"prop": "farm_preserve_jars", "pos": [14.8, 1.85], "y": 0.76, "rot": 15},
+        {"prop": "farm_oil_lamp", "pos": [14.2, 2.12], "y": 0.76},
+        {"prop": "farm_washtub", "pos": [12.55, 0.55], "rot": 10},
+        {"prop": "farm_butter_churn", "pos": [12.35, 3.62]},
+        {"prop": "bucket", "pos": [15.5, 3.62]}
       ],
       "pickups": [
         {"id": "storeroom_key", "item": "farm_storeroom_key", "pos": [7.5, 7.48], "y": 0.62},
@@ -264,8 +282,8 @@
         {"note": "farm_ife_storeroom", "pos": [11.6, 0.36], "y": 0.56, "level": -1}
       ],
       "sleepers": [
-        {"id": "parlour_rubble_a", "pos": [8.6, 5.55], "enemy": "hollow", "pose": "lie", "rot": 30, "group": "parlour"},
-        {"id": "parlour_rubble_b", "pos": [10.45, 7.35], "enemy": "hollow", "pose": "lie", "rot": 200, "group": "parlour"},
+        {"id": "parlour_rubble_a", "pos": [8.6, 5.55], "enemy": "hollow", "pose": "lie", "rot": 30, "group": "parlour", "anchor": "floor"},
+        {"id": "parlour_rubble_b", "pos": [10.45, 7.35], "enemy": "hollow", "pose": "lie", "rot": 200, "group": "parlour", "anchor": "floor"},
         {"id": "hall_watcher", "pos": [6.45, 7.0], "enemy": "hollow", "pose": "stand", "rot": 90},
         {"id": "dining_sitter", "pos": [1.25, 6.95], "enemy": "hollow", "pose": "sit", "rot": 90, "group": "dining"},
         {"id": "landing_stander", "pos": [5.45, 8.4], "enemy": "hollow", "pose": "stand", "rot": 180, "level": 1},
@@ -273,11 +291,12 @@
         {"id": "sewing_keener", "pos": [1.5, 1.0], "enemy": "keener", "pose": "sit", "rot": 180, "level": 1},
         {"id": "chidi_bed_sleeper", "pos": [10.2, 7.55], "enemy": "hollow", "pose": "lie", "rot": 90, "level": 1},
         {"id": "spare_room_stander", "pos": [7.05, 2.55], "enemy": "hollow", "pose": "stand", "rot": 160, "level": 1, "group": "spare"},
-        {"id": "papa_room_dragger", "pos": [8.6, 3.05], "enemy": "dragger", "pose": "lie", "rot": 270},
-        {"id": "cellar_sleeper_a", "pos": [5.35, 1.45], "enemy": "hollow", "pose": "lie", "rot": 80, "level": -1, "group": "cellar"},
-        {"id": "cellar_sleeper_b", "pos": [10.4, 2.4], "enemy": "hollow", "pose": "lie", "rot": 260, "level": -1, "group": "cellar"},
+        {"id": "papa_room_dragger", "pos": [8.6, 3.05], "enemy": "dragger", "pose": "lie", "rot": 270, "anchor": "floor"},
+        {"id": "cellar_sleeper_a", "pos": [5.35, 1.45], "enemy": "hollow", "pose": "lie", "rot": 80, "level": -1, "group": "cellar", "anchor": "floor"},
+        {"id": "cellar_sleeper_b", "pos": [10.4, 2.4], "enemy": "hollow", "pose": "lie", "rot": 260, "level": -1, "group": "cellar", "anchor": "floor"},
         {"id": "cellar_lurcher", "pos": [7.6, 0.45], "enemy": "lurcher", "pose": "crouch", "rot": 120, "level": -1, "group": "cellar"},
-        {"id": "papa", "pos": [8.45, 1.45], "enemy": "hollow", "pose": "stand", "rot": -90, "level": -1, "group": "cellar", "guardian": true}
+        {"id": "papa", "pos": [8.45, 1.45], "enemy": "hollow", "pose": "stand", "rot": -90, "level": -1, "group": "cellar", "guardian": true},
+        {"id": "summer_kitchen_sitter", "pos": [13.62, 1.9], "enemy": "hollow", "pose": "sit", "rot": 90}
       ],
       "traps": [
         {"id": "chime_back_door", "type": "can_chime", "at": [1, 0], "side": "N"},
@@ -309,7 +328,9 @@
         {"decal": "water_stain", "at": [10, 0], "side": "N", "height": 2.0, "size": [1.4, 1.0], "level": 1},
         {"decal": "blood_pool", "at": [7, 1], "side": "floor", "size": [1.2, 1.0], "level": -1},
         {"decal": "blood_handprint", "at": [8, 0], "side": "N", "height": 1.25, "size": [0.4, 0.4], "level": -1},
-        {"decal": "survivor_marks_b", "at": [10, 1], "side": "S", "height": 1.0, "size": [0.9, 0.7], "level": -1}
+        {"decal": "survivor_marks_b", "at": [10, 1], "side": "S", "height": 1.0, "size": [0.9, 0.7], "level": -1},
+        {"decal": "blood_handprint", "at": [12, 3], "side": "W", "height": 1.25, "size": [0.4, 0.4]},
+        {"decal": "footprints_mud", "at": [13, 3], "side": "floor", "size": [1.0, 1.6]}
       ],
       "route": [
         {"at": [5, 11], "label": "Up the lane to the porch: the front door and the windows are boarded over with Tom Merrow's plywood"},
@@ -328,7 +349,7 @@
       ],
       "loot_room": {"room": "M", "level": -1},
       "shortcuts": [{"opening": "pantry_door"}],
-      "budget": {"lights": 4, "enemies": 14}
+      "budget": {"lights": 4, "enemies": 15}
     }
   ]
 }

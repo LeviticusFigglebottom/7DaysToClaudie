@@ -48,11 +48,12 @@ composes it identically.
 | `road` | `id, surface, width, shoulder, points, bridges?, markings?` | region road (graded profile, painted; asphalt ≥ 6 m gets lane lines unless `"markings": false`, e.g. lots and aprons) |
 | `path` | `id, surface, width, points` | footpath (painted, lightly graded) |
 | `framework` | `id, framework, origin:[x,z], rotation, skirt?` | flattened pad + streets + lots (docs/POI_AUTHORING.md) |
-| `poi` | `id, poi, origin, rotation, biome?` | standalone POI on a pad |
+| `poi` | `id, poi, origin, rotation, biome?, skirt?, keep_water?, freeboard?` | standalone POI on a pad. `"keep_water": true` (also on `framework`): the pad sits `freeboard` (default 0.6 m) over the lake or river it overlaps, grades only the dry ground and leaves the water and its bed alone (a boathouse slip, a dock: ADR-0024) |
 | `biome` | `biome, circle:[x,z], radius, blend` | paints a biome (vegetation, ground layers, ambience, spawns) |
 | `clearing` | `pos, radius` | no trees/scatter |
 | `spawn` | `id, pos, yaw, props?` | named spawn (e.g. `drop_site`) |
 | `frontier` | `id, pos, kind: road|river|cave|trail|sea, leads_to, note` | where an expansion connects (see below) |
+| `bloom` | `id, at:[x,z]` or `points:[[x,z]...]` or `poi:<placement id>, offset:[x,z]`; `radius, strength (0..1), edge (0..1)` | where the Bloom has taken the ground: a patch, a seep along a line, or a patch in a POI's own frame (ADR-0025; `data/config/bloom.json` shapes the edges and holds per-POI defaults). Keep the start area clean |
 
 ## Borders
 Region-local features fade out within **48 m** of the region border (heights blend back to the

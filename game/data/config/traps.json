@@ -1,5 +1,5 @@
 {
-  "_doc": "POI dungeon mechanics tuning (ADR-0018, docs/POI_AUTHORING.md). Distances in metres, times in seconds, noise = Stimuli loudness (metres at which a normal listener just hears it; >= 20 also feeds the heat map). Yields are items handed over by a crouched disarm (poi.disarm_trap); 'salvage' is what a sprung trap still gives.",
+  "_doc": "POI dungeon mechanics tuning (ADR-0018, ADR-0022, docs/POI_AUTHORING.md). Distances in metres, times in seconds, noise = Stimuli loudness (metres at which a normal listener just hears it; >= 20 also feeds the heat map). Yields are items handed over by a crouched disarm (poi.disarm_trap); 'salvage' is what a sprung trap still gives. Each trap's 'hollowed' block says how the Hollowed set it off (see 'hollowed' below).",
   "ambush": {
     "_doc": "Grouped (held) sleepers ignore ordinary noise, light and proximity until a trigger of their group fires; then they wake one after another, alerted to the player. Only these sound kinds within wake_radius wake them early.",
     "stagger": [0.15, 0.6],
@@ -7,24 +7,61 @@
     "wake_kinds": ["gunshot", "explosion", "alarm"],
     "cue_volume_db": 2.0
   },
+  "unspawned": {
+    "_doc": "A trigger or a loud trap that goes off while the building's sleepers are not spawned (the Hum breaking a door far from the player, a wanderer in a can chime) is spent all the same, and rouses who would have woken: the trigger's group, everyone for an alarm the player set off, and for noise the ordinary sleepers within loudness x hearing (held ones only for wake_kinds within the ambush wake_radius). Roused sleepers are saved (WorldState.pois[id].roused) and spawn awake by their post next time, heading for where it happened.",
+    "hearing": 0.7
+  },
   "guardian": {"_doc": "Guardians spawn this many infected tiers above their roll (normal -> Seeded -> Bloomed).", "tier_steps": 1},
+  "sleepers": {
+    "_doc": "Posed sleepers on seats and beds (ADR-0022, SleeperAnchors). reach: how far a sit/lie sleeper looks for a free seat or bed from where it is authored (twice that for a pinned 'anchor'); exclusive: anchors of one prop closer than this exclude each other (a bench's two facings); facing_cost: metres added per 180 deg an anchor faces away from the sleeper's authored rot. seat_height / seat_back: where idle_sleep_seat puts the pelvis above and behind its feet (keep in step with char_anim SEAT_H / SEAT_Y); lie_back / sit_back: char_anim LIE_Y / SIT_Y (a lying body; one sat legs out on a low seat); max_sink: how far a seat lower than seat_height may sink the feet; mattress_sink: how far a lying body presses into the bedding; seat_side_step: how far a sitter shuffles sideways out of a booth. Getting up runs over rise_seconds: the body moves to its exit over *_move and turns over bed_turn (fractions of it).",
+    "reach": 1.6, "exclusive": 0.45, "facing_cost": 0.25,
+    "seat_height": 0.46, "seat_back": 0.40, "lie_back": 0.45, "sit_back": 0.30, "max_sink": 0.05, "mattress_sink": 0.03, "seat_side_step": 0.8,
+    "rise_seconds": 1.25, "seat_move": [0.4, 0.8], "bed_move": [0.25, 0.7], "bed_turn": [0.12, 0.45]
+  },
+  "hollowed": {
+    "_doc": "How the Hollowed set traps off (ADR-0022). weights: weight class per enemy id (others weigh default_weight). A trap reacts to a Hollowed whose class is at least its hollowed.min_weight (no min_weight: never); hollowed.fires_trigger says whether that fires the trap's ambush triggers. A trap a Hollowed sets off makes its noise through the stimulus fields: sleepers wake by hearing it; only the player's misstep alerts them directly or sets off an alarm's building-wide rouse.",
+    "classes": ["light", "normal", "heavy"],
+    "default_weight": "normal",
+    "weights": {"dragger": "light", "husk": "heavy", "rammer": "heavy"}
+  },
+  "can_chime": {
+    "noise": 40.0, "volume_db": 2.0, "alert_radius": 16.0,
+    "hollowed": {"min_weight": "light", "fires_trigger": true}
+  },
   "bear_trap": {
     "damage": 25.0, "bleed": 0.35, "root_seconds": 2.5, "struggle_seconds": 0.45, "noise": 32.0, "alert_radius": 14.0,
     "enemy_damage": 60.0,
-    "disarm_yield": {"scrap_metal": 2}, "salvage_yield": {"scrap_metal": 1}
+    "disarm_yield": {"scrap_metal": 2}, "salvage_yield": {"scrap_metal": 1},
+    "hollowed": {"min_weight": "light", "fires_trigger": true}
   },
   "shotgun": {
-    "_doc": "Damage falls off linearly from 'damage' at 'near' to 0 at 'far' for bodies the cone of 'cone_deg' (half angle) from the muzzle touches (a body counts as 0.3 m wide, so point-blank it hits anyone in front of the barrels); the wire pulls the trigger pull_seconds after it is caught.",
-    "damage": 60.0, "near": 1.5, "far": 9.0, "cone_deg": 24.0, "bleed": 0.45, "noise": 120.0, "heat": 14.0, "pull_seconds": 0.1,
-    "enemy_damage": 150.0,
-    "disarm_yield": {"cordage": 1, "scrap_metal": 1}, "salvage_yield": {"cordage": 1}
+    "_doc": "A sawn-off charge: 'pellets' rays from the muzzle, spread uniformly within spread_deg (half angle) of the aim, deterministic per trap. Walls, props and the first body in the way stop a pellet. Each pellet carries damage / pellets (enemy_damage / pellets against the Hollowed), falling off linearly from full at 'near' to nothing at 'far'; one body takes all its pellets as one hit. The wire pulls the trigger pull_seconds after it is caught.",
+    "pellets": 9, "spread_deg": 7.0,
+    "damage": 60.0, "near": 1.5, "far": 9.0, "bleed": 0.45, "noise": 120.0, "heat": 14.0, "pull_seconds": 0.1,
+    "enemy_damage": 150.0, "alert_radius": 30.0,
+    "disarm_yield": {"cordage": 1, "scrap_metal": 1}, "salvage_yield": {"cordage": 1},
+    "hollowed": {"min_weight": "light", "fires_trigger": true}
   },
-  "creaky_floor": {"stride": 0.75, "noise": 18.0, "crouch_noise": 3.0},
-  "weak_floor": {"delay": 0.5, "noise": 30.0},
+  "creaky_floor": {
+    "stride": 0.75, "noise": 18.0, "crouch_noise": 3.0,
+    "hollowed": {"_doc": "The boards groan under the Hollowed too: a sound cue for the player only (no noise for the Hollowed, the trap does not count as fired, its ambush stays armed for the player).", "min_weight": "light", "fires_trigger": false, "volume_db": -5.0, "stride": 0.9}
+  },
+  "weak_floor": {
+    "delay": 0.5, "noise": 30.0, "alert_radius": 12.0,
+    "hollowed": {"_doc": "Only the heavy ones break through; they fall to the room below and take fall_damage.", "min_weight": "heavy", "fires_trigger": true, "fall_damage": 40.0}
+  },
   "alarm": {
     "seconds": 20.0, "noise": 55.0, "noise_interval": 1.0, "heat_per_second": 2.0,
-    "disarm_yield": {"scrap_metal": 1}
+    "disarm_yield": {"scrap_metal": 1},
+    "hollowed": {"_doc": "A Hollowed that blunders through rings it like anyone; the ringing wakes sleepers by stimulus (held ambushes only within the ambush wake_radius) instead of rousing the whole building.", "min_weight": "light", "fires_trigger": true}
   },
   "padlock": {"_doc": "Breakable lock cues on locked doors: hit points per kind (deadbolts and bolts cannot be broken off; bash the door).", "hp": 60.0, "chain_hp": 90.0, "noise": 22.0},
+  "route_cues": {
+    "_doc": "Route cues on windows (ADR-0022, RouteCues): every window the validated route climbs in through gets 'default'; an opening's own \"cue\" (a kind, a list, or \"none\") overrides it. crate: the prop stood under the window outside (two stacked when the sill is more than crate_high above the ground); scuff_decal / sill_decal: decal ids for the boot scuffs up the wall and the handprint on the sill; light_prop: the lantern a \"light\" cue leaves burning on the sill (its light: PropDef.light_for), at most max_lights per building.",
+    "default": ["curtain", "crate", "scuffs"],
+    "crate": "crate_wood", "crate_high": 1.6,
+    "scuff_decal": "footprints_mud", "sill_decal": "blood_handprint",
+    "light_prop": "lantern_camping", "max_lights": 1
+  },
   "disarm_reach": 3.0
 }

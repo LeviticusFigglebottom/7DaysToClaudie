@@ -70,6 +70,25 @@ def _split_halves(mb, z0, z1, *, r, gap_fn, seed, bark="item_bark", inner="item_
             mb.fmat[fi] = inner
 
 
+def _rawhide(mb, p0, p1, radius, turns, seed, *, width=0.0068, thick=0.0011, mat="item_rawhide"):
+    """A flat strip of rawhide wound round a core, each turn overlapping the last (hide is bound on
+    wet and shrinks tight as it dries), ends tucked under. Seen at 40 cm in first person, a round
+    cord read as plant twine."""
+    p0, p1 = Vector(p0), Vector(p1)
+    axis = (p1 - p0).normalized()
+    pts = K.helix(p0, p1, radius + thick * 0.6, turns, phase=seed * 0.7, per_turn=16)
+    from mathutils import noise as _nz
+    _nz.seed_set(seed)
+    pts = [q + axis * _nz.noise(q * 60.0) * 0.0009 for q in pts]
+    for idx in (0, -1):
+        c = p0 if idx == 0 else p1
+        q = pts[idx]
+        radial = (q - c) - axis * (q - c).dot(axis)
+        pts[idx] = q - radial.normalized() * thick * 1.5
+    K.tube(mb, pts, (width * 0.5, thick * 0.5), profile=K.rect_profile(1.0, 1.0, 0.45), mat=mat, u_tile=1.0,
+           v_scale=1.0 / 0.05, up=axis, caps=(True, True))
+
+
 def _sock(name, loc, fwd):
     return K.socket(name, loc, fwd)
 
@@ -97,10 +116,10 @@ def stone_axe(p):
     mb.push(Matrix.Translation((top.x, top.y, 0)))
     _split_halves(mb, hz0, hz1, r=hr * 0.97, gap_fn=gap, seed=seed)
     mb.pop()
-    # lashings below / above the head and an X binding over the stone faces
-    _wedge_cord(mb, (top.x, top.y, 0.226), (top.x, top.y, 0.262), hr + 0.001, 6.5, seed)
-    _wedge_cord(mb, (top.x, top.y, 0.334), (top.x, top.y, 0.362), hr + 0.0015, 5.5, seed + 1)
-    rr = hr * 0.97 + 0.0022
+    # rawhide bindings below / above the head and an X over the stone faces
+    _rawhide(mb, (top.x, top.y, 0.224), (top.x, top.y, 0.262), hr + 0.0008, 6.0, seed)
+    _rawhide(mb, (top.x, top.y, 0.333), (top.x, top.y, 0.364), hr + 0.0012, 5.0, seed + 1)
+    rr = hr * 0.97 + 0.0016
     for side in (1, -1):
         for diag in (1, -1):
             for k in range(2):
@@ -112,9 +131,11 @@ def stone_axe(p):
                     th = diag * (1.25 - 2.5 * t)
                     g = gap(min(1.0, max(0.0, (z - hz0) / (hz1 - hz0))))
                     pts_c.append(Vector((top.x + side * (g + rr * math.cos(th)), top.y + rr * math.sin(th), z)))
-                K.tube(mb, pts_c, 0.0023, sides=5, mat="item_cordage", u_tile=1.0, v_scale=1.0 / (2 * math.pi * 0.0023) / 3)
+                K.tube(mb, pts_c, (0.0006, 0.0031), profile=K.rect_profile(1.0, 1.0, 0.45), mat="item_rawhide", u_tile=1.0,
+                       v_scale=1.0 / 0.05, up=Vector((side, 0, 0)))
     handle = mb.build("haft", sharp_deg=60)
-    head = K.knapped("head", length=0.148, width=0.08, thickness=0.029, seed=seed + 5, scars=44, cortex=0.22)
+    head = K.knapped("head", length=0.148, width=0.08, thickness=0.029, seed=seed + 5, scars=52, cortex=0.22,
+                     mat="item_flint", tris=2200)
     head.data.transform(Matrix.Translation((top.x, -0.022 + top.y, zc)) @ Matrix.Rotation(math.radians(-4), 4, "X"))
     sockets = [_sock("socket_head", (0, -0.09, zc), (0, -1, 0))]
     return [handle, head], sockets
@@ -468,7 +489,8 @@ def torch(p):
     mb.push(Matrix.Translation((tip.x, tip.y, 0)))
     from mathutils import noise
     noise.seed_set(seed)
-    K.lathe(mb, prof, segments=14, mat="item_cloth_torch", cap_bottom=False, cap_top=True, cap_mat_top="item_wood_charred",
+    # The burnt top glows like coals while the torch is lit (item_torch_ember: light_source 1).
+    K.lathe(mb, prof, segments=14, mat="item_cloth_torch", cap_bottom=False, cap_top=True, cap_mat_top="item_torch_ember",
             radial_fn=lambda k, i, rr, z: 1.0 + 0.09 * noise.noise(Vector((math.cos(k * 0.449) * 2, math.sin(k * 0.449) * 2, z * 30))))
     hel = K.helix((0, 0, zc0 + 0.01), (0, 0, zc1 - 0.01), 0.029, 2.2, per_turn=14)
     K.tube(mb, hel, (0.0035, 0.009), sides=6, mat="item_cloth_torch", u_tile=0.05)

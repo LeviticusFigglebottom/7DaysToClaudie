@@ -1989,3 +1989,69 @@ def item_bark_twig(size, seed, out):
     col = T.mix(col, _fill(size, "#8e9479"), lich * 0.4)
     height = T.normalize(0.45 * wr + 0.25 * len_cov - 0.3 * flake + 0.2 * mott)
     _save(out, col, height, 0.82 + 0.1 * flake, ns=3.0)
+
+
+# ------------------------------------------------------------------------------------------------
+# First-person close range (ADR-0029): the stone axe's flint and its rawhide lashing
+# ------------------------------------------------------------------------------------------------
+
+@texture("item_flint", size=1024, seed=390_1)
+def item_flint(size, seed, out):
+    """Knapped flint seen at 40 cm (0.1 m tile): glassy blue-black to smoky brown in clouded zones,
+    pale chalky inclusions and specks, the concentric ripple rings of each conchoidal flake scar,
+    and a waxy sheen (low roughness) that makes the facets catch the light."""
+    mott = T.spectral(size, 2.4, seed)
+    cloud = T.warp(T.spectral(size, 2.0, seed + 1), T.spectral(size, 2.0, seed + 2), T.spectral(size, 2.0, seed + 3), size * 0.04)
+    col = T.gradient(T.normalize(0.6 * cloud + 0.4 * mott),
+                     [(0.0, "#16171a"), (0.35, "#26262a"), (0.6, "#3a332e"), (0.85, "#4e4237"), (1.0, "#5d5044")])
+    # chalky inclusions (fossil specks, cortex flecks) and fine light speckle
+    f1, _, _ = T.worley(size, 60, seed + 4)
+    inc = (1.0 - T.smoothstep(2.0, 9.0, f1)) * T.smoothstep(0.55, 0.8, T.spectral(size, 1.6, seed + 5))
+    col = T.mix(col, _fill(size, "#a79d8d"), np.clip(inc, 0, 1) * 0.7)
+    speck = (T.spectral(size, 0.25, seed + 6) > 0.9).astype(np.float32)
+    col = T.mix(col, _fill(size, "#8a8277"), speck * 0.35)
+    # ripple rings of the flake scars (centres scattered; periodic distances)
+    r = T.rng(seed + 7)
+    yy, xx = np.mgrid[0:size, 0:size].astype(np.float32)
+    rip = np.zeros((size, size), np.float32)
+    for _ in range(14):
+        cx, cy = r.uniform(0, size, 2)
+        dx = (xx - cx + size / 2) % size - size / 2
+        dy = (yy - cy + size / 2) % size - size / 2
+        d = np.sqrt(dx * dx + dy * dy)
+        reach = r.uniform(0.2, 0.45) * size
+        rip += np.sin(d / r.uniform(3.5, 7.0) + r.uniform(0, 6.3)) * np.clip(1 - d / reach, 0, 1) ** 1.5
+    col *= (0.93 + 0.07 * T.normalize(rip))[..., None]
+    height = T.normalize(0.6 * rip + 0.25 * mott + 0.15 * inc)
+    rough = np.clip(0.24 + 0.12 * T.normalize(mott) + 0.35 * inc + 0.15 * speck, 0.15, 0.9)
+    _save(out, col, height, rough, ns=1.4, ao=0.6)
+
+
+@texture("item_flint_edge", size=512, seed=390_2)
+def item_flint_edge(size, seed, out):
+    """The thin knapped edges of flint: translucent, so lighter and warmer (smoky grey-brown), with
+    tiny step fractures. The wear layer the edge mask reveals on item_flint."""
+    b = T.spectral(size, 1.8, seed)
+    col = T.gradient(T.normalize(b), [(0.0, "#4d4640"), (0.5, "#6a5f55"), (1.0, "#857869")])
+    steps = T.levels(T.spectral(size, 0.7, seed + 1, anisotropy=(1.0, 4.0)), 0.6, 0.95)
+    col = T.mix(col, _fill(size, "#a39484"), steps * 0.4)
+    height = T.normalize(0.6 * b + 0.4 * steps)
+    _save(out, col, height, np.clip(0.22 + 0.1 * steps, 0.1, 0.6), ns=1.2)
+
+
+@texture("item_rawhide", size=512, seed=390_3)
+def item_rawhide(size, seed, out):
+    """Rawhide lashing, wetted, wound on and shrunk dry (u around the strip, v along it): amber to
+    bone translucent hide, fibres along the strip, darker where hair roots and grime remain, glossy
+    where it pulled taut."""
+    fib = T.spectral(size, 1.0, seed, anisotropy=(1.0, 12.0))
+    patch = T.spectral(size, 2.2, seed + 1)
+    col = T.gradient(T.normalize(0.5 * fib + 0.5 * patch), [(0.0, "#6d4a26"), (0.4, "#8f6a3c"), (0.75, "#b08c5c"), (1.0, "#c6a676")])
+    roots = T.levels(T.spectral(size, 0.5, seed + 2), 0.82, 0.97)
+    col = T.mix(col, _fill(size, "#3a2716"), roots * 0.45)
+    dirt = T.smoothstep(0.55, 0.85, T.spectral(size, 1.8, seed + 3))
+    col = T.mix(col, _fill(size, "#3b2a1c"), dirt * 0.35)
+    taut = T.smoothstep(0.5, 0.8, T.spectral(size, 2.0, seed + 4, anisotropy=(1.0, 4.0)))
+    height = T.normalize(0.55 * fib + 0.25 * patch - 0.2 * roots)
+    rough = np.clip(0.62 - 0.3 * taut + 0.15 * dirt, 0.2, 0.95)
+    _save(out, col, height, rough, ns=2.2, ao=0.8)

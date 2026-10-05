@@ -1,12 +1,15 @@
 class_name SupplyDrops
 extends Node3D
 ## Remand Program supply drops (our take on the 7 Days airdrop). On the schedule the world
-## setting `supply_drops` picks (at dawn after each Hum, weekly, every third day, or never) a
-## Program drone releases a canister under a drogue chute a few hundred metres from the player.
-## It lands with a hissing flare and a smoke column (which the Hollowed nearby hear too) and holds
-## a `supply_drop` container whose loot tier rises with the gamestage. With the world setting
-## `supply_drop_markers` the tether marks it. The spot and the loot are deterministic (world seed
-## + drop id). Drops persist in WorldState.drops until they have been emptied and left behind.
+## setting `supply_drops` picks (at dawn after each Hum, weekly, every third day, or never) the
+## Program's heavy-lift drone (ProgramDrone, ADR-0023) flies in, hovers over a spot a few hundred
+## metres from the player and lets a canister go under a drogue chute; its racket and the landing
+## carry to the Hollowed nearby. The canister lands with a hissing flare and a smoke column and
+## holds a `supply_drop` container whose loot tier rises with the gamestage. With the world setting
+## `supply_drop_markers` the tether marks and lists every drop. The spot, the drone's bearing and the
+## loot are deterministic (world seed + drop id); the spot is dry, fairly flat, off the buildings and
+## clear of trees and player structures. Drops persist in WorldState.drops until they have been
+## emptied and left behind.
 
 const RELEASE_HEIGHT: float = 110.0
 const FALL_SPEED: float = 5.5
@@ -21,7 +24,13 @@ const FLARE_COLOR := Color(1.0, 0.3, 0.16)
 var world: Node
 ## drop id -> Drop node
 var drops: Dictionary = {}
+## (p: Vector3, r: float) -> [{"pos", "radius"}]: replaces the scatter as the landing check's tree
+## source (tests).
+var tree_source: Callable = Callable()
 var _check_t: float = 0.0
+## Chunk -> its collidable trees, for one pick_spot() (the scatter is deterministic; felled trees
+## can change between drops).
+var _tree_cache: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
@@ -71,14 +80,26 @@ func dispatch(day: int) -> StringName:
 	var at: Vector3 = pick_spot((world.player as Node3D).global_position, String(id))
 	var tier: int = tier_for(Game.session.gamestage())
 	Game.session.world.drops[String(id)] = {"pos": [at.x, at.y, at.z], "day": day, "tier": tier}
-	_spawn(id, at, tier, false)
+	var d: Drop = _spawn(id, at, tier, false, ProgramDrone.plan_flight(at, String(id), Game.session.world_seed, _cfg(), RELEASE_HEIGHT))
+	var drone := ProgramDrone.new()
+	drone.name = "Drone"
+	drone.flight = d.flight
+	drone.cfg = _cfg()
+	drone.ground = at
+	d.drone = drone
+	d.add_child(drone)
 	Events.supply_drop_incoming.emit(id, at)
 	return id
+
+
+func _cfg() -> Dictionary:
+	return Content.config(&"program_drone")
 
 
 ## A dry, fairly flat spot MIN..MAX_DIST from `center`, inside the detailed map and clear of
 ## buildings, chosen deterministically from the world seed and `key` (later attempts move closer).
 func pick_spot(center: Vector3, key: String) -> Vector3:
+	_tree_cache.clear()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = Ids.hash64("drop:%d:%s" % [Game.session.world_seed, key])
 	for attempt: int in 40:
@@ -108,16 +129,82 @@ func spot_ok(p: Vector3) -> bool:
 			var b: AABB = inst.world_bounds().grow(12.0)
 			if b.has_point(Vector3(p.x, b.get_center().y, p.z)):
 				return false
+	return _clear_of_obstacles(Vector3(p.x, h, p.z))
+
+
+## Trees and anything solid around a landing spot (TD-029). Trees come from the deterministic
+## scatter (felled ones excluded), so a spot far beyond the trees' pooled colliders is checked
+## too; player structures from the building manager; and whatever else collides (rocks, props,
+## structures near the player) from a physics query over the canister's footprint.
+func _clear_of_obstacles(p: Vector3) -> bool:
+	var tree_clear: float = float(_cfg().get("landing_tree_clearance", 4.5))
+	for t: Dictionary in trees_near(p, tree_clear + 1.0):
+		if Vector2(t["pos"].x - p.x, t["pos"].z - p.z).length() < tree_clear + float(t["radius"]):
+			return false
+	var clear: float = float(_cfg().get("landing_clearance", 3.5))
+	var building: Node = world.get(&"building")
+	if building != null and building.has_method(&"pieces_in_radius"):
+		for piece: Variant in building.call(&"pieces_in_radius", p, clear):
+			if piece is Node3D and Vector2((piece as Node3D).global_position.x - p.x, (piece as Node3D).global_position.z - p.z).length() < clear:
+				return false
+	if is_inside_tree() and get_world_3d() != null:
+		var q := PhysicsShapeQueryParameters3D.new()
+		var cyl := CylinderShape3D.new()
+		cyl.radius = clear
+		cyl.height = 4.0
+		q.shape = cyl
+		# Clear of the ground itself (layer 1 is the terrain): structures, props and vegetation.
+		q.collision_mask = (1 << 1) | (1 << 2) | (1 << 12)
+		q.transform = Transform3D(Basis.IDENTITY, p + Vector3.UP * 2.4)
+		if not get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty():
+			return false
 	return true
 
 
-func _spawn(id: StringName, ground: Vector3, tier: int, landed: bool) -> Drop:
+## Collidable trees within `r` of `p`: [{"pos": Vector3, "radius": trunk m}]: the vegetation
+## scatter's tree layer, or `tree_source` when set (tests).
+func trees_near(p: Vector3, r: float) -> Array:
+	if tree_source.is_valid():
+		return tree_source.call(p, r)
+	var out: Array = []
+	var terrain: Node = world.get(&"terrain") if world != null else null
+	if terrain == null or Game.session == null:
+		return out
+	var c0 := Vector2i(int(floor((p.x - r) / VegetationScatter.CHUNK)), int(floor((p.z - r) / VegetationScatter.CHUNK)))
+	var c1 := Vector2i(int(floor((p.x + r) / VegetationScatter.CHUNK)), int(floor((p.z + r) / VegetationScatter.CHUNK)))
+	for cz: int in range(c0.y, c1.y + 1):
+		for cx: int in range(c0.x, c1.x + 1):
+			for t: Dictionary in _chunk_trees(terrain, Vector2i(cx, cz)):
+				if Vector2(t["pos"].x - p.x, t["pos"].z - p.z).length() <= r + float(t["radius"]):
+					out.append(t)
+	return out
+
+
+func _chunk_trees(terrain: Node, key: Vector2i) -> Array:
+	if _tree_cache.has(key):
+		return _tree_cache[key]
+	var out: Array = []
+	var rt: Variant = terrain.call(&"region_terrain_at", (key.x + 0.5) * VegetationScatter.CHUNK, (key.y + 0.5) * VegetationScatter.CHUNK)
+	if rt is RegionTerrain:
+		var felled: Dictionary = Game.session.world.trees.get(Ids.chunk_key(key.x, key.y), {})
+		var layers: Dictionary = VegetationScatter.scatter_chunk(key, rt, Game.session.world_seed, Callable(world, &"height_at"), Callable(), 1)
+		for inst: VegetationScatter.Instance in layers.get("tree", []):
+			var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
+			if sp == null or not sp.collides or felled.has(str(inst.index)):
+				continue
+			out.append({"pos": inst.pos, "radius": maxf(0.15, sp.trunk_radius * inst.scale)})
+	_tree_cache[key] = out
+	return out
+
+
+func _spawn(id: StringName, ground: Vector3, tier: int, landed: bool, flight: ProgramDrone.Flight = null) -> Drop:
 	var d := Drop.new()
 	d.name = String(id)
 	d.drop_id = id
 	d.ground = ground
 	d.tier = tier
 	d.landed = landed
+	d.flight = flight
 	add_child(d)
 	drops[id] = d
 	return d
@@ -126,11 +213,24 @@ func _spawn(id: StringName, ground: Vector3, tier: int, landed: bool) -> Drop:
 ## Drop positions for the tether (empty when the world setting hides them).
 func markers() -> Array[Vector3]:
 	var out: Array[Vector3] = []
+	for e: Dictionary in entries():
+		out.append(e["pos"])
+	return out
+
+
+## Every drop not yet emptied, for the tether's list (empty when the world setting hides them):
+## [{"id", "pos", "day", "state": "inbound" | "falling" | "landed" | "opened"}], in the order they came.
+func entries() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
 	if not GameRules.current().flag("supply_drop_markers"):
 		return out
-	for d: Drop in drops.values():
-		if is_instance_valid(d) and not d.emptied():
-			out.append(d.ground)
+	var ids: Array = drops.keys()
+	ids.sort_custom(func(a: StringName, b: StringName) -> bool: return (drops[a] as Drop).day() < (drops[b] as Drop).day() or ((drops[a] as Drop).day() == (drops[b] as Drop).day() and String(a) < String(b)))
+	for id: StringName in ids:
+		var d: Drop = drops[id]
+		if not is_instance_valid(d) or d.emptied():
+			continue
+		out.append({"id": id, "pos": d.ground, "day": d.day(), "state": d.state()})
 	return out
 
 
@@ -150,20 +250,27 @@ func _process(delta: float) -> void:
 			d.queue_free()
 
 
-## One canister: falls under its chute, lands, burns a flare beside it until it is searched.
+## One canister: carried in under the drone, let go over the spot, falls under its chute, lands
+## and burns a flare beside it until it is searched. Its clock (`_t`, seconds since dispatch)
+## drives the drone too, so both follow the same flight.
 class Drop:
 	extends Node3D
 	var drop_id: StringName = &""
 	var ground := Vector3.ZERO
 	var tier: int = 2
 	var landed: bool = false
+	## The drone's flight (null for a drop restored from a save, already down, or one dropped
+	## without a drone: it then falls from RELEASE_HEIGHT straight away).
+	var flight: ProgramDrone.Flight = null
+	var drone: ProgramDrone = null
 	var crate: PoiPieces.LootProp
 	var _chute: Node3D
 	var _flare: FlickerLight
 	var _smoke: CPUParticles3D
 	var _hiss: AudioStreamPlayer3D
-	var _sway: float = 0.0
 	var _fade: float = 1.0
+	var _t: float = 0.0
+	var _height: float = 1.0
 
 	func _ready() -> void:
 		crate = PoiPieces.LootProp.new()
@@ -182,23 +289,57 @@ class Drop:
 		cs.position = aabb.get_center()
 		crate.add_child(cs)
 		add_child(crate)
+		_height = aabb.size.y
 		if landed:
 			global_position = ground
 			_land(true)
+		elif flight != null:
+			global_position = flight.position(0.0) + ProgramDrone.HANG
 		else:
 			global_position = ground + Vector3.UP * SupplyDrops.RELEASE_HEIGHT
-			_chute = _make_chute(aabb.size.y)
-			add_child(_chute)
+			_open_chute()
 
 	func emptied() -> bool:
 		return crate != null and crate.opened and (crate.inventory == null or crate.inventory.stacks.is_empty())
 
-	func _process(delta: float) -> void:
+	## Inbound under the drone, falling under the chute, down, or down and searched.
+	func state() -> String:
 		if not landed:
-			_sway += delta
-			var y: float = global_position.y - SupplyDrops.FALL_SPEED * delta
-			global_position = Vector3(ground.x + sin(_sway * 0.7) * 0.6, maxf(ground.y, y), ground.z + cos(_sway * 0.5) * 0.6)
-			crate.rotation.z = sin(_sway * 1.3) * 0.08
+			return "inbound" if flight != null and _t < flight.release_time() else "falling"
+		return "opened" if crate != null and crate.opened else "landed"
+
+	## Game day the drop was sent (from its id, drop_<day>).
+	func day() -> int:
+		return int(String(drop_id).get_slice("_", 1)) if String(drop_id).begins_with("drop_") else 0
+
+	func _open_chute() -> void:
+		if _chute == null:
+			_chute = _make_chute(_height)
+			add_child(_chute)
+
+	func _process(delta: float) -> void:
+		_t += delta
+		if drone != null and is_instance_valid(drone):
+			drone.fly(_t)
+		elif drone != null:
+			drone = null
+		if not landed:
+			var released: float = flight.release_time() if flight != null else 0.0
+			if _t < released:
+				# Carried: the sling sways a little under the airframe.
+				global_position = flight.position(_t) + ProgramDrone.HANG
+				crate.rotation.z = sin(_t * 1.9) * 0.03
+				return
+			_open_chute()
+			var from: Vector3 = (flight.position(released) + ProgramDrone.HANG) if flight != null else ground + Vector3.UP * SupplyDrops.RELEASE_HEIGHT
+			var since: float = _t - released
+			# The chute takes a few seconds to drift onto the spot from where the drone let go.
+			var drift: float = smoothstep(0.0, 6.0, since)
+			var y: float = from.y - SupplyDrops.FALL_SPEED * since
+			var x: float = lerpf(from.x, ground.x, drift) + sin(_t * 0.7) * 0.6 * drift
+			var z: float = lerpf(from.z, ground.z, drift) + cos(_t * 0.5) * 0.6 * drift
+			global_position = Vector3(x, maxf(ground.y, y), z)
+			crate.rotation.z = sin(_t * 1.3) * 0.08
 			if y <= ground.y:
 				global_position = ground
 				crate.rotation = Vector3.ZERO

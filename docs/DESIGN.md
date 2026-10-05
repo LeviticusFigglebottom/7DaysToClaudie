@@ -249,7 +249,7 @@ shortcut out, held sleeper groups that ambush on a trigger (a room, a door, a pi
 trap), traps a careful player spots and disarms, lock cues that read at a glance, and a guardian on
 the loot. Below-ground rooms are real cellars cut out of the terrain (TD-026, ADR-0007).
 
-**M1 roster: 19 buildings in Larch Hollow (D6).**
+**M1 roster: 22 buildings in Larch Hollow (D6).**
 
 *Pell's Crossing (town framework `pell_crossing`)*
 
@@ -289,6 +289,14 @@ the loot. Below-ground rooms are real cellars cut out of the terrain (TD-026, AD
 | The Trapper's Cabin | 1 | One-room cabin, boarded from outside with a warning | Bear trap at the corner → clawed hole under the lean-to → held trio (journal, bolt or cache wakes them) → smokehouse key (second trap) → cache |
 | Tamsin Logging Camp | 2 | Camp house and office at the end of the logging road | Kitchen door → office keys wake the cookhouse → padlocked drying room (chime) → creaky bunkroom aisle → foreman's room (guardian) → bolted side door |
 | Larch Hollow Sawmill | 4 | A three-level mill on the pond: the valley's hardest building | Barred doors → log-haul stairs → deck boards wake the saw floor → offices for the keys → lunchroom ambush → one-way dust chute → basement ambush → payroll office behind a shotgun (husk guardian); a weak floor punishes greed |
+
+*Outskirts*
+
+| POI | Tier | Concept | Route sketch |
+|---|---|---|---|
+| Larch Pond Bait & Boat | 1 | Bait shop and boathouse on piles over the pond; the Ruuds fished through the loft floor | Shop padlocked from outside → round to the dock (bear trap under the net) → slip walk (loose boards wake the mill hands across the water) → bay ladder to the net loft for Ned's keys (the bay wakes) → bait-room padlock → shop → Ned's office (guardian, safe) → bolted side door |
+| Ashen Watch Camp | 2 | Mostly outdoor: a palisade camp of the Ashen at the treeline, taken by the fever | Barred gate → round the palisade to the burnt breach (bone chimes) → burial platform for the cache key (jaws in the grass; the key wakes the lean-to) → clawed longhouse wall → the sick round the hearth (ambush) → hatch to the cache pit (keeper, guardian) → the longhouse's bolted back door |
+| Tamsin River Campground | 2 | County campground on a gravel loop; the host kept a ward in the shower house | Fee station (cans on the door) → the loop past tents, an RV and fire rings (bear trap at site 5) → padlocked host trailer → shower house: the women's-side ward wakes when its door opens, Bev's keys in the utility room wake the chained men's side → the trailer: an alarm on the bedroom door, Gus on the lockbox (guardian) → bolted back door |
 
 **Planned (M2+)**: school, mine office, rail depot, dam control house, lighthouse, fishing co-op,
 lab outpost, survivor compounds, Ashen camps, crashed Program supply drone, quarantine camp.

@@ -692,6 +692,276 @@
           2403.77
         ]
       ]
+    },
+    {
+      "type": "bloom",
+      "id": "bloom_mill_pond",
+      "_doc": "The sawmill crew lie in the sawdust like they are sleeping (wild_mill_filer); the Bloom has run from the log deck down the haul to Larch Pond and along its north shore.",
+      "points": [
+        [
+          -196,
+          1872
+        ],
+        [
+          -226,
+          1880
+        ],
+        [
+          -256,
+          1862
+        ],
+        [
+          -292,
+          1858
+        ]
+      ],
+      "radius": 26,
+      "strength": 0.85,
+      "edge": 0.6
+    },
+    {
+      "type": "bloom",
+      "id": "bloom_mill_yard",
+      "_doc": "The mill yard and the birches behind the log deck.",
+      "at": [
+        -205,
+        1866
+      ],
+      "radius": 46,
+      "strength": 0.7
+    },
+    {
+      "type": "bloom",
+      "id": "bloom_ne_deep_wood",
+      "_doc": "Danger rises north and east (DESIGN 10.1): the deep larch wood north-east of the Tamsin is the worst-colonised ground in the valley.",
+      "at": [
+        330,
+        1730
+      ],
+      "radius": 100,
+      "strength": 1.0,
+      "edge": 0.7
+    },
+    {
+      "type": "bloom",
+      "id": "bloom_ne_tongue",
+      "_doc": "A tongue of the deep wood reaching down toward the river.",
+      "at": [
+        248,
+        1772
+      ],
+      "radius": 40,
+      "strength": 0.65
+    },
+    {
+      "type": "bloom",
+      "id": "bloom_tamsin_seep",
+      "_doc": "A seep along the Tamsin east bank, carried down from the deep wood; it stops short of Route 9.",
+      "points": [
+        [
+          196,
+          1748
+        ],
+        [
+          214,
+          1806
+        ],
+        [
+          222,
+          1860
+        ],
+        [
+          214,
+          1905
+        ]
+      ],
+      "radius": 15,
+      "strength": 0.7,
+      "edge": 0.65
+    },
+    {
+      "type": "poi",
+      "id": "larch_pond_boathouse",
+      "poi": "larch_pond_boathouse",
+      "origin": [
+        -322.5,
+        1899
+      ],
+      "rotation": 90,
+      "biome": "town",
+      "skirt": 8,
+      "keep_water": true,
+      "freeboard": 0.6,
+      "_doc": "Bait shop and boathouse on piles over the west shore of Larch Pond. keep_water: the pad grades only the dry ground and sits a 0.6 m freeboard over the pond, which stays under the slip and the dock (ADR-0024)."
+    },
+    {
+      "type": "road",
+      "id": "larch_pond_road",
+      "surface": "gravel",
+      "width": 3.5,
+      "shoulder": 1.0,
+      "markings": false,
+      "points": [
+        [
+          -361,
+          1672
+        ],
+        [
+          -363,
+          1720
+        ],
+        [
+          -361,
+          1775
+        ],
+        [
+          -357,
+          1830
+        ],
+        [
+          -353,
+          1872
+        ],
+        [
+          -351,
+          1894
+        ],
+        [
+          -350.5,
+          1906
+        ]
+      ]
+    },
+    {
+      "type": "poi",
+      "id": "ashen_watch_camp",
+      "poi": "ashen_watch_camp",
+      "origin": [
+        398,
+        1720
+      ],
+      "rotation": 0,
+      "biome": "rocky_slope",
+      "skirt": 12,
+      "_doc": "The Ashen watch camp at the treeline on the edge of the deep wood (tier 2)."
+    },
+    {
+      "type": "path",
+      "id": "ashen_watch_trail",
+      "surface": "dirt",
+      "width": 1.5,
+      "points": [
+        [
+          417,
+          1890
+        ],
+        [
+          419,
+          1862
+        ],
+        [
+          414,
+          1826
+        ],
+        [
+          418,
+          1790
+        ],
+        [
+          417.5,
+          1757
+        ]
+      ]
+    },
+    {
+      "type": "biome",
+      "id": "ashen_watch_rocks",
+      "biome": "rocky_slope",
+      "circle": [
+        417,
+        1739
+      ],
+      "radius": 34,
+      "blend": 14
+    },
+    {
+      "type": "poi",
+      "id": "tamsin_campground",
+      "poi": "tamsin_campground",
+      "origin": [
+        365,
+        1996
+      ],
+      "rotation": 180,
+      "biome": "conifer_forest",
+      "skirt": 10,
+      "_doc": "Tamsin River Campground: a county campground on a gravel loop in the woods south of Route 9."
+    },
+    {
+      "type": "road",
+      "id": "tamsin_campground_road",
+      "surface": "gravel",
+      "width": 4.0,
+      "shoulder": 1.0,
+      "markings": false,
+      "points": [
+        [
+          339,
+          1909
+        ],
+        [
+          339.5,
+          1930
+        ],
+        [
+          339,
+          1950
+        ],
+        [
+          339,
+          1960
+        ],
+        [
+          330,
+          1962
+        ],
+        [
+          324,
+          1969
+        ],
+        [
+          324.5,
+          1980
+        ],
+        [
+          331,
+          1984.5
+        ],
+        [
+          339,
+          1985.5
+        ],
+        [
+          349,
+          1983.5
+        ],
+        [
+          354,
+          1978
+        ],
+        [
+          354.5,
+          1969
+        ],
+        [
+          350,
+          1962.5
+        ],
+        [
+          340.5,
+          1960.3
+        ]
+      ]
     }
   ]
 }

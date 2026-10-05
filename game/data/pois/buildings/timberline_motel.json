@@ -347,7 +347,9 @@
         {"id": "back_dumpster", "prop": "dumpster", "pos": [10.5, -1.7], "rot": 180},
         {"id": "back_trash_1", "prop": "trash_bag", "pos": [12.0, -1.5], "rot": 50},
         {"id": "back_trash_2", "prop": "trash_bag", "pos": [12.6, -1.9], "rot": 110},
-        {"prop": "pallet", "pos": [15.0, -1.4], "rot": 6}
+        {"prop": "pallet", "pos": [15.0, -1.4], "rot": 6},
+        {"id": "walkway_chair_7", "prop": "civic_folding_chair", "pos": [10.4, 8.6], "level": 1, "rot": 175, "variant": "worn"},
+        {"id": "june_armchair", "prop": "armchair", "pos": [19.5, 3.05], "level": 1, "rot": 200, "variant": "worn"}
       ],
       "pickups": [
         {"id": "master_key", "item": "road_key_motel_master", "pos": [15.3, 7.3], "y": 1.1, "level": 1, "rot": 20}
@@ -358,7 +360,7 @@
       ],
       "sleepers": [
         {"id": "sallow", "pos": [10.4, 8.6], "level": 1, "enemy": "lurcher", "pose": "sit", "rot": 175},
-        {"id": "lee", "pos": [14.6, 1.9], "level": 1, "enemy": "hollow", "pose": "lie", "rot": 0},
+        {"id": "lee", "pos": [14.9, 4.62], "level": 1, "enemy": "hollow", "pose": "lie", "rot": -90},
         {"id": "bell_a", "pos": [6.6, 6.4], "level": 1, "enemy": "hollow", "pose": "stand", "rot": 20, "group": "room6"},
         {"id": "bell_b", "pos": [5.45, 1.4], "level": 1, "enemy": "hollow", "pose": "crouch", "rot": 250, "group": "room6"},
         {"id": "ortiz", "pos": [1.2, 3.55], "level": 1, "enemy": "dragger", "pose": "lie", "rot": 90},
@@ -366,7 +368,7 @@
         {"id": "kowalski", "pos": [10.45, 1.6], "enemy": "keener", "pose": "stand", "rot": 200},
         {"id": "walt", "pos": [20.4, 2.6], "enemy": "husk", "pose": "stand", "rot": 250, "group": "laundry"},
         {"id": "guest_a", "pos": [17.6, 3.3], "enemy": "hollow", "pose": "stand", "rot": 10, "group": "laundry"},
-        {"id": "guest_b", "pos": [17.3, 1.0], "enemy": "hollow", "pose": "lie", "rot": 0, "group": "laundry"},
+        {"id": "guest_b", "pos": [17.3, 1.0], "enemy": "hollow", "pose": "lie", "rot": 0, "group": "laundry", "anchor": "floor"},
         {"id": "guest_c", "pos": [19.9, 0.6], "enemy": "lurcher", "pose": "crouch", "rot": 300, "group": "laundry"},
         {"id": "june", "pos": [19.4, 2.8], "level": 1, "enemy": "hollow", "pose": "sit", "rot": 200, "guardian": true},
         {"id": "clerk", "pos": [21.4, 5.7], "enemy": "hollow", "pose": "stand", "rot": 170}

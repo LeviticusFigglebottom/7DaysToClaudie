@@ -82,13 +82,15 @@ func spawn(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Enemy:
 
 ## Dormant sleeper placed by a POI (pose: lie/sit/stand/kneel/crouch). Harder buildings roll
 ## their sleepers' infected tier at a higher gamestage. extra (ADR-0018): "group" (ambush group),
-## "held" (dormant until the group's trigger fires), "guardian" (one infected tier up).
+## "held" (dormant until the group's trigger fires), "guardian" (one infected tier up); ADR-0022:
+## "perch" (the seat or bed it sits or lies on, Enemy.perch), "awake_at" (spawn it up and about,
+## heading there: its building was roused while nobody was near).
 func spawn_sleeper(enemy_id: StringName, pos: Vector3, yaw: float, pose: String, poi_id: StringName, sleeper_id: StringName,
 		poi_tier: int = 1, extra: Dictionary = {}) -> Enemy:
 	var bonus: int = int((InfectedTiers.cfg().get("sleeper_tier_bonus", {}) as Dictionary).get("per_poi_tier", 8)) * maxi(0, poi_tier - 1)
 	var opts: Dictionary = {"yaw": yaw, "pose": pose, "poi": poi_id, "sleeper": sleeper_id, "id": "sl:%s:%s" % [poi_id, sleeper_id],
 		"tier_bonus": bonus}
-	for k: String in ["group", "held", "guardian"]:
+	for k: String in ["group", "held", "guardian", "perch", "awake_at"]:
 		if extra.has(k):
 			opts[k] = extra[k]
 	return spawn(enemy_id, pos, opts)

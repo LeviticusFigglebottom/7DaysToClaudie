@@ -2,8 +2,10 @@
 cluster, propane lantern, mattress barricade, leaning plywood, crude painted sign, human remains,
 bloody bandages, burnt-out oil-drum fire.
 
-Light sources (candle flames, lantern globe) use the "flame_glow"/"lamp_glow" materials and keep
-vertex AO at 1; the light itself comes from PropDef.light (see game/data/props/exterior.json).
+Light sources glow through std_surface emission while the prop's light burns (ADR-0023): candle
+flames ("flame_glow") exist only then, the lantern mantle ("mantle_glow") and the barrel's coals
+("ember_glow") show cold when unlit. The light itself comes from PropDef.light (see
+game/data/props/exterior.json), lit where a POI's story says so.
 Remains are desiccated and clothed — grim, never gory."""
 from __future__ import annotations
 
@@ -224,9 +226,9 @@ def candle_cluster(ctx: K.Ctx) -> None:
 # ============================================================================================
 
 def lantern_camping(ctx: K.Ctx) -> None:
-    """Propane mantle lantern on a 1 lb cylinder: base cap, valve knob, glass globe, vented hood,
-    wire bail. Worn: globe cracked out on one side, rusted hood. Destroyed: knocked over, globe
-    shattered across the floor."""
+    """Propane mantle lantern on a 1 lb cylinder: base cap, valve knob, clear glass globe round a
+    mantle that glows white-hot when lit, vented hood, wire bail. Worn: globe cracked out on one side,
+    rusted hood. Destroyed: knocked over, globe shattered across the floor, the mantle crushed."""
     r = ctx.rnd("lantern")
     cyl = K.lathe("bottle", [(0.0, 0.0), (0.05, 0.0), (0.055, 0.012), (0.055, 0.17), (0.042, 0.2), (0.015, 0.21), (0.0, 0.212)],
                   segs=14)
@@ -268,10 +270,12 @@ def lantern_camping(ctx: K.Ctx) -> None:
     for o in frame + [bail]:
         ctx.add(o, "chrome_pitted", uv_scale=1.0, smooth=40)
     if globe is not None:
-        ctx.add(globe, "lamp_glow", uv_scale=1.0, smooth=50, wear=0.0, ao=False)
-        if ctx.worn:
-            mantle = K.blob("mantle", 0.018, subdiv=2, scale=(1, 1, 1.3), center=(0.0, 0.0, 0.29))
-            ctx.add(mantle, "flame_glow", uv_scale=1.0, smooth=50, wear=0.0, ao=False)
+        # Clear globe round the mantle (a sock of ash on the burner tube) that glows when lit.
+        ctx.add(globe, "glass_clear", uv_scale=1.0, smooth=50, wear=0.0, ao=False)
+        tube = K.cyl("tube", 0.006, 0.03, segs=6, center=(0.0, 0.0, 0.26))
+        ctx.add(tube, "chrome_pitted", uv_scale=1.0, smooth=40)
+        mantle = K.blob("mantle", 0.017, subdiv=2, scale=(1, 1, 1.35), center=(0.0, 0.0, 0.292))
+        ctx.add(mantle, "mantle_glow", uv_scale=1.0, smooth=50, wear=0.0, ao=False)
     for s in shards:
         ctx.add(s, "glass_clear", uv_scale=1.0, wear=0.0)
     ctx.col_hull(allp, max_points=24)
@@ -673,8 +677,9 @@ def _drum_open_profile():
 
 def oil_drum_fire(ctx: K.Ctx) -> None:
     """Burn barrel: 55 gal drum with the lid cut out and air holes punched round the base,
-    scorched and rusted, ash bed with charred planks poking out, embers still glowing.
-    Worn: cold — dented, rusted through, ash spilled round the foot."""
+    scorched and rusted, a bed of coals and charred planks poking out; lit, the coals glow and
+    PropLights adds the flames. Worn: burning low — dented, rusted through, ash spilled round the
+    foot, a few coals left in the ash."""
     r = ctx.rnd("drum")
     d = K.lathe("drum", _drum_open_profile(), segs=14)
     # Air holes: punch out faces in the low band at alternating segments.
@@ -700,10 +705,21 @@ def oil_drum_fire(ctx: K.Ctx) -> None:
         K.place(pl, rot=(0, -rr.uniform(35, 65), math.degrees(a)))
         K.place(pl, (math.cos(a) * 0.1, math.sin(a) * 0.1, 0.74))
         ctx.add(pl, "wood_charred", uv="box", long_axis=None, patches=0.0, edge=0.4)
+    # Coals in the ash: cold charcoal unless the barrel burns (ember_glow). A fed fire has a deep
+    # bed and glowing log ends; one burning low only a few coals.
+    er = ctx.rnd("embers")
+    for k in range(16 if ctx.clean else 7):
+        a, d = er.uniform(0, math.tau), 0.2 * math.sqrt(er.random())
+        z = 0.5 + 0.08 * math.sqrt(max(0.0, 1.0 - (d / 0.25) ** 2))  # on the ash dome, half sunk
+        e = K.blob(f"ember{k}", er.uniform(0.014, 0.03), subdiv=1, rough=0.3, seed=er.randint(0, 999),
+                   scale=(1.0, 1.0, 0.6), center=(math.cos(a) * d, math.sin(a) * d, z - 0.004))
+        ctx.add(e, "ember_glow", uv_scale=1.0, wear=0.0, ao=False)
     if ctx.clean:
-        for k in range(7):
-            e = K.blob(f"ember{k}", r.uniform(0.012, 0.025), subdiv=1, center=(r.uniform(-0.15, 0.15), r.uniform(-0.15, 0.15), 0.555))
-            ctx.add(e, "flame_glow", uv_scale=1.0, wear=0.0, ao=False)
+        for k in range(3):
+            a = k * math.tau / 3 + er.uniform(-0.3, 0.3)
+            end = K.cyl(f"logend{k}", er.uniform(0.025, 0.035), 0.012, segs=8)
+            K.place(end, (math.cos(a) * 0.1, math.sin(a) * 0.1, 0.6), (er.uniform(-20, 20), er.uniform(-20, 20), 0))
+            ctx.add(end, "ember_glow", uv_scale=1.0, wear=0.0, ao=False)
     else:
         spill = K.blob("spill", 0.5, subdiv=2, scale=(0.5, 0.35, 0.04), rough=0.3, seed=r.randint(0, 999), center=(0.25, -0.28, 0.0))
         K.cut_plane(spill, (0, 0, 0.001), (0, 0, -1), keep="below", fill=False)

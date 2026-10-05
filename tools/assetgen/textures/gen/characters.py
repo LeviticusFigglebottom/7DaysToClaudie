@@ -484,3 +484,278 @@ def blood_grime(size: int, seed: int, out) -> None:
     height = T.normalize(0.5 * b + 0.5 * splat)
     rough = np.clip(0.45 + 0.35 * dirt - 0.15 * splat, 0.2, 0.95)
     T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=1.5)
+
+
+# --------------------------------------------------------------------------------------------
+# The valley's wardrobe and the specials' armour (ADR-0028). Neutral sets are tinted per material
+# (game/data/materials/characters.json `tint`), so one weave serves several garments.
+# --------------------------------------------------------------------------------------------
+
+def _knit_rib(size, ribs, seed):
+    """Vertical knit ribs with the V-stitch texture along them."""
+    y, x = np.mgrid[0:size, 0:size].astype(np.float32) / size
+    u = (x * ribs) % 1.0
+    rib = 0.5 + 0.5 * np.cos(u * 2 * np.pi)
+    v = (y * ribs * 2.2 + np.where(u < 0.5, 0.0, 0.5)) % 1.0
+    vst = 1.0 - np.abs(v - 0.5) * 2.0
+    return T.normalize(0.6 * rib + 0.4 * vst * rib)
+
+
+@texture("cloth_hivis", size=1024, seed=471)
+def cloth_hivis(size: int, seed: int, out) -> None:
+    """Hi-vis polyester mesh (neutral bright: tinted fluorescent per material): a fine hexagonal
+    knit with open holes, faded at the stress points, grimy."""
+    f1, f2, _ = T.worley(size, 73 * 73, seed, jitter=0.35)    # a full grid: a partial last row seamed
+    holes = 1.0 - T.smoothstep(0.0, 2.2, f2 - f1)
+    cell = T.smoothstep(0.5, 3.5, f1)
+    base = 0.86 + 0.08 * T.spectral(size, 2.0, seed + 1)
+    col = np.stack([base, base, base], -1)
+    col = col * (1.0 - 0.45 * holes)[..., None]
+    fade = T.smoothstep(0.55, 0.9, T.spectral(size, 2.2, seed + 2))
+    col = T.mix(col, _c("#d8d2bc") * np.ones_like(col), fade * 0.35)
+    col, stain = _wear_stains(size, seed + 3, col, 0.35)
+    grime = T.smoothstep(0.72, 0.95, T.spectral(size, 1.6, seed + 4))
+    col = T.mix(col, _c("#6a6456") * np.ones_like(col), grime * 0.3)
+    height = T.normalize(0.7 * cell - 0.5 * holes + 0.2 * T.spectral(size, 1.2, seed + 5))
+    rough = np.clip(0.62 + 0.15 * stain + 0.1 * holes, 0.4, 0.95)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.5)
+
+
+@texture("cloth_drill", size=1024, seed=481)
+def cloth_drill(size: int, seed: int, out) -> None:
+    """Workwear cotton drill (neutral, tinted navy / orange / khaki per material): steep twill,
+    worn pale along the ridges, oil and grime."""
+    weave = _weave(size, 150, seed, twill=True)
+    slub = T.spectral(size, 1.1, seed + 1, anisotropy=(7.0, 1.0))
+    col = T.gradient(T.normalize(0.65 * T.spectral(size, 2.3, seed + 2) + 0.35 * slub),
+                     [(0.0, "#8e8e8a"), (0.5, "#a8a8a2"), (1.0, "#bdbcb4")])
+    worn = T.smoothstep(0.55, 0.92, T.spectral(size, 2.0, seed + 3))
+    col = T.mix(col, _c("#d6d3c8") * np.ones_like(col), worn * 0.35 * (0.5 + 0.5 * weave))
+    col, stain = _wear_stains(size, seed + 4, col, 0.7)
+    oil = T.smoothstep(0.76, 0.95, T.spectral(size, 2.4, seed + 5))
+    col = T.mix(col, _c("#24201a") * np.ones_like(col), oil * 0.55)
+    height = T.normalize(0.7 * weave + 0.3 * slub)
+    rough = np.clip(0.84 - 0.25 * oil + 0.06 * stain, 0.4, 1.0)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=3.5)
+
+
+@texture("cloth_wool", size=1024, seed=491)
+def cloth_wool(size: int, seed: int, out) -> None:
+    """Sunday suiting wool (neutral, tinted charcoal / brown per material): a fine herringbone,
+    a faint pinstripe, shine on the worn ridges, moth holes."""
+    y, x = np.mgrid[0:size, 0:size].astype(np.float32) / size
+    band = np.floor(x * 24) % 2
+    d = np.where(band > 0, x + y, x - y) * 220
+    hb = 0.5 + 0.5 * np.cos(d * 2 * np.pi)
+    pin = T.smoothstep(0.985, 1.0, 0.5 + 0.5 * np.cos(x * 16 * 2 * np.pi))
+    fuzz = T.spectral(size, 0.6, seed)
+    col = T.gradient(T.normalize(0.5 * T.spectral(size, 2.2, seed + 1) + 0.25 * hb + 0.25 * fuzz),
+                     [(0.0, "#5e5e60"), (0.5, "#717174"), (1.0, "#858589")])
+    col = T.mix(col, _c("#b4b4b8") * np.ones_like(col), pin * 0.5)
+    col, stain = _wear_stains(size, seed + 2, col, 0.5)
+    moth = T.smoothstep(0.9, 0.97, T.spectral(size, 0.8, seed + 3)) * T.smoothstep(0.6, 0.8, T.spectral(size, 2.0, seed + 4))
+    col = T.mix(col, _c("#141414") * np.ones_like(col), moth)
+    height = T.normalize(0.6 * hb + 0.4 * fuzz - 0.6 * moth)
+    rough = np.clip(0.80 - 0.18 * T.smoothstep(0.6, 0.95, hb) * 0.5 + 0.08 * stain, 0.45, 0.95)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.0)
+
+
+@texture("cloth_shirt", size=1024, seed=501)
+def cloth_shirt(size: int, seed: int, out) -> None:
+    """White cotton poplin (dress shirts; tinted for scrubs): a very fine plain weave, sweat
+    yellowing, grey grime and creases."""
+    weave = _weave(size, 260, seed)
+    col = T.gradient(T.normalize(0.7 * T.spectral(size, 2.3, seed + 1) + 0.3 * weave),
+                     [(0.0, "#c7c6c0"), (0.5, "#d9d8d2"), (1.0, "#e6e5df")])
+    yel = T.smoothstep(0.55, 0.9, T.spectral(size, 2.5, seed + 2))
+    col = T.mix(col, _c("#c2b07a") * np.ones_like(col), yel * 0.35)
+    col, stain = _wear_stains(size, seed + 3, col, 0.7)
+    crease = _level_lines(T.warp(T.spectral(size, 1.8, seed + 4, anisotropy=(1.0, 4.0)), T.spectral(size, 2.0, seed + 5),
+                                 T.spectral(size, 2.0, seed + 6), size * 0.02), 1.6)
+    col *= (1.0 - 0.08 * crease)[..., None]
+    height = T.normalize(0.5 * weave - 0.5 * crease)
+    rough = np.clip(0.84 + 0.05 * stain, 0.6, 1.0)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=1.6)
+
+
+@texture("cloth_knit", size=1024, seed=511)
+def cloth_knit(size: int, seed: int, out) -> None:
+    """Wool cardigan / sweater knit (neutral, tinted per material): ribs of V stitches, pilling,
+    snags."""
+    rib = _knit_rib(size, 90, seed)
+    pill = T.smoothstep(0.8, 0.95, T.spectral(size, 0.4, seed + 1)) * T.smoothstep(0.5, 0.8, T.spectral(size, 2.2, seed + 2))
+    col = T.gradient(T.normalize(0.6 * rib + 0.4 * T.spectral(size, 2.1, seed + 3)),
+                     [(0.0, "#8a8478"), (0.5, "#a49e90"), (1.0, "#bab4a6")])
+    col = T.mix(col, _c("#c8c2b4") * np.ones_like(col), pill * 0.6)
+    col, stain = _wear_stains(size, seed + 4, col, 0.6)
+    height = T.normalize(0.75 * rib + 0.25 * pill)
+    rough = np.clip(0.93 + 0.04 * stain, 0.7, 1.0)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=3.5)
+
+
+@texture("cloth_buffalo", size=1024, seed=521)
+def cloth_buffalo(size: int, seed: int, out) -> None:
+    """Hunting coat wool: red and black buffalo check, heavy nap, burrs and mud."""
+    y, x = np.mgrid[0:size, 0:size].astype(np.float32) / size
+    n = 4
+    cx = (np.floor(x * n * 2) % 2)
+    cy = (np.floor(y * n * 2) % 2)
+    red, black = _c("#7c1714"), _c("#141110")
+    both = (cx * cy)[..., None]
+    one = ((cx + cy) % 2)[..., None]
+    col = red * (1 - both - one) * np.ones((size, size, 3)) + black * both + (0.55 * red + 0.45 * black) * one
+    nap = T.spectral(size, 0.7, seed)
+    col = col * (0.82 + 0.3 * nap)[..., None]
+    col, stain = _wear_stains(size, seed + 1, col.astype(np.float32), 0.6)
+    mud = T.smoothstep(0.7, 0.92, T.spectral(size, 2.3, seed + 2))
+    col = T.mix(col, _c("#3c3226") * np.ones_like(col), mud * 0.5)
+    weave = _weave(size, 120, seed + 3, twill=True)
+    height = T.normalize(0.4 * weave + 0.6 * nap)
+    rough = np.clip(0.95 - 0.05 * stain, 0.75, 1.0)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.6)
+
+
+@texture("cloth_dress", size=1024, seed=531)
+def cloth_dress(size: int, seed: int, out) -> None:
+    """A Sunday dress: small cream-and-rose flowers on faded navy rayon, stained."""
+    r = T.rng(seed)
+    col = T.gradient(T.spectral(size, 2.3, seed + 1), [(0.0, "#1c2340"), (0.5, "#252d4c"), (1.0, "#313a5a")])
+    flowers = np.zeros((size, size), np.float32)
+    centres = np.zeros((size, size), np.float32)
+    y, x = np.mgrid[0:size, 0:size].astype(np.float32)
+    for _ in range(70):
+        cx0, cy0 = r.uniform(0, size), r.uniform(0, size)
+        rad = r.uniform(18.0, 34.0)
+        ang0 = r.uniform(0, 2 * np.pi)
+        dx = (x - cx0 + size / 2) % size - size / 2
+        dy = (y - cy0 + size / 2) % size - size / 2
+        rr = np.sqrt(dx * dx + dy * dy)
+        th = np.arctan2(dy, dx) + ang0
+        petal = rad * (0.62 + 0.38 * np.abs(np.cos(th * 2.5)))
+        flowers = np.maximum(flowers, 1.0 - T.smoothstep(petal - 1.2, petal + 0.6, rr))
+        centres = np.maximum(centres, 1.0 - T.smoothstep(rad * 0.22, rad * 0.32, rr))
+    petal_col = T.mix(_c("#d9cdb2") * np.ones((size, size, 3)), _c("#b86a72") * np.ones((size, size, 3)),
+                      T.smoothstep(0.4, 0.7, T.spectral(size, 1.6, seed + 2)))
+    col = T.mix(col, petal_col, flowers * 0.9)
+    col = T.mix(col, _c("#c9a64a") * np.ones_like(col), centres * 0.8)
+    col, stain = _wear_stains(size, seed + 3, col, 0.7)
+    weave = _weave(size, 240, seed + 4)
+    height = T.normalize(0.7 * weave + 0.3 * T.spectral(size, 1.4, seed + 5))
+    rough = np.clip(0.72 + 0.1 * stain, 0.5, 0.95)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=1.4)
+
+
+@texture("hide", size=1024, seed=541)
+def hide(size: int, seed: int, out) -> None:
+    """The Ashen's hides: smoked buckskin with scars, veining, hair left in patches, ash rubbed in."""
+    f1, f2, _ = T.worley(size, 1800, seed, jitter=1.0)
+    grain = T.normalize(f1)
+    veins = _veins(size, seed + 1, 14, 1.2, 40.0)
+    smoke = T.spectral(size, 2.4, seed + 2)
+    col = T.gradient(T.normalize(0.6 * smoke + 0.4 * grain), [(0.0, "#4a3422"), (0.5, "#6e5136"), (1.0, "#8f704e")])
+    scars = _level_lines(T.spectral(size, 2.0, seed + 3, anisotropy=(1.0, 3.0)), 1.2) * \
+        T.smoothstep(0.6, 0.8, T.spectral(size, 2.0, seed + 4))
+    col = T.mix(col, _c("#a88a66") * np.ones_like(col), scars * 0.6)
+    col *= (1.0 - 0.25 * veins)[..., None]
+    hair = T.smoothstep(0.62, 0.85, T.spectral(size, 2.1, seed + 5)) * \
+        T.smoothstep(0.5, 0.9, T.spectral(size, 0.5, seed + 6, anisotropy=(1.0, 14.0)))
+    col = T.mix(col, _c("#3a2c20") * np.ones_like(col), hair * 0.7)
+    ash = T.smoothstep(0.55, 0.85, T.spectral(size, 2.2, seed + 7))
+    col = T.mix(col, _c("#8a8780") * np.ones_like(col), ash * 0.35)
+    height = T.normalize(0.5 * grain - 0.4 * veins + 0.3 * hair + 0.2 * scars)
+    rough = np.clip(0.78 + 0.12 * ash - 0.1 * smoke, 0.5, 0.98)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=3.0)
+
+
+@texture("fur", size=1024, seed=551)
+def fur(size: int, seed: int, out) -> None:
+    """Matted pelt: strands along V in clumps, grey-brown with pale tips, ash and filth."""
+    strands = T.spectral(size, 0.8, seed, anisotropy=(30.0, 1.0))
+    clumps = T.spectral(size, 1.5, seed + 1, anisotropy=(4.0, 1.0))
+    s = T.normalize(0.6 * strands + 0.4 * clumps)
+    col = T.gradient(s, [(0.0, "#1e1813"), (0.45, "#3d3127"), (0.8, "#6b5a48"), (1.0, "#9a8a76")])
+    filth = T.smoothstep(0.6, 0.9, T.spectral(size, 2.2, seed + 2))
+    col = T.mix(col, _c("#2a241c") * np.ones_like(col), filth * 0.5)
+    height = s
+    rough = np.clip(0.75 + 0.2 * (1 - s), 0.5, 1.0)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=4.0)
+
+
+@texture("plastic_hard", size=1024, seed=561)
+def plastic_hard(size: int, seed: int, out) -> None:
+    """Moulded hard plastic (neutral: hard hats, riot armour, buttons; tinted per material):
+    scuffs, gouges, sun-chalked patches, grime in the scratches."""
+    base = 0.82 + 0.06 * T.spectral(size, 2.4, seed)
+    col = np.stack([base, base, base], -1).astype(np.float32)
+    scratch = T.smoothstep(0.86, 0.97, T.spectral(size, 0.9, seed + 1, anisotropy=(1.0, 9.0)))
+    scratch = np.maximum(scratch, T.smoothstep(0.88, 0.98, T.spectral(size, 0.9, seed + 2, anisotropy=(9.0, 1.0))))
+    gouge = T.smoothstep(0.92, 0.99, T.spectral(size, 1.2, seed + 3))
+    chalk = T.smoothstep(0.5, 0.85, T.spectral(size, 2.2, seed + 4))
+    col = T.mix(col, _c("#e8e6df") * np.ones_like(col), chalk * 0.25)
+    grime = T.smoothstep(0.62, 0.9, T.spectral(size, 2.3, seed + 5))
+    col = T.mix(col, _c("#4a4438") * np.ones_like(col), np.clip(grime * 0.4 + scratch * 0.45 + gouge * 0.6, 0, 1))
+    height = T.normalize(-0.5 * scratch - 0.8 * gouge + 0.1 * T.spectral(size, 1.6, seed + 6))
+    rough = np.clip(0.38 + 0.3 * chalk + 0.25 * scratch + 0.2 * grime, 0.25, 0.95)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.0)
+
+
+@texture("debris_metal", size=1024, seed=571)
+def debris_metal(size: int, seed: int, out) -> None:
+    """Husk debris: painted sheet steel torn from cars and sheds, paint flaking off rust."""
+    paint_n = T.spectral(size, 2.4, seed)
+    paint = T.gradient(paint_n, [(0.0, "#3e5446"), (0.5, "#4f6656"), (1.0, "#61786a")])
+    rust_n = T.spectral(size, 2.0, seed + 1)
+    flake = T.smoothstep(0.5, 0.56, rust_n + 0.15 * T.spectral(size, 1.0, seed + 2))
+    rust = T.gradient(T.spectral(size, 1.6, seed + 3), [(0.0, "#3a1d0e"), (0.5, "#6a3417"), (1.0, "#8c4a22")])
+    col = T.mix(paint, rust, flake)
+    edge = T.smoothstep(0.48, 0.5, rust_n) * (1 - flake)
+    col = T.mix(col, _c("#20160f") * np.ones_like(col), edge * 0.5)
+    pits = T.smoothstep(0.85, 0.95, T.spectral(size, 0.5, seed + 4)) * flake
+    height = T.normalize(0.4 * (1 - flake) + 0.2 * paint_n - 0.5 * pits)
+    rough = np.clip(0.55 + 0.35 * flake, 0.3, 0.95)
+    metal = (1 - flake) * 0.0 + flake * 0.15
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, metal=metal, normal_strength=3.0)
+
+
+@texture("pustule", size=1024, seed=581)
+def pustule(size: int, seed: int, out) -> None:
+    """A Blister's pustules: taut, translucent yellow-green membrane over pale fluid, a fine net
+    of dark veins, milky clouding."""
+    base = T.spectral(size, 2.2, seed)
+    col = T.gradient(base, [(0.0, "#8e8a3c"), (0.5, "#b0a752"), (1.0, "#cfc47a")])
+    veins = _branching(size, seed + 1, trunks=10, steps=120, step=2.5, w0=1.8, wmin=0.45, branch_p=0.06, turn=0.22,
+                       taper=0.993, flow_amt=0.05)
+    col = T.mix(col, _c("#5a3f2a") * np.ones_like(col), veins * 0.7)
+    milk = T.smoothstep(0.55, 0.85, T.spectral(size, 2.0, seed + 2))
+    col = T.mix(col, _c("#e2dcb6") * np.ones_like(col), milk * 0.3)
+    height = T.normalize(0.3 * base + 0.6 * veins)
+    rough = np.clip(0.18 + 0.15 * milk, 0.1, 0.5)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=1.6)
+
+
+@texture("cord", size=512, seed=591)
+def cord(size: int, seed: int, out) -> None:
+    """Twisted plant-fibre and rawhide cord (Ashen lashings, charms)."""
+    y, x = np.mgrid[0:size, 0:size].astype(np.float32) / size
+    twist = 0.5 + 0.5 * np.cos((x * 6 + y * 18) * 2 * np.pi)
+    fib = T.spectral(size, 0.8, seed, anisotropy=(1.0, 12.0))
+    col = T.gradient(T.normalize(0.6 * twist + 0.4 * fib), [(0.0, "#3b2e20"), (0.5, "#5e4a33"), (1.0, "#80684a")])
+    height = T.normalize(0.7 * twist + 0.3 * fib)
+    rough = np.clip(0.88 + 0.08 * fib, 0.6, 1.0)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=3.0)
+
+
+@texture("cloth_flannel_green", size=1024, seed=601)
+def cloth_flannel_green(size: int, seed: int, out) -> None:
+    """A second flannel: faded forest-green and black plaid with a mustard line."""
+    pal = ["#2c4a2e", "#141614", "#9a8a4a", "#3c3a30"]
+    setts = [(0, 20), (1, 6), (0, 3), (1, 16), (2, 1), (1, 16), (0, 3), (1, 6), (3, 5)]
+    col = _tartan(size, setts, pal)
+    nap = T.spectral(size, 0.9, seed)
+    col = col * (0.85 + 0.25 * nap)[..., None]
+    col = T.mix(col, col * 0.6 + 0.4 * _c("#7a7a66"), T.smoothstep(0.4, 0.95, T.spectral(size, 2.4, seed + 2)) * 0.45)
+    col, stain = _wear_stains(size, seed + 3, col, 0.7)
+    weave = _weave(size, 140, seed + 4)
+    height = T.normalize(0.5 * weave + 0.3 * nap + 0.2 * T.spectral(size, 0.4, seed + 1))
+    rough = np.clip(0.9 - 0.05 * stain, 0.6, 1.0)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.5)

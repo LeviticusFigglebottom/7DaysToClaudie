@@ -3,7 +3,8 @@ extends Node3D
 ## Renders and simulates vegetation from VegetationScatter (deterministic per chunk).
 ##  * near chunks (±NEAR_CHUNKS): MultiMesh per species/variant/LOD with visibility-range fades
 ##  * ground cover (±GROUND_CHUNKS): ferns, grass, flowers, moss, litter in 32 m blocks; each plant
-##    shrinks away near the grass distance in the shader
+##    shrinks away near the grass distance in the shader. The Bloom's fruiting bodies (the scatter's
+##    bloom layer, ADR-0025) are drawn the same way.
 ##  * far layer: per-region camera-facing impostor MultiMeshes discarding inside the near square
 ##  * collision: pooled bodies for trees/boulders within COLLISION_RADIUS of the player
 ##  * chopping (take_damage with tool_power.chop) -> FallingTree -> logs + stump
@@ -29,6 +30,8 @@ const THINNED_KINDS: PackedStringArray = ["grass", "litter", "flower", "herb"]
 const GROUND_LOD_SPLIT: float = 40.0
 ## Twig litter is invisible beyond a few tens of metres: it shrinks away sooner.
 const LITTER_END: float = 30.0
+## The Bloom's pale caps read further than litter against the dark floor, but are small.
+const FUNGUS_END: float = 36.0
 const FADE: float = 8.0
 const MAX_JOBS: int = 3
 
@@ -76,6 +79,11 @@ func setup_world(w: Node) -> void:
 	_far_root.name = "FarTrees"
 	add_child(_far_root)
 	_build_far_layer()
+	# The fungal mounds Hum survivors leave where they root at dawn (ADR-0025).
+	var mounds := BloomMounds.new()
+	mounds.name = "BloomMounds"
+	add_child(mounds)
+	mounds.setup_world(w)
 
 
 # --- Queries ----------------------------------------------------------------------------------
@@ -107,7 +115,8 @@ func _scatter(key: Vector2i) -> Dictionary:
 	var rt: RegionTerrain = _rt_for_chunk(key)
 	if rt == null:
 		return {}
-	return VegetationScatter.scatter_chunk(key, rt, Game.session.world_seed, terrain.height_at, _water_fn())
+	return VegetationScatter.scatter_chunk(key, rt, Game.session.world_seed, terrain.height_at, _water_fn(),
+		VegetationScatter.ORDER.size(), terrain.bloom_base_at)
 
 
 ## Joins in-flight scatter jobs (they read content and terrain) before the world is freed.
@@ -260,7 +269,8 @@ func _set_ground(key: Vector2i, on: bool) -> void:
 	var fade_end: float = minf(GROUND_END, float(Settings.gfx("grass_distance", 60.0)))
 	var origin := Vector2(key.x * CHUNK, key.y * CHUNK)
 	var groups: Dictionary = {}
-	for inst: VegetationScatter.Instance in (_data[key] as Dictionary).get("ground", []):
+	var layers: Dictionary = _data[key]
+	for inst: VegetationScatter.Instance in (layers.get("ground", []) as Array) + (layers.get("bloom", []) as Array):
 		if _is_removed(key, inst.index):
 			continue
 		var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
@@ -277,7 +287,11 @@ func _set_ground(key: Vector2i, on: bool) -> void:
 		var parts: PackedStringArray = gk.split("|")
 		var sp: SpeciesDef = Content.get_def(&"species", StringName(parts[0])) as SpeciesDef
 		var variant: int = int(parts[1])
-		var shrink: float = minf(fade_end, LITTER_END) if sp.veg_kind == "litter" else fade_end
+		var shrink: float = fade_end
+		if sp.veg_kind == "litter":
+			shrink = minf(fade_end, LITTER_END)
+		elif sp.veg_kind == "fungus":
+			shrink = minf(fade_end, FUNGUS_END)
 		# Drawn while any plant of the block can be inside the fade distance (half a block diagonal).
 		var end: float = shrink + GROUND_BLOCK * 0.71
 		var mmis: Array[MultiMeshInstance3D] = []
@@ -576,7 +590,7 @@ func _find_instance(id: StringName) -> Array:
 		return []
 	var key: Vector2i = Ids.parse_chunk_key(parts[1])
 	var idx: int = int(parts[2])
-	for layer: String in ["tree", "medium", "ground"]:
+	for layer: String in VegetationScatter.ORDER:
 		for inst: VegetationScatter.Instance in (_data.get(key, {}) as Dictionary).get(layer, []):
 			if inst.index == idx:
 				return [key, inst]
@@ -629,7 +643,7 @@ func nearest_instance(pos: Vector3, veg_kind: String, max_dist: float = 80.0) ->
 	var best: Array = []
 	var best_d: float = max_dist
 	for key: Vector2i in _data:
-		for layer: String in ["tree", "medium", "ground"]:
+		for layer: String in VegetationScatter.ORDER:
 			for inst: VegetationScatter.Instance in (_data[key] as Dictionary).get(layer, []):
 				var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
 				if sp.veg_kind != veg_kind or _is_removed(key, inst.index):
@@ -639,6 +653,27 @@ func nearest_instance(pos: Vector3, veg_kind: String, max_dist: float = 80.0) ->
 					best_d = d
 					best = [key, inst]
 	return best
+
+
+## Loaded instances within `max_dist` (horizontally) of `pos`, nearest first, as [chunk, Instance]
+## pairs; only one species when `species` is given. Visual QA frames a tree or a cluster of caps
+## with it, and keeps the lens clear of everything else.
+func instances_near(pos: Vector3, max_dist: float, species: StringName = &"") -> Array:
+	var found: Array = []
+	var p := Vector2(pos.x, pos.z)
+	for key: Vector2i in _data:
+		var lo := Vector2(key.x, key.y) * CHUNK
+		if p.x < lo.x - max_dist or p.x > lo.x + CHUNK + max_dist or p.y < lo.y - max_dist or p.y > lo.y + CHUNK + max_dist:
+			continue
+		for layer: String in VegetationScatter.ORDER:
+			for inst: VegetationScatter.Instance in (_data[key] as Dictionary).get(layer, []):
+				if species != &"" and inst.species != species:
+					continue
+				var d: float = Vector2(inst.pos.x, inst.pos.z).distance_to(p)
+				if d <= max_dist and not _is_removed(key, inst.index):
+					found.append([d, key, inst])
+	found.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	return found.map(func(e: Array) -> Array: return [e[1], e[2]])
 
 
 ## Collision body of a tree/boulder instance if it is currently pooled near the player.

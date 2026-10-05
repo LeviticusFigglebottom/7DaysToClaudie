@@ -2,8 +2,14 @@
 // height-based blending (layer height in albedo alpha), slope-driven triplanar rock, snow and
 // wetness. Normals are blended in world space (whiteout), so the mesh needs no tangents.
 // Layer order / tile sizes: game/data/materials/terrain_layers.json (TerrainTextures).
+// Where the Bloom field holds the ground (ADR-0025) a white-grey mycelial web binds the litter: a
+// generated thread mask revealed by coverage priority (cords first, then fans, then the cottony
+// mat in the litter's hollows), over litter bleached by the rot; past a pixel or two the share of
+// threads in the footprint instead (a pale veil, fading with distance); at night they glow faintly.
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
+
+#include "res://assets/shaders/bloom.gdshaderinc"
 
 uniform sampler2DArray layer_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray layer_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -26,6 +32,22 @@ uniform float macro_strength = 0.35;
 uniform float normal_strength = 1.0;
 // Far-field tiles discard inside the near square (x0, z0, x1, z1); disabled when x1 < x0.
 uniform vec4 discard_rect = vec4(1.0, 1.0, -1.0, -1.0);
+
+// The Bloom's web (BloomWorld.apply_web; textures/gen/bloom.py). Mask: R coverage priority
+// (rank-equalised: a threshold t shows 1 - t of the ground at full growth), G age (fresh white ..
+// old cream), B cottony mat, A thread body (opacity and glow).
+uniform sampler2D bloom_web_mask : hint_default_black, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D bloom_web_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+// The thread masks at a third, two thirds and all of full growth (RGB), binary: mipmapped, the share
+// of threads in a footprint.
+uniform sampler2D bloom_web_cov : hint_default_black, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float bloom_web_tile = 1.6;
+// Share of the tile the mask's threads cover (printed by the generator: keep in step). At full
+// strength they all show; the cottony mat (B) fills in further.
+uniform float bloom_web_cover = 0.33;
+uniform vec4 bloom_web_fresh : source_color = vec4(0.86, 0.86, 0.82, 1.0);
+uniform vec4 bloom_web_aged : source_color = vec4(0.69, 0.66, 0.57, 1.0);
+uniform float bloom_glow_energy = 0.035;
 
 global uniform float hm_wetness;
 global uniform float hm_snow;
@@ -73,6 +95,7 @@ void fragment() {
 	vec3 alb = vec3(0.0);
 	vec3 nrm = vec3(0.0);
 	vec3 orm = vec3(0.0);
+	float hgt = 0.0;
 	float bsum = 0.0;
 	float cutoff = best - height_blend_depth;
 	for (int i = 0; i < 8; i++) {
@@ -81,6 +104,7 @@ void fragment() {
 			int L = ids[i];
 			vec2 uv = v_world_pos.xz / max(layer_tile[L], 0.1);
 			alb += albs[i].rgb * b;
+			hgt += albs[i].a * b;
 			nrm += whiteout_top(texture(layer_normal, vec3(uv, float(L))).rgb * 2.0 - 1.0, gn) * b;
 			orm += texture(layer_orm, vec3(uv, float(L))).rgb * b;
 			bsum += b;
@@ -89,10 +113,54 @@ void fragment() {
 	alb /= max(bsum, 1e-4);
 	nrm = normalize(nrm);
 	orm /= max(bsum, 1e-4);
+	hgt /= max(bsum, 1e-4);
 
 	// Macro variation breaks up tiling at distance.
 	float mv = texture(macro_variation, v_world_pos.xz * macro_scale).r;
 	alb *= mix(1.0, 0.75 + mv * 0.5, macro_strength);
+
+	// The Bloom: rot bleaches the litter, then the web binds it. Derivatives are taken here, outside
+	// the (non-uniform) branch, where they are defined; the branch samples with textureGrad.
+	float bloom_glow_m = 0.0;
+	float field = hm_bloom_at(v_world_pos.xz);
+	vec2 wuv = v_world_pos.xz / bloom_web_tile;
+	vec2 wdx = dFdx(wuv);
+	vec2 wdy = dFdy(wuv);
+	if (field > 0.004) {
+		float bf = hm_bloom_ragged(v_world_pos.xz, field);
+		vec4 wm = textureGrad(bloom_web_mask, wuv, wdx, wdy);
+		vec3 wcv = textureGrad(bloom_web_cov, wuv, wdx, wdy).rgb;
+		// Coverage: a priority threshold near the camera (threads extend as the field rises); once a
+		// texel is below a pixel, the share of threads in the footprint at this growth, from the
+		// mipmapped binary masks (thresholding mipmapped priorities turns the web into blotches).
+		vec2 wsize = vec2(textureSize(bloom_web_mask, 0));
+		float lod = 0.5 * log2(max(max(dot(wdx * wsize, wdx * wsize), dot(wdy * wsize, wdy * wsize)), 1e-6));
+		float mid_w = smoothstep(0.3, 1.3, lod);
+		float t = 1.0 - bf * bloom_web_cover;
+		float aa = 0.012 + 0.03 * max(lod, 0.0);
+		float near_web = smoothstep(t - aa, t + aa, wm.r);
+		float g = clamp(bf, 0.0, 1.0) * 3.0;
+		float share = mix(mix(wcv.r * clamp(g, 0.0, 1.0), wcv.g, clamp(g - 1.0, 0.0, 1.0)), wcv.b, clamp(g - 2.0, 0.0, 1.0));
+		float threads = mix(near_web, share, mid_w);
+		// The threads are hair-thin: with distance they sink into the litter, a faint pale veil.
+		float far_w = smoothstep(1.5, 4.5, lod);
+		threads *= mix(1.0, 0.45, far_w);
+		// The cottony mat, in the litter's hollows and only where the Bloom is strongest.
+		float cotton = smoothstep(0.62, 1.0, bf) * wm.b * smoothstep(0.4, 0.8, 1.0 - hgt) * 0.55;
+		// Rot drains the colour from what the web holds (no lighter: bleached litter in shade is grey).
+		float decay = smoothstep(0.06, 0.65, bf);
+		float lum = dot(alb, vec3(0.299, 0.587, 0.114));
+		alb = mix(alb, vec3(lum) * vec3(1.04, 1.0, 0.94), decay * 0.5);
+		vec3 wc = mix(bloom_web_fresh.rgb, bloom_web_aged.rgb, wm.g);
+		float body = mix(mix(0.5, 0.95, wm.a), 0.75, mid_w);
+		float web = clamp(max(threads * body, cotton), 0.0, 1.0);
+		alb = mix(alb, mix(wc, bloom_web_aged.rgb * 0.85, smoothstep(-0.05, 0.05, cotton - threads)), web);
+		vec3 wn = whiteout_top(textureGrad(bloom_web_normal, wuv, wdx, wdy).rgb * 2.0 - 1.0, gn);
+		nrm = normalize(mix(nrm, wn, threads * (1.0 - far_w) * 0.85));
+		orm.g = mix(orm.g, 0.58, web);
+		orm.r = mix(orm.r, 1.0, web * 0.5);
+		bloom_glow_m = threads * body + cotton * 0.4;
+	}
 
 	// Slope rock (triplanar on X/Z projections + top).
 	float rock_w = smoothstep(rock_start, rock_end, gn.y);
@@ -127,6 +195,10 @@ void fragment() {
 	alb *= mix(1.0, 0.62, wet);
 	orm.g = mix(orm.g, 0.18, wet * 0.85);
 
+	if (bloom_glow_m > 0.0) {
+		// Nothing glows on cliff faces or under snow.
+		EMISSION = hm_bloom_glow(bloom_glow_m * (1.0 - rock_w) * (1.0 - snow), v_world_pos.xz, TIME) * bloom_glow_energy;
+	}
 	ALBEDO = alb;
 	ROUGHNESS = clamp(orm.g, 0.05, 1.0);
 	METALLIC = 0.0;

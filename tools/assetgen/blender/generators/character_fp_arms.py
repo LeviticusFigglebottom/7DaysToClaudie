@@ -1,10 +1,12 @@
-"""First-person arms: jumpsuit sleeves, the convict's hands (thumb/index/fingers bones), the
-bolted-on wrist tether on the left forearm, hand sockets and the fp_* actions.
+"""First-person arms (ADR-0029): Remand jumpsuit sleeves rolled to the elbow, bare working
+forearms, the convict's hands, the bolted tether over the back of the left wrist, hand sockets and
+the fp_* actions baked from the hold poses in game/data/config/viewmodel.json.
 
 Camera at the origin looking -Y (Blender); arms enter from the lower edge of the view.
 Sockets (empties parented to the hand bones; in Godot local +Y runs along the gripped handle
-towards the thumb/tool head, +X towards the fingertips):
+towards the thumb/tool head, +X towards the knuckles):
   socket_hand.R - tool grip point (tools parent here), socket_hand.L - off-hand.
+params: seed, height, h (meshing cell, m), arm_tris (per arm), sleeve_roll (fraction of the forearm).
 """
 from __future__ import annotations
 
@@ -13,8 +15,8 @@ import bpy
 import numpy as np
 from mathutils import Matrix, Vector
 
-from lib import char_anim, char_fp as F, char_gltf, char_mesh as M, char_uv as U, common, export, vcolor
-from lib.char_body import LABEL_MATERIALS, normalize_weights
+from lib import char_anim, char_fp as F, char_mesh as M, char_uv as U, common, export, vcolor
+from lib.char_body import normalize_weights, smoothstep
 from lib.char_skel import create_armature
 
 
@@ -31,7 +33,15 @@ def _mesh_arm(model, sd: str, sk, h: float, tris: int):
     V = M.project_to_surface(V, lambda P: model.eval_points(P)[0], h, iterations=2)
     obj = M.mesh_from_arrays(f"arm_{sd}", V, Q)
     M.remove_small_islands(obj)
-    M.decimate(obj, tris)
+    # Spend the triangles on the hands and wrists, which are seen at 30-50 cm all game. The
+    # collapse ratio is per face, so a protected mesh lands above target: go round again.
+    el, wr = j[f"elbow.{sd}"], j[f"wrist.{sd}"]
+    for _ in range(4):
+        if common.triangle_count(obj) <= tris * 1.05:
+            break
+        Vd = M.mesh_arrays(obj)
+        t = ((Vd - el) @ F._n(wr - el)) / np.linalg.norm(wr - el)
+        M.decimate(obj, tris, protect=0.6 * np.clip((t - 0.55) / 0.35, 0.0, 1.0), protect_factor=1.0)
     return obj
 
 
@@ -68,9 +78,40 @@ def _bind(o, arm):
     mod.object = arm
 
 
+def _dirt_mask(model, sk, o) -> None:
+    """Vertex G: where dirt, soot and dried blood gather - skin creases (low AO), knuckles and
+    fingertips, the wrist under the tether, the sleeve's roll and elbow - broken up by noise.
+    The fp_* materials reveal their grime layer by it."""
+    V = M.mesh_arrays(o)
+    lv = np.zeros(len(o.data.loops), np.int32)
+    o.data.loops.foreach_get("vertex_index", lv)
+    layer = o.data.color_attributes[vcolor.ATTR]
+    cols = np.zeros(len(layer.data) * 4, np.float32)
+    layer.data.foreach_get("color", cols)
+    cols = cols.reshape(-1, 4)
+    ao = np.zeros(len(V))
+    ao[lv] = cols[:, 0]
+    j = sk.j
+    tip = np.zeros(len(V))
+    for sd, _ in F.SIDES:
+        for k in ("ix", "md", "rg", "pk", "th"):
+            d = np.linalg.norm(V - j[f"{k}_tip.{sd}"], axis=1)
+            tip = np.maximum(tip, 1.0 - smoothstep(0.004, 0.016, d))
+        for k in ("ix", "md", "rg", "pk"):
+            d = np.linalg.norm(V - (j[f"{k}_mcp.{sd}"] + j[f"back.{sd}"] * 0.008), axis=1)
+            tip = np.maximum(tip, 0.6 * (1.0 - smoothstep(0.004, 0.014, d)))
+    nz = model.noise
+    n1 = nz.fbm(V, 22.0, 3) * 0.5 + 0.5
+    n2 = nz.fbm(V + 3.1, 7.0, 2) * 0.5 + 0.5
+    g = np.clip((1.0 - ao) * 1.6 * (0.5 + n1) + tip * (0.6 + 0.6 * n1) + 0.35 * smoothstep(0.55, 0.85, n2), 0.0, 1.0)
+    cols[:, 1] = g[lv]
+    layer.data.foreach_set("color", cols.ravel())
+
+
 def build(params: dict, outputs: list[str]) -> None:
     scene = bpy.context.scene
     scene.render.fps = 30
+    cfg = F.load_config()
     j = F.fp_joints(params)
     sk = F.FPSkeleton(j, params, bones=F.FP_BONES)
     arm = create_armature(sk)
@@ -78,19 +119,19 @@ def build(params: dict, outputs: list[str]) -> None:
     model.build()
     s = model.s
     arms = []
-    for sd in ("L", "R"):
-        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0021)), int(params.get("arm_tris", 6000)))
+    for sd, _ in F.SIDES:
+        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0018)), int(params.get("arm_tris", 9000)))
         lab = _labels(model, o)
-        M.assign_labels(o, lab, LABEL_MATERIALS)
+        M.assign_labels(o, lab, F.LABEL_MATERIALS)
         fa = model.fa[sd]
         wr = j[f"wrist.{sd}"]
-        U.project(o, fa.head, fa.axis, -j[f"back.{sd}"], planar_threshold=0.9,
+        U.project(o, fa.head, fa.axis, -model.dorsal[sd], planar_threshold=0.9,
                   box_mask=lambda C, wr=wr, ax=fa.axis: (C - wr) @ ax > 0.0)
         arms.append(o)
     body = common.join(arms, "fp_arms")
     common.shade_smooth(body, angle_deg=70.0)
-    # tether (rigid on the left forearm)
-    parts, centre, Rt = F.build_tether(sk, s)
+    # tether (rigid on the left forearm's twist bone: it turns with the wrist like a watch)
+    parts, centre, Rt = F.build_tether(sk, s, model)
     bm = bmesh.new()
     labels, uvs = [], []
     for verts, faces, lab, uv in parts:
@@ -102,8 +143,12 @@ def build(params: dict, outputs: list[str]) -> None:
                 continue
             labels.append(lab)
             uvs.append(uv[fi] if uv is not None else None)
+    # Every part but the screen is a closed shell: face them outward (the hand-built straps are
+    # wound either way); the screen quad is wound towards the viewer by construction.
+    screen = [f for f, lab in zip(bm.faces, labels) if lab == F.L_SCREEN]
+    bmesh.ops.recalc_face_normals(bm, faces=[f for f in bm.faces if f not in screen])
     tether = common.mesh_from_bmesh("tether", bm)
-    M.assign_labels(tether, np.array(labels), LABEL_MATERIALS)
+    M.assign_labels(tether, np.array(labels), F.LABEL_MATERIALS)
     U.project(tether, centre, Rt[:, 1], -Rt[:, 2], planar_threshold=0.7)
     uvl = tether.data.uv_layers.active
     for fi, uv in enumerate(uvs):
@@ -111,16 +156,17 @@ def build(params: dict, outputs: list[str]) -> None:
             continue
         for k, li in enumerate(tether.data.polygons[fi].loop_indices):
             uvl.data[li].uv = uv[k]
-    common.shade_smooth(tether, angle_deg=40.0)
-    # vertex colours
-    vcolor.bake_ao([body, tether], samples=16, distance=0.12, strength=0.85, ground=False)
+    common.shade_smooth(tether, angle_deg=35.0)
+    # vertex colours: R = AO, G = dirt mask, B = 0, A = 1
+    vcolor.bake_ao([body, tether], samples=24, distance=0.10, strength=0.9, ground=False)
+    _dirt_mask(model, sk, body)
     nz = model.noise
-    for o, grime in ((body, 0.35), (tether, 0.3)):
-        V = M.mesh_arrays(o)
-        g = grime * np.clip(0.4 + 0.6 * (nz.fbm(V, 14.0, 3) * 0.5 + 0.5), 0, 1)
-        lv = np.zeros(len(o.data.loops), np.int32)
-        o.data.loops.foreach_get("vertex_index", lv)
-        vcolor.set_channel(o, 1, lambda co, n, li, g=g, lv=lv: float(g[lv[li]]))
+    Vt = M.mesh_arrays(tether)
+    gt = 0.3 * np.clip(0.4 + 0.6 * (nz.fbm(Vt, 40.0, 3) * 0.5 + 0.5), 0, 1)
+    lvt = np.zeros(len(tether.data.loops), np.int32)
+    tether.data.loops.foreach_get("vertex_index", lvt)
+    vcolor.set_channel(tether, 1, lambda co, n, li, g=gt, lv=lvt: float(g[lv[li]]))
+    for o in (body, tether):
         vcolor.fill_channel(o, 2, 0.0)
         vcolor.fill_channel(o, 3, 1.0)
     # skinning
@@ -130,7 +176,7 @@ def build(params: dict, outputs: list[str]) -> None:
     _apply_weights(body, W, names)
     _bind(body, arm)
     Wt = np.zeros((len(tether.data.vertices), len(names)))
-    Wt[:, names.index("forearm.L")] = 1.0
+    Wt[:, names.index("forearm_twist.L")] = 1.0
     _apply_weights(tether, Wt, names)
     _bind(tether, arm)
     # sockets
@@ -154,10 +200,11 @@ def build(params: dict, outputs: list[str]) -> None:
             Mw[r][0], Mw[r][1], Mw[r][2], Mw[r][3] = x[r], y[r], z[r], j[f"grip.{sd}"][r]
         e.matrix_world = Mw
         sockets.append(e)
-    # actions
+    # actions, from the hold poses in the data file
     rig = F.FPRig(sk)
-    for name, n, loop, gen in F.fp_actions(params):
-        baked = [rig.evaluate(gen(f)) for f in range(n + 1)]
+    solver = F.PoseSolver(rig)
+    for name, n, loop, frames in F.fp_actions(cfg):
+        baked = [rig.evaluate(solver.solve(hands)) for hands in frames]
         char_anim.write_action(arm, sk, name, baked)
     arm.animation_data.action = None
     for pb in arm.pose.bones:
@@ -165,4 +212,5 @@ def build(params: dict, outputs: list[str]) -> None:
         pb.location = (0, 0, 0)
     scene.frame_set(0)
     export.export_glb(outputs[0], [arm, body, tether] + sockets, animations=True, skins=True)
-    print(f"[character_fp_arms] tris arms {common.triangle_count(body)} tether {common.triangle_count(tether)}")
+    print(f"[character_fp_arms] tris arms {common.triangle_count(body)} tether {common.triangle_count(tether)} "
+          f"actions {len(bpy.data.actions)}")

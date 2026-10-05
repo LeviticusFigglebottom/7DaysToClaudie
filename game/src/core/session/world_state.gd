@@ -30,6 +30,9 @@ var chunk_blobs: Dictionary = {}
 var flags: Dictionary = {}
 ## Remand supply drops still in the world: drop id -> {pos:[3], day, tier}.
 var drops: Dictionary = {}
+## Fungal mounds where Hum survivors rooted at dawn (BloomMounds, ADR-0025): mound id ->
+## {pos:[3], yaw, model, day (game day, fractional, when it rooted), harvested: bool}.
+var mounds: Dictionary = {}
 
 
 func container_state(id: StringName) -> Dictionary:
@@ -82,7 +85,7 @@ func set_tree_state(chunk_key: String, index: int, state: Dictionary) -> void:
 func to_dict() -> Dictionary:
 	return {
 		"structures": structures, "blueprints": blueprints, "containers": containers, "pois": pois,
-		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "chunk_keys": chunk_blobs.keys(),
+		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "mounds": mounds, "chunk_keys": chunk_blobs.keys(),
 	}
 
 
@@ -96,3 +99,4 @@ func from_dict(d: Dictionary) -> void:
 	loose = d.get("loose", {})
 	flags = d.get("flags", {})
 	drops = d.get("drops", {})
+	mounds = d.get("mounds", {})

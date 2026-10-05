@@ -1,0 +1,35 @@
+{
+  "_doc": "The Bloom on the land (ADR-0025, BloomField / BloomWorld / BloomMounds). Zones are authored as region features ({\"type\": \"bloom\", \"at\" | \"points\" | \"poi\"+\"offset\", \"radius\", \"strength\", \"edge\"}, docs/REGIONS.md); this file shapes them and adds the per-POI defaults.",
+  "field": {
+    "_doc": "texel: grid spacing (m) of the hm_bloom_map shader global. Each zone's radius swells and shrinks along its boundary (lobe x radius, one lobe per lobe_len x radius of boundary) and shoots out tongues (up to tongue x edge radii, tongue_len x radius apart); the point is warped (warp x radius, wavelength warp_scale x radius) so the tongues bend, the edge frays at edge_scale m (depth edge x 0.35 radii; edge is the default when a zone sets none), the value fades over softness x radius either side of the edge and is mottled inside (mottle, mottle_scale m). spot_reach: how far past its radius a dynamic spot (a rooting mound) spreads.",
+    "texel": 2.0,
+    "edge": 0.6,
+    "warp": 0.45,
+    "warp_scale": 0.8,
+    "lobe": 0.35,
+    "lobe_len": 0.8,
+    "tongue": 1.4,
+    "tongue_len": 0.28,
+    "edge_scale": 16.0,
+    "softness": 0.16,
+    "mottle": 0.5,
+    "mottle_scale": 10.0,
+    "spot_reach": 1.6
+  },
+  "poi_defaults": {
+    "_doc": "POI def -> a zone every standalone placement of it carries, unless the region anchors its own bloom feature to that placement. offset: metres from the footprint centre in the building's frame (+x along its width, +z toward its front).",
+    "tamsin_clinic": {"_doc": "Cordon Medical held the sick in the isolation ward and took the dead out by the rear ambulance bay: the back lot is where it took.", "offset": [0, -24], "radius": 22, "strength": 0.65, "edge": 0.6},
+    "tamsin_logging_camp": {"_doc": "Six crew quarantined in the bunkhouse; the foreman slept over there with them.", "offset": [6, -20], "radius": 24, "strength": 0.6}
+  },
+  "mounds": {
+    "_doc": "Dawn rooting (DESIGN §6): a Hum survivor that roots into the soil leaves a fungal mound (BloomMounds, WorldState.mounds). It swells for grow_hours, then shrinks and pales until lifetime_days, when it is gone. Around it the ground takes the Bloom (a dynamic spot of radius m and strength). Harvesting tears it open for bloom_mycelium, with a chance of a core sample.",
+    "lifetime_days": 6.0,
+    "grow_hours": 6.0,
+    "radius": 2.4,
+    "strength": 0.85,
+    "max": 48,
+    "yield": {"bloom_mycelium": [2, 4]},
+    "sample_chance": 0.12,
+    "reach": 2.6
+  }
+}

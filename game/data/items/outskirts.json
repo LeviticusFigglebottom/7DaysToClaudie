@@ -1,0 +1,154 @@
+{
+ "_doc": "Keys and note items of the Larch Hollow outskirts (larch_pond_boathouse, ashen_watch_camp, tamsin_campground). Models reuse the generated paper and key models.",
+ "defs": [
+  {
+   "id": "note_out_bait_closed",
+   "name": "Sign on the Shop Door",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_merrow_fridge",
+   "note": "out_bait_closed"
+  },
+  {
+   "id": "note_out_bait_diary",
+   "name": "Agnes Ruud's Diary",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_journal",
+   "note": "out_bait_diary"
+  },
+  {
+   "id": "note_out_bait_ledger",
+   "name": "Boat Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_pharmacy_ledger",
+   "note": "out_bait_ledger"
+  },
+  {
+   "id": "note_out_bait_pip",
+   "name": "Pip's Fishing Card",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_diner_specials",
+   "note": "out_bait_pip"
+  },
+  {
+   "id": "note_out_ashen_report",
+   "name": "Program Field Report 7-C",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_page",
+   "note": "out_ashen_report"
+  },
+  {
+   "id": "note_out_ashen_tally",
+   "name": "Bark Slate",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_page",
+   "note": "out_ashen_tally"
+  },
+  {
+   "id": "note_out_ashen_offering",
+   "name": "Note Weighted with a Stone",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_okafor_letter",
+   "note": "out_ashen_offering"
+  },
+  {
+   "id": "note_out_camp_register",
+   "name": "Campground Register",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_ranger_log",
+   "note": "out_camp_register"
+  },
+  {
+   "id": "note_out_camp_bev",
+   "name": "Bev's Ward Notes",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_ledger",
+   "note": "out_camp_bev"
+  },
+  {
+   "id": "note_out_camp_mila",
+   "name": "Mila's Drawing",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_diner_specials",
+   "note": "out_camp_mila"
+  },
+  {
+   "id": "note_out_camp_notice",
+   "name": "Notice on the Board",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_hardware_inventory",
+   "note": "out_camp_notice"
+  },
+  {
+   "id": "out_ruud_keyring",
+   "name": "Ned Ruud's Key Ring",
+   "description": "Brass padlock keys and a safe key on a cork float.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_key_tackroom",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "out_ashen_cache_key",
+   "name": "Key on a Sinew Thong",
+   "description": "A padlock key strung on sinew between two bear teeth.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/pharmacy_key",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "out_camp_keyring",
+   "name": "Bev Lindgren's Key Ring",
+   "description": "Trailer padlock, the chain on the men's side, the cash box; a plastic tent fob.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_key_storeroom",
+   "tags": [
+    "key"
+   ]
+  }
+ ]
+}

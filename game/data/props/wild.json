@@ -26,6 +26,10 @@
    "rooms": [
     "bunkhouse",
     "bedroom"
+   ],
+   "anchors": [
+    {"kind": "bed", "pos": [-0.1, 0.0], "height": 0.45, "facing": 90},
+    {"kind": "bed", "pos": [-0.1, 0.0], "height": 1.38, "facing": 90}
    ]
   },
   {
@@ -59,7 +63,8 @@
      0.0,
      0.42,
      0.0
-    ]
+    ],
+    "power": "flame"
    },
    "rooms": [
     "bunkhouse",
@@ -100,7 +105,8 @@
      0.0,
      0.55,
      0.0
-    ]
+    ],
+    "power": "flame"
    },
    "rooms": [
     "kitchen"
@@ -159,6 +165,14 @@
     "diner",
     "kitchen",
     "bunkhouse"
+   ],
+   "anchors": [
+    {"kind": "seat", "pos": [-0.7, 0.0], "height": 0.45, "lean": "forward"},
+    {"kind": "seat", "pos": [0.0, 0.0], "height": 0.45, "lean": "forward"},
+    {"kind": "seat", "pos": [0.7, 0.0], "height": 0.45, "lean": "forward"},
+    {"kind": "seat", "pos": [-0.7, 0.0], "height": 0.45, "facing": 180, "lean": "forward"},
+    {"kind": "seat", "pos": [0.0, 0.0], "height": 0.45, "facing": 180, "lean": "forward"},
+    {"kind": "seat", "pos": [0.7, 0.0], "height": 0.45, "facing": 180, "lean": "forward"}
    ]
   },
   {
@@ -330,6 +344,11 @@
     "lookout",
     "bunkhouse",
     "cabin"
+   ],
+   "anchors": [
+    {"kind": "bed", "pos": [-0.1, 0.0], "height": 0.4, "facing": 90},
+    {"kind": "seat", "pos": [0.1, 0.22], "height": 0.4, "lean": "forward"},
+    {"kind": "seat", "pos": [0.1, -0.22], "height": 0.4, "facing": 180, "lean": "forward"}
    ]
   },
   {
@@ -363,7 +382,8 @@
      0.0,
      0.16,
      0.0
-    ]
+    ],
+    "power": "flame"
    },
    "blocks_sight": false,
    "rooms": [
@@ -401,7 +421,8 @@
      0.0,
      0.16,
      0.0
-    ]
+    ],
+    "power": "flame"
    },
    "blocks_sight": false,
    "rooms": [

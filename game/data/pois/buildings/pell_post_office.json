@@ -171,7 +171,8 @@
         {"prop": "dumpster", "pos": [6.0, -1.6], "rot": 0, "id": "po_dumpster"},
         {"prop": "pallet", "pos": [17.6, 1.2], "rot": 15},
         {"prop": "trash_bag", "pos": [17.5, 6.4], "rot": 10, "id": "dock_trash"},
-        {"prop": "civic_mail_cart", "pos": [17.3, 4.9], "rot": 40, "id": "yard_cart", "variant": "destroyed"}
+        {"prop": "civic_mail_cart", "pos": [17.3, 4.9], "rot": 40, "id": "yard_cart", "variant": "destroyed"},
+        {"id": "benning_cot", "prop": "civic_army_cot", "pos": [13.8, 10.4], "rot": 250, "variant": "worn"}
       ],
       "pickups": [
         {"id": "cage_key", "item": "civic_parcel_cage_key", "pos": [10.22, 9.35], "y": 1.45}
@@ -191,8 +192,8 @@
         {"id": "sorting_carrier", "pos": [6.4, 3.6], "enemy": "hollow", "pose": "stand", "rot": 160},
         {"id": "benning", "pos": [13.8, 10.4], "enemy": "hollow", "pose": "lie", "rot": 250},
         {"id": "boiler_crouch", "pos": [1.6, 0.9], "enemy": "hollow", "pose": "crouch", "rot": 120, "level": -1},
-        {"id": "dock_carrier_1", "pos": [12.6, 2.2], "enemy": "hollow", "pose": "lie", "rot": 30, "group": "dock"},
-        {"id": "dock_carrier_2", "pos": [14.8, 2.4], "enemy": "hollow", "pose": "lie", "rot": 200, "group": "dock"}
+        {"id": "dock_carrier_1", "pos": [12.6, 2.2], "enemy": "hollow", "pose": "lie", "rot": 30, "group": "dock", "anchor": "floor"},
+        {"id": "dock_carrier_2", "pos": [14.8, 2.4], "enemy": "hollow", "pose": "lie", "rot": 200, "group": "dock", "anchor": "floor"}
       ],
       "lights": [
         {"pos": [13.2, 11.5], "height": 1.05, "color": "#fff0cf", "energy": 0.5, "range": 5.0, "flicker": 0.1},

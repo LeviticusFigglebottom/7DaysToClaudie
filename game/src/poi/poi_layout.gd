@@ -6,19 +6,42 @@ extends RefCounted
 ## Space: POI-local, metres. x = plan column, z = plan row (row 0 = back, last row = front);
 ## the building's front faces +Z. Level L floor top sits at floor_height + L * 3.0. Walls run on
 ## cell edges: a horizontal edge (c, r) spans x c..c+1 at z = r; a vertical edge (c, r) spans
-## z r..r+1 at x = c. Plan characters: letters/digits = rooms, '.' = outside, ' ' = nothing.
+## z r..r+1 at x = c. Plan characters: letters/digits = rooms, '.' = outside, ' ' = nothing,
+## '^' = the room below rises through this storey (a tall room, ADR-0021).
 ##
 ## Dungeon mechanics (ADR-0018): sleepers may carry a "group" (an ambush, woken by its
 ## "triggers") and "guardian"; traps are typed (cell or edge traps); doors carry a lock kind; every
 ## stateful piece gets a stable key (sid / tid / pid / pkey) that the save ledger uses (TD-031).
+##
+## Tall rooms (ADR-0021): a room def with "storeys": 2 or 3 may continue up through the levels
+## above wherever their plans hold '^' over it (the void). A void cell has no floor and no ceiling
+## under it; it belongs to the room it rises from (volume_of), so walls between it and the outside
+## rise through the storey, and an upper-level room beside it gets a gallery edge (a railing) instead
+## of a wall unless that room says "gallery": false. Tall openings (lancet, window_tall, door2_tall)
+## span two storeys of one wall.
 
 const STOREY: float = 3.0
 const WALL_H: float = 2.8
 const SIDES: Dictionary = {"N": 0, "E": 1, "S": 2, "W": 3}
 const SIDE_NAMES: PackedStringArray = ["N", "E", "S", "W"]
 const DIRS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
-const OPENING_TYPES: PackedStringArray = ["door", "door2", "window", "window2", "breach", "open", "half"]
+## The plan character of a storey a tall room rises through.
+const VOID: String = "^"
+const MAX_STOREYS: int = 3
+const OPENING_TYPES: PackedStringArray = ["door", "door2", "window", "window2", "breach", "open", "half", "lancet",
+	"window_tall", "door2_tall"]
+## Opening type -> cells along the wall ("w") and storeys of wall it spans ("storeys", default 1).
+## Two-storey openings stand on the level they are authored on and need a wall on the same edge one
+## level up (the tall room's void, or the outside over a lower room).
+const OPENING_SPECS: Dictionary = {
+	"door": {"w": 1}, "door2": {"w": 2}, "window": {"w": 1}, "window2": {"w": 2}, "breach": {"w": 1}, "open": {"w": 1},
+	"half": {"w": 1}, "lancet": {"w": 1, "storeys": 2}, "window_tall": {"w": 1, "storeys": 2}, "door2_tall": {"w": 2, "storeys": 2},
+}
 const OPENING_STATES: PackedStringArray = ["closed", "open", "locked", "locked_inside", "broken", "barricaded", "boarded", "missing"]
+## Keys a room def may carry ("_"-prefixed keys are comments).
+const ROOM_KEYS: PackedStringArray = ["name", "type", "wall", "floor", "ceiling", "open_to", "storeys", "open_roof", "gallery"]
+## Gallery edge kit styles: turned balusters and a moulded rail, or a rough two-rail timber railing.
+const GALLERY_STYLES: PackedStringArray = ["balustrade", "rail"]
 ## Trap type -> placement: "cell" traps sit in a cell ("at", optional "size" for creaky floors),
 ## "edge" traps span a cell side ("at" + "side") like a doorway.
 const TRAP_TYPES: Dictionary = {"can_chime": "edge", "bear_trap": "cell", "shotgun": "edge", "creaky_floor": "cell",
@@ -46,8 +69,16 @@ var floor_height: float = 0.6
 var origin := Vector2.ZERO
 var style: Dictionary = {}
 ## Edge key "L:h:c:r" / "L:v:c:r" -> {level, axis ("h"/"v"), cell: Vector2i, a: room char (south/east
-## side), b: room char (north/west side), exterior: bool, opening: Dictionary or {}}
+## side), b: room char (north/west side), ra / rb: the rooms those cells belong to ([level, char],
+## [] outside; a void cell resolves to its tall room), exterior: bool, opening: Dictionary or {},
+## covered: the two-storey opening below that fills this edge (absent otherwise)}
 var walls: Dictionary = {}
+## Edge key -> {level, axis, cell, a, b, room: [level, char] of the upper room on it, void_a: the void
+## is on the "a" side, style ("balustrade" / "rail"), opening: an "open"/"breach" gap in it, or {}}.
+## Edges between a tall room's void and a room on the same storey: a railing, not a wall.
+var galleries: Dictionary = {}
+## Node key "L:c:r" of every void cell -> [base level, room char] of the tall room it belongs to.
+var void_base: Dictionary = {}
 var openings: Array[Dictionary] = []
 var stairs: Array[Dictionary] = []
 var ladders: Array[Dictionary] = []
@@ -97,17 +128,22 @@ func _compile() -> void:
 		var rooms: Dictionary = {}
 		var rd: Dictionary = lv.get("rooms", {})
 		for k: Variant in rd.keys():
+			if str(k) == VOID:
+				err("level %d: '%s' is reserved for the storeys a tall room rises through; it cannot name a room" % [li, VOID])
+				continue
 			var room: Dictionary = (rd[k] as Dictionary).duplicate()
 			room["char"] = str(k)
 			rooms[str(k)] = room
+			_check_room(li, room)
 		levels[li] = {"plan": plan, "w": w, "d": plan.size(), "y": level_y(li), "rooms": rooms}
 		level_ids.append(li)
 		for row: String in plan:
 			for ch: String in row:
-				if ch != "." and ch != " " and not rooms.has(ch):
+				if ch != "." and ch != " " and ch != VOID and not rooms.has(ch):
 					err("level %d: plan uses room '%s' with no rooms entry" % [li, ch])
 					rooms[ch] = {"char": ch, "type": "room"}
 	level_ids.sort()
+	_compile_voids()
 	_compile_openings(lay.get("openings", []))
 	_compile_walls()
 	_compile_vertical(lay)
@@ -178,6 +214,52 @@ func _compile() -> void:
 			break
 
 
+## Room def keys and the tall-room values (storeys, open_roof, gallery).
+func _check_room(li: int, room: Dictionary) -> void:
+	var ch: String = str(room["char"])
+	for k: Variant in room.keys():
+		var ks: String = str(k)
+		if ks != "char" and not ks.begins_with("_") and not ROOM_KEYS.has(ks):
+			err("level %d room '%s' has unknown key '%s' (%s)" % [li, ch, ks, ", ".join(ROOM_KEYS)])
+	if room.has("storeys"):
+		var n: int = int(room["storeys"])
+		if n < 1 or n > MAX_STOREYS or float(room["storeys"]) != float(n):
+			err("level %d room '%s': storeys must be 1..%d" % [li, ch, MAX_STOREYS])
+	if room.has("open_roof") and not room["open_roof"] is bool:
+		err("level %d room '%s': open_roof must be true or false" % [li, ch])
+	if room.has("gallery"):
+		var g: Variant = room["gallery"]
+		if not (g is bool or (g is String and GALLERY_STYLES.has(g))):
+			err("level %d room '%s': gallery must be true, false or one of %s" % [li, ch, ", ".join(GALLERY_STYLES)])
+
+
+## Resolves every '^' cell to the tall room it rises from (the room below, or the void below's room)
+## and checks that room is tall enough to reach this storey.
+func _compile_voids() -> void:
+	for li: int in level_ids:
+		var lv: Dictionary = levels[li]
+		for r: int in int(lv["d"]):
+			var row: String = (lv["plan"] as PackedStringArray)[r]
+			for c: int in row.length():
+				if row[c] != VOID:
+					continue
+				var cell := Vector2i(c, r)
+				var below: String = room_at(li - 1, cell)
+				var base: Array = []
+				if below == VOID:
+					base = void_base.get(node_key(li - 1, cell), [])
+				elif is_room(below):
+					base = [li - 1, below]
+				if base.is_empty():
+					err("level %d cell %s is '%s' but no room rises from below it (level %d holds '%s')" % [li, cell, VOID, li - 1, below])
+					continue
+				var n: int = room_storeys(int(base[0]), str(base[1]))
+				if li - int(base[0]) + 1 > n:
+					err("level %d cell %s: room '%s' (level %d) rises through it but has storeys %d; give it \"storeys\": %d" % [
+						li, cell, base[1], base[0], n, li - int(base[0]) + 1])
+				void_base[node_key(li, cell)] = base
+
+
 ## Normalises one trap: placement, its stable id ("trap<i>" before ids were required), its
 ## kind ("cell"/"edge"), the side index and edge of edge traps, and the cells a cell trap covers.
 func _compile_trap(raw: Dictionary, i: int) -> Dictionary:
@@ -239,7 +321,11 @@ func level_y(li: int) -> float:
 	return floor_height + float(li) * STOREY
 
 
-## Room char at a cell ('.' outside the plan, ' ' nothing).
+static func node_key(li: int, c: Vector2i) -> String:
+	return "%d:%d:%d" % [li, c.x, c.y]
+
+
+## Room char at a cell ('.' outside the plan, ' ' nothing, '^' a tall room's void).
 func room_at(li: int, c: Vector2i) -> String:
 	var lv: Dictionary = levels.get(li, {})
 	if lv.is_empty() or c.y < 0 or c.y >= int(lv["d"]) or c.x < 0:
@@ -250,8 +336,67 @@ func room_at(li: int, c: Vector2i) -> String:
 	return row[c.x]
 
 
+## A room cell with a floor of its own (not outside, not a tall room's void).
 func is_room(ch: String) -> bool:
-	return ch != "." and ch != " "
+	return ch != "." and ch != " " and ch != VOID
+
+
+func is_void(li: int, c: Vector2i) -> bool:
+	return room_at(li, c) == VOID
+
+
+## Something is built in this cell on this level: a room, or a tall room rising through it.
+func is_built(li: int, c: Vector2i) -> bool:
+	var ch: String = room_at(li, c)
+	return is_room(ch) or ch == VOID
+
+
+## The room a cell belongs to: [level, char] of the room itself, of the tall room a void cell rises
+## from, or [] outside.
+func volume_of(li: int, c: Vector2i) -> Array:
+	var ch: String = room_at(li, c)
+	if is_room(ch):
+		return [li, ch]
+	if ch == VOID:
+		return void_base.get(node_key(li, c), [])
+	return []
+
+
+## [level, cell] of the floor under a point of a cell: a void cell's tall room floor, else itself.
+## (PoiInstance.locate: indoor queries, shelter, reverb and room triggers treat the whole volume
+## as one room.)
+func floor_cell(li: int, c: Vector2i) -> Array:
+	var v: Array = volume_of(li, c) if is_void(li, c) else []
+	return [int(v[0]), c] if not v.is_empty() else [li, c]
+
+
+## Storeys of a room (1 unless its def says "storeys").
+func room_storeys(li: int, ch: String) -> int:
+	return clampi(int(room_def(li, ch).get("storeys", 1)), 1, MAX_STOREYS)
+
+
+## The highest level the room column at (li, c) reaches: li unless voids of the same room rise
+## above it.
+func column_top(li: int, c: Vector2i) -> int:
+	var base: Array = volume_of(li, c)
+	if base.is_empty():
+		return li
+	var top: int = li
+	while is_void(top + 1, c) and volume_of(top + 1, c) == base:
+		top += 1
+	return top
+
+
+## Height of a cell's ceiling (underside) above the floor of level `li`: 2.8 m, plus 3 m for every
+## storey a tall room rises above it.
+func ceiling_height(li: int, c: Vector2i) -> float:
+	return float(column_top(li, c) - li) * STOREY + WALL_H
+
+
+## Whether the room at (li, c) has no ceiling at its top: it sees the roof (rafters and boards).
+func open_roof_at(li: int, c: Vector2i) -> bool:
+	var v: Array = volume_of(li, c)
+	return not v.is_empty() and bool(room_def(int(v[0]), str(v[1])).get("open_roof", false))
 
 
 func room_def(li: int, ch: String) -> Dictionary:
@@ -273,6 +418,23 @@ static func side_edge(cell: Vector2i, side: int) -> Array:
 			return ["v", cell]
 		_:
 			return ["v", Vector2i(cell.x + 1, cell.y)]
+
+
+## The two cells an edge separates: [a (south / east of it), b (north / west)].
+static func edge_cells(axis: String, c: Vector2i) -> Array[Vector2i]:
+	if axis == "h":
+		return [c, Vector2i(c.x, c.y - 1)]
+	return [c, Vector2i(c.x - 1, c.y)]
+
+
+## Glazed opening types (glass, boards, a sill to vault): windows and lancets.
+static func is_window(t: String) -> bool:
+	return t.begins_with("window") or t == "lancet"
+
+
+## Storeys of wall an opening type spans (1, or 2 for lancets, tall windows and tall doors).
+static func opening_storeys(t: String) -> int:
+	return int((OPENING_SPECS.get(t, {}) as Dictionary).get("storeys", 1))
 
 
 func _compile_openings(list: Array) -> void:
@@ -302,8 +464,9 @@ func _compile_openings(list: Array) -> void:
 			lock = ""
 		var op: Dictionary = {
 			"id": str(d.get("id", "op%d" % idx)), "level": int(d.get("level", 0)), "cell": Vector2i(int(at[0]), int(at[1])),
-			"side": SIDES[side_name], "type": t, "state": st, "width": 2 if t.ends_with("2") else 1,
-			"key": str(d.get("key", "")), "hp": float(d.get("hp", 0.0)), "lock": lock, "lock_authored": d.has("lock"),
+			"side": SIDES[side_name], "type": t, "state": st, "width": int((OPENING_SPECS[t] as Dictionary)["w"]),
+			"storeys": opening_storeys(t), "key": str(d.get("key", "")), "hp": float(d.get("hp", 0.0)), "lock": lock,
+			"lock_authored": d.has("lock"),
 		}
 		# Leaf model ("door_metal") and barricade kind ("furniture") were documented but dropped
 		# here, so every door was a wooden one and every barricade boards.
@@ -320,37 +483,74 @@ func _compile_openings(list: Array) -> void:
 
 func _compile_walls() -> void:
 	var open_by_edge: Dictionary = {}
+	## Edges one storey above a two-storey opening: its piece fills them.
+	var covered: Dictionary = {}
 	for op: Dictionary in openings:
 		var e: Vector2i = op["edge"]
 		for k: int in op["width"]:
 			var ek: Vector2i = e + (Vector2i(k, 0) if op["axis"] == "h" else Vector2i(0, k))
 			open_by_edge[edge_key(op["level"], op["axis"], ek)] = op
+			for s: int in range(1, int(op["storeys"])):
+				covered[edge_key(int(op["level"]) + s, op["axis"], ek)] = op
 	for li: int in level_ids:
 		var lv: Dictionary = levels[li]
 		var w: int = lv["w"]
 		var d: int = lv["d"]
 		for r: int in range(0, d + 1):
 			for c: int in range(0, w):
-				_maybe_wall(li, "h", Vector2i(c, r), room_at(li, Vector2i(c, r)), room_at(li, Vector2i(c, r - 1)), open_by_edge)
+				_maybe_wall(li, "h", Vector2i(c, r), open_by_edge)
 		for r2: int in range(0, d):
 			for c2: int in range(0, w + 1):
-				_maybe_wall(li, "v", Vector2i(c2, r2), room_at(li, Vector2i(c2, r2)), room_at(li, Vector2i(c2 - 1, r2)), open_by_edge)
+				_maybe_wall(li, "v", Vector2i(c2, r2), open_by_edge)
 	for k: String in open_by_edge:
-		if not walls.has(k):
-			var op: Dictionary = open_by_edge[k]
-			err("opening '%s' at level %d %s is not on a wall" % [op["id"], op["level"], k])
+		var op: Dictionary = open_by_edge[k]
+		if walls.has(k):
+			continue
+		if galleries.has(k):
+			if str(op["type"]) in ["open", "breach"]:
+				galleries[k]["opening"] = op
+			else:
+				err("opening '%s' at level %d %s is on a gallery edge: only 'open' (a gap in the railing) or 'breach' (a broken one) go there; give the room \"gallery\": false for a wall" % [
+					op["id"], op["level"], k])
+			continue
+		err("opening '%s' at level %d %s is not on a wall" % [op["id"], op["level"], k])
+	for k2: String in covered:
+		var op2: Dictionary = covered[k2]
+		if not walls.has(k2):
+			err("tall opening '%s' (%s) needs a wall on the same edge one storey up (%s): put it on a tall room's wall" % [op2["id"], op2["type"], k2])
+		elif not (walls[k2]["opening"] as Dictionary).is_empty():
+			err("opening '%s' sits on the upper half of tall opening '%s'" % [walls[k2]["opening"]["id"], op2["id"]])
+		else:
+			walls[k2]["covered"] = op2
 
 
-func _maybe_wall(li: int, axis: String, c: Vector2i, a: String, b: String, open_by_edge: Dictionary) -> void:
-	if a == b or (not is_room(a) and not is_room(b)):
+func _maybe_wall(li: int, axis: String, c: Vector2i, open_by_edge: Dictionary) -> void:
+	var cells: Array[Vector2i] = edge_cells(axis, c)
+	var a: String = room_at(li, cells[0])
+	var b: String = room_at(li, cells[1])
+	var ra: Array = volume_of(li, cells[0])
+	var rb: Array = volume_of(li, cells[1])
+	if ra.is_empty() and rb.is_empty():
 		return
-	if is_room(a) and is_room(b):
-		var ra: Dictionary = room_def(li, a)
-		var rb: Dictionary = room_def(li, b)
-		if str(ra.get("open_to", "")).contains(b) or str(rb.get("open_to", "")).contains(a):
-			return
 	var key: String = edge_key(li, axis, c)
-	walls[key] = {"level": li, "axis": axis, "cell": c, "a": a, "b": b, "exterior": not (is_room(a) and is_room(b)),
+	if not ra.is_empty() and not rb.is_empty():
+		if ra == rb:
+			return
+		if int(ra[0]) == int(rb[0]):
+			var da: Dictionary = room_def(int(ra[0]), str(ra[1]))
+			var db: Dictionary = room_def(int(rb[0]), str(rb[1]))
+			if str(da.get("open_to", "")).contains(str(rb[1])) or str(db.get("open_to", "")).contains(str(ra[1])):
+				return
+		# A tall room's void beside a room on this storey: the room looks over it from a gallery,
+		# unless it asks for a wall.
+		if (a == VOID) != (b == VOID):
+			var up: Array = rb if a == VOID else ra
+			var g: Variant = room_def(int(up[0]), str(up[1])).get("gallery", true)
+			if not (g is bool and not g):
+				galleries[key] = {"level": li, "axis": axis, "cell": c, "a": a, "b": b, "room": up, "void_a": a == VOID,
+					"style": str(g) if g is String else "balustrade", "opening": {}}
+				return
+	walls[key] = {"level": li, "axis": axis, "cell": c, "a": a, "b": b, "ra": ra, "rb": rb, "exterior": ra.is_empty() or rb.is_empty(),
 		"opening": open_by_edge.get(key, {})}
 
 
@@ -441,13 +641,24 @@ func local_pos(li: int, p: Vector2) -> Vector3:
 	return Vector3(origin.x + p.x, level_y(li), origin.y + p.y)
 
 
-## Every room cell on a level.
+## Every room cell on a level (not a tall room's void: it has no floor of its own).
 func room_cells(li: int) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	var lv: Dictionary = levels.get(li, {})
 	for r: int in int(lv.get("d", 0)):
 		for c: int in int(lv.get("w", 0)):
 			if is_room(room_at(li, Vector2i(c, r))):
+				out.append(Vector2i(c, r))
+	return out
+
+
+## Every void cell on a level.
+func void_cells(li: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var lv: Dictionary = levels.get(li, {})
+	for r: int in int(lv.get("d", 0)):
+		for c: int in int(lv.get("w", 0)):
+			if is_void(li, Vector2i(c, r)):
 				out.append(Vector2i(c, r))
 	return out
 

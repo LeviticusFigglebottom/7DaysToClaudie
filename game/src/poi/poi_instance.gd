@@ -8,7 +8,16 @@ extends Node3D
 ##    another, already alerted to the player. Each trigger fires once per instance (persisted);
 ##  * traps (pieces in `traps`, state "armed" / "sprung" / "disarmed" in the ledger) and alarms,
 ##    which rouse every sleeper in the building.
+## ADR-0022: sit/lie sleepers spawn on their seat or bed (SleeperAnchors, Enemy.perch). A trigger
+## that fires, or a loud trap that goes off, while the sleepers are not spawned is spent all the
+## same and rouses who would have woken (`roused` in the ledger): they spawn awake by their posts
+## next time, heading for where it happened. A weak floor giving way asks for a nav rebake
+## (geometry_changed).
 ## Without a session (previews, tests, the editor) it keeps a detached ledger.
+
+## Walkable geometry changed at a world position (a weak floor gave way): PoiManager has the nav
+## tiles there rebaked so the Hollowed stop pathing over the hole.
+signal geometry_changed(world_pos: Vector3)
 
 var layout: PoiLayout
 var instance_id: StringName = &""
@@ -31,6 +40,19 @@ var _room_triggers: Dictionary = {}
 var _event_triggers: Dictionary = {}
 ## Opening id -> [alarm trap ids] strung on it: opening or breaking it sets them off.
 var _alarms_on: Dictionary = {}
+## sid -> the seat or bed it lands on (SleeperAnchors.assign, POI-local), computed on first use.
+var _seats: Dictionary = {}
+var _seats_done: bool = false
+
+
+## Route cues on the entry windows (RouteCues, ADR-0022) go in once the building is in the tree.
+var _cues_built: bool = false
+
+
+func _ready() -> void:
+	if not _cues_built and layout != null:
+		_cues_built = true
+		RouteCues.build(self)
 
 
 func setup(p_layout: PoiLayout, p_id: StringName) -> void:
@@ -192,7 +214,9 @@ func locate(world_pos: Vector3) -> Array:
 	for li: int in layout.level_ids:
 		var y: float = layout.level_y(li)
 		if p.y >= y - 0.5 and p.y < y + PoiLayout.STOREY - 0.2:
-			return [li, Vector2i(int(floor(p.x - layout.origin.x)), int(floor(p.z - layout.origin.y)))]
+			# A tall room's open space is that room (ADR-0021): indoor queries, shelter, reverb and
+			# room triggers answer for the floor it rises from.
+			return layout.floor_cell(li, Vector2i(int(floor(p.x - layout.origin.x)), int(floor(p.z - layout.origin.y))))
 	return [-999, Vector2i.ZERO]
 
 
@@ -225,6 +249,8 @@ func spawn_sleepers(ai: Node) -> void:
 		return
 	sleepers_spawned = true
 	var dead: Array = state.get("dead", [])
+	var roused: Dictionary = state.get("roused", {})
+	var seats: Dictionary = seat_plan()
 	for i: int in layout.sleepers.size():
 		var s: Dictionary = layout.sleepers[i]
 		var sid: String = str(s["sid"])
@@ -236,15 +262,50 @@ func spawn_sleepers(ai: Node) -> void:
 			continue
 		_roaming.erase(StringName(sid))
 		var local: Vector3 = layout.local_pos(s["level"], s["pos"])
+		var yaw: float = global_rotation.y + deg_to_rad(float(s.get("rot", 0.0)))
 		var group: String = str(s["group"])
 		# An ambush whose trigger already fired is spent: survivors are ordinary sleepers now.
 		var extra: Dictionary = {"group": group, "held": group != "" and not group_released(group), "guardian": bool(s["guardian"])}
+		var seat: Dictionary = seats.get(sid, {})
+		if roused.has(sid):
+			# Woken while nobody was near: up and about by its post (off its seat or bed), heading
+			# for where it happened. It has been seen to now; from here on it is an ordinary body.
+			var at: Array = roused[sid]
+			extra["awake_at"] = to_global(Vector3(float(at[0]), float(at[1]), float(at[2])))
+			extra["held"] = false
+			if not seat.is_empty():
+				local = seat["exit"]
+				yaw = global_rotation.y + float(seat["exit_yaw"])
+			roused.erase(sid)
+		elif not seat.is_empty():
+			extra["perch"] = _world_seat(seat)
 		var e: Enemy = ai.call(&"spawn_sleeper", StringName(str(s.get("enemy", "hollow"))), to_global(local) + Vector3.UP * 0.05,
-			global_rotation.y + deg_to_rad(float(s.get("rot", 0.0))), str(s.get("pose", "stand")), instance_id, StringName(sid), layout.def.tier,
-			extra)
+			yaw, str(s.get("pose", "stand")), instance_id, StringName(sid), layout.def.tier, extra)
 		if e != null:
 			_sleepers[StringName(sid)] = e
 			e.died.connect(_on_sleeper_died.bind(sid))
+
+
+## Which sit/lie sleepers land on which seat or bed (SleeperAnchors.assign; POI-local). A pure
+## function of the layout, so every visit and every machine poses them the same.
+func seat_plan() -> Dictionary:
+	if not _seats_done:
+		_seats_done = true
+		_seats = SleeperAnchors.assign(layout)["by_sleeper"]
+	return _seats
+
+
+## The seat or bed a sleeper lands on ({} on the floor), POI-local.
+func seat_of(sid: String) -> Dictionary:
+	return seat_plan().get(sid, {})
+
+
+## A landed seat in world space for Enemy.perch.
+func _world_seat(seat: Dictionary) -> Dictionary:
+	var pt: Vector3 = seat["point"]
+	return {"kind": seat["kind"], "lean": seat["lean"], "point": to_global(pt),
+		"floor": to_global(Vector3(pt.x, float(seat["floor"]), pt.z)).y, "yaw": global_rotation.y + float(seat["yaw"]),
+		"exit": to_global(seat["exit"] as Vector3), "exit_yaw": global_rotation.y + float(seat["exit_yaw"])}
 
 
 ## Leaving the area puts dormant sleepers away. Awake ones that followed the player out are
@@ -287,24 +348,98 @@ func _on_sleeper_died(_e: Enemy, sid: String) -> void:
 		Events.player_status_message.emit("%s cleared." % layout.def.display_name, &"info")
 
 
-## A trap or loud event inside wakes the sleepers within earshot (held ambushes keep still).
+## A trap or loud event inside wakes the sleepers within earshot (held ambushes keep still). While
+## they are not spawned, the ones within earshot are roused instead (ADR-0022).
 func alert_sleepers(world_pos: Vector3, radius: float = 16.0) -> void:
+	if not sleepers_spawned:
+		var at: Vector3 = to_local(world_pos)
+		for s: Dictionary in layout.sleepers:
+			if not _is_held(s) and _sleeper_local(s).distance_to(at) < radius:
+				rouse(str(s["sid"]), at)
+		return
 	for sid: StringName in _sleepers:
 		var e: Enemy = _sleepers[sid]
 		if is_instance_valid(e) and e.is_alive() and e.global_position.distance_to(world_pos) < radius:
 			e.notice(world_pos)
 
 
-## An alarm rings: every sleeper in the building wakes and heads for it, ambushes included, and
-## every ambush is spent (its triggers count as fired).
-func alarm(world_pos: Vector3) -> void:
+## An alarm rings. Set off by the player (ADR-0018): every sleeper in the building wakes and heads
+## for it, ambushes included, and every ambush is spent (its triggers count as fired); with nobody
+## spawned, every sleeper is roused. Set off by a Hollowed (ADR-0022): its ringing wakes sleepers
+## through the stimulus fields like any noise (AlarmTrap emits it), and while nobody is near, those
+## that would have heard it are roused.
+func alarm(world_pos: Vector3, by_player: bool = true) -> void:
+	if not by_player:
+		if not sleepers_spawned:
+			on_trap_noise(world_pos, float(PoiPieces.cfg("alarm").get("noise", 55.0)), &"alarm")
+		return
 	for t: Dictionary in layout.triggers:
 		(state["triggers"] as Dictionary)[str(t["id"])] = true
+	if not sleepers_spawned:
+		for s: Dictionary in layout.sleepers:
+			rouse(str(s["sid"]), to_local(world_pos))
+		return
 	for sid: StringName in _sleepers:
 		var e: Enemy = _sleepers[sid]
 		if is_instance_valid(e) and e.is_alive():
 			e.release_hold()
 			e.notice(world_pos)
+
+
+## A trap went off with nobody spawned to hear it (a Hollowed tripped it far from the player): the
+## sleepers that would have woken to it by stimulus are roused (ADR-0022): ordinary ones within
+## loudness x unspawned.hearing, held ones only for ambush wake_kinds within the wake radius. While
+## the sleepers are out, the stimulus fields do this themselves.
+func on_trap_noise(world_pos: Vector3, loudness: float, kind: StringName) -> void:
+	if sleepers_spawned:
+		return
+	var amb: Dictionary = PoiPieces.cfg("ambush")
+	var hearing: float = float(PoiPieces.cfg("unspawned").get("hearing", 0.7))
+	var at: Vector3 = to_local(world_pos)
+	for s: Dictionary in layout.sleepers:
+		var d: float = _sleeper_local(s).distance_to(at)
+		if _is_held(s):
+			if (amb.get("wake_kinds", []) as Array).has(String(kind)) and d <= float(amb.get("wake_radius", 14.0)):
+				rouse(str(s["sid"]), at)
+		elif d <= loudness * hearing:
+			rouse(str(s["sid"]), at)
+
+
+## The ledger of sleepers roused while the building was empty: sid -> POI-local [x, y, z] of where
+## it happened. Saved; consumed when they next spawn (awake).
+func roused() -> Dictionary:
+	return state.get("roused", {})
+
+
+func is_roused(sid: String) -> bool:
+	return roused().has(sid)
+
+
+## Marks one sleeper roused (no-op for the dead and the already roused).
+func rouse(sid: String, local_at: Vector3) -> void:
+	if (state.get("dead", []) as Array).has(sid):
+		return
+	if not state.has("roused"):
+		state["roused"] = {}
+	var r: Dictionary = state["roused"]
+	if not r.has(sid):
+		r[sid] = [snappedf(local_at.x, 0.01), snappedf(local_at.y, 0.01), snappedf(local_at.z, 0.01)]
+
+
+## Whether an authored sleeper is held right now (a grouped one whose ambush is not spent).
+func _is_held(s: Dictionary) -> bool:
+	var g: String = str(s["group"])
+	return g != "" and not group_released(g)
+
+
+func _sleeper_local(s: Dictionary) -> Vector3:
+	return layout.local_pos(int(s["level"]), s["pos"])
+
+
+## A weak floor gave way: the nav tiles there are rebaked (PoiManager), so the Hollowed stop
+## pathing over the hole.
+func on_floor_collapsed(world_pos: Vector3) -> void:
+	geometry_changed.emit(world_pos)
 
 
 # --- Ambush triggers --------------------------------------------------------------------------
@@ -323,14 +458,22 @@ func group_released(group: String) -> bool:
 
 ## Fires a trigger once: its group's dormant sleepers wake one after another (closest first,
 ## ambush.stagger seconds apart after the trigger's delay), alerted to the player, with an audible
-## stir. Returns false if it already fired, does not exist, or the building's sleepers are not out
-## (nobody to ambush yet: it stays armed). `at`: where it was set off (fallback target).
+## stir. Returns false if it already fired or does not exist. `at`: where it was set off (fallback
+## target). With the building's sleepers not spawned (the Hum broke the door far from the player,
+## ADR-0022) it is spent all the same: the group is roused and is up and about next time.
 func fire_trigger(tid: String, at: Vector3 = Vector3.INF) -> bool:
 	var t: Dictionary = layout.trigger(tid)
-	if t.is_empty() or is_trigger_fired(tid) or not sleepers_spawned:
+	if t.is_empty() or is_trigger_fired(tid):
 		return false
 	(state["triggers"] as Dictionary)[tid] = true
 	var group: StringName = StringName(str(t["group"]))
+	if not sleepers_spawned:
+		var local_at: Vector3 = to_local(at) if at != Vector3.INF else layout.cell_center(0, Vector2i(layout.extent().get_center() - layout.origin))
+		for s: Dictionary in layout.sleepers:
+			if str(s["group"]) == String(group):
+				rouse(str(s["sid"]), local_at)
+		Log.info("poi", "%s: trigger '%s' fired with nobody near: group '%s' roused" % [instance_id, tid, group])
+		return true
 	var target: Vector3 = _ambush_target(at)
 	var members: Array[Enemy] = []
 	for sid: StringName in _sleepers:
@@ -382,13 +525,13 @@ func check_player_at(world_pos: Vector3) -> void:
 
 
 ## A door was opened or an opening (door, glass, boards, barricade) broken: its triggers fire and
-## alarms strung on it go off.
-func on_opening_event(op_id: String, at: Vector3) -> void:
+## alarms strung on it go off. `by_player`: false when a Hollowed (the Hum) broke it.
+func on_opening_event(op_id: String, at: Vector3, by_player: bool = true) -> void:
 	_fire_event("opening:" + op_id, at)
 	for tid: String in _alarms_on.get(op_id, []):
 		var piece: Node = traps.get(tid)
 		if piece != null and is_instance_valid(piece) and piece.has_method(&"trip"):
-			piece.call(&"trip", null)
+			piece.call(&"trip", null, by_player)
 
 
 func on_pickup_taken(pickup_id: String, at: Vector3) -> void:

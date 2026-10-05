@@ -1,0 +1,18 @@
+{
+  "_doc": "The Remand Program's heavy-lift drone that brings supply lifts in (ProgramDrone, SupplyDrops; ADR-0023). It comes in approach_m out at cruise_alt along a bearing fixed by the world seed and the drop, brakes over the last brake_m to a hover over the spot (SupplyDrops.RELEASE_HEIGHT up), lets the canister go release_after_s into the hover, hovers hover_s in all, then flies on and climbs to depart_alt depart_m away. Its noise over the spot carries hover_noise metres on the ground (stimulus). The landing spot needs landing_clearance m clear of player structures and solid props and landing_tree_clearance m clear of tree trunks (a crown snags the chute). Metres, m/s, seconds.",
+  "approach_m": 650.0,
+  "depart_m": 900.0,
+  "cruise_alt": 140.0,
+  "depart_alt": 190.0,
+  "cruise_speed": 30.0,
+  "brake_m": 120.0,
+  "hover_s": 3.0,
+  "release_after_s": 1.2,
+  "rotor_rps": 7.0,
+  "sound_range": 700.0,
+  "sound_unit_size": 45.0,
+  "sound_db": -2.0,
+  "hover_noise": 70.0,
+  "landing_clearance": 3.5,
+  "landing_tree_clearance": 4.5
+}

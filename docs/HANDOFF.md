@@ -42,7 +42,7 @@ Snapshot for the next session. Update it when the state changes; delete it once 
   kept.
 * Verified headless:
   * `make check`: all scripts compile.
-  * `make validate`: 0 errors, 0 warnings over 19 POIs and 2 frameworks.
+  * `make validate`: 0 errors, 0 warnings over 22 POIs and 2 frameworks.
   * `make test`: 225 unit and integration tests. They cover:
     * POI routes and dungeon mechanics (triggers, traps, locks, stable ids, stairwells,
       placement);
@@ -55,12 +55,14 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     * fire fuel, repairs and the horde's routing round buildings.
   * `make smoke`: the slice loop runs fell → carry → build → craft → night → Hum → XP, level,
     supply drop, spending points → save/load of all of it.
-* **POI dungeons** (ADR-0018, TD-026). Larch Hollow has 19 authored buildings (DESIGN §11):
+* **POI dungeons** (ADR-0018, TD-026). Larch Hollow has 22 authored buildings (DESIGN §11):
   * Pell's Crossing grew a church block: St. Ansel, the Northwoods Tavern, the post office, the
     grange hall and a trailer.
   * Route 9 has a gas garage, a clinic and the Timberline Motel.
   * The Okafor farm has a farmhouse and a barn.
   * The wilderness has a fire lookout, a trapper's cabin, a logging camp and the tier-4 sawmill.
+  * The outskirts have Larch Pond Bait & Boat (its slip is open pond water: a keep_water pad,
+    ADR-0024), the mostly outdoor Ashen watch camp and Tamsin River Campground.
   * Every building is a dungeon: held sleeper groups that ambush on a trigger, guardians on the
     loot, typed traps that a crouched player disarms, and lock cues that can be beaten off.
   * Cellars are cut out of the terrain mesh, collision and navmesh.

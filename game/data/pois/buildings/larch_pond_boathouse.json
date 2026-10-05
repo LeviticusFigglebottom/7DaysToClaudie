@@ -1,0 +1,2152 @@
+{
+ "_doc": "Tier-1 bait and tackle shop with a boathouse on piles over the north-west shore of Larch Pond (region D6). The slip is open water inside the building: its cells are yard ('.') between the slip walk (W) and the boat bay (E), under the net loft, and the placement's keep_water pad (ADR-0024) leaves the pond bed under it. Dock sections and pilings are props with their decks at the pad; the rowboat floats at the water, 0.6 m under the pad (the placement's freeboard: place it with \"keep_water\": true, \"freeboard\": 0.6). Route: the lot -> the shop padlocked from outside -> round to the dock (a bear trap under the heap of net) -> the dock door -> the slip walk (loose boards wake the mill hands in the bay across the slip) -> the bay ladder to the net loft -> Ned's keys on the nail by the hatch (taking them wakes the bay; the Hollowed can't climb, so they wait below, and Pip's fishing hole is a drop into the slip) -> down to the bait-room door padlocked from the slip side -> the shop -> Ned's office (the safe; Ned guards it) -> the bolted side door. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "larch_pond_boathouse",
+   "name": "Larch Pond Bait & Boat",
+   "tier": 1,
+   "zoning": [
+    "wilderness",
+    "commercial"
+   ],
+   "footprint": [
+    22,
+    30
+   ],
+   "origin": [
+    5,
+    4
+   ],
+   "author": "Hollowmere team",
+   "story": "Ned and Agnes Ruud sold crawlers and rented rowboats on Larch Pond for thirty-one summers. When Pell's Crossing went dark they brought their grandson Pip down from town: Ned had read in the Cordon pamphlet that water masks scent, and nothing that walks the shore would follow them out over the pond. He padlocked the shop, boarded its windows and moved the three of them into the net loft above the boat slip, and pulled the ladder up after them each night. For five weeks they fished through a hole in the loft floor. Then three mill hands came down the shore path wanting a boat, and Ned let them sleep in the boat bay. The fever went through the bay in four days, and through Ned. He went into the shop for the shells and the cash box and Agnes padlocked the bait-room door behind him. She sent Pip across the pond in the canoe to the Okafors' at first light, hung Ned's keys on the nail by the hatch and wrote it all down. The mill hands still lie among the life jackets in the bay.",
+   "style": {
+    "exterior": "siding_pale_blue",
+    "interior": "wood_paneling_dark",
+    "floor": "wood_pine",
+    "ceiling": "wood_paneling_dark",
+    "floor_height": 0.1,
+    "decay": 0.5,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "z",
+     "pitch": 28,
+     "overhang": 0.5,
+     "material": "roof_metal",
+     "parapet": 0.45,
+     "flat_color": "#2b2a28",
+     "gutters": false
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "WW....EEEEEE",
+      "WW....EEEEEE",
+      "WW....EEEEEE",
+      "WW....EEEEEE",
+      "WW....EEEEEE",
+      "WW....EEEEEE",
+      "WW....EEEEEE",
+      "HHHHHHEEEEEE",
+      "HHHHHHEEEEEE",
+      "KKKKKOOORRRR",
+      "KKKKKOOORRRR",
+      "KKKKKOOORRRR",
+      "SSSSSSSSSSSS",
+      "SSSSSSSSSSSS",
+      "SSSSSSSSSSSS",
+      "SSSSSSSSSSSS",
+      "SSSSSSSSSSSS"
+     ],
+     "rooms": {
+      "W": {
+       "name": "Slip walk",
+       "type": "hallway",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "open_to": "H"
+      },
+      "H": {
+       "name": "Slip head",
+       "type": "workshop",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "E": {
+       "name": "Boat bay",
+       "type": "workshop",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "K": {
+       "name": "Bait room",
+       "type": "storage",
+       "wall": "tile_bathroom_white",
+       "floor": "concrete"
+      },
+      "O": {
+       "name": "Ned's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_brown"
+      },
+      "R": {
+       "name": "Stockroom",
+       "type": "storage",
+       "wall": "plaster_grey",
+       "floor": "concrete"
+      },
+      "S": {
+       "name": "Bait & tackle shop",
+       "type": "store",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "LLLLLLLLNNNN",
+      "LLLLLLLLNNNN",
+      "LLLLLLLLNNNN",
+      "LLLLLLLLNNNN",
+      "LLLLLLLLNNNN",
+      "LLLLLLLLNNNN",
+      "LLLLLLLLNNNN",
+      "LLLLLLLLNNNN",
+      "LLLLLLLLNNNN"
+     ],
+     "rooms": {
+      "L": {
+       "name": "Net loft",
+       "type": "loft",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      },
+      "N": {
+       "name": "Net store",
+       "type": "storage",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "walk_slip_0",
+     "at": [
+      1,
+      0
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "bay_slip_0",
+     "at": [
+      6,
+      0
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "walk_slip_1",
+     "at": [
+      1,
+      1
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "bay_slip_1",
+     "at": [
+      6,
+      1
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "walk_slip_2",
+     "at": [
+      1,
+      2
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "bay_slip_2",
+     "at": [
+      6,
+      2
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "walk_slip_3",
+     "at": [
+      1,
+      3
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "bay_slip_3",
+     "at": [
+      6,
+      3
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "walk_slip_4",
+     "at": [
+      1,
+      4
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "bay_slip_4",
+     "at": [
+      6,
+      4
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "walk_slip_5",
+     "at": [
+      1,
+      5
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "bay_slip_5",
+     "at": [
+      6,
+      5
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "walk_slip_6",
+     "at": [
+      1,
+      6
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "bay_slip_6",
+     "at": [
+      6,
+      6
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "head_slip_2",
+     "at": [
+      2,
+      7
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "head_slip_3",
+     "at": [
+      3,
+      7
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "head_slip_4",
+     "at": [
+      4,
+      7
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "head_slip_5",
+     "at": [
+      5,
+      7
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "dock_door",
+     "at": [
+      0,
+      4
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "walk_window",
+     "at": [
+      0,
+      0
+     ],
+     "side": "N",
+     "type": "window2",
+     "state": "closed"
+    },
+    {
+     "id": "head_bay_door",
+     "at": [
+      5,
+      8
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "bay_window_n",
+     "at": [
+      7,
+      0
+     ],
+     "side": "N",
+     "type": "window2",
+     "state": "closed"
+    },
+    {
+     "id": "bay_window_n2",
+     "at": [
+      10,
+      0
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "bay_window_e1",
+     "at": [
+      11,
+      1
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "bay_window_e2",
+     "at": [
+      11,
+      7
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "bait_door",
+     "at": [
+      2,
+      8
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "out_ruud_keyring"
+    },
+    {
+     "id": "bait_shop_door",
+     "at": [
+      1,
+      11
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "bait_window",
+     "at": [
+      0,
+      10
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "office_door",
+     "at": [
+      6,
+      11
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "stock_door",
+     "at": [
+      9,
+      11
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "stock_window",
+     "at": [
+      11,
+      10
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "front_door",
+     "at": [
+      5,
+      16
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "out_ruud_keyring"
+    },
+    {
+     "id": "display_w",
+     "at": [
+      1,
+      16
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "display_e",
+     "at": [
+      8,
+      16
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "side_door",
+     "at": [
+      11,
+      13
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked_inside"
+    },
+    {
+     "id": "shop_window_e",
+     "at": [
+      11,
+      15
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "loft_pass_a",
+     "at": [
+      7,
+      3
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "loft_pass_b",
+     "at": [
+      7,
+      6
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "loft_window_nw",
+     "at": [
+      1,
+      0
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "loft_hoist_door",
+     "at": [
+      3,
+      0
+     ],
+     "side": "N",
+     "type": "window2",
+     "state": "missing",
+     "level": 1
+    },
+    {
+     "id": "loft_window_ne",
+     "at": [
+      9,
+      0
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded",
+     "level": 1
+    },
+    {
+     "id": "loft_window_w1",
+     "at": [
+      0,
+      2
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "loft_window_w2",
+     "at": [
+      0,
+      6
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded",
+     "level": 1
+    },
+    {
+     "id": "loft_window_e",
+     "at": [
+      11,
+      6
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "loft_window_s1",
+     "at": [
+      2,
+      8
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "loft_window_s2",
+     "at": [
+      9,
+      8
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "broken",
+     "level": 1
+    }
+   ],
+   "ladders": [
+    {
+     "level": 0,
+     "at": [
+      11,
+      4
+     ],
+     "side": "E",
+     "hatch": true
+    }
+   ],
+   "holes": [
+    {
+     "level": 1,
+     "at": [
+      3,
+      4
+     ]
+    }
+   ],
+   "props": [
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      -1.0,
+      6.0
+     ],
+     "rot": 0,
+     "y": -3.2,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      -1.0,
+      2.0
+     ],
+     "rot": 0,
+     "y": -3.2,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      -1.0,
+      -2.0
+     ],
+     "rot": 0,
+     "y": -3.2,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      -3.0,
+      -3.0
+     ],
+     "rot": 90,
+     "y": -3.2,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      2.18,
+      1.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      5.82,
+      1.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      2.18,
+      3.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      5.82,
+      3.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      2.18,
+      5.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      5.82,
+      5.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      12.2,
+      1.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      12.2,
+      3.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      12.2,
+      5.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      12.2,
+      7.0
+     ],
+     "rot": 90,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      1.0,
+      -0.2
+     ],
+     "rot": 0,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      7.0,
+      -0.2
+     ],
+     "rot": 0,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      9.0,
+      -0.2
+     ],
+     "rot": 0,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      11.0,
+      -0.2
+     ],
+     "rot": 0,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      3.0,
+      6.8
+     ],
+     "rot": 0,
+     "y": -3.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      5.0,
+      6.8
+     ],
+     "rot": 0,
+     "y": -3.3
+    },
+    {
+     "prop": "out_boat_doors",
+     "pos": [
+      4.0,
+      0.0
+     ],
+     "rot": 0,
+     "y": -0.4,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_rowboat",
+     "pos": [
+      4.05,
+      3.1
+     ],
+     "rot": 3,
+     "y": -0.72,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_net_pile",
+     "pos": [
+      -1.25,
+      5.55
+     ],
+     "rot": 20,
+     "variant": "worn"
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      -0.45,
+      1.3
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "out_life_jackets",
+     "pos": [
+      -3.6,
+      -3.2
+     ],
+     "rot": 80,
+     "variant": "worn"
+    },
+    {
+     "prop": "road_fuel_pump_vintage",
+     "pos": [
+      -1.4,
+      13.6
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      -0.75,
+      13.15
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      -0.6,
+      14.1
+     ],
+     "rot": -20,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_life_jackets",
+     "pos": [
+      0.75,
+      0.85
+     ],
+     "rot": 15,
+     "variant": "worn"
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      0.35,
+      3.45
+     ]
+    },
+    {
+     "prop": "road_workbench",
+     "id": "head_bench",
+     "pos": [
+      4.55,
+      8.6
+     ],
+     "rot": 180,
+     "variant": "worn",
+     "container": "out_boathouse_stores"
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      0.35,
+      8.55
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      0.75,
+      8.62
+     ],
+     "rot": 10,
+     "variant": "worn"
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      0.4,
+      7.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "out_rowboat_hauled",
+     "pos": [
+      9.05,
+      4.4
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_outboard_motor",
+     "pos": [
+      11.35,
+      1.1
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_outboard_motor",
+     "pos": [
+      11.35,
+      6.9
+     ],
+     "rot": -90,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_life_jackets",
+     "pos": [
+      7.25,
+      1.95
+     ],
+     "rot": 40,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_life_jackets",
+     "pos": [
+      7.45,
+      6.15
+     ],
+     "rot": -20
+    },
+    {
+     "prop": "metal_shelf",
+     "id": "bay_shelf",
+     "at": [
+      8,
+      0
+     ],
+     "against": "N",
+     "variant": "worn",
+     "container": "out_boathouse_stores"
+    },
+    {
+     "prop": "wild_tool_chest",
+     "id": "bay_tool_chest",
+     "at": [
+      10,
+      8
+     ],
+     "against": "S",
+     "variant": "worn"
+    },
+    {
+     "prop": "pegboard_wall",
+     "id": "bay_pegboard",
+     "pos": [
+      7.6,
+      8.915
+     ],
+     "rot": 180,
+     "height": 1.25
+    },
+    {
+     "prop": "paint_can_stack",
+     "pos": [
+      8.85,
+      8.62
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "road_oil_drum",
+     "pos": [
+      11.45,
+      8.5
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "propane_tank_small",
+     "pos": [
+      11.6,
+      0.4
+     ]
+    },
+    {
+     "prop": "out_bait_tank",
+     "at": [
+      0,
+      10
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "prop": "out_bait_tank",
+     "at": [
+      3,
+      9
+     ],
+     "against": "N",
+     "offset": [
+      0.3,
+      0.0
+     ],
+     "variant": "destroyed"
+    },
+    {
+     "prop": "store_freezer",
+     "id": "worm_freezer",
+     "at": [
+      3,
+      11
+     ],
+     "against": "S",
+     "variant": "worn"
+    },
+    {
+     "prop": "sink_pedestal",
+     "at": [
+      0,
+      11
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      1.6,
+      9.45
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      4.6,
+      11.55
+     ]
+    },
+    {
+     "prop": "office_desk",
+     "id": "ned_desk",
+     "at": [
+      6,
+      9
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      6.55,
+      10.25
+     ],
+     "rot": 170,
+     "variant": "worn"
+    },
+    {
+     "prop": "safe_small",
+     "id": "ned_safe",
+     "at": [
+      7,
+      11
+     ],
+     "against": "E",
+     "variant": "worn",
+     "container": "out_bait_safe",
+     "key": "out_ruud_keyring"
+    },
+    {
+     "prop": "filing_cabinet",
+     "id": "ned_files",
+     "at": [
+      5,
+      11
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "prop": "out_trophy_fish",
+     "pos": [
+      5.085,
+      10.1
+     ],
+     "rot": 90,
+     "height": 1.55
+    },
+    {
+     "prop": "wild_gun_rack",
+     "id": "ned_gun_rack",
+     "pos": [
+      7.915,
+      9.9
+     ],
+     "rot": -90,
+     "height": 1.3,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "pos": [
+      7.05,
+      9.35
+     ],
+     "y": 1.08,
+     "variant": "worn"
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      6.2,
+      11.2
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "metal_shelf",
+     "id": "stock_shelf_a",
+     "at": [
+      8,
+      9
+     ],
+     "against": "N",
+     "variant": "worn",
+     "container": "out_tackle"
+    },
+    {
+     "prop": "metal_shelf",
+     "id": "stock_shelf_b",
+     "at": [
+      10,
+      9
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "cardboard_box",
+     "id": "stock_box_a",
+     "pos": [
+      11.5,
+      11.4
+     ],
+     "rot": 15
+    },
+    {
+     "prop": "cardboard_box",
+     "id": "stock_box_b",
+     "pos": [
+      11.45,
+      10.9
+     ],
+     "rot": -10,
+     "y": 0.34
+    },
+    {
+     "prop": "crate_wood",
+     "id": "stock_crate",
+     "pos": [
+      8.5,
+      11.5
+     ],
+     "rot": 5
+    },
+    {
+     "prop": "propane_tank_small",
+     "pos": [
+      10.6,
+      11.6
+     ]
+    },
+    {
+     "prop": "out_tackle_wall",
+     "id": "tackle_wall",
+     "pos": [
+      0.085,
+      13.3
+     ],
+     "rot": 90,
+     "height": 0.65
+    },
+    {
+     "prop": "road_cooler",
+     "id": "bait_cooler",
+     "pos": [
+      0.5,
+      15.6
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_rod_rack",
+     "at": [
+      11,
+      16
+     ],
+     "against": "S",
+     "offset": [
+      -0.12,
+      0.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "cork_board",
+     "pos": [
+      4.6,
+      12.085
+     ],
+     "rot": 0,
+     "height": 1.35
+    },
+    {
+     "prop": "store_shelf_gondola",
+     "id": "shop_gondola_a",
+     "pos": [
+      3.1,
+      14.45
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "store_shelf_gondola",
+     "id": "shop_gondola_b",
+     "pos": [
+      6.2,
+      14.4
+     ],
+     "rot": 90,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "counter_reception",
+     "id": "shop_counter",
+     "pos": [
+      10.15,
+      14.75
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "cash_register",
+     "id": "shop_till",
+     "pos": [
+      10.4,
+      14.2
+     ],
+     "rot": -90,
+     "y": 0.76,
+     "variant": "worn"
+    },
+    {
+     "prop": "coffee_machine",
+     "pos": [
+      10.45,
+      15.4
+     ],
+     "rot": -90,
+     "y": 0.76,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_trophy_fish",
+     "pos": [
+      11.915,
+      12.9
+     ],
+     "rot": -90,
+     "height": 1.75,
+     "variant": "worn"
+    },
+    {
+     "prop": "store_freezer",
+     "id": "shop_ice_cream",
+     "pos": [
+      7.25,
+      16.45
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "glass_shards",
+     "pos": [
+      2.0,
+      16.4
+     ],
+     "route_ok": true
+    },
+    {
+     "prop": "glass_shards",
+     "pos": [
+      9.1,
+      16.45
+     ],
+     "rot": 60,
+     "route_ok": true
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      5.0,
+      13.6
+     ],
+     "rot": 70
+    },
+    {
+     "prop": "cans_scatter",
+     "pos": [
+      8.4,
+      13.2
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "trash_can_kitchen",
+     "id": "shop_trash",
+     "pos": [
+      0.35,
+      12.45
+     ]
+    },
+    {
+     "prop": "wild_cot_canvas",
+     "at": [
+      0,
+      6
+     ],
+     "against": "W",
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_cot_canvas",
+     "pos": [
+      1.5,
+      0.45
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_footlocker",
+     "id": "agnes_footlocker",
+     "pos": [
+      2.15,
+      7.45
+     ],
+     "rot": 90,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "pos": [
+      2.15,
+      7.35
+     ],
+     "level": 1,
+     "y": 0.4,
+     "lit": true
+    },
+    {
+     "prop": "sleeping_bag",
+     "pos": [
+      5.9,
+      7.7
+     ],
+     "rot": 8,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_wood_stove",
+     "at": [
+      7,
+      8
+     ],
+     "against": "S",
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "duffel_bag",
+     "id": "pip_duffel",
+     "pos": [
+      4.2,
+      8.45
+     ],
+     "rot": 20,
+     "level": 1
+    },
+    {
+     "prop": "books_scatter",
+     "pos": [
+      2.6,
+      1.3
+     ],
+     "rot": 35,
+     "level": 1
+    },
+    {
+     "prop": "crate_wood",
+     "id": "loft_crate_a",
+     "pos": [
+      0.5,
+      3.6
+     ],
+     "rot": 5,
+     "level": 1,
+     "container": "wild_lookout_stores"
+    },
+    {
+     "prop": "crate_wood",
+     "id": "loft_crate_b",
+     "pos": [
+      0.55,
+      4.25
+     ],
+     "rot": -8,
+     "level": 1
+    },
+    {
+     "prop": "cans_scatter",
+     "pos": [
+      5.6,
+      6.1
+     ],
+     "rot": 50,
+     "level": 1
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      3.6,
+      5.45
+     ],
+     "level": 1
+    },
+    {
+     "prop": "out_fishing_rod",
+     "pos": [
+      4.2,
+      4.45
+     ],
+     "rot": 75,
+     "level": 1
+    },
+    {
+     "prop": "out_net_pile",
+     "pos": [
+      6.6,
+      1.25
+     ],
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "prop": "out_net_pile",
+     "pos": [
+      9.3,
+      1.3
+     ],
+     "rot": 90,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_life_jackets",
+     "pos": [
+      9.6,
+      7.7
+     ],
+     "rot": 10,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "crate_wood",
+     "id": "net_crate",
+     "pos": [
+      11.4,
+      8.4
+     ],
+     "rot": 10,
+     "level": 1
+    },
+    {
+     "prop": "cardboard_box",
+     "id": "net_box",
+     "pos": [
+      8.5,
+      8.5
+     ],
+     "rot": -5,
+     "level": 1
+    },
+    {
+     "prop": "out_fishing_rod",
+     "pos": [
+      8.5,
+      4.6
+     ],
+     "rot": 5,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_bait_sign",
+     "pos": [
+      1.4,
+      21.2
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "pickup_wreck",
+     "id": "ned_truck",
+     "pos": [
+      8.6,
+      22.2
+     ],
+     "rot": 80,
+     "variant": "worn"
+    },
+    {
+     "prop": "road_vending_machine",
+     "id": "pop_machine",
+     "pos": [
+      3.9,
+      17.55
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "road_ice_freezer",
+     "id": "ice_chest",
+     "pos": [
+      10.6,
+      17.5
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "bench_park",
+     "pos": [
+      7.4,
+      17.55
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "picnic_table",
+     "pos": [
+      15.6,
+      18.8
+     ],
+     "rot": 20,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_rowboat_hauled",
+     "pos": [
+      15.2,
+      8.6
+     ],
+     "rot": 10,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_rowboat",
+     "pos": [
+      16.6,
+      3.0
+     ],
+     "rot": 30,
+     "variant": "destroyed",
+     "y": -1.15
+    },
+    {
+     "prop": "woodpile",
+     "pos": [
+      14.6,
+      14.2
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      12.9,
+      12.2
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "trash_bag",
+     "id": "yard_trash",
+     "pos": [
+      13.0,
+      11.3
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "utility_pole",
+     "pos": [
+      13.8,
+      22.5
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_chopping_block",
+     "pos": [
+      15.9,
+      15.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_firewood_stack",
+     "pos": [
+      15.2,
+      12.6
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_net_pile",
+     "pos": [
+      -2.8,
+      10.6
+     ],
+     "rot": 70,
+     "variant": "worn"
+    },
+    {
+     "prop": "sawhorse_barricade",
+     "pos": [
+      -4.2,
+      16.5
+     ],
+     "rot": 80,
+     "variant": "worn"
+    },
+    {
+     "prop": "corpse_remains",
+     "id": "lot_corpse",
+     "pos": [
+      2.6,
+      19.2
+     ],
+     "rot": 160
+    }
+   ],
+   "pickups": [
+    {
+     "id": "ruud_keys",
+     "item": "out_ruud_keyring",
+     "pos": [
+      11.84,
+      5.35
+     ],
+     "level": 1,
+     "y": 1.35
+    }
+   ],
+   "notes": [
+    {
+     "note": "out_bait_closed",
+     "pos": [
+      5.5,
+      17.06
+     ],
+     "y": 1.45
+    },
+    {
+     "note": "out_bait_diary",
+     "pos": [
+      2.2,
+      7.6
+     ],
+     "level": 1,
+     "y": 0.42
+    },
+    {
+     "note": "out_bait_pip",
+     "pos": [
+      3.4,
+      5.35
+     ],
+     "level": 1,
+     "y": 0.02
+    },
+    {
+     "note": "out_bait_ledger",
+     "pos": [
+      6.3,
+      9.4
+     ],
+     "y": 0.78
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "bay_millhand",
+     "pos": [
+      7.85,
+      1.7
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 70,
+     "group": "bay",
+     "anchor": "floor"
+    },
+    {
+     "id": "bay_sawyer",
+     "pos": [
+      10.35,
+      5.75
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": -100,
+     "group": "bay",
+     "anchor": "floor"
+    },
+    {
+     "id": "bay_lurcher",
+     "pos": [
+      7.05,
+      6.95
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 160,
+     "group": "bay"
+    },
+    {
+     "id": "agnes",
+     "pos": [
+      0.95,
+      6.5
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "id": "shop_customer",
+     "pos": [
+      7.1,
+      13.15
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 200,
+     "anchor": "floor"
+    },
+    {
+     "id": "ned",
+     "pos": [
+      6.5,
+      11.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 0,
+     "guardian": true
+    }
+   ],
+   "decals": [
+    {
+     "decal": "footprints_mud",
+     "at": [
+      1,
+      5
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      1.6
+     ],
+     "rot": 180
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      -1,
+      3
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      1.8
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      3,
+      7
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.2
+     ],
+     "rot": 90
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      8,
+      2
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      5,
+      10
+     ],
+     "side": "W",
+     "size": [
+      0.4,
+      0.4
+     ],
+     "height": 1.25
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      2,
+      8
+     ],
+     "side": "S",
+     "size": [
+      0.4,
+      0.4
+     ],
+     "height": 1.1
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      0,
+      10
+     ],
+     "side": "W",
+     "size": [
+      1.0,
+      1.4
+     ],
+     "height": 1.0
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      1,
+      10
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "survivor_marks_b",
+     "at": [
+      2,
+      0
+     ],
+     "side": "N",
+     "size": [
+      0.8,
+      0.6
+     ],
+     "height": 1.3,
+     "level": 1
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      5,
+      16
+     ],
+     "side": "S",
+     "size": [
+      0.8,
+      0.6
+     ],
+     "height": 1.6
+    },
+    {
+     "decal": "grime_streaks",
+     "at": [
+      3,
+      12
+     ],
+     "side": "N",
+     "size": [
+      1.2,
+      1.4
+     ],
+     "height": 1.2
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      5,
+      19
+     ],
+     "label": "The gravel lot: LARCH POND BAIT & BOAT, the shop dark"
+    },
+    {
+     "at": [
+      5,
+      17
+     ],
+     "label": "The shop door is padlocked from outside: CLOSED, GONE TO THE WATER"
+    },
+    {
+     "at": [
+      -1,
+      9
+     ],
+     "label": "Round the side to the dock (mind the heap of net)"
+    },
+    {
+     "at": [
+      -1,
+      5
+     ],
+     "label": "Along the dock beside the boathouse"
+    },
+    {
+     "at": [
+      0,
+      4
+     ],
+     "label": "In through the dock door to the slip walk"
+    },
+    {
+     "at": [
+      1,
+      7
+     ],
+     "label": "The slip walk: boards that groan, the mill hands lying in the boat bay across the water"
+    },
+    {
+     "at": [
+      8,
+      7
+     ],
+     "label": "The boat bay: the ladder up to the net loft"
+    },
+    {
+     "at": [
+      10,
+      4
+     ],
+     "level": 1,
+     "label": "The net loft: Ned's keys on the nail by the hatch"
+    },
+    {
+     "at": [
+      3,
+      6
+     ],
+     "level": 1,
+     "label": "Agnes on her cot, her diary, Pip's fishing hole through the floor"
+    },
+    {
+     "at": [
+      2,
+      8
+     ],
+     "label": "Back down to the bait-room door, padlocked from the slip side"
+    },
+    {
+     "at": [
+      2,
+      10
+     ],
+     "label": "The bait room: minnow tanks, the worm freezer"
+    },
+    {
+     "at": [
+      6,
+      13
+     ],
+     "label": "The shop, boarded up and dark"
+    },
+    {
+     "at": [
+      6,
+      10
+     ],
+     "label": "Ned's office: the safe, and Ned"
+    },
+    {
+     "at": [
+      11,
+      13
+     ],
+     "label": "Slide the side door's bolt"
+    },
+    {
+     "at": [
+      12,
+      13
+     ],
+     "label": "Out on the shore"
+    }
+   ],
+   "loot_room": {
+    "room": "O",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "side_door"
+    }
+   ],
+   "traps": [
+    {
+     "id": "dock_net_trap",
+     "type": "bear_trap",
+     "pos": [
+      -1.15,
+      5.7
+     ],
+     "rot": 25
+    },
+    {
+     "id": "slip_walk_boards",
+     "type": "creaky_floor",
+     "at": [
+      0,
+      5
+     ],
+     "size": [
+      2,
+      2
+     ]
+    }
+   ],
+   "triggers": [
+    {
+     "id": "slip_boards_groan",
+     "group": "bay",
+     "on": "trap",
+     "trap": "slip_walk_boards",
+     "delay": 0.5
+    },
+    {
+     "id": "keys_taken",
+     "group": "bay",
+     "on": "pickup",
+     "pickup": "ruud_keys",
+     "delay": 1.4
+    }
+   ]
+  }
+ ]
+}

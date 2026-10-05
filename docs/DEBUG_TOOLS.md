@@ -15,4 +15,24 @@ Available in debug builds (and exports with the `debug_tools` feature). Implemen
 
 Headless tools (see the Makefile): `make smoke` (end-to-end slice run), `make validate`
 (content + POIs), `make check` (compile every script), `make test`, `compose_region.gd`
-(terrain inspection images in build/region_preview).
+(terrain inspection images in build/region_preview). `exterior_qa.gd` renders the moon's phases,
+the Route 9 bridge, light props lit and destroyed, and the Program drone (ADR-0023; its header
+has the command line).
+
+`make poi-preview POI="id ..." [POI_ARGS="..."]` renders layout QA images into build/poi_preview
+(`--out DIR` elsewhere). The cut-away plans (`<id>_plan_L<n>.png`) show the dungeon (ADR-0022):
+* **Sleepers** where they spawn, in their ambush group's colour with the group's name (ungrouped:
+  pale blue; guardians ringed orange). Standing, kneeling and crouched sleepers are discs, seated
+  ones a disc on their seat, lying ones a body-long capsule head to feet. Each has a tick for its
+  facing and a thin line back to its authored spot when a seat or bed moved it.
+* **Triggers** in their group's colour, linked to the group and labelled `T id`: a room trigger
+  tints its cells, an opening trigger is a diamond on the edge, and a pickup, container or trap
+  trigger is a ring.
+* **Traps** in magenta: bars across edge traps, squares on cell traps.
+* **Route-cue windows** as white bars with their cue kinds.
+* **The route and the rest:** the validator's route path (green), waypoints (cyan), pickups
+  (yellow-green), lights (orange), and props at their true size (gold = container, blue = solid,
+  grey = no collision).
+
+`--sleepers [sid,sid]` spawns the sleepers and shoots a close view of each seated or lying one
+(`<id>_sleeper_<sid>.png`). `--no-exterior` / `--no-plans` / `--inside` choose the other views.

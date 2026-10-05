@@ -3,7 +3,7 @@ extends Node3D
 ## The tether (wrist tracker, T): a rugged Remand Program wrist unit raised into view without
 ## stopping you. Its screen (a SubViewport rendered onto the device) shows day/time/weather,
 ## vitals and conditions, your level / XP / gamestage, the Hum countdown and forecast
-## (HumDirector's plan for the next Hum), supply drops (when the world setting marks them) and a
+## (HumDirector's plan for the next Hum), every supply drop (when the world setting marks them) and a
 ## minimap of the region with you, your bed, your base and the places you've been.
 
 const HIDDEN := Vector3(-0.2, -0.42, -0.34)
@@ -19,6 +19,8 @@ var _time: Label
 var _vitals: Label
 var _status: Label
 var _record: Label
+## Every supply drop on its own line (ADR-0023); the Hum forecast moves down below them.
+var _drops: Label
 var _directives: Label
 var _hum: Label
 var _map: TextureRect
@@ -30,6 +32,10 @@ var _map_img: Image = null
 var _map_pending: String = ""
 var _markers: Control
 var _refresh_t: float = 0.0
+## The UI shows on the unit bolted to the first-person arms' left wrist (ADR-0029), raised by the
+## viewmodel; the floating device is only built when there are no arms.
+var _on_arms: bool = false
+var _vm: ViewModel = null
 
 
 func _ready() -> void:
@@ -41,6 +47,14 @@ func _ready() -> void:
 	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(_vp)
 	_build_screen()
+	var vm: ViewModel = get_parent().get_node_or_null(^"ViewModel") as ViewModel
+	if vm != null and vm.attach_tether_screen(_vp.get_texture()):
+		_on_arms = true
+		_vm = vm
+		position = Vector3.ZERO
+		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		_refresh()
+		return
 	var shell := MeshInstance3D.new()
 	var box := BoxMesh.new()
 	box.size = Vector3(0.118, 0.082, 0.02)
@@ -100,6 +114,7 @@ func _build_screen() -> void:
 	_vitals = _lcd_label(Vector2(16, 52), 18)
 	_status = _lcd_label(Vector2(16, 200), 16)
 	_record = _lcd_label(Vector2(16, 230), 16)
+	_drops = _lcd_label(Vector2(16, 254), 13)
 	_hum = _lcd_label(Vector2(16, 290), 16)
 	_hum.size = Vector2(340, 100)
 	_hum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -136,9 +151,22 @@ func toggle() -> void:
 		_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 		_refresh()
 		Audio.play_2d(&"ui/tether_beep", -10.0)
+	elif _on_arms:
+		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 
 func _process(delta: float) -> void:
+	if _on_arms:
+		# A swing or the guard lowers the wrist on its own: follow it, so T raises it again.
+		if raised and is_instance_valid(_vm) and not _vm.tether_raised():
+			raised = false
+		# Raised: live. Lowered, the screen still glows dimly on the wrist: a fresh frame every 2 s.
+		_refresh_t += delta
+		if raised and _refresh_t > 0.5 or _refresh_t > 2.0:
+			_refresh_t = 0.0
+			_refresh()
+			_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS if raised else SubViewport.UPDATE_ONCE
+		return
 	_t = clampf(_t + (delta if raised else -delta) * 4.0, 0.0, 1.0)
 	var e: float = _t * _t * (3.0 - 2.0 * _t)
 	position = HIDDEN.lerp(RAISED, e)
@@ -177,6 +205,8 @@ func _refresh() -> void:
 		flags.append("WET")
 	_status.text = "  ".join(flags) if not flags.is_empty() else "NOMINAL"
 	_record.text = _record_text(p)
+	_drops.text = _drops_text()
+	_hum.position.y = maxf(290.0, 254.0 + 17.0 * float(_drops.text.count("\n") + 1) + 6.0) if _drops.text != "" else 290.0
 	_directives.text = _directives_text(p)
 	_hum.text = _hum_text()
 	_ensure_map()
@@ -194,14 +224,38 @@ func _record_text(p: PlayerState) -> String:
 	var line: String = "LV %d  XP %d/%d  GS %d" % [pr.level, pr.xp, pr.xp_to_next(), Game.session.gamestage(p)]
 	if pr.skill_points > 0:
 		line += "  +%d PT%s" % [pr.skill_points, "" if pr.skill_points == 1 else "S"]
+	return line
+
+
+## Every supply drop: distance, compass sector and whether it is still coming down, down or
+## searched, one to a line; past four drops they pair up on a line in short form (eight fit).
+func _drops_text() -> String:
 	var w: Node = Game.world
 	var drops: Node = w.get(&"supply_drops") if w != null else null
-	if drops != null and w.player != null:
-		var pp: Vector3 = (w.player as Node3D).global_position
-		for at: Vector3 in (drops.call(&"markers") as Array[Vector3]):
-			line += "\nDROP  %d m %s" % [int(Vector2(at.x - pp.x, at.z - pp.z).length()), HordeMemory.SECTOR_NAMES[HordeMemory.sector_of(pp, at)]]
+	if drops == null or w.player == null or not drops.has_method(&"entries"):
+		return ""
+	return drops_lines(drops.call(&"entries"), (w.player as Node3D).global_position)
+
+
+static func drops_lines(list: Array, pp: Vector3) -> String:
+	var items: PackedStringArray = []
+	var short: bool = list.size() > 4
+	for e: Dictionary in list:
+		var at: Vector3 = e["pos"]
+		var d: float = Vector2(at.x - pp.x, at.z - pp.z).length()
+		var dist: String = ("%d m" % int(d)) if d < 1000.0 else ("%.1f km" % (d / 1000.0))
+		var sector: String = HordeMemory.SECTOR_NAMES[HordeMemory.sector_of(pp, at)]
+		var state: String = str(e["state"]).to_upper()
+		items.append(("%s %s %s" % [dist, sector, state.substr(0, 3)]) if short else ("DROP  %-8s %-3s %s" % [dist, sector, state]))
+	if not short:
+		return "\n".join(items)
+	var lines: PackedStringArray = []
+	for i: int in range(0, items.size(), 2):
+		if lines.size() == 3 and items.size() > 8:
+			lines.append("DROPS +%d MORE ON THE MAP" % (items.size() - 6))
 			break
-	return line
+		lines.append(("DROPS " if i == 0 else "      ") + "  ·  ".join(items.slice(i, i + 2)))
+	return "\n".join(lines)
 
 
 ## The open chapter's next two Program directives with their progress.

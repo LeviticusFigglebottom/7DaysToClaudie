@@ -49,21 +49,17 @@
    }
   },
   "road_bulb": {
-   "shader": "foliage",
+   "shader": "std_surface",
    "params": {
-    "tint": "#ffe2a8",
-    "alpha_scissor": 0.0,
-    "translucency": 1.8,
-    "roughness": 0.3,
-    "spring_tint": "#ffffff",
-    "summer_tint": "#ffffff",
-    "autumn_tint": "#ffffff",
-    "winter_tint": "#ffffff",
-    "winter_leaf_loss": 0.0,
-    "sway_height": 1000.0,
-    "stiffness": 10.0,
-    "flutter_strength": 0.0,
-    "ao_strength": 0.0
+    "tint": "#cbc5b6",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.18,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#ffe2a8",
+    "emission_energy": 2.6,
+    "emission_flicker": 0.0
    }
   },
   "road_burnt": {
@@ -253,21 +249,17 @@
    }
   },
   "road_lamp_glow": {
-   "shader": "foliage",
+   "shader": "std_surface",
    "params": {
-    "tint": "#e8eefc",
-    "alpha_scissor": 0.0,
-    "translucency": 1.6,
-    "roughness": 0.4,
-    "spring_tint": "#ffffff",
-    "summer_tint": "#ffffff",
-    "autumn_tint": "#ffffff",
-    "winter_tint": "#ffffff",
-    "winter_leaf_loss": 0.0,
-    "sway_height": 1000.0,
-    "stiffness": 10.0,
-    "flutter_strength": 0.0,
-    "ao_strength": 0.0
+    "tint": "#d4d9de",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.3,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#e8eefc",
+    "emission_energy": 2.0,
+    "emission_flicker": 0.0
    }
   },
   "road_lead": {

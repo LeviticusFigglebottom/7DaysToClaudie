@@ -67,10 +67,13 @@ def campfire(p):
         K.tube(mb, [mid, mid.lerp(top, 0.5), top], [rr * 0.95, rr * 0.8, rr * 0.35], sides=7, mat="item_wood_charred", caps=(False, True))
     ash = mb.build("ashbed", sharp_deg=55)
     parts.append(ash)
+    # Coals: charcoal while cold; the inner ones glow while the fire burns (ember_glow: StructurePiece
+    # lights them with the fire, ADR-0023).
     for k in range(9):
         a, d = r.uniform(0, 6.28), r.uniform(0.0, 0.22)
         ch = _decimated_pebble(f"coal{k}", (r.uniform(0.03, 0.06), r.uniform(0.025, 0.045), r.uniform(0.02, 0.035)), seed + 60 + k,
-                               "item_charcoal", (math.cos(a) * d, math.sin(a) * d, 0.012), tris=40, subdiv=1, lump=0.25)
+                               "ember_glow" if d < 0.15 else "item_charcoal", (math.cos(a) * d, math.sin(a) * d, 0.012), tris=40,
+                               subdiv=1, lump=0.25)
         parts.append(ch)
     col = K.collider_hull("campfire", parts[:n], max_faces=40)
     return parts, {"colliders": [col], "keep_xy": True}

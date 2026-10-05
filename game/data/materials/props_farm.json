@@ -377,21 +377,17 @@
    }
   },
   "farm_wick_flame": {
-   "shader": "foliage",
+   "shader": "std_surface",
    "params": {
     "tint": "#ffb85a",
-    "alpha_scissor": 0.0,
-    "translucency": 2.2,
-    "roughness": 0.9,
-    "spring_tint": "#ffffff",
-    "summer_tint": "#ffffff",
-    "autumn_tint": "#ffffff",
-    "winter_tint": "#ffffff",
-    "winter_leaf_loss": 0.0,
-    "sway_height": 1000.0,
-    "stiffness": 10.0,
-    "flutter_strength": 0.0,
-    "ao_strength": 0.0
+    "roughness_mult": 0.0,
+    "roughness_add": 0.9,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 2,
+    "emission_color": "#ffa448",
+    "emission_energy": 3.4,
+    "emission_flicker": 0.3
    }
   },
   "farm_feathers": {

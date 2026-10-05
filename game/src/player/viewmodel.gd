@@ -1,33 +1,72 @@
 class_name ViewModel
 extends Node3D
-## First-person presentation of the held item: idle sway, walk bob, swing/recoil animation.
-## Uses the generated first-person arms (models/characters/fp_arms.glb, docs/CHARACTERS.md) with
-## the item parented to their `socket_hand.R`, and their fp_* actions for idle/walk/swing. Without
-## the arms model the item floats at a rest pose and swings procedurally.
-## Items use their viewmodel model (models/viewmodels/<id>.glb) or the plain item model.
+## First-person presentation (ADR-0029): the generated arms (models/characters/fp_arms.glb,
+## docs/CHARACTERS.md) in the hold pose of the item in hand (data/config/viewmodel.json): tools
+## low and to the right, two-handed weapons, the torch held up in the left hand, food, bottles,
+## the Field Manual while laying out a blueprint, a log on the shoulder. On top of the baked poses
+## ViewModelMotion adds breathing, sway, inertia, a footstep bob and the lowered sprint pose; swings
+## are per class (chop, slash, bash, stab, dig, punch, torch) and freeze for a beat with a camera
+## kick when they connect; the guard, staggers, eating and drinking have their own motions. The
+## tether is the unit bolted over the left wrist: raising the wrist to read it narrows the view and
+## its screen shows the live tether UI (Tether renders into it). Everything draws with its own
+## field of view and squeezed depth (FpMaterials). Without the arms model the item floats at a
+## rest pose and swings procedurally.
 
 const ARMS_PATH: String = "res://assets/generated/models/characters/fp_arms.glb"
-const LOOPING: Array[StringName] = [&"fp_idle", &"fp_walk_bob", &"fp_idle_grip", &"fp_walk_grip", &"fp_carry_log"]
+const VM_PATH: String = "res://assets/generated/models/viewmodels/%s.glb"
+const MANUAL_MODEL: StringName = &"field_manual"
+const FLIPBOOK: String = "res://assets/generated/textures/fx_fire_flipbook.png"
+## Loops of the arms built before the hold classes (ADR-0029) existed.
+const LEGACY_LOOPS: Array[StringName] = [&"fp_idle", &"fp_walk_bob", &"fp_idle_grip", &"fp_walk_grip", &"fp_carry_log"]
 
-var _item_root: Node3D
+var cfg: Dictionary = {}
+var motion := ViewModelMotion.new()
+var tether := TetherRaise.new()
+## The hold class of what is in hand (ViewModelHolds).
+var hold_class: StringName = ViewModelHolds.EMPTY
+## QA (fp_preview): forces the base loop (fp_carry_log, fp_blueprint) without a player or building.
+var qa_base: StringName = &""
+
 var _rig: Node3D
+var _item_root: Node3D
 var _arms: Node3D = null
-var _arms_anim: AnimationPlayer = null
-var _hand: Node3D = null
+var _anim: AnimationPlayer = null
+var _sock: Dictionary = {}
 var _held: Node3D = null
 var _held_def: ItemDef = null
+var _held_hand: String = "R"
+## Shown instead of the held item: the Field Manual while laying out a blueprint, the log on the
+## shoulder while carrying.
+var _manual: Node3D = null
+var _log: Node3D = null
+var _flame: Node3D = null
+var _lit: bool = false
+var _base: StringName = &""
+var _action: StringName = &""
+var _action_end: float = 0.0
+var _hitstop: float = 0.0
+var _guard: bool = false
+var _t: float = 0.0
+var _prev_basis := Basis()
+var _have_basis: bool = false
+var _screen_mesh: MeshInstance3D = null
+var _screen_surface: int = -1
+var _screen_mat: StandardMaterial3D = null
+var _player: Player = null
+var _loops: Dictionary = {}
+# Procedural fallback (no arms model).
 var _swing_t: float = -1.0
 var _swing_len: float = 0.8
 var _recoil: float = 0.0
-var _lit: bool = false
 var _rest := Transform3D(Basis.from_euler(Vector3(deg_to_rad(8.0), deg_to_rad(-12.0), deg_to_rad(4.0))), Vector3(0.28, -0.3, -0.52))
-var _t: float = 0.0
-var _prev_cam_basis := Basis()
-var _one_shot: bool = false
-var _hold: bool = false
 
 
 func _ready() -> void:
+	cfg = ViewModelHolds.config()
+	FpMaterials.configure(cfg)
+	motion.setup(cfg)
+	tether.setup(cfg)
+	_player = owner as Player if owner is Player else null
 	_rig = Node3D.new()
 	_rig.name = "Rig"
 	add_child(_rig)
@@ -35,21 +74,31 @@ func _ready() -> void:
 	_item_root.name = "Held"
 	add_child(_item_root)
 	_item_root.transform = _rest
+	for cls: String in cfg.get("holds", {}):
+		for n: StringName in [ViewModelHolds.idle_action(StringName(cls)), ViewModelHolds.guard_action(StringName(cls)), ViewModelHolds.tether_action(StringName(cls))]:
+			_loops[n] = true
+	for n: StringName in LEGACY_LOOPS:
+		_loops[n] = true
 	if ResourceLoader.exists(ARMS_PATH):
 		_arms = (load(ARMS_PATH) as PackedScene).instantiate() as Node3D
 		_arms.name = "Arms"
 		# Authored looking down Blender -Y, which imports facing +Z: turn it to the camera's -Z.
 		_arms.rotation_degrees = Vector3(0.0, 180.0, 0.0)
 		_rig.add_child(_arms)
-		_set_layers(_arms)
-		_hand = _find_socket(_arms, "socket_hand.R")
-		_arms_anim = _arms.find_child("AnimationPlayer", true, false) as AnimationPlayer
-		if _arms_anim != null:
-			for a: StringName in LOOPING:
-				if _arms_anim.has_animation(a):
-					_arms_anim.get_animation(a).loop_mode = Animation.LOOP_LINEAR
-			_arms_anim.animation_finished.connect(func(_n: StringName) -> void: _one_shot = _hold)
-			_play(&"fp_idle")
+		FpMaterials.apply(_arms)
+		for sd: String in ["R", "L"]:
+			_sock[sd] = _find_socket(_arms, "socket_hand.%s" % sd)
+		_anim = _arms.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if _anim != null:
+			for a: StringName in _anim.get_animation_list():
+				if _loops.has(a):
+					_anim.get_animation(a).loop_mode = Animation.LOOP_LINEAR
+			_anim.animation_finished.connect(_on_animation_finished)
+		_find_tether_screen()
+	if _player != null:
+		_player.landed.connect(motion.landed)
+	Events.player_damaged.connect(_on_player_damaged)
+	_update_base()
 
 
 ## Bone-attached empties import under BoneAttachment3D, with "." replaced in their names.
@@ -60,53 +109,112 @@ static func _find_socket(root: Node, socket: String) -> Node3D:
 	return n as Node3D
 
 
+func has_arms() -> bool:
+	return _arms != null and _anim != null
+
+
+func has_action(anim_name: StringName) -> bool:
+	return _anim != null and _anim.has_animation(anim_name)
+
+
+# --- Items ---------------------------------------------------------------------------------
+
 func show_item(item_id: StringName) -> void:
 	if _held != null:
 		_held.queue_free()
 		_held = null
-	_held_def = null
-	if item_id == &"":
-		return
-	var def: ItemDef = Content.item(item_id)
-	_held_def = def
-	var vm_id: String = str(def.equip.get("viewmodel", "")) if def != null else ""
-	var vm_path: String = "res://assets/generated/models/viewmodels/%s.glb" % vm_id
-	var node: Node3D = null
-	var is_vm: bool = vm_id != "" and ResourceLoader.exists(vm_path)
-	if is_vm:
-		node = (load(vm_path) as PackedScene).instantiate() as Node3D
-		if _hand == null:
-			node.rotation_degrees = _rest_pose(node, def)
-	else:
-		node = ItemVisuals.make_model(item_id)
-		node.rotation_degrees = Vector3(-60.0, 20.0, 0.0)
-	_set_layers(node)
-	_held = node
-	# Viewmodels are authored in the hand-socket frame (grip at the origin), so they sit in the
-	# hand at identity; plain item models (food, placeables) rest on the palm, scaled down.
-	if _hand != null:
-		_hand.add_child(node)
-		if not is_vm:
-			node.rotation_degrees = Vector3.ZERO
-			node.scale = Vector3.ONE * 0.8
+	_flame = null
+	_lit = false
+	_held_def = Content.item(item_id) if item_id != &"" else null
+	hold_class = ViewModelHolds.hold_class(_held_def, cfg)
+	_guard = false
+	motion.start_equip()
+	if _held_def != null:
+		_held = _make_item(_held_def)
+		_set_layers(_held)
+		if has_arms():
+			_attach_held(ViewModelHolds.item_hand(hold_class, cfg))
 		else:
-			node.rotation_degrees = grip_rotation(def)
-	else:
-		_item_root.add_child(node)
+			_item_root.add_child(_held)
+			_held.rotation_degrees = _rest_pose(_held, _held_def)
+		FpMaterials.apply(_held)
+	if _action != &"" and _anim != null:
+		_action = &""
+	_update_base(true)
 
 
-## Orientation of a viewmodel in the hand socket (equip.grip_rot, degrees). Tools stand on their
-## handle along the socket's +Y (towards the thumb); pointing items (barrel, beam) aim along +Z,
-## which is the back of the hand, so guns and lights turn +90 deg about Y to aim along the
-## fingers, and a spear turns its shaft forward.
-static func grip_rotation(def: ItemDef) -> Vector3:
-	var g: Array = def.equip.get("grip_rot", []) if def != null else []
-	return Vector3(float(g[0]), float(g[1]), float(g[2])) if g.size() == 3 else Vector3.ZERO
+func _make_item(def: ItemDef) -> Node3D:
+	var vm_id: String = str(def.equip.get("viewmodel", ""))
+	if vm_id != "" and ResourceLoader.exists(VM_PATH % vm_id):
+		return (load(VM_PATH % vm_id) as PackedScene).instantiate() as Node3D
+	var node: Node3D = ItemVisuals.make_model(def.id)
+	# Ground models lie in their resting pose; held ones stand up, longest side along the grip.
+	var it: Dictionary = ViewModelHolds.hold(hold_class, cfg).get("item", {})
+	if bool(it.get("upright", false)):
+		var bb: AABB = _local_aabb(node)
+		var longest: int = 0 if bb.size.x >= maxf(bb.size.y, bb.size.z) else (1 if bb.size.y >= bb.size.z else 2)
+		var wrap := Node3D.new()
+		wrap.add_child(node)
+		if longest == 0:
+			node.rotation_degrees = Vector3(0, 0, 90)
+		elif longest == 2:
+			node.rotation_degrees = Vector3(90, 0, 0)
+		return wrap
+	return node
 
 
-## Floating pose for a viewmodel when there are no arms. Viewmodels import facing the camera:
-## melee tools stand on their handle (+Y) with the edge toward +Z; pointing items (muzzle, beam,
-## flame sockets) aim along +Z. Turn them around and tilt them into a carried pose.
+## Puts the held item in a hand socket with its hold's placement, centred on the grip when the
+## hold asks for it (cans, bottles: the fist closes round their middle).
+func _attach_held(hand: String) -> void:
+	if _held == null:
+		return
+	var sock: Node3D = _sock.get(hand, null)
+	if sock == null:
+		sock = _sock.get("R", null)
+	if sock == null:
+		return
+	if _held.get_parent() != null:
+		_held.get_parent().remove_child(_held)
+	sock.add_child(_held)
+	_held_hand = hand
+	var xf: Transform3D = ViewModelHolds.item_transform(_held_def, hold_class, cfg)
+	var it: Dictionary = ViewModelHolds.hold(hold_class, cfg).get("item", {})
+	var sc: float = float(it.get("scale", 1.0))
+	var c: Array = it.get("center", [])
+	if c.size() == 3:
+		var bb: AABB = _local_aabb(_held)
+		var at: Vector3 = bb.position + bb.size * Vector3(float(c[0]), float(c[1]), float(c[2]))
+		xf.origin -= xf.basis * (at * sc)
+	_held.transform = xf
+	_held.scale = Vector3.ONE * sc
+
+
+static func _local_aabb(root: Node3D) -> AABB:
+	var out := AABB()
+	var first: bool = true
+	var inv: Transform3D = root.global_transform.affine_inverse() if root.is_inside_tree() else Transform3D()
+	for mi: Node in root.find_children("*", "MeshInstance3D", true, false):
+		var m: MeshInstance3D = mi
+		if m.mesh == null:
+			continue
+		var xf: Transform3D = (inv * m.global_transform) if root.is_inside_tree() else _rel_xf(root, m)
+		var bb: AABB = xf * m.mesh.get_aabb()
+		out = bb if first else out.merge(bb)
+		first = false
+	return out
+
+
+static func _rel_xf(root: Node3D, n: Node3D) -> Transform3D:
+	var xf := Transform3D()
+	var cur: Node = n
+	while cur != null and cur != root:
+		if cur is Node3D:
+			xf = (cur as Node3D).transform * xf
+		cur = cur.get_parent()
+	return xf
+
+
+## Floating pose for a viewmodel when there are no arms (models import facing the camera).
 static func _rest_pose(node: Node3D, def: ItemDef) -> Vector3:
 	var pointing: bool = false
 	for s: String in ["socket_muzzle", "socket_light", "socket_flame"]:
@@ -123,87 +231,502 @@ static func _rest_pose(node: Node3D, def: ItemDef) -> Vector3:
 
 func _set_layers(n: Node) -> void:
 	if n is GeometryInstance3D:
-		var g: GeometryInstance3D = n
-		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		(n as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for c: Node in n.get_children():
 		_set_layers(c)
 
 
-func _play(anim_name: StringName, speed: float = 1.0, blend: float = 0.15) -> void:
-	if _arms_anim == null or not _arms_anim.has_animation(anim_name):
-		return
-	if _arms_anim.current_animation == anim_name and _arms_anim.is_playing():
-		_arms_anim.speed_scale = speed
-		return
-	_arms_anim.play(anim_name, blend)
-	_arms_anim.speed_scale = speed
+# --- Actions -------------------------------------------------------------------------------
+
+## Plays a one-shot arms action over `duration` seconds (its own length when 0). Also answers the
+## older calls: fp_raise_wrist / fp_lower_wrist raise and lower the tether, fp_use is the held
+## item's use. Returns false if the arms or the action are missing so callers can fall back.
+func play_action(anim_name: StringName, duration: float = 0.0, _hold: bool = false) -> bool:
+	match anim_name:
+		&"fp_raise_wrist":
+			set_tether_raised(true)
+			return has_arms()
+		&"fp_lower_wrist":
+			set_tether_raised(false)
+			return has_arms()
+		&"fp_use":
+			return play_use(ViewModelHolds.use_action(_held_def, hold_class, cfg), duration)
+	return _play_once(anim_name, duration)
 
 
-## Plays a one-shot arms action (fp_swing, fp_stab, fp_use, fp_raise_wrist...); with `hold` the
-## arms stay on its last frame until the next action. Returns false if the arms or the action are
-## missing so callers can fall back.
-func play_action(anim_name: StringName, duration: float = 0.0, hold: bool = false) -> bool:
-	if _arms_anim == null or not _arms_anim.has_animation(anim_name):
+func _play_once(anim_name: StringName, duration: float) -> bool:
+	if not has_action(anim_name):
 		return false
-	_hold = hold
-	var length: float = _arms_anim.get_animation(anim_name).length
-	_arms_anim.play(anim_name, 0.08)
-	_arms_anim.speed_scale = length / duration if duration > 0.05 else 1.0
-	_one_shot = true
+	var length: float = _anim.get_animation(anim_name).length
+	# play() keeps going if this action is still running (a swing that ran late on its hit-stop):
+	# start it over instead.
+	if _anim.current_animation == anim_name:
+		_anim.seek(0.0, true)
+	_anim.play(anim_name, 0.06)
+	_anim.speed_scale = length / duration if duration > 0.05 else 1.0
+	_action = anim_name
+	_action_end = _t + (duration if duration > 0.05 else length)
+	_hitstop = 0.0
 	return true
 
 
+## QA (fp_preview, screenshots): holds the arms `at` seconds into an action until released.
+func freeze_action(anim_name: StringName, at: float) -> bool:
+	if not has_action(anim_name):
+		return false
+	_anim.play(anim_name, 0.0)
+	_anim.seek(at, true)
+	_anim.speed_scale = 0.0
+	_action = anim_name
+	_action_end = INF
+	_hitstop = 0.0
+	return true
+
+
+func release_action() -> void:
+	if _action == &"":
+		return
+	_action = &""
+	if _anim != null:
+		_anim.speed_scale = 1.0
+	_update_base(true)
+
+
+## A swing of the held item over its attack_time (its class's style, or punching bare-handed).
 func play_swing(duration: float) -> void:
-	var held_pierce: bool = _held_def != null and str(_held_def.equip.get("damage_type", "")) == "pierce"
-	if play_action(&"fp_stab" if held_pierce else &"fp_swing", duration):
+	var style: StringName = ViewModelHolds.attack_style(_held_def, hold_class, cfg)
+	play_attack(style if style != &"" else &"punch", duration)
+
+
+func play_attack(style: StringName, duration: float) -> void:
+	tether.set_raised(false)
+	if _play_once(StringName("fp_%s" % style), duration):
+		return
+	# Older arms: their generic chop / stab.
+	if _play_once(&"fp_stab" if style in [&"stab", &"dig"] else &"fp_swing", duration):
 		return
 	_swing_t = 0.0
 	_swing_len = maxf(0.2, duration)
 
 
+## Eat, drink, apply, place, throw, light...: false when the arms have no such action.
+func play_use(use: StringName, duration: float = 0.0) -> bool:
+	if use == &"":
+		return false
+	if _play_once(StringName("fp_%s" % use), duration):
+		return true
+	return _play_once(&"fp_use", duration) if use in [&"eat", &"drink", &"apply"] else false
+
+
 func play_recoil() -> void:
 	_recoil = 1.0
+	motion.gun_recoil(1.0)
 
 
 func set_lit(on: bool) -> void:
 	_lit = on
+	_update_flame()
+
+
+## The swing connected with `surface` (ViewModelHolds.surface_kind): a beat of hit-stop, the
+## camera kicks, the tool recoils off it.
+func impact(surface: StringName) -> void:
+	var surf: Dictionary = (cfg.get("impact", {}) as Dictionary).get("surfaces", {})
+	var s: Dictionary = surf.get(String(surface), surf.get("solid", {}))
+	_hitstop = maxf(_hitstop, float(s.get("hitstop", 0.05)))
+	var k: Array = s.get("kick", [-1.0, 0.0, 0.0])
+	motion.impact(Vector3(float(k[0]), float(k[1]), float(k[2])), float(s.get("recoil", 0.01)))
+
+
+func set_guard(on: bool) -> void:
+	if on == _guard:
+		return
+	_guard = on
+	if on:
+		tether.set_raised(false)
+	_update_base()
+
+
+func guarding() -> bool:
+	return _guard
+
+
+## A blow landed on the raised guard: the weapon is knocked back.
+func blocked(amount: float) -> void:
+	var st: Dictionary = cfg.get("stagger", {})
+	motion.stagger(float(st.get("block_deg", 4.0)) * clampf(amount / 10.0, 0.4, 1.5), 0.01, 1.0)
+
+
+func _on_player_damaged(player_id: StringName, amount: float, source: Dictionary) -> void:
+	if _player == null or _player.state == null or player_id != _player.state.id:
+		return
+	var st: Dictionary = cfg.get("stagger", {})
+	var deg: float = minf(amount * float(st.get("deg_per_damage", 0.35)), float(st.get("max_deg", 10.0)))
+	var side: float = 1.0
+	var from: Array = source.get("from", [])
+	if from.size() == 3:
+		var to_src: Vector3 = Vector3(float(from[0]), float(from[1]), float(from[2])) - _player.global_position
+		side = -1.0 if to_src.dot(_player.global_transform.basis.x) > 0.0 else 1.0
+	motion.stagger(deg, amount * float(st.get("pos_per_damage", 0.0012)), side)
+
+
+# --- The tether ------------------------------------------------------------------------------
+
+func set_tether_raised(up: bool) -> void:
+	if tether.set_raised(up):
+		_update_base()
+
+
+func tether_raised() -> bool:
+	return tether.wants_up()
+
+
+## The tether's screen (fp_tether_screen) on the arms, if the model has one.
+func has_tether_screen() -> bool:
+	return _screen_mesh != null
+
+
+## Shows `tex` (the tether UI's viewport) on the arms' tether screen. Returns false without arms.
+func attach_tether_screen(tex: Texture2D) -> bool:
+	if _screen_mesh == null:
+		return false
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.015, 0.02, 0.018)
+	m.emission_enabled = true
+	m.emission_texture = tex
+	m.emission = Color.WHITE
+	m.emission_energy_multiplier = _screen_energy(0.0)
+	m.roughness = 0.16
+	m.metallic_specular = 0.65
+	_screen_mat = FpMaterials.fp_material(m) as StandardMaterial3D
+	_screen_mesh.set_surface_override_material(_screen_surface, _screen_mat)
+	return true
+
+
+func _find_tether_screen() -> void:
+	for n: Node in _arms.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = n
+		if mi.mesh == null:
+			continue
+		for i: int in mi.mesh.get_surface_count():
+			var m: Material = mi.mesh.surface_get_material(i)
+			if m != null and m.resource_name.contains("tether_screen"):
+				_screen_mesh = mi
+				_screen_surface = i
+				return
+
+
+func _screen_energy(raise: float) -> float:
+	var e: Array = (cfg.get("tether", {}) as Dictionary).get("screen_energy", [0.35, 1.3])
+	return lerpf(float(e[0]), float(e[1]), raise)
+
+
+# --- Lights ----------------------------------------------------------------------------------
+
+## Where a held light burns (the torch's flame, the flashlight's lens), for the light to follow.
+func light_anchor() -> Node3D:
+	if _held == null:
+		return null
+	for s: String in ["socket_flame", "socket_light"]:
+		var n: Node3D = _held.find_child(s, true, false) as Node3D
+		if n != null:
+			return n
+	return null
+
+
+## A burning torch head: licking flames from the fire flipbook, embers and a thin smoke, all in
+## world space so they trail as you move.
+func _update_flame() -> void:
+	if _flame != null and is_instance_valid(_flame):
+		_flame.queue_free()
+	_flame = null
+	_set_ember(_lit)
+	if not _lit or _held == null or DisplayServer.get_name() == "headless":
+		return
+	var sock: Node3D = _held.find_child("socket_flame", true, false) as Node3D
+	if sock == null:
+		return
+	var small: bool = _held_def != null and _held_def.id != &"torch"
+	_flame = Node3D.new()
+	_flame.name = "Flame"
+	sock.add_child(_flame)
+	_flame.add_child(_flame_particles(small))
+	if not small:
+		_flame.add_child(_ember_particles())
+	FpMaterials.apply(_flame)
+
+
+## The torch's burnt top glows like coals while it burns (item_torch_ember is a light_source 1
+## material: it reads the instance's light_lit).
+func _set_ember(on: bool) -> void:
+	if _held == null:
+		return
+	for n: Node in _held.find_children("*", "GeometryInstance3D", true, false):
+		(n as GeometryInstance3D).set_instance_shader_parameter(&"light_lit", 1.0 if on else 0.0)
+
+
+func _flame_particles(small: bool) -> GPUParticles3D:
+	var p := GPUParticles3D.new()
+	p.amount = 10 if small else 22
+	p.lifetime = 0.45 if small else 0.7
+	p.local_coords = false
+	p.fixed_fps = 0
+	p.visibility_aabb = AABB(Vector3(-1, -1, -1), Vector3(2, 2, 2))
+	var m := ParticleProcessMaterial.new()
+	m.direction = Vector3(0, 1, 0)
+	m.spread = 12.0
+	m.initial_velocity_min = 0.25
+	m.initial_velocity_max = 0.5
+	m.gravity = Vector3(0, 0.9, 0)
+	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	m.emission_sphere_radius = 0.008 if small else 0.028
+	m.scale_min = 0.55
+	m.scale_max = 1.0
+	var sc := Curve.new()
+	sc.add_point(Vector2(0.0, 0.55))
+	sc.add_point(Vector2(0.35, 1.0))
+	sc.add_point(Vector2(1.0, 0.25))
+	var st := CurveTexture.new()
+	st.curve = sc
+	m.scale_curve = st
+	var g := Gradient.new()
+	g.set_color(0, Color(1.0, 0.9, 0.6, 1.0))
+	g.set_color(1, Color(0.7, 0.18, 0.05, 0.0))
+	var gt := GradientTexture1D.new()
+	gt.gradient = g
+	m.color_ramp = gt
+	var q := QuadMesh.new()
+	q.size = Vector2(0.07, 0.11) if small else Vector2(0.16, 0.24)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_color = Color(1.0, 0.85, 0.6) * 1.6
+	if ResourceLoader.exists(FLIPBOOK):
+		mat.albedo_texture = load(FLIPBOOK)
+		mat.particles_anim_h_frames = 8
+		mat.particles_anim_v_frames = 8
+		mat.particles_anim_loop = true
+		m.anim_speed_min = 1.0
+		m.anim_speed_max = 1.3
+		m.anim_offset_max = 1.0
+	q.material = mat
+	p.process_material = m
+	p.draw_pass_1 = q
+	return p
+
+
+func _ember_particles() -> GPUParticles3D:
+	var p := GPUParticles3D.new()
+	p.amount = 10
+	p.lifetime = 1.4
+	p.local_coords = false
+	p.visibility_aabb = AABB(Vector3(-2, -1, -2), Vector3(4, 4, 4))
+	var m := ParticleProcessMaterial.new()
+	m.direction = Vector3(0, 1, 0)
+	m.spread = 25.0
+	m.initial_velocity_min = 0.4
+	m.initial_velocity_max = 0.9
+	m.gravity = Vector3(0, 0.5, 0)
+	m.turbulence_enabled = true
+	m.turbulence_noise_strength = 0.6
+	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	m.emission_sphere_radius = 0.03
+	m.scale_min = 0.4
+	m.scale_max = 1.0
+	var g := Gradient.new()
+	g.set_color(0, Color(1.0, 0.75, 0.35, 1.0))
+	g.set_color(1, Color(0.9, 0.25, 0.05, 0.0))
+	var gt := GradientTexture1D.new()
+	gt.gradient = g
+	m.color_ramp = gt
+	var q := QuadMesh.new()
+	q.size = Vector2(0.008, 0.008)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	mat.vertex_color_use_as_albedo = true
+	mat.albedo_color = Color(1.0, 0.8, 0.5) * 2.0
+	q.material = mat
+	p.process_material = m
+	p.draw_pass_1 = q
+	return p
+
+
+# --- Per frame -------------------------------------------------------------------------------
+
+func _on_animation_finished(anim_name: StringName) -> void:
+	if anim_name == _action:
+		_action = &""
+		_update_base(true)
+
+
+func _placing_blueprint() -> bool:
+	var w: Node = Game.world
+	var b: Node = w.get(&"building") if w != null else null
+	return b != null and b.has_method(&"is_placing") and bool(b.call(&"is_placing"))
+
+
+func _carrying_logs() -> bool:
+	return _player != null and _player.equipment != null and _player.equipment.carried_logs() > 0
+
+
+## The loop the arms should be in (when no swing or use is playing): carrying logs, laying out a
+## blueprint, reading the tether, guarding, or the hold class's idle; older arms fall back to
+## their generic idles.
+func base_action() -> StringName:
+	var want: StringName = ViewModelHolds.idle_action(hold_class)
+	if qa_base != &"" and has_action(qa_base):
+		want = qa_base
+	elif _carrying_logs():
+		want = &"fp_carry_log"
+	elif _placing_blueprint():
+		want = &"fp_blueprint"
+	elif tether.wants_up() and has_action(ViewModelHolds.tether_action(hold_class)):
+		want = ViewModelHolds.tether_action(hold_class)
+	elif _guard and has_action(ViewModelHolds.guard_action(hold_class)):
+		want = ViewModelHolds.guard_action(hold_class)
+	if not has_action(want):
+		want = &"fp_idle_grip" if _held != null and has_action(&"fp_idle_grip") else &"fp_idle"
+	if not has_action(want):
+		want = ViewModelHolds.idle_action(ViewModelHolds.EMPTY)
+	return want
+
+
+func _update_base(force: bool = false) -> void:
+	if _anim == null or _action != &"":
+		return
+	var want: StringName = base_action()
+	if not has_action(want) or (want == _base and not force and _anim.current_animation == want):
+		return
+	var blend: float = 0.22
+	if want == ViewModelHolds.tether_action(hold_class):
+		blend = tether.raise_time
+	elif _base == ViewModelHolds.tether_action(hold_class):
+		blend = tether.lower_time
+	elif want == ViewModelHolds.guard_action(hold_class) or _base == ViewModelHolds.guard_action(hold_class):
+		blend = float((cfg.get("guard", {}) as Dictionary).get("raise_time", 0.12))
+	if _anim.current_animation != want or force:
+		_anim.play(want, blend)
+	_anim.speed_scale = 1.0
+	_base = want
+	# Hands busy with the manual or a log put the item away for the moment.
+	var busy: bool = want == &"fp_carry_log" or want == &"fp_blueprint"
+	if _held != null:
+		_held.visible = not busy
+	_show_manual(want == &"fp_blueprint")
+	_show_log(want == &"fp_carry_log")
+	# Reading the tether with a light in the left hand: it moves to the right.
+	if _held != null and has_arms():
+		var hand: String = ViewModelHolds.item_hand(hold_class, cfg)
+		if hand == "L" and want == ViewModelHolds.tether_action(hold_class):
+			hand = "R"
+		if hand != _held_hand:
+			_attach_held(hand)
+
+
+func _show_manual(on: bool) -> void:
+	if not on:
+		if _manual != null:
+			_manual.visible = false
+		return
+	if _manual == null and _sock.get("L", null) != null:
+		_manual = ItemVisuals.make_model(MANUAL_MODEL)
+		(_sock["L"] as Node3D).add_child(_manual)
+		var bp: Dictionary = ViewModelHolds.hold(&"blueprint", cfg).get("item", {})
+		var r: Array = bp.get("rot", [90, 0, 0])
+		var p: Array = bp.get("pos", [0, 0, 0])
+		_manual.rotation_degrees = Vector3(float(r[0]), float(r[1]), float(r[2]))
+		_manual.position = Vector3(float(p[0]), float(p[1]), float(p[2]))
+		_set_layers(_manual)
+		FpMaterials.apply(_manual)
+	if _manual != null:
+		_manual.visible = true
+
+
+## The carried log, resting on the right shoulder (viewmodel.json holds.carry_log.log).
+func _show_log(on: bool) -> void:
+	if not on:
+		if _log != null:
+			_log.visible = false
+		return
+	if _log == null:
+		var lc: Dictionary = ViewModelHolds.hold(&"carry_log", cfg).get("log", {})
+		var c: Array = lc.get("center", [0.24, -0.1, 0.1])
+		var d: Array = lc.get("dir", [0.15, 0.45, -0.88])
+		var mi := MeshInstance3D.new()
+		mi.name = "CarriedLog"
+		mi.mesh = ModelLibrary.mesh(str(lc.get("model", "structures/log_piece")), "log")
+		var x := Vector3(float(d[0]), float(d[1]), float(d[2])).normalized()
+		var y: Vector3 = x.cross(Vector3.FORWARD).normalized() if absf(x.dot(Vector3.FORWARD)) < 0.99 else Vector3.UP
+		mi.transform = Transform3D(Basis(x, y, x.cross(y)), Vector3(float(c[0]), float(c[1]), float(c[2])))
+		_log = mi
+		_rig.add_child(_log)
+		_set_layers(_log)
+		FpMaterials.apply(_log)
+	_log.visible = true
 
 
 func _process(delta: float) -> void:
 	_t += delta
-	var player: Player = owner as Player if owner is Player else null
-	var speed: float = player.horizontal_speed() if player != null else 0.0
-	var bob := Vector3(sin(_t * 6.0) * 0.006, absf(cos(_t * 6.0)) * 0.008, 0.0) * clampf(speed / 3.0, 0.0, 1.5)
-	var breathe := Vector3(0.0, sin(_t * 1.3) * 0.003, 0.0)
-	# Sway: lag behind camera rotation.
+	tether.update(delta)
 	var cam: Camera3D = get_parent() as Camera3D
-	var sway := Vector3.ZERO
 	if cam != null:
-		var d: Basis = _prev_cam_basis.inverse() * cam.global_transform.basis
-		var e: Vector3 = d.get_euler()
-		sway = Vector3(-e.y * 0.6, e.x * 0.6, 0.0).limit_length(0.05)
-		_prev_cam_basis = cam.global_transform.basis
-	if _arms_anim != null and not _one_shot:
-		if player != null and player.equipment != null and player.equipment.carried_logs() > 0:
-			_play(&"fp_carry_log")
-		else:
-			# A held item closes the hand round it (the *_grip variants of the same stance).
-			var grip: bool = _held != null and _arms_anim.has_animation(&"fp_idle_grip")
-			var walk: StringName = &"fp_walk_grip" if grip else &"fp_walk_bob"
-			var idle: StringName = &"fp_idle_grip" if grip else &"fp_idle"
-			_play(walk if speed > 0.6 else idle, clampf(speed / 3.0, 0.6, 1.6) if speed > 0.6 else 1.0)
-	var rig := Transform3D(Basis(), sway + (breathe if _arms != null else Vector3.ZERO))
-	if _recoil > 0.0:
-		_recoil = maxf(0.0, _recoil - delta * 6.0)
-		rig.basis = Basis(Vector3.RIGHT, _recoil * 0.2)
-		rig.origin += Vector3(0.0, 0.0, _recoil * 0.05)
-	_rig.transform = _rig.transform.interpolate_with(rig, minf(1.0, 20.0 * delta))
+		visible = cam.current
+	var look := Vector2.ZERO
+	if cam != null:
+		var b: Basis = cam.global_transform.basis
+		if _have_basis and delta > 0.0:
+			var e: Vector3 = (_prev_basis.inverse() * b).get_euler()
+			look = Vector2(e.y, e.x) / delta
+		_prev_basis = b
+		_have_basis = true
+	var vel := Vector3.ZERO
+	var speed: float = 0.0
+	if _player != null and cam != null:
+		vel = cam.global_transform.basis.inverse() * _player.velocity
+		speed = _player.horizontal_speed()
+		motion.reading = tether.progress()
+		motion.update(delta, look, vel, speed, _player.sprinting, _player.crouching, _player.is_on_floor(),
+			_player.step_phase(), _player.step_count, float(_player.cfg.get("walk_speed", 3.4)))
+	else:
+		motion.reading = tether.progress()
+		motion.update(delta, look, vel, 0.0, false, false, true, 0.0, 0)
+	_rig.transform = motion.rig_transform()
+	if cam != null and cam.current:
+		cam.rotation = motion.camera_kick()
+	# Hit-stop: the swing hangs on what it struck, then catches up to finish on time.
+	if _anim != null and _action != &"":
+		if _hitstop > 0.0:
+			_hitstop -= delta
+			_anim.speed_scale = 0.0
+			if _hitstop <= 0.0:
+				var left_anim: float = _anim.current_animation_length - _anim.current_animation_position
+				_anim.speed_scale = clampf(left_anim / maxf(0.05, _action_end - _t), 0.5, 4.0)
+	else:
+		_update_base()
+	# Reading the tether narrows the viewmodel's field of view so the screen fills more of it.
+	var tc: Dictionary = cfg.get("tether", {})
+	var fov: float = lerpf(float(cfg.get("fov", 58.0)), float(tc.get("fov", 42.0)), tether.progress())
+	if absf(fov - FpMaterials.fov) > 0.01:
+		FpMaterials.set_fov(fov)
+	if _screen_mat != null:
+		_screen_mat.emission_energy_multiplier = _screen_energy(tether.progress())
+	if not has_arms():
+		_fallback_motion(delta, speed)
+
+
+## No arms model: the item floats at its rest pose and swings procedurally.
+func _fallback_motion(delta: float, speed: float) -> void:
 	var tr: Transform3D = _rest
-	tr.origin += bob + breathe + sway
+	tr.origin += Vector3(sin(_t * 6.0) * 0.006, absf(cos(_t * 6.0)) * 0.008, 0.0) * clampf(speed / 3.0, 0.0, 1.5)
 	if _swing_t >= 0.0:
 		_swing_t += delta
 		var k: float = clampf(_swing_t / _swing_len, 0.0, 1.0)
-		# Wind-up (0..0.35), strike (0.35..0.5), recover.
 		var a: float
 		if k < 0.35:
 			a = -ease(k / 0.35, 0.5) * 0.9
@@ -215,7 +738,8 @@ func _process(delta: float) -> void:
 		tr.origin += Vector3(-a * 0.08, a * 0.05, -absf(a) * 0.06)
 		if k >= 1.0:
 			_swing_t = -1.0
-	if _recoil > 0.0 and _arms == null:
+	if _recoil > 0.0:
+		_recoil = maxf(0.0, _recoil - delta * 6.0)
 		tr.basis = tr.basis * Basis(Vector3.RIGHT, _recoil * 0.35)
 		tr.origin += Vector3(0.0, 0.0, _recoil * 0.06)
 	_item_root.transform = _item_root.transform.interpolate_with(tr, minf(1.0, 20.0 * delta))

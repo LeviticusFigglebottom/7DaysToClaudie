@@ -33,6 +33,8 @@ var _placeholder: bool = false
 var _segments: Dictionary = {}
 var _stumps: Dictionary = {}
 var _bob_t: float = 0.0
+## Idle and shamble variants this body plays (ADR-0028): action name -> the variant to play.
+var _variants: Dictionary = {}
 const SENSE_SHADER: String = "res://assets/shaders/sleeper_sense.gdshader"
 static var _sense_material: ShaderMaterial = null
 ## Warmer, stronger rim for a POI guardian (ADR-0018): Sleeper Sense tells the loot room's
@@ -85,13 +87,67 @@ static func model_path(id: String) -> String:
 	return "res://assets/generated/models/%s.glb" % id
 
 
-## height_scale is uniform; body_scale widens/deepens a frame (Rammer bulk) on top of it.
+## Population looks (ADR-0028): the body a Hollowed wears comes from the population its sleeper
+## post, its building or its region asks for (PopulationDef); `fallback`, the type's own pick,
+## otherwise, and while that body's model is not generated yet.
+static func population_body(enemy: Node, fallback: String) -> String:
+	var e := enemy as Enemy
+	if e == null or e.def == null:
+		return fallback
+	var pop: StringName = population_of(e)
+	if pop == &"":
+		return fallback
+	var pd := Content.get_def(&"population", pop) as PopulationDef
+	if pd == null:
+		return fallback
+	var body: String = pd.pick(e.def.id, String(e.entity_id))
+	if body == "" or not ResourceLoader.exists(model_path(body)):
+		return fallback
+	return body
+
+
+## The population a Hollowed belongs to: its sleeper entry's, else its building's, else its
+## region's (region.json "population"); &"" for none.
+static func population_of(e: Enemy) -> StringName:
+	var w: Node = Game.world
+	if w == null:
+		return &""
+	var pois: Node = w.get(&"pois")
+	if e.poi_id != &"" and pois != null:
+		var inst := (pois.get(&"instances") as Dictionary).get(e.poi_id) as PoiInstance
+		if inst != null and inst.layout != null:
+			for sl: Dictionary in inst.layout.sleepers:
+				if str(sl.get("sid", "")) == String(e.sleeper_id) and sl.has("population"):
+					return StringName(str(sl["population"]))
+			if inst.layout.def.population != &"":
+				return inst.layout.def.population
+	var wd: WorldDef = w.get(&"world_def") as WorldDef
+	if wd != null and e.is_inside_tree():
+		var rid: String = wd.region_at(e.global_position.x, e.global_position.z)
+		if rid != "":
+			return StringName(str(wd.region_data(rid).get("population", "")))
+	return &""
+
+
+## The Blister's pustules burst (the skin shader swaps them for torn craters, ADR-0028).
+func burst() -> void:
+	if _placeholder or _root == null:
+		return
+	for g: Node in _root.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).set_instance_shader_parameter(&"hollow_burst", 1.0)
+
+
+## height_scale is uniform; body_scale widens/deepens a frame on top of it (the Rammer's bulk is
+## now built into its own mesh: ADR-0028).
 func build(p_model_id: String, height_scale: float, body_scale := Vector3.ONE) -> void:
-	model_id = p_model_id
+	model_id = population_body(get_parent(), p_model_id)
 	scale = body_scale * height_scale
 	var path: String = model_path(model_id)
-	if ResourceLoader.exists(path):
-		_root = (load(path) as PackedScene).instantiate() as Node3D
+	# A model regenerated but not imported yet has a sidecar and no scene: the stand-in body then,
+	# rather than a Hollowed with no body at all.
+	var ps: PackedScene = load(path) as PackedScene if ResourceLoader.exists(path) else null
+	if ps != null:
+		_root = ps.instantiate() as Node3D
 		add_child(_root)
 		anim = _root.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		skeleton = _root.find_child("Skeleton3D", true, false) as Skeleton3D
@@ -104,8 +160,9 @@ func build(p_model_id: String, height_scale: float, body_scale := Vector3.ONE) -
 		if anim != null:
 			for a: StringName in anim.get_animation_list():
 				var res: Animation = anim.get_animation(a)
-				if String(a).begins_with("idle") or a in [&"walk", &"walk_b", &"run", &"crawl", &"attack_structure", &"eat"]:
+				if String(a).begins_with("idle") or a in [&"walk", &"walk_b", &"walk_limp", &"run", &"crawl", &"attack_structure", &"eat"]:
 					res.loop_mode = Animation.LOOP_LINEAR
+			_pick_variants()
 	else:
 		_placeholder = true
 		_root = _make_placeholder()
@@ -145,6 +202,23 @@ func _make_placeholder() -> Node3D:
 	return root
 
 
+## Each body settles on one idle (sway, head loll or twitching) and a third of them limp hard in
+## place of dragging a foot, so a crowd does not move in step. Deterministic per Hollowed.
+func _pick_variants() -> void:
+	var key: String = "%s:%s" % [model_id, str(get_parent().get(&"entity_id")) if get_parent() != null else ""]
+	# Through an RNG: the raw FNV hash's low bits barely change between ids like "e:1", "e:2"
+	# (nearly every body took the same idle).
+	var rng := RandomNumberGenerator.new()
+	rng.seed = Ids.hash64("variants:" + key)
+	var idles: Array[StringName] = [&"idle"]
+	for v: StringName in [&"idle_b", &"idle_c"]:
+		if anim.has_animation(v):
+			idles.append(v)
+	_variants[&"idle"] = idles[rng.randi() % idles.size()]
+	if anim.has_animation(&"walk_limp") and rng.randf() < 1.0 / 3.0:
+		_variants[&"walk_b"] = &"walk_limp"
+
+
 func has_anim(n: StringName) -> bool:
 	return anim != null and anim.has_animation(n)
 
@@ -154,7 +228,7 @@ func play(n: StringName, speed: float = 1.0, blend: float = 0.25, alts: Array[St
 	if anim == null:
 		current_anim = n
 		return
-	var name_to_play: StringName = n
+	var name_to_play: StringName = _variants.get(n, n)
 	if not anim.has_animation(name_to_play):
 		name_to_play = &""
 		for a: StringName in alts:
@@ -183,10 +257,19 @@ func play_once(n: StringName, speed: float = 1.0, alts: Array[StringName] = []) 
 				break
 	if name_to_play == &"":
 		return 0.6
+	if String(name_to_play).begins_with("death"):
+		# whatever kills it bursts the pustules it carries (only the Blister has any)
+		burst()
 	current_anim = name_to_play
 	anim.play(name_to_play, 0.12, 1.0)
 	anim.speed_scale = speed
 	return anim.get_animation(name_to_play).length / maxf(speed, 0.05)
+
+
+## Holds the pose it is in (a sleeper killed where it sat or lay stays that way).
+func freeze() -> void:
+	if anim != null:
+		anim.pause()
 
 
 ## Placeholder bodies get a little procedural life (sway / lean while moving).

@@ -39,13 +39,22 @@ def glass(tex: str, uv: float, tint: str, opacity: float, **params) -> dict:
     return m
 
 
-def glow(tint: str, translucency: float = 2.0, rough: float = 0.6) -> dict:
-    """Light-source surfaces (flames, lamp globes): the foliage shader's BACKLIGHT term lets the
-    prop's own OmniLight (PropDef.light) shine through them at night. std_surface has no emission."""
-    return {"shader": "foliage", "params": {
-        "tint": tint, "alpha_scissor": 0.0, "translucency": float(translucency), "roughness": float(rough),
-        "spring_tint": WHITE, "summer_tint": WHITE, "autumn_tint": WHITE, "winter_tint": WHITE,
-        "winter_leaf_loss": 0.0, "sway_height": 1000.0, "stiffness": 10.0, "flutter_strength": 0.0, "ao_strength": 0.0}}
+def glow(tint: str, emission: str, energy: float, *, kind: int = 1, flicker: float = 0.0, rough: float = 0.6) -> dict:
+    """Light-source surfaces (ADR-0023): std_surface emission in the light's own colour, shining only
+    while the prop's light burns (PropLights sets the `light_lit` instance uniform where a POI lights
+    it). kind 1 = lamp globes, lenses, embers and stove mica, which show `tint` when cold; kind 2 =
+    flames, which exist only while lit. Untextured: flat tint, `rough` roughness, no metal."""
+    return std_flat(tint, rough, light_source=kind, emission_color=emission, emission_energy=energy,
+                    emission_flicker=flicker)
+
+
+def std_flat(tint: str, rough: float, **params) -> dict:
+    """Untextured std_surface (its default ORM is white: roughness 1 x mult, metal 1 x mult)."""
+    m = {"shader": STD, "params": {"tint": tint, "roughness_mult": 0.0, "roughness_add": float(rough),
+                                   "metallic_mult": 0.0, "vertex_ao_strength": 0.0}}
+    for k, v in params.items():
+        m["params"][k] = float(v) if isinstance(v, float) else v
+    return m
 
 
 MATS: dict[str, dict] = {}
@@ -105,6 +114,20 @@ MATS["chainlink"] = {"shader": "foliage", "textures": "chainlink", "params": {
     "spring_tint": WHITE, "summer_tint": WHITE, "autumn_tint": WHITE, "winter_tint": WHITE, "winter_leaf_loss": 0.0,
     "sway_height": 1000.0, "stiffness": 10.0, "flutter_strength": 0.0}}
 MATS["concrete_barrier"] = std("concrete_barrier", 1.0, grime_amount=0.5, grime_color="#3a362e")
+# Bridge kit (ADR-0023): weathered cast concrete for abutments, piers and approach walls (silt and
+# rust-water staining in the wear layer, moss on top faces, metre-scale tone drift for the big
+# faces), road paint worn through to the asphalt, and retroreflective delineators.
+MATS["bridge_concrete"] = std("concrete", 0.5, tint="#c4bfb4", layers={"wear": "terrain_mud", "moss": "moss"},
+                              wear_amount=0.55, wear_uv_scale=0.4, moss_amount=0.4, moss_uv_scale=0.6,
+                              grime_amount=0.45, grime_color="#2b2721", macro_variation=0.55)
+MATS["bridge_paint_yellow"] = std("plastic_molded", 2.0, tint="#d6a23c", layers={"wear": "terrain_asphalt_cracked"},
+                                  wear_amount=0.7, wear_uv_scale=0.25, roughness_add=0.4, grime_amount=0.35,
+                                  grime_color="#3a362e")
+MATS["bridge_paint_white"] = std("plastic_molded", 2.0, tint="#dedbd2", layers={"wear": "terrain_asphalt_cracked"},
+                                 wear_amount=0.7, wear_uv_scale=0.25, roughness_add=0.4, grime_amount=0.35,
+                                 grime_color="#3a362e")
+MATS["bridge_reflector_amber"] = {"shader": "retroreflector", "params": {"tint": "#ffa818", "retro": 9.0}}
+MATS["bridge_reflector_white"] = {"shader": "retroreflector", "params": {"tint": "#eeeee6", "retro": 7.0}}
 MATS["paint_red_sign"] = std("paint_red_sign", 1.0, grime_amount=0.3)
 
 # --- Clutter -------------------------------------------------------------------------------------
@@ -157,8 +180,11 @@ MATS["corpse_hair"] = std("canvas_tarp", 12.0, tint="#3e3428", grime_amount=0.3)
 MATS["blood_dried"] = std("blood_dried", 2.5, grime_amount=0.2)
 MATS["ash_burnt"] = std("ash_burnt", 1.5, grime_amount=0.3, grime_color="#0a0909")
 MATS["candle_wax"] = std("plastic_molded", 4.0, tint="#e7dcc0", roughness_add=0.15, grime_amount=0.4)
-MATS["flame_glow"] = glow("#ffb04a", translucency=2.0, rough=0.9)
-MATS["lamp_glow"] = glow("#efe6cf", translucency=1.6, rough=0.4)
+MATS["flame_glow"] = glow("#ffb04a", "#ffa040", 3.6, kind=2, flicker=0.3, rough=0.9)
+MATS["lamp_glow"] = glow("#d6d1c3", "#fff0cf", 2.2, kind=1, flicker=0.05, rough=0.22)
+MATS["ember_glow"] = glow("#2a221d", "#ff5418", 2.4, kind=1, flicker=0.45, rough=0.95)
+MATS["mica_glow"] = glow("#3b2b20", "#ff7a2c", 1.8, kind=1, flicker=0.35, rough=0.35)
+MATS["mantle_glow"] = glow("#cfcac0", "#fff3da", 4.5, kind=1, flicker=0.04, rough=0.95)
 MATS["leather_dark"] = std("plastic_molded", 2.5, tint="#4a3426", roughness_add=0.25, grime_amount=0.5)
 
 

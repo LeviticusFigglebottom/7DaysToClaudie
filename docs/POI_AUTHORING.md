@@ -38,6 +38,10 @@ triggers, traps a careless player springs, lock cues on doors, a guardian on the
   "lights": [...], "decals": [...], "route": [...], "loot_room": {...}, "shortcuts": [...], "budget": {...}
 }
 ```
+`"population": "clinic"` (optional) dresses the building's Hollowed as the people who were there
+(`game/data/populations/`, ADR-0028): the clinic's patients, St. Ansel's congregation, a Cordon
+crew. A sleeper entry may name its own `population` (a nurse among the patients); a region names
+one for its open ground with `"population"` in `region.json`.
 
 ### style
 | key | meaning |
@@ -49,7 +53,7 @@ triggers, traps a careless player springs, lock cues on doors, a guardian on the
 | `damaged_walls` | chance an interior wall uses `wall_1m_damaged` |
 | `prop_condition` | default prop variant: `clean` / `worn` / `destroyed` |
 | `scatter` | `{"density": 0.35}` — room-appropriate clutter along walls, never on the route |
-| `roof` | `{"type": "gable"|"flat", "axis": "x"|"z", "pitch": 32, "overhang": 0.45, "material": "...", "parapet": 0.6}` |
+| `roof` | defaults for every roof of the building, `{"type": "gable", "axis": "x"|"z", "pitch": 32, "overhang": 0.45, "material": "...", "parapet": 0.6, "roofs": [...]}`: the planner roofs each part where it sits, `roofs` overrides a part (see [Roofs](#roofs)) |
 | `porch` | `{"side": "S", "from": 1, "to": 8, "depth": 2, "steps": [4]}` (deck along a side, steps at columns) |
 | `chimney` | `[col, row]` |
 
@@ -76,6 +80,10 @@ linoleum_beige, tile_white_small, concrete`.
 * Each character is one cell: a room letter, `.` = yard (outside), space = nothing.
 * Walls are generated automatically on every edge between different rooms and between a room
   and the outside. `"open_to": "HD"` removes walls to those rooms (open plan).
+* A room may rise two or three storeys: `"storeys": 2` on its lowest level and `^` in the plans
+  above wherever it rises; `"open_roof": true` leaves out its ceiling and `"gallery"` sets the
+  railing of the rooms that look over it (see [Tall rooms](#tall-rooms-galleries-and-open-roofs)).
+  Room keys: `name, type, wall, floor, ceiling, open_to, storeys, open_roof, gallery`.
 * Room `type` drives clutter and ambience: `kitchen, living, bedroom, bath, hallway, office, store,
   storage, garage, basement, diner, pharmacy, cells, loft, church, bar, post_office, hall, cellar`.
   Scatter clutter comes from props whose `rooms` tags match; `PoiBuilder.ROOM_TAGS` maps types
@@ -88,7 +96,9 @@ linoleum_beige, tile_white_small, concrete`.
 `{"id": "front_door", "at": [3, 7], "side": "S", "type": "door", "state": "closed", "key": "", "level": 0}`
 * `type`: `door`, `door2` (2 m double), `window`, `window2` (2 m), `breach` (passable hole),
   `open` (no wall), `half` (1 m pony wall, vaultable). 2 m openings span this cell and the next one
-  along the wall (east for N/S walls, south for E/W walls).
+  along the wall (east for N/S walls, south for E/W walls). Two storeys high, on a tall room's wall
+  ([Tall rooms](#tall-rooms-galleries-and-open-roofs)): `lancet` (pointed church window),
+  `window_tall` (1 m) and `door2_tall` (2 m barn or bay doors).
 * `state`: `closed`, `open`, `locked` (needs `key` item — place it as a pickup), `locked_inside`
   (bolted: only opens from the cell it was authored on — the classic **shortcut**), `broken`,
   `barricaded` (door + boards, or `"barricade": "furniture"` for an inside furniture pile),
@@ -100,6 +110,8 @@ linoleum_beige, tile_white_small, concrete`.
   room instead (`"."` = outside), e.g. boards nailed on the hall side of a cellar door the player
   first reaches from the cellar.
 * Doors take an optional `"model": "door_metal"`, `"hp"` and `"lock"` (see [Locks](#locks)).
+* Windows the route climbs in by get route cues; `"cue"` overrides them on any opening (see
+  [Route cues on windows](#route-cues-on-windows)).
 
 ### stairs, ladders, holes
 * `{"level": 0, "at": [6, 5], "dir": "N"}` — a straight flight occupying 4 cells from `at` toward
@@ -132,7 +144,8 @@ linoleum_beige, tile_white_small, concrete`.
   — dormant until noise, light or a careless approach wakes them (spawned within ~45 m). `id` is
   **required** (their dead/alive state is keyed by it). `group` puts the sleeper in an ambush
   ([Ambushes](#ambushes-sleeper-groups-and-triggers)); `guardian` makes it the loot room's
-  keeper ([Guardians](#guardians)).
+  keeper ([Guardians](#guardians)). `sit` and `lie` sleepers land on the nearest free seat or bed;
+  `"anchor"` pins or opts out ([Seats and beds](#seats-and-beds)).
 * `pickups`: `{"id": "k1", "item": "pharmacy_key", "at": [2, 1], "y": 0.9}` (keys, schematics, journals).
   Give pickups an `id` (taken-state key; pickup triggers name it).
 * `notes`: `{"note": "merrow_fridge", "at": [1, 0], "y": 1.2}` → the readable item `note_<id>`
@@ -179,11 +192,12 @@ knowing where the player is, under an audible stir. Every group needs at least o
 | `trap` | that trap goes off | `"trap": "<trap id>"` |
 
 * `delay` (s, default 0) before the first ambusher stirs.
-* Each trigger fires **once per POI instance** and only while the building's sleepers are out
-  (the player is near); it is saved. After a reload a spent ambush stays spent: survivors are
-  ordinary sleepers. Several triggers may wake one group (two doors into the same room); a later
+* Each trigger fires **once per POI instance**; it is saved. One fired while nobody is near (the
+  Hum broke the door) is spent all the same, and its group comes back awake
+  ([The Hollowed on traps](#the-hollowed-on-traps)). After a reload a spent ambush stays spent:
+  survivors are ordinary sleepers. Several triggers may wake one group (two doors into the same room); a later
   one only wakes members still asleep.
-* An alarm wakes every sleeper in the building and spends every ambush.
+* An alarm the player sets off wakes every sleeper in the building and spends every ambush.
 * Keys allowed: `id, group, on, room, level, opening, pickup, prop, trap, delay` (others are errors;
   `_`-prefixed keys are comments).
 
@@ -202,10 +216,10 @@ be **disarmed crouched** (interact) for its parts; tuning lives in `data/config/
 |---|---|---|
 | `can_chime` | edge `{"at", "side"}` | trip line across that cell side; rattles loudly (wakes ordinary sleepers near) |
 | `bear_trap` | cell `{"at" or "pos", "rot"?}` (rooms, or the yard on level 0) | steel jaws half-hidden in debris: 25 damage, bleeding, holds the player ~2.5 s (Jump to struggle free sooner), a snap that wakes sleepers near; bites Hollowed too. Disarm: 2 scrap metal |
-| `shotgun` | edge `{"at", "side"}`: `at` is the room the gun is in | a tripwire across the doorway at shin height and a sawn-off lashed to a chair beside it, aimed back along the wire: heavy damage falling off with distance (cone), bleeding, a gunshot (heat; wakes ambushers within 14 m). Disarm on the wire: cordage + scrap |
-| `creaky_floor` | cell `{"at", "size": [w, d]?}` | loose boards: every stride groans loudly (crouch-walk: barely a creak); the first loud groan counts as the trap firing |
-| `weak_floor` | cell `{"at", "level"}` with a **room directly below** | rotten sagging boards: 0.5 s after the player steps on them they give way → a one-way drop hole, for good |
-| `alarm` | edge `{"at", "side", "style"?}` | battery door/window alarm on the frame (or `"style": "bell"`: a bell on a cord across an open passage, the default for openings that are open). Opening/breaking the opening or walking through sets it off: rings 20 s, wakes **every** sleeper in the building, keeps making noise and heat the horde hears. Use it while ringing to smash it quiet; disarm it crouched before |
+| `shotgun` | edge `{"at", "side"}`: `at` is the room the gun is in | a tripwire across the doorway at shin height and a sawn-off lashed to a chair beside it, aimed back along the wire: a spread of pellets that walls and the first body stop, falling off with distance, bleeding, a gunshot (heat; wakes ambushers within 14 m). Disarm on the wire: cordage + scrap |
+| `creaky_floor` | cell `{"at", "size": [w, d]?}` | loose boards: every stride groans loudly (crouch-walk: barely a creak); the first loud groan counts as the trap firing. They groan under the Hollowed too: a warning only |
+| `weak_floor` | cell `{"at", "level"}` with a **room directly below** | rotten sagging boards: 0.5 s after the player (or a Rammer or Husk) steps on them they give way → a one-way drop hole, for good |
+| `alarm` | edge `{"at", "side", "style"?}` | battery door/window alarm on the frame (or `"style": "bell"`: a bell on a cord across an open passage, the default for openings that are open). Opening/breaking the opening or walking through sets it off: rings 20 s; set off by the player it wakes **every** sleeper in the building (by a Hollowed it only rings), keeps making noise and heat the horde hears. Use it while ringing to smash it quiet; disarm it crouched before |
 
 ```json
 "traps": [
@@ -242,6 +256,81 @@ outside: "Bolted from the other side"). Override with `"lock"`:
 Breaking a lock is the noisy alternative to the key; the validator's route still requires the key.
 Use `deadbolt` on keyless sealed doors that must hold the route, `chain` on shutters and roll-up
 doors.
+
+## Dungeon life: seats, beds, the Hollowed on traps, window cues
+ADR-0022. The building's furniture, its traps and its windows tell the story too.
+
+### Seats and beds
+A `sit` sleeper sits on the nearest free **seat** and a `lie` sleeper lies on the nearest free
+**bed**, within 1.6 m of where it is authored on its level. It is posed at the furniture's height,
+facing the way the seat faces (head to feet along a bed), and when it wakes it gets up off it
+before it hunts. Put the sleeper roughly where it sits; the plan in `make poi-preview` draws a line
+from the authored spot to the seat it took. With nothing free in reach it stays on the floor, and
+the validator warns.
+
+| props with anchors | seats | beds |
+|---|---|---|
+| chairs (`kitchen_chair`, `chair_wood`, `office_chair`, `civic_folding_chair`, `armchair`, `recliner`, `road_wheelchair`) | 1 | |
+| `civic_pew` 4, `couch` 3 (or one lying), `diner_booth` 2, `road_waiting_chairs` 3, `bench_park` 2, `picnic_table` 4, `wild_mess_bench` 3 each way | yes | |
+| stools (`diner_stool`, `civic_bar_stool`), `crate_wood`, `civic_beer_crates` (hunched, any way round), `toilet` | 1 | |
+| `bed_double`, `road_motel_bed`, `farm_quilt_bed`, `mattress_dirty` | (mattress: 2 sat legs out) | 2 |
+| `bed_single`, `civic_army_cot` and `wild_cot_canvas` (plus one sat on the rail), `sleeping_bag` (or sat up in it), `wild_bunk_steel` (lower and upper) | | 1–2 |
+| `bathtub` | 1, sat legs out | |
+
+* `"anchor": "floor"` keeps a `sit`/`lie` sleeper on the floor (a Dragger, a body in the rubble,
+  someone slumped in an aisle) and silences the warning. Decide for every one: the validator warns
+  about each `sit`/`lie` sleeper that lands on nothing without it.
+* `"anchor": "<prop id>"` pins it to that prop (within 3.2 m). An error if no such prop has that
+  kind of anchor.
+* `rot` picks among close choices (a bench or crate seats either way: give the sitter the facing
+  you want).
+* Each anchor holds one body, close anchors of one prop exclude each other, and a couch holds
+  sitters or one lying body.
+* Not used: destroyed props, props stacked on something (`"y"`), anchors with something standing on
+  them (the crate under a crate, a lamp on the mattress), and seats whose sitter's feet would be in
+  a wall, outside or over a stair well.
+* The getting-up spot is in front of a seat (else behind it or out to a side), beside a bed (else
+  past its foot): leave a body's width free there.
+* A sitter may be authored in its seat's cell: the validator warns about a sitter sharing a cell
+  with a prop only when it lands on no seat.
+* A new seat or bed prop gets `"anchors"` in its def:
+  `{"kind": "seat", "pos": [x, z], "height": 0.46, "facing": 0, "lean": "back|forward|low"}`
+  (prop-local, under the pelvis; `facing` in degrees from the prop's front; `lean` `forward` for
+  backless seats, `low` for sitting legs out).
+
+### The Hollowed on traps
+The Hollowed set traps off too, by weight (`data/config/traps.json` `hollowed`): Draggers are
+light, Husks and Rammers heavy, the rest in between.
+
+| trap | set off by a Hollowed | then |
+|---|---|---|
+| `can_chime`, `bear_trap`, `shotgun` | any | as for the player (the jaws and the pellets hurt them) |
+| `alarm` | any | it rings; the ringing wakes who hears it (a held ambush only within 14 m); it does not rouse the whole building |
+| `creaky_floor` | any | it groans for the player to hear (something walking about upstairs); nothing else: the trap and its ambush stay armed |
+| `weak_floor` | heavy only | it gives way; they fall to the room below hurt, and stop pathing over the hole |
+
+A trap a Hollowed sets off fires its `trap` triggers (except the creaky floor) and makes its noise
+for the sleepers to hear; only the player's own misstep alerts the sleepers near at once.
+
+With nobody near, a trigger that fires (the Hum breaking a door) is spent and its group is
+**roused**, and a trap a Hollowed trips rouses the sleepers that would have heard it. Roused
+sleepers are saved, and the next time the player comes they are up and about, off their seats and
+beds, heading for where it happened. Plan for it: an ambush on a door the Hum likes to break may be
+spent before the player ever gets there.
+
+### Route cues on windows
+A window the validated route climbs in through from outside reads from the street: a torn curtain
+dragged out over the sill (open, broken or missing windows only), a crate under it to climb on (two
+if the sill is high), muddy boot scuffs up the wall and a handprint on the sill. Any opening can ask
+for its own with `"cue"`: one of `curtain`, `crate`, `scuffs`, `light` (a lantern left burning on
+the inside sill: the window glows at night, one per building), a list of them, or `"none"`.
+
+```json
+{"id": "kitchen_window", "at": [6, 0], "side": "N", "type": "window", "state": "broken", "cue": ["curtain", "light"]},
+{"id": "bath_window", "at": [2, 4], "side": "W", "type": "window", "state": "broken", "cue": "none"}
+```
+The validator errors on unknown kinds and warns about a cue on an interior wall or a curtain in a
+shut window. Defaults: `data/config/traps.json` `route_cues`.
 
 ## Designing a dungeon
 Write the route as beats, then hang a mechanic on each:
@@ -281,6 +370,9 @@ POI ships, never reorder its `props`, `sleepers`, `pickups` or `notes` without i
 6. Sleepers, traps and triggers have unique ids (containers and pickups should); trap types, keys
    and placement are valid; triggers name real rooms/openings/pickups/containers/traps and wake a
    group that has sleepers; locks sit on doors.
+7. Every `^` has a tall room under it with enough `storeys`; nothing stands, lands or is cut in a
+   void; tall openings have a wall above them; gallery edges carry only gaps and breaches, and no
+   drop strands the player; `style.roof` keys and its `roofs` overrides are valid.
 
 ## Story first
 Write the `story` before the plan. Every room should say something about it: the barricade that
@@ -328,3 +420,105 @@ saved: the same placements cut the same holes.
   physics, and `test_terrain_holes_world.gd` does it end to end on the Okafor farm framework. The
   Okafor farmhouse (`okafor_farmhouse`) is the reference: drop in through a clawed hole, climb out
   through the pantry hatch.
+
+## Tall rooms, galleries and open roofs
+ADR-0021. A room can rise two or three storeys: a church nave, a barn's threshing bay, a saw floor,
+a hall open to its rafters, a school gym, a fire station's apparatus bay.
+
+```json
+"levels": [
+  {"level": 0,
+   "plan": [
+     "BBBBBBBBOOOO",
+     "BBBBBBBBOOOO",
+     "BBBBBBBBKKKK",
+     "BBBBBBBBKKKK"],
+   "rooms": {
+     "B": {"name": "Apparatus bay", "type": "garage", "storeys": 2, "wall": "concrete_block", "floor": "concrete"},
+     "O": {"name": "Watch office", "type": "office"},
+     "K": {"name": "Kitchen", "type": "kitchen"}}},
+  {"level": 1,
+   "plan": [
+     "^^^^^^^^DDDD",
+     "^^^^^^^^DDDD",
+     "^^^^^^^^MMMM",
+     "^^^^^^^^MMMM"],
+   "rooms": {
+     "D": {"name": "Bunk room", "type": "bedroom", "gallery": false},
+     "M": {"name": "Hose loft", "type": "storage", "gallery": "rail"}}}],
+"openings": [
+  {"id": "bay_door_a", "at": [1, 3], "side": "S", "type": "door2_tall", "state": "closed"},
+  {"id": "bay_door_b", "at": [5, 3], "side": "S", "type": "door2_tall", "state": "broken"},
+  {"id": "loft_gap", "at": [8, 3], "side": "W", "type": "open", "level": 1}]
+```
+* `"storeys": 2` (or 3) goes on the room at its lowest level; the plans above hold `^` wherever it
+  rises (any shape: leave cells for a gallery, a loft or a bell chamber). A `^` with no tall room
+  under it, or above the room's `storeys`, is an error; a tall room with no `^` over it stays one
+  storey (warning).
+* The tall room has no floor or ceiling between its storeys: its walls rise through the void
+  without a floor band, outside the siding and trims run on unbroken, and its ceiling is at its
+  top storey. Authored lights and `ceiling_mounted` fixtures without a `y` hang from that ceiling.
+* `"open_roof": true` on any room whose top is under the roof (tall or not: a hayloft) leaves out
+  its ceiling: it sees the roof's boards, rafters, ridge beam, wall plates and collar ties, and the
+  walls between it and closed rooms beside it rise to the roof.
+* An upper room beside the void looks over it from a **gallery**: a fascia over its floor's edge
+  and a waist-high railing the player and the Hollowed can't walk through. `"gallery": "balustrade"`
+  (the default: turned balusters and a moulded rail), `"rail"` (two rough timber rails, for barns
+  and mills) or `false` (a wall instead: the bunk room above).
+* On a gallery edge only `open` (a gap in the railing) and `breach` (a broken one) are allowed.
+  Both are **one-way drops** onto the tall room's floor for the route, so a gap in a hayloft rail is
+  a valid shortcut down; the validator errors when a drop strands the player. A passable opening
+  in a wall onto the void (a door out of a `"gallery": false` room) drops the same way.
+* Tall openings stand on the lower storey of a tall room's wall and fill the storey above it,
+  which must be a wall with nothing else on it: `lancet`, `window_tall` (a 1 m sash 2.5 m high:
+  gyms, mills, halls), `door2_tall` (2 m wide, 3.5 m high, a pair of board-and-batten barn doors).
+  There is no roll-up or sectional bay door and nothing wider yet (TD-041): use two `door2_tall`s.
+* Nothing stands in the void: sleepers, pickups, cell traps, route waypoints, stair landings,
+  holes, props (except wall-mounted ones, `stairwell` props and props raised 0.5 m with `y`). Put
+  them on the tall room's floor, at its level.
+* In game the volume is one room: room triggers, shelter, indoor checks and reverb answer for its
+  floor wherever the player is in it. The Hollowed walk its floor and do not follow a drop: they go
+  round by the stairs (TD-042).
+* Interior light needs nothing authored: every building gets a reflection probe per rectangle of
+  rooms of one height (8 at most), so a tall room and each wing of an L are lit as rooms and a yard
+  inside an L stays outdoors.
+* A school gym: a `hall` two storeys tall with `open_roof`, `window_tall` along both long walls, a
+  balustrade gallery on the side the bleachers or the stage are on. A fire station: the bay above,
+  `door2_tall` doors on the apron side and a flat roof behind a parapet (`commercial` zoning, or an
+  override).
+
+## Roofs
+`RoofPlanner` roofs the building's massing; `style.roof` holds the building's defaults and
+`roofs` overrides single parts of it:
+
+```json
+"roof": {"type": "gable", "axis": "x", "pitch": 38, "overhang": 0.5, "material": "roof_shingle_brown",
+         "roofs": [{"level": 3, "at": [6, 20], "type": "flat", "parapet": 0.45},
+                   {"level": 0, "at": [2, 9], "type": "shed", "slope": "S", "pitch": 18}]}
+```
+The tops of the building (every built cell with nothing built above it, a tall room's void
+included) are split level by level into rectangles, largest first. Each is a **wing**, roofed at
+its own height:
+
+| wing | what | roof by default |
+|---|---|---|
+| main | the largest part of a level | the style's `type`, ridge along `axis` (else the long side) |
+| leg | a part of the same height beside a larger one (an L, T or U) | a gable whose ridge runs into the main roof (cross gables meeting in valleys), or that stops against the gable end it abuts |
+| annex | a lower part against a taller wall | a lean-to sloping away when up to 4.5 m deep, an abutting gable when deeper, a flat roof behind a parapet on `commercial` and `industrial` buildings |
+| tower | a top of 8 × 8 cells or less with nothing of its height beside it, standing over lower parts of the building (a small two-storey house on its own is a main) | hip; a tower rising through a bigger roof (a belfry) leaves that roof whole around it |
+
+* Types: `gable`, `hip`, `shed` (a lean-to; `"slope"` names its low side), `flat` (a membrane
+  behind a parapet on the outside walls, `"parapet"` m), `pyramid`, `spire` (an octagonal broach
+  spire with a cross, `"height"` m) and `none`.
+* A `roofs` entry names its wing by `"level"` (the roof's level: the highest storey built at that
+  cell) and `"at"`, any cell of the wing. It may set `type, axis, pitch, overhang, slope, material,
+  color, flat_material, flat_color, parapet, gutters, gable_finish, height`. An entry that names no
+  wing, an unknown key and an unknown type are errors.
+* An annex roof is pitched down until its top stays 25 cm under the lowest sill of the wall it
+  leans on (or 35 cm under that wall's top), and turns into a lean-to, then a flat roof, when that
+  gets too flat. Keep windows off a wall a lower roof leans on: the Okafor farmhouse moved the two
+  east windows its kitchen ell covers to the back wall.
+* Pitched roofs keep the ADR-0019 trims: fascia under the eaves, rake boards, capped ridges and
+  hips, gutters (`"gutters": false` for cabins and sheds). Gable ends wear the exterior finish
+  (`"gable_finish"` overrides it).
+* Check roofs from every side with `make poi-preview POI=<id>`.

@@ -5,6 +5,9 @@ extends RefCounted
 ## props, ladders, pickups and the traps (ADR-0018): can-chime trip lines, bear traps, shotgun
 ## trip-wires, creaky floors, weak floors and alarms. Each reports state changes to its
 ## PoiInstance so they persist (WorldState.pois) and so the building's ambush triggers can fire.
+## ADR-0022: the Hollowed set traps off by weight class (data/config/traps.json "hollowed" and each
+## trap's "hollowed" block); what they set off makes its noise through the stimulus fields, and
+## only the player's misstep alerts sleepers directly. The shotgun fires a spread of pellet rays.
 
 ## Layers: interactable bodies sit on "interact" (the interaction ray, not movement); breakable
 ## lock bodies on "hitboxes" (melee sweeps and bullets hit them, nobody bumps into them); trap
@@ -19,6 +22,39 @@ const ENEMY_LAYER: int = 1 << 4
 ## Tuning for one trap type (data/config/traps.json).
 static func cfg(section: String) -> Dictionary:
 	return Content.config(&"traps").get(section, {})
+
+
+## Weight class index of a Hollowed (traps.json hollowed.classes: light < normal < heavy).
+static func weight_of(e: Enemy) -> int:
+	var h: Dictionary = cfg("hollowed")
+	var classes: Array = h.get("classes", ["light", "normal", "heavy"])
+	var w: String = str((h.get("weights", {}) as Dictionary).get(String(e.def.id), h.get("default_weight", "normal")))
+	return maxi(0, classes.find(w))
+
+
+## A trap type's rules for the Hollowed ({} = they never set it off).
+static func hollowed_rule(trap_type: String) -> Dictionary:
+	return cfg(trap_type).get("hollowed", {})
+
+
+## Whether a living Hollowed is heavy enough to set this trap type off.
+static func hollowed_sets_off(trap_type: String, e: Enemy) -> bool:
+	var rule: Dictionary = hollowed_rule(trap_type)
+	if not rule.has("min_weight") or e == null or not e.is_alive():
+		return false
+	var classes: Array = cfg("hollowed").get("classes", ["light", "normal", "heavy"])
+	return weight_of(e) >= maxi(0, classes.find(str(rule["min_weight"])))
+
+
+## Whether a trap a Hollowed set off fires the trap's ambush triggers.
+static func hollowed_fires(trap_type: String) -> bool:
+	return bool(hollowed_rule(trap_type).get("fires_trigger", true))
+
+
+## Whether damage came from a player (their blows and bullets break a door "by the player"; the
+## Hum's do not).
+static func by_player(info: DamageInfo) -> bool:
+	return Game.session != null and Game.session.players.has(info.source_id)
 
 
 ## A generated model, or (before `make assets`) a box of `size` standing on its origin.
@@ -93,6 +129,8 @@ class Door:
 	var leaf_local := Transform3D.IDENTITY
 	var _open_amount: float = 0.0
 	var _target: float = 0.0
+	## Whether the last blow came from a player (an alarm on the door rouses the whole building).
+	var _by_player: bool = true
 
 	func _ready() -> void:
 		collision_layer = 1 << 1
@@ -197,6 +235,7 @@ class Door:
 	func take_damage(info: DamageInfo) -> void:
 		if state == "broken":
 			return
+		_by_player = PoiPieces.by_player(info)
 		var amount: float = float(info.tool_power.get("structure", info.amount))
 		hp -= amount
 		if poi != null and hp > 0.0:
@@ -228,7 +267,7 @@ class Door:
 					(c2 as MeshInstance3D).visible = false
 		_save()
 		if poi != null:
-			poi.call(&"on_opening_event", opening_id, global_position + Vector3.UP)
+			poi.call(&"on_opening_event", opening_id, global_position + Vector3.UP, _by_player)
 
 	func _save() -> void:
 		if poi != null:
@@ -280,6 +319,8 @@ class Breakable:
 	var hp: float = 120.0
 	var model_broken: String = ""
 	var mesh_node: MeshInstance3D
+	## Whether the last blow came from a player (see Door._by_player).
+	var _by_player: bool = true
 
 	func _ready() -> void:
 		collision_layer = 1 << 1
@@ -294,6 +335,7 @@ class Breakable:
 		# Hollow still pounding the frame) must not replay the break or count it again.
 		if hp <= 0.0:
 			return
+		_by_player = PoiPieces.by_player(info)
 		var amount: float = float(info.tool_power.get("structure", info.amount))
 		if kind == "glass":
 			amount = 999.0
@@ -323,7 +365,7 @@ class Breakable:
 				(c as CollisionShape3D).set_deferred(&"disabled", true)
 		if poi != null:
 			poi.call(&"set_piece_state", piece_id, "broken")
-			poi.call(&"on_opening_event", opening_id, global_position + Vector3.UP)
+			poi.call(&"on_opening_event", opening_id, global_position + Vector3.UP, _by_player)
 
 
 class LootProp:
@@ -461,7 +503,9 @@ class Ladder:
 
 class TripLine:
 	extends Area3D
-	## A can-chime string across a doorway: rattles (loud) when anything walks through it.
+	## A can-chime string across a doorway: rattles (loud) when anyone walks through it, the player
+	## or a Hollowed (traps.json can_chime). The player's misstep alerts the sleepers near at once;
+	## a Hollowed's rattle wakes them by hearing it (ADR-0022).
 	var poi: Node
 	var trap_id: String = ""
 	var armed: bool = true
@@ -474,14 +518,23 @@ class TripLine:
 	func _on_body(body: Node) -> void:
 		if not armed:
 			return
+		var player: bool = body is Player
+		if not player and not (body is Enemy and PoiPieces.hollowed_sets_off("can_chime", body as Enemy)):
+			return
 		armed = false
-		Audio.play_3d(&"sfx/can_chime", global_position + Vector3.UP * 0.5, {"volume_db": 2.0, "max_distance": 70.0})
+		var t: Dictionary = PoiPieces.cfg("can_chime")
+		var loud: float = float(t.get("noise", 40.0))
+		Audio.play_3d(&"sfx/can_chime", global_position + Vector3.UP * 0.5, {"volume_db": float(t.get("volume_db", 2.0)), "max_distance": 70.0})
 		if Stimuli.current != null:
-			Stimuli.current.emit_sound(global_position, 40.0, &"trap", StringName(trap_id))
+			Stimuli.current.emit_sound(global_position, loud, &"trap", StringName(trap_id))
 		if poi != null:
 			poi.call(&"set_piece_state", trap_id, "triggered")
-			poi.call(&"alert_sleepers", global_position)
-			poi.call(&"on_trap_fired", trap_id, global_position)
+			if player:
+				poi.call(&"alert_sleepers", global_position, float(t.get("alert_radius", 16.0)))
+			else:
+				poi.call(&"on_trap_noise", global_position, loud, &"trap")
+			if player or PoiPieces.hollowed_fires("can_chime"):
+				poi.call(&"on_trap_fired", trap_id, global_position)
 
 
 class Pickup:
@@ -549,11 +602,14 @@ class Trap:
 		PoiPieces._box_shape(interact_body, size, xf)
 		add_child(interact_body)
 
-	## Trap sensor watching `mask` bodies.
+	## Trap sensor watching `mask` bodies, and the Hollowed too when this trap type's rules let them
+	## set it off (traps.json "hollowed": the builder asks for the player; `type` is set by then).
 	func add_sensor(size: Vector3, xf: Transform3D, mask: int) -> Area3D:
 		var a := Area3D.new()
 		a.name = "Sensor"
 		a.collision_layer = PoiPieces.TRIGGER_LAYER
+		if PoiPieces.hollowed_rule(type).has("min_weight"):
+			mask |= PoiPieces.ENEMY_LAYER
 		a.collision_mask = mask
 		a.monitorable = false
 		PoiPieces._box_shape(a, size, xf)
@@ -588,6 +644,19 @@ class Trap:
 		if poi != null:
 			poi.call(&"on_trap_fired", trap_id, at)
 
+	## After it went off: the player's misstep alerts the sleepers near (radius); a Hollowed's
+	## wakes them through the stimulus fields, or rouses them while nobody is spawned; its ambush
+	## triggers fire unless the rules say a Hollowed does not count (ADR-0022).
+	func went_off(at: Vector3, player: bool, radius: float, loudness: float, kind: StringName) -> void:
+		if poi == null:
+			return
+		if player:
+			poi.call(&"alert_sleepers", at, radius)
+		else:
+			poi.call(&"on_trap_noise", at, loudness, kind)
+		if player or PoiPieces.hollowed_fires(type):
+			fired(at)
+
 
 class BearTrap:
 	extends Trap
@@ -609,7 +678,7 @@ class BearTrap:
 			return
 		if body is Player and (body as Player).state != null and (body as Player).state.stats.alive:
 			_spring(body as Player, null)
-		elif body is Enemy and (body as Enemy).is_alive():
+		elif body is Enemy and PoiPieces.hollowed_sets_off(type if type != "" else "bear_trap", body as Enemy):
 			_spring(null, body as Enemy)
 
 	func _spring(player: Player, enemy: Enemy) -> void:
@@ -638,9 +707,7 @@ class BearTrap:
 			info2.source_pos = pos
 			info2.direction = Vector3.UP
 			enemy.take_damage(info2)
-		if poi != null:
-			poi.call(&"alert_sleepers", pos, float(t.get("alert_radius", 14.0)))
-		fired(pos)
+		went_off(pos, player != null, float(t.get("alert_radius", 14.0)), float(t.get("noise", 32.0)), &"trap")
 
 	func show_sprung() -> void:
 		if mesh != null:
@@ -678,11 +745,16 @@ class BearTrap:
 class ShotgunTrap:
 	extends Trap
 	## A tripwire across a doorway and a shotgun lashed to a chair beside it, its barrels across the
-	## doorway. Crossing fires it: heavy damage falling off with distance in a cone, bleeding, a
-	## gunshot the whole street hears (it wakes held ambushers close by too). Crouch-interact on the
-	## wire disarms it (cordage, scrap).
-	## Half the width of a body the charge can catch (player capsule ~0.33, Hollowed similar).
-	const BODY_RADIUS: float = 0.3
+	## doorway. Crossing it (the player, or any Hollowed: traps.json shotgun.hollowed) fires it: a
+	## spread of pellet rays from the muzzle (ADR-0022). Walls, furniture and the first body in the
+	## way stop a pellet; each carries its share of the damage, falling off with the distance it
+	## flew; a body takes all its pellets as one hit (bleeding for the player, a chance to sever a
+	## limb for the Hollowed). A gunshot the whole street hears (it wakes held ambushers close by
+	## too). Crouch-interact on the wire disarms it (cordage, scrap).
+	## What stops a pellet: the building shell and solid props (layer 1), containers (layer 3),
+	## the player and the Hollowed. Doors and glass (layer 2) do not: a leaf swung open beside the
+	## gun must not shield the doorway.
+	const PELLET_MASK: int = 1 | (1 << 2) | (1 << 3) | (1 << 4)
 	var wire: Node3D
 	## Muzzle position and aim direction in this node's frame (set by the builder).
 	var muzzle := Vector3.ZERO
@@ -690,6 +762,7 @@ class ShotgunTrap:
 	## The wire pulls the trigger a moment after it is caught: whoever caught it is in the doorway,
 	## in front of the barrels, when the charge goes off (-1 = not pulled).
 	var _pull_t: float = -1.0
+	var _by_player: bool = true
 
 	func _ready() -> void:
 		label = "shotgun trap"
@@ -697,7 +770,9 @@ class ShotgunTrap:
 	func on_body(body: Node) -> void:
 		if not is_armed() or _pull_t >= 0.0:
 			return
-		if (body is Player and (body as Player).state != null and (body as Player).state.stats.alive) or (body is Enemy and (body as Enemy).is_alive()):
+		var player: bool = body is Player and (body as Player).state != null and (body as Player).state.stats.alive
+		if player or (body is Enemy and PoiPieces.hollowed_sets_off("shotgun", body as Enemy)):
+			_by_player = player
 			_pull_t = float(tuning().get("pull_seconds", 0.12))
 			Audio.play_3d(&"sfx/trap_disarm", global_position + Vector3.UP * 0.4, {"volume_db": -10.0})
 
@@ -708,6 +783,64 @@ class ShotgunTrap:
 		if _pull_t <= 0.0:
 			_pull_t = -1.0
 			fire()
+
+	## The pellets' directions (world), a fixed pattern for this trap: uniform over the disc of
+	## half angle spread_deg around `dir`, seeded by the building and the trap.
+	func pellet_dirs(dir: Vector3) -> Array[Vector3]:
+		var t: Dictionary = tuning()
+		var n: int = maxi(1, int(t.get("pellets", 9)))
+		var spread: float = tan(deg_to_rad(float(t.get("spread_deg", 7.0))))
+		var rng := RandomNumberGenerator.new()
+		rng.seed = Ids.hash64("pellets:%s:%s" % [String(poi.get(&"instance_id")) if poi != null else "", trap_id])
+		var side: Vector3 = dir.cross(Vector3.UP).normalized() if absf(dir.y) < 0.98 else Vector3.RIGHT
+		var up: Vector3 = side.cross(dir).normalized()
+		var out: Array[Vector3] = []
+		for i: int in n:
+			var r: float = sqrt(rng.randf()) * spread
+			var a: float = rng.randf() * TAU
+			out.append((dir + side * (cos(a) * r) + up * (sin(a) * r)).normalized())
+		return out
+
+	## Casts every pellet from muzzle `m`: [{collider, pos, normal, dist}] for the pellets that hit
+	## something within `far` (in pellet order).
+	func cast_pellets(m: Vector3, dirs: Array[Vector3], far: float) -> Array[Dictionary]:
+		var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+		var exclude: Array[RID] = []
+		var rig: CollisionObject3D = get_node_or_null(^"RigBody") as CollisionObject3D
+		if rig != null:
+			exclude.append(rig.get_rid())
+		var out: Array[Dictionary] = []
+		for d: Vector3 in dirs:
+			var q := PhysicsRayQueryParameters3D.create(m, m + d * far, PELLET_MASK)
+			q.exclude = exclude
+			var hit: Dictionary = space.intersect_ray(q)
+			if hit.is_empty():
+				continue
+			out.append({"collider": hit["collider"], "pos": hit["position"], "normal": hit["normal"],
+				"dist": m.distance_to(hit["position"])})
+		return out
+
+	## Sums the pellets per body: collider -> {"share": sum of falloff (0..pellets), "pos": first hit,
+	## "n": pellets}. Walls and props take theirs and stop them.
+	func pellet_hits(m: Vector3, dir: Vector3) -> Dictionary:
+		var t: Dictionary = tuning()
+		var near: float = float(t.get("near", 1.5))
+		var far: float = float(t.get("far", 9.0))
+		var out: Dictionary = {}
+		var puffs: int = 0
+		for h: Dictionary in cast_pellets(m, pellet_dirs(dir), far):
+			var c: Object = h["collider"]
+			# Bodies take pellets (and a test target marked "pellet_target"); everything else stops them.
+			if c is Player or c is Enemy or (c != null and c.has_meta(&"pellet_target")):
+				var falloff: float = 1.0 - clampf((float(h["dist"]) - near) / maxf(far - near, 0.1), 0.0, 1.0)
+				if not out.has(c):
+					out[c] = {"share": 0.0, "pos": h["pos"], "n": 0}
+				out[c]["share"] = float(out[c]["share"]) + falloff
+				out[c]["n"] = int(out[c]["n"]) + 1
+			elif puffs < 4 and get_parent() != null:
+				puffs += 1
+				FxLibrary.burst(get_parent(), "dust", h["pos"], h["normal"], 0.25)
+		return out
 
 	func fire() -> void:
 		if not is_armed():
@@ -723,57 +856,34 @@ class ShotgunTrap:
 		FxLibrary.burst(get_parent(), "sparks", m, dir, 1.2)
 		FxLibrary.burst(get_parent(), "dust", m + dir * 0.4, dir, 0.6)
 		_flash(m)
+		var loud: float = float(t.get("noise", 120.0))
 		if Stimuli.current != null:
-			Stimuli.current.emit_sound(m, float(t.get("noise", 120.0)), &"gunshot", StringName(trap_id))
+			Stimuli.current.emit_sound(m, loud, &"gunshot", StringName(trap_id))
 		if Game.session != null:
 			Game.session.heat.add(m, float(t.get("heat", 14.0)))
-		var cone: float = deg_to_rad(float(t.get("cone_deg", 20.0)))
-		var near: float = float(t.get("near", 1.5))
-		var far: float = float(t.get("far", 9.0))
-		var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-		for n: Node in get_tree().get_nodes_in_group(&"player") + get_tree().get_nodes_in_group(&"enemies"):
-			var b: Node3D = n as Node3D
-			if b == null:
-				continue
-			# The charge goes where the barrels point: knee, hip or chest, whichever the cone touches
-			# (a gun on a chair seat fires low) and not behind a wall. Bodies have width (BODY_RADIUS),
-			# so point-blank the blast catches anyone in front of the barrels, far off only a true aim.
-			var chest := Vector3.INF
-			for h: float in [0.35, 0.8, 1.25]:
-				var aimp: Vector3 = b.global_position + Vector3.UP * h
-				var tp: Vector3 = aimp - m
-				var dist: float = tp.length()
-				if dist <= BODY_RADIUS or dir.angle_to(tp) - asin(BODY_RADIUS / dist) <= cone:
-					chest = aimp
-					break
-			if chest == Vector3.INF:
-				continue
-			var to: Vector3 = chest - m
-			var d: float = to.length()
-			if d > far:
-				continue
-			# Walls stop the charge; a door leaf swung open beside the gun does not.
-			var q := PhysicsRayQueryParameters3D.create(m, chest, 1)
-			if not space.intersect_ray(q).is_empty():
-				continue
-			var falloff: float = 1.0 - clampf((d - near) / maxf(far - near, 0.1), 0.0, 1.0)
-			if b is Player and (b as Player).state != null:
-				var info := DamageInfo.make(float(t.get("damage", 60.0)) * falloff, &"ballistic", &"trap", StringName(trap_id))
-				info.hit_pos = chest
+		var n: float = float(maxi(1, int(t.get("pellets", 9))))
+		var hits: Dictionary = pellet_hits(m, dir)
+		for c: Object in hits:
+			var h: Dictionary = hits[c]
+			var share: float = float(h["share"]) / n
+			var hp: Vector3 = h["pos"]
+			if c is Player and (c as Player).state != null:
+				var info := DamageInfo.make(float(t.get("damage", 60.0)) * share, &"ballistic", &"trap", StringName(trap_id))
+				info.hit_pos = hp
 				info.source_pos = m
-				info.direction = to.normalized()
-				(b as Player).take_damage(info)
-				(b as Player).state.stats.add_wound(float(t.get("bleed", 0.45)) * falloff)
-			elif b is Enemy and (b as Enemy).is_alive():
-				var info2 := DamageInfo.make(float(t.get("enemy_damage", 150.0)) * falloff, &"ballistic", &"trap", StringName(trap_id))
-				info2.hit_pos = chest
+				info.direction = (hp - m).normalized()
+				(c as Player).take_damage(info)
+				(c as Player).state.stats.add_wound(float(t.get("bleed", 0.45)) * share)
+			elif is_instance_valid(c) and c.has_method(&"take_damage"):
+				if c is Enemy and not (c as Enemy).is_alive():
+					continue
+				var info2 := DamageInfo.make(float(t.get("enemy_damage", 150.0)) * share, &"ballistic", &"trap", StringName(trap_id))
+				info2.hit_pos = hp
 				info2.source_pos = m
-				info2.direction = to.normalized()
-				info2.dismember = 0.3
-				(b as Enemy).take_damage(info2)
-		if poi != null:
-			poi.call(&"alert_sleepers", m, 30.0)
-		fired(m)
+				info2.direction = (hp - m).normalized()
+				info2.dismember = 0.3 * share
+				c.call(&"take_damage", info2)
+		went_off(m, _by_player, float(t.get("alert_radius", 30.0)), loud, &"gunshot")
 
 	func _flash(at: Vector3) -> void:
 		var l := OmniLight3D.new()
@@ -795,45 +905,64 @@ class ShotgunTrap:
 class CreakyFloor:
 	extends Trap
 	## Loose, warped boards: every stride across them groans — loud underfoot, barely a whisper
-	## crouched. The first loud groan counts as the trap firing (once) for ambush triggers.
-	var _body: Player = null
-	var _last := Vector3.ZERO
-	var _walked: float = 0.0
+	## crouched. The player's first loud groan counts as the trap firing (once) for ambush triggers.
+	## The Hollowed make them groan too (ADR-0022): a sound cue for the player only (no noise for
+	## the Hollowed to hear, no ambush: traps.json creaky_floor.hollowed).
+	## Bodies on the boards: body -> [last position, metres walked since the last groan].
+	var _on: Dictionary = {}
 
 	func _ready() -> void:
 		label = "loose boards"
 
 	func on_enter(body: Node) -> void:
-		if body is Player:
-			_body = body as Player
-			_last = _body.global_position
-			_walked = 0.0
+		if body is Player or (body is Enemy and PoiPieces.hollowed_sets_off("creaky_floor", body as Enemy)):
+			_on[body] = [(body as Node3D).global_position, 0.0]
 
 	func on_exit(body: Node) -> void:
-		if body == _body:
-			_body = null
+		_on.erase(body)
 
 	func interact_text(_player: Player) -> String:
 		return ""
 
 	func _physics_process(_delta: float) -> void:
-		if _body == null or not is_instance_valid(_body):
+		if _on.is_empty():
 			return
-		var p: Vector3 = _body.global_position
-		_walked += Vector2(p.x - _last.x, p.z - _last.z).length()
-		_last = p
-		if _walked < float(tuning().get("stride", 0.75)):
-			return
-		_walked = 0.0
-		creak(_body.crouching, p)
+		var t: Dictionary = tuning()
+		for body: Variant in _on.keys():
+			var b: Node3D = body as Node3D
+			if not is_instance_valid(b) or (b is Enemy and not (b as Enemy).is_alive()):
+				_on.erase(body)
+				continue
+			var rec: Array = _on[body]
+			var p: Vector3 = b.global_position
+			var last: Vector3 = rec[0]
+			var walked: float = float(rec[1]) + Vector2(p.x - last.x, p.z - last.z).length()
+			var player: Player = b as Player
+			var stride: float = float(t.get("stride", 0.75)) if player != null else float((t.get("hollowed", {}) as Dictionary).get("stride", 0.9))
+			if walked >= stride:
+				walked = 0.0
+				if player != null:
+					creak(player.crouching, p, player.state.id if player.state != null else &"")
+				else:
+					creak_under_hollowed(p)
+			_on[body] = [p, walked]
 
-	func creak(quiet: bool, at: Vector3) -> void:
+	func creak(quiet: bool, at: Vector3, source: StringName = &"") -> void:
 		var t: Dictionary = tuning()
 		Audio.play_3d(&"sfx/trap_floor_creak", at, {"volume_db": -16.0 if quiet else -1.0, "max_distance": 25.0 if quiet else 55.0})
 		if Stimuli.current != null:
-			Stimuli.current.emit_sound(at, float(t.get("crouch_noise" if quiet else "noise", 3.0 if quiet else 18.0)), &"creak",
-				_body.state.id if _body != null and _body.state != null else &"")
+			Stimuli.current.emit_sound(at, float(t.get("crouch_noise" if quiet else "noise", 3.0 if quiet else 18.0)), &"creak", source)
 		if not quiet and is_armed():
+			if poi != null:
+				poi.call(&"set_trap_state", trap_id, "sprung")
+			fired(at)
+
+	## A Hollowed's weight on the boards: the groan is the player's warning that something is
+	## walking about upstairs. Nothing hears it but the player; the trap stays armed.
+	func creak_under_hollowed(at: Vector3) -> void:
+		var h: Dictionary = tuning().get("hollowed", {})
+		Audio.play_3d(&"sfx/trap_floor_creak", at, {"volume_db": float(h.get("volume_db", -5.0)), "max_distance": 45.0, "pitch": 0.9})
+		if bool(h.get("fires_trigger", false)) and is_armed():
 			if poi != null:
 				poi.call(&"set_trap_state", trap_id, "sprung")
 			fired(at)
@@ -841,20 +970,27 @@ class CreakyFloor:
 
 class WeakFloor:
 	extends Trap
-	## Rotten, sagging boards over a room: half a second after the player steps on them they give
-	## way into a one-way drop hole (persisted: the hole is there on every later visit).
+	## Rotten, sagging boards over a room: half a second after the player, or a heavy Hollowed (a
+	## Rammer, a Husk: traps.json weak_floor.hollowed), steps on them they give way into a one-way
+	## drop hole (persisted: the hole is there on every later visit). A Hollowed that goes through
+	## takes fall damage; the nav tiles there are rebaked so the rest stop pathing over the hole.
 	var shape: CollisionShape3D
 	## Kit floor batches of this cell: the rotten slab now, the broken one once it falls.
 	var intact_mm: Node3D
 	var broken_mm: Node3D
 	var _t: float = -1.0
+	var _by_player: bool = true
 
 	func _ready() -> void:
 		label = "rotten floor"
 
 	func on_body(body: Node) -> void:
-		if not is_armed() or _t >= 0.0 or not body is Player:
+		if not is_armed() or _t >= 0.0:
 			return
+		var player: bool = body is Player
+		if not player and not (body is Enemy and PoiPieces.hollowed_sets_off("weak_floor", body as Enemy)):
+			return
+		_by_player = player
 		_t = float(tuning().get("delay", 0.5))
 		Audio.play_3d(&"sfx/trap_floor_crack", global_position + Vector3.UP * 0.1, {"volume_db": -2.0, "max_distance": 40.0})
 		FxLibrary.burst(get_parent(), "dust", global_position + Vector3.UP * 0.1, Vector3.UP, 0.5)
@@ -875,16 +1011,32 @@ class WeakFloor:
 			return
 		if poi != null:
 			poi.call(&"set_trap_state", trap_id, "sprung")
+		# The heavy ones standing on it go down with it.
+		var fallers: Array[Enemy] = []
+		for c: Node in get_children():
+			if c is Area3D:
+				for b: Node3D in (c as Area3D).get_overlapping_bodies():
+					if b is Enemy and PoiPieces.hollowed_sets_off("weak_floor", b as Enemy):
+						fallers.append(b as Enemy)
 		show_collapsed()
 		var pos: Vector3 = global_position
+		var t: Dictionary = tuning()
 		Audio.play_3d(&"sfx/trap_floor_collapse", pos, {"volume_db": 2.0, "max_distance": 70.0})
 		FxLibrary.burst(get_parent(), "splinters", pos, Vector3.DOWN, 1.4)
 		FxLibrary.burst(get_parent(), "dust", pos - Vector3.UP * 0.5, Vector3.UP, 1.2)
+		var loud: float = float(t.get("noise", 30.0))
 		if Stimuli.current != null:
-			Stimuli.current.emit_sound(pos, float(tuning().get("noise", 30.0)), &"structure_break", StringName(trap_id))
+			Stimuli.current.emit_sound(pos, loud, &"structure_break", StringName(trap_id))
+		var dmg: float = float((t.get("hollowed", {}) as Dictionary).get("fall_damage", 40.0))
+		for e: Enemy in fallers:
+			var info := DamageInfo.make(dmg, &"blunt", &"fall", StringName(trap_id))
+			info.hit_pos = e.global_position + Vector3.UP * 0.4
+			info.source_pos = pos + Vector3.UP
+			info.direction = Vector3.DOWN
+			e.take_damage(info)
 		if poi != null:
-			poi.call(&"alert_sleepers", pos, 12.0)
-		fired(pos)
+			poi.call(&"on_floor_collapsed", pos)
+		went_off(pos, _by_player, float(t.get("alert_radius", 12.0)), loud, &"structure_break")
 
 	func show_collapsed() -> void:
 		if shape != null:
@@ -905,8 +1057,9 @@ class AlarmTrap:
 	extends Trap
 	## A battery door/window alarm (or a bell on a cord across an open passage). Opening or
 	## breaking its opening, or walking through, sets it off: it rings for `seconds`, wakes every
-	## sleeper in the building and keeps putting out noise the horde and heat systems hear. Use it
-	## while ringing to smash it quiet; crouch-interact while armed to disarm it.
+	## sleeper in the building (when the player set it off; a Hollowed blundering through only makes
+	## it ring, ADR-0022) and keeps putting out noise the horde and heat systems hear. Use it while
+	## ringing to smash it quiet; crouch-interact while armed to disarm it.
 	var style: String = "battery"
 	var _ring_t: float = 0.0
 	var _noise_t: float = 0.0
@@ -917,10 +1070,14 @@ class AlarmTrap:
 
 	func on_body(body: Node) -> void:
 		if body is Player:
-			trip(body)
+			trip(body, true)
+		elif body is Enemy and PoiPieces.hollowed_sets_off("alarm", body as Enemy):
+			trip(body, false)
 
-	## Sets the alarm off (body: whoever did it, or null for an opening event).
-	func trip(_body: Variant) -> void:
+	## Sets the alarm off (body: whoever did it, or null for an opening event). `by_player`: the
+	## player's doing rouses the whole building (ADR-0018); a Hollowed's only rings (ADR-0022), and
+	## the ringing wakes what hears it.
+	func trip(_body: Variant, by_player: bool = true) -> void:
 		if not is_armed():
 			return
 		if poi != null:
@@ -940,8 +1097,9 @@ class AlarmTrap:
 			_player3d.position = Vector3.UP * 1.9
 			_player3d.play()
 		if poi != null:
-			poi.call(&"alarm", global_position)
-		fired(global_position + Vector3.UP)
+			poi.call(&"alarm", global_position, by_player)
+		if by_player or PoiPieces.hollowed_fires("alarm"):
+			fired(global_position + Vector3.UP)
 
 	func is_ringing() -> bool:
 		return _ring_t > 0.0

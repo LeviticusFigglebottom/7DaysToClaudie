@@ -58,6 +58,9 @@ signal enemy_spawned(entity_id: StringName, enemy_id: StringName, position: Vect
 signal enemy_killed(entity_id: StringName, enemy_id: StringName, position: Vector3, killer: Dictionary)
 signal enemy_alerted(entity_id: StringName, position: Vector3)
 signal limb_severed(entity_id: StringName, limb: StringName, position: Vector3)
+## A Hum survivor rooted into the soil at dawn (DESIGN §6) and left the world at `position`; the
+## Bloom leaves a fungal mound there (BloomMounds, ADR-0025).
+signal hollowed_rooted(entity_id: StringName, enemy_id: StringName, position: Vector3)
 
 # --- POIs / quests -----------------------------------------------------------------------
 signal poi_entered(poi_instance_id: StringName)

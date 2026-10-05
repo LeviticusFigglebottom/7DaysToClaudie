@@ -1,0 +1,2571 @@
+{
+  "_doc": "First-person presentation (ADR-0029). Read by the arms generator (tools/assetgen/blender/lib/char_fp.py bakes one fp_* action per hold pose, attack and use) and by ViewModel at runtime. Positions and directions are in camera space (x right, y up, z back; metres). A hand spec places the hand by its grip: 'grip' point, 'dir' (handle axis, thumb side), 'knuckles' (where the knuckles point), 'fist' / 'thumb' curl 0..1, 'index' extra index curl (-1 points), 'elbow' hint added to the rest elbow direction; or {'on': 'R', 'along': m, 'spin': deg} grips the other hand's handle. Attack and use keys are [frame, channels, ease] with channels relative to the hold: S.move [x,y,z] m, S.rot [pitch, yaw, roll] deg about the camera axes (pivot on the grip), S.elbow, S.along, S.spin and the curls. Edit, then `python tools/build_assets.py --match fp_arms` and import.",
+  "fov": 58.0,
+  "z_clip_scale": 0.04,
+  "defaults": {
+    "_doc": "Hold class of an item without equip.hold: by equip.kind, then (melee) by damage_type, then by category. use_by_category picks the use action for consumables.",
+    "by_kind": {
+      "ranged": "pistol",
+      "light": "light_left",
+      "placeable": "held",
+      "throwable": "held"
+    },
+    "by_damage_type": {
+      "pierce": "spear",
+      "blunt": "club",
+      "slash": "one_hand",
+      "fire": "light_left"
+    },
+    "by_category": {
+      "food": "food",
+      "drink": "bottle",
+      "medical": "held"
+    },
+    "use_by_category": {
+      "food": "eat",
+      "drink": "drink",
+      "medical": "apply"
+    },
+    "fallback": "held"
+  },
+  "holds": {
+    "empty": {
+      "_doc": "Bare hands: loose fists at the lower edge, ready.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.15,
+            -0.165,
+            -0.36
+          ],
+          "dir": [
+            -0.25,
+            0.85,
+            -0.45
+          ],
+          "back": [
+            0.75,
+            0.55,
+            0.1
+          ],
+          "fist": 0.72,
+          "thumb": 0.65,
+          "elbow": [
+            0.5,
+            -0.4,
+            0.5
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.17,
+            -0.18,
+            -0.36
+          ],
+          "dir": [
+            0.25,
+            0.85,
+            -0.45
+          ],
+          "back": [
+            -0.75,
+            0.55,
+            0.1
+          ],
+          "fist": 0.68,
+          "thumb": 0.6,
+          "elbow": [
+            -0.5,
+            -0.4,
+            0.5
+          ]
+        }
+      },
+      "guard": {
+        "R": {
+          "grip": [
+            0.12,
+            -0.08,
+            -0.3
+          ],
+          "dir": [
+            -0.35,
+            0.85,
+            0.35
+          ],
+          "back": [
+            0.85,
+            0.2,
+            -0.35
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            0.4,
+            -0.8,
+            0.2
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.14,
+            -0.11,
+            -0.32
+          ],
+          "dir": [
+            0.35,
+            0.85,
+            0.35
+          ],
+          "back": [
+            -0.85,
+            0.2,
+            -0.35
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            -0.4,
+            -0.8,
+            0.2
+          ]
+        }
+      },
+      "attack": "punch",
+      "block": 0.25
+    },
+    "one_hand": {
+      "_doc": "Axes, hatchet, machete, knife, hammer: low right, the head angled in, the off hand loose at the left edge with the tether on its wrist.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.19,
+            -0.135,
+            -0.37
+          ],
+          "dir": [
+            -0.28,
+            0.86,
+            -0.42
+          ],
+          "back": [
+            0.9,
+            0.1,
+            0.4
+          ],
+          "fist": 0.96,
+          "thumb": 0.85,
+          "elbow": [
+            0.5,
+            -0.4,
+            0.4
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.2,
+            -0.19,
+            -0.37
+          ],
+          "dir": [
+            0.25,
+            0.8,
+            -0.55
+          ],
+          "back": [
+            -0.85,
+            0.45,
+            0.1
+          ],
+          "fist": 0.45,
+          "thumb": 0.38,
+          "elbow": [
+            -0.5,
+            -0.4,
+            0.4
+          ]
+        }
+      },
+      "guard": {
+        "R": {
+          "grip": [
+            0.16,
+            -0.06,
+            -0.33
+          ],
+          "dir": [
+            -0.92,
+            0.25,
+            -0.3
+          ],
+          "back": [
+            0.0,
+            0.3,
+            0.95
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            0.5,
+            -0.6,
+            0.2
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.1,
+            -0.12,
+            -0.3
+          ],
+          "dir": [
+            0.25,
+            0.9,
+            -0.35
+          ],
+          "back": [
+            -0.8,
+            0.2,
+            0.5
+          ],
+          "fist": 0.85,
+          "thumb": 0.7,
+          "elbow": [
+            -0.4,
+            -0.7,
+            0.2
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          0,
+          180,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ]
+      },
+      "attack": "chop",
+      "block": 0.45
+    },
+    "club": {
+      "_doc": "Stone club, steel pipe: both hands on the handle, cocked up over the right shoulder.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.17,
+            -0.09,
+            -0.36
+          ],
+          "dir": [
+            0.45,
+            0.85,
+            0.2
+          ],
+          "back": [
+            0.65,
+            -0.35,
+            0.65
+          ],
+          "fist": 1.0,
+          "thumb": 0.85,
+          "elbow": [
+            0.5,
+            -0.5,
+            0.3
+          ]
+        },
+        "L": {
+          "on": "R",
+          "along": -0.095,
+          "spin": 0,
+          "fist": 1.0,
+          "thumb": 0.85,
+          "elbow": [
+            0.0,
+            -0.8,
+            0.3
+          ]
+        }
+      },
+      "guard": {
+        "R": {
+          "grip": [
+            0.2,
+            -0.1,
+            -0.36
+          ],
+          "dir": [
+            -0.95,
+            0.25,
+            -0.18
+          ],
+          "back": [
+            0.0,
+            0.3,
+            0.95
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            0.5,
+            -0.6,
+            0.2
+          ]
+        },
+        "L": {
+          "on": "R",
+          "along": 0.26,
+          "spin": 0,
+          "fist": 1.0,
+          "thumb": 0.85,
+          "elbow": [
+            -0.4,
+            -0.7,
+            0.2
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          0,
+          90,
+          0
+        ],
+        "pos": [
+          0,
+          -0.06,
+          0
+        ]
+      },
+      "attack": "bash",
+      "block": 0.6
+    },
+    "spear": {
+      "_doc": "Spear: low at the hip, point forward to the centre; rear hand overhand, front hand under the shaft.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.13,
+            -0.17,
+            -0.31
+          ],
+          "dir": [
+            -0.15,
+            0.06,
+            -0.99
+          ],
+          "back": [
+            0.2,
+            0.95,
+            0.15
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            0.5,
+            -0.5,
+            0.4
+          ]
+        },
+        "L": {
+          "on": "R",
+          "along": 0.15,
+          "spin": 0,
+          "fist": 0.95,
+          "thumb": 0.8,
+          "elbow": [
+            -0.4,
+            -0.8,
+            0.2
+          ]
+        }
+      },
+      "guard": {
+        "R": {
+          "grip": [
+            0.22,
+            -0.12,
+            -0.32
+          ],
+          "dir": [
+            -0.97,
+            0.18,
+            -0.15
+          ],
+          "back": [
+            0.0,
+            0.3,
+            0.95
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            0.5,
+            -0.6,
+            0.2
+          ]
+        },
+        "L": {
+          "on": "R",
+          "along": 0.34,
+          "spin": 0,
+          "fist": 0.95,
+          "thumb": 0.8,
+          "elbow": [
+            -0.4,
+            -0.7,
+            0.2
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          0,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ]
+      },
+      "attack": "stab",
+      "block": 0.5
+    },
+    "two_hand": {
+      "_doc": "Shovel: carried in front, blade low and forward; rear hand near the grip, front hand under the shaft.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.12,
+            -0.19,
+            -0.32
+          ],
+          "dir": [
+            -0.15,
+            -0.12,
+            -0.98
+          ],
+          "back": [
+            0.2,
+            0.95,
+            0.15
+          ],
+          "fist": 1.0,
+          "thumb": 0.85,
+          "elbow": [
+            0.5,
+            -0.5,
+            0.4
+          ]
+        },
+        "L": {
+          "on": "R",
+          "along": 0.15,
+          "spin": 0,
+          "fist": 0.95,
+          "thumb": 0.8,
+          "elbow": [
+            -0.4,
+            -0.8,
+            0.2
+          ]
+        }
+      },
+      "guard": {
+        "R": {
+          "grip": [
+            0.22,
+            -0.12,
+            -0.32
+          ],
+          "dir": [
+            -0.97,
+            0.18,
+            -0.15
+          ],
+          "back": [
+            0.0,
+            0.3,
+            0.95
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            0.5,
+            -0.6,
+            0.2
+          ]
+        },
+        "L": {
+          "on": "R",
+          "along": 0.34,
+          "spin": 0,
+          "fist": 0.95,
+          "thumb": 0.8,
+          "elbow": [
+            -0.4,
+            -0.7,
+            0.2
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          0,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ]
+      },
+      "attack": "dig",
+      "block": 0.55
+    },
+    "light_left": {
+      "_doc": "Torch, flashlight, lighter: held up in the left hand, the right hand loose and ready.",
+      "pose": {
+        "L": {
+          "grip": [
+            -0.17,
+            -0.11,
+            -0.4
+          ],
+          "dir": [
+            0.12,
+            0.85,
+            -0.5
+          ],
+          "back": [
+            -0.8,
+            0.1,
+            -0.55
+          ],
+          "fist": 0.95,
+          "thumb": 0.85,
+          "elbow": [
+            -0.5,
+            -0.5,
+            0.3
+          ]
+        },
+        "R": {
+          "grip": [
+            0.15,
+            -0.165,
+            -0.36
+          ],
+          "dir": [
+            -0.25,
+            0.85,
+            -0.45
+          ],
+          "back": [
+            0.75,
+            0.55,
+            0.1
+          ],
+          "fist": 0.72,
+          "thumb": 0.65,
+          "elbow": [
+            0.5,
+            -0.4,
+            0.5
+          ]
+        }
+      },
+      "guard": {
+        "L": {
+          "grip": [
+            -0.1,
+            -0.1,
+            -0.47
+          ],
+          "dir": [
+            0.15,
+            0.55,
+            -0.82
+          ],
+          "back": [
+            -0.8,
+            0.2,
+            -0.4
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            -0.4,
+            -0.6,
+            0.1
+          ]
+        },
+        "R": {
+          "grip": [
+            0.12,
+            -0.08,
+            -0.3
+          ],
+          "dir": [
+            -0.35,
+            0.85,
+            0.35
+          ],
+          "back": [
+            0.85,
+            0.2,
+            -0.35
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            0.4,
+            -0.8,
+            0.2
+          ]
+        }
+      },
+      "tether_right": {
+        "grip": [
+          0.17,
+          -0.2,
+          -0.4
+        ],
+        "dir": [
+          -0.12,
+          0.85,
+          -0.5
+        ],
+        "back": [
+          0.8,
+          0.1,
+          -0.55
+        ],
+        "fist": 0.95,
+        "thumb": 0.85,
+        "elbow": [
+          0.5,
+          -0.5,
+          0.3
+        ]
+      },
+      "hand": "L",
+      "item": {
+        "rot": [
+          0,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ]
+      },
+      "attack": "torch",
+      "block": 0.3
+    },
+    "flashlight": {
+      "_doc": "Flashlight: overhand in the left fist, the lens out of the little-finger side so the beam goes where you look; the forearm crosses the lower left. The right hand loose and ready.",
+      "pose": {
+        "L": {
+          "grip": [
+            -0.08,
+            -0.13,
+            -0.29
+          ],
+          "dir": [
+            -0.05,
+            0.12,
+            0.99
+          ],
+          "back": [
+            -0.8,
+            0.6,
+            0.06
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            -0.6,
+            -0.5,
+            0.2
+          ]
+        },
+        "R": {
+          "grip": [
+            0.15,
+            -0.165,
+            -0.36
+          ],
+          "dir": [
+            -0.25,
+            0.85,
+            -0.45
+          ],
+          "back": [
+            0.75,
+            0.55,
+            0.1
+          ],
+          "fist": 0.72,
+          "thumb": 0.65,
+          "elbow": [
+            0.5,
+            -0.4,
+            0.5
+          ]
+        }
+      },
+      "guard": {
+        "L": {
+          "grip": [
+            -0.06,
+            -0.07,
+            -0.3
+          ],
+          "dir": [
+            -0.1,
+            0.35,
+            0.93
+          ],
+          "back": [
+            -0.75,
+            0.6,
+            -0.2
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            -0.6,
+            -0.5,
+            0.1
+          ]
+        },
+        "R": {
+          "grip": [
+            0.12,
+            -0.08,
+            -0.3
+          ],
+          "dir": [
+            -0.35,
+            0.85,
+            0.35
+          ],
+          "back": [
+            0.85,
+            0.2,
+            -0.35
+          ],
+          "fist": 1.0,
+          "thumb": 0.9,
+          "elbow": [
+            0.4,
+            -0.8,
+            0.2
+          ]
+        }
+      },
+      "tether_right": {
+        "grip": [
+          0.1,
+          -0.13,
+          -0.29
+        ],
+        "dir": [
+          0.05,
+          0.12,
+          0.99
+        ],
+        "back": [
+          0.8,
+          0.6,
+          0.06
+        ],
+        "fist": 1.0,
+        "thumb": 0.9,
+        "elbow": [
+          0.6,
+          -0.5,
+          0.2
+        ]
+      },
+      "hand": "L",
+      "item": {
+        "rot": [
+          0,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ]
+      },
+      "attack": "jab",
+      "block": 0.3
+    },
+    "pistol": {
+      "_doc": "Revolver: low ready in the right hand, barrel forward.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.14,
+            -0.16,
+            -0.45
+          ],
+          "dir": [
+            0.05,
+            0.95,
+            0.25
+          ],
+          "back": [
+            0.95,
+            -0.05,
+            0.1
+          ],
+          "fist": 0.95,
+          "thumb": 0.7,
+          "elbow": [
+            0.5,
+            -0.5,
+            0.4
+          ],
+          "index": -0.35
+        },
+        "L": {
+          "grip": [
+            -0.2,
+            -0.19,
+            -0.37
+          ],
+          "dir": [
+            0.25,
+            0.8,
+            -0.55
+          ],
+          "back": [
+            -0.85,
+            0.45,
+            0.1
+          ],
+          "fist": 0.45,
+          "thumb": 0.38,
+          "elbow": [
+            -0.5,
+            -0.4,
+            0.4
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          0,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ]
+      },
+      "attack": ""
+    },
+    "held": {
+      "_doc": "Anything small carried on the right palm: resources, medicine, placeables, stones.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.15,
+            -0.14,
+            -0.36
+          ],
+          "dir": [
+            0.85,
+            0.15,
+            -0.35
+          ],
+          "back": [
+            0.0,
+            -1.0,
+            0.1
+          ],
+          "fist": 0.35,
+          "thumb": 0.3,
+          "elbow": [
+            0.5,
+            -0.6,
+            0.3
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.2,
+            -0.19,
+            -0.37
+          ],
+          "dir": [
+            0.25,
+            0.8,
+            -0.55
+          ],
+          "back": [
+            -0.85,
+            0.45,
+            0.1
+          ],
+          "fist": 0.45,
+          "thumb": 0.38,
+          "elbow": [
+            -0.5,
+            -0.4,
+            0.4
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          -90,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0.02
+        ],
+        "center": [
+          0.5,
+          0.0,
+          0.5
+        ]
+      },
+      "attack": "",
+      "use": "place"
+    },
+    "food": {
+      "_doc": "A can, a bar, a mushroom: in the right fist, ready to eat.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.15,
+            -0.13,
+            -0.38
+          ],
+          "dir": [
+            -0.12,
+            0.95,
+            -0.2
+          ],
+          "back": [
+            0.75,
+            0.1,
+            -0.6
+          ],
+          "fist": 0.75,
+          "thumb": 0.6,
+          "elbow": [
+            0.5,
+            -0.5,
+            0.4
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.2,
+            -0.19,
+            -0.37
+          ],
+          "dir": [
+            0.25,
+            0.8,
+            -0.55
+          ],
+          "back": [
+            -0.85,
+            0.45,
+            0.1
+          ],
+          "fist": 0.45,
+          "thumb": 0.38,
+          "elbow": [
+            -0.5,
+            -0.4,
+            0.4
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          0,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ],
+        "center": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "upright": true
+      },
+      "attack": "",
+      "use": "eat"
+    },
+    "bottle": {
+      "_doc": "A bottle upright in the right fist.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.15,
+            -0.14,
+            -0.38
+          ],
+          "dir": [
+            -0.1,
+            0.96,
+            -0.2
+          ],
+          "back": [
+            0.75,
+            0.1,
+            -0.6
+          ],
+          "fist": 0.7,
+          "thumb": 0.55,
+          "elbow": [
+            0.5,
+            -0.5,
+            0.4
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.2,
+            -0.19,
+            -0.37
+          ],
+          "dir": [
+            0.25,
+            0.8,
+            -0.55
+          ],
+          "back": [
+            -0.85,
+            0.45,
+            0.1
+          ],
+          "fist": 0.45,
+          "thumb": 0.38,
+          "elbow": [
+            -0.5,
+            -0.4,
+            0.4
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          0,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ],
+        "center": [
+          0.5,
+          0.38,
+          0.5
+        ],
+        "upright": true
+      },
+      "attack": "",
+      "use": "drink"
+    },
+    "blueprint": {
+      "_doc": "Laying out a blueprint: the Field Manual open on the left palm, the right hand pointing.",
+      "pose": {
+        "L": {
+          "grip": [
+            -0.16,
+            -0.2,
+            -0.36
+          ],
+          "dir": [
+            -0.85,
+            0.15,
+            -0.35
+          ],
+          "back": [
+            0.0,
+            -1.0,
+            0.1
+          ],
+          "fist": 0.3,
+          "thumb": 0.25,
+          "elbow": [
+            -0.5,
+            -0.6,
+            0.3
+          ]
+        },
+        "R": {
+          "grip": [
+            0.16,
+            -0.16,
+            -0.42
+          ],
+          "dir": [
+            -0.25,
+            0.8,
+            -0.55
+          ],
+          "back": [
+            0.8,
+            0.5,
+            0.0
+          ],
+          "fist": 0.85,
+          "thumb": 0.7,
+          "elbow": [
+            0.5,
+            -0.5,
+            0.4
+          ],
+          "index": -1.0
+        }
+      },
+      "hand": "L",
+      "item": {
+        "rot": [
+          90,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          -0.02
+        ],
+        "center": [
+          0.5,
+          0.0,
+          0.5
+        ]
+      },
+      "show": "field_manual",
+      "attack": "",
+      "no_tether": true
+    },
+    "carry_log": {
+      "_doc": "A log on the right shoulder: its front end rises out of the top right; the right hand steadies it from below, the left hangs free.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.205,
+            -0.034,
+            -0.313
+          ],
+          "dir": [
+            0.15,
+            0.45,
+            -0.88
+          ],
+          "back": [
+            -0.6,
+            -0.8,
+            -0.1
+          ],
+          "fist": 0.65,
+          "thumb": 0.5,
+          "elbow": [
+            0.6,
+            -0.6,
+            0.2
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.2,
+            -0.19,
+            -0.37
+          ],
+          "dir": [
+            0.25,
+            0.8,
+            -0.55
+          ],
+          "back": [
+            -0.85,
+            0.45,
+            0.1
+          ],
+          "fist": 0.45,
+          "thumb": 0.38,
+          "elbow": [
+            -0.5,
+            -0.4,
+            0.4
+          ]
+        }
+      },
+      "attack": "",
+      "no_tether": true,
+      "log": {
+        "center": [
+          0.24,
+          -0.1,
+          0.1
+        ],
+        "dir": [
+          0.15,
+          0.45,
+          -0.88
+        ],
+        "model": "structures/log_piece"
+      }
+    }
+  },
+  "attacks": {
+    "_doc": "fp_<name>: played over the item's attack_time, so `impact` (the hit resolves at attack_time x impact) sits on the keyed contact frame.",
+    "punch": {
+      "hold": "empty",
+      "frames": 18,
+      "impact": 0.39,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          4,
+          {
+            "R.move": [
+              0.02,
+              0.0,
+              0.06
+            ],
+            "R.rot": [
+              0,
+              -8,
+              0
+            ],
+            "R.fist": 1.0,
+            "L.move": [
+              0.03,
+              0.05,
+              0.0
+            ],
+            "L.fist": 1.0
+          },
+          "out"
+        ],
+        [
+          7,
+          {
+            "R.move": [
+              -0.1,
+              0.09,
+              -0.2
+            ],
+            "R.rot": [
+              0,
+              15,
+              -40
+            ],
+            "R.fist": 1.0,
+            "L.move": [
+              0.02,
+              0.06,
+              0.02
+            ],
+            "L.fist": 1.0
+          },
+          "snap"
+        ],
+        [
+          10,
+          {
+            "R.move": [
+              -0.095,
+              0.085,
+              -0.19
+            ],
+            "R.rot": [
+              0,
+              15,
+              -40
+            ],
+            "R.fist": 1.0,
+            "L.move": [
+              0.02,
+              0.06,
+              0.02
+            ],
+            "L.fist": 1.0
+          },
+          "out"
+        ],
+        [
+          18,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "chop": {
+      "hold": "one_hand",
+      "frames": 26,
+      "impact": 0.46,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          8,
+          {
+            "R.move": [
+              0.06,
+              0.12,
+              0.08
+            ],
+            "R.rot": [
+              55,
+              -10,
+              -35
+            ],
+            "R.fist": 1.0,
+            "R.elbow": [
+              0.2,
+              0.5,
+              0.0
+            ],
+            "L.move": [
+              0.01,
+              -0.03,
+              0.01
+            ]
+          },
+          "out"
+        ],
+        [
+          10,
+          {
+            "R.move": [
+              0.065,
+              0.13,
+              0.09
+            ],
+            "R.rot": [
+              62,
+              -12,
+              -38
+            ],
+            "R.fist": 1.0,
+            "R.elbow": [
+              0.2,
+              0.5,
+              0.0
+            ],
+            "L.move": [
+              0.01,
+              -0.035,
+              0.01
+            ]
+          },
+          "inout"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              -0.06,
+              -0.06,
+              -0.08
+            ],
+            "R.rot": [
+              -40,
+              15,
+              35
+            ],
+            "R.fist": 1.0,
+            "L.move": [
+              0.0,
+              -0.02,
+              0.0
+            ]
+          },
+          "in"
+        ],
+        [
+          15,
+          {
+            "R.move": [
+              -0.12,
+              -0.15,
+              -0.04
+            ],
+            "R.rot": [
+              -75,
+              20,
+              60
+            ],
+            "R.fist": 1.0,
+            "L.move": [
+              0.0,
+              -0.025,
+              0.0
+            ]
+          },
+          "out"
+        ],
+        [
+          26,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "slash": {
+      "hold": "one_hand",
+      "frames": 20,
+      "impact": 0.45,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          6,
+          {
+            "R.move": [
+              0.07,
+              0.1,
+              0.05
+            ],
+            "R.rot": [
+              35,
+              -35,
+              -55
+            ],
+            "R.fist": 1.0
+          },
+          "out"
+        ],
+        [
+          9,
+          {
+            "R.move": [
+              0.0,
+              0.02,
+              -0.12
+            ],
+            "R.rot": [
+              -10,
+              25,
+              30
+            ],
+            "R.fist": 1.0
+          },
+          "in"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              -0.12,
+              -0.09,
+              -0.06
+            ],
+            "R.rot": [
+              -35,
+              50,
+              60
+            ],
+            "R.fist": 1.0
+          },
+          "out"
+        ],
+        [
+          20,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "bash": {
+      "hold": "club",
+      "frames": 32,
+      "impact": 0.5,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          10,
+          {
+            "R.move": [
+              0.06,
+              0.1,
+              0.08
+            ],
+            "R.rot": [
+              35,
+              -20,
+              -30
+            ],
+            "R.elbow": [
+              0.3,
+              0.6,
+              0.0
+            ],
+            "L.elbow": [
+              0.0,
+              0.3,
+              0.0
+            ]
+          },
+          "out"
+        ],
+        [
+          13,
+          {
+            "R.move": [
+              0.065,
+              0.11,
+              0.09
+            ],
+            "R.rot": [
+              42,
+              -22,
+              -34
+            ],
+            "R.elbow": [
+              0.3,
+              0.6,
+              0.0
+            ],
+            "L.elbow": [
+              0.0,
+              0.3,
+              0.0
+            ]
+          },
+          "inout"
+        ],
+        [
+          16,
+          {
+            "R.move": [
+              -0.08,
+              -0.08,
+              -0.1
+            ],
+            "R.rot": [
+              -95,
+              25,
+              35
+            ]
+          },
+          "in"
+        ],
+        [
+          20,
+          {
+            "R.move": [
+              -0.15,
+              -0.15,
+              -0.03
+            ],
+            "R.rot": [
+              -120,
+              32,
+              48
+            ]
+          },
+          "out"
+        ],
+        [
+          32,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "stab": {
+      "hold": "spear",
+      "frames": 22,
+      "impact": 0.41,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          6,
+          {
+            "R.move": [
+              0.02,
+              0.0,
+              0.1
+            ],
+            "R.rot": [
+              5,
+              -4,
+              0
+            ],
+            "L.along": 0.17
+          },
+          "out"
+        ],
+        [
+          9,
+          {
+            "R.move": [
+              -0.02,
+              0.03,
+              -0.085
+            ],
+            "R.rot": [
+              -4,
+              4,
+              0
+            ],
+            "L.along": 0.1
+          },
+          "in"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              -0.02,
+              0.03,
+              -0.09
+            ],
+            "R.rot": [
+              -5,
+              4,
+              0
+            ],
+            "L.along": 0.1
+          },
+          "out"
+        ],
+        [
+          22,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "dig": {
+      "hold": "two_hand",
+      "frames": 26,
+      "impact": 0.46,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          8,
+          {
+            "R.move": [
+              0.02,
+              0.06,
+              0.08
+            ],
+            "R.rot": [
+              12,
+              0,
+              -4
+            ]
+          },
+          "out"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              -0.02,
+              -0.06,
+              -0.06
+            ],
+            "R.rot": [
+              -14,
+              0,
+              4
+            ],
+            "L.along": 0.12
+          },
+          "in"
+        ],
+        [
+          15,
+          {
+            "R.move": [
+              -0.02,
+              -0.07,
+              -0.07
+            ],
+            "R.rot": [
+              -16,
+              0,
+              4
+            ],
+            "L.along": 0.12
+          },
+          "out"
+        ],
+        [
+          26,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "torch": {
+      "hold": "light_left",
+      "frames": 22,
+      "impact": 0.45,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          6,
+          {
+            "L.move": [
+              -0.06,
+              0.1,
+              0.06
+            ],
+            "L.rot": [
+              40,
+              30,
+              20
+            ]
+          },
+          "out"
+        ],
+        [
+          10,
+          {
+            "L.move": [
+              0.09,
+              -0.02,
+              -0.08
+            ],
+            "L.rot": [
+              -30,
+              -25,
+              -25
+            ]
+          },
+          "in"
+        ],
+        [
+          13,
+          {
+            "L.move": [
+              0.14,
+              -0.1,
+              -0.04
+            ],
+            "L.rot": [
+              -55,
+              -40,
+              -35
+            ]
+          },
+          "out"
+        ],
+        [
+          22,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "jab": {
+      "hold": "flashlight",
+      "frames": 18,
+      "impact": 0.42,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          4,
+          {
+            "L.move": [
+              -0.02,
+              0.02,
+              0.06
+            ],
+            "L.rot": [
+              8,
+              0,
+              0
+            ]
+          },
+          "out"
+        ],
+        [
+          7,
+          {
+            "L.move": [
+              0.02,
+              0.03,
+              -0.09
+            ],
+            "L.rot": [
+              -6,
+              -5,
+              0
+            ]
+          },
+          "in"
+        ],
+        [
+          10,
+          {
+            "L.move": [
+              0.02,
+              0.03,
+              -0.09
+            ],
+            "L.rot": [
+              -6,
+              -5,
+              0
+            ]
+          },
+          "out"
+        ],
+        [
+          18,
+          {},
+          "inout"
+        ]
+      ]
+    }
+  },
+  "uses": {
+    "eat": {
+      "hold": "food",
+      "frames": 40,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          11,
+          {
+            "R.move": [
+              -0.12,
+              0.06,
+              0.18
+            ],
+            "R.rot": [
+              -15,
+              20,
+              10
+            ],
+            "R.elbow": [
+              0.0,
+              -0.5,
+              0.0
+            ]
+          },
+          "inout"
+        ],
+        [
+          15,
+          {
+            "R.move": [
+              -0.125,
+              0.07,
+              0.2
+            ],
+            "R.rot": [
+              -20,
+              20,
+              10
+            ],
+            "R.elbow": [
+              0.0,
+              -0.5,
+              0.0
+            ]
+          },
+          "out"
+        ],
+        [
+          19,
+          {
+            "R.move": [
+              -0.12,
+              0.06,
+              0.17
+            ],
+            "R.rot": [
+              -15,
+              20,
+              10
+            ],
+            "R.elbow": [
+              0.0,
+              -0.5,
+              0.0
+            ]
+          },
+          "inout"
+        ],
+        [
+          23,
+          {
+            "R.move": [
+              -0.125,
+              0.07,
+              0.2
+            ],
+            "R.rot": [
+              -20,
+              20,
+              10
+            ],
+            "R.elbow": [
+              0.0,
+              -0.5,
+              0.0
+            ]
+          },
+          "out"
+        ],
+        [
+          28,
+          {
+            "R.move": [
+              -0.12,
+              0.06,
+              0.17
+            ],
+            "R.rot": [
+              -15,
+              20,
+              10
+            ],
+            "R.elbow": [
+              0.0,
+              -0.5,
+              0.0
+            ]
+          },
+          "inout"
+        ],
+        [
+          40,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "drink": {
+      "hold": "bottle",
+      "frames": 44,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              -0.12,
+              0.07,
+              0.19
+            ],
+            "R.rot": [
+              50,
+              15,
+              15
+            ],
+            "R.elbow": [
+              0.0,
+              -0.4,
+              0.0
+            ]
+          },
+          "inout"
+        ],
+        [
+          32,
+          {
+            "R.move": [
+              -0.12,
+              0.09,
+              0.2
+            ],
+            "R.rot": [
+              72,
+              15,
+              15
+            ],
+            "R.elbow": [
+              0.0,
+              -0.4,
+              0.0
+            ]
+          },
+          "inout"
+        ],
+        [
+          44,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "place": {
+      "hold": "held",
+      "frames": 20,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          9,
+          {
+            "R.move": [
+              -0.04,
+              -0.08,
+              -0.2
+            ],
+            "R.rot": [
+              -25,
+              0,
+              0
+            ],
+            "R.fist": 0.4
+          },
+          "inout"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              -0.04,
+              -0.09,
+              -0.21
+            ],
+            "R.rot": [
+              -25,
+              0,
+              0
+            ],
+            "R.fist": 0.05,
+            "R.thumb": 0.05
+          },
+          "out"
+        ],
+        [
+          20,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "throw": {
+      "hold": "held",
+      "frames": 24,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          9,
+          {
+            "R.move": [
+              0.04,
+              0.22,
+              0.25
+            ],
+            "R.rot": [
+              70,
+              0,
+              -10
+            ],
+            "R.fist": 0.9,
+            "R.elbow": [
+              0.3,
+              0.8,
+              0.0
+            ],
+            "L.move": [
+              0.05,
+              0.1,
+              -0.08
+            ]
+          },
+          "out"
+        ],
+        [
+          13,
+          {
+            "R.move": [
+              -0.04,
+              0.16,
+              -0.1
+            ],
+            "R.rot": [
+              10,
+              0,
+              0
+            ],
+            "R.fist": 0.9,
+            "L.move": [
+              0.04,
+              0.06,
+              -0.06
+            ]
+          },
+          "in"
+        ],
+        [
+          15,
+          {
+            "R.move": [
+              -0.07,
+              0.08,
+              -0.2
+            ],
+            "R.rot": [
+              -30,
+              0,
+              0
+            ],
+            "R.fist": 0.0,
+            "R.thumb": 0.0
+          },
+          "lin"
+        ],
+        [
+          24,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "light": {
+      "hold": "light_left",
+      "frames": 24,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          8,
+          {
+            "L.move": [
+              0.06,
+              0.06,
+              0.02
+            ],
+            "L.rot": [
+              0,
+              -15,
+              0
+            ]
+          },
+          "out"
+        ],
+        [
+          10,
+          {
+            "L.move": [
+              0.06,
+              0.06,
+              0.02
+            ],
+            "L.rot": [
+              0,
+              -15,
+              0
+            ],
+            "L.flick": 60
+          },
+          "snap"
+        ],
+        [
+          12,
+          {
+            "L.move": [
+              0.06,
+              0.06,
+              0.02
+            ],
+            "L.rot": [
+              0,
+              -15,
+              0
+            ]
+          },
+          "inout"
+        ],
+        [
+          24,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "apply": {
+      "hold": "held",
+      "frames": 40,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              -0.2,
+              0.06,
+              0.06
+            ],
+            "R.rot": [
+              0,
+              40,
+              0
+            ],
+            "L.move": [
+              0.1,
+              0.08,
+              0.02
+            ],
+            "L.rot": [
+              0,
+              -30,
+              -60
+            ]
+          },
+          "inout"
+        ],
+        [
+          20,
+          {
+            "R.move": [
+              -0.22,
+              0.03,
+              0.08
+            ],
+            "R.rot": [
+              0,
+              50,
+              20
+            ],
+            "L.move": [
+              0.1,
+              0.08,
+              0.02
+            ],
+            "L.rot": [
+              0,
+              -30,
+              -60
+            ]
+          },
+          "inout"
+        ],
+        [
+          28,
+          {
+            "R.move": [
+              -0.2,
+              0.07,
+              0.05
+            ],
+            "R.rot": [
+              0,
+              40,
+              -10
+            ],
+            "L.move": [
+              0.1,
+              0.08,
+              0.02
+            ],
+            "L.rot": [
+              0,
+              -30,
+              -60
+            ]
+          },
+          "inout"
+        ],
+        [
+          40,
+          {},
+          "inout"
+        ]
+      ]
+    }
+  },
+  "tether": {
+    "_doc": "Raising the left wrist to read the tether (T): the reading pose, how long the raise and lower take, the viewmodel's narrower field of view while reading (the screen fills more of the view), and the screen's glow lowered / raised.",
+    "pose": {
+      "L": {
+        "grip": [
+          0.09,
+          -0.04,
+          -0.27
+        ],
+        "dir": [
+          0.0,
+          -1.0,
+          0.0
+        ],
+        "back": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "fist": 0.55,
+        "thumb": 0.4,
+        "elbow": [
+          -0.4,
+          0.6,
+          -0.2
+        ]
+      }
+    },
+    "raise_time": 0.35,
+    "lower_time": 0.25,
+    "fov": 42.0,
+    "screen_energy": [
+      0.35,
+      1.3
+    ]
+  },
+  "guard": {
+    "_doc": "Holding Block with a melee weapon raises the hold's guard: a blow from within arc_deg of where you face loses the hold's (or equip.block's) share of its damage, costing stamina per blocked hit plus per point absorbed. You can't attack while guarding.",
+    "arc_deg": 110.0,
+    "stamina_per_hit": 6.0,
+    "stamina_per_damage": 0.4,
+    "raise_time": 0.12
+  },
+  "motion": {
+    "_doc": "Procedural motion on top of the baked poses. breathe: period s, pos m, rot deg. sway: the rig lags the view (deg of lag per rad/s of turn), sprung. move: lag against velocity changes. bob: per footstep (pos m, rot deg), scaled when sprinting / crouched. sprint: the lowered pose (pos m, rot deg) blended in while sprinting. land: dip per m/s of landing speed. equip: seconds to raise a new item.",
+    "breathe": {
+      "period": 4.2,
+      "pos": [
+        0.0,
+        0.0028,
+        0.0012
+      ],
+      "rot": [
+        0.45,
+        0.0,
+        0.25
+      ]
+    },
+    "sway": {
+      "deg_per_rad_s": [
+        1.6,
+        1.6,
+        0.6
+      ],
+      "max_deg": 6.0,
+      "pos_per_deg": 0.0012,
+      "stiffness": 95.0,
+      "damping": 13.0
+    },
+    "move": {
+      "pos_per_mps": [
+        0.004,
+        0.0,
+        0.006
+      ],
+      "rot_per_mps": [
+        0.6,
+        0.0,
+        1.0
+      ],
+      "stiffness": 45.0,
+      "damping": 10.0
+    },
+    "bob": {
+      "pos": [
+        0.006,
+        0.01,
+        0.0
+      ],
+      "rot": [
+        0.9,
+        0.5,
+        1.1
+      ],
+      "sprint": 1.8,
+      "crouch": 0.55
+    },
+    "sprint": {
+      "pos": [
+        0.03,
+        -0.07,
+        0.06
+      ],
+      "rot": [
+        -20,
+        26,
+        12
+      ],
+      "blend": 6.0
+    },
+    "land": {
+      "per_mps": 0.006,
+      "max": 0.05
+    },
+    "equip": 0.3
+  },
+  "impact": {
+    "_doc": "Feedback when a swing connects, by what it hit: hitstop (s the swing freezes), camera kick (pitch, yaw, roll deg; sprung back), rig recoil (m), and particles where the target makes none of its own.",
+    "kick_stiffness": 170.0,
+    "kick_damping": 20.0,
+    "surfaces": {
+      "wood": {
+        "hitstop": 0.065,
+        "kick": [
+          -1.4,
+          0.4,
+          0.8
+        ],
+        "recoil": 0.012,
+        "fx": ""
+      },
+      "bark": {
+        "hitstop": 0.06,
+        "kick": [
+          -1.2,
+          0.4,
+          0.6
+        ],
+        "recoil": 0.012,
+        "fx": "bark",
+        "fx_scale": 0.9
+      },
+      "flesh": {
+        "hitstop": 0.05,
+        "kick": [
+          -0.9,
+          0.5,
+          1.0
+        ],
+        "recoil": 0.008,
+        "fx": ""
+      },
+      "metal": {
+        "hitstop": 0.09,
+        "kick": [
+          -2.2,
+          -0.6,
+          -1.2
+        ],
+        "recoil": 0.02,
+        "fx": "sparks",
+        "fx_scale": 0.8
+      },
+      "stone": {
+        "hitstop": 0.08,
+        "kick": [
+          -1.8,
+          -0.5,
+          -1.0
+        ],
+        "recoil": 0.018,
+        "fx": "stone",
+        "fx_scale": 0.6
+      },
+      "dirt": {
+        "hitstop": 0.04,
+        "kick": [
+          -0.8,
+          0.0,
+          0.4
+        ],
+        "recoil": 0.006,
+        "fx": ""
+      },
+      "solid": {
+        "hitstop": 0.06,
+        "kick": [
+          -1.5,
+          -0.4,
+          -0.8
+        ],
+        "recoil": 0.014,
+        "fx": "dust",
+        "fx_scale": 0.25
+      }
+    },
+    "by_surface_meta": {
+      "wood_floor": "wood",
+      "metal": "metal",
+      "concrete": "stone",
+      "stone": "stone",
+      "rock_cliff": "stone",
+      "dirt": "dirt",
+      "gravel": "stone"
+    }
+  },
+  "stagger": {
+    "_doc": "Taking a hit knocks the arms: deg and m per point of damage, capped; a blocked hit jolts the guard instead.",
+    "deg_per_damage": 0.35,
+    "max_deg": 10.0,
+    "pos_per_damage": 0.0012,
+    "block_deg": 4.0
+  }
+}

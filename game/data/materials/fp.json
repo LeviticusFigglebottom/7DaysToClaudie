@@ -1,0 +1,24 @@
+{
+  "_doc": "First-person arms (family: fp, ADR-0029): models/characters/fp_arms.glb names these M_fp_*. Skin and nails use the character skin shader (ADR-0028) with its screen-space subsurface blur off (the viewmodel's squeezed depth would widen it tenfold), the sleeves its cloth shader (no seam or edge data on the arms, so seams and stitching are off). Textures from tools/assetgen/textures/gen/fp.py; the arms use metre UVs, so uv_scale = 1 / tile size (m). Vertex colour: R = baked AO, G = the dirt mask (creases, knuckles, fingertips, cuff) that reveals the fp_grime wear layer. The game draws them with the viewmodel's own field of view (FpMaterials); the tether screen is replaced by the live tether UI once it exists.",
+  "materials": {
+    "fp_skin": {"shader": "skin", "textures": "fp_skin", "layers": {"wear": "fp_grime"},
+                "params": {"uv_scale": 5.0, "normal_strength": 1.0, "wear_amount": 0.42, "wear_uv_scale": 6.0, "vertex_ao_strength": 1.0, "variation_strength": 0.04,
+                           "sss_strength": 0.0, "transmittance_color": "#a8503a", "transmittance_depth": 0.025, "transmittance_boost": 0.1}},
+    "fp_nail": {"shader": "skin", "textures": "fp_skin", "layers": {"wear": "fp_grime"},
+                "params": {"uv_scale": 14.0, "tint": "#f0d2c4", "normal_strength": 0.4, "roughness_add": -0.22, "wear_amount": 0.22, "wear_uv_scale": 10.0, "vertex_ao_strength": 1.0,
+                           "sss_strength": 0.0, "transmittance_color": "#b86a58", "transmittance_depth": 0.01}},
+    "fp_sleeve": {"shader": "cloth", "textures": "fp_sleeve", "layers": {"wear": "fp_grime"},
+                  "params": {"uv_scale": 7.0, "normal_strength": 0.7, "wear_amount": 0.35, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "grime_amount": 0.25, "grime_color": "#2a1d14",
+                             "sheen": 0.5, "wrap": 0.4, "seam_shade": 0.0, "stitch_amount": 0.0}},
+    "fp_tether": {"shader": "std_surface", "textures": "fp_tether",
+                  "params": {"uv_scale": 9.0, "normal_strength": 0.9, "vertex_ao_strength": 1.0, "grime_amount": 0.3, "grime_color": "#1c1814", "metallic_mult": 0.0}},
+    "fp_tether_strap": {"shader": "std_surface", "textures": "item_rubber",
+                        "params": {"uv_scale": 10.0, "tint": "#4a4c48", "normal_strength": 0.9, "vertex_ao_strength": 1.0, "grime_amount": 0.35, "grime_color": "#1e1a15"}},
+    "fp_tether_metal": {"shader": "std_surface", "textures": "item_steel_tool",
+                        "params": {"uv_scale": 30.0, "tint": "#6a6d70", "roughness_add": 0.08, "vertex_ao_strength": 1.0, "grime_amount": 0.3}},
+    "fp_tether_screen": {"shader": "std_surface", "textures": "fp_tether_screen",
+                         "params": {"uv_scale": 1.0, "vertex_ao_strength": 0.0, "metallic_mult": 0.0, "emission_color": "#ffffff", "emission_energy": 0.55}},
+    "fp_tether_led": {"shader": "std_surface",
+                      "params": {"tint": "#ff6a2a", "roughness_mult": 0.0, "roughness_add": 0.2, "metallic_mult": 0.0, "vertex_ao_strength": 0.0, "emission_color": "#ff5a1e", "emission_energy": 2.2}}
+  }
+}

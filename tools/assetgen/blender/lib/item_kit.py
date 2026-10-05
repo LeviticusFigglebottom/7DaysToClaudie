@@ -64,6 +64,7 @@ PREVIEW: dict[str, tuple[float, float, float]] = {
     "item_plant_fiber": (0.45, 0.40, 0.25), "item_scrip": (0.30, 0.32, 0.22), "item_screen": (0.02, 0.03, 0.03),
     "item_clay": (0.35, 0.22, 0.12), "item_charcoal": (0.03, 0.03, 0.03), "item_ghost": (0.45, 0.55, 0.60),
     "item_rx_label": (0.80, 0.80, 0.78), "item_flower": (0.85, 0.84, 0.78), "item_stem_green": (0.09, 0.16, 0.04),
+    "item_flint": (0.05, 0.05, 0.055), "item_rawhide": (0.42, 0.30, 0.15), "item_torch_ember": (0.05, 0.03, 0.02),
 }
 
 METALS = ("item_steel", "item_galvanized", "item_aluminium", "item_chrome", "item_brass", "item_copper", "item_can_tin")

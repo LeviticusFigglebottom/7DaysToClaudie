@@ -1,0 +1,16 @@
+{
+ "_doc": "The Remand Program's kit (ADR-0023): the heavy-lift supply drone. Models: tools/assetgen/blender/generators/props_ext_program.py. Textures: tools/assetgen/textures/gen/program.py (program_livery atlas, program_carbon weave) plus shared sets (car_paint, chrome_pitted, canvas_tarp). Vertex colour G drives the wear layer (bare aluminium under the paint). Nav lights are always-on emissive std_surface (battery-powered Program kit still runs in the dark valley).",
+ "materials": {
+  "program_white": {"shader": "std_surface", "textures": "car_paint", "layers": {"wear": "chrome_pitted"}, "params": {"uv_scale": 1.5, "tint": "#dad7cd", "wear_amount": 0.45, "wear_uv_scale": 2.0, "grime_amount": 0.45, "grime_color": "#2c2924", "roughness_add": 0.18, "vertex_ao_strength": 1.0}},
+  "program_orange": {"shader": "std_surface", "textures": "car_paint", "layers": {"wear": "chrome_pitted"}, "params": {"uv_scale": 1.5, "tint": "#cf5a1f", "wear_amount": 0.45, "wear_uv_scale": 2.0, "grime_amount": 0.45, "grime_color": "#2c2924", "roughness_add": 0.18, "vertex_ao_strength": 1.0}},
+  "program_grey": {"shader": "std_surface", "textures": "car_paint", "layers": {"wear": "chrome_pitted"}, "params": {"uv_scale": 1.5, "tint": "#4b4d4e", "wear_amount": 0.4, "wear_uv_scale": 2.0, "grime_amount": 0.4, "grime_color": "#22201c", "roughness_add": 0.25, "vertex_ao_strength": 1.0}},
+  "program_livery": {"shader": "std_surface", "textures": "program_livery", "params": {"uv_scale": 1.0, "normal_strength": 0.6, "grime_amount": 0.35, "grime_color": "#2c2924", "vertex_ao_strength": 1.0, "metallic_mult": 0.0}},
+  "program_carbon": {"shader": "std_surface", "textures": "program_carbon", "params": {"uv_scale": 6.0, "normal_strength": 0.8, "grime_amount": 0.25, "grime_color": "#22201c", "vertex_ao_strength": 1.0, "metallic_mult": 0.0}},
+  "program_anodized": {"shader": "std_surface", "textures": "chrome_pitted", "params": {"uv_scale": 3.0, "tint": "#4a4e53", "roughness_add": 0.12, "grime_amount": 0.3, "vertex_ao_strength": 1.0}},
+  "program_webbing": {"shader": "std_surface", "textures": "canvas_tarp", "params": {"uv_scale": 6.0, "tint": "#d0711f", "grime_amount": 0.4, "grime_color": "#2c2924", "vertex_ao_strength": 1.0}},
+  "program_nav_red": {"shader": "std_surface", "params": {"tint": "#ff3a24", "roughness_mult": 0.0, "roughness_add": 0.25, "metallic_mult": 0.0, "vertex_ao_strength": 0.0, "emission_color": "#ff2818", "emission_energy": 5.0}},
+  "program_nav_green": {"shader": "std_surface", "params": {"tint": "#3aff6a", "roughness_mult": 0.0, "roughness_add": 0.25, "metallic_mult": 0.0, "vertex_ao_strength": 0.0, "emission_color": "#28ff58", "emission_energy": 5.0}},
+  "program_nav_white": {"shader": "std_surface", "params": {"tint": "#ffffff", "roughness_mult": 0.0, "roughness_add": 0.25, "metallic_mult": 0.0, "vertex_ao_strength": 0.0, "emission_color": "#eef2ff", "emission_energy": 6.0}},
+  "program_rotor_blur": {"shader": "std_glass", "params": {"tint": "#1c1c1c", "opacity": 0.14, "roughness_mult": 0.0, "roughness_add": 0.7, "normal_strength": 0.0}}
+ }
+}

@@ -17,6 +17,8 @@
     "item_plywood_edge":   {"shader": "std_surface", "textures": "item_plywood_edge", "params": {"uv_scale": 55.0, "normal_strength": 0.8}},
 
     "item_knapped_stone":  {"shader": "std_surface", "textures": "item_knapped_stone", "layers": {"wear": "item_stone_cortex"}, "params": {"uv_scale": 8.3333, "normal_strength": 0.6, "roughness_add": 0.2, "wear_amount": 0.42, "wear_uv_scale": 12.0, "vertex_ao_strength": 1.0}},
+    "item_flint":          {"shader": "std_surface", "textures": "item_flint", "layers": {"wear": "item_flint_edge"}, "params": {"uv_scale": 10.0, "normal_strength": 0.9, "roughness_add": 0.22, "wear_amount": 0.55, "wear_uv_scale": 14.0, "vertex_ao_strength": 1.0, "metallic_mult": 0.0}},
+    "item_rawhide":        {"shader": "std_surface", "textures": "item_rawhide", "params": {"uv_scale": 1.0, "normal_strength": 1.1, "grime_amount": 0.35, "grime_color": "#2a1d12", "vertex_ao_strength": 1.0, "metallic_mult": 0.0}},
     "item_lead":           {"shader": "std_surface", "textures": "item_aluminium", "params": {"uv_scale": 20.0, "tint": "#8a8c90", "roughness_mult": 2.2, "metallic_mult": 0.4}},
     "item_stone_cortex":   {"shader": "std_surface", "textures": "item_stone_cortex", "params": {"uv_scale": 10.0, "normal_strength": 1.0}},
     "item_stone":          {"shader": "std_surface", "textures": "item_river_stone", "params": {"uv_scale": 6.6667, "normal_strength": 0.8, "grime_amount": 0.25, "grime_color": "#2a2620"}},
@@ -75,6 +77,7 @@
     "item_cloth_rag":      {"shader": "std_surface", "textures": "item_cloth_rag", "params": {"uv_scale": 4.1667, "normal_strength": 0.8, "grime_amount": 0.3}},
     "item_cloth_bandage":  {"shader": "std_surface", "textures": "item_cloth_bandage", "params": {"uv_scale": 8.3333, "normal_strength": 0.8, "grime_amount": 0.25}},
     "item_cloth_torch":    {"shader": "std_surface", "textures": "item_cloth_bandage", "params": {"uv_scale": 8.3333, "tint": "#6e5c46", "roughness_mult": 0.85, "grime_amount": 0.6, "grime_color": "#120f0c"}},
+    "item_torch_ember":    {"shader": "std_surface", "textures": "item_wood_charred", "params": {"uv_scale": 6.0, "normal_strength": 1.2, "light_source": 1, "emission_color": "#ff6a1c", "emission_energy": 1.6, "emission_flicker": 0.5, "metallic_mult": 0.0}},
     "item_cloth_poultice": {"shader": "std_surface", "textures": "item_cloth_bandage", "params": {"uv_scale": 8.3333, "tint": "#d8d6b4", "grime_amount": 0.55, "grime_color": "#3e4c22"}},
     "item_parachute":      {"shader": "std_surface", "textures": "item_parachute", "params": {"uv_scale": 10.0, "tint": "#8e9468", "normal_strength": 0.6, "grime_amount": 0.3}},
     "item_cordage":        {"shader": "std_surface", "textures": "item_cordage", "params": {"uv_scale": 1.0, "normal_strength": 1.2, "grime_amount": 0.2}},

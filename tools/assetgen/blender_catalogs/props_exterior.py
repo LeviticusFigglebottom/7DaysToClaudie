@@ -72,9 +72,15 @@ PROPS: dict[str, tuple[str, list[str], dict]] = {
     "bench_park": ("street", CWD, {"seed": 315}),
     "sawhorse_barricade": ("street", CWD, {"seed": 316}),
     "jersey_barrier": ("street", CWD, {"seed": 317}),
-    # Highway bridge kit, instanced along road bridge spans by the game (world/bridges.gd).
+    # Highway bridge kit, laid along road bridge spans by the game (world/bridges.gd, ADR-0023).
     "bridge_deck": ("street", [C], {"seed": 321, "ao_dist": 1.5}),
     "bridge_pier": ("street", [C], {"seed": 322, "ao_dist": 1.5}),
+    "bridge_approach": ("street", [C], {"seed": 323, "ao_dist": 1.5}),
+    "bridge_abutment": ("street", [C], {"seed": 324, "ao_dist": 1.5}),
+    "bridge_bent": ("street", [C], {"seed": 325, "ao_dist": 1.5}),
+    # The Remand Program's heavy-lift supply drone and its rotor (world/program_drone.gd, ADR-0023).
+    "program_drone": ("program", [C], {"seed": 401, "ao_dist": 0.6}),
+    "program_drone_rotor": ("program", [C], {"seed": 402, "ao_dist": 0.2}),
     "woodpile": ("street", CW, {"seed": 318}),
     "wheelbarrow": ("street", CW, {"seed": 319}),
     "well_pump": ("street", CW, {"seed": 320}),

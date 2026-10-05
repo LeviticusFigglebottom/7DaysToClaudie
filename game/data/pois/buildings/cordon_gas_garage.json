@@ -5,6 +5,7 @@
       "id": "cordon_gas_garage",
       "name": "Cordon Gas & Garage",
       "tier": 2,
+      "population": "cordon",
       "zoning": ["roadside", "commercial"],
       "footprint": [32, 30],
       "origin": [6, 4],
@@ -200,7 +201,9 @@
         {"prop": "sleeping_bag", "pos": [10.0, 2.45], "level": -1, "rot": 90},
         {"prop": "gas_can", "pos": [9.4, 0.4], "level": -1},
         {"prop": "cans_scatter", "pos": [10.1, 1.2], "level": -1},
-        {"prop": "bucket", "pos": [8.4, 0.5], "level": -1}
+        {"prop": "bucket", "pos": [8.4, 0.5], "level": -1},
+        {"id": "kell_chair", "prop": "civic_folding_chair", "pos": [17.4, 5.5], "rot": 0, "variant": "worn"},
+        {"id": "shop_bedroll", "prop": "sleeping_bag", "pos": [12.53, 8.95], "rot": 0, "variant": "worn"}
       ],
       "pickups": [
         {"id": "stock_key", "item": "road_key_cordon_stock", "pos": [6.55, 0.55], "y": 0.92, "rot": 30},
@@ -213,12 +216,12 @@
       ],
       "sleepers": [
         {"id": "mechanic", "pos": [2.3, 3.4], "enemy": "hollow", "pose": "stand", "rot": 170, "group": "garage"},
-        {"id": "rack_dragger", "pos": [2.2, 1.35], "enemy": "dragger", "pose": "lie", "rot": 80, "group": "garage"},
+        {"id": "rack_dragger", "pos": [2.2, 1.35], "enemy": "dragger", "pose": "lie", "rot": 80, "group": "garage", "anchor": "floor"},
         {"id": "dale", "pos": [11.6, 2.6], "enemy": "hollow", "pose": "stand", "rot": 200, "level": -1, "group": "cellar"},
         {"id": "kell", "pos": [17.4, 5.5], "enemy": "hollow", "pose": "sit", "rot": 0, "group": "shop"},
-        {"id": "buick_driver", "pos": [12.2, 8.7], "enemy": "lurcher", "pose": "lie", "rot": 100, "group": "shop"},
+        {"id": "buick_driver", "pos": [12.2, 8.95], "enemy": "lurcher", "pose": "lie", "rot": 90, "group": "shop"},
         {"id": "trucker", "pos": [10.3, 5.4], "enemy": "hollow", "pose": "stand", "rot": -90, "group": "shop"},
-        {"id": "kell_girl", "pos": [16.4, 1.1], "enemy": "hollow", "pose": "sit", "rot": 160, "guardian": true}
+        {"id": "kell_girl", "pos": [16.4, 1.1], "enemy": "hollow", "pose": "sit", "rot": 160, "guardian": true, "anchor": "floor"}
       ],
       "traps": [
         {"id": "chime_pit", "type": "can_chime", "at": [7, 0], "side": "W", "level": -1},

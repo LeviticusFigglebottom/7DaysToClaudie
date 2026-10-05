@@ -136,6 +136,10 @@ func _decal(a: Vector3, b: Vector3, offset: float, col: Color) -> void:
 
 
 func _on_bridge(p: Vector3) -> bool:
+	# Decks follow the road's curve (BridgeBuilder.on_deck, ADR-0023); the chords are the fallback.
+	var bridges: Node = world.get(&"bridges") if world != null else null
+	if bridges != null and bridges.has_method(&"on_deck"):
+		return bool(bridges.call(&"on_deck", p, 1.0))
 	for sp: Dictionary in _spans:
 		var a: Vector3 = sp["from"]
 		var b: Vector3 = sp["to"]

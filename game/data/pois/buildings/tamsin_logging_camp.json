@@ -5,6 +5,7 @@
       "id": "tamsin_logging_camp",
       "name": "Tamsin Timber Camp 4",
       "tier": 2,
+      "population": "loggers",
       "zoning": ["wilderness", "industrial"],
       "footprint": [36, 28],
       "origin": [0, 0],
@@ -340,7 +341,8 @@
         {"prop": "oil_drum_fire", "pos": [17.4, 18.5]},
         {"prop": "pallet", "pos": [19.6, 20.6], "rot": 12},
         {"prop": "corpse_remains", "pos": [21.4, 16.4], "rot": 200, "id": "yard_corpse"},
-        {"prop": "utility_pole", "pos": [33.5, 21.5], "rot": 0}
+        {"prop": "utility_pole", "pos": [33.5, 21.5], "rot": 0},
+        {"id": "sick_cot", "prop": "wild_cot_canvas", "pos": [28.5, 9.28], "rot": 170, "variant": "worn"}
       ],
       "pickups": [
         {"id": "office_key", "item": "wild_camp_office_key", "pos": [5.84, 7.5], "y": 1.5},
@@ -356,9 +358,9 @@
         {"id": "cook_dee", "pos": [4.0, 3.45], "enemy": "hollow", "pose": "stand", "rot": 180, "group": "cookhouse"},
         {"id": "mess_sitter", "pos": [12.95, 6.4], "enemy": "hollow", "pose": "sit", "rot": -90, "group": "cookhouse"},
         {"id": "mess_crouch", "pos": [9.75, 7.6], "enemy": "lurcher", "pose": "crouch", "rot": 60, "group": "cookhouse"},
-        {"id": "clerk", "pos": [28.9, 19.55], "enemy": "hollow", "pose": "lie", "rot": 90},
+        {"id": "clerk", "pos": [28.9, 19.55], "enemy": "hollow", "pose": "lie", "rot": 90, "anchor": "floor"},
         {"id": "drying_man", "pos": [20.1, 4.55], "enemy": "hollow", "pose": "stand", "rot": 200},
-        {"id": "bunk_halvorsen", "pos": [24.4, 8.6], "enemy": "hollow", "pose": "lie", "rot": 80, "group": "bunks"},
+        {"id": "bunk_halvorsen", "pos": [23.3, 10.45], "enemy": "hollow", "pose": "lie", "rot": -90, "group": "bunks"},
         {"id": "bunk_pike", "pos": [28.6, 9.3], "enemy": "hollow", "pose": "lie", "rot": -100, "group": "bunks"},
         {"id": "bunk_kees", "pos": [27.0, 4.3], "enemy": "lurcher", "pose": "crouch", "rot": 150, "group": "bunks"},
         {"id": "walt", "pos": [31.0, 6.0], "enemy": "hollow", "pose": "stand", "rot": 90, "level": 1, "guardian": true}

@@ -50,6 +50,8 @@ var _shake: float = 0.0
 var _vault_path: PackedVector3Array = []
 var _vault_t: float = -1.0
 var _vault_restand: bool = false
+## Footsteps taken (the first-person bob alternates its sway with each one, ADR-0029).
+var step_count: int = 0
 
 
 func _ready() -> void:
@@ -360,6 +362,7 @@ func _footsteps(delta: float, speed: float) -> void:
 	if _step_dist < stride:
 		return
 	_step_dist = 0.0
+	step_count += 1
 	var surface: String = _surface_under()
 	var vol: float = -16.0 if crouching else (-6.0 if sprinting else -11.0)
 	Audio.play_3d(StringName("sfx/footstep_" + surface), global_position, {"volume_db": vol, "max_distance": 40.0, "occlusion": false})
@@ -368,6 +371,12 @@ func _footsteps(delta: float, speed: float) -> void:
 	if surface in ["wood_floor", "gravel", "metal", "leaves"]:
 		loud *= 1.3
 	_emit_noise(loud, &"footstep")
+
+
+## 0..1 through the current footstep (0 = a foot just landed), for the first-person bob.
+func step_phase() -> float:
+	var stride: float = 0.75 if crouching else (1.3 if sprinting else 0.95)
+	return clampf(_step_dist / stride, 0.0, 1.0)
 
 
 const SURFACE_SOUNDS: Dictionary = {
@@ -437,11 +446,13 @@ func take_damage(info: DamageInfo) -> void:
 	if state == null or god_mode or not state.stats.alive:
 		return
 	var resist: float = clampf(state.progression.modifier("damage_resist"), 0.0, 0.6)
-	var amount: float = info.amount * (1.0 - resist)
+	# A raised guard takes its share of a blow from the front, and of the wound (ADR-0029).
+	var guarded: float = equipment.guard_factor(info) if equipment != null else 1.0
+	var amount: float = info.amount * (1.0 - resist) * guarded
 	state.stats.apply_damage(amount, info.cause)
 	if info.type == &"zombie":
 		var bleed: float = float(info.tool_power.get("bleed", 0.15)) * (1.0 - clampf(state.progression.modifier("bleed_resist"), 0.0, 0.8))
-		state.stats.add_wound(bleed, float(info.tool_power.get("infection", 0.0)))
+		state.stats.add_wound(bleed * guarded, float(info.tool_power.get("infection", 0.0)) * guarded)
 	elif info.tool_power.has("infection"):
 		# Spores and other non-bite exposure: Bloom infection without a bleeding wound.
 		state.stats.add_wound(0.0, float(info.tool_power["infection"]))

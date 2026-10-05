@@ -102,6 +102,74 @@
     "grime_color": "#2e211a"
    }
   },
+  "bridge_concrete": {
+   "shader": "std_surface",
+   "textures": "concrete",
+   "params": {
+    "uv_scale": 0.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#c4bfb4",
+    "wear_amount": 0.55,
+    "wear_uv_scale": 0.4,
+    "moss_amount": 0.4,
+    "moss_uv_scale": 0.6,
+    "grime_amount": 0.45,
+    "grime_color": "#2b2721",
+    "macro_variation": 0.55
+   },
+   "layers": {
+    "wear": "terrain_mud",
+    "moss": "moss"
+   }
+  },
+  "bridge_paint_white": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#dedbd2",
+    "wear_amount": 0.7,
+    "wear_uv_scale": 0.25,
+    "roughness_add": 0.4,
+    "grime_amount": 0.35,
+    "grime_color": "#3a362e"
+   },
+   "layers": {
+    "wear": "terrain_asphalt_cracked"
+   }
+  },
+  "bridge_paint_yellow": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#d6a23c",
+    "wear_amount": 0.7,
+    "wear_uv_scale": 0.25,
+    "roughness_add": 0.4,
+    "grime_amount": 0.35,
+    "grime_color": "#3a362e"
+   },
+   "layers": {
+    "wear": "terrain_asphalt_cracked"
+   }
+  },
+  "bridge_reflector_amber": {
+   "shader": "retroreflector",
+   "params": {
+    "tint": "#ffa818",
+    "retro": 9.0
+   }
+  },
+  "bridge_reflector_white": {
+   "shader": "retroreflector",
+   "params": {
+    "tint": "#eeeee6",
+    "retro": 7.0
+   }
+  },
   "can_alu": {
    "shader": "std_surface",
    "textures": "chrome_pitted",
@@ -501,6 +569,20 @@
     "wear": "blood_dried"
    }
   },
+  "ember_glow": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#2a221d",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.95,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#ff5418",
+    "emission_energy": 2.4,
+    "emission_flicker": 0.45
+   }
+  },
   "ext_mattress_ticking": {
    "shader": "std_surface",
    "textures": "ext_mattress_ticking",
@@ -512,21 +594,17 @@
    }
   },
   "flame_glow": {
-   "shader": "foliage",
+   "shader": "std_surface",
    "params": {
     "tint": "#ffb04a",
-    "alpha_scissor": 0.0,
-    "translucency": 2.0,
-    "roughness": 0.9,
-    "spring_tint": "#ffffff",
-    "summer_tint": "#ffffff",
-    "autumn_tint": "#ffffff",
-    "winter_tint": "#ffffff",
-    "winter_leaf_loss": 0.0,
-    "sway_height": 1000.0,
-    "stiffness": 10.0,
-    "flutter_strength": 0.0,
-    "ao_strength": 0.0
+    "roughness_mult": 0.0,
+    "roughness_add": 0.9,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 2,
+    "emission_color": "#ffa040",
+    "emission_energy": 3.6,
+    "emission_flicker": 0.3
    }
   },
   "flannel_bloody": {
@@ -602,21 +680,17 @@
    }
   },
   "lamp_glow": {
-   "shader": "foliage",
+   "shader": "std_surface",
    "params": {
-    "tint": "#efe6cf",
-    "alpha_scissor": 0.0,
-    "translucency": 1.6,
-    "roughness": 0.4,
-    "spring_tint": "#ffffff",
-    "summer_tint": "#ffffff",
-    "autumn_tint": "#ffffff",
-    "winter_tint": "#ffffff",
-    "winter_leaf_loss": 0.0,
-    "sway_height": 1000.0,
-    "stiffness": 10.0,
-    "flutter_strength": 0.0,
-    "ao_strength": 0.0
+    "tint": "#d6d1c3",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.22,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#fff0cf",
+    "emission_energy": 2.2,
+    "emission_flicker": 0.05
    }
   },
   "leather_dark": {
@@ -666,6 +740,20 @@
     "grime_amount": 0.3
    }
   },
+  "mantle_glow": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#cfcac0",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.95,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#fff3da",
+    "emission_energy": 4.5,
+    "emission_flicker": 0.04
+   }
+  },
   "metal_galvanized": {
    "shader": "std_surface",
    "textures": "metal_galvanized",
@@ -678,6 +766,20 @@
    },
    "layers": {
     "wear": "car_rust"
+   }
+  },
+  "mica_glow": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#3b2b20",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.35,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#ff7a2c",
+    "emission_energy": 1.8,
+    "emission_flicker": 0.35
    }
   },
   "nylon_navy": {

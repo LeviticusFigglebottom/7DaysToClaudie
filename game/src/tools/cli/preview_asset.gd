@@ -7,6 +7,12 @@ extends SceneTree
 ## Options: --out DIR, --size WxH, --time HOUR (sun position), --dist MULT, --angle DEG, --grid (all
 ## models side by side in one image named grid.png), --ground none|grass|dirt, --focus X,Y,Z,R (look
 ## at that model-space point and frame a radius R instead of the whole model: a trunk base, a face).
+## Characters (ADR-0028): --anim NAME[:SECONDS] holds that pose of the model's animation,
+## --instance NAME=VALUE (repeatable) sets an instance shader parameter on every mesh (bloom_glow=1
+## for a Bloomed Hollowed, hollow_burst=1 for burst pustules), --tag TAG names the image
+## <model>_<TAG>.png so views of one model don't overwrite each other, --focus-bone NAME,R frames a
+## radius R round a bone of the posed skeleton (a face close-up whatever the body's height), --elev
+## E the camera's rise per unit of distance (default 0.42; 0 looks a hanging face in the eye).
 
 var _out_dir: String = "res://../build/previews"
 var _size := Vector2i(960, 540)
@@ -17,6 +23,12 @@ var _grid: bool = false
 var _ground: String = "dirt"
 var _focus := Vector4.ZERO
 var _models: PackedStringArray = []
+var _anim: String = ""
+var _instance_params: Dictionary = {}
+var _tag: String = ""
+var _focus_bone: String = ""
+var _focus_bone_r: float = 0.25
+var _elev: float = 0.42
 
 
 func _initialize() -> void:
@@ -63,6 +75,24 @@ func _parse_args() -> void:
 				i += 1
 				var f: PackedStringArray = a[i].split(",")
 				_focus = Vector4(float(f[0]), float(f[1]), float(f[2]), float(f[3]))
+			"--anim":
+				i += 1
+				_anim = a[i]
+			"--instance":
+				i += 1
+				var kv: PackedStringArray = a[i].split("=")
+				_instance_params[StringName(kv[0])] = float(kv[1])
+			"--tag":
+				i += 1
+				_tag = a[i]
+			"--elev":
+				i += 1
+				_elev = float(a[i])
+			"--focus-bone":
+				i += 1
+				var fb: PackedStringArray = a[i].split(",")
+				_focus_bone = fb[0]
+				_focus_bone_r = float(fb[1]) if fb.size() > 1 else 0.25
 			_:
 				_models.append(a[i])
 		i += 1
@@ -116,7 +146,39 @@ func _load_model(model_id: String) -> Node3D:
 		push_error("preview: missing %s" % path)
 		return null
 	var ps: PackedScene = load(path)
-	return ps.instantiate() as Node3D
+	var inst: Node3D = ps.instantiate() as Node3D
+	for g: Node in inst.find_children("*", "GeometryInstance3D", true, false):
+		for k: StringName in _instance_params:
+			(g as GeometryInstance3D).set_instance_shader_parameter(k, _instance_params[k])
+	return inst
+
+
+## --focus-bone: the bone's posed position becomes the --focus point.
+func _focus_on_bone(inst: Node3D) -> void:
+	if _focus_bone == "":
+		return
+	var sk := inst.find_child("Skeleton3D", true, false) as Skeleton3D
+	var bi: int = sk.find_bone(_focus_bone) if sk != null else -1
+	if bi < 0:
+		push_error("preview: no bone %s" % _focus_bone)
+		return
+	# a little along the bone (glTF bones run along +Y): the middle of a head, not the top of the neck
+	var at: Vector3 = sk.global_transform * (sk.get_bone_global_pose(bi) * Vector3(0.0, 0.09, 0.0))
+	_focus = Vector4(at.x, at.y, at.z, _focus_bone_r)
+
+
+## Holds the --anim pose (needs the model in the tree).
+func _pose(inst: Node3D) -> void:
+	if _anim == "":
+		return
+	var ap := inst.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	var parts: PackedStringArray = _anim.split(":")
+	if ap == null or not ap.has_animation(StringName(parts[0])):
+		push_error("preview: no animation %s" % parts[0])
+		return
+	ap.play(StringName(parts[0]))
+	ap.seek(float(parts[1]) if parts.size() > 1 else 0.5, true)
+	ap.pause()
 
 
 func _aabb(n: Node) -> AABB:
@@ -141,7 +203,7 @@ func _camera_for(world: Node3D, box: AABB) -> Camera3D:
 		radius = _focus.w
 	var dist: float = radius / tan(deg_to_rad(cam.fov * 0.5)) * 1.1 * _dist_mult
 	var a: float = deg_to_rad(_angle)
-	var dir := Vector3(sin(a), 0.42, cos(a)).normalized()
+	var dir := Vector3(sin(a), _elev, cos(a)).normalized()
 	cam.position = center + dir * dist
 	cam.look_at(center)
 	cam.make_current()
@@ -153,11 +215,13 @@ func _render_one(world: Node3D, model_id: String) -> void:
 	if inst == null:
 		return
 	world.add_child(inst)
+	_pose(inst)
 	await process_frame
+	_focus_on_bone(inst)
 	var cam: Camera3D = _camera_for(world, _aabb(inst))
 	await _settle()
 	var img: Image = root.get_texture().get_image()
-	var out: String = _out_dir.path_join(model_id.replace("/", "__") + ".png")
+	var out: String = _out_dir.path_join(model_id.replace("/", "__") + ("_" + _tag if _tag != "" else "") + ".png")
 	img.save_png(out)
 	print("PREVIEW ", out)
 	inst.queue_free()
@@ -174,6 +238,7 @@ func _render_grid(world: Node3D) -> void:
 		if inst == null:
 			continue
 		holder.add_child(inst)
+		_pose(inst)
 		await process_frame
 		var b: AABB = _aabb(inst)
 		inst.position.x = x - b.position.x

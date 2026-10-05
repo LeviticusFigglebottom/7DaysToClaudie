@@ -1,0 +1,7 @@
+{
+  "_doc": "Route-cue props (ADR-0022): the torn curtain hanging out of a POI's entry window. Models: tools/assetgen/blender/generators/props_cues.py. The interior props' upholstery_floral print, paler and sun-faded, with their worn-fabric layer; the rod reuses the traps family's lock_zinc.",
+  "materials": {
+    "cue_curtain": {"shader": "std_surface", "textures": "upholstery_floral", "layers": {"wear": "pi_fabric_worn"},
+      "params": {"uv_scale": 2.4, "tint": "#e2dccb", "normal_strength": 0.45, "wear_amount": 0.6, "wear_uv_scale": 2.5, "grime_amount": 0.6, "grime_color": "#2e271d", "vertex_ao_strength": 1.0, "metallic_mult": 0.0}}
+  }
+}

@@ -57,6 +57,8 @@ var _dirty_saves: Dictionary = {}
 var volume: VolumeTerrain
 ## Cellar openings of the placed POIs (TD-026). Immutable after setup; read by mesh workers.
 var holes := TerrainHoles.new()
+## The Bloom's field over the built regions and its presence on screen (ADR-0025).
+var bloom: BloomWorld
 var _update_accum: float = 0.0
 
 
@@ -97,6 +99,10 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	_fallback_material = ground
 	_build_grid()
 	holes = TerrainHoles.from_regions(regions)
+	bloom = BloomWorld.new()
+	bloom.name = "Bloom"
+	add_child(bloom)
+	bloom.setup(BloomField.build(world, regions, ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}))
 	_canopy = far_canopy(ContentDB.instance)
 	_build_far_tiles()
 	volume = VolumeTerrain.new()
@@ -110,6 +116,7 @@ func _make_region_material(rt: RegionTerrain) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://assets/shaders/terrain.gdshader")
 	textures.apply_to(mat)
+	BloomWorld.apply_web(mat)
 	var imgs: Array[Image] = rt.splat_images()
 	mat.set_shader_parameter("splat0", ImageTexture.create_from_image(imgs[0]))
 	mat.set_shader_parameter("splat1", ImageTexture.create_from_image(imgs[1]))
@@ -153,6 +160,17 @@ func canopy_at(x: float, z: float) -> float:
 	if rt == null:
 		return 0.0
 	return (_canopy.get(rt.biome_at(x, z), Vector2.ZERO) as Vector2).x * rt.veg_at(x, z)
+
+
+## How far the Bloom has taken the ground at world (x, z), 0..1 (ADR-0025): the authored field plus
+## the rooting mounds, as the shaders draw it. Thread-safe for reads.
+func bloom_at(x: float, z: float) -> float:
+	return bloom.field.at(x, z) if bloom != null and bloom.field != null else 0.0
+
+
+## The authored Bloom field only (deterministic per world; the vegetation scatter reads this).
+func bloom_base_at(x: float, z: float) -> float:
+	return bloom.field.base_at(x, z) if bloom != null and bloom.field != null else 0.0
 
 
 ## Terrain height at world (x, z). Thread-safe for reads.

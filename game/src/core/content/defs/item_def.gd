@@ -84,6 +84,14 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 		out.append("%s: teaches unknown blueprint '%s'" % [ctx(), teaches["blueprint"]])
 	if note != &"" and not db.has_def(&"note", note):
 		out.append("%s: note '%s' unknown" % [ctx(), note])
+	# First-person hold class and swing (ADR-0029, data/config/viewmodel.json).
+	var vm: Dictionary = db.call(&"config", &"viewmodel")
+	var hold: String = str(equip.get("hold", ""))
+	if hold != "" and not (vm.get("holds", {}) as Dictionary).has(hold):
+		out.append("%s: equip.hold '%s' is not a viewmodel hold class" % [ctx(), hold])
+	var swing: String = str(equip.get("swing", ""))
+	if swing != "" and not (vm.get("attacks", {}) as Dictionary).has(swing):
+		out.append("%s: equip.swing '%s' is not a viewmodel attack" % [ctx(), swing])
 
 
 func is_equippable() -> bool:

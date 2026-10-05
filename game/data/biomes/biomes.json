@@ -1,24 +1,24 @@
 {
-  "_doc": "Biomes. vegetation densities are instances per 100 m^2 before slope/moisture masks. ground = splat layers.",
+  "_doc": "Biomes. vegetation densities are instances per 100 m^2 before slope/moisture masks (fungus kinds: at full Bloom strength, ADR-0025). ground = splat layers.",
   "defs": [
     {"id": "conifer_forest", "name": "Conifer Forest", "description": "Grey fir and larch, deep shade, moss and needles underfoot.",
-     "vegetation": {"grey_fir": 2.2, "hollow_larch": 0.9, "paper_birch": 0.25, "dead_snag": 0.12, "fir_sapling": 1.2, "huckleberry_bush": 0.9, "sword_fern": 12.0, "forest_moss": 3.5, "forest_litter": 7.0, "forest_sorrel": 9.0, "deadfall_branches": 0.9, "loose_stone": 0.45, "granite_boulder": 0.1, "shelf_mushroom": 0.2, "fallen_log": 0.1, "yarrow_plant": 0.1},
+     "vegetation": {"grey_fir": 2.2, "hollow_larch": 0.9, "paper_birch": 0.25, "dead_snag": 0.12, "fir_sapling": 1.2, "huckleberry_bush": 0.9, "sword_fern": 12.0, "forest_moss": 3.5, "forest_litter": 7.0, "forest_sorrel": 9.0, "deadfall_branches": 0.9, "loose_stone": 0.45, "granite_boulder": 0.1, "shelf_mushroom": 0.2, "fallen_log": 0.1, "yarrow_plant": 0.1, "bloom_caps": 6.0},
      "ground": ["forest_floor", "moss", "rock"], "ambience": "forest", "temperature_offset": -0.5, "spawns": {"hollow": 10, "lurcher": 2, "keener": 1, "blister": 0.8, "husk": 0.6, "rammer": 0.25}, "spawn_density": 1.0, "fog_tint": "#9aa59c"},
     {"id": "birch_grove", "name": "Birch Grove", "description": "Pale trunks, brighter light, fireweed.",
-     "vegetation": {"paper_birch": 2.4, "grey_fir": 0.4, "fireweed": 3.0, "meadow_grass": 16.0, "huckleberry_bush": 0.6, "yarrow_plant": 0.5, "loose_stone": 0.3, "deadfall_branches": 0.5, "sword_fern": 2.5, "forest_moss": 1.0, "forest_litter": 2.5, "forest_sorrel": 4.0},
+     "vegetation": {"paper_birch": 2.4, "grey_fir": 0.4, "fireweed": 3.0, "meadow_grass": 16.0, "huckleberry_bush": 0.6, "yarrow_plant": 0.5, "loose_stone": 0.3, "deadfall_branches": 0.5, "sword_fern": 2.5, "forest_moss": 1.0, "forest_litter": 2.5, "forest_sorrel": 4.0, "bloom_caps": 5.0},
      "ground": ["grass", "forest_floor"], "ambience": "forest_light", "temperature_offset": 0.0, "spawns": {"hollow": 10, "lurcher": 1, "blister": 0.6, "husk": 0.4}, "spawn_density": 0.8, "fog_tint": "#a8b0a6"},
     {"id": "meadow", "name": "Meadow", "description": "Open grass, fireweed and yarrow; nowhere to hide.",
-     "vegetation": {"meadow_grass": 38.0, "fireweed": 3.5, "yarrow_plant": 1.2, "paper_birch": 0.05, "loose_stone": 0.2, "granite_boulder": 0.03},
+     "vegetation": {"meadow_grass": 38.0, "fireweed": 3.5, "yarrow_plant": 1.2, "paper_birch": 0.05, "loose_stone": 0.2, "granite_boulder": 0.03, "bloom_caps": 3.0},
      "ground": ["grass", "dirt"], "ambience": "meadow", "temperature_offset": 0.5, "spawns": {"hollow": 10, "lurcher": 1, "rammer": 0.3}, "spawn_density": 0.7, "fog_tint": "#b0b6ac"},
     {"id": "riverbank", "name": "Riverbank", "description": "Gravel bars, willow scrub, sedge and horsetail, cold water.",
      "vegetation": {"slough_sedge": 14.0, "horsetail": 2.5, "meadow_grass": 6.0, "pacific_willow": 1.4, "paper_birch": 0.5, "fireweed": 1.0,
-                    "loose_stone": 1.8, "granite_boulder": 0.2, "deadfall_branches": 0.4, "driftwood_log": 0.35, "forest_moss": 0.8},
+                    "loose_stone": 1.8, "granite_boulder": 0.2, "deadfall_branches": 0.4, "driftwood_log": 0.35, "forest_moss": 0.8, "bloom_caps": 4.0},
      "ground": ["gravel", "mud", "grass"], "ambience": "river", "temperature_offset": -1.0, "spawns": {"hollow": 10}, "spawn_density": 0.6, "fog_tint": "#a0aab0"},
     {"id": "town", "name": "Town", "description": "Overgrown lots and cracked asphalt.",
-     "vegetation": {"meadow_grass": 16.0, "paper_birch": 0.1, "fireweed": 1.5, "deadfall_branches": 0.2},
+     "vegetation": {"meadow_grass": 16.0, "paper_birch": 0.1, "fireweed": 1.5, "deadfall_branches": 0.2, "bloom_caps": 2.0},
      "ground": ["grass", "dirt", "gravel"], "ambience": "town", "temperature_offset": 0.5, "spawns": {"hollow": 10, "lurcher": 2, "keener": 1, "blister": 1.2, "husk": 1.0, "rammer": 0.4}, "spawn_density": 1.4, "fog_tint": "#a6a8a8"},
     {"id": "rocky_slope", "name": "Rocky Slope", "description": "Talus and stunted fir.",
-     "vegetation": {"grey_fir": 0.5, "dead_snag": 0.2, "granite_boulder": 0.6, "loose_stone": 1.2, "sword_fern": 1.0, "forest_moss": 2.0, "forest_litter": 1.0},
+     "vegetation": {"grey_fir": 0.5, "dead_snag": 0.2, "granite_boulder": 0.6, "loose_stone": 1.2, "sword_fern": 1.0, "forest_moss": 2.0, "forest_litter": 1.0, "bloom_caps": 2.5},
      "ground": ["rock", "gravel"], "ambience": "forest", "temperature_offset": -1.5, "spawns": {"hollow": 10}, "spawn_density": 0.4, "fog_tint": "#9ea4a8"}
   ]
 }

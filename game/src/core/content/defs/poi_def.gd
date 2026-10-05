@@ -21,6 +21,9 @@ var scene: String = ""
 var layout: Dictionary = {}
 ## Performance budget overrides {draw_calls, triangles, lights, enemies}.
 var budget: Dictionary = {}
+## Who its Hollowed were (a PopulationDef id, ADR-0028): the clinic's patients, the church's
+## congregation. A sleeper entry's own "population" wins over it. "" = the enemy types' own bodies.
+var population: StringName = &""
 
 ## "triggers" wake sleeper groups as ambushes (ADR-0018, docs/POI_AUTHORING.md "Ambushes").
 const LAYOUT_KEYS: PackedStringArray = ["style", "levels", "rooms", "openings", "stairs", "ladders", "props",
@@ -29,7 +32,7 @@ const LAYOUT_KEYS: PackedStringArray = ["style", "levels", "rooms", "openings", 
 
 
 func _fields() -> PackedStringArray:
-	var f: PackedStringArray = ["tier", "zoning", "footprint", "story", "author", "scene", "budget"]
+	var f: PackedStringArray = ["tier", "zoning", "footprint", "story", "author", "scene", "budget", "population"]
 	f.append_array(LAYOUT_KEYS)
 	return f
 
@@ -49,6 +52,7 @@ func _parse(r: DefReader) -> void:
 	author = r.str_field("author", "")
 	scene = r.str_field("scene", "")
 	budget = r.dict("budget")
+	population = r.sname("population")
 	for k: String in LAYOUT_KEYS:
 		if r.has(k):
 			layout[k] = r.raw(k)
@@ -65,6 +69,10 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 			for e: Variant in (s.get("enemies", {}) as Dictionary).keys():
 				if not db.has_def(&"enemy", StringName(e)):
 					out.append("%s: sleeper enemy '%s' unknown" % [ctx(), e])
+			if s.has("population") and not db.has_def(&"population", StringName(str(s["population"]))):
+				out.append("%s: sleeper '%s' population '%s' unknown" % [ctx(), s.get("id", "?"), s["population"]])
+	if population != &"" and not db.has_def(&"population", population):
+		out.append("%s: population '%s' unknown" % [ctx(), population])
 	for n: Variant in layout.get("notes", []):
 		if n is Dictionary and n.has("note") and not db.has_def(&"note", StringName(n["note"])):
 			out.append("%s: note '%s' unknown" % [ctx(), n["note"]])

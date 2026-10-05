@@ -9,6 +9,10 @@ params: kind, name, seed
   porch_deck:  1 x 1 deck boards along X, top at 0.6 (origin = cell bottom centre at grade), joists,
                beam and a concrete pier below.
   chimney:     0.8 x 0.6 x 4.5 brick chimney with corbelled top, concrete crown and clay flue.
+  chimney_shaft: 1 m of the chimney's plain brick shaft (open top and bottom). The builder stacks whole
+               metres of it under `chimney` until the stack clears the roof (ADR-0021); the courses run
+               on because both start at z = 0 and a metre holds 16 of them. Neither bakes ground
+               occlusion, so no dark band shows where a lifted chimney sits on its shaft.
 """
 from __future__ import annotations
 
@@ -154,12 +158,24 @@ def build_chimney(p: dict, name: str, outputs: list[str]) -> None:
     km.prism([outer, inner], zf - 0.02, H, axis="z", mat="brick", side=(SIDE_N,) * 3, caps=(False, True))
     km.box((-fi, -fi, H - 0.12), (fi, fi, H - 0.1), "concrete", skip=("-z", "-x", "+x", "-y", "+y"))
     obj = km.build()
-    bake_colors(obj, ground_z=0.0, samples=12, distance=0.4, strength=0.6, seed=seed)
+    bake_colors(obj, ground_z=None, samples=12, distance=0.4, strength=0.6, seed=seed)
     export_glb(outputs[0], [obj, collision_box(f"{name}_col0", (-hx, -hy, 0.0), (hx, hy, H))])
+
+
+def build_chimney_shaft(p: dict, name: str, outputs: list[str]) -> None:
+    seed = int(p.get("seed", 1))
+    km = KitMesh(name)
+    X, Y, _H = CHIMNEY
+    hx, hy = X / 2, Y / 2
+    km.part(0.5)
+    km.box((-hx, -hy, 0.0), (hx, hy, 1.0), "brick", skip=("+z", "-z"))
+    obj = km.build()
+    bake_colors(obj, ground_z=None, samples=8, distance=0.4, strength=0.6, seed=seed)
+    export_glb(outputs[0], [obj, collision_box(f"{name}_col0", (-hx, -hy, 0.0), (hx, hy, 1.0))])
 
 
 def build(params: dict, outputs: list[str]) -> None:
     name = params.get("name", "exterior")
     kind = params["kind"]
     {"foundation": build_foundation, "porch_step": build_porch_step, "porch_post": build_porch_post,
-     "porch_deck": build_porch_deck, "chimney": build_chimney}[kind](params, name, outputs)
+     "porch_deck": build_porch_deck, "chimney": build_chimney, "chimney_shaft": build_chimney_shaft}[kind](params, name, outputs)

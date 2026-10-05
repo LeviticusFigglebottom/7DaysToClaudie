@@ -8,6 +8,7 @@ extends Node3D
 ## framework/POI plane the same way the composer did (Vector2.rotated), i.e. node yaw = -angle.
 ## Inside a framework, a lot's POI is centred in its rect with its front (+Z) toward `facing`.
 ## Owns the poi.* commands (ADR-0003): poi.disarm_trap takes a POI trap apart for its parts.
+## A building whose weak floor gives way gets its nav tiles rebaked (ADR-0022).
 
 const SLEEPER_SPAWN: float = 46.0
 const SLEEPER_DESPAWN: float = 95.0
@@ -106,7 +107,17 @@ func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _p
 	add_child(inst)
 	inst.global_transform = xf
 	instances[instance_id] = inst
+	inst.geometry_changed.connect(_on_poi_geometry_changed)
 	return inst
+
+
+## A building's walkable geometry changed (a weak floor gave way, ADR-0022): rebake the nav tiles
+## there so the Hollowed stop pathing over the hole.
+func _on_poi_geometry_changed(pos: Vector3) -> void:
+	var ai: Node = world.get(&"ai") if world != null else null
+	var nav: NavTiles = ai.get(&"nav") as NavTiles if ai != null else null
+	if nav != null:
+		nav.mark_dirty(pos)
 
 
 func _process(delta: float) -> void:

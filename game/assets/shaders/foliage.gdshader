@@ -1,9 +1,13 @@
 // Foliage cards / fronds / grass: alpha-cut, double-sided, translucent, wind + seasons.
 // Vertex colour: R = AO, A = wind weight. hm_season = (spring, summer, autumn, winter) weights.
+// Inside the Bloom (the field at the plant's foot, ADR-0025) plants wilt: they desaturate toward the
+// material's wilt tint (ferns brown, grass greys), lose their translucency, thin out and droop, and
+// fronds curl in toward the crown. Materials opt in with bloom_wilt > 0.
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_disabled, diffuse_burley, specular_schlick_ggx;
 
 #include "res://assets/shaders/wind.gdshaderinc"
+#include "res://assets/shaders/bloom.gdshaderinc"
 
 uniform sampler2D albedo_tex : source_color, hint_default_white, filter_linear_mipmap_anisotropic;
 uniform sampler2D normal_tex : hint_normal, filter_linear_mipmap_anisotropic;
@@ -27,12 +31,20 @@ uniform float roughness = 0.75;
 // towards the background; scaling alpha up by the mip level keeps crowns and ferns dense (after
 // Ben Golus, "Anti-aliased Alpha Test").
 uniform float mip_alpha_scale = 0.25;
+// The Bloom: how far this plant wilts at full strength (0 = never), the colour it dies back to
+// (multiplied into its desaturated self), how far its tips droop and curl in (fraction of their
+// height), and how much it thins (alpha threshold).
+uniform float bloom_wilt : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 bloom_wilt_tint : source_color = vec4(0.6, 0.46, 0.31, 1.0);
+uniform float bloom_droop : hint_range(0.0, 1.0) = 0.0;
+uniform float bloom_thin : hint_range(0.0, 0.5) = 0.0;
 
 global uniform vec4 hm_season;
 global uniform float hm_wetness;
 global uniform float hm_snow;
 
 varying vec3 v_world_normal;
+varying float v_wilt;
 
 void vertex() {
 	vec3 origin = MODEL_MATRIX[3].xyz;
@@ -42,9 +54,19 @@ void vertex() {
 	if (INSTANCE_CUSTOM.a < 0.0) {
 		VERTEX *= 1.0 - smoothstep(-INSTANCE_CUSTOM.a * 0.8, -INSTANCE_CUSTOM.a, distance(origin, CAMERA_POSITION_WORLD));
 	}
+	v_wilt = 0.0;
+	if (bloom_wilt > 0.0) {
+		v_wilt = smoothstep(0.08, 0.6, hm_bloom_at(origin.xz)) * bloom_wilt;
+		// Tips (high wind weight) droop toward the ground and curl in toward the crown; the base
+		// stays where it grows.
+		float c = v_wilt * bloom_droop * COLOR.a * COLOR.a;
+		VERTEX.y -= max(VERTEX.y, 0.0) * c * 0.75;
+		VERTEX.xz *= 1.0 - c * 0.35;
+	}
 	vec3 wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	VERTEX.xz += hm_plant_sway(VERTEX, origin, sway_height, stiffness, TIME);
-	VERTEX += hm_flutter(wpos, NORMAL, COLOR.a * flutter_strength, TIME);
+	// Wilted plants hang limp: less flutter.
+	VERTEX += hm_flutter(wpos, NORMAL, COLOR.a * flutter_strength * (1.0 - 0.6 * v_wilt), TIME);
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
 
@@ -54,6 +76,18 @@ void fragment() {
 	float wsum = max(0.001, hm_season.x + hm_season.y + hm_season.z + hm_season.w);
 	vec3 col = a.rgb * tint.rgb * (season.rgb / wsum);
 	float threshold = mix(alpha_scissor, 1.01, hm_season.w / wsum * winter_leaf_loss);
+	float trans = translucency;
+	if (v_wilt > 0.001) {
+		// Dying back: the green drains out (luminance kept) into the wilt tint, unevenly from frond
+		// to frond (the generators' per-card variation, COLOR.b), and the tissue stops letting light
+		// through.
+		float lum = dot(col, vec3(0.299, 0.587, 0.114));
+		float w = clamp(v_wilt * (0.7 + 0.6 * COLOR.b), 0.0, 1.0);
+		// The tint is the dead colour of a mid-toned leaf; the texture's light and shade stay.
+		col = mix(col, bloom_wilt_tint.rgb * (0.35 + 2.6 * lum), w);
+		trans *= 1.0 - 0.7 * w;
+		threshold = min(threshold + bloom_thin * w, 0.98);
+	}
 	vec3 orm = texture(orm_tex, UV).rgb;
 	float snow = hm_snow * smoothstep(0.3, 0.8, v_world_normal.y);
 	col = mix(col, vec3(0.85, 0.87, 0.9), snow);
@@ -68,5 +102,5 @@ void fragment() {
 	NORMAL_MAP_DEPTH = normal_strength;
 	ROUGHNESS = mix(roughness * orm.g, 0.2, hm_wetness * 0.7);
 	AO = orm.r;
-	BACKLIGHT = col * translucency;
+	BACKLIGHT = col * trans;
 }

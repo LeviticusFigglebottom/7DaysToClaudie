@@ -3,6 +3,9 @@
 //   r = finish slice for side A (UV2.x == 0: wall face toward +Z / floor top)
 //   g = finish slice for side B (UV2.x == 1: wall face toward -Z / floor underside = ceiling)
 //   b = the building's decay 0..1 (drives every wear layer below), a = per-instance random 0..1
+//   plus a height code in its integer part (ADR-0021): per side (A + 16 x B), the storeys the piece
+//   stands above its room's floor (0..3) + 4 x (the storeys that room is tall - 1), so a tall
+//   room's stacked pieces share one baseboard, one band of floor grime and one ceiling
 // Finishes are projected in world space (metre scale) so pieces tile seamlessly. Edges/reveals
 // (UV2.x == 0.5) take side A's finish slightly darkened.
 //
@@ -151,8 +154,13 @@ void fragment() {
 		vec4 zone = 0.4 + 1.2 * texture(decay_albedo, dm * 0.23 + vec2(0.13, 0.71));
 		vec3 dt = texture(decay_orm, dm * 1.7).rgb;
 		float macro = texture(decay_orm, dm * 0.19).r;
-		float low = 1.0 - smoothstep(0.0, 0.9, v_h);
-		float high = smoothstep(1.4, 2.8, v_h);
+		// Height in the room and the room's height (tall rooms: ADR-0021 code in INSTANCE_CUSTOM.a).
+		int hcode = int(floor(v_custom.a));
+		int hside = side_b ? (hcode / 16) % 16 : hcode % 16;
+		float hr = v_h + 3.0 * float(hside % 4);
+		float room_h = 3.0 * float(hside / 4 + 1) - 0.2;
+		float low = 1.0 - smoothstep(0.0, 0.9, hr);
+		float high = smoothstep(room_h - 1.4, room_h, hr);
 		float d2 = decay * decay;
 
 		// Macro tone breaks the finish tiling; interiors yellow with age.
@@ -263,10 +271,10 @@ void fragment() {
 		// shadow on the wall above it; kicked and scuffed.
 		vec4 bb = BASEBOARD[wi];
 		if (wall && !edge && bb.a > 0.5) {
-			float aa = fwidth(v_h) * 1.5;
-			float board = 1.0 - smoothstep(BASEBOARD_H - aa, BASEBOARD_H + aa, v_h);
-			float bevel = smoothstep(BASEBOARD_H - 0.022, BASEBOARD_H - 0.006, v_h) * board;
-			float shade = (1.0 - smoothstep(BASEBOARD_H, BASEBOARD_H + 0.02, v_h)) * (1.0 - board);
+			float aa = fwidth(hr) * 1.5;
+			float board = 1.0 - smoothstep(BASEBOARD_H - aa, BASEBOARD_H + aa, hr);
+			float bevel = smoothstep(BASEBOARD_H - 0.022, BASEBOARD_H - 0.006, hr) * board;
+			float shade = (1.0 - smoothstep(BASEBOARD_H, BASEBOARD_H + 0.02, hr)) * (1.0 - board);
 			vec3 bcol = bb.rgb * (0.92 + 0.16 * dt.g);
 			bcol *= 1.0 - 0.35 * decay * dt.b;
 			albedo = mix(albedo, bcol * (1.0 + 0.35 * bevel), board);
@@ -282,9 +290,9 @@ void fragment() {
 		albedo *= mix(vec3(1.0), exterior ? vec3(0.62, 0.6, 0.55) : vec3(0.6, 0.55, 0.47), g * 0.75);
 		rough = mix(rough, min(1.0, rough + 0.1), g);
 		if (wall && !exterior) {
-			albedo *= 1.0 - decay * 0.3 * (1.0 - smoothstep(0.0, 0.3, v_h));
-			albedo *= 1.0 - (0.08 + 0.15 * decay) * smoothstep(2.45, 2.8, v_h);
-			ao *= 0.7 + 0.3 * smoothstep(0.0, 0.025, v_h);
+			albedo *= 1.0 - decay * 0.3 * (1.0 - smoothstep(0.0, 0.3, hr));
+			albedo *= 1.0 - (0.08 + 0.15 * decay) * smoothstep(room_h - 0.35, room_h, hr);
+			ao *= 0.7 + 0.3 * smoothstep(0.0, 0.025, hr);
 		}
 		if (floor_top) {
 			// Dust settles (lighter and flatter on dark floors), scuffed where people walked.

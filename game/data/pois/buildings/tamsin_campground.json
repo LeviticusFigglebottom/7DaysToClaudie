@@ -1,0 +1,1794 @@
+{
+ "_doc": "Tier-2 county campground on a gravel road in the woods south of Route 9 (region D6), across the road from the Ashen watch camp. Three small kit buildings in a yard of tent sites: the fee station and the camp host's trailer wear shell props (out_kiosk_shell, out_host_trailer_shell: their walls stand outside the kit walls, openings where the plan's doors and windows are), the concrete-block shower house wears a roof prop (out_block_roof); style roof 'none'. The loop road is a region road over the pad. Trees (out_tree_*: the vegetation models as props) stand in the pad the composer clears. Route: the gravel road -> the fee station (its window smashed; the register) -> the sites, the Haldanes' motorhome -> the host's trailer, padlocked -> the shower house: the men's side chained, the women's side a ward (opening it wakes the sick on their cots) -> the utility room, Bev under her key hook (taking the keys wakes the men's side, who come through the hole they knocked in the block wall) -> back to the trailer: Bev's battery alarm on the bedroom door -> the bedroom (Gus guards the lockbox) -> the bolted back door. Site 5 is closed for Gus's traps. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "tamsin_campground",
+   "name": "Tamsin River Campground",
+   "tier": 2,
+   "zoning": [
+    "wilderness",
+    "roadside"
+   ],
+   "footprint": [
+    52,
+    48
+   ],
+   "origin": [
+    2,
+    2
+   ],
+   "author": "Hollowmere team",
+   "story": "Bev and Gus Lindgren hosted Tamsin River Campground every summer for nine years. When the Cordon shut Route 9 there were still eleven campers on the loop, and Bev kept order: fees in the lockbox, quiet hours at ten, water from the spigot boiled, flour and salt left for the painted people on the rise. In September the fever started at the Haldanes' motorhome. Bev turned the shower house into a sick ward and chained the men's side when the Haldane boys started biting. Gus took sick last; she rigged her door alarm on the bedroom so she would hear him get up, padlocked the trailer behind her and went back to nurse the others, her keys on the utility-room hook. The register in the fee station says who left and who stayed.",
+   "style": {
+    "exterior": "concrete_block",
+    "interior": "plaster_white",
+    "floor": "linoleum_beige",
+    "ceiling": "plaster_white",
+    "floor_height": 0.35,
+    "decay": 0.45,
+    "damaged_walls": 0.03,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "none"
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "....................MMMUUFFF....................",
+      "....................MMMUUFFF....................",
+      "....................MMMUUFFF....................",
+      "....................MMMUUFFF....................",
+      "....................MMMUUFFF....................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "......LLLLLLRRR.................................",
+      "......LLLLLLRRR............KKK..................",
+      "......LLLLLLRRR............KKK..................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................"
+     ],
+     "rooms": {
+      "K": {
+       "name": "Fee station",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_beige",
+       "ceiling": "plaster_white"
+      },
+      "L": {
+       "name": "Trailer living room",
+       "type": "living",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_brown",
+       "ceiling": "plaster_white"
+      },
+      "R": {
+       "name": "Trailer bedroom",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_blue_worn",
+       "ceiling": "plaster_white"
+      },
+      "M": {
+       "name": "Men's side",
+       "type": "bath",
+       "wall": "tile_bathroom_white",
+       "floor": "tile_white_small",
+       "ceiling": "plaster_grey"
+      },
+      "U": {
+       "name": "Utility room",
+       "type": "storage",
+       "wall": "plaster_grey",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "F": {
+       "name": "Women's side (the ward)",
+       "type": "bath",
+       "wall": "tile_bathroom_white",
+       "floor": "tile_white_small",
+       "ceiling": "plaster_grey"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "kiosk_window",
+     "at": [
+      27,
+      37
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "kiosk_window_n",
+     "at": [
+      28,
+      37
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "kiosk_door",
+     "at": [
+      29,
+      38
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "trailer_door",
+     "at": [
+      8,
+      36
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked",
+     "key": "out_camp_keyring"
+    },
+    {
+     "id": "trailer_back",
+     "at": [
+      14,
+      37
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked_inside"
+    },
+    {
+     "id": "bedroom_door",
+     "at": [
+      11,
+      37
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "trailer_win_w",
+     "at": [
+      6,
+      37
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "trailer_win_n",
+     "at": [
+      10,
+      36
+     ],
+     "side": "N",
+     "type": "window2",
+     "state": "closed"
+    },
+    {
+     "id": "trailer_win_n2",
+     "at": [
+      13,
+      36
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "trailer_win_s",
+     "at": [
+      7,
+      38
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "trailer_win_s2",
+     "at": [
+      10,
+      38
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "trailer_win_s3",
+     "at": [
+      13,
+      38
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "mens_door",
+     "at": [
+      21,
+      20
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "out_camp_keyring",
+     "lock": "chain",
+     "model": "door_metal"
+    },
+    {
+     "id": "ward_door",
+     "at": [
+      26,
+      20
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal"
+    },
+    {
+     "id": "utility_door",
+     "at": [
+      24,
+      18
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "block_breach",
+     "at": [
+      23,
+      17
+     ],
+     "side": "W",
+     "type": "breach"
+    },
+    {
+     "id": "block_win_m",
+     "at": [
+      21,
+      16
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "block_win_f",
+     "at": [
+      26,
+      16
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "block_win_w",
+     "at": [
+      20,
+      18
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "block_win_e",
+     "at": [
+      27,
+      17
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    }
+   ],
+   "props": [
+    {
+     "prop": "out_host_trailer_shell",
+     "id": "trailer_shell",
+     "pos": [
+      10.5,
+      37.5
+     ],
+     "rot": 0,
+     "y": -0.35,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_kiosk_shell",
+     "id": "kiosk_shell",
+     "pos": [
+      28.5,
+      38.0
+     ],
+     "rot": 0,
+     "y": -0.35,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_block_roof",
+     "id": "block_roof",
+     "pos": [
+      24.0,
+      18.5
+     ],
+     "rot": 0,
+     "y": 3.0,
+     "route_ok": true
+    },
+    {
+     "prop": "desk_small",
+     "id": "kiosk_desk",
+     "at": [
+      28,
+      37
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_radio_set",
+     "pos": [
+      28.75,
+      37.3
+     ],
+     "rot": 0,
+     "y": 0.75,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      28.2,
+      38.15
+     ],
+     "rot": 160,
+     "variant": "worn"
+    },
+    {
+     "prop": "cardboard_box",
+     "id": "kiosk_box",
+     "pos": [
+      27.45,
+      38.55
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "kitchen_counter_sink",
+     "id": "trailer_sink",
+     "at": [
+      6,
+      38
+     ],
+     "against": "S",
+     "variant": "worn"
+    },
+    {
+     "prop": "stove_old",
+     "id": "trailer_stove",
+     "at": [
+      7,
+      36
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "fridge_old",
+     "id": "trailer_fridge",
+     "at": [
+      6,
+      36
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "kitchen_table",
+     "pos": [
+      8.6,
+      37.9
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      8.1,
+      37.35
+     ],
+     "rot": 170,
+     "variant": "worn"
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      9.2,
+      38.45
+     ],
+     "rot": -10,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "couch",
+     "at": [
+      10,
+      38
+     ],
+     "against": "S",
+     "offset": [
+      0.0,
+      0.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "tv_crt",
+     "pos": [
+      11.55,
+      36.4
+     ],
+     "rot": -45,
+     "variant": "worn"
+    },
+    {
+     "prop": "rug_rect",
+     "pos": [
+      9.9,
+      37.4
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "trash_can_kitchen",
+     "id": "trailer_trash",
+     "pos": [
+      6.35,
+      37.45
+     ]
+    },
+    {
+     "prop": "bed_single",
+     "pos": [
+      13.1,
+      38.4
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "nightstand",
+     "id": "bev_nightstand",
+     "at": [
+      12,
+      36
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "out_lockbox",
+     "id": "host_lockbox",
+     "pos": [
+      13.7,
+      36.35
+     ],
+     "rot": 30,
+     "key": "out_camp_keyring"
+    },
+    {
+     "prop": "bloody_bandages",
+     "pos": [
+      13.1,
+      36.4
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "toilet",
+     "at": [
+      20,
+      16
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "prop": "toilet",
+     "at": [
+      20,
+      17
+     ],
+     "against": "W",
+     "variant": "destroyed"
+    },
+    {
+     "prop": "sink_pedestal",
+     "at": [
+      21,
+      16
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "sink_pedestal",
+     "at": [
+      22,
+      16
+     ],
+     "against": "N",
+     "variant": "destroyed"
+    },
+    {
+     "prop": "towel_rack",
+     "pos": [
+      22.915,
+      19.6
+     ],
+     "rot": -90,
+     "height": 1.2
+    },
+    {
+     "prop": "trash_can_kitchen",
+     "id": "mens_trash",
+     "pos": [
+      20.4,
+      20.55
+     ]
+    },
+    {
+     "prop": "metal_shelf",
+     "id": "utility_shelf",
+     "at": [
+      23,
+      19
+     ],
+     "against": "W",
+     "variant": "worn",
+     "container": "medicine_cabinet"
+    },
+    {
+     "prop": "road_mop_bucket",
+     "pos": [
+      24.4,
+      20.4
+     ],
+     "rot": 30,
+     "variant": "worn"
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      23.5,
+      16.5
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "civic_army_cot",
+     "pos": [
+      27.52,
+      17.1
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "civic_army_cot",
+     "pos": [
+      27.52,
+      19.45
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "sink_pedestal",
+     "at": [
+      25,
+      16
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "toilet",
+     "at": [
+      25,
+      20
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "prop": "bloody_bandages",
+     "pos": [
+      26.3,
+      18.2
+     ],
+     "rot": 70
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      26.5,
+      16.5
+     ]
+    },
+    {
+     "prop": "medicine_cabinet",
+     "id": "ward_cabinet",
+     "pos": [
+      25.5,
+      16.085
+     ],
+     "rot": 0,
+     "height": 1.4,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tent_pad",
+     "pos": [
+      3.0,
+      22.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tent_dome",
+     "pos": [
+      3.0,
+      22.0
+     ],
+     "rot": 20,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tent_dome",
+     "pos": [
+      2.6,
+      17.0
+     ],
+     "rot": -15,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "picnic_table",
+     "pos": [
+      5.0,
+      26.2
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_fire_ring",
+     "pos": [
+      5.6,
+      19.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_bear_box",
+     "id": "site1_bear_box",
+     "pos": [
+      0.9,
+      25.4
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_camp_chair",
+     "pos": [
+      6.0,
+      21.2
+     ],
+     "rot": 200,
+     "variant": "worn"
+    },
+    {
+     "prop": "duffel_bag",
+     "id": "pruitt_duffel",
+     "pos": [
+      1.6,
+      20.4
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "out_tent_pad",
+     "pos": [
+      7.0,
+      5.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tent_cabin",
+     "pos": [
+      7.0,
+      5.0
+     ],
+     "rot": -10,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "picnic_table",
+     "pos": [
+      9.5,
+      7.6
+     ],
+     "rot": 30,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_fire_ring",
+     "pos": [
+      11.4,
+      3.2
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_bear_box",
+     "id": "site2_bear_box",
+     "pos": [
+      2.9,
+      9.4
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "car_sedan_wreck",
+     "id": "novak_car",
+     "pos": [
+      15.2,
+      4.6
+     ],
+     "rot": 70,
+     "variant": "worn"
+    },
+    {
+     "prop": "backpack_dropped",
+     "id": "mila_pack",
+     "pos": [
+      5.3,
+      8.3
+     ],
+     "rot": 150
+    },
+    {
+     "prop": "out_rv",
+     "id": "haldane_rv",
+     "pos": [
+      22.0,
+      3.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_camp_chair",
+     "pos": [
+      19.3,
+      5.2
+     ],
+     "rot": 160,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_camp_chair",
+     "pos": [
+      21.1,
+      5.4
+     ],
+     "rot": 190,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_fire_ring",
+     "pos": [
+      27.6,
+      5.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "propane_tank_small",
+     "pos": [
+      26.0,
+      1.7
+     ]
+    },
+    {
+     "prop": "out_tent_pad",
+     "pos": [
+      41.0,
+      5.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_tent_dome",
+     "pos": [
+      41.0,
+      5.0
+     ],
+     "rot": 35,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_fire_ring",
+     "pos": [
+      37.6,
+      8.1
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "picnic_table",
+     "pos": [
+      44.6,
+      9.0
+     ],
+     "rot": 80,
+     "variant": "worn"
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      44.4,
+      8.8
+     ],
+     "y": 0.76,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_camp_chair",
+     "pos": [
+      38.8,
+      6.7
+     ],
+     "rot": 230
+    },
+    {
+     "prop": "out_tent_pad",
+     "pos": [
+      44.4,
+      20.5
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "sawhorse_barricade",
+     "pos": [
+      41.0,
+      18.2
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_bear_box",
+     "id": "site5_bear_box",
+     "pos": [
+      46.6,
+      24.0
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tent_pad",
+     "pos": [
+      42.0,
+      32.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "picnic_table",
+     "pos": [
+      40.6,
+      30.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_fire_ring",
+     "pos": [
+      44.2,
+      35.2
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_camp_chair",
+     "pos": [
+      43.2,
+      34.2
+     ],
+     "rot": 120,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_camp_chair",
+     "pos": [
+      8.9,
+      34.6
+     ],
+     "rot": 170,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_camp_chair",
+     "pos": [
+      10.2,
+      34.8
+     ],
+     "rot": 200,
+     "variant": "worn"
+    },
+    {
+     "prop": "picnic_table",
+     "pos": [
+      17.5,
+      36.8
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_fire_ring",
+     "pos": [
+      3.6,
+      33.6
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "propane_tank_small",
+     "pos": [
+      5.1,
+      36.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "propane_tank_small",
+     "pos": [
+      5.0,
+      37.0
+     ]
+    },
+    {
+     "prop": "out_bear_box",
+     "id": "host_bear_box",
+     "pos": [
+      4.8,
+      39.6
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "out_camp_sign",
+     "pos": [
+      19.6,
+      42.7
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_gate_arm",
+     "pos": [
+      24.0,
+      40.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "woodpile",
+     "pos": [
+      31.6,
+      38.1
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "dumpster",
+     "id": "camp_dumpster",
+     "pos": [
+      31.8,
+      41.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_water_spigot",
+     "pos": [
+      24.0,
+      27.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_water_spigot",
+     "pos": [
+      33.5,
+      15.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_fire_ring",
+     "pos": [
+      30.0,
+      24.5
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "corpse_remains",
+     "id": "loop_corpse",
+     "pos": [
+      34.6,
+      21.0
+     ],
+     "rot": 60
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      14.0,
+      17.5
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      30.5,
+      13.0
+     ],
+     "rot": 47,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      16.6,
+      27.4
+     ],
+     "rot": 94,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      30.8,
+      27.0
+     ],
+     "rot": 141,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      1.6,
+      12.8
+     ],
+     "rot": 188,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      46.5,
+      13.6
+     ],
+     "rot": 235,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      46.8,
+      28.6
+     ],
+     "rot": 282,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      1.2,
+      33.2
+     ],
+     "rot": 329,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      33.8,
+      2.0
+     ],
+     "rot": 16,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      12.4,
+      1.2
+     ],
+     "rot": 63,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      33.5,
+      35.5
+     ],
+     "rot": 110,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      18.5,
+      13.5
+     ],
+     "rot": 157,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      38.0,
+      39.5
+     ],
+     "rot": 204,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      2.0,
+      42.0
+     ],
+     "rot": 251,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      46.0,
+      41.0
+     ],
+     "rot": 298,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      12.5,
+      21.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      35.0,
+      22.0
+     ],
+     "rot": 61,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      20.0,
+      28.5
+     ],
+     "rot": 122,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      6.5,
+      12.2
+     ],
+     "rot": 183,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      42.5,
+      12.5
+     ],
+     "rot": 244,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      28.0,
+      12.8
+     ],
+     "rot": 305,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      13.2,
+      15.6
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      34.0,
+      16.5
+     ],
+     "rot": 83,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      29.5,
+      28.5
+     ],
+     "rot": 166,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      16.5,
+      25.0
+     ],
+     "rot": 249,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      0.8,
+      30.5
+     ],
+     "rot": 332,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      47.2,
+      16.5
+     ],
+     "rot": 55,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      36.2,
+      37.8
+     ],
+     "rot": 138,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      19.5,
+      13.0
+     ],
+     "rot": 221,
+     "variant": "clean"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "bev_keys",
+     "item": "out_camp_keyring",
+     "pos": [
+      24.0,
+      16.1
+     ],
+     "y": 1.5
+    }
+   ],
+   "notes": [
+    {
+     "note": "out_camp_register",
+     "pos": [
+      28.55,
+      37.3
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "out_camp_bev",
+     "pos": [
+      23.35,
+      19.5
+     ],
+     "y": 1.0
+    },
+    {
+     "note": "out_camp_mila",
+     "pos": [
+      9.55,
+      7.65
+     ],
+     "y": 0.77
+    },
+    {
+     "note": "out_camp_notice",
+     "pos": [
+      26.75,
+      38.3
+     ],
+     "y": 1.45
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "kiosk_camper",
+     "pos": [
+      28.6,
+      38.55
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 300,
+     "anchor": "floor"
+    },
+    {
+     "id": "ward_novak",
+     "pos": [
+      27.52,
+      17.1
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "group": "ward"
+    },
+    {
+     "id": "ward_pruitt",
+     "pos": [
+      27.52,
+      19.45
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 180,
+     "group": "ward"
+    },
+    {
+     "id": "haldane_danny",
+     "pos": [
+      21.6,
+      18.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 90,
+     "group": "quarantine"
+    },
+    {
+     "id": "haldane_cole",
+     "pos": [
+      20.6,
+      19.6
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 45,
+     "group": "quarantine"
+    },
+    {
+     "id": "ostrowski",
+     "pos": [
+      22.3,
+      17.0
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": -60,
+     "group": "quarantine",
+     "anchor": "floor"
+    },
+    {
+     "id": "bev",
+     "pos": [
+      23.55,
+      17.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "anchor": "floor"
+    },
+    {
+     "id": "gus",
+     "pos": [
+      13.0,
+      37.3
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": -90,
+     "guardian": true
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_handprint",
+     "at": [
+      21,
+      20
+     ],
+     "side": "S",
+     "size": [
+      0.4,
+      0.4
+     ],
+     "height": 1.3
+    },
+    {
+     "decal": "blood_splatter_a",
+     "at": [
+      22,
+      17
+     ],
+     "side": "E",
+     "size": [
+      1.0,
+      1.0
+     ],
+     "height": 1.1
+    },
+    {
+     "decal": "crack_wall",
+     "at": [
+      23,
+      18
+     ],
+     "side": "W",
+     "size": [
+      1.2,
+      1.4
+     ],
+     "height": 1.0
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      26,
+      18
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      0.9
+     ]
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      21,
+      19
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      24,
+      19
+     ],
+     "side": "E",
+     "size": [
+      0.8,
+      0.6
+     ],
+     "height": 1.5
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      12,
+      37
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 90
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      9,
+      36
+     ],
+     "side": "N",
+     "size": [
+      1.0,
+      1.4
+     ],
+     "height": 1.2
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      24,
+      21
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      1.8
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "blood_drip",
+     "at": [
+      28,
+      37
+     ],
+     "side": "N",
+     "size": [
+      0.6,
+      0.9
+     ],
+     "height": 1.0
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      24,
+      43
+     ],
+     "label": "The gravel road into Tamsin River Campground"
+    },
+    {
+     "at": [
+      26,
+      38
+     ],
+     "label": "The fee station: its window smashed, the board's notice still up"
+    },
+    {
+     "at": [
+      28,
+      38
+     ],
+     "label": "Inside the fee station: the campground register"
+    },
+    {
+     "at": [
+      22,
+      7
+     ],
+     "label": "Site 3: the Haldanes' motorhome, its door hanging open"
+    },
+    {
+     "at": [
+      8,
+      34
+     ],
+     "label": "The camp host's trailer: padlocked from outside"
+    },
+    {
+     "at": [
+      26,
+      21
+     ],
+     "label": "The shower house: the men's side chained shut, the women's side a sick ward"
+    },
+    {
+     "at": [
+      26,
+      18
+     ],
+     "label": "The ward: the sick on their cots"
+    },
+    {
+     "at": [
+      24,
+      18
+     ],
+     "label": "The utility room: Bev, and her keys on the hook above her"
+    },
+    {
+     "at": [
+      8,
+      35
+     ],
+     "label": "Back to the trailer: Bev's keys open the padlock"
+    },
+    {
+     "at": [
+      9,
+      37
+     ],
+     "label": "Inside: Bev's alarm on the bedroom door"
+    },
+    {
+     "at": [
+      13,
+      37
+     ],
+     "label": "The bedroom: the cash lockbox, and Gus"
+    },
+    {
+     "at": [
+      15,
+      37
+     ],
+     "label": "Out through the bolted back door"
+    }
+   ],
+   "loot_room": {
+    "room": "R",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "trailer_back"
+    }
+   ],
+   "traps": [
+    {
+     "id": "site5_jaws",
+     "type": "bear_trap",
+     "pos": [
+      44.3,
+      20.7
+     ],
+     "rot": 40
+    },
+    {
+     "id": "kiosk_cans",
+     "type": "can_chime",
+     "at": [
+      29,
+      38
+     ],
+     "side": "E"
+    },
+    {
+     "id": "bedroom_alarm",
+     "type": "alarm",
+     "at": [
+      11,
+      37
+     ],
+     "side": "E"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "ward_door_opened",
+     "group": "ward",
+     "on": "opening",
+     "opening": "ward_door",
+     "delay": 0.6
+    },
+    {
+     "id": "bev_keys_taken",
+     "group": "quarantine",
+     "on": "pickup",
+     "pickup": "bev_keys",
+     "delay": 0.4
+    },
+    {
+     "id": "mens_door_opened",
+     "group": "quarantine",
+     "on": "opening",
+     "opening": "mens_door",
+     "delay": 0.2
+    }
+   ]
+  }
+ ]
+}

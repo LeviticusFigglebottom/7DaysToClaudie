@@ -456,10 +456,17 @@ def act_sleep_stand(rig, p, n=90):
 
 LIE_Y = 0.45     # pelvis this far behind the origin when lying / sitting, so that getting up
 SIT_Y = 0.30     # ends with the feet on the origin (in-place animations, no root motion)
+# Seated on a chair, pew, booth or bench (ADR-0022): the origin is on the floor under the feet, the
+# pelvis SEAT_Y behind it with the buttocks on a seat SEAT_H high. The game lifts the body by
+# (seat height - SEAT_H) for taller seats (stools) and reads both constants from
+# data/config/traps.json "sleepers" (keep them in step).
+SEAT_H = 0.46
+SEAT_Y = 0.40
 
 
 def lie_pose(rig, p):
-    """Lying on the back (sleeper): IK legs extended along the ground, knees up-pole."""
+    """Lying on the back (sleeper, on the floor or a bed): IK legs extended along the ground, knees
+    up-pole, the left hand on the belly and the right arm along the side, so the body fits a cot."""
     d = {"hips.z": -rig.pel_z + 0.12, "hips.y": LIE_Y, "hips.flex": -88.0,
          "spine.flex": 2.0, "chest.flex": 0.0, "neck.flex": 14.0, "head.flex": -4.0, "head.twist": 26.0, "head.side": 6.0,
          "jaw.open": 16.0}
@@ -470,9 +477,9 @@ def lie_pose(rig, p):
                   f"foot.{sd}.yaw": sx * (14.0 if sd == "L" else 26.0),
                   f"knee.{sd}.px": sx * 0.5, f"knee.{sd}.py": -0.2, f"knee.{sd}.pz": 1.0,
                   f"shoulder.{sd}.shrug": 6.0, f"shoulder.{sd}.fwd": -4.0,
-                  f"upper_arm.{sd}.abd": -24.0 if sd == "L" else -12.0, f"upper_arm.{sd}.flex": -4.0,
-                  f"upper_arm.{sd}.twist": 20.0, f"forearm.{sd}.flex": 10.0 if sd == "L" else 16.0,
                   f"hand.{sd}.flex": 24.0})
+    d.update({"upper_arm.L.flex": -10.0, "upper_arm.L.abd": -40.0, "upper_arm.L.twist": 60.0, "forearm.L.flex": 100.0,
+              "upper_arm.R.flex": -20.0, "upper_arm.R.abd": -40.0, "upper_arm.R.twist": 20.0, "forearm.R.flex": 10.0})
     return d
 
 
@@ -487,11 +494,107 @@ def sit_pose(rig, p):
               "ik.R": 1.0, "foot.R.x": -0.05, "foot.R.y": SIT_Y - ext * 0.60 - rig.ankle["R"][1], "foot.R.z": 0.0,
               "foot.R.pitch": 0.0, "foot.R.pivot": 0.0, "foot.R.yaw": -10.0,
               "knee.R.px": -0.45, "knee.R.py": -0.3, "knee.R.pz": 1.0})
+    # The left hand rests on the floor beside the outstretched leg (hanging straight it went 0.2 m
+    # through the floor); the right forearm lies over the raised knee.
     for sd, sx in SIDES:
         d.update({f"shoulder.{sd}.shrug": -6.0, f"shoulder.{sd}.fwd": 12.0,
-                  f"upper_arm.{sd}.abd": -30.0 if sd == "L" else -22.0, f"upper_arm.{sd}.flex": 6.0 if sd == "L" else 28.0,
-                  f"upper_arm.{sd}.twist": -10.0, f"forearm.{sd}.flex": 18.0 if sd == "L" else 34.0,
+                  f"upper_arm.{sd}.abd": -12.0 if sd == "L" else -22.0, f"upper_arm.{sd}.flex": 0.0 if sd == "L" else 28.0,
+                  f"upper_arm.{sd}.twist": -10.0, f"forearm.{sd}.flex": 64.0 if sd == "L" else 34.0,
                   f"hand.{sd}.flex": 22.0})
+    _lift_hand(rig, d, "R", 0.0)
+    return _lift_hand(rig, d, "L", 0.0)
+
+
+def _hand_low(rig, prm: dict, sd: str) -> float:
+    """Height of the lowest point of a hand (wrist or fingertips) in a pose."""
+    Q, off = rig.evaluate(prm)
+    acc, pos = rig.sk.fk(Q, off)
+    tip = rig.sk.point(acc, pos, f"hand.{sd}", rig.sk.tail[f"hand.{sd}"])
+    return min(float(tip[2]), float(pos[f"hand.{sd}"][2]))
+
+
+def _lift_hand(rig, prm: dict, sd: str, floor: float = 0.02, hi: float = 130.0) -> dict:
+    """Bends the forearm (FK) just enough that the hand clears the floor. Poses are authored on an
+    average body; long-armed ones (the Rammer, Lurchers) hung their hands through the floor."""
+    key = f"forearm.{sd}.flex"
+    if _hand_low(rig, prm, sd) >= floor:
+        return prm
+    a, b = float(prm.get(key, 0.0)), hi
+    for _ in range(14):
+        m = (a + b) * 0.5
+        prm[key] = m
+        if _hand_low(rig, prm, sd) >= floor:
+            b = m
+        else:
+            a = m
+    prm[key] = b
+    return prm
+
+
+def seat_pose(rig, p):
+    """Slumped on a chair, pew, booth or bench (ADR-0022): pelvis on a seat SEAT_H high and SEAT_Y
+    behind the feet (planted on the floor at the origin), back against the backrest, head lolled,
+    the right hand in the lap and the left on the left thigh (nothing sticks out sideways into a
+    neighbouring seat or a booth wall)."""
+    d = {"hips.z": -rig.pel_z + SEAT_H + 0.125, "hips.y": SEAT_Y, "hips.flex": -18.0, "spine.flex": 12.0, "chest.flex": 14.0,
+         "chest.side": -4.0, "neck.flex": 30.0, "head.flex": 12.0, "head.side": 26.0, "head.twist": 12.0, "jaw.open": 16.0}
+    for sd, sx in SIDES:
+        d.update({f"ik.{sd}": 1.0, f"foot.{sd}.x": sx * 0.05, f"foot.{sd}.y": -0.06 if sd == "L" else 0.02, f"foot.{sd}.z": 0.0,
+                  f"foot.{sd}.pitch": 0.0, f"foot.{sd}.pivot": 0.0, f"foot.{sd}.yaw": sx * 12.0,
+                  f"knee.{sd}.px": sx * 0.35, f"knee.{sd}.py": -1.0, f"knee.{sd}.pz": 0.3,
+                  f"shoulder.{sd}.shrug": -6.0, f"shoulder.{sd}.fwd": 10.0})
+    d.update({"upper_arm.L.flex": 15.0, "upper_arm.L.abd": -36.0, "upper_arm.L.twist": -8.0, "forearm.L.flex": 45.0, "hand.L.flex": 10.0,
+              "upper_arm.R.flex": 20.0, "upper_arm.R.abd": -48.0, "upper_arm.R.twist": 0.0, "forearm.R.flex": 45.0, "hand.R.flex": 16.0})
+    return d
+
+
+def hunch_pose(rig, p):
+    """Hunched forward on a backless seat (stool, mess bench): the seat pose leaning over the knees,
+    elbows on the thighs, forearms and hands hanging past the knees, head down."""
+    d = seat_pose(rig, p)
+    d.update({"hips.y": SEAT_Y - 0.03, "hips.flex": 4.0, "spine.flex": 14.0, "chest.flex": 20.0, "chest.side": 3.0,
+              "neck.flex": 24.0, "head.flex": 20.0, "head.side": -10.0, "head.twist": -8.0, "jaw.open": 18.0})
+    for sd, sx in SIDES:
+        d.update({f"upper_arm.{sd}.flex": 35.0, f"upper_arm.{sd}.abd": -30.0, f"upper_arm.{sd}.twist": -6.0,
+                  f"forearm.{sd}.flex": 60.0, f"hand.{sd}.flex": 30.0, f"shoulder.{sd}.fwd": 16.0})
+    return d
+
+
+def crouch_pose(rig, p):
+    """Squatting low on the balls of the feet (an ambusher waiting), knees wide, arms hanging with
+    the knuckles on the floor, head down."""
+    base = base_stand(p)
+    d = merged(base, {"hips.z": -0.50, "hips.y": 0.10, "hips.flex": 34.0, "spine.flex": 18.0, "chest.flex": 16.0,
+                      "neck.flex": 16.0, "head.flex": 4.0, "head.side": 9.0, "head.twist": -6.0, "jaw.open": 13.0})
+    for sd, sx in SIDES:
+        d.update({f"ik.{sd}": 1.0, f"foot.{sd}.x": sx * 0.05, f"foot.{sd}.y": 0.02 if sd == "L" else -0.04, f"foot.{sd}.z": 0.0,
+                  f"foot.{sd}.pitch": -22.0, f"foot.{sd}.pivot": 1.0, f"foot.{sd}.yaw": sx * 16.0,
+                  f"knee.{sd}.px": sx * 0.55, f"knee.{sd}.py": -0.8, f"knee.{sd}.pz": 0.1,
+                  f"shoulder.{sd}.shrug": -8.0, f"shoulder.{sd}.fwd": 14.0,
+                  f"upper_arm.{sd}.flex": 34.0, f"upper_arm.{sd}.abd": -44.0, f"upper_arm.{sd}.twist": -6.0,
+                  f"forearm.{sd}.flex": 30.0, f"hand.{sd}.flex": 24.0})
+    for sd, _ in SIDES:
+        _lift_hand(rig, d, sd, 0.0)
+    return d
+
+
+def kneel_pose(rig, p):
+    """Kneeling upright but sagging: knees on the floor, shins along it behind with the tops of the
+    feet down, head bowed, arms hanging."""
+    base = base_stand(p)
+    th = rig.sk.length("thigh.L")
+    sh = rig.sk.length("shin.L")
+    d = merged(base, {"hips.z": -rig.pel_z + 0.06 + th * 0.97 + 0.04, "hips.y": 0.02, "hips.flex": 8.0, "spine.flex": 14.0,
+                      "chest.flex": 18.0, "neck.flex": 30.0, "head.flex": 16.0, "head.side": -12.0, "head.twist": 8.0, "jaw.open": 15.0})
+    for sd, sx in SIDES:
+        d.update({f"ik.{sd}": 1.0, f"foot.{sd}.x": sx * 0.01, f"foot.{sd}.y": sh * 0.97 - 0.02, f"foot.{sd}.z": 0.08,
+                  f"foot.{sd}.pitch": -122.0, f"foot.{sd}.pivot": 0.0, f"foot.{sd}.yaw": sx * 4.0, f"toe.{sd}.bend": 10.0,
+                  f"knee.{sd}.px": sx * 0.15, f"knee.{sd}.py": -1.0, f"knee.{sd}.pz": -0.4,
+                  f"shoulder.{sd}.shrug": -10.0, f"shoulder.{sd}.fwd": 10.0,
+                  f"upper_arm.{sd}.flex": 6.0, f"upper_arm.{sd}.abd": -32.0, f"upper_arm.{sd}.twist": -4.0,
+                  f"forearm.{sd}.flex": 10.0, f"hand.{sd}.flex": 18.0})
+    for sd, _ in SIDES:
+        _lift_hand(rig, d, sd, 0.03)
     return d
 
 
@@ -522,6 +625,74 @@ def act_sleep_sit(rig, p, n=60):
         prm["head.side"] = pose["head.side"] + 1.5 * math.sin(w + 1.0)
         prm["neck.flex"] = pose["neck.flex"] + 1.0 * math.sin(w + 0.3)
         prm["jaw.open"] = pose["jaw.open"] + 2.0 * math.sin(w)
+        frames.append(prm)
+    return frames
+
+
+def _breathing(pose: dict, n: int, seed: int, head_sway: float = 1.5) -> list[dict]:
+    """A dormant loop over a held pose: shallow breathing, a slow head sway, the jaw working, one
+    finger twitch (seeded so bodies side by side don't breathe in step)."""
+    frames = []
+    ph = (seed % 7) * 0.7
+    for f in range(n + 1):
+        w = 2 * math.pi * f / n
+        prm = dict(pose)
+        prm["chest.flex"] = pose.get("chest.flex", 0.0) + 1.2 * math.sin(w + ph)
+        prm["head.side"] = pose.get("head.side", 0.0) + head_sway * math.sin(w + 1.0 + ph)
+        prm["neck.flex"] = pose.get("neck.flex", 0.0) + 1.0 * math.sin(w + 0.3 + ph)
+        prm["jaw.open"] = pose.get("jaw.open", 0.0) + 2.0 * math.sin(w + ph)
+        prm["hand.R.flex"] = pose.get("hand.R.flex", 0.0) + 10.0 * smooth_pulse(f, 20 + seed % 13, 2, 2, 8)
+        frames.append(prm)
+    return frames
+
+
+def act_sleep_seat(rig, p, n=60):
+    return _breathing(seat_pose(rig, p), n, int(p.get("seed", 1)))
+
+
+def act_sleep_hunch(rig, p, n=60):
+    return _breathing(hunch_pose(rig, p), n, int(p.get("seed", 1)) + 1, head_sway=2.0)
+
+
+def act_sleep_crouch(rig, p, n=60):
+    return _breathing(crouch_pose(rig, p), n, int(p.get("seed", 1)) + 3, head_sway=2.5)
+
+
+def act_sleep_kneel(rig, p, n=60):
+    return _breathing(kneel_pose(rig, p), n, int(p.get("seed", 1)) + 5, head_sway=2.0)
+
+
+def act_wake_seat(rig, p, n=40, start=None):
+    """Seated sleeper (feet planted on the origin) jerks its head up, leans forward over its knees,
+    pushes off the seat and straightens: it ends standing where its feet were (no root motion).
+    `start`: the seated pose it wakes from (seat_pose, or hunch_pose on a backless seat)."""
+    base = base_stand(p)
+    seat = start if start is not None else seat_pose(rig, p)
+    pz = -rig.pel_z
+    lift = merged(seat, {"neck.flex": 6.0, "head.flex": -12.0, "head.side": 4.0, "head.twist": 0.0, "chest.side": 0.0, "jaw.open": 24.0,
+                         "hips.flex": -10.0})
+    lean = merged(seat, {"hips.flex": 22.0, "spine.flex": 24.0, "chest.flex": 16.0, "neck.flex": -2.0, "head.flex": -24.0,
+                         "head.side": 0.0, "head.twist": 0.0, "chest.side": 0.0, "jaw.open": 20.0,
+                         "foot.L.y": 0.03, "foot.R.y": 0.05, "foot.L.x": 0.04, "foot.R.x": -0.04,
+                         "upper_arm.L.flex": 36.0, "upper_arm.R.flex": 34.0, "upper_arm.L.abd": -30.0, "upper_arm.R.abd": -30.0,
+                         "forearm.L.flex": 24.0, "forearm.R.flex": 24.0, "hand.L.flex": -20.0, "hand.R.flex": -20.0})
+    push = merged(base, {"hips.z": pz + SEAT_H + 0.2, "hips.y": 0.17, "hips.flex": 38.0, "spine.flex": 26.0, "chest.flex": 16.0,
+                         "neck.flex": -8.0, "head.flex": -26.0, "jaw.open": 18.0,
+                         "foot.L.y": 0.03, "foot.R.y": 0.05, "foot.L.x": 0.04, "foot.R.x": -0.04,
+                         "upper_arm.L.flex": 30.0, "upper_arm.R.flex": 28.0, "forearm.L.flex": 30.0, "forearm.R.flex": 30.0})
+    rise = merged(base, {"hips.z": -0.12, "hips.y": 0.06, "hips.flex": 16.0, "spine.flex": 14.0, "chest.flex": 12.0,
+                         "head.flex": -18.0, "head.twist": -10.0, "jaw.open": 14.0,
+                         "foot.L.y": 0.012, "foot.R.y": 0.02})
+    ks = Keys(base, [(0, seat), (6, lift, "snap"), (14, lean), (24, push, "inout"), (32, rise, "out"), (40, base, "inout")])
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        for sd, _ in SIDES:
+            prm[f"ik.{sd}"] = 1.0
+            if f >= 14:   # default knee pole (pelvis forward) for the rise
+                w = ease((f - 14) / 12.0)
+                for c, v in (("px", 0.0), ("py", -1.0), ("pz", 0.0)):
+                    prm[f"knee.{sd}.{c}"] = prm.get(f"knee.{sd}.{c}", 0.0) * (1 - w) + v * w
         frames.append(prm)
     return frames
 
@@ -928,6 +1099,99 @@ def act_eat(rig, p, n=60):
 
 
 # --------------------------------------------------------------------------------------------
+# Idle and shamble variants (ADR-0028): EnemyVisual gives each body one of the idles and, for some,
+# the hard limp in place of walk_b, so a crowd does not sway in step.
+# --------------------------------------------------------------------------------------------
+
+def act_idle_loll(rig, p, n=120):
+    """Idle variant: the head lolls slowly over to the weak side and down, hangs there with the
+    jaw dropping, then jerks back up; the body sways off its bad leg."""
+    base = base_stand(p)
+    side = 1.0 if p.get("limp_side", "R") == "L" else -1.0
+    seed = int(p.get("seed", 1)) + 17
+    frames = []
+    for f in range(n + 1):
+        w = 2 * math.pi * f / n
+        u = f / n
+        if u < 0.62:
+            lol = ease(u / 0.62, "inout")
+        elif u < 0.9:
+            lol = 1.0
+        else:
+            lol = 1.0 - ease((u - 0.9) / 0.1, "snap")
+        prm = dict(base)
+        prm["hips.x"] = 0.02 * math.sin(w) + side * 0.008
+        prm["hips.z"] = base["hips.z"] - 0.008 * (0.5 + 0.5 * math.cos(2 * w))
+        prm["hips.side"] = 3.0 * math.sin(w + 0.3)
+        prm["spine.side"] = -2.4 * math.sin(w + 0.7)
+        prm["chest.flex"] = base["chest.flex"] + 1.4 * math.sin(2 * w)
+        prm["chest.twist"] = 2.5 * loop_noise(seed, f, n)
+        prm["neck.side"] = side * 11.0 * lol
+        prm["head.side"] = base["head.side"] + side * 24.0 * lol
+        prm["head.flex"] = base["head.flex"] + 15.0 * lol + 2.0 * loop_noise(seed + 1, f, n)
+        prm["head.twist"] = base["head.twist"] + 5.0 * loop_noise(seed + 2, f, n) - side * 6.0 * lol
+        prm["jaw.open"] = base["jaw.open"] + 9.0 * lol
+        for sd, sx in SIDES:
+            lag = w - 0.9
+            prm[f"upper_arm.{sd}.flex"] = base[f"upper_arm.{sd}.flex"] + 3.0 * math.sin(lag)
+            prm[f"upper_arm.{sd}.abd"] = base[f"upper_arm.{sd}.abd"] - sx * 2.0 * math.sin(lag)
+            prm[f"forearm.{sd}.flex"] = base[f"forearm.{sd}.flex"] + 2.5 * math.sin(2 * lag + 0.5)
+        frames.append(prm)
+    return frames
+
+
+def act_idle_twitch(rig, p, n=100):
+    """Idle variant: still, with a tremor in the hands and jaw, broken by spasms - a head jerk, a
+    shoulder hitched to the ear, an arm flung half up - at irregular beats."""
+    base = base_stand(p)
+    seed = int(p.get("seed", 1)) + 29
+    r = np.random.default_rng(seed)
+    beats = sorted(int(x) for x in r.choice(np.arange(6, n - 16), 5, replace=False))
+    frames = []
+    for f in range(n + 1):
+        w = 2 * math.pi * f / n
+        prm = dict(base)
+        prm["hips.x"] = 0.008 * math.sin(w)
+        prm["chest.flex"] = base["chest.flex"] + 1.0 * math.sin(2 * w)
+        k = [smooth_pulse(f, b, 1, 2, 6) for b in beats]
+        prm["head.twist"] = base["head.twist"] + 24.0 * k[0] - 16.0 * k[2] + 1.5 * math.sin(f * 2.9)
+        prm["head.side"] = base["head.side"] + 14.0 * k[1] - 10.0 * k[3]
+        prm["head.flex"] = base["head.flex"] - 9.0 * k[0] + 6.0 * k[4]
+        prm["neck.flex"] = base["neck.flex"] - 6.0 * k[0]
+        prm["chest.twist"] = 9.0 * k[4] - 5.0 * k[1]
+        prm["jaw.open"] = base["jaw.open"] + 10.0 * k[2] + 1.2 * math.sin(f * 3.7)
+        prm["shoulder.R.shrug"] = base["shoulder.R.shrug"] + 14.0 * k[1]
+        prm["shoulder.L.shrug"] = base["shoulder.L.shrug"] + 10.0 * k[3]
+        prm["upper_arm.L.flex"] = base["upper_arm.L.flex"] + 22.0 * k[3]
+        prm["forearm.L.flex"] = base["forearm.L.flex"] + 35.0 * k[3]
+        for sd, sx in SIDES:
+            prm[f"hand.{sd}.flex"] = base[f"hand.{sd}.flex"] + 4.0 * math.sin(f * (2.3 if sd == "L" else 2.7))
+        frames.append(prm)
+    return frames
+
+
+def act_walk_limp(rig, p, n=44):
+    """Shamble variant: a hard limp - the bad leg barely leaves the ground and the body drops onto
+    it each step, the shoulder on that side hitched, the head thrown to the other."""
+    frames = locomotion(rig, p, n, 0.65, "walk")
+    limp = p.get("limp_side", "R")
+    lsx = 1.0 if limp == "L" else -1.0
+    for f, prm in enumerate(frames):
+        ph = (f / n) % 1.0
+        lp = (ph + (0.0 if limp == "L" else 0.5)) % 1.0
+        st = 0.57
+        dip = 0.05 * math.sin(math.pi * min(1.0, lp / st)) if lp < st else 0.0
+        prm["hips.z"] = prm.get("hips.z", 0.0) - dip
+        prm["hips.side"] = prm.get("hips.side", 0.0) + lsx * dip * 150
+        prm["spine.side"] = prm.get("spine.side", 0.0) - lsx * dip * 100
+        prm["chest.side"] = prm.get("chest.side", 0.0) - lsx * dip * 60
+        prm["head.side"] = prm.get("head.side", 0.0) - lsx * dip * 90
+        prm[f"foot.{limp}.z"] = prm.get(f"foot.{limp}.z", 0.0) * 0.35
+        prm[f"shoulder.{limp}.shrug"] = prm.get(f"shoulder.{limp}.shrug", 0.0) + 200.0 * dip
+    return frames
+
+
+# --------------------------------------------------------------------------------------------
 # Action table (name, frames, loop, builder)
 # --------------------------------------------------------------------------------------------
 
@@ -937,8 +1201,14 @@ def actions_table():
         ("idle_sleep_lie", 60, True, act_sleep_lie),
         ("idle_sleep_sit", 60, True, act_sleep_sit),
         ("idle_sleep_stand", 90, True, act_sleep_stand),
+        ("idle_sleep_seat", 60, True, act_sleep_seat),
+        ("idle_sleep_crouch", 60, True, act_sleep_crouch),
+        ("idle_sleep_kneel", 60, True, act_sleep_kneel),
         ("wake_lie", 40, False, act_wake_lie),
         ("wake_sit", 40, False, act_wake_sit),
+        ("wake_seat", 40, False, act_wake_seat),
+        ("idle_sleep_hunch", 60, True, act_sleep_hunch),
+        ("wake_hunch", 40, False, lambda r, p, n: act_wake_seat(r, p, n, hunch_pose(r, p))),
         ("walk", 36, True, lambda r, p, n: locomotion(r, p, n, 0.9, "walk")),
         ("walk_b", 40, True, lambda r, p, n: locomotion(r, p, n, 0.75, "walk_b")),
         ("run", 20, True, lambda r, p, n: locomotion(r, p, n, 4.5, "run")),
@@ -954,6 +1224,9 @@ def actions_table():
         ("crawl", 40, True, act_crawl),
         ("crawl_attack", 24, False, act_crawl_attack),
         ("eat", 60, True, act_eat),
+        ("idle_b", 120, True, act_idle_loll),
+        ("idle_c", 100, True, act_idle_twitch),
+        ("walk_limp", 44, True, act_walk_limp),
     ]
 
 

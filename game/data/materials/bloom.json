@@ -1,0 +1,11 @@
+{
+  "_doc": "The Bloom's growths (ADR-0025): fruiting bodies (caps, stems, gills) and the felted mycelium of cushions and rooting mounds. Shader bloom_fungus: translucency through thin parts (vertex B), greyer gills (vertex G) that glow faintly at night; the felt glows where its threads are brightest.",
+  "materials": {
+    "bloom_caps": {"shader": "bloom_fungus", "textures": "bloom_cap",
+      "params": {"uv_scale": 1.0, "normal_strength": 0.8, "ao_strength": 0.85, "translucency": 0.85, "tint": "#f2f0e8",
+                 "translucent_tint": "#e6ecd8", "gill_tint": "#c8c8be", "glow_energy": 0.06, "glow_gills": 1.0, "glow_felt": 0.0}},
+    "bloom_felt": {"shader": "bloom_fungus", "textures": "bloom_mound",
+      "params": {"uv_scale": 1.0, "normal_strength": 1.1, "ao_strength": 1.0, "translucency": 0.15, "tint": "#ffffff",
+                 "gill_tint": "#ffffff", "glow_energy": 0.04, "glow_gills": 0.0, "glow_felt": 1.0, "glow_from": 0.62}}
+  }
+}

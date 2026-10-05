@@ -1,0 +1,187 @@
+extends Node
+## fp_preview.gd's work: a clearing with a sun (or a moonlit night), a camera with the player's
+## ViewModel, and one PNG per shot: an item in its hold pose, frozen partway through an action,
+## guarding, reading the tether, or burning at night. Shots and options are documented in
+## fp_preview.gd.
+
+const SHOTS: Array[Dictionary] = [
+	{"name": "axe_idle", "item": "stone_axe"},
+	{"name": "axe_windup", "item": "stone_axe", "action": "fp_chop", "frame": 10},
+	{"name": "axe_impact", "item": "stone_axe", "action": "fp_chop", "frame": 12},
+	{"name": "axe_guard", "item": "stone_axe", "guard": true},
+	{"name": "hatchet_idle", "item": "hatchet"},
+	{"name": "machete_idle", "item": "machete"},
+	{"name": "knife_idle", "item": "kitchen_knife"},
+	{"name": "hammer_idle", "item": "claw_hammer"},
+	{"name": "spear_idle", "item": "crude_spear"},
+	{"name": "spear_stab", "item": "crude_spear", "action": "fp_stab", "frame": 9},
+	{"name": "club_idle", "item": "stone_club"},
+	{"name": "club_bash", "item": "stone_club", "action": "fp_bash", "frame": 16},
+	{"name": "pipe_idle", "item": "steel_pipe"},
+	{"name": "machete_slash", "item": "machete", "action": "fp_slash", "frame": 9},
+	{"name": "shovel_idle", "item": "shovel"},
+	{"name": "shovel_dig", "item": "shovel", "action": "fp_dig", "frame": 12},
+	{"name": "punch", "item": "", "action": "fp_punch", "frame": 7},
+	{"name": "revolver_idle", "item": "revolver"},
+	{"name": "torch_day", "item": "torch", "lit": true},
+	{"name": "torch_night", "item": "torch", "lit": true, "night": true},
+	{"name": "flashlight_idle", "item": "flashlight"},
+	{"name": "lighter_idle", "item": "lighter", "lit": true},
+	{"name": "torch_swing", "item": "torch", "lit": true, "action": "fp_torch", "frame": 10},
+	{"name": "tether_raised", "item": "stone_axe", "tether": true},
+	{"name": "food_idle", "item": "canned_beans"},
+	{"name": "food_eat", "item": "canned_beans", "action": "fp_eat", "frame": 15},
+	{"name": "bottle_idle", "item": "water_bottle_clean"},
+	{"name": "bottle_drink", "item": "water_bottle_clean", "action": "fp_drink", "frame": 30},
+	{"name": "held_stone", "item": "stone"},
+	{"name": "stone_throw", "item": "stone", "action": "fp_throw", "frame": 12},
+	{"name": "bandage_apply", "item": "cloth_bandage", "action": "fp_apply", "frame": 20},
+	{"name": "empty_hands", "item": ""},
+	{"name": "empty_guard", "item": "", "guard": true},
+	{"name": "carry_log", "item": "", "base": "fp_carry_log"},
+	{"name": "blueprint", "item": "stone_axe", "base": "fp_blueprint"},
+]
+
+var _out: String = "res://../build/fp_preview"
+var _only: PackedStringArray = []
+var _size := Vector2i(1280, 720)
+var _cam: Camera3D
+var _vm: ViewModel
+var _sun: DirectionalLight3D
+var _env: Environment
+var _torch_light: OmniLight3D
+
+
+func _ready() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	for i: int in args.size():
+		match args[i]:
+			"--out":
+				_out = args[i + 1]
+			"--only":
+				_only = args[i + 1].split(",")
+			"--size":
+				var p: PackedStringArray = args[i + 1].split("x")
+				_size = Vector2i(int(p[0]), int(p[1]))
+	DirAccess.make_dir_recursive_absolute(_out)
+	get_window().size = _size
+	_run.call_deferred()
+
+
+func _wait(s: float) -> void:
+	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
+	while Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+
+
+func _scene() -> void:
+	var world := Node3D.new()
+	add_child(world)
+	_env = Environment.new()
+	_env.background_mode = Environment.BG_SKY
+	var sky := Sky.new()
+	var sm := ProceduralSkyMaterial.new()
+	sm.sky_top_color = Color(0.30, 0.42, 0.58)
+	sm.sky_horizon_color = Color(0.66, 0.68, 0.66)
+	sm.ground_horizon_color = Color(0.36, 0.33, 0.28)
+	sm.ground_bottom_color = Color(0.12, 0.1, 0.08)
+	sky.sky_material = sm
+	_env.sky = sky
+	_env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	_env.ambient_light_energy = 0.7
+	_env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	_env.glow_enabled = true
+	_env.glow_intensity = 0.35
+	_env.ssao_enabled = true
+	_env.ssao_radius = 1.4
+	_env.ssao_intensity = 2.2
+	var we := WorldEnvironment.new()
+	we.environment = _env
+	world.add_child(we)
+	_sun = DirectionalLight3D.new()
+	_sun.shadow_enabled = true
+	_sun.light_energy = 1.4
+	_sun.rotation_degrees = Vector3(-48.0, -35.0, 0.0)
+	world.add_child(_sun)
+	var ground := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(80, 80)
+	ground.mesh = pm
+	var gm := StandardMaterial3D.new()
+	gm.albedo_color = Color(0.30, 0.22, 0.14)
+	gm.roughness = 1.0
+	ground.material_override = gm
+	world.add_child(ground)
+	# A few trees and a boulder in front for depth and something to lean against.
+	for t: Array in [["trees/grey_fir_a", Vector3(-3.0, 0, -7.0), 0.0], ["trees/paper_birch_a", Vector3(2.5, 0, -9.0), 1.0],
+			["trees/grey_fir_c", Vector3(6.0, 0, -15.0), 2.0], ["trees/hollow_larch_a", Vector3(-7.5, 0, -14.0), 0.5],
+			["rocks/boulder_a", Vector3(1.2, 0, -4.5), 0.3]]:
+		var path: String = "res://assets/generated/models/%s.glb" % t[0]
+		if ResourceLoader.exists(path):
+			var n: Node3D = (load(path) as PackedScene).instantiate() as Node3D
+			world.add_child(n)
+			n.position = t[1]
+			n.rotation.y = float(t[2])
+	_cam = Camera3D.new()
+	_cam.fov = 75.0
+	_cam.near = 0.04
+	_cam.far = 400.0
+	world.add_child(_cam)
+	_cam.position = Vector3(0, 1.65, 0)
+	_cam.make_current()
+	_vm = (load("res://src/player/viewmodel.gd") as GDScript).new() as ViewModel
+	_vm.name = "ViewModel"
+	_cam.add_child(_vm)
+	_torch_light = OmniLight3D.new()
+	_torch_light.light_color = Color(1.0, 0.6, 0.29)
+	_torch_light.omni_range = 13.0
+	_torch_light.light_energy = 2.4
+	_torch_light.shadow_enabled = true
+	_torch_light.visible = false
+	world.add_child(_torch_light)
+
+
+func _run() -> void:
+	_scene()
+	await _wait(0.5)
+	for shot: Dictionary in SHOTS:
+		if not _only.is_empty() and not _only.has(str(shot["name"])):
+			continue
+		await _shoot(shot)
+	print("FP_PREVIEW done")
+	get_tree().quit(0)
+
+
+func _shoot(shot: Dictionary) -> void:
+	var night: bool = bool(shot.get("night", false))
+	_sun.visible = not night
+	_env.ambient_light_energy = 0.06 if night else 0.7
+	_env.background_energy_multiplier = 0.04 if night else 1.0
+	_vm.release_action()
+	_vm.set_guard(false)
+	_vm.set_tether_raised(false)
+	_vm.tether.t = 0.0
+	_vm.tether.state = TetherRaise.State.LOWERED
+	_vm.qa_base = StringName(str(shot.get("base", "")))
+	_vm.show_item(StringName(str(shot.get("item", ""))))
+	_vm.motion.equip = 1.0
+	if bool(shot.get("guard", false)):
+		_vm.set_guard(true)
+	if bool(shot.get("tether", false)):
+		_vm.set_tether_raised(true)
+	var lit: bool = bool(shot.get("lit", false))
+	_vm.set_lit(lit)
+	await _wait(0.6)
+	if shot.has("action"):
+		if not _vm.freeze_action(StringName(str(shot["action"])), float(shot.get("frame", 0)) / 30.0):
+			print("FP_PREVIEW warning: no action %s" % shot["action"])
+	_torch_light.visible = lit and night
+	await _wait(1.2)
+	var anchor: Node3D = _vm.light_anchor()
+	if anchor != null:
+		_torch_light.global_position = anchor.global_position + Vector3.UP * 0.08
+	await _wait(0.4)
+	var img: Image = get_viewport().get_texture().get_image()
+	var path: String = _out.path_join("%s.png" % shot["name"])
+	img.save_png(path)
+	print("FP_PREVIEW %s" % path)

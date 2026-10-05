@@ -57,6 +57,13 @@ uniform float patch_scale = 0.18;
 // Self-lit surfaces (device screens, indicator LEDs): emission = colour x energy x albedo.
 uniform vec4 emission_color : source_color = vec4(0.0, 0.0, 0.0, 1.0);
 uniform float emission_energy = 0.0;
+// Light sources (ADR-0023): 1 glows only while the instance's light burns (lamp globes, lenses,
+// embers: cold, they show their albedo); 2 exists only while it burns (flames collapse away). They
+// glow in emission_color whatever their albedo, breathing by emission_flicker. light_lit is set
+// per instance (PropLights) in a slot of its own after the four shared ones.
+uniform int light_source : hint_range(0, 2) = 0;
+uniform float emission_flicker : hint_range(0.0, 1.0) = 0.0;
+instance uniform float light_lit : instance_index(4) = 0.0;
 instance uniform float instance_variation : instance_index(1) = 0.5;
 // Infected tiers (Seeded/Bloomed Hollowed, InfectedTiers): pale Bloom filaments glowing under the
 // skin, patterned in object space. The instance sets how far the Bloom has gone (bloom_glow); the
@@ -73,6 +80,7 @@ varying vec3 v_world_normal;
 varying vec3 v_world_pos;
 varying vec3 v_obj_pos;
 varying vec3 v_obj_normal;
+varying float v_emit;
 
 float value_noise(vec2 p) {
 	vec2 i = floor(p);
@@ -118,6 +126,19 @@ void vertex() {
 	// Ground cover (moss, litter) shrinks away by distance; see foliage.gdshader.
 	if (INSTANCE_CUSTOM.a < 0.0) {
 		VERTEX *= 1.0 - smoothstep(-INSTANCE_CUSTOM.a * 0.8, -INSTANCE_CUSTOM.a, distance(MODEL_MATRIX[3].xyz, CAMERA_POSITION_WORLD));
+	}
+	// Light sources: a cold flame collapses to nothing; a burning one flickers, phased by position
+	// so neighbouring candles and embers don't pulse together.
+	v_emit = 1.0;
+	if (light_source > 0) {
+		v_emit = light_lit;
+		if (light_source == 2 && light_lit < 0.5) {
+			VERTEX = vec3(0.0);
+		}
+		if (emission_flicker > 0.0) {
+			float ft = TIME * 7.0 + dot((MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz, vec3(9.1, 5.3, 7.7));
+			v_emit *= 1.0 + emission_flicker * (0.5 * sin(ft) * sin(ft * 0.61 + 1.7) + 0.3 * sin(ft * 2.3 + 0.4) + 0.2 * sin(ft * 4.7));
+		}
 	}
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
@@ -224,7 +245,8 @@ void fragment() {
 
 	ALBEDO = clamp(alb, vec3(0.0), vec3(1.0));
 	if (emission_energy > 0.0) {
-		EMISSION = emission_color.rgb * emission_energy * clamp(alb, vec3(0.0), vec3(1.0));
+		vec3 e_base = light_source > 0 ? vec3(v_emit) : clamp(alb, vec3(0.0), vec3(1.0));
+		EMISSION = emission_color.rgb * emission_energy * e_base;
 	}
 	float bg = bloom_glow * bloom_skin;
 	if (bg > 0.001) {

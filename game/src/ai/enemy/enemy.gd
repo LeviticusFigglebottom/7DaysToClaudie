@@ -51,6 +51,12 @@ var sleep_pose: String = "stand"
 var group: StringName = &""
 var held: bool = false
 var guardian: bool = false
+## A sleeper on a seat or bed (ADR-0022, SleeperAnchors), world space: {kind ("seat" / "bed"),
+## lean ("back" / "forward" / "low"), point (seat or mattress top under the pelvis), floor (y under the
+## seat), yaw (its facing), exit (floor spot it stands on once up), exit_yaw}. While set, the body
+## keeps out of physics: it sits or lies posed on the furniture and, once woken, rises off it along
+## a scripted path to the exit (rise_seconds) before it hunts. Empty on the floor and once up.
+var perch: Dictionary = {}
 var horde_sector: int = -1
 var horde: bool = false
 var break_target: Node3D = null
@@ -100,6 +106,14 @@ var _spit_done: bool = false
 var _charge_cd: float = 0.0
 var _charge_dir := Vector3.ZERO
 var _charge_hit: bool = false
+## Where a perched sleeper sleeps (its transform when woken) and where the rise ends.
+var _perch_from := Transform3D.IDENTITY
+## The standing capsule (sleep poses and crawling reshape it; waking restores it).
+var _cap_radius: float = 0.3
+var _cap_height: float = 1.75
+## A POI sleeper spawned already awake (its building was roused while nobody was near, ADR-0022):
+## where it heads first. INF = none.
+var _wake_at := Vector3.INF
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -143,7 +157,14 @@ func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary
 	horde_sector = int(opts.get("horde_sector", -1))
 	horde = horde_sector >= 0
 	crawling = def.archetype == "crawler"
-	if bool(opts.get("sleeper", "") != ""):
+	perch = opts.get("perch", {})
+	if opts.get("awake_at", null) is Vector3:
+		# A roused POI sleeper: up and about by its post, making for where the building was woken.
+		_wake_at = opts["awake_at"]
+		perch = {}
+		held = false
+		state = State.IDLE
+	elif bool(opts.get("sleeper", "") != ""):
 		state = State.SLEEP
 	elif horde:
 		state = State.HORDE
@@ -170,6 +191,8 @@ func _ready() -> void:
 	var cap := CapsuleShape3D.new()
 	cap.radius = float(def.beh("radius", 0.3))
 	cap.height = maxf(1.75, float(def.beh("height", 1.75))) * size * float(bs[1])
+	_cap_radius = cap.radius
+	_cap_height = cap.height
 	_shape.shape = cap
 	add_child(_shape)
 	_fit_shape()
@@ -182,11 +205,23 @@ func _ready() -> void:
 	agent.radius = maxf(0.35, cap.radius)
 	agent.height = 1.7
 	add_child(agent)
-	home = global_position
+	if not perch.is_empty():
+		# On its seat or bed, posed for this body's size (the animation offsets scale with it).
+		var place: Dictionary = SleeperAnchors.body_origin(perch, visual.scale)
+		global_position = place["origin"]
+		rotation.y = float(place["yaw"])
+		_perch_from = global_transform
+		velocity = Vector3.ZERO
+	home = global_position if perch.is_empty() else (perch["exit"] as Vector3)
 	target_pos = global_position
 	_yaw_target = rotation.y
 	_perc_t = _rng.randf() * PERCEPTION_INTERVAL
 	_heard_seq = Stimuli.current.last_seq() if Stimuli.current != null else 0
+	if state == State.SLEEP:
+		_fit_sleep_shape()
+	if _wake_at != Vector3.INF:
+		target_pos = _wake_at
+		_set_state(State.INVESTIGATE)
 	_enter_anim()
 
 
@@ -224,6 +259,7 @@ func _physics_process(delta: float) -> void:
 		_root_t -= delta
 		if _root_t <= 0.0:
 			if dist > 25.0 and state not in [State.CHASE, State.ATTACK, State.CHARGE, State.SPIT] and director != null:
+				Events.hollowed_rooted.emit(entity_id, def.id, global_position)
 				director.call(&"despawn", self)
 				return
 			_root_t = 20.0
@@ -329,6 +365,10 @@ func _physics_process(delta: float) -> void:
 			if flow == Vector3.ZERO and p != null:
 				flow = _move_dir(p.global_position)
 			want = flow * _speed(true) * 0.9
+	if not perch.is_empty():
+		# Posed on a seat or bed: no gravity, no sliding; once awake, the scripted rise.
+		_perch_step()
+		return
 	_move(want, delta, dist)
 	_update_anim(want)
 
@@ -545,9 +585,21 @@ func _perceive_held(st: Stimuli) -> void:
 		_wake(heard.pos, false)
 
 
+## Where it looks from: the head of the pose it is in (a sleeper lying on a bed sees from the
+## pillow, not from 1.6 m above its knees).
+func _eye() -> Vector3:
+	if crawling:
+		return global_position + Vector3.UP * 0.4
+	if state == State.SLEEP:
+		var s: Vector3 = visual.scale if visual != null else Vector3.ONE
+		var local: Vector3 = POSE_EYES.get(_pose_key(), Vector3(0, 1.6, 0))
+		return global_transform * Vector3(local.x * s.x, local.y * s.y, local.z * s.z)
+	return global_position + Vector3.UP * 1.6
+
+
 func _line_of_sight(p: Player) -> bool:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * (0.4 if crawling else 1.6), p.eye_position(), SIGHT_MASK)
+	var q := PhysicsRayQueryParameters3D.create(_eye(), p.eye_position(), SIGHT_MASK)
 	q.exclude = [get_rid()]
 	return space.intersect_ray(q).is_empty()
 
@@ -558,6 +610,10 @@ func _wake(toward: Vector3, saw: bool) -> void:
 	target_pos = toward
 	if saw:
 		last_seen_time = _now()
+	if perch.is_empty():
+		_fit_shape()
+	else:
+		_perch_from = global_transform
 	_set_state(State.WAKING)
 	Audio.play_3d(&"voice/zombie_wake", global_position + Vector3.UP, {"volume_db": -2.0})
 
@@ -824,16 +880,143 @@ func _sever(limb: String, info: DamageInfo) -> void:
 func _fit_shape() -> void:
 	var cap: CapsuleShape3D = _shape.shape
 	if crawling:
-		cap.radius = minf(cap.radius, 0.3)
+		cap.radius = minf(_cap_radius, 0.3)
 		cap.height = 1.3
 		_shape.rotation = Vector3(PI * 0.5, 0.0, 0.0)
 		_shape.position = Vector3(0, cap.radius, 0.15)
 	else:
+		cap.radius = _cap_radius
+		cap.height = _cap_height
 		_shape.rotation = Vector3.ZERO
 		_shape.position = Vector3(0, cap.height * 0.5, 0)
 
 
+## Dormant poses (ADR-0022): which one this body holds. "seat" / "hunch" on a seat anchor (leaning
+## back / hunched on a backless one), "sit" slumped on the floor or sat legs out on a low seat (a
+## tub, a mattress), "lie" on the floor or a bed, else the authored pose (stand, kneel, crouch).
+func _pose_key() -> String:
+	if not perch.is_empty() and str(perch.get("kind", "")) == "seat":
+		match str(perch.get("lean", "back")):
+			"forward":
+				return "hunch"
+			"low":
+				# Sat in a tub or on a mattress, legs out: the floor sit, raised onto it.
+				return "sit"
+		return "seat"
+	return sleep_pose
+
+
+## Capsule (what weapons hit and the player bumps) around each dormant pose, unscaled, in the body's
+## frame: [centre, height, radius, lying along Z]. The poses' bodies lie behind their origin
+## (char_anim LIE_Y, SIT_Y, SEAT_Y), and a capsule standing at the knees of a lying body missed every
+## blow to its head.
+const POSE_SHAPES: Dictionary = {
+	"lie": [Vector3(0, 0.22, -0.42), 1.75, 0.22, true],
+	"sit": [Vector3(0, 0.5, -0.24), 1.0, 0.28, false],
+	"seat": [Vector3(0, 0.92, -0.36), 0.8, 0.25, false],
+	"hunch": [Vector3(0, 0.86, -0.28), 0.78, 0.27, false],
+	"crouch": [Vector3(0, 0.45, -0.04), 0.9, 0.3, false],
+	"kneel": [Vector3(0, 0.55, 0.0), 1.1, 0.28, false],
+}
+## Corpse box ([centre, size], body frame, unscaled) of a sleeper killed where it lay or sat: what
+## "Search remains" finds.
+const CORPSE_BOXES: Dictionary = {
+	"lie": [Vector3(0, 0.15, -0.42), Vector3(0.6, 0.3, 1.75)],
+	"sit": [Vector3(0, 0.33, -0.18), Vector3(0.6, 0.66, 0.85)],
+	"seat": [Vector3(0, 0.8, -0.28), Vector3(0.5, 0.8, 0.7)],
+	"hunch": [Vector3(0, 0.75, -0.18), Vector3(0.55, 0.7, 0.75)],
+}
+## Eye of each dormant pose (body frame, unscaled): sight lines start at the head.
+const POSE_EYES: Dictionary = {
+	"lie": Vector3(0, 0.25, -1.12), "sit": Vector3(0, 0.62, -0.18), "seat": Vector3(0, 1.12, -0.24),
+	"hunch": Vector3(0, 0.98, -0.05), "crouch": Vector3(0, 0.62, 0.15), "kneel": Vector3(0, 0.85, 0.08),
+	"stand": Vector3(0, 1.5, 0.05),
+}
+
+
+func _fit_sleep_shape() -> void:
+	var spec: Array = POSE_SHAPES.get(_pose_key(), [])
+	if spec.is_empty() or crawling:
+		_fit_shape()
+		return
+	var s: Vector3 = visual.scale if visual != null else Vector3.ONE
+	var cap: CapsuleShape3D = _shape.shape
+	var lying: bool = bool(spec[3])
+	cap.radius = float(spec[2]) * maxf(s.x, s.z)
+	cap.height = maxf(float(spec[1]) * (s.z if lying else s.y), cap.radius * 2.0 + 0.01)
+	var c: Vector3 = spec[0]
+	_shape.position = Vector3(c.x * s.x, c.y * s.y, c.z * s.z)
+	_shape.rotation = Vector3(PI * 0.5, 0.0, 0.0) if lying else Vector3.ZERO
+
+
+## A perched sleeper (ADR-0022): holds its pose on the seat or bed while it sleeps; once woken it
+## gets up along a scripted path while its wake animation plays (wake_seat / wake_hunch keep the
+## feet planted; wake_lie sits up, and the body swings round and drops off the side of the bed to
+## its exit), then it is an ordinary body on the floor.
+func _perch_step() -> void:
+	if state == State.SLEEP or state == State.DEAD:
+		return
+	if state != State.WAKING:
+		_release_perch()
+		return
+	var c: Dictionary = SleeperAnchors.cfg()
+	var t: float = _state_t / maxf(float(c.get("rise_seconds", 1.25)), 0.05)
+	if t >= 1.0:
+		_release_perch()
+		return
+	var bed: bool = str(perch.get("kind", "")) == "bed"
+	var mv: Array = c.get("bed_move" if bed else "seat_move", [0.4, 0.8])
+	var k: float = smoothstep(float(mv[0]), float(mv[1]), t)
+	var turn: Array = c.get("bed_turn", [0.12, 0.45]) if bed else mv
+	var yaw0: float = _perch_from.basis.get_euler().y
+	var yaw: float = lerp_angle(yaw0, float(perch["exit_yaw"]), smoothstep(float(turn[0]), float(turn[1]), t))
+	var exit: Vector3 = perch["exit"]
+	if not bed:
+		global_position = _perch_from.origin.lerp(exit, k)
+	else:
+		# The body turns about its pelvis (wake_lie keeps the pelvis lie_back behind the origin while
+		# it sits up, and brings it over the feet as it stands), which travels from the mattress to
+		# above the exit with a little hop over the edge.
+		var lb: float = float(c.get("lie_back", 0.45)) * (visual.scale.z if visual != null else 1.0)
+		var pel0: Vector3 = _perch_from.origin - Vector3(sin(yaw0), 0.0, cos(yaw0)) * lb
+		var pel: Vector3 = pel0.lerp(exit, k) + Vector3.UP * sin(k * PI) * 0.12
+		global_position = pel + Vector3(sin(yaw), 0.0, cos(yaw)) * lb * _lie_rise_offset(t)
+	rotation.y = yaw
+	_yaw_target = yaw
+
+
+## How far behind its feet wake_lie holds the pelvis (fraction of LIE_Y) at time t of the rise:
+## lying and sitting up (frames 0-17), crouched over the feet (26), rising (34), standing (40).
+static func _lie_rise_offset(t: float) -> float:
+	var keys: Array = [[0.0, 1.0], [0.425, 1.0], [0.65, 0.36], [0.85, 0.11], [1.0, 0.0]]
+	for i: int in range(1, keys.size()):
+		if t <= float(keys[i][0]):
+			var a: Array = keys[i - 1]
+			var b: Array = keys[i]
+			return lerpf(float(a[1]), float(b[1]), (t - float(a[0])) / maxf(float(b[0]) - float(a[0]), 1e-4))
+	return 0.0
+
+
+## Off the seat or bed for good: standing on its exit spot, an ordinary body under physics.
+func _release_perch() -> void:
+	if perch.is_empty():
+		return
+	global_position = perch["exit"]
+	rotation.y = float(perch["exit_yaw"])
+	_yaw_target = rotation.y
+	velocity = Vector3.ZERO
+	home = global_position
+	perch = {}
+	_fit_shape()
+
+
 func _die(info: DamageInfo) -> void:
+	# Killed in its sleep lying, slumped or seated: it stays as it was (a body dead on its bed or
+	# its pew, ADR-0022). Standing, kneeling and crouching sleepers, and anything awake, fall.
+	var pose: String = _pose_key()
+	var in_pose: bool = state == State.SLEEP and pose in ["lie", "sit", "seat", "hunch"]
+	if not in_pose:
+		_release_perch()
 	_set_state(State.DEAD)
 	killer = {"source": String(info.source_id), "cause": String(info.cause), "tier": String(tier)}
 	velocity = Vector3.ZERO
@@ -844,10 +1027,17 @@ func _die(info: DamageInfo) -> void:
 	_shape.shape = box
 	_shape.rotation = Vector3.ZERO
 	_shape.position = Vector3(0, 0.15, -0.6)
-	# Struck from the front, fall on the back; from behind, pitch forward onto the face.
-	var back: bool = info.direction.dot(global_transform.basis.z) < 0.0
-	visual.play_once(&"death_back" if back else &"death_front", 1.0, [&"death_front"] as Array[StringName])
-	visual.animate_placeholder(0.0, 0.0, true)
+	if in_pose:
+		var s: Vector3 = visual.scale
+		var corpse: Array = CORPSE_BOXES.get(pose, CORPSE_BOXES["lie"])
+		box.size = (corpse[1] as Vector3) * s
+		_shape.position = (corpse[0] as Vector3) * s
+		visual.freeze()
+	else:
+		# Struck from the front, fall on the back; from behind, pitch forward onto the face.
+		var back: bool = info.direction.dot(global_transform.basis.z) < 0.0
+		visual.play_once(&"death_back" if back else &"death_front", 1.0, [&"death_front"] as Array[StringName])
+		visual.animate_placeholder(0.0, 0.0, true)
 	Audio.play_3d(&"voice/zombie_death", global_position + Vector3.UP, {"volume_db": -2.0})
 	if Game.session != null:
 		Game.session.stats["zombies_killed"] = int(Game.session.stats.get("zombies_killed", 0)) + 1
@@ -910,6 +1100,9 @@ var container_id: StringName:
 func _set_state(s: State) -> void:
 	if state == s:
 		return
+	if not perch.is_empty() and s not in [State.SLEEP, State.WAKING, State.DEAD]:
+		# Staggered or turned on mid-rise: off the furniture at once.
+		_release_perch()
 	if state == State.ATTACK:
 		# A swing interrupted (stagger, chase) must not land later without its animation.
 		_hit_at = -1.0
@@ -921,15 +1114,24 @@ func _set_state(s: State) -> void:
 func _enter_anim() -> void:
 	match state:
 		State.SLEEP:
-			visual.play(StringName("idle_sleep_" + sleep_pose), 1.0, 0.0, [&"idle_sleep_stand", &"idle"] as Array[StringName])
-			visual.animate_placeholder(0.0, 0.0, sleep_pose == "lie")
+			var key: String = _pose_key()
+			var alts: Array[StringName] = [&"idle_sleep_stand", &"idle"]
+			if key in ["seat", "hunch"]:
+				alts = [&"idle_sleep_seat", &"idle_sleep_sit", &"idle"]
+			visual.play(StringName("idle_sleep_" + key), 1.0, 0.0, alts)
+			visual.animate_placeholder(0.0, 0.0, key == "lie")
 		State.WAKING:
-			# Standing, kneeling and crouching sleepers just straighten up (no sit-down first).
-			match sleep_pose:
+			# Standing, kneeling and crouching sleepers just straighten up (no sit-down first);
+			# seated ones push up off their seat, feet planted (ADR-0022).
+			match _pose_key():
 				"lie":
 					visual.play_once(&"wake_lie", 1.0, [&"idle"] as Array[StringName])
 				"sit":
 					visual.play_once(&"wake_sit", 1.0, [&"idle"] as Array[StringName])
+				"seat":
+					visual.play_once(&"wake_seat", 1.0, [&"wake_sit", &"idle"] as Array[StringName])
+				"hunch":
+					visual.play_once(&"wake_hunch", 1.0, [&"wake_seat", &"wake_sit", &"idle"] as Array[StringName])
 				_:
 					visual.play(&"idle", 1.0, 0.5)
 			visual.animate_placeholder(0.0, 0.0, false)

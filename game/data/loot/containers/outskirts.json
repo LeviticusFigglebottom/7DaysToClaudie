@@ -1,0 +1,72 @@
+{
+ "_doc": "Containers of the Larch Hollow outskirts (bait shop and boathouse, Ashen watch camp, campground). Loot tables in loot/tables/outskirts.json. Locked ones need the 'key' named on the prop in the POI.",
+ "defs": [
+  {
+   "id": "out_tackle",
+   "name": "Tackle Wall",
+   "loot_table": "out_tackle",
+   "slots": 6,
+   "search_time": 1.4,
+   "noise": 3
+  },
+  {
+   "id": "out_bait_safe",
+   "name": "Ned's Safe",
+   "loot_table": "out_bait_safe",
+   "slots": 8,
+   "search_time": 2.5,
+   "noise": 6,
+   "locked": true
+  },
+  {
+   "id": "out_boathouse_stores",
+   "name": "Boathouse Stores",
+   "loot_table": "out_boathouse_stores",
+   "slots": 8,
+   "search_time": 1.8,
+   "noise": 5
+  },
+  {
+   "id": "out_ashen_cache",
+   "name": "Ashen Cache",
+   "loot_table": "out_ashen_cache",
+   "slots": 10,
+   "search_time": 2.4,
+   "noise": 5,
+   "locked": true
+  },
+  {
+   "id": "out_ashen_bundle",
+   "name": "Hide Bundle",
+   "loot_table": "out_ashen_bundle",
+   "slots": 4,
+   "search_time": 1.2,
+   "noise": 2
+  },
+  {
+   "id": "out_bear_box",
+   "name": "Bear Box",
+   "loot_table": "out_bear_box",
+   "slots": 8,
+   "search_time": 1.6,
+   "noise": 6
+  },
+  {
+   "id": "out_rv",
+   "name": "Motorhome Cabinets",
+   "loot_table": "out_rv",
+   "slots": 10,
+   "search_time": 3.0,
+   "noise": 5
+  },
+  {
+   "id": "out_camp_lockbox",
+   "name": "Cash Lockbox",
+   "loot_table": "out_camp_lockbox",
+   "slots": 4,
+   "search_time": 1.0,
+   "noise": 3,
+   "locked": true
+  }
+ ]
+}

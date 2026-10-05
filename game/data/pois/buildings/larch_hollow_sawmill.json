@@ -1,10 +1,11 @@
 {
-  "_doc": "Tier-4 sawmill between the logging road and Larch Pond (region D6). A long mill on three levels: the basement (undermill, waste conveyor, line-shaft drives) with the payroll office and the fuse-room pocket at ground level; the saw floor (log deck along the pond side, carriage and headrig, live rolls, edger, trimmer end) and the locker room on level 1; the filing room, the manager's office and the lunchroom on level 2 (gable), the saw floor under a flat roof. Route: the big doors are barred from inside -> round to the log haul -> up the haul stairs onto the log deck (two walkers) -> loose deck boards into the saw floor wake its group -> stair hall -> filing room (office key, filer's notebook) -> Pruett's office (safe key) -> the lunchroom where the crew made its stand (ambush on the door) -> back down -> the dust chute by the headrig drops onto the waste conveyor (one way) -> the basement (held sleepers in the sawdust; loose boards or the office door wake them) -> the shipping room -> the payroll office behind a shotgun tripwire (loot; Gus guards it) -> out through the big doors, lifting the bar. A rotten patch in the saw floor by a tool chest drops greedy players into the basement. See docs/POI_AUTHORING.md.",
+  "_doc": "Tier-4 sawmill between the logging road and Larch Pond (region D6). A long mill on three levels: the basement (undermill, waste conveyor, line-shaft drives) with the payroll office and the fuse-room pocket at ground level; the saw floor (log deck along the pond side, carriage and headrig, live rolls, edger, trimmer end) and the locker room on level 1; the filing room, the manager's office and the lunchroom on level 2. Massing (ADR-0021): the saw floor rises two storeys, open to the roof timbers, with tall windows; the office block's filing room and lunchroom look down into it through their windows; one long gable runs over mill and offices, and the log deck is a lean-to on the pond side. Route: the big doors are barred from inside -> round to the log haul -> up the haul stairs onto the log deck (two walkers) -> loose deck boards into the saw floor wake its group -> stair hall -> filing room (office key, filer's notebook) -> Pruett's office (safe key) -> the lunchroom where the crew made its stand (ambush on the door) -> back down -> the dust chute by the headrig drops onto the waste conveyor (one way) -> the basement (held sleepers in the sawdust; loose boards or the office door wake them) -> the shipping room -> the payroll office behind a shotgun tripwire (loot; Gus guards it) -> out through the big doors, lifting the bar. A rotten patch in the saw floor by a tool chest drops greedy players into the basement. See docs/POI_AUTHORING.md.",
   "defs": [
     {
       "id": "larch_hollow_sawmill",
       "name": "Larch Hollow Sawmill",
       "tier": 4,
+      "population": "loggers",
       "zoning": ["industrial", "wilderness"],
       "footprint": [54, 32],
       "origin": [2, 1],
@@ -24,8 +25,8 @@
         },
         "roof": {
           "type": "gable",
-          "axis": "z",
-          "pitch": 28,
+          "axis": "x",
+          "pitch": 24,
           "overhang": 0.5,
           "material": "roof_metal",
           "parapet": 0.2,
@@ -93,7 +94,9 @@
               "type": "mill",
               "wall": "wood_paneling_dark",
               "floor": "wood_pine",
-              "open_to": "T"
+              "open_to": "T",
+              "storeys": 2,
+              "open_roof": true
             },
             "T": {
               "name": "Trimmer end",
@@ -117,25 +120,28 @@
         },
         {
           "level": 2,
-          "plan": ["..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "....FFFFFFFFFFFF..................................", "....FFFFFFFFFFFF..................................", "....FFFFFFFFFFFF..................................", "....FFFFFFFFFFFF..................................", "....FFFFFFFFFFFF..................................", "....PPPPPZZZZZZZ..................................", "....PPPPPZZZZZZZ..................................", "....PPPPPZZZZZZZ..................................", "....PPPPPZZZZZZZ..................................", "....PPPPPZZZZZZZ..................................", "....PPPPPZZZZZZZ..................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", ".................................................."],
+          "plan": ["..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "....FFFFFFFFFFFF^^^^^^^^^^^^^^^^^^^^^^............", "....FFFFFFFFFFFF^^^^^^^^^^^^^^^^^^^^^^............", "....FFFFFFFFFFFF^^^^^^^^^^^^^^^^^^^^^^............", "....FFFFFFFFFFFF^^^^^^^^^^^^^^^^^^^^^^............", "....FFFFFFFFFFFF^^^^^^^^^^^^^^^^^^^^^^............", "....PPPPPZZZZZZZ^^^^^^^^^^^^^^^^^^^^^^............", "....PPPPPZZZZZZZ^^^^^^^^^^^^^^^^^^^^^^............", "....PPPPPZZZZZZZ^^^^^^^^^^^^^^^^^^^^^^............", "....PPPPPZZZZZZZ^^^^^^^^^^^^^^^^^^^^^^............", "....PPPPPZZZZZZZ^^^^^^^^^^^^^^^^^^^^^^............", "....PPPPPZZZZZZZ^^^^^^^^^^^^^^^^^^^^^^............", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", "..................................................", ".................................................."],
           "rooms": {
             "F": {
               "name": "Filing room",
               "type": "workshop",
               "wall": "wood_paneling_dark",
-              "floor": "wood_pine"
+              "floor": "wood_pine",
+              "gallery": false
             },
             "P": {
               "name": "Manager's office",
               "type": "office",
               "wall": "wallpaper_damask_brown",
-              "floor": "carpet_brown"
+              "floor": "carpet_brown",
+              "gallery": false
             },
             "Z": {
               "name": "Lunchroom",
               "type": "diner",
               "wall": "paint_mustard",
-              "floor": "linoleum_check"
+              "floor": "linoleum_check",
+              "gallery": false
             }
           }
         }
@@ -223,12 +229,12 @@
         {"id": "deck_rail_29", "at": [37, 8], "side": "E", "type": "half", "level": 1},
         {"id": "hall_saw", "at": [15, 11], "side": "E", "type": "open", "level": 1},
         {"id": "locker_door", "at": [9, 11], "side": "E", "type": "door", "state": "closed", "level": 1},
-        {"id": "win_s1", "at": [18, 19], "side": "S", "type": "window", "state": "closed", "level": 1},
-        {"id": "win_s2", "at": [22, 19], "side": "S", "type": "window", "state": "broken", "level": 1},
-        {"id": "win_s3", "at": [30, 19], "side": "S", "type": "window", "state": "closed", "level": 1},
-        {"id": "win_s4", "at": [34, 19], "side": "S", "type": "window", "state": "closed", "level": 1},
-        {"id": "win_s5", "at": [37, 11], "side": "E", "type": "window", "state": "broken", "level": 1},
-        {"id": "win_s6", "at": [37, 15], "side": "E", "type": "window", "state": "closed", "level": 1},
+        {"id": "win_s1", "at": [18, 19], "side": "S", "type": "window_tall", "state": "closed", "level": 1},
+        {"id": "win_s2", "at": [22, 19], "side": "S", "type": "window_tall", "state": "broken", "level": 1},
+        {"id": "win_s3", "at": [30, 19], "side": "S", "type": "window_tall", "state": "closed", "level": 1},
+        {"id": "win_s4", "at": [34, 19], "side": "S", "type": "window_tall", "state": "closed", "level": 1},
+        {"id": "win_s5", "at": [37, 11], "side": "E", "type": "window_tall", "state": "broken", "level": 1},
+        {"id": "win_s6", "at": [37, 15], "side": "E", "type": "window_tall", "state": "closed", "level": 1},
         {"id": "win_t1", "at": [6, 19], "side": "S", "type": "window", "state": "closed", "level": 1},
         {"id": "win_t2", "at": [11, 19], "side": "S", "type": "window", "state": "closed", "level": 1},
         {"id": "win_t3", "at": [4, 16], "side": "W", "type": "window", "state": "closed", "level": 1},
@@ -411,7 +417,8 @@
         {"prop": "utility_pole", "pos": [46.5, 18.0], "rot": 90},
         {"prop": "trash_pile", "pos": [2.5, 21.5], "rot": 30, "id": "yard_trash"},
         {"prop": "wild_chopping_block", "pos": [47.0, 6.0], "variant": "worn"},
-        {"prop": "woodpile", "pos": [46.5, 8.0], "rot": 90}
+        {"prop": "woodpile", "pos": [46.5, 8.0], "rot": 90},
+        {"prop": "crate_wood", "id": "filer_crate", "pos": [11.3, 11.62], "level": 2, "rot": 120, "variant": "worn"}
       ],
       "pickups": [
         {"id": "office_key", "item": "wild_mill_office_key", "pos": [15.82, 10.35], "y": 1.45, "level": 2},
@@ -427,14 +434,14 @@
         {"id": "headsaw_hand", "pos": [28.3, 13.7], "enemy": "hollow", "pose": "stand", "rot": 10, "level": 1, "group": "sawfloor"},
         {"id": "carriage_rider", "pos": [21.6, 11.4], "enemy": "hollow", "pose": "crouch", "rot": 60, "level": 1, "group": "sawfloor"},
         {"id": "edger_man", "pos": [33.6, 15.6], "enemy": "husk", "pose": "stand", "rot": -90, "level": 1, "group": "sawfloor"},
-        {"id": "kowalski", "pos": [6.3, 11.6], "enemy": "hollow", "pose": "lie", "rot": 30},
+        {"id": "kowalski", "pos": [6.3, 11.6], "enemy": "hollow", "pose": "lie", "rot": 30, "anchor": "floor"},
         {"id": "filer_helper", "pos": [11.3, 11.7], "enemy": "hollow", "pose": "sit", "rot": -60, "level": 2},
         {"id": "crew_bench", "pos": [11.35, 17.2], "enemy": "hollow", "pose": "sit", "rot": -90, "level": 2, "group": "lunch"},
-        {"id": "crew_floor", "pos": [13.1, 18.3], "enemy": "hollow", "pose": "lie", "rot": 100, "level": 2, "group": "lunch"},
+        {"id": "crew_floor", "pos": [13.1, 18.3], "enemy": "hollow", "pose": "lie", "rot": 100, "level": 2, "group": "lunch", "anchor": "floor"},
         {"id": "crew_corner", "pos": [10.2, 18.6], "enemy": "lurcher", "pose": "crouch", "rot": 40, "level": 2, "group": "lunch"},
-        {"id": "dust_a", "pos": [24.4, 11.3], "enemy": "hollow", "pose": "lie", "rot": 20, "group": "basement"},
-        {"id": "dust_b", "pos": [28.9, 15.3], "enemy": "hollow", "pose": "lie", "rot": 170, "group": "basement"},
-        {"id": "dust_c", "pos": [33.0, 15.6], "enemy": "dragger", "pose": "lie", "rot": -60, "group": "basement"},
+        {"id": "dust_a", "pos": [24.4, 11.3], "enemy": "hollow", "pose": "lie", "rot": 20, "group": "basement", "anchor": "floor"},
+        {"id": "dust_b", "pos": [28.9, 15.3], "enemy": "hollow", "pose": "lie", "rot": 170, "group": "basement", "anchor": "floor"},
+        {"id": "dust_c", "pos": [33.0, 15.6], "enemy": "dragger", "pose": "lie", "rot": -60, "group": "basement", "anchor": "floor"},
         {"id": "dust_d", "pos": [18.2, 15.4], "enemy": "lurcher", "pose": "crouch", "rot": 90, "group": "basement"},
         {"id": "gus", "pos": [6.8, 15.2], "enemy": "husk", "pose": "stand", "rot": -90, "guardian": true}
       ],

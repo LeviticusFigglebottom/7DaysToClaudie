@@ -177,10 +177,10 @@
       "sleepers": [
         {"id": "regular_stool", "pos": [7.0, 8.35], "enemy": "hollow", "pose": "sit", "rot": 180},
         {"id": "regular_booth", "pos": [4.35, 10.45], "enemy": "hollow", "pose": "sit", "rot": 90},
-        {"id": "under_barricade", "pos": [1.4, 6.1], "enemy": "dragger", "pose": "lie", "rot": 60},
+        {"id": "under_barricade", "pos": [1.4, 6.1], "enemy": "dragger", "pose": "lie", "rot": 60, "anchor": "floor"},
         {"id": "cook", "pos": [6.5, 1.25], "enemy": "hollow", "pose": "stand", "rot": 180},
         {"id": "pantry_trucker", "group": "pantry", "pos": [2.4, 1.35], "enemy": "hollow", "pose": "crouch", "rot": 90},
-        {"id": "pantry_waitress", "group": "pantry", "pos": [1.4, 3.5], "enemy": "hollow", "pose": "lie", "rot": 200}
+        {"id": "pantry_waitress", "group": "pantry", "pos": [1.4, 3.5], "enemy": "hollow", "pose": "lie", "rot": 200, "anchor": "floor"}
       ],
       "traps": [
         {"id": "barricade_gap_trap", "type": "bear_trap", "pos": [3.6, 7.35], "rot": 0}

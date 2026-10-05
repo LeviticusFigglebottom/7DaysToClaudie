@@ -264,7 +264,9 @@
         {"prop": "trash_bag", "pos": [18.9, 5.3], "rot": -20, "id": "yard_trash_2"},
         {"prop": "pallet", "pos": [19.0, 3.0], "rot": 80},
         {"prop": "civic_keg", "pos": [18.7, 0.4], "id": "yard_keg", "variant": "destroyed"},
-        {"prop": "woodpile", "pos": [-1.5, 2.0], "rot": 90}
+        {"prop": "woodpile", "pos": [-1.5, 2.0], "rot": 90},
+        {"prop": "civic_beer_crates", "pos": [14.4, 1.75], "rot": 20, "level": -1, "variant": "worn"},
+        {"id": "quarantine_mattress", "prop": "mattress_dirty", "pos": [13.46, 10.08], "rot": 80, "variant": "worn"}
       ],
       "pickups": [
         {"id": "gus_keys", "item": "civic_tavern_keys", "pos": [10.55, 7.4], "y": 1.08}
@@ -283,7 +285,7 @@
         {"id": "t_barroom_chime", "group": "barroom", "on": "trap", "trap": "flap_chime"}
       ],
       "sleepers": [
-        {"id": "cellar_dragger", "pos": [12.3, 2.7], "enemy": "dragger", "pose": "lie", "rot": 100, "level": -1},
+        {"id": "cellar_dragger", "pos": [12.3, 2.7], "enemy": "dragger", "pose": "lie", "rot": 100, "level": -1, "anchor": "floor"},
         {"id": "cellar_driver", "pos": [14.4, 1.75], "enemy": "hollow", "pose": "sit", "rot": 200, "level": -1},
         {"id": "gus", "pos": [10.65, 8.4], "enemy": "hollow", "pose": "sit", "rot": 0, "group": "barroom"},
         {"id": "booth_driver", "pos": [10.1, 11.65], "enemy": "hollow", "pose": "sit", "rot": 180, "group": "barroom"},

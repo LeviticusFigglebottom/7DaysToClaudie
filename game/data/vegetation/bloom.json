@@ -1,0 +1,8 @@
+{
+  "_doc": "The Bloom's growths (ADR-0025). Kind fungus = the scatter's bloom layer: placed only where the Bloom field is strong (biome density per 100 m^2 at full strength, scaled by the field). Models: tools/assetgen/blender_catalogs/bloom.py.",
+  "defs": [
+    {"id": "bloom_caps", "name": "Bloom Caps", "kind": "fungus",
+     "models": ["plants/bloom_caps_a", "plants/bloom_caps_b", "plants/bloom_caps_c", "plants/bloom_caps_d"],
+     "hp": 0, "height": [0.08, 0.3], "collides": false, "lod_distances": [14, 30, 40, 40]}
+  ]
+}

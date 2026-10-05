@@ -1,0 +1,1195 @@
+{
+ "_doc": "Outskirts props (Larch Hollow, agent H2): Larch Pond Bait & Boat, the Ashen watch camp and Tamsin River Campground. Models: tools/assetgen/blender/generators/props_outskirts.py and props_outskirts_ashen.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_outskirts.py; materials game/data/materials/props_outskirts.json. size = [width x, height y, depth z] in metres (Godot axes, front +Z); the box collider is centred on the origin. Shell props (out_*_shell) wrap a POI's kit room: origin at the room's floor-plan centre on the ground (place them y = -floor_height); their walls stand 0.12 m outside the kit walls' edge lines with openings where the plan's doors are, and their roofs sit on the kit ceiling (3 m). Dock props have their deck at the top of the model: place them with y = -height so the deck is at the ground (pad).",
+ "defs": [
+  {
+   "id": "out_dock_section",
+   "name": "Dock Section",
+   "description": "Two metres of plank dock on creosoted piles: stringers, pile caps, cleats and a rub rail. Its deck is the top of the prop (place it y = -3.2 to put the deck at the ground).",
+   "tags": [
+    "structure",
+    "exterior",
+    "dock"
+   ],
+   "variants": {
+    "clean": "props/out_dock_section",
+    "worn": "props/out_dock_section_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    2.0,
+    3.2,
+    4.0
+   ]
+  },
+  {
+   "id": "out_dock_piles",
+   "name": "Dock Pilings",
+   "description": "A bent of two creosoted piles under a cap beam, weed and algae at the waterline (under walkways and dock ends; no collision).",
+   "tags": [
+    "structure",
+    "exterior",
+    "dock"
+   ],
+   "variants": {
+    "clean": "props/out_dock_piles",
+    "worn": "props/out_dock_piles_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.0,
+    3.2,
+    0.45
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_rowboat",
+   "name": "Rowboat",
+   "description": "Lapstrake rowboat, painted: three thwarts, oarlocks and a pair of oars. Worn: bilge water, moss on the transom. Destroyed: stove in and swamped.",
+   "tags": [
+    "vehicle",
+    "exterior",
+    "boat"
+   ],
+   "variants": {
+    "clean": "props/out_rowboat",
+    "worn": "props/out_rowboat_worn",
+    "destroyed": "props/out_rowboat_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.36,
+    0.62,
+    3.7
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_rowboat_hauled",
+   "name": "Rowboat on Sawhorses",
+   "description": "A rowboat hauled out for the winter, upside down on two sawhorses, a plank half let in over a stove-in strake.",
+   "tags": [
+    "vehicle",
+    "exterior",
+    "boat"
+   ],
+   "variants": {
+    "clean": "props/out_rowboat_hauled",
+    "worn": "props/out_rowboat_hauled_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.4,
+    1.35,
+    3.7
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_fishing_rod",
+   "name": "Fishing Rod",
+   "description": "A fibreglass rod and spinning reel lying on the boards, line still threaded.",
+   "tags": [
+    "clutter_large"
+   ],
+   "variants": {
+    "clean": "props/out_fishing_rod",
+    "worn": "props/out_fishing_rod_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.95,
+    0.08,
+    0.22
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_boat_doors",
+   "name": "Boathouse Doors",
+   "description": "The slip's pair of ledged plank doors hung open on strap hinges under a header beam (origin at the slip mouth, leaves toward -Z).",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/out_boat_doors",
+    "worn": "props/out_boat_doors_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    4.6,
+    4.15,
+    0.8
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_bait_tank",
+   "name": "Minnow Tank",
+   "description": "Galvanized aerated bait tank on angle legs: hinged screen lids, an air pump, murky water and dead shiners.",
+   "tags": [
+    "furniture",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/out_bait_tank",
+    "worn": "props/out_bait_tank_worn",
+    "destroyed": "props/out_bait_tank_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    1.25,
+    0.95,
+    0.62
+   ],
+   "rooms": [
+    "store"
+   ]
+  },
+  {
+   "id": "out_tackle_wall",
+   "name": "Tackle Wall",
+   "description": "Pegboard display of carded lures, spinners, line spools, hooks, bobbers and a landing net.",
+   "tags": [
+    "furniture",
+    "container",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/out_tackle_wall",
+    "worn": "props/out_tackle_wall_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.0,
+    1.5,
+    0.14
+   ],
+   "container": "out_tackle",
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "store"
+   ]
+  },
+  {
+   "id": "out_rod_rack",
+   "name": "Rod Rack",
+   "description": "Floor rack of rental rods and reels. Destroyed: kicked over, rods snapped.",
+   "tags": [
+    "furniture"
+   ],
+   "variants": {
+    "clean": "props/out_rod_rack",
+    "worn": "props/out_rod_rack_worn",
+    "destroyed": "props/out_rod_rack_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    1.1,
+    1.95,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "store"
+   ]
+  },
+  {
+   "id": "out_life_jackets",
+   "name": "Life Jackets",
+   "description": "A heap of faded orange kapok life jackets and a ring buoy.",
+   "tags": [
+    "clutter_large"
+   ],
+   "variants": {
+    "clean": "props/out_life_jackets",
+    "worn": "props/out_life_jackets_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.3,
+    0.45,
+    1.0
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_outboard_motor",
+   "name": "Outboard Motor",
+   "description": "A 1970s outboard clamped to a sawhorse stand, cowling off on the worn one.",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/out_outboard_motor",
+    "worn": "props/out_outboard_motor_worn",
+    "destroyed": "props/out_outboard_motor_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    0.75,
+    1.45,
+    0.95
+   ],
+   "rooms": [
+    "workshop",
+    "garage"
+   ]
+  },
+  {
+   "id": "out_net_pile",
+   "name": "Net Heap",
+   "description": "A heap of gill net with cork floats and a coil of rope (hides what is under it).",
+   "tags": [
+    "clutter_large"
+   ],
+   "variants": {
+    "clean": "props/out_net_pile",
+    "worn": "props/out_net_pile_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.5,
+    0.4,
+    1.2
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_bait_sign",
+   "name": "Bait & Boat Sign",
+   "description": "Hand-lettered plywood sign on two posts: LARCH POND BAIT & BOAT, a jumping trout.",
+   "tags": [
+    "sign",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/out_bait_sign",
+    "worn": "props/out_bait_sign_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    2.6,
+    2.6,
+    0.3
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_trophy_fish",
+   "name": "Mounted Pike",
+   "description": "A varnished pike on a plaque, one glass eye gone.",
+   "tags": [
+    "decor",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/out_trophy_fish",
+    "worn": "props/out_trophy_fish_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.85,
+    0.32,
+    0.12
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "store",
+    "office"
+   ]
+  },
+  {
+   "id": "out_palisade",
+   "name": "Palisade",
+   "description": "Two metres of sharpened fir logs set in the ground, lashed to a rail with rawhide and smeared with lichen-ash. Destroyed: burnt and leaning.",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_palisade",
+    "worn": "props/out_palisade_worn",
+    "destroyed": "props/out_palisade_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 1600,
+   "size": [
+    2.0,
+    3.4,
+    0.5
+   ]
+  },
+  {
+   "id": "out_palisade_half",
+   "name": "Palisade (short)",
+   "description": "One metre of the palisade, to close a run.",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_palisade_half",
+    "worn": "props/out_palisade_half_worn",
+    "destroyed": "props/out_palisade_half_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    1.0,
+    3.4,
+    0.5
+   ]
+  },
+  {
+   "id": "out_palisade_gate",
+   "name": "Barred Gate",
+   "description": "The camp's double gate of split logs on a lintel, a timber bar across it in forked brackets, antlers lashed over it.",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_palisade_gate",
+    "worn": "props/out_palisade_gate_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 2400,
+   "size": [
+    3.4,
+    3.8,
+    0.6
+   ]
+  },
+  {
+   "id": "out_palisade_breach",
+   "name": "Burnt Breach",
+   "description": "Where a palisade section burned through: charred stumps and the logs that fell inward (walk-through).",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_palisade_breach",
+    "worn": "props/out_palisade_breach_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.6,
+    0.65,
+    2.55
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_effigy",
+   "name": "Ash Effigy",
+   "description": "A figure on a pole frame: an antlered elk skull, a cloak of ash-smeared hide, a cage of rib bones and strings of teeth.",
+   "tags": [
+    "decor",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_effigy",
+    "worn": "props/out_effigy_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    0.7,
+    3.2,
+    0.7
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_bone_totem",
+   "name": "Bone Totem",
+   "description": "A peeled pole with a deer skull, a fork of antler and bones on sinew: the Ashen's warning at the treeline.",
+   "tags": [
+    "decor",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_bone_totem",
+    "worn": "props/out_bone_totem_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    0.5,
+    2.3,
+    0.5
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_bone_chime",
+   "name": "Bone Chimes",
+   "description": "A post with an arm over a passage, hung with strings of bone, antler tines and teeth that clatter at a touch.",
+   "tags": [
+    "decor",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_bone_chime",
+    "worn": "props/out_bone_chime_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.75,
+    3.6,
+    0.6
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_burial_platform",
+   "name": "Burial Platform",
+   "description": "Four poles carrying a lashed platform two metres up; a hide-wrapped body, offerings, antlers on the posts.",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_burial_platform",
+    "worn": "props/out_burial_platform_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 700,
+   "size": [
+    3.0,
+    3.25,
+    2.0
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_pit_hut",
+   "name": "Pit Hut",
+   "description": "A conical frame of poles over an earth-rimmed pit, covered in bark slabs and sod. Destroyed: burnt to the frame.",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_pit_hut",
+    "worn": "props/out_pit_hut_worn",
+    "destroyed": "props/out_pit_hut_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    2.0,
+    2.3,
+    2.0
+   ]
+  },
+  {
+   "id": "out_pyre",
+   "name": "Pyre",
+   "description": "A crib of split logs waiting for its dead, ash and charred bone from the last one around it. Worn: burnt down.",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_pyre",
+    "worn": "props/out_pyre_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 800,
+   "size": [
+    2.2,
+    1.0,
+    2.2
+   ]
+  },
+  {
+   "id": "out_hide_frame",
+   "name": "Hide Frame",
+   "description": "A pole frame with a hide laced into it, scraped and ash-smeared.",
+   "tags": [
+    "decor",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_hide_frame",
+    "worn": "props/out_hide_frame_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    1.7,
+    2.2,
+    0.45
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_antler_pile",
+   "name": "Antler Heap",
+   "description": "Shed antlers, skulls and long bones heaped against a post.",
+   "tags": [
+    "decor",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_antler_pile"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.3,
+    0.55,
+    1.0
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_stone_fire_pit",
+   "name": "Stone Fire Pit",
+   "description": "A ring of river stones round old ash, a green-wood spit on forked sticks.",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_stone_fire_pit",
+    "worn": "props/out_stone_fire_pit_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.5,
+    0.95,
+    1.5
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_hide_bed",
+   "name": "Hide Bed",
+   "description": "Spruce boughs under a smoked hide and a fur, a rolled hide for a pillow: an Ashen's bed.",
+   "tags": [
+    "furniture",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_hide_bed",
+    "worn": "props/out_hide_bed_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.9,
+    0.22,
+    2.0
+   ],
+   "blocks_sight": false,
+   "anchors": [
+    {
+     "kind": "bed",
+     "pos": [
+      0.0,
+      0.05
+     ],
+     "height": 0.16
+    }
+   ]
+  },
+  {
+   "id": "out_ashen_cache",
+   "name": "Ashen Cache",
+   "description": "A salvaged steel ammunition locker wrapped in hide and ash-painted, padlocked.",
+   "tags": [
+    "furniture",
+    "container",
+    "metal",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_ashen_cache",
+    "worn": "props/out_ashen_cache_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    1.0,
+    0.62,
+    0.6
+   ],
+   "container": "out_ashen_cache"
+  },
+  {
+   "id": "out_ashen_bundle",
+   "name": "Hide Bundle",
+   "description": "A rolled hide bundle tied with sinew: an Ashen's things.",
+   "tags": [
+    "container",
+    "ashen"
+   ],
+   "variants": {
+    "clean": "props/out_ashen_bundle",
+    "worn": "props/out_ashen_bundle_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    0.8,
+    0.35,
+    0.5
+   ],
+   "container": "out_ashen_bundle",
+   "blocks_sight": false
+  },
+  {
+   "id": "out_longhouse_shell",
+   "name": "Ashen Longhouse",
+   "description": "The watch camp's longhouse: pole walls under bark slabs, a sod-and-bark roof with a smoke hole (shell over the POI kit room).",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen",
+    "shell"
+   ],
+   "variants": {
+    "clean": "props/out_longhouse_shell"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    9.65,
+    5.4,
+    5.35
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_smoke_hut_shell",
+   "name": "Smoke Hut",
+   "description": "A squat hut of stacked logs, chinked with moss, under a sod roof and a smoke hole (shell over the POI kit room).",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen",
+    "shell"
+   ],
+   "variants": {
+    "clean": "props/out_smoke_hut_shell"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    4.35,
+    4.45,
+    4.15
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_lean_to_shell",
+   "name": "Ashen Lean-to",
+   "description": "A pole lean-to against the palisade, bark-slab roof and hide hangings, open to the fire (shell over the POI kit room).",
+   "tags": [
+    "structure",
+    "exterior",
+    "ashen",
+    "shell"
+   ],
+   "variants": {
+    "clean": "props/out_lean_to_shell"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.3,
+    4.0,
+    5.4
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_rv",
+   "name": "Motorhome",
+   "description": "A 1980s cab-over motorhome: fibreglass shell, faded stripes, a torn awning, the side door hanging open.",
+   "tags": [
+    "vehicle",
+    "exterior",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/out_rv",
+    "worn": "props/out_rv_worn",
+    "destroyed": "props/out_rv_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 2500,
+   "size": [
+    2.5,
+    3.3,
+    7.4
+   ],
+   "container": "out_rv"
+  },
+  {
+   "id": "out_tent_dome",
+   "name": "Dome Tent",
+   "description": "A two-person nylon dome tent. Worn: a pole snapped, sagging. Destroyed: flattened and torn open.",
+   "tags": [
+    "exterior",
+    "camp"
+   ],
+   "variants": {
+    "clean": "props/out_tent_dome",
+    "worn": "props/out_tent_dome_worn",
+    "destroyed": "props/out_tent_dome_destroyed"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.7,
+    1.2,
+    2.7
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_tent_cabin",
+   "name": "Cabin Tent",
+   "description": "A big canvas family tent with a front awning. Worn: one side down. Destroyed: collapsed.",
+   "tags": [
+    "exterior",
+    "camp"
+   ],
+   "variants": {
+    "clean": "props/out_tent_cabin",
+    "worn": "props/out_tent_cabin_worn",
+    "destroyed": "props/out_tent_cabin_destroyed"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.5,
+    2.1,
+    4.5
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_fire_ring",
+   "name": "Fire Ring",
+   "description": "A steel campground fire ring with a swing-over grate, ash and half-burnt wood.",
+   "tags": [
+    "exterior",
+    "camp",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/out_fire_ring",
+    "worn": "props/out_fire_ring_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 800,
+   "size": [
+    1.05,
+    0.5,
+    1.05
+   ]
+  },
+  {
+   "id": "out_tent_pad",
+   "name": "Tent Pad",
+   "description": "A gravel tent pad edged with treated timbers (walk-over).",
+   "tags": [
+    "exterior",
+    "camp"
+   ],
+   "variants": {
+    "clean": "props/out_tent_pad",
+    "worn": "props/out_tent_pad_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.6,
+    0.16,
+    3.6
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_bear_box",
+   "name": "Bear Box",
+   "description": "A galvanized steel food locker with a latch bears can't work.",
+   "tags": [
+    "furniture",
+    "container",
+    "metal",
+    "camp"
+   ],
+   "variants": {
+    "clean": "props/out_bear_box",
+    "worn": "props/out_bear_box_worn",
+    "destroyed": "props/out_bear_box_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    1.25,
+    1.0,
+    0.7
+   ],
+   "container": "out_bear_box"
+  },
+  {
+   "id": "out_host_trailer_shell",
+   "name": "Camp Host Trailer",
+   "description": "A park-model trailer: aluminium siding, an awning on its door side, skirting, propane bottles on the tongue (shell over the POI kit rooms).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell"
+   ],
+   "variants": {
+    "clean": "props/out_host_trailer_shell",
+    "worn": "props/out_host_trailer_shell_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    10.55,
+    3.8,
+    5.75
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_block_roof",
+   "name": "Comfort Station Roof",
+   "description": "Low-pitched roof for the concrete-block shower house: fascia, vent stacks and a skylight.",
+   "tags": [
+    "structure",
+    "exterior",
+    "roof"
+   ],
+   "variants": {
+    "clean": "props/out_block_roof"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    8.6,
+    1.1,
+    5.6
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_kiosk_shell",
+   "name": "Fee Station",
+   "description": "The campground's little fee station: board-and-batten walls, a sliding window and a hip roof (shell over the POI kit room).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell"
+   ],
+   "variants": {
+    "clean": "props/out_kiosk_shell",
+    "worn": "props/out_kiosk_shell_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.85,
+    4.35,
+    2.8
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_camp_sign",
+   "name": "Campground Sign",
+   "description": "Routed cedar sign on two log posts: TAMSIN RIVER CAMPGROUND, COUNTY PARK.",
+   "tags": [
+    "sign",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/out_camp_sign",
+    "worn": "props/out_camp_sign_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    3.2,
+    2.3,
+    0.45
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_gate_arm",
+   "name": "Gate Arm",
+   "description": "A swing gate arm on a steel post, striped; the worn one snapped and hanging.",
+   "tags": [
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/out_gate_arm",
+    "worn": "props/out_gate_arm_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    4.2,
+    1.2,
+    0.35
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_water_spigot",
+   "name": "Water Spigot",
+   "description": "A frost-free hydrant on a post over a gravel sump, a bucket hook.",
+   "tags": [
+    "exterior",
+    "metal",
+    "camp"
+   ],
+   "variants": {
+    "clean": "props/out_water_spigot",
+    "worn": "props/out_water_spigot_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.45,
+    1.1,
+    0.45
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "out_camp_chair",
+   "name": "Camp Chair",
+   "description": "A folding camp chair with a cup holder. Destroyed: crushed flat.",
+   "tags": [
+    "furniture",
+    "camp"
+   ],
+   "variants": {
+    "clean": "props/out_camp_chair",
+    "worn": "props/out_camp_chair_worn",
+    "destroyed": "props/out_camp_chair_destroyed"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.62,
+    0.85,
+    0.6
+   ],
+   "blocks_sight": false,
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      0.03
+     ],
+     "height": 0.42
+    }
+   ]
+  },
+  {
+   "id": "out_lockbox",
+   "name": "Cash Lockbox",
+   "description": "A grey steel cash box with a key lock and a carry handle.",
+   "tags": [
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/out_lockbox"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    0.42,
+    0.18,
+    0.32
+   ],
+   "container": "out_camp_lockbox",
+   "rooms": [
+    "bedroom",
+    "office"
+   ]
+  },
+  {
+   "id": "out_tree_fir",
+   "name": "Grey Fir",
+   "description": "A grey fir left standing in a cleared site (the vegetation model; the box is its trunk). Destroyed: a dead snag.",
+   "tags": [
+    "vegetation",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "trees/grey_fir_a",
+    "worn": "trees/grey_fir_c",
+    "destroyed": "trees/dead_snag_a"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.7,
+    8.0,
+    0.7
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "out_tree_larch",
+   "name": "Larch",
+   "description": "A larch left standing in a cleared site (the vegetation model; the box is its trunk).",
+   "tags": [
+    "vegetation",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "trees/hollow_larch_a",
+    "worn": "trees/hollow_larch_c"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.6,
+    8.0,
+    0.6
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "out_tree_birch",
+   "name": "Paper Birch",
+   "description": "A paper birch left standing in a cleared site (the vegetation model; the box is its trunk).",
+   "tags": [
+    "vegetation",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "trees/paper_birch_a",
+    "worn": "trees/paper_birch_c"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.45,
+    7.0,
+    0.45
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "out_stump",
+   "name": "Stump",
+   "description": "A sawn stump where a tree came down for the clearing.",
+   "tags": [
+    "vegetation",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "trees/conifer_stump",
+    "worn": "trees/birch_stump"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.7,
+    0.55,
+    0.7
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "out_shrub",
+   "name": "Brush",
+   "description": "Huckleberry and fir regrowth in a cleared site (walk-through).",
+   "tags": [
+    "vegetation",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "plants/huckleberry_a",
+    "worn": "plants/huckleberry_b",
+    "destroyed": "plants/fir_sapling_a"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.9,
+    1.0,
+    0.9
+   ],
+   "blocks_sight": false
+  }
+ ]
+}

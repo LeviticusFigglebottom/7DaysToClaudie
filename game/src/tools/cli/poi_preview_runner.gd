@@ -1,20 +1,33 @@
 extends Node
 ## POI preview logic (loaded by poi_preview.gd once autoloads exist). For each requested POI:
 ##   <id>_plan_L<n>.png   top-down orthographic plan of level n: roofs, ceilings and everything
-##                        above 1.5 m over that floor hidden; markers: sleepers (hollow red, lurcher
-##                        orange, keener magenta, dragger brown; lying = flat), pickups/notes
-##                        yellow-green, lights orange, traps magenta, validator route path green,
-##                        waypoints cyan with their index, authored props at their true size
-##                        (gold = container, blue = solid, grey = no collision)
+##                        above 1.5 m over that floor hidden; markers: sleepers posed where they
+##                        spawn (ADR-0022: standing = disc, kneeling / crouched = smaller discs,
+##                        seated = disc on its seat, lying = a body-long capsule head to feet, a tick
+##                        for the way each faces, a thin line back to where it was authored if a seat
+##                        or bed moved it), coloured by ambush group (ungrouped pale blue) with the
+##                        group's name, guardians in an orange ring; triggers in their group's colour
+##                        linked to the group: room = its cells tinted, opening = a diamond on the
+##                        edge, pickup / container / trap = a ring round it, each labelled "T id";
+##                        pickups/notes yellow-green, lights orange, traps magenta (bars across edge
+##                        traps, squares on cell traps), validator route path green, waypoints cyan
+##                        with their index, route-cue windows white, authored props at their true
+##                        size (gold = container, blue = solid, grey = no collision)
 ##   <id>_front.png, <id>_back.png, <id>_aerial.png   exterior perspective views
 ##   <id>_inside_L<n>_a.png / _b.png   (--inside) eye-level views across the largest room of level n
+##   <id>_sleeper_<sid>.png   (--sleepers [sid,sid...]) the building's sleepers spawned and posed (on
+##                        their seats and beds), a close view of each seated or lying one
 ## and prints the validator stats line ("POI_PREVIEW <id> stats {...}") plus any errors/warnings.
-## Options: --out DIR, --size WxH, --all (every POI), --no-exterior, --no-plans, --inside.
+## Options: --out DIR, --size WxH, --all (every POI), --no-exterior, --no-plans, --inside,
+## --sleepers [ids].
 ## Kit pieces / props that have not been generated render as stand-in boxes.
 
 const CUT: float = 1.5
-const ENEMY_COLORS: Dictionary = {"hollow": Color(0.85, 0.12, 0.1), "lurcher": Color(1.0, 0.5, 0.05),
-	"keener": Color(0.9, 0.1, 0.85), "dragger": Color(0.45, 0.2, 0.1)}
+## Ambush group colours, in the order groups first appear among the sleepers (deterministic).
+const GROUP_COLORS: Array[Color] = [Color(0.95, 0.2, 0.15), Color(1.0, 0.75, 0.1), Color(0.25, 0.85, 0.35),
+	Color(0.7, 0.35, 1.0), Color(0.1, 0.8, 0.9), Color(1.0, 0.45, 0.75), Color(0.6, 0.85, 0.2), Color(1.0, 0.55, 0.25)]
+const UNGROUPED: Color = Color(0.6, 0.75, 1.0)
+const GUARDIAN: Color = Color(1.0, 0.55, 0.15)
 
 var _out_dir: String = "res://../build/poi_preview"
 var _size := Vector2i(1280, 720)
@@ -22,6 +35,9 @@ var _ids: PackedStringArray = []
 var _exterior: bool = true
 var _plans: bool = true
 var _inside: bool = false
+## --sleepers: spawn the sleepers and shoot the seated / lying ones (empty = every one, else ids).
+var _sleepers: bool = false
+var _sleeper_ids: PackedStringArray = []
 var _world: Node3D
 var _sun: DirectionalLight3D
 var _ground: MeshInstance3D
@@ -67,6 +83,11 @@ func _parse_args() -> void:
 				_plans = false
 			"--inside":
 				_inside = true
+			"--sleepers":
+				_sleepers = true
+				if i + 1 < a.size() and not a[i + 1].begins_with("--") and Content.get_def(&"poi", StringName(a[i + 1])) == null:
+					i += 1
+					_sleeper_ids = a[i].split(",", false)
 			_:
 				for part: String in a[i].split(" ", false):
 					_ids.append(part)
@@ -168,6 +189,8 @@ func _preview(id: String) -> void:
 			(markers[k2] as Node3D).queue_free()
 	if _inside:
 		await _interiors(id, layout)
+	if _sleepers:
+		await _sleeper_shots(id, inst)
 	inst.queue_free()
 	await _frames(2)
 
@@ -324,17 +347,9 @@ func _build_markers(v: PoiValidator, layout: PoiLayout, inst: PoiInstance) -> Di
 		lab.modulate = Color(0.1, 0.9, 1.0)
 		lab.position = p2 + Vector3(0.45, 0.6, -0.45)
 		(by_level[li2] as Node3D).add_child(lab)
-	for s: Dictionary in layout.sleepers:
-		var li3: int = int(s["level"])
-		if not by_level.has(li3):
-			continue
-		var col: Color = ENEMY_COLORS.get(str(s.get("enemy", "hollow")), Color.RED)
-		var p3: Vector3 = layout.local_pos(li3, s["pos"])
-		var lying: bool = str(s.get("pose", "stand")) == "lie"
-		var cap := _marker(by_level[li3], CapsuleMesh.new(), Vector3(0.6, 1.6, 0.6) if not lying else Vector3(0.6, 1.6, 0.6),
-			p3 + Vector3.UP * (0.8 if not lying else 0.3), col)
-		if lying:
-			cap.rotation = Vector3(PI * 0.5, deg_to_rad(float(s.get("rot", 0.0))), 0.0)
+	_sleeper_markers(layout, inst, by_level)
+	_trigger_markers(layout, by_level)
+	_cue_markers(layout, by_level)
 	for pk: Dictionary in layout.pickups:
 		var li4: int = int(pk["level"])
 		if by_level.has(li4):
@@ -364,6 +379,259 @@ func _build_markers(v: PoiValidator, layout: PoiLayout, inst: PoiInstance) -> Di
 	return by_level
 
 
+## Group name -> colour (GROUP_COLORS in first-appearance order; guardians orange).
+func _group_colors(layout: PoiLayout) -> Dictionary:
+	var out: Dictionary = {}
+	for s: Dictionary in layout.sleepers:
+		var g: String = str(s["group"])
+		if g != "" and not out.has(g):
+			out[g] = GUARDIAN if g == PoiLayout.GUARDIAN_GROUP else GROUP_COLORS[out.size() % GROUP_COLORS.size()]
+	return out
+
+
+## Group name -> centre of its sleepers' markers (POI-local), for the trigger links.
+var _group_centroids: Dictionary = {}
+
+
+## Sleepers as they spawn (ADR-0022): posed on their seat or bed, or where authored, in their
+## ambush group's colour, a tick for their facing, guardians ringed.
+func _sleeper_markers(layout: PoiLayout, inst: PoiInstance, by_level: Dictionary) -> void:
+	var colors: Dictionary = _group_colors(layout)
+	var seats: Dictionary = inst.seat_plan()
+	var sums: Dictionary = {}
+	_group_centroids = {}
+	for s: Dictionary in layout.sleepers:
+		var li: int = int(s["level"])
+		if not by_level.has(li):
+			continue
+		var parent: Node3D = by_level[li]
+		var g: String = str(s["group"])
+		var col: Color = colors.get(g, UNGROUPED)
+		var pose: String = str(s.get("pose", "stand"))
+		var authored: Vector3 = layout.local_pos(li, s["pos"])
+		var pelvis: Vector3 = authored
+		var yaw: float = deg_to_rad(float(s.get("rot", 0.0)))
+		var top: float = authored.y + 0.6
+		var seat: Dictionary = seats.get(str(s["sid"]), {})
+		if not seat.is_empty():
+			yaw = float(seat["yaw"])
+			pelvis = seat["point"]
+			top = pelvis.y + 0.35
+			if Vector2(authored.x - pelvis.x, authored.z - pelvis.z).length() > 0.25:
+				_link(parent, Vector3(authored.x, top, authored.z), Vector3(pelvis.x, top, pelvis.z), col.darkened(0.35), 0.05)
+		var fwd := Vector3(sin(yaw), 0.0, cos(yaw))
+		var at := Vector3(pelvis.x, top, pelvis.z)
+		if pose == "lie":
+			# Head to feet along its facing: the head 0.75 m behind the pelvis, the feet 0.9 ahead.
+			var cap: MeshInstance3D = _marker(parent, CapsuleMesh.new(), Vector3(0.46, 1.65, 0.46), at + fwd * 0.07, col)
+			cap.basis = Basis(Vector3.UP, yaw) * Basis(Vector3.RIGHT, PI * 0.5)
+			_marker(parent, SphereMesh.new(), Vector3.ONE * 0.3, at - fwd * 0.62 + Vector3.UP * 0.12, col.lightened(0.45))
+		else:
+			var r: float = {"stand": 0.62, "kneel": 0.5, "crouch": 0.44, "sit": 0.52}.get(pose, 0.55)
+			_marker(parent, SphereMesh.new(), Vector3.ONE * r, at, col)
+			var tick: MeshInstance3D = _marker(parent, BoxMesh.new(), Vector3(0.09, 0.07, 0.42), at + fwd * 0.38 + Vector3.UP * 0.2, col.lightened(0.45))
+			tick.basis = Basis(Vector3.UP, yaw)
+		if bool(s["guardian"]):
+			var ring := TorusMesh.new()
+			ring.inner_radius = 0.46
+			ring.outer_radius = 0.58
+			_marker(parent, ring, Vector3.ONE, at + Vector3.UP * 0.3, GUARDIAN)
+		if g != "":
+			if not sums.has(g):
+				sums[g] = [Vector3.ZERO, 0, li]
+			sums[g][0] = (sums[g][0] as Vector3) + at
+			sums[g][1] = int(sums[g][1]) + 1
+	for g2: String in sums:
+		var c: Array = sums[g2]
+		var centre: Vector3 = (c[0] as Vector3) / float(c[1])
+		_group_centroids[g2] = centre
+		_label(by_level[int(c[2])], "guardian" if g2 == PoiLayout.GUARDIAN_GROUP else g2, centre + Vector3(0.0, 1.1, -0.8),
+			colors.get(g2, UNGROUPED), 48)
+
+
+## Triggers in their group's colour, each linked to its group: room = the room's cells tinted,
+## opening = a diamond on the edge, pickup / container / trap = a ring round it; "T id" labels.
+func _trigger_markers(layout: PoiLayout, by_level: Dictionary) -> void:
+	var colors: Dictionary = _group_colors(layout)
+	for t: Dictionary in layout.triggers:
+		var col: Color = colors.get(str(t["group"]), UNGROUPED)
+		var tint := Color(col.r, col.g, col.b, 0.28)
+		var li: int = int(t["level"])
+		var at := Vector3.INF
+		match str(t["on"]):
+			"room":
+				if not by_level.has(li):
+					continue
+				var sum := Vector3.ZERO
+				var n: int = 0
+				for c: Vector2i in layout.room_cells(li):
+					if layout.room_at(li, c) == str(t["room"]):
+						_marker(by_level[li], BoxMesh.new(), Vector3(0.96, 0.03, 0.96), layout.cell_center(li, c) + Vector3.UP * 0.02, tint)
+						sum += layout.cell_center(li, c)
+						n += 1
+				if n > 0:
+					at = sum / float(n) + Vector3.UP * 0.3
+			"opening":
+				var op: Dictionary = layout.opening(str(t["opening"]))
+				if op.is_empty():
+					continue
+				li = int(op["level"])
+				at = _edge_centre(layout, op) + Vector3.UP * 0.6
+				if by_level.has(li):
+					var dia: MeshInstance3D = _marker(by_level[li], BoxMesh.new(), Vector3(0.42, 0.42, 0.42), at, col)
+					dia.basis = Basis(Vector3.UP, PI * 0.25) * Basis(Vector3.RIGHT, PI * 0.25)
+			"pickup":
+				for pk: Dictionary in layout.pickups:
+					if str(pk["pid"]) == str(t["pickup"]):
+						li = int(pk["level"])
+						at = layout.local_pos(li, pk["pos"]) + Vector3.UP * 0.4
+			"container":
+				for p: Dictionary in layout.props:
+					if str(p.get("id", "")) == str(t["prop"]):
+						li = int(p["level"])
+						at = layout.local_pos(li, p["pos"]) + Vector3.UP * 0.4
+			"trap":
+				var tr: Dictionary = layout.trap(str(t["trap"]))
+				if not tr.is_empty():
+					li = int(tr["level"])
+					at = layout.local_pos(li, tr["pos"]) + Vector3.UP * 0.4
+		if at == Vector3.INF or not by_level.has(li):
+			continue
+		if str(t["on"]) in ["pickup", "container", "trap"]:
+			var ring := TorusMesh.new()
+			ring.inner_radius = 0.55
+			ring.outer_radius = 0.68
+			_marker(by_level[li], ring, Vector3.ONE, at, col)
+		var text: String = "T guardian: enter loot room" if bool(t["implicit"]) else "T " + str(t["id"])
+		_label(by_level[li], text, at + Vector3(0.0, 0.6, 0.45), col, 40)
+		if _group_centroids.has(str(t["group"])):
+			var to: Vector3 = _group_centroids[str(t["group"])]
+			_link(by_level[li], at, Vector3(to.x, at.y, to.z), col, 0.05)
+
+
+## Windows that get route cues (RouteCues): a white bar outside the window and the cue kinds.
+func _cue_markers(layout: PoiLayout, by_level: Dictionary) -> void:
+	var plan: Dictionary = RouteCues.plan(layout)
+	for op_id: String in plan:
+		var op: Dictionary = layout.opening(op_id)
+		var f: Dictionary = RouteCues.frame(layout, op)
+		if f.is_empty() or not by_level.has(int(op["level"])):
+			continue
+		var out: Vector3 = f["out"]
+		var c: Vector3 = (f["centre"] as Vector3) + out * 0.35 + Vector3.UP * 0.2
+		var bar: MeshInstance3D = _marker(by_level[int(op["level"])], BoxMesh.new(), Vector3(float(f["width"]) * 0.8, 0.1, 0.22), c, Color(1, 1, 1))
+		bar.basis = Basis(Vector3.UP, atan2(out.x, out.z))
+		_label(by_level[int(op["level"])], "cue " + ", ".join(plan[op_id]), c + out * 0.6 + Vector3.UP * 0.3, Color(1, 1, 1), 32)
+
+
+func _edge_centre(layout: PoiLayout, op: Dictionary) -> Vector3:
+	var e: Vector2i = op["edge"]
+	var w: float = float(op["width"])
+	var y: float = layout.level_y(int(op["level"]))
+	if str(op["axis"]) == "h":
+		return Vector3(layout.origin.x + e.x + w * 0.5, y, layout.origin.y + e.y)
+	return Vector3(layout.origin.x + e.x, y, layout.origin.y + e.y + w * 0.5)
+
+
+## A thin bar from a to b (links: trigger -> group, authored -> posed).
+func _link(parent: Node3D, a: Vector3, b: Vector3, col: Color, width: float) -> void:
+	var d: Vector3 = b - a
+	if d.length() < 0.05:
+		return
+	var bar: MeshInstance3D = _marker(parent, BoxMesh.new(), Vector3(width, width, d.length()), (a + b) * 0.5, col)
+	bar.basis = Basis.looking_at(d.normalized(), Vector3.UP if absf(d.normalized().y) < 0.98 else Vector3.FORWARD)
+
+
+func _label(parent: Node3D, text: String, pos: Vector3, col: Color, size: int) -> void:
+	var lab := Label3D.new()
+	lab.text = text
+	lab.font_size = size
+	lab.pixel_size = 0.01
+	lab.outline_size = 12
+	lab.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lab.no_depth_test = true
+	lab.modulate = col
+	lab.position = pos
+	parent.add_child(lab)
+
+
+## --sleepers: spawns the building's sleepers (a throwaway session and director: previews have no
+## world) and shoots each seated or lying one from in front of its seat or beside its bed.
+func _sleeper_shots(id: String, inst: PoiInstance) -> void:
+	if Game.session == null:
+		Game.session = GameSession.create_new({"seed": 4711, "game_mode": "survival"})
+	var ai := AIDirector.new()
+	ai.name = "PreviewAI"
+	_world.add_child(ai)
+	inst.spawn_sleepers(ai)
+	_ground.visible = true
+	_sun.rotation_degrees = Vector3(-38.0, -35.0, 0.0)
+	await _frames(6)
+	var seats: Dictionary = inst.seat_plan()
+	for s: Dictionary in inst.layout.sleepers:
+		var sid: String = str(s["sid"])
+		if not _sleeper_ids.is_empty() and not _sleeper_ids.has(sid):
+			continue
+		var seat: Dictionary = seats.get(sid, {})
+		var e: Enemy = inst.sleeper(sid)
+		if e == null or (seat.is_empty() and _sleeper_ids.is_empty()):
+			continue
+		var target: Vector3 = e.global_position + Vector3.UP * 0.6
+		var from_dir := Vector3(sin(e.global_rotation.y), 0.0, cos(e.global_rotation.y))
+		if not seat.is_empty():
+			var pt: Vector3 = inst.to_global(seat["point"] as Vector3)
+			var ex: Vector3 = inst.to_global(seat["exit"] as Vector3)
+			target = pt + Vector3.UP * (0.3 if str(seat["kind"]) == "seat" else 0.1)
+			from_dir = Vector3(ex.x - pt.x, 0.0, ex.z - pt.z).normalized()
+			if str(seat["kind"]) == "bed":
+				# Beside the bed, toward its foot, looking along the body.
+				var yaw: float = inst.global_rotation.y + float(seat["yaw"])
+				from_dir = (from_dir + Vector3(sin(yaw), 0.0, cos(yaw)) * 0.7).normalized()
+		var cam := Camera3D.new()
+		cam.fov = 64.0
+		cam.near = 0.05
+		_world.add_child(cam)
+		cam.global_position = target + _clear_view(target, from_dir, 1.6) + Vector3.UP * 0.7
+		cam.look_at(target, Vector3.UP)
+		cam.make_current()
+		var fill := OmniLight3D.new()
+		fill.light_energy = 1.3
+		fill.omni_range = 7.0
+		fill.light_color = Color(1.0, 0.93, 0.82)
+		fill.shadow_enabled = true
+		cam.add_child(fill)
+		fill.position = Vector3(0.5, 0.4, 0.3)
+		await _shoot("%s_sleeper_%s" % [id, sid], 4)
+		cam.queue_free()
+	inst.despawn_sleepers(ai)
+	ai.queue_free()
+	await _frames(2)
+
+
+## The camera offset from `target` (horizontal) for a close view: along `dir` if the room is open
+## that way for `want` metres, else the direction within +-70 degrees with the longest clear line
+## (walls, doors, furniture and containers cut it short), kept a hand's breadth off what is in the
+## way.
+func _clear_view(target: Vector3, dir: Vector3, want: float) -> Vector3:
+	var space: PhysicsDirectSpaceState3D = _world.get_world_3d().direct_space_state
+	var eye_up := Vector3.UP * 0.7
+	var best := Vector3.ZERO
+	var best_len: float = -1.0
+	for deg: float in [0.0, 35.0, -35.0, 70.0, -70.0]:
+		var d: Vector3 = dir.rotated(Vector3.UP, deg_to_rad(deg))
+		var q := PhysicsRayQueryParameters3D.create(target, target + d * want + eye_up, 1 | (1 << 1) | (1 << 2))
+		var hit: Dictionary = space.intersect_ray(q)
+		# Clear length along the ground (the ray climbs 0.7 m over `want`).
+		var clear: float = want if hit.is_empty() else \
+			maxf(0.3, (target.distance_to(hit["position"]) - 0.15) * want / Vector2(want, 0.7).length())
+		if clear > best_len + 0.25:
+			best_len = clear
+			best = d * clear
+		if clear >= want:
+			break
+	return best
+
+
 func _marker(parent: Node3D, mesh: PrimitiveMesh, size: Vector3, pos: Vector3, col: Color) -> MeshInstance3D:
 	if mesh is BoxMesh:
 		(mesh as BoxMesh).size = size
@@ -390,8 +658,10 @@ func _marker(parent: Node3D, mesh: PrimitiveMesh, size: Vector3, pos: Vector3, c
 	return mi
 
 
-func _shoot(file_stem: String) -> void:
-	await _frames(8)
+## Renders and saves one image after `settle` frames (software Vulkan is slow: close views of
+## a still scene need fewer).
+func _shoot(file_stem: String, settle: int = 8) -> void:
+	await _frames(settle)
 	RenderingServer.force_draw()
 	await _frames(1)
 	var img: Image = get_viewport().get_texture().get_image()

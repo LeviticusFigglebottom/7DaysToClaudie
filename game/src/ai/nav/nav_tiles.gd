@@ -38,6 +38,18 @@ static func tile_of(p: Vector3) -> Vector2i:
 	return Vector2i(int(floor(p.x / TILE)), int(floor(p.z / TILE)))
 
 
+## Something walkable changed at `pos` outside the usual events (a POI weak floor gave way,
+## ADR-0022): rebake the tiles around it once REBAKE_DELAY has passed (by then the collider the
+## change disabled is gone from the physics state the bake parses).
+func mark_dirty(pos: Vector3) -> void:
+	_mark(pos)
+
+
+## Whether a tile around `pos` is waiting for a rebake (tests, debug).
+func is_dirty(pos: Vector3) -> bool:
+	return _dirty.has(tile_of(pos))
+
+
 func _mark(pos: Vector3) -> void:
 	var t: Vector2i = tile_of(pos)
 	for dz: int in range(-1, 2):

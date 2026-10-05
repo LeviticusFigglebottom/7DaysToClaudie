@@ -270,12 +270,24 @@ def hymnal(p: Prop, center, rot=(0, 0, 0), size=(0.032, 0.115, 0.17), open_deg: 
     return out
 
 
+# Candle flame profile (radius, height above the wick's foot): drawn only while the prop's light
+# burns ("flame_glow", ADR-0023), so an unlit candle shows just its wick.
+FLAME_PROFILE = [(0.0, 0.0), (0.0045, 0.004), (0.006, 0.011), (0.0042, 0.02), (0.0018, 0.027), (0.0, 0.031)]
+
+
+def flame(p: Prop, center, scale: float = 1.0, key: str = "flame"):
+    """A candle flame standing on `center` (the top of the wick)."""
+    prof = [(rr * scale, zz * scale) for rr, zz in FLAME_PROFILE]
+    return p.lathe(prof, center, "flame_glow", segs=6, tags=("flame", key))
+
+
 def candle(p: Prop, center, h: float, r: float = 0.02, burnt: bool = False, key: str = "candle") -> list:
-    """Wax candle (burnt: short stub with drips and a pooled foot)."""
+    """Wax candle (burnt: short stub with drips and a pooled foot) with its flame."""
     x, y, z = center
     hh = h * (0.35 if burnt else 1.0)
     out = [p.cyl(r, hh, (x, y, z + hh / 2), C.CANDLE, segs=8, tags=("candle", key))]
     out.append(p.cyl(0.0015, 0.012, (x, y, z + hh + 0.006), M.CAST_IRON, segs=4, tags=("candle", key)))
+    out.append(flame(p, (x, y, z + hh + 0.005), key=key))
     if burnt:
         rr = p.rng(key + "drip")
         for i in range(3):
@@ -644,6 +656,8 @@ def civic_candle_stand(p: Prop) -> None:
             parts.append(cup)
             burnt = p.worn and lit.random() < 0.7
             parts.append(p.cyl(0.022, 0.012 if burnt else 0.035, (x, y, z + 0.015 + (0.006 if burnt else 0.0175)), C.CANDLE, segs=6))
+            if not burnt:
+                parts.append(flame(p, (x, y, z + 0.052), scale=0.8, key=f"votive{k}_{i}"))
         if p.worn:
             for j in range(3):
                 x = lit.uniform(-0.38, 0.38)

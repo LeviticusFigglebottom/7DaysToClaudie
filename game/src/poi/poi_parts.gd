@@ -5,16 +5,28 @@ extends RefCounted
 ## stand-ins for kit pieces that have not been generated yet.
 
 const KIT: String = "kit/"
-## Opening geometry (metres): width, height, sill.
+## Opening geometry (metres): width, height, sill; "len" cells along the wall, "storeys" of wall the
+## piece stands (two-storey pieces are 5.8 m tall: a tall room's wall), and the kit ids of the pane
+## ("glass"), board-up ("boards") and door leaf ("leaf") that fill it. A lancet's "h" is to the
+## apex of its pointed arch ("spring": where the arch starts).
 const OPENINGS: Dictionary = {
 	"door": {"model": "wall_1m_door", "w": 0.86, "h": 2.1, "sill": 0.0, "len": 1},
 	"door2": {"model": "wall_2m_door", "w": 1.7, "h": 2.1, "sill": 0.0, "len": 2},
-	"window": {"model": "wall_1m_window", "w": 0.7, "h": 1.1, "sill": 0.9, "len": 1},
-	"window2": {"model": "wall_2m_window", "w": 1.6, "h": 1.2, "sill": 0.85, "len": 2},
+	"window": {"model": "wall_1m_window", "w": 0.7, "h": 1.1, "sill": 0.9, "len": 1, "glass": "window_glass_1m", "boards": "boards_window_1m"},
+	"window2": {"model": "wall_2m_window", "w": 1.6, "h": 1.2, "sill": 0.85, "len": 2, "glass": "window_glass_2m", "boards": "boards_window_2m"},
 	"breach": {"model": "wall_1m_breach", "w": 0.8, "h": 1.7, "sill": 0.0, "len": 1},
 	"half": {"model": "wall_1m_half", "w": 1.0, "h": 0.0, "sill": 1.0, "len": 1},
 	"open": {"model": "", "w": 1.0, "h": 2.8, "sill": 0.0, "len": 1},
+	"lancet": {"model": "wall_1m_lancet", "w": 0.66, "h": 3.0, "sill": 1.0, "spring": 2.45, "len": 1, "storeys": 2,
+		"glass": "window_glass_lancet", "boards": "boards_window_lancet"},
+	"window_tall": {"model": "wall_1m_window_tall", "w": 0.76, "h": 2.5, "sill": 0.8, "len": 1, "storeys": 2,
+		"glass": "window_glass_tall", "boards": "boards_window_tall"},
+	"door2_tall": {"model": "wall_2m_door_tall", "w": 1.8, "h": 3.5, "sill": 0.0, "len": 2, "storeys": 2, "leaf": "door_barn_tall",
+		"leaf_size": [0.89, 3.45]},
 }
+## Wall height of an opening piece: 2.8 m, or 5.8 m for a two-storey piece.
+static func piece_height(spec: Dictionary) -> float:
+	return PoiLayout.WALL_H + PoiLayout.STOREY * float(int(spec.get("storeys", 1)) - 1)
 
 static var _finishes: Dictionary = {}
 static var _mats: Dictionary = {}
@@ -109,9 +121,24 @@ static func _standin(piece: String) -> Mesh:
 	var kind: String = "wall"
 	if piece.begins_with("wall_2m"):
 		size.x = 2.0
+	if piece.ends_with("_tall") or piece == "wall_1m_lancet":
+		# Two-storey wall pieces (a tall room's wall): the stand-in is solid, the opening is cut
+		# by the generated piece only.
+		size.y = 5.8
+		offset.y = 2.9
 	if piece == "wall_1m_half":
 		size.y = 1.0
 		offset.y = 0.5
+	elif piece == "wall_band_1m":
+		# The 20 cm storey band between stacked wall pieces (2.8 .. 3.0 above the storey's floor).
+		size.y = 0.2
+		offset.y = 2.9
+	elif piece.begins_with("gallery_"):
+		# A gallery railing: the rail stands on the gallery side (local -Z), the fascia covers the
+		# floor slab's edge over the void (local +Z).
+		size = Vector3(1.0, 1.0, 0.07)
+		offset = Vector3(0, 0.5, -0.06)
+		kind = "boards"
 	elif piece.begins_with("floor"):
 		size = Vector3(1.0, 0.2, 1.0)
 		offset = Vector3(0, -0.1, 0)
@@ -122,19 +149,32 @@ static func _standin(piece: String) -> Mesh:
 		size = Vector3(1.0, 0.6, 0.2)
 		offset = Vector3(0, 0.3, 0)
 		kind = "concrete"
+	elif piece == "chimney_brick" or piece == "chimney_shaft_1m":
+		# The chimney (4.5 m) and the metres of shaft stacked under it to clear the roof.
+		size = Vector3(0.8, 4.5 if piece == "chimney_brick" else 1.0, 0.6)
+		offset = Vector3(0, size.y * 0.5, 0)
+		kind = "brick"
 	elif piece.begins_with("stairs"):
 		size = Vector3(1.0, 0.2, 5.0)
 		kind = "stairs"
+	elif piece.begins_with("door_barn_tall"):
+		size = Vector3(0.89, 3.45, 0.06)
+		offset = Vector3(0.445, 1.725, 0)
+		kind = "door"
 	elif piece.begins_with("door"):
 		size = Vector3(0.82, 2.05, 0.04)
 		offset = Vector3(0.41, 1.025, 0)
 		kind = "door"
 	elif piece.begins_with("window_glass"):
-		size = Vector3(0.7 if piece.contains("1m") else 1.6, 1.1, 0.01)
-		offset = Vector3(0, 0.55, 0)
+		size = Vector3(1.6 if piece.contains("2m") else 0.7, 1.1, 0.01)
+		if piece.contains("lancet") or piece.contains("tall"):
+			size.y = 2.5
+		offset = Vector3(0, size.y * 0.5, 0)
 		kind = "glass"
 	elif piece.begins_with("boards"):
-		size = Vector3(0.9 if piece.contains("1m") or piece == "boards_door" else 1.8, 1.2 if piece != "boards_door" else 2.0, 0.04)
+		size = Vector3(1.8 if piece.contains("2m") else 0.9, 2.0 if piece == "boards_door" else 1.2, 0.04)
+		if piece.contains("lancet") or piece.contains("tall"):
+			size.y = 2.4
 		offset = Vector3(0, size.y * 0.5, 0)
 		kind = "boards"
 	elif piece == "ladder_3m":
@@ -171,7 +211,7 @@ static func _standin(piece: String) -> Mesh:
 			mat = kit_material(kind)
 		_:
 			var sm := StandardMaterial3D.new()
-			sm.albedo_color = {"concrete": Color(0.5, 0.5, 0.48), "stairs": Color(0.42, 0.3, 0.2), "door": Color(0.45, 0.33, 0.22),
+			sm.albedo_color = {"concrete": Color(0.5, 0.5, 0.48), "brick": Color(0.5, 0.27, 0.2), "stairs": Color(0.42, 0.3, 0.2), "door": Color(0.45, 0.33, 0.22),
 				"glass": Color(0.6, 0.7, 0.75, 0.35), "boards": Color(0.5, 0.4, 0.28)}.get(kind, Color(0.5, 0.5, 0.5))
 			if kind == "glass":
 				sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA

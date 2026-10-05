@@ -7,6 +7,8 @@ The last block ("compat") provides the model ids game/data/structures/poi_kit.js
 """
 from __future__ import annotations
 
+import pathlib
+
 from ..core.registry import Task, blender_sources
 
 # model id -> (generator module, params)
@@ -58,6 +60,28 @@ PIECES: dict[str, tuple[str, dict]] = {
     "porch_post": ("kit_exterior", {"kind": "porch_post", "seed": 72}),
     "porch_deck_1m": ("kit_exterior", {"kind": "porch_deck", "seed": 73}),
     "chimney_brick": ("kit_exterior", {"kind": "chimney", "seed": 74}),
+    "chimney_shaft_1m": ("kit_exterior", {"kind": "chimney_shaft", "seed": 75}),
+    # --- tall rooms (ADR-0021): storey band, two-storey openings, galleries ----------------------
+    "wall_band_1m": ("kit_tall", {"kind": "band", "seed": 110}),
+    "wall_1m_window_tall": ("kit_tall", {"kind": "wall_tall", "length": 1.0, "opening": "window_tall", "seed": 111}),
+    "wall_2m_door_tall": ("kit_tall", {"kind": "wall_tall", "length": 2.0, "opening": "door_2m_tall", "seed": 112}),
+    "wall_1m_lancet": ("kit_tall", {"kind": "lancet", "seed": 113}),
+    "window_glass_lancet": ("kit_tall", {"kind": "glass", "target": "lancet", "seed": 305}),
+    "window_glass_lancet_broken": ("kit_tall", {"kind": "glass", "target": "lancet", "broken": True, "seed": 306}),
+    "window_glass_tall": ("kit_tall", {"kind": "glass", "target": "window_tall", "seed": 307}),
+    "window_glass_tall_broken": ("kit_tall", {"kind": "glass", "target": "window_tall", "broken": True, "seed": 308}),
+    "boards_window_lancet": ("kit_tall", {"kind": "boards", "target": "lancet", "seed": 404}),
+    "boards_window_tall": ("kit_tall", {"kind": "boards", "target": "window_tall", "seed": 405}),
+    "door_barn_tall": ("kit_tall", {"kind": "barn_door", "seed": 68}),
+    "door_barn_tall_broken": ("kit_tall", {"kind": "barn_door", "broken": True, "seed": 69}),
+    "gallery_balustrade_fascia": ("kit_gallery", {"kind": "fascia", "style": "balustrade", "seed": 701}),
+    "gallery_balustrade_1m": ("kit_gallery", {"kind": "rail", "style": "balustrade", "seed": 702}),
+    "gallery_balustrade_1m_broken": ("kit_gallery", {"kind": "rail", "style": "balustrade", "broken": True, "seed": 703}),
+    "gallery_balustrade_post": ("kit_gallery", {"kind": "post", "style": "balustrade", "seed": 704}),
+    "gallery_rail_fascia": ("kit_gallery", {"kind": "fascia", "style": "rail", "seed": 711}),
+    "gallery_rail_1m": ("kit_gallery", {"kind": "rail", "style": "rail", "seed": 712}),
+    "gallery_rail_1m_broken": ("kit_gallery", {"kind": "rail", "style": "rail", "broken": True, "seed": 713}),
+    "gallery_rail_post": ("kit_gallery", {"kind": "post", "style": "rail", "seed": 714}),
     # --- compat: ids referenced by game/data/structures/poi_kit.json ----------------------------
     "wall_1m_worn": ("kit_wall", {"kind": "layered", "mode": "worn", "seed": 31}),
     "wall_1m_brick": ("kit_wall", {"kind": "wall", "thickness": 0.24, "seed": 109}),
@@ -68,10 +92,16 @@ PIECES: dict[str, tuple[str, dict]] = {
 }
 
 
+# Generator modules a module imports (not followed by blender_sources, which follows lib imports).
+EXTRA_SOURCES: dict[str, list[str]] = {"kit_tall": ["kit_wall"]}
+
+
 def tasks() -> list[Task]:
     out = []
+    gen_dir = pathlib.Path(__file__).resolve().parent.parent / "blender" / "generators"
     for mid, (module, params) in PIECES.items():
         p = {"name": mid, **params}
+        extra = [gen_dir / f"{m}.py" for m in EXTRA_SOURCES.get(module, [])]
         out.append(Task(name=f"model:kit/{mid}", group="models", outputs=[f"models/kit/{mid}.glb"],
-                        sources=blender_sources(module), params=p, blender=module))
+                        sources=blender_sources(module) + extra, params=p, blender=module))
     return out

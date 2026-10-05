@@ -67,241 +67,20 @@ class Measures:
         return s, d
 
     def in_arm(self, P, side):
-        """> 0 inside the arm volume (past the shoulder cut, near the arm axis)."""
+        """> 0 inside the arm volume (past the shoulder cut, near the arm axis). The hand counts out
+        to 15 cm from the wrist-to-fingertip line: a spread thumb or clawed fingers reach past the
+        arm's 10 cm tube, and a thumb counted as "below the waist" came out in denim."""
         m = self.m
         c, n = m.cuts[f"shoulder.{side}"]
         _, d = self.arc(P, self.arm_pts[side])
-        return np.minimum((P - c) @ n + 0.015 * m.s, 0.10 * m.s - d)
+        _, dh = self.arc(P, self.arm_pts[side][2:])
+        return np.minimum((P - c) @ n + 0.015 * m.s, np.maximum(0.10 * m.s - d, 0.15 * m.s - dh))
 
-
-def _noise_edge(model, P, freq, amp, seed_off=0.0):
-    return model.noise.fbm(P + seed_off, freq, 3) * amp
-
-
-# --------------------------------------------------------------------------------------------
-# Garments
-# --------------------------------------------------------------------------------------------
-
-def _wrinkles(model, P, axis, along, freq, amp, seed_off):
-    """Irregular cloth wrinkles running around a limb/torso axis: noise-modulated partial rings."""
-    nz = model.noise
-    phase = along * freq * 2 * math.pi + nz.noise(P + seed_off, 9.0) * 2.5
-    ring = np.sin(phase)
-    mask = np.clip(nz.noise(P + seed_off * 2, 4.0) * 1.4 + 0.3, 0.0, 1.0)
-    return amp * ring * mask
-
-
-def make_top(model, spec: dict, mz: Measures):
-    """Shirt / t-shirt / jacket / hospital gown (upper body + sleeves)."""
-    s = model.s
-    kind = spec.get("type", "flannel")
-    label = B.CLOTH_LABELS.get(kind, B.L_FLANNEL)
-    thick = float(spec.get("thickness", {"flannel": 0.0055, "tshirt": 0.0038, "jacket": 0.011,
-                                         "hospital": 0.0050}.get(kind, 0.005))) * s
-    hem = float(spec.get("hem", -0.075)) * s           # relative to the pelvis joint along the trunk
-    sleeve = {L: float(spec.get("sleeve", 0.55)) for L in ("L", "R")}
-    for side_key in ("sleeve_L", "sleeve_R"):
-        if side_key in spec:
-            sleeve[side_key[-1]] = float(spec[side_key])
-    neck_drop = float(spec.get("neck_drop", 0.0)) * s
-    neck_front = float(spec.get("neck_front", 0.025)) * s
-    open_front = float(spec.get("open_front", 0.0)) * s
-    open_back = float(spec.get("open_back", 0.0)) * s
-    flare = float(spec.get("flare", 0.010)) * s
-    torn = float(spec.get("torn", 0.0))
-    rolled = spec.get("rolled", {})
-    tears = spec.get("tears", [])
-    # sleeve fractions are measured shoulder -> wrist (1.0 = full sleeve to the wrist)
-    arm_len = {side: float(sum(np.linalg.norm(b - a) for a, b in zip(mz.arm_pts[side][:2], mz.arm_pts[side][1:3])))
-               for side in ("L", "R")}
-    ua_len = {side: float(np.linalg.norm(mz.arm_pts[side][1] - mz.arm_pts[side][0])) for side in ("L", "R")}
-    sk = model.skel
-    n_c, n_ax = model.cuts["neck"]
-    neck_base_h = float((sk.head["neck"] - n_c) @ n_ax)
-    neck_line = [sk.head["neck"] - n_ax * 0.1, sk.head["head"]]
-    head_h = float((sk.head["head"] - n_c) @ n_ax) - neck_base_h
-    chestR = sk.rest["chest"]
-    off = 13.7 * (1 + sum(ord(ch) for ch in kind) % 7)
-
-    def g(P, d_base):
-        out_d = np.full(len(P), 1.0)
-        h_all = mz.h(P)
-        sel = np.nonzero(h_all > hem - 0.05 * s)[0]
-        if len(sel) == 0:
-            return out_d, np.full(len(P), label, np.int16)
-        P = P[sel]
-        h = h_all[sel]
-        db = d_base[sel]
-        # --- region: below the neckline (only inside the neck tube), above the hem, sleeves ---
-        nh = (P - n_c) @ n_ax - neck_base_h          # height above the neck base
-        frontness = np.clip(((P - n_c) @ chestR[:, 2]) / (0.06 * s), -1, 1)
-        line_h = 0.010 * s - neck_drop - neck_front * np.maximum(frontness, 0) * (1 + 0.3 * frontness)
-        d_ax = B.polyline_dist(P, neck_line)
-        reg_neck = np.maximum(np.minimum(nh - line_h, 0.085 * s - d_ax), nh - head_h)
-        hem_noise = _noise_edge(model, P, 9.0, 0.010 * s * (0.4 + torn), off)
-        reg = np.maximum(reg_neck, (hem + hem_noise) - h)
-        t_extra = np.zeros(len(P))
-        folds = np.zeros(len(P))
-        for side, sx in (("L", 1.0), ("R", -1.0)):
-            a_s, a_d = mz.arm_arc(P, side)
-            in_arm_v = mz.in_arm(P, side)
-            in_arm = in_arm_v > -0.01 * s
-            if not in_arm.any():
-                continue
-            frac = a_s / arm_len[side]
-            sl_noise = _noise_edge(model, P, 11.0, 0.012 * (0.4 + torn), off + sx)
-            reg = np.where(in_arm, np.maximum(reg, (frac - (sleeve[side] + sl_noise)) * arm_len[side]), reg)
-            end = (sleeve[side] - frac) * arm_len[side]
-            if side in rolled:
-                t_extra += in_arm * (1 - smoothstep(0.0, 0.035 * s, end)) * 0.007 * s
-            else:
-                t_extra += in_arm * (1 - smoothstep(0.0, 0.012 * s, end)) * 0.0015 * s
-            # elbow: bunching folds on the inner side, loose wrinkles elsewhere
-            el = a_s - ua_len[side]
-            fwin = np.exp(-(el / (0.09 * s)) ** 2) * in_arm
-            folds += fwin * _wrinkles(model, P, None, a_s, 1.0 / (0.022 * s), 0.0016 * s, off + 5 * sx)
-            folds += in_arm * (1 - fwin) * _wrinkles(model, P, None, a_s, 1.0 / (0.05 * s), 0.0009 * s, off + 9 * sx)
-        # hanging loose towards the hem (untucked): covers belt / waistband
-        t_extra += flare * (1 - smoothstep(hem + 0.10 * s, hem + 0.24 * s, h))
-        # torso: soft horizontal bunching above the waist + diagonal strain wrinkles
-        folds += np.exp(-((h - 0.10 * s) / (0.09 * s)) ** 2) * _wrinkles(model, P, None, h, 1.0 / (0.045 * s),
-                                                                          0.0018 * s, off + 2)
-        folds += model.noise.fbm(P * 1.0 + off, 10.0, 2) * 0.0012 * s
-        d = db - thick - t_extra - folds
-        q = (P - mz.pel) @ chestR
-        if open_front > 0:
-            gap = open_front * (0.6 + 0.4 * smoothstep(0.0, 0.35 * s, h)) - np.abs(q[:, 0] - 0.004 * s)
-            reg = np.maximum(reg, np.where(q[:, 2] > 0.02 * s, gap, -1.0))
-        if open_back > 0:
-            w = open_back * (0.55 + 0.45 * smoothstep(0.05 * s, 0.35 * s, h)) + _noise_edge(model, P, 7.0, 0.01 * s, off + 3)
-            gap = w - np.abs(q[:, 0])
-            win = (q[:, 2] < -0.02 * s) & (h > 0.02 * s)
-            reg = np.maximum(reg, np.where(win, gap, -1.0))
-        for tc, tr in tears:
-            dist = np.sqrt(((P - tc) ** 2).sum(-1))
-            near = dist < tr * 2.5
-            if near.any():
-                hole = np.full(len(P), -1.0)
-                hole[near] = (tr - dist[near]) + model.noise.fbm(P[near] + off * 2, 22.0, 2) * tr * 0.9
-                reg = np.maximum(reg, hole)
-        if torn > 0:
-            hole = model.noise.fbm(P + off * 3, 5.0, 2) - (1.25 - 0.35 * torn)
-            reg = np.maximum(reg, hole * 0.05 * s)
-        out_d[sel] = np.maximum(d, reg)
-        return out_d, np.full(len(out_d), label, np.int16)
-
-    return g
-
-
-def make_collar(model, spec: dict, mz: Measures):
-    """Shirt/jacket collar: a folded band lying around the base of the neck just outside the
-    shirt surface, open at the front."""
-    s = model.s
-    label = B.CLOTH_LABELS.get(spec.get("type", "flannel"), B.L_FLANNEL)
-    big = 1.5 if spec.get("type") == "jacket" else 1.0
-    thick = float(spec.get("thickness", {"flannel": 0.0055, "tshirt": 0.0038, "jacket": 0.011}.get(spec.get("type"), 0.0055)))
-    sk = model.skel
-    R = sk.rest["neck"]
-    base = sk.head["neck"] + R @ np.array([0.0, 0.004, 0.0]) * s
-    n_c, n_ax = model.cuts["neck"]
-
-    def g(P, d_base):
-        q = (P - base) @ R            # (left, up, front)
-        x, y, z = q[:, 0], q[:, 1], q[:, 2]
-        ang = np.arctan2(x, z)        # 0 = front
-        lift = (0.016 - 0.016 * np.clip(np.cos(ang), 0, 1)) * big * s   # higher at the back
-        shell = np.abs(d_base - (thick + 0.0075 * big) * s) - 0.0032 * s * big
-        yb = np.maximum(y - (0.010 * s + lift), -(0.030 * big * s) + 0.5 * lift - y)
-        band = np.maximum(shell, yb)
-        rad = np.sqrt(x * x + z * z)
-        band = np.maximum(band, rad - 0.13 * s * big)
-        band = np.maximum(band, (P - n_c) @ n_ax + 0.018 * s)      # stays below the neck cut
-        opening = np.cos(ang) - math.cos(math.radians(32))
-        band = np.maximum(band, opening * 0.03 * s)
-        return band, np.full(len(P), label, np.int16)
-
-    return g
-
-
-def make_pants(model, spec: dict, mz: Measures):
-    s = model.s
-    kind = spec.get("type", "denim")
-    label = B.CLOTH_LABELS.get(kind, B.L_DENIM)
-    thick = float(spec.get("thickness", 0.0050)) * s
-    waist = float(spec.get("waist", 0.075)) * s
-    length = {sd: float(spec.get("length", 1.0)) for sd in ("L", "R")}
-    for k in ("length_L", "length_R"):
-        if k in spec:
-            length[k[-1]] = float(spec[k])
-    torn = float(spec.get("torn", 0.0))
-    tears = spec.get("tears", [])
-    leg_len = {side: float(sum(np.linalg.norm(b - a) for a, b in zip(mz.leg_pts[side][:-1], mz.leg_pts[side][1:])))
-               for side in ("L", "R")}
-    th_len = {side: float(np.linalg.norm(mz.leg_pts[side][1] - mz.leg_pts[side][0])) for side in ("L", "R")}
-    off = 41.3
-
-    def g(P, d_base):
-        out_d = np.full(len(P), 1.0)
-        h_all = mz.h(P)
-        sel = np.nonzero(h_all < waist + 0.04 * s)[0]
-        if len(sel) == 0:
-            return out_d, np.full(len(P), label, np.int16)
-        P = P[sel]
-        h = h_all[sel]
-        db = d_base[sel]
-        reg = h - (waist + _noise_edge(model, P, 8.0, 0.003 * s, off))
-        # exclude the arms/hands hanging next to the thighs
-        reg = np.maximum(reg, np.maximum(mz.in_arm(P, "L"), mz.in_arm(P, "R")))
-        folds = model.noise.fbm(P + off, 10.0, 2) * 0.0011 * s
-        t_extra = np.zeros(len(P))
-        for side, sx in (("L", 1.0), ("R", -1.0)):
-            l_s, l_d = mz.leg_arc(P, side)
-            frac = l_s / leg_len[side]
-            on_leg = (P[:, 0] * sx > -0.01 * s) & (l_d < 0.14 * s)
-            if not on_leg.any():
-                continue
-            end = length[side] + _noise_edge(model, P, 10.0, 0.015 * (0.3 + torn), off + sx)
-            reg = np.where(on_leg, np.maximum(reg, (frac - end) * leg_len[side]), reg)
-            kn = l_s - th_len[side]
-            kwin = np.exp(-(kn / (0.07 * s)) ** 2)
-            folds += on_leg * kwin * _wrinkles(model, P, None, l_s, 1.0 / (0.025 * s), 0.0015 * s, off + 3 * sx)
-            hem_d = (end - frac) * leg_len[side]
-            stack = 1 - smoothstep(0.0, 0.10 * s, hem_d)
-            folds += on_leg * stack * _wrinkles(model, P, None, l_s, 1.0 / (0.02 * s), 0.0022 * s, off + 7 * sx)
-            t_extra += on_leg * stack * 0.004 * s
-        d = db - thick - t_extra - folds
-        for tc, tr in tears:
-            dist = np.sqrt(((P - tc) ** 2).sum(-1))
-            near = dist < tr * 2.5
-            if near.any():
-                hole = np.full(len(P), -1.0)
-                hole[near] = (tr - dist[near]) + model.noise.fbm(P[near] + off * 2, 22.0, 2) * tr * 0.9
-                reg = np.maximum(reg, hole)
-        if torn > 0:
-            hole = model.noise.fbm(P + off * 3, 5.0, 2) - (1.3 - 0.35 * torn)
-            reg = np.maximum(reg, hole * 0.05 * s)
-        out_d[sel] = np.maximum(d, reg)
-        return out_d, np.full(len(out_d), label, np.int16)
-
-    return g
-
-
-def make_belt(model, spec: dict, mz: Measures):
-    s = model.s
-    z0 = float(spec.get("waist", 0.075)) * s - 0.018 * s
-    chestR = model.skel.rest["hips"]
-
-    def g(P, d_base):
-        h = mz.h(P)
-        band = np.maximum(d_base - 0.0105 * s, np.abs(h - z0) - 0.017 * s)
-        band = np.maximum(band, np.maximum(mz.in_arm(P, "L"), mz.in_arm(P, "R")) + 0.01 * s)
-        # buckle at the front
-        q = (P - mz.pel) @ chestR
-        buckle = np.maximum(np.maximum(np.abs(q[:, 0]) - 0.026 * s, np.abs(h - z0) - 0.022 * s), d_base - 0.016 * s)
-        buckle = np.where(q[:, 2] > 0.03 * s, buckle, 1.0)
-        return np.minimum(band, buckle), np.full(len(P), B.L_BOOT, np.int16)
-
-    return g
+    def on_foot(self, P, side):
+        """> 0 on the foot below the ankle (trousers stop at the ankle; bare feet stay bare)."""
+        sk, s = self.m.skel, self.m.s
+        _, fd = self.arc(P, [sk.j[f"heel.{side}"], sk.j[f"ball.{side}"], sk.j[f"toe_tip.{side}"]])
+        return np.minimum(0.07 * s - fd, (sk.j[f"ankle.{side}"][2] + 0.015 * s) - P[:, 2])
 
 
 def add_boot(model, side: str, spec: dict):
@@ -368,8 +147,10 @@ def add_hair(model, spec: dict, rng):
         crown = bald * 0.06 - np.sqrt(x * x + (z + 0.01) ** 2 + np.maximum(0.11 - y, 0) ** 2 * 4) + nz.noise(P, 18.0) * 0.01
         patches = nz.fbm(P, 14.0, 2) - (0.75 - 0.6 * patchy)
         reg = np.maximum(reg, np.maximum(crown, patches * 0.03))
-        # soft clumps (fine strands come from the texture)
-        d = d - np.maximum(nz.fbm(P, 22.0, 2), 0) * 0.0018 * s
+        # greasy, matted hanks (the fine strands come from the texture): clumps a few millimetres
+        # proud, stretched along the way the hair lies
+        lie = P + np.outer(nz.noise(P, 6.0), R[:, 1]) * 0.01 * s
+        d = d - np.maximum(nz.fbm(lie * np.array([1.0, 1.0, 1.6]), 24.0, 3) + 0.15, 0) * 0.0032 * s
         return np.maximum(d, reg * s)
 
     lo = hc - radii - 0.03 * s
@@ -390,6 +171,79 @@ def add_hair(model, spec: dict, rng):
                 pts.append(pts[-1] + d * length / 4)
             for a, bpt in zip(pts[:-1], pts[1:]):
                 prog.capsule(a, bpt, rng.uniform(0.004, 0.0065) * s, k=0.006 * s, label=B.L_HAIR)
+
+
+def add_headgear(model, spec: dict):
+    """Hats and head dressings over the hair, owned by the head segment (ADR-0028): a hard hat
+    (dome, brim, ridge), a baseball cap, a knit beanie, or a gauze head bandage."""
+    kind = spec.get("type", "")
+    if not kind:
+        return
+    s = model.s
+    R = model.hR
+    Rl = R @ np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])     # radii (left, front, up)
+    hs = float(model.p.get("head_scale", 1.0))
+    c = model.HP(0, 0.035, -0.012)
+    radii = np.array([0.072, 0.095, 0.087]) * s * hs
+    up, front = R[:, 1], R[:, 2]
+    tilt = math.radians(float(spec.get("tilt", 0.0)))         # pushed back (+) / forward (-)
+    Rt = rot_axis(R[:, 0], tilt) @ Rl
+    prog = model.hair
+    lo, hi = c - 0.2 * s, c + 0.2 * s
+    if kind == "hardhat":
+        lab = B.L_HARDHAT
+        brim_y = 0.028 * s
+
+        def dome(P):
+            q = (P - c) @ Rt
+            d = S.sd_ellipsoid(P, c + up * 0.012 * s, radii + np.array([0.019, 0.021, 0.017]) * s, Rt)
+            return np.maximum(d, brim_y - q[:, 2])
+        prog.union(dome, lo, hi, k=0.0, label=lab)
+        # brim: wider at the front (the peak), flattened
+        bc = c + Rt @ np.array([0.0, 0.018, 0.030]) * s
+        prog.ellipsoid(bc, np.array([0.100, 0.132, 0.0045]) * s * hs, R=Rt, k=0.006 * s, label=lab)
+        # the ridge along the crown
+        top = c + Rt @ np.array([0.0, 0.0, 0.110]) * s
+        prog.capsule(top + Rt @ np.array([0.0, 0.075, -0.030]) * s, top + Rt @ np.array([0.0, -0.075, -0.030]) * s,
+                     0.0075 * s, k=0.010 * s, label=lab)
+    elif kind == "cap":
+        lab = B.L_CAP
+
+        def crown(P):
+            q = (P - c) @ Rt
+            d = S.sd_ellipsoid(P, c + up * 0.006 * s, radii + np.array([0.008, 0.008, 0.008]) * s, Rt)
+            return np.maximum(d, 0.030 * s - q[:, 2] - 0.012 * s * np.clip(q[:, 1] / (0.09 * s), 0, 1))
+        prog.union(crown, lo, hi, k=0.0, label=lab)
+        bill_R = rot_axis(R[:, 0], math.radians(14)) @ Rt
+        prog.ellipsoid(c + Rt @ np.array([0.0, 0.112, 0.024]) * s, np.array([0.062, 0.060, 0.0045]) * s, R=bill_R,
+                       k=0.004 * s, label=lab)
+        prog.sphere(c + Rt @ np.array([0.0, -0.004, 0.103]) * s, 0.006 * s, k=0.003 * s, label=lab)
+    elif kind == "beanie":
+        lab = B.L_KNIT
+
+        def knit(P):
+            q = (P - c) @ Rt
+            d = S.sd_ellipsoid(P, c + up * 0.004 * s, radii + np.array([0.010, 0.010, 0.012]) * s, Rt)
+            return np.maximum(d, 0.004 * s - q[:, 2])
+        prog.union(knit, lo, hi, k=0.0, label=lab)
+        # the turned-up rim
+        def rim(P):
+            q = (P - c) @ Rt
+            d = S.sd_ellipsoid(P, c, radii + np.array([0.016, 0.016, 0.0]) * s, Rt)
+            return np.maximum(np.abs(d) - 0.006 * s, np.abs(q[:, 2] - 0.012 * s) - 0.014 * s)
+        prog.union(rim, lo, hi, k=0.004 * s, label=lab)
+    elif kind == "bandage":
+        lab = B.L_SHIRT
+        y0 = float(spec.get("height", 0.045)) * s
+
+        def gauze(P):
+            q = (P - c) @ Rl
+            d = S.sd_ellipsoid(P, c, radii + np.array([0.006, 0.006, 0.006]) * s, Rl)
+            wrap = np.abs(q[:, 2] - y0 + 0.012 * s * np.tanh(q[:, 1] / (0.05 * s))) - 0.022 * s
+            return np.maximum(np.abs(d) - 0.004 * s, wrap)
+        prog.union(gauze, lo, hi, k=0.003 * s, label=lab)
+        # blood seeping through over the wound (vertex G)
+        model.wounds.append((c + front * (radii[1] + 0.006 * s) + up * y0 * 0.6 + R[:, 0] * 0.03 * s, 0.02 * s, 0.9))
 
 
 def surface_hit(model, origin, direction, max_dist=0.3):
@@ -527,6 +381,7 @@ def _tear_points(model, tears):
 
 
 def dress(model, params: dict, rng) -> None:
+    from . import char_wardrobe as W
     model.bloom_extras = []
     mz = Measures(model)
     model.measures = mz
@@ -545,13 +400,29 @@ def dress(model, params: dict, rng) -> None:
     for top in outfit.get("tops", []):
         spec = dict(top)
         spec["tears"] = _tear_points(model, top.get("tears", []))
-        model.garments.append(make_top(model, spec, mz))
+        model.garments.append(W.make(model, spec, mz, "top"))
         if top.get("collar"):
-            model.garments.append(make_collar(model, top, mz))
+            model.garments.append(W.make(model, top, mz, "collar"))
     if "pants" in outfit:
         spec = dict(outfit["pants"])
         spec["tears"] = _tear_points(model, outfit["pants"].get("tears", []))
-        model.garments.append(make_pants(model, spec, mz))
-        if spec.get("belt"):
-            model.garments.append(make_belt(model, spec, mz))
+        model.garments.append(W.make(model, spec, mz, "pants"))
+        # an untucked top hanging over the waistband hides the belt (its buckle poked through)
+        covered = any(float(t.get("hem", -0.075)) < float(spec.get("waist", 0.075)) - 0.03 and not t.get("tucked")
+                      for t in outfit.get("tops", []))
+        if spec.get("belt") and not covered:
+            model.garments.append(W.make(model, spec, mz, "belt"))
     add_hair(model, params.get("hair", {"style": "short"}), rng)
+    add_headgear(model, params.get("hat", {}))
+    for g in params.get("straps", []):
+        model.garments.append(W.Strap(model, g, mz))
+    if params.get("tie"):
+        model.garments.append(W.Tie(model, params["tie"], mz))
+    if params.get("mantle"):
+        model.garments.append(W.Mantle(model, params["mantle"], mz))
+    # the specials' features sit on the finished surface (ADR-0028)
+    from . import char_specials as SP
+    if params.get("armour"):
+        SP.add_armour(model, params["armour"], rng)
+    if params.get("pustules"):
+        SP.add_pustules(model, params["pustules"], rng)

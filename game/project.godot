@@ -147,3 +147,15 @@ hm_sky_horizon={
 "type": "vec4",
 "value": Vector4(0.37, 0.43, 0.51, 1)
 }
+hm_bloom_map={
+"type": "sampler2D",
+"value": ""
+}
+hm_bloom_rect={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+hm_bloom_night={
+"type": "float",
+"value": 0.0
+}

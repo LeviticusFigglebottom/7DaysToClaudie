@@ -180,9 +180,9 @@
         {"id": "aisle_lurcher", "group": "looters", "pos": [9.0, 1.4], "enemy": "lurcher", "pose": "crouch", "rot": 90},
         {"id": "back_lurcher", "group": "looters", "pos": [13.5, 1.5], "enemy": "lurcher", "pose": "crouch", "rot": -90},
         {"id": "stock_hollow", "pos": [14.5, 3.5], "enemy": "hollow", "pose": "stand", "rot": -90},
-        {"id": "shelf_dragger", "pos": [8.3, 4.5], "enemy": "dragger", "pose": "lie", "rot": 100},
+        {"id": "shelf_dragger", "pos": [8.3, 4.5], "enemy": "dragger", "pose": "lie", "rot": 100, "anchor": "floor"},
         {"id": "lydia", "pos": [1.95, 7.6], "enemy": "hollow", "pose": "sit", "rot": 0},
-        {"id": "aisle_sleeper", "pos": [4.0, 12.5], "enemy": "hollow", "pose": "lie", "rot": 30},
+        {"id": "aisle_sleeper", "pos": [4.0, 12.5], "enemy": "hollow", "pose": "lie", "rot": 30, "anchor": "floor"},
         {"id": "shutter_hollow", "pos": [7.6, 15.3], "enemy": "hollow", "pose": "stand", "rot": 0},
         {"id": "dispensary_tech", "guardian": true, "pos": [13.5, 7.35], "enemy": "hollow", "pose": "stand", "rot": -90}
       ],

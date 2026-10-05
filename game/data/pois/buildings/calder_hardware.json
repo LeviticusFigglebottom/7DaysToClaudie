@@ -247,11 +247,11 @@
       "sleepers": [
         {"id": "aisle_hollow", "pos": [8.5, 11.4], "enemy": "hollow", "pose": "stand", "rot": 200},
         {"id": "aisle_lurcher", "pos": [12.8, 10.4], "enemy": "lurcher", "pose": "crouch", "rot": -90},
-        {"id": "paint_aisle", "pos": [1.2, 11.3], "enemy": "hollow", "pose": "lie", "rot": 10},
-        {"id": "sacks_dragger", "group": "back_room", "pos": [7.6, 1.45], "enemy": "dragger", "pose": "lie", "rot": 120},
+        {"id": "paint_aisle", "pos": [1.2, 11.3], "enemy": "hollow", "pose": "lie", "rot": 10, "anchor": "floor"},
+        {"id": "sacks_dragger", "group": "back_room", "pos": [7.6, 1.45], "enemy": "dragger", "pose": "lie", "rot": 120, "anchor": "floor"},
         {"id": "back_lurcher", "group": "back_room", "pos": [9.6, 4.2], "enemy": "lurcher", "pose": "crouch", "rot": 180},
         {"id": "ed_calder", "pos": [15.4, 1.3], "enemy": "hollow", "pose": "stand", "rot": 130},
-        {"id": "loft_looter", "guardian": true, "pos": [7.5, 3.4], "level": 1, "enemy": "hollow", "pose": "lie", "rot": 70}
+        {"id": "loft_looter", "guardian": true, "pos": [1.4, 0.8], "level": 1, "enemy": "hollow", "pose": "lie", "rot": 90}
       ],
       "lights": [
         {"pos": [2.6, 1.6], "level": 1, "height": 0.45, "color": "#f6e2b4", "energy": 0.5, "range": 6.0, "flicker": 0.06},

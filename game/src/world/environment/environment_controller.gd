@@ -2,7 +2,9 @@ class_name EnvironmentController
 extends Node3D
 ## Sky, sun/moon, ambient, fog, volumetric fog, GI and post-processing driven by the world clock,
 ## weather and the graphics preset. Also publishes the hm_* global shader parameters.
-## Night is meant to be genuinely dark: moonlight is faint, ambient nearly black.
+## Night is meant to be genuinely dark, and no two nights alike: the moon (MoonModel, ADR-0023)
+## orbits with phases, and the night's ambient light, sky and stars run from a near-black new moon
+## to a readable full moon over the range in data/config/world_clock.json "moon".
 
 var clock: WorldClock
 var weather: WeatherState
@@ -13,6 +15,11 @@ var world_env: WorldEnvironment
 var sun: DirectionalLight3D
 var moon: DirectionalLight3D
 var sky_mat: ShaderMaterial
+var moon_model := MoonModel.new()
+## The moon now: phase (0 new .. 0.5 full), lit fraction, light relative to full, altitude in
+## degrees, how much moonlight is in the sky (0..1) and the phase's name.
+var moon_state: Dictionary = {}
+var _moon_cfg: Dictionary = {}
 var _last_snapshot: Dictionary = {}
 
 
@@ -64,8 +71,13 @@ func _ready() -> void:
 	moon.shadow_enabled = true
 	moon.directional_shadow_max_distance = 60.0
 	moon.light_volumetric_fog_energy = 0.4
-	moon.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_AND_SKY
+	# The sky shader draws the moon from uniforms; as a sky light it would take the hidden sun's
+	# LIGHT0 slot at night.
+	moon.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY
+	moon.light_angular_distance = 0.5
 	add_child(moon)
+	_moon_cfg = (Content.config(&"world_clock").get("moon", {}) as Dictionary)
+	moon_model.configure(_moon_cfg)
 	_load_sky_textures()
 	Settings.graphics_changed.connect(apply_graphics)
 	apply_graphics()
@@ -142,8 +154,6 @@ func update_now() -> void:
 	var el: float = deg_to_rad(elev)
 	var sun_dir := Vector3(dir_h.x * cos(el), sin(el), dir_h.z * cos(el)).normalized()
 	_orient(sun, sun_dir)
-	var moon_dir := Vector3(-sun_dir.x * 0.9 + 0.2, maxf(-sun_dir.y, -0.2) * 0.9 + 0.12, -sun_dir.z * 0.9).normalized()
-	_orient(moon, moon_dir)
 	var cover: float = float(w["cloud_cover"])
 	var day: float = smoothstep(-5.0, 12.0, elev)
 	# Ambient follows twilight down to -10 degrees: it used to hit its night floor at -5 while the
@@ -157,16 +167,17 @@ func update_now() -> void:
 	sun.light_energy = smoothstep(-3.0, 18.0, elev) * 1.35 * (1.0 - 0.72 * cover)
 	sun.visible = elev > -4.0
 	sun.shadow_enabled = elev > 0.5
-	# Moonlight: faint, cool; clouds kill it.
-	var moon_up: float = smoothstep(-2.0, 10.0, rad_to_deg(asin(moon_dir.y)))
-	moon.light_energy = 0.065 * moon_up * night * (1.0 - 0.85 * cover)
-	moon.visible = moon.light_energy > 0.001
-	# Sky.
+	# The sky is drawn dimmer at night (background energy); the moon's disc is not.
+	var bg_energy: float = lerpf(0.25, 1.0, day)
+	var moon_sky: float = _update_moon(sun_dir, night, day, cover, bg_energy)
+	# Sky. Night colours run from the new-moon black to a moonlit deep blue.
 	var overcast: float = smoothstep(0.55, 1.0, cover)
 	var zenith: Color = Color(0.2, 0.34, 0.56).lerp(Color(0.42, 0.45, 0.48), overcast)
 	var horizon: Color = Color(0.64, 0.69, 0.74).lerp(Color(0.56, 0.58, 0.6), overcast)
-	zenith = zenith.lerp(Color(0.006, 0.009, 0.02), night)
-	horizon = horizon.lerp(Color(0.012, 0.016, 0.028), night)
+	var night_zenith: Color = _moon_color("night_zenith_new", "#020307").lerp(_moon_color("night_zenith_full", "#0b1630"), moon_sky)
+	var night_horizon: Color = _moon_color("night_horizon_new", "#05070d").lerp(_moon_color("night_horizon_full", "#1a2741"), moon_sky)
+	zenith = zenith.lerp(night_zenith, night)
+	horizon = horizon.lerp(night_horizon, night)
 	sky_mat.set_shader_parameter("zenith_color", zenith)
 	sky_mat.set_shader_parameter("horizon_color", horizon)
 	sky_mat.set_shader_parameter("ground_color", horizon.darkened(0.6))
@@ -174,17 +185,28 @@ func update_now() -> void:
 	sky_mat.set_shader_parameter("night_amount", night)
 	sky_mat.set_shader_parameter("cloud_cover", cover)
 	sky_mat.set_shader_parameter("cloud_darkness", clampf(float(w["rain"]) + overcast * 0.4, 0.0, 1.0))
+	sky_mat.set_shader_parameter("sun_dir", sun_dir)
+	sky_mat.set_shader_parameter("sun_color", Vector3(sun_col.r, sun_col.g, sun_col.b))
+	sky_mat.set_shader_parameter("sun_energy", sun.light_energy)
 	var wd: Vector2 = w["wind_dir"]
 	sky_mat.set_shader_parameter("cloud_wind", wd * (0.002 + 0.006 * float(w["wind"])))
 	sky_mat.set_shader_parameter("aurora", hum_intensity)
-	# Ambient: bright by day, near-black at night (light sources must matter).
-	env.ambient_light_energy = lerpf(0.035, 1.05, dusk) * (1.0 - 0.25 * overcast)
-	env.ambient_light_sky_contribution = 0.85
+	# Ambient: bright by day; at night the moonlit (or moonless) fill from data, plus the Bloom
+	# aurora's green during the Hum. At night the fill comes from the ambient colour rather than
+	# the near-black sky, so the darkness range in data is what the player gets.
+	var night_fill: float = lerpf(float(_moon_cfg.get("night_ambient_new", 0.03)), float(_moon_cfg.get("night_ambient_full", 0.11)), moon_sky)
+	var hum_fill: float = float(_moon_cfg.get("hum_ambient", 0.05)) * hum_intensity
+	var night_col: Color = _moon_color("night_ambient_color", "#5c6f99")
+	if hum_fill > 0.0:
+		night_col = night_col.lerp(_moon_color("hum_ambient_color", "#5fae86"), hum_fill / (night_fill + hum_fill))
+	env.ambient_light_color = Color.BLACK.lerp(night_col, night)
+	env.ambient_light_sky_contribution = lerpf(0.85, 0.25, night)
+	env.ambient_light_energy = lerpf((night_fill + hum_fill) / 0.75, 1.05, dusk) * (1.0 - 0.25 * overcast)
 	# Building interiors: a dim daylight fill from their interior probes (PoiBuilder), none at night.
 	var interior_fill: float = lerpf(0.0, 0.55, day) * (1.0 - 0.3 * overcast)
 	for probe: Node in get_tree().get_nodes_in_group(&"interior_probe"):
 		(probe as ReflectionProbe).ambient_color_energy = interior_fill
-	env.background_energy_multiplier = lerpf(0.25, 1.0, day)
+	env.background_energy_multiplier = bg_energy
 	# Fog: weather + early-morning valley mist.
 	# A thin valley mist at dawn that burns off by mid-morning (weather fog adds on top).
 	var morning_mist: float = smoothstep(4.0, 6.0, hour) * (1.0 - smoothstep(7.0, 9.5, hour)) * 0.0012
@@ -199,7 +221,7 @@ func update_now() -> void:
 	env.fog_density = fog_d
 	var fog_col: Color = horizon.lerp(sun_col * 0.7, golden * 0.35)
 	env.fog_light_color = fog_col
-	env.fog_light_energy = lerpf(0.06, 1.0, day)
+	env.fog_light_energy = lerpf(0.06 + 0.12 * moon_sky, 1.0, day)
 	env.fog_sun_scatter = 0.25 * day
 	env.volumetric_fog_density = vol_d
 	env.volumetric_fog_albedo = Color(0.88, 0.9, 0.92)
@@ -220,7 +242,57 @@ func update_now() -> void:
 	var hl: Color = horizon.lerp(sun_col, golden * 0.3).srgb_to_linear() * sky_e
 	RenderingServer.global_shader_parameter_set(&"hm_sky_zenith", Vector4(zl.r, zl.g, zl.b, 1.0))
 	RenderingServer.global_shader_parameter_set(&"hm_sky_horizon", Vector4(hl.r, hl.g, hl.b, 1.0))
-	_last_snapshot = {"elev": elev, "day": day, "night": night, "cover": cover}
+	_last_snapshot = {"elev": elev, "day": day, "night": night, "cover": cover, "moon_sky": moon_sky}
+
+
+## Places the moon, sets its light by phase and altitude and feeds the sky shader (ADR-0023).
+## Returns how much moonlight is in the night sky (0 new moon or set .. 1 high full moon).
+func _update_moon(sun_dir: Vector3, night: float, day: float, cover: float, bg_energy: float) -> float:
+	var moon_dir: Vector3 = moon_model.direction(clock)
+	_orient(moon, moon_dir)
+	var phase: float = moon_model.phase_at(clock.total_minutes)
+	var illum: float = MoonModel.illuminated(phase)
+	var bright: float = moon_model.brightness(phase)
+	var alt: float = rad_to_deg(asin(clampf(moon_dir.y, -1.0, 1.0)))
+	var up: float = smoothstep(-1.0, 8.0, alt)
+	# A low moon shines through more air: dimmer and warmer.
+	var high: float = smoothstep(4.0, 30.0, alt)
+	var col: Color = _moon_color("color_crescent", "#93a7d6").lerp(_moon_color("color_full", "#b9c7e6"), illum)
+	col = _moon_color("color_low", "#d9b98f").lerp(col, high)
+	moon.light_color = col
+	moon.light_energy = float(_moon_cfg.get("energy_full", 0.2)) * bright * up * lerpf(0.55, 1.0, high) * night * (1.0 - 0.85 * cover)
+	moon.visible = moon.light_energy > 0.0015
+	moon.shadow_enabled = moon.light_energy > 0.02
+	var moon_sky: float = bright * smoothstep(-6.0, 12.0, alt) * (1.0 - 0.6 * cover)
+	sky_mat.set_shader_parameter("moon_dir", moon_dir)
+	sky_mat.set_shader_parameter("moon_sun_dir", MoonModel.sunlight_at_moon(moon_dir, sun_dir, phase))
+	sky_mat.set_shader_parameter("moon_radius", deg_to_rad(float(_moon_cfg.get("disc_degrees", 3.2)) * 0.5))
+	sky_mat.set_shader_parameter("moon_illum", illum)
+	sky_mat.set_shader_parameter("moon_color", Vector3(col.r, col.g, col.b))
+	sky_mat.set_shader_parameter("moon_disc_energy", lerpf(float(_moon_cfg.get("disc_energy", 2.2)), float(_moon_cfg.get("disc_energy_day", 0.45)), day) / bg_energy)
+	sky_mat.set_shader_parameter("earthshine", float(_moon_cfg.get("earthshine", 0.05)))
+	sky_mat.set_shader_parameter("moon_glow", float(_moon_cfg.get("glow", 0.35)) * bright * up * night / bg_energy)
+	sky_mat.set_shader_parameter("moon_sky", moon_sky * night)
+	sky_mat.set_shader_parameter("star_visibility", 1.0 - float(_moon_cfg.get("star_fade_full", 0.72)) * moon_sky)
+	sky_mat.set_shader_parameter("star_rotation", star_basis(clock, moon_model.latitude_deg))
+	moon_state = {"phase": phase, "illuminated": illum, "brightness": bright, "altitude": alt, "sky": moon_sky,
+		"name": MoonModel.phase_name(phase)}
+	return moon_sky
+
+
+## The star sphere's turn: about the celestial pole (north, `latitude` up) once a sidereal day,
+## which is a day less a year's worth (one turn more per year than the sun makes). Maps a view
+## direction to its place on the star texture.
+static func star_basis(c: WorldClock, latitude: float) -> Basis:
+	var year_days: float = float(c.season_length_days * maxi(1, c.season_order.size()))
+	var sidereal: float = WorldClock.MIN_PER_DAY * year_days / (year_days + 1.0)
+	var lat: float = deg_to_rad(latitude)
+	var pole := Vector3(0.0, sin(lat), -cos(lat))
+	return Basis(pole, TAU * fposmod(c.total_minutes / sidereal, 1.0))
+
+
+func _moon_color(key: String, fallback: String) -> Color:
+	return Color.html(str(_moon_cfg.get(key, fallback)))
 
 
 func _season_weights() -> Vector4:
@@ -235,8 +307,10 @@ func _season_weights() -> Vector4:
 
 
 ## Light level of the sky at the moment (0 dark night .. 1 bright day), used by stealth/visibility.
+## A full moon lifts the night a little.
 func ambient_light_level() -> float:
-	return float(_last_snapshot.get("day", 1.0)) * (1.0 - 0.3 * float(_last_snapshot.get("cover", 0.0)))
+	var sky: float = float(_last_snapshot.get("day", 1.0)) * (1.0 - 0.3 * float(_last_snapshot.get("cover", 0.0)))
+	return maxf(sky, 0.15 * float(_last_snapshot.get("moon_sky", 0.0)) * float(_last_snapshot.get("night", 0.0)))
 
 
 static func _orient(light: DirectionalLight3D, toward_light: Vector3) -> void:

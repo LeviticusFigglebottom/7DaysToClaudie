@@ -202,7 +202,8 @@
         {"prop": "barrel_metal", "pos": [20.6, 14.4]},
         {"id": "yard_trash_bag", "prop": "trash_bag", "pos": [-1.7, 3.0], "rot": 20},
         {"prop": "pallet", "pos": [-1.9, 9.0], "rot": 85},
-        {"prop": "tire", "pos": [3.5, -1.6]}
+        {"prop": "tire", "pos": [3.5, -1.6]},
+        {"id": "evidence_room_chair", "prop": "chair_wood", "pos": [1.5, 1.6], "rot": 160, "variant": "worn"}
       ],
       "pickups": [
         {"id": "evidence_key", "item": "evidence_locker_key", "pos": [14.5, 11.2], "y": 0.78},
@@ -218,11 +219,11 @@
         {"id": "block_lurcher_1", "pos": [6.5, 5.5], "enemy": "lurcher", "pose": "crouch", "rot": 90},
         {"id": "block_lurcher_2", "pos": [10.5, 4.5], "enemy": "lurcher", "pose": "crouch", "rot": -90},
         {"id": "block_hollow", "pos": [8.5, 5.4], "enemy": "hollow", "pose": "stand", "rot": 180},
-        {"id": "cell_1_sick", "group": "cells", "pos": [5.15, 1.6], "enemy": "hollow", "pose": "sit", "rot": 90},
-        {"id": "cell_2_dragger", "group": "cells", "pos": [8.4, 2.3], "enemy": "dragger", "pose": "lie", "rot": 200},
+        {"id": "cell_1_sick", "group": "cells", "pos": [5.15, 1.6], "enemy": "hollow", "pose": "lie", "rot": 90},
+        {"id": "cell_2_dragger", "group": "cells", "pos": [8.4, 2.3], "enemy": "dragger", "pose": "lie", "rot": 200, "anchor": "floor"},
         {"id": "hale", "pos": [11.4, 1.1], "enemy": "keener", "pose": "stand", "rot": 180},
         {"id": "bunk_sleeper", "pos": [13.8, 3.0], "enemy": "hollow", "pose": "lie", "rot": 90},
-        {"id": "lobby_sleeper", "pos": [3.5, 11.2], "enemy": "hollow", "pose": "lie", "rot": 260},
+        {"id": "lobby_sleeper", "pos": [3.5, 11.2], "enemy": "hollow", "pose": "lie", "rot": 260, "anchor": "floor"},
         {"id": "sample_miner", "guardian": true, "pos": [1.5, 1.6], "enemy": "hollow", "pose": "sit", "rot": 160}
       ],
       "traps": [

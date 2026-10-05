@@ -1,5 +1,5 @@
 {
-  "_doc": "Tier-2 dairy barn across the yard from the Okafor farmhouse (framework farm_okafor, lot 'barn', big doors face the yard). Route: big doors chained from inside -> round the west side where the workshop boards are torn out -> workshop -> the aisle between the stalls (sleepers in the straw; Papa's bear trap) -> feed room: the milk ledger and the tack-room key on the nail (a can chime on the door) -> unlock the tack room: saddles, Papa's chest, the ladder -> up through the hatch into the nest where the thing in the loft lived (loot room; its guardian is home) -> out into the hayloft (ambush; a soft patch of floor) -> drop through the hay hole into the east stalls -> draw the bolt on the stall door and leave. Hollowed don't climb ladders: the loft is the only place the stall sleepers can't follow.",
+  "_doc": "Tier-2 dairy barn across the yard from the Okafor farmhouse (framework farm_okafor, lot 'barn', big doors face the yard). Route: big doors chained from inside -> round the west side where the workshop boards are torn out -> workshop -> the aisle between the stalls (sleepers in the straw; Papa's bear trap) -> feed room: the milk ledger and the tack-room key on the nail (a can chime on the door) -> unlock the tack room: saddles, Papa's chest, the ladder -> up through the hatch into the nest where the thing in the loft lived (loot room; its guardian is home) -> out into the hayloft (ambush; a soft patch of floor) -> drop through the hay hole into the east stalls -> draw the bolt on the stall door and leave. Hollowed don't climb ladders: the loft is the only place the stall sleepers can't follow. Massing (ADR-0021): the threshing aisle rises two storeys open to the roof timbers between the hay mows, entered by tall barn doors; the lofts look over it from rough rails, with a hay chute gap on the east side; the hay door is in the back gable over the back doors.",
   "defs": [
     {
       "id": "okafor_barn",
@@ -33,7 +33,7 @@
             "SSSSAAAAMMMM"
           ],
           "rooms": {
-            "A": {"name": "Aisle", "type": "barn", "wall": "wood_paneling_dark", "floor": "concrete"},
+            "A": {"name": "Aisle", "type": "barn", "wall": "wood_paneling_dark", "floor": "concrete", "storeys": 2, "open_roof": true},
             "W": {"name": "West stalls", "type": "barn", "wall": "wood_paneling_dark", "floor": "wood_pine", "open_to": "A"},
             "E": {"name": "East stalls", "type": "barn", "wall": "wood_paneling_dark", "floor": "wood_pine", "open_to": "A"},
             "M": {"name": "Machine bay", "type": "barn", "wall": "wood_paneling_dark", "floor": "concrete", "open_to": "A"},
@@ -48,28 +48,28 @@
             "LLLLLLLLNNNN",
             "LLLLLLLLNNNN",
             "LLLLLLLLNNNN",
-            "LLLLLLLLNNNN",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL",
-            "LLLLLLLLLLLL"
+            "LLLLLLLLLNNN",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL",
+            "LLLL^^^^LLLL"
           ],
           "rooms": {
-            "L": {"name": "Hayloft", "type": "loft", "wall": "wood_paneling_dark", "floor": "wood_pine"},
+            "L": {"name": "Hayloft", "type": "loft", "wall": "wood_paneling_dark", "floor": "wood_pine", "open_roof": true, "gallery": "rail"},
             "N": {"name": "The nest", "type": "loft", "wall": "wood_paneling_dark", "floor": "wood_pine"}
           }
         }
       ],
       "openings": [
-        {"id": "big_doors", "at": [5, 15], "side": "S", "type": "door2", "state": "locked_inside", "lock": "chain"},
+        {"id": "big_doors", "at": [5, 15], "side": "S", "type": "door2_tall", "state": "locked_inside", "lock": "chain"},
         {"id": "back_doors", "at": [5, 0], "side": "N", "type": "door2", "state": "barricaded"},
         {"id": "workshop_breach", "at": [0, 14], "side": "W", "type": "breach"},
         {"id": "workshop_door", "at": [3, 14], "side": "E", "type": "door", "state": "broken"},
@@ -86,7 +86,8 @@
         {"id": "workshop_window", "at": [1, 15], "side": "S", "type": "window", "state": "closed"},
         {"id": "machine_window", "at": [10, 15], "side": "S", "type": "window", "state": "boarded"},
         {"id": "nest_door", "at": [8, 2], "side": "W", "type": "door", "state": "closed", "level": 1},
-        {"id": "hay_door", "at": [5, 15], "side": "S", "type": "window2", "state": "open", "level": 1},
+        {"id": "hay_door", "at": [5, 0], "side": "N", "type": "window2", "state": "open", "level": 1},
+        {"id": "hay_chute", "at": [8, 8], "side": "W", "type": "open", "level": 1},
         {"id": "loft_window_w", "at": [0, 8], "side": "W", "type": "window", "state": "broken", "level": 1},
         {"id": "loft_window_e", "at": [11, 10], "side": "E", "type": "window", "state": "closed", "level": 1},
         {"id": "nest_window", "at": [11, 1], "side": "E", "type": "window", "state": "boarded", "level": 1}
@@ -95,8 +96,7 @@
         {"level": 0, "at": [11, 3], "side": "E", "hatch": true}
       ],
       "holes": [
-        {"level": 1, "at": [9, 6]},
-        {"level": 1, "at": [5, 12]}
+        {"level": 1, "at": [9, 6]}
       ],
       "props": [
         {"prop": "pegboard_wall", "id": "workshop_pegboard", "at": [1, 13], "against": "N", "height": 0.9},
@@ -174,9 +174,9 @@
         {"prop": "farm_hay_bale_square", "pos": [1.55, 14.6], "rot": 90, "level": 1},
         {"prop": "farm_hay_bale_square", "pos": [1.55, 13.6], "rot": 90, "level": 1},
         {"prop": "farm_hay_bale_square", "pos": [3.6, 7.0], "rot": 30, "variant": "destroyed", "level": 1},
-        {"prop": "farm_hay_bale_square", "pos": [6.5, 9.4], "rot": 110, "variant": "destroyed", "level": 1},
+        {"prop": "farm_hay_bale_square", "pos": [9.6, 9.4], "rot": 110, "variant": "destroyed", "level": 1},
         {"prop": "farm_hay_bale_square", "pos": [10.6, 13.6], "rot": 10, "variant": "destroyed", "level": 1},
-        {"prop": "farm_pitchfork", "pos": [6.4, 5.2], "rot": 60, "level": 1},
+        {"prop": "farm_pitchfork", "pos": [8.7, 7.4], "rot": 60, "level": 1},
         {"prop": "farm_hay_bale_square", "pos": [11.4, 4.6], "rot": 0, "level": 1},
         {"prop": "farm_hay_bale_square", "pos": [11.4, 5.15], "y": 0.0, "rot": 4, "level": 1},
         {"prop": "farm_lantern", "pos": [7.6, 1.0], "variant": "destroyed", "level": 1},
@@ -189,7 +189,8 @@
         {"prop": "cans_scatter", "pos": [9.5, 2.65], "rot": 80, "level": 1},
         {"prop": "bottles_scatter", "pos": [11.0, 2.5], "level": 1},
         {"prop": "candle_cluster", "pos": [10.8, 1.15], "level": 1},
-        {"prop": "farm_hay_bale_square", "pos": [8.55, 3.4], "rot": 90, "level": 1}
+        {"prop": "farm_hay_bale_square", "pos": [9.6, 3.4], "rot": 90, "level": 1},
+        {"prop": "crate_wood", "id": "workshop_crate", "pos": [2.6, 13.62], "rot": 0, "variant": "worn"}
       ],
       "pickups": [
         {"id": "tackroom_key", "item": "farm_tackroom_key", "pos": [1.7, 0.12], "y": 1.45}
@@ -199,12 +200,12 @@
       ],
       "sleepers": [
         {"id": "workshop_sitter", "pos": [2.6, 13.75], "enemy": "hollow", "pose": "sit", "rot": 0},
-        {"id": "stall_sleeper_a", "pos": [1.5, 6.0], "enemy": "hollow", "pose": "lie", "rot": 100, "group": "stalls"},
-        {"id": "stall_sleeper_b", "pos": [2.4, 11.4], "enemy": "hollow", "pose": "lie", "rot": 250, "group": "stalls"},
+        {"id": "stall_sleeper_a", "pos": [1.5, 6.0], "enemy": "hollow", "pose": "lie", "rot": 100, "group": "stalls", "anchor": "floor"},
+        {"id": "stall_sleeper_b", "pos": [2.4, 11.4], "enemy": "hollow", "pose": "lie", "rot": 250, "group": "stalls", "anchor": "floor"},
         {"id": "stall_lurcher", "pos": [10.35, 7.8], "enemy": "lurcher", "pose": "crouch", "rot": 200, "group": "stalls"},
         {"id": "aisle_stander", "pos": [6.4, 4.6], "enemy": "hollow", "pose": "stand", "rot": 180},
-        {"id": "loft_sleeper_a", "pos": [3.0, 5.8], "enemy": "hollow", "pose": "lie", "rot": 20, "level": 1, "group": "loft"},
-        {"id": "loft_sleeper_b", "pos": [7.0, 12.6], "enemy": "hollow", "pose": "lie", "rot": 300, "level": 1, "group": "loft"},
+        {"id": "loft_sleeper_a", "pos": [3.0, 5.8], "enemy": "hollow", "pose": "lie", "rot": 20, "level": 1, "group": "loft", "anchor": "floor"},
+        {"id": "loft_sleeper_b", "pos": [9.3, 12.5], "enemy": "hollow", "pose": "lie", "rot": 300, "level": 1, "group": "loft", "anchor": "floor"},
         {"id": "nest_drifter", "pos": [9.4, 2.9], "enemy": "hollow", "pose": "stand", "rot": 90, "level": 1, "guardian": true}
       ],
       "traps": [
@@ -236,7 +237,7 @@
         {"at": [1, 1], "label": "Feed room (a can chime on the door): the milk ledger, the tack-room key on the nail over the bins"},
         {"at": [10, 1], "label": "Unlock the tack room: saddles, Papa's chest, the ladder up"},
         {"at": [10, 2], "level": 1, "label": "Up through the hatch into the nest - somebody lived here, and still does (loot, guardian)"},
-        {"at": [4, 8], "level": 1, "label": "Out into the hayloft: they're lying in the hay (ambush; mind the soft boards)"},
+        {"at": [2, 8], "level": 1, "label": "Out across the mow into the hayloft: they're lying in the hay (ambush; mind the soft boards)"},
         {"at": [9, 7], "level": 1, "label": "The hay drop over the east stalls"},
         {"at": [9, 6], "label": "Drop into the east stalls"},
         {"at": [13, 6], "label": "Draw the bolt on the stall door and leave"}

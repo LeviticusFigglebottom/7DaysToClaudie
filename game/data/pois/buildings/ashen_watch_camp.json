@@ -1,0 +1,1557 @@
+{
+ "_doc": "Tier-2 Ashen watch camp at the treeline on the rise north of Route 9 (region D6), where the Bloom's deep larch wood ends. Mostly outdoors: a palisade of prop sections (2 m and 1 m) round a compound of yard cells, with three small kit rooms dressed by shell props (out_longhouse_shell, out_smoke_hut_shell, out_lean_to_shell: bark, pole and sod walls and roofs, lined inside, openings where the plan's doors are; style roof 'none') and a cache pit cut into the ground under the longhouse. The validator treats the yard as open: the palisade, the barred gate and the 1 m burnt breach are real only in game (prop collision). Route: the trail -> the barred gate -> round the palisade -> the breach with the bone chimes (alarm: wakes the camp) -> the burial platform for the cache key (taking it, or the jaws in the grass, wakes the watchers in the lean-to) -> the longhouse through its clawed east wall (entering wakes the sick) -> the hatch to the cache pit (the keeper guards the cache) -> the longhouse's bolted back door out through the palisade line. Sleepers are Ashen Hollowed (enemy ashen_hollow). See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "ashen_watch_camp",
+   "name": "Ashen Watch Camp",
+   "tier": 2,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    38,
+    38
+   ],
+   "origin": [
+    2,
+    2
+   ],
+   "author": "Hollowmere team",
+   "story": "The Ashen kept a watch on this rise above Route 9 to see who came up from the Cordon gate: six watchers, a fire they never let die, and a pit full of what they took off the road. In March they caught a Remand salvager at the river and kept him in the cache pit to dig for them and read them the Program's papers. In May the fever came up from the campground with the trade goods. The Ashen did what the Ashen do: they barred their sick in the longhouse and stacked the pyre against its wall, strung the bone chimes across the burnt gap in the palisade and barred the gate. Nobody would light the pyre. The keeper went down into the pit to sit with the cache and the salvager until it was over, and the sick clawed their way out through the longhouse's east wall and lay down again where they had always slept. The old man they put up on the burial platform first still wears the cache key on a thong round its post.",
+   "style": {
+    "exterior": "wood_paneling_dark",
+    "interior": "wood_paneling_dark",
+    "floor": "wood_pine",
+    "ceiling": "wood_paneling_dark",
+    "floor_height": 0.08,
+    "decay": 0.7,
+    "damaged_walls": 0.0,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.0
+    },
+    "roof": {
+     "type": "none"
+    }
+   },
+   "levels": [
+    {
+     "level": -1,
+     "plan": [
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..............CCCC................",
+      "..............CCCC................",
+      "..............CCCC................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      ".................................."
+     ],
+     "rooms": {
+      "C": {
+       "name": "Cache pit",
+       "type": "cellar",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      }
+     }
+    },
+    {
+     "level": 0,
+     "plan": [
+      "..................................",
+      "..................................",
+      "..................................",
+      ".............LLLLLLLL.............",
+      ".............LLLLLLLL.............",
+      ".............LLLLLLLL.............",
+      ".............LLLLLLLL.............",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "........................SSS.......",
+      "...TT...................SSS.......",
+      "...TT...................SSS.......",
+      "...TT.............................",
+      "...TT.............................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      ".................................."
+     ],
+     "rooms": {
+      "L": {
+       "name": "Longhouse",
+       "type": "ashen",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      },
+      "S": {
+       "name": "Smoke hut",
+       "type": "ashen",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      },
+      "T": {
+       "name": "Lean-to",
+       "type": "ashen",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "back_door",
+     "at": [
+      14,
+      3
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_plank"
+    },
+    {
+     "id": "longhouse_door",
+     "at": [
+      17,
+      6
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "barricaded",
+     "model": "door_plank"
+    },
+    {
+     "id": "longhouse_breach",
+     "at": [
+      20,
+      5
+     ],
+     "side": "E",
+     "type": "breach"
+    },
+    {
+     "id": "smoke_door",
+     "at": [
+      24,
+      13
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed",
+     "model": "door_plank"
+    },
+    {
+     "id": "lean_to_open_13",
+     "at": [
+      4,
+      13
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "lean_to_open_14",
+     "at": [
+      4,
+      14
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "lean_to_open_15",
+     "at": [
+      4,
+      15
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "lean_to_open_16",
+     "at": [
+      4,
+      16
+     ],
+     "side": "E",
+     "type": "open"
+    }
+   ],
+   "ladders": [
+    {
+     "level": -1,
+     "at": [
+      14,
+      6
+     ],
+     "side": "S",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "prop": "out_palisade",
+     "pos": [
+      4.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      6.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      8.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      10.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      12.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      22.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      24.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      26.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      28.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      30.0,
+      2.9
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      4.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      6.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      8.0
+     ],
+     "rot": 90,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      11.0
+     ],
+     "rot": 90,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_palisade_half",
+     "pos": [
+      2.9,
+      12.5
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      18.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      20.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      22.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      24.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      26.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      2.9,
+      28.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      4.0
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      6.0
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      8.0
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      10.0
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      12.0
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      14.0
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      16.0
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      18.0
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      20.0
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      22.0
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      24.0
+     ],
+     "rot": -90,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      26.0
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      31.1,
+      28.0
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      4.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      6.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      8.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      10.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      12.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      14.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade_half",
+     "pos": [
+      15.5,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      20.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      22.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      24.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      26.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      28.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade",
+     "pos": [
+      30.0,
+      29.1
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_palisade_gate",
+     "id": "gate",
+     "pos": [
+      17.5,
+      29.1
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_palisade_breach",
+     "pos": [
+      2.9,
+      9.5
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_bone_chime",
+     "pos": [
+      3.25,
+      9.5
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_longhouse_shell",
+     "id": "longhouse_shell",
+     "pos": [
+      17.0,
+      5.0
+     ],
+     "rot": 0,
+     "y": -0.08,
+     "route_ok": true
+    },
+    {
+     "prop": "out_smoke_hut_shell",
+     "id": "smoke_hut_shell",
+     "pos": [
+      25.5,
+      13.5
+     ],
+     "rot": 0,
+     "y": -0.08,
+     "route_ok": true
+    },
+    {
+     "prop": "out_lean_to_shell",
+     "id": "lean_to_shell",
+     "pos": [
+      4.0,
+      15.0
+     ],
+     "rot": 0,
+     "y": -0.08,
+     "route_ok": true
+    },
+    {
+     "prop": "out_hide_bed",
+     "pos": [
+      13.55,
+      4.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_hide_bed",
+     "pos": [
+      19.9,
+      3.6
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_hide_bed",
+     "pos": [
+      16.4,
+      6.45
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "out_hide_bed",
+     "pos": [
+      19.6,
+      6.45
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_stone_fire_pit",
+     "pos": [
+      17.6,
+      4.9
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_ashen_bundle",
+     "id": "longhouse_bundle_a",
+     "pos": [
+      20.5,
+      4.4
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "out_ashen_bundle",
+     "id": "longhouse_bundle_b",
+     "pos": [
+      13.6,
+      3.45
+     ],
+     "rot": 10,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_firewood_stack",
+     "pos": [
+      16.2,
+      3.35
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_antler_pile",
+     "pos": [
+      18.2,
+      3.45
+     ],
+     "rot": 200
+    },
+    {
+     "prop": "out_ashen_cache",
+     "id": "ashen_cache",
+     "at": [
+      17,
+      4
+     ],
+     "against": "E",
+     "level": -1,
+     "variant": "worn",
+     "key": "out_ashen_cache_key"
+    },
+    {
+     "prop": "out_ashen_bundle",
+     "id": "pit_bundle",
+     "pos": [
+      16.2,
+      6.55
+     ],
+     "rot": 15,
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_ammo_box",
+     "id": "pit_ammo",
+     "pos": [
+      14.5,
+      4.3
+     ],
+     "rot": 30,
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "crate_wood",
+     "id": "pit_crate",
+     "pos": [
+      17.4,
+      6.4
+     ],
+     "rot": -10,
+     "level": -1,
+     "variant": "worn",
+     "container": "out_ashen_bundle"
+    },
+    {
+     "prop": "corpse_remains",
+     "id": "salvager_remains",
+     "pos": [
+      15.95,
+      4.4
+     ],
+     "rot": 88,
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "pos": [
+      15.25,
+      4.25
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_smoking_rack",
+     "pos": [
+      25.5,
+      12.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_ashen_bundle",
+     "id": "smoke_bundle",
+     "pos": [
+      26.4,
+      14.4
+     ],
+     "rot": -60
+    },
+    {
+     "prop": "out_stone_fire_pit",
+     "pos": [
+      25.6,
+      13.75
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "out_hide_bed",
+     "pos": [
+      3.55,
+      14.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_hide_bed",
+     "pos": [
+      3.55,
+      16.05
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_ashen_bundle",
+     "id": "lean_to_bundle",
+     "pos": [
+      4.55,
+      13.4
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "out_pyre",
+     "pos": [
+      17.0,
+      17.5
+     ],
+     "rot": 10,
+     "variant": "clean"
+    },
+    {
+     "prop": "woodpile",
+     "pos": [
+      13.6,
+      19.6
+     ],
+     "rot": 75,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_burial_platform",
+     "pos": [
+      26.5,
+      6.6
+     ],
+     "rot": 15,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_antler_pile",
+     "pos": [
+      28.9,
+      8.9
+     ],
+     "rot": 120
+    },
+    {
+     "prop": "out_effigy",
+     "pos": [
+      20.6,
+      20.0
+     ],
+     "rot": 200,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_effigy",
+     "pos": [
+      9.0,
+      9.5
+     ],
+     "rot": 135
+    },
+    {
+     "prop": "out_pit_hut",
+     "pos": [
+      8.6,
+      24.0
+     ],
+     "rot": 20,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_pit_hut",
+     "pos": [
+      12.8,
+      25.8
+     ],
+     "rot": -15,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_hide_frame",
+     "pos": [
+      22.4,
+      10.2
+     ],
+     "rot": 30,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_hide_frame",
+     "pos": [
+      8.3,
+      19.9
+     ],
+     "rot": -15
+    },
+    {
+     "prop": "out_stone_fire_pit",
+     "pos": [
+      7.2,
+      15.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "wild_meat_cache",
+     "pos": [
+      28.4,
+      23.2
+     ],
+     "rot": 15,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_antler_pile",
+     "pos": [
+      15.0,
+      27.6
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "wild_chopping_block",
+     "pos": [
+      11.4,
+      18.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_firewood_stack",
+     "pos": [
+      11.2,
+      18.9
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "corpse_remains",
+     "id": "breach_corpse",
+     "pos": [
+      6.0,
+      10.6
+     ],
+     "rot": 120,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_ashen_bundle",
+     "id": "yard_bundle",
+     "pos": [
+      23.6,
+      25.6
+     ],
+     "rot": 30,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_effigy",
+     "pos": [
+      13.4,
+      31.7
+     ],
+     "rot": 5,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_effigy",
+     "pos": [
+      21.6,
+      31.7
+     ],
+     "rot": -5
+    },
+    {
+     "prop": "out_bone_totem",
+     "pos": [
+      10.6,
+      33.2
+     ],
+     "rot": 10,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_bone_totem",
+     "pos": [
+      24.6,
+      33.3
+     ],
+     "rot": -20
+    },
+    {
+     "prop": "out_bone_totem",
+     "pos": [
+      0.8,
+      6.8
+     ],
+     "rot": 80,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_bone_totem",
+     "pos": [
+      33.0,
+      15.0
+     ],
+     "rot": -80
+    },
+    {
+     "prop": "out_antler_pile",
+     "pos": [
+      1.2,
+      26.5
+     ],
+     "rot": 60
+    }
+   ],
+   "pickups": [
+    {
+     "id": "cache_key",
+     "item": "out_ashen_cache_key",
+     "pos": [
+      25.45,
+      5.75
+     ],
+     "y": 1.45
+    }
+   ],
+   "notes": [
+    {
+     "note": "out_ashen_offering",
+     "pos": [
+      17.5,
+      29.6
+     ],
+     "y": 0.12
+    },
+    {
+     "note": "out_ashen_tally",
+     "pos": [
+      18.5,
+      5.95
+     ],
+     "y": 0.04
+    },
+    {
+     "note": "out_ashen_report",
+     "pos": [
+      16.95,
+      4.85
+     ],
+     "level": -1,
+     "y": 0.04
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "sick_hunter",
+     "pos": [
+      13.55,
+      4.6
+     ],
+     "enemy": "ashen_hollow",
+     "pose": "lie",
+     "rot": 0,
+     "group": "sick"
+    },
+    {
+     "id": "sick_elder",
+     "pos": [
+      19.9,
+      3.6
+     ],
+     "enemy": "ashen_hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "sick"
+    },
+    {
+     "id": "sick_girl",
+     "pos": [
+      16.4,
+      6.45
+     ],
+     "enemy": "ashen_hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "sick"
+    },
+    {
+     "id": "sick_watcher",
+     "pos": [
+      19.0,
+      5.2
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 200,
+     "group": "sick"
+    },
+    {
+     "id": "watch_a",
+     "pos": [
+      3.55,
+      14.0
+     ],
+     "enemy": "ashen_hollow",
+     "pose": "lie",
+     "rot": 0,
+     "group": "watch"
+    },
+    {
+     "id": "watch_b",
+     "pos": [
+      3.55,
+      16.05
+     ],
+     "enemy": "ashen_hollow",
+     "pose": "lie",
+     "rot": 180,
+     "group": "watch"
+    },
+    {
+     "id": "watch_c",
+     "pos": [
+      4.6,
+      15.1
+     ],
+     "enemy": "ashen_hollow",
+     "pose": "sit",
+     "rot": 90,
+     "group": "watch",
+     "anchor": "floor"
+    },
+    {
+     "id": "smoke_tender",
+     "pos": [
+      24.6,
+      14.3
+     ],
+     "enemy": "ashen_hollow",
+     "pose": "sit",
+     "rot": 45,
+     "anchor": "floor"
+    },
+    {
+     "id": "keeper",
+     "pos": [
+      16.5,
+      5.45
+     ],
+     "enemy": "ashen_hollow",
+     "pose": "stand",
+     "rot": -110,
+     "level": -1,
+     "guardian": true
+    }
+   ],
+   "decals": [
+    {
+     "decal": "scorch",
+     "at": [
+      17,
+      5
+     ],
+     "side": "floor",
+     "size": [
+      1.6,
+      1.6
+     ]
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      19,
+      5
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 90
+    },
+    {
+     "decal": "out_ash_hand",
+     "at": [
+      13,
+      4
+     ],
+     "side": "W",
+     "size": [
+      0.5,
+      0.5
+     ],
+     "height": 1.3
+    },
+    {
+     "decal": "out_ash_hand",
+     "at": [
+      20,
+      6
+     ],
+     "side": "S",
+     "size": [
+      0.5,
+      0.5
+     ],
+     "height": 1.5
+    },
+    {
+     "decal": "out_ash_ward",
+     "at": [
+      14,
+      3
+     ],
+     "side": "N",
+     "size": [
+      0.9,
+      0.9
+     ],
+     "height": 1.6
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      15,
+      6
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.0
+     ],
+     "level": -1
+    },
+    {
+     "decal": "out_ash_ward",
+     "at": [
+      16,
+      4
+     ],
+     "side": "N",
+     "size": [
+      0.8,
+      0.8
+     ],
+     "height": 1.4,
+     "level": -1
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      17,
+      4
+     ],
+     "side": "E",
+     "size": [
+      0.8,
+      0.6
+     ],
+     "height": 1.2,
+     "level": -1
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      4,
+      9
+     ],
+     "side": "floor",
+     "size": [
+      1.1,
+      1.6
+     ],
+     "rot": 90
+    },
+    {
+     "decal": "blood_splatter_b",
+     "at": [
+      20,
+      5
+     ],
+     "side": "E",
+     "size": [
+      1.0,
+      1.0
+     ],
+     "height": 1.0
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      17,
+      33
+     ],
+     "label": "The trail tops out at the treeline: bone totems, effigies, a palisade"
+    },
+    {
+     "at": [
+      17,
+      30
+     ],
+     "label": "The gate is barred from inside; a note under a stone at its foot"
+    },
+    {
+     "at": [
+      1,
+      20
+     ],
+     "label": "Round the palisade along the treeline"
+    },
+    {
+     "at": [
+      2,
+      9
+     ],
+     "label": "A burnt gap in the west wall, bone chimes strung across it"
+    },
+    {
+     "at": [
+      4,
+      9
+     ],
+     "label": "Inside the watch camp"
+    },
+    {
+     "at": [
+      25,
+      8
+     ],
+     "label": "The burial platform: a key on a thong round its post (and jaws in the grass)"
+    },
+    {
+     "at": [
+      5,
+      15
+     ],
+     "label": "The lean-to: the watchers on their hides"
+    },
+    {
+     "at": [
+      21,
+      5
+     ],
+     "label": "The longhouse is barred, but its east wall is clawed through from inside"
+    },
+    {
+     "at": [
+      17,
+      5
+     ],
+     "label": "The longhouse: the sick lie round the cold hearth"
+    },
+    {
+     "at": [
+      15,
+      5
+     ],
+     "level": -1,
+     "label": "Down the hatch to the cache pit: the keeper and the cache"
+    },
+    {
+     "at": [
+      14,
+      3
+     ],
+     "label": "Back up; slide the bolt of the longhouse's back door"
+    },
+    {
+     "at": [
+      14,
+      1
+     ],
+     "label": "Out behind the palisade"
+    }
+   ],
+   "loot_room": {
+    "room": "C",
+    "level": -1
+   },
+   "shortcuts": [
+    {
+     "opening": "back_door"
+    }
+   ],
+   "traps": [
+    {
+     "id": "breach_chimes",
+     "type": "alarm",
+     "at": [
+      3,
+      9
+     ],
+     "side": "W",
+     "style": "bell"
+    },
+    {
+     "id": "platform_jaws",
+     "type": "bear_trap",
+     "pos": [
+      25.0,
+      8.7
+     ],
+     "rot": 30
+    },
+    {
+     "id": "pit_hut_jaws",
+     "type": "bear_trap",
+     "pos": [
+      10.4,
+      21.7
+     ],
+     "rot": -20
+    }
+   ],
+   "triggers": [
+    {
+     "id": "longhouse_entered",
+     "group": "sick",
+     "on": "room",
+     "room": "L",
+     "level": 0,
+     "delay": 0.5
+    },
+    {
+     "id": "cache_key_taken",
+     "group": "watch",
+     "on": "pickup",
+     "pickup": "cache_key",
+     "delay": 0.8
+    },
+    {
+     "id": "platform_jaws_snap",
+     "group": "watch",
+     "on": "trap",
+     "trap": "platform_jaws",
+     "delay": 0.3
+    }
+   ]
+  }
+ ]
+}

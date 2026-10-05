@@ -266,13 +266,16 @@ def build_joints(p: dict) -> dict[str, np.ndarray]:
     arm_s = float(p.get("arm_scale", 1.0))
     leg_s = float(p.get("leg_scale", 1.0))
     build = float(p.get("build", 0.3))
+    # Bloom-thickened bulk (the Rammer): a yoke of shoulders, a wide pelvis, built into the frame
+    # instead of scaling the body in the game (which stretched the head and pushed the arms out).
+    mass = float(np.clip(p.get("mass", 0.0), 0.0, 1.0))
     j: dict[str, np.ndarray] = {}
     a = np.array
     # --- legs (heights as fractions of stature, scaled by leg_scale about the ground) ---------
     hip_z = 0.522 * H * (0.94 + 0.06 * leg_s) * (1.0 + (leg_s - 1.0) * 0.6)
     leg_len = hip_z - 0.042 * H
     knee_z = 0.042 * H + leg_len * 0.505
-    hip_x = (0.050 + 0.006 * fem + 0.004 * build) * H
+    hip_x = (0.050 + 0.006 * fem + 0.004 * build) * H * (1.0 + 0.22 * mass)
     ankle_x = float(p.get("stance", 0.068)) * H
     for side, sx in (("L", 1.0), ("R", -1.0)):
         j[f"hip.{side}"] = a([sx * hip_x, 0.0, hip_z])
@@ -301,11 +304,12 @@ def build_joints(p: dict) -> dict[str, np.ndarray]:
     jdir = a([0.0, -math.cos(math.radians(33) + jd), -math.sin(math.radians(33) + jd)])
     j["chin"] = j["jaw0"] + jdir * jaw_len
     # head geometry anchors (for the face builder)
-    sw = (0.101 - 0.010 * fem + 0.004 * build) * H
+    sw = (0.101 - 0.010 * fem + 0.004 * build) * H * (1.0 + 0.30 * mass)
     j["clav.L"] = a([0.012 * H, -0.010 * H, zt(0.812)])
     j["clav.R"] = a([-0.012 * H, -0.010 * H, zt(0.812)])
-    j["shoulder.L"] = a([sw, 0.004 * H, zt(0.806)])
-    j["shoulder.R"] = a([-sw, 0.004 * H, zt(0.806)])
+    # the yoke rides high round a short neck
+    j["shoulder.L"] = a([sw, 0.004 * H, zt(0.806 + 0.010 * mass)])
+    j["shoulder.R"] = a([-sw, 0.004 * H, zt(0.806 + 0.010 * mass)])
     # --- arms (A-pose) -------------------------------------------------------------------------
     ang = math.radians(float(p.get("arm_angle", 47.0)))
     fwd_tilt = math.radians(8.0)

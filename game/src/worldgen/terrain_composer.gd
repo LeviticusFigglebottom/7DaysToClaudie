@@ -10,7 +10,8 @@ extends RefCounted
 ##      so neighbouring regions meet seamlessly)
 ##   3. water distance fields (rivers, lakes) on a 4 m grid -> valley caps, banks, channel beds
 ##   4. road distance fields -> smoothed centre-line profiles -> flatten (bridges skip water)
-##   5. pads for frameworks/POIs (flatten to their mean height + skirt)
+##   5. pads for frameworks/POIs (flatten to their mean height + skirt; "keep_water" pads sit a
+##      "freeboard" above the lake or river they overlap, grade only dry ground and leave the water)
 ##   6. biome map, splat weights (8-layer palette), vegetation mask
 
 const VERSION: int = 10
@@ -262,7 +263,8 @@ class _Build:
 			size = _v2(f["size"])
 		return {"kind": str(f["type"]), "def": def_id, "id": str(f.get("id", def_id)), "origin": _v2(f["origin"]),
 			"rot": deg_to_rad(float(f.get("rotation", 0.0))), "size": size, "skirt": float(f.get("skirt", 10.0)),
-			"biome": str(f.get("biome", "town" if str(f["type"]) == "framework" else "meadow"))}
+			"biome": str(f.get("biome", "town" if str(f["type"]) == "framework" else "meadow")),
+			"keep_water": bool(f.get("keep_water", false)), "freeboard": float(f.get("freeboard", 0.6))}
 
 	func _content() -> Node:
 		return ContentDB.instance
@@ -731,15 +733,27 @@ class _Build:
 			var size: Vector2 = pad["size"]
 			var rot: float = pad["rot"]
 			var skirt: float = pad["skirt"]
+			# A pad that keeps its water (a boathouse slip or a dock out over a lake, ADR-0024) grades
+			# only the dry ground, and the lake or river under it keeps its bed instead of being filled
+			# to the pad. Its height is the water's plus a freeboard, not the ground's mean: the POI's
+			# docks, piles and boats are authored against the water, which an "auto" lake level moves.
+			var keep_water: bool = pad["keep_water"]
 			# Mean height over the pad.
 			var acc: float = 0.0
 			var cnt: int = 0
+			var wet_lvl: float = 0.0
+			var wet_cnt: int = 0
 			for k: int in 25:
 				var lp := Vector2((k % 5 + 0.5) / 5.0 * size.x, (k / 5 + 0.5) / 5.0 * size.y)
 				var wp: Vector2 = o + lp.rotated(rot)
 				acc += _sample(wp.x, wp.y)
 				cnt += 1
+				if keep_water and _water_d(wp.x, wp.y) < 0.0:
+					wet_lvl += _water_field(w_lvl, wp.x, wp.y)
+					wet_cnt += 1
 			var target: float = acc / cnt + 0.05
+			if wet_cnt > 0:
+				target = wet_lvl / wet_cnt + float(pad["freeboard"])
 			pad["height"] = target
 			var corners: Array[Vector2] = [o, o + Vector2(size.x, 0).rotated(rot), o + size.rotated(rot), o + Vector2(0, size.y).rotated(rot)]
 			var bb := Rect2(corners[0], Vector2.ZERO)
@@ -753,6 +767,10 @@ class _Build:
 				var d: float = sqrt(dx * dx + dz * dz)
 				if d < skirt:
 					var wgt: float = 1.0 - smoothstep(0.0, skirt, d)
+					if keep_water:
+						# Nothing in the water; the dry ground eases down to the bank over its last 2 m
+						# rather than standing over the water as a step.
+						wgt *= smoothstep(0.0, 2.0, _water_d(x, z))
 					h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
 
 	# --- 6. Surface: biome, splat, vegetation ---------------------------------------------------
@@ -1017,6 +1035,19 @@ class _Build:
 		var top: float = a + (b - a) * fx
 		var bot: float = c + (d - c) * fx
 		return top + (bot - top) * fz
+
+	## Signed distance (m) from (x, z) to the nearest lake or river edge, negative in the water and
+	## huge far from any (the coarse water field, bilinear, as _apply_water carved it).
+	func _water_d(x: float, z: float) -> float:
+		return _water_field(w_d, x, z)
+
+	## A coarse water field (w_d, w_lvl) sampled bilinearly at (x, z).
+	func _water_field(f: PackedFloat32Array, x: float, z: float) -> float:
+		var gx: float = clampf((x - cx0) / cs, 0.0, cn - 1.001)
+		var gz: float = clampf((z - cz0) / cs, 0.0, cn - 1.001)
+		var cx: int = int(gx)
+		var cz: int = int(gz)
+		return _bl(f, cz * cn + cx, gx - cx, gz - cz)
 
 	## Calls fn(index, x, z) for every fine sample inside `box` (world rect).
 	func _for_box(box: Rect2, fn: Callable) -> void:

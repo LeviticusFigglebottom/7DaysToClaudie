@@ -13,7 +13,7 @@ import numpy as np
 from mathutils import Matrix
 
 from lib import char_body as B, char_dress, char_mesh as M, char_pipeline as CP, char_sdf as S, char_uv as U
-from lib import common, export, vcolor
+from lib import char_attrs as A, common, export, vcolor
 from lib.char_skel import Skeleton, build_joints
 
 PIECES = {
@@ -107,6 +107,11 @@ def build(params: dict, outputs: list[str]) -> None:
         c, n = model.cuts[cut]
         # origin at the centre of the cut (section centroid on the cut plane)
         V = M.mesh_arrays(obj)
+        # shader data from the body's rest pose, before the origin moves: a severed arm's veins and
+        # mottling are the ones it had on the body (ADR-0028)
+        f = A.Fields(len(V))
+        f.wet, f.bruise = model.skin_masks(V)
+        A.write(obj, V, f)
         near = np.abs((V - c) @ n) < 0.004 * model.s
         centre = V[near].mean(0) if near.sum() > 3 else c
         obj.data.transform(Matrix.Translation(tuple(-centre)))
@@ -119,6 +124,7 @@ def build(params: dict, outputs: list[str]) -> None:
         if o.name.startswith("gib_chunk"):
             U.project(o, (0, 0, 0), (0, 0, 1), (0, 1, 0), planar_threshold=0.7)
             common.shade_smooth(o, angle_deg=70.0)
+            A.write(o, M.mesh_arrays(o), A.Fields(len(o.data.vertices)))
     vcolor.bake_ao(objs, samples=12, distance=0.08, strength=0.8, ground=False)
     for o in objs:
         vcolor.fill_channel(o, 1, 0.85)       # blood/dirt mask high: fresh gore

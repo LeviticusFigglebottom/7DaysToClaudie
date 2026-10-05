@@ -1,0 +1,81 @@
+{
+ "_doc": "Readable notes of the Larch Hollow outskirts (item note_<id> in items/outskirts.json). Each advances its site's story and points at the route; the campground and the Ashen camp point at each other.",
+ "defs": [
+  {
+   "id": "out_bait_closed",
+   "title": "Sign on the Shop Door",
+   "style": "handwritten",
+   "author": "N. Ruud",
+   "body": "CLOSED.\nGONE TO THE WATER.\n\nBoats are NOT for hire. Don't come down the dock: there are traps set for the ones that walk the shore at night.\n\nIf you're Program, leave flour or coffee by the gas pump and blow your horn twice. We'll trade you fish.\n— N. Ruud"
+  },
+  {
+   "id": "out_bait_diary",
+   "title": "Agnes Ruud's Diary",
+   "style": "handwritten",
+   "author": "Agnes Ruud",
+   "body": "Sept 2. Ned read us the Cordon pamphlet twice over supper. Water masks scent. So we are going out over the water: the net loft over the boat slip, the ladder pulled up behind us at night. Pip thinks it's camping.\nSept 9. Pip cut himself a fishing hole in the loft floor over the slip. Fourteen perch and a sucker. Ned says the Hollowed walk the shore after dark and stop at the water like it's a wall.\nSept 30. Three hands from the mill came down the shore path wanting a boat across. Ned let them sleep in the boat bay. One had a rag round his hand he wouldn't take off.\nOct 4. All three fevered. Ned nursing them down in the bay.\nOct 6. Ned's burning up. He went through to the office for the shells and the cash box and didn't come back. I heard him walking the shop all night.\nOct 7. I padlocked the bait-room door from the slip side. His keys are on the nail by the hatch. I couldn't throw them in the water.\nOct 8. The mill hands lie in the bay among the life jackets. They don't answer when I call. The boards on the slip walk groan under you; I go over them on my knees.\nOct 9. Sent Pip across the pond in the canoe at first light, to the Okafors'. I waved till he was round the point. My hands are hot. — A.R."
+  },
+  {
+   "id": "out_bait_ledger",
+   "title": "Boat Log",
+   "style": "handwritten",
+   "author": "Ned Ruud",
+   "body": "BOAT LOG\nJun 14 — No. 2 — Halvorsen (2) — 3 hrs — $6.00 — four crappie\nJul 22 — No. 1 — Okafor & boy — all day — $10.00 — 'the big pike got off AGAIN'\nAug 30 — No. 3 — Cordon man asking the depth at the outlet. No charge. Didn't fish.\nSept 1 — CLOSED for the season (Cordon order).\nOct 1 — No. 2 and 3 — mill hands (3) — no charge\nOct 6 — Shells: none in the drawer. Cash box in the safe, key on my ring.\n\n(The last line runs off the page:) It's in me like a fever in the water. Aggie keep the boy off the"
+  },
+  {
+   "id": "out_bait_pip",
+   "title": "Pip's Fishing Card",
+   "style": "scrawl",
+   "author": "Pip",
+   "body": "PIP'S FISHING HOLE — NO GROWNUPS\nperch IIII IIII IIII\ntrout II\nsucker I (threw back)\nTHE BIG PIKE: not yet\n\nGrandpa says don't drop the line when the people walk on the shore. He says they can't swim. I think they can't."
+  },
+  {
+   "id": "out_ashen_report",
+   "title": "Program Field Report 7-C",
+   "style": "handwritten",
+   "author": "Salvager #2271",
+   "body": "REMAND SALVAGE PROGRAM — FIELD REPORT 7-C\nSalvager no. 2271. Sector D6/E6. Nature of incident: (pencil) CAPTURED.\n\nThey took me at the river in March. They're people. Ash on every inch of them so the Hollowed can't smell them. They burn their dead up here and hang the bones on poles to say whose ground it is. They kept me in this pit to dig, and to read them the Program papers off the drop canisters.\n\nThe bone chimes on the burnt gap in the wall are their alarm. When those ring the whole camp gets up. Crawl it and cut the cord.\n\nIn May the fever came up from the campground with the trade goods. They barred their sick in the longhouse and stacked the pyre against the wall, and nobody would light it.\n\nThe keeper came down here with me and the cache. He sits with his back to it and breathes like a dog. The cache key is on the old man on the platform, the first one they put up.\n\nIf you read this, I'm the one in the corner. Tell them 2271 dug his quota."
+  },
+  {
+   "id": "out_ashen_tally",
+   "title": "Bark Slate",
+   "style": "scrawl",
+   "body": "(Charcoal on a slab of cedar bark, in the Ashen's hand-marks.)\n\nSix hands in a row; the last three smeared out with a thumb.\nUnder them a longhouse, a bar drawn across its door. A pyre beside it, the flame strokes rubbed away.\nAt the bottom one small hand inside a circle inside the ground: the pit."
+  },
+  {
+   "id": "out_ashen_offering",
+   "title": "Note Weighted with a Stone",
+   "style": "handwritten",
+   "author": "Bev Lindgren",
+   "body": "To the people on the rise —\n\nWe left flour, salt and two propane bottles at the big cedar by the creek, like before. Please leave the campers be. They mean you no harm, and none of them have the sickness. If you need medicine I have some.\n\nThe Ostrowski boy isn't lost. He's with us at the ward. Please.\n— Bev Lindgren, camp host, Tamsin River Campground"
+  },
+  {
+   "id": "out_camp_register",
+   "title": "Campground Register",
+   "style": "handwritten",
+   "author": "B. & G. Lindgren, camp hosts",
+   "body": "TAMSIN RIVER CAMPGROUND — REGISTER\n\nSite 1 — Pruitt, two tents — in Aug 26 — Dana to the ward\nSite 2 — Novak family (Mila, 9) — in Aug 28\nSite 3 — Haldane, motorhome — in Aug 29 — SICK Sept 14\nSite 4 — Ostrowski, dome tent — in Aug 30 — to the ward\nSite 5 — closed: Gus's traps, keep the kids off\nSite 6 — Okafor cousins — in Sept 1 — went home to the farm\n\nSept 1: Cordon closed Route 9. No departures. Quiet hours 10 pm, still.\nSept 16: shower house is the sick ward now. MEN'S SIDE CHAINED. Do not open it.\nSept 19: Gus. (Pressed hard enough to tear the page:) Trailer locked. Don't go in."
+  },
+  {
+   "id": "out_camp_bev",
+   "title": "Bev's Ward Notes",
+   "style": "handwritten",
+   "author": "Bev Lindgren",
+   "body": "WARD — shower house\nWomen's side: Mrs. Novak (104 and climbing), Dana Pruitt.\nMen's side: the Haldane boys, Mr. Ostrowski and his boy. Chained after Danny bit me. They've started on the block wall from inside.\n\nAspirin every four hours while it lasts. Boil the water.\n\nGus is in the trailer, in the bedroom. DO NOT OPEN THE BEDROOM. The alarm on that door is for me, so I know when he's up. It isn't for you.\n\nMy keys are on my hook here: the trailer padlock, the chain, the cash box. If I'm not me when you find this, take them and go."
+  },
+  {
+   "id": "out_camp_mila",
+   "title": "Mila's Drawing",
+   "style": "scrawl",
+   "author": "Mila, 9",
+   "body": "(Crayon: a tent, a picnic table, and tall grey people with branches on their heads standing in the trees.)\n\nthe painted people came back last nite. they left a deer head on our table. Mom says dont go past the bear box. Bev says they are just hungry. I left them my granola bars. — MILA"
+  },
+  {
+   "id": "out_camp_notice",
+   "title": "Notice on the Board",
+   "style": "printed",
+   "author": "Tamsin County Parks",
+   "body": "TAMSIN COUNTY PARKS — NOTICE\n\nBy order of the Cordon Authority (Order 14) Route 9 is closed to all traffic until further notice. Campers are to REMAIN AT THEIR SITES.\n\nReport fever, confusion or bites to the camp host at once. Do not approach persons in the forest. Do not feed wildlife.\n\nQuiet hours 10 pm – 6 am. Fires in rings only."
+  }
+ ]
+}

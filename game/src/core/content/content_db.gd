@@ -34,6 +34,7 @@ const KINDS: Dictionary = {
 	&"framework": {"dir": "pois/frameworks", "script": preload("res://src/core/content/defs/framework_def.gd")},
 	&"quest": {"dir": "quests", "script": preload("res://src/core/content/defs/quest_def.gd")},
 	&"prop": {"dir": "props", "script": preload("res://src/core/content/defs/prop_def.gd")},
+	&"population": {"dir": "populations", "script": preload("res://src/core/content/defs/population_def.gd")},
 }
 
 const BASE_PACK: String = "res://data"

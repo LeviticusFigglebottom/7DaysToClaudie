@@ -229,6 +229,9 @@ func set_lit(on: bool) -> void:
 			Game.session.world.flags["lit:%s" % piece_id] = true
 		else:
 			Game.session.world.flags.erase("lit:%s" % piece_id)
+	# The coals of a lit fire glow (ember_glow materials, ADR-0023).
+	if _mesh != null:
+		PropLights.set_lit(_mesh, on)
 	if on and _light == null:
 		_light = FlickerLight.new()
 		_light.light_color = Color(1.0, 0.62, 0.32)

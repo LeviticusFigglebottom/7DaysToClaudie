@@ -10,8 +10,13 @@ extends RefCounted
 ##  * dungeon mechanics (ADR-0018): stable ids on sleepers, traps and triggers (TD-031), trap types
 ##    and placement, triggers that name real rooms/openings/pickups/containers/traps and wake a
 ##    group that exists, guardians in the loot room, lock kinds on doors,
+##  * tall rooms (ADR-0021): nobody stands in a tall room's open space (sleepers, props, pickups,
+##    traps, stair landings, holes), a gallery railing only lets anyone through where a gap is
+##    authored, and that drop lands on the room's floor without stranding the player; roof
+##    overrides name real wings,
 ##  * the building fits its footprint, and the performance budget (lights, sleepers, pieces) holds.
-## Node graph: (level, cell) room/outside cells; "out" = the yard.
+## Node graph: (level, cell) room/outside cells; "out" = the yard. A tall room's void cells are
+## never nodes: stepping into one lands on the floor it rises from.
 
 const PASSABLE_DOOR_STATES: PackedStringArray = ["closed", "open", "broken", "missing", "locked", "locked_inside"]
 const DEFAULT_BUDGET: Dictionary = {"lights": 10, "enemies": 14, "pieces": 2600, "props": 220}
@@ -81,11 +86,29 @@ func _walkable(li: int, c: Vector2i) -> bool:
 	return c.x >= -YARD and c.y >= -YARD and c.x < int(lv.get("w", 0)) + YARD and c.y < int(lv.get("d", 0)) + YARD
 
 
-## Where a step onto (li, c) ends: on the cell itself, or (weak floors collapsed) on the cell below.
+## Where a step onto (li, c) ends: on the cell itself, (weak floors collapsed) on the cell below, or
+## (a tall room's void) on the floor of the room it rises from.
 func _land(li: int, c: Vector2i) -> Array:
 	if _collapsed and _weak.has(node_key(li, c)):
 		return [li - 1, c]
+	if layout.is_void(li, c):
+		return layout.floor_cell(li, c)
 	return [li, c]
+
+
+## What stands between two cells across an edge: a wall (passable only through an opening) or a
+## gallery railing (only where an "open"/"breach" gap is authored in it).
+func _edge_passable(li: int, e: Array, from_cell: Vector2i, keys: Dictionary) -> bool:
+	var ek: String = PoiLayout.edge_key(li, e[0], e[1])
+	var wall: Dictionary = layout.walls.get(ek, {})
+	if not wall.is_empty():
+		var op: Dictionary = wall["opening"]
+		return not op.is_empty() and _opening_passable(op, from_cell, keys)
+	var gal: Dictionary = layout.galleries.get(ek, {})
+	if not gal.is_empty():
+		var gop: Dictionary = gal["opening"]
+		return not gop.is_empty() and _opening_passable(gop, from_cell, keys)
+	return true
 
 
 ## Neighbours of a node given the keys held.
@@ -99,13 +122,10 @@ func _neighbors(li: int, c: Vector2i, keys: Dictionary) -> Array:
 		out.append("out")
 	for side: int in 4:
 		var n: Vector2i = c + PoiLayout.DIRS[side]
-		var e: Array = PoiLayout.side_edge(c, side)
-		var wall: Dictionary = layout.walls.get(PoiLayout.edge_key(li, e[0], e[1]), {})
-		if not wall.is_empty():
-			var op: Dictionary = wall["opening"]
-			if op.is_empty() or not _opening_passable(op, c, keys):
-				continue
-		if _walkable(li, n):
+		if not _edge_passable(li, PoiLayout.side_edge(c, side), c, keys):
+			continue
+		# Over a gallery's gap (or through a door onto a tall room's void) is a one-way drop.
+		if _walkable(li, n) or layout.is_void(li, n):
 			out.append(_land(li, n))
 	for s: Dictionary in layout.stairs:
 		if int(s["level"]) == li and s["cell"] == c:
@@ -121,7 +141,7 @@ func _neighbors(li: int, c: Vector2i, keys: Dictionary) -> Array:
 			out.append([li - 1, lc])
 	for h: Dictionary in layout.holes:
 		if int(h["level"]) == li and h["cell"] == c:
-			out.append([li - 1, c])
+			out.append(_land(li - 1, c))
 	return out
 
 
@@ -132,7 +152,7 @@ func _opening_passable(op: Dictionary, from_cell: Vector2i, keys: Dictionary) ->
 	var st: String = op["state"]
 	if t in ["open", "breach", "half"]:
 		return true
-	if t.begins_with("window"):
+	if PoiLayout.is_window(t):
 		return st == "broken" or st == "missing" or st == "open"
 	if not PASSABLE_DOOR_STATES.has(st):
 		return false
@@ -251,7 +271,11 @@ func _run() -> void:
 		var li: int = wp["level"]
 		var c: Vector2i = wp["cell"]
 		if not _walkable(li, c):
-			_e("route waypoint %d '%s' is not on a walkable cell %s (level %d)" % [i, wp.get("label", ""), c, li])
+			if layout.is_void(li, c):
+				_e("route waypoint %d '%s' at %s (level %d) is in a tall room's open space; put it on its floor (level %d)" % [
+					i, wp.get("label", ""), c, li, int(layout.floor_cell(li, c)[0])])
+			else:
+				_e("route waypoint %d '%s' is not on a walkable cell %s (level %d)" % [i, wp.get("label", ""), c, li])
 			route_ok = false
 			continue
 		var s2: Dictionary = _bfs([prev], keys)
@@ -264,6 +288,7 @@ func _run() -> void:
 		prev = [li, c]
 	if route_ok and not _weak.is_empty():
 		_check_collapsed_route(seen)
+	_check_tall_rooms(seen, keys)
 	# Shortcuts lead outside.
 	for sc: Variant in layout.shortcuts:
 		var op_id: String = str((sc as Dictionary).get("opening", "")) if sc is Dictionary else str(sc)
@@ -275,16 +300,21 @@ func _run() -> void:
 		for c: Vector2i in s["cells"]:
 			stair_cells[node_key(s["level"], c)] = true
 	var blocked: Dictionary = _prop_cells()
+	# A sitter that lands on the chair it was authored at shares that chair's cell by design
+	# (SleeperAnchors, ADR-0022).
+	var landed: Dictionary = {} if layout.sleepers.is_empty() else SleeperAnchors.assign(layout)["by_sleeper"]
 	for i: int in layout.sleepers.size():
 		var sl: Dictionary = layout.sleepers[i]
 		var k2: String = node_key(sl["level"], sl["cell"])
-		if not layout.is_room(layout.room_at(sl["level"], sl["cell"])):
+		if layout.is_void(sl["level"], sl["cell"]):
+			_e("sleeper '%s' at %s (level %d) floats in a tall room's open space (no floor there)" % [sl.get("sid", i), sl["cell"], sl["level"]])
+		elif not layout.is_room(layout.room_at(sl["level"], sl["cell"])):
 			_e("sleeper %d is not inside a room (%s level %d)" % [i, sl["cell"], sl["level"]])
 		elif stair_cells.has(k2):
 			_e("sleeper %d stands on stairs" % i)
 		elif _over_well(int(sl["level"]), sl["cell"]):
 			_e("sleeper '%s' at %s (level %d) floats over a stairwell or hatch opening" % [sl.get("sid", i), sl["cell"], sl["level"]])
-		elif blocked.has(k2) and str(sl.get("pose", "stand")) != "lie":
+		elif blocked.has(k2) and str(sl.get("pose", "stand")) != "lie" and not landed.has(str(sl.get("sid", ""))):
 			_w("sleeper %d shares a cell with a prop" % i)
 		elif not seen.has(k2):
 			_e("sleeper %d is in an unreachable cell" % i)
@@ -307,9 +337,15 @@ func _run() -> void:
 		if pd == null:
 			_e("prop '%s' unknown" % p.get("prop"))
 			continue
-		var outside: bool = not layout.is_room(layout.room_at(p["level"], p["cell"]))
+		var in_void: bool = layout.is_void(p["level"], p["cell"])
+		var outside: bool = not layout.is_room(layout.room_at(p["level"], p["cell"])) and not in_void
+		var hangs: bool = pd.wall_mounted or pd.has_tag("stairwell") or float(p.get("y", 0.0)) >= 0.5
 		if outside and int(p["level"]) != 0:
 			_e("prop '%s' at %s level %d is outside the building" % [pd.id, p["cell"], p["level"]])
+		# A tall room's open space has no floor: only what hangs on its walls or high in it.
+		elif in_void and not hangs:
+			_e("prop '%s' at %s level %d floats in a tall room's open space (no floor there; place it on level %d)" % [
+				str(p.get("id", pd.id)), p["cell"], p["level"], int(layout.floor_cell(p["level"], p["cell"])[0])])
 		# Only what stands on the floor needs one: wall-mounted props hang on the well's walls,
 		# raised ones (y >= 0.5 m: under a ceiling or on a counter, which is checked itself) hang
 		# or sit above it, and a prop tagged "stairwell" (a railing, a ladder) belongs in it.
@@ -320,7 +356,9 @@ func _run() -> void:
 		if pd.collision != "none" and route_cells.has(node_key(p["level"], p["cell"])) and pd.size.x * pd.size.z > 0.5 and not bool(p.get("route_ok", false)):
 			_w("prop '%s' at %s sits on the route corridor" % [pd.id, p["cell"]])
 	for p2: Dictionary in layout.pickups:
-		if _over_well(int(p2["level"]), p2["cell"]):
+		if layout.is_void(int(p2["level"]), p2["cell"]):
+			_e("pickup '%s' at %s level %d floats in a tall room's open space" % [p2["pid"], p2["cell"], p2["level"]])
+		elif _over_well(int(p2["level"]), p2["cell"]):
 			_e("pickup '%s' at %s level %d floats over a stairwell or hatch opening" % [p2["pid"], p2["cell"], p2["level"]])
 		if not seen.has(node_key(p2["level"], p2["cell"])):
 			_e("pickup '%s' unreachable" % p2.get("item"))
@@ -330,10 +368,12 @@ func _run() -> void:
 	_check_traps(seen, stair_cells)
 	_check_triggers(seen)
 	_check_locks(keys)
+	_check_roof()
+	_check_dungeon_life()
 	# Budget.
 	var budget: Dictionary = DEFAULT_BUDGET.duplicate()
 	budget.merge(def.budget, true)
-	var piece_count: int = layout.walls.size()
+	var piece_count: int = layout.walls.size() + layout.galleries.size()
 	for li: int in layout.level_ids:
 		piece_count += layout.room_cells(li).size() * 2
 	var groups: Dictionary = {}
@@ -377,6 +417,76 @@ func _check_collapsed_route(intact: Dictionary) -> void:
 		if not _bfs([below], keys).has("out"):
 			_e("falling through weak floor '%s' traps the player: no way out from %s level %d" % [_weak[wk], below[1], below[0]])
 	_collapsed = false
+
+
+## Tall rooms (ADR-0021): every "storeys" room rises somewhere and every "open_roof" room reaches the
+## roof; stair landings and drop holes have a floor; and each authored drop off a gallery (a gap in
+## its railing, or a door or broken window onto a tall room's open space) lands where the player can
+## still get out (a fall must never strand them).
+func _check_tall_rooms(seen: Dictionary, keys: Dictionary) -> void:
+	var rises: Dictionary = {}
+	for vk: String in layout.void_base:
+		var b: Array = layout.void_base[vk]
+		rises["%d:%s" % [int(b[0]), b[1]]] = true
+	var under_roof: Dictionary = {}
+	for li: int in layout.level_ids:
+		for c: Vector2i in layout.room_cells(li):
+			if not layout.is_built(layout.column_top(li, c) + 1, c):
+				under_roof["%d:%s" % [li, layout.room_at(li, c)]] = true
+	for li2: int in layout.level_ids:
+		for ch: String in (layout.levels[li2]["rooms"] as Dictionary):
+			var rd: Dictionary = layout.room_def(li2, ch)
+			var rk: String = "%d:%s" % [li2, ch]
+			if layout.room_storeys(li2, ch) > 1 and not rises.has(rk):
+				_w("room '%s' (level %d) has storeys %d but no '%s' above it, so it is one storey tall" % [ch, li2, layout.room_storeys(li2, ch), PoiLayout.VOID])
+			if bool(rd.get("open_roof", false)) and not under_roof.has(rk):
+				_w("room '%s' (level %d) is open_roof but no part of it is under the roof" % [ch, li2])
+	for s: Dictionary in layout.stairs:
+		if layout.is_void(int(s["level"]) + 1, s["landing"]):
+			_e("stairs at %s (level %d) land in a tall room's open space on level %d" % [s["cell"], s["level"], int(s["level"]) + 1])
+	for h: Dictionary in layout.holes:
+		if layout.is_void(int(h["level"]), h["cell"]):
+			_e("hole at %s (level %d) is in a tall room's open space: there is no floor to break" % [h["cell"], h["level"]])
+	# Drops off a gallery: through a gap in its railing, or a passable opening in a wall onto the void.
+	var drops: Array = []
+	for gk: String in layout.galleries:
+		var g: Dictionary = layout.galleries[gk]
+		if not (g["opening"] as Dictionary).is_empty():
+			drops.append([g, g["opening"]])
+	for wk: String in layout.walls:
+		var w: Dictionary = layout.walls[wk]
+		if not (w["opening"] as Dictionary).is_empty() and (str(w["a"]) == PoiLayout.VOID) != (str(w["b"]) == PoiLayout.VOID):
+			drops.append([w, w["opening"]])
+	for d: Array in drops:
+		var e: Dictionary = d[0]
+		var op: Dictionary = d[1]
+		var li3: int = int(e["level"])
+		var cells: Array[Vector2i] = PoiLayout.edge_cells(str(e["axis"]), e["cell"])
+		var from: Vector2i = cells[1] if layout.is_void(li3, cells[0]) else cells[0]
+		var into: Vector2i = cells[0] if layout.is_void(li3, cells[0]) else cells[1]
+		if not seen.has(node_key(li3, from)) or not _opening_passable(op, from, keys):
+			continue
+		var land: Array = layout.floor_cell(li3, into)
+		if not _bfs([land], keys).has("out"):
+			_e("the drop through '%s' from %s (level %d) strands the player: no way out from %s level %d" % [op["id"], from, li3, land[1], land[0]])
+
+
+## style.roof keys and type, and its per-wing overrides (RoofPlanner): each must name a cell of a
+## roof on its level, with a known type.
+func _check_roof() -> void:
+	var roof: Variant = layout.style.get("roof", {})
+	if not roof is Dictionary:
+		_e("style.roof must be an object")
+		return
+	for k: Variant in (roof as Dictionary).keys():
+		if not str(k).begins_with("_") and not RoofPlanner.ROOF_KEYS.has(str(k)):
+			_e("style.roof has unknown key '%s' (%s)" % [k, ", ".join(RoofPlanner.ROOF_KEYS)])
+	var t: String = str((roof as Dictionary).get("type", "gable"))
+	if not RoofPlanner.TYPES.has(t):
+		_e("style.roof type '%s' unknown (%s)" % [t, ", ".join(RoofPlanner.TYPES)])
+	RoofPlanner.plan(layout)
+	for e: String in RoofPlanner.last_errors:
+		_e(e)
 
 
 static func _valid_id(s: String) -> bool:
@@ -486,6 +596,9 @@ func _check_traps(seen: Dictionary, stair_cells: Dictionary) -> void:
 			var wall: Dictionary = layout.walls.get(PoiLayout.edge_key(li, t["axis"], t["edge"]), {})
 			if not wall.is_empty() and (wall["opening"] as Dictionary).is_empty():
 				_e("trap '%s' crosses a solid wall at %s %s" % [tid, c1, PoiLayout.SIDE_NAMES[int(t["side_i"])]])
+			var gal: Dictionary = layout.galleries.get(PoiLayout.edge_key(li, t["axis"], t["edge"]), {})
+			if not gal.is_empty() and (gal["opening"] as Dictionary).is_empty():
+				_e("trap '%s' crosses a gallery railing at %s %s" % [tid, c1, PoiLayout.SIDE_NAMES[int(t["side_i"])]])
 			if type == "shotgun" and not layout.is_room(layout.room_at(li, c1)):
 				_e("shotgun trap '%s': its 'at' cell %s holds the gun and must be inside a room" % [tid, c1])
 			# The chair-and-gun and the chime's cans stand on the 'at' cell's floor (an alarm hangs
@@ -586,6 +699,17 @@ func _check_triggers(seen: Dictionary) -> void:
 
 ## Lock kinds sit on doors that are locked; and where each padlock hangs (the side the door is
 ## approached from: reachable from outside without passing through it).
+## ADR-0022: seated and lying sleepers land on a seat or bed in reach (SleeperAnchors: a warning
+## for each one left on the floor without "anchor": "floor", an error for a pinned anchor that
+## names no such prop), and authored window cues are valid (RouteCues).
+func _check_dungeon_life() -> void:
+	for res: Dictionary in [SleeperAnchors.check(layout), RouteCues.check(layout)]:
+		for e: String in res["errors"]:
+			_e(e)
+		for w: String in res["warnings"]:
+			_w(w)
+
+
 func _check_locks(keys: Dictionary) -> void:
 	for op: Dictionary in layout.openings:
 		var lock: String = str(op.get("lock", ""))

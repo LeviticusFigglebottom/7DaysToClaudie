@@ -162,7 +162,8 @@
      0.0,
      -0.15,
      0.0
-    ]
+    ],
+    "power": "mains"
    },
    "blocks_sight": false,
    "rooms": [
@@ -721,6 +722,10 @@
    "rooms": [
     "motel_room",
     "bedroom"
+   ],
+   "anchors": [
+    {"kind": "bed", "pos": [-0.38, -0.05], "height": 0.63},
+    {"kind": "bed", "pos": [0.38, -0.05], "height": 0.63}
    ]
   },
   {
@@ -1064,6 +1069,9 @@
    "rooms": [
     "clinic",
     "hallway"
+   ],
+   "anchors": [
+    {"kind": "seat", "pos": [0.0, -0.1], "height": 0.47}
    ]
   },
   {
@@ -1117,6 +1125,11 @@
     "clinic",
     "hallway",
     "office"
+   ],
+   "anchors": [
+    {"kind": "seat", "pos": [-0.58, -0.06], "height": 0.47},
+    {"kind": "seat", "pos": [0.0, -0.06], "height": 0.47},
+    {"kind": "seat", "pos": [0.58, -0.06], "height": 0.47}
    ]
   },
   {

@@ -19,11 +19,13 @@ and clear at least one authored building along its route, survive a night and a 
 (slice mode: Hum on night 3), then save and reload. All visuals use generated assets.
 
 - 🟡 Region D6 *Larch Hollow*: terrain (heightmap chunks + LOD + digging), river, pond, cliffs,
-  forest scatter ✅. 19 authored buildings validated by `make validate` (DESIGN §11):
+  forest scatter ✅. 22 authored buildings validated by `make validate` (DESIGN §11):
   * Pell's Crossing (10 buildings, with the church block on Church Lane).
   * Three on Route 9: gas garage, clinic, motel.
   * The Okafor farm: farmhouse and barn.
   * Four in the wilderness: lookout, trapper's cabin, logging camp, sawmill.
+  * Three on the outskirts: Larch Pond Bait & Boat (a boathouse over the pond, ADR-0024), the
+    Ashen watch camp, Tamsin River Campground.
 
   Still pending: in-game visual QA of the town.
 - ✅ Player controller, interaction, gathering, stamina, damage, death/respawn; step-up onto
@@ -78,6 +80,37 @@ and clear at least one authored building along its route, survive a night and a 
   * Lakes and rivers drawn for the first time, mirroring the tree line actually around them.
   * A forest canopy on distant hills.
   * Shaded clouds with a cirrus veil.
+- ✅ Buildings with massing (ADR-0021):
+  * Tall rooms: St. Ansel's nave and belfry, the Okafor barn's threshing bay under its hayloft
+    gallery, the sawmill's saw floor and the grange hall rise two or three storeys, open to their
+    rafters, with lancets, tall windows and tall barn doors.
+  * A roof planner that follows the plan: cross gables, lean-tos on annexes, flat roofs behind
+    parapets, towers, per-part overrides; chimneys that clear them. The Okafor farmhouse gets its
+    kitchen ell.
+  * Interior light probes per room rectangle; stairs and doors stand off the walls.
+- ✅ The Bloom on the land (ADR-0025): an authored, deterministic infestation field (`bloom_at`);
+  pale threads climbing the trunks (larches most), a mycelial web over the litter, fruiting
+  caps where it is strong, plants wilting, a cold slow glow at night (brighter on Hum nights),
+  and fungal mounds where Hum survivors root at dawn (save v4).
+- ✅ Light, moon, bridges and the Program's drone (ADR-0023):
+  * What still burns follows the buildings' stories: no mains power, candles, lanterns, stoves
+    and burn barrels lit per condition variant, flames and globes glowing through emission and
+    flickering, coals glowing in barrels and campfires.
+  * A moon with phases on a 10-day month, rising later each night: a readable full moon, a
+    near-black new moon, stars that fade in moonlight and wheel around the pole.
+  * Bridges that follow their road's curve, with abutments, U-wing approaches, evenly spaced
+    river piers turned to the current and reflectors on the guardrail posts.
+  * Supply drops flown in by a heavy-lift drone in Program livery (doppler rotor loop). They land
+    clear of trees and the player's base, and the tether lists every one.
+- ✅ The Hollowed up close (ADR-0028):
+  * Dead skin with light under it, wet eyes and mouths, and Bloom veins that stay put on a moving
+    body; clothes with thickness, seams, hems, tears and retroreflective tape.
+  * Fruiting caps and filament mats that erupt as the tier rises.
+  * A plated Husk, a Blister of translucent pustules that burst, and a Rammer built big rather than
+    scaled.
+  * Buildings dress their Hollowed (clinic patients, St. Ansel's congregation, Cordon crews,
+    loggers, hunters, the Ashen).
+  * Idle and limp variants, so a crowd doesn't move in step.
 - ⬜ Human playthrough on a GPU machine against the acceptance criteria and the 60 FPS budget
   (TD-003); `make bake` impostors from the real tree models (TD-005).
 
@@ -89,7 +122,8 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
 - Corvane cave network (SDF volumes, darkness, key items, mine levels) + region C2/C6 entrances.
 - Companion Ezra Vane: follow/gather/guard/fetch orders.
 - Full perk trees (rank 4–5 capstones), forge/chemistry bench/grill, more schematics and
-  journals (the joinery track has no recipes yet, TD-030); a visible Program drone for supply drops.
+  journals (the joinery track has no recipes yet, TD-030). (The Program's supply drone landed
+  early, in M1: ADR-0023.)
 - Waystation 9 trader, contracts (clear/fetch/defend), reputation tiers, scrip economy.
 - More POIs (school, mine office, rail depot, dam control house...) and the Mile 12 framework.
   Church, motel, gas station, bar, clinic, post office, lookout, logging camp, sawmill and the

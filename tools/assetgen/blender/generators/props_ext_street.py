@@ -1401,12 +1401,18 @@ def payphone(ctx: K.Ctx) -> None:
 
 
 # --------------------------------------------------------------------------------------------------
-# Highway bridge kit (Route 9 over the Tamsin River): instanced along a span by the game's BridgeBuilder
+# Highway bridge kit (Route 9 over the Tamsin River): laid along a span's curve by the game's
+# BridgeBuilder (game/src/world/bridges.gd, ADR-0023). Every piece has its origin at the road surface
+# on the centre line, X along the road, so sections, abutments and piers share one placement frame.
 # --------------------------------------------------------------------------------------------------
 
 BRIDGE_W = 9.0        # deck width (route 9 is 8 m + curbs); the game scales other widths across
 BRIDGE_SECTION = 8.0  # one deck section along X
 GIRDER_DEPTH = 0.9
+SLAB_T = 0.3
+CURB = 0.45
+SEAT_Z = -0.08 - SLAB_T - GIRDER_DEPTH - 0.06   # top of the abutment seat / pier cap (under the bearings)
+GIRDER_Y = (-BRIDGE_W * 0.3, 0.0, BRIDGE_W * 0.3)
 
 
 def _w_beam(name: str, length: float):
@@ -1417,30 +1423,63 @@ def _w_beam(name: str, length: float):
     return K.prism(name, [(-y, z) for y, z in prof], length, plane="YZ", offset=0.0)
 
 
+def _road_surface(ctx: K.Ctx, L: float, W: float, slab_mat: str = "concrete") -> None:
+    """Asphalt wearing course, cast-in-place slab and curbs, with the paint the bridge carries
+    itself: a double yellow no-passing line and white edge lines, worn through to the asphalt in
+    patches (RoadMarkings keeps its decals off decks)."""
+    road_w = W - 2 * CURB
+    asph = K.box("asphalt", (L, road_w, 0.08), center=(0, 0, -0.04), cuts=(4, 2, 0))
+    ctx.add(asph, "terrain_asphalt_cracked", uv_scale=1.0, patches=0.2, wear=0.3)
+    slab = K.box("slab", (L, W + 0.1, SLAB_T), center=(0, 0, -0.08 - SLAB_T / 2), bevel=0.02)
+    ctx.add(slab, slab_mat, uv_scale=1.0, patches=0.5)
+    for sy in (-1, 1):
+        c = K.box("curb", (L, CURB, 0.33), center=(0, sy * (W / 2 - CURB / 2), 0.165 - 0.08), bevel=0.02)
+        ctx.add(c, "concrete_barrier", uv_scale=1.0, patches=0.5, moss=0.15)
+    for yy, mat, w in ((0.09, "bridge_paint_yellow", 0.1), (-0.09, "bridge_paint_yellow", 0.1),
+                       (road_w / 2 - 0.3, "bridge_paint_white", 0.12), (-(road_w / 2 - 0.3), "bridge_paint_white", 0.12)):
+        line = K.box("paint", (L, w, 0.004), center=(0, yy, 0.002), cuts=(24, 0, 0))
+        ctx.add(line, mat, uv_scale=1.0, wear=1.0, edge=0.0, patches=0.55, noise_scale=1.4, ao=False)
+
+
+def _guardrail(ctx: K.Ctx, L: float, W: float) -> None:
+    """Steel posts every 2 m on the curbs with timber-look blockouts and a galvanized W-beam facing
+    the road. Every post carries a delineator facing each way along the road (amber on the left,
+    white on the right) that flares back at a torch: there is no lighting on the deck."""
+    for sy in (-1, 1):
+        y_post = sy * (W / 2 - 0.2)
+        for x in (-3.0, -1.0, 1.0, 3.0):
+            post = K.box("post", (0.1, 0.15, 0.78), center=(x, y_post, 0.25 + 0.39))
+            ctx.add(post, "metal_galvanized", uv_scale=1.0, wear=0.6, patches=0.3)
+            blk = K.box("blockout", (0.08, 0.12, 0.3), center=(x, y_post - sy * 0.13, 0.25 + 0.55))
+            ctx.add(blk, "metal_galvanized", uv_scale=1.0, wear=0.6, patches=0.3)
+            for fx in (-1, 1):
+                ref = K.box("reflector", (0.01, 0.085, 0.13), center=(x + fx * 0.055, y_post, 0.25 + 0.66))
+                ctx.add(ref, "bridge_reflector_white" if sy < 0 else "bridge_reflector_amber", uv_scale=1.0,
+                        wear=0.0, patches=0.0, ao=False)
+        rail = _w_beam("rail", L)
+        if sy > 0:
+            K.place(rail, (0, y_post - 0.23, 0.25 + 0.55), (0, 0, 180))
+        else:
+            K.place(rail, (0, y_post + 0.23, 0.25 + 0.55))
+        ctx.add(rail, "metal_galvanized", uv_scale=1.0, wear=0.5, patches=0.3, smooth=30)
+
+
 def bridge_deck(ctx: K.Ctx) -> None:
     """One 8 m section of a 1990s two-lane highway bridge, origin at the road surface on the centre
-    line, length along X: asphalt wearing course on a cast-in-place concrete slab over three
-    painted steel plate girders, concrete curbs and galvanized W-beam guardrail on steel posts
-    every 2 m. Sections repeat end to end; the game adds piers and collision."""
+    line, length along X: asphalt and paint on a cast-in-place concrete slab over three painted steel
+    plate girders streaked with rust, concrete curbs, a galvanized W-beam guardrail on posts every
+    2 m with a reflector on each, and drip scuppers through the slab edge. Sections repeat along the
+    span's curve, angled to each other; the game adds abutments, piers and collision."""
     ctx.ground_clamp = False
     L, W = BRIDGE_SECTION, BRIDGE_W
-    curb = 0.45
-    road_w = W - 2 * curb
-    asph = K.box("asphalt", (L, road_w, 0.08), center=(0, 0, -0.04))
-    ctx.add(asph, "terrain_asphalt_cracked", uv_scale=1.0, patches=0.2, wear=0.3)
-    slab_t = 0.3
-    slab = K.box("slab", (L, W + 0.1, slab_t), center=(0, 0, -0.08 - slab_t / 2), bevel=0.02)
-    ctx.add(slab, "concrete", uv_scale=1.0, patches=0.5)
-    for sy in (-1, 1):
-        c = K.box("curb", (L, curb, 0.33), center=(0, sy * (W / 2 - curb / 2), 0.165 - 0.08), bevel=0.02)
-        ctx.add(c, "concrete_barrier", uv_scale=1.0, patches=0.5, moss=0.15)
-    # plate girders: web + flanges, painted steel streaked with rust
-    z_top = -0.08 - slab_t
-    for gy in (-W * 0.3, 0.0, W * 0.3):
-        web = K.box("web", (L, 0.022, GIRDER_DEPTH - 0.06), center=(0, gy, z_top - GIRDER_DEPTH / 2))
-        ctx.add(web, "metal_painted", uv_scale=1.0, patches=0.6, wear=0.8)
+    _road_surface(ctx, L, W)
+    z_top = -0.08 - SLAB_T
+    for gy in GIRDER_Y:
+        web = K.box("web", (L, 0.022, GIRDER_DEPTH - 0.06), center=(0, gy, z_top - GIRDER_DEPTH / 2), cuts=(6, 0, 2))
+        ctx.add(web, "metal_painted", uv_scale=1.0, patches=0.6, wear=0.8,
+                extra=lambda co, n: 0.35 * max(0.0, 1.0 - (co.z - (z_top - GIRDER_DEPTH)) / 0.5))
         for fz in (z_top - 0.015, z_top - GIRDER_DEPTH + 0.015):
-            fl = K.box("flange", (L, 0.36, 0.03), center=(0, gy, fz))
+            fl = K.box("flange", (L, 0.36, 0.03), center=(0, gy, fz), cuts=(6, 0, 0))
             ctx.add(fl, "metal_painted", uv_scale=1.0, patches=0.6, wear=0.9)
         # bearing stiffeners every 2 m
         for x in (-3.0, -1.0, 1.0, 3.0):
@@ -1451,40 +1490,124 @@ def bridge_deck(ctx: K.Ctx) -> None:
     for gy0, gy1 in ((-W * 0.3, 0.0), (0.0, W * 0.3)):
         d = K.box("diaphragm", (0.02, abs(gy1 - gy0) - 0.03, GIRDER_DEPTH * 0.55), center=(0, (gy0 + gy1) / 2, z_top - GIRDER_DEPTH * 0.45))
         ctx.add(d, "metal_painted", uv_scale=1.0, patches=0.6, wear=0.8)
-    # guardrail: posts every 2 m on the curbs, W-beam on blockouts facing the road
+    # drip scuppers: short pipes through the slab by the curbs, stained below
     for sy in (-1, 1):
-        y_post = sy * (W / 2 - 0.2)
-        for x in (-3.0, -1.0, 1.0, 3.0):
-            post = K.box("post", (0.1, 0.15, 0.78), center=(x, y_post, 0.25 + 0.39))
-            ctx.add(post, "metal_galvanized", uv_scale=1.0, wear=0.6, patches=0.3)
-            blk = K.box("blockout", (0.08, 0.12, 0.3), center=(x, y_post - sy * 0.13, 0.25 + 0.55))
-            ctx.add(blk, "metal_galvanized", uv_scale=1.0, wear=0.6, patches=0.3)
-        rail = _w_beam("rail", L)
-        if sy > 0:
-            K.place(rail, (0, y_post - 0.23, 0.25 + 0.55), (0, 0, 180))
-        else:
-            K.place(rail, (0, y_post + 0.23, 0.25 + 0.55))
-        ctx.add(rail, "metal_galvanized", uv_scale=1.0, wear=0.5, patches=0.3, smooth=30)
+        sc = K.cyl("scupper", 0.05, 0.42, segs=8, center=(0.0, sy * (W / 2 - CURB - 0.15), -0.28))
+        ctx.add(sc, "metal_galvanized", uv_scale=1.0, wear=1.0, patches=0.6)
+    _guardrail(ctx, L, W)
+
+
+def bridge_approach(ctx: K.Ctx) -> None:
+    """One 8 m section of a bridge approach over the abutment fill, origin at the road surface on
+    the centre line: the deck's road, curbs, paint and guardrail on an approach slab, between
+    board-formed U-wing retaining walls that run 4.6 m down into the bank under a cast coping, with
+    weep holes, efflorescence and moss toward the ground."""
+    ctx.ground_clamp = False
+    L, W = BRIDGE_SECTION, BRIDGE_W
+    _road_surface(ctx, L, W, slab_mat="bridge_concrete")
+    for sy in (-1, 1):
+        y = sy * (W / 2 - 0.12)
+        wall = K.box("wingwall", (L, 0.34, 4.6), center=(0, y, -0.12 - 2.3), cuts=(6, 0, 6))
+        # Grime and wear thicken toward the ground (wherever the bank meets the wall).
+        ctx.add(wall, "bridge_concrete", uv_scale=1.0, patches=0.6, extra=lambda co, n: 0.35 * min(1.0, max(0.0, -0.8 - co.z) / 3.0))
+        coping = K.box("coping", (L, 0.44, 0.16), center=(0, y + sy * 0.05, -0.04), bevel=0.02, cuts=(4, 0, 0))
+        ctx.add(coping, "bridge_concrete", uv_scale=1.0, patches=0.4)
+        for x in (-2.0, 2.0):
+            weep = K.cyl("weep", 0.04, 0.12, segs=8, axis="Y", center=(x, y + sy * 0.15, -1.6))
+            ctx.add(weep, "plastic_black", uv_scale=1.0, wear=0.3)
+    _guardrail(ctx, L, W)
+
+
+def bridge_abutment(ctx: K.Ctx) -> None:
+    """Seat-type abutment where the girders come to rest on a bank, origin at the road surface over
+    the girder ends, +X toward the span: bearing pads on a seat ledge, a backwall under the approach
+    slab, a 1.6 m stem with chamfered edges and a spread footing, sunk 7 m into the bank (the ground
+    hides what it covers), and splayed wing ends that tie into the approach walls. Rust from the
+    bearings runs down the stem; silt and moss mark its foot."""
+    ctx.ground_clamp = False
+    W = BRIDGE_W
+    span_w = W + 0.6
+    stem = K.box("stem", (1.6, span_w, 5.2), center=(-0.05, 0, SEAT_Z - 2.6), bevel=0.04, cuts=(2, 8, 8))
+    # Rust tracks run down the face under each bearing; wear thickens toward the foot.
+    ctx.add(stem, "bridge_concrete", uv_scale=1.0, patches=0.7,
+            extra=lambda co, n: 0.6 * max(0.0, n.x) * sum(max(0.0, 1.0 - abs(co.y - gy) / 0.35) for gy in GIRDER_Y)
+            * max(0.0, 1.0 - (SEAT_Z - co.z) / 3.5) + 0.3 * min(1.0, max(0.0, SEAT_Z - 1.0 - co.z) / 3.0))
+    back = K.box("backwall", (0.45, span_w, -0.38 - SEAT_Z), center=(-0.62, 0, (SEAT_Z - 0.38) / 2), bevel=0.02, cuts=(0, 6, 0))
+    ctx.add(back, "bridge_concrete", uv_scale=1.0, patches=0.5)
+    foot = K.box("footing", (3.2, span_w + 1.0, 0.9), center=(-0.05, 0, SEAT_Z - 5.2 - 0.45))
+    ctx.add(foot, "bridge_concrete", uv_scale=1.0, patches=0.5)
+    for gy in GIRDER_Y:
+        brg = K.box("bearing", (0.4, 0.45, 0.06), center=(0.35, gy, SEAT_Z + 0.03))
+        ctx.add(brg, "metal_painted", uv_scale=1.0, wear=1.0)
+        pad = K.box("pedestal", (0.55, 0.6, 0.05), center=(0.35, gy, SEAT_Z + 0.005))
+        ctx.add(pad, "bridge_concrete", uv_scale=1.0, patches=0.4)
+    # Finger expansion joint across the road over the girder ends (the game lifts the deck 2.5 cm
+    # off the span's height; the plate sits on its asphalt).
+    joint = K.box("joint", (0.32, W - 2 * CURB, 0.012), center=(0.0, 0, 0.025 + 0.006), cuts=(0, 12, 0))
+    ctx.add(joint, "metal_galvanized", uv_scale=2.0, wear=1.2, patches=0.8)
+    for k in range(13):
+        y = -(W / 2 - CURB) + (k + 0.5) * (W - 2 * CURB) / 13
+        bolt = K.cyl("jointbolt", 0.015, 0.008, segs=6, center=(0.1, y, 0.04))
+        ctx.add(bolt, "metal_galvanized", uv_scale=2.0, wear=1.0)
+    # Wing ends: splayed back from the stem's corners into the bank, tops falling with the slope.
+    for sy in (-1, 1):
+        pts = [(0.0, 0.0), (1.9, 0.0), (1.9, -1.4), (0.0, -5.2)]
+        wing = K.prism("wing", [(x, z) for x, z in pts], 0.35, plane="XZ", offset=0.0)
+        K.place(wing, (0.0, 0.0, 0.0), (0, 0, 180))
+        K.place(wing, (-0.85, sy * (span_w / 2 - 0.17), SEAT_Z + 1.2), (0, 0, sy * 28))
+        ctx.add(wing, "bridge_concrete", uv_scale=1.0, patches=0.6, extra=lambda co, n: 0.3 * min(1.0, max(0.0, SEAT_Z - co.z) / 3.0))
 
 
 def bridge_pier(ctx: K.Ctx) -> None:
-    """Two-column concrete pier with a cap beam, origin at the road surface level so it shares the
-    deck's placement: the cap sits under the girders and the columns run 14 m down (the part below
-    the riverbed is hidden; the game picks pier spots where there is room)."""
+    """River pier: a solid wall pier with rounded cutwater noses (its long axis is the game's local Z,
+    which the BridgeBuilder turns to the current), a cap beam with bearings under the girders and a
+    footing deep in the bed. Origin at the road surface, like the deck; the wall runs 13 m down (the
+    riverbed hides the rest). Silt, algae and a dark wet band mark where the water works on it."""
     ctx.ground_clamp = False
     W = BRIDGE_W
-    z_cap = -0.08 - 0.3 - GIRDER_DEPTH
-    cap = K.box("cap", (1.3, W + 0.4, 1.0), center=(0, 0, z_cap - 0.5), bevel=0.04)
-    ctx.add(cap, "concrete", uv_scale=1.0, patches=0.7, low=0.0)
-    for gy in (-W * 0.3, 0.0, W * 0.3):
-        brg = K.box("bearing", (0.45, 0.45, 0.06), center=(0, gy, z_cap + 0.03))
+    cap_h = 1.0
+    cap = K.box("cap", (1.5, W + 0.4, cap_h), center=(0, 0, SEAT_Z - cap_h / 2), bevel=0.05, cuts=(0, 6, 0))
+    ctx.add(cap, "bridge_concrete", uv_scale=1.0, patches=0.7,
+            extra=lambda co, n: 0.5 * max(0.0, abs(n.x)) * sum(max(0.0, 1.0 - abs(co.y - gy) / 0.3) for gy in GIRDER_Y))
+    for gy in GIRDER_Y:
+        brg = K.box("bearing", (0.45, 0.45, 0.06), center=(0, gy, SEAT_Z + 0.03))
+        ctx.add(brg, "metal_painted", uv_scale=1.0, wear=1.0)
+    # Wall plan: a stadium 1.1 m thick, W * 0.66 long, with half-round noses at both ends.
+    t, half = 0.55, W * 0.33
+    plan = []
+    for k in range(9):
+        a = -math.pi / 2 + math.pi * k / 8
+        plan.append((t * math.cos(a), half - t + t * math.sin(a) + t))
+    for k in range(9):
+        a = math.pi / 2 + math.pi * k / 8
+        plan.append((t * math.cos(a), -(half - t) + t * math.sin(a) - t))
+    z0 = SEAT_Z - cap_h
+    wall = K.prism("wall", [(x, y * 0.92) for x, y in plan], 13.0, plane="XY", offset=z0 - 13.0)
+    for k in range(1, 13):
+        K.bisect(wall, (0.0, 0.0, z0 - k * 1.0), (0.0, 0.0, 1.0))
+    # Wet, silted and green low down, where the river works on it.
+    ctx.add(wall, "bridge_concrete", uv_scale=1.0, patches=0.6, smooth=35,
+            extra=lambda co, n: 0.45 * min(1.0, max(0.0, z0 - 3.0 - co.z) / 4.0))
+    foot = K.box("footing", (3.0, W * 0.8, 1.2), center=(0, 0, z0 - 13.0))
+    ctx.add(foot, "bridge_concrete", uv_scale=1.0, patches=0.5)
+
+
+def bridge_bent(ctx: K.Ctx) -> None:
+    """Two-column concrete bent for a pier on dry ground, origin at the road surface like the deck:
+    a cap beam with bearings under the girders and two round columns running 14 m down (the bank
+    hides the rest), weathered with rust tracks from the bearings and moss low on the columns."""
+    ctx.ground_clamp = False
+    W = BRIDGE_W
+    cap = K.box("cap", (1.3, W + 0.4, 1.0), center=(0, 0, SEAT_Z - 0.5), bevel=0.04, cuts=(0, 6, 0))
+    ctx.add(cap, "bridge_concrete", uv_scale=1.0, patches=0.7,
+            extra=lambda co, n: 0.5 * max(0.0, abs(n.x)) * sum(max(0.0, 1.0 - abs(co.y - gy) / 0.3) for gy in GIRDER_Y))
+    for gy in GIRDER_Y:
+        brg = K.box("bearing", (0.45, 0.45, 0.06), center=(0, gy, SEAT_Z + 0.03))
         ctx.add(brg, "metal_painted", uv_scale=1.0, wear=1.0)
     for sy in (-1, 1):
-        col = K.cyl("column", 0.46, 14.0, segs=16, center=(0, sy * W * 0.27, z_cap - 1.0 - 7.0), cuts=6)
-        ctx.add(col, "concrete", uv="cyl", uv_scale=1.0, smooth=40, patches=0.7, moss=0.25)
-    # a web wall between the columns low down (river piers carry one against debris and ice)
-    wall = K.box("web_wall", (0.5, W * 0.54, 5.0), center=(0, 0, z_cap - 1.0 - 9.5))
-    ctx.add(wall, "concrete", uv_scale=1.0, patches=0.7, moss=0.3)
+        col = K.cyl("column", 0.46, 14.0, segs=16, center=(0, sy * W * 0.27, SEAT_Z - 1.0 - 7.0), cuts=8)
+        ctx.add(col, "bridge_concrete", uv="cyl", uv_scale=1.0, smooth=40, patches=0.7,
+                extra=lambda co, n: 0.35 * min(1.0, max(0.0, SEAT_Z - 4.0 - co.z) / 4.0))
 
 
 BUILDERS = {
@@ -1510,7 +1633,10 @@ BUILDERS = {
     "bicycle_rusty": bicycle_rusty,
     "payphone": payphone,
     "bridge_deck": bridge_deck,
+    "bridge_approach": bridge_approach,
+    "bridge_abutment": bridge_abutment,
     "bridge_pier": bridge_pier,
+    "bridge_bent": bridge_bent,
 }
 
 

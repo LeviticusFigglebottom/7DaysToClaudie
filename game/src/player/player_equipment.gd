@@ -4,6 +4,9 @@ extends Node
 ## Hits are resolved with a short shape cast along the view; receivers implement take_damage().
 ## Trees (group "tree_body"), terrain (meta "terrain"), structures and enemies all receive
 ## DamageInfo with the item's tool_power so each decides what the hit does (chop, dig, break).
+## First person (ADR-0029): a swing connects at its style's keyed contact frame (attack_time x
+## viewmodel.json attacks.<style>.impact) and the viewmodel answers with hit-stop, a camera kick
+## and particles by what was struck; holding Block with a melee weapon raises its guard.
 
 signal equipped_changed(item_id: StringName)
 signal swung()
@@ -21,6 +24,11 @@ var viewmodel: ViewModel
 ## finishes; putting the gun away first cancels it (it used to load instantly).
 var _reload_left: float = -1.0
 var _reload_item: StringName = &""
+## The swing in progress: its length and the fraction of it at which it connects.
+var _swing_len: float = 0.6
+var _hit_frac: float = 0.45
+## Block held with a weapon that has a guard (ViewModelHolds.block_share > 0).
+var guarding: bool = false
 
 
 func _ready() -> void:
@@ -48,21 +56,28 @@ func _physics_process(delta: float) -> void:
 		_cycle(-1)
 	if Input.is_action_just_pressed(&"light"):
 		toggle_light()
-	if Input.is_action_pressed(&"attack") and _cooldown <= 0.0 and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		primary()
-	if Input.is_action_just_pressed(&"block") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not _building_busy():
+	var captured: bool = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	_update_guard(captured and Input.is_action_pressed(&"block") and not _building_busy())
+	if Input.is_action_pressed(&"attack") and _cooldown <= 0.0 and captured and not guarding:
+		# A raised wrist goes down first; the next press swings.
+		if viewmodel != null and viewmodel.tether_raised():
+			if Input.is_action_just_pressed(&"attack"):
+				viewmodel.set_tether_raised(false)
+				_cooldown = 0.2
+		else:
+			primary()
+	if Input.is_action_just_pressed(&"block") and captured and not _building_busy():
 		secondary()
 	if _light_on:
 		_burn_light(delta)
+		_follow_light()
 	if _reload_left >= 0.0:
 		_reload_left -= delta
 		if _reload_left < 0.0:
 			_finish_reload()
 	if _swing_t >= 0.0:
 		_swing_t += delta
-		var def: ItemDef = Content.item(current)
-		var t_hit: float = (def.equip_num("attack_time", 0.8) if def != null else 0.6) * 0.45
-		if _swing_t >= t_hit:
+		if _swing_t >= _swing_len * _hit_frac:
 			_swing_t = -1.0
 			_resolve_hit()
 
@@ -99,6 +114,7 @@ func _sync_equipped() -> void:
 	_reload_left = -1.0
 	_reload_item = &""
 	_cooldown = 0.3
+	guarding = false
 	if viewmodel != null:
 		viewmodel.show_item(item_id)
 	equipped_changed.emit(item_id)
@@ -112,7 +128,7 @@ func primary() -> void:
 	if building != null and building.call(&"handle_primary", player):
 		_cooldown = 0.35
 		if viewmodel != null:
-			viewmodel.play_action(&"fp_place", 0.35)
+			viewmodel.play_use(&"place", 0.35)
 		return
 	if def == null:
 		_punch()
@@ -130,6 +146,8 @@ func primary() -> void:
 			if Game.world != null and Game.world.get("building") != null:
 				Game.world.building.place_item_structure(player, current)
 				_cooldown = 0.5
+				if viewmodel != null:
+					viewmodel.play_use(&"place", 0.5)
 
 
 func secondary() -> void:
@@ -137,7 +155,7 @@ func secondary() -> void:
 	if def != null and def.is_consumable():
 		var res: Dictionary = Game.execute(&"inventory.consume", {"player": player.state.id, "item": current})
 		if bool(res.get("ok", false)) and viewmodel != null:
-			viewmodel.play_action(&"fp_use")
+			viewmodel.play_use(ViewModelHolds.use_action(def, viewmodel.hold_class))
 	elif def != null and str(def.equip.get("kind", "")) == "ranged":
 		_reload(def)
 	elif def != null and bool(def.equip.get("throwable", false)) and _cooldown <= 0.0:
@@ -149,9 +167,7 @@ func _punch() -> void:
 	if not player.state.stats.spend_stamina(5.0):
 		return
 	_cooldown = 0.6
-	_swing_t = 0.0
-	if viewmodel != null:
-		viewmodel.play_swing(0.6)
+	_begin_swing(&"punch", 0.6)
 	swung.emit()
 
 
@@ -160,11 +176,19 @@ func _start_swing(def: ItemDef) -> void:
 	if not player.state.stats.spend_stamina(cost):
 		return
 	_cooldown = def.equip_num("attack_time", 0.8)
-	_swing_t = 0.0
-	if viewmodel != null:
-		viewmodel.play_swing(_cooldown)
+	var style: StringName = ViewModelHolds.attack_style(def, ViewModelHolds.hold_class(def))
+	_begin_swing(style if style != &"" else &"punch", _cooldown)
 	Audio.play_3d(&"sfx/swing_whoosh", player.global_position + Vector3.UP * 1.4, {"volume_db": -8.0, "occlusion": false})
 	swung.emit()
+
+
+## Starts the swing's clock (it connects at its style's contact frame) and its arms action.
+func _begin_swing(style: StringName, length: float) -> void:
+	_swing_t = 0.0
+	_swing_len = length
+	_hit_frac = ViewModelHolds.impact_fraction(style)
+	if viewmodel != null:
+		viewmodel.play_attack(style, length)
 
 
 func _resolve_hit() -> void:
@@ -197,10 +221,71 @@ func _resolve_hit() -> void:
 	var receiver: Object = _damage_receiver(collider)
 	if receiver != null:
 		receiver.call(&"take_damage", dmg)
+	_impact_feedback(collider, receiver, pos, dir)
 	_wear(def)
 	var loud: float = def.equip_num("noise", 8.0) if def != null else 5.0
 	if Stimuli.current != null:
 		Stimuli.current.emit_sound(pos, loud, &"impact", player.state.id)
+
+
+## What a connecting swing feels like (data/config/viewmodel.json impact.surfaces): the viewmodel's
+## hit-stop and kick, plus particles where the struck thing makes none of its own (bark off a
+## loose log, sparks off metal, chips off stone).
+func _impact_feedback(collider: Object, receiver: Object, pos: Vector3, dir: Vector3) -> void:
+	var surface: StringName = ViewModelHolds.surface_kind(collider, receiver)
+	if viewmodel != null:
+		viewmodel.impact(surface)
+	var surf: Dictionary = (ViewModelHolds.config().get("impact", {}) as Dictionary).get("surfaces", {})
+	var s: Dictionary = surf.get(String(surface), {})
+	var fx: String = str(s.get("fx", ""))
+	if fx != "" and Game.world != null:
+		FxLibrary.burst(Game.world, fx, pos - dir * 0.03, -dir, float(s.get("fx_scale", 1.0)))
+		if surface == &"bark":
+			FxLibrary.burst(Game.world, "wood", pos - dir * 0.03, -dir, 0.5)
+
+
+# --- Guard -----------------------------------------------------------------------------------
+
+## Block held: raise the hold's guard if the item has one (and its Block isn't already a use:
+## eating, reloading, throwing). You can't swing while guarding.
+func _update_guard(want: bool) -> void:
+	var def: ItemDef = Content.item(current)
+	var can: bool = want and not (def != null and (def.is_consumable() or str(def.equip.get("kind", "")) == "ranged"
+		or bool(def.equip.get("throwable", false)))) and ViewModelHolds.block_share(def, ViewModelHolds.hold_class(def)) > 0.0
+	if can == guarding:
+		return
+	guarding = can
+	if viewmodel != null:
+		viewmodel.set_guard(can)
+
+
+## How much of a blow gets through (1 = all): a raised guard facing the attacker takes its share
+## (equip.block or the hold's), spending stamina per blocked hit and per point absorbed and wearing
+## the weapon; without the stamina the guard is beaten down and takes nothing.
+func guard_factor(info: DamageInfo) -> float:
+	if not guarding or player == null or player.state == null or info.cause in [&"fall", &"fire", &"trap"]:
+		return 1.0
+	var g: Dictionary = ViewModelHolds.config().get("guard", {})
+	var to_src: Vector3 = info.source_pos - player.global_position
+	to_src.y = 0.0
+	var fwd: Vector3 = -player.global_transform.basis.z
+	fwd.y = 0.0
+	if info.source_pos == Vector3.ZERO or to_src.length() < 0.01 or fwd.length() < 0.01:
+		return 1.0
+	if rad_to_deg(fwd.normalized().angle_to(to_src.normalized())) > float(g.get("arc_deg", 110.0)) * 0.5:
+		return 1.0
+	var def: ItemDef = Content.item(current)
+	var share: float = ViewModelHolds.block_share(def, ViewModelHolds.hold_class(def))
+	var cost: float = float(g.get("stamina_per_hit", 6.0)) + info.amount * share * float(g.get("stamina_per_damage", 0.4))
+	if not player.state.stats.spend_stamina(cost):
+		_update_guard(false)
+		return 1.0
+	if def != null:
+		_wear(def)
+	if viewmodel != null:
+		viewmodel.blocked(info.amount)
+	Audio.play_3d(&"sfx/hit_wood_structure", player.global_position + Vector3.UP * 1.4, {"volume_db": -4.0, "occlusion": false})
+	return 1.0 - share
 
 
 func _damage_for(def: ItemDef, pos: Vector3, dir: Vector3) -> DamageInfo:
@@ -342,7 +427,7 @@ func _throw(def: ItemDef) -> void:
 	if thrown.is_empty():
 		return
 	if viewmodel != null:
-		viewmodel.play_action(&"fp_throw", 0.5)
+		viewmodel.play_use(&"throw", 0.5)
 	_cooldown = 0.7
 	var proj: Node3D = load("res://src/combat/thrown_item.gd").new()
 	proj.set(&"item_id", current)
@@ -369,7 +454,7 @@ func toggle_light() -> void:
 		return
 	_set_light(not _light_on)
 	if _light_on and viewmodel != null and "lighter" in (def.equip.get("tools", []) as Array):
-		viewmodel.play_action(&"fp_light")
+		viewmodel.play_use(&"light")
 
 
 func _set_light(on: bool) -> void:
@@ -418,6 +503,15 @@ func _set_light(on: bool) -> void:
 
 func has_light_on() -> bool:
 	return _light_on
+
+
+## A held flame lights from where it burns: the torch up in the left hand, swinging with it.
+func _follow_light() -> void:
+	if _light == null or not (_light is OmniLight3D) or viewmodel == null:
+		return
+	var anchor: Node3D = viewmodel.light_anchor()
+	if anchor != null and anchor.is_inside_tree():
+		_light.global_position = anchor.global_position + Vector3.UP * 0.08
 
 
 ## The held light's own stack: the most used one of its kind (the one already burning).

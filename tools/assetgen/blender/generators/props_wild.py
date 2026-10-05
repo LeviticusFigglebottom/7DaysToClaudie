@@ -231,7 +231,7 @@ def wild_wood_stove(ctx: K.Ctx) -> None:
     frame = K.box("dframe", (0.26, 0.012, 0.12), center=(0.02, dy - 0.012, dz + 0.04), bevel=0.003)
     door_parts.append(ctx.add(frame, iron, uv_scale=1.0, patches=0.4, edge=1.6))
     mica = K.box("mica", (0.22, 0.004, 0.085), center=(0.02, dy - 0.019, dz + 0.04))
-    door_parts.append(ctx.add(mica, "flame_glow", uv_scale=1.0, wear=0.0, ao=False))
+    door_parts.append(ctx.add(mica, "mica_glow", uv_scale=1.0, wear=0.0, ao=False))
     draft = K.cyl("draft", 0.045, 0.012, segs=16, axis="Y", center=(0.0, dy - 0.016, dz - 0.07))
     door_parts.append(ctx.add(draft, iron, uv_scale=2.0, smooth=40, patches=0.4, edge=1.5))
     knob = K.cyl("dknob", 0.012, 0.03, segs=8, axis="Y", center=(0.0, dy - 0.035, dz - 0.07))
@@ -290,7 +290,7 @@ def wild_cook_range(ctx: K.Ctx) -> None:
     fd = K.box("firedoor", (0.3, 0.02, 0.2), center=(-0.5, fy, z0 + 0.5), bevel=0.006)
     ctx.add(fd, iron, uv_scale=1.0, patches=0.4, edge=1.6)
     mica = K.box("mica", (0.16, 0.004, 0.06), center=(-0.5, fy - 0.012, z0 + 0.52))
-    ctx.add(mica, "flame_glow", uv_scale=1.0, wear=0.0, ao=False)
+    ctx.add(mica, "mica_glow", uv_scale=1.0, wear=0.0, ao=False)
     ad = K.box("ashdoor", (0.3, 0.02, 0.12), center=(-0.5, fy, z0 + 0.17), bevel=0.006)
     ctx.add(ad, iron, uv_scale=1.0, patches=0.4, edge=1.6)
     for zz in (z0 + 0.5, z0 + 0.17):
@@ -798,7 +798,8 @@ def _lantern(ctx, *, hanging=False):
     if not ctx.destroyed:
         globe = K.lathe("globe", [(0.0, 0.092), (0.034, 0.092), (0.05, 0.115), (0.058, 0.15), (0.056, 0.186), (0.046, 0.21),
                                   (0.031, 0.228), (0.0, 0.228)], segs=14)
-        glass.append(ctx.add(globe, "lamp_glow", uv_scale=1.0, smooth=50, wear=0.0, ao=False))
+        # Clear globe: the flame inside (drawn only while the lantern burns) shows through it.
+        glass.append(ctx.add(globe, "glass_clear", uv_scale=1.0, smooth=50, wear=0.0, ao=False))
         flame = K.blob("flame", 0.011, subdiv=1, scale=(1.0, 1.0, 1.9), center=(0.0, 0.0, 0.113))
         glass.append(ctx.add(flame, "flame_glow", uv_scale=1.0, smooth=50, wear=0.0, ao=False))
     for k in range(4):

@@ -150,6 +150,16 @@ def build_body(params: dict):
     head_x = X.eyes(model)
     head_x.merge(X.teeth(model, rng))
     extras["body_head"] = head_x
+    for seg, part in X.nails(model, rng).items():
+        extras.setdefault(seg, X.Part()).merge(part)
+    for seg, part in X.accessories(model, rng).items():
+        extras.setdefault(seg, X.Part()).merge(part)
+    for seg, part in X.buttons(model, rng).items():
+        extras.setdefault(seg, X.Part()).merge(part)
+    for seg, part in X.tier_growths(model, rng).items():
+        extras.setdefault(seg, X.Part()).merge(part)
+    for seg, part in model.extra_parts.items():
+        extras.setdefault(seg, X.Part()).merge(part)
     for seg, part in X.bloom(model, rng).items():
         if seg in extras:
             extras[seg].merge(part)
@@ -162,16 +172,35 @@ def build_body(params: dict):
     extra_tris = sum(part_tris(pt) for pt in extras.values()) + CAP_TRIS * len(B.STUMPS)
     targets = {seg: _parts_for(model, seg)[1] for seg in B.SEGMENTS}
     room = BODY_BUDGET - extra_tris
-    scale = min(1.0, room / float(sum(targets.values())))
+    # The face is what the player sees at arm's length: it keeps its share; the rest of the body
+    # shrinks to fit (a tall Rammer's head used to lose triangles to its bigger torso and growths).
+    head_t = targets.get("body_head", 0)
+    rest_t = float(sum(v for k, v in targets.items() if k != "body_head"))
+    scale = min(1.0, (room - head_t) / rest_t) if rest_t > 0 else 1.0
+    scale_of = {seg: (1.0 if seg == "body_head" else scale) for seg in B.SEGMENTS}
     objs = []
     stats = {}
-    for seg in B.SEGMENTS:
+    mats = B.label_materials(params)
+    face_labels: dict[str, np.ndarray] = {}
+    # Decimation lands a little over its target on segments with much boundary (torn cloth, cut
+    # edges, plates fused on): what a segment spends over its target is taken from the segments
+    # after it, so the body stays in budget (the plated Husk and the Blister ran ~3% over).
+    order = list(B.SEGMENTS)
+    planned = {seg: int(targets[seg] * scale_of[seg]) for seg in order}
+    over = 0
+    for i, seg in enumerate(order):
         cfg = SEG_CFG[seg]
         bb = CP.segment_bounds(model, coarse, seg)
         obj = CP.mesh_segment(model, seg, cfg["h"], bb[0], bb[1], name=seg)
         parts, _ = _parts_for(model, seg)
-        tris = int(targets[seg] * scale)
+        tris = planned[seg]
+        if seg != "body_head" and over > 0:
+            later = sum(planned[s] for s in order[i:] if s != "body_head")
+            cut = min(tris // 2, int(round(over * tris / max(1, later))))
+            tris -= cut
+            over -= cut
         CP.decimate_parts(obj, parts, tris)
+        over = max(0, over + common.triangle_count(obj) - tris)
         labels = list(CP.label_faces(model, obj, seg))
         part = extras.get(seg)
         x_v0 = x_f0 = None
@@ -179,7 +208,8 @@ def build_body(params: dict):
             x_v0, x_f0 = _append_part(obj, part)
             labels += part.L
         labels = np.array(labels[:len(obj.data.polygons)], dtype=np.int32)
-        M.assign_labels(obj, labels, B.LABEL_MATERIALS)
+        M.assign_labels(obj, labels, mats)
+        face_labels[seg] = labels
         _uv_segment(model, obj, seg)
         if part is not None and x_f0 is not None:
             _set_part_uvs(obj, part, x_f0)
@@ -198,15 +228,52 @@ def build_body(params: dict):
         me.from_pydata([tuple(x) for x in v], [], [tuple(ff) for ff in f])
         me.update()
         o = common.new_object(name, me)
-        M.assign_labels(o, np.array(lab), B.LABEL_MATERIALS)
+        M.assign_labels(o, np.array(lab), mats)
         c, n = model.cuts[cut]
         U.planar(o, c, n, (0.0, 0.0, 1.0) if abs(n[2]) < 0.9 else (0.0, 1.0, 0.0), scale=1.0)
         common.shade_smooth(o, angle_deg=60.0)
         o["_rigid"] = bone
         caps.append(o)
     _vertex_colors(model, objs, caps, rng)
+    shader_attrs(model, objs, extras, face_labels)
     _skin(arm, model, objs, caps)
     return arm, objs, caps, skel, model, stats
+
+
+def vertex_labels(obj, face_lab: np.ndarray) -> np.ndarray:
+    """Per-vertex material label from the per-face labels: a cloth label wins over skin where a
+    vertex touches both (hems need the garment's edge distance on both sides of the line)."""
+    me = obj.data
+    lt = np.zeros(len(me.polygons), np.int32)
+    me.polygons.foreach_get("loop_total", lt)
+    lv = np.zeros(len(me.loops), np.int32)
+    me.loops.foreach_get("vertex_index", lv)
+    loop_lab = np.repeat(np.asarray(face_lab, np.int32), lt)
+    out = np.full(len(me.vertices), B.L_SKIN, np.int32)
+    cloth = np.array(sorted(set(B.CLOTH_LABELS.values())), np.int32)
+    is_cloth = np.isin(loop_lab, cloth)
+    out[lv[~is_cloth]] = loop_lab[~is_cloth]
+    out[lv[is_cloth]] = loop_lab[is_cloth]
+    return out
+
+
+def shader_attrs(model, objs, extras, face_labels) -> None:
+    """Rest pose, gates, skin masks and garment marks for the character shaders (char_attrs)."""
+    from . import char_attrs as A
+    from . import char_wardrobe as W
+    for o in objs:
+        seg = o["_seg"]
+        V = M.mesh_arrays(o)
+        f = A.Fields(len(V))
+        x0 = int(o.get("_x_v0", -1))
+        part = extras.get(seg)
+        if part is not None and x0 >= 0 and part.gate:
+            g = np.asarray(part.gate, np.float64)[: max(0, len(V) - x0)]
+            f.gate[x0:x0 + len(g)] = g
+        f.wet, f.bruise = model.skin_masks(V)
+        f.trim, f.seam, f.edge = W.garment_fields(model, V, vertex_labels(o, face_labels[seg]))
+        f.paint = model.paint_sd(V)
+        A.write(o, V, f)
 
 
 def _set_part_uvs(obj, part: X.Part, f0: int):

@@ -5,6 +5,7 @@
       "id": "trappers_cabin",
       "name": "Lindqvist's Trapline Cabin",
       "tier": 1,
+      "population": "hunters",
       "zoning": ["wilderness"],
       "footprint": [22, 18],
       "origin": [0, 0],
@@ -137,7 +138,7 @@
         {"note": "wild_trapper_journal", "pos": [9.55, 8.62], "y": 0.77}
       ],
       "sleepers": [
-        {"id": "breach_dragger", "pos": [7.65, 9.65], "enemy": "dragger", "pose": "lie", "rot": -100},
+        {"id": "breach_dragger", "pos": [7.65, 9.65], "enemy": "dragger", "pose": "lie", "rot": -100, "anchor": "floor"},
         {"id": "arvid", "pos": [12.55, 7.55], "enemy": "hollow", "pose": "lie", "rot": 10, "group": "cabin"},
         {"id": "jory_rask", "pos": [9.35, 9.45], "enemy": "hollow", "pose": "sit", "rot": 180, "group": "cabin"},
         {"id": "stove_lurcher", "pos": [8.6, 7.3], "enemy": "lurcher", "pose": "crouch", "rot": 170, "group": "cabin"}
