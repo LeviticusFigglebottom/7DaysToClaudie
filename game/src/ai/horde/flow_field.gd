@@ -98,6 +98,31 @@ func add_structures(pieces: Array, cost_per_hp: float, radius: float = 0.6) -> v
 					structure_cost[i] = maxf(structure_cost[i], extra)
 
 
+## Town buildings (POIs): a heavy soft cost on their footprint so the horde routes around houses
+## toward the base instead of piling into their walls (shell walls cannot be broken). Soft, not
+## impassable, so a player hiding inside one is still reachable. buildings: [{"xf": Transform3D
+## (POI global), "rect": Rect2 (POI-local x/z extent)}].
+func add_buildings(buildings: Array, extra: float = 30.0) -> void:
+	for b: Dictionary in buildings:
+		var xf: Transform3D = b["xf"]
+		var rect: Rect2 = b["rect"]
+		var inv: Transform3D = xf.affine_inverse()
+		var aabb := AABB()
+		var first: bool = true
+		for corner: Vector2 in [rect.position, rect.position + Vector2(rect.size.x, 0), rect.end, rect.position + Vector2(0, rect.size.y)]:
+			var w3: Vector3 = xf * Vector3(corner.x, 0.0, corner.y)
+			aabb = AABB(w3, Vector3.ZERO) if first else aabb.expand(w3)
+			first = false
+		var c0: Vector2i = cell_of(aabb.position)
+		var c1: Vector2i = cell_of(aabb.end)
+		for cy: int in range(maxi(0, c0.y), mini(n - 1, c1.y) + 1):
+			for cx: int in range(maxi(0, c0.x), mini(n - 1, c1.x) + 1):
+				var lp: Vector3 = inv * cell_pos(Vector2i(cx, cy))
+				if rect.grow(-0.2).has_point(Vector2(lp.x, lp.z)):
+					var i: int = cy * n + cx
+					structure_cost[i] = maxf(structure_cost[i], extra)
+
+
 ## Dijkstra from the target positions over 8-neighbour moves.
 func integrate(targets: Array[Vector3]) -> void:
 	dist.fill(INF)

@@ -73,3 +73,23 @@ func test_deep_water_is_impassable() -> void:
 	f.integrate([Vector3.ZERO] as Array[Vector3])
 	var end: Vector3 = _walk(f, Vector3(16, 0, 0), 400)
 	assert_lt(end.length(), 1.5, "walked round the river")
+
+
+func test_horde_walks_around_a_town_building() -> void:
+	var f := _field()
+	# An 8 x 8 m house centred at x = 12 (rotated 30 degrees) between the spawn and the base.
+	var xf := Transform3D(Basis(Vector3.UP, deg_to_rad(30.0)), Vector3(12, 0, 0))
+	f.add_buildings([{"xf": xf, "rect": Rect2(-4, -4, 8, 8)}])
+	f.integrate([Vector3.ZERO] as Array[Vector3])
+	var p: Vector3 = Vector3(24, 0, 0)
+	var entered: bool = false
+	for i: int in 200:
+		var d: Vector3 = f.direction_at(p)
+		if d == Vector3.ZERO:
+			break
+		p += d * 0.5
+		var lp: Vector3 = xf.affine_inverse() * p
+		if absf(lp.x) < 3.5 and absf(lp.z) < 3.5:
+			entered = true
+	assert_false(entered, "the route goes round the house, not through its walls")
+	assert_lt(p.length(), 1.5, "and still reaches the base")

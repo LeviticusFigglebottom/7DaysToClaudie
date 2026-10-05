@@ -219,6 +219,14 @@ func _rebuild_flow() -> void:
 			else:
 				pieces.append({"a": p.global_position, "b": p.global_position, "hp": p.hp})
 	var targets: Array[Vector3] = [(w.player as Node3D).global_position]
+	# Buildings the horde should walk around (not the one the player is sheltering in).
+	var houses: Array = []
+	var pois: Node = w.get(&"pois")
+	if pois != null:
+		var inside: PoiInstance = pois.call(&"poi_at", targets[0]) as PoiInstance
+		for inst: PoiInstance in (pois.get(&"instances") as Dictionary).values():
+			if inst != inside and inst.global_position.distance_to(base) < f.cell * f.n:
+				houses.append({"xf": inst.global_transform, "rect": inst.layout.extent()})
 	var height_fn: Callable = w.height_at
 	var wsys: Node = w.get(&"water")
 	var water_fn: Callable = Callable(wsys, &"water_level_at") if wsys != null and wsys.has_method(&"water_level_at") else Callable()
@@ -227,6 +235,7 @@ func _rebuild_flow() -> void:
 	_flow_next = f
 	var job := func() -> void:
 		f.build_terrain(height_fn, water_fn, max_slope)
+		f.add_buildings(houses)
 		f.add_structures(pieces, per_hp)
 		f.integrate(targets)
 	_flow_task = WorkerThreadPool.add_task(job, false, "hum flow field")
