@@ -116,35 +116,62 @@ def _fill(size: int, h: str) -> np.ndarray:
 
 
 def _wood(size: int, seed: int, *, rings: int, stops, pores: float, warp_amt: float, rough_base: float,
-          figure: float = 1.0):
-    """Flat-sawn grain running along U (image x), 1 tile ~ 1 m. Rings are contour lines of
-    y*rings + smooth elongated 2D noise, which yields nested 'cathedral' arches. Tileable: integer
-    ring count + periodic noise."""
+          figure: float = 1.0, boards: int = 3):
+    """Flat-sawn grain running along U (image x), 1 tile ~ 1 m, as glued-up boards (panels, table
+    tops, veneer leaves). Each board is a plane through a log: the ring index at a point is its
+    distance from the pith, and the pith's depth below the face drifts along the board, so rings
+    open into nested cathedral arches where the cut comes close to it and run straight where it is
+    deep. Ring-porous pores sit in the early wood, ring widths wander, and every board has its own
+    tone. Tileable: whole boards per tile, periodic drift along U."""
     xx, yy = _grid(size)
-    w1 = T.spectral(size, 3.2, seed, anisotropy=(1.0, 2.5), fmax=10)
-    w2 = T.spectral(size, 2.2, seed + 1, anisotropy=(1.0, 8.0), fmin=3)
-    v = yy / size * rings + (w1 - 0.5) * warp_amt * figure + (w2 - 0.5) * warp_amt * 0.12
-    ring = v - np.floor(v)
-    late = T.smoothstep(0.62, 0.93, ring) * (1.0 - T.smoothstep(0.95, 1.0, ring))
-    early = ring ** 2
-    fibre = T.spectral(size, 1.1, seed + 2, anisotropy=(1.0, 40.0))
-    streak = T.spectral(size, 1.8, seed + 3, anisotropy=(1.0, 12.0))
-    pore = T.spectral(size, 0.5, seed + 4, anisotropy=(1.0, 24.0))
-    pore_mask = T.smoothstep(0.66, 0.8, pore) * pores
+    u = xx / size
+    v = yy / size
+    r = T.rng(seed)
+    bw = 1.0 / boards
+    board = np.minimum((v / bw).astype(np.int32), boards - 1)
+    vin = v - board * bw                                   # 0..bw across the board
+    # Per-board pith: its offset across the board, base depth and the drift that makes the arches.
+    yc = np.zeros_like(v)
+    depth = np.zeros_like(v)
+    tone_b = np.zeros_like(v)
+    for b in range(boards):
+        m = board == b
+        c = r.uniform(0.25, 0.75) * bw
+        # A log tapers and sweeps only a few centimetres per metre: the slow drift is what stretches
+        # the arches along the board (a fast one closes the rings into knot-like eyes).
+        d0 = r.uniform(0.05, 0.13)
+        amp = r.uniform(0.008, 0.02) * figure
+        ph1, ph2 = r.uniform(0, 2 * np.pi, 2)
+        n1 = int(r.integers(1, 3))
+        drift = (np.cos(2 * np.pi * n1 * u[m] + ph1) + 0.3 * np.cos(2 * np.pi * (n1 + 1) * u[m] + ph2)) * amp
+        yc[m] = c
+        depth[m] = d0 + drift
+        tone_b[m] = r.uniform(-1.0, 1.0)
+    wob = T.spectral(size, 2.6, seed + 1, anisotropy=(1.0, 4.0))
+    rad = np.sqrt(depth ** 2 + (vin - yc) ** 2)
+    ring = rad * rings * 3.0 + (wob - 0.5) * warp_amt * 0.5 + (T.spectral(size, 1.8, seed + 2, anisotropy=(1.0, 10.0)) - 0.5) * 0.35
+    p = ring - np.floor(ring)
+    late = T.smoothstep(0.58, 0.8, p) * (1.0 - T.smoothstep(0.9, 1.0, p))
+    early = 1.0 - T.smoothstep(0.0, 0.3, p)
+    fibre = T.spectral(size, 1.1, seed + 3, anisotropy=(1.0, 40.0))
+    pore = T.spectral(size, 0.45, seed + 4, anisotropy=(1.0, 22.0))
+    pore_mask = T.smoothstep(0.62, 0.78, pore) * (0.35 + 0.65 * early) * pores
     broad = T.spectral(size, 2.8, seed + 5)
-    tone = np.clip(0.38 * late + 0.17 * early + 0.27 * fibre + 0.18 * streak, 0, 1)
+    glue = 1.0 - T.smoothstep(0.0, 1.2 / size, np.minimum(vin, bw - vin))
+    tone = np.clip(0.48 * late + 0.12 * (1 - early) + 0.22 * fibre + 0.1 * broad + 0.08 * (tone_b * 0.5 + 0.5), 0, 1)
     col = T.gradient(T.normalize(tone), stops)
-    col *= (0.9 + 0.14 * broad[..., None])
-    col *= (1.0 - 0.3 * pore_mask)[..., None]
-    height = T.normalize(0.45 * (1 - late) + 0.35 * fibre - 0.5 * pore_mask)
-    rough = np.clip(rough_base + 0.06 * (fibre - 0.5) + 0.15 * pore_mask + 0.04 * late, 0, 1)
+    col *= (0.92 + 0.1 * broad[..., None] + 0.06 * tone_b[..., None])
+    col *= (1.0 - 0.32 * pore_mask)[..., None]
+    col *= (1.0 - 0.35 * glue)[..., None]
+    height = T.normalize(0.4 * (1 - late) + 0.3 * fibre - 0.55 * pore_mask - 0.4 * glue)
+    rough = np.clip(rough_base + 0.06 * (fibre - 0.5) + 0.18 * pore_mask + 0.04 * late, 0, 1)
     return col, height, rough
 
 
 @texture("wood_furniture_oak", size=1024, seed=4101)
 def wood_furniture_oak(size: int, seed: int, out) -> None:
     """Golden-oak finished veneer (90s furniture), grain along U."""
-    col, h, r = _wood(size, seed, rings=56, warp_amt=3.6, pores=1.0, rough_base=0.46,
+    col, h, r = _wood(size, seed, rings=34, warp_amt=1.2, pores=1.0, rough_base=0.46, boards=3,
                       stops=[(0.0, "#c99a5e"), (0.45, "#b9874d"), (0.8, "#a1703d"), (1.0, "#80542b")])
     T.save_pbr_set(out, np.clip(col, 0, 1), h, r, normal_strength=1.4)
 
@@ -152,7 +179,7 @@ def wood_furniture_oak(size: int, seed: int, out) -> None:
 @texture("wood_furniture_dark", size=1024, seed=4111)
 def wood_furniture_dark(size: int, seed: int, out) -> None:
     """Dark walnut / cherry stained veneer, grain along U."""
-    col, h, r = _wood(size, seed, rings=48, warp_amt=4.5, pores=0.55, rough_base=0.4,
+    col, h, r = _wood(size, seed, rings=30, warp_amt=1.4, pores=0.55, rough_base=0.4, boards=2,
                       stops=[(0.0, "#6f472d"), (0.45, "#5c3824"), (0.8, "#482a1a"), (1.0, "#331d10")])
     T.save_pbr_set(out, np.clip(col, 0, 1), h, r, normal_strength=1.2)
 
@@ -160,7 +187,7 @@ def wood_furniture_dark(size: int, seed: int, out) -> None:
 @texture("pi_wood_raw", size=512, seed=4121)
 def pi_wood_raw(size: int, seed: int, out) -> None:
     """Raw pine / splintered wood (wear layer under paint and veneer, break faces, lumber)."""
-    col, h, r = _wood(size, seed, rings=18, warp_amt=4.0, pores=0.15, rough_base=0.82,
+    col, h, r = _wood(size, seed, rings=14, warp_amt=1.6, pores=0.15, rough_base=0.82, boards=2,
                       stops=[(0.0, "#e2c597"), (0.5, "#d4b07c"), (0.8, "#b98a52"), (1.0, "#9a6c3a")])
     fib = T.spectral(size, 0.8, seed + 9, anisotropy=(1.0, 30.0))
     h = T.normalize(h + 0.6 * fib)
@@ -171,7 +198,7 @@ def pi_wood_raw(size: int, seed: int, out) -> None:
 @texture("pi_wood_scuffed", size=512, seed=4125)
 def pi_wood_scuffed(size: int, seed: int, out) -> None:
     """Scuffed-through veneer / paint: dull mid-tan raw wood with ground-in dirt (wear layer)."""
-    col, h, r = _wood(size, seed, rings=26, warp_amt=3.0, pores=0.3, rough_base=0.8,
+    col, h, r = _wood(size, seed, rings=20, warp_amt=1.2, pores=0.3, rough_base=0.8, boards=3,
                       stops=[(0.0, "#b9966a"), (0.5, "#a7845a"), (0.85, "#8d6c45"), (1.0, "#76593a")])
     dirt = T.spectral(size, 1.6, seed + 3)
     col *= (0.82 + 0.2 * dirt[..., None])
@@ -265,17 +292,29 @@ def pi_metal_brushed(size: int, seed: int, out) -> None:
 
 @texture("pi_rust", size=512, seed=4241)
 def pi_rust(size: int, seed: int, out) -> None:
-    """Rust over bare steel (wear layer of painted steel / enamel / chrome)."""
+    """Rust over bare steel (wear layer of painted steel / enamel / chrome): a dark adherent oxide
+    crust, bright orange powdery bloom in crisp-edged blisters, pitting where flakes have spalled,
+    a few islands of grey steel and streaks where damp ran down."""
     big = T.spectral(size, 2.0, seed)
     fine = T.spectral(size, 0.8, seed + 1)
     f1, f2, _ = T.worley(size, 300, seed + 2)
     pit = 1.0 - T.normalize(f1)
-    t = T.normalize(0.6 * big + 0.4 * fine)
-    col = T.gradient(t, [(0.0, "#3c3a38"), (0.35, "#5a3a24"), (0.65, "#8a4a22"), (1.0, "#b0682e")])
-    col *= (0.8 + 0.25 * pit)[..., None]
-    metal = np.clip(1.0 - T.smoothstep(0.25, 0.45, t) * 1.2, 0, 1) * 0.8
-    r = np.clip(0.75 + 0.2 * fine - 0.35 * metal, 0, 1)
-    T.save_pbr_set(out, np.clip(col, 0, 1), T.normalize(0.6 * fine + 0.4 * pit), r, metal=metal, normal_strength=3.0)
+    crust = T.gradient(T.normalize(0.7 * big + 0.3 * fine), [(0.0, "#2e2620"), (0.5, "#4a3020"), (1.0, "#5e3a22")])
+    bloom_f = T.normalize(0.55 * T.spectral(size, 1.6, seed + 3) + 0.45 * fine)
+    bloom = T.smoothstep(0.55, 0.6, bloom_f)                        # crisp blister edges
+    bcol = T.gradient(T.normalize(T.spectral(size, 1.0, seed + 4)), [(0.0, "#8a4418"), (0.6, "#a85a22"), (1.0, "#c27a36")])
+    col = T.mix(crust, bcol, bloom)
+    spall = T.smoothstep(0.7, 0.74, T.normalize(0.6 * T.spectral(size, 1.3, seed + 5) + 0.4 * pit))
+    col = T.mix(col, crust * 0.6, spall)                            # dark pitted craters where flakes fell
+    steel = T.smoothstep(0.86, 0.875, T.spectral(size, 1.6, seed + 6)) * (1 - bloom)
+    col = T.mix(col, _fill(size, "#6d6b67"), steel * 0.8)
+    streak = T.smoothstep(0.6, 0.9, T.spectral(size, 1.5, seed + 7, anisotropy=(12.0, 1.0)))
+    col *= (1.0 - 0.18 * streak)[..., None]
+    col *= (0.85 + 0.2 * pit)[..., None]
+    metal = np.clip(steel * 0.9, 0, 1)
+    r = np.clip(0.78 + 0.15 * bloom - 0.45 * steel + 0.05 * fine, 0, 1)
+    h = T.normalize(0.35 * fine + 0.35 * bloom - 0.45 * spall + 0.2 * pit)
+    T.save_pbr_set(out, np.clip(col, 0, 1), h, r, metal=metal, normal_strength=3.5)
 
 
 @texture("pi_paint_steel", size=512, seed=4251)

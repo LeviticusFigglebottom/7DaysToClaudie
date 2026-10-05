@@ -237,16 +237,17 @@ def roof_tar(size: int, seed: int, out) -> None:
     stone = 1.0 - T.smoothstep(0.55, 0.95, f1 / np.maximum(f2, 1e-3))
     sr = K._hash_arr(cid, seed + 2)
     scol = T.gradient(sr, [(0.0, "#5f5a52"), (0.4, "#857e72"), (0.75, "#a39b8c"), (1.0, "#bdb4a3")])
-    bare = T.smoothstep(0.6, 0.72, K._warp(K._sn(n, 2.2, seed + 3), seed + 4, 30.0))
+    # Washed-bare spots stay small and rare: a 2 m tile repeats ten times across a store roof, so any
+    # big feature reads as a grid (std_surface's macro_variation carries the large-scale drift).
+    bare = T.smoothstep(0.74, 0.8, K._warp(K._sn(n, 1.3, seed + 3, fmin=4.0), seed + 4, 12.0))
     keep = (1.0 - bare) * (K._hash_arr(cid, seed + 5) < 0.85)
     tar = T.gradient(K._sn(n, 1.2, seed + 6), [(0.0, "#141312"), (1.0, "#2a2826")])
     cr = K._cracks(n, seed + 7, 40, 1.4, 0.8) * bare
     tar *= (1.0 - 0.5 * cr)[..., None]
     col = T.mix(tar, scol, stone * keep)
-    pond = K._sn(n, 2.4, seed + 8)
-    rings = (0.5 + 0.5 * np.cos(pond * 2 * np.pi * 9.0)) ** 10 * T.smoothstep(0.55, 0.7, pond)
-    silt = T.smoothstep(0.62, 0.72, pond)
-    col = T.mix(col, col * 0.7 + T.hex_rgb("#7d766a")[None, None, :] * 0.3, np.clip(silt * 0.5 + rings * 0.5, 0, 1))
+    pond = K._sn(n, 1.8, seed + 8, fmin=3.0)
+    silt = T.smoothstep(0.66, 0.76, pond) * 0.5
+    col = T.mix(col, col * 0.75 + T.hex_rgb("#7d766a")[None, None, :] * 0.25, silt)
     seam = 1.0 - T.smoothstep(0.0, 0.01, K._wrapdist_x(y, np.array([0.0, 1.0], np.float32), TILE))
     col *= (1.0 - 0.25 * seam)[..., None]
     height = 0.3 + 0.5 * stone * keep + 0.08 * seam - 0.2 * cr
