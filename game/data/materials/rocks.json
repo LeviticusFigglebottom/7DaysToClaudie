@@ -1,8 +1,8 @@
 {
   "_doc": "Material library (not loaded by ContentDB). tools/build_assets.py writes assets/generated/materials/<id>.tres for each entry. Models reference materials by name M_<id>. Shaders live in game/assets/shaders/. 'textures' = texture set prefix (<set>_albedo/_normal/_orm); 'layers' bind secondary sets (moss, wear) as <layer>_albedo_tex etc.",
   "materials": {
-    "rock_granite": {"shader": "std_surface", "textures": "rock_granite", "layers": {"moss": "moss"}, "params": {"uv_scale": 0.5, "moss_amount": 0.88, "moss_uv_scale": 0.8, "vertex_ao_strength": 1.0}},
-    "rock_moss": {"shader": "std_surface", "textures": "rock_granite", "layers": {"moss": "moss"}, "params": {"uv_scale": 0.5, "moss_amount": 1.0, "moss_uv_scale": 0.8}},
+    "rock_granite": {"shader": "std_surface", "textures": "rock_granite", "layers": {"moss": "moss"}, "params": {"uv_scale": 0.5, "triplanar": 0.5, "moss_amount": 0.88, "moss_uv_scale": 0.8, "vertex_ao_strength": 1.0}},
+    "rock_moss": {"shader": "std_surface", "textures": "rock_granite", "layers": {"moss": "moss"}, "params": {"uv_scale": 0.5, "triplanar": 0.5, "moss_amount": 1.0, "moss_uv_scale": 0.8}},
     "stone_river": {"shader": "std_surface", "textures": "rock_granite", "params": {"uv_scale": 2.0, "tint": "#b8b2a8"}}
   }
 }

@@ -15,6 +15,10 @@ uniform float roughness_mult = 1.0;
 uniform float roughness_add = 0.0;
 uniform float metallic_mult = 1.0;
 uniform float vertex_ao_strength : hint_range(0.0, 1.0) = 1.0;
+// > 0: object-space triplanar mapping instead of the mesh UVs, with this many "UV units" per metre
+// (uv_scale / moss_uv_scale still apply). Rocks use it: their box-projected UVs show as jagged
+// seams wherever neighbouring faces picked different projection axes.
+uniform float triplanar = 0.0;
 
 // Wear layer (revealed on worn edges; e.g. bare wood under paint, rust under paint).
 uniform sampler2D wear_albedo_tex : source_color, hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -56,6 +60,38 @@ instance uniform float weather_exposure = 1.0;
 varying vec3 v_world_normal;
 varying vec3 v_world_pos;
 varying vec3 v_obj_pos;
+varying vec3 v_obj_normal;
+
+vec3 tri_weights(vec3 n) {
+	vec3 w = pow(abs(n), vec3(4.0));
+	return w / max(w.x + w.y + w.z, 1e-4);
+}
+
+// Planes: X samples (z, -y), Y samples (x, -z), Z samples (x, -y), so the image "up" (+green) is
+// +y on the sides and +z on top.
+vec4 tri_tex(sampler2D t, vec3 p, vec3 w) {
+	return texture(t, vec2(p.z, -p.y)) * w.x + texture(t, vec2(p.x, -p.z)) * w.y + texture(t, vec2(p.x, -p.y)) * w.z;
+}
+
+// Object-space normal from a tangent-space normal map sampled on three planes: whiteout blend
+// (after Ben Golus, "Normal Mapping for a Triplanar Shader"), with the tangent sign flipped on the
+// planes whose projection mirrors Godot's right-handed tangent frame.
+vec3 tri_normal(sampler2D t, vec3 p, vec3 n, vec3 w, float strength) {
+	vec3 tx = texture(t, vec2(p.z, -p.y)).rgb * 2.0 - 1.0;
+	vec3 ty = texture(t, vec2(p.x, -p.z)).rgb * 2.0 - 1.0;
+	vec3 tz = texture(t, vec2(p.x, -p.y)).rgb * 2.0 - 1.0;
+	tx.xy *= strength;
+	ty.xy *= strength;
+	tz.xy *= strength;
+	vec3 sg = sign(n);
+	tx.x *= -sg.x;
+	ty.x *= -sg.y;
+	tz.x *= sg.z;
+	tx = vec3(tx.xy + n.zy, abs(tx.z) * n.x);
+	ty = vec3(ty.xy + n.xz, abs(ty.z) * n.y);
+	tz = vec3(tz.xy + n.xy, abs(tz.z) * n.z);
+	return normalize(tx.zyx * w.x + ty.xzy * w.y + tz.xyz * w.z);
+}
 
 void vertex() {
 	// Ground cover (moss, litter) shrinks away by distance; see foliage.gdshader.
@@ -65,13 +101,31 @@ void vertex() {
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_obj_pos = VERTEX;
+	v_obj_normal = NORMAL;
 }
 
 void fragment() {
 	vec2 uv = UV * uv_scale;
-	vec3 alb = texture(albedo_tex, uv).rgb * tint.rgb;
-	vec3 nrm = texture(normal_tex, uv).rgb;
-	vec3 orm = texture(orm_tex, uv).rgb;
+	vec3 alb;
+	vec3 nrm;
+	vec3 orm;
+	// Triplanar: the normal is built in object space (tri_n) and written to NORMAL at the end;
+	// NORMAL_MAP stays flat so it doesn't perturb it again.
+	vec3 tri_w = vec3(0.0);
+	vec3 tri_n = vec3(0.0);
+	vec3 obj_n = normalize(v_obj_normal);
+	if (triplanar > 0.0) {
+		tri_w = tri_weights(obj_n);
+		vec3 tp = v_obj_pos * triplanar * uv_scale;
+		alb = tri_tex(albedo_tex, tp, tri_w).rgb * tint.rgb;
+		orm = tri_tex(orm_tex, tp, tri_w).rgb;
+		tri_n = tri_normal(normal_tex, tp, obj_n, tri_w, normal_strength);
+		nrm = vec3(0.5, 0.5, 1.0);
+	} else {
+		alb = texture(albedo_tex, uv).rgb * tint.rgb;
+		nrm = texture(normal_tex, uv).rgb;
+		orm = texture(orm_tex, uv).rgb;
+	}
 	float rough = clamp(orm.g * roughness_mult + roughness_add, 0.02, 1.0);
 	float metal = orm.b * metallic_mult;
 	float ao = orm.r;
@@ -94,12 +148,18 @@ void fragment() {
 	float up = clamp(v_world_normal.y, 0.0, 1.0);
 	if (moss_amount > 0.001) {
 		vec2 muv = UV * moss_uv_scale;
-		vec3 ma = texture(moss_albedo_tex, muv).rgb;
+		vec3 mp = v_obj_pos * triplanar * moss_uv_scale;
+		vec3 ma = triplanar > 0.0 ? tri_tex(moss_albedo_tex, mp, tri_w).rgb : texture(moss_albedo_tex, muv).rgb;
 		float m = moss_amount * COLOR.b * smoothstep(0.25, 0.75, up) + (ma.g - 0.25) * 0.6 * moss_amount;
 		m = smoothstep(0.35, 0.65, m);
 		alb = mix(alb, ma, m);
-		nrm = mix(nrm, texture(moss_normal_tex, muv).rgb, m);
-		rough = mix(rough, texture(moss_orm_tex, muv).g, m);
+		if (triplanar > 0.0) {
+			tri_n = normalize(mix(tri_n, tri_normal(moss_normal_tex, mp, obj_n, tri_w, 1.0), m));
+			rough = mix(rough, tri_tex(moss_orm_tex, mp, tri_w).g, m);
+		} else {
+			nrm = mix(nrm, texture(moss_normal_tex, muv).rgb, m);
+			rough = mix(rough, texture(moss_orm_tex, muv).g, m);
+		}
 		metal *= 1.0 - m;
 	}
 
@@ -148,6 +208,9 @@ void fragment() {
 	METALLIC = metal;
 	AO = ao * vao;
 	AO_LIGHT_AFFECT = 0.25;
+	if (triplanar > 0.0) {
+		NORMAL = normalize((VIEW_MATRIX * (MODEL_MATRIX * vec4(tri_n, 0.0))).xyz);
+	}
 	NORMAL_MAP = nrm;
 	NORMAL_MAP_DEPTH = normal_strength;
 }
