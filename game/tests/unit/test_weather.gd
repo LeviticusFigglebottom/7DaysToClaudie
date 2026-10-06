@@ -249,3 +249,23 @@ func test_weather_map_is_published_round_the_camera_and_kept_until_the_next_is_d
 	assert_true(m.covers(far), "round the camera again")
 	assert_almost_eq(m.catch_at(far.x, far.z), 12.3 + 0.01 * far.x, 0.02)
 	m.shutdown()
+
+
+func test_small_things_on_the_ground_keep_no_rain_off() -> void:
+	# A road barricade stood in a dry disc a map cell wide on a puddled road: the map's rays look past
+	# small, low boxes on the ground. A car (wide), a porch deck (off the ground) and a post (tall)
+	# still stop them.
+	var body := StaticBody3D.new()
+	add_child_autofree(body)
+	var cases: Array = [[Vector3(1.2, 1.1, 0.6), 0.0, true, "a barricade"], [Vector3(1.8, 1.5, 4.5), 0.0, false, "a car"],
+		[Vector3(1.0, 0.2, 1.0), 0.5, false, "a porch deck"], [Vector3(0.6, 2.4, 0.6), 0.0, false, "a post"]]
+	for i: int in cases.size():
+		var cs := CollisionShape3D.new()
+		var b := BoxShape3D.new()
+		b.size = cases[i][0]
+		cs.shape = b
+		cs.position = Vector3(i * 10.0, 10.0 + float(cases[i][1]) + b.size.y * 0.5, 0.0)
+		body.add_child(cs)
+	for i: int in cases.size():
+		var top := Vector3(i * 10.0, 10.0 + float(cases[i][1]) + (cases[i][0] as Vector3).y, 0.0)
+		assert_eq(WeatherMaps._small_and_low({"position": top, "collider": body, "shape": i}, 10.0), bool(cases[i][2]), str(cases[i][3]))

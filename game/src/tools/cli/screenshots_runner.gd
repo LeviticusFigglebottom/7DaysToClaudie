@@ -157,6 +157,7 @@ func _wait(s: float) -> void:
 ## Memory after a shot (a rendered weather run was OOM-killed at 10.9 GB): the process's resident
 ## set (Linux /proc), what the engine allocated itself (static) and for the GPU (video, which
 ## lavapipe keeps in RAM), live objects, resources and nodes, and the pipelines compiled so far.
+## The static peak bounds what the engine ever held at once, transient work included.
 ## Resident memory that grows while the engine's own figures stay flat is the driver's.
 func _mem_report(tag: String) -> void:
 	var rss_kb: int = -1
@@ -170,8 +171,9 @@ func _mem_report(tag: String) -> void:
 	for p: Array in LoadMeter.PIPELINES:
 		pipes.append("%s %d" % [p[1], RenderingServer.get_rendering_info(int(p[0]) as RenderingServer.RenderingInfo)])
 	var mb: float = 1048576.0
-	print("SHOT mem %s at %.0f s: rss %.0f MB, static %.0f MB, video %.0f MB (textures %.0f, buffers %.0f), objects %d, resources %d, nodes %d, orphans %d; pipelines %s" % [
+	print("SHOT mem %s at %.0f s: rss %.0f MB, static %.0f MB (peak %.0f), video %.0f MB (textures %.0f, buffers %.0f), objects %d, resources %d, nodes %d, orphans %d; pipelines %s" % [
 		tag, Time.get_ticks_msec() / 1000.0, rss_kb / 1024.0, Performance.get_monitor(Performance.MEMORY_STATIC) / mb,
+		Performance.get_monitor(Performance.MEMORY_STATIC_MAX) / mb,
 		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / mb, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / mb,
 		Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / mb, int(Performance.get_monitor(Performance.OBJECT_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)), int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),

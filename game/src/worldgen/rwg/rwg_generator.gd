@@ -20,6 +20,7 @@ const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Terrain := preload("res://src/worldgen/rwg/rwg_terrain.gd")
 const Roads := preload("res://src/worldgen/rwg/rwg_roads.gd")
 const Towns := preload("res://src/worldgen/rwg/rwg_towns.gd")
+const Grid := preload("res://src/worldgen/spatial_grid.gd")
 
 ## Bump when the output for a given seed and settings changes: it is part of every world's id, so
 ## saves made with an older generator regenerate their world as it was (cached) or as now (TD-082).
@@ -55,10 +56,25 @@ var biome_cells := PackedByteArray()
 ## Water distance per macro cell (m, chamfer), for quick site tests.
 var water_dist := PackedFloat32Array()
 var timings: Dictionary = {}
+## Milliseconds of the steps inside the stages (ADR-0038's measurements; not written to the world).
+var sub_timings: Dictionary = {}
 var warnings: PackedStringArray = []
 var progress: Callable = Callable()
 
 var _t0: int = 0
+var _t_sub: int = 0
+var _last_report: int = 0
+## Spatial indexes, 256 m cells (ADR-0038): road segments and road vertices as Grid.pack(road,
+## part), places by index. They narrow nearest_road, road_clearance and _hits_built to what can be
+## near; every exact test stays, so the world is the same as the scans over everything made.
+var _seg_grid := Grid.new(256.0)
+var _pt_grid := Grid.new(256.0)
+var _place_grid := Grid.new(256.0)
+## The widest road's half width plus shoulder (road_clearance's reach).
+var _max_half: float = 0.0
+## Each town's polygon grown 40 m, as _hits_built tests it, and its bounds grown 1 m.
+var _town_grown: Array[PackedVector2Array] = []
+var _town_grown_box: Array[Rect2] = []
 
 
 static func world_id_for(s: GenSettings) -> String:
@@ -85,8 +101,28 @@ func _stage(name: String, t: float) -> void:
 	if _t0 > 0:
 		timings[name] = now - _t0
 	_t0 = now
+	_t_sub = now
 	if progress.is_valid():
 		progress.call(name, t)
+
+
+## Progress inside a stage: `stage` (the one under way) at fraction f of its span t0..t1, at most
+## every 50 ms, so the loading bar keeps moving through the long stages (ADR-0038).
+func _sub(stage: String, t0: float, t1: float, f: float) -> void:
+	if not progress.is_valid():
+		return
+	var now: int = Time.get_ticks_msec()
+	if now - _last_report < 50:
+		return
+	_last_report = now
+	progress.call(stage, lerpf(t0, t1, clampf(f, 0.0, 1.0)))
+
+
+## Records how long the step since the last mark took.
+func _mark(step: String) -> void:
+	var now: int = Time.get_ticks_msec()
+	sub_timings[step] = now - _t_sub
+	_t_sub = now
 
 
 func run() -> void:
@@ -96,27 +132,39 @@ func run() -> void:
 	world_id = world_id_for(settings)
 	var t_all: int = Time.get_ticks_msec()
 	_t0 = t_all
+	_t_sub = t_all
 	if progress.is_valid():
 		progress.call("Raising the land", 0.0)
-	terrain.build(settings, tun, names)
+	terrain.build(settings, tun, names, func(f: float) -> void: _sub("Raising the land", 0.0, 0.3, f))
+	for k: String in terrain.timings:
+		sub_timings["land/" + k] = terrain.timings[k]
 	_stage("Raising the land", 0.3)
 	_regions()
 	_water_distance()
+	_mark("water_distance")
 	_towns()
+	_mark("towns")
 	_stage("Laying out towns", 0.45)
 	router.setup(terrain, tun.get("roads", {}))
 	for tw: Dictionary in towns:
 		router.block_polygon(tw["poly"], 16.0)
+	_mark("router_setup")
 	_road_network()
+	_mark("road_network")
 	_stage("Building roads", 0.6)
 	_drop_site()
+	_mark("drop_site")
 	_danger()
 	_biome_map()
+	_mark("biome_map")
 	_stage("Planting forests", 0.7)
 	_places()
+	_mark("places")
 	_stage("Placing camps and cabins", 0.85)
 	_bridges()
+	_mark("bridges")
 	_bloom()
+	_mark("bloom")
 	_name_regions()
 	_stage("Mapping", 1.0)
 	timings["total"] = Time.get_ticks_msec() - t_all
@@ -247,7 +295,9 @@ func _towns() -> void:
 	for v: float in terrain.h:
 		hmin = minf(hmin, v)
 		hmax = maxf(hmax, v)
-	for kind: String in kinds:
+	for ki: int in kinds.size():
+		var kind: String = kinds[ki]
+		_sub("Laying out towns", 0.3, 0.45, float(ki) / kinds.size())
 		var plan: Dictionary = Towns.plan(kind, tcfg, r)
 		var sz := Vector2(float(plan["size"][0]), float(plan["size"][1]))
 		var best: Dictionary = {}
@@ -369,7 +419,9 @@ func _road_network() -> void:
 		if float(e3[0]) < maxf(longest * 1.5, 1800.0):
 			chosen.append(e3)
 			extra -= 1
-	for e4: Array in chosen:
+	for ci: int in chosen.size():
+		var e4: Array = chosen[ci]
+		_sub("Building roads", 0.45, 0.6, 0.8 * ci / chosen.size())
 		var ta: Dictionary = towns[int(e4[1])]
 		var tb: Dictionary = towns[int(e4[2])]
 		var big: bool = str(ta["kind"]) != "hamlet" and str(tb["kind"]) != "hamlet"
@@ -506,12 +558,79 @@ func _add_road(pts: PackedVector2Array, cls: String, name: String, off_map: bool
 	roads.append({"id": "road_%d" % roads.size(), "name": name, "class": cls, "points": pts, "width": float(spec["width"]),
 		"shoulder": float(spec["shoulder"]), "surface": str(spec["surface"]), "markings": cls == "highway", "bridges": [],
 		"line": Polyline2.from_array(Terrain._arr(pts))})
+	_index_road(roads.size() - 1)
 	return true
+
+
+## Adds a road's segments and vertices to the spatial indexes.
+func _index_road(i: int) -> void:
+	var rd: Dictionary = roads[i]
+	var line: Polyline2 = rd["line"]
+	_max_half = maxf(_max_half, float(rd["width"]) * 0.5 + float(rd["shoulder"]))
+	for k: int in line.points.size():
+		_pt_grid.insert(Grid.pack(i, k), Rect2(line.points[k], Vector2.ZERO).grow(1.0))
+		if k + 1 < line.points.size():
+			_seg_grid.insert(Grid.pack(i, k), Rect2(line.points[k], Vector2.ZERO).expand(line.points[k + 1]).grow(1.0))
 
 
 ## The nearest point on any road to p: [distance, point, road index, arc]. `clear_of_towns`: only
 ## points at least 30 m outside every town pad (a track must not start on a town's street).
+## Searched through the spatial indexes in growing squares around p until the nearest found lies
+## inside the square (no road outside can then be nearer). The scan over every road takes the
+## nearest, the lowest road index first among equals, whenever one lies within 4000 m, and so does
+## this; farther (or with no road near), the scan runs as it always has.
 func nearest_road(p: Vector2, classes: PackedStringArray = [], clear_of_towns: bool = false) -> Array:
+	for r: float in [256.0, 1024.0, 4097.0]:
+		var square := Rect2(p - Vector2(r, r), Vector2(r, r) * 2.0)
+		var best: Array = _nearest_vertex_in(p, classes, square) if clear_of_towns else _nearest_segment_in(p, classes, square)
+		if int(best[2]) >= 0 and float(best[0]) < r - 1.0:
+			if clear_of_towns or float(best[0]) <= 4000.0:
+				return best
+			break
+	return _nearest_road_scan(p, classes, clear_of_towns)
+
+
+## nearest_road among the road segments indexed in `square`, roads in ascending order and each
+## through closest() over its listed segments.
+func _nearest_segment_in(p: Vector2, classes: PackedStringArray, square: Rect2) -> Array:
+	var best: Array = [INF, p, -1, 0.0]
+	var ids: PackedInt64Array = _seg_grid.query(square)
+	var k: int = 0
+	while k < ids.size():
+		var i: int = ids[k] >> Grid.PART_BITS
+		var segs := PackedInt32Array()
+		while k < ids.size() and (ids[k] >> Grid.PART_BITS) == i:
+			segs.append(ids[k] & Grid.PART_MASK)
+			k += 1
+		if not classes.is_empty() and not classes.has(str(roads[i]["class"])):
+			continue
+		var line: Polyline2 = roads[i]["line"]
+		var q: Vector3 = line.closest_in(p, segs)
+		if q.x < float(best[0]):
+			best = [q.x, line.point_at(q.y), i, q.y]
+	return best
+
+
+## nearest_road(clear_of_towns) among the road vertices indexed in `square`, in (road, vertex)
+## order as the scan visits them.
+func _nearest_vertex_in(p: Vector2, classes: PackedStringArray, square: Rect2) -> Array:
+	var best: Array = [INF, p, -1, 0.0]
+	for id: int in _pt_grid.query(square):
+		var i: int = id >> Grid.PART_BITS
+		if not classes.is_empty() and not classes.has(str(roads[i]["class"])):
+			continue
+		var line: Polyline2 = roads[i]["line"]
+		var k: int = id & Grid.PART_MASK
+		var q2: Vector2 = line.points[k]
+		var d: float = q2.distance_to(p)
+		if d >= float(best[0]) or _near_town(q2, 30.0):
+			continue
+		best = [d, q2, i, line.lengths[k]]
+	return best
+
+
+## nearest_road as a scan over every road (what the index stands in for).
+func _nearest_road_scan(p: Vector2, classes: PackedStringArray, clear_of_towns: bool) -> Array:
 	var best: Array = [INF, p, -1, 0.0]
 	for i: int in roads.size():
 		if not classes.is_empty() and not classes.has(str(roads[i]["class"])):
@@ -540,26 +659,35 @@ func _near_town(p: Vector2, gap: float) -> bool:
 	return false
 
 
-## Clearance (m) between a polygon and every road's edge (shoulder included).
+## Clearance (m) between a polygon and every road's edge (shoulder included). Only road vertices
+## within the widest road's reach + 60 m of the polygon's box can count: those come from the
+## vertex index, and each road's own reach is tested exactly as the scan over every road did.
 func road_clearance(poly: PackedVector2Array, skip: int = -1) -> float:
 	var bb := Rect2(poly[0], Vector2.ZERO)
 	for p: Vector2 in poly:
 		bb = bb.expand(p)
 	var best: float = INF
-	for i: int in roads.size():
-		if i == skip:
+	var cur: int = -1
+	var half: float = 0.0
+	var near: bool = false
+	var box := Rect2()
+	var line: Polyline2 = null
+	for id: int in _pt_grid.query(bb.grow(_max_half + 61.0)):
+		var i: int = id >> Grid.PART_BITS
+		if i != cur:
+			cur = i
+			var rd: Dictionary = roads[i]
+			line = rd["line"]
+			half = float(rd["width"]) * 0.5 + float(rd["shoulder"])
+			near = i != skip and line.bounds.grow(half + 60.0).intersects(bb.grow(60.0))
+			box = bb.grow(half + 60.0)
+		if not near:
 			continue
-		var rd: Dictionary = roads[i]
-		var line: Polyline2 = rd["line"]
-		var half: float = float(rd["width"]) * 0.5 + float(rd["shoulder"])
-		if not line.bounds.grow(half + 60.0).intersects(bb.grow(60.0)):
+		var q: Vector2 = line.points[id & Grid.PART_MASK]
+		if not box.has_point(q):
 			continue
-		for k: int in line.points.size():
-			var q: Vector2 = line.points[k]
-			if not bb.grow(half + 60.0).has_point(q):
-				continue
-			var d: float = 0.0 if Geometry2D.is_point_in_polygon(q, poly) else Terrain._poly_distance(poly, q)
-			best = minf(best, d - half)
+		var d: float = 0.0 if Geometry2D.is_point_in_polygon(q, poly) else Terrain._poly_distance(poly, q)
+		best = minf(best, d - half)
 	return best
 
 
@@ -654,6 +782,7 @@ func _biome_map() -> void:
 	var raw := PackedByteArray()
 	raw.resize(biome_cols * biome_cols)
 	for j: int in biome_cols:
+		_sub("Planting forests", 0.6, 0.7, 0.8 * j / biome_cols)
 		for i: int in biome_cols:
 			var p := Vector2(-size * 512.0 + (i + 0.5) * biome_step, -size * 512.0 + (j + 0.5) * biome_step)
 			var e: float = (terrain.height(p.x, p.y) - hmin) / maxf(1.0, hmax - hmin)
@@ -696,12 +825,17 @@ func _biome_map() -> void:
 				if counts[k3] > counts[top]:
 					top = k3
 			biome_cells[j2 * biome_cols + i2] = top if counts[own] <= 2 else own
-	# Each region's dominant biome (its default and summary).
+	# Each region's dominant biome (its default and summary), counted over the cells whose centres
+	# lie in it: only cells near it are tested (one of slack each way), not the whole map's.
 	for cell: String in regions:
 		var rect: Rect2 = regions[cell]["rect"]
 		var counts2: Array[int] = [0, 0, 0, 0]
-		for j3: int in biome_cols:
-			for i3: int in biome_cols:
+		var i0: int = clampi(floori((rect.position.x + size * 512.0) / biome_step) - 1, 0, biome_cols - 1)
+		var i1: int = clampi(ceili((rect.end.x + size * 512.0) / biome_step) + 1, 0, biome_cols - 1)
+		var j0: int = clampi(floori((rect.position.y + size * 512.0) / biome_step) - 1, 0, biome_cols - 1)
+		var j1: int = clampi(ceili((rect.end.y + size * 512.0) / biome_step) + 1, 0, biome_cols - 1)
+		for j3: int in range(j0, j1 + 1):
+			for i3: int in range(i0, i1 + 1):
 				var p2 := Vector2(-size * 512.0 + (i3 + 0.5) * biome_step, -size * 512.0 + (j3 + 0.5) * biome_step)
 				if rect.has_point(p2):
 					counts2[biome_cells[j3 * biome_cols + i3]] += 1
@@ -730,7 +864,9 @@ func _places() -> void:
 		max_danger = maxi(max_danger, int(regions[cell]["danger"]))
 	var order: Array[String] = ["roadside", "lake_shore", "summit", "waterside", "remote", "forest"]
 	var pool: Array = wcfg.get("pool", [])
-	for site: String in order:
+	for oi: int in order.size():
+		var site: String = order[oi]
+		_sub("Placing camps and cabins", 0.7, 0.85, float(oi) / order.size())
 		for e: Variant in pool:
 			var pe: Dictionary = e
 			if str(pe.get("site", "")) != site or int(pe.get("min_danger", 1)) > max_danger:
@@ -795,6 +931,7 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 			"poly": poly, "biome": str(pe.get("biome", "meadow")), "skirt": float(pe.get("skirt", 10.0)), "keep_water": keep_water,
 			"access": access, "site": site, "cell": cell, "center": centre}
 		places.append(place)
+		_place_grid.insert(places.size() - 1, _bounds(poly).grow(1.0))
 		router.block_polygon(poly, 6.0)
 		_access(place, str(pe.get("access", "trail")), cand)
 		return
@@ -879,19 +1016,34 @@ func _candidate(site: String, fp: Vector2, r: RandomNumberGenerator) -> Dictiona
 
 
 ## True when a polygon (grown by `gap`) touches a town, another place, or the drop site's clearing.
+## Towns' grown outlines are made once, and only towns and places whose bounds meet the grown
+## polygon's are tested (polygons with disjoint bounds can't intersect).
 func _hits_built(poly: PackedVector2Array, gap: float) -> bool:
 	var grown: PackedVector2Array = poly
 	var off: Array = Geometry2D.offset_polygon(poly, gap)
 	if not off.is_empty():
 		grown = off[0]
-	for tw: Dictionary in towns:
+	var gb: Rect2 = _bounds(grown).grow(1.0)
+	while _town_grown.size() < towns.size():
+		var tw: Dictionary = towns[_town_grown.size()]
 		var tg: Array = Geometry2D.offset_polygon(tw["poly"], 40.0)
-		if not Geometry2D.intersect_polygons(grown, tg[0] if not tg.is_empty() else tw["poly"]).is_empty():
+		var tpoly: PackedVector2Array = tg[0] if not tg.is_empty() else tw["poly"]
+		_town_grown.append(tpoly)
+		_town_grown_box.append(_bounds(tpoly).grow(1.0))
+	for ti: int in towns.size():
+		if _town_grown_box[ti].intersects(gb) and not Geometry2D.intersect_polygons(grown, _town_grown[ti]).is_empty():
 			return true
-	for pl: Dictionary in places:
-		if not Geometry2D.intersect_polygons(grown, pl["poly"]).is_empty():
+	for id: int in _place_grid.query(gb):
+		if not Geometry2D.intersect_polygons(grown, places[id]["poly"]).is_empty():
 			return true
 	return false
+
+
+static func _bounds(poly: PackedVector2Array) -> Rect2:
+	var bb := Rect2(poly[0], Vector2.ZERO)
+	for p: Vector2 in poly:
+		bb = bb.expand(p)
+	return bb
 
 
 ## The way to a place: a short asphalt drive off the road it fronts, a dirt track or a footpath

@@ -66,11 +66,12 @@ static func is_detail(file: String) -> bool:
 
 
 ## Records a file just written and, for a detail file, trims the detail files to the budget (never
-## `path` itself, nor `keep`). Returns the evicted paths.
-func wrote(path: String, keep: PackedStringArray = []) -> PackedStringArray:
+## `path` itself, nor `keep`). Returns the evicted paths. `at`: the time of use (unix seconds;
+## -1 now).
+func wrote(path: String, keep: PackedStringArray = [], at: int = -1) -> PackedStringArray:
 	_mutex.lock()
 	_load()
-	_record(path, _size_of(path))
+	_record(path, _size_of(path), at)
 	var removed := PackedStringArray()
 	if is_detail(path):
 		var k: PackedStringArray = keep.duplicate()
@@ -81,12 +82,12 @@ func wrote(path: String, keep: PackedStringArray = []) -> PackedStringArray:
 	return removed
 
 
-## A cache hit: `path` was used now.
-func touch(path: String) -> void:
+## A cache hit: `path` was used now (or at `at`, unix seconds).
+func touch(path: String, at: int = -1) -> void:
 	_mutex.lock()
 	_load()
 	var e: Variant = (_index.get(path.get_base_dir().get_file(), {}) as Dictionary).get(path.get_file())
-	_record(path, int(e[0]) if e is Array else _size_of(path))
+	_record(path, int(e[0]) if e is Array else _size_of(path), at)
 	if _now() - _last_flush >= TOUCH_FLUSH_S:
 		_flush()
 	_mutex.unlock()
@@ -212,11 +213,11 @@ func _reconcile() -> void:
 			_dirty = true
 
 
-func _record(path: String, bytes: int) -> void:
+func _record(path: String, bytes: int, at: int = -1) -> void:
 	var wid: String = path.get_base_dir().get_file()
 	if not _index.has(wid):
 		_index[wid] = {}
-	(_index[wid] as Dictionary)[path.get_file()] = [bytes, _now()]
+	(_index[wid] as Dictionary)[path.get_file()] = [bytes, _now() if at < 0 else at]
 	_dirty = true
 
 

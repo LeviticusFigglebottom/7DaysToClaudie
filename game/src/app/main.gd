@@ -1,7 +1,8 @@
 extends Control
 ## Boot scene + main menu.
 ##
-## Command line (after `--`):  --new-game [--mode slice|survival] [--seed N] [--skip-intro]
+## Command line (after `--`):  --new-game [--mode slice|survival] [--seed N|text] [--skip-intro]
+##                             (no --seed: the slice's demo seed, otherwise a fresh one)
 ##                             [--preset drifter|survivor|remanded|hollowed|rooted]
 ##                             [--rule key=value ...]   (any data/config/game_rules.json option)
 ##                             [--world random [--world-seed N] [--world-preset id]
@@ -9,6 +10,11 @@ extends Control
 ##                             --load <slot>    --continue
 ## e.g. godot --path game -- --new-game --mode slice --skip-intro
 ##      godot --path game -- --new-game --world random --world-seed 77 --world-set size=3
+
+## The menu's Vertical Slice button is the curated demo run, always on this run seed (the one the QA
+## screenshots and the smoke test play, GameSession's default); every other new game rolls a
+## fresh run seed (ADR-0030).
+const SLICE_DEMO_SEED: int = 4471
 
 @onready var _list: VBoxContainer = %Buttons
 @onready var _status: Label = %Status
@@ -28,7 +34,7 @@ func _handle_cli(args: PackedStringArray) -> bool:
 		var opts: Dictionary = {"game_mode": _arg_value(args, "--mode", "survival")}
 		var seed_s: String = _arg_value(args, "--seed", "")
 		if seed_s != "":
-			opts["seed"] = int(seed_s)
+			opts["seed"] = NewGamePanel.run_seed_from_text(seed_s)
 		opts["skip_intro"] = args.has("--skip-intro")
 		opts["preset"] = _arg_value(args, "--preset", "survivor")
 		var rules: Dictionary = {}
@@ -39,6 +45,8 @@ func _handle_cli(args: PackedStringArray) -> bool:
 		opts["rules"] = rules
 		if _arg_value(args, "--world", "main") == "random":
 			opts["world_gen"] = world_gen_from_args(args, int(opts.get("seed", randi() % 1000000)))
+		if not opts.has("seed"):
+			opts["seed"] = cli_default_seed(str(opts["game_mode"]), opts.has("world_gen"))
 		Game.start_new_game.call_deferred(opts)
 		return true
 	# A load that fails leaves the menu up with the reason, not a blank screen.
@@ -53,6 +61,12 @@ func _handle_cli(args: PackedStringArray) -> bool:
 			_load.call_deferred(str(slots[0]["slot"]))
 			return true
 	return false
+
+
+## The run seed of a `--new-game` without `--seed`: the slice on the handcrafted map is the curated
+## demo run (the menu's button), anything else a fresh run (ADR-0030).
+static func cli_default_seed(mode: String, random_world: bool) -> int:
+	return SLICE_DEMO_SEED if mode == "slice" and not random_world else NewGamePanel.fresh_seed()
 
 
 ## A random world's settings from the command line: --world-seed, --world-preset, --world-set k=v.
@@ -80,7 +94,9 @@ func _build_menu() -> void:
 	if not slots.is_empty():
 		_add_button("Continue (Day %d)" % int(slots[0].get("day", 1)), _load.bind(str(slots[0]["slot"])))
 	_add_button("New Game…", _open_new_game)
-	_add_button("New Game — Vertical Slice (Hum on night 3)", func() -> void: Game.start_new_game({"game_mode": "slice"}))
+	var demo: Button = _add_button("New Game — Vertical Slice demo (seed %d, Hum on night 3)" % SLICE_DEMO_SEED,
+		func() -> void: Game.start_new_game({"game_mode": "slice", "seed": SLICE_DEMO_SEED}))
+	demo.tooltip_text = "The curated demo run: the same run seed every time, so the same buildings, loot and Hum as the QA screenshots. New Game… rolls a fresh run."
 	_add_button("Random World…", _open_new_game.bind(true))
 	for s: Dictionary in slots:
 		var label: String = "Load %s — Day %d" % [str(s.get("slot", "?")).capitalize(), int(s.get("day", 1))]

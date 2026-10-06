@@ -118,7 +118,7 @@ static func get_or_compose(world: WorldDef, region_id: String, spacing: float = 
 static func compose(world: WorldDef, region_id: String, spacing: float = 1.0, progress: Callable = Callable(),
 		cancel: Array = [false], bands: int = 1) -> RegionTerrain:
 	var b := _Build.new(world, region_id, spacing, progress)
-	b.cancel = cancel
+	b.cancel = cancel if not cancel.is_empty() else [false]
 	b.bands = maxi(1, bands)
 	return b.run()
 
@@ -188,7 +188,7 @@ class _Build:
 	# them. Per-column values are computed once with the exact expressions the loops used. A band's
 	# loop calls no script function and no object method that it can avoid, and copies no shared
 	# container per sample: each such call or copy takes a shared reference count (and, in debug
-	# builds, ObjectDB's lock), which made four bands slower than one. So the helpers (_bl, _blf,
+	# builds, ObjectDB's lock), which made four bands slower than one. So the helpers (_bl,
 	# _add, _border_weight, Polyline2.closest) are inlined there with their exact arithmetic, and
 	# per-road and per-item data are flat packed arrays with offsets rather than arrays of arrays.
 	var _col_x := PackedFloat64Array()

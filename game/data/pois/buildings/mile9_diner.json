@@ -112,7 +112,7 @@
         {"prop": "chair_wood", "pos": [0.6, 9.8], "rot": 200, "variant": "destroyed"},
         {"prop": "debris_pile", "pos": [1.2, 5.9], "rot": 20},
         {"prop": "barricade_mattress", "pos": [2.1, 6.4], "rot": 75, "variant": "destroyed"},
-        {"prop": "plywood_leaning", "at": [0, 7], "against": "W", "variant": "destroyed"},
+        {"prop": "plywood_leaning", "at": [0, 7], "against": "W", "offset": [0, -0.12], "variant": "destroyed"},
         {"prop": "plywood_leaning", "pos": [12.8, 6.1], "rot": 90},
         {"prop": "diner_table", "pos": [12.9, 7.0], "rot": 95, "variant": "destroyed"},
         {"prop": "kitchen_chair", "pos": [12.7, 5.45], "rot": 30, "variant": "destroyed"},

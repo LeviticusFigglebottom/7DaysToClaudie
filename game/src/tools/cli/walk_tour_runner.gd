@@ -44,8 +44,15 @@ func _run() -> void:
 	var game: Node = get_node("/root/Game")
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var mode: String = args[args.find("--mode") + 1] if args.find("--mode") >= 0 and args.find("--mode") + 1 < args.size() else "survival"
-	game.call(&"start_new_game", {"game_mode": mode, "skip_intro": true, "slot": "tour"})
-	var ready: bool = await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), 240.0)
+	var opts: Dictionary = {"game_mode": mode, "skip_intro": true, "slot": "tour"}
+	# `--world random [--world-seed N] [--world-preset id] [--world-set key=value ...]` tours a random
+	# world (ADR-0031), read as the game's own command line reads it (map seed 7 by default).
+	var wi: int = args.find("--world")
+	if wi >= 0 and wi + 1 < args.size() and args[wi + 1] == "random":
+		opts["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", args, 7)
+	game.call(&"start_new_game", opts)
+	# A random world composes its regions on its first load (minutes on a busy machine).
+	var ready: bool = await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), 600.0 if opts.has("world_gen") else 240.0)
 	if not ok(ready, "world loads and the player spawns (%.1fs)" % ((Time.get_ticks_msec() - _t0) / 1000.0)):
 		_finish()
 		return
