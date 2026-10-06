@@ -44,3 +44,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0038](0038-streamed-worlds.md) | Streamed worlds: Phase 1, a composer 2-2.5x faster with byte-identical output, row bands, cancellation, a crash-safe region cache with an LRU, generator spatial indexes | Accepted (Phase 1) |
 | [0040](0040-organic-towns.md) | Organic towns: streets grown over the land, lots by frontage, zoning by rings | Accepted |
 | [0041](0041-burnt-forest-and-fen.md) | Burnt forest and fen: fire scars and drowned lowland in random worlds, fire char on the bark, waders, per-biome ambience | Accepted |
+| [0046](0046-tier-five-field-lab.md) | Tier 5: the Corvane Field Lab, keycards as keys, and a compound the validator can walk | Accepted |

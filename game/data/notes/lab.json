@@ -1,0 +1,47 @@
+{
+ "_doc": "Readable notes of the Corvane Field Lab (no note names a town). Items: items/lab.json note_<id>.",
+ "defs": [
+  {
+   "id": "lab_core_log",
+   "title": "Core Log, BH-7",
+   "style": "handwritten",
+   "author": "T. Brask, senior geologist",
+   "body": "HOLE BH-7  CORVANE DEEP, 4 LEVEL STEP-OUT  LOGGED T.B.\n1,288-1,390 ft. Grey limestone, massive, fossil hash. Good recovery.\n1,390-1,411 ft. Karsted. Calcite on fractures. Core loss 30%.\n1,411-1,412 ft. VOID. Rods dropped 4 ft. Air came up the string, warm, smelled of wet bread.\n1,412-1,413 ft. 0.3 m recovered. Limestone with white filaments on every fracture face, soft, dry. Filaments in the core barrel. Filaments on the saw.\nBoxes 211-214 sealed and sent to the shed. Told Anders to keep the boys off them.\nUnder it, later, in pencil: The threads moved toward the lamp. I am not writing that on the sheet."
+  },
+  {
+   "id": "lab_tether_3907",
+   "title": "Tether, Salvager #3907",
+   "style": "printed",
+   "author": "Remand Program tether log",
+   "body": "REMAND SALVAGE PROGRAM - UNIT 3907 - PRUITT, C.\nCONTRACT 77-B: BLOOM CORE SAMPLES (3) + RESEARCH MEDIA. SITE: CORVANE FS-2.\nD31 0612  ARRIVED. GATE CHAINED. HUT BOLTED. CUT FENCE WEST SIDE.\nD31 0640  CORE SHED: THEY GOT UP WHEN THE TRAP WENT. TWO DOWN. LEG BAD.\nD31 0702  DECON UNIT CHAINED. KEY NOT FOUND. ADMIN PADLOCKED. MANAGER'S KEYS IN THE BUNKHOUSE?\nD31 0705  DOWNSTAIRS NEEDS A CARD. DOCTOR HAD IT. COLD ROOM.\nD31 0711  VITALS: HR 141. TEMP 38.9. BLOOM EXPOSURE 44%.\nD31 0800  RESTING IN THE SHED. GOING BACK IN AT DARK.\nD32 ----  NO MOVEMENT 31 HRS. SIGNAL LOST. BEACON ACTIVE."
+  },
+  {
+   "id": "lab_station_log",
+   "title": "Station Log, Field Station 2",
+   "style": "handwritten",
+   "author": "A. Lindqvist, station manager",
+   "body": "Wk 1. Ted's BH-7 boxes in. He won't let anyone saw them. Told head office.\nWk 2. Head office says the Cordon is coming to look. Fuel down to 60%.\nWk 3. They came with a convoy: Dr. Marchetti, six of hers, and a biosafety officer, Torvald, who doesn't smile. They took the old powder store into the hill for a vault and poured a floor over it.\nWk 5. Containment block done. Decon unit on the boardwalk. Ted and two of his men in the ward downstairs 'for observation'. They waved at me through the glass.\nWk 7. No convoy. No fuel. Generator on four hours a night for the freezers. Marchetti says the cores cannot warm up.\nWk 8. The ground hummed. Ted's shed boys got up off their bunks with their eyes open.\nWk 9. Radio says hold. I am putting the keys where I can find them. If you are reading this, the admin key is the red one."
+  },
+  {
+   "id": "lab_orders",
+   "title": "Directive to Field Station 2",
+   "style": "typed",
+   "author": "Cordon Medical Authority",
+   "body": "CORDON MEDICAL AUTHORITY - DIRECTIVE 14 - FIELD STATION 2 (CORVANE)\n1. Field Station 2 is requisitioned as a forward containment laboratory. Corvane personnel remain under Authority direction.\n2. All core recovered from BH-7 and successor holes is a Class A biological specimen. Specimens are to be held at -80 C in the specimen vault under the two-person rule.\n3. No specimen, sample, data medium or person leaves the station until cleared by the Biosafety Officer.\n4. Collection of specimens and data by the Program is scheduled. Await notice.\n5. In the event of a containment failure the Biosafety Officer will secure the vault. Lethal force is authorized at the wire.\nUnder it, in pen: Collection was scheduled six weeks ago. - A.L."
+  },
+  {
+   "id": "lab_sample_log",
+   "title": "Sample Log",
+   "style": "handwritten",
+   "author": "Dr. C. Marchetti",
+   "body": "CFL-001-019  BH-7 core scrapings. Hyphae viable after thaw. Growth on agar at 4 C, which should not happen.\nCFL-022  Hyphae orient away from the microscope lamp within minutes. Filmed it.\nCFL-031  Tissue from Corvane worker (T.B.). Same organism, central nervous tissue. He is still talking to us through the glass.\nCFL-040  Every culture in the cold room pulsed at 02:10. Same minute the ground hummed.\nCFL-044  Seven cores sealed for the Program. Vault. Ines has the code; so do I.\nLast line: The freezers are holding. We are not."
+  },
+  {
+   "id": "lab_torvald",
+   "title": "Biosafety Log",
+   "style": "typed",
+   "author": "BSO I. Torvald",
+   "body": "BIOSAFETY LOG - FS-2 - BSO TORVALD\nD40. Ward downstairs: three Corvane men symptomatic. Isolation maintained.\nD47. Hum. Containment suite breached from inside. Two staff lost in the airlock. Cells holding.\nD48. Dr. Marchetti refuses to leave the cold room. Her card stays with her.\nD49. Generator out. Battery lighting only. The suite is awake.\nD50. Securing the vault per Directive 14 para 5. I have changed the combination. The new one is on the card in the specimen lab, for whoever the Program sends. Do not send anyone.\nD50. The escape shaft is clear. I am not using it."
+  }
+ ]
+}

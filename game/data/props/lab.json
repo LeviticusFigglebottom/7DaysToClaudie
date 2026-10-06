@@ -1,0 +1,1246 @@
+{
+ "_doc": "The Corvane Field Lab (agent Y): the tier-5 Bloom lab compound random worlds place far from the start. Models: tools/assetgen/blender/generators/props_lab.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_lab.py; materials game/data/materials/props_lab.json; the lab_signs lettering atlas textures/gen/lab.py. size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. Shells (lab_*_shell) wrap the POI's kit rooms: origin at the rooms' plan centre on the ground (place them y = -floor_height); the catalog's SHELLS lists the rooms and openings they are cut for. Wall props hang with their origin on the wall plane; ceiling props hang from it.",
+ "defs": [
+  {
+   "id": "lab_module_shell",
+   "name": "Prefab Lab Module",
+   "description": "A prefab lab module on concrete piers round a 9 x 4 m kit room: ribbed white panels, a steel skid and skirting, a low-pitched roof with its rooftop air unit, a vent stack and the module number stencilled at the door end (shell: origin at the room's plan centre on the ground, place it y = -floor_height; turned 180 degrees for modules east of the boardwalk).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_module_shell",
+    "worn": "props/lab_module_shell_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    9.8,
+    4.3,
+    4.8
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_decon_shell",
+   "name": "Decontamination Unit",
+   "description": "The Cordon's decontamination unit round its 6 x 4 m kit rooms (PPE, shower, airlock): ribbed panels in Cordon grey, a hazard band, the DECON stencil, a water tank and pump on the roof, its back against the containment block (no north wall; shell: origin at the rooms' plan centre on the ground, y = -floor_height).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell",
+    "lab",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/lab_decon_shell",
+    "worn": "props/lab_decon_shell_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    6.8,
+    4.4,
+    4.5
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_boardwalk_roof",
+   "name": "Covered Boardwalk",
+   "description": "Four metres of the covered boardwalk: steel posts, a corrugated roof on purlins with a gutter, the conduit and a caged lamp under it (no collision: the boardwalk is the kit floor under it).",
+   "tags": [
+    "structure",
+    "exterior",
+    "lab",
+    "light"
+   ],
+   "variants": {
+    "clean": "props/lab_boardwalk_roof",
+    "worn": "props/lab_boardwalk_roof_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.6,
+    3.3,
+    4.1
+   ],
+   "light": {
+    "color": "#e8eef2",
+    "energy": 1.2,
+    "range": 7.0,
+    "flicker": 0.05,
+    "offset": [
+     0.0,
+     2.75,
+     0.0
+    ],
+    "power": "generator"
+   },
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_berm",
+   "name": "Earth Bank",
+   "description": "The hillside the containment block is dug into: a bank of earth, rock and roots three metres high against the wall, grass on its crown (its high side at the back, -Z).",
+   "tags": [
+    "exterior",
+    "terrain"
+   ],
+   "variants": {
+    "clean": "props/lab_berm"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    6.2,
+    3.3,
+    4.6
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "lab_fence",
+   "name": "Station Fence",
+   "description": "Three metres of the station's security fence: galvanized posts set in concrete, chain-link, three strands of barbed wire on Y-arms and a concertina coil between them (+Z is inside; destroyed: the mesh torn, the coil sagging).",
+   "tags": [
+    "fence",
+    "metal",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_fence",
+    "worn": "props/lab_fence_worn",
+    "destroyed": "props/lab_fence_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 320,
+   "size": [
+    3.0,
+    2.75,
+    0.15
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_fence_cut",
+   "name": "Cut Fence",
+   "description": "A bay of the station fence cut through with bolt cutters and peeled back both ways, the concertina snipped and hanging (no collision: the way in).",
+   "tags": [
+    "fence",
+    "metal",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_fence_cut"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.0,
+    2.75,
+    1.4
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_gate",
+   "name": "Station Gate",
+   "description": "The station's double gate on heavy posts, chained and padlocked in the middle, the Corvane plate on one leaf and the Cordon's biohazard notice on the other.",
+   "tags": [
+    "fence",
+    "metal",
+    "lab",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/lab_gate",
+    "worn": "props/lab_gate_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    5.4,
+    2.8,
+    0.25
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_sign_station",
+   "name": "Station Sign",
+   "description": "CORVANE MINING CO. - FIELD STATION 2 - EXPLORATION DIVISION on a painted steel board between two posts, the Cordon's BIOHAZARD notice zip-tied over its corner.",
+   "tags": [
+    "exterior",
+    "sign",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_station",
+    "worn": "props/lab_sign_station_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    2.7,
+    2.5,
+    0.3
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_sign_fence",
+   "name": "Biohazard Plate",
+   "description": "A BIOHAZARD - CORDON MEDICAL AUTHORITY - NO ENTRY plate wired to the fence at chest height.",
+   "tags": [
+    "exterior",
+    "sign",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_fence",
+    "worn": "props/lab_sign_fence_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.62,
+    1.8,
+    0.06
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_fuel_tank",
+   "name": "Diesel Tank",
+   "description": "A double-walled diesel tank on steel saddles inside a bund: placards, a level gauge, the fill box and a hose reel.",
+   "tags": [
+    "exterior",
+    "metal",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_fuel_tank",
+    "worn": "props/lab_fuel_tank_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    3.3,
+    2.1,
+    1.7
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_generator",
+   "name": "Station Generator",
+   "description": "A skid-mounted diesel generator in a sound-proofed enclosure: louvres, the exhaust stack and its rain cap, the control panel with its hour meter, cables run out under the skid (lit: its panel lamp).",
+   "tags": [
+    "machine",
+    "metal",
+    "lab",
+    "light"
+   ],
+   "variants": {
+    "clean": "props/lab_generator",
+    "worn": "props/lab_generator_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    3.1,
+    2.4,
+    1.35
+   ],
+   "light": {
+    "color": "#ffd28a",
+    "energy": 0.35,
+    "range": 2.5,
+    "flicker": 0.1,
+    "offset": [
+     -1.0,
+     1.4,
+     0.7
+    ],
+    "power": "generator"
+   },
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_drill_rig",
+   "name": "Core Drill Rig",
+   "description": "A skid-mounted diamond core drill parked in the yard: the mast laid back on its stand, the rod rack, the power pack, the water tank and a stack of empty core trays.",
+   "tags": [
+    "exterior",
+    "machine",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_drill_rig",
+    "worn": "props/lab_drill_rig_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 1500,
+   "size": [
+    3.2,
+    4.2,
+    6.6
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "lab_core_rack",
+   "name": "Core Racking",
+   "description": "Steel pallet racking stacked with waxed core boxes end-on, their ends stencilled with hole and depth (BH-7 among them); a few pulled out, lids off (destroyed: a shelf collapsed and the boxes spilled).",
+   "tags": [
+    "furniture",
+    "metal",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_core_rack",
+    "worn": "props/lab_core_rack_worn",
+    "destroyed": "props/lab_core_rack_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    2.5,
+    2.3,
+    1.15
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "workshop",
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_core_boxes",
+   "name": "Core Boxes",
+   "description": "Waxed cardboard core boxes stacked on a pallet, the top one open on its rows of grey drill core, a depth block between the runs.",
+   "tags": [
+    "furniture",
+    "container",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_core_boxes",
+    "worn": "props/lab_core_boxes_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    1.25,
+    0.7,
+    1.05
+   ],
+   "container": "lab_core_box",
+   "blocks_sight": false,
+   "rooms": [
+    "workshop",
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_core_saw",
+   "name": "Core Saw",
+   "description": "A diamond core saw on a steel stand: the blade guard, a sliding cradle with a half-cut core, the water tray and pump, the motor and a spattered splash board.",
+   "tags": [
+    "machine",
+    "metal",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_core_saw",
+    "worn": "props/lab_core_saw_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.7,
+    1.45,
+    0.85
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "workshop",
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_logging_bench",
+   "name": "Logging Bench",
+   "description": "A geologist's logging bench of heavy timber: an angled tray of core under a lamp, a hand lens, a scale bar, a clipboard of logging sheets and a mug of pencils.",
+   "tags": [
+    "furniture",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_logging_bench",
+    "worn": "props/lab_logging_bench_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    2.4,
+    1.3,
+    0.9
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "workshop",
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_bench",
+   "name": "Lab Bench",
+   "description": "A lab bench with a black epoxy top over steel cabinets, a reagent shelf of brown and clear bottles above, a gas tap and a socket strip (destroyed: the shelf down, the bottles broken across the top).",
+   "tags": [
+    "furniture",
+    "container",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_bench",
+    "worn": "props/lab_bench_worn",
+    "destroyed": "props/lab_bench_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    1.8,
+    1.95,
+    0.75
+   ],
+   "container": "lab_bench",
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_fume_hood",
+   "name": "Fume Hood",
+   "description": "A fume hood on its cabinet base: the sash glass half raised, the baffle, a flow gauge and the duct rising to the ceiling.",
+   "tags": [
+    "furniture",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_fume_hood",
+    "worn": "props/lab_fume_hood_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.5,
+    2.75,
+    0.85
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_biosafety_cabinet",
+   "name": "Biosafety Cabinet",
+   "description": "A class II biosafety cabinet on its stand: the angled sash, the front grille, the blower housing on top, a UV tube and the airflow alarm panel.",
+   "tags": [
+    "furniture",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_biosafety_cabinet",
+    "worn": "props/lab_biosafety_cabinet_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.4,
+    2.2,
+    0.85
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_freezer_80",
+   "name": "Minus-80 Freezer",
+   "description": "An upright ultra-low freezer: frost round its door seal, the keypad and temperature display, warning labels, the compressor grille at its foot.",
+   "tags": [
+    "furniture",
+    "container",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_freezer_80",
+    "worn": "props/lab_freezer_80_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 350,
+   "size": [
+    0.85,
+    1.98,
+    0.92
+   ],
+   "container": "lab_freezer",
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_centrifuge",
+   "name": "Centrifuge",
+   "description": "A floor-standing refrigerated centrifuge: the lid, the control panel and its lock lamp.",
+   "tags": [
+    "machine",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_centrifuge",
+    "worn": "props/lab_centrifuge_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    0.78,
+    1.0,
+    0.82
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_microscope",
+   "name": "Microscope",
+   "description": "A binocular microscope with a slide on its stage and a box of slides beside it (tabletop: place it on a bench with y).",
+   "tags": [
+    "tabletop",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_microscope",
+    "worn": "props/lab_microscope_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.42,
+    0.45,
+    0.38
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_sample_rack",
+   "name": "Sample Shelving",
+   "description": "Wire shelving of sample bottles, tube racks, labelled boxes and a clipboard.",
+   "tags": [
+    "furniture",
+    "container",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sample_rack",
+    "worn": "props/lab_sample_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.2,
+    1.9,
+    0.5
+   ],
+   "container": "lab_sample_rack",
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_dewar",
+   "name": "Nitrogen Dewar",
+   "description": "A liquid-nitrogen dewar on a wheeled base, frost on its neck, a cryo-glove over the handle.",
+   "tags": [
+    "machine",
+    "container",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_dewar",
+    "worn": "props/lab_dewar_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    0.62,
+    1.2,
+    0.62
+   ],
+   "container": "lab_dewar",
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_sample_vault",
+   "name": "Specimen Store",
+   "description": "A stainless cryo cabinet behind a padlocked grille: sealed sample canisters in numbered rows, frost on the shelves.",
+   "tags": [
+    "furniture",
+    "container",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sample_vault",
+    "worn": "props/lab_sample_vault_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    1.2,
+    2.05,
+    0.72
+   ],
+   "container": "lab_specimen_vault",
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_vault_frame",
+   "name": "Vault Collar",
+   "description": "The specimen vault's steel collar round its door: the locking wheel, the bolt housings, the keypad and the hazard stripes (the vault door is the kit door_vault).",
+   "tags": [
+    "structure",
+    "metal",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_vault_frame",
+    "worn": "props/lab_vault_frame_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.2,
+    2.6,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_card_reader",
+   "name": "Card Reader",
+   "description": "A keycard reader beside the airlock door: a slot, a keypad and a red lamp (lit: the lamp burns on the battery).",
+   "tags": [
+    "lab",
+    "light",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/lab_card_reader"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.12,
+    0.2,
+    0.06
+   ],
+   "light": {
+    "color": "#ff3322",
+    "energy": 0.25,
+    "range": 1.6,
+    "flicker": 0.0,
+    "offset": [
+     0.0,
+     0.07,
+     0.04
+    ],
+    "power": "battery"
+   },
+   "blocks_sight": false,
+   "wall_mounted": true
+  },
+  {
+   "id": "lab_decon_shower",
+   "name": "Decon Shower",
+   "description": "A decontamination shower: a stainless tray and drain grate, a ring of nozzles overhead and nozzle bars on the sides, a pull handle, an eyewash and a torn curtain.",
+   "tags": [
+    "structure",
+    "lab",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/lab_decon_shower",
+    "worn": "props/lab_decon_shower_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.7,
+    2.5,
+    1.7
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "bath",
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_ppe_rack",
+   "name": "PPE Rack",
+   "description": "A rack of hanging Tyvek suits and respirators, boots and taped gloves below, a box of filters on top.",
+   "tags": [
+    "furniture",
+    "container",
+    "lab",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/lab_ppe_rack",
+    "worn": "props/lab_ppe_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    1.6,
+    2.05,
+    0.6
+   ],
+   "container": "lab_ppe",
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_biohazard_bin",
+   "name": "Biohazard Bin",
+   "description": "A red pedal bin with the biohazard trefoil, a yellow bag pulled over its rim.",
+   "tags": [
+    "clutter",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_biohazard_bin",
+    "worn": "props/lab_biohazard_bin_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.5,
+    0.78,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "lab",
+    "clinic",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_radio_desk",
+   "name": "Radio Desk",
+   "description": "The station's radio desk: an HF transceiver and its power supply, a desk mic, a handset, the frequency card, a map of the claims under the glass and the logbook.",
+   "tags": [
+    "furniture",
+    "container",
+    "lab",
+    "radio"
+   ],
+   "variants": {
+    "clean": "props/lab_radio_desk",
+    "worn": "props/lab_radio_desk_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    1.6,
+    1.25,
+    0.8
+   ],
+   "container": "lab_radio",
+   "blocks_sight": false,
+   "rooms": [
+    "office",
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_server_rack",
+   "name": "Data Rack",
+   "description": "A 19-inch rack cabinet: tape drives and servers, a patch panel and a bundle of cable out of its roof (lit: its status lights on the battery).",
+   "tags": [
+    "furniture",
+    "container",
+    "lab",
+    "electronics",
+    "light"
+   ],
+   "variants": {
+    "clean": "props/lab_server_rack",
+    "worn": "props/lab_server_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.65,
+    2.0,
+    0.9
+   ],
+   "container": "lab_server",
+   "light": {
+    "color": "#6aff8a",
+    "energy": 0.12,
+    "range": 1.4,
+    "flicker": 0.3,
+    "offset": [
+     0.0,
+     1.4,
+     0.48
+    ],
+    "power": "battery"
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "office",
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_ceiling_light",
+   "name": "Lab Panel Light",
+   "description": "A recessed fluorescent panel on the generator circuit.",
+   "tags": [
+    "ceiling_mounted",
+    "light",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_ceiling_light",
+    "worn": "props/lab_ceiling_light_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.25,
+    0.12,
+    0.62
+   ],
+   "light": {
+    "color": "#eef3f6",
+    "energy": 1.1,
+    "range": 7.0,
+    "flicker": 0.04,
+    "offset": [
+     0.0,
+     -0.15,
+     0.0
+    ],
+    "power": "generator",
+    "variants": {
+     "worn": {
+      "energy": 0.7,
+      "flicker": 0.35
+     }
+    }
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_emergency_light",
+   "name": "Emergency Beacon",
+   "description": "A red emergency beacon on its battery pack over a door.",
+   "tags": [
+    "light",
+    "lab",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/lab_emergency_light"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.24,
+    0.3,
+    0.16
+   ],
+   "light": {
+    "color": "#ff3a2a",
+    "energy": 0.9,
+    "range": 6.0,
+    "flicker": 0.55,
+    "offset": [
+     0.0,
+     0.12,
+     0.1
+    ],
+    "power": "battery"
+   },
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab"
+   ]
+  },
+  {
+   "id": "lab_sign_biohazard",
+   "name": "Biohazard Sign",
+   "description": "A BIOHAZARD - CONTAINMENT LEVEL 3 sign. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_biohazard",
+    "worn": "props/lab_sign_biohazard_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.6,
+    0.45,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_airlock",
+   "name": "Airlock Stencil",
+   "description": "AIRLOCK - ONE DOOR AT A TIME stencilled on a steel plate. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_airlock",
+    "worn": "props/lab_sign_airlock_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.9,
+    0.3,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_decon",
+   "name": "Decon Board",
+   "description": "The decon line in three steps: 1 PPE, 2 DECON SHOWER, 3 AIRLOCK. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_decon",
+    "worn": "props/lab_sign_decon_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.2,
+    0.4,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_vault",
+   "name": "Vault Plate",
+   "description": "SPECIMEN VAULT - CORDON MEDICAL AUTHORITY - TWO-PERSON RULE. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_vault",
+    "worn": "props/lab_sign_vault_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.8,
+    0.3,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_emergency",
+   "name": "Emergency Exit Sign",
+   "description": "EMERGENCY EXIT with an arrow up the shaft. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_emergency",
+    "worn": "props/lab_sign_emergency_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.6,
+    0.25,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_containment",
+   "name": "Containment Notice",
+   "description": "CONTAINMENT - AUTHORIZED PERSONNEL ONLY - BY ORDER. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_containment",
+    "worn": "props/lab_sign_containment_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.7,
+    0.5,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_core_shed",
+   "name": "Core Shed Board",
+   "description": "CORE SHED - NO SMOKING painted on a board. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_core_shed",
+    "worn": "props/lab_sign_core_shed_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.4,
+    0.35,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_module_prep",
+   "name": "Module Plate: Prep",
+   "description": "LAB 1 - SAMPLE PREP on the module's door end. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_module_prep",
+    "worn": "props/lab_sign_module_prep_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.7,
+    0.25,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_module_micro",
+   "name": "Module Plate: Microscopy",
+   "description": "LAB 2 - MICROSCOPY on the module's door end. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_module_micro",
+    "worn": "props/lab_sign_module_micro_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.7,
+    0.25,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_module_cold",
+   "name": "Module Plate: Cold Room",
+   "description": "LAB 3 - COLD ROOM -80 on the module's door end. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_module_cold",
+    "worn": "props/lab_sign_module_cold_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.7,
+    0.25,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  },
+  {
+   "id": "lab_sign_module_admin",
+   "name": "Module Plate: Admin",
+   "description": "ADMIN - RADIO on the module's door end. (wall-mounted)",
+   "tags": [
+    "decor",
+    "sign",
+    "wall",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/lab_sign_module_admin",
+    "worn": "props/lab_sign_module_admin_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.7,
+    0.25,
+    0.03
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "lab",
+    "exterior"
+   ]
+  }
+ ]
+}

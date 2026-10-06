@@ -1,0 +1,162 @@
+{
+ "_doc": "The Corvane Field Lab (agent Y): its keys (station keys, the containment key, Marchetti's keycard, the vault code), the trip's payoff (sealed Bloom cores and Program research drives, quest items the quartermaster buys at sell_ratio of their value), a staff-strength antifungal, and the notes (note_<id>, notes/lab.json). Models: tools/assetgen/blender_catalogs/items_lab.py (keys and papers by item_paper, the salvager's tether by item_gear, the card, canister, drive and injector by item_lab).",
+ "defs": [
+  {
+   "id": "lab_station_keys",
+   "name": "Station Keys",
+   "description": "Anders Lindqvist's ring: a dozen keys and a brass tag stamped CORVANE FS-2. One padlock key is wrapped in red tape and marked ADMIN.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/lab/lab_station_keys"
+  },
+  {
+   "id": "lab_containment_key",
+   "name": "Containment Key",
+   "description": "A heavy padlock key on a yellow Cordon lanyard, a tag in a careful hand: DECON OUTER - BSO ONLY.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/lab/lab_containment_key"
+  },
+  {
+   "id": "lab_keycard",
+   "name": "Containment Keycard",
+   "description": "A white access card on a clip: CORDON MEDICAL AUTHORITY - CONTAINMENT L3 - DR. C. MARCHETTI. Someone scratched across the photograph.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/lab/lab_keycard"
+  },
+  {
+   "id": "lab_vault_code",
+   "name": "Vault Code Card",
+   "description": "A laminated card off the specimen lab's clipboard: SPECIMEN VAULT and two combinations, the first crossed out. The second is in a different hand.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/lab/lab_vault_code"
+  },
+  {
+   "id": "bloom_core_canister",
+   "name": "Sealed Bloom Core",
+   "description": "A frosted steel canister the size of a thermos, sealed with Cordon tape and a numbered tag: BH-7, 1,412 FT. Inside, a run of grey limestone threaded with something pale. The Program pays more for one of these than for anything else in the valley.",
+   "category": "quest",
+   "stack_max": 3,
+   "carry_max": 6,
+   "bulk": 0.6,
+   "value": 600,
+   "tags": [
+    "bloom",
+    "trade",
+    "program"
+   ],
+   "model": "items/lab/bloom_core_canister"
+  },
+  {
+   "id": "lab_research_drive",
+   "name": "Program Research Drive",
+   "description": "A ruggedized hard drive in an orange shock case, labelled in marker: CFL - SEQ RUNS / IMAGING. The Program wants its data back and pays for it.",
+   "category": "quest",
+   "stack_max": 5,
+   "carry_max": 10,
+   "bulk": 0.15,
+   "value": 220,
+   "tags": [
+    "trade",
+    "program"
+   ],
+   "model": "items/lab/lab_research_drive"
+  },
+  {
+   "id": "lab_antifungal_ampoule",
+   "name": "Antifungal Auto-Injector",
+   "description": "A staff dose off the Cordon's cold chain: one jab in the thigh, three times what the tablets do.",
+   "category": "medical",
+   "stack_max": 5,
+   "carry_max": 5,
+   "bulk": 0.05,
+   "value": 85,
+   "consume": {
+    "infection": -60
+   },
+   "model": "items/lab/lab_antifungal_ampoule"
+  },
+  {
+   "id": "note_lab_core_log",
+   "name": "Core Log, BH-7",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "lab_core_log",
+   "model": "items/lab/note_lab_core_log"
+  },
+  {
+   "id": "note_lab_tether_3907",
+   "name": "Tether, Salvager #3907",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "lab_tether_3907",
+   "model": "items/lab/note_lab_tether_3907"
+  },
+  {
+   "id": "note_lab_station_log",
+   "name": "Station Log, Field Station 2",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "lab_station_log",
+   "model": "items/lab/note_lab_station_log"
+  },
+  {
+   "id": "note_lab_orders",
+   "name": "Directive to Field Station 2",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "lab_orders",
+   "model": "items/lab/note_lab_orders"
+  },
+  {
+   "id": "note_lab_sample_log",
+   "name": "Sample Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "lab_sample_log",
+   "model": "items/lab/note_lab_sample_log"
+  },
+  {
+   "id": "note_lab_torvald",
+   "name": "Biosafety Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "lab_torvald",
+   "model": "items/lab/note_lab_torvald"
+  }
+ ]
+}

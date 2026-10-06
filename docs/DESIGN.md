@@ -388,6 +388,19 @@ Props: `data/props/wild3.json` (`props_wild3.py`) and the `w3_signs` atlas.
 | Cordon Quarantine Camp | 3 | roadside, 44 x 44 | A fenced roadside screening camp; the wards broke the night the ground hummed and the doctor lay down with the dead and the doses | The road → the checkpoint hut, the only way through the wire → its inner door: the screening line turns → screening tent → decontamination line (jaws in the clothes) → the wards → the command trailer: the radio log, the captain's office behind an alarm, the reefer key (Ward B wakes) → the generator and light towers → the morgue reefer, padlocked, a shotgun behind its door (Dr. Vance, guardian, the cold-chain box) → its bolted side door, which opens beyond the wire (the reefer stands in the fence line: no way round it) |
 | The Haldane Place | 2 | forest, 40 x 40 | A homestead a family walled with tin, pallets and car doors and held for fourteen months, until the seventh night broke the wall | Chained gate, TURN BACK → round to where the wall went (jaws; Ray's axe) → the yard: raised beds, rain catchers, platforms → the boarded house, its back door kicked in (cans wake the house) → the kitchen: Della's calendar and the bunker key → down to the root cellar → the bunker's steel door (opening it wakes the family; Tom, guardian) → up the ladder into the cellar entry, unbolt it |
 
+*Tier 5 (random worlds, far from the start)*
+
+The deepest dungeons (ADR-0046): a locked front and a way round it, four or more held groups on different
+kinds of trigger, traps of four kinds, a chain of keys (and a keycard) to the deep rooms, a buried level, a
+vault (ADR-0026) behind a wire with a special Hollowed on it, the bolted way out, and loot gated to tiers
+4-5 whose payoff is what the Program pays most for: sealed Bloom cores and its research drives. The
+wilderness pool stands them only in danger 4-5 regions. Props: `data/props/lab.json` (`props_lab.py`) and
+the `lab_signs` atlas.
+
+| POI | Tier | Site, footprint | Concept | Route sketch |
+|---|---|---|---|---|
+| Corvane Field Lab | 5 | remote, 56 x 56 | Corvane Mining Co.'s geology field station at the end of its exploration road, where the first Bloom cores came; the Cordon took it for its forward lab, dug a containment block into the hillside, and it fell with Dr. Marchetti's team at their benches and Biosafety Officer Torvald sealed in the vault with the cores. Remand Salvager #3907 came first; his tether still talks from the core shed | The road: a chained gate in razor wire, the guard hut bolted from inside → round the wire to the cut (jaws: the core shed wakes) → the core shed: core racks, the saw, the logging benches, #3907 and his tether → the covered boardwalk (loose boards) → sample prep (its door wakes the technicians) → microscopy → the mess (the crew at the tables) → the manager's room: the station keys (his footlocker wakes the bunks) → the padlocked admin module: the radio room, the office behind its alarm, the containment key → the cold room: Marchetti's keycard (the cold room wakes) → the chained decon unit: PPE (jaws in the suits), the shower, the airlock → the stair hall and Torvald's office → down: the isolation ward (its drug cabinet wakes it) → the keycard airlock → the containment suite and its cells (the suite rises) → the specimen lab: the vault code (the last two wake) → dial the vault (a shotgun behind its door; Torvald, a Husk, guardian; the Bloom cores) → the escape shaft's ladder → unbolt the escape hatch, out on the hillside beyond the wire |
+
 **Planned (M2+)**: school, mine office, rail depot, dam control house, lighthouse, fishing co-op,
 lab outpost, survivor compounds, Ashen camps, crashed Program supply drone.
 

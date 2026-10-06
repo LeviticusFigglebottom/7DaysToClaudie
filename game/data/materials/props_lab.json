@@ -1,0 +1,276 @@
+{
+ "_doc": "The Corvane Field Lab (agent Y). Models: tools/assetgen/blender/generators/props_lab.py. Only lab_signs is a new texture (textures/gen/lab.py, an atlas whose cells the generator maps); the rest tint shared sets: module and decon panels, skid steel, lab cabinets, the epoxy bench tops, enamel, frost, Tyvek, waxed core boxes, the Cordon's orange, the tank, genset and drill paints, the earth of the berm and the glow of lamps, beacons, status lights and the freezer displays. Shared ids reused by these props: road_*, t3_*, town4_core_*, metal_galvanized, chainlink, tyre_rubber, plastic_*, wood_weathered, concrete_barrier, furn_*, item_*.",
+ "materials": {
+  "lab_signs": {
+   "shader": "std_surface",
+   "textures": "lab_signs",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "normal_strength": 1.0,
+    "grime_amount": 0.3,
+    "grime_color": "#2b2822"
+   }
+  },
+  "lab_panel_white": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "layers": {
+    "wear": "car_rust"
+   },
+   "params": {
+    "uv_scale": 1.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#dcdcd3",
+    "wear_amount": 0.4,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.6,
+    "grime_color": "#3a342a",
+    "roughness_add": 0.1
+   }
+  },
+  "lab_panel_grey": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "layers": {
+    "wear": "car_rust"
+   },
+   "params": {
+    "uv_scale": 1.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#8d948f",
+    "wear_amount": 0.4,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.55,
+    "grime_color": "#2e2b25",
+    "roughness_add": 0.1
+   }
+  },
+  "lab_skid_steel": {
+   "shader": "std_surface",
+   "textures": "pi_paint_steel",
+   "layers": {
+    "wear": "car_rust"
+   },
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#3f4442",
+    "wear_amount": 0.55,
+    "wear_uv_scale": 1.4,
+    "grime_amount": 0.5,
+    "grime_color": "#2a241c"
+   }
+  },
+  "lab_cabinet_grey": {
+   "shader": "std_surface",
+   "textures": "pi_paint_steel",
+   "params": {
+    "uv_scale": 1.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b9bdba",
+    "grime_amount": 0.4,
+    "grime_color": "#37332c"
+   }
+  },
+  "lab_epoxy": {
+   "shader": "std_surface",
+   "textures": "pi_plastic",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#232527",
+    "grime_amount": 0.3,
+    "grime_color": "#4a463d",
+    "roughness_add": -0.1
+   }
+  },
+  "lab_enamel": {
+   "shader": "std_surface",
+   "textures": "enamel_appliance",
+   "params": {
+    "uv_scale": 1.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#ecece6",
+    "grime_amount": 0.45,
+    "grime_color": "#3b372e"
+   }
+  },
+  "lab_frost": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 0.6,
+    "tint": "#f2f6f8",
+    "grime_amount": 0.05,
+    "roughness_add": 0.2
+   }
+  },
+  "lab_tyvek": {
+   "shader": "std_surface",
+   "textures": "pi_cotton",
+   "params": {
+    "uv_scale": 1.6,
+    "vertex_ao_strength": 1.0,
+    "tint": "#e8eae6",
+    "grime_amount": 0.55,
+    "grime_color": "#3d382e"
+   }
+  },
+  "lab_tyvek_yellow": {
+   "shader": "std_surface",
+   "textures": "pi_cotton",
+   "params": {
+    "uv_scale": 1.6,
+    "vertex_ao_strength": 1.0,
+    "tint": "#d9b531",
+    "grime_amount": 0.55,
+    "grime_color": "#3d382e"
+   }
+  },
+  "lab_waxed_box": {
+   "shader": "std_surface",
+   "textures": "cardboard",
+   "params": {
+    "uv_scale": 1.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#a58c62",
+    "grime_amount": 0.5,
+    "grime_color": "#30281c",
+    "roughness_add": -0.1
+   }
+  },
+  "lab_cordon_orange": {
+   "shader": "std_surface",
+   "textures": "plastic_molded",
+   "params": {
+    "uv_scale": 1.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#c9581f",
+    "grime_amount": 0.45,
+    "grime_color": "#2e271f"
+   }
+  },
+  "lab_tank_green": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "layers": {
+    "wear": "car_rust"
+   },
+   "params": {
+    "uv_scale": 1.2,
+    "vertex_ao_strength": 1.0,
+    "tint": "#4a5a45",
+    "wear_amount": 0.55,
+    "wear_uv_scale": 1.3,
+    "grime_amount": 0.55,
+    "grime_color": "#2a241a"
+   }
+  },
+  "lab_genset_yellow": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "layers": {
+    "wear": "car_rust"
+   },
+   "params": {
+    "uv_scale": 1.2,
+    "vertex_ao_strength": 1.0,
+    "tint": "#c7a13a",
+    "wear_amount": 0.5,
+    "wear_uv_scale": 1.3,
+    "grime_amount": 0.6,
+    "grime_color": "#2a241a"
+   }
+  },
+  "lab_rig_red": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "layers": {
+    "wear": "car_rust"
+   },
+   "params": {
+    "uv_scale": 1.2,
+    "vertex_ao_strength": 1.0,
+    "tint": "#8f2d22",
+    "wear_amount": 0.6,
+    "wear_uv_scale": 1.3,
+    "grime_amount": 0.6,
+    "grime_color": "#2a241a"
+   }
+  },
+  "lab_earth": {
+   "shader": "std_surface",
+   "textures": "terrain_dirt",
+   "params": {
+    "uv_scale": 0.6,
+    "vertex_ao_strength": 1.0,
+    "tint": "#9c8f7c",
+    "grime_amount": 0.3,
+    "grime_color": "#2c251c",
+    "moss_amount": 0.55,
+    "moss_uv_scale": 0.8
+   },
+   "layers": {
+    "moss": "moss"
+   }
+  },
+  "lab_glow_lamp": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#d7dde0",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.3,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#eef4ff",
+    "emission_energy": 2.4,
+    "emission_flicker": 0.0
+   }
+  },
+  "lab_glow_red": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#5a1210",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.2,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#ff2a18",
+    "emission_energy": 3.2,
+    "emission_flicker": 0.05
+   }
+  },
+  "lab_glow_green": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#1d2a1e",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.25,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#8dff74",
+    "emission_energy": 1.4,
+    "emission_flicker": 0.1
+   }
+  },
+  "lab_glow_display": {
+   "shader": "std_surface",
+   "params": {
+    "tint": "#1a2420",
+    "roughness_mult": 0.0,
+    "roughness_add": 0.2,
+    "metallic_mult": 0.0,
+    "vertex_ao_strength": 0.0,
+    "light_source": 1,
+    "emission_color": "#ff5a3a",
+    "emission_energy": 1.2,
+    "emission_flicker": 0.0
+   }
+  }
+ }
+}
