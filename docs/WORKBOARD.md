@@ -92,7 +92,11 @@ Diagnosis:
 * Never replace an Array, Dictionary or Packed*Array member that worker threads read. In GDScript
   the assignment isn't atomic: the old value is released and the pointer is null before the new
   one is stored, so a reader in that window crashes (session 3 found this in its own TD-104
-  copy-and-swap). Write elements in place, or guard the member with a Mutex on both sides.
+  copy-and-swap). Writing in place is no safer. A Packed*Array that a worker also holds is
+  copy-on-write, so the write moves the buffer out from under the reader. Readers and writers must
+  take the same Mutex; TerrainManager's terrain lock is the model (444375b).
+* A WorkerThreadPool task still running at engine shutdown aborts the process with rc 134 and
+  prints nothing. Wait for your tasks in `_exit_tree`, as VolumeTerrain does.
 * Reflection probes share a 64-slot atlas, and going past it crashes the engine. Put any new
   probe in the `interior_probe` group so PoiManager's budget caps it.
 * A generated model can exist on disk and still not load (built, not imported yet). Check the
