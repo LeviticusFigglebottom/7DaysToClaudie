@@ -109,6 +109,10 @@ ci: ## Everything CI runs: setup, assets, import, validate (strict), tests
 	@$(MAKE) --no-print-directory validate VALIDATE_ARGS=--strict-assets
 	@$(MAKE) --no-print-directory test
 
+export: ## Package Windows and Linux builds with the generated assets into build/export/*.zip (ADR-0036): make export [EXPORT_TARGETS="windows linux"]
+	@mkdir -p $(ROOT)/build/export
+	@GODOT="$(GODOT)" LOCK="$(LOCK)" tools/export/export.sh $(EXPORT_TARGETS)
+
 clean: ## Remove build output (keeps .tools and generated assets)
 	rm -rf $(ROOT)/build $(GAME)/.godot
 

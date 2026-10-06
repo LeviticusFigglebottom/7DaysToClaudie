@@ -9,6 +9,9 @@ extends SceneTree
 
 func _initialize() -> void:
 	await process_frame
-	var runner: Node = (load("res://src/tools/cli/walk_tour_runner.gd") as GDScript).new()
+	# The runner beside this script: res:// normally; a filesystem path when an exported build
+	# (which leaves the CLI tools out) runs it with `-s /path/to/walk_tour.gd` (ADR-0036).
+	var here: String = (get_script() as Script).resource_path.get_base_dir()
+	var runner: Node = (load(here.path_join("walk_tour_runner.gd")) as GDScript).new()
 	runner.name = "WalkTour"
 	root.add_child(runner)
