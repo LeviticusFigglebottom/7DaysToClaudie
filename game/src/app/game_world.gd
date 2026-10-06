@@ -32,6 +32,17 @@ var supply_drops: Node = null
 var directives: Node = null
 var wildlife: Node = null
 var is_ready: bool = false
+## True when this random world streams its regions (ADR-0038): only the first area is composed at
+## 1 m at load, the RegionStreamer brings in the rest. Opt-in while RWG v2 Phase 2 lands.
+var streaming: bool = false
+
+
+## Streaming is asked for by the new-game options ("stream": true, `--stream` on the command line)
+## or HOLLOWMERE_STREAM=1 (tools, loads).
+static func wants_streaming() -> bool:
+	return bool(Game.pending_options.get("stream", false)) or OS.get_environment("HOLLOWMERE_STREAM") == "1"
+
+
 ## Framework lots resolved by the world loader (WorldLoader.lots), read by the POI manager.
 var poi_lots: Dictionary = {}
 var sleeping: bool = false
@@ -71,6 +82,10 @@ func _ready() -> void:
 		# A random world (ADR-0031): generated (or read from its cache) on the same worker thread.
 		var gen: Dictionary = session.world_gen.duplicate(true)
 		var saved_id: String = String(session.world_id)
+		streaming = wants_streaming()
+		_loader.stream = streaming
+		if streaming and not bool(Game.pending_options.get("is_new_game", false)):
+			_loader.spawn_hint = session.local_player().position
 		_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_random_world(gen, saved_id), true, "world load")
 		return
 	_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_world(dir), true, "world load")
@@ -107,6 +122,9 @@ func _load_step() -> void:
 	if _boot != null:
 		_run_boot_steps()
 		return
+	if not _awaiting.is_empty():
+		_poll_await()
+		return
 	if not is_ready and player != null:
 		ui.show_loading("Finding your feet…", 0.95)
 		if terrain.is_ready_around(player.global_position, 1):
@@ -133,6 +151,7 @@ func _loading_map_texture() -> Texture2D:
 
 ## Runs boot steps within the frame's budget, then shows the next one's label.
 func _run_boot_steps() -> void:
+	_turn_warm_camera()
 	_boot.run_frame()
 	if _boot.is_idle():
 		_boot = null
@@ -176,7 +195,8 @@ func _on_world_loaded() -> void:
 ## neighbours are there. Their previous process modes are restored when the boot ends.
 func _hold_processing() -> void:
 	for c: Node in get_children():
-		if c != ui and not _held.has(c):
+		# The warm-up camera is freed when the player arrives: never held, nothing to release.
+		if c != ui and c != _warm_camera and not _held.has(c):
 			_held[c] = c.process_mode
 			c.process_mode = Node.PROCESS_MODE_DISABLED
 
@@ -220,8 +240,53 @@ func _boot_terrain() -> void:
 	terrain.defer_far_tiles = true
 	terrain.prebuilt_bloom = _loader.bloom_field
 	add_child(terrain)
-	terrain.setup(world_def, _loader.detailed, _loader.coarse)
+	terrain.setup(world_def, _loader.detailed.duplicate(), _loader.coarse)
+	# The terrain owns the regions now (they detach in a streamed world: nothing else may hold them).
+	_loader.detailed = {}
 	_insert_boot_steps(terrain.boot_steps())
+	if streaming:
+		terrain.start_streaming(Content.config(&"streaming"))
+	_add_warm_camera()
+
+
+# --- Pipeline warm-up (TD-003) ----------------------------------------------------------------
+
+## A camera at the spawn while the world boots, so the renderer draws it behind the loading
+## screen as each system adds its meshes. Without one nothing 3D was drawn until the player's
+## camera arrived, and that first frame compiled every pipeline the view needed at once: 16.5 s
+## (151 surface pipelines) in the owner's Windows build, the "not responding" freeze. Turning a
+## fifth of a circle a frame, it shows every direction the player may face within five frames.
+var _warm_camera: Camera3D = null
+const WARM_TURN: float = TAU / 5.0
+
+
+func _add_warm_camera() -> void:
+	var at: Vector3
+	if bool(Game.pending_options.get("is_new_game", false)):
+		at = _find_spawn("drop_site").get("pos", Vector3.ZERO)
+	else:
+		at = session.local_player().position
+	_warm_camera = Camera3D.new()
+	_warm_camera.name = "WarmCamera"
+	_warm_camera.fov = 100.0
+	_warm_camera.far = 2000.0
+	add_child(_warm_camera)
+	_warm_camera.global_position = at + Vector3.UP * 1.7
+	_warm_camera.make_current()
+
+
+func _turn_warm_camera() -> void:
+	if _warm_camera != null and is_instance_valid(_warm_camera):
+		_warm_camera.rotation = Vector3(-0.15, _warm_camera.rotation.y + WARM_TURN, 0.0)
+
+
+func _drop_warm_camera() -> void:
+	if _warm_camera != null and is_instance_valid(_warm_camera):
+		# Out of the tree now, not at the end of the frame: the hold after this step would
+		# otherwise catch it as a system and queue a release step for a freed node.
+		remove_child(_warm_camera)
+		_warm_camera.queue_free()
+	_warm_camera = null
 
 
 func _boot_environment() -> void:
@@ -304,6 +369,8 @@ func _spawn_player() -> void:
 		_give_start_kit(p)
 	player = (load(PLAYER_SCENE) as PackedScene).instantiate() as Player
 	add_child(player)
+	_drop_warm_camera()
+	player.camera.make_current()
 	player.bind_state(p)
 	player.input_enabled = false
 	player.died.connect(_on_player_died)
@@ -323,8 +390,11 @@ func _on_player_leveled(level: int, player_id: StringName) -> void:
 
 
 func _find_spawn(id: String) -> Dictionary:
-	for rid: String in _loader.detailed:
-		var rt: RegionTerrain = _loader.detailed[rid]
+	# The terrain's regions, then the coarse ones (their metadata has the spawns too; the player is
+	# grounded on the real terrain when placed). Not the loader's: in a streamed world it would
+	# keep every first-area region in memory after it detaches.
+	var all: Array = terrain.regions.values() + terrain.coarse.values()
+	for rt: RegionTerrain in all:
 		if rt.spawns.has(id):
 			var s: Dictionary = rt.spawns[id]
 			var a: Array = s["pos"]
@@ -553,9 +623,43 @@ func respawn() -> void:
 	var p: PlayerState = player.state
 	var pos: Vector3 = p.spawn_point if p.has_spawn_point else _find_spawn("drop_site").get("pos", Vector3.ZERO)
 	p.stats.revive(50.0)
-	player.global_position = pos + Vector3.UP * 0.5
+	await_area(pos, func() -> void:
+		player.global_position = pos + Vector3.UP * 0.5
+		player.velocity = Vector3.ZERO
+		terrain.update_streaming(player.global_position, true)
+		player.input_enabled = true
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		Events.player_spawned.emit(p.id))
+
+
+## Runs `then` once the ground at `pos` exists (ADR-0038): at once in a world that doesn't
+## stream; in a streamed one, behind a blocking "Finding your feet…" overlay while the region
+## there is composed and attached and its near chunks meshed (a respawn or a teleport far from
+## where the player was). The player is frozen meanwhile.
+func await_area(pos: Vector3, then: Callable) -> void:
+	if terrain.streamer == null or (terrain.streamer.is_area_ready(pos, 64.0) and terrain.is_ready_around(pos, 1)):
+		then.call()
+		return
+	player.input_enabled = false
+	terrain.streamer.request_now(pos)
+	_awaiting = {"pos": pos, "then": then}
+	ui.show_loading("Finding your feet…", 0.95)
+
+
+## The area await_area is waiting for ({} = none).
+var _awaiting: Dictionary = {}
+
+
+func _poll_await() -> void:
+	var pos: Vector3 = _awaiting["pos"]
+	# Keep the player at the spot (nothing to stand on yet) while the land forms.
+	player.global_position = Vector3(pos.x, maxf(player.global_position.y, terrain.height_at(pos.x, pos.z) + 2.0), pos.z)
 	player.velocity = Vector3.ZERO
-	terrain.update_streaming(player.global_position, true)
-	player.input_enabled = true
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	Events.player_spawned.emit(p.id)
+	terrain.update_streaming(pos)
+	if not terrain.streamer.is_area_ready(pos, 64.0) or not terrain.is_ready_around(pos, 1):
+		return
+	var then: Callable = _awaiting["then"]
+	_awaiting = {}
+	terrain.streamer.clear_request()
+	ui.hide_loading()
+	then.call()
