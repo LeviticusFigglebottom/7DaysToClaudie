@@ -184,7 +184,7 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
     (`props_town3.py`) and the `town3_print` sign atlas. Gaps: TD-086..089.
   - [x] Pool round 2 (DESIGN §11): Hollis Pawn & Gun, Northfork Packing Co., Water Works,
     Ridgeline Aggregate and the Veterans' Post, five more pool dungeons (three of them industrial)
-    with their own keys, notes and loot (`town4` content) and 23 new props (`props_town4.py`);
+    with their own keys, notes and loot (`town4` content) and 24 new props (`props_town4.py`);
     `tests/unit/test_pool_round_two.gd`. Gaps: TD-112..114.
 - Burnt forest, snow, swamp, scrub biomes; full seasons (snow cover, frozen water, temperature).
 - Structural tiers: stone, metal; repair/upgrade tools; Rammer breakers that tear through walls.
