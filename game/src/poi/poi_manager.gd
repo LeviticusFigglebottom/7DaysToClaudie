@@ -327,6 +327,8 @@ func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
 		if ai != null:
 			inst.despawn_sleepers(ai)
 		_keep_roamers(id, inst)
+		RouteCues.forget(inst.layout)
+		_mark_nav(inst)
 		inst.queue_free()
 	instances.erase(id)
 	_grid_remove(id)
@@ -573,7 +575,7 @@ func _prepare_poi(job: Dictionary) -> void:
 	# only: a dictionary written from two threads at once can corrupt itself.
 	var a: Array = dress_args(job["pd"], job["id"], Game.session)
 	var pd: PoiDef = job["pd"]
-	var out: Array = [null, null]
+	var out: Array = [null, null, null]
 	job["out"] = out
 	job["layout"] = null
 	job["task"] = WorkerThreadPool.add_task(func() -> void:
@@ -583,7 +585,10 @@ func _prepare_poi(job: Dictionary) -> void:
 		out[0] = layout
 		out[1] = v
 		v._run()
-		PoiBuilder.prepare_check(v), false, "poi check %s" % job["id"])
+		PoiBuilder.prepare_check(v)
+		# The route-cue windows walk the route's outdoor legs: ~350 ms for the quarantine camp's
+		# 44 m yard, which PoiInstance._ready (RouteCues.build) paid in one streaming frame.
+		out[2] = RouteCues.entry_windows(layout), false, "poi check %s" % job["id"])
 	_tasks.append(job["task"])
 
 
@@ -606,6 +611,7 @@ func _finish_poi(job: Dictionary) -> bool:
 		if job.has("out"):
 			job["layout"] = job["out"][0]
 			job["checked"] = job["out"][1]
+			RouteCues.plan(job["layout"], job["out"][2])
 			job.erase("out")
 			for e: String in (job["layout"] as PoiLayout).errors:
 				Log.warn("poi", e)
@@ -654,7 +660,19 @@ func _place_built(inst: PoiInstance, instance_id: StringName, xf: Transform3D) -
 	_limit_draw_distance(inst)
 	inst.geometry_changed.connect(_on_poi_geometry_changed)
 	_set_hole(instance_id, true)
+	_mark_nav(inst)
 	return inst
+
+
+## A streamed world's building comes and goes after the nav tiles round it were baked: bake them
+## again over its whole box (NavTiles marks the 3 x 3 tiles round each point).
+func _mark_nav(inst: PoiInstance) -> void:
+	if registry == null:
+		return
+	var b: AABB = inst.world_bounds()
+	for x: float in [b.position.x, b.end.x]:
+		for z: float in [b.position.z, b.end.z]:
+			_on_poi_geometry_changed(Vector3(x, 0.0, z))
 
 
 ## A streamed world's cellar of this building opens with it and closes when it is freed.

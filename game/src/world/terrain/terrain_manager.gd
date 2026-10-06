@@ -266,6 +266,7 @@ func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 	_publish_holes()
 	t = _part("holes", t)
 	_refresh_chunks(rt.rect)
+	_remesh_far_tile(rid)
 	t = _part("chunks", t)
 	region_attached.emit(rid)
 	_part("listeners", t)
@@ -304,6 +305,7 @@ func detach_region(rid: String) -> void:
 	_publish_holes()
 	t = _part("holes", t)
 	_refresh_chunks(rect)
+	_remesh_far_tile(rid)
 	t = _part("chunks", t)
 	region_detached.emit(rid)
 	_part("listeners", t)
@@ -339,6 +341,9 @@ func _exit_tree() -> void:
 		if job.has("task"):
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 	_pending.clear()
+	for job2: Dictionary in _far_jobs.values():
+		WorkerThreadPool.wait_for_task_completion(int(job2["task"]))
+	_far_jobs.clear()
 
 
 func _process(delta: float) -> void:
@@ -352,6 +357,8 @@ func _process_body(delta: float) -> void:
 		return
 	_collect_finished()
 	_collect_collision()
+	if not _far_jobs.is_empty():
+		_collect_far_jobs()
 	_update_accum += delta
 	if _update_accum < 0.2:
 		return
@@ -663,6 +670,38 @@ func _far_tile_mesh(rid: String, snap: Dictionary = regions) -> Variant:
 	var height_fn := func(x: float, z: float) -> float: return height_at(x, z) + (at.call(x, z) as Vector2).x * CANOPY_HEIGHT
 	var color_fn := func(x: float, z: float) -> Color: return _far_color(rt, x, z, at.call(x, z))
 	return TerrainMesher.build_chunk_job(rect.position, rect.size.x, FAR_STEP, height_fn, 12.0, color_fn)
+
+
+## Region id -> {task, out}: far tiles being meshed again because the region attached (its trees
+## are drawn by the vegetation from then on: no canopy) or detached (the canopy comes back).
+var _far_jobs: Dictionary = {}
+## Set by GameWorld. Off for bare managers (tests): a worker inside one of this node's methods
+## makes free() refuse it, and a test frees with free() before _exit_tree can join the job.
+var remesh_far_tiles: bool = false
+
+
+func _remesh_far_tile(rid: String) -> void:
+	if not remesh_far_tiles or _far_root == null or _far_task >= 0 or not is_inside_tree():
+		return
+	var old: Dictionary = _far_jobs.get(rid, {})
+	if not old.is_empty():
+		# Superseded: join it (it reads only snapshots) and start again with the current state.
+		WorkerThreadPool.wait_for_task_completion(int(old["task"]))
+	var snap: Dictionary = regions
+	var out: Array = [null]
+	_far_jobs[rid] = {"out": out, "task": WorkerThreadPool.add_task(func() -> void: out[0] = _far_tile_mesh(rid, snap), false, "far tile %s" % rid)}
+
+
+func _collect_far_jobs() -> void:
+	for rid: String in _far_jobs.keys():
+		var job: Dictionary = _far_jobs[rid]
+		if not WorkerThreadPool.is_task_completed(int(job["task"])):
+			continue
+		WorkerThreadPool.wait_for_task_completion(int(job["task"]))
+		_far_jobs.erase(rid)
+		var mi: MeshInstance3D = _far_root.get_node_or_null(NodePath("Far_" + rid)) as MeshInstance3D
+		if mi != null:
+			mi.mesh = TerrainMesher.finish((job["out"] as Array)[0])
 
 
 func _add_far_tile(rid: String, mesh: ArrayMesh) -> void:

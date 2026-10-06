@@ -27,6 +27,29 @@ func setup(w: Node) -> void:
 	Events.structure_destroyed.connect(func(_id: StringName, _d: StringName, pos: Vector3) -> void: _mark(pos))
 	Events.tree_felled.connect(func(_id: StringName, pos: Vector3) -> void: _mark(pos))
 	Events.terrain_modified.connect(func(aabb: AABB) -> void: _mark(aabb.get_center()))
+	# A streamed world (ADR-0038): tiles baked over a region's coarse ground are baked again once its
+	# 1 m terrain attaches.
+	var tm: TerrainManager = w.get(&"terrain") as TerrainManager if w != null else null
+	if tm != null:
+		tm.region_attached.connect(_on_region_attached)
+
+
+func _on_region_attached(rid: String) -> void:
+	var rt: RegionTerrain = (world.get(&"terrain") as TerrainManager).regions.get(rid)
+	if rt == null:
+		return
+	for k: Vector2i in _tiles.keys():
+		if rt.rect.intersects(Rect2(k.x * TILE, k.y * TILE, TILE, TILE)):
+			_dirty[k] = REBAKE_DELAY
+
+
+## Whether a tile's ground is the 1 m terrain (always outside a streamed world): baking over a
+## region's coarse heights would give the Hollowed a mesh 16 m out of true.
+func _ground_ready(k: Vector2i) -> bool:
+	var tm: TerrainManager = world.get(&"terrain") as TerrainManager
+	if tm == null or tm.streamer == null:
+		return true
+	return tm.region_terrain_at((k.x + 0.5) * TILE, (k.y + 0.5) * TILE) != null
 
 
 func _exit_tree() -> void:
@@ -66,6 +89,9 @@ func _process(delta: float) -> void:
 	for k: Vector2i in _dirty.keys():
 		_dirty[k] = float(_dirty[k]) - delta
 		if float(_dirty[k]) <= 0.0 and _busy < 2:
+			if not _ground_ready(k):
+				_dirty[k] = REBAKE_DELAY
+				continue
 			_dirty.erase(k)
 			_bake(k)
 	if _t < 0.5:

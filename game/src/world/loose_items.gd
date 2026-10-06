@@ -65,7 +65,8 @@ func _physics_process(delta: float) -> void:
 				b.freeze = false
 			elif not near and not b.freeze:
 				b.freeze = true
-			if p.y < ground - 1.5:
+			# Not over a region's coarse ground (a streamed world): its heights are 16 m samples.
+			if p.y < ground - 1.5 and (terrain.streamer == null or terrain.region_terrain_at(p.x, p.z) != null):
 				b.global_position = Vector3(p.x, ground + 0.6, p.z)
 				b.linear_velocity = Vector3.ZERO
 				b.angular_velocity = Vector3.ZERO

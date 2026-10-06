@@ -38,11 +38,15 @@ func frame(label: String) -> void:
 			longest_at = _last_label
 		var compiled: String = _pipeline_delta()
 		if ms > SLOW_FRAME_MS:
-			Log.info("load", "slow frame %.0f ms (%s)%s" % [ms, _last_label if _last_label != "" else "in the world", compiled])
+			# The steps it ran, so a frame whose label names the next step still says what it was.
+			var ran: String = ", ".join(_frame_steps.map(func(s: Array) -> String: return "%s %.0f" % [s[0], s[1]])) if not _frame_steps.is_empty() else "no steps"
+			Log.info("load", "slow frame %.0f ms (%s; ran: %s; process %.0f, physics %.0f)%s" % [ms, _last_label if _last_label != "" else "in the world", ran,
+				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, compiled])
 	else:
 		_pipeline_delta()
 	_last_us = now
 	_last_label = label
+	_frame_steps.clear()
 	if _trailing > 0:
 		_trailing -= 1
 		if _trailing == 0:
@@ -67,6 +71,11 @@ func _pipeline_delta() -> String:
 
 func step(label: String, usec: int) -> void:
 	steps.append({"label": label, "ms": float(usec) / 1000.0})
+	_frame_steps.append([label, float(usec) / 1000.0])
+
+
+## [label, ms] of the steps run since the last frame() (the slow-frame log names them).
+var _frame_steps: Array = []
 
 
 ## True while the frames right after the spawn are still being measured.

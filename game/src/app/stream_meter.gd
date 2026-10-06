@@ -139,11 +139,16 @@ func summary(all: bool = false) -> String:
 		var k: Dictionary = kinds[kind]
 		parts.append("%s %dx max %.1f/total %.0f ms" % [kind, int(k["count"]), float(k["max_ms"]), float(k["total_ms"])])
 	var over: PackedStringArray = over_budget(STEP_BUDGET_MS, all)
-	return "%.0f s, %d frames, longest %.0f ms (%s), late %.1f s; %d steps %.0f ms%s%s" % [
+	# The slowest single step by name ("poi ivy_bend_lot_7"): a kind's max alone can't be traced.
+	var worst: String = ""
+	if not over.is_empty():
+		var wk: Dictionary = kinds[over[0]]
+		worst = "; worst %s %.1f ms" % [wk["max_name"], float(wk["max_ms"])]
+	return "%.0f s, %d frames, longest %.0f ms (%s), late %.1f s; %d steps %.0f ms%s%s%s" % [
 		float(t["seconds"]), int(t["frames"]), float(t["longest_ms"]), t["longest_at"] if str(t["longest_at"]) != "" else "no steps",
 		float(t["late_s"]), int(t["steps"]), float(t["step_ms"]),
 		("; " + ", ".join(parts)) if not parts.is_empty() else "",
-		("; over %.0f ms: %s" % [STEP_BUDGET_MS, ", ".join(over)]) if not over.is_empty() else ""]
+		("; over %.0f ms: %s" % [STEP_BUDGET_MS, ", ".join(over)]) if not over.is_empty() else "", worst]
 
 
 ## The kinds run in the frame being closed, costliest first ("poi 31 ms + attach 4 ms").

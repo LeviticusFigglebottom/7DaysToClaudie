@@ -5,6 +5,9 @@ extends Node
 ## A crash shows as the process dying before "[tour] PASS"; script errors are counted from the log
 ## by CI. `-- --mode survival|slice` picks the game mode (survival, as the menu's New Game).
 
+## Wall-clock limit for the whole tour (a random 10 km world takes 10–20 min on a busy machine).
+const WATCHDOG_S: float = 1800.0
+
 var _fails: int = 0
 var _t0: int = 0
 var _visits: int = 0
@@ -14,7 +17,15 @@ var p: Player
 
 func _ready() -> void:
 	_t0 = Time.get_ticks_msec()
+	# A script error inside _run's coroutine stops it without quitting: without this the process
+	# would idle until an outside timeout instead of failing.
+	get_tree().create_timer(WATCHDOG_S, true, false, true).timeout.connect(_on_watchdog)
 	_run.call_deferred()
+
+
+func _on_watchdog() -> void:
+	ok(false, "tour finished within %d s (a script error stops the tour's coroutine)" % int(WATCHDOG_S))
+	_finish()
 
 
 func ok(cond: bool, what: String) -> bool:
@@ -72,6 +83,10 @@ func _run() -> void:
 
 	# --- Vegetation: one of every kind near the spawn --------------------------------------------
 	var veg: VegetationManager = w.vegetation
+	# "World ready" doesn't wait for the scatter (or, streamed, the buildings past the boot radius):
+	# a quick load reached here with nothing scattered and the tour skipped every kind.
+	if not await wait_until(func() -> bool: return veg.is_settled(1), 60.0):
+		print("[tour] note  vegetation not settled: %s" % veg.settle_report(1))
 	for kind: String in ["tree", "rock", "deadfall", "bush", "fern", "herb", "mushroom", "flower"]:
 		var found: Array = veg.nearest_instance(spawn, kind, 200.0)
 		if found.is_empty():
@@ -85,17 +100,35 @@ func _run() -> void:
 	# --- Logs and loose items ----------------------------------------------------------------------
 	for g: StringName in [&"logs", &"item_drops"]:
 		var nodes: Array = get_tree().get_nodes_in_group(g)
-		for n: Node in nodes.slice(0, 3):
+		# Untyped: an earlier visit can free a later node (picked up, or streamed out).
+		for n: Variant in nodes.slice(0, 3):
 			if is_instance_valid(n) and n is Node3D:
-				await visit("%s %s" % [g, n.name], (n as Node3D).global_position, 0.5)
+				await visit("%s %s" % [g, (n as Node).name], (n as Node3D).global_position, 0.5)
 				await use()
 
 	# --- POIs: walk up to each, into it, swing at whatever is in front, use what the ray finds ------
-	var pois: Array = (w.pois.get(&"instances") as Dictionary).values() if w.pois != null else []
-	pois.sort_custom(func(a: Node3D, b: Node3D) -> bool: return a.global_position.distance_to(spawn) < b.global_position.distance_to(spawn))
-	var max_pois: int = 6
-	for i: int in mini(max_pois, pois.size()):
-		var poi: Node3D = pois[i]
+	# A streamed world builds and frees buildings by the player's distance (ADR-0038) while the tour
+	# walks, so each pick is the nearest building still standing, never a list taken up front.
+	var seen_pois: Dictionary = {}
+	if w.pois != null and not await wait_until(func() -> bool: return (w.pois.get(&"_jobs") as Dictionary).is_empty(), 120.0):
+		print("[tour] note  buildings still on their way after 120 s")
+	var live: Dictionary = w.pois.get(&"instances") as Dictionary if w.pois != null else {}
+	for i: int in 6:
+		var poi: Node3D = null
+		var poi_id: StringName = &""
+		var best: float = INF
+		for id: StringName in live:
+			var cand: Variant = live[id]
+			if seen_pois.has(id) or not is_instance_valid(cand):
+				continue
+			var d: float = (cand as Node3D).global_position.distance_to(spawn)
+			if d < best:
+				best = d
+				poi = cand
+				poi_id = id
+		if poi == null:
+			break
+		seen_pois[poi_id] = true
 		await visit("poi %s" % poi.name, poi.global_position, 1.0)
 		for k: int in 8:
 			p.rotation.y = k * TAU / 8.0
