@@ -2897,11 +2897,11 @@
      "label": "The dining hall",
      "options": [
       {
-       "id": "panelled",
-       "weight": 2
+       "id": "panelled"
       },
       {
        "id": "sage",
+       "weight": 2,
        "rooms": [
         {
          "level": 0,
