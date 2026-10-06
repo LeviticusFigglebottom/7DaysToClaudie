@@ -24,7 +24,25 @@ SPEC: dict[str, tuple[str, dict]] = {
     "storage_crate": ("structure_stations", {"kind": "storage_crate", "seed": 422}),
     "forge": ("structure_stations", {"kind": "forge", "seed": 423}),
     "chemistry_bench": ("structure_stations", {"kind": "chemistry_bench", "seed": 424}),
+    # ADR-0035 holders, stairs and door (structure_base)
+    "log_rack": ("structure_base", {"kind": "log_rack", "seed": 441}),
+    "stick_rack": ("structure_base", {"kind": "stick_rack", "seed": 442}),
+    "stone_pile": ("structure_base", {"kind": "stone_pile", "seed": 443}),
+    "log_stairs": ("structure_base", {"kind": "log_stairs", "seed": 444}),
+    "stick_door": ("structure_base", {"kind": "stick_door", "seed": 445}),
 }
+# Built even before a structure def references them (the runtime + defs land separately).
+ALWAYS = ("log_rack", "stick_rack", "stone_pile", "log_stairs", "stick_door")
+
+
+def _sources(mod: str) -> list:
+    """Every structure generator builds on the log toolkit in structure_logs.py: list it (and the libs
+    it imports) as a source so a change to the bark or the log rebuilds what uses it."""
+    out = blender_sources(mod)
+    for f in blender_sources("structure_logs"):
+        if f not in out:
+            out.append(f)
+    return out
 
 
 def _referenced() -> list[str]:
@@ -51,13 +69,15 @@ def _ghosts() -> list[tuple[str, list]]:
 
 def tasks() -> list[Task]:
     out: list[Task] = []
-    for sid in _referenced():
+    ids = _referenced()
+    ids += [sid for sid in ALWAYS if sid not in ids]
+    for sid in ids:
         if sid not in SPEC:
             print(f"[structures] WARNING: no model spec for structure model '{sid}'", file=sys.stderr)
             continue
         mod, p = SPEC[sid]
         out.append(Task(name=f"model:structures/{sid}", group="models", outputs=[f"models/structures/{sid}.glb"],
-                        sources=blender_sources(mod), params={"name": sid, **p}, blender=mod))
+                        sources=_sources(mod), params={"name": sid, **p}, blender=mod))
     for gid, pieces in _ghosts():
         params = {"name": gid, "kind": "ghost", "seed": 431, "pieces": pieces}
         out.append(Task(name=f"model:structures/{gid}", group="models", outputs=[f"models/structures/{gid}.glb"],
