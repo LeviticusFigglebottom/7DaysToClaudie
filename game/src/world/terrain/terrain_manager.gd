@@ -16,6 +16,9 @@ extends Node3D
 ##    ("t:<cx>_<cz>") so the composed world + deltas reproduce the edited terrain.
 
 signal chunk_ready(key: Vector2i)
+## A region's 1 m terrain came into or left memory (ADR-0038, region streaming).
+signal region_attached(rid: String)
+signal region_detached(rid: String)
 signal terrain_changed(aabb: AABB)
 
 const CHUNK: float = 64.0
@@ -68,6 +71,8 @@ class Chunk:
 	var mesh_instance: MeshInstance3D
 	var body: StaticBody3D
 	var has_collision: bool = false
+	## The collision being built on a worker ({} = none): {task, out: [shape data], kind}.
+	var col_job: Dictionary = {}
 
 
 func _ready() -> void:
@@ -102,7 +107,9 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	bloom = BloomWorld.new()
 	bloom.name = "Bloom"
 	add_child(bloom)
-	bloom.setup(BloomField.build(world, regions, ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}))
+	# The world loader may have built the field on its thread already.
+	bloom.setup(prebuilt_bloom if prebuilt_bloom != null else BloomField.build(world, regions, ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}))
+	prebuilt_bloom = null
 	_canopy = far_canopy(ContentDB.instance)
 	if not defer_far_tiles:
 		_build_far_tiles()
@@ -138,12 +145,23 @@ func _make_region_material(rt: RegionTerrain) -> ShaderMaterial:
 var _grid: Array = []
 
 
+## The grid and `regions` are replaced whole when regions attach or detach (ADR-0038), and
+## worker threads (chunk meshing, scatter, weather, the flow field) read them through height_at
+## meanwhile. Replacing an Array or Dictionary member is not atomic in GDScript (the old one is
+## released and the member left null for a moment before the new one is stored), so the swap and
+## the workers' reads take _lock; main-thread code reads them freely (only it writes them).
+var _lock := Mutex.new()
+
+
 func _build_grid() -> void:
-	_grid.clear()
-	_grid.resize(world.cols * world.rows)
+	var g: Array = []
+	g.resize(world.cols * world.rows)
 	for rid: String in world.regions:
 		var c: Vector2i = WorldDef.cell_coords(str(world.regions[rid]["cell"]))
-		_grid[c.x + c.y * world.cols] = regions.get(rid, coarse.get(rid))
+		g[c.x + c.y * world.cols] = regions.get(rid, coarse.get(rid))
+	_lock.lock()
+	_grid = g
+	_lock.unlock()
 
 
 func _terrain_for(x: float, z: float) -> RegionTerrain:
@@ -151,7 +169,10 @@ func _terrain_for(x: float, z: float) -> RegionTerrain:
 	var row: int = int(floor(z / world.region_size + world.rows * 0.5))
 	if col < 0 or row < 0 or col >= world.cols or row >= world.rows:
 		return null
-	return _grid[col + row * world.cols]
+	_lock.lock()
+	var rt: RegionTerrain = _grid[col + row * world.cols]
+	_lock.unlock()
+	return rt
 
 
 ## Forest canopy at world (x, z), 0..1 (see far_canopy): the biome's trees under the vegetation
@@ -174,12 +195,14 @@ func bloom_base_at(x: float, z: float) -> float:
 	return bloom.field.base_at(x, z) if bloom != null and bloom.field != null else 0.0
 
 
-## Terrain height at world (x, z). Thread-safe for reads.
+## Terrain height at world (x, z). Thread-safe: the sample is taken under _lock, which edits of
+## the heights also hold (see modify()).
 func height_at(x: float, z: float) -> float:
+	_lock.lock()
 	var rt: RegionTerrain = _terrain_for(x, z)
-	if rt != null:
-		return rt.height.sample(x, z)
-	return world.macro_height(x, z) if world != null else 0.0
+	var h: float = rt.height.sample(x, z) if rt != null else (world.macro_height(x, z) if world != null else 0.0)
+	_lock.unlock()
+	return h
 
 
 func normal_at(x: float, z: float) -> Vector3:
@@ -190,7 +213,12 @@ func normal_at(x: float, z: float) -> Vector3:
 ## Detailed (1 m) region terrain at a position, or null.
 func region_terrain_at(x: float, z: float) -> RegionTerrain:
 	var rt: RegionTerrain = _terrain_for(x, z)
-	return rt if rt != null and regions.has(rt.region_id) else null
+	if rt == null:
+		return null
+	_lock.lock()
+	var detailed: bool = regions.has(rt.region_id)
+	_lock.unlock()
+	return rt if detailed else null
 
 
 ## Dominant ground layer name (footsteps, particles); "" outside detailed regions.
@@ -203,10 +231,70 @@ static func chunk_of(x: float, z: float) -> Vector2i:
 	return Vector2i(int(floor(x / CHUNK)), int(floor(z / CHUNK)))
 
 
+# --- Regions in and out (ADR-0038) -----------------------------------------------------------
+
+## Brings a region's 1 m terrain into play: its saved digs applied, published in a new `regions`
+## and grid (under _lock), a material made, the near chunks over it re-meshed and their collision
+## rebuilt. `pristine`: its unedited heights when the caller has them (the dig limit must never be
+## taken from already-edited heights).
+func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
+	var rid: String = rt.region_id
+	if pristine != null:
+		_base_cache[rid] = pristine
+	_apply_deltas(rt)
+	var next: Dictionary = regions.duplicate()
+	next[rid] = rt
+	_lock.lock()
+	regions = next
+	_lock.unlock()
+	_build_grid()
+	_materials[rid] = _make_region_material(rt)
+	_refresh_chunks(rt.rect)
+	region_attached.emit(rid)
+
+
+## Takes a region's 1 m terrain out of play: the coarse terrain (if any) answers height_at there
+## again. Its digs stay in _deltas (saved as before) and come back on the next attach.
+func detach_region(rid: String) -> void:
+	if not regions.has(rid):
+		return
+	var rt: RegionTerrain = regions[rid]
+	var rect: Rect2 = rt.rect
+	var next: Dictionary = regions.duplicate()
+	next.erase(rid)
+	_lock.lock()
+	regions = next
+	_lock.unlock()
+	_build_grid()
+	_materials.erase(rid)
+	# _base_cache keeps a dug region's pristine heights (4 MB) across the detach: its digs live on
+	# in _deltas and are re-applied over them on the next attach, whatever the object then holds.
+	_refresh_chunks(rect)
+	region_detached.emit(rid)
+
+
+## Re-meshes the live near chunks over a rect (plus one chunk around it, whose skirts and normals
+## read across the border) and rebuilds their collision.
+func _refresh_chunks(rect: Rect2) -> void:
+	var grown: Rect2 = rect.grow(CHUNK)
+	for key: Vector2i in _chunks.keys():
+		var ch: Chunk = _chunks[key]
+		if not grown.intersects(Rect2(key.x * CHUNK, key.y * CHUNK, CHUNK, CHUNK)):
+			continue
+		if ch.lod >= 0 and not _pending.has(key):
+			_request_mesh(key, ch.lod, false)
+		if ch.has_collision:
+			_rebuild_collision(ch, false)
+
+
 # --- Streaming --------------------------------------------------------------------------------
 
 ## Joins in-flight mesh jobs so no worker touches freed data when the world goes away.
 func _exit_tree() -> void:
+	for ch: Chunk in _col_pending:
+		if ch.col_job.has("task"):
+			WorkerThreadPool.wait_for_task_completion(int(ch.col_job["task"]))
+	_col_pending.clear()
 	if _far_task >= 0:
 		WorkerThreadPool.wait_for_group_task_completion(_far_task)
 		_far_task = -1
@@ -221,6 +309,7 @@ func _process(delta: float) -> void:
 	if world == null or focus == null:
 		return
 	_collect_finished()
+	_collect_collision()
 	_update_accum += delta
 	if _update_accum < 0.2:
 		return
@@ -256,7 +345,7 @@ func update_streaming(pos: Vector3, synchronous: bool = false) -> void:
 				_request_mesh(key, lod, synchronous)
 			var want_col: bool = absi(dx) <= COLLISION_RADIUS and absi(dz) <= COLLISION_RADIUS
 			if want_col != ch.has_collision:
-				_set_collision(ch, want_col)
+				_set_collision(ch, want_col, synchronous)
 
 
 func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
@@ -283,7 +372,14 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 	_pending[key] = job
 
 
+## Main-thread time a frame spends installing finished chunk meshes and collision bodies: the 169
+## meshes and 25 bodies of a spawn otherwise all land in one frame (~0.5 s, ADR-0036); the rest
+## wait for the next frames.
+const COLLECT_BUDGET_MS: float = 6.0
+
+
 func _collect_finished() -> void:
+	var t0: int = Time.get_ticks_usec()
 	for key: Vector2i in _pending.keys():
 		var job: Dictionary = _pending[key]
 		if WorkerThreadPool.is_task_completed(job["task"]):
@@ -291,6 +387,8 @@ func _collect_finished() -> void:
 			_pending.erase(key)
 			job["mesh"] = job["out"][0]
 			_apply_mesh(job)
+			if float(Time.get_ticks_usec() - t0) / 1000.0 >= COLLECT_BUDGET_MS:
+				return
 
 
 func _apply_mesh(job: Dictionary) -> void:
@@ -337,15 +435,74 @@ func _free_chunk(key: Vector2i) -> void:
 	_chunks.erase(key)
 
 
-func _set_collision(ch: Chunk, on: bool) -> void:
+## Turns a chunk's collision on or off. On, unless `sync`: built on a worker (the heights or the
+## cellar trimesh are ~25 ms of GDScript a chunk; the 25 around a spawn took 0.6 s of one frame,
+## ADR-0036) and installed when it comes back (_collect_collision).
+func _set_collision(ch: Chunk, on: bool, sync: bool = true) -> void:
 	ch.has_collision = on
 	if not on:
+		ch.col_job = {}
 		if ch.body != null:
 			ch.body.queue_free()
 			ch.body = null
 		return
+	_rebuild_collision(ch, sync)
+
+
+## Builds a chunk's collision anew, keeping the old body until the new one replaces it (so the
+## ground never disappears under someone). `sync`: now, on this thread (digging, which must
+## collide with the new ground at once; chunks with volume columns, whose height reads volumes).
+func _rebuild_collision(ch: Chunk, sync: bool) -> void:
 	var origin := Vector2(ch.key.x * CHUNK, ch.key.y * CHUNK)
 	var cut: Array[PackedVector2Array] = _cutters(ch.key)
+	var has_volume: bool = _chunk_has_volume(ch.key)
+	var out: Array = [null]
+	var job: Dictionary = {"out": out, "kind": "faces" if not cut.is_empty() else "heights"}
+	var hole: Callable = volume.is_volume_column if has_volume else Callable()
+	var fn := func() -> void:
+		if cut.is_empty():
+			out[0] = TerrainMesher.collision_heights(origin, CHUNK, 1.0, height_at)
+		else:
+			out[0] = TerrainMesher.surface_faces(origin, CHUNK, 1.0, height_at, hole, cut)
+	if sync or has_volume:
+		if cut.is_empty() and has_volume:
+			out[0] = TerrainMesher.collision_heights(origin, CHUNK, 1.0, _collision_height)
+		else:
+			fn.call()
+		ch.col_job = {}
+		_install_collision(ch, job)
+		return
+	ch.col_job = job
+	job["task"] = WorkerThreadPool.add_task(fn, true, "terrain collision")
+	_col_pending.append(ch)
+
+
+## Collision jobs on workers (chunks whose col_job has a task).
+var _col_pending: Array[Chunk] = []
+
+
+func _collect_collision() -> void:
+	var t0: int = Time.get_ticks_usec()
+	for i: int in range(_col_pending.size() - 1, -1, -1):
+		if float(Time.get_ticks_usec() - t0) / 1000.0 >= COLLECT_BUDGET_MS:
+			return
+		var ch: Chunk = _col_pending[i]
+		var job: Dictionary = ch.col_job
+		if job.is_empty() or not job.has("task"):
+			_col_pending.remove_at(i)
+			continue
+		if not WorkerThreadPool.is_task_completed(int(job["task"])):
+			continue
+		WorkerThreadPool.wait_for_task_completion(int(job["task"]))
+		_col_pending.remove_at(i)
+		ch.col_job = {}
+		if ch.has_collision and _chunks.get(ch.key) == ch:
+			_install_collision(ch, job)
+
+
+## A finished collision job in a body, replacing the chunk's old one.
+func _install_collision(ch: Chunk, job: Dictionary) -> void:
+	var origin := Vector2(ch.key.x * CHUNK, ch.key.y * CHUNK)
 	var body := StaticBody3D.new()
 	body.name = "Col_%d_%d" % [ch.key.x, ch.key.y]
 	body.collision_layer = COLLISION_LAYER
@@ -353,12 +510,12 @@ func _set_collision(ch: Chunk, on: bool) -> void:
 	body.set_meta(&"terrain", true)
 	body.set_meta(&"damage_receiver", self)
 	var cs := CollisionShape3D.new()
-	if cut.is_empty():
+	if str(job["kind"]) == "heights":
 		var shape := HeightMapShape3D.new()
 		var vc: int = int(CHUNK) + 1
 		shape.map_width = vc
 		shape.map_depth = vc
-		shape.map_data = TerrainMesher.collision_heights(origin, CHUNK, 1.0, _collision_height if _chunk_has_volume(ch.key) else height_at)
+		shape.map_data = job["out"][0]
 		cs.shape = shape
 		# HeightMapShape3D is centred on its origin.
 		cs.position = Vector3(CHUNK * 0.5, 0.0, CHUNK * 0.5)
@@ -367,22 +524,24 @@ func _set_collision(ch: Chunk, on: bool) -> void:
 		# 1 m); volume columns are left out instead of sunk.
 		var tri := ConcavePolygonShape3D.new()
 		tri.backface_collision = true
-		var hole: Callable = volume.is_volume_column if _chunk_has_volume(ch.key) else Callable()
-		tri.set_faces(TerrainMesher.surface_faces(origin, CHUNK, 1.0, height_at, hole, cut))
+		tri.set_faces(job["out"][0])
 		cs.shape = tri
 	body.add_child(cs)
 	body.position = Vector3(origin.x, 0.0, origin.y)
 	_near_root.add_child(body)
+	if ch.body != null:
+		ch.body.queue_free()
 	ch.body = body
 
 
-## True once every chunk within `radius` chunks of pos has a mesh (and collision where needed).
+## True once every chunk within `radius` chunks of pos has a mesh, and its collision when it wants
+## one (and collision where needed).
 func is_ready_around(pos: Vector3, radius: int = 1) -> bool:
 	var c: Vector2i = chunk_of(pos.x, pos.z)
 	for dz: int in range(-radius, radius + 1):
 		for dx: int in range(-radius, radius + 1):
 			var ch: Chunk = _chunks.get(Vector2i(c.x + dx, c.y + dz))
-			if ch == null or ch.mesh_instance == null:
+			if ch == null or ch.mesh_instance == null or (ch.has_collision and ch.body == null):
 				return false
 	return true
 
@@ -394,6 +553,8 @@ func _build_far_tiles() -> void:
 		_add_far_tile(rid, _far_tile_mesh(rid))
 
 
+## Set before setup(): a Bloom field built off the main thread (WorldLoader.bloom_field).
+var prebuilt_bloom: BloomField = null
 ## Set before setup() to build the far tiles on worker threads through boot_steps() (ADR-0036:
 ## about 1.5 s of meshing that used to run in the load's one long main-thread frame).
 var defer_far_tiles: bool = false
@@ -412,7 +573,9 @@ func boot_steps() -> Array:
 func _start_far_tiles() -> void:
 	_far_ids = world.regions.keys()
 	_far_meshes.resize(_far_ids.size())
-	_far_task = WorkerThreadPool.add_group_task(func(i: int) -> void: _far_meshes[i] = _far_tile_mesh(_far_ids[i]), _far_ids.size(), -1, false, "far tiles")
+	# The workers read a snapshot: an attach on the main thread swaps `regions` meanwhile.
+	var snap: Dictionary = regions
+	_far_task = WorkerThreadPool.add_group_task(func(i: int) -> void: _far_meshes[i] = _far_tile_mesh(_far_ids[i], snap), _far_ids.size(), -1, false, "far tiles")
 
 
 func _finish_far_tiles() -> bool:
@@ -427,16 +590,17 @@ func _finish_far_tiles() -> bool:
 	return true
 
 
-## A far tile's mesh (pure data: reads the composed regions only, safe on a worker thread).
-func _far_tile_mesh(rid: String) -> ArrayMesh:
+## A far tile's mesh (pure data: reads the composed regions only, safe on a worker thread given
+## `snap`, the `regions` dictionary taken on the main thread; attach and detach replace it).
+func _far_tile_mesh(rid: String, snap: Dictionary = regions) -> ArrayMesh:
 	var built: Array[Rect2] = []
-	for b: String in regions:
+	for b: String in snap:
 		built.append(world.region_rect(b))
 	var rect: Rect2 = world.region_rect(rid)
-	var rt: RegionTerrain = regions.get(rid, coarse.get(rid))
+	var rt: RegionTerrain = snap.get(rid, coarse.get(rid))
 	# Built regions draw their own trees (impostors out to 1.2 km); the others get a canopy,
 	# raised into the mesh itself so its normals light the forest edges.
-	var grid: PackedVector2Array = _far_canopy_grid(rt, rect, {} if regions.has(rid) else _canopy, built)
+	var grid: PackedVector2Array = _far_canopy_grid(rt, rect, {} if snap.has(rid) else _canopy, built)
 	var n: int = int(round(rect.size.x / FAR_STEP)) + 3
 	var at := func(x: float, z: float) -> Vector2:
 		return grid[clampi(int(round((z - rect.position.y) / FAR_STEP)) + 1, 0, n - 1) * n + clampi(int(round((x - rect.position.x) / FAR_STEP)) + 1, 0, n - 1)]
@@ -595,8 +759,7 @@ func _on_volume_column(col: Vector2i) -> void:
 	if ch != null:
 		_request_mesh(key, maxi(ch.lod, 0), true)
 		if ch.has_collision:
-			_set_collision(ch, false)
-			_set_collision(ch, true)
+			_rebuild_collision(ch, true)
 
 
 ## Tool hits on the ground: shovels dig the heightmap; past its depth limit, into steep faces or
@@ -652,10 +815,15 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 	var cj: int = int(round((center.z - hf.origin.y) / hf.spacing))
 	var moved: float = 0.0
 	var touched: Dictionary = {}
-	# Edit a private copy and publish it whole (_publish_heights): worker threads read these heights
-	# all the time (chunk meshing, scatter, weather, the Hum's flow field).
-	var original: PackedFloat32Array = hf.heights
-	var heights: PackedFloat32Array = hf.heights.duplicate()
+	# Written in place under _lock: worker threads read these heights all the time through
+	# height_at (chunk meshing, scatter, weather, the Hum's flow field), which takes the lock too.
+	# Neither alternative is safe without it: replacing the array releases the old one and leaves
+	# the member null for a moment, and writing a packed array that a reader's temporary also
+	# references copies it on write, swapping the buffer under that reader (TD-104).
+	var original := PackedFloat32Array()
+	if mode == "smooth":
+		original = hf.heights.duplicate()
+	_lock.lock()
 	for j: int in range(cj - r_cells, cj + r_cells + 1):
 		for i: int in range(ci - r_cells, ci + r_cells + 1):
 			if i < 0 or j < 0 or i >= hf.width or j >= hf.depth:
@@ -667,7 +835,7 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 				continue
 			var k: float = 0.5 + 0.5 * cos(d * PI)
 			var idx: int = j * hf.width + i
-			var h0: float = heights[idx]
+			var h0: float = hf.heights[idx]
 			var nh: float = h0
 			match mode:
 				"dig":
@@ -682,42 +850,47 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 						for oi: int in range(-1, 2):
 							acc += original[clampi(j + oj, 0, hf.depth - 1) * hf.width + clampi(i + oi, 0, hf.width - 1)]
 					nh = lerpf(h0, acc / 9.0, amount * k)
-			heights[idx] = nh
+			hf.heights[idx] = nh
 			moved += (h0 - nh) * hf.spacing * hf.spacing
 			touched[chunk_of(x, z)] = true
 			# Samples on chunk borders belong to neighbours too.
 			touched[chunk_of(x - 0.01, z - 0.01)] = true
-	_publish_heights(hf, heights)
+	_lock.unlock()
 	for key: Vector2i in touched:
 		_record_delta(rt, key)
 		var ch: Chunk = _chunks.get(key)
 		if ch != null:
 			_request_mesh(key, ch.lod if ch.lod >= 0 else 0, true)
 			if ch.has_collision:
-				_set_collision(ch, false)
-				_set_collision(ch, true)
+				_rebuild_collision(ch, true)
 	var aabb := AABB(center - Vector3(radius, MAX_DIG_DEPTH, radius), Vector3(radius, MAX_DIG_DEPTH, radius) * 2.0)
 	terrain_changed.emit(aabb)
 	Events.terrain_modified.emit(aabb)
 	return moved
 
 
-## Height arrays replaced by an edit, kept alive for RETIRE_MSEC: a worker that fetched the old
-## array just before the swap may still be reading it, and freeing it under that worker crashes
-## (use after free; more likely the more threads a machine runs). [ticks_msec, array] oldest first.
-var _retired: Array = []
-const RETIRE_MSEC: int = 20000
-const RETIRE_MIN: int = 4
-
-
-## Swaps a region's heights for an edited copy. Readers on other threads see the old array or the
-## new one, never a buffer freed under them, and never a half-written edit.
-func _publish_heights(hf: HeightField, heights: PackedFloat32Array) -> void:
-	var now: int = Time.get_ticks_msec()
-	_retired.append([now, hf.heights])
-	hf.heights = heights
-	while _retired.size() > RETIRE_MIN and now - int(_retired[0][0]) > RETIRE_MSEC:
-		_retired.pop_front()
+## Applies the saved digs that fall in a region onto its heights (in place, see modify()). The
+## pristine heights come from _base_cache when the region was dug before (kept across a detach),
+## so a re-attached object that still carries its digs gets them once, not twice.
+func _apply_deltas(rt: RegionTerrain) -> void:
+	var vc: int = int(CHUNK) + 1
+	var hf: HeightField = rt.height
+	var base: HeightField = null
+	_lock.lock()
+	for key_s: String in _deltas:
+		var key: Vector2i = Ids.parse_chunk_key(key_s.substr(2))
+		if not rt.rect.has_point(Vector2(key.x * CHUNK + 1.0, key.y * CHUNK + 1.0)):
+			continue
+		if base == null:
+			base = _base_heights(rt)
+		var delta: PackedFloat32Array = _deltas[key_s]
+		for j: int in vc:
+			for i: int in vc:
+				var gx: int = int(round((key.x * CHUNK + i - hf.origin.x) / hf.spacing))
+				var gz: int = int(round((key.y * CHUNK + j - hf.origin.y) / hf.spacing))
+				if gx >= 0 and gz >= 0 and gx < hf.width and gz < hf.depth:
+					hf.heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
+	_lock.unlock()
 
 
 ## Composed (unedited) heights per region, kept to clamp digging depth and compute deltas.
@@ -775,27 +948,15 @@ func save_into(ws: WorldState) -> void:
 ## Applies saved deltas to freshly composed heights (call after setup, before streaming).
 func load_from(ws: WorldState) -> void:
 	var vc: int = int(CHUNK) + 1
+	# Every saved dig is decoded (ADR-0038: a region that attaches later still gets its own), then
+	# applied to the regions present now; attach_region applies the rest.
 	for k: Variant in ws.chunk_blobs.keys():
 		var key_s: String = str(k)
 		if not key_s.begins_with("t:"):
 			continue
 		var raw: PackedByteArray = (ws.chunk_blobs[k] as PackedByteArray).decompress(vc * vc * 4, FileAccess.COMPRESSION_ZSTD)
-		var delta: PackedFloat32Array = raw.to_float32_array()
-		var key: Vector2i = Ids.parse_chunk_key(key_s.substr(2))
-		var rt: RegionTerrain = region_terrain_at(key.x * CHUNK + 1.0, key.y * CHUNK + 1.0)
-		if rt == null:
-			continue
-		_base_heights(rt)
-		var hf: HeightField = rt.height
-		var heights: PackedFloat32Array = hf.heights.duplicate()
-		for j: int in vc:
-			for i: int in vc:
-				var gx: int = int(round((key.x * CHUNK + i - hf.origin.x) / hf.spacing))
-				var gz: int = int(round((key.y * CHUNK + j - hf.origin.y) / hf.spacing))
-				if gx >= 0 and gz >= 0 and gx < hf.width and gz < hf.depth:
-					var base: HeightField = _base_cache[rt.region_id]
-					heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
-		_publish_heights(hf, heights)
-		_deltas[key_s] = delta
+		_deltas[key_s] = raw.to_float32_array()
+	for rid: String in regions:
+		_apply_deltas(regions[rid])
 	if volume != null:
 		volume.load_from(ws)

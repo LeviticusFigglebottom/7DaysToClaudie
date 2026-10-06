@@ -50,14 +50,57 @@ const MAX_PROBES: int = 8
 
 ## `checked`: the layout's PoiValidator, already run (PoiManager runs it on a worker thread while
 ## the world loads, ADR-0036: it is nearly all of a building's build time); null runs it here.
+## Builds the whole building at once (tools, tests, previews); the game builds in phases (start).
 static func build(p_layout: PoiLayout, instance_id: StringName, checked: PoiValidator = null) -> PoiInstance:
+	var b: PoiBuilder = start(p_layout, instance_id, checked)
+	while not b.step():
+		pass
+	return b.root
+
+
+## The build's phases in order, one per step() (ADR-0038: a building is raised over several frames
+## within the streaming budget, so no single frame pays for a whole sawmill).
+const PHASES: PackedStringArray = ["_begin", "_route", "_walls", "_posts", "_floors", "_galleries",
+	"_stairs_and_ladders", "_openings", "_exterior", "_roof", "_props", "_scatter", "_lights",
+	"_interior_probes", "_pickups", "_decals", "_traps", "_emit_batches", "_wire_weak_floors"]
+
+var _instance_id: StringName = &""
+var _phase: int = 0
+
+
+## A builder for one building; call step() until it returns true, then take `root`.
+static func start(p_layout: PoiLayout, instance_id: StringName, checked: PoiValidator = null) -> PoiBuilder:
 	var b := PoiBuilder.new()
 	b.layout = p_layout
 	b._checked = checked
-	return b._build(instance_id)
+	b._instance_id = instance_id
+	return b
 
 
+## Runs the next phase; true once the building is complete (root holds it).
+func step() -> bool:
+	if _phase < PHASES.size():
+		call(PHASES[_phase])
+		_phase += 1
+	return _phase >= PHASES.size()
+
+
+## Name of the phase the next step() runs ("" when done): for meters.
+func next_phase() -> String:
+	return PHASES[_phase].trim_prefix("_") if _phase < PHASES.size() else ""
+
+
+## The whole build on a builder already set up with `layout` (tests that pre-set builder state).
 func _build(instance_id: StringName) -> PoiInstance:
+	_instance_id = instance_id
+	_phase = 0
+	while not step():
+		pass
+	return root
+
+
+func _begin() -> void:
+	var instance_id: StringName = _instance_id
 	root = PoiInstance.new()
 	root.name = String(instance_id).replace("/", "_").replace(":", "_")
 	root.setup(layout, instance_id)
@@ -80,25 +123,10 @@ func _build(instance_id: StringName) -> PoiInstance:
 	root.add_child(shell)
 	root.shell = shell
 	_porch_cells = _porch_cell_set()
+
+
+func _route() -> void:
 	_route_cells = _route_corridor()
-	_walls()
-	_posts()
-	_floors()
-	_galleries()
-	_stairs_and_ladders()
-	_openings()
-	_exterior()
-	_roof()
-	_props()
-	_scatter()
-	_lights()
-	_interior_probes()
-	_pickups()
-	_decals()
-	_traps()
-	_emit_batches()
-	_wire_weak_floors()
-	return root
 
 
 # --- helpers ---------------------------------------------------------------------------------

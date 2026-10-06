@@ -41,18 +41,21 @@ var _load_task: int = -1
 var _spawn_settle: int = 0
 ## The main-thread half of the load (ADR-0036): [label, Callable, name] steps, run a few a frame
 ## within BOOT_BUDGET_MS so the window keeps answering the OS (one long frame here made Windows
-## flag the game as not responding). _boot_i = -1: not booting.
+## flag the game as not responding).
 const BOOT_BUDGET_MS: float = 40.0
 ## Share of the loading bar the worker thread's half fills; the boot steps fill the rest to 0.95.
 const WORKER_SHARE: float = 0.7
-var _boot: Array = []
-var _boot_i: int = -1
+## The boot's steps (StepRunner); null when not booting.
+var _boot: StepRunner = null
 var _held: Dictionary = {}
 var _load_meter: LoadMeter = LoadMeter.new()
 
 
 func _ready() -> void:
 	Game.world = self
+	# Process after the world's systems: a boot step that lets a system tick (_boot_release) then
+	# measures exactly that system's first frame (LoadMeter), not the next one's too.
+	process_priority = 1000
 	session = Game.session
 	if session == null:
 		session = Game.new_session({"game_mode": "survival"})
@@ -82,11 +85,17 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
+	_load_step()
+	# Sampled after this frame's steps: the label shown now names the step the next frame runs,
+	# and the meter attributes the coming frame to it (GameWorld processes last, see _ready).
 	if not is_ready or _load_meter.trailing():
-		_load_meter.frame(ui.loading_text() if ui != null else "")
+		_load_meter.frame(ui.loading_text() if ui != null and not is_ready else "")
+
+
+func _load_step() -> void:
 	if _load_task >= 0:
 		var st: Array = _loader.status()
-		ui.show_loading(str(st[0]), float(st[1]) * WORKER_SHARE)
+		ui.show_loading(str(st[0]), float(st[1]) * WORKER_SHARE, _loading_map_texture(), _loader.marks())
 		if WorkerThreadPool.is_task_completed(_load_task):
 			WorkerThreadPool.wait_for_task_completion(_load_task)
 			_load_task = -1
@@ -95,7 +104,7 @@ func _process(_delta: float) -> void:
 				return
 			_on_world_loaded()
 		return
-	if _boot_i >= 0:
+	if _boot != null:
 		_run_boot_steps()
 		return
 	if not is_ready and player != null:
@@ -108,32 +117,33 @@ func _process(_delta: float) -> void:
 
 ## True while the main-thread half of the load runs (modules may queue work with boot_steps()).
 func is_booting() -> bool:
-	return _boot_i >= 0
+	return _boot != null
 
 
-## Runs boot steps until this frame's budget is spent (always at least one, so a step that alone
-## overruns still progresses), then shows the next one's label.
+## The random world's map for the loading screen, read once its file exists (null otherwise).
+var _map_tex: Texture2D = null
+func _loading_map_texture() -> Texture2D:
+	var path: String = _loader.map_file() if _map_tex == null else ""
+	if path != "" and FileAccess.file_exists(path):
+		var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+		if img != null and not img.is_empty():
+			_map_tex = ImageTexture.create_from_image(img)
+	return _map_tex
+
+
+## Runs boot steps within the frame's budget, then shows the next one's label.
 func _run_boot_steps() -> void:
-	var t0: int = Time.get_ticks_usec()
-	while _boot_i < _boot.size():
-		var step: Array = _boot[_boot_i]
-		var s0: int = Time.get_ticks_usec()
-		# A step that returns false is waiting on a worker thread: it runs again next frame.
-		var done: Variant = (step[1] as Callable).call()
-		_load_meter.step(str(step[2]), Time.get_ticks_usec() - s0)
-		_hold_processing()
-		if done is bool and not done:
-			break
-		_boot_i += 1
-		if float(Time.get_ticks_usec() - t0) / 1000.0 >= BOOT_BUDGET_MS:
-			break
-	if _boot_i >= _boot.size():
-		_boot_i = -1
-		_boot.clear()
+	_boot.run_frame()
+	if _boot.is_idle():
+		_boot = null
 		_release_processing()
 		return
-	var p: float = WORKER_SHARE + (0.95 - WORKER_SHARE) * float(_boot_i) / float(_boot.size())
-	ui.show_loading(str(_boot[_boot_i][0]), p)
+	ui.show_loading(_boot.current_label(), WORKER_SHARE + (0.95 - WORKER_SHARE) * _boot.progress())
+
+
+func _on_boot_step(step_name: String, usec: int, _finished: bool) -> void:
+	_load_meter.step(step_name, usec)
+	_hold_processing()
 
 
 ## The worker thread is done: queue the scene-tree half of the load as boot steps (see _boot).
@@ -142,18 +152,23 @@ func _on_world_loaded() -> void:
 	poi_lots = _loader.lots
 	if _loader.world_id != "":
 		session.world_id = StringName(_loader.world_id)
-	_boot = [
+	_boot = StepRunner.new()
+	_boot.budget_ms = BOOT_BUDGET_MS
+	_boot.step_ran.connect(_on_boot_step)
+	_boot.add_all([
 		["Laying the ground…", _boot_terrain, "terrain"],
 		["Reading the old survey…", func() -> void: terrain.load_from(session.world), "terrain edits"],
 		["Hanging the sky…", _boot_environment, "environment"],
 		["Winding the clocks…", _boot_clock, "clock"],
-	]
+	])
 	for m: Array in MODULES:
-		_boot.append([str(m[2]), _spawn_module.bind(m[0], m[1]), str(m[0])])
-	_boot.append(["Waking up…", _spawn_player, "player"])
-	_boot.append(["Waking up…", _boot_hooks, "hooks"])
-	_boot_i = 0
-	_run_boot_steps()
+		_boot.add([str(m[2]), _spawn_module.bind(m[0], m[1]), str(m[0])])
+	_boot.add(["Waking up…", _spawn_player, "player"])
+	_boot.add(["Waking up…", _boot_hooks, "hooks"])
+	_boot.add(["Waking up…", _boot_release, "release"])
+	# Show the first step's label for a frame before running it: the frame it runs in is then
+	# measured (and reported by LoadMeter) under its own name, not the worker's last stage.
+	ui.show_loading(_boot.current_label(), WORKER_SHARE)
 
 
 ## Systems added by a boot step don't tick until the whole world exists: before the split they
@@ -168,9 +183,31 @@ func _hold_processing() -> void:
 
 func _release_processing() -> void:
 	for c: Node in _held:
-		if is_instance_valid(c):
+		if is_instance_valid(c) and int(_held[c]) >= 0:
 			c.process_mode = _held[c]
 	_held.clear()
+
+
+## The last boot steps: one per held system, each letting it tick and then giving it a frame of
+## its own. All of them starting in one frame cost ~0.5 s (their first _process: streaming,
+## scatter, sleepers); one at a time spreads that out, and LoadMeter names the slow one.
+func _boot_release() -> void:
+	var steps: Array = []
+	for c: Node in _held:
+		var node: Node = c
+		var ticked: Array = [false]
+		# First call: let it tick and end the frame; the next frame is its first. Second call (the
+		# frame after, once it has ticked): done.
+		steps.append(["Waking up… (%s)" % node.name, func() -> bool:
+			if ticked[0]:
+				return true
+			ticked[0] = true
+			if is_instance_valid(node) and int(_held.get(node, -1)) >= 0:
+				node.process_mode = _held[node]
+				# Kept, marked released, so _hold_processing doesn't hold it again.
+				_held[node] = -1
+			return false, "release %s" % node.name])
+	_insert_boot_steps(steps)
 
 
 func _boot_terrain() -> void:
@@ -181,6 +218,7 @@ func _boot_terrain() -> void:
 	terrain = TerrainManager.new()
 	terrain.name = "Terrain"
 	terrain.defer_far_tiles = true
+	terrain.prebuilt_bloom = _loader.bloom_field
 	add_child(terrain)
 	terrain.setup(world_def, _loader.detailed, _loader.coarse)
 	_insert_boot_steps(terrain.boot_steps())
@@ -251,8 +289,7 @@ func _spawn_module(prop: String, script: String) -> void:
 
 ## Queues steps to run right after the current one (only called from a boot step).
 func _insert_boot_steps(more: Array) -> void:
-	for i: int in more.size():
-		_boot.insert(_boot_i + 1 + i, more[i])
+	_boot.insert_next(more)
 
 
 func _spawn_player() -> void:
@@ -274,7 +311,9 @@ func _spawn_player() -> void:
 	# (state -> progression -> connection -> lambda -> state) and leak the whole player.
 	p.progression.leveled_up.connect(_on_player_leveled.bind(p.id))
 	terrain.focus = player
-	terrain.update_streaming(player.global_position, true)
+	# Meshed on worker threads ("Finding your feet" waits for the chunks around the player): the
+	# synchronous version meshed all 169 near chunks in this step, ~0.45 s of one frame.
+	terrain.update_streaming(player.global_position)
 	if stimuli != null:
 		stimuli.recenter(player.global_position)
 
