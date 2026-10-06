@@ -1,0 +1,85 @@
+{
+ "_doc": "Containers of the Corvane Field Lab (containers/lab.json -> tables/lab.json).",
+ "defs": [
+  {
+   "id": "lab_core_box",
+   "name": "Core Boxes",
+   "loot_table": "lab_core_box",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 4
+  },
+  {
+   "id": "lab_bench",
+   "name": "Lab Bench",
+   "loot_table": "lab_bench",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 4
+  },
+  {
+   "id": "lab_freezer",
+   "name": "Minus-80 Freezer",
+   "loot_table": "lab_freezer",
+   "slots": 8,
+   "search_time": 2.2,
+   "noise": 5
+  },
+  {
+   "id": "lab_sample_rack",
+   "name": "Sample Shelving",
+   "loot_table": "lab_sample_rack",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 4
+  },
+  {
+   "id": "lab_dewar",
+   "name": "Nitrogen Dewar",
+   "loot_table": "lab_dewar",
+   "slots": 4,
+   "search_time": 2.0,
+   "noise": 4
+  },
+  {
+   "id": "lab_specimen_vault",
+   "name": "Specimen Store",
+   "loot_table": "lab_specimen_vault",
+   "slots": 10,
+   "search_time": 2.6,
+   "noise": 5
+  },
+  {
+   "id": "lab_ppe",
+   "name": "PPE Rack",
+   "loot_table": "lab_ppe",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 4
+  },
+  {
+   "id": "lab_radio",
+   "name": "Radio Desk",
+   "loot_table": "lab_radio",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 4
+  },
+  {
+   "id": "lab_server",
+   "name": "Data Rack",
+   "loot_table": "lab_server",
+   "slots": 6,
+   "search_time": 2.0,
+   "noise": 5
+  },
+  {
+   "id": "lab_footlocker",
+   "name": "Manager's Footlocker",
+   "loot_table": "lab_footlocker",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 5
+  }
+ ]
+}

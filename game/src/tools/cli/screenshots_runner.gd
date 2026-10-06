@@ -149,6 +149,17 @@ const POI_SHOTS: Array[Dictionary] = [
 	{"name": "adit_approach", "poi": "corvane_larkspur_adit", "at": Vector3(8.0, 1.8, 24.0), "look": Vector3(13.0, 3.0, 9.0), "hour": 16.5, "weather": "overcast"},
 	{"name": "adit_drift", "poi": "corvane_larkspur_adit", "at": Vector3(21.5, -1.1, 8.5), "look": Vector3(40.0, -1.7, 8.5), "hour": 13.0, "weather": "clear", "light": true},
 	{"name": "adit_grotto", "poi": "corvane_larkspur_adit", "at": Vector3(56.0, -4.1, 6.0), "look": Vector3(63.0, -5.0, 2.0), "hour": 13.0, "weather": "clear", "light": true},
+	# The Corvane Field Lab (tier 5, ADR-0046): the road up to its wire by day, the core shed, a lab module, the
+	# decon line, the buried containment suite at night by its own lights and the specimen vault (the building
+	# has a 1 m origin offset: plan cell (c, r) is footprint (c + 1, r + 1); the buried level's floor is 2.65 m
+	# under the pad). Shot on `--world random --world-seed 101 --world-set size=3 --world-set wilderness=2.5`.
+	{"name": "lab_approach", "poi": "corvane_field_lab", "at": Vector3(21.0, 1.8, 57.5), "look": Vector3(29.0, 3.0, 38.0), "hour": 10.5, "weather": "clear", "fov": 70.0},
+	{"name": "lab_yard", "poi": "corvane_field_lab", "at": Vector3(15.5, 2.0, 44.0), "look": Vector3(28.0, 2.5, 26.0), "hour": 15.0, "weather": "overcast", "fov": 70.0},
+	{"name": "lab_core_shed", "poi": "corvane_field_lab", "at": Vector3(14.2, 2.1, 28.6), "look": Vector3(6.5, 1.2, 25.5), "hour": 13.0, "weather": "overcast", "fov": 70.0},
+	{"name": "lab_module", "poi": "corvane_field_lab", "at": Vector3(25.7, 2.2, 26.4), "look": Vector3(18.5, 1.2, 24.6), "hour": 14.0, "weather": "overcast", "fov": 72.0},
+	{"name": "lab_decon_line", "poi": "corvane_field_lab", "at": Vector3(27.3, 2.2, 21.7), "look": Vector3(29.4, 1.3, 19.0), "hour": 14.0, "weather": "overcast", "fov": 72.0},
+	{"name": "lab_containment_night", "poi": "corvane_field_lab", "at": Vector3(32.4, -0.95, 16.5), "look": Vector3(33.0, -1.9, 11.4), "hour": 22.5, "weather": "clear", "fov": 72.0},
+	{"name": "lab_vault", "poi": "corvane_field_lab", "at": Vector3(27.4, -0.95, 10.5), "look": Vector3(23.0, -1.9, 6.6), "hour": 23.0, "weather": "clear", "fov": 72.0},
 ]
 
 const ProbeBudget := preload("res://src/poi/interior_probe_budget.gd")
@@ -354,6 +365,10 @@ func _run() -> void:
 	# amount every run).
 	(w.get(&"clock_driver") as WorldClockDriver).paused = true
 	_mem_report("world ready")
+	if random_world:
+		# The set pieces' sleepers stay where they were authored: the player standing at each camera
+		# is invisible to them (awake, the dining hall's families climbed the tables at the camera).
+		DebugTools.set_flag(&"invisible", true)
 	# The main map takes the POI shots of the buildings it placed too (the Corvane adit in D6).
 	var shots: Array[Dictionary] = _poi_shots(w)
 	if not random_world:

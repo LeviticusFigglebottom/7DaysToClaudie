@@ -46,3 +46,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0040](0040-organic-towns.md) | Organic towns: streets grown over the land, lots by frontage, zoning by rings | Accepted |
 | [0041](0041-burnt-forest-and-fen.md) | Burnt forest and fen: fire scars and drowned lowland in random worlds, fire char on the bark, waders, per-biome ambience | Accepted |
 | [0044](0044-corvane-caves.md) | The Corvane caves: buried POI levels (a mine and a limestone cave under the Larkspur cliffs), underground is night for the Hollowed, rock finishes and a mine kit | Accepted |
+| [0046](0046-tier-five-field-lab.md) | Tier 5: the Corvane Field Lab, keycards as keys, and a compound the validator can walk | Accepted |

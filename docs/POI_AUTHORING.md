@@ -521,6 +521,17 @@ generator's lots (`data/config/world_gen.json` `tuning.towns.lot`: commercial 28
 alternatives so two runs don't meet the same set piece. Leave a zoning off when a framework's
 generated lots must not draw it (Larch Street is residential, so none of the five is).
 
+**Organic towns (random worlds v2, ADR-0040).** A generated town's lots are **frame lots**:
+`"frame": [cx, cz, w, d, yaw]` in world XZ, a rectangle stood along its street (its front is the
+frame's local +Z, toward the street; `w` is the frontage, `d` the depth), with the graded pad's
+height in `y`. `LotPicker.lot_size` reads the frame and `lot_local_xf` stands the building in it,
+footprint centred, front to the street, so author the front of a pool building on its `+Z` side as
+usual. Its authored buildings are **capped world-wide**: the generator gives each authored building
+to at most `tuning.towns.authored_max` towns of one world (3) and writes each town's share into
+its framework's `authored` list; an organic town's lots choose authored buildings from that list
+only, and fill the rest from templates. So a big world shows each set piece a few times, not on
+every street. Rect lots (`rect`, the handcrafted frameworks and v1 towns) are unchanged.
+
 ## Cellars and terrain
 Rooms on level −1 (and below) are cellars. At load the terrain is cut away under them (TD-026):
 `TerrainHoles` (`game/src/world/terrain/terrain_holes.gd`) takes every placed POI's below-ground room

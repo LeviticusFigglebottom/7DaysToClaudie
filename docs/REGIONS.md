@@ -111,7 +111,7 @@ the Ashen camp far out) with drives, tracks and trails, and Bloom patches in the
 
 Tools:
 * `godot --headless --path game -s res://src/tools/cli/rwg_preview.gd -- --seed 1234 --size 5 --out
-  /abs/map.png [--preset highlands] [--set towns=4 --set lakes=many] [--fresh] [--compose]`: the
+  /abs/map.png [--preset highlands] [--set town_density=3 --set lakes=many] [--fresh] [--compose]`: the
   world's summary and map; `--compose` shapes every region into the cache.
 * `... -s res://src/tools/cli/rwg_preview_shots.gd -- --out /abs/dir --world-seed N [--world-set k=v]`
   under Xvfb: in-world shots of a town street, the town from above, a river valley, a wilderness

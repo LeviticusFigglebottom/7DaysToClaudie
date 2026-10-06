@@ -541,7 +541,7 @@ func interact_text(player: Player) -> String:
 			return "Add fuel (%s)" % Content.item(item).display_name if item != &"" else "Needs fuel: sticks, leaves or a log"
 		if not lit:
 			return ("Light fire" if _has_igniter(player) else "Light fire (needs a lighter)") + " · fuel %s" % fuel_text(fuel)
-		return "%s · burns %s · [G] add fuel" % [parts[0], fuel_text(fuel)]
+		return "%s · burns %s · [%s] add fuel" % [parts[0], fuel_text(fuel), PlayerInteraction.key_label(&"drop")]
 	if provides("light") and not lit:
 		return "Light fire" if _has_igniter(player) else "Light fire (needs a lighter)"
 	return parts[0]

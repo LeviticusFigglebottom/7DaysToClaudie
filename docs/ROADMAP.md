@@ -214,6 +214,14 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
     the wilderness pool with room alternatives, their own keys, notes and loot (`wild3` content), 49
     new props (`props_wild3.py`, shells for the lodge, reefer and trailer) and the `w3_signs` atlas;
     `tests/unit/test_wilderness_round_three.gd`. Gaps: TD-154..158.
+  - [x] The first tier-5 dungeon (DESIGN §11 "Tier 5", ADR-0046): the Corvane Field Lab, the geology field
+    station the Cordon took for its Bloom lab, a 56 x 56 compound behind razor wire (core shed, prefab lab
+    modules on a covered boardwalk, mess and bunkhouse, generator shed, decontamination unit) over a buried
+    containment level (keycard airlock, isolation cells, specimen lab, the vault and its escape shaft); eight
+    held groups, a 22-beat route, sixteen dressings; sealed Bloom cores and Program research drives as the
+    payoff (`lab` content), 45 new props (`props_lab.py`), the `lab_signs` atlas and six item models
+    (`item_lab.py`); one `remote` wilderness pool entry (danger 4+); `tests/unit/test_field_lab.gd`.
+    Gaps: TD-176..180.
 - Burnt forest, snow, swamp, scrub biomes; full seasons (snow cover, frozen water, temperature).
 - Structural tiers: stone, metal; repair/upgrade tools; Rammer breakers that tear through walls.
 - Farming, rain collection, traps (spike pits, deadfalls), electricity (generator, wiring, lights,

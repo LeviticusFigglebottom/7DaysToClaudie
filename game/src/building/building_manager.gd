@@ -767,10 +767,10 @@ func hammer_hint(piece: StructurePiece, p: PlayerState) -> String:
 	var t: String = "%s  %d / %d" % [piece.def.display_name, ceili(piece.hp), ceili(piece.max_hp())]
 	if piece.hp < piece.max_hp() - 0.5:
 		var cost: Dictionary = repair_cost(piece.def)
-		t += "  ·  [LMB] repair: %s%s" % [_cost_text(cost), "" if p.inventory.has_all(cost) else " (missing)"]
+		t += "  ·  [%s] repair: %s%s" % [PlayerInteraction.key_label(&"attack"), _cost_text(cost), "" if p.inventory.has_all(cost) else " (missing)"]
 	elif not piece.def.upgrade.is_empty():
-		t += "  ·  [LMB] twice to reinforce: %s" % _cost_text(piece.def.upgrade.get("cost", {}))
-	return t + "  ·  crouch + hold [E] to dismantle"
+		t += "  ·  [%s] twice to reinforce: %s" % [PlayerInteraction.key_label(&"attack"), _cost_text(piece.def.upgrade.get("cost", {}))]
+	return t + "  ·  crouch [%s] + hold [%s] to dismantle" % [PlayerInteraction.key_label(&"crouch"), PlayerInteraction.key_label(&"interact")]
 
 
 func _cmd_dismantle(args: Dictionary) -> Dictionary:
