@@ -5,6 +5,8 @@
                      from vertex colour and the material's tints). 1 tile ~ 0.11 m at uv_scale 9.
   animal_fur_soft    a hare's coat: finer, longer and fluffier, in tufts that part.
   animal_feathers    contour feathers: overlapping scalloped vanes with rachis and barbs.
+  animal_fur_coarse  a starving dog's coat (the Hollowed hounds): coarse guard hairs matted into
+                     greasy locks that part over thin, scurfy skin; crusts and flakes.
   animal_antler      antler bone: grooves and pearling along V, polished tines, blood-dark seams.
   animal_hoof        keratin: growth rings across V, vertical striations, scuffs and dried mud.
 """
@@ -56,6 +58,24 @@ def animal_fur_soft(size: int, seed: int, out) -> None:
     height = T.normalize(0.6 * s + 0.4 * tufts - 0.5 * parts)
     rough = np.clip(0.85 + 0.12 * (1 - s), 0.6, 1.0)
     T.save_pbr_set(out, col, height, rough, normal_strength=2.4, ao_strength=0.8)
+
+
+@texture("animal_fur_coarse", size=1024, seed=2708)
+def animal_fur_coarse(size: int, seed: int, out) -> None:
+    """Hairs along V, matted into clumps (locks that taper to points), parted down to the skin
+    between them; flakes of scurf and dried crust on the skin. Neutral around 0.5: the coat and
+    the bare skin get their colours from the hound's vertex masks and tints."""
+    s, _, _ = _strands(size, seed, 16.0, 1.3, 2.4)
+    locks = T.spectral(size, 1.5, seed + 5, anisotropy=(5.0, 1.0))
+    locks = T.warp(locks, T.spectral(size, 2.4, seed + 6), T.spectral(size, 2.4, seed + 7), size / 48.0)
+    clump = T.smoothstep(0.35, 0.75, locks)
+    parts = T.smoothstep(0.30, 0.12, locks)                      # partings down to the skin
+    crust = T.smoothstep(0.72, 0.86, T.spectral(size, 0.9, seed + 8)) * parts
+    v = np.clip(0.45 * s * (0.6 + 0.4 * clump) + 0.35 * clump + 0.12 - 0.28 * parts + 0.1 * crust, 0, 1)
+    col = _neutral(v, 0.26, 0.72)
+    height = T.normalize(0.5 * s * clump + 0.6 * clump - 0.4 * parts + 0.25 * crust)
+    rough = np.clip(0.72 + 0.2 * (1 - s) - 0.18 * clump * s + 0.1 * crust, 0.45, 1.0)
+    T.save_pbr_set(out, col, height, rough, normal_strength=3.2, ao_strength=0.9)
 
 
 @texture("animal_feathers", size=1024, seed=2703)

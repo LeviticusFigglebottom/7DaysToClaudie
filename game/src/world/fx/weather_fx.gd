@@ -82,6 +82,19 @@ func hold_still(on: bool) -> void:
 			p.speed_scale = 0.0 if on else 1.0
 
 
+## Builds the weather map round the camera now, blocking (QA captures: see WeatherMaps.finish).
+## True once the map round the camera is published.
+func settle_map() -> bool:
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var world: Node = Game.world
+	if cam == null or world == null:
+		return false
+	var ok: bool = maps.finish(cam.global_position, world.get(&"terrain"), world.get(&"water"), get_world_3d().direct_space_state)
+	if ok:
+		_upload_eaves()
+	return ok
+
+
 ## The low ground round the camera (the map's), for the far fog level.
 func valley_level() -> float:
 	return maps.valley if maps.is_ready() else 0.0

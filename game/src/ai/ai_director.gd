@@ -1,7 +1,8 @@
 class_name AIDirector
 extends Node3D
 ## Owns every Hollowed in the world: spawning (wandering population by biome, time and
-## gamestage; heat-triggered scouts/Keeners/packs; Keener summons; POI sleepers via PoiManager;
+## gamestage; heat-triggered scouts/Keeners/packs; Keener summons; hound packs (ADR-0034); POI
+## sleepers via PoiManager;
 ## Hum waves via HumDirector), despawning out of range, corpse cleanup, and spatial queries for
 ## other systems (sleep checks, debug overlay). Wanderers are not persisted — the population is
 ## re-rolled around you; sleepers persist through their POI's state (dead ids).
@@ -114,6 +115,8 @@ static func allowed_enemy(enemy_id: StringName, gamestage: int, authored: bool) 
 		return enemy_id
 	if bool(def.beh("special", false)) and not GameRules.current().flag("special_hollowed"):
 		return &"hollow"
+	if def.archetype == "hound" and not GameRules.current().flag("hollowed_hounds"):
+		return &"hollow"
 	if not authored and def.gamestage_min > gamestage:
 		return &"hollow"
 	return enemy_id
@@ -140,6 +143,13 @@ func _heat_response(t: Dictionary) -> void:
 	var target: Vector3 = t["pos"]
 	target.y = world.height_at(target.x, target.z)
 	var group: Array[StringName] = []
+	if str(t["kind"]) == "pack" and hounds_allowed(_gamestage()) and _rng.randf() < float(Content.config(&"hounds").get("heat_pack", 0.5)):
+		# the noise has drawn a hound pack: it comes in on the scent
+		var from: Vector3 = _offscreen_point(target, 60.0, 90.0)
+		if from != Vector3.INF and _roaming_count() < MAX_ROAMING:
+			spawn_pack(&"hollow_hound", from, {"target": target})
+			Log.info("ai", "heat response 'hounds' at %s (heat %.0f)" % [target, t["heat"]])
+		return
 	match str(t["kind"]):
 		"scout":
 			group = [&"hollow"]
@@ -156,6 +166,39 @@ func _heat_response(t: Dictionary) -> void:
 			id = &"hollow"
 		spawn(id, _ground(origin + Vector3(_rng.randf_range(-3, 3), 0.0, _rng.randf_range(-3, 3))), {"target": target + Vector3(_rng.randf_range(-6, 6), 0, _rng.randf_range(-6, 6))})
 	Log.info("ai", "heat response '%s' at %s (heat %.0f)" % [t["kind"], target, t["heat"]])
+
+
+## A hound pack (ADR-0034): `def.behavior.pack.size` hounds of `enemy_id` round `pos`, each knowing
+## the others (Enemy.pack) and its place in their spread. opts are passed to every spawn (a
+## "target" sends the pack to look there). Returns the hounds.
+func spawn_pack(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Array[Enemy]:
+	var out: Array[Enemy] = []
+	var def: EnemyDef = Content.enemy(enemy_id)
+	if def == null:
+		return out
+	var size: Array = (def.beh("pack", {}) as Dictionary).get("size", [3, 5])
+	var n: int = _rng.randi_range(int(size[0]), int(size[1]))
+	for i: int in n:
+		var at: Vector3 = pos + Vector3(_rng.randf_range(-4.0, 4.0), 0.0, _rng.randf_range(-4.0, 4.0))
+		var o: Dictionary = opts.duplicate()
+		if opts.has("id"):
+			o["id"] = "%s:%d" % [opts["id"], i]
+		if opts.has("target"):
+			o["target"] = (opts["target"] as Vector3) + Vector3(_rng.randf_range(-5, 5), 0, _rng.randf_range(-5, 5))
+		var e: Enemy = spawn(enemy_id, _ground(at) if world != null else at, o)
+		if e != null:
+			out.append(e)
+	for i: int in out.size():
+		out[i].pack = out
+		out[i].pack_slot = i
+	return out
+
+
+## Whether hound packs may appear at this gamestage (the world setting, and the hound's own
+## gamestage_min).
+func hounds_allowed(gamestage: int) -> bool:
+	var def: EnemyDef = Content.enemy(&"hollow_hound")
+	return def != null and GameRules.current().flag("hollowed_hounds") and gamestage >= def.gamestage_min
 
 
 ## A Keener's scream calls Hollowed from out of sight toward it.
@@ -259,6 +302,11 @@ func _spawn_group(ppos: Vector3) -> void:
 		if b != null and not b.spawns.is_empty():
 			table = b.spawns
 	var gs: int = _gamestage()
+	var hc: Dictionary = Content.config(&"hounds").get("spawn", {})
+	var chance: float = float(hc.get("chance", 0.12)) * (float(hc.get("night_mult", 2.0)) if Game.session.clock.is_night() else 1.0)
+	if hounds_allowed(gs) and _rng.randf() < chance:
+		spawn_pack(&"hollow_hound", pos)
+		return
 	var n: int = _rng.randi_range(1, 3)
 	for i: int in n:
 		var id := StringName(str(Weighted.pick_key(table, _rng)))

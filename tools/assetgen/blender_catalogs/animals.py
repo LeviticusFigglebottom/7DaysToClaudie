@@ -1,5 +1,6 @@
 """Wildlife (ADR-0027): deer and hare on the quadruped skeleton (animal_quad), and the birds the
-flocks instance (animal_bird). Ids are models/animals/<id>.glb; data/wildlife/*.json names them."""
+flocks instance (animal_bird). Ids are models/animals/<id>.glb; data/wildlife/*.json names them.
+The Hollowed hounds (DESIGN §6) are quadrupeds too, with the Hollowed's action names."""
 from __future__ import annotations
 
 from ..core.registry import Task, blender_sources
@@ -18,6 +19,25 @@ QUADS = {
     "hare": {"seed": 21, "species": "hare", "scale": 1.0,
              "budget": {"body": 5200, "ears": 500},
              "materials": {"fur": "fur_hare", "hoof": "fur_hare", "mouth": "nose_wet", "eye": "eye_animal"}},
+    # Hollowed hounds: Bloom-infected dogs starved to the bone, lips drawn back off the teeth, milky
+    # eyes, the Bloom's shelf plates breaking out along the spine, the shoulders and one flank.
+    # A rangy lab/hound mongrel, 0.62 m at the withers, drop ears (the left one torn).
+    "hollow_hound_a": {"seed": 41, "species": "hound", "breed": "mongrel", "scale": 1.0, "bulk": 1.0, "gaunt": 1.0,
+                       "ears": "drop", "torn_ear": "L", "grid": 0.0042,
+                       "growth": {"spine": 5, "shoulder": 2, "flank": 5, "flank_side": "R"},
+                       "budget": {"body": 10500, "ears": 700, "teeth": 1400, "growths": 3800},
+                       "materials": {"fur": "fur_hound_a", "hoof": "hoof", "nose": "nose_wet", "mouth": "hound_gums",
+                                     "eye": "eye_hound_milky", "teeth": "teeth", "gums": "hound_gums",
+                                     "plates": "hound_bloom_plates", "threads": "bloom_growth"}},
+    # A big shepherd-type, 0.70 m at the withers: a heavier chest, black saddle and mask, pricked
+    # ears (the right one torn), the Bloom down its left flank.
+    "hollow_hound_b": {"seed": 42, "species": "hound", "breed": "shepherd", "scale": 1.13, "bulk": 1.18, "gaunt": 0.85,
+                       "ears": "erect", "torn_ear": "R", "grid": 0.0042,
+                       "growth": {"spine": 6, "shoulder": 2, "flank": 6, "flank_side": "L"},
+                       "budget": {"body": 11000, "ears": 700, "teeth": 1400, "growths": 4200},
+                       "materials": {"fur": "fur_hound_b", "hoof": "hoof", "nose": "nose_wet", "mouth": "hound_gums",
+                                     "eye": "eye_hound_milky", "teeth": "teeth", "gums": "hound_gums",
+                                     "plates": "hound_bloom_plates", "threads": "bloom_growth"}},
 }
 
 BIRDS = {

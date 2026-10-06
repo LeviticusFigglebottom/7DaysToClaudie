@@ -39,6 +39,8 @@ var _queue_builds: Array = []
 var _queueing: bool = false
 ## Route checks still running on worker threads (joined in _exit_tree).
 var _tasks: Array[int] = []
+## Every building placed in this world, built yet or not (all_buildings()): instance id -> entry.
+var _placed: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
@@ -180,6 +182,8 @@ func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _p
 	if pd == null:
 		Log.warn("poi", "poi %s not found" % def_id)
 		return null
+	_placed[instance_id] = {"id": instance_id, "def": pd.id, "name": pd.display_name, "tier": pd.tier,
+		"kind": "generated" if pd.template != &"" else "authored", "pos": xf * Vector3(pd.footprint.x * 0.5, 0.0, pd.footprint.y * 0.5)}
 	if _queueing:
 		# Two steps a building: compile it (and start its route check on a worker thread), then,
 		# once every compile has started its check, build it as soon as its check is done.
@@ -322,6 +326,15 @@ func _process(delta: float) -> void:
 
 
 # --- Queries ---------------------------------------------------------------------------------
+
+## Every building this world places, whether built yet or not: {id: instance id, def: def id,
+## name, tier, kind: "authored" | "generated", pos: its centre}. The one lookup for "what buildings
+## does this world have" (the directives use it): when buildings stream by distance, `instances`
+## holds only the nearby ones, so this switches to the PoiRegistry of every placement
+## (docs/RWG_V2_PLAN.md §1.7) instead.
+func all_buildings() -> Array:
+	return _placed.values()
+
 
 func poi_at(pos: Vector3) -> PoiInstance:
 	for inst: PoiInstance in instances.values():

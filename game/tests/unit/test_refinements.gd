@@ -56,6 +56,15 @@ func test_repair_costs_something_for_every_piece() -> void:
 func test_dismantle_refunds_half_and_logs_whole() -> void:
 	assert_eq(BuildingManager.dismantle_refund(Content.structure(&"log_piece")), {"log": 1})
 	assert_eq(BuildingManager.dismantle_refund(Content.structure(&"campfire")), {"stone": 3, "stick": 2})
+	assert_eq(BuildingManager.dismantle_refund(Content.structure(&"workbench")), {"log": 1, "stick": 3, "cordage": 1, "nails": 6},
+		"half, rounded down, of the bigger costs")
+	assert_eq(BuildingManager.dismantle_refund(Content.structure(&"can_chime_trap")), {"can_chime": 1},
+		"a placed can chime comes back: half of one is not nothing")
+	for d: ContentDef in Content.all(&"structure"):
+		var sd: StructureDef = d
+		for k: Variant in sd.cost.keys():
+			if int(sd.cost[k]) > 0 and sd.piece_kind != "log":
+				assert_gte(int(BuildingManager.dismantle_refund(sd).get(k, 0)), 1, "%s gives back some %s" % [sd.id, k])
 
 
 func test_fire_fuel_data_and_text() -> void:

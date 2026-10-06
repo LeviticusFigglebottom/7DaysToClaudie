@@ -1,7 +1,7 @@
 extends GutTest
 ## Progression that changes the character and the world: stats derived from attributes and perks,
-## XP sources, the reasons the Record tab shows, loot quality, structure toughness, weapon stagger
-## and quality tiers.
+## XP sources, the reasons the Record tab shows, loot quality, structure toughness, weapon stagger,
+## quality tiers and Steady Aim's steadier shot.
 
 
 func test_attributes_and_perks_change_derived_stats() -> void:
@@ -134,3 +134,30 @@ func test_quality_tiers_have_names_and_scale_damage() -> void:
 	assert_ne(ItemStack.quality_color(1), ItemStack.quality_color(6))
 	assert_gt(ItemStack.quality_damage_mult(6), ItemStack.quality_damage_mult(1))
 	assert_almost_eq(ItemStack.quality_damage_mult(0), 1.0, 0.001)
+
+
+func test_steady_aim_steadies_the_shot() -> void:
+	var gun: ItemDef = Content.item(&"revolver")
+	var ps := PlayerState.new()
+	var base: float = PlayerEquipment.shot_spread(gun, false, ps.progression)
+	assert_almost_eq(base, deg_to_rad(gun.equip_num("spread_deg", 1.5)), 0.0001, "the gun's own spread")
+	assert_almost_eq(PlayerEquipment.shot_spread(gun, true, ps.progression), base * 0.5, 0.0001, "halved crouched")
+	ps.progression.skill_points = 20
+	assert_true(ps.progression.buy_perk(&"steady_aim"))
+	assert_almost_eq(PlayerEquipment.shot_spread(gun, false, ps.progression), base * 0.75, 0.0001, "rank 1: a quarter less sway")
+	for i: int in 3:
+		ps.progression.raise_attribute(&"keen")
+	assert_true(ps.progression.buy_perk(&"steady_aim"))
+	assert_almost_eq(PlayerEquipment.shot_spread(gun, false, ps.progression), base * 0.5, 0.0001, "rank 2: half")
+
+
+func test_every_effect_has_a_label() -> void:
+	# The Record tab words each effect from FieldManual.EFFECT_TEXT; an unlabelled key would show
+	# as its raw id (and was once a promise with no effect behind it).
+	for d: ContentDef in Content.all(&"perk"):
+		for rk: Dictionary in (d as PerkDef).ranks:
+			for k: String in (rk["effects"] as Dictionary):
+				assert_true(FieldManual.EFFECT_TEXT.has(k), "%s: effect '%s' has a label" % [d.id, k])
+	for a: ContentDef in Content.all(&"attribute"):
+		for k2: String in (a as AttributeDef).per_level:
+			assert_true(FieldManual.EFFECT_TEXT.has(k2), "%s: effect '%s' has a label" % [a.id, k2])

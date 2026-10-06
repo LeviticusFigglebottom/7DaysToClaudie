@@ -1,0 +1,9 @@
+{
+  "_doc": "Hollowed hound packs (ADR-0034). howl: the call one hound gives on first sight, which rallies its pack (all within pack_radius take up the chase) and is a sound the Hollowed hear. flank: a pack spreads round its quarry, each hound making for its own bearing round the player at radius m, spread degrees apart, before it closes in. retreat: after a bite a hound breaks off for this many seconds (min, max), then comes again. torch: a hound in front of a player holding a lit light keeps this far off and circles; one behind still bites. spawn: chance a wandering group is a pack instead (needs the hound's gamestage and the hollowed_hounds setting), and its multiplier at night; heat_pack: chance a heat 'pack' response at that gamestage is hounds.",
+  "howl": {"loudness": 70.0, "pack_radius": 90.0, "cooldown": 40.0},
+  "flank": {"radius": 6.5, "spread": 55.0, "close_within": 2.0},
+  "retreat": [0.9, 1.8],
+  "torch": {"keep_off": 3.8, "behind_angle": 110.0},
+  "spawn": {"chance": 0.12, "night_mult": 2.0},
+  "heat_pack": 0.5
+}

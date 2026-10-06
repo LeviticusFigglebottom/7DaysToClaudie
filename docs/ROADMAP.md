@@ -163,8 +163,8 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
 - More POIs (mine office, rail depot, dam control house...) and the Mile 12 framework.
   Church, motel, gas station, bar, clinic, post office, lookout, logging camp, sawmill and the
   Okafor farm landed early, in M1.
-- Wolves, Hollowed hounds and Murmurs that follow you (deer, hares, songbirds and crows landed early, in M1:
-  ADR-0027; Blister, Husk and Rammer too).
+- Wolves. Deer, hares, songbirds and crows landed early, in M1 (ADR-0027), as did the Blister,
+  Husk and Rammer, and the Hollowed hounds and Murmurs (ADR-0034).
 
 ## M3 — RWG, biomes, seasons, base tech ⬜
 - Randomized world generation (macro terrain + erosion, biomes, rivers/lakes, roads, towns from

@@ -2,7 +2,8 @@ class_name DirectiveTracker
 extends Node
 ## Feeds gameplay events into the local player's Program directives and pays out what they
 ## complete: XP, items (dropped at your feet if the pack is full), a status line and a chime.
-## Progress itself lives in PlayerState.directives (saved with the player).
+## Progress itself lives in PlayerState.directives (saved with the player). Directives aimed at
+## particular buildings are fitted to the world on load (fit_world).
 
 var world: Node
 var _announced: int = 0
@@ -22,7 +23,7 @@ func setup_world(w: Node) -> void:
 	Events.enemy_killed.connect(_on_killed)
 	Events.poi_entered.connect(func(id: StringName) -> void: record("enter_poi", _poi_def(id)))
 	Events.poi_cleared.connect(func(id: StringName) -> void: record("clear_poi", _poi_def(id)))
-	Events.horde_night_ended.connect(func(_d: int, _r: Dictionary) -> void: record("survive_hum"))
+	Events.horde_night_ended.connect(_on_hum_ended)
 	Events.note_found.connect(func(_n: StringName) -> void: record("read_note"))
 	Events.player_leveled.connect(func(_pid: StringName, level: int) -> void: record("level", &"", level))
 	Events.player_slept.connect(func(_pid: StringName, _h: float) -> void: record("sleep"))
@@ -30,9 +31,44 @@ func setup_world(w: Node) -> void:
 	Events.trap_disarmed.connect(func(pid: StringName, _poi: StringName, trap_type: StringName, was_armed: bool) -> void:
 		if was_armed and Game.session != null and pid == Game.session.local_player_id:
 			record("disarm_trap", trap_type))
-	# A loaded game may already meet a level goal in its open chapter.
 	if p != null:
+		fit_world(p)
+		# A loaded game may already meet a level goal in its open chapter.
 		record.call_deferred("level", &"", p.progression.level)
+
+
+## Fits the directives aimed at particular buildings to this world (Directives.for_world): a random
+## world without the ranger station or the sawmill gets the nearest building like them instead,
+## or the directive is spent. A chapter that opens this way is announced by the deferred record.
+func fit_world(p: PlayerState) -> void:
+	var pois: Node = world.get(&"pois") if world != null else null
+	if pois == null or not pois.has_method(&"all_buildings") or Game.session == null:
+		return
+	var fit: Dictionary = Directives.for_world(pois.call(&"all_buildings"), drop_site(), Game.session.world_seed)
+	for id: Variant in fit["stand_ins"]:
+		Log.info("directives", "%s: this world stands in %s" % [id, (fit["stand_ins"][id] as Dictionary)["targets"]])
+	for id2: Variant in fit["spent"]:
+		Log.info("directives", "%s: spent (no such building in this world)" % id2)
+	p.directives.set_world(fit)
+
+
+## The drop site: the "drop_site" spawn of the world's regions (where a new game starts).
+func drop_site() -> Vector3:
+	var terrain: Node = world.get(&"terrain") if world != null else null
+	var regions: Dictionary = terrain.get(&"regions") if terrain != null and terrain.get(&"regions") is Dictionary else {}
+	for rid: Variant in regions:
+		var rt: RegionTerrain = regions[rid] as RegionTerrain
+		if rt != null and rt.spawns.has("drop_site"):
+			var a: Array = (rt.spawns["drop_site"] as Dictionary).get("pos", [0, 0, 0])
+			return Vector3(float(a[0]), float(a[1]), float(a[2]))
+	return Vector3.ZERO
+
+
+## Dawn after a Hum: it counts only for a player still alive, like the Hum's XP (HumDirector).
+func _on_hum_ended(_day: int, _report: Dictionary) -> void:
+	var p: PlayerState = Game.local_player()
+	if p != null and p.stats.alive:
+		record("survive_hum")
 
 
 func _on_looted(player_id: StringName, container_id: StringName, _tier: int) -> void:
@@ -83,7 +119,7 @@ func _pay(p: PlayerState, d: DirectiveDef) -> void:
 	if not got.is_empty():
 		Events.inventory_changed.emit(p.id)
 	Audio.play_2d(&"ui/learned", -5.0)
-	Events.player_status_message.emit("Directive complete: %s.  +%d XP%s" % [d.display_name, d.reward_xp,
+	Events.player_status_message.emit("Directive complete: %s.  +%d XP%s" % [p.directives.label(d), d.reward_xp,
 		("  ·  " + ", ".join(got)) if not got.is_empty() else ""], &"level")
 	if d.reward_xp > 0:
 		p.progression.add_xp(d.reward_xp)
