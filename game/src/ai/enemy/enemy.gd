@@ -136,6 +136,11 @@ var _howl_cd: float = 0.0
 var _flanked: bool = false
 ## The Ashen (ADR-0048): morale, band, job and their own states; null for the Hollowed.
 var tribe: AshenMind = null
+## TD-186 (ADR-0048 phase 2): a body of a hostile faction (FactionDef.hostile) it has seen or been
+## hurt by, fought in CHASE/ATTACK (SPIT for a spear) while the player is out of sight. "Foes" below.
+var foe: Enemy = null
+var _foe_seen: float = -100.0
+var _foe_scan_t: float = 0.0
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -318,6 +323,8 @@ func _physics_process(delta: float) -> void:
 	var want := Vector3.ZERO
 	if tribe != null:
 		tribe.tick(delta, p)
+	if _foe_step(delta, dist):  # TD-186: fighting a foe of a hostile faction this frame
+		return
 	match state:
 		State.SLEEP, State.WAKING, State.SCREAM, State.STAGGER:
 			want = Vector3.ZERO
@@ -1066,6 +1073,7 @@ func take_damage(info: DamageInfo) -> void:
 	if Game.session != null and Game.session.players.has(info.source_id):
 		last_seen_time = _now()
 		target_pos = info.source_pos
+	_hurt_by_foe(info)  # TD-186: a blow or a spear from a hostile body makes it the foe
 	if state == State.SLEEP:
 		_wake(info.source_pos, true)
 	elif amount >= _stagger_threshold(info) and state != State.STAGGER and _stagger_lock <= 0.0:
@@ -1290,6 +1298,151 @@ func _die(info: DamageInfo) -> void:
 		Spores.burst(get_parent(), global_position, _scaled_spores(burst), entity_id)
 	Events.enemy_killed.emit(entity_id, def.id, global_position, killer)
 	died.emit(self)
+
+
+# --- Foes (TD-186, ADR-0048 phase 2) ---------------------------------------------------------------
+# The Ashen and the Hollowed fight each other. Every FOE_SCAN_INTERVAL s a body within
+# FOE_SCAN_RANGE of the player looks for the nearest living Enemy of a hostile faction it can see
+# within its sight range; a blow from one does the same. The player stays the priority: the foe is
+# only fought once the player hasn't been seen for a second. Blows go to the foe's take_damage with
+# the attacker's entity id as source, so its death is nobody's kill (no XP, directive or hostility).
+
+const FOE_SCAN_INTERVAL: float = 1.0
+const FOE_SCAN_RANGE: float = 40.0
+
+
+## Scans for a foe now and then and, while one is engaged, runs the chase and the blows at it
+## (movement and animation included). False: the ordinary state machine runs this frame.
+func _foe_step(delta: float, pdist: float) -> bool:
+	_foe_scan_t -= delta
+	if _foe_scan_t <= 0.0:
+		_foe_scan_t = FOE_SCAN_INTERVAL
+		scan_foes(pdist)
+	if not fighting_foe():
+		return false
+	var want: Vector3 = _fight_foe()
+	_move(want, delta, pdist)
+	_update_anim(want)
+	return true
+
+
+## Whether the foe has this body's attention now: alive and remembered, the body on the hunt, and
+## the player not seen this last second.
+func fighting_foe() -> bool:
+	if foe != null and (not is_instance_valid(foe) or not foe.is_alive() or _now() - _foe_seen > MEMORY_SECONDS):
+		foe = null
+	return foe != null and state in [State.CHASE, State.ATTACK, State.SPIT] and _now() - last_seen_time >= 1.0
+
+
+## Keeps its foe in view, or picks the nearest hostile body it can see (none past FOE_SCAN_RANGE
+## of the player, nor while asleep, in the Hum, watching or running: the cost stays small).
+func scan_foes(pdist: float) -> void:
+	if foe != null and is_instance_valid(foe) and foe.is_alive() and _sees_body(foe):
+		_foe_seen = _now()
+		return
+	if pdist > FOE_SCAN_RANGE or director == null or state not in [State.IDLE, State.WANDER, State.INVESTIGATE, State.CHASE, State.ATTACK]:
+		return
+	var sight: float = def.perc("sight_night" if is_night() else "sight_day", 15.0)
+	var best: Enemy = null
+	var best_d: float = INF
+	for e: Enemy in director.call(&"enemies_in_radius", global_position, sight):
+		if e == self or not e.is_alive() or not FactionDef.hostile(def.faction, e.def.faction):
+			continue
+		var d: float = global_position.distance_to(e.global_position)
+		if d < best_d and _sees_body(e):
+			best = e
+			best_d = d
+	if best != null:
+		_take_foe(best)
+
+
+func _take_foe(e: Enemy) -> void:
+	var first: bool = foe == null
+	foe = e
+	_foe_seen = _now()
+	target_pos = e.global_position
+	if state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+		break_target = null
+		_set_state(State.CHASE)
+	if first:
+		Audio.play_3d(_vid(&"voice/zombie_alert", &"voice/hound_bark"), _mouth(), {"volume_db": -2.0})
+
+
+## A blow from a body of a hostile faction: that body is the foe now.
+func _hurt_by_foe(info: DamageInfo) -> void:
+	var enemies: Variant = director.get(&"enemies") if director != null else null
+	if not (enemies is Dictionary):
+		return
+	var e: Enemy = (enemies as Dictionary).get(info.source_id) as Enemy
+	if e != null and e != self and is_instance_valid(e) and e.is_alive() and FactionDef.hostile(def.faction, e.def.faction):
+		foe = e
+		_foe_seen = _now()
+		target_pos = e.global_position
+
+
+## The foe's chase: in close, a blow (ATTACK); an Ashen throws its spear from its band of range.
+func _fight_foe() -> Vector3:
+	var to: Vector3 = foe.global_position
+	var d: float = global_position.distance_to(to)
+	var reach: float = def.atk("range", 1.5)
+	target_pos = to
+	match state:
+		State.SPIT:
+			_face(to)
+			if not _spit_done and _state_t >= 0.55:
+				_spit_done = true
+				if tribe != null:
+					tribe.throw_at_body(foe)
+			elif _state_t > 1.3:
+				_set_state(State.CHASE)
+			return Vector3.ZERO
+		State.ATTACK:
+			_face(to)
+			if _hit_at >= 0.0 and _state_t >= _hit_at:
+				_hit_at = -1.0
+				hit_foe()
+			if _hit_at < 0.0 and _attack_cd <= 0.0:
+				if d > reach + 0.5:
+					_set_state(State.CHASE)
+				else:
+					_start_attack()
+			return Vector3.ZERO
+	if tribe != null and tribe.can_throw(d, _spit_cd):
+		_start_spit()
+		return Vector3.ZERO
+	if d <= reach + 0.2:
+		_set_state(State.ATTACK)
+		return Vector3.ZERO
+	return _move_dir(to) * _speed(true)
+
+
+## A blow landing on the foe (in reach, in front, nothing in between): its own attack damage. A
+## Hollowed's bite carries no infection that matters to another Enemy.
+func hit_foe() -> void:
+	if foe == null or not is_instance_valid(foe) or not foe.is_alive():
+		return
+	var to: Vector3 = foe.global_position - global_position
+	if to.length() > def.atk("range", 1.5) + 0.45:
+		return
+	var fwd := Vector3(sin(rotation.y), 0.0, cos(rotation.y))
+	if fwd.dot(Vector3(to.x, 0.0, to.z).normalized()) < 0.3 or not _sees_body(foe):
+		return
+	var dmg: float = def.atk("damage", 10.0) * damage_mult * (0.5 if severed.has("arm_l") and severed.has("arm_r") else 1.0)
+	var info := DamageInfo.make(dmg, &"zombie" if tribe == null else &"slash", &"zombie" if tribe == null else &"ashen", entity_id)
+	info.hit_pos = foe.global_position + Vector3.UP * (1.2 if foe.quad.is_empty() else 0.4)
+	info.source_pos = global_position
+	info.direction = to.normalized()
+	foe.take_damage(info)
+	Audio.play_3d(&"sfx/zombie_hit_flesh", info.hit_pos, {"volume_db": -2.0})
+
+
+## A clear sight line from its eye to another body's chest (Enemies don't block sight).
+func _sees_body(b: Node3D) -> bool:
+	if not is_inside_tree() or not b.is_inside_tree():
+		return false
+	var q := PhysicsRayQueryParameters3D.create(_eye(), b.global_position + Vector3.UP * 1.2, SIGHT_MASK)
+	q.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 
 
 # --- Corpse loot -------------------------------------------------------------------------------

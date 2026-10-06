@@ -109,11 +109,31 @@ A raid or a scout in progress isn't saved; it is simply over after a reload.
 * **QA shot**: `ashen_highcamp`.
 
 ### Not in phase 1 (phase 2, later)
-* Ashen and Hollowed fighting each other (a faction relation matrix and a target abstraction in
-  `Enemy`, which today only targets the player), luring Hollowed into a camp, Ashen burning nests.
+* ~~Ashen and Hollowed fighting each other~~ (phase 2 below); luring Hollowed into a camp on
+  purpose, Ashen burning nests.
 * Territory influence that shifts over weeks; alliance, trade and Ashen contracts; the main map's
   F2 and F4 regions.
 * Bows (the spear throw stands in), patrol routes between camps, a living-human animation set.
+
+### Phase 2: Ashen vs Hollowed (TD-186)
+* **Relations.** `FactionDef.relations: {faction: "hostile" | "neutral"}` (validated: another of
+  `EnemyDef.FACTIONS`, a known value; unlisted = neutral). `FactionDef.hostile(a, b)` is symmetric:
+  one side saying hostile is enough, so the Ashen's `hollowed: hostile` turns the Hollowed (who
+  have no FactionDef) on them too. Never within a faction.
+* **A foe, not a target list.** `Enemy.foe` is one body of a hostile faction. Every second a body
+  within 40 m of the player (awake, not in the Hum, not watching or fleeing) takes the nearest
+  hostile Enemy it can see within its sight range (AIDirector `enemies_in_radius` and a ray), and a
+  blow or spear from one makes that one the foe. The player stays the priority: the foe is fought
+  (CHASE, ATTACK, an Ashen's spear through SPIT) only once the player hasn't been seen for a second,
+  in a self-contained block of `enemy.gd` hooked in by one line in the state machine.
+* **Damage and credit.** Blows go to `foe.take_damage` with the attacker's damage and its entity id
+  as source (a Hollowed bite's infection means nothing to an Enemy); a thrown spear wounds a body of
+  a hostile faction and flies past its own. A kill by an Enemy is nobody's: no XP or kill count
+  (`_die` pays only a player source), no directive (DirectiveTracker checks the local player), no
+  hostility (AshenDirector's `by_player`); band mates still lose morale over the dead.
+* **Morale.** Seeing a Hollowed doesn't break them (they fight); wounds and fallen mates count as
+  ever, and the Hum still sends scouts and raids running.
+* Left (TD-186): threat weighing, offscreen fights, Ashen burning nests, sound and scent of a foe.
 
 ## Consequences
 * The wilderness gets a second, thinking enemy that answers to what the player does: where they
