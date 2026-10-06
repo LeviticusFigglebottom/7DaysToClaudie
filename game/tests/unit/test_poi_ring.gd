@@ -85,3 +85,14 @@ func test_footprint_at_sees_buildings_not_built_yet() -> void:
 	assert_eq(pm.footprint_at(Vector3(2006.0, 0.0, 6.0)), &"d", "in a region not even attached")
 	assert_eq(pm.footprint_at(Vector3(130.0, 0.0, 6.0)), &"", "18 m past its edge")
 	assert_eq(pm.footprint_at(Vector3(130.0, 0.0, 6.0), 20.0), &"a", "within a 20 m margin")
+
+
+func test_all_buildings_lists_the_unbuilt_ones_too() -> void:
+	var s: Array = _setup({"near": [_poi("a", 100.0)], "far": [_poi("d", 2000.0)]})
+	var pm: PoiManager = s[1]
+	var all: Array = pm.all_buildings()
+	assert_eq(all.size(), 2, "every building of the world, nothing built")
+	var pd: PoiDef = Content.get_def(&"poi", StringName(PICK)) as PoiDef
+	for b: Dictionary in all:
+		assert_eq(b["def"], StringName(PICK))
+		assert_eq(int(b["tier"]), pd.tier, "its tier from its def, for the directives")

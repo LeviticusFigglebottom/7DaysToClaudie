@@ -609,7 +609,35 @@ func _process(delta: float) -> void:
 ## holds only the nearby ones, so this switches to the PoiRegistry of every placement
 ## (docs/RWG_V2_PLAN.md §1.7) instead.
 func all_buildings() -> Array:
-	return _placed.values()
+	if registry == null:
+		return _placed.values()
+	var out: Array = []
+	for id: StringName in registry.entries:
+		out.append(_placed[id] if _placed.has(id) else _registry_listing(registry.entries[id]))
+	return out
+
+
+## A building not resolved yet, as all_buildings() lists it, without generating it: an authored
+## one from its def, a generated one from its template (its def id is the one the generator will
+## give it, LotPicker.gen_id; its name the template's until a building is made).
+func _registry_listing(e: Dictionary) -> Dictionary:
+	var c: Vector2 = e["center"]
+	var out: Dictionary = {"id": e["id"], "def": e["def"], "name": "", "tier": 1, "kind": "authored", "pos": Vector3(c.x, 0.0, c.y)}
+	if e["def"] != &"":
+		var pd: PoiDef = Content.get_def(&"poi", e["def"]) as PoiDef
+		if pd != null:
+			out["name"] = pd.display_name
+			out["tier"] = pd.tier
+			out["kind"] = "generated" if pd.template != &"" else "authored"
+		return out
+	var res: Dictionary = e["res"]
+	var t: ContentDef = Content.get_def(&"building_template", StringName(str(res.get("template", ""))))
+	out["def"] = StringName(Lots.gen_id(res))
+	out["kind"] = "generated"
+	if t != null:
+		out["name"] = t.display_name
+		out["tier"] = int(t.get(&"tier"))
+	return out
 
 
 ## The building whose footprint lies within `margin` m of pos, built or not ("" when none, or in a
