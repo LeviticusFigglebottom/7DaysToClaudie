@@ -2,6 +2,7 @@
   "_doc": "First-person presentation (ADR-0029). Read by the arms generator (tools/assetgen/blender/lib/char_fp.py bakes one fp_* action per hold pose, attack and use) and by ViewModel at runtime. Positions and directions are in camera space (x right, y up, z back; metres). A hand spec places the hand by its grip: 'grip' point, 'dir' (handle axis, thumb side), 'knuckles' (where the knuckles point), 'fist' / 'thumb' curl 0..1, 'index' extra index curl (-1 points), 'elbow' hint added to the rest elbow direction; or {'on': 'R', 'along': m, 'spin': deg} grips the other hand's handle. Attack and use keys are [frame, channels, ease] with channels relative to the hold: S.move [x,y,z] m, S.rot [pitch, yaw, roll] deg about the camera axes (pivot on the grip), S.elbow, S.along, S.spin and the curls. Edit, then `python tools/build_assets.py --match fp_arms` and import.",
   "fov": 58.0,
   "z_clip_scale": 0.04,
+  "wrist": {"_doc": "A wrist's range (degrees, ADR-0045): flexion, extension, radial and ulnar deviation (an ellipse between them) and the forearm's roll either way of the thumb-up rest. PoseSolver keeps every baked hand inside it (the elbow swings to line the forearm up first, then the hand turns back about its grip); test_viewmodel_holds checks the baked arms.", "flex": 65, "extend": 55, "radial": 18, "ulnar": 32, "roll": 95},
   "defaults": {
     "_doc": "Hold class of an item without equip.hold: by equip.kind, then (melee) by damage_type, then by category. use_by_category picks the use action for consumables.",
     "by_kind": {

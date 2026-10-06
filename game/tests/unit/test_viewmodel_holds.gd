@@ -133,3 +133,60 @@ func test_arms_carry_every_action() -> void:
 	assert_true(anim.has_animation(&"fp_one_hand_tether"), "reading the tether with a tool in hand")
 	assert_not_null(ViewModel._find_socket(arms, "socket_hand.R"), "right hand socket")
 	assert_not_null(ViewModel._find_socket(arms, "socket_hand.L"), "left hand socket")
+
+
+## (swing, roll) in degrees of a hand bone's rotation off its rest relative to its forearm: the
+## roll about the forearm's axis, the swing (the wrist's bend) what is left.
+func _wrist(rest: Basis, pose: Quaternion) -> Vector2:
+	var rel := Quaternion(rest.inverse() * Basis(pose))
+	var axis: Vector3 = (rest.inverse() * Vector3.UP).normalized()
+	var p: float = Vector3(rel.x, rel.y, rel.z).dot(axis)
+	var twist := Quaternion(axis.x * p, axis.y * p, axis.z * p, rel.w)
+	twist = twist.normalized() if twist.length() > 1e-6 else Quaternion.IDENTITY
+	var swing: Quaternion = rel * twist.inverse()
+	var roll: float = rad_to_deg(twist.get_angle())
+	return Vector2(rad_to_deg(swing.get_angle()), roll if roll <= 180.0 else 360.0 - roll)
+
+
+func test_baked_wrists_stay_in_a_wrists_range() -> void:
+	# ADR-0045: the holds once bent the wrists ~90° at rest and up to 140° mid-swing. Every frame
+	# of every baked action, each hand's bend off its forearm stays inside viewmodel.json's wrist
+	# range (its widest axis, plus a little for the ellipse's rounding) and its roll inside the
+	# forearm's.
+	if not ResourceLoader.exists(ARMS):
+		pending("arms not built (make assets)")
+		return
+	var arms: Node = (load(ARMS) as PackedScene).instantiate()
+	autofree(arms)
+	var anim: AnimationPlayer = arms.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	var skel: Skeleton3D = arms.find_child("Skeleton3D", true, false) as Skeleton3D
+	if anim == null or skel == null or skel.find_bone("middle_1.R") < 0:
+		pending("arms predate ADR-0045's rig (rebuild fp_arms)")
+		return
+	var w: Dictionary = ViewModelHolds.config().get("wrist", {})
+	var bend_max: float = maxf(float(w.get("flex", 65)), float(w.get("extend", 55))) + 3.0
+	var roll_max: float = float(w.get("roll", 95)) + 3.0
+	var bad: PackedStringArray = []
+	var checked: int = 0
+	for name: StringName in anim.get_animation_list():
+		if not String(name).begins_with("fp_"):
+			continue
+		var a: Animation = anim.get_animation(name)
+		for sd: String in ["R", "L"]:
+			var bone: int = skel.find_bone("hand.%s" % sd)
+			var tr: int = -1
+			for t: int in a.get_track_count():
+				if a.track_get_type(t) == Animation.TYPE_ROTATION_3D and String(a.track_get_path(t)).ends_with(":hand.%s" % sd):
+					tr = t
+			if tr < 0:
+				continue
+			var rest: Basis = skel.get_bone_rest(bone).basis
+			var worst := Vector2.ZERO
+			for k: int in 31:
+				var v: Vector2 = _wrist(rest, a.rotation_track_interpolate(tr, a.length * k / 30.0))
+				worst = worst.max(v)
+			checked += 1
+			if worst.x > bend_max or worst.y > roll_max:
+				bad.append("%s %s: wrist bent %.0f°, rolled %.0f°" % [name, sd, worst.x, worst.y])
+	assert_gt(checked, 60, "every action's hands measured")
+	assert_eq(bad, PackedStringArray(), "bend <= %.0f°, roll <= %.0f°" % [bend_max, roll_max])
