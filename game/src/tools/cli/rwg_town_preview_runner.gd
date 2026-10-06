@@ -48,6 +48,7 @@ func _ready() -> void:
 				print("[towns] %-7s %-7s seed %-3d r %3d: %3d lots %s | side %d loops %d cul %d back %d | %d m streets, %d blocks, %d fixtures | %.0f ms (arterials %.0f ms)" % [kind, land, seed,
 					int(case["site"]["radius"]), int(st["lots"]), JSON.stringify(st["zones"]), int(st["side_streets"]), int(st["loops"]), int(st["culdesacs"]),
 					int(st["back_lanes"]), int(st["street_length"]), (p["blocks"] as Array).size(), (p["fixtures"] as Array).size(), ms, float(case["ms"])])
+				print("         parts %s" % JSON.stringify(st["ms_parts"]))
 				var base: String = out.path_join("%s_%s_%d" % [kind, land, seed])
 				var c := Vector2(float(p["center"][0]), float(p["center"][1]))
 				var r: float = float(p["radius"])
@@ -134,6 +135,7 @@ static func make_arterials(kind: String, radius: float, outskirts: float, world:
 			pts.append_array(p1)
 			pts.remove_at(pts.size() - 1)
 			pts.append_array(p2)
+			pts = Streets.relax(g, pts, opts)
 		else:
 			# A county road that tees into the main street 120-200 m from the centre.
 			var main: Polyline2 = Polyline2.from_array(out[0]["points"])

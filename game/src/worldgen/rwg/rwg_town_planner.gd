@@ -70,10 +70,12 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 		var back: float = float((lots.size_of("civic")[1] as Array)[1]) + lots.verge + 6.0
 		net.obstacles.append(PackedVector2Array([plaza.at(-plaza.w * 0.5 - 8.0, plaza.d * 0.5), plaza.at(plaza.w * 0.5 + 8.0, plaza.d * 0.5),
 			plaza.at(plaza.w * 0.5 + 8.0, -plaza.d * 0.5 - back), plaza.at(-plaza.w * 0.5 - 8.0, -plaza.d * 0.5 - back)]))
+	var t_net: int = Time.get_ticks_usec()
 	net.grow(rs)
 	if bool(kd.get("back_lanes", false)):
 		net.add_back_lanes(rs, float(scfg.get("back_lane_offset", 44.0)))
 	net.add_bulbs()
+	var t_lots: int = Time.get_ticks_usec()
 	# Lots, quota by quota (§3.7), then houses everywhere else.
 	var quota: Dictionary = {}
 	for z: String in ["commercial", "civic", "industrial", "rural"]:
@@ -94,12 +96,18 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 	var candidates: int = lots.lots.size() - (1 if plaza != null else 0)
 	_thin(lots, rl, maxi(0, target - fixed), center, radius, float(lcfg.get("thin", 2.5)))
 	_finish(net, lots, kd, radius)
+	var t_parcels: int = Time.get_ticks_usec()
 	lots.parcels(float(lcfg.get("parcel_back", 8.0)))
+	var t_fix: int = Time.get_ticks_usec()
 	var fixtures: Array = _fixtures(net, lots, plaza, kd, fcfg, rf)
+	var t_blocks: int = Time.get_ticks_usec()
 	var blocks: Array[Dictionary] = net.blocks()
+	var t_end: int = Time.get_ticks_usec()
 	stats = _stats(net, lots, quota, target, candidates)
 	stats["ground_calls"] = ground.calls
-	stats["ms"] = (Time.get_ticks_usec() - t0) / 1000.0
+	stats["ms"] = (t_end - t0) / 1000.0
+	stats["ms_parts"] = {"setup": (t_net - t0) / 1000.0, "streets": (t_lots - t_net) / 1000.0, "lots": (t_parcels - t_lots) / 1000.0,
+		"parcels": (t_fix - t_parcels) / 1000.0, "fixtures": (t_blocks - t_fix) / 1000.0, "blocks": (t_end - t_blocks) / 1000.0}
 	return _output(site, net, lots, plaza, fixtures, blocks, stats)
 
 

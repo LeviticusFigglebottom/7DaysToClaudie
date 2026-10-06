@@ -14,7 +14,7 @@ extends RefCounted
 ## the normal `Vector2(-t.y, t.x)`.
 
 ## Agent headings tried each step, relative to the current one (degrees), straight ahead first.
-const TURNS: Array[float] = [0.0, 12.0, -12.0, 24.0, -24.0, 36.0, -36.0]
+const TURNS: Array[float] = [0.0, 6.0, -6.0, 12.0, -12.0, 24.0, -24.0, 36.0, -36.0]
 ## Street classes a town draws itself (arterials come from the world's roads).
 const CLASSES: Dictionary = {
 	"street": {"width": 6.0, "shoulder": 0.8, "surface": "asphalt"},
@@ -212,7 +212,9 @@ var _water_stop: float = 15.0
 var _max_grade: float = 0.11
 var _max_turn_cos: float = -0.17
 var _min_len: float = 40.0
-var _wander: float = 5.0
+var _wander: float = 4.0
+var _wander_max: float = 28.0
+var _aim_k: float = 0.35
 var _junction_gap: float = 30.0
 var _merge: float = 14.0
 var _snap_bonus: float = 0.6
@@ -248,7 +250,9 @@ func setup(p_ground: Ground, p_center: Vector2, p_radius: float, p_kd: Dictionar
 	_max_grade = float(cfg.get("max_grade", 0.11))
 	_max_turn_cos = cos(deg_to_rad(float(cfg.get("max_turn", 100.0))))
 	_min_len = float(cfg.get("min_length", 40.0))
-	_wander = float(cfg.get("wander", 5.0))
+	_wander = float(cfg.get("wander", 4.0))
+	_wander_max = float(cfg.get("wander_max", 28.0))
+	_aim_k = float(cfg.get("aim_cost", 0.35))
 	_junction_gap = float(cfg.get("junction_spacing", 30.0))
 	_merge = float(cfg.get("junction_merge", 14.0))
 	_snap_bonus = float(cfg.get("snap_bonus", 0.6))
@@ -536,8 +540,11 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 	var cos_turn: float = _max_turn_cos
 	var look: float = maxf(_parallel, _crowd_reach) + _step + 2.0
 	while length < budget and length_total + length < _budget:
-		if k % 3 == 0:
-			wander = 0.0 if straight > 0.0 else r.randf_range(-_wander, _wander)
+		# The heading the street drifts towards: a slow random walk round its first heading (none in
+		# a gridded core), so streets on open level ground still bend a little.
+		if straight <= 0.0:
+			wander = clampf(wander + r.randf_range(-_wander, _wander), -_wander_max, _wander_max)
+		var aim: Vector2 = d0.rotated(deg_to_rad(wander))
 		k += 1
 		var near_ids: PackedInt32Array = near(p, look)
 		var best: float = INF
@@ -564,7 +571,8 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 			var pr: Array = _probe(p, q, c, near_ids, ignore, length, hp)
 			if not bool(pr[0]):
 				continue
-			var cost: float = _grade_k * g + _turn_k * absf(turn - wander) / 12.0 + float(pr[2]) + straight * absf(turn) / 12.0
+			var cost: float = _grade_k * g + _turn_k * absf(turn) / 12.0 + _aim_k * rad_to_deg(acos(clampf(c.dot(aim), -1.0, 1.0))) / 12.0 \
+				+ float(pr[2]) + straight * absf(turn) / 12.0
 			var sn: Dictionary = pr[1]
 			if not sn.is_empty():
 				cost -= _snap_bonus
@@ -958,9 +966,9 @@ func _point_at_offset(st: Street, from: Street, offset: float) -> Variant:
 # --- Blocks: faces of the street graph ---------------------------------------------------------
 
 ## The blocks: bounded faces of the planar street graph (junctions and street ends as nodes, the
-## street pieces between them as edges), walked by always taking the next edge counter-clockwise.
-## Dead-end spurs are dropped from a face's outline. [{poly: PackedVector2Array, area}], largest
-## first is not guaranteed: in face-walk order (deterministic).
+## street pieces between them as edges), walked by always taking the next edge round each node.
+## Dead-end spurs are dropped from a face's outline. [{poly: PackedVector2Array (counter-clockwise
+## in atan2's sense), area}] in face-walk order (deterministic).
 func blocks(min_area: float = 300.0) -> Array[Dictionary]:
 	var reach: float = radius + 60.0
 	var nodes: Array[Vector2] = []
@@ -1064,8 +1072,11 @@ func blocks(min_area: float = 300.0) -> Array[Dictionary]:
 					poly.append(pts2[i2])
 		if poly.size() < 3:
 			continue
-		var area: float = signed_area(poly)
+		# Taking the rightmost turn at every node walks each bounded face clockwise (negative
+		# shoelace area) and the outer face of each component counter-clockwise.
+		var area: float = -signed_area(poly)
 		if area > min_area:
+			poly.reverse()
 			out.append({"poly": poly, "area": area})
 	return out
 
@@ -1079,7 +1090,7 @@ static func _sub_line(line: Polyline2, s0: float, s1: float) -> PackedVector2Arr
 	return out
 
 
-## Shoelace area; positive for the faces `blocks()` keeps (counter-clockwise in atan2's sense).
+## Shoelace area: positive counter-clockwise in atan2's sense (x towards z).
 static func signed_area(poly: PackedVector2Array) -> float:
 	var a: float = 0.0
 	for i: int in poly.size():
@@ -1215,7 +1226,42 @@ static func route_fine(g: Ground, a: Vector2, b: Vector2, opts: Dictionary = {})
 	path.reverse()
 	path[0] = a
 	path[path.size() - 1] = b
-	return simplify(path, float(opts.get("tol", 7.0)))
+	return relax(g, simplify(path, float(opts.get("tol", 7.0))), opts)
+
+
+## Cuts a route's sharp corners: a point where it turns more than 35 degrees is dropped when the
+## straight line between its neighbours is dry and no steeper than `grade_max` (grid zigzags and
+## the joint of two routes become one bend).
+static func relax(g: Ground, pts: PackedVector2Array, opts: Dictionary = {}) -> PackedVector2Array:
+	var g_max: float = float(opts.get("grade_max", 0.12))
+	var water_min: float = float(opts.get("water", 10.0))
+	var bridge: float = float(opts.get("bridge", 0.0))
+	for pass_i: int in 6:
+		var changed: bool = false
+		var i: int = 1
+		while i < pts.size() - 1:
+			var d0: Vector2 = (pts[i] - pts[i - 1]).normalized()
+			var d1: Vector2 = (pts[i + 1] - pts[i]).normalized()
+			if d0.dot(d1) < 0.82 and _passable(g, pts[i - 1], pts[i + 1], g_max, water_min if bridge <= 0.0 else -INF):
+				pts.remove_at(i)
+				changed = true
+			else:
+				i += 1
+		if not changed:
+			break
+	return pts
+
+
+static func _passable(g: Ground, a: Vector2, b: Vector2, g_max: float, water_min: float) -> bool:
+	var n: int = maxi(2, int(ceil(a.distance_to(b) / 8.0)))
+	var prev: float = g.h(a)
+	for k: int in range(1, n + 1):
+		var p: Vector2 = a.lerp(b, float(k) / n)
+		var hv: float = g.h(p)
+		if absf(hv - prev) / (a.distance_to(b) / n) > g_max or g.water(p) < water_min:
+			return false
+		prev = hv
+	return true
 
 
 ## Ramer-Douglas-Peucker: drops points within `tol` of the line between kept ones.
