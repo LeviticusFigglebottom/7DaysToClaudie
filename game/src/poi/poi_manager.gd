@@ -328,6 +328,7 @@ func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
 			inst.despawn_sleepers(ai)
 		_keep_roamers(id, inst)
 		RouteCues.forget(inst.layout)
+		_mark_nav(inst)
 		inst.queue_free()
 	instances.erase(id)
 	_grid_remove(id)
@@ -659,7 +660,19 @@ func _place_built(inst: PoiInstance, instance_id: StringName, xf: Transform3D) -
 	_limit_draw_distance(inst)
 	inst.geometry_changed.connect(_on_poi_geometry_changed)
 	_set_hole(instance_id, true)
+	_mark_nav(inst)
 	return inst
+
+
+## A streamed world's building comes and goes after the nav tiles round it were baked: bake them
+## again over its whole box (NavTiles marks the 3 x 3 tiles round each point).
+func _mark_nav(inst: PoiInstance) -> void:
+	if registry == null:
+		return
+	var b: AABB = inst.world_bounds()
+	for x: float in [b.position.x, b.end.x]:
+		for z: float in [b.position.z, b.end.z]:
+			_on_poi_geometry_changed(Vector3(x, 0.0, z))
 
 
 ## A streamed world's cellar of this building opens with it and closes when it is freed.

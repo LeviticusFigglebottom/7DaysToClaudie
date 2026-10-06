@@ -436,7 +436,23 @@ func _find_spawn(id: String) -> Dictionary:
 ## Set dressing named by the drop-site spawn feature (the Remand supply canister). It is pure
 ## data, rebuilt on every load rather than saved. A prop id resolves through its PropDef when one
 ## exists, otherwise to the generated item model `items/<id>`.
+## [body, height above the ground] of the drop-site props: a streamed world may place them over
+## the region's coarse ground (a load far from the drop site), so they settle again when the
+## region's 1 m terrain attaches.
+var _spawn_props: Array = []
+
+
+func _reground_spawn_props(_rid: String) -> void:
+	for e: Array in _spawn_props:
+		var body: Node3D = e[0]
+		if is_instance_valid(body):
+			var p: Vector3 = body.global_position
+			body.global_position = Vector3(p.x, terrain.height_at(p.x, p.z) + float(e[1]), p.z)
+
+
 func _place_spawn_props() -> void:
+	if streaming and not terrain.region_attached.is_connected(_reground_spawn_props):
+		terrain.region_attached.connect(_reground_spawn_props)
 	var spawn: Dictionary = _find_spawn("drop_site")
 	var base: Vector3 = spawn.get("pos", Vector3.ZERO)
 	for v: Variant in spawn.get("props", []):
@@ -452,6 +468,7 @@ func _place_spawn_props() -> void:
 		body.name = "SpawnProp_%s" % id
 		add_child(body)
 		body.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(float(d.get("rot", 0.0)))), at)
+		_spawn_props.append([body, float(off[1])])
 		var mi := MeshInstance3D.new()
 		mi.mesh = ModelLibrary.mesh(model, "box")
 		body.add_child(mi)
