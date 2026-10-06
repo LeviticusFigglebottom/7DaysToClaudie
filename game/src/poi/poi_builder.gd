@@ -989,6 +989,11 @@ func _open_partitions(w: RoofPlanner.Wing) -> Array:
 func _prop_xf(p: Dictionary, pd: PropDef) -> Transform3D:
 	var pos: Vector2 = p["pos"]
 	var rot: float = float(p.get("rot", 0.0))
+	# A prop against a wall faces into the room unless its author turned it. Compiled props carry
+	# "rot_set" (PoiLayout._placed always fills "rot"); scatter entries set "rot" themselves.
+	# Testing p.has("rot") alone turned every authored wall prop without a rot toward north:
+	# about 224 props in 19 buildings faced into or through their wall.
+	var turned: bool = bool(p.get("rot_set", p.has("rot")))
 	var against: String = str(p.get("against", ""))
 	if against != "" and PoiLayout.SIDES.has(against):
 		var cell: Vector2i = p["cell"]
@@ -996,16 +1001,16 @@ func _prop_xf(p: Dictionary, pd: PropDef) -> Transform3D:
 		match against:
 			"N":
 				pos.y = cell.y + WALL_T * 0.5 + depth * 0.5 + 0.01
-				rot = 0.0 if not p.has("rot") else rot
+				rot = rot if turned else 0.0
 			"S":
 				pos.y = cell.y + 1.0 - WALL_T * 0.5 - depth * 0.5 - 0.01
-				rot = 180.0 if not p.has("rot") else rot
+				rot = rot if turned else 180.0
 			"W":
 				pos.x = cell.x + WALL_T * 0.5 + depth * 0.5 + 0.01
-				rot = 90.0 if not p.has("rot") else rot
+				rot = rot if turned else 90.0
 			"E":
 				pos.x = cell.x + 1.0 - WALL_T * 0.5 - depth * 0.5 - 0.01
-				rot = -90.0 if not p.has("rot") else rot
+				rot = rot if turned else -90.0
 	# Free-standing props in the yard stand on the pad; wall-mounted ones hang at a height measured
 	# from the building's floor, whichever side of the wall they are on.
 	var li: int = int(p["level"])
