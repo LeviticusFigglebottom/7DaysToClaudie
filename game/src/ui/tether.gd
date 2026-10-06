@@ -331,7 +331,16 @@ func _ensure_map() -> void:
 	if rt == null or rt.region_id == _map_region:
 		return
 	_map_pending = rt.region_id
-	_map_task = WorkerThreadPool.add_task(_shade_map.bind(rt), false, "tether map")
+	# The worker shades a copy of the heights. Digging writes the live array in place on the main
+	# thread, and a worker reading it meanwhile can crash (TD-104; TerrainManager's readers take its
+	# lock instead). The copy is one region's heights, once per region the player enters.
+	var hf := HeightField.new()
+	hf.origin = rt.height.origin
+	hf.spacing = rt.height.spacing
+	hf.width = rt.height.width
+	hf.depth = rt.height.depth
+	hf.heights = rt.height.heights.duplicate()
+	_map_task = WorkerThreadPool.add_task(_shade_map.bind(rt, hf), false, "tether map")
 
 
 func _exit_tree() -> void:
@@ -340,17 +349,18 @@ func _exit_tree() -> void:
 		_map_task = -1
 
 
-## Worker thread: reads the region's height and vegetation fields only, touches no nodes.
-func _shade_map(rt: RegionTerrain) -> void:
+## Worker thread: reads `hf` (a copy of the region's heights) and the region's vegetation mask,
+## water and roads (written only when the region is composed or loaded); touches no nodes.
+func _shade_map(rt: RegionTerrain, hf: HeightField) -> void:
 	var img := Image.create(MAP_PX, MAP_PX, false, Image.FORMAT_RGB8)
 	var step: float = rt.rect.size.x / float(MAP_PX)
 	for y: int in MAP_PX:
 		for x: int in MAP_PX:
 			var wx: float = rt.rect.position.x + (x + 0.5) * step
 			var wz: float = rt.rect.position.y + (y + 0.5) * step
-			var h: float = rt.height.sample(wx, wz)
-			var hx: float = rt.height.sample(wx + step, wz) - h
-			var hz: float = rt.height.sample(wx, wz + step) - h
+			var h: float = hf.sample(wx, wz)
+			var hx: float = hf.sample(wx + step, wz) - h
+			var hz: float = hf.sample(wx, wz + step) - h
 			var shade: float = clampf(0.55 - (hx + hz) * 0.35 / step, 0.15, 0.95)
 			var col := Color(0.12, 0.3, 0.16) * (0.6 + shade * 0.8)
 			var veg: float = rt.veg_at(wx, wz)

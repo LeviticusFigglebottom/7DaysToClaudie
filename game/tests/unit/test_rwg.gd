@@ -240,7 +240,8 @@ func test_drop_site_is_safe() -> void:
 		assert_false(drop.is_empty(), "seed %d has a drop site" % seed)
 		var p: Vector2 = drop["pos"]
 		for t: Dictionary in g.get(&"towns"):
-			assert_gt((t["center"] as Vector2).distance_to(p) - float(t["radius"]), 300.0, "seed %d: dropped away from %s" % [seed, t["name"]])
+			# 380 m from a town's disc, 0.65 of that in the last fallback tier.
+			assert_gt((t["center"] as Vector2).distance_to(p) - float(t["radius"]), 240.0, "seed %d: dropped away from %s" % [seed, t["name"]])
 			for l: Dictionary in t["plan"]["lots"]:
 				assert_gt(Terrain._poly_distance(Generator.frame_poly(l["frame"]), p), 100.0, "seed %d: dropped away from %s's farms" % [seed, t["name"]])
 		# A streamed world shapes the land round the drop site first: 300 m from a region border.

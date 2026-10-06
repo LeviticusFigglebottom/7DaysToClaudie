@@ -4,7 +4,7 @@ extends GutTest
 ## not hash the composer's code (only TerrainComposer.VERSION): any change in output for the same
 ## inputs silently breaks old runs. So every speed-up must give byte-identical regions.
 ##
-## Larch Hollow (the handcrafted map's built region) and the town region of a fixed random world
+## Larch Hollow (the handcrafted map's built region) and a town region of a fixed random world
 ## (seed 2026, size 3), and its drop-site region, are composed at 4 m and 8 m and digested: the
 ## height hash, md5 of the splat, biome and vegetation arrays, and the JSON of the metadata (water,
 ## roads, bridges, placements and the rest). The digests were recorded from the composer at VERSION
@@ -73,69 +73,69 @@ const GOLDEN: Dictionary = {
 		"other": "1351cdaa2b2e1e2441abf2bc1ab94843",
 	},
 	"rwg@4": {
-		"input": "b37c42711ab80a290dbcea9ef278f20a895bea78141ebc34affc05340010875d",
-		"height": "d6d973d4cb88199d886ab4b17658b8ac96a6e0d67ad4017eda2ef6979c5c95f8",
-		"splat0": "1d90149ec8c8253ee7de0f9b44dab68c",
-		"splat1": "40ca0393c6977791d2372428e4ff40f3",
-		"biome": "1eb5c6c01866c964a329a9ecccfcd0b1",
-		"vegmask": "d12a482b773fbd316d6a312d95070f6f",
-		"water": "d751713988987e9331980363e24189ce",
-		"roads": "692b73e2614d0630e436ef6b4d64f966",
+		"input": "8748d38b30154e0d8f36b3e56a84d3d494750050b4790f22fa45eed2007ec5b9",
+		"height": "0eaa8506c0ba2d3484781a920c3d58d080738b9bbd24dd5049779a7212d63783",
+		"splat0": "b57140b9a4a248a8823629c9ae0181ca",
+		"splat1": "19391a95713fd102f71d144d72dba05a",
+		"biome": "7a1829b798445e721a980decdc403ccc",
+		"vegmask": "76aa2381a2cbafff797251da8246ba98",
+		"water": "e06b515a4cb727b37aecd8d9b9021e5c",
+		"roads": "9e82e825c0312e5c65fc8edbe883d8f1",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "077354b28eb149eca57bc6578cee4b26",
-		"other": "e27b28fdf003836f2d66c19e8682c841",
+		"placements": "8f4011cac26aa26f76b8f481a81d7949",
+		"other": "cdea7f25fbe2a5d7db76f5471a367e8b",
 	},
 	"rwg@8": {
-		"input": "21a5315f36730a4a8564837f181e8e9af6b089adadd14e2a6d07044069cdd5b0",
-		"height": "aac5c29fa4ab97b821f201177c03a55ae3cf05f06c3b151113fc0f1a1dd40503",
-		"splat0": "0ec226709d7aeaeaa6fc3acae5983c53",
-		"splat1": "80060b7d539c8628d960d48b78512d90",
-		"biome": "c4c1336a67ed16574c87afb69b55f4c5",
-		"vegmask": "1fe2c1f0fb3859e398dc0d958bc822f8",
-		"water": "d751713988987e9331980363e24189ce",
-		"roads": "692b73e2614d0630e436ef6b4d64f966",
+		"input": "c79355e26825833a1949e28f4b612bb22d27557e6a4c9b618d27552044fec75c",
+		"height": "9f0d511eee35a49c7efdd8195af376c67a6712bf7b1eb5a9d776476341bd9cc6",
+		"splat0": "e2f1238a5db9a70e67d9a14df759fe79",
+		"splat1": "6c424b2a6dc95535b4b448ddc710896d",
+		"biome": "d15bf6cdbf7dc917b8c71338dccdfd18",
+		"vegmask": "f18870f87931440c349cec4645cd222f",
+		"water": "e06b515a4cb727b37aecd8d9b9021e5c",
+		"roads": "9e82e825c0312e5c65fc8edbe883d8f1",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "077354b28eb149eca57bc6578cee4b26",
-		"other": "1768c8543beaa1f380acfabdbb30b44a",
+		"placements": "8df202996e49f7aea2660e8c467c55d3",
+		"other": "db456385e78c1ef69a9e46930f6a7afb",
 	},
 	"rwg@1": {
-		"input": "31654a77d3cd49832f7131752de740c0f639b52c08eb561b96d82dfd15b4eae3",
-		"height": "a839a351ad5a7973b0a9d67b3423e4996b00fcbd7f5df71027a92053fbc12148",
-		"splat0": "d060157ca03510f8b3360b5add5a2182",
-		"splat1": "3fe38d0980a1834c506cfc5119387fae",
-		"biome": "561f81885fbc374de8b60ad4ad44097d",
-		"vegmask": "b93d0f77d02980872ae4cd118767e02e",
+		"input": "574a5b8d9074a6baeb8264d0f550a0df4f83fafe8375b29d2b30ea388b63d379",
+		"height": "25eedd51f00f08b54fc9f90bbef8ce8a6df18f2686f5a8e37b764797fbcbdd91",
+		"splat0": "1136992f426ddc8627f9063f05247d56",
+		"splat1": "dc4ef3215278fddfbda34c6216d78f86",
+		"biome": "e76f894ea096b19e194d1935e27f3eec",
+		"vegmask": "75d7e00fb1c0d9afa12c9792011b6a0d",
+		"water": "e06b515a4cb727b37aecd8d9b9021e5c",
+		"roads": "9e82e825c0312e5c65fc8edbe883d8f1",
+		"bridges": "d751713988987e9331980363e24189ce",
+		"placements": "59f756cb79614ed2137bd5c34503ee19",
+		"other": "be2cb6d869865cd65c1e45d6db34b512",
+	},
+	"rwg_drop@4": {
+		"input": "41fb9df0ed6c18a123b9f7c542c1d659576182046b7befa4373881842c4bdf53",
+		"height": "d6d973d4cb88199d886ab4b17658b8ac96a6e0d67ad4017eda2ef6979c5c95f8",
+		"splat0": "e730d222f93b7762a60efa7792f53d3e",
+		"splat1": "da47f68660bef05e23e84e3434ff6104",
+		"biome": "1eb5c6c01866c964a329a9ecccfcd0b1",
+		"vegmask": "b82b334d48abfe0c2f6708729381e727",
 		"water": "d751713988987e9331980363e24189ce",
 		"roads": "692b73e2614d0630e436ef6b4d64f966",
 		"bridges": "d751713988987e9331980363e24189ce",
 		"placements": "077354b28eb149eca57bc6578cee4b26",
-		"other": "67b6ee660bde2070759e5f30e8ba6359",
-	},
-	"rwg_drop@4": {
-		"input": "62fcdfaa9d5c3f2672e0d63f598120822c86ca00d804c010dbbdfbd0a27d7c8c",
-		"height": "37718bfdcb559616689d587239191d873d7b07c7b498ef1d8be5447c950a468e",
-		"splat0": "1302bd2189a039ab811624d5136bf5cb",
-		"splat1": "bb2839c357afc97d70e80ffecc9458a4",
-		"biome": "9994f8f29387c5fb8e842e475f1018aa",
-		"vegmask": "17c3fd782109ef0233cbb8fe2b9adf1d",
-		"water": "646da548e4581b18bc1605655c50b049",
-		"roads": "d751713988987e9331980363e24189ce",
-		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "4f1e53c44567c3d0c5e23e9fa602ca96",
-		"other": "a70ca807c8122f946b6959fdb7848198",
+		"other": "27aec2506dedd3b08659cf99db183294",
 	},
 	"rwg_drop@8": {
-		"input": "ff3f225618808d106182d78678ab6cc1200ad94d5753a4ca6af126f414b28aac",
-		"height": "15cf61fe74754265e18d249dac81a3e30d8b88f153fc94243af0f4a3e55252c3",
-		"splat0": "5bdd15325abca0736ec62ac7ecb33ce5",
-		"splat1": "d9048c66455e267f190d61d7e5a79cff",
-		"biome": "b896f595496e5b2e691735360287a44f",
-		"vegmask": "1d9c859cf05b1abdbd596ab94135256e",
-		"water": "646da548e4581b18bc1605655c50b049",
-		"roads": "d751713988987e9331980363e24189ce",
+		"input": "ff5adab1d331202dee12ea484c037202da5345547b281ad2160e797933ce0c3c",
+		"height": "aac5c29fa4ab97b821f201177c03a55ae3cf05f06c3b151113fc0f1a1dd40503",
+		"splat0": "db6248abb9a635711c764a621a188397",
+		"splat1": "520ea23af1d69e2143a5a881b07113ca",
+		"biome": "c4c1336a67ed16574c87afb69b55f4c5",
+		"vegmask": "27056da36569c8511a609b99f7294472",
+		"water": "d751713988987e9331980363e24189ce",
+		"roads": "692b73e2614d0630e436ef6b4d64f966",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "08c45a9a1db6e417a5d8711fea6686a4",
-		"other": "d8746ff32d27b03113ff4f7b8b24b56f",
+		"placements": "077354b28eb149eca57bc6578cee4b26",
+		"other": "de1e72e4a08456d49a175449afabfc18",
 	},
 }
 
@@ -168,12 +168,21 @@ func before_all() -> void:
 	for tw: Dictionary in g.get(&"towns"):
 		_fw_ids.append(StringName(str(tw["fw_id"])))
 	_rwg = WorldDef.load_from(dir)
-	# The first town's region: world roads, the town's pad and streets, and its places.
+	# The drop site's region: its clearing, spawn, trail and a river.
+	var drop_cell: String = str((g.get(&"drop") as Dictionary).get("cell", "A1"))
+	_rwg_drop_region = str(ids[drop_cell])
+	# And a region of the first town (world roads, its lots and streets, its places): its own when the
+	# drop site is elsewhere, else another one its lots reach (generator v2's towns straddle borders).
 	var towns: Array = g.get(&"towns")
 	if not towns.is_empty():
-		_rwg_region = str(ids[str(towns[0]["cell"])])
-	# And the drop site's region: its clearing, spawn, trail and a river.
-	_rwg_drop_region = str(ids[str((g.get(&"drop") as Dictionary).get("cell", "A1"))])
+		var cell: String = str(towns[0]["cell"])
+		if cell == drop_cell:
+			for l: Dictionary in towns[0]["plan"]["lots"]:
+				var lc: String = str(g.call(&"cell_at", Vector2(float(l["frame"][0]), float(l["frame"][1]))))
+				if lc != drop_cell:
+					cell = lc
+					break
+		_rwg_region = str(ids[cell])
 
 
 func after_all() -> void:

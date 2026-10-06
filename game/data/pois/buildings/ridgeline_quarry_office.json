@@ -1,0 +1,919 @@
+{
+ "_doc": "Tier-2 pool building (random towns, industrial lots): a quarry's scale house, office and equipment shed with a steel-lined powder magazine. Route: the office door is bolted -> round the back: a haul truck backed through the equipment shed wall -> the shed (jaws by the drill rack) -> the scale house: the weighmaster still at the terminal -> the manager's office: the magazine key in the desk (taking it wakes the core shed: ambush) -> back through the shed to the magazine door (cans on it in one dressing) -> the magazine: the blaster guards it -> through the office, unbolting the front door. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "ridgeline_quarry_office",
+   "name": "Ridgeline Aggregate",
+   "tier": 2,
+   "zoning": [
+    "industrial"
+   ],
+   "footprint": [
+    26,
+    26
+   ],
+   "origin": [
+    4,
+    6
+   ],
+   "author": "Hollowmere team",
+   "population": "loggers",
+   "story": "Ridgeline crushed gravel for every road in the valley. When the Cordon closed the roads the crew had nothing to do but sit in the scale house and listen to the radio. The Cordon came for the powder magazine on the fourth day; Pete Haralson, the blaster, wouldn't hand it over without the manager's signature, and the manager had gone home sick. Pete locked himself in with the stick and the caps and the manager's key stayed in the desk drawer where it always was.",
+   "style": {
+    "exterior": "siding_white",
+    "interior": "wood_paneling_dark",
+    "floor": "concrete",
+    "ceiling": "plaster_grey",
+    "floor_height": 0.15,
+    "decay": 0.5,
+    "damaged_walls": 0.06,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.35
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "x",
+     "pitch": 20,
+     "overhang": 0.4,
+     "material": "roof_metal",
+     "color": "#77797c"
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "GGGGGGGGGGMMMMWWWW",
+      "GGGGGGGGGGMMMMWWWW",
+      "GGGGGGGGGGMMMMWWWW",
+      "GGGGGGGGGGMMMMWWWW",
+      "GGGGGGGGGGMMMMWWWW",
+      "GGGGGGGGGGMMMMWWWW",
+      "SSSSSSOOOOOOOCCCCC",
+      "SSSSSSOOOOOOOCCCCC",
+      "SSSSSSOOOOOOOCCCCC",
+      "SSSSSSOOOOOOOCCCCC",
+      "SSSSSSOOOOOOOCCCCC",
+      "SSSSSSOOOOOOOCCCCC",
+      "SSSSSSOOOOOOOCCCCC",
+      "SSSSSSOOOOOOOCCCCC"
+     ],
+     "rooms": {
+      "G": {
+       "name": "Equipment shed",
+       "type": "garage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "M": {
+       "name": "Powder magazine",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "W": {
+       "name": "Wash room",
+       "type": "bath",
+       "wall": "tile_bathroom_white",
+       "floor": "tile_white_small"
+      },
+      "S": {
+       "name": "Scale house",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_beige"
+      },
+      "O": {
+       "name": "Manager's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_brown"
+      },
+      "C": {
+       "name": "Core shed",
+       "type": "storage",
+       "wall": "plaster_grey",
+       "floor": "concrete"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      9,
+      13
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked_inside",
+     "lock": "deadbolt"
+    },
+    {
+     "id": "office_window",
+     "at": [
+      7,
+      13
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "closed"
+    },
+    {
+     "id": "scale_window",
+     "at": [
+      0,
+      10
+     ],
+     "side": "W",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "scale_window_s",
+     "at": [
+      2,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "core_window",
+     "at": [
+      15,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "shed_breach",
+     "at": [
+      4,
+      0
+     ],
+     "side": "N",
+     "type": "breach"
+    },
+    {
+     "id": "shed_scale",
+     "at": [
+      2,
+      5
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "scale_office",
+     "at": [
+      5,
+      9
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "office_core",
+     "at": [
+      12,
+      9
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "office_shed",
+     "at": [
+      8,
+      5
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "magazine_door",
+     "at": [
+      10,
+      2
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "locked",
+     "key": "town4_quarry_magazine_key",
+     "lock": "padlock",
+     "model": "door_metal",
+     "hp": 800
+    },
+    {
+     "id": "wash_door",
+     "at": [
+      14,
+      4
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "wash_core",
+     "at": [
+      15,
+      5
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    }
+   ],
+   "props": [
+    {
+     "id": "haul_truck",
+     "prop": "pickup_wreck",
+     "pos": [
+      4.4,
+      -2.4
+     ],
+     "rot": 180
+    },
+    {
+     "id": "loader",
+     "prop": "farm_tractor_wreck",
+     "pos": [
+      6.6,
+      2.4
+     ],
+     "rot": 90
+    },
+    {
+     "id": "drill_rack",
+     "prop": "quarry_drill_steel_rack",
+     "at": [
+      1,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "shed_chest",
+     "prop": "road_tool_chest",
+     "at": [
+      0,
+      3
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "prop": "road_oil_drum",
+     "pos": [
+      9.2,
+      0.6
+     ]
+    },
+    {
+     "prop": "tire",
+     "pos": [
+      1.2,
+      4.6
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      8.4,
+      1.0
+     ],
+     "rot": 10
+    },
+    {
+     "id": "magazine_1",
+     "prop": "quarry_magazine",
+     "pos": [
+      12.0,
+      0.9
+     ],
+     "rot": 0,
+     "container": "town4_magazine"
+    },
+    {
+     "id": "magazine_2",
+     "prop": "quarry_magazine",
+     "pos": [
+      12.0,
+      4.4
+     ],
+     "rot": 180,
+     "variant": "worn",
+     "container": "town4_magazine"
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      11.0,
+      2.6
+     ],
+     "lit": true
+    },
+    {
+     "id": "wash_lockers",
+     "prop": "road_staff_locker",
+     "at": [
+      17,
+      1
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "sink_pedestal",
+     "at": [
+      15,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "toilet",
+     "at": [
+      17,
+      4
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "terminal",
+     "prop": "quarry_scale_terminal",
+     "at": [
+      1,
+      10
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      1.6,
+      10.4
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      3.6,
+      7.5
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      3.0,
+      8.8
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      4.2,
+      8.8
+     ],
+     "rot": 350
+    },
+    {
+     "prop": "coffee_machine",
+     "pos": [
+      3.4,
+      7.3
+     ],
+     "y": 0.75
+    },
+    {
+     "id": "scale_files",
+     "prop": "filing_cabinet",
+     "at": [
+      0,
+      7
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "mgr_desk",
+     "prop": "office_desk",
+     "at": [
+      11,
+      6
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      11.5,
+      7.6
+     ],
+     "rot": 180
+    },
+    {
+     "id": "mgr_files",
+     "prop": "filing_cabinet",
+     "at": [
+      12,
+      7
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "mgr_safe",
+     "prop": "safe_small",
+     "at": [
+      12,
+      11
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      7,
+      6
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      9.0,
+      10.2
+     ],
+     "rot": 40
+    },
+    {
+     "id": "core_rack_1",
+     "prop": "quarry_core_rack",
+     "at": [
+      17,
+      7
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "core_rack_2",
+     "prop": "quarry_core_rack",
+     "at": [
+      17,
+      10
+     ],
+     "against": "E",
+     "variant": "worn",
+     "rot": 270
+    },
+    {
+     "id": "core_rack_3",
+     "prop": "quarry_core_rack",
+     "at": [
+      14,
+      12
+     ],
+     "against": "S",
+     "rot": 180
+    },
+    {
+     "id": "core_crate",
+     "prop": "crate_wood",
+     "pos": [
+      14.4,
+      7.2
+     ],
+     "rot": 10
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "weighmaster",
+     "pos": [
+      1.6,
+      10.4
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 270
+    },
+    {
+     "id": "shed_1",
+     "pos": [
+      7.6,
+      4.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 120,
+     "anchor": "floor"
+    },
+    {
+     "id": "crew_1",
+     "pos": [
+      15.0,
+      9.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 270,
+     "group": "crew",
+     "alt": "crew:in_the_core_shed"
+    },
+    {
+     "id": "crew_2",
+     "pos": [
+      16.0,
+      11.4
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 250,
+     "group": "crew",
+     "alt": "crew:in_the_core_shed"
+    },
+    {
+     "id": "crew_3",
+     "pos": [
+      15.4,
+      11.8
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 300,
+     "group": "crew",
+     "alt": "crew:in_the_core_shed"
+    },
+    {
+     "id": "crew_1",
+     "pos": [
+      3.2,
+      8.8
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 10,
+     "group": "crew",
+     "anchor": "floor",
+     "alt": "crew:at_the_radio"
+    },
+    {
+     "id": "crew_2",
+     "pos": [
+      4.2,
+      8.8
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 350,
+     "group": "crew",
+     "anchor": "floor",
+     "alt": "crew:at_the_radio"
+    },
+    {
+     "id": "crew_3",
+     "pos": [
+      2.4,
+      12.4
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 30,
+     "group": "crew",
+     "alt": "crew:at_the_radio"
+    },
+    {
+     "id": "pete",
+     "pos": [
+      12.2,
+      2.6
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 270,
+     "guardian": true
+    }
+   ],
+   "pickups": [
+    {
+     "id": "magazine_key",
+     "item": "town4_quarry_magazine_key",
+     "pos": [
+      11.6,
+      6.6
+     ],
+     "y": 0.77
+    }
+   ],
+   "notes": [
+    {
+     "note": "town4_quarry_ticket",
+     "pos": [
+      1.2,
+      10.0
+     ],
+     "y": 0.9
+    },
+    {
+     "note": "town4_quarry_seizure",
+     "pos": [
+      9.4,
+      12.6
+     ]
+    },
+    {
+     "note": "town4_quarry_pete",
+     "pos": [
+      11.2,
+      1.6
+     ]
+    }
+   ],
+   "traps": [
+    {
+     "id": "shed_jaws",
+     "type": "bear_trap",
+     "pos": [
+      2.6,
+      1.4
+     ],
+     "rot": 20,
+     "alt": "jaws:set"
+    },
+    {
+     "id": "magazine_cans",
+     "type": "can_chime",
+     "at": [
+      10,
+      2
+     ],
+     "side": "W",
+     "alt": "magazine:canned"
+    },
+    {
+     "id": "office_boards",
+     "type": "creaky_floor",
+     "at": [
+      6,
+      10
+     ],
+     "size": [
+      2,
+      2
+     ]
+    }
+   ],
+   "triggers": [
+    {
+     "id": "t_crew_key",
+     "group": "crew",
+     "on": "pickup",
+     "pickup": "magazine_key",
+     "delay": 1.0
+    },
+    {
+     "id": "t_crew_boards",
+     "group": "crew",
+     "on": "trap",
+     "trap": "office_boards",
+     "delay": 0.8
+    }
+   ],
+   "lights": [
+    {
+     "at": [
+      11,
+      2
+     ],
+     "height": 0.5,
+     "color": "#ffcc88",
+     "energy": 0.5,
+     "range": 4.0,
+     "flicker": 0.1
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      4,
+      1
+     ],
+     "side": "floor",
+     "size": [
+      1.6,
+      0.7
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      13,
+      2
+     ],
+     "side": "E",
+     "height": 1.2,
+     "size": [
+      1.2,
+      1.0
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      9,
+      14
+     ],
+     "label": "The office door: bolted from inside"
+    },
+    {
+     "at": [
+      19,
+      14
+     ],
+     "label": "Round the east side"
+    },
+    {
+     "at": [
+      19,
+      -1
+     ],
+     "label": "Round the back"
+    },
+    {
+     "at": [
+      4,
+      -1
+     ],
+     "label": "A haul truck backed through the shed wall"
+    },
+    {
+     "at": [
+      3,
+      2
+     ],
+     "label": "The equipment shed - jaws by the drill rack"
+    },
+    {
+     "at": [
+      2,
+      6
+     ],
+     "label": "The scale house: the weighmaster at his terminal"
+    },
+    {
+     "at": [
+      8,
+      8
+     ],
+     "label": "The manager's office: the magazine key (the crew wakes)"
+    },
+    {
+     "at": [
+      8,
+      4
+     ],
+     "label": "Back into the shed"
+    },
+    {
+     "at": [
+      9,
+      2
+     ],
+     "label": "The magazine door"
+    },
+    {
+     "at": [
+      12,
+      2
+     ],
+     "label": "The magazine (loot) - Pete"
+    },
+    {
+     "at": [
+      8,
+      4
+     ],
+     "label": "Back out"
+    },
+    {
+     "at": [
+      9,
+      12
+     ],
+     "label": "Through the office: unbolt the front door"
+    },
+    {
+     "at": [
+      9,
+      14
+     ],
+     "label": "Out"
+    }
+   ],
+   "loot_room": {
+    "room": "M",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "front_door"
+    }
+   ],
+   "budget": {
+    "lights": 3,
+    "enemies": 10,
+    "pieces": 2000
+   },
+   "alternatives": [
+    {
+     "id": "crew",
+     "label": "Where the crew wait",
+     "options": [
+      {
+       "id": "in_the_core_shed",
+       "label": "Shut in the core shed",
+       "weight": 2
+      },
+      {
+       "id": "at_the_radio",
+       "label": "Round the table in the scale house, at the radio"
+      }
+     ]
+    },
+    {
+     "id": "magazine",
+     "label": "Pete's magazine door",
+     "options": [
+      {
+       "id": "plain",
+       "label": "Just the padlock",
+       "weight": 2
+      },
+      {
+       "id": "canned",
+       "label": "Cans strung on it from inside"
+      }
+     ]
+    },
+    {
+     "id": "office",
+     "label": "The manager's office",
+     "options": [
+      {
+       "id": "tidy",
+       "label": "Tidy, as he left it"
+      },
+      {
+       "id": "turned_over",
+       "label": "Turned over by the Cordon",
+       "style": {
+        "decay": 0.6
+       }
+      }
+     ]
+    },
+    {
+     "id": "jaws",
+     "label": "The jaws in the shed",
+     "options": [
+      {
+       "id": "set",
+       "label": "Set by the drill rack",
+       "weight": 2
+      },
+      {
+       "id": "sprung",
+       "label": "Already sprung"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

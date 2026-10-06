@@ -8,7 +8,7 @@ way it never conflicts.
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
 | Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Landed: random worlds v1 (O2), weather (Q2, ADR-0033), the pool buildings (P2), the guide's bug batch (S1), the wall-prop facing fix. Running: V (the QA and stabilization round), R2 (RWG v2 Phases 4 and 5: organic towns into generated worlds, generator VERSION 2); R1 (RWG v2 Phase 1: golden composer test, speed-ups, bands, cancel, cache LRU, ADR-0038); T (the organic town planner, ADR-0040); S1 (bugs found while writing `docs/HOW_TO_PLAY.md`) | Random worlds v2 (`docs/RWG_V2_PLAN.md`): Phase 1 (measure and speed up the composer and generator) once O2 lands, then Phase 4's generator side and Phase 5 (organic towns, ADR-0040); the full screenshot QA and stabilization round once O2, P2 and Q2 land |
-| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Base-building fidelity (ADR-0035). Hounds and Murmurs merged (694df3c); the third block merged (dd01229, 437535c) | Base-building fidelity (ADR-0035); the third block opened to random towns' pool; pool round 2 (four or five set pieces: motel and annex, church hall, garage, trailer park, a second industrial site) |
+| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife, town content and economy | Traders and contracts (M2, ADR-0039): Waystation 9, the shop, clear/fetch/defend contracts, reputation. Merged: hounds and Murmurs, base building (02cb425), pool round 2, the third block | Then the Corvane caves (likely) |
 | Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Merged: boot-step load, stand-in CI, menu notices, Build workflow (301e85c), terrain thread races (cb83882). Now: the performance pass (TD-003) | Random worlds v2 Phases 2 and 3 (regions and buildings stream; the load path), then Phase 4's save side (v7, the world bundle), then graphics options (ADR-0037) |
 
 ## Protocol
@@ -32,15 +32,16 @@ way it never conflicts.
 |---|---|---|
 | Random worlds v2, generator side (R2: Phases 4 and 5, organic towns wired in; Phase 1 and the planner landed) | integrator | `game/src/worldgen/**`, `game/src/ui/new_game_panel.gd`, `game/data/config/world_gen.json`, `game/data/config/town_planner.json`, `game/src/tools/cli/rwg_*`, `compose_region*` |
 | QA round (V) | integrator | fixes in building JSONs, `game/src/ui/new_game_panel.gd` and `game/src/app/main.gd` (seed handling, World tab label), the storm-night shot in `screenshots_runner.gd` |
-| Hounds and Murmurs (ADR-0034) | session 2 | new enemy defs in `game/data/enemies/`, their generators and populations, additive hunks in `game/src/ai/` (quadruped and flock pipelines) |
+| Traders and contracts (ADR-0039) | session 2 | the trader post, shop and contract data and scripts it creates; additive hunks elsewhere reported to the hub; no edits in `game/src/worldgen/**` |
 | Builds and stability | session 3 | `.github/workflows/` (new export jobs), `game/export_presets.cfg`, the load sequence (`game/src/app/game_world.gd`, `world_loader.gd`, `PoiManager`'s placement path, `PoiBuilder.build`'s validator argument), thread-safety fixes in `game/src/world/terrain/` and `game/src/world/vegetation/`, and fixes it reports to the hub |
 
 ## Allocations
 * ADR: 0026 (vault, S2), 0027 (wildlife, S2), 0031 (random worlds), 0032 (pool, if needed),
   0033 (weather), 0034 (hounds and Murmurs, S2), 0035 (base building, S2), 0036–0037 (session 3),
-  0038 (streamed worlds: the hub creates it, session 3 adds its phases), 0039 (pool round 2, S2,
-  if needed), 0040 (organic towns, the hub). Next free: 0041.
-* TD: S2 094–101 and 111–114; session 3 102–109 and 126–130; the hub 110 and 115–125, then 131 up.
+  0038 (streamed worlds: the hub creates it, session 3 adds its phases), 0039 (traders and
+  contracts, S2), 0040 (organic towns, the hub). Next free: 0041.
+* TD: S2 094–101, 111–114 and 141–148; session 3 102–109 and 126–130; the hub 110, 115–125 and
+  131–140, then 149 up.
 * Save version: 6 since random worlds. 7 is reserved for session 3's world bundle (RWG v2 Phase 4); anyone else who needs a bump asks the hub first.
 
 ## Queue (in order)
@@ -91,7 +92,11 @@ Diagnosis:
 * Never replace an Array, Dictionary or Packed*Array member that worker threads read. In GDScript
   the assignment isn't atomic: the old value is released and the pointer is null before the new
   one is stored, so a reader in that window crashes (session 3 found this in its own TD-104
-  copy-and-swap). Write elements in place, or guard the member with a Mutex on both sides.
+  copy-and-swap). Writing in place is no safer. A Packed*Array that a worker also holds is
+  copy-on-write, so the write moves the buffer out from under the reader. Readers and writers must
+  take the same Mutex; TerrainManager's terrain lock is the model (444375b).
+* A WorkerThreadPool task still running at engine shutdown aborts the process with rc 134 and
+  prints nothing. Wait for your tasks in `_exit_tree`, as VolumeTerrain does.
 * Reflection probes share a 64-slot atlas, and going past it crashes the engine. Put any new
   probe in the `interior_probe` group so PoiManager's budget caps it.
 * A generated model can exist on disk and still not load (built, not imported yet). Check the

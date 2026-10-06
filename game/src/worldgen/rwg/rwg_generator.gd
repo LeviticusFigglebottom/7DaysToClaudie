@@ -784,19 +784,24 @@ func _main_streets() -> void:
 		var ground := Streets.Ground.new({"height": _ground_fn(), "water": water_fn}, c, float(tw["radius"]) + stub_len + 240.0)
 		var reach: float = float(tw["radius"]) + stub_len
 		var ends: Array = _ends_at(c)
-		if ends.size() >= 2:
-			var best: Array = []
-			var best_dot: float = INF
-			for a: int in ends.size():
-				for b: int in range(a + 1, ends.size()):
-					var dd: float = (ends[a][2] as Vector2).dot(ends[b][2])
-					if dd < best_dot:
-						best_dot = dd
-						best = [ends[a], ends[b]]
+		var best: Array = []
+		var best_dot: float = INF
+		for a: int in ends.size():
+			for b: int in range(a + 1, ends.size()):
+				var dd: float = (ends[a][2] as Vector2).dot(ends[b][2])
+				if dd < best_dot:
+					best_dot = dd
+					best = [ends[a], ends[b]]
+		# Two roads leaving the same way would make a hairpin through the centre: the first carries on
+		# as a stub instead (the other meets it there).
+		if not best.is_empty() and best_dot < -0.3:
 			_merge_through(best[0], best[1])
-		elif ends.size() == 1:
+		elif not ends.is_empty():
 			var e: Array = ends[0]
-			var stub: PackedVector2Array = _stub(ground, c, -(e[2] as Vector2), reach, 70.0)
+			var away := Vector2.ZERO
+			for e2: Array in ends:
+				away += e2[2]
+			var stub: PackedVector2Array = _stub(ground, c, -(away.normalized() if away.length() > 0.01 else (e[2] as Vector2)), reach, 70.0)
 			if stub.size() >= 2:
 				_extend_through(e, stub)
 		elif _roads_near(c, float(tw["radius"]) * 0.3) == 0:
@@ -1331,7 +1336,9 @@ func road_clearance(poly: PackedVector2Array, skip: int = -1) -> float:
 
 ## Where a new player lands: away from towns and places, near (not on) a road, on gentle dry ground,
 ## about a day's walk from a town, and at least 300 m from a region border (a streamed world
-## composes the land round the drop site first; fallbacks 200, 120, 60 m).
+## composes the land round the drop site first). Fallbacks, in tiers: 200 m from a border; then
+## 120 m, the towns 0.8 as far and the road up to 1.8 as far; then 60 m, 0.65 and 2.3 (a small
+## map's few roads mostly run through its towns, which are wide).
 func _drop_site() -> void:
 	var dcfg: Dictionary = tun.get("drop_site", {})
 	var r := rng("drop")
@@ -1341,6 +1348,8 @@ func _drop_site() -> void:
 	var best: Dictionary = {}
 	for mi: int in margins.size():
 		var margin: float = float(margins[mi])
+		var town_k: float = [1.0, 1.0, 0.8, 0.65][mini(mi, 3)]
+		var road_k: float = [1.0, 1.4, 1.8, 2.3][mini(mi, 3)]
 		var best_score: float = INF
 		for attempt: int in 600:
 			var p := Vector2(r.randf_range(-size * 512.0 + 90.0, size * 512.0 - 90.0), r.randf_range(-size * 512.0 + 90.0, size * 512.0 - 90.0))
@@ -1350,11 +1359,11 @@ func _drop_site() -> void:
 			if water_at(p) < 70.0 or terrain.slope(p.x, p.y) > 0.12:
 				continue
 			var near_town: float = _town_distance(p)
-			if near_town < town_d or _near_lots(p, 120.0):
+			if near_town < town_d * town_k or _near_lots(p, 120.0):
 				continue
 			var nr: Array = nearest_road(p)
 			var road_d: float = float(nr[0])
-			if not roads.is_empty() and (road_d < float(rd[0]) or road_d > float(rd[1])):
+			if not roads.is_empty() and (road_d < float(rd[0]) or road_d > float(rd[1]) * road_k):
 				continue
 			if water_exact(p) < 50.0:
 				continue

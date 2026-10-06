@@ -1,0 +1,69 @@
+{
+ "_doc": "Containers of pool round 2 (random-town set pieces: pawn & gun, cannery, water works, quarry office, veterans' post).",
+ "defs": [
+  {
+   "id": "town4_gun_case",
+   "name": "Gun Counter Case",
+   "loot_table": "town4_gun_case",
+   "slots": 6,
+   "search_time": 2.0,
+   "noise": 6
+  },
+  {
+   "id": "town4_ammo_shelf",
+   "name": "Ammunition Shelf",
+   "loot_table": "town4_ammo_shelf",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 4
+  },
+  {
+   "id": "town4_pawn_shelf",
+   "name": "Pawn Shelf",
+   "loot_table": "town4_pawn_shelf",
+   "slots": 8,
+   "search_time": 2.0,
+   "noise": 5
+  },
+  {
+   "id": "town4_can_pallet",
+   "name": "Pallet of Cases",
+   "loot_table": "town4_can_pallet",
+   "slots": 10,
+   "search_time": 2.2,
+   "noise": 6
+  },
+  {
+   "id": "town4_tote",
+   "name": "Tote Bins",
+   "loot_table": "town4_tote",
+   "slots": 4,
+   "search_time": 1.2,
+   "noise": 5
+  },
+  {
+   "id": "town4_magazine",
+   "name": "Magazine Box",
+   "loot_table": "town4_magazine",
+   "slots": 8,
+   "search_time": 2.4,
+   "noise": 7
+  },
+  {
+   "id": "town4_ww_stores",
+   "name": "Emergency Stores",
+   "loot_table": "town4_ww_stores",
+   "slots": 10,
+   "search_time": 2.2,
+   "noise": 5
+  },
+  {
+   "id": "town4_vfw_raffle",
+   "name": "Raffle Prize Box",
+   "loot_table": "town4_vfw_raffle",
+   "slots": 4,
+   "search_time": 1.4,
+   "noise": 3
+  }
+ ]
+}

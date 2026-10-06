@@ -1,0 +1,1284 @@
+{
+ "_doc": "Tier-3 pool building (random towns, commercial lots): a pawn shop and gun counter with a vault room and a basement range. Route: the grille is down and the front door bolted -> round the east side to the alley: the back door jemmied -> stair hall -> back hall (loose boards) -> Ray's office (the book) -> the staff door behind the counters: the looters on the showroom floor wake (ambush) -> down the stair to the basement range: Ray's body and the vault key on the bench (taking it wakes the range; cans strung in the doorway) -> back up to the vault door (Ray's shotgun rigged on it; an alarm in one dressing) -> the vault: Danny guards the guns -> out through the showroom, unbolting the front door. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "hollis_pawn_gun",
+   "name": "Hollis Pawn & Gun",
+   "tier": 3,
+   "zoning": [
+    "commercial"
+   ],
+   "footprint": [
+    28,
+    28
+   ],
+   "origin": [
+    5,
+    6
+   ],
+   "author": "Hollowmere team",
+   "population": "hunters",
+   "story": "Ray Hollis sold every rifle off his wall the first week, to men heading up into the hills with their families. When the Cordon came round collecting guns he pulled the grille down, bolted the door and moved what was left into the vault room. His nephew Danny came in through the alley with a bite on his forearm and Ray did what he'd promised Danny's mother: he locked the boy in the vault with a lamp and a radio, to sit it out. Then he went down to the range with the key on its lanyard, the bottle and the .38, and he didn't come back up. The people who broke the front glass for the counter guns never got out of the showroom.",
+   "style": {
+    "exterior": "brick_red",
+    "interior": "paint_mustard",
+    "floor": "linoleum_beige",
+    "ceiling": "plaster_white",
+    "floor_height": 0.15,
+    "decay": 0.5,
+    "damaged_walls": 0.06,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.35
+    },
+    "roof": {
+     "type": "flat",
+     "parapet": 0.7,
+     "flat_material": "roof_membrane"
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "VVVVVOOOOOOKKKSSSS",
+      "VVVVVOOOOOOKKKSSSS",
+      "VVVVVOOOOOOKKKSSSS",
+      "VVVVVOOOOOOKKKSSSS",
+      "VVVVVOOOOOOKKKSSSS",
+      "HHHHHHHHHHHHHHSSSS",
+      "HHHHHHHHHHHHHHSSSS",
+      "CCCCCCCCCCCCCCCCCC",
+      "CCCCCCCCCCCCCCCCCC",
+      "CCCCCCCCCCCCCCCCCC",
+      "FFFFFFFFFFFFFFFFFF",
+      "FFFFFFFFFFFFFFFFFF",
+      "FFFFFFFFFFFFFFFFFF",
+      "FFFFFFFFFFFFFFFFFF",
+      "FFFFFFFFFFFFFFFFFF",
+      "FFFFFFFFFFFFFFFFFF"
+     ],
+     "rooms": {
+      "V": {
+       "name": "Vault room",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "O": {
+       "name": "Ray's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_brown"
+      },
+      "K": {
+       "name": "Stock room",
+       "type": "storage",
+       "wall": "plaster_grey",
+       "floor": "concrete"
+      },
+      "S": {
+       "name": "Stair hall",
+       "type": "hallway",
+       "wall": "plaster_grey",
+       "floor": "concrete"
+      },
+      "H": {
+       "name": "Back hall",
+       "type": "hallway",
+       "wall": "plaster_grey",
+       "floor": "linoleum_beige"
+      },
+      "C": {
+       "name": "Behind the counters",
+       "type": "store",
+       "open_to": "F"
+      },
+      "F": {
+       "name": "Showroom",
+       "type": "store"
+      }
+     }
+    },
+    {
+     "level": -1,
+     "plan": [
+      "RRRRRRRRRRRRAAAAAA",
+      "RRRRRRRRRRRRAAAAAA",
+      "RRRRRRRRRRRRAAAAAA",
+      "RRRRRRRRRRRRAAAAAA",
+      "RRRRRRRRRRRRAAAAAA",
+      "RRRRRRRRRRRRAAAAAA",
+      "RRRRRRRRRRRRAAAAAA"
+     ],
+     "rooms": {
+      "R": {
+       "name": "Basement range",
+       "type": "basement",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "A": {
+       "name": "Ammunition store",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      9,
+      15
+     ],
+     "side": "S",
+     "type": "door2",
+     "state": "locked_inside",
+     "model": "door_metal",
+     "lock": "chain"
+    },
+    {
+     "id": "front_window_w",
+     "at": [
+      3,
+      15
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "front_window_e",
+     "at": [
+      14,
+      15
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "side_window",
+     "at": [
+      0,
+      12
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "back_door",
+     "at": [
+      17,
+      1
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "broken"
+    },
+    {
+     "id": "stair_hall_door",
+     "at": [
+      14,
+      5
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "vault_door",
+     "at": [
+      2,
+      4
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "town4_pawn_vault_key",
+     "lock": "deadbolt",
+     "model": "door_metal",
+     "hp": 900
+    },
+    {
+     "id": "office_door",
+     "at": [
+      7,
+      4
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "stock_door",
+     "at": [
+      12,
+      4
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "staff_door",
+     "at": [
+      3,
+      6
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "range_door",
+     "at": [
+      12,
+      3
+     ],
+     "side": "W",
+     "type": "open",
+     "level": -1
+    }
+   ],
+   "stairs": [
+    {
+     "level": -1,
+     "at": [
+      15,
+      4
+     ],
+     "dir": "N"
+    }
+   ],
+   "props": [
+    {
+     "id": "case_w",
+     "prop": "pawn_gun_case",
+     "pos": [
+      4.2,
+      9.55
+     ],
+     "rot": 0,
+     "variant": "destroyed"
+    },
+    {
+     "id": "case_mid",
+     "prop": "pawn_gun_case",
+     "pos": [
+      8.4,
+      9.55
+     ],
+     "rot": 0
+    },
+    {
+     "id": "case_e",
+     "prop": "pawn_gun_case",
+     "pos": [
+      12.6,
+      9.55
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "till",
+     "prop": "cash_register",
+     "pos": [
+      8.0,
+      9.55
+     ],
+     "y": 0.95,
+     "rot": 0
+    },
+    {
+     "id": "long_guns_1",
+     "prop": "pawn_long_gun_rack",
+     "at": [
+      7,
+      7
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "long_guns_2",
+     "prop": "pawn_long_gun_rack",
+     "at": [
+      11,
+      7
+     ],
+     "against": "N",
+     "variant": "worn",
+     "rot": 0
+    },
+    {
+     "id": "counter_ammo",
+     "prop": "pawn_ammo_shelf",
+     "at": [
+      16,
+      7
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "shelf_w1",
+     "prop": "pawn_shelf_mixed",
+     "at": [
+      0,
+      11
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "shelf_w2",
+     "prop": "pawn_shelf_mixed",
+     "at": [
+      0,
+      14
+     ],
+     "against": "W",
+     "variant": "worn",
+     "rot": 90
+    },
+    {
+     "id": "shelf_e1",
+     "prop": "pawn_shelf_mixed",
+     "at": [
+      17,
+      11
+     ],
+     "against": "E",
+     "variant": "worn",
+     "rot": 270
+    },
+    {
+     "id": "shelf_e2",
+     "prop": "pawn_shelf_mixed",
+     "at": [
+      17,
+      14
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "pawn_security_grille",
+     "pos": [
+      3.5,
+      16.08
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "pawn_security_grille",
+     "pos": [
+      14.5,
+      16.08
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "glass_shards",
+     "pos": [
+      4.4,
+      10.6
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "glass_shards",
+     "pos": [
+      14.0,
+      15.3
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      10.5,
+      12.4
+     ],
+     "rot": 15
+    },
+    {
+     "prop": "cans_scatter",
+     "pos": [
+      6.2,
+      13.6
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      15.6,
+      14.6
+     ],
+     "rot": 20
+    },
+    {
+     "id": "office_desk",
+     "prop": "office_desk",
+     "at": [
+      7,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      7.6,
+      1.6
+     ],
+     "rot": 200
+    },
+    {
+     "id": "office_files",
+     "prop": "filing_cabinet",
+     "at": [
+      10,
+      0
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "office_safe",
+     "prop": "safe_small",
+     "at": [
+      5,
+      0
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      8,
+      4
+     ],
+     "against": "S",
+     "rot": 180
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      8.6,
+      2.6
+     ],
+     "rot": 120
+    },
+    {
+     "id": "stock_shelf_1",
+     "prop": "metal_shelf",
+     "at": [
+      13,
+      1
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "stock_shelf_2",
+     "prop": "metal_shelf",
+     "at": [
+      13,
+      3
+     ],
+     "against": "E",
+     "variant": "worn",
+     "rot": 270
+    },
+    {
+     "id": "stock_box_1",
+     "prop": "cardboard_box",
+     "pos": [
+      11.6,
+      0.7
+     ],
+     "rot": 10,
+     "alt": "stock:stacked"
+    },
+    {
+     "id": "stock_box_2",
+     "prop": "cardboard_box",
+     "pos": [
+      11.6,
+      0.7
+     ],
+     "y": 0.5,
+     "rot": 24,
+     "alt": "stock:stacked"
+    },
+    {
+     "prop": "cardboard_box_open",
+     "pos": [
+      12.2,
+      2.6
+     ],
+     "rot": 70,
+     "alt": "stock:ransacked"
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      12.0,
+      3.4
+     ],
+     "rot": 30,
+     "alt": "stock:ransacked"
+    },
+    {
+     "id": "vault_ammo_1",
+     "prop": "pawn_ammo_shelf",
+     "at": [
+      1,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "vault_ammo_2",
+     "prop": "pawn_ammo_shelf",
+     "at": [
+      3,
+      0
+     ],
+     "against": "N",
+     "variant": "worn",
+     "rot": 0
+    },
+    {
+     "id": "vault_locker",
+     "prop": "weapons_locker",
+     "at": [
+      0,
+      2
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "vault_rack",
+     "prop": "pawn_long_gun_rack",
+     "at": [
+      4,
+      2
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      3.6,
+      3.6
+     ],
+     "lit": true
+    },
+    {
+     "prop": "sleeping_bag",
+     "pos": [
+      1.6,
+      3.4
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "cans_scatter",
+     "pos": [
+      2.6,
+      3.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      0.8,
+      6.4
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "ceiling_light",
+     "pos": [
+      15.5,
+      5.6
+     ],
+     "y": 2.95
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      9.8,
+      1.2
+     ],
+     "rot": 90,
+     "level": -1
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      9.8,
+      3.4
+     ],
+     "rot": 90,
+     "level": -1
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      9.8,
+      5.6
+     ],
+     "rot": 90,
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      0,
+      1
+     ],
+     "against": "W",
+     "level": -1,
+     "rot": 90
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      0,
+      3
+     ],
+     "against": "W",
+     "level": -1,
+     "rot": 90
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      0,
+      5
+     ],
+     "against": "W",
+     "level": -1,
+     "rot": 90
+    },
+    {
+     "id": "ray",
+     "prop": "corpse_remains",
+     "pos": [
+      8.4,
+      3.6
+     ],
+     "rot": 100,
+     "level": -1
+    },
+    {
+     "prop": "bottles_scatter",
+     "pos": [
+      8.9,
+      4.4
+     ],
+     "rot": 0,
+     "level": -1
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      9.8,
+      3.2
+     ],
+     "y": 0.76,
+     "lit": true,
+     "level": -1
+    },
+    {
+     "id": "store_shelf_1",
+     "prop": "metal_shelf",
+     "at": [
+      17,
+      6
+     ],
+     "against": "E",
+     "level": -1,
+     "rot": 270
+    },
+    {
+     "id": "store_box",
+     "prop": "wild_ammo_box",
+     "pos": [
+      13.2,
+      1.0
+     ],
+     "rot": 0,
+     "level": -1
+    },
+    {
+     "id": "store_crate",
+     "prop": "crate_wood",
+     "pos": [
+      13.2,
+      5.6
+     ],
+     "rot": 15,
+     "level": -1
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      16.8,
+      0.6
+     ],
+     "level": -1
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "looter_1",
+     "pos": [
+      5.6,
+      12.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 30,
+     "group": "showroom",
+     "anchor": "floor",
+     "alt": "showroom:at_the_cases"
+    },
+    {
+     "id": "looter_2",
+     "pos": [
+      11.0,
+      11.4
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 180,
+     "group": "showroom",
+     "alt": "showroom:at_the_cases"
+    },
+    {
+     "id": "looter_3",
+     "pos": [
+      15.4,
+      10.8
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 220,
+     "group": "showroom",
+     "alt": "showroom:at_the_cases"
+    },
+    {
+     "id": "looter_1",
+     "pos": [
+      8.2,
+      14.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 160,
+     "group": "showroom",
+     "anchor": "floor",
+     "alt": "showroom:by_the_door"
+    },
+    {
+     "id": "looter_2",
+     "pos": [
+      10.6,
+      14.2
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 200,
+     "group": "showroom",
+     "anchor": "floor",
+     "alt": "showroom:by_the_door"
+    },
+    {
+     "id": "looter_3",
+     "pos": [
+      13.2,
+      12.0
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 250,
+     "group": "showroom",
+     "alt": "showroom:by_the_door"
+    },
+    {
+     "id": "stock_sleeper",
+     "pos": [
+      12.4,
+      1.8
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "anchor": "floor"
+    },
+    {
+     "id": "range_1",
+     "pos": [
+      3.0,
+      1.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 270,
+     "level": -1,
+     "group": "range"
+    },
+    {
+     "id": "range_2",
+     "pos": [
+      2.4,
+      5.4
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 300,
+     "level": -1,
+     "group": "range"
+    },
+    {
+     "id": "range_3",
+     "pos": [
+      6.0,
+      4.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 10,
+     "level": -1,
+     "group": "range",
+     "anchor": "floor"
+    },
+    {
+     "id": "danny",
+     "pos": [
+      2.2,
+      1.8
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 180,
+     "guardian": true
+    }
+   ],
+   "pickups": [
+    {
+     "id": "vault_key",
+     "item": "town4_pawn_vault_key",
+     "pos": [
+      9.7,
+      3.7
+     ],
+     "y": 0.76,
+     "level": -1
+    }
+   ],
+   "notes": [
+    {
+     "note": "town4_pawn_book",
+     "pos": [
+      12.4,
+      9.55
+     ],
+     "y": 0.95
+    },
+    {
+     "note": "town4_pawn_order",
+     "pos": [
+      9.6,
+      15.4
+     ]
+    },
+    {
+     "note": "town4_pawn_ray",
+     "pos": [
+      7.2,
+      0.6
+     ],
+     "y": 0.77
+    }
+   ],
+   "traps": [
+    {
+     "id": "hall_boards",
+     "type": "creaky_floor",
+     "at": [
+      8,
+      5
+     ],
+     "size": [
+      3,
+      2
+     ]
+    },
+    {
+     "id": "stock_jaws",
+     "type": "bear_trap",
+     "pos": [
+      12.3,
+      3.3
+     ],
+     "alt": "jaws:set"
+    },
+    {
+     "id": "vault_gun",
+     "type": "shotgun",
+     "at": [
+      2,
+      4
+     ],
+     "side": "S"
+    },
+    {
+     "id": "vault_alarm",
+     "type": "alarm",
+     "at": [
+      2,
+      4
+     ],
+     "side": "S",
+     "alt": "vault_alarm:armed"
+    },
+    {
+     "id": "range_cans",
+     "type": "can_chime",
+     "at": [
+      12,
+      3
+     ],
+     "side": "W",
+     "level": -1
+    }
+   ],
+   "triggers": [
+    {
+     "id": "t_showroom",
+     "group": "showroom",
+     "on": "room",
+     "room": "C",
+     "level": 0,
+     "delay": 0.8
+    },
+    {
+     "id": "t_range_key",
+     "group": "range",
+     "on": "pickup",
+     "pickup": "vault_key",
+     "delay": 1.0
+    },
+    {
+     "id": "t_range_cans",
+     "group": "range",
+     "on": "trap",
+     "trap": "range_cans",
+     "delay": 0.3
+    }
+   ],
+   "lights": [
+    {
+     "at": [
+      3,
+      3
+     ],
+     "height": 0.5,
+     "color": "#ffcc88",
+     "energy": 0.5,
+     "range": 4.0,
+     "flicker": 0.1
+    },
+    {
+     "at": [
+      9,
+      3
+     ],
+     "height": 0.9,
+     "color": "#ffbb77",
+     "energy": 0.5,
+     "range": 5.0,
+     "flicker": 0.2,
+     "level": -1
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      16,
+      2
+     ],
+     "side": "floor",
+     "size": [
+      1.6,
+      0.7
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      2,
+      4
+     ],
+     "side": "S",
+     "height": 1.2,
+     "size": [
+      0.6,
+      0.6
+     ]
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      8,
+      3
+     ],
+     "side": "floor",
+     "size": [
+      1.4,
+      1.4
+     ],
+     "level": -1
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      9,
+      16
+     ],
+     "label": "Front: the grille is down and the door's bolted behind it"
+    },
+    {
+     "at": [
+      19,
+      15
+     ],
+     "label": "Round the east side"
+    },
+    {
+     "at": [
+      19,
+      1
+     ],
+     "label": "The alley: the back door jemmied open"
+    },
+    {
+     "at": [
+      16,
+      1
+     ],
+     "label": "Stair hall"
+    },
+    {
+     "at": [
+      12,
+      5
+     ],
+     "label": "Back hall - loose boards"
+    },
+    {
+     "at": [
+      7,
+      2
+     ],
+     "label": "Ray's office - the book"
+    },
+    {
+     "at": [
+      3,
+      5
+     ],
+     "label": "The staff door behind the counters"
+    },
+    {
+     "at": [
+      3,
+      8
+     ],
+     "label": "Behind the counters: the showroom wakes"
+    },
+    {
+     "at": [
+      9,
+      12
+     ],
+     "label": "The showroom floor"
+    },
+    {
+     "at": [
+      3,
+      8
+     ],
+     "label": "Back through the staff door"
+    },
+    {
+     "at": [
+      14,
+      6
+     ],
+     "label": "Down the stair"
+    },
+    {
+     "at": [
+      14,
+      5
+     ],
+     "label": "The ammunition store",
+     "level": -1
+    },
+    {
+     "at": [
+      8,
+      2
+     ],
+     "label": "The range: Ray, and the vault key on the bench (cans strung in the doorway)",
+     "level": -1
+    },
+    {
+     "at": [
+      14,
+      5
+     ],
+     "label": "Back up",
+     "level": -1
+    },
+    {
+     "at": [
+      2,
+      5
+     ],
+     "label": "The vault door - Ray's shotgun rigged on it"
+    },
+    {
+     "at": [
+      2,
+      2
+     ],
+     "label": "The vault (loot) - Danny"
+    },
+    {
+     "at": [
+      3,
+      8
+     ],
+     "label": "Out through the counters"
+    },
+    {
+     "at": [
+      9,
+      14
+     ],
+     "label": "Unbolt the front door"
+    },
+    {
+     "at": [
+      9,
+      16
+     ],
+     "label": "Out"
+    }
+   ],
+   "loot_room": {
+    "room": "V",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "front_door"
+    }
+   ],
+   "budget": {
+    "lights": 4,
+    "enemies": 12,
+    "pieces": 2400
+   },
+   "alternatives": [
+    {
+     "id": "showroom",
+     "label": "Where the looters lie",
+     "options": [
+      {
+       "id": "at_the_cases",
+       "label": "At the smashed gun cases",
+       "weight": 2
+      },
+      {
+       "id": "by_the_door",
+       "label": "Heaped by the front door they couldn't open"
+      }
+     ]
+    },
+    {
+     "id": "vault_alarm",
+     "label": "Ray's alarm on the vault room",
+     "options": [
+      {
+       "id": "dead",
+       "label": "The battery's flat",
+       "weight": 2
+      },
+      {
+       "id": "armed",
+       "label": "Still armed: a red light over the door"
+      }
+     ]
+    },
+    {
+     "id": "stock",
+     "label": "The stock room",
+     "options": [
+      {
+       "id": "stacked",
+       "label": "Boxes still stacked"
+      },
+      {
+       "id": "ransacked",
+       "label": "Torn open and gone through",
+       "style": {
+        "decay": 0.6
+       }
+      }
+     ]
+    },
+    {
+     "id": "jaws",
+     "label": "The jaws in the stock room",
+     "options": [
+      {
+       "id": "set",
+       "label": "Set behind the shelving",
+       "weight": 2
+      },
+      {
+       "id": "sprung",
+       "label": "Already sprung on a looter's boot"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
