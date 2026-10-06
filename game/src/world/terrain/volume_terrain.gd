@@ -215,6 +215,13 @@ func _process(_delta: float) -> void:
 			_apply(key, job["out"][0])
 
 
+## Joins in-flight mesh tasks: leaving one running past the engine's shutdown aborts it.
+func _exit_tree() -> void:
+	for key: Vector3i in _pending.keys():
+		WorkerThreadPool.wait_for_task_completion(_pending[key]["task"])
+	_pending.clear()
+
+
 ## Builds the mesh and collision of a chunk synchronously (tests, load).
 func flush() -> void:
 	for key: Vector3i in _pending.keys():

@@ -112,3 +112,4 @@ func test_volume_columns_grow_while_workers_read() -> void:
 		WorkerThreadPool.wait_for_task_completion(t)
 	assert_true(vol.columns.has(Vector2i(1, 1)))
 	assert_true(vol.is_volume_column(24.0, 24.0), "a worker's hole test sees the new column")
+	vol.flush()
