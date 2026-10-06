@@ -7,7 +7,7 @@ way it never conflicts.
 ## Sessions
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
-| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Landed this round: TD-134 and the real atlas fix (8625cbe: far probes parked out of the tree), trader posts in generated worlds (faadca8, generator v3), and the merges of session 3's streamed load with the Windows load-freeze fix (71d68d3) and session 2's traders and contracts with the playtest door fixes (9c768f6). Running: W (burnt forest and fen biomes, ADR-0041), X (four wilderness dungeons, round 3) | W and X land; then build every generated model this checkout lacks (the town4 props, the hunting items, session 2's camp structures, the animals); a `mine` wilderness site once session 2's adit is in |
+| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Landed this round: TD-134 and the real atlas fix (8625cbe: far probes parked out of the tree), trader posts in generated worlds (faadca8, generator v3), and the merges of session 3's streamed load with the Windows load-freeze fix (71d68d3) and session 2's traders and contracts with the playtest door fixes (9c768f6). Landed: W (burnt forest and fen biomes, ADR-0041, generator v4). Running: X (four wilderness dungeons, round 3), Y (the Corvane Field Lab, the first tier-5 dungeon) | X and Y land; then build every generated model this checkout lacks (the town4 props, the hunting items, session 2's camp structures, the animals); a `mine` wilderness site once session 2's adit is in |
 | Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife, town content and economy | The Corvane caves (ADR-0044, TD-162–169): the Corvane Mining Co. Larkspur Exploration Adit in D6, under the Larkspur cliffs, as underground levels of a POI; a `"buried": true` level hunk in terrain_holes.gd, agreed with session 3. Its 62f61df (Hollowed see in the dark underground) lands with the caves. Merged: traders and contracts (ADR-0039), the quartermaster, the stair-door and broken-door fixes (9c768f6) | Then the Ashen (camps, scouts, raids, fear of fire) |
 | Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Merged in 71d68d3: the Windows load-freeze fix (a warm-up camera compiles pipelines behind the loading screen), RegionStreamer and the streamed load behind `stream`, per-region POIs and far vegetation, `make stream-check`, TD-103 (terrain meshes on the main thread under the dummy renderer), `--expect-assets` in the pack smoke. Now: verifying the merged Windows build, and merging 8625cbe (parked probes) into its streaming | Phase 3 (PoiRegistry with frame lots), then TD-003 (the 60 FPS pass), Phase 4's save side (v7, the world bundle), graphics options (ADR-0037) |
 | Session 4 `session_015vPE349hAFMwSqC3TWWqqz` | `claude/blissful-wright-gnc54e` | POI prop placement, then first-person hands | Wall-mounted props flush to their walls: 83 sit more than 10 cm off, plus two edge cases, fixed at the source (wall depth from mesh bounds or PropDef size). Its facing fix landed as 2ffe55e, with V's nudges | The first-person hands (ADR-0045, TD-172–175): the owner found them flat, mitt-like and holding tools wrong. Starts from session 2's npc_build gloves and hands, now on the integration branch |
@@ -31,7 +31,7 @@ way it never conflicts.
 ## Active streams and the files they own
 | Stream | Where | Owns |
 |---|---|---|
-| New biomes: burnt forest and fen (W) | integrator | `game/data/biomes/**`, its additions to species, terrain layers and vegetation data, new vegetation generators and terrain textures in `tools/assetgen`, the generator's biome map (`_biome_map`, `biome_at`, BIOME_COLORS, the biome settings) and the composer's biome painting; small reported hunks in terrain, foliage, bark and water shaders and the weather tables |
+| The Corvane Field Lab (Y) | integrator | its building JSON with its notes, loot, keys and items, `props_lab.py` with its catalog and `data/props/lab.json`, its sign atlas, `test_field_lab.gd`, its one entry in the wilderness pool of `world_gen.json`, ADR-0046 if it writes one |
 | Wilderness set pieces, round 3 (X) | integrator | its four building JSONs (Camp Tamarack, Elk Ridge Lodge, the Cordon Quarantine Camp, the Haldane Place) with their notes, loot and keys, its new props family, `test_wilderness_round_three.gd`, and its four entries in the wilderness pool of `world_gen.json` |
 | The Corvane caves (ADR-0044) | session 2 | the cave POI, its data, keys, lights and the sight rule; the `buried` level hunk in `game/src/world/terrain/terrain_holes.gd` (agreed with session 3, which owns the file); D6's region data for the adit; no edits in `game/src/worldgen/**` |
 | Wall-mounted prop offsets | session 4 | the wall-mount math in `PoiBuilder._prop_xf` and `poi_layout.gd`, wall-depth data on prop defs, and a validator check for wall gaps. Session 3 owns the rest of PoiBuilder; keep hunks small and report them |
@@ -44,10 +44,11 @@ way it never conflicts.
   0038 (streamed worlds: the hub creates it, session 3 adds its phases), 0039 (traders and
   contracts, S2), 0040 (organic towns, the hub), 0041 (new biomes, the hub), 0042 (wilderness
   set pieces, the hub, if needed), 0043 (session 4, if needed), 0044 (the Corvane caves, S2),
-  0045 (first-person hands, session 4, if needed). Next free: 0046.
+  0045 (first-person hands, session 4, if needed), 0046 (the field lab, the hub, if needed). Next free:
+  0047.
 * TD: S2 094–101, 111–114, 141–148, 162–169 (caves) and 170–171 (the quartermaster's face, NPC
   notes); session 3 102–109 and 126–130; session 4 159–161 and 172–175 (hands); the hub 110,
-  115–125, 131–140 and 149–158 (agents W and X), then 176 up.
+  115–125, 131–140, 149–158 (agents W and X) and 176–180 (agent Y), then 181 up.
 * Save version: 6 since random worlds. Traders add `world.traders` and `players[*].contracts`
   without a bump (both load empty from older saves). 7 is reserved for session 3's world bundle
   (RWG v2 Phase 4), which carries those keys through. Anyone else who needs a bump asks the hub
@@ -60,15 +61,16 @@ way it never conflicts.
    `stream`), and every crash and freeze the owner has hit: the probe atlas for good (parked
    probes, 8625cbe), the digging crash, the Windows load freeze (71d68d3).
 2. Running now:
-   * the hub's agent W: new biomes for random worlds (burnt forest and fen, ADR-0041);
    * the hub's agent X: wilderness set pieces, round 3 (a summer camp, a hunting lodge, a quarantine
      camp, a fortified homestead);
+   * the hub's agent Y: the Corvane Field Lab (tier 5, the premise's "old field lab"), its props and
+     its place in random worlds;
    * session 2: the Corvane caves (ADR-0044), the Larkspur adit in D6;
    * session 3: verifying the merged Windows build, then Phase 3 (PoiRegistry with frame lots);
    * session 4: wall-mounted props flush to their walls, then the first-person hands (ADR-0045).
-3. The hub, once W and X land: build every generated model this checkout lacks, then the next
-   rounds of agents (more pool dungeons, the M3 base tech, a fidelity pass on what the owner's
-   playtests show).
+3. The hub: W landed (burnt forest and fen, generator v4, TD-149..153). Once X lands, build every
+   generated model this checkout lacks, then a fidelity round on what the owner's playtests show,
+   then the M3 base tech or more pool dungeons.
 4. Session 3, in this order:
    * Phase 3 (PoiRegistry with frame lots; TD-137: today every building of every town is built at
      load);
