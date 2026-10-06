@@ -245,7 +245,9 @@ func _build_chunk(key: Vector2i, ground: bool) -> void:
 			var insts: Array = groups[gk]
 			if sp.veg_kind == "tree":
 				for lod: int in 3:
-					holder.add_child(_mmi(_lod_mesh(sp, variant, lod), insts, 0.0 if lod == 0 else LOD_END[lod - 1], LOD_END[lod], true))
+					if _lod_end(lod) <= 0.0:
+						continue
+					holder.add_child(_mmi(_lod_mesh(sp, variant, lod), insts, 0.0 if lod == 0 else _lod_end(lod - 1), _lod_end(lod), true))
 				continue
 			var end: float = minf(float(sp.lod_distances[1]) * 2.0, 220.0)
 			# Boulders cast shadows (they sit in the light like the trees); loose pebbles don't.
@@ -353,6 +355,20 @@ func _mmi(mesh: Mesh, insts: Array, begin: float, end: float, shadows: bool, shr
 static func _xform(inst: VegetationScatter.Instance) -> Transform3D:
 	var b := Basis.from_euler(Vector3(inst.tilt.x, inst.yaw, inst.tilt.y)).scaled(Vector3.ONE * inst.scale)
 	return Transform3D(b, inst.pos)
+
+
+## Where tree LOD `lod` ends. The graphics setting tree_lod_scale (ADR-0037) moves the full-detail
+## and middle LODs nearer or further; the last LOD keeps its end, since the far impostors start at
+## the near ring's edge. LODs switch per 64 m chunk (TD-035), so the chunk around the player is
+## full detail whenever LOD0 reaches its centre: ~340 firs of ~10k triangles. Below 0.5 there is
+## no full detail at all (LOD1 from 0 m): the low preset's saving (TD-003).
+func _lod_end(lod: int) -> float:
+	if lod >= LOD_END.size() - 1:
+		return LOD_END[LOD_END.size() - 1]
+	var scale: float = clampf(float(Settings.gfx("tree_lod_scale", 1.0)), 0.3, 2.0)
+	if lod == 0 and scale < 0.5:
+		return 0.0
+	return minf(LOD_END[lod] * scale, LOD_END[LOD_END.size() - 1] - 20.0 * float(LOD_END.size() - 1 - lod))
 
 
 func _lod_mesh(sp: SpeciesDef, variant: int, lod: int) -> Mesh:
