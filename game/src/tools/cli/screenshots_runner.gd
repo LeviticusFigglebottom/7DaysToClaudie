@@ -87,6 +87,10 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "larch_street", "pos": Vector3(-69.0, 2.6, 2330.0), "look": Vector3(-84.0, 1.5, 2262.0), "hour": 10.5, "weather": "clear"},
 	# The third block on Larch Street's corner: the Savings & Loan and the school on the right, the fire
 	# station on the left, the Grange Road corner beyond.
+	# Render check (ADR-0036, make render-check): the whole valley's buildings in one view from high
+	# above, so every interior probe (92 of them) is in the frustum at once; the first playtest crashed
+	# when more than the reflection atlas's 64 were.
+	{"name": "valley_overview", "pos": Vector3(0.0, 900.0, 1450.0), "look": Vector3(0.0, 100.0, 2055.0), "hour": 11.0, "weather": "clear", "fov": 90.0},
 	{"name": "third_block", "pos": Vector3(-70.0, 3.2, 2254.0), "look": Vector3(-75.0, 3.0, 2196.0), "hour": 15.5, "weather": "clear", "fov": 70.0},
 	# Weather and atmosphere (ADR-0033): rain on Pell's Crossing's street, a storm in the forest at
 	# night lit by a strike, misty dawn over the valley, the town under snow and a puddled road after

@@ -9,7 +9,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 GODOT="${GODOT:-$ROOT/.tools/godot/godot}"
 LOCK="${LOCK:-}"
-shots="${1:-pell_crossing_street,larch_street}"
+shots="${1:-valley_overview,pell_crossing_street}"
 out="$ROOT/build/render_check"
 log="$out/render_check.log"
 mkdir -p "$out"
