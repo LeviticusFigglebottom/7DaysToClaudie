@@ -120,7 +120,7 @@ def _dirt_mask(model, sk, o) -> None:
     n1 = nz.fbm(V, 22.0, 3) * 0.5 + 0.5
     n2 = nz.fbm(V + 3.1, 7.0, 2) * 0.5 + 0.5
     n3 = nz.fbm(V + 7.7, 60.0, 2) * 0.5 + 0.5
-    g = (1.0 - ao) * 1.6 * (0.5 + n1) + tip * (0.6 + 0.6 * n1) + 0.6 * knuckle * (0.6 + 0.6 * n1) \
+    g = (1.0 - ao) * 1.6 * (0.5 + n1) + tip * (0.25 + 0.3 * n1) + 0.6 * knuckle * (0.6 + 0.6 * n1) \
         + 0.55 * joint * (0.5 + 0.8 * n3) + 0.35 * smoothstep(0.55, 0.85, n2)
     cols[:, 1] = np.clip(g, 0.0, 1.0)[lv]
     flush = np.clip(0.85 * knuckle + 0.6 * joint + 0.45 * tip, 0.0, 1.0) * (0.75 + 0.5 * n1)
@@ -225,7 +225,7 @@ def build(params: dict, outputs: list[str]) -> None:
     solver = F.PoseSolver(rig, cfg.get("wrist"))
     turned = []
     for name, n, loop, frames in F.fp_actions(cfg):
-        solver.clamped = {}
+        solver.reset()
         baked = [rig.evaluate(solver.solve(hands)) for hands in frames]
         char_anim.write_action(arm, sk, name, baked)
         # how far the wrist limits turned each hand from what the pose asked for

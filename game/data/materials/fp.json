@@ -6,7 +6,7 @@
                            "sss_strength": 0.0, "transmittance_color": "#a8503a", "transmittance_depth": 0.025, "transmittance_boost": 0.1,
                            "flush": 0.45, "flush_color": "#c4675a"}},
     "fp_nail": {"shader": "skin", "textures": "fp_skin", "layers": {"wear": "fp_grime"},
-                "params": {"uv_scale": 14.0, "tint": "#f0d2c4", "normal_strength": 0.4, "roughness_add": -0.22, "wear_amount": 0.22, "wear_uv_scale": 10.0, "vertex_ao_strength": 1.0,
+                "params": {"uv_scale": 14.0, "tint": "#f0d2c4", "normal_strength": 0.4, "roughness_add": -0.22, "wear_amount": 0.1, "wear_uv_scale": 10.0, "vertex_ao_strength": 1.0,
                            "sss_strength": 0.0, "transmittance_color": "#b86a58", "transmittance_depth": 0.01}},
     "fp_sleeve": {"shader": "cloth", "textures": "fp_sleeve", "layers": {"wear": "fp_grime"},
                   "params": {"uv_scale": 7.0, "normal_strength": 0.7, "wear_amount": 0.35, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "grime_amount": 0.25, "grime_color": "#2a1d14",
