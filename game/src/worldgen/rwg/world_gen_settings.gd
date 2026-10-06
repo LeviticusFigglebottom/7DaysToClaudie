@@ -22,13 +22,16 @@ const TUNING_KEYS: PackedStringArray = ["macro_step", "biome_step", "region_marg
 const BURN_KEYS: PackedStringArray = ["per_16km2", "cells", "max_share", "water", "road", "town_clear", "drop_clear", "islands"]
 const FEN_KEYS: PackedStringArray = ["max_slope", "water", "low", "valley", "patch", "town_clear", "drop_clear", "pools"]
 const POOL_SPEC_KEYS: PackedStringArray = ["chance", "per_cell", "radius", "depth", "drop", "shore", "irregularity", "max_slope", "border"]
-const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt", "unique"]
+const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt", "unique",
+	"pad", "door"]
+## tuning.wilderness.mine: how a `mine` site (a buried-level POI dug into a hillside, TD-169) fits.
+const MINE_KEYS: PackedStringArray = ["slope", "cover", "portal", "taper", "pad_relief", "approach", "road"]
 ## tuning.towns (organic towns, ADR-0040; the planner's own numbers are town_planner.json).
 const TOWN_KEYS: PackedStringArray = ["mix", "spacing", "edge", "candidates", "core_relief", "disc_relief", "max_slope", "water", "score", "core_smoothing",
 	"stub", "authored_max", "clearance"]
 ## The size classes a town-size mix may name (town_planner.json `kinds`).
 const KIND_KEYS: PackedStringArray = ["hamlet", "village", "town"]
-const SITES: PackedStringArray = ["summit", "forest", "waterside", "lake_shore", "remote", "roadside"]
+const SITES: PackedStringArray = ["summit", "forest", "waterside", "lake_shore", "remote", "roadside", "mine"]
 const ACCESS: PackedStringArray = ["trail", "track", "drive"]
 const NAME_KEYS: PackedStringArray = ["towns", "regions", "region_words", "lakes", "rivers"]
 
@@ -196,13 +199,18 @@ static func schema_errors(db: Node = null) -> PackedStringArray:
 	_unknown(t.get("fen", {}), FEN_KEYS, "world_gen.json tuning.fen", out)
 	_unknown((t.get("fen", {}) as Dictionary).get("pools", {}), POOL_SPEC_KEYS, "world_gen.json tuning.fen.pools", out)
 	var wild: Dictionary = t.get("wilderness", {})
-	_unknown(wild, ["pool", "farmsteads", "spacing", "max_relief"], "world_gen.json tuning.wilderness", out)
+	_unknown(wild, ["pool", "farmsteads", "spacing", "max_relief", "mine"], "world_gen.json tuning.wilderness", out)
+	_unknown(wild.get("mine", {}), MINE_KEYS, "world_gen.json tuning.wilderness.mine", out)
 	for e: Variant in wild.get("pool", []):
 		var pe: Dictionary = e
 		var where: String = "world_gen.json tuning.wilderness.pool[%s]" % pe.get("poi", "?")
 		_unknown(pe, POOL_KEYS, where, out)
 		if not SITES.has(str(pe.get("site", ""))):
 			out.append("%s: site must be one of %s" % [where, ", ".join(SITES)])
+		# A mine's pad is the part of its footprint that stands on the surface (the rest runs under the
+		# hill), so the site can't do without it.
+		if str(pe.get("site", "")) == "mine" and (pe.get("pad", []) as Array).size() != 2:
+			out.append("%s: a mine site needs its surface `pad` [w, d]" % where)
 		if not ACCESS.has(str(pe.get("access", ""))):
 			out.append("%s: access must be one of %s" % [where, ", ".join(ACCESS)])
 		if db != null and not bool(db.call(&"has_def", &"poi", StringName(str(pe.get("poi", ""))))):
