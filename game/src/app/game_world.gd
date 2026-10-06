@@ -260,6 +260,7 @@ func _boot_terrain() -> void:
 	terrain.prebuilt_bloom = _loader.bloom_field
 	# Buildings come by distance (ADR-0038 §8): a cellar is cut once its building stands.
 	terrain.gate_holes = streaming and _loader.registry != null
+	terrain.remesh_far_tiles = streaming
 	add_child(terrain)
 	terrain.setup(world_def, _loader.detailed.duplicate(), _loader.coarse)
 	# The terrain owns the regions now (they detach in a streamed world: nothing else may hold them).

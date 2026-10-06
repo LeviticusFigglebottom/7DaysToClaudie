@@ -675,10 +675,13 @@ func _far_tile_mesh(rid: String, snap: Dictionary = regions) -> Variant:
 ## Region id -> {task, out}: far tiles being meshed again because the region attached (its trees
 ## are drawn by the vegetation from then on: no canopy) or detached (the canopy comes back).
 var _far_jobs: Dictionary = {}
+## Set by GameWorld. Off for bare managers (tests): a worker inside one of this node's methods
+## makes free() refuse it, and a test frees with free() before _exit_tree can join the job.
+var remesh_far_tiles: bool = false
 
 
 func _remesh_far_tile(rid: String) -> void:
-	if _far_root == null or _far_task >= 0:
+	if not remesh_far_tiles or _far_root == null or _far_task >= 0 or not is_inside_tree():
 		return
 	var old: Dictionary = _far_jobs.get(rid, {})
 	if not old.is_empty():
