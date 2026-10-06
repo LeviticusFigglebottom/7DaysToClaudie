@@ -74,6 +74,13 @@ static func _kinds(v: Variant) -> Variant:
 	return out
 
 
+## Drops a building's cached plan when it is freed (a streamed world makes a new dressed def each
+## time it builds one, and an object id can be reused once its object is gone).
+static func forget(layout: PoiLayout) -> void:
+	if layout != null and layout.def != null:
+		_plans.erase(layout.def.get_instance_id())
+
+
 ## Opening id -> [cue kinds] for every opening that gets cues. Main thread only (the cache);
 ## `windows` is entry_windows(layout) when a worker already walked it (PoiManager._prepare_poi).
 static func plan(layout: PoiLayout, windows: Variant = null) -> Dictionary:

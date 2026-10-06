@@ -327,6 +327,7 @@ func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
 		if ai != null:
 			inst.despawn_sleepers(ai)
 		_keep_roamers(id, inst)
+		RouteCues.forget(inst.layout)
 		inst.queue_free()
 	instances.erase(id)
 	_grid_remove(id)

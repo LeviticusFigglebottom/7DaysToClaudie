@@ -38,7 +38,7 @@ func setup_world(w: Node) -> void:
 	world = w
 	Game.register_command(&"wildlife.butcher", _butcher)
 	# A region's 1 m terrain answers sample() differently from its coarse one: plan again.
-	var tm: Node = w.get(&"terrain") as Node
+	var tm: Node = (w.get(&"terrain") as Node) if w != null else null
 	if tm != null and tm.has_signal(&"region_attached"):
 		tm.connect(&"region_attached", _on_regions_changed)
 		tm.connect(&"region_detached", _on_regions_changed)
