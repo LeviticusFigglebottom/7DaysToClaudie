@@ -70,10 +70,12 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 		var back: float = float((lots.size_of("civic")[1] as Array)[1]) + lots.verge + 6.0
 		net.obstacles.append(PackedVector2Array([plaza.at(-plaza.w * 0.5 - 8.0, plaza.d * 0.5), plaza.at(plaza.w * 0.5 + 8.0, plaza.d * 0.5),
 			plaza.at(plaza.w * 0.5 + 8.0, -plaza.d * 0.5 - back), plaza.at(-plaza.w * 0.5 - 8.0, -plaza.d * 0.5 - back)]))
+	var t_net: int = Time.get_ticks_usec()
 	net.grow(rs)
 	if bool(kd.get("back_lanes", false)):
 		net.add_back_lanes(rs, float(scfg.get("back_lane_offset", 44.0)))
 	net.add_bulbs()
+	var t_lots: int = Time.get_ticks_usec()
 	# Lots, quota by quota (§3.7), then houses everywhere else.
 	var quota: Dictionary = {}
 	for z: String in ["commercial", "civic", "industrial", "rural"]:
@@ -82,8 +84,16 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 	var counts: Dictionary = {"commercial": 0, "civic": 0, "industrial": 0, "rural": 0}
 	if plaza != null:
 		counts["civic"] += _plaza_civic(lots, plaza, rl, int(quota["civic"]))
-	counts["commercial"] += _frontage_quota(net, lots, rl, "commercial", int(quota["commercial"]), 0.0, radius * 0.6, 0.0, false)
-	counts["civic"] += _frontage_quota(net, lots, rl, "civic", int(quota["civic"]) - int(counts["civic"]), 0.0, radius * 0.6, 0.0, true)
+	for z2: String in ["commercial", "civic"]:
+		# Nearest the centre on the arterials (civic also on the first stretch of the side streets);
+		# then anywhere in town; then on ground a metre steeper than the zone likes.
+		var want: int = int(quota[z2]) - int(counts[z2])
+		var lo_q: int = int((kd.get(z2, [0, 0]) as Array)[0])
+		counts[z2] += _frontage_quota(net, lots, rl, z2, want, 0.0, radius * 0.6, 0.0, z2 == "civic")
+		if int(counts[z2]) < lo_q:
+			counts[z2] += _frontage_quota(net, lots, rl, z2, lo_q - int(counts[z2]), 0.0, radius, 0.0, true)
+		if int(counts[z2]) < lo_q:
+			counts[z2] += _frontage_quota(net, lots, rl, z2, lo_q - int(counts[z2]), 0.0, radius, 0.0, true, 1.0)
 	counts["industrial"] += _frontage_quota(net, lots, rl, "industrial", int(quota["industrial"]), radius * 0.72, radius + 140.0, radius * 0.92, false)
 	counts["rural"] += _rural(net, lots, rl, int(quota["rural"]), radius, outskirts, lcfg)
 	var fixed: int = lots.lots.size() - (1 if plaza != null else 0)
@@ -94,12 +104,18 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 	var candidates: int = lots.lots.size() - (1 if plaza != null else 0)
 	_thin(lots, rl, maxi(0, target - fixed), center, radius, float(lcfg.get("thin", 2.5)))
 	_finish(net, lots, kd, radius)
+	var t_parcels: int = Time.get_ticks_usec()
 	lots.parcels(float(lcfg.get("parcel_back", 8.0)))
+	var t_fix: int = Time.get_ticks_usec()
 	var fixtures: Array = _fixtures(net, lots, plaza, kd, fcfg, rf)
+	var t_blocks: int = Time.get_ticks_usec()
 	var blocks: Array[Dictionary] = net.blocks()
+	var t_end: int = Time.get_ticks_usec()
 	stats = _stats(net, lots, quota, target, candidates)
 	stats["ground_calls"] = ground.calls
-	stats["ms"] = (Time.get_ticks_usec() - t0) / 1000.0
+	stats["ms"] = (t_end - t0) / 1000.0
+	stats["ms_parts"] = {"setup": (t_net - t0) / 1000.0, "streets": (t_lots - t_net) / 1000.0, "lots": (t_parcels - t_lots) / 1000.0,
+		"parcels": (t_fix - t_parcels) / 1000.0, "fixtures": (t_blocks - t_fix) / 1000.0, "blocks": (t_end - t_blocks) / 1000.0}
 	return _output(site, net, lots, plaza, fixtures, blocks, stats)
 
 
@@ -160,40 +176,33 @@ static func _plaza(net: Streets, lots: Lots, kd: Dictionary, r: RandomNumberGene
 	var pr: Array = kd.get("plaza", [0, 0])
 	if float(pr[1]) <= 0.0:
 		return null
-	var size: float = r.randf_range(float(pr[0]), float(pr[1]))
-	var main: int = _main_street(net)
-	if main < 0:
-		return null
-	var st: Streets.Street = net.streets[main]
-	var sc: float = st.line.closest(net.center).y
-	var first: int = 1 if r.randf() < 0.5 else -1
-	for k: float in [0.0, 1.0, -1.0, 2.0, -2.0, 3.0, -3.0]:
-		for side: int in [first, -first]:
-			var lo: float = sc + k * (size * 0.5 + 12.0) - size * 0.5
-			var hi: float = lo + size
-			if lo < 0.0 or hi > st.length() or not is_nan(Lots._jump(lots.blocked(main, side), lo, hi, 1.0)):
-				continue
-			var l: Lots.Lot = lots.frame_on(main, side, lo, hi, size)
-			if lots.fits(l, lots.relief_of("plaza")):
-				l.zone = "plaza"
-				l.size_key = "plaza"
-				l.fixed = true
-				return l
-	return null
-
-
-## The arterial passing nearest the centre (-1: none).
-static func _main_street(net: Streets) -> int:
-	var best: int = -1
-	var bd: float = INF
+	var arts: Array = []
 	for si: int in net.streets.size():
-		if net.streets[si].cls != "arterial":
-			continue
-		var d: float = net.streets[si].line.closest(net.center).x
-		if d < bd:
-			bd = d
-			best = si
-	return best
+		if net.streets[si].cls == "arterial":
+			arts.append([net.streets[si].line.closest(net.center).x, si])
+	arts.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	var first: int = 1 if r.randf() < 0.5 else -1
+	var sizes: Array[float] = [r.randf_range(float(pr[0]), float(pr[1])), float(pr[0])]
+	for attempt: int in 2:
+		var size: float = sizes[attempt]
+		var relief: float = lots.relief_of("plaza") + attempt * 1.0
+		for ar: Array in arts:
+			var si2: int = int(ar[1])
+			var st: Streets.Street = net.streets[si2]
+			var sc: float = st.line.closest(net.center).y
+			for k: float in [0.0, 1.0, -1.0, 2.0, -2.0, 3.0, -3.0]:
+				for side: int in [first, -first]:
+					var lo: float = sc + k * (size * 0.5 + 12.0) - size * 0.5
+					var hi: float = lo + size
+					if lo < 0.0 or hi > st.length() or not is_nan(Lots._jump(lots.blocked(si2, side), lo, hi, 1.0)):
+						continue
+					var l: Lots.Lot = lots.frame_on(si2, side, lo, hi, size)
+					if l.c.distance_to(net.center) < float(kd.get("core", 130.0)) and lots.fits(l, relief):
+						l.zone = "plaza"
+						l.size_key = "plaza"
+						l.fixed = true
+						return l
+	return null
 
 
 ## Civic lots round the square: one behind it and one at either side, facing it.
@@ -227,9 +236,13 @@ static func _plaza_civic(lots: Lots, plaza: Lots.Lot, r: RandomNumberGenerator, 
 ## A quota of `zone` lots on arterial frontage (and, for civic, the first stretch of the side
 ## streets) between `d_lo` and `d_hi` m from the centre: candidates from walks out from the centre,
 ## taken nearest `d_at` first while they still fit.
-static func _frontage_quota(net: Streets, lots: Lots, r: RandomNumberGenerator, zone: String, quota: int, d_lo: float, d_hi: float, d_at: float, side_streets: bool) -> int:
+static func _frontage_quota(net: Streets, lots: Lots, r: RandomNumberGenerator, zone: String, quota: int, d_lo: float, d_hi: float, d_at: float, side_streets: bool,
+		extra_relief: float = 0.0) -> int:
 	if quota <= 0:
 		return 0
+	var keep_relief: float = lots.relief_of(zone)
+	if extra_relief > 0.0:
+		lots.reliefs[zone] = keep_relief + extra_relief
 	var center: Vector2 = net.center
 	var zone_at := func(p: Vector2, _si: int) -> String:
 		var d: float = p.distance_to(center)
@@ -242,7 +255,7 @@ static func _frontage_quota(net: Streets, lots: Lots, r: RandomNumberGenerator, 
 			for side: int in [1, -1]:
 				cands.append_array(lots.walk(si, side, sc + 0.5, st.length(), zone_at, r, false, 12))
 				cands.append_array(lots.walk(si, side, sc - 0.5, 0.0, zone_at, r, false, 12))
-		elif side_streets and st.gen == 1 and st.line.points[0].distance_to(center) < d_hi:
+		elif side_streets and st.gen >= 1 and st.cls in ["street", "lane"] and st.line.points[0].distance_to(center) < d_hi:
 			for side2: int in [1, -1]:
 				cands.append_array(lots.walk(si, side2, 0.0, minf(st.length(), 130.0), zone_at, r, false, 2))
 	cands.sort_custom(func(a: Lots.Lot, b: Lots.Lot) -> bool: return absf(a.c.distance_to(center) - d_at) < absf(b.c.distance_to(center) - d_at))
@@ -254,6 +267,7 @@ static func _frontage_quota(net: Streets, lots: Lots, r: RandomNumberGenerator, 
 			l.fixed = true
 			lots.add(l)
 			made += 1
+	lots.reliefs[zone] = keep_relief
 	return made
 
 
@@ -602,7 +616,7 @@ static func _stats(net: Streets, lots: Lots, quota: Dictionary, target: int, can
 			back += 1
 		if st.gen >= 1 and st.cls != "bulb":
 			length += st.length()
-	return {"lots": n, "zones": zones, "rings": rings, "quota": quota, "lot_target": target, "lot_candidates": candidates,
+	return {"lots": n, "zones": zones, "rings": rings, "quota": quota, "lot_target": target, "lot_candidates": candidates, "plaza": lots.lots.any(func(l: Lots.Lot) -> bool: return l.zone == "plaza"),
 		"side_streets": net.side_count, "loops": net.loops, "culdesacs": cul, "back_lanes": back, "street_length": snappedf(length, 1.0),
 		"junctions": net.junctions.size()}
 

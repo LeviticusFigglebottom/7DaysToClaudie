@@ -7,8 +7,8 @@ way it never conflicts.
 ## Sessions
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
-| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O2 (random worlds), P2 (pool buildings), Q2 (weather) finishing after the owner's interrupt stopped O, P and Q; a player guide (`docs/HOW_TO_PLAY.md`); the random worlds v2 plan | Random worlds v2 (`docs/RWG_V2_PLAN.md`): Phase 1 (measure and speed up the composer and generator) once O2 lands, then Phase 4's generator side and Phase 5 (organic towns, ADR-0040); the full screenshot QA and stabilization round once O2, P2 and Q2 land |
-| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Hollowed hounds and Murmurs (ADR-0034); the third block is merged (dd01229, 437535c) | Base-building fidelity (ADR-0035); the third block opened to random towns' pool; pool round 2 (four or five set pieces: motel and annex, church hall, garage, trailer park, a second industrial site) |
+| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Random worlds v1 (O2) and weather (Q2, ADR-0033) landed. Running: P2 (pool buildings) finishing; R1 (RWG v2 Phase 1: golden composer test, speed-ups, bands, cancel, cache LRU, ADR-0038); T (the organic town planner, ADR-0040); S1 (bugs found while writing `docs/HOW_TO_PLAY.md`) | Random worlds v2 (`docs/RWG_V2_PLAN.md`): Phase 1 (measure and speed up the composer and generator) once O2 lands, then Phase 4's generator side and Phase 5 (organic towns, ADR-0040); the full screenshot QA and stabilization round once O2, P2 and Q2 land |
+| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Base-building fidelity (ADR-0035). Hounds and Murmurs merged (694df3c); the third block merged (dd01229, 437535c) | Base-building fidelity (ADR-0035); the third block opened to random towns' pool; pool round 2 (four or five set pieces: motel and annex, church hall, garage, trailer park, a second industrial site) |
 | Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Merged: boot-step load, stand-in CI, menu notices, Build workflow (301e85c), terrain thread races (cb83882). Now: the performance pass (TD-003) | Random worlds v2 Phases 2 and 3 (regions and buildings stream; the load path), then Phase 4's save side (v7, the world bundle), then graphics options (ADR-0037) |
 
 ## Protocol
@@ -30,9 +30,8 @@ way it never conflicts.
 ## Active streams and the files they own
 | Stream | Where | Owns |
 |---|---|---|
-| Random worlds (O, ADR-0031) | integrator | `game/src/worldgen/**`, `game/src/ui/new_game_panel.gd`, `game/data/config/world_gen.json`, `game/src/tools/cli/rwg_*` |
+| Random worlds v2, generator side (R1 Phase 1, T planner) | integrator | `game/src/worldgen/**`, `game/src/ui/new_game_panel.gd`, `game/data/config/world_gen.json`, `game/data/config/town_planner.json`, `game/src/tools/cli/rwg_*`, `compose_region*` |
 | Pool buildings (P) | integrator | `game/data/props/town3.json`, `props_town3.py`, the laundromat, grocery, lumber & feed, library and radio station JSONs |
-| Weather (Q, ADR-0033) | integrator | `game/src/world/environment/**`, `game/src/world/fx/` (rain, snow), the weather hunks in every shader, rain and thunder audio |
 | Hounds and Murmurs (ADR-0034) | session 2 | new enemy defs in `game/data/enemies/`, their generators and populations, additive hunks in `game/src/ai/` (quadruped and flock pipelines) |
 | Builds and stability | session 3 | `.github/workflows/` (new export jobs), `game/export_presets.cfg`, the load sequence (`game/src/app/game_world.gd`, `world_loader.gd`, `PoiManager`'s placement path, `PoiBuilder.build`'s validator argument), thread-safety fixes in `game/src/world/terrain/` and `game/src/world/vegetation/`, and fixes it reports to the hub |
 
@@ -45,7 +44,7 @@ way it never conflicts.
 * Save version: 6 since random worlds. 7 is reserved for session 3's world bundle (RWG v2 Phase 4); anyone else who needs a bump asks the hub first.
 
 ## Queue (in order)
-1. Land O, P and Q. (Session 2's school, fire station and bank are merged: dd01229.)
+1. Land P2 (random worlds v1 and weather landed; session 2's third block, hounds and Murmurs are merged).
 2. Session 3: the first downloadable build from the Build workflow (artifacts on the Actions page),
    then the races and the performance pass. The freeze and the crash are fixed (below).
 3. Random worlds v2 (`docs/RWG_V2_PLAN.md`): compose regions on demand, so maps of 10–16 km
