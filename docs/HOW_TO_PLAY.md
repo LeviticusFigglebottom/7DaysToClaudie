@@ -663,8 +663,5 @@ Options. The packaged build has no frame counter (F4 is a developer tool).
 | A crash | Send `logs\godot.log` before starting the game again (Godot keeps a few older logs beside it, dated), the console window's text if you used Hollowmere.console.exe, what you were doing, your GPU and preset, and the run's save folder if a save is involved |
 
 **Known issues in this build:**
-* If the Bloom turns you (infection 100), *Wake up* brings you back still fully infected and you die
-  again at once. Close the game (Alt+F4) and *Continue* from your last save; keep infection down with
-  antifungals.
 * A placed blueprint ghost can't be removed.
 * The tether's map caption always reads "LARCH HOLLOW · CORDON SECTOR D6", even in a random world.
