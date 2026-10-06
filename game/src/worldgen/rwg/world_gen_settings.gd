@@ -19,8 +19,8 @@ const PRESET_KEYS: PackedStringArray = ["label", "description", "values"]
 const TUNING_KEYS: PackedStringArray = ["macro_step", "biome_step", "region_margin", "terrain", "rivers", "lakes", "towns", "roads", "wilderness", "drop_site", "bloom"]
 const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt"]
 ## tuning.towns (organic towns, ADR-0040; the planner's own numbers are town_planner.json).
-const TOWN_KEYS: PackedStringArray = ["mix", "spacing", "edge", "candidates", "core_relief", "disc_relief", "water", "score", "core_smoothing", "stub",
-	"authored_max", "clearance"]
+const TOWN_KEYS: PackedStringArray = ["mix", "spacing", "edge", "candidates", "core_relief", "disc_relief", "max_slope", "water", "score", "core_smoothing",
+	"stub", "authored_max", "clearance"]
 ## The size classes a town-size mix may name (town_planner.json `kinds`).
 const KIND_KEYS: PackedStringArray = ["hamlet", "village", "town"]
 const SITES: PackedStringArray = ["summit", "forest", "waterside", "lake_shore", "remote", "roadside"]

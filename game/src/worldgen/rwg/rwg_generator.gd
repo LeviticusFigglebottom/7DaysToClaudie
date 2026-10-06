@@ -142,6 +142,13 @@ class RefGround extends RefCounted:
 	func h(x: float, z: float) -> float:
 		return wd.macro_height(x, z) + noise.get_noise_2d(x, z) * AMP
 
+	## The land's shape without the detail noise: what the planner plans streets and lots over. The
+	## noise (2.5 m, 10-80 m across) is texture the composer smooths out of every street's profile
+	## and grades out of every pad; on it, a 12 m step of a street or a lot's relief read as steep
+	## ground at random, and towns came out half grown.
+	func m(x: float, z: float) -> float:
+		return wd.macro_height(x, z)
+
 
 static func world_id_for(s: GenSettings) -> String:
 	return "rwg_%s" % ("%x" % (Ids.hash64("v%d|%s" % [VERSION, s.key()]) & 0xffffffffffff)).lpad(12, "0")
@@ -463,43 +470,65 @@ func _town_sites() -> void:
 			continue
 		var best: Dictionary = {}
 		var best_score: float = INF
-		for attempt: int in tries:
-			var c := Vector2(r.randf_range(-lim, lim), r.randf_range(-lim, lim))
-			var jitter: float = r.randf()
-			var clear: bool = true
-			for other: Dictionary in towns:
-				if (other["center"] as Vector2).distance_to(c) < radius + float(other["radius"]) + spacing:
-					clear = false
+		# The disc's mean slope may not pass the class's limit; where nothing passes, the limit
+		# relaxes to the least steep disc seen (plus a little) and the search runs again.
+		var max_slope: float = float((tcfg.get("max_slope", {}) as Dictionary).get(kind, 0.09))
+		var steep_best: float = INF
+		for round_i: int in 2:
+			if round_i == 1:
+				if not best.is_empty() or steep_best == INF:
 					break
-			if not clear:
-				continue
-			var wd: float = water_at(c)
-			if wd < float(wr[0]) + 60.0:
-				wd = water_exact(c)
-			if wd < float(wr[0]):
-				continue
-			var core_st: Vector3 = _relief(c, core)
-			if core_st.y - core_st.x > core_max:
-				continue
-			var disc_st: Vector3 = _relief(c, radius)
-			if disc_st.y - disc_st.x > disc_max:
-				continue
-			var slope: float = 0.0
-			for k2: int in 9:
-				var q: Vector2 = c + (Vector2.ZERO if k2 == 0 else Vector2.from_angle(k2 * TAU / 8.0) * core * 0.6)
-				slope += terrain.slope(q.x, q.y) / 9.0
-			var hood: float = 0.0
-			for k3: int in 24:
-				var q3: Vector2 = c + (Vector2.from_angle(k3 * TAU / 16.0) * 500.0 if k3 < 16 else Vector2.from_angle((k3 - 16) * TAU / 8.0) * 250.0)
-				hood += terrain.height(q3.x, q3.y) / 24.0
-			var rel: float = terrain.height(c.x, c.y) - hood
-			var water_term: float = -float(sc.get("water", 6.0)) if wd >= float(wr[1]) and wd <= float(wr[2]) else 0.0
-			var edge_d: float = half - maxf(absf(c.x), absf(c.y)) - radius
-			var score: float = float(sc.get("slope", 120.0)) * slope + float(sc.get("valley", 0.25)) * rel + water_term \
-				+ float(sc.get("central", 4.0)) * c.length() / half + float(sc.get("edge", 0.02)) * maxf(0.0, 300.0 - edge_d) + float(sc.get("jitter", 3.0)) * jitter
-			if score < best_score:
-				best_score = score
-				best = {"center": c}
+				# Nothing level enough: once more, a little steeper than the least steep disc seen.
+				max_slope = steep_best + 0.01
+				steep_best = INF
+			for attempt: int in tries:
+				var c := Vector2(r.randf_range(-lim, lim), r.randf_range(-lim, lim))
+				var jitter: float = r.randf()
+				var clear: bool = true
+				for other: Dictionary in towns:
+					if (other["center"] as Vector2).distance_to(c) < radius + float(other["radius"]) + spacing:
+						clear = false
+						break
+				if not clear:
+					continue
+				var wd: float = water_at(c)
+				if wd < float(wr[0]) + 60.0:
+					wd = water_exact(c)
+				if wd < float(wr[0]):
+					continue
+				var core_st: Vector3 = _relief(c, core)
+				if core_st.y - core_st.x > core_max:
+					continue
+				var disc_st: Vector3 = _relief(c, radius)
+				if disc_st.y - disc_st.x > disc_max:
+					continue
+				# Mean slope over the core (9 samples) and over the disc (the core's and two rings): the
+				# planner's streets climb at most 0.11, so a town on a valley side stays half grown.
+				var slope: float = 0.0
+				var disc_slope: float = 0.0
+				for k2: int in 25:
+					var q: Vector2 = c
+					if k2 > 0:
+						q += Vector2.from_angle(k2 * TAU / 8.0) * (core * 0.6 if k2 <= 8 else (radius * 0.55 if k2 <= 16 else radius * 0.9))
+					var sl: float = terrain.slope(q.x, q.y)
+					if k2 <= 8:
+						slope += sl / 9.0
+					disc_slope += sl / 25.0
+				if disc_slope > max_slope:
+					steep_best = minf(steep_best, disc_slope)
+					continue
+				var hood: float = 0.0
+				for k3: int in 24:
+					var q3: Vector2 = c + (Vector2.from_angle(k3 * TAU / 16.0) * 500.0 if k3 < 16 else Vector2.from_angle((k3 - 16) * TAU / 8.0) * 250.0)
+					hood += terrain.height(q3.x, q3.y) / 24.0
+				var rel: float = terrain.height(c.x, c.y) - hood
+				var water_term: float = -float(sc.get("water", 6.0)) if wd >= float(wr[1]) and wd <= float(wr[2]) else 0.0
+				var edge_d: float = half - maxf(absf(c.x), absf(c.y)) - radius
+				var score: float = float(sc.get("slope", 120.0)) * slope + float(sc.get("disc_slope", 150.0)) * disc_slope + float(sc.get("valley", 0.25)) * rel + water_term \
+					+ float(sc.get("central", 4.0)) * c.length() / half + float(sc.get("edge", 0.02)) * maxf(0.0, 300.0 - edge_d) + float(sc.get("jitter", 3.0)) * jitter
+				if score < best_score:
+					best_score = score
+					best = {"center": c}
 		if best.is_empty():
 			warnings.append("no room for a %s" % kind)
 			continue
@@ -778,11 +807,13 @@ func _main_streets() -> void:
 	_reindex_roads()
 
 
-## The reference ground callable (built on demand: the planner and the stubs share it).
+## The land the towns are planned over: the composer's macro ground (RefGround.m; built on demand,
+## the planner and the stubs share it). Lot heights come from the full reference ground
+## (_finalize_town_heights).
 func _ground_fn() -> Callable:
 	if _ref == null:
 		_ref = RefGround.new(terrain, settings.seed & 0x7fffffff, size)
-	return _ref.h
+	return _ref.m
 
 
 ## Roads with an end at c: [[road index, at its start, direction out of c along it]].
@@ -1285,7 +1316,7 @@ func _drop_site() -> void:
 		var p2 := Vector2.ZERO
 		for k: int in 400:
 			var q := Vector2(r.randf_range(-size * 300.0, size * 300.0), r.randf_range(-size * 300.0, size * 300.0))
-			if water_at(q) > 70.0 and terrain.slope(q.x, q.y) < 0.15 and not _near_lots(q, 60.0) \
+			if water_at(q) > 70.0 and terrain.slope(q.x, q.y) < 0.15 and not _near_lots(q, 60.0) and _town_distance(q) > (60.0 if k < 300 else 0.0) \
 					and inside_one_region(PackedVector2Array([q - Vector2(24, 24), q + Vector2(24, 24)]), 60.0):
 				p2 = q
 				break

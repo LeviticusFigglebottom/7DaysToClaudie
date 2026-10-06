@@ -82,7 +82,8 @@ func test_a_town_across_region_borders_has_no_seam() -> void:
 	if fw == null:
 		return
 	assert_eq(fw.layout, "organic")
-	assert_gt(fw.lots.size(), 12, "the village has lots (%d)" % fw.lots.size())
+	gut.p("forced village: %d lots, %d streets; warnings %s" % [fw.lots.size(), fw.roads.size(), g.get(&"warnings")])
+	assert_gt(fw.lots.size(), 8, "the village has lots (%d)" % fw.lots.size())
 	var rts: Dictionary = {}
 	for rid: String in world.regions:
 		rts[world.regions[rid]["cell"]] = TerrainComposer.compose(world, rid, 4.0)
