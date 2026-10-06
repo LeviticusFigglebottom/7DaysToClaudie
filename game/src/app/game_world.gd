@@ -151,6 +151,7 @@ func _loading_map_texture() -> Texture2D:
 
 ## Runs boot steps within the frame's budget, then shows the next one's label.
 func _run_boot_steps() -> void:
+	_turn_warm_camera()
 	_boot.run_frame()
 	if _boot.is_idle():
 		_boot = null
@@ -194,7 +195,8 @@ func _on_world_loaded() -> void:
 ## neighbours are there. Their previous process modes are restored when the boot ends.
 func _hold_processing() -> void:
 	for c: Node in get_children():
-		if c != ui and not _held.has(c):
+		# The warm-up camera is freed when the player arrives: never held, nothing to release.
+		if c != ui and c != _warm_camera and not _held.has(c):
 			_held[c] = c.process_mode
 			c.process_mode = Node.PROCESS_MODE_DISABLED
 
@@ -244,6 +246,44 @@ func _boot_terrain() -> void:
 	_insert_boot_steps(terrain.boot_steps())
 	if streaming:
 		terrain.start_streaming(Content.config(&"streaming"))
+	_add_warm_camera()
+
+
+# --- Pipeline warm-up (TD-003) ----------------------------------------------------------------
+
+## A camera at the spawn while the world boots, so the renderer draws it behind the loading
+## screen as each system adds its meshes. Without one nothing 3D was drawn until the player's
+## camera arrived, and that first frame compiled every pipeline the view needed at once: 16.5 s
+## (151 surface pipelines) in the owner's Windows build, the "not responding" freeze. Turning a
+## fifth of a circle a frame, it shows every direction the player may face within five frames.
+var _warm_camera: Camera3D = null
+const WARM_TURN: float = TAU / 5.0
+
+
+func _add_warm_camera() -> void:
+	var at: Vector3
+	if bool(Game.pending_options.get("is_new_game", false)):
+		at = _find_spawn("drop_site").get("pos", Vector3.ZERO)
+	else:
+		at = session.local_player().position
+	_warm_camera = Camera3D.new()
+	_warm_camera.name = "WarmCamera"
+	_warm_camera.fov = 100.0
+	_warm_camera.far = 2000.0
+	add_child(_warm_camera)
+	_warm_camera.global_position = at + Vector3.UP * 1.7
+	_warm_camera.make_current()
+
+
+func _turn_warm_camera() -> void:
+	if _warm_camera != null and is_instance_valid(_warm_camera):
+		_warm_camera.rotation = Vector3(-0.15, _warm_camera.rotation.y + WARM_TURN, 0.0)
+
+
+func _drop_warm_camera() -> void:
+	if _warm_camera != null and is_instance_valid(_warm_camera):
+		_warm_camera.queue_free()
+	_warm_camera = null
 
 
 func _boot_environment() -> void:
@@ -326,6 +366,8 @@ func _spawn_player() -> void:
 		_give_start_kit(p)
 	player = (load(PLAYER_SCENE) as PackedScene).instantiate() as Player
 	add_child(player)
+	_drop_warm_camera()
+	player.camera.make_current()
 	player.bind_state(p)
 	player.input_enabled = false
 	player.died.connect(_on_player_died)
