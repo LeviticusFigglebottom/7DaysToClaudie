@@ -220,7 +220,8 @@ run whose folder is gone regenerates with v2, TD-082):
 − Towns are bigger (a town 70-120 lots): until Phases 2-3 stream them, every building of every
   town is built at load (TD-137).
 − Lots step down a slope as terraces with short banks between them (1 m apart, 5 m skirts), and
-  yards grow grass right up to (and, under a low floor, possibly into) the building (TD-136).
+  yards grow grass right up to (and, under a low floor, possibly into) the building (TD-136; since ADR-0047 it keeps off the
+  largest authored footprint a lot may hold).
 − Lots are rectangles in irregular parcels; a building never takes a parcel's shape (TD-116).
 − Fixtures are per town in lists of a few hundred; they need Phase 3's per-cell batching.
 − The planner trusts its arterials: a kinked main street near the centre costs core frontage; the
@@ -228,6 +229,7 @@ run whose folder is gone regenerates with v2, TD-082):
   (a turn past 120 degrees where it skirts a river crossing or a steep bank, 2-4 a settled map),
   in towns and out of them (TD-139).
 − From above, a town's disc of `town` ground reads as one patch of brown among the meadows: the
-  paint keeps town ambience and spawns over the streets between the lots (TD-136).
+  paint keeps town ambience and spawns over the streets between the lots (TD-136; since ADR-0047
+  `town` is painted on the streets only and a town mask keys ambience and spawns).
 − A town on ground steeper than its class's slope limit (rough small maps) still comes out half
   grown (TD-138).

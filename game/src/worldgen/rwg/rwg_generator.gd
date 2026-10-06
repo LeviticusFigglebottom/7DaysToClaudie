@@ -44,7 +44,8 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 3: a trader post by each town (session 2's `trader:program_relay:<n>` spawns, ADR-0039).
 ## 4: burnt forest (fire scars) and fen (low wet ground, with pools) in the biome map (ADR-0041).
 ## 5: wilderness pool entries may be `unique` (one per world whatever its size: the field lab).
-const VERSION: int = 5
+## 6: the Ashen high camp joins the wilderness pool (ADR-0048), so worlds cached at 5 regenerate.
+const VERSION: int = 6
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -160,7 +161,21 @@ class RefGround extends RefCounted:
 
 
 static func world_id_for(s: GenSettings) -> String:
-	return "rwg_%s" % ("%x" % (Ids.hash64("v%d|%s" % [VERSION, s.key()]) & 0xffffffffffff)).lpad(12, "0")
+	return world_id_for_version(s, VERSION)
+
+
+## The id generator version `version` gave these settings' world.
+static func world_id_for_version(s: GenSettings, version: int) -> String:
+	return "rwg_%s" % ("%x" % (Ids.hash64("v%d|%s" % [version, s.key()]) & 0xffffffffffff)).lpad(12, "0")
+
+
+## Which generator version made world `world_id` from these settings (the id hashes it); 0 when
+## none up to this one did (a world id from somewhere else). Save v7 records it (TD-140).
+static func version_of(world_id: String, s: GenSettings) -> int:
+	for v: int in range(VERSION, 0, -1):
+		if world_id_for_version(s, v) == world_id:
+			return v
+	return 0
 
 
 ## Runs the generator. Returns the generator (an RwgGenerator) with everything it made.

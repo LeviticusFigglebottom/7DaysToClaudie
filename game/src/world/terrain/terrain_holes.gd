@@ -60,6 +60,40 @@ func has_buried() -> bool:
 
 # --- Construction ---------------------------------------------------------------------------------
 
+## The holes of `parts` (TerrainHoles, in order) as one new object, keeping only those of the POIs
+## in `only` (instance id -> anything) unless `only` is null. Holes are shared, not copied: they
+## are immutable. A streamed world cuts only built buildings' cellars (ADR-0038 §8): a pit where
+## the ring has not built the building yet would be a hole in an empty lot.
+static func combined(parts: Array, only: Variant = null) -> TerrainHoles:
+	var th := TerrainHoles.new()
+	var gate: Dictionary = only if only is Dictionary else {}
+	for part: Variant in parts:
+		for h: Hole in (part as TerrainHoles).holes:
+			if only == null or gate.has(h.id):
+				th.bounds = h.bounds if th.holes.is_empty() else th.bounds.merge(h.bounds)
+				th.holes.append(h)
+		for b: Hole in (part as TerrainHoles).buried:
+			if only == null or gate.has(owner_of(b.id)):
+				th.buried.append(b)
+	return th
+
+
+## The POI a hole belongs to: a buried level's hole is "<poi id>@<level>".
+static func owner_of(hole_id: StringName) -> StringName:
+	var s: String = String(hole_id)
+	var at: int = s.rfind("@")
+	return StringName(s.substr(0, at)) if at >= 0 else hole_id
+
+
+## Whether any hole (cut or buried) belongs to POI `id`, and where: its holes' bounds merged
+## (Rect2() when none).
+func bounds_of(id: StringName) -> Rect2:
+	var out := Rect2()
+	for h: Hole in holes + buried:
+		if h.id == id or owner_of(h.id) == id:
+			out = h.bounds if out.size == Vector2.ZERO else out.merge(h.bounds)
+	return out
+
 ## Holes for every POI placed in `regions` (region id -> RegionTerrain; the detailed regions,
 ## which are the ones PoiManager builds).
 static func from_regions(regions: Dictionary) -> TerrainHoles:

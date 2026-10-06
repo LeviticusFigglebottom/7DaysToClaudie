@@ -103,7 +103,9 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	ground.roughness = 0.95
 	_fallback_material = ground
 	_build_grid()
-	holes = TerrainHoles.from_regions(regions)
+	for rid: String in regions:
+		_region_holes[rid] = TerrainHoles.from_regions({rid: regions[rid]})
+	_publish_holes()
 	bloom = BloomWorld.new()
 	bloom.name = "Bloom"
 	add_child(bloom)
@@ -239,20 +241,39 @@ static func chunk_of(x: float, z: float) -> Vector2i:
 ## taken from already-edited heights).
 func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 	var rid: String = rt.region_id
+	var t: int = Time.get_ticks_usec()
+	attach_parts = {}
 	if pristine != null:
 		_base_cache[rid] = pristine
 	_apply_deltas(rt)
+	t = _part("deltas", t)
 	var next: Dictionary = regions.duplicate()
 	next[rid] = rt
 	_lock.lock()
 	regions = next
 	_lock.unlock()
 	_build_grid()
+	t = _part("grid", t)
 	_materials[rid] = _make_region_material(rt)
+	t = _part("material", t)
 	# Cellars of the region's buildings (a new object: workers hold the old one).
-	holes = TerrainHoles.from_regions(regions)
+	_region_holes[rid] = TerrainHoles.from_regions({rid: rt})
+	_publish_holes()
+	t = _part("holes", t)
 	_refresh_chunks(rt.rect)
+	t = _part("chunks", t)
 	region_attached.emit(rid)
+	_part("listeners", t)
+
+
+## What the last attach spent where (ms by part), for StreamMeter's slow-step log.
+var attach_parts: Dictionary = {}
+
+
+func _part(name: String, t0: int) -> int:
+	var now: int = Time.get_ticks_usec()
+	attach_parts[name] = snappedf(float(now - t0) / 1000.0, 0.1)
+	return now
 
 
 ## Takes a region's 1 m terrain out of play: the coarse terrain (if any) answers height_at there
@@ -271,7 +292,8 @@ func detach_region(rid: String) -> void:
 	_materials.erase(rid)
 	# _base_cache keeps a dug region's pristine heights (4 MB) across the detach: its digs live on
 	# in _deltas and are re-applied over them on the next attach, whatever the object then holds.
-	holes = TerrainHoles.from_regions(regions)
+	_region_holes.erase(rid)
+	_publish_holes()
 	_refresh_chunks(rect)
 	region_detached.emit(rid)
 
@@ -745,6 +767,58 @@ func _collision_height(x: float, z: float) -> float:
 
 
 # --- POI cellars (TD-026) -------------------------------------------------------------------------
+
+## Region id -> the cellars of every building placed in it (TerrainHoles.from_regions, made once
+## per attach: compiling the layouts is the costly part).
+var _region_holes: Dictionary = {}
+## Set by a PoiManager that builds by distance (ADR-0038 §8): only the cellars of buildings in
+## `_hole_gate` (instance id -> true) are cut, the others wait for their building.
+var gate_holes: bool = false
+var _hole_gate: Dictionary = {}
+
+
+## Opens (a building now stands there) or closes (it was freed) one POI's cellar: the holes are
+## published anew and the near chunks over it re-meshed and re-collided.
+func set_poi_hole(id: StringName, open: bool) -> void:
+	if open == _hole_gate.has(id):
+		return
+	if open:
+		_hole_gate[id] = true
+	else:
+		_hole_gate.erase(id)
+	if not gate_holes:
+		return
+	var where := Rect2()
+	for th: TerrainHoles in _region_holes.values():
+		var b: Rect2 = th.bounds_of(id)
+		if b.size != Vector2.ZERO:
+			where = b if where.size == Vector2.ZERO else where.merge(b)
+	if where.size == Vector2.ZERO:
+		return
+	_publish_holes()
+	_refresh_chunks(where)
+
+
+## Starts gating cellars by built buildings (see gate_holes); the ones open so far stay open.
+func start_gating_holes() -> void:
+	if gate_holes:
+		return
+	gate_holes = true
+	_publish_holes()
+	for th: TerrainHoles in _region_holes.values():
+		if not (th as TerrainHoles).is_empty():
+			_refresh_chunks(th.bounds)
+
+
+## Publishes `holes` from the regions' cellars, by region id order (from_regions' order), as a new
+## object: workers and queued jobs keep the old one.
+func _publish_holes() -> void:
+	var ids: Array = _region_holes.keys()
+	ids.sort()
+	var parts: Array = []
+	for rid: Variant in ids:
+		parts.append(_region_holes[rid])
+	holes = TerrainHoles.combined(parts, _hole_gate if gate_holes else null)
 
 ## Cellar footprints (world-XZ convex pieces) that cut a near chunk.
 func _cutters(key: Vector2i) -> Array[PackedVector2Array]:

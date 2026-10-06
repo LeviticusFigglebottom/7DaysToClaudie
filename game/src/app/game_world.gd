@@ -36,14 +36,19 @@ var traders: Node = null
 var ashen: Node = null
 var is_ready: bool = false
 ## True when this random world streams its regions (ADR-0038): only the first area is composed at
-## 1 m at load, the RegionStreamer brings in the rest. Opt-in while RWG v2 Phase 2 lands.
+## 1 m at load, the RegionStreamer brings in the rest, and buildings come by distance. The default
+## for random worlds (TD-137: without it every building of every town is built at load).
 var streaming: bool = false
 
 
-## Streaming is asked for by the new-game options ("stream": true, `--stream` on the command line)
-## or HOLLOWMERE_STREAM=1 (tools, loads).
+## Whether a random world streams. On by default; a tool turns it off with the new-game option
+## "stream": false (`--no-stream` in smoke and tour) or HOLLOWMERE_STREAM=0, which also wins for
+## loads (a load's options carry no "stream"). The main map never streams.
 static func wants_streaming() -> bool:
-	return bool(Game.pending_options.get("stream", false)) or OS.get_environment("HOLLOWMERE_STREAM") == "1"
+	var env: String = OS.get_environment("HOLLOWMERE_STREAM")
+	if env == "0" or env == "1":
+		return env == "1"
+	return bool(Game.pending_options.get("stream", true))
 
 
 ## Framework lots resolved by the world loader (WorldLoader.lots), read by the POI manager.
@@ -92,6 +97,8 @@ func _ready() -> void:
 		var saved_id: String = String(session.world_id)
 		streaming = wants_streaming()
 		_loader.stream = streaming
+		_loader.warm_models = DisplayServer.get_name() != "headless"
+		Log.info("world", "random world %s: %s" % [saved_id if saved_id != "" else "(new)", "streamed (ADR-0038)" if streaming else "built whole (streaming off)"])
 		if streaming and not bool(Game.pending_options.get("is_new_game", false)):
 			_loader.spawn_hint = session.local_player().position
 		_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_random_world(gen, saved_id), true, "world load")
@@ -248,6 +255,8 @@ func _boot_terrain() -> void:
 	terrain.name = "Terrain"
 	terrain.defer_far_tiles = true
 	terrain.prebuilt_bloom = _loader.bloom_field
+	# Buildings come by distance (ADR-0038 §8): a cellar is cut once its building stands.
+	terrain.gate_holes = streaming and _loader.registry != null
 	add_child(terrain)
 	terrain.setup(world_def, _loader.detailed.duplicate(), _loader.coarse)
 	# The terrain owns the regions now (they detach in a streamed world: nothing else may hold them).
@@ -399,6 +408,12 @@ func _spawn_player() -> void:
 
 func _on_player_leveled(level: int, player_id: StringName) -> void:
 	Events.player_leveled.emit(player_id, level)
+
+
+## Where a new game starts (the "drop_site" spawn), attached or not: every caller asks here
+## (directives, respawn, supply drops) so a streamed world answers the same as a loaded one.
+func drop_site() -> Vector3:
+	return _find_spawn("drop_site").get("pos", Vector3.ZERO)
 
 
 func _find_spawn(id: String) -> Dictionary:
