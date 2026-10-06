@@ -352,6 +352,9 @@ func spawn_point_ok(pos: Vector3) -> bool:
 	var pois: Node = world.get(&"pois")
 	if pois != null and pois.has_method(&"poi_at") and pois.call(&"poi_at", pos + Vector3.UP) != null:
 		return false
+	# Streamed worlds: nor where a building not built yet will stand (RWG v2 Phase 3).
+	if pois != null and pois.has_method(&"footprint_at") and pois.call(&"footprint_at", pos) != &"":
+		return false
 	var b: Node = world.get(&"building")
 	if b != null and b.has_method(&"pieces_in_radius") and not (b.call(&"pieces_in_radius", pos, 6.0) as Array).is_empty():
 		return false

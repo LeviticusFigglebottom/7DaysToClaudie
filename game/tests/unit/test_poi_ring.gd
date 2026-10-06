@@ -76,3 +76,12 @@ func test_buildings_beyond_the_free_radius_are_dropped() -> void:
 	assert_false(pm._jobs.has(&"a"), "a is ~890 m away now, beyond the free radius")
 	assert_false(pm._region_of.has(&"a"))
 	assert_true(pm._jobs.has(&"b"), "and b came into the ring")
+
+
+func test_footprint_at_sees_buildings_not_built_yet() -> void:
+	var s: Array = _setup({"near": [_poi("a", 100.0)], "far": [_poi("d", 2000.0)]})
+	var pm: PoiManager = s[1]
+	assert_eq(pm.footprint_at(Vector3(106.0, 0.0, 6.0)), &"a", "on a's footprint, though nothing is built")
+	assert_eq(pm.footprint_at(Vector3(2006.0, 0.0, 6.0)), &"d", "in a region not even attached")
+	assert_eq(pm.footprint_at(Vector3(130.0, 0.0, 6.0)), &"", "18 m past its edge")
+	assert_eq(pm.footprint_at(Vector3(130.0, 0.0, 6.0), 20.0), &"a", "within a 20 m margin")

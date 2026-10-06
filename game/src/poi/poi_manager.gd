@@ -612,6 +612,19 @@ func all_buildings() -> Array:
 	return _placed.values()
 
 
+## The building whose footprint lies within `margin` m of pos, built or not ("" when none, or in a
+## world without a registry, where every building is built: poi_at answers there). Wanderer
+## spawns and supply drops use it so nothing lands where a building is about to stand.
+func footprint_at(pos: Vector3, margin: float = 0.0) -> StringName:
+	if registry == null:
+		return &""
+	var p := Vector2(pos.x, pos.z)
+	if margin <= 0.0:
+		return registry.footprint_at(p)
+	var hits: Array = registry.near(p, margin)
+	return hits[0][0] if not hits.is_empty() else &""
+
+
 func poi_at(pos: Vector3) -> PoiInstance:
 	for inst: PoiInstance in instances.values():
 		if inst.world_bounds().has_point(pos):
