@@ -153,7 +153,9 @@ func _on_world_loaded() -> void:
 	_boot.append(["Waking up…", _spawn_player, "player"])
 	_boot.append(["Waking up…", _boot_hooks, "hooks"])
 	_boot_i = 0
-	_run_boot_steps()
+	# Show the first step's label for a frame before running it: the frame it runs in is then
+	# measured (and reported by LoadMeter) under its own name, not the worker's last stage.
+	ui.show_loading(str(_boot[0][0]), WORKER_SHARE)
 
 
 ## Systems added by a boot step don't tick until the whole world exists: before the split they
@@ -181,6 +183,7 @@ func _boot_terrain() -> void:
 	terrain = TerrainManager.new()
 	terrain.name = "Terrain"
 	terrain.defer_far_tiles = true
+	terrain.prebuilt_bloom = _loader.bloom_field
 	add_child(terrain)
 	terrain.setup(world_def, _loader.detailed, _loader.coarse)
 	_insert_boot_steps(terrain.boot_steps())

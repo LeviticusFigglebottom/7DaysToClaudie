@@ -23,6 +23,9 @@ var world_id: String = ""
 var resolve_lots: bool = false
 var world_seed: int = 0
 var lots: Dictionary = {}
+## The Bloom field over the detailed regions, built here too when resolve_lots is set (about a
+## second of the main thread on a 3x3 random world, ADR-0036); null otherwise.
+var bloom_field: BloomField = null
 var _mutex := Mutex.new()
 
 const Lots := preload("res://src/poi/lot_picker.gd")
@@ -66,6 +69,8 @@ func load_world(world_dir: String, detail_spacing: float = 1.0, coarse_spacing: 
 func _resolve_lots() -> void:
 	if not resolve_lots or ContentDB.instance == null:
 		return
+	_set_stage("Spreading the Bloom", 0.97)
+	bloom_field = BloomField.build(world, detailed, ContentDB.instance.config(&"bloom"))
 	_set_stage("Planning the towns", 0.98)
 	for rid: String in detailed:
 		for pl: Dictionary in (detailed[rid] as RegionTerrain).placements:

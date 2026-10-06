@@ -102,7 +102,9 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	bloom = BloomWorld.new()
 	bloom.name = "Bloom"
 	add_child(bloom)
-	bloom.setup(BloomField.build(world, regions, ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}))
+	# The world loader may have built the field on its thread already.
+	bloom.setup(prebuilt_bloom if prebuilt_bloom != null else BloomField.build(world, regions, ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}))
+	prebuilt_bloom = null
 	_canopy = far_canopy(ContentDB.instance)
 	if not defer_far_tiles:
 		_build_far_tiles()
@@ -394,6 +396,8 @@ func _build_far_tiles() -> void:
 		_add_far_tile(rid, _far_tile_mesh(rid))
 
 
+## Set before setup(): a Bloom field built off the main thread (WorldLoader.bloom_field).
+var prebuilt_bloom: BloomField = null
 ## Set before setup() to build the far tiles on worker threads through boot_steps() (ADR-0036:
 ## about 1.5 s of meshing that used to run in the load's one long main-thread frame).
 var defer_far_tiles: bool = false
