@@ -1,0 +1,27 @@
+{
+ "_doc": "Gardens and rain catchers (ADR-0049, src/building/farming.gd). Times are game minutes or days. A bed holds 0..capacity of soil moisture; a catcher holds bottles' worth of water (units).",
+ "tick_minutes": 10.0,
+ "soil": {
+  "_doc": "capacity: a soaked bed. dry_per_day: what bare soil loses a day; crop_use_per_day: what each living plant drinks on top; hot_dry_per_c: +x per degree over hot_from_c. rain_fill_minutes: minutes of full rain that soak a dry bed.",
+  "capacity": 1.0, "dry_per_day": 0.3, "crop_use_per_day": 0.06, "hot_from_c": 18.0, "hot_dry_per_c": 0.04, "rain_fill_minutes": 90.0
+ },
+ "plants": {
+  "_doc": "recover_per_day: health a watered plant regains. frost_kill_days: days of frost that kill a healthy plant. wilted_below: health under which it shows wilted.",
+  "recover_per_day": 0.6, "frost_kill_days": 1.0, "wilted_below": 0.6
+ },
+ "seasons": {"spring": 1.0, "summer": 1.15, "autumn": 0.6, "winter": 0.0},
+ "temperature": {"_doc": "Growth rises from the crop's min_temp_c to best_c, holds to hot_c and falls off past it.", "best_c": 16.0, "hot_c": 30.0},
+ "water_sources": {
+  "_doc": "What waters a bed, in the order chosen when nothing suitable is held (clean water last: you drink that).",
+  "order": ["water_bottle_dirty", "bucket_water", "water_bottle_clean"],
+  "water_bottle_dirty": {"amount": 0.5, "returns": "water_bottle_empty"},
+  "bucket_water": {"amount": 1.0, "returns": "bucket"},
+  "water_bottle_clean": {"amount": 0.5, "returns": "water_bottle_empty"}
+ },
+ "catcher": {
+  "_doc": "fill_per_hour: units an hour in full rain (snow_fill_per_hour in snow). containers: empty item -> [full item, units it takes], in the order they are filled. drink: one mouthful of rain water (murky: boil a bottle to be safe).",
+  "fill_per_hour": 2.0, "snow_fill_per_hour": 0.4,
+  "containers": {"water_bottle_empty": ["water_bottle_dirty", 1], "bucket": ["bucket_water", 4]},
+  "drink": {"hydration": 18.0, "health": -1.0}
+ }
+}

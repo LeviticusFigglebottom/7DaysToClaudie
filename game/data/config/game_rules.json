@@ -44,6 +44,7 @@
 
     "needs_rate": {"category": "survival", "type": "float", "min": 0.25, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Hunger & thirst rate"},
     "infection_rate": {"category": "survival", "type": "float", "min": 0.0, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Bloom infection rate"},
+    "crop_growth": {"category": "survival", "type": "float", "min": 0.25, "max": 4.0, "step": 0.25, "default": 1.0, "label": "Crop growth speed"},
 
     "death_penalty": {"category": "death", "type": "enum", "values": ["none", "xp_loss", "drop_pack", "drop_all", "permadeath"], "default": "drop_pack", "label": "On death"}
   },

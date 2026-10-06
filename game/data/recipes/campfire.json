@@ -5,6 +5,8 @@
     {"id": "heat_stew", "result": "hot_stew", "ingredients": {"canned_stew": 1}, "station": "campfire", "time": 15.0, "category": "cooking"},
     {"id": "harden_spear", "result": "crude_spear", "ingredients": {"stick": 2, "cordage": 1}, "station": "campfire", "time": 10.0, "category": "weapons"},
     {"id": "roast_venison", "result": "cooked_venison", "ingredients": {"raw_venison": 1}, "station": "campfire", "time": 25.0, "category": "cooking"},
-    {"id": "roast_hare", "result": "cooked_hare", "ingredients": {"raw_hare": 1}, "station": "campfire", "time": 18.0, "category": "cooking"}
+    {"id": "roast_hare", "result": "cooked_hare", "ingredients": {"raw_hare": 1}, "station": "campfire", "time": 18.0, "category": "cooking"},
+    {"id": "bake_potato", "result": "baked_potato", "ingredients": {"potato": 1}, "station": "campfire", "time": 15.0, "category": "cooking"},
+    {"id": "garden_stew", "result": "garden_stew", "ingredients": {"potato": 1, "carrot": 1, "green_beans": 1, "water_bottle_clean": 1, "empty_can": 1}, "station": "campfire", "time": 25.0, "category": "cooking"}
   ]
 }

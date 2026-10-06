@@ -38,6 +38,8 @@ var _fills: Array[Node3D] = []
 var _leaf: Node3D = null
 var _leaf_shape: CollisionShape3D = null
 var door_open: bool = false
+## A garden bed's or rain catcher's plants and water (ADR-0049), null for every other piece.
+var farm_visual: FarmVisual = null
 ## Stairs: rise and run of the flight (8 courses of logs over 3.6 m).
 const STAIR_RISE: float = 2.32
 const STAIR_RUN: float = 3.6
@@ -73,6 +75,9 @@ func max_hp() -> float:
 
 func _build_visual() -> void:
 	_mesh = MeshInstance3D.new()
+	if FarmVisual.handles(def):
+		farm_visual = FarmVisual.attach(self, _mesh)
+		return
 	if rack_capacity() > 0 or def.piece_kind == "door":
 		_build_parted_visual()
 		return
@@ -514,6 +519,8 @@ func interact_text(player: Player) -> String:
 		return "Dismantle %s (hold)" % def.display_name.to_lower()
 	if def.piece_kind == "log":
 		return ""
+	if Farming.is_farm(def):
+		return FarmManager.prompt(self, player)
 	if def.piece_kind == "door":
 		return "Close door" if door_open else "Open door"
 	if rack_capacity() > 0:
@@ -563,6 +570,9 @@ func interact(player: Player) -> void:
 	if _dismantling(player):
 		Game.execute(&"build.dismantle", {"player": player.state.id, "piece": String(piece_id)})
 		return
+	if Farming.is_farm(def):
+		FarmManager.act(self, player)
+		return
 	if def.piece_kind == "door":
 		Game.execute(&"build.toggle_door", {"player": player.state.id, "piece": String(piece_id)})
 		return
@@ -588,6 +598,16 @@ func interact(player: Player) -> void:
 		return
 	if provides("sleep") and Game.world != null and Game.world.has_method(&"try_sleep"):
 		Game.world.call(&"try_sleep", player, self)
+
+
+## The second action (hold the cancel key): a garden bed is watered, a rain catcher drunk from.
+func alt_interact_text(player: Player) -> String:
+	return FarmManager.alt_prompt(self, player) if Farming.is_farm(def) and not _dismantling(player) else ""
+
+
+func alt_interact(player: Player) -> void:
+	if Farming.is_farm(def):
+		FarmManager.alt_act(self, player)
 
 
 ## Containers: persist contents whenever they change.

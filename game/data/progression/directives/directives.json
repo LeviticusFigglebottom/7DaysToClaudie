@@ -1,5 +1,5 @@
 {
-  "_doc": "Remand Program directives (our take on 7 Days challenges). Chapters open in order; only the open chapter's directives advance. event: fell_tree, craft, place_log, build, loot, kill, enter_poi, clear_poi, survive_hum, read_note, level, sleep, supply_drop, disarm_trap (armed traps taken apart). targets: ids that count (empty = any). min_tier (kill): normal/seeded/bloomed. count: times (for level: the level). reward: xp + items.",
+  "_doc": "Remand Program directives (our take on 7 Days challenges). Chapters open in order; only the open chapter's directives advance. event: fell_tree, craft, place_log, build, loot, kill, enter_poi, clear_poi, survive_hum, read_note, level, sleep, supply_drop, disarm_trap (armed traps taken apart), contract, harvest (a garden crop brought in; targets: crop ids). targets: ids that count (empty = any). min_tier (kill): normal/seeded/bloomed. count: times (for level: the level). reward: xp + items.",
   "defs": [
     {"id": "arrival_fell", "name": "Fell three trees", "description": "Timber is shelter, fire and walls. Swing at the trunk, then step clear of where it falls.",
      "chapter": 1, "chapter_name": "Arrival", "order": 1, "event": "fell_tree", "count": 3, "reward": {"xp": 60, "items": {"ration_bar": 1}}},
@@ -38,6 +38,8 @@
      "reward": {"xp": 400, "items": {"first_aid_kit": 1}}},
     {"id": "hold_contract", "name": "Complete a Waystation contract", "description": "Waystation 9 stands on Route 9, south, short of where the river leaves the valley. The quartermaster pays scrip for work done.",
      "chapter": 3, "order": 6, "event": "contract", "reward": {"xp": 200, "items": {"scrip": 30}}},
+    {"id": "hold_harvest", "name": "Bring in a harvest", "description": "Build a garden bed, plant what you find in kitchen drawers and feed bins, keep it watered. Cans run out; dirt doesn't.",
+     "chapter": 3, "order": 7, "event": "harvest", "reward": {"xp": 150, "items": {"bucket": 1}}},
 
     {"id": "bloom_infected", "name": "Put down a Seeded or Bloomed Hollowed", "description": "Pale threads under the skin. They hit harder and take longer to drop.",
      "chapter": 4, "chapter_name": "Into the Bloom", "order": 1, "event": "kill", "min_tier": "seeded", "reward": {"xp": 200}},

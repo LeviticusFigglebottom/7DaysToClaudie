@@ -40,6 +40,10 @@ var drops: Dictionary = {}
 var mounds: Dictionary = {}
 ## Trader posts (ADR-0039): trader id -> {period: restock period rolled, stock: {item: {count, rep_tier}}}.
 var traders: Dictionary = {}
+## Gardens and rain catchers (ADR-0049), by the piece id of their structure:
+## bed -> {kind: "bed", water: soil moisture, plots: [{} (empty) | {crop, grown: days, health, dead?}]};
+## catcher -> {kind: "catcher", water: units}. Loads empty from saves before it (no version bump).
+var farms: Dictionary = {}
 
 
 func container_state(id: StringName) -> Dictionary:
@@ -92,7 +96,7 @@ func set_tree_state(chunk_key: String, index: int, state: Dictionary) -> void:
 func to_dict() -> Dictionary:
 	return {
 		"structures": structures, "blueprints": blueprints, "containers": containers, "pois": pois,
-		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "mounds": mounds, "traders": traders, "chunk_keys": chunk_blobs.keys(),
+		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "mounds": mounds, "traders": traders, "farms": farms, "chunk_keys": chunk_blobs.keys(),
 		"poi_dressing": poi_dressing,
 	}
 
@@ -109,5 +113,6 @@ func from_dict(d: Dictionary) -> void:
 	drops = d.get("drops", {})
 	mounds = d.get("mounds", {})
 	traders = d.get("traders", {})
+	farms = d.get("farms", {})
 	# A world saved without the key predates per-run dressing (the v4 -> v5 migration sets it too).
 	poi_dressing = int(d.get("poi_dressing", 1))

@@ -47,6 +47,8 @@ signal structure_placed(piece_id: StringName, def_id: StringName, position: Vect
 signal structure_damaged(piece_id: StringName, hp: float, max_hp: float)
 signal structure_destroyed(piece_id: StringName, def_id: StringName, position: Vector3)
 signal blueprint_completed(blueprint_id: StringName, def_id: StringName)
+## A garden plot brought in (ADR-0049): the crop def and what it gave ({item: count}).
+signal crop_harvested(player_id: StringName, crop_id: StringName, items: Dictionary)
 signal terrain_modified(aabb: AABB)
 signal tree_felled(tree_id: StringName, position: Vector3)
 ## A Remand Program supply canister was released over `position` (lands a little later).

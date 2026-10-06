@@ -1,0 +1,9 @@
+{
+  "_doc": "Garden seeds (ADR-0049): what a kitchen drawer, a shed or a feed bin keeps for next spring. Referenced from junk_common and the farm's feed bin.",
+  "defs": [
+    {"id": "garden_seeds", "rolls": [1, 1], "entries": [
+      {"item": "seed_potato", "weight": 6, "count": [1, 3]}, {"item": "carrot_seeds", "weight": 5},
+      {"item": "bean_seeds", "weight": 4}, {"item": "yarrow_seeds", "weight": 2, "count": [1, 2]},
+      {"item": "huckleberry_seeds", "weight": 1, "count": [1, 2]}]}
+  ]
+}
