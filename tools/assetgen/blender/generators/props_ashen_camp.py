@@ -57,10 +57,13 @@ def ashen_war_drum(ctx: K.Ctx) -> None:
         ctx.add(band, "out_rawhide", uv="box", uv_scale=4.0, smooth=40, patches=0.3)
     # The heads: rawhide discs a little proud of both ends, the top one with a turned rim.
     for k, sgn in enumerate((1, -1)):
-        head = K.cyl(f"head{k}", R + 0.022, 0.016, segs=24, bevel=0.006)
+        # a lathed disc (rings across the face, so it can sag and split), the rim turned over the shell
+        Rh = R + 0.022
+        head = K.lathe(f"head{k}", [(0.0, -0.008), (Rh, -0.008), (Rh, 0.008), (Rh * 0.75, 0.008), (Rh * 0.5, 0.008),
+                                    (Rh * 0.25, 0.008), (0.0, 0.008)], segs=24)
         if not ctx.clean and sgn > 0:
-            K.jagged_hole(head, (0.08, -0.05, 0.0), 0.09, ctx.seed + 3, axis=2, jag=0.5)
-            K.map_verts(head, lambda co: Vector((co.x, co.y, co.z - 0.018 * max(0.0, 1 - (co.x ** 2 + co.y ** 2) / R ** 2))))
+            K.map_verts(head, lambda co: Vector((co.x, co.y, co.z - 0.022 * max(0.0, 1 - (co.x ** 2 + co.y ** 2) / R ** 2))))
+            K.delete_faces(head, lambda c, n: n.z > 0.5 and (c.x - 0.1) ** 2 + (c.y + 0.06) ** 2 < 0.11 ** 2)
         K.orient(head, _tilt(Vector((1, 0, 0)), tilt), axis, centre + axis * sgn * (L / 2 + 0.004))
         ctx.add(head, "ashen_drum_hide", uv="planar", uv_axis=2, uv_scale=1.6, smooth=45, patches=0.35)
     # Lacing: sinew zig-zag between the two heads' rims.
