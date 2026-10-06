@@ -222,7 +222,7 @@ def build(params: dict, outputs: list[str]) -> None:
         sockets.append(e)
     # actions, from the hold poses in the data file
     rig = F.FPRig(sk)
-    solver = F.PoseSolver(rig)
+    solver = F.PoseSolver(rig, cfg.get("wrist"))
     for name, n, loop, frames in F.fp_actions(cfg):
         baked = [rig.evaluate(solver.solve(hands)) for hands in frames]
         char_anim.write_action(arm, sk, name, baked)

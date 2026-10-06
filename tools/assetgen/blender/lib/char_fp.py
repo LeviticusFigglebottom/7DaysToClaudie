@@ -44,6 +44,10 @@ def load_config() -> dict:
     return json.loads(VIEWMODEL_JSON.read_text())
 
 
+# Finger joint prefixes and their bone names.
+FINGER_BONES = (("ix", "index"), ("md", "middle"), ("rg", "ring"), ("pk", "pinky"))
+
+
 def _fp_bones():
     bones = [("root", None, "root", "root_tail", UP)]
     for sd in ("L", "R"):
@@ -55,13 +59,20 @@ def _fp_bones():
             (f"forearm_twist.{sd}", f"forearm.{sd}", f"twist.{sd}", f"wrist.{sd}", UP),
             (f"hand.{sd}", f"forearm.{sd}", f"wrist.{sd}", f"hand_tip.{sd}", UP),
             (f"thumb_1.{sd}", f"hand.{sd}", f"th_cmc.{sd}", f"th_mcp.{sd}", f"th_up.{sd}"),
-            (f"thumb_2.{sd}", f"thumb_1.{sd}", f"th_mcp.{sd}", f"th_tip.{sd}", f"th_up.{sd}"),
-            (f"index_1.{sd}", f"hand.{sd}", f"ix_mcp.{sd}", f"ix_pip.{sd}", f"palm_back.{sd}"),
-            (f"index_2.{sd}", f"index_1.{sd}", f"ix_pip.{sd}", f"ix_tip.{sd}", f"palm_back.{sd}"),
-            (f"fingers_1.{sd}", f"hand.{sd}", f"md_mcp.{sd}", f"md_pip.{sd}", f"palm_back.{sd}"),
-            (f"fingers_2.{sd}", f"fingers_1.{sd}", f"md_pip.{sd}", f"md_tip.{sd}", f"palm_back.{sd}"),
+            (f"thumb_2.{sd}", f"thumb_1.{sd}", f"th_mcp.{sd}", f"th_ip.{sd}", f"th_up.{sd}"),
+            (f"thumb_3.{sd}", f"thumb_2.{sd}", f"th_ip.{sd}", f"th_tip.{sd}", f"th_up.{sd}"),
         ]
+        # Every finger bends at its own three knuckles (ADR-0045): the middle, ring and little
+        # fingers once shared the middle finger's two bones, so they hinged 1-3 cm off their own
+        # knuckles, could not close separately and a fist left a hollow under them.
+        for k, name in FINGER_BONES:
+            bones += [
+                (f"{name}_1.{sd}", f"hand.{sd}", f"{k}_mcp.{sd}", f"{k}_pip.{sd}", f"palm_back.{sd}"),
+                (f"{name}_2.{sd}", f"{name}_1.{sd}", f"{k}_pip.{sd}", f"{k}_dip.{sd}", f"palm_back.{sd}"),
+                (f"{name}_3.{sd}", f"{name}_2.{sd}", f"{k}_dip.{sd}", f"{k}_tip.{sd}", f"palm_back.{sd}"),
+            ]
     return bones
+
 
 
 FP_BONES = _fp_bones()
@@ -525,13 +536,13 @@ class FPModel:
             hand_w = w_fa * w_h
             caps = {
                 f"thumb_1.{sd}": [(j[f"th_cmc.{sd}"], j[f"th_mcp.{sd}"])],
-                f"thumb_2.{sd}": [(j[f"th_mcp.{sd}"], j[f"th_ip.{sd}"]), (j[f"th_ip.{sd}"], j[f"th_tip.{sd}"])],
-                f"index_1.{sd}": [(j[f"ix_mcp.{sd}"], j[f"ix_pip.{sd}"])],
-                f"index_2.{sd}": [(j[f"ix_pip.{sd}"], j[f"ix_dip.{sd}"]), (j[f"ix_dip.{sd}"], j[f"ix_tip.{sd}"])],
-                f"fingers_1.{sd}": [(j[f"{k}_mcp.{sd}"], j[f"{k}_pip.{sd}"]) for k in ("md", "rg", "pk")],
-                f"fingers_2.{sd}": [(j[f"{k}_pip.{sd}"], j[f"{k}_dip.{sd}"]) for k in ("md", "rg", "pk")] +
-                                   [(j[f"{k}_dip.{sd}"], j[f"{k}_tip.{sd}"]) for k in ("md", "rg", "pk")],
+                f"thumb_2.{sd}": [(j[f"th_mcp.{sd}"], j[f"th_ip.{sd}"])],
+                f"thumb_3.{sd}": [(j[f"th_ip.{sd}"], j[f"th_tip.{sd}"])],
             }
+            for k, name in FINGER_BONES:
+                caps[f"{name}_1.{sd}"] = [(j[f"{k}_mcp.{sd}"], j[f"{k}_pip.{sd}"])]
+                caps[f"{name}_2.{sd}"] = [(j[f"{k}_pip.{sd}"], j[f"{k}_dip.{sd}"])]
+                caps[f"{name}_3.{sd}"] = [(j[f"{k}_dip.{sd}"], j[f"{k}_tip.{sd}"])]
             dist = {}
             for bn, segs in caps.items():
                 dist[bn] = np.min(np.stack([polyline_dist(P, [a, b]) for a, b in segs], 0), 0)
@@ -830,6 +841,33 @@ class FPRig:
             self.S0[sd] = _frame(j[f"axis.{sd}"], j[f"lat.{sd}"])
             self.grip_off[sd] = j[f"grip.{sd}"] - j[f"wrist.{sd}"]
 
+    def wrist_axes(self, sd: str):
+        """Rest-space axes the wrist bends about: flexion (the palm towards the forearm), ulnar
+        deviation (towards the little finger), and the forearm's own axis it rolls about."""
+        j = self.sk.j
+        a, b, lat = _n(j[f"axis.{sd}"]), _n(j[f"back.{sd}"]), _n(j[f"lat.{sd}"])
+        return _n(np.cross(a, -b)), _n(np.cross(a, -lat)), self.sk.rest[f"forearm.{sd}"][:, 1]
+
+    def wrist_angles(self, sd: str, Qh: np.ndarray):
+        """(flexion, ulnar deviation, roll) in degrees of a hand rotation relative to its forearm:
+        the swing split from the roll about the forearm's axis, as a rotation vector on the flexion
+        and deviation axes."""
+        fx, ul, ax = self.wrist_axes(sd)
+        q = _quat(Qh)
+        tw = 2.0 * math.atan2(float(q[1:] @ ax), q[0])
+        tw = (tw + math.pi) % (2 * math.pi) - math.pi
+        sw = Qh @ rot_axis(ax, -tw)
+        w = _rotvec(sw)
+        return math.degrees(float(w @ fx)), math.degrees(float(w @ ul)), math.degrees(tw)
+
+    def wrist_rotation(self, sd: str, flex: float, ulnar: float, roll: float) -> np.ndarray:
+        """The hand-relative-to-forearm rotation for wrist angles (degrees): wrist_angles' inverse."""
+        fx, ul, ax = self.wrist_axes(sd)
+        w = fx * math.radians(flex) + ul * math.radians(ulnar)
+        ang = float(np.linalg.norm(w))
+        sw = rot_axis(w / ang, ang) if ang > 1e-9 else np.eye(3)
+        return sw @ rot_axis(ax, math.radians(roll))
+
     def hand(self, sd: str, grip, d, k):
         """(wrist target, hand world rotation) so the socket sits at `grip` with its handle axis
         (thumb side) along d and the knuckles towards k (all Blender space)."""
@@ -861,15 +899,31 @@ class FPRig:
             grip = float(prm.get(f"{sd}.fist", 0.3))
             idx = float(prm.get(f"{sd}.index", 0.0))
             thumb = float(prm.get(f"{sd}.thumb", grip))
-            for bn, amt in ((f"index_1.{sd}", 55 * (grip + idx)), (f"index_2.{sd}", 70 * (grip + idx)),
-                            (f"fingers_1.{sd}", 62 * grip), (f"fingers_2.{sd}", 78 * grip)):
-                Q[bn] = _R(sk.rest[bn][:, 0], -amt)
-            # A closed thumb wraps the handle over the index and middle fingers (fitted so its tip
-            # sits ~4 cm off the handle axis, on the fingers, not sticking out beside them).
-            Q[f"thumb_1.{sd}"] = _R(sk.rest[f"thumb_1.{sd}"][:, 0], 30 * thumb) @ \
-                _R(sk.rest[f"thumb_1.{sd}"][:, 2], 30 * thumb * sx)
-            Q[f"thumb_2.{sd}"] = _R(sk.rest[f"thumb_2.{sd}"][:, 0], -60 * thumb - float(prm.get(f"{sd}.flick", 0.0)))
+            for k, name in FINGER_BONES:
+                c = max(-0.15, grip + idx) if k == "ix" else grip
+                for i, deg in enumerate(FINGER_CURL):
+                    bn = f"{name}_{i + 1}.{sd}"
+                    Q[bn] = _R(sk.rest[bn][:, 0], -deg * c * FINGER_SCALE[k])
+            # The thumb opposes as it closes: its metacarpal swings across the palm and turns
+            # about its own length so the pad, not the side, meets the index finger; then its
+            # two joints wrap the handle.
+            t1 = sk.rest[f"thumb_1.{sd}"]
+            Q[f"thumb_1.{sd}"] = _R(t1[:, 0], THUMB_CURL[0] * thumb) @ _R(t1[:, 2], THUMB_CURL[1] * thumb * sx) @ \
+                _R(t1[:, 1], THUMB_CURL[2] * thumb * sx)
+            Q[f"thumb_2.{sd}"] = _R(sk.rest[f"thumb_2.{sd}"][:, 0], -THUMB_CURL[3] * thumb)
+            Q[f"thumb_3.{sd}"] = _R(sk.rest[f"thumb_3.{sd}"][:, 0], -THUMB_CURL[4] * thumb - float(prm.get(f"{sd}.flick", 0.0)))
         return Q, np.zeros(3)
+
+
+def _rotvec(m: np.ndarray) -> np.ndarray:
+    """Rotation vector (axis * angle, radians) of a rotation matrix."""
+    q = _quat(m)
+    if q[0] < 0:
+        q = -q
+    s_ = float(np.linalg.norm(q[1:]))
+    if s_ < 1e-12:
+        return np.zeros(3)
+    return q[1:] / s_ * 2.0 * math.atan2(s_, float(q[0]))
 
 
 def _quat(m: np.ndarray) -> np.ndarray:
@@ -891,6 +945,20 @@ def _quat(m: np.ndarray) -> np.ndarray:
 # --------------------------------------------------------------------------------------------
 # Actions from the data file
 # --------------------------------------------------------------------------------------------
+
+# Finger curl at fist 1 (degrees at the MCP, PIP and DIP joints: a fist round a ~3.5 cm handle,
+# the end joint following the middle one), scaled per finger: the ring and little fingers close
+# a little further, as they do round a handle.
+FINGER_CURL = (68.0, 92.0, 58.0)
+FINGER_SCALE = {"ix": 1.0, "md": 1.0, "rg": 1.05, "pk": 1.12}
+# Thumb at curl 1: metacarpal flexion across the palm, swing toward the fingers, opposition about
+# its own axis; then MCP and IP flexion (degrees).
+THUMB_CURL = (30.0, 30.0, 25.0, 38.0, 48.0)
+
+# A working wrist's range (degrees): flexion and extension, radial and ulnar deviation (an
+# ellipse between them), and the forearm's roll either way of the thumb-up rest. viewmodel.json
+# `wrist` overrides them.
+WRIST_LIMITS = {"flex": 65.0, "extend": 55.0, "radial": 18.0, "ulnar": 32.0, "roll": 95.0}
 
 SCALARS = ("fist", "thumb", "index", "flick")
 DEFAULT_SCALARS = {"fist": 0.4, "thumb": 0.4, "index": 0.0, "flick": 0.0}
@@ -993,12 +1061,88 @@ def _lerp_hand(a: Hand, b: Hand, t: float) -> Hand:
 class PoseSolver:
     """Hands -> rig parameters. A hand 'on' the other grips its handle `along` metres up it
     (+ towards the head) with its knuckles turned `spin` degrees round it (its F, when keyed, is
-    an extra rotation in camera axes)."""
+    an extra rotation in camera axes).
 
-    def __init__(self, rig: FPRig):
+    A pose names where the grip is and how the hand is turned, not where the forearm goes, and a
+    wrist only bends so far: an arm laid out by its elbow hint alone left the wrists of most holds
+    bent ~90° (up to 140° mid-swing), which is what made them read wrong. So the elbow is swung
+    round the shoulder-wrist line to where the forearm best lines up with the hand (staying near
+    the authored hint), and whatever bend is left past the wrist's range (`wrist` in
+    viewmodel.json: flexion, extension, radial and ulnar deviation, forearm roll) is taken out
+    of the hand's turn, keeping the grip where the pose put it."""
+
+    # Elbow search: swings either side of the hinted elbow (degrees), and the cost of a degree of
+    # swing relative to a degree of over-bend (so the hint wins between equally good elbows).
+    SWINGS = tuple(range(-100, 101, 5))
+    HINT_COST = 0.15
+
+    def __init__(self, rig: FPRig, limits: dict | None = None):
         self.rig = rig
         j = rig.sk.j
         self.pole0 = {sd: j[f"pole.{sd}"] for sd, _ in SIDES}
+        lim = dict(WRIST_LIMITS)
+        lim.update({k: float(v) for k, v in (limits or {}).items() if not k.startswith("_")})
+        self.lim = lim
+        self.clamped = {}               # side -> worst (degrees the hand was turned back by)
+
+    def _over(self, flex: float, ulnar: float, roll: float) -> float:
+        """How far (degrees, elliptical) a wrist pose is outside the limits; 0 inside."""
+        L = self.lim
+        f = flex / (L["flex"] if flex > 0 else L["extend"])
+        u = ulnar / (L["ulnar"] if ulnar > 0 else L["radial"])
+        e = math.hypot(f, u)
+        over = max(0.0, e - 1.0) * math.hypot(flex, ulnar) / max(e, 1e-9)
+        return over + max(0.0, abs(roll) - L["roll"])
+
+    def _clamp(self, flex: float, ulnar: float, roll: float):
+        L = self.lim
+        f = flex / (L["flex"] if flex > 0 else L["extend"])
+        u = ulnar / (L["ulnar"] if ulnar > 0 else L["radial"])
+        e = math.hypot(f, u)
+        if e > 1.0:
+            flex, ulnar = flex / e, ulnar / e
+        return flex, ulnar, max(-L["roll"], min(L["roll"], roll))
+
+    def _arm(self, sd: str, wrist, pole, Rh):
+        """IK the arm to `wrist` bending toward `pole`: (forearm world rotation, hand rotation
+        relative to it)."""
+        sk = self.rig.sk
+        Q = {}
+        sk.solve_two_bone(Q, f"upper_arm.{sd}", f"forearm.{sd}", wrist, pole, z_sign=-1.0)
+        acc, _ = sk.fk(Q)
+        A = acc[f"forearm.{sd}"]
+        return A, A.T @ Rh
+
+    def _fit(self, sd: str, g, F, elbow):
+        """(wrist, Rh, pole) for a grip at g turned F: the elbow that bends the wrist least, then
+        the hand turned back inside the wrist's range about the grip."""
+        rig = self.rig
+        hint = _n(self.pole0[sd] + elbow)
+        wrist, Rh = rig.hand(sd, g, F[:, 2], F[:, 0])
+        line = _n(wrist - rig.sk.j[f"shoulder.{sd}"])
+        best = None
+        for a in self.SWINGS:
+            pole = rot_axis(line, math.radians(a)) @ hint
+            _, Qh = self._arm(sd, wrist, pole, Rh)
+            cost = self._over(*rig.wrist_angles(sd, Qh)) + self.HINT_COST * abs(a)
+            if best is None or cost < best[0]:
+                best = (cost, pole)
+        pole = best[1]
+        # Turn the hand back inside the range. The forearm moves with the wrist, so go round a
+        # few times; the grip stays put and the wrist follows the hand.
+        turned = 0.0
+        for _ in range(4):
+            A, Qh = self._arm(sd, wrist, pole, Rh)
+            ang = rig.wrist_angles(sd, Qh)
+            c = self._clamp(*ang)
+            if max(abs(x - y) for x, y in zip(ang, c)) < 0.05:
+                break
+            Rh2 = A @ rig.wrist_rotation(sd, *c)
+            turned = max(turned, math.degrees(float(np.linalg.norm(_rotvec(Rh2 @ Rh.T)))))
+            Rh = Rh2
+            wrist = np.asarray(g) - Rh @ rig.grip_off[sd]
+        self.clamped[sd] = max(self.clamped.get(sd, 0.0), turned)
+        return wrist, Rh, pole
 
     def solve(self, hands: dict) -> dict:
         prm = {}
@@ -1016,10 +1160,11 @@ class PoseSolver:
                 F = _frame(k, d)
             else:
                 g, F = h.g, h.F
-            placed[sd] = Hand(g, F, h.elbow, h.sc)
-            wrist, Rh = self.rig.hand(sd, g, F[:, 2], F[:, 0])
+            wrist, Rh, pole = self._fit(sd, g, F, h.elbow)
+            # What the hand really ended up gripping (the other hand follows this handle).
+            placed[sd] = Hand(g, Rh @ self.rig.S0[sd], h.elbow, h.sc)
             prm[f"{sd}.wrist"], prm[f"{sd}.Rh"] = wrist, Rh
-            prm[f"{sd}.pole"] = _n(self.pole0[sd] + h.elbow)
+            prm[f"{sd}.pole"] = pole
             for c in SCALARS:
                 prm[f"{sd}.{c}"] = h.sc[c]
         return prm
