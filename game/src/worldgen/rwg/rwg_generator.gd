@@ -44,7 +44,8 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 3: a trader post by each town (session 2's `trader:program_relay:<n>` spawns, ADR-0039).
 ## 4: burnt forest (fire scars) and fen (low wet ground, with pools) in the biome map (ADR-0041).
 ## 5: wilderness pool entries may be `unique` (one per world whatever its size: the field lab).
-const VERSION: int = 5
+## 6: the Ashen high camp joins the wilderness pool (ADR-0048), so worlds cached at 5 regenerate.
+const VERSION: int = 6
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
