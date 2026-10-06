@@ -79,6 +79,11 @@ func _check_world_gen(content: Node) -> void:
 	for e: String in errs:
 		_err("world_gen: " + e)
 	print("[validate] world_gen: %d options, %d presets" % [(script.call(&"options") as Dictionary).size(), (script.call(&"presets") as Dictionary).size()])
+	# The organic town planner's tuning (ADR-0040): data/config/town_planner.json.
+	var planner: Script = load("res://src/worldgen/rwg/rwg_town_planner.gd")
+	if planner != null:
+		for e2: String in planner.call(&"config_errors", content.call(&"config", &"town_planner")):
+			_err("town_planner: " + e2)
 
 
 func _err(msg: String) -> void:

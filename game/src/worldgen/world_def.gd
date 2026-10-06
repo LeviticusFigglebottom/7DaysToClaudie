@@ -20,6 +20,11 @@ var rivers: Array[Dictionary] = []
 var lakes: Array[Dictionary] = []
 ## [{id, line: Polyline2, width, shoulder, surface, bridges: [{from, to, deck}]}]
 var roads: Array[Dictionary] = []
+## World-level towns of a random world (ADR-0040, RWG v2): [{id, name, framework, kind, center:
+## Vector2, radius, bounds: Rect2}]. A town is a framework placed at the world origin (its lots are
+## frames in world XZ); the composer applies it in every region its bounds come near, graded from
+## world data alone, so it may straddle region borders. Empty on the main map and v1 worlds.
+var towns: Array[Dictionary] = []
 ## region id -> summary dict (from world.json)
 var regions: Dictionary = {}
 var cells: Dictionary = {}
@@ -126,6 +131,12 @@ func _parse(d: Dictionary) -> void:
 	for r: Dictionary in d.get("regions", []):
 		regions[str(r["id"])] = r
 		cells[str(r["cell"])] = str(r["id"])
+	for t: Dictionary in d.get("towns", []):
+		var tb: Array = t.get("bounds", [0, 0, 0, 0])
+		var tc: Array = t.get("center", [0, 0])
+		towns.append({"id": str(t.get("id", "")), "name": str(t.get("name", "")), "framework": str(t.get("framework", "")),
+			"kind": str(t.get("kind", "")), "center": Vector2(float(tc[0]), float(tc[1])), "radius": float(t.get("radius", 0.0)),
+			"bounds": Rect2(float(tb[0]), float(tb[1]), float(tb[2]), float(tb[3]))})
 	_noise.seed = seed
 	_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
@@ -247,8 +258,9 @@ func set_memo_hash(key: String, h: String) -> void:
 ## The profile of world road `index` ({profile, step, spans}), built by `build` the first time and
 ## shared by every region afterwards. Only for roads graded from world data alone (road_grade
 ## "world"), whose profile is the same whichever region builds it. Two threads may build one at
-## once; the first stored wins, and both are identical.
-func road_profile(index: int, build: Callable) -> Dictionary:
+## once; the first stored wins, and both are identical. `index` is a world road's index, or a
+## String key for a world town's street ("town:<town>:<street>", ADR-0040).
+func road_profile(index: Variant, build: Callable) -> Dictionary:
 	_memo_mutex.lock()
 	var hit: Variant = _profiles.get(index)
 	_memo_mutex.unlock()

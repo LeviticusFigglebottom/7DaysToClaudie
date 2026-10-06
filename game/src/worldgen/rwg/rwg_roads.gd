@@ -9,6 +9,7 @@ extends RefCounted
 
 ## New ADR-0031 scripts by path, so this compiles before the editor registers their class names.
 const Terrain := preload("res://src/worldgen/rwg/rwg_terrain.gd")
+const Streets := preload("res://src/worldgen/rwg/rwg_streets.gd")
 
 const NB8: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
 	Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]
@@ -24,6 +25,11 @@ var grade_ok: float = 0.07
 var grade_max: float = 0.16
 var bridge_cost: float = 420.0
 var reuse: float = 0.4
+## The valley term (RWG v2, plan §3.4): each metre of road costs `valley` more per metre the ground
+## stands above its mean over ~300 m, so roads keep to valley floors and pass through the towns
+## sited there. `mean`: that mean per cell (a summed-area table, once).
+var valley: float = 0.0
+var mean := PackedFloat32Array()
 
 
 func setup(terrain: Terrain, cfg: Dictionary) -> void:
@@ -37,6 +43,9 @@ func setup(terrain: Terrain, cfg: Dictionary) -> void:
 	grade_max = float(g[1])
 	bridge_cost = float(cfg.get("bridge_cost", 420.0))
 	reuse = float(cfg.get("reuse", 0.4))
+	valley = float(cfg.get("valley", 0.0))
+	if valley > 0.0:
+		_mean_field(int(round(150.0 / t.step)))
 	for c: int in count:
 		if t.lake_of[c] >= 0:
 			blocked[c] = 1
@@ -49,6 +58,27 @@ func setup(terrain: Terrain, cfg: Dictionary) -> void:
 				var nj: int = cj + d.y
 				if ni >= 0 and nj >= 0 and ni < t.n and nj < t.n:
 					water[nj * t.n + ni] = 1
+
+
+## The ground's mean over (2 r + 1)² cells round each cell (clipped at the map edge).
+func _mean_field(r: int) -> void:
+	var n: int = t.n
+	var sat := PackedFloat64Array()
+	sat.resize((n + 1) * (n + 1))
+	for j: int in n:
+		var row: float = 0.0
+		for i: int in n:
+			row += t.h[j * n + i]
+			sat[(j + 1) * (n + 1) + i + 1] = sat[j * (n + 1) + i + 1] + row
+	mean.resize(n * n)
+	for j2: int in n:
+		var ja: int = maxi(0, j2 - r)
+		var jb: int = mini(n, j2 + r + 1)
+		for i2: int in n:
+			var ia: int = maxi(0, i2 - r)
+			var ib: int = mini(n, i2 + r + 1)
+			var tot: float = sat[jb * (n + 1) + ib] - sat[ja * (n + 1) + ib] - sat[jb * (n + 1) + ia] + sat[ja * (n + 1) + ia]
+			mean[j2 * n + i2] = tot / float((jb - ja) * (ib - ia))
 
 
 ## Blocks every cell whose centre lies inside the polygon grown by `grow` metres.
@@ -67,7 +97,7 @@ func block_polygon(poly: PackedVector2Array, grow: float) -> void:
 	var j1: int = clampi(int(ceil((bb.end.y - t.z0) / t.step)), 0, t.n - 1)
 	for j: int in range(j0, j1 + 1):
 		for i: int in range(i0, i1 + 1):
-			if Geometry2D.is_point_in_polygon(Vector2(t.x0 + i * t.step, t.z0 + j * t.step), big):
+			if Streets.point_in(Vector2(t.x0 + i * t.step, t.z0 + j * t.step), big):
 				blocked[j * t.n + i] = 1
 
 
@@ -134,6 +164,8 @@ func route(a: Vector2, b: Vector2, margin: float = 700.0, smooth: float = 0.5, g
 			var dist: float = t.step * (1.4142 if d.x != 0 and d.y != 0 else 1.0)
 			var gr: float = absf(t.h[nb] - hc) / dist
 			var cost: float = dist * (1.0 + 30.0 * gr * gr)
+			if valley > 0.0:
+				cost += dist * valley * maxf(0.0, t.h[nb] - mean[nb])
 			if gr > g_ok:
 				cost *= 1.0 + (gr - g_ok) * 25.0
 			if gr > g_max:

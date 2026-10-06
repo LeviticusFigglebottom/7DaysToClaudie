@@ -71,7 +71,7 @@ func _place_all(w: Node) -> void:
 		var rt: RegionTerrain = w.terrain.regions[rid]
 		for pl: Dictionary in rt.placements:
 			match str(pl.get("kind", "")):
-				"framework":
+				"framework", "town":
 					_place_framework(pl)
 				"poi":
 					_place_poi(StringName(str(pl["def"])), StringName(str(pl["id"])), _placement_xf(pl), Vector2(pl.get("size", [0, 0])[0], pl.get("size", [0, 0])[1]))
@@ -89,22 +89,28 @@ func _place_framework(pl: Dictionary) -> void:
 		return
 	var fxf: Transform3D = _placement_xf(pl)
 	var seed: int = Game.session.world_seed if Game.session != null else 0
+	# An organic town of a random world (ADR-0040) comes once per region it touches ("town", with
+	# that region's rect): only its lots whose frames centre there and the fixtures standing there.
+	var only := Rect2()
+	if pl.has("rect"):
+		only = Rect2(float(pl["rect"][0]), float(pl["rect"][1]), float(pl["rect"][2]), float(pl["rect"][3]))
 	# The world loader may have resolved the lots (and generated their buildings) already.
 	var cache: Dictionary = world.get(&"poi_lots") if world.get(&"poi_lots") is Dictionary else {}
 	var resolved: Array = cache.get(str(pl["id"]), [])
 	if resolved.is_empty():
 		for r: Dictionary in Lots.resolve(fw, str(pl["id"]), seed):
-			resolved.append([r, null if str(r["kind"]) in ["reserved", "empty"] else Lots.def_for(r)])
+			var away: bool = only.has_area() and not only.has_point(Lots.lot_center(r["lot"]))
+			resolved.append([r, null if away or str(r["kind"]) in ["reserved", "empty"] else Lots.def_for(r)])
 	for pair: Array in resolved:
 		var res: Dictionary = pair[0]
 		var l: Dictionary = res["lot"]
-		if str(res["kind"]) in ["reserved", "empty"]:
+		if str(res["kind"]) in ["reserved", "empty"] or (only.has_area() and not only.has_point(Lots.lot_center(l))):
 			continue
 		var pd: PoiDef = pair[1]
 		if pd == null:
 			Log.warn("poi", "lot %s: nothing to place (%s %s)" % [l.get("id"), res["kind"], res.get("def_id", res.get("template", ""))])
 			continue
-		var xf: Transform3D = fxf * lot_xf(l, pd.footprint)
+		var xf: Transform3D = fxf * (Lots.lot_local_xf(l, pd.footprint) if l.has("frame") else lot_xf(l, pd.footprint))
 		_place_poi(pd.id, StringName(str(res["instance"])), xf, Vector2(pd.footprint), pd)
 	for fi: int in fw.fixtures.size():
 		var f: Dictionary = fw.fixtures[fi]
@@ -113,6 +119,8 @@ func _place_framework(pl: Dictionary) -> void:
 			continue
 		var p: Array = f.get("pos", [0, 0])
 		var lp: Vector3 = fxf * Vector3(float(p[0]), 0.0, float(p[1]))
+		if only.has_area() and not only.has_point(Vector2(lp.x, lp.z)):
+			continue
 		lp.y = world.height_at(lp.x, lp.z)
 		# Street fixtures with a container (dumpster, wrecks, mailbox) are searchable like any
 		# prop indoors: same LootProp, tier 1, its id from the framework and the fixture's own id.

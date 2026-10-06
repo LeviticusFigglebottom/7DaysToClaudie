@@ -69,7 +69,8 @@ func _resolve_lots() -> void:
 	_set_stage("Planning the towns", 0.98)
 	for rid: String in detailed:
 		for pl: Dictionary in (detailed[rid] as RegionTerrain).placements:
-			if str(pl.get("kind", "")) != "framework":
+			# An organic town (ADR-0040) has a "town" placement in every region it touches: resolved once.
+			if not str(pl.get("kind", "")) in ["framework", "town"] or lots.has(str(pl["id"])):
 				continue
 			var fw: FrameworkDef = ContentDB.instance.call(&"get_def", &"framework", StringName(str(pl["def"]))) as FrameworkDef
 			if fw == null:

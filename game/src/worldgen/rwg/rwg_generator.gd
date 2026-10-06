@@ -1,41 +1,61 @@
 class_name RwgGenerator
 extends RefCounted
-## The random world generator (ADR-0031, DESIGN §10.2). A pure function of (map seed, resolved
-## WorldGenSettings, VERSION) that writes the same structure as the handcrafted map: a world.json
-## (macro grid, rivers, lakes, roads, biome map, region roster) and one region.json feature list per
-## region in the vocabulary of docs/REGIONS.md, plus the generated towns as frameworks. Composing,
-## vegetation, water, POI placement and streaming then work unchanged.
+## The random world generator (ADR-0031; organic towns ADR-0040, DESIGN §10.2). A pure function of
+## (map seed, resolved WorldGenSettings, VERSION) that writes the same structure as the handcrafted
+## map: a world.json (macro grid, rivers, lakes, roads, biome map, region roster and, since VERSION
+## 2, the world-level towns) and one region.json feature list per region in the vocabulary of
+## docs/REGIONS.md, plus the towns as frameworks. Composing, vegetation, water, POI placement and
+## streaming then work unchanged.
 ##
-## Stages: land (Terrain: shape, lakes, hydrology, valleys, rivers) -> towns (sites on flat dry
-## ground, street plans from Towns) -> the road network (spanning tree between towns plus loops
-## and exits off the map, Roads) -> the drop site and its trail -> danger by distance from it ->
-## the biome map -> places (roadside, lake shore, summit, waterside, forest, remote; farmsteads)
-## with their drives, tracks and trails -> bridges -> Bloom patches far from the start -> regions.
+## Stages: land (Terrain: shape, lakes, hydrology, valleys, rivers) -> town sites by size class from
+## the town density (low, level, dry ground; a gently smoothed core) -> the road network through
+## the town centres (a spanning tree plus loops and exits off the map, routed by Roads with a valley
+## term; every town gets a main street through its centre, stubbed out past its edge where the
+## network gives it none, and a town a cross street) -> each town planned on a worker thread
+## (RwgTownPlanner: streets grown over the land, lots by frontage, zoning by rings, fixtures) and
+## settled against its neighbours and the map's edge -> the drop site and its trail -> danger by
+## distance from it, and each town's tier range -> the biome map -> places (roadside, lake shore,
+## summit, waterside, forest, remote; farmsteads) with their drives, tracks and trails -> bridges ->
+## Bloom patches far from the start -> regions -> each lot's pad height from the final ground ->
+## authored buildings capped world-wide (LotPicker.assign_authored).
 ## Every stage draws from its own derived stream, so a change in one does not reshuffle the others.
 ## Run it on a worker thread (`progress` is called with (stage, 0..1)); content comes from
 ## ContentDB.instance.
+##
+## Towns are world-level features (plan §3): a town's lots are frames in world XZ (frameworks.json,
+## `layout: "organic"`, placed at the origin with no rotation), and world.json `towns` lists each
+## with its bounds, so the composer applies it in every region it touches, graded from world data
+## alone (its streets from the reference ground, each lot's pad at the height `y` computed here from
+## the same ground), and a town may straddle region borders.
 
-## New ADR-0031 scripts by path, so this compiles before the editor registers their class names.
+## New ADR-0031/0040 scripts by path, so this compiles before the editor registers their class names.
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Terrain := preload("res://src/worldgen/rwg/rwg_terrain.gd")
 const Roads := preload("res://src/worldgen/rwg/rwg_roads.gd")
-const Towns := preload("res://src/worldgen/rwg/rwg_towns.gd")
+const Planner := preload("res://src/worldgen/rwg/rwg_town_planner.gd")
+const Streets := preload("res://src/worldgen/rwg/rwg_streets.gd")
 const Grid := preload("res://src/worldgen/spatial_grid.gd")
+const LotPicker := preload("res://src/poi/lot_picker.gd")
 
 ## Bump when the output for a given seed and settings changes: it is part of every world's id, so
 ## saves made with an older generator regenerate their world as it was (cached) or as now (TD-082).
-const VERSION: int = 1
+## 2: organic world-level towns (ADR-0040), town density, place caps per 16 km², the drop site away
+## from region borders, a valley term in the router, RwgStreets.point_in for polygon tests.
+const VERSION: int = 2
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope"]
+const KINDS: PackedStringArray = ["hamlet", "village", "town"]
 
 var settings: GenSettings
 var tun: Dictionary
+## The town planner's tuning (data/config/town_planner.json).
+var ptun: Dictionary
 var names: Dictionary
 var terrain := Terrain.new()
 var router := Roads.new()
 var world_id: String = ""
 var size: int = 4
-## {id, name, kind, fw_id, plan, origin: Vector2, rot: degrees, poly, center, entries: [Vector2],
-##  leads: [Vector2], cell: region cell, tier: [lo, hi]}
+## {id, name, kind, fw_id, center: Vector2, radius, core, cell, tier: [lo, hi], plan (the planner's
+##  output, lots settled), authored: PackedStringArray, bounds: Rect2}
 var towns: Array[Dictionary] = []
 ## {id, kind: "poi" | "framework", def, origin: Vector2, rot, size: Vector2, poly, biome, skirt,
 ##  keep_water, access: Vector2, site, cell}
@@ -60,21 +80,74 @@ var timings: Dictionary = {}
 var sub_timings: Dictionary = {}
 var warnings: PackedStringArray = []
 var progress: Callable = Callable()
+## Test hook: town sites to use instead of searching for them ([{kind, center: Vector2, radius}];
+## the seam test puts a town across region borders). Empty in play.
+var test_sites: Array = []
 
 var _t0: int = 0
 var _t_sub: int = 0
 var _last_report: int = 0
 ## Spatial indexes, 256 m cells (ADR-0038): road segments and road vertices as Grid.pack(road,
-## part), places by index. They narrow nearest_road, road_clearance and _hits_built to what can be
-## near; every exact test stays, so the world is the same as the scans over everything made.
+## part), places by index, river segments, the towns' lot frames and street segments. They narrow
+## nearest_road, road_clearance, _hits_built and the water distance to what can be near; every exact
+## test stays.
 var _seg_grid := Grid.new(256.0)
 var _pt_grid := Grid.new(256.0)
 var _place_grid := Grid.new(256.0)
+var _river_grid := Grid.new(256.0)
+var _river_widths: Array = []
+var _lot_grid := Grid.new(256.0)
+var _lot_polys: Array[PackedVector2Array] = []
+## Each lot frame grown by tuning.towns.clearance.lots (what places keep off), and its town index.
+var _lot_grown: Array[PackedVector2Array] = []
+var _lot_town := PackedInt32Array()
+var _street_grid := Grid.new(256.0)
+## Every town street: {line: Polyline2, need: half width + shoulder, town}.
+var _streets: Array[Dictionary] = []
 ## The widest road's half width plus shoulder (road_clearance's reach).
 var _max_half: float = 0.0
-## Each town's polygon grown 40 m, as _hits_built tests it, and its bounds grown 1 m.
-var _town_grown: Array[PackedVector2Array] = []
-var _town_grown_box: Array[Rect2] = []
+## The composer's reference ground over the current macro grid (RefGround).
+var _ref: RefGround = null
+
+
+## The ground the composer grades world roads and world pads from (TerrainComposer's
+## `_reference_ground`): world.json's macro grid exactly as the composer reads it back (0.1 m steps,
+## through JSON, float32, bicubic) plus the shared world detail noise. Read-only once made, so the
+## planner's threads share it.
+class RefGround extends RefCounted:
+	## TerrainComposer._Build.WORLD_NOISE_AMP.
+	const AMP: float = 2.5
+	var wd := WorldDef.new()
+	var noise := FastNoiseLite.new()
+
+	func _init(t: RefCounted, world_seed: int, cols: int) -> void:
+		var n: int = t.get(&"n")
+		var hs: PackedFloat32Array = t.get(&"h")
+		var rows: Array = []
+		for j: int in n:
+			var row: Array = []
+			for i: int in n:
+				row.append(snappedf(hs[j * n + i], 0.1))
+			rows.append(row)
+		# Written and read back as world.json is, so every value is the composer's to the last bit.
+		var back: Variant = JSON.parse_string(JSON.stringify(rows, "", false))
+		wd._parse({"seed": world_seed, "region_size": 1024.0, "cols": cols, "rows": cols, "macro": {"step": float(t.get(&"step")), "corner_heights": back,
+			"noise": {"frequency": 0.001, "octaves": 1, "amplitude": 0.0, "ridged_amplitude": 0.0, "mountain_boost": 0.0}}})
+		noise.seed = world_seed + 101
+		noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+		noise.fractal_octaves = 4
+		noise.frequency = 0.012
+
+	func h(x: float, z: float) -> float:
+		return wd.macro_height(x, z) + noise.get_noise_2d(x, z) * AMP
+
+	## The land's shape without the detail noise: what the planner plans streets and lots over. The
+	## noise (2.5 m, 10-80 m across) is texture the composer smooths out of every street's profile
+	## and grades out of every pad; on it, a 12 m step of a street or a lot's relief read as steep
+	## ground at random, and towns came out half grown.
+	func m(x: float, z: float) -> float:
+		return wd.macro_height(x, z)
 
 
 static func world_id_for(s: GenSettings) -> String:
@@ -127,6 +200,7 @@ func _mark(step: String) -> void:
 
 func run() -> void:
 	tun = GenSettings.tuning()
+	ptun = Planner.default_tuning()
 	names = GenSettings.names()
 	size = settings.integer("size")
 	world_id = world_id_for(settings)
@@ -141,17 +215,23 @@ func run() -> void:
 	_stage("Raising the land", 0.3)
 	_regions()
 	_water_distance()
+	_index_water()
 	_mark("water_distance")
-	_towns()
-	_mark("towns")
-	_stage("Laying out towns", 0.45)
+	_town_sites()
+	_mark("town_sites")
+	_stage("Choosing town sites", 0.34)
 	router.setup(terrain, tun.get("roads", {}))
-	for tw: Dictionary in towns:
-		router.block_polygon(tw["poly"], 16.0)
 	_mark("router_setup")
 	_road_network()
 	_mark("road_network")
-	_stage("Building roads", 0.6)
+	_main_streets()
+	_mark("main_streets")
+	_stage("Building roads", 0.48)
+	_plan_towns()
+	_mark("town_plans")
+	_settle_towns()
+	_mark("town_settle")
+	_stage("Laying out towns", 0.62)
 	_drop_site()
 	_mark("drop_site")
 	_danger()
@@ -166,8 +246,14 @@ func run() -> void:
 	_bloom()
 	_mark("bloom")
 	_name_regions()
+	_finalize_town_heights()
+	_mark("town_heights")
+	_assign_authored()
+	_mark("authored")
 	_stage("Mapping", 1.0)
 	timings["total"] = Time.get_ticks_msec() - t_all
+	# Drop what only generation needed (the planner's closures hold the reference ground).
+	_ref = null
 
 
 # --- Regions ---------------------------------------------------------------------------------------
@@ -241,6 +327,49 @@ func water_at(p: Vector2) -> float:
 	return water_dist[terrain.cell(p.x, p.y)]
 
 
+## River segments in a grid, so the exact water distance looks only at the stretches near a point.
+func _index_water() -> void:
+	for ri: int in terrain.rivers.size():
+		var line: Polyline2 = terrain.rivers[ri]["line"]
+		_river_widths.append(Array(terrain.rivers[ri]["widths"]))
+		for k: int in line.points.size() - 1:
+			_river_grid.insert(Grid.pack(ri, k), Rect2(line.points[k], Vector2.ZERO).expand(line.points[k + 1]).grow(1.0))
+
+
+## Distance (m) from p to the nearest river's edge or lake shore, negative in the water, as
+## Terrain.water_distance measures it, through the river index; 400 when no water is within 300 m.
+func water_exact(p: Vector2) -> float:
+	var best: float = 400.0
+	var ids: PackedInt64Array = _river_grid.query(Rect2(p - Vector2(300.0, 300.0), Vector2(600.0, 600.0)))
+	var k: int = 0
+	while k < ids.size():
+		var ri: int = ids[k] >> Grid.PART_BITS
+		var segs := PackedInt32Array()
+		while k < ids.size() and (ids[k] >> Grid.PART_BITS) == ri:
+			segs.append(ids[k] & Grid.PART_MASK)
+			k += 1
+		var line: Polyline2 = terrain.rivers[ri]["line"]
+		var q: Vector3 = line.closest_in(p, segs)
+		best = minf(best, q.x - line.value_at(_river_widths[ri], q.y) * 0.5)
+	for l: Dictionary in terrain.lakes:
+		if (l["center"] as Vector2).distance_to(p) > float(l["radius"]) * 1.6 + 300.0:
+			continue
+		var poly: PackedVector2Array = l["polygon"]
+		var d: float = Terrain._poly_distance(poly, p)
+		best = minf(best, -d if Streets.point_in(p, poly) else d)
+	return best
+
+
+## The planner's water callable: exact near the water, a safe lower bound from the chamfer field
+## far from it (the planner only compares water distances with a few metres).
+func water_fn(x: float, z: float) -> float:
+	var p := Vector2(x, z)
+	var coarse: float = water_at(p)
+	if coarse > 160.0:
+		return coarse * 0.9 - 40.0
+	return water_exact(p)
+
+
 ## Exact clearance (m) from a polygon to the water: rivers' banks and lakes' shores (negative when
 ## it touches). Quick-rejects with the chamfer field.
 func water_clearance(poly: PackedVector2Array) -> float:
@@ -248,7 +377,7 @@ func water_clearance(poly: PackedVector2Array) -> float:
 	for p: Vector2 in _dense(poly, 16.0):
 		if water_at(p) > 220.0:
 			continue
-		best = minf(best, terrain.water_distance(p))
+		best = minf(best, water_exact(p))
 	return best
 
 
@@ -272,92 +401,186 @@ static func rect_poly(origin: Vector2, sz: Vector2, rot_deg: float) -> PackedVec
 	return PackedVector2Array([origin, origin + Vector2(sz.x, 0.0).rotated(a), origin + sz.rotated(a), origin + Vector2(0.0, sz.y).rotated(a)])
 
 
-# --- Towns ---------------------------------------------------------------------------------------
+## The corners of a lot frame [cx, cz, w, d, yaw] (lot_xf convention: front, local +Z, along
+## (sin yaw, cos yaw)): front-left, front-right, back-right, back-left.
+static func frame_poly(f: Array) -> PackedVector2Array:
+	var c := Vector2(float(f[0]), float(f[1]))
+	var yaw: float = deg_to_rad(float(f[4]))
+	var az := Vector2(sin(yaw), cos(yaw))
+	var ax := Vector2(az.y, -az.x)
+	var hx: Vector2 = ax * float(f[2]) * 0.5
+	var hz: Vector2 = az * float(f[3]) * 0.5
+	return PackedVector2Array([c - hx + hz, c + hx + hz, c + hx - hz, c - hx - hz])
 
-func _towns() -> void:
-	var want: int = settings.integer("towns")
-	if want <= 0:
-		return
+
+# --- Town sites (plan §3.3) ----------------------------------------------------------------------
+
+## Town sites by size class: the count from the town density (towns per 16 km²), the classes from
+## the town-size mix (big first: they need the most room), each on the best of a few hundred
+## candidates: dry, level in its core and its disc, low against a kilometre around it (valleys),
+## water a walk away, away from the map's edge, and its disc 300 m clear of every other town's.
+func _town_sites() -> void:
 	var tcfg: Dictionary = tun.get("towns", {})
-	var mix: Dictionary = (tcfg.get("mix", {}) as Dictionary).get(settings.choice("town_size"), {"village": 1.0})
+	var kinds_cfg: Dictionary = ptun.get("kinds", {})
+	var density: float = settings.num("town_density")
 	var r := rng("towns")
+	var want: int = int(floor(density * size * size / 16.0 + r.randf()))
+	if density > 0.0:
+		want = maxi(want, 1)
+	if not test_sites.is_empty():
+		want = test_sites.size()
+	if want <= 0 or kinds_cfg.is_empty():
+		return
+	var mix: Dictionary = (tcfg.get("mix", {}) as Dictionary).get(settings.choice("town_size"), {"village": 1.0})
 	var kinds: Array[String] = []
 	for k: int in want:
 		kinds.append(_weighted(mix, r))
-	# Big towns first: they need the most room.
-	kinds.sort_custom(func(a: String, b: String) -> bool: return Towns.KINDS.find(a) > Towns.KINDS.find(b))
+	kinds.sort_custom(func(a: String, b: String) -> bool: return KINDS.find(a) > KINDS.find(b))
 	var pool: Array = (names.get("towns", []) as Array).duplicate()
-	var max_relief: float = float(tcfg.get("max_relief", 9.0))
-	var spacing: float = float(tcfg.get("spacing", 650.0))
-	var margin: float = float(tun.get("region_margin", 72.0))
-	var hmin: float = INF
-	var hmax: float = -INF
-	for v: float in terrain.h:
-		hmin = minf(hmin, v)
-		hmax = maxf(hmax, v)
+	var spacing: float = float(tcfg.get("spacing", 300.0))
+	var edge: float = float(tcfg.get("edge", 120.0))
+	var tries: int = int(tcfg.get("candidates", 240))
+	var core_max: float = float(tcfg.get("core_relief", 15.0))
+	var disc_max: float = float(tcfg.get("disc_relief", 45.0))
+	var wr: Array = tcfg.get("water", [60.0, 80.0, 300.0])
+	var sc: Dictionary = tcfg.get("score", {})
+	var smooth_k: float = float(tcfg.get("core_smoothing", 0.5))
+	var half: float = size * 512.0
+	if not test_sites.is_empty():
+		kinds.clear()
+		for ts: Variant in test_sites:
+			kinds.append(str(ts["kind"]))
 	for ki: int in kinds.size():
 		var kind: String = kinds[ki]
-		_sub("Laying out towns", 0.3, 0.45, float(ki) / kinds.size())
-		var plan: Dictionary = Towns.plan(kind, tcfg, r)
-		var sz := Vector2(float(plan["size"][0]), float(plan["size"][1]))
+		_sub("Choosing town sites", 0.3, 0.34, float(ki) / kinds.size())
+		if not test_sites.is_empty():
+			var tc: Vector2 = test_sites[ki]["center"]
+			var tname: String = str(pool.pop_front()) if not pool.is_empty() else "Town %d" % (ki + 1)
+			towns.append({"id": _slug(tname), "name": tname, "kind": kind, "fw_id": "%s_%s" % [world_id, _slug(tname)], "center": tc,
+				"radius": float(test_sites[ki]["radius"]), "core": minf(float((kinds_cfg.get(kind, {}) as Dictionary).get("core", 80.0)), float(test_sites[ki]["radius"]) * 0.6),
+				"cell": cell_at(tc), "tier": [1, 2], "plan": {}, "authored": PackedStringArray(), "bounds": Rect2(tc, Vector2.ZERO)})
+			continue
+		var kd: Dictionary = kinds_cfg.get(kind, {})
+		var rr: Array = kd.get("radius", [200.0, 250.0])
+		var radius: float = minf(r.randf_range(float(rr[0]), float(rr[1])), half - edge - 40.0)
+		var core: float = minf(float(kd.get("core", 80.0)), radius * 0.6)
+		var lim: float = half - radius - edge
+		if lim <= 0.0 or radius < float(rr[0]) * 0.6:
+			warnings.append("no room for a %s" % kind)
+			continue
 		var best: Dictionary = {}
 		var best_score: float = INF
-		for attempt: int in 260:
-			var rot: float = 90.0 * float(r.randi() % 4)
-			var half: Vector2 = (sz if int(rot) % 180 == 0 else Vector2(sz.y, sz.x)) * 0.5
-			var c := Vector2(r.randf_range(-size * 512.0 + margin + half.x, size * 512.0 - margin - half.x),
-				r.randf_range(-size * 512.0 + margin + half.y, size * 512.0 - margin - half.y))
-			# The placement origin is the pad's corner: centre minus the rotated half size.
-			var origin: Vector2 = c - (sz * 0.5).rotated(deg_to_rad(rot))
-			var poly: PackedVector2Array = rect_poly(origin, sz, rot)
-			if not inside_one_region(poly, margin):
-				continue
-			var too_close: bool = false
-			for other: Dictionary in towns:
-				if (other["center"] as Vector2).distance_to(c) < spacing:
-					too_close = true
+		# The disc's mean slope may not pass the class's limit; where nothing passes, the limit
+		# relaxes to the least steep disc seen (plus a little) and the search runs again.
+		var max_slope: float = float((tcfg.get("max_slope", {}) as Dictionary).get(kind, 0.09))
+		var steep_best: float = INF
+		for round_i: int in 2:
+			if round_i == 1:
+				if not best.is_empty() or steep_best == INF:
 					break
-			if too_close or water_at(c) < 90.0:
-				continue
-			var st: Dictionary = terrain.stats_in(poly)
-			var relief: float = float(st["max"]) - float(st["min"])
-			if relief > max_relief * 1.8:
-				continue
-			var clear: float = water_clearance(poly)
-			if clear < 45.0:
-				continue
-			var elev: float = (float(st["mean"]) - hmin) / maxf(1.0, hmax - hmin)
-			var central: float = c.length() / (size * 512.0)
-			var near_water: float = 0.0 if clear < 320.0 else 4.0
-			var score: float = relief + elev * 14.0 + central * 5.0 + near_water + r.randf() * 3.0
-			if score < best_score:
-				best_score = score
-				best = {"origin": origin, "rot": rot, "poly": poly, "center": c, "mean": float(st["mean"])}
+				# Nothing level enough: once more, a little steeper than the least steep disc seen.
+				max_slope = steep_best + 0.01
+				steep_best = INF
+			for attempt: int in tries:
+				var c := Vector2(r.randf_range(-lim, lim), r.randf_range(-lim, lim))
+				var jitter: float = r.randf()
+				var clear: bool = true
+				for other: Dictionary in towns:
+					if (other["center"] as Vector2).distance_to(c) < radius + float(other["radius"]) + spacing:
+						clear = false
+						break
+				if not clear:
+					continue
+				var wd: float = water_at(c)
+				if wd < float(wr[0]) + 60.0:
+					wd = water_exact(c)
+				if wd < float(wr[0]):
+					continue
+				var core_st: Vector3 = _relief(c, core)
+				if core_st.y - core_st.x > core_max:
+					continue
+				var disc_st: Vector3 = _relief(c, radius)
+				if disc_st.y - disc_st.x > disc_max:
+					continue
+				# Mean slope over the core (9 samples) and over the disc (the core's and two rings): the
+				# planner's streets climb at most 0.11, so a town on a valley side stays half grown.
+				var slope: float = 0.0
+				var disc_slope: float = 0.0
+				for k2: int in 25:
+					var q: Vector2 = c
+					if k2 > 0:
+						q += Vector2.from_angle(k2 * TAU / 8.0) * (core * 0.6 if k2 <= 8 else (radius * 0.55 if k2 <= 16 else radius * 0.9))
+					var sl: float = terrain.slope(q.x, q.y)
+					if k2 <= 8:
+						slope += sl / 9.0
+					disc_slope += sl / 25.0
+				if disc_slope > max_slope:
+					steep_best = minf(steep_best, disc_slope)
+					continue
+				var hood: float = 0.0
+				for k3: int in 24:
+					var q3: Vector2 = c + (Vector2.from_angle(k3 * TAU / 16.0) * 500.0 if k3 < 16 else Vector2.from_angle((k3 - 16) * TAU / 8.0) * 250.0)
+					hood += terrain.height(q3.x, q3.y) / 24.0
+				var rel: float = terrain.height(c.x, c.y) - hood
+				var water_term: float = -float(sc.get("water", 6.0)) if wd >= float(wr[1]) and wd <= float(wr[2]) else 0.0
+				var edge_d: float = half - maxf(absf(c.x), absf(c.y)) - radius
+				var score: float = float(sc.get("slope", 120.0)) * slope + float(sc.get("disc_slope", 150.0)) * disc_slope + float(sc.get("valley", 0.25)) * rel + water_term \
+					+ float(sc.get("central", 4.0)) * c.length() / half + float(sc.get("edge", 0.02)) * maxf(0.0, 300.0 - edge_d) + float(sc.get("jitter", 3.0)) * jitter
+				if score < best_score:
+					best_score = score
+					best = {"center": c}
 		if best.is_empty():
 			warnings.append("no room for a %s" % kind)
 			continue
 		var ti: int = towns.size()
 		var name: String = str(pool.pop_at(r.randi() % pool.size())) if not pool.is_empty() else "Town %d" % (ti + 1)
 		var tid: String = _slug(name)
-		var a: float = deg_to_rad(float(best["rot"]))
-		# Roads arrive along the main street's axis: an approach point 22 m out and a lead 46 m out,
-		# where the route over the land starts (a road meeting the entry at an angle swung its last
-		# curve into the pad).
-		var entries: Array[Vector2] = []
-		var approaches: Array[Vector2] = []
-		var leads: Array[Vector2] = []
-		var dirs: Array = plan.get("entry_dirs", [])
-		for ei: int in (plan["entries"] as Array).size():
-			var e: Array = plan["entries"][ei]
-			var local := Vector2(float(e[0]), float(e[1]))
-			var outward := Vector2(float(dirs[ei][0]), float(dirs[ei][1])) if ei < dirs.size() else Vector2(-1.0 if local.x < 1.0 else 1.0, 0.0)
-			entries.append((best["origin"] as Vector2) + local.rotated(a))
-			approaches.append((best["origin"] as Vector2) + (local + outward * 22.0).rotated(a))
-			leads.append((best["origin"] as Vector2) + (local + outward * 46.0).rotated(a))
-		terrain.flatten(best["poly"], float(best["mean"]), 56.0)
-		towns.append({"id": tid, "name": name, "kind": kind, "fw_id": "%s_%s" % [world_id, tid], "plan": plan,
-			"origin": best["origin"], "rot": best["rot"], "poly": best["poly"], "center": best["center"],
-			"entries": entries, "approaches": approaches, "leads": leads, "cell": cell_at(best["center"]), "tier": [1, 2]})
+		var c2: Vector2 = best["center"]
+		_smooth_core(c2, core, smooth_k)
+		towns.append({"id": tid, "name": name, "kind": kind, "fw_id": "%s_%s" % [world_id, tid], "center": c2, "radius": snappedf(radius, 0.1),
+			"core": core, "cell": cell_at(c2), "tier": [1, 2], "plan": {}, "authored": PackedStringArray(), "bounds": Rect2(c2, Vector2.ZERO)})
+
+
+## (min, max, 0) of the ground at c and on two rings (half the radius and the radius).
+func _relief(c: Vector2, radius: float) -> Vector3:
+	var lo: float = terrain.height(c.x, c.y)
+	var hi: float = lo
+	for k: int in 16:
+		var q: Vector2 = c + Vector2.from_angle(k * TAU / 8.0) * radius * (0.5 if k < 8 else 1.0)
+		var v: float = terrain.height(q.x, q.y)
+		lo = minf(lo, v)
+		hi = maxf(hi, v)
+	return Vector3(lo, hi, 0.0)
+
+
+## Eases the macro grid within 0.8 of the core radius `k` of the way towards its mean there (plan
+## §3.2: no flat town pad; a gentler core for the shops and the square). Water and its banks stay.
+func _smooth_core(c: Vector2, core: float, k: float) -> void:
+	if k <= 0.0:
+		return
+	var rad: float = core * 0.8
+	var n: int = terrain.n
+	var i0: int = clampi(int(floor((c.x - rad - terrain.x0) / terrain.step)), 0, n - 1)
+	var i1: int = clampi(int(ceil((c.x + rad - terrain.x0) / terrain.step)), 0, n - 1)
+	var j0: int = clampi(int(floor((c.y - rad - terrain.z0) / terrain.step)), 0, n - 1)
+	var j1: int = clampi(int(ceil((c.y + rad - terrain.z0) / terrain.step)), 0, n - 1)
+	var acc: float = 0.0
+	var cnt: int = 0
+	for j: int in range(j0, j1 + 1):
+		for i: int in range(i0, i1 + 1):
+			if terrain.pos(j * n + i).distance_to(c) <= rad:
+				acc += terrain.h[j * n + i]
+				cnt += 1
+	if cnt == 0:
+		return
+	var mean: float = acc / cnt
+	for j2: int in range(j0, j1 + 1):
+		for i2: int in range(i0, i1 + 1):
+			var cell: int = j2 * n + i2
+			var d: float = terrain.pos(cell).distance_to(c)
+			if d > rad or water_dist[cell] < 64.0:
+				continue
+			terrain.h[cell] = lerpf(terrain.h[cell], mean, k * (1.0 - smoothstep(rad * 0.5, rad, d)))
 
 
 static func _weighted(w: Dictionary, r: RandomNumberGenerator) -> String:
@@ -383,19 +606,20 @@ static func _slug(s: String) -> String:
 	return out.strip_edges().trim_suffix("_").trim_prefix("_")
 
 
-# --- Roads -----------------------------------------------------------------------------------------
+# --- Roads (plan §3.4) -----------------------------------------------------------------------------
 
+## The network through the town centres: a spanning tree between them (by distance) plus loops by
+## road density, then exits off the map from the biggest towns. Towns are not obstacles: the main
+## street of a town is the world road through its centre (_main_streets).
 func _road_network() -> void:
 	var rcfg: Dictionary = tun.get("roads", {})
 	var r := rng("roads")
 	var density: String = settings.choice("roads")
-	# Spanning tree between towns (Prim, by the gap between their nearest entries), plus loops.
 	var edges: Array = []
 	for i: int in towns.size():
 		for j: int in range(i + 1, towns.size()):
-			var best: Array = _closest_entries(towns[i], towns[j])
-			edges.append([float(best[0]), i, j, best[1], best[2]])
-	edges.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]) or (float(a[0]) == float(b[0]) and int(a[1]) * 100 + int(a[2]) < int(b[1]) * 100 + int(b[2])))
+			edges.append([(towns[i]["center"] as Vector2).distance_to(towns[j]["center"]), i, j])
+	edges.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]) or (float(a[0]) == float(b[0]) and int(a[1]) * 1000 + int(a[2]) < int(b[1]) * 1000 + int(b[2])))
 	var parent: Array[int] = []
 	for i2: int in towns.size():
 		parent.append(i2)
@@ -409,7 +633,7 @@ func _road_network() -> void:
 			chosen.append(e)
 		else:
 			rest.append(e)
-	var extra: int = int((rcfg.get("extra", {}) as Dictionary).get(density, 1))
+	var extra: int = int((rcfg.get("extra", {}) as Dictionary).get(density, 1)) * maxi(1, int(round(size * size / 16.0)))
 	var longest: float = 0.0
 	for e2: Array in chosen:
 		longest = maxf(longest, float(e2[0]))
@@ -421,37 +645,43 @@ func _road_network() -> void:
 			extra -= 1
 	for ci: int in chosen.size():
 		var e4: Array = chosen[ci]
-		_sub("Building roads", 0.45, 0.6, 0.8 * ci / chosen.size())
+		_sub("Building roads", 0.34, 0.48, 0.7 * ci / chosen.size())
 		var ta: Dictionary = towns[int(e4[1])]
 		var tb: Dictionary = towns[int(e4[2])]
 		var big: bool = str(ta["kind"]) != "hamlet" and str(tb["kind"]) != "hamlet"
-		_connect(ta, int(e4[3]), tb, int(e4[4]), "highway" if big else "county", "%s to %s" % [ta["name"], tb["name"]])
-	# Roads off the map: the biggest towns' far entries to the nearest edge.
-	var exits: int = int((rcfg.get("exits", {}) as Dictionary).get(density, 1))
+		_connect(ta, tb, "highway" if big else "county", "%s to %s" % [ta["name"], tb["name"]])
+	# Roads off the map: from the biggest towns' centres, the cheapest way to any edge.
+	var exits: int = int((rcfg.get("exits", {}) as Dictionary).get(density, 1)) * maxi(1, int(round(size / 4.0)))
 	var order: Array = []
 	for i3: int in towns.size():
-		order.append([Towns.KINDS.find(str(towns[i3]["kind"])), i3])
+		order.append([KINDS.find(str(towns[i3]["kind"])), i3])
 	order.sort_custom(func(a: Array, b: Array) -> bool: return int(a[0]) > int(b[0]) or (int(a[0]) == int(b[0]) and int(a[1]) < int(b[1])))
 	for o: Array in order:
 		if exits <= 0:
 			break
 		var tw: Dictionary = towns[int(o[1])]
-		# The easiest way off the map: from either entry to the nearest point of any edge, the
-		# cheapest route (not simply the nearest edge, which in mountains meant switchbacks over a
-		# range).
-		var best_route := PackedVector2Array()
+		var from: Vector2 = tw["center"]
+		var best_to := Vector2.INF
 		var best_cost: float = INF
-		for lead_i: int in (tw["leads"] as Array).size():
-			var from: Vector2 = tw["leads"][lead_i]
-			for to: Vector2 in _edge_points(from):
-				var pts: PackedVector2Array = _route_from_entry(tw, lead_i, to)
-				if pts.is_empty():
-					continue
-				var c: float = router.last_cost
-				if c < best_cost:
-					best_cost = c
-					best_route = pts
-		if _add_road(best_route, "highway", "%s road" % tw["name"], true):
+		for to: Vector2 in _edge_points(from):
+			var pts: PackedVector2Array = router.route(from, to, 700.0, 0.9)
+			if pts.is_empty():
+				continue
+			if router.last_cost < best_cost:
+				best_cost = router.last_cost
+				best_to = to
+		if best_to == Vector2.INF:
+			continue
+		var pieces: Array[Dictionary] = router.route_pieces(from, best_to, 700.0, 0.9)
+		var added: bool = false
+		for pc: Dictionary in pieces:
+			var mid: PackedVector2Array = pc["points"]
+			if not bool(pc["start_exact"]):
+				mid[0] = _snap_to_road(mid[0])
+			if not bool(pc["end_exact"]):
+				mid[mid.size() - 1] = _snap_to_road(mid[mid.size() - 1])
+			added = _add_road(mid, "highway", "%s road" % tw["name"], bool(pc["end_exact"])) or added
+		if added:
 			exits -= 1
 	if towns.is_empty():
 		# No towns: one county road across the map still gives the land a way through.
@@ -467,76 +697,25 @@ static func _find(parent: Array[int], i: int) -> int:
 	return i
 
 
-func _closest_entries(a: Dictionary, b: Dictionary) -> Array:
-	var best: Array = [INF, 0, 0]
-	for i: int in (a["leads"] as Array).size():
-		for j: int in (b["leads"] as Array).size():
-			var d: float = (a["leads"][i] as Vector2).distance_to(b["leads"][j])
-			if d < float(best[0]):
-				best = [d, i, j]
-	return best
-
-
-## The entry of a town nearer the map edge.
-func _edge_side_entry(tw: Dictionary) -> int:
-	var best: int = 0
-	var bd: float = INF
-	for i: int in (tw["leads"] as Array).size():
-		var p: Vector2 = tw["leads"][i]
-		var d: float = size * 512.0 - maxf(absf(p.x), absf(p.y))
-		if d < bd:
-			bd = d
-			best = i
-	return best
-
-
 ## The nearest point of each map edge to p (8 m inside it).
 func _edge_points(p: Vector2) -> Array[Vector2]:
 	var e: float = size * 512.0 - 8.0
 	return [Vector2(-e, p.y), Vector2(e, p.y), Vector2(p.x, -e), Vector2(p.x, e)]
 
 
-func _edge_point(p: Vector2) -> Vector2:
-	var e: float = size * 512.0 - 8.0
-	var dx: float = e - absf(p.x)
-	var dz: float = e - absf(p.y)
-	if dx < dz:
-		return Vector2(signf(p.x) * e if p.x != 0.0 else e, p.y)
-	return Vector2(p.x, signf(p.y) * e if p.y != 0.0 else e)
-
-
-## Route from a town's entry: the main street's end, its lead-out, then A* to `to`.
-func _route_from_entry(tw: Dictionary, entry: int, to: Vector2) -> PackedVector2Array:
-	var mid: PackedVector2Array = router.route(tw["leads"][entry], to, 700.0, 0.9)
-	if mid.is_empty():
-		return mid
-	var out := PackedVector2Array([tw["entries"][entry], tw["approaches"][entry]])
-	out.append_array(mid)
-	return out
-
-
-func _connect(ta: Dictionary, ea: int, tb: Dictionary, eb: int, cls: String, name: String) -> void:
-	var a: Vector2 = ta["leads"][ea]
-	var b: Vector2 = tb["leads"][eb]
-	var pieces: Array[Dictionary] = router.route_pieces(a, b, 900.0, 0.9 if cls == "highway" else 0.7)
+## A road between two town centres, joining roads already built at T-junctions where it meets them.
+func _connect(ta: Dictionary, tb: Dictionary, cls: String, name: String) -> void:
+	var pieces: Array[Dictionary] = router.route_pieces(ta["center"], tb["center"], 900.0, 0.9 if cls == "highway" else 0.7)
 	if pieces.is_empty():
 		warnings.append("no road from %s to %s" % [ta["name"], tb["name"]])
 		return
-	# Where the route meets roads already built it joins them (a T-junction snapped onto the other
-	# road's line) instead of running beside them.
 	for pc: Dictionary in pieces:
 		var mid: PackedVector2Array = pc["points"]
-		var pts := PackedVector2Array()
-		if bool(pc["start_exact"]):
-			pts.append_array([ta["entries"][ea], ta["approaches"][ea]])
-		else:
+		if not bool(pc["start_exact"]):
 			mid[0] = _snap_to_road(mid[0])
 		if not bool(pc["end_exact"]):
 			mid[mid.size() - 1] = _snap_to_road(mid[mid.size() - 1])
-		pts.append_array(mid)
-		if bool(pc["end_exact"]):
-			pts.append_array([tb["approaches"][eb], tb["entries"][eb]])
-		_add_road(pts, cls, name, false)
+		_add_road(mid, cls, name, false)
 
 
 ## The nearest point on a road already built (a junction), or p itself when none is near.
@@ -573,8 +752,408 @@ func _index_road(i: int) -> void:
 			_seg_grid.insert(Grid.pack(i, k), Rect2(line.points[k], Vector2.ZERO).expand(line.points[k + 1]).grow(1.0))
 
 
+## Rebuilds the road indexes and ids after roads were merged (_main_streets).
+func _reindex_roads() -> void:
+	_seg_grid = Grid.new(256.0)
+	_pt_grid = Grid.new(256.0)
+	_max_half = 0.0
+	for i: int in roads.size():
+		roads[i]["id"] = "road_%d" % i
+		roads[i]["line"] = Polyline2.from_array(Terrain._arr(roads[i]["points"]))
+		_index_road(i)
+
+
+# --- Main streets (plan §3.2 step 3) ---------------------------------------------------------------
+
+## Every town's main street is a world road through its centre: the two roads that end there and
+## meet straightest become one road through it; a lone road carries on through the centre as a
+## stub out past the town along the lowest ground; a town no road reached gets a county road
+## through it along its valley; and a town (the biggest class) whose network gives it one road
+## through its core gets a county road across it.
+func _main_streets() -> void:
+	var tcfg: Dictionary = tun.get("towns", {})
+	var stub_len: float = float(tcfg.get("stub", 150.0))
+	for ti: int in towns.size():
+		var tw: Dictionary = towns[ti]
+		_sub("Building roads", 0.34, 0.48, 0.7 + 0.3 * ti / towns.size())
+		var c: Vector2 = tw["center"]
+		var ground := Streets.Ground.new({"height": _ground_fn(), "water": water_fn}, c, float(tw["radius"]) + stub_len + 240.0)
+		var reach: float = float(tw["radius"]) + stub_len
+		var ends: Array = _ends_at(c)
+		if ends.size() >= 2:
+			var best: Array = []
+			var best_dot: float = INF
+			for a: int in ends.size():
+				for b: int in range(a + 1, ends.size()):
+					var dd: float = (ends[a][2] as Vector2).dot(ends[b][2])
+					if dd < best_dot:
+						best_dot = dd
+						best = [ends[a], ends[b]]
+			_merge_through(best[0], best[1])
+		elif ends.size() == 1:
+			var e: Array = ends[0]
+			var stub: PackedVector2Array = _stub(ground, c, -(e[2] as Vector2), reach, 70.0)
+			if stub.size() >= 2:
+				_extend_through(e, stub)
+		elif _roads_near(c, float(tw["radius"]) * 0.3) == 0:
+			var axis: PackedVector2Array = _through_road(ground, c, reach, Vector2.ZERO)
+			if axis.size() >= 2:
+				_add_road(axis, "county", "%s road" % tw["name"], false)
+		if str(tw["kind"]) == "town" and _roads_near(c, float(tw["core"]) * 0.5) < 2:
+			var main_dir: Vector2 = _road_dir_at(c)
+			var cross: PackedVector2Array = _through_road(ground, c, reach, Vector2(-main_dir.y, main_dir.x))
+			if cross.size() >= 2:
+				_add_road(cross, "county", "%s cross road" % tw["name"], false)
+	_reindex_roads()
+
+
+## The land the towns are planned over: the composer's macro ground (RefGround.m; built on demand,
+## the planner and the stubs share it). Lot heights come from the full reference ground
+## (_finalize_town_heights).
+func _ground_fn() -> Callable:
+	if _ref == null:
+		_ref = RefGround.new(terrain, settings.seed & 0x7fffffff, size)
+	return _ref.m
+
+
+## Roads with an end at c: [[road index, at its start, direction out of c along it]].
+func _ends_at(c: Vector2) -> Array:
+	var out: Array = []
+	for ri: int in roads.size():
+		var pts: PackedVector2Array = roads[ri]["points"]
+		var line: Polyline2 = roads[ri]["line"]
+		if pts[0].distance_to(c) < 1.0:
+			out.append([ri, true, (line.point_at(minf(40.0, line.total_length)) - c).normalized()])
+		elif pts[pts.size() - 1].distance_to(c) < 1.0:
+			out.append([ri, false, (line.point_at(maxf(0.0, line.total_length - 40.0)) - c).normalized()])
+	return out
+
+
+## How many roads pass within r of p.
+func _roads_near(p: Vector2, r: float) -> int:
+	var n: int = 0
+	for rd: Dictionary in roads:
+		if (rd["line"] as Polyline2).closest(p).x < r:
+			n += 1
+	return n
+
+
+## The direction of the road passing nearest p (east when there is none).
+func _road_dir_at(p: Vector2) -> Vector2:
+	var best: float = INF
+	var dir := Vector2.RIGHT
+	for rd: Dictionary in roads:
+		var line: Polyline2 = rd["line"]
+		var q: Vector3 = line.closest(p)
+		if q.x < best:
+			best = q.x
+			dir = line.tangent_at(q.y)
+	return dir
+
+
+## Joins two roads that end at a town centre into one road through it (the first keeps its place
+## and takes the higher class; the second goes).
+func _merge_through(ea: Array, eb: Array) -> void:
+	var a: int = int(ea[0])
+	var b: int = int(eb[0])
+	var pa: PackedVector2Array = (roads[a]["points"] as PackedVector2Array).duplicate()
+	if bool(ea[1]):
+		pa.reverse()
+	var pb: PackedVector2Array = (roads[b]["points"] as PackedVector2Array).duplicate()
+	if not bool(eb[1]):
+		pb.reverse()
+	pa.append_array(pb.slice(1))
+	var cls: String = str(roads[a]["class"])
+	if str(roads[b]["class"]) == "highway" and cls != "highway":
+		_set_class(a, "highway")
+	roads[a]["points"] = pa
+	roads[a]["line"] = Polyline2.from_array(Terrain._arr(pa))
+	roads.remove_at(b)
+
+
+## Carries a road that ends at a town centre on through it with `stub` (which starts there).
+func _extend_through(e: Array, stub: PackedVector2Array) -> void:
+	var a: int = int(e[0])
+	var pa: PackedVector2Array = (roads[a]["points"] as PackedVector2Array).duplicate()
+	if bool(e[1]):
+		pa.reverse()
+	pa.append_array(stub.slice(1))
+	roads[a]["points"] = pa
+	roads[a]["line"] = Polyline2.from_array(Terrain._arr(pa))
+
+
+func _set_class(i: int, cls: String) -> void:
+	var spec: Dictionary = (tun.get("roads", {}) as Dictionary).get(cls, {"surface": "gravel", "width": 5.0, "shoulder": 1.5})
+	roads[i]["class"] = cls
+	roads[i]["width"] = float(spec["width"])
+	roads[i]["shoulder"] = float(spec["shoulder"])
+	roads[i]["surface"] = str(spec["surface"])
+	roads[i]["markings"] = cls == "highway"
+
+
+## A road from c out `length` m, within `spread` degrees of `dir`, along whichever heading keeps
+## lowest and dry, routed on the town's 8 m ground (RwgStreets.route_fine). Empty when none goes.
+func _stub(g: Streets.Ground, c: Vector2, dir: Vector2, length: float, spread: float) -> PackedVector2Array:
+	var half: float = size * 512.0 - 40.0
+	var cands: Array = []
+	var h0: float = g.h(c)
+	for k: int in 9:
+		var turn: float = deg_to_rad((k - 4) * spread / 4.0)
+		var u: Vector2 = dir.normalized().rotated(turn)
+		var score: float = absf(turn) * 4.0
+		for f: float in [0.3, 0.6, 1.0]:
+			var q: Vector2 = c + u * length * f
+			score += (g.h(q) - h0) * (0.5 if g.h(q) < h0 else 1.0)
+			if g.water(q) < 15.0:
+				score += 400.0
+			if absf(q.x) > half or absf(q.y) > half:
+				score += 800.0
+		cands.append([score, u])
+	cands.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	for ci: int in mini(4, cands.size()):
+		var u2: Vector2 = cands[ci][1]
+		var to: Vector2 = c + u2 * length
+		to = Vector2(clampf(to.x, -half, half), clampf(to.y, -half, half))
+		var pts: PackedVector2Array = Streets.route_fine(g, c, to, {"grade_max": 0.1, "water": 14.0, "margin": 120.0})
+		if pts.size() >= 2:
+			return pts
+	return PackedVector2Array()
+
+
+## A road through c both ways: out along `axis` (or the town's lowest axis when ZERO) and back
+## out the other side, as one line through c.
+func _through_road(g: Streets.Ground, c: Vector2, length: float, axis: Vector2) -> PackedVector2Array:
+	var dir: Vector2 = axis
+	if dir == Vector2.ZERO:
+		var best: float = INF
+		for k: int in 8:
+			var u: Vector2 = Vector2.from_angle(k * PI / 8.0)
+			var s: float = 0.0
+			for f: float in [-1.0, -0.5, 0.5, 1.0]:
+				var q: Vector2 = c + u * length * f
+				s += g.h(q) + (400.0 if g.water(q) < 15.0 else 0.0)
+			if s < best:
+				best = s
+				dir = u
+	var a: PackedVector2Array = _stub(g, c, dir, length, 50.0)
+	var b: PackedVector2Array = _stub(g, c, -dir, length, 50.0)
+	if a.size() < 2 or b.size() < 2:
+		return a if a.size() >= 2 else b
+	a.reverse()
+	a.append_array(b.slice(1))
+	return a
+
+
+# --- Town plans (plan §3.2 step 4) -----------------------------------------------------------------
+
+## Plans every town (RwgTownPlanner) on the reference ground the composer will grade, with the
+## world roads near it as its arterials, the towns spread over a few threads (the planner is pure,
+## and the ground, the water and the roads are only read while it runs).
+func _plan_towns() -> void:
+	if towns.is_empty():
+		return
+	var height: Callable = _ground_fn()
+	var outskirts: float = float((ptun.get("lots", {}) as Dictionary).get("outskirts", 400.0))
+	var jobs: Array = []
+	for tw: Dictionary in towns:
+		var site: Dictionary = {"id": tw["id"], "kind": tw["kind"], "center": tw["center"], "radius": tw["radius"], "name": tw["name"]}
+		jobs.append([site, _arterials_for(tw["center"], float(tw["radius"]) + outskirts + 60.0), Ids.derive_seed(settings.seed, "rwg:town:%s" % tw["id"])])
+	var world: Dictionary = {"height": height, "water": water_fn}
+	var count: int = mini(clampi(OS.get_processor_count() - 1, 1, 4), jobs.size())
+	var results: Array = []
+	var threads: Array[Thread] = []
+	for k: int in range(1, count):
+		var th := Thread.new()
+		if th.start(_plan_batch.bind(jobs, k, count, world)) == OK:
+			threads.append(th)
+		else:
+			results.append_array(_plan_batch(jobs, k, count, world))
+	results.append_array(_plan_batch(jobs, 0, count, world, true))
+	for th2: Thread in threads:
+		results.append_array(th2.wait_to_finish())
+	for res: Array in results:
+		towns[int(res[0])]["plan"] = res[1]
+
+
+## Plans jobs k, k + stride, ... ([index, plan] each). `report`: this is the generator's own thread.
+func _plan_batch(jobs: Array, k: int, stride: int, world: Dictionary, report: bool = false) -> Array:
+	var out: Array = []
+	for i: int in range(k, jobs.size(), stride):
+		var job: Array = jobs[i]
+		out.append([i, Planner.plan(job[0], world, job[1], ptun, int(job[2]))])
+		if report:
+			_sub("Laying out towns", 0.48, 0.62, float(i + 1) / jobs.size())
+	return out
+
+
+## The world roads within `reach` of c as the planner's arterials, nearest first (the main street).
+func _arterials_for(c: Vector2, reach: float) -> Array:
+	var near: Array = []
+	for ri: int in roads.size():
+		var d: float = (roads[ri]["line"] as Polyline2).closest(c).x
+		if d < reach:
+			near.append([d, ri])
+	near.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]) or (float(a[0]) == float(b[0]) and int(a[1]) < int(b[1])))
+	var out: Array = []
+	for nr: Array in near:
+		var rd: Dictionary = roads[int(nr[1])]
+		out.append({"id": rd["id"], "points": Terrain._arr(rd["points"]), "width": rd["width"], "shoulder": rd["shoulder"],
+			"surface": rd["surface"], "markings": rd["markings"]})
+	return out
+
+
+## Towns against each other and the map: a lot must stand inside the map, clear of every other
+## town's streets and of the lots of the towns planned before it (the outskirts of two towns can
+## meet along a road between them); a fixture must not stand in another town's lot. Then the lots,
+## the square and the streets go into the indexes places, the drop site and the Bloom keep off,
+## and the router keeps tracks out of the lots.
+func _settle_towns() -> void:
+	var half: float = size * 512.0 - 12.0
+	var inside := Rect2(-half, -half, half * 2.0, half * 2.0)
+	var ccfg: Dictionary = (tun.get("towns", {}) as Dictionary).get("clearance", {})
+	var lot_gap: float = float(ccfg.get("lots", 12.0))
+	var street_gap: float = float(ccfg.get("streets", 8.0))
+	# Every town's streets first: a lot is tested against all of them.
+	for ti: int in towns.size():
+		for rd: Variant in (towns[ti]["plan"] as Dictionary).get("roads", []):
+			var line: Polyline2 = Polyline2.from_array((rd as Dictionary)["points"])
+			var si: int = _streets.size()
+			var need: float = float(rd["width"]) * 0.5 + float(rd.get("shoulder", 0.5))
+			_streets.append({"line": line, "need": need, "town": ti})
+			for k: int in line.points.size() - 1:
+				_street_grid.insert(Grid.pack(si, k), Rect2(line.points[k], Vector2.ZERO).expand(line.points[k + 1]).grow(need + street_gap + 1.0))
+	for ti2: int in towns.size():
+		var tw: Dictionary = towns[ti2]
+		var plan: Dictionary = tw["plan"]
+		var kept: Array = []
+		for lv: Variant in plan.get("lots", []):
+			var l: Dictionary = lv
+			var poly: PackedVector2Array = frame_poly(l["frame"])
+			var ok: bool = true
+			for p: Vector2 in poly:
+				if not inside.has_point(p):
+					ok = false
+			if ok and (_frame_hits_lots(poly, ti2, 1.0) or _frame_hits_streets(poly, ti2)):
+				ok = false
+			if ok:
+				kept.append(l)
+				_add_lot(poly, ti2, lot_gap)
+		if kept.size() < (plan.get("lots", []) as Array).size():
+			warnings.append("%s: %d lots left out (the map edge or a neighbour)" % [tw["name"], (plan["lots"] as Array).size() - kept.size()])
+		plan["lots"] = kept
+		if not (plan.get("plaza", {}) as Dictionary).is_empty():
+			_add_lot(frame_poly(plan["plaza"]["frame"]), ti2, lot_gap)
+	for ti3: int in towns.size():
+		var plan2: Dictionary = towns[ti3]["plan"]
+		var fx_kept: Array = []
+		for fv: Variant in plan2.get("fixtures", []):
+			var p2 := Vector2(float(fv["pos"][0]), float(fv["pos"][1]))
+			var in_lot: bool = absf(p2.x) > half or absf(p2.y) > half
+			for id: int in _lot_grid.query(Rect2(p2, Vector2.ZERO).grow(1.0)):
+				if _lot_town[id] != ti3 and Streets.point_in(p2, _lot_polys[id]):
+					in_lot = true
+					break
+			if not in_lot:
+				fx_kept.append(fv)
+		plan2["fixtures"] = fx_kept
+		towns[ti3]["bounds"] = _town_bounds(plan2)
+	for poly2: PackedVector2Array in _lot_polys:
+		router.block_polygon(poly2, 6.0)
+
+
+func _add_lot(poly: PackedVector2Array, town: int, gap: float) -> void:
+	var id: int = _lot_polys.size()
+	_lot_polys.append(poly)
+	_lot_town.append(town)
+	var g: Array = Geometry2D.offset_polygon(poly, gap)
+	_lot_grown.append(g[0] if not g.is_empty() else poly)
+	_lot_grid.insert(id, _bounds(poly).grow(gap + 1.0))
+
+
+## A frame within `gap` of another town's lot already kept.
+func _frame_hits_lots(poly: PackedVector2Array, town: int, gap: float) -> bool:
+	var bb: Rect2 = _bounds(poly).grow(gap)
+	var grown := PackedVector2Array()
+	for id: int in _lot_grid.query(bb):
+		if _lot_town[id] == town or not _bounds(_lot_polys[id]).intersects(bb):
+			continue
+		if grown.is_empty():
+			var off: Array = Geometry2D.offset_polygon(poly, gap)
+			grown = off[0] if not off.is_empty() else poly
+		if not Geometry2D.intersect_polygons(grown, _lot_polys[id]).is_empty():
+			return true
+	return false
+
+
+## A frame reaching into another town's street corridor (half width + shoulder + 0.4 m).
+func _frame_hits_streets(poly: PackedVector2Array, town: int) -> bool:
+	for sid: int in _street_grid.query(_bounds(poly).grow(1.0)):
+		var st: Dictionary = _streets[sid >> Grid.PART_BITS]
+		if int(st["town"]) == town:
+			continue
+		var line: Polyline2 = st["line"]
+		var k: int = sid & Grid.PART_MASK
+		if _seg_poly_distance(line.points[k], line.points[k + 1], poly) < float(st["need"]) + 0.4:
+			return true
+	return false
+
+
+## Distance between segment a-b and a polygon (0 when they touch or overlap).
+static func _seg_poly_distance(a: Vector2, b: Vector2, poly: PackedVector2Array) -> float:
+	if Streets.point_in(a, poly) or Streets.point_in(b, poly):
+		return 0.0
+	var best: float = INF
+	for k: int in poly.size():
+		var c: Vector2 = poly[k]
+		var d: Vector2 = poly[(k + 1) % poly.size()]
+		if Geometry2D.segment_intersects_segment(a, b, c, d) != null:
+			return 0.0
+		var pts: PackedVector2Array = Geometry2D.get_closest_points_between_segments(a, b, c, d)
+		best = minf(best, pts[0].distance_to(pts[1]))
+	return best
+
+
+## A town's bounds: its lots' parcels and frames, its streets (with their width), its square and
+## its fixtures, grown 4 m (what the composer looks for near each region, ADR-0040).
+func _town_bounds(plan: Dictionary) -> Rect2:
+	var c: Array = plan.get("center", [0.0, 0.0])
+	var bb := Rect2(Vector2(float(c[0]), float(c[1])), Vector2.ZERO)
+	for lv: Variant in plan.get("lots", []):
+		for p: Vector2 in frame_poly(lv["frame"]):
+			bb = bb.expand(p)
+		for q: Variant in lv.get("poly", []):
+			bb = bb.expand(Vector2(float(q[0]), float(q[1])))
+	for rd: Variant in plan.get("roads", []):
+		var line: Polyline2 = Polyline2.from_array(rd["points"])
+		bb = bb.merge(line.bounds.grow(float(rd["width"]) * 0.5 + float(rd.get("shoulder", 0.5))))
+	if not (plan.get("plaza", {}) as Dictionary).is_empty():
+		for p2: Vector2 in frame_poly(plan["plaza"]["frame"]):
+			bb = bb.expand(p2)
+	for fv: Variant in plan.get("fixtures", []):
+		bb = bb.expand(Vector2(float(fv["pos"][0]), float(fv["pos"][1])))
+	return bb.grow(4.0)
+
+
+## True when p lies within `gap` of a town's lots or square.
+func _near_lots(p: Vector2, gap: float) -> bool:
+	for id: int in _lot_grid.query(Rect2(p, Vector2.ZERO).grow(gap + 1.0)):
+		var poly: PackedVector2Array = _lot_polys[id]
+		if Streets.point_in(p, poly) or Terrain._poly_distance(poly, p) < gap:
+			return true
+	return false
+
+
+## Distance from p to the nearest town's disc (0 inside one; INF without towns).
+func _town_distance(p: Vector2) -> float:
+	var best: float = INF
+	for tw: Dictionary in towns:
+		best = minf(best, maxf(0.0, (tw["center"] as Vector2).distance_to(p) - float(tw["radius"])))
+	return best
+
+
+## nearest_road and road_clearance as v1 had them (see ADR-0038's spatial indexes).
 ## The nearest point on any road to p: [distance, point, road index, arc]. `clear_of_towns`: only
-## points at least 30 m outside every town pad (a track must not start on a town's street).
+## points at least 30 m outside every town (a track must not start on a town's street).
 ## Searched through the spatial indexes in growing squares around p until the nearest found lies
 ## inside the square (no road outside can then be nearer). The scan over every road takes the
 ## nearest, the lowest road index first among equals, whenever one lies within 4000 m, and so does
@@ -651,12 +1230,13 @@ func _nearest_road_scan(p: Vector2, classes: PackedStringArray, clear_of_towns: 
 	return best
 
 
+## Within `gap` of a town: inside its disc grown by `gap`, or that near one of its lots (the farms
+## out along its roads).
 func _near_town(p: Vector2, gap: float) -> bool:
 	for tw: Dictionary in towns:
-		var poly: PackedVector2Array = tw["poly"]
-		if Geometry2D.is_point_in_polygon(p, poly) or Terrain._poly_distance(poly, p) < gap:
+		if (tw["center"] as Vector2).distance_to(p) < float(tw["radius"]) + gap:
 			return true
-	return false
+	return _near_lots(p, gap)
 
 
 ## Clearance (m) between a polygon and every road's edge (shoulder included). Only road vertices
@@ -686,48 +1266,58 @@ func road_clearance(poly: PackedVector2Array, skip: int = -1) -> float:
 		var q: Vector2 = line.points[id & Grid.PART_MASK]
 		if not box.has_point(q):
 			continue
-		var d: float = 0.0 if Geometry2D.is_point_in_polygon(q, poly) else Terrain._poly_distance(poly, q)
+		var d: float = 0.0 if Streets.point_in(q, poly) else Terrain._poly_distance(poly, q)
 		best = minf(best, d - half)
 	return best
 
 
 # --- Drop site -------------------------------------------------------------------------------------
 
+## Where a new player lands: away from towns and places, near (not on) a road, on gentle dry ground,
+## about a day's walk from a town, and at least 300 m from a region border (a streamed world
+## composes the land round the drop site first; fallbacks 200, 120, 60 m).
 func _drop_site() -> void:
 	var dcfg: Dictionary = tun.get("drop_site", {})
 	var r := rng("drop")
 	var town_d: float = float(dcfg.get("town_distance", 380.0))
 	var rd: Array = dcfg.get("road_distance", [40, 220])
+	var margins: Array = dcfg.get("border", [300.0, 200.0, 120.0, 60.0])
 	var best: Dictionary = {}
-	var best_score: float = INF
-	for attempt: int in 600:
-		var p := Vector2(r.randf_range(-size * 512.0 + 90.0, size * 512.0 - 90.0), r.randf_range(-size * 512.0 + 90.0, size * 512.0 - 90.0))
-		if not inside_one_region(PackedVector2Array([p - Vector2(24, 24), p + Vector2(24, 24)]), 60.0):
-			continue
-		if water_at(p) < 70.0 or terrain.slope(p.x, p.y) > 0.12:
-			continue
-		var near_town: float = INF
-		for tw: Dictionary in towns:
-			near_town = minf(near_town, Terrain._poly_distance(tw["poly"], p))
-		if near_town < town_d:
-			continue
-		var nr: Array = nearest_road(p)
-		var road_d: float = float(nr[0])
-		if not roads.is_empty() and (road_d < float(rd[0]) or road_d > float(rd[1])):
-			continue
-		if terrain.water_distance(p) < 50.0:
-			continue
-		# Close enough to walk to a town on the first day, central rather than at the edge.
-		var score: float = (absf(near_town - 750.0) / 100.0 if near_town < INF else 0.0) + p.length() / (size * 512.0) * 4.0 + terrain.slope(p.x, p.y) * 30.0 + r.randf() * 2.0
-		if score < best_score:
-			best_score = score
-			best = {"pos": p, "road": nr}
+	for mi: int in margins.size():
+		var margin: float = float(margins[mi])
+		var best_score: float = INF
+		for attempt: int in 600:
+			var p := Vector2(r.randf_range(-size * 512.0 + 90.0, size * 512.0 - 90.0), r.randf_range(-size * 512.0 + 90.0, size * 512.0 - 90.0))
+			var jitter: float = r.randf()
+			if not inside_one_region(PackedVector2Array([p - Vector2(24, 24), p + Vector2(24, 24)]), margin):
+				continue
+			if water_at(p) < 70.0 or terrain.slope(p.x, p.y) > 0.12:
+				continue
+			var near_town: float = _town_distance(p)
+			if near_town < town_d or _near_lots(p, 120.0):
+				continue
+			var nr: Array = nearest_road(p)
+			var road_d: float = float(nr[0])
+			if not roads.is_empty() and (road_d < float(rd[0]) or road_d > float(rd[1])):
+				continue
+			if water_exact(p) < 50.0:
+				continue
+			# Close enough to walk to a town on the first day, central rather than at the edge.
+			var score: float = (absf(near_town - 750.0) / 100.0 if near_town < INF else 0.0) + p.length() / (size * 512.0) * 4.0 + terrain.slope(p.x, p.y) * 30.0 + jitter * 2.0
+			if score < best_score:
+				best_score = score
+				best = {"pos": p, "road": nr}
+		if not best.is_empty():
+			if mi > 0:
+				warnings.append("drop site %d m from a region border" % int(margin))
+			break
 	if best.is_empty():
 		# Fallback: the flattest dry spot near the middle.
 		var p2 := Vector2.ZERO
 		for k: int in 400:
 			var q := Vector2(r.randf_range(-size * 300.0, size * 300.0), r.randf_range(-size * 300.0, size * 300.0))
-			if water_at(q) > 70.0 and terrain.slope(q.x, q.y) < 0.15 and inside_one_region(PackedVector2Array([q - Vector2(24, 24), q + Vector2(24, 24)]), 60.0):
+			if water_at(q) > 70.0 and terrain.slope(q.x, q.y) < 0.15 and not _near_lots(q, 60.0) and _town_distance(q) > (60.0 if k < 300 else 0.0) \
+					and inside_one_region(PackedVector2Array([q - Vector2(24, 24), q + Vector2(24, 24)]), 60.0):
 				p2 = q
 				break
 		best = {"pos": p2, "road": nearest_road(p2)}
@@ -742,6 +1332,7 @@ func _drop_site() -> void:
 			paths.append({"id": "drop_trail", "points": trail, "width": 2.2, "surface": "dirt"})
 
 
+## Region danger (1-5) by distance from the drop site; a town's tier range by its centre's danger.
 func _danger() -> void:
 	var p: Vector2 = drop.get("pos", Vector2.ZERO)
 	var far: float = 0.0
@@ -782,7 +1373,7 @@ func _biome_map() -> void:
 	var raw := PackedByteArray()
 	raw.resize(biome_cols * biome_cols)
 	for j: int in biome_cols:
-		_sub("Planting forests", 0.6, 0.7, 0.8 * j / biome_cols)
+		_sub("Planting forests", 0.62, 0.7, 0.8 * j / biome_cols)
 		for i: int in biome_cols:
 			var p := Vector2(-size * 512.0 + (i + 0.5) * biome_step, -size * 512.0 + (j + 0.5) * biome_step)
 			var e: float = (terrain.height(p.x, p.y) - hmin) / maxf(1.0, hmax - hmin)
@@ -791,8 +1382,9 @@ func _biome_map() -> void:
 			var town_ring: float = 0.0
 			for tw: Dictionary in towns:
 				var d: float = (tw["center"] as Vector2).distance_to(p)
-				# Cleared ground round a town (yards, pasture), then the trees close in again.
-				town_ring = maxf(town_ring, 1.0 - smoothstep(110.0, 260.0, d))
+				var tr: float = float(tw["radius"])
+				# Cleared ground over a town's disc (yards, pasture), then the trees close in again.
+				town_ring = maxf(town_ring, 1.0 - smoothstep(tr * 0.7, tr + 90.0, d))
 			var nc: float = noises[0].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nb: float = noises[1].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nm: float = noises[2].get_noise_2d(p.x, p.y) * 0.5 + 0.5
@@ -854,6 +1446,8 @@ func biome_at(p: Vector2) -> String:
 
 # --- Places --------------------------------------------------------------------------------------
 
+## The authored wilderness places by site, each pool entry's count from its density per region and
+## capped at `max` per 16 km² of map (so a 16 x 16 world holds sixteen times a 4 x 4's).
 func _places() -> void:
 	var wcfg: Dictionary = tun.get("wilderness", {})
 	var density: float = settings.num("wilderness")
@@ -862,6 +1456,7 @@ func _places() -> void:
 	var max_danger: int = 1
 	for cell: String in regions:
 		max_danger = maxi(max_danger, int(regions[cell]["danger"]))
+	var area16: float = size * size / 16.0
 	var order: Array[String] = ["roadside", "lake_shore", "summit", "waterside", "remote", "forest"]
 	var pool: Array = wcfg.get("pool", [])
 	for oi: int in order.size():
@@ -875,13 +1470,15 @@ func _places() -> void:
 			if pd == null:
 				continue
 			var expected: float = float(pe.get("per_region", 0.1)) * size * size * density
-			var count: int = mini(int(pe.get("max", 2)), int(floor(expected + r.randf())))
+			var cap: int = maxi(1, int(ceil(float(pe.get("max", 2)) * area16 - 0.001)))
+			var count: int = mini(cap, int(floor(expected + r.randf())))
 			for k: int in count:
 				_place_one(pe, Vector2(pd.footprint), r, wcfg)
 	var farm: Dictionary = wcfg.get("farmsteads", {})
 	var fw: FrameworkDef = db.call(&"get_def", &"framework", StringName(str(farm.get("framework", "")))) as FrameworkDef if db != null and not farm.is_empty() else null
 	if fw != null and int(farm.get("min_danger", 1)) <= max_danger:
-		var fcount: int = mini(int(farm.get("max", 1)), int(floor(float(farm.get("per_region", 0.1)) * size * size * density + r.randf())))
+		var fcap: int = maxi(1, int(ceil(float(farm.get("max", 1)) * area16 - 0.001)))
+		var fcount: int = mini(fcap, int(floor(float(farm.get("per_region", 0.1)) * size * size * density + r.randf())))
 		for k2: int in fcount:
 			var fe: Dictionary = farm.duplicate()
 			fe["site"] = "farm"
@@ -1015,26 +1612,27 @@ func _candidate(site: String, fp: Vector2, r: RandomNumberGenerator) -> Dictiona
 	return {}
 
 
-## True when a polygon (grown by `gap`) touches a town, another place, or the drop site's clearing.
-## Towns' grown outlines are made once, and only towns and places whose bounds meet the grown
-## polygon's are tested (polygons with disjoint bounds can't intersect).
+## True when a polygon (grown by `gap`) touches a town's lots (grown tuning.towns.clearance.lots)
+## or street corridors (grown clearance.streets), another place, or the drop site's clearing. Only
+## what the spatial indexes return near the grown polygon is tested exactly.
 func _hits_built(poly: PackedVector2Array, gap: float) -> bool:
 	var grown: PackedVector2Array = poly
 	var off: Array = Geometry2D.offset_polygon(poly, gap)
 	if not off.is_empty():
 		grown = off[0]
 	var gb: Rect2 = _bounds(grown).grow(1.0)
-	while _town_grown.size() < towns.size():
-		var tw: Dictionary = towns[_town_grown.size()]
-		var tg: Array = Geometry2D.offset_polygon(tw["poly"], 40.0)
-		var tpoly: PackedVector2Array = tg[0] if not tg.is_empty() else tw["poly"]
-		_town_grown.append(tpoly)
-		_town_grown_box.append(_bounds(tpoly).grow(1.0))
-	for ti: int in towns.size():
-		if _town_grown_box[ti].intersects(gb) and not Geometry2D.intersect_polygons(grown, _town_grown[ti]).is_empty():
+	for id: int in _lot_grid.query(gb):
+		if not Geometry2D.intersect_polygons(grown, _lot_grown[id]).is_empty():
 			return true
-	for id: int in _place_grid.query(gb):
-		if not Geometry2D.intersect_polygons(grown, places[id]["poly"]).is_empty():
+	var street_gap: float = float(((tun.get("towns", {}) as Dictionary).get("clearance", {}) as Dictionary).get("streets", 8.0))
+	for sid: int in _street_grid.query(gb):
+		var st: Dictionary = _streets[sid >> Grid.PART_BITS]
+		var line: Polyline2 = st["line"]
+		var k: int = sid & Grid.PART_MASK
+		if _seg_poly_distance(line.points[k], line.points[k + 1], grown) < float(st["need"]) + street_gap:
+			return true
+	for id2: int in _place_grid.query(gb):
+		if not Geometry2D.intersect_polygons(grown, places[id2]["poly"]).is_empty():
 			return true
 	return false
 
@@ -1138,10 +1736,9 @@ func _bloom() -> void:
 					continue
 				if water_at(p) < 40.0 or float(nearest_road(p)[0]) < 40.0:
 					continue
+				if _town_distance(p) < 120.0 or _near_lots(p, 60.0):
+					continue
 				var clear: bool = true
-				for tw: Dictionary in towns:
-					if Terrain._poly_distance(tw["poly"], p) < 120.0:
-						clear = false
 				for pl: Dictionary in places:
 					if (pl["center"] as Vector2).distance_to(p) < 60.0:
 						clear = false
@@ -1173,6 +1770,73 @@ func _name_regions() -> void:
 		used[nm] = true
 		regions[cell]["name"] = nm
 		regions[cell]["id"] = "%s_%s" % [cell.to_lower(), _slug(nm)]
+
+
+# --- Town heights and authored buildings ------------------------------------------------------------
+
+## Each lot's pad height `y` (and the square's): the mean of the reference ground over its frame (5 x 5
+## samples, as the frame is written) on the final macro grid, which the composer grades it to in
+## every region the lot touches, and where PoiManager stands its building (plan §3.2 step 8).
+func _finalize_town_heights() -> void:
+	if towns.is_empty():
+		return
+	_ref = RefGround.new(terrain, settings.seed & 0x7fffffff, size)
+	for tw: Dictionary in towns:
+		var plan: Dictionary = tw["plan"]
+		for lv: Variant in plan.get("lots", []):
+			(lv as Dictionary)["y"] = _frame_height(lv["frame"])
+		if not (plan.get("plaza", {}) as Dictionary).is_empty():
+			plan["plaza"]["y"] = _frame_height(plan["plaza"]["frame"])
+
+
+func _frame_height(f: Array) -> float:
+	var c := Vector2(float(f[0]), float(f[1]))
+	var yaw: float = deg_to_rad(float(f[4]))
+	var az := Vector2(sin(yaw), cos(yaw))
+	var ax := Vector2(az.y, -az.x)
+	var acc: float = 0.0
+	for k: int in 25:
+		var p: Vector2 = c + ax * (((k % 5) / 4.0 - 0.5) * float(f[2])) + az * (((k / 5) / 4.0 - 0.5) * float(f[3]))
+		acc += _ref.h(p.x, p.y)
+	return snappedf(acc / 25.0, 0.01)
+
+
+## Caps the authored buildings world-wide (plan §3.11: at most tuning.towns.authored_max towns hold
+## each one) and makes sure every lot holds something: a civic lot only takes an authored civic
+## building, so a town keeps as many pure civic lots as it has civic buildings that fit them all,
+## and the rest take shops too.
+func _assign_authored() -> void:
+	if towns.is_empty():
+		return
+	var fws: Array = []
+	for tw: Dictionary in towns:
+		fws.append({"id": tw["id"], "tier_range": tw["tier"], "lots": (tw["plan"] as Dictionary).get("lots", [])})
+	var cap: int = int((tun.get("towns", {}) as Dictionary).get("authored_max", 3))
+	var given: Dictionary = LotPicker.assign_authored(fws, settings.seed, cap)
+	var db: Node = ContentDB.instance
+	for tw2: Dictionary in towns:
+		var allowed: PackedStringArray = given.get(str(tw2["id"]), PackedStringArray())
+		tw2["authored"] = allowed
+		var lots: Array = (tw2["plan"] as Dictionary).get("lots", [])
+		var pure: Array = []
+		var smallest := Vector2i(1 << 20, 1 << 20)
+		for lv: Variant in lots:
+			if Array(lv["zoning"]) == ["civic"]:
+				pure.append(lv)
+				var s: Vector2i = LotPicker.lot_size(lv)
+				smallest = Vector2i(mini(smallest.x, s.x), mini(smallest.y, s.y))
+		if pure.is_empty():
+			continue
+		var fit_all: int = 0
+		if db != null:
+			for pid: String in allowed:
+				var pd: PoiDef = db.call(&"get_def", &"poi", StringName(pid)) as PoiDef
+				var tr: Array = tw2["tier"]
+				if pd != null and Array(pd.zoning) == ["civic"] and pd.tier >= int(tr[0]) and pd.tier <= int(tr[1]) \
+						and pd.footprint.x <= smallest.x and pd.footprint.y <= smallest.y:
+					fit_all += 1
+		for i: int in range(fit_all, pure.size()):
+			(pure[i] as Dictionary)["zoning"] = ["civic", "commercial"]
 
 
 # --- Output --------------------------------------------------------------------------------------
@@ -1215,23 +1879,27 @@ func world_json() -> Dictionary:
 		reg.append({"cell": cell, "id": rg["id"], "name": rg["name"], "biome": rg["biome"], "danger": rg["danger"], "status": "built",
 			"summary": _region_summary(cell)})
 	var town_out: Array = []
+	var summary: Array = []
 	for tw: Dictionary in towns:
-		town_out.append({"id": tw["id"], "name": tw["name"], "kind": tw["kind"], "framework": tw["fw_id"], "region": regions[tw["cell"]]["id"],
-			"center": Terrain._arr(PackedVector2Array([tw["center"]]))[0], "lots": (tw["plan"]["lots"] as Array).size(),
-			"polygon": Terrain._arr(tw["poly"])})
+		var c: Array = Terrain._arr(PackedVector2Array([tw["center"]]))[0]
+		var b: Rect2 = tw["bounds"]
+		town_out.append({"id": tw["id"], "name": tw["name"], "kind": tw["kind"], "framework": tw["fw_id"], "origin": [0.0, 0.0], "rotation": 0.0,
+			"center": c, "radius": tw["radius"], "bounds": [snappedf(b.position.x, 0.1), snappedf(b.position.y, 0.1), ceilf(b.size.x), ceilf(b.size.y)]})
+		summary.append({"id": tw["id"], "name": tw["name"], "kind": tw["kind"], "framework": tw["fw_id"], "region": regions[tw["cell"]]["id"],
+			"center": c, "radius": tw["radius"], "lots": ((tw["plan"] as Dictionary).get("lots", []) as Array).size()})
 	var place_out: Array = []
 	for pl: Dictionary in places:
 		place_out.append({"id": pl["id"], "kind": pl["kind"], "def": pl["def"], "site": pl["site"], "region": regions[pl["cell"]]["id"],
 			"polygon": Terrain._arr(pl["poly"])})
 	return {
-		"_doc": "A random world (ADR-0031), generated by RwgGenerator v%d. Same schema as game/world/main_map/world.json (docs/REGIONS.md)." % VERSION,
+		"_doc": "A random world (ADR-0031, ADR-0040), generated by RwgGenerator v%d. Same schema as game/world/main_map/world.json (docs/REGIONS.md), plus world-level towns." % VERSION,
 		"id": world_id, "name": world_name(), "seed": settings.seed & 0x7fffffff, "region_size": 1024, "cols": size, "rows": size, "sea_level": 0.0,
 		"road_grade": "world",
-		"generator": {"version": VERSION, "settings": settings.to_dict(), "key": settings.key(), "towns": town_out, "places": place_out,
+		"generator": {"version": VERSION, "settings": settings.to_dict(), "key": settings.key(), "towns": summary, "places": place_out,
 			"drop_site": Terrain._arr(PackedVector2Array([drop.get("pos", Vector2.ZERO)]))[0], "timings_ms": timings, "warnings": Array(warnings)},
 		"macro": {"step": terrain.step, "corner_heights": rows, "noise": {"frequency": 0.001, "octaves": 1, "amplitude": 0.0, "ridged_amplitude": 0.0, "mountain_boost": 0.0}},
 		"biome_map": {"ids": Array(BIOMES), "step": biome_step, "cols": biome_cols, "rows": biome_cols, "rows_data": bm_rows},
-		"rivers": rivers, "lakes": lakes, "roads": road_out, "regions": reg,
+		"rivers": rivers, "lakes": lakes, "roads": road_out, "regions": reg, "towns": town_out,
 	}
 
 
@@ -1259,15 +1927,13 @@ func _region_summary(cell: String) -> String:
 	return ("%s, %s." % [str(regions[cell]["biome"]).replace("_", " ").capitalize(), ", ".join(parts)]) if not parts.is_empty() else "%s." % str(regions[cell]["biome"]).replace("_", " ").capitalize()
 
 
+## A region's features: its places, the paths crossing it, the drop site and the Bloom. Towns are
+## world-level (world.json `towns`), not region features, since VERSION 2.
 func region_json(cell: String) -> Dictionary:
 	var rg: Dictionary = regions[cell]
 	var rect: Rect2 = rg["rect"]
 	var feats: Array = []
 	var rough: float = settings.num("roughness")
-	for tw: Dictionary in towns:
-		if str(tw["cell"]) == cell:
-			feats.append({"type": "framework", "id": tw["id"], "framework": tw["fw_id"], "origin": Terrain._arr(PackedVector2Array([tw["origin"]]))[0],
-				"rotation": tw["rot"], "skirt": 14})
 	for pl: Dictionary in places:
 		if str(pl["cell"]) != cell:
 			continue
@@ -1304,13 +1970,17 @@ func region_json(cell: String) -> Dictionary:
 	}
 
 
+## The towns as frameworks (FrameworkDef, `layout: "organic"`, ADR-0040): the planner's framework
+## keys (RwgTownPlanner.to_framework), the tier range by danger, and the authored buildings this
+## town may hold.
 func frameworks_json() -> Dictionary:
 	var defs: Array = []
 	for tw: Dictionary in towns:
-		var plan: Dictionary = tw["plan"]
-		defs.append({"id": tw["fw_id"], "name": tw["name"], "size": plan["size"], "tier_range": tw["tier"],
-			"lots": plan["lots"], "roads": plan["roads"], "fixtures": plan["fixtures"]})
-	return {"_doc": "Generated towns of %s (ADR-0031): frameworks whose lots pick or generate their buildings (ADR-0030)." % world_id, "defs": defs}
+		var fw: Dictionary = Planner.to_framework(tw["plan"], tw["fw_id"], tw["name"])
+		fw["tier_range"] = tw["tier"]
+		fw["authored"] = Array(tw["authored"])
+		defs.append(fw)
+	return {"_doc": "Generated towns of %s (ADR-0031, ADR-0040): organic frameworks whose frame lots pick or generate their buildings (ADR-0030)." % world_id, "defs": defs}
 
 
 ## Region ids by cell (after run()).
