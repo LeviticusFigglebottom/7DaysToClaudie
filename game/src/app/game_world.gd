@@ -186,6 +186,8 @@ func _on_world_loaded() -> void:
 	poi_registry = _loader.registry
 	if _loader.world_id != "":
 		session.world_id = StringName(_loader.world_id)
+	# Before the vegetation reads its felled trees: records a newer composer re-scattered (TD-182).
+	SaveSystem.fix_composer_changes(session, world_def, TerrainComposer.VERSION)
 	_boot = StepRunner.new()
 	_boot.budget_ms = BOOT_BUDGET_MS
 	_boot.step_ran.connect(_on_boot_step)

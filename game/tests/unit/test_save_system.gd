@@ -239,3 +239,29 @@ func test_the_bundle_restores_a_deleted_world_folder_byte_for_byte() -> void:
 	SaveSystem._remove_recursive(dir)
 	SaveSystem.delete_slot(SLOT)
 	assert_ne(SaveSystem.world_warning(meta), "", "folder and bundle both gone: the menu warns")
+
+
+class FakeWorldDef:
+	extends RefCounted
+	var towns: Array[Dictionary] = [{"id": "t", "center": Vector2(500, 500), "radius": 200.0, "bounds": Rect2(300, 300, 400, 400)}]
+
+
+func test_a_pre_12_random_run_drops_town_vegetation_records() -> void:
+	# TD-182: composer 12 re-scattered towns' vegetation; their per-index records point elsewhere.
+	var s: GameSession = GameSession.create_new({"world_gen": _gen(5), "seed": 1})
+	s.composer_version = 11
+	s.world.set_tree_state(Ids.chunk_key(7, 7), 3, {"state": "stump", "day": 1})    # 448..512: in the town
+	s.world.set_tree_state(Ids.chunk_key(0, 0), 5, {"state": "stump", "day": 1})    # far away
+	s.world.set_tree_state(Ids.chunk_key(2, 7), 1, {"state": "stump", "day": 1})    # 128..192 x: outside the disc
+	var n: int = SaveSystem.fix_composer_changes(s, FakeWorldDef.new(), 12)
+	assert_eq(n, 1)
+	assert_false(s.world.trees.has(Ids.chunk_key(7, 7)), "the town chunk's records are dropped")
+	assert_true(s.world.trees.has(Ids.chunk_key(0, 0)))
+	assert_true(s.world.trees.has(Ids.chunk_key(2, 7)))
+	assert_eq(s.composer_version, 12, "recorded")
+	assert_eq(SaveSystem.fix_composer_changes(s, FakeWorldDef.new(), 12), 0, "once only")
+	var main: GameSession = GameSession.create_new({})
+	main.composer_version = 0
+	main.world.set_tree_state(Ids.chunk_key(7, 7), 3, {"state": "stump", "day": 1})
+	assert_eq(SaveSystem.fix_composer_changes(main, FakeWorldDef.new(), 12), 0, "the main map is unchanged")
+	assert_eq(GameSession.from_dict(s.to_dict()).composer_version, 12, "saved")

@@ -18,6 +18,10 @@ var generator_version: int = 0
 ## Where a random world's files come from: "shared" (user://worlds/random/<id>/, the generator's
 ## cache) or "slot" (restored from the save's own world bundle, save v7).
 var world_files: StringName = &"shared"
+## TerrainComposer.VERSION the run's world was composed with (0: before save v7 recorded it). A
+## composer change that re-scatters vegetation invalidates saved per-instance vegetation records
+## where it changed (SaveSystem.fix_composer_changes, TD-182).
+var composer_version: int = 0
 ## Game mode preset id (data/config/game_modes.json): "survival", "slice", ...
 var game_mode: StringName = &"survival"
 ## World settings (difficulty preset + customised options), saved with the session.
@@ -44,6 +48,7 @@ static func create_new(options: Dictionary = {}) -> GameSession:
 	s._set_world_gen(options.get("world_gen", {}))
 	s.game_mode = StringName(str(options.get("game_mode", "survival")))
 	s.created_unix = int(Time.get_unix_time_from_system())
+	s.composer_version = int((load("res://src/worldgen/terrain_composer.gd") as GDScript).get_script_constant_map().get("VERSION", 0))
 	s.rules = GameRules.resolve(s.mode_config().get("rules", {}), StringName(str(options.get("preset", "survivor"))), options.get("rules", {}))
 	s._init_systems()
 	var mode: Dictionary = s.mode_config()
@@ -128,7 +133,7 @@ func to_dict() -> Dictionary:
 		"clock": clock.to_dict(), "ids": ids.to_dict(), "rng": rng.to_dict(), "players": ps,
 		"local_player": String(local_player_id), "world": world.to_dict(), "horde": horde.to_dict(),
 		"heat": heat.to_dict(), "weather": weather.to_dict(), "stats": stats,
-		"generator_version": generator_version, "world_files": String(world_files),
+		"generator_version": generator_version, "world_files": String(world_files), "composer_version": composer_version,
 	}
 
 
@@ -143,6 +148,7 @@ static func from_dict(d: Dictionary) -> GameSession:
 	s.world_id = StringName(str(d.get("world_id", s.world_id)))
 	s.generator_version = int(d.get("generator_version", s.generator_version if s.is_random_world() else 0))
 	s.world_files = StringName(str(d.get("world_files", "shared")))
+	s.composer_version = int(d.get("composer_version", 0))
 	s.game_mode = StringName(str(d.get("game_mode", "survival")))
 	s.created_unix = int(d.get("created", 0))
 	s.play_seconds = float(d.get("play_seconds", 0.0))
