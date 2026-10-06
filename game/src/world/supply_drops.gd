@@ -129,6 +129,9 @@ func spot_ok(p: Vector3) -> bool:
 			var b: AABB = inst.world_bounds().grow(12.0)
 			if b.has_point(Vector3(p.x, b.get_center().y, p.z)):
 				return false
+		# Streamed worlds: nor by a building not built yet (RWG v2 Phase 3).
+		if pois.has_method(&"footprint_at") and pois.call(&"footprint_at", p, 12.0) != &"":
+			return false
 	return _clear_of_obstacles(Vector3(p.x, h, p.z))
 
 

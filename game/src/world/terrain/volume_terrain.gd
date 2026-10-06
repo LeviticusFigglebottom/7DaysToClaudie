@@ -19,6 +19,11 @@ signal column_activated(column: Vector2i)
 var terrain: Node
 var chunks: Dictionary = {}
 var columns: Dictionary = {}
+## Guards `columns`: terrain chunk meshing reads it on worker threads (is_volume_column is the
+## mesher's hole test) while activate_column inserts on the main thread. Copy-and-swap is not
+## enough: assigning a container to a member releases the old one before the new one is stored, so
+## a reader in between dereferences null (TD-104).
+var _columns_lock := Mutex.new()
 var _material: ShaderMaterial
 var _pending: Dictionary = {}
 var _edited: Dictionary = {}
@@ -50,7 +55,10 @@ static func chunk_of(p: Vector3) -> Vector3i:
 
 
 func is_volume_column(x: float, z: float) -> bool:
-	return columns.has(column_of(x, z))
+	_columns_lock.lock()
+	var on: bool = columns.has(column_of(x, z))
+	_columns_lock.unlock()
+	return on
 
 
 ## Converts the 16 m column at (x, z) to volume chunks spanning from below `min_y` to above the
@@ -69,7 +77,9 @@ func activate_column(col: Vector2i, min_y: float) -> void:
 	var span := Vector2i(cy0, cy1)
 	if not had.is_empty():
 		span = Vector2i(mini(cy0, int(had["y0"])), maxi(cy1, int(had["y1"])))
+	_columns_lock.lock()
 	columns[col] = {"y0": span.x, "y1": span.y}
+	_columns_lock.unlock()
 	for cy: int in range(span.x, span.y + 1):
 		var key := Vector3i(col.x, cy, col.y)
 		if not chunks.has(key):
@@ -186,8 +196,11 @@ func remesh_all() -> void:
 func _remesh(key: Vector3i) -> void:
 	var c: VChunk = chunks[key]
 	var data: PackedFloat32Array = c.density.duplicate()
-	var job: Dictionary = {"key": key, "res": {}}
-	job["task"] = WorkerThreadPool.add_task(func() -> void: job["res"] = SurfaceNets.mesh(data, N, VOXEL), true, "volume mesh")
+	# The worker fills its own slot: `job` gains "task" on this thread after the task has started,
+	# and a dictionary written from two threads at once can corrupt itself.
+	var out: Array = [{}]
+	var job: Dictionary = {"key": key, "out": out}
+	job["task"] = WorkerThreadPool.add_task(func() -> void: out[0] = SurfaceNets.mesh(data, N, VOXEL), true, "volume mesh")
 	if _pending.has(key):
 		WorkerThreadPool.wait_for_task_completion(_pending[key]["task"])
 	_pending[key] = job
@@ -199,14 +212,21 @@ func _process(_delta: float) -> void:
 		if WorkerThreadPool.is_task_completed(job["task"]):
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
-			_apply(key, job["res"])
+			_apply(key, job["out"][0])
+
+
+## Joins in-flight mesh tasks: leaving one running past the engine's shutdown aborts it.
+func _exit_tree() -> void:
+	for key: Vector3i in _pending.keys():
+		WorkerThreadPool.wait_for_task_completion(_pending[key]["task"])
+	_pending.clear()
 
 
 ## Builds the mesh and collision of a chunk synchronously (tests, load).
 func flush() -> void:
 	for key: Vector3i in _pending.keys():
 		WorkerThreadPool.wait_for_task_completion(_pending[key]["task"])
-		_apply(key, _pending[key]["res"])
+		_apply(key, _pending[key]["out"][0])
 	_pending.clear()
 
 

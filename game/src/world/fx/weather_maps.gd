@@ -10,12 +10,20 @@ extends RefCounted
 ##   B  the ground smoothed over `hollow_m`: puddles collect where G lies below it, and ground fog
 ##      reads its mips for the low ground it pools in
 ##   A  the water surface (lakes and rivers), or -1000 where there is none
-## The heights come from a worker thread (TerrainManager.height_at and WaterSystem.water_level_at
-## only read data); the rays run on the main thread, `rays_per_frame` a frame. The published map
-## stays in place until a new one is complete, so every frame sees one consistent map. Eave drip
-## points are found on it: roof cells standing over open ground beside them.
+## The heights come from a thread of the map's own (TerrainManager.height_at and
+## WaterSystem.water_level_at only read data): a WorkerThreadPool task queued behind a jump's
+## streaming (terrain chunks, vegetation scatter) could wait minutes. The rays run on the main
+## thread, `rays_per_frame` a frame. The published map stays in place until a new one is complete,
+## so every frame sees one consistent map. Eave drip points are found on it: roof cells standing
+## over open ground beside them.
 
 const NO_WATER: float = -1000.0
+## A box standing on the ground that is narrower than SHELTER_MIN_M and lower than SHELTER_LOW_M
+## (a barrel, a road barricade, a mailbox) keeps no rain off the ground round it: the rays look
+## past it. Each one stood in a dry disc a map cell wide on a wet road. A car (1.8 m wide) still
+## shelters what is under it.
+const SHELTER_MIN_M: float = 1.2
+const SHELTER_LOW_M: float = 1.6
 
 var cells: int = 128
 var cell_m: float = 1.5
@@ -37,7 +45,7 @@ var eaves: Array = []
 
 var _terrain: Object
 var _water: Object
-var _task: int = -1
+var _thread: Thread
 var _next_origin := Vector2.ZERO
 var _ground := PackedFloat32Array()
 var _smooth := PackedFloat32Array()
@@ -63,6 +71,16 @@ func configure(cfg: Dictionary) -> void:
 
 func is_ready() -> bool:
 	return texture != null
+
+
+## True when the published map is the one round `p` (centred within recentre_m of it), so no
+## rebuild is due there. After a jump (a respawn, a QA shot) the last place's map stays published
+## until the new one is complete: the heights' thread and a dozen frames of rays.
+func covers(p: Vector3) -> bool:
+	if texture == null:
+		return false
+	var size: float = float(cells) * cell_m
+	return Vector2(p.x, p.z).distance_to(origin + Vector2(size, size) * 0.5) <= recentre_m + cell_m
 
 
 ## World rect of the published map as the shaders read it: (x0, z0, 1 / size, base height); zero
@@ -95,17 +113,18 @@ func update(focus: Vector3, terrain: Object, water: Object, space: PhysicsDirect
 		return false
 	var size: float = float(cells) * cell_m
 	var centre: Vector2 = origin + Vector2(size, size) * 0.5
-	if _task < 0 and _ray_i < 0 and (origin.x == INF or Vector2(focus.x, focus.z).distance_to(centre) > recentre_m):
+	if _thread == null and _ray_i < 0 and (origin.x == INF or Vector2(focus.x, focus.z).distance_to(centre) > recentre_m):
 		# Snap to the cell grid so a rebuilt map samples the ground at the same points.
 		_next_origin = (Vector2(focus.x, focus.z) - Vector2(size, size) * 0.5).snapped(Vector2(cell_m, cell_m))
 		_ray_top = focus.y
-		_task = WorkerThreadPool.add_task(_build_heights, true, "weather map")
+		_thread = Thread.new()
+		_thread.start(_build_heights)
 		return false
-	if _task >= 0:
-		if not WorkerThreadPool.is_task_completed(_task):
+	if _thread != null:
+		if _thread.is_alive():
 			return false
-		WorkerThreadPool.wait_for_task_completion(_task)
-		_task = -1
+		_thread.wait_to_finish()
+		_thread = null
 		_ray_i = 0 if space != null and catch_cells > 0 else catch_cells * catch_cells
 	if _ray_i >= 0:
 		_cast_rays(space)
@@ -116,11 +135,27 @@ func update(focus: Vector3, terrain: Object, water: Object, space: PhysicsDirect
 	return false
 
 
-## Waits for the worker (call from _exit_tree).
+## Builds and publishes the map round `focus` now, blocking: the heights' thread is waited on and
+## every ray cast at once. For QA captures, whose software frames take seconds while the rays are
+## spread over a dozen frames. Returns false if no map could be built (no terrain).
+func finish(focus: Vector3, terrain: Object, water: Object, space: PhysicsDirectSpaceState3D) -> bool:
+	if terrain == null:
+		return false
+	var per_frame: int = rays_per_frame
+	rays_per_frame = cells * cells
+	var end: int = Time.get_ticks_msec() + 120000
+	while not (covers(focus) and _thread == null and _ray_i < 0) and Time.get_ticks_msec() < end:
+		if not update(focus, terrain, water, space) and _thread != null:
+			OS.delay_msec(2)
+	rays_per_frame = per_frame
+	return covers(focus)
+
+
+## Waits for the heights' thread (call from _exit_tree).
 func shutdown() -> void:
-	if _task >= 0:
-		WorkerThreadPool.wait_for_task_completion(_task)
-		_task = -1
+	if _thread != null:
+		_thread.wait_to_finish()
+		_thread = null
 
 
 # Worker thread: ground and water heights over the new rect, and the smoothed ground.
@@ -205,9 +240,34 @@ func _cast_rays(space: PhysicsDirectSpaceState3D) -> void:
 		_query.from = Vector3(x, maxf(_ray_top, g) + 45.0, z)
 		_query.to = Vector3(x, g - 0.5, z)
 		var hit: Dictionary = space.intersect_ray(_query)
+		var looks: int = 0
+		while not hit.is_empty() and looks < 3 and _small_and_low(hit, g):
+			# Rays starting inside a shape miss it (hit_from_inside is off): look on below it.
+			_query.from = (hit["position"] as Vector3) - Vector3(0.0, 0.02, 0.0)
+			hit = space.intersect_ray(_query)
+			looks += 1
 		if not hit.is_empty():
 			_catch[k] = maxf(float((hit["position"] as Vector3).y), _wat[k])
 			_rgba[k * 4] = _catch[k] - _next_base
+
+
+## True if a ray hit a box standing on the ground (within 0.25 m) that is narrower than
+## SHELTER_MIN_M and whose top is under SHELTER_LOW_M above the ground `g`: something too small to
+## keep rain off the ground round it. Roofs, decks (off the ground), walls (tall) and cars (wide)
+## are not.
+static func _small_and_low(hit: Dictionary, g: float) -> bool:
+	if float((hit["position"] as Vector3).y) - g > SHELTER_LOW_M:
+		return false
+	var co: CollisionObject3D = hit.get("collider") as CollisionObject3D
+	if co == null:
+		return false
+	var cs: CollisionShape3D = co.shape_owner_get_owner(co.shape_find_owner(int(hit.get("shape", 0)))) as CollisionShape3D
+	var box: BoxShape3D = cs.shape as BoxShape3D if cs != null else null
+	if box == null:
+		return false
+	var b: Basis = cs.global_transform.basis
+	var bottom: float = cs.global_position.y - box.size.y * 0.5 * b.y.length()
+	return bottom - g < 0.25 and minf(box.size.x * b.x.length(), box.size.z * b.z.length()) < SHELTER_MIN_M
 
 
 func _publish() -> void:

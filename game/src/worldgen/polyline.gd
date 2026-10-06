@@ -109,6 +109,28 @@ func closest(p: Vector2) -> Vector3:
 	return Vector3(sqrt(best_d2), best_s, best_side)
 
 
+## closest(p) over the segments `segs` only (ascending indices; segment i runs from points[i] to
+## points[i + 1]), with closest()'s arithmetic and tie rule: the very same result whenever every
+## nearest segment is among them (ADR-0038: a spatial index lists the segments near p). INF if none.
+func closest_in(p: Vector2, segs: PackedInt32Array) -> Vector3:
+	var best_d2: float = INF
+	var best_s: float = 0.0
+	var best_side: float = 1.0
+	for i: int in segs:
+		var a: Vector2 = points[i]
+		var b: Vector2 = points[i + 1]
+		var ab: Vector2 = b - a
+		var l2: float = ab.length_squared()
+		var t: float = 0.0 if l2 <= 0.0 else clampf((p - a).dot(ab) / l2, 0.0, 1.0)
+		var q: Vector2 = a + ab * t
+		var d2: float = p.distance_squared_to(q)
+		if d2 < best_d2:
+			best_d2 = d2
+			best_s = lengths[i] + sqrt(l2) * t
+			best_side = 1.0 if ab.cross(p - a) >= 0.0 else -1.0
+	return Vector3(sqrt(best_d2), best_s, best_side)
+
+
 ## A value along the arc: a single number, a [start, end] pair interpolated linearly, or (ADR-0031,
 ## a generated river's level and width) three or more values spaced evenly along the arc and
 ## interpolated piecewise linearly between them.

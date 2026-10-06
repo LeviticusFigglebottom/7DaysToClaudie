@@ -1,0 +1,16 @@
+{
+  "_doc": "Hollowed hounds (ADR-0034): dogs the Bloom took, hunting in packs. Speeds in m/s, ranges in metres. behavior.quadruped sizes the low collision body (a capsule lying along it on the ground: length nose to tail, radius; eye height; unscaled); behavior.pack sets pack size, the howl that rallies it and the hit-and-run of a pack fight (data/config/hounds.json holds the shared tuning).",
+  "defs": [
+    {"id": "hollow_hound", "name": "Hollowed Hound", "description": "A dog the Bloom took: ribs through the mange, shelf fungus down its spine. Hunts in packs by scent, circles, and goes for the back of your legs. Keeps clear of a torch you hold up to it.",
+     "archetype": "hound",
+     "bodies": ["animals/hollow_hound_a", "animals/hollow_hound_b"],
+     "health": 70, "limbs": {"head": 28, "torso": 70},
+     "speed": {"day_walk": 1.5, "day_run": 6.0, "night_walk": 1.9, "night_run": 7.6},
+     "attack": {"damage": 8, "range": 1.7, "cooldown": 1.0, "structure_damage": 3, "infection": 4, "bleed": 0.35},
+     "perception": {"sight_day": 24, "sight_night": 40, "fov": 220, "hearing": 1.6, "smell": 3.0},
+     "behavior": {"quadruped": {"length": 1.2, "radius": 0.3, "eye": 0.62},
+                  "pack": {"size": [3, 5]}, "tracker": true, "no_dismember": true, "crawl_on_leg_loss": false,
+                  "stagger_threshold": 12, "sleeper_poses": ["lie"]},
+     "xp": 45, "loot_table": "hound_remains", "heat_value": 1.2, "gamestage_min": 6, "scale": [0.94, 1.08]}
+  ]
+}

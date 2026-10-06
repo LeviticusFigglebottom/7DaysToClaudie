@@ -19,6 +19,20 @@ static func has_model(model_id: String) -> bool:
 	return ResourceLoader.exists(model_path(model_id))
 
 
+## Share (0..1) of the vegetation species' models that exist: 0 means the game runs entirely on
+## the procedural stand-ins (no `make assets`, e.g. a fresh Windows clone opened in the editor),
+## between 0 and 1 a partial asset build (ADR-0036). The main menu says so.
+static func generated_share(content: ContentDB) -> float:
+	var total: int = 0
+	var found: int = 0
+	for def: ContentDef in content.all(&"species"):
+		for m: String in (def as SpeciesDef).models:
+			total += 1
+			if has_model(m):
+				found += 1
+	return float(found) / float(total) if total > 0 else 0.0
+
+
 ## Merged mesh for a model id (all MeshInstance3D surfaces baked into one ArrayMesh).
 static func mesh(model_id: String, placeholder: String = "box") -> Mesh:
 	_mutex.lock()
@@ -63,6 +77,59 @@ static func _load_merged(model_id: String) -> Mesh:
 	_extract_shapes(model_id, scene)
 	scene.free()
 	return m
+
+
+## A model split into named moving or showing parts (ADR-0035): {"base": the merged mesh of
+## everything else, "parts": {name: {"mesh": merged mesh of that node's subtree, "xf": its transform
+## in the model}}}. A part is a top-level-or-nested Node3D whose name starts with one of `prefixes`
+## (a door's "leaf", a rack's "fill_01".."fill_12"). Empty when the model is not generated (the
+## caller builds its own stand-in). Cached per model and prefix list.
+static var _parts: Dictionary = {}
+
+
+static func parts(model_id: String, prefixes: PackedStringArray) -> Dictionary:
+	var key: String = model_id + "|" + ",".join(prefixes)
+	_mutex.lock()
+	var cached: Variant = _parts.get(key)
+	_mutex.unlock()
+	if cached != null:
+		return cached
+	var out: Dictionary = {}
+	var ps: PackedScene = load(model_path(model_id)) as PackedScene if has_model(model_id) else null
+	if ps != null:
+		var scene: Node3D = ps.instantiate()
+		var found: Dictionary = {}
+		_find_parts(scene, scene, prefixes, found)
+		var named: Dictionary = {}
+		for nm: String in found:
+			var n: Node3D = found[nm]
+			var holder := Node3D.new()
+			holder.add_child(n.duplicate())
+			(holder.get_child(0) as Node3D).transform = Transform3D.IDENTITY
+			named[nm] = {"mesh": merge_meshes(holder), "xf": _global_xf(n, scene)}
+			holder.free()
+			n.get_parent().remove_child(n)
+			n.free()
+		out = {"base": merge_meshes(scene), "parts": named}
+		scene.free()
+	_mutex.lock()
+	_parts[key] = out
+	_mutex.unlock()
+	return out
+
+
+static func _find_parts(n: Node, root: Node, prefixes: PackedStringArray, found: Dictionary) -> void:
+	for c: Node in n.get_children():
+		var nm: String = String(c.name)
+		var hit: bool = false
+		for pre: String in prefixes:
+			if nm.begins_with(pre):
+				hit = true
+				break
+		if hit and c is Node3D:
+			found[nm] = c
+		else:
+			_find_parts(c, root, prefixes, found)
 
 
 ## [{shape: Shape3D, transform: Transform3D}] from the model's collision nodes (empty if none).

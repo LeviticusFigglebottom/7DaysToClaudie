@@ -13,67 +13,132 @@ extends RefCounted
 ##   5. pads for frameworks/POIs (flatten to their mean height + skirt; "keep_water" pads sit a
 ##      "freeboard" above the lake or river they overlap, grade only dry ground and leave the water)
 ##   6. biome map, splat weights (8-layer palette), vegetation mask
+##
+## World towns (ADR-0040, random worlds v2): a generated world lists its organic towns in world.json
+## (`towns`, each a framework of frame lots at the world origin). Every region a town's bounds come
+## near adds its streets as world roads (graded from the reference ground, no border fade), a pad
+## per lot at the lot's own height `y` (yard ground, grass at YARD_VEG, giving way to the streets)
+## and its paved square; a lot is placed by the region holding its frame's centre, and each region
+## the town touches places the fixtures standing in it. Both sides of a border compute the same
+## samples from world data alone, so a town may straddle borders. Worlds without `towns` (the main
+## map, v1 worlds) compose exactly as before.
+##
+## Streaming (ADR-0038): the per-sample passes (macro and noise, water, roads, surface) can run in
+## row bands, each on a Thread of its own writing its own arrays, merged in row order after the join
+## (one PackedArray written from several threads can fork). Field rasterisation, cliffs and pads
+## stay sequential. A compose looks at `cancel[0]` at each progress report and every CANCEL_ROWS
+## rows and returns null once it is set. Every speed-up is output-identical, byte for byte
+## (test_composer_golden.gd): saves keep digs, felled trees and POI state against composed regions,
+## and the cache key hashes the inputs and VERSION, not this code.
 
-const VERSION: int = 10
+const VERSION: int = 11
+## A water edge's profile: the ground falls EDGE_DROP below the water within EDGE_IN metres inside
+## the edge and rises EDGE_RISE above it within EDGE_OUT outside. A slope through the water line
+## keeps the shore off the 1 m sample grid; a step (VERSION 10: bed 0.35 m under, bank 0.22 m over,
+## one sample apart) drew every river and lake edge as a 1 m staircase seen from near the water.
+const EDGE_DROP: float = 0.35
+const EDGE_IN: float = 1.5
+const EDGE_RISE: float = 0.22
+const EDGE_OUT: float = 1.0
 const COARSE: float = 4.0
 const MACRO_STEP: float = 8.0
 const BORDER_FADE: float = 48.0
 const DEFAULT_PALETTE: PackedStringArray = ["forest_floor", "moss_ground", "grass_ground", "dirt", "mud", "gravel", "asphalt_cracked", "sand"]
+## Rows a band runs between two looks at the cancel flag (about 0.1 s of work at 1 m).
+const CANCEL_ROWS: int = 64
+## Cell size (m) of the surface pass's index of pads, paints, paths and clearings.
+const BUCKET: float = 32.0
+## World towns (ADR-0040): a lot pad's skirt (m), the vegetation a yard keeps (grass, 0..1), how far
+## round a town's bounds a region looks for it (m), and how far beyond a street's paved corridor
+## (half width + shoulder) a lot pad's skirt eases in (m): on the corridor it grades nothing, and the
+## bank between a street and a yard spreads over the verge.
+const LOT_SKIRT: float = 5.0
+const YARD_VEG: float = 0.6
+const TOWN_REACH: float = 40.0
+const LOT_ROAD_YIELD: float = 2.0
+## A yard's grass grows within this much of its frame's edge (m), and none a metre further in.
+const YARD_EDGE: float = 2.0
+
+## By path: new with ADR-0038, so this compiles before the editor registers its class name.
+const Cache := preload("res://src/worldgen/region_cache.gd")
 
 
 ## Everything that influences the output, hashed. Changing data or VERSION invalidates caches.
+## The formula is v1's, so v1 caches stay valid; the files are read once per WorldDef and the
+## hash is memoised there per region and spacing (ADR-0038).
 static func input_hash(world: WorldDef, region_id: String, spacing: float) -> String:
+	var key: String = "%s|%.3f" % [region_id, spacing]
+	var memo: String = world.memo_hash(key)
+	if memo != "":
+		return memo
 	var ctx := HashingContext.new()
 	ctx.start(HashingContext.HASH_SHA256)
 	ctx.update(("v%d|%s|%s|%.3f" % [VERSION, world.id, region_id, spacing]).to_utf8_buffer())
-	ctx.update(FileAccess.get_file_as_bytes(world.dir_path.path_join("world.json")))
+	ctx.update(world.file_bytes(world.dir_path.path_join("world.json")))
 	var rp: String = world.dir_path.path_join("regions").path_join(region_id).path_join("region.json")
 	if FileAccess.file_exists(rp):
-		ctx.update(FileAccess.get_file_as_bytes(rp))
+		ctx.update(world.file_bytes(rp))
 		# Frameworks and standalone POIs shape the terrain too (pads, streets): hash their files.
-		var region: Variant = JSON.parse_string(FileAccess.get_file_as_string(rp))
-		if region is Dictionary:
-			for f: Variant in (region as Dictionary).get("features", []):
-				if not f is Dictionary:
-					continue
-				var dep: String = ""
-				match str(f.get("type", "")):
-					"framework":
-						dep = "res://data/pois/frameworks/%s.json" % f.get("framework", "")
-					"poi":
-						dep = "res://data/pois/buildings/%s.json" % f.get("poi", "")
-				if dep != "" and FileAccess.file_exists(dep):
-					ctx.update(FileAccess.get_file_as_bytes(dep))
+		for f: Variant in world.region_data(region_id).get("features", []):
+			if not f is Dictionary:
+				continue
+			var dep: String = ""
+			match str(f.get("type", "")):
+				"framework":
+					dep = "res://data/pois/frameworks/%s.json" % f.get("framework", "")
+				"poi":
+					dep = "res://data/pois/buildings/%s.json" % f.get("poi", "")
+			if dep != "" and FileAccess.file_exists(dep):
+				ctx.update(world.file_bytes(dep))
 	# A generated world's towns are frameworks of its own, written beside its world.json (ADR-0031).
 	var gen_fw: String = world.dir_path.path_join("frameworks.json")
 	if FileAccess.file_exists(gen_fw):
-		ctx.update(FileAccess.get_file_as_bytes(gen_fw))
-	return ctx.finish().hex_encode()
+		ctx.update(world.file_bytes(gen_fw))
+	var h: String = ctx.finish().hex_encode()
+	world.set_memo_hash(key, h)
+	return h
 
 
-## Loads from the disk cache or composes (and caches) a region.
-static func get_or_compose(world: WorldDef, region_id: String, spacing: float = 1.0, progress: Callable = Callable()) -> RegionTerrain:
+## Where a region's composed terrain is cached (RegionCache, ADR-0038).
+static func cache_path(world: WorldDef, region_id: String, spacing: float) -> String:
+	return Cache.path_for(world.id, region_id, spacing)
+
+
+## Loads from the disk cache or composes (and caches) a region. `cancel` and `bands` as compose();
+## a cancelled compose returns null and writes nothing.
+static func get_or_compose(world: WorldDef, region_id: String, spacing: float = 1.0, progress: Callable = Callable(),
+		cancel: Array = [false], bands: int = 1) -> RegionTerrain:
 	# Without content loaded (a bare `-s` tool), frameworks and POIs can't be resolved: the result
 	# lacks pads and streets. Cached under the real input hash, the game then loaded a town with
 	# no ground graded for it, so such a compose is never read from or written to the cache.
 	if ContentDB.instance == null:
 		push_warning("TerrainComposer: no content loaded; composing %s without frameworks or POIs, uncached" % region_id)
-		return compose(world, region_id, spacing, progress)
+		return compose(world, region_id, spacing, progress, cancel, bands)
 	var h: String = input_hash(world, region_id, spacing)
-	var path: String = "user://cache/worlds/%s/%s_%d.bin" % [world.id, region_id, int(spacing * 100)]
+	var path: String = cache_path(world, region_id, spacing)
 	var rt: RegionTerrain = RegionTerrain.load_cached(path, h)
 	if rt != null:
+		(Cache.shared() as Cache).touch(path)
 		return rt
-	rt = compose(world, region_id, spacing, progress)
+	rt = compose(world, region_id, spacing, progress, cancel, bands)
 	if rt != null:
 		var err: Error = rt.save(path, h)
 		if err != OK:
 			push_warning("TerrainComposer: could not cache %s (%s)" % [path, error_string(err)])
+		else:
+			# Records the file and, after a detail write, trims the detail files to the budget.
+			(Cache.shared() as Cache).wrote(path)
 	return rt
 
 
-static func compose(world: WorldDef, region_id: String, spacing: float = 1.0, progress: Callable = Callable()) -> RegionTerrain:
+## Composes a region. `cancel`: set cancel[0] = true from any thread to stop it (it returns null
+## within about CANCEL_ROWS rows). `bands`: threads for the per-sample passes (1 = this thread
+## only); the output is identical for any count.
+static func compose(world: WorldDef, region_id: String, spacing: float = 1.0, progress: Callable = Callable(),
+		cancel: Array = [false], bands: int = 1) -> RegionTerrain:
 	var b := _Build.new(world, region_id, spacing, progress)
+	b.cancel = cancel if not cancel.is_empty() else [false]
+	b.bands = maxi(1, bands)
 	return b.run()
 
 
@@ -90,6 +155,8 @@ class _Build:
 	## Detail-noise component of h (re-added on flattened areas so they keep texture).
 	var dnoise: PackedFloat32Array
 	var progress: Callable
+	var cancel: Array = [false]
+	var bands: int = 1
 	var rt: RegionTerrain
 
 	# coarse grid (step cs = max(COARSE, spacing))
@@ -121,13 +188,111 @@ class _Build:
 	var pads: Array[Dictionary] = []
 	var clearings: Array[Dictionary] = []
 	var paints: Array[Dictionary] = []
-	## Axis-aligned bounds of each pad (grown 1.5 m), for _pad_at's early out.
+	## Axis-aligned bounds of each pad (grown 1.5 m), for the pad test's early out.
 	var _pad_boxes: Array[Rect2] = []
 	var paths: Array[Dictionary] = []
+	## World towns near this region (ADR-0040): [{id, fw: FrameworkDef}] in world.json order.
+	var _towns: Array[Dictionary] = []
 	var max_band: float = 0.0
 	## The world detail noise every region shares (and blends to at its borders).
 	var world_noise := FastNoiseLite.new()
 	const WORLD_NOISE_AMP: float = 2.5
+	## Levels of the region's local lakes by feature index. ("auto" levels sample this compose's
+	## heights; written into the shared region data, they raced when two spacings of one region
+	## composed at once, as a streamed world will.)
+	var _lake_levels: Dictionary = {}
+	## Step timings (ms), RegionTerrain.compose_ms.
+	var _ms: Dictionary = {}
+	var _tl: int = 0
+
+	# Inputs of the band passes: set up on the calling thread before the bands start, read-only in
+	# them. Per-column values are computed once with the exact expressions the loops used. A band's
+	# loop calls no script function and no object method that it can avoid, and copies no shared
+	# container per sample: each such call or copy takes a shared reference count (and, in debug
+	# builds, ObjectDB's lock), which made four bands slower than one. So the helpers (_bl,
+	# _add, _border_weight, Polyline2.closest) are inlined there with their exact arithmetic, and
+	# per-road and per-item data are flat packed arrays with offsets rather than arrays of arrays.
+	var _col_x := PackedFloat64Array()
+	var _macro := PackedFloat32Array()
+	var _mn: int = 0
+	var _noises: Array[FastNoiseLite] = []
+	var _amps := PackedFloat32Array()
+	## The detail layer configured exactly like world_noise (a generated world's first layer): its
+	## value is world_noise's, so it is not computed twice. -1: none.
+	var _same_layer: int = -1
+	# Per road (index into road_list), for the road and surface passes.
+	var _r_half := PackedFloat64Array()
+	var _r_sh := PackedFloat64Array()
+	var _r_world := PackedByteArray()
+	var _r_has := PackedByteArray()
+	var _r_step := PackedFloat64Array()
+	## Every road's profile in one array: road ri's starts at _r_prof_off[ri], _r_prof_n[ri] long.
+	var _r_prof := PackedFloat32Array()
+	var _r_prof_off := PackedInt32Array()
+	var _r_prof_n := PackedInt32Array()
+	## Road ri's bridge spans, [s0, s1] pairs: _r_span[_r_span_off[ri] .. _r_span_off[ri + 1]).
+	var _r_span := PackedFloat64Array()
+	var _r_span_off := PackedInt32Array()
+	var _r_surf := PackedInt32Array()
+	# Surface pass.
+	var _s_kind := PackedInt32Array()
+	var _s_map_index := PackedInt32Array()
+	var _s_use_map: bool = false
+	var _s_layers := PackedInt32Array()
+	var _s_pn := FastNoiseLite.new()
+	var _s_qn := FastNoiseLite.new()
+	var _p1 := PackedFloat32Array()
+	var _p2 := PackedFloat32Array()
+	var _q1 := PackedFloat32Array()
+	var _q2 := PackedFloat32Array()
+	var _s_col_c := PackedInt32Array()
+	var _s_col_f := PackedFloat64Array()
+	var _s_col_b := PackedInt32Array()
+	## The 32 m index. Per cell c, the items _bk_*_items[_bk_*_start[c] .. _bk_*_start[c + 1]).
+	var _bk_n: int = 1
+	var _bk_paint_start := PackedInt32Array()
+	var _bk_paint_items := PackedInt32Array()
+	var _bk_pad_start := PackedInt32Array()
+	var _bk_pad_items := PackedInt32Array()
+	var _bk_clear_start := PackedInt32Array()
+	var _bk_clear_items := PackedInt32Array()
+	## Paths: per cell c, entries e in _bk_path_start[c] .. [c + 1): path _bk_path_of[e], with its
+	## segments near the cell _bk_path_segs[_bk_path_seg_start[e] .. _bk_path_seg_start[e + 1]).
+	var _bk_path_start := PackedInt32Array()
+	var _bk_path_of := PackedInt32Array()
+	var _bk_path_seg_start := PackedInt32Array()
+	var _bk_path_segs := PackedInt32Array()
+	var _paint_boxes: Array[Rect2] = []
+	var _paint_pos := PackedVector2Array()
+	var _paint_blend := PackedFloat64Array()
+	var _paint_r := PackedFloat64Array()
+	var _paint_bi := PackedInt32Array()
+	var _pad_origin := PackedVector2Array()
+	var _pad_rot := PackedFloat64Array()
+	var _pad_size := PackedVector2Array()
+	var _pad_bi := PackedInt32Array()
+	## Per pad: the vegetation it keeps (0 but in a world town's yards) and the palette layer it is
+	## paved with (-1: none; a world town's square).
+	var _pad_veg := PackedFloat64Array()
+	var _pad_surf := PackedInt32Array()
+	var _cl_pos := PackedVector2Array()
+	var _cl_r := PackedFloat64Array()
+	## Every path's points in one array: path pi's start at _path_off[pi].
+	var _path_pts := PackedVector2Array()
+	var _path_off := PackedInt32Array()
+	var _path_bounds: Array[Rect2] = []
+	var _path_w := PackedFloat64Array()
+
+	const K_CONIFER: int = 0
+	const K_BIRCH: int = 1
+	const K_MEADOW: int = 2
+	const K_TOWN: int = 3
+	const K_RIVERBANK: int = 4
+	const K_ROCKY: int = 5
+	const K_OTHER: int = 6
+	## ADR-0041: an old burn (ash and char, regrowth) and a fen (peat, sphagnum, its pools).
+	const K_BURN: int = 7
+	const K_FEN: int = 8
 
 	func _init(p_world: WorldDef, p_region_id: String, p_spacing: float, p_progress: Callable) -> void:
 		world = p_world
@@ -153,33 +318,63 @@ class _Build:
 	func _reference_ground(x: float, z: float) -> float:
 		return world.macro_height(x, z) + world_noise.get_noise_2d(x, z) * WORLD_NOISE_AMP
 
-	func _report(stage: String, t: float) -> void:
+	func _cancelled() -> bool:
+		return bool(cancel[0]) if not cancel.is_empty() else false
+
+	## Reports progress; false once the compose is cancelled.
+	func _report(stage: String, t: float) -> bool:
+		if _cancelled():
+			return false
 		if progress.is_valid():
 			progress.call(stage, t)
+		return not _cancelled()
+
+	func _mark(step: String) -> void:
+		var now: int = Time.get_ticks_usec()
+		_ms[step] = float(now - _tl) / 1000.0
+		_tl = now
 
 	func run() -> RegionTerrain:
 		if rect.size == Vector2.ZERO:
 			push_error("TerrainComposer: unknown region %s" % region_id)
 			return null
+		_tl = Time.get_ticks_usec()
+		var t_all: int = _tl
 		rt = RegionTerrain.new()
 		rt.region_id = region_id
 		rt.rect = rect
 		rt.spacing = sp
 		rt.palette = PackedStringArray(region.get("palette", DEFAULT_PALETTE))
-		_report("macro", 0.0)
+		for ix: int in n:
+			_col_x.append(cx0 + ix * sp)
+		if not _report("macro", 0.0):
+			return null
 		_macro_and_noise()
-		_report("features", 0.3)
+		_mark("macro_noise")
+		if not _report("features", 0.3):
+			return null
 		_collect_features()
+		_mark("collect")
 		_hills_and_cliffs()
+		_mark("hills_cliffs")
 		_local_lakes_prepass()
-		_report("water", 0.45)
+		_mark("lakes_prepass")
+		if not _report("water", 0.45):
+			return null
 		_water_fields()
+		_mark("water_fields")
 		_apply_water()
-		_report("roads", 0.6)
+		_mark("apply_water")
+		if not _report("roads", 0.6):
+			return null
 		_road_fields()
+		_mark("road_fields")
 		_apply_roads()
-		_report("pads", 0.7)
+		_mark("apply_roads")
+		if not _report("pads", 0.7):
+			return null
 		_apply_pads()
+		_mark("pads")
 		var hf := HeightField.new()
 		hf.origin = rect.position
 		hf.spacing = sp
@@ -187,25 +382,84 @@ class _Build:
 		hf.depth = n
 		hf.heights = h
 		rt.height = hf
-		_report("surface", 0.8)
+		if not _report("surface", 0.8):
+			return null
 		_surface_pass()
+		_mark("surface")
+		if _cancelled():
+			return null
 		_metadata()
-		_report("done", 1.0)
+		_mark("metadata")
+		_ms["total"] = float(Time.get_ticks_usec() - t_all) / 1000.0
+		rt.compose_ms = _ms
+		if not _report("done", 1.0):
+			return null
 		return rt
+
+	# --- Bands ------------------------------------------------------------------------------
+
+	## Runs fn(r0, r1) -> Array over `rows` rows cut into `bands` bands, the first on this thread and
+	## each other on a Thread of its own, and returns the bands' results in row order.
+	func _run_bands(rows: int, fn: Callable) -> Array:
+		var count: int = clampi(bands, 1, maxi(1, rows / 8))
+		if count <= 1:
+			return [fn.call(0, rows)]
+		var threads: Array[Thread] = []
+		for b: int in range(1, count):
+			var th := Thread.new()
+			threads.append(th if th.start(fn.bind(rows * b / count, rows * (b + 1) / count)) == OK else null)
+		var out: Array = [fn.call(0, rows / count)]
+		for b2: int in range(1, count):
+			var th2: Thread = threads[b2 - 1]
+			out.append(th2.wait_to_finish() if th2 != null else fn.call(rows * b2 / count, rows * (b2 + 1) / count))
+		return out
+
+	static func _concat_f32(parts: Array, k: int) -> PackedFloat32Array:
+		if parts.size() == 1:
+			return parts[0][k]
+		var out := PackedFloat32Array()
+		for p: Array in parts:
+			out.append_array(p[k])
+		return out
+
+	static func _concat_bytes(parts: Array, k: int) -> PackedByteArray:
+		if parts.size() == 1:
+			return parts[0][k]
+		var out := PackedByteArray()
+		for p: Array in parts:
+			out.append_array(p[k])
+		return out
 
 	# --- 1. Macro + detail noise ---------------------------------------------------------
 
 	func _macro_and_noise() -> void:
 		var mn: int = int(round(rect.size.x / MACRO_STEP)) + 1
-		var macro := PackedFloat32Array()
-		macro.resize(mn * mn)
+		var ratio: float = sp / MACRO_STEP
+		# The grid rows and columns the samples read with a non-zero weight. A coarse compose reads
+		# every other one (16 m samples on the 8 m grid); the rest stay 0.0 and enter the bilinear
+		# blend only times an exact 0, which leaves the result as it was.
+		var need := PackedByteArray()
+		need.resize(mn)
+		for i: int in n:
+			var g: float = i * ratio
+			var m: int = mini(int(g), mn - 2)
+			need[m] = 1
+			if g - m != 0.0:
+				need[m + 1] = 1
+		_macro = PackedFloat32Array()
+		_macro.resize(mn * mn)
 		for iz: int in mn:
+			if need[iz] == 0:
+				continue
 			for ix: int in mn:
-				macro[iz * mn + ix] = world.macro_height(cx0 + ix * MACRO_STEP, cz0 + iz * MACRO_STEP)
+				if need[ix] != 0:
+					_macro[iz * mn + ix] = world.macro_height(cx0 + ix * MACRO_STEP, cz0 + iz * MACRO_STEP)
+		_mn = mn
 		var dcfg: Dictionary = region.get("detail_noise", {})
 		var layers: Array = dcfg.get("layers", [{"frequency": dcfg.get("frequency", 0.012), "octaves": dcfg.get("octaves", 4), "amplitude": dcfg.get("amplitude", 2.5)}])
-		var noises: Array[FastNoiseLite] = []
-		var amps := PackedFloat32Array()
+		_noises = []
+		_amps = PackedFloat32Array()
+		_same_layer = -1
 		for li: int in layers.size():
 			var lc: Dictionary = layers[li]
 			var nz := FastNoiseLite.new()
@@ -214,37 +468,85 @@ class _Build:
 			nz.fractal_type = FastNoiseLite.FRACTAL_FBM
 			nz.fractal_octaves = int(lc.get("octaves", 3))
 			nz.frequency = float(lc.get("frequency", 0.01))
-			noises.append(nz)
-			amps.append(float(lc.get("amplitude", 1.0)))
+			_noises.append(nz)
+			_amps.append(float(lc.get("amplitude", 1.0)))
+			if _same_layer < 0 and nz.seed == world_noise.seed and nz.fractal_octaves == world_noise.fractal_octaves and nz.frequency == world_noise.frequency:
+				_same_layer = li
+		var parts: Array = _run_bands(n, _band_macro)
+		h = _concat_f32(parts, 0)
+		dnoise = _concat_f32(parts, 1)
+
+	func _band_macro(z0: int, z1: int) -> Array:
+		var nn: int = n
+		var hb := PackedFloat32Array()
+		hb.resize((z1 - z0) * nn)
+		var db := PackedFloat32Array()
+		db.resize((z1 - z0) * nn)
+		var macro: PackedFloat32Array = _macro
+		var mn: int = _mn
+		var ratio: float = sp / MACRO_STEP
+		var noises: Array[FastNoiseLite] = _noises
+		var amps: PackedFloat32Array = _amps
+		var nl: int = noises.size()
+		var same: int = _same_layer
+		# The first three layers in locals (regions have three), not fetched from the array per call.
+		var nz0: FastNoiseLite = noises[0] if nl > 0 else null
+		var nz1: FastNoiseLite = noises[1] if nl > 1 else null
+		var nz2: FastNoiseLite = noises[2] if nl > 2 else null
+		var a0: float = amps[0] if nl > 0 else 0.0
+		var a1: float = amps[1] if nl > 1 else 0.0
+		var a2: float = amps[2] if nl > 2 else 0.0
+		var wn_noise: FastNoiseLite = world_noise
+		var col_x: PackedFloat64Array = _col_x
+		var cancel_flag: Array = cancel
+		var z_0: float = cz0
+		var spc: float = sp
 		# Border samples use a world-level default (same in every region) so regions stitch.
 		var world_amp: float = WORLD_NOISE_AMP
-		h.resize(n * n)
-		dnoise.resize(n * n)
-		var ratio: float = sp / MACRO_STEP
-		var nl: int = noises.size()
-		for iz: int in n:
+		# _border_weight's terms, as it read them (Rect2 is single precision).
+		var bx0: float = rect.position.x
+		var bx1: float = rect.end.x
+		var bz0: float = rect.position.y
+		var bz1: float = rect.end.y
+		var col_m := PackedInt32Array()
+		var col_f := PackedFloat64Array()
+		for ix: int in nn:
+			var gx: float = ix * ratio
+			var mx: int = mini(int(gx), mn - 2)
+			col_m.append(mx)
+			col_f.append(gx - mx)
+		for iz: int in range(z0, z1):
+			if (iz - z0) % CANCEL_ROWS == CANCEL_ROWS - 1 and bool(cancel_flag[0]):
+				break
 			var gz: float = iz * ratio
 			var mz: int = mini(int(gz), mn - 2)
 			var fz: float = gz - mz
-			var z: float = cz0 + iz * sp
-			var row: int = iz * n
-			for ix: int in n:
-				var gx: float = ix * ratio
-				var mx: int = mini(int(gx), mn - 2)
-				var fx: float = gx - mx
-				var i: int = mz * mn + mx
+			var z: float = z_0 + iz * spc
+			var row: int = (iz - z0) * nn
+			var dz: float = minf(z - bz0, bz1 - z)
+			for ix: int in nn:
+				var fx: float = col_f[ix]
+				var i: int = mz * mn + col_m[ix]
 				var top: float = macro[i] + (macro[i + 1] - macro[i]) * fx
 				var bot: float = macro[i + mn] + (macro[i + mn + 1] - macro[i + mn]) * fx
-				var x: float = cx0 + ix * sp
-				var bw: float = _border_weight(x, z)
+				var x: float = col_x[ix]
+				var bw: float = clampf(minf(minf(x - bx0, bx1 - x), dz) / BORDER_FADE, 0.0, 1.0)
+				var wn: float = wn_noise.get_noise_2d(x, z)
 				var detail: float = 0.0
 				if bw > 0.0:
-					for li: int in nl:
-						detail += noises[li].get_noise_2d(x, z) * amps[li]
-				var base_n: float = world_noise.get_noise_2d(x, z) * world_amp
+					if nl > 0:
+						detail += (wn if same == 0 else nz0.get_noise_2d(x, z)) * a0
+					if nl > 1:
+						detail += (wn if same == 1 else nz1.get_noise_2d(x, z)) * a1
+					if nl > 2:
+						detail += (wn if same == 2 else nz2.get_noise_2d(x, z)) * a2
+					for li: int in range(3, nl):
+						detail += (wn if li == same else noises[li].get_noise_2d(x, z)) * amps[li]
+				var base_n: float = wn * world_amp
 				var dv: float = lerpf(base_n, detail, bw)
-				dnoise[row + ix] = dv
-				h[row + ix] = top + (bot - top) * fz + dv
+				db[row + ix] = dv
+				hb[row + ix] = top + (bot - top) * fz + dv
+		return [hb, db]
 
 	func _border_weight(x: float, z: float) -> float:
 		var d: float = minf(minf(x - rect.position.x, rect.end.x - x), minf(z - rect.position.y, rect.end.y - z))
@@ -265,6 +567,46 @@ class _Build:
 					paints.append({"biome": str(f["biome"]), "pos": _v2(f["circle"]), "r": float(f.get("radius", 100.0)), "blend": float(f.get("blend", 30.0))})
 				"path":
 					paths.append({"line": Polyline2.from_array(f["points"]), "width": float(f.get("width", 2.0)), "surface": str(f.get("surface", "dirt"))})
+		_collect_towns()
+
+	## World towns whose bounds come near this region (ADR-0040): a pad per lot (its frame, turned
+	## by -yaw as the composer turns pads; target the lot's `y`) and the square. Their streets join
+	## the roads in _road_fields.
+	func _collect_towns() -> void:
+		if world.towns.is_empty():
+			return
+		var content: Node = _content()
+		if content == null:
+			return
+		for tw: Dictionary in world.towns:
+			if not (tw["bounds"] as Rect2).grow(TOWN_REACH).intersects(rect):
+				continue
+			var fw: FrameworkDef = content.get_def(&"framework", StringName(str(tw["framework"]))) as FrameworkDef
+			if fw == null:
+				push_warning("TerrainComposer: town %s: framework %s not registered" % [tw["id"], tw["framework"]])
+				continue
+			var tid: String = str(tw["id"])
+			_towns.append({"id": tid, "fw": fw})
+			# Town ground over its disc (its streets and what lies between them), as a v1 town's pad
+			# had; the lots are yards.
+			if float(tw["radius"]) > 0.0:
+				paints.append({"biome": "town", "pos": tw["center"], "r": float(tw["radius"]), "blend": 40.0})
+			for lv: Variant in fw.lots:
+				var l: Dictionary = lv
+				if l.has("frame"):
+					pads.append(_frame_pad(l["frame"], float(l.get("y", 0.0)), "lot", String(fw.id), "%s/%s" % [tid, l.get("id", "")], "yard", YARD_VEG, ""))
+			if fw.plaza.has("frame"):
+				pads.append(_frame_pad(fw.plaza["frame"], float(fw.plaza.get("y", 0.0)), "plaza", String(fw.id), "%s/plaza" % tid, "town", 0.0, "asphalt"))
+
+	## A world pad over a frame [cx, cz, w, d, yaw] (yaw as PoiManager.lot_xf turns a building: the
+	## composer's rotation is -yaw, and the pad's corner is the frame's local (-w/2, -d/2)).
+	static func _frame_pad(f: Array, y: float, kind: String, def_id: String, id: String, biome: String, veg: float, surface: String) -> Dictionary:
+		var w: float = float(f[2])
+		var d: float = float(f[3])
+		var a: float = -deg_to_rad(float(f[4]))
+		var c := Vector2(float(f[0]), float(f[1]))
+		return {"kind": kind, "def": def_id, "id": id, "origin": c + Vector2(-w * 0.5, -d * 0.5).rotated(a), "rot": a, "size": Vector2(w, d),
+			"skirt": LOT_SKIRT, "biome": biome, "keep_water": false, "freeboard": 0.0, "world": true, "target": y, "veg": veg, "surface": surface}
 
 	func _pad_for(f: Dictionary) -> Dictionary:
 		var size := Vector2(40, 40)
@@ -355,18 +697,23 @@ class _Build:
 
 	## Local lakes: resolve "auto" levels before water fields are built.
 	func _local_lakes_prepass() -> void:
-		for f: Dictionary in region.get("features", []):
+		var feats: Array = region.get("features", [])
+		for fi: int in feats.size():
+			var f: Dictionary = feats[fi]
 			if str(f.get("type", "")) != "lake":
 				continue
 			if str(f.get("level", "auto")) == "auto":
 				var c: Vector2 = _v2(f["ellipse"]) if f.has("ellipse") else _poly_centroid(f["polygon"])
+				# A fen pool (ADR-0041) samples its own small ground (`probe` m a step) and stands
+				# brim-full (`drop` under it); a lake sits 1.8 m under the ground 32 m round.
+				var probe: float = float(f.get("probe", 4.0))
 				var acc: float = 0.0
 				for k: int in 9:
-					var o := Vector2(cos(k * 0.7), sin(k * 0.7)) * float(k) * 4.0
+					var o := Vector2(cos(k * 0.7), sin(k * 0.7)) * float(k) * probe
 					acc += _sample(c.x + o.x, c.y + o.y)
-				f["_level"] = acc / 9.0 - 1.8
+				_lake_levels[fi] = acc / 9.0 - float(f.get("drop", 1.8))
 			else:
-				f["_level"] = float(f["level"])
+				_lake_levels[fi] = float(f["level"])
 
 	# --- 3. Water ---------------------------------------------------------------------------
 
@@ -401,10 +748,12 @@ class _Build:
 			_rasterize_river(r)
 		for l: Dictionary in world.lakes:
 			_rasterize_lake_polygon(l["polygon"], float(l["level"]), float(l["depth"]), float(l["shore"]), 160.0, 0.2)
-		for f: Dictionary in region.get("features", []):
+		var feats: Array = region.get("features", [])
+		for fi: int in feats.size():
+			var f: Dictionary = feats[fi]
 			if str(f.get("type", "")) == "lake":
 				var poly: PackedVector2Array = _lake_poly(f)
-				_rasterize_lake_polygon(poly, float(f["_level"]), float(f.get("depth", 4.0)), float(f.get("shore", 12.0)), 50.0, 0.22)
+				_rasterize_lake_polygon(poly, float(_lake_levels[fi]), float(f.get("depth", 4.0)), float(f.get("shore", 12.0)), 50.0, 0.22)
 
 	func _rasterize_river(r: Dictionary) -> void:
 		var line: Polyline2 = r["line"]
@@ -489,60 +838,112 @@ class _Build:
 				fw_vs[fi] = slope)
 
 	func _apply_water() -> void:
+		h = _concat_f32(_run_bands(n, _band_water), 0)
+
+	func _band_water(z0: int, z1: int) -> Array:
+		var nn: int = n
+		var hb: PackedFloat32Array = h.slice(z0 * nn, z1 * nn)
+		var dn: PackedFloat32Array = dnoise
+		var fwd: PackedFloat32Array = fw_d
+		var fwl: PackedFloat32Array = fw_lvl
+		var fwvw: PackedFloat32Array = fw_vw
+		var fwvs: PackedFloat32Array = fw_vs
+		var wdd: PackedFloat32Array = w_d
+		var wlv: PackedFloat32Array = w_lvl
+		var wbk: PackedFloat32Array = w_bank
+		var wdp: PackedFloat32Array = w_depth
+		var fnn: int = fn_
+		var cnn: int = cn
+		var cancel_flag: Array = cancel
 		var ratio: float = sp / cs
 		var fratio: float = sp / FAR_STEP
-		for iz: int in n:
+		for iz: int in range(z0, z1):
+			if (iz - z0) % CANCEL_ROWS == CANCEL_ROWS - 1 and bool(cancel_flag[0]):
+				break
 			var gz: float = iz * ratio
-			var cz: int = mini(int(gz), cn - 2)
+			var cz: int = mini(int(gz), cnn - 2)
 			var fz: float = gz - cz
 			var fgz: float = iz * fratio
-			var fcz: int = mini(int(fgz), fn_ - 2)
+			var fcz: int = mini(int(fgz), fnn - 2)
 			var ffz: float = fgz - fcz
-			var row: int = iz * n
-			for ix: int in n:
+			var row: int = iz * nn
+			var lrow: int = (iz - z0) * nn
+			for ix: int in nn:
 				var fgx: float = ix * fratio
-				var fcx: int = mini(int(fgx), fn_ - 2)
-				var fi: int = fcz * fn_ + fcx
-				if fw_d[fi] > fw_vw[fi] + FAR_STEP * 1.5 and fw_d[fi + fn_ + 1] > fw_vw[fi + fn_ + 1] + FAR_STEP * 1.5:
+				var fcx: int = mini(int(fgx), fnn - 2)
+				var fi: int = fcz * fnn + fcx
+				if fwd[fi] > fwvw[fi] + FAR_STEP * 1.5 and fwd[fi + fnn + 1] > fwvw[fi + fnn + 1] + FAR_STEP * 1.5:
 					continue
-				var hv: float = h[row + ix]
-				var fd: float = _blf(fw_d, fi, fgx - fcx, ffz)
+				var hv: float = hb[lrow + ix]
+				var ffx: float = fgx - fcx
+				# fw_d bilinear on the 16 m grid (_bl's arithmetic, its "far" rule included)
+				var fa: float = fwd[fi]
+				var fb: float = fwd[fi + 1]
+				var fc: float = fwd[fi + fnn]
+				var fdd: float = fwd[fi + fnn + 1]
+				var fd: float
+				if fa > 1.0e8 or fb > 1.0e8 or fc > 1.0e8 or fdd > 1.0e8:
+					fd = minf(minf(fa, fb), minf(fc, fdd))
+				else:
+					var ftop: float = fa + (fb - fa) * ffx
+					fd = ftop + ((fc + (fdd - fc) * ffx) - ftop) * ffz
 				if fd < 1.0e8:
-					var vw: float = fw_vw[fi]
+					var vw: float = fwvw[fi]
 					if fd < vw:
-						var flvl: float = _blf(fw_lvl, fi, fgx - fcx, ffz)
-						var nd: float = dnoise[row + ix] * clampf(fd / 25.0, 0.15, 0.8)
-						var cap: float = flvl + 0.5 + maxf(fd, 0.0) * fw_vs[fi] + nd
+						# fw_lvl bilinear on the 16 m grid
+						var la: float = fwl[fi]
+						var lb: float = fwl[fi + 1]
+						var lc: float = fwl[fi + fnn]
+						var ld: float = fwl[fi + fnn + 1]
+						var flvl: float
+						if la > 1.0e8 or lb > 1.0e8 or lc > 1.0e8 or ld > 1.0e8:
+							flvl = minf(minf(la, lb), minf(lc, ld))
+						else:
+							var ltop: float = la + (lb - la) * ffx
+							flvl = ltop + ((lc + (ld - lc) * ffx) - ltop) * ffz
+						var nd: float = dn[row + ix] * clampf(fd / 25.0, 0.15, 0.8)
+						var cap: float = flvl + 0.5 + maxf(fd, 0.0) * fwvs[fi] + nd
 						var wv: float = 1.0 - smoothstep(vw * 0.55, vw, fd)
 						hv = lerpf(hv, minf(hv, cap), wv)
 				var gx: float = ix * ratio
-				var cx: int = mini(int(gx), cn - 2)
-				var ci: int = cz * cn + cx
-				if w_d[ci] < 1.0e8 or w_d[ci + cn + 1] < 1.0e8:
-					var d: float = _bl(w_d, ci, gx - cx, fz)
+				var cx: int = mini(int(gx), cnn - 2)
+				var ci: int = cz * cnn + cx
+				if wdd[ci] < 1.0e8 or wdd[ci + cnn + 1] < 1.0e8:
+					var fx: float = gx - cx
+					# _bl(w_d, ci, fx, fz)
+					var wa: float = wdd[ci]
+					var wb: float = wdd[ci + 1]
+					var wc: float = wdd[ci + cnn]
+					var wdx: float = wdd[ci + cnn + 1]
+					var d: float
+					if wa > 1.0e8 or wb > 1.0e8 or wc > 1.0e8 or wdx > 1.0e8:
+						d = minf(minf(wa, wb), minf(wc, wdx))
+					else:
+						var wtop: float = wa + (wb - wa) * fx
+						d = wtop + ((wc + (wdx - wc) * fx) - wtop) * fz
 					if d < 1.0e8:
-						var lvl: float = _bl(w_lvl, ci, gx - cx, fz)
-						var bank: float = w_bank[ci]
+						# _bl(w_lvl, ci, fx, fz)
+						var va: float = wlv[ci]
+						var vb: float = wlv[ci + 1]
+						var vc: float = wlv[ci + cnn]
+						var vd: float = wlv[ci + cnn + 1]
+						var lvl: float
+						if va > 1.0e8 or vb > 1.0e8 or vc > 1.0e8 or vd > 1.0e8:
+							lvl = minf(minf(va, vb), minf(vc, vd))
+						else:
+							var vtop: float = va + (vb - va) * fx
+							lvl = vtop + ((vc + (vd - vc) * fx) - vtop) * fz
+						var bank: float = wbk[ci]
 						if d < 0.0:
 							var f: float = clampf(-d / maxf(3.0, bank * 0.9), 0.0, 1.0)
-							var bed: float = lvl - 0.35 - w_depth[ci] * (f * f * (3.0 - 2.0 * f))
+							var bed: float = lvl - EDGE_DROP * minf(-d / EDGE_IN, 1.0) - wdp[ci] * (f * f * (3.0 - 2.0 * f))
 							hv = minf(hv, bed)
 						elif d < bank:
 							var t: float = smoothstep(0.0, bank, d)
-							var shore_h: float = lvl + 0.22 + d * 0.06
+							var shore_h: float = lvl + EDGE_RISE * minf(d / EDGE_OUT, 1.0) + d * 0.06
 							hv = lerpf(shore_h, maxf(hv, shore_h), t)
-				h[row + ix] = hv
-
-	func _blf(f: PackedFloat32Array, fi: int, fx: float, fz: float) -> float:
-		var a: float = f[fi]
-		var b: float = f[fi + 1]
-		var c: float = f[fi + fn_]
-		var d: float = f[fi + fn_ + 1]
-		if a > 1.0e8 or b > 1.0e8 or c > 1.0e8 or d > 1.0e8:
-			return minf(minf(a, b), minf(c, d))
-		var top: float = a + (b - a) * fx
-		var bot: float = c + (d - c) * fx
-		return top + (bot - top) * fz
+				hb[lrow + ix] = hv
+		return [hb]
 
 	func _for_far_box(box: Rect2, fn: Callable) -> void:
 		var r: Rect2 = box.intersection(rect.grow(FAR_STEP))
@@ -560,9 +961,10 @@ class _Build:
 	# --- 4. Roads ---------------------------------------------------------------------------
 
 	func _road_fields() -> void:
-		for r: Dictionary in world.roads:
+		for wi: int in world.roads.size():
+			var r: Dictionary = world.roads[wi]
 			road_list.append({"id": r["id"], "line": r["line"], "width": r["width"], "shoulder": r["shoulder"],
-				"surface": r["surface"], "bridges": r.get("bridges", []), "world": true, "markings": bool(r.get("markings", true))})
+				"surface": r["surface"], "bridges": r.get("bridges", []), "world": true, "markings": bool(r.get("markings", true)), "world_index": wi})
 		for f: Dictionary in region.get("features", []):
 			if str(f.get("type", "")) == "road":
 				road_list.append({"id": str(f.get("id", "road")), "line": Polyline2.from_array(f["points"]),
@@ -571,6 +973,17 @@ class _Build:
 					"markings": bool(f.get("markings", true))})
 			elif str(f.get("type", "")) == "framework":
 				_framework_roads(f)
+		# World towns' streets (ADR-0040): world roads, graded from the reference ground in every
+		# region they cross (one profile, memoised under the town and street).
+		for tw: Dictionary in _towns:
+			var fw: FrameworkDef = tw["fw"]
+			for rv: Variant in fw.roads:
+				if not rv is Dictionary or ((rv as Dictionary).get("points", []) as Array).size() < 2:
+					continue
+				var rd: Dictionary = rv
+				road_list.append({"id": "%s/%s" % [tw["id"], rd.get("id", "street")], "line": Polyline2.from_array(rd["points"]),
+					"width": float(rd.get("width", 6.0)), "shoulder": float(rd.get("shoulder", 0.8)), "surface": str(rd.get("surface", "asphalt")),
+					"bridges": [], "world": true, "markings": bool(rd.get("markings", false)), "profile_key": "town:%s:%s" % [tw["id"], rd.get("id", "")]})
 		var count: int = cn * cn
 		r_d = PackedFloat32Array()
 		r_d.resize(count)
@@ -580,6 +993,7 @@ class _Build:
 		r_idx = PackedInt32Array()
 		r_idx.resize(count)
 		r_idx.fill(-1)
+		var near: Rect2 = rect.grow(cs)
 		for ri: int in road_list.size():
 			var r: Dictionary = road_list[ri]
 			var line: Polyline2 = r["line"]
@@ -587,11 +1001,24 @@ class _Build:
 			max_band = maxf(max_band, reach)
 			if not line.bounds.grow(reach).intersects(rect):
 				continue
-			_build_profile(r)
+			if bool(r["world"]) and world.road_grade == "world":
+				# Graded from world data alone, a world road has one profile in every region it
+				# crosses: built once per world (each region used to build the whole road).
+				var key: Variant = r["profile_key"] if r.has("profile_key") else int(r["world_index"])
+				var prof: Dictionary = world.road_profile(key, _profile_data.bind(r))
+				r["profile"] = prof["profile"]
+				r["step"] = prof["step"]
+				r["spans"] = prof["spans"]
+			else:
+				_build_profile(r)
 			for si: int in line.points.size() - 1:
 				var a: Vector2 = line.points[si]
 				var bpt: Vector2 = line.points[si + 1]
 				var seg := Rect2(a, Vector2.ZERO).expand(bpt).grow(reach)
+				# _for_coarse_box's own test, before a callable is made for a far segment.
+				var hit: Rect2 = seg.intersection(near)
+				if hit.size.x <= 0.0 or hit.size.y <= 0.0:
+					continue
 				var ab: Vector2 = bpt - a
 				var l2: float = maxf(ab.length_squared(), 1e-6)
 				var seg_len: float = sqrt(l2)
@@ -605,6 +1032,27 @@ class _Build:
 						r_d[ci] = dist
 						r_s[ci] = s0 + seg_len * t
 						r_idx[ci] = idx)
+		# Per-road values for the road and surface passes, flat (see the band notes above).
+		for ri2: int in road_list.size():
+			var r2: Dictionary = road_list[ri2]
+			var has: bool = r2.has("spans")
+			_r_half.append(float(r2["width"]) * 0.5)
+			_r_sh.append(float(r2["shoulder"]))
+			_r_world.append(1 if bool(r2["world"]) else 0)
+			_r_has.append(1 if has else 0)
+			_r_step.append(float(r2["step"]) if has else 0.0)
+			_r_prof_off.append(_r_prof.size())
+			_r_span_off.append(_r_span.size())
+			if has:
+				var prof: PackedFloat32Array = r2["profile"]
+				_r_prof.append_array(prof)
+				_r_prof_n.append(prof.size())
+				for span: Array in r2["spans"]:
+					_r_span.append(float(span[0]))
+					_r_span.append(float(span[1]))
+			else:
+				_r_prof_n.append(0)
+		_r_span_off.append(_r_span.size())
 
 	## Streets of a placed framework (FrameworkDef.roads, framework-local) become region roads.
 	func _framework_roads(f: Dictionary) -> void:
@@ -634,6 +1082,13 @@ class _Build:
 	## Road height profile along the centre line: terrain sampled every 4 m, smoothed; bridge spans
 	## are lifted to the deck height with ramps.
 	func _build_profile(r: Dictionary) -> void:
+		var prof: Dictionary = _profile_data(r)
+		r["profile"] = prof["profile"]
+		r["step"] = prof["step"]
+		r["spans"] = prof["spans"]
+
+	## {profile, step, spans} of a road (see _build_profile).
+	func _profile_data(r: Dictionary) -> Dictionary:
 		var line: Polyline2 = r["line"]
 		var step: float = 4.0
 		var count: int = int(ceil(line.total_length / step)) + 1
@@ -680,9 +1135,7 @@ class _Build:
 					prof[k] = lerpf(prof[k], deck, smoothstep(s0 - 40.0, s0, s))
 				elif s > s1 and s < s1 + 40.0:
 					prof[k] = lerpf(deck, prof[k], smoothstep(s1, s1 + 40.0, s))
-		r["profile"] = prof
-		r["step"] = step
-		r["spans"] = spans
+		return {"profile": prof, "step": step, "spans": spans}
 
 	func _water_level_near(p: Vector2) -> float:
 		var best: float = -1.0e9
@@ -694,57 +1147,110 @@ class _Build:
 		return best
 
 	func _apply_roads() -> void:
+		h = _concat_f32(_run_bands(n, _band_roads), 0)
+
+	func _band_roads(z0: int, z1: int) -> Array:
+		var nn: int = n
+		var hb: PackedFloat32Array = h.slice(z0 * nn, z1 * nn)
+		var ridx: PackedInt32Array = r_idx
+		var rdd: PackedFloat32Array = r_d
+		var rss: PackedFloat32Array = r_s
+		var rhalf: PackedFloat64Array = _r_half
+		var rsh: PackedFloat64Array = _r_sh
+		var rhas: PackedByteArray = _r_has
+		var rworld: PackedByteArray = _r_world
+		var rstep: PackedFloat64Array = _r_step
+		var rprof: PackedFloat32Array = _r_prof
+		var rpoff: PackedInt32Array = _r_prof_off
+		var rpn: PackedInt32Array = _r_prof_n
+		var rspan: PackedFloat64Array = _r_span
+		var rsoff: PackedInt32Array = _r_span_off
+		var cnn: int = cn
+		var x_0: float = cx0
+		var z_0: float = cz0
+		var spc: float = sp
+		var cancel_flag: Array = cancel
+		# _border_weight's terms, as it read them (Rect2 is single precision).
+		var bx0: float = rect.position.x
+		var bx1: float = rect.end.x
+		var bz0: float = rect.position.y
+		var bz1: float = rect.end.y
 		var ratio: float = sp / cs
-		for iz: int in n:
+		for iz: int in range(z0, z1):
+			if (iz - z0) % CANCEL_ROWS == CANCEL_ROWS - 1 and bool(cancel_flag[0]):
+				break
 			var gz: float = iz * ratio
-			var cz: int = mini(int(gz), cn - 2)
+			var cz: int = mini(int(gz), cnn - 2)
 			var fz: float = gz - cz
-			var row: int = iz * n
-			for ix: int in n:
+			var lrow: int = (iz - z0) * nn
+			var bz: float = z_0 + iz * spc
+			var dz: float = minf(bz - bz0, bz1 - bz)
+			for ix: int in nn:
 				var gx: float = ix * ratio
-				var cx: int = mini(int(gx), cn - 2)
-				var ci: int = cz * cn + cx
-				var ri: int = r_idx[ci]
+				var cx: int = mini(int(gx), cnn - 2)
+				var ci: int = cz * cnn + cx
+				var ri: int = ridx[ci]
 				if ri < 0:
-					ri = r_idx[ci + cn + 1]
+					ri = ridx[ci + cnn + 1]
 					if ri < 0:
 						continue
 				var fx: float = gx - cx
 				var d: float
 				var s: float
-				if r_idx[ci] == r_idx[ci + 1] and r_idx[ci] == r_idx[ci + cn] and r_idx[ci] == r_idx[ci + cn + 1]:
-					d = _bl(r_d, ci, fx, fz)
-					s = _bl(r_s, ci, fx, fz)
+				var i00: int = ridx[ci]
+				if i00 == ridx[ci + 1] and i00 == ridx[ci + cnn] and i00 == ridx[ci + cnn + 1]:
+					# _bl(r_d, ci, fx, fz) and _bl(r_s, ci, fx, fz)
+					var da: float = rdd[ci]
+					var db: float = rdd[ci + 1]
+					var dc: float = rdd[ci + cnn]
+					var ddd: float = rdd[ci + cnn + 1]
+					if da > 1.0e8 or db > 1.0e8 or dc > 1.0e8 or ddd > 1.0e8:
+						d = minf(minf(da, db), minf(dc, ddd))
+					else:
+						var dtop: float = da + (db - da) * fx
+						d = dtop + ((dc + (ddd - dc) * fx) - dtop) * fz
+					var sa: float = rss[ci]
+					var sb: float = rss[ci + 1]
+					var sc: float = rss[ci + cnn]
+					var sd: float = rss[ci + cnn + 1]
+					if sa > 1.0e8 or sb > 1.0e8 or sc > 1.0e8 or sd > 1.0e8:
+						s = minf(minf(sa, sb), minf(sc, sd))
+					else:
+						var stop: float = sa + (sb - sa) * fx
+						s = stop + ((sc + (sd - sc) * fx) - stop) * fz
 				else:
-					var nci: int = ci + (1 if fx > 0.5 else 0) + (cn if fz > 0.5 else 0)
-					if r_idx[nci] >= 0:
-						ri = r_idx[nci]
-					d = r_d[nci]
-					s = r_s[nci]
-				var r: Dictionary = road_list[ri]
-				var half: float = float(r["width"]) * 0.5
-				var outer: float = half + float(r["shoulder"]) + 8.0
-				if d > outer or not r.has("spans"):
+					var nci: int = ci + (1 if fx > 0.5 else 0) + (cnn if fz > 0.5 else 0)
+					if ridx[nci] >= 0:
+						ri = ridx[nci]
+					d = rdd[nci]
+					s = rss[nci]
+				var half: float = rhalf[ri]
+				var sh: float = rsh[ri]
+				var outer: float = half + sh + 8.0
+				if d > outer or rhas[ri] == 0:
 					continue
 				var skip: bool = false
-				for span: Array in r["spans"]:
-					if s > float(span[0]) + 2.0 and s < float(span[1]) - 2.0:
+				for j: int in range(rsoff[ri], rsoff[ri + 1], 2):
+					if s > rspan[j] + 2.0 and s < rspan[j + 1] - 2.0:
 						skip = true
 						break
 				if skip:
 					continue
-				var prof: PackedFloat32Array = r["profile"]
-				var step: float = r["step"]
+				var step: float = rstep[ri]
 				var k: float = s / step
-				var k0: int = clampi(int(k), 0, prof.size() - 1)
-				var k1: int = mini(k0 + 1, prof.size() - 1)
-				var target: float = lerpf(prof[k0], prof[k1], k - k0)
+				var pn: int = rpn[ri]
+				var po: int = rpoff[ri]
+				var k0: int = clampi(int(k), 0, pn - 1)
+				var k1: int = mini(k0 + 1, pn - 1)
+				var target: float = lerpf(rprof[po + k0], rprof[po + k1], k - k0)
 				target -= 0.06 * minf(1.0, (d / maxf(half, 0.5)) * (d / maxf(half, 0.5)))
-				var inner: float = half + float(r["shoulder"])
+				var inner: float = half + sh
 				var wgt: float = 1.0 - smoothstep(inner, outer, d)
-				if not bool(r["world"]):
-					wgt *= _border_weight(cx0 + ix * sp, cz0 + iz * sp)
-				h[row + ix] = lerpf(h[row + ix], target, wgt)
+				if rworld[ri] == 0:
+					var bx: float = x_0 + ix * spc
+					wgt *= clampf(minf(minf(bx - bx0, bx1 - bx), dz) / BORDER_FADE, 0.0, 1.0)
+				hb[lrow + ix] = lerpf(hb[lrow + ix], target, wgt)
+		return [hb]
 
 	# --- 5. Pads ----------------------------------------------------------------------------
 
@@ -759,22 +1265,27 @@ class _Build:
 			# to the pad. Its height is the water's plus a freeboard, not the ground's mean: the POI's
 			# docks, piles and boats are authored against the water, which an "auto" lake level moves.
 			var keep_water: bool = pad["keep_water"]
-			# Mean height over the pad.
-			var acc: float = 0.0
-			var cnt: int = 0
-			var wet_lvl: float = 0.0
-			var wet_cnt: int = 0
-			for k: int in 25:
-				var lp := Vector2((k % 5 + 0.5) / 5.0 * size.x, (k / 5 + 0.5) / 5.0 * size.y)
-				var wp: Vector2 = o + lp.rotated(rot)
-				acc += _sample(wp.x, wp.y)
-				cnt += 1
-				if keep_water and _water_d(wp.x, wp.y) < 0.0:
-					wet_lvl += _water_field(w_lvl, wp.x, wp.y)
-					wet_cnt += 1
-			var target: float = acc / cnt + 0.05
-			if wet_cnt > 0:
-				target = wet_lvl / wet_cnt + float(pad["freeboard"])
+			# A world town's pad (ADR-0040) is graded to its own height from world data, everywhere
+			# alike (no border fade), and gives way to the streets.
+			var world_pad: bool = bool(pad.get("world", false))
+			var target: float = float(pad.get("target", 0.0))
+			if not world_pad:
+				# Mean height over the pad.
+				var acc: float = 0.0
+				var cnt: int = 0
+				var wet_lvl: float = 0.0
+				var wet_cnt: int = 0
+				for k: int in 25:
+					var lp := Vector2((k % 5 + 0.5) / 5.0 * size.x, (k / 5 + 0.5) / 5.0 * size.y)
+					var wp: Vector2 = o + lp.rotated(rot)
+					acc += _sample(wp.x, wp.y)
+					cnt += 1
+					if keep_water and _water_d(wp.x, wp.y) < 0.0:
+						wet_lvl += _water_field(w_lvl, wp.x, wp.y)
+						wet_cnt += 1
+				target = acc / cnt + 0.05
+				if wet_cnt > 0:
+					target = wet_lvl / wet_cnt + float(pad["freeboard"])
 			pad["height"] = target
 			var corners: Array[Vector2] = [o, o + Vector2(size.x, 0).rotated(rot), o + size.rotated(rot), o + Vector2(0, size.y).rotated(rot)]
 			var bb := Rect2(corners[0], Vector2.ZERO)
@@ -792,7 +1303,58 @@ class _Build:
 						# Nothing in the water; the dry ground eases down to the bank over its last 2 m
 						# rather than standing over the water as a step.
 						wgt *= smoothstep(0.0, 2.0, _water_d(x, z))
-					h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
+					if world_pad:
+						# Only the skirt here: the frames are graded last (below).
+						if d > 0.0:
+							h[i] = lerpf(h[i], target, wgt * _yield_to_roads(x, z))
+					else:
+						h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
+		# A world town's lots stand 1 m apart and their skirts reach over each other: each frame is
+		# graded last, all of it at its own height (frames never overlap, so their order is moot; the
+		# planner keeps every frame clear of the street corridors), and a building on it stands on
+		# level ground to its corners (ADR-0040).
+		for pad2: Dictionary in pads:
+			if not bool(pad2.get("world", false)):
+				continue
+			var o2: Vector2 = pad2["origin"]
+			var size2: Vector2 = pad2["size"]
+			var rot2: float = pad2["rot"]
+			var target2: float = pad2["height"]
+			var bb2 := Rect2(o2, Vector2.ZERO)
+			for c2: Vector2 in [o2 + Vector2(size2.x, 0).rotated(rot2), o2 + size2.rotated(rot2), o2 + Vector2(0, size2.y).rotated(rot2)]:
+				bb2 = bb2.expand(c2)
+			_for_box(bb2, func(i: int, x: float, z: float) -> void:
+				var lp: Vector2 = (Vector2(x, z) - o2).rotated(-rot2)
+				if lp.x >= 0.0 and lp.y >= 0.0 and lp.x <= size2.x and lp.y <= size2.y:
+					h[i] = target2)
+
+	## How much a world town's pad skirt may grade a sample (ADR-0040): nothing on a road's paved
+	## corridor (half width + shoulder), easing to all of it LOT_ROAD_YIELD m beyond, so a yard never
+	## bumps a street. The road and its distance are read from the road fields as _band_roads reads them.
+	func _yield_to_roads(x: float, z: float) -> float:
+		var gx: float = clampf((x - cx0) / cs, 0.0, cn - 1.001)
+		var gz: float = clampf((z - cz0) / cs, 0.0, cn - 1.001)
+		var cx: int = mini(int(gx), cn - 2)
+		var cz: int = mini(int(gz), cn - 2)
+		var ci: int = cz * cn + cx
+		var ri: int = r_idx[ci]
+		if ri < 0:
+			ri = r_idx[ci + cn + 1]
+			if ri < 0:
+				return 1.0
+		var fx: float = gx - cx
+		var fz: float = gz - cz
+		var d: float
+		var i00: int = r_idx[ci]
+		if i00 == r_idx[ci + 1] and i00 == r_idx[ci + cn] and i00 == r_idx[ci + cn + 1]:
+			d = _bl(r_d, ci, fx, fz)
+		else:
+			var nci: int = ci + (1 if fx > 0.5 else 0) + (cn if fz > 0.5 else 0)
+			if r_idx[nci] >= 0:
+				ri = r_idx[nci]
+			d = r_d[nci]
+		var inner: float = _r_half[ri] + _r_sh[ri]
+		return smoothstep(inner, inner + LOT_ROAD_YIELD, d)
 
 	# --- 6. Surface: biome, splat, vegetation ---------------------------------------------------
 
@@ -807,19 +1369,46 @@ class _Build:
 		# A generated world's biome map (ADR-0031): each cell's id maps to an index of `biomes`.
 		var map_index := PackedInt32Array()
 		var use_map: bool = world.has_biome_map()
-		var wr: Rect2 = world.world_rect()
 		if use_map:
 			for bid: String in world.biome_ids:
 				if not biomes.has(bid):
 					biomes.append(bid)
 				map_index.append(biomes.find(bid))
 		rt.biome_ids = biomes
+		_s_map_index = map_index
+		_s_use_map = use_map
+		# The splat recipe of each biome (what the per-sample `match` on its name chose).
+		_s_kind = PackedInt32Array()
+		for bname: String in biomes:
+			match bname:
+				"conifer_forest":
+					_s_kind.append(K_CONIFER)
+				"birch_grove":
+					_s_kind.append(K_BIRCH)
+				"meadow", "yard":
+					_s_kind.append(K_MEADOW)
+				"town":
+					_s_kind.append(K_TOWN)
+				"riverbank":
+					_s_kind.append(K_RIVERBANK)
+				"rocky_slope":
+					_s_kind.append(K_ROCKY)
+				"burnt_forest":
+					_s_kind.append(K_BURN)
+				"fen":
+					_s_kind.append(K_FEN)
+				_:
+					_s_kind.append(K_OTHER)
 		# Paints and pads by bounding box first: a sample outside every box skips the exact tests
 		# (same result, and most samples are outside most of them).
-		var paint_boxes: Array[Rect2] = []
+		_paint_boxes.clear()
 		for pt0: Dictionary in paints:
 			var reach: float = float(pt0["r"]) + float(pt0["blend"]) * 0.8 + 1.0
-			paint_boxes.append(Rect2((pt0["pos"] as Vector2) - Vector2(reach, reach), Vector2(reach, reach) * 2.0))
+			_paint_boxes.append(Rect2((pt0["pos"] as Vector2) - Vector2(reach, reach), Vector2(reach, reach) * 2.0))
+			_paint_pos.append(pt0["pos"])
+			_paint_blend.append(float(pt0["blend"]))
+			_paint_r.append(float(pt0["r"]))
+			_paint_bi.append(biomes.find(pt0["biome"]))
 		_pad_boxes.clear()
 		for pad0: Dictionary in pads:
 			var o0: Vector2 = pad0["origin"]
@@ -829,219 +1418,577 @@ class _Build:
 			for c0: Vector2 in [Vector2(s0.x, 0.0), s0, Vector2(0.0, s0.y)]:
 				bb0 = bb0.expand(o0 + c0.rotated(r0))
 			_pad_boxes.append(bb0.grow(1.5))
+			_pad_origin.append(o0)
+			_pad_rot.append(float(pad0["rot"]))
+			_pad_size.append(s0)
+			_pad_bi.append(biomes.find(pad0["biome"]))
+			_pad_veg.append(float(pad0.get("veg", 0.0)))
+		var clear_boxes: Array[Rect2] = []
+		for cl0: Dictionary in clearings:
+			var cr: float = float(cl0["r"]) + 6.0
+			clear_boxes.append(Rect2((cl0["pos"] as Vector2) - Vector2(cr, cr), Vector2(cr, cr) * 2.0))
+			_cl_pos.append(cl0["pos"])
+			_cl_r.append(float(cl0["r"]))
 		var pal: PackedStringArray = rt.palette
-		var L_FOREST: int = pal.find("forest_floor")
-		var L_MOSS: int = pal.find("moss_ground")
-		var L_GRASS: int = pal.find("grass_ground")
-		var L_DIRT: int = pal.find("dirt")
-		var L_MUD: int = pal.find("mud")
-		var L_GRAVEL: int = pal.find("gravel")
-		var L_ASPHALT: int = pal.find("asphalt_cracked")
-		var L_SAND: int = pal.find("sand")
-		var count: int = n * n
-		rt.splat0.resize(count * 4)
-		rt.splat1.resize(count * 4)
-		rt.biome.resize(count)
-		rt.vegmask.resize(count)
-		var pn := FastNoiseLite.new()
-		pn.seed = world.seed + 202
-		pn.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-		pn.fractal_type = FastNoiseLite.FRACTAL_FBM
-		pn.fractal_octaves = 3
-		pn.frequency = 0.035
-		# Patch noise on the coarse grid (two channels), bilinear per sample.
-		var p1 := PackedFloat32Array()
-		var p2 := PackedFloat32Array()
-		p1.resize(cn * cn)
-		p2.resize(cn * cn)
+		# forest_floor, moss_ground, grass_ground, dirt, mud, gravel, asphalt_cracked, sand, ash_char, peat
+		_s_layers = PackedInt32Array([pal.find("forest_floor"), pal.find("moss_ground"), pal.find("grass_ground"), pal.find("dirt"),
+			pal.find("mud"), pal.find("gravel"), pal.find("asphalt_cracked"), pal.find("sand"), pal.find("ash_char"), pal.find("peat")])
+		for ri: int in road_list.size():
+			var surface: String = str(road_list[ri]["surface"])
+			_r_surf.append(_s_layers[6] if surface == "asphalt" else (_s_layers[5] if surface == "gravel" else _s_layers[3]))
+		for pad1: Dictionary in pads:
+			var psurf: String = str(pad1.get("surface", ""))
+			_pad_surf.append(-1 if psurf == "" else (_s_layers[6] if psurf == "asphalt" else (_s_layers[5] if psurf == "gravel" else _s_layers[3])))
+		for pth: Dictionary in paths:
+			var pl: Polyline2 = pth["line"]
+			_path_off.append(_path_pts.size())
+			_path_pts.append_array(pl.points)
+			_path_bounds.append(pl.bounds.grow(6.0))
+			_path_w.append(float(pth["width"]))
+		# The 32 m index: per cell, the paints, pads and clearings whose boxes reach it and the paths
+		# with a segment near it, each in ascending order, so a sample tests the same items in the
+		# same order as a walk over all of them did, less those that can't reach it.
+		_bk_n = int(ceil(rect.size.x / BUCKET)) + 1
+		var csr: Array = _bucket(_paint_boxes)
+		_bk_paint_start = csr[0]
+		_bk_paint_items = csr[1]
+		csr = _bucket(_pad_boxes)
+		_bk_pad_start = csr[0]
+		_bk_pad_items = csr[1]
+		csr = _bucket(clear_boxes)
+		_bk_clear_start = csr[0]
+		_bk_clear_items = csr[1]
+		_bucket_paths()
+		_s_pn.seed = world.seed + 202
+		_s_pn.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+		_s_pn.fractal_type = FastNoiseLite.FRACTAL_FBM
+		_s_pn.fractal_octaves = 3
+		_s_pn.frequency = 0.035
 		# Biome-map edges wander by up to ~1.5 cells (two slow channels) so they read as stands and
 		# clearings rather than the map's squares.
-		var q1 := PackedFloat32Array()
-		var q2 := PackedFloat32Array()
-		var qn := FastNoiseLite.new()
 		if use_map:
-			q1.resize(cn * cn)
-			q2.resize(cn * cn)
-			qn.seed = world.seed + 303
-			qn.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-			qn.fractal_type = FastNoiseLite.FRACTAL_FBM
-			qn.fractal_octaves = 3
-			qn.frequency = 0.0075
-		for cz: int in cn:
-			for cx: int in cn:
-				var x: float = cx0 + cx * cs
-				var z: float = cz0 + cz * cs
-				p1[cz * cn + cx] = pn.get_noise_2d(x, z) * 0.5 + 0.5
-				p2[cz * cn + cx] = pn.get_noise_2d(x + 913.0, z - 377.0) * 0.5 + 0.5
+			_s_qn.seed = world.seed + 303
+			_s_qn.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+			_s_qn.fractal_type = FastNoiseLite.FRACTAL_FBM
+			_s_qn.fractal_octaves = 3
+			_s_qn.frequency = 0.0075
+		# Patch noise on the coarse grid (two channels), bilinear per sample.
+		var patch: Array = _run_bands(cn, _band_patch)
+		_p1 = _concat_f32(patch, 0)
+		_p2 = _concat_f32(patch, 1)
+		_q1 = _concat_f32(patch, 2)
+		_q2 = _concat_f32(patch, 3)
+		if _cancelled():
+			return
+		var ratio: float = sp / cs
+		for ix: int in n:
+			var gx: float = ix * ratio
+			var cx2: int = mini(int(gx), cn - 2)
+			_s_col_c.append(cx2)
+			_s_col_f.append(gx - cx2)
+			_s_col_b.append(clampi(int(floor((_col_x[ix] - cx0) / BUCKET)), 0, _bk_n - 1))
+		var parts: Array = _run_bands(n, _band_surface)
+		rt.splat0 = _concat_bytes(parts, 0)
+		rt.splat1 = _concat_bytes(parts, 1)
+		rt.biome = _concat_bytes(parts, 2)
+		rt.vegmask = _concat_bytes(parts, 3)
+
+	## [start, items]: the indices of `boxes` (grown 1 m) that reach each index cell, ascending.
+	func _bucket(boxes: Array[Rect2]) -> Array:
+		var lists: Dictionary = {}
+		var reach: Rect2 = rect.grow(BUCKET)
+		for k: int in boxes.size():
+			var b: Rect2 = boxes[k].grow(1.0)
+			if not b.intersects(reach):
+				continue
+			for c: int in _cells_of(b):
+				if not lists.has(c):
+					lists[c] = []
+				(lists[c] as Array).append(k)
+		var cells: int = _bk_n * _bk_n
+		var start := PackedInt32Array()
+		start.resize(cells + 1)
+		var items := PackedInt32Array()
+		for c2: int in cells:
+			start[c2] = items.size()
+			if lists.has(c2):
+				items.append_array(PackedInt32Array(lists[c2]))
+		start[cells] = items.size()
+		return [start, items]
+
+	## The paths' index: per cell, each path (ascending) with a segment near the cell, and those
+	## segments (ascending). A path paints within its half width + 1.9 m of its line and segments
+	## are indexed out to half width + 4 m, so a sample's nearest segment of any path that paints it
+	## is in its cell's list, and the distance over the listed segments is closest()'s distance.
+	func _bucket_paths() -> void:
+		var lists: Dictionary = {}
+		var reach: Rect2 = rect.grow(BUCKET)
+		for pi: int in paths.size():
+			var pl: Polyline2 = paths[pi]["line"]
+			var grow: float = _path_w[pi] * 0.5 + 4.0
+			for si: int in pl.points.size() - 1:
+				var sb: Rect2 = Rect2(pl.points[si], Vector2.ZERO).expand(pl.points[si + 1]).grow(grow)
+				if not sb.intersects(reach):
+					continue
+				for c: int in _cells_of(sb):
+					if not lists.has(c):
+						lists[c] = {}
+					var per: Dictionary = lists[c]
+					if not per.has(pi):
+						per[pi] = []
+					(per[pi] as Array).append(si)
+		var cells: int = _bk_n * _bk_n
+		_bk_path_start.resize(cells + 1)
+		for c2: int in cells:
+			_bk_path_start[c2] = _bk_path_of.size()
+			if not lists.has(c2):
+				continue
+			var per2: Dictionary = lists[c2]
+			var keys: Array = per2.keys()
+			keys.sort()
+			for pi2: int in keys:
+				_bk_path_of.append(pi2)
+				_bk_path_seg_start.append(_bk_path_segs.size())
+				_bk_path_segs.append_array(PackedInt32Array(per2[pi2]))
+		_bk_path_start[cells] = _bk_path_of.size()
+		_bk_path_seg_start.append(_bk_path_segs.size())
+
+	## The index cells a world rect touches.
+	func _cells_of(b: Rect2) -> PackedInt32Array:
+		var x0: int = clampi(int(floor((b.position.x - cx0) / BUCKET)), 0, _bk_n - 1)
+		var x1: int = clampi(int(floor((b.end.x - cx0) / BUCKET)), 0, _bk_n - 1)
+		var z0: int = clampi(int(floor((b.position.y - cz0) / BUCKET)), 0, _bk_n - 1)
+		var z1: int = clampi(int(floor((b.end.y - cz0) / BUCKET)), 0, _bk_n - 1)
+		var out := PackedInt32Array()
+		for bz: int in range(z0, z1 + 1):
+			for bx: int in range(x0, x1 + 1):
+				out.append(bz * _bk_n + bx)
+		return out
+
+	func _band_patch(r0: int, r1: int) -> Array:
+		var cnn: int = cn
+		var cnt: int = (r1 - r0) * cnn
+		var a1 := PackedFloat32Array()
+		a1.resize(cnt)
+		var a2 := PackedFloat32Array()
+		a2.resize(cnt)
+		var b1 := PackedFloat32Array()
+		var b2 := PackedFloat32Array()
+		var use_map: bool = _s_use_map
+		if use_map:
+			b1.resize(cnt)
+			b2.resize(cnt)
+		var pn: FastNoiseLite = _s_pn
+		var qn: FastNoiseLite = _s_qn
+		var bstep: float = world.biome_step
+		var x_0: float = cx0
+		var z_0: float = cz0
+		var step: float = cs
+		var cancel_flag: Array = cancel
+		for cz: int in range(r0, r1):
+			if (cz - r0) % CANCEL_ROWS == CANCEL_ROWS - 1 and bool(cancel_flag[0]):
+				break
+			for cx: int in cnn:
+				var x: float = x_0 + cx * step
+				var z: float = z_0 + cz * step
+				var k: int = (cz - r0) * cnn + cx
+				a1[k] = pn.get_noise_2d(x, z) * 0.5 + 0.5
+				a2[k] = pn.get_noise_2d(x + 913.0, z - 377.0) * 0.5 + 0.5
 				if use_map:
-					q1[cz * cn + cx] = qn.get_noise_2d(x, z) * world.biome_step * 1.5
-					q2[cz * cn + cx] = qn.get_noise_2d(x - 1711.0, z + 529.0) * world.biome_step * 1.5
+					b1[k] = qn.get_noise_2d(x, z) * bstep * 1.5
+					b2[k] = qn.get_noise_2d(x - 1711.0, z + 529.0) * bstep * 1.5
+		return [a1, a2, b1, b2]
+
+	func _band_surface(z0: int, z1: int) -> Array:
+		var nn: int = n
+		var cnn: int = cn
+		var rows: int = z1 - z0
+		var s0b := PackedByteArray()
+		s0b.resize(rows * nn * 4)
+		var s1b := PackedByteArray()
+		s1b.resize(rows * nn * 4)
+		var bio := PackedByteArray()
+		bio.resize(rows * nn)
+		var vgm := PackedByteArray()
+		vgm.resize(rows * nn)
 		var w := PackedFloat32Array()
 		w.resize(8)
+		var lay: PackedInt32Array = _s_layers
+		var L_FOREST: int = lay[0]
+		var L_MOSS: int = lay[1]
+		var L_GRASS: int = lay[2]
+		var L_DIRT: int = lay[3]
+		var L_MUD: int = lay[4]
+		var L_GRAVEL: int = lay[5]
+		var L_SAND: int = lay[7]
+		var L_ASH: int = lay[8]
+		var L_PEAT: int = lay[9]
+		var hh: PackedFloat32Array = h
+		var p1: PackedFloat32Array = _p1
+		var p2: PackedFloat32Array = _p2
+		var q1: PackedFloat32Array = _q1
+		var q2: PackedFloat32Array = _q2
+		var wdd: PackedFloat32Array = w_d
+		var wkind: PackedByteArray = w_kind
+		var ridx: PackedInt32Array = r_idx
+		var rdd: PackedFloat32Array = r_d
+		var rhalf: PackedFloat64Array = _r_half
+		var rsh: PackedFloat64Array = _r_sh
+		var rsurf: PackedInt32Array = _r_surf
+		var col_c: PackedInt32Array = _s_col_c
+		var col_f: PackedFloat64Array = _s_col_f
+		var col_b: PackedInt32Array = _s_col_b
+		var col_x: PackedFloat64Array = _col_x
+		var kind: PackedInt32Array = _s_kind
+		var use_map: bool = _s_use_map
+		var map_index: PackedInt32Array = _s_map_index
+		var wrp: Vector2 = world.world_rect().position
+		var bstep: float = world.biome_step
+		var bcols: int = world.biome_cols
+		var brows: int = world.biome_rows
+		var bcells: PackedByteArray = world.biome_cells
+		var bk_n: int = _bk_n
+		var pst: PackedInt32Array = _bk_paint_start
+		var pit: PackedInt32Array = _bk_paint_items
+		var pboxes: Array[Rect2] = _paint_boxes
+		var ppos: PackedVector2Array = _paint_pos
+		var pblend: PackedFloat64Array = _paint_blend
+		var prad: PackedFloat64Array = _paint_r
+		var pbi: PackedInt32Array = _paint_bi
+		var dst: PackedInt32Array = _bk_pad_start
+		var dit: PackedInt32Array = _bk_pad_items
+		var dboxes: Array[Rect2] = _pad_boxes
+		var dorg: PackedVector2Array = _pad_origin
+		var drot: PackedFloat64Array = _pad_rot
+		var dsize: PackedVector2Array = _pad_size
+		var dbi: PackedInt32Array = _pad_bi
+		var dveg: PackedFloat64Array = _pad_veg
+		var dsurf: PackedInt32Array = _pad_surf
+		var cst: PackedInt32Array = _bk_clear_start
+		var cit: PackedInt32Array = _bk_clear_items
+		var clpos: PackedVector2Array = _cl_pos
+		var clr: PackedFloat64Array = _cl_r
+		var hst: PackedInt32Array = _bk_path_start
+		var hof: PackedInt32Array = _bk_path_of
+		var hss: PackedInt32Array = _bk_path_seg_start
+		var hsegs: PackedInt32Array = _bk_path_segs
+		var hpts: PackedVector2Array = _path_pts
+		var hoff: PackedInt32Array = _path_off
+		var hbounds: Array[Rect2] = _path_bounds
+		var hw: PackedFloat64Array = _path_w
+		var cancel_flag: Array = cancel
 		var ratio: float = sp / cs
+		var spc: float = sp
+		var z_0: float = cz0
 		var b_default: int = 0
-		for iz: int in n:
+		for iz: int in range(z0, z1):
+			if (iz - z0) % CANCEL_ROWS == CANCEL_ROWS - 1 and bool(cancel_flag[0]):
+				break
 			var gz: float = iz * ratio
-			var cz2: int = mini(int(gz), cn - 2)
+			var cz2: int = mini(int(gz), cnn - 2)
 			var fz: float = gz - cz2
-			var z: float = cz0 + iz * sp
-			var row: int = iz * n
-			for ix: int in n:
-				var gx: float = ix * ratio
-				var cx2: int = mini(int(gx), cn - 2)
-				var fx: float = gx - cx2
-				var ci: int = cz2 * cn + cx2
-				var x: float = cx0 + ix * sp
-				var i: int = row + ix
-				var n1: float = _bl(p1, ci, fx, fz)
-				var n2: float = _bl(p2, ci, fx, fz)
+			var z: float = z_0 + iz * spc
+			var row: int = iz * nn
+			var lrow: int = (iz - z0) * nn
+			var brow: int = clampi(floori((z - z_0) / BUCKET), 0, bk_n - 1) * bk_n
+			var hrow_u: int = maxi(iz - 1, 0) * nn
+			var hrow_d: int = mini(iz + 1, nn - 1) * nn
+			for ix: int in nn:
+				var cx2: int = col_c[ix]
+				var fx: float = col_f[ix]
+				var ci: int = cz2 * cnn + cx2
+				var x: float = col_x[ix]
+				var li: int = lrow + ix
+				var cell: int = brow + col_b[ix]
+				# Patch noise, bilinear (_bl; its values are never the distance fields' 1e9 "far").
+				var a: float = p1[ci]
+				var top: float = a + (p1[ci + 1] - a) * fx
+				var c: float = p1[ci + cnn]
+				var n1: float = top + ((c + (p1[ci + cnn + 1] - c) * fx) - top) * fz
+				a = p2[ci]
+				top = a + (p2[ci + 1] - a) * fx
+				c = p2[ci + cnn]
+				var n2: float = top + ((c + (p2[ci + cnn + 1] - c) * fx) - top) * fz
 				# Slope from neighbours.
-				var hl: float = h[row + maxi(ix - 1, 0)]
-				var hr: float = h[row + mini(ix + 1, n - 1)]
-				var hu: float = h[maxi(iz - 1, 0) * n + ix]
-				var hd: float = h[mini(iz + 1, n - 1) * n + ix]
-				var grad: float = sqrt((hr - hl) * (hr - hl) + (hd - hu) * (hd - hu)) / (2.0 * sp)
+				var hl: float = hh[row + maxi(ix - 1, 0)]
+				var hr: float = hh[row + mini(ix + 1, nn - 1)]
+				var hu: float = hh[hrow_u + ix]
+				var hd: float = hh[hrow_d + ix]
+				var grad: float = sqrt((hr - hl) * (hr - hl) + (hd - hu) * (hd - hu)) / (2.0 * spc)
 				var slope: float = rad_to_deg(atan(grad))
 				# Biome.
 				var bi: int = b_default
 				if use_map:
-					var bx: int = clampi(int(floor((x + _bl(q1, ci, fx, fz) - wr.position.x) / world.biome_step)), 0, world.biome_cols - 1)
-					var bz: int = clampi(int(floor((z + _bl(q2, ci, fx, fz) - wr.position.y) / world.biome_step)), 0, world.biome_rows - 1)
-					var mi: int = world.biome_cells[bz * world.biome_cols + bx]
+					a = q1[ci]
+					top = a + (q1[ci + 1] - a) * fx
+					c = q1[ci + cnn]
+					var m1: float = top + ((c + (q1[ci + cnn + 1] - c) * fx) - top) * fz
+					a = q2[ci]
+					top = a + (q2[ci + 1] - a) * fx
+					c = q2[ci + cnn]
+					var m2: float = top + ((c + (q2[ci + cnn + 1] - c) * fx) - top) * fz
+					var bx: int = clampi(floori((x + m1 - wrp.x) / bstep), 0, bcols - 1)
+					var bz: int = clampi(floori((z + m2 - wrp.y) / bstep), 0, brows - 1)
+					var mi: int = bcells[bz * bcols + bx]
 					if mi < map_index.size():
 						bi = map_index[mi]
-				for pidx: int in paints.size():
-					if not paint_boxes[pidx].has_point(Vector2(x, z)):
+				for j: int in range(pst[cell], pst[cell + 1]):
+					var pidx: int = pit[j]
+					if not pboxes[pidx].has_point(Vector2(x, z)):
 						continue
-					var pt: Dictionary = paints[pidx]
-					var dd: float = Vector2(x, z).distance_to(pt["pos"]) + (n1 - 0.5) * float(pt["blend"]) * 1.6
-					if dd < float(pt["r"]):
-						bi = biomes.find(pt["biome"])
+					var dd: float = Vector2(x, z).distance_to(ppos[pidx]) + (n1 - 0.5) * pblend[pidx] * 1.6
+					if dd < prad[pidx]:
+						bi = pbi[pidx]
 				var wd: float = 1.0e9
-				var wl: float = 0.0
 				var wk: int = 0
-				if w_d[ci] < 60.0 or w_d[ci + cn + 1] < 60.0:
-					wd = _bl(w_d, ci, fx, fz)
-					wl = _bl(w_lvl, ci, fx, fz)
-					wk = w_kind[ci]
-				if wd < 14.0 + n2 * 10.0:
+				if wdd[ci] < 60.0 or wdd[ci + cnn + 1] < 60.0:
+					# _bl(w_d, ci, fx, fz)
+					var wa: float = wdd[ci]
+					var wb: float = wdd[ci + 1]
+					var wc: float = wdd[ci + cnn]
+					var wdx: float = wdd[ci + cnn + 1]
+					if wa > 1.0e8 or wb > 1.0e8 or wc > 1.0e8 or wdx > 1.0e8:
+						wd = minf(minf(wa, wb), minf(wc, wdx))
+					else:
+						var wtop: float = wa + (wb - wa) * fx
+						wd = wtop + ((wc + (wdx - wc) * fx) - wtop) * fz
+					wk = wkind[ci]
+				# A fen keeps its own wet margins (ADR-0041); other ground turns riverbank by water.
+				if wd < 14.0 + n2 * 10.0 and kind[bi] != K_FEN:
 					bi = 1
-				var pad_hit: int = _pad_at(x, z)
+				var pad_hit: int = -1
+				var pad_in: float = 0.0
+				for j2: int in range(dst[cell], dst[cell + 1]):
+					var pi: int = dit[j2]
+					if not dboxes[pi].has_point(Vector2(x, z)):
+						continue
+					var lp: Vector2 = (Vector2(x, z) - dorg[pi]).rotated(-drot[pi])
+					var size: Vector2 = dsize[pi]
+					if lp.x >= -1.0 and lp.y >= -1.0 and lp.x <= size.x + 1.0 and lp.y <= size.y + 1.0:
+						pad_hit = pi
+						# How far inside the pad's edge (a yard's grass keeps to its edges).
+						pad_in = minf(minf(lp.x, size.x - lp.x), minf(lp.y, size.y - lp.y))
+						break
 				if pad_hit >= 0:
-					bi = biomes.find(pads[pad_hit]["biome"])
+					bi = dbi[pad_hit]
 				if slope > 34.0 + n1 * 6.0:
 					bi = 2
-				rt.biome[i] = bi
-				# Splat weights.
+				bio[li] = bi
+				# Splat weights (_add inlined: a layer the palette lacks (-1) or a zero amount adds
+				# nothing).
 				w.fill(0.0)
-				var bname: String = biomes[bi]
-				match bname:
-					"conifer_forest":
-						_add(w, L_FOREST, 1.0)
-						_add(w, L_MOSS, smoothstep(0.45, 0.75, n1) * 0.9)
-						_add(w, L_DIRT, smoothstep(0.7, 0.9, n2) * 0.35)
-					"birch_grove":
-						_add(w, L_GRASS, 0.8)
-						_add(w, L_FOREST, smoothstep(0.4, 0.7, n1))
-						_add(w, L_MOSS, smoothstep(0.65, 0.85, n2) * 0.5)
-					"meadow":
-						_add(w, L_GRASS, 1.0)
-						_add(w, L_DIRT, smoothstep(0.68, 0.9, n2) * 0.45)
-					"town":
-						_add(w, L_GRASS, 0.9)
-						_add(w, L_DIRT, smoothstep(0.55, 0.8, n1) * 0.6)
-						_add(w, L_GRAVEL, smoothstep(0.7, 0.9, n2) * 0.5)
-					"riverbank":
-						_add(w, L_GRASS, smoothstep(2.0, 12.0, wd))
-						_add(w, L_GRAVEL, 1.0 - smoothstep(1.0, 6.0 + n1 * 4.0, wd))
-						_add(w, L_MUD, (1.0 - smoothstep(0.0, 9.0, absf(wd - 3.0))) * smoothstep(0.35, 0.6, n2))
-					"rocky_slope":
-						_add(w, L_GRAVEL, 0.8)
-						_add(w, L_DIRT, 0.5)
-						_add(w, L_MOSS, smoothstep(0.6, 0.8, n1) * 0.4)
-					_:
-						_add(w, L_FOREST, 1.0)
-				if wk == 2 and wd < 6.0 + n1 * 3.0:
+				var am: float
+				# An if chain, not `match` (which is slower and serialises threads).
+				var kb: int = kind[bi]
+				if kb == K_CONIFER:
+					if L_FOREST >= 0:
+						w[L_FOREST] += 1.0
+					am = smoothstep(0.45, 0.75, n1) * 0.9
+					if L_MOSS >= 0 and am > 0.0:
+						w[L_MOSS] += am
+					am = smoothstep(0.7, 0.9, n2) * 0.35
+					if L_DIRT >= 0 and am > 0.0:
+						w[L_DIRT] += am
+				elif kb == K_BIRCH:
+					if L_GRASS >= 0:
+						w[L_GRASS] += 0.8
+					am = smoothstep(0.4, 0.7, n1)
+					if L_FOREST >= 0 and am > 0.0:
+						w[L_FOREST] += am
+					am = smoothstep(0.65, 0.85, n2) * 0.5
+					if L_MOSS >= 0 and am > 0.0:
+						w[L_MOSS] += am
+				elif kb == K_MEADOW:
+					if L_GRASS >= 0:
+						w[L_GRASS] += 1.0
+					am = smoothstep(0.68, 0.9, n2) * 0.45
+					if L_DIRT >= 0 and am > 0.0:
+						w[L_DIRT] += am
+				elif kb == K_TOWN:
+					if L_GRASS >= 0:
+						w[L_GRASS] += 0.9
+					am = smoothstep(0.55, 0.8, n1) * 0.6
+					if L_DIRT >= 0 and am > 0.0:
+						w[L_DIRT] += am
+					am = smoothstep(0.7, 0.9, n2) * 0.5
+					if L_GRAVEL >= 0 and am > 0.0:
+						w[L_GRAVEL] += am
+				elif kb == K_RIVERBANK:
+					am = smoothstep(2.0, 12.0, wd)
+					if L_GRASS >= 0 and am > 0.0:
+						w[L_GRASS] += am
+					am = 1.0 - smoothstep(1.0, 6.0 + n1 * 4.0, wd)
+					if L_GRAVEL >= 0 and am > 0.0:
+						w[L_GRAVEL] += am
+					am = (1.0 - smoothstep(0.0, 9.0, absf(wd - 3.0))) * smoothstep(0.35, 0.6, n2)
+					if L_MUD >= 0 and am > 0.0:
+						w[L_MUD] += am
+				elif kb == K_ROCKY:
+					if L_GRAVEL >= 0:
+						w[L_GRAVEL] += 0.8
+					if L_DIRT >= 0:
+						w[L_DIRT] += 0.5
+					am = smoothstep(0.6, 0.8, n1) * 0.4
+					if L_MOSS >= 0 and am > 0.0:
+						w[L_MOSS] += am
+				elif kb == K_BURN:
+					# Ash and char, grass coming back in drifts, bare burnt soil between.
+					if L_ASH >= 0:
+						w[L_ASH] += 1.0
+					elif L_DIRT >= 0:
+						w[L_DIRT] += 1.0
+					am = smoothstep(0.42, 0.78, n1) * 0.85
+					if L_GRASS >= 0 and am > 0.0:
+						w[L_GRASS] += am
+					am = smoothstep(0.62, 0.88, n2) * 0.45
+					if L_DIRT >= 0 and am > 0.0:
+						w[L_DIRT] += am
+				elif kb == K_FEN:
+					# Peat, sphagnum carpets on the rises, sedge meadow, the pools' muddy margins.
+					if L_PEAT >= 0:
+						w[L_PEAT] += 1.0
+					elif L_MUD >= 0:
+						w[L_MUD] += 1.0
+					am = smoothstep(0.42, 0.75, n1) * 0.85
+					if L_MOSS >= 0 and am > 0.0:
+						w[L_MOSS] += am
+					am = smoothstep(0.55, 0.85, n2) * 0.55
+					if L_GRASS >= 0 and am > 0.0:
+						w[L_GRASS] += am
+					am = (1.0 - smoothstep(0.5, 3.5 + n1 * 3.0, wd)) * 0.9
+					if L_MUD >= 0 and am > 0.0:
+						w[L_MUD] += am
+				else:
+					if L_FOREST >= 0:
+						w[L_FOREST] += 1.0
+				if wk == 2 and wd < 6.0 + n1 * 3.0 and kb != K_FEN:
 					# Forest lakes and ponds have muddy, stony margins with the odd sandy cove: a sand
 					# ring all the way round read as a beach, and from the trees as a bleached halo.
 					var shore: float = 1.0 - smoothstep(-2.0, 6.0, wd)
 					var cove: float = smoothstep(0.6, 0.78, n2)
-					_add(w, L_SAND, shore * 1.5 * cove)
-					_add(w, L_MUD, shore * 1.2 * (1.0 - cove) * (0.45 + 0.55 * smoothstep(0.3, 0.65, n1)))
-					_add(w, L_GRAVEL, shore * 0.7 * (1.0 - cove))
-				if wd < 0.0:
+					am = shore * 1.5 * cove
+					if L_SAND >= 0 and am > 0.0:
+						w[L_SAND] += am
+					am = shore * 1.2 * (1.0 - cove) * (0.45 + 0.55 * smoothstep(0.3, 0.65, n1))
+					if L_MUD >= 0 and am > 0.0:
+						w[L_MUD] += am
+					am = shore * 0.7 * (1.0 - cove)
+					if L_GRAVEL >= 0 and am > 0.0:
+						w[L_GRAVEL] += am
+				if wd < 0.0 and kb == K_FEN:
+					# A fen pool's bed is soft peat and muck.
 					w.fill(0.0)
-					_add(w, L_MUD, 0.7)
-					_add(w, L_GRAVEL, 0.5 + n2 * 0.5)
+					if L_PEAT >= 0:
+						w[L_PEAT] += 0.8
+					if L_MUD >= 0:
+						w[L_MUD] += 0.5
+				elif wd < 0.0:
+					w.fill(0.0)
+					if L_MUD >= 0:
+						w[L_MUD] += 0.7
+					am = 0.5 + n2 * 0.5
+					if L_GRAVEL >= 0 and am > 0.0:
+						w[L_GRAVEL] += am
+				# A paved pad (a world town's square) is its surface, under the roads.
+				if pad_hit >= 0 and dsurf[pad_hit] >= 0:
+					w.fill(0.0)
+					w[dsurf[pad_hit]] += 2.0
 				var veg: float = 1.0
-				if wd < 2.0:
+				if wd < 2.0 and kb == K_FEN:
+					# Cattails, bulrush and drowned snags stand in a fen's pools: the scatter keeps only
+					# species that wade there (SpeciesDef.wade_depth, ADR-0041).
+					veg = 0.55 if wd < -0.25 else 0.55 + 0.45 * smoothstep(-0.25, 2.0, wd)
+				elif wd < 2.0:
 					# Sedges and horsetail grow right down to the waterline (and a little into it);
 					# thinning them over the last two metres left a bare ring round every shore.
 					veg = 0.0 if wd < -0.25 else 0.4 + 0.6 * smoothstep(-0.25, 2.0, wd)
 				# Roads.
-				var ri: int = r_idx[ci]
+				var ri: int = ridx[ci]
 				if ri < 0:
-					ri = r_idx[ci + cn + 1]
+					ri = ridx[ci + cnn + 1]
 				if ri >= 0:
-					var rd: float = _bl(r_d, ci, fx, fz)
-					var r: Dictionary = road_list[ri]
-					var half: float = float(r["width"]) * 0.5
-					var sh: float = float(r["shoulder"])
+					# _bl(r_d, ci, fx, fz)
+					var ra: float = rdd[ci]
+					var rb: float = rdd[ci + 1]
+					var rc: float = rdd[ci + cnn]
+					var rdx: float = rdd[ci + cnn + 1]
+					var rd: float
+					if ra > 1.0e8 or rb > 1.0e8 or rc > 1.0e8 or rdx > 1.0e8:
+						rd = minf(minf(ra, rb), minf(rc, rdx))
+					else:
+						var rtop: float = ra + (rb - ra) * fx
+						rd = rtop + ((rc + (rdx - rc) * fx) - rtop) * fz
+					var half: float = rhalf[ri]
+					var sh: float = rsh[ri]
 					var on_road: float = 1.0 - smoothstep(half - 0.6 + n2 * 0.8, half + 0.4 + n2 * 0.8, rd)
 					var on_sh: float = (1.0 - smoothstep(half + sh * 0.5, half + sh + 1.0, rd)) * (1.0 - on_road)
 					if on_road > 0.0 or on_sh > 0.0:
-						var surf: int = L_ASPHALT if str(r["surface"]) == "asphalt" else (L_GRAVEL if str(r["surface"]) == "gravel" else L_DIRT)
-						for c: int in 8:
-							w[c] *= (1.0 - on_road) * (1.0 - on_sh * 0.6)
-						_add(w, surf, on_road * 2.0)
-						_add(w, L_GRAVEL if surf != L_GRAVEL else L_DIRT, on_sh * 1.2)
+						var surf: int = rsurf[ri]
+						for k: int in 8:
+							w[k] *= (1.0 - on_road) * (1.0 - on_sh * 0.6)
+						am = on_road * 2.0
+						if surf >= 0 and am > 0.0:
+							w[surf] += am
+						var shl: int = L_GRAVEL if surf != L_GRAVEL else L_DIRT
+						am = on_sh * 1.2
+						if shl >= 0 and am > 0.0:
+							w[shl] += am
 					veg = minf(veg, smoothstep(half + sh * 0.5, half + sh + 3.0, rd))
-				# Paths.
-				for path: Dictionary in paths:
-					var pl: Polyline2 = path["line"]
-					if not pl.bounds.grow(6.0).has_point(Vector2(x, z)):
+				# Paths: the distance to the nearest listed segment, with Polyline2.closest()'s
+				# arithmetic (and its single-precision result, it returns it in a Vector3).
+				for e: int in range(hst[cell], hst[cell + 1]):
+					var ph: int = hof[e]
+					if not hbounds[ph].has_point(Vector2(x, z)):
 						continue
-					var pd: float = pl.closest(Vector2(x, z)).x
-					var pw: float = float(path["width"]) * 0.5 + (n2 - 0.5) * 0.8
+					var pp := Vector2(x, z)
+					var best_d2: float = INF
+					var off: int = hoff[ph]
+					for q: int in range(hss[e], hss[e + 1]):
+						var si: int = off + hsegs[q]
+						var sa: Vector2 = hpts[si]
+						var ab: Vector2 = hpts[si + 1] - sa
+						var l2: float = ab.length_squared()
+						var t: float = 0.0 if l2 <= 0.0 else clampf((pp - sa).dot(ab) / l2, 0.0, 1.0)
+						var qq: Vector2 = sa + ab * t
+						var d2: float = pp.distance_squared_to(qq)
+						if d2 < best_d2:
+							best_d2 = d2
+					var pd: float = Vector2(sqrt(best_d2), 0.0).x
+					var pw: float = hw[ph] * 0.5 + (n2 - 0.5) * 0.8
 					if pd < pw + 1.5:
 						var pk: float = 1.0 - smoothstep(pw - 0.4, pw + 1.2, pd)
-						for c: int in 8:
-							w[c] *= 1.0 - pk * 0.8
-						_add(w, L_DIRT, pk * 1.5)
+						for k2: int in 8:
+							w[k2] *= 1.0 - pk * 0.8
+						am = pk * 1.5
+						if L_DIRT >= 0 and am > 0.0:
+							w[L_DIRT] += am
 						veg = minf(veg, smoothstep(pw - 0.3, pw + 1.5, pd))
 				if pad_hit >= 0:
-					veg = 0.0
-				for cl: Dictionary in clearings:
-					var dc: float = Vector2(x, z).distance_to(cl["pos"])
-					if dc < float(cl["r"]) + 6.0:
-						veg = minf(veg, smoothstep(float(cl["r"]), float(cl["r"]) + 6.0, dc))
+					# Bare under a building's pad; a world town's yard keeps grass round its edges, where
+					# no building stands (a generated one keeps 3 m from its lot's sides and back and its
+					# setback from the front; a floor 0.15 m up hid no grass).
+					var keep: float = dveg[pad_hit]
+					if keep > 0.0:
+						keep *= 1.0 - smoothstep(YARD_EDGE, YARD_EDGE + 1.0, pad_in)
+					veg = minf(veg, keep)
+				for j3: int in range(cst[cell], cst[cell + 1]):
+					var ck: int = cit[j3]
+					var dc: float = Vector2(x, z).distance_to(clpos[ck])
+					if dc < clr[ck] + 6.0:
+						veg = minf(veg, smoothstep(clr[ck], clr[ck] + 6.0, dc))
 				# Normalize + quantize.
 				var total: float = 0.0
-				for c: int in 8:
-					total += w[c]
+				for k3: int in 8:
+					total += w[k3]
 				if total <= 0.0:
 					w[maxi(L_FOREST, 0)] = 1.0
 					total = 1.0
-				var o4: int = i * 4
-				for c: int in 4:
-					rt.splat0[o4 + c] = int(round(w[c] / total * 255.0))
-					rt.splat1[o4 + c] = int(round(w[c + 4] / total * 255.0))
-				rt.vegmask[i] = int(round(clampf(veg, 0.0, 1.0) * 255.0))
-
-	func _pad_at(x: float, z: float) -> int:
-		for pi: int in pads.size():
-			if pi < _pad_boxes.size() and not _pad_boxes[pi].has_point(Vector2(x, z)):
-				continue
-			var pad: Dictionary = pads[pi]
-			var lp: Vector2 = (Vector2(x, z) - (pad["origin"] as Vector2)).rotated(-float(pad["rot"]))
-			var size: Vector2 = pad["size"]
-			if lp.x >= -1.0 and lp.y >= -1.0 and lp.x <= size.x + 1.0 and lp.y <= size.y + 1.0:
-				return pi
-		return -1
-
-	static func _add(w: PackedFloat32Array, layer: int, amount: float) -> void:
-		if layer >= 0 and amount > 0.0:
-			w[layer] += amount
+				var o4: int = li * 4
+				for k4: int in 4:
+					s0b[o4 + k4] = roundi(w[k4] / total * 255.0)
+					s1b[o4 + k4] = roundi(w[k4 + 4] / total * 255.0)
+				vgm[li] = roundi(clampf(veg, 0.0, 1.0) * 255.0)
+		return [s0b, s1b, bio, vgm]
 
 	# --- Metadata ----------------------------------------------------------------------------
 
@@ -1056,42 +2003,69 @@ class _Build:
 			var widths: Array = []
 			var levels: Array = []
 			var arcs: Array = []
-			var s: float = 0.0
-			while s <= line.total_length:
+			# Samples every 6 m of arc from the source, as ever, but only along the stretch near
+			# this region (a long river's other samples can't land in its margin).
+			var kmax: int = int(line.total_length / 6.0)
+			while 6.0 * (kmax + 1) <= line.total_length:
+				kmax += 1
+			while kmax > 0 and 6.0 * kmax > line.total_length:
+				kmax -= 1
+			for k: int in _arc_ks(line, margin, 6.0, kmax):
+				var s: float = k * 6.0
 				var p: Vector2 = line.point_at(s)
 				if margin.has_point(p):
 					pts.append([p.x, p.y])
 					widths.append(line.value_at(r["width"], s))
 					levels.append(line.value_at(r["level"], s))
 					arcs.append(s)
-				s += 6.0
 			if pts.size() > 1:
 				rt.water.append({"kind": "river", "id": r["id"], "points": pts, "widths": widths, "levels": levels, "arcs": arcs})
 		for l: Dictionary in world.lakes:
 			if (l["bounds"] as Rect2).intersects(margin):
 				rt.water.append({"kind": "lake", "id": l["id"], "level": l["level"], "polygon": _poly_to_array(l["polygon"])})
-		for f: Dictionary in region.get("features", []):
+		var feats: Array = region.get("features", [])
+		for fi: int in feats.size():
+			var f: Dictionary = feats[fi]
 			match str(f.get("type", "")):
 				"lake":
 					var poly: PackedVector2Array = _lake_poly(f)
-					rt.water.append({"kind": "lake", "id": str(f.get("id", "lake")), "level": float(f["_level"]), "polygon": _poly_to_array(poly)})
+					rt.water.append({"kind": "lake", "id": str(f.get("id", "lake")), "level": float(_lake_levels[fi]), "polygon": _poly_to_array(poly)})
 				"spawn":
 					var sp2: Vector2 = _v2(f["pos"])
 					rt.spawns[str(f["id"])] = {"pos": [sp2.x, hf.sample(sp2.x, sp2.y), sp2.y], "yaw": float(f.get("yaw", 0.0)), "props": f.get("props", [])}
 				"frontier":
 					rt.frontiers.append(f)
 		for pad: Dictionary in pads:
+			if bool(pad.get("world", false)):
+				continue
 			var o: Vector2 = pad["origin"]
 			rt.placements.append({"kind": pad["kind"], "def": pad["def"], "id": pad["id"], "origin": [o.x, float(pad.get("height", hf.sample(o.x, o.y))), o.y],
 				"rotation": rad_to_deg(float(pad["rot"])), "size": [pad["size"].x, pad["size"].y]})
+		# World towns (ADR-0040): a lot is placed by the region holding its frame's centre (one owner
+		# each; origin the frame's centre at the lot's height, rotation -yaw as the composer turns),
+		# and every region the town touches places the fixtures standing in its rect (`town`).
+		for tw: Dictionary in _towns:
+			var fw: FrameworkDef = tw["fw"]
+			for lv: Variant in fw.lots:
+				var l: Dictionary = lv
+				if not l.has("frame"):
+					continue
+				var f: Array = l["frame"]
+				if world.region_at(float(f[0]), float(f[1])) != region_id:
+					continue
+				rt.placements.append({"kind": "lot", "def": String(fw.id), "town": tw["id"], "lot": str(l.get("id", "")), "id": "%s/%s" % [tw["id"], l.get("id", "")],
+					"origin": [float(f[0]), float(l.get("y", 0.0)), float(f[1])], "rotation": -float(f[4]), "size": [float(f[2]), float(f[3])]})
+			rt.placements.append({"kind": "town", "def": String(fw.id), "id": tw["id"], "origin": [0.0, 0.0, 0.0], "rotation": 0.0,
+				"rect": [rect.position.x, rect.position.y, rect.size.x, rect.size.y]})
 		for r: Dictionary in road_list:
 			var line: Polyline2 = r["line"]
 			if not line.bounds.grow(16.0).intersects(margin) or not r.has("profile"):
 				continue
 			var pts: Array = []
 			var prof: PackedFloat32Array = r["profile"]
-			for k: int in prof.size():
-				var p: Vector2 = line.point_at(k * float(r["step"]))
+			var step: float = float(r["step"])
+			for k: int in _arc_ks(line, margin, step, prof.size() - 1):
+				var p: Vector2 = line.point_at(k * step)
 				if margin.has_point(p):
 					pts.append([p.x, prof[k], p.y])
 			rt.roads.append({"id": r["id"], "surface": r["surface"], "width": r["width"], "points": pts, "markings": r.get("markings", true)})
@@ -1099,6 +2073,30 @@ class _Build:
 				var a: Vector2 = line.point_at(float(span[0]))
 				var bpt: Vector2 = line.point_at(float(span[1]))
 				rt.bridges.append({"road": r["id"], "from": [a.x, float(span[2]), a.y], "to": [bpt.x, float(span[2]), bpt.y], "width": float(r["width"]) + 1.0})
+
+	## The k in 0..kmax, ascending, whose arc length k * step can lie in `box`: those on segments
+	## near it (grown 1 m against rounding), widened by one step each way. A point at arc s lies on
+	## the segment holding s, so every k whose point is inside `box` is among them.
+	static func _arc_ks(line: Polyline2, box: Rect2, step: float, kmax: int) -> PackedInt32Array:
+		var out := PackedInt32Array()
+		var pts: PackedVector2Array = line.points
+		var nseg: int = pts.size() - 1
+		if nseg < 1:
+			for k: int in kmax + 1:
+				out.append(k)
+			return out
+		var grown: Rect2 = box.grow(1.0)
+		var last: int = -1
+		for si: int in nseg:
+			var sb: Rect2 = Rect2(pts[si], Vector2.ZERO).expand(pts[si + 1]).grow(1.0)
+			if not sb.intersects(grown):
+				continue
+			var k0: int = maxi(int(floor(line.lengths[si] / step)) - 1, 0)
+			var k1: int = kmax if si == nseg - 1 else mini(int(ceil(line.lengths[si + 1] / step)) + 1, kmax)
+			for k: int in range(maxi(k0, last + 1), k1 + 1):
+				out.append(k)
+			last = maxi(last, k1)
+		return out
 
 	# --- Helpers -----------------------------------------------------------------------------
 

@@ -6,6 +6,7 @@ extends CanvasLayer
 
 var _loading: Control
 var _loading_label: Label
+var _loading_map: LoadingMap
 var _loading_bar: ProgressBar
 var _hud: Control
 var _crosshair: Control
@@ -56,8 +57,7 @@ func _ready() -> void:
 	_build_pause()
 	Events.player_status_message.connect(message)
 	Events.player_damaged.connect(_on_player_damaged)
-	Events.horde_night_warning.connect(func(_d: int, h: float) -> void: message("The ground is humming. %d hour%s." % [int(h), "" if int(h) == 1 else "s"], &"warning"))
-	Events.horde_night_started.connect(func(_d: int) -> void: message("THE HUM HAS BEGUN.", &"danger"))
+	# The Hum's warnings and its start are announced by HumDirector alone (with the forecast).
 	Events.horde_night_ended.connect(_on_hum_ended)
 	Events.game_saved.connect(func(_slot: String, ok: bool) -> void:
 		# Autosaves announce themselves in their own line ("Rested. Progress saved.").
@@ -105,6 +105,11 @@ func _build_loading() -> void:
 	_loading_bar.size = Vector2(520, 10)
 	_loading_bar.show_percentage = false
 	_loading.add_child(_loading_bar)
+	_loading_map = LoadingMap.new()
+	_loading_map.position = Vector2(680, 80)
+	_loading_map.size = Vector2(520, 520)
+	_loading_map.visible = false
+	_loading.add_child(_loading_map)
 	var tip := Label.new()
 	tip.text = "Night is darker than you think. Carry a light — and remember they see it too."
 	tip.add_theme_color_override(&"font_color", Color(0.45, 0.47, 0.44))
@@ -114,11 +119,20 @@ func _build_loading() -> void:
 	_loading.add_child(tip)
 
 
-func show_loading(text: String, progress: float) -> void:
+## `map`: the world's map (random worlds) and `marks` its region states (LoadingMap); a null map
+## leaves the last one shown.
+func show_loading(text: String, progress: float, map: Texture2D = null, marks: Dictionary = {}) -> void:
 	_loading.visible = true
 	_hud.visible = false
 	_loading_label.text = text
 	_loading_bar.value = progress * 100.0
+	if map != null:
+		_loading_map.set_map(map, marks)
+
+
+## What the loading screen says now ("" once it is hidden).
+func loading_text() -> String:
+	return _loading_label.text if _loading != null and _loading.visible else ""
 
 
 func hide_loading() -> void:
@@ -270,13 +284,15 @@ func _process(delta: float) -> void:
 		return
 	var p: Player = w.player
 	if p.interaction != null:
-		_prompt.text = ("[E] " + p.interaction.prompt) if p.interaction.prompt != "" else ""
+		_prompt.text = ("[%s] %s" % [PlayerInteraction.key_label(&"interact"), p.interaction.prompt]) if p.interaction.prompt != "" else ""
 		var ht: float = p.interaction.hold_t / maxf(p.interaction.hold_needed, 0.001) if p.interaction.hold_needed > 0.0 else 0.0
 		_hold.visible = ht > 0.0
 		_hold.value = ht * 100.0
 		var b: Node = w.get(&"building")
 		var place_why: String = str(b.call(&"placement_hint")) if b != null else ""
-		_tool_hint.text = place_why if place_why != "" else p.interaction.tool_hint
+		# Under the prompt: why a placement can't go, else the held tool's hint, else what holding
+		# the cancel key on the target does (take a blueprint ghost down).
+		_tool_hint.text = place_why if place_why != "" else (p.interaction.tool_hint if p.interaction.tool_hint != "" else p.interaction.alt_prompt)
 	_update_belt(p.state, delta)
 	if not _hits.is_empty():
 		for h: Dictionary in _hits:
@@ -486,7 +502,7 @@ func _build_pause() -> void:
 	title.add_theme_font_size_override(&"font_size", 40)
 	box.add_child(title)
 	for spec: Array in [["Resume", toggle_pause], ["Save", func() -> void: Game.save_game()],
-			["Load last save", _confirm_load], ["Options", _open_options],
+			["Load last save", _confirm_load], ["Options", _open_options], ["Controls", _open_options.bind("Controls")],
 			["Save and quit to menu", _save_and_quit], ["Quit without saving", _confirm_quit]]:
 		var b := Button.new()
 		b.text = spec[0]
@@ -531,11 +547,12 @@ func _save_and_quit() -> void:
 	Game.quit_to_menu()
 
 
-func _open_options() -> void:
+func _open_options(tab: String = "General") -> void:
 	var panel := OptionsPanel.new()
+	panel.open_tab = tab
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = (get_viewport().get_visible_rect().size - Vector2(620, 560)) * 0.5
+	panel.position = (get_viewport().get_visible_rect().size - Vector2(680, 660)) * 0.5
 	_pause.visible = false
 	panel.closed.connect(func() -> void: _pause.visible = true)
 

@@ -14,7 +14,7 @@
 
     {"id": "cordon_search", "name": "Search ten containers", "description": "Cupboards, glove boxes, cash registers. People left in a hurry.",
      "chapter": 2, "chapter_name": "The Cordon", "order": 1, "event": "loot", "count": 10, "reward": {"xp": 120, "items": {"cloth_bandage": 2}}},
-    {"id": "cordon_enter", "name": "Go inside a building in Pell's Crossing", "description": "Listen at the door first. Sleepers don't stay asleep.",
+    {"id": "cordon_enter", "name": "Go inside a building", "description": "Listen at the door first. Sleepers don't stay asleep.",
      "chapter": 2, "order": 2, "event": "enter_poi", "reward": {"xp": 60}},
     {"id": "cordon_kill", "name": "Put down ten Hollowed", "description": "Head first. A Hollow without legs still crawls.",
      "chapter": 2, "order": 3, "event": "kill", "count": 10, "reward": {"xp": 150, "items": {"ammo_38": 6}}},
@@ -22,7 +22,7 @@
      "chapter": 2, "order": 4, "event": "read_note", "count": 2, "reward": {"xp": 80}},
     {"id": "cordon_clear", "name": "Clear a building", "description": "Every sleeper inside put down. The Program pays for cleared ground.",
      "chapter": 2, "order": 5, "event": "clear_poi", "reward": {"xp": 200, "items": {"first_aid_kit": 1}}},
-    {"id": "cordon_disarm", "name": "Disarm two traps", "description": "A wire across a doorway, jaws under the leaves, boards that groan. Crouch, look, and take it apart.",
+    {"id": "cordon_disarm", "name": "Disarm two traps", "description": "A wire across a doorway, jaws under the leaves, an alarm on a door. Crouch, look, and take it apart.",
      "chapter": 2, "order": 6, "event": "disarm_trap", "count": 2, "reward": {"xp": 120, "items": {"nails": 10}}},
 
     {"id": "hold_logs", "name": "Set twenty logs", "description": "Walls that notch together hold. Walls that don't, fall on you.",
@@ -36,6 +36,8 @@
     {"id": "hold_tier3", "name": "Clear a hard building", "description": "The ranger station, the grange hall, the Timberline or the Okafor place. Whatever is held there is waiting for you.",
      "chapter": 3, "order": 5, "event": "clear_poi", "targets": ["pell_ranger_station", "pell_grange_hall", "timberline_motel", "okafor_farmhouse"],
      "reward": {"xp": 400, "items": {"first_aid_kit": 1}}},
+    {"id": "hold_contract", "name": "Complete a Waystation contract", "description": "Waystation 9 stands on Route 9, south, short of where the river leaves the valley. The quartermaster pays scrip for work done.",
+     "chapter": 3, "order": 6, "event": "contract", "reward": {"xp": 200, "items": {"scrip": 30}}},
 
     {"id": "bloom_infected", "name": "Put down a Seeded or Bloomed Hollowed", "description": "Pale threads under the skin. They hit harder and take longer to drop.",
      "chapter": 4, "chapter_name": "Into the Bloom", "order": 1, "event": "kill", "min_tier": "seeded", "reward": {"xp": 200}},

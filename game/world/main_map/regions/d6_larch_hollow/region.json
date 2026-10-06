@@ -247,6 +247,44 @@
       ]
     },
     {
+      "type": "clearing",
+      "pos": [
+        -30,
+        2522
+      ],
+      "radius": 24
+    },
+    {
+      "type": "spawn",
+      "id": "trader:waystation_9",
+      "pos": [
+        -30,
+        2522
+      ],
+      "yaw": -90
+    },
+    {
+      "type": "road",
+      "id": "waystation_drive",
+      "surface": "asphalt",
+      "width": 5.0,
+      "shoulder": 0.8,
+      "points": [
+        [
+          -87.0,
+          2522.0
+        ],
+        [
+          -60.0,
+          2522.0
+        ],
+        [
+          -43.0,
+          2522.0
+        ]
+      ]
+    },
+    {
       "type": "frontier",
       "id": "larkspur_sealed_cave",
       "pos": [
@@ -256,6 +294,50 @@
       "kind": "cave",
       "leads_to": "c6_larkspur_ridge",
       "note": "Collapsed cave mouth in the cliff; opens in M2."
+    },
+    {
+      "type": "poi",
+      "id": "corvane_larkspur_adit",
+      "poi": "corvane_larkspur_adit",
+      "origin": [
+        -385.0,
+        2183.0
+      ],
+      "rotation": 180,
+      "size": [
+        24,
+        14
+      ],
+      "skirt": 6,
+      "biome": "meadow"
+    },
+    {
+      "type": "path",
+      "id": "adit_track",
+      "surface": "dirt",
+      "width": 3.0,
+      "points": [
+        [
+          -292.0,
+          2290.0
+        ],
+        [
+          -318.0,
+          2262.0
+        ],
+        [
+          -345.0,
+          2228.0
+        ],
+        [
+          -375.0,
+          2200.0
+        ],
+        [
+          -396.0,
+          2189.0
+        ]
+      ]
     },
     {
       "type": "frontier",

@@ -6,16 +6,29 @@ extends RefCounted
 ## JSON (world.json, its regions and frameworks), so the New Game screen, the CLI
 ## (rwg_preview.gd) and QA all see exactly what the game will load. Pure Image work: safe on a
 ## worker thread.
+## Organic towns (RWG v2, ADR-0040: world.json `towns`, frame lots) are drawn as the town preview
+## draws them: yards (parcels), lot frames by zoning with a tick to the street they face, the
+## square, and the streets by class with their turning circles; a v1 town (a region's framework
+## feature) as its pad, lots and streets.
 
 const BIOME_COLORS: Dictionary = {
 	"conifer_forest": Color(0.25, 0.36, 0.22), "birch_grove": Color(0.45, 0.55, 0.33), "meadow": Color(0.62, 0.64, 0.4),
 	"rocky_slope": Color(0.56, 0.55, 0.5), "riverbank": Color(0.45, 0.52, 0.42), "town": Color(0.6, 0.58, 0.52),
+	# ADR-0041: an old burn's ash grey-brown, a fen's olive peat (its pools drawn as small lakes).
+	"burnt_forest": Color(0.4, 0.36, 0.33), "fen": Color(0.38, 0.38, 0.24),
 }
+## Fen pools (region lake features) on the map: darker, browner water than the lakes.
+const FEN_WATER := Color(0.2, 0.24, 0.22)
 const WATER := Color(0.23, 0.4, 0.55)
 const WATER_EDGE := Color(0.16, 0.28, 0.4)
 const ZONE_COLORS: Dictionary = {
 	"residential": Color(0.86, 0.76, 0.58), "commercial": Color(0.9, 0.55, 0.3), "civic": Color(0.62, 0.5, 0.78),
-	"industrial": Color(0.55, 0.55, 0.6), "roadside": Color(0.9, 0.55, 0.3),
+	"industrial": Color(0.55, 0.55, 0.6), "roadside": Color(0.9, 0.55, 0.3), "rural": Color(0.62, 0.78, 0.35),
+}
+## An organic town's streets by class: [casing, width floor in px].
+const STREET_STYLE: Dictionary = {
+	"street": [Color(0.17, 0.17, 0.18), 1.6], "lane": [Color(0.42, 0.37, 0.3), 1.3], "back_lane": [Color(0.45, 0.4, 0.33), 1.2],
+	"bulb": [Color(0.17, 0.17, 0.18), 2.0], "drive": [Color(0.4, 0.36, 0.3), 1.0],
 }
 const ROAD_STYLE: Dictionary = {
 	"highway": [Color(0.12, 0.12, 0.13), 4.5, Color(0.95, 0.85, 0.45), 1.5],
@@ -23,11 +36,13 @@ const ROAD_STYLE: Dictionary = {
 	"track": [Color(0.38, 0.28, 0.18), 2.0, Color(0.0, 0.0, 0.0, 0.0), 0.0],
 	"drive": [Color(0.2, 0.2, 0.22), 2.0, Color(0.0, 0.0, 0.0, 0.0), 0.0],
 }
-## 3 x 5 glyphs for the cell labels (A-G, 1-7), one row of three bits per entry.
+## 3 x 5 glyphs for the cell labels (A-P, 0-9: maps up to 16 x 16), one row of three bits per entry.
 const GLYPHS: Dictionary = {
 	"A": [2, 5, 7, 5, 5], "B": [6, 5, 6, 5, 6], "C": [3, 4, 4, 4, 3], "D": [6, 5, 5, 5, 6], "E": [7, 4, 6, 4, 7], "F": [7, 4, 6, 4, 4],
-	"G": [3, 4, 5, 5, 3], "1": [2, 6, 2, 2, 7], "2": [6, 1, 2, 4, 7], "3": [6, 1, 2, 1, 6], "4": [5, 5, 7, 1, 1], "5": [7, 4, 6, 1, 6],
-	"6": [3, 4, 6, 5, 2], "7": [7, 1, 2, 2, 2],
+	"G": [3, 4, 5, 5, 3], "H": [5, 5, 7, 5, 5], "I": [7, 2, 2, 2, 7], "J": [1, 1, 1, 5, 2], "K": [5, 5, 6, 5, 5], "L": [4, 4, 4, 4, 7],
+	"M": [5, 7, 7, 5, 5], "N": [5, 7, 7, 7, 5], "O": [2, 5, 5, 5, 2], "P": [6, 5, 6, 4, 4],
+	"0": [7, 5, 5, 5, 7], "1": [2, 6, 2, 2, 7], "2": [6, 1, 2, 4, 7], "3": [6, 1, 2, 1, 6], "4": [5, 5, 7, 1, 1], "5": [7, 4, 6, 1, 6],
+	"6": [3, 4, 6, 5, 2], "7": [7, 1, 2, 2, 2], "8": [2, 5, 2, 5, 2], "9": [2, 5, 3, 1, 6],
 }
 
 var img: Image
@@ -71,6 +86,13 @@ func render(world: Dictionary, regions: Array, fws: Dictionary, size_px: int) ->
 			var w: float = line.value_at(r.get("width", 10.0), s)
 			_dot(line.point_at(s), maxf(1.6, w / _mpp()), WATER)
 			s += _mpp() * 0.5
+	# Fen pools (region lake features, ADR-0041): ellipses, at least a pixel or two across.
+	for regp: Variant in regions:
+		for fp: Variant in (regp as Dictionary).get("features", []):
+			var fpd: Dictionary = fp
+			if str(fpd.get("type", "")) == "lake" and fpd.has("ellipse"):
+				var el: Array = fpd["ellipse"]
+				_disc(Vector2(float(el[0]), float(el[1])), maxf((float(el[2]) + float(el[3])) * 0.5, _mpp() * 0.8), FEN_WATER)
 	# Bloom patches, faint, under the roads.
 	for reg: Variant in regions:
 		for f: Variant in (reg as Dictionary).get("features", []):
@@ -83,6 +105,12 @@ func render(world: Dictionary, regions: Array, fws: Dictionary, size_px: int) ->
 			var fd2: Dictionary = f2
 			if str(fd2.get("type", "")) == "path":
 				_dashed(Polyline2.from_array(fd2.get("points", [])), Color(0.45, 0.33, 0.2), 1.3)
+	# Organic towns (world-level, RWG v2) under the world roads, so the main streets run on top.
+	var fw_by_id: Dictionary = {}
+	for d: Variant in fws.get("defs", []):
+		fw_by_id[str((d as Dictionary).get("id", ""))] = d
+	for tw: Variant in world.get("towns", []):
+		_organic_town(fw_by_id.get(str((tw as Dictionary).get("framework", "")), {}))
 	# Roads: casing then centre line, in class order so highways draw on top.
 	for cls: String in ["track", "drive", "county", "highway"]:
 		var st: Array = ROAD_STYLE[cls]
@@ -100,10 +128,7 @@ func render(world: Dictionary, regions: Array, fws: Dictionary, size_px: int) ->
 				var e: Vector2 = _v2(bd["to"])
 				_segment(a, e, Color(0.08, 0.08, 0.08), float(st[1]) + 2.5)
 				_segment(a, e, Color(0.85, 0.82, 0.75), maxf(1.2, float(st[1]) - 1.0))
-	# Towns: pad, lots by zoning, streets.
-	var fw_by_id: Dictionary = {}
-	for d: Variant in fws.get("defs", []):
-		fw_by_id[str((d as Dictionary).get("id", ""))] = d
+	# v1 towns (region framework features): pad, lots by zoning, streets.
 	for reg3: Variant in regions:
 		for f3: Variant in (reg3 as Dictionary).get("features", []):
 			var fd3: Dictionary = f3
@@ -112,8 +137,13 @@ func render(world: Dictionary, regions: Array, fws: Dictionary, size_px: int) ->
 					_town(fd3, fw_by_id.get(str(fd3.get("framework", "")), {}))
 				"poi":
 					_place(fd3)
-	# The drop site: a yellow ring.
 	var gen: Dictionary = world.get("generator", {})
+	# Trader posts (ADR-0039): a green dot with a dark rim.
+	for tp: Variant in gen.get("traders", []):
+		var tpos: Vector2 = _v2((tp as Dictionary)["pos"])
+		_dot(tpos, 11.0, Color(0.05, 0.05, 0.05))
+		_dot(tpos, 8.0, Color(0.35, 0.8, 0.4))
+	# The drop site: a yellow ring.
 	if gen.has("drop_site"):
 		var dp: Vector2 = _v2(gen["drop_site"])
 		_dot(dp, 13.0, Color(0.05, 0.05, 0.05))
@@ -222,6 +252,58 @@ func _town(f: Dictionary, fw: Dictionary) -> void:
 		var pts: Array = (rdv as Dictionary).get("points", [])
 		for k: int in pts.size() - 1:
 			_segment(o + _v2(pts[k]).rotated(rot), o + _v2(pts[k + 1]).rotated(rot), Color(0.16, 0.16, 0.17), maxf(2.0, float((rdv as Dictionary).get("width", 6.0)) / _mpp()))
+
+
+## An organic town (ADR-0040): yards, lot frames by zoning with a tick towards the street each
+## faces, the square, then the streets by class (turning circles as discs), all in world XZ.
+func _organic_town(fw: Dictionary) -> void:
+	if fw.is_empty():
+		return
+	var mpp: float = _mpp()
+	for lv: Variant in fw.get("lots", []):
+		var l: Dictionary = lv
+		var parcel: PackedVector2Array = _poly(l.get("poly", []))
+		var zon: String = str((l.get("zoning", ["residential"]) as Array)[0])
+		var col: Color = ZONE_COLORS.get(zon, Color(0.8, 0.8, 0.8))
+		if parcel.size() >= 3:
+			_fill(parcel, Color(col.r * 0.75, col.g * 0.75, col.b * 0.7, 0.35))
+	var plaza: Dictionary = fw.get("plaza", {})
+	if plaza.has("frame"):
+		var pc: PackedVector2Array = frame_corners(plaza["frame"])
+		_fill(pc, Color(0.74, 0.72, 0.68))
+		_outline(pc, Color(0.3, 0.28, 0.25), 1.0)
+	for lv2: Variant in fw.get("lots", []):
+		var l2: Dictionary = lv2
+		if not l2.has("frame"):
+			continue
+		var f: Array = l2["frame"]
+		var zon2: String = str((l2.get("zoning", ["residential"]) as Array)[0])
+		var corners: PackedVector2Array = frame_corners(f)
+		_fill(corners, ZONE_COLORS.get(zon2, Color(0.8, 0.8, 0.8)))
+		_outline(corners, Color(0.28, 0.24, 0.2), 1.0)
+		if float(f[3]) / mpp >= 6.0:
+			var yaw: float = deg_to_rad(float(f[4]))
+			var c := Vector2(float(f[0]), float(f[1]))
+			_segment(c, c + Vector2(sin(yaw), cos(yaw)) * float(f[3]) * 0.5, Color(0.28, 0.24, 0.2), 1.0)
+	for rv: Variant in fw.get("roads", []):
+		var rd: Dictionary = rv
+		var st: Array = STREET_STYLE.get(str(rd.get("class", "street")), STREET_STYLE["street"])
+		var w_px: float = maxf(float(st[1]), (float(rd.get("width", 6.0)) + float(rd.get("shoulder", 0.5))) / mpp)
+		if str(rd.get("class", "")) == "bulb":
+			_dot(_v2((rd.get("points", [[0, 0]]) as Array)[0]), w_px, st[0])
+			continue
+		_stroke(Polyline2.from_array(rd.get("points", [])), st[0], w_px)
+
+
+## The corners of a lot frame [cx, cz, w, d, yaw] (yaw as PoiManager.lot_xf turns a building).
+static func frame_corners(f: Array) -> PackedVector2Array:
+	var c := Vector2(float(f[0]), float(f[1]))
+	var yaw: float = deg_to_rad(float(f[4]))
+	var az := Vector2(sin(yaw), cos(yaw))
+	var ax := Vector2(az.y, -az.x)
+	var hx: Vector2 = ax * float(f[2]) * 0.5
+	var hz: Vector2 = az * float(f[3]) * 0.5
+	return PackedVector2Array([c - hx + hz, c + hx + hz, c + hx - hz, c - hx - hz])
 
 
 func _place(f: Dictionary) -> void:

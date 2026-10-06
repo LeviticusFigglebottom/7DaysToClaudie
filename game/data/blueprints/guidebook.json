@@ -39,12 +39,13 @@
     "leaf_bundle": 6,
     "stick": 4
    },
-   "preview": "structures/bough_bed"
+   "preview": "structures/bough_bed",
+   "on_structures": true
   },
   {
    "id": "workbench",
    "name": "Workbench",
-   "description": "Needs nails \u2014 the hardware store in town should have some.",
+   "description": "Needs nails — the hardware store in town should have some.",
    "mode": "assembly",
    "category": "crafting",
    "result": "workbench",
@@ -54,7 +55,8 @@
     "cordage": 2,
     "nails": 12
    },
-   "preview": "structures/workbench"
+   "preview": "structures/workbench",
+   "on_structures": true
   },
   {
    "id": "spike_barrier",
@@ -81,12 +83,13 @@
     "wood_plank": 6,
     "nails": 8
    },
-   "preview": "structures/storage_crate"
+   "preview": "structures/storage_crate",
+   "on_structures": true
   },
   {
    "id": "log_wall",
    "name": "Log Wall (4 m)",
-   "description": "Five logs stacked and notched. Hollowed have to break it, not walk around it.",
+   "description": "Six logs stacked and notched. Hollowed have to break it, not walk around it.",
    "mode": "pieces",
    "category": "walls",
    "pieces": [
@@ -711,6 +714,78 @@
     }
    ],
    "preview": "structures/log_cabin_ghost"
+  },
+  {
+   "id": "log_rack",
+   "name": "Log Holder",
+   "description": "A cradle of lashed stakes for a dozen logs, close to where you build. Stack them in, take them out one at a time.",
+   "mode": "assembly",
+   "category": "storage",
+   "result": "log_rack",
+   "cost": {
+    "log": 2,
+    "stick": 6,
+    "cordage": 2
+   },
+   "preview": "structures/log_rack",
+   "on_structures": true
+  },
+  {
+   "id": "stick_rack",
+   "name": "Stick Holder",
+   "description": "Holds forty sticks in bundles: kindling, repairs and fuel within reach.",
+   "mode": "assembly",
+   "category": "storage",
+   "result": "stick_rack",
+   "cost": {
+    "stick": 8,
+    "cordage": 1
+   },
+   "preview": "structures/stick_rack",
+   "on_structures": true
+  },
+  {
+   "id": "stone_pile",
+   "name": "Rock Pile",
+   "description": "A crib of stakes for thirty stones. Fire rings, a forge, weights for a trap.",
+   "mode": "assembly",
+   "category": "storage",
+   "result": "stone_pile",
+   "cost": {
+    "stick": 6
+   },
+   "preview": "structures/stone_pile",
+   "on_structures": true
+  },
+  {
+   "id": "log_stairs",
+   "name": "Log Stairs",
+   "description": "Two log stringers and split-log treads, eight courses up: onto a platform, a second floor or a wall-walk.",
+   "mode": "assembly",
+   "category": "floors",
+   "result": "log_stairs",
+   "cost": {
+    "log": 4,
+    "stick": 8,
+    "cordage": 2
+   },
+   "preview": "structures/log_stairs",
+   "max_slope": 20.0,
+   "on_structures": true
+  },
+  {
+   "id": "stick_door",
+   "name": "Stick Door",
+   "description": "A lashed door on a pole frame for a gap in a wall. It shuts out the cold; the Hollowed will still claw at it.",
+   "mode": "assembly",
+   "category": "walls",
+   "result": "stick_door",
+   "cost": {
+    "stick": 14,
+    "cordage": 3
+   },
+   "preview": "structures/stick_door",
+   "on_structures": true
   }
  ]
 }

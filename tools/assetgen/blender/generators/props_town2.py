@@ -29,6 +29,7 @@ from lib import common, export, materials
 from lib import props_int_core as core
 from lib import props_int_furn as F
 from lib import props_int_mesh as G
+from lib import props_ext_kit as K
 from lib import props_ext_parts as EP
 from lib.props_int_core import M, Prop
 
@@ -970,6 +971,7 @@ def _cut(part: core.Part, planes) -> None:
     for co, no in planes:
         geom = list(bm.verts) + list(bm.edges) + list(bm.faces)
         bmesh.ops.bisect_plane(bm, geom=geom, plane_co=co, plane_no=no)
+    K.canon_bm(bm)  # bisect emits new elements in a run-dependent order
     bm.to_mesh(me)
     bm.free()
     me.update()
@@ -1265,6 +1267,7 @@ def _vault_leaf(p: Prop, broken: bool) -> None:
         bm.faces.new([corners["f"][3], corners["f"][0], corners["b"][0], corners["b"][3]])
         bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-5)
         bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+        K.canon_bm(bm)
         slab = G._obj(p._name("slab"), bm)
         part = p.add(slab, C.VAULT, grain="Z")
         hole_faces = lambda poly: (Vector((poly.center.x - hc[0], poly.center.z - hc[1])).length < hole_r + 0.06 and

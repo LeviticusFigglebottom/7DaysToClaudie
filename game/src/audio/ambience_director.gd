@@ -73,8 +73,17 @@ func _choose() -> void:
 	var dark: bool = clock.sun_elevation_deg() < -3.0
 	var bed: StringName = &"amb/forest_night" if dark else &"amb/forest_day"
 	var rt: RegionTerrain = (world.get(&"terrain") as TerrainManager).region_terrain_at(p.x, p.z)
-	if rt != null and rt.biome_at(p.x, p.z) == "town":
+	var biome: String = rt.biome_at(p.x, p.z) if rt != null else ""
+	if biome == "town":
 		bed = &"amb/town" if not dark else &"amb/forest_night"
+	elif biome != "":
+		# A biome with beds of its own plays them (ADR-0041: amb/burn_*, amb/fen_*; the others fall
+		# back to the forest's, as before).
+		var bd: BiomeDef = Content.get_def(&"biome", StringName(biome)) as BiomeDef
+		if bd != null and bd.ambience != "":
+			var own := StringName("amb/%s_%s" % [bd.ambience, "night" if dark else "day"])
+			if own != bed and Audio.stream(own) != null:
+				bed = own
 	var water: String = _water_near(p)
 	if water != "" and not indoors:
 		_want[&"amb/river" if water == "river" else &"amb/lake_shore"] = -8.0

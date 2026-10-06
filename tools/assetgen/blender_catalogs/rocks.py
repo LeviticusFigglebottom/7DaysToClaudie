@@ -35,6 +35,14 @@ def tasks() -> list[Task]:
         out.append(Task(name=f"model:rocks/pebble_cluster_{key}", group="models",
                         outputs=[f"models/rocks/pebble_cluster_{key}.glb"], sources=blender_sources("rock"),
                         params=params, blender="rock"))
+    # Soot-stained boulders of the burnt forest (ADR-0041): granite shapes under the rock_sooted
+    # material (blackened, no moss).
+    for key, src in (("a", "b"), ("b", "d"), ("c", "f")):
+        params = {"kind": "boulder", "name": f"sooted_boulder_{key}", "moss": 0.0, "tris": 2400,
+                  **{k: v for k, v in BOULDERS[src].items()}, "seed": BOULDERS[src]["seed"] + 7, "material": "rock_sooted"}
+        out.append(Task(name=f"model:rocks/sooted_boulder_{key}", group="models",
+                        outputs=[f"models/rocks/sooted_boulder_{key}.glb", f"models/rocks/sooted_boulder_{key}_lod1.glb"],
+                        sources=blender_sources("rock"), params=params, blender="rock"))
     for key, p in CLIFFS.items():
         params = {"kind": "cliff", "name": f"cliff_rock_{key}", "moss": 0.85, "tris": 2450, "embed": 0.06, **p}
         out.append(Task(name=f"model:rocks/cliff_rock_{key}", group="models", outputs=[f"models/rocks/cliff_rock_{key}.glb"],

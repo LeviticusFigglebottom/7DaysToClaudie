@@ -24,11 +24,14 @@ var collides: bool = true
 var regrow_days: float = 0.0
 ## Leaves turn and fall with the seasons (trees): the far-terrain canopy tints by it.
 var deciduous: bool = false
+## Metres of standing water the species grows in (fen cattails, bulrush and drowned snags,
+## ADR-0041); 0 keeps it on dry ground, as every species before them.
+var wade_depth: float = 0.0
 
 
 func _fields() -> PackedStringArray:
 	return ["kind", "models", "stump_model", "log_model", "hp", "yields", "tool", "height", "trunk_radius",
-		"lod_distances", "collides", "regrow_days", "deciduous"]
+		"lod_distances", "collides", "regrow_days", "deciduous", "wade_depth"]
 
 
 func _parse(r: DefReader) -> void:
@@ -47,6 +50,7 @@ func _parse(r: DefReader) -> void:
 	collides = r.boolean("collides", veg_kind in ["tree", "rock", "deadfall"])
 	regrow_days = r.num("regrow_days", 0.0)
 	deciduous = r.boolean("deciduous", false)
+	wade_depth = maxf(0.0, r.num("wade_depth", 0.0))
 	if models.is_empty():
 		r.err("species needs at least one model")
 

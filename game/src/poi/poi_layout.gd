@@ -28,9 +28,6 @@ const WALL_H: float = 2.8
 const SIDES: Dictionary = {"N": 0, "E": 1, "S": 2, "W": 3}
 const SIDE_NAMES: PackedStringArray = ["N", "E", "S", "W"]
 const DIRS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
-## The facing (degrees) of a prop with its back against the wall on each side (N, E, S, W): into
-## the room.
-const AGAINST_ROT: Array[float] = [0.0, -90.0, 180.0, 90.0]
 ## The plan character of a storey a tall room rises through.
 const VOID: String = "^"
 const MAX_STOREYS: int = 3
@@ -144,7 +141,10 @@ func _compile() -> void:
 			room["char"] = str(k)
 			rooms[str(k)] = room
 			_check_room(li, room)
-		levels[li] = {"plan": plan, "w": w, "d": plan.size(), "y": level_y(li), "rooms": rooms}
+		# A buried underground level (ADR-0044) runs on under the ground beyond the building: only
+		# its cells under a ground-floor room cut the surface (TerrainHoles).
+		levels[li] = {"plan": plan, "w": w, "d": plan.size(), "y": level_y(li), "rooms": rooms,
+			"buried": li < 0 and bool(lv.get("buried", false))}
 		level_ids.append(li)
 		for row: String in plan:
 			for ch: String in row:
@@ -612,8 +612,6 @@ func _ladder_landing(l: Dictionary) -> Vector2i:
 
 ## Normalises a placed entry. "at": [c, r] = centre of that cell (plus optional "offset":
 ## [dx, dz] in metres); "pos": [x, z] = exact plan position in metres. Adds pos, level, rot, cell.
-## A prop "against" a wall without a "rot" of its own gets that wall's facing (AGAINST_ROT): every
-## compiled entry carries a "rot", so this is the one place that can default it.
 func _placed(d: Dictionary) -> Dictionary:
 	var out: Dictionary = d.duplicate()
 	var p := Vector2.ZERO
@@ -627,8 +625,10 @@ func _placed(d: Dictionary) -> Dictionary:
 		p += Vector2(float(off[0]), float(off[1]))
 	out["pos"] = p
 	out["level"] = int(d.get("level", 0))
-	var against: String = str(d.get("against", ""))
-	out["rot"] = float(d.get("rot", AGAINST_ROT[SIDES[against]] if SIDES.has(against) else 0.0))
+	out["rot"] = float(d.get("rot", 0.0))
+	# Whether the author gave a rotation. "rot" is always filled in above, so without this flag a
+	# prop placed `against` a wall could never take that wall's default facing.
+	out["rot_set"] = d.has("rot")
 	out["cell"] = Vector2i(int(floor(p.x)), int(floor(p.y)))
 	return out
 

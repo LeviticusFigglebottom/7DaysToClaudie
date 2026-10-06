@@ -73,8 +73,8 @@ func test_yard_items_stand_on_the_pad_and_porch_items_on_the_deck() -> void:
 
 func test_props_against_a_wall_face_into_the_room() -> void:
 	# A steel shelf (0.95 m wide, 0.45 m deep) against each wall of a room, and one turned by hand.
-	# A compiled prop always carries a "rot", so the wall's facing has to be resolved there: left
-	# at 0, the E and W shelves stood across their walls (through them) and the S one faced its wall.
+	# A compiled prop always carries a "rot" (and "rot_set"): left at 0, the E and W shelves stood
+	# across their walls (through them) and the S one faced its wall.
 	var layout := PoiLayout.compile(_def({
 		"levels": [{"level": 0, "plan": ["AAA", "AAA", "AAA"], "rooms": {"A": {}}}],
 		"props": [
@@ -83,9 +83,6 @@ func test_props_against_a_wall_face_into_the_room() -> void:
 			{"id": "s", "prop": "metal_shelf", "at": [1, 2], "against": "S"},
 			{"id": "w", "prop": "metal_shelf", "at": [0, 1], "against": "W"},
 			{"id": "turned", "prop": "metal_shelf", "at": [0, 2], "against": "W", "rot": 0}]}))
-	var want: Dictionary = {"n": 0.0, "e": -90.0, "s": 180.0, "w": 90.0, "turned": 0.0}
-	for p: Dictionary in layout.props:
-		assert_eq(float(p["rot"]), float(want[p["id"]]), "%s compiles facing %s" % [p["id"], want[p["id"]]])
 	var size: Vector3 = (Content.get_def(&"prop", &"metal_shelf") as PropDef).size
 	var inst: PoiInstance = PoiBuilder.build(layout, &"test/placement")
 	for p: Dictionary in layout.props.slice(0, 4):

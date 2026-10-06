@@ -1,6 +1,6 @@
 {
   "_doc": "Terrain layer contract between tools/assetgen/textures/gen/terrain.py (generator) and the terrain shader. Slice i of every array = layers[i]; never reorder (append new layers at the end). tile_metres = real-world size of one texture repeat (UV = world_xz / tile_metres). The generator refuses to build the arrays if this file disagrees with it.",
-  "layers": ["forest_floor", "moss_ground", "grass_ground", "dirt", "mud", "gravel", "rock_cliff", "sand", "snow", "asphalt_cracked", "concrete_slab"],
+  "layers": ["forest_floor", "moss_ground", "grass_ground", "dirt", "mud", "gravel", "rock_cliff", "sand", "snow", "asphalt_cracked", "concrete_slab", "ash_char", "peat"],
   "tile_metres": {
     "forest_floor": 3.0,
     "moss_ground": 2.5,
@@ -12,7 +12,9 @@
     "sand": 2.0,
     "snow": 3.0,
     "asphalt_cracked": 4.0,
-    "concrete_slab": 4.0
+    "concrete_slab": 4.0,
+    "ash_char": 3.0,
+    "peat": 3.0
   },
   "textures": {
     "albedo_height": "res://assets/generated/textures/terrain_albedo_array.png",
@@ -34,13 +36,15 @@
   "height_blend_contrast": {
     "_doc": "Suggested sharpness of the height blend per layer (higher = crisper transition into neighbours).",
     "forest_floor": 0.25, "moss_ground": 0.3, "grass_ground": 0.25, "dirt": 0.2, "mud": 0.15, "gravel": 0.35,
-    "rock_cliff": 0.4, "sand": 0.2, "snow": 0.3, "asphalt_cracked": 0.45, "concrete_slab": 0.5
+    "rock_cliff": 0.4, "sand": 0.2, "snow": 0.3, "asphalt_cracked": 0.45, "concrete_slab": 0.5, "ash_char": 0.25, "peat": 0.15
   },
   "notes": {
     "concrete_slab": "Saw-cut joints are baked on a 2 m grid aligned to the tile (joints at UV 0 and 0.5). Do not rotate/offset this layer with stochastic anti-tiling or the joints break.",
     "asphalt_cracked": "Generic cracked town road (no lane markings: use decals). Tar crack-sealant bands are glossy (low roughness).",
     "mud": "Standing water already sits in the deepest dents (flat normal, roughness ~0.05); the global hm_wetness can still darken/gloss the rest.",
     "rock_cliff": "Water streaks run toward +V (down the texture rows); project with V pointing down the cliff.",
-    "snow": "Albedo is near-white (mean linear luminance 0.72); keep exposure/tonemapping in mind when blending."
+    "snow": "Albedo is near-white (mean linear luminance 0.72); keep exposure/tonemapping in mind when blending.",
+    "ash_char": "Burnt forest floor (ADR-0041): char, charcoal, scorched needles, grey ash in drifts and hollows, white ash patches, sparse fire moss.",
+    "peat": "Fen muck (ADR-0041): black-brown, glossy (roughness ~0.3), tannin-black standing water in the lowest quarter of its relief."
   }
 }

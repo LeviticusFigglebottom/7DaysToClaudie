@@ -95,7 +95,15 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     office wired to a shotgun), Pell County Library (stacks of creaking boards, a reading room under
     a two-storey ceiling, a flat reached by its fire-escape ladder, an archive cage in the cellar)
     and KHLW Valley Radio (a booth under a lit ON AIR sign, a lattice mast climbed platform by
-    platform). Five to seven alternative groups each; `tests/unit/test_pool_buildings.gd`.
+    platform). Five to seven alternative groups each; `tests/unit/test_pool_buildings.gd`. Their
+    wall props spell out `rot`: `against` alone leaves a prop facing north (TD-086).
+  * **Pool round 2**: five more, mostly industrial: Hollis Pawn & Gun (a vault room behind Ray's
+    rigged shotgun, a basement range), Northfork Packing Co. (retort baskets, a two-storey packing
+    floor under a gallery, the Cordon's cold store), Water Works (two storeys of pumps, a valve
+    gallery and the emergency stores below), Ridgeline Aggregate (scale house, equipment shed, a
+    steel powder magazine) and the Veterans' Post (bingo hall turned shelter, a canteen, the
+    quartermaster's cage in the cellar). Keys, notes and loot are `town4` content; props are
+    `props_town4.py`; `tests/unit/test_pool_round_two.gd` (TD-114: three pool suites overlap).
 * **Random worlds** (ADR-0031): the main menu's Random World opens the New Game screen's World tab.
   * Settings and presets in `data/config/world_gen.json`, a map seed and a map preview; a world is
     generated in about a second and cached in `user://worlds/random/<id>/` in the main map's own
@@ -114,6 +122,16 @@ Snapshot for the next session. Update it when the state changes; delete it once 
   * Hunting: a carcass bleeds scent; `wildlife.butcher` with a knife or an axe gives venison or
     hare, a hide or pelt, bone and sinew. World settings `wildlife` and `wildlife_density`.
   * QA shots `deer_meadow_dawn`, `hare_brush`, `birds_lift_off`.
+* **Hollowed hounds and Murmurs** (ADR-0034):
+  * Hound packs of 3-5, wandering by gamestage (more at night) and answering heat. The first to
+    see you howls and the pack rallies; they spread round you, bite and break off, track your
+    scent, and keep clear of a torch held up in front of them. Generated dog bodies with Bloom
+    growths and their own voices; a four-legged stand-in without generated assets.
+  * Murmurs: a crow flock you flush may follow you, every caw a mark on you the Hollowed come to;
+    cover, a gunshot, nightfall or time ends it.
+  * World settings `hollowed_hounds` and `murmurs`; tuning in `data/config/hounds.json` and the
+    crow def's `murmur`.
+  * QA shots `hound_pack` and `murmur_overhead`.
 * **Surfaces, water and sky** (ADR-0019, ADR-0020):
   * Interiors wear in world space.
   * Roofs have trim and tiles that don't repeat.

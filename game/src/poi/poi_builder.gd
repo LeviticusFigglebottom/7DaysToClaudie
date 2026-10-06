@@ -25,6 +25,7 @@ var _batches: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 var _decay: float = 0.4
 var _route_cells: Dictionary = {}
+var _checked: PoiValidator = null
 var _occupied: Dictionary = {}
 ## Locked door opening id -> +1/-1: the wall side its lock cue faces (PoiValidator.lock_sides).
 var _lock_sides: Dictionary = {}
@@ -47,13 +48,59 @@ var _wings: Array[RoofPlanner.Wing] = []
 const MAX_PROBES: int = 8
 
 
-static func build(p_layout: PoiLayout, instance_id: StringName) -> PoiInstance:
+## `checked`: the layout's PoiValidator, already run (PoiManager runs it on a worker thread while
+## the world loads, ADR-0036: it is nearly all of a building's build time); null runs it here.
+## Builds the whole building at once (tools, tests, previews); the game builds in phases (start).
+static func build(p_layout: PoiLayout, instance_id: StringName, checked: PoiValidator = null) -> PoiInstance:
+	var b: PoiBuilder = start(p_layout, instance_id, checked)
+	while not b.step():
+		pass
+	return b.root
+
+
+## The build's phases in order, one per step() (ADR-0038: a building is raised over several frames
+## within the streaming budget, so no single frame pays for a whole sawmill).
+const PHASES: PackedStringArray = ["_begin", "_route", "_walls", "_posts", "_floors", "_galleries",
+	"_stairs_and_ladders", "_openings", "_exterior", "_roof", "_props", "_scatter", "_lights",
+	"_interior_probes", "_pickups", "_decals", "_traps", "_emit_batches", "_wire_weak_floors"]
+
+var _instance_id: StringName = &""
+var _phase: int = 0
+
+
+## A builder for one building; call step() until it returns true, then take `root`.
+static func start(p_layout: PoiLayout, instance_id: StringName, checked: PoiValidator = null) -> PoiBuilder:
 	var b := PoiBuilder.new()
 	b.layout = p_layout
-	return b._build(instance_id)
+	b._checked = checked
+	b._instance_id = instance_id
+	return b
 
 
+## Runs the next phase; true once the building is complete (root holds it).
+func step() -> bool:
+	if _phase < PHASES.size():
+		call(PHASES[_phase])
+		_phase += 1
+	return _phase >= PHASES.size()
+
+
+## Name of the phase the next step() runs ("" when done): for meters.
+func next_phase() -> String:
+	return PHASES[_phase].trim_prefix("_") if _phase < PHASES.size() else ""
+
+
+## The whole build on a builder already set up with `layout` (tests that pre-set builder state).
 func _build(instance_id: StringName) -> PoiInstance:
+	_instance_id = instance_id
+	_phase = 0
+	while not step():
+		pass
+	return root
+
+
+func _begin() -> void:
+	var instance_id: StringName = _instance_id
 	root = PoiInstance.new()
 	root.name = String(instance_id).replace("/", "_").replace(":", "_")
 	root.setup(layout, instance_id)
@@ -76,25 +123,10 @@ func _build(instance_id: StringName) -> PoiInstance:
 	root.add_child(shell)
 	root.shell = shell
 	_porch_cells = _porch_cell_set()
+
+
+func _route() -> void:
 	_route_cells = _route_corridor()
-	_walls()
-	_posts()
-	_floors()
-	_galleries()
-	_stairs_and_ladders()
-	_openings()
-	_exterior()
-	_roof()
-	_props()
-	_scatter()
-	_lights()
-	_interior_probes()
-	_pickups()
-	_decals()
-	_traps()
-	_emit_batches()
-	_wire_weak_floors()
-	return root
 
 
 # --- helpers ---------------------------------------------------------------------------------
@@ -215,9 +247,11 @@ func _edge_xf(li: int, axis: String, c: Vector2i, span: int = 1) -> Transform3D:
 
 func _route_corridor() -> Dictionary:
 	var out: Dictionary = {}
-	var v := PoiValidator.new()
-	v.layout = layout
-	v._run()
+	var v: PoiValidator = _checked
+	if v == null or v.layout != layout:
+		v = PoiValidator.new()
+		v.layout = layout
+		v._run()
 	_lock_sides = v.lock_sides
 	_barricade_sides = _barricade_faces(v)
 	for path: Array in v.paths:
@@ -743,6 +777,11 @@ func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: 
 	d.add_child(d.pivot)
 	var mi := MeshInstance3D.new()
 	mi.mesh = PoiParts.kit_mesh(leaf) if d.state != "broken" else PoiParts.kit_mesh(leaf + "_broken")
+	# A broken door with no broken model (metal, wood) has lost its leaf: drawing the stand-in
+	# would hang a slab in a doorway the player walks through (the first playtest). Door.break_open
+	# hides it the same way.
+	if d.state == "broken" and not ModelLibrary.has_model(d.model_broken):
+		mi.visible = false
 	d.pivot.add_child(mi)
 	d.leaf_local = Transform3D(Basis.IDENTITY, Vector3(leaf_size.x * 0.5, leaf_size.y * 0.5, 0))
 	d.leaf_shape = _box(Vector3(leaf_size.x, leaf_size.y, 0.05), d.pivot.transform * d.leaf_local, d)
@@ -980,11 +1019,14 @@ func _open_partitions(w: RoofPlanner.Wing) -> Array:
 
 # --- props & set dressing ------------------------------------------------------------------------
 
-## Where a compiled prop entry stands (POI-local). "against" pushes its back flush to that wall of
-## its cell; the entry's "rot" already holds its facing (PoiLayout._placed).
 func _prop_xf(p: Dictionary, pd: PropDef) -> Transform3D:
 	var pos: Vector2 = p["pos"]
 	var rot: float = float(p.get("rot", 0.0))
+	# A prop against a wall faces into the room unless its author turned it. Compiled props carry
+	# "rot_set" (PoiLayout._placed always fills "rot"); scatter entries set "rot" themselves.
+	# Testing p.has("rot") alone turned every authored wall prop without a rot toward north:
+	# about 224 props in 19 buildings faced into or through their wall.
+	var turned: bool = bool(p.get("rot_set", p.has("rot")))
 	var against: String = str(p.get("against", ""))
 	if against != "" and PoiLayout.SIDES.has(against):
 		var cell: Vector2i = p["cell"]
@@ -992,12 +1034,16 @@ func _prop_xf(p: Dictionary, pd: PropDef) -> Transform3D:
 		match against:
 			"N":
 				pos.y = cell.y + WALL_T * 0.5 + depth * 0.5 + 0.01
+				rot = rot if turned else 0.0
 			"S":
 				pos.y = cell.y + 1.0 - WALL_T * 0.5 - depth * 0.5 - 0.01
+				rot = rot if turned else 180.0
 			"W":
 				pos.x = cell.x + WALL_T * 0.5 + depth * 0.5 + 0.01
+				rot = rot if turned else 90.0
 			"E":
 				pos.x = cell.x + 1.0 - WALL_T * 0.5 - depth * 0.5 - 0.01
+				rot = rot if turned else -90.0
 	# Free-standing props in the yard stand on the pad; wall-mounted ones hang at a height measured
 	# from the building's floor, whichever side of the wall they are on.
 	var li: int = int(p["level"])
@@ -1118,7 +1164,7 @@ func _scatter() -> void:
 					continue
 				var pd2: PropDef = pool[_rng.randi() % pool.size()]
 				var entry: Dictionary = {"level": li, "cell": c, "pos": Vector2(c.x + 0.5 + _rng.randf_range(-0.25, 0.25), c.y + 0.5 + _rng.randf_range(-0.25, 0.25)),
-					"against": PoiLayout.SIDE_NAMES[side], "rot": PoiLayout.AGAINST_ROT[side] + _rng.randf_range(-25, 25)}
+					"against": PoiLayout.SIDE_NAMES[side], "rot": [0.0, -90.0, 180.0, 90.0][side] + _rng.randf_range(-25, 25)}
 				var xf: Transform3D = _prop_xf(entry, pd2)
 				var cond: String = "destroyed" if _rng.randf() < _decay * 0.3 else "worn"
 				_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)

@@ -37,3 +37,13 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0030](0030-varied-interiors.md) | Varied interiors: per-run dressing, room alternatives, generated ordinary buildings, lots that pick | Accepted |
 | [0031](0031-random-worlds.md) | Random worlds: a seeded generator that writes the handcrafted map's own format | Accepted |
 | [0033](0033-weather-and-atmosphere.md) | Weather you can see: rain that stops at roofs, wet ground and puddles, lightning and thunder, ground fog that pools, falling snow | Accepted |
+| [0034](0034-hounds-and-murmurs.md) | Hollowed hounds and Murmurs: pack hunters on the Enemy brain, crows that mark you | Accepted |
+| [0035](0035-base-building-fidelity.md) | Base-building fidelity: a woodsman's camp, racks that fill, doors, stairs, furnished floors | Accepted |
+| [0036](0036-playable-builds.md) | Playable builds: packaged exports with the generated assets, a stand-in mode we test, a load that keeps the window alive | Accepted |
+| [0037](0037-graphics-options-and-perf.md) | Graphics and controls options for real GPUs, and what the first perf pass found | Accepted |
+| [0038](0038-streamed-worlds.md) | Streamed worlds: Phase 1, a composer 2-2.5x faster with byte-identical output, row bands, cancellation, a crash-safe region cache with an LRU, generator spatial indexes | Accepted (Phase 1) |
+| [0039](0039-waystation-trading.md) | Waystation trading: trader posts (safe zones, a quartermaster), a scrip shop with reputation tiers, clear/fetch/defend contracts dealt by the day | Accepted |
+| [0040](0040-organic-towns.md) | Organic towns: streets grown over the land, lots by frontage, zoning by rings | Accepted |
+| [0041](0041-burnt-forest-and-fen.md) | Burnt forest and fen: fire scars and drowned lowland in random worlds, fire char on the bark, waders, per-biome ambience | Accepted |
+| [0044](0044-corvane-caves.md) | The Corvane caves: buried POI levels (a mine and a limestone cave under the Larkspur cliffs), underground is night for the Hollowed, rock finishes and a mine kit | Accepted |
+| [0046](0046-tier-five-field-lab.md) | Tier 5: the Corvane Field Lab, keycards as keys, and a compound the validator can walk | Accepted |

@@ -3,6 +3,9 @@ extends StaticBody3D
 ## A placed building piece (log, station, shelter, storage, trap). Collision + presentation +
 ## the behaviour its StructureDef `provides` (station, light/warmth, storage, sleep, noise trap,
 ## contact damage). Hit points, support and collapse are BuildingManager's business.
+## ADR-0035: a resource rack (`rack:<item>:<capacity>`) holds one kind of thing and shows how full
+## it is (its model's fill_NN parts); a door (kind `door`) swings its `leaf` open and shut; stairs
+## (kind `stairs`) are a ramp to walk up.
 
 const LAYER: int = 1 << 1
 
@@ -29,6 +32,15 @@ var _spike_area: Area3D = null
 var _spike_t: float = 0.0
 ## Seconds between spike hits on a Hollow that stays on (or keeps pushing into) the spikes.
 const SPIKE_INTERVAL: float = 1.2
+## A rack's fill parts in order (the first N shown), a door's leaf (pivoting on its hinge) and the
+## leaf's collision, and whether the door stands open (ADR-0035).
+var _fills: Array[Node3D] = []
+var _leaf: Node3D = null
+var _leaf_shape: CollisionShape3D = null
+var door_open: bool = false
+## Stairs: rise and run of the flight (8 courses of logs over 3.6 m).
+const STAIR_RISE: float = 2.32
+const STAIR_RUN: float = 3.6
 
 
 func setup(p_id: StringName, p_def: StructureDef, p_manager: Node, p_hp: float = -1.0, p_hp_mult: float = 1.0) -> void:
@@ -61,6 +73,9 @@ func max_hp() -> float:
 
 func _build_visual() -> void:
 	_mesh = MeshInstance3D.new()
+	if rack_capacity() > 0 or def.piece_kind == "door":
+		_build_parted_visual()
+		return
 	if ModelLibrary.has_model(def.model):
 		_mesh.mesh = ModelLibrary.mesh(def.model)
 	elif is_log():
@@ -76,7 +91,93 @@ func _build_visual() -> void:
 	add_child(_mesh)
 
 
+## A rack or a door: the model's still part merged, its moving or showing parts as their own
+## nodes; stand-ins when the model is not generated.
+func _build_parted_visual() -> void:
+	var door: bool = def.piece_kind == "door"
+	var split: Dictionary = ModelLibrary.parts(def.model, PackedStringArray(["leaf"] if door else ["fill_"]))
+	if not split.is_empty() and split.get("base") != null:
+		_mesh.mesh = split["base"]
+		add_child(_mesh)
+		var names: Array = (split["parts"] as Dictionary).keys()
+		names.sort()
+		for nm: String in names:
+			var part: Dictionary = split["parts"][nm]
+			var mi := MeshInstance3D.new()
+			mi.name = nm
+			mi.mesh = part["mesh"]
+			if door:
+				# The leaf turns about its own origin, the hinge.
+				_leaf = Node3D.new()
+				_leaf.name = "Leaf"
+				_leaf.transform = part["xf"]
+				_leaf.add_child(mi)
+				add_child(_leaf)
+			else:
+				mi.transform = part["xf"]
+				add_child(mi)
+				_fills.append(mi)
+		return
+	# Stand-ins: a frame of posts and a slab leaf, or a cradle with stacked fill blocks.
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.42, 0.33, 0.24)
+	var box := func(size: Vector3, at: Vector3, parent: Node3D) -> MeshInstance3D:
+		var mi := MeshInstance3D.new()
+		var b := BoxMesh.new()
+		b.size = size
+		b.material = m
+		mi.mesh = b
+		mi.position = at
+		parent.add_child(mi)
+		return mi
+	add_child(_mesh)
+	if door:
+		box.call(Vector3(0.12, 2.2, 0.12), Vector3(-0.55, 1.1, 0), self)
+		box.call(Vector3(0.12, 2.2, 0.12), Vector3(0.55, 1.1, 0), self)
+		box.call(Vector3(1.22, 0.12, 0.12), Vector3(0, 2.16, 0), self)
+		_leaf = Node3D.new()
+		_leaf.name = "Leaf"
+		_leaf.position = Vector3(-0.5, 0, 0)
+		add_child(_leaf)
+		box.call(Vector3(1.0, 2.0, 0.07), Vector3(0.5, 1.0, 0), _leaf)
+		return
+	box.call(Vector3(def.size.x, 0.08, def.size.z), Vector3(0, 0.04, 0), self)
+	var cap: int = rack_capacity()
+	var slots: int = mini(cap, 12)
+	for i: int in slots:
+		var row: int = i % 4
+		var tier: int = i / 4
+		var f: MeshInstance3D = box.call(Vector3(def.size.x * 0.9, 0.12, def.size.z * 0.2),
+			Vector3(0, 0.14 + tier * 0.13, (float(row) - 1.5) * def.size.z * 0.22), self)
+		_fills.append(f)
+
+
 func _build_collision() -> void:
+	if def.piece_kind == "stairs":
+		# One ramp along the flight (walkable at 33 degrees), lying under the treads' noses.
+		var ramp := CollisionShape3D.new()
+		var rb := BoxShape3D.new()
+		var length: float = Vector2(STAIR_RUN, STAIR_RISE).length()
+		rb.size = Vector3(maxf(def.size.x, 1.0), 0.1, length)
+		ramp.shape = rb
+		ramp.transform = Transform3D(Basis(Vector3.RIGHT, -atan2(STAIR_RISE, STAIR_RUN)), Vector3(0, STAIR_RISE * 0.5, STAIR_RUN * 0.5))
+		add_child(ramp)
+		return
+	if def.piece_kind == "door":
+		for x: float in [-0.55, 0.55]:
+			var post := CollisionShape3D.new()
+			var pb := BoxShape3D.new()
+			pb.size = Vector3(0.14, 2.2, 0.14)
+			post.shape = pb
+			post.position = Vector3(x, 1.1, 0)
+			add_child(post)
+		_leaf_shape = CollisionShape3D.new()
+		var lb := BoxShape3D.new()
+		lb.size = Vector3(1.0, 2.0, 0.08)
+		_leaf_shape.shape = lb
+		add_child(_leaf_shape)
+		_place_leaf(false)
+		return
 	if is_log():
 		var cs := CollisionShape3D.new()
 		var cyl := CylinderShape3D.new()
@@ -149,7 +250,74 @@ func storage_slots() -> int:
 	return 0
 
 
+## A resource rack's item and how many it holds (`rack:<item>:<capacity>`, ADR-0035).
+func rack_item() -> StringName:
+	for p: String in def.provides:
+		if p.begins_with("rack:"):
+			return StringName(p.get_slice(":", 1))
+	return &""
+
+
+func rack_capacity() -> int:
+	for p: String in def.provides:
+		if p.begins_with("rack:"):
+			return int(p.get_slice(":", 2))
+	return 0
+
+
+func rack_count() -> int:
+	return inventory.count_of(rack_item()) if inventory != null else 0
+
+
+## Shows as many fill parts as the rack's share of its capacity.
+func update_fill() -> void:
+	if _fills.is_empty():
+		return
+	var cap: int = rack_capacity()
+	var n: int = rack_count()
+	var shown: int = 0 if n <= 0 else clampi(int(ceil(float(n) * float(_fills.size()) / float(maxi(cap, 1)))), 1, _fills.size())
+	for i: int in _fills.size():
+		_fills[i].visible = i < shown
+
+
+## Swings the leaf open (90 degrees, away from the side it opens to) or shut; `animate` eases it.
+func set_door_open(on: bool, animate: bool = true) -> void:
+	door_open = on
+	_place_leaf(animate)
+
+
+func _place_leaf(animate: bool) -> void:
+	var yaw: float = -PI * 0.5 if door_open else 0.0
+	if _leaf != null:
+		var base: Basis = _leaf.transform.basis.orthonormalized()
+		var target := Basis(Vector3.UP, yaw)
+		if animate and is_inside_tree():
+			var tw := create_tween()
+			tw.tween_method(func(t: float) -> void:
+				if is_instance_valid(_leaf):
+					_leaf.basis = base.slerp(target, t), 0.0, 1.0, 0.45)
+		else:
+			_leaf.basis = target
+	if _leaf_shape != null:
+		# The collider jumps to where the leaf ends up (open, it stands along the hinge post).
+		var hinge := Vector3(-0.5, 0.0, 0.0)
+		var leaf_xf := Transform3D(Basis(Vector3.UP, yaw), hinge)
+		_leaf_shape.transform = leaf_xf * Transform3D(Basis(), Vector3(0.5, 1.0, 0.0))
+
+
 func _apply_provides() -> void:
+	if rack_capacity() > 0:
+		inventory = Inventory.new()
+		inventory.owner_id = piece_id
+		inventory.max_slots = rack_capacity()
+		var rst: Dictionary = Game.session.world.container_state(piece_id) if Game.session != null else {}
+		for d: Variant in rst.get("items", []):
+			var s2: ItemStack = ItemStack.from_dict(d)
+			if s2 != null:
+				inventory.add(s2)
+		update_fill()
+	if def.piece_kind == "door" and Game.session != null:
+		set_door_open(bool(Game.session.world.flags.get("open:%s" % piece_id, false)), false)
 	if storage_slots() > 0:
 		inventory = Inventory.new()
 		inventory.owner_id = piece_id
@@ -346,6 +514,18 @@ func interact_text(player: Player) -> String:
 		return "Dismantle %s (hold)" % def.display_name.to_lower()
 	if def.piece_kind == "log":
 		return ""
+	if def.piece_kind == "door":
+		return "Close door" if door_open else "Open door"
+	if rack_capacity() > 0:
+		var item: ItemDef = Content.item(rack_item())
+		var nm: String = item.display_name.to_lower() if item != null else String(rack_item())
+		var carried: int = player.state.inventory.count_of(rack_item())
+		var room: int = rack_capacity() - rack_count()
+		if carried > 0 and room > 0:
+			return "Store %s x%d (%d/%d)" % [nm, mini(carried, room), rack_count(), rack_capacity()]
+		if rack_count() > 0:
+			return "Take %s (%d/%d)" % [nm, rack_count(), rack_capacity()]
+		return "%s (empty, holds %d %s)" % [def.display_name, rack_capacity(), nm]
 	var parts: PackedStringArray = []
 	if station_id() != &"":
 		parts.append("Use %s" % def.display_name)
@@ -361,7 +541,7 @@ func interact_text(player: Player) -> String:
 			return "Add fuel (%s)" % Content.item(item).display_name if item != &"" else "Needs fuel: sticks, leaves or a log"
 		if not lit:
 			return ("Light fire" if _has_igniter(player) else "Light fire (needs a lighter)") + " · fuel %s" % fuel_text(fuel)
-		return "%s · burns %s · [G] add fuel" % [parts[0], fuel_text(fuel)]
+		return "%s · burns %s · [%s] add fuel" % [parts[0], fuel_text(fuel), PlayerInteraction.key_label(&"drop")]
 	if provides("light") and not lit:
 		return "Light fire" if _has_igniter(player) else "Light fire (needs a lighter)"
 	return parts[0]
@@ -382,6 +562,13 @@ static func has_igniter(p: PlayerState) -> bool:
 func interact(player: Player) -> void:
 	if _dismantling(player):
 		Game.execute(&"build.dismantle", {"player": player.state.id, "piece": String(piece_id)})
+		return
+	if def.piece_kind == "door":
+		Game.execute(&"build.toggle_door", {"player": player.state.id, "piece": String(piece_id)})
+		return
+	if rack_capacity() > 0:
+		var store: bool = player.state.inventory.count_of(rack_item()) > 0 and rack_count() < rack_capacity()
+		Game.execute(&"build.rack_store" if store else &"build.rack_take", {"player": player.state.id, "piece": String(piece_id)})
 		return
 	if burns_fuel() and not lit and fuel <= 0.0:
 		Game.execute(&"build.add_fuel", {"player": player.state.id, "piece": String(piece_id)})
@@ -407,6 +594,7 @@ func interact(player: Player) -> void:
 func on_contents_changed() -> void:
 	if inventory != null and Game.session != null:
 		Game.session.world.set_container_items(piece_id, inventory)
+	update_fill()
 
 
 var container_id: StringName:

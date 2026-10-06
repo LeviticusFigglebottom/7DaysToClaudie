@@ -154,17 +154,25 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
 
 ## M2 — Factions, caves, companion, economy ⬜
 - The Ashen: camps, routines, scouts that observe, morale/fear of fire, raids, effigies.
-- Corvane cave network (SDF volumes, darkness, key items, mine levels) + region C2/C6 entrances.
+- Corvane cave network (darkness, key items, mine levels) + region C2/C6 entrances.
+  - [x] The Corvane Larkspur Adit (ADR-0044): the caves' entrance in D6 at the Larkspur cliffs, a
+    mine office over two buried levels (a timbered drift, a stope broken into a limestone cave);
+    buried POI levels in TerrainHoles; underground is night for the Hollowed; rock finishes and a
+    mine prop kit. Gaps: TD-162..169.
+  - [ ] The Corvane Deep Mine (C2), the sealed passages (C6, C1), organic caves.
 - Companion Ezra Vane: follow/gather/guard/fetch orders.
 - Full perk trees (rank 4–5 capstones), forge/chemistry bench/grill, more schematics and
   journals (the joinery track has no recipes yet, TD-030). (The Program's supply drone landed
   early, in M1: ADR-0023.)
-- Waystation 9 trader, contracts (clear/fetch/defend), reputation tiers, scrip economy.
+- ✅ Waystation 9 trader (ADR-0039): a safe-zone post in D6 by Route 9 (D7 later), a quartermaster,
+  a scrip shop with restocks and reputation tiers, a contracts board dealing clear/fetch/defend
+  contracts by the day, turn-ins for scrip, XP and standing; `program_relay` camps for random
+  worlds once the generator places them. Gaps: TD-141..148.
 - More POIs (mine office, rail depot, dam control house...) and the Mile 12 framework.
   Church, motel, gas station, bar, clinic, post office, lookout, logging camp, sawmill and the
   Okafor farm landed early, in M1.
-- Wolves, Hollowed hounds and Murmurs that follow you (deer, hares, songbirds and crows landed early, in M1:
-  ADR-0027; Blister, Husk and Rammer too).
+- Wolves. Deer, hares, songbirds and crows landed early, in M1 (ADR-0027), as did the Blister,
+  Husk and Rammer, and the Hollowed hounds and Murmurs (ADR-0034).
 
 ## M3 — RWG, biomes, seasons, base tech ⬜
 - Randomized world generation (macro terrain + erosion, biomes, rivers/lakes, roads, towns from
@@ -176,12 +184,44 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
     frameworks; roads with bridges; authored places by site; drop site; Bloom patches; cached in
     user://worlds/random; save v6; `rwg_preview.gd` map CLI and in-world shots; the slice smoke
     passes on a 3 x 3 random world.
+  - [x] v2, organic towns (ADR-0040, `RwgGenerator.VERSION` 2): towns sited by size class from a
+    `town_density` setting, arterials routed through their centres, streets grown over the land with
+    lots by frontage and zoning by rings, lot pads graded to each frame, buildings stood on their
+    frames, an authored building in at most 3 towns per world; v1 worlds still load. Gaps:
+    TD-136..140.
+  - [x] New biomes (ADR-0041, `RwgGenerator.VERSION` 4): burnt forest as fire scars that stop at
+    water, roads and towns (charred snags with alligator char under silver wood, charred windfall,
+    fire-hollowed stumps, sooted boulders, ash-and-char ground, fireweed, bracken and lodgepole
+    regrowth, its own ambience) and fen on low wet ground (peat, sphagnum hummocks, tannin pools the
+    player wades, cattail and bulrush that stand in them, skunk cabbage, stunted tamarack and black
+    spruce, drowned snags, frogs at dusk; the Bloom pools there); two weights on the World tab.
+    Gaps: TD-149..153.
   - [ ] Caves, traders, the Ashen's territory, coasts and new biomes; streaming regions for 6-7 km
-    worlds (TD-081..084).
+    worlds (TD-081..084; RWG v2 Phases 2–4, ADR-0038).
   - [x] Pool buildings for random towns (DESIGN §11): Suds & Spin Laundromat, Hollowmere Grocery,
     Bracken Lumber & Feed, Pell County Library and KHLW Valley Radio, five authored dungeons with
     room alternatives that town lots pick by zoning, tier and footprint; 36 new props
     (`props_town3.py`) and the `town3_print` sign atlas. Gaps: TD-086..089.
+  - [x] Pool round 2 (DESIGN §11): Hollis Pawn & Gun, Northfork Packing Co., Water Works,
+    Ridgeline Aggregate and the Veterans' Post, five more pool dungeons (three of them industrial)
+    with their own keys, notes and loot (`town4` content) and 24 new props (`props_town4.py`);
+    `tests/unit/test_pool_round_two.gd`. Gaps: TD-112..114.
+  - [x] Wilderness set pieces, round 3 (DESIGN §11): Camp Tamarack (a church camp on a lake shore, the
+    Cordon's family evacuation point), Elk Ridge Lodge (a two-storey chinked-log hunting lodge with a
+    double-height great room and a cellar meat locker), the Cordon Quarantine Camp (a fenced roadside
+    camp: checkpoint, screening, decontamination, open-sided ward tents, command trailer, morgue
+    reefer) and the Haldane Place (a fortified homestead and its root-cellar bunker), four dungeons in
+    the wilderness pool with room alternatives, their own keys, notes and loot (`wild3` content), 49
+    new props (`props_wild3.py`, shells for the lodge, reefer and trailer) and the `w3_signs` atlas;
+    `tests/unit/test_wilderness_round_three.gd`. Gaps: TD-154..158.
+  - [x] The first tier-5 dungeon (DESIGN §11 "Tier 5", ADR-0046): the Corvane Field Lab, the geology field
+    station the Cordon took for its Bloom lab, a 56 x 56 compound behind razor wire (core shed, prefab lab
+    modules on a covered boardwalk, mess and bunkhouse, generator shed, decontamination unit) over a buried
+    containment level (keycard airlock, isolation cells, specimen lab, the vault and its escape shaft); eight
+    held groups, a 22-beat route, sixteen dressings; sealed Bloom cores and Program research drives as the
+    payoff (`lab` content), 45 new props (`props_lab.py`), the `lab_signs` atlas and six item models
+    (`item_lab.py`); one `remote` wilderness pool entry (danger 4+); `tests/unit/test_field_lab.gd`.
+    Gaps: TD-176..180.
 - Burnt forest, snow, swamp, scrub biomes; full seasons (snow cover, frozen water, temperature).
 - Structural tiers: stone, metal; repair/upgrade tools; Rammer breakers that tear through walls.
 - Farming, rain collection, traps (spike pits, deadfalls), electricity (generator, wiring, lights,

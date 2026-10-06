@@ -31,16 +31,49 @@ var ambience: Node = null
 var supply_drops: Node = null
 var directives: Node = null
 var wildlife: Node = null
+## Waystation trading (ADR-0039): trader posts, their shops, contracts and safe zones.
+var traders: Node = null
 var is_ready: bool = false
+## True when this random world streams its regions (ADR-0038): only the first area is composed at
+## 1 m at load, the RegionStreamer brings in the rest. Opt-in while RWG v2 Phase 2 lands.
+var streaming: bool = false
+
+
+## Streaming is asked for by the new-game options ("stream": true, `--stream` on the command line)
+## or HOLLOWMERE_STREAM=1 (tools, loads).
+static func wants_streaming() -> bool:
+	return bool(Game.pending_options.get("stream", false)) or OS.get_environment("HOLLOWMERE_STREAM") == "1"
+
+
+## Framework lots resolved by the world loader (WorldLoader.lots), read by the POI manager.
+var poi_lots: Dictionary = {}
+## Every building of the world as data (WorldLoader.registry, RWG v2 Phase 3).
+var poi_registry: PoiRegistry = null
+## Where the player will stand when the boot ends (the warm-up camera's spot): a streamed world
+## builds the buildings around it during the boot.
+var boot_focus := Vector3.ZERO
 var sleeping: bool = false
 
 var _loader: WorldLoader
 var _load_task: int = -1
 var _spawn_settle: int = 0
+## The main-thread half of the load (ADR-0036): [label, Callable, name] steps, run a few a frame
+## within BOOT_BUDGET_MS so the window keeps answering the OS (one long frame here made Windows
+## flag the game as not responding).
+const BOOT_BUDGET_MS: float = 40.0
+## Share of the loading bar the worker thread's half fills; the boot steps fill the rest to 0.95.
+const WORKER_SHARE: float = 0.7
+## The boot's steps (StepRunner); null when not booting.
+var _boot: StepRunner = null
+var _held: Dictionary = {}
+var _load_meter: LoadMeter = LoadMeter.new()
 
 
 func _ready() -> void:
 	Game.world = self
+	# Process after the world's systems: a boot step that lets a system tick (_boot_release) then
+	# measures exactly that system's first frame (LoadMeter), not the next one's too.
+	process_priority = 1000
 	session = Game.session
 	if session == null:
 		session = Game.new_session({"game_mode": "survival"})
@@ -49,11 +82,17 @@ func _ready() -> void:
 	add_child(ui)
 	ui.show_loading("Entering the Cordon…", 0.0)
 	_loader = WorldLoader.new()
+	_loader.resolve_lots = true
+	_loader.world_seed = session.world_seed
 	var dir: String = MAIN_WORLD_DIR
 	if session.is_random_world():
 		# A random world (ADR-0031): generated (or read from its cache) on the same worker thread.
 		var gen: Dictionary = session.world_gen.duplicate(true)
 		var saved_id: String = String(session.world_id)
+		streaming = wants_streaming()
+		_loader.stream = streaming
+		if streaming and not bool(Game.pending_options.get("is_new_game", false)):
+			_loader.spawn_hint = session.local_player().position
 		_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_random_world(gen, saved_id), true, "world load")
 		return
 	_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_world(dir), true, "world load")
@@ -68,8 +107,17 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
+	_load_step()
+	# Sampled after this frame's steps: the label shown now names the step the next frame runs,
+	# and the meter attributes the coming frame to it (GameWorld processes last, see _ready).
+	if not is_ready or _load_meter.trailing():
+		_load_meter.frame(ui.loading_text() if ui != null and not is_ready else "")
+
+
+func _load_step() -> void:
 	if _load_task >= 0:
-		ui.show_loading(_loader.stage, _loader.progress)
+		var st: Array = _loader.status()
+		ui.show_loading(str(st[0]), float(st[1]) * WORKER_SHARE, _loading_map_texture(), _loader.marks())
 		if WorkerThreadPool.is_task_completed(_load_task):
 			WorkerThreadPool.wait_for_task_completion(_load_task)
 			_load_task = -1
@@ -77,6 +125,12 @@ func _process(_delta: float) -> void:
 				ui.show_loading("Failed: %s" % _loader.error, 1.0)
 				return
 			_on_world_loaded()
+		return
+	if _boot != null:
+		_run_boot_steps()
+		return
+	if not _awaiting.is_empty():
+		_poll_await()
 		return
 	if not is_ready and player != null:
 		ui.show_loading("Finding your feet…", 0.95)
@@ -86,24 +140,173 @@ func _process(_delta: float) -> void:
 				_finish_spawn()
 
 
+## True while the main-thread half of the load runs (modules may queue work with boot_steps()).
+func is_booting() -> bool:
+	return _boot != null
+
+
+## The random world's map for the loading screen, read once its file exists (null otherwise).
+var _map_tex: Texture2D = null
+func _loading_map_texture() -> Texture2D:
+	var path: String = _loader.map_file() if _map_tex == null else ""
+	if path != "" and FileAccess.file_exists(path):
+		var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+		if img != null and not img.is_empty():
+			_map_tex = ImageTexture.create_from_image(img)
+	return _map_tex
+
+
+## Runs boot steps within the frame's budget, then shows the next one's label.
+func _run_boot_steps() -> void:
+	_turn_warm_camera()
+	_boot.run_frame()
+	if _boot.is_idle():
+		_boot = null
+		_release_processing()
+		return
+	ui.show_loading(_boot.current_label(), WORKER_SHARE + (0.95 - WORKER_SHARE) * _boot.progress())
+
+
+func _on_boot_step(step_name: String, usec: int, _finished: bool) -> void:
+	_load_meter.step(step_name, usec)
+	_hold_processing()
+
+
+## The worker thread is done: queue the scene-tree half of the load as boot steps (see _boot).
 func _on_world_loaded() -> void:
 	world_def = _loader.world
+	poi_lots = _loader.lots
+	poi_registry = _loader.registry
 	if _loader.world_id != "":
 		session.world_id = StringName(_loader.world_id)
+	_boot = StepRunner.new()
+	_boot.budget_ms = BOOT_BUDGET_MS
+	_boot.step_ran.connect(_on_boot_step)
+	_boot.add_all([
+		["Laying the ground…", _boot_terrain, "terrain"],
+		["Reading the old survey…", func() -> void: terrain.load_from(session.world), "terrain edits"],
+		["Hanging the sky…", _boot_environment, "environment"],
+		["Winding the clocks…", _boot_clock, "clock"],
+	])
+	for m: Array in MODULES:
+		_boot.add([str(m[2]), _spawn_module.bind(m[0], m[1]), str(m[0])])
+	_boot.add(["Waking up…", _spawn_player, "player"])
+	_boot.add(["Waking up…", _boot_hooks, "hooks"])
+	_boot.add(["Waking up…", _boot_release, "release"])
+	# Show the first step's label for a frame before running it: the frame it runs in is then
+	# measured (and reported by LoadMeter) under its own name, not the worker's last stage.
+	ui.show_loading(_boot.current_label(), WORKER_SHARE)
+
+
+## Systems added by a boot step don't tick until the whole world exists: before the split they
+## were all created in one frame, and their _process code may assume the player and its
+## neighbours are there. Their previous process modes are restored when the boot ends.
+func _hold_processing() -> void:
+	for c: Node in get_children():
+		# The warm-up camera is freed when the player arrives: never held, nothing to release.
+		if c != ui and c != _warm_camera and not _held.has(c):
+			_held[c] = c.process_mode
+			c.process_mode = Node.PROCESS_MODE_DISABLED
+
+
+func _release_processing() -> void:
+	for c: Node in _held:
+		if is_instance_valid(c) and int(_held[c]) >= 0:
+			c.process_mode = _held[c]
+	_held.clear()
+
+
+## The last boot steps: one per held system, each letting it tick and then giving it a frame of
+## its own. All of them starting in one frame cost ~0.5 s (their first _process: streaming,
+## scatter, sleepers); one at a time spreads that out, and LoadMeter names the slow one.
+func _boot_release() -> void:
+	var steps: Array = []
+	for c: Node in _held:
+		var node: Node = c
+		var ticked: Array = [false]
+		# First call: let it tick and end the frame; the next frame is its first. Second call (the
+		# frame after, once it has ticked): done.
+		steps.append(["Waking up… (%s)" % node.name, func() -> bool:
+			if ticked[0]:
+				return true
+			ticked[0] = true
+			if is_instance_valid(node) and int(_held.get(node, -1)) >= 0:
+				node.process_mode = _held[node]
+				# Kept, marked released, so _hold_processing doesn't hold it again.
+				_held[node] = -1
+			return false, "release %s" % node.name])
+	_insert_boot_steps(steps)
+
+
+func _boot_terrain() -> void:
 	stimuli = Stimuli.new()
 	stimuli.name = "Stimuli"
 	stimuli.heat = session.heat
 	add_child(stimuli)
 	terrain = TerrainManager.new()
 	terrain.name = "Terrain"
+	terrain.defer_far_tiles = true
+	terrain.prebuilt_bloom = _loader.bloom_field
 	add_child(terrain)
-	terrain.setup(world_def, _loader.detailed, _loader.coarse)
-	terrain.load_from(session.world)
+	terrain.setup(world_def, _loader.detailed.duplicate(), _loader.coarse)
+	# The terrain owns the regions now (they detach in a streamed world: nothing else may hold them).
+	_loader.detailed = {}
+	_insert_boot_steps(terrain.boot_steps())
+	if streaming:
+		terrain.start_streaming(Content.config(&"streaming"))
+	_add_warm_camera()
+
+
+# --- Pipeline warm-up (TD-003) ----------------------------------------------------------------
+
+## A camera at the spawn while the world boots, so the renderer draws it behind the loading
+## screen as each system adds its meshes. Without one nothing 3D was drawn until the player's
+## camera arrived, and that first frame compiled every pipeline the view needed at once: 16.5 s
+## (151 surface pipelines) in the owner's Windows build, the "not responding" freeze. Turning a
+## fifth of a circle a frame, it shows every direction the player may face within five frames.
+var _warm_camera: Camera3D = null
+const WARM_TURN: float = TAU / 5.0
+
+
+func _add_warm_camera() -> void:
+	var at: Vector3
+	if bool(Game.pending_options.get("is_new_game", false)):
+		at = _find_spawn("drop_site").get("pos", Vector3.ZERO)
+	else:
+		at = session.local_player().position
+	boot_focus = at
+	_warm_camera = Camera3D.new()
+	_warm_camera.name = "WarmCamera"
+	_warm_camera.fov = 100.0
+	_warm_camera.far = 2000.0
+	add_child(_warm_camera)
+	_warm_camera.global_position = at + Vector3.UP * 1.7
+	_warm_camera.make_current()
+
+
+func _turn_warm_camera() -> void:
+	if _warm_camera != null and is_instance_valid(_warm_camera):
+		_warm_camera.rotation = Vector3(-0.15, _warm_camera.rotation.y + WARM_TURN, 0.0)
+
+
+func _drop_warm_camera() -> void:
+	if _warm_camera != null and is_instance_valid(_warm_camera):
+		# Out of the tree now, not at the end of the frame: the hold after this step would
+		# otherwise catch it as a system and queue a release step for a freed node.
+		remove_child(_warm_camera)
+		_warm_camera.queue_free()
+	_warm_camera = null
+
+
+func _boot_environment() -> void:
 	env = EnvironmentController.new()
 	env.name = "Environment"
 	env.clock = session.clock
 	env.weather = session.weather
 	add_child(env)
+
+
+func _boot_clock() -> void:
 	clock_driver = WorldClockDriver.new()
 	clock_driver.name = "Clock"
 	clock_driver.session = session
@@ -114,8 +317,9 @@ func _on_world_loaded() -> void:
 	actions.world = self
 	add_child(actions)
 	clock_driver.game_minutes_passed.connect(_on_game_minutes)
-	_spawn_modules()
-	_spawn_player()
+
+
+func _boot_hooks() -> void:
 	Events.game_saving.connect(_on_game_saving)
 	if DebugTools.enabled():
 		var dbg := DebugOverlay.new()
@@ -124,30 +328,43 @@ func _on_world_loaded() -> void:
 		dbg.setup(self)
 
 
-## Optional modules: instantiated if their scripts exist (lets systems land incrementally).
-func _spawn_modules() -> void:
-	var mods: Array = [
-		["water", "res://src/world/water/water_system.gd"],
-		["bridges", "res://src/world/bridges.gd"],
-		["road_markings", "res://src/world/road_markings.gd"],
-		["vegetation", "res://src/world/vegetation/vegetation_manager.gd"],
-		["loose", "res://src/world/loose_items.gd"],
-		["building", "res://src/building/building_manager.gd"],
-		["pois", "res://src/poi/poi_manager.gd"],
-		["ai", "res://src/ai/ai_director.gd"],
-		["ambience", "res://src/audio/ambience_director.gd"],
-		["supply_drops", "res://src/world/supply_drops.gd"],
-		["directives", "res://src/progression/directive_tracker.gd"],
-		["wildlife", "res://src/wildlife/wildlife_manager.gd"],
-	]
-	for m: Array in mods:
-		if ResourceLoader.exists(m[1]):
-			var node: Node = (load(m[1]) as GDScript).new()
-			node.name = str(m[0]).capitalize()
-			set(m[0], node)
-			add_child(node)
-			if node.has_method(&"setup_world"):
-				node.call(&"setup_world", self)
+## Optional modules: instantiated if their scripts exist (lets systems land incrementally), one
+## boot step each: [property, script, loading-screen label].
+const MODULES: Array = [
+	["water", "res://src/world/water/water_system.gd", "Filling the rivers…"],
+	["bridges", "res://src/world/bridges.gd", "Filling the rivers…"],
+	["road_markings", "res://src/world/road_markings.gd", "Painting the roads…"],
+	["vegetation", "res://src/world/vegetation/vegetation_manager.gd", "Growing the forest…"],
+	["loose", "res://src/world/loose_items.gd", "Scattering what was dropped…"],
+	["building", "res://src/building/building_manager.gd", "Raising what you built…"],
+	["pois", "res://src/poi/poi_manager.gd", "Raising the town…"],
+	["ai", "res://src/ai/ai_director.gd", "Stirring the Hollowed…"],
+	["ambience", "res://src/audio/ambience_director.gd", "Listening…"],
+	["supply_drops", "res://src/world/supply_drops.gd", "Listening…"],
+	["directives", "res://src/progression/directive_tracker.gd", "Listening…"],
+	["wildlife", "res://src/wildlife/wildlife_manager.gd", "Waking the woods…"],
+	["traders", "res://src/trade/trader_manager.gd", "Manning the Waystation…"],
+]
+
+
+func _spawn_module(prop: String, script: String) -> void:
+	if not ResourceLoader.exists(script):
+		return
+	var node: Node = (load(script) as GDScript).new()
+	node.name = prop.capitalize()
+	set(prop, node)
+	add_child(node)
+	if node.has_method(&"setup_world"):
+		node.call(&"setup_world", self)
+	# A module with more main-thread work than one frame should take queues it as further steps,
+	# run right after its own (before the modules that follow it, which may expect the work done).
+	if node.has_method(&"boot_steps"):
+		_insert_boot_steps(node.call(&"boot_steps"))
+
+
+## Queues steps to run right after the current one (only called from a boot step).
+func _insert_boot_steps(more: Array) -> void:
+	_boot.insert_next(more)
 
 
 func _spawn_player() -> void:
@@ -162,6 +379,8 @@ func _spawn_player() -> void:
 		_give_start_kit(p)
 	player = (load(PLAYER_SCENE) as PackedScene).instantiate() as Player
 	add_child(player)
+	_drop_warm_camera()
+	player.camera.make_current()
 	player.bind_state(p)
 	player.input_enabled = false
 	player.died.connect(_on_player_died)
@@ -169,7 +388,9 @@ func _spawn_player() -> void:
 	# (state -> progression -> connection -> lambda -> state) and leak the whole player.
 	p.progression.leveled_up.connect(_on_player_leveled.bind(p.id))
 	terrain.focus = player
-	terrain.update_streaming(player.global_position, true)
+	# Meshed on worker threads ("Finding your feet" waits for the chunks around the player): the
+	# synchronous version meshed all 169 near chunks in this step, ~0.45 s of one frame.
+	terrain.update_streaming(player.global_position)
 	if stimuli != null:
 		stimuli.recenter(player.global_position)
 
@@ -179,8 +400,11 @@ func _on_player_leveled(level: int, player_id: StringName) -> void:
 
 
 func _find_spawn(id: String) -> Dictionary:
-	for rid: String in _loader.detailed:
-		var rt: RegionTerrain = _loader.detailed[rid]
+	# The terrain's regions, then the coarse ones (their metadata has the spawns too; the player is
+	# grounded on the real terrain when placed). Not the loader's: in a streamed world it would
+	# keep every first-area region in memory after it detaches.
+	var all: Array = terrain.regions.values() + terrain.coarse.values()
+	for rt: RegionTerrain in all:
 		if rt.spawns.has(id):
 			var s: Dictionary = rt.spawns[id]
 			var a: Array = s["pos"]
@@ -234,6 +458,7 @@ func _finish_spawn() -> void:
 	if pos.y < ground + 0.2 or pos.y > ground + 30.0:
 		player.global_position = Vector3(pos.x, ground + 0.4, pos.z)
 	_place_spawn_props()
+	_load_meter.spawned()
 	player.input_enabled = true
 	is_ready = true
 	ui.hide_loading()
@@ -408,9 +633,43 @@ func respawn() -> void:
 	var p: PlayerState = player.state
 	var pos: Vector3 = p.spawn_point if p.has_spawn_point else _find_spawn("drop_site").get("pos", Vector3.ZERO)
 	p.stats.revive(50.0)
-	player.global_position = pos + Vector3.UP * 0.5
+	await_area(pos, func() -> void:
+		player.global_position = pos + Vector3.UP * 0.5
+		player.velocity = Vector3.ZERO
+		terrain.update_streaming(player.global_position, true)
+		player.input_enabled = true
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		Events.player_spawned.emit(p.id))
+
+
+## Runs `then` once the ground at `pos` exists (ADR-0038): at once in a world that doesn't
+## stream; in a streamed one, behind a blocking "Finding your feet…" overlay while the region
+## there is composed and attached and its near chunks meshed (a respawn or a teleport far from
+## where the player was). The player is frozen meanwhile.
+func await_area(pos: Vector3, then: Callable) -> void:
+	if terrain.streamer == null or (terrain.streamer.is_area_ready(pos, 64.0) and terrain.is_ready_around(pos, 1)):
+		then.call()
+		return
+	player.input_enabled = false
+	terrain.streamer.request_now(pos)
+	_awaiting = {"pos": pos, "then": then}
+	ui.show_loading("Finding your feet…", 0.95)
+
+
+## The area await_area is waiting for ({} = none).
+var _awaiting: Dictionary = {}
+
+
+func _poll_await() -> void:
+	var pos: Vector3 = _awaiting["pos"]
+	# Keep the player at the spot (nothing to stand on yet) while the land forms.
+	player.global_position = Vector3(pos.x, maxf(player.global_position.y, terrain.height_at(pos.x, pos.z) + 2.0), pos.z)
 	player.velocity = Vector3.ZERO
-	terrain.update_streaming(player.global_position, true)
-	player.input_enabled = true
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	Events.player_spawned.emit(p.id)
+	terrain.update_streaming(pos)
+	if not terrain.streamer.is_area_ready(pos, 64.0) or not terrain.is_ready_around(pos, 1):
+		return
+	var then: Callable = _awaiting["then"]
+	_awaiting = {}
+	terrain.streamer.clear_request()
+	ui.hide_loading()
+	then.call()

@@ -3,13 +3,22 @@ extends Node
 ## frameworks and POIs, which need Content) and writes inspection images (hillshade, biome,
 ## dominant splat, vegetation).
 ##   godot --headless --path game -s res://src/tools/cli/compose_region.gd -- \
-##       [--world res://world/main_map] [--region d6_larch_hollow] [--spacing 1.0] [--out DIR] [--no-cache]
+##       [--world res://world/main_map | /abs/generated/world] [--region d6_larch_hollow | --all]
+##       [--spacing 1.0] [--bands N] [--repeat K] [--out DIR] [--no-cache] [--no-images] [--cache-io]
+## --no-cache composes without the disk cache and prints each step's time (ADR-0038's budgets),
+## the region's RAM and the process's static memory; --bands N runs the per-sample passes on N
+## threads; --repeat K composes K times (the fastest is the number to quote on a shared machine);
+## --all composes every region of the world (no images) and prints the total; --cache-io also
+## times a cache write, a cache read and the input hash (first and memoised). A generated world's
+## towns are registered first (its frameworks.json), or its regions would compose without streets.
 
 const LAYER_COLORS: Dictionary = {
 	"forest_floor": Color(0.32, 0.22, 0.12), "moss_ground": Color(0.25, 0.36, 0.12), "grass_ground": Color(0.42, 0.52, 0.22),
 	"dirt": Color(0.55, 0.42, 0.28), "mud": Color(0.3, 0.24, 0.18), "gravel": Color(0.6, 0.58, 0.54),
 	"asphalt_cracked": Color(0.15, 0.15, 0.16), "sand": Color(0.82, 0.74, 0.55), "rock_cliff": Color(0.5, 0.5, 0.5),
+	"ash_char": Color(0.36, 0.34, 0.32), "peat": Color(0.17, 0.12, 0.09),
 }
+const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
 
 
 func _ready() -> void:
@@ -17,20 +26,97 @@ func _ready() -> void:
 	var world_path: String = _arg(a, "--world", "res://world/main_map")
 	var region_id: String = _arg(a, "--region", "d6_larch_hollow")
 	var spacing: float = float(_arg(a, "--spacing", "1.0"))
+	var bands: int = int(_arg(a, "--bands", "1"))
+	var repeat: int = maxi(1, int(_arg(a, "--repeat", "1")))
 	var out_dir: String = _arg(a, "--out", ProjectSettings.globalize_path("res://").path_join("../build/region_preview"))
-	DirAccess.make_dir_recursive_absolute(out_dir)
+	if FileAccess.file_exists(world_path.path_join("frameworks.json")):
+		for e: String in Worlds.register_frameworks(world_path):
+			push_warning("compose_region: %s" % e)
 	var world: WorldDef = WorldDef.load_from(world_path)
-	var t0: int = Time.get_ticks_msec()
+	if world == null:
+		get_tree().quit(1)
+		return
+	print("[compose] load avg %s, %d cores" % [_loadavg(), OS.get_processor_count()])
+	if a.has("--all"):
+		_compose_all(world, spacing, bands, a.has("--no-cache"))
+		get_tree().quit(0)
+		return
 	var rt: RegionTerrain
-	if a.has("--no-cache"):
-		rt = TerrainComposer.compose(world, region_id, spacing, func(stage: String, t: float) -> void: print("  [%3d%%] %s (%d ms)" % [int(t * 100), stage, Time.get_ticks_msec() - t0]))
-	else:
-		rt = TerrainComposer.get_or_compose(world, region_id, spacing)
-	print("composed %s in %d ms: %dx%d samples, hash %s" % [region_id, Time.get_ticks_msec() - t0, rt.height.width, rt.height.depth, rt.height.content_hash().substr(0, 16)])
+	for k: int in repeat:
+		var t0: int = Time.get_ticks_usec()
+		if a.has("--no-cache"):
+			rt = TerrainComposer.compose(world, region_id, spacing, Callable(), [false], bands)
+		else:
+			rt = TerrainComposer.get_or_compose(world, region_id, spacing, Callable(), [false], bands)
+		var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+		if rt == null:
+			printerr("[compose] %s did not compose" % region_id)
+			get_tree().quit(1)
+			return
+		print("[compose] %s at %s m, %d band(s), run %d: %.0f ms%s" % [region_id, spacing, bands, k + 1, ms, _steps(rt.compose_ms)])
+	print("composed %s: %dx%d samples, hash %s; region RAM %.1f MB, static memory %.0f MB (peak %.0f MB)" % [region_id, rt.height.width, rt.height.depth,
+		rt.height.content_hash().substr(0, 16), rt.memory_bytes() / 1048576.0, OS.get_static_memory_usage() / 1048576.0, OS.get_static_memory_peak_usage() / 1048576.0])
 	var hr: Vector2 = rt.height.min_max(0, 0, rt.height.width, rt.height.depth)
 	print("height range %.1f .. %.1f m; water bodies %d; roads %d; bridges %d; placements %d" % [hr.x, hr.y, rt.water.size(), rt.roads.size(), rt.bridges.size(), rt.placements.size()])
-	_write_images(rt, out_dir, hr)
+	if a.has("--cache-io"):
+		_cache_io(world, region_id, spacing, rt, out_dir)
+	if not a.has("--no-images"):
+		DirAccess.make_dir_recursive_absolute(out_dir)
+		_write_images(rt, out_dir, hr)
 	get_tree().quit(0)
+
+
+## Every region of the world at `spacing`, one after another on this thread (plus bands).
+func _compose_all(world: WorldDef, spacing: float, bands: int, no_cache: bool) -> void:
+	var ids: Array = world.regions.keys()
+	ids.sort()
+	var total: float = 0.0
+	var worst: float = 0.0
+	var t_all: int = Time.get_ticks_usec()
+	for rid: String in ids:
+		var t0: int = Time.get_ticks_usec()
+		var rt: RegionTerrain = TerrainComposer.compose(world, rid, spacing, Callable(), [false], bands) if no_cache \
+			else TerrainComposer.get_or_compose(world, rid, spacing, Callable(), [false], bands)
+		var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+		total += ms
+		worst = maxf(worst, ms)
+		print("[compose] %-28s %6.0f ms%s" % [rid, ms, _steps(rt.compose_ms) if rt != null else " FAILED"])
+	print("[compose] %d regions at %s m: %.0f ms in all (wall %.0f ms), %.1f ms a region, slowest %.0f ms" % [ids.size(), spacing, total,
+		float(Time.get_ticks_usec() - t_all) / 1000.0, total / maxf(1.0, ids.size()), worst])
+
+
+## Times a cache write and read of `rt` (in the output folder, not the game's cache) and the input
+## hash, first and memoised (ADR-0038's measurements 3).
+func _cache_io(world: WorldDef, region_id: String, spacing: float, rt: RegionTerrain, out_dir: String) -> void:
+	DirAccess.make_dir_recursive_absolute(out_dir)
+	var path: String = out_dir.path_join("%s_%d.bin" % [region_id, int(spacing * 100)])
+	var fresh: WorldDef = WorldDef.load_from(world.dir_path)
+	var t0: int = Time.get_ticks_usec()
+	var h: String = TerrainComposer.input_hash(fresh, region_id, spacing)
+	var t1: int = Time.get_ticks_usec()
+	TerrainComposer.input_hash(fresh, region_id, spacing)
+	var t2: int = Time.get_ticks_usec()
+	var err: Error = rt.save(path, h)
+	var t3: int = Time.get_ticks_usec()
+	var back: RegionTerrain = RegionTerrain.load_cached(path, h)
+	var t4: int = Time.get_ticks_usec()
+	var size: int = FileAccess.open(path, FileAccess.READ).get_length() if err == OK else 0
+	print("[compose] input hash %.2f ms first, %.3f ms memoised; cache write %.0f ms (%s), read %.0f ms (%s), file %.2f MB" % [
+		(t1 - t0) / 1000.0, (t2 - t1) / 1000.0, (t3 - t2) / 1000.0, error_string(err), (t4 - t3) / 1000.0,
+		"ok" if back != null and back.height.content_hash() == rt.height.content_hash() else "MISMATCH", size / 1048576.0])
+
+
+static func _steps(ms: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	for k: String in ms:
+		if k != "total":
+			parts.append("%s %.0f" % [k, float(ms[k])])
+	return " (%s)" % ", ".join(parts) if not parts.is_empty() else ""
+
+
+static func _loadavg() -> String:
+	var f := FileAccess.open("/proc/loadavg", FileAccess.READ)
+	return f.get_line().get_slice(" ", 0) if f != null else "?"
 
 
 func _write_images(rt: RegionTerrain, out_dir: String, hr: Vector2) -> void:

@@ -1,0 +1,11 @@
+{
+  "_doc": "Player-built structure surfaces (family: structures, ADR-0035): the building log's bark, axe-cut end grain and hewn wood. Textures from tools/assetgen/textures/gen/structures.py. Bark UVs: u = once round the log (0..1), v = metres along it, so uv_scale 1 = a 1 m tile (the log generator displaces its vertices with the same plate field). End grain is disc-mapped (0..1). Moss grows where the vertex colour B mask is set (patches on the log's upper side).",
+  "materials": {
+    "struct_log_bark":  {"shader": "std_surface", "textures": "struct_log_bark", "layers": {"moss": "moss"}, "params": {"uv_scale": 1.0, "normal_strength": 1.5, "moss_amount": 0.65, "moss_uv_scale": 2.2, "grime_amount": 0.35, "grime_color": "#15100c", "vertex_ao_strength": 1.0, "metallic_mult": 0.0}},
+    "struct_log_end":   {"shader": "std_surface", "textures": "struct_log_end", "params": {"uv_scale": 1.0, "normal_strength": 1.1, "grime_amount": 0.2, "grime_color": "#2a1e14", "vertex_ao_strength": 1.0, "metallic_mult": 0.0}},
+    "struct_log_knot":  {"shader": "std_surface", "textures": "struct_log_end", "params": {"uv_scale": 1.0, "tint": "#4e3322", "normal_strength": 1.2, "roughness_add": 0.05, "vertex_ao_strength": 1.0, "metallic_mult": 0.0}},
+    "struct_log_hewn":  {"shader": "std_surface", "textures": "struct_log_hewn", "params": {"uv_scale": 2.0, "normal_strength": 1.2, "grime_amount": 0.3, "grime_color": "#2e2216", "vertex_ao_strength": 1.0, "metallic_mult": 0.0}},
+    "struct_hide":      {"shader": "std_surface", "textures": "item_rawhide", "params": {"uv_scale": 2.0, "tint": "#a3927c", "normal_strength": 1.2, "grime_amount": 0.45, "grime_color": "#2a1d12", "vertex_ao_strength": 1.0, "metallic_mult": 0.0}},
+    "struct_log_char":  {"shader": "std_surface", "textures": "item_wood_charred", "params": {"uv_scale": 3.0, "normal_strength": 1.4, "vertex_ao_strength": 1.0, "metallic_mult": 0.0}}
+  }
+}

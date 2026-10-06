@@ -1,0 +1,33 @@
+{
+ "_doc": "Notes of the Corvane Larkspur Adit (ADR-0044).",
+ "defs": [
+  {
+   "id": "corvane_shift_log",
+   "title": "Shift Boss's Log",
+   "style": "handwritten",
+   "author": "E. Marsh, shift boss, No. 2 Level",
+   "body": "Mon. Stope 2-West holed through at 14:10. Air came OUT of it. Warm. Smelled like a cellar full of apples gone bad.\nTue. Office says seal it and wait for the company geologist. Bulkheaded the breach. Crew spooked.\nThu. Geologist came with two Program people in white. They went in with lamps for an hour. Came out quiet. Took jars.\nSat. Breach seal weeping. White threads on the timbers either side of it. Burned them off.\nMon. Office says reopen it for the survey team. I said not on my shift. Office says it IS your shift."
+  },
+  {
+   "id": "corvane_breakthrough",
+   "title": "Breakthrough Report",
+   "style": "typed",
+   "author": "Corvane Mining Co., Larkspur Exploration",
+   "body": "INCIDENT: Stope 2-West holed into an open void at 34 m below collar. Void is natural (limestone, active flowstone). Extent unknown; lamps show a chamber at least 20 m across sloping west, toward Larkspur Ridge.\nAIR: warm, humid, faint organic odour. No gas on the detector.\nOBSERVED: a white filamentous growth on the void walls, dense near the floor, luminous in the dark (!).\nACTION: breach bulkheaded. Samples forwarded to the Remand Program liaison at their request.\n\nPencil, in the margin: they knew it was there."
+  },
+  {
+   "id": "corvane_refuge",
+   "title": "Scratched on the Refuge Station Door",
+   "style": "scrawl",
+   "author": "the No. 1 Level crew",
+   "body": "MARSH WENT DOWN THE WINZE AT 6\nNOT BACK\nTHE NOISE IN THE STOPE ISNT THE PUMP\nWE HAVE AIR + WATER FOR 4 DAYS\nKEY TO THE WINZE IS ON MARSH'S BELT. HE GAVE IT TO DOYLE. DOYLE IS IN HERE WITH US.\nDOYLE IS NOT RIGHT\n\ndont open the winze"
+  },
+  {
+   "id": "corvane_program_seal",
+   "title": "Remand Program Survey Memo",
+   "style": "typed",
+   "author": "Remand Program, Field Survey 3",
+   "body": "SURVEY 3 / LARKSPUR VOID — PRELIMINARY\nThe void connects west through a constricted passage (partially collapsed) toward the Larkspur Ridge system; airflow suggests a second opening on the far side.\nSpecimen growth matches the Corvane Deep Mine samples. Growth density increases toward the passage.\nRECOMMENDATION: collapse the passage. Do not inform the company. Quarantine protocol applies to all personnel who entered the void.\n\nThe passage is stamped SEALED in red. Someone has written under it: not well enough."
+  }
+ ]
+}

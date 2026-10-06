@@ -1,0 +1,417 @@
+{
+ "_doc": "Program relay camps (ADR-0039): the trader post random worlds place by their roads (a `trader:program_relay:<n>` spawn feature). Smaller than Waystation 9, the same quartermaster's stock up to Trusted, and Waystation 9's contracts. Standing is kept per trader def.",
+ "defs": [
+  {
+   "id": "program_relay",
+   "name": "Program Relay",
+   "description": "A Remand Program relay camp by the road: a hatch counter, a contracts board and a tower, under the Waystations' guards.",
+   "safe_radius": 40.0,
+   "guard_dps": 50.0,
+   "quartermaster": {
+    "model": "characters/waystation_quartermaster",
+    "offset": [
+     -0.3,
+     0.0,
+     -4.05
+    ],
+    "yaw": 0,
+    "_doc": "On the counter model's standing spot (x -0.30, z -0.05 from its origin), facing out through the hatch."
+   },
+   "counter": {
+    "prop": "waystation_counter",
+    "offset": [
+     0.0,
+     -4.0
+    ],
+    "rot": 0
+   },
+   "board": {
+    "prop": "waystation_board",
+    "offset": [
+     4.5,
+     1.0
+    ],
+    "rot": -30
+   },
+   "props": [
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -4.5,
+      -9.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -1.5,
+      -9.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      1.5,
+      -9.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      4.5,
+      -9.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -7.5,
+      -6.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -7.5,
+      -3.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -7.5,
+      0.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      7.5,
+      -6.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      7.5,
+      -3.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      7.5,
+      0.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_tower",
+     "offset": [
+      -6.0,
+      -7.0
+     ],
+     "rot": 45,
+     "variant": "worn"
+    },
+    {
+     "prop": "waystation_floodlight",
+     "offset": [
+      5.5,
+      -4.0
+     ],
+     "rot": -60
+    },
+    {
+     "prop": "waystation_supply_stack",
+     "offset": [
+      -4.0,
+      -6.5
+     ],
+     "rot": 10,
+     "variant": "worn"
+    },
+    {
+     "prop": "waystation_gate",
+     "offset": [
+      0.0,
+      7.5
+     ],
+     "rot": 0
+    }
+   ],
+   "restock_days": 3,
+   "buy_markup": 2.2,
+   "rep_discount": 0.05,
+   "sell_ratio": 0.35,
+   "rep_tiers": [
+    {
+     "name": "Unknown",
+     "at": 0
+    },
+    {
+     "name": "Known",
+     "at": 60
+    },
+    {
+     "name": "Trusted",
+     "at": 200
+    },
+    {
+     "name": "Program asset",
+     "at": 450
+    }
+   ],
+   "stock": [
+    {
+     "item": "water_bottle_clean",
+     "count": [
+      3,
+      6
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "canned_beans",
+     "count": [
+      2,
+      5
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "canned_stew",
+     "count": [
+      1,
+      4
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "ration_bar",
+     "count": [
+      2,
+      4
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "cloth_bandage",
+     "count": [
+      2,
+      5
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "painkillers",
+     "count": [
+      1,
+      3
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "ammo_38",
+     "count": [
+      6,
+      18
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "cordage",
+     "count": [
+      2,
+      6
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "nails",
+     "count": [
+      10,
+      30
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "duct_tape",
+     "count": [
+      1,
+      3
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "lighter",
+     "count": [
+      1,
+      2
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "torch",
+     "count": [
+      1,
+      3
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "first_aid_kit",
+     "count": [
+      1,
+      2
+     ],
+     "rep_tier": 1,
+     "chance": 0.8
+    },
+    {
+     "item": "flashlight",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.7
+    },
+    {
+     "item": "claw_hammer",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.6
+    },
+    {
+     "item": "shovel",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.5
+    },
+    {
+     "item": "hatchet",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.6
+    },
+    {
+     "item": "repair_kit",
+     "count": [
+      1,
+      2
+     ],
+     "rep_tier": 1,
+     "chance": 0.8
+    },
+    {
+     "item": "steel_pipe",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.5
+    },
+    {
+     "item": "schematic_can_chime",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.5
+    },
+    {
+     "item": "schematic_spike_barrier",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.4
+    },
+    {
+     "item": "antifungal",
+     "count": [
+      1,
+      2
+     ],
+     "rep_tier": 2,
+     "chance": 0.7
+    },
+    {
+     "item": "machete",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 2,
+     "chance": 0.6
+    },
+    {
+     "item": "schematic_log_cabin",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 2,
+     "chance": 0.4
+    },
+    {
+     "item": "journal_field_medicine",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 2,
+     "chance": 0.4
+    },
+    {
+     "item": "journal_timber_trade",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 2,
+     "chance": 0.4
+    }
+   ],
+   "contracts_from": [
+    "waystation_9"
+   ],
+   "offers_per_day": 3,
+   "max_active": 3
+  }
+ ]
+}

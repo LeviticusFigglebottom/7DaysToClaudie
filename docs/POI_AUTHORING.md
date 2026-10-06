@@ -28,6 +28,10 @@ lots without a pick are [generated](#generated-buildings) from templates.
 * `origin: [x, z]` offsets the plan inside the lot `footprint: [w, d]` (yard space around it).
 * Level `L` floor top is at `floor_height + L × 3.0` (default `floor_height` 0.6 with a porch,
   use 0.15 for slab-on-grade shops). Level −1 is a cellar.
+* A level below ground may say `"buried": true` (ADR-0044): it runs on under the ground beyond the
+  building (a mine level, a cave). Only its cells under a ground-floor room cut the terrain; the rest
+  lie under the hillside. Give the region feature a `size` to level only the surface buildings, and
+  keep at least a storey of ground over buried cells (TD-164). Example: `corvane_larkspur_adit`.
 * Sides: `N` (−z, back), `E` (+x), `S` (+z, front), `W` (−x).
 * Placed things use `"at": [col, row]` = centre of that cell (+ optional `"offset": [dx, dz]` m),
   or `"pos": [x, z]` = exact plan position in metres. `"level"` defaults to 0; `"rot"` is degrees
@@ -68,9 +72,10 @@ one for its open ground with `"population"` in `region.json`.
 Wall finishes (texture-array order is fixed in `data/materials/kit_finishes.json`):
 `plaster_white, plaster_grey, paint_mustard, paint_sage, paint_slate_blue, wallpaper_floral_rose,
 wallpaper_stripe_green, wallpaper_damask_brown, wood_paneling_dark, tile_bathroom_white,
-tile_kitchen_check, siding_white, siding_pale_blue, siding_barn_red, brick_red, concrete_block`.
+tile_kitchen_check, siding_white, siding_pale_blue, siding_barn_red, brick_red, concrete_block,
+rock_drift, rock_limestone` (the two rock walls also serve as ceilings; they never peel).
 Floor finishes: `wood_oak, wood_pine, carpet_brown, carpet_blue_worn, linoleum_check,
-linoleum_beige, tile_white_small, concrete`.
+linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
 
 ### levels
 ```json
@@ -516,6 +521,17 @@ generator's lots (`data/config/world_gen.json` `tuning.towns.lot`: commercial 28
 32 x 32, industrial 26 x 26 on the back street), keep its notes free of a town's name, and give it
 alternatives so two runs don't meet the same set piece. Leave a zoning off when a framework's
 generated lots must not draw it (Larch Street is residential, so none of the five is).
+
+**Organic towns (random worlds v2, ADR-0040).** A generated town's lots are **frame lots**:
+`"frame": [cx, cz, w, d, yaw]` in world XZ, a rectangle stood along its street (its front is the
+frame's local +Z, toward the street; `w` is the frontage, `d` the depth), with the graded pad's
+height in `y`. `LotPicker.lot_size` reads the frame and `lot_local_xf` stands the building in it,
+footprint centred, front to the street, so author the front of a pool building on its `+Z` side as
+usual. Its authored buildings are **capped world-wide**: the generator gives each authored building
+to at most `tuning.towns.authored_max` towns of one world (3) and writes each town's share into
+its framework's `authored` list; an organic town's lots choose authored buildings from that list
+only, and fill the rest from templates. So a big world shows each set piece a few times, not on
+every street. Rect lots (`rect`, the handcrafted frameworks and v1 towns) are unchanged.
 
 ## Cellars and terrain
 Rooms on level −1 (and below) are cellars. At load the terrain is cut away under them (TD-026):

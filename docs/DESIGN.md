@@ -77,7 +77,7 @@ repair, learn what the horde learned (the tether's *Hum forecast*), plan the nex
 | Gathering from environment | Trees fall physically and leave stumps; sticks, stones, fibre, boughs, berries, mushrooms, bones | M1 |
 | Diegetic UI | Salvage roll inventory on the ground, crafting on the work slate, Remand Field Manual (guidebook), wrist tether (GPS/vitals/countdown), minimal HUD | M1 |
 | Intelligent humanoid enemies | The Ashen: tribes with camps, routines, scouting, fear of fire, morale, escalation | M2 |
-| Cave networks | The Corvane caves (lightless, key items, the mine and the Root) | M2 |
+| Cave networks | The Corvane caves (lightless, key items, the mine and the Root): the Larkspur Adit landed (ADR-0044) | M2 🟡 |
 | AI companion | Ezra Vane, an earlier Remand convict (ex-lineman) — follow, gather, guard, fetch | M2 |
 | Survival stats & seasons | Health, stamina, fullness, hydration, rest, body temperature, wetness, bleeding, Bloom infection; four seasons, snow, freezing water | M1 stats / M3 seasons |
 | Stealth, light, noise, fire | Shared stimulus fields (sight/sound/scent) drive all AI; fire warms and attracts | M1 |
@@ -91,7 +91,7 @@ repair, learn what the horde learned (the tether's *Hum forecast*), plan the nex
 | Escalating horde nights | The Hum every 7th night (configurable), sector waves, breach targeting, adaptive memory | M1 |
 | Zombie variety | Hollow (walker), Lurcher (feral), Keener (screamer), Dragger (crawler) in M1; Blister (spitter), Husk (armoured), Rammer (breaker), hounds, Murmur crows later | M1/M2/M3 |
 | Heat / attention | Heat grid: noisy activity summons scouts, Keeners, packs | M1 |
-| Traders & quests | Waystation 9 quartermaster, contracts (clear/fetch/defend), reputation tiers | M2 |
+| Traders & quests | Waystation 9 quartermaster, contracts (clear/fetch/defend), reputation tiers (ADR-0039) | M2 ✅ |
 | Mining & digging | Heightmap digging + smooth SDF volumes for tunnels/caves/mines | M1 (dig), M2 (tunnels) |
 | Farming, water, traps, electricity | Rain catchers, gardens, deadfalls, generator + wiring + lights + motion turrets | M3 |
 | Randomized worlds | Seeded RWG using the same terrain composer, biomes, frameworks and POIs | M3 |
@@ -131,6 +131,12 @@ We propose five; **two ship in the M1 core loop**, the rest have hooks now.
 *Dragger* (legless crawler — also produced by severing a Hollow's legs), later *Blister*
 (spits spore blisters), *Husk* (fused with debris/riot gear, armoured), *Rammer* (huge, tears
 through walls), *Hollowed hounds*, *Murmurs* (crow flocks that mark you).
+
+**Hollowed hounds** (ADR-0034): dogs the Bloom took, in packs of three to five, more at night and
+when your noise draws them. The first to see you howls and the pack comes. They spread round
+you, bite and break off, and work your scent trail when they lose you. A torch held up keeps the
+ones in front of you off; the one behind still goes for your legs. Climb, shut a door, or hold
+the flame and turn.
 **Sleepers**: dormant Hollowed in POIs (lying, sitting, standing head-down) wake on noise, light
 or line of sight. **Dawn rooting**: Hum survivors collapse into the soil as fungal mounds.
 
@@ -147,13 +153,16 @@ escalating responses to the player (watchers → raids → war parties).
 * **Songbirds** in the canopy and on the ground, **crows** in the clearings and over Pell's
   Crossing. They **flush** when you or a Hollowed come close, or at a loud noise: wingbeats, an
   alarm call, and a sound the Hollowed hear and come to look at. Birds give your position away.
-  Crows circle what put them up, cawing, every caw another mark over your head (the Murmurs, in
-  small).
+  Crows circle what put them up, cawing, every caw another mark over your head.
+* **Murmurs** (ADR-0034): a crow flock you flush may not settle. It follows you low overhead,
+  and every caw is a mark *on you* that the Hollowed come to; more often where the Bloom lies
+  thick. Get under a roof or the canopy until they lose you, shoot into them (and pay for the
+  noise), or wait for nightfall.
 * **The Hum night is silent**: from the evening before the Hum the herds leave and the birds go.
 * **Hunting**: a deer or hare killed with any weapon leaves a carcass that bleeds scent the
   Hollowed follow; butcher it with a knife or an axe for venison or hare, a hide or pelt, bone and
   sinew; roast the meat at a campfire, twist sinew into cordage, cut rawhide strips.
-* Later: wolves, Hollowed hounds, Murmurs that follow you (TD-066).
+* Later: wolves (TD-066).
 
 ## 7. Progression
 
@@ -289,9 +298,9 @@ the loot. Below-ground rooms are real cellars cut out of the terrain (TD-026, AD
 | Northwoods Tavern | 2 | Roadhouse on Route 9 | Front nailed → beer-hatch ladder to the keg cellar → trapdoor behind the bar (keys or the bottle chime wake the bar) → back stairs → Marnie's room (shotgun, guardian, safe) |
 | Pell Ranger Station | 3 | Ranger substation; last log of Deputy Hale | Fenced lot → office (creaky boards, keys) → evidence locker search wakes the cell block → deadbolted security door → shotgun on the evidence room → guardian |
 | Pell Grange Hall | 3 | The town's last shelter, a ward of cots | Barricaded front → stage door → hall of cots (chime ambush) → kitchen triage (bear trap) → sick-bay ambush → records room behind an alarm (guardian) → drop through the rotten balcony |
-| Pell Volunteer Fire Station | 2 | Double-height apparatus bay with the engine still in it; the crew went to the dorm | Bolted watch office, bays padlocked → broken hose-tower door (bear trap) → ladder up the tower to the lookout (station keys) → day room → dorm door (creaky aisle, the dorm wakes) → down the brass pole into the bay ambush → chief's office guardian → unbolt the watch office |
-| Pell's Crossing School | 3 | The Cordon's failed evacuation point: cots in the gym, triage in the nurse's office | Front doors boarded → Mrs Dale's window (bear trap) → classrooms and lockers → teachers' workroom ambush → lights catwalk over the gym (creaky, boiler key) → drop through the rail gap: the families in the cots wake → nurse's triage → boiler-room cellar → isolation behind a shotgun (guardian) → unbolt the back door |
-| Tamsin Valley Savings & Loan | 3 | A bank that closed at three o'clock with a line still waiting | Front bolted → staff-room window → creaky back hall → manager's office (the combination) → the line in the banking hall turns → behind the teller counter → dial the vault (or cut it: ADR-0026, the whole building wakes) → vault guardian → unbolt the front |
+| Volunteer Fire Station (Pell's Crossing; also a random-town pool building) | 2 | Double-height apparatus bay with the engine still in it; the crew went to the dorm | Bolted watch office, bays padlocked → broken hose-tower door (bear trap) → ladder up the tower to the lookout (station keys) → day room → dorm door (creaky aisle, the dorm wakes) → down the brass pole into the bay ambush → chief's office guardian → unbolt the watch office |
+| Consolidated School (Pell's Crossing; also a random-town pool building) | 3 | The Cordon's failed evacuation point: cots in the gym, triage in the nurse's office | Front doors boarded → Mrs Dale's window (bear trap) → classrooms and lockers → teachers' workroom ambush → lights catwalk over the gym (creaky, boiler key) → drop through the rail gap: the families in the cots wake → nurse's triage → boiler-room cellar → isolation behind a shotgun (guardian) → unbolt the back door |
+| Tamsin Valley Savings & Loan (Pell's Crossing; also a random-town pool building) | 3 | A bank that closed at three o'clock with a line still waiting | Front bolted → staff-room window → creaky back hall → manager's office (the combination) → the line in the banking hall turns → behind the teller counter → dial the vault (or cut it: ADR-0026, the whole building wakes) → vault guardian → unbolt the front |
 
 *Route 9*
 
@@ -346,7 +355,8 @@ industrial lots from them through `LotPicker` by zoning, tier and footprint (siz
 generator's 28 x 32 commercial, 32 x 32 civic and 26 x 26 industrial lots), so two towns of one
 world show different landmarks. Each is a full dungeon with room alternatives (ADR-0030), and its
 notes name people, not a town. None stands in the handcrafted map, and Larch Street's residential
-lots never draw one. Props: `data/props/town3.json` (`props_town3.py`).
+lots never draw one. Props: `data/props/town3.json` (`props_town3.py`) and, for the second round,
+`data/props/town4.json` (`props_town4.py`).
 
 | POI | Tier | Zoning, footprint | Concept | Route sketch |
 |---|---|---|---|---|
@@ -355,9 +365,44 @@ lots never draw one. Props: `data/props/town3.json` (`props_town3.py`).
 | Bracken Lumber & Feed | 3 | industrial, 26 x 26 | Lumber yard and feed store; a timber shed open to its rafters and a grain leg climbing beside the feed bin | Padlocked store, chained shed → through the yard (forklift, stacks, jaws) → the shed's back doors (their cans wake the shed) → ladder to the catwalk (rotten boards past the tool crate) → feed loft (its door wakes the sacks) → mix loft → ladder up the grain leg to the head house: Walt and the office key → back down → Walt's office, wired to his shotgun (Eli, guardian) → bolted yard door |
 | Pell County Library | 2 | civic, 32 x 32 | Carnegie-style library: a reading room two storeys high, the stacks a maze of creaking boards, the librarian's flat over them, the county archive in the basement | Bolted front doors → up the fire-escape ladder to Ida's back porch → her flat (the cage key, her diary) → back stair → the stacks (every board wakes them) → the reading room, where they sit at the tables (ambush as you walk in) → circulation hall → children's corner → cellar → the archive cage, chained and alarmed (the Cordon's clerk, guardian) → out through the bolted front doors |
 | KHLW Valley Radio | 2 | civic or commercial, 26 x 30 | Small AM station where the Cordon read its bulletins; the generator still runs at dusk: the ON AIR sign, the racks and the mast beacon burn | Chained front → the generator shed → the hole Bud cut for the generator cable (jaws in the gap) → equipment room → Bud's office → the hall's boards or the studio door wake the booth (Mel at the console, the transcripts) → out of the office's bolted side door → up the lattice mast's ladders past two rest platforms → the relay cabinet (Bud, guardian) |
+| Hollis Pawn & Gun | 3 | commercial, 28 x 28 | Pawn shop and gun counter; Ray Hollis held out in his vault room until the counter stock ran out | Grille down, front bolted → the alley: back door jemmied → back hall (loose boards) → Ray's office (the book) → the staff door wakes the looters on the showroom floor → basement range: Ray's body and the vault key (the range wakes; cans in the doorway) → vault door on Ray's shotgun (an alarm in one dressing) → the vault (Danny, guardian) → unbolt the front |
+| Northfork Packing Co. | 3 | industrial, 26 x 26 | Cannery the Cordon took over to can rations; the night shift never went home | Office bolted → a truck through the dock wall (jaws among the totes) → retort room (the night shift in the baskets wakes) → the two-storey packing floor → gallery (loose boards) → foreman's office: the cold-store key (the line below wakes) → the cold store (alarm in one dressing; the quartermaster, guardian) → unbolt the street door |
+| Water Works | 2 | industrial, 26 x 26 | The town's pumping station; Gus kept the emergency water and tablets for "the town" | Street door bolted → smashed workshop window (jaws) → hall → the lab: the stores key (the pump hall wakes) → two storeys of pumps (cans across the door) → down to the valve gallery (two of the crew) → emergency stores (alarm in one dressing; Gus, guardian) → unbolt the street door |
+| Ridgeline Aggregate | 2 | industrial, 26 x 26 | Quarry scale house and office; the blaster locked himself in the powder magazine rather than sign it over | Office bolted → a haul truck through the shed wall (jaws by the drill rack) → the scale house (the weighmaster at his terminal) → manager's office: the magazine key (the crew wakes, in the core shed or round the radio) → magazine door (cans in one dressing) → the magazine (Pete, guardian) → unbolt the front |
+| Veterans' Post | 2 | civic, 24 x 22 | Bingo-night hall turned shelter; the quartermaster kept the cellar stores and the raffle revolver by the count | Doors chained → the kitchen door kicked in → the hall (the families who sheltered there) → canteen: the cage key in the till (the hall wakes) → back hall, down the cellar stair → the cage (a shotgun on its door or cans on the stair; the quartermaster, guardian) → out through the vestibule, unchaining the doors |
+
+*Wilderness set pieces (random worlds)*
+
+Authored places with no fixed spot that random worlds stand outside towns: the wilderness pool in
+`data/config/world_gen.json` (`tuning.wilderness.pool`) gives each a site, a density and a cap, its
+access and its pad, alongside the main map's lookout, cabin, camps, boathouse, sawmill and roadside
+stops. Each is a full dungeon with room alternatives (ADR-0030) whose notes name people, not a town.
+Walls the kit can't build are shell props round kit rooms (the lodge's chinked logs, the reefer, the
+command trailer); tents are open-sided kit rooms under a tent prop, so their sleepers lie in rooms.
+Props: `data/props/wild3.json` (`props_wild3.py`) and the `w3_signs` atlas.
+
+| POI | Tier | Site, footprint | Concept | Route sketch |
+|---|---|---|---|---|
+| Camp Tamarack | 2 | lake shore (keeps its water), 48 x 50 | A church summer camp on a lake the Cordon made a family evacuation point; the children left on the first buses, the parents wait for the second | Arch over the drive, a gate arm chained → the registration board → the loop round the flagpole and fire ring → the staff lodge, bolted → a smashed window round the side (jaws) → the counsellors' bunk room (loose boards, or the key, wake them) → the director's office: her radio log and the walk-in key → the mess hall, piled shut inside → its side door (cans) → the dining hall: the families rise → the kitchen → the walk-in (Ruth, guardian, with the convoy stores) → unbolt the kitchen's back door to the dock |
+| Elk Ridge Lodge | 3 | forest, 36 x 32 | A two-storey chinked-log hunting lodge; the guide's party came back from the woods sick | Porch doors piled shut → round past the kennels, wire pushed out → a kitchen window smashed in (the jaws' snap wakes the hunters) → Marit's note → down to the cellar → the meat locker: Arne's keys (the locker wakes) → the double-height great room under the antlers: the hunters rise → the gun room's deadbolt, a shotgun wired behind it → Marit (guardian) and the guns → unbolt the gun room's yard door; upstairs, a balcony whose boards have rotted |
+| Cordon Quarantine Camp | 3 | roadside, 44 x 44 | A fenced roadside screening camp; the wards broke the night the ground hummed and the doctor lay down with the dead and the doses | The road → the checkpoint hut, the only way through the wire → its inner door: the screening line turns → screening tent → decontamination line (jaws in the clothes) → the wards → the command trailer: the radio log, the captain's office behind an alarm, the reefer key (Ward B wakes) → the generator and light towers → the morgue reefer, padlocked, a shotgun behind its door (Dr. Vance, guardian, the cold-chain box) → its bolted side door, which opens beyond the wire (the reefer stands in the fence line: no way round it) |
+| The Haldane Place | 2 | forest, 40 x 40 | A homestead a family walled with tin, pallets and car doors and held for fourteen months, until the seventh night broke the wall | Chained gate, TURN BACK → round to where the wall went (jaws; Ray's axe) → the yard: raised beds, rain catchers, platforms → the boarded house, its back door kicked in (cans wake the house) → the kitchen: Della's calendar and the bunker key → down to the root cellar → the bunker's steel door (opening it wakes the family; Tom, guardian) → up the ladder into the cellar entry, unbolt it |
+
+*Tier 5 (random worlds, far from the start)*
+
+The deepest dungeons (ADR-0046): a locked front and a way round it, four or more held groups on different
+kinds of trigger, traps of four kinds, a chain of keys (and a keycard) to the deep rooms, a buried level, a
+vault (ADR-0026) behind a wire with a special Hollowed on it, the bolted way out, and loot gated to tiers
+4-5 whose payoff is what the Program pays most for: sealed Bloom cores and its research drives. The
+wilderness pool stands them only in danger 4-5 regions. Props: `data/props/lab.json` (`props_lab.py`) and
+the `lab_signs` atlas.
+
+| POI | Tier | Site, footprint | Concept | Route sketch |
+|---|---|---|---|---|
+| Corvane Field Lab | 5 | remote, 56 x 56 | Corvane Mining Co.'s geology field station at the end of its exploration road, where the first Bloom cores came; the Cordon took it for its forward lab, dug a containment block into the hillside, and it fell with Dr. Marchetti's team at their benches and Biosafety Officer Torvald sealed in the vault with the cores. Remand Salvager #3907 came first; his tether still talks from the core shed | The road: a chained gate in razor wire, the guard hut bolted from inside → round the wire to the cut (jaws: the core shed wakes) → the core shed: core racks, the saw, the logging benches, #3907 and his tether → the covered boardwalk (loose boards) → sample prep (its door wakes the technicians) → microscopy → the mess (the crew at the tables) → the manager's room: the station keys (his footlocker wakes the bunks) → the padlocked admin module: the radio room, the office behind its alarm, the containment key → the cold room: Marchetti's keycard (the cold room wakes) → the chained decon unit: PPE (jaws in the suits), the shower, the airlock → the stair hall and Torvald's office → down: the isolation ward (its drug cabinet wakes it) → the keycard airlock → the containment suite and its cells (the suite rises) → the specimen lab: the vault code (the last two wake) → dial the vault (a shotgun behind its door; Torvald, a Husk, guardian; the Bloom cores) → the escape shaft's ladder → unbolt the escape hatch, out on the hillside beyond the wire |
 
 **Planned (M2+)**: school, mine office, rail depot, dam control house, lighthouse, fishing co-op,
-lab outpost, survivor compounds, Ashen camps, crashed Program supply drone, quarantine camp.
+lab outpost, survivor compounds, Ashen camps, crashed Program supply drone.
 
 ## 12. Audio & visual direction
 

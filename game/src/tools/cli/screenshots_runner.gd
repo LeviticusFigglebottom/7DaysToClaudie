@@ -2,7 +2,7 @@ extends Node
 ## Screenshot suite (loaded by screenshots.gd): starts a slice game, then for each shot sets the
 ## time, weather and a camera, waits for streaming to settle and saves a PNG. Used for visual QA
 ## of terrain, vegetation, lighting, POIs, building and the Hum.
-##   make screenshots [SHOTS_ARGS="--only pell_crossing,pond_dusk --settle 6 --stream-wait 120"]
+##   make screenshots [SHOTS_ARGS="--only pell_crossing,pond_dusk --settle 6 --stream-wait 120 --settle-frames 24"]
 
 const SHOTS: Array[Dictionary] = [
 	{"name": "drop_site_morning", "pos": Vector3(-300, 2.0, 2302), "look": Vector3(-240, 0, 2296), "hour": 7.6, "weather": "clear"},
@@ -85,17 +85,36 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "birds_lift_off", "pos": Vector3(-143, 1.2, 2117), "look": Vector3(-150, 2.2, 2108), "hour": 9.5, "weather": "overcast",
 	 "flock": "crow", "flush_after": 0.9, "fov": 60.0},
 	{"name": "larch_street", "pos": Vector3(-69.0, 2.6, 2330.0), "look": Vector3(-84.0, 1.5, 2262.0), "hour": 10.5, "weather": "clear"},
+	# Hollowed hounds and Murmurs (ADR-0034): a pack (a Seeded one in the
+	# middle) at the drop site, and a Murmur ringing low over the camera on Pell's Crossing's street.
+	# Base building (ADR-0035): a camp at the drop site with a corner of log wall, a door, stairs, the
+	# racks part-filled, a bed, the workbench and a lit fire.
+	{"name": "furnished_base", "pos": Vector3(-290.8, 2.1, 2302.8), "look": Vector3(-286.4, 0.7, 2297.4), "hour": 16.0, "weather": "overcast", "base_kit": true, "fov": 58.0},
+	# Waystation 9 (ADR-0039) from Route 9's drive: the gate, the barriers, the counter with the
+	# quartermaster behind it and the contracts board.
+	{"name": "waystation_9", "pos": Vector3(-54.0, 2.4, 2530.0), "look": Vector3(-27.0, 1.4, 2521.0), "hour": 17.5, "weather": "clear", "fov": 62.0},
+	{"name": "waystation_counter", "pos": Vector3(-36.5, 1.6, 2524.5), "look": Vector3(-25.5, 1.3, 2521.5), "hour": 11.0, "weather": "overcast", "fov": 55.0},
+	{"name": "hound_pack", "pos": Vector3(-300, 1.6, 2297), "look": Vector3(-300, 0.5, 2291.5), "hour": 16.5, "weather": "overcast", "fov": 50.0,
+	 "lineup": [["hollow_hound", -1.5, "normal", ""], ["hollow_hound", 0.0, "seeded", ""], ["hollow_hound", 1.5, "normal", ""]],
+	 "cam_height": 0.9, "look_height": 0.45},
+	{"name": "murmur_overhead", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-49, 12.0, 2064), "hour": 14.0, "weather": "overcast",
+	 "flock": "crow", "murmur": true, "flush_after": 9.0, "fov": 90.0},
 	# The third block on Larch Street's corner: the Savings & Loan and the school on the right, the fire
 	# station on the left, the Grange Road corner beyond.
+	# Render check (ADR-0036, make render-check): the whole valley's buildings in one view from high
+	# above, so every interior probe (92 of them) is in the frustum at once; the first playtest crashed
+	# when more than the reflection atlas's 64 were.
+	{"name": "valley_overview", "pos": Vector3(0.0, 900.0, 1450.0), "look": Vector3(0.0, 100.0, 2055.0), "hour": 11.0, "weather": "clear", "fov": 90.0},
 	{"name": "third_block", "pos": Vector3(-70.0, 3.2, 2254.0), "look": Vector3(-75.0, 3.0, 2196.0), "hour": 15.5, "weather": "clear", "fov": 70.0},
 	# Weather and atmosphere (ADR-0033): rain on Pell's Crossing's street, a storm in the forest at
 	# night lit by a strike, misty dawn over the valley, the town under snow and a puddled road after
 	# rain. The clock stands still between shots, so "wet", "puddles" and "snow_cover" say how long
-	# it has rained or snowed; "strike" flashes lightning that many seconds before the capture.
+	# it has rained or snowed; "strike" flashes lightning that many seconds before the capture, and
+	# "strike_frames" renders that many frames more on the held flash.
 	{"name": "wx_rain_street", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-95, 2, 2064), "hour": 15.5, "weather": "rain", "wet": 1.0, "puddles": 0.8,
 		"settle": 10.0},
 	{"name": "wx_storm_night", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 1.5, 2280), "hour": 23.0, "weather": "storm", "wet": 1.0,
-		"puddles": 1.0, "light": true, "strike": 0.12, "settle": 8.0},
+		"puddles": 1.0, "light": true, "strike": 0.12, "strike_frames": 6, "settle": 8.0},
 	{"name": "wx_misty_dawn", "pos": Vector3(-150, 140.0, 2420), "look": Vector3(-60, 0, 2050), "hour": 6.6, "weather": "mist", "wet": 0.3},
 	{"name": "wx_snow_town", "pos": Vector3(-30, 6.0, 2170), "look": Vector3(-60, 0, 2070), "hour": 13.0, "weather": "snow", "snow_cover": 0.9, "settle": 10.0},
 	{"name": "wx_puddled_road", "pos": Vector3(-40, 1.4, 2067), "look": Vector3(-95, 0.6, 2064), "hour": 17.5, "weather": "overcast", "wet": 1.0,
@@ -104,10 +123,62 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "wx_mist_forest_dawn", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 3.0, 2283), "hour": 6.9, "weather": "mist", "wet": 0.4},
 ]
 
+## The wilderness set pieces of round 3 (DESIGN §11), shot on a random world that placed them (the main
+## map takes those it placed, after SHOTS): run with
+## main.gd's world arguments (`--world random --world-seed 12 --world-set size=4 --world-set wilderness=2.5`)
+## and `--only` naming some of these. Positions are in the building's own footprint (metres from its
+## corner, y above its pad), resolved against wherever the world stood it; a building the world did not
+## place is skipped. Each has its approach by day, its signature room and an interior at night by its
+## own lights.
+const POI_SHOTS: Array[Dictionary] = [
+	{"name": "w3_tamarack_approach", "poi": "camp_tamarack", "at": Vector3(26.0, 1.8, 49.5), "look": Vector3(24.0, 2.5, 40.0), "hour": 10.5, "weather": "clear"},
+	{"name": "w3_tamarack_dining", "poi": "camp_tamarack", "at": Vector3(28.5, 2.05, 33.3), "look": Vector3(20.5, 1.0, 28.0), "hour": 15.0, "weather": "overcast"},
+	{"name": "w3_tamarack_night", "poi": "camp_tamarack", "at": Vector3(21.5, 2.05, 27.6), "look": Vector3(24.0, 1.2, 32.0), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_elk_approach", "poi": "elk_ridge_lodge", "at": Vector3(3.5, 2.0, 28.0), "look": Vector3(13.0, 4.5, 15.0), "hour": 16.0, "weather": "clear"},
+	{"name": "w3_elk_great_room", "poi": "elk_ridge_lodge", "at": Vector3(14.5, 2.15, 18.5), "look": Vector3(7.5, 2.6, 15.0), "hour": 14.0, "weather": "overcast"},
+	{"name": "w3_elk_night", "poi": "elk_ridge_lodge", "at": Vector3(15.3, 5.1, 18.0), "look": Vector3(8.5, 1.5, 14.5), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_qc_approach", "poi": "cordon_quarantine_camp", "at": Vector3(16.0, 2.0, 43.5), "look": Vector3(24.0, 2.5, 30.0), "hour": 11.0, "weather": "overcast"},
+	{"name": "w3_qc_wards", "poi": "cordon_quarantine_camp", "at": Vector3(22.5, 1.95, 15.6), "look": Vector3(22.5, 0.8, 7.0), "hour": 13.0, "weather": "clear"},
+	{"name": "w3_qc_morgue_night", "poi": "cordon_quarantine_camp", "at": Vector3(37.5, 2.0, 13.4), "look": Vector3(37.5, 0.8, 7.0), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_qc_camp_night", "poi": "cordon_quarantine_camp", "at": Vector3(29.0, 3.0, 28.0), "look": Vector3(18.0, 1.5, 14.0), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_haldane_approach", "poi": "haldane_place", "at": Vector3(20.0, 1.8, 39.8), "look": Vector3(20.0, 2.0, 24.0), "hour": 10.0, "weather": "clear"},
+	{"name": "w3_haldane_yard", "poi": "haldane_place", "at": Vector3(32.5, 2.2, 20.0), "look": Vector3(14.0, 1.0, 18.0), "hour": 15.5, "weather": "clear"},
+	{"name": "w3_haldane_bunker_night", "poi": "haldane_place", "at": Vector3(19.6, -0.95, 15.4), "look": Vector3(25.5, -1.8, 17.0), "hour": 23.0, "weather": "clear"},
+	# The Corvane Larkspur Adit (ADR-0044; D6 places it on the main map): the yard and the headframe,
+	# then the buried levels by the player's light alone: the No. 1 Level drift, the grotto.
+	{"name": "adit_approach", "poi": "corvane_larkspur_adit", "at": Vector3(8.0, 1.8, 24.0), "look": Vector3(13.0, 3.0, 9.0), "hour": 16.5, "weather": "overcast"},
+	{"name": "adit_drift", "poi": "corvane_larkspur_adit", "at": Vector3(21.5, -1.1, 8.5), "look": Vector3(40.0, -1.7, 8.5), "hour": 13.0, "weather": "clear", "light": true},
+	{"name": "adit_grotto", "poi": "corvane_larkspur_adit", "at": Vector3(56.0, -4.1, 6.0), "look": Vector3(63.0, -5.0, 2.0), "hour": 13.0, "weather": "clear", "light": true},
+	# The Corvane Field Lab (tier 5, ADR-0046): the road up to its wire by day, the core shed, a lab module, the
+	# decon line, the buried containment suite at night by its own lights and the specimen vault (the building
+	# has a 1 m origin offset: plan cell (c, r) is footprint (c + 1, r + 1); the buried level's floor is 2.65 m
+	# under the pad). Shot on `--world random --world-seed 101 --world-set size=3 --world-set wilderness=2.5`.
+	{"name": "lab_approach", "poi": "corvane_field_lab", "at": Vector3(21.0, 1.8, 57.5), "look": Vector3(29.0, 3.0, 38.0), "hour": 10.5, "weather": "clear", "fov": 70.0},
+	{"name": "lab_yard", "poi": "corvane_field_lab", "at": Vector3(15.5, 2.0, 44.0), "look": Vector3(28.0, 2.5, 26.0), "hour": 15.0, "weather": "overcast", "fov": 70.0},
+	{"name": "lab_core_shed", "poi": "corvane_field_lab", "at": Vector3(14.2, 2.1, 28.6), "look": Vector3(6.5, 1.2, 25.5), "hour": 13.0, "weather": "overcast", "fov": 70.0},
+	{"name": "lab_module", "poi": "corvane_field_lab", "at": Vector3(25.7, 2.2, 26.4), "look": Vector3(18.5, 1.2, 24.6), "hour": 14.0, "weather": "overcast", "fov": 72.0},
+	{"name": "lab_decon_line", "poi": "corvane_field_lab", "at": Vector3(27.3, 2.2, 21.7), "look": Vector3(29.4, 1.3, 19.0), "hour": 14.0, "weather": "overcast", "fov": 72.0},
+	{"name": "lab_containment_night", "poi": "corvane_field_lab", "at": Vector3(32.4, -0.95, 16.5), "look": Vector3(33.0, -1.9, 11.4), "hour": 22.5, "weather": "clear", "fov": 72.0},
+	{"name": "lab_vault", "poi": "corvane_field_lab", "at": Vector3(27.4, -0.95, 10.5), "look": Vector3(23.0, -1.9, 6.6), "hour": 23.0, "weather": "clear", "fov": 72.0},
+]
+
+const ProbeBudget := preload("res://src/poi/interior_probe_budget.gd")
+
 var _out: String = "res://../build/screenshots"
+## Pieces the furnished_base shot placed (BuildingManager ids), taken down after it.
+var _base_kit: Array[StringName] = []
 ## Nodes a shot spawned for itself (QA enemies, the QA drop), removed after the shot.
 var _temp: Array[Node] = []
 var _settle: float = 4.0
+## Frames drawn on the held view before each capture (--settle-frames): a software frame lasts
+## seconds, so the settle above is a frame or two, and TAA and SDFGI (20 frames to converge after a
+## jump) show half settled: a dim deep wood, noisy soft shadows.
+var _settle_frames: int = 0
+## The world the current shot is taken in.
+var _world: Node = null
+## --probe-always: the interior probes round the camera re-render every frame during a shot (QA of
+## interiors lit by PoiManager's probe budget, which hides and shows UPDATE_ONCE probes).
+var _probe_always: bool = false
 ## Seconds a shot waits at most for vegetation to stream in (--stream-wait).
 var _stream_wait: float = 240.0
 ## [enemy, position] pairs a shot keeps in place until it is taken.
@@ -125,6 +196,10 @@ func _ready() -> void:
 				_settle = float(args[i + 1])
 			"--stream-wait":
 				_stream_wait = float(args[i + 1])
+			"--settle-frames":
+				_settle_frames = int(args[i + 1])
+			"--probe-always":
+				_probe_always = true
 			"--only":
 				_only = args[i + 1].split(",")
 	DirAccess.make_dir_recursive_absolute(_out)
@@ -135,6 +210,114 @@ func _wait(s: float) -> void:
 	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
 	while Time.get_ticks_msec() < end:
 		await get_tree().process_frame
+
+
+## Memory after a shot (a rendered weather run was OOM-killed at 10.9 GB): the process's resident
+## set (Linux /proc), what the engine allocated itself (static) and for the GPU (video, which
+## lavapipe keeps in RAM), live objects, resources and nodes, and the pipelines compiled so far.
+## The static peak bounds what the engine ever held at once, transient work included.
+## Resident memory that grows while the engine's own figures stay flat is the driver's.
+func _mem_report(tag: String) -> void:
+	var rss_kb: int = -1
+	var f := FileAccess.open("/proc/self/status", FileAccess.READ)
+	while f != null and not f.eof_reached():
+		var line: String = f.get_line()
+		if line.begins_with("VmRSS:"):
+			rss_kb = line.substr(6).strip_edges().to_int()
+			break
+	var pipes: PackedStringArray = []
+	for p: Array in LoadMeter.PIPELINES:
+		pipes.append("%s %d" % [p[1], RenderingServer.get_rendering_info(int(p[0]) as RenderingServer.RenderingInfo)])
+	var mb: float = 1048576.0
+	print("SHOT mem %s at %.0f s: rss %.0f MB, static %.0f MB (peak %.0f), video %.0f MB (textures %.0f, buffers %.0f), objects %d, resources %d, nodes %d, orphans %d; pipelines %s" % [
+		tag, Time.get_ticks_msec() / 1000.0, rss_kb / 1024.0, Performance.get_monitor(Performance.MEMORY_STATIC) / mb,
+		Performance.get_monitor(Performance.MEMORY_STATIC_MAX) / mb,
+		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / mb, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / mb,
+		Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / mb, int(Performance.get_monitor(Performance.OBJECT_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)), int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)), ", ".join(pipes)])
+
+
+## The interior probes round the camera (PoiBuilder: one per room rectangle; PoiManager's budget keeps
+## the nearest 32 to 48 live and parks the rest): how many there are, how many are live, and the
+## three nearest.
+func _probe_report(tag: String, eye: Vector3) -> void:
+	var budget: Node = _probe_budget()
+	var ranked: Array = []
+	var shown: int = 0
+	for n: Variant in _all_probes(budget):
+		var p := n as ReflectionProbe
+		if p != null:
+			ranked.append([ProbeBudget.box_distance(p, eye), p])
+			shown += 1 if _probe_live(budget, p) else 0
+	ranked.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	var near: PackedStringArray = []
+	for e: Array in ranked.slice(0, 3):
+		var p: ReflectionProbe = e[1]
+		near.append("%.1f m %s%s" % [float(e[0]), "live" if _probe_live(budget, p) else "parked", " (always)" if p.update_mode == ReflectionProbe.UPDATE_ALWAYS else ""])
+	print("SHOT probes %s: %d interior probes, %d live; nearest %s" % [tag, ranked.size(), shown, ", ".join(near)])
+
+
+## PoiManager's probe budget in the world being shot (null without one, as in POI previews).
+func _probe_budget() -> Node:
+	var pois: Node = _world.get(&"pois") as Node if is_instance_valid(_world) else null
+	return pois.get(&"probes") as Node if pois != null else null
+
+
+func _probe_live(budget: Node, p: ReflectionProbe) -> bool:
+	return bool(budget.call(&"is_shown", p)) if budget != null else p.visible
+
+
+## Every interior probe: the budget's list when there is one (it holds the parked ones, which are
+## out of the tree and its groups), else the group.
+func _all_probes(budget: Node) -> Array:
+	return budget.call(&"all_probes") if budget != null else get_tree().get_nodes_in_group(&"interior_probe")
+
+
+## Probes an interior shot keeps live while it waits: the room's own and its three nearest.
+const PROBE_FOCUS: int = 4
+## Frames an interior shot waits at most for them to render.
+const PROBE_WAIT_MAX: int = PROBE_FOCUS * ProbeBudget.RENDER_FRAMES + 4
+
+
+## For a camera in or by a room: parks every interior probe but the PROBE_FOCUS nearest, so they
+## are all the render queue holds, and waits until they have had their turn to render. Godot renders
+## them one at a time over several frames each, in its own order, and a room whose probe hasn't
+## finished reads near-black (TD-134). A software frame lasts seconds, so the time-based settle
+## covers only one or two. The budget's rankings take over again after the shot.
+func _wait_probes(w: Node, eye: Vector3) -> void:
+	var pois: Node = w.get(&"pois") as Node
+	var budget: Node = pois.get(&"probes") as Node if pois != null else null
+	if budget == null:
+		return
+	var near: bool = false
+	for n: Variant in _all_probes(budget):
+		var p := n as ReflectionProbe
+		if p != null and ProbeBudget.box_distance(p, eye) < 2.0:
+			near = true
+			break
+	if not near:
+		return
+	budget.call(&"focus", eye, PROBE_FOCUS)
+	var waited: int = 0
+	while waited < PROBE_WAIT_MAX and int(budget.call(&"frames_to_render")) > 0:
+		await get_tree().process_frame
+		waited += 1
+	print("SHOT probes waited %d frames (%d still queued)" % [waited, int(budget.call(&"frames_to_render"))])
+
+
+## --probe-always: the shown interior probes within 2 m of the camera's room re-render every frame
+## (QA only: the first UPDATE_ALWAYS probe clears the whole reflection atlas and leaves it at
+## real-time quality, so this is not how the game looks)
+## until the capture (set back to once after it).
+func _refresh_probes(eye: Vector3) -> Array[ReflectionProbe]:
+	var out: Array[ReflectionProbe] = []
+	for n: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+		var p := n as ReflectionProbe
+		if p != null and _probe_live(_probe_budget(), p) and ProbeBudget.box_distance(p, eye) < 2.0:
+			p.update_mode = ReflectionProbe.UPDATE_ALWAYS
+			out.append(p)
+	return out
 
 
 ## Waits (up to --stream-wait seconds, 4 min by default) until the vegetation within two chunks of
@@ -152,9 +335,14 @@ func _wait_streamed(w: Node) -> void:
 
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
-	game.call(&"start_new_game", {"game_mode": "slice", "skip_intro": true, "slot": "screens"})
+	var start: Dictionary = {"game_mode": "slice", "skip_intro": true, "slot": "screens"}
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var random_world: bool = args.has("--world") and args.find("--world") + 1 < args.size() and args[args.find("--world") + 1] == "random"
+	if random_world:
+		start["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", args, 7)
+	game.call(&"start_new_game", start)
 	var t0: int = Time.get_ticks_msec()
-	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < 300000:
+	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < (1200000 if random_world else 300000):
 		await get_tree().process_frame
 	var w: Node = game.world
 	if w == null:
@@ -176,7 +364,16 @@ func _run() -> void:
 	# length moved a "19.6 h" dusk shot an hour and a half into the night (and by a different
 	# amount every run).
 	(w.get(&"clock_driver") as WorldClockDriver).paused = true
-	for shot: Dictionary in SHOTS:
+	_mem_report("world ready")
+	if random_world:
+		# The set pieces' sleepers stay where they were authored: the player standing at each camera
+		# is invisible to them (awake, the dining hall's families climbed the tables at the camera).
+		DebugTools.set_flag(&"invisible", true)
+	# The main map takes the POI shots of the buildings it placed too (the Corvane adit in D6).
+	var shots: Array[Dictionary] = _poi_shots(w)
+	if not random_world:
+		shots = SHOTS.duplicate() + shots
+	for shot: Dictionary in shots:
 		if not _only.is_empty() and not _only.has(str(shot["name"])):
 			continue
 		await _shoot(w, cam, p, shot)
@@ -184,7 +381,35 @@ func _run() -> void:
 	get_tree().quit(0)
 
 
+## POI_SHOTS resolved against the buildings the world placed (the first of each kind): positions in
+## world space with y over the ground there, as _shoot takes them.
+func _poi_shots(w: Node) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var pois: Node = w.get(&"pois") as Node
+	var placed: Dictionary = {}
+	if pois != null:
+		for iid: Variant in (pois.get(&"instances") as Dictionary):
+			var inst: PoiInstance = (pois.get(&"instances") as Dictionary)[iid] as PoiInstance
+			if inst != null and inst.layout != null and not placed.has(String(inst.layout.def.id)):
+				placed[String(inst.layout.def.id)] = inst
+	for shot: Dictionary in POI_SHOTS:
+		var inst2: PoiInstance = placed.get(str(shot["poi"])) as PoiInstance
+		if inst2 == null:
+			print("SHOT %s skipped: the world placed no %s" % [shot["name"], shot["poi"]])
+			continue
+		var xf: Transform3D = inst2.global_transform
+		var a: Vector3 = xf * (shot["at"] as Vector3)
+		var b: Vector3 = xf * (shot["look"] as Vector3)
+		var s2: Dictionary = shot.duplicate()
+		s2["pos"] = Vector3(a.x, a.y - float(w.call(&"height_at", a.x, a.z)), a.z)
+		s2["look"] = Vector3(b.x, b.y - float(w.call(&"height_at", b.x, b.z)), b.z)
+		print("SHOT %s: %s at %s, looking at %s" % [shot["name"], inst2.instance_id, a, b])
+		out.append(s2)
+	return out
+
+
 func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
+	_world = w
 	var pos: Vector3 = shot["pos"]
 	var look: Vector3 = shot["look"]
 	var ground: float = w.call(&"height_at", pos.x, pos.z)
@@ -229,6 +454,8 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		l.shadow_enabled = true
 		cam.add_child(l)
 		l.position = Vector3(0.3, -0.3, -0.5)
+	if bool(shot.get("base_kit", false)):
+		_place_base_kit(w, look)
 	if shot.has("lineup"):
 		# Special Hollowed side by side across the frame, awake and facing the camera, each at the
 		# infected tier given (normal / seeded / bloomed).
@@ -316,6 +543,11 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		_seek_view(w, cam, shot)
 	var wx_env: EnvironmentController = w.get(&"env") as EnvironmentController
 	if str(shot["name"]).begins_with("wx_") and wx_env.fx != null:
+		# The weather map (where rain lands, the puddles' hollows, the fog's low ground) is rebuilt
+		# after the jump to the shot with its rays spread over a dozen frames, which in software
+		# take minutes: build it now, or the capture shows the last shot's map.
+		if not wx_env.fx.settle_map():
+			print("SHOT warning: %s: no weather map round the camera" % shot["name"])
 		# Rain and snow held still for the capture, so temporal AA settles on them (ADR-0033).
 		await _wait(2.0)
 		wx_env.fx.hold_still(true)
@@ -325,22 +557,39 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		wx_env.strike_now(atan2(look.z - pos.z, look.x - pos.x) + 0.5, 900.0)
 		wx_env.flash_hold = 0.85
 		await _wait(maxf(float(shot["strike"]), 3.0))
+		# Temporal AA blends each frame into the last ones, and a software frame lasts seconds, so
+		# the wait above is a frame or two and the flash came out dim: let it settle on the flash.
+		for i: int in int(shot.get("strike_frames", 0)):
+			await get_tree().process_frame
 	elif flock != null:
 		await _wait(float(shot.get("settle", _settle)))
 		DebugTools.set_flag(&"invisible", false)
 		# stepped at a fixed rate: a software-rendered frame can last seconds
 		flock.set_process(false)
 		flock.flush(cam.global_position, "person")
+		if bool(shot.get("murmur", false)):
+			flock.start_murmur(Vector3(pos.x, w.call(&"height_at", pos.x, pos.z), pos.z))
 		for i: int in int(float(shot["flush_after"]) * 30.0):
 			flock.advance(1.0 / 30.0)
 		await get_tree().process_frame
 		await get_tree().process_frame
 	else:
 		await _wait(float(shot.get("settle", _settle)))
+	var refreshed: Array[ReflectionProbe] = []
+	if _probe_always:
+		refreshed = _refresh_probes(cam.global_position)
+	else:
+		await _wait_probes(w, cam.global_position)
+	for i: int in _settle_frames:
+		await get_tree().process_frame
 	var img: Image = get_viewport().get_texture().get_image()
 	var path: String = _out.path_join("%s.png" % shot["name"])
 	img.save_png(path)
 	print("SHOT %s" % path)
+	_mem_report(str(shot["name"]))
+	_probe_report(str(shot["name"]), cam.global_position)
+	for pr: ReflectionProbe in refreshed:
+		pr.update_mode = ReflectionProbe.UPDATE_ONCE
 	if str(shot["name"]).begins_with("wx_") and wx_env.fx != null and wx_env.fx.rain != null:
 		var fx: WeatherFx = wx_env.fx
 		var c: Vector3 = cam.global_position
@@ -364,6 +613,10 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		_fp_pose(w, p, shot, false)
 	if shot.has("poi_view"):
 		DebugTools.set_flag(&"invisible", false)
+	# The camp's pieces leave through the manager (its piece table and graph), not queue_free.
+	for id: StringName in _base_kit:
+		(w.get(&"building") as Node).call(&"_free_piece_node", id)
+	_base_kit.clear()
 	for n: Node in _temp:
 		if is_instance_valid(n):
 			if n is Enemy:
@@ -658,6 +911,45 @@ func _build_scene(w: Node, at: Vector3) -> void:
 		if piece.provides("light"):
 			piece.set_lit(true)
 	p.global_position = stand
+
+
+## The furnished camp (ADR-0035): pieces placed straight into the building manager around `at`
+## (no blueprints, no materials), racks filled part way, the fire lit.
+func _place_base_kit(w: Node, at: Vector3) -> void:
+	var bm: Node = w.get(&"building")
+	var ps: PlayerState = Game.local_player()
+	var g := func(x: float, z: float) -> float: return float(w.call(&"height_at", x, z))
+	var base_y: float = g.call(at.x, at.z)
+	var count: Array[int] = [0]
+	var place := func(def_id: StringName, pos: Vector3, yaw: float) -> StructurePiece:
+		count[0] += 1
+		var def: StructureDef = Content.structure(def_id)
+		var id := StringName("qa_base_%d" % count[0])
+		var piece: StructurePiece = bm.call(&"_add_piece", id, def, Transform3D(Basis(Vector3.UP, yaw), pos), def.hp, true)
+		_base_kit.append(id)
+		return piece
+	# A corner of wall: four courses each way, interleaved as LogSnapper stacks them.
+	var corner := Vector3(at.x - 1.0, base_y + LogSnapper.RADIUS, at.z - 2.5)
+	for i: int in 4:
+		place.call(&"log_piece", corner + Vector3(0, LogSnapper.STACK * i, 0), 0.0)
+		place.call(&"log_piece", corner + Vector3(-LogSnapper.CORNER, LogSnapper.STACK * i + LogSnapper.CORNER_RISE, LogSnapper.CORNER), PI * 0.5)
+	var door: StructurePiece = place.call(&"stick_door", Vector3(at.x + 2.1, g.call(at.x + 2.1, at.z - 2.5), at.z - 2.5), 0.0)
+	door.set_door_open(true, false)
+	place.call(&"log_stairs", Vector3(at.x + 4.2, g.call(at.x + 4.2, at.z - 1.0), at.z - 1.0), PI)
+	var rack: StructurePiece = place.call(&"log_rack", Vector3(at.x - 2.6, g.call(at.x - 2.6, at.z + 0.8), at.z + 0.8), PI * 0.5)
+	rack.inventory.add_item(&"log", 7)
+	rack.update_fill()
+	var sticks: StructurePiece = place.call(&"stick_rack", Vector3(at.x - 0.6, g.call(at.x - 0.6, at.z - 1.6), at.z - 1.6), 0.0)
+	sticks.inventory.add_item(&"stick", 25)
+	sticks.update_fill()
+	var stones: StructurePiece = place.call(&"stone_pile", Vector3(at.x + 0.9, g.call(at.x + 0.9, at.z - 1.4), at.z - 1.4), 0.0)
+	stones.inventory.add_item(&"stone", 18)
+	stones.update_fill()
+	place.call(&"bedroll", Vector3(at.x + 2.6, g.call(at.x + 2.6, at.z + 1.6), at.z + 1.6), PI * 0.5)
+	place.call(&"workbench", Vector3(at.x - 0.4, g.call(at.x - 0.4, at.z + 2.6), at.z + 2.6), PI)
+	var fire: StructurePiece = place.call(&"campfire", Vector3(at.x + 0.6, g.call(at.x + 0.6, at.z + 0.6), at.z + 0.6), 0.3)
+	fire.fuel = 60.0
+	fire.set_lit(true)
 
 
 ## A band of wild animals at the look point, side-on to the camera, their brains paused in the

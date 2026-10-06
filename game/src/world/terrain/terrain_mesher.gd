@@ -16,6 +16,18 @@ extends RefCounted
 ## handed over to the SDF volume terrain).
 ## cutters: convex world-XZ polygons cut out of the surface and its skirt (cellar holes).
 static func build_chunk(origin: Vector2, size: float, step: float, height_fn: Callable, skirt: float, colors: Callable = Callable(), hole_fn: Callable = Callable(), cutters: Array[PackedVector2Array] = []) -> ArrayMesh:
+	return finish(build_chunk_job(origin, size, step, height_fn, skirt, colors, hole_fn, cutters))
+
+
+## True under the headless dummy renderer, whose mesh RID table is not thread-safe (TD-103): a
+## mesh made on a worker races meshes made elsewhere ("Attempting to initialize the wrong RID",
+## "unimplemented base type" in scene cull). The real renderers' tables are thread-safe.
+static var meshes_on_main: bool = DisplayServer.get_name() == "headless"
+
+
+## build_chunk for worker threads: the ArrayMesh, or under the dummy renderer its surface arrays,
+## which the main thread turns into the mesh with finish().
+static func build_chunk_job(origin: Vector2, size: float, step: float, height_fn: Callable, skirt: float, colors: Callable = Callable(), hole_fn: Callable = Callable(), cutters: Array[PackedVector2Array] = []) -> Variant:
 	var res: int = int(round(size / step))
 	var vcount: int = res + 1
 	# Sample heights on a padded grid (+1 ring) for normals.
@@ -90,8 +102,15 @@ static func build_chunk(origin: Vector2, size: float, step: float, height_fn: Ca
 	arrays[Mesh.ARRAY_INDEX] = idx
 	if use_colors:
 		arrays[Mesh.ARRAY_COLOR] = cols
+	return arrays if meshes_on_main else finish(arrays)
+
+
+## The mesh of a build_chunk_job result (an ArrayMesh passes through; on the main thread).
+static func finish(job: Variant) -> ArrayMesh:
+	if job is ArrayMesh or job == null:
+		return job
 	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, job as Array)
 	return mesh
 
 

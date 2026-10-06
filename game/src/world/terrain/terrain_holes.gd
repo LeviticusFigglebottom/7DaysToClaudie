@@ -44,10 +44,18 @@ class Hole:
 
 var holes: Array[Hole] = []
 var bounds := Rect2()
+## Buried levels' cells (ADR-0044: mine levels and caves running on under the ground beyond the
+## building), one floor-only Hole per level: they cut nothing (the surface stays whole over them,
+## so the mesher, collision, nav and volumes never see them), but ground_below finds their floors.
+var buried: Array[Hole] = []
 
 
 func is_empty() -> bool:
 	return holes.is_empty()
+
+
+func has_buried() -> bool:
+	return not buried.is_empty()
 
 
 # --- Construction ---------------------------------------------------------------------------------
@@ -85,16 +93,23 @@ static func placed_pois(placements: Array) -> Array[Dictionary]:
 				var pd: PoiDef = db.call(&"get_def", &"poi", StringName(str(p.get("def", "")))) as PoiDef
 				if pd != null:
 					out.append({"def": pd, "id": StringName(str(p.get("id", pd.id))), "xf": xf})
-			"framework":
+			"framework", "town":
 				var fw: FrameworkDef = db.call(&"get_def", &"framework", StringName(str(p.get("def", "")))) as FrameworkDef
 				if fw == null:
 					continue
+				# An organic town (ADR-0040) comes once per region it touches: its lots centred in `rect`.
+				var only := Rect2()
+				if p.has("rect"):
+					only = Rect2(float(p["rect"][0]), float(p["rect"][1]), float(p["rect"][2]), float(p["rect"][3]))
 				# Lots without a pick hold what LotPicker chooses (ADR-0030), resolved as PoiManager does;
 				# generated buildings have no cellars, so only authored ones can cut a hole.
 				for res: Dictionary in Lots.resolve(fw, str(p.get("id", fw.id)), Lots.session_seed()):
 					var l: Dictionary = res["lot"]
 					var lpd: PoiDef = db.call(&"get_def", &"poi", res["def_id"]) as PoiDef if str(res["kind"]) == "authored" else null
-					if lpd == null:
+					if lpd == null or (only.has_area() and not only.has_point(Lots.lot_center(l))):
+						continue
+					if l.has("frame"):
+						out.append({"def": lpd, "id": StringName("%s/%s" % [p.get("id", fw.id), l["id"]]), "xf": xf * Lots.lot_local_xf(l, lpd.footprint)})
 						continue
 					var rect: Array = l["rect"]
 					var center := Vector3(float(rect[0]) + float(rect[2]) * 0.5, 0.0, float(rect[1]) + float(rect[3]) * 0.5)
@@ -117,17 +132,59 @@ func add_poi(def: PoiDef, id: StringName, xf: Transform3D) -> void:
 	var cells: Array[Vector2i] = []
 	var seen: Dictionary = {}
 	var lowest: int = 0
+	# A buried level's cells cut the surface only under a ground-floor room (the building closes
+	# them); the rest lie under the ground and get a floor-only hole per level.
+	var covered: Dictionary = {}
+	for c0: Vector2i in layout.room_cells(0):
+		covered[c0] = true
 	for li: int in layout.level_ids:
 		if li >= 0:
 			continue
-		lowest = mini(lowest, li)
+		var is_buried: bool = bool((layout.levels[li] as Dictionary).get("buried", false))
+		var deep: Array[Vector2i] = []
 		for c: Vector2i in layout.room_cells(li):
+			if is_buried and not covered.has(c):
+				deep.append(c)
+				continue
+			lowest = mini(lowest, li)
 			if not seen.has(c):
 				seen[c] = true
 				cells.append(c)
+		if not deep.is_empty():
+			add_buried(StringName("%s@%d" % [id, li]), deep, layout.origin, xf, xf.origin.y + layout.level_y(li),
+				xf.origin.y + layout.level_y(li) + PoiLayout.STOREY - SLAB)
 	if cells.is_empty():
 		return
 	add_cells(id, cells, layout.origin, xf, xf.origin.y + layout.level_y(lowest), xf.origin.y, xf.origin.y + layout.level_y(0) - SLAB)
+
+
+## A buried level's floor under (x, z) for a point at height y: the floor of the buried level
+## whose storey holds y, or the lowest buried floor there when y is below them all; NAN when no
+## buried level lies under (x, z) or y is above every one of them.
+func buried_floor(x: float, z: float, y: float) -> float:
+	var p := Vector2(x, z)
+	var lowest: float = NAN
+	for h: Hole in buried:
+		if not h.bounds.grow(0.001).has_point(p):
+			continue
+		for poly: PackedVector2Array in h.pieces:
+			if not point_in_convex(poly, p):
+				continue
+			if y >= h.floor_y - 0.5 and y < h.ceiling_y:
+				return h.floor_y
+			if y < h.floor_y and (is_nan(lowest) or h.floor_y < lowest):
+				lowest = h.floor_y
+	return lowest
+
+
+## Adds a buried level's floor-only hole (see `buried`).
+func add_buried(id: StringName, cells: Array[Vector2i], origin: Vector2, xf: Transform3D, floor_y: float, ceiling_y: float) -> void:
+	var keep: Array[Hole] = holes.duplicate()
+	var keep_bounds: Rect2 = bounds
+	add_cells(id, cells, origin, xf, floor_y, floor_y, ceiling_y)
+	buried.append(holes.pop_back())
+	holes = keep
+	bounds = keep_bounds
 
 
 ## Adds a hole over plan cells (1 m, POI-local: cell (c, r) spans x origin.x+c..+1, z

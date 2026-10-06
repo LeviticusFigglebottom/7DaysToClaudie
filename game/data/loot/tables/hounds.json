@@ -1,0 +1,8 @@
+{
+  "_doc": "What a dead Hollowed hound leaves (ADR-0034): bone and sinew, and the Bloom it carried.",
+  "defs": [
+    {"id": "hound_remains", "rolls": [1, 2], "empty_chance": 0.35, "entries": [
+      {"item": "bone", "weight": 8, "count": [1, 2]}, {"item": "sinew", "weight": 5}, {"item": "bloom_mycelium", "weight": 4},
+      {"item": "bloom_sample", "weight": 1, "tier_min": 2}]}
+  ]
+}

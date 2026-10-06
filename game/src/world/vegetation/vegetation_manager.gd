@@ -65,10 +65,10 @@ var _last_harvest: HarvestTarget = null
 ## can pick), filtered once when the chunk's scatter arrives.
 var _pickable: Dictionary = {}
 ## Far layer: one group task over every 64 m chunk of every detailed region (one element each).
-var _far_task: int = -1
-var _far_jobs: Array = []
-var _far_chunks: Array = []
-var _far_result: Dictionary = {}
+## The far impostor layer per region (ADR-0038: regions attach and detach in a streamed world):
+## rid -> {task (-1 once built), jobs: [[rid, chunk key]], chunks: [result per job], holder: Node3D,
+## mats: [ShaderMaterial], dropped: bool}.
+var _far: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
@@ -79,6 +79,8 @@ func setup_world(w: Node) -> void:
 	_far_root.name = "FarTrees"
 	add_child(_far_root)
 	_build_far_layer()
+	terrain.region_attached.connect(_far_attach)
+	terrain.region_detached.connect(_far_detach)
 	# The fungal mounds Hum survivors leave where they root at dawn (ADR-0025).
 	var mounds := BloomMounds.new()
 	mounds.name = "BloomMounds"
@@ -124,9 +126,10 @@ func _exit_tree() -> void:
 	for key: Vector2i in _pending.keys():
 		WorkerThreadPool.wait_for_task_completion(_pending[key]["task"])
 	_pending.clear()
-	if _far_task >= 0:
-		WorkerThreadPool.wait_for_group_task_completion(_far_task)
-		_far_task = -1
+	for e: Dictionary in _far.values():
+		if int(e["task"]) >= 0:
+			WorkerThreadPool.wait_for_group_task_completion(int(e["task"]))
+			e["task"] = -1
 
 
 # --- Streaming --------------------------------------------------------------------------------
@@ -162,8 +165,11 @@ func _update(pos: Vector3) -> void:
 		var want_ground: bool = absi(off.x) <= GROUND_CHUNKS and absi(off.y) <= GROUND_CHUNKS
 		if not _data.has(key):
 			if not _pending.has(key) and _pending.size() < MAX_JOBS and _rt_for_chunk(key) != null:
-				var job: Dictionary = {"key": key, "res": {}}
-				job["task"] = WorkerThreadPool.add_task(func() -> void: job["res"] = _scatter(key), true, "veg scatter")
+				# The worker fills its own slot: `job` gains "task" on this thread after the task has
+				# started, and a dictionary written from two threads at once can corrupt itself.
+				var out: Array = [{}]
+				var job: Dictionary = {"key": key, "out": out}
+				job["task"] = WorkerThreadPool.add_task(func() -> void: out[0] = _scatter(key), true, "veg scatter")
 				_pending[key] = job
 			continue
 		var n: Dictionary = _nodes.get(key, {})
@@ -184,8 +190,9 @@ func is_settled(radius: int = NEAR_CHUNKS) -> bool:
 func settle_report(radius: int = NEAR_CHUNKS) -> String:
 	if world == null or world.player == null:
 		return "no player"
-	if _far_task != -1:
-		return "far layer scattering"
+	for e: Dictionary in _far.values():
+		if int(e["task"]) != -1:
+			return "far layer scattering"
 	if not _pending.is_empty():
 		return "%d scatter jobs pending" % _pending.size()
 	var p: Vector3 = world.player.global_position
@@ -207,8 +214,8 @@ func _collect() -> void:
 		if WorkerThreadPool.is_task_completed(job["task"]):
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
-			_data[key] = job["res"]
-			_pickable[key] = _harvestables(job["res"])
+			_data[key] = job["out"][0]
+			_pickable[key] = _harvestables(job["out"][0])
 
 
 ## Small plants and stones with yields, filtered once per chunk instead of on every physics
@@ -242,7 +249,9 @@ func _build_chunk(key: Vector2i, ground: bool) -> void:
 			var insts: Array = groups[gk]
 			if sp.veg_kind == "tree":
 				for lod: int in 3:
-					holder.add_child(_mmi(_lod_mesh(sp, variant, lod), insts, 0.0 if lod == 0 else LOD_END[lod - 1], LOD_END[lod], true))
+					if _lod_end(lod) <= 0.0:
+						continue
+					holder.add_child(_mmi(_lod_mesh(sp, variant, lod), insts, 0.0 if lod == 0 else _lod_end(lod - 1), _lod_end(lod), true))
 				continue
 			var end: float = minf(float(sp.lod_distances[1]) * 2.0, 220.0)
 			# Boulders cast shadows (they sit in the light like the trees); loose pebbles don't.
@@ -352,6 +361,20 @@ static func _xform(inst: VegetationScatter.Instance) -> Transform3D:
 	return Transform3D(b, inst.pos)
 
 
+## Where tree LOD `lod` ends. The graphics setting tree_lod_scale (ADR-0037) moves the full-detail
+## and middle LODs nearer or further; the last LOD keeps its end, since the far impostors start at
+## the near ring's edge. LODs switch per 64 m chunk (TD-035), so the chunk around the player is
+## full detail whenever LOD0 reaches its centre: ~340 firs of ~10k triangles. Below 0.5 there is
+## no full detail at all (LOD1 from 0 m): the low preset's saving (TD-003).
+func _lod_end(lod: int) -> float:
+	if lod >= LOD_END.size() - 1:
+		return LOD_END[LOD_END.size() - 1]
+	var scale: float = clampf(float(Settings.gfx("tree_lod_scale", 1.0)), 0.3, 2.0)
+	if lod == 0 and scale < 0.5:
+		return 0.0
+	return minf(LOD_END[lod] * scale, LOD_END[LOD_END.size() - 1] - 20.0 * float(LOD_END.size() - 1 - lod))
+
+
 func _lod_mesh(sp: SpeciesDef, variant: int, lod: int) -> Mesh:
 	var base: String = sp.models[variant % sp.models.size()]
 	var id: String = base if lod == 0 else "%s_lod%d" % [base, lod]
@@ -390,29 +413,82 @@ func _rebuild(key: Vector2i) -> void:
 ## MultiMeshes are built on the main thread once it finishes (_process -> _collect_far).
 func _build_far_layer() -> void:
 	VegetationScatter.warm()
-	var regions: Dictionary = terrain.regions.duplicate()
+	for rid: String in terrain.regions:
+		_far_attach(rid)
+
+
+## Scatters a region's far trees on workers (low priority); _collect_far adds them when done.
+func _far_attach(rid: String) -> void:
+	if _far.has(rid):
+		# Still scattering after a detach: keep that work (its task must stay joinable).
+		_far[rid]["dropped"] = false
+		return
+	var rt: RegionTerrain = terrain.regions.get(rid)
+	if rt == null:
+		return
 	var seed_v: int = Game.session.world_seed
 	var height_fn: Callable = terrain.height_at
 	var removed: Dictionary = _removed.duplicate(true)
-	_far_jobs.clear()
-	for rid: String in regions:
-		var rt: RegionTerrain = regions[rid]
-		var cx0: int = int(floor(rt.rect.position.x / CHUNK))
-		var cz0: int = int(floor(rt.rect.position.y / CHUNK))
-		var count: int = int(rt.rect.size.x / CHUNK)
-		for cz: int in range(cz0, cz0 + count):
-			for cx: int in range(cx0, cx0 + count):
-				_far_jobs.append([rid, Vector2i(cx, cz)])
-	_far_chunks.clear()
-	_far_chunks.resize(_far_jobs.size())
-	var jobs: Array = _far_jobs
-	var results: Array = _far_chunks
+	var jobs: Array = []
+	var cx0: int = int(floor(rt.rect.position.x / CHUNK))
+	var cz0: int = int(floor(rt.rect.position.y / CHUNK))
+	var count: int = int(rt.rect.size.x / CHUNK)
+	for cz: int in range(cz0, cz0 + count):
+		for cx: int in range(cx0, cx0 + count):
+			jobs.append([rid, Vector2i(cx, cz)])
+	var results: Array = []
+	results.resize(jobs.size())
+	# Impostor sizes per species, read here: ImpostorLibrary caches them in a static (not for
+	# worker threads).
+	var dims: Dictionary = {}
+	for d: ContentDef in Content.all(&"species"):
+		if (d as SpeciesDef).veg_kind == "tree":
+			dims[d.id] = ImpostorLibrary.size_for(d as SpeciesDef)
 	# Each element writes only its own slot of the pre-sized results array. Low priority: Godot
 	# caps low-priority work to a share of the pool, so the near chunks around the player (high
 	# priority scatter jobs, terrain meshing) never queue behind the far layer.
-	_far_task = WorkerThreadPool.add_group_task(func(i: int) -> void:
-		results[i] = _scatter_far_chunk(regions[jobs[i][0]], jobs[i][1], seed_v, height_fn, removed),
+	var task: int = WorkerThreadPool.add_group_task(func(i: int) -> void:
+		results[i] = _far_buffers(_scatter_far_chunk(rt, jobs[i][1], seed_v, height_fn, removed), dims),
 		jobs.size(), -1, false, "far trees")
+	_far[rid] = {"task": task, "jobs": jobs, "chunks": results, "holder": null, "mats": [], "dropped": false}
+
+
+## A region detached: its far trees go (once their scatter, if still running, comes back).
+func _far_detach(rid: String) -> void:
+	if not _far.has(rid):
+		return
+	var e: Dictionary = _far[rid]
+	if int(e["task"]) >= 0:
+		e["dropped"] = true
+		return
+	_far_free(rid)
+
+
+func _far_free(rid: String) -> void:
+	var e: Dictionary = _far[rid]
+	if e["holder"] != null and is_instance_valid(e["holder"]):
+		(e["holder"] as Node).queue_free()
+	for m: ShaderMaterial in e["mats"]:
+		_far_mats.erase(m)
+	_far.erase(rid)
+
+
+## A chunk's far trees as MultiMesh transform buffers per species ({species: [count,
+## PackedFloat32Array of 12 floats each]}), built on the worker (ADR-0038): the main thread only
+## joins them, where setting ~50k transforms one by one took ~0.5 s of one frame.
+static func _far_buffers(insts: Array, dims: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for inst: VegetationScatter.Instance in insts:
+		var dim: Vector2 = dims.get(inst.species, Vector2(6.4, 21.0))
+		var b := Basis(Vector3.UP, inst.yaw).scaled(Vector3(dim.x, dim.y, dim.x) * inst.scale)
+		if not out.has(inst.species):
+			out[inst.species] = [0, PackedFloat32Array()]
+		var e: Array = out[inst.species]
+		var buf: PackedFloat32Array = e[1]
+		buf.append_array([b.x.x, b.y.x, b.z.x, inst.pos.x, b.x.y, b.y.y, b.z.y, inst.pos.y, b.x.z, b.y.z, b.z.z, inst.pos.z])
+		e[1] = buf
+		e[0] = int(e[0]) + 1
+	return out
 
 
 ## Trees of one chunk for the far layer (felled ones removed).
@@ -427,23 +503,49 @@ static func _scatter_far_chunk(rt: RegionTerrain, key: Vector2i, seed_v: int, he
 
 
 func _collect_far() -> void:
-	if _far_task < 0 or not WorkerThreadPool.is_group_task_completed(_far_task):
+	for rid0: String in _far.keys():
+		var e: Dictionary = _far[rid0]
+		if int(e["task"]) < 0 or not WorkerThreadPool.is_group_task_completed(int(e["task"])):
+			continue
+		WorkerThreadPool.wait_for_group_task_completion(int(e["task"]))
+		e["task"] = -1
+		if bool(e["dropped"]):
+			_far_free(rid0)
+			continue
+		_far_build(rid0, e)
+		# One region a frame.
 		return
-	WorkerThreadPool.wait_for_group_task_completion(_far_task)
-	_far_task = -1
-	_far_result = {}
-	for i: int in _far_jobs.size():
-		var rid: String = _far_jobs[i][0]
-		if not _far_result.has(rid):
-			_far_result[rid] = {}
-		var per_species: Dictionary = _far_result[rid]
-		for inst: VegetationScatter.Instance in (_far_chunks[i] if _far_chunks[i] != null else []):
-			if not per_species.has(inst.species):
-				per_species[inst.species] = []
-			(per_species[inst.species] as Array).append(inst)
-	_far_chunks.clear()
-	for rid: String in _far_result:
-		var per_species: Dictionary = _far_result[rid]
+
+
+## Joins a region's chunk buffers per species (packed appends, no per-tree work here) and adds
+## its MultiMeshes.
+func _far_build(rid0: String, e: Dictionary) -> void:
+	var holder := Node3D.new()
+	holder.name = "Far_%s" % rid0
+	_far_root.add_child(holder)
+	e["holder"] = holder
+	var joined: Dictionary = {}
+	var jobs: Array = e["jobs"]
+	var chunks: Array = e["chunks"]
+	for i: int in jobs.size():
+		var rid: String = jobs[i][0]
+		if not joined.has(rid):
+			joined[rid] = {}
+		var per_species: Dictionary = joined[rid]
+		var chunk: Dictionary = chunks[i] if chunks[i] != null else {}
+		for sp_id: Variant in chunk:
+			var ce: Array = chunk[sp_id]
+			if not per_species.has(sp_id):
+				per_species[sp_id] = [0, PackedFloat32Array()]
+			var acc: Array = per_species[sp_id]
+			acc[0] = int(acc[0]) + int(ce[0])
+			var buf: PackedFloat32Array = acc[1]
+			buf.append_array(ce[1])
+			acc[1] = buf
+	e["jobs"] = []
+	e["chunks"] = []
+	for rid: String in joined:
+		var per_species: Dictionary = joined[rid]
 		for sp_id: StringName in per_species:
 			var sp: SpeciesDef = Content.get_def(&"species", sp_id) as SpeciesDef
 			var mat := ShaderMaterial.new()
@@ -460,27 +562,24 @@ func _collect_far() -> void:
 				for k: String in tints:
 					mat.set_shader_parameter(k, tints[k])
 			_far_mats.append(mat)
+			(e["mats"] as Array).append(mat)
 			var quad := QuadMesh.new()
 			quad.size = Vector2(1.0, 1.0)
 			quad.center_offset = Vector3(0, 0.5, 0)
 			quad.material = mat
-			var insts: Array = per_species[sp_id]
+			var e2: Array = per_species[sp_id]
 			var mm := MultiMesh.new()
 			mm.transform_format = MultiMesh.TRANSFORM_3D
 			mm.mesh = quad
-			mm.instance_count = insts.size()
-			var dims: Vector2 = ImpostorLibrary.size_for(sp)
-			for i: int in insts.size():
-				var inst: VegetationScatter.Instance = insts[i]
-				var b := Basis(Vector3.UP, inst.yaw).scaled(Vector3(dims.x, dims.y, dims.x) * inst.scale)
-				mm.set_instance_transform(i, Transform3D(b, inst.pos))
+			mm.instance_count = int(e2[0])
+			if int(e2[0]) > 0:
+				mm.buffer = e2[1]
 			var mmi := MultiMeshInstance3D.new()
 			mmi.name = "Far_%s_%s" % [rid, sp_id]
 			mmi.multimesh = mm
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			mmi.visibility_range_end = float(Settings.gfx("view_distance", 1400.0))
-			_far_root.add_child(mmi)
-	_far_result = {}
+			holder.add_child(mmi)
 
 
 func _near_rect() -> Vector4:

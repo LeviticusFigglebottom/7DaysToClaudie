@@ -20,6 +20,9 @@ extends RefCounted
 
 ## New ADR-0031 scripts by path, so this compiles before the editor registers their class names.
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
+## Polygon tests through RwgStreets.point_in (Geometry2D.is_point_in_polygon counted a test ray
+## through a vertex twice, TD-135; generator VERSION 2).
+const Streets := preload("res://src/worldgen/rwg/rwg_streets.gd")
 
 const EPS: float = 0.02
 const NB8: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
@@ -49,7 +52,17 @@ var relief: float = 50.0
 var _seed: int = 0
 
 
-func build(settings: GenSettings, tun: Dictionary, names: Dictionary) -> void:
+## Milliseconds each step of build() took (ADR-0038's measurements; not part of the world).
+var timings: Dictionary = {}
+## Called with the fraction (0..1) of build() done, inside its long steps too, so a loading bar
+## keeps moving (ADR-0038). Optional; held only while build() runs.
+var _progress: Callable = Callable()
+var _t_step: int = 0
+
+
+func build(settings: GenSettings, tun: Dictionary, names: Dictionary, progress: Callable = Callable()) -> void:
+	_progress = progress
+	_t_step = Time.get_ticks_msec()
 	_seed = settings.seed
 	step = float(tun.get("macro_step", 32.0))
 	width_m = settings.integer("size") * 1024.0
@@ -64,11 +77,31 @@ func build(settings: GenSettings, tun: Dictionary, names: Dictionary) -> void:
 	river_of.resize(n * n)
 	river_of.fill(-1)
 	_shape(prof, settings.num("roughness"))
+	_done("shape", 0.2)
 	_place_lakes(settings, tun.get("lakes", {}), names)
-	_flood()
+	_done("lakes", 0.25)
+	_flood(0.25, 0.5)
+	_done("flood", 0.5)
 	_carve(float(prof.get("carve", 4.0)) * (0.6 + 0.8 * settings.num("roughness")))
-	_flood()
+	_done("carve", 0.6)
+	_flood(0.6, 0.85)
+	_done("flood2", 0.85)
 	_rivers(settings, tun.get("rivers", {}), names)
+	_done("rivers", 1.0)
+	# The caller's callable may hold its owner (the generator, which holds this): let it go.
+	_progress = Callable()
+
+
+func _done(step_name: String, f: float) -> void:
+	var now: int = Time.get_ticks_msec()
+	timings[step_name] = now - _t_step
+	_t_step = now
+	_report(f)
+
+
+func _report(f: float) -> void:
+	if _progress.is_valid():
+		_progress.call(f)
 
 
 func rng_for(key: String) -> RandomNumberGenerator:
@@ -125,7 +158,7 @@ func stats_in(poly: PackedVector2Array) -> Dictionary:
 	while z <= bb.end.y + 0.01:
 		var x: float = bb.position.x
 		while x <= bb.end.x + 0.01:
-			if Geometry2D.is_point_in_polygon(Vector2(x, z), poly):
+			if Streets.point_in(Vector2(x, z), poly):
 				var v: float = height(x, z)
 				lo = minf(lo, v)
 				hi = maxf(hi, v)
@@ -160,7 +193,7 @@ func flatten(poly: PackedVector2Array, target: float, falloff: float) -> void:
 			if lake_of[c] >= 0:
 				continue
 			var p := Vector2(x0 + i * step, z0 + j * step)
-			var d: float = 0.0 if Geometry2D.is_point_in_polygon(p, poly) else _poly_distance(poly, p)
+			var d: float = 0.0 if Streets.point_in(p, poly) else _poly_distance(poly, p)
 			if d >= falloff:
 				continue
 			var w: float = 1.0 - smoothstep(0.0, falloff, d)
@@ -210,6 +243,8 @@ func _shape(prof: Dictionary, rough: float) -> void:
 	var ridges: float = float(prof.get("ridges", 0.0))
 	var tilt_m: float = float(prof.get("tilt", 20.0))
 	for j: int in n:
+		if j % 64 == 63:
+			_report(0.2 * j / n)
 		var z: float = z0 + j * step
 		for i: int in n:
 			var x: float = x0 + i * step
@@ -290,7 +325,7 @@ func _dig_basin(li: int, poly: PackedVector2Array, c: Vector2, level: float, dep
 		for i: int in range(i0, i1 + 1):
 			var k: int = j * n + i
 			var p := Vector2(x0 + i * step, z0 + j * step)
-			if Geometry2D.is_point_in_polygon(p, poly):
+			if Streets.point_in(p, poly):
 				var d: float = _poly_distance(poly, p)
 				var f: float = clampf(d / maxf(20.0, reach * 0.6), 0.0, 1.0)
 				h[k] = minf(h[k], level - 1.0 - depth * f * (2.0 - f))
@@ -305,7 +340,7 @@ func _dig_basin(li: int, poly: PackedVector2Array, c: Vector2, level: float, dep
 
 ## Priority-flood: fills every hollow that is not a lake to its spill height (plus a whisker of
 ## fall), sets each cell's drain and counts the cells draining through it.
-func _flood() -> void:
+func _flood(f0: float = 0.0, f1: float = 0.0) -> void:
 	var count: int = n * n
 	down.resize(count)
 	down.fill(-1)
@@ -332,6 +367,8 @@ func _flood() -> void:
 		var c: int = heap.pop()
 		order[oi] = c
 		oi += 1
+		if oi % 32768 == 0:
+			_report(lerpf(f0, f1, 0.8 * oi / count))
 		var ci: int = c % n
 		var cj: int = c / n
 		var fc: float = fill[c]
@@ -656,7 +693,7 @@ func water_distance(p: Vector2) -> float:
 		if (l["center"] as Vector2).distance_to(p) > float(l["radius"]) * 1.6 + 400.0:
 			continue
 		var d: float = _poly_distance(poly, p)
-		best = minf(best, -d if Geometry2D.is_point_in_polygon(p, poly) else d)
+		best = minf(best, -d if Streets.point_in(p, poly) else d)
 	return best
 
 

@@ -10,11 +10,14 @@ extends Node3D
 ##   build.deliver         {player, site}                        -> {ok, complete}
 ##   build.place_log       {player, site?, slot? | pos:[3], rot:[4]} -> {ok, piece}
 ##   build.repair / build.upgrade {player, piece}
-##   build.demolish        {player, site}                        (cancel a ghost, refunds deliveries)
+##   build.demolish        {player, site}                        -> {ok, refund} (take a placed ghost down: hold cancel on it)
 ##   build.dismantle       {player, piece}                       (take a piece down for part of its cost)
 ##   build.add_fuel        {player, piece, item?}                -> {ok, fuel}
 ##   build.light           {player, piece}                       (needs fuel and a lighter or torch)
 ##   build.place_item      {player, item, pos:[3], yaw}          (a placeable item: the can chime)
+##   build.rack_store      {player, piece, count?}               -> {ok, stored} (ADR-0035 racks)
+##   build.rack_take       {player, piece, count?}               -> {ok, taken}
+##   build.toggle_door     {player, piece}                       -> {ok, open}
 
 const LOG_DEF: StringName = &"log_piece"
 const CELL: float = 4.0
@@ -38,7 +41,8 @@ var _bp_target: Dictionary = {}
 var _cells: Dictionary = {}
 
 const COMMANDS: Array[StringName] = [&"build.place_blueprint", &"build.deliver", &"build.place_log", &"build.repair",
-	&"build.upgrade", &"build.demolish", &"build.dismantle", &"build.add_fuel", &"build.light", &"build.place_item"]
+	&"build.upgrade", &"build.demolish", &"build.dismantle", &"build.add_fuel", &"build.light", &"build.place_item",
+	&"build.rack_store", &"build.rack_take", &"build.toggle_door"]
 ## What a fire is fed with, in order, when the player doesn't hold a fuel item: kindling first,
 ## logs last (they are walls too). Cloth only burns when held: it is bandages.
 const FUEL_ORDER: Array[StringName] = [&"stick", &"leaf_bundle", &"wood_plank", &"log"]
@@ -66,6 +70,9 @@ func setup_world(w: Node) -> void:
 	Game.register_command(&"build.add_fuel", _cmd_add_fuel)
 	Game.register_command(&"build.light", _cmd_light)
 	Game.register_command(&"build.place_item", _cmd_place_item)
+	Game.register_command(&"build.rack_store", _cmd_rack_store)
+	Game.register_command(&"build.rack_take", _cmd_rack_take)
+	Game.register_command(&"build.toggle_door", _cmd_toggle_door)
 	Events.terrain_modified.connect(_on_terrain_modified)
 	if w.get(&"clock_driver") != null:
 		w.clock_driver.game_minutes_passed.connect(_burn_fires)
@@ -259,14 +266,16 @@ func _aim(player: Player, reach: float, mask: int) -> Dictionary:
 
 
 func _update_blueprint_target(player: Player) -> void:
-	var a: Dictionary = _aim(player, REACH * 1.6, 1)
+	var a: Dictionary = _aim(player, REACH * 1.6, 1 | (StructurePiece.LAYER if placing.on_structures else 0))
 	var hit: Dictionary = a["hit"]
 	var pos: Vector3
 	if hit.is_empty():
 		pos = (a["from"] as Vector3) + (a["dir"] as Vector3) * REACH * 1.6
 	else:
 		pos = hit["position"]
-	pos.y = _footprint_height(placing, pos)
+	# On a log floor (ADR-0035): stand on the logs where the aim lands; elsewhere on the ground.
+	var floor_y: float = _structure_floor(placing, pos)
+	pos.y = floor_y if floor_y > -INF else _footprint_height(placing, pos)
 	var yaw: float = player.global_rotation.y + _place_yaw
 	var xf := Transform3D(Basis(Vector3.UP, yaw), pos)
 	var why: String = _blueprint_blocker(placing, xf)
@@ -274,6 +283,25 @@ func _update_blueprint_target(player: Player) -> void:
 	preview.global_transform = xf
 	preview.show_blueprint(placing)
 	preview.set_state(why == "")
+
+
+## The top of the log floor or platform under `pos` (a ray down from just above it onto horizontal
+## logs), or -INF: not an on_structures blueprint, or no logs there.
+func _structure_floor(bp: BlueprintDef, pos: Vector3) -> float:
+	var under: StructurePiece = support_under(pos) if bp != null and bp.on_structures and is_inside_tree() else null
+	if under == null:
+		return -INF
+	return under.global_position.y + LogSnapper.RADIUS
+
+
+## The horizontal log a thing standing at `pos` rests on (within half a metre below or above).
+func support_under(pos: Vector3) -> StructurePiece:
+	var q := PhysicsRayQueryParameters3D.create(pos + Vector3.UP * 0.5, pos + Vector3.DOWN * 0.6, StructurePiece.LAYER)
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(q)
+	var piece := hit.get("collider") as StructurePiece if not hit.is_empty() else null
+	if piece == null or not piece.is_log() or LogSnapper.is_vertical(piece.global_transform.basis):
+		return null
+	return piece
 
 
 func _footprint_radius(bp: BlueprintDef) -> float:
@@ -302,8 +330,9 @@ func _blueprint_blocker(bp: BlueprintDef, xf: Transform3D) -> String:
 	var p: Player = world.player
 	if p.global_position.distance_to(pos) > REACH * 1.8:
 		return "too far"
+	var on_floor: StructurePiece = support_under(pos) if bp.on_structures and is_inside_tree() else null
 	var n: Vector3 = (world.terrain as TerrainManager).normal_at(pos.x, pos.z)
-	if rad_to_deg(n.angle_to(Vector3.UP)) > bp.max_slope:
+	if on_floor == null and rad_to_deg(n.angle_to(Vector3.UP)) > bp.max_slope:
 		return "too steep"
 	var wsys: Node = world.get(&"water")
 	if wsys != null and wsys.has_method(&"depth_at") and float(wsys.call(&"depth_at", pos)) > 0.25:
@@ -311,6 +340,9 @@ func _blueprint_blocker(bp: BlueprintDef, xf: Transform3D) -> String:
 	var r: float = _footprint_radius(bp)
 	for other: StructurePiece in pieces_in_radius(pos, r):
 		var flat: float = Vector2(other.global_position.x - pos.x, other.global_position.z - pos.z).length()
+		# The floor logs it stands on are not in its way.
+		if on_floor != null and other.is_log() and other.global_position.y < pos.y - 0.05:
+			continue
 		if flat < r * 0.6 and absf(other.global_position.y - pos.y) < 2.5:
 			return "blocked"
 	for s: BlueprintSite in sites.values():
@@ -539,7 +571,12 @@ func _complete_assembly(site: BlueprintSite, p: PlayerState) -> void:
 	var id: StringName = Game.session.ids.next("s")
 	_remove_site(site.site_id)
 	var mult: float = _hp_mult(p)
-	var built: StructurePiece = _add_piece(id, def, xf, def.hp * mult, true, mult)
+	# Standing on a log floor (ADR-0035): it rests on that log and comes down with it.
+	var under: StructurePiece = support_under(xf.origin) if site.bp.on_structures and is_inside_tree() else null
+	var built: StructurePiece = _add_piece(id, def, xf, def.hp * mult, under == null, mult)
+	if under != null:
+		graph.set_grounded(id, false)
+		graph.link(id, under.piece_id, StructureGraph.Link.ON)
 	if built.burns_fuel():
 		built.fuel = built.station_def().start_fuel
 	Audio.play_3d(&"sfx/build_complete", xf.origin, {"volume_db": -2.0})
@@ -660,18 +697,44 @@ func _cmd_upgrade(args: Dictionary) -> Dictionary:
 	return {"ok": true}
 
 
+## Takes a placed ghost down (BlueprintSite.alt_interact: the cancel key held on it). Everything
+## handed over comes back, at your feet if it doesn't fit; logs already set in a log blueprint stay
+## where they are, ordinary logs now.
 func _cmd_demolish(args: Dictionary) -> Dictionary:
 	var p: PlayerState = _player_state(args)
 	var site: BlueprintSite = sites.get(StringName(str(args.get("site", ""))))
 	if p == null or site == null:
 		return _fail("no site")
+	if not p.stats.alive:
+		return _fail("dead")
+	var at: Vector3 = site.global_position
+	var node: Player = world.player_node(p.id) if world != null else null
+	if node != null and node.global_position.distance_to(at) > REACH + 2.0:
+		return _fail("too far")
+	var refund: Dictionary = {}
+	var back: PackedStringArray = []
 	for k: Variant in site.delivered.keys():
-		var left: int = p.inventory.add_item(StringName(str(k)), int(site.delivered[k]))
-		if left > 0:
-			ItemDrop.spawn(world, ItemStack.make(StringName(str(k)), left), site.global_position + Vector3.UP)
+		var item := StringName(str(k))
+		var n: int = int(site.delivered[k])
+		if n <= 0:
+			continue
+		refund[String(item)] = n
+		var idef: ItemDef = Content.item(item)
+		back.append("%d %s" % [n, idef.display_name if idef != null else String(item)])
+		var left: int = p.inventory.add_item(item, n)
+		if left > 0 and world != null:
+			# Logs that don't fit on the shoulder are dropped as logs, stacked so they don't collide.
+			if item == &"log" and world.get(&"loose") != null:
+				for i: int in left:
+					world.loose.spawn_log(at + Vector3.UP * (0.6 + 0.5 * i), Basis(Vector3.UP, site.global_rotation.y), &"")
+			else:
+				ItemDrop.spawn(world, ItemStack.make(item, left), at + Vector3.UP)
+	var name_: String = site.bp.display_name
 	_remove_site(site.site_id)
+	Audio.play_3d(&"sfx/blueprint_place", at, {"volume_db": -8.0})
 	Events.inventory_changed.emit(p.id)
-	return {"ok": true}
+	Events.player_status_message.emit("Took down the %s blueprint%s." % [name_, (": " + ", ".join(back) + " back") if not back.is_empty() else ""], &"info")
+	return {"ok": true, "refund": refund}
 
 
 ## What one hammer repair costs: the def's own repair cost, else a quarter of what it took to
@@ -685,16 +748,16 @@ static func repair_cost(def: StructureDef) -> Dictionary:
 	return out
 
 
-## Half of a piece's build cost (rounded down), returned when it is dismantled whole. A log
-## comes back as the log itself.
+## Half of a piece's build cost (rounded down), returned when it is dismantled whole, but at
+## least one of everything it cost: half of a single item (a placed can chime) is not nothing.
+## A log comes back as the log itself.
 static func dismantle_refund(def: StructureDef) -> Dictionary:
 	if def.piece_kind == "log":
 		return {"log": 1}
 	var out: Dictionary = {}
 	for k: Variant in def.cost.keys():
-		var n: int = int(floor(float(def.cost[k]) * 0.5))
-		if n > 0:
-			out[k] = n
+		if int(def.cost[k]) > 0:
+			out[k] = maxi(1, int(floor(float(def.cost[k]) * 0.5)))
 	return out
 
 
@@ -704,10 +767,10 @@ func hammer_hint(piece: StructurePiece, p: PlayerState) -> String:
 	var t: String = "%s  %d / %d" % [piece.def.display_name, ceili(piece.hp), ceili(piece.max_hp())]
 	if piece.hp < piece.max_hp() - 0.5:
 		var cost: Dictionary = repair_cost(piece.def)
-		t += "  ·  [LMB] repair: %s%s" % [_cost_text(cost), "" if p.inventory.has_all(cost) else " (missing)"]
+		t += "  ·  [%s] repair: %s%s" % [PlayerInteraction.key_label(&"attack"), _cost_text(cost), "" if p.inventory.has_all(cost) else " (missing)"]
 	elif not piece.def.upgrade.is_empty():
-		t += "  ·  [LMB] twice to reinforce: %s" % _cost_text(piece.def.upgrade.get("cost", {}))
-	return t + "  ·  crouch + hold [E] to dismantle"
+		t += "  ·  [%s] twice to reinforce: %s" % [PlayerInteraction.key_label(&"attack"), _cost_text(piece.def.upgrade.get("cost", {}))]
+	return t + "  ·  crouch [%s] + hold [%s] to dismantle" % [PlayerInteraction.key_label(&"crouch"), PlayerInteraction.key_label(&"interact")]
 
 
 func _cmd_dismantle(args: Dictionary) -> Dictionary:
@@ -794,6 +857,84 @@ func _cmd_add_fuel(args: Dictionary) -> Dictionary:
 	Audio.play_3d(&"sfx/log_drop" if item in [&"log", &"wood_plank"] else &"sfx/stick_pickup", piece.global_position, {"volume_db": -6.0})
 	Events.inventory_changed.emit(p.id)
 	return {"ok": true, "fuel": piece.fuel}
+
+
+# --- Racks and doors (ADR-0035) ------------------------------------------------------------------
+
+## The piece a command names, if the player is close enough to reach it.
+func _reachable_piece(p: PlayerState, args: Dictionary) -> StructurePiece:
+	var piece: StructurePiece = pieces.get(StringName(str(args.get("piece", ""))))
+	if piece == null or p == null:
+		return null
+	var pl: Player = world.player_node(p.id) if world != null else null
+	if pl != null and pl.global_position.distance_to(piece.global_position) > REACH + maxf(piece.def.size.x, piece.def.size.z):
+		return null
+	return piece
+
+
+## Puts carried items of the rack's kind on it, up to its capacity (all carried, or `count`).
+func _cmd_rack_store(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player_state(args)
+	var piece: StructurePiece = _reachable_piece(p, args)
+	if piece == null or piece.rack_capacity() <= 0:
+		return _fail("not a rack")
+	var item: StringName = piece.rack_item()
+	var room: int = piece.rack_capacity() - piece.rack_count()
+	var n: int = mini(p.inventory.count_of(item), room)
+	if args.has("count"):
+		n = mini(n, int(args["count"]))
+	if n <= 0:
+		return _fail("full" if room <= 0 else "none carried")
+	var stored: int = 0
+	for st: ItemStack in p.inventory.take(item, n):
+		var rest: int = piece.inventory.add(st)
+		stored += st.count - rest
+		if rest > 0:
+			st.count = rest
+			p.inventory.add(st)
+	Events.inventory_changed.emit(p.id)
+	piece.on_contents_changed()
+	Audio.play_3d(&"sfx/log_drop" if item == &"log" else &"sfx/stick_pickup", piece.global_position, {"volume_db": -6.0})
+	return {"ok": stored > 0, "stored": stored}
+
+
+## Takes items off a rack (one, or `count`), as many as the player can carry.
+func _cmd_rack_take(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player_state(args)
+	var piece: StructurePiece = _reachable_piece(p, args)
+	if piece == null or piece.rack_capacity() <= 0:
+		return _fail("not a rack")
+	var item: StringName = piece.rack_item()
+	var n: int = mini(int(args.get("count", 1)), piece.rack_count())
+	if n <= 0:
+		return _fail("empty")
+	var taken: int = 0
+	for st: ItemStack in piece.inventory.take(item, n):
+		var rest: int = p.inventory.add(st)
+		taken += st.count - rest
+		if rest > 0:
+			st.count = rest
+			piece.inventory.add(st)
+	if taken <= 0:
+		Events.player_status_message.emit("You can't carry any more.", &"warning")
+		return _fail("can't carry")
+	Events.inventory_changed.emit(p.id)
+	piece.on_contents_changed()
+	return {"ok": true, "taken": taken}
+
+
+func _cmd_toggle_door(args: Dictionary) -> Dictionary:
+	var p: PlayerState = _player_state(args)
+	var piece: StructurePiece = _reachable_piece(p, args)
+	if piece == null or piece.def.piece_kind != "door":
+		return _fail("not a door")
+	piece.set_door_open(not piece.door_open)
+	if piece.door_open:
+		Game.session.world.flags["open:%s" % piece.piece_id] = true
+	else:
+		Game.session.world.flags.erase("open:%s" % piece.piece_id)
+	Audio.play_3d(&"sfx/door_open_creak" if piece.door_open else &"sfx/door_close", piece.global_position + Vector3.UP, {"volume_db": -4.0})
+	return {"ok": true, "open": piece.door_open}
 
 
 func _cmd_light(args: Dictionary) -> Dictionary:
@@ -885,6 +1026,8 @@ func _free_piece_node(id: StringName) -> void:
 	_fires.erase(id)
 	if piece.lit and Game.session != null:
 		Game.session.world.flags.erase("lit:%s" % id)
+	if piece.door_open and Game.session != null:
+		Game.session.world.flags.erase("open:%s" % id)
 	piece.queue_free()
 
 

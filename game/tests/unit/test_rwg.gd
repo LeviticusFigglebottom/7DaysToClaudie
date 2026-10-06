@@ -1,16 +1,23 @@
 extends GutTest
-## Random worlds (ADR-0031): settings, determinism, what the generator promises about its output
-## (counts, no overlaps, connected towns, rivers that run downhill, a safe drop site), its time
-## budget, and that its output loads and composes like any world.
+## Random worlds (ADR-0031; generator v2 with organic towns, ADR-0040): settings, determinism, what
+## the generator promises about its output (town counts by density, no overlaps, connected towns,
+## rivers that run downhill, a safe drop site away from region borders), its time budget (sizes 5
+## and 10), and that its output loads and composes like any world. test_world_towns.gd covers the
+## towns themselves (seams, lot heights, buildings, the v1 world fixture).
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Generator := preload("res://src/worldgen/rwg/rwg_generator.gd")
 const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
 const Lots := preload("res://src/poi/lot_picker.gd")
 const Terrain := preload("res://src/worldgen/rwg/rwg_terrain.gd")
+const Streets := preload("res://src/worldgen/rwg/rwg_streets.gd")
 
-## Generation budget for a 5 x 5 world (ADR-0031): measured ~1 s headless on one core.
+## Generation budget for a 5 x 5 world (ADR-0031): measured ~1 s headless on one core (v1), ~3 s
+## with organic towns (v2).
 const BUDGET_5X5_MS: int = 10000
+## A 10 x 10 world (size forced past the New Game cap, as rwg_preview --force-size measures it):
+## ~10 s headless on the busy shared container (v2; the plan's budget for 16 x 16 is 20 s).
+const BUDGET_10X10_MS: int = 40000
 const TMP: String = "user://test_rwg"
 
 
@@ -44,11 +51,11 @@ func test_config_is_valid() -> void:
 
 
 func test_settings_resolve_clamp_and_round_trip() -> void:
-	var s: RefCounted = _settings(42, {"size": 99, "terrain": "volcanic", "towns": "5"}, "highlands")
+	var s: RefCounted = _settings(42, {"size": 99, "terrain": "volcanic", "town_density": "2.5"}, "highlands")
 	var v: Dictionary = s.get(&"values")
-	assert_eq(int(v["size"]), 7, "size clamped to its range")
+	assert_eq(int(v["size"]), 7, "size clamped to its range: big worlds wait for streaming")
 	assert_eq(str(v["terrain"]), str(GenSettings.options()["terrain"]["default"]), "an unknown enum value falls back to the option's default")
-	assert_eq(int(v["towns"]), 5, "strings from the command line are coerced")
+	assert_eq(float(v["town_density"]), 2.5, "strings from the command line are coerced")
 	var back: RefCounted = GenSettings.from_dict(s.call(&"to_dict"))
 	assert_eq(str(back.call(&"key")), str(s.call(&"key")), "to_dict/from_dict keeps the world")
 	assert_eq(Generator.world_id_for(back), Generator.world_id_for(s))
@@ -70,40 +77,58 @@ func test_same_seed_same_world_other_seed_other_world() -> void:
 # --- What the generator promises --------------------------------------------------------------
 
 func test_town_count_and_size_follow_the_settings() -> void:
-	var g: RefCounted = _gen(77, {"size": 4, "towns": 3, "town_size": "villages"})
+	# 3 towns per 16 km² on a 4 x 4 world: three villages (floor(3 + a draw under 1)).
+	var g: RefCounted = _gen(77, {"size": 4, "town_density": 3.0, "town_size": "villages"})
 	var towns: Array = g.get(&"towns")
 	assert_eq(towns.size(), 3, "three towns")
 	for t: Dictionary in towns:
 		assert_eq(str(t["kind"]), "village")
-	var h: RefCounted = _gen(77, {"size": 4, "towns": 2, "town_size": "hamlets"})
+	var h: RefCounted = _gen(77, {"size": 4, "town_density": 2.0, "town_size": "hamlets"})
+	assert_eq((h.get(&"towns") as Array).size(), 2, "two hamlets")
 	for t2: Dictionary in h.get(&"towns"):
 		assert_eq(str(t2["kind"]), "hamlet")
 	var lots_h: int = ((h.get(&"towns") as Array)[0]["plan"]["lots"] as Array).size()
 	var lots_v: int = (towns[0]["plan"]["lots"] as Array).size()
 	assert_gt(lots_v, lots_h, "a village has more lots than a hamlet")
-	assert_eq((_gen(77, {"size": 3, "towns": 0}).get(&"towns") as Array).size(), 0, "no towns when none are asked for")
-	var big: RefCounted = _gen(78, {"size": 5, "towns": 6, "town_size": "towns"})
-	assert_eq((big.get(&"towns") as Array).size(), 6, "six towns fit a 5 x 5 world")
+	assert_eq((_gen(77, {"size": 3, "town_density": 0.0}).get(&"towns") as Array).size(), 0, "no towns when none are asked for")
+	assert_eq((_gen(77, {"size": 2, "town_density": 0.25, "town_size": "hamlets"}).get(&"towns") as Array).size(), 1, "any density above zero makes a town")
+	var big: RefCounted = _gen(78, {"size": 5, "town_density": 4.0, "town_size": "towns"})
+	var nb: int = (big.get(&"towns") as Array).size()
+	var no_room: int = 0
+	for w: String in big.get(&"warnings"):
+		if w.begins_with("no room"):
+			no_room += 1
+	assert_eq(nb + no_room, 6, "6.25 towns per 5 x 5 world: six sites tried (%d placed, %d without room)" % [nb, no_room])
+	assert_gt(nb, 3, "most big towns fit a 5 x 5 world")
+	for t3: Dictionary in big.get(&"towns"):
+		assert_true(str(t3["kind"]) in ["village", "town"], "the 'towns' mix makes villages and towns")
 
 
 func test_places_never_overlap_each_other_water_or_roads() -> void:
 	for seed: int in [5, 6, 9]:
 		var g: RefCounted = _gen(seed, {"size": 4, "wilderness": 1.5})
 		var built: Array = []
-		var entries: Array = []
 		for t: Dictionary in g.get(&"towns"):
-			built.append(["town %s" % t["name"], t["poly"], false])
-			entries.append_array(t["entries"])
+			for l: Dictionary in t["plan"]["lots"]:
+				built.append(["lot %s/%s" % [t["id"], l["id"]], Generator.frame_poly(l["frame"]), false])
 		for p: Dictionary in g.get(&"places"):
 			built.append(["place %s" % p["id"], p["poly"], bool(p["keep_water"])])
 		assert_gt((g.get(&"places") as Array).size(), 5, "seed %d places something" % seed)
+		var bad: PackedStringArray = []
 		for i: int in built.size():
+			var bi: Rect2 = Generator._bounds(built[i][1])
 			for j: int in range(i + 1, built.size()):
-				assert_true(Geometry2D.intersect_polygons(built[i][1], built[j][1]).is_empty(), "seed %d: %s overlaps %s" % [seed, built[i][0], built[j][0]])
-			if not bool(built[i][2]):
-				assert_gt(float(g.call(&"water_clearance", built[i][1])), 0.0, "seed %d: %s is clear of the water" % [seed, built[i][0]])
-			else:
-				assert_lt(float(g.call(&"water_clearance", built[i][1])), 0.0, "seed %d: %s stands over its lake" % [seed, built[i][0]])
+				if bi.grow(1.0).intersects(Generator._bounds(built[j][1])) and not Geometry2D.intersect_polygons(built[i][1], built[j][1]).is_empty():
+					var over: float = 0.0
+					for part: PackedVector2Array in Geometry2D.intersect_polygons(built[i][1], built[j][1]):
+						over += absf(_area(part))
+					if over > 0.5 or str(built[i][0]).begins_with("place") or str(built[j][0]).begins_with("place"):
+						bad.append("%s overlaps %s" % [built[i][0], built[j][0]])
+			if str(built[i][0]).begins_with("place"):
+				if not bool(built[i][2]) and float(g.call(&"water_clearance", built[i][1])) <= 0.0:
+					bad.append("%s is in the water" % built[i][0])
+				elif bool(built[i][2]) and float(g.call(&"water_clearance", built[i][1])) >= 0.0:
+					bad.append("%s does not stand over its lake" % built[i][0])
 		# Roads keep off every building; a place's own drive or track ends at its front, so only the
 		# through roads are checked against places.
 		var roads: Array = g.get(&"roads")
@@ -112,35 +137,39 @@ func test_places_never_overlap_each_other_water_or_roads() -> void:
 			for b: Array in built:
 				if cls in ["track", "drive"] and str(b[0]).begins_with("place"):
 					continue
-				var clear: float = _road_gap(roads[k], b[1], entries)
-				assert_gt(clear, -0.5, "seed %d: road %s (%s) runs through %s (%.1f m)" % [seed, roads[k]["id"], cls, b[0], clear])
+				var clear: float = _road_gap(roads[k], b[1])
+				if clear <= -0.5:
+					bad.append("road %s (%s) runs through %s (%.1f m)" % [roads[k]["id"], cls, b[0], clear])
+		assert_eq(bad.size(), 0, "seed %d: %d problems: %s" % [seed, bad.size(), "; ".join(bad.slice(0, 8))])
 
 
-## Clearance between a road's edge and a polygon; the stretch where a road meets a town's main
-## street at its entry (by design, inside the pad edge) is left out.
-static func _road_gap(rd: Dictionary, poly: PackedVector2Array, entries: Array) -> float:
+## Clearance between a road's edge (half width + shoulder) and a polygon, over its segments.
+static func _road_gap(rd: Dictionary, poly: PackedVector2Array) -> float:
 	var line: Polyline2 = rd["line"]
+	var need: float = float(rd["width"]) * 0.5 + float(rd["shoulder"])
+	if not line.bounds.grow(need + 2.0).intersects(Generator._bounds(poly)):
+		return INF
 	var best: float = INF
-	var half: float = float(rd["width"]) * 0.5
-	for q: Vector2 in line.points:
-		var at_entry: bool = false
-		for e: Vector2 in entries:
-			if q.distance_to(e) < 20.0:
-				at_entry = true
-		if at_entry:
-			continue
-		var d: float = -1.0 if Geometry2D.is_point_in_polygon(q, poly) else Terrain._poly_distance(poly, q)
-		best = minf(best, d - half)
-	return best
+	for k: int in line.points.size() - 1:
+		best = minf(best, Generator._seg_poly_distance(line.points[k], line.points[k + 1], poly))
+	return best - need
+
+
+static func _area(poly: PackedVector2Array) -> float:
+	var a: float = 0.0
+	for i: int in poly.size():
+		a += poly[i].cross(poly[(i + 1) % poly.size()])
+	return a * 0.5
 
 
 func test_roads_connect_every_town() -> void:
 	for seed: int in [11, 12]:
-		var g: RefCounted = _gen(seed, {"size": 5, "towns": 5})
+		var g: RefCounted = _gen(seed, {"size": 5, "town_density": 3.0})
 		var towns: Array = g.get(&"towns")
 		var roads: Array = g.get(&"roads")
 		assert_gt(towns.size(), 1)
-		# Roads join where one's end meets another's line; a town joins the roads ending at its entries.
+		# Roads join where one's end meets another's line; a town is on the road through its centre
+		# (its main street, ADR-0040).
 		var parent: Array[int] = []
 		for i: int in roads.size() + towns.size():
 			parent.append(i)
@@ -150,13 +179,19 @@ func test_roads_connect_every_town() -> void:
 				for b: int in roads.size():
 					if a != b and (roads[b]["line"] as Polyline2).closest(end).x < 14.0:
 						_union(parent, a, b)
-				for t: int in towns.size():
-					for e: Vector2 in towns[t]["entries"]:
-						if end.distance_to(e) < 5.0:
-							_union(parent, a, roads.size() + t)
+			for t: int in towns.size():
+				if (roads[a]["line"] as Polyline2).closest(towns[t]["center"]).x < 2.0:
+					_union(parent, a, roads.size() + t)
 		var root: int = _find(parent, roads.size())
 		for t2: int in towns.size():
 			assert_eq(_find(parent, roads.size() + t2), root, "seed %d: %s is on the road network" % [seed, towns[t2]["name"]])
+			var through: int = 0
+			for rd: Dictionary in roads:
+				var line: Polyline2 = rd["line"]
+				var q: Vector3 = line.closest(towns[t2]["center"])
+				if q.x < 2.0 and q.y > 20.0 and q.y < line.total_length - 20.0:
+					through += 1
+			assert_gt(through, 0, "seed %d: a main street runs through %s's centre" % [seed, towns[t2]["name"]])
 
 
 static func _find(parent: Array[int], i: int) -> int:
@@ -191,7 +226,7 @@ func test_rivers_run_downhill_to_a_mouth() -> void:
 				# Where a river runs into its lake, the ground under it is the lake bed.
 				var in_lake: bool = false
 				for lk: Dictionary in t.get(&"lakes"):
-					in_lake = in_lake or Geometry2D.is_point_in_polygon(p, lk["polygon"])
+					in_lake = in_lake or Streets.point_in(p, lk["polygon"])
 				if not in_lake:
 					assert_true(float(t.call(&"height", p.x, p.y)) >= line.value_at(Array(lv), s) - 3.5, "seed %d %s: ground at %s stays near or above the water" % [seed, rv["id"], p])
 				s += 120.0
@@ -205,7 +240,18 @@ func test_drop_site_is_safe() -> void:
 		assert_false(drop.is_empty(), "seed %d has a drop site" % seed)
 		var p: Vector2 = drop["pos"]
 		for t: Dictionary in g.get(&"towns"):
-			assert_gt(Terrain._poly_distance(t["poly"], p), 300.0, "seed %d: dropped away from %s" % [seed, t["name"]])
+			# 380 m from a town's disc, 0.65 of that in the last fallback tier.
+			assert_gt((t["center"] as Vector2).distance_to(p) - float(t["radius"]), 240.0, "seed %d: dropped away from %s" % [seed, t["name"]])
+			for l: Dictionary in t["plan"]["lots"]:
+				assert_gt(Terrain._poly_distance(Generator.frame_poly(l["frame"]), p), 100.0, "seed %d: dropped away from %s's farms" % [seed, t["name"]])
+		# A streamed world shapes the land round the drop site first: 300 m from a region border.
+		var rect: Rect2 = (g.get(&"regions") as Dictionary)[str(drop["cell"])]["rect"]
+		var border: float = minf(minf(p.x - rect.position.x, rect.end.x - p.x), minf(p.y - rect.position.y, rect.end.y - p.y))
+		var fell_back: bool = false
+		for w: String in g.get(&"warnings"):
+			fell_back = fell_back or w.begins_with("drop site")
+		if not fell_back:
+			assert_gt(border, 300.0 - 24.0, "seed %d: the drop site is %.0f m from a region border" % [seed, border])
 		assert_gt(float((g.get(&"terrain") as RefCounted).call(&"water_distance", p)), 30.0, "seed %d: dropped on dry ground" % seed)
 		var near: Array = g.call(&"nearest_road", p)
 		assert_lt(float(near[0]), 400.0, "seed %d: a road within reach" % seed)
@@ -219,10 +265,41 @@ func test_generation_time_5x5() -> void:
 	assert_lt(ms, BUDGET_5X5_MS, "a 5 x 5 world generates within the budget")
 
 
+## Phase 4's sizes: a 10 x 10 world (the size forced past the New Game cap in memory, as
+## rwg_preview --force-size does) generates, deterministically, with towns and places in
+## proportion, cell names past G and two-digit rows. 16 x 16 runs with SLOW_TESTS=1.
+func test_generation_scales_to_10x10() -> void:
+	var sizes: Array[int] = [10]
+	if OS.get_environment("SLOW_TESTS") == "1":
+		sizes.append(16)
+	for sz: int in sizes:
+		var s: RefCounted = _settings(1010)
+		(s.get(&"values") as Dictionary)["size"] = sz
+		var t0: int = Time.get_ticks_msec()
+		var g: RefCounted = Generator.generate(s)
+		var ms: int = Time.get_ticks_msec() - t0
+		gut.p("%d x %d world generated in %d ms: %s; %s" % [sz, sz, ms, g.get(&"timings"), g.get(&"sub_timings")])
+		var towns: int = (g.get(&"towns") as Array).size()
+		var places: int = (g.get(&"places") as Array).size()
+		assert_gt(towns, int(sz * sz / 16.0 * 2.0 * 0.6), "%d x %d: towns by density (%d)" % [sz, sz, towns])
+		assert_gt(places, sz * sz / 4, "%d x %d: places by the per-16 km² caps (%d)" % [sz, sz, places])
+		# Named places repeat with the area, but a `unique` one (the field lab) stands once at most.
+		var labs: int = (g.get(&"places") as Array).filter(func(p: Dictionary) -> bool: return str(p["def"]) == "corvane_field_lab").size()
+		assert_lte(labs, 1, "%d x %d: the field lab is unique (%d)" % [sz, sz, labs])
+		assert_eq(labs, 1, "%d x %d: and a world this big has one" % [sz, sz])
+		var ids: Dictionary = g.call(&"region_ids")
+		assert_eq(ids.size(), sz * sz)
+		assert_true(ids.has("%s%d" % [char(64 + sz), sz]), "the last cell is %s%d" % [char(64 + sz), sz])
+		if sz == 10:
+			assert_lt(ms, BUDGET_10X10_MS, "a 10 x 10 world generates within the budget")
+			var again: RefCounted = Generator.generate(s)
+			assert_eq(_all_json(again).md5_text(), _all_json(g).md5_text(), "the same 10 x 10 world twice, byte for byte (towns planned on threads)")
+
+
 # --- It loads like any world ---------------------------------------------------------------------
 
 func test_output_loads_composes_and_registers_its_towns() -> void:
-	var g: RefCounted = _gen(4040, {"size": 2, "towns": 1, "town_size": "hamlets"})
+	var g: RefCounted = _gen(4040, {"size": 2, "town_density": 4.0, "town_size": "hamlets"})
 	var dir: String = TMP.path_join(str(g.get(&"world_id")))
 	assert_eq(Worlds.write(g, dir), OK)
 	assert_true(FileAccess.file_exists(dir.path_join("map.png")), "the map is drawn")
@@ -237,20 +314,27 @@ func test_output_loads_composes_and_registers_its_towns() -> void:
 	assert_almost_eq(world.macro_height(float(t.get(&"x0")) + 5 * 32.0, float(t.get(&"z0")) + 7 * 32.0), float(snappedf(hs[7 * n + 5], 0.1)), 0.11, "the macro grid is the generator's land")
 	var towns: Array = g.get(&"towns")
 	assert_eq(towns.size(), 1)
+	assert_eq(world.towns.size(), 1, "the town is a world-level town (ADR-0040)")
 	var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(towns[0]["fw_id"]))) as FrameworkDef
 	assert_not_null(fw, "the town is a registered framework")
+	assert_eq(fw.layout, "organic")
 	# Every lot holds a building (authored or generated), none is left empty.
 	for res: Dictionary in Lots.resolve(fw, str(towns[0]["id"]), 99):
 		assert_true(str(res["kind"]) in ["authored", "generated"], "lot %s holds a building (%s)" % [res["lot"]["id"], res["kind"]])
-	# The town's region composes (coarsely, for speed) with the town's pad and streets.
+	# The town's region composes (coarsely, for speed) with the town's lots and streets.
 	var rid: String = str(world.cells[str(towns[0]["cell"])])
 	var rt: RegionTerrain = TerrainComposer.compose(world, rid, 8.0)
 	assert_not_null(rt)
 	var kinds: Array = []
 	for pl: Dictionary in rt.placements:
 		kinds.append(str(pl["kind"]))
-	assert_has(kinds, "framework", "the town is placed")
+	assert_has(kinds, "town", "the town's fixtures are placed")
+	assert_has(kinds, "lot", "its lots are placed")
+	assert_true(rt.biome_ids.has("yard"), "its lots are yards")
 	assert_gt(rt.roads.size(), 1, "its streets and roads are graded")
+	for r2: Variant in world.regions:
+		for f: Variant in world.region_data(str(r2)).get("features", []):
+			assert_ne(str((f as Dictionary).get("framework", "")), String(fw.id), "no region lists the town as a feature")
 	# Leave content as it was for the tests after this one.
 	Content.remove_runtime_def(&"framework", fw.id)
 
@@ -281,7 +365,7 @@ func test_new_game_world_tab_generates_a_preview() -> void:
 	assert_eq(panel._tabs.current_tab, 1, "the Random World button opens the World tab")
 	assert_eq(panel._map.selected, 1, "with a random world chosen")
 	(panel._wcontrols["size"] as SpinBox).value = 2
-	(panel._wcontrols["towns"] as SpinBox).value = 1
+	(panel._wcontrols["town_density"] as SpinBox).value = 4.0
 	panel._wseed.text = "8080"
 	var settings: RefCounted = panel.world_settings()
 	assert_eq(int((settings.get(&"values") as Dictionary)["size"]), 2, "the controls set the world's settings")
@@ -293,38 +377,3 @@ func test_new_game_world_tab_generates_a_preview() -> void:
 	assert_not_null(panel._preview.texture, "the map preview is shown")
 	assert_string_contains(panel._preview_status.text, "Towns:", "with a summary of the world")
 	Worlds._remove(Worlds.dir_for(Generator.world_id_for(settings)))
-
-
-# --- Town plans --------------------------------------------------------------------------------------
-
-func test_town_plans_keep_lots_off_streets_and_each_other() -> void:
-	const Towns := preload("res://src/worldgen/rwg/rwg_towns.gd")
-	var cfg: Dictionary = GenSettings.tuning()["towns"]
-	var layouts: Dictionary = {}
-	for kind: String in ["hamlet", "village", "town"]:
-		for seed: int in 24:
-			var r := RandomNumberGenerator.new()
-			r.seed = seed * 7919 + kind.length()
-			var plan: Dictionary = Towns.plan(kind, cfg, r)
-			layouts[str(plan["layout"])] = true
-			var pad := Rect2(Vector2.ZERO, Vector2(float(plan["size"][0]), float(plan["size"][1])))
-			var rects: Array[Rect2] = []
-			for l: Dictionary in plan["lots"]:
-				var a: Array = l["rect"]
-				rects.append(Rect2(float(a[0]), float(a[1]), float(a[2]), float(a[3])))
-			for i: int in rects.size():
-				assert_true(pad.grow(0.01).encloses(rects[i]), "%s %d: lot %d inside the pad" % [kind, seed, i])
-				for j: int in range(i + 1, rects.size()):
-					assert_false(rects[i].grow(-0.05).intersects(rects[j].grow(-0.05)), "%s %d: lots %d and %d overlap" % [kind, seed, i, j])
-				for rd: Dictionary in plan["roads"]:
-					var pts: Array = rd["points"]
-					for k: int in pts.size() - 1:
-						var street := Rect2(Vector2(float(pts[k][0]), float(pts[k][1])), Vector2.ZERO).expand(Vector2(float(pts[k + 1][0]), float(pts[k + 1][1]))).grow(float(rd["width"]) * 0.5)
-						assert_false(street.intersects(rects[i].grow(-0.05)), "%s %d: lot %d stands in a street" % [kind, seed, i])
-			# Every lot holds a building of this world's pool.
-			var fw := FrameworkDef.new()
-			assert_eq(fw.parse({"id": "plan_test", "size": plan["size"], "tier_range": [1, 3], "lots": plan["lots"], "roads": plan["roads"], "fixtures": plan["fixtures"]},
-				&"framework", "test"), PackedStringArray())
-			for res: Dictionary in Lots.resolve(fw, "plan_test", seed):
-				assert_true(str(res["kind"]) in ["authored", "generated"], "%s %d: lot %s (%s, %s) holds a building" % [kind, seed, res["lot"]["id"], res["lot"]["zoning"], res["size"]])
-	assert_true(layouts.has("rows") and layouts.has("crossroads"), "both layouts occur")

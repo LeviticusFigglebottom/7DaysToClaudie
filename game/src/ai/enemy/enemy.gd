@@ -14,7 +14,10 @@ extends CharacterBody3D
 ## Specials (EnemyDef.behavior): SPIT (Blister) lobs spore globs from range, CHARGE (Rammer)
 ## barrels at you or through a wall, `armor` (Husk) shrugs off everything but headshots, and
 ## `death_burst` leaves a spore cloud. Infected tiers (Seeded, Bloomed) scale stats, regenerate
-## and glow (InfectedTiers, ADR-0014).
+## and glow (InfectedTiers, ADR-0014). Hollowed hounds (archetype `hound`, ADR-0034) run on four
+## legs in a low body: a pack rallies to the first one that sees you (it howls), spreads round you
+## before it closes, bites and breaks off, tracks you by scent when it loses sight of you, and
+## keeps clear of a flame held up to it.
 
 enum State { SLEEP, WAKING, IDLE, WANDER, INVESTIGATE, CHASE, ATTACK, BREAK, SCREAM, STAGGER, HORDE, DEAD, SPIT, CHARGE }
 
@@ -32,6 +35,10 @@ signal died(enemy: Enemy)
 var entity_id: StringName = &""
 var def: EnemyDef
 var director: Node = null
+## Below the ground surface by more than this counts as underground (is_night).
+const UNDERGROUND_DEPTH: float = 2.5
+var _underground: bool = false
+var _underground_at: int = -100000
 var visual: EnemyVisual
 var agent: NavigationAgent3D
 var state: State = State.IDLE
@@ -114,12 +121,23 @@ var _cap_height: float = 1.75
 ## A POI sleeper spawned already awake (its building was roused while nobody was near, ADR-0022):
 ## where it heads first. INF = none.
 var _wake_at := Vector3.INF
+## Hollowed hounds (ADR-0034): the low four-legged body (EnemyDef behavior.quadruped; empty for
+## everything that walks upright), the pack it hunts with (Array of Enemy, itself included, wired
+## by AIDirector.spawn_pack) and its place in the pack's spread round the quarry.
+var quad: Dictionary = {}
+var pack: Array = []
+var pack_slot: int = 0
+var _retreat_t: float = 0.0
+var _howl_cd: float = 0.0
+## Reached its flanking spot this approach: now it goes straight in.
+var _flanked: bool = false
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
 	entity_id = p_id
 	def = p_def
 	director = p_director
+	quad = def.beh("quadruped", {})
 	_rng.seed = Ids.hash64("enemy:" + String(p_id))
 	var rules: GameRules = GameRules.current()
 	max_health = def.health * rules.num("enemy_health")
@@ -191,6 +209,10 @@ func _ready() -> void:
 	var cap := CapsuleShape3D.new()
 	cap.radius = float(def.beh("radius", 0.3))
 	cap.height = maxf(1.75, float(def.beh("height", 1.75))) * size * float(bs[1])
+	if not quad.is_empty():
+		# A hound: a capsule lying along its body on the ground, nose to tail.
+		cap.radius = float(quad.get("radius", 0.3)) * size
+		cap.height = maxf(float(quad.get("length", 1.2)) * size, cap.radius * 2.0 + 0.01)
 	_cap_radius = cap.radius
 	_cap_height = cap.height
 	_shape.shape = cap
@@ -203,7 +225,7 @@ func _ready() -> void:
 	agent.target_desired_distance = 1.0
 	agent.path_max_distance = 3.0
 	agent.radius = maxf(0.35, cap.radius)
-	agent.height = 1.7
+	agent.height = 1.7 if quad.is_empty() else 0.8
 	add_child(agent)
 	if not perch.is_empty():
 		# On its seat or bed, posed for this body's size (the animation offsets scale with it).
@@ -237,8 +259,19 @@ func is_alive() -> bool:
 	return state != State.DEAD
 
 
+## Night by the clock, or deep underground (a cellar, a mine level, a cave: ADR-0044), where it is
+## always night for the Hollowed: they see without light and run, so the player's light matters.
 func is_night() -> bool:
-	return Game.session != null and Game.session.clock.is_night()
+	return Game.session != null and (Game.session.clock.is_night() or is_underground())
+
+
+## More than UNDERGROUND_DEPTH below the ground surface (re-checked every second or so).
+func is_underground() -> bool:
+	var now: int = Time.get_ticks_msec()
+	if now - _underground_at > 900:
+		_underground_at = now
+		_underground = Game.world != null and global_position.y < float(Game.world.call(&"height_at", global_position.x, global_position.z)) - UNDERGROUND_DEPTH
+	return _underground
 
 
 # --- Main loop -------------------------------------------------------------------------------
@@ -253,6 +286,8 @@ func _physics_process(delta: float) -> void:
 	_scream_cd = maxf(0.0, _scream_cd - delta)
 	_spit_cd = maxf(0.0, _spit_cd - delta)
 	_charge_cd = maxf(0.0, _charge_cd - delta)
+	_howl_cd = maxf(0.0, _howl_cd - delta)
+	_retreat_t = maxf(0.0, _retreat_t - delta)
 	_stagger_lock = maxf(0.0, _stagger_lock - delta)
 	_far = dist > KINEMATIC_BEYOND
 	if _root_t > 0.0:
@@ -329,9 +364,11 @@ func _physics_process(delta: float) -> void:
 				_start_charge(p)
 			elif dist < float(def.beh("keeps_distance", 0.0)):
 				want = (global_position - tgt).normalized() * _speed(true) * Vector3(1, 0, 1)
+			elif not quad.is_empty() and p != null:
+				want = _hound_move(p, tgt, dist, seen)
 			else:
 				want = _move_dir(tgt) * _speed(true)
-			if p != null and dist <= def.atk("range", 1.5) + 0.2 and _now() - last_seen_time < 1.0:
+			if p != null and dist <= def.atk("range", 1.5) + 0.2 and _now() - last_seen_time < 1.0 and _may_close(p):
 				_set_state(State.ATTACK)
 			elif _now() - last_seen_time > MEMORY_SECONDS:
 				_set_state(State.HORDE if horde else State.INVESTIGATE)
@@ -343,6 +380,16 @@ func _physics_process(delta: float) -> void:
 			if _hit_at >= 0.0 and _state_t >= _hit_at:
 				_hit_at = -1.0
 				_deliver_hit(p)
+				if not quad.is_empty():
+					# A hound bites and breaks off, then comes again (from wherever the pack puts it).
+					var rr: Array = Content.config(&"hounds").get("retreat", [0.9, 1.8])
+					_retreat_t = _rng.randf_range(float(rr[0]), float(rr[1]))
+					_flanked = false
+					_set_state(State.CHASE)
+					return
+			if not _may_close(p):
+				_set_state(State.CHASE)
+				return
 			if _hit_at < 0.0 and _attack_cd <= 0.0:
 				if p == null or dist > def.atk("range", 1.5) + 0.5:
 					_set_state(State.CHASE)
@@ -491,10 +538,13 @@ func _vocalize(delta: float, dist: float) -> void:
 			State.CHASE:
 				id = &"voice/lurcher_pant" if def.archetype == "feral" else &"voice/hollow_attack"
 				_voice_t *= 0.5
+		if not quad.is_empty() and id != &"":
+			id = &"" if state == State.SLEEP else (&"voice/hound_pant" if state == State.CHASE else &"voice/hound_growl")
 		if id != &"":
-			Audio.play_3d(id, global_position + Vector3.UP * (0.4 if crawling else 1.6), {"volume_db": -4.0, "max_distance": 45.0})
+			Audio.play_3d(id, global_position + Vector3.UP * (0.4 if crawling or not quad.is_empty() else 1.6), {"volume_db": -4.0, "max_distance": 45.0})
 	var sp: float = Vector2(velocity.x, velocity.z).length()
-	if sp > 0.2 and is_on_floor():
+	# a hound's pads make no shuffle (its panting gives it away)
+	if sp > 0.2 and is_on_floor() and quad.is_empty():
 		_step_t -= delta * sp
 		if _step_t <= 0.0:
 			_step_t = 0.9 if not crawling else 1.3
@@ -535,6 +585,11 @@ func _perceive(p: Player, dist: float) -> void:
 		var first: bool = _now() - last_seen_time > MEMORY_SECONDS
 		last_seen_time = _now()
 		target_pos = p.global_position
+		if not quad.is_empty():
+			_rally_pack(p.global_position)
+			if first and _howl_cd <= 0.0 and _pack_alive() > 1 and state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+				_howl()
+				return
 		if def.archetype == "screamer" and _scream_cd <= 0.0 and bool(def.beh("scream", false)) and state != State.SCREAM:
 			_scream()
 			return
@@ -542,7 +597,8 @@ func _perceive(p: Player, dist: float) -> void:
 			break_target = null
 			_set_state(State.CHASE)
 			if first:
-				Audio.play_3d(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", global_position + Vector3.UP * 1.6, {"volume_db": 0.0})
+				Audio.play_3d(_vid(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", &"voice/hound_bark"),
+					_mouth(), {"volume_db": 0.0})
 				Events.enemy_alerted.emit(entity_id, global_position)
 		return
 	# Hearing.
@@ -558,6 +614,12 @@ func _perceive(p: Player, dist: float) -> void:
 			target_pos = e.pos + Vector3(_rng.randf_range(-2, 2), 0, _rng.randf_range(-2, 2))
 			_set_state(State.INVESTIGATE)
 		return
+	# A tracker (a hound) works a trail it is on: it keeps its nose to the freshest scent ahead.
+	if state == State.INVESTIGATE and bool(def.beh("tracker", false)) and st.scent_at(global_position) * def.perc("smell", 1.0) > 0.6:
+		var tg: Vector3 = st.scent_gradient(global_position)
+		if tg != Vector3.ZERO:
+			target_pos = global_position + tg * 6.0
+			_state_t = 0.0
 	# Smell: a strong trail pulls idle Hollowed along it.
 	if state in [State.IDLE, State.WANDER] and st.scent_at(global_position) * def.perc("smell", 1.0) > 2.0:
 		var g: Vector3 = st.scent_gradient(global_position)
@@ -588,6 +650,8 @@ func _perceive_held(st: Stimuli) -> void:
 ## Where it looks from: the head of the pose it is in (a sleeper lying on a bed sees from the
 ## pillow, not from 1.6 m above its knees).
 func _eye() -> Vector3:
+	if not quad.is_empty():
+		return global_position + Vector3.UP * float(quad.get("eye", 0.62)) * (visual.scale.y if visual != null else 1.0)
 	if crawling:
 		return global_position + Vector3.UP * 0.4
 	if state == State.SLEEP:
@@ -615,7 +679,7 @@ func _wake(toward: Vector3, saw: bool) -> void:
 	else:
 		_perch_from = global_transform
 	_set_state(State.WAKING)
-	Audio.play_3d(&"voice/zombie_wake", global_position + Vector3.UP, {"volume_db": -2.0})
+	Audio.play_3d(_vid(&"voice/zombie_wake", &"voice/hound_growl"), global_position + Vector3.UP, {"volume_db": -2.0})
 
 
 func notice(pos: Vector3, alert: bool = true) -> void:
@@ -645,7 +709,7 @@ func ambush(target: Vector3) -> void:
 			_set_state(State.CHASE)
 		return
 	_wake(target, true)
-	Audio.play_3d(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", global_position + Vector3.UP * 1.6,
+	Audio.play_3d(_vid(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", &"voice/hound_bark"), _mouth(),
 		{"volume_db": 2.0})
 	Events.enemy_alerted.emit(entity_id, global_position)
 
@@ -676,7 +740,7 @@ func _start_attack() -> void:
 	_attack_cd = def.atk("cooldown", 1.5)
 	var dur: float = visual.play_once(&"crawl_attack" if crawling else (&"attack_a" if _rng.randf() < 0.5 else &"attack_b"), 1.0, [&"attack_a"] as Array[StringName])
 	_hit_at = _state_t + dur * 0.45
-	Audio.play_3d(&"voice/zombie_attack", global_position + Vector3.UP * 1.5, {"volume_db": -2.0})
+	Audio.play_3d(_vid(&"voice/zombie_attack", &"voice/hound_snarl"), _mouth(), {"volume_db": -2.0})
 
 
 func _deliver_hit(p: Player) -> void:
@@ -691,7 +755,7 @@ func _deliver_hit(p: Player) -> void:
 		return
 	var dmg: float = def.atk("damage", 10.0) * damage_mult * (0.5 if severed.has("arm_l") and severed.has("arm_r") else 1.0)
 	var info := DamageInfo.make(dmg, &"zombie", &"zombie", entity_id)
-	info.hit_pos = p.global_position + Vector3.UP * 1.3
+	info.hit_pos = p.global_position + Vector3.UP * (1.3 if quad.is_empty() else 0.6)
 	info.source_pos = global_position
 	info.direction = (p.global_position - global_position).normalized()
 	info.tool_power = {"bleed": def.atk("bleed", 0.15), "infection": def.atk("infection", 3.0)}
@@ -723,6 +787,134 @@ func _scream() -> void:
 		Game.session.heat.add(global_position, float(Content.config(&"heat").get("sources", {}).get("scream", 30.0)))
 	if director != null and director.has_method(&"on_scream"):
 		director.call(&"on_scream", self, int(def.beh("scream_summons", 3)))
+
+
+# --- Hollowed hounds (ADR-0034) ------------------------------------------------------------------
+
+## A voice for this body: the Hollowed's own, or a hound's.
+func _vid(hollowed: StringName, hound: StringName) -> StringName:
+	return hollowed if quad.is_empty() else hound
+
+
+## Where its voice comes from: a Hollowed's head, a hound's muzzle.
+func _mouth() -> Vector3:
+	if quad.is_empty():
+		return global_position + Vector3.UP * 1.6
+	return global_position + Vector3.UP * float(quad.get("eye", 0.62)) * 0.9 + global_transform.basis.z * 0.5
+
+
+## Pack mates still alive (itself included).
+func _pack_alive() -> int:
+	var n: int = 0
+	for m: Variant in pack:
+		if m is Enemy and is_instance_valid(m) and (m as Enemy).is_alive():
+			n += 1
+	return n
+
+
+func _pack_centre() -> Vector3:
+	var c := Vector3.ZERO
+	var n: int = 0
+	for m: Variant in pack:
+		if m is Enemy and is_instance_valid(m) and (m as Enemy).is_alive():
+			c += (m as Enemy).global_position
+			n += 1
+	return c / float(n) if n > 0 else global_position
+
+
+## What one hound sees, the pack knows: every mate within call that is not already on the quarry
+## takes up the chase (a dozing one wakes to it).
+func _rally_pack(at: Vector3) -> void:
+	var r: float = float((Content.config(&"hounds").get("howl", {}) as Dictionary).get("pack_radius", 90.0))
+	for m: Variant in pack:
+		if not (m is Enemy) or not is_instance_valid(m) or m == self:
+			continue
+		var e: Enemy = m
+		if e.is_alive() and e.state in [State.SLEEP, State.IDLE, State.WANDER, State.INVESTIGATE] \
+				and e.global_position.distance_to(global_position) <= r:
+			e.ambush(at)
+
+
+## First sight: it stops and howls, and the pack answers. The howl carries a long way; the Hollowed
+## hear it like any other sound and come to see what the dogs have found.
+func _howl() -> void:
+	var c: Dictionary = Content.config(&"hounds").get("howl", {})
+	_howl_cd = float(c.get("cooldown", 40.0))
+	for m: Variant in pack:
+		if m is Enemy and is_instance_valid(m):
+			(m as Enemy)._howl_cd = _howl_cd
+	_set_state(State.SCREAM)
+	visual.play_once(&"scream", 1.0, [&"idle"] as Array[StringName])
+	Audio.play_3d(&"voice/hound_howl", _mouth(), {"volume_db": 4.0, "max_distance": 260.0})
+	if Stimuli.current != null:
+		Stimuli.current.emit_sound(global_position, float(c.get("loudness", 70.0)), &"howl", entity_id)
+	Events.enemy_alerted.emit(entity_id, global_position)
+
+
+## Whether it will go in for the bite now: not while it is breaking off after one, nor in front of
+## a held flame.
+func _may_close(p: Player) -> bool:
+	if quad.is_empty():
+		return true
+	return _retreat_t <= 0.0 and not _flame_shy(p)
+
+
+## In front of a player holding a flame up (a torch, a lantern): it keeps off. A hound behind them
+## still goes for the legs.
+func _flame_shy(p: Player) -> bool:
+	if p == null or not p.has_node(^"Equipment") or not bool(p.get_node(^"Equipment").call(&"has_flame_on")):
+		return false
+	var c: Dictionary = Content.config(&"hounds").get("torch", {})
+	var fwd: Vector3 = -p.camera.global_transform.basis.z if p.camera != null else Vector3.FORWARD
+	fwd.y = 0.0
+	var to_me := Vector3(global_position.x - p.global_position.x, 0.0, global_position.z - p.global_position.z)
+	if fwd.length() < 0.01 or to_me.length() < 0.01:
+		return true
+	return rad_to_deg(fwd.angle_to(to_me)) < float(c.get("behind_angle", 110.0))
+
+
+## How a hound runs a chase: breaking off wide after a bite, circling out of a flame's reach, and
+## with its pack, spreading round the quarry (each to its own bearing) before it closes.
+func _hound_move(p: Player, tgt: Vector3, dist: float, seen: bool) -> Vector3:
+	var cfg: Dictionary = Content.config(&"hounds")
+	var spd: float = _speed(true)
+	var away := Vector3(global_position.x - p.global_position.x, 0.0, global_position.z - p.global_position.z)
+	var away_n: Vector3 = away.normalized() if away.length() > 0.05 else Vector3.FORWARD
+	var side: Vector3 = away_n.cross(Vector3.UP) * (1.0 if pack_slot % 2 == 0 else -1.0)
+	if _retreat_t > 0.0:
+		return _steer_open((away_n + side * 0.7).normalized()) * spd * 0.85
+	if seen and _flame_shy(p):
+		var keep: float = float((cfg.get("torch", {}) as Dictionary).get("keep_off", 3.8))
+		var radial: float = clampf((keep - dist) * 0.8, -1.0, 1.0)
+		return _steer_open((side + away_n * radial).normalized()) * spd * 0.5
+	var flank: Dictionary = cfg.get("flank", {})
+	var mates: int = _pack_alive()
+	var radius: float = float(flank.get("radius", 6.5))
+	if seen and mates > 1 and not _flanked and dist > radius * 0.6 and _state_t < 6.0:
+		var base: Vector3 = _pack_centre() - p.global_position
+		var bearing: float = atan2(base.x, base.z) + deg_to_rad(float(flank.get("spread", 55.0))) * (float(pack_slot) - float(pack.size() - 1) * 0.5)
+		var spot: Vector3 = p.global_position + Vector3(sin(bearing), 0.0, cos(bearing)) * radius
+		if _flat_dist(spot) > float(flank.get("close_within", 2.0)):
+			return _move_dir(spot) * spd
+		_flanked = true
+	return _move_dir(tgt) * spd
+
+
+## A direction turned aside from walls it would run into (a quick probe, no path query: breaking
+## off and circling are short moves round the quarry).
+func _steer_open(dir: Vector3) -> Vector3:
+	if not is_inside_tree():
+		return dir
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var from: Vector3 = global_position + Vector3.UP * 0.4
+	for k: int in 5:
+		var a: float = float((k + 1) / 2) * 0.6 * (1.0 if k % 2 == 1 else -1.0)
+		var d: Vector3 = dir.rotated(Vector3.UP, a)
+		var q := PhysicsRayQueryParameters3D.create(from, from + d * 2.0, MOVE_MASK & ~LAYER)
+		q.exclude = [get_rid()]
+		if space.intersect_ray(q).is_empty():
+			return d
+	return dir
 
 
 func _can_spit(dist: float) -> bool:
@@ -823,7 +1015,7 @@ func take_damage(info: DamageInfo) -> void:
 	last_hit_cause = info.cause
 	if limb_hp.has(limb):
 		limb_hp[limb] = float(limb_hp[limb]) - amount
-		if float(limb_hp[limb]) <= 0.0 and limb != "torso" and not severed.has(limb):
+		if float(limb_hp[limb]) <= 0.0 and limb != "torso" and not severed.has(limb) and not bool(def.beh("no_dismember", false)):
 			var chance: float = info.dismember + clampf(-float(limb_hp[limb]) / 40.0, 0.0, 0.4)
 			if _rng.randf() < chance:
 				_sever(limb, info)
@@ -833,7 +1025,7 @@ func take_damage(info: DamageInfo) -> void:
 		FxLibrary.burst(get_parent(), "blood", info.hit_pos, -info.direction if info.direction != Vector3.ZERO else Vector3.UP, 0.8)
 		Audio.play_3d(&"sfx/blade_hit_flesh" if info.type in [&"slash", &"pierce"] else &"sfx/hit_flesh", info.hit_pos, {"volume_db": -3.0})
 	if health > 0.0 and _rng.randf() < 0.6:
-		Audio.play_3d(&"voice/zombie_pain", global_position + Vector3.UP * 1.6, {"volume_db": -3.0})
+		Audio.play_3d(_vid(&"voice/zombie_pain", &"voice/hound_yelp"), _mouth(), {"volume_db": -3.0})
 	if health <= 0.0 or (severed.has("head")):
 		_die(info)
 		return
@@ -879,6 +1071,13 @@ func _sever(limb: String, info: DamageInfo) -> void:
 ## the ground where its head and arms actually are.
 func _fit_shape() -> void:
 	var cap: CapsuleShape3D = _shape.shape
+	if not quad.is_empty():
+		# A hound: lying along its body, resting on the ground (also what weapons hit).
+		cap.radius = _cap_radius
+		cap.height = _cap_height
+		_shape.rotation = Vector3(PI * 0.5, 0.0, 0.0)
+		_shape.position = Vector3(0, cap.radius, 0.0)
+		return
 	if crawling:
 		cap.radius = minf(_cap_radius, 0.3)
 		cap.height = 1.3
@@ -936,7 +1135,7 @@ const POSE_EYES: Dictionary = {
 
 func _fit_sleep_shape() -> void:
 	var spec: Array = POSE_SHAPES.get(_pose_key(), [])
-	if spec.is_empty() or crawling:
+	if spec.is_empty() or crawling or not quad.is_empty():
 		_fit_shape()
 		return
 	var s: Vector3 = visual.scale if visual != null else Vector3.ONE
@@ -1027,6 +1226,10 @@ func _die(info: DamageInfo) -> void:
 	_shape.shape = box
 	_shape.rotation = Vector3.ZERO
 	_shape.position = Vector3(0, 0.15, -0.6)
+	if not quad.is_empty():
+		# a dog on its side
+		box.size = Vector3(0.7, 0.3, float(quad.get("length", 1.2))) * (visual.scale if visual != null else Vector3.ONE)
+		_shape.position = Vector3(0, 0.15, 0.0)
 	if in_pose:
 		var s: Vector3 = visual.scale
 		var corpse: Array = CORPSE_BOXES.get(pose, CORPSE_BOXES["lie"])
@@ -1038,7 +1241,7 @@ func _die(info: DamageInfo) -> void:
 		var back: bool = info.direction.dot(global_transform.basis.z) < 0.0
 		visual.play_once(&"death_back" if back else &"death_front", 1.0, [&"death_front"] as Array[StringName])
 		visual.animate_placeholder(0.0, 0.0, true)
-	Audio.play_3d(&"voice/zombie_death", global_position + Vector3.UP, {"volume_db": -2.0})
+	Audio.play_3d(_vid(&"voice/zombie_death", &"voice/hound_death"), global_position + Vector3.UP * (1.0 if quad.is_empty() else 0.5), {"volume_db": -2.0})
 	if Game.session != null:
 		Game.session.stats["zombies_killed"] = int(Game.session.stats.get("zombies_killed", 0)) + 1
 		var pl: PlayerState = Game.session.players.get(info.source_id)
@@ -1144,6 +1347,11 @@ func _update_anim(want: Vector3) -> void:
 		visual.play(&"run", 1.5, 0.15, [&"walk"] as Array[StringName])
 		return
 	var sp: float = Vector2(velocity.x, velocity.z).length()
+	if not quad.is_empty() and state == State.INVESTIGATE and sp > 0.15 and sp <= 2.4 and bool(def.beh("tracker", false)):
+		# nose down on the trail
+		visual.play(&"track", clampf(sp / 1.4, 0.5, 1.8), 0.3, [&"walk"] as Array[StringName])
+		visual.animate_placeholder(get_physics_process_delta_time(), want.length(), false)
+		return
 	if crawling:
 		visual.play(&"crawl", clampf(sp / 0.6, 0.4, 2.0), 0.25, [&"walk"] as Array[StringName])
 	elif sp > 2.4:

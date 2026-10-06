@@ -1,0 +1,674 @@
+{
+ "_doc": "Town props IV, pool round 2: the cannery, the water works pump house, the quarry office, the Pawn & Gun and the VFW post. Models: tools/assetgen/blender/generators/props_town4.py -> models/props/<id>[_worn|_destroyed].glb. size = [width x, height y, depth z] in metres (Godot axes, front +Z), measured from the clean model. Wall-mounted props have their origin on the wall plane at the bottom centre (vfw_bar_taps and pawn_security_grille stand on the floor: hang them at 0). pump_chlorinator stands on the floor with its backboard against the wall.",
+ "defs": [
+  {
+   "id": "cannery_retort",
+   "name": "Steam Retort",
+   "description": "Horizontal still retort: a riveted steel pressure drum on saddles, a dished door on a davit hinge, steam, vent and drain lines, gauges and the round-chart recording thermometer, basket rails out the door.",
+   "tags": [
+    "family_cannery",
+    "machine",
+    "metal",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/cannery_retort",
+    "worn": "props/cannery_retort_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.13,
+    2.45,
+    4.08
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "cannery",
+    "workshop"
+   ]
+  },
+  {
+   "id": "cannery_conveyor",
+   "name": "Roller Conveyor",
+   "description": "Three-metre gravity roller conveyor on leg stands with can guides.",
+   "tags": [
+    "family_cannery",
+    "machine",
+    "metal",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/cannery_conveyor",
+    "worn": "props/cannery_conveyor_worn",
+    "destroyed": "props/cannery_conveyor_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    3.0,
+    0.96,
+    0.55
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "cannery",
+    "workshop",
+    "storage"
+   ]
+  },
+  {
+   "id": "cannery_filler",
+   "name": "Can Filler and Seamer",
+   "description": "Rotary can filler under a conical product hopper, beside the double seamer head, on a green machine base.",
+   "tags": [
+    "family_cannery",
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/cannery_filler",
+    "worn": "props/cannery_filler_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.75,
+    2.4,
+    1.19
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "cannery",
+    "workshop"
+   ]
+  },
+  {
+   "id": "cannery_can_pallet",
+   "name": "Pallet of Cans",
+   "description": "Pallet load of unlabelled tall cans on tier sheets, shrink wrapped.",
+   "tags": [
+    "family_cannery",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/cannery_can_pallet",
+    "worn": "props/cannery_can_pallet_worn",
+    "destroyed": "props/cannery_can_pallet_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.22,
+    1.09,
+    1.0
+   ],
+   "container": "town4_can_pallet",
+   "blocks_sight": true,
+   "rooms": [
+    "cannery",
+    "storage",
+    "garage"
+   ]
+  },
+  {
+   "id": "cannery_sorting_table",
+   "name": "Sorting Table",
+   "description": "Stainless lipped fish sorting table draining to a bucket, fish totes on the undershelf.",
+   "tags": [
+    "family_cannery",
+    "metal",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/cannery_sorting_table",
+    "worn": "props/cannery_sorting_table_worn",
+    "destroyed": "props/cannery_sorting_table_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 220,
+   "size": [
+    2.54,
+    0.9,
+    0.9
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "cannery",
+    "kitchen"
+   ]
+  },
+  {
+   "id": "cannery_tote_stack",
+   "name": "Fish Totes",
+   "description": "Stacked blue and grey plastic fish totes.",
+   "tags": [
+    "family_cannery",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/cannery_tote_stack",
+    "worn": "props/cannery_tote_stack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.84,
+    1.34,
+    0.56
+   ],
+   "container": "town4_tote",
+   "blocks_sight": false,
+   "rooms": [
+    "cannery",
+    "storage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "pump_station_pump",
+   "name": "Centrifugal Pump",
+   "description": "End-suction centrifugal pump and finned motor on a baseplate and concrete plinth, flanged suction and valved discharge.",
+   "tags": [
+    "family_pumphouse",
+    "machine",
+    "metal",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/pump_station_pump",
+    "worn": "props/pump_station_pump_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.8,
+    1.75,
+    1.42
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "pump_house",
+    "basement",
+    "workshop"
+   ]
+  },
+  {
+   "id": "pump_pipe_manifold",
+   "name": "Pipe Manifold",
+   "description": "Potable-water header on saddles with two valved branches down into the floor and a riser.",
+   "tags": [
+    "family_pumphouse",
+    "metal",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/pump_pipe_manifold",
+    "worn": "props/pump_pipe_manifold_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.99,
+    1.6,
+    1.76
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "pump_house",
+    "basement"
+   ]
+  },
+  {
+   "id": "pump_pipe_manifold_wall",
+   "name": "Wall Pipe Run",
+   "description": "Treated and raw water lines on wall brackets with geared butterfly valves and a valved cross tie (hang ~0.2 m).",
+   "tags": [
+    "family_pumphouse",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/pump_pipe_manifold_wall",
+    "worn": "props/pump_pipe_manifold_wall_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.67,
+    1.48,
+    0.73
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "pump_house",
+    "basement"
+   ]
+  },
+  {
+   "id": "pump_chlorinator",
+   "name": "Chlorinator",
+   "description": "Chlorine cylinders chained on a platform scale with the regulator panel and toxic-gas placard on a backboard (stand against a wall).",
+   "tags": [
+    "family_pumphouse",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/pump_chlorinator",
+    "worn": "props/pump_chlorinator_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.38,
+    2.0,
+    0.57
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "pump_house",
+    "basement"
+   ]
+  },
+  {
+   "id": "pump_control_panel",
+   "name": "Pump Control Cabinet",
+   "description": "Wall relay cabinet with the pump mimic diagram, run lamps, ammeters and selector switches (hang ~0.9 m).",
+   "tags": [
+    "family_pumphouse",
+    "metal",
+    "electronics"
+   ],
+   "variants": {
+    "clean": "props/pump_control_panel",
+    "worn": "props/pump_control_panel_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.04,
+    1.52,
+    0.37
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "pump_house",
+    "basement",
+    "workshop"
+   ]
+  },
+  {
+   "id": "quarry_magazine",
+   "name": "Explosives Magazine",
+   "description": "Squat steel day box on timber skids, padlock hood over the hasp, hazard pictograms.",
+   "tags": [
+    "family_quarry",
+    "metal",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/quarry_magazine",
+    "worn": "props/quarry_magazine_worn",
+    "destroyed": "props/quarry_magazine_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    1.32,
+    0.96,
+    0.91
+   ],
+   "container": "town4_magazine",
+   "blocks_sight": false,
+   "rooms": [
+    "quarry_office",
+    "storage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "quarry_core_rack",
+   "name": "Core Tray Rack",
+   "description": "Steel rack of wooden core trays holding runs of drill core.",
+   "tags": [
+    "family_quarry",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/quarry_core_rack",
+    "worn": "props/quarry_core_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.7,
+    1.9,
+    0.6
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "quarry_office",
+    "storage",
+    "workshop"
+   ]
+  },
+  {
+   "id": "quarry_drill_steel_rack",
+   "name": "Drill Steel Rack",
+   "description": "Yellow stand of hex drill steels with a shelf of button bits and couplings.",
+   "tags": [
+    "family_quarry",
+    "metal",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/quarry_drill_steel_rack",
+    "worn": "props/quarry_drill_steel_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.56,
+    2.01,
+    0.55
+   ],
+   "container": "toolbox",
+   "blocks_sight": false,
+   "rooms": [
+    "quarry_office",
+    "workshop",
+    "garage"
+   ]
+  },
+  {
+   "id": "quarry_scale_terminal",
+   "name": "Weighbridge Desk",
+   "description": "Scale operator's desk: indicator, ticket printer, remote readout, phone, blast plan, and the swivel chair.",
+   "tags": [
+    "family_quarry",
+    "office"
+   ],
+   "variants": {
+    "clean": "props/quarry_scale_terminal",
+    "worn": "props/quarry_scale_terminal_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.36,
+    1.36,
+    1.35
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "quarry_office",
+    "office"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -0.15,
+      0.68
+     ],
+     "height": 0.48,
+     "facing": 180,
+     "lean": "back"
+    }
+   ]
+  },
+  {
+   "id": "pawn_gun_case",
+   "name": "Handgun Showcase",
+   "description": "Glass-topped display counter of pistols and revolvers on red felt, locked sliding doors on the staff side.",
+   "tags": [
+    "family_pawn",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/pawn_gun_case",
+    "worn": "props/pawn_gun_case_worn",
+    "destroyed": "props/pawn_gun_case_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    1.51,
+    1.0,
+    0.64
+   ],
+   "container": "town4_gun_case",
+   "blocks_sight": false,
+   "rooms": [
+    "pawn_shop",
+    "store"
+   ]
+  },
+  {
+   "id": "pawn_long_gun_rack",
+   "name": "Long Gun Rack",
+   "description": "Wall rack of rifles and shotguns behind a padlocked steel cable (hang ~0.5 m).",
+   "tags": [
+    "family_pawn"
+   ],
+   "variants": {
+    "clean": "props/pawn_long_gun_rack",
+    "worn": "props/pawn_long_gun_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.64,
+    1.35,
+    0.19
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "pawn_shop",
+    "store"
+   ]
+  },
+  {
+   "id": "pawn_shelf_mixed",
+   "name": "Pawn Shelving",
+   "description": "Steel shelving of pawned goods: guitars, power tools, a portable TV, ring and watch boxes.",
+   "tags": [
+    "family_pawn",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/pawn_shelf_mixed",
+    "worn": "props/pawn_shelf_mixed_worn",
+    "destroyed": "props/pawn_shelf_mixed_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    2.03,
+    1.86,
+    0.56
+   ],
+   "container": "town4_pawn_shelf",
+   "blocks_sight": true,
+   "rooms": [
+    "pawn_shop",
+    "store"
+   ]
+  },
+  {
+   "id": "pawn_security_grille",
+   "name": "Security Grille",
+   "description": "Folding scissor security gate across a doorway or window, 1.2 x 2.1 m (hang at 0).",
+   "tags": [
+    "family_pawn",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/pawn_security_grille",
+    "worn": "props/pawn_security_grille_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.28,
+    2.1,
+    0.08
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "pawn_shop",
+    "store",
+    "exterior"
+   ]
+  },
+  {
+   "id": "pawn_ammo_shelf",
+   "name": "Ammunition Shelf",
+   "description": "Heavy steel shelf of ammunition cartons and surplus ammo cans.",
+   "tags": [
+    "family_pawn",
+    "metal",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/pawn_ammo_shelf",
+    "worn": "props/pawn_ammo_shelf_worn",
+    "destroyed": "props/pawn_ammo_shelf_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    1.0,
+    1.81,
+    0.4
+   ],
+   "container": "town4_ammo_shelf",
+   "blocks_sight": true,
+   "rooms": [
+    "pawn_shop",
+    "store"
+   ]
+  },
+  {
+   "id": "vfw_honor_wall",
+   "name": "Honor Wall",
+   "description": "Framed service photographs, plaques, certificates, the post emblem and a folded flag in its case (hang ~0.9 m).",
+   "tags": [
+    "family_vfw"
+   ],
+   "variants": {
+    "clean": "props/vfw_honor_wall",
+    "worn": "props/vfw_honor_wall_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.4,
+    1.21,
+    0.08
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "hall",
+    "bar",
+    "office"
+   ]
+  },
+  {
+   "id": "vfw_flag_stand",
+   "name": "Flag Stand",
+   "description": "Brass floor stand with two flags on oak poles: the post flag and a plain banded flag.",
+   "tags": [
+    "family_vfw",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/vfw_flag_stand",
+    "worn": "props/vfw_flag_stand_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    1.28,
+    2.76,
+    0.51
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "hall",
+    "office"
+   ]
+  },
+  {
+   "id": "vfw_memorial_case",
+   "name": "Memorial Case",
+   "description": "Glass display case on a mahogany pedestal: a steel helmet, medals, dog tags and a portrait.",
+   "tags": [
+    "family_vfw",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/vfw_memorial_case",
+    "worn": "props/vfw_memorial_case_worn",
+    "destroyed": "props/vfw_memorial_case_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    1.04,
+    1.44,
+    0.55
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "hall",
+    "office"
+   ]
+  },
+  {
+   "id": "vfw_bar_taps",
+   "name": "Back Bar",
+   "description": "Mahogany back bar with a keg-cooler section, a three-faucet tap tower and a framed back-bar mirror with bottle shelves (stands on the floor, hang at 0).",
+   "tags": [
+    "family_vfw",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/vfw_bar_taps",
+    "worn": "props/vfw_bar_taps_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    2.05,
+    2.3,
+    0.62
+   ],
+   "blocks_sight": true,
+   "wall_mounted": true,
+   "rooms": [
+    "bar",
+    "hall"
+   ]
+  }
+ ]
+}

@@ -40,6 +40,9 @@ PIECES: dict[str, tuple[str, dict]] = {
     "door_metal": ("kit_door", {"kind": "metal", "seed": 63}),
     "door_interior_broken": ("kit_door", {"kind": "interior", "broken": True, "seed": 64}),
     "door_exterior_broken": ("kit_door", {"kind": "exterior", "broken": True, "seed": 65}),
+    # PoiBuilder asks every door leaf for its "_broken" model; a forced steel door is the same
+    # leaf (kit_door's metal kind does not splinter), but it must exist or builds show a stand-in.
+    "door_metal_broken": ("kit_door", {"kind": "metal", "broken": True, "seed": 70}),
     "door_interior_frac": ("kit_door", {"kind": "interior", "frac": True, "pieces": 7, "seed": 66}),
     "door_exterior_frac": ("kit_door", {"kind": "exterior", "frac": True, "pieces": 7, "seed": 67}),
     # --- windows / board-ups / barricade -------------------------------------------------------

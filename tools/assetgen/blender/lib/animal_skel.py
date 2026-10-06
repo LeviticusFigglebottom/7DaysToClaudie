@@ -1,5 +1,5 @@
-"""Quadruped skeleton (ADR-0027): one bone layout for every four-legged animal (deer, hare), joint
-tables per species, built on the character toolkit (char_skel.Skeleton, create_armature).
+"""Quadruped skeleton (ADR-0027): one bone layout for every four-legged animal (deer, hare, the
+Hollowed hound), joint tables per species, built on the character toolkit (char_skel.Skeleton, create_armature).
 
 Conventions are the Hollowed's (docs/CHARACTERS.md): armature object "Armature", front = -Y,
 the animal's left = +X, ground at Z = 0, origin under the body's middle. The pelvis bone is named
@@ -11,6 +11,13 @@ Bones (exactly):
   thigh.S, shin.S, cannon_h.S, hoof_h.S                             (hind legs)
 `hoof_*` ends at the toe tip on the ground (a deer's hoof, a hare's toes); `cannon_*` is the
 metacarpus / metatarsus (a hare's long hind foot lies almost flat in the rest crouch).
+
+The hound (a dog: digitigrade) maps the same names onto a dog's limbs: `scapula` is a long,
+sloping shoulder blade, `upper_arm` the humerus running back from the point of the shoulder to an
+elbow tucked against the brisket, `forearm` the radius down to the wrist (`carpus`), `cannon_f`
+the short front pastern and `hoof_f` the paw (toes and pads flat on the ground); behind, `shin`
+runs back to the hock, `cannon_h` is the near-vertical rear pastern and `hoof_h` the hind paw. A
+dog's long tail gets a second bone, `tail2` (hound only: deer and hare keep the layout above).
 """
 from __future__ import annotations
 
@@ -52,6 +59,9 @@ def _bones():
 
 BONES = _bones()
 BONE_NAMES = [b[0] for b in BONES]
+# The hound's tail curls and tucks: one more bone after `tail` (appended, so every shared bone
+# keeps its index).
+HOUND_BONES = BONES + [("tail2", "tail", "tail1", "tail2", UP)]
 FRONT_LEG = ("scapula", "upper_arm", "forearm", "cannon_f", "hoof_f")
 HIND_LEG = ("thigh", "shin", "cannon_h", "hoof_h")
 
@@ -81,13 +91,42 @@ _HARE = {
     "hip": (0.040, 0.105, 0.185), "stifle": (0.052, 0.035, 0.125), "hock": (0.050, 0.140, 0.040),
     "fetlock_h": (0.048, 0.030, 0.014), "toe_h": (0.048, -0.020, 0.0),
 }
-TABLES = {"deer": _DEER, "hare": _HARE}
+# A gaunt Hollowed hound: a rangy lab/hound mongrel of about 0.62 m at the withers, 0.66 m from
+# the point of the shoulder to the buttock, head carried level with the back. Digitigrade: wrists
+# and hocks well off the ground, paws flat. The elbow sits back under the brisket; the long tail
+# hangs low.
+_HOUND = {
+    "root": (0, 0.0, 0.0), "root_tail": (0, -0.2, 0.0),
+    "pelvis": (0, 0.215, 0.545), "spine0": (0, 0.03, 0.565), "chest0": (0, -0.15, 0.565),
+    "neck0": (0, -0.255, 0.545), "neck1": (0, -0.325, 0.630), "head0": (0, -0.370, 0.705),
+    "nose": (0, -0.605, 0.652), "jaw0": (0, -0.405, 0.668), "chin": (0, -0.575, 0.618),
+    "tail0": (0, 0.330, 0.555), "tail1": (0, 0.395, 0.425), "tail2": (0, 0.415, 0.255),
+    "ear0": (0.052, -0.392, 0.738), "ear1": (0.093, -0.428, 0.625),
+    "scap0": (0.045, -0.140, 0.600), "shoulder": (0.072, -0.268, 0.468), "elbow": (0.078, -0.192, 0.335),
+    "carpus": (0.068, -0.200, 0.118), "fetlock_f": (0.066, -0.222, 0.034), "toe_f": (0.066, -0.272, 0.0),
+    "hip": (0.064, 0.240, 0.505), "stifle": (0.080, 0.150, 0.345), "hock": (0.074, 0.292, 0.150),
+    "fetlock_h": (0.070, 0.276, 0.034), "toe_h": (0.070, 0.226, 0.0),
+}
+# A shepherd-type (scaled to 0.70 m by params): a longer body and a croup that falls away to
+# well-angulated hind legs, a longer muzzle, and pricked ears standing up off the skull.
+_HOUND_SHEPHERD = dict(_HOUND, **{
+    "pelvis": (0, 0.235, 0.528), "spine0": (0, 0.04, 0.560), "tail0": (0, 0.352, 0.520),
+    "tail1": (0, 0.415, 0.395), "tail2": (0, 0.430, 0.230),
+    "nose": (0, -0.630, 0.668), "chin": (0, -0.598, 0.628),
+    "ear0": (0.042, -0.390, 0.772), "ear1": (0.085, -0.368, 0.870),
+    "hip": (0.064, 0.262, 0.485), "stifle": (0.080, 0.165, 0.320), "hock": (0.074, 0.330, 0.140),
+    "fetlock_h": (0.070, 0.316, 0.034), "toe_h": (0.070, 0.266, 0.0),
+})
+TABLES = {"deer": _DEER, "hare": _HARE, "hound": _HOUND}
 
 
 def build_joints(p: dict) -> dict[str, np.ndarray]:
-    """Joint positions for params: species (deer / hare) and scale (uniform: a buck is a bigger
-    doe; its bulk is the body's, not the skeleton's)."""
+    """Joint positions for params: species (deer / hare / hound) and scale (uniform: a buck is a
+    bigger doe; its bulk is the body's, not the skeleton's). A hound's `breed` "shepherd" picks the
+    shepherd table."""
     table = TABLES[p.get("species", "deer")]
+    if p.get("species") == "hound" and p.get("breed") == "shepherd":
+        table = _HOUND_SHEPHERD
     s = float(p.get("scale", 1.0))
     j: dict[str, np.ndarray] = {}
     for k, v in table.items():
@@ -100,8 +139,12 @@ def build_joints(p: dict) -> dict[str, np.ndarray]:
     return j
 
 
+def bones_for(p: dict):
+    return HOUND_BONES if p.get("species") == "hound" else BONES
+
+
 def make_skeleton(p: dict) -> Skeleton:
-    return Skeleton(build_joints(p), p, bones=BONES)
+    return Skeleton(build_joints(p), p, bones=bones_for(p))
 
 
 def side_of(bone: str) -> float:
