@@ -89,6 +89,28 @@ func test_death_signal_once() -> void:
 	assert_false(s.alive)
 
 
+func test_waking_after_turning_does_not_turn_again() -> void:
+	var s := SurvivalStats.new()
+	var causes: Array[String] = []
+	s.died.connect(func(cause: String) -> void: causes.append(cause))
+	s.infection = 99.9
+	s.tick_game(60.0, _env())
+	assert_eq(causes, ["turned"] as Array[String], "the Bloom turns the player at 100")
+	s.revive(50.0)
+	s.tick_game(240.0, _env())
+	assert_true(s.alive, "waking up is not a second turning")
+	assert_eq(causes.size(), 1)
+	assert_false(s.has_status(&"infected"), "the infection ended with the turning")
+
+
+func test_waking_after_another_death_keeps_the_infection() -> void:
+	var s := SurvivalStats.new()
+	s.infection = 40.0
+	s.apply_damage(1000.0, &"fall")
+	s.revive(50.0)
+	assert_almost_eq(s.infection, 40.0, 0.001, "dying of a fall doesn't cure the Bloom")
+
+
 func test_sleep_restores_rest_and_slows_needs() -> void:
 	var s := SurvivalStats.new()
 	s.rest = 20.0

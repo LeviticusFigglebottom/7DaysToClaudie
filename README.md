@@ -15,6 +15,8 @@ Download a packaged build (Windows or Linux): GitHub Actions → **Build** → t
 `hollowmere-windows` / `hollowmere-linux`. Unzip and run; the zip includes every generated asset.
 See `docs/BUILDS.md`.
 
+New to the game? Read the player's guide: [docs/HOW_TO_PLAY.md](docs/HOW_TO_PLAY.md).
+
 A clone opened straight in the Godot editor has **no generated assets** (they are built by
 `make assets`, which needs Linux) and draws the world with placeholder shapes; the main menu says
 so. Open the project with **Godot 4.7.2** exactly: other versions import and render differently.
