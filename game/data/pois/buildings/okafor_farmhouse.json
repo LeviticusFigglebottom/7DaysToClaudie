@@ -124,7 +124,7 @@
         {"level": 0, "at": [7, 1]}
       ],
       "props": [
-        {"prop": "farm_stove_castiron", "id": "kitchen_stove", "at": [0, 2], "against": "W"},
+        {"prop": "farm_stove_castiron", "id": "kitchen_stove", "at": [0, 2], "offset": [0, -0.15], "against": "W"},
         {"prop": "kitchen_counter", "id": "kitchen_counter", "at": [2, 0], "against": "N"},
         {"prop": "kitchen_counter_sink", "id": "kitchen_sink", "at": [3, 0], "against": "N"},
         {"prop": "kitchen_wall_cabinet", "id": "kitchen_wall_cabinet", "at": [2, 0], "against": "N", "height": 1.5},

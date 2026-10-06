@@ -168,7 +168,7 @@
         {"prop": "office_desk", "at": [1, 0], "offset": [0.3, 0], "against": "N", "id": "office_desk", "variant": "worn"},
         {"prop": "office_chair", "pos": [1.9, 1.35], "rot": 160},
         {"prop": "filing_cabinet", "at": [0, 2], "against": "W", "id": "office_files"},
-        {"prop": "bookshelf", "at": [3, 0], "against": "E", "id": "office_shelf", "variant": "worn"},
+        {"prop": "bookshelf", "at": [3, 0], "offset": [0, 0.06], "against": "E", "id": "office_shelf", "variant": "worn"},
         {"prop": "civic_coat_rack", "pos": [3.45, 2.5], "rot": -90, "id": "office_coats"},
         {"prop": "lantern_camping", "pos": [2.35, 0.6], "y": 0.76},
         {"prop": "plywood_leaning", "pos": [0.45, 5.35], "rot": 95},
