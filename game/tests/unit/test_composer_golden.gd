@@ -23,6 +23,10 @@ extends GutTest
 ## Larkspur Adit was placed by the Larkspur cliffs (ADR-0044: its pad and its track);
 ## the generator versions leave them unchanged, the main map having no towns, generated posts or
 ## new biomes.
+## Composer VERSION 12 (ADR-0047: a world town paints `town` on its streets only, and yard grass keeps
+## off the authored footprints a lot may hold) re-recorded the random world's splat, biome and
+## vegetation digests (its drop-site region reaches the town too) and every input hash (the
+## version is hashed); Larch Hollow's outputs held, byte for byte, at 1, 4 and 8 m.
 ##
 ## When a digest differs: if the inputs changed on purpose (region.json, a framework or POI the
 ## region places, world_gen.json, the generator), the recorded input hash differs too and the
@@ -40,11 +44,11 @@ const RWG_SEED: int = 2026
 const RWG_SIZE: int = 3
 const DIGEST_KEYS: PackedStringArray = ["height", "splat0", "splat1", "biome", "vegmask", "water", "roads", "bridges", "placements", "other"]
 
-## Recorded from the VERSION 11 composer before Phase 1 (see the header). "input" is the region's
+## Recorded from the VERSION 11 composer before Phase 1, re-recorded for VERSION 12 (see the header). "input" is the region's
 ## input hash at that spacing, to tell changed inputs from a changed composer.
 const GOLDEN: Dictionary = {
 	"larch@4": {
-		"input": "b4fbc6834b8545490def9f0a2c9714500de403fac3b01044ff442bf377e552dd",
+		"input": "4f993b6d5aeeea3718aa7fe6066b1ecc7e6efc82afb2883d5c40ffe5cad2bf2c",
 		"height": "d02d26e81d142f13334430a59a777d48751f494f876d140a5f7090841ff5aa3b",
 		"splat0": "d12f5b596a18cdddd81dd54ef5c36f92",
 		"splat1": "a0e0f3e9d0ea61b64313f463af34b2c4",
@@ -57,7 +61,7 @@ const GOLDEN: Dictionary = {
 		"other": "343d7ca5a31189c644d8aca5e9ee0028",
 	},
 	"larch@8": {
-		"input": "63988d66f687b2ed39b9ce9f004db3afa86b6160110a0a8e1269e6f8ebf47aa0",
+		"input": "b27fdcd16fd701851d70d1dd737a8152be3aa6763348e9d66e708a702c37b3b4",
 		"height": "9e83fffe70ac6033922bc32628cf233346ec3a2c98f760e7043cb1e9dedef150",
 		"splat0": "8ee58b4216332e9f737a5152274f2fb2",
 		"splat1": "71f4ef029e083c97ad7fdbac70c5e563",
@@ -70,7 +74,7 @@ const GOLDEN: Dictionary = {
 		"other": "0619089a625a0d5200fa83faa962ee3c",
 	},
 	"larch@1": {
-		"input": "db8b578eb03eb907f2b3dcb1eb8771e54b709f883f10460e10c0ff9c5ebd0db9",
+		"input": "2ab4b08b3d4f7d5f26f68c1d29e575918bb0d76cf0d6b184758d563dbe61a916",
 		"height": "7440c2c539d199bcd29cfbee12a1ec392fa97e8d2b0240dcd226eb383a27e7b4",
 		"splat0": "9676745eb0d6b01bbe11c9e83b16549f",
 		"splat1": "55b0189d93e9a60ec3392ca26604f9ad",
@@ -83,12 +87,12 @@ const GOLDEN: Dictionary = {
 		"other": "9042e6121a94f2a29c717a3d15b2b03d",
 	},
 	"rwg@4": {
-		"input": "432389bc19d1057130c283e59724796c3de766c0599505b4f2290e9826fd5799",
+		"input": "911f161c616c5cd2822b5646cd25499cb97eff89c101f0e19198e4119cc2edcb",
 		"height": "a3f403f848325b1a1ac53870645f41dc3f58c1926830f486c333375fe360f1d8",
-		"splat0": "f38e64842bf50943ac0f59f6c65343f6",
-		"splat1": "6516361fff888d53383d86388f6881ce",
-		"biome": "2d3c3f5d688e720d97472a23102188d0",
-		"vegmask": "6652deffe6d28e7629a843f861143079",
+		"splat0": "081a5dcd3e7328f29a8f6b00269330c8",
+		"splat1": "df43dcb0e34a5e1502b9eadfcd6e6085",
+		"biome": "bf01f1111789438d98a3c04586a9fead",
+		"vegmask": "fcdb1b7a991db447804bcd262b7a3b69",
 		"water": "49e108a32077cec749d37e86d197b32f",
 		"roads": "769d0793d5f34a5fe20bc332862e79e3",
 		"bridges": "d751713988987e9331980363e24189ce",
@@ -96,12 +100,12 @@ const GOLDEN: Dictionary = {
 		"other": "cec63ec5e9ea167c69260cbaf86a1d0a",
 	},
 	"rwg@8": {
-		"input": "da7af1c7b8acba65ae74b660e1dfa1450830c85cac407341c7eb7235598cf956",
+		"input": "296ddd988f6d2f8e59f8671102d0cba69bb6e24b3b49acffdec2a05a43eced45",
 		"height": "aaa598ed617dc791436e6e0fb60fdfddd8d9c710ab7a8fc5c80a1562254d4071",
-		"splat0": "da4bd626d8a9c987ff0f4068211101dc",
-		"splat1": "948a79245e54a783bdf46e12989ba630",
-		"biome": "e0d99bf09eb560d100ace94bc11aafa4",
-		"vegmask": "d4a9ec05c924fc566eaa08dd6ea446f8",
+		"splat0": "ca327c82eb1681b7f39f8712665dd9c9",
+		"splat1": "1df97b211488e2b8d72393e3247d480a",
+		"biome": "c0d4076061381897e0bf01f70b52c4c1",
+		"vegmask": "b45272c16cfe82896123a1684cf99485",
 		"water": "fd041168cd7a58fb4b7994caf5864ac8",
 		"roads": "769d0793d5f34a5fe20bc332862e79e3",
 		"bridges": "d751713988987e9331980363e24189ce",
@@ -109,12 +113,12 @@ const GOLDEN: Dictionary = {
 		"other": "bcea77cbf3c997af1ab262307621ca3b",
 	},
 	"rwg@1": {
-		"input": "c83175c1071eec713da1c0ad8bc6719c77871be1ba981b5f6d94a7a673440e5d",
+		"input": "52a703d19e8e9ce31737bf04edeb6a7fdf566ae36f47519dce57ae48695c33a4",
 		"height": "3ff9acf55cf2c423877cd5c919337834aa44704ccfc39f27f4eee42444a2cfa9",
-		"splat0": "28b5db0f6ab043b6aeb4cfcfe8a218f2",
-		"splat1": "520eb68cacda5e9dfe903b792ffdb8f0",
-		"biome": "a163b9755939c953c97d8253d0fcc639",
-		"vegmask": "38fcd6d0d3b2a948011f7fb06eff1f80",
+		"splat0": "3ef3d8c6adf1dd61e061996c0c4fb5e9",
+		"splat1": "8c3952002580f9f85e2cd0f77eb0e677",
+		"biome": "8b9c73e6a95b6613d722012b143b6d7f",
+		"vegmask": "1f54a4bd0bda2b2684fb105cbff58fe7",
 		"water": "0815ff0f2b7d71ee76189c656a648066",
 		"roads": "769d0793d5f34a5fe20bc332862e79e3",
 		"bridges": "d751713988987e9331980363e24189ce",
@@ -122,12 +126,12 @@ const GOLDEN: Dictionary = {
 		"other": "445eed2000fca209f9b0b52d17c5924b",
 	},
 	"rwg_drop@4": {
-		"input": "acc382c72cc4df5d420a1db2889b9aa448ba8df2a7c1d59d1476f093b53e37ab",
+		"input": "a1bd65cf86c2bea9104045b3c6064dc31bc0ccc44bc8f17697309eaa1c3d5d1e",
 		"height": "c176d0709f4d21b4aa95532b211d0af63be784541958436e0b00fea36a978488",
-		"splat0": "144426b092fa259c16e5e3c4feec3c92",
-		"splat1": "cd96ce9c0ef56f67e700f707c69f4763",
-		"biome": "1eb5c6c01866c964a329a9ecccfcd0b1",
-		"vegmask": "b35af689f1fd056fc754dd7e46479733",
+		"splat0": "5e0b93f23957c50754121ac1a52c2f04",
+		"splat1": "4516aea033ac574140369ed02cdb8985",
+		"biome": "1c6ad66f8a087571d27204d512eec86c",
+		"vegmask": "5ae56c7dde25bccc12599228f46170d5",
 		"water": "d751713988987e9331980363e24189ce",
 		"roads": "f0db205ae7464b3a50176b11cd609325",
 		"bridges": "d751713988987e9331980363e24189ce",
@@ -135,12 +139,12 @@ const GOLDEN: Dictionary = {
 		"other": "5bc27312937ee0c0680239869cc69b16",
 	},
 	"rwg_drop@8": {
-		"input": "f41fe25fc53c616fa0027d51c939106f01f2c2772a30ad86405fd636f9273f0c",
+		"input": "201e157f211ca50371a08b0e8c13d688b63fd737291a7d3c5d349ec30fc7564b",
 		"height": "2627c13e991906fd2eec9fee5bfe187d9f52e2a8c5c6e5232a09a6a6a5e85399",
-		"splat0": "db6fc63a4179d47f2e4f021de6b6ed7f",
-		"splat1": "56d7ba6832a117a9f0640062acafb0c4",
-		"biome": "c4c1336a67ed16574c87afb69b55f4c5",
-		"vegmask": "606e1b7e116d6344a5bba2305161a628",
+		"splat0": "5e80c496aff37e4da35832c26eb881cc",
+		"splat1": "b56557e643b782752c0d4bccd7fc7fe3",
+		"biome": "b194762f7ae3b4cf3de942ab720b9d08",
+		"vegmask": "742ad0ae10522fcdfc1c6eecb7c3104f",
 		"water": "d751713988987e9331980363e24189ce",
 		"roads": "f0db205ae7464b3a50176b11cd609325",
 		"bridges": "d751713988987e9331980363e24189ce",
@@ -252,8 +256,8 @@ func _check(key: String, world: WorldDef, rid: String, spacing: float, rt: Regio
 	fail_test("%s differs in %s: %s" % [key, ", ".join(differs), why])
 
 
-func test_version_is_still_11() -> void:
-	assert_eq(TerrainComposer.VERSION, 11, "Phase 1 changes no output, so VERSION stays 11 and v1 caches stay valid")
+func test_version_is_12() -> void:
+	assert_eq(TerrainComposer.VERSION, 12, "Phase 1 changed no output; VERSION 12 is ADR-0047's town paint (the main map's output held)")
 
 
 func test_larch_hollow_at_4_and_8_m() -> void:

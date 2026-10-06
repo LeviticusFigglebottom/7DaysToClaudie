@@ -25,6 +25,8 @@ var roads: Array[Dictionary] = []
 ## frames in world XZ); the composer applies it in every region its bounds come near, graded from
 ## world data alone, so it may straddle region borders. Empty on the main map and v1 worlds.
 var towns: Array[Dictionary] = []
+## How far past a town's built bounds its ground reaches for town_at (m).
+const TOWN_MARGIN: float = 20.0
 ## region id -> summary dict (from world.json)
 var regions: Dictionary = {}
 var cells: Dictionary = {}
@@ -211,6 +213,25 @@ func biome_at(x: float, z: float) -> String:
 	var r: int = clampi(int(floor((z - wr.position.y) / biome_step)), 0, biome_rows - 1)
 	var i: int = biome_cells[r * biome_cols + c]
 	return biome_ids[i] if i < biome_ids.size() else ""
+
+
+## The organic town (ADR-0040) whose ground holds (x, z): inside its disc and its built bounds,
+## grown TOWN_MARGIN m ("" outside every town; always on the main map). The composer paints `town`
+## only on a town's streets (ADR-0047), so town ambience and spawns key on this mask instead.
+func town_at(x: float, z: float) -> String:
+	var p := Vector2(x, z)
+	for tw: Dictionary in towns:
+		if (tw["bounds"] as Rect2).grow(TOWN_MARGIN).has_point(p) and (tw["center"] as Vector2).distance_to(p) <= float(tw["radius"]):
+			return str(tw["id"])
+	return ""
+
+
+## The biome whose ambience, spawns and spawn density apply at (x, z), given the composed biome
+## there: "town" anywhere in an organic town but its yards (ADR-0047), else the composed one.
+func behaviour_biome(composed: String, x: float, z: float) -> String:
+	if composed == "town" or composed == "yard" or towns.is_empty():
+		return composed
+	return "town" if town_at(x, z) != "" else composed
 
 
 func has_biome_map() -> bool:

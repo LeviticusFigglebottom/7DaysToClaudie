@@ -9,6 +9,9 @@ extends Node3D
 ## brief hard shadow from the strike, its thunder following at the speed of sound; ground fog pools
 ## in hollows and over water at dawn and dusk; rain hangs a grey haze; gusts drive the foliage and the
 ## rain. The precipitation, the weather map and the motes are WeatherFx's.
+## The biome round the camera tints the fog (its `fog_tint` against the conifer forest's, so the
+## forest looks as it always did), and a fen pools deeper, thicker ground fog (ADR-0047). Both are
+## sampled twice a second at five points and eased over a few seconds, so they cost nothing.
 
 var clock: WorldClock
 var weather: WeatherState
@@ -44,6 +47,18 @@ var _real_t: float = 0.0
 var ground_fog: float = 0.0
 var fog_volume: FogVolume
 var _fog_mat: ShaderMaterial
+## The fog's colour multiplier from the biomes round the camera (white: as the reference biome), and
+## how much of that ground is fen (0..1), both eased toward the last sample (ADR-0047).
+var biome_tint: Color = Color.WHITE
+var fen_weight: float = 0.0
+var _tint_target: Color = Color.WHITE
+var _fen_target: float = 0.0
+var _biome_check: float = 0.0
+## Biome id -> [fog tint multiplier, is fen], filled on first use.
+var _biome_fog: Dictionary = {}
+## Seconds between biome samples; the ease's time constant.
+const BIOME_CHECK: float = 0.5
+const BIOME_EASE: float = 3.0
 ## Rain, snow, splashes, eave drips and motes round the camera, and the weather map.
 var fx: WeatherFx
 
@@ -189,6 +204,13 @@ func _process(delta: float) -> void:
 	var hum_target: float = 1.0 if clock.is_horde_active() else 0.35 * (1.0 - smoothstep(0.0, 3.0, clock.hours_until_horde()))
 	hum_intensity = move_toward(hum_intensity, hum_target, delta * 0.05)
 	_real_t += delta
+	_biome_check -= delta
+	if _biome_check <= 0.0:
+		_biome_check = BIOME_CHECK
+		_sample_biomes()
+	var eased: float = 1.0 - exp(-delta / BIOME_EASE)
+	biome_tint = biome_tint.lerp(_tint_target, eased)
+	fen_weight = lerpf(fen_weight, _fen_target, eased)
 	_update_lightning()
 	update_now()
 
@@ -295,12 +317,14 @@ func update_now() -> void:
 	var fog_col: Color = horizon.lerp(sun_col * 0.7, golden * 0.35)
 	# Haze in rain is grey water in the air, not blue distance.
 	fog_col = fog_col.lerp(Color(0.6, 0.62, 0.64).lerp(horizon, 0.5), fall * 0.6)
+	# The biome round the camera: a burn's dusty warmth, a fen's grey-green (ADR-0047).
+	fog_col *= biome_tint
 	env.fog_light_color = fog_col
 	env.fog_light_energy = lerpf(0.06 + 0.12 * moon_sky, 1.0, day) + flash * 0.6 * _flash_reach(fdist, lf)
 	env.fog_sun_scatter = 0.25 * day
 	_update_ground_fog(w, hour, day, fog_col, sun_col, golden)
 	env.volumetric_fog_density = vol_d
-	env.volumetric_fog_albedo = Color(0.88, 0.9, 0.92)
+	env.volumetric_fog_albedo = Color(0.88, 0.9, 0.92) * biome_tint
 	env.volumetric_fog_emission = Color(0.02, 0.06, 0.04) * hum_intensity
 	env.volumetric_fog_emission_energy = hum_intensity * 0.4
 	env.volumetric_fog_ambient_inject = lerpf(0.05, 0.4, day)
@@ -498,8 +522,11 @@ func _update_ground_fog(w: Dictionary, hour: float, day: float, fog_col: Color, 
 	# A misty state (ground_fog over 1) keeps a bank in the low ground all day, thinner at noon.
 	var gf: float = float(w.get("ground_fog", 1.0))
 	ground_fog = (ground_fog_at(hour, clock.sunrise_hour, clock.sunset_hour, fc) * gf + maxf(0.0, gf - 1.0) * 0.5) * calm
+	# A fen pools more of it, deeper, when it gathers (dawn and dusk; ADR-0047).
+	var pool: Vector2 = fen_pool(fen_weight, fc)
+	ground_fog *= pool.x
 	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
-	var depth: float = float(fc.get("depth_m", 6.0))
+	var depth: float = float(fc.get("depth_m", 6.0)) + pool.y
 	var level: float = (fx.valley_level() if fx != null else 0.0) + depth
 	if cam != null:
 		# Standing in the fog, the depth fog's falloff would veil your own feet: keep it below you
@@ -517,7 +544,7 @@ func _update_ground_fog(w: Dictionary, hour: float, day: float, fog_col: Color, 
 		return
 	if cam != null:
 		fog_volume.global_position = Vector3(cam.global_position.x, level - 4.0, cam.global_position.z)
-	var albedo: Color = Color(0.9, 0.92, 0.95).lerp(sun_col, golden * 0.25)
+	var albedo: Color = Color(0.9, 0.92, 0.95).lerp(sun_col, golden * 0.25) * biome_tint
 	_fog_mat.set_shader_parameter("density", float(fc.get("volume_density", 0.05)) * ground_fog)
 	_fog_mat.set_shader_parameter("albedo", Vector3(albedo.r, albedo.g, albedo.b))
 	_fog_mat.set_shader_parameter("depth_m", depth)
@@ -526,6 +553,68 @@ func _update_ground_fog(w: Dictionary, hour: float, day: float, fog_col: Color, 
 	_fog_mat.set_shader_parameter("fallback_level", level)
 	var wd: Vector2 = w["wind_dir"]
 	_fog_mat.set_shader_parameter("drift", wd * (0.15 + 1.5 * float(w["wind"])))
+
+
+## The fog of the biomes round the camera (ADR-0047): the camera's ground and four points
+## `biome_sample_m` round it, weighted 0.4 and 0.15 each, set the tint and fen targets.
+func _sample_biomes() -> void:
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var world: Node = Game.world
+	var terrain: TerrainManager = world.get(&"terrain") as TerrainManager if world != null else null
+	if cam == null or terrain == null:
+		return
+	var fc: Dictionary = _wcfg.get("fog", {}) as Dictionary
+	var r: float = float(fc.get("biome_sample_m", 40.0))
+	var p: Vector3 = cam.global_position
+	var ids := PackedStringArray()
+	for o: Vector2 in [Vector2.ZERO, Vector2(r, 0.0), Vector2(-r, 0.0), Vector2(0.0, r), Vector2(0.0, -r)]:
+		var rt: RegionTerrain = terrain.region_terrain_at(p.x + o.x, p.z + o.y)
+		ids.append(rt.biome_at(p.x + o.x, p.z + o.y) if rt != null else "")
+	var t: Array = biome_fog_target(ids, _biome_fog_of, fc)
+	_tint_target = t[0]
+	_fen_target = t[1]
+
+
+## [tint multiplier, is fen (0/1)] of a biome, cached.
+func _biome_fog_of(id: String) -> Array:
+	if not _biome_fog.has(id):
+		var fc: Dictionary = _wcfg.get("fog", {}) as Dictionary
+		var bd: BiomeDef = Content.get_def(&"biome", StringName(id)) as BiomeDef if id != "" else null
+		var ref := Color(str(fc.get("biome_tint_reference", "#9aa59c")))
+		_biome_fog[id] = [fog_tint_mul(bd.fog_tint, ref) if bd != null else Color.WHITE, 1.0 if id == "fen" else 0.0]
+	return _biome_fog[id]
+
+
+## The fog colour multiplier of a biome's `fog_tint` against the reference tint: their ratio per
+## channel with its luminance taken out (fog brightness is the sky's and the sun's), so the
+## reference biome is white and the others shift hue only.
+static func fog_tint_mul(tint: Color, reference: Color) -> Color:
+	var m := Color(tint.r / maxf(reference.r, 0.01), tint.g / maxf(reference.g, 0.01), tint.b / maxf(reference.b, 0.01))
+	var lum: float = maxf(m.r * 0.2126 + m.g * 0.7152 + m.b * 0.0722, 0.01)
+	return Color(m.r / lum, m.g / lum, m.b / lum)
+
+
+## [tint multiplier, fen weight] for five biome samples (the camera's first, weighted 0.4, then four
+## round it at 0.15 each), the tint pulled `biome_tint` of the way from white. `of(id)` gives a
+## biome's [multiplier, is fen].
+static func biome_fog_target(ids: PackedStringArray, of: Callable, fc: Dictionary) -> Array:
+	var tint := Color(0.0, 0.0, 0.0)
+	var fen: float = 0.0
+	for i: int in ids.size():
+		var wgt: float = 0.4 if i == 0 else 0.6 / maxf(1.0, ids.size() - 1.0)
+		var bf: Array = of.call(ids[i])
+		var m: Color = bf[0]
+		tint += Color(m.r * wgt, m.g * wgt, m.b * wgt, 0.0)
+		fen += float(bf[1]) * wgt
+	tint.a = 1.0
+	return [Color.WHITE.lerp(tint, float(fc.get("biome_tint", 0.6))), fen]
+
+
+## How a fen changes the ground fog: Vector2(density multiplier, extra depth in m). The multiplier
+## scales the hour's fog (ground_fog_at), so the pooling shows at dawn and dusk and is gone by noon.
+static func fen_pool(fen: float, fc: Dictionary) -> Vector2:
+	var fp: Dictionary = fc.get("fen_pool", {}) as Dictionary
+	return Vector2(1.0 + fen * float(fp.get("density", 0.9)), fen * float(fp.get("depth_m", 2.5)))
 
 
 ## Per terrain layer: how readily puddles collect and how much darker it turns soaked (config
