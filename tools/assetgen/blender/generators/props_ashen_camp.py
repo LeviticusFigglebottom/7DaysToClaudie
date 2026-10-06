@@ -36,12 +36,12 @@ def _tilt(v: Vector, deg_x: float) -> Vector:
 def ashen_war_drum(ctx: K.Ctx) -> None:
     """A big drum hollowed from a log section, a rawhide head laced to a second skin underneath with
     sinew zig-zagging down its sides, ash-painted rings; it sits tilted towards the player (-Y) in a
-    cradle of two crossed-pole frames lashed with rawhide, an elk skull and antlers on the frame
-    behind it, two bone-knobbed beaters leaning on it. Worn: the head slack and split, one beater
+    cradle of two crossed-pole frames lashed with rawhide, a deer skull hung with bone charms on a
+    stake behind it, two bone-knobbed beaters leaning on it. Worn: the head slack and split, one beater
     gone."""
     r = ctx.rnd("drum")
     R, L = 0.36, 0.56
-    tilt = -24.0                      # top head leans towards -Y
+    tilt = 24.0                       # top head leans towards -Y (the player)
     centre = Vector((0.0, 0.0, 0.72))
     axis = _tilt(Vector((0, 0, 1)), tilt)
     # The shell: a bark-on log section along X, stood up along the drum axis.
@@ -92,12 +92,13 @@ def ashen_war_drum(ctx: K.Ctx) -> None:
         s = sling[k * 3:(k + 1) * 3]
         o = K.tube(f"sling{k}", s, 0.012, segs=4, flat=(1.0, 0.35))
         ctx.add(o, "out_rawhide", uv="box", uv_scale=3.0, smooth=40)
-    # The skull on a stake behind (+Y), facing the player over the drum.
-    W.pole(ctx, "skull_post", [(0.0, 0.5, -0.03), (0.01, 0.52, 0.7), (0.0, 0.53, 1.36)], 0.035, "out_bark_ash",
+    # The skull on a stake behind (+Y), facing the player over the drum. (No antlers: at this size
+    # the shared antler part starts well above the brain case and floats.)
+    W.pole(ctx, "skull_post", [(0.0, 0.5, -0.03), (0.01, 0.52, 0.7), (0.0, 0.53, 1.3)], 0.035, "out_bark_ash",
            r_end=0.028, seed=ctx.seed + 40)
-    O.add_skull(ctx, "skull", (0.0, 0.53, 1.42), (-8, 0, 0), 0.3, ctx.seed + 41, kind="elk", tines=5, ash=0.6,
-                broken_tine=not ctx.clean)
-    O.bone_string(ctx, "charms", Vector((0.0, 0.46, 1.32)), 0.32, ctx.seed + 42, n=4)
+    O.add_skull(ctx, "skull", (0.0, 0.5, 1.36), (10, 0, 0), 0.22, ctx.seed + 41, antlers=False, ash=0.6)
+    for k, sx in enumerate((-1, 1)):
+        O.bone_string(ctx, f"charms{k}", Vector((sx * 0.07, 0.46, 1.3)), 0.28 + 0.06 * k, ctx.seed + 42 + k, n=4)
     # Beaters: a stick with a hide-wrapped knob, leaning against the frame.
     for k in range(2 if ctx.clean else 1):
         sx = -1 if k == 0 else 1
@@ -129,8 +130,12 @@ def _spear(ctx, name, base: Vector, top: Vector, seed: int, *, head: str = "flin
     K.place(o, rot=(0, 90, 0))       # the lathe runs along Z; orient() wants the part along X
     K.orient(o, d, W.up_for(d), top - d * 0.03)
     ctx.add(o, "ashen_flint" if head == "flint" else "out_bone", uv="box", uv_scale=6.0, smooth=25, patches=0.2)
-    O.lash(ctx, f"{name}_bind", top - d * 0.02, d, 0.014, turns=3, width=0.05, mat="out_sinew", seed=seed)
-    O.lash(ctx, f"{name}_grip", base + d * L * 0.55, d, 0.017, turns=4, width=0.16, mat="out_rawhide", seed=seed + 1)
+    # The binding and the grip: short sleeves of sinew and rawhide (cheaper than lashing rings).
+    for part, at, rr_, ln, mat in (("bind", top - d * 0.035, 0.0165, 0.06, "out_sinew"),
+                                   ("grip", base + d * L * 0.55, 0.021, 0.16, "out_rawhide")):
+        o = K.cyl(f"{name}_{part}", rr_, ln, segs=6, center=(0, 0, 0))
+        K.place(o, rot=(0, 90, 0))
+        ctx.add(o, mat, uv="cyl", uv_axis=0, uv_scale=4.0, smooth=50, patches=0.3, ori=(d, W.up_for(d), at))
 
 
 def ashen_spear_rack(ctx: K.Ctx) -> None:
@@ -144,8 +149,8 @@ def ashen_spear_rack(ctx: K.Ctx) -> None:
                r_end=0.045, seed=ctx.seed + k, wobble=0.01)
         W.pole(ctx, f"fork{k}", [(x, 0.05, 1.45), (x - sx * 0.12, 0.06, 1.72)], 0.03, "out_bark_ash", r_end=0.022,
                seed=ctx.seed + 4 + k)
-        for j in range(5):
-            a = math.tau * j / 5 + r.uniform(-0.2, 0.2)
+        for j in range(3):
+            a = math.tau * j / 3 + r.uniform(-0.3, 0.3)
             O.add_stone(ctx, f"cairn{k}{j}", (x + math.cos(a) * 0.17, 0.05 + math.sin(a) * 0.17, 0.05), r.uniform(0.13, 0.18),
                         ctx.seed + 10 * k + j, flat=0.6)
     bar = W.pole(ctx, "crossbar", [(-1.08, 0.06, 1.55), (0.0, 0.05, 1.53), (1.08, 0.06, 1.56)], 0.04, "out_log_peeled",
@@ -202,9 +207,10 @@ def _pot(ctx, name, at, h, rb, seed, *, ash: bool = True, cracked: bool = False,
         K.place(mound, at, (0, 0, rot))
         ctx.add(mound, "ashen_lichen_ash", uv="box", uv_scale=3.0, smooth=60, patches=0.2)
     if cover:
-        lid = K.blob(f"{name}_cover", neck * 1.5, subdiv=2, scale=(1.0, 1.0, 0.18), rough=0.15, seed=seed + 2,
+        lid = K.blob(f"{name}_cover", neck * 1.3, subdiv=2, scale=(1.0, 1.0, 0.16), rough=0.15, seed=seed + 2,
                      center=(0, 0, h + 0.008))
-        K.map_verts(lid, lambda co: Vector((co.x, co.y, max(h - 0.06, co.z - 0.25 * max(0.0, (co.x ** 2 + co.y ** 2) ** 0.5 - neck)))))
+        K.map_verts(lid, lambda co: Vector((co.x * 0.92, co.y * 0.92,
+                                            max(h - 0.09, co.z - 0.9 * max(0.0, (co.x ** 2 + co.y ** 2) ** 0.5 - neck * 0.9)))))
         K.place(lid, at, (0, 0, rot))
         ctx.add(lid, "out_hide", uv="box", uv_scale=3.0, smooth=50, patches=0.4)
         tie = K.tube(f"{name}_tie", [Vector((math.cos(a) * neck * 1.06, math.sin(a) * neck * 1.06, h * 0.9))
@@ -263,7 +269,7 @@ def ashen_drying_rack(ctx: K.Ctx) -> None:
     for i in range(n):
         x = -0.95 + 1.9 * (i + 0.5) / n + r.uniform(-0.03, 0.03)
         L = r.uniform(0.32, 0.55)
-        w = r.uniform(0.045, 0.075)
+        w = r.uniform(0.07, 0.1)
         top = Vector((x, r.uniform(-0.02, 0.02), 1.7))
         cord = K.tube(f"cord{i}", [top + Vector((0, 0, 0.04)), top], 0.0035, segs=4)
         ctx.add(cord, "out_sinew", uv="box", uv_scale=4.0, smooth=40)
@@ -274,7 +280,7 @@ def ashen_drying_rack(ctx: K.Ctx) -> None:
         K.place(strip, top, (r.uniform(-4, 4), 0, r.uniform(-30, 30)))
         ctx.add(strip, "ashen_meat_dried", uv="box", uv_scale=4.0, smooth=45, patches=0.3)
     # The hide over the rail (draped both sides).
-    hide = O.hide_obj("hide", 1.05, 1.2, ctx.seed + 40, ragged=0.08)
+    hide = O.hide_obj("hide", 1.2, 1.45, ctx.seed + 40, ragged=0.08)
     K.place(hide, rot=(-90, 0, 0))   # flat in XY
     K.map_verts(hide, lambda co: Vector((co.x, -0.22 + math.sin(max(-1.4, min(1.4, co.y / 0.42))) * 0.2,
                                          0.95 - 0.55 * (1 - math.cos(max(-1.4, min(1.4, co.y / 0.42)))) - 0.12 * abs(co.y))))
@@ -345,8 +351,8 @@ def ashen_camp_fire(ctx: K.Ctx) -> None:
         ctx.add(cap, "ember_glow", uv_scale=1.0, wear=0.0, ao=False)
     # Wood waiting by the ring.
     for k in range(3 if ctx.clean else 1):
-        lg = W.log_obj(f"spare{k}", r.uniform(0.7, 0.95), 0.06, ctx.seed + 60 + k, sides=8, rings=3, bark="out_bark_ash")
-        K.place(lg, (0.95 + k * 0.03, r.uniform(-0.35, 0.35), 0.06 + k * 0.1), (0, 0, 80 + r.uniform(-10, 10)))
+        lg = W.log_obj(f"spare{k}", r.uniform(0.55, 0.7), 0.05, ctx.seed + 60 + k, sides=7, rings=3, bark="out_bark_ash")
+        K.place(lg, (0.86 + (k % 2) * 0.1, -0.12 + k * 0.1, 0.05 + (k // 2) * 0.09), (0, 0, 80 + r.uniform(-10, 10)))
         ctx.add(lg, None, uv=None, smooth=45, patches=0.4)
     # Spit on forked sticks across the fire, a clay pot in the edge of the coals.
     for sx in (-1, 1):

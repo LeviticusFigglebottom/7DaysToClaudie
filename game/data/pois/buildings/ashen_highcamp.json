@@ -1,5 +1,5 @@
 {
- "_doc": "Tier-3 living Ashen camp in the high timber (ADR-0048): the watch camp's kit (palisade, longhouse, lean-to, smoke huts, pyre, effigies; shells round small kit rooms under roof 'none') plus the living camp's own props (props/ashen.json: war drum, spear racks, ash pots, drying racks, fed camp fires). Its fires burn (lit + keep, lights_on 1). The camp's people are not sleepers: the AshenDirector spawns them awake round the fires (data/factions/ashen.json camps). The only sleepers are three 'taken' Ashen the camp keeps chained in the binding hut (population ashen). Route: the trail -> the open gateway between two fires -> the big fire and the drum -> the binding hut's chained door (jaws in the grass before it; breaking the chain or the jaws' snap sets the taken loose) -> the smoke hut for the cache key -> the longhouse through the hide-hung hole in its east wall (bone chimes across it: an alarm) -> the hatch to the cache pit -> the longhouse's bolted back door out through the palisade line. See docs/POI_AUTHORING.md.",
+ "_doc": "Tier-3 living Ashen camp in the high timber (ADR-0048): the watch camp's kit (palisade, longhouse, lean-to, smoke huts, pyre, effigies; shells round small kit rooms under roof 'none') plus the living camp's own props (props/ashen.json: war drum, spear racks, ash pots, drying racks, fed camp fires). Its fires burn (lit + keep, lights_on 1). The camp's people are not sleepers: the AshenDirector spawns them awake round the fires (data/factions/ashen.json camps). The only sleepers are three 'taken' Ashen the camp keeps chained in the binding hut (population ashen). Route: the trail -> the open gateway between two fires -> the big fire and the drum -> the binding hut's chained door (jaws in the grass before it; its key hangs over a bed in the lean-to; opening or breaking the chain, or the jaws' snap, sets the taken loose) -> the smoke hut for the cache key -> the longhouse through the hide-hung hole in its east wall (bone chimes across it: an alarm) -> the hatch to the cache pit -> the longhouse's bolted back door out through the palisade line. See docs/POI_AUTHORING.md.",
  "_ashen": "A living camp (ADR-0048): residents come from the AshenDirector, not from this file. Keep sleepers to the taken; the camp's fires and pyre are lit props and register as the camp's own fires (they don't scare their own people).",
  "defs": [
   {
@@ -18,7 +18,7 @@
     2
    ],
    "author": "Hollowmere team",
-   "story": "The Ashen came up here the first winter, when the valley below turned. From the rise they can see the river road, the convoy road and the smoke of anyone who lights a fire, and somebody is always watching. The drum by the gate calls the camp; the fires are never let die, and the dead go on the pyre the same night. They live off the timber and off whoever comes up the river road with something worth taking: a Remand salvager's pack, a trader's cart, a drop canister out of the sky. They don't take the sick. When three of their own turned in the spring - one of them clawed through the longhouse's east wall on the way out - they couldn't bring themselves to burn them. They chained them in the small hut by the east wall instead, and every night someone sits outside the door and sings to them.",
+   "story": "The Ashen came up here the first winter, when the valley below turned. From the rise they can see the river road, the convoy road and the smoke of anyone who lights a fire, and somebody is always watching. The drum by the gate calls the camp; the fires are never let die, and the dead go on the pyre the same night. They live off the timber and off whoever comes up the river road with something worth taking: a Remand salvager's pack, a trader's cart, a drop canister out of the sky. They don't take the sick. When three of their own turned in the spring - one of them clawed through the longhouse's east wall on the way out - they couldn't bring themselves to burn them. They chained them in the small hut by the east wall instead, and every night the woman who keeps the key to the chain sits outside the door and sings to them.",
    "style": {
     "exterior": "wood_paneling_dark",
     "interior": "wood_paneling_dark",
@@ -216,6 +216,7 @@
      "type": "door",
      "state": "locked",
      "lock": "chain",
+     "key": "ashen_chain_key",
      "model": "door_plank"
     },
     {
@@ -1292,6 +1293,15 @@
       10.55
      ],
      "y": 1.5
+    },
+    {
+     "id": "chain_key",
+     "item": "ashen_chain_key",
+     "pos": [
+      3.7,
+      18.5
+     ],
+     "y": 0.16
     }
    ],
    "notes": [
