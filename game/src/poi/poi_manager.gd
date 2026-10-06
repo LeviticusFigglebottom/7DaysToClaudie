@@ -714,6 +714,12 @@ func _on_poi_geometry_changed(pos: Vector3) -> void:
 
 
 func _process(delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_process_body(delta)
+	StreamMeter.note("pois", t0)
+
+
+func _process_body(delta: float) -> void:
 	_ring_t += delta
 	if registry != null and _ring_t >= RING_INTERVAL and world != null and world.player != null and world.is_ready:
 		_ring_t = 0.0

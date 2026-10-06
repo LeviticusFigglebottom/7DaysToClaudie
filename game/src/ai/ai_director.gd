@@ -241,6 +241,12 @@ func _gamestage() -> int:
 # --- Population --------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_process_body(delta)
+	StreamMeter.note("ai", t0)
+
+
+func _process_body(delta: float) -> void:
 	_pop_t += delta
 	if _pop_t < POP_INTERVAL or world == null or world.player == null or not world.is_ready:
 		return

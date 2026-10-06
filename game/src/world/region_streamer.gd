@@ -90,6 +90,7 @@ var _stats: Dictionary = {"attached": 0, "composed": 0, "cancelled": 0, "last_at
 
 func _init() -> void:
 	steps.step_ran.connect(meter.step)
+	StreamMeter.current = meter
 
 
 ## Starts streaming over `terrain`'s world. cfg: data/config/streaming.json.
@@ -125,6 +126,8 @@ func setup(p_terrain: TerrainManager, cfg: Dictionary, threads: int = -1) -> voi
 
 
 func _exit_tree() -> void:
+	if StreamMeter.current == meter:
+		StreamMeter.current = null
 	_pool.mutex.lock()
 	_pool.quit = true
 	for job: Dictionary in _jobs.values():

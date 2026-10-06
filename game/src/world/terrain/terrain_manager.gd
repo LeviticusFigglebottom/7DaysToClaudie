@@ -342,6 +342,12 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_process_body(delta)
+	StreamMeter.note("terrain", t0)
+
+
+func _process_body(delta: float) -> void:
 	if world == null or focus == null:
 		return
 	_collect_finished()

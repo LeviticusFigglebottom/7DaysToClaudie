@@ -154,5 +154,19 @@ func _describe_frame() -> String:
 	return " + ".join(parts)
 
 
+## The meter of the running streamed world (null otherwise), for note().
+static var current: StreamMeter = null
+
+
+## A system's per-frame work outside the steps (vegetation, terrain installs, AI...), noted by name
+## so a long frame says what filled it: "~veg 210 ms". Costs nothing without a streamed world.
+static func note(name: String, t0_usec: int) -> void:
+	if current == null:
+		return
+	var ms: float = float(Time.get_ticks_usec() - t0_usec) / 1000.0
+	if ms >= 2.0:
+		current._frame_kinds["~" + name] = float(current._frame_kinds.get("~" + name, 0.0)) + ms
+
+
 static func _new_tally() -> Dictionary:
 	return {"seconds": 0.0, "frames": 0, "longest_ms": 0.0, "longest_at": "", "late_s": 0.0, "steps": 0, "step_ms": 0.0, "kinds": {}}

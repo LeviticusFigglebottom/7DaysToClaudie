@@ -177,6 +177,12 @@ func perches_for(d: WildlifeDef, spot: Vector3, n: int, p_seed: int) -> Array[Ve
 # --- Population ---------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_process_body(delta)
+	StreamMeter.note("wildlife", t0)
+
+
+func _process_body(delta: float) -> void:
 	if world == null or not bool(world.get(&"is_ready")):
 		return
 	_flock_check_t -= delta
