@@ -21,7 +21,7 @@ splat layers per region.
   conifer forest: open sky through dead crowns), a few survivors, charred windfall and fire-hollowed
   stumps, sooted boulders, and regrowth that makes it beautiful as well as grim: fireweed drifts,
   bracken, lodgepole seedlings, grass in the gaps. Ground: ash and char, grass in drifts, bare burnt
-  soil. A warmer, dustier `fog_tint` (`#b4a996`; nothing reads biome fog tints yet, TD-151). Spawns for open ground with long sightlines:
+  soil. A warmer, dustier `fog_tint` (`#b4a996`; read by the fog since ADR-0047). Spawns for open ground with long sightlines:
   more lurchers (they sprint) and keeners (they see you from far and call the rest).
 * `fen`: the drowned lowland. Stunted black spruce and tamarack, grey drowned snags, cattail and
   bulrush stands, willow, sedge tussocks, sphagnum hummocks, skunk cabbage, horsetail. Ground: peat,
@@ -130,8 +130,9 @@ shot logs its frame time, draw calls, primitives and objects (`SHOT perf`).
 − The burn's edge follows the 64 m biome map: the composer's edge wander (up to ~1.5 cells) can carry
   ash a little past a road or river it stopped at (TD-149).
 − Regions holding both new biomes lose a default layer (sand, then asphalt or moss) (TD-150).
-− Fog does not pool more in fens than elsewhere; the fen's dawn mist is the valley's (TD-151).
+− Fog does not pool more in fens than elsewhere; the fen's dawn mist is the valley's (TD-151; fixed by ADR-0047).
 − Far views: unbuilt fens and burns tint by the terrain's fallback colours (grey for both new
   layers until `TerrainTextures.FALLBACK_COLORS` learns them) and the far canopy counts snags and
-  stunted trees by the 20 m tree-height convention (TD-152).
+  stunted trees by the 20 m tree-height convention (TD-152; the colours came with ADR-0047, the
+  canopy is TD-185).
 − Biome shot QA needs a world that holds both biomes (seed and weights chosen per run) (TD-153).
