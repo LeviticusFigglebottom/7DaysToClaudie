@@ -7,9 +7,9 @@ way it never conflicts.
 ## Sessions
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
-| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O2 (random worlds), P2 (pool buildings), Q2 (weather): relaunched to finish after the owner's interrupt stopped O, P and Q | Random worlds v2 (big streaming maps, organic towns); full screenshot QA |
-| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Hollowed hounds and Murmurs (ADR-0034); the third block is merged (dd01229, 437535c) | Base-building fidelity (ADR-0035) |
-| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | First round merged (301e85c): boot-step load, stand-in CI, menu notices, export presets and the Build workflow. Now: thread races in terrain and vegetation, the export with assets | A performance pass for real GPUs (TD-003) |
+| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O2 (random worlds), P2 (pool buildings), Q2 (weather) finishing after the owner's interrupt stopped O, P and Q; a player guide (`docs/HOW_TO_PLAY.md`); the random worlds v2 plan | Random worlds v2 (ADR-0038): regions composed on demand for 10–16 km maps, organic towns |
+| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Hollowed hounds and Murmurs (ADR-0034); the third block is merged (dd01229, 437535c) | Base-building fidelity (ADR-0035); the third block opened to random towns' pool; pool round 2 (four or five set pieces: motel and annex, church hall, garage, trailer park, a second industrial site) |
+| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Merged: boot-step load, stand-in CI, menu notices, Build workflow (301e85c), terrain thread races (cb83882). Now: the performance pass (TD-003) | Graphics options for real GPUs (ADR-0037: render scale and FSR, per-feature quality, key rebinding, controls screen); then the full screenshot QA and stabilization round |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -38,9 +38,9 @@ way it never conflicts.
 
 ## Allocations
 * ADR: 0026 (vault, S2), 0027 (wildlife, S2), 0031 (random worlds), 0032 (pool, if needed),
-  0033 (weather), 0034 (hounds and Murmurs, S2), 0035 (base building, S2), 0036–0037 (session 3).
-  Next free for the integrator: 0038.
-* TD: S2 094–101; session 3 102–109; integrator 110 and up.
+  0033 (weather), 0034 (hounds and Murmurs, S2), 0035 (base building, S2), 0036–0037 (session 3),
+  0038 (random worlds v2, integrator), 0039 (pool round 2, S2, if needed). Next free: 0040.
+* TD: S2 094–101 and 111–114; session 3 102–109; integrator 110 and 115 up.
 * Save version: 6 since random worlds. Next bump: merge first, then take 7.
 
 ## Queue (in order)
