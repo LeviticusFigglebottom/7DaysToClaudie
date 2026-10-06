@@ -7,9 +7,9 @@ way it never conflicts.
 ## Sessions
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
-| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O (random worlds), P (pool buildings), Q (weather) | Random worlds v2 (big streaming maps, organic towns); full screenshot QA |
+| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O2 (random worlds), P2 (pool buildings), Q2 (weather): relaunched to finish after the owner's interrupt stopped O, P and Q | Random worlds v2 (big streaming maps, organic towns); full screenshot QA |
 | Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Hollowed hounds and Murmurs (ADR-0034); the third block is merged (dd01229, 437535c) | Base-building fidelity (ADR-0035) |
-| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | The load stall (buildings built in boot steps, validators on workers), thread races in terrain and vegetation | The 4.7.2 notice, a rendered probe-atlas check, downloadable builds, then a performance pass (TD-003) |
+| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | First round merged (301e85c): boot-step load, stand-in CI, menu notices, export presets and the Build workflow. Now: thread races in terrain and vegetation, the export with assets | A performance pass for real GPUs (TD-003) |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -45,8 +45,8 @@ way it never conflicts.
 
 ## Queue (in order)
 1. Land O, P and Q. (Session 2's school, fire station and bank are merged: dd01229.)
-2. Session 3: downloadable builds that include the generated assets, plus the reported freeze
-   and crash (below).
+2. Session 3: the first downloadable build from the Build workflow (artifacts on the Actions page),
+   then the races and the performance pass. The freeze and the crash are fixed (below).
 3. Random worlds v2: compose regions on demand, so maps of 10–16 km stream within bounded
    memory; organic towns (streets that follow the land, irregular lots).
 4. Session 2: hounds and Murmurs, then base-building fidelity.
@@ -71,8 +71,9 @@ Diagnosis:
 * **Primitive stand-ins:** the generated assets aren't committed, and the toolchain that builds
   them is Linux-only (`tools/versions.env` pins Linux Godot and Blender). A Windows clone runs on
   the procedural stand-ins. Session 3's downloadable builds fix this.
-* **"Not responding":** the end of the load does a lot of work on the main thread in one frame;
-  `PoiManager.setup_world` builds every building there. Session 3 is on it.
+* **"Not responding":** the end of the load did all its main-thread work in one frame of about
+  15 s, mostly `PoiManager.setup_world` building every building. Session 3 split it into boot
+  steps (301e85c): the longest frame is now about 0.5 s headless.
 * A model that exists on disk but doesn't load (built, not imported yet) stopped buildings
   halfway with script errors. Every generated-model load now falls back to its stand-in.
 
