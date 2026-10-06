@@ -47,7 +47,7 @@ PROPS: dict[str, tuple[list[str], str, int, dict]] = {
     # --- Tamsin Valley Savings & Loan -------------------------------------------------------------
     "bank_vault_door": (CW, "floor", 2500, {}),
     "bank_teller_counter": (CWD, "floor", 4000, {}),
-    "bank_deposit_boxes": (CWD, "floor", 3000, {}),
+    "bank_deposit_boxes": (CWD, "floor", 3500, {}),
     "bank_stanchions": (CW, "floor", 1500, {}),
     "bank_money_bags": (CW, "floor", 1800, {}),
 }
