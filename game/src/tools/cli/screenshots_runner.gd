@@ -88,6 +88,20 @@ const SHOTS: Array[Dictionary] = [
 	# The third block on Larch Street's corner: the Savings & Loan and the school on the right, the fire
 	# station on the left, the Grange Road corner beyond.
 	{"name": "third_block", "pos": Vector3(-70.0, 3.2, 2254.0), "look": Vector3(-75.0, 3.0, 2196.0), "hour": 15.5, "weather": "clear", "fov": 70.0},
+	# Weather and atmosphere (ADR-0033): rain on Pell's Crossing's street, a storm in the forest at
+	# night lit by a strike, misty dawn over the valley, the town under snow and a puddled road after
+	# rain. The clock stands still between shots, so "wet", "puddles" and "snow_cover" say how long
+	# it has rained or snowed; "strike" flashes lightning that many seconds before the capture.
+	{"name": "wx_rain_street", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-95, 2, 2064), "hour": 15.5, "weather": "rain", "wet": 1.0, "puddles": 0.8,
+		"settle": 10.0},
+	{"name": "wx_storm_night", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 1.5, 2280), "hour": 23.0, "weather": "storm", "wet": 1.0,
+		"puddles": 1.0, "light": true, "strike": 0.12, "settle": 8.0},
+	{"name": "wx_misty_dawn", "pos": Vector3(-150, 140.0, 2420), "look": Vector3(-60, 0, 2050), "hour": 6.6, "weather": "mist", "wet": 0.3},
+	{"name": "wx_snow_town", "pos": Vector3(-30, 6.0, 2170), "look": Vector3(-60, 0, 2070), "hour": 13.0, "weather": "snow", "snow_cover": 0.9, "settle": 10.0},
+	{"name": "wx_puddled_road", "pos": Vector3(-40, 1.4, 2067), "look": Vector3(-95, 0.6, 2064), "hour": 17.5, "weather": "overcast", "wet": 1.0,
+		"puddles": 1.0},
+	# Into the low sun through the wood on a misty morning: ground fog and the canopy's god rays.
+	{"name": "wx_mist_forest_dawn", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 3.0, 2283), "hour": 6.9, "weather": "mist", "wet": 0.4},
 ]
 
 var _out: String = "res://../build/screenshots"
@@ -184,6 +198,12 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	Game.session.weather.force(StringName(str(shot["weather"])))
 	Game.session.weather.blend = 1.0
 	Game.session.weather.current = StringName(str(shot["weather"]))
+	# What the weather has left behind (nothing builds up while the clock stands still).
+	var ws: WeatherState = Game.session.weather
+	ws.wetness = float(shot.get("wet", 0.0))
+	ws.snow_cover = float(shot.get("snow_cover", 0.0))
+	if &"puddles" in ws:
+		ws.set(&"puddles", float(shot.get("puddles", 0.0)))
 	(w.get(&"terrain") as TerrainManager).update_streaming(p.global_position, true)
 	if bool(shot.get("build", false)) or bool(shot.get("hum", false)):
 		_build_scene(w, look)
@@ -289,7 +309,18 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		_frame_tree(w, cam, shot)
 	if shot.has("seek"):
 		_seek_view(w, cam, shot)
-	if flock != null:
+	var wx_env: EnvironmentController = w.get(&"env") as EnvironmentController
+	if str(shot["name"]).begins_with("wx_") and wx_env.fx != null:
+		# Rain and snow held still for the capture, so temporal AA settles on them (ADR-0033).
+		await _wait(2.0)
+		wx_env.fx.hold_still(true)
+	if shot.has("strike"):
+		# Lightning toward the view, held at its flash: a software frame takes longer than one.
+		await _wait(float(shot.get("settle", _settle)))
+		wx_env.strike_now(atan2(look.z - pos.z, look.x - pos.x) + 0.5, 900.0)
+		wx_env.flash_hold = 0.85
+		await _wait(maxf(float(shot["strike"]), 3.0))
+	elif flock != null:
 		await _wait(float(shot.get("settle", _settle)))
 		DebugTools.set_flag(&"invisible", false)
 		# stepped at a fixed rate: a software-rendered frame can last seconds
@@ -305,6 +336,12 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	var path: String = _out.path_join("%s.png" % shot["name"])
 	img.save_png(path)
 	print("SHOT %s" % path)
+	if str(shot["name"]).begins_with("wx_") and wx_env.fx != null and wx_env.fx.rain != null:
+		var fx: WeatherFx = wx_env.fx
+		var c: Vector3 = cam.global_position
+		print("SHOT %s: rain %s x%.2f over %s, snow %s; weather map %s, rain lands at %.2f under the camera (ground %.2f), %d eaves" % [
+			shot["name"], fx.rain.emitting, fx.rain.amount_ratio, fx.rain.capture_aabb(), fx.snow.emitting, fx.maps.shader_rect(),
+			fx.maps.catch_at(c.x, c.z), float(w.call(&"height_at", c.x, c.z)), fx.maps.eaves.size()])
 	if shot.has("ui"):
 		var ui: GameUI = w.get(&"ui") as GameUI
 		ui.manual.close()
@@ -312,6 +349,10 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 			if c is OptionsPanel:
 				c.queue_free()
 		ui.visible = false
+	if shot.has("strike"):
+		wx_env.flash_hold = 0.0
+	if wx_env.fx != null:
+		wx_env.fx.hold_still(false)
 	if bool(shot.get("fp_light", false)) and p.equipment.has_light_on():
 		p.equipment.toggle_light()
 	if shot.has("fp"):

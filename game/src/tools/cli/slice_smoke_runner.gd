@@ -4,6 +4,7 @@ extends Node
 ## New game -> world ready -> fell a tree -> carry a log -> place logs (freeform) -> lay out and
 ## complete a campfire -> craft a stone axe -> survival ticks -> night wanderers -> a Hum night
 ## with waves and a memory report -> save -> load -> state restored. Exit code = failures.
+## `-- --world random --world-seed N --world-set size=3` runs it on a generated world (ADR-0031).
 
 var _fails: int = 0
 var _t0: int = 0
@@ -53,7 +54,13 @@ func _game() -> Node:
 
 func _run() -> void:
 	var game: Node = _game()
-	game.call(&"start_new_game", {"game_mode": "slice", "skip_intro": true, "slot": "smoke"})
+	var opts: Dictionary = {"game_mode": "slice", "skip_intro": true, "slot": "smoke"}
+	# The same run on a random world (ADR-0031): -- --world random [--world-seed N] [--world-set k=v].
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if args.find("--world") >= 0 and args.find("--world") + 1 < args.size() and args[args.find("--world") + 1] == "random":
+		opts["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", args, 1)
+		opts["slot"] = "smoke_rwg"
+	game.call(&"start_new_game", opts)
 	var ready: bool = await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), 240.0)
 	if not ok(ready, "world loads and the player spawns (%.1fs)" % ((Time.get_ticks_msec() - _t0) / 1000.0)):
 		_finish()

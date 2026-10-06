@@ -12,9 +12,9 @@ extends RefCounted
 ## ones. Worker-thread safe (call `ensure` from the world loader's task).
 
 const ROOT: String = "user://worlds/random"
-## How many generated worlds to keep on disk (oldest beyond this are removed, composed caches
-## included); a save whose world was removed regenerates it.
-const KEEP: int = 6
+## How many generated worlds to keep on disk beyond those a save names (the oldest are removed,
+## composed caches included). A save's own world is never removed (TD-082).
+const KEEP: int = 8
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Generator := preload("res://src/worldgen/rwg/rwg_generator.gd")
@@ -109,11 +109,14 @@ static func register_frameworks(dir: String) -> PackedStringArray:
 	return errs
 
 
-## Keeps the newest KEEP generated worlds (and `keep_id`), removing the rest with their composed
-## terrain caches.
+## Keeps the newest KEEP generated worlds, `keep_id` and every world a save slot names, removing the
+## rest with their composed terrain caches.
 static func prune(keep_id: String) -> void:
 	if not DirAccess.dir_exists_absolute(ROOT):
 		return
+	var saved: Dictionary = {}
+	for meta0: Dictionary in SaveSystem.list_slots():
+		saved[str(meta0.get("world_id", ""))] = true
 	var dirs: Array = []
 	for d: String in DirAccess.get_directories_at(ROOT):
 		if d.ends_with(".tmp"):
@@ -123,7 +126,7 @@ static func prune(keep_id: String) -> void:
 	dirs.sort_custom(func(a: Array, b: Array) -> bool: return int(a[0]) > int(b[0]))
 	for k: int in range(KEEP, dirs.size()):
 		var wid: String = str(dirs[k][1])
-		if wid == keep_id:
+		if wid == keep_id or saved.has(wid):
 			continue
 		_remove(ROOT.path_join(wid))
 		_remove("user://cache/worlds".path_join(wid))

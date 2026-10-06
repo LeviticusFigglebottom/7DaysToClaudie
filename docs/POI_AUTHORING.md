@@ -508,6 +508,14 @@ zoned and tiered for it that fits and is not already standing in this framework,
 building from a template zoned for it (filling the lot). Larch Street in Pell's Crossing is six
 such lots; the school, fire station and bank lots on its corner are `reserved`.
 
+**Pool buildings.** An authored building with no fixed placement is still in every lot's pool when
+its zoning, tier and footprint fit (DESIGN §11 "Pool buildings": the laundromat, grocery, lumber
+yard, library and radio station only random towns place). Size a pool building for the random
+generator's lots (`data/config/world_gen.json` `tuning.towns.lot`: commercial 28 x 32, civic
+32 x 32, industrial 26 x 26 on the back street), keep its notes free of a town's name, and give it
+alternatives so two runs don't meet the same set piece. Leave a zoning off when a framework's
+generated lots must not draw it (Larch Street is residential, so none of the five is).
+
 ## Cellars and terrain
 Rooms on level −1 (and below) are cellars. At load the terrain is cut away under them (TD-026):
 `TerrainHoles` (`game/src/world/terrain/terrain_holes.gd`) takes every placed POI's below-ground room

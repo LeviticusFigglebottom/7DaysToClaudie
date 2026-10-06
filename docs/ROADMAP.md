@@ -45,6 +45,10 @@ and clear at least one authored building along its route, survive a night and a 
   perception through stimulus fields, heat summons ✅; generated bodies/animations merged, visual QA
   of the rigs in game pending.
 - ✅ Day/night, weather (clear/overcast/mist/rain/storm), seasons hook.
+- ✅ Weather you can see (ADR-0033): rain streaks and splashes that stop at roofs, eave drips,
+  ripples on puddles and lakes, soaked materials by porosity, puddles in hollows and on asphalt that
+  outlast the rain, lightning with bolts and hard shadows, thunder delayed by distance, gusts,
+  ground fog pooling in the valley at dawn and dusk, rain haze, dust motes indoors, falling snow.
 - ✅ One Hum night with sector waves, weak-point flow field, horde memory report + forecast.
 - ✅ World settings (game rules) with five difficulty presets and a New Game screen; gamestage
   scaling; special Hollowed (Blister, Husk, Rammer) and infected tiers (Seeded, Bloomed)
@@ -166,6 +170,17 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
   frameworks, wilderness POIs, caves, trader placement), background thread + progress UI + cache.
   Frameworks already fill lots without a pick from zoning (LotPicker, generated buildings,
   ADR-0030); RWG is ADR-0031.
+  - [x] v1 (ADR-0031): world settings + presets + map seed on the New Game World tab with a map
+    preview; land with drainage-carved valleys, lakes, rivers, biome map; towns as generated
+    frameworks; roads with bridges; authored places by site; drop site; Bloom patches; cached in
+    user://worlds/random; save v6; `rwg_preview.gd` map CLI and in-world shots; the slice smoke
+    passes on a 3 x 3 random world.
+  - [ ] Caves, traders, the Ashen's territory, coasts and new biomes; streaming regions for 6-7 km
+    worlds (TD-081..084).
+  - [x] Pool buildings for random towns (DESIGN §11): Suds & Spin Laundromat, Hollowmere Grocery,
+    Bracken Lumber & Feed, Pell County Library and KHLW Valley Radio, five authored dungeons with
+    room alternatives that town lots pick by zoning, tier and footprint; 36 new props
+    (`props_town3.py`) and the `town3_print` sign atlas. Gaps: TD-086..089.
 - Burnt forest, snow, swamp, scrub biomes; full seasons (snow cover, frozen water, temperature).
 - Structural tiers: stone, metal; repair/upgrade tools; Rammer breakers that tear through walls.
 - Farming, rain collection, traps (spike pits, deadfalls), electricity (generator, wiring, lights,

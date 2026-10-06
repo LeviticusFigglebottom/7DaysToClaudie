@@ -6,10 +6,12 @@ extends RefCounted
 ## composer grades its pad and paints its streets like any framework's.
 ##
 ## Framework space: x east along the row streets, z south, origin at the pad's north-west corner.
-## A town has one or two row streets; lots line both sides of each, facing it, with a verge between
+## Two layouts. Rows: one or two row streets; lots line both sides of each, facing it, with a verge between
 ## kerb and lot front for lamps, poles and hydrants. With two rows, cross streets at both ends (and
 ## between segments) join them. The main street (the first row) runs the full width of the pad:
-## its two ends are the town's entries, where the world roads arrive.
+## its two ends are the town's entries, where the world roads arrive. Crossroads (villages and
+## towns, by the kind's `crossroads` chance): a main street and a cross street through its middle,
+## lots along all four arms and a corner lot in each angle of the crossing; four entries.
 ## Zoning: commercial lots gather in the middle of the main street, civic lots at its centre, one
 ## workshop lot at the end of a back street; everything else is residential. Lot sizes fit every
 ## building template and the authored buildings zoned for them (docs/POI_AUTHORING.md).
@@ -17,12 +19,15 @@ extends RefCounted
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
 
 
-## A town's plan: {"kind", "size": [w, d], "lots", "roads", "fixtures", "entries": [[x, z], [x, z]]
-## (west and east ends of the main street), "main_z"}.
+## A town's plan: {"kind", "layout": "rows" | "crossroads", "size": [w, d], "lots", "roads",
+## "fixtures", "entries": [[x, z], ...] (the ends of the through streets), "entry_dirs": the way
+## out of each, "main_z"}.
 static func plan(kind: String, cfg: Dictionary, r: RandomNumberGenerator) -> Dictionary:
 	var kd: Dictionary = (cfg.get("kinds", {}) as Dictionary).get(kind, {"rows": 1, "segments": 1, "lots": [3, 4], "commercial": 1, "civic": 0})
 	var st: Dictionary = cfg.get("street", {})
 	var lt: Dictionary = cfg.get("lot", {})
+	if r.randf() < float(kd.get("crossroads", 0.0)):
+		return _plan_crossroads(kind, kd, st, lt, r)
 	var main_w: float = float(st.get("main", 8.0))
 	var side_w: float = float(st.get("side", 6.0))
 	var verge: float = float(st.get("verge", 3.0))
@@ -66,8 +71,6 @@ static func plan(kind: String, cfg: Dictionary, r: RandomNumberGenerator) -> Dic
 		var sw: float = main_w if ri == 0 else side_w
 		var d_n: float = main_d if ri == 0 else back_d
 		var d_s: float = main_d if ri == 0 else back_d
-		if ri == 0 or rows == 1:
-			pass
 		sides.append({"row": ri, "facing": "S", "z": z, "depth": d_n})
 		z += d_n + verge
 		streets_z.append(z + sw * 0.5)
@@ -124,12 +127,10 @@ static func plan(kind: String, cfg: Dictionary, r: RandomNumberGenerator) -> Dic
 			var gap: float = (x1 - x0 - used) / maxf(1.0, run.size())
 			var lx: float = x0 + gap * 0.5
 			for e2: Array in run:
-				var lot_id: String = "lot_%d" % lots.size()
 				var zoning: Array = [e2[0]]
 				if str(e2[0]) == "commercial" and is_main:
 					zoning = ["commercial", "roadside"]
-				lots.append({"id": lot_id, "rect": [snappedf(lx, 0.1), snappedf(float(side["z"]), 0.1), snappedf(float(e2[1]), 0.1), snappedf(float(side["depth"]), 0.1)],
-					"zoning": zoning, "facing": side["facing"]})
+				lots.append(_lot(lots.size(), lx, float(side["z"]), float(e2[1]), float(side["depth"]), zoning, side["facing"]))
 				lx += float(e2[1]) + gap
 	# Streets.
 	var roads: Array = []
@@ -142,8 +143,207 @@ static func plan(kind: String, cfg: Dictionary, r: RandomNumberGenerator) -> Dic
 			roads.append({"_doc": "Cross street", "points": [[snappedf(xc, 0.1), snappedf(streets_z[0], 0.1)], [snappedf(xc, 0.1), snappedf(streets_z[1], 0.1)]],
 				"width": side_w, "surface": "asphalt", "shoulder": 0.8})
 	var fixtures: Array = _fixtures(r, width, streets_z, [main_w] + ([side_w] if rows >= 2 else []), crosses, lots, verge, rows)
-	return {"kind": kind, "size": [int(width), int(depth)], "lots": lots, "roads": roads, "fixtures": fixtures,
-		"entries": [[0.0, streets_z[0]], [width, streets_z[0]]], "main_z": streets_z[0]}
+	return {"kind": kind, "layout": "rows", "size": [int(width), int(depth)], "lots": lots, "roads": roads, "fixtures": fixtures,
+		"entries": [[0.0, streets_z[0]], [width, streets_z[0]]], "entry_dirs": [[-1.0, 0.0], [1.0, 0.0]], "main_z": streets_z[0]}
+
+
+## A crossroads town: the main street and a cross street through its middle, lots along all four
+## arms (the main street's 32 m deep, facing it; the cross street's facing east and west), and a
+## corner lot in each angle of the crossing facing the main street (shops, the church, the post
+## office). Four entries, one at each end.
+static func _plan_crossroads(kind: String, kd: Dictionary, st: Dictionary, lt: Dictionary, r: RandomNumberGenerator) -> Dictionary:
+	var main_w: float = float(st.get("main", 8.0))
+	var side_w: float = float(st.get("side", 6.0))
+	var verge: float = float(st.get("verge", 3.0))
+	var margin: float = float(st.get("margin", 6.0))
+	var res: Array = lt.get("residential", [20, 23])
+	var main_d: float = float(lt.get("main_depth", 32))
+	var back_d: float = float(lt.get("back_depth", 26))
+	var al: Array = kd.get("arm_lots", [2, 3])
+	var core_x: float = side_w * 0.5 + verge + back_d
+	var core_z: float = main_w * 0.5 + verge + main_d
+	var arm_x: float = float(r.randi_range(int(al[0]), int(al[1]))) * 22.5 + r.randf_range(0.0, 4.0)
+	var arm_z: float = float(r.randi_range(int(al[0]), int(al[1]))) * 22.5 + r.randf_range(0.0, 4.0)
+	var width: float = ceilf(2.0 * (margin + arm_x + core_x))
+	var depth: float = ceilf(2.0 * (margin + arm_z + core_z))
+	var xc: float = width * 0.5
+	var zc: float = depth * 0.5
+	var lots: Array = []
+	var commercial: int = int(kd.get("commercial", 2))
+	var civic: int = int(kd.get("civic", 1))
+	# Corner lots in the four angles of the crossing, facing the main street.
+	for cz: int in 2:
+		for cx: int in 2:
+			var zon: String = "residential"
+			if civic > 0 and cx == cz:
+				zon = "civic"
+				civic -= 1
+			elif commercial > 0:
+				zon = "commercial"
+				commercial -= 1
+			var x0: float = xc - side_w * 0.5 - verge - back_d if cx == 0 else xc + side_w * 0.5 + verge
+			var z0: float = zc - main_w * 0.5 - verge - main_d if cz == 0 else zc + main_w * 0.5 + verge
+			lots.append(_lot(lots.size(), x0, z0, back_d, main_d, [zon] + (["roadside"] if zon == "commercial" else []), "S" if cz == 0 else "N"))
+	# The main street's arms: 32 m lots facing it, shops nearest the crossing.
+	for side: int in 2:
+		var z_lot: float = zc - main_w * 0.5 - verge - main_d if side == 0 else zc + main_w * 0.5 + verge
+		for half: int in 2:
+			var run: Array = _run_lots(r, arm_x, res, commercial)
+			commercial -= int(run[1])
+			var fronts: Array = run[0]
+			var x: float = (xc - core_x - arm_x) if half == 0 else (xc + core_x)
+			# Shops at the crossing end of each arm: the run is laid out from the crossing outwards.
+			if half == 0:
+				fronts.reverse()
+			for e: Array in fronts:
+				lots.append(_lot(lots.size(), x, z_lot, float(e[1]), main_d, [e[0]] + (["roadside"] if str(e[0]) == "commercial" else []), "S" if side == 0 else "N"))
+				x += float(e[1])
+	# The cross street's arms: houses facing east and west.
+	var industrial: bool = kind == "town"
+	for side2: int in 2:
+		var x_lot: float = xc - side_w * 0.5 - verge - back_d if side2 == 0 else xc + side_w * 0.5 + verge
+		for half2: int in 2:
+			var z: float = (zc - core_z - arm_z) if half2 == 0 else (zc + core_z)
+			var used: float = 0.0
+			while used + float(res[0]) <= arm_z + 0.01:
+				var front: float = minf(r.randf_range(float(res[0]), float(res[1])), arm_z - used)
+				var zon2: String = "residential"
+				if industrial and half2 == 1 and side2 == 1 and used + 2.0 * float(res[0]) > arm_z:
+					zon2 = "industrial"
+					industrial = false
+					front = maxf(front, minf(26.0, arm_z - used))
+					if front < 26.0:
+						zon2 = "residential"
+				# Facing the street: lots west of it face east, lots east of it face west.
+				lots.append(_lot(lots.size(), x_lot, z + used, back_d, front, [zon2], "E" if side2 == 0 else "W"))
+				used += front
+	var roads: Array = [
+		{"_doc": "Main street", "points": [[0.0, snappedf(zc, 0.1)], [snappedf(xc, 0.1), snappedf(zc, 0.1)], [width, snappedf(zc, 0.1)]], "width": main_w, "surface": "asphalt", "shoulder": 1.0},
+		{"_doc": "Cross street", "points": [[snappedf(xc, 0.1), 0.0], [snappedf(xc, 0.1), snappedf(zc, 0.1)], [snappedf(xc, 0.1), depth]], "width": side_w, "surface": "asphalt", "shoulder": 0.8},
+	]
+	var fixtures: Array = _crossroads_fixtures(r, width, depth, xc, zc, main_w, side_w, core_x, core_z, lots, verge)
+	return {"kind": kind, "layout": "crossroads", "size": [int(width), int(depth)], "lots": lots, "roads": roads, "fixtures": fixtures,
+		"entries": [[0.0, zc], [width, zc], [xc, 0.0], [xc, depth]], "entry_dirs": [[-1.0, 0.0], [1.0, 0.0], [0.0, -1.0], [0.0, 1.0]], "main_z": zc}
+
+
+## Lots (zoning, frontage) along an arm of `length` m: shops first while `commercial` allows.
+static func _run_lots(r: RandomNumberGenerator, length: float, res: Array, commercial: int) -> Array:
+	var out: Array = []
+	var used: float = 0.0
+	var shops: int = 0
+	while true:
+		var zon: String = "residential"
+		var front: float = r.randf_range(float(res[0]), float(res[1]))
+		if commercial - shops > 0 and out.is_empty():
+			zon = "commercial"
+			front = 28.0
+		if used + front > length + 0.01:
+			zon = "residential"
+			front = float(res[0])
+			if used + front > length + 0.01:
+				break
+		if zon == "commercial":
+			shops += 1
+		out.append([zon, front])
+		used += front
+	# Spread the slack evenly.
+	var slack: float = (length - used) / maxf(1.0, out.size())
+	for e: Array in out:
+		e[1] = float(e[1]) + slack
+	return [out, shops]
+
+
+## A lot's data; both edges are snapped (not the position and size apart), so neighbours share an edge
+## exactly instead of overlapping by a rounding.
+static func _lot(i: int, x: float, z: float, w: float, d: float, zoning: Array, facing: String) -> Dictionary:
+	var x0: float = snappedf(x, 0.1)
+	var z0: float = snappedf(z, 0.1)
+	return {"id": "lot_%d" % i, "rect": [x0, z0, snappedf(snappedf(x + w, 0.1) - x0, 0.1), snappedf(snappedf(z + d, 0.1) - z0, 0.1)], "zoning": zoning, "facing": facing}
+
+
+## A crossroads town's fixtures: lamps and hydrants along both streets (clear of the crossing), poles
+## along the main street, stop signs at the crossing, wrecks, a barricaded entry, and the shop and
+## civic dressing in front of the corner and main-street lots.
+static func _crossroads_fixtures(r: RandomNumberGenerator, width: float, depth: float, xc: float, zc: float, main_w: float, side_w: float,
+		core_x: float, core_z: float, lots: Array, verge: float) -> Array:
+	var out: Array = []
+	var nid: Array[int] = [0]
+	var add := func(prop: String, x: float, z: float, rot: float) -> void:
+		out.append({"id": "fx_%d" % nid[0], "prop": prop, "pos": [snappedf(x, 0.1), snappedf(z, 0.1)], "rot": snappedf(rot, 1.0)})
+		nid[0] += 1
+	# Along the main street (x), then the cross street (z).
+	var k: int = 0
+	var x: float = 10.0 + r.randf_range(0.0, 6.0)
+	while x < width - 6.0:
+		if absf(x - xc) > side_w * 0.5 + 5.0:
+			var north: bool = k % 2 == 0
+			add.call("street_lamp", x, zc + (-1.0 if north else 1.0) * (main_w * 0.5 + 1.0), 180.0 if north else 0.0)
+			if k % 2 == 1:
+				add.call("utility_pole", x + 14.0, zc - main_w * 0.5 - 2.1, 90.0)
+		k += 1
+		x += r.randf_range(30.0, 38.0)
+	var z: float = 10.0 + r.randf_range(0.0, 6.0)
+	k = 0
+	while z < depth - 6.0:
+		if absf(z - zc) > main_w * 0.5 + 5.0:
+			var west: bool = k % 2 == 0
+			add.call("street_lamp", xc + (-1.0 if west else 1.0) * (side_w * 0.5 + 1.0), z, -90.0 if west else 90.0)
+		k += 1
+		z += r.randf_range(30.0, 38.0)
+	for h: int in 4:
+		var t: float = r.randf_range(0.15, 0.4)
+		match h:
+			0:
+				add.call("fire_hydrant", xc - core_x - (width * 0.5 - core_x) * t, zc + main_w * 0.5 + 1.7, 0.0)
+			1:
+				add.call("fire_hydrant", xc + core_x + (width * 0.5 - core_x) * t, zc - main_w * 0.5 - 1.7, 0.0)
+			2:
+				add.call("fire_hydrant", xc + side_w * 0.5 + 1.7, zc - core_z - (depth * 0.5 - core_z) * t, 0.0)
+			3:
+				add.call("fire_hydrant", xc - side_w * 0.5 - 1.7, zc + core_z + (depth * 0.5 - core_z) * t, 0.0)
+	# Stop signs on the cross street's approaches to the crossing.
+	add.call("road_sign_stop", xc + side_w * 0.5 + 1.4, zc - main_w * 0.5 - 2.6, 0.0)
+	add.call("road_sign_stop", xc - side_w * 0.5 - 1.4, zc + main_w * 0.5 + 2.6, 180.0)
+	# Wrecks in the lanes of both streets.
+	for wi: int in r.randi_range(2, 4):
+		if r.randf() < 0.6:
+			var wx: float = r.randf_range(8.0, width - 8.0)
+			if absf(wx - xc) > side_w + 4.0:
+				add.call("car_sedan_wreck" if r.randf() < 0.7 else "pickup_wreck", wx, zc + (1.0 if r.randf() < 0.5 else -1.0) * r.randf_range(0.8, main_w * 0.5 - 1.0),
+					90.0 + (180.0 if r.randf() < 0.5 else 0.0) + r.randf_range(-20.0, 20.0))
+		else:
+			var wz: float = r.randf_range(8.0, depth - 8.0)
+			if absf(wz - zc) > main_w + 4.0:
+				add.call("car_sedan_wreck" if r.randf() < 0.7 else "pickup_wreck", xc + (1.0 if r.randf() < 0.5 else -1.0) * r.randf_range(0.5, side_w * 0.5 - 0.8), wz,
+					(180.0 if r.randf() < 0.5 else 0.0) + r.randf_range(-20.0, 20.0))
+	# The Cordon closed one end of the main street.
+	var west_end: bool = r.randf() < 0.5
+	var bx: float = 4.0 if west_end else width - 4.0
+	add.call("jersey_barrier", bx, zc - 2.1, 90.0 + r.randf_range(-6.0, 6.0))
+	add.call("jersey_barrier", bx + (1.5 if west_end else -1.5), zc + 2.0, 90.0 + r.randf_range(-6.0, 6.0))
+	add.call("sawhorse_barricade", bx + (3.5 if west_end else -3.5), zc + r.randf_range(-1.0, 1.0), 90.0 + r.randf_range(-10.0, 10.0))
+	add.call("oil_drum_fire", bx + (6.5 if west_end else -6.5), zc - main_w * 0.5 - 1.6, 0.0)
+	# Shop and civic dressing in front of the lots facing the main street.
+	var did_phone: bool = false
+	for l: Variant in lots:
+		var lot: Dictionary = l
+		var zon: String = str((lot["zoning"] as Array)[0])
+		if (zon != "commercial" and zon != "civic") or not str(lot["facing"]) in ["S", "N"]:
+			continue
+		var rect: Array = lot["rect"]
+		var front_z: float = float(rect[1]) + float(rect[3]) + verge * 0.5 if str(lot["facing"]) == "S" else float(rect[1]) - verge * 0.5
+		var cxl: float = float(rect[0]) + float(rect[2]) * 0.5
+		var face_rot: float = 0.0 if str(lot["facing"]) == "S" else 180.0
+		if zon == "commercial":
+			if r.randf() < 0.5:
+				add.call("dumpster", float(rect[0]) + 2.0, front_z, face_rot)
+			if not did_phone:
+				add.call("payphone", cxl + float(rect[2]) * 0.3, front_z, face_rot)
+				did_phone = true
+		else:
+			add.call("bench_park", cxl - 4.0, front_z, face_rot)
+			add.call("civic_collection_mailbox", cxl + 5.0, front_z, face_rot + 90.0)
+	return out
 
 
 ## Lamps, poles, hydrants, stop signs, wrecks, a barricaded entry, dumpsters, benches and litter,

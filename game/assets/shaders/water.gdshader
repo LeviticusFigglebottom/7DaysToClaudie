@@ -10,8 +10,9 @@
 // The two are blended by Fresnel and emitted; albedo is black and ambient light is off, so the
 // engine adds only the sun's glint. Without screen-space reflections the engine would mirror only
 // bright sky at grazing angles, and the river read as pale sand.
-// Also: two scrolling normal maps (rivers flow along UV.y), shoreline foam, rain ripples via
-// hm_wetness. Rivers set flow_speed > 0.
+// Also: two scrolling normal maps (rivers flow along UV.y), shoreline foam, and rain: rings
+// spreading from every drop and a roughened surface while it falls (hm_rain.x, ADR-0033). Rivers set
+// flow_speed > 0.
 shader_type spatial;
 render_mode blend_mix, depth_draw_always, cull_back, diffuse_burley, specular_schlick_ggx, ambient_light_disabled;
 
@@ -33,8 +34,9 @@ uniform float foam_width = 0.6;
 uniform float treeline = 0.9;
 uniform float spires = 110.0;
 
+#include "res://assets/shaders/weather.gdshaderinc"
+
 global uniform vec4 hm_wind;
-global uniform float hm_wetness;
 global uniform vec4 hm_sky_zenith;
 global uniform vec4 hm_sky_horizon;
 
@@ -79,10 +81,11 @@ void fragment() {
 	vec3 n1 = texture(normal_a, uv1).rgb;
 	vec3 n2 = texture(normal_b, uv2).rgb;
 	vec3 nrm = normalize(mix(n1, n2, 0.5) * 2.0 - 1.0);
-	// Rain ripples: extra high-frequency normal noise.
-	if (hm_wetness > 0.05) {
+	// Rain: rings spreading from the drops, over a fine chop of their splashes.
+	if (hm_rain.x > 0.02) {
 		vec3 n3 = texture(normal_b, wuv * 9.0 + vec2(TIME * 0.05, -TIME * 0.07)).rgb * 2.0 - 1.0;
-		nrm = normalize(nrm + n3 * hm_wetness * 0.6);
+		vec2 rip = wx_ripples(v_world.xz, TIME, hm_rain.x);
+		nrm = normalize(nrm + n3 * hm_rain.x * 0.35 + vec3(rip.x, -rip.y, 0.0) * 1.4);
 	}
 	// Water depth from the depth buffer.
 	float depth = textureLod(depth_tex, SCREEN_UV, 0.0).r;
@@ -117,7 +120,7 @@ void fragment() {
 	col = mix(col, sky_h * 0.85, foam * 0.6);
 	ALBEDO = vec3(foam * 0.5);
 	EMISSION = col;
-	ROUGHNESS = mix(0.04, 0.12, hm_wetness);
+	ROUGHNESS = mix(0.04, 0.14, hm_rain.x);
 	METALLIC = 0.0;
 	SPECULAR = 0.5;
 	NORMAL_MAP = nrm * 0.5 + 0.5;

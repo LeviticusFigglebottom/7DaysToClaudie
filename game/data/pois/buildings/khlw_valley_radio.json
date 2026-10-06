@@ -1,0 +1,273 @@
+{
+  "_doc": "Tier-2 pool building (random towns, civic or commercial lots): a small AM station with its broadcast booth, equipment room and generator shed, and a square lattice mast with two rest platforms under the relay platform. The generator still runs at dusk: the ON AIR sign, the racks and the mast's beacon burn (prop lights on 'generator' power, ADR-0023). Route: the front door is chained -> the yard and the generator shed -> round the back to the hole Bud cut for the generator cable (jaws set in the gap) -> the equipment room -> Bud's office and his log -> the hall, where the boards groan and the ON AIR light burns over the studio door (opening it, or the boards, wakes the booth: ambush) -> the booth: Mel at the console, the Cordon's transcripts -> reception -> back through the office and out of its bolted side door into the mast compound -> up the mast's ladders platform by platform -> the top platform: the relay cabinet (loot) and Bud (guardian) -> back down. Hollowed don't climb ladders: once the top is cleared the mast is a refuge. See docs/POI_AUTHORING.md.",
+  "defs": [
+    {
+      "id": "khlw_valley_radio",
+      "name": "KHLW Valley Radio",
+      "tier": 2,
+      "zoning": ["civic", "commercial"],
+      "footprint": [26, 30],
+      "origin": [5, 10],
+      "author": "Hollowmere team",
+      "story": "KHLW 1340 played the farm report and the high-school games until the Cordon took the station over to read its emergency instructions on the hour: boil your water, go to the assembly points, buses at first light. The buses never came, and Lieutenant Voss left on the ninth morning. Mel Ostrander, the night man, kept reading the bulletins into the microphone because somebody out there still had a radio, and Bud Kearney, the engineer, put the generator on a timer, cut a hole through the equipment room's back wall when the conduit was crushed, and locked the Cordon's emergency kit in the relay cabinet on the mast's top platform. Mel would not come out of the booth and kept the ON AIR light burning for company. Bud was bitten fixing the beacon and climbed up one last time to fix the relay. At dusk the generator still turns over, the ON AIR sign glows red over the studio door and the beacon burns on top of the mast for anyone left to see it.",
+      "style": {"exterior": "concrete_block", "interior": "paint_slate_blue", "floor": "linoleum_beige", "ceiling": "plaster_white", "floor_height": 0.15, "decay": 0.45, "damaged_walls": 0.06, "prop_condition": "worn", "scatter": {"density": 0.35}, "roof": {"type": "flat", "parapet": 0.6, "flat_color": "#2a2928", "roofs": [{"level": 3, "at": [13, 6], "type": "none"}, {"level": 0, "at": [14, 1], "type": "shed", "slope": "N", "pitch": 14, "material": "roof_metal"}]}},
+      "levels": [
+        {
+          "level": 0,
+          "plan": [
+            "EEEEEEOOOOOO.GGGG",
+            "EEEEEEOOOOOO.GGGG",
+            "EEEEEEOOOOOO.GGGG",
+            "EEEEEEOOOOOO.....",
+            "BBBBBBHHHLLL.....",
+            "BBBBBBHHHLLL.....",
+            "BBBBBBHHHLLL.....",
+            "BBBBBBHHHLLL.....",
+            "BBBBBBHHHLLL....."
+          ],
+          "rooms": {
+            "E": {"name": "Equipment room", "type": "studio", "wall": "concrete_block", "floor": "concrete"},
+            "O": {"name": "Bud's office", "type": "office", "wall": "wood_paneling_dark", "floor": "carpet_brown"},
+            "B": {"name": "Broadcast booth", "type": "studio", "wall": "wood_paneling_dark", "floor": "carpet_blue_worn"},
+            "H": {"name": "Hall", "type": "hallway", "wall": "paint_slate_blue", "floor": "linoleum_beige"},
+            "L": {"name": "Reception", "type": "office", "wall": "paint_mustard", "floor": "linoleum_beige"},
+            "G": {"name": "Generator shed", "type": "garage", "wall": "concrete_block", "floor": "concrete"}
+          }
+        },
+        {
+          "level": 1,
+          "plan": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "             PP",
+            "             PP"
+          ],
+          "rooms": {
+            "P": {"name": "First rest platform", "type": "hallway", "wall": "concrete_block", "floor": "concrete"}
+          }
+        },
+        {
+          "level": 2,
+          "plan": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "             QQ",
+            "             QQ"
+          ],
+          "rooms": {
+            "Q": {"name": "Second rest platform", "type": "hallway", "wall": "concrete_block", "floor": "concrete"}
+          }
+        },
+        {
+          "level": 3,
+          "plan": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "             TT",
+            "             TT"
+          ],
+          "rooms": {
+            "T": {"name": "Top platform", "type": "hallway", "wall": "concrete_block", "floor": "concrete"}
+          }
+        }
+      ],
+      "openings": [
+        {"id": "front_door", "at": [10, 8], "side": "S", "type": "door", "state": "locked", "lock": "chain", "model": "door_metal"},
+        {"id": "lobby_window", "at": [11, 6], "side": "E", "type": "window", "state": "closed"},
+        {"id": "lobby_front_window", "at": [9, 8], "side": "S", "type": "window", "state": "boarded"},
+        {"id": "hall_front_window", "at": [7, 8], "side": "S", "type": "window", "state": "closed"},
+        {"id": "cable_hole", "at": [2, 0], "side": "N", "type": "breach"},
+        {"id": "equipment_vent", "at": [4, 0], "side": "N", "type": "window", "state": "boarded"},
+        {"id": "equipment_window", "at": [0, 1], "side": "W", "type": "window", "state": "boarded"},
+        {"id": "office_window", "at": [9, 0], "side": "N", "type": "window", "state": "closed"},
+        {"id": "office_side_window", "at": [11, 3], "side": "E", "type": "window", "state": "closed"},
+        {"id": "office_side_door", "at": [11, 1], "side": "E", "type": "door", "state": "locked_inside", "model": "door_metal"},
+        {"id": "booth_door_e", "at": [2, 3], "side": "S", "type": "door", "state": "closed"},
+        {"id": "equipment_office_door", "at": [6, 1], "side": "W", "type": "door", "state": "closed"},
+        {"id": "office_hall_door", "at": [7, 3], "side": "S", "type": "door", "state": "closed"},
+        {"id": "booth_glass", "at": [6, 4], "side": "W", "type": "window", "state": "closed"},
+        {"id": "studio_door", "at": [6, 6], "side": "W", "type": "door", "state": "closed"},
+        {"id": "lobby_arch", "at": [9, 6], "side": "W", "type": "open"},
+        {"id": "booth_back_window", "at": [0, 7], "side": "W", "type": "window", "state": "boarded"},
+        {"id": "shed_door", "at": [14, 2], "side": "S", "type": "door", "state": "open"},
+        {"id": "shed_window", "at": [16, 1], "side": "E", "type": "window", "state": "broken"},
+        {"id": "plat1_n136", "at": [13, 6], "side": "N", "type": "open", "level": 1},
+        {"id": "plat1_n146", "at": [14, 6], "side": "N", "type": "open", "level": 1},
+        {"id": "plat1_s137", "at": [13, 7], "side": "S", "type": "open", "level": 1},
+        {"id": "plat1_s147", "at": [14, 7], "side": "S", "type": "open", "level": 1},
+        {"id": "plat1_w136", "at": [13, 6], "side": "W", "type": "open", "level": 1},
+        {"id": "plat1_w137", "at": [13, 7], "side": "W", "type": "open", "level": 1},
+        {"id": "plat1_e146", "at": [14, 6], "side": "E", "type": "open", "level": 1},
+        {"id": "plat1_e147", "at": [14, 7], "side": "E", "type": "open", "level": 1},
+        {"id": "plat2_n136", "at": [13, 6], "side": "N", "type": "open", "level": 2},
+        {"id": "plat2_n146", "at": [14, 6], "side": "N", "type": "open", "level": 2},
+        {"id": "plat2_s137", "at": [13, 7], "side": "S", "type": "open", "level": 2},
+        {"id": "plat2_s147", "at": [14, 7], "side": "S", "type": "open", "level": 2},
+        {"id": "plat2_w136", "at": [13, 6], "side": "W", "type": "open", "level": 2},
+        {"id": "plat2_w137", "at": [13, 7], "side": "W", "type": "open", "level": 2},
+        {"id": "plat2_e146", "at": [14, 6], "side": "E", "type": "open", "level": 2},
+        {"id": "plat2_e147", "at": [14, 7], "side": "E", "type": "open", "level": 2},
+        {"id": "plat3_n136", "at": [13, 6], "side": "N", "type": "open", "level": 3},
+        {"id": "plat3_n146", "at": [14, 6], "side": "N", "type": "open", "level": 3},
+        {"id": "plat3_s137", "at": [13, 7], "side": "S", "type": "open", "level": 3},
+        {"id": "plat3_s147", "at": [14, 7], "side": "S", "type": "open", "level": 3},
+        {"id": "plat3_w136", "at": [13, 6], "side": "W", "type": "open", "level": 3},
+        {"id": "plat3_w137", "at": [13, 7], "side": "W", "type": "open", "level": 3},
+        {"id": "plat3_e146", "at": [14, 6], "side": "E", "type": "open", "level": 3},
+        {"id": "plat3_e147", "at": [14, 7], "side": "E", "type": "open", "level": 3}
+      ],
+      "ladders": [
+        {"level": 0, "at": [13, 7], "side": "W", "hatch": true},
+        {"level": 1, "at": [14, 6], "side": "E", "hatch": true},
+        {"level": 2, "at": [13, 7], "side": "W", "hatch": true}
+      ],
+      "props": [
+        {"id": "transmitter", "prop": "town3_transmitter", "at": [0, 2], "against": "W", "lit": true, "keep": true},
+        {"id": "rack_1", "prop": "town3_equipment_rack", "at": [4, 0], "against": "N", "lit": true, "keep": true},
+        {"id": "rack_2", "prop": "town3_equipment_rack", "at": [5, 0], "against": "N", "lit": true},
+        {"id": "rack_3", "prop": "town3_equipment_rack", "at": [5, 3], "against": "E", "variant": "destroyed"},
+        {"prop": "plaster_chunks", "pos": [1.5, 0.6], "rot": 20},
+        {"prop": "debris_pile", "pos": [3.4, 0.7], "rot": 80},
+        {"id": "equipment_shelf", "prop": "metal_shelf", "at": [0, 3], "against": "W", "container": "town3_equipment"},
+        {"id": "equipment_box", "prop": "cardboard_box", "pos": [3.6, 2.5], "rot": 15},
+        {"id": "bud_desk", "prop": "office_desk", "at": [8, 0], "against": "N"},
+        {"prop": "office_chair", "pos": [8.4, 1.3], "rot": 160},
+        {"id": "bud_files", "prop": "filing_cabinet", "at": [11, 3], "against": "S"},
+        {"id": "bud_locker", "prop": "weapons_locker", "at": [6, 3], "against": "W"},
+        {"prop": "civic_ham_radio", "pos": [7.6, 0.45], "y": 0.78, "rot": 0},
+        {"prop": "cork_board", "at": [10, 0], "against": "N", "height": 1.5},
+        {"prop": "candle_cluster", "pos": [8.6, 0.45], "y": 0.78, "lit": true},
+        {"id": "bud_toolbox", "prop": "toolbox", "pos": [10.6, 2.3], "rot": 30},
+        {"id": "studio_desk", "prop": "town3_studio_desk", "pos": [2.4, 7.4], "rot": 0},
+        {"id": "mel_chair", "prop": "office_chair", "pos": [2.6, 6.5], "rot": 180},
+        {"id": "booth_rack", "prop": "town3_equipment_rack", "at": [0, 5], "against": "W", "lit": true},
+        {"id": "booth_shelf", "prop": "bookshelf", "at": [5, 8], "against": "S"},
+        {"prop": "chair_wood", "pos": [4.4, 4.8], "rot": 200},
+        {"prop": "paper_scatter", "pos": [3.6, 5.4], "rot": 30},
+        {"prop": "town3_on_air_sign", "at": [6, 6], "against": "W", "height": 2.25, "lit": true, "keep": true},
+        {"prop": "road_waiting_chairs", "pos": [10.5, 4.4], "rot": 0},
+        {"id": "reception_desk", "prop": "counter_reception", "pos": [10.5, 7.3], "rot": 180},
+        {"prop": "water_cooler", "at": [11, 5], "against": "E"},
+        {"prop": "town3_sign_khlw", "at": [9, 9], "against": "N", "height": 2.6},
+        {"id": "generator", "prop": "town3_generator", "pos": [14.7, 0.9], "rot": 0, "lit": true, "keep": true},
+        {"prop": "barrel_metal", "pos": [13.5, 1.6]},
+        {"prop": "gas_can", "pos": [16.3, 2.4], "rot": 40},
+        {"prop": "gas_can", "pos": [16.5, 2.2], "rot": 100},
+        {"id": "mast", "prop": "town3_lattice_mast", "pos": [14.0, 7.0], "rot": 0, "lit": true, "keep": true},
+        {"id": "relay_cabinet", "prop": "town3_relay_cabinet", "at": [13, 6], "against": "N", "level": 3, "key": "t3_khlw_relay_key"},
+        {"id": "bud_toolbox_top", "prop": "toolbox", "pos": [14.5, 6.4], "level": 3, "rot": 40},
+        {"prop": "fence_chainlink_2m", "pos": [12.0, 5.0], "rot": 90},
+        {"prop": "fence_chainlink_2m", "pos": [16.4, 7.0], "rot": 90},
+        {"prop": "fence_chainlink_2m", "pos": [16.4, 9.0], "rot": 90, "variant": "destroyed"},
+        {"prop": "fence_chainlink_2m", "pos": [15.2, 4.6], "rot": 0},
+        {"id": "yard_pickup", "prop": "pickup_wreck", "pos": [3.5, 12.6], "rot": 95},
+        {"prop": "bench_park", "pos": [13.4, 11.4], "rot": 180, "variant": "worn"},
+        {"prop": "town3_mast_rail", "at": [13, 6], "against": "N", "level": 1},
+        {"prop": "town3_mast_rail", "at": [14, 6], "against": "N", "level": 1},
+        {"prop": "town3_mast_rail", "at": [13, 7], "against": "S", "level": 1},
+        {"prop": "town3_mast_rail", "at": [14, 7], "against": "S", "level": 1},
+        {"prop": "town3_mast_rail", "at": [13, 6], "against": "W", "level": 1},
+        {"prop": "town3_mast_rail", "at": [13, 7], "against": "W", "level": 1},
+        {"prop": "town3_mast_rail", "at": [14, 7], "against": "E", "level": 1},
+        {"prop": "town3_mast_rail", "at": [13, 6], "against": "N", "level": 2},
+        {"prop": "town3_mast_rail", "at": [14, 6], "against": "N", "level": 2},
+        {"prop": "town3_mast_rail", "at": [13, 7], "against": "S", "level": 2},
+        {"prop": "town3_mast_rail", "at": [14, 7], "against": "S", "level": 2},
+        {"prop": "town3_mast_rail", "at": [13, 6], "against": "W", "level": 2},
+        {"prop": "town3_mast_rail", "at": [14, 6], "against": "E", "level": 2},
+        {"prop": "town3_mast_rail", "at": [14, 7], "against": "E", "level": 2},
+        {"prop": "town3_mast_rail", "at": [14, 6], "against": "N", "level": 3},
+        {"prop": "town3_mast_rail", "at": [13, 7], "against": "S", "level": 3},
+        {"prop": "town3_mast_rail", "at": [14, 7], "against": "S", "level": 3},
+        {"prop": "town3_mast_rail", "at": [13, 6], "against": "W", "level": 3},
+        {"prop": "town3_mast_rail", "at": [13, 7], "against": "W", "level": 3},
+        {"prop": "town3_mast_rail", "at": [14, 6], "against": "E", "level": 3},
+        {"prop": "town3_mast_rail", "at": [14, 7], "against": "E", "level": 3}
+      ],
+      "pickups": [
+        {"id": "relay_key", "item": "t3_khlw_relay_key", "pos": [14.6, 7.4], "y": 0.02, "level": 3}
+      ],
+      "notes": [
+        {"note": "t3_khlw_day3", "pos": [5.85, 4.4], "y": 1.45},
+        {"note": "t3_khlw_day9", "pos": [2.2, 7.6], "y": 0.78},
+        {"note": "t3_khlw_bud", "pos": [8.6, 0.45], "y": 0.78}
+      ],
+      "sleepers": [
+        {"id": "rack_hollow", "pos": [3.2, 2.4], "enemy": "hollow", "pose": "stand", "rot": 40},
+        {"id": "mel", "group": "booth", "pos": [2.6, 6.5], "enemy": "hollow", "pose": "sit", "rot": 180, "alt": "mel:at_the_console"},
+        {"id": "booth_soldier", "group": "booth", "population": "cordon", "pos": [4.5, 7.6], "enemy": "lurcher", "pose": "crouch", "rot": -90, "alt": "soldier:by_the_desk"},
+        {"id": "booth_guest", "group": "booth", "pos": [4.4, 4.8], "enemy": "hollow", "pose": "sit", "rot": 200},
+        {"id": "lobby_waiting", "pos": [10.5, 4.4], "enemy": "hollow", "pose": "sit", "rot": 0},
+        {"id": "lobby_door", "pos": [10.2, 8.4], "enemy": "hollow", "pose": "stand", "rot": 0},
+        {"id": "shed_dragger", "pos": [13.6, 2.4], "enemy": "dragger", "pose": "lie", "rot": 60, "anchor": "floor"},
+        {"id": "bud", "guardian": true, "pos": [14.5, 6.6], "level": 3, "enemy": "hollow", "pose": "stand", "rot": 200, "alt": "bud:by_the_cabinet"},
+        {"id": "mel", "group": "booth", "pos": [1.4, 5.2], "enemy": "hollow", "pose": "lie", "rot": 40, "anchor": "floor", "alt": "mel:on_the_floor"},
+        {"id": "booth_soldier", "group": "booth", "population": "cordon", "pos": [4.9, 4.6], "enemy": "lurcher", "pose": "stand", "rot": 90, "alt": "soldier:at_the_glass"},
+        {"id": "bud", "guardian": true, "pos": [14.4, 7.5], "level": 3, "enemy": "hollow", "pose": "kneel", "rot": 20, "alt": "bud:at_the_rail"}
+      ],
+      "traps": [
+        {"id": "hole_jaws", "type": "bear_trap", "pos": [2.55, 0.7], "rot": 90},
+        {"id": "hall_boards", "type": "creaky_floor", "at": [6, 5], "size": [3, 2]}
+      ],
+      "triggers": [
+        {"id": "studio_door_opened", "group": "booth", "on": "opening", "opening": "studio_door", "delay": 0.3},
+        {"id": "hall_boards_groan", "group": "booth", "on": "trap", "trap": "hall_boards", "delay": 0.6}
+      ],
+      "lights": [
+        {"pos": [8.6, 0.45], "height": 0.95, "color": "#ffb46e", "energy": 0.4, "range": 4.0, "flicker": 0.3}
+      ],
+      "decals": [
+        {"decal": "crack_wall", "at": [1, 0], "side": "N", "height": 1.2, "size": [1.4, 1.6]},
+        {"decal": "footprints_mud", "at": [2, 1], "side": "floor", "size": [1.0, 1.6]},
+        {"decal": "survivor_marks_a", "at": [6, 6], "side": "W", "height": 1.5, "size": [0.8, 0.6]},
+        {"decal": "blood_handprint", "at": [5, 6], "side": "E", "height": 1.2, "size": [0.4, 0.4]},
+        {"decal": "grime_streaks", "at": [3, 8], "side": "S", "height": 1.7, "size": [1.4, 1.2]},
+        {"decal": "blood_trail", "at": [8, 2], "side": "floor", "size": [0.9, 1.8], "rot": 90},
+        {"decal": "survivor_marks_b", "at": [10, 8], "side": "S", "height": 1.5, "size": [0.8, 0.6]},
+        {"decal": "water_stain", "at": [15, 0], "side": "N", "height": 1.8, "size": [1.2, 1.2]}
+      ],
+      "route": [
+        {"at": [10, 10], "label": "KHLW: the front door is chained, the Cordon's schedule behind the glass"},
+        {"at": [14, 4], "label": "The yard: the mast, its beacon, and the generator shed's door standing open"},
+        {"at": [14, 1], "label": "The generator shed: it still turns over at dusk"},
+        {"at": [2, -1], "label": "Behind the station: a hole cut through the wall for the generator cable"},
+        {"at": [2, 1], "label": "The equipment room: the transmitter and the racks, still lit"},
+        {"at": [7, 1], "label": "Bud's office: his log"},
+        {"at": [7, 5], "label": "The hall: the ON AIR light burns over the studio door"},
+        {"at": [3, 6], "label": "The booth: Mel at the console, the Cordon's transcripts"},
+        {"at": [10, 6], "label": "Reception"},
+        {"at": [11, 1], "label": "Back through the office: slide the bolt on the side door"},
+        {"at": [13, 7], "label": "Out to the mast: the ladder"},
+        {"at": [14, 7], "level": 1, "label": "The first rest platform"},
+        {"at": [13, 6], "level": 2, "label": "The second rest platform"},
+        {"at": [14, 7], "level": 3, "label": "The top platform: the relay cabinet (loot); Bud is up here"},
+        {"at": [13, 7], "label": "Back down the mast"},
+        {"at": [13, 10], "label": "Out of the compound"}
+      ],
+      "loot_room": {"room": "T", "level": 3},
+      "shortcuts": [
+        {"opening": "office_side_door"}
+      ],
+      "alternatives": [
+        {"id": "mel", "label": "Where Mel is", "options": [{"id": "at_the_console", "weight": 2}, {"id": "on_the_floor", "label": "On the booth floor under the window"}]},
+        {"id": "soldier", "label": "Where the Cordon's man waits in the booth", "options": [{"id": "by_the_desk", "weight": 2}, {"id": "at_the_glass", "label": "At the booth glass, facing the hall"}]},
+        {"id": "bud", "label": "How Bud waits on the top platform", "options": [{"id": "by_the_cabinet", "weight": 2}, {"id": "at_the_rail", "label": "Kneeling at the rail"}]},
+        {"id": "front", "label": "How the front door is held", "options": [{"id": "chained", "weight": 2}, {"id": "barricaded", "label": "Barricaded from inside with the reception furniture", "openings": [{"id": "front_door", "state": "barricaded", "barricade": "furniture", "lock": ""}]}]},
+        {"id": "hall", "label": "The hall's paint", "options": [{"id": "slate", "weight": 2}, {"id": "sage", "rooms": [{"level": 0, "room": "H", "wall": "paint_sage"}]}]}
+      ],
+      "budget": {"lights": 2, "enemies": 10}
+    }
+  ]
+}

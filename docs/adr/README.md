@@ -35,3 +35,5 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0028](0028-the-hollowed-up-close.md) | The Hollowed up close: skin and cloth shaders on rest-pose vertex data, garments, tier growths, special features, populations | Accepted |
 | [0029](0029-first-person.md) | First person: hold classes, a viewmodel field of view, arms that carry the tether, swings that land | Accepted |
 | [0030](0030-varied-interiors.md) | Varied interiors: per-run dressing, room alternatives, generated ordinary buildings, lots that pick | Accepted |
+| [0031](0031-random-worlds.md) | Random worlds: a seeded generator that writes the handcrafted map's own format | Accepted |
+| [0033](0033-weather-and-atmosphere.md) | Weather you can see: rain that stops at roofs, wet ground and puddles, lightning and thunder, ground fog that pools, falling snow | Accepted |

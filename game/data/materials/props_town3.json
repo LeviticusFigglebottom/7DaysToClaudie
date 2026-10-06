@@ -1,0 +1,19 @@
+{
+  "_doc": "Props of the town pool buildings (Suds & Spin Laundromat, Hollowmere Grocery, Bracken Lumber & Feed, Pell County Library, KHLW Valley Radio). Models: tools/assetgen/blender/generators/props_town3.py; most surfaces reuse the interior, exterior, farm, wild and roadside families. t3_print is the town3_print atlas (tools/assetgen/textures/gen/town3.py; UV rects in the generator's ATLAS). The glow materials follow ADR-0023: light_source 1 shows the albedo cold and glows only while the prop is lit (the ON AIR letters, the mast beacon and the rack LEDs burn on KHLW's generator).",
+  "materials": {
+    "t3_print": {"shader": "std_surface", "textures": "town3_print",
+      "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "grime_amount": 0.35, "grime_color": "#2a251d"}},
+    "t3_on_air_glow": {"shader": "std_surface",
+      "params": {"tint": "#6a1712", "roughness_mult": 0.0, "roughness_add": 0.3, "metallic_mult": 0.0, "vertex_ao_strength": 0.0, "light_source": 1, "emission_color": "#ff3a22", "emission_energy": 3.2, "emission_flicker": 0.04}},
+    "t3_beacon_glow": {"shader": "std_surface",
+      "params": {"tint": "#5a1210", "roughness_mult": 0.0, "roughness_add": 0.2, "metallic_mult": 0.0, "vertex_ao_strength": 0.0, "light_source": 1, "emission_color": "#ff2414", "emission_energy": 4.0, "emission_flicker": 0.02}},
+    "t3_led_glow": {"shader": "std_surface",
+      "params": {"tint": "#1d2a1e", "roughness_mult": 0.0, "roughness_add": 0.25, "metallic_mult": 0.0, "vertex_ao_strength": 0.0, "light_source": 1, "emission_color": "#8dff74", "emission_energy": 1.6, "emission_flicker": 0.1}},
+    "t3_trailer_white": {"shader": "std_surface", "textures": "car_paint", "layers": {"wear": "car_rust"},
+      "params": {"uv_scale": 1.5, "vertex_ao_strength": 1.0, "tint": "#e4e2dc", "wear_amount": 0.45, "wear_uv_scale": 1.2, "grime_amount": 0.55, "grime_color": "#3b3328", "roughness_add": 0.08}},
+    "t3_meat_spoiled": {"shader": "std_surface", "textures": "farm_preserve",
+      "params": {"uv_scale": 3.0, "vertex_ao_strength": 1.0, "tint": "#8c5a4a", "roughness_add": -0.15, "grime_amount": 0.5, "grime_color": "#2a1a12"}},
+    "t3_drum_steel": {"shader": "std_surface", "textures": "metal_galvanized", "maps": {"normal_tex": "pi_pegboard_normal"},
+      "params": {"uv_scale": 6.0, "vertex_ao_strength": 1.0, "tint": "#cfd2d4", "roughness_add": -0.2, "grime_amount": 0.4, "grime_color": "#2c2a26"}}
+  }
+}

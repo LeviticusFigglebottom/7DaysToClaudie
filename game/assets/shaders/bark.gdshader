@@ -46,7 +46,7 @@ uniform vec4 bloom_aged : source_color = vec4(0.67, 0.63, 0.53, 1.0);
 uniform vec4 bloom_crust : source_color = vec4(0.78, 0.73, 0.6, 1.0);
 uniform float bloom_glow_energy = 0.045;
 
-global uniform float hm_wetness;
+#include "res://assets/shaders/weather.gdshaderinc"
 global uniform float hm_snow;
 
 varying vec3 v_world_normal;
@@ -124,9 +124,13 @@ void fragment() {
 		rough = mix(rough, 0.8, crust);
 		glow_m = threads * body + crust * 0.3;
 	}
-	float wet = hm_wetness * 0.8;
-	alb *= mix(1.0, 0.55, wet);
-	rough = mix(rough, 0.15, wet);
+	// Rain (ADR-0033): bark soaks dark, the side facing into the wind first, and water runs down the
+	// furrows (dark in the AO); its sheen stays satin, not varnish.
+	vec2 wdir = normalize(hm_wind.xy + vec2(1e-4, 0.0));
+	float windward = clamp(dot(normalize(v_world_normal.xz + vec2(1e-4, 0.0)), -wdir) * 0.5 + 0.5, 0.0, 1.0);
+	float wet = hm_wetness * mix(0.6, 1.0, windward) * mix(1.0, 0.8, COLOR.r);
+	alb = wx_wet_albedo(alb, wet, 0.85);
+	rough = mix(rough, max(rough * 0.5, 0.3), wx_film(wet, 0.85));
 	float snow = hm_snow * smoothstep(0.5, 0.85, v_world_normal.y);
 	alb = mix(alb, vec3(0.86, 0.88, 0.92), snow);
 	ALBEDO = alb * mix(1.0, COLOR.r, ao_strength);

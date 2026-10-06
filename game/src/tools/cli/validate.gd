@@ -19,6 +19,7 @@ func _initialize() -> void:
 	print("[validate] content: %s" % content.summary())
 	_check_assets(content, strict)
 	_check_pois()
+	_check_world_gen(content)
 	print("[validate] %d errors, %d warnings" % [_errors, _warnings])
 	quit(1 if _errors > 0 else 0)
 
@@ -66,6 +67,18 @@ func _check_pois() -> void:
 	for w: String in report.get("warnings", []):
 		_warn("poi: " + w)
 	print("[validate] pois: %s" % report.get("summary", ""))
+
+
+## Random worlds (ADR-0031): data/config/world_gen.json against its typed schema (unknown keys,
+## option specs, presets, the places and frameworks its pool names).
+func _check_world_gen(content: Node) -> void:
+	var script: Script = load("res://src/worldgen/rwg/world_gen_settings.gd")
+	if script == null:
+		return
+	var errs: PackedStringArray = script.call(&"schema_errors", content)
+	for e: String in errs:
+		_err("world_gen: " + e)
+	print("[validate] world_gen: %d options, %d presets" % [(script.call(&"options") as Dictionary).size(), (script.call(&"presets") as Dictionary).size()])
 
 
 func _err(msg: String) -> void:

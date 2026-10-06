@@ -1,0 +1,21 @@
+{
+  "_doc": "Containers of the town pool buildings (Suds & Spin Laundromat, Hollowmere Grocery, Bracken Lumber & Feed, Pell County Library, KHLW Valley Radio). Tables in loot/tables/town3.json. Locked ones open with the key named on the placed prop (\"key\") or by force.",
+  "defs": [
+    {"id": "town3_washer", "name": "Washer", "loot_table": "town3_laundry", "slots": 3, "search_time": 1.4, "noise": 3},
+    {"id": "town3_change_machine", "name": "Change Machine", "loot_table": "town3_coins", "slots": 3, "search_time": 2.2, "noise": 8},
+    {"id": "town3_family_hoard", "name": "The Bauers' Stores", "loot_table": "town3_family_hoard", "slots": 8, "search_time": 2.0, "noise": 3},
+    {"id": "town3_household", "name": "Household Aisle", "loot_table": "town3_household", "slots": 6, "search_time": 1.8, "noise": 4},
+    {"id": "town3_cooler", "name": "Dairy Cooler", "loot_table": "town3_cooler", "slots": 4, "search_time": 1.6, "noise": 4},
+    {"id": "town3_butcher_case", "name": "Butcher's Case", "loot_table": "town3_butcher", "slots": 4, "search_time": 1.8, "noise": 5},
+    {"id": "town3_cold_store", "name": "Cold Room Racks", "loot_table": "town3_cold_store", "slots": 8, "search_time": 2.2, "noise": 4},
+    {"id": "town3_reefer", "name": "Reefer Load", "loot_table": "town3_reefer", "slots": 8, "search_time": 2.6, "noise": 6},
+    {"id": "town3_lumber", "name": "Lumber Rack", "loot_table": "town3_lumber", "slots": 6, "search_time": 2.0, "noise": 6},
+    {"id": "town3_feed_store", "name": "Feed Store Shelves", "loot_table": "town3_feed_store", "slots": 6, "search_time": 1.8, "noise": 4},
+    {"id": "town3_bracken_stash", "name": "Walt's Stash", "loot_table": "town3_bracken_stash", "slots": 8, "search_time": 2.4, "noise": 5, "locked": true},
+    {"id": "town3_card_catalog", "name": "Card Catalogue", "loot_table": "town3_card_catalog", "slots": 3, "search_time": 2.4, "noise": 3},
+    {"id": "town3_archive", "name": "Archive Boxes", "loot_table": "town3_archive", "slots": 8, "search_time": 2.6, "noise": 3},
+    {"id": "town3_equipment", "name": "Equipment Rack", "loot_table": "town3_equipment", "slots": 4, "search_time": 2.2, "noise": 5},
+    {"id": "town3_generator", "name": "Generator", "loot_table": "town3_generator", "slots": 3, "search_time": 2.0, "noise": 6},
+    {"id": "town3_relay_cabinet", "name": "Relay Cabinet", "loot_table": "town3_relay_cabinet", "slots": 8, "search_time": 2.4, "noise": 6, "locked": true}
+  ]
+}

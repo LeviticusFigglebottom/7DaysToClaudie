@@ -106,7 +106,7 @@ func run() -> void:
 	_stage("Laying out towns", 0.45)
 	router.setup(terrain, tun.get("roads", {}))
 	for tw: Dictionary in towns:
-		router.block_polygon(tw["poly"], 10.0)
+		router.block_polygon(tw["poly"], 16.0)
 	_road_network()
 	_stage("Building roads", 0.6)
 	_drop_site()
@@ -290,17 +290,24 @@ func _towns() -> void:
 		var name: String = str(pool.pop_at(r.randi() % pool.size())) if not pool.is_empty() else "Town %d" % (ti + 1)
 		var tid: String = _slug(name)
 		var a: float = deg_to_rad(float(best["rot"]))
+		# Roads arrive along the main street's axis: an approach point 22 m out and a lead 46 m out,
+		# where the route over the land starts (a road meeting the entry at an angle swung its last
+		# curve into the pad).
 		var entries: Array[Vector2] = []
+		var approaches: Array[Vector2] = []
 		var leads: Array[Vector2] = []
-		for e: Variant in plan["entries"]:
+		var dirs: Array = plan.get("entry_dirs", [])
+		for ei: int in (plan["entries"] as Array).size():
+			var e: Array = plan["entries"][ei]
 			var local := Vector2(float(e[0]), float(e[1]))
-			var outward := Vector2(-1.0 if local.x < 1.0 else 1.0, 0.0)
+			var outward := Vector2(float(dirs[ei][0]), float(dirs[ei][1])) if ei < dirs.size() else Vector2(-1.0 if local.x < 1.0 else 1.0, 0.0)
 			entries.append((best["origin"] as Vector2) + local.rotated(a))
-			leads.append((best["origin"] as Vector2) + (local + outward * float((tcfg.get("street", {}) as Dictionary).get("entry", 14.0)) * 2.2).rotated(a))
+			approaches.append((best["origin"] as Vector2) + (local + outward * 22.0).rotated(a))
+			leads.append((best["origin"] as Vector2) + (local + outward * 46.0).rotated(a))
 		terrain.flatten(best["poly"], float(best["mean"]), 56.0)
 		towns.append({"id": tid, "name": name, "kind": kind, "fw_id": "%s_%s" % [world_id, tid], "plan": plan,
 			"origin": best["origin"], "rot": best["rot"], "poly": best["poly"], "center": best["center"],
-			"entries": entries, "leads": leads, "cell": cell_at(best["center"]), "tier": [1, 2]})
+			"entries": entries, "approaches": approaches, "leads": leads, "cell": cell_at(best["center"]), "tier": [1, 2]})
 
 
 static func _weighted(w: Dictionary, r: RandomNumberGenerator) -> String:
@@ -377,10 +384,22 @@ func _road_network() -> void:
 		if exits <= 0:
 			break
 		var tw: Dictionary = towns[int(o[1])]
-		var lead_i: int = _edge_side_entry(tw)
-		var from: Vector2 = tw["leads"][lead_i]
-		var to: Vector2 = _edge_point(from)
-		if _add_road(_route_from_entry(tw, lead_i, to), "highway", "%s road" % tw["name"], true):
+		# The easiest way off the map: from either entry to the nearest point of any edge, the
+		# cheapest route (not simply the nearest edge, which in mountains meant switchbacks over a
+		# range).
+		var best_route := PackedVector2Array()
+		var best_cost: float = INF
+		for lead_i: int in (tw["leads"] as Array).size():
+			var from: Vector2 = tw["leads"][lead_i]
+			for to: Vector2 in _edge_points(from):
+				var pts: PackedVector2Array = _route_from_entry(tw, lead_i, to)
+				if pts.is_empty():
+					continue
+				var c: float = router.last_cost
+				if c < best_cost:
+					best_cost = c
+					best_route = pts
+		if _add_road(best_route, "highway", "%s road" % tw["name"], true):
 			exits -= 1
 	if towns.is_empty():
 		# No towns: one county road across the map still gives the land a way through.
@@ -419,6 +438,12 @@ func _edge_side_entry(tw: Dictionary) -> int:
 	return best
 
 
+## The nearest point of each map edge to p (8 m inside it).
+func _edge_points(p: Vector2) -> Array[Vector2]:
+	var e: float = size * 512.0 - 8.0
+	return [Vector2(-e, p.y), Vector2(e, p.y), Vector2(p.x, -e), Vector2(p.x, e)]
+
+
 func _edge_point(p: Vector2) -> Vector2:
 	var e: float = size * 512.0 - 8.0
 	var dx: float = e - absf(p.x)
@@ -430,23 +455,42 @@ func _edge_point(p: Vector2) -> Vector2:
 
 ## Route from a town's entry: the main street's end, its lead-out, then A* to `to`.
 func _route_from_entry(tw: Dictionary, entry: int, to: Vector2) -> PackedVector2Array:
-	var mid: PackedVector2Array = router.route(tw["leads"][entry], to)
+	var mid: PackedVector2Array = router.route(tw["leads"][entry], to, 700.0, 0.9)
 	if mid.is_empty():
 		return mid
-	var out := PackedVector2Array([tw["entries"][entry]])
+	var out := PackedVector2Array([tw["entries"][entry], tw["approaches"][entry]])
 	out.append_array(mid)
 	return out
 
 
 func _connect(ta: Dictionary, ea: int, tb: Dictionary, eb: int, cls: String, name: String) -> void:
-	var mid: PackedVector2Array = router.route(ta["leads"][ea], tb["leads"][eb], 900.0)
-	if mid.is_empty():
+	var a: Vector2 = ta["leads"][ea]
+	var b: Vector2 = tb["leads"][eb]
+	var pieces: Array[Dictionary] = router.route_pieces(a, b, 900.0, 0.9 if cls == "highway" else 0.7)
+	if pieces.is_empty():
 		warnings.append("no road from %s to %s" % [ta["name"], tb["name"]])
 		return
-	var pts := PackedVector2Array([ta["entries"][ea]])
-	pts.append_array(mid)
-	pts.append(tb["entries"][eb])
-	_add_road(pts, cls, name, false)
+	# Where the route meets roads already built it joins them (a T-junction snapped onto the other
+	# road's line) instead of running beside them.
+	for pc: Dictionary in pieces:
+		var mid: PackedVector2Array = pc["points"]
+		var pts := PackedVector2Array()
+		if bool(pc["start_exact"]):
+			pts.append_array([ta["entries"][ea], ta["approaches"][ea]])
+		else:
+			mid[0] = _snap_to_road(mid[0])
+		if not bool(pc["end_exact"]):
+			mid[mid.size() - 1] = _snap_to_road(mid[mid.size() - 1])
+		pts.append_array(mid)
+		if bool(pc["end_exact"]):
+			pts.append_array([tb["approaches"][eb], tb["entries"][eb]])
+		_add_road(pts, cls, name, false)
+
+
+## The nearest point on a road already built (a junction), or p itself when none is near.
+func _snap_to_road(p: Vector2) -> Vector2:
+	var nr: Array = nearest_road(p)
+	return nr[1] if float(nr[0]) < terrain.step * 1.5 else p
 
 
 func _add_road(pts: PackedVector2Array, cls: String, name: String, off_map: bool) -> bool:
@@ -458,25 +502,42 @@ func _add_road(pts: PackedVector2Array, cls: String, name: String, off_map: bool
 		if absf(last.x) > size * 512.0 - 20.0 or absf(last.y) > size * 512.0 - 20.0:
 			var out: Vector2 = (last - pts[pts.size() - 2]).normalized()
 			pts.append(last + out * 60.0)
-	router.mark(pts)
+	router.mark(pts, roads.size())
 	roads.append({"id": "road_%d" % roads.size(), "name": name, "class": cls, "points": pts, "width": float(spec["width"]),
 		"shoulder": float(spec["shoulder"]), "surface": str(spec["surface"]), "markings": cls == "highway", "bridges": [],
 		"line": Polyline2.from_array(Terrain._arr(pts))})
 	return true
 
 
-## The nearest point on any road to p: [distance, point, road index, arc].
-func nearest_road(p: Vector2, classes: PackedStringArray = []) -> Array:
+## The nearest point on any road to p: [distance, point, road index, arc]. `clear_of_towns`: only
+## points at least 30 m outside every town pad (a track must not start on a town's street).
+func nearest_road(p: Vector2, classes: PackedStringArray = [], clear_of_towns: bool = false) -> Array:
 	var best: Array = [INF, p, -1, 0.0]
 	for i: int in roads.size():
 		if not classes.is_empty() and not classes.has(str(roads[i]["class"])):
 			continue
 		var line: Polyline2 = roads[i]["line"]
-		if line.bounds.grow(minf(float(best[0]), 4000.0)).has_point(p) or float(best[0]) == INF:
-			var q: Vector3 = line.closest(p)
-			if q.x < float(best[0]):
-				best = [q.x, line.point_at(q.y), i, q.y]
+		if not clear_of_towns:
+			if line.bounds.grow(minf(float(best[0]), 4000.0)).has_point(p) or float(best[0]) == INF:
+				var q: Vector3 = line.closest(p)
+				if q.x < float(best[0]):
+					best = [q.x, line.point_at(q.y), i, q.y]
+			continue
+		for k: int in line.points.size():
+			var q2: Vector2 = line.points[k]
+			var d: float = q2.distance_to(p)
+			if d >= float(best[0]) or _near_town(q2, 30.0):
+				continue
+			best = [d, q2, i, line.lengths[k]]
 	return best
+
+
+func _near_town(p: Vector2, gap: float) -> bool:
+	for tw: Dictionary in towns:
+		var poly: PackedVector2Array = tw["poly"]
+		if Geometry2D.is_point_in_polygon(p, poly) or Terrain._poly_distance(poly, p) < gap:
+			return true
+	return false
 
 
 ## Clearance (m) between a polygon and every road's edge (shoulder included).
@@ -601,7 +662,8 @@ func _biome_map() -> void:
 			var town_ring: float = 0.0
 			for tw: Dictionary in towns:
 				var d: float = (tw["center"] as Vector2).distance_to(p)
-				town_ring = maxf(town_ring, 1.0 - smoothstep(120.0, 420.0, d))
+				# Cleared ground round a town (yards, pasture), then the trees close in again.
+				town_ring = maxf(town_ring, 1.0 - smoothstep(110.0, 260.0, d))
 			var nc: float = noises[0].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nb: float = noises[1].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nm: float = noises[2].get_noise_2d(p.x, p.y) * 0.5 + 0.5
@@ -610,7 +672,9 @@ func _biome_map() -> void:
 				w[0] * (0.55 + 0.6 * nc),
 				w[1] * (0.3 + 0.85 * nb) * (0.8 + 0.6 * wet),
 				w[2] * (0.25 + 0.95 * nm) * (1.25 - 0.9 * smoothstep(0.05, 0.22, s)) * (1.0 - 0.6 * e) + town_ring * (0.6 + w[2]),
-				w[3] * (smoothstep(0.55, 0.95, e) * 1.6 + smoothstep(0.18, 0.42, s) * 1.3 + 0.12 * nr),
+				# Bare rock on the heights and the steepest ground only: the composer already turns
+				# slopes past ~35 degrees to rock, and highlands should keep their forested sides.
+				w[3] * (smoothstep(0.62, 0.97, e) * 1.5 + smoothstep(0.32, 0.65, s) * 0.8 + 0.1 * nr),
 			]
 			var bi: int = 0
 			for k2: int in range(1, 4):
@@ -839,14 +903,21 @@ func _access(place: Dictionary, kind: String, cand: Dictionary) -> void:
 		var pts := PackedVector2Array([from, from.lerp(to, 0.5), to + (to - from).normalized() * 2.0])
 		_add_road(pts, "drive", "%s drive" % place["def"], false)
 		return
-	var nr: Array = nearest_road(to, ["highway", "county", "track"] if kind == "track" else [])
-	if int(nr[2]) < 0:
+	var nr: Array = nearest_road(to, ["highway", "county", "track"] if kind == "track" else [], true)
+	# Far from any road a place is reached cross-country: a trail kilometres long reads as a
+	# scribble across the map.
+	if int(nr[2]) < 0 or float(nr[0]) > (900.0 if kind == "track" else 700.0):
 		return
 	var start: Vector2 = nr[1]
-	var route: PackedVector2Array = router.route(start, to, 500.0)
+	var route: PackedVector2Array = router.route(start, to, 500.0, 0.6, 1.5 if kind == "trail" else 1.25)
 	if route.size() < 2:
 		return
-	if kind == "track":
+	# A track that would have to wind up a slope (half as long again as the straight line) is a
+	# footpath instead: switchbacks of dirt road read as scribble.
+	var length: float = 0.0
+	for k: int in route.size() - 1:
+		length += route[k].distance_to(route[k + 1])
+	if kind == "track" and length < start.distance_to(to) * 1.5:
 		_add_road(route, "track", "%s track" % place["def"], false)
 	else:
 		paths.append({"id": "%s_trail" % place["id"], "points": route, "width": 1.6, "surface": "dirt"})
