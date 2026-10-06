@@ -209,7 +209,12 @@ func _prepare_poi(job: Dictionary) -> void:
 	_tasks.append(job["task"])
 
 
-## Boot step: builds a prepared building once its check is done (false = not yet, ask again).
+## Main-thread time a building's build takes per call before it yields to the next frame.
+const BUILD_SLICE_MS: float = 8.0
+
+
+## Boot step: builds a prepared building once its check is done, a few PoiBuilder phases per call
+## (ADR-0038: no single frame pays for a whole sawmill); false = not done, ask again next frame.
 func _finish_poi(job: Dictionary) -> bool:
 	var task: int = int(job.get("task", -1))
 	if task >= 0:
@@ -218,7 +223,14 @@ func _finish_poi(job: Dictionary) -> bool:
 		WorkerThreadPool.wait_for_task_completion(task)
 		_tasks.erase(task)
 		job.erase("task")
-	_build_poi(job["pd"], job["id"], job["xf"], job.get("layout"), job.get("checked"))
+	if not job.has("builder"):
+		job["builder"] = PoiBuilder.start(job["layout"], job["id"], job.get("checked"))
+	var b: PoiBuilder = job["builder"]
+	var t0: int = Time.get_ticks_usec()
+	while not b.step():
+		if float(Time.get_ticks_usec() - t0) / 1000.0 >= BUILD_SLICE_MS:
+			return false
+	_place_built(b.root, job["id"], job["xf"])
 	return true
 
 
@@ -227,7 +239,10 @@ func _build_poi(pd: PoiDef, instance_id: StringName, xf: Transform3D, layout: Po
 		layout = PoiLayout.compile(dress_for(pd, instance_id, Game.session))
 		for e: String in layout.errors:
 			Log.warn("poi", e)
-	var inst: PoiInstance = PoiBuilder.build(layout, instance_id, checked)
+	return _place_built(PoiBuilder.build(layout, instance_id, checked), instance_id, xf)
+
+
+func _place_built(inst: PoiInstance, instance_id: StringName, xf: Transform3D) -> PoiInstance:
 	add_child(inst)
 	inst.global_transform = xf
 	instances[instance_id] = inst
