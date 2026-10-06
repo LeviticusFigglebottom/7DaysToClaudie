@@ -55,6 +55,11 @@ func setup_world(w: Node) -> void:
 	_queueing = w.has_method(&"is_booting") and bool(w.call(&"is_booting"))
 	_place_all(w)
 	_queueing = false
+	# Streamed worlds (ADR-0038): a region's buildings come and go with its 1 m terrain.
+	var tm: TerrainManager = w.get(&"terrain") as TerrainManager
+	if tm != null:
+		tm.region_attached.connect(_on_region_attached)
+		tm.region_detached.connect(_on_region_detached)
 
 
 ## The buildings queued by setup_world as [label, Callable, name] boot steps (empties the queue):
@@ -68,13 +73,107 @@ func boot_steps() -> Array:
 
 func _place_all(w: Node) -> void:
 	for rid: String in (w.terrain as TerrainManager).regions:
-		var rt: RegionTerrain = w.terrain.regions[rid]
-		for pl: Dictionary in rt.placements:
-			match str(pl.get("kind", "")):
-				"framework":
-					_place_framework(pl)
-				"poi":
-					_place_poi(StringName(str(pl["def"])), StringName(str(pl["id"])), _placement_xf(pl), Vector2(pl.get("size", [0, 0])[0], pl.get("size", [0, 0])[1]))
+		_place_region(w.terrain.regions[rid])
+
+
+## Places (or queues, see _queueing) a region's buildings and framework fixtures, remembering
+## which region each belongs to.
+func _place_region(rt: RegionTerrain) -> void:
+	_region_now = rt.region_id
+	_placed_regions[rt.region_id] = true
+	for pl: Dictionary in rt.placements:
+		match str(pl.get("kind", "")):
+			"framework":
+				_place_framework(pl)
+			"poi":
+				_place_poi(StringName(str(pl["def"])), StringName(str(pl["id"])), _placement_xf(pl), Vector2(pl.get("size", [0, 0])[0], pl.get("size", [0, 0])[1]))
+	_region_now = ""
+
+
+# --- Regions in and out (ADR-0038, RWG v2 Phase 2: buildings by region until Phase 3's rings) ---
+
+## Region id -> true once its buildings are placed or queued.
+var _placed_regions: Dictionary = {}
+## Instance id -> the region it stands in; fixture bodies by region.
+var _region_of: Dictionary = {}
+var _fixtures: Dictionary = {}
+var _region_now: String = ""
+
+
+## A region attached at runtime: resolve its towns' lots (and generate their houses) on a worker,
+## then queue its buildings as streaming steps, plan first and build after, a few phases a frame.
+func _on_region_attached(rid: String) -> void:
+	if _placed_regions.has(rid):
+		return
+	var tm: TerrainManager = world.terrain
+	var rt: RegionTerrain = tm.regions.get(rid)
+	if rt == null:
+		return
+	var steps: StepRunner = tm.streamer.steps if tm.streamer != null else null
+	if steps == null:
+		_place_region(rt)
+		return
+	_placed_regions[rid] = true
+	var lots: Dictionary = world.get(&"poi_lots") if world.get(&"poi_lots") is Dictionary else {}
+	var seed: int = Game.session.world_seed if Game.session != null else 0
+	var todo: Array = []
+	for pl: Dictionary in rt.placements:
+		if str(pl.get("kind", "")) == "framework" and not lots.has(str(pl["id"])):
+			var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(pl["def"]))) as FrameworkDef
+			if fw != null:
+				todo.append([str(pl["id"]), fw])
+	var out: Array = [{}]
+	var task: int = WorkerThreadPool.add_task(func() -> void:
+		var res: Dictionary = {}
+		for t: Array in todo:
+			var pairs: Array = []
+			for r: Dictionary in Lots.resolve(t[1], t[0], seed):
+				pairs.append([r, null if str(r["kind"]) in ["reserved", "empty"] else Lots.def_for(r)])
+			res[t[0]] = pairs
+		out[0] = res, false, "poi lots %s" % rid)
+	_tasks.append(task)
+	steps.add(["Raising the town…", func() -> bool:
+		if not WorkerThreadPool.is_task_completed(task):
+			return false
+		WorkerThreadPool.wait_for_task_completion(task)
+		_tasks.erase(task)
+		if not _placed_regions.has(rid) or not tm.regions.has(rid):
+			return true
+		lots.merge(out[0])
+		_queueing = true
+		_place_region(rt)
+		_queueing = false
+		steps.insert_next(boot_steps())
+		return true, "poi region %s" % rid], 10.0)
+
+
+## A region detached: its queued building steps are dropped and its buildings and fixtures freed
+## (their state lives in WorldState; sleepers despawn first).
+func _on_region_detached(rid: String) -> void:
+	if not _placed_regions.has(rid):
+		return
+	_placed_regions.erase(rid)
+	var steps: StepRunner = world.terrain.streamer.steps if world.terrain.streamer != null else null
+	if steps != null:
+		steps.cancel("poi region %s" % rid, true)
+	var ai: Node = world.get(&"ai")
+	for id: StringName in _region_of.keys():
+		if _region_of[id] != rid:
+			continue
+		_region_of.erase(id)
+		if steps != null:
+			steps.cancel("poi plan %s" % id, true)
+			steps.cancel("poi %s" % id, true)
+		var inst: PoiInstance = instances.get(id)
+		if inst != null and is_instance_valid(inst):
+			if ai != null:
+				inst.despawn_sleepers(ai)
+			inst.queue_free()
+		instances.erase(id)
+	for body: Node in _fixtures.get(rid, []):
+		if is_instance_valid(body):
+			body.queue_free()
+	_fixtures.erase(rid)
 
 
 static func _placement_xf(pl: Dictionary) -> Transform3D:
@@ -140,6 +239,10 @@ func _place_framework(pl: Dictionary) -> void:
 			body.add_child(cs)
 		add_child(body)
 		body.global_transform = Transform3D(fxf.basis * Basis(Vector3.UP, deg_to_rad(float(f.get("rot", 0.0)))), lp)
+		if _region_now != "":
+			if not _fixtures.has(_region_now):
+				_fixtures[_region_now] = []
+			(_fixtures[_region_now] as Array).append(body)
 
 
 ## A lot's POI frame in its framework: the footprint centred in the rect, its front (+Z) toward
@@ -184,6 +287,8 @@ func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _p
 		return null
 	_placed[instance_id] = {"id": instance_id, "def": pd.id, "name": pd.display_name, "tier": pd.tier,
 		"kind": "generated" if pd.template != &"" else "authored", "pos": xf * Vector3(pd.footprint.x * 0.5, 0.0, pd.footprint.y * 0.5)}
+	if _region_now != "":
+		_region_of[instance_id] = _region_now
 	if _queueing:
 		# Two steps a building: compile it (and start its route check on a worker thread), then,
 		# once every compile has started its check, build it as soon as its check is done.

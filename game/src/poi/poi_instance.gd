@@ -257,8 +257,10 @@ func spawn_sleepers(ai: Node) -> void:
 		if dead.has(sid):
 			continue
 		# Still out hunting from the last visit: it is not back at its post yet.
-		var out: Enemy = _roaming.get(StringName(sid), null)
-		if is_instance_valid(out) and out.is_alive():
+		# Untyped first: the roamer may have been freed meanwhile (despawned far away), and a freed
+		# instance can't be assigned to a typed variable.
+		var out: Variant = _roaming.get(StringName(sid), null)
+		if is_instance_valid(out) and (out as Enemy).is_alive():
 			continue
 		_roaming.erase(StringName(sid))
 		var local: Vector3 = layout.local_pos(s["level"], s["pos"])
