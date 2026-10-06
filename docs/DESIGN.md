@@ -273,7 +273,7 @@ shortcut out, held sleeper groups that ambush on a trigger (a room, a door, a pi
 trap), traps a careful player spots and disarms, lock cues that read at a glance, and a guardian on
 the loot. Below-ground rooms are real cellars cut out of the terrain (TD-026, ADR-0007).
 
-**M1 roster: 22 buildings in Larch Hollow (D6).**
+**M1 roster: 25 buildings in Larch Hollow (D6).**
 
 *Pell's Crossing (town framework `pell_crossing`)*
 
@@ -289,6 +289,9 @@ the loot. Below-ground rooms are real cellars cut out of the terrain (TD-026, AD
 | Northwoods Tavern | 2 | Roadhouse on Route 9 | Front nailed → beer-hatch ladder to the keg cellar → trapdoor behind the bar (keys or the bottle chime wake the bar) → back stairs → Marnie's room (shotgun, guardian, safe) |
 | Pell Ranger Station | 3 | Ranger substation; last log of Deputy Hale | Fenced lot → office (creaky boards, keys) → evidence locker search wakes the cell block → deadbolted security door → shotgun on the evidence room → guardian |
 | Pell Grange Hall | 3 | The town's last shelter, a ward of cots | Barricaded front → stage door → hall of cots (chime ambush) → kitchen triage (bear trap) → sick-bay ambush → records room behind an alarm (guardian) → drop through the rotten balcony |
+| Pell Volunteer Fire Station | 2 | Double-height apparatus bay with the engine still in it; the crew went to the dorm | Bolted watch office, bays padlocked → broken hose-tower door (bear trap) → ladder up the tower to the lookout (station keys) → day room → dorm door (creaky aisle, the dorm wakes) → down the brass pole into the bay ambush → chief's office guardian → unbolt the watch office |
+| Pell's Crossing School | 3 | The Cordon's failed evacuation point: cots in the gym, triage in the nurse's office | Front doors boarded → Mrs Dale's window (bear trap) → classrooms and lockers → teachers' workroom ambush → lights catwalk over the gym (creaky, boiler key) → drop through the rail gap: the families in the cots wake → nurse's triage → boiler-room cellar → isolation behind a shotgun (guardian) → unbolt the back door |
+| Tamsin Valley Savings & Loan | 3 | A bank that closed at three o'clock with a line still waiting | Front bolted → staff-room window → creaky back hall → manager's office (the combination) → the line in the banking hall turns → behind the teller counter → dial the vault (or cut it: ADR-0026, the whole building wakes) → vault guardian → unbolt the front |
 
 *Route 9*
 

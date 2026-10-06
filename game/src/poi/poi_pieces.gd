@@ -131,6 +131,8 @@ class Door:
 	var _target: float = 0.0
 	## Whether the last blow came from a player (an alarm on the door rouses the whole building).
 	var _by_player: bool = true
+	## A vault door has already roused its building (ADR-0026).
+	var _vault_roused: bool = false
 
 	func _ready() -> void:
 		collision_layer = 1 << 1
@@ -168,6 +170,8 @@ class Door:
 				var kd: ItemDef = Content.item(StringName(key))
 				return "Unlock (%s)" % (kd.display_name if kd != null else key)
 			match lock_kind:
+				"vault":
+					return "Vault door: needs the combination (or cut it open)"
 				"padlock":
 					return "Padlocked"
 				"chain":
@@ -187,6 +191,8 @@ class Door:
 				if key != "" and player.state.inventory.has(StringName(key)):
 					unlock(false)
 					Audio.play_3d(&"sfx/door_unlock", global_position + Vector3.UP, {"volume_db": -4.0})
+					if lock_kind == "vault":
+						Audio.play_3d(&"sfx/metal_clang", global_position + Vector3.UP, {"volume_db": -2.0})
 				else:
 					Audio.play_3d(&"sfx/door_locked", global_position + Vector3.UP, {"volume_db": -6.0})
 				return
@@ -240,12 +246,27 @@ class Door:
 		hp -= amount
 		if poi != null and hp > 0.0:
 			poi.call(&"set_piece_hp", op_id, hp)
-		Audio.play_3d(&"sfx/hit_wood_structure", info.hit_pos, {"volume_db": -3.0})
-		FxLibrary.burst(get_parent(), "splinters", info.hit_pos, -info.direction, 0.4)
-		if Stimuli.current != null:
-			Stimuli.current.emit_sound(info.hit_pos, 16.0, &"pound", info.source_id)
+		if lock_kind == "vault" and is_locked():
+			_cut(info)
+		else:
+			Audio.play_3d(&"sfx/hit_wood_structure", info.hit_pos, {"volume_db": -3.0})
+			FxLibrary.burst(get_parent(), "splinters", info.hit_pos, -info.direction, 0.4)
+			if Stimuli.current != null:
+				Stimuli.current.emit_sound(info.hit_pos, 16.0, &"pound", info.source_id)
 		if hp <= 0.0:
 			smash()
+
+	## Cutting at a vault door (ADR-0026): sparks and a screech of steel that carries like an alarm
+	## (held ambushers within their wake radius rise to it), and the first blow a player lands
+	## rouses the whole building, as a set-off alarm does. It takes the opening's hit points.
+	func _cut(info: DamageInfo) -> void:
+		Audio.play_3d(&"sfx/hit_metal", info.hit_pos, {"volume_db": 0.0})
+		FxLibrary.burst(get_parent(), "sparks", info.hit_pos, -info.direction, 0.8)
+		if Stimuli.current != null:
+			Stimuli.current.emit_sound(info.hit_pos, float(PoiPieces.cfg("vault").get("noise", 48.0)), &"alarm", info.source_id)
+		if _by_player and not _vault_roused and poi != null:
+			_vault_roused = true
+			poi.call(&"alarm", info.hit_pos, true)
 
 	func smash() -> void:
 		state = "broken"

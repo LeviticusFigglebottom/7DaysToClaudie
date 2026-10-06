@@ -55,8 +55,9 @@ const TRAP_KEYS: PackedStringArray = ["id", "type", "at", "pos", "offset", "side
 const TRIGGER_ON: PackedStringArray = ["room", "opening", "pickup", "container", "trap"]
 const TRIGGER_KEYS: PackedStringArray = ["id", "group", "on", "room", "level", "opening", "pickup", "prop", "trap", "delay"]
 ## Door lock cues: padlock / chain (breakable, on the side the key opens from), deadbolt (keyed,
-## not breakable), bolt (the default for locked_inside: a sliding bolt on the inside face).
-const LOCK_KINDS: PackedStringArray = ["padlock", "chain", "deadbolt", "bolt"]
+## not breakable), bolt (the default for locked_inside: a sliding bolt on the inside face), vault
+## (ADR-0026: keyed by a combination; cutting through it instead is slow and rouses the building).
+const LOCK_KINDS: PackedStringArray = ["padlock", "chain", "deadbolt", "bolt", "vault"]
 ## Guardians without a group of their own wake when the loot room is entered (implicit trigger).
 const GUARDIAN_GROUP: String = "_guardian"
 const GUARDIAN_TRIGGER: String = "_guardian"
@@ -467,6 +468,8 @@ func _compile_openings(list: Array) -> void:
 		if lock != "" and not LOCK_KINDS.has(lock):
 			err("opening '%s' lock '%s' must be one of %s" % [d.get("id", "op%d" % idx), lock, ", ".join(LOCK_KINDS)])
 			lock = ""
+		if lock == "vault" and (st != "locked" or str(d.get("key", "")) == "" or t != "door"):
+			err("opening '%s': a vault lock goes on a locked door with a key (its combination)" % d.get("id", "op%d" % idx))
 		var op: Dictionary = {
 			"id": str(d.get("id", "op%d" % idx)), "level": int(d.get("level", 0)), "cell": Vector2i(int(at[0]), int(at[1])),
 			"side": SIDES[side_name], "type": t, "state": st, "width": int((OPENING_SPECS[t] as Dictionary)["w"]),
