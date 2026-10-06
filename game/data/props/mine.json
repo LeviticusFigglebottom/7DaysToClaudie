@@ -1,0 +1,428 @@
+{
+ "_doc": "Larkspur Exploration Adit props: the Corvane Mining Co.'s small hard-rock exploration mine (1950s-80s equipment, abandoned during the quarantine) and the limestone cave its drifts broke into. Underground levels use the kit's rock finishes (walls rock_drift / rock_limestone, floors rock_floor / cave_mud; ceilings take the wall names). Models: tools/assetgen/blender/generators/props_mine.py -> models/props/<id>[_worn|_destroyed].glb. size = [width x, height y, depth z] in metres (Godot axes, front +Z), measured from the clean model; footprints are centred on the origin (bottom centre), except mine_safety_board (wall-mounted: origin on the wall plane) and mine_lamp_string (ceiling-mounted: origin on the ceiling plane, hangs down). Each model also ships per-part -convcolonly collision boxes.",
+ "defs": [
+  {
+   "id": "mine_timber_set",
+   "name": "Timber Drift Set",
+   "description": "Two battered square posts and a cap across a drift, lagging boards over the cap and stood behind the posts against the rock, wedges driven up to the back.",
+   "_placement": "3.0 m wide x 2.8 m tall x ~0.4 m deep, free-standing across a 3-cell drift every 2-3 m (posts ~8 cm into the side walls). collision 'none': the POI builder's box-from-size stand-in would close the drift; the model's own -convcolonly boxes are on the posts only (destroyed: one low box over the debris).",
+   "tags": [
+    "family_mine",
+    "wood",
+    "structure",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/mine_timber_set",
+    "worn": "props/mine_timber_set_worn",
+    "destroyed": "props/mine_timber_set_destroyed"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    3.0,
+    2.8,
+    0.42
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mine"
+   ]
+  },
+  {
+   "id": "mine_rail_straight",
+   "name": "Mine Rail",
+   "description": "Three metres of 0.6 m gauge light rail spiked to creosoted sleepers bedded in ballast.",
+   "_placement": "Runs along x (prop-local), ends exactly at x +-1.5: butt pieces end to end. Rail tops at y 0.095 (mine_ore_cart's wheels rest there at the same origin). No collision: walk over it.",
+   "tags": [
+    "family_mine",
+    "metal",
+    "floor"
+   ],
+   "variants": {
+    "clean": "props/mine_rail_straight",
+    "worn": "props/mine_rail_straight_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.0,
+    0.14,
+    1.05
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mine"
+   ]
+  },
+  {
+   "id": "mine_ore_cart",
+   "name": "Side-Tip Ore Car",
+   "description": "A small side-tipping ore car: a U-shaped steel tub on rockers over a channel frame, flanged wheels, timber bumpers, number 17 stencilled on its side.",
+   "_placement": "Runs along x like mine_rail_straight; its wheels sit on rail tops (0.095 m): place it on a rail at the same origin and rotation, or with y -0.095 on bare floor. Worn: loaded with ore. Destroyed: tipped on its side, the load spilled.",
+   "tags": [
+    "family_mine",
+    "metal",
+    "vehicle",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/mine_ore_cart",
+    "worn": "props/mine_ore_cart_worn",
+    "destroyed": "props/mine_ore_cart_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    1.56,
+    0.99,
+    0.87
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mine"
+   ]
+  },
+  {
+   "id": "mine_hoist",
+   "name": "Mine Hoist",
+   "description": "An electric single-drum hoist on timber skids: rope wound on the drum, band brake and weighted lever, a geared motor, the operator's lever and depth dial.",
+   "tags": [
+    "family_mine",
+    "metal",
+    "machine"
+   ],
+   "variants": {
+    "clean": "props/mine_hoist",
+    "worn": "props/mine_hoist_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.53,
+    1.81,
+    1.62
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "mine",
+    "industrial"
+   ]
+  },
+  {
+   "id": "mine_headframe",
+   "name": "Headframe",
+   "description": "A red-oxide steel A-frame headframe over the shaft collar: four-post tower, backstays, the sheave wheel on its deck nine metres up, a ladder and the LARKSPUR No. 1 SHAFT sign.",
+   "_placement": "Exterior landmark over the No. 1 shaft (the collar's opening shows a black drop: stand it where no floor is drawn over it, or accept the void panel at 2 cm). Over 8 m extent: PoiManager never draw-distance culls it. The backstays reach +z (prop-local back): face the hoist house behind it. collision 'mesh': its box-from-size stand-in would enclose the collar and cage landing; place it with the model's own collision boxes (collar, legs, deck).",
+   "tags": [
+    "family_mine",
+    "metal",
+    "structure",
+    "landmark"
+   ],
+   "variants": {
+    "clean": "props/mine_headframe",
+    "worn": "props/mine_headframe_worn"
+   },
+   "collision": "mesh",
+   "physics": "static",
+   "size": [
+    3.2,
+    9.44,
+    4.4
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "mine_cage",
+   "name": "Shaft Cage",
+   "description": "The shaft's man cage: a steel frame with sheet and wire-mesh sides, a bridle and rope socket on the roof, guide shoes, a scissor gate folded back across the open front.",
+   "_placement": "Open front +z. collision 'mesh': the model has floor, side, back and roof boxes so a player can step in; the box-from-size stand-in would fill it.",
+   "tags": [
+    "family_mine",
+    "metal",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/mine_cage",
+    "worn": "props/mine_cage_worn"
+   },
+   "collision": "mesh",
+   "physics": "static",
+   "size": [
+    1.74,
+    2.52,
+    1.38
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mine"
+   ]
+  },
+  {
+   "id": "mine_rock_face",
+   "name": "Rock Face",
+   "description": "A blasted granite face, chunky and faceted, with fallen blocks at its foot.",
+   "_placement": "Stand against a kit wall ('against') to break the 1 m grid: the back is flat at the wall, the outline ragged; 2.8 m tall to the ceiling.",
+   "tags": [
+    "family_mine",
+    "rock",
+    "cave"
+   ],
+   "variants": {
+    "clean": "props/mine_rock_face",
+    "worn": "props/mine_rock_face_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.0,
+    2.9,
+    0.73
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "mine",
+    "cave"
+   ]
+  },
+  {
+   "id": "mine_rock_face_b",
+   "name": "Rock Face (Ledge)",
+   "description": "A granite face with an overhanging ledge over a recess.",
+   "_placement": "As mine_rock_face.",
+   "tags": [
+    "family_mine",
+    "rock",
+    "cave"
+   ],
+   "variants": {
+    "clean": "props/mine_rock_face_b",
+    "worn": "props/mine_rock_face_b_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.0,
+    2.9,
+    0.75
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "mine",
+    "cave"
+   ]
+  },
+  {
+   "id": "mine_rock_face_c",
+   "name": "Flowstone Wall",
+   "description": "A rounded limestone cave wall draped in flowstone, small stalagmites at its foot.",
+   "_placement": "As mine_rock_face; matches the rock_limestone wall finish.",
+   "tags": [
+    "family_mine",
+    "rock",
+    "cave"
+   ],
+   "variants": {
+    "clean": "props/mine_rock_face_c",
+    "worn": "props/mine_rock_face_c_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.0,
+    2.9,
+    0.64
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "cave"
+   ]
+  },
+  {
+   "id": "mine_rock_pile",
+   "name": "Rock Fall",
+   "description": "A mound of broken rock and boulders where the back came down.",
+   "tags": [
+    "family_mine",
+    "rock",
+    "debris"
+   ],
+   "variants": {
+    "clean": "props/mine_rock_pile",
+    "worn": "props/mine_rock_pile_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.38,
+    1.15,
+    1.73
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "mine",
+    "cave"
+   ]
+  },
+  {
+   "id": "mine_stalagmites",
+   "name": "Stalagmites",
+   "description": "A cluster of limestone stalagmites rising from a flowstone boss.",
+   "tags": [
+    "family_mine",
+    "rock",
+    "cave"
+   ],
+   "variants": {
+    "clean": "props/mine_stalagmites",
+    "worn": "props/mine_stalagmites_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.24,
+    1.75,
+    1.04
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "cave"
+   ]
+  },
+  {
+   "id": "mine_lamp_string",
+   "name": "Drift Lights",
+   "description": "A string of caged bulbs on a sagging cable hooked to the back of the drift.",
+   "_placement": "ceiling_mounted: origin on the ceiling plane, 3 m along x; light at the middle bulb (place lit: true where the mine generator runs).",
+   "tags": [
+    "family_mine",
+    "ceiling_mounted",
+    "light",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/mine_lamp_string",
+    "worn": "props/mine_lamp_string_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 20,
+   "size": [
+    3.04,
+    0.41,
+    0.09
+   ],
+   "light": {
+    "color": "#ffc98a",
+    "energy": 0.7,
+    "range": 6.5,
+    "flicker": 0.08,
+    "offset": [
+     0.0,
+     -0.3,
+     0.0
+    ],
+    "power": "generator",
+    "variants": {
+     "worn": {
+      "energy": 0.45,
+      "flicker": 0.2
+     }
+    }
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "mine"
+   ]
+  },
+  {
+   "id": "mine_powder_box",
+   "name": "Explosives Box",
+   "description": "A wooden box stencilled HIGH EXPLOSIVES - DANGEROUS, 50 LBS DYNAMITE on the ends.",
+   "tags": [
+    "family_mine",
+    "wood",
+    "storage"
+   ],
+   "variants": {
+    "clean": "props/mine_powder_box",
+    "worn": "props/mine_powder_box_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.9,
+    0.48,
+    0.55
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "mine",
+    "storage"
+   ],
+   "container": "mine_powder_box"
+  },
+  {
+   "id": "mine_tool_rack",
+   "name": "Tool Rack",
+   "description": "A timber rack of picks hung by their heads, shovels in the trough and a bundle of drill steels.",
+   "_placement": "Floor-standing, back to a wall ('against').",
+   "tags": [
+    "family_mine",
+    "wood",
+    "storage",
+    "tools"
+   ],
+   "variants": {
+    "clean": "props/mine_tool_rack",
+    "worn": "props/mine_tool_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.67,
+    1.8,
+    0.34
+   ],
+   "container": "toolbox",
+   "blocks_sight": true,
+   "rooms": [
+    "mine",
+    "storage"
+   ]
+  },
+  {
+   "id": "mine_safety_board",
+   "name": "Check Board",
+   "description": "The shift boss's board: a SAFETY FIRST notice, the chalk shift tally and the brass check tags of the men on shift. Some tags are missing: they never came up.",
+   "_placement": "wall_mounted: origin on the wall plane at the board's bottom centre; hang with height ~0.9.",
+   "tags": [
+    "family_mine",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/mine_safety_board",
+    "worn": "props/mine_safety_board_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.4,
+    1.2,
+    0.24
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "mine"
+   ]
+  }
+ ]
+}

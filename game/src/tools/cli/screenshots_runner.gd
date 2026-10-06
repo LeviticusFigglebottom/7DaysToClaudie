@@ -123,7 +123,8 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "wx_mist_forest_dawn", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 3.0, 2283), "hour": 6.9, "weather": "mist", "wet": 0.4},
 ]
 
-## The wilderness set pieces of round 3 (DESIGN §11), shot on a random world that placed them: run with
+## The wilderness set pieces of round 3 (DESIGN §11), shot on a random world that placed them (the main
+## map takes those it placed, after SHOTS): run with
 ## main.gd's world arguments (`--world random --world-seed 12 --world-set size=4 --world-set wilderness=2.5`)
 ## and `--only` naming some of these. Positions are in the building's own footprint (metres from its
 ## corner, y above its pad), resolved against wherever the world stood it; a building the world did not
@@ -143,6 +144,11 @@ const POI_SHOTS: Array[Dictionary] = [
 	{"name": "w3_haldane_approach", "poi": "haldane_place", "at": Vector3(20.0, 1.8, 39.8), "look": Vector3(20.0, 2.0, 24.0), "hour": 10.0, "weather": "clear"},
 	{"name": "w3_haldane_yard", "poi": "haldane_place", "at": Vector3(32.5, 2.2, 20.0), "look": Vector3(14.0, 1.0, 18.0), "hour": 15.5, "weather": "clear"},
 	{"name": "w3_haldane_bunker_night", "poi": "haldane_place", "at": Vector3(19.6, -0.95, 15.4), "look": Vector3(25.5, -1.8, 17.0), "hour": 23.0, "weather": "clear"},
+	# The Corvane Larkspur Adit (ADR-0044; D6 places it on the main map): the yard and the headframe,
+	# then the buried levels by the player's light alone: the No. 1 Level drift, the grotto.
+	{"name": "adit_approach", "poi": "corvane_larkspur_adit", "at": Vector3(8.0, 1.8, 24.0), "look": Vector3(13.0, 3.0, 9.0), "hour": 16.5, "weather": "overcast"},
+	{"name": "adit_drift", "poi": "corvane_larkspur_adit", "at": Vector3(21.5, -1.1, 8.5), "look": Vector3(40.0, -1.7, 8.5), "hour": 13.0, "weather": "clear", "light": true},
+	{"name": "adit_grotto", "poi": "corvane_larkspur_adit", "at": Vector3(56.0, -4.1, 6.0), "look": Vector3(63.0, -5.0, 2.0), "hour": 13.0, "weather": "clear", "light": true},
 ]
 
 const ProbeBudget := preload("res://src/poi/interior_probe_budget.gd")
@@ -348,7 +354,11 @@ func _run() -> void:
 	# amount every run).
 	(w.get(&"clock_driver") as WorldClockDriver).paused = true
 	_mem_report("world ready")
-	for shot: Dictionary in (_poi_shots(w) if random_world else SHOTS):
+	# The main map takes the POI shots of the buildings it placed too (the Corvane adit in D6).
+	var shots: Array[Dictionary] = _poi_shots(w)
+	if not random_world:
+		shots = SHOTS.duplicate() + shots
+	for shot: Dictionary in shots:
 		if not _only.is_empty() and not _only.has(str(shot["name"])):
 			continue
 		await _shoot(w, cam, p, shot)

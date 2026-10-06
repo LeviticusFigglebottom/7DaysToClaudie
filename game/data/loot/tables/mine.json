@@ -1,0 +1,107 @@
+{
+ "_doc": "Loot tables of the Corvane Larkspur Adit (containers/mine.json). The survey cache always holds a Bloom core sample.",
+ "defs": [
+  {
+   "id": "mine_powder_box",
+   "rolls": [
+    1,
+    3
+   ],
+   "empty_chance": 0.15,
+   "entries": [
+    {
+     "item": "cordage",
+     "weight": 6,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "lighter",
+     "weight": 3
+    },
+    {
+     "item": "duct_tape",
+     "weight": 3
+    },
+    {
+     "item": "scrap_metal",
+     "weight": 3,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "repair_kit",
+     "weight": 1,
+     "tier_min": 2
+    },
+    {
+     "item": "nails",
+     "weight": 3,
+     "count": [
+      4,
+      12
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mine_survey_cache",
+   "rolls": [
+    2,
+    4
+   ],
+   "empty_chance": 0.0,
+   "entries": [
+    {
+     "item": "first_aid_kit",
+     "weight": 3
+    },
+    {
+     "item": "antifungal",
+     "weight": 3
+    },
+    {
+     "item": "flashlight",
+     "weight": 3
+    },
+    {
+     "item": "repair_kit",
+     "weight": 2
+    },
+    {
+     "item": "scrip",
+     "weight": 4,
+     "count": [
+      15,
+      40
+     ]
+    },
+    {
+     "item": "water_bottle_clean",
+     "weight": 3,
+     "count": [
+      1,
+      2
+     ]
+    },
+    {
+     "table": "weapons_rare",
+     "weight": 2
+    }
+   ],
+   "guaranteed": [
+    {
+     "item": "bloom_sample",
+     "count": [
+      1,
+      1
+     ]
+    }
+   ]
+  }
+ ]
+}

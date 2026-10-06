@@ -15,7 +15,9 @@
     "siding_pale_blue",
     "siding_barn_red",
     "brick_red",
-    "concrete_block"
+    "concrete_block",
+    "rock_drift",
+    "rock_limestone"
   ],
   "floor": [
     "wood_oak",
@@ -25,6 +27,8 @@
     "linoleum_check",
     "linoleum_beige",
     "tile_white_small",
-    "concrete"
+    "concrete",
+    "rock_floor",
+    "cave_mud"
   ]
 }

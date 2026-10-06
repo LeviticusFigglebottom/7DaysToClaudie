@@ -296,6 +296,50 @@
       "note": "Collapsed cave mouth in the cliff; opens in M2."
     },
     {
+      "type": "poi",
+      "id": "corvane_larkspur_adit",
+      "poi": "corvane_larkspur_adit",
+      "origin": [
+        -385.0,
+        2183.0
+      ],
+      "rotation": 180,
+      "size": [
+        24,
+        14
+      ],
+      "skirt": 6,
+      "biome": "meadow"
+    },
+    {
+      "type": "path",
+      "id": "adit_track",
+      "surface": "dirt",
+      "width": 3.0,
+      "points": [
+        [
+          -292.0,
+          2290.0
+        ],
+        [
+          -318.0,
+          2262.0
+        ],
+        [
+          -345.0,
+          2228.0
+        ],
+        [
+          -375.0,
+          2200.0
+        ],
+        [
+          -396.0,
+          2189.0
+        ]
+      ]
+    },
+    {
       "type": "frontier",
       "id": "cordon_south",
       "pos": [

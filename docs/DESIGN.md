@@ -77,7 +77,7 @@ repair, learn what the horde learned (the tether's *Hum forecast*), plan the nex
 | Gathering from environment | Trees fall physically and leave stumps; sticks, stones, fibre, boughs, berries, mushrooms, bones | M1 |
 | Diegetic UI | Salvage roll inventory on the ground, crafting on the work slate, Remand Field Manual (guidebook), wrist tether (GPS/vitals/countdown), minimal HUD | M1 |
 | Intelligent humanoid enemies | The Ashen: tribes with camps, routines, scouting, fear of fire, morale, escalation | M2 |
-| Cave networks | The Corvane caves (lightless, key items, the mine and the Root) | M2 |
+| Cave networks | The Corvane caves (lightless, key items, the mine and the Root): the Larkspur Adit landed (ADR-0044) | M2 🟡 |
 | AI companion | Ezra Vane, an earlier Remand convict (ex-lineman) — follow, gather, guard, fetch | M2 |
 | Survival stats & seasons | Health, stamina, fullness, hydration, rest, body temperature, wetness, bleeding, Bloom infection; four seasons, snow, freezing water | M1 stats / M3 seasons |
 | Stealth, light, noise, fire | Shared stimulus fields (sight/sound/scent) drive all AI; fire warms and attracts | M1 |
