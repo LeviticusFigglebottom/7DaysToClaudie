@@ -8,8 +8,8 @@ way it never conflicts.
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
 | Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O (random worlds), P (pool buildings), Q (weather) | Random worlds v2 (big streaming maps, organic towns); full screenshot QA |
-| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Third block merged (dd01229); previewing it and checking it with no generated assets | Hollowed hounds and Murmurs (ADR-0034), then base-building fidelity (ADR-0035) |
-| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Downloadable builds with assets; the player-reported freeze and crash | A performance pass for real GPUs (TD-003) |
+| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Hollowed hounds and Murmurs (ADR-0034); the third block is merged (dd01229, 437535c) | Base-building fidelity (ADR-0035) |
+| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | The load stall (buildings built in boot steps, validators on workers), thread races in terrain and vegetation | The 4.7.2 notice, a rendered probe-atlas check, downloadable builds, then a performance pass (TD-003) |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -33,8 +33,8 @@ way it never conflicts.
 | Random worlds (O, ADR-0031) | integrator | `game/src/worldgen/**`, `game/src/ui/new_game_panel.gd`, `game/data/config/world_gen.json`, `game/src/tools/cli/rwg_*` |
 | Pool buildings (P) | integrator | `game/data/props/town3.json`, `props_town3.py`, the laundromat, grocery, lumber & feed, library and radio station JSONs |
 | Weather (Q, ADR-0033) | integrator | `game/src/world/environment/**`, `game/src/world/fx/` (rain, snow), the weather hunks in every shader, rain and thunder audio |
-| Town buildings (ADR-0026, merged; polish only) | session 2 | the school, fire station and bank JSONs, `game/data/props/town2.json` and its generators, the vault lock kind |
-| Builds and stability | session 3 | `.github/workflows/` (new export jobs), `game/export_presets.cfg`, the load sequence (`game/src/app/game_world.gd`, `world_loader.gd`) and fixes it reports to the hub |
+| Hounds and Murmurs (ADR-0034) | session 2 | new enemy defs in `game/data/enemies/`, their generators and populations, additive hunks in `game/src/ai/` (quadruped and flock pipelines) |
+| Builds and stability | session 3 | `.github/workflows/` (new export jobs), `game/export_presets.cfg`, the load sequence (`game/src/app/game_world.gd`, `world_loader.gd`, `PoiManager`'s placement path, `PoiBuilder.build`'s validator argument), thread-safety fixes in `game/src/world/terrain/` and `game/src/world/vegetation/`, and fixes it reports to the hub |
 
 ## Allocations
 * ADR: 0026 (vault, S2), 0027 (wildlife, S2), 0031 (random worlds), 0032 (pool, if needed),
