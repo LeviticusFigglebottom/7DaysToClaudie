@@ -16,7 +16,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: smoke check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: smoke tour export check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview
 
@@ -72,6 +72,9 @@ import: ## Import project resources headless (required before tests on a fresh c
 
 smoke: ## Headless end-to-end run of the slice (world, trees, building, crafting, AI, Hum, save/load)
 	@$(GODOT_HEADLESS) -s res://src/tools/cli/slice_smoke.gd
+
+tour: ## Headless walk tour: the player runs into, hits and uses every kind of thing (crash hunt, ADR-0036)
+	@$(GODOT_HEADLESS) -s res://src/tools/cli/walk_tour.gd -- $(TOUR_ARGS)
 
 validate: ## Validate content, asset references and POIs
 	@$(GODOT_HEADLESS) -s res://src/tools/cli/validate.gd -- $(VALIDATE_ARGS)
