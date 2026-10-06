@@ -1,0 +1,1364 @@
+{
+ "_doc": "Tier-2 pool building (random towns, civic lots): a veterans' post - canteen bar, the hall (honor wall, bingo tables), the commander's office, a kitchen and, under it, the cellar with the quartermaster's cage where the fall raffle prize waits. Route: the front doors are chained from inside -> round the back: the kitchen door kicked in -> the kitchen -> the hall (the families who sheltered there) -> the bar: the cage key in the till (taking it wakes the hall: ambush) -> the back hall, down the cellar stair -> the cellar stores -> the cage: the quartermaster guards it -> back up and out through the vestibule, unchaining the front doors. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "vfw_post",
+   "name": "Veterans' Post",
+   "tier": 2,
+   "zoning": [
+    "civic"
+   ],
+   "footprint": [
+    24,
+    22
+   ],
+   "origin": [
+    2,
+    3
+   ],
+   "author": "Hollowmere team",
+   "population": "church",
+   "story": "The post had bingo on Thursdays and a fish fry on Fridays. When the radio said shelter in place the commander opened the hall to anyone who needed it, and forty people slept on the bingo tables. The quartermaster kept the cellar: the post's canned stores and the fall raffle prize, a .38 in a walnut presentation box. He said nobody was getting the raffle prize before the draw. Somebody got sick in the hall on the fifth night, and he went down to the cage and locked it from inside.",
+   "style": {
+    "exterior": "brick_red",
+    "interior": "wood_paneling_dark",
+    "floor": "wood_oak",
+    "ceiling": "plaster_white",
+    "floor_height": 0.2,
+    "decay": 0.45,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.4
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "x",
+     "pitch": 24,
+     "overhang": 0.45,
+     "material": "roof_shingle",
+     "color": "#3b3a38"
+    },
+    "porch": {
+     "side": "S",
+     "from": 13,
+     "to": 19,
+     "depth": 2,
+     "steps": [
+      16
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": -1,
+     "plan": [
+      "SSSSSSSSSQQQQQ      ",
+      "SSSSSSSSSQQQQQ      ",
+      "SSSSSSSSSQQQQQ      ",
+      "SSSSSSSSSQQQQQ      ",
+      "SSSSSSSSSQQQQQ      ",
+      "SSSSSSSSSQQQQQ      "
+     ],
+     "rooms": {
+      "S": {
+       "name": "Cellar stores",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "wood_paneling_dark"
+      },
+      "Q": {
+       "name": "Quartermaster's cage",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "wood_paneling_dark"
+      }
+     }
+    },
+    {
+     "level": 0,
+     "plan": [
+      "KKKKKKCCOOOOOOWWWWWW",
+      "KKKKKKCCOOOOOOWWWWWW",
+      "KKKKKKCCOOOOOOWWWWWW",
+      "KKKKKKCCOOOOOOWWWWWW",
+      "KKKKKKCCOOOOOOWWWWWW",
+      "HHHHHHHHHHHHHBBBBBBB",
+      "HHHHHHHHHHHHHBBBBBBB",
+      "HHHHHHHHHHHHHBBBBBBB",
+      "HHHHHHHHHHHHHBBBBBBB",
+      "HHHHHHHHHHHHHBBBBBBB",
+      "HHHHHHHHHHHHHBBBBBBB",
+      "HHHHHHHHHHHHHBBBBBBB",
+      "HHHHHHHHHHHHHVVVVVVV",
+      "HHHHHHHHHHHHHVVVVVVV",
+      "HHHHHHHHHHHHHVVVVVVV"
+     ],
+     "rooms": {
+      "K": {
+       "name": "Kitchen",
+       "type": "kitchen",
+       "wall": "tile_kitchen_check",
+       "floor": "linoleum_beige"
+      },
+      "C": {
+       "name": "Back hall",
+       "type": "hallway",
+       "wall": "plaster_grey",
+       "floor": "linoleum_beige"
+      },
+      "O": {
+       "name": "Commander's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_brown"
+      },
+      "W": {
+       "name": "Restrooms",
+       "type": "bath",
+       "wall": "tile_bathroom_white",
+       "floor": "tile_white_small"
+      },
+      "H": {
+       "name": "Post hall",
+       "type": "living",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak"
+      },
+      "B": {
+       "name": "Canteen",
+       "type": "bar",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak"
+      },
+      "V": {
+       "name": "Vestibule",
+       "type": "hallway",
+       "wall": "plaster_grey",
+       "floor": "linoleum_beige"
+      }
+     }
+    }
+   ],
+   "stairs": [
+    {
+     "level": -1,
+     "at": [
+      6,
+      4
+     ],
+     "dir": "N"
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      16,
+      14
+     ],
+     "side": "S",
+     "type": "door2",
+     "state": "locked_inside",
+     "lock": "chain"
+    },
+    {
+     "id": "kitchen_back",
+     "at": [
+      0,
+      2
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "broken"
+    },
+    {
+     "id": "vest_bar",
+     "at": [
+      16,
+      12
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "vest_hall",
+     "at": [
+      13,
+      13
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "bar_hall",
+     "at": [
+      13,
+      8
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "hall_kitchen",
+     "at": [
+      3,
+      5
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "kitchen_backhall",
+     "at": [
+      5,
+      1
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "hall_backhall",
+     "at": [
+      7,
+      5
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "office_door",
+     "at": [
+      10,
+      5
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "rest_door",
+     "at": [
+      16,
+      4
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "cage_door",
+     "at": [
+      9,
+      3
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "locked",
+     "level": -1,
+     "key": "town4_vfw_cage_key",
+     "lock": "padlock",
+     "model": "door_metal",
+     "hp": 800
+    },
+    {
+     "id": "hall_window_w",
+     "at": [
+      0,
+      9
+     ],
+     "side": "W",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "hall_window_s1",
+     "at": [
+      3,
+      14
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "hall_window_s2",
+     "at": [
+      9,
+      14
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "broken"
+    },
+    {
+     "id": "bar_window",
+     "at": [
+      19,
+      8
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "vest_window",
+     "at": [
+      19,
+      13
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "office_window",
+     "at": [
+      11,
+      0
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "kitchen_window",
+     "at": [
+      2,
+      0
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "rest_window",
+     "at": [
+      17,
+      0
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    }
+   ],
+   "props": [
+    {
+     "id": "kitchen_sink",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      2,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "kitchen_counter_1",
+     "prop": "kitchen_counter",
+     "at": [
+      3,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "kitchen_counter_2",
+     "prop": "kitchen_counter",
+     "at": [
+      4,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "kitchen_stove",
+     "prop": "stove_old",
+     "at": [
+      1,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "kitchen_fridge",
+     "prop": "fridge_old",
+     "at": [
+      0,
+      4
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "prop": "kitchen_table",
+     "pos": [
+      4.6,
+      2.8
+     ],
+     "rot": 0
+    },
+    {
+     "id": "kitchen_bin",
+     "prop": "trash_can_kitchen",
+     "pos": [
+      5.4,
+      4.4
+     ]
+    },
+    {
+     "id": "stair_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      7,
+      1
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "cmd_desk",
+     "prop": "office_desk",
+     "at": [
+      11,
+      1
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      11.5,
+      2.6
+     ],
+     "rot": 180
+    },
+    {
+     "id": "cmd_files",
+     "prop": "filing_cabinet",
+     "at": [
+      13,
+      3
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "civic_trophy_case",
+     "at": [
+      8,
+      2
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "office_coats",
+     "prop": "civic_coat_rack",
+     "pos": [
+      13.4,
+      4.4
+     ]
+    },
+    {
+     "prop": "sink_pedestal",
+     "at": [
+      15,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "toilet",
+     "at": [
+      19,
+      1
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "toilet",
+     "at": [
+      19,
+      3
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "honor_wall",
+     "prop": "vfw_honor_wall",
+     "at": [
+      6,
+      14
+     ],
+     "against": "S",
+     "rot": 180
+    },
+    {
+     "id": "memorial",
+     "prop": "vfw_memorial_case",
+     "at": [
+      12,
+      10
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "vfw_flag_stand",
+     "pos": [
+      0.6,
+      13.4
+     ],
+     "rot": 45
+    },
+    {
+     "prop": "vfw_flag_stand",
+     "pos": [
+      0.6,
+      5.6
+     ],
+     "rot": 135,
+     "variant": "worn"
+    },
+    {
+     "id": "hall_lectern",
+     "prop": "civic_stage_lectern",
+     "pos": [
+      1.0,
+      9.5
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      4.0,
+      9.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      8.0,
+      9.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      4.0,
+      11.4
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      8.0,
+      11.4
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      3.2,
+      9.8
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      4.8,
+      9.9
+     ],
+     "rot": 350
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      7.4,
+      8.2
+     ],
+     "rot": 190
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      8.8,
+      12.2
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      3.5,
+      12.2
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      10.2,
+      10.0
+     ],
+     "rot": 95
+    },
+    {
+     "prop": "barricade_mattress",
+     "pos": [
+      6.0,
+      13.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "barricade_mattress",
+     "pos": [
+      10.6,
+      13.1
+     ],
+     "rot": 80,
+     "variant": "worn"
+    },
+    {
+     "id": "hall_suitcase",
+     "prop": "road_suitcase",
+     "pos": [
+      11.8,
+      11.8
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      6.0,
+      10.4
+     ],
+     "rot": 30
+    },
+    {
+     "id": "bar_counter",
+     "prop": "civic_bar_counter",
+     "pos": [
+      16.5,
+      7.0
+     ],
+     "rot": 0
+    },
+    {
+     "id": "bar_taps",
+     "prop": "vfw_bar_taps",
+     "at": [
+      18,
+      5
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "till",
+     "prop": "cash_register",
+     "pos": [
+      17.6,
+      7.0
+     ],
+     "y": 1.1,
+     "rot": 180
+    },
+    {
+     "id": "back_bar",
+     "prop": "civic_back_bar",
+     "at": [
+      15,
+      5
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "civic_bar_stool",
+     "pos": [
+      15.2,
+      8.2
+     ]
+    },
+    {
+     "prop": "civic_bar_stool",
+     "pos": [
+      16.4,
+      8.3
+     ]
+    },
+    {
+     "prop": "civic_bar_stool",
+     "pos": [
+      17.6,
+      8.1
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "civic_jukebox",
+     "at": [
+      19,
+      10
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "civic_pool_table",
+     "pos": [
+      16.4,
+      10.4
+     ],
+     "rot": 90
+    },
+    {
+     "id": "vest_coats",
+     "prop": "civic_coat_rack",
+     "pos": [
+      13.6,
+      13.4
+     ]
+    },
+    {
+     "id": "stores_1",
+     "prop": "metal_shelf",
+     "at": [
+      0,
+      0
+     ],
+     "against": "N",
+     "level": -1,
+     "container": "civic_pantry_shelf",
+     "rot": 0
+    },
+    {
+     "id": "stores_2",
+     "prop": "metal_shelf",
+     "at": [
+      1,
+      0
+     ],
+     "against": "N",
+     "level": -1,
+     "variant": "worn",
+     "container": "civic_pantry_shelf",
+     "rot": 0
+    },
+    {
+     "id": "stores_3",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      0,
+      3
+     ],
+     "against": "W",
+     "level": -1,
+     "rot": 90
+    },
+    {
+     "id": "stores_keg",
+     "prop": "civic_keg",
+     "pos": [
+      3.5,
+      4.6
+     ],
+     "level": -1
+    },
+    {
+     "id": "stores_keg_2",
+     "prop": "civic_keg",
+     "pos": [
+      4.4,
+      4.8
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "stores_crate",
+     "prop": "crate_wood",
+     "pos": [
+      2.6,
+      2.4
+     ],
+     "rot": 15,
+     "level": -1
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      7.6,
+      0.5
+     ],
+     "level": -1,
+     "lit": true
+    },
+    {
+     "id": "cage_locker",
+     "prop": "weapons_locker",
+     "at": [
+      11,
+      0
+     ],
+     "against": "N",
+     "level": -1,
+     "rot": 0
+    },
+    {
+     "id": "cage_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      13,
+      4
+     ],
+     "against": "E",
+     "level": -1,
+     "container": "town4_vfw_raffle",
+     "rot": 270
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      10.6,
+      4.4
+     ],
+     "rot": 200,
+     "level": -1
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "cook",
+     "pos": [
+      2.0,
+      1.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 0
+    },
+    {
+     "id": "crowd_1",
+     "pos": [
+      2.0,
+      12.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "crowd",
+     "anchor": "floor",
+     "alt": "crowd:on_the_tables"
+    },
+    {
+     "id": "crowd_2",
+     "pos": [
+      11.6,
+      9.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 270,
+     "group": "crowd",
+     "anchor": "floor",
+     "alt": "crowd:on_the_tables"
+    },
+    {
+     "id": "crowd_3",
+     "pos": [
+      6.0,
+      13.0
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "crowd",
+     "anchor": "floor",
+     "alt": "crowd:on_the_tables"
+    },
+    {
+     "id": "crowd_4",
+     "pos": [
+      10.6,
+      13.1
+     ],
+     "enemy": "lurcher",
+     "pose": "lie",
+     "rot": 80,
+     "group": "crowd",
+     "anchor": "floor",
+     "alt": "crowd:on_the_tables"
+    },
+    {
+     "id": "crowd_1",
+     "pos": [
+      3.2,
+      9.8
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 10,
+     "group": "crowd",
+     "anchor": "floor",
+     "alt": "crowd:at_bingo"
+    },
+    {
+     "id": "crowd_2",
+     "pos": [
+      8.8,
+      12.2
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "group": "crowd",
+     "anchor": "floor",
+     "alt": "crowd:at_bingo"
+    },
+    {
+     "id": "crowd_3",
+     "pos": [
+      10.2,
+      10.0
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 95,
+     "group": "crowd",
+     "anchor": "floor",
+     "alt": "crowd:at_bingo"
+    },
+    {
+     "id": "crowd_4",
+     "pos": [
+      1.6,
+      9.5
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 90,
+     "group": "crowd",
+     "alt": "crowd:at_bingo"
+    },
+    {
+     "id": "barman",
+     "pos": [
+      18.4,
+      6.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180
+    },
+    {
+     "id": "quartermaster",
+     "pos": [
+      10.6,
+      4.4
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 200,
+     "guardian": true,
+     "level": -1
+    }
+   ],
+   "pickups": [
+    {
+     "id": "cage_key",
+     "item": "town4_vfw_cage_key",
+     "pos": [
+      17.0,
+      7.0
+     ],
+     "y": 1.1
+    }
+   ],
+   "notes": [
+    {
+     "note": "town4_vfw_bulletin",
+     "pos": [
+      13.0,
+      13.8
+     ]
+    },
+    {
+     "note": "town4_vfw_minutes",
+     "pos": [
+      11.8,
+      1.2
+     ],
+     "y": 0.78
+    },
+    {
+     "note": "town4_vfw_qm",
+     "pos": [
+      10.4,
+      2.0
+     ],
+     "level": -1
+    }
+   ],
+   "traps": [
+    {
+     "id": "cage_shotgun",
+     "type": "shotgun",
+     "at": [
+      9,
+      3
+     ],
+     "side": "W",
+     "level": -1,
+     "alt": "cage:rigged"
+    },
+    {
+     "id": "stair_cans",
+     "type": "can_chime",
+     "at": [
+      6,
+      4
+     ],
+     "side": "S",
+     "level": -1,
+     "alt": "cage:canned"
+    },
+    {
+     "id": "bar_boards",
+     "type": "creaky_floor",
+     "at": [
+      14,
+      6
+     ],
+     "size": [
+      2,
+      2
+     ]
+    }
+   ],
+   "triggers": [
+    {
+     "id": "t_crowd_key",
+     "group": "crowd",
+     "on": "pickup",
+     "pickup": "cage_key",
+     "delay": 1.2
+    },
+    {
+     "id": "t_crowd_boards",
+     "group": "crowd",
+     "on": "trap",
+     "trap": "bar_boards",
+     "delay": 0.8
+    }
+   ],
+   "lights": [
+    {
+     "at": [
+      7,
+      2
+     ],
+     "height": 0.5,
+     "color": "#ffcc88",
+     "energy": 0.5,
+     "range": 4.0,
+     "flicker": 0.1,
+     "level": -1
+    },
+    {
+     "at": [
+      16,
+      10
+     ],
+     "height": 2.4,
+     "color": "#ff7766",
+     "energy": 0.35,
+     "range": 3.5,
+     "flicker": 0.25
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      1,
+      2
+     ],
+     "side": "floor",
+     "size": [
+      1.6,
+      0.7
+     ]
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      7,
+      9
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.2
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      16,
+      15
+     ],
+     "label": "The front doors: chained from inside"
+    },
+    {
+     "at": [
+      -1,
+      15
+     ],
+     "label": "Round the west side"
+    },
+    {
+     "at": [
+      -1,
+      2
+     ],
+     "label": "The kitchen door, kicked in"
+    },
+    {
+     "at": [
+      2,
+      2
+     ],
+     "label": "The kitchen - the cook"
+    },
+    {
+     "at": [
+      3,
+      6
+     ],
+     "label": "The hall: the people who sheltered here"
+    },
+    {
+     "at": [
+      12,
+      6
+     ],
+     "label": "Along the hall"
+    },
+    {
+     "at": [
+      14,
+      8
+     ],
+     "label": "The canteen: the cage key in the till (the hall wakes)"
+    },
+    {
+     "at": [
+      12,
+      6
+     ],
+     "label": "Back across the hall"
+    },
+    {
+     "at": [
+      7,
+      6
+     ],
+     "label": "To the back hall"
+    },
+    {
+     "at": [
+      7,
+      0
+     ],
+     "label": "The cellar stair"
+    },
+    {
+     "at": [
+      6,
+      4
+     ],
+     "label": "Down",
+     "level": -1
+    },
+    {
+     "at": [
+      8,
+      3
+     ],
+     "label": "The cellar stores - the cage door",
+     "level": -1
+    },
+    {
+     "at": [
+      11,
+      3
+     ],
+     "label": "The cage (loot) - the quartermaster",
+     "level": -1
+    },
+    {
+     "at": [
+      6,
+      4
+     ],
+     "label": "Back up",
+     "level": -1
+    },
+    {
+     "at": [
+      7,
+      0
+     ],
+     "label": "The back hall"
+    },
+    {
+     "at": [
+      7,
+      6
+     ],
+     "label": "Into the hall"
+    },
+    {
+     "at": [
+      12,
+      6
+     ],
+     "label": "Across the hall"
+    },
+    {
+     "at": [
+      14,
+      8
+     ],
+     "label": "The canteen"
+    },
+    {
+     "at": [
+      14,
+      11
+     ],
+     "label": "Round the pool table"
+    },
+    {
+     "at": [
+      16,
+      12
+     ],
+     "label": "Out through the vestibule: unchain the doors"
+    },
+    {
+     "at": [
+      16,
+      15
+     ],
+     "label": "Out"
+    }
+   ],
+   "loot_room": {
+    "room": "Q",
+    "level": -1
+   },
+   "shortcuts": [
+    {
+     "opening": "front_door"
+    }
+   ],
+   "budget": {
+    "lights": 4,
+    "enemies": 10,
+    "pieces": 2400
+   },
+   "alternatives": [
+    {
+     "id": "crowd",
+     "label": "The people in the hall",
+     "options": [
+      {
+       "id": "on_the_tables",
+       "label": "Laid out on the tables and mattresses",
+       "weight": 2
+      },
+      {
+       "id": "at_bingo",
+       "label": "Sat at the bingo tables"
+      }
+     ]
+    },
+    {
+     "id": "cage",
+     "label": "The quartermaster's cage",
+     "options": [
+      {
+       "id": "rigged",
+       "label": "A shotgun wired to the cage door",
+       "weight": 2
+      },
+      {
+       "id": "canned",
+       "label": "Cans strung across the foot of the stair"
+      }
+     ]
+    },
+    {
+     "id": "canteen",
+     "label": "The canteen",
+     "options": [
+      {
+       "id": "closed",
+       "label": "Closed up"
+      },
+      {
+       "id": "drunk_dry",
+       "label": "Drunk dry the last night",
+       "style": {
+        "decay": 0.6
+       }
+      }
+     ]
+    },
+    {
+     "id": "office",
+     "label": "The commander's office",
+     "options": [
+      {
+       "id": "tidy",
+       "label": "As he left it"
+      },
+      {
+       "id": "searched",
+       "label": "Searched for the cage key",
+       "style": {
+        "decay": 0.6
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

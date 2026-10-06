@@ -97,6 +97,13 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     and KHLW Valley Radio (a booth under a lit ON AIR sign, a lattice mast climbed platform by
     platform). Five to seven alternative groups each; `tests/unit/test_pool_buildings.gd`. Their
     wall props spell out `rot`: `against` alone leaves a prop facing north (TD-086).
+  * **Pool round 2**: five more, mostly industrial: Hollis Pawn & Gun (a vault room behind Ray's
+    rigged shotgun, a basement range), Northfork Packing Co. (retort baskets, a two-storey packing
+    floor under a gallery, the Cordon's cold store), Water Works (two storeys of pumps, a valve
+    gallery and the emergency stores below), Ridgeline Aggregate (scale house, equipment shed, a
+    steel powder magazine) and the Veterans' Post (bingo hall turned shelter, a canteen, the
+    quartermaster's cage in the cellar). Keys, notes and loot are `town4` content; props are
+    `props_town4.py`; `tests/unit/test_pool_round_two.gd` (TD-114: three pool suites overlap).
 * **Random worlds** (ADR-0031): the main menu's Random World opens the New Game screen's World tab.
   * Settings and presets in `data/config/world_gen.json`, a map seed and a map preview; a world is
     generated in about a second and cached in `user://worlds/random/<id>/` in the main map's own

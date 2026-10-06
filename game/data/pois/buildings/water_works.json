@@ -1,0 +1,1160 @@
+{
+ "_doc": "Tier-2 pool building (random towns, industrial lots): the town's pumping station and treatment plant. Route: the street door is bolted -> round the east side: a workshop window smashed in (jaws under it) -> the workshop -> the hall -> the lab: the stores key on its hook (taking it wakes the pump hall: ambush) -> the pump hall, two storeys of pumps (cans strung across its door) -> down the stair to the valve gallery: two of the crew wake when you step in -> the emergency stores (the operator's alarm in one dressing): Gus guards the water and the tablets -> back up and out through the hall, unbolting the street door. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "water_works",
+   "name": "Water Works",
+   "tier": 2,
+   "zoning": [
+    "industrial"
+   ],
+   "footprint": [
+    26,
+    26
+   ],
+   "origin": [
+    3,
+    5
+   ],
+   "author": "Hollowmere team",
+   "population": "loggers",
+   "story": "Gus Lindqvist ran the town's water for thirty-one years and he kept it running through the Bloom: when the Cordon said boil all water, Gus doubled the chlorine; when the crew started coughing, he sent them home and kept the pumps on himself. The last of them came back anyway, to the only place in town with clean water, and Gus let them into the pump hall. He kept the emergency stores in the valve gallery under lock and the key on the lab hook, because the stores were for the town, not for whoever got there first.",
+   "style": {
+    "exterior": "brick_red",
+    "interior": "concrete_block",
+    "floor": "concrete",
+    "ceiling": "plaster_grey",
+    "floor_height": 0.15,
+    "decay": 0.45,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "flat",
+     "parapet": 0.6,
+     "flat_material": "roof_membrane"
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "PPPPPPPPPPPPPPCCCCCC",
+      "PPPPPPPPPPPPPPCCCCCC",
+      "PPPPPPPPPPPPPPCCCCCC",
+      "PPPPPPPPPPPPPPCCCCCC",
+      "PPPPPPPPPPPPPPOOOOOO",
+      "PPPPPPPPPPPPPPOOOOOO",
+      "PPPPPPPPPPPPPPOOOOOO",
+      "PPPPPPPPPPPPPPOOOOOO",
+      "PPPPPPPPPPPPPPOOOOOO",
+      "LLLLLLLHHHWWWWWWWWWW",
+      "LLLLLLLHHHWWWWWWWWWW",
+      "LLLLLLLHHHWWWWWWWWWW",
+      "LLLLLLLHHHWWWWWWWWWW",
+      "LLLLLLLHHHWWWWWWWWWW",
+      "LLLLLLLHHHWWWWWWWWWW",
+      "LLLLLLLHHHWWWWWWWWWW"
+     ],
+     "rooms": {
+      "P": {
+       "name": "Pump hall",
+       "type": "workshop",
+       "wall": "tile_bathroom_white",
+       "floor": "concrete",
+       "storeys": 2
+      },
+      "C": {
+       "name": "Chlorine room",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "O": {
+       "name": "Operator's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_beige"
+      },
+      "L": {
+       "name": "Lab",
+       "type": "office",
+       "wall": "plaster_white",
+       "floor": "linoleum_check"
+      },
+      "H": {
+       "name": "Front hall",
+       "type": "hallway",
+       "wall": "plaster_grey",
+       "floor": "linoleum_beige"
+      },
+      "W": {
+       "name": "Workshop",
+       "type": "workshop",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "^^^^^^^^^^^^^^      ",
+      "^^^^^^^^^^^^^^      ",
+      "^^^^^^^^^^^^^^      ",
+      "^^^^^^^^^^^^^^      ",
+      "^^^^^^^^^^^^^^      ",
+      "^^^^^^^^^^^^^^      ",
+      "^^^^^^^^^^^^^^      ",
+      "^^^^^^^^^^^^^^      ",
+      "^^^^^^^^^^^^^^      ",
+      "                    ",
+      "                    ",
+      "                    ",
+      "                    ",
+      "                    ",
+      "                    ",
+      "                    "
+     ],
+     "rooms": {}
+    },
+    {
+     "level": -1,
+     "plan": [
+      "VVVVVVVVVVVVVVSSSSSS",
+      "VVVVVVVVVVVVVVSSSSSS",
+      "VVVVVVVVVVVVVVSSSSSS",
+      "VVVVVVVVVVVVVVSSSSSS",
+      "VVVVVVVVVVVVVVSSSSSS",
+      "VVVVVVVVVVVVVVSSSSSS",
+      "VVVVVVVVVVVVVVSSSSSS",
+      "VVVVVVVVVVVVVVSSSSSS",
+      "VVVVVVVVVVVVVVSSSSSS"
+     ],
+     "rooms": {
+      "V": {
+       "name": "Valve gallery",
+       "type": "basement",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "S": {
+       "name": "Emergency stores",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      8,
+      15
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_metal",
+     "lock": "deadbolt"
+    },
+    {
+     "id": "lab_window",
+     "at": [
+      3,
+      15
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "shop_window_s",
+     "at": [
+      15,
+      15
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "shop_window_e",
+     "at": [
+      19,
+      12
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "hall_shop",
+     "at": [
+      9,
+      12
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "hall_lab",
+     "at": [
+      7,
+      11
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "hall_pumps",
+     "at": [
+      8,
+      9
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "pumps_office",
+     "at": [
+      13,
+      6
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "office_chlorine",
+     "at": [
+      16,
+      4
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "pump_window",
+     "at": [
+      0,
+      4
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "boarded"
+    },
+    {
+     "id": "stores_door",
+     "at": [
+      13,
+      4
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked",
+     "key": "town4_waterworks_store_key",
+     "lock": "padlock",
+     "model": "door_metal",
+     "hp": 600,
+     "level": -1
+    }
+   ],
+   "stairs": [
+    {
+     "level": -1,
+     "at": [
+      11,
+      4
+     ],
+     "dir": "N"
+    }
+   ],
+   "props": [
+    {
+     "id": "pump_1",
+     "prop": "pump_station_pump",
+     "pos": [
+      2.8,
+      4.6
+     ],
+     "rot": 0
+    },
+    {
+     "id": "pump_2",
+     "prop": "pump_station_pump",
+     "pos": [
+      7.0,
+      4.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "manifold_n",
+     "prop": "pump_pipe_manifold",
+     "at": [
+      4,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "manifold_n2",
+     "prop": "pump_pipe_manifold",
+     "at": [
+      8,
+      0
+     ],
+     "against": "N",
+     "variant": "worn",
+     "rot": 0
+    },
+    {
+     "id": "pump_panel",
+     "prop": "pump_control_panel",
+     "at": [
+      0,
+      7
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "prop": "ceiling_light",
+     "pos": [
+      6.5,
+      4.5
+     ],
+     "y": 5.9
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      12.9,
+      7.9
+     ]
+    },
+    {
+     "prop": "civic_army_cot",
+     "pos": [
+      3.0,
+      7.6
+     ],
+     "rot": 90,
+     "alt": "pumps:shelter"
+    },
+    {
+     "prop": "civic_army_cot",
+     "pos": [
+      6.6,
+      7.6
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "alt": "pumps:shelter"
+    },
+    {
+     "prop": "sleeping_bag",
+     "pos": [
+      9.6,
+      7.4
+     ],
+     "rot": 20,
+     "alt": "pumps:shelter"
+    },
+    {
+     "id": "chlorinator_1",
+     "prop": "pump_chlorinator",
+     "at": [
+      19,
+      1
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "chlorinator_2",
+     "prop": "pump_chlorinator",
+     "at": [
+      17,
+      0
+     ],
+     "against": "N",
+     "variant": "worn",
+     "rot": 0
+    },
+    {
+     "id": "chem_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      14,
+      1
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "op_desk",
+     "prop": "office_desk",
+     "at": [
+      18,
+      8
+     ],
+     "against": "S",
+     "rot": 180
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      18.4,
+      7.4
+     ],
+     "rot": 0
+    },
+    {
+     "id": "op_files",
+     "prop": "filing_cabinet",
+     "at": [
+      19,
+      5
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      15,
+      8
+     ],
+     "against": "S",
+     "rot": 180
+    },
+    {
+     "prop": "desk_lamp",
+     "pos": [
+      17.6,
+      8.6
+     ],
+     "y": 0.77
+    },
+    {
+     "id": "lab_bench",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      0,
+      10
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "lab_bench_2",
+     "prop": "kitchen_counter",
+     "at": [
+      0,
+      12
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "lab_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      3,
+      9
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "lab_cabinet",
+     "prop": "filing_cabinet",
+     "at": [
+      6,
+      14
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "bottles_scatter",
+     "pos": [
+      2.4,
+      12.6
+     ],
+     "rot": 30
+    },
+    {
+     "id": "shop_bench",
+     "prop": "road_workbench",
+     "at": [
+      14,
+      9
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "shop_chest",
+     "prop": "road_tool_chest",
+     "at": [
+      19,
+      10
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "shop_pegboard",
+     "prop": "pegboard_wall",
+     "at": [
+      12,
+      9
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "road_oil_drum",
+     "pos": [
+      17.8,
+      14.6
+     ]
+    },
+    {
+     "prop": "wild_chain_hoist",
+     "pos": [
+      15.6,
+      12.4
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "glass_shards",
+     "pos": [
+      18.8,
+      12.4
+     ],
+     "rot": 60
+    },
+    {
+     "id": "valve_run_1",
+     "prop": "pump_pipe_manifold_wall",
+     "at": [
+      3,
+      0
+     ],
+     "against": "N",
+     "level": -1,
+     "rot": 0
+    },
+    {
+     "id": "valve_run_2",
+     "prop": "pump_pipe_manifold_wall",
+     "at": [
+      7,
+      0
+     ],
+     "against": "N",
+     "level": -1,
+     "variant": "worn",
+     "rot": 0
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      1.0,
+      7.8
+     ],
+     "level": -1
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      5.8,
+      7.4
+     ],
+     "rot": 40,
+     "level": -1
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      12.4,
+      6.6
+     ],
+     "lit": true,
+     "level": -1
+    },
+    {
+     "id": "store_shelf_1",
+     "prop": "metal_shelf",
+     "at": [
+      19,
+      1
+     ],
+     "against": "E",
+     "level": -1,
+     "container": "town4_ww_stores",
+     "rot": 270
+    },
+    {
+     "id": "store_shelf_2",
+     "prop": "metal_shelf",
+     "at": [
+      19,
+      4
+     ],
+     "against": "E",
+     "level": -1,
+     "container": "town4_ww_stores",
+     "rot": 270
+    },
+    {
+     "id": "store_shelf_3",
+     "prop": "metal_shelf",
+     "at": [
+      16,
+      8
+     ],
+     "against": "S",
+     "level": -1,
+     "variant": "worn",
+     "container": "town4_ww_stores",
+     "rot": 180
+    },
+    {
+     "id": "store_crates",
+     "prop": "civic_relief_crate",
+     "pos": [
+      15.6,
+      1.2
+     ],
+     "rot": 0,
+     "level": -1
+    },
+    {
+     "prop": "water_cooler",
+     "pos": [
+      17.2,
+      0.6
+     ],
+     "level": -1
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "shop_1",
+     "pos": [
+      16.4,
+      13.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 200,
+     "anchor": "floor"
+    },
+    {
+     "id": "assistant",
+     "pos": [
+      18.4,
+      7.4
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "alt": "office:at_the_desk"
+    },
+    {
+     "id": "pumps_1",
+     "pos": [
+      3.0,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "pumps",
+     "alt": "pumps:shelter"
+    },
+    {
+     "id": "pumps_2",
+     "pos": [
+      6.6,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "pumps",
+     "alt": "pumps:shelter"
+    },
+    {
+     "id": "pumps_3",
+     "pos": [
+      10.8,
+      8.2
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 200,
+     "group": "pumps",
+     "alt": "pumps:shelter"
+    },
+    {
+     "id": "pumps_1",
+     "pos": [
+      2.6,
+      3.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "group": "pumps",
+     "alt": "pumps:at_the_pumps"
+    },
+    {
+     "id": "pumps_2",
+     "pos": [
+      7.2,
+      3.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 160,
+     "group": "pumps",
+     "alt": "pumps:at_the_pumps"
+    },
+    {
+     "id": "pumps_3",
+     "pos": [
+      9.8,
+      6.4
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 230,
+     "group": "pumps",
+     "alt": "pumps:at_the_pumps"
+    },
+    {
+     "id": "valve_1",
+     "pos": [
+      4.4,
+      4.2
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 90,
+     "level": -1,
+     "group": "valve"
+    },
+    {
+     "id": "valve_2",
+     "pos": [
+      7.8,
+      6.6
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 60,
+     "level": -1,
+     "group": "valve"
+    },
+    {
+     "id": "gus",
+     "pos": [
+      16.6,
+      4.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 270,
+     "level": -1,
+     "guardian": true
+    }
+   ],
+   "pickups": [
+    {
+     "id": "store_key",
+     "item": "town4_waterworks_store_key",
+     "pos": [
+      2.0,
+      9.3
+     ],
+     "y": 1.4
+    }
+   ],
+   "notes": [
+    {
+     "note": "town4_waterworks_log",
+     "pos": [
+      17.8,
+      8.6
+     ],
+     "y": 0.77
+    },
+    {
+     "note": "town4_waterworks_boil",
+     "pos": [
+      8.5,
+      14.6
+     ]
+    },
+    {
+     "note": "town4_waterworks_gus",
+     "pos": [
+      15.4,
+      5.6
+     ],
+     "level": -1
+    }
+   ],
+   "traps": [
+    {
+     "id": "shop_jaws",
+     "type": "bear_trap",
+     "pos": [
+      18.4,
+      11.4
+     ],
+     "rot": 30
+    },
+    {
+     "id": "pump_cans",
+     "type": "can_chime",
+     "at": [
+      8,
+      9
+     ],
+     "side": "N"
+    },
+    {
+     "id": "valve_rot",
+     "type": "creaky_floor",
+     "at": [
+      1,
+      2
+     ],
+     "size": [
+      2,
+      2
+     ],
+     "level": -1
+    },
+    {
+     "id": "stores_alarm",
+     "type": "alarm",
+     "at": [
+      13,
+      4
+     ],
+     "side": "E",
+     "level": -1,
+     "alt": "stores_alarm:armed"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "t_pumps_key",
+     "group": "pumps",
+     "on": "pickup",
+     "pickup": "store_key",
+     "delay": 1.2
+    },
+    {
+     "id": "t_pumps_cans",
+     "group": "pumps",
+     "on": "trap",
+     "trap": "pump_cans",
+     "delay": 0.4
+    },
+    {
+     "id": "t_valve",
+     "group": "valve",
+     "on": "room",
+     "room": "V",
+     "level": -1,
+     "delay": 0.8
+    }
+   ],
+   "lights": [
+    {
+     "at": [
+      12,
+      6
+     ],
+     "height": 0.5,
+     "color": "#ffcc88",
+     "energy": 0.5,
+     "range": 4.5,
+     "flicker": 0.1,
+     "level": -1
+    },
+    {
+     "at": [
+      18,
+      8
+     ],
+     "height": 0.9,
+     "color": "#ffd9a0",
+     "energy": 0.4,
+     "range": 3.5,
+     "flicker": 0.15
+    }
+   ],
+   "decals": [
+    {
+     "decal": "mold_patch",
+     "at": [
+      19,
+      2
+     ],
+     "side": "E",
+     "height": 1.2,
+     "size": [
+      1.6,
+      1.2
+     ]
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      18,
+      12
+     ],
+     "side": "floor",
+     "size": [
+      1.6,
+      0.7
+     ]
+    },
+    {
+     "decal": "crack_wall",
+     "at": [
+      0,
+      6
+     ],
+     "side": "W",
+     "height": 2.0,
+     "size": [
+      2.0,
+      1.4
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      8,
+      16
+     ],
+     "label": "The street door: bolted from inside"
+    },
+    {
+     "at": [
+      21,
+      15
+     ],
+     "label": "Round the east side"
+    },
+    {
+     "at": [
+      20,
+      12
+     ],
+     "label": "A workshop window, smashed in (jaws under it)"
+    },
+    {
+     "at": [
+      16,
+      12
+     ],
+     "label": "The workshop"
+    },
+    {
+     "at": [
+      8,
+      12
+     ],
+     "label": "The front hall"
+    },
+    {
+     "at": [
+      3,
+      11
+     ],
+     "label": "The lab: the stores key on its hook (the pump hall wakes)"
+    },
+    {
+     "at": [
+      8,
+      11
+     ],
+     "label": "Back to the hall"
+    },
+    {
+     "at": [
+      8,
+      7
+     ],
+     "label": "The pump hall (cans across the door)"
+    },
+    {
+     "at": [
+      11,
+      6
+     ],
+     "label": "The stair down"
+    },
+    {
+     "at": [
+      11,
+      6
+     ],
+     "label": "The valve gallery: the crew wakes",
+     "level": -1
+    },
+    {
+     "at": [
+      12,
+      4
+     ],
+     "label": "The stores door",
+     "level": -1
+    },
+    {
+     "at": [
+      16,
+      3
+     ],
+     "label": "The emergency stores (loot) - Gus",
+     "level": -1
+    },
+    {
+     "at": [
+      11,
+      6
+     ],
+     "label": "Back up",
+     "level": -1
+    },
+    {
+     "at": [
+      8,
+      8
+     ],
+     "label": "Through the pump hall"
+    },
+    {
+     "at": [
+      8,
+      14
+     ],
+     "label": "Unbolt the street door"
+    },
+    {
+     "at": [
+      8,
+      16
+     ],
+     "label": "Out"
+    }
+   ],
+   "loot_room": {
+    "room": "S",
+    "level": -1
+   },
+   "shortcuts": [
+    {
+     "opening": "front_door"
+    }
+   ],
+   "budget": {
+    "lights": 4,
+    "enemies": 11,
+    "pieces": 2600
+   },
+   "alternatives": [
+    {
+     "id": "pumps",
+     "label": "Where the crew are",
+     "options": [
+      {
+       "id": "shelter",
+       "label": "On the cots Gus put out for them",
+       "weight": 2
+      },
+      {
+       "id": "at_the_pumps",
+       "label": "Standing at the pumps"
+      }
+     ]
+    },
+    {
+     "id": "office",
+     "label": "Gus's assistant",
+     "options": [
+      {
+       "id": "at_the_desk",
+       "label": "Still at the desk"
+      },
+      {
+       "id": "gone",
+       "label": "Gone: the chair tipped over",
+       "style": {
+        "decay": 0.55
+       }
+      }
+     ]
+    },
+    {
+     "id": "stores_alarm",
+     "label": "The stores alarm",
+     "options": [
+      {
+       "id": "dead",
+       "label": "Dead",
+       "weight": 2
+      },
+      {
+       "id": "armed",
+       "label": "Armed"
+      }
+     ]
+    },
+    {
+     "id": "lab",
+     "label": "The lab",
+     "options": [
+      {
+       "id": "tidy",
+       "label": "Gus kept it tidy"
+      },
+      {
+       "id": "turned_over",
+       "label": "Turned over for the tablets",
+       "style": {
+        "decay": 0.6
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,110 @@
+{
+ "_doc": "Readable notes of pool round 2 (random-town set pieces; no note names its town). Items: items/town4.json note_<id>.",
+ "defs": [
+  {
+   "id": "town4_pawn_book",
+   "title": "The Book on the Counter",
+   "style": "handwritten",
+   "author": "Ray Hollis",
+   "body": "Day 2. 30-30 to the Pruett boy. Two .243s, the Remington pump, all the .22 LR on the shelf. Cash only, no layaway, sorry.\nDay 3. Cordon by at noon with a list. Told them I'm a licensed dealer. They said that doesn't mean anything now.\nDay 4. Grille down. Moved the counter stock to the vault room.\nDay 5. Danny came in the alley door. Forearm. I promised his mother.\nDay 5. Put him in the vault with the lamp and the radio and locked it. Going down to sit a while. Key's on me."
+  },
+  {
+   "id": "town4_pawn_order",
+   "title": "Notice Taped to the Door",
+   "style": "typed",
+   "author": "Cordon Command",
+   "body": "ORDER 14 — FIREARMS\n\nAll firearms and ammunition held for sale are to be surrendered to Cordon personnel. Licensed dealers will be issued receipts.\nPremises refusing inspection will be sealed.\n\nUnder it, in marker: SEALED. DO NOT ENTER."
+  },
+  {
+   "id": "town4_pawn_ray",
+   "title": "Folded in the Desk Drawer",
+   "style": "handwritten",
+   "author": "Ray Hollis",
+   "body": "Danny — if you're reading this you got out, and I'm sorry. The vault key's with me downstairs. Don't come down. The rifles in the rack are loaded. Take the .30-06 and go north to your mother's. Don't come back for me."
+  },
+  {
+   "id": "town4_cannery_tally",
+   "title": "Tally Book",
+   "style": "handwritten",
+   "author": "Walt Kessler, foreman",
+   "body": "Mon. 1,140 cases rations (beans/pork) to dock. QM counts every one.\nTue. 960. Two off sick. QM says sick go to the clinic, not home.\nWed. 410. Line stopped twice. Ortiz bit Lena on the belt and we all stood there.\nThu. Guards chained the office door from the street side. Told us keep packing.\nThu night. I'm up here with the spare cold-store key on its hook. QM's in the cold store with the stock and won't open. The line's still on the floor. They're still standing at the belts. I can hear them."
+  },
+  {
+   "id": "town4_cannery_requisition",
+   "title": "Requisition Order",
+   "style": "typed",
+   "author": "Cordon Logistics",
+   "body": "REQUISITION — FOOD PROCESSING FACILITY\n\nThis plant, its stock, vehicles and staff are placed under Cordon control for the duration. Production quota: 1,200 cases daily. Cold store under the Quartermaster's sole key.\nStaff absent without leave will be treated as exposed."
+  },
+  {
+   "id": "town4_cannery_quartermaster",
+   "title": "Pinned Inside the Cold Store",
+   "style": "handwritten",
+   "author": "Sgt. D. Mercer, Quartermaster",
+   "body": "Stock as of tonight: 2,214 cases. Signed for every one. Nobody is getting them without a signature. I've got the door and I've got the cold. If you're reading this you came in with Walt's key and I hope to God you're Cordon."
+  },
+  {
+   "id": "town4_waterworks_log",
+   "title": "Operator's Log",
+   "style": "handwritten",
+   "author": "Gus Lindqvist",
+   "body": "Chlorine up to 4 ppm per Cordon. Tastes like a pool. Better than the alternative.\nCrew sent home, all three coughing. Running it myself.\nDay 9. Pressure holding. Half the town's drawing from the plant tap at the gate.\nDay 11. Dale and Mikey came back. Nowhere else with clean water, they said. Put cots out in the pump hall. They're not right.\nDay 12. Stores key's on the lab hook. The stores are for the town. Going down to count the tablets."
+  },
+  {
+   "id": "town4_waterworks_boil",
+   "title": "Notice in the Front Hall",
+   "style": "typed",
+   "author": "Water Department",
+   "body": "BOIL WATER NOTICE\n\nBy order of the Cordon all tap water is to be boiled for one full minute before drinking.\nEmergency water and purification tablets will be issued at this plant to residents with ration cards.\n\nUnder it, in pencil: plant tap at the gate is still good - Gus"
+  },
+  {
+   "id": "town4_waterworks_gus",
+   "title": "Taped to a Store Shelf",
+   "style": "handwritten",
+   "author": "Gus Lindqvist",
+   "body": "Tablets 4,800. Jugs 312. Filters 40. For the town. Not for whoever gets here first. If you got here, you're the town now. Take what you need and leave the door how you found it."
+  },
+  {
+   "id": "town4_quarry_ticket",
+   "title": "Scale Ticket",
+   "style": "typed",
+   "author": "Ridgeline Aggregate",
+   "body": "SCALE TICKET 004417\nGROSS 0 - TARE 0 - NET 0\nMATERIAL: NONE\nHAULER: CORDON\n\nOn the back, in pencil: roads closed. radio says stay put. Pete won't open the mag. manager's key is in his desk, top drawer, same as always."
+  },
+  {
+   "id": "town4_quarry_seizure",
+   "title": "Seizure Order",
+   "style": "typed",
+   "author": "Cordon Engineering",
+   "body": "NOTICE OF SEIZURE\n\nAll explosive materials, detonators and blasting equipment on these premises are seized for Cordon use under emergency regulation 6.\nThe licensee will surrender the magazine on presentation of this order.\n\nScrawled across it: NOT WITHOUT THE MANAGER'S SIGNATURE - P.H."
+  },
+  {
+   "id": "town4_quarry_pete",
+   "title": "Chalked Inside the Magazine",
+   "style": "handwritten",
+   "author": "Pete Haralson",
+   "body": "Day 4. They can have it with Dale's signature. Dale's sick.\nDay 6. Not opening.\nDay 8. Cough. Ha.\n(lower down, shakier) Don't light a match in here."
+  },
+  {
+   "id": "town4_vfw_bulletin",
+   "title": "Post Bulletin Board",
+   "style": "typed",
+   "author": "The Post Commander",
+   "body": "NOTICE TO MEMBERS AND GUESTS\nThe hall is open to anyone who needs a roof. Cots by the stage, families by the windows.\nCanteen is closed. Coffee is free.\nNO ONE goes in the cellar. The quartermaster has the stores and he will issue them.\nThursday bingo is CANCELLED until further notice.\n\nPinned under it: FALL RAFFLE - presentation revolver - drawing postponed."
+  },
+  {
+   "id": "town4_vfw_minutes",
+   "title": "Minutes of a Special Meeting",
+   "style": "typed",
+   "author": "Post Adjutant",
+   "body": "Special meeting called to order 1900 hrs. 22 members present, 40-odd guests.\nMotion: open the cellar stores to the guests. Seconded. Carried.\nQuartermaster objected. Said the stores are counted and he will issue by the count, and the raffle revolver stays boxed until the drawing.\nMotion: issue the raffle revolver to a member for the defence of the hall. Not seconded.\nThe commander asked the quartermaster for the cage key. He said it's in the till where it always is and he'll know if it moves.\nMeeting adjourned 1940 hrs. Two guests in the hall reported sick."
+  },
+  {
+   "id": "town4_vfw_qm",
+   "title": "Inventory, Pencil on Cardboard",
+   "style": "handwritten",
+   "author": "The Quartermaster",
+   "body": "Beans 6 cs. Peaches 4 cs. Coffee 2 cs. Blanks 300 (funeral detail).\nRevolver .38, raffle, boxed: 1. Cartridges for same: 6 bx.\nNight 5. They're coughing up there. I locked the cage. I'll issue by the count when it's over.\nNight 6. Somebody tried the till. I heard the drawer.\n(the last line goes off the edge) the count is the count"
+  }
+ ]
+}
