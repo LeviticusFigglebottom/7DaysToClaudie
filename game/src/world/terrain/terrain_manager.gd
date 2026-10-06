@@ -195,12 +195,14 @@ func bloom_base_at(x: float, z: float) -> float:
 	return bloom.field.base_at(x, z) if bloom != null and bloom.field != null else 0.0
 
 
-## Terrain height at world (x, z). Thread-safe for reads.
+## Terrain height at world (x, z). Thread-safe: the sample is taken under _lock, which edits of
+## the heights also hold (see modify()).
 func height_at(x: float, z: float) -> float:
+	_lock.lock()
 	var rt: RegionTerrain = _terrain_for(x, z)
-	if rt != null:
-		return rt.height.sample(x, z)
-	return world.macro_height(x, z) if world != null else 0.0
+	var h: float = rt.height.sample(x, z) if rt != null else (world.macro_height(x, z) if world != null else 0.0)
+	_lock.unlock()
+	return h
 
 
 func normal_at(x: float, z: float) -> Vector3:
@@ -830,13 +832,15 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 	var cj: int = int(round((center.z - hf.origin.y) / hf.spacing))
 	var moved: float = 0.0
 	var touched: Dictionary = {}
-	# Written in place, value by value: worker threads read these heights all the time (chunk
-	# meshing, scatter, weather, the Hum's flow field), and a float written in place is either old
-	# or new to them. Replacing the array instead is NOT safe: GDScript releases the old one and
-	# leaves the member null for a moment before storing the new one (TD-104).
+	# Written in place under _lock: worker threads read these heights all the time through
+	# height_at (chunk meshing, scatter, weather, the Hum's flow field), which takes the lock too.
+	# Neither alternative is safe without it: replacing the array releases the old one and leaves
+	# the member null for a moment, and writing a packed array that a reader's temporary also
+	# references copies it on write, swapping the buffer under that reader (TD-104).
 	var original := PackedFloat32Array()
 	if mode == "smooth":
 		original = hf.heights.duplicate()
+	_lock.lock()
 	for j: int in range(cj - r_cells, cj + r_cells + 1):
 		for i: int in range(ci - r_cells, ci + r_cells + 1):
 			if i < 0 or j < 0 or i >= hf.width or j >= hf.depth:
@@ -868,6 +872,7 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 			touched[chunk_of(x, z)] = true
 			# Samples on chunk borders belong to neighbours too.
 			touched[chunk_of(x - 0.01, z - 0.01)] = true
+	_lock.unlock()
 	for key: Vector2i in touched:
 		_record_delta(rt, key)
 		var ch: Chunk = _chunks.get(key)
@@ -888,6 +893,7 @@ func _apply_deltas(rt: RegionTerrain) -> void:
 	var vc: int = int(CHUNK) + 1
 	var hf: HeightField = rt.height
 	var base: HeightField = null
+	_lock.lock()
 	for key_s: String in _deltas:
 		var key: Vector2i = Ids.parse_chunk_key(key_s.substr(2))
 		if not rt.rect.has_point(Vector2(key.x * CHUNK + 1.0, key.y * CHUNK + 1.0)):
@@ -901,6 +907,7 @@ func _apply_deltas(rt: RegionTerrain) -> void:
 				var gz: int = int(round((key.y * CHUNK + j - hf.origin.y) / hf.spacing))
 				if gx >= 0 and gz >= 0 and gx < hf.width and gz < hf.depth:
 					hf.heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
+	_lock.unlock()
 
 
 ## Composed (unedited) heights per region, kept to clamp digging depth and compute deltas.
