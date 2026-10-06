@@ -8,7 +8,7 @@
     "town2_deposit_boxes": {"shader": "std_surface", "textures": "town2_deposit_boxes",
       "params": {"uv_scale": 1.0, "grime_amount": 0.4, "normal_strength": 1.0}},
     "town2_vault_steel": {"shader": "std_surface", "textures": "town2_vault_steel", "layers": {"wear": "pi_metal_brushed"},
-      "params": {"uv_scale": 1.0, "wear_amount": 0.35, "wear_uv_scale": 2.0, "grime_amount": 0.35, "grime_color": "#24221d"}},
+      "params": {"uv_scale": 1.6, "wear_amount": 0.35, "wear_uv_scale": 2.0, "grime_amount": 0.35, "grime_color": "#24221d"}},
     "town2_bus_yellow": {"shader": "std_surface", "textures": "car_paint", "layers": {"wear": "car_rust"},
       "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "tint": "#d39a26", "wear_amount": 0.66, "wear_uv_scale": 1.2, "grime_amount": 0.5, "grime_color": "#2b261c", "roughness_add": 0.1}},
     "town2_engine_red": {"shader": "std_surface", "textures": "car_paint", "layers": {"wear": "car_rust"},
