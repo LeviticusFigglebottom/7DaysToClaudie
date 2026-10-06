@@ -371,8 +371,25 @@ lots never draw one. Props: `data/props/town3.json` (`props_town3.py`) and, for 
 | Ridgeline Aggregate | 2 | industrial, 26 x 26 | Quarry scale house and office; the blaster locked himself in the powder magazine rather than sign it over | Office bolted → a haul truck through the shed wall (jaws by the drill rack) → the scale house (the weighmaster at his terminal) → manager's office: the magazine key (the crew wakes, in the core shed or round the radio) → magazine door (cans in one dressing) → the magazine (Pete, guardian) → unbolt the front |
 | Veterans' Post | 2 | civic, 24 x 22 | Bingo-night hall turned shelter; the quartermaster kept the cellar stores and the raffle revolver by the count | Doors chained → the kitchen door kicked in → the hall (the families who sheltered there) → canteen: the cage key in the till (the hall wakes) → back hall, down the cellar stair → the cage (a shotgun on its door or cans on the stair; the quartermaster, guardian) → out through the vestibule, unchaining the doors |
 
+*Wilderness set pieces (random worlds)*
+
+Authored places with no fixed spot that random worlds stand outside towns: the wilderness pool in
+`data/config/world_gen.json` (`tuning.wilderness.pool`) gives each a site, a density and a cap, its
+access and its pad, alongside the main map's lookout, cabin, camps, boathouse, sawmill and roadside
+stops. Each is a full dungeon with room alternatives (ADR-0030) whose notes name people, not a town.
+Walls the kit can't build are shell props round kit rooms (the lodge's chinked logs, the reefer, the
+command trailer); tents are open-sided kit rooms under a tent prop, so their sleepers lie in rooms.
+Props: `data/props/wild3.json` (`props_wild3.py`) and the `w3_signs` atlas.
+
+| POI | Tier | Site, footprint | Concept | Route sketch |
+|---|---|---|---|---|
+| Camp Tamarack | 2 | lake shore (keeps its water), 48 x 50 | A church summer camp on a lake the Cordon made a family evacuation point; the children left on the first buses, the parents wait for the second | Arch over the drive, a gate arm chained → the registration board → the loop round the flagpole and fire ring → the staff lodge, bolted → a smashed window round the side (jaws) → the counsellors' bunk room (loose boards, or the key, wake them) → the director's office: her radio log and the walk-in key → the mess hall, piled shut inside → its side door (cans) → the dining hall: the families rise → the kitchen → the walk-in (Ruth, guardian, with the convoy stores) → unbolt the kitchen's back door to the dock |
+| Elk Ridge Lodge | 3 | forest, 36 x 32 | A two-storey chinked-log hunting lodge; the guide's party came back from the woods sick | Porch doors piled shut → round past the kennels, wire pushed out → a kitchen window smashed in (the jaws' snap wakes the hunters) → Marit's note → down to the cellar → the meat locker: Arne's keys (the locker wakes) → the double-height great room under the antlers: the hunters rise → the gun room's deadbolt, a shotgun wired behind it → Marit (guardian) and the guns → unbolt the gun room's yard door; upstairs, a balcony whose boards have rotted |
+| Cordon Quarantine Camp | 3 | roadside, 44 x 44 | A fenced roadside screening camp; the wards broke the night the ground hummed and the doctor lay down with the dead and the doses | The road → the checkpoint hut, the only way through the wire → its inner door: the screening line turns → screening tent → decontamination line (jaws in the clothes) → the wards → the command trailer: the radio log, the captain's office behind an alarm, the reefer key (Ward B wakes) → the generator and light towers → the morgue reefer, padlocked, a shotgun behind its door (Dr. Vance, guardian, the cold-chain box) → its bolted side door, which opens beyond the wire (the reefer stands in the fence line: no way round it) |
+| The Haldane Place | 2 | forest, 40 x 40 | A homestead a family walled with tin, pallets and car doors and held for fourteen months, until the seventh night broke the wall | Chained gate, TURN BACK → round to where the wall went (jaws; Ray's axe) → the yard: raised beds, rain catchers, platforms → the boarded house, its back door kicked in (cans wake the house) → the kitchen: Della's calendar and the bunker key → down to the root cellar → the bunker's steel door (opening it wakes the family; Tom, guardian) → up the ladder into the cellar entry, unbolt it |
+
 **Planned (M2+)**: school, mine office, rail depot, dam control house, lighthouse, fishing co-op,
-lab outpost, survivor compounds, Ashen camps, crashed Program supply drone, quarantine camp.
+lab outpost, survivor compounds, Ashen camps, crashed Program supply drone.
 
 ## 12. Audio & visual direction
 

@@ -16,7 +16,12 @@ const TOP_KEYS: PackedStringArray = ["categories", "options", "presets", "tuning
 const OPTION_KEYS: PackedStringArray = ["category", "type", "min", "max", "step", "default", "label", "values"]
 const OPTION_TYPES: PackedStringArray = ["int", "float", "enum"]
 const PRESET_KEYS: PackedStringArray = ["label", "description", "values"]
-const TUNING_KEYS: PackedStringArray = ["macro_step", "biome_step", "region_margin", "terrain", "rivers", "lakes", "towns", "roads", "wilderness", "drop_site", "bloom"]
+const TUNING_KEYS: PackedStringArray = ["macro_step", "biome_step", "region_margin", "terrain", "rivers", "lakes", "towns", "roads", "wilderness", "drop_site", "bloom",
+	"burn", "fen"]
+## tuning.burn and tuning.fen (burnt forest and fen biomes, ADR-0041) and the fen's pools.
+const BURN_KEYS: PackedStringArray = ["per_16km2", "cells", "max_share", "water", "road", "town_clear", "drop_clear", "islands"]
+const FEN_KEYS: PackedStringArray = ["max_slope", "water", "low", "valley", "patch", "town_clear", "drop_clear", "pools"]
+const POOL_SPEC_KEYS: PackedStringArray = ["chance", "per_cell", "radius", "depth", "drop", "shore", "irregularity", "max_slope", "border"]
 const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt"]
 ## tuning.towns (organic towns, ADR-0040; the planner's own numbers are town_planner.json).
 const TOWN_KEYS: PackedStringArray = ["mix", "spacing", "edge", "candidates", "core_relief", "disc_relief", "max_slope", "water", "score", "core_smoothing",
@@ -187,6 +192,9 @@ static func schema_errors(db: Node = null) -> PackedStringArray:
 	for v: Variant in (opts.get("town_size", {}) as Dictionary).get("values", []):
 		if not (towns.get("mix", {}) as Dictionary).has(str(v)):
 			out.append("world_gen.json tuning.towns.mix: no mix for town_size '%s'" % v)
+	_unknown(t.get("burn", {}), BURN_KEYS, "world_gen.json tuning.burn", out)
+	_unknown(t.get("fen", {}), FEN_KEYS, "world_gen.json tuning.fen", out)
+	_unknown((t.get("fen", {}) as Dictionary).get("pools", {}), POOL_SPEC_KEYS, "world_gen.json tuning.fen.pools", out)
 	var wild: Dictionary = t.get("wilderness", {})
 	_unknown(wild, ["pool", "farmsteads", "spacing", "max_relief"], "world_gen.json tuning.wilderness", out)
 	for e: Variant in wild.get("pool", []):

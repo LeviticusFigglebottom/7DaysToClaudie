@@ -46,6 +46,19 @@ uniform vec4 bloom_aged : source_color = vec4(0.67, 0.63, 0.53, 1.0);
 uniform vec4 bloom_crust : source_color = vec4(0.78, 0.73, 0.6, 1.0);
 uniform float bloom_glow_energy = 0.045;
 
+// Fire char (burnt forest, ADR-0041; off unless char_amount > 0): the bark of a fire-killed tree
+// burnt to charcoal and cracked into alligator blocks (char_* maps, textures/gen/burn_fen.py) from
+// the roots up to a ragged line; above it the base textures show the silver wood the bark weathered
+// off to. The line stands char_height m up, higher on the lee side of the trunk and different on
+// every tree (char_ragged m of world-space noise), and frays into scorched patches.
+uniform sampler2D char_albedo_tex : source_color, hint_default_black, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D char_normal_tex : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D char_orm_tex : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform float char_amount : hint_range(0.0, 1.0) = 0.0;
+uniform float char_height = 4.0;
+uniform float char_ragged = 2.0;
+uniform vec2 char_uv_scale = vec2(1.0, 1.0);
+
 #include "res://assets/shaders/weather.gdshaderinc"
 global uniform float hm_snow;
 
@@ -54,6 +67,8 @@ varying vec3 v_wpos;
 // Field at the tree's foot x affinity, and the height above it (m, before the sway).
 varying float v_bloom;
 varying float v_trunk_h;
+// This tree's char line (m above its foot), from noise at the foot (0 when char is off).
+varying float v_char_line;
 
 void vertex() {
 	vec3 origin = MODEL_MATRIX[3].xyz;
@@ -62,6 +77,7 @@ void vertex() {
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 	v_wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_bloom = bloom_affinity > 0.0 ? hm_bloom_at(origin.xz) * bloom_affinity : 0.0;
+	v_char_line = char_amount > 0.0 ? char_height + char_ragged * (hm_bloom_noise3(vec3(origin.x * 0.37, 1.7, origin.z * 0.37)) * 2.0 - 1.0) * 1.4 : 0.0;
 }
 
 void fragment() {
@@ -70,6 +86,24 @@ void fragment() {
 	vec3 orm = texture(orm_tex, uv).rgb;
 	float rough = orm.g;
 	vec3 nrm = texture(normal_tex, uv).rgb;
+	if (char_amount > 0.001) {
+		// Higher on one side of the trunk (the fire's lee), frayed by finer noise into scorched
+		// tongues and islands of char above the line.
+		float side = hm_bloom_noise3(v_wpos * vec3(0.8, 0.12, 0.8) + vec3(5.3, 0.0, 2.9));
+		float fray = hm_bloom_noise3(v_wpos * vec3(2.6, 0.9, 2.6) + vec3(1.1, 7.0, 3.3));
+		float line = max(v_char_line, 0.6) * (0.65 + 0.7 * side) + (fray - 0.5) * char_ragged;
+		float ch = char_amount * (1.0 - smoothstep(line - 0.35, line + 0.35, v_trunk_h));
+		if (ch > 0.001) {
+			vec2 cuv = UV * char_uv_scale;
+			alb = mix(alb, texture(char_albedo_tex, cuv).rgb, ch);
+			vec3 co = texture(char_orm_tex, cuv).rgb;
+			orm = mix(orm, co, ch);
+			rough = mix(rough, co.g, ch);
+			nrm = mix(nrm, texture(char_normal_tex, cuv).rgb, ch);
+		}
+		// Above the line the silver wood is still soot-stained a while: a grey fade.
+		alb *= mix(1.0, 0.72, char_amount * (1.0 - smoothstep(line, line + 2.5, v_trunk_h)) * (1.0 - ch));
+	}
 	if (moss_amount > 0.001) {
 		vec3 ma = texture(moss_albedo_tex, uv * 0.7).rgb;
 		// Moss grows on the shaded/wet side and low on the trunk (COLOR.b from the generator).

@@ -1,0 +1,2949 @@
+{
+ "_doc": "Tier-2 wilderness set piece for random worlds (site lake_shore, keep_water: the back third of the footprint stands over the lake, its water 0.6 m under the pad, ADR-0024). A church summer camp the Cordon made a family evacuation point: six kit buildings in a yard of trees - four 4 x 4 cabins on the loop round the flagpole and fire ring, the mess hall (kitchen, walk-in, a dining hall open to its rafters), the staff lodge (common room, the director's office, the counsellors' bunk room), the infirmary cabin and the canoe shed - with the dock and its T-head on piles over the water, the canoe rack, the outdoor chapel's benches and birch cross by the shore, the arch over the drive and the Cordon's registration board. Route: the arch (a gate arm across it) -> the registration board -> the loop -> the staff lodge, bolted -> round the side to a smashed window (jaws in the grass) -> the counsellors' bunk room (loose boards, or the key, wake them) -> the director's office: the radio log and the walk-in key -> draw the lodge's front bolt -> the mess hall, piled shut inside -> its side door (cans strung across it) -> the dining hall: the families rise -> the kitchen -> the walk-in, padlocked: Ruth (guardian) and the convoy stores -> unbolt the kitchen's back door to the dock. Alternatives: where the families wait, how the walk-in is shut, which lodge window is broken, which cabin is boarded up, the dining hall's finish and how many lights still burn. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "camp_tamarack",
+   "name": "Camp Tamarack",
+   "tier": 2,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    48,
+    50
+   ],
+   "origin": [
+    2,
+    2
+   ],
+   "author": "Hollowmere team (agent X)",
+   "story": "Camp Tamarack was a church summer camp on the lake: four cabins round the flagpole and the fire ring, a mess hall, the staff lodge, an infirmary cabin and a canoe shed, and Ruth Halvorsen, who had directed it for twenty-two summers. When the Cordon closed the roads it made the camp Family Evacuation Point 6. Thirty-one families came with what they could carry; the Cordon registered them on a board under the gate, one family a cabin and the rest on mats in the mess hall, and on the third morning the buses took every child under fourteen. The second convoy, for the parents, was coming Thursday. Ruth called Convoy Control on the lodge radio at nine every night and heard static. The fever came with a late family. Nell, the camp nurse, filled the infirmary; Ruth padlocked the sick cabins at night and kept the walk-in full of the convoy's stores, untouched, for when it came. When her own hands went cold she sat down in the walk-in with the stores and had Corporal Ames lock it behind her, the key on her board in the office. Ames took a canoe across the lake to find a phone. The families are still at the long tables, waiting for their turn.",
+   "style": {
+    "exterior": "siding_barn_red",
+    "interior": "wood_paneling_dark",
+    "floor": "wood_pine",
+    "ceiling": "wood_paneling_dark",
+    "floor_height": 0.45,
+    "decay": 0.5,
+    "damaged_walls": 0.04,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "gable",
+     "pitch": 32,
+     "overhang": 0.45,
+     "material": "roof_shingle",
+     "gutters": false,
+     "roofs": [
+      {
+       "level": 0,
+       "at": [
+        20,
+        26
+       ],
+       "pitch": 26,
+       "material": "roof_metal"
+      },
+      {
+       "level": 0,
+       "at": [
+        30,
+        17
+       ],
+       "type": "shed",
+       "slope": "N",
+       "pitch": 16,
+       "material": "roof_metal"
+      }
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................................",
+      "............................SSSSS...........",
+      "............................SSSSS...........",
+      "............................SSSSS...........",
+      "............................SSSSS...........",
+      "............................................",
+      "................KKKKKKKKKWWW................",
+      "................KKKKKKKKKWWW................",
+      "................KKKKKKKKKWWW....CCCCCCOOOO..",
+      "...IIIINNN......KKKKKKKKKWWW....CCCCCCOOOO..",
+      "...IIIINNN......DDDDDDDDDDDD....CCCCCCOOOO..",
+      "...IIIINNN......DDDDDDDDDDDD....CCCCCCBBBB..",
+      "...IIIIUUU......DDDDDDDDDDDD....CCCCCCBBBB..",
+      "...IIIIUUU......DDDDDDDDDDDD....CCCCCCBBBB..",
+      "...IIIIUUU......DDDDDDDDDDDD....CCCCCCBBBB..",
+      "................DDDDDDDDDDDD................",
+      "................DDDDDDDDDDDD................",
+      "............................................",
+      "...LLLL..............................EEEE...",
+      "...LLLL..............................EEEE...",
+      "...LLLL..............................EEEE...",
+      "...LLLL..............................EEEE...",
+      "............................................",
+      "............................................",
+      "............................................",
+      "..........HHHH................PPPP..........",
+      "..........HHHH................PPPP..........",
+      "..........HHHH................PPPP..........",
+      "..........HHHH................PPPP..........",
+      "............................................",
+      "............................................"
+     ],
+     "rooms": {
+      "K": {
+       "name": "Camp kitchen",
+       "type": "kitchen",
+       "wall": "tile_kitchen_check",
+       "floor": "linoleum_check"
+      },
+      "W": {
+       "name": "Walk-in",
+       "type": "storage",
+       "wall": "plaster_white",
+       "floor": "concrete",
+       "ceiling": "plaster_white"
+      },
+      "D": {
+       "name": "Dining hall",
+       "type": "diner",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "open_roof": true
+      },
+      "C": {
+       "name": "Lodge common room",
+       "type": "living",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak"
+      },
+      "O": {
+       "name": "Director's office",
+       "type": "office",
+       "wall": "paint_sage",
+       "floor": "wood_oak"
+      },
+      "B": {
+       "name": "Counsellors' bunk room",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "I": {
+       "name": "Infirmary ward",
+       "type": "bedroom",
+       "wall": "plaster_white",
+       "floor": "linoleum_beige",
+       "ceiling": "plaster_white"
+      },
+      "N": {
+       "name": "Nurse's room",
+       "type": "office",
+       "wall": "plaster_white",
+       "floor": "linoleum_beige",
+       "ceiling": "plaster_white"
+      },
+      "U": {
+       "name": "Infirmary stores",
+       "type": "storage",
+       "wall": "plaster_grey",
+       "floor": "linoleum_beige"
+      },
+      "S": {
+       "name": "Canoe shed",
+       "type": "storage",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "L": {
+       "name": "Loon cabin",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "H": {
+       "name": "Heron cabin",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "P": {
+       "name": "Osprey cabin",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "E": {
+       "name": "Kestrel cabin",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "kitchen_back",
+     "at": [
+      18,
+      21
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked_inside"
+    },
+    {
+     "id": "kitchen_win_n",
+     "at": [
+      22,
+      21
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "kitchen_win_w",
+     "at": [
+      16,
+      23
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "walkin_door",
+     "at": [
+      24,
+      22
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked",
+     "key": "w3_tamarack_walkin_key",
+     "model": "door_metal"
+    },
+    {
+     "id": "kitchen_door",
+     "at": [
+      19,
+      24
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "serving_hatch",
+     "at": [
+      22,
+      24
+     ],
+     "side": "S",
+     "type": "half",
+     "state": "closed"
+    },
+    {
+     "id": "mess_front",
+     "at": [
+      21,
+      31
+     ],
+     "side": "S",
+     "type": "door2",
+     "state": "barricaded",
+     "barricade": "furniture"
+    },
+    {
+     "id": "mess_side",
+     "at": [
+      27,
+      28
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "mess_win_w1",
+     "at": [
+      16,
+      26
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "mess_win_w2",
+     "at": [
+      16,
+      29
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "mess_win_e1",
+     "at": [
+      27,
+      26
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "mess_win_e2",
+     "at": [
+      27,
+      30
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "mess_win_s1",
+     "at": [
+      18,
+      31
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "mess_win_s2",
+     "at": [
+      25,
+      31
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "lodge_front",
+     "at": [
+      34,
+      29
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked_inside"
+    },
+    {
+     "id": "lodge_win_s",
+     "at": [
+      36,
+      29
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "lodge_win_w",
+     "at": [
+      32,
+      24
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "lodge_win_n",
+     "at": [
+      34,
+      23
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "office_bunk_door",
+     "at": [
+      38,
+      25
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "office_common_door",
+     "at": [
+      38,
+      24
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "bunk_common_door",
+     "at": [
+      38,
+      28
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "bunk_window",
+     "at": [
+      41,
+      28
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "office_window",
+     "at": [
+      41,
+      24
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "office_window_n",
+     "at": [
+      40,
+      23
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "infirmary_door",
+     "at": [
+      5,
+      29
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "infirmary_stores_door",
+     "at": [
+      8,
+      29
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "ward_nurse_door",
+     "at": [
+      6,
+      25
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "nurse_stores_door",
+     "at": [
+      8,
+      26
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "ward_win_w1",
+     "at": [
+      3,
+      26
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "ward_win_w2",
+     "at": [
+      3,
+      28
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "ward_win_n",
+     "at": [
+      5,
+      24
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "nurse_win_n",
+     "at": [
+      8,
+      24
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "nurse_win_e",
+     "at": [
+      9,
+      25
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "stores_win_e",
+     "at": [
+      9,
+      28
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "shed_lake_doors",
+     "at": [
+      29,
+      16
+     ],
+     "side": "N",
+     "type": "door2",
+     "state": "open"
+    },
+    {
+     "id": "shed_door",
+     "at": [
+      30,
+      19
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "shed_win_w",
+     "at": [
+      28,
+      17
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "loon_door",
+     "at": [
+      6,
+      34
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "broken"
+    },
+    {
+     "id": "loon_win_n",
+     "at": [
+      6,
+      33
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "loon_win_s",
+     "at": [
+      6,
+      36
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "cue": "none"
+    },
+    {
+     "id": "heron_door",
+     "at": [
+      13,
+      41
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "heron_win_n",
+     "at": [
+      13,
+      40
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "heron_win_s",
+     "at": [
+      13,
+      43
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "osprey_door",
+     "at": [
+      30,
+      41
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "barricaded"
+    },
+    {
+     "id": "osprey_win_n",
+     "at": [
+      30,
+      40
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "osprey_win_s",
+     "at": [
+      30,
+      43
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "kestrel_door",
+     "at": [
+      37,
+      34
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "kestrel_win_n",
+     "at": [
+      37,
+      33
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "kestrel_win_s",
+     "at": [
+      37,
+      36
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "cue": "none"
+    }
+   ],
+   "props": [
+    {
+     "id": "kitchen_range",
+     "prop": "wild_cook_range",
+     "at": [
+      20,
+      21
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "id": "kitchen_sink",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      23,
+      21
+     ],
+     "against": "N",
+     "offset": [
+      -0.1,
+      0
+     ]
+    },
+    {
+     "id": "kitchen_counter",
+     "prop": "kitchen_counter",
+     "at": [
+      24,
+      21
+     ],
+     "against": "N",
+     "offset": [
+      -0.1,
+      0
+     ]
+    },
+    {
+     "id": "kitchen_cabinet",
+     "prop": "kitchen_wall_cabinet",
+     "at": [
+      24,
+      21
+     ],
+     "against": "N",
+     "offset": [
+      -0.1,
+      0
+     ],
+     "height": 1.5
+    },
+    {
+     "id": "kitchen_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      16,
+      22
+     ],
+     "against": "W",
+     "container": "kitchen_cabinet"
+    },
+    {
+     "prop": "wild_enamel_dishes",
+     "pos": [
+      23.4,
+      21.35
+     ],
+     "y": 1.0
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      16.5,
+      24.45
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      21.6,
+      24.5
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "cans_scatter",
+     "pos": [
+      22.4,
+      22.9
+     ],
+     "rot": 30
+    },
+    {
+     "id": "walkin_shelf_a",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      27,
+      22
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      -0.4
+     ],
+     "container": "w3_walkin_stores"
+    },
+    {
+     "id": "walkin_shelf_b",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      27,
+      23
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.35
+     ],
+     "container": "farm_pantry"
+    },
+    {
+     "id": "walkin_stores",
+     "prop": "civic_relief_crate",
+     "at": [
+      25,
+      24
+     ],
+     "against": "S",
+     "offset": [
+      0.12,
+      0
+     ],
+     "container": "w3_walkin_stores"
+    },
+    {
+     "id": "walkin_crate_b",
+     "prop": "civic_relief_crate",
+     "at": [
+      26,
+      24
+     ],
+     "against": "S",
+     "offset": [
+      0.18,
+      0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "ruth_crate",
+     "prop": "crate_wood",
+     "pos": [
+      26.15,
+      23.15
+     ],
+     "rot": -90
+    },
+    {
+     "id": "walkin_lantern",
+     "prop": "lantern_camping",
+     "pos": [
+      25.6,
+      23.7
+     ],
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "mess_table_0",
+     "prop": "wild_mess_table",
+     "pos": [
+      19.0,
+      27.4
+     ],
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "mess_bench_0n",
+     "prop": "wild_mess_bench",
+     "pos": [
+      19.0,
+      26.74
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "mess_bench_0s",
+     "prop": "wild_mess_bench",
+     "pos": [
+      19.0,
+      28.06
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "mess_table_1",
+     "prop": "wild_mess_table",
+     "pos": [
+      24.0,
+      27.4
+     ],
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "mess_bench_1n",
+     "prop": "wild_mess_bench",
+     "pos": [
+      24.0,
+      26.74
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "mess_bench_1s",
+     "prop": "wild_mess_bench",
+     "pos": [
+      24.0,
+      28.06
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "mess_table_2",
+     "prop": "wild_mess_table",
+     "pos": [
+      19.0,
+      30.2
+     ],
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "mess_bench_2n",
+     "prop": "wild_mess_bench",
+     "pos": [
+      19.0,
+      29.54
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "mess_bench_2s",
+     "prop": "wild_mess_bench",
+     "pos": [
+      19.0,
+      30.86
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "mess_table_3",
+     "prop": "wild_mess_table",
+     "pos": [
+      24.0,
+      30.2
+     ],
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "mess_bench_3n",
+     "prop": "wild_mess_bench",
+     "pos": [
+      24.0,
+      29.54
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "mess_bench_3s",
+     "prop": "wild_mess_bench",
+     "pos": [
+      24.0,
+      30.86
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "mess_candles_a",
+     "prop": "candle_cluster",
+     "pos": [
+      19.3,
+      27.35
+     ],
+     "y": 0.78,
+     "lit": true
+    },
+    {
+     "id": "mess_candles_b",
+     "prop": "candle_cluster",
+     "pos": [
+      23.6,
+      30.25
+     ],
+     "y": 0.78,
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_enamel_dishes",
+     "pos": [
+      18.4,
+      27.5
+     ],
+     "y": 0.78
+    },
+    {
+     "prop": "wild_enamel_dishes",
+     "pos": [
+      24.6,
+      27.3
+     ],
+     "y": 0.78
+    },
+    {
+     "prop": "wild_enamel_dishes",
+     "pos": [
+      19.9,
+      30.1
+     ],
+     "y": 0.78
+    },
+    {
+     "id": "mat_w1",
+     "prop": "sleeping_bag",
+     "pos": [
+      16.62,
+      27.9
+     ],
+     "rot": 90
+    },
+    {
+     "id": "mat_w2",
+     "prop": "sleeping_bag",
+     "pos": [
+      16.62,
+      30.45
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "mat_e1",
+     "prop": "sleeping_bag",
+     "pos": [
+      27.38,
+      26.62
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "civic_shelter_board",
+     "at": [
+      20,
+      25
+     ],
+     "against": "N",
+     "height": 1.35
+    },
+    {
+     "id": "mess_duffel",
+     "prop": "duffel_bag",
+     "pos": [
+      26.6,
+      31.4
+     ],
+     "rot": 20
+    },
+    {
+     "id": "mess_pack",
+     "prop": "backpack_dropped",
+     "pos": [
+      16.6,
+      25.6
+     ],
+     "rot": 60
+    },
+    {
+     "prop": "w3_sign_mess",
+     "at": [
+      23,
+      32
+     ],
+     "against": "N",
+     "height": 2.25
+    },
+    {
+     "id": "lodge_stove",
+     "prop": "wild_wood_stove",
+     "at": [
+      32,
+      23
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "id": "lodge_couch",
+     "prop": "couch",
+     "at": [
+      32,
+      27
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "prop": "armchair",
+     "pos": [
+      34.9,
+      26.4
+     ],
+     "rot": -70,
+     "variant": "worn"
+    },
+    {
+     "prop": "coffee_table",
+     "pos": [
+      33.8,
+      27.5
+     ],
+     "rot": 90
+    },
+    {
+     "id": "lodge_books",
+     "prop": "bookshelf",
+     "at": [
+      37,
+      26
+     ],
+     "against": "E"
+    },
+    {
+     "prop": "civic_shelter_board",
+     "at": [
+      35,
+      23
+     ],
+     "against": "N",
+     "height": 1.4,
+     "variant": "worn"
+    },
+    {
+     "prop": "rug_oval",
+     "pos": [
+      34.6,
+      27.4
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_firewood_stack",
+     "pos": [
+      33.3,
+      23.35
+     ]
+    },
+    {
+     "prop": "w3_sign_lodge",
+     "at": [
+      35,
+      30
+     ],
+     "against": "N",
+     "height": 2.25
+    },
+    {
+     "id": "ruth_desk",
+     "prop": "desk_small",
+     "at": [
+      39,
+      23
+     ],
+     "against": "N"
+    },
+    {
+     "prop": "wild_radio_set",
+     "pos": [
+      39.35,
+      23.3
+     ],
+     "y": 0.75,
+     "variant": "worn"
+    },
+    {
+     "id": "office_lantern",
+     "prop": "lantern_camping",
+     "pos": [
+      39.85,
+      23.32
+     ],
+     "y": 0.75,
+     "lit": true
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      39.5,
+      24.15
+     ],
+     "rot": 180
+    },
+    {
+     "id": "office_files",
+     "prop": "filing_cabinet",
+     "at": [
+      38,
+      23
+     ],
+     "against": "W"
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      41,
+      25
+     ],
+     "against": "E",
+     "height": 1.3
+    },
+    {
+     "id": "bunk_a",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      39.15,
+      29.42
+     ]
+    },
+    {
+     "id": "bunk_b",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      40.85,
+      26.58
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "bunk_locker",
+     "prop": "wild_footlocker",
+     "at": [
+      41,
+      29
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      -0.07
+     ],
+     "container": "w3_camp_footlocker"
+    },
+    {
+     "prop": "books_scatter",
+     "pos": [
+      40.4,
+      28.3
+     ],
+     "rot": 20
+    },
+    {
+     "id": "ward_cot_a",
+     "prop": "civic_army_cot",
+     "pos": [
+      3.55,
+      25.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "ward_cot_b",
+     "prop": "civic_army_cot",
+     "pos": [
+      3.55,
+      27.85
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "ward_cot_c",
+     "prop": "civic_army_cot",
+     "pos": [
+      6.4,
+      27.05
+     ]
+    },
+    {
+     "id": "ward_cabinet",
+     "prop": "medicine_cabinet",
+     "at": [
+      3,
+      24
+     ],
+     "against": "N",
+     "height": 1.4,
+     "container": "w3_infirmary_cabinet"
+    },
+    {
+     "prop": "road_iv_stand",
+     "pos": [
+      4.55,
+      25.2
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "bloody_bandages",
+     "pos": [
+      4.9,
+      28.6
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      6.5,
+      24.5
+     ]
+    },
+    {
+     "id": "nell_desk",
+     "prop": "desk_small",
+     "at": [
+      9,
+      24
+     ],
+     "against": "N",
+     "offset": [
+      -0.1,
+      0
+     ]
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      9.35,
+      25.05
+     ],
+     "rot": 180
+    },
+    {
+     "id": "nell_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      9.0,
+      24.3
+     ],
+     "y": 0.75,
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "nell_cabinet",
+     "prop": "road_medical_cabinet",
+     "at": [
+      7,
+      24
+     ],
+     "against": "W",
+     "container": "w3_infirmary_cabinet"
+    },
+    {
+     "id": "stores_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      9,
+      27
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.08
+     ],
+     "container": "w3_infirmary_cabinet"
+    },
+    {
+     "id": "stores_box_a",
+     "prop": "cardboard_box",
+     "pos": [
+      7.5,
+      27.45
+     ],
+     "rot": 10
+    },
+    {
+     "id": "stores_box_b",
+     "prop": "cardboard_box",
+     "pos": [
+      7.5,
+      27.45
+     ],
+     "y": 0.34,
+     "rot": -5
+    },
+    {
+     "prop": "w3_sign_infirmary",
+     "at": [
+      6,
+      30
+     ],
+     "against": "N",
+     "height": 2.25
+    },
+    {
+     "prop": "out_rowboat_hauled",
+     "pos": [
+      31.95,
+      18.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "shed_motor",
+     "prop": "out_outboard_motor",
+     "pos": [
+      28.7,
+      19.2
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "out_life_jackets",
+     "pos": [
+      30.2,
+      17.9
+     ]
+    },
+    {
+     "prop": "w3_sign_canoes",
+     "at": [
+      31,
+      20
+     ],
+     "against": "N",
+     "height": 2.25
+    },
+    {
+     "id": "canoe_rack",
+     "prop": "w3_canoe_rack",
+     "pos": [
+      25.55,
+      18.0
+     ],
+     "rot": 90
+    },
+    {
+     "id": "loon_bunk_n",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      4.17,
+      33.58
+     ],
+     "variant": "destroyed"
+    },
+    {
+     "id": "loon_bunk_s",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      4.17,
+      36.42
+     ]
+    },
+    {
+     "id": "loon_locker",
+     "prop": "wild_footlocker",
+     "at": [
+      6,
+      35
+     ],
+     "against": "E",
+     "container": "w3_camp_footlocker"
+    },
+    {
+     "prop": "w3_sign_loon",
+     "at": [
+      7,
+      35
+     ],
+     "against": "W",
+     "height": 2.2
+    },
+    {
+     "id": "heron_bunk_n",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      11.17,
+      40.58
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "heron_bunk_s",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      11.17,
+      43.42
+     ]
+    },
+    {
+     "id": "heron_locker",
+     "prop": "wild_footlocker",
+     "at": [
+      13,
+      42
+     ],
+     "against": "E",
+     "container": "w3_camp_footlocker"
+    },
+    {
+     "prop": "w3_sign_heron",
+     "at": [
+      14,
+      42
+     ],
+     "against": "W",
+     "height": 2.2
+    },
+    {
+     "id": "osprey_bunk_n",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      32.83,
+      40.58
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "osprey_bunk_s",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      32.83,
+      43.42
+     ]
+    },
+    {
+     "id": "osprey_locker",
+     "prop": "wild_footlocker",
+     "at": [
+      30,
+      42
+     ],
+     "against": "W",
+     "container": "w3_camp_footlocker"
+    },
+    {
+     "prop": "w3_sign_osprey",
+     "at": [
+      29,
+      42
+     ],
+     "against": "E",
+     "height": 2.2
+    },
+    {
+     "id": "kestrel_bunk_n",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      39.83,
+      33.58
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "kestrel_bunk_s",
+     "prop": "w3_camp_bunk",
+     "pos": [
+      39.83,
+      36.42
+     ]
+    },
+    {
+     "id": "kestrel_locker",
+     "prop": "wild_footlocker",
+     "at": [
+      37,
+      35
+     ],
+     "against": "W",
+     "container": "w3_camp_footlocker"
+    },
+    {
+     "prop": "w3_sign_kestrel",
+     "at": [
+      36,
+      35
+     ],
+     "against": "E",
+     "height": 2.2
+    },
+    {
+     "id": "heron_duffel",
+     "prop": "duffel_bag",
+     "pos": [
+      11.0,
+      41.6
+     ],
+     "rot": 80
+    },
+    {
+     "id": "kestrel_pack",
+     "prop": "backpack_dropped",
+     "pos": [
+      38.0,
+      35.4
+     ],
+     "rot": -30
+    },
+    {
+     "id": "kestrel_lantern",
+     "prop": "lantern_camping",
+     "pos": [
+      39.4,
+      34.3
+     ],
+     "variant": "destroyed"
+    },
+    {
+     "prop": "school_flagpole",
+     "pos": [
+      22.5,
+      37.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "out_stone_fire_pit",
+     "pos": [
+      22.5,
+      40.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "ring_bench_s",
+     "prop": "w3_log_bench",
+     "pos": [
+      22.5,
+      42.45
+     ]
+    },
+    {
+     "id": "ring_bench_w",
+     "prop": "w3_log_bench",
+     "pos": [
+      20.25,
+      40.6
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "ring_bench_e",
+     "prop": "w3_log_bench",
+     "pos": [
+      24.75,
+      40.6
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w3_camp_arch",
+     "pos": [
+      22.5,
+      45.35
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "out_gate_arm",
+     "pos": [
+      22.5,
+      44.55
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "sawhorse_barricade",
+     "pos": [
+      19.2,
+      44.3
+     ],
+     "rot": 10,
+     "variant": "worn"
+    },
+    {
+     "prop": "sawhorse_barricade",
+     "pos": [
+      25.9,
+      44.2
+     ],
+     "rot": -15
+    },
+    {
+     "id": "evac_board",
+     "prop": "w3_evac_board",
+     "pos": [
+      16.6,
+      43.2
+     ]
+    },
+    {
+     "id": "registration_table",
+     "prop": "civic_folding_table",
+     "pos": [
+      28.4,
+      43.1
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      28.5,
+      42.4
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      27.6,
+      43.9
+     ],
+     "rot": 40
+    },
+    {
+     "id": "family_car_a",
+     "prop": "car_sedan_wreck",
+     "pos": [
+      37.0,
+      44.0
+     ],
+     "rot": 82,
+     "variant": "worn"
+    },
+    {
+     "id": "family_truck",
+     "prop": "pickup_wreck",
+     "pos": [
+      6.6,
+      43.8
+     ],
+     "rot": 98,
+     "variant": "worn"
+    },
+    {
+     "id": "family_car_b",
+     "prop": "car_sedan_wreck",
+     "pos": [
+      41.0,
+      40.4
+     ],
+     "rot": 10,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "w3_chapel_cross",
+     "pos": [
+      8.0,
+      15.7
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "chapel_body",
+     "prop": "corpse_remains",
+     "pos": [
+      10.6,
+      19.7
+     ],
+     "rot": 80,
+     "variant": "worn"
+    },
+    {
+     "id": "chapel_candles",
+     "prop": "candle_cluster",
+     "pos": [
+      8.45,
+      16.35
+     ],
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "chapel_bench_0",
+     "prop": "w3_log_bench",
+     "pos": [
+      8.0,
+      17.6
+     ],
+     "variant": "clean"
+    },
+    {
+     "id": "chapel_bench_1",
+     "prop": "w3_log_bench",
+     "pos": [
+      8.0,
+      19.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "chapel_bench_2",
+     "prop": "w3_log_bench",
+     "pos": [
+      8.0,
+      20.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      21.5,
+      16.5
+     ],
+     "y": -3.2,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      21.5,
+      14.5
+     ],
+     "y": -3.2
+    },
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      21.5,
+      12.5
+     ],
+     "y": -3.2,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      21.5,
+      10.5
+     ],
+     "y": -3.2
+    },
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      21.5,
+      8.5
+     ],
+     "y": -3.2,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      21.5,
+      6.5
+     ],
+     "y": -3.2
+    },
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      21.5,
+      4.5
+     ],
+     "y": -3.2,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      21.5,
+      2.5
+     ],
+     "y": -3.2
+    },
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      19.5,
+      1.5
+     ],
+     "rot": 90,
+     "y": -3.2,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      19.5,
+      0.6
+     ],
+     "y": -3.2
+    },
+    {
+     "prop": "out_dock_section",
+     "pos": [
+      23.5,
+      1.5
+     ],
+     "rot": 90,
+     "y": -3.2,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "out_dock_piles",
+     "pos": [
+      23.5,
+      0.6
+     ],
+     "y": -3.2
+    },
+    {
+     "prop": "wild_canoe",
+     "pos": [
+      24.4,
+      9.2
+     ],
+     "rot": 92,
+     "y": -0.72,
+     "variant": "clean"
+    },
+    {
+     "prop": "wild_canoe",
+     "pos": [
+      18.6,
+      5.6
+     ],
+     "rot": 78,
+     "y": -0.72,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      1.4,
+      31.5
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      14.2,
+      35.4
+     ],
+     "rot": 47,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      28.4,
+      36.8
+     ],
+     "rot": 94,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      42.4,
+      38.5
+     ],
+     "rot": 141,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      1.2,
+      41.0
+     ],
+     "rot": 188,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      43.0,
+      44.6
+     ],
+     "rot": 235,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      36.4,
+      20.2
+     ],
+     "rot": 282,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      13.2,
+      22.4
+     ],
+     "rot": 329,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      42.6,
+      18.0
+     ],
+     "rot": 16,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      1.8,
+      20.0
+     ],
+     "rot": 63,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      15.6,
+      17.2
+     ],
+     "rot": 110,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      43.0,
+      31.5
+     ],
+     "rot": 157,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      10.8,
+      31.6
+     ],
+     "rot": 204,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      29.2,
+      33.0
+     ],
+     "rot": 251,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      12.2,
+      37.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      34.0,
+      37.4
+     ],
+     "rot": 61,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      17.6,
+      34.0
+     ],
+     "rot": 122,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      27.2,
+      20.2
+     ],
+     "rot": 183,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      2.4,
+      38.0
+     ],
+     "rot": 244,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      39.8,
+      21.2
+     ],
+     "rot": 305,
+     "variant": "clean"
+    },
+    {
+     "prop": "woodpile",
+     "pos": [
+      13.6,
+      27.4
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_chopping_block",
+     "pos": [
+      12.6,
+      25.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_outhouse",
+     "pos": [
+      1.6,
+      36.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "camp_bear_box",
+     "prop": "out_bear_box",
+     "pos": [
+      15.0,
+      39.6
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "loop_body",
+     "prop": "corpse_remains",
+     "pos": [
+      26.6,
+      38.6
+     ],
+     "rot": 40,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      10.8,
+      30.6
+     ],
+     "rot": 85,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      12.0,
+      30.75
+     ],
+     "rot": 95,
+     "variant": "worn"
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "c_lower",
+     "pos": [
+      39.0,
+      29.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "counsellors"
+    },
+    {
+     "id": "c_upper",
+     "pos": [
+      40.9,
+      26.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "counsellors",
+     "anchor": "bunk_b"
+    },
+    {
+     "id": "c_floor",
+     "pos": [
+      38.55,
+      27.3
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "group": "counsellors",
+     "anchor": "floor"
+    },
+    {
+     "id": "fam_a",
+     "pos": [
+      18.6,
+      26.74
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "group": "families",
+     "alt": "families:at_tables"
+    },
+    {
+     "id": "fam_b",
+     "pos": [
+      24.4,
+      28.06
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "group": "families",
+     "alt": "families:at_tables"
+    },
+    {
+     "id": "fam_c",
+     "pos": [
+      19.6,
+      30.86
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "group": "families",
+     "alt": "families:at_tables"
+    },
+    {
+     "id": "fam_d",
+     "pos": [
+      22.5,
+      25.7
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 180,
+     "group": "families"
+    },
+    {
+     "id": "inf_a",
+     "pos": [
+      3.55,
+      25.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "group": "infirmary"
+    },
+    {
+     "id": "inf_b",
+     "pos": [
+      3.55,
+      27.85
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 180,
+     "group": "infirmary"
+    },
+    {
+     "id": "inf_c",
+     "pos": [
+      5.3,
+      26.5
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 0,
+     "group": "infirmary"
+    },
+    {
+     "id": "ruth",
+     "pos": [
+      26.15,
+      23.15
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -90,
+     "guardian": true,
+     "anchor": "ruth_crate"
+    },
+    {
+     "id": "heron_parent",
+     "pos": [
+      11.17,
+      43.42
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90
+    },
+    {
+     "id": "osprey_parent",
+     "pos": [
+      32.83,
+      40.58
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90
+    },
+    {
+     "id": "kestrel_parent",
+     "pos": [
+      38.6,
+      34.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "anchor": "floor"
+    },
+    {
+     "id": "shed_watcher",
+     "pos": [
+      29.6,
+      17.15
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180
+    },
+    {
+     "id": "fam_a",
+     "pos": [
+      16.62,
+      27.9
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "group": "families",
+     "alt": "families:on_mats"
+    },
+    {
+     "id": "fam_b",
+     "pos": [
+      16.62,
+      30.45
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 180,
+     "group": "families",
+     "alt": "families:on_mats"
+    },
+    {
+     "id": "fam_c",
+     "pos": [
+      27.38,
+      26.62
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "group": "families",
+     "alt": "families:on_mats"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "walkin_key",
+     "item": "w3_tamarack_walkin_key",
+     "pos": [
+      41.82,
+      25.55
+     ],
+     "y": 1.42
+    }
+   ],
+   "notes": [
+    {
+     "note": "w3_tamarack_log",
+     "pos": [
+      39.1,
+      23.35
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w3_tamarack_notice",
+     "pos": [
+      16.6,
+      43.6
+     ],
+     "y": 1.05
+    },
+    {
+     "note": "w3_tamarack_letter",
+     "pos": [
+      39.6,
+      36.42
+     ],
+     "y": 0.58
+    },
+    {
+     "note": "w3_tamarack_nell",
+     "pos": [
+      9.3,
+      24.35
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w3_tamarack_ames",
+     "pos": [
+      29.9,
+      18.65
+     ],
+     "y": 0.02
+    }
+   ],
+   "traps": [
+    {
+     "id": "lodge_jaws",
+     "type": "bear_trap",
+     "pos": [
+      42.45,
+      28.55
+     ],
+     "rot": 20,
+     "alt": "lodge_way_in:bunk_window"
+    },
+    {
+     "id": "bunkroom_boards",
+     "type": "creaky_floor",
+     "at": [
+      39,
+      27
+     ],
+     "size": [
+      2,
+      1
+     ]
+    },
+    {
+     "id": "side_door_cans",
+     "type": "can_chime",
+     "at": [
+      27,
+      28
+     ],
+     "side": "E"
+    },
+    {
+     "id": "lodge_jaws",
+     "type": "bear_trap",
+     "pos": [
+      42.45,
+      24.45
+     ],
+     "rot": -10,
+     "alt": "lodge_way_in:office_window"
+    },
+    {
+     "id": "ring_jaws",
+     "type": "bear_trap",
+     "pos": [
+      18.4,
+      38.6
+     ],
+     "rot": 35
+    }
+   ],
+   "triggers": [
+    {
+     "id": "counsellors_boards",
+     "group": "counsellors",
+     "on": "trap",
+     "trap": "bunkroom_boards",
+     "delay": 0.4
+    },
+    {
+     "id": "counsellors_key",
+     "group": "counsellors",
+     "on": "pickup",
+     "pickup": "walkin_key",
+     "delay": 0.7
+    },
+    {
+     "id": "families_hall",
+     "group": "families",
+     "on": "room",
+     "room": "D",
+     "level": 0,
+     "delay": 0.5
+    },
+    {
+     "id": "families_cans",
+     "group": "families",
+     "on": "trap",
+     "trap": "side_door_cans",
+     "delay": 0.3
+    },
+    {
+     "id": "infirmary_opened",
+     "group": "infirmary",
+     "on": "opening",
+     "opening": "infirmary_door",
+     "delay": 0.5
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      21.5,
+      28.8
+     ],
+     "height": 2.2,
+     "color": "#ffb873",
+     "energy": 0.6,
+     "range": 7.0,
+     "flicker": 0.35
+    },
+    {
+     "pos": [
+      39.6,
+      24.0
+     ],
+     "height": 1.6,
+     "color": "#ffc890",
+     "energy": 0.45,
+     "range": 4.5,
+     "flicker": 0.1
+    }
+   ],
+   "decals": [
+    {
+     "decal": "survivor_marks_b",
+     "at": [
+      40,
+      23
+     ],
+     "side": "N",
+     "height": 1.6,
+     "size": [
+      0.9,
+      0.7
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      24,
+      22
+     ],
+     "side": "E",
+     "height": 1.3,
+     "size": [
+      0.4,
+      0.4
+     ]
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      26,
+      21
+     ],
+     "side": "N",
+     "height": 1.2,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      27,
+      27
+     ],
+     "side": "E",
+     "height": 2.0,
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      5,
+      27
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 10
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      30,
+      41
+     ],
+     "side": "W",
+     "height": 1.4,
+     "size": [
+      0.9,
+      0.7
+     ]
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      3,
+      27
+     ],
+     "side": "W",
+     "height": 1.9,
+     "size": [
+      1.0,
+      0.8
+     ]
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      28,
+      28
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      1.6
+     ],
+     "rot": 90
+    },
+    {
+     "decal": "blood_splatter_c",
+     "at": [
+      40,
+      27
+     ],
+     "side": "E",
+     "height": 1.0,
+     "size": [
+      0.9,
+      0.9
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      22,
+      45
+     ],
+     "label": "The camp road ends under the arch: CAMP TAMARACK, a Cordon gate arm chained across it"
+    },
+    {
+     "at": [
+      17,
+      42
+     ],
+     "label": "The registration board: FAMILY EVACUATION POINT 6, the lists, the notice"
+    },
+    {
+     "at": [
+      22,
+      39
+     ],
+     "label": "The loop: the flagpole, the cold fire ring, the cabins all round"
+    },
+    {
+     "at": [
+      34,
+      31
+     ],
+     "label": "The staff lodge: its front door bolted from inside"
+    },
+    {
+     "at": [
+      42,
+      28
+     ],
+     "label": "Round the side: a lodge window smashed in, glass in the grass (and jaws in it)"
+    },
+    {
+     "at": [
+      40,
+      27
+     ],
+     "label": "The counsellors' bunk room: loose boards between the bunks"
+    },
+    {
+     "at": [
+      39,
+      24
+     ],
+     "label": "The director's office: the radio log, and the walk-in key on her board"
+    },
+    {
+     "at": [
+      35,
+      27
+     ],
+     "label": "The common room: draw the front door's bolt"
+    },
+    {
+     "at": [
+      34,
+      30
+     ],
+     "label": "Back out to the loop"
+    },
+    {
+     "at": [
+      28,
+      28
+     ],
+     "label": "The mess hall, piled shut inside; its side door, cans strung across it"
+    },
+    {
+     "at": [
+      25,
+      29
+     ],
+     "label": "The dining hall: the families at the long tables, waiting"
+    },
+    {
+     "at": [
+      21,
+      23
+     ],
+     "label": "The kitchen"
+    },
+    {
+     "at": [
+      26,
+      23
+     ],
+     "label": "The walk-in, padlocked: Ruth with the convoy stores"
+    },
+    {
+     "at": [
+      18,
+      22
+     ],
+     "label": "Draw the bolt on the kitchen's back door"
+    },
+    {
+     "at": [
+      18,
+      19
+     ],
+     "label": "Out to the lake: the dock and the canoe shed"
+    }
+   ],
+   "loot_room": {
+    "room": "W",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "kitchen_back"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "families",
+     "label": "Where the families wait",
+     "options": [
+      {
+       "id": "at_tables",
+       "weight": 2,
+       "label": "At the long tables"
+      },
+      {
+       "id": "on_mats",
+       "label": "On their mats along the walls"
+      }
+     ]
+    },
+    {
+     "id": "walkin",
+     "label": "How the walk-in is shut",
+     "options": [
+      {
+       "id": "padlock",
+       "weight": 2
+      },
+      {
+       "id": "chain",
+       "openings": [
+        {
+         "id": "walkin_door",
+         "lock": "chain"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "lodge_way_in",
+     "label": "Which lodge window is broken",
+     "options": [
+      {
+       "id": "bunk_window",
+       "weight": 2
+      },
+      {
+       "id": "office_window",
+       "openings": [
+        {
+         "id": "bunk_window",
+         "state": "closed"
+        },
+        {
+         "id": "office_window",
+         "state": "broken"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "cabins",
+     "label": "Which cabin Ruth boarded up",
+     "options": [
+      {
+       "id": "osprey",
+       "weight": 2
+      },
+      {
+       "id": "heron",
+       "openings": [
+        {
+         "id": "osprey_door",
+         "state": "closed"
+        },
+        {
+         "id": "heron_door",
+         "state": "barricaded"
+        }
+       ]
+      },
+      {
+       "id": "none",
+       "openings": [
+        {
+         "id": "osprey_door",
+         "state": "closed"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "dining",
+     "label": "The dining hall",
+     "options": [
+      {
+       "id": "panelled",
+       "weight": 2
+      },
+      {
+       "id": "sage",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "D",
+         "wall": "paint_sage"
+        }
+       ]
+      },
+      {
+       "id": "whitewashed",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "D",
+         "wall": "plaster_white",
+         "floor": "wood_oak"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "lights",
+     "label": "How many lights still burn",
+     "options": [
+      {
+       "id": "some",
+       "weight": 2
+      },
+      {
+       "id": "few",
+       "style": {
+        "lights_on": 0.35
+       }
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "enemies": 15,
+    "props": 260
+   }
+  }
+ ]
+}

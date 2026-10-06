@@ -181,6 +181,13 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
     lots by frontage and zoning by rings, lot pads graded to each frame, buildings stood on their
     frames, an authored building in at most 3 towns per world; v1 worlds still load. Gaps:
     TD-136..140.
+  - [x] New biomes (ADR-0041, `RwgGenerator.VERSION` 4): burnt forest as fire scars that stop at
+    water, roads and towns (charred snags with alligator char under silver wood, charred windfall,
+    fire-hollowed stumps, sooted boulders, ash-and-char ground, fireweed, bracken and lodgepole
+    regrowth, its own ambience) and fen on low wet ground (peat, sphagnum hummocks, tannin pools the
+    player wades, cattail and bulrush that stand in them, skunk cabbage, stunted tamarack and black
+    spruce, drowned snags, frogs at dusk; the Bloom pools there); two weights on the World tab.
+    Gaps: TD-149..153.
   - [ ] Caves, traders, the Ashen's territory, coasts and new biomes; streaming regions for 6-7 km
     worlds (TD-081..084; RWG v2 Phases 2–4, ADR-0038).
   - [x] Pool buildings for random towns (DESIGN §11): Suds & Spin Laundromat, Hollowmere Grocery,
@@ -191,6 +198,14 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
     Ridgeline Aggregate and the Veterans' Post, five more pool dungeons (three of them industrial)
     with their own keys, notes and loot (`town4` content) and 24 new props (`props_town4.py`);
     `tests/unit/test_pool_round_two.gd`. Gaps: TD-112..114.
+  - [x] Wilderness set pieces, round 3 (DESIGN §11): Camp Tamarack (a church camp on a lake shore, the
+    Cordon's family evacuation point), Elk Ridge Lodge (a two-storey chinked-log hunting lodge with a
+    double-height great room and a cellar meat locker), the Cordon Quarantine Camp (a fenced roadside
+    camp: checkpoint, screening, decontamination, open-sided ward tents, command trailer, morgue
+    reefer) and the Haldane Place (a fortified homestead and its root-cellar bunker), four dungeons in
+    the wilderness pool with room alternatives, their own keys, notes and loot (`wild3` content), 49
+    new props (`props_wild3.py`, shells for the lodge, reefer and trailer) and the `w3_signs` atlas;
+    `tests/unit/test_wilderness_round_three.gd`. Gaps: TD-154..158.
 - Burnt forest, snow, swamp, scrub biomes; full seasons (snow cover, frozen water, temperature).
 - Structural tiers: stone, metal; repair/upgrade tools; Rammer breakers that tear through walls.
 - Farming, rain collection, traps (spike pits, deadfalls), electricity (generator, wiring, lights,

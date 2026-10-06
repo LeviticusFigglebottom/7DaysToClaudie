@@ -16,6 +16,7 @@ const LAYER_COLORS: Dictionary = {
 	"forest_floor": Color(0.32, 0.22, 0.12), "moss_ground": Color(0.25, 0.36, 0.12), "grass_ground": Color(0.42, 0.52, 0.22),
 	"dirt": Color(0.55, 0.42, 0.28), "mud": Color(0.3, 0.24, 0.18), "gravel": Color(0.6, 0.58, 0.54),
 	"asphalt_cracked": Color(0.15, 0.15, 0.16), "sand": Color(0.82, 0.74, 0.55), "rock_cliff": Color(0.5, 0.5, 0.5),
+	"ash_char": Color(0.36, 0.34, 0.32), "peat": Color(0.17, 0.12, 0.09),
 }
 const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
 

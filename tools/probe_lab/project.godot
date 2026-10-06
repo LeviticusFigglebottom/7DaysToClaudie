@@ -1,0 +1,9 @@
+; The probe lab (make probe-lab): a bare project, so it runs without the game import cache or
+; its render lock. See probe_lab.gd.
+config_version=5
+
+[application]
+config/name="probe_lab"
+
+[rendering]
+renderer/rendering_method="forward_plus"

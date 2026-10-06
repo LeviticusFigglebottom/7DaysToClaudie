@@ -128,7 +128,8 @@ static func scatter_chunk(chunk: Vector2i, rt: RegionTerrain, world_seed: int, h
 				var slope: float = rad_to_deg(atan(grad.length()))
 				if slope > float(MAX_SLOPE.get(sp.veg_kind, 35.0)):
 					continue
-				if water_fn.is_valid() and float(water_fn.call(x, z)) > y - 0.15:
+				# Nothing stands in water but the species that wade (ADR-0041; wade_depth 0 for all others).
+				if water_fn.is_valid() and float(water_fn.call(x, z)) > y - 0.15 + sp.wade_depth:
 					continue
 				var inst := Instance.new()
 				inst.index = index

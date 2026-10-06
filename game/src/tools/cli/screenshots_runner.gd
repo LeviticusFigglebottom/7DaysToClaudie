@@ -119,6 +119,28 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "wx_mist_forest_dawn", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 3.0, 2283), "hour": 6.9, "weather": "mist", "wet": 0.4},
 ]
 
+## The wilderness set pieces of round 3 (DESIGN §11), shot on a random world that placed them: run with
+## main.gd's world arguments (`--world random --world-seed 12 --world-set size=4 --world-set wilderness=2.5`)
+## and `--only` naming some of these. Positions are in the building's own footprint (metres from its
+## corner, y above its pad), resolved against wherever the world stood it; a building the world did not
+## place is skipped. Each has its approach by day, its signature room and an interior at night by its
+## own lights.
+const POI_SHOTS: Array[Dictionary] = [
+	{"name": "w3_tamarack_approach", "poi": "camp_tamarack", "at": Vector3(26.0, 1.8, 49.5), "look": Vector3(24.0, 2.5, 40.0), "hour": 10.5, "weather": "clear"},
+	{"name": "w3_tamarack_dining", "poi": "camp_tamarack", "at": Vector3(28.5, 2.05, 33.3), "look": Vector3(20.5, 1.0, 28.0), "hour": 15.0, "weather": "overcast"},
+	{"name": "w3_tamarack_night", "poi": "camp_tamarack", "at": Vector3(21.5, 2.05, 27.6), "look": Vector3(24.0, 1.2, 32.0), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_elk_approach", "poi": "elk_ridge_lodge", "at": Vector3(3.5, 2.0, 28.0), "look": Vector3(13.0, 4.5, 15.0), "hour": 16.0, "weather": "clear"},
+	{"name": "w3_elk_great_room", "poi": "elk_ridge_lodge", "at": Vector3(14.5, 2.15, 18.5), "look": Vector3(7.5, 2.6, 15.0), "hour": 14.0, "weather": "overcast"},
+	{"name": "w3_elk_night", "poi": "elk_ridge_lodge", "at": Vector3(15.3, 5.1, 18.0), "look": Vector3(8.5, 1.5, 14.5), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_qc_approach", "poi": "cordon_quarantine_camp", "at": Vector3(16.0, 2.0, 43.5), "look": Vector3(24.0, 2.5, 30.0), "hour": 11.0, "weather": "overcast"},
+	{"name": "w3_qc_wards", "poi": "cordon_quarantine_camp", "at": Vector3(22.5, 1.95, 15.6), "look": Vector3(22.5, 0.8, 7.0), "hour": 13.0, "weather": "clear"},
+	{"name": "w3_qc_morgue_night", "poi": "cordon_quarantine_camp", "at": Vector3(37.5, 2.0, 13.4), "look": Vector3(37.5, 0.8, 7.0), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_qc_camp_night", "poi": "cordon_quarantine_camp", "at": Vector3(29.0, 3.0, 28.0), "look": Vector3(18.0, 1.5, 14.0), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_haldane_approach", "poi": "haldane_place", "at": Vector3(20.0, 1.8, 39.8), "look": Vector3(20.0, 2.0, 24.0), "hour": 10.0, "weather": "clear"},
+	{"name": "w3_haldane_yard", "poi": "haldane_place", "at": Vector3(32.5, 2.2, 20.0), "look": Vector3(14.0, 1.0, 18.0), "hour": 15.5, "weather": "clear"},
+	{"name": "w3_haldane_bunker_night", "poi": "haldane_place", "at": Vector3(19.6, -0.95, 15.4), "look": Vector3(25.5, -1.8, 17.0), "hour": 23.0, "weather": "clear"},
+]
+
 const ProbeBudget := preload("res://src/poi/interior_probe_budget.gd")
 
 var _out: String = "res://../build/screenshots"
@@ -131,6 +153,8 @@ var _settle: float = 4.0
 ## seconds, so the settle above is a frame or two, and TAA and SDFGI (20 frames to converge after a
 ## jump) show half settled: a dim deep wood, noisy soft shadows.
 var _settle_frames: int = 0
+## The world the current shot is taken in.
+var _world: Node = null
 ## --probe-always: the interior probes round the camera re-render every frame during a shot (QA of
 ## interiors lit by PoiManager's probe budget, which hides and shows UPDATE_ONCE probes).
 var _probe_always: bool = false
@@ -193,31 +217,83 @@ func _mem_report(tag: String) -> void:
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)), ", ".join(pipes)])
 
 
-## The interior probes round the camera (PoiBuilder: one per room rectangle; PoiManager's budget shows
-## the nearest 32 to 48): how many there are, how many are shown, and the three nearest.
+## The interior probes round the camera (PoiBuilder: one per room rectangle; PoiManager's budget keeps
+## the nearest 32 to 48 live and parks the rest): how many there are, how many are live, and the
+## three nearest.
 func _probe_report(tag: String, eye: Vector3) -> void:
+	var budget: Node = _probe_budget()
 	var ranked: Array = []
 	var shown: int = 0
-	for n: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+	for n: Variant in _all_probes(budget):
 		var p := n as ReflectionProbe
-		if p != null and p.is_inside_tree():
+		if p != null:
 			ranked.append([ProbeBudget.box_distance(p, eye), p])
-			shown += 1 if p.visible else 0
+			shown += 1 if _probe_live(budget, p) else 0
 	ranked.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
 	var near: PackedStringArray = []
 	for e: Array in ranked.slice(0, 3):
 		var p: ReflectionProbe = e[1]
-		near.append("%.1f m %s%s" % [float(e[0]), "shown" if p.visible else "hidden", " (always)" if p.update_mode == ReflectionProbe.UPDATE_ALWAYS else ""])
-	print("SHOT probes %s: %d interior probes, %d shown; nearest %s" % [tag, ranked.size(), shown, ", ".join(near)])
+		near.append("%.1f m %s%s" % [float(e[0]), "live" if _probe_live(budget, p) else "parked", " (always)" if p.update_mode == ReflectionProbe.UPDATE_ALWAYS else ""])
+	print("SHOT probes %s: %d interior probes, %d live; nearest %s" % [tag, ranked.size(), shown, ", ".join(near)])
+
+
+## PoiManager's probe budget in the world being shot (null without one, as in POI previews).
+func _probe_budget() -> Node:
+	var pois: Node = _world.get(&"pois") as Node if is_instance_valid(_world) else null
+	return pois.get(&"probes") as Node if pois != null else null
+
+
+func _probe_live(budget: Node, p: ReflectionProbe) -> bool:
+	return bool(budget.call(&"is_shown", p)) if budget != null else p.visible
+
+
+## Every interior probe: the budget's list when there is one (it holds the parked ones, which are
+## out of the tree and its groups), else the group.
+func _all_probes(budget: Node) -> Array:
+	return budget.call(&"all_probes") if budget != null else get_tree().get_nodes_in_group(&"interior_probe")
+
+
+## Probes an interior shot keeps live while it waits: the room's own and its three nearest.
+const PROBE_FOCUS: int = 4
+## Frames an interior shot waits at most for them to render.
+const PROBE_WAIT_MAX: int = PROBE_FOCUS * ProbeBudget.RENDER_FRAMES + 4
+
+
+## For a camera in or by a room: parks every interior probe but the PROBE_FOCUS nearest, so they
+## are all the render queue holds, and waits until they have had their turn to render. Godot renders
+## them one at a time over several frames each, in its own order, and a room whose probe hasn't
+## finished reads near-black (TD-134). A software frame lasts seconds, so the time-based settle
+## covers only one or two. The budget's rankings take over again after the shot.
+func _wait_probes(w: Node, eye: Vector3) -> void:
+	var pois: Node = w.get(&"pois") as Node
+	var budget: Node = pois.get(&"probes") as Node if pois != null else null
+	if budget == null:
+		return
+	var near: bool = false
+	for n: Variant in _all_probes(budget):
+		var p := n as ReflectionProbe
+		if p != null and ProbeBudget.box_distance(p, eye) < 2.0:
+			near = true
+			break
+	if not near:
+		return
+	budget.call(&"focus", eye, PROBE_FOCUS)
+	var waited: int = 0
+	while waited < PROBE_WAIT_MAX and int(budget.call(&"frames_to_render")) > 0:
+		await get_tree().process_frame
+		waited += 1
+	print("SHOT probes waited %d frames (%d still queued)" % [waited, int(budget.call(&"frames_to_render"))])
 
 
 ## --probe-always: the shown interior probes within 2 m of the camera's room re-render every frame
+## (QA only: the first UPDATE_ALWAYS probe clears the whole reflection atlas and leaves it at
+## real-time quality, so this is not how the game looks)
 ## until the capture (set back to once after it).
 func _refresh_probes(eye: Vector3) -> Array[ReflectionProbe]:
 	var out: Array[ReflectionProbe] = []
 	for n: Node in get_tree().get_nodes_in_group(&"interior_probe"):
 		var p := n as ReflectionProbe
-		if p != null and p.visible and ProbeBudget.box_distance(p, eye) < 2.0:
+		if p != null and _probe_live(_probe_budget(), p) and ProbeBudget.box_distance(p, eye) < 2.0:
 			p.update_mode = ReflectionProbe.UPDATE_ALWAYS
 			out.append(p)
 	return out
@@ -238,9 +314,14 @@ func _wait_streamed(w: Node) -> void:
 
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
-	game.call(&"start_new_game", {"game_mode": "slice", "skip_intro": true, "slot": "screens"})
+	var start: Dictionary = {"game_mode": "slice", "skip_intro": true, "slot": "screens"}
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var random_world: bool = args.has("--world") and args.find("--world") + 1 < args.size() and args[args.find("--world") + 1] == "random"
+	if random_world:
+		start["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", args, 7)
+	game.call(&"start_new_game", start)
 	var t0: int = Time.get_ticks_msec()
-	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < 300000:
+	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < (1200000 if random_world else 300000):
 		await get_tree().process_frame
 	var w: Node = game.world
 	if w == null:
@@ -263,7 +344,7 @@ func _run() -> void:
 	# amount every run).
 	(w.get(&"clock_driver") as WorldClockDriver).paused = true
 	_mem_report("world ready")
-	for shot: Dictionary in SHOTS:
+	for shot: Dictionary in (_poi_shots(w) if random_world else SHOTS):
 		if not _only.is_empty() and not _only.has(str(shot["name"])):
 			continue
 		await _shoot(w, cam, p, shot)
@@ -271,7 +352,35 @@ func _run() -> void:
 	get_tree().quit(0)
 
 
+## POI_SHOTS resolved against the buildings the world placed (the first of each kind): positions in
+## world space with y over the ground there, as _shoot takes them.
+func _poi_shots(w: Node) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var pois: Node = w.get(&"pois") as Node
+	var placed: Dictionary = {}
+	if pois != null:
+		for iid: Variant in (pois.get(&"instances") as Dictionary):
+			var inst: PoiInstance = (pois.get(&"instances") as Dictionary)[iid] as PoiInstance
+			if inst != null and inst.layout != null and not placed.has(String(inst.layout.def.id)):
+				placed[String(inst.layout.def.id)] = inst
+	for shot: Dictionary in POI_SHOTS:
+		var inst2: PoiInstance = placed.get(str(shot["poi"])) as PoiInstance
+		if inst2 == null:
+			print("SHOT %s skipped: the world placed no %s" % [shot["name"], shot["poi"]])
+			continue
+		var xf: Transform3D = inst2.global_transform
+		var a: Vector3 = xf * (shot["at"] as Vector3)
+		var b: Vector3 = xf * (shot["look"] as Vector3)
+		var s2: Dictionary = shot.duplicate()
+		s2["pos"] = Vector3(a.x, a.y - float(w.call(&"height_at", a.x, a.z)), a.z)
+		s2["look"] = Vector3(b.x, b.y - float(w.call(&"height_at", b.x, b.z)), b.z)
+		print("SHOT %s: %s at %s, looking at %s" % [shot["name"], inst2.instance_id, a, b])
+		out.append(s2)
+	return out
+
+
 func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
+	_world = w
 	var pos: Vector3 = shot["pos"]
 	var look: Vector3 = shot["look"]
 	var ground: float = w.call(&"height_at", pos.x, pos.z)
@@ -440,6 +549,8 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	var refreshed: Array[ReflectionProbe] = []
 	if _probe_always:
 		refreshed = _refresh_probes(cam.global_position)
+	else:
+		await _wait_probes(w, cam.global_position)
 	for i: int in _settle_frames:
 		await get_tree().process_frame
 	var img: Image = get_viewport().get_texture().get_image()

@@ -28,13 +28,15 @@ from ..registry import texture
 # Layer contract (must match game/data/materials/terrain_layers.json; checked when the arrays build)
 # --------------------------------------------------------------------------------------------------
 LAYERS = ["forest_floor", "moss_ground", "grass_ground", "dirt", "mud", "gravel", "rock_cliff", "sand",
-          "snow", "asphalt_cracked", "concrete_slab"]
+          "snow", "asphalt_cracked", "concrete_slab", "ash_char", "peat"]
 TILE_M = {"forest_floor": 3.0, "moss_ground": 2.5, "grass_ground": 2.5, "dirt": 2.5, "mud": 3.0, "gravel": 2.0,
-          "rock_cliff": 6.0, "sand": 2.0, "snow": 3.0, "asphalt_cracked": 4.0, "concrete_slab": 4.0}
-# Mean linear albedo luminance per layer (measured-material ballpark values).
+          "rock_cliff": 6.0, "sand": 2.0, "snow": 3.0, "asphalt_cracked": 4.0, "concrete_slab": 4.0,
+          "ash_char": 3.0, "peat": 3.0}
+# Mean linear albedo luminance per layer (measured-material ballpark values). Burnt ground: char
+# ~0.04, wood ash 0.15-0.3, so an old burn's floor mixes to ~0.07; wet peat is darker than mud.
 TARGET_LUM = {"forest_floor": 0.085, "moss_ground": 0.085, "grass_ground": 0.13, "dirt": 0.10, "mud": 0.055,
               "gravel": 0.17, "rock_cliff": 0.16, "sand": 0.21, "snow": 0.72, "asphalt_cracked": 0.075,
-              "concrete_slab": 0.24}
+              "concrete_slab": 0.24, "ash_char": 0.072, "peat": 0.042}
 LAYERS_JSON = pathlib.Path(__file__).resolve().parents[4] / "game" / "data" / "materials" / "terrain_layers.json"
 
 
@@ -1808,6 +1810,169 @@ def layer_concrete_slab(n: int, seed: int) -> Layer:
                    target=TARGET_LUM["concrete_slab"], detile=0.5, rough_detile=0.2)
 
 
+# --------------------------------------------------------------------------------------------------
+# ash_char: the floor of an old burn (burnt forest biome, ADR-0041)
+# --------------------------------------------------------------------------------------------------
+
+BURNT_SOIL = [(0.0, "#24201d"), (0.45, "#332e29"), (1.0, "#48413a")]
+CHAR_COLS = ["#121110", "#181614", "#0e0d0c", "#1f1c19", "#272320", "#2f2b27"]
+CHAR_STOPS = [(0.0, "#1d1916"), (0.5, "#141210"), (1.0, "#0c0b0a")]
+# Needles the killed crowns dropped after the fire: scorched rust-red to burnt black.
+SCORCH_STOPS = [(0.0, "#8f4524"), (0.3, "#743a1f"), (0.6, "#4a2b1a"), (0.85, "#2a1d15"), (1.0, "#171210")]
+ASH_STOPS = [(0.0, "#46423e"), (0.4, "#5d5953"), (0.75, "#77726a"), (1.0, "#8f897f")]
+ASH_WHITE = "#c4bfb5"
+FIRE_MOSS = [(0.0, "#3a3a1c"), (0.4, "#4f5224"), (0.7, "#5e4a24"), (1.0, "#6e5a2c")]
+
+
+def layer_ash_char(n: int, seed: int) -> Layer:
+    """An old burn's floor: crusted burnt mineral soil, a mat of charred needles and charcoal
+    (angular pieces with cracked faces and a dull sheen), blackened twigs, sooted pebbles the fire
+    laid bare, the rust-red needles the killed crowns shed afterwards, then fine grey ash laid in
+    wind drifts and filling the hollows, white where the fuel burnt hottest, and the first green:
+    fire moss and grass blades in the sheltered dips."""
+    G = Ground(n, TILE_M["ash_char"])
+    r = _rng(seed)
+    und = _band(n, 3, 12, seed + 1, 2.0)
+    med = _band(n, 12, 48, seed + 2, 1.3)
+    fine = _spec(n, 0.9, seed + 3)
+    G.h[:] = (0.011 * und + 0.0025 * med + 0.0007 * fine).ravel()
+    h0 = G.H().copy()
+    G.col[:] = T.gradient(np.clip(0.5 * fine + 0.5 * med, 0, 1), BURNT_SOIL).reshape(-1, 3)
+    G.rough[:] = 0.93
+    wx, wy = _spec(n, 2.2, seed + 4), _spec(n, 2.2, seed + 5)
+    # The drifts only lean the cover: in a 3 m tile any pale patch that stands out repeats every 3 m
+    # across the burn (white blobs read as polka dots in game), so the ash is a powder thicker or
+    # thinner, the white wood ash a scatter of grains in it; the burn's larger variety comes from
+    # its splat blend with dirt and grass.
+    drift = T.warp(_band(n, 2, 9, seed + 6, 1.8), wx, wy, n * 0.05)
+    ashy = 0.42 + 0.22 * _ss(0.3, 0.9, drift)
+    white = _ss(0.62, 0.9, _band(n, 14, 48, seed + 7, 1.2)) * ashy
+    charry = _ss(0.35, 0.8, _band(n, 4, 14, seed + 8, 1.3))
+    age = _band(n, 4, 14, seed + 9)
+    noise = _spec(n, 1.4, seed + 10)
+    # 1 a matted, half-buried layer of charred needles and fine char
+    _needles(G, r, 17000, 0.35 + 0.65 * (1 - ashy), CHAR_STOPS, (0.008, 0.02), (0.36, 0.46), age=age, mode="drape",
+             lift=0.0005, thick_m=0.0006, bend=0.5, rough=(0.8, 0.92), tag=TAG_UNDER, dark_tip=0.1)
+    # 2 charcoal: crumbs, then pieces and chunks with cracked faces (alligatored like the trunks)
+    _blobs(G, r, 7000, (0.003, 0.011), CHAR_COLS, kind="flake", density=charry * 0.75 + 0.25, H_ratio=0.28,
+           rough=(0.55, 0.75), tag=TAG_BARK, noise=noise, aspect=(0.4, 0.9), irregular=1.3, zoff=-0.0006)
+    _blobs(G, r, 900, (0.012, 0.07), CHAR_COLS, kind="flake", density=charry, H_ratio=0.24, rough=(0.5, 0.7),
+           tag=TAG_BARK, noise=noise, aspect=(0.3, 0.7), irregular=1.2, zoff=-0.0016)
+    # 3 blackened twigs and a few charred sticks
+    _twigs(G, r, 70, (0.04, 0.2), (0.0015, 0.004), CHAR_STOPS, branch=0.4, age=age, segs=3)
+    _twigs(G, r, 12, (0.15, 0.55), (0.004, 0.01), CHAR_STOPS, branch=0.7, age=age)
+    # 4 pebbles the fire laid bare, sooted
+    _blobs(G, r, 520, (0.004, 0.022), PEBBLE_COLS, kind="pebble", H_ratio=0.4, rough=(0.65, 0.85), tag=TAG_STONE,
+           noise=noise, aspect=(0.55, 1.0), irregular=1.2, zoff=-0.003, tint="#34302c", tint_amt=0.5)
+    # 5 scorched needles shed by the dead crowns after the fire, resting on top
+    env = _envelope(G)
+    _needles(G, r, 3800, None, SCORCH_STOPS, (0.012, 0.024), (0.4, 0.5), age=np.clip(age + 0.25, 0, 1), env=env,
+             thick_m=0.001, rough=(0.75, 0.9))
+    _needles(G, r, 700, None, SCORCH_STOPS, (0.045, 0.075), (0.46, 0.56), age=np.clip(age + 0.35, 0, 1), env=env,
+             pair=0.5, bend=0.15, thick_m=0.0011, rough=(0.75, 0.9))
+    # 6 the first green in sheltered dips: fire moss cushions and a few grass blades
+    green = _ss(0.66, 0.88, _band(n, 5, 16, seed + 11, 1.3)) * (1 - 0.7 * ashy)
+    _fronds(G, r, 650, green * 0.7, (0.01, 0.024), FIRE_MOSS, age=age, nb=7, lift=0.0005)
+    _blades(G, r, 320, green * 0.8 + 0.03, (0.04, 0.12), (0.002, 0.0035), GRASS_GREEN, age=age, K=3,
+            rough=(0.55, 0.75), basec=0.6, tipc=0.9)
+    h = G.H().copy()
+    col = G.C().copy()
+    rough = G.R().copy()
+    tag = G.TAG()
+    # 7 ash: a fine powder laid over everything, thick in the hollows and drifts, thin on the tops;
+    # wood ash white where the fuel burnt hottest. It smooths the relief it fills.
+    # Hollows of the ground itself (not the rings round every pebble).
+    hollow = _blur(h0, 10.0) - h0
+    hol = _ss(0.0, 0.0025, hollow)
+    speck = _spec(n, 0.6, seed + 12)
+    grain = _spec(n, 0.25, seed + 15)
+    base = 0.55 * ashy + 0.45 * hol * (0.3 + 0.7 * ashy) + 0.1 * white
+    # A powder: granular where it thins out, never a soft blur.
+    cover = _ss(0.28, 0.7, base + (grain - 0.5) * 0.6)
+    cover *= 1.0 - 0.8 * (tag == TAG_GRASS) - 0.7 * (tag == TAG_MOSS)
+    film = 0.14 * _ss(0.45, 0.75, grain)
+    ash = T.gradient(np.clip(0.55 * speck + 0.45 * _spec(n, 1.6, seed + 13), 0, 1), ASH_STOPS)
+    ash = T.mix(ash, np.ones_like(ash) * _cols([ASH_WHITE])[0], (white * _ss(0.4, 0.7, grain))[..., None] * 0.3)
+    col = T.mix(col, ash, np.clip(cover * 0.85 + film, 0, 1)[..., None])
+    rough = rough * (1 - cover) + 0.97 * cover
+    h = h + hollow.clip(0, None) * 0.5 * cover + 0.0003 * cover * speck
+    col *= (0.95 + 0.1 * _band(n, 4, 16, seed + 14))[..., None]
+    return _finish(col, h, rough, G.px, exag=1.3, ao_strength=1.8, ao_bake=0.55, ao_radii=(1.0, 2.5, 6, 16),
+                   target=TARGET_LUM["ash_char"])
+
+
+# --------------------------------------------------------------------------------------------------
+# peat: bog muck of the fen (ADR-0041), wetter and glossier than mud
+# --------------------------------------------------------------------------------------------------
+
+PEAT_STOPS = [(0.0, "#0e0b09"), (0.35, "#16110e"), (0.7, "#201914"), (1.0, "#2c231b")]
+# Decomposed sphagnum and sedge root fibres: reddish-brown strands sunk in the muck.
+FIBRE_STOPS = [(0.0, "#4e2f1d"), (0.5, "#633b24"), (1.0, "#7d5233")]
+SPHAG_RED = [(0.0, "#4e1b18"), (0.4, "#6e2620"), (0.75, "#8c3c28"), (1.0, "#a35a34")]
+SPHAG_GREEN = [(0.0, "#43521f"), (0.5, "#62722b"), (1.0, "#86903c")]
+SEDGE_DEAD = [(0.0, "#7a6a4a"), (0.5, "#66573c"), (1.0, "#4c412e")]
+
+
+def layer_peat(n: int, seed: int) -> Layer:
+    """Fen peat: black-brown muck, near saturated, in low hummocks and wallows with a few old
+    prints, a tangle of reddish sphagnum and root fibres half sunk in it, flattened straw-brown
+    sedge leaves, small red and green sphagnum cushions on the rises, and a film of tannin-black
+    water in the deepest prints and wallows. Wet peat is glossy (roughness ~0.3). Standing water is
+    left to the weather's world-space puddles (peat's puddle factor is 1.0) and the fen's pools: a
+    mirror-water quarter baked into a 3 m tile repeated across the fen as pale, sky-lit plates."""
+    G = Ground(n, TILE_M["peat"])
+    r = _rng(seed)
+    big = _band(n, 2, 7, seed + 1, 2.2)
+    lumps = _band(n, 8, 32, seed + 2, 1.5)
+    fine = _spec(n, 1.0, seed + 3)
+    h = (0.026 * big + 0.006 * lumps + 0.0005 * fine).astype(np.float32)
+    wx, wy = _spec(n, 1.6, seed + 4), _spec(n, 1.6, seed + 5)
+    rn = _spec(n, 1.4, seed + 6)
+    cnt = 90
+    kinds = r.choice(4, cnt, p=[0.08, 0.14, 0.1, 0.68])
+    xs, ys = _points(r, n, cnt, None)
+    for i in range(cnt):
+        k = ("boot", "hoof", "slide", "squish")[kinds[i]]
+        size = {"boot": 0.29, "hoof": 0.12, "slide": 0.2 + 0.3 * r.random(), "squish": 0.08 + 0.35 * r.random() ** 2}[k]
+        depth = {"boot": 0.012, "hoof": 0.02, "slide": 0.008, "squish": 0.008}[k] * (0.4 + r.random())
+        _imprint(h, G.px, xs[i], ys[i], r.random() * 6.283, k, size * (0.9 + 0.2 * r.random()), depth, depth * 0.2,
+                 r, wx, wy, rn)
+    h = _blur(T.warp(h, wx, wy, 3.0), 0.8) + 0.0004 * fine
+    G.h[:] = h.ravel()
+    t = np.clip(0.5 * _spec(n, 1.5, seed + 7) + 0.5 * _band(n, 6, 30, seed + 8), 0, 1)
+    G.col[:] = T.gradient(t, PEAT_STOPS).reshape(-1, 3)
+    G.rough[:] = 0.36
+    age = _band(n, 4, 14, seed + 9)
+    _needles(G, r, 15000, None, FIBRE_STOPS, (0.006, 0.02), (0.3, 0.42), age=age, mode="drape", lift=0.0002,
+             thick_m=0.0004, bend=0.8, rough=(0.4, 0.6), tag=TAG_UNDER, dark_tip=0.3)
+    flow = _spec(n, 3.0, seed + 10)
+    _blades(G, r, 1100, None, (0.06, 0.2), (0.003, 0.006), SEDGE_DEAD, age=age, flow=flow, flow_amt=0.5,
+            mode="drape", lift=0.0003, rough=(0.45, 0.65), K=3, bend=0.25, basec=0.55, tipc=0.95)
+    rise = _ss(0.45, 0.8, big)
+    cush = _ss(0.6, 0.85, _band(n, 5, 16, seed + 11, 1.3)) * (0.3 + 0.7 * rise)
+    _fronds(G, r, 1700, cush, (0.01, 0.026), SPHAG_RED, age=age, nb=7, lift=0.0006, rough=(0.55, 0.75))
+    _fronds(G, r, 1300, cush * 0.8 + 0.05 * rise, (0.01, 0.026), SPHAG_GREEN, age=age, nb=7, lift=0.0007,
+            rough=(0.55, 0.75))
+    _leaves(G, r, 14, {"willow": 1, "dead": 3}, noise=_spec(n, 1.6, seed + 12), age_bias=0.6)
+    _twigs(G, r, 6, (0.05, 0.2), (0.0015, 0.004), TWIG_STOPS, branch=0.4)
+    hh = G.H().copy()
+    col = G.C().copy()
+    tag = G.TAG()
+    wl = np.percentile(hh, 6)
+    depth = np.clip(wl - hh, 0, None)
+    water = _ss(0.0, 0.0012, depth)
+    shore = _ss(0.008, 0.0, hh - wl) * (1 - water)
+    plant = np.isin(tag, [TAG_LEAF, TAG_TWIG, TAG_GRASS, TAG_MOSS]).astype(np.float32)
+    col = col * (1 - 0.22 * shore * (1 - plant))[..., None]
+    rough = np.where(plant > 0, G.R(), 0.3 - 0.12 * shore)
+    wcol = col * 0.45 + _cols(["#160f0a"])[0] * 0.35
+    col = col * (1 - water[..., None]) + wcol * water[..., None]
+    rough = rough * (1 - water) + 0.12 * water
+    hh = np.maximum(hh, wl)
+    return _finish(col, hh, rough, G.px, exag=1.0, ao_strength=1.2, ao_bake=0.4, target=TARGET_LUM["peat"],
+                   rough_detile=0.0, max_slope=1.6)
+
+
 LAYER_FUNCS = {
     "forest_floor": layer_forest_floor,
     "moss_ground": layer_moss_ground,
@@ -1820,6 +1985,8 @@ LAYER_FUNCS = {
     "snow": layer_snow,
     "asphalt_cracked": layer_asphalt_cracked,
     "concrete_slab": layer_concrete_slab,
+    "ash_char": layer_ash_char,
+    "peat": layer_peat,
 }
 
 LAYER_SEEDS = {name: 1000 + 37 * i for i, name in enumerate(LAYERS)}

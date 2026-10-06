@@ -7,6 +7,7 @@ Model ids match game/data/vegetation/species.json.
 from __future__ import annotations
 
 from ..core.registry import Task, blender_sources
+from ..textures.gen.burn_fen import FEN
 from ..textures.gen.riparian import RIPARIAN
 from ..textures.gen.vegetation import LAYOUTS
 
@@ -24,6 +25,27 @@ TREES: dict[str, dict] = {
     "paper_birch_c": {"species": "birch", "seed": 3303, "height": 15.8, "dbh_r": 0.16, "stems": 1, "crown_r": 0.18},
     "dead_snag_a": {"species": "snag", "seed": 4101, "height": 12.5, "dbh_r": 0.3, "full_height": 1.8, "lean": 2.5},
     "dead_snag_b": {"species": "snag", "seed": 4202, "height": 8.5, "dbh_r": 0.26, "full_height": 2.3, "lean": 4.0},
+    # The fen's stunted trees (ADR-0041): tamarack (larch) and black spruce (a narrow fir spire),
+    # starved on the peat: short, thin-crowned, low-limbed.
+    "tamarack_a": {"species": "larch", "seed": 2411, "height": 9.0, "dbh_r": 0.13, "crown_base": 0.22, "crown_r": 0.11, "lean": 3.0, "density": 0.8},
+    "tamarack_b": {"species": "larch", "seed": 2512, "height": 6.5, "dbh_r": 0.1, "crown_base": 0.18, "crown_r": 0.12, "lean": 4.5, "density": 0.7},
+    "black_spruce_a": {"species": "fir", "seed": 1511, "height": 8.5, "dbh_r": 0.11, "crown_base": 0.08, "crown_r": 0.075, "lean": 2.0, "density": 1.0},
+    "black_spruce_b": {"species": "fir", "seed": 1612, "height": 6.0, "dbh_r": 0.09, "crown_base": 0.06, "crown_r": 0.085, "lean": 3.5, "density": 0.9},
+}
+
+# Fire-killed snags of the burnt forest (generators/veg_burn.py): fir spikes and snapped firs, larch
+# snapped and whole; one bark-shader material whose char layer covers the lower trunk.
+BURNT_SNAGS: dict[str, dict] = {
+    "burnt_snag_a": {"form": "fir", "seed": 9101, "height": 24.0, "dbh_r": 0.32, "top": "spike", "lean": 1.0},
+    "burnt_snag_b": {"form": "fir", "seed": 9202, "height": 15.5, "dbh_r": 0.34, "full_height": 1.6, "top": "snapped", "lean": 2.0},
+    "burnt_snag_c": {"form": "fir", "seed": 9303, "height": 19.0, "dbh_r": 0.26, "top": "spike", "lean": 2.5, "limbs": 0.7},
+    "burnt_snag_d": {"form": "larch", "seed": 9404, "height": 13.0, "dbh_r": 0.28, "full_height": 1.7, "top": "snapped", "lean": 3.0},
+    "burnt_snag_e": {"form": "larch", "seed": 9505, "height": 21.0, "dbh_r": 0.27, "top": "spike", "lean": 1.5},
+}
+# Fire-hollowed stumps (veg_burn kind stump): the heartwood burnt out of the broken trunk.
+BURNT_STUMPS: dict[str, dict] = {
+    "burnt_stump_a": {"kind": "stump", "seed": 9611, "height": 1.3, "radius": 0.36, "shell": 0.07, "mat": "burn_wood_char"},
+    "burnt_stump_b": {"kind": "stump", "seed": 9712, "height": 0.8, "radius": 0.3, "shell": 0.06, "mat": "burn_wood_char"},
 }
 
 
@@ -40,6 +62,12 @@ WOOD: dict[str, dict] = {
     # Stripped, bleached logs the river left on its gravel bars (moss mask unused by the material).
     "driftwood_a": {"kind": "fallen", "seed": 5903, "radius": 0.27, "length": 4.8, "sink": 0.1, "bark": "driftwood", "end": "wood_log_end_dead"},
     "driftwood_b": {"kind": "fallen", "seed": 6004, "radius": 0.2, "length": 3.3, "sink": 0.08, "bark": "driftwood", "end": "wood_log_end_dead"},
+    # Burnt forest (ADR-0041): charred windfall, hollowed and torn at the ends; the stump and log a
+    # felled burnt snag leaves.
+    "fallen_burnt_a": {"kind": "fallen", "seed": 9801, "radius": 0.38, "length": 7.4, "sink": 0.18, "bark": "burn_wood_char", "end": "wood_log_end_charred"},
+    "fallen_burnt_b": {"kind": "fallen", "seed": 9902, "radius": 0.3, "length": 4.6, "sink": 0.14, "bark": "burn_wood_char", "end": "wood_log_end_charred"},
+    "burnt_cut_stump": {"kind": "stump", "seed": 9951, "radius": 0.34, "height": 0.6, "bark": "burn_wood_char", "end": "wood_log_end_dead"},
+    "log_burnt": {"kind": "log", "seed": 9961, "radius": 0.162, "length": 4.0, "bark": "burn_wood_char", "end": "wood_log_end_dead", "knots": 3},
 }
 
 
@@ -53,6 +81,10 @@ def _wood_tasks() -> list[Task]:
 
 _FIR = LAYOUTS["foliage_fir"]
 _PL = LAYOUTS["plants"]
+# Fern-built plants of the fen atlas: the builder's frond and young regions mapped onto it.
+_BRACKEN = {"frond_a": FEN["bracken_a"], "frond_b": FEN["bracken_b"], "frond_c": FEN["bracken_a"], "young": FEN["bracken_young"]}
+# Skunk cabbage in late season: three leaf shapes and no spathe (FEN["skunk_young"] is spring's).
+_SKUNK = {"frond_a": FEN["skunk_a"], "frond_b": FEN["skunk_b"], "frond_c": FEN["skunk_c"], "young": FEN["skunk_c"]}
 # Understory plants (models/plants/). lods=2 ships an explicit cheaper <id>_lod1.glb.
 PLANTS: dict[str, dict] = {
     "fir_sapling_a": {"kind": "sapling", "seed": 6101, "height": 2.5, "atlas": _FIR, "mat": "foliage_sapling", "bark": "bark_sapling", "lods": 2},
@@ -106,6 +138,23 @@ PLANTS: dict[str, dict] = {
     "willow_shrub_b": {"kind": "willow", "seed": 8502, "height": 1.9, "stems": 8, "shoots": 7, "clusters": 155,
                        "regs": ["willow_b", "willow_a"], "lean": [0.1, 0.32], "card_len": [0.19, 0.28], "stem_scale": 1.5, "atlas": RIPARIAN, "mat": "willow",
                        "stem_mat": "willow_stem", "lods": 2},
+    # Burnt forest regrowth (ADR-0041): bracken drifts (textures/gen/burn_fen.py) and lodgepole
+    # seedlings coming up through the ash.
+    "bracken_a": {"kind": "fern", "seed": 10101, "size": 0.95, "fronds": 9, "atlas": _BRACKEN, "mat": "bracken", "lods": 2},
+    "bracken_b": {"kind": "fern", "seed": 10202, "size": 1.25, "fronds": 12, "atlas": _BRACKEN, "mat": "bracken", "lods": 2},
+    "lodgepole_sapling_a": {"kind": "sapling", "seed": 10301, "height": 1.6, "atlas": _FIR, "mat": "foliage_lodgepole", "bark": "bark_sapling", "lods": 2},
+    "lodgepole_sapling_b": {"kind": "sapling", "seed": 10402, "height": 0.9, "atlas": _FIR, "mat": "foliage_lodgepole", "bark": "bark_sapling", "lods": 2},
+    # Fen (ADR-0041): sphagnum hummocks, cattail and bulrush stands, skunk cabbage.
+    "sphagnum_mound_a": {"kind": "moss", "seed": 10501, "radius": 0.75, "height": 0.26, "humps": 4, "mat": "sphagnum_red"},
+    "sphagnum_mound_b": {"kind": "moss", "seed": 10602, "radius": 1.05, "height": 0.32, "humps": 5, "mat": "sphagnum_green"},
+    "cattail_a": {"kind": "grass", "seed": 10701, "height": 1.9, "cards": [["cattail", 1.0], ["cattail", 0.9], ["cattail", 0.8]],
+                  "tufts": 5, "spread": 0.55, "atlas": FEN, "mat": "fen_plants", "lods": 2},
+    "cattail_b": {"kind": "grass", "seed": 10802, "height": 1.6, "cards": [["cattail", 1.0], ["cattail", 0.85], ["bulrush", 0.9]],
+                  "tufts": 4, "spread": 0.45, "atlas": FEN, "mat": "fen_plants", "lods": 2},
+    "bulrush_a": {"kind": "grass", "seed": 10903, "height": 1.7, "cards": [["bulrush", 1.0], ["bulrush", 0.85], ["bulrush", 0.7]],
+                  "tufts": 4, "spread": 0.4, "atlas": FEN, "mat": "fen_plants", "lods": 2},
+    "skunk_cabbage_a": {"kind": "fern", "seed": 11001, "size": 0.75, "fronds": 8, "atlas": _SKUNK, "mat": "fen_leaves", "lods": 2},
+    "skunk_cabbage_b": {"kind": "fern", "seed": 11102, "size": 0.55, "fronds": 6, "atlas": _SKUNK, "mat": "fen_leaves", "lods": 2},
 }
 
 
@@ -131,5 +180,19 @@ def _tree_tasks() -> list[Task]:
     return out
 
 
+def _burn_tasks() -> list[Task]:
+    # veg_burn builds on generators/veg_tree.py (trunks, roots, broken tops): its edits rebuild these.
+    src = blender_sources("veg_burn") + [f for f in blender_sources("veg_tree") if f.name == "veg_tree.py"]
+    out = []
+    for tid, p in BURNT_SNAGS.items():
+        outs = [f"models/trees/{tid}.glb", f"models/trees/{tid}_lod1.glb", f"models/trees/{tid}_lod2.glb"]
+        out.append(Task(name=f"model:trees/{tid}", group="models", outputs=outs, sources=src,
+                        params={"name": tid, "kind": "snag", **p}, blender="veg_burn"))
+    for sid, p in BURNT_STUMPS.items():
+        out.append(Task(name=f"model:trees/{sid}", group="models", outputs=[f"models/trees/{sid}.glb"], sources=src,
+                        params={"name": sid, **p}, blender="veg_burn"))
+    return out
+
+
 def tasks() -> list[Task]:
-    return _tree_tasks() + _wood_tasks() + _plant_tasks()
+    return _tree_tasks() + _wood_tasks() + _plant_tasks() + _burn_tasks()

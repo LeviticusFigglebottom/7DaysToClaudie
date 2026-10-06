@@ -14,6 +14,8 @@
     "birch": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.35, "label": "Birch groves"},
     "meadow": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.35, "label": "Meadows"},
     "rocky": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.3, "label": "Rocky ground"},
+    "burn": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.4, "label": "Old burns"},
+    "fen": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.35, "label": "Fens"},
     "rivers": {"category": "water", "type": "enum", "values": ["none", "few", "some", "many"], "default": "some", "label": "Rivers"},
     "lakes": {"category": "water", "type": "enum", "values": ["none", "few", "some", "many"], "default": "some", "label": "Lakes"},
     "town_density": {"category": "places", "type": "float", "min": 0.0, "max": 6.0, "step": 0.25, "default": 2.0, "label": "Towns per 16 km²"},
@@ -25,13 +27,13 @@
     "standard": {"label": "Standard", "description": "Rolling forest country, a few rivers and lakes, three towns of mixed size and the usual camps, cabins and lookouts between them.", "values": {}},
     "small_valley": {"label": "Small valley (3 x 3)", "description": "A 3 km valley with two villages: quick to generate and to cross.", "values": {"size": 3, "town_density": 3.5, "town_size": "villages", "lakes": "few"}},
     "highlands": {"label": "Highlands", "description": "Mountain ranges and deep valleys, bare rock above the trees, few lakes and two small settlements on the valley floors.",
-      "values": {"terrain": "mountainous", "roughness": 0.7, "rocky": 0.7, "meadow": 0.15, "birch": 0.2, "lakes": "few", "rivers": "some", "town_density": 2.0, "town_size": "hamlets", "wilderness": 1.25}},
+      "values": {"terrain": "mountainous", "roughness": 0.7, "rocky": 0.7, "meadow": 0.15, "birch": 0.2, "lakes": "few", "rivers": "some", "town_density": 2.0, "town_size": "hamlets", "wilderness": 1.25, "burn": 0.5, "fen": 0.15}},
     "lakeland": {"label": "Lakeland", "description": "Low rolling country full of lakes and slow rivers, birch along the water.",
-      "values": {"terrain": "rolling", "roughness": 0.4, "lakes": "many", "rivers": "many", "birch": 0.6, "meadow": 0.4, "town_density": 3.0}},
+      "values": {"terrain": "rolling", "roughness": 0.4, "lakes": "many", "rivers": "many", "birch": 0.6, "meadow": 0.4, "town_density": 3.0, "fen": 0.7, "burn": 0.2}},
     "settled": {"label": "Settled county", "description": "More towns and bigger ones, open farmland and a dense road net: more to loot, more of them.",
-      "values": {"terrain": "rolling", "town_density": 5.0, "town_size": "towns", "roads": "dense", "meadow": 0.6, "conifer": 0.5, "wilderness": 0.75}},
+      "values": {"terrain": "rolling", "town_density": 5.0, "town_size": "towns", "roads": "dense", "meadow": 0.6, "conifer": 0.5, "wilderness": 0.75, "burn": 0.2}},
     "wild": {"label": "Wild country", "description": "One hamlet, a few tracks and a lot of forest between the camps.",
-      "values": {"terrain": "hilly", "town_density": 1.0, "town_size": "hamlets", "roads": "sparse", "wilderness": 1.75, "conifer": 0.9, "meadow": 0.2}}
+      "values": {"terrain": "hilly", "town_density": 1.0, "town_size": "hamlets", "roads": "sparse", "wilderness": 1.75, "conifer": 0.9, "meadow": 0.2, "burn": 0.6, "fen": 0.5}}
   },
   "tuning": {
     "_doc": "Generator numbers. Lengths in metres. See RwgGenerator / RwgTerrain / RwgTowns.",
@@ -103,14 +105,23 @@
         {"poi": "ashen_watch_camp", "site": "remote", "per_region": 0.1, "max": 2, "access": "trail", "biome": "rocky_slope", "min_danger": 3, "skirt": 12},
         {"poi": "cordon_gas_garage", "site": "roadside", "per_region": 0.12, "max": 2, "access": "drive", "biome": "meadow", "min_danger": 1},
         {"poi": "timberline_motel", "site": "roadside", "per_region": 0.08, "max": 1, "access": "drive", "biome": "meadow", "min_danger": 2},
-        {"poi": "mile9_diner", "site": "roadside", "per_region": 0.06, "max": 1, "access": "drive", "biome": "meadow", "min_danger": 1}
+        {"poi": "mile9_diner", "site": "roadside", "per_region": 0.06, "max": 1, "access": "drive", "biome": "meadow", "min_danger": 1},
+        {"poi": "camp_tamarack", "site": "lake_shore", "per_region": 0.12, "max": 2, "access": "track", "biome": "town", "min_danger": 1, "keep_water": true, "skirt": 10},
+        {"poi": "elk_ridge_lodge", "site": "forest", "per_region": 0.1, "max": 2, "access": "track", "biome": "meadow", "min_danger": 2, "skirt": 10},
+        {"poi": "cordon_quarantine_camp", "site": "roadside", "per_region": 0.08, "max": 1, "access": "drive", "biome": "town", "min_danger": 2},
+        {"poi": "haldane_place", "site": "forest", "per_region": 0.12, "max": 2, "access": "track", "biome": "meadow", "min_danger": 1, "skirt": 10}
       ],
       "farmsteads": {"framework": "farm_okafor", "per_region": 0.1, "max": 2, "biome": "meadow", "min_danger": 2},
       "spacing": 160,
       "max_relief": 7.0
     },
     "drop_site": {"_doc": "Where a new player lands: away from towns and places, near (not on) a road, on gentle dry ground, `border` m from a region border (the first that has room).", "town_distance": 380, "poi_distance": 160, "road_distance": [40, 220], "border": [300, 200, 120, 60]},
-    "bloom": {"_doc": "Bloom patches (ADR-0025) in the far regions: per region at danger 3, 4 and 5.", "per_danger": [0, 0, 0.6, 1.2, 2.0], "radius": [40, 110]}
+    "bloom": {"_doc": "Bloom patches (ADR-0025) in the far regions: per region at danger 3, 4 and 5.", "per_danger": [0, 0, 0.6, 1.2, 2.0], "radius": [40, 110]},
+    "burn": {"_doc": "Fire scars (ADR-0041): fires per 16 km² at burn 1.0 (x the burn option); each spreads over this many 64 m biome cells (low end more likely), no scar past max_share of the map's cells and all of them past twice that; water within `water` m, roads within `road` m, fens, towns (+ town_clear) and the drop site (drop_clear) stop it; islands: noise level above which a cell the fire reached stays green.",
+      "per_16km2": 3.0, "cells": [45, 650], "max_share": 0.09, "water": 48, "road": 48, "town_clear": 120, "drop_clear": 260, "islands": 0.72},
+    "fen": {"_doc": "Fens (ADR-0041): on ground flatter than max_slope, within `water` m of a river or lake, low on the map (elevation fraction `low`, raised by the fen option) or `valley` m under the ground 400 m round, in patches of noise about `patch` m across; town_clear / drop_clear keep them off towns and the start. pools: per fen cell the chance of pools, how many, their radius, depth under the edge drop (wading depth), how far the water stands under the ground round it (drop), shore width, outline irregularity, the slope they need and how far they keep inside a region border.",
+      "max_slope": 0.075, "water": 420, "low": [0.12, 0.4], "valley": 8.0, "patch": 380, "town_clear": 80, "drop_clear": 220,
+      "pools": {"chance": 0.55, "per_cell": [1, 3], "radius": [5.0, 15.0], "depth": 0.65, "drop": 0.28, "shore": 4.0, "irregularity": 0.3, "max_slope": 0.05, "border": 72}}
   },
   "names": {
     "towns": ["Aldermoor", "Bracken Ford", "Caddis Hill", "Dunlow", "Elkwater", "Fallow", "Greywell", "Harrowgate", "Ivy Bend", "Juniper Flats", "Kestrel", "Lomond", "Marrow Creek", "Nettlefield", "Oxbow", "Pinecrest", "Quarry Hill", "Redfern", "Saltash", "Thistlewood", "Underhill", "Vale End", "Willowby", "Yarrow", "Ashby", "Coldbrook", "Hatchet Lake", "Millbank", "Stonecross", "Tanager",
