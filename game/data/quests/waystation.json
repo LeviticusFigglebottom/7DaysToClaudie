@@ -1,8 +1,222 @@
 {
-  "_doc": "M2: Waystation contracts. Defined now so POIs can expose quest hooks; runtime lands in M2.",
-  "defs": [
-    {"id": "clear_merrow_house", "name": "Clear the Merrow House", "type": "clear", "tier": 1, "objectives": [{"type": "clear_poi", "target": "merrow_house"}], "rewards": {"scrip": 40, "xp": 200}},
-    {"id": "fetch_dispensary", "name": "Antifungal Recovery", "type": "fetch", "tier": 2, "objectives": [{"type": "fetch", "target": "antifungal", "count": 3}], "rewards": {"scrip": 90, "xp": 350}},
-    {"id": "ranger_samples", "name": "The Cold Box", "type": "story", "tier": 3, "objectives": [{"type": "fetch", "target": "bloom_sample", "count": 1}], "rewards": {"scrip": 150, "xp": 600}}
-  ]
+ "_doc": "Waystation contracts (ADR-0039): templates the trader's board deals out by the day; each offer picks its building from target (tier band, distance from the post). Story quests name their targets in objectives.",
+ "defs": [
+  {
+   "id": "clear_t1",
+   "name": "Clear a building",
+   "type": "clear",
+   "tier": 1,
+   "giver": "waystation_9",
+   "rep_tier": 0,
+   "weight": 2,
+   "target": {
+    "tier": [
+     1,
+     1
+    ],
+    "distance": [
+     120,
+     900
+    ]
+   },
+   "briefing": "The Program wants {building} emptied: every Hollowed in it put down and its stores searched. {distance} out.",
+   "rewards": {
+    "scrip": 35,
+    "xp": 150,
+    "reputation": 15
+   }
+  },
+  {
+   "id": "clear_t2",
+   "name": "Clear a building",
+   "type": "clear",
+   "tier": 2,
+   "giver": "waystation_9",
+   "rep_tier": 1,
+   "weight": 2,
+   "target": {
+    "tier": [
+     2,
+     2
+    ],
+    "distance": [
+     150,
+     1400
+    ]
+   },
+   "briefing": "{building} has to be cleared before a survey team goes in: every Hollowed, and its stores searched. {distance} out.",
+   "rewards": {
+    "scrip": 75,
+    "xp": 300,
+    "reputation": 25
+   }
+  },
+  {
+   "id": "clear_t3",
+   "name": "Clear a hard building",
+   "type": "clear",
+   "tier": 3,
+   "giver": "waystation_9",
+   "rep_tier": 2,
+   "weight": 1.5,
+   "target": {
+    "tier": [
+     3,
+     3
+    ],
+    "distance": [
+     200,
+     1800
+    ]
+   },
+   "briefing": "Nobody has come back from {building}. Clear it and search its stores. {distance} out. Hazard pay.",
+   "rewards": {
+    "scrip": 150,
+    "xp": 600,
+    "reputation": 40,
+    "first_aid_kit": 1
+   }
+  },
+  {
+   "id": "fetch_t1",
+   "name": "Recover a Program cache",
+   "type": "fetch",
+   "tier": 1,
+   "giver": "waystation_9",
+   "rep_tier": 0,
+   "weight": 1.5,
+   "target": {
+    "tier": [
+     1,
+     2
+    ],
+    "distance": [
+     120,
+     900
+    ]
+   },
+   "item": "program_cache",
+   "briefing": "A survey team left a sealed cache in {building} and didn't come back for it. Bring it here. {distance} out.",
+   "rewards": {
+    "scrip": 45,
+    "xp": 150,
+    "reputation": 15
+   }
+  },
+  {
+   "id": "fetch_t2",
+   "name": "Recover a Program cache",
+   "type": "fetch",
+   "tier": 2,
+   "giver": "waystation_9",
+   "rep_tier": 1,
+   "weight": 1.5,
+   "target": {
+    "tier": [
+     2,
+     3
+    ],
+    "distance": [
+     150,
+     1600
+    ]
+   },
+   "item": "program_cache",
+   "briefing": "There's a Program cache in {building}, deep inside. Bring it back sealed. {distance} out.",
+   "rewards": {
+    "scrip": 95,
+    "xp": 350,
+    "reputation": 25
+   }
+  },
+  {
+   "id": "defend_t1",
+   "name": "Hold a cache",
+   "type": "defend",
+   "tier": 1,
+   "giver": "waystation_9",
+   "rep_tier": 0,
+   "weight": 1,
+   "target": {
+    "tier": [
+     1,
+     2
+    ],
+    "distance": [
+     100,
+     800
+    ]
+   },
+   "duration": 120,
+   "waves": 3,
+   "wave_size": [
+    2,
+    3
+   ],
+   "enemies": {
+    "hollow": 4,
+    "lurcher": 1
+   },
+   "briefing": "A drone set a relay cache down by {building}. Its beacon draws them. Hold it until the uplink finishes. {distance} out.",
+   "rewards": {
+    "scrip": 55,
+    "xp": 250,
+    "reputation": 20
+   }
+  },
+  {
+   "id": "defend_t2",
+   "name": "Hold a cache",
+   "type": "defend",
+   "tier": 2,
+   "giver": "waystation_9",
+   "rep_tier": 2,
+   "weight": 1,
+   "target": {
+    "tier": [
+     2,
+     3
+    ],
+    "distance": [
+     150,
+     1400
+    ]
+   },
+   "duration": 180,
+   "waves": 5,
+   "wave_size": [
+    3,
+    4
+   ],
+   "enemies": {
+    "hollow": 5,
+    "lurcher": 2,
+    "dragger": 1
+   },
+   "briefing": "A relay cache by {building} has to upload. Everything for half a kilometre will hear it. Hold it. {distance} out.",
+   "rewards": {
+    "scrip": 115,
+    "xp": 500,
+    "reputation": 35,
+    "repair_kit": 1
+   }
+  },
+  {
+   "id": "ranger_samples",
+   "name": "The Cold Box",
+   "type": "story",
+   "tier": 3,
+   "objectives": [
+    {
+     "type": "fetch",
+     "target": "bloom_sample",
+     "count": 1
+    }
+   ],
+   "rewards": {
+    "scrip": 150,
+    "xp": 600
+   }
+  }
+ ]
 }

@@ -77,6 +77,11 @@ signal poi_exited(poi_instance_id: StringName)
 signal poi_cleared(poi_instance_id: StringName)
 ## A POI trap taken apart (was armed) or salvaged (was sprung) through poi.disarm_trap.
 signal trap_disarmed(player_id: StringName, poi_instance_id: StringName, trap_type: StringName, was_armed: bool)
+
+# --- Trade (ADR-0039) --------------------------------------------------------------------
+signal contract_accepted(player_id: StringName, contract_id: String, def_id: StringName)
+signal contract_completed(player_id: StringName, contract_id: String, def_id: StringName, tier: int)
+signal trade_made(player_id: StringName, trader_id: StringName, item_id: StringName, count: int, scrip: int)
 signal note_found(note_id: StringName)
 signal schematic_learned(schematic_id: StringName)
 

@@ -1,0 +1,642 @@
+{
+ "_doc": "Waystation 9 (ADR-0039): the Remand Program's trader relay post. DESIGN puts it at the Cordon wall where the river leaves the valley (region D7); until D7 is built it stands in D6 by Route 9, short of the river's exit (spawn feature trader:waystation_9). Offsets are post-local metres; +Z faces the road.",
+ "defs": [
+  {
+   "id": "waystation_9",
+   "name": "Waystation 9",
+   "description": "The Remand Program's relay post on Route 9: a quartermaster, a counter and a contracts board inside a ring of barriers the Program's guards keep clear.",
+   "safe_radius": 40.0,
+   "guard_dps": 60.0,
+   "quartermaster": {
+    "model": "characters/waystation_quartermaster",
+    "offset": [
+     -0.3,
+     0.0,
+     -4.05
+    ],
+    "yaw": 0,
+    "_doc": "On the counter model's standing spot (x -0.30, z -0.05 from its origin), facing out through the hatch."
+   },
+   "counter": {
+    "prop": "waystation_counter",
+    "offset": [
+     0.0,
+     -4.0
+    ],
+    "rot": 0
+   },
+   "board": {
+    "prop": "waystation_board",
+    "offset": [
+     6.0,
+     1.5
+    ],
+    "rot": -30
+   },
+   "props": [
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -10.5,
+      -14.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -7.5,
+      -14.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -4.5,
+      -14.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -1.5,
+      -14.0
+     ],
+     "rot": 0,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      1.5,
+      -14.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      4.5,
+      -14.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      7.5,
+      -14.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      10.5,
+      -14.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -13.5,
+      -12.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -13.5,
+      -9.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -13.5,
+      -6.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -13.5,
+      -3.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -13.5,
+      0.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -13.5,
+      3.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -13.5,
+      6.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -13.5,
+      9.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      13.5,
+      -12.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      13.5,
+      -9.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      13.5,
+      -6.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      13.5,
+      -3.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      13.5,
+      0.0
+     ],
+     "rot": 270,
+     "variant": "worn"
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      13.5,
+      3.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      13.5,
+      6.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      13.5,
+      9.0
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -10.5,
+      12.6
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -7.5,
+      12.6
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      -4.5,
+      12.6
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      4.5,
+      12.6
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      7.5,
+      12.6
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "waystation_barrier",
+     "offset": [
+      10.5,
+      12.6
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "waystation_gate",
+     "offset": [
+      0.0,
+      12.8
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_tower",
+     "offset": [
+      -10.8,
+      -10.8
+     ],
+     "rot": 45
+    },
+    {
+     "prop": "waystation_tower",
+     "offset": [
+      10.8,
+      -10.8
+     ],
+     "rot": -45,
+     "variant": "worn"
+    },
+    {
+     "prop": "waystation_sign",
+     "offset": [
+      -6.0,
+      16.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "waystation_floodlight",
+     "offset": [
+      -8.0,
+      5.0
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "waystation_floodlight",
+     "offset": [
+      8.5,
+      -3.0
+     ],
+     "rot": -60
+    },
+    {
+     "prop": "waystation_supply_stack",
+     "offset": [
+      -6.5,
+      -9.5
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "waystation_supply_stack",
+     "offset": [
+      -8.6,
+      -8.8
+     ],
+     "rot": -20,
+     "variant": "worn"
+    },
+    {
+     "prop": "waystation_supply_stack",
+     "offset": [
+      7.0,
+      -9.6
+     ],
+     "rot": 5
+    },
+    {
+     "prop": "jersey_barrier",
+     "offset": [
+      3.5,
+      19.0
+     ],
+     "rot": 15
+    },
+    {
+     "prop": "jersey_barrier",
+     "offset": [
+      -3.0,
+      20.5
+     ],
+     "rot": -10
+    }
+   ],
+   "restock_days": 3,
+   "buy_markup": 2.0,
+   "rep_discount": 0.05,
+   "sell_ratio": 0.4,
+   "rep_tiers": [
+    {
+     "name": "Unknown",
+     "at": 0
+    },
+    {
+     "name": "Known",
+     "at": 60
+    },
+    {
+     "name": "Trusted",
+     "at": 200
+    },
+    {
+     "name": "Program asset",
+     "at": 450
+    }
+   ],
+   "stock": [
+    {
+     "item": "water_bottle_clean",
+     "count": [
+      3,
+      6
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "canned_beans",
+     "count": [
+      2,
+      5
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "canned_stew",
+     "count": [
+      1,
+      4
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "ration_bar",
+     "count": [
+      2,
+      4
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "cloth_bandage",
+     "count": [
+      2,
+      5
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "painkillers",
+     "count": [
+      1,
+      3
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "ammo_38",
+     "count": [
+      6,
+      18
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "cordage",
+     "count": [
+      2,
+      6
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "nails",
+     "count": [
+      10,
+      30
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "duct_tape",
+     "count": [
+      1,
+      3
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "lighter",
+     "count": [
+      1,
+      2
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "torch",
+     "count": [
+      1,
+      3
+     ],
+     "rep_tier": 0,
+     "chance": 1.0
+    },
+    {
+     "item": "first_aid_kit",
+     "count": [
+      1,
+      2
+     ],
+     "rep_tier": 1,
+     "chance": 0.8
+    },
+    {
+     "item": "flashlight",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.7
+    },
+    {
+     "item": "claw_hammer",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.6
+    },
+    {
+     "item": "shovel",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.5
+    },
+    {
+     "item": "hatchet",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.6
+    },
+    {
+     "item": "repair_kit",
+     "count": [
+      1,
+      2
+     ],
+     "rep_tier": 1,
+     "chance": 0.8
+    },
+    {
+     "item": "steel_pipe",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.5
+    },
+    {
+     "item": "schematic_can_chime",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.5
+    },
+    {
+     "item": "schematic_spike_barrier",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 1,
+     "chance": 0.4
+    },
+    {
+     "item": "antifungal",
+     "count": [
+      1,
+      2
+     ],
+     "rep_tier": 2,
+     "chance": 0.7
+    },
+    {
+     "item": "machete",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 2,
+     "chance": 0.6
+    },
+    {
+     "item": "schematic_log_cabin",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 2,
+     "chance": 0.4
+    },
+    {
+     "item": "journal_field_medicine",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 2,
+     "chance": 0.4
+    },
+    {
+     "item": "journal_timber_trade",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 2,
+     "chance": 0.4
+    },
+    {
+     "item": "revolver",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 3,
+     "chance": 0.8
+    }
+   ],
+   "offers_per_day": 4,
+   "max_active": 3
+  }
+ ]
+}
