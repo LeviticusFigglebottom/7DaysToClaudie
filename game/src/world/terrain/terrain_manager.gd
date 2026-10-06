@@ -16,6 +16,9 @@ extends Node3D
 ##    ("t:<cx>_<cz>") so the composed world + deltas reproduce the edited terrain.
 
 signal chunk_ready(key: Vector2i)
+## A region's 1 m terrain came into or left memory (ADR-0038, region streaming).
+signal region_attached(rid: String)
+signal region_detached(rid: String)
 signal terrain_changed(aabb: AABB)
 
 const CHUNK: float = 64.0
@@ -140,12 +143,18 @@ func _make_region_material(rt: RegionTerrain) -> ShaderMaterial:
 var _grid: Array = []
 
 
+## The grid and `regions` are replaced whole, never edited in place (ADR-0038): worker threads
+## (chunk meshing, scatter, weather, the flow field) read them through height_at while regions
+## attach and detach. The replaced ones are retired like height arrays (_retire).
 func _build_grid() -> void:
-	_grid.clear()
-	_grid.resize(world.cols * world.rows)
+	var g: Array = []
+	g.resize(world.cols * world.rows)
 	for rid: String in world.regions:
 		var c: Vector2i = WorldDef.cell_coords(str(world.regions[rid]["cell"]))
-		_grid[c.x + c.y * world.cols] = regions.get(rid, coarse.get(rid))
+		g[c.x + c.y * world.cols] = regions.get(rid, coarse.get(rid))
+	if not _grid.is_empty():
+		_retire(_grid)
+	_grid = g
 
 
 func _terrain_for(x: float, z: float) -> RegionTerrain:
@@ -203,6 +212,64 @@ func surface_at(x: float, z: float) -> String:
 
 static func chunk_of(x: float, z: float) -> Vector2i:
 	return Vector2i(int(floor(x / CHUNK)), int(floor(z / CHUNK)))
+
+
+# --- Regions in and out (ADR-0038) -----------------------------------------------------------
+
+## Brings a region's 1 m terrain into play: published in a new `regions` and grid (workers keep
+## reading the old ones safely), its saved digs applied, a material made, the near chunks over it
+## re-meshed and their collision rebuilt. `pristine`: its unedited heights when the caller has
+## them (the dig limit must never be taken from already-edited heights).
+func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
+	var rid: String = rt.region_id
+	if pristine != null:
+		_base_cache[rid] = pristine
+	var next: Dictionary = regions.duplicate()
+	next[rid] = rt
+	_retire(regions)
+	regions = next
+	_apply_deltas(rt)
+	_build_grid()
+	_materials[rid] = _make_region_material(rt)
+	_refresh_chunks(rt.rect)
+	region_attached.emit(rid)
+
+
+## Takes a region's 1 m terrain out of play: the coarse terrain (if any) answers height_at there
+## again. Its digs stay in _deltas (saved as before) and come back on the next attach.
+func detach_region(rid: String) -> void:
+	if not regions.has(rid):
+		return
+	var rt: RegionTerrain = regions[rid]
+	var rect: Rect2 = rt.rect
+	# The region leaves as it was composed: its digs live on in _deltas, and a re-attach of this
+	# same object must not take dug heights for pristine ones (the digs would apply twice).
+	if _base_cache.has(rid):
+		_publish_heights(rt.height, (_base_cache[rid] as HeightField).heights.duplicate())
+	var next: Dictionary = regions.duplicate()
+	next.erase(rid)
+	_retire(regions)
+	regions = next
+	_build_grid()
+	_materials.erase(rid)
+	_base_cache.erase(rid)
+	_refresh_chunks(rect)
+	region_detached.emit(rid)
+
+
+## Re-meshes the live near chunks over a rect (plus one chunk around it, whose skirts and normals
+## read across the border) and rebuilds their collision.
+func _refresh_chunks(rect: Rect2) -> void:
+	var grown: Rect2 = rect.grow(CHUNK)
+	for key: Vector2i in _chunks.keys():
+		var ch: Chunk = _chunks[key]
+		if not grown.intersects(Rect2(key.x * CHUNK, key.y * CHUNK, CHUNK, CHUNK)):
+			continue
+		if ch.lod >= 0 and not _pending.has(key):
+			_request_mesh(key, ch.lod, false)
+		if ch.has_collision:
+			_set_collision(ch, false)
+			_set_collision(ch, true)
 
 
 # --- Streaming --------------------------------------------------------------------------------
@@ -717,11 +784,40 @@ const RETIRE_MIN: int = 4
 ## Swaps a region's heights for an edited copy. Readers on other threads see the old array or the
 ## new one, never a buffer freed under them, and never a half-written edit.
 func _publish_heights(hf: HeightField, heights: PackedFloat32Array) -> void:
-	var now: int = Time.get_ticks_msec()
-	_retired.append([now, hf.heights])
+	_retire(hf.heights)
 	hf.heights = heights
+
+
+## Keeps a replaced array, dictionary or grid referenced for RETIRE_MSEC (see _retired).
+func _retire(old: Variant) -> void:
+	var now: int = Time.get_ticks_msec()
+	_retired.append([now, old])
 	while _retired.size() > RETIRE_MIN and now - int(_retired[0][0]) > RETIRE_MSEC:
 		_retired.pop_front()
+
+
+## Applies the saved digs that fall in a region onto its heights (one published copy).
+func _apply_deltas(rt: RegionTerrain) -> void:
+	var vc: int = int(CHUNK) + 1
+	var hf: HeightField = rt.height
+	var heights: PackedFloat32Array = []
+	var base: HeightField = null
+	for key_s: String in _deltas:
+		var key: Vector2i = Ids.parse_chunk_key(key_s.substr(2))
+		if not rt.rect.has_point(Vector2(key.x * CHUNK + 1.0, key.y * CHUNK + 1.0)):
+			continue
+		if base == null:
+			base = _base_heights(rt)
+			heights = hf.heights.duplicate()
+		var delta: PackedFloat32Array = _deltas[key_s]
+		for j: int in vc:
+			for i: int in vc:
+				var gx: int = int(round((key.x * CHUNK + i - hf.origin.x) / hf.spacing))
+				var gz: int = int(round((key.y * CHUNK + j - hf.origin.y) / hf.spacing))
+				if gx >= 0 and gz >= 0 and gx < hf.width and gz < hf.depth:
+					heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
+	if base != null:
+		_publish_heights(hf, heights)
 
 
 ## Composed (unedited) heights per region, kept to clamp digging depth and compute deltas.
@@ -779,27 +875,15 @@ func save_into(ws: WorldState) -> void:
 ## Applies saved deltas to freshly composed heights (call after setup, before streaming).
 func load_from(ws: WorldState) -> void:
 	var vc: int = int(CHUNK) + 1
+	# Every saved dig is decoded (ADR-0038: a region that attaches later still gets its own), then
+	# applied to the regions present now; attach_region applies the rest.
 	for k: Variant in ws.chunk_blobs.keys():
 		var key_s: String = str(k)
 		if not key_s.begins_with("t:"):
 			continue
 		var raw: PackedByteArray = (ws.chunk_blobs[k] as PackedByteArray).decompress(vc * vc * 4, FileAccess.COMPRESSION_ZSTD)
-		var delta: PackedFloat32Array = raw.to_float32_array()
-		var key: Vector2i = Ids.parse_chunk_key(key_s.substr(2))
-		var rt: RegionTerrain = region_terrain_at(key.x * CHUNK + 1.0, key.y * CHUNK + 1.0)
-		if rt == null:
-			continue
-		_base_heights(rt)
-		var hf: HeightField = rt.height
-		var heights: PackedFloat32Array = hf.heights.duplicate()
-		for j: int in vc:
-			for i: int in vc:
-				var gx: int = int(round((key.x * CHUNK + i - hf.origin.x) / hf.spacing))
-				var gz: int = int(round((key.y * CHUNK + j - hf.origin.y) / hf.spacing))
-				if gx >= 0 and gz >= 0 and gx < hf.width and gz < hf.depth:
-					var base: HeightField = _base_cache[rt.region_id]
-					heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
-		_publish_heights(hf, heights)
-		_deltas[key_s] = delta
+		_deltas[key_s] = raw.to_float32_array()
+	for rid: String in regions:
+		_apply_deltas(regions[rid])
 	if volume != null:
 		volume.load_from(ws)
