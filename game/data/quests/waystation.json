@@ -130,6 +130,37 @@
    }
   },
   {
+   "id": "fetch_t5",
+   "name": "Bring in a Bloom core",
+   "type": "fetch",
+   "tier": 5,
+   "giver": "waystation_9",
+   "rep_tier": 2,
+   "weight": 3,
+   "_doc": "TD-179: the one contract on a tier-5 site (the Corvane Field Lab, unique per random world). The lab's vault always holds a sealed core, so nothing is set down (`place` false); the contract is ready while the player carries one and pays well over its 240-scrip sale. `fresh` false: offered even after the player has been inside. Once turned in, never dealt again.",
+   "target": {
+    "tier": [
+     5,
+     5
+    ],
+    "distance": [
+     200,
+     9000
+    ],
+    "fresh": false
+   },
+   "item": "bloom_core_canister",
+   "place": false,
+   "once": true,
+   "briefing": "The Program lost a field lab: {building}, {distance} out. Its vault holds a sealed Bloom core. Bring one back intact and the Program will remember you.",
+   "rewards": {
+    "scrip": 450,
+    "xp": 2000,
+    "reputation": 80,
+    "lab_antifungal_ampoule": 2
+   }
+  },
+  {
    "id": "defend_t1",
    "name": "Hold a cache",
    "type": "defend",
