@@ -96,6 +96,7 @@ func _ready() -> void:
 		var saved_id: String = String(session.world_id)
 		streaming = wants_streaming()
 		_loader.stream = streaming
+		_loader.warm_models = DisplayServer.get_name() != "headless"
 		Log.info("world", "random world %s: %s" % [saved_id if saved_id != "" else "(new)", "streamed (ADR-0038)" if streaming else "built whole (streaming off)"])
 		if streaming and not bool(Game.pending_options.get("is_new_game", false)):
 			_loader.spawn_hint = session.local_player().position
