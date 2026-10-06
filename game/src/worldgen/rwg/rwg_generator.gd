@@ -108,6 +108,9 @@ var _streets: Array[Dictionary] = []
 var _max_half: float = 0.0
 ## The composer's reference ground over the current macro grid (RefGround).
 var _ref: RefGround = null
+## How many roads there were when the towns were planned (later ones, tracks and drives to places,
+## are checked against the lots once more).
+var _roads_at_plan: int = 0
 
 
 ## The ground the composer grades world roads and world pads from (TerrainComposer's
@@ -239,6 +242,7 @@ func run() -> void:
 	_mark("biome_map")
 	_stage("Planting forests", 0.7)
 	_places()
+	_clear_lots_off_roads()
 	_mark("places")
 	_stage("Placing camps and cabins", 0.85)
 	_bridges()
@@ -892,7 +896,8 @@ func _set_class(i: int, cls: String) -> void:
 
 
 ## A road from c out `length` m, within `spread` degrees of `dir`, along whichever heading keeps
-## lowest and dry, routed on the town's 8 m ground (RwgStreets.route_fine). Empty when none goes.
+## gentle, low and dry, routed on the town's 8 m ground (RwgStreets.route_fine). Of the four best
+## headings the route that winds least wins (a route forced up a slope zigzags). Empty when none goes.
 func _stub(g: Streets.Ground, c: Vector2, dir: Vector2, length: float, spread: float) -> PackedVector2Array:
 	var half: float = size * 512.0 - 40.0
 	var cands: Array = []
@@ -900,24 +905,40 @@ func _stub(g: Streets.Ground, c: Vector2, dir: Vector2, length: float, spread: f
 	for k: int in 9:
 		var turn: float = deg_to_rad((k - 4) * spread / 4.0)
 		var u: Vector2 = dir.normalized().rotated(turn)
-		var score: float = absf(turn) * 4.0
-		for f: float in [0.3, 0.6, 1.0]:
-			var q: Vector2 = c + u * length * f
-			score += (g.h(q) - h0) * (0.5 if g.h(q) < h0 else 1.0)
+		var score: float = absf(turn) * 2.0
+		var prev: float = h0
+		var steepest: float = 0.0
+		for f: int in range(1, 9):
+			var q: Vector2 = c + u * length * f / 8.0
+			var hq: float = g.h(q)
+			steepest = maxf(steepest, absf(hq - prev) / (length / 8.0))
+			score += maxf(0.0, hq - h0) * 0.02
+			prev = hq
 			if g.water(q) < 15.0:
 				score += 400.0
 			if absf(q.x) > half or absf(q.y) > half:
 				score += 800.0
-		cands.append([score, u])
+		cands.append([score + steepest * 60.0, u])
 	cands.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	var best := PackedVector2Array()
+	var best_wind: float = INF
 	for ci: int in mini(4, cands.size()):
 		var u2: Vector2 = cands[ci][1]
 		var to: Vector2 = c + u2 * length
 		to = Vector2(clampf(to.x, -half, half), clampf(to.y, -half, half))
-		var pts: PackedVector2Array = Streets.route_fine(g, c, to, {"grade_max": 0.1, "water": 14.0, "margin": 120.0})
-		if pts.size() >= 2:
-			return pts
-	return PackedVector2Array()
+		var pts: PackedVector2Array = Streets.route_fine(g, c, to, {"grade_ok": 0.06, "grade_max": 0.13, "water": 14.0, "margin": 100.0, "tol": 10.0})
+		if pts.size() < 2:
+			continue
+		var run: float = 0.0
+		for k2: int in pts.size() - 1:
+			run += pts[k2].distance_to(pts[k2 + 1])
+		var wind: float = run / maxf(1.0, c.distance_to(to))
+		if wind < best_wind:
+			best_wind = wind
+			best = pts
+		if wind < 1.15:
+			break
+	return best
 
 
 ## A road through c both ways: out along `axis` (or the town's lowest axis when ZERO) and back
@@ -1057,8 +1078,11 @@ func _settle_towns() -> void:
 				fx_kept.append(fv)
 		plan2["fixtures"] = fx_kept
 		towns[ti3]["bounds"] = _town_bounds(plan2)
+	# Tracks and trails keep out of the lots: the router's 32 m cells near a frame are closed (a route
+	# runs between cell centres, so the frames grow by about half a cell).
 	for poly2: PackedVector2Array in _lot_polys:
-		router.block_polygon(poly2, 6.0)
+		router.block_polygon(poly2, 18.0)
+	_roads_at_plan = roads.size()
 
 
 func _add_lot(poly: PackedVector2Array, town: int, gap: float) -> void:
@@ -1132,6 +1156,38 @@ func _town_bounds(plan: Dictionary) -> Rect2:
 	for fv: Variant in plan.get("fixtures", []):
 		bb = bb.expand(Vector2(float(fv["pos"][0]), float(fv["pos"][1])))
 	return bb.grow(4.0)
+
+
+## A road added after the towns were planned (a track or a drive to a place) that still comes into a
+## lot's frame takes the lot away (the outskirts' farms, out along the roads): a frame is graded
+## level to its edges, which would cut the road.
+func _clear_lots_off_roads() -> void:
+	if _roads_at_plan >= roads.size() or towns.is_empty():
+		return
+	for tw: Dictionary in towns:
+		var plan: Dictionary = tw["plan"]
+		var kept: Array = []
+		for lv: Variant in plan.get("lots", []):
+			var poly: PackedVector2Array = frame_poly(lv["frame"])
+			var bb: Rect2 = _bounds(poly)
+			var hit: bool = false
+			for ri: int in range(_roads_at_plan, roads.size()):
+				var rd: Dictionary = roads[ri]
+				var line: Polyline2 = rd["line"]
+				var need: float = float(rd["width"]) * 0.5 + float(rd["shoulder"]) + 0.4
+				if not line.bounds.grow(need + 1.0).intersects(bb):
+					continue
+				for k: int in line.points.size() - 1:
+					if _seg_poly_distance(line.points[k], line.points[k + 1], poly) < need:
+						hit = true
+						break
+				if hit:
+					break
+			if not hit:
+				kept.append(lv)
+		if kept.size() < (plan.get("lots", []) as Array).size():
+			warnings.append("%s: %d lots gave way to a track" % [tw["name"], (plan["lots"] as Array).size() - kept.size()])
+			plan["lots"] = kept
 
 
 ## True when p lies within `gap` of a town's lots or square.

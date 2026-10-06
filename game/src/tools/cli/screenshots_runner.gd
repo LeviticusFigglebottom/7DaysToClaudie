@@ -2,7 +2,7 @@ extends Node
 ## Screenshot suite (loaded by screenshots.gd): starts a slice game, then for each shot sets the
 ## time, weather and a camera, waits for streaming to settle and saves a PNG. Used for visual QA
 ## of terrain, vegetation, lighting, POIs, building and the Hum.
-##   make screenshots [SHOTS_ARGS="--only pell_crossing,pond_dusk --settle 6 --stream-wait 120"]
+##   make screenshots [SHOTS_ARGS="--only pell_crossing,pond_dusk --settle 6 --stream-wait 120 --settle-frames 24"]
 
 const SHOTS: Array[Dictionary] = [
 	{"name": "drop_site_morning", "pos": Vector3(-300, 2.0, 2302), "look": Vector3(-240, 0, 2296), "hour": 7.6, "weather": "clear"},
@@ -125,6 +125,10 @@ var _base_kit: Array[StringName] = []
 ## Nodes a shot spawned for itself (QA enemies, the QA drop), removed after the shot.
 var _temp: Array[Node] = []
 var _settle: float = 4.0
+## Frames drawn on the held view before each capture (--settle-frames): a software frame lasts
+## seconds, so the settle above is a frame or two, and TAA and SDFGI (20 frames to converge after a
+## jump) show half settled: a dim deep wood, noisy soft shadows.
+var _settle_frames: int = 0
 ## Seconds a shot waits at most for vegetation to stream in (--stream-wait).
 var _stream_wait: float = 240.0
 ## [enemy, position] pairs a shot keeps in place until it is taken.
@@ -142,6 +146,8 @@ func _ready() -> void:
 				_settle = float(args[i + 1])
 			"--stream-wait":
 				_stream_wait = float(args[i + 1])
+			"--settle-frames":
+				_settle_frames = int(args[i + 1])
 			"--only":
 				_only = args[i + 1].split(",")
 	DirAccess.make_dir_recursive_absolute(_out)
@@ -394,6 +400,8 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		await _wait(float(shot.get("settle", _settle)))
+	for i: int in _settle_frames:
+		await get_tree().process_frame
 	var img: Image = get_viewport().get_texture().get_image()
 	var path: String = _out.path_join("%s.png" % shot["name"])
 	img.save_png(path)

@@ -50,11 +50,14 @@ const CANCEL_ROWS: int = 64
 const BUCKET: float = 32.0
 ## World towns (ADR-0040): a lot pad's skirt (m), the vegetation a yard keeps (grass, 0..1), how far
 ## round a town's bounds a region looks for it (m), and how far beyond a street's paved corridor
-## (half width + shoulder) a lot pad eases in (m): on the corridor it grades nothing.
+## (half width + shoulder) a lot pad's skirt eases in (m): on the corridor it grades nothing, and the
+## bank between a street and a yard spreads over the verge.
 const LOT_SKIRT: float = 5.0
 const YARD_VEG: float = 0.6
 const TOWN_REACH: float = 40.0
-const LOT_ROAD_YIELD: float = 1.0
+const LOT_ROAD_YIELD: float = 2.0
+## A yard's grass grows within this much of its frame's edge (m), and none a metre further in.
+const YARD_EDGE: float = 2.0
 
 ## By path: new with ADR-0038, so this compiles before the editor registers its class name.
 const Cache := preload("res://src/worldgen/region_cache.gd")
@@ -1301,8 +1304,9 @@ class _Build:
 					else:
 						h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
 		# A world town's lots stand 1 m apart and their skirts reach over each other: each frame is
-		# graded last, all of it at its own height (frames never overlap, so their order is moot),
-		# and a building on it stands on level ground to its corners (ADR-0040).
+		# graded last, all of it at its own height (frames never overlap, so their order is moot; the
+		# planner keeps every frame clear of the street corridors), and a building on it stands on
+		# level ground to its corners (ADR-0040).
 		for pad2: Dictionary in pads:
 			if not bool(pad2.get("world", false)):
 				continue
@@ -1316,11 +1320,11 @@ class _Build:
 			_for_box(bb2, func(i: int, x: float, z: float) -> void:
 				var lp: Vector2 = (Vector2(x, z) - o2).rotated(-rot2)
 				if lp.x >= 0.0 and lp.y >= 0.0 and lp.x <= size2.x and lp.y <= size2.y:
-					h[i] = lerpf(h[i], target2, _yield_to_roads(x, z)))
+					h[i] = target2)
 
-	## How much a world town's pad may grade a sample (ADR-0040): nothing on a road's paved corridor
-	## (half width + shoulder), easing to all of it LOT_ROAD_YIELD m beyond, so a yard never bumps a
-	## street. The road and its distance are read from the road fields as _band_roads reads them.
+	## How much a world town's pad skirt may grade a sample (ADR-0040): nothing on a road's paved
+	## corridor (half width + shoulder), easing to all of it LOT_ROAD_YIELD m beyond, so a yard never
+	## bumps a street. The road and its distance are read from the road fields as _band_roads reads them.
 	func _yield_to_roads(x: float, z: float) -> float:
 		var gx: float = clampf((x - cx0) / cs, 0.0, cn - 1.001)
 		var gz: float = clampf((z - cz0) / cs, 0.0, cn - 1.001)
@@ -1740,6 +1744,7 @@ class _Build:
 				if wd < 14.0 + n2 * 10.0:
 					bi = 1
 				var pad_hit: int = -1
+				var pad_in: float = 0.0
 				for j2: int in range(dst[cell], dst[cell + 1]):
 					var pi: int = dit[j2]
 					if not dboxes[pi].has_point(Vector2(x, z)):
@@ -1748,6 +1753,8 @@ class _Build:
 					var size: Vector2 = dsize[pi]
 					if lp.x >= -1.0 and lp.y >= -1.0 and lp.x <= size.x + 1.0 and lp.y <= size.y + 1.0:
 						pad_hit = pi
+						# How far inside the pad's edge (a yard's grass keeps to its edges).
+						pad_in = minf(minf(lp.x, size.x - lp.x), minf(lp.y, size.y - lp.y))
 						break
 				if pad_hit >= 0:
 					bi = dbi[pad_hit]
@@ -1906,8 +1913,13 @@ class _Build:
 							w[L_DIRT] += am
 						veg = minf(veg, smoothstep(pw - 0.3, pw + 1.5, pd))
 				if pad_hit >= 0:
-					# Bare under a building's pad; a world town's yard keeps some grass.
-					veg = minf(veg, dveg[pad_hit])
+					# Bare under a building's pad; a world town's yard keeps grass round its edges, where
+					# no building stands (a generated one keeps 3 m from its lot's sides and back and its
+					# setback from the front; a floor 0.15 m up hid no grass).
+					var keep: float = dveg[pad_hit]
+					if keep > 0.0:
+						keep *= 1.0 - smoothstep(YARD_EDGE, YARD_EDGE + 1.0, pad_in)
+					veg = minf(veg, keep)
 				for j3: int in range(cst[cell], cst[cell + 1]):
 					var ck: int = cit[j3]
 					var dc: float = Vector2(x, z).distance_to(clpos[ck])
