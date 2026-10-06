@@ -980,6 +980,8 @@ func _open_partitions(w: RoofPlanner.Wing) -> Array:
 
 # --- props & set dressing ------------------------------------------------------------------------
 
+## Where a compiled prop entry stands (POI-local). "against" pushes its back flush to that wall of
+## its cell; the entry's "rot" already holds its facing (PoiLayout._placed).
 func _prop_xf(p: Dictionary, pd: PropDef) -> Transform3D:
 	var pos: Vector2 = p["pos"]
 	var rot: float = float(p.get("rot", 0.0))
@@ -990,16 +992,12 @@ func _prop_xf(p: Dictionary, pd: PropDef) -> Transform3D:
 		match against:
 			"N":
 				pos.y = cell.y + WALL_T * 0.5 + depth * 0.5 + 0.01
-				rot = 0.0 if not p.has("rot") else rot
 			"S":
 				pos.y = cell.y + 1.0 - WALL_T * 0.5 - depth * 0.5 - 0.01
-				rot = 180.0 if not p.has("rot") else rot
 			"W":
 				pos.x = cell.x + WALL_T * 0.5 + depth * 0.5 + 0.01
-				rot = 90.0 if not p.has("rot") else rot
 			"E":
 				pos.x = cell.x + 1.0 - WALL_T * 0.5 - depth * 0.5 - 0.01
-				rot = -90.0 if not p.has("rot") else rot
 	# Free-standing props in the yard stand on the pad; wall-mounted ones hang at a height measured
 	# from the building's floor, whichever side of the wall they are on.
 	var li: int = int(p["level"])
@@ -1120,7 +1118,7 @@ func _scatter() -> void:
 					continue
 				var pd2: PropDef = pool[_rng.randi() % pool.size()]
 				var entry: Dictionary = {"level": li, "cell": c, "pos": Vector2(c.x + 0.5 + _rng.randf_range(-0.25, 0.25), c.y + 0.5 + _rng.randf_range(-0.25, 0.25)),
-					"against": PoiLayout.SIDE_NAMES[side], "rot": [0.0, -90.0, 180.0, 90.0][side] + _rng.randf_range(-25, 25)}
+					"against": PoiLayout.SIDE_NAMES[side], "rot": PoiLayout.AGAINST_ROT[side] + _rng.randf_range(-25, 25)}
 				var xf: Transform3D = _prop_xf(entry, pd2)
 				var cond: String = "destroyed" if _rng.randf() < _decay * 0.3 else "worn"
 				_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)

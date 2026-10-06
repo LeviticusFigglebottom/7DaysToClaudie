@@ -137,7 +137,8 @@ linoleum_beige, tile_white_small, concrete`.
 * `id` (lower_snake_case, not a number, unique in the POI): **give every container one** — its
   saved loot state is keyed by it (`c:<instance>:<id>`; without it, by list position, which a later
   edit can scramble — the validator warns). Container triggers name props by it.
-* `against` pushes the prop's back flush to that wall of its cell and faces it into the room.
+* `against` pushes the prop's back flush to that wall of its cell and faces it into the room
+  (`N` 0, `E` −90, `S` 180, `W` 90); a `rot` of its own overrides that facing.
 * Containers come from the PropDef (`container`) or an override; loot is rolled on first search
   from the container's table at the POI tier (+1 and a second roll in the **loot room**).
 * `key` on a locked container (safe, weapons locker) names the key item.
