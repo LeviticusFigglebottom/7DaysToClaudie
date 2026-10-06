@@ -16,7 +16,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: smoke tour export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: smoke tour check-logs export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview
 
@@ -70,11 +70,25 @@ import: ## Import project resources headless (required before tests on a fresh c
 	if [ $$? -eq 2 ]; then $(GODOT_HEADLESS) --import >> $(ROOT)/build/import.log 2>&1 || (cat $(ROOT)/build/import.log; exit 1); fi
 	@echo "[import] ok"
 
-smoke: ## Headless end-to-end run of the slice (world, trees, building, crafting, AI, Hum, save/load)
-	@$(GODOT_HEADLESS) -s res://src/tools/cli/slice_smoke.gd
+# Headless runs log to build/logs/<name>.log and then fail on any ERROR / SCRIPT ERROR line not in
+# tools/qa/log_error_allowlist.txt (TD-103). The Godot exit code still counts: the recipe exits
+# with it when it failed, and runs the log check either way so the errors show next to the failure.
+LOGS_DIR := $(ROOT)/build/logs
+# $(call logged_run,<log name>,<godot args>)
+logged_run = mkdir -p $(LOGS_DIR); set -o pipefail; rc=0; \
+	$(GODOT_HEADLESS) $(2) 2>&1 | tee $(LOGS_DIR)/$(1).log || rc=$$?; \
+	python3 $(ROOT)/tools/qa/check_log_errors.py $(LOGS_DIR)/$(1).log || { [ $$rc -ne 0 ] || rc=1; }; \
+	exit $$rc
 
-tour: ## Headless walk tour: the player runs into, hits and uses every kind of thing (crash hunt, ADR-0036)
-	@$(GODOT_HEADLESS) -s res://src/tools/cli/walk_tour.gd -- $(TOUR_ARGS)
+SMOKE_LOG ?= smoke
+smoke: ## Headless end-to-end run of the slice (world, trees, building, crafting, AI, Hum, save/load); fails on log errors [SMOKE_ARGS="--world random --world-seed 7" SMOKE_LOG=name]
+	@$(call logged_run,$(SMOKE_LOG),-s res://src/tools/cli/slice_smoke.gd $(if $(SMOKE_ARGS),-- $(SMOKE_ARGS)))
+
+tour: ## Headless walk tour: the player runs into, hits and uses every kind of thing (crash hunt, ADR-0036); fails on log errors
+	@$(call logged_run,tour,-s res://src/tools/cli/walk_tour.gd -- $(TOUR_ARGS))
+
+check-logs: ## Fail on ERROR / SCRIPT ERROR lines (minus tools/qa/log_error_allowlist.txt) in logs: [LOGS="build/logs/*.log"]
+	@python3 $(ROOT)/tools/qa/check_log_errors.py $(or $(LOGS),$(wildcard $(LOGS_DIR)/*.log))
 
 validate: ## Validate content, asset references and POIs
 	@$(GODOT_HEADLESS) -s res://src/tools/cli/validate.gd -- $(VALIDATE_ARGS)

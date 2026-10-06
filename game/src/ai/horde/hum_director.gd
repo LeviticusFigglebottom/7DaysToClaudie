@@ -232,6 +232,11 @@ func _rebuild_flow() -> void:
 	var water_fn: Callable = Callable(wsys, &"water_level_at") if wsys != null and wsys.has_method(&"water_level_at") else Callable()
 	var max_slope: float = float(cfg.get("slope_max_deg", 42.0))
 	var per_hp: float = float(cfg.get("structure_cost_per_hp", 0.02))
+	# A build still in flight (the Hum ended mid-build, then a new one starts) is joined before its
+	# handle is overwritten, so no task is left unjoined.
+	if _flow_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_flow_task)
+		_flow_task = -1
 	_flow_next = f
 	var job := func() -> void:
 		f.build_terrain(height_fn, water_fn, max_slope)

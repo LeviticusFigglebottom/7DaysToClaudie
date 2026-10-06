@@ -1,0 +1,11 @@
+# Known engine noise in headless smoke/tour logs, ignored by check_log_errors.py (TD-103).
+# One Python regex per line, matched (re.search) against each ERROR / SCRIPT ERROR line.
+# Every entry needs a comment saying why it is engine noise and not our bug. Keep this short:
+# an entry here hides that line forever.
+#
+# Census 2026-10-06 (stand-in mode, no generated assets): main-map smoke, random-world smoke
+# (seed 7, size=5) and the walk tour logged no ERROR line at all, so nothing is allowlisted yet.
+#
+# Not needed here but seen elsewhere: the very first `--import` of a fresh checkout logs
+# "Cannot open file ...IBMPlexMono-Regular.ttf-*.fontdata" / "Error loading custom project font"
+# (the project font is read before the importer has made it). Import logs are not checked.
