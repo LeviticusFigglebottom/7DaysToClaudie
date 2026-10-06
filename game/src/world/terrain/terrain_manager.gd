@@ -268,10 +268,15 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 	if volume != null and not volume.columns.is_empty() and _chunk_has_volume(key):
 		hole = volume.is_volume_column
 	var cut: Array[PackedVector2Array] = _cutters(key)
+	# The worker fills its own slot: `job` gains "task" on this thread after the task has started,
+	# and a dictionary written from two threads at once can corrupt itself.
+	var out: Array = [null]
+	job["out"] = out
 	var fn := func() -> void:
-		job["mesh"] = TerrainMesher.build_chunk(origin, CHUNK, step, height_at, skirt, Callable(), hole, cut)
+		out[0] = TerrainMesher.build_chunk(origin, CHUNK, step, height_at, skirt, Callable(), hole, cut)
 	if synchronous:
 		fn.call()
+		job["mesh"] = out[0]
 		_apply_mesh(job)
 		return
 	job["task"] = WorkerThreadPool.add_task(fn, true, "terrain chunk")
@@ -284,6 +289,7 @@ func _collect_finished() -> void:
 		if WorkerThreadPool.is_task_completed(job["task"]):
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
+			job["mesh"] = job["out"][0]
 			_apply_mesh(job)
 
 
@@ -646,9 +652,10 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 	var cj: int = int(round((center.z - hf.origin.y) / hf.spacing))
 	var moved: float = 0.0
 	var touched: Dictionary = {}
-	var original := PackedFloat32Array()
-	if mode == "smooth":
-		original = hf.heights.duplicate()
+	# Edit a private copy and publish it whole (_publish_heights): worker threads read these heights
+	# all the time (chunk meshing, scatter, weather, the Hum's flow field).
+	var original: PackedFloat32Array = hf.heights
+	var heights: PackedFloat32Array = hf.heights.duplicate()
 	for j: int in range(cj - r_cells, cj + r_cells + 1):
 		for i: int in range(ci - r_cells, ci + r_cells + 1):
 			if i < 0 or j < 0 or i >= hf.width or j >= hf.depth:
@@ -660,7 +667,7 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 				continue
 			var k: float = 0.5 + 0.5 * cos(d * PI)
 			var idx: int = j * hf.width + i
-			var h0: float = hf.heights[idx]
+			var h0: float = heights[idx]
 			var nh: float = h0
 			match mode:
 				"dig":
@@ -675,11 +682,12 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 						for oi: int in range(-1, 2):
 							acc += original[clampi(j + oj, 0, hf.depth - 1) * hf.width + clampi(i + oi, 0, hf.width - 1)]
 					nh = lerpf(h0, acc / 9.0, amount * k)
-			hf.heights[idx] = nh
+			heights[idx] = nh
 			moved += (h0 - nh) * hf.spacing * hf.spacing
 			touched[chunk_of(x, z)] = true
 			# Samples on chunk borders belong to neighbours too.
 			touched[chunk_of(x - 0.01, z - 0.01)] = true
+	_publish_heights(hf, heights)
 	for key: Vector2i in touched:
 		_record_delta(rt, key)
 		var ch: Chunk = _chunks.get(key)
@@ -692,6 +700,24 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 	terrain_changed.emit(aabb)
 	Events.terrain_modified.emit(aabb)
 	return moved
+
+
+## Height arrays replaced by an edit, kept alive for RETIRE_MSEC: a worker that fetched the old
+## array just before the swap may still be reading it, and freeing it under that worker crashes
+## (use after free; more likely the more threads a machine runs). [ticks_msec, array] oldest first.
+var _retired: Array = []
+const RETIRE_MSEC: int = 20000
+const RETIRE_MIN: int = 4
+
+
+## Swaps a region's heights for an edited copy. Readers on other threads see the old array or the
+## new one, never a buffer freed under them, and never a half-written edit.
+func _publish_heights(hf: HeightField, heights: PackedFloat32Array) -> void:
+	var now: int = Time.get_ticks_msec()
+	_retired.append([now, hf.heights])
+	hf.heights = heights
+	while _retired.size() > RETIRE_MIN and now - int(_retired[0][0]) > RETIRE_MSEC:
+		_retired.pop_front()
 
 
 ## Composed (unedited) heights per region, kept to clamp digging depth and compute deltas.
@@ -761,13 +787,15 @@ func load_from(ws: WorldState) -> void:
 			continue
 		_base_heights(rt)
 		var hf: HeightField = rt.height
+		var heights: PackedFloat32Array = hf.heights.duplicate()
 		for j: int in vc:
 			for i: int in vc:
 				var gx: int = int(round((key.x * CHUNK + i - hf.origin.x) / hf.spacing))
 				var gz: int = int(round((key.y * CHUNK + j - hf.origin.y) / hf.spacing))
 				if gx >= 0 and gz >= 0 and gx < hf.width and gz < hf.depth:
 					var base: HeightField = _base_cache[rt.region_id]
-					hf.heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
+					heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
+		_publish_heights(hf, heights)
 		_deltas[key_s] = delta
 	if volume != null:
 		volume.load_from(ws)
