@@ -121,20 +121,46 @@ func _make_material(flow: float) -> ShaderMaterial:
 	return m
 
 
+## Fallback normal maps (no generated assets), by seed: shared by every water material and kept
+## for the process, so a reload doesn't make them again.
+static var _noise_normals: Dictionary = {}
+## Worker tasks generating them, not yet joined.
+static var _noise_tasks: PackedInt64Array = []
+
+
+## A flat normal map now, the generated one when a worker has made it (TD-197). A NoiseTexture2D
+## makes its first image synchronously in the next deferred-call flush: 512² seamless with
+## mipmaps is ~70 ms, and six of them made one ~410 ms load frame after the water module (and
+## again on every reload).
 static func _noise_normal(seed: int) -> Texture2D:
+	if _noise_normals.has(seed):
+		return _noise_normals[seed]
+	var flat := Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)
+	flat.fill(Color(0.5, 0.5, 1.0))
+	var tex := ImageTexture.create_from_image(flat)
+	_noise_normals[seed] = tex
+	# Joined by _exit_tree; set_image runs on the main thread (call_deferred from the worker).
+	_noise_tasks.append(WorkerThreadPool.add_task(func() -> void:
+		tex.set_image.call_deferred(_noise_normal_image(seed)), false, "water normals"))
+	return tex
+
+
+## What NoiseTexture2D made with these settings (seamless, normal map, bump 6, mipmaps).
+static func _noise_normal_image(seed: int) -> Image:
 	var nz := FastNoiseLite.new()
 	nz.seed = seed
 	nz.frequency = 0.03
 	nz.fractal_octaves = 4
-	var tex := NoiseTexture2D.new()
-	tex.noise = nz
-	tex.seamless = true
-	tex.as_normal_map = true
-	tex.bump_strength = 6.0
-	tex.width = 512
-	tex.height = 512
-	tex.generate_mipmaps = true
-	return tex
+	var img: Image = nz.get_seamless_image(512, 512, false, false, 0.1, true)
+	img.bump_map_to_normal_map(6.0)
+	img.generate_mipmaps()
+	return img
+
+
+func _exit_tree() -> void:
+	for t: int in _noise_tasks:
+		WorkerThreadPool.wait_for_task_completion(t)
+	_noise_tasks.clear()
 
 
 func _add_lake(wb: Dictionary) -> void:
