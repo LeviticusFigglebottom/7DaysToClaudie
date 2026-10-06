@@ -777,6 +777,11 @@ func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: 
 	d.add_child(d.pivot)
 	var mi := MeshInstance3D.new()
 	mi.mesh = PoiParts.kit_mesh(leaf) if d.state != "broken" else PoiParts.kit_mesh(leaf + "_broken")
+	# A broken door with no broken model (metal, wood) has lost its leaf: drawing the stand-in
+	# would hang a slab in a doorway the player walks through (the first playtest). Door.break_open
+	# hides it the same way.
+	if d.state == "broken" and not ModelLibrary.has_model(d.model_broken):
+		mi.visible = false
 	d.pivot.add_child(mi)
 	d.leaf_local = Transform3D(Basis.IDENTITY, Vector3(leaf_size.x * 0.5, leaf_size.y * 0.5, 0))
 	d.leaf_shape = _box(Vector3(leaf_size.x, leaf_size.y, 0.05), d.pivot.transform * d.leaf_local, d)
