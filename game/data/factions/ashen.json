@@ -1,5 +1,5 @@
 {
-  "_doc": "The Ashen (ADR-0048). camps: POI defs whose placed buildings are living camps (residents spawned awake when the player comes within wake_range, kept until sleep_range; the dead never come back). hostility: one world-wide score; gain per event (kill an Ashen, trespass in a camp's territory, a scout that reports back or is killed, a camp wiped out, heat raised in a territory, a raid repelled), decay_per_day. levels: 0 unaware, 1 watchers (scouts), 2 raids, 3 war parties; a level needs both its hostility and its gamestage. scouts/raids: chance per level per day (deterministic from the world seed and day). morale: 0-1; a fighter flees under `break`. fire: the outsider's fire frightens them (a held flame facing them, the player's lit fires and stations).",
+  "_doc": "The Ashen (ADR-0048). camps: POI defs whose placed buildings are living camps (residents spawned awake when the player comes within wake_range, kept until sleep_range; the dead never come back). hostility: one world-wide score; gain per event (kill an Ashen, trespass in a camp's territory, a scout that reports back or is killed, a camp wiped out, heat raised in a territory, a raid repelled), decay_per_day. levels: 0 unaware, 1 watchers (scouts), 2 raids, 3 war parties; a level needs both its hostility and its gamestage. scouts/raids: chance per level per day (deterministic from the world seed and day). morale: 0-1; a fighter flees under `break`. fire: the outsider's fire frightens them (a held flame facing them, the player's lit fires and stations). relations: {faction: hostile|neutral}, symmetric (TD-186): the Ashen and the Hollowed fight on sight.",
   "defs": [
     {
       "id": "ashen",
@@ -50,6 +50,7 @@
         "gardens": {"loot_crops": true, "trample": true, "trample_damage": 0.5, "looters": 1, "reach": 1.2}
       },
       "morale": {"mate_down": 0.25, "hurt": 0.5, "break": 0.3, "home_floor": 0.6, "recover_per_s": 0.01},
+      "relations": {"hollowed": "hostile", "wildlife": "neutral"},
       "fire": {"radius": 9.0, "keep_off": 4.0, "morale_per_s": 0.06, "behind_angle": 100.0, "station_radius": 7.0}
     }
   ]

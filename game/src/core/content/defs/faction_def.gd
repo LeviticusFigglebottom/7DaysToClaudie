@@ -23,12 +23,17 @@ var raids: Dictionary = {}
 var morale: Dictionary = {}
 ## {radius, keep_off, morale_per_s, behind_angle}
 var fire: Dictionary = {}
+## {other faction (EnemyDef.FACTIONS): "hostile" | "neutral"} (ADR-0048 phase 2, TD-186). Unlisted
+## factions are neutral. Hostility is symmetric: one side saying "hostile" is enough (the Hollowed
+## have no FactionDef, so the Ashen's `hollowed: hostile` is what turns the Hollowed on them too).
+var relations: Dictionary = {}
 
+const RELATIONS: PackedStringArray = ["hostile", "neutral"]
 const GAIN_EVENTS: PackedStringArray = ["kill", "trespass", "scout_report", "scout_killed", "camp_wiped", "heat", "raid_repelled"]
 
 
 func _fields() -> PackedStringArray:
-	return ["camps", "levels", "hostility", "scouts", "raids", "morale", "fire"]
+	return ["camps", "levels", "hostility", "scouts", "raids", "morale", "fire", "relations"]
 
 
 func _parse(r: DefReader) -> void:
@@ -39,9 +44,15 @@ func _parse(r: DefReader) -> void:
 	raids = r.dict("raids")
 	morale = r.dict("morale")
 	fire = r.dict("fire")
+	relations = r.dict("relations")
 
 
 func _validate(db: Node, out: PackedStringArray) -> void:
+	for f: Variant in relations.keys():
+		if not EnemyDef.FACTIONS.has(str(f)) or str(f) == String(id):
+			out.append("%s: relation to '%s' (not another of %s)" % [ctx(), f, EnemyDef.FACTIONS])
+		elif not RELATIONS.has(str(relations[f])):
+			out.append("%s: relation '%s' to %s is not one of %s" % [ctx(), relations[f], f, RELATIONS])
 	for c: Variant in camps:
 		var cd: Dictionary = c
 		if not db.has_def(&"poi", StringName(str(cd.get("poi", "")))):
@@ -84,6 +95,20 @@ func _check_member(db: Node, enemy_id: String, out: PackedStringArray) -> void:
 		out.append("%s: enemy '%s' unknown" % [ctx(), enemy_id])
 	elif ed.faction != String(id):
 		out.append("%s: enemy '%s' is faction %s, not %s" % [ctx(), enemy_id, ed.faction, id])
+
+
+## Whether bodies of factions `a` and `b` fight each other: never within a faction; otherwise when
+## either side's FactionDef lists the other as hostile (symmetric). Safe from any thread.
+static func hostile(a: String, b: String) -> bool:
+	if a == b:
+		return false
+	return _says_hostile(a, b) or _says_hostile(b, a)
+
+
+static func _says_hostile(a: String, b: String) -> bool:
+	var db: Node = ContentDB.instance
+	var fd: FactionDef = db.call(&"get_def", &"faction", StringName(a)) as FactionDef if db != null else null
+	return fd != null and str(fd.relations.get(b, "neutral")) == "hostile"
 
 
 ## The camp entry for a POI def ({} when the def is not one of this faction's camps).
