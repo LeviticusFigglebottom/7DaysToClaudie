@@ -1,0 +1,17 @@
+{
+  "_doc": "Keys and readable notes of Pell's Crossing's third block (the school, the fire station, the Savings & Loan). Note items are note_<note id> (notes/town2.json); models come from tools/assetgen/blender_catalogs/items_town2.py (models/items/town2/<id>.glb).",
+  "defs": [
+    {"id": "town2_vault_combination", "name": "Vault Combination", "description": "A deposit slip with three numbers on the back in a neat hand: 'L 34 - R 12 - L 77. Time lock on MANUAL.'", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/town2/town2_vault_combination"},
+    {"id": "town2_isolation_key", "name": "Boiler Room Key", "description": "A heavy brass key on a school tag: 'BOILER RM - CUSTODIAN'. A strip of Cordon tape is wrapped round the bow.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/town2/town2_isolation_key"},
+    {"id": "town2_tower_keys", "name": "Station Keys", "description": "A ring of keys on a brass tag stamped PVFD: the chief's office, the radio room, the engine.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/town2/town2_tower_keys"},
+    {"id": "note_town2_evac_notice", "name": "Cordon Notice No. 7", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_evac_notice", "model": "items/town2/note_town2_evac_notice"},
+    {"id": "note_town2_school_register", "name": "Evacuation Register", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_school_register", "model": "items/town2/note_town2_school_register"},
+    {"id": "note_town2_school_chalkboard", "name": "Written on the Classroom Board", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_school_chalkboard", "model": "items/town2/note_town2_school_chalkboard"},
+    {"id": "note_town2_isolation_orders", "name": "Isolation Orders", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_isolation_orders", "model": "items/town2/note_town2_isolation_orders"},
+    {"id": "note_town2_fire_log", "name": "Station Run Log", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_fire_log", "model": "items/town2/note_town2_fire_log"},
+    {"id": "note_town2_fire_duty_board", "name": "Duty Board", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_fire_duty_board", "model": "items/town2/note_town2_fire_duty_board"},
+    {"id": "note_town2_bank_notice", "name": "Disbursement Notice", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_bank_notice", "model": "items/town2/note_town2_bank_notice"},
+    {"id": "note_town2_bank_ledger", "name": "Manager's Ledger", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_bank_ledger", "model": "items/town2/note_town2_bank_ledger"},
+    {"id": "note_town2_vault_scratch", "name": "Scratched Inside the Vault Door", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_vault_scratch", "model": "items/town2/note_town2_vault_scratch"}
+  ]
+}
