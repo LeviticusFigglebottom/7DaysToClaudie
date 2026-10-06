@@ -51,9 +51,20 @@ func setup_world(w: Node) -> void:
 	add_child(probes)
 	Game.register_command(&"poi.disarm_trap", _cmd_disarm_trap)
 	Settings.graphics_changed.connect(_on_graphics_changed)
+	# A streamed world (RWG v2 Phase 3) builds its buildings by distance from the PoiRegistry:
+	# its regions bring only their fixtures, and the boot builds the buildings around the spawn.
+	if bool(w.get(&"streaming")) and w.get(&"poi_registry") is PoiRegistry:
+		registry = w.get(&"poi_registry")
+		var cfg: Dictionary = (Content.config(&"streaming") as Dictionary).get("poi", {})
+		_build_r = float(cfg.get("build", 450.0))
+		_free_r = float(cfg.get("free", 560.0))
+		_max_built = int(cfg.get("max_built", 90))
 	# Tools and tests that set up a bare world still get every building built here and now.
 	_queueing = w.has_method(&"is_booting") and bool(w.call(&"is_booting"))
 	_place_all(w)
+	if registry != null:
+		var focus: Vector3 = w.get(&"boot_focus") if w.get(&"boot_focus") is Vector3 else Vector3.ZERO
+		_update_ring(focus, BOOT_RADIUS)
 	_queueing = false
 	# Streamed worlds (ADR-0038): a region's buildings come and go with its 1 m terrain.
 	var tm: TerrainManager = w.get(&"terrain") as TerrainManager
@@ -77,16 +88,19 @@ func _place_all(w: Node) -> void:
 
 
 ## Places (or queues, see _queueing) a region's buildings and framework fixtures, remembering
-## which region each belongs to.
+## which region each belongs to. With a registry (a streamed world) only the fixtures: the
+## buildings come from the ring (_update_ring).
 func _place_region(rt: RegionTerrain) -> void:
+	var buildings: bool = registry == null
 	_region_now = rt.region_id
 	_placed_regions[rt.region_id] = true
 	for pl: Dictionary in rt.placements:
 		match str(pl.get("kind", "")):
 			"framework", "town":
-				_place_framework(pl)
+				_place_framework(pl, buildings)
 			"poi":
-				_place_poi(StringName(str(pl["def"])), StringName(str(pl["id"])), _placement_xf(pl), Vector2(pl.get("size", [0, 0])[0], pl.get("size", [0, 0])[1]))
+				if buildings:
+					_place_poi(StringName(str(pl["def"])), StringName(str(pl["id"])), _placement_xf(pl), Vector2(pl.get("size", [0, 0])[0], pl.get("size", [0, 0])[1]))
 	_region_now = ""
 
 
@@ -114,6 +128,13 @@ func _on_region_attached(rid: String) -> void:
 		_place_region(rt)
 		return
 	_placed_regions[rid] = true
+	if registry != null:
+		# Its pads at 1 m heights; its fixtures in a step of their own (the buildings: _update_ring).
+		registry.refresh_region(rid, rt)
+		steps.add(["", func() -> void:
+			if _placed_regions.has(rid) and tm.regions.has(rid):
+				_place_region(rt), "poi region %s" % rid])
+		return
 	var lots: Dictionary = world.get(&"poi_lots") if world.get(&"poi_lots") is Dictionary else {}
 	var seed: int = Game.session.world_seed if Game.session != null else 0
 	var todo: Array = []
@@ -161,19 +182,146 @@ func _on_region_detached(rid: String) -> void:
 		if _region_of[id] != rid:
 			continue
 		_region_of.erase(id)
-		if steps != null:
-			steps.cancel("poi plan %s" % id, true)
-			steps.cancel("poi %s" % id, true)
-		var inst: PoiInstance = instances.get(id)
-		if inst != null and is_instance_valid(inst):
-			if ai != null:
-				inst.despawn_sleepers(ai)
-			inst.queue_free()
-		instances.erase(id)
+		_free_building(id, steps, ai)
 	for body: Node in _fixtures.get(rid, []):
 		if is_instance_valid(body):
 			body.queue_free()
 	_fixtures.erase(rid)
+
+
+# --- Buildings by distance (RWG v2 Phase 3, streamed worlds) -----------------------------------
+
+## Every building of the world as data (GameWorld.poi_registry); null builds everything at load.
+var registry: PoiRegistry = null
+## streaming.json "poi": build the nearest within _build_r (at most _max_built built or on the
+## way), free beyond _free_r. The gap between the two keeps a building at the edge from flickering.
+var _build_r: float = 450.0
+var _free_r: float = 560.0
+var _max_built: int = 90
+## Built during the boot around the spawn, so the player doesn't arrive in a town of empty lots.
+const BOOT_RADIUS: float = 200.0
+const RING_INTERVAL: float = 0.5
+var _ring_t: float = 0.0
+## Instance id -> a building on its way (resolving, planning or building in steps).
+var _jobs: Dictionary = {}
+## Worker tasks of buildings freed before they were built (_prune_tasks, _exit_tree).
+var _orphans: Array[int] = []
+
+
+## Frees what fell out of the ring and queues the nearest wanted buildings whose regions are
+## attached (a building's ground is its region's 1 m terrain), nearest first.
+func _update_ring(pos: Vector3, radius: float) -> void:
+	var tm: TerrainManager = world.get(&"terrain") as TerrainManager
+	if tm == null:
+		return
+	var p := Vector2(pos.x, pos.z)
+	var steps: StepRunner = tm.streamer.steps if tm.streamer != null else null
+	var ai: Node = world.get(&"ai")
+	for id: StringName in instances.keys() + _jobs.keys():
+		if registry.entries.has(id) and registry.distance_to(id, p) > _free_r:
+			_free_building(id, steps, ai)
+	_prune_tasks()
+	var count: int = instances.size() + _jobs.size()
+	for hit: Array in registry.near(p, radius):
+		if count >= _max_built:
+			break
+		var id2: StringName = hit[0]
+		if instances.has(id2) or _jobs.has(id2):
+			continue
+		var e: Dictionary = registry.entries[id2]
+		if not tm.regions.has(str(e["region"])):
+			continue
+		_queue_stream_build(id2, e, float(hit[1]), steps)
+		count += 1
+
+
+## A building's steps: resolve its def (a generated one on a worker), compile it and start its
+## route check (_prepare_poi), then build it in slices (_finish_poi). Boot steps while the world
+## boots, else streaming steps at its distance as priority.
+func _queue_stream_build(id: StringName, e: Dictionary, dist: float, steps: StepRunner) -> void:
+	var job: Dictionary = {"id": id, "e": e}
+	_jobs[id] = job
+	_region_of[id] = str(e["region"])
+	var resolve := func() -> bool:
+		if not job.has("pd"):
+			var did: StringName = e["def"]
+			if did != &"":
+				job["pd"] = Content.get_def(&"poi", did) as PoiDef
+			else:
+				if not job.has("rtask"):
+					var out: Array = [null]
+					var res: Dictionary = e["res"]
+					job["rout"] = out
+					job["rtask"] = WorkerThreadPool.add_task(func() -> void: out[0] = Lots.def_for(res), false, "poi gen %s" % id)
+					_tasks.append(job["rtask"])
+					return false
+				if not WorkerThreadPool.is_task_completed(job["rtask"]):
+					return false
+				WorkerThreadPool.wait_for_task_completion(job["rtask"])
+				_tasks.erase(job["rtask"])
+				job["pd"] = (job["rout"] as Array)[0]
+		var pd: PoiDef = job["pd"]
+		if pd == null:
+			Log.warn("poi", "%s: nothing to place" % id)
+			_jobs.erase(id)
+			return true
+		var xf: Transform3D = PoiRegistry.building_xf(e, pd)
+		job["xf"] = xf
+		_placed[id] = {"id": id, "def": pd.id, "name": pd.display_name, "tier": pd.tier,
+			"kind": "generated" if pd.template != &"" else "authored", "pos": xf * Vector3(pd.footprint.x * 0.5, 0.0, pd.footprint.y * 0.5)}
+		_prepare_poi(job)
+		return true
+	var build := func() -> bool:
+		if not job.has("layout") or not _jobs.has(id):
+			return true
+		if not _finish_poi(job):
+			return false
+		_jobs.erase(id)
+		return true
+	var label: String = "Raising the town…"
+	if _queueing or steps == null:
+		_queue.append([label, resolve, "poi plan %s" % id])
+		_queue_builds.append([label, build, "poi %s" % id])
+	else:
+		steps.add(["", resolve, "poi plan %s" % id], 100.0 + dist)
+		steps.add(["", build, "poi %s" % id], 100.0 + dist)
+
+
+## Takes a building out of the world (built or on its way): its steps dropped, sleepers despawned,
+## its node freed. Its state stays in WorldState for when it comes back.
+func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
+	if steps != null:
+		steps.cancel("poi plan %s" % id, true)
+		steps.cancel("poi %s" % id, true)
+	# Its worker tasks still finish; they are joined once done (_prune_tasks), not by its steps.
+	var job: Dictionary = _jobs.get(id, {})
+	for k: String in ["task", "rtask"]:
+		if job.has(k) and _tasks.has(job[k]):
+			_tasks.erase(job[k])
+			_orphans.append(job[k])
+	# Half built: its root never entered the tree.
+	if job.has("builder"):
+		var half: Node = (job["builder"] as PoiBuilder).root
+		if is_instance_valid(half) and not half.is_inside_tree():
+			half.free()
+	_jobs.erase(id)
+	_region_of.erase(id)
+	_inside.erase(id)
+	var inst: PoiInstance = instances.get(id)
+	if inst != null and is_instance_valid(inst):
+		if ai != null:
+			inst.despawn_sleepers(ai)
+		inst.queue_free()
+	instances.erase(id)
+
+
+## Joins the finished tasks of buildings freed on their way (a route check or a generation keeps
+## running after its building is dropped; the steps that would have joined it are gone).
+func _prune_tasks() -> void:
+	for i: int in range(_orphans.size() - 1, -1, -1):
+		if WorkerThreadPool.is_task_completed(_orphans[i]):
+			WorkerThreadPool.wait_for_task_completion(_orphans[i])
+			_orphans.remove_at(i)
 
 
 static func _placement_xf(pl: Dictionary) -> Transform3D:
@@ -181,7 +329,7 @@ static func _placement_xf(pl: Dictionary) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, -deg_to_rad(float(pl.get("rotation", 0.0)))), Vector3(float(o[0]), float(o[1]), float(o[2])))
 
 
-func _place_framework(pl: Dictionary) -> void:
+func _place_framework(pl: Dictionary, buildings: bool = true) -> void:
 	var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(pl["def"]))) as FrameworkDef
 	if fw == null:
 		Log.warn("poi", "framework %s not found" % pl["def"])
@@ -200,7 +348,7 @@ func _place_framework(pl: Dictionary) -> void:
 		for r: Dictionary in Lots.resolve(fw, str(pl["id"]), seed):
 			var away: bool = only.has_area() and not only.has_point(Lots.lot_center(r["lot"]))
 			resolved.append([r, null if away or str(r["kind"]) in ["reserved", "empty"] else Lots.def_for(r)])
-	for pair: Array in resolved:
+	for pair: Array in (resolved if buildings else []):
 		var res: Dictionary = pair[0]
 		var l: Dictionary = res["lot"]
 		if str(res["kind"]) in ["reserved", "empty"] or (only.has_area() and not only.has_point(Lots.lot_center(l))):
@@ -418,6 +566,10 @@ func _on_poi_geometry_changed(pos: Vector3) -> void:
 
 
 func _process(delta: float) -> void:
+	_ring_t += delta
+	if registry != null and _ring_t >= RING_INTERVAL and world != null and world.player != null and world.is_ready:
+		_ring_t = 0.0
+		_update_ring(world.player.global_position, _build_r)
 	_t += delta
 	if _t < 1.0 or world == null or world.player == null or not world.is_ready:
 		return
@@ -493,9 +645,10 @@ func save_into(_session: GameSession) -> void:
 
 
 func _exit_tree() -> void:
-	for t: int in _tasks:
+	for t: int in _tasks + _orphans:
 		WorkerThreadPool.wait_for_task_completion(t)
 	_tasks.clear()
+	_orphans.clear()
 	if world != null:
 		Game.unregister_command(&"poi.disarm_trap")
 

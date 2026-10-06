@@ -23,6 +23,9 @@ var world_id: String = ""
 var resolve_lots: bool = false
 var world_seed: int = 0
 var lots: Dictionary = {}
+## Every building of the world as data (RWG v2 Phase 3), made with the lots: a streamed world
+## builds its buildings from it by distance.
+var registry: PoiRegistry = null
 ## The Bloom field over the detailed regions, built here too when resolve_lots is set (about a
 ## second of the main thread on a 3x3 random world, ADR-0036); null otherwise.
 var bloom_field: BloomField = null
@@ -104,6 +107,11 @@ func _resolve_lots() -> void:
 				var placed: bool = not str(res["kind"]) in ["reserved", "empty"]
 				out.append([res, Lots.def_for(res) if placed else null])
 			lots[str(pl["id"])] = out
+	# Every region's placements, the coarse ones too: a streamed world composes only the first
+	# area at 1 m, and the rest of its towns still need their lots resolved (not generated).
+	var all: Dictionary = coarse.duplicate()
+	all.merge(detailed, true)
+	registry = PoiRegistry.build(world, all, lots, world_seed)
 
 
 ## A random world: the saved world `world_id` when it is still on disk (identical to what the run

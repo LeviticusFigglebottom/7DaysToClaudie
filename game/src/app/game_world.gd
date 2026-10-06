@@ -45,6 +45,11 @@ static func wants_streaming() -> bool:
 
 ## Framework lots resolved by the world loader (WorldLoader.lots), read by the POI manager.
 var poi_lots: Dictionary = {}
+## Every building of the world as data (WorldLoader.registry, RWG v2 Phase 3).
+var poi_registry: PoiRegistry = null
+## Where the player will stand when the boot ends (the warm-up camera's spot): a streamed world
+## builds the buildings around it during the boot.
+var boot_focus := Vector3.ZERO
 var sleeping: bool = false
 
 var _loader: WorldLoader
@@ -169,6 +174,7 @@ func _on_boot_step(step_name: String, usec: int, _finished: bool) -> void:
 func _on_world_loaded() -> void:
 	world_def = _loader.world
 	poi_lots = _loader.lots
+	poi_registry = _loader.registry
 	if _loader.world_id != "":
 		session.world_id = StringName(_loader.world_id)
 	_boot = StepRunner.new()
@@ -266,6 +272,7 @@ func _add_warm_camera() -> void:
 		at = _find_spawn("drop_site").get("pos", Vector3.ZERO)
 	else:
 		at = session.local_player().position
+	boot_focus = at
 	_warm_camera = Camera3D.new()
 	_warm_camera.name = "WarmCamera"
 	_warm_camera.fov = 100.0
