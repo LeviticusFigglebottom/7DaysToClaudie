@@ -10,7 +10,7 @@
    "collision": "box",
    "physics": "static",
    "hp": 250,
-   "size": [1.28, 1.6, 1.08],
+   "size": [1.28, 1.45, 1.08],
    "blocks_sight": false
   },
   {

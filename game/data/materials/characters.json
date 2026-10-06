@@ -12,7 +12,7 @@
     "skin_ashen_living": {"shader": "skin", "textures": "skin_human", "layers": {"wear": "blood_grime"},
                           "params": {"uv_scale": 4.0, "tint": "#8f6a50", "wear_amount": 0.15, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "normal_strength": 0.8, "variation_strength": 0.07,
                                      "sss_strength": 0.4, "transmittance_color": "#a8462e", "transmittance_depth": 0.04, "pallor": 0.0, "mottle": 0.0, "bruise": 0.0,
-                                     "bloom_skin": 0.0, "growth_glow": 0.0, "wet_roughness": 0.22, "wet_clearcoat": 0.2, "ash": 0.6, "ash_color": "#a3a197", "paint": 1.0, "paint_color": "#141611"}},
+                                     "bloom_skin": 0.0, "growth_glow": 0.0, "wet_roughness": 0.22, "wet_clearcoat": 0.2, "ash": 0.35, "ash_color": "#8f8d85", "paint": 1.0, "paint_color": "#141611"}},
     "ashen_inner": {"shader": "std_surface", "textures": "gore", "params": {"uv_scale": 6.0, "tint": "#6a2e26", "vertex_ao_strength": 0.7, "normal_strength": 0.8}},
     "skin_human": {"shader": "std_surface", "textures": "skin_human", "layers": {"wear": "blood_grime"},
                    "params": {"uv_scale": 4.0, "wear_amount": 0.25, "wear_uv_scale": 4.0, "vertex_ao_strength": 1.0, "normal_strength": 0.8}},
