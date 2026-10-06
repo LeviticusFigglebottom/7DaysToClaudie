@@ -1,0 +1,1346 @@
+{
+ "_doc": "Tier-3 bank on Larch Street (Pell's Crossing, lot 'bank', the third block; front faces the street). A brick branch with a flat roof behind a parapet. Route: front doors bolted from inside -> round the west side to the break-room window (smashed; the line came in this way) -> the back hall (loose boards in front of the vault wake the tellers behind the counter) -> Ruth Calloway's office: her ledger and the vault combination in her desk (taking it wakes the line in the lobby) -> the loan office -> the lobby -> behind the teller line -> the back hall again: the vault door (a battery alarm still armed on some runs; cutting it instead screams through the building, ADR-0026) -> the vault (loot; Sgt. Vance, the guardian) -> out through the lobby: unbolt the front doors. Side loot: the safe-deposit room behind a shotgun wire. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "pell_savings_loan",
+   "name": "Tamsin Valley Savings & Loan",
+   "tier": 3,
+   "zoning": [
+    "commercial"
+   ],
+   "footprint": [
+    22,
+    19
+   ],
+   "origin": [
+    3,
+    3
+   ],
+   "author": "Hollowmere team",
+   "story": "The Savings & Loan was where the Cordon paid Pell's Crossing to leave: a hundred dollars a head, cash or scrip, signed for at the teller line on presentation of a screening card. On the last day the line ran down Larch Street to the river. Manager Ruth Calloway bolted the front doors at three o'clock sharp with the line still outside, and the line came in through the staff-room window. Ruth, her head teller Dale Ostrom and the Cordon paymaster, Sergeant Vance, shut themselves in the vault with the stipend cash. Ruth had set the time lock to manual so they could let themselves out in the morning. Vance had a bite on his hand. He said it was a dog.",
+   "population": "cordon",
+   "style": {
+    "exterior": "brick_red",
+    "interior": "plaster_white",
+    "floor": "tile_white_small",
+    "ceiling": "plaster_white",
+    "floor_height": 0.45,
+    "decay": 0.5,
+    "damaged_walls": 0.06,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "flat",
+     "parapet": 0.8,
+     "flat_material": "roof_membrane"
+    },
+    "porch": {
+     "side": "S",
+     "from": 7,
+     "to": 12,
+     "depth": 2,
+     "steps": [
+      9,
+      10
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "BBBBVVVVVVVDDDDD",
+      "BBBBVVVVVVVDDDDD",
+      "BBBBVVVVVVVDDDDD",
+      "BBBBVVVVVVVDDDDD",
+      "HHHHHHHHHHHHHHHH",
+      "MMMMTTTTTTTTTTTT",
+      "MMMMTTTTTTTTTTTT",
+      "MMMMLLLLLLLLLLLL",
+      "MMMMLLLLLLLLLLLL",
+      "CCCCLLLLLLLLLLLL",
+      "CCCCLLLLLLLLLLLL",
+      "CCCCLLLLLLLLLLLL"
+     ],
+     "rooms": {
+      "B": {
+       "name": "Staff room",
+       "type": "kitchen",
+       "wall": "paint_mustard",
+       "floor": "linoleum_beige"
+      },
+      "V": {
+       "name": "Vault",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "D": {
+       "name": "Safe-deposit room",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_brown"
+      },
+      "H": {
+       "name": "Back hall",
+       "type": "hallway",
+       "wall": "plaster_grey",
+       "floor": "linoleum_beige"
+      },
+      "M": {
+       "name": "Manager's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_brown"
+      },
+      "T": {
+       "name": "Teller line",
+       "type": "office",
+       "wall": "plaster_white",
+       "floor": "wood_oak",
+       "open_to": "L"
+      },
+      "L": {
+       "name": "Banking hall",
+       "type": "office",
+       "wall": "plaster_white",
+       "floor": "tile_white_small",
+       "open_to": "T"
+      },
+      "C": {
+       "name": "Loan office",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "carpet_blue_worn"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_doors",
+     "at": [
+      9,
+      11
+     ],
+     "side": "S",
+     "type": "door2",
+     "state": "locked_inside",
+     "model": "door_metal"
+    },
+    {
+     "id": "front_window_w",
+     "at": [
+      5,
+      11
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "front_window_e",
+     "at": [
+      12,
+      11
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "closed"
+    },
+    {
+     "id": "loan_window",
+     "at": [
+      1,
+      11
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "loan_side_window",
+     "at": [
+      0,
+      10
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "office_window",
+     "at": [
+      0,
+      6
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "hall_side_window",
+     "at": [
+      15,
+      9
+     ],
+     "side": "E",
+     "type": "window2",
+     "state": "closed"
+    },
+    {
+     "id": "staff_window",
+     "at": [
+      0,
+      1
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "staff_back_window",
+     "at": [
+      2,
+      0
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "staff_door",
+     "at": [
+      15,
+      4
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "barricaded",
+     "barricade": "furniture"
+    },
+    {
+     "id": "staff_room_door",
+     "at": [
+      2,
+      3
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "office_door",
+     "at": [
+      1,
+      4
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "loan_door",
+     "at": [
+      1,
+      8
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "loan_hall_door",
+     "at": [
+      3,
+      10
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "teller_door",
+     "at": [
+      14,
+      4
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "vault_door",
+     "at": [
+      7,
+      3
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "town2_vault_combination",
+     "lock": "vault",
+     "model": "door_vault",
+     "hp": 1400
+    },
+    {
+     "id": "deposit_door",
+     "at": [
+      13,
+      3
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    }
+   ],
+   "props": [
+    {
+     "id": "staff_counter",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      1,
+      0
+     ],
+     "against": "N"
+    },
+    {
+     "id": "staff_fridge",
+     "prop": "fridge_old",
+     "at": [
+      3,
+      0
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "coffee_machine",
+     "pos": [
+      1.25,
+      0.35
+     ],
+     "y": 0.92
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      3.4,
+      2.6
+     ],
+     "rot": 180,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "glass_shards",
+     "pos": [
+      0.6,
+      1.4
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "road_staff_locker",
+     "at": [
+      3,
+      1
+     ],
+     "against": "E",
+     "id": "staff_lockers"
+    },
+    {
+     "prop": "fire_extinguisher",
+     "at": [
+      3,
+      4
+     ],
+     "against": "N",
+     "height": 0.9
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      10.5,
+      4.6
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "bank_vault_door",
+     "at": [
+      7,
+      4
+     ],
+     "against": "N",
+     "id": "vault_frame",
+     "route_ok": true
+    },
+    {
+     "id": "teller_1",
+     "prop": "bank_teller_counter",
+     "pos": [
+      5.5,
+      6.6
+     ],
+     "rot": 0
+    },
+    {
+     "id": "teller_2",
+     "prop": "bank_teller_counter",
+     "pos": [
+      8.5,
+      6.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "teller_3",
+     "prop": "bank_teller_counter",
+     "pos": [
+      11.5,
+      6.6
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      5.6,
+      5.6
+     ],
+     "rot": 10,
+     "variant": "worn"
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      11.3,
+      5.5
+     ],
+     "rot": -20
+    },
+    {
+     "id": "teller_files",
+     "prop": "filing_cabinet",
+     "at": [
+      9,
+      5
+     ],
+     "against": "N"
+    },
+    {
+     "prop": "bank_money_bags",
+     "pos": [
+      7.3,
+      5.4
+     ],
+     "rot": 40,
+     "id": "money_bags_1"
+    },
+    {
+     "prop": "bank_stanchions",
+     "pos": [
+      8.0,
+      8.6
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "bank_stanchions",
+     "pos": [
+      8.0,
+      9.9
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      15.3,
+      10.4
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      4.6,
+      7.6
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      4.6,
+      8.6
+     ],
+     "rot": 90,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      10.4,
+      9.0
+     ],
+     "rot": 70
+    },
+    {
+     "prop": "backpack_dropped",
+     "pos": [
+      6.4,
+      10.4
+     ],
+     "rot": 110,
+     "id": "line_pack_1"
+    },
+    {
+     "prop": "duffel_bag",
+     "pos": [
+      12.2,
+      8.3
+     ],
+     "rot": 30,
+     "id": "line_duffel"
+    },
+    {
+     "prop": "clothes_pile",
+     "pos": [
+      6.6,
+      9.2
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "water_cooler",
+     "at": [
+      15,
+      7
+     ],
+     "against": "E"
+    },
+    {
+     "id": "office_desk",
+     "prop": "office_desk",
+     "pos": [
+      2.0,
+      7.0
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      2.0,
+      7.9
+     ],
+     "rot": 0,
+     "id": "office_chair"
+    },
+    {
+     "id": "office_safe",
+     "prop": "safe_small",
+     "at": [
+      0,
+      5
+     ],
+     "against": "W",
+     "container": "road_cash_safe"
+    },
+    {
+     "id": "office_files",
+     "prop": "filing_cabinet",
+     "at": [
+      3,
+      5
+     ],
+     "against": "E"
+    },
+    {
+     "prop": "bookshelf",
+     "at": [
+      0,
+      8
+     ],
+     "against": "W",
+     "id": "office_shelf",
+     "variant": "worn"
+    },
+    {
+     "prop": "desk_lamp",
+     "pos": [
+      2.6,
+      7.0
+     ],
+     "y": 0.76
+    },
+    {
+     "id": "loan_desk",
+     "prop": "desk_small",
+     "pos": [
+      1.5,
+      10.3
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      1.5,
+      9.6
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      2.5,
+      11.1
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "loan_files",
+     "prop": "filing_cabinet",
+     "at": [
+      0,
+      9
+     ],
+     "against": "W"
+    },
+    {
+     "id": "vault_boxes_1",
+     "prop": "bank_deposit_boxes",
+     "at": [
+      5,
+      0
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "id": "vault_boxes_2",
+     "prop": "bank_deposit_boxes",
+     "at": [
+      8,
+      0
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "vault_cash",
+     "prop": "metal_shelf",
+     "at": [
+      10,
+      1
+     ],
+     "against": "E",
+     "container": "bank_vault"
+    },
+    {
+     "prop": "bank_money_bags",
+     "pos": [
+      4.7,
+      2.5
+     ],
+     "rot": 15,
+     "id": "money_bags_2"
+    },
+    {
+     "prop": "bank_money_bags",
+     "pos": [
+      9.4,
+      2.9
+     ],
+     "rot": -30,
+     "id": "money_bags_3"
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      6.0,
+      1.2
+     ],
+     "lit": true
+    },
+    {
+     "id": "deposit_boxes_1",
+     "prop": "bank_deposit_boxes",
+     "at": [
+      12,
+      0
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "id": "deposit_boxes_2",
+     "prop": "bank_deposit_boxes",
+     "at": [
+      14,
+      0
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "variant": "destroyed"
+    },
+    {
+     "id": "deposit_boxes_3",
+     "prop": "bank_deposit_boxes",
+     "at": [
+      15,
+      2
+     ],
+     "against": "E"
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      12.6,
+      2.3
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      12.0,
+      1.6
+     ],
+     "rot": 60
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "staff_floor",
+     "pos": [
+      3.3,
+      2.9
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 70,
+     "anchor": "floor"
+    },
+    {
+     "id": "teller_ana",
+     "pos": [
+      6.5,
+      5.5
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 180,
+     "group": "tellers"
+    },
+    {
+     "id": "teller_bo",
+     "pos": [
+      9.6,
+      5.6
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 150,
+     "group": "tellers"
+    },
+    {
+     "id": "teller_cass",
+     "pos": [
+      12.6,
+      5.4
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 200,
+     "group": "tellers"
+    },
+    {
+     "id": "line_1",
+     "pos": [
+      8.4,
+      10.5
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 20,
+     "group": "line",
+     "alt": "line:at_the_doors",
+     "anchor": "floor"
+    },
+    {
+     "id": "line_2",
+     "pos": [
+      10.7,
+      10.3
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 200,
+     "group": "line",
+     "alt": "line:at_the_doors"
+    },
+    {
+     "id": "line_3",
+     "pos": [
+      11.9,
+      9.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 120,
+     "group": "line",
+     "alt": "line:at_the_doors",
+     "anchor": "floor"
+    },
+    {
+     "id": "line_4",
+     "pos": [
+      7.0,
+      9.3
+     ],
+     "enemy": "keener",
+     "pose": "stand",
+     "rot": 90,
+     "group": "line",
+     "alt": "line:at_the_doors"
+    },
+    {
+     "id": "line_1",
+     "pos": [
+      6.0,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 80,
+     "group": "line",
+     "alt": "line:at_the_counter",
+     "anchor": "floor"
+    },
+    {
+     "id": "line_2",
+     "pos": [
+      9.6,
+      7.5
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 0,
+     "group": "line",
+     "alt": "line:at_the_counter"
+    },
+    {
+     "id": "line_3",
+     "pos": [
+      11.8,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 100,
+     "group": "line",
+     "alt": "line:at_the_counter",
+     "anchor": "floor"
+    },
+    {
+     "id": "line_4",
+     "pos": [
+      13.4,
+      8.6
+     ],
+     "enemy": "keener",
+     "pose": "stand",
+     "rot": 270,
+     "group": "line",
+     "alt": "line:at_the_counter"
+    },
+    {
+     "id": "deposit_holder",
+     "pos": [
+      13.6,
+      2.6
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 0
+    },
+    {
+     "id": "dale",
+     "pos": [
+      8.6,
+      1.4
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "anchor": "floor",
+     "group": "vault"
+    },
+    {
+     "id": "ruth",
+     "pos": [
+      5.4,
+      2.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "floor",
+     "group": "vault"
+    },
+    {
+     "id": "sgt_vance",
+     "pos": [
+      7.2,
+      1.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "guardian": true
+    }
+   ],
+   "pickups": [
+    {
+     "id": "vault_combination",
+     "item": "town2_vault_combination",
+     "pos": [
+      1.6,
+      6.85
+     ],
+     "y": 0.77
+    }
+   ],
+   "notes": [
+    {
+     "note": "town2_bank_ledger",
+     "pos": [
+      2.4,
+      6.8
+     ],
+     "y": 0.77
+    },
+    {
+     "note": "town2_bank_notice",
+     "pos": [
+      13.4,
+      10.5
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "town2_vault_scratch",
+     "pos": [
+      7.3,
+      2.6
+     ]
+    }
+   ],
+   "traps": [
+    {
+     "id": "hall_boards",
+     "type": "creaky_floor",
+     "at": [
+      5,
+      4
+     ],
+     "size": [
+      5,
+      1
+     ]
+    },
+    {
+     "id": "deposit_shotgun",
+     "type": "shotgun",
+     "at": [
+      13,
+      3
+     ],
+     "side": "S"
+    },
+    {
+     "id": "vault_alarm",
+     "type": "alarm",
+     "at": [
+      7,
+      3
+     ],
+     "side": "S",
+     "alt": "alarm:armed"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "t_tellers_boards",
+     "group": "tellers",
+     "on": "trap",
+     "trap": "hall_boards",
+     "delay": 0.4
+    },
+    {
+     "id": "t_tellers_room",
+     "group": "tellers",
+     "on": "room",
+     "room": "T",
+     "level": 0
+    },
+    {
+     "id": "t_line",
+     "group": "line",
+     "on": "pickup",
+     "pickup": "vault_combination",
+     "delay": 1.2
+    },
+    {
+     "id": "t_line_lobby",
+     "group": "line",
+     "on": "room",
+     "room": "L",
+     "level": 0,
+     "delay": 0.3
+    },
+    {
+     "id": "t_vault",
+     "group": "vault",
+     "on": "opening",
+     "opening": "vault_door",
+     "delay": 0.5
+    }
+   ],
+   "lights": [
+    {
+     "at": [
+      6,
+      1
+     ],
+     "height": 0.5,
+     "color": "#ffbb77",
+     "energy": 0.6,
+     "range": 5.0,
+     "flicker": 0.2
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      1,
+      1
+     ],
+     "side": "floor",
+     "size": [
+      2.0,
+      0.8
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      7,
+      4
+     ],
+     "side": "N",
+     "height": 1.1,
+     "size": [
+      0.6,
+      0.6
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      7,
+      4
+     ],
+     "side": "N",
+     "height": 1.3,
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      10,
+      9
+     ],
+     "side": "floor",
+     "size": [
+      1.6,
+      1.6
+     ]
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      8,
+      8
+     ],
+     "side": "floor",
+     "size": [
+      2.5,
+      1.4
+     ]
+    },
+    {
+     "decal": "survivor_marks_b",
+     "at": [
+      15,
+      10
+     ],
+     "side": "E",
+     "height": 1.4,
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "bullet_holes",
+     "at": [
+      4,
+      6
+     ],
+     "side": "W",
+     "height": 1.3,
+     "size": [
+      1.0,
+      0.8
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      9,
+      13
+     ],
+     "label": "Front doors - bolted from inside at three o'clock"
+    },
+    {
+     "at": [
+      -1,
+      1
+     ],
+     "label": "Round the west side: the staff-room window, smashed in"
+    },
+    {
+     "at": [
+      1,
+      2
+     ],
+     "label": "Staff room"
+    },
+    {
+     "at": [
+      2,
+      4
+     ],
+     "label": "Back hall - loose boards in front of the vault"
+    },
+    {
+     "at": [
+      1,
+      6
+     ],
+     "label": "Ruth's office - the ledger, the combination in her desk"
+    },
+    {
+     "at": [
+      1,
+      9
+     ],
+     "label": "Loan office"
+    },
+    {
+     "at": [
+      5,
+      10
+     ],
+     "label": "The banking hall - the line"
+    },
+    {
+     "at": [
+      14,
+      7
+     ],
+     "label": "Round the end of the teller line"
+    },
+    {
+     "at": [
+      14,
+      5
+     ],
+     "label": "Behind the counter"
+    },
+    {
+     "at": [
+      7,
+      4
+     ],
+     "label": "The vault door - dial the combination"
+    },
+    {
+     "at": [
+      7,
+      2
+     ],
+     "label": "The vault (loot) - Sergeant Vance"
+    },
+    {
+     "at": [
+      9,
+      10
+     ],
+     "label": "Back through the hall: slide the bolts on the front doors"
+    },
+    {
+     "at": [
+      9,
+      13
+     ],
+     "label": "Out"
+    }
+   ],
+   "loot_room": {
+    "room": "V",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "front_doors"
+    }
+   ],
+   "budget": {
+    "lights": 4,
+    "enemies": 13
+   },
+   "alternatives": [
+    {
+     "id": "alarm",
+     "label": "The vault's battery alarm",
+     "options": [
+      {
+       "id": "dead",
+       "label": "The battery died days ago",
+       "weight": 2
+      },
+      {
+       "id": "armed",
+       "label": "Still armed: a red light over the vault door"
+      }
+     ]
+    },
+    {
+     "id": "line",
+     "label": "Where the line lies",
+     "options": [
+      {
+       "id": "at_the_doors",
+       "label": "Piled against the front doors"
+      },
+      {
+       "id": "at_the_counter",
+       "label": "Pressed against the teller line",
+       "style": {
+        "decay": 0.6
+       }
+      }
+     ]
+    },
+    {
+     "id": "office",
+     "label": "Ruth's office",
+     "options": [
+      {
+       "id": "paneled",
+       "label": "Dark paneling"
+      },
+      {
+       "id": "wallpaper",
+       "label": "Damask wallpaper",
+       "rooms": [
+        {
+         "room": "M",
+         "wall": "wallpaper_damask_brown",
+         "floor": "carpet_blue_worn"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "staff_door",
+     "label": "How the staff door was left",
+     "options": [
+      {
+       "id": "barricaded",
+       "label": "Barricaded with the staff-room furniture",
+       "weight": 2
+      },
+      {
+       "id": "kicked_in",
+       "label": "Kicked in from the alley",
+       "openings": [
+        {
+         "id": "staff_door",
+         "state": "broken"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "hall",
+     "label": "The banking hall",
+     "options": [
+      {
+       "id": "white",
+       "label": "White plaster and tile"
+      },
+      {
+       "id": "green",
+       "label": "Sage walls, worn oak",
+       "rooms": [
+        {
+         "room": "L",
+         "wall": "paint_sage",
+         "floor": "wood_oak"
+        },
+        {
+         "room": "T",
+         "wall": "paint_sage"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

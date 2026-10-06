@@ -90,10 +90,10 @@ func test_generated_lots_build_a_building_that_fits() -> void:
 	assert_eq(JSON.stringify(pd.layout, "", true), JSON.stringify(again.layout, "", true), "the same lot regenerates the same house")
 
 
-func test_pell_crossing_has_a_street_of_generated_houses_and_reserved_civic_lots() -> void:
+func test_pell_crossing_has_a_street_of_generated_houses_and_its_third_block() -> void:
 	var fw: FrameworkDef = Content.get_def(&"framework", &"pell_crossing")
 	var generated: int = 0
-	var reserved: PackedStringArray = []
+	var third_block: PackedStringArray = []
 	var names: Dictionary = {}
 	for res: Dictionary in Lots.resolve(fw, "pell_crossing", 4471):
 		match str(res["kind"]):
@@ -104,12 +104,16 @@ func test_pell_crossing_has_a_street_of_generated_houses_and_reserved_civic_lots
 				if pd != null:
 					names[pd.display_name] = true
 					assert_eq(PoiValidator.validate(pd).errors, PackedStringArray(), "%s validates" % res["instance"])
+			"authored":
+				if "third_block" in (res["lot"].get("tags", []) as Array):
+					third_block.append(str(res["lot"].get("pick", "")))
 			"reserved":
-				reserved.append(str(res["lot"].get("reserved", "")))
+				fail_test("lot %s is still reserved" % res["lot"].get("id"))
 			"empty":
 				fail_test("lot %s holds nothing" % res["lot"].get("id"))
 	assert_between(generated, 6, 10, "a residential street of 6-10 generated houses")
-	assert_eq(reserved.size(), 3, "lots held for the school, the fire station and the bank")
+	third_block.sort()
+	assert_eq(third_block, PackedStringArray(["pell_crossing_school", "pell_fire_station", "pell_savings_loan"]), "the school, the fire station and the bank stand on the third block")
 	assert_gt(names.size(), generated - 2, "the houses have their own names")
 
 

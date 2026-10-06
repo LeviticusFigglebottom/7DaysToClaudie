@@ -1,0 +1,1980 @@
+{
+ "_doc": "Tier-2 volunteer fire station on Larch Street (Pell's Crossing, lot 'fire_station', the third block; front faces the street). Massing (ADR-0021): the apparatus bay rises two storeys behind two padlocked roll-up doors, a hose loft looks over it on a rail, the dorm and the day room are upstairs on the street side, and the hose tower climbs a third storey; the roofs are flat behind parapets. Route: the bay doors are down and padlocked, the watch office door bolted -> round the back to the hose tower, its door broken in (a trap in the gravel) -> climb the tower's ladders to the lookout: Haag, and the station keys on his hook (taking them wakes the day room) -> down to the upper floor -> the day room -> the dorm (the keys open it; loose boards down the aisle wake the bunks) -> slide down the brass pole into the bay (one way) -> the bay wakes round the engine -> the chief's office (keys; the chief guards his lockbox: loot) -> the radio room -> the watch office: unbolt the front door. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "pell_fire_station",
+   "name": "Pell Volunteer Fire Station",
+   "tier": 2,
+   "zoning": [
+    "civic"
+   ],
+   "footprint": [
+    28,
+    33
+   ],
+   "origin": [
+    3,
+    6
+   ],
+   "author": "Hollowmere team",
+   "story": "Pell Volunteer Fire Department ran one engine, four men and a siren on a pole. In the second week Chief Hal Brekke's crew pulled a woman out of the Merrow place and Pruitt came back with a bite. Hal put him in the dorm, then put Sorensen in with him, then locked the dorm and moved them both down to the bay because the bay doors were steel. The Cordon wanted the engine for the checkpoint; Hal told them it didn't start. Haag, on lookout duty, climbed the hose tower to watch the town and never came down, and the station keys are still on the hook up there beside him. Hal stayed with his crew. The last line in the run log asks whoever reads it to slide down the pole and close the bay doors behind him.",
+   "style": {
+    "exterior": "brick_red",
+    "interior": "paint_slate_blue",
+    "floor": "concrete",
+    "ceiling": "plaster_white",
+    "floor_height": 0.15,
+    "decay": 0.55,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "flat",
+     "parapet": 0.7,
+     "flat_material": "roof_membrane"
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "QQQQQQQQQQQQQQWWWWTTTT",
+      "QQQQQQQQQQQQQQWWWWTTTT",
+      "QQQQQQQQQQQQQQWWWWTTTT",
+      "QQQQQQQQQQQQQQWWWWTTTT",
+      "AAAAAAAAAAAAAASSGGGGGG",
+      "AAAAAAAAAAAAAASSGGGGGG",
+      "AAAAAAAAAAAAAASSGGGGGG",
+      "AAAAAAAAAAAAAASSGGGGGG",
+      "AAAAAAAAAAAAAAFFFFRRRR",
+      "AAAAAAAAAAAAAAFFFFRRRR",
+      "AAAAAAAAAAAAAAFFFFRRRR",
+      "AAAAAAAAAAAAAAFFFFRRRR",
+      "AAAAAAAAAAAAAAOOOOOOOO",
+      "AAAAAAAAAAAAAAOOOOOOOO",
+      "AAAAAAAAAAAAAAOOOOOOOO",
+      "AAAAAAAAAAAAAAOOOOOOOO",
+      "AAAAAAAAAAAAAAOOOOOOOO",
+      "AAAAAAAAAAAAAAOOOOOOOO"
+     ],
+     "rooms": {
+      "A": {
+       "name": "Apparatus bay",
+       "type": "garage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "storeys": 2
+      },
+      "Q": {
+       "name": "Compressor room",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "W": {
+       "name": "Hose shop",
+       "type": "garage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "T": {
+       "name": "Hose tower (base)",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "S": {
+       "name": "Stair hall",
+       "type": "hallway",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige"
+      },
+      "G": {
+       "name": "Gear room",
+       "type": "storage",
+       "wall": "paint_slate_blue",
+       "floor": "concrete"
+      },
+      "F": {
+       "name": "Chief's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_brown"
+      },
+      "R": {
+       "name": "Radio room",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige"
+      },
+      "O": {
+       "name": "Watch office",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_check"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "MMMMMMMMMMMMMMYYYYUUUU",
+      "MMMMMMMMMMMMMMYYYYUUUU",
+      "MMMMMMMMMMMMMMYYYYUUUU",
+      "MMMMMMMMMMMMMMYYYYUUUU",
+      "^^^^^^^^^^^^^^HHKKKKKK",
+      "^^^^^^^^^^^^^^HHKKKKKK",
+      "^^^^^^^^^^^^^^HHKKKKKK",
+      "^^^^^^^^^^^^^^HHKKKKKK",
+      "^^^^^^^^^^^^^^HHKKKKKK",
+      "^^^^^^^^^^^^^^HHKKKKKK",
+      "^^^^^^^^^^^^^^DDDDDDDD",
+      "^^^^^^^^^^^^^^DDDDDDDD",
+      "^^^^^^^^^^^^^^DDDDDDDD",
+      "^^^^^^^^^^^^^^DDDDDDDD",
+      "^^^^^^^^^^^^^^DDDDDDDD",
+      "^^^^^^^^^^^^^^DDDDDDDD",
+      "^^^^^^^^^^^^^^DDDDDDDD",
+      "^^^^^^^^^^^^^^DDDDDDDD"
+     ],
+     "rooms": {
+      "M": {
+       "name": "Hose loft",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "wood_pine",
+       "gallery": "rail"
+      },
+      "Y": {
+       "name": "Training room",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige"
+      },
+      "U": {
+       "name": "Hose tower (middle)",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "wood_pine"
+      },
+      "H": {
+       "name": "Upper hall",
+       "type": "hallway",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige",
+       "gallery": false
+      },
+      "K": {
+       "name": "Day room",
+       "type": "kitchen",
+       "wall": "paint_mustard",
+       "floor": "linoleum_check"
+      },
+      "D": {
+       "name": "Dorm",
+       "type": "bedroom",
+       "wall": "paint_slate_blue",
+       "floor": "wood_pine",
+       "gallery": false
+      }
+     }
+    },
+    {
+     "level": 2,
+     "plan": [
+      "                  PPPP",
+      "                  PPPP",
+      "                  PPPP",
+      "                  PPPP"
+     ],
+     "rooms": {
+      "P": {
+       "name": "Tower lookout",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "wood_pine"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      17,
+      17
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_metal"
+    },
+    {
+     "id": "watch_window_1",
+     "at": [
+      15,
+      17
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "closed"
+    },
+    {
+     "id": "watch_window_2",
+     "at": [
+      19,
+      17
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "watch_side_window",
+     "at": [
+      21,
+      14
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "radio_window",
+     "at": [
+      21,
+      9
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "gear_window",
+     "at": [
+      21,
+      5
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "tower_door",
+     "at": [
+      21,
+      2
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "broken",
+     "model": "door_metal"
+    },
+    {
+     "id": "shop_back_door",
+     "at": [
+      15,
+      0
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked",
+     "key": "town2_tower_keys",
+     "lock": "chain"
+    },
+    {
+     "id": "compressor_window",
+     "at": [
+      4,
+      0
+     ],
+     "side": "N",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "bay_window_w1",
+     "at": [
+      0,
+      7
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "bay_window_w2",
+     "at": [
+      0,
+      11
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "broken"
+    },
+    {
+     "id": "bay_window_w3",
+     "at": [
+      0,
+      15
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "boarded"
+    },
+    {
+     "id": "compressor_door",
+     "at": [
+      6,
+      3
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "shop_door",
+     "at": [
+      15,
+      4
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "tower_shop_door",
+     "at": [
+      18,
+      2
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "stair_bay_door",
+     "at": [
+      14,
+      6
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "gear_door",
+     "at": [
+      15,
+      6
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "chief_door",
+     "at": [
+      14,
+      9
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "locked",
+     "key": "town2_tower_keys",
+     "lock": "deadbolt"
+    },
+    {
+     "id": "chief_radio_door",
+     "at": [
+      17,
+      10
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "radio_watch_door",
+     "at": [
+      19,
+      11
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "watch_bay_door",
+     "at": [
+      14,
+      15
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "barricaded",
+     "barricade": "furniture"
+    },
+    {
+     "id": "stair_watch_door",
+     "at": [
+      15,
+      7
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "loft_door",
+     "at": [
+      14,
+      1
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "training_tower_door",
+     "at": [
+      17,
+      2
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open",
+     "level": 1
+    },
+    {
+     "id": "training_hall_door",
+     "at": [
+      15,
+      4
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "open",
+     "level": 1
+    },
+    {
+     "id": "dayroom_door",
+     "at": [
+      15,
+      6
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open",
+     "level": 1
+    },
+    {
+     "id": "dorm_door",
+     "at": [
+      15,
+      9
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "town2_tower_keys",
+     "lock": "padlock",
+     "level": 1
+    },
+    {
+     "id": "dayroom_dorm_door",
+     "at": [
+      19,
+      9
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "barricaded",
+     "barricade": "furniture",
+     "level": 1
+    },
+    {
+     "id": "pole_hole",
+     "at": [
+      14,
+      13
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "dayroom_window_e",
+     "at": [
+      21,
+      6
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "dorm_window_s1",
+     "at": [
+      15,
+      17
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "dorm_window_s2",
+     "at": [
+      19,
+      17
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded",
+     "level": 1
+    },
+    {
+     "id": "dorm_window_e",
+     "at": [
+      21,
+      13
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "training_window",
+     "at": [
+      16,
+      0
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "loft_window",
+     "at": [
+      6,
+      0
+     ],
+     "side": "N",
+     "type": "window2",
+     "state": "boarded",
+     "level": 1
+    },
+    {
+     "id": "lookout_window_n",
+     "at": [
+      19,
+      0
+     ],
+     "side": "N",
+     "type": "window2",
+     "state": "broken",
+     "level": 2
+    },
+    {
+     "id": "lookout_window_e",
+     "at": [
+      21,
+      1
+     ],
+     "side": "E",
+     "type": "window2",
+     "state": "closed",
+     "level": 2
+    },
+    {
+     "id": "lookout_window_s",
+     "at": [
+      19,
+      3
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "closed",
+     "level": 2
+    },
+    {
+     "id": "lookout_window_w",
+     "at": [
+      18,
+      1
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "broken",
+     "level": 2
+    }
+   ],
+   "stairs": [
+    {
+     "level": 0,
+     "at": [
+      14,
+      4
+     ],
+     "dir": "S"
+    }
+   ],
+   "ladders": [
+    {
+     "level": 0,
+     "at": [
+      20,
+      0
+     ],
+     "side": "N",
+     "hatch": true
+    },
+    {
+     "level": 1,
+     "at": [
+      21,
+      2
+     ],
+     "side": "E",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "engine",
+     "prop": "fire_engine_wreck",
+     "pos": [
+      6.0,
+      10.6
+     ],
+     "rot": 0,
+     "alt": "engine:west_bay"
+    },
+    {
+     "id": "engine",
+     "prop": "fire_engine_wreck",
+     "pos": [
+      10.2,
+      8.8
+     ],
+     "rot": 0,
+     "alt": "engine:east_bay"
+    },
+    {
+     "prop": "road_rollup_door",
+     "pos": [
+      3.5,
+      18.09
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "road_rollup_door",
+     "pos": [
+      9.5,
+      18.09
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "pole",
+     "prop": "fire_pole",
+     "pos": [
+      13.45,
+      13.5
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "bay_turnouts_1",
+     "prop": "fire_turnout_locker",
+     "at": [
+      0,
+      5
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.5
+     ]
+    },
+    {
+     "id": "bay_turnouts_2",
+     "prop": "fire_turnout_locker",
+     "at": [
+      12,
+      4
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "prop": "fire_hose_rack",
+     "at": [
+      0,
+      9
+     ],
+     "against": "W",
+     "height": 0.9
+    },
+    {
+     "prop": "fire_extinguisher",
+     "at": [
+      13,
+      6
+     ],
+     "against": "E",
+     "height": 0.9
+    },
+    {
+     "prop": "road_tire_stack",
+     "pos": [
+      1.0,
+      16.6
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "road_oil_drum",
+     "pos": [
+      12.6,
+      16.7
+     ]
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      11.6,
+      12.1
+     ]
+    },
+    {
+     "prop": "bloody_bandages",
+     "pos": [
+      10.4,
+      9.0
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "sleeping_bag",
+     "pos": [
+      11.5,
+      6.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "comp_shelf_1",
+     "prop": "metal_shelf",
+     "at": [
+      0,
+      0
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "container": "hardware_shelf"
+    },
+    {
+     "prop": "road_air_pump",
+     "at": [
+      9,
+      0
+     ],
+     "against": "N"
+    },
+    {
+     "prop": "propane_tank_small",
+     "pos": [
+      11.2,
+      0.5
+     ]
+    },
+    {
+     "prop": "road_tire_rack",
+     "at": [
+      13,
+      1
+     ],
+     "against": "E"
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      2.6,
+      2.6
+     ],
+     "rot": 30
+    },
+    {
+     "id": "shop_bench",
+     "prop": "road_workbench",
+     "at": [
+      16,
+      0
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "id": "shop_tools",
+     "prop": "road_tool_chest",
+     "at": [
+      14,
+      2
+     ],
+     "against": "W"
+    },
+    {
+     "prop": "fire_hose_rack",
+     "at": [
+      17,
+      2
+     ],
+     "against": "E",
+     "height": 0.9
+    },
+    {
+     "prop": "fire_hose_hanging",
+     "at": [
+      18,
+      3
+     ],
+     "against": "S",
+     "height": 0.4
+    },
+    {
+     "prop": "fire_hose_hanging",
+     "at": [
+      21,
+      3
+     ],
+     "against": "S",
+     "height": 0.4
+    },
+    {
+     "id": "gear_turnouts_1",
+     "prop": "fire_turnout_locker",
+     "at": [
+      17,
+      4
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "id": "gear_turnouts_2",
+     "prop": "fire_turnout_locker",
+     "at": [
+      20,
+      4
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "pegboard_wall",
+     "at": [
+      21,
+      6
+     ],
+     "against": "E",
+     "height": 0.9,
+     "id": "gear_pegboard"
+    },
+    {
+     "id": "gear_toolbox",
+     "prop": "toolbox",
+     "pos": [
+      19.5,
+      6.8
+     ]
+    },
+    {
+     "id": "chief_desk",
+     "prop": "office_desk",
+     "pos": [
+      15.6,
+      8.8
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      15.6,
+      8.0
+     ],
+     "rot": 180
+    },
+    {
+     "id": "chief_lockbox",
+     "prop": "safe_small",
+     "at": [
+      17,
+      11
+     ],
+     "against": "E",
+     "container": "fire_chief_safe"
+    },
+    {
+     "id": "chief_files",
+     "prop": "filing_cabinet",
+     "at": [
+      14,
+      11
+     ],
+     "against": "W"
+    },
+    {
+     "prop": "civic_trophy_case",
+     "at": [
+      16,
+      11
+     ],
+     "against": "S"
+    },
+    {
+     "id": "radio_desk",
+     "prop": "office_desk",
+     "pos": [
+      20.4,
+      9.2
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "civic_ham_radio",
+     "pos": [
+      20.5,
+      9.3
+     ],
+     "y": 0.76,
+     "rot": 270
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      19.6,
+      9.3
+     ],
+     "rot": 90,
+     "id": "radio_chair"
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      18,
+      8
+     ],
+     "against": "N",
+     "height": 1.3
+    },
+    {
+     "id": "watch_counter",
+     "prop": "counter_reception",
+     "pos": [
+      18.0,
+      13.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      18.0,
+      12.4
+     ],
+     "rot": 200
+    },
+    {
+     "prop": "bench_park",
+     "pos": [
+      20.8,
+      15.5
+     ],
+     "rot": 270
+    },
+    {
+     "prop": "water_cooler",
+     "at": [
+      14,
+      12
+     ],
+     "against": "W"
+    },
+    {
+     "prop": "civic_coat_rack",
+     "pos": [
+      14.5,
+      16.7
+     ],
+     "rot": 90,
+     "id": "watch_coats"
+    },
+    {
+     "prop": "barricade_mattress",
+     "pos": [
+      14.6,
+      15.4
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "fire_hose_hanging",
+     "at": [
+      18,
+      0
+     ],
+     "against": "N",
+     "height": 0.0,
+     "level": 1
+    },
+    {
+     "prop": "fire_hose_hanging",
+     "at": [
+      20,
+      3
+     ],
+     "against": "S",
+     "height": 0.0,
+     "level": 1
+    },
+    {
+     "id": "loft_shelf_1",
+     "prop": "metal_shelf",
+     "at": [
+      2,
+      0
+     ],
+     "against": "N",
+     "level": 1,
+     "container": "hardware_shelf"
+    },
+    {
+     "prop": "fire_hose_rack",
+     "at": [
+      8,
+      0
+     ],
+     "against": "N",
+     "height": 0.9,
+     "level": 1
+    },
+    {
+     "prop": "cardboard_box",
+     "pos": [
+      11.4,
+      1.0
+     ],
+     "rot": 20,
+     "level": 1,
+     "id": "loft_box_1"
+    },
+    {
+     "prop": "crate_wood",
+     "pos": [
+      12.4,
+      0.8
+     ],
+     "rot": 0,
+     "level": 1,
+     "id": "loft_crate_1"
+    },
+    {
+     "prop": "civic_folding_table",
+     "pos": [
+      16.8,
+      0.9
+     ],
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "prop": "civic_folding_chair",
+     "pos": [
+      16.8,
+      1.6
+     ],
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      14,
+      3
+     ],
+     "against": "W",
+     "height": 1.3,
+     "level": 1
+    },
+    {
+     "id": "day_stove",
+     "prop": "stove_old",
+     "at": [
+      21,
+      4
+     ],
+     "against": "E",
+     "level": 1
+    },
+    {
+     "id": "day_counter",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      21,
+      5
+     ],
+     "against": "E",
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "day_fridge",
+     "prop": "fridge_old",
+     "at": [
+      21,
+      7
+     ],
+     "against": "E",
+     "level": 1
+    },
+    {
+     "prop": "coffee_machine",
+     "pos": [
+      21.4,
+      5.2
+     ],
+     "y": 0.92,
+     "level": 1
+    },
+    {
+     "id": "day_table",
+     "prop": "kitchen_table",
+     "pos": [
+      18.6,
+      7.6
+     ],
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      17.8,
+      7.6
+     ],
+     "rot": 90,
+     "level": 1,
+     "id": "day_chair_1"
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      19.4,
+      7.6
+     ],
+     "rot": 270,
+     "level": 1,
+     "id": "day_chair_2"
+    },
+    {
+     "prop": "couch",
+     "at": [
+      16,
+      4
+     ],
+     "against": "N",
+     "offset": [
+      0.6,
+      0
+     ],
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "tv_crt",
+     "pos": [
+      20.9,
+      8.5
+     ],
+     "rot": 270,
+     "level": 1
+    },
+    {
+     "prop": "dish_clutter",
+     "pos": [
+      18.6,
+      7.4
+     ],
+     "y": 0.76,
+     "level": 1,
+     "alt": "kitchen:last_meal"
+    },
+    {
+     "prop": "barricade_mattress",
+     "pos": [
+      19.4,
+      8.8
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "worn",
+     "alt": "kitchen:barricaded"
+    },
+    {
+     "id": "bunk_1",
+     "prop": "wild_bunk_steel",
+     "at": [
+      21,
+      10
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.5
+     ],
+     "level": 1
+    },
+    {
+     "id": "bunk_2",
+     "prop": "wild_bunk_steel",
+     "at": [
+      21,
+      12
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.5
+     ],
+     "level": 1
+    },
+    {
+     "id": "bunk_3",
+     "prop": "wild_bunk_steel",
+     "at": [
+      21,
+      15
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.5
+     ],
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "bunk_4",
+     "prop": "wild_bunk_steel",
+     "at": [
+      16,
+      16
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "id": "dorm_footlocker_1",
+     "prop": "wild_footlocker",
+     "pos": [
+      20.0,
+      10.7
+     ],
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "id": "dorm_footlocker_2",
+     "prop": "wild_footlocker",
+     "pos": [
+      20.0,
+      12.7
+     ],
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "id": "dorm_footlocker_3",
+     "prop": "wild_footlocker",
+     "pos": [
+      20.0,
+      15.7
+     ],
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "id": "dorm_lockers",
+     "prop": "wild_locker_steel",
+     "at": [
+      17,
+      10
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "prop": "clothes_pile",
+     "pos": [
+      14.6,
+      16.6
+     ],
+     "rot": 30,
+     "level": 1
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      20.6,
+      14.0
+     ],
+     "level": 1,
+     "lit": true
+    },
+    {
+     "prop": "utility_pole",
+     "pos": [
+      26.0,
+      22.5
+     ]
+    },
+    {
+     "prop": "fire_siren",
+     "pos": [
+      25.6,
+      22.5
+     ],
+     "y": 6.6,
+     "rot": 270
+    },
+    {
+     "prop": "pickup_wreck",
+     "pos": [
+      -2.0,
+      14.0
+     ],
+     "rot": 10,
+     "id": "side_pickup"
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "haag",
+     "pos": [
+      19.6,
+      1.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 0,
+     "level": 2
+    },
+    {
+     "id": "dayroom_1",
+     "pos": [
+      17.8,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "level": 1,
+     "group": "dayroom"
+    },
+    {
+     "id": "dayroom_2",
+     "pos": [
+      19.4,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 270,
+     "level": 1,
+     "group": "dayroom"
+    },
+    {
+     "id": "dorm_1",
+     "pos": [
+      21.2,
+      10.5
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "level": 1,
+     "group": "dorm",
+     "alt": "dorm:in_bunks"
+    },
+    {
+     "id": "dorm_2",
+     "pos": [
+      21.2,
+      15.5
+     ],
+     "enemy": "lurcher",
+     "pose": "lie",
+     "rot": 0,
+     "level": 1,
+     "group": "dorm",
+     "alt": "dorm:in_bunks"
+    },
+    {
+     "id": "dorm_1",
+     "pos": [
+      17.4,
+      14.6
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 90,
+     "level": 1,
+     "group": "dorm",
+     "alt": "dorm:on_the_floor"
+    },
+    {
+     "id": "dorm_2",
+     "pos": [
+      18.6,
+      11.4
+     ],
+     "enemy": "lurcher",
+     "pose": "lie",
+     "rot": 200,
+     "level": 1,
+     "group": "dorm",
+     "anchor": "floor",
+     "alt": "dorm:on_the_floor"
+    },
+    {
+     "id": "pruitt",
+     "pos": [
+      7.9,
+      15.4
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 270,
+     "group": "bay",
+     "population": "cordon"
+    },
+    {
+     "id": "sorensen",
+     "pos": [
+      3.4,
+      12.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 80,
+     "group": "bay",
+     "anchor": "floor"
+    },
+    {
+     "id": "bay_3",
+     "pos": [
+      10.6,
+      14.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 220,
+     "group": "bay"
+    },
+    {
+     "id": "radio_operator",
+     "pos": [
+      19.6,
+      9.3
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90
+    },
+    {
+     "id": "chief_brekke",
+     "pos": [
+      16.6,
+      10.2
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "guardian": true
+    }
+   ],
+   "pickups": [
+    {
+     "id": "tower_keys",
+     "item": "town2_tower_keys",
+     "pos": [
+      21.6,
+      0.5
+     ],
+     "y": 1.4,
+     "level": 2
+    }
+   ],
+   "notes": [
+    {
+     "note": "town2_fire_log",
+     "pos": [
+      15.2,
+      8.7
+     ],
+     "y": 0.77
+    },
+    {
+     "note": "town2_fire_duty_board",
+     "pos": [
+      18.5,
+      8.2
+     ],
+     "y": 1.3
+    }
+   ],
+   "traps": [
+    {
+     "id": "tower_jaws",
+     "type": "bear_trap",
+     "pos": [
+      22.6,
+      3.1
+     ],
+     "rot": 25
+    },
+    {
+     "id": "dorm_boards",
+     "type": "creaky_floor",
+     "at": [
+      16,
+      13
+     ],
+     "size": [
+      3,
+      1
+     ],
+     "level": 1
+    }
+   ],
+   "triggers": [
+    {
+     "id": "t_dayroom_keys",
+     "group": "dayroom",
+     "on": "pickup",
+     "pickup": "tower_keys",
+     "delay": 2.0
+    },
+    {
+     "id": "t_dayroom_room",
+     "group": "dayroom",
+     "on": "room",
+     "room": "K",
+     "level": 1
+    },
+    {
+     "id": "t_dorm",
+     "group": "dorm",
+     "on": "trap",
+     "trap": "dorm_boards",
+     "delay": 0.3
+    },
+    {
+     "id": "t_dorm_door",
+     "group": "dorm",
+     "on": "opening",
+     "opening": "dorm_door",
+     "delay": 1.5
+    },
+    {
+     "id": "t_bay",
+     "group": "bay",
+     "on": "room",
+     "room": "A",
+     "level": 0,
+     "delay": 0.4
+    }
+   ],
+   "lights": [
+    {
+     "at": [
+      20,
+      14
+     ],
+     "level": 1,
+     "height": 0.4,
+     "color": "#ffbb77",
+     "energy": 0.6,
+     "range": 5.0,
+     "flicker": 0.2
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      9,
+      10
+     ],
+     "side": "floor",
+     "size": [
+      2.6,
+      1.0
+     ]
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      3,
+      12
+     ],
+     "side": "floor",
+     "size": [
+      1.8,
+      1.8
+     ]
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      13,
+      8
+     ],
+     "side": "E",
+     "height": 1.5,
+     "size": [
+      1.4,
+      1.0
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      15,
+      9
+     ],
+     "side": "S",
+     "height": 1.1,
+     "size": [
+      0.6,
+      0.6
+     ],
+     "level": 1
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      6,
+      16
+     ],
+     "side": "floor",
+     "size": [
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      20,
+      2
+     ],
+     "side": "floor",
+     "size": [
+      1.6,
+      1.2
+     ]
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      0,
+      13
+     ],
+     "side": "W",
+     "height": 2.2,
+     "size": [
+      1.4,
+      1.6
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      17,
+      19
+     ],
+     "label": "Watch office door - bolted from inside; the bay doors are down and padlocked"
+    },
+    {
+     "at": [
+      23,
+      2
+     ],
+     "label": "Round the back: the hose tower door, broken in (jaws in the gravel)"
+    },
+    {
+     "at": [
+      20,
+      2
+     ],
+     "label": "Hose tower - the ladder"
+    },
+    {
+     "at": [
+      20,
+      2
+     ],
+     "level": 1,
+     "label": "Up the tower"
+    },
+    {
+     "at": [
+      19,
+      2
+     ],
+     "level": 2,
+     "label": "The lookout - Haag, and the station keys on his hook"
+    },
+    {
+     "at": [
+      19,
+      1
+     ],
+     "level": 1,
+     "label": "Back down"
+    },
+    {
+     "at": [
+      15,
+      2
+     ],
+     "level": 1,
+     "label": "Training room"
+    },
+    {
+     "at": [
+      15,
+      5
+     ],
+     "level": 1,
+     "label": "Upper hall"
+    },
+    {
+     "at": [
+      18,
+      5
+     ],
+     "level": 1,
+     "label": "The day room"
+    },
+    {
+     "at": [
+      15,
+      8
+     ],
+     "level": 1,
+     "label": "The dorm door - the keys open it"
+    },
+    {
+     "at": [
+      17,
+      12
+     ],
+     "level": 1,
+     "label": "The dorm - loose boards down the aisle"
+    },
+    {
+     "at": [
+      15,
+      13
+     ],
+     "level": 1,
+     "label": "The pole"
+    },
+    {
+     "at": [
+      13,
+      13
+     ],
+     "label": "Slide down into the bay"
+    },
+    {
+     "at": [
+      12,
+      9
+     ],
+     "label": "The bay - the engine"
+    },
+    {
+     "at": [
+      15,
+      9
+     ],
+     "label": "The chief's office (loot) - Chief Brekke and his lockbox"
+    },
+    {
+     "at": [
+      19,
+      10
+     ],
+     "label": "The radio room"
+    },
+    {
+     "at": [
+      17,
+      16
+     ],
+     "label": "The watch office: slide the bolt"
+    },
+    {
+     "at": [
+      17,
+      19
+     ],
+     "label": "Out"
+    }
+   ],
+   "loot_room": {
+    "room": "F",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "front_door"
+    }
+   ],
+   "budget": {
+    "lights": 4,
+    "enemies": 12
+   },
+   "alternatives": [
+    {
+     "id": "engine",
+     "label": "Where the engine stands",
+     "options": [
+      {
+       "id": "west_bay",
+       "label": "In the west bay"
+      },
+      {
+       "id": "east_bay",
+       "label": "In the east bay, nose to the doors"
+      }
+     ]
+    },
+    {
+     "id": "dorm",
+     "label": "The dorm",
+     "options": [
+      {
+       "id": "in_bunks",
+       "label": "Lying in their bunks",
+       "weight": 2
+      },
+      {
+       "id": "on_the_floor",
+       "label": "Out of their bunks, on the floor"
+      }
+     ]
+    },
+    {
+     "id": "kitchen",
+     "label": "The day room",
+     "options": [
+      {
+       "id": "last_meal",
+       "label": "The last meal still on the table"
+      },
+      {
+       "id": "barricaded",
+       "label": "The dorm door barricaded with a mattress",
+       "style": {
+        "decay": 0.65
+       }
+      }
+     ]
+    },
+    {
+     "id": "tower",
+     "label": "The tower door",
+     "options": [
+      {
+       "id": "broken",
+       "label": "Broken in",
+       "weight": 2
+      },
+      {
+       "id": "open",
+       "label": "Left open",
+       "openings": [
+        {
+         "id": "tower_door",
+         "state": "open"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "watch",
+     "label": "The watch office",
+     "options": [
+      {
+       "id": "blue",
+       "label": "Slate blue"
+      },
+      {
+       "id": "paneled",
+       "label": "Knotty pine paneling",
+       "rooms": [
+        {
+         "room": "O",
+         "wall": "wood_paneling_dark",
+         "floor": "wood_pine"
+        },
+        {
+         "room": "R",
+         "wall": "wood_paneling_dark"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
