@@ -126,8 +126,13 @@ func render(world: Dictionary, regions: Array, fws: Dictionary, size_px: int) ->
 					_town(fd3, fw_by_id.get(str(fd3.get("framework", "")), {}))
 				"poi":
 					_place(fd3)
-	# The drop site: a yellow ring.
 	var gen: Dictionary = world.get("generator", {})
+	# Trader posts (ADR-0039): a green dot with a dark rim.
+	for tp: Variant in gen.get("traders", []):
+		var tpos: Vector2 = _v2((tp as Dictionary)["pos"])
+		_dot(tpos, 11.0, Color(0.05, 0.05, 0.05))
+		_dot(tpos, 8.0, Color(0.35, 0.8, 0.4))
+	# The drop site: a yellow ring.
 	if gen.has("drop_site"):
 		var dp: Vector2 = _v2(gen["drop_site"])
 		_dot(dp, 13.0, Color(0.05, 0.05, 0.05))
