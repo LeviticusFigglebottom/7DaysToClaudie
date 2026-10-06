@@ -60,6 +60,7 @@ func _run() -> void:
 	if args.find("--world") >= 0 and args.find("--world") + 1 < args.size() and args[args.find("--world") + 1] == "random":
 		opts["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", args, 1)
 		opts["slot"] = "smoke_rwg"
+		opts["stream"] = args.has("--stream")
 	game.call(&"start_new_game", opts)
 	var ready: bool = await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), 240.0)
 	if not ok(ready, "world loads and the player spawns (%.1fs)" % ((Time.get_ticks_msec() - _t0) / 1000.0)):

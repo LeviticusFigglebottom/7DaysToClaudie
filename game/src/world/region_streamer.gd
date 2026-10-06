@@ -37,6 +37,8 @@ var _ready: Dictionary = {}
 ## rid -> job {rid, kind, priority, cancel: [bool], out: [RegionTerrain], state}
 var _jobs: Dictionary = {}
 var _pins: Dictionary = {}
+## Regions known to be in the disk cache (a prefetch finished): not prefetched again.
+var _cached: Dictionary = {}
 var _extra_focus: Array = []
 var _pool := Pool.new()
 var _threads: Array[Thread] = []
@@ -159,7 +161,7 @@ func update() -> void:
 	var prefetch: Dictionary = {}
 	for rid3: String in plan["prefetch"]:
 		prefetch[rid3] = true
-		if not _ready.has(rid3) and not _attached.has(rid3):
+		if not _ready.has(rid3) and not _attached.has(rid3) and not _cached.has(rid3):
 			# After every wanted region: prefetch only fills the disk cache.
 			_request(rid3, PREFETCH, 100000.0 + float(prio[rid3]))
 	# Jobs nobody wants any more stop; composed regions nobody wants are dropped.
@@ -174,7 +176,7 @@ func update() -> void:
 	for rid5: String in _ready.keys():
 		if not wanted.has(rid5):
 			_ready.erase(rid5)
-			steps.cancel("attach %s" % rid5)
+			steps.cancel("attach %s" % rid5, true)
 
 
 ## Streams around `pos` at once (a teleport, a respawn), on top of the players' own focus, until
@@ -210,7 +212,8 @@ func attached() -> Dictionary:
 	return _attached
 
 
-## {attached, ready, jobs, queued_steps, composed, cancelled, last_attach_ms}
+## {attached, ready, jobs, queued_steps, composed (jobs that produced a region), cancelled,
+## last_attach_ms}
 func status() -> Dictionary:
 	_pool.mutex.lock()
 	var jobs: int = _jobs.size()
@@ -259,6 +262,7 @@ func _collect() -> void:
 		if bool(job["cancel"][0]) or rt == null:
 			continue
 		_stats["composed"] = int(_stats["composed"]) + 1
+		_cached[rid] = true
 		if int(job["kind"]) == LOAD:
 			_ready[rid] = rt
 			_queue_attach(rid)
@@ -266,10 +270,10 @@ func _collect() -> void:
 
 ## Queues the main-thread attach of a composed region (once; a pending detach of it is dropped).
 func _queue_attach(rid: String) -> void:
-	steps.cancel("detach %s" % rid)
+	steps.cancel("detach %s" % rid, true)
 	if _attached.has(rid) or not _ready.has(rid):
 		return
-	steps.cancel("attach %s" % rid)
+	steps.cancel("attach %s" % rid, true)
 	steps.add(["Shaping the land around you…", func() -> void:
 		var rt: RegionTerrain = _ready.get(rid)
 		if rt == null or _attached.has(rid):
@@ -283,11 +287,11 @@ func _queue_attach(rid: String) -> void:
 
 ## Queues the detach of a region that left the rings (once; a pending attach of it is dropped).
 func _queue_detach(rid: String) -> void:
-	steps.cancel("attach %s" % rid)
+	steps.cancel("attach %s" % rid, true)
 	_ready.erase(rid)
 	if not _attached.has(rid):
 		return
-	steps.cancel("detach %s" % rid)
+	steps.cancel("detach %s" % rid, true)
 	steps.add(["", func() -> void:
 		if _attached.has(rid):
 			terrain.detach_region(rid)
