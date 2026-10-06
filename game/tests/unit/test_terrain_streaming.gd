@@ -73,7 +73,6 @@ func test_a_dig_comes_back_after_detach_and_the_limit_still_holds() -> void:
 	var dug: float = tm.height_at(c.x, c.y)
 	assert_lt(dug, B_Y - 1.0, "dug")
 	tm.detach_region("b")
-	assert_almost_eq(rt.height.sample(c.x, c.y), B_Y, 1e-3, "the region object leaves pristine")
 	tm.attach_region(rt)
 	assert_almost_eq(tm.height_at(c.x, c.y), dug, 1e-3, "the dig is back, once")
 	for i: int in 20:

@@ -145,18 +145,23 @@ func _make_region_material(rt: RegionTerrain) -> ShaderMaterial:
 var _grid: Array = []
 
 
-## The grid and `regions` are replaced whole, never edited in place (ADR-0038): worker threads
-## (chunk meshing, scatter, weather, the flow field) read them through height_at while regions
-## attach and detach. The replaced ones are retired like height arrays (_retire).
+## The grid and `regions` are replaced whole when regions attach or detach (ADR-0038), and
+## worker threads (chunk meshing, scatter, weather, the flow field) read them through height_at
+## meanwhile. Replacing an Array or Dictionary member is not atomic in GDScript (the old one is
+## released and the member left null for a moment before the new one is stored), so the swap and
+## the workers' reads take _lock; main-thread code reads them freely (only it writes them).
+var _lock := Mutex.new()
+
+
 func _build_grid() -> void:
 	var g: Array = []
 	g.resize(world.cols * world.rows)
 	for rid: String in world.regions:
 		var c: Vector2i = WorldDef.cell_coords(str(world.regions[rid]["cell"]))
 		g[c.x + c.y * world.cols] = regions.get(rid, coarse.get(rid))
-	if not _grid.is_empty():
-		_retire(_grid)
+	_lock.lock()
 	_grid = g
+	_lock.unlock()
 
 
 func _terrain_for(x: float, z: float) -> RegionTerrain:
@@ -164,7 +169,10 @@ func _terrain_for(x: float, z: float) -> RegionTerrain:
 	var row: int = int(floor(z / world.region_size + world.rows * 0.5))
 	if col < 0 or row < 0 or col >= world.cols or row >= world.rows:
 		return null
-	return _grid[col + row * world.cols]
+	_lock.lock()
+	var rt: RegionTerrain = _grid[col + row * world.cols]
+	_lock.unlock()
+	return rt
 
 
 ## Forest canopy at world (x, z), 0..1 (see far_canopy): the biome's trees under the vegetation
@@ -203,7 +211,12 @@ func normal_at(x: float, z: float) -> Vector3:
 ## Detailed (1 m) region terrain at a position, or null.
 func region_terrain_at(x: float, z: float) -> RegionTerrain:
 	var rt: RegionTerrain = _terrain_for(x, z)
-	return rt if rt != null and regions.has(rt.region_id) else null
+	if rt == null:
+		return null
+	_lock.lock()
+	var detailed: bool = regions.has(rt.region_id)
+	_lock.unlock()
+	return rt if detailed else null
 
 
 ## Dominant ground layer name (footsteps, particles); "" outside detailed regions.
@@ -218,21 +231,24 @@ static func chunk_of(x: float, z: float) -> Vector2i:
 
 # --- Regions in and out (ADR-0038) -----------------------------------------------------------
 
-## Brings a region's 1 m terrain into play: published in a new `regions` and grid (workers keep
-## reading the old ones safely), its saved digs applied, a material made, the near chunks over it
-## re-meshed and their collision rebuilt. `pristine`: its unedited heights when the caller has
-## them (the dig limit must never be taken from already-edited heights).
+## Brings a region's 1 m terrain into play: its saved digs applied, published in a new `regions`
+## and grid (under _lock), a material made, the near chunks over it re-meshed and their collision
+## rebuilt. `pristine`: its unedited heights when the caller has them (the dig limit must never be
+## taken from already-edited heights).
 func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 	var rid: String = rt.region_id
 	if pristine != null:
 		_base_cache[rid] = pristine
+	_apply_deltas(rt)
 	var next: Dictionary = regions.duplicate()
 	next[rid] = rt
-	_retire(regions)
+	_lock.lock()
 	regions = next
-	_apply_deltas(rt)
+	_lock.unlock()
 	_build_grid()
 	_materials[rid] = _make_region_material(rt)
+	# Cellars of the region's buildings (a new object: workers hold the old one).
+	holes = TerrainHoles.from_regions(regions)
 	_refresh_chunks(rt.rect)
 	region_attached.emit(rid)
 
@@ -244,17 +260,16 @@ func detach_region(rid: String) -> void:
 		return
 	var rt: RegionTerrain = regions[rid]
 	var rect: Rect2 = rt.rect
-	# The region leaves as it was composed: its digs live on in _deltas, and a re-attach of this
-	# same object must not take dug heights for pristine ones (the digs would apply twice).
-	if _base_cache.has(rid):
-		_publish_heights(rt.height, (_base_cache[rid] as HeightField).heights.duplicate())
 	var next: Dictionary = regions.duplicate()
 	next.erase(rid)
-	_retire(regions)
+	_lock.lock()
 	regions = next
+	_lock.unlock()
 	_build_grid()
 	_materials.erase(rid)
-	_base_cache.erase(rid)
+	# _base_cache keeps a dug region's pristine heights (4 MB) across the detach: its digs live on
+	# in _deltas and are re-applied over them on the next attach, whatever the object then holds.
+	holes = TerrainHoles.from_regions(regions)
 	_refresh_chunks(rect)
 	region_detached.emit(rid)
 
@@ -539,6 +554,20 @@ func _build_far_tiles() -> void:
 		_add_far_tile(rid, _far_tile_mesh(rid))
 
 
+## The region streamer (ADR-0038) when this world streams; null otherwise.
+var streamer: RegionStreamer = null
+
+
+## Streams regions' 1 m terrain around the focus from now on (streamed random worlds).
+func start_streaming(cfg: Dictionary) -> void:
+	if streamer != null:
+		return
+	streamer = RegionStreamer.new()
+	streamer.name = "Streamer"
+	add_child(streamer)
+	streamer.setup(self, cfg)
+
+
 ## Set before setup(): a Bloom field built off the main thread (WorldLoader.bloom_field).
 var prebuilt_bloom: BloomField = null
 ## Set before setup() to build the far tiles on worker threads through boot_steps() (ADR-0036:
@@ -559,7 +588,9 @@ func boot_steps() -> Array:
 func _start_far_tiles() -> void:
 	_far_ids = world.regions.keys()
 	_far_meshes.resize(_far_ids.size())
-	_far_task = WorkerThreadPool.add_group_task(func(i: int) -> void: _far_meshes[i] = _far_tile_mesh(_far_ids[i]), _far_ids.size(), -1, false, "far tiles")
+	# The workers read a snapshot: an attach on the main thread swaps `regions` meanwhile.
+	var snap: Dictionary = regions
+	_far_task = WorkerThreadPool.add_group_task(func(i: int) -> void: _far_meshes[i] = _far_tile_mesh(_far_ids[i], snap), _far_ids.size(), -1, false, "far tiles")
 
 
 func _finish_far_tiles() -> bool:
@@ -574,16 +605,17 @@ func _finish_far_tiles() -> bool:
 	return true
 
 
-## A far tile's mesh (pure data: reads the composed regions only, safe on a worker thread).
-func _far_tile_mesh(rid: String) -> ArrayMesh:
+## A far tile's mesh (pure data: reads the composed regions only, safe on a worker thread given
+## `snap`, the `regions` dictionary taken on the main thread; attach and detach replace it).
+func _far_tile_mesh(rid: String, snap: Dictionary = regions) -> ArrayMesh:
 	var built: Array[Rect2] = []
-	for b: String in regions:
+	for b: String in snap:
 		built.append(world.region_rect(b))
 	var rect: Rect2 = world.region_rect(rid)
-	var rt: RegionTerrain = regions.get(rid, coarse.get(rid))
+	var rt: RegionTerrain = snap.get(rid, coarse.get(rid))
 	# Built regions draw their own trees (impostors out to 1.2 km); the others get a canopy,
 	# raised into the mesh itself so its normals light the forest edges.
-	var grid: PackedVector2Array = _far_canopy_grid(rt, rect, {} if regions.has(rid) else _canopy, built)
+	var grid: PackedVector2Array = _far_canopy_grid(rt, rect, {} if snap.has(rid) else _canopy, built)
 	var n: int = int(round(rect.size.x / FAR_STEP)) + 3
 	var at := func(x: float, z: float) -> Vector2:
 		return grid[clampi(int(round((z - rect.position.y) / FAR_STEP)) + 1, 0, n - 1) * n + clampi(int(round((x - rect.position.x) / FAR_STEP)) + 1, 0, n - 1)]
@@ -798,10 +830,13 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 	var cj: int = int(round((center.z - hf.origin.y) / hf.spacing))
 	var moved: float = 0.0
 	var touched: Dictionary = {}
-	# Edit a private copy and publish it whole (_publish_heights): worker threads read these heights
-	# all the time (chunk meshing, scatter, weather, the Hum's flow field).
-	var original: PackedFloat32Array = hf.heights
-	var heights: PackedFloat32Array = hf.heights.duplicate()
+	# Written in place, value by value: worker threads read these heights all the time (chunk
+	# meshing, scatter, weather, the Hum's flow field), and a float written in place is either old
+	# or new to them. Replacing the array instead is NOT safe: GDScript releases the old one and
+	# leaves the member null for a moment before storing the new one (TD-104).
+	var original := PackedFloat32Array()
+	if mode == "smooth":
+		original = hf.heights.duplicate()
 	for j: int in range(cj - r_cells, cj + r_cells + 1):
 		for i: int in range(ci - r_cells, ci + r_cells + 1):
 			if i < 0 or j < 0 or i >= hf.width or j >= hf.depth:
@@ -813,7 +848,7 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 				continue
 			var k: float = 0.5 + 0.5 * cos(d * PI)
 			var idx: int = j * hf.width + i
-			var h0: float = heights[idx]
+			var h0: float = hf.heights[idx]
 			var nh: float = h0
 			match mode:
 				"dig":
@@ -828,12 +863,11 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 						for oi: int in range(-1, 2):
 							acc += original[clampi(j + oj, 0, hf.depth - 1) * hf.width + clampi(i + oi, 0, hf.width - 1)]
 					nh = lerpf(h0, acc / 9.0, amount * k)
-			heights[idx] = nh
+			hf.heights[idx] = nh
 			moved += (h0 - nh) * hf.spacing * hf.spacing
 			touched[chunk_of(x, z)] = true
 			# Samples on chunk borders belong to neighbours too.
 			touched[chunk_of(x - 0.01, z - 0.01)] = true
-	_publish_heights(hf, heights)
 	for key: Vector2i in touched:
 		_record_delta(rt, key)
 		var ch: Chunk = _chunks.get(key)
@@ -847,34 +881,12 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 	return moved
 
 
-## Height arrays replaced by an edit, kept alive for RETIRE_MSEC: a worker that fetched the old
-## array just before the swap may still be reading it, and freeing it under that worker crashes
-## (use after free; more likely the more threads a machine runs). [ticks_msec, array] oldest first.
-var _retired: Array = []
-const RETIRE_MSEC: int = 20000
-const RETIRE_MIN: int = 4
-
-
-## Swaps a region's heights for an edited copy. Readers on other threads see the old array or the
-## new one, never a buffer freed under them, and never a half-written edit.
-func _publish_heights(hf: HeightField, heights: PackedFloat32Array) -> void:
-	_retire(hf.heights)
-	hf.heights = heights
-
-
-## Keeps a replaced array, dictionary or grid referenced for RETIRE_MSEC (see _retired).
-func _retire(old: Variant) -> void:
-	var now: int = Time.get_ticks_msec()
-	_retired.append([now, old])
-	while _retired.size() > RETIRE_MIN and now - int(_retired[0][0]) > RETIRE_MSEC:
-		_retired.pop_front()
-
-
-## Applies the saved digs that fall in a region onto its heights (one published copy).
+## Applies the saved digs that fall in a region onto its heights (in place, see modify()). The
+## pristine heights come from _base_cache when the region was dug before (kept across a detach),
+## so a re-attached object that still carries its digs gets them once, not twice.
 func _apply_deltas(rt: RegionTerrain) -> void:
 	var vc: int = int(CHUNK) + 1
 	var hf: HeightField = rt.height
-	var heights: PackedFloat32Array = []
 	var base: HeightField = null
 	for key_s: String in _deltas:
 		var key: Vector2i = Ids.parse_chunk_key(key_s.substr(2))
@@ -882,16 +894,13 @@ func _apply_deltas(rt: RegionTerrain) -> void:
 			continue
 		if base == null:
 			base = _base_heights(rt)
-			heights = hf.heights.duplicate()
 		var delta: PackedFloat32Array = _deltas[key_s]
 		for j: int in vc:
 			for i: int in vc:
 				var gx: int = int(round((key.x * CHUNK + i - hf.origin.x) / hf.spacing))
 				var gz: int = int(round((key.y * CHUNK + j - hf.origin.y) / hf.spacing))
 				if gx >= 0 and gz >= 0 and gx < hf.width and gz < hf.depth:
-					heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
-	if base != null:
-		_publish_heights(hf, heights)
+					hf.heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
 
 
 ## Composed (unedited) heights per region, kept to clamp digging depth and compute deltas.

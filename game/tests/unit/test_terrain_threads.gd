@@ -1,9 +1,11 @@
 extends GutTest
-## Terrain edits while worker threads read the terrain (TD-104, ADR-0036): digging publishes a new
-## height array instead of writing the one chunk meshing, scatter, weather and the flow field read,
-## and keeps the old one alive a while; volume columns are swapped the same way. The stress test
-## digs on the main thread while workers mesh chunks and sample heights; a race here crashed the
-## engine rather than failing an assert, so passing means surviving.
+## Terrain edits while worker threads read the terrain (TD-104, ADR-0036): digging writes heights
+## in place (one float at a time: a reader sees each sample either before or after the edit, never
+## a released array), and the containers that are replaced or grown (the region grid, `regions`,
+## volume columns) are read and written under a mutex. Swapping a new array into a member is not
+## safe on its own: the old one is released before the new one is stored. The stress tests dig on
+## the main thread while workers mesh chunks and sample heights; a race here crashed the engine
+## rather than failing an assert, so passing means surviving.
 
 const PAD_Y: float = 12.0
 
@@ -39,7 +41,7 @@ func _manager() -> Array:
 	return [tm, wr[1]]
 
 
-func test_a_dig_publishes_a_new_array_and_keeps_the_old_alive() -> void:
+func test_a_dig_writes_the_live_heights() -> void:
 	var m: Array = _manager()
 	var tm: TerrainManager = m[0]
 	var rt: RegionTerrain = m[1]
@@ -48,9 +50,7 @@ func test_a_dig_publishes_a_new_array_and_keeps_the_old_alive() -> void:
 	var moved: float = tm.modify(Vector3(c.x, before, c.y), 2.0, 0.5)
 	assert_gt(moved, 0.0, "earth moved")
 	assert_lt(tm.height_at(c.x, c.y), before, "the new heights are live")
-	assert_eq(tm._retired.size(), 1, "the replaced array is kept for readers still holding it")
-	assert_almost_eq(float((tm._retired[0][1] as PackedFloat32Array)[rt.height.width * 128 + 128]), before, 1e-4,
-		"and it is untouched: a reader never sees half an edit")
+	assert_almost_eq(rt.height.sample(c.x, c.y), tm.height_at(c.x, c.y), 1e-4, "edited in the region's own array")
 
 
 func test_digging_while_workers_mesh_and_sample() -> void:
@@ -92,12 +92,23 @@ func test_digging_while_workers_mesh_and_sample() -> void:
 	assert_lt(tm.height_at(o.x + 8.0, o.y + 8.0), PAD_Y, "the digs landed")
 
 
-func test_volume_columns_are_swapped_not_written() -> void:
+func test_volume_columns_grow_while_workers_read() -> void:
 	var m: Array = _manager()
 	var tm: TerrainManager = m[0]
 	var vol: VolumeTerrain = tm.volume
-	var held: Dictionary = vol.columns
-	vol.activate_column(Vector2i(1, 1), PAD_Y - 6.0)
+	var stop: Array = [false]
+	var seen: Array = [0]
+	var tasks: Array[int] = []
+	for r: int in 4:
+		tasks.append(WorkerThreadPool.add_task(func() -> void:
+			while not stop[0]:
+				if vol.is_volume_column(24.0, 24.0):
+					seen[0] += 1
+		))
+	for i: int in 12:
+		vol.activate_column(Vector2i(i % 4, i / 4), PAD_Y - 6.0)
+	stop[0] = true
+	for t: int in tasks:
+		WorkerThreadPool.wait_for_task_completion(t)
 	assert_true(vol.columns.has(Vector2i(1, 1)))
-	assert_false(held.has(Vector2i(1, 1)), "a reader holding the old dictionary never sees it change")
-	vol.flush()
+	assert_true(vol.is_volume_column(24.0, 24.0), "a worker's hole test sees the new column")
