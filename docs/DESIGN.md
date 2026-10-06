@@ -91,7 +91,7 @@ repair, learn what the horde learned (the tether's *Hum forecast*), plan the nex
 | Escalating horde nights | The Hum every 7th night (configurable), sector waves, breach targeting, adaptive memory | M1 |
 | Zombie variety | Hollow (walker), Lurcher (feral), Keener (screamer), Dragger (crawler) in M1; Blister (spitter), Husk (armoured), Rammer (breaker), hounds, Murmur crows later | M1/M2/M3 |
 | Heat / attention | Heat grid: noisy activity summons scouts, Keeners, packs | M1 |
-| Traders & quests | Waystation 9 quartermaster, contracts (clear/fetch/defend), reputation tiers | M2 |
+| Traders & quests | Waystation 9 quartermaster, contracts (clear/fetch/defend), reputation tiers (ADR-0039) | M2 ✅ |
 | Mining & digging | Heightmap digging + smooth SDF volumes for tunnels/caves/mines | M1 (dig), M2 (tunnels) |
 | Farming, water, traps, electricity | Rain catchers, gardens, deadfalls, generator + wiring + lights + motion turrets | M3 |
 | Randomized worlds | Seeded RWG using the same terrain composer, biomes, frameworks and POIs | M3 |

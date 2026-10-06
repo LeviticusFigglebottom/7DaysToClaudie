@@ -32,6 +32,11 @@ extends Node
 ##   its room has no interior fill and reads near-black under SDFGI (TD-134). A ranking puts back at
 ##   most `show_per_rank` probes, nearest first, and a jump ranks at once, so the room you're in
 ##   renders first; `focus()` parks all but the nearest few for a capture that can't wait.
+## * Leaving the scenario frees a probe's slot but leaves it in the renderer's queue. When the
+##   queue reaches it, the renderer logs `Parameter "scenario" is null` and drops it, a frame lost
+##   per stale entry (agent W's biome renders logged 22 after two jumps). So a ranking puts back
+##   more probes only once the last ones have nearly had their turn, and doesn't park a probe
+##   before its turn has come.
 ## * Never switch these probes to UPDATE_ALWAYS. The first ALWAYS probe clears the whole atlas
 ##   (`_reflection_atlas_clear`), which wipes every probe's cube map, and leaves the atlas at
 ##   real-time quality.
@@ -54,6 +59,8 @@ const JUMP: float = 24.0
 
 ## Probes put back per ranking (SHOW_PER_RANK; tests raise it to check the ranking alone).
 var show_per_rank: int = SHOW_PER_RANK
+## The drawn-frame clock the render queue runs on (tests step a fake one).
+var frames: Callable = Callable(Engine, &"get_frames_drawn")
 var _t: float = 0.0
 var _last_eye := Vector3(INF, INF, INF)
 ## Every probe the budget manages, live or parked.
@@ -67,6 +74,9 @@ var _parked: Dictionary = {}
 var _to_park: Array[ReflectionProbe] = []
 ## The drawn frame by which every probe put back so far has had its turn to render.
 var _rendered_by: int = 0
+## Probes put back -> the drawn frame by which each has had its turn; until then it may still be
+## in the renderer's queue, so it isn't parked.
+var _due: Dictionary = {}
 
 
 func _ready() -> void:
@@ -102,24 +112,29 @@ func due(eye: Vector3, delta: float) -> bool:
 
 
 ## Makes the probes nearest `eye` live (MAX_VISIBLE, plus those already live that still rank within
-## KEEP_VISIBLE; at most `show_per_rank` put back, nearest first) and parks the rest. Probes hidden
-## on purpose (`visible` false) are left alone. Returns how many are live.
+## KEEP_VISIBLE; at most `show_per_rank` put back, nearest first, and none while the last ones still
+## wait to render) and parks the rest, except those still waiting for their turn. Probes hidden on
+## purpose (`visible` false) are left alone. Returns how many are live.
 func update(eye: Vector3) -> int:
 	flush_parks()
 	_last_eye = eye
+	var now: int = int(frames.call())
 	var ranked: Array = _ranked(eye)
+	var room: bool = frames_to_render() < show_per_rank * RENDER_FRAMES
+	var start: int = maxi(_rendered_by, now)
 	var fresh: int = 0
 	for i: int in ranked.size():
 		var p: ReflectionProbe = ranked[i][1]
 		var live: bool = not _homes.has(p)
 		var show: bool = i < MAX_VISIBLE or (i < KEEP_VISIBLE and live)
 		if show and not live:
-			if fresh < show_per_rank and _unpark(p):
+			if room and fresh < show_per_rank and _unpark(p):
 				fresh += 1
-		elif not show and live:
+				_due[p] = start + fresh * RENDER_FRAMES
+		elif not show and live and int(_due.get(p, 0)) <= now:
 			_park(p)
 	if fresh > 0:
-		_rendered_by = maxi(_rendered_by, Engine.get_frames_drawn()) + fresh * RENDER_FRAMES
+		_rendered_by = start + fresh * RENDER_FRAMES
 	return shown()
 
 
@@ -137,7 +152,7 @@ func focus(eye: Vector3, k: int) -> void:
 			_park(p)
 	_last_eye = eye
 	_t = INTERVAL
-	_rendered_by = Engine.get_frames_drawn() + mini(k, ranked.size()) * RENDER_FRAMES
+	_rendered_by = int(frames.call()) + mini(k, ranked.size()) * RENDER_FRAMES
 
 
 ## Parks the probes that entered the tree since the last call (normally at the end of the frame).
@@ -166,7 +181,7 @@ func all_probes() -> Array:
 ## Frames until every probe put back so far has had its turn to render (they render one at a time).
 ## The screenshot runner waits on it for interiors.
 func frames_to_render() -> int:
-	return maxi(_rendered_by - Engine.get_frames_drawn(), 0)
+	return maxi(_rendered_by - int(frames.call()), 0)
 
 
 ## Live interior probes right now.
@@ -192,6 +207,7 @@ func _ranked(eye: Vector3) -> Array:
 	for v: Variant in _probes.keys():
 		if not is_instance_valid(v):
 			_probes.erase(v)
+			_due.erase(v)
 			continue
 		var p := v as ReflectionProbe
 		if p.visible:
@@ -208,6 +224,7 @@ func _park(p: ReflectionProbe) -> void:
 	# Its place in the world, for ranking while it is out of the tree.
 	p.set_meta(&"probe_xf", p.global_transform)
 	_homes[p] = hid
+	_due.erase(p)
 	if not _parked.has(hid):
 		_parked[hid] = []
 		# One watch per building (a signal takes one connection per method, binds aside).
@@ -259,6 +276,7 @@ func _send_home(hid: int) -> void:
 		var p := v as ReflectionProbe
 		_homes.erase(p)
 		_probes.erase(p)
+		_due.erase(p)
 		if p.get_parent() != null:
 			continue
 		if home != null and not home.is_queued_for_deletion():
@@ -291,3 +309,4 @@ func _on_node_removed(n: Node) -> void:
 	# Removed with its building, or by someone else: forget it (re-added later, it starts over).
 	_probes.erase(p)
 	_to_park.erase(p)
+	_due.erase(p)

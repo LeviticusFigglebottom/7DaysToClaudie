@@ -5,10 +5,11 @@ extends ContentDef
 ## comes from gameplay events (DirectiveTracker), rewards are XP and items (ADR-0015).
 
 const EVENTS: PackedStringArray = ["fell_tree", "craft", "place_log", "build", "loot", "kill", "enter_poi",
-	"clear_poi", "survive_hum", "read_note", "level", "sleep", "supply_drop", "disarm_trap"]
+	"clear_poi", "survive_hum", "read_note", "level", "sleep", "supply_drop", "disarm_trap", "contract"]
 const TIERS: PackedStringArray = ["", "normal", "seeded", "bloomed"]
 ## Content kind each event's targets must name (build accepts a blueprint or a structure).
-const TARGET_KIND: Dictionary = {"craft": &"item", "kill": &"enemy", "enter_poi": &"poi", "clear_poi": &"poi"}
+const TARGET_KIND: Dictionary = {"craft": &"item", "kill": &"enemy", "enter_poi": &"poi", "clear_poi": &"poi",
+	"contract": &"quest"}
 
 var chapter: int = 1
 var chapter_name: String = ""

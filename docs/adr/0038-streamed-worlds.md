@@ -138,6 +138,37 @@ identical.
   generator's stage and step times, the size and parse time of `world.json`, the map's time;
   `--force-size` lifts the size cap for that measurement only (never in the settings).
 
+### 7. Terrain streams (Phase 2, session 3)
+
+**Opt-in while it lands.** A random world streams when the new game asks for it (`--stream`,
+the `stream` option) or `HOLLOWMERE_STREAM=1`; everything else loads as before.
+
+* **Load** (`WorldLoader._compose_streamed`): every region at 16 m (far tiles, water, the
+  `height_at` fallback, spawn metadata), then only the built regions within
+  `streaming.json region.first_area` m of the spawn at 1 m; a load starts from the saved player
+  position. The loading screen shows the map with each region's state.
+* **RegionStreamer** (child of TerrainManager): `RegionRings` plans every 0.25 s (load/unload
+  hysteresis, heading priority, pins, `max_attached`, prefetch); jobs run on its own
+  `Thread.PRIORITY_LOW` threads in a priority queue (the queue and loop in a RefCounted pool, so
+  the node can be freed), `TerrainComposer.get_or_compose(..., cancel)`, cancelled when no longer
+  wanted; finished regions attach, regions out of the rings detach, through a StepRunner within
+  `budget_ms.runtime`. `request_now`, `pin`/`unpin`, `is_area_ready`, `status`.
+* **TerrainManager**: `regions` and the grid copy-on-write with retirement;
+  `attach_region`/`detach_region` (saved digs applied on attach, the region object restored to
+  pristine on detach, material, holes rebuilt, near chunks re-meshed and re-collided); collision
+  built on workers; finished chunks installed within 6 ms a frame.
+* **Per region**: PoiManager resolves an attached region's lots on a worker and queues its
+  buildings as streaming steps (plan, then PoiBuilder phases); detach drops queued steps and frees
+  its buildings (sleepers despawned) and fixtures. The far impostor layer scatters per region on
+  attach and frees it on detach.
+* **GameWorld**: `await_area(pos, then)` holds the player behind "Finding your feet…" until the
+  ground at `pos` is attached and meshed (respawn); the loader's region references are dropped
+  after setup so detached regions free.
+
+Measured (`make stream-check`, headless container, 5x5 world, seed 7): world ready in 13 s;
+2 km out and back twice at 6.2 m/s with no late seconds; attach steps 30-80 ms; the longest frame
+~450 ms; static memory 569 → 568 MiB between laps (no leak). Interim gaps: TD-106.
+
 ## Budgets and measurements
 Headless on this container (4 shared cores; other agents' processes were running throughout, so
 the load average is given with each run). "Before" is the code at the start of this phase, run

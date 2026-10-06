@@ -1,0 +1,280 @@
+class_name TraderScreen
+extends Control
+## The Waystation trade screen (ADR-0039): the quartermaster's counter (buy, sell) and the
+## contracts board (today's offers, your contracts, turning them in). A plain clipboard over the
+## view; everything it does goes through the trade.* / contract.* commands.
+
+const PAPER := Color(0.83, 0.8, 0.7)
+const INK := Color(0.14, 0.12, 0.1)
+const INK_DIM := Color(0.42, 0.38, 0.32)
+const OK_INK := Color(0.16, 0.4, 0.18)
+
+var manager: Node
+var _post_id: String = ""
+var _tab: String = "buy"
+var _open: bool = false
+var _title: Label
+var _status: Label
+var _list: VBoxContainer
+var _tabs: HBoxContainer
+var _msg: Label
+
+
+func _ready() -> void:
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	visible = false
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.45)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(dim)
+	var panel := PanelContainer.new()
+	panel.anchor_left = 0.2
+	panel.anchor_right = 0.8
+	panel.anchor_top = 0.1
+	panel.anchor_bottom = 0.9
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = PAPER
+	sb.border_color = Color(0.3, 0.28, 0.22)
+	sb.set_border_width_all(3)
+	sb.content_margin_left = 30
+	sb.content_margin_right = 30
+	sb.content_margin_top = 22
+	sb.content_margin_bottom = 22
+	sb.shadow_size = 12
+	sb.shadow_color = Color(0, 0, 0, 0.5)
+	panel.add_theme_stylebox_override(&"panel", sb)
+	add_child(panel)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override(&"separation", 10)
+	panel.add_child(v)
+	_title = _label("", 24, INK)
+	v.add_child(_title)
+	_status = _label("", 16, INK_DIM)
+	v.add_child(_status)
+	_tabs = HBoxContainer.new()
+	_tabs.add_theme_constant_override(&"separation", 18)
+	v.add_child(_tabs)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(scroll)
+	_list = VBoxContainer.new()
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list.add_theme_constant_override(&"separation", 6)
+	scroll.add_child(_list)
+	_msg = _label("", 15, INK_DIM)
+	v.add_child(_msg)
+	var close := Button.new()
+	close.text = "Done"
+	close.pressed.connect(close_screen)
+	v.add_child(close)
+	Events.ui_modal_closed.connect(func(id: StringName) -> void:
+		if id == &"trader" and _open:
+			_open = false
+			visible = false)
+
+
+func open(post_id: String, where: String) -> void:
+	_post_id = post_id
+	_tab = "buy" if where == "shop" else "offers"
+	_open = true
+	visible = true
+	_msg.text = ""
+	_refresh()
+	var ui: Node = get_parent()
+	if ui != null and ui.has_method(&"push_modal"):
+		ui.call(&"push_modal", &"trader")
+	Audio.play_2d(&"ui/page_turn", -8.0)
+
+
+func close_screen() -> void:
+	if not _open:
+		return
+	_open = false
+	visible = false
+	var ui: Node = get_parent()
+	if ui != null and ui.has_method(&"pop_modal"):
+		ui.call(&"pop_modal", &"trader")
+
+
+func is_open() -> bool:
+	return _open
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if _open and event.is_action_pressed(&"cancel"):
+		close_screen()
+		get_viewport().set_input_as_handled()
+
+
+func _trader() -> TraderDef:
+	var post: Dictionary = (manager.get(&"posts") as Dictionary).get(_post_id, {})
+	return post.get("def") as TraderDef
+
+
+func _refresh() -> void:
+	for c: Node in _list.get_children():
+		c.queue_free()
+	for c: Node in _tabs.get_children():
+		c.queue_free()
+	var td: TraderDef = _trader()
+	var p: PlayerState = Game.session.local_player()
+	if td == null or p == null:
+		return
+	var key: StringName = TraderManager.rep_key(td)
+	var tier: int = td.rep_tier(p.contracts.reputation(key))
+	_title.text = td.display_name.to_upper()
+	_status.text = "Scrip: %d    Standing: %s (%d)    Contracts: %d/%d" % [p.inventory.count_of(&"scrip"),
+		td.rep_tier_name(tier), p.contracts.reputation(key), p.contracts.count_for(key), td.max_active]
+	for t: Array in [["buy", "Buy"], ["sell", "Sell"], ["offers", "Contracts board"], ["mine", "Your contracts"]]:
+		var b := Button.new()
+		b.text = ("> %s" % t[1]) if _tab == t[0] else str(t[1])
+		b.flat = true
+		b.add_theme_color_override(&"font_color", INK)
+		b.add_theme_font_size_override(&"font_size", 18)
+		b.pressed.connect(func() -> void:
+			_tab = str(t[0])
+			_msg.text = ""
+			_refresh())
+		_tabs.add_child(b)
+	match _tab:
+		"buy":
+			_buy_rows(td, p, tier)
+		"sell":
+			_sell_rows(td, p)
+		"offers":
+			_offer_rows(td, p)
+		"mine":
+			_mine_rows(td, p)
+
+
+func _buy_rows(td: TraderDef, p: PlayerState, tier: int) -> void:
+	var stock: Dictionary = manager.call(&"stock_of", td.id)
+	var ids: Array = stock.keys()
+	ids.sort()
+	var shown: int = 0
+	for id: Variant in ids:
+		var e: Dictionary = stock[id]
+		var idef: ItemDef = Content.item(StringName(str(id)))
+		if idef == null or int(e["count"]) <= 0:
+			continue
+		var need: int = int(e.get("rep_tier", 0))
+		if need > tier:
+			_list.add_child(_label("%s — needs %s standing" % [idef.display_name, td.rep_tier_name(need)], 16, INK_DIM))
+			continue
+		var price: int = td.buy_price(idef, tier)
+		_row("%s  x%d   —   %d scrip" % [idef.display_name, int(e["count"]), price], "Buy",
+			p.inventory.count_of(&"scrip") >= price, _do.bind(&"trade.buy", {"item": String(idef.id), "count": 1}))
+		shown += 1
+	if shown == 0:
+		_list.add_child(_label("Nothing on the shelves. Restocks every %d days." % td.restock_days, 16, INK_DIM))
+
+
+func _sell_rows(td: TraderDef, p: PlayerState) -> void:
+	var seen: Dictionary = {}
+	for s: ItemStack in p.inventory.stacks:
+		if seen.has(s.id):
+			continue
+		seen[s.id] = true
+		var idef: ItemDef = Content.item(s.id)
+		var each: int = td.sell_price(idef) if idef != null else 0
+		if each <= 0:
+			continue
+		var n: int = p.inventory.count_of(s.id)
+		var h: HBoxContainer = _row("%s  x%d   —   pays %d each" % [idef.display_name, n, each], "Sell 1", true,
+			_do.bind(&"trade.sell", {"item": String(s.id), "count": 1}))
+		if n > 1:
+			var all := Button.new()
+			all.text = "Sell all"
+			all.pressed.connect(_do.bind(&"trade.sell", {"item": String(s.id), "count": n}))
+			h.add_child(all)
+	if seen.is_empty():
+		_list.add_child(_label("You have nothing the Program buys.", 16, INK_DIM))
+
+
+func _offer_rows(td: TraderDef, p: PlayerState) -> void:
+	var post: Dictionary = (manager.get(&"posts") as Dictionary)[_post_id]
+	var offers: Array = manager.call(&"board_offers", p, td)
+	if offers.is_empty():
+		_list.add_child(_label("Nothing posted today. Come back tomorrow.", 16, INK_DIM))
+	for o: Variant in offers:
+		var od: Dictionary = o
+		var qd: QuestDef = Content.get_def(&"quest", StringName(str(od["def"]))) as QuestDef
+		var rw: String = _rewards_text(qd)
+		_list.add_child(_label("%s — %s  (tier %d)" % [qd.display_name, od["name"], int(od["tier"])], 18, INK))
+		_list.add_child(_label(Contracts.briefing(qd, od, post["pos"]), 15, INK_DIM, true))
+		_row("Pays %s" % rw, "Take it", p.contracts.count_for(TraderManager.rep_key(td)) < td.max_active,
+			_do.bind(&"contract.accept", {"offer": str(od["id"])}))
+
+
+func _mine_rows(td: TraderDef, p: PlayerState) -> void:
+	var any: bool = false
+	for c: Variant in p.contracts.active:
+		var cd: Dictionary = c
+		if not td.contracts_from.has(str(cd.get("giver", ""))):
+			continue
+		any = true
+		var qd: QuestDef = Content.get_def(&"quest", StringName(str(cd["def"]))) as QuestDef
+		var ready: bool = str(cd["state"]) == ContractLog.READY
+		_list.add_child(_label("%s — %s%s" % [qd.display_name, cd.get("name", ""), "   (done)" if ready else ""], 18,
+			OK_INK if ready else INK))
+		var h: HBoxContainer = _row("Pays %s" % _rewards_text(qd), "Turn in", ready,
+			_do.bind(&"contract.turn_in", {"contract": str(cd["id"])}))
+		var ab := Button.new()
+		ab.text = "Abandon"
+		ab.pressed.connect(_do.bind(&"contract.abandon", {"contract": str(cd["id"])}))
+		h.add_child(ab)
+	if not any:
+		_list.add_child(_label("You hold no contracts from %s." % td.display_name, 16, INK_DIM))
+
+
+static func _rewards_text(qd: QuestDef) -> String:
+	var parts: PackedStringArray = []
+	for k: Variant in qd.rewards.keys():
+		match str(k):
+			"scrip":
+				parts.append("%d scrip" % int(qd.rewards[k]))
+			"xp":
+				parts.append("%d XP" % int(qd.rewards[k]))
+			"reputation":
+				parts.append("+%d standing" % int(qd.rewards[k]))
+			_:
+				var idef: ItemDef = Content.item(StringName(str(k)))
+				parts.append("%s x%d" % [idef.display_name if idef != null else str(k), int(qd.rewards[k])])
+	return ", ".join(parts)
+
+
+func _do(cmd: StringName, args: Dictionary) -> void:
+	var a: Dictionary = args.duplicate()
+	a["trader"] = String(_trader().id)
+	var r: Dictionary = Game.execute(cmd, a)
+	_msg.text = "" if bool(r.get("ok", false)) else str(r.get("error", "")).capitalize() + "."
+	if bool(r.get("ok", false)):
+		Audio.play_2d(&"ui/page_turn", -12.0)
+	_refresh()
+
+
+func _row(text: String, action: String, enabled: bool, cb: Callable) -> HBoxContainer:
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override(&"separation", 10)
+	var l: Label = _label(text, 16, INK)
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(l)
+	var b := Button.new()
+	b.text = action
+	b.disabled = not enabled
+	b.pressed.connect(cb)
+	h.add_child(b)
+	_list.add_child(h)
+	return h
+
+
+static func _label(text: String, size: int, color: Color, wrap: bool = false) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override(&"font_size", size)
+	l.add_theme_color_override(&"font_color", color)
+	if wrap:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return l

@@ -1,0 +1,33 @@
+{
+  "_doc": "Waystation 9 props (the Remand Program's trader relay post in the Cordon wall): kiosk, contracts board, guard tower, hesco barrier, boom gate, sign, floodlight, supply stack. Models: tools/assetgen/blender/generators/props_waystation.py. Textures: tools/assetgen/textures/gen/waystation.py: waystation_print is an atlas (UV rects in the generator's ATLAS), waystation_hazard tiles yellow-black stripes at 1 m per tile. Paints reveal their wear layer (rust) where vertex colour G is high; grime collects where vertex AO (R) is low. Shared ids reused: farm_corrugated_galv / _rust, civic_wire_mesh (texture of ws_hesco_mesh: dull grey-green galvanised wire, darker than the parcel cages so the fill dominates at range), civic_crate_olive, out_earth, road_concrete, road_steel, road_plywood, wood_weathered, metal_galvanized, canvas_olive, rubber_black, lens_clear, lens_amber, town4_ammo_can, town4_tin, cardboard and the interior furn_* / steel_* sets.",
+  "materials": {
+    "ws_print": {"shader": "std_surface", "textures": "waystation_print",
+      "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "grime_amount": 0.35, "grime_color": "#2a251d"}},
+    "ws_hazard": {"shader": "std_surface", "textures": "waystation_hazard", "layers": {"wear": "pi_rust"},
+      "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "wear_amount": 0.55, "wear_uv_scale": 2.0, "grime_amount": 0.45, "grime_color": "#28241c"}},
+    "ws_corrugated_olive": {"shader": "std_surface", "textures": "farm_corrugated", "layers": {"wear": "car_rust"},
+      "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "tint": "#7c8458", "metallic_mult": 0.35, "roughness_add": 0.15, "wear_amount": 0.6, "wear_uv_scale": 1.2, "grime_amount": 0.5, "grime_color": "#28241b"}},
+    "ws_paint_olive": {"shader": "std_surface", "textures": "pi_paint_steel", "layers": {"wear": "pi_rust"},
+      "params": {"uv_scale": 1.5, "vertex_ao_strength": 1.0, "tint": "#4f5536", "wear_amount": 0.6, "wear_uv_scale": 2.0, "grime_amount": 0.45, "grime_color": "#28241c"}},
+    "ws_paint_yellow": {"shader": "std_surface", "textures": "pi_paint_steel", "layers": {"wear": "pi_rust"},
+      "params": {"uv_scale": 1.5, "vertex_ao_strength": 1.0, "tint": "#d9ae2c", "wear_amount": 0.55, "wear_uv_scale": 2.0, "grime_amount": 0.45}},
+    "ws_paint_black": {"shader": "std_surface", "textures": "pi_paint_steel", "layers": {"wear": "pi_rust"},
+      "params": {"uv_scale": 1.5, "vertex_ao_strength": 1.0, "tint": "#262624", "wear_amount": 0.5, "wear_uv_scale": 2.0, "grime_amount": 0.4}},
+    "ws_paint_white": {"shader": "std_surface", "textures": "pi_paint_steel", "layers": {"wear": "pi_rust"},
+      "params": {"uv_scale": 1.5, "vertex_ao_strength": 1.0, "tint": "#d8d5cb", "wear_amount": 0.5, "wear_uv_scale": 2.0, "grime_amount": 0.45}},
+    "ws_geotextile": {"shader": "std_surface", "textures": "canvas_tarp",
+      "params": {"uv_scale": 3.0, "vertex_ao_strength": 1.0, "tint": "#6b6253", "roughness_add": 0.2, "grime_amount": 0.65, "grime_color": "#2e271d"}},
+    "ws_hesco_mesh": {"shader": "foliage", "textures": "civic_wire_mesh",
+      "params": {"alpha_scissor": 0.5, "tint": "#646a5a", "translucency": 0.0, "roughness": 0.9, "normal_strength": 1.0, "ao_strength": 0.6,
+        "spring_tint": "#ffffff", "summer_tint": "#ffffff", "autumn_tint": "#ffffff", "winter_tint": "#ffffff", "winter_leaf_loss": 0.0,
+        "sway_height": 1000.0, "stiffness": 10.0, "flutter_strength": 0.0}},
+    "ws_sandbag_tan": {"shader": "std_surface", "textures": "pi_burlap",
+      "params": {"uv_scale": 2.5, "vertex_ao_strength": 1.0, "tint": "#b3a27a", "grime_amount": 0.5, "grime_color": "#3a3124"}},
+    "ws_sandbag_olive": {"shader": "std_surface", "textures": "pi_burlap",
+      "params": {"uv_scale": 2.5, "vertex_ao_strength": 1.0, "tint": "#7e7d58", "grime_amount": 0.5, "grime_color": "#33301f"}},
+    "ws_flood_glow": {"shader": "std_surface",
+      "params": {"tint": "#e6eaf2", "roughness_mult": 0.0, "roughness_add": 0.2, "metallic_mult": 0.0, "vertex_ao_strength": 0.0, "light_source": 1, "emission_color": "#eef2ff", "emission_energy": 3.0, "emission_flicker": 0.03}},
+    "ws_bulb_glow": {"shader": "std_surface",
+      "params": {"tint": "#e8e2d2", "roughness_mult": 0.0, "roughness_add": 0.2, "metallic_mult": 0.0, "vertex_ao_strength": 0.0, "light_source": 1, "emission_color": "#ffe2b0", "emission_energy": 2.2, "emission_flicker": 0.06}}
+  }
+}

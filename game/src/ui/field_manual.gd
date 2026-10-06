@@ -16,6 +16,7 @@ const TIPS: Array[Array] = [
 	["Shelter", "A lean-to and a bough bed mark your place in the world: sleep there to rest, save, and wake there if the worst happens. Fire keeps you warm and dries you — but within twenty metres of it you stand in its light, and the Hollowed see you from much farther off."],
 	["Building with logs", "Fell trees with an axe; carry two logs (three once you learn Timberwright). Lay a blueprint from this manual and fill its ghost, or set logs freely: they notch onto each other (R turns the log, V stands it up or pitches it for a roof). A log needs something under it or beside it — what nothing holds up, falls."],
 	["Hammer", "A claw hammer repairs what the Hollowed break (sticks for a log, sticks and nails for a reinforced one, a quarter of its cost for anything else), and reinforces logs once they are whole (cordage and nails)."],
+	["Waystation 9", "The Program's relay post on Route 9, south by the river. Its guards shoot any Hollowed that come inside the wire, and nothing rises there. The quartermaster buys what you carry and sells what the drones bring, for Program scrip. The board posts contracts: clear a building and search its stores, bring back a cache the survey teams left, or hold a relay cache while it uploads. Report back to be paid; standing with the post opens better stock and harder work."],
 	["Your record", "Everything you survive teaches you something: Hollowed put down, places searched, logs set, things made, buildings cleared, a Hum lived through. Each level is a point to spend in the Record — on an attribute, or on a perk once its attribute is high enough. The Cordon notices too: the longer you last and the more you learn, the worse the Hollowed that come for you, and the better what you find."],
 ]
 ## Attribute display order (the data is sorted by id).
@@ -278,7 +279,8 @@ func _on_action() -> void:
 		var building: Node = Game.world.get(&"building") if Game.world != null else null
 		if building != null and bool(building.call(&"begin_placement", (_selected as BlueprintDef).id)):
 			close()
-			Events.player_status_message.emit("Place the %s — [LMB] place · [R] rotate · [X] cancel" % (_selected as BlueprintDef).display_name, &"info")
+			Events.player_status_message.emit("Place the %s — [%s] place · [%s] rotate · [%s] cancel" % [(_selected as BlueprintDef).display_name,
+				PlayerInteraction.key_label(&"attack"), PlayerInteraction.key_label(&"rotate_piece"), PlayerInteraction.key_label(&"cancel")], &"info")
 
 
 # --- Record tab ---------------------------------------------------------------------------------

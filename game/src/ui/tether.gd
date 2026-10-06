@@ -289,8 +289,13 @@ func _directives_text(p: PlayerState) -> String:
 	if dr.all_done():
 		return "DIRECTIVES  all complete"
 	var lines: PackedStringArray = ["DIRECTIVES · %s" % Directives.chapter_name(dr.chapter).to_upper()]
-	for d: DirectiveDef in dr.open().slice(0, 2):
+	# With a Waystation contract open, it takes the second line (ADR-0039).
+	var w: Node = Game.world
+	var contracts: PackedStringArray = w.get(&"traders").call(&"lines") if w != null and w.get(&"traders") != null else PackedStringArray()
+	for d: DirectiveDef in dr.open().slice(0, 1 if not contracts.is_empty() else 2):
 		lines.append("> %s  %s" % [dr.label(d), d.goal_text(dr.count_of(d.id))])
+	if not contracts.is_empty():
+		lines.append("CONTRACT  %s" % contracts[0])
 	return "\n".join(lines)
 
 
@@ -434,6 +439,19 @@ func _draw_markers() -> void:
 			# Off the map edge: pinned to the border in its direction.
 			var mp: Vector2 = _to_map(rt, at).clamp(lim.position, lim.end)
 			_markers.draw_colored_polygon(PackedVector2Array([mp + Vector2(0, -6), mp + Vector2(6, 0), mp + Vector2(0, 6), mp + Vector2(-6, 0)]), Color(1.0, 0.35, 0.2))
+	# Waystations (a yellow post square) and your contracts (a ring; filled once done, to report
+	# in). Off the map edge: pinned to the border in their direction (ADR-0039).
+	var traders: Node = w.get(&"traders")
+	if traders != null and traders.has_method(&"markers"):
+		for m: Dictionary in (traders.call(&"markers") as Array[Dictionary]):
+			var mp: Vector2 = _to_map(rt, m["pos"]).clamp(lim.position, lim.end)
+			if str(m["kind"]) == "trader":
+				_markers.draw_rect(Rect2(mp - Vector2(5, 5), Vector2(10, 10)), Color(1.0, 0.82, 0.2))
+				_markers.draw_rect(Rect2(mp - Vector2(5, 5), Vector2(10, 10)), Color(0.1, 0.1, 0.1), false, 1.5)
+			elif bool(m["ready"]):
+				_markers.draw_circle(mp, 5.0, Color(0.5, 1.0, 0.55))
+			else:
+				_markers.draw_arc(mp, 5.5, 0.0, TAU, 18, Color(1.0, 0.85, 0.3), 2.0)
 	var me: Vector2 = _to_map(rt, pl.global_position)
 	var yaw: float = pl.global_rotation.y
 	var fwd := Vector2(-sin(yaw), -cos(yaw))

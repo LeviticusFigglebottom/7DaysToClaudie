@@ -247,6 +247,44 @@
       ]
     },
     {
+      "type": "clearing",
+      "pos": [
+        -30,
+        2522
+      ],
+      "radius": 24
+    },
+    {
+      "type": "spawn",
+      "id": "trader:waystation_9",
+      "pos": [
+        -30,
+        2522
+      ],
+      "yaw": -90
+    },
+    {
+      "type": "road",
+      "id": "waystation_drive",
+      "surface": "asphalt",
+      "width": 5.0,
+      "shoulder": 0.8,
+      "points": [
+        [
+          -87.0,
+          2522.0
+        ],
+        [
+          -60.0,
+          2522.0
+        ],
+        [
+          -43.0,
+          2522.0
+        ]
+      ]
+    },
+    {
       "type": "frontier",
       "id": "larkspur_sealed_cave",
       "pos": [

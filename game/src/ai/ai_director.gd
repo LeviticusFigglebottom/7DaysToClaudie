@@ -334,7 +334,7 @@ func _offscreen_point(center: Vector3, min_d: float, max_d: float) -> Vector3:
 
 
 ## Whether a Hollowed can appear at `pos`: inside the map, dry, not on a cliff, not inside a
-## building or someone's base, and not on top of the player.
+## building or someone's base or a trader's safe zone, and not on top of the player.
 func spawn_point_ok(pos: Vector3) -> bool:
 	if world.terrain.region_terrain_at(pos.x, pos.z) == null:
 		return false
@@ -354,6 +354,10 @@ func spawn_point_ok(pos: Vector3) -> bool:
 		return false
 	var b: Node = world.get(&"building")
 	if b != null and b.has_method(&"pieces_in_radius") and not (b.call(&"pieces_in_radius", pos, 6.0) as Array).is_empty():
+		return false
+	# A trader post's safe zone (ADR-0039): its guards keep it clear.
+	var tr: Node = world.get(&"traders")
+	if tr != null and tr.has_method(&"is_safe") and bool(tr.call(&"is_safe", pos)):
 		return false
 	return true
 

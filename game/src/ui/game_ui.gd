@@ -284,7 +284,7 @@ func _process(delta: float) -> void:
 		return
 	var p: Player = w.player
 	if p.interaction != null:
-		_prompt.text = ("[E] " + p.interaction.prompt) if p.interaction.prompt != "" else ""
+		_prompt.text = ("[%s] %s" % [PlayerInteraction.key_label(&"interact"), p.interaction.prompt]) if p.interaction.prompt != "" else ""
 		var ht: float = p.interaction.hold_t / maxf(p.interaction.hold_needed, 0.001) if p.interaction.hold_needed > 0.0 else 0.0
 		_hold.visible = ht > 0.0
 		_hold.value = ht * 100.0
