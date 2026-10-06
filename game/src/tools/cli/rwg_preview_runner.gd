@@ -1,10 +1,13 @@
 extends Node
 ## The work of rwg_preview.gd, loaded once the autoloads exist: resolves the settings, generates
 ## the world (or reads it from user://worlds/random/), writes its map PNG and prints a summary.
-## `--memory` draws the map straight from the generator without writing the world; `--fresh`
-## removes the cached world (and its composed terrain) first, so the run times a full
-## generation; `--compose` also shapes every region into the terrain cache, as the game's first
-## load would (QA renders then start without that wait).
+## `--memory` draws the map straight from the generator without writing the world, and times the
+## world's JSON (size, stringify, parse) and the map (`--px`); `--force-size N` (with --memory)
+## lifts the size cap for that measurement only; `--write-dir DIR` writes such a world to DIR for
+## compose_region; `--progress` prints the generator's progress as it goes. `--fresh` removes the
+## cached world (and its composed terrain) first, so the run times a full generation; `--compose`
+## also shapes every region into the terrain cache, as the game's first load would (QA renders
+## then start without that wait).
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
@@ -22,6 +25,14 @@ func _ready() -> void:
 	if _arg(a, "--size", "") != "":
 		overrides["size"] = _arg(a, "--size", "4")
 	var settings: RefCounted = GenSettings.resolve(StringName(_arg(a, "--preset", "standard")), overrides, int(_arg(a, "--seed", "1")))
+	# --force-size N: measurement only (ADR-0038, before Phase 4 lifts the cap). The settings clamp
+	# the size to world_gen.json's range; this sets it past that, in memory, for this run alone.
+	if _arg(a, "--force-size", "") != "":
+		(settings.get(&"values") as Dictionary)["size"] = int(_arg(a, "--force-size", "4"))
+		if not a.has("--memory"):
+			printerr("[rwg] --force-size needs --memory (a world over the size cap can't be played or cached)")
+			get_tree().quit(2)
+			return
 	var out: String = _arg(a, "--out", ProjectSettings.globalize_path("res://").path_join("../build/rwg_preview/map.png"))
 	var px: int = int(_arg(a, "--px", "1024"))
 	DirAccess.make_dir_recursive_absolute(out.get_base_dir())
@@ -31,22 +42,47 @@ func _ready() -> void:
 		Worlds._remove("user://cache/worlds".path_join(wid))
 	print("[rwg] %s (%s), world %s" % [settings.call(&"summary"), settings.get(&"preset"), wid])
 	var t0: int = Time.get_ticks_msec()
-	# --memory: generate and draw without writing the world to user://worlds (nothing cached or pruned).
+	var report := func(stage: String, t: float) -> void: print("  [%3d%%] %s (%d ms)" % [int(t * 100), stage, Time.get_ticks_msec() - t0])
+	# --memory: generate and draw without writing the world to user://worlds (nothing cached or
+	# pruned); also times the world's JSON and the map (ADR-0038's measurements). --write-dir DIR
+	# writes the world's files to DIR (an absolute folder of your own) for compose_region --all.
 	if a.has("--memory"):
-		var g: RefCounted = Generator.generate(settings)
+		var g: RefCounted = Generator.generate(settings, report if a.has("--progress") else Callable())
+		var gen_ms: int = Time.get_ticks_msec() - t0
 		var regions: Array = []
 		var ids: Dictionary = g.call(&"region_ids")
+		var t1: int = Time.get_ticks_msec()
 		for cell: Variant in ids:
 			regions.append(g.call(&"region_json", str(cell)))
 		var wj: Dictionary = g.call(&"world_json")
+		var fwj: Dictionary = g.call(&"frameworks_json")
+		var t2: int = Time.get_ticks_msec()
+		var text: String = JSON.stringify(wj, "", false)
+		var t3: int = Time.get_ticks_msec()
+		var parsed: Variant = JSON.parse_string(text)
+		var t4: int = Time.get_ticks_msec()
+		var wd := WorldDef.new()
+		wd._parse(parsed)
+		var t5: int = Time.get_ticks_msec()
 		var m: RefCounted = MapImage.new()
-		(m.call(&"render", wj, regions, g.call(&"frameworks_json"), px) as Image).save_png(out)
-		print("[rwg] generated in memory in %d ms: %d towns, %d places, %d rivers, %d lakes, %d roads; timings %s; warnings %s -> %s" % [Time.get_ticks_msec() - t0,
+		var img: Image = m.call(&"render", wj, regions, fwj, px)
+		var t6: int = Time.get_ticks_msec()
+		img.save_png(out)
+		print("[rwg] generated in memory in %d ms: %d towns, %d places, %d rivers, %d lakes, %d roads; warnings %s -> %s" % [gen_ms,
 			(g.get(&"towns") as Array).size(), (g.get(&"places") as Array).size(), (wj["rivers"] as Array).size(), (wj["lakes"] as Array).size(),
-			(wj["roads"] as Array).size(), g.get(&"timings"), g.get(&"warnings"), out])
+			(wj["roads"] as Array).size(), g.get(&"warnings"), out])
+		print("[rwg] timings %s" % g.get(&"timings"))
+		print("[rwg] sub-timings %s" % g.get(&"sub_timings"))
+		print("[rwg] world.json %.2f MB: building the JSON %d ms, stringify %d ms, parse %d ms, WorldDef %d ms; map %d px %d ms; peak static memory %.0f MB" % [
+			text.length() / 1048576.0, t2 - t1, t3 - t2, t4 - t3, t5 - t4, px, t6 - t5, OS.get_static_memory_peak_usage() / 1048576.0])
+		var wdir: String = _arg(a, "--write-dir", "")
+		if wdir != "":
+			var t7: int = Time.get_ticks_msec()
+			var err: Error = Worlds.write(g, wdir)
+			print("[rwg] wrote the world to %s in %d ms (%s)" % [wdir, Time.get_ticks_msec() - t7, error_string(err)])
 		get_tree().quit(0)
 		return
-	var res: Dictionary = Worlds.ensure(settings, func(stage: String, t: float) -> void: print("  [%3d%%] %s (%d ms)" % [int(t * 100), stage, Time.get_ticks_msec() - t0]), a.has("--compose"))
+	var res: Dictionary = Worlds.ensure(settings, report, a.has("--compose"))
 	if not bool(res.get("ok", false)):
 		printerr("[rwg] FAILED: %s" % res.get("error", ""))
 		get_tree().quit(1)

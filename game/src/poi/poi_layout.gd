@@ -623,6 +623,9 @@ func _placed(d: Dictionary) -> Dictionary:
 	out["pos"] = p
 	out["level"] = int(d.get("level", 0))
 	out["rot"] = float(d.get("rot", 0.0))
+	# Whether the author gave a rotation. "rot" is always filled in above, so without this flag a
+	# prop placed `against` a wall could never take that wall's default facing.
+	out["rot_set"] = d.has("rot")
 	out["cell"] = Vector2i(int(floor(p.x)), int(floor(p.y)))
 	return out
 

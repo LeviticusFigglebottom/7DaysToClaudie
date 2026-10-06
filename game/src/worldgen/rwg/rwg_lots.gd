@@ -18,7 +18,7 @@ const Streets := preload("res://src/worldgen/rwg/rwg_streets.gd")
 ## The zone each size class belongs to.
 const SIZE_ZONES: Dictionary = {
 	"inner_residential": "residential", "outer_residential": "residential", "commercial": "commercial",
-	"civic": "civic", "industrial": "industrial", "rural": "rural", "plaza": "plaza",
+	"civic": "civic", "civic_small": "civic", "industrial": "industrial", "rural": "rural", "plaza": "plaza",
 }
 
 
@@ -467,7 +467,7 @@ func parcels(back: float) -> void:
 					continue
 				var best: PackedVector2Array = parts[0]
 				for part: PackedVector2Array in parts:
-					if Geometry2D.is_point_in_polygon(l.c, part):
+					if Streets.point_in(l.c, part):
 						best = part
 						break
 				poly = best

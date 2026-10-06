@@ -24,10 +24,10 @@
 		}
 	},
 	"streets": {
-		"step": 12.0, "grade_cost": 55.0, "turn_cost": 0.6, "core_straight_cost": 0.8, "crowd_cost": 0.35, "crowd_reach": 45.0,
+		"step": 12.0, "grade_cost": 55.0, "turn_cost": 0.35, "core_straight_cost": 0.8, "crowd_cost": 0.35, "crowd_reach": 45.0,
 		"snap": 16.0, "snap_angle": 35.0, "snap_bonus": 0.6, "parallel": 60.0, "parallel_angle": 25.0, "keep_out": 30.0,
-		"water_stop": 15.0, "max_grade": 0.11, "max_turn": 100.0, "curl_gap": 36.0, "min_length": 50.0, "wander": 7.0, "wander_max": 40.0, "aim_cost": 0.6,
-		"junction_spacing": 30.0, "junction_merge": 14.0, "length": [80, 320], "branch_length": [60, 140], "branch_angle": [75, 105],
+		"water_stop": 15.0, "max_grade": 0.11, "max_turn": 100.0, "curl_gap": 36.0, "min_length": 50.0, "wander": 6.0, "wander_max": 40.0, "aim_cost": 0.7,
+		"junction_spacing": 30.0, "junction_merge": 14.0, "length": [80, 320], "branch_length": [60, 140], "branch_angle": [65, 115],
 		"lane_from": 0.75, "bulb_min": 60.0, "back_lane_offset": 44.0,
 		"classes": {
 			"street": {"width": 6.0, "shoulder": 0.8, "surface": "asphalt"},
@@ -43,6 +43,7 @@
 			"outer_residential": [[22, 30], [30, 40]],
 			"commercial": [[22, 32], [28, 36]],
 			"civic": [[32, 36], [33, 38]],
+			"civic_small": [[26, 30], [30, 33]],
 			"industrial": [[30, 44], [32, 44]],
 			"rural": [[34, 60], [40, 60]]
 		},

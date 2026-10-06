@@ -48,6 +48,31 @@ func _def(layout: Dictionary, extra: Dictionary = {}) -> PoiDef:
 	return d
 
 
+func test_props_against_a_wall_face_into_the_room() -> void:
+	# A prop placed `against` a wall with no authored "rot" takes that wall's facing. PoiLayout
+	# always fills "rot", and the builder used to read that as authored, which turned every such
+	# prop in the game toward north: into or through its wall on the S, E and W sides.
+	const FACING: Dictionary = {"N": 0.0, "E": -90.0, "S": 180.0, "W": 90.0}
+	var checked: int = 0
+	for def: ContentDef in Content.all(&"poi"):
+		var l: PoiLayout = PoiLayout.compile(def as PoiDef)
+		var b := PoiBuilder.new()
+		b.layout = l
+		for p: Dictionary in l.props:
+			var side: String = str(p.get("against", ""))
+			var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+			if not FACING.has(side) or bool(p.get("rot_set", true)) or pd == null:
+				continue
+			var yaw: float = rad_to_deg(b._prop_xf(p, pd).basis.get_euler().y)
+			var off: float = fposmod(yaw - float(FACING[side]) + 180.0, 360.0) - 180.0
+			assert_almost_eq(off, 0.0, 0.5, "%s: %s against %s at %s faces into the room" % [def.id, p["prop"], side, p["cell"]])
+			checked += 1
+	assert_gt(checked, 100, "the buildings place many wall props without an authored turn")
+	var turned := PoiLayout.compile(Content.all(&"poi")[0] as PoiDef)
+	var p2: Dictionary = turned._placed({"prop": "x", "at": [1, 1], "against": "E", "rot": 30.0})
+	assert_true(bool(p2["rot_set"]), "an authored turn is kept")
+
+
 func test_walls_follow_room_boundaries() -> void:
 	var d: PoiDef = _def({"levels": [{"level": 0, "plan": ["AAB", "AAB"], "rooms": {"A": {}, "B": {}}}]})
 	var l := PoiLayout.compile(d)

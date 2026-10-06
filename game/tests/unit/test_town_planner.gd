@@ -136,10 +136,10 @@ static func make_arterials(kind: String, radius: float, outskirts: float, world:
 			# Through the centre (the generator routes arterials to town centres): each half is
 			# relaxed on its own, and points crowding the joint go so the line bends smoothly there.
 			for q: Vector2 in p1:
-				if q.length() > 40.0 or q == Vector2.ZERO:
+				if q.length() > 70.0 or q == Vector2.ZERO:
 					pts.append(q)
 			for q2: Vector2 in p2:
-				if q2.length() > 40.0:
+				if q2.length() > 70.0:
 					pts.append(q2)
 		else:
 			var main: Polyline2 = Polyline2.from_array(out[0]["points"])
@@ -180,7 +180,7 @@ static func _area(poly: PackedVector2Array) -> float:
 
 
 static func _seg_poly_distance(a: Vector2, b: Vector2, poly: PackedVector2Array) -> float:
-	if Geometry2D.is_point_in_polygon(a, poly) or Geometry2D.is_point_in_polygon(b, poly):
+	if Streets.point_in(a, poly) or Streets.point_in(b, poly):
 		return 0.0
 	var best: float = INF
 	for k: int in poly.size():
@@ -369,12 +369,15 @@ func test_lot_fronts_face_their_streets_as_lot_xf_turns_buildings() -> void:
 			var ctr := Vector2(float(f[0]), float(f[1]))
 			var front3: Vector3 = Basis(Vector3.UP, deg_to_rad(float(f[4]))) * Vector3(0.0, 0.0, 1.0)
 			var front := Vector2(front3.x, front3.z)
+			# The street seen from the middle of the lot's front edge (corner lots in a bend see
+			# their own frontage first): it must lie ahead of the front.
+			var mid: Vector2 = ctr + front * float(f[3]) * 0.5
 			var target: Vector2
 			if str(l["street"]) == "plaza":
 				target = Vector2(float(plaza["frame"][0]), float(plaza["frame"][1]))
 			else:
 				var line: Polyline2 = by_id[str(l["street"])]
-				target = line.point_at(line.closest(ctr).y)
+				target = line.point_at(line.closest(mid).y)
 			if (target - ctr).normalized().dot(front) < 0.7:
 				bad.append("%s: %s faces %.0f degrees off its street %s" % [_label(c), l["id"], rad_to_deg(acos(clampf((target - ctr).normalized().dot(front), -1.0, 1.0))), l["street"]])
 	assert_eq(bad.size(), 0, _report(bad))
@@ -452,7 +455,7 @@ func test_fixtures_are_real_props_off_the_lots() -> void:
 			ids[fx["id"]] = true
 			var p := Vector2(float(fx["pos"][0]), float(fx["pos"][1]))
 			for fr: PackedVector2Array in frames:
-				if Geometry2D.is_point_in_polygon(p, fr):
+				if Streets.point_in(p, fr):
 					bad.append("%s: %s %s stands in a lot" % [_label(c), fx["id"], fx["prop"]])
 					break
 	assert_eq(bad.size(), 0, _report(bad))
@@ -649,3 +652,21 @@ func test_planning_time() -> void:
 			worst_case = _label(c)
 	gut.p("town plans: mean %.0f ms, worst %.0f ms (%s)" % [total / maxi(1, cases.size()), worst, worst_case])
 	assert_lt(worst, BUDGET_MS, "every town plans in under a second (%s took %.0f ms)" % [worst_case, worst])
+
+
+func test_plans_on_a_worker_thread() -> void:
+	var c: Dictionary = {}
+	for cc: Dictionary in cases:
+		if str(cc["kind"]) == "town":
+			c = cc
+			break
+	var out: Array = [null]
+	var th := Thread.new()
+	th.start(func() -> void: out[0] = Planner.plan(c["site"], c["world"], c["arterials"], tuning, int(c["seed"])))
+	th.wait_to_finish()
+	var here: Dictionary = Planner.plan(c["site"], c["world"], c["arterials"], tuning, int(c["seed"]))
+	assert_true(out[0] is Dictionary, "the planner runs off the main thread (no scene tree, no autoloads)")
+	for p: Dictionary in [out[0], here]:
+		(p["stats"] as Dictionary).erase("ms")
+		(p["stats"] as Dictionary).erase("ms_parts")
+	assert_eq(JSON.stringify(out[0], "", false).md5_text(), JSON.stringify(here, "", false).md5_text(), "and plans the same town there")

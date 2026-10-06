@@ -48,16 +48,26 @@ var _noise := FastNoiseLite.new()
 var _ridge := FastNoiseLite.new()
 var _region_cache: Dictionary = {}
 var _region_cache_mutex := Mutex.new()
+## Per-world memos shared by every composer thread (ADR-0038), under `_memo_mutex`: the bytes of
+## the files a region's input hash reads (world.json, frameworks.json, region.json and the
+## frameworks and POIs it places: hashing a region re-read about 3 MB each time), the hashes by
+## "region|spacing", and the profiles of world-graded roads by world road index.
+var _bytes: Dictionary = {}
+var _hashes: Dictionary = {}
+var _profiles: Dictionary = {}
+var _memo_mutex := Mutex.new()
 
 
 static func load_from(path: String) -> WorldDef:
-	var text: String = FileAccess.get_file_as_string(path.path_join("world.json"))
-	var data: Variant = JSON.parse_string(text)
+	# The bytes are kept for the composer's input hash, so world.json is read once.
+	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(path.path_join("world.json"))
+	var data: Variant = JSON.parse_string(bytes.get_string_from_utf8())
 	if not data is Dictionary:
 		push_error("WorldDef: cannot parse %s/world.json" % path)
 		return null
 	var w := WorldDef.new()
 	w.dir_path = path
+	w._bytes[path.path_join("world.json")] = bytes
 	w._parse(data)
 	return w
 
@@ -93,6 +103,8 @@ func _parse(d: Dictionary) -> void:
 	for row: Variant in corner_heights:
 		for v: Variant in row:
 			_corners.append(float(v))
+	# Only the flattened copy is read; the nested Arrays cost ~20 MB on a 513² generated grid.
+	corner_heights = []
 	macro_noise_cfg = macro.get("noise", {})
 	for r: Dictionary in d.get("rivers", []):
 		rivers.append({"id": str(r.get("id", "")), "line": Polyline2.from_array(r["points"]), "width": r.get("width", 16.0),
@@ -198,6 +210,60 @@ func is_region_built(region_id: String) -> bool:
 	return str((regions.get(region_id, {}) as Dictionary).get("status", "")) == "built"
 
 
+# --- Composer memos (ADR-0038; thread-safe) ----------------------------------------------------
+
+## A file's bytes, read once per world (the composer's input hash reads the same files for every
+## region and spacing).
+func file_bytes(path: String) -> PackedByteArray:
+	_memo_mutex.lock()
+	var hit: Variant = _bytes.get(path)
+	_memo_mutex.unlock()
+	if hit != null:
+		return hit
+	var b: PackedByteArray = FileAccess.get_file_as_bytes(path)
+	_memo_mutex.lock()
+	if _bytes.has(path):
+		b = _bytes[path]
+	else:
+		_bytes[path] = b
+	_memo_mutex.unlock()
+	return b
+
+
+## A memoised input hash ("" when not computed yet); TerrainComposer.input_hash fills it.
+func memo_hash(key: String) -> String:
+	_memo_mutex.lock()
+	var h: String = str(_hashes.get(key, ""))
+	_memo_mutex.unlock()
+	return h
+
+
+func set_memo_hash(key: String, h: String) -> void:
+	_memo_mutex.lock()
+	_hashes[key] = h
+	_memo_mutex.unlock()
+
+
+## The profile of world road `index` ({profile, step, spans}), built by `build` the first time and
+## shared by every region afterwards. Only for roads graded from world data alone (road_grade
+## "world"), whose profile is the same whichever region builds it. Two threads may build one at
+## once; the first stored wins, and both are identical.
+func road_profile(index: int, build: Callable) -> Dictionary:
+	_memo_mutex.lock()
+	var hit: Variant = _profiles.get(index)
+	_memo_mutex.unlock()
+	if hit != null:
+		return hit
+	var p: Dictionary = build.call()
+	_memo_mutex.lock()
+	if _profiles.has(index):
+		p = _profiles[index]
+	else:
+		_profiles[index] = p
+	_memo_mutex.unlock()
+	return p
+
+
 # --- Macro elevation --------------------------------------------------------------------------
 
 ## Smooth large-scale elevation (corner grid, Catmull-Rom) + elevation-scaled macro noise.
@@ -209,8 +275,10 @@ func macro_height(x: float, z: float) -> float:
 	var boost: float = float(macro_noise_cfg.get("mountain_boost", 2.5))
 	var mount: float = clampf((base - 60.0) / 500.0, 0.0, 1.0)
 	var scale: float = 0.35 + mount * boost
-	var n: float = _noise.get_noise_2d(x, z) * amp * scale
-	var rn: float = (_ridge.get_noise_2d(x, z) * 0.5 + 0.5) * ridged_amp * mount * boost
+	# A zero amplitude (a generated world: its land is all in the grid) makes a term a signed
+	# zero, and base + 0.0 + 0.0 is base (or +0.0) whichever zero it was: skip the noise calls.
+	var n: float = 0.0 if amp == 0.0 else _noise.get_noise_2d(x, z) * amp * scale
+	var rn: float = 0.0 if ridged_amp == 0.0 or boost == 0.0 else (_ridge.get_noise_2d(x, z) * 0.5 + 0.5) * ridged_amp * mount * boost
 	return base + n + rn
 
 
