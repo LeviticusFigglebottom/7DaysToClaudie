@@ -12,7 +12,9 @@ const DEFAULT_TILES: Dictionary = {"forest_floor": 3.0, "moss_ground": 2.5, "gra
 const FALLBACK_COLORS: Dictionary = {"forest_floor": Color(0.23, 0.16, 0.09), "moss_ground": Color(0.2, 0.27, 0.09),
 	"grass_ground": Color(0.3, 0.36, 0.14), "dirt": Color(0.38, 0.29, 0.19), "mud": Color(0.22, 0.17, 0.12),
 	"gravel": Color(0.45, 0.43, 0.4), "rock_cliff": Color(0.42, 0.41, 0.39), "sand": Color(0.62, 0.55, 0.4),
-	"snow": Color(0.85, 0.87, 0.9), "asphalt_cracked": Color(0.13, 0.13, 0.14), "concrete_slab": Color(0.5, 0.5, 0.48)}
+	"snow": Color(0.85, 0.87, 0.9), "asphalt_cracked": Color(0.13, 0.13, 0.14), "concrete_slab": Color(0.5, 0.5, 0.48),
+	# ADR-0041's burn and fen (TD-152): charcoal under grey ash, and black-brown peat.
+	"ash_char": Color(0.2, 0.19, 0.17), "peat": Color(0.15, 0.11, 0.08)}
 
 static var _cached: TerrainTextures = null
 

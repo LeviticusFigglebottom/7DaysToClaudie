@@ -386,6 +386,9 @@ const SURFACE_SOUNDS: Dictionary = {
 	"forest_floor": "forest_floor", "moss_ground": "forest_floor", "grass_ground": "grass", "dirt": "dirt",
 	"mud": "dirt", "gravel": "gravel", "sand": "dirt", "asphalt_cracked": "concrete", "concrete_slab": "concrete",
 	"snow": "leaves", "rock_cliff": "concrete",
+	# Burnt soil and peat step like bare ground (TD-152): the forest floor's needle crunch read wrong
+	# on both. Their own crunch and squelch sets are still to come.
+	"ash_char": "dirt", "peat": "dirt",
 }
 
 
