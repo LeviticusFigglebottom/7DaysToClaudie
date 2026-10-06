@@ -204,7 +204,7 @@ static func assign_authored(towns: Array, seed: int, cap: int) -> Dictionary:
 
 ## The largest authored footprint (per axis: x along the street, y depth) that could stand on a lot,
 ## whatever the run's seed picks (Vector2i.ZERO: only generated buildings or nothing). The composer
-## keeps a town yard's grass off it (TD-136): which building a lot holds is a run-seed choice, and
+## keeps a town yard's grass off it (ADR-0047): which building a lot holds is a run-seed choice, and
 ## the terrain is a function of the world's data alone. A generated building keeps its own yards
 ## (BuildingGenerator.SIDE_YARD, BACK_YARD) inside the frame, so it needs no clip. Same filter as
 ## _choose, less the `used` dedupe (any candidate may win).

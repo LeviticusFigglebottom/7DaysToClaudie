@@ -10,7 +10,7 @@ extends Node3D
 ## in hollows and over water at dawn and dusk; rain hangs a grey haze; gusts drive the foliage and the
 ## rain. The precipitation, the weather map and the motes are WeatherFx's.
 ## The biome round the camera tints the fog (its `fog_tint` against the conifer forest's, so the
-## forest looks as it always did), and a fen pools deeper, thicker ground fog (TD-151). Both are
+## forest looks as it always did), and a fen pools deeper, thicker ground fog (ADR-0047). Both are
 ## sampled twice a second at five points and eased over a few seconds, so they cost nothing.
 
 var clock: WorldClock
@@ -48,7 +48,7 @@ var ground_fog: float = 0.0
 var fog_volume: FogVolume
 var _fog_mat: ShaderMaterial
 ## The fog's colour multiplier from the biomes round the camera (white: as the reference biome), and
-## how much of that ground is fen (0..1), both eased toward the last sample (TD-151).
+## how much of that ground is fen (0..1), both eased toward the last sample (ADR-0047).
 var biome_tint: Color = Color.WHITE
 var fen_weight: float = 0.0
 var _tint_target: Color = Color.WHITE
@@ -317,7 +317,7 @@ func update_now() -> void:
 	var fog_col: Color = horizon.lerp(sun_col * 0.7, golden * 0.35)
 	# Haze in rain is grey water in the air, not blue distance.
 	fog_col = fog_col.lerp(Color(0.6, 0.62, 0.64).lerp(horizon, 0.5), fall * 0.6)
-	# The biome round the camera: a burn's dusty warmth, a fen's grey-green (TD-151).
+	# The biome round the camera: a burn's dusty warmth, a fen's grey-green (ADR-0047).
 	fog_col *= biome_tint
 	env.fog_light_color = fog_col
 	env.fog_light_energy = lerpf(0.06 + 0.12 * moon_sky, 1.0, day) + flash * 0.6 * _flash_reach(fdist, lf)
@@ -522,7 +522,7 @@ func _update_ground_fog(w: Dictionary, hour: float, day: float, fog_col: Color, 
 	# A misty state (ground_fog over 1) keeps a bank in the low ground all day, thinner at noon.
 	var gf: float = float(w.get("ground_fog", 1.0))
 	ground_fog = (ground_fog_at(hour, clock.sunrise_hour, clock.sunset_hour, fc) * gf + maxf(0.0, gf - 1.0) * 0.5) * calm
-	# A fen pools more of it, deeper, when it gathers (dawn and dusk; TD-151).
+	# A fen pools more of it, deeper, when it gathers (dawn and dusk; ADR-0047).
 	var pool: Vector2 = fen_pool(fen_weight, fc)
 	ground_fog *= pool.x
 	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
@@ -555,7 +555,7 @@ func _update_ground_fog(w: Dictionary, hour: float, day: float, fog_col: Color, 
 	_fog_mat.set_shader_parameter("drift", wd * (0.15 + 1.5 * float(w["wind"])))
 
 
-## The fog of the biomes round the camera (TD-151): the camera's ground and four points
+## The fog of the biomes round the camera (ADR-0047): the camera's ground and four points
 ## `biome_sample_m` round it, weighted 0.4 and 0.15 each, set the tint and fen targets.
 func _sample_biomes() -> void:
 	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null

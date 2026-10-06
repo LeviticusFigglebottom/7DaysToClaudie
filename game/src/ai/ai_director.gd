@@ -317,7 +317,7 @@ func _spawn_group(ppos: Vector3) -> void:
 
 
 ## The biome whose spawns apply at (x, z): an organic town's whole ground spawns as town, not only
-## its streets, which are all the composer paints `town` (TD-136).
+## its streets, which are all the composer paints `town` (ADR-0047).
 func _spawn_biome(rt: RegionTerrain, x: float, z: float) -> String:
 	var composed: String = rt.biome_at(x, z)
 	var wdef: WorldDef = world.get(&"world_def") as WorldDef

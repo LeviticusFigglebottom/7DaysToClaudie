@@ -1,5 +1,5 @@
 extends GutTest
-## A world town's ground (TD-136, TerrainComposer VERSION 12): `town` is painted on its streets (and
+## A world town's ground (ADR-0047, TerrainComposer VERSION 12): `town` is painted on its streets (and
 ## the highway through it) and its square only, not over its whole disc; the ground between streets
 ## and yards keeps the world's biome; town ambience and spawns key on WorldDef.town_at instead; and a
 ## yard's grass keeps off the largest authored building its lot may hold.

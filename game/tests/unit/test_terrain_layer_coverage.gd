@@ -1,7 +1,7 @@
 extends GutTest
 ## Every terrain layer (data/materials/terrain_layers.json) has a stand-in colour, so the terrain
 ## draws it before `make assets` and in far views (TerrainTextures.FALLBACK_COLORS; ash and peat
-## drew grey, TD-152), and a footstep sound set that exists in the sound catalog
+## drew grey, ADR-0047), and a footstep sound set that exists in the sound catalog
 ## (Player.SURFACE_SOUNDS; unknown layers fell back to the forest floor's).
 
 const LAYERS_JSON: String = "res://data/materials/terrain_layers.json"

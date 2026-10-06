@@ -22,7 +22,7 @@ extends RefCounted
 ## the town touches places the fixtures standing in it. Both sides of a border compute the same
 ## samples from world data alone, so a town may straddle borders. Worlds without `towns` (the main
 ## map, v1 worlds) compose exactly as before.
-## VERSION 12 (TD-136): a world town paints `town` only on its streets (TOWN_VERGE past their
+## VERSION 12 (ADR-0047): a world town paints `town` only on its streets (TOWN_VERGE past their
 ## shoulders) and square, no longer over its whole disc, and a yard's grass keeps off the largest
 ## authored footprint its lot may hold. The main map's output did not change.
 ##
@@ -62,7 +62,7 @@ const LOT_ROAD_YIELD: float = 2.0
 ## A yard's grass grows within this much of its frame's edge (m), and none a metre further in.
 const YARD_EDGE: float = 2.0
 ## A world town's streets paint `town` this far past their shoulders (m, plus up to 2 m of noise);
-## the ground between the streets and the lots keeps the world's biome (TD-136).
+## the ground between the streets and the lots keeps the world's biome (ADR-0047).
 const TOWN_VERGE: float = 3.0
 
 ## By path: new with ADR-0038, so this compiles before the editor registers its class name.
@@ -101,7 +101,7 @@ static func input_hash(world: WorldDef, region_id: String, spacing: float) -> St
 	var gen_fw: String = world.dir_path.path_join("frameworks.json")
 	if FileAccess.file_exists(gen_fw):
 		ctx.update(world.file_bytes(gen_fw))
-	# A town yard's grass keeps off the authored buildings its lot may hold (TD-136): their
+	# A town yard's grass keeps off the authored buildings its lot may hold (ADR-0047): their
 	# footprints, tiers and zoning shape the vegetation mask.
 	var authored: String = _town_authored_key(world)
 	if authored != "":
@@ -633,7 +633,7 @@ class _Build:
 			_town_r.append(float(tw["radius"]))
 			# `town` is painted on its streets (_band_surface) and its square; the lots are yards, and
 			# the ground between them keeps the world's biome, so from above a town is streets and
-			# yards in the meadows, not one brown disc (TD-136; town ambience and spawns key on
+			# yards in the meadows, not one brown disc (ADR-0047; town ambience and spawns key on
 			# WorldDef.town_at).
 			for lv: Variant in fw.lots:
 				var l: Dictionary = lv
@@ -1826,7 +1826,7 @@ class _Build:
 					else:
 						var rtop: float = ra + (rb - ra) * fx
 						rd = rtop + ((rc + (rdx - rc) * fx) - rtop) * fz
-					# A world town's street and its verges are town ground (TD-136).
+					# A world town's street and its verges are town ground (ADR-0047).
 					var tk: int = rtown[ri]
 					if tk > 0 and rd < rhalf[ri] + rsh[ri] + TOWN_VERGE + n2 * 2.0:
 						if tk == 1:
@@ -1866,7 +1866,7 @@ class _Build:
 						pad_hit = pi
 						# How far inside the pad's edge (a yard's grass keeps to its edges).
 						pad_in = minf(minf(lp.x, size.x - lp.x), minf(lp.y, size.y - lp.y))
-						# How far outside the footprint its yard's grass keeps off (TD-136).
+						# How far outside the footprint its yard's grass keeps off (ADR-0047).
 						var core: Vector2 = dcore[pi]
 						if core.x > 0.0:
 							pad_out = maxf(absf(lp.x - size.x * 0.5) - core.x * 0.5, absf(lp.y - size.y * 0.5) - core.y * 0.5)

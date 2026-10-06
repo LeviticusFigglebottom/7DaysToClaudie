@@ -23,7 +23,7 @@ extends GutTest
 ## Larkspur Adit was placed by the Larkspur cliffs (ADR-0044: its pad and its track);
 ## the generator versions leave them unchanged, the main map having no towns, generated posts or
 ## new biomes.
-## Composer VERSION 12 (TD-136: a world town paints `town` on its streets only, and yard grass keeps
+## Composer VERSION 12 (ADR-0047: a world town paints `town` on its streets only, and yard grass keeps
 ## off the authored footprints a lot may hold) re-recorded the random world's splat, biome and
 ## vegetation digests (its drop-site region reaches the town too) and every input hash (the
 ## version is hashed); Larch Hollow's outputs held, byte for byte, at 1, 4 and 8 m.
@@ -257,7 +257,7 @@ func _check(key: String, world: WorldDef, rid: String, spacing: float, rt: Regio
 
 
 func test_version_is_12() -> void:
-	assert_eq(TerrainComposer.VERSION, 12, "Phase 1 changed no output; VERSION 12 is TD-136's town paint (the main map's output held)")
+	assert_eq(TerrainComposer.VERSION, 12, "Phase 1 changed no output; VERSION 12 is ADR-0047's town paint (the main map's output held)")
 
 
 func test_larch_hollow_at_4_and_8_m() -> void:

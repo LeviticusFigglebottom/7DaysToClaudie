@@ -74,7 +74,7 @@ func _choose() -> void:
 	var bed: StringName = &"amb/forest_night" if dark else &"amb/forest_day"
 	var rt: RegionTerrain = (world.get(&"terrain") as TerrainManager).region_terrain_at(p.x, p.z)
 	var biome: String = rt.biome_at(p.x, p.z) if rt != null else ""
-	# An organic town's ground is town between its streets and yards too (TD-136: the composer paints
+	# An organic town's ground is town between its streets and yards too (ADR-0047: the composer paints
 	# `town` only on its streets).
 	var wdef: WorldDef = world.get(&"world_def") as WorldDef
 	if wdef != null:

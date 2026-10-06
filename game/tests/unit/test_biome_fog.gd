@@ -1,5 +1,5 @@
 extends GutTest
-## Biome fog (TD-151): EnvironmentController tints the fog by the biomes round the camera (their
+## Biome fog (ADR-0047): EnvironmentController tints the fog by the biomes round the camera (their
 ## `fog_tint` against the conifer forest's, hue only) and pools deeper, thicker ground fog in fens
 ## when the hour's fog gathers.
 

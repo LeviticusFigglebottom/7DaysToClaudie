@@ -217,7 +217,7 @@ func biome_at(x: float, z: float) -> String:
 
 ## The organic town (ADR-0040) whose ground holds (x, z): inside its disc and its built bounds,
 ## grown TOWN_MARGIN m ("" outside every town; always on the main map). The composer paints `town`
-## only on a town's streets (TD-136), so town ambience and spawns key on this mask instead.
+## only on a town's streets (ADR-0047), so town ambience and spawns key on this mask instead.
 func town_at(x: float, z: float) -> String:
 	var p := Vector2(x, z)
 	for tw: Dictionary in towns:
@@ -227,7 +227,7 @@ func town_at(x: float, z: float) -> String:
 
 
 ## The biome whose ambience, spawns and spawn density apply at (x, z), given the composed biome
-## there: "town" anywhere in an organic town but its yards (TD-136), else the composed one.
+## there: "town" anywhere in an organic town but its yards (ADR-0047), else the composed one.
 func behaviour_biome(composed: String, x: float, z: float) -> String:
 	if composed == "town" or composed == "yard" or towns.is_empty():
 		return composed
