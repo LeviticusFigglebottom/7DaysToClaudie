@@ -1,7 +1,8 @@
 extends Node
-## The work of rwg_town_preview.gd: for each size class, land and seed, a closed-form synthetic
-## land (rolling or hilly, sometimes a river in a valley), arterials routed over it by
-## RwgStreets.route_fine (valley-seeking, bridged where they must cross the river), a planned town
+## The work of rwg_town_preview.gd: for each size class, land and seed, the closed-form synthetic
+## land of test_town_planner.gd (rolling or hilly, sometimes a river in a valley, the site moved to
+## low level ground), arterials routed over it by RwgStreets.route_fine (valley-seeking, bridged
+## where they must cross the river), a planned town
 ## (RwgTownPlanner), and two PNGs: shaded relief with 2 m contours, water, blocks, parcels, lot
 ## frames by zoning (a tick on each front), streets by class, cul-de-sac bulbs, the plaza, fixtures,
 ## and the core / 0.6 r / radius rings.
@@ -40,7 +41,9 @@ func _ready() -> void:
 		for land: String in lands:
 			for sv: String in seeds:
 				var seed: int = int(sv)
+				var tc: int = Time.get_ticks_usec()
 				var case: Dictionary = make_case(kind, land, seed, tuning)
+				case["ms"] = (Time.get_ticks_usec() - tc) / 1000.0
 				var t0: int = Time.get_ticks_usec()
 				var p: Dictionary = Planner.plan(case["site"], case["world"], case["arterials"], tuning, seed)
 				var ms: float = (Time.get_ticks_usec() - t0) / 1000.0
@@ -64,11 +67,13 @@ static func _arg(a: PackedStringArray, key: String, def: String) -> String:
 
 # --- Synthetic land and arterials (the same closed forms as test_town_planner.gd) ---------------
 
-## {site, world, arterials, land: {height, water}, river: PackedVector2Array, ms}.
-static func make_case(kind: String, land: String, seed: int, tuning: Dictionary) -> Dictionary:
+## A test case: {kind, land, seed, site, world: {height, water}, arterials}. The land is a sum of
+## sines (rolling: 12 m, hilly: 30 m amplitude) with, on some seeds, a river in a valley; the
+## town's centre is moved to the lowest, levellest dry spot within 400 m of the origin.
+static func make_case(kind: String, land: String, seed: int, t: Dictionary) -> Dictionary:
 	var r := RandomNumberGenerator.new()
 	r.seed = Ids.derive_seed(seed, "town_case:%s:%s" % [kind, land])
-	var kd: Dictionary = tuning["kinds"][kind]
+	var kd: Dictionary = t["kinds"][kind]
 	var radius: float = r.randf_range(float(kd["radius"][0]), float(kd["radius"][1]))
 	var ph: Array[float] = []
 	for k: int in 8:
@@ -77,7 +82,7 @@ static func make_case(kind: String, land: String, seed: int, tuning: Dictionary)
 	var has_river: bool = r.randf() < (0.5 if land == "rolling" else 0.7)
 	var rv_angle: float = r.randf_range(0.0, TAU)
 	var rv_off: float = r.randf_range(radius * 0.7, radius * 1.1) * (1.0 if r.randf() < 0.5 else -1.0)
-	var height := func(x: float, z: float) -> float:
+	var raw_h := func(x: float, z: float) -> float:
 		var v: float = amp * (0.55 * sin(x / 260.0 + ph[0]) * cos(z / 310.0 + ph[1]) + 0.3 * sin((x * 0.8 + z * 0.6) / 150.0 + ph[2])
 			+ 0.15 * sin(x / 75.0 + ph[3]) * sin(z / 90.0 + ph[4]))
 		if has_river:
@@ -85,30 +90,49 @@ static func make_case(kind: String, land: String, seed: int, tuning: Dictionary)
 			var dz: float = q.y - (rv_off + 50.0 * sin(q.x / 170.0 + ph[5]))
 			v -= amp * 0.5 * exp(-dz * dz / (160.0 * 160.0))
 		return v + 100.0
-	var water := func(x: float, z: float) -> float:
+	var raw_w := func(x: float, z: float) -> float:
 		if not has_river:
 			return 1.0e6
 		var q2 := Vector2(x, z).rotated(-rv_angle)
-		# Distance to the sinusoid, approximated by the vertical offset scaled by its slope.
 		var f: float = rv_off + 50.0 * sin(q2.x / 170.0 + ph[5])
 		var fp: float = 50.0 / 170.0 * cos(q2.x / 170.0 + ph[5])
 		return absf(q2.y - f) / sqrt(1.0 + fp * fp) - 9.0
+	# The site (§3.3): dry, low against its surroundings, level in its core.
+	var core: float = float(kd["core"])
+	var best := Vector2.ZERO
+	var best_score: float = INF
+	for j: int in range(-4, 5):
+		for i: int in range(-4, 5):
+			var p := Vector2(i, j) * 100.0
+			if float(raw_w.call(p.x, p.y)) < 90.0:
+				continue
+			var acc: float = 0.0
+			for k2: int in 25:
+				acc += float(raw_h.call(p.x + (k2 % 5 - 2) * 250.0, p.y + (k2 / 5 - 2) * 250.0))
+			var lo: float = INF
+			var hi: float = -INF
+			for k3: int in 25:
+				var v2: float = float(raw_h.call(p.x + (k3 % 5 - 2) * core * 0.5, p.y + (k3 / 5 - 2) * core * 0.5))
+				lo = minf(lo, v2)
+				hi = maxf(hi, v2)
+			var score: float = (float(raw_h.call(p.x, p.y)) - acc / 25.0) + 0.5 * (hi - lo) + p.length() * 0.004
+			if score < best_score:
+				best_score = score
+				best = p
+	var height := func(x: float, z: float) -> float:
+		return float(raw_h.call(x + best.x, z + best.y))
+	var water := func(x: float, z: float) -> float:
+		return float(raw_w.call(x + best.x, z + best.y))
 	var world: Dictionary = {"height": height, "water": water}
 	var site: Dictionary = {"id": "%s_%s_%d" % [kind, land, seed], "kind": kind, "center": [0.0, 0.0], "radius": radius, "name": "Test %s" % kind}
-	var t0: int = Time.get_ticks_usec()
-	var arterials: Array = make_arterials(kind, radius, float((tuning["lots"] as Dictionary).get("outskirts", 400.0)), world, r)
-	var river := PackedVector2Array()
-	if has_river:
-		var x: float = -1400.0
-		while x <= 1400.0:
-			river.append(Vector2(x, rv_off + 50.0 * sin(x / 170.0 + ph[5])).rotated(rv_angle))
-			x += 10.0
-	return {"site": site, "world": world, "arterials": arterials, "river": river, "ms": (Time.get_ticks_usec() - t0) / 1000.0}
+	var arterials: Array = make_arterials(kind, radius, float((t["lots"] as Dictionary).get("outskirts", 400.0)), world, r)
+	return {"kind": kind, "land": land, "seed": seed, "site": site, "world": world, "arterials": arterials}
 
 
-## Arterials as the generator would bring them: routed over the land (route_fine, valley-seeking)
-## from the edge of the outskirts through the centre and out the far side; towns get a second one
-## crossing it and sometimes a third that tees into the first.
+## Arterials as the generator brings them: routed over the land from the edge of the outskirts
+## through the centre and out the far side (route_fine: gentle grades, valleys, a bridge where it
+## must cross the river); villages may have a second crossing it, towns have one and may have a
+## county road teeing into the main street.
 static func make_arterials(kind: String, radius: float, outskirts: float, world: Dictionary, r: RandomNumberGenerator) -> Array:
 	var reach: float = radius + outskirts + 60.0
 	var g := Streets.Ground.new(world, Vector2.ZERO, reach + 200.0)
@@ -137,7 +161,6 @@ static func make_arterials(kind: String, radius: float, outskirts: float, world:
 			pts.append_array(p2)
 			pts = Streets.relax(g, pts, opts)
 		else:
-			# A county road that tees into the main street 120-200 m from the centre.
 			var main: Polyline2 = Polyline2.from_array(out[0]["points"])
 			var tee: Vector2 = main.point_at(main.closest(Vector2.ZERO).y + r.randf_range(120.0, 200.0) * (1.0 if r.randf() < 0.5 else -1.0))
 			pts = Streets.route_fine(g, a, tee, opts)
@@ -146,7 +169,7 @@ static func make_arterials(kind: String, radius: float, outskirts: float, world:
 		var arr: Array = []
 		for p: Vector2 in pts:
 			arr.append([snappedf(p.x, 0.1), snappedf(p.y, 0.1)])
-		var county: bool = k == 2 or (kind == "hamlet")
+		var county: bool = k == 2 or kind == "hamlet"
 		out.append({"id": "road_%d" % k, "points": arr, "width": 5.0 if county else 8.0, "shoulder": 1.5 if county else 2.5,
 			"surface": "gravel" if county else "asphalt", "markings": not county, "class": "county" if county else "highway"})
 	return out

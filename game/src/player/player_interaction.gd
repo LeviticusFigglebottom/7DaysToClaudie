@@ -98,14 +98,12 @@ func _placing() -> bool:
 	return building != null and building.has_method(&"is_placing") and bool(building.call(&"is_placing"))
 
 
-## The key an input action is bound to, for prompts ("X"; "?" when it has none).
+## The key or mouse button an input action is bound to now (rebinds included), named as the
+## Controls screen names it ("X", "Middle mouse"; "?" when it has neither), for prompts.
 static func key_label(action: StringName) -> String:
-	if not InputMap.has_action(action):
-		return "?"
-	for ev: InputEvent in InputMap.action_get_events(action):
-		var k: InputEventKey = ev as InputEventKey
-		if k != null:
-			return OS.get_keycode_string(k.physical_keycode if k.physical_keycode != KEY_NONE else k.keycode)
+	for spec: Variant in Settings.bindings(String(action)):
+		if spec is Dictionary and ((spec as Dictionary).has("key") or (spec as Dictionary).has("mouse")):
+			return Settings.describe(spec)
 	return "?"
 
 
