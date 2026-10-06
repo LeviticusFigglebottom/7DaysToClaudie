@@ -447,7 +447,7 @@ func grow(r: RandomNumberGenerator) -> void:
 			var sb: float = r.randf_range(40.0, st.length() - 40.0) if n_br == 1 else (st.length() * (0.3 + 0.4 * b) + r.randf_range(-15.0, 15.0))
 			var bp: Vector2 = st.line.point_at(sb)
 			var nb: Dictionary = {"from": si, "s": sb, "side": 1 if r.randf() < 0.5 else -1, "angle": r.randf_range(float(ba[0]), float(ba[1])),
-				"gen": 2, "budget": r.randf_range(float(bl[0]), float(bl[1])), "prio": bp.distance_to(center) + 40.0, "cls": _class_at(bp)}
+				"gen": 2, "budget": r.randf_range(float(bl[0]), float(bl[1])), "prio": bp.distance_to(center) / radius + r.randf_range(0.1, 0.5), "cls": _class_at(bp)}
 			var at: int = queue.size()
 			for qi: int in queue.size():
 				if float(queue[qi]["prio"]) > float(nb["prio"]):
@@ -487,11 +487,14 @@ func _arterial_seeds(r: RandomNumberGenerator) -> Array[Dictionary]:
 				var in_core: bool = ring == 0 and grid_bias
 				var angle: float = 90.0 + r.randf_range(-4.0, 4.0) if in_core else r.randf_range(float(ba[0]), float(ba[1]))
 				var cls: String = _class_at(p)
+				# Core seeds first, the rest mixed across the rings, so the side-street count reaches
+				# out to the edge instead of being spent round the centre.
+				var prio: float = dist / radius + (0.0 if ring == 0 else r.randf_range(0.0, float(kd.get("seed_mix", 0.6))))
 				out.append({"from": ai, "s": s, "side": side, "angle": angle, "gen": 1, "budget": r.randf_range(float(sl[0]), float(sl[1])),
-					"prio": dist, "cls": cls})
+					"prio": prio, "cls": cls})
 				if ring == 0 and r.randf() < cross_chance:
 					out.append({"from": ai, "s": s, "side": -side, "angle": 180.0 - angle, "gen": 1,
-						"budget": r.randf_range(float(sl[0]), float(sl[1])), "prio": dist + 0.5, "cls": cls})
+						"budget": r.randf_range(float(sl[0]), float(sl[1])), "prio": prio + 0.001, "cls": cls})
 				var spr: Array = sp[ring]
 				s += dir * r.randf_range(float(spr[0]), float(spr[1]))
 				side = -side

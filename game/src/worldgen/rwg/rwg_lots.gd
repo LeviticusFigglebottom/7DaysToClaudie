@@ -89,6 +89,8 @@ var gaps: Array = [1.0, 4.0]
 var occupied: Dictionary = {}
 var _cells: Dictionary = {}
 var _cell: float = 32.0
+var _qstamp := PackedInt32Array()
+var _qn: int = 0
 
 
 func setup(p_net: Streets, p_cfg: Dictionary) -> void:
@@ -145,8 +147,8 @@ func frame_on(si: int, side: int, lo: float, hi: float, depth: float) -> Lot:
 	return l
 
 
-## Whether a frame may stand: clear of every lot (and of `extra`, candidates not yet added), of
-## every street corridor, of the water, and on ground within `relief` m.
+## Whether a frame may stand: clear of every lot (and of `extra`, candidates not yet added), on
+## ground within `relief` m, dry, and clear of every street corridor (cheapest tests first).
 func fits(l: Lot, relief: float, extra: Array[Lot] = []) -> bool:
 	var cs: PackedVector2Array = l.corners()
 	var bb := Rect2(cs[0], Vector2.ZERO)
@@ -158,27 +160,52 @@ func fits(l: Lot, relief: float, extra: Array[Lot] = []) -> bool:
 	for e: Lot in extra:
 		if not clear_of(l, e, overlap_gap):
 			return false
-	if corridor_clearance(l, cs) < 0.0:
+	if not relief_ok(l, relief):
 		return false
 	for k: int in 9:
-		var p2: Vector2 = l.at((k % 3 - 1) * l.w * 0.5, (k / 3 - 1) * l.d * 0.5)
-		if ground.water(p2) < water_min:
+		if ground.water(l.at((k % 3 - 1) * l.w * 0.5, (k / 3 - 1) * l.d * 0.5)) < water_min:
 			return false
-	var st: Vector3 = ground_stats(l)
-	l.relief = st.y - st.x
-	return l.relief <= relief
+	return corridor_clearance(l, cs, true) >= 0.0
 
 
-## The smallest clearance (m) from the frame to any street corridor (negative: inside one).
-func corridor_clearance(l: Lot, cs: PackedVector2Array) -> float:
+## The 5 x 5 samples of a frame, corners and middle first (so a steep frame fails early).
+const _ORDER: Array[int] = [0, 4, 20, 24, 12, 2, 10, 14, 22, 6, 8, 16, 18, 1, 3, 5, 9, 15, 19, 21, 23, 7, 11, 13, 17]
+
+
+func relief_ok(l: Lot, limit: float) -> bool:
+	var lo: float = INF
+	var hi: float = -INF
+	for k: int in _ORDER:
+		var v: float = ground.h(l.at(((k % 5) / 4.0 - 0.5) * l.w, ((k / 5) / 4.0 - 0.5) * l.d))
+		lo = minf(lo, v)
+		hi = maxf(hi, v)
+		if hi - lo > limit:
+			return false
+	l.relief = hi - lo
+	return true
+
+
+## The smallest clearance (m) from the frame to any street corridor (negative: inside one);
+## `early`: stop at the first corridor it enters.
+func corridor_clearance(l: Lot, cs: PackedVector2Array, early: bool = false) -> float:
 	var best: float = INF
-	for sid: int in net.near(l.c, maxf(l.w, l.d) * 0.75 + 14.0):
+	var half_diag: float = Vector2(l.w, l.d).length() * 0.5
+	for sid: int in net.near(l.c, half_diag + 14.0):
 		var si: int = net.seg_st[sid]
 		if si < 0:
 			continue
 		var st: Streets.Street = net.streets[si]
-		var dist: float = seg_rect_distance(net.seg_a[sid], net.seg_b[sid], l, cs)
-		best = minf(best, dist - (st.half() + st.shoulder + margin))
+		var need: float = st.half() + st.shoulder + margin
+		var a: Vector2 = net.seg_a[sid]
+		var b: Vector2 = net.seg_b[sid]
+		# No part of the frame is nearer the segment than its centre less its half diagonal: skip
+		# segments that cannot beat the best so far (or, early, cannot reach into the frame).
+		var bound: float = l.c.distance_to(Geometry2D.get_closest_point_to_segment(l.c, a, b)) - half_diag - need
+		if bound >= (0.0 if early else best):
+			continue
+		best = minf(best, seg_rect_distance(a, b, l, cs) - need)
+		if early and best < 0.0:
+			return best
 	return best
 
 
@@ -242,6 +269,7 @@ func retain(keep: Callable) -> void:
 	var old: Array[Lot] = lots
 	lots = []
 	_cells.clear()
+	_qstamp.clear()
 	occupied.clear()
 	for l: Lot in old:
 		if bool(keep.call(l)):
@@ -265,12 +293,14 @@ func _insert(li: int) -> void:
 
 func _query(bb: Rect2) -> PackedInt32Array:
 	var out := PackedInt32Array()
-	var seen: Dictionary = {}
+	_qn += 1
+	if _qstamp.size() < lots.size():
+		_qstamp.resize(lots.size())
 	for j: int in range(int(floor(bb.position.y / _cell)), int(floor(bb.end.y / _cell)) + 1):
 		for i: int in range(int(floor(bb.position.x / _cell)), int(floor(bb.end.x / _cell)) + 1):
 			for li: int in _cells.get(Vector2i(i, j), []):
-				if not seen.has(li):
-					seen[li] = true
+				if _qstamp[li] != _qn:
+					_qstamp[li] = _qn
 					out.append(li)
 	return out
 
