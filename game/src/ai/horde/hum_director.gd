@@ -99,7 +99,7 @@ func _on_start(d: int) -> void:
 	flow = null
 	_rebuild_flow()
 	Audio.play_2d(&"music/hum_start", -2.0, &"Music")
-	Events.player_status_message.emit("The Hum.", &"danger")
+	Events.player_status_message.emit("THE HUM HAS BEGUN.", &"danger")
 
 
 func _on_end(_d: int, _r: Dictionary) -> void:

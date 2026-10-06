@@ -71,6 +71,14 @@ about 100 ms on a desktop CPU (the OS flags a window after about 5 s without mes
 * The load is longer in wall time by a few frames of overhead and shows its progress; the longest
   frame went from ~15 s to ~0.5 s headless on a contended container (the remaining offenders are
   the largest single POI builds, terrain setup and the player scene; see TD-102).
+* The playtest crash itself was a reflection probe atlas overflow (more than 64 interior probes in
+  view, on the player's Godot 4.7.1 with an RX 9070 XT); the integrator's `interior_probe_budget.gd`
+  caps visible probes. `make render-check` renders `valley_overview`, whose frustum holds all 92 of
+  the world's probes: with the budget disabled (both caps set to 999, not committed) Godot 4.7.2 on
+  lavapipe logs **no** atlas error there. So the overflow did not reproduce on the pinned engine
+  here; it may be specific to 4.7.1 or to that GPU's driver. The budget stays as a guard, and the
+  render check guards the class of failure (probe atlas, FATAL, crash handler) without proving
+  that fix.
 * Export templates ignore `-s`, so an exported pack is smoked with the editor binary:
   `godot --headless --main-pack Hollowmere.pck -s /abs/path/slice_smoke.gd` (the wrappers load
   their runner from beside themselves for this).

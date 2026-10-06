@@ -4,12 +4,17 @@ extends Node3D
 ## stopping you. Its screen (a SubViewport rendered onto the device) shows day/time/weather,
 ## vitals and conditions, your level / XP / gamestage, the Hum countdown and forecast
 ## (HumDirector's plan for the next Hum), every supply drop (when the world setting marks them) and a
-## minimap of the region with you, your bed, your base and the places you've been.
+## minimap of the region you are in, captioned with the world's name and your sector (the region's
+## map cell): you, where you wake (your bed, or the drop site until you have one), supply drops and
+## the buildings (grey; orange once you've been inside, green once cleared).
 
 const HIDDEN := Vector3(-0.2, -0.42, -0.34)
 const RAISED := Vector3(-0.085, -0.075, -0.3)
 const SCREEN := Vector2i(640, 400)
 const MAP_PX: int = 256
+## Characters of the 14 px caption that fit beside the map's left edge on the screen.
+const CAPTION_CHARS: int = 32
+const WAKE_COLOR := Color(0.95, 0.85, 0.4)
 
 var raised: bool = false
 var _t: float = 0.0
@@ -24,6 +29,7 @@ var _drops: Label
 var _directives: Label
 var _hum: Label
 var _map: TextureRect
+var _caption: Label
 var _map_region: String = ""
 ## The region map is shaded on a worker thread (65k height samples hitched the frame the
 ## tether opened in a new region); the texture is swapped in when it is done.
@@ -128,8 +134,9 @@ func _build_screen() -> void:
 	_markers.size = _map.size
 	_markers.draw.connect(_draw_markers)
 	_root.add_child(_markers)
-	var cap := _lcd_label(Vector2(370, 322), 14)
-	cap.text = "LARCH HOLLOW  ·  CORDON SECTOR D6"
+	_caption = _lcd_label(Vector2(370, 322), 14)
+	_caption.size = Vector2(SCREEN.x - 370, 20)
+	_caption.clip_text = true
 	_directives = _lcd_label(Vector2(370, 342), 13)
 	_directives.size = Vector2(262, 56)
 	_directives.clip_text = true
@@ -209,6 +216,9 @@ func _refresh() -> void:
 	_hum.position.y = maxf(290.0, 254.0 + 17.0 * float(_drops.text.count("\n") + 1) + 6.0) if _drops.text != "" else 290.0
 	_directives.text = _directives_text(p)
 	_hum.text = _hum_text()
+	var w: Node = Game.world
+	if w != null and w.get(&"terrain") != null and w.get(&"player") != null:
+		_caption.text = map_caption((w.terrain as TerrainManager).world, (w.player as Node3D).global_position)
 	_ensure_map()
 	_markers.queue_redraw()
 
@@ -258,6 +268,21 @@ static func drops_lines(list: Array, pp: Vector3) -> String:
 	return "\n".join(lines)
 
 
+## The map's caption: the world's name and the sector (map cell of the region) at `pos`,
+## "HOLLOWMERE VALLEY  ·  SECTOR D6". A long name is cut short so the sector always shows.
+static func map_caption(wd: WorldDef, pos: Vector3) -> String:
+	if wd == null:
+		return ""
+	var name_: String = wd.display_name.to_upper()
+	var cell: String = str((wd.regions.get(wd.region_at(pos.x, pos.z), {}) as Dictionary).get("cell", ""))
+	if cell == "":
+		return name_.left(CAPTION_CHARS)
+	var sector: String = "  ·  SECTOR %s" % cell
+	if name_.length() + sector.length() > CAPTION_CHARS:
+		name_ = name_.left(maxi(1, CAPTION_CHARS - sector.length() - 1)).strip_edges() + "…"
+	return name_ + sector
+
+
 ## The open chapter's next two Program directives with their progress.
 func _directives_text(p: PlayerState) -> String:
 	var dr: Directives = p.directives
@@ -265,7 +290,7 @@ func _directives_text(p: PlayerState) -> String:
 		return "DIRECTIVES  all complete"
 	var lines: PackedStringArray = ["DIRECTIVES · %s" % Directives.chapter_name(dr.chapter).to_upper()]
 	for d: DirectiveDef in dr.open().slice(0, 2):
-		lines.append("> %s  %s" % [d.display_name, d.goal_text(dr.count_of(d.id))])
+		lines.append("> %s  %s" % [dr.label(d), d.goal_text(dr.count_of(d.id))])
 	return "\n".join(lines)
 
 
@@ -376,8 +401,13 @@ func _draw_markers() -> void:
 	if rt == null:
 		return
 	var p: PlayerState = Game.local_player()
+	var lim := Rect2(Vector2(6, 6), Vector2(MAP_PX - 12, MAP_PX - 12))
+	# Where you wake: your bed (a dot), else the drop site (a ring; spawn_point holds it from the
+	# start). Off the map edge: pinned to the border in its direction, like the drops.
 	if p.has_spawn_point:
-		_markers.draw_circle(_to_map(rt, p.spawn_point), 4.0, Color(0.95, 0.85, 0.4))
+		_markers.draw_circle(_to_map(rt, p.spawn_point).clamp(lim.position, lim.end), 4.0, WAKE_COLOR)
+	elif p.spawn_point != Vector3.ZERO:
+		_markers.draw_arc(_to_map(rt, p.spawn_point).clamp(lim.position, lim.end), 4.5, 0.0, TAU, 16, WAKE_COLOR, 1.5)
 	var pois: Node = w.get(&"pois")
 	if pois != null:
 		for inst: PoiInstance in (pois.get(&"instances") as Dictionary).values():
@@ -390,7 +420,6 @@ func _draw_markers() -> void:
 			_markers.draw_rect(Rect2(mp - Vector2(3, 3), Vector2(6, 6)), col)
 	var drops: Node = w.get(&"supply_drops")
 	if drops != null:
-		var lim := Rect2(Vector2(6, 6), Vector2(MAP_PX - 12, MAP_PX - 12))
 		for at: Vector3 in (drops.call(&"markers") as Array[Vector3]):
 			# Off the map edge: pinned to the border in its direction.
 			var mp: Vector2 = _to_map(rt, at).clamp(lim.position, lim.end)

@@ -89,7 +89,7 @@
   {
    "id": "log_wall",
    "name": "Log Wall (4 m)",
-   "description": "Five logs stacked and notched. Hollowed have to break it, not walk around it.",
+   "description": "Six logs stacked and notched. Hollowed have to break it, not walk around it.",
    "mode": "pieces",
    "category": "walls",
    "pieces": [

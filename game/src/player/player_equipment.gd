@@ -358,7 +358,7 @@ func _fire(def: ItemDef) -> void:
 	stack.data["loaded"] = loaded - 1
 	_cooldown = def.equip_num("attack_time", 0.45)
 	var cam: Camera3D = player.camera
-	var spread: float = deg_to_rad(def.equip_num("spread_deg", 1.5)) * (0.5 if player.crouching else 1.0)
+	var spread: float = shot_spread(def, player.crouching, player.state.progression)
 	var dir: Vector3 = (-cam.global_transform.basis.z).rotated(cam.global_transform.basis.x, randf_range(-spread, spread)).rotated(Vector3.UP, randf_range(-spread, spread))
 	var q := PhysicsRayQueryParameters3D.create(cam.global_position, cam.global_position + dir * def.equip_num("range", 60.0), HIT_MASK)
 	q.collide_with_areas = true
@@ -385,6 +385,13 @@ func _fire(def: ItemDef) -> void:
 		if r != null:
 			r.call(&"take_damage", info)
 	_wear(def)
+
+
+## How far (radians, each axis) a shot may wander off the crosshair: the gun's spread_deg, halved
+## crouched, less with the Steady Aim perk (ranged_spread_mult, ADR-0015).
+static func shot_spread(def: ItemDef, crouching: bool, prog: Progression) -> float:
+	var steady: float = maxf(0.1, 1.0 + prog.modifier("ranged_spread_mult")) if prog != null else 1.0
+	return deg_to_rad(def.equip_num("spread_deg", 1.5)) * (0.5 if crouching else 1.0) * steady
 
 
 func _reload(def: ItemDef) -> void:

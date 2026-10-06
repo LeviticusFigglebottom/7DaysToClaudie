@@ -6,11 +6,17 @@ extends Node
 ##   interact_text(player: Player) -> String          prompt ("" = not interactable now)
 ##   interact(player: Player) -> void
 ##   interact_hold_time(player: Player) -> float      optional; > 0 = hold to complete (searching)
+##   alt_interact_text(player: Player) -> String      optional second action, done by holding the
+##   alt_interact(player: Player) -> void             `cancel` key (X) ALT_HOLD s ("" = none now):
+##                                                    taking down a blueprint ghost
 
 signal focus_changed(target: Object, text: String)
 signal hold_progress(t: float)
 
 const MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 6) | (1 << 7) | (1 << 12)
+## Seconds the cancel key is held for a second action: long enough that a tap meant to cancel a
+## placement or close a page never takes anything down.
+const ALT_HOLD: float = 1.0
 
 var player: Player
 var target: Object = null
@@ -21,9 +27,17 @@ var last_hit: Dictionary = {}
 ## Context for the held tool on what is aimed at (a hammer on a building piece: its health and
 ## what a strike does), shown under the prompt.
 var tool_hint: String = ""
+## The target's second action for the line under the prompt ("hold [X] to take down the …
+## blueprint"), "" when it has none.
+var alt_prompt: String = ""
 ## What a running hold started on: looking at something else cancels it rather than finishing
 ## the search on the new target.
 var _hold_target: Object = null
+## The running hold is the second action (on the cancel key), not an interact hold.
+var _hold_alt: bool = false
+## A blueprint was being placed last frame: its cancel press (handled by BuildingManager, which
+## runs first) must not also start taking a ghost down.
+var _was_placing: bool = false
 ## One reused instance, so the focus doesn't change every frame while you look at a stream.
 var _water := WaterSource.new()
 
@@ -36,6 +50,9 @@ func _physics_process(delta: float) -> void:
 	if player == null or player.state == null:
 		return
 	_scan()
+	var placing: bool = _placing()
+	var was_placing: bool = _was_placing
+	_was_placing = placing
 	if not player.input_enabled:
 		_cancel_hold()
 		return
@@ -48,16 +65,23 @@ func _physics_process(delta: float) -> void:
 			hold_needed = ht
 			hold_t = 0.0
 			_hold_target = target
+			_hold_alt = false
+	elif alt_prompt != "" and not placing and not was_placing and Input.is_action_just_pressed(&"cancel"):
+		hold_needed = ALT_HOLD
+		hold_t = 0.0
+		_hold_target = target
+		_hold_alt = true
 	if hold_needed > 0.0:
-		if target == null or target != _hold_target or not Input.is_action_pressed(&"interact"):
+		if target == null or target != _hold_target or not Input.is_action_pressed(&"cancel" if _hold_alt else &"interact"):
 			_cancel_hold()
 		else:
 			hold_t += delta
 			hold_progress.emit(hold_t / hold_needed)
 			if hold_t >= hold_needed:
 				var t: Object = target
+				var alt: bool = _hold_alt
 				_cancel_hold()
-				t.call(&"interact", player)
+				t.call(&"alt_interact" if alt else &"interact", player)
 
 
 func _cancel_hold() -> void:
@@ -66,6 +90,23 @@ func _cancel_hold() -> void:
 	hold_needed = 0.0
 	hold_t = 0.0
 	_hold_target = null
+	_hold_alt = false
+
+
+func _placing() -> bool:
+	var building: Node = Game.world.get(&"building") if Game.world != null else null
+	return building != null and building.has_method(&"is_placing") and bool(building.call(&"is_placing"))
+
+
+## The key an input action is bound to, for prompts ("X"; "?" when it has none).
+static func key_label(action: StringName) -> String:
+	if not InputMap.has_action(action):
+		return "?"
+	for ev: InputEvent in InputMap.action_get_events(action):
+		var k: InputEventKey = ev as InputEventKey
+		if k != null:
+			return OS.get_keycode_string(k.physical_keycode if k.physical_keycode != KEY_NONE else k.keycode)
+	return "?"
 
 
 func _scan() -> void:
@@ -94,10 +135,20 @@ func _scan() -> void:
 		text = str(found.call(&"interact_text", player))
 		if text == "":
 			found = null
+	alt_prompt = alt_text(found, player)
 	if found != target or text != prompt:
 		target = found
 		prompt = text
 		focus_changed.emit(target, prompt)
+
+
+## "hold [X] to take down the Campfire blueprint (3 Stone back)" for a target with a second
+## action, "" otherwise.
+static func alt_text(found: Object, p: Player) -> String:
+	if found == null or not found.has_method(&"alt_interact_text"):
+		return ""
+	var what: String = str(found.call(&"alt_interact_text", p))
+	return "hold [%s] to %s" % [key_label(&"cancel"), what] if what != "" else ""
 
 
 func _tool_hint(hit: Dictionary) -> String:

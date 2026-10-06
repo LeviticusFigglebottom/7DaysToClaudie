@@ -95,7 +95,8 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     office wired to a shotgun), Pell County Library (stacks of creaking boards, a reading room under
     a two-storey ceiling, a flat reached by its fire-escape ladder, an archive cage in the cellar)
     and KHLW Valley Radio (a booth under a lit ON AIR sign, a lattice mast climbed platform by
-    platform). Five to seven alternative groups each; `tests/unit/test_pool_buildings.gd`.
+    platform). Five to seven alternative groups each; `tests/unit/test_pool_buildings.gd`. Their
+    wall props spell out `rot`: `against` alone leaves a prop facing north (TD-086).
 * **Random worlds** (ADR-0031): the main menu's Random World opens the New Game screen's World tab.
   * Settings and presets in `data/config/world_gen.json`, a map seed and a map preview; a world is
     generated in about a second and cached in `user://worlds/random/<id>/` in the main map's own

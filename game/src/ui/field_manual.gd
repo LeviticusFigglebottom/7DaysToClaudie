@@ -13,9 +13,9 @@ const TIPS: Array[Array] = [
 	["The Remand Program", "You signed the waiver. You are inside the Cordon to find out what the Bloom did to Hollowmere and whether anyone is left. The canister drop is your only resupply. Your tether keeps time, vitals and the Hum forecast."],
 	["Hollowed", "By day they are slow and half blind. After dark they see without light and they run. Anything you carry that glows tells them where you are. Crouch, keep your lights off, and let the wind carry your scent away from them."],
 	["The Hum", "Every few nights the ground hums and the Hollowed answer from every side. They remember what killed them last time and where your walls held. Build where you can see them coming. Spikes slow them; logs make them work; nothing stops them forever."],
-	["Shelter", "A lean-to and a bough bed mark your place in the world: sleep there to rest, save, and wake there if the worst happens. Fire keeps you warm and dries you — and every Hollowed for half a kilometre can see it."],
+	["Shelter", "A lean-to and a bough bed mark your place in the world: sleep there to rest, save, and wake there if the worst happens. Fire keeps you warm and dries you — but within twenty metres of it you stand in its light, and the Hollowed see you from much farther off."],
 	["Building with logs", "Fell trees with an axe; carry two logs (three once you learn Timberwright). Lay a blueprint from this manual and fill its ghost, or set logs freely: they notch onto each other (R turns the log, V stands it up or pitches it for a roof). A log needs something under it or beside it — what nothing holds up, falls."],
-	["Hammer", "A claw hammer repairs what the Hollowed break (sticks and nails), and reinforces logs once they are whole (cordage and nails)."],
+	["Hammer", "A claw hammer repairs what the Hollowed break (sticks for a log, sticks and nails for a reinforced one, a quarter of its cost for anything else), and reinforces logs once they are whole (cordage and nails)."],
 	["Your record", "Everything you survive teaches you something: Hollowed put down, places searched, logs set, things made, buildings cleared, a Hum lived through. Each level is a point to spend in the Record — on an attribute, or on a perk once its attribute is high enough. The Cordon notices too: the longer you last and the more you learn, the worse the Hollowed that come for you, and the better what you find."],
 ]
 ## Attribute display order (the data is sorted by id).
@@ -23,7 +23,8 @@ const ATTR_ORDER: PackedStringArray = ["sinew", "grit", "keen", "quiet", "wits"]
 ## Perk/attribute effect keys -> [format, scale] for the Record tab.
 const EFFECT_TEXT: Dictionary = {
 	"melee_damage_mult": ["%+.0f%% melee damage", 100.0], "blunt_damage_mult": ["%+.0f%% blunt damage", 100.0],
-	"ranged_damage_mult": ["%+.0f%% firearm damage", 100.0], "chop_damage_mult": ["%+.0f%% chopping", 100.0],
+	"ranged_damage_mult": ["%+.0f%% firearm damage", 100.0], "ranged_spread_mult": ["%+.0f%% firearm sway", 100.0],
+	"chop_damage_mult": ["%+.0f%% chopping", 100.0],
 	"carry_bulk": ["%+.0f pack space", 1.0], "log_carry": ["%+.0f log on the shoulder", 1.0],
 	"max_health": ["%+.0f max health", 1.0], "stamina_regen_mult": ["%+.0f%% stamina recovery", 100.0],
 	"damage_resist": ["%+.0f%% damage resisted", 100.0], "bleed_resist": ["%+.0f%% bleeding resisted", 100.0],
@@ -367,7 +368,10 @@ func _directive_lines(dr: Directives) -> PackedStringArray:
 		return out
 	for d: DirectiveDef in Directives.chapter_defs(dr.chapter):
 		if dr.done.has(d.id):
-			out.append("[color=#3a5a2a]  ✓ %s[/color]" % d.display_name)
+			out.append("[color=#3a5a2a]  ✓ %s[/color]" % dr.label(d))
+			continue
+		if dr.spent.has(d.id):
+			out.append("[color=#8a7a6a]  – %s  (no such building in this world)[/color]" % d.display_name)
 			continue
 		var reward: PackedStringArray = []
 		if d.reward_xp > 0:
@@ -375,7 +379,7 @@ func _directive_lines(dr: Directives) -> PackedStringArray:
 		for k: Variant in d.reward_items.keys():
 			var idef: ItemDef = Content.item(StringName(str(k)))
 			reward.append("%d %s" % [int(d.reward_items[k]), idef.display_name if idef != null else str(k)])
-		out.append("  • %s  %s  [color=#6a5a48](%s)[/color]" % [d.display_name, d.goal_text(dr.count_of(d.id)), ", ".join(reward)])
+		out.append("  • %s  %s  [color=#6a5a48](%s)[/color]" % [dr.label(d), d.goal_text(dr.count_of(d.id)), ", ".join(reward)])
 	return out
 
 

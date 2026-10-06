@@ -127,7 +127,9 @@ func _shots(dir: String, wd: WorldDef = null) -> Array[Dictionary]:
 		var cam_p: Vector2 = line.point_at(s)
 		var look_p: Vector2 = line.point_at(s + 110.0)
 		out.append({"name": "river_valley", "pos": Vector3(cam_p.x, 6.0, cam_p.y), "look": Vector3(look_p.x, 1.0, look_p.y), "hour": 9.0, "weather": "clear"})
-	# A wilderness place, from in front of it.
+	# A wilderness place, from a front corner of its own footprint across its yard: the pad grows
+	# nothing, but the forest comes right up to its edge (the skirt only grades the ground), so a
+	# camera anywhere outside it looked at the place through trunks.
 	for want: String in ["trappers_cabin", "tamsin_logging_camp", "cedar_ridge_lookout", "tamsin_campground", "cordon_gas_garage"]:
 		var found: bool = false
 		for reg2: Dictionary in regions:
@@ -138,8 +140,8 @@ func _shots(dir: String, wd: WorldDef = null) -> Array[Dictionary]:
 					var o2 := Vector2(float(f2["origin"][0]), float(f2["origin"][1]))
 					var r2: float = deg_to_rad(float(f2["rotation"]))
 					var centre: Vector2 = o2 + (fp * 0.5).rotated(r2)
-					var front: Vector2 = o2 + Vector2(fp.x * 0.5, fp.y).rotated(r2) + Vector2(0.0, 1.0).rotated(r2) * 16.0 + Vector2(1.0, 0.0).rotated(r2) * 7.0
-					out.append({"name": "wilderness_%s" % want, "pos": Vector3(front.x, 2.2, front.y), "look": Vector3(centre.x, 2.0, centre.y), "hour": 15.0, "weather": "overcast"})
+					var front: Vector2 = o2 + Vector2(1.5, fp.y - 0.8).rotated(r2)
+					out.append({"name": "wilderness_%s" % want, "pos": Vector3(front.x, 3.0, front.y), "look": Vector3(centre.x, 1.4, centre.y), "hour": 11.5, "weather": "clear"})
 					found = true
 					break
 			if found:

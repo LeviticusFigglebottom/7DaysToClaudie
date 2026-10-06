@@ -26,7 +26,7 @@ Linux. `logs/godot.log` is the log of the last run: send it with any crash repor
 ## Building one yourself (Linux)
 ```bash
 make setup         # pinned Godot, Blender, Python (once)
-make assets        # every generated asset (first run: a few hours on 4 cores; incremental after)
+make assets        # every generated asset (first run: about 2½ hours with 3 jobs; incremental after)
 make export        # build/export/hollowmere-{windows,linux}-<version>-<rev>.zip
 ```
 `make export` installs the pinned export templates (`tools/versions.env`, SHA-512 checked) into
