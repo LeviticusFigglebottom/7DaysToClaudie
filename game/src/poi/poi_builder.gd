@@ -25,6 +25,7 @@ var _batches: Dictionary = {}
 var _rng := RandomNumberGenerator.new()
 var _decay: float = 0.4
 var _route_cells: Dictionary = {}
+var _checked: PoiValidator = null
 var _occupied: Dictionary = {}
 ## Locked door opening id -> +1/-1: the wall side its lock cue faces (PoiValidator.lock_sides).
 var _lock_sides: Dictionary = {}
@@ -47,9 +48,12 @@ var _wings: Array[RoofPlanner.Wing] = []
 const MAX_PROBES: int = 8
 
 
-static func build(p_layout: PoiLayout, instance_id: StringName) -> PoiInstance:
+## `checked`: the layout's PoiValidator, already run (PoiManager runs it on a worker thread while
+## the world loads, ADR-0036: it is nearly all of a building's build time); null runs it here.
+static func build(p_layout: PoiLayout, instance_id: StringName, checked: PoiValidator = null) -> PoiInstance:
 	var b := PoiBuilder.new()
 	b.layout = p_layout
+	b._checked = checked
 	return b._build(instance_id)
 
 
@@ -215,9 +219,11 @@ func _edge_xf(li: int, axis: String, c: Vector2i, span: int = 1) -> Transform3D:
 
 func _route_corridor() -> Dictionary:
 	var out: Dictionary = {}
-	var v := PoiValidator.new()
-	v.layout = layout
-	v._run()
+	var v: PoiValidator = _checked
+	if v == null or v.layout != layout:
+		v = PoiValidator.new()
+		v.layout = layout
+		v._run()
 	_lock_sides = v.lock_sides
 	_barricade_sides = _barricade_faces(v)
 	for path: Array in v.paths:

@@ -26,9 +26,36 @@ var _t: float = 0.0
 var _inside: Dictionary = {}
 
 
+## While set (during setup_world in a GameWorld that is booting), _place_poi queues each building
+## here instead of building it: GameWorld runs them as boot steps, a few per frame (ADR-0036). A
+## 22-building town used to build in one frame of several seconds, and the OS called the game not
+## responding.
+var _queue: Array = []
+var _queue_builds: Array = []
+var _queueing: bool = false
+## Route checks still running on worker threads (joined in _exit_tree).
+var _tasks: Array[int] = []
+
+
 func setup_world(w: Node) -> void:
 	world = w
 	Game.register_command(&"poi.disarm_trap", _cmd_disarm_trap)
+	# Tools and tests that set up a bare world still get every building built here and now.
+	_queueing = w.has_method(&"is_booting") and bool(w.call(&"is_booting"))
+	_place_all(w)
+	_queueing = false
+
+
+## The buildings queued by setup_world as [label, Callable, name] boot steps (empties the queue):
+## every building's plan first, then every build.
+func boot_steps() -> Array:
+	var out: Array = _queue + _queue_builds
+	_queue = []
+	_queue_builds = []
+	return out
+
+
+func _place_all(w: Node) -> void:
 	for rid: String in (w.terrain as TerrainManager).regions:
 		var rt: RegionTerrain = w.terrain.regions[rid]
 		for pl: Dictionary in rt.placements:
@@ -51,11 +78,18 @@ func _place_framework(pl: Dictionary) -> void:
 		return
 	var fxf: Transform3D = _placement_xf(pl)
 	var seed: int = Game.session.world_seed if Game.session != null else 0
-	for res: Dictionary in Lots.resolve(fw, str(pl["id"]), seed):
+	# The world loader may have resolved the lots (and generated their buildings) already.
+	var cache: Dictionary = world.get(&"poi_lots") if world.get(&"poi_lots") is Dictionary else {}
+	var resolved: Array = cache.get(str(pl["id"]), [])
+	if resolved.is_empty():
+		for r: Dictionary in Lots.resolve(fw, str(pl["id"]), seed):
+			resolved.append([r, null if str(r["kind"]) in ["reserved", "empty"] else Lots.def_for(r)])
+	for pair: Array in resolved:
+		var res: Dictionary = pair[0]
 		var l: Dictionary = res["lot"]
 		if str(res["kind"]) in ["reserved", "empty"]:
 			continue
-		var pd: PoiDef = Lots.def_for(res)
+		var pd: PoiDef = pair[1]
 		if pd == null:
 			Log.warn("poi", "lot %s: nothing to place (%s %s)" % [l.get("id"), res["kind"], res.get("def_id", res.get("template", ""))])
 			continue
@@ -137,10 +171,50 @@ func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _p
 	if pd == null:
 		Log.warn("poi", "poi %s not found" % def_id)
 		return null
-	var layout := PoiLayout.compile(dress_for(pd, instance_id, Game.session))
+	if _queueing:
+		# Two steps a building: compile it (and start its route check on a worker thread), then,
+		# once every compile has started its check, build it as soon as its check is done.
+		var job: Dictionary = {"pd": pd, "id": instance_id, "xf": xf}
+		var label: String = "Raising %s…" % pd.display_name if pd.display_name != "" else "Raising the town…"
+		_queue.append(["Surveying the town…", _prepare_poi.bind(job), "poi plan %s" % instance_id])
+		_queue_builds.append([label, _finish_poi.bind(job), "poi %s" % instance_id])
+		return null
+	return _build_poi(pd, instance_id, xf)
+
+
+## Boot step: compiles a queued building's layout (main thread: the per-run picks are pinned in
+## the session) and starts its PoiValidator on a worker thread.
+func _prepare_poi(job: Dictionary) -> void:
+	var layout := PoiLayout.compile(dress_for(job["pd"], job["id"], Game.session))
 	for e: String in layout.errors:
 		Log.warn("poi", e)
-	var inst: PoiInstance = PoiBuilder.build(layout, instance_id)
+	var v := PoiValidator.new()
+	v.layout = layout
+	job["layout"] = layout
+	job["checked"] = v
+	job["task"] = WorkerThreadPool.add_task(v._run, false, "poi check %s" % job["id"])
+	_tasks.append(job["task"])
+
+
+## Boot step: builds a prepared building once its check is done (false = not yet, ask again).
+func _finish_poi(job: Dictionary) -> bool:
+	var task: int = int(job.get("task", -1))
+	if task >= 0:
+		if not WorkerThreadPool.is_task_completed(task):
+			return false
+		WorkerThreadPool.wait_for_task_completion(task)
+		_tasks.erase(task)
+		job.erase("task")
+	_build_poi(job["pd"], job["id"], job["xf"], job.get("layout"), job.get("checked"))
+	return true
+
+
+func _build_poi(pd: PoiDef, instance_id: StringName, xf: Transform3D, layout: PoiLayout = null, checked: PoiValidator = null) -> PoiInstance:
+	if layout == null:
+		layout = PoiLayout.compile(dress_for(pd, instance_id, Game.session))
+		for e: String in layout.errors:
+			Log.warn("poi", e)
+	var inst: PoiInstance = PoiBuilder.build(layout, instance_id, checked)
 	add_child(inst)
 	inst.global_transform = xf
 	instances[instance_id] = inst
@@ -224,6 +298,9 @@ func save_into(_session: GameSession) -> void:
 
 
 func _exit_tree() -> void:
+	for t: int in _tasks:
+		WorkerThreadPool.wait_for_task_completion(t)
+	_tasks.clear()
 	if world != null:
 		Game.unregister_command(&"poi.disarm_trap")
 

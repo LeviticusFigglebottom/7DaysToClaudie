@@ -17,7 +17,15 @@ var error: String = ""
 ## The generated world's id when it differs from the one asked for (regenerated after the
 ## generator changed and its old folder was gone); "" otherwise.
 var world_id: String = ""
+## Set before loading to also resolve every framework's lots here, on the worker thread (ADR-0036):
+## placement id -> [[lot result, PoiDef or null]] (LotPicker.resolve / def_for). Generating Pell's
+## Crossing's houses took a second of the main thread's load.
+var resolve_lots: bool = false
+var world_seed: int = 0
+var lots: Dictionary = {}
 var _mutex := Mutex.new()
+
+const Lots := preload("res://src/poi/lot_picker.gd")
 
 
 func load_world(world_dir: String, detail_spacing: float = 1.0, coarse_spacing: float = 16.0, only_regions: PackedStringArray = []) -> void:
@@ -30,6 +38,7 @@ func load_world(world_dir: String, detail_spacing: float = 1.0, coarse_spacing: 
 	ids.sort()
 	if not world.generator.is_empty():
 		_compose_parallel(ids, detail_spacing, coarse_spacing, only_regions)
+		_resolve_lots()
 		_set_stage("Ready", 1.0)
 		done = true
 		return
@@ -49,8 +58,27 @@ func load_world(world_dir: String, detail_spacing: float = 1.0, coarse_spacing: 
 			_mutex.lock()
 			coarse[rid] = ct
 			_mutex.unlock()
+	_resolve_lots()
 	_set_stage("Ready", 1.0)
 	done = true
+
+
+func _resolve_lots() -> void:
+	if not resolve_lots or ContentDB.instance == null:
+		return
+	_set_stage("Planning the towns", 0.98)
+	for rid: String in detailed:
+		for pl: Dictionary in (detailed[rid] as RegionTerrain).placements:
+			if str(pl.get("kind", "")) != "framework":
+				continue
+			var fw: FrameworkDef = ContentDB.instance.call(&"get_def", &"framework", StringName(str(pl["def"]))) as FrameworkDef
+			if fw == null:
+				continue
+			var out: Array = []
+			for res: Dictionary in Lots.resolve(fw, str(pl["id"]), world_seed):
+				var placed: bool = not str(res["kind"]) in ["reserved", "empty"]
+				out.append([res, Lots.def_for(res) if placed else null])
+			lots[str(pl["id"])] = out
 
 
 ## A random world: the saved world `world_id` when it is still on disk (identical to what the run
