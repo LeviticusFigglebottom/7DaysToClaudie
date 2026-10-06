@@ -20,6 +20,9 @@ extends RefCounted
 
 ## New ADR-0031 scripts by path, so this compiles before the editor registers their class names.
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
+## Polygon tests through RwgStreets.point_in (Geometry2D.is_point_in_polygon counted a test ray
+## through a vertex twice, TD-135; generator VERSION 2).
+const Streets := preload("res://src/worldgen/rwg/rwg_streets.gd")
 
 const EPS: float = 0.02
 const NB8: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
@@ -155,7 +158,7 @@ func stats_in(poly: PackedVector2Array) -> Dictionary:
 	while z <= bb.end.y + 0.01:
 		var x: float = bb.position.x
 		while x <= bb.end.x + 0.01:
-			if Geometry2D.is_point_in_polygon(Vector2(x, z), poly):
+			if Streets.point_in(Vector2(x, z), poly):
 				var v: float = height(x, z)
 				lo = minf(lo, v)
 				hi = maxf(hi, v)
@@ -190,7 +193,7 @@ func flatten(poly: PackedVector2Array, target: float, falloff: float) -> void:
 			if lake_of[c] >= 0:
 				continue
 			var p := Vector2(x0 + i * step, z0 + j * step)
-			var d: float = 0.0 if Geometry2D.is_point_in_polygon(p, poly) else _poly_distance(poly, p)
+			var d: float = 0.0 if Streets.point_in(p, poly) else _poly_distance(poly, p)
 			if d >= falloff:
 				continue
 			var w: float = 1.0 - smoothstep(0.0, falloff, d)
@@ -322,7 +325,7 @@ func _dig_basin(li: int, poly: PackedVector2Array, c: Vector2, level: float, dep
 		for i: int in range(i0, i1 + 1):
 			var k: int = j * n + i
 			var p := Vector2(x0 + i * step, z0 + j * step)
-			if Geometry2D.is_point_in_polygon(p, poly):
+			if Streets.point_in(p, poly):
 				var d: float = _poly_distance(poly, p)
 				var f: float = clampf(d / maxf(20.0, reach * 0.6), 0.0, 1.0)
 				h[k] = minf(h[k], level - 1.0 - depth * f * (2.0 - f))
@@ -690,7 +693,7 @@ func water_distance(p: Vector2) -> float:
 		if (l["center"] as Vector2).distance_to(p) > float(l["radius"]) * 1.6 + 400.0:
 			continue
 		var d: float = _poly_distance(poly, p)
-		best = minf(best, -d if Geometry2D.is_point_in_polygon(p, poly) else d)
+		best = minf(best, -d if Streets.point_in(p, poly) else d)
 	return best
 
 

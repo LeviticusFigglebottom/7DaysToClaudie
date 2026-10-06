@@ -27,6 +27,7 @@ import bmesh
 from mathutils import Matrix, Vector
 
 from lib import common
+from lib import props_ext_kit as EK
 from lib import props_int_core as core
 from lib import props_int_furn as F
 from lib import props_int_mesh as G
@@ -2357,7 +2358,10 @@ def civic_grange_banner(p: Prop) -> None:
                         if grid[ii][jj] is vi:
                             loop[uvl].uv = (u0 + (ii / nx) * (u1 - u0), v0 + (jj / nz) * (v1 - v0))
     bmesh.ops.solidify(bm, geom=list(bm.faces), thickness=0.004)
+    # solidify emits the far side's elements in a run-dependent order
+    EK.canon_bm(bm)
     obj = common.mesh_from_bmesh(p._name("banner"), bm)
+    EK.canon_loops(obj.data)
     p.add(obj, C.PRINT, uv="keep", wear=0.3, edge_deg=50)
     p.cyl(0.015, 1.72, (0, -0.03, 0.5), C.OAK_DARK, axis="X", segs=8)
     for sx in (-1, 1):

@@ -2047,45 +2047,8 @@ BUILDERS = {
 }
 
 
-def _open_box(self: Prop, size, center, mat, wall=0.018, open_face="-Y", bevel=0.002, back=None, **kw) -> core.Part:
-    """Deterministic stand-in for Prop.hollow (G.hollow_box's inset + extrude come out in a run-dependent
-    face order, which breaks byte-identical rebuilds): five wall slabs in one mesh, open on open_face."""
-    sx, sy, sz = size
-    ax = "XYZ".index(open_face[1])
-    sign = 1.0 if open_face[0] == "+" else -1.0
-    bk = back if back is not None else wall
-    bm = bmesh.new()
-    slabs = []
-    for a in range(3):
-        for sd in (-1.0, 1.0):
-            if a == ax and sd == sign:
-                continue
-            t = bk if a == ax else wall
-            dims = [sx, sy, sz]
-            dims[a] = t
-            c = [0.0, 0.0, 0.0]
-            c[a] = sd * ([sx, sy, sz][a] / 2 - t / 2)
-            slabs.append((dims, c))
-    for dims, c in slabs:
-        geom = bmesh.ops.create_cube(bm, size=1.0)
-        vs = geom["verts"]
-        bmesh.ops.scale(bm, vec=Vector(dims), verts=vs)
-        bmesh.ops.translate(bm, vec=Vector(c) + Vector(center), verts=vs)
-    obj = G._obj(self._name("openbox"), bm)
-    return self.add(obj, mat, **kw)
-
-
 def build(params: dict, outputs: list[str]) -> None:
     fn = BUILDERS[params.get("builder", params["prop"])]
-    orig_hollow = Prop.hollow
-    Prop.hollow = _open_box
-    try:
-        _build(params, outputs, fn)
-    finally:
-        Prop.hollow = orig_hollow
-
-
-def _build(params: dict, outputs: list[str], fn) -> None:
     if not params.get("no_collision"):
         core.build_variants(params, outputs, fn)
         return

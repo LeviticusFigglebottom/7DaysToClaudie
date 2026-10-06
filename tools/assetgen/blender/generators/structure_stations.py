@@ -1,5 +1,7 @@
 """Crafting / storage stations: workbench, storage crate (lid = separate node "lid"), forge with hand
 bellows, chemistry bench. Origin bottom centre on the authored ground plane, front = -Y.
+The workbench (ADR-0035) is all bushcraft: split logs, log legs and rope, built with the
+building-log toolkit in structure_logs.
 params: kind, name, seed."""
 from __future__ import annotations
 
@@ -7,6 +9,7 @@ import math
 
 from mathutils import Matrix, Vector, noise
 
+from generators import structure_logs as L
 from lib import common, item_kit as K, item_props as P
 
 
@@ -27,45 +30,100 @@ def _nail_head(mb, at, normal=(0, 0, 1), r=0.0045):
     mb.pop()
 
 
+def _hatchet(mb, seed: int) -> None:
+    """A small hatchet in the canonical frame: handle along +X from the butt at the origin, head at
+    the far end, bit toward -Z (so it can be buried in a block)."""
+    r = common.rng(seed)
+    L_h = 0.36
+    K.tube(mb, [Vector((0.0, 0, 0)), Vector((0.12, 0, 0.004)), Vector((0.26, 0, 0.0)), Vector((L_h, 0, -0.002))],
+           [0.016, 0.014, 0.013, 0.014], sides=8, mat="item_wood_handle", cap_mat="item_wood_end", cap_uv="disc", up=Vector((0, 0, 1)))
+    # forged head: eye round the handle, cheeks tapering to a flared bit pointing down
+    hx = L_h - 0.03
+    K.box(mb, (0.05, 0.034, 0.05), (hx, 0.0, 0.012), mat="item_steel_dark", bevel=0.006)
+    blade = [(hx - 0.022, -0.012), (hx + 0.022, -0.012), (hx + 0.034, -0.085), (hx - 0.036, -0.088)]
+    mb.push(Matrix.Translation((0, 0.009, 0)) @ Matrix.Rotation(math.pi / 2, 4, "X"))
+    K.extrude(mb, blade, 0.018, mat="item_steel_dark", uv_scale=1.0, chamfer=0.003)
+    mb.pop()
+    K.box(mb, (0.012, 0.016, 0.03), (hx - 0.03, 0.0, 0.012), mat="item_steel_dark", bevel=0.003)
+    del r
+
+
 def workbench(p):
+    """Rustic bench, no sawn planks: three split logs (flat side up) for the top, laid across two
+    cross bearers on four log legs; X braces and a stretcher of poles, rope lashings at every joint,
+    a stump vice (a split block on the top) holding a hatchet, and a coil of cordage."""
     seed = int(p["seed"])
     r = common.rng(seed)
     mb = K.MB()
-    top_z = 0.85
-    for k, y in enumerate((-0.285, -0.095, 0.095, 0.285)):
-        P.plank(mb, 1.78 + r.uniform(-0.02, 0.02), 0.186, 0.045, center=(r.uniform(-0.01, 0.01), y, top_z - 0.0225), seed=seed + k,
-                warp=0.3, n=6)
-        for x in (-0.76, 0.76):
-            for dy in (-0.05, 0.05):
-                _nail_head(mb, (x + r.uniform(-0.01, 0.01), y + dy, top_z + 0.0003))
-    for k, (x, y) in enumerate(((-0.76, -0.26), (0.76, -0.26), (-0.76, 0.26), (0.76, 0.26))):
-        _pole(mb, (x * 1.02, y * 1.04, -0.04), (x, y, top_z - 0.045), 0.056, 0.052, seed + 10 + k)
-    for k, y in enumerate((-0.26, 0.26)):
-        _pole(mb, (-0.88, y, top_z - 0.085), (0.88, y, top_z - 0.085), 0.042, 0.04, seed + 20 + k, n=6)
-        _pole(mb, (-0.8, y, 0.24), (0.8, y, 0.24), 0.028, 0.026, seed + 25 + k, n=6, bark="item_bark_twig", sides=8)
-        for x in (-0.76, 0.76):
-            K.lashing(mb, (x - 0.05, y, 0.24), (x + 0.05, y, 0.24), 0.05, cord=0.0035, turns=4, per_turn=9, sides=4, mat="item_cordage",
-                      seed=seed + k, up=Vector((0, 0, 1)))
-    for k, x in enumerate((-0.76, 0.76)):
-        _pole(mb, (x, -0.33, top_z - 0.125), (x, 0.33, top_z - 0.125), 0.036, 0.034, seed + 30 + k, n=5, bark="item_bark_twig")
-    # lower shelf planks on the stretchers
-    for k, x in enumerate((-0.42, 0.0, 0.42)):
-        P.plank(mb, 0.64, 0.17, 0.024, center=(x + r.uniform(-0.03, 0.03), 0.0, 0.24 + 0.028 + 0.012), axis="Y", seed=seed + 40 + k, n=4)
-    # leg vice: chop, wooden screw with tommy bar, parallel guide
-    vx = -0.62
-    K.box(mb, (0.13, 0.05, 0.62), (vx, -0.405, top_z - 0.31), mat="item_wood_plank", bevel=0.006)
-    K.tube(mb, [Vector((vx, -0.5, 0.74)), Vector((vx, -0.3, 0.74))], 0.021, sides=10, mat="item_wood_raw", cap_mat="item_wood_end",
-           cap_uv="disc")
-    K.tube(mb, [Vector((vx - 0.16, -0.49, 0.74)), Vector((vx + 0.16, -0.49, 0.74))], 0.011, sides=8, mat="item_wood_handle",
-           cap_mat="item_wood_end", cap_uv="disc")
-    K.box(mb, (0.04, 0.2, 0.035), (vx, -0.32, 0.29), mat="item_wood_plank", bevel=0.004)
-    # loose nails on the top
-    for k in range(6):
-        a = r.uniform(0, math.tau)
-        P.nail(mb, (0.35 + r.uniform(-0.12, 0.12), -0.15 + r.uniform(-0.1, 0.1), top_z + 0.0034), (math.cos(a), math.sin(a), 0.0), 0.075,
-               sides=5)
+    top_z = 0.8
+    tr = 0.133
+    depth = 0.85
+    # split-log top: half logs along X, flat faces up at top_z
+    for k, y in enumerate((-0.255, 0.0, 0.255)):
+        mb.push(Matrix.Translation((r.uniform(-0.03, 0.03), y + r.uniform(-0.006, 0.006), top_z)) @ Matrix.Rotation(r.uniform(-0.012, 0.012), 4, "Z"))
+        L.half_log(mb, 1.74 + r.uniform(-0.04, 0.04), tr, seed + k, sides=10, steps=5, depth=depth)
+        mb.pop()
+        for x in (-0.66, 0.66):
+            c = Vector((x + r.uniform(-0.01, 0.01), y + r.uniform(-0.02, 0.02), top_z + 0.003))
+            K.tube(mb, [c - Vector((0, 0, 0.01)), c], 0.015, sides=7, mat="struct_log_end", cap_mat="struct_log_end", cap_uv="disc",
+                   caps=(False, True), smooth=False)
+    bz = top_z - tr * depth - 0.045
+    for k, x in enumerate((-0.66, 0.66)):
+        L.pole(mb, (x, -0.36, bz), (x + r.uniform(-0.01, 0.01), 0.36, bz), 0.05, 0.047, seed + 10 + k, n=5, sides=10)
+    # log legs, splayed a little, notched under the bearers
+    legs = []
+    for k, (x, y) in enumerate(((-0.66, -0.3), (0.66, -0.3), (-0.66, 0.3), (0.66, 0.3))):
+        foot = Vector((x * 1.08, y * 1.0, -0.03))
+        head = Vector((x, y, bz - 0.04))
+        L.pole(mb, foot, head + Vector((0, 0, 0.08)), 0.058, 0.052, seed + 20 + k, n=4, sides=10)
+        legs.append((foot, head))
+        L.cross_lash(mb, (x, y, bz), (0, 0, 1), (0, 1, 0), 0.065, seed + 30 + k, cord=0.0055)
+    # X braces on each end, a stretcher pole along the middle
+    for k, x in enumerate((-0.66, 0.66)):
+        lo, hi = 0.16, bz - 0.12
+        for j, sgn in enumerate((1, -1)):
+            a = Vector((x * 1.05 + 0.055 * (1 if x > 0 else -1), -0.33 * sgn, lo))
+            b = Vector((x + 0.055 * (1 if x > 0 else -1), 0.3 * sgn, hi))
+            L.pole(mb, a, b, 0.024, 0.021, seed + 40 + k * 2 + j, n=4, sides=7)
+        L.bind(mb, (x * 1.03 + 0.06 * (1 if x > 0 else -1), 0.0, (lo + hi) / 2), (0, 0, 1), 0.035, seed + 44 + k, turns=3, cord=0.004,
+               width=0.04, mat="item_cordage")
+    L.pole(mb, (-0.75, 0.0, 0.3), (0.75, 0.0, 0.31), 0.032, 0.03, seed + 50, n=6, sides=8)
+    for k, x in enumerate((-0.7, 0.7)):
+        L.bind(mb, (x, 0.0, 0.3), (1, 0, 0), 0.034, seed + 52 + k, turns=3, cord=0.004, width=0.05, mat="item_cordage")
+    # stump vice: a short round block, split across its top, with the hatchet's bit driven into it
+    vx, vy = -0.5, -0.05
+    bh = 0.09
+    mb.push(Matrix.Translation((vx, vy, top_z)))
+    L.pole(mb, (0, 0, 0.0), (0, 0, bh), 0.115, 0.11, seed + 60, n=2, sides=12, bend=0.0, caps=(False, False))
+    K.lathe(mb, [(0.11, bh), (0.0, bh)], segments=12, mat="struct_log_end", cap_bottom=False, cap_top=False, cap_uv="disc")
+    K.box(mb, (0.006, 0.2, 0.06), (0.0, 0.0, bh - 0.025), mat="item_wood_charred", bevel=0.0)     # the split
+    mb.pop()
+    # butt resting on the top, head end raised onto the block with the bit buried in it
+    butt_z = top_z + 0.016
+    ang = math.atan2(top_z + bh + 0.02 - butt_z, 0.33)
+    mb.push(Matrix.Translation((vx - 0.33, vy, butt_z)) @ Matrix.Rotation(-ang, 4, "Y"))
+    _hatchet(mb, seed + 61)
+    mb.pop()
+    # coil of cordage
+    cx, cy = 0.42, 0.06
+    coil = []
+    for i in range(5 * 18 + 1):
+        t = i / 18
+        a = 2 * math.pi * t
+        rad = 0.085 + 0.004 * math.sin(a * 3.0)
+        coil.append(Vector((cx + math.cos(a) * rad, cy + math.sin(a) * rad, top_z + 0.009 + 0.0075 * (t % 5) * 0.9 + 0.002 * math.sin(a * 2))))
+    K.tube(mb, coil, 0.0055, sides=5, mat="item_cordage", u_tile=1.0, v_scale=1.0 / (2 * math.pi * 0.0055) / 3)
+    for k in range(4):
+        a = 2 * math.pi * k / 4 + 0.4
+        q = Vector((cx + math.cos(a) * 0.085, cy + math.sin(a) * 0.085, top_z + 0.025))
+        K.lashing(mb, q - Vector((0, 0, 0.012)), q + Vector((0, 0, 0.012)), 0.014, cord=0.003, turns=2, per_turn=6, sides=3,
+                  mat="item_cordage", seed=seed + 70 + k, up=Vector((math.cos(a), math.sin(a), 0)))
+    # loose end trailing off the coil
+    end = coil[-1]
+    K.tube(mb, [end, end + Vector((0.06, -0.04, -0.004)), end + Vector((0.14, -0.05, -0.02)), Vector((end.x + 0.2, end.y - 0.03, top_z + 0.006))],
+           0.0055, sides=5, mat="item_cordage")
     obj = mb.build("workbench", sharp_deg=45)
-    col = K.collider_box("workbench", (-0.9, -0.43, 0.0), (0.9, 0.35, top_z))
+    col = K.collider_box("workbench", (-0.9, -0.43, 0.0), (0.9, 0.42, top_z))
     return [obj], {"colliders": [col]}
 
 

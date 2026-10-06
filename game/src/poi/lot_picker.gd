@@ -12,6 +12,12 @@ extends RefCounted
 ## Pure function of the framework, the placement id and the world seed: PoiManager (which places
 ## the buildings) and TerrainHoles (which cuts their cellars) resolve the same lots the same way.
 ## Content comes from ContentDB.instance.
+##
+## An organic town of a random world (ADR-0040) has frame lots (`frame: [cx, cz, w, d, yaw]`, world
+## XZ): `lot_size` reads the frame and `lot_local_xf` stands the building in it. Its authored
+## buildings are capped world-wide: the generator runs `assign_authored` over every town of the
+## world and writes each town's share into its framework (`authored`), and an organic town's lots
+## choose authored buildings from that list only (v1 towns, rect lots, are unchanged).
 
 ## New ADR-0030 scripts by path, so this compiles before the editor registers their class names.
 const Generator := preload("res://src/poi/building_generator.gd")
@@ -19,16 +25,39 @@ const TemplateDef := preload("res://src/core/content/defs/building_template_def.
 
 const POOLS: PackedStringArray = ["any", "authored", "generated"]
 ## Lot keys (FrameworkDef checks them).
-const LOT_KEYS: PackedStringArray = ["id", "rect", "zoning", "facing", "pick", "tags", "tier", "pool", "templates", "reserved"]
+const LOT_KEYS: PackedStringArray = ["id", "rect", "zoning", "facing", "pick", "tags", "tier", "pool", "templates", "reserved",
+	"frame", "poly", "street", "ring", "y"]
 ## An authored building weighs this much against a template of weight 1.
 const AUTHORED_WEIGHT: float = 1.0
 
 
-## The lot's size as the building sees it: x along the street, y depth (its front faces `facing`).
+## The lot's size as the building sees it: x along the street, y depth (its front faces `facing`;
+## a frame's front is its local +Z, so its frontage and depth are already the building's x and y).
 static func lot_size(lot: Dictionary) -> Vector2i:
+	if lot.has("frame"):
+		var f: Array = lot["frame"]
+		return Vector2i(int(f[2]), int(f[3]))
 	var r: Array = lot.get("rect", [0, 0, 0, 0])
 	var facing: String = str(lot.get("facing", "S"))
 	return Vector2i(int(r[2]), int(r[3])) if facing in ["S", "N"] else Vector2i(int(r[3]), int(r[2]))
+
+
+## A frame lot's building transform in the framework's frame (an organic town's is the world's):
+## T(cx, y, cz) · Basis(UP, yaw) · T(-footprint / 2), the footprint centred in the frame, its front
+## (+Z) towards the street. The same convention as PoiManager.lot_xf (facing S is yaw 0, E 90).
+static func lot_local_xf(lot: Dictionary, footprint: Vector2i) -> Transform3D:
+	var f: Array = lot["frame"]
+	var b := Basis(Vector3.UP, deg_to_rad(float(f[4])))
+	var c := Vector3(float(f[0]), float(lot.get("y", 0.0)), float(f[1]))
+	return Transform3D(b, c - b * Vector3(footprint.x * 0.5, 0.0, footprint.y * 0.5))
+
+
+## A lot's centre in its framework's plane (x, z): a frame's centre, or a rect's middle.
+static func lot_center(lot: Dictionary) -> Vector2:
+	if lot.has("frame"):
+		return Vector2(float(lot["frame"][0]), float(lot["frame"][1]))
+	var r: Array = lot.get("rect", [0, 0, 0, 0])
+	return Vector2(float(r[0]) + float(r[2]) * 0.5, float(r[1]) + float(r[3]) * 0.5)
 
 
 ## One entry per lot, in order: {"lot": Dictionary, "kind": "authored" | "generated" | "reserved" |
@@ -72,10 +101,14 @@ static func _choose(fw: FrameworkDef, l: Dictionary, res: Dictionary, used: Dict
 	var pool: String = str(l.get("pool", "generated" if l.has("templates") else "any"))
 	var allowed: Array = l.get("templates", [])
 	var cands: Array = []
+	# An organic town holds only the authored buildings the world gave it (assign_authored).
+	var capped: bool = fw.layout == "organic"
 	if pool != "generated":
 		for pd: Variant in db.call(&"all", &"poi"):
 			var p: PoiDef = pd
 			if used.has(String(p.id)) or p.tier < tr.x or p.tier > tr.y or not _zoned(p.zoning, zon):
+				continue
+			if capped and not fw.authored.has(String(p.id)):
 				continue
 			# The footprint fits the lot's own frame (x along the street, y depth).
 			if p.footprint.x > size.x or p.footprint.y > size.y:
@@ -112,6 +145,61 @@ static func _choose(fw: FrameworkDef, l: Dictionary, res: Dictionary, used: Dict
 		used[String(pick[2])] = true
 	else:
 		res["template"] = pick[2]
+
+
+## World-wide caps on authored buildings (ADR-0040, random worlds v2; plan §3.11): which towns of a
+## world may hold each authored building, at most `cap` towns per building, so 32 towns do not
+## each get a Merrow House. `towns`: [{id, tier_range: [lo, hi], lots: [{frame | rect, zoning, ...}]}]
+## (framework dictionaries). For each authored POI (by id) the towns with a lot it fits (zoning,
+## tier, size) are listed in town-id order and `cap` of them drawn from a stream of `seed` and the
+## POI's id. Returns {town id: PackedStringArray of POI ids, sorted}. Pure (content from ContentDB).
+static func assign_authored(towns: Array, seed: int, cap: int) -> Dictionary:
+	var out: Dictionary = {}
+	var ids: PackedStringArray = []
+	var by_id: Dictionary = {}
+	for tv: Variant in towns:
+		var t: Dictionary = tv
+		ids.append(str(t.get("id", "")))
+		by_id[str(t.get("id", ""))] = t
+		out[str(t.get("id", ""))] = []
+	ids.sort()
+	var db: Node = ContentDB.instance
+	if db == null or ids.is_empty() or cap <= 0:
+		for tid0: String in ids:
+			out[tid0] = PackedStringArray()
+		return out
+	# ContentDB.all is sorted by id.
+	for pv: Variant in db.call(&"all", &"poi"):
+		var p: PoiDef = pv
+		var fits: PackedStringArray = []
+		for tid: String in ids:
+			var t: Dictionary = by_id[tid]
+			var tr: Array = t.get("tier_range", [1, 3])
+			if p.tier < int(tr[0]) or p.tier > int(tr[1]):
+				continue
+			for lv: Variant in t.get("lots", []):
+				var l: Dictionary = lv
+				var size: Vector2i = lot_size(l)
+				if _zoned(p.zoning, PackedStringArray(l.get("zoning", []))) and p.footprint.x <= size.x and p.footprint.y <= size.y:
+					fits.append(tid)
+					break
+		if fits.is_empty():
+			continue
+		var rng := RandomNumberGenerator.new()
+		rng.seed = Ids.derive_seed(seed, "authored:%s" % p.id)
+		# A seeded partial Fisher-Yates over the towns in id order: `cap` of them, each equally likely.
+		var order: PackedStringArray = fits.duplicate()
+		for k: int in mini(cap, order.size()):
+			var j: int = k + rng.randi_range(0, order.size() - 1 - k)
+			var tmp: String = order[k]
+			order[k] = order[j]
+			order[j] = tmp
+			(out[order[k]] as Array).append(String(p.id))
+	for tid2: String in ids:
+		var lst := PackedStringArray(out[tid2])
+		lst.sort()
+		out[tid2] = lst
+	return out
 
 
 static func _zoned(have: PackedStringArray, want: PackedStringArray) -> bool:

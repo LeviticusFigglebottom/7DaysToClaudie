@@ -18,6 +18,12 @@ extends RefCounted
 ## over open ground beside them.
 
 const NO_WATER: float = -1000.0
+## A box standing on the ground that is narrower than SHELTER_MIN_M and lower than SHELTER_LOW_M
+## (a barrel, a road barricade, a mailbox) keeps no rain off the ground round it: the rays look
+## past it. Each one stood in a dry disc a map cell wide on a wet road. A car (1.8 m wide) still
+## shelters what is under it.
+const SHELTER_MIN_M: float = 1.2
+const SHELTER_LOW_M: float = 1.6
 
 var cells: int = 128
 var cell_m: float = 1.5
@@ -234,9 +240,34 @@ func _cast_rays(space: PhysicsDirectSpaceState3D) -> void:
 		_query.from = Vector3(x, maxf(_ray_top, g) + 45.0, z)
 		_query.to = Vector3(x, g - 0.5, z)
 		var hit: Dictionary = space.intersect_ray(_query)
+		var looks: int = 0
+		while not hit.is_empty() and looks < 3 and _small_and_low(hit, g):
+			# Rays starting inside a shape miss it (hit_from_inside is off): look on below it.
+			_query.from = (hit["position"] as Vector3) - Vector3(0.0, 0.02, 0.0)
+			hit = space.intersect_ray(_query)
+			looks += 1
 		if not hit.is_empty():
 			_catch[k] = maxf(float((hit["position"] as Vector3).y), _wat[k])
 			_rgba[k * 4] = _catch[k] - _next_base
+
+
+## True if a ray hit a box standing on the ground (within 0.25 m) that is narrower than
+## SHELTER_MIN_M and whose top is under SHELTER_LOW_M above the ground `g`: something too small to
+## keep rain off the ground round it. Roofs, decks (off the ground), walls (tall) and cars (wide)
+## are not.
+static func _small_and_low(hit: Dictionary, g: float) -> bool:
+	if float((hit["position"] as Vector3).y) - g > SHELTER_LOW_M:
+		return false
+	var co: CollisionObject3D = hit.get("collider") as CollisionObject3D
+	if co == null:
+		return false
+	var cs: CollisionShape3D = co.shape_owner_get_owner(co.shape_find_owner(int(hit.get("shape", 0)))) as CollisionShape3D
+	var box: BoxShape3D = cs.shape as BoxShape3D if cs != null else null
+	if box == null:
+		return false
+	var b: Basis = cs.global_transform.basis
+	var bottom: float = cs.global_position.y - box.size.y * 0.5 * b.y.length()
+	return bottom - g < 0.25 and minf(box.size.x * b.x.length(), box.size.z * b.z.length()) < SHELTER_MIN_M
 
 
 func _publish() -> void:

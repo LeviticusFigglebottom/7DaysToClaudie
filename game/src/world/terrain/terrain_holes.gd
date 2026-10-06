@@ -85,16 +85,23 @@ static func placed_pois(placements: Array) -> Array[Dictionary]:
 				var pd: PoiDef = db.call(&"get_def", &"poi", StringName(str(p.get("def", "")))) as PoiDef
 				if pd != null:
 					out.append({"def": pd, "id": StringName(str(p.get("id", pd.id))), "xf": xf})
-			"framework":
+			"framework", "town":
 				var fw: FrameworkDef = db.call(&"get_def", &"framework", StringName(str(p.get("def", "")))) as FrameworkDef
 				if fw == null:
 					continue
+				# An organic town (ADR-0040) comes once per region it touches: its lots centred in `rect`.
+				var only := Rect2()
+				if p.has("rect"):
+					only = Rect2(float(p["rect"][0]), float(p["rect"][1]), float(p["rect"][2]), float(p["rect"][3]))
 				# Lots without a pick hold what LotPicker chooses (ADR-0030), resolved as PoiManager does;
 				# generated buildings have no cellars, so only authored ones can cut a hole.
 				for res: Dictionary in Lots.resolve(fw, str(p.get("id", fw.id)), Lots.session_seed()):
 					var l: Dictionary = res["lot"]
 					var lpd: PoiDef = db.call(&"get_def", &"poi", res["def_id"]) as PoiDef if str(res["kind"]) == "authored" else null
-					if lpd == null:
+					if lpd == null or (only.has_area() and not only.has_point(Lots.lot_center(l))):
+						continue
+					if l.has("frame"):
+						out.append({"def": lpd, "id": StringName("%s/%s" % [p.get("id", fw.id), l["id"]]), "xf": xf * Lots.lot_local_xf(l, lpd.footprint)})
 						continue
 					var rect: Array = l["rect"]
 					var center := Vector3(float(rect[0]) + float(rect[2]) * 0.5, 0.0, float(rect[1]) + float(rect[3]) * 0.5)

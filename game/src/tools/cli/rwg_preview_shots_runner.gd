@@ -1,6 +1,9 @@
 extends Node
 ## The work of rwg_preview_shots.gd: a slice game on a generated world, then one PNG per shot. Shot
 ## positions come from the world's files (towns, rivers, places, the drop site), so any seed works.
+## An organic town (RWG v2, ADR-0040) gives three: its main street from 70 m out looking at the
+## centre (town_street), its steepest side street looking up it (town_slope), and the town from
+## above (town_aerial); a v1 town (a region framework) its street and aerial as before.
 
 const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
 const MapImage := preload("res://src/worldgen/rwg/rwg_map.gd")
@@ -93,7 +96,10 @@ func _shots(dir: String, wd: WorldDef = null) -> Array[Dictionary]:
 		for r: Variant in world.get("regions", []):
 			regions.append(MapImage._read(dir.path_join("regions").path_join(str(r["id"])).path_join("region.json")))
 	var gen: Dictionary = world.get("generator", {})
-	# The biggest town: along its main street, and from above.
+	# The biggest organic town (world-level): its main street, its steepest side street, from above.
+	if wd != null and not wd.towns.is_empty():
+		out.append_array(_organic_town_shots(wd))
+	# The biggest v1 town: along its main street, and from above.
 	var best_fw: Dictionary = {}
 	var best_f: Dictionary = {}
 	for reg: Dictionary in regions:
@@ -160,6 +166,63 @@ func _shots(dir: String, wd: WorldDef = null) -> Array[Dictionary]:
 				out.append({"name": "drop_site", "pos": Vector3(at.x, 1.7, at.y), "look": Vector3(lk.x, 1.0, lk.y), "hour": 7.8, "weather": "clear"})
 				var up: Vector2 = dpos - fwd * 260.0
 				out.append({"name": "land_aerial", "pos": Vector3(up.x, 150.0, up.y), "look": Vector3(lk.x + fwd.x * 400.0, 0.0, lk.y + fwd.y * 400.0), "hour": 17.0, "weather": "clear"})
+	return out
+
+
+## Shots of the organic town with the most lots: down its main street (the world road through its
+## centre) from 70 m out, up its steepest side street from its foot, and from above.
+func _organic_town_shots(wd: WorldDef) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var best: FrameworkDef = null
+	var best_c := Vector2.ZERO
+	for tw: Dictionary in wd.towns:
+		var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(tw["framework"]))) as FrameworkDef
+		if fw != null and (best == null or fw.lots.size() > best.lots.size()):
+			best = fw
+			best_c = tw["center"]
+	if best == null:
+		return out
+	# The main street: the world road passing nearest the centre.
+	var main: Polyline2 = null
+	var md: float = INF
+	for rd: Dictionary in wd.roads:
+		var q: Vector3 = (rd["line"] as Polyline2).closest(best_c)
+		if q.x < md:
+			md = q.x
+			main = rd["line"]
+	if main != null:
+		var sc: float = main.closest(best_c).y
+		var s0: float = clampf(sc - 70.0, 0.0, main.total_length)
+		var a: Vector2 = main.point_at(s0)
+		var t: Vector2 = main.tangent_at(s0)
+		var cam_p: Vector2 = a + Vector2(-t.y, t.x) * 2.5
+		var look: Vector2 = main.point_at(minf(sc + 30.0, main.total_length))
+		out.append({"name": "town_street", "pos": Vector3(cam_p.x, 1.7, cam_p.y), "look": Vector3(look.x, 2.5, look.y), "hour": 10.5, "weather": "clear"})
+	# The steepest side street (rise over its first 120 m of the reference ground the composer grades it from).
+	var steep: Dictionary = {}
+	var rise: float = -1.0
+	for rv: Variant in best.roads:
+		var rd2: Dictionary = rv
+		if not str(rd2.get("class", "")) in ["street", "lane"]:
+			continue
+		var line: Polyline2 = Polyline2.from_array(rd2["points"])
+		if line.total_length < 60.0:
+			continue
+		var e: float = minf(120.0, line.total_length)
+		var dh: float = absf(wd.macro_height(line.point_at(e).x, line.point_at(e).y) - wd.macro_height(line.points[0].x, line.points[0].y))
+		if dh > rise:
+			rise = dh
+			steep = {"line": line, "e": e, "up": wd.macro_height(line.point_at(e).x, line.point_at(e).y) > wd.macro_height(line.points[0].x, line.points[0].y)}
+	if not steep.is_empty():
+		var sl: Polyline2 = steep["line"]
+		var e2: float = float(steep["e"])
+		var from_s: float = 4.0 if bool(steep["up"]) else e2 - 4.0
+		var to_s: float = e2 if bool(steep["up"]) else 0.0
+		var p0: Vector2 = sl.point_at(from_s)
+		var p1: Vector2 = sl.point_at(to_s)
+		out.append({"name": "town_slope", "pos": Vector3(p0.x, 1.7, p0.y), "look": Vector3(p1.x, 3.0, p1.y), "hour": 15.0, "weather": "clear"})
+	var back: Vector2 = best_c + Vector2(-0.6, 1.0).normalized() * (best.radius * 0.55 + 90.0)
+	out.append({"name": "town_aerial", "pos": Vector3(back.x, best.radius * 0.35 + 60.0, back.y), "look": Vector3(best_c.x, 0.0, best_c.y), "hour": 16.0, "weather": "clear"})
 	return out
 
 
