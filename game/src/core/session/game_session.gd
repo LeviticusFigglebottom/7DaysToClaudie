@@ -12,6 +12,12 @@ var world_seed: int = 0
 ## map. The world is a pure function of them, so a loaded run regenerates (or reads from cache)
 ## exactly the world it was played in.
 var world_gen: Dictionary = {}
+## The RwgGenerator VERSION that made a random world (0 on the main map, TD-140): its world id
+## hashes it, so a run whose world folder is gone knows whether the current generator remakes it.
+var generator_version: int = 0
+## Where a random world's files come from: "shared" (user://worlds/random/<id>/, the generator's
+## cache) or "slot" (restored from the save's own world bundle, save v7).
+var world_files: StringName = &"shared"
 ## Game mode preset id (data/config/game_modes.json): "survival", "slice", ...
 var game_mode: StringName = &"survival"
 ## World settings (difficulty preset + customised options), saved with the session.
@@ -57,7 +63,9 @@ func _set_world_gen(gen: Variant) -> void:
 	var settings: RefCounted = (load("res://src/worldgen/rwg/world_gen_settings.gd") as GDScript).call(&"from_dict", gen)
 	world_gen = settings.call(&"to_dict")
 	world_mode = &"random"
-	world_id = StringName(str((load("res://src/worldgen/rwg/rwg_generator.gd") as GDScript).call(&"world_id_for", settings)))
+	var gen_script: GDScript = load("res://src/worldgen/rwg/rwg_generator.gd") as GDScript
+	world_id = StringName(str(gen_script.call(&"world_id_for", settings)))
+	generator_version = int(gen_script.get_script_constant_map().get("VERSION", 0))
 
 
 func is_random_world() -> bool:
@@ -120,6 +128,7 @@ func to_dict() -> Dictionary:
 		"clock": clock.to_dict(), "ids": ids.to_dict(), "rng": rng.to_dict(), "players": ps,
 		"local_player": String(local_player_id), "world": world.to_dict(), "horde": horde.to_dict(),
 		"heat": heat.to_dict(), "weather": weather.to_dict(), "stats": stats,
+		"generator_version": generator_version, "world_files": String(world_files),
 	}
 
 
@@ -132,6 +141,8 @@ static func from_dict(d: Dictionary) -> GameSession:
 	# The saved id wins: it names the generated world on disk this run was played in, even if the
 	# generator has changed since (RwgWorlds reads that world before it regenerates anything).
 	s.world_id = StringName(str(d.get("world_id", s.world_id)))
+	s.generator_version = int(d.get("generator_version", s.generator_version if s.is_random_world() else 0))
+	s.world_files = StringName(str(d.get("world_files", "shared")))
 	s.game_mode = StringName(str(d.get("game_mode", "survival")))
 	s.created_unix = int(d.get("created", 0))
 	s.play_seconds = float(d.get("play_seconds", 0.0))
