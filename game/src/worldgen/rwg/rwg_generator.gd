@@ -784,19 +784,24 @@ func _main_streets() -> void:
 		var ground := Streets.Ground.new({"height": _ground_fn(), "water": water_fn}, c, float(tw["radius"]) + stub_len + 240.0)
 		var reach: float = float(tw["radius"]) + stub_len
 		var ends: Array = _ends_at(c)
-		if ends.size() >= 2:
-			var best: Array = []
-			var best_dot: float = INF
-			for a: int in ends.size():
-				for b: int in range(a + 1, ends.size()):
-					var dd: float = (ends[a][2] as Vector2).dot(ends[b][2])
-					if dd < best_dot:
-						best_dot = dd
-						best = [ends[a], ends[b]]
+		var best: Array = []
+		var best_dot: float = INF
+		for a: int in ends.size():
+			for b: int in range(a + 1, ends.size()):
+				var dd: float = (ends[a][2] as Vector2).dot(ends[b][2])
+				if dd < best_dot:
+					best_dot = dd
+					best = [ends[a], ends[b]]
+		# Two roads leaving the same way would make a hairpin through the centre: the first carries on
+		# as a stub instead (the other meets it there).
+		if not best.is_empty() and best_dot < -0.3:
 			_merge_through(best[0], best[1])
-		elif ends.size() == 1:
+		elif not ends.is_empty():
 			var e: Array = ends[0]
-			var stub: PackedVector2Array = _stub(ground, c, -(e[2] as Vector2), reach, 70.0)
+			var away := Vector2.ZERO
+			for e2: Array in ends:
+				away += e2[2]
+			var stub: PackedVector2Array = _stub(ground, c, -(away.normalized() if away.length() > 0.01 else (e[2] as Vector2)), reach, 70.0)
 			if stub.size() >= 2:
 				_extend_through(e, stub)
 		elif _roads_near(c, float(tw["radius"]) * 0.3) == 0:
