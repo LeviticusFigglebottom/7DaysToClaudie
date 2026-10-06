@@ -9,7 +9,7 @@ way it never conflicts.
 |---|---|---|---|---|
 | Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O (random worlds), P (pool buildings), Q (weather) | Random worlds v2 (big streaming maps, organic towns); full screenshot QA |
 | Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | School, fire station, bank (ADR-0026) | Hollowed hounds and Murmurs (ADR-0034), then base-building fidelity (ADR-0035) |
-| Session 3 (see the integrator's messages) | `claude/hollowmere-playable` | Playable builds and stability | Downloadable builds with assets; the player-reported freeze and crash | A performance pass for real GPUs (TD-003) |
+| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Downloadable builds with assets; the player-reported freeze and crash | A performance pass for real GPUs (TD-003) |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
