@@ -67,8 +67,13 @@ func _has_trader() -> bool:
 	var terrain: Node = world.get(&"terrain") if world != null else null
 	if terrain == null:
 		return false
-	for rid: Variant in (terrain.get(&"regions") as Dictionary).keys():
-		for sid: Variant in ((terrain.regions[rid] as RegionTerrain).spawns as Dictionary).keys():
+	# The coarse regions too: a streamed world (ADR-0038) has only the regions near the player at
+	# 1 m, and the others' coarse compositions carry the same spawns.
+	var all: Array = (terrain.get(&"regions") as Dictionary).values()
+	if terrain.get(&"coarse") is Dictionary:
+		all.append_array((terrain.get(&"coarse") as Dictionary).values())
+	for rt: Variant in all:
+		for sid: Variant in ((rt as RegionTerrain).spawns as Dictionary).keys():
 			if str(sid).begins_with("trader:"):
 				return true
 	return false
