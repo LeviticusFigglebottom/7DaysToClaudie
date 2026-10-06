@@ -343,6 +343,9 @@ func _run() -> void:
 	var random_world: bool = args.has("--world") and args.find("--world") + 1 < args.size() and args[args.find("--world") + 1] == "random"
 	if random_world:
 		start["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", args, 7)
+		# Random worlds stream by default (ADR-0038), and a streamed world builds only the buildings
+		# near the player, so POI_SHOTS would find none of theirs: shots build the whole world.
+		start["stream"] = false
 	game.call(&"start_new_game", start)
 	var t0: int = Time.get_ticks_msec()
 	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < (1200000 if random_world else 300000):
