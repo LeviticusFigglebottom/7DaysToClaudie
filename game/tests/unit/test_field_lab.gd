@@ -206,14 +206,18 @@ func test_loot_items_and_notes_resolve() -> void:
 	assert_not_null(core, "the sealed core is an item")
 	assert_not_null(drive, "the research drive is an item")
 	if core != null and drive != null:
-		assert_eq(core.category, "quest", "the core is a Program delivery")
-		assert_true(core.has_tag("trade") and drive.has_tag("trade"), "both trade at the quartermaster")
+		assert_true(core.has_tag("trade") and drive.has_tag("trade"), "both are trade goods")
 		var best: int = 0
 		for it: ContentDef in Content.all(&"item"):
 			if String(it.id) != "bloom_core_canister":
 				best = maxi(best, int((it as ItemDef).value))
 		assert_gt(core.value, best, "a sealed core is worth more than anything else in the valley")
 		assert_gt(drive.value, 120, "a research drive is worth more than a revolver")
+		# The quartermaster buys them (ADR-0039: the posts never buy keys, quest items or notes).
+		for td: ContentDef in Content.all(&"trader"):
+			var trader: TraderDef = td as TraderDef
+			assert_gt(trader.sell_price(core), 0, "%s buys a sealed core" % trader.id)
+			assert_gt(trader.sell_price(drive), 0, "%s buys a research drive" % trader.id)
 	for e2: String in Content.errors():
 		assert_false(e2.contains("lab_") or e2.contains("corvane"), e2)
 

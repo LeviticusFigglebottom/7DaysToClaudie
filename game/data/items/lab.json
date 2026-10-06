@@ -1,5 +1,5 @@
 {
- "_doc": "The Corvane Field Lab (agent Y): its keys (station keys, the containment key, Marchetti's keycard, the vault code), the trip's payoff (sealed Bloom cores and Program research drives, quest items the quartermaster buys at sell_ratio of their value), a staff-strength antifungal, and the notes (note_<id>, notes/lab.json). Models: tools/assetgen/blender_catalogs/items_lab.py (keys and papers by item_paper, the salvager's tether by item_gear, the card, canister, drive and injector by item_lab).",
+ "_doc": "The Corvane Field Lab (agent Y): its keys (station keys, the containment key, Marchetti's keycard, the vault code), the trip's payoff (sealed Bloom cores and Program research drives: resources, not quest items, so the quartermaster buys them at sell_ratio of their value, ADR-0039; the posts never buy keys, quest items or notes), a staff-strength antifungal, and the notes (note_<id>, notes/lab.json). Models: tools/assetgen/blender_catalogs/items_lab.py (keys and papers by item_paper, the salvager's tether by item_gear, the card, canister, drive and injector by item_lab).",
  "defs": [
   {
    "id": "lab_station_keys",
@@ -57,7 +57,7 @@
    "id": "bloom_core_canister",
    "name": "Sealed Bloom Core",
    "description": "A frosted steel canister the size of a thermos, sealed with Cordon tape and a numbered tag: BH-7, 1,412 FT. Inside, a run of grey limestone threaded with something pale. The Program pays more for one of these than for anything else in the valley.",
-   "category": "quest",
+   "category": "resource",
    "stack_max": 3,
    "carry_max": 6,
    "bulk": 0.6,
@@ -73,7 +73,7 @@
    "id": "lab_research_drive",
    "name": "Program Research Drive",
    "description": "A ruggedized hard drive in an orange shock case, labelled in marker: CFL - SEQ RUNS / IMAGING. The Program wants its data back and pays for it.",
-   "category": "quest",
+   "category": "resource",
    "stack_max": 5,
    "carry_max": 10,
    "bulk": 0.15,

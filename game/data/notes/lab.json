@@ -13,7 +13,7 @@
    "title": "Tether, Salvager #3907",
    "style": "printed",
    "author": "Remand Program tether log",
-   "body": "REMAND SALVAGE PROGRAM - UNIT 3907 - PRUITT, C.\nCONTRACT 77-B: BLOOM CORE SAMPLES (3) + RESEARCH MEDIA. SITE: CORVANE FS-2.\nD31 0612  ARRIVED. GATE CHAINED. HUT BOLTED. CUT FENCE WEST SIDE.\nD31 0640  CORE SHED: THEY GOT UP WHEN THE TRAP WENT. TWO DOWN. LEG BAD.\nD31 0702  DECON UNIT CHAINED. KEY NOT FOUND. ADMIN PADLOCKED. MANAGER'S KEYS IN THE BUNKHOUSE?\nD31 0705  DOWNSTAIRS NEEDS A CARD. DOCTOR HAD IT. COLD ROOM.\nD31 0711  VITALS: HR 141. TEMP 38.9. BLOOM EXPOSURE 44%.\nD31 0800  RESTING IN THE SHED. GOING BACK IN AT DARK.\nD32 ----  NO MOVEMENT 31 HRS. SIGNAL LOST. BEACON ACTIVE."
+   "body": "REMAND SALVAGE PROGRAM - UNIT 3907 - PRUITT, C.\nCONTRACT 77-B: BLOOM CORE SAMPLES (3) + RESEARCH MEDIA. SITE: CORVANE FS-2.\nD31 0612  ARRIVED. GATE CHAINED. HUT BOLTED. CUT FENCE WEST SIDE.\nD31 0640  CORE SHED: THEY GOT UP WHEN THE TRAP WENT. GOT ONE. LEG BAD.\nD31 0702  DECON UNIT LOCKED. KEY NOT FOUND. ADMIN PADLOCKED. MANAGER'S KEYS IN THE BUNKHOUSE?\nD31 0705  BRIEFING: CONTAINMENT IS CARD ACCESS. THE DOCTOR'S CARD. TRY THE COLD ROOM.\nD31 0711  VITALS: HR 141. TEMP 38.9. BLOOM EXPOSURE 44%.\nD31 0800  RESTING IN THE SHED. GOING BACK IN AT DARK.\nD32 ----  NO MOVEMENT 31 HRS. SIGNAL LOST. BEACON ACTIVE."
   },
   {
    "id": "lab_station_log",
@@ -41,7 +41,7 @@
    "title": "Biosafety Log",
    "style": "typed",
    "author": "BSO I. Torvald",
-   "body": "BIOSAFETY LOG - FS-2 - BSO TORVALD\nD40. Ward downstairs: three Corvane men symptomatic. Isolation maintained.\nD47. Hum. Containment suite breached from inside. Two staff lost in the airlock. Cells holding.\nD48. Dr. Marchetti refuses to leave the cold room. Her card stays with her.\nD49. Generator out. Battery lighting only. The suite is awake.\nD50. Securing the vault per Directive 14 para 5. I have changed the combination. The new one is on the card in the specimen lab, for whoever the Program sends. Do not send anyone.\nD50. The escape shaft is clear. I am not using it."
+   "body": "BIOSAFETY LOG - FS-2 - BSO TORVALD\nD40. Ward downstairs: three Corvane men symptomatic. Isolation maintained.\nD47. Hum. Containment suite breached from inside. Two staff lost in the airlock. Cells holding.\nD48. Dr. Marchetti refuses to leave the cold room. Her card stays with her.\nD49. Diesel for a week if it runs for the freezers alone. The suite is awake.\nD50. Securing the vault per Directive 14 para 5. I have changed the combination. The new one is on the card in the specimen lab, for whoever the Program sends. Do not send anyone.\nD50. The escape shaft is clear. I am not using it."
   }
  ]
 }
