@@ -419,6 +419,8 @@ func _follow(p: PlayerState, c: Dictionary, dt: float) -> void:
 				_follow_recovery(p, c, qd)
 			elif not bool(c.get("placed", false)):
 				_place_cache(c, p)
+			else:
+				_follow_beacon(c, p)
 		"defend":
 			_follow_defence(p, c, dt)
 
@@ -486,8 +488,9 @@ func _in_loot_room(instance_id: StringName, pos: Vector3) -> bool:
 
 
 ## Sets a fetch contract's cache down in its building once the building stands and the player is
-## near: on the floor of a loot-room cell (any room cell when it has none) the seed picks. It is
-## a loose item from then on (saved with the world's loose items).
+## near: on its authored spot or a free floor cell of its loot room (Contracts.cache_spot, TD-144).
+## It is a loose item from then on (saved with the world's loose items), with a Program beacon
+## blinking over it while the contract is open.
 func _place_cache(c: Dictionary, p: PlayerState) -> void:
 	var pois: Node = world.get(&"pois") if world != null else null
 	if pois == null:
@@ -495,22 +498,60 @@ func _place_cache(c: Dictionary, p: PlayerState) -> void:
 	var inst: PoiInstance = (pois.get(&"instances") as Dictionary).get(StringName(str(c["target"]))) as PoiInstance
 	if inst == null or _player_pos(p).distance_to(_vec(c["pos"])) > PLACE_RANGE:
 		return
-	var l: PoiLayout = inst.layout
-	var level: int = int(l.loot_room.get("level", 0)) if not l.loot_room.is_empty() else 0
-	var cells: Array[Vector2i] = []
-	for cell: Vector2i in l.room_cells(level):
-		if l.loot_room.is_empty() or l.room_at(level, cell) == str(l.loot_room.get("room", "")):
-			cells.append(cell)
-	if cells.is_empty():
+	var spot: Dictionary = Contracts.cache_spot(inst.layout, "%d:%s" % [Game.session.world_seed, c["id"]])
+	if spot.is_empty():
 		return
-	var rng := RandomNumberGenerator.new()
-	rng.seed = Ids.hash64("cache:%d:%s" % [Game.session.world_seed, c["id"]])
-	var cell: Vector2i = cells[rng.randi() % cells.size()]
-	var at: Vector3 = inst.global_transform * (l.cell_center(level, cell) + Vector3.UP * 0.6)
+	var at: Vector3 = inst.global_transform * ((spot["pos"] as Vector3) + Vector3.UP * 0.3)
 	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c["def"]))) as QuestDef
 	ItemDrop.spawn(world, ItemStack.make(StringName(qd.item), 1), at, StringName("cache_%s" % str(c["id"]).replace(":", "_")))
 	c["placed"] = true
 	c["cache_at"] = [at.x, at.y, at.z]
+
+
+## contract id -> the beacon blinking over its cache
+var _beacons: Dictionary = {}
+
+
+## A Program beacon over a placed cache while the contract is open and the player is near, so it
+## can be found in a dark room; gone once it is picked up.
+func _follow_beacon(c: Dictionary, p: PlayerState) -> void:
+	var cid: String = str(c["id"])
+	var want: bool = bool(c.get("placed", false)) and str(c["state"]) == ContractLog.ACTIVE \
+		and _player_pos(p).distance_to(_vec(c.get("cache_at", c["pos"]))) < CACHE_RANGE
+	if want and not _beacons.has(cid):
+		var b := CacheBeacon.new()
+		add_child(b)
+		b.global_position = _vec(c["cache_at"]) + Vector3.UP * 0.25
+		_beacons[cid] = b
+	elif not want and _beacons.has(cid):
+		_drop_beacon(cid)
+
+
+func _drop_beacon(cid: String) -> void:
+	if _beacons.has(cid):
+		var b: Node = _beacons[cid]
+		if is_instance_valid(b):
+			b.queue_free()
+		_beacons.erase(cid)
+
+
+## A small amber lamp that pulses (the Program's cache beacon).
+class CacheBeacon:
+	extends Node3D
+	var _light: OmniLight3D
+	var _t: float = 0.0
+
+	func _ready() -> void:
+		_light = OmniLight3D.new()
+		_light.light_color = Color(1.0, 0.62, 0.2)
+		_light.omni_range = 3.5
+		_light.light_energy = 0.0
+		_light.shadow_enabled = false
+		add_child(_light)
+
+	func _process(delta: float) -> void:
+		_t += delta
+		_light.light_energy = 1.4 * maxf(0.0, sin(_t * 4.0)) if fmod(_t, 2.0) < 0.8 else 0.0
 
 
 ## A fetch whose building already holds the item (the field lab's Bloom core, TD-179): ready while
@@ -621,6 +662,7 @@ static func _pick_enemy(qd: QuestDef, rng: RandomNumberGenerator) -> StringName:
 
 
 func _end_run(cid: String) -> void:
+	_drop_beacon(cid)
 	_runs.erase(cid)
 	if _caches.has(cid):
 		(_caches[cid] as Node).queue_free()
