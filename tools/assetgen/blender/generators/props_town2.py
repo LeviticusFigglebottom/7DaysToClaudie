@@ -1370,7 +1370,9 @@ def bank_teller_counter(p: Prop) -> None:
     p.box((W - 0.02, D - 0.07, 0.08), (0, 0.03, 0.04), C.OAK_DARK, bevel=0.004, grain="X")
     for i in range(5):
         x = -W / 2 + 0.3 + i * 0.6
-        p.panel(0.54, 0.62, 0.025, (x, yf + 0.0125 + 0.02, 0.5), wood, style="raised", frame=0.07)
+        # fielded panel from plain boxes (G.panel's insets come out in a run-dependent face order)
+        p.box((0.54, 0.02, 0.62), (x, yf + 0.03, 0.5), wood, bevel=0.003, grain="Z")
+        p.box((0.42, 0.012, 0.5), (x, yf + 0.016, 0.5), wood, bevel=0.006, grain="Z")
     for i in range(6):
         p.box((0.04, 0.03, 0.88), (-W / 2 + 0.02 + i * 0.592, yf + 0.03, 0.5), wood, bevel=0.004, grain="Z")
     p.box((W, 0.035, 0.05), (0, yf + 0.03, 0.88), wood, bevel=0.006, grain="X")
@@ -1379,9 +1381,10 @@ def bank_teller_counter(p: Prop) -> None:
         p.box((0.03, 0.06, 0.03), (x, yf - 0.02, 0.15), C.BRASS, bevel=0.005)
     split = p.destroyed
     if split:
-        a, b = F.split_panel(p, W + 0.06, D + 0.08, 0.04, (0, 0.0, H - 0.08), C.MARBLE, (-0.3, -(D + 0.08) / 2), (0.1, (D + 0.08) / 2),
-                             plane="XY", inner=C.MARBLE, key="marble")
-        G.xform(b.obj, rot=(0, 3, -1), pivot=(0.0, 0, H - 0.08))
+        # the slab cracked through and one half dropped a little
+        p.box((1.6, D + 0.08, 0.04), (-0.73 - 0.0, 0.0, H - 0.08), C.MARBLE, bevel=0.006, grain="X")
+        q = p.box((1.44, D + 0.08, 0.04), (0.81, 0.0, H - 0.08), C.MARBLE, bevel=0.006, grain="X")
+        G.xform(q.obj, rot=(0, 3, -1), pivot=(0.09, 0, H - 0.1))
     else:
         p.box((W + 0.06, D + 0.08, 0.04), (0, 0.0, H - 0.08 + 0.0), C.MARBLE, bevel=0.008, grain="X")
     top = H - 0.06
@@ -1426,7 +1429,7 @@ def bank_teller_counter(p: Prop) -> None:
         pull = 0.0
         if p.worn and i == 1:
             pull = 0.3
-        F.drawer(p, x - 0.25, 0.7, x + 0.25, 0.85, D / 2 + 0.02, 0.4, wood, t=0.02, style="slab", handle="cup", handle_mat=C.BRASS,
+        F.drawer(p, x - 0.25, 0.7, x + 0.25, 0.85, D / 2 + 0.02, 0.4, wood, t=0.02, style="slab", handle="bar", handle_mat=C.BRASS,
                  pull=0.0, key=f"cd{i}")
         if pull:
             p.box((0.48, 0.4, 0.1), (x, D / 2 - 0.15, 0.78), wood, bevel=0.003)
