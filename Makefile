@@ -16,7 +16,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: smoke tour export render-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: smoke tour export render-check stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview
 
@@ -112,6 +112,9 @@ ci: ## Everything CI runs: setup, assets, import, validate (strict), tests
 export: ## Package Windows and Linux builds with the generated assets into build/export/*.zip (ADR-0036): make export [EXPORT_TARGETS="windows linux"]
 	@mkdir -p $(ROOT)/build/export
 	@GODOT="$(GODOT)" LOCK="$(LOCK)" tools/export/export.sh $(EXPORT_TARGETS)
+
+stream-check: ## Streamed random world walk: late seconds, longest frame, memory between laps (ADR-0038): [STREAM_ARGS="--world-seed 7 --world-set size=5 --km 2"]
+	@$(GODOT_HEADLESS) -s res://src/tools/cli/stream_walk.gd -- $(STREAM_ARGS)
 
 render-check: ## Render town views (software Vulkan) and fail on renderer errors such as probe atlas overflow (ADR-0036): [RENDER_CHECK_SHOTS=a,b]
 	@GODOT="$(GODOT)" LOCK="$(LOCK)" tools/qa/render_check.sh $(RENDER_CHECK_SHOTS)
