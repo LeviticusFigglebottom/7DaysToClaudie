@@ -2,8 +2,9 @@ extends GutTest
 ## World-level organic towns (ADR-0040, random worlds v2 Phase 5): the generator plans its towns on
 ## the ground the composer grades, the composer applies a town in every region it touches with no
 ## seam at the borders, every lot is placed once at its own height, every lot holds a building that
-## fits and keeps off the water, the roads and the other lots, authored buildings are capped per
-## world, and a v1 world (towns as region frameworks) still loads from its folder.
+## fits and keeps off the water, the roads and the other lots, PoiManager stands each building on
+## its lot's frame, authored buildings are capped per world, and a v1 world (towns as region
+## frameworks) still loads from its folder.
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Generator := preload("res://src/worldgen/rwg/rwg_generator.gd")
@@ -252,6 +253,70 @@ func test_lot_local_xf_stands_the_building_in_its_frame() -> void:
 	var frame_lot: Dictionary = {"frame": [100.0, -50.0, 30.0, 22.0, 90.0]}
 	assert_true(PoiManager.lot_xf(rect_lot, fp).is_equal_approx(LotPicker.lot_local_xf(frame_lot, fp)), "a frame facing east is lot_xf's east-facing rect lot")
 	assert_eq(LotPicker.lot_size(frame_lot), Vector2i(30, 22), "a frame's size is its frontage and depth")
+
+
+## PoiManager itself, on its boot path (placements queued, then built a few phases a frame): for a
+## region's `town` placement it queues exactly the lots whose frames centre in that region, each
+## building's footprint centred on its frame's centre at the lot's y (the composer's `lot`
+## placement) and its front along the frame's yaw: the transform is lot_local_xf's.
+func test_poi_manager_queues_each_frame_lot_on_its_frame() -> void:
+	var made: Array = _world(5150, {"size": 2, "town_density": 0.0, "lakes": "none", "rivers": "none"}, [{"kind": "village", "center": Vector2(14.0, -9.0), "radius": 230.0}])
+	var world: WorldDef = WorldDef.load_from(made[1])
+	var tw: Dictionary = world.towns[0]
+	var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(tw["framework"]))) as FrameworkDef
+	assert_not_null(fw, "the town's framework is registered")
+	if fw == null:
+		return
+	# The region holding most of its lots.
+	var per_region: Dictionary = {}
+	var rid: String = ""
+	for l0: Dictionary in fw.lots:
+		var r0: String = world.region_at(float(l0["frame"][0]), float(l0["frame"][1]))
+		per_region[r0] = int(per_region.get(r0, 0)) + 1
+		if rid == "" or int(per_region[r0]) > int(per_region[rid]):
+			rid = r0
+	var rt: RegionTerrain = TerrainComposer.compose(world, rid, 8.0)
+	var town_pl: Dictionary = {}
+	var lot_pls: Dictionary = {}
+	for pl: Dictionary in rt.placements:
+		if str(pl["kind"]) == "town":
+			town_pl = pl
+		elif str(pl["kind"]) == "lot":
+			lot_pls[str(pl["id"])] = pl
+	assert_false(town_pl.is_empty(), "the region places the town")
+	assert_gt(lot_pls.size(), 2, "and some of its lots (%d)" % lot_pls.size())
+	if town_pl.is_empty():
+		return
+	var yaw_of: Dictionary = {}
+	for l: Dictionary in fw.lots:
+		yaw_of["%s/%s" % [tw["id"], l["id"]]] = float(l["frame"][4])
+	var pm := PoiManager.new()
+	var host := Node.new()
+	pm.world = host
+	pm._queueing = true
+	# The street fixtures need a world to stand on; the lots are what this checks.
+	var fixtures: Array = fw.fixtures
+	fw.fixtures = []
+	pm._place_framework(town_pl)
+	fw.fixtures = fixtures
+	assert_eq(pm._placed.size(), lot_pls.size(), "one building queued per lot the region owns")
+	for iid: Variant in pm._placed:
+		var pl2: Dictionary = lot_pls.get(str(iid), {})
+		assert_false(pl2.is_empty(), "%s is a lot of this region" % iid)
+		if pl2.is_empty():
+			continue
+		var o: Array = pl2["origin"]
+		assert_almost_eq(pm._placed[iid]["pos"] as Vector3, Vector3(float(o[0]), float(o[1]), float(o[2])), Vector3.ONE * 1.0e-3, "%s: the footprint centred on its frame, at its y" % iid)
+	var fronts: int = 0
+	for step: Array in pm._queue_builds:
+		var job: Dictionary = (step[1] as Callable).get_bound_arguments()[0]
+		var yaw: float = deg_to_rad(float(yaw_of.get(str(job["id"]), 0.0)))
+		var front: Vector3 = (job["xf"] as Transform3D).basis * Vector3(0.0, 0.0, 1.0)
+		assert_almost_eq(Vector2(front.x, front.z), Vector2(sin(yaw), cos(yaw)), Vector2.ONE * 1.0e-5, "%s faces along its frame's yaw" % job["id"])
+		fronts += 1
+	assert_eq(fronts, lot_pls.size(), "every queued build carries its transform")
+	pm.free()
+	host.free()
 
 
 # --- Old worlds ------------------------------------------------------------------------------------
