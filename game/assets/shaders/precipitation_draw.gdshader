@@ -21,7 +21,7 @@ uniform float streak_length = 0.5;
 uniform float streak_width = 0.0085;
 uniform float splash_size = 0.15;
 uniform float splash_s = 0.24;
-uniform vec2 flake_size = vec2(0.014, 0.034);
+uniform vec2 flake_size = vec2(0.035, 0.075);
 uniform float opacity = 0.72;
 // Fades out toward the column's edge (its half-width).
 uniform float fade_far = 16.0;
@@ -129,7 +129,7 @@ void fragment() {
 		}
 	} else {
 		vec2 q = v_uv * 2.0 - 1.0;
-		a = smoothstep(1.0, 0.25, length(q));
+		a = smoothstep(1.0, 0.3, length(q));
 		if (has_flakes) {
 			// A crystal's thin arms average away in the mips of a flake a few pixels across, which
 			// left falling snow invisible: the atlas shows only up close, a soft disc further off.

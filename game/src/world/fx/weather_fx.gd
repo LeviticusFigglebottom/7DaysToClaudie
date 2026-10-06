@@ -46,7 +46,7 @@ func _ready() -> void:
 	maps.min_drop = float((_pcfg.get("drips", {}) as Dictionary).get("min_drop_m", 1.8))
 	if _headless:
 		return
-	var box: Array = _pcfg.get("box", [16.0, 12.0, 4.0])
+	var box: Array = _pcfg.get("box", [13.0, 12.0, 4.0])
 	var preset: String = Settings.graphics_preset
 	var rain_n: int = int((_pcfg.get("rain_drops", {}) as Dictionary).get(preset, 6000))
 	var snow_n: int = int((_pcfg.get("snow_flakes", {}) as Dictionary).get(preset, 4000))
@@ -124,7 +124,7 @@ func _drive(p: GPUParticles3D, at: Vector3, amount: float, push: Vector2) -> voi
 		return
 	# The emitter stays at the world origin and the column follows the camera through `focus`, so
 	# the particles are in world space whichever way the engine places them; its culling box moves.
-	var box: Array = _pcfg.get("box", [16.0, 12.0, 4.0])
+	var box: Array = _pcfg.get("box", [13.0, 12.0, 4.0])
 	var hw: float = float(box[0]) + 2.0
 	p.visibility_aabb = AABB(at + Vector3(-hw, -float(box[2]) - 30.0, -hw), Vector3(hw * 2.0, float(box[1]) + float(box[2]) + 34.0, hw * 2.0))
 	(p.process_material as ShaderMaterial).set_shader_parameter("focus", at)
@@ -140,7 +140,7 @@ func _drive(p: GPUParticles3D, at: Vector3, amount: float, push: Vector2) -> voi
 
 
 func _make_precip(node_name: String, mode: int, count: int, life: float) -> GPUParticles3D:
-	var box: Array = _pcfg.get("box", [16.0, 12.0, 4.0])
+	var box: Array = _pcfg.get("box", [13.0, 12.0, 4.0])
 	var p := GPUParticles3D.new()
 	p.name = node_name
 	# At the world origin whatever its parents do (see _drive).
@@ -168,7 +168,7 @@ func _make_precip(node_name: String, mode: int, count: int, life: float) -> GPUP
 	dm.set_shader_parameter("streak_width", float(_pcfg.get("streak_width", 0.0085)))
 	dm.set_shader_parameter("splash_size", float(_pcfg.get("splash_size", 0.15)))
 	dm.set_shader_parameter("splash_s", float(_pcfg.get("splash_s", 0.24)))
-	var fs: Array = _pcfg.get("flake_size", [0.014, 0.034])
+	var fs: Array = _pcfg.get("flake_size", [0.035, 0.075])
 	dm.set_shader_parameter("flake_size", Vector2(float(fs[0]), float(fs[1])))
 	dm.set_shader_parameter("fade_far", float(box[0]))
 	dm.set_shader_parameter("life", life)

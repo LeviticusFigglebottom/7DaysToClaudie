@@ -76,8 +76,10 @@ tint (TD-018):
   * The emitters stay at the world origin and the column follows the camera through a `focus`
     uniform, with the culling box moved to match. So the particles are in world space whichever
     space the engine draws them in, and they don't slide when the camera moves.
-  * Counts depend on the graphics preset, from 2,500 to 12,000 drops. `amount_ratio` follows the
-    rainfall without restarting the system.
+  * Counts depend on the graphics preset: 4,000 to 16,000 drops and 4,000 to 15,000 flakes, in a
+    column 26 m across. A narrow, dense column reads as rain where a wide, sparse one did not; the
+    rain haze carries it beyond. `amount_ratio` follows the rainfall without restarting the
+    system.
 * **Rain stops where it lands.** The **weather map** (below) holds the height where rain lands
   under each cell: the roof, the ground or the water surface. So no rain falls indoors, under a
   porch roof or under a bridge.
@@ -88,7 +90,15 @@ tint (TD-018):
   * Never thinner than about a pixel: a wider streak is fainter by the same factor, so far rain
     keeps its weight without shimmering.
   * Streaks are lit, with backlight, so they glow round lamps and torches and flare in
-    lightning. By day they mirror the sky's brightness.
+    lightning. By day they mirror the sky's brightness: lighter than a wall or the road behind
+    them, fading into the sky itself.
+  * NaN-proof. The profile is clamped (a UV a hair outside 0..1 on a one-pixel streak's edge made
+    `pow()` return NaN) and an inactive particle's zeroed transform collapses instead of making NaN
+    vertices. The glow had blown each stray NaN pixel up into a white disc with a black centre.
+* **How a flake is drawn:** a soft disc facing the camera, tumbling as it falls. Only up close (10
+  to 22 pixels across) does the generated crystal atlas (`fx_snowflakes`) take over: a crystal's
+  thin arms average away in the mips of a flake a few pixels across, which had left falling snow
+  invisible.
 * **Eave drips:**
   * The map finds roof edges standing `min_drop_m` over open ground. Up to 256 points within
     22 m go to a third particle system.
@@ -183,8 +193,12 @@ Shot keys `wet`, `puddles` and `snow_cover` set what the weather has left (the c
 between shots). `strike` holds a strike's flash for the capture, because software frames take
 longer than a flash (`EnvironmentController.flash_hold`). Weather shots also freeze the rain and
 snow for the capture (`WeatherFx.hold_still`). A software frame takes so long that a moving drop
-never covers the same pixels twice, and temporal AA averaged every streak away. `--stream-wait`
-caps the runner's wait for vegetation (240 s by default) when the render lock is busy.
+never covers the same pixels twice, and temporal AA averaged every streak away. They also wait (up
+to three minutes) until the weather map is the one round the camera (`WeatherMaps.covers`): after
+the jump to a shot it is rebuilt by a worker queued behind the streaming and some frames of rays,
+and the first renders captured the previous shot's map, with rain landing and puddles collecting
+by another place's heights. `--stream-wait` caps the runner's wait for vegetation (240 s by
+default) when the render lock is busy.
 
 ## Consequences
 + Rain reads in daylight and at night, and stays out of buildings.

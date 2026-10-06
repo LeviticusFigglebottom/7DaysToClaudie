@@ -211,3 +211,41 @@ func test_eaves_are_found_where_a_roof_stands_over_open_ground() -> void:
 		assert_almost_eq(float(e[2]), 2.92, 0.001, "and fall to the ground beside it")
 		var on_edge: bool = is_equal_approx(at.x, 106.0) or is_equal_approx(at.x, 110.0) or is_equal_approx(at.z, 206.0) or is_equal_approx(at.z, 210.0)
 		assert_true(on_edge, "on the roof's outline: %s" % at)
+
+
+## Ground that slopes gently east, and no water: what the weather map's worker reads.
+class SlopedGround:
+	extends RefCounted
+
+	func height_at(x: float, _z: float) -> float:
+		return 12.3 + 0.01 * x
+
+	func water_level_at(_x: float, _z: float) -> float:
+		return -INF
+
+
+## Polls the map round `at` until it publishes (the heights come from a worker thread).
+func _publish(m: WeatherMaps, at: Vector3, g: Object) -> bool:
+	for i: int in 3000:
+		if m.update(at, g, g, null):
+			return true
+		OS.delay_msec(1)
+	return false
+
+
+func test_weather_map_is_published_round_the_camera_and_kept_until_the_next_is_done() -> void:
+	var m := WeatherMaps.new()
+	m.configure({"cells": 16, "cell_m": 1.5, "catch_cells": 0, "recentre_m": 8.0})
+	var g := SlopedGround.new()
+	var at := Vector3(100.0, 14.0, 200.0)
+	assert_false(m.covers(at), "no map yet")
+	assert_true(_publish(m, at, g), "a map is published")
+	assert_true(m.covers(at), "round the camera")
+	assert_almost_eq(m.catch_at(at.x, at.z), 12.3 + 0.01 * at.x, 0.02, "with nothing overhead, rain lands on the ground")
+	var far := Vector3(160.0, 14.0, 200.0)
+	assert_false(m.covers(far), "after a jump the old map stays in place")
+	assert_eq(m.catch_at(far.x, far.z), -INF, "and the camera is off it")
+	assert_true(_publish(m, far, g), "until the new one is complete")
+	assert_true(m.covers(far), "round the camera again")
+	assert_almost_eq(m.catch_at(far.x, far.z), 12.3 + 0.01 * far.x, 0.02)
+	m.shutdown()
