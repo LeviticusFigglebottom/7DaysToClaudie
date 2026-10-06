@@ -202,6 +202,45 @@ static func assign_authored(towns: Array, seed: int, cap: int) -> Dictionary:
 	return out
 
 
+## The largest authored footprint (per axis: x along the street, y depth) that could stand on a lot,
+## whatever the run's seed picks (Vector2i.ZERO: only generated buildings or nothing). The composer
+## keeps a town yard's grass off it (TD-136): which building a lot holds is a run-seed choice, and
+## the terrain is a function of the world's data alone. A generated building keeps its own yards
+## (BuildingGenerator.SIDE_YARD, BACK_YARD) inside the frame, so it needs no clip. Same filter as
+## _choose, less the `used` dedupe (any candidate may win).
+static func max_authored_footprint(fw: FrameworkDef, l: Dictionary) -> Vector2i:
+	var db: Node = ContentDB.instance
+	if db == null or l.has("reserved"):
+		return Vector2i.ZERO
+	var pick: String = str(l.get("pick", ""))
+	if pick != "":
+		var pp: PoiDef = db.call(&"get_def", &"poi", StringName(pick)) as PoiDef
+		return pp.footprint if pp != null else Vector2i.ZERO
+	var pool: String = str(l.get("pool", "generated" if l.has("templates") else "any"))
+	if pool == "generated":
+		return Vector2i.ZERO
+	var size: Vector2i = lot_size(l)
+	var zon: PackedStringArray = PackedStringArray(l.get("zoning", []))
+	var tr: Vector2i = fw.tier_range
+	var lt: Variant = l.get("tier", null)
+	if lt is Array and (lt as Array).size() == 2:
+		tr = Vector2i(int(lt[0]), int(lt[1]))
+	elif lt is float or lt is int:
+		tr = Vector2i(int(lt), int(lt))
+	var capped: bool = fw.layout == "organic"
+	var out := Vector2i.ZERO
+	for pd: Variant in db.call(&"all", &"poi"):
+		var p: PoiDef = pd
+		if p.tier < tr.x or p.tier > tr.y or not _zoned(p.zoning, zon):
+			continue
+		if capped and not fw.authored.has(String(p.id)):
+			continue
+		if p.footprint.x > size.x or p.footprint.y > size.y:
+			continue
+		out = Vector2i(maxi(out.x, p.footprint.x), maxi(out.y, p.footprint.y))
+	return out
+
+
 static func _zoned(have: PackedStringArray, want: PackedStringArray) -> bool:
 	if want.is_empty():
 		return true

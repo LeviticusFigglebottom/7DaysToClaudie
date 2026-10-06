@@ -22,6 +22,9 @@ extends RefCounted
 ## the town touches places the fixtures standing in it. Both sides of a border compute the same
 ## samples from world data alone, so a town may straddle borders. Worlds without `towns` (the main
 ## map, v1 worlds) compose exactly as before.
+## VERSION 12 (TD-136): a world town paints `town` only on its streets (TOWN_VERGE past their
+## shoulders) and square, no longer over its whole disc, and a yard's grass keeps off the largest
+## authored footprint its lot may hold. The main map's output did not change.
 ##
 ## Streaming (ADR-0038): the per-sample passes (macro and noise, water, roads, surface) can run in
 ## row bands, each on a Thread of its own writing its own arrays, merged in row order after the join
@@ -31,7 +34,7 @@ extends RefCounted
 ## (test_composer_golden.gd): saves keep digs, felled trees and POI state against composed regions,
 ## and the cache key hashes the inputs and VERSION, not this code.
 
-const VERSION: int = 11
+const VERSION: int = 12
 ## A water edge's profile: the ground falls EDGE_DROP below the water within EDGE_IN metres inside
 ## the edge and rises EDGE_RISE above it within EDGE_OUT outside. A slope through the water line
 ## keeps the shore off the 1 m sample grid; a step (VERSION 10: bed 0.35 m under, bank 0.22 m over,
@@ -58,9 +61,13 @@ const TOWN_REACH: float = 40.0
 const LOT_ROAD_YIELD: float = 2.0
 ## A yard's grass grows within this much of its frame's edge (m), and none a metre further in.
 const YARD_EDGE: float = 2.0
+## A world town's streets paint `town` this far past their shoulders (m, plus up to 2 m of noise);
+## the ground between the streets and the lots keeps the world's biome (TD-136).
+const TOWN_VERGE: float = 3.0
 
 ## By path: new with ADR-0038, so this compiles before the editor registers its class name.
 const Cache := preload("res://src/worldgen/region_cache.gd")
+const Lots := preload("res://src/poi/lot_picker.gd")
 
 
 ## Everything that influences the output, hashed. Changing data or VERSION invalidates caches.
@@ -94,9 +101,36 @@ static func input_hash(world: WorldDef, region_id: String, spacing: float) -> St
 	var gen_fw: String = world.dir_path.path_join("frameworks.json")
 	if FileAccess.file_exists(gen_fw):
 		ctx.update(world.file_bytes(gen_fw))
+	# A town yard's grass keeps off the authored buildings its lot may hold (TD-136): their
+	# footprints, tiers and zoning shape the vegetation mask.
+	var authored: String = _town_authored_key(world)
+	if authored != "":
+		ctx.update(authored.to_utf8_buffer())
 	var h: String = ctx.finish().hex_encode()
 	world.set_memo_hash(key, h)
 	return h
+
+
+## The authored buildings a world's organic towns may hold, with what decides whether they fit a lot
+## ("" without towns or content).
+static func _town_authored_key(world: WorldDef) -> String:
+	var db: Node = ContentDB.instance
+	if world.towns.is_empty() or db == null:
+		return ""
+	var ids: Dictionary = {}
+	for tw: Dictionary in world.towns:
+		var fw: FrameworkDef = db.call(&"get_def", &"framework", StringName(str(tw["framework"]))) as FrameworkDef
+		if fw != null:
+			for id: Variant in fw.authored:
+				ids[str(id)] = true
+	var keys: Array = ids.keys()
+	keys.sort()
+	var parts := PackedStringArray()
+	for id2: Variant in keys:
+		var pd: PoiDef = db.call(&"get_def", &"poi", StringName(str(id2))) as PoiDef
+		if pd != null:
+			parts.append("%s:%d,%d:%d:%s" % [pd.id, pd.footprint.x, pd.footprint.y, pd.tier, ",".join(pd.zoning)])
+	return "|".join(parts)
 
 
 ## Where a region's composed terrain is cached (RegionCache, ADR-0038).
@@ -275,6 +309,14 @@ class _Build:
 	## paved with (-1: none; a world town's square).
 	var _pad_veg := PackedFloat64Array()
 	var _pad_surf := PackedInt32Array()
+	## Per pad: the footprint centred in it that a town yard's grass keeps off (ZERO: none).
+	var _pad_core := PackedVector2Array()
+	## Per road: 1 for a world town's street, 2 for a world road through a town's disc (both paint
+	## `town` round them, the second only inside a disc); the biome index of `town`; the discs.
+	var _r_town := PackedByteArray()
+	var _s_town_bi: int = -1
+	var _town_c := PackedVector2Array()
+	var _town_r := PackedFloat64Array()
 	var _cl_pos := PackedVector2Array()
 	var _cl_r := PackedFloat64Array()
 	## Every path's points in one array: path pi's start at _path_off[pi].
@@ -587,14 +629,20 @@ class _Build:
 				continue
 			var tid: String = str(tw["id"])
 			_towns.append({"id": tid, "fw": fw})
-			# Town ground over its disc (its streets and what lies between them), as a v1 town's pad
-			# had; the lots are yards.
-			if float(tw["radius"]) > 0.0:
-				paints.append({"biome": "town", "pos": tw["center"], "r": float(tw["radius"]), "blend": 40.0})
+			_town_c.append(tw["center"])
+			_town_r.append(float(tw["radius"]))
+			# `town` is painted on its streets (_band_surface) and its square; the lots are yards, and
+			# the ground between them keeps the world's biome, so from above a town is streets and
+			# yards in the meadows, not one brown disc (TD-136; town ambience and spawns key on
+			# WorldDef.town_at).
 			for lv: Variant in fw.lots:
 				var l: Dictionary = lv
 				if l.has("frame"):
-					pads.append(_frame_pad(l["frame"], float(l.get("y", 0.0)), "lot", String(fw.id), "%s/%s" % [tid, l.get("id", "")], "yard", YARD_VEG, ""))
+					var lp: Dictionary = _frame_pad(l["frame"], float(l.get("y", 0.0)), "lot", String(fw.id), "%s/%s" % [tid, l.get("id", "")], "yard", YARD_VEG, "")
+					# The largest authored footprint the lot may hold, centred in the frame: no
+					# yard grass under it, whichever building the run's seed stands there.
+					lp["core"] = Vector2(Lots.max_authored_footprint(fw, l))
+					pads.append(lp)
 			if fw.plaza.has("frame"):
 				pads.append(_frame_pad(fw.plaza["frame"], float(fw.plaza.get("y", 0.0)), "plaza", String(fw.id), "%s/plaza" % tid, "town", 0.0, "asphalt"))
 
@@ -1423,6 +1471,7 @@ class _Build:
 			_pad_size.append(s0)
 			_pad_bi.append(biomes.find(pad0["biome"]))
 			_pad_veg.append(float(pad0.get("veg", 0.0)))
+			_pad_core.append(pad0.get("core", Vector2.ZERO))
 		var clear_boxes: Array[Rect2] = []
 		for cl0: Dictionary in clearings:
 			var cr: float = float(cl0["r"]) + 6.0
@@ -1433,9 +1482,11 @@ class _Build:
 		# forest_floor, moss_ground, grass_ground, dirt, mud, gravel, asphalt_cracked, sand, ash_char, peat
 		_s_layers = PackedInt32Array([pal.find("forest_floor"), pal.find("moss_ground"), pal.find("grass_ground"), pal.find("dirt"),
 			pal.find("mud"), pal.find("gravel"), pal.find("asphalt_cracked"), pal.find("sand"), pal.find("ash_char"), pal.find("peat")])
+		_s_town_bi = biomes.find("town")
 		for ri: int in road_list.size():
 			var surface: String = str(road_list[ri]["surface"])
 			_r_surf.append(_s_layers[6] if surface == "asphalt" else (_s_layers[5] if surface == "gravel" else _s_layers[3]))
+			_r_town.append(_town_road(road_list[ri]))
 		for pad1: Dictionary in pads:
 			var psurf: String = str(pad1.get("surface", ""))
 			_pad_surf.append(-1 if psurf == "" else (_s_layers[6] if psurf == "asphalt" else (_s_layers[5] if psurf == "gravel" else _s_layers[3])))
@@ -1492,6 +1543,21 @@ class _Build:
 		rt.splat1 = _concat_bytes(parts, 1)
 		rt.biome = _concat_bytes(parts, 2)
 		rt.vegmask = _concat_bytes(parts, 3)
+
+	## 1: a world town's own street; 2: a world road (the highway its main street is) whose line comes
+	## into a town's disc; 0: any other road.
+	func _town_road(r: Dictionary) -> int:
+		if str(r.get("profile_key", "")).begins_with("town:"):
+			return 1
+		if not r.has("world_index"):
+			return 0
+		var bounds: Rect2 = (r["line"] as Polyline2).bounds
+		for k: int in _town_c.size():
+			var c: Vector2 = _town_c[k]
+			var rr: float = _town_r[k]
+			if bounds.intersects(Rect2(c - Vector2(rr, rr), Vector2(rr, rr) * 2.0)) and (r["line"] as Polyline2).closest(c).x < rr:
+				return 2
+		return 0
 
 	## [start, items]: the indices of `boxes` (grown 1 m) that reach each index cell, ascending.
 	func _bucket(boxes: Array[Rect2]) -> Array:
@@ -1635,6 +1701,11 @@ class _Build:
 		var rhalf: PackedFloat64Array = _r_half
 		var rsh: PackedFloat64Array = _r_sh
 		var rsurf: PackedInt32Array = _r_surf
+		var rtown: PackedByteArray = _r_town
+		var town_bi: int = _s_town_bi
+		var town_c: PackedVector2Array = _town_c
+		var town_r: PackedFloat64Array = _town_r
+		var dcore: PackedVector2Array = _pad_core
 		var col_c: PackedInt32Array = _s_col_c
 		var col_f: PackedFloat64Array = _s_col_f
 		var col_b: PackedInt32Array = _s_col_b
@@ -1739,6 +1810,32 @@ class _Build:
 					var dd: float = Vector2(x, z).distance_to(ppos[pidx]) + (n1 - 0.5) * pblend[pidx] * 1.6
 					if dd < prad[pidx]:
 						bi = pbi[pidx]
+				# The nearest road and its distance (a world town's streets here, every road below).
+				var ri: int = ridx[ci]
+				if ri < 0:
+					ri = ridx[ci + cnn + 1]
+				var rd: float = 1.0e9
+				if ri >= 0:
+					# _bl(r_d, ci, fx, fz)
+					var ra: float = rdd[ci]
+					var rb: float = rdd[ci + 1]
+					var rc: float = rdd[ci + cnn]
+					var rdx: float = rdd[ci + cnn + 1]
+					if ra > 1.0e8 or rb > 1.0e8 or rc > 1.0e8 or rdx > 1.0e8:
+						rd = minf(minf(ra, rb), minf(rc, rdx))
+					else:
+						var rtop: float = ra + (rb - ra) * fx
+						rd = rtop + ((rc + (rdx - rc) * fx) - rtop) * fz
+					# A world town's street and its verges are town ground (TD-136).
+					var tk: int = rtown[ri]
+					if tk > 0 and rd < rhalf[ri] + rsh[ri] + TOWN_VERGE + n2 * 2.0:
+						if tk == 1:
+							bi = town_bi
+						else:
+							for k5: int in town_c.size():
+								if Vector2(x, z).distance_to(town_c[k5]) < town_r[k5]:
+									bi = town_bi
+									break
 				var wd: float = 1.0e9
 				var wk: int = 0
 				if wdd[ci] < 60.0 or wdd[ci + cnn + 1] < 60.0:
@@ -1758,6 +1855,7 @@ class _Build:
 					bi = 1
 				var pad_hit: int = -1
 				var pad_in: float = 0.0
+				var pad_out: float = 1.0e9
 				for j2: int in range(dst[cell], dst[cell + 1]):
 					var pi: int = dit[j2]
 					if not dboxes[pi].has_point(Vector2(x, z)):
@@ -1768,6 +1866,10 @@ class _Build:
 						pad_hit = pi
 						# How far inside the pad's edge (a yard's grass keeps to its edges).
 						pad_in = minf(minf(lp.x, size.x - lp.x), minf(lp.y, size.y - lp.y))
+						# How far outside the footprint its yard's grass keeps off (TD-136).
+						var core: Vector2 = dcore[pi]
+						if core.x > 0.0:
+							pad_out = maxf(absf(lp.x - size.x * 0.5) - core.x * 0.5, absf(lp.y - size.y * 0.5) - core.y * 0.5)
 						break
 				if pad_hit >= 0:
 					bi = dbi[pad_hit]
@@ -1903,21 +2005,7 @@ class _Build:
 					# thinning them over the last two metres left a bare ring round every shore.
 					veg = 0.0 if wd < -0.25 else 0.4 + 0.6 * smoothstep(-0.25, 2.0, wd)
 				# Roads.
-				var ri: int = ridx[ci]
-				if ri < 0:
-					ri = ridx[ci + cnn + 1]
 				if ri >= 0:
-					# _bl(r_d, ci, fx, fz)
-					var ra: float = rdd[ci]
-					var rb: float = rdd[ci + 1]
-					var rc: float = rdd[ci + cnn]
-					var rdx: float = rdd[ci + cnn + 1]
-					var rd: float
-					if ra > 1.0e8 or rb > 1.0e8 or rc > 1.0e8 or rdx > 1.0e8:
-						rd = minf(minf(ra, rb), minf(rc, rdx))
-					else:
-						var rtop: float = ra + (rb - ra) * fx
-						rd = rtop + ((rc + (rdx - rc) * fx) - rtop) * fz
 					var half: float = rhalf[ri]
 					var sh: float = rsh[ri]
 					var on_road: float = 1.0 - smoothstep(half - 0.6 + n2 * 0.8, half + 0.4 + n2 * 0.8, rd)
@@ -1970,6 +2058,9 @@ class _Build:
 					var keep: float = dveg[pad_hit]
 					if keep > 0.0:
 						keep *= 1.0 - smoothstep(YARD_EDGE, YARD_EDGE + 1.0, pad_in)
+						# And none under the largest building its lot may hold, fading in over a metre
+						# past its walls (a frame it fills keeps no yard).
+						keep *= smoothstep(0.0, 1.0, pad_out)
 					veg = minf(veg, keep)
 				for j3: int in range(cst[cell], cst[cell + 1]):
 					var ck: int = cit[j3]
