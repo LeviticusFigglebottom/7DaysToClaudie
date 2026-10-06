@@ -153,14 +153,14 @@ the `stream` option) or `HOLLOWMERE_STREAM=1`; everything else loads as before.
   the node can be freed), `TerrainComposer.get_or_compose(..., cancel)`, cancelled when no longer
   wanted; finished regions attach, regions out of the rings detach, through a StepRunner within
   `budget_ms.runtime`. `request_now`, `pin`/`unpin`, `is_area_ready`, `status`.
-* **TerrainManager**: `regions` and the grid copy-on-write with retirement;
-  `attach_region`/`detach_region` (saved digs applied on attach, the region object restored to
-  pristine on detach, material, holes rebuilt, near chunks re-meshed and re-collided); collision
-  built on workers; finished chunks installed within 6 ms a frame.
-* **Per region**: PoiManager resolves an attached region's lots on a worker and queues its
-  buildings as streaming steps (plan, then PoiBuilder phases); detach drops queued steps and frees
-  its buildings (sleepers despawned) and fixtures. The far impostor layer scatters per region on
-  attach and frees it on detach.
+* **TerrainManager**: `regions` and the grid are swapped, and heights written in place, under
+  one terrain lock that every worker read takes (`height_at`); copy-and-swap alone crashed
+  (TD-104). `attach_region`/`detach_region`: saved digs applied on attach over the region's
+  pristine heights (kept across a detach), material, holes rebuilt, near chunks re-meshed and
+  re-collided. Collision built on workers; finished chunks installed within 6 ms a frame.
+* **Per region**: a region brings its framework fixtures on attach and takes them on detach;
+  its buildings come by distance (§8). The far impostor layer scatters per region on attach and
+  frees it on detach.
 * **GameWorld**: `await_area(pos, then)` holds the player behind "Finding your feet…" until the
   ground at `pos` is attached and meshed (respawn); the loader's region references are dropped
   after setup so detached regions free.
@@ -168,6 +168,27 @@ the `stream` option) or `HOLLOWMERE_STREAM=1`; everything else loads as before.
 Measured (`make stream-check`, headless container, 5x5 world, seed 7): world ready in 13 s;
 2 km out and back twice at 6.2 m/s with no late seconds; attach steps 30-80 ms; the longest frame
 ~450 ms; static memory 569 → 568 MiB between laps (no leak). Interim gaps: TD-106.
+
+### 8. Buildings by distance (Phase 3, session 3)
+
+* **PoiRegistry** (`poi/poi_registry.gd`): every building of the world as data, built on the
+  loader thread from every region's placements (coarse ones included), with the lots chosen
+  exactly as `PoiManager._place_framework` chooses them. A lot keeps its LotPicker resolution;
+  nothing is generated. Footprint boxes on a 64 m grid answer `near` (nearest first) and
+  `footprint_at`.
+* **The ring** (`PoiManager._update_ring`, streamed worlds only): every 0.5 s the nearest
+  buildings within `poi.build` whose region is attached are queued as streaming steps, nearest
+  first, at most `poi.max_built` built or on the way; those beyond `poi.free` are dropped (steps
+  cancelled, sleepers despawned, a half-built root freed, orphaned worker tasks joined once done).
+  A generated building's def is made on a worker when it enters the ring. The boot builds those
+  within 200 m of the spawn (`GameWorld.boot_focus`).
+* **Readers of "every building"** go through the registry: `all_buildings()` (directives),
+  `markers()` (the tether map), `footprint_at()` (wanderer spawns, supply drops). Built-only
+  readers (`poi_at`, `instances`) are for things that need the node.
+
+Measured (`stream_walk`, headless, size 4, seed 11, 2 km out and back twice): no late seconds,
+longest frame 679 ms, static memory flat at 423 MiB, 6,244 nodes against 19,567 when regions
+built all their buildings. Deferred: TD-107.
 
 ## Budgets and measurements
 Headless on this container (4 shared cores; other agents' processes were running throughout, so

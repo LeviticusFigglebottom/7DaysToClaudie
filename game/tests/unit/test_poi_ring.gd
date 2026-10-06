@@ -96,3 +96,14 @@ func test_all_buildings_lists_the_unbuilt_ones_too() -> void:
 	for b: Dictionary in all:
 		assert_eq(b["def"], StringName(PICK))
 		assert_eq(int(b["tier"]), pd.tier, "its tier from its def, for the directives")
+
+
+func test_markers_show_every_building_without_touching_saved_state() -> void:
+	var s: Array = _setup({"near": [_poi("a", 100.0)], "far": [_poi("d", 2000.0)]})
+	var pm: PoiManager = s[1]
+	var before: int = Game.session.world.pois.size() if Game.session != null else 0
+	var ms: Array = pm.markers()
+	assert_eq(ms.size(), 2, "both buildings on the map, nothing built")
+	assert_false(bool(ms[0]["visited"]))
+	if Game.session != null:
+		assert_eq(Game.session.world.pois.size(), before, "drawing the map adds no saved state")
