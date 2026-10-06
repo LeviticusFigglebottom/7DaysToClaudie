@@ -344,6 +344,13 @@ func _on_sleeper_died(_e: Enemy, sid: String) -> void:
 	if not dead.has(sid):
 		dead.append(sid)
 	state["dead"] = dead
+	check_cleared()
+
+
+## Counts the building cleared once every sleeper is dead (also after a rebuild: a sleeper that
+## roamed off can die while its building is freed, PoiManager._on_roamer_died).
+func check_cleared() -> void:
+	var dead: Array = state.get("dead", [])
 	if not bool(state.get("cleared", false)) and dead.size() >= layout.sleepers.size() and Game.session != null:
 		state["cleared"] = true
 		Game.session.stats["pois_cleared"] = int(Game.session.stats.get("pois_cleared", 0)) + 1

@@ -315,10 +315,48 @@ func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
 	if inst != null and is_instance_valid(inst):
 		if ai != null:
 			inst.despawn_sleepers(ai)
+		_keep_roamers(id, inst)
 		inst.queue_free()
 	instances.erase(id)
 	_grid_remove(id)
 	_set_hole(id, false)
+
+
+## Instance id -> {sleeper id: Enemy}: awake sleepers that followed the player out of a building
+## the ring then freed. Their died hook went with the building's node, so the manager keeps it.
+var _roamers: Dictionary = {}
+## Instance ids whose roamer died while the building was freed (cleared is checked on rebuild).
+var _died_away: Dictionary = {}
+
+
+func _keep_roamers(id: StringName, inst: PoiInstance) -> void:
+	var out: Dictionary = {}
+	for sid: StringName in inst._roaming:
+		var e: Variant = inst._roaming[sid]
+		if is_instance_valid(e) and (e as Enemy).is_alive():
+			out[sid] = e
+			var hook: Callable = _on_roamer_died.bind(id, String(sid))
+			if not (e as Enemy).died.is_connected(hook):
+				(e as Enemy).died.connect(hook)
+	if not out.is_empty():
+		_roamers[id] = out
+
+
+func _on_roamer_died(e: Enemy, id: StringName, sid: String) -> void:
+	var inst: PoiInstance = instances.get(id)
+	if inst != null and is_instance_valid(inst):
+		inst._on_sleeper_died(e, sid)
+		inst._roaming.erase(StringName(sid))
+		return
+	(_roamers.get(id, {}) as Dictionary).erase(StringName(sid))
+	if Game.session == null:
+		return
+	var st: Dictionary = Game.session.world.poi_state(id)
+	var dead: Array = st.get("dead", [])
+	if not dead.has(sid):
+		dead.append(sid)
+	st["dead"] = dead
+	_died_away[id] = true
 
 
 ## Joins the finished tasks of buildings freed on their way (a route check or a generation keeps
@@ -559,6 +597,13 @@ func _place_built(inst: PoiInstance, instance_id: StringName, xf: Transform3D) -
 	inst.global_transform = xf
 	instances[instance_id] = inst
 	_grid_add(instance_id, inst)
+	# Its sleepers still out hunting from before it was freed: not spawned again at their posts.
+	if _roamers.has(instance_id):
+		inst._roaming = _roamers[instance_id]
+		_roamers.erase(instance_id)
+	if _died_away.has(instance_id):
+		_died_away.erase(instance_id)
+		inst.check_cleared()
 	_limit_draw_distance(inst)
 	inst.geometry_changed.connect(_on_poi_geometry_changed)
 	_set_hole(instance_id, true)
