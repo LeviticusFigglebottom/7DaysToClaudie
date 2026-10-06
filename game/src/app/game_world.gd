@@ -53,6 +53,9 @@ var _load_meter: LoadMeter = LoadMeter.new()
 
 func _ready() -> void:
 	Game.world = self
+	# Process after the world's systems: a boot step that lets a system tick (_boot_release) then
+	# measures exactly that system's first frame (LoadMeter), not the next one's too.
+	process_priority = 1000
 	session = Game.session
 	if session == null:
 		session = Game.new_session({"game_mode": "survival"})
@@ -82,8 +85,14 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
+	_load_step()
+	# Sampled after this frame's steps: the label shown now names the step the next frame runs,
+	# and the meter attributes the coming frame to it (GameWorld processes last, see _ready).
 	if not is_ready or _load_meter.trailing():
-		_load_meter.frame(ui.loading_text() if ui != null else "")
+		_load_meter.frame(ui.loading_text() if ui != null and not is_ready else "")
+
+
+func _load_step() -> void:
 	if _load_task >= 0:
 		var st: Array = _loader.status()
 		ui.show_loading(str(st[0]), float(st[1]) * WORKER_SHARE, _loading_map_texture(), _loader.marks())
@@ -156,6 +165,7 @@ func _on_world_loaded() -> void:
 		_boot.add([str(m[2]), _spawn_module.bind(m[0], m[1]), str(m[0])])
 	_boot.add(["Waking up…", _spawn_player, "player"])
 	_boot.add(["Waking up…", _boot_hooks, "hooks"])
+	_boot.add(["Waking up…", _boot_release, "release"])
 	# Show the first step's label for a frame before running it: the frame it runs in is then
 	# measured (and reported by LoadMeter) under its own name, not the worker's last stage.
 	ui.show_loading(_boot.current_label(), WORKER_SHARE)
@@ -173,9 +183,31 @@ func _hold_processing() -> void:
 
 func _release_processing() -> void:
 	for c: Node in _held:
-		if is_instance_valid(c):
+		if is_instance_valid(c) and int(_held[c]) >= 0:
 			c.process_mode = _held[c]
 	_held.clear()
+
+
+## The last boot steps: one per held system, each letting it tick and then giving it a frame of
+## its own. All of them starting in one frame cost ~0.5 s (their first _process: streaming,
+## scatter, sleepers); one at a time spreads that out, and LoadMeter names the slow one.
+func _boot_release() -> void:
+	var steps: Array = []
+	for c: Node in _held:
+		var node: Node = c
+		var ticked: Array = [false]
+		# First call: let it tick and end the frame; the next frame is its first. Second call (the
+		# frame after, once it has ticked): done.
+		steps.append(["Waking up… (%s)" % node.name, func() -> bool:
+			if ticked[0]:
+				return true
+			ticked[0] = true
+			if is_instance_valid(node) and int(_held.get(node, -1)) >= 0:
+				node.process_mode = _held[node]
+				# Kept, marked released, so _hold_processing doesn't hold it again.
+				_held[node] = -1
+			return false, "release %s" % node.name])
+	_insert_boot_steps(steps)
 
 
 func _boot_terrain() -> void:
@@ -279,7 +311,9 @@ func _spawn_player() -> void:
 	# (state -> progression -> connection -> lambda -> state) and leak the whole player.
 	p.progression.leveled_up.connect(_on_player_leveled.bind(p.id))
 	terrain.focus = player
-	terrain.update_streaming(player.global_position, true)
+	# Meshed on worker threads ("Finding your feet" waits for the chunks around the player): the
+	# synchronous version meshed all 169 near chunks in this step, ~0.45 s of one frame.
+	terrain.update_streaming(player.global_position)
 	if stimuli != null:
 		stimuli.recenter(player.global_position)
 
