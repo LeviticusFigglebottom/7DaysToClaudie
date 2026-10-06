@@ -163,6 +163,10 @@ const POI_SHOTS: Array[Dictionary] = [
 	{"name": "lab_decon_line", "poi": "corvane_field_lab", "at": Vector3(27.3, 2.2, 21.7), "look": Vector3(29.4, 1.3, 19.0), "hour": 14.0, "weather": "overcast", "fov": 72.0},
 	{"name": "lab_containment_night", "poi": "corvane_field_lab", "at": Vector3(32.4, -0.95, 16.5), "look": Vector3(33.0, -1.9, 11.4), "hour": 22.5, "weather": "clear", "fov": 72.0},
 	{"name": "lab_vault", "poi": "corvane_field_lab", "at": Vector3(27.4, -0.95, 10.5), "look": Vector3(23.0, -1.9, 6.6), "hour": 23.0, "weather": "clear", "fov": 72.0},
+	# The Ashen high camp (ADR-0048): up the trail to its gateway between the two gate fires at dusk,
+	# and the yard by night, the big fire, the pyre and the drum.
+	{"name": "ashen_highcamp_gate", "poi": "ashen_highcamp", "at": Vector3(20.0, 2.0, 41.0), "look": Vector3(19.0, 2.0, 22.0), "hour": 18.6, "weather": "clear", "fov": 68.0},
+	{"name": "ashen_highcamp_night", "poi": "ashen_highcamp", "at": Vector3(25.0, 2.2, 31.0), "look": Vector3(14.0, 1.0, 20.0), "hour": 22.5, "weather": "clear", "fov": 70.0},
 ]
 
 const ProbeBudget := preload("res://src/poi/interior_probe_budget.gd")
