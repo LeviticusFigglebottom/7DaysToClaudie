@@ -41,12 +41,12 @@ var _load_task: int = -1
 var _spawn_settle: int = 0
 ## The main-thread half of the load (ADR-0036): [label, Callable, name] steps, run a few a frame
 ## within BOOT_BUDGET_MS so the window keeps answering the OS (one long frame here made Windows
-## flag the game as not responding). _boot_i = -1: not booting.
+## flag the game as not responding).
 const BOOT_BUDGET_MS: float = 40.0
 ## Share of the loading bar the worker thread's half fills; the boot steps fill the rest to 0.95.
 const WORKER_SHARE: float = 0.7
-var _boot: Array = []
-var _boot_i: int = -1
+## The boot's steps (StepRunner); null when not booting.
+var _boot: StepRunner = null
 var _held: Dictionary = {}
 var _load_meter: LoadMeter = LoadMeter.new()
 
@@ -95,7 +95,7 @@ func _process(_delta: float) -> void:
 				return
 			_on_world_loaded()
 		return
-	if _boot_i >= 0:
+	if _boot != null:
 		_run_boot_steps()
 		return
 	if not is_ready and player != null:
@@ -108,32 +108,22 @@ func _process(_delta: float) -> void:
 
 ## True while the main-thread half of the load runs (modules may queue work with boot_steps()).
 func is_booting() -> bool:
-	return _boot_i >= 0
+	return _boot != null
 
 
-## Runs boot steps until this frame's budget is spent (always at least one, so a step that alone
-## overruns still progresses), then shows the next one's label.
+## Runs boot steps within the frame's budget, then shows the next one's label.
 func _run_boot_steps() -> void:
-	var t0: int = Time.get_ticks_usec()
-	while _boot_i < _boot.size():
-		var step: Array = _boot[_boot_i]
-		var s0: int = Time.get_ticks_usec()
-		# A step that returns false is waiting on a worker thread: it runs again next frame.
-		var done: Variant = (step[1] as Callable).call()
-		_load_meter.step(str(step[2]), Time.get_ticks_usec() - s0)
-		_hold_processing()
-		if done is bool and not done:
-			break
-		_boot_i += 1
-		if float(Time.get_ticks_usec() - t0) / 1000.0 >= BOOT_BUDGET_MS:
-			break
-	if _boot_i >= _boot.size():
-		_boot_i = -1
-		_boot.clear()
+	_boot.run_frame()
+	if _boot.is_idle():
+		_boot = null
 		_release_processing()
 		return
-	var p: float = WORKER_SHARE + (0.95 - WORKER_SHARE) * float(_boot_i) / float(_boot.size())
-	ui.show_loading(str(_boot[_boot_i][0]), p)
+	ui.show_loading(_boot.current_label(), WORKER_SHARE + (0.95 - WORKER_SHARE) * _boot.progress())
+
+
+func _on_boot_step(step_name: String, usec: int, _finished: bool) -> void:
+	_load_meter.step(step_name, usec)
+	_hold_processing()
 
 
 ## The worker thread is done: queue the scene-tree half of the load as boot steps (see _boot).
@@ -142,20 +132,22 @@ func _on_world_loaded() -> void:
 	poi_lots = _loader.lots
 	if _loader.world_id != "":
 		session.world_id = StringName(_loader.world_id)
-	_boot = [
+	_boot = StepRunner.new()
+	_boot.budget_ms = BOOT_BUDGET_MS
+	_boot.step_ran.connect(_on_boot_step)
+	_boot.add_all([
 		["Laying the ground…", _boot_terrain, "terrain"],
 		["Reading the old survey…", func() -> void: terrain.load_from(session.world), "terrain edits"],
 		["Hanging the sky…", _boot_environment, "environment"],
 		["Winding the clocks…", _boot_clock, "clock"],
-	]
+	])
 	for m: Array in MODULES:
-		_boot.append([str(m[2]), _spawn_module.bind(m[0], m[1]), str(m[0])])
-	_boot.append(["Waking up…", _spawn_player, "player"])
-	_boot.append(["Waking up…", _boot_hooks, "hooks"])
-	_boot_i = 0
+		_boot.add([str(m[2]), _spawn_module.bind(m[0], m[1]), str(m[0])])
+	_boot.add(["Waking up…", _spawn_player, "player"])
+	_boot.add(["Waking up…", _boot_hooks, "hooks"])
 	# Show the first step's label for a frame before running it: the frame it runs in is then
 	# measured (and reported by LoadMeter) under its own name, not the worker's last stage.
-	ui.show_loading(str(_boot[0][0]), WORKER_SHARE)
+	ui.show_loading(_boot.current_label(), WORKER_SHARE)
 
 
 ## Systems added by a boot step don't tick until the whole world exists: before the split they
@@ -254,8 +246,7 @@ func _spawn_module(prop: String, script: String) -> void:
 
 ## Queues steps to run right after the current one (only called from a boot step).
 func _insert_boot_steps(more: Array) -> void:
-	for i: int in more.size():
-		_boot.insert(_boot_i + 1 + i, more[i])
+	_boot.insert_next(more)
 
 
 func _spawn_player() -> void:
