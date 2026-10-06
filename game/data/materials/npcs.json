@@ -1,0 +1,30 @@
+{
+  "_doc": "Living people (trader-post NPCs, the Remand Program's staff). Same shaders and texture sets as the Hollowed (characters.json) with the infection switched off rather than forked: skin on the skin shader with bloom_skin, pallor, mottle and bruise at 0 (no Bloom veins, no dead pallor) and a warm living transmittance; clear eyes (npc_eye); the Program's olive fatigues, padded vest, yellow armband, knit cap and work gloves. Bodies select these with the body params' remap (blender_catalogs/npcs.py).",
+  "materials": {
+    "npc_skin": {"shader": "skin", "textures": "skin_human", "layers": {"wear": "blood_grime"},
+                 "params": {"uv_scale": 4.0, "tint": "#f2e2d6", "wear_amount": 0.12, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "normal_strength": 0.7,
+                            "variation_strength": 0.05, "sss_strength": 0.45, "transmittance_color": "#b8523a", "transmittance_depth": 0.04,
+                            "pallor": 0.0, "mottle": 0.0, "bruise": 0.0, "bloom_skin": 0.0, "growth_glow": 0.0,
+                            "wet_roughness": 0.22, "wet_clearcoat": 0.2}},
+    "npc_eye": {"shader": "skin", "textures": "npc_eye",
+                "params": {"uv_scale": 1.0, "vertex_ao_strength": 0.6, "sss_strength": 0.1, "transmittance_color": "#a08070",
+                           "wet_base": 1.0, "wet_roughness": 0.04, "wet_clearcoat": 1.0, "variation_strength": 0.0, "bloom_skin": 0.0}},
+    "npc_hair": {"shader": "std_surface", "textures": "npc_hair", "params": {"uv_scale": 6.0, "tint": "#ffffff", "vertex_ao_strength": 1.0, "normal_strength": 1.0}},
+    "npc_fatigues": {"shader": "cloth", "textures": "npc_ripstop", "layers": {"wear": "blood_grime"},
+                     "params": {"uv_scale": 4.0, "tint": "#6a6c48", "wear_amount": 0.08, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "grime_amount": 0.1,
+                                "sheen": 0.25, "stitch_color": "#4a4c30", "stitch_amount": 0.55, "seam_width": 0.0045}},
+    "npc_vest": {"shader": "cloth", "textures": "npc_ripstop", "layers": {"wear": "blood_grime"},
+                 "params": {"uv_scale": 5.0, "tint": "#9a8a62", "wear_amount": 0.08, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "grime_amount": 0.1,
+                            "sheen": 0.35, "roughness_add": -0.1, "stitch_color": "#4a4030", "stitch_amount": 0.8, "seam_width": 0.004}},
+    "npc_armband": {"shader": "cloth", "textures": "cloth_drill", "layers": {"wear": "blood_grime"},
+                    "params": {"uv_scale": 5.0, "tint": "#f2c21e", "wear_amount": 0.2, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "grime_amount": 0.2,
+                               "sheen": 0.3, "stitch_color": "#9a7410", "stitch_amount": 0.6, "seam_width": 0.003}},
+    "npc_knit": {"shader": "cloth", "textures": "cloth_knit", "layers": {"wear": "blood_grime"},
+                 "params": {"uv_scale": 5.0, "tint": "#5a5c44", "wear_amount": 0.2, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "grime_amount": 0.2,
+                            "sheen": 0.7, "wrap": 0.5, "stitch_amount": 0.0, "fray_width": 0.02}},
+    "npc_inner": {"shader": "std_surface", "textures": "gore", "params": {"uv_scale": 6.0, "tint": "#2c2523", "vertex_ao_strength": 0.7, "normal_strength": 0.6, "roughness_add": 0.1}},
+    "npc_gloves": {"shader": "cloth", "textures": "cloth_drill", "layers": {"wear": "blood_grime"},
+                   "params": {"uv_scale": 7.0, "tint": "#d4ac78", "wear_amount": 0.3, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "grime_amount": 0.35,
+                              "sheen": 0.15, "roughness_add": 0.05, "stitch_color": "#6a5030", "stitch_amount": 0.5, "seam_width": 0.003}}
+  }
+}

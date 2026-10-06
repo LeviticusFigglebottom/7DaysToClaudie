@@ -551,8 +551,22 @@ and marks it on the map. Hold E to search it; its contents improve with gamestag
 most), a web binds the forest floor, caps fruit, plants wilt, and at night it glows a cold, pale
 green, brighter on Hum nights. For now it's a warning, not a hazard: the ground doesn't infect you.
 After a Hum, survivors leave **fungal mounds** for six days; E (*Tear open the mound*) gives 2–4
-Bloom Mycelium and a 12% chance of a Bloom Core Sample. There is no trader yet (Waystation 9 is
-planned), so these and Program Scrip have no use for now.
+Bloom Mycelium and a 12% chance of a Bloom Core Sample. Waystation 9 buys both, and pays in Program
+Scrip.
+
+**Waystation 9** stands on Route 9 in the south of Larch Hollow, just short of where the river
+leaves the valley: a ring of barriers, two towers, a hatch counter and a contracts board (a yellow
+square on the tether). Inside the wire nothing rises, and the guards shoot any Hollowed that follow
+you in. At the **counter** (E) the quartermaster buys what you carry (keys, notes and Program
+caches aside) and sells what the drones bring, for scrip; the shelves restock every three days.
+At the **board** (E) he posts four contracts a day; you can hold three:
+* **Clear**: every Hollowed in a building put down and its stores (the loot room) searched.
+* **Fetch**: a sealed Program cache left in a building; pick it up and bring it back.
+* **Defend**: a relay cache by a building; hold E on it to start the uplink, then stay within 30 m
+  while waves come for it until it finishes (leave for 8 s and it drops; start it again).
+Contracts show on the tether as rings, filled once done; report back to the board to be paid in
+scrip, XP and **standing**. Standing (Unknown, Known, Trusted, Program asset) opens better stock,
+harder contracts and a discount.
 
 **Weather** changes every few hours, weighted by season: Clear (+1 °C), Overcast (−1), Valley Mist
 (−1.5, still air, fog in the hollows, sound a little muffled), Rain (−3, soaks you outdoors, sound

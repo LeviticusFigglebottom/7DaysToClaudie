@@ -31,6 +31,8 @@ var ambience: Node = null
 var supply_drops: Node = null
 var directives: Node = null
 var wildlife: Node = null
+## Waystation trading (ADR-0039): trader posts, their shops, contracts and safe zones.
+var traders: Node = null
 var is_ready: bool = false
 ## True when this random world streams its regions (ADR-0038): only the first area is composed at
 ## 1 m at load, the RegionStreamer brings in the rest. Opt-in while RWG v2 Phase 2 lands.
@@ -341,6 +343,7 @@ const MODULES: Array = [
 	["supply_drops", "res://src/world/supply_drops.gd", "Listening…"],
 	["directives", "res://src/progression/directive_tracker.gd", "Listening…"],
 	["wildlife", "res://src/wildlife/wildlife_manager.gd", "Waking the woods…"],
+	["traders", "res://src/trade/trader_manager.gd", "Manning the Waystation…"],
 ]
 
 

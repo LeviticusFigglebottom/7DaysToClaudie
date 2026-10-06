@@ -16,7 +16,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: smoke tour export render-check stream-check probe-lab check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: smoke tour export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview
 

@@ -42,5 +42,6 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0036](0036-playable-builds.md) | Playable builds: packaged exports with the generated assets, a stand-in mode we test, a load that keeps the window alive | Accepted |
 | [0037](0037-graphics-options-and-perf.md) | Graphics and controls options for real GPUs, and what the first perf pass found | Accepted |
 | [0038](0038-streamed-worlds.md) | Streamed worlds: Phase 1, a composer 2-2.5x faster with byte-identical output, row bands, cancellation, a crash-safe region cache with an LRU, generator spatial indexes | Accepted (Phase 1) |
+| [0039](0039-waystation-trading.md) | Waystation trading: trader posts (safe zones, a quartermaster), a scrip shop with reputation tiers, clear/fetch/defend contracts dealt by the day | Accepted |
 | [0040](0040-organic-towns.md) | Organic towns: streets grown over the land, lots by frontage, zoning by rings | Accepted |
 | [0041](0041-burnt-forest-and-fen.md) | Burnt forest and fen: fire scars and drowned lowland in random worlds, fire char on the bark, waders, per-biome ambience | Accepted |

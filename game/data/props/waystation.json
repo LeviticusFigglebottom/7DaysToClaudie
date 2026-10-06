@@ -1,0 +1,106 @@
+{
+ "_doc": "Waystation 9 props: the Remand Program's trader relay post built into the Cordon wall where the river leaves the valley (checkpoint kit: olive corrugated steel, hesco cages, sandbags, yellow-black hazard paint, floodlights on a generator). Models: tools/assetgen/blender/generators/props_waystation.py -> models/props/<id>[_worn|_destroyed].glb. size = [width x, height y, depth z] in metres (Godot axes, front +Z), measured from the clean model; every footprint is centred on the origin (bottom centre). Each model also ships per-part -convcolonly collision boxes (the kiosk's leave its standing space free).",
+ "defs": [
+  {
+   "id": "waystation_counter",
+   "name": "Trade Kiosk",
+   "description": "Olive corrugated booth with a wide serving hatch over a plank counter, the mesh grille rolled up above it, a chalk board of scrip rates, stock on the shelves inside and a work lamp. The quartermaster trades from inside.",
+   "_trader_spot": "Prop-local Godot metres: the trader stands at (x -0.30, z -0.05) on the ground (y 0), facing +Z through the hatch; the free standing box behind the counter spans x -1.00..0.45, z -0.76..0.30 (counter top 1.05 m, hatch opening x -1.20..0.60, y 1.05..2.05). The side doorway is on the -X wall (z -0.65..0.05). collision 'mesh' marks that the box-from-size stand-in would enclose the trader: place it with the model's own collision boxes.",
+   "tags": ["family_waystation", "trader", "structure", "metal"],
+   "variants": {"clean": "props/waystation_counter", "worn": "props/waystation_counter_worn"},
+   "collision": "mesh",
+   "physics": "static",
+   "size": [3.24, 2.64, 1.87],
+   "light": {"color": "#ffe2b0", "energy": 1.1, "range": 5.0, "flicker": 0.05, "offset": [-0.3, 2.2, -0.1], "power": "battery", "variants": {"worn": {"energy": 0.8, "flicker": 0.15}}},
+   "blocks_sight": true,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "waystation_board",
+   "name": "Contracts Board",
+   "description": "Plywood notice board on two posts under a tin roof: the CONTRACTS header, a Program bulletin, contract forms, a bounty sheet, scrawled slips and a valley map ringed in red.",
+   "tags": ["family_waystation", "sign", "wood"],
+   "variants": {"clean": "props/waystation_board", "worn": "props/waystation_board_worn"},
+   "collision": "box",
+   "physics": "static",
+   "size": [2.34, 2.43, 0.71],
+   "blocks_sight": true,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "waystation_tower",
+   "name": "Guard Tower",
+   "description": "Timber guard tower on splayed, braced legs: a sandbagged deck behind a corrugated skirt at 4.5 m, a tin roof, a floodlight and a ladder up the back.",
+   "tags": ["family_waystation", "structure", "wood"],
+   "variants": {"clean": "props/waystation_tower", "worn": "props/waystation_tower_worn"},
+   "collision": "box",
+   "physics": "static",
+   "size": [3.46, 7.62, 3.53],
+   "light": {"color": "#eef2ff", "energy": 4.0, "range": 20.0, "flicker": 0.02, "offset": [1.27, 6.35, 1.75], "shadow": true, "power": "generator", "variants": {"worn": {"energy": 2.5, "flicker": 0.1}}},
+   "blocks_sight": true,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "waystation_barrier",
+   "name": "Hesco Barrier",
+   "description": "Three earth-filled wire-mesh cages lined with geotextile, a coil of concertina wire along the top.",
+   "tags": ["family_waystation", "fence", "barrier", "breakable"],
+   "variants": {"clean": "props/waystation_barrier", "worn": "props/waystation_barrier_worn", "destroyed": "props/waystation_barrier_destroyed"},
+   "collision": "box",
+   "physics": "static",
+   "hp": 1500,
+   "size": [3.01, 1.87, 1.07],
+   "blocks_sight": true,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "waystation_gate",
+   "name": "Boom Gate",
+   "description": "Checkpoint boom: a counterweighted yellow pedestal with an amber beacon, a hazard-striped arm on its rest fork and a HALT plate hung from it.",
+   "tags": ["family_waystation", "street", "metal"],
+   "variants": {"clean": "props/waystation_gate", "worn": "props/waystation_gate_worn"},
+   "collision": "box",
+   "physics": "static",
+   "size": [4.52, 1.28, 0.74],
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "waystation_sign",
+   "name": "Waystation 9 Sign",
+   "description": "Painted steel sign on two posts: WAYSTATION 9 in big stencils, REMAND PROGRAM under it, the Program roundel and a hazard band, streaked with rust.",
+   "tags": ["family_waystation", "sign", "metal"],
+   "variants": {"clean": "props/waystation_sign", "worn": "props/waystation_sign_worn"},
+   "collision": "box",
+   "physics": "static",
+   "size": [2.9, 2.77, 0.36],
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "waystation_floodlight",
+   "name": "Floodlight Pole",
+   "description": "Steel pole on a concrete block with two floodlight heads, its cable taped down the pole and run to a portable generator at its foot.",
+   "tags": ["family_waystation", "street", "light", "metal"],
+   "variants": {"clean": "props/waystation_floodlight", "worn": "props/waystation_floodlight_worn"},
+   "collision": "box",
+   "physics": "static",
+   "size": [1.77, 4.56, 0.97],
+   "light": {"color": "#eef2ff", "energy": 5.0, "range": 22.0, "flicker": 0.02, "offset": [-0.33, 4.3, 0.45], "shadow": true, "power": "generator", "variants": {"worn": {"energy": 3.0, "flicker": 0.08}}},
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "waystation_supply_stack",
+   "name": "Program Supply Stack",
+   "description": "Stencilled Program crates, drums and ammo cans strapped on a pallet, a drum standing beside it.",
+   "tags": ["family_waystation", "storage", "wood"],
+   "variants": {"clean": "props/waystation_supply_stack", "worn": "props/waystation_supply_stack_worn"},
+   "collision": "box",
+   "physics": "static",
+   "size": [1.7, 1.51, 1.03],
+   "blocks_sight": true,
+   "rooms": ["exterior", "storage"]
+  }
+ ]
+}
