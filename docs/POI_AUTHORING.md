@@ -142,7 +142,16 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
 * `id` (lower_snake_case, not a number, unique in the POI): **give every container one** — its
   saved loot state is keyed by it (`c:<instance>:<id>`; without it, by list position, which a later
   edit can scramble — the validator warns). Container triggers name props by it.
-* `against` pushes the prop's back flush to that wall of its cell and faces it into the room.
+* `against` pushes the prop's back flush to that wall of its cell (1 cm off its face) and faces it
+  into the room (`N` 0, `E` −90, `S` 180, `W` 90); a `rot` of its own overrides that facing. Name
+  the cell **next to** the wall: `against` on a cell whose side has no wall leaves the prop standing
+  in the room (the validator says so). How far the back is from the model's origin is the
+  PropDef's `back` (default: 0 for a `wall_mounted` prop, whose origin is on the wall plane; half
+  its depth for the rest), so a wall cabinet hangs on the wall, not half its depth out.
+* A wall-mounted prop placed by hand with `pos` hangs on the wall behind it: put its origin on the
+  wall's face (half a wall, 0.08 m, off the wall's line, plus 1 cm). One hung on something that is
+  not a building wall (a counter's front, a canopy, a sign leant on a sawhorse) takes
+  `"wall_ok": true`.
 * Containers come from the PropDef (`container`) or an override; loot is rolled on first search
   from the container's table at the POI tier (+1 and a second roll in the **loot room**).
 * `key` on a locked container (safe, weapons locker) names the key item.
@@ -385,7 +394,9 @@ POI ships, never reorder its `props`, `sleepers`, `pickups` or `notes` without i
    flight or ladder hatch leaves in the level above: there is no floor there. Wall-mounted props,
    props raised 0.5 m or more with `y` (a ceiling lamp), and props tagged `stairwell` (a railing, a
    ladder) are the exception.
-3. Props stay inside rooms and off the route corridor (`"route_ok": true` to allow).
+3. Props stay inside rooms and off the route corridor (`"route_ok": true` to allow). Every wall
+   prop (wall-mounted, or `against` a wall) has its back within 5 cm of a wall's face (a gallery
+   railing counts), as the builder places it (`"wall_ok": true` to skip; test_poi_wall_gaps.gd).
 4. The plan fits the footprint; lights ≤ 10, sleepers ≤ 14, kit pieces ≤ 2600 (override in `budget`).
 5. Every prop/enemy/item/note id exists.
 6. Sleepers, traps and triggers have unique ids (containers and pickups should); trap types, keys
@@ -418,7 +429,7 @@ per run from the world seed (each group from its own stream):
      {"id": "kicked_in", "openings": [{"id": "bedroom_door", "state": "broken"}]}]}
 ],
 "props": [
-  {"id": "back_bed", "prop": "bed_double", "at": [10, 6], "against": "E", "alt": "back_bedroom:bedroom"},
+  {"id": "back_bed", "prop": "bed_double", "at": [11, 6], "against": "E", "alt": "back_bedroom:bedroom"},
   {"prop": "crib", "at": [7, 3], "against": "W", "alt": "back_bedroom:nursery"},
   {"id": "study_desk", "prop": "desk_small", "at": [7, 0], "against": "N", "alt": ["back_bedroom:study", "back_bedroom:nursery"]}
 ]

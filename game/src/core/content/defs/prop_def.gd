@@ -17,6 +17,12 @@ var container: StringName = &""
 var light: Dictionary = {}
 var blocks_sight: bool = true
 var wall_mounted: bool = false
+## Metres from the model's origin back to its back face (prop-local −Z): what stands between a
+## prop placed `against` a wall and that wall. Negative = the convention (docs/ASSET_PIPELINE.md):
+## 0 for a wall-mounted prop (origin on the wall plane), half its depth for the rest (origin at
+## the bottom centre). Set it only for a model that breaks the convention; test_prop_wall_depth
+## checks it against the generated meshes.
+var back: float = -1.0
 ## Room tags this prop suits (kitchen, bedroom, bathroom, living, office, store, garage, basement,
 ## diner, hallway, exterior, any). PoiBuilder.ROOM_TAGS maps POI room types onto these.
 var rooms: PackedStringArray = []
@@ -30,7 +36,7 @@ var anchors: Array[Dictionary] = []
 
 func _fields() -> PackedStringArray:
 	return ["variants", "collision", "physics", "hp", "size", "container", "light", "blocks_sight", "wall_mounted", "rooms",
-		"anchors"]
+		"anchors", "back"]
 
 
 func _parse(r: DefReader) -> void:
@@ -43,6 +49,9 @@ func _parse(r: DefReader) -> void:
 	light = r.dict("light")
 	blocks_sight = r.boolean("blocks_sight", true)
 	wall_mounted = r.boolean("wall_mounted", false)
+	back = r.num("back", -1.0)
+	if r.has("back") and (back < 0.0 or back > size.z):
+		r.err("back must be between 0 and the prop's depth (size z, %.2f m)" % size.z)
 	rooms = r.strings("rooms")
 	if variants.is_empty():
 		r.err("prop needs variants {clean|worn|destroyed: model}")
@@ -89,6 +98,19 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 	if container != &"" and not db.has_def(&"container", container):
 		out.append("%s: container '%s' unknown" % [ctx(), container])
 	_validate_light(out)
+
+
+## Metres from the origin back to the back face (see `back`).
+func back_depth() -> float:
+	if back >= 0.0:
+		return back
+	return 0.0 if wall_mounted else size.z * 0.5
+
+
+## Centre of the prop's collision box in its own frame: up half its height, and forward off a wall
+## plane origin so the box covers the model rather than reaching into the wall behind it.
+func box_centre() -> Vector3:
+	return Vector3(0.0, size.y * 0.5, size.z * 0.5 - back_depth())
 
 
 func model_for(condition: String) -> String:

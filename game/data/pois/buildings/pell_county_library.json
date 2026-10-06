@@ -223,7 +223,7 @@
         {"prop": "rug_oval", "pos": [7.5, 2.8], "level": 1, "rot": 0},
         {"id": "ida_bed", "prop": "bed_double", "at": [11, 6], "against": "E", "rot": -90, "level": 1},
         {"id": "ida_nightstand", "prop": "nightstand", "at": [8, 5], "against": "N", "level": 1},
-        {"id": "ida_dresser", "prop": "dresser", "at": [9, 10], "against": "W", "rot": 90, "level": 1},
+        {"id": "ida_dresser", "prop": "dresser", "at": [8, 10], "against": "W", "rot": 90, "level": 1},
         {"prop": "candle_cluster", "pos": [8.3, 5.45], "level": 1, "y": 0.62, "lit": true},
         {"prop": "bathtub", "at": [7, 9], "against": "E", "rot": -90, "level": 1},
         {"prop": "toilet", "at": [6, 10], "against": "S", "rot": 180, "level": 1},

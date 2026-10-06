@@ -92,7 +92,7 @@
         {"id": "living_room_bookshelf", "prop": "bookshelf", "at": [5, 7], "against": "E", "container": "bookshelf"},
         {"prop": "rug_rect", "at": [2, 6]},
         {"prop": "floor_lamp", "at": [0, 5], "against": "W"},
-        {"prop": "bed_double", "at": [10, 6], "against": "E"},
+        {"prop": "bed_double", "at": [11, 6], "offset": [0, -0.25], "against": "E"},
         {"id": "bedroom_nightstand", "prop": "nightstand", "at": [11, 8], "against": "E", "container": "nightstand"},
         {"id": "bedroom_wardrobe", "prop": "wardrobe", "at": [6, 6], "against": "W", "container": "dresser"},
         {"id": "bedroom_dresser", "prop": "dresser", "at": [10, 8], "against": "S", "container": "dresser"},
@@ -109,7 +109,7 @@
       ],
       "sleepers": [
         {"id": "dad", "at": [8, 4], "enemy": "hollow", "pose": "stand", "rot": 180},
-        {"id": "neighbour", "group": "bedroom", "at": [9, 7], "enemy": "hollow", "pose": "lie", "rot": 90, "alt": ["neighbour:on_bed", "neighbour:both"]},
+        {"id": "neighbour", "group": "bedroom", "at": [10, 6], "enemy": "hollow", "pose": "lie", "rot": 90, "alt": ["neighbour:on_bed", "neighbour:both"]},
         {"id": "sitter", "at": [1, 6], "enemy": "hollow", "pose": "sit", "rot": 90},
         {"id": "neighbour", "group": "bedroom", "pos": [8.3, 7.4], "enemy": "hollow", "pose": "crouch", "rot": 70, "alt": "neighbour:by_wardrobe"},
         {"id": "neighbours_wife", "group": "bedroom", "pos": [7.6, 5.6], "enemy": "hollow", "pose": "stand", "rot": 120, "alt": "neighbour:both"}

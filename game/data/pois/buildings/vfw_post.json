@@ -430,7 +430,7 @@
      "prop": "office_desk",
      "at": [
       11,
-      1
+      0
      ],
      "against": "N",
      "rot": 0
@@ -439,7 +439,7 @@
      "prop": "office_chair",
      "pos": [
       11.5,
-      2.6
+      1.6
      ],
      "rot": 180
     },

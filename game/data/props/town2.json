@@ -736,6 +736,7 @@
     2.5,
     0.53
    ],
+   "back": 0.23,
    "blocks_sight": false,
    "rooms": [
     "office"
