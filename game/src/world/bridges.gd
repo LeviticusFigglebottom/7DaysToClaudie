@@ -75,7 +75,26 @@ func setup_world(w: Node) -> void:
 			var a := Vector3(float(f[0]), float(f[1]), float(f[2]))
 			var c := Vector3(float(t[0]), float(t[1]), float(t[2]))
 			var path: PackedVector3Array = deck_path(road_points(all, str(b.get("road", ""))), a, c)
-			build(path, float(b.get("width", MODEL_WIDTH)))
+			_todo.append(build.bind(path, float(b.get("width", MODEL_WIDTH))))
+	# A tool or test without a booting world gets every bridge now.
+	if not (w.has_method(&"is_booting") and bool(w.call(&"is_booting"))):
+		for f: Callable in _todo:
+			f.call()
+		_todo.clear()
+
+
+## Bridges still to build: the main map's took one frame of ~470 ms at load.
+var _todo: Array[Callable] = []
+
+
+## The bridges as one boot step, one a call (GameWorld runs it right after this module's).
+func boot_steps() -> Array:
+	if _todo.is_empty():
+		return []
+	return [["Filling the rivers…", func() -> bool:
+		if not _todo.is_empty():
+			(_todo.pop_front() as Callable).call()
+		return _todo.is_empty(), "bridges"]]
 
 
 ## Every centreline point the regions recorded for road `road_id` (each records its own stretch,
