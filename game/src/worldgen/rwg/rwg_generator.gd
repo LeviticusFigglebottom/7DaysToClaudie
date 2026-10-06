@@ -684,7 +684,8 @@ func _road_network() -> void:
 				mid[0] = _snap_to_road(mid[0])
 			if not bool(pc["end_exact"]):
 				mid[mid.size() - 1] = _snap_to_road(mid[mid.size() - 1])
-			added = _add_road(mid, "highway", "%s road" % tw["name"], bool(pc["end_exact"])) or added
+			if not _along_roads(mid):
+				added = _add_road(mid, "highway", "%s road" % tw["name"], bool(pc["end_exact"])) or added
 		if added:
 			exits -= 1
 	if towns.is_empty():
@@ -719,13 +720,27 @@ func _connect(ta: Dictionary, tb: Dictionary, cls: String, name: String) -> void
 			mid[0] = _snap_to_road(mid[0])
 		if not bool(pc["end_exact"]):
 			mid[mid.size() - 1] = _snap_to_road(mid[mid.size() - 1])
-		_add_road(mid, cls, name, false)
+		if not _along_roads(mid):
+			_add_road(mid, cls, name, false)
 
 
 ## The nearest point on a road already built (a junction), or p itself when none is near.
 func _snap_to_road(p: Vector2) -> Vector2:
 	var nr: Array = nearest_road(p)
 	return nr[1] if float(nr[0]) < terrain.step * 1.5 else p
+
+
+## True when a route piece only runs along roads already built (within 6 m all the way). Routes
+## start and end at town centres, where roads already meet, so route_pieces hands back stretches of
+## a road the route steps onto, and connectors between two roads that share cells: a second road on
+## top of the first that grades the ground with its own profile.
+func _along_roads(pts: PackedVector2Array) -> bool:
+	for k: int in pts.size() - 1:
+		var n: int = maxi(1, int(ceil(pts[k].distance_to(pts[k + 1]) / 8.0)))
+		for s: int in n + (1 if k == pts.size() - 2 else 0):
+			if float(nearest_road(pts[k].lerp(pts[k + 1], float(s) / n))[0]) > 6.0:
+				return false
+	return true
 
 
 func _add_road(pts: PackedVector2Array, cls: String, name: String, off_map: bool) -> bool:
@@ -931,7 +946,7 @@ func _stub(g: Streets.Ground, c: Vector2, dir: Vector2, length: float, spread: f
 		var u2: Vector2 = cands[ci][1]
 		var to: Vector2 = c + u2 * length
 		to = Vector2(clampf(to.x, -half, half), clampf(to.y, -half, half))
-		var pts: PackedVector2Array = Streets.route_fine(g, c, to, {"grade_ok": 0.06, "grade_max": 0.13, "water": 14.0, "margin": 100.0, "tol": 10.0})
+		var pts: PackedVector2Array = _despike(Streets.route_fine(g, c, to, {"grade_ok": 0.06, "grade_max": 0.13, "water": 14.0, "margin": 100.0, "tol": 10.0}))
 		if pts.size() < 2:
 			continue
 		var run: float = 0.0
@@ -944,6 +959,19 @@ func _stub(g: Streets.Ground, c: Vector2, dir: Vector2, length: float, spread: f
 		if wind < 1.15:
 			break
 	return best
+
+
+## Drops the points where a route doubles back on itself (turns by more than 120 degrees): a grid
+## search's hook round a cell or two, simplified, is a spike a few metres long in the road.
+static func _despike(pts: PackedVector2Array) -> PackedVector2Array:
+	var i: int = 1
+	while i < pts.size() - 1:
+		if (pts[i] - pts[i - 1]).normalized().dot((pts[i + 1] - pts[i]).normalized()) < -0.5:
+			pts.remove_at(i)
+			i = maxi(1, i - 1)
+		else:
+			i += 1
+	return pts
 
 
 ## A road through c both ways: out along `axis` (or the town's lowest axis when ZERO) and back
