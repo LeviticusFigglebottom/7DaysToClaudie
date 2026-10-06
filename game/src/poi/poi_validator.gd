@@ -451,6 +451,7 @@ func _run() -> void:
 			_e("pickup item '%s' unknown" % p2.get("item"))
 	_check_ids()
 	_check_traps(seen, stair_cells)
+	_check_stair_doors()
 	_check_triggers(seen)
 	_check_locks(keys)
 	_check_roof()
@@ -641,6 +642,25 @@ func _check_ids() -> void:
 
 ## Trap types, keys and placement: cell traps inside rooms (bear traps may sit in the yard), weak
 ## floors over a room, creaky floors wholly indoors, edge traps across a passable edge.
+## A doorway onto a stair flight above its first step meets the steps a metre or more up: the player
+## has to jump onto them (the fire station's bay door, the first playtest). Doors and openings
+## belong at a flight's foot or along the floor beside it.
+func _check_stair_doors() -> void:
+	for s: Dictionary in layout.stairs:
+		var mid: Dictionary = {}
+		var cells: Array = s["cells"]
+		for k: int in range(1, cells.size()):
+			mid[cells[k]] = true
+		for op: Dictionary in layout.openings:
+			if int(op["level"]) != int(s["level"]) or PoiLayout.is_window(str(op["type"])) or str(op["type"]) == "half":
+				continue
+			var c: Vector2i = op["cell"]
+			var n: Vector2i = c + PoiLayout.DIRS[int(op["side"])]
+			if mid.has(c) or mid.has(n):
+				_e("opening '%s' at %s (level %d) opens onto the stair flight from %s above its foot: move it to the foot (%s) or off the flight" % [
+					op["id"], c, int(op["level"]), s["cell"], s["cell"]])
+
+
 func _check_traps(seen: Dictionary, stair_cells: Dictionary) -> void:
 	for t: Dictionary in layout.traps:
 		var tid: String = str(t["tid"])
