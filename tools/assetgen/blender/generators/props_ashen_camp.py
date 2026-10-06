@@ -37,7 +37,7 @@ def ashen_war_drum(ctx: K.Ctx) -> None:
     """A big drum hollowed from a log section, a rawhide head laced to a second skin underneath with
     sinew zig-zagging down its sides, ash-painted rings; it sits tilted towards the player (-Y) in a
     cradle of two crossed-pole frames lashed with rawhide, a deer skull hung with bone charms on a
-    stake behind it, two bone-knobbed beaters leaning on it. Worn: the head slack and split, one beater
+    stake behind it, two bone-knobbed beaters leaning on it. Worn: the top head torn out to its rim, one beater
     gone."""
     r = ctx.rnd("drum")
     R, L = 0.36, 0.56

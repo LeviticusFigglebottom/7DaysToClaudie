@@ -435,7 +435,11 @@ BODIES = {
 # bone over it. Their joint skirts and stump caps (and the parting of the lips) are ashen_inner, a
 # darker blood than the Hollowed's gore. The Hollowed head is wide-eyed: a low eye_open and a heavy lid
 # give the living a hard squint instead (TD-170).
-ASHEN_LIVING_REMAP = {"skin_hollow": "skin_ashen_living", "eyes_hollow": "npc_eye", "leather_boot": "hide",
+# Ash-grey from scalp to heel (skin_ashen_living: a grey base under heavy lichen-ash dust, charcoal paint),
+# so they read at 30 m as grey figures; darker worn hide (ashen_hide_dark) and wrapped shins: the
+# "boots" are raised to the knee and drawn as hide strip wraps (ashen_wrap), as is the belt.
+ASHEN_LIVING_REMAP = {"skin_hollow": "skin_ashen_living", "eyes_hollow": "npc_eye", "hide": "ashen_hide_dark",
+                     "leather_boot": "ashen_wrap",
                      # the closed lips' parting line and the stump caps: dark blood, not the Hollowed's wet red
                      "gore": "ashen_inner"}
 _LIVING_FACE = {"hunch": 0.0, "head_forward": 0.0, "head_tilt": 0.0, "gaze_down": 2.0, "claw": 0.08, "jaw_drop": 0.0,
@@ -450,9 +454,9 @@ LIVING = {
         "lid_droop": 0.45, "nose_rot": 0.2, "limp_side": "R",
         "outfit": {"tops": [{"type": "hide", "sleeve": 0.0, "hem": -0.13, "torn": 0.1, "neck_front": 0.06,
                              "flare": 0.014, "placket": False, "armhole": 0.01}],
-                   "pants": {"type": "hide", "belt": True, "torn": 0.05, "length": 0.97}},
+                   "pants": {"type": "hide", "belt": True, "torn": 0.15, "length": 0.97, "thickness": 0.0045}},
         "mantle": {"low": 0.25, "reach": 0.26},
-        "boots": {"L": True, "R": True, "height": 0.24},
+        "boots": {"L": True, "R": True, "height": 0.36},
         "hair": {"style": "long", "hairline": 0.05, "patchy": 0.0, "locks": 12, "length": 0.11},
         "beard": {"thickness": 0.0035, "line": -0.028, "moustache": True},
         "remap": ASHEN_LIVING_REMAP,
@@ -474,10 +478,10 @@ LIVING = {
         "lid_droop": 0.4, "limp_side": "L",
         "outfit": {"tops": [{"type": "hide", "sleeve": 0.82, "hem": -0.22, "torn": 0.12, "neck_front": 0.05,
                              "flare": 0.02, "placket": False}],
-                   "pants": {"type": "hide", "belt": True, "torn": 0.05, "length": 0.97}},
+                   "pants": {"type": "hide", "belt": True, "torn": 0.15, "length": 0.97, "thickness": 0.0045}},
         "mantle": {"low": 0.16, "reach": 0.19},
         "straps": [{"type": "cord", "x": 0.06, "width": 0.018, "waist": 0.16}],
-        "boots": {"L": True, "R": True, "height": 0.22},
+        "boots": {"L": True, "R": True, "height": 0.34},
         "hair": {"style": "long", "hairline": 0.06, "patchy": 0.0, "locks": 14, "length": 0.12},
         "remap": ASHEN_LIVING_REMAP,
         "paint": [{"kind": "eye_band", "y": 0.014, "width": 0.013},
@@ -493,9 +497,9 @@ LIVING = {
     "ashen_scout_a": {
         "seed": 1103, "height": 1.77, "sex": "m", "build": 0.12, "gaunt": 0.4, **_LIVING_FACE, "brow": 0.8,
         "lid_droop": 0.4, "leg_scale": 1.03, "limp_side": "R",
-        "outfit": {"pants": {"type": "hide", "belt": True, "torn": 0.1, "length": 0.97, "waist": 0.06}},
+        "outfit": {"pants": {"type": "hide", "belt": True, "torn": 0.15, "length": 0.97, "waist": 0.06, "thickness": 0.0045}},
         "mantle": {"low": 0.15, "reach": 0.19},
-        "boots": {"L": True, "R": True, "height": 0.2},
+        "boots": {"L": True, "R": True, "height": 0.34},
         "hair": {"style": "short", "hairline": 0.06, "patchy": 0.0},
         "remap": ASHEN_LIVING_REMAP,
         "paint": [{"kind": "eye_band", "y": 0.010, "width": 0.016},
