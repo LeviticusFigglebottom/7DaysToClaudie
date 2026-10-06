@@ -176,8 +176,13 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
     frameworks; roads with bridges; authored places by site; drop site; Bloom patches; cached in
     user://worlds/random; save v6; `rwg_preview.gd` map CLI and in-world shots; the slice smoke
     passes on a 3 x 3 random world.
+  - [x] v2, organic towns (ADR-0040, `RwgGenerator.VERSION` 2): towns sited by size class from a
+    `town_density` setting, arterials routed through their centres, streets grown over the land with
+    lots by frontage and zoning by rings, lot pads graded to each frame, buildings stood on their
+    frames, an authored building in at most 3 towns per world; v1 worlds still load. Gaps:
+    TD-136..140.
   - [ ] Caves, traders, the Ashen's territory, coasts and new biomes; streaming regions for 6-7 km
-    worlds (TD-081..084).
+    worlds (TD-081..084; RWG v2 Phases 2–4, ADR-0038).
   - [x] Pool buildings for random towns (DESIGN §11): Suds & Spin Laundromat, Hollowmere Grocery,
     Bracken Lumber & Feed, Pell County Library and KHLW Valley Radio, five authored dungeons with
     room alternatives that town lots pick by zoning, tier and footprint; 36 new props
