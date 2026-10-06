@@ -899,11 +899,18 @@ class FPRig:
             grip = float(prm.get(f"{sd}.fist", 0.3))
             idx = float(prm.get(f"{sd}.index", 0.0))
             thumb = float(prm.get(f"{sd}.thumb", grip))
+            lat = sk.j[f"lat.{sd}"]
             for k, name in FINGER_BONES:
                 c = max(-0.15, grip + idx) if k == "ix" else grip
                 for i, deg in enumerate(FINGER_CURL):
                     bn = f"{name}_{i + 1}.{sd}"
                     Q[bn] = _R(sk.rest[bn][:, 0], -deg * c * FINGER_SCALE[k])
+                # Closing fingers converge on the middle finger (splayed at rest, they would
+                # close into gaps): swing each knuckle sideways, about its back-of-hand axis.
+                bn = f"{name}_1.{sd}"
+                r = sk.rest[bn]
+                toward_thumb = 1.0 if float(np.cross(r[:, 2], r[:, 1]) @ lat) > 0 else -1.0
+                Q[bn] = _R(r[:, 2], FINGER_CONVERGE[k] * max(0.0, c) * toward_thumb) @ Q[bn]
             # The thumb opposes as it closes: its metacarpal swings across the palm and turns
             # about its own length so the pad, not the side, meets the index finger; then its
             # two joints wrap the handle.
@@ -951,6 +958,8 @@ def _quat(m: np.ndarray) -> np.ndarray:
 # a little further, as they do round a handle.
 FINGER_CURL = (68.0, 92.0, 58.0)
 FINGER_SCALE = {"ix": 1.0, "md": 1.0, "rg": 1.05, "pk": 1.12}
+# How far each finger swings toward the thumb side (degrees, + towards it) at curl 1.
+FINGER_CONVERGE = {"ix": -5.0, "md": 0.0, "rg": 4.0, "pk": 9.0}
 # Thumb at curl 1: metacarpal flexion across the palm, swing toward the fingers, opposition about
 # its own axis; then MCP and IP flexion (degrees).
 THUMB_CURL = (30.0, 30.0, 25.0, 38.0, 48.0)
@@ -1075,12 +1084,16 @@ class PoseSolver:
     # line, and the hand spun about its handle. What a pose must keep is where the tool points; how
     # the fist is rolled round the handle is free within reason, and turning it is often all a
     # wrist needs (a spear held forward from the hip). The first frame of an action searches wide;
-    # later frames search near the last answer, so the arm never jumps between solutions.
+    # later frames search near the last answer, so the arm doesn't jump between solutions, unless
+    # that answer leaves the wrist past its range.
     SWINGS = tuple(range(-100, 101, 10))
     SPINS = tuple(range(-60, 61, 10))
     NEAR = (-12.0, -6.0, -3.0, 0.0, 3.0, 6.0, 12.0)
     # Cost of a degree off the hints relative to a degree of over-bend (so between equally good
     # answers the hinted elbow and the authored roll win).
+    # A grip moves at most this far (m) to spare a wrist: past it the pose is wrong, not a little
+    # off, and the hand turns instead (and the build log says how far).
+    MOVE_MAX = 0.06
     SWING_COST = 0.15
     SPIN_COST = 0.12
 
@@ -1097,6 +1110,7 @@ class PoseSolver:
         """Start a new action: search wide again and forget how far hands were turned."""
         self.prev = {}                  # side -> (swing, spin) of the last frame
         self.clamped = {}               # side -> worst degrees a hand was turned back by
+        self.moved = {}                 # side -> furthest (m) a grip was moved to spare the wrist
 
     def _over(self, flex: float, ulnar: float, roll: float) -> float:
         """How far (degrees, elliptical) a wrist pose is outside the limits; 0 inside."""
@@ -1126,49 +1140,92 @@ class PoseSolver:
         A = acc[f"forearm.{sd}"]
         return A, A.T @ Rh
 
-    def _fit(self, sd: str, g, F, elbow):
+    def _straight_wrist(self, sd: str, wrist, Rh):
+        """Where the wrist would be, nearest `wrist`, for this hand turn with the wrist straight:
+        the forearm along the hand's rest relation, the elbow anywhere the upper arm reaches."""
+        sk = self.rig.sk
+        f = Rh @ sk.rest[f"forearm.{sd}"][:, 1]
+        sh = sk.j[f"shoulder.{sd}"]
+        l1, l2 = sk.length(f"upper_arm.{sd}"), sk.length(f"forearm.{sd}")
+        c = sh + f * l2
+        return c + _n(np.asarray(wrist) - c) * l1, c
+
+    def _fit(self, sd: str, g, F, elbow, movable: bool = True):
         """(wrist, Rh, pole) for a grip at g with its handle along F's z: the elbow and the roll
-        round the handle that bend the wrist least, then the hand turned back inside the wrist's
-        range about the grip."""
+        round the handle that bend the wrist least; then, if the wrist is still past its range,
+        the hand moved (tool direction kept) just far enough toward where a straight wrist would
+        put it; and what is left turned back about the grip."""
         rig = self.rig
         hint = _n(self.pole0[sd] + elbow)
         g = np.asarray(g, dtype=np.float64)
         d, k = F[:, 2], F[:, 0]
-        line = _n(g - rig.sk.j[f"shoulder.{sd}"])
+        sh = rig.sk.j[f"shoulder.{sd}"]
 
-        def cost(sw, sp):
-            Rh = rig.hand(sd, g, d, _R(d, sp) @ k)[1]
-            wrist = g - Rh @ rig.grip_off[sd]
-            pole = rot_axis(line, math.radians(sw)) @ hint
-            _, Qh = self._arm(sd, wrist, pole, Rh)
-            return self._over(*rig.wrist_angles(sd, Qh)) + self.SWING_COST * abs(sw) + self.SPIN_COST * abs(sp)
+        def place(gg, sw, sp):
+            Rh = rig.hand(sd, gg, d, _R(d, sp) @ k)[1]
+            wrist = gg - Rh @ rig.grip_off[sd]
+            pole = rot_axis(_n(wrist - sh), math.radians(sw)) @ hint
+            return wrist, Rh, pole
 
-        if sd in self.prev:
-            s0, p0 = self.prev[sd]
-            cands = [(s0 + a, p0 + b) for a in self.NEAR for b in self.NEAR]
-        else:
-            cands = [(a, b) for a in self.SWINGS for b in self.SPINS]
-            best = min(cands, key=lambda c: cost(*c))
-            cands = [(best[0] + a, best[1] + b) for a in self.NEAR for b in self.NEAR]
-        sw, sp = min(cands, key=lambda c: cost(*c))
+        def over(gg, sw, sp):
+            wrist, Rh, pole = place(gg, sw, sp)
+            return self._over(*rig.wrist_angles(sd, self._arm(sd, wrist, pole, Rh)[1]))
+
+        def cost(gg, sw, sp):
+            return over(gg, sw, sp) + self.SWING_COST * abs(sw) + self.SPIN_COST * abs(sp)
+
+        def search(gg, around):
+            if around is None:
+                best = min(((a, b) for a in self.SWINGS for b in self.SPINS), key=lambda c: cost(gg, *c))
+            else:
+                best = around
+            return min(((best[0] + a, best[1] + b) for a in self.NEAR for b in self.NEAR), key=lambda c: cost(gg, *c))
+
+        sw, sp = search(g, self.prev.get(sd))
+        if sd in self.prev and over(g, sw, sp) > 0.5:
+            # A fast swing can outrun the local search: look wide again and take a better answer
+            # (the arm may change its elbow between two frames of a strike, never in an idle).
+            wide = search(g, None)
+            if cost(g, *wide) < cost(g, sw, sp):
+                sw, sp = wide
+        moved = 0.0
+        if movable and over(g, sw, sp) > 0.5:
+            # Bisect how far toward the straight-wrist grip the hand must go.
+            wrist, Rh, _ = place(g, sw, sp)
+            ws, _c = self._straight_wrist(sd, wrist, Rh)
+            shift = ws - wrist
+            n = float(np.linalg.norm(shift))
+            if n > self.MOVE_MAX:
+                shift *= self.MOVE_MAX / n
+            lo, hi = 0.0, 1.0
+            fit = search(g + shift, (sw, sp))
+            for _ in range(7):
+                mid = 0.5 * (lo + hi)
+                cand = search(g + shift * mid, (sw, sp))
+                if over(g + shift * mid, *cand) <= 0.5:
+                    hi, fit = mid, cand
+                else:
+                    lo = mid
+            g = g + shift * hi
+            sw, sp = fit
+            moved = float(np.linalg.norm(shift)) * hi
         self.prev[sd] = (sw, sp)
-        Rh = rig.hand(sd, g, d, _R(d, sp) @ k)[1]
-        wrist = g - Rh @ rig.grip_off[sd]
-        pole = rot_axis(line, math.radians(sw)) @ hint
-        # Turn the hand back inside the range. The forearm moves with the wrist, so go round a
-        # few times; the grip stays put and the wrist follows the hand.
+        wrist, Rh, pole = place(g, sw, sp)
+        # Turn the hand back inside the range, about the wrist: in one step, the forearm stays
+        # where the arm put it and the grip shifts a little. (Turned about the grip instead, each
+        # correction moved the forearm and so the angles again, and a hand 1° past its range could
+        # wander 40° off.)
         R0 = Rh
-        for _ in range(4):
-            A, Qh = self._arm(sd, wrist, pole, Rh)
-            ang = rig.wrist_angles(sd, Qh)
-            c = self._clamp(*ang)
-            if max(abs(x - y) for x, y in zip(ang, c)) < 0.05:
-                break
+        A, Qh = self._arm(sd, wrist, pole, Rh)
+        ang = rig.wrist_angles(sd, Qh)
+        c = self._clamp(*ang)
+        if max(abs(x - y) for x, y in zip(ang, c)) > 0.05:
             Rh = A @ rig.wrist_rotation(sd, *c)
-            wrist = g - Rh @ rig.grip_off[sd]
+            g = wrist + Rh @ rig.grip_off[sd]
         turned = math.degrees(float(np.linalg.norm(_rotvec(Rh @ R0.T))))
         self.clamped[sd] = max(self.clamped.get(sd, 0.0), turned)
-        return wrist, Rh, pole
+        self.moved[sd] = max(self.moved.get(sd, 0.0), moved)
+        return g, wrist, Rh, pole
 
     def solve(self, hands: dict) -> dict:
         prm = {}
@@ -1186,7 +1243,8 @@ class PoseSolver:
                 F = _frame(k, d)
             else:
                 g, F = h.g, h.F
-            wrist, Rh, pole = self._fit(sd, g, F, h.elbow)
+            # A hand on the other's handle stays on it: it can turn, not move.
+            g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None)
             # What the hand really ended up gripping (the other hand follows this handle).
             placed[sd] = Hand(g, Rh @ self.rig.S0[sd], h.elbow, h.sc)
             prm[f"{sd}.wrist"], prm[f"{sd}.Rh"] = wrist, Rh
