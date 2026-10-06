@@ -1434,9 +1434,9 @@ def lab_decon_shower(ctx: K.Ctx) -> None:
             _cy(ctx, f"side_nozzle{sy}{k}", 0.014, 0.05, (-hs + 0.04, sy * hs, 0.5 + k * 0.38), DARK, axis="X", segs=8)
     W.rod(ctx, "pull_rod", (0.2, -0.2, H), (0.2, -0.2, 1.75), 0.006, STAINLESS, segs=5)
     tri = K.tube("pull", [(0.12, -0.2, 1.75), (0.28, -0.2, 1.75), (0.2, -0.2, 1.65), (0.12, -0.2, 1.75)], 0.008, segs=5)
-    ctx.add(tri, "plastic_green", uv="box", uv_scale=4.0, smooth=40)
+    ctx.add(tri, "road_plastic_green", uv="box", uv_scale=4.0, smooth=40)
     # Eyewash pedestal outside the tray.
-    W.rod(ctx, "eyewash_post", (hs + 0.25, -hs + 0.2, 0.0), (hs + 0.25, -hs + 0.2, 1.0), 0.03, "plastic_green", segs=8)
+    W.rod(ctx, "eyewash_post", (hs + 0.25, -hs + 0.2, 0.0), (hs + 0.25, -hs + 0.2, 1.0), 0.03, "road_plastic_green", segs=8)
     bowl = K.lathe("eyewash_bowl", [(0.0, 0.0), (0.12, 0.04), (0.14, 0.08), (0.13, 0.085), (0.0, 0.03)], segs=14)
     K.place(bowl, (hs + 0.25, -hs + 0.2, 1.0))
     ctx.add(bowl, "plastic_yellow", uv="cyl", uv_axis=2, smooth=40)

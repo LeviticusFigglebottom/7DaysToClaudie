@@ -216,3 +216,45 @@ func test_the_safe_zone_keeps_hollowed_out() -> void:
 	for i: int in 20:
 		_tm._guards(1.0)
 	assert_true(e.health <= 0.0 or e.state == Enemy.State.DEAD, "and put it down")
+
+
+## TD-179: the field lab's Bloom core. The board deals it only to a Trusted player, sends them to
+## the tier-5 site even after they have been inside, is done while they carry a core, and is never
+## dealt again once turned in.
+func test_the_field_lab_contract_brings_in_a_bloom_core() -> void:
+	var lab: Dictionary = {"id": "poi:lab", "def": "corvane_field_lab", "name": "the Corvane Field Lab", "tier": 5,
+		"kind": "generated", "pos": POST + Vector3(2400, 0, -1800)}
+	_tm.buildings_source = func() -> Array:
+		return [lab]
+	Game.session.world.poi_state(&"poi:lab")["visited"] = true
+	var lab_offer := func() -> Dictionary:
+		for day: int in range(1, 30):
+			Game.session.clock.total_minutes = float(day - 1) * 1440.0 + 540.0
+			for o: Dictionary in _tm.board_offers(_p, _td):
+				if str(o["def"]) == "fetch_t5":
+					return o
+		return {}
+	_p.contracts.add_rep(&"waystation_9", 100)
+	assert_true((lab_offer.call() as Dictionary).is_empty(), "Known isn't trusted with it")
+	_p.contracts.add_rep(&"waystation_9", 150)
+	var o: Dictionary = lab_offer.call()
+	assert_false(o.is_empty(), "a Trusted player is sent to the lab, visited or not")
+	assert_eq(str(o["target"]), "poi:lab")
+	var r: Dictionary = Game.execute(&"contract.accept", _args({"offer": str(o["id"])}))
+	assert_true(bool(r["ok"]), str(r))
+	var c: Dictionary = _p.contracts.get_contract(str(r["contract"]))
+	_tm._follow(_p, c, 1.0)
+	assert_eq(str(c["state"]), ContractLog.ACTIVE)
+	assert_false(c.has("placed"), "the vault already holds one: nothing is set down")
+	_p.inventory.add_item(&"bloom_core_canister", 1)
+	_tm._follow(_p, c, 1.0)
+	assert_eq(str(c["state"]), ContractLog.READY, "carrying a core")
+	_p.inventory.remove(&"bloom_core_canister", 1)
+	_tm._follow(_p, c, 1.0)
+	assert_eq(str(c["state"]), ContractLog.ACTIVE, "sold or dropped it: open again")
+	_p.inventory.add_item(&"bloom_core_canister", 1)
+	_tm._follow(_p, c, 1.0)
+	_turn_in(c)
+	assert_eq(_p.inventory.count_of(&"bloom_core_canister"), 0, "the core handed over")
+	assert_eq(_p.inventory.count_of(&"lab_antifungal_ampoule"), 2)
+	assert_true((lab_offer.call() as Dictionary).is_empty(), "a one-off job")

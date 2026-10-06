@@ -31,9 +31,11 @@ outdoors) that the validator can still prove in every dressing.
   (`lab_card_reader`, its red lamp on the battery) beside the door as the lock cue. No engine change; the
   validator proves it like any key.
 * **Placement**: one wilderness pool entry, site `remote` (far from the drop site, high, level ground),
-  `min_danger` 4, `max` 1 per 16 km², reached by a dirt track. `per_region` 0.07 places one in every world of
-  4 x 4 and up (16 x 0.07 > 1) and in about two of three 3 x 3 worlds; `rwg_preview`-style checks placed it in
-  15 of 15 worlds of size 4-6, always in a danger 4-5 region 2.5-6 km from the drop site.
+  `min_danger` 4, `"unique": true` (one per world, whatever its size: generator VERSION 5, 1a300a3; the
+  first draft's `max` 1 per 16 km² put two or three labs in 5 x 5 and 6 x 6 worlds), reached by a dirt
+  track. `per_region` 0.07 places it in every world of 4 x 4 and up (16 x 0.07 > 1) and in about two of
+  three 3 x 3 worlds; before the `unique` key, `rwg_preview`-style checks placed it in 15 of 15 worlds of
+  size 4-6, always in a danger 4-5 region 2.5-6 km from the drop site.
 * **The compound**: a 56 x 56 footprint. The wire is props with collision (the station fence, its gate); the
   guard hut stands in the south fence line and the containment block in the north one, so the block's escape
   hatch (the bolted shortcut) opens on the hillside beyond the wire. Prefab lab modules are kit rooms under

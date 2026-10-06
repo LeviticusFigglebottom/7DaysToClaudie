@@ -15,9 +15,9 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
 | Integrator `session_01F4L1SyEdjgRRBm7g93Yk8J` | `ccr-24ba8b7d-fttoi8` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Merged session 3's tether markers and ADR-0038 §8 (604b97f) and session 2's Corvane caves (ADR-0044). Landing X (wilderness round 3) and Y (the field lab): fixes, `make assets`, renders, reviewed landing commits. Agent Z's fidelity round restarts from its brief | A `mine` wilderness site (TD-169); the M3 base tech or more pool dungeons |
-| Session 2 `@S2` | `claude/hollowmere-wildlife-town` | Wildlife, town content and economy | A tier-5 contract on `bloom_core_canister` (TD-179), then the Ashen (ADR-0048) | Ashen camps, scouts, raids, fear of fire |
-| Session 3 `@S3` | `claude/hollowmere-playable` | Playable builds and stability | Streaming on for random worlds (TD-137, TD-118), then Phase 3 part 2 (TD-107) | Phase 4's save side (v7, the world bundle), then TD-003's headless profile |
-| Session 4 `@S4` | `claude/blissful-wright-gnc54e` | POI prop placement, then first-person hands | Merge the integration branch (take its side of the facing fix), port the two lost nudges, then wall-mounted props flush to their walls (TD-159–161) | The first-person hands (ADR-0045, TD-172–175) |
+| Session 2 `session_018Mc59z7WZz2YkXsyMHsJ75` | `claude/hollowmere-wildlife-town` | Wildlife, town content and economy | A tier-5 contract on `bloom_core_canister` (TD-179), then the Ashen (ADR-0048) | Ashen camps, scouts, raids, fear of fire |
+| Session 3 `session_01Nvn2rfJdMq7iK7ZuQhac7y` | `claude/hollowmere-playable` | Playable builds and stability | Streaming on for random worlds (TD-137, TD-118), then Phase 3 part 2 (TD-107) | Phase 4's save side (v7, the world bundle), then TD-003's headless profile |
+| Session 4 `session_01DYqPNtu8CtWNbHWPmbsFcW` | `claude/blissful-wright-gnc54e` | POI prop placement, then first-person hands | Merge the integration branch (take its side of the facing fix), port the two lost nudges, then wall-mounted props flush to their walls (TD-159–161) | The first-person hands (ADR-0045, TD-172–175) |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with

@@ -270,7 +270,7 @@ func board_offers(p: PlayerState, td: TraderDef) -> Array[Dictionary]:
 	var day: int = Game.session.clock.day()
 	var out: Array[Dictionary] = []
 	for o: Dictionary in Contracts.offers(td, day, Game.session.world_seed, buildings(), post.get("pos", Vector3.ZERO),
-			rep_tier(p, td), Game.session.world.pois, p.contracts.busy_targets()):
+			rep_tier(p, td), Game.session.world.pois, p.contracts.busy_targets(), p.contracts.done):
 		if not p.contracts.has_taken(str(o["id"]), day):
 			out.append(o)
 	return out
@@ -334,7 +334,7 @@ func _cmd_contract_turn_in(args: Dictionary) -> Dictionary:
 	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c["def"]))) as QuestDef
 	if qd.quest_type == "fetch":
 		if not p.inventory.remove(StringName(qd.item), 1):
-			return _fail("bring the cache")
+			return _fail("bring the %s" % ("cache" if qd.place else Content.item(StringName(qd.item)).display_name.to_lower()))
 	var paid: Dictionary = {}
 	for k: Variant in qd.rewards.keys():
 		var n: int = int(qd.rewards[k])
@@ -414,7 +414,10 @@ func _follow(p: PlayerState, c: Dictionary, dt: float) -> void:
 			if str(c["state"]) == ContractLog.ACTIVE and _clear_done(c):
 				_mark_ready(p, c)
 		"fetch":
-			if not bool(c.get("placed", false)):
+			var qd: QuestDef = Content.get_def(&"quest", StringName(str(c["def"]))) as QuestDef
+			if qd != null and not qd.place:
+				_follow_recovery(p, c, qd)
+			elif not bool(c.get("placed", false)):
 				_place_cache(c, p)
 		"defend":
 			_follow_defence(p, c, dt)
@@ -510,6 +513,16 @@ func _place_cache(c: Dictionary, p: PlayerState) -> void:
 	c["cache_at"] = [at.x, at.y, at.z]
 
 
+## A fetch whose building already holds the item (the field lab's Bloom core, TD-179): ready while
+## the player carries one, wherever it came from, and back to open if they drop or sell it.
+func _follow_recovery(p: PlayerState, c: Dictionary, qd: QuestDef) -> void:
+	var has: bool = p.inventory.count_of(StringName(qd.item)) > 0
+	if has and str(c["state"]) == ContractLog.ACTIVE:
+		_mark_ready(p, c)
+	elif not has and str(c["state"]) == ContractLog.READY:
+		c["state"] = ContractLog.ACTIVE
+
+
 func _on_item_picked_up(owner_id: StringName, item_id: StringName, _count: int) -> void:
 	var p: PlayerState = Game.session.players.get(owner_id)
 	if p == null:
@@ -519,6 +532,8 @@ func _on_item_picked_up(owner_id: StringName, item_id: StringName, _count: int) 
 		if str(cd.get("type", "")) != "fetch" or not bool(cd.get("placed", false)) or str(cd["state"]) != ContractLog.ACTIVE:
 			continue
 		var qd: QuestDef = Content.get_def(&"quest", StringName(str(cd["def"]))) as QuestDef
+		if qd == null:
+			continue
 		if StringName(qd.item) == item_id and _player_pos(p).distance_to(_vec(cd.get("cache_at", cd["pos"]))) < 12.0:
 			_mark_ready(p, cd)
 			return

@@ -1120,7 +1120,8 @@
       10.45
      ],
      "level": -1,
-     "variant": "worn"
+     "variant": "worn",
+     "container": "w3_meat_locker"
     },
     {
      "prop": "bucket",
