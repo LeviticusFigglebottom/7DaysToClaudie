@@ -88,6 +88,10 @@ Diagnosis:
 * A new `class_name` needs an import before `-s` scripts can see it.
 * `compose_region.gd` now loads content (d4d34eb); never cache a region composed without content.
 * The asset manifest merges only the tasks each build touched (c410c49).
+* Never replace an Array, Dictionary or Packed*Array member that worker threads read. In GDScript
+  the assignment isn't atomic: the old value is released and the pointer is null before the new
+  one is stored, so a reader in that window crashes (session 3 found this in its own TD-104
+  copy-and-swap). Write elements in place, or guard the member with a Mutex on both sides.
 * Reflection probes share a 64-slot atlas, and going past it crashes the engine. Put any new
   probe in the `interior_probe` group so PoiManager's budget caps it.
 * A generated model can exist on disk and still not load (built, not imported yet). Check the
