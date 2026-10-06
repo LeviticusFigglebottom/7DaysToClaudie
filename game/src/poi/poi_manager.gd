@@ -135,9 +135,15 @@ func _on_region_attached(rid: String) -> void:
 	if registry != null:
 		# Its pads at 1 m heights; its fixtures in a step of their own (the buildings: _update_ring).
 		registry.refresh_region(rid, rt)
-		steps.add(["", func() -> void:
-			if _placed_regions.has(rid) and tm.regions.has(rid):
-				_place_region(rt), "poi region %s" % rid])
+		# A step per framework (a town's fixtures in one region were ~45 ms in one step).
+		for pl: Dictionary in rt.placements:
+			if not str(pl.get("kind", "")) in ["framework", "town"]:
+				continue
+			steps.add(["", func() -> void:
+				if _placed_regions.has(rid) and tm.regions.has(rid):
+					_region_now = rid
+					_place_framework(pl, false)
+					_region_now = "", "poi region %s" % rid])
 		return
 	var lots: Dictionary = world.get(&"poi_lots") if world.get(&"poi_lots") is Dictionary else {}
 	var seed: int = Game.session.world_seed if Game.session != null else 0
