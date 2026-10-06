@@ -22,7 +22,7 @@ const TUNING_KEYS: PackedStringArray = ["macro_step", "biome_step", "region_marg
 const BURN_KEYS: PackedStringArray = ["per_16km2", "cells", "max_share", "water", "road", "town_clear", "drop_clear", "islands"]
 const FEN_KEYS: PackedStringArray = ["max_slope", "water", "low", "valley", "patch", "town_clear", "drop_clear", "pools"]
 const POOL_SPEC_KEYS: PackedStringArray = ["chance", "per_cell", "radius", "depth", "drop", "shore", "irregularity", "max_slope", "border"]
-const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt"]
+const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt", "unique"]
 ## tuning.towns (organic towns, ADR-0040; the planner's own numbers are town_planner.json).
 const TOWN_KEYS: PackedStringArray = ["mix", "spacing", "edge", "candidates", "core_relief", "disc_relief", "max_slope", "water", "score", "core_smoothing",
 	"stub", "authored_max", "clearance"]

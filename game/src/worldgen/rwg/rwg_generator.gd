@@ -43,7 +43,8 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## from region borders, a valley term in the router, RwgStreets.point_in for polygon tests.
 ## 3: a trader post by each town (session 2's `trader:program_relay:<n>` spawns, ADR-0039).
 ## 4: burnt forest (fire scars) and fen (low wet ground, with pools) in the biome map (ADR-0041).
-const VERSION: int = 4
+## 5: wilderness pool entries may be `unique` (one per world whatever its size: the field lab).
+const VERSION: int = 5
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -1864,6 +1865,10 @@ func _places() -> void:
 				continue
 			var expected: float = float(pe.get("per_region", 0.1)) * size * size * density
 			var cap: int = maxi(1, int(ceil(float(pe.get("max", 2)) * area16 - 0.001)))
+			# A place the story knows as one (the premise's old field lab) stands once in any world;
+			# the rest repeat with the map's area, as 7 Days' named places do.
+			if bool(pe.get("unique", false)):
+				cap = 1
 			var count: int = mini(cap, int(floor(expected + r.randf())))
 			for k: int in count:
 				_place_one(pe, Vector2(pd.footprint), r, wcfg)

@@ -283,6 +283,10 @@ func test_generation_scales_to_10x10() -> void:
 		var places: int = (g.get(&"places") as Array).size()
 		assert_gt(towns, int(sz * sz / 16.0 * 2.0 * 0.6), "%d x %d: towns by density (%d)" % [sz, sz, towns])
 		assert_gt(places, sz * sz / 4, "%d x %d: places by the per-16 km² caps (%d)" % [sz, sz, places])
+		# Named places repeat with the area, but a `unique` one (the field lab) stands once at most.
+		var labs: int = (g.get(&"places") as Array).filter(func(p: Dictionary) -> bool: return str(p["def"]) == "corvane_field_lab").size()
+		assert_lte(labs, 1, "%d x %d: the field lab is unique (%d)" % [sz, sz, labs])
+		assert_eq(labs, 1, "%d x %d: and a world this big has one" % [sz, sz])
 		var ids: Dictionary = g.call(&"region_ids")
 		assert_eq(ids.size(), sz * sz)
 		assert_true(ids.has("%s%d" % [char(64 + sz), sz]), "the last cell is %s%d" % [char(64 + sz), sz])
