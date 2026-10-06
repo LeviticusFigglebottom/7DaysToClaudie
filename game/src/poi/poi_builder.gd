@@ -1020,30 +1020,9 @@ func _open_partitions(w: RoofPlanner.Wing) -> Array:
 # --- props & set dressing ------------------------------------------------------------------------
 
 func _prop_xf(p: Dictionary, pd: PropDef) -> Transform3D:
-	var pos: Vector2 = p["pos"]
-	var rot: float = float(p.get("rot", 0.0))
-	# A prop against a wall faces into the room unless its author turned it. Compiled props carry
-	# "rot_set" (PoiLayout._placed always fills "rot"); scatter entries set "rot" themselves.
-	# Testing p.has("rot") alone turned every authored wall prop without a rot toward north:
-	# about 224 props in 19 buildings faced into or through their wall.
-	var turned: bool = bool(p.get("rot_set", p.has("rot")))
-	var against: String = str(p.get("against", ""))
-	if against != "" and PoiLayout.SIDES.has(against):
-		var cell: Vector2i = p["cell"]
-		var depth: float = pd.size.z
-		match against:
-			"N":
-				pos.y = cell.y + WALL_T * 0.5 + depth * 0.5 + 0.01
-				rot = rot if turned else 0.0
-			"S":
-				pos.y = cell.y + 1.0 - WALL_T * 0.5 - depth * 0.5 - 0.01
-				rot = rot if turned else 180.0
-			"W":
-				pos.x = cell.x + WALL_T * 0.5 + depth * 0.5 + 0.01
-				rot = rot if turned else 90.0
-			"E":
-				pos.x = cell.x + 1.0 - WALL_T * 0.5 - depth * 0.5 - 0.01
-				rot = rot if turned else -90.0
+	var plan: Vector3 = PoiLayout.prop_plan(p, pd)
+	var pos := Vector2(plan.x, plan.y)
+	var rot: float = plan.z
 	# Free-standing props in the yard stand on the pad; wall-mounted ones hang at a height measured
 	# from the building's floor, whichever side of the wall they are on.
 	var li: int = int(p["level"])
@@ -1089,7 +1068,7 @@ func _props() -> void:
 			if not light.is_empty():
 				PropLights.set_lit(mi, true)
 			lp.add_child(mi)
-			_box(pd.size.max(Vector3(0.2, 0.2, 0.2)), Transform3D(Basis.IDENTITY, Vector3(0, pd.size.y * 0.5, 0)), lp)
+			_box(pd.size.max(Vector3(0.2, 0.2, 0.2)), Transform3D(Basis.IDENTITY, pd.box_centre()), lp)
 			root.add_child(lp)
 		else:
 			if light.is_empty():
@@ -1097,7 +1076,7 @@ func _props() -> void:
 			else:
 				root.add_child(PropLights.lit_mesh(model, xf, layout.is_room(layout.room_at(p["level"], p["cell"]))))
 			if pd.collision != "none":
-				_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, Vector3(0, pd.size.y * 0.5, 0)))
+				_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre()))
 		if not light.is_empty():
 			root.add_child(PropLights.light_node(light, xf))
 

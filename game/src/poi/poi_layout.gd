@@ -633,6 +633,38 @@ func _placed(d: Dictionary) -> Dictionary:
 	return out
 
 
+## Where a compiled prop (or a scatter entry) stands in plan: Vector3(x, z, facing in degrees),
+## layout-local. A prop `against` a wall stands with its back (PropDef.back_depth) 1 cm off the
+## wall's face and faces into the room unless its author turned it. Compiled props carry
+## "rot_set" (_placed always fills "rot"); scatter entries set "rot" themselves. PoiBuilder places
+## by this and PoiValidator measures wall gaps by it.
+static func prop_plan(p: Dictionary, pd: PropDef) -> Vector3:
+	var pos: Vector2 = p["pos"]
+	var rot: float = float(p.get("rot", 0.0))
+	var turned: bool = bool(p.get("rot_set", p.has("rot")))
+	var against: String = str(p.get("against", ""))
+	if against != "" and SIDES.has(against):
+		var cell: Vector2i = p["cell"]
+		# Origin to wall face: half the wall, 1 cm of air, then the model's own back depth. Round
+		# 1 used half the prop's depth for every prop, which stood wall-mounted ones (origin on the
+		# wall plane) half their depth out in the room: 83 more than 10 cm off their walls.
+		var off: float = PoiBuilder.WALL_T * 0.5 + pd.back_depth() + 0.01
+		match against:
+			"N":
+				pos.y = cell.y + off
+				rot = rot if turned else 0.0
+			"S":
+				pos.y = cell.y + 1.0 - off
+				rot = rot if turned else 180.0
+			"W":
+				pos.x = cell.x + off
+				rot = rot if turned else 90.0
+			"E":
+				pos.x = cell.x + 1.0 - off
+				rot = rot if turned else -90.0
+	return Vector3(pos.x, pos.y, rot)
+
+
 ## Cells blocked for the stairwell on the level above (no floor slab there).
 func stairwell_cells(li: int) -> Dictionary:
 	var out: Dictionary = {}
