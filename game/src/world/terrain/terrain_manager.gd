@@ -241,21 +241,39 @@ static func chunk_of(x: float, z: float) -> Vector2i:
 ## taken from already-edited heights).
 func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 	var rid: String = rt.region_id
+	var t: int = Time.get_ticks_usec()
+	attach_parts = {}
 	if pristine != null:
 		_base_cache[rid] = pristine
 	_apply_deltas(rt)
+	t = _part("deltas", t)
 	var next: Dictionary = regions.duplicate()
 	next[rid] = rt
 	_lock.lock()
 	regions = next
 	_lock.unlock()
 	_build_grid()
+	t = _part("grid", t)
 	_materials[rid] = _make_region_material(rt)
+	t = _part("material", t)
 	# Cellars of the region's buildings (a new object: workers hold the old one).
 	_region_holes[rid] = TerrainHoles.from_regions({rid: rt})
 	_publish_holes()
+	t = _part("holes", t)
 	_refresh_chunks(rt.rect)
+	t = _part("chunks", t)
 	region_attached.emit(rid)
+	_part("listeners", t)
+
+
+## What the last attach spent where (ms by part), for StreamMeter's slow-step log.
+var attach_parts: Dictionary = {}
+
+
+func _part(name: String, t0: int) -> int:
+	var now: int = Time.get_ticks_usec()
+	attach_parts[name] = snappedf(float(now - t0) / 1000.0, 0.1)
+	return now
 
 
 ## Takes a region's 1 m terrain out of play: the coarse terrain (if any) answers height_at there

@@ -297,6 +297,8 @@ func _queue_attach(rid: String) -> void:
 		var t0: int = Time.get_ticks_usec()
 		terrain.attach_region(rt)
 		_stats["last_attach_ms"] = float(Time.get_ticks_usec() - t0) / 1000.0
+		if float(_stats["last_attach_ms"]) > 50.0:
+			Log.info("stream", "attach %s %.0f ms: %s" % [rid, _stats["last_attach_ms"], terrain.attach_parts])
 		_ready.erase(rid)
 		_attached[rid] = true, "attach %s" % rid])
 
