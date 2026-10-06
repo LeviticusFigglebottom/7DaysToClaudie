@@ -20,6 +20,7 @@ func _ready() -> void:
 	if _handle_cli(args):
 		return
 	_build_menu()
+	_show_asset_notice()
 
 
 func _handle_cli(args: PackedStringArray) -> bool:
@@ -93,6 +94,40 @@ func _build_menu() -> void:
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
 
 
+## Without the generated assets (they are built by `make assets` on Linux and shipped in the
+## packaged builds, never committed) the world is drawn with procedural stand-ins: say so plainly
+## instead of letting a player think that is the game (ADR-0036).
+func _show_asset_notice() -> void:
+	var share: float = ModelLibrary.generated_share(Content)
+	if share >= 1.0:
+		return
+	var panel := PanelContainer.new()
+	panel.name = "AssetNotice"
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.16, 0.1, 0.06, 0.92)
+	sb.border_color = Color(0.85, 0.6, 0.25)
+	sb.set_border_width_all(2)
+	sb.set_content_margin_all(16)
+	panel.add_theme_stylebox_override(&"panel", sb)
+	var label := Label.new()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2(520, 0)
+	label.add_theme_color_override(&"font_color", Color(0.95, 0.85, 0.65))
+	if share <= 0.0:
+		label.text = ("Placeholder world: the generated models, textures and sounds are missing, so "
+			+ "everything is drawn as simple stand-in shapes (no grass, no textures).\n\n"
+			+ "To play the real game, download a packaged build (they include the assets), or "
+			+ "on Linux run \"make setup assets\" and reopen the project. See docs/BUILDS.md.")
+	else:
+		label.text = ("Incomplete assets: only %d%% of the generated models were found, so some of "
+			+ "the world is drawn as stand-in shapes. Re-run \"make assets\" (see docs/BUILDS.md).") % roundi(share * 100.0)
+	panel.add_child(label)
+	add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	panel.position = Vector2(get_viewport_rect().size.x - 520 - 32 - 40, 240)
+	Log.warn("assets", "generated assets %d%% present: running on stand-ins" % roundi(share * 100.0))
+
+
 ## World settings screen (difficulty preset + every game rule) before a new game; `random` opens it
 ## on its World tab with a random world chosen (ADR-0031).
 func _open_new_game(random: bool = false) -> void:
@@ -111,7 +146,7 @@ func _open_new_game(random: bool = false) -> void:
 
 ## The big title would show beside (and under) the wide New Game panel.
 func _set_title_visible(on: bool) -> void:
-	for n: String in ["Title", "Subtitle"]:
+	for n: String in ["Title", "Subtitle", "AssetNotice"]:
 		var c: CanvasItem = get_node_or_null(n) as CanvasItem
 		if c != null:
 			c.visible = on
