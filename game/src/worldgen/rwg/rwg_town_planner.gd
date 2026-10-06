@@ -93,7 +93,7 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 		var d_lo: float = 0.0
 		if z2 == "civic":
 			d_lo = _mean_distance(lots, "commercial", net.center)
-			d_at = d_lo * 1.25
+			d_at = d_lo * 1.05
 		counts[z2] += _frontage_quota(net, lots, rl, z2, want, d_lo, radius * 0.6, d_at, z2 == "civic")
 		# Short of the class's minimum: the inner ring on ground a metre steeper, then anywhere.
 		if int(counts[z2]) < lo_q:

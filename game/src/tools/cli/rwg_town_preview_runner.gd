@@ -159,10 +159,10 @@ static func make_arterials(kind: String, radius: float, outskirts: float, world:
 			# Through the centre (the generator routes arterials to town centres): each half is
 			# relaxed on its own, and points crowding the joint go so the line bends smoothly there.
 			for q: Vector2 in p1:
-				if q.length() > 40.0 or q == Vector2.ZERO:
+				if q.length() > 70.0 or q == Vector2.ZERO:
 					pts.append(q)
 			for q2: Vector2 in p2:
-				if q2.length() > 40.0:
+				if q2.length() > 70.0:
 					pts.append(q2)
 		else:
 			var main: Polyline2 = Polyline2.from_array(out[0]["points"])
