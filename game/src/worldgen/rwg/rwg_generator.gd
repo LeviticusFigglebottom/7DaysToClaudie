@@ -41,7 +41,8 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## saves made with an older generator regenerate their world as it was (cached) or as now (TD-082).
 ## 2: organic world-level towns (ADR-0040), town density, place caps per 16 km², the drop site away
 ## from region borders, a valley term in the router, RwgStreets.point_in for polygon tests.
-const VERSION: int = 2
+## 3: a trader post by each town (session 2's `trader:program_relay:<n>` spawns, ADR-0039).
+const VERSION: int = 3
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
 
@@ -60,6 +61,8 @@ var towns: Array[Dictionary] = []
 ## {id, kind: "poi" | "framework", def, origin: Vector2, rot, size: Vector2, poly, biome, skirt,
 ##  keep_water, access: Vector2, site, cell}
 var places: Array[Dictionary] = []
+## Trader posts (session 2's TraderManager, ADR-0039): {id, pos, yaw, cell, poly, safe, town}.
+var posts: Array[Dictionary] = []
 ## {id, name, class, points: PackedVector2Array, width, shoulder, surface, markings, bridges}
 var roads: Array[Dictionary] = []
 ## {id, points: PackedVector2Array, width, surface}
@@ -241,6 +244,8 @@ func run() -> void:
 	_biome_map()
 	_mark("biome_map")
 	_stage("Planting forests", 0.7)
+	_trader_posts()
+	_mark("traders")
 	_places()
 	_clear_lots_off_roads()
 	_mark("places")
@@ -1727,6 +1732,9 @@ func _hits_built(poly: PackedVector2Array, gap: float) -> bool:
 	for id2: int in _place_grid.query(gb):
 		if not Geometry2D.intersect_polygons(grown, places[id2]["poly"]).is_empty():
 			return true
+	for pt: Dictionary in posts:
+		if gb.intersects(_bounds(pt["safe"])) and not Geometry2D.intersect_polygons(grown, pt["safe"]).is_empty():
+			return true
 	return false
 
 
@@ -1764,6 +1772,116 @@ func _access(place: Dictionary, kind: String, cand: Dictionary) -> void:
 		_add_road(route, "track", "%s track" % place["def"], false)
 	else:
 		paths.append({"id": "%s_trail" % place["id"], "points": route, "width": 1.6, "surface": "dirt"})
+
+
+# --- Trader posts ----------------------------------------------------------------------------------
+
+## The trader def every generated post uses (session 2's data/traders/program_relay.json): it posts
+## Waystation 9's contracts and shares its standing.
+const TRADER_DEF: String = "program_relay"
+## A post's yard in its own frame, local +Z toward the road it fronts: a ring of barriers from x -14
+## to 14 and z -15 to 21, sign included (TraderPost).
+const POST_MIN := Vector2(-14.0, -15.0)
+const POST_MAX := Vector2(14.0, 21.0)
+## Its gate, on local +Z.
+const POST_GATE: float = 12.8
+
+
+## One trader post by each town, at least `spacing` metres apart, on a highway or county road where
+## it leaves the town. Each post is a `trader:<def>:<n>` spawn facing that road, with a clearing and
+## a drive to its gate (TraderManager builds the post from the spawn). Its safe zone keeps lots,
+## streets and wilderness places out: the guards shoot whatever Hollowed wake inside it.
+func _trader_posts() -> void:
+	var tcfg: Dictionary = tun.get("traders", {})
+	var spacing: float = float(tcfg.get("spacing", 600.0))
+	var safe: float = float(tcfg.get("safe_radius", 40.0))
+	var r := rng("traders")
+	for tw: Dictionary in towns:
+		var c: Vector2 = tw["center"]
+		var best: Dictionary = {}
+		# Just outside the town, farther out where a bend, a slope, water or the town's outer lots
+		# leave no room at the first ring.
+		for extra: float in [30.0, 70.0, 120.0, 190.0]:
+			var ring: float = float(tw["radius"]) + safe + extra
+			for i: int in roads.size():
+				if not str(roads[i]["class"]) in ["highway", "county"]:
+					continue
+				var line: Polyline2 = roads[i]["line"]
+				var prev: float = c.distance_to(line.point_at(0.0)) - ring
+				var s: float = 0.0
+				while s + 6.0 <= line.total_length:
+					s += 6.0
+					var d: float = c.distance_to(line.point_at(s)) - ring
+					if prev * d <= 0.0:
+						for side: float in [1.0, -1.0]:
+							var cand: Dictionary = _post_candidate(i, s, side, safe)
+							if not cand.is_empty():
+								cand["score"] = float(cand["score"]) + r.randf()
+								if best.is_empty() or float(cand["score"]) < float(best["score"]):
+									best = cand
+					prev = d
+			if not best.is_empty():
+				break
+		if best.is_empty():
+			warnings.append("no trader post by %s" % tw["name"])
+			continue
+		var pos: Vector2 = best["pos"]
+		var crowded: bool = false
+		for pt: Dictionary in posts:
+			if (pt["pos"] as Vector2).distance_to(pos) < spacing:
+				crowded = true
+				break
+		if crowded:
+			continue
+		var poly: PackedVector2Array = best["poly"]
+		terrain.flatten(poly, float(best["ground"]), 18.0)
+		router.block_polygon(poly, 6.0)
+		var from: Vector2 = best["road_point"]
+		var gate: Vector2 = best["gate"]
+		_add_road(PackedVector2Array([from, from.lerp(gate, 0.5), gate + (gate - from).normalized() * 2.0]), "drive", "%s trader drive" % tw["name"], false)
+		posts.append({"id": "trader:%s:%d" % [TRADER_DEF, posts.size()], "pos": pos, "yaw": best["yaw"], "cell": cell_at(pos),
+			"poly": poly, "safe": best["safe"], "town": tw["id"]})
+
+
+## A post beside road `ri` at arc `s`, on the `side` (+1 left, -1 right) of its travel: {pos, yaw,
+## poly, safe, gate, road_point, ground, score}, or {} where it doesn't fit (a bend, steep or wet
+## ground, a region border, or lots, streets, places or the drop site inside its safe zone).
+func _post_candidate(ri: int, s: float, side: float, safe: float) -> Dictionary:
+	var rd: Dictionary = roads[ri]
+	var line: Polyline2 = rd["line"]
+	if s < 40.0 or s > line.total_length - 40.0:
+		return {}
+	var tg: Vector2 = line.tangent_at(s)
+	# A straight stretch only: the drive and the yard's front must line up with the road.
+	if tg.dot(line.tangent_at(s - 30.0)) < 0.97 or tg.dot(line.tangent_at(s + 30.0)) < 0.97:
+		return {}
+	var nrm := Vector2(-tg.y, tg.x) * side
+	var edge: float = float(rd["width"]) * 0.5 + float(rd["shoulder"])
+	# The sign (local z 21) stands 6 m back from the shoulder.
+	var pos: Vector2 = line.point_at(s) + nrm * (edge + POST_MAX.y + 6.0)
+	# Local +Z faces the road: (sin yaw, cos yaw) = -nrm, so Basis(UP, yaw) turns the post to it.
+	var front: Vector2 = -nrm
+	var yaw: float = snappedf(rad_to_deg(atan2(front.x, front.y)), 0.1)
+	var ax := Vector2(front.y, -front.x)
+	var poly := PackedVector2Array()
+	for k: Vector2 in [Vector2(POST_MIN.x, POST_MIN.y), Vector2(POST_MAX.x, POST_MIN.y), Vector2(POST_MAX.x, POST_MAX.y), Vector2(POST_MIN.x, POST_MAX.y)]:
+		poly.append(pos + ax * k.x + front * k.y)
+	var safe_poly := PackedVector2Array()
+	for k2: int in 12:
+		safe_poly.append(pos + Vector2.from_angle(TAU * k2 / 12.0) * safe)
+	var margin: float = float(tun.get("region_margin", 72.0)) - 8.0
+	if cell_at(pos) == "" or not inside_one_region(poly, margin):
+		return {}
+	if water_clearance(poly) < 14.0 or (drop.get("pos", Vector2(1e9, 1e9)) as Vector2).distance_to(pos) < safe + 40.0:
+		return {}
+	if _hits_built(safe_poly, 0.0) or road_clearance(poly, ri) < 4.0:
+		return {}
+	var st: Dictionary = terrain.stats_in(poly)
+	var relief: float = float(st["max"]) - float(st["min"])
+	if relief > float((tun.get("traders", {}) as Dictionary).get("max_relief", 6.0)):
+		return {}
+	return {"pos": pos, "yaw": yaw, "poly": poly, "safe": safe_poly, "gate": pos + front * POST_GATE,
+		"road_point": line.point_at(s) + nrm * float(rd["width"]) * 0.5, "ground": float(st["mean"]), "score": relief}
 
 
 # --- Bridges ---------------------------------------------------------------------------------------
@@ -1980,6 +2098,10 @@ func world_json() -> Dictionary:
 			"center": c, "radius": tw["radius"], "bounds": [snappedf(b.position.x, 0.1), snappedf(b.position.y, 0.1), ceilf(b.size.x), ceilf(b.size.y)]})
 		summary.append({"id": tw["id"], "name": tw["name"], "kind": tw["kind"], "framework": tw["fw_id"], "region": regions[tw["cell"]]["id"],
 			"center": c, "radius": tw["radius"], "lots": ((tw["plan"] as Dictionary).get("lots", []) as Array).size()})
+	var post_out: Array = []
+	for pt: Dictionary in posts:
+		post_out.append({"id": pt["id"], "pos": Terrain._arr(PackedVector2Array([pt["pos"]]))[0], "yaw": pt["yaw"], "town": pt["town"],
+			"region": regions[pt["cell"]]["id"]})
 	var place_out: Array = []
 	for pl: Dictionary in places:
 		place_out.append({"id": pl["id"], "kind": pl["kind"], "def": pl["def"], "site": pl["site"], "region": regions[pl["cell"]]["id"],
@@ -1988,7 +2110,7 @@ func world_json() -> Dictionary:
 		"_doc": "A random world (ADR-0031, ADR-0040), generated by RwgGenerator v%d. Same schema as game/world/main_map/world.json (docs/REGIONS.md), plus world-level towns." % VERSION,
 		"id": world_id, "name": world_name(), "seed": settings.seed & 0x7fffffff, "region_size": 1024, "cols": size, "rows": size, "sea_level": 0.0,
 		"road_grade": "world",
-		"generator": {"version": VERSION, "settings": settings.to_dict(), "key": settings.key(), "towns": summary, "places": place_out,
+		"generator": {"version": VERSION, "settings": settings.to_dict(), "key": settings.key(), "towns": summary, "places": place_out, "traders": post_out,
 			"drop_site": Terrain._arr(PackedVector2Array([drop.get("pos", Vector2.ZERO)]))[0], "timings_ms": timings, "warnings": Array(warnings)},
 		"macro": {"step": terrain.step, "corner_heights": rows, "noise": {"frequency": 0.001, "octaves": 1, "amplitude": 0.0, "ridged_amplitude": 0.0, "mountain_boost": 0.0}},
 		"biome_map": {"ids": Array(BIOMES), "step": biome_step, "cols": biome_cols, "rows": biome_cols, "rows_data": bm_rows},
@@ -2015,6 +2137,9 @@ func _region_summary(cell: String) -> String:
 			n_places += 1
 	if n_places > 0:
 		parts.append("%d place%s off the roads" % [n_places, "" if n_places == 1 else "s"])
+	for pt: Dictionary in posts:
+		if str(pt["cell"]) == cell:
+			parts.append("a trader post")
 	if str(drop.get("cell", "")) == cell:
 		parts.append("the drop site")
 	return ("%s, %s." % [str(regions[cell]["biome"]).replace("_", " ").capitalize(), ", ".join(parts)]) if not parts.is_empty() else "%s." % str(regions[cell]["biome"]).replace("_", " ").capitalize()
@@ -2050,6 +2175,11 @@ func region_json(cell: String) -> Dictionary:
 		feats.append({"type": "clearing", "pos": dp, "radius": 16})
 		feats.append({"type": "spawn", "id": "drop_site", "pos": dp, "yaw": drop["yaw"],
 			"props": [{"prop": "supply_canister", "offset": [2.0, 0.0, 1.0], "rot": 30}]})
+	for pt: Dictionary in posts:
+		if str(pt["cell"]) == cell:
+			var pp: Array = Terrain._arr(PackedVector2Array([pt["pos"]]))[0]
+			feats.append({"type": "clearing", "pos": pp, "radius": 24})
+			feats.append({"type": "spawn", "id": pt["id"], "pos": pp, "yaw": pt["yaw"]})
 	for bl: Dictionary in blooms:
 		if str(bl["cell"]) == cell:
 			feats.append({"type": "bloom", "id": bl["id"], "at": Terrain._arr(PackedVector2Array([bl["at"]]))[0], "radius": bl["radius"],
