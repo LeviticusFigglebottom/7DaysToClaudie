@@ -1,6 +1,6 @@
 # ADR-0048: The Ashen: a human raider faction with camps, scouts, raids, morale and fear of fire
 
-**Status**: Accepted · 2026-10 (phase 1 landed, session 2; phase 2 open)
+**Status**: Accepted · 2026-10 (phase 1 landed, session 2; phase 2 raids, gardens and saved bands landed; the rest of phase 2 open)
 
 ## Context
 DESIGN §1, §4 and §6 promise the Ashen: survivors who fled to the high timber, smear themselves with
@@ -114,6 +114,33 @@ A raid or a scout in progress isn't saved; it is simply over after a reload.
 * Territory influence that shifts over weeks; alliance, trade and Ashen contracts; the main map's
   F2 and F4 regions.
 * Bows (the spear throw stands in), patrol routes between camps, a living-human animation set.
+
+### Phase 2: raids that path, hit empty bases, raid gardens and survive a save (TD-188, TD-189, TD-211)
+* **The way in.** A raid on a base picks its goal: the weakest piece within `base_range` (fewest
+  hit points, ties by id; never a lit fire or a garden bed). AshenDirector builds a `FlowField`
+  round the base (the Hum's class, `raids.flow`: structures cost hp × `structure_cost_per_hp` to
+  cross, lit fires `fire_cost` out to `fire.keep_off`, beds and the goal nothing) integrated to the
+  goal, synchronously (a few thousand cells, deterministic). Enemy needs no new state: every tick
+  the director gives each raider at a loose end (IDLE, WANDER, INVESTIGATE) a waypoint a few cells
+  down the field (`notice`), or, in reach of the goal, sets it breaking that piece; when the goal
+  falls the next weakest is picked and the field rebuilt. A raider that sees the player still
+  turns on them first.
+* **The dark side.** The band comes out within `raids.dark_side` degrees of the bearing opposite
+  the summed directions of the base's lit fires (`dark_bearing`); with none, anywhere on the ring.
+* **Nobody home.** The director remembers the base the player was last at (`ashen.base`); a raid
+  due while they are away goes there. Once the band has arrived, broken `sack_pieces` pieces (or
+  had none to break) and taken every ripe crop, it leaves (not repelled: no XP, `raid_ended` with
+  `false`). Raiders of any finished raid are followed until they get away and then despawned.
+* **Gardens.** A raider within `gardens.reach` of a bed tramples it once a raid and takes its ripe
+  crops (`FarmManager.raid_bed`, which writes WorldState.farms like the farm commands); the last
+  `gardens.looters` of the band go for ripe beds first.
+* **Saved bands.** On `Events.game_saving` the raid (members' enemy ids, positions, morale and
+  jobs; goal, goal piece, elapsed time, trampled beds) and the scouts (position, watched time,
+  morale) go into `world.ashen.live` (no version bump); the director respawns them as themselves on
+  its first tick after a load. Raid and scout bodies get fixed ids (`ash:raid:<day>:<n>:<i>`,
+  `ash:scout:<day>:<n>`) so a restored body never collides with the AI director's running count.
+  Ashen already running off are not saved. This replaces phase 1's "a raid or scout in progress
+  isn't saved".
 
 ## Consequences
 * The wilderness gets a second, thinking enemy that answers to what the player does: where they

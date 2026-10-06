@@ -16,7 +16,8 @@ var hostility: Dictionary = {}
 var scouts: Dictionary = {}
 ## {chance: [per level], grace_days, hour: [from, to], ring: [min, max] m, size: [[lo, hi] per level],
 ##  per_gamestage: extra fighters per gamestage point, max_size, enemies: [{enemy: weight} per level],
-##  give_up: s, base_range: m}
+##  give_up: s, base_range: m, dark_side: deg, flow: {radius, cell, structure_cost_per_hp, fire_cost,
+##  slope_max_deg}, sack_pieces, gardens: {loot_crops, trample, trample_damage 0-1, looters, reach: m}}
 var raids: Dictionary = {}
 ## {mate_down, hurt (per fraction of health lost), break, home_floor, recover_per_s}
 var morale: Dictionary = {}
@@ -68,6 +69,9 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 	for tbl: Variant in raids.get("enemies", []):
 		for e2: Variant in (tbl as Dictionary).keys():
 			_check_member(db, str(e2), out)
+	var g: Dictionary = raids.get("gardens", {})
+	if float(g.get("trample_damage", 0.0)) < 0.0 or float(g.get("trample_damage", 0.0)) > 1.0 or int(g.get("looters", 0)) < 0:
+		out.append("%s: raids.gardens trample_damage must be 0-1 and looters 0 or more" % ctx())
 	for key: String in ["chance"]:
 		for src: Dictionary in [scouts, raids]:
 			if src.has(key) and (src[key] as Array).size() != levels.size():
