@@ -282,6 +282,9 @@ func _turn_warm_camera() -> void:
 
 func _drop_warm_camera() -> void:
 	if _warm_camera != null and is_instance_valid(_warm_camera):
+		# Out of the tree now, not at the end of the frame: the hold after this step would
+		# otherwise catch it as a system and queue a release step for a freed node.
+		remove_child(_warm_camera)
 		_warm_camera.queue_free()
 	_warm_camera = null
 
