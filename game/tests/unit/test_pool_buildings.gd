@@ -128,6 +128,20 @@ func test_each_is_a_full_dungeon() -> void:
 		assert_gt(locks, 1, "%s shows lock cues" % id)
 
 
+func test_wall_props_face_into_the_room() -> void:
+	# PoiLayout gives every compiled prop a "rot" (0 when none is authored), so PoiBuilder never applies
+	# the facing "against" implies: a prop against a side wall needs its turn spelled out, or a dryer row
+	# stands sideways and a cooler case pokes through the wall.
+	const FACING: Dictionary = {"N": 0.0, "E": -90.0, "S": 180.0, "W": 90.0}
+	for id: String in POOL:
+		var l: PoiLayout = PoiLayout.compile(Content.get_def(&"poi", StringName(id)) as PoiDef)
+		for p: Dictionary in l.props:
+			var side: String = str(p.get("against", ""))
+			if FACING.has(side):
+				assert_almost_eq(fposmod(float(p["rot"]) - float(FACING[side]), 360.0), 0.0, 0.01,
+					"%s: %s against %s at %s faces into the room" % [id, p["prop"], side, p["cell"]])
+
+
 func test_larch_street_still_builds_its_own_houses() -> void:
 	var fw: FrameworkDef = Content.get_def(&"framework", &"pell_crossing")
 	for ws: int in [4471, 1, 90210, 7]:

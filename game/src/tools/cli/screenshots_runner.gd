@@ -2,7 +2,7 @@ extends Node
 ## Screenshot suite (loaded by screenshots.gd): starts a slice game, then for each shot sets the
 ## time, weather and a camera, waits for streaming to settle and saves a PNG. Used for visual QA
 ## of terrain, vegetation, lighting, POIs, building and the Hum.
-##   make screenshots [SHOTS_ARGS="--only pell_crossing,pond_dusk --settle 6"]
+##   make screenshots [SHOTS_ARGS="--only pell_crossing,pond_dusk --settle 6 --stream-wait 120"]
 
 const SHOTS: Array[Dictionary] = [
 	{"name": "drop_site_morning", "pos": Vector3(-300, 2.0, 2302), "look": Vector3(-240, 0, 2296), "hour": 7.6, "weather": "clear"},
@@ -115,6 +115,8 @@ var _out: String = "res://../build/screenshots"
 ## Nodes a shot spawned for itself (QA enemies, the QA drop), removed after the shot.
 var _temp: Array[Node] = []
 var _settle: float = 4.0
+## Seconds a shot waits at most for vegetation to stream in (--stream-wait).
+var _stream_wait: float = 240.0
 ## [enemy, position] pairs a shot keeps in place until it is taken.
 var _hold: Array = []
 var _only: PackedStringArray = []
@@ -128,6 +130,8 @@ func _ready() -> void:
 				_out = args[i + 1]
 			"--settle":
 				_settle = float(args[i + 1])
+			"--stream-wait":
+				_stream_wait = float(args[i + 1])
 			"--only":
 				_only = args[i + 1].split(",")
 	DirAccess.make_dir_recursive_absolute(_out)
@@ -140,14 +144,15 @@ func _wait(s: float) -> void:
 		await get_tree().process_frame
 
 
-## Waits (up to 4 min) until the vegetation within two chunks of the camera has streamed in
+## Waits (up to --stream-wait seconds, 4 min by default) until the vegetation within two chunks of
+## the camera has streamed in
 ## (software rendering leaves the scatter workers little CPU; the far impostors cover the rest).
 func _wait_streamed(w: Node) -> void:
 	var veg: Node = w.get(&"vegetation")
 	var t0: int = Time.get_ticks_msec()
 	while veg != null and not bool(veg.call(&"is_settled", 2)):
-		if Time.get_ticks_msec() - t0 > 240000:
-			print("SHOT warning: vegetation still streaming after 240 s (%s)" % veg.call(&"settle_report", 2))
+		if Time.get_ticks_msec() - t0 > int(_stream_wait * 1000.0):
+			print("SHOT warning: vegetation still streaming after %.0f s (%s)" % [_stream_wait, veg.call(&"settle_report", 2)])
 			return
 		await get_tree().process_frame
 

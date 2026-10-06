@@ -68,8 +68,9 @@ func _ready() -> void:
 func _load_meshes() -> Dictionary:
 	var out: Dictionary = {}
 	var path: String = "res://assets/generated/models/%s.glb" % def.model
-	if ResourceLoader.exists(path):
-		var root: Node = (load(path) as PackedScene).instantiate()
+	var scene: PackedScene = load(path) as PackedScene if ResourceLoader.exists(path) else null
+	if scene != null:
+		var root: Node = scene.instantiate()
 		for mi: Node in root.find_children("*", "MeshInstance3D", true, false):
 			out[String(mi.name)] = (mi as MeshInstance3D).mesh
 		root.free()

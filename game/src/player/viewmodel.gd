@@ -79,8 +79,9 @@ func _ready() -> void:
 			_loops[n] = true
 	for n: StringName in LEGACY_LOOPS:
 		_loops[n] = true
-	if ResourceLoader.exists(ARMS_PATH):
-		_arms = (load(ARMS_PATH) as PackedScene).instantiate() as Node3D
+	var arms_scene: PackedScene = load(ARMS_PATH) as PackedScene if ResourceLoader.exists(ARMS_PATH) else null
+	if arms_scene != null:
+		_arms = arms_scene.instantiate() as Node3D
 		_arms.name = "Arms"
 		# Authored looking down Blender -Y, which imports facing +Z: turn it to the camera's -Z.
 		_arms.rotation_degrees = Vector3(0.0, 180.0, 0.0)
@@ -145,8 +146,9 @@ func show_item(item_id: StringName) -> void:
 
 func _make_item(def: ItemDef) -> Node3D:
 	var vm_id: String = str(def.equip.get("viewmodel", ""))
-	if vm_id != "" and ResourceLoader.exists(VM_PATH % vm_id):
-		return (load(VM_PATH % vm_id) as PackedScene).instantiate() as Node3D
+	var vm_scene: PackedScene = load(VM_PATH % vm_id) as PackedScene if vm_id != "" and ResourceLoader.exists(VM_PATH % vm_id) else null
+	if vm_scene != null:
+		return vm_scene.instantiate() as Node3D
 	var node: Node3D = ItemVisuals.make_model(def.id)
 	# Ground models lie in their resting pose; held ones stand up, longest side along the grip.
 	var it: Dictionary = ViewModelHolds.hold(hold_class, cfg).get("item", {})

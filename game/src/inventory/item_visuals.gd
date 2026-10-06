@@ -23,11 +23,13 @@ static func model_path(item_id: StringName) -> String:
 static func make_model(item_id: StringName) -> Node3D:
 	var path: String = model_path(item_id)
 	if path != "" and ResourceLoader.exists(path):
-		var ps: PackedScene = _cache.get(path)
-		if ps == null:
-			ps = load(path)
-			_cache[path] = ps
-		return ps.instantiate() as Node3D
+		# Null is cached too: a model built but not imported yet does not load, and falls through
+		# to the placeholder below.
+		if not _cache.has(path):
+			_cache[path] = load(path) as PackedScene
+		var ps: PackedScene = _cache[path]
+		if ps != null:
+			return ps.instantiate() as Node3D
 	var def: ItemDef = Content.item(item_id)
 	var mi := MeshInstance3D.new()
 	var box := BoxMesh.new()

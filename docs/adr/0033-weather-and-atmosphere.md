@@ -183,7 +183,8 @@ Shot keys `wet`, `puddles` and `snow_cover` set what the weather has left (the c
 between shots). `strike` holds a strike's flash for the capture, because software frames take
 longer than a flash (`EnvironmentController.flash_hold`). Weather shots also freeze the rain and
 snow for the capture (`WeatherFx.hold_still`). A software frame takes so long that a moving drop
-never covers the same pixels twice, and temporal AA averaged every streak away.
+never covers the same pixels twice, and temporal AA averaged every streak away. `--stream-wait`
+caps the runner's wait for vegetation (240 s by default) when the render lock is busy.
 
 ## Consequences
 + Rain reads in daylight and at night, and stays out of buildings.
