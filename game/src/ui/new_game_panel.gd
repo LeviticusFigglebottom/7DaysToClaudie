@@ -12,6 +12,9 @@ signal closed
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
+## The handcrafted map as it is today: the planned 7 x 7 km valley has one region built (D6,
+## world.json `status`); the rest is coarse terrain. A test keeps it naming every built region.
+const MAIN_MAP_LABEL: String = "Hollowmere Valley (handcrafted: Larch Hollow, 1 x 1 km)"
 
 ## Open on the World tab with a random world chosen (the main menu's Random World button).
 var start_random: bool = false
@@ -122,7 +125,7 @@ func _build_game_tab() -> void:
 	# A fresh seed per new game (ADR-0030): buildings are dressed per run from it, so the default
 	# run is a new one; type a seed to replay a run.
 	_seed.text = str(100000 + randi() % 900000)
-	_seed.tooltip_text = "Scatter, loot rolls, Hum plans and how every building is dressed (its rooms, wear and the houses on Larch Street) follow the run seed. A random world's land has its own map seed (World tab)."
+	_seed.tooltip_text = "Scatter, loot rolls, Hum plans and how every building is dressed (its rooms, wear and the houses on Larch Street) follow the run seed: a whole number or any text. A random world's land has its own map seed (World tab)."
 	_add_pair(top, "Run seed", _seed)
 	_preset_info = Label.new()
 	_preset_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -248,7 +251,7 @@ func _build_world_tab() -> void:
 	top.columns = 2
 	left.add_child(top)
 	_map = OptionButton.new()
-	_map.add_item("Hollowmere Valley (handcrafted, 7 x 7 km)")
+	_map.add_item(MAIN_MAP_LABEL)
 	_map.add_item("Random world")
 	_map.item_selected.connect(_on_map_changed)
 	_add_pair(top, "Map", _map)
@@ -375,6 +378,21 @@ func _world_changed(v: Variant, key: String) -> void:
 	_mark_stale()
 
 
+## The run seed typed on the Game tab: a whole number is itself and any other text hashes as the
+## map seed does (it used to become the session's default, 4471, silently); an empty field rolls
+## a fresh run (ADR-0030).
+static func run_seed_from_text(text: String) -> int:
+	var t: String = text.strip_edges()
+	if t == "":
+		return fresh_seed()
+	return int(t) if t.is_valid_int() else Ids.hash31(t)
+
+
+## A fresh six-digit run seed, as the Game tab offers (ADR-0030: a new run per new game).
+static func fresh_seed() -> int:
+	return 100000 + randi() % 900000
+
+
 ## The random world these controls describe.
 func world_settings() -> RefCounted:
 	var seed_text: String = _wseed.text.strip_edges()
@@ -451,8 +469,7 @@ func _describe(dir: String, generated: bool, ms: int) -> String:
 
 func _start() -> void:
 	var opts: Dictionary = {"game_mode": _modes[_mode.selected], "preset": _presets[_preset.selected], "rules": overrides()}
-	if _seed.text.strip_edges().is_valid_int():
-		opts["seed"] = int(_seed.text.strip_edges())
+	opts["seed"] = run_seed_from_text(_seed.text)
 	if _map.selected == 1:
 		opts["world_gen"] = world_settings().call(&"to_dict")
 	Game.start_new_game(opts)

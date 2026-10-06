@@ -42,7 +42,7 @@ confirm the first run. The game opens in a 1280 × 720 window (Options has Fulls
 |---|---|
 | Continue (Day N) | Loads your most recent save |
 | New Game… | The world settings screen (§2) |
-| New Game — Vertical Slice (Hum on night 3) | Starts the slice at once: Survivor difficulty, 30-minute days, the first Hum on day 3, always run seed 4471 |
+| New Game — Vertical Slice demo (seed 4471, Hum on night 3) | Starts the slice's curated demo run at once: Survivor difficulty, 30-minute days, the first Hum on day 3, always run seed 4471 (New Game… rolls a fresh seed) |
 | Random World… | The world settings screen, open on its World tab with a random world chosen |
 | Load RunN — Day N · Preset | Each saved run, newest first ("· Random world" marks those) |
 | Options… | Mouse sensitivity and invert, field of view, head bob, five volumes, brightness, graphics preset, fullscreen, V-sync |
@@ -131,9 +131,10 @@ deletes the run. The tether and field manual are never dropped.
   4-core test machine), then it's cached. 7 × 7 is heavy on memory. No coasts, caves or traders yet.
 
 ### Seeds
-* **Run seed** (Game tab; a whole number, new each time): the scatter, every loot roll, the Hum's
-  plans and how each building is dressed (rooms, wear, lights, the generated houses). Reuse one to
-  replay a run's world. Anything but a whole number is replaced by 4471.
+* **Run seed** (Game tab; a whole number or any text, new each time): the scatter, every loot
+  roll, the Hum's plans and how each building is dressed (rooms, wear, lights, the generated
+  houses). Reuse one to replay a run's world. Text is hashed into a number, as the map seed is; an
+  empty field rolls a fresh seed.
 * **Map seed** (World tab; any text): the land, water, roads, towns and places of a random world.
   Same seed and settings, same world, so you can replay one map with different run seeds.
 
