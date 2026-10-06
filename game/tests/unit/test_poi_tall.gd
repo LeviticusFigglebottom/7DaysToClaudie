@@ -286,12 +286,13 @@ func test_roof_plan_follows_the_massing() -> void:
 	assert_eq(top.type, "hip")
 	# Overrides name a wing by a cell; a bad one is reported.
 	tower["style"]["roof"]["roofs"] = [{"level": 1, "at": [4, 1], "type": "spire"}, {"level": 1, "at": [0, 3], "type": "hip"}]
-	var w4: Array = RoofPlanner.plan(PoiLayout.compile(_def(tower)))
+	var roof_errors: Array = []
+	var w4: Array = RoofPlanner.plan(PoiLayout.compile(_def(tower)), roof_errors)
 	var spire: bool = false
 	for w: RoofPlanner.Wing in w4:
 		spire = spire or (w.level == 1 and w.type == "spire")
 	assert_true(spire)
-	assert_eq(RoofPlanner.last_errors.size(), 1, "no roof at level 1 over (0, 3)")
+	assert_eq(roof_errors.size(), 1, "no roof at level 1 over (0, 3)")
 	var v: PoiValidator = PoiValidator.validate(_def(tower))
 	assert_eq(_count(v.errors, "roof override"), 1, "and the validator reports it")
 

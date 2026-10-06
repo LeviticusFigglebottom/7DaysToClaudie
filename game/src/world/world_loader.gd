@@ -144,6 +144,15 @@ func _compose_parallel(ids: Array, detail_spacing: float, coarse_spacing: float,
 		th2.wait_to_finish()
 
 
+## [stage, progress] for the loading screen, read under the lock the worker writes them with (a
+## String read while another thread replaces it can free it twice).
+func status() -> Array:
+	_mutex.lock()
+	var out: Array = [stage, progress]
+	_mutex.unlock()
+	return out
+
+
 func _set_stage(s: String, p: float) -> void:
 	_mutex.lock()
 	stage = s

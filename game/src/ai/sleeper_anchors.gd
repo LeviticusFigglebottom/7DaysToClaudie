@@ -28,7 +28,7 @@ const BODY_RADIUS: float = 0.26
 
 ## Tuning: data/config/traps.json "sleepers".
 static func cfg() -> Dictionary:
-	return Content.config(&"traps").get("sleepers", {})
+	return ContentDB.instance.config(&"traps").get("sleepers", {})
 
 
 ## Every usable seat and bed of the layout's authored props, POI-local, in a fixed order (prop list
@@ -45,7 +45,7 @@ static func collect(layout: PoiLayout) -> Array[Dictionary]:
 	var placed: Array = _placed(layout, pb)
 	for i: int in layout.props.size():
 		var p: Dictionary = layout.props[i]
-		var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+		var pd: PropDef = ContentDB.instance.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
 		if pd == null or pd.anchors.is_empty() or float(p.get("y", 0.0)) > 0.05:
 			continue
 		if str(p.get("variant", layout.style.get("prop_condition", "worn"))) == "destroyed":
@@ -70,7 +70,7 @@ static func _placed(layout: PoiLayout, pb: PoiBuilder) -> Array:
 	var out: Array = []
 	for i: int in layout.props.size():
 		var p: Dictionary = layout.props[i]
-		var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+		var pd: PropDef = ContentDB.instance.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
 		if pd != null and not pd.wall_mounted:
 			out.append([i, pb._prop_xf(p, pd), pd])
 	return out
@@ -276,7 +276,7 @@ static func free_floor(layout: PoiLayout, li: int, from: Vector3, q: Vector3, ow
 		var p: Dictionary = layout.props[i]
 		if int(p["level"]) != li:
 			continue
-		var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+		var pd: PropDef = ContentDB.instance.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
 		if pd == null or pd.collision == "none" or pd.wall_mounted or float(p.get("y", 0.0)) >= 1.2:
 			continue
 		if pb == null:

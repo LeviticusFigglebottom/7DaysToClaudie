@@ -569,8 +569,9 @@ func _check_roof() -> void:
 	var t: String = str((roof as Dictionary).get("type", "gable"))
 	if not RoofPlanner.TYPES.has(t):
 		_e("style.roof type '%s' unknown (%s)" % [t, ", ".join(RoofPlanner.TYPES)])
-	RoofPlanner.plan(layout)
-	for e: String in RoofPlanner.last_errors:
+	var roof_errors: Array = []
+	RoofPlanner.plan(layout, roof_errors)
+	for e: String in roof_errors:
 		_e(e)
 
 

@@ -85,7 +85,8 @@ func _process(_delta: float) -> void:
 	if not is_ready or _load_meter.trailing():
 		_load_meter.frame(ui.loading_text() if ui != null else "")
 	if _load_task >= 0:
-		ui.show_loading(_loader.stage, _loader.progress * WORKER_SHARE)
+		var st: Array = _loader.status()
+		ui.show_loading(str(st[0]), float(st[1]) * WORKER_SHARE)
 		if WorkerThreadPool.is_task_completed(_load_task):
 			WorkerThreadPool.wait_for_task_completion(_load_task)
 			_load_task = -1
