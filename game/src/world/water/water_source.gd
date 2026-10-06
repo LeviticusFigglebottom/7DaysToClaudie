@@ -13,15 +13,20 @@ var point := Vector3.ZERO
 
 
 func interact_text(player: Player) -> String:
-	if player.state.inventory.has(&"water_bottle_empty"):
+	if _can_fill(player):
 		return "Fill bottles with stream water"
 	return "Drink stream water"
 
 
 func interact_hold_time(player: Player) -> float:
-	return FILL_TIME if player.state.inventory.has(&"water_bottle_empty") else DRINK_TIME
+	return FILL_TIME if _can_fill(player) else DRINK_TIME
 
 
 func interact(player: Player) -> void:
-	var cmd: StringName = &"world.fill_water" if player.state.inventory.has(&"water_bottle_empty") else &"world.drink_water"
+	var cmd: StringName = &"world.fill_water" if _can_fill(player) else &"world.drink_water"
 	Game.execute(cmd, {"player": player.state.id, "pos": [point.x, point.y, point.z]})
+
+
+## Carrying an empty bottle or bucket (ADR-0049: a bucket waters a garden bed).
+static func _can_fill(player: Player) -> bool:
+	return player.state.inventory.has(&"water_bottle_empty") or player.state.inventory.has(&"bucket")

@@ -15,6 +15,7 @@ const TIPS: Array[Array] = [
 	["The Hum", "Every few nights the ground hums and the Hollowed answer from every side. They remember what killed them last time and where your walls held. Build where you can see them coming. Spikes slow them; logs make them work; nothing stops them forever."],
 	["Shelter", "A lean-to and a bough bed mark your place in the world: sleep there to rest, save, and wake there if the worst happens. Fire keeps you warm and dries you — but within twenty metres of it you stand in its light, and the Hollowed see you from much farther off."],
 	["Building with logs", "Fell trees with an axe; carry two logs (three once you learn Timberwright). Lay a blueprint from this manual and fill its ghost, or set logs freely: they notch onto each other (R turns the log, V stands it up or pitches it for a roof). A log needs something under it or beside it — what nothing holds up, falls."],
+	["Gardens and rain", "A garden bed grows what you plant in it: seed packets and seed potatoes turn up in kitchen drawers and feed bins, and wild huckleberries and yarrow give seed of their own. Plants grow only while the soil is wet: rain soaks it, a bottle or a bucket of water tops it up (hold [X] on the bed to water it). Dry soil wilts them and kills them in a day or two; frost hurts the tender ones; nothing grows in winter, and summer is best. A rain catcher fills under open sky whenever it rains: fill bottles and buckets from it, or drink. Rain water is murky, so boil what you bottle."],
 	["Hammer", "A claw hammer repairs what the Hollowed break (sticks for a log, sticks and nails for a reinforced one, a quarter of its cost for anything else), and reinforces logs once they are whole (cordage and nails)."],
 	["Waystation 9", "The Program's relay post on Route 9, south by the river. Its guards shoot any Hollowed that come inside the wire, and nothing rises there. The quartermaster buys what you carry and sells what the drones bring, for Program scrip. The board posts contracts: clear a building and search its stores, bring back a cache the survey teams left, or hold a relay cache while it uploads. Report back to be paid; standing with the post opens better stock and harder work."],
 	["The Ashen", "Tribes of the high timber, painted in lichen-ash so the Hollowed can't smell them. They burn their dead and kill outsiders who might carry the Bloom. First they watch: a still figure on a ridge, gone when you look again. Let a scout get away and the camp learns where you sleep. Anger them enough and they come at dusk, with drums: raiders who break what is in their way. Hold a torch up at them and keep your fires burning; fire in an outsider's hand frightens them, and a band that loses its nerve runs. They never come on a Hum night. At home in their camps they fight to the last."],
@@ -191,7 +192,7 @@ func _refresh() -> void:
 				if not by_cat.has(bp.category):
 					by_cat[bp.category] = []
 				(by_cat[bp.category] as Array).append(bp)
-			for cat: String in ["survival", "shelter", "crafting", "storage", "defense", "walls", "floors"]:
+			for cat: String in ["survival", "shelter", "crafting", "storage", "farming", "defense", "walls", "floors"]:
 				if not by_cat.has(cat):
 					continue
 				_header(cat.capitalize())

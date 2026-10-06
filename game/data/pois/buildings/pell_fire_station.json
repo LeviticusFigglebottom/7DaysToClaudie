@@ -1294,9 +1294,10 @@
     {
      "id": "bunk_4",
      "prop": "wild_bunk_steel",
+     "offset": [0.5, 0],
      "at": [
       16,
-      16
+      17
      ],
      "against": "S",
      "level": 1

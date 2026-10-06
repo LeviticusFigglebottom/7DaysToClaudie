@@ -135,6 +135,12 @@ func _exit_tree() -> void:
 # --- Streaming --------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_process_body(delta)
+	StreamMeter.note("veg", t0)
+
+
+func _process_body(delta: float) -> void:
 	_collect_far()
 	if world == null or world.player == null:
 		return

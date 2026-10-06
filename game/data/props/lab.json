@@ -638,6 +638,7 @@
     2.05,
     0.72
    ],
+   "back": 0.39,
    "container": "lab_specimen_vault",
    "blocks_sight": false,
    "rooms": [
@@ -664,6 +665,7 @@
     2.6,
     0.5
    ],
+   "back": 0.22,
    "blocks_sight": false,
    "rooms": [
     "lab"

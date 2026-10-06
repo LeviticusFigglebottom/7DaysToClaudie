@@ -34,6 +34,7 @@ var wildlife: Node = null
 ## Waystation trading (ADR-0039): trader posts, their shops, contracts and safe zones.
 var traders: Node = null
 var ashen: Node = null
+var farming: Node = null
 var is_ready: bool = false
 ## True when this random world streams its regions (ADR-0038): only the first area is composed at
 ## 1 m at load, the RegionStreamer brings in the rest, and buildings come by distance. The default
@@ -187,6 +188,8 @@ func _on_world_loaded() -> void:
 	poi_registry = _loader.registry
 	if _loader.world_id != "":
 		session.world_id = StringName(_loader.world_id)
+	# Before the vegetation reads its felled trees: records a newer composer re-scattered (TD-182).
+	SaveSystem.fix_composer_changes(session, world_def, TerrainComposer.VERSION)
 	_boot = StepRunner.new()
 	_boot.budget_ms = BOOT_BUDGET_MS
 	_boot.step_ran.connect(_on_boot_step)
@@ -347,6 +350,7 @@ const MODULES: Array = [
 	["vegetation", "res://src/world/vegetation/vegetation_manager.gd", "Growing the forest…"],
 	["loose", "res://src/world/loose_items.gd", "Scattering what was dropped…"],
 	["building", "res://src/building/building_manager.gd", "Raising what you built…"],
+	["farming", "res://src/building/farm_manager.gd", "Raising what you built…"],
 	["pois", "res://src/poi/poi_manager.gd", "Raising the town…"],
 	["ai", "res://src/ai/ai_director.gd", "Stirring the Hollowed…"],
 	["ambience", "res://src/audio/ambience_director.gd", "Listening…"],

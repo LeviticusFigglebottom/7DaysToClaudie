@@ -329,7 +329,7 @@
         {"prop": "metal_shelf", "at": [8, 0], "against": "N", "container": "civic_pantry_shelf", "id": "pantry_shelf_1", "level": -1},
         {"prop": "metal_shelf", "at": [9, 0], "against": "N", "container": "civic_pantry_shelf", "id": "pantry_shelf_2", "level": -1},
         {"prop": "metal_shelf", "at": [10, 0], "against": "N", "container": "civic_pantry_shelf", "id": "pantry_shelf_3", "level": -1},
-        {"prop": "store_freezer", "at": [11, 1], "against": "E", "container": "civic_pantry_shelf", "id": "pantry_freezer", "level": -1},
+        {"prop": "store_freezer", "at": [11, 1], "offset": [0, -0.25], "against": "E", "container": "civic_pantry_shelf", "id": "pantry_freezer", "level": -1},
         {"prop": "civic_relief_crate", "pos": [8.5, 2.3], "rot": 90, "id": "pantry_relief", "level": -1},
         {"prop": "feed_sacks", "pos": [11.35, 3.3], "rot": 92, "level": -1},
         {"prop": "cardboard_box", "pos": [8.4, 3.45], "rot": 15, "id": "pantry_box", "level": -1},

@@ -81,68 +81,142 @@ static func build(kind: String, rect: Rect2, y: float, spec: Dictionary) -> Arra
 ## {exterior, decay, finishes: {"L:c:r": interior wall finish index of open-roof cells},
 ##  walls: [[a: Vector2, b: Vector2, y0, finish index]] partitions to raise under open roofs}.
 static func build_plan(wings: Array, origin: Vector2, ctx: Dictionary) -> Array:
-	var faces: Array[Face] = []
+	var job := Job.new(wings, origin, ctx)
+	job.step()
+	return job.out
+
+
+## A roof plan built in stages (ADR-0038, TD-107: a big building's roof was one ~40 ms streaming
+## step): step() runs its stages one item (a wing, a face, a material...) at a time until a
+## deadline, in the same order as build_plan does at once, so the roof is the same either way.
+## `out` holds the result once step() returns true.
+class Job:
+	extends RefCounted
+	const STAGES: int = 12
+	var wings: Array
+	var origin: Vector2
+	var ctx: Dictionary
+	var out: Array = []
+	var faces: Array[RoofBuilder.Face] = []
 	var feet: Array[Rect2] = []
 	var tops: Array[float] = []
-	for w: RoofPlanner.Wing in wings:
-		feet.append(w.rect_m(origin, w.span))
-		tops.append(w.y + w.rise())
-	for i: int in wings.size():
-		var w: RoofPlanner.Wing = wings[i]
-		match w.type:
-			"gable":
-				faces.append_array(_gable_faces(w, origin, i))
-			"hip", "pyramid":
-				faces.append_array(_hip_faces(w, origin, i))
-			"shed":
-				faces.append_array(_shed_faces(w, origin, i))
-			"flat":
-				faces.append(_flat_face(w, origin, i))
-	_clip(faces, feet)
-	var out: Array = []
 	var by_mat: Dictionary = {}
 	var collide := PackedVector3Array()
-	for f: Face in faces:
-		if not by_mat.has(f.mat):
-			var st := SurfaceTool.new()
-			st.begin(Mesh.PRIMITIVE_TRIANGLES)
-			by_mat[f.mat] = st
-		_emit_face(by_mat[f.mat], f, collide)
-	# Undersides: boards (the sheathing), seen from an open room and from under the eaves and rakes.
-	# The covering's own back read as a black hole under every overhang.
 	var under := SurfaceTool.new()
-	under.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for f2: Face in faces:
-		_emit_underside(under, f2)
-	var n: int = 0
-	for mat_id: String in by_mat:
-		out.append(_mesh_node("Roof" if n == 0 else "Roof%d" % n, (by_mat[mat_id] as SurfaceTool).commit(), _cover_material(mat_id, wings)))
-		n += 1
-	if not faces.is_empty():
-		out.append(_mesh_node("RoofDeck", under.commit(), _material(DECK_MAT, "#6f6559")))
-	out.append(_trims(faces, wings))
-	var kit := {}
-	for i2: int in wings.size():
-		var w2: RoofPlanner.Wing = wings[i2]
-		if w2.type in ["gable", "shed"]:
-			_ends(w2, origin, wings, feet, tops, i2, ctx, kit, collide)
-		elif w2.type == "flat":
-			_parapets(w2, origin, wings, ctx, kit)
-		elif w2.type == "spire":
-			out.append_array(_spire(w2, origin, collide))
-	var timbers: MeshInstance3D = _timbers(faces, wings, origin)
-	if timbers != null:
-		out.append(timbers)
-	_partitions(faces, ctx, kit)
-	for key2: String in kit:
-		var k: Dictionary = kit[key2]
-		out.append(_kit_instance(str(k["name"]), (k["st"] as SurfaceTool).commit(), k["custom"], k["xf"]))
-	if not collide.is_empty():
-		var shape := ConcavePolygonShape3D.new()
-		shape.backface_collision = true
-		shape.set_faces(collide)
-		out.append(shape)
-	return out
+	var kit: Dictionary = {}
+	var stage: int = 0
+	var i: int = 0
+
+	func _init(p_wings: Array, p_origin: Vector2, p_ctx: Dictionary) -> void:
+		wings = p_wings
+		origin = p_origin
+		ctx = p_ctx
+		for w: RoofPlanner.Wing in wings:
+			feet.append(w.rect_m(origin, w.span))
+			tops.append(w.y + w.rise())
+
+	## Runs items until `deadline` (Time.get_ticks_usec(); 0 = none) has passed, at least one;
+	## true once the roof is done.
+	func step(deadline: int = 0) -> bool:
+		while stage < STAGES:
+			if _item():
+				stage += 1
+				i = 0
+			else:
+				i += 1
+			if deadline > 0 and Time.get_ticks_usec() >= deadline:
+				break
+		return stage >= STAGES
+
+	## Frees the nodes made so far (a build given up half way).
+	func free_nodes() -> void:
+		for item: Variant in out:
+			if item is Node and is_instance_valid(item):
+				(item as Node).free()
+		out = []
+
+	## One item of the current stage (index i); true once the stage is through.
+	func _item() -> bool:
+		match stage:
+			0:  # each wing's faces
+				if i >= wings.size():
+					return true
+				var w: RoofPlanner.Wing = wings[i]
+				match w.type:
+					"gable":
+						faces.append_array(RoofBuilder._gable_faces(w, origin, i))
+					"hip", "pyramid":
+						faces.append_array(RoofBuilder._hip_faces(w, origin, i))
+					"shed":
+						faces.append_array(RoofBuilder._shed_faces(w, origin, i))
+					"flat":
+						faces.append(RoofBuilder._flat_face(w, origin, i))
+			1:  # each face cut where other wings stand higher (_clip)
+				if i == 0:
+					for f: RoofBuilder.Face in faces:
+						f.pieces = [f.poly]
+				if i >= faces.size():
+					return true
+				RoofBuilder._clip_face(faces[i], faces, feet)
+			2:  # each face into its covering's mesh
+				if i >= faces.size():
+					return true
+				var f2: RoofBuilder.Face = faces[i]
+				if not by_mat.has(f2.mat):
+					var st := SurfaceTool.new()
+					st.begin(Mesh.PRIMITIVE_TRIANGLES)
+					by_mat[f2.mat] = st
+				RoofBuilder._emit_face(by_mat[f2.mat], f2, collide)
+			3:  # undersides: boards (the sheathing), seen from an open room and from under the eaves
+				# and rakes. The covering's own back read as a black hole under every overhang.
+				if i == 0:
+					under.begin(Mesh.PRIMITIVE_TRIANGLES)
+				if i >= faces.size():
+					return true
+				RoofBuilder._emit_underside(under, faces[i])
+			4:  # each covering's mesh
+				if i >= by_mat.size():
+					return true
+				var mat_id: String = by_mat.keys()[i]
+				out.append(RoofBuilder._mesh_node("Roof" if i == 0 else "Roof%d" % i, (by_mat[mat_id] as SurfaceTool).commit(), RoofBuilder._cover_material(mat_id, wings)))
+			5:
+				if not faces.is_empty():
+					out.append(RoofBuilder._mesh_node("RoofDeck", under.commit(), RoofBuilder._material(RoofBuilder.DECK_MAT, "#6f6559")))
+				return true
+			6:
+				out.append(RoofBuilder._trims(faces, wings))
+				return true
+			7:  # each wing's gable ends, parapets or spire
+				if i >= wings.size():
+					return true
+				var w2: RoofPlanner.Wing = wings[i]
+				if w2.type in ["gable", "shed"]:
+					RoofBuilder._ends(w2, origin, wings, feet, tops, i, ctx, kit, collide)
+				elif w2.type == "flat":
+					RoofBuilder._parapets(w2, origin, wings, ctx, kit)
+				elif w2.type == "spire":
+					out.append_array(RoofBuilder._spire(w2, origin, collide))
+			8:
+				var timbers: MeshInstance3D = RoofBuilder._timbers(faces, wings, origin)
+				if timbers != null:
+					out.append(timbers)
+				return true
+			9:
+				RoofBuilder._partitions(faces, ctx, kit)
+				return true
+			10:  # each kit-wall batch (gable ends, parapets, partitions)
+				if i >= kit.size():
+					return true
+				var k: Dictionary = kit[kit.keys()[i]]
+				out.append(RoofBuilder._kit_instance(str(k["name"]), (k["st"] as SurfaceTool).commit(), k["custom"], k["xf"]))
+			_:
+				if not collide.is_empty():
+					var shape := ConcavePolygonShape3D.new()
+					shape.backface_collision = true
+					shape.set_faces(collide)
+					out.append(shape)
+				return true
+		return false
 
 
 # --- faces per roof type -----------------------------------------------------------------------
@@ -311,19 +385,25 @@ static func _clip(faces: Array[Face], feet: Array[Rect2]) -> void:
 	for f: Face in faces:
 		f.pieces = [f.poly]
 	for f2: Face in faces:
-		for g: Face in faces:
-			if g.wing == f2.wing:
-				continue
-			var region: PackedVector2Array = clip_rect(g.poly, feet[g.wing])
-			if region.size() < 3:
-				continue
-			region = clip_half(region, g.a - f2.a, g.b - f2.b, g.c - f2.c - EPS)
-			if region.size() < 3 or area(region) < 1e-5:
-				continue
-			var next: Array = []
-			for piece: PackedVector2Array in f2.pieces:
-				next.append_array(subtract(piece, region))
-			f2.pieces = next
+		_clip_face(f2, faces, feet)
+
+
+## One face of _clip (it reads only the other faces' uncut polygons, so faces cut one at a time
+## come out the same).
+static func _clip_face(f2: Face, faces: Array[Face], feet: Array[Rect2]) -> void:
+	for g: Face in faces:
+		if g.wing == f2.wing:
+			continue
+		var region: PackedVector2Array = clip_rect(g.poly, feet[g.wing])
+		if region.size() < 3:
+			continue
+		region = clip_half(region, g.a - f2.a, g.b - f2.b, g.c - f2.c - EPS)
+		if region.size() < 3 or area(region) < 1e-5:
+			continue
+		var next: Array = []
+		for piece: PackedVector2Array in f2.pieces:
+			next.append_array(subtract(piece, region))
+		f2.pieces = next
 
 
 # --- 2D convex polygon helpers -------------------------------------------------------------------

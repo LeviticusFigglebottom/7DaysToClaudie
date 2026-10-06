@@ -172,6 +172,9 @@ func _run() -> void:
 	await wait_until(func() -> bool: return ai.hum.members.size() > 0, 20.0)
 	ok(ai.hum.members.size() > 0, "Hum waves spawn (%d)" % ai.hum.members.size())
 	await seconds(4.0)
+	# The field builds on a low-priority worker that shares the pool with terrain streaming; on a
+	# freshly streamed random world the first build can take longer than 4 s (one flaky FAIL).
+	await wait_until(func() -> bool: return ai.hum.flow != null and ai.hum.flow.ready, 16.0)
 	ok(ai.hum.flow != null and ai.hum.flow.ready, "horde flow field built")
 	# Kill a few attackers to give the memory something to learn from.
 	var killed: int = 0

@@ -42,6 +42,15 @@ var stats: Dictionary = {}
 ## Locked doors: opening id -> +1 / -1, the side of the wall (local +Z = the "a" room side) the
 ## door is approached from, i.e. where its padlock hangs and its key is used (PoiBuilder lock cues).
 var lock_sides: Dictionary = {}
+## The builder's prework, done on PoiManager's check worker by PoiBuilder.prepare_check (`prepared`):
+## barricaded door id -> +1 / -1 (the face its barricade stands on), the roof plan, the interior
+## probe boxes, the scatter's clutter props by room tag and the per-run decals.
+var prepared: bool = false
+var barricade_sides: Dictionary = {}
+var roof_wings: Array[RoofPlanner.Wing] = []
+var probe_boxes: Array[AABB] = []
+var clutter: Dictionary = {}
+var run_decals: Array[Dictionary] = []
 var _keys_found: Dictionary = {}
 ## Weak floors treated as already collapsed: stepping onto one drops you to the level below.
 var _collapsed: bool = false
@@ -448,6 +457,7 @@ func _run() -> void:
 				str(p.get("id", pd.id)), p["cell"], p["level"]])
 		if pd.collision != "none" and route_cells.has(node_key(p["level"], p["cell"])) and pd.size.x * pd.size.z > 0.5 and not bool(p.get("route_ok", false)):
 			_w("prop '%s' at %s sits on the route corridor" % [pd.id, p["cell"]])
+	_check_wall_gaps()
 	for p2: Dictionary in layout.pickups:
 		if layout.is_void(int(p2["level"]), p2["cell"]):
 			_e("pickup '%s' at %s level %d floats in a tall room's open space" % [p2["pid"], p2["cell"], p2["level"]])
@@ -485,6 +495,92 @@ func _run() -> void:
 		_e("too many kit pieces %d > %d" % [piece_count, budget["pieces"]])
 	if layout.props.size() > int(budget["props"]):
 		_w("many authored props %d > %d" % [layout.props.size(), budget["props"]])
+
+
+## Wall props this far (m) off their wall's face, or into it, are reported: about what a
+## player sees from across a room as a prop hanging in the air or swallowed by its wall.
+const WALL_GAP_MAX: float = 0.05
+## How far behind a wall prop the wall it hangs on may be before it hangs on nothing (m).
+const WALL_REACH: float = 0.6
+
+
+## Every wall prop (wall-mounted, or placed `against` a wall) has its back on a wall's face: within
+## WALL_GAP_MAX of it, measured from the footprint's nearest point (PropDef.back_depth square on)
+## as PoiBuilder places it. A prop `against` a wall stands 1 cm off by construction, so this catches
+## the hand-placed ones (`pos`), authors' rotations and walls that are not there. Messages start
+## with "wall gap" (test_poi_wall_gaps.gd collects them across every building).
+func _check_wall_gaps() -> void:
+	for p: Dictionary in layout.props:
+		var pd: PropDef = ContentDB.instance.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+		# "wall_ok": hung on or leant against something that is not a building wall (a counter's
+		# front, a canopy, a sawhorse); it is placed by hand and not checked.
+		if pd == null or not (pd.wall_mounted or p.has("against")) or bool(p.get("wall_ok", false)):
+			continue
+		var plan: Vector3 = PoiLayout.prop_plan(p, pd)
+		var r: float = deg_to_rad(plan.z)
+		var fwd := Vector2(sin(r), cos(r))
+		# From the footprint's nearest point toward the wall: straight back from a hand-placed
+		# prop, toward the named wall from one `against` it (however it is turned).
+		var dir: Vector2 = -fwd
+		var reach: float = pd.back_depth()
+		var side: String = str(p.get("against", ""))
+		if PoiLayout.SIDES.has(side):
+			var s: int = int(PoiLayout.SIDES[side])
+			dir = Vector2(PoiLayout.DIRS[s])
+			reach = PoiLayout.wall_reach(pd, plan.z - PoiLayout.AGAINST_ROT[s])
+		var back_pt: Vector2 = Vector2(plan.x, plan.y) + dir * reach
+		var li: int = int(p["level"])
+		if pd.wall_mounted:
+			# A prop hung above its storey's walls hangs on the storey above's.
+			li += int(floor((float(p.get("height", 1.4)) + float(p.get("y", 0.0))) / PoiLayout.STOREY))
+		var gap: float = wall_gap(layout, li, back_pt, dir)
+		var what: String = "'%s' (%s) at %s level %d" % [str(p.get("id", pd.id)), pd.id, p["pos"], int(p["level"])]
+		if is_inf(gap):
+			_w("wall gap: %s has no wall within %.1f m behind it" % [what, WALL_REACH])
+		elif gap > WALL_GAP_MAX:
+			_w("wall gap: %s stands %.2f m off its wall" % [what, gap])
+		elif gap < -WALL_GAP_MAX:
+			_w("wall gap: %s sinks %.2f m into its wall" % [what, -gap])
+
+
+## Distance (m) from `from` (layout-local plan point) along `dir` to the nearest face of a wall on
+## level `li` whose span it meets (a gallery's railing counts: an organ backs onto one); negative
+## when `from` is already inside the wall, INF when no wall lies within WALL_REACH. Only walls
+## roughly square to `dir` count (a prop hung on a wall faces away from it).
+static func wall_gap(lay: PoiLayout, li: int, from: Vector2, dir: Vector2) -> float:
+	var best: float = INF
+	var half: float = PoiBuilder.WALL_T * 0.5
+	var c0 := Vector2i(int(floor(from.x)), int(floor(from.y)))
+	var seen: Dictionary = {}
+	for dz: int in range(-1, 2):
+		for dx: int in range(-1, 2):
+			for side: int in 4:
+				var e: Array = PoiLayout.side_edge(c0 + Vector2i(dx, dz), side)
+				var key: String = PoiLayout.edge_key(li, e[0], e[1])
+				if seen.has(key) or not (lay.walls.has(key) or lay.galleries.has(key)):
+					continue
+				seen[key] = true
+				var c: Vector2i = e[1]
+				# The wall's centre line on its axis, the prop's coordinate across it and along it.
+				var horiz: bool = e[0] == "h"
+				var line: float = float(c.y if horiz else c.x)
+				var across: float = from.y if horiz else from.x
+				var d_across: float = dir.y if horiz else dir.x
+				if absf(d_across) < 0.7:
+					continue
+				# Distance to the face on the prop's side of the centre line (negative: inside it).
+				var to_line: float = (line - across) / d_across
+				var t: float = to_line - half / absf(d_across)
+				if t > WALL_REACH or to_line < -half:
+					continue
+				var hit: Vector2 = from + dir * maxf(t, 0.0)
+				var along: float = hit.x if horiz else hit.y
+				var lo: float = float(c.x if horiz else c.y)
+				if along < lo - 0.01 or along > lo + 1.01:
+					continue
+				if absf(t) < absf(best):
+					best = t
+	return best
 
 
 ## The route again with every weak floor already given way: a waypoint on a weak floor counts as

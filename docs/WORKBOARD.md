@@ -14,7 +14,7 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
 ## Sessions
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
-| Integrator `session_01F4L1SyEdjgRRBm7g93Yk8J` | `ccr-24ba8b7d-fttoi8` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Merged session 3's tether markers and ADR-0038 §8 (604b97f) and session 2's Corvane caves (ADR-0044). Landing X (wilderness round 3) and Y (the field lab): fixes, `make assets`, renders, reviewed landing commits. Agent Z's fidelity round restarts from its brief | A `mine` wilderness site (TD-169); the M3 base tech or more pool dungeons |
+| Integrator `session_01F4L1SyEdjgRRBm7g93Yk8J` | `ccr-24ba8b7d-fttoi8` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Landed this round: session 2's caves (ADR-0044), tier-5 contract (TD-179) and the Ashen phase 1 (ADR-0048, generator VERSION 6); session 3's streamed random worlds, Phase 3 part 2, save v7, TD-182 and the stream budgets; agent Z's town ground and biome fog (ADR-0047); the hub's mine site (TD-169, VERSION 7) and farming and rain collection (ADR-0049). Every generated model is built. Now: renders and landing commits for X and Y | The garden and Ashen camp renders (TD-215); Z's asset side (fur, impostors); traps and electricity (M3 part 2) or more pool dungeons |
 | Session 2 `session_018Mc59z7WZz2YkXsyMHsJ75` | `claude/hollowmere-wildlife-town` | Wildlife, town content and economy | A tier-5 contract on `bloom_core_canister` (TD-179), then the Ashen (ADR-0048) | Ashen camps, scouts, raids, fear of fire |
 | Session 3 `session_01Nvn2rfJdMq7iK7ZuQhac7y` | `claude/hollowmere-playable` | Playable builds and stability | Streaming on for random worlds (TD-137, TD-118), then Phase 3 part 2 (TD-107) | Phase 4's save side (v7, the world bundle), then TD-003's headless profile |
 | Session 4 `session_01DYqPNtu8CtWNbHWPmbsFcW` | `claude/blissful-wright-gnc54e` | POI prop placement, then first-person hands | Merge the integration branch (take its side of the facing fix), port the two lost nudges, then wall-mounted props flush to their walls (TD-159–161) | The first-person hands (ADR-0045, TD-172–175) |
@@ -48,8 +48,6 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
 | The Corvane Field Lab (Y), landing | integrator | `corvane_field_lab.json` with its notes, loot, keys and items, `props_lab.py` with its catalog and `data/props/lab.json`, the `lab_signs` atlas, `test_field_lab.gd`, its pool entry, ADR-0046 |
 | Wilderness set pieces, round 3 (X), landing | integrator | its four building JSONs (Camp Tamarack, Elk Ridge Lodge, the Cordon Quarantine Camp, the Haldane Place) with their notes, loot and keys, its props family, `test_wilderness_round_three.gd`, and its four entries in the wilderness pool of `world_gen.json` |
 | Fidelity round (Z), code side | integrator | landed (ADR-0047); the asset side (fur, impostors: TD-005/006/067) waits for renders |
-| A `mine` wilderness site (TD-169) | integrator, agent | the RWG site kind and placement for buried-level POIs, its pool entry, generator VERSION 6, the random-world goldens, TD-206..210 |
-| Farming and rain collection (ADR-0049) | integrator, agent | new farming/rain systems, structures, crop items and data, their generators and tests, TD-211..220; one module line in `game_world.gd` (reported) |
 | Tier-5 contract, then the Ashen (ADR-0048) | session 2 | contract and trader data and code (`game/data/traders/`, `contracts`), new Ashen data (`game/data/factions/` or `enemies/ashen*`), Ashen AI under `game/src/ai/ashen/`, Ashen camp POIs, their props and generators; `enemy.gd` hunks reported |
 | Streaming default, Phase 3 part 2, Phase 4 (v7) | session 3 | `.github/workflows/`, `game/export_presets.cfg`, the load sequence (`game_world.gd`, `world_loader.gd`, `PoiManager`'s placement path, `PoiBuilder.build`'s validator argument), RegionStreamer, PoiRegistry, `terrain_holes.gd`, `terrain_manager.gd`, thread-safety fixes in `game/src/world/terrain/` and `vegetation/`, `game/src/core/save/` (v7) |
 | Wall-mounted prop offsets | session 4 | the wall-mount math in `PoiBuilder._prop_xf` and `poi_layout.gd`, wall-depth data on prop defs, and a validator check for wall gaps. Session 3 owns the rest of PoiBuilder; keep hunks small and report them |
@@ -133,6 +131,11 @@ Same setup, now on the downloadable build:
   this next (ADR-0045, TD-172–175).
 
 ## Lessons (read before your first render)
+* Every checkout and worktree of this project shares one `user://` folder (Godot keys it by the
+  project name). Two test runs at once can clobber each other's random-world cache and fail
+  `test_rwg` with "cannot parse world.json": run one full suite per machine at a time.
+* Adding a wilderness pool entry moves every place drawn after it: bump `RwgGenerator.VERSION`
+  (pool data isn't in the settings key) and re-record test_composer_golden with SLOW_TESTS=1.
 * Software Vulkan takes minutes per image. Imports and renders take
   `flock build/.godot.lock`, one at a time. `make screenshots` has a 30 s exit watchdog
   (`tools/qa_watchdog.sh`); start any other render with `setsid` and kill only your own process

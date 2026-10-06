@@ -1,6 +1,7 @@
 extends GutTest
 ## PoiBuilder placement: free-standing level-0 props and pickups on yard cells stand on the pad
-## (y = 0), on the porch deck and indoors on the floor (floor_height); boards on a barricaded
+## (y = 0), on the porch deck and indoors on the floor (floor_height); a prop "against" a wall
+## stands flush to it facing into the room unless it is turned by hand; boards on a barricaded
 ## interior door face the way in, never the room they seal, unless "barricade_on" names a room.
 
 
@@ -22,6 +23,14 @@ func _loot_y(inst: PoiInstance, key: String) -> float:
 			return (c as Node3D).position.y
 	fail_test("no loot prop '%s'" % key)
 	return NAN
+
+
+func _loot_xf(inst: PoiInstance, key: String) -> Transform3D:
+	for c: Node in inst.get_children():
+		if c is PoiPieces.LootProp and (c as PoiPieces.LootProp).prop_key == key:
+			return (c as Node3D).transform
+	fail_test("no loot prop '%s'" % key)
+	return Transform3D()
 
 
 func _pickup_y(inst: PoiInstance, pid: String) -> float:
@@ -59,6 +68,36 @@ func test_yard_items_stand_on_the_pad_and_porch_items_on_the_deck() -> void:
 	assert_almost_eq(_loot_y(inst, "yard_lifted"), 0.4, 0.001, "yard y is measured from the pad")
 	assert_almost_eq(_pickup_y(inst, "yard_key"), 0.1, 0.001)
 	assert_almost_eq(_pickup_y(inst, "porch_key"), 0.7, 0.001)
+	inst.free()
+
+
+func test_props_against_a_wall_face_into_the_room() -> void:
+	# A steel shelf (0.95 m wide, 0.45 m deep) against each wall of a room, and one turned by hand.
+	# A compiled prop always carries a "rot" (and "rot_set"): left at 0, the E and W shelves stood
+	# across their walls (through them) and the S one faced its wall.
+	var layout := PoiLayout.compile(_def({
+		"levels": [{"level": 0, "plan": ["AAA", "AAA", "AAA"], "rooms": {"A": {}}}],
+		"props": [
+			{"id": "n", "prop": "metal_shelf", "at": [1, 0], "against": "N"},
+			{"id": "e", "prop": "metal_shelf", "at": [2, 1], "against": "E"},
+			{"id": "s", "prop": "metal_shelf", "at": [1, 2], "against": "S"},
+			{"id": "w", "prop": "metal_shelf", "at": [0, 1], "against": "W"},
+			{"id": "turned", "prop": "metal_shelf", "at": [0, 2], "against": "W", "rot": 0}]}))
+	var size: Vector3 = (Content.get_def(&"prop", &"metal_shelf") as PropDef).size
+	var inst: PoiInstance = PoiBuilder.build(layout, &"test/placement")
+	for p: Dictionary in layout.props.slice(0, 4):
+		var xf: Transform3D = _loot_xf(inst, str(p["id"]))
+		var toward: Vector2i = PoiLayout.DIRS[PoiLayout.SIDES[p["against"]]]
+		var into := Vector3(-toward.x, 0.0, -toward.y)
+		assert_almost_eq(xf.basis.z.dot(into), 1.0, 0.001, "%s: its front faces into the room" % p["id"])
+		# Every corner of its footprint on the room side of the wall's face, the back 1 cm off it.
+		var face: Vector3 = layout.cell_center(0, p["cell"]) - into * (0.5 - PoiBuilder.WALL_T * 0.5)
+		var nearest: float = INF
+		for sx: float in [-0.5, 0.5]:
+			for sz: float in [-0.5, 0.5]:
+				nearest = minf(nearest, (xf * Vector3(sx * size.x, 0.0, sz * size.z) - face).dot(into))
+		assert_almost_eq(nearest, 0.01, 0.001, "%s: its back is flush to the wall" % p["id"])
+	assert_almost_eq(_loot_xf(inst, "turned").basis.z.dot(Vector3(0, 0, 1)), 1.0, 0.001, "an authored rot wins")
 	inst.free()
 
 

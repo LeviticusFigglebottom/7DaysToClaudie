@@ -39,6 +39,10 @@ func setup_world(w: Node) -> void:
 	Events.ashen_raid_ended.connect(func(_rid: String, repelled: bool) -> void:
 		if repelled:
 			record("raid"))
+	# A garden plot brought in (ADR-0049).
+	Events.crop_harvested.connect(func(pid: StringName, crop_id: StringName, _items: Dictionary) -> void:
+		if Game.session != null and pid == Game.session.local_player_id:
+			record("harvest", crop_id))
 	if p != null:
 		fit_world(p)
 		# A loaded game may already meet a level goal in its open chapter.
