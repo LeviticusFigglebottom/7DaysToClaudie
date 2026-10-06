@@ -129,3 +129,20 @@ func test_poi_at_tests_turned_neighbours_in_their_own_frames() -> void:
 	pm._free_building(&"ring_a", null, null)
 	assert_null(pm.poi_at(mid_a), "freed buildings leave the grid")
 	assert_eq(pm.poi_at(b.global_transform * b.local_bounds().get_center()), b)
+
+
+func test_fixtures_batch_per_cell() -> void:
+	# Plain street fixtures share one body and a MultiMesh per model in their 64 m cell (TD-107).
+	var pm := PoiManager.new()
+	add_child_autofree(pm)
+	var a := Transform3D(Basis(), Vector3(10.0, 2.0, 10.0))
+	var b := Transform3D(Basis(Vector3.UP, 0.5), Vector3(20.0, 3.0, 12.0))
+	var cell := {"models": {"props/test_lamp": [a, b], "props/test_bench": [a]}, "boxes": [[a, Vector3(1, 2, 1)], [b, Vector3(1, 2, 1)]]}
+	var body: StaticBody3D = pm.fixture_cell(cell, "Fixtures_test")
+	var mmis: Array = body.find_children("*", "MultiMeshInstance3D", false, false)
+	assert_eq(mmis.size(), 2, "one MultiMesh per model")
+	var lamp: MultiMesh = (body.get_node("test_lamp") as MultiMeshInstance3D).multimesh
+	assert_eq(lamp.instance_count, 2)
+	# (Instance transforms aren't read back: the headless dummy renderer doesn't store them.)
+	assert_eq(body.find_children("*", "CollisionShape3D", false, false).size(), 2, "a box per solid fixture")
+	assert_true(body.global_transform.is_equal_approx(Transform3D.IDENTITY))

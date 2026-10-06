@@ -365,6 +365,10 @@ func _place_framework(pl: Dictionary, buildings: bool = true) -> void:
 			continue
 		var xf: Transform3D = fxf * (Lots.lot_local_xf(l, pd.footprint) if l.has("frame") else lot_xf(l, pd.footprint))
 		_place_poi(pd.id, StringName(str(res["instance"])), xf, Vector2(pd.footprint), pd)
+	# Plain fixtures (lamp posts, hydrants, benches) are batched per 64 m cell: one MultiMesh per
+	# model and one body holding every box (TD-107). An organic town has hundreds of them, and a
+	# body and a mesh instance each cost a node, a draw call and a physics object apiece.
+	var cells: Dictionary = {}
 	for fi: int in fw.fixtures.size():
 		var f: Dictionary = fw.fixtures[fi]
 		var pdef: PropDef = Content.get_def(&"prop", StringName(str(f.get("prop", "")))) as PropDef
@@ -375,36 +379,81 @@ func _place_framework(pl: Dictionary, buildings: bool = true) -> void:
 		if only.has_area() and not only.has_point(Vector2(lp.x, lp.z)):
 			continue
 		lp.y = world.height_at(lp.x, lp.z)
+		var xf := Transform3D(fxf.basis * Basis(Vector3.UP, deg_to_rad(float(f.get("rot", 0.0)))), lp)
+		var model: String = pdef.model_for(str(f.get("variant", "worn")))
 		# Street fixtures with a container (dumpster, wrecks, mailbox) are searchable like any
 		# prop indoors: same LootProp, tier 1, its id from the framework and the fixture's own id.
 		var cdef: ContainerDef = Content.get_def(&"container", pdef.container) as ContainerDef if pdef.container != &"" else null
-		var body: StaticBody3D
-		if cdef != null:
-			var lpr := PoiPieces.LootProp.new()
-			lpr.prop = pdef
-			lpr.cdef = cdef
-			lpr.container_id = StringName("c:%s:%s" % [pl["id"], str(f.get("id", "fx%d" % fi))])
-			lpr.tier = 1
-			body = lpr
-		else:
-			body = StaticBody3D.new()
-		body.name = "Fixture_%s_%d" % [pdef.id, fi]
+		if cdef == null:
+			var k := Vector2i(floori(lp.x / GRID_CELL), floori(lp.z / GRID_CELL))
+			if not cells.has(k):
+				cells[k] = {"models": {}, "boxes": []}
+			var models: Dictionary = cells[k]["models"]
+			if not models.has(model):
+				models[model] = []
+			(models[model] as Array).append(xf)
+			if pdef.collision != "none":
+				(cells[k]["boxes"] as Array).append([xf * Transform3D(Basis(), Vector3(0, pdef.size.y * 0.5, 0)), pdef.size])
+			continue
+		var lpr := PoiPieces.LootProp.new()
+		lpr.prop = pdef
+		lpr.cdef = cdef
+		lpr.container_id = StringName("c:%s:%s" % [pl["id"], str(f.get("id", "fx%d" % fi))])
+		lpr.tier = 1
+		lpr.name = "Fixture_%s_%d" % [pdef.id, fi]
 		var mi := MeshInstance3D.new()
-		mi.mesh = ModelLibrary.mesh(pdef.model_for(str(f.get("variant", "worn"))), "box")
-		body.add_child(mi)
+		mi.mesh = ModelLibrary.mesh(model, "box")
+		lpr.add_child(mi)
 		if pdef.collision != "none":
 			var cs := CollisionShape3D.new()
 			var box := BoxShape3D.new()
 			box.size = pdef.size
 			cs.shape = box
 			cs.position = Vector3(0, pdef.size.y * 0.5, 0)
-			body.add_child(cs)
-		add_child(body)
-		body.global_transform = Transform3D(fxf.basis * Basis(Vector3.UP, deg_to_rad(float(f.get("rot", 0.0)))), lp)
-		if _region_now != "":
-			if not _fixtures.has(_region_now):
-				_fixtures[_region_now] = []
-			(_fixtures[_region_now] as Array).append(body)
+			lpr.add_child(cs)
+		add_child(lpr)
+		lpr.global_transform = xf
+		_keep_fixture(lpr)
+	for k2: Vector2i in cells:
+		_keep_fixture(fixture_cell(cells[k2], "Fixtures_%s_%d_%d" % [str(pl["id"]).replace("/", "_"), k2.x, k2.y]))
+
+
+## One cell's batched fixtures ({models: {model id: [Transform3D]}, boxes: [[Transform3D, size]]},
+## world transforms) as a body at the origin: a MultiMesh per model, a box shape per solid one.
+func fixture_cell(cell: Dictionary, node_name: String) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.name = node_name
+	var models: Dictionary = cell["models"]
+	for model: String in models:
+		var xfs: Array = models[model]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = ModelLibrary.mesh(model, "box")
+		mm.instance_count = xfs.size()
+		for i: int in xfs.size():
+			mm.set_instance_transform(i, xfs[i])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = model.get_file()
+		mmi.multimesh = mm
+		body.add_child(mmi)
+	for b: Array in cell["boxes"]:
+		var cs := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = b[1]
+		cs.shape = box
+		cs.transform = b[0]
+		body.add_child(cs)
+	add_child(body)
+	body.global_transform = Transform3D.IDENTITY
+	return body
+
+
+func _keep_fixture(body: Node) -> void:
+	if _region_now == "":
+		return
+	if not _fixtures.has(_region_now):
+		_fixtures[_region_now] = []
+	(_fixtures[_region_now] as Array).append(body)
 
 
 ## A lot's POI frame in its framework: the footprint centred in the rect, its front (+Z) toward
