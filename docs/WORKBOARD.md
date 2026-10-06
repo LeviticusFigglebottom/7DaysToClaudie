@@ -7,9 +7,9 @@ way it never conflicts.
 ## Sessions
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
-| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O2 (random worlds), P2 (pool buildings), Q2 (weather) finishing after the owner's interrupt stopped O, P and Q; a player guide (`docs/HOW_TO_PLAY.md`); the random worlds v2 plan | Random worlds v2 (ADR-0038): regions composed on demand for 10–16 km maps, organic towns |
+| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O2 (random worlds), P2 (pool buildings), Q2 (weather) finishing after the owner's interrupt stopped O, P and Q; a player guide (`docs/HOW_TO_PLAY.md`); the random worlds v2 plan | Random worlds v2 (`docs/RWG_V2_PLAN.md`): Phase 1 (measure and speed up the composer and generator) once O2 lands, then Phase 4's generator side and Phase 5 (organic towns, ADR-0040); the full screenshot QA and stabilization round once O2, P2 and Q2 land |
 | Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Hollowed hounds and Murmurs (ADR-0034); the third block is merged (dd01229, 437535c) | Base-building fidelity (ADR-0035); the third block opened to random towns' pool; pool round 2 (four or five set pieces: motel and annex, church hall, garage, trailer park, a second industrial site) |
-| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Merged: boot-step load, stand-in CI, menu notices, Build workflow (301e85c), terrain thread races (cb83882). Now: the performance pass (TD-003) | Graphics options for real GPUs (ADR-0037: render scale and FSR, per-feature quality, key rebinding, controls screen); then the full screenshot QA and stabilization round |
+| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Merged: boot-step load, stand-in CI, menu notices, Build workflow (301e85c), terrain thread races (cb83882). Now: the performance pass (TD-003) | Random worlds v2 Phases 2 and 3 (regions and buildings stream; the load path), then Phase 4's save side (v7, the world bundle), then graphics options (ADR-0037) |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -39,16 +39,18 @@ way it never conflicts.
 ## Allocations
 * ADR: 0026 (vault, S2), 0027 (wildlife, S2), 0031 (random worlds), 0032 (pool, if needed),
   0033 (weather), 0034 (hounds and Murmurs, S2), 0035 (base building, S2), 0036–0037 (session 3),
-  0038 (random worlds v2, integrator), 0039 (pool round 2, S2, if needed). Next free: 0040.
-* TD: S2 094–101 and 111–114; session 3 102–109; integrator 110 and 115 up.
-* Save version: 6 since random worlds. Next bump: merge first, then take 7.
+  0038 (streamed worlds: the hub creates it, session 3 adds its phases), 0039 (pool round 2, S2,
+  if needed), 0040 (organic towns, the hub). Next free: 0041.
+* TD: S2 094–101 and 111–114; session 3 102–109 and 126–130; the hub 110 and 115–125, then 131 up.
+* Save version: 6 since random worlds. 7 is reserved for session 3's world bundle (RWG v2 Phase 4); anyone else who needs a bump asks the hub first.
 
 ## Queue (in order)
 1. Land O, P and Q. (Session 2's school, fire station and bank are merged: dd01229.)
 2. Session 3: the first downloadable build from the Build workflow (artifacts on the Actions page),
    then the races and the performance pass. The freeze and the crash are fixed (below).
-3. Random worlds v2: compose regions on demand, so maps of 10–16 km stream within bounded
-   memory; organic towns (streets that follow the land, irregular lots).
+3. Random worlds v2 (`docs/RWG_V2_PLAN.md`): compose regions on demand, so maps of 10–16 km
+   stream within bounded memory; organic towns (streets that follow the land, irregular lots).
+   The hub takes the composer and generator; session 3 takes streaming and saves.
 4. Session 2: hounds and Murmurs, then base-building fidelity.
 5. A full screenshot QA pass and a stabilization round, then a "how to play" guide.
 
