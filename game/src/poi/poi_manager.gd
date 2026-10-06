@@ -256,11 +256,7 @@ func _place_framework(pl: Dictionary) -> void:
 ## A lot's POI frame in its framework: the footprint centred in the rect, its front (+Z) toward
 ## the lot's `facing`.
 static func lot_xf(l: Dictionary, footprint: Vector2i) -> Transform3D:
-	var rect: Array = l["rect"]
-	var center := Vector3(float(rect[0]) + float(rect[2]) * 0.5, 0.0, float(rect[1]) + float(rect[3]) * 0.5)
-	var yaw: float = {"S": 0.0, "E": PI * 0.5, "N": PI, "W": -PI * 0.5}.get(str(l.get("facing", "S")), 0.0)
-	var b := Basis(Vector3.UP, yaw)
-	return Transform3D(b, center - b * Vector3(footprint.x * 0.5, 0.0, footprint.y * 0.5))
+	return PoiRegistry.rect_lot_xf(l, footprint)
 
 
 ## The def as this run builds it at this placement (ADR-0030): per-run picks and wear for a world
