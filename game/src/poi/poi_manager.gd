@@ -640,6 +640,27 @@ func _registry_listing(e: Dictionary) -> Dictionary:
 	return out
 
 
+## Map markers for every building, built or not: [{pos: Vector3, visited: bool, cleared: bool}].
+## Read from the saved state without creating any (WorldState.poi_state would add an entry for
+## every building in the world just by drawing the map).
+func markers() -> Array:
+	var saved: Dictionary = Game.session.world.pois if Game.session != null else {}
+	var out: Array = []
+	if registry == null:
+		for id: StringName in instances:
+			out.append(_marker((instances[id] as PoiInstance).global_position, saved.get(String(id), {})))
+		return out
+	for id2: StringName in registry.entries:
+		var inst: PoiInstance = instances.get(id2)
+		var c: Vector2 = registry.entries[id2]["center"]
+		out.append(_marker(inst.global_position if inst != null and is_instance_valid(inst) else Vector3(c.x, 0.0, c.y), saved.get(String(id2), {})))
+	return out
+
+
+static func _marker(pos: Vector3, st: Dictionary) -> Dictionary:
+	return {"pos": pos, "visited": bool(st.get("visited", false)), "cleared": bool(st.get("cleared", false))}
+
+
 ## The building whose footprint lies within `margin` m of pos, built or not ("" when none, or in a
 ## world without a registry, where every building is built: poi_at answers there). Wanderer
 ## spawns and supply drops use it so nothing lands where a building is about to stand.

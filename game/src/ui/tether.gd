@@ -424,14 +424,15 @@ func _draw_markers() -> void:
 	elif p.spawn_point != Vector3.ZERO:
 		_markers.draw_arc(_to_map(rt, p.spawn_point).clamp(lim.position, lim.end), 4.5, 0.0, TAU, 16, WAKE_COLOR, 1.5)
 	var pois: Node = w.get(&"pois")
-	if pois != null:
-		for inst: PoiInstance in (pois.get(&"instances") as Dictionary).values():
+	if pois != null and pois.has_method(&"markers"):
+		# Every building, built or not (a streamed world builds only the nearby ones, ADR-0038).
+		for m: Dictionary in (pois.call(&"markers") as Array):
 			var col := Color(0.6, 0.6, 0.6)
-			if bool(inst.state.get("cleared", false)):
+			if bool(m["cleared"]):
 				col = Color(0.4, 0.9, 0.5)
-			elif bool(inst.state.get("visited", false)):
+			elif bool(m["visited"]):
 				col = Color(0.9, 0.7, 0.4)
-			var mp: Vector2 = _to_map(rt, inst.global_position)
+			var mp: Vector2 = _to_map(rt, m["pos"])
 			_markers.draw_rect(Rect2(mp - Vector2(3, 3), Vector2(6, 6)), col)
 	var drops: Node = w.get(&"supply_drops")
 	if drops != null:
