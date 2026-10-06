@@ -82,13 +82,11 @@ class Wing:
 		return 0.25
 
 
-## Errors from the last plan (overrides that name no wing, bad keys or values).
-static var last_errors: PackedStringArray = []
-
-
-## The wings of a compiled layout, ready for RoofBuilder.build_plan.
-static func plan(layout: PoiLayout) -> Array[Wing]:
-	last_errors = []
+## The wings of a compiled layout, ready for RoofBuilder.build_plan. `errors` collects problems
+## with the layout's roof overrides (overrides that name no wing, bad keys or values). It is the
+## caller's own array, not a static: validators plan roofs on worker threads while the main thread
+## builds other buildings (ADR-0036).
+static func plan(layout: PoiLayout, errors: Array = []) -> Array[Wing]:
 	var base: Dictionary = (layout.style.get("roof", {"type": "gable"}) as Dictionary).duplicate()
 	var overrides: Array = base.get("roofs", [])
 	base.erase("roofs")
@@ -112,7 +110,7 @@ static func plan(layout: PoiLayout) -> Array[Wing]:
 		w.pitch = float(base.get("pitch", 30.0))
 		w.overhang = float(base.get("overhang", 0.45))
 		w.open = _open_under(layout, w)
-	var forced: Dictionary = _apply_overrides(layout, wings, overrides)
+	var forced: Dictionary = _apply_overrides(layout, wings, overrides, errors)
 	_assign(layout, wings, base, forced)
 	return wings
 
@@ -252,19 +250,19 @@ static func _open_under(layout: PoiLayout, w: Wing) -> bool:
 
 ## Applies style.roof.roofs entries to the wings holding their cell; returns wing index -> the keys
 ## an author set (they win over the planner's choices).
-static func _apply_overrides(layout: PoiLayout, wings: Array[Wing], overrides: Array) -> Dictionary:
+static func _apply_overrides(layout: PoiLayout, wings: Array[Wing], overrides: Array, errors: Array) -> Dictionary:
 	var forced: Dictionary = {}
 	for o: Variant in overrides:
 		if not o is Dictionary:
-			last_errors.append("style.roof.roofs entries must be objects")
+			errors.append("style.roof.roofs entries must be objects")
 			continue
 		var d: Dictionary = o
 		for k: Variant in d.keys():
 			if not str(k).begins_with("_") and not WING_KEYS.has(str(k)):
-				last_errors.append("roof override has unknown key '%s' (%s)" % [k, ", ".join(WING_KEYS)])
+				errors.append("roof override has unknown key '%s' (%s)" % [k, ", ".join(WING_KEYS)])
 		var at: Array = d.get("at", [])
 		if at.size() != 2:
-			last_errors.append("roof override needs \"at\": [col, row] (a cell of the wing it changes)")
+			errors.append("roof override needs \"at\": [col, row] (a cell of the wing it changes)")
 			continue
 		var li: int = int(d.get("level", 0))
 		var cell := Vector2i(int(at[0]), int(at[1]))
@@ -273,17 +271,17 @@ static func _apply_overrides(layout: PoiLayout, wings: Array[Wing], overrides: A
 			if w.level == li and w.cells.has_point(cell):
 				hit = w
 		if hit == null:
-			last_errors.append("roof override at %s level %d: no roof there (the top of the building at that cell is on another level)" % [cell, li])
+			errors.append("roof override at %s level %d: no roof there (the top of the building at that cell is on another level)" % [cell, li])
 			continue
 		var t: String = str(d.get("type", ""))
 		if t != "" and not TYPES.has(t):
-			last_errors.append("roof override at %s: type '%s' unknown (%s)" % [cell, t, ", ".join(TYPES)])
+			errors.append("roof override at %s: type '%s' unknown (%s)" % [cell, t, ", ".join(TYPES)])
 			continue
 		if d.has("slope") and not PoiLayout.SIDES.has(str(d["slope"])):
-			last_errors.append("roof override at %s: slope must be N/E/S/W" % cell)
+			errors.append("roof override at %s: slope must be N/E/S/W" % cell)
 			continue
 		if d.has("axis") and not str(d["axis"]) in ["x", "z"]:
-			last_errors.append("roof override at %s: axis must be x or z" % cell)
+			errors.append("roof override at %s: axis must be x or z" % cell)
 			continue
 		for k2: Variant in d.keys():
 			if not str(k2) in ["level", "at"]:

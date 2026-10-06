@@ -104,7 +104,8 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	add_child(bloom)
 	bloom.setup(BloomField.build(world, regions, ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}))
 	_canopy = far_canopy(ContentDB.instance)
-	_build_far_tiles()
+	if not defer_far_tiles:
+		_build_far_tiles()
 	volume = VolumeTerrain.new()
 	volume.name = "Volume"
 	add_child(volume)
@@ -206,6 +207,9 @@ static func chunk_of(x: float, z: float) -> Vector2i:
 
 ## Joins in-flight mesh jobs so no worker touches freed data when the world goes away.
 func _exit_tree() -> void:
+	if _far_task >= 0:
+		WorkerThreadPool.wait_for_group_task_completion(_far_task)
+		_far_task = -1
 	for key: Variant in _pending.keys():
 		var job: Dictionary = _pending[key]
 		if job.has("task"):
@@ -380,28 +384,70 @@ func is_ready_around(pos: Vector3, radius: int = 1) -> bool:
 # --- Far tiles ----------------------------------------------------------------------------------
 
 func _build_far_tiles() -> void:
-	var built: Array[Rect2] = []
-	for rid: String in regions:
-		built.append(world.region_rect(rid))
 	for rid: String in world.regions:
-		var rect: Rect2 = world.region_rect(rid)
-		var rt: RegionTerrain = regions.get(rid, coarse.get(rid))
-		# Built regions draw their own trees (impostors out to 1.2 km); the others get a canopy,
-		# raised into the mesh itself so its normals light the forest edges.
-		var grid: PackedVector2Array = _far_canopy_grid(rt, rect, {} if regions.has(rid) else _canopy, built)
-		var n: int = int(round(rect.size.x / FAR_STEP)) + 3
-		var at := func(x: float, z: float) -> Vector2:
-			return grid[clampi(int(round((z - rect.position.y) / FAR_STEP)) + 1, 0, n - 1) * n + clampi(int(round((x - rect.position.x) / FAR_STEP)) + 1, 0, n - 1)]
-		var height_fn := func(x: float, z: float) -> float: return height_at(x, z) + (at.call(x, z) as Vector2).x * CANOPY_HEIGHT
-		var color_fn := func(x: float, z: float) -> Color: return _far_color(rt, x, z, at.call(x, z))
-		var mesh: ArrayMesh = TerrainMesher.build_chunk(rect.position, rect.size.x, FAR_STEP, height_fn, 12.0, color_fn)
-		var mi := MeshInstance3D.new()
-		mi.name = "Far_" + rid
-		mi.mesh = mesh
-		mi.material_override = _far_material
-		mi.position = Vector3(rect.position.x, -0.35, rect.position.y)
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		_far_root.add_child(mi)
+		_add_far_tile(rid, _far_tile_mesh(rid))
+
+
+## Set before setup() to build the far tiles on worker threads through boot_steps() (ADR-0036:
+## about 1.5 s of meshing that used to run in the load's one long main-thread frame).
+var defer_far_tiles: bool = false
+var _far_task: int = -1
+var _far_ids: Array = []
+var _far_meshes: Array = []
+
+
+## Boot steps for a deferred setup: mesh every far tile in parallel, then add them.
+func boot_steps() -> Array:
+	if not defer_far_tiles:
+		return []
+	return [["Raising the far hills…", _start_far_tiles, "far tiles"], ["Raising the far hills…", _finish_far_tiles, "far tiles (add)"]]
+
+
+func _start_far_tiles() -> void:
+	_far_ids = world.regions.keys()
+	_far_meshes.resize(_far_ids.size())
+	_far_task = WorkerThreadPool.add_group_task(func(i: int) -> void: _far_meshes[i] = _far_tile_mesh(_far_ids[i]), _far_ids.size(), -1, false, "far tiles")
+
+
+func _finish_far_tiles() -> bool:
+	if _far_task >= 0:
+		if not WorkerThreadPool.is_group_task_completed(_far_task):
+			return false
+		WorkerThreadPool.wait_for_group_task_completion(_far_task)
+		_far_task = -1
+	for i: int in _far_ids.size():
+		_add_far_tile(_far_ids[i], _far_meshes[i])
+	_far_meshes.clear()
+	return true
+
+
+## A far tile's mesh (pure data: reads the composed regions only, safe on a worker thread).
+func _far_tile_mesh(rid: String) -> ArrayMesh:
+	var built: Array[Rect2] = []
+	for b: String in regions:
+		built.append(world.region_rect(b))
+	var rect: Rect2 = world.region_rect(rid)
+	var rt: RegionTerrain = regions.get(rid, coarse.get(rid))
+	# Built regions draw their own trees (impostors out to 1.2 km); the others get a canopy,
+	# raised into the mesh itself so its normals light the forest edges.
+	var grid: PackedVector2Array = _far_canopy_grid(rt, rect, {} if regions.has(rid) else _canopy, built)
+	var n: int = int(round(rect.size.x / FAR_STEP)) + 3
+	var at := func(x: float, z: float) -> Vector2:
+		return grid[clampi(int(round((z - rect.position.y) / FAR_STEP)) + 1, 0, n - 1) * n + clampi(int(round((x - rect.position.x) / FAR_STEP)) + 1, 0, n - 1)]
+	var height_fn := func(x: float, z: float) -> float: return height_at(x, z) + (at.call(x, z) as Vector2).x * CANOPY_HEIGHT
+	var color_fn := func(x: float, z: float) -> Color: return _far_color(rt, x, z, at.call(x, z))
+	return TerrainMesher.build_chunk(rect.position, rect.size.x, FAR_STEP, height_fn, 12.0, color_fn)
+
+
+func _add_far_tile(rid: String, mesh: ArrayMesh) -> void:
+	var rect: Rect2 = world.region_rect(rid)
+	var mi := MeshInstance3D.new()
+	mi.name = "Far_" + rid
+	mi.mesh = mesh
+	mi.material_override = _far_material
+	mi.position = Vector3(rect.position.x, -0.35, rect.position.y)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_far_root.add_child(mi)
 
 
 ## {biome id: Vector2(canopy 0..1, deciduous share 0..1)} from the biomes' trees. Canopy is cover

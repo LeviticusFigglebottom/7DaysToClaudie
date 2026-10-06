@@ -121,6 +121,11 @@ func show_loading(text: String, progress: float) -> void:
 	_loading_bar.value = progress * 100.0
 
 
+## What the loading screen says now ("" once it is hidden).
+func loading_text() -> String:
+	return _loading_label.text if _loading != null and _loading.visible else ""
+
+
 func hide_loading() -> void:
 	_loading.visible = false
 	_hud.visible = true

@@ -32,11 +32,23 @@ var supply_drops: Node = null
 var directives: Node = null
 var wildlife: Node = null
 var is_ready: bool = false
+## Framework lots resolved by the world loader (WorldLoader.lots), read by the POI manager.
+var poi_lots: Dictionary = {}
 var sleeping: bool = false
 
 var _loader: WorldLoader
 var _load_task: int = -1
 var _spawn_settle: int = 0
+## The main-thread half of the load (ADR-0036): [label, Callable, name] steps, run a few a frame
+## within BOOT_BUDGET_MS so the window keeps answering the OS (one long frame here made Windows
+## flag the game as not responding). _boot_i = -1: not booting.
+const BOOT_BUDGET_MS: float = 40.0
+## Share of the loading bar the worker thread's half fills; the boot steps fill the rest to 0.95.
+const WORKER_SHARE: float = 0.7
+var _boot: Array = []
+var _boot_i: int = -1
+var _held: Dictionary = {}
+var _load_meter: LoadMeter = LoadMeter.new()
 
 
 func _ready() -> void:
@@ -49,6 +61,8 @@ func _ready() -> void:
 	add_child(ui)
 	ui.show_loading("Entering the Cordon…", 0.0)
 	_loader = WorldLoader.new()
+	_loader.resolve_lots = true
+	_loader.world_seed = session.world_seed
 	var dir: String = MAIN_WORLD_DIR
 	if session.is_random_world():
 		# A random world (ADR-0031): generated (or read from its cache) on the same worker thread.
@@ -68,8 +82,11 @@ func _exit_tree() -> void:
 
 
 func _process(_delta: float) -> void:
+	if not is_ready or _load_meter.trailing():
+		_load_meter.frame(ui.loading_text() if ui != null else "")
 	if _load_task >= 0:
-		ui.show_loading(_loader.stage, _loader.progress)
+		var st: Array = _loader.status()
+		ui.show_loading(str(st[0]), float(st[1]) * WORKER_SHARE)
 		if WorkerThreadPool.is_task_completed(_load_task):
 			WorkerThreadPool.wait_for_task_completion(_load_task)
 			_load_task = -1
@@ -77,6 +94,9 @@ func _process(_delta: float) -> void:
 				ui.show_loading("Failed: %s" % _loader.error, 1.0)
 				return
 			_on_world_loaded()
+		return
+	if _boot_i >= 0:
+		_run_boot_steps()
 		return
 	if not is_ready and player != null:
 		ui.show_loading("Finding your feet…", 0.95)
@@ -86,24 +106,95 @@ func _process(_delta: float) -> void:
 				_finish_spawn()
 
 
+## True while the main-thread half of the load runs (modules may queue work with boot_steps()).
+func is_booting() -> bool:
+	return _boot_i >= 0
+
+
+## Runs boot steps until this frame's budget is spent (always at least one, so a step that alone
+## overruns still progresses), then shows the next one's label.
+func _run_boot_steps() -> void:
+	var t0: int = Time.get_ticks_usec()
+	while _boot_i < _boot.size():
+		var step: Array = _boot[_boot_i]
+		var s0: int = Time.get_ticks_usec()
+		# A step that returns false is waiting on a worker thread: it runs again next frame.
+		var done: Variant = (step[1] as Callable).call()
+		_load_meter.step(str(step[2]), Time.get_ticks_usec() - s0)
+		_hold_processing()
+		if done is bool and not done:
+			break
+		_boot_i += 1
+		if float(Time.get_ticks_usec() - t0) / 1000.0 >= BOOT_BUDGET_MS:
+			break
+	if _boot_i >= _boot.size():
+		_boot_i = -1
+		_boot.clear()
+		_release_processing()
+		return
+	var p: float = WORKER_SHARE + (0.95 - WORKER_SHARE) * float(_boot_i) / float(_boot.size())
+	ui.show_loading(str(_boot[_boot_i][0]), p)
+
+
+## The worker thread is done: queue the scene-tree half of the load as boot steps (see _boot).
 func _on_world_loaded() -> void:
 	world_def = _loader.world
+	poi_lots = _loader.lots
 	if _loader.world_id != "":
 		session.world_id = StringName(_loader.world_id)
+	_boot = [
+		["Laying the ground…", _boot_terrain, "terrain"],
+		["Reading the old survey…", func() -> void: terrain.load_from(session.world), "terrain edits"],
+		["Hanging the sky…", _boot_environment, "environment"],
+		["Winding the clocks…", _boot_clock, "clock"],
+	]
+	for m: Array in MODULES:
+		_boot.append([str(m[2]), _spawn_module.bind(m[0], m[1]), str(m[0])])
+	_boot.append(["Waking up…", _spawn_player, "player"])
+	_boot.append(["Waking up…", _boot_hooks, "hooks"])
+	_boot_i = 0
+	_run_boot_steps()
+
+
+## Systems added by a boot step don't tick until the whole world exists: before the split they
+## were all created in one frame, and their _process code may assume the player and its
+## neighbours are there. Their previous process modes are restored when the boot ends.
+func _hold_processing() -> void:
+	for c: Node in get_children():
+		if c != ui and not _held.has(c):
+			_held[c] = c.process_mode
+			c.process_mode = Node.PROCESS_MODE_DISABLED
+
+
+func _release_processing() -> void:
+	for c: Node in _held:
+		if is_instance_valid(c):
+			c.process_mode = _held[c]
+	_held.clear()
+
+
+func _boot_terrain() -> void:
 	stimuli = Stimuli.new()
 	stimuli.name = "Stimuli"
 	stimuli.heat = session.heat
 	add_child(stimuli)
 	terrain = TerrainManager.new()
 	terrain.name = "Terrain"
+	terrain.defer_far_tiles = true
 	add_child(terrain)
 	terrain.setup(world_def, _loader.detailed, _loader.coarse)
-	terrain.load_from(session.world)
+	_insert_boot_steps(terrain.boot_steps())
+
+
+func _boot_environment() -> void:
 	env = EnvironmentController.new()
 	env.name = "Environment"
 	env.clock = session.clock
 	env.weather = session.weather
 	add_child(env)
+
+
+func _boot_clock() -> void:
 	clock_driver = WorldClockDriver.new()
 	clock_driver.name = "Clock"
 	clock_driver.session = session
@@ -114,8 +205,9 @@ func _on_world_loaded() -> void:
 	actions.world = self
 	add_child(actions)
 	clock_driver.game_minutes_passed.connect(_on_game_minutes)
-	_spawn_modules()
-	_spawn_player()
+
+
+func _boot_hooks() -> void:
 	Events.game_saving.connect(_on_game_saving)
 	if DebugTools.enabled():
 		var dbg := DebugOverlay.new()
@@ -124,30 +216,43 @@ func _on_world_loaded() -> void:
 		dbg.setup(self)
 
 
-## Optional modules: instantiated if their scripts exist (lets systems land incrementally).
-func _spawn_modules() -> void:
-	var mods: Array = [
-		["water", "res://src/world/water/water_system.gd"],
-		["bridges", "res://src/world/bridges.gd"],
-		["road_markings", "res://src/world/road_markings.gd"],
-		["vegetation", "res://src/world/vegetation/vegetation_manager.gd"],
-		["loose", "res://src/world/loose_items.gd"],
-		["building", "res://src/building/building_manager.gd"],
-		["pois", "res://src/poi/poi_manager.gd"],
-		["ai", "res://src/ai/ai_director.gd"],
-		["ambience", "res://src/audio/ambience_director.gd"],
-		["supply_drops", "res://src/world/supply_drops.gd"],
-		["directives", "res://src/progression/directive_tracker.gd"],
-		["wildlife", "res://src/wildlife/wildlife_manager.gd"],
-	]
-	for m: Array in mods:
-		if ResourceLoader.exists(m[1]):
-			var node: Node = (load(m[1]) as GDScript).new()
-			node.name = str(m[0]).capitalize()
-			set(m[0], node)
-			add_child(node)
-			if node.has_method(&"setup_world"):
-				node.call(&"setup_world", self)
+## Optional modules: instantiated if their scripts exist (lets systems land incrementally), one
+## boot step each: [property, script, loading-screen label].
+const MODULES: Array = [
+	["water", "res://src/world/water/water_system.gd", "Filling the rivers…"],
+	["bridges", "res://src/world/bridges.gd", "Filling the rivers…"],
+	["road_markings", "res://src/world/road_markings.gd", "Painting the roads…"],
+	["vegetation", "res://src/world/vegetation/vegetation_manager.gd", "Growing the forest…"],
+	["loose", "res://src/world/loose_items.gd", "Scattering what was dropped…"],
+	["building", "res://src/building/building_manager.gd", "Raising what you built…"],
+	["pois", "res://src/poi/poi_manager.gd", "Raising the town…"],
+	["ai", "res://src/ai/ai_director.gd", "Stirring the Hollowed…"],
+	["ambience", "res://src/audio/ambience_director.gd", "Listening…"],
+	["supply_drops", "res://src/world/supply_drops.gd", "Listening…"],
+	["directives", "res://src/progression/directive_tracker.gd", "Listening…"],
+	["wildlife", "res://src/wildlife/wildlife_manager.gd", "Waking the woods…"],
+]
+
+
+func _spawn_module(prop: String, script: String) -> void:
+	if not ResourceLoader.exists(script):
+		return
+	var node: Node = (load(script) as GDScript).new()
+	node.name = prop.capitalize()
+	set(prop, node)
+	add_child(node)
+	if node.has_method(&"setup_world"):
+		node.call(&"setup_world", self)
+	# A module with more main-thread work than one frame should take queues it as further steps,
+	# run right after its own (before the modules that follow it, which may expect the work done).
+	if node.has_method(&"boot_steps"):
+		_insert_boot_steps(node.call(&"boot_steps"))
+
+
+## Queues steps to run right after the current one (only called from a boot step).
+func _insert_boot_steps(more: Array) -> void:
+	for i: int in more.size():
+		_boot.insert(_boot_i + 1 + i, more[i])
 
 
 func _spawn_player() -> void:
@@ -234,6 +339,7 @@ func _finish_spawn() -> void:
 	if pos.y < ground + 0.2 or pos.y > ground + 30.0:
 		player.global_position = Vector3(pos.x, ground + 0.4, pos.z)
 	_place_spawn_props()
+	_load_meter.spawned()
 	player.input_enabled = true
 	is_ready = true
 	ui.hide_loading()

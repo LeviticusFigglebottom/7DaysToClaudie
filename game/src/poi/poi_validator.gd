@@ -409,7 +409,7 @@ func _run() -> void:
 			# A sleeper spawned on the jaws springs them on itself.
 			if str(bt["type"]) == "bear_trap" and int(bt["level"]) == int(sl["level"]) and (bt["pos"] as Vector2).distance_to(sl["pos"]) < 0.55:
 				_w("sleeper '%s' stands on bear trap '%s'" % [sl["sid"], bt["tid"]])
-		if not Content.has_def(&"enemy", StringName(str(sl.get("enemy", "hollow")))):
+		if not ContentDB.instance.has_def(&"enemy", StringName(str(sl.get("enemy", "hollow")))):
 			_e("sleeper %d enemy '%s' unknown" % [i, sl.get("enemy")])
 	# Props.
 	var route_cells: Dictionary = {}
@@ -418,7 +418,7 @@ func _run() -> void:
 			if node is Array:
 				route_cells[node_key(node[0], node[1])] = true
 	for p: Dictionary in layout.props:
-		var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+		var pd: PropDef = ContentDB.instance.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
 		if pd == null:
 			_e("prop '%s' unknown" % p.get("prop"))
 			continue
@@ -447,7 +447,7 @@ func _run() -> void:
 			_e("pickup '%s' at %s level %d floats over a stairwell or hatch opening" % [p2["pid"], p2["cell"], p2["level"]])
 		if not seen.has(node_key(p2["level"], p2["cell"])):
 			_e("pickup '%s' unreachable" % p2.get("item"))
-		elif not Content.has_def(&"item", StringName(str(p2.get("item", "")))):
+		elif not ContentDB.instance.has_def(&"item", StringName(str(p2.get("item", "")))):
 			_e("pickup item '%s' unknown" % p2.get("item"))
 	_check_ids()
 	_check_traps(seen, stair_cells)
@@ -569,8 +569,9 @@ func _check_roof() -> void:
 	var t: String = str((roof as Dictionary).get("type", "gable"))
 	if not RoofPlanner.TYPES.has(t):
 		_e("style.roof type '%s' unknown (%s)" % [t, ", ".join(RoofPlanner.TYPES)])
-	RoofPlanner.plan(layout)
-	for e: String in RoofPlanner.last_errors:
+	var roof_errors: Array = []
+	RoofPlanner.plan(layout, roof_errors)
+	for e: String in roof_errors:
 		_e(e)
 
 
@@ -846,14 +847,14 @@ func _approach_side(op: Dictionary, keys: Dictionary) -> float:
 func _is_container(p: Dictionary) -> bool:
 	if p.has("container"):
 		return true
-	var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+	var pd: PropDef = ContentDB.instance.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
 	return pd != null and pd.container != ""
 
 
 func _prop_cells() -> Dictionary:
 	var out: Dictionary = {}
 	for p: Dictionary in layout.props:
-		var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+		var pd: PropDef = ContentDB.instance.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
 		if pd != null and pd.collision != "none" and pd.size.x * pd.size.z > 0.35:
 			out[node_key(p["level"], p["cell"])] = true
 	return out

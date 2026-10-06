@@ -19,6 +19,20 @@ static func has_model(model_id: String) -> bool:
 	return ResourceLoader.exists(model_path(model_id))
 
 
+## Share (0..1) of the vegetation species' models that exist: 0 means the game runs entirely on
+## the procedural stand-ins (no `make assets`, e.g. a fresh Windows clone opened in the editor),
+## between 0 and 1 a partial asset build (ADR-0036). The main menu says so.
+static func generated_share(content: ContentDB) -> float:
+	var total: int = 0
+	var found: int = 0
+	for def: ContentDef in content.all(&"species"):
+		for m: String in (def as SpeciesDef).models:
+			total += 1
+			if has_model(m):
+				found += 1
+	return float(found) / float(total) if total > 0 else 0.0
+
+
 ## Merged mesh for a model id (all MeshInstance3D surfaces baked into one ArrayMesh).
 static func mesh(model_id: String, placeholder: String = "box") -> Mesh:
 	_mutex.lock()

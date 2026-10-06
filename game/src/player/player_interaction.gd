@@ -140,7 +140,7 @@ static func find_interactable(o: Object) -> Object:
 			return n
 		if n.has_meta(&"interactable"):
 			var ref: Variant = n.get_meta(&"interactable")
-			if ref is Object and is_instance_valid(ref):
+			if is_instance_valid(ref):
 				return ref
 		n = n.get_parent()
 		depth += 1
