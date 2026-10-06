@@ -4,7 +4,8 @@ Campground (region D6).
 One task per prop id, one GLB per condition: models/props/<id>.glb (clean), <id>_worn.glb,
 <id>_destroyed.glb. Generators: blender/generators/props_outskirts.py (boathouse, campground) and
 props_outskirts_ashen.py (the watch camp, plus the plank door leaf models/kit/door_plank[_broken]
-its doorways hang); shared parts in blender/lib/props_outskirts_parts.py. The camp's Hollowed wear
+its doorways hang) and props_ashen_camp.py (the living Ashen's highcamp: drum, spear rack, ash pots,
+drying rack, camp fire; defs in game/data/props/ashen.json); shared parts in blender/lib/props_outskirts_parts.py. The camp's Hollowed wear
 the `ashen` population's bodies (characters.py, ADR-0028). Content defs: game/data/props/outskirts.json;
 materials: game/data/materials/props_outskirts.json; textures: textures/gen/outskirts.py.
 """
@@ -17,6 +18,7 @@ CW = [C, W]
 CWD = [C, W, D]
 OUT = "props_outskirts"
 ASH = "props_outskirts_ashen"
+CAMP = "props_ashen_camp"
 
 # id: (generator module, conditions, params). Conditions match the variants in props/outskirts.json.
 PROPS: dict[str, tuple[str, list[str], dict]] = {
@@ -55,6 +57,12 @@ PROPS: dict[str, tuple[str, list[str], dict]] = {
     "out_longhouse_shell": (ASH, [C], {"seed": 1217, "ao_samples": 12, "ao_dist": 1.2}),
     "out_smoke_hut_shell": (ASH, [C], {"seed": 1218, "ao_samples": 12, "ao_dist": 1.0}),
     "out_lean_to_shell": (ASH, [C], {"seed": 1219, "ao_samples": 12, "ao_dist": 1.0}),
+    # --- The living Ashen's camp kit (ADR-0048, the highcamp; props_ashen_camp.py, props/ashen.json) --
+    "ashen_war_drum": (CAMP, CW, {"seed": 1231, "ao_dist": 0.8}),
+    "ashen_spear_rack": (CAMP, CW, {"seed": 1232}),
+    "ashen_ash_pots": (CAMP, CW, {"seed": 1233}),
+    "ashen_drying_rack": (CAMP, CW, {"seed": 1234}),
+    "ashen_camp_fire": (CAMP, CW, {"seed": 1235}),
     # --- Tamsin River Campground -----------------------------------------------------------------------
     "out_rv": (OUT, CWD, {"seed": 1301, "ao_samples": 16, "ao_dist": 1.0}),
     "out_tent_dome": (OUT, CWD, {"seed": 1302, "ao_dist": 0.8}),

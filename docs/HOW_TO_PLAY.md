@@ -408,6 +408,30 @@ does 14 damage to a Hollowed touching it, again every 1.2 seconds it stays, and 
 A **Can Chime** (hold it, Left mouse at the ground) rattles when anything walks through it, with
 "Something rattled the can chime." when it's a Hollowed.
 
+### Gardens and rain
+The Field Manual's **Farming** blueprints are a **Garden Bed** (2 Logs, 6 Sticks, 4 Leaf Bundles)
+and a **Rain Catcher** (1 Log, 8 Sticks, 2 Cordage, 4 Cloth).
+* **Seed**: seed packets and seed potatoes turn up in kitchen drawers, sheds and feed bins; wild
+  huckleberry bushes and yarrow sometimes give seed when you pick them; a potato plants a potato,
+  and four huckleberries crushed by hand give two seeds.
+* **Planting**: press **E** on a bed holding a seed (or carrying one) to plant it in the next free
+  plot of four. Nothing will go in during winter.
+* **Water**: plants grow only while the soil is wet. Rain soaks a bed under open sky; a bottle of
+  water tops it up by half, a bucket soaks it (**E** when there's nothing else to do, or hold **X**
+  any time). The empty bottle or bucket comes back. A soaked bed dries out in two to three days,
+  faster in the heat.
+* **Growing**: potatoes take about five good days, carrots four, beans four and a half, yarrow three,
+  a huckleberry bush seven. Summer is best, autumn slow, cold nights slower; the "Crop growth speed"
+  world setting scales it. Dry soil wilts a plant and kills it in a day or two; frost kills beans
+  overnight, while berries and yarrow shrug it off.
+* **Harvest**: press **E** on a bed with anything ripe. Annuals leave the plot empty (carrots, beans
+  and yarrow may give seed back); a huckleberry bush and yarrow grow back. Pull dead plants with
+  **E** (for a little fibre). Bake potatoes at a campfire, or make a garden stew (a potato, a carrot,
+  beans, a bottle of boiled water and an empty can).
+* **The rain catcher** fills when it rains, about two bottles an hour in a downpour, up to 24. Press
+  **E** with empty bottles or a bucket to fill them (the water is murky: boil it), or drink straight
+  from it. Under a roof it stays dry. Buckets also fill at streams.
+
 ## 8. Buildings are dungeons
 
 Every building is built around a route. The front is locked, barricaded or chained; you find a way

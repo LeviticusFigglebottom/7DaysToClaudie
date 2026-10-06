@@ -4,6 +4,7 @@
     {"id": "world", "label": "World & time"},
     {"id": "hollowed", "label": "The Hollowed"},
     {"id": "hum", "label": "The Hum"},
+    {"id": "factions", "label": "The Ashen"},
     {"id": "loot", "label": "Loot & progression"},
     {"id": "survival", "label": "Survival"},
     {"id": "death", "label": "Death"}
@@ -25,6 +26,8 @@
     "sleeper_alertness": {"category": "hollowed", "type": "enum", "values": ["deep", "normal", "light"], "default": "normal", "label": "Sleepers wake"},
     "special_hollowed": {"category": "hollowed", "type": "bool", "default": true, "label": "Special Hollowed (Blister, Husk, Rammer)"},
     "hollowed_hounds": {"category": "hollowed", "type": "bool", "default": true, "label": "Hollowed hound packs"},
+    "ashen": {"category": "factions", "type": "bool", "default": true, "label": "The Ashen (scouts and raids)"},
+    "ashen_aggression": {"category": "factions", "type": "enum", "values": ["calm", "normal", "fierce"], "default": "normal", "label": "Ashen aggression"},
     "infected_tiers": {"category": "hollowed", "type": "bool", "default": true, "label": "Seeded and Bloomed tiers"},
     "gamestage_days_weight": {"category": "hollowed", "type": "float", "min": 0.0, "max": 4.0, "step": 0.25, "default": 1.5, "label": "Gamestage per day survived"},
     "gamestage_bonus": {"category": "hollowed", "type": "float", "min": 0.5, "max": 2.0, "step": 0.1, "default": 1.0, "label": "Gamestage multiplier"},
@@ -44,6 +47,7 @@
 
     "needs_rate": {"category": "survival", "type": "float", "min": 0.25, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Hunger & thirst rate"},
     "infection_rate": {"category": "survival", "type": "float", "min": 0.0, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Bloom infection rate"},
+    "crop_growth": {"category": "survival", "type": "float", "min": 0.25, "max": 4.0, "step": 0.25, "default": 1.0, "label": "Crop growth speed"},
 
     "death_penalty": {"category": "death", "type": "enum", "values": ["none", "xp_loss", "drop_pack", "drop_all", "permadeath"], "default": "drop_pack", "label": "On death"}
   },
