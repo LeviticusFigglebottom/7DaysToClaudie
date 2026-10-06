@@ -119,6 +119,8 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "wx_mist_forest_dawn", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 3.0, 2283), "hour": 6.9, "weather": "mist", "wet": 0.4},
 ]
 
+const ProbeBudget := preload("res://src/poi/interior_probe_budget.gd")
+
 var _out: String = "res://../build/screenshots"
 ## Pieces the furnished_base shot placed (BuildingManager ids), taken down after it.
 var _base_kit: Array[StringName] = []
@@ -129,6 +131,9 @@ var _settle: float = 4.0
 ## seconds, so the settle above is a frame or two, and TAA and SDFGI (20 frames to converge after a
 ## jump) show half settled: a dim deep wood, noisy soft shadows.
 var _settle_frames: int = 0
+## --probe-always: the interior probes round the camera re-render every frame during a shot (QA of
+## interiors lit by PoiManager's probe budget, which hides and shows UPDATE_ONCE probes).
+var _probe_always: bool = false
 ## Seconds a shot waits at most for vegetation to stream in (--stream-wait).
 var _stream_wait: float = 240.0
 ## [enemy, position] pairs a shot keeps in place until it is taken.
@@ -148,6 +153,8 @@ func _ready() -> void:
 				_stream_wait = float(args[i + 1])
 			"--settle-frames":
 				_settle_frames = int(args[i + 1])
+			"--probe-always":
+				_probe_always = true
 			"--only":
 				_only = args[i + 1].split(",")
 	DirAccess.make_dir_recursive_absolute(_out)
@@ -184,6 +191,36 @@ func _mem_report(tag: String) -> void:
 		Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / mb, int(Performance.get_monitor(Performance.OBJECT_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)), int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)), ", ".join(pipes)])
+
+
+## The interior probes round the camera (PoiBuilder: one per room rectangle; PoiManager's budget shows
+## the nearest 32 to 48): how many there are, how many are shown, and the three nearest.
+func _probe_report(tag: String, eye: Vector3) -> void:
+	var ranked: Array = []
+	var shown: int = 0
+	for n: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+		var p := n as ReflectionProbe
+		if p != null and p.is_inside_tree():
+			ranked.append([ProbeBudget.box_distance(p, eye), p])
+			shown += 1 if p.visible else 0
+	ranked.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	var near: PackedStringArray = []
+	for e: Array in ranked.slice(0, 3):
+		var p: ReflectionProbe = e[1]
+		near.append("%.1f m %s%s" % [float(e[0]), "shown" if p.visible else "hidden", " (always)" if p.update_mode == ReflectionProbe.UPDATE_ALWAYS else ""])
+	print("SHOT probes %s: %d interior probes, %d shown; nearest %s" % [tag, ranked.size(), shown, ", ".join(near)])
+
+
+## --probe-always: the shown interior probes within 2 m of the camera's room re-render every frame
+## until the capture (set back to once after it).
+func _refresh_probes(eye: Vector3) -> Array[ReflectionProbe]:
+	var out: Array[ReflectionProbe] = []
+	for n: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+		var p := n as ReflectionProbe
+		if p != null and p.visible and ProbeBudget.box_distance(p, eye) < 2.0:
+			p.update_mode = ReflectionProbe.UPDATE_ALWAYS
+			out.append(p)
+	return out
 
 
 ## Waits (up to --stream-wait seconds, 4 min by default) until the vegetation within two chunks of
@@ -400,6 +437,7 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		await _wait(float(shot.get("settle", _settle)))
+	var refreshed: Array[ReflectionProbe] = _refresh_probes(cam.global_position) if _probe_always else []
 	for i: int in _settle_frames:
 		await get_tree().process_frame
 	var img: Image = get_viewport().get_texture().get_image()
@@ -407,6 +445,9 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	img.save_png(path)
 	print("SHOT %s" % path)
 	_mem_report(str(shot["name"]))
+	_probe_report(str(shot["name"]), cam.global_position)
+	for pr: ReflectionProbe in refreshed:
+		pr.update_mode = ReflectionProbe.UPDATE_ONCE
 	if str(shot["name"]).begins_with("wx_") and wx_env.fx != null and wx_env.fx.rain != null:
 		var fx: WeatherFx = wx_env.fx
 		var c: Vector3 = cam.global_position

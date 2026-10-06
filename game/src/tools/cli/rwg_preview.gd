@@ -1,7 +1,7 @@
 extends SceneTree
 ## Generates a random world (ADR-0031) and writes its map, for QA:
 ##   godot --headless --path game -s res://src/tools/cli/rwg_preview.gd -- --seed 1234 --size 5 \
-##       --out /abs/path.png [--preset standard] [--set towns=4 --set terrain=hilly ...] [--px 1024] [--fresh]
+##       --out /abs/path.png [--preset standard] [--set town_density=3 --set terrain=hilly ...] [--px 1024] [--fresh]
 ##       [--compose] [--crop x,z,metres] [--memory]
 ## Prints the world's id, folder, towns, places, rivers, lakes, roads, warnings and timings.
 ## A thin launcher: the generator needs Content (POI footprints, templates), and a `-s` script is

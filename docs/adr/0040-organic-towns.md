@@ -188,9 +188,15 @@ run whose folder is gone regenerates with v2, TD-082):
 * **The map** draws an organic town from world.json and frameworks.json: yards, frames by zoning
   with a tick to the street each faces, the square, the streets by class (turning circles as
   discs) under the world roads; glyphs for cells A-P and rows 0-9 (maps to 16 x 16).
-* **Sizes.** The New Game cap stays 7 (big worlds wait for streaming); generation scales: 10 x 10
-  in 6.3 s (towns 1.1 s on threads, roads 1.6 s, land 1.9 s), tested with the size forced in
-  memory (rwg_preview `--force-size`); place caps are per 16 km²; 70 town names.
+* **Sizes and the rest of Phase 4's generator side.** The New Game cap stays 7 (big worlds wait
+  for streaming); generation scales, measured with the size forced in memory (rwg_preview
+  `--force-size`, busy container): 10 x 10 in 6.5 s (12 towns, 156 places), 13 x 13 in 9.9 s, 16 x 16
+  in 18.2 s (32 towns, 397 places, 258 roads; land 4.8 s, roads and main streets 6.2 s, towns 3.3 s
+  on threads), inside the plan's 20 s. Place caps are per 16 km² (`max` x area / 16). 70 town names.
+  The drop site keeps 300 m from a region border (a streamed world composes round it first), with
+  tiered fallbacks: 200 m; 120 m with the towns 0.8 as far and the road up to 1.8 as far; 60 m,
+  0.65 and 2.3 (a small map's few arterials mostly run through its wide towns: without the tiers
+  half the 4 x 4 seeds tried fell back to "the flattest dry spot near the middle").
 * **TD-135**: the generator's polygon tests use `RwgStreets.point_in` (Geometry2D's counted a ray
   through a vertex twice); the composer's lake tests keep Geometry2D (main-map output).
 

@@ -1,6 +1,7 @@
 extends SceneTree
 ## Walks the player up to every kind of thing in the world and hits, harvests and uses it:
 ##   godot --headless --path game -s res://src/tools/cli/walk_tour.gd [-- --mode survival]
+##       [--world random --world-seed N --world-set size=3]   (a random world, ADR-0031)
 ## Runs the game as a player would (real movement input, sprinting into things, swinging at them)
 ## so a crash on contact shows up as a dead process instead of a passing smoke run. Works with or
 ## without generated assets (ADR-0036): CI runs it on the stand-ins. Exit code = failures.

@@ -1331,7 +1331,9 @@ func road_clearance(poly: PackedVector2Array, skip: int = -1) -> float:
 
 ## Where a new player lands: away from towns and places, near (not on) a road, on gentle dry ground,
 ## about a day's walk from a town, and at least 300 m from a region border (a streamed world
-## composes the land round the drop site first; fallbacks 200, 120, 60 m).
+## composes the land round the drop site first). Fallbacks, in tiers: 200 m from a border; then
+## 120 m, the towns 0.8 as far and the road up to 1.8 as far; then 60 m, 0.65 and 2.3 (a small
+## map's few roads mostly run through its towns, which are wide).
 func _drop_site() -> void:
 	var dcfg: Dictionary = tun.get("drop_site", {})
 	var r := rng("drop")
@@ -1341,6 +1343,8 @@ func _drop_site() -> void:
 	var best: Dictionary = {}
 	for mi: int in margins.size():
 		var margin: float = float(margins[mi])
+		var town_k: float = [1.0, 1.0, 0.8, 0.65][mini(mi, 3)]
+		var road_k: float = [1.0, 1.4, 1.8, 2.3][mini(mi, 3)]
 		var best_score: float = INF
 		for attempt: int in 600:
 			var p := Vector2(r.randf_range(-size * 512.0 + 90.0, size * 512.0 - 90.0), r.randf_range(-size * 512.0 + 90.0, size * 512.0 - 90.0))
@@ -1350,11 +1354,11 @@ func _drop_site() -> void:
 			if water_at(p) < 70.0 or terrain.slope(p.x, p.y) > 0.12:
 				continue
 			var near_town: float = _town_distance(p)
-			if near_town < town_d or _near_lots(p, 120.0):
+			if near_town < town_d * town_k or _near_lots(p, 120.0):
 				continue
 			var nr: Array = nearest_road(p)
 			var road_d: float = float(nr[0])
-			if not roads.is_empty() and (road_d < float(rd[0]) or road_d > float(rd[1])):
+			if not roads.is_empty() and (road_d < float(rd[0]) or road_d > float(rd[1]) * road_k):
 				continue
 			if water_exact(p) < 50.0:
 				continue
