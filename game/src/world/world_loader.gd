@@ -92,7 +92,13 @@ func _resolve_lots() -> void:
 	if not resolve_lots or ContentDB.instance == null:
 		return
 	_set_stage("Spreading the Bloom", 0.97)
-	bloom_field = BloomField.build(world, detailed, ContentDB.instance.config(&"bloom"))
+	# A streamed world spreads it over every region, the coarse ones too (their 16 m vegetation
+	# mask is blurrier, but a region past the first area must not be Bloom-free, TD-106).
+	var spread: Dictionary = detailed
+	if stream:
+		spread = coarse.duplicate()
+		spread.merge(detailed, true)
+	bloom_field = BloomField.build(world, spread, ContentDB.instance.config(&"bloom"))
 	_set_stage("Planning the towns", 0.98)
 	for rid: String in detailed:
 		for pl: Dictionary in (detailed[rid] as RegionTerrain).placements:
@@ -104,7 +110,9 @@ func _resolve_lots() -> void:
 				continue
 			var out: Array = []
 			for res: Dictionary in Lots.resolve(fw, str(pl["id"]), world_seed):
-				var placed: bool = not str(res["kind"]) in ["reserved", "empty"]
+				# A streamed world generates a lot's building on a worker when it enters the
+				# build ring (PoiManager); only a world built whole at load needs them all now.
+				var placed: bool = not stream and not str(res["kind"]) in ["reserved", "empty"]
 				out.append([res, Lots.def_for(res) if placed else null])
 			lots[str(pl["id"])] = out
 	# Every region's placements, the coarse ones too: a streamed world composes only the first

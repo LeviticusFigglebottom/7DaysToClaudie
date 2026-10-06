@@ -50,6 +50,8 @@ func _run() -> void:
 	var wi: int = args.find("--world")
 	if wi >= 0 and wi + 1 < args.size() and args[wi + 1] == "random":
 		opts["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", args, 7)
+		# Random worlds stream by default (ADR-0038); --no-stream loads every region and building.
+		opts["stream"] = not args.has("--no-stream")
 	game.call(&"start_new_game", opts)
 	# A random world composes its regions on its first load (minutes on a busy machine).
 	var ready: bool = await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), 600.0 if opts.has("world_gen") else 240.0)

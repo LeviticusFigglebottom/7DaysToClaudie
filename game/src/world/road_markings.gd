@@ -42,8 +42,8 @@ func setup_world(w: Node) -> void:
 	if _albedo.is_empty():
 		return
 	var terrain: TerrainManager = w.terrain
-	for rid: String in terrain.regions:
-		var rt: RegionTerrain = terrain.regions[rid]
+	# Every region's spans, the coarse ones too (a streamed world paints regions as they attach).
+	for rt: RegionTerrain in terrain.regions.values() + terrain.coarse.values():
 		for b: Dictionary in rt.bridges:
 			var f: Array = b["from"]
 			var t: Array = b["to"]
@@ -54,6 +54,29 @@ func setup_world(w: Node) -> void:
 		for r: Dictionary in rt.roads:
 			if paints(r):
 				_mark(r)
+	# A streamed world (ADR-0038): a region attached later gets its lines then (on its 1 m roads;
+	# _placed keeps a repainted stretch from doubling). They stay when it detaches: decals only.
+	terrain.region_attached.connect(_on_region_attached)
+
+
+func _on_region_attached(rid: String) -> void:
+	var rt: RegionTerrain = world.terrain.regions.get(rid)
+	if rt == null:
+		return
+	var roads: Array = rt.roads.filter(func(r: Dictionary) -> bool: return paints(r))
+	var streamer: RegionStreamer = world.terrain.streamer
+	if streamer == null:
+		for r: Dictionary in roads:
+			_mark(r)
+		return
+	# A road a call, as a streaming step: a region's network is hundreds of decals.
+	var at: Array = [0]
+	streamer.steps.add(["", func() -> bool:
+		if at[0] >= roads.size():
+			return true
+		_mark(roads[at[0]])
+		at[0] += 1
+		return at[0] >= roads.size(), "road markings %s" % rid], 200.0)
 
 
 ## Whether a road gets lines: two-lane asphalt, unless it opts out with "markings": false (lots,

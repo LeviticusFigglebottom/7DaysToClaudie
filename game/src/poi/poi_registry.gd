@@ -46,6 +46,11 @@ func add_region(world: WorldDef, rid: String, rt: RegionTerrain, lots: Dictionar
 		match str(pl.get("kind", "")):
 			"poi":
 				var size := Vector2(float(pl.get("size", [0, 0])[0]), float(pl.get("size", [0, 0])[1]))
+				# The box covers the building, not just its pad: the Corvane adit's buried levels
+				# run ~50 m past its 24 m pad (ADR-0044), and the ring builds and frees by this box.
+				var pdef: PoiDef = db.call(&"get_def", &"poi", StringName(str(pl["def"]))) as PoiDef if db != null else null
+				if pdef != null:
+					size = size.max(Vector2(pdef.footprint))
 				var xf: Transform3D = placement_xf(pl)
 				var c: Vector3 = xf * Vector3(size.x * 0.5, 0.0, size.y * 0.5)
 				_add({"id": StringName(str(pl["id"])), "kind": "poi", "region": rid, "placement": str(pl["id"]),
