@@ -1,0 +1,94 @@
+extends GutTest
+## Graphics and controls options (ADR-0037): per-feature overrides on top of a preset, a preset
+## that drops them, the first-run preset from the GPU kind, key rebinding that keeps gamepad and
+## second bindings, and the options panel building all three tabs. Restores the user's settings.
+
+var _preset: String
+var _overrides: Dictionary = {}
+var _crouch: Array
+
+
+func before_each() -> void:
+	_preset = Settings.graphics_preset
+	_overrides.clear()
+	for k: String in Settings.graphics_overrides():
+		_overrides[k] = Settings.graphics[k]
+	_crouch = Settings.bindings("crouch").duplicate(true)
+
+
+func after_each() -> void:
+	Settings.set_graphics_preset(_preset)
+	for k: String in _overrides:
+		Settings.set_graphics_override(k, _overrides[k])
+	var defaults: Array = Content.config(&"input_bindings").get("actions", {}).get("crouch", [])
+	if _crouch == defaults:
+		Settings.reset_bindings()
+	else:
+		Settings.rebind("crouch", _crouch)
+
+
+func test_an_override_sits_on_the_preset_until_a_preset_is_picked() -> void:
+	Settings.set_graphics_preset("high")
+	assert_true(bool(Settings.gfx("sdfgi", false)), "high has GI")
+	Settings.set_graphics_override("sdfgi", false)
+	assert_false(bool(Settings.gfx("sdfgi", true)), "turned off on top of high")
+	assert_true(Settings.graphics_overrides().has("sdfgi"))
+	assert_eq(float(Settings.gfx("shadow_distance", 0.0)), 130.0, "the rest of the preset stands")
+	Settings.set_graphics_preset("low")
+	assert_eq(Settings.graphics_overrides().size(), 0, "a preset drops the changes")
+	assert_eq(int(Settings.gfx("shadow_filter", -1)), 1)
+
+
+func test_first_run_preset_follows_the_gpu_kind() -> void:
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU), "high")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU), "low")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_CPU), "low")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_OTHER), "medium")
+
+
+func test_every_preset_sets_every_option_the_screen_shows() -> void:
+	var presets: Dictionary = Content.config(&"graphics_presets").get("presets", {})
+	for name: String in Settings.PRESET_ORDER:
+		var p: Dictionary = presets.get(name, {})
+		for k: String in ["render_scale", "upscaler", "taa", "sdfgi", "volumetric_fog", "ssao", "ssil", "ssr",
+				"directional_shadow_size", "shadow_filter", "shadow_distance", "view_distance", "tree_lod_scale", "object_distance",
+				"grass_density", "grass_distance"]:
+			assert_true(p.has(k), "%s sets %s" % [name, k])
+
+
+func test_rebinding_replaces_the_main_key_and_keeps_the_rest() -> void:
+	Settings.reset_bindings()
+	var ev := InputEventKey.new()
+	ev.physical_keycode = KEY_Z
+	assert_true(Settings.bind_primary("crouch", ev))
+	var specs: Array = Settings.bindings("crouch")
+	assert_eq(specs[0], {"key": "Z"})
+	assert_true(specs.has({"key": "Ctrl"}), "the second key stays")
+	assert_true(specs.any(func(s: Dictionary) -> bool: return s.has("joy_button")), "the gamepad button stays")
+	var z := InputEventKey.new()
+	z.physical_keycode = KEY_Z
+	z.pressed = true
+	assert_true(InputMap.event_is_action(z, &"crouch"), "the input map follows")
+	Settings.reset_bindings()
+	assert_eq(Settings.bindings("crouch")[0], {"key": "C"})
+
+
+func test_binding_specs_round_trip_and_read_well() -> void:
+	var mb := InputEventMouseButton.new()
+	mb.button_index = MOUSE_BUTTON_RIGHT
+	assert_eq(Settings.spec_from_event(mb), {"mouse": 2})
+	assert_eq(Settings.describe({"mouse": 2}), "Right mouse")
+	assert_eq(Settings.describe({"key": "Shift"}), "Shift")
+	assert_eq(Settings.spec_from_event(InputEventJoypadMotion.new()), {}, "only keys and mouse buttons are bound here")
+
+
+func test_the_panel_builds_every_tab() -> void:
+	for tab: String in OptionsPanel.TABS:
+		var panel := OptionsPanel.new()
+		panel.open_tab = tab
+		add_child_autofree(panel)
+		await get_tree().process_frame
+		assert_eq(panel._tabs.get_tab_count(), 3)
+		assert_eq(panel._tabs.current_tab, OptionsPanel.TABS.find(tab))
+		assert_gt((panel._graphics_page.get_child(0) as GridContainer).get_child_count(), 20, "graphics rows")
+		assert_gt((panel._controls_page.get_child(0) as GridContainer).get_child_count(), 40, "a row per action")

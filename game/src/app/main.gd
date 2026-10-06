@@ -185,7 +185,7 @@ func _open_options() -> void:
 	var panel := OptionsPanel.new()
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = (get_viewport_rect().size - Vector2(620, 560)) * 0.5
+	panel.position = (get_viewport_rect().size - Vector2(680, 660)) * 0.5
 	_list.visible = false
 	panel.closed.connect(func() -> void: _list.visible = true)
 
