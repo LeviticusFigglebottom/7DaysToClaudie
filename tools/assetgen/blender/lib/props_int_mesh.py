@@ -31,7 +31,15 @@ AXES = {"X": 0, "Y": 1, "Z": 2}
 
 
 def _obj(name: str, bm: bmesh.types.BMesh) -> bpy.types.Object:
-    return common.mesh_from_bmesh(name, bm)
+    """Every helper's mesh leaves in a geometry-defined element and corner order: inset, extrude,
+    bevel and bisect emit new elements in a run-dependent order (hollow_box, raised panels, ...),
+    and the order reaches the exported GLB and every later per-element step. Canonicalising here
+    keeps every prop family byte-identical from build to build without changing a shape."""
+    from . import props_ext_kit as EK  # imported lazily: props_ext_kit must not import back
+    EK.canon_bm(bm)
+    obj = common.mesh_from_bmesh(name, bm)
+    EK.canon_loops(obj.data)
+    return obj
 
 
 def _axis_matrix(axis: str) -> Matrix:

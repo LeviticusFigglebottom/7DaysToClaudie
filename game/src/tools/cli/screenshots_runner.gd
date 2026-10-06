@@ -87,6 +87,9 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "larch_street", "pos": Vector3(-69.0, 2.6, 2330.0), "look": Vector3(-84.0, 1.5, 2262.0), "hour": 10.5, "weather": "clear"},
 	# Hollowed hounds and Murmurs (ADR-0034): a pack (a Seeded one in the
 	# middle) at the drop site, and a Murmur ringing low over the camera on Pell's Crossing's street.
+	# Base building (ADR-0035): a camp at the drop site with a corner of log wall, a door, stairs, the
+	# racks part-filled, a bed, the workbench and a lit fire.
+	{"name": "furnished_base", "pos": Vector3(-290.8, 2.1, 2302.8), "look": Vector3(-286.4, 0.7, 2297.4), "hour": 16.0, "weather": "overcast", "base_kit": true, "fov": 58.0},
 	{"name": "hound_pack", "pos": Vector3(-300, 1.6, 2297), "look": Vector3(-300, 0.5, 2291.5), "hour": 16.5, "weather": "overcast", "fov": 50.0,
 	 "lineup": [["hollow_hound", -1.5, "normal", ""], ["hollow_hound", 0.0, "seeded", ""], ["hollow_hound", 1.5, "normal", ""]],
 	 "cam_height": 0.9, "look_height": 0.45},
@@ -117,6 +120,8 @@ const SHOTS: Array[Dictionary] = [
 ]
 
 var _out: String = "res://../build/screenshots"
+## Pieces the furnished_base shot placed (BuildingManager ids), taken down after it.
+var _base_kit: Array[StringName] = []
 ## Nodes a shot spawned for itself (QA enemies, the QA drop), removed after the shot.
 var _temp: Array[Node] = []
 var _settle: float = 4.0
@@ -268,6 +273,8 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		l.shadow_enabled = true
 		cam.add_child(l)
 		l.position = Vector3(0.3, -0.3, -0.5)
+	if bool(shot.get("base_kit", false)):
+		_place_base_kit(w, look)
 	if shot.has("lineup"):
 		# Special Hollowed side by side across the frame, awake and facing the camera, each at the
 		# infected tier given (normal / seeded / bloomed).
@@ -415,6 +422,10 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		_fp_pose(w, p, shot, false)
 	if shot.has("poi_view"):
 		DebugTools.set_flag(&"invisible", false)
+	# The camp's pieces leave through the manager (its piece table and graph), not queue_free.
+	for id: StringName in _base_kit:
+		(w.get(&"building") as Node).call(&"_free_piece_node", id)
+	_base_kit.clear()
 	for n: Node in _temp:
 		if is_instance_valid(n):
 			if n is Enemy:
@@ -709,6 +720,45 @@ func _build_scene(w: Node, at: Vector3) -> void:
 		if piece.provides("light"):
 			piece.set_lit(true)
 	p.global_position = stand
+
+
+## The furnished camp (ADR-0035): pieces placed straight into the building manager around `at`
+## (no blueprints, no materials), racks filled part way, the fire lit.
+func _place_base_kit(w: Node, at: Vector3) -> void:
+	var bm: Node = w.get(&"building")
+	var ps: PlayerState = Game.local_player()
+	var g := func(x: float, z: float) -> float: return float(w.call(&"height_at", x, z))
+	var base_y: float = g.call(at.x, at.z)
+	var count: Array[int] = [0]
+	var place := func(def_id: StringName, pos: Vector3, yaw: float) -> StructurePiece:
+		count[0] += 1
+		var def: StructureDef = Content.structure(def_id)
+		var id := StringName("qa_base_%d" % count[0])
+		var piece: StructurePiece = bm.call(&"_add_piece", id, def, Transform3D(Basis(Vector3.UP, yaw), pos), def.hp, true)
+		_base_kit.append(id)
+		return piece
+	# A corner of wall: four courses each way, interleaved as LogSnapper stacks them.
+	var corner := Vector3(at.x - 1.0, base_y + LogSnapper.RADIUS, at.z - 2.5)
+	for i: int in 4:
+		place.call(&"log_piece", corner + Vector3(0, LogSnapper.STACK * i, 0), 0.0)
+		place.call(&"log_piece", corner + Vector3(-LogSnapper.CORNER, LogSnapper.STACK * i + LogSnapper.CORNER_RISE, LogSnapper.CORNER), PI * 0.5)
+	var door: StructurePiece = place.call(&"stick_door", Vector3(at.x + 2.1, g.call(at.x + 2.1, at.z - 2.5), at.z - 2.5), 0.0)
+	door.set_door_open(true, false)
+	place.call(&"log_stairs", Vector3(at.x + 4.2, g.call(at.x + 4.2, at.z - 1.0), at.z - 1.0), PI)
+	var rack: StructurePiece = place.call(&"log_rack", Vector3(at.x - 2.6, g.call(at.x - 2.6, at.z + 0.8), at.z + 0.8), PI * 0.5)
+	rack.inventory.add_item(&"log", 7)
+	rack.update_fill()
+	var sticks: StructurePiece = place.call(&"stick_rack", Vector3(at.x - 0.6, g.call(at.x - 0.6, at.z - 1.6), at.z - 1.6), 0.0)
+	sticks.inventory.add_item(&"stick", 25)
+	sticks.update_fill()
+	var stones: StructurePiece = place.call(&"stone_pile", Vector3(at.x + 0.9, g.call(at.x + 0.9, at.z - 1.4), at.z - 1.4), 0.0)
+	stones.inventory.add_item(&"stone", 18)
+	stones.update_fill()
+	place.call(&"bedroll", Vector3(at.x + 2.6, g.call(at.x + 2.6, at.z + 1.6), at.z + 1.6), PI * 0.5)
+	place.call(&"workbench", Vector3(at.x - 0.4, g.call(at.x - 0.4, at.z + 2.6), at.z + 2.6), PI)
+	var fire: StructurePiece = place.call(&"campfire", Vector3(at.x + 0.6, g.call(at.x + 0.6, at.z + 0.6), at.z + 0.6), 0.3)
+	fire.fuel = 60.0
+	fire.set_lit(true)
 
 
 ## A band of wild animals at the look point, side-on to the camera, their brains paused in the
