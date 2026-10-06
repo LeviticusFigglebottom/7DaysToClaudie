@@ -122,8 +122,15 @@ Diagnosis:
   take the same Mutex; TerrainManager's terrain lock is the model (444375b).
 * A WorkerThreadPool task still running at engine shutdown aborts the process with rc 134 and
   prints nothing. Wait for your tasks in `_exit_tree`, as VolumeTerrain does.
-* Reflection probes share a 64-slot atlas, and going past it crashes the engine. Put any new
-  probe in the `interior_probe` group so PoiManager's budget caps it.
+* Reflection probes share a 64-slot atlas, and going past it crashes the engine. In Godot 4.7.2 a
+  probe takes a slot the first time it renders and keeps it until it leaves the scene tree or is
+  freed:
+  * Hiding a probe keeps its slot. A lab that showed one probe at a time crashed with the player's
+    error after its 64th room.
+  * Detaching its RenderingServer base frees the slot, but the probe never renders again.
+  * UPDATE_ONCE probes render one at a time, about 9 frames each, in the renderer's order.
+  * Setting any probe to UPDATE_ALWAYS clears the whole atlas.
+  Put new probes in the `interior_probe` group; PoiManager's budget parks far ones out of the tree.
 * A generated model can exist on disk and still not load (built, not imported yet). Check the
   loaded resource for null before `instantiate()`; ModelLibrary does.
 * The instance shader-variable buffer is 262144. std_surface uses instance slots 0–4 (light_lit

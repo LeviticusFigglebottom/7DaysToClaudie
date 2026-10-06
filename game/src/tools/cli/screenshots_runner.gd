@@ -131,6 +131,8 @@ var _settle: float = 4.0
 ## seconds, so the settle above is a frame or two, and TAA and SDFGI (20 frames to converge after a
 ## jump) show half settled: a dim deep wood, noisy soft shadows.
 var _settle_frames: int = 0
+## The world the current shot is taken in.
+var _world: Node = null
 ## --probe-always: the interior probes round the camera re-render every frame during a shot (QA of
 ## interiors lit by PoiManager's probe budget, which hides and shows UPDATE_ONCE probes).
 var _probe_always: bool = false
@@ -193,31 +195,83 @@ func _mem_report(tag: String) -> void:
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)), ", ".join(pipes)])
 
 
-## The interior probes round the camera (PoiBuilder: one per room rectangle; PoiManager's budget shows
-## the nearest 32 to 48): how many there are, how many are shown, and the three nearest.
+## The interior probes round the camera (PoiBuilder: one per room rectangle; PoiManager's budget keeps
+## the nearest 32 to 48 live and parks the rest): how many there are, how many are live, and the
+## three nearest.
 func _probe_report(tag: String, eye: Vector3) -> void:
+	var budget: Node = _probe_budget()
 	var ranked: Array = []
 	var shown: int = 0
-	for n: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+	for n: Variant in _all_probes(budget):
 		var p := n as ReflectionProbe
-		if p != null and p.is_inside_tree():
+		if p != null:
 			ranked.append([ProbeBudget.box_distance(p, eye), p])
-			shown += 1 if p.visible else 0
+			shown += 1 if _probe_live(budget, p) else 0
 	ranked.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
 	var near: PackedStringArray = []
 	for e: Array in ranked.slice(0, 3):
 		var p: ReflectionProbe = e[1]
-		near.append("%.1f m %s%s" % [float(e[0]), "shown" if p.visible else "hidden", " (always)" if p.update_mode == ReflectionProbe.UPDATE_ALWAYS else ""])
-	print("SHOT probes %s: %d interior probes, %d shown; nearest %s" % [tag, ranked.size(), shown, ", ".join(near)])
+		near.append("%.1f m %s%s" % [float(e[0]), "live" if _probe_live(budget, p) else "parked", " (always)" if p.update_mode == ReflectionProbe.UPDATE_ALWAYS else ""])
+	print("SHOT probes %s: %d interior probes, %d live; nearest %s" % [tag, ranked.size(), shown, ", ".join(near)])
+
+
+## PoiManager's probe budget in the world being shot (null without one, as in POI previews).
+func _probe_budget() -> Node:
+	var pois: Node = _world.get(&"pois") as Node if is_instance_valid(_world) else null
+	return pois.get(&"probes") as Node if pois != null else null
+
+
+func _probe_live(budget: Node, p: ReflectionProbe) -> bool:
+	return bool(budget.call(&"is_shown", p)) if budget != null else p.visible
+
+
+## Every interior probe: the budget's list when there is one (it holds the parked ones, which are
+## out of the tree and its groups), else the group.
+func _all_probes(budget: Node) -> Array:
+	return budget.call(&"all_probes") if budget != null else get_tree().get_nodes_in_group(&"interior_probe")
+
+
+## Probes an interior shot keeps live while it waits: the room's own and its three nearest.
+const PROBE_FOCUS: int = 4
+## Frames an interior shot waits at most for them to render.
+const PROBE_WAIT_MAX: int = PROBE_FOCUS * ProbeBudget.RENDER_FRAMES + 4
+
+
+## For a camera in or by a room: parks every interior probe but the PROBE_FOCUS nearest, so they
+## are all the render queue holds, and waits until they have had their turn to render. Godot renders
+## them one at a time over several frames each, in its own order, and a room whose probe hasn't
+## finished reads near-black (TD-134). A software frame lasts seconds, so the time-based settle
+## covers only one or two. The budget's rankings take over again after the shot.
+func _wait_probes(w: Node, eye: Vector3) -> void:
+	var pois: Node = w.get(&"pois") as Node
+	var budget: Node = pois.get(&"probes") as Node if pois != null else null
+	if budget == null:
+		return
+	var near: bool = false
+	for n: Variant in _all_probes(budget):
+		var p := n as ReflectionProbe
+		if p != null and ProbeBudget.box_distance(p, eye) < 2.0:
+			near = true
+			break
+	if not near:
+		return
+	budget.call(&"focus", eye, PROBE_FOCUS)
+	var waited: int = 0
+	while waited < PROBE_WAIT_MAX and int(budget.call(&"frames_to_render")) > 0:
+		await get_tree().process_frame
+		waited += 1
+	print("SHOT probes waited %d frames (%d still queued)" % [waited, int(budget.call(&"frames_to_render"))])
 
 
 ## --probe-always: the shown interior probes within 2 m of the camera's room re-render every frame
+## (QA only: the first UPDATE_ALWAYS probe clears the whole reflection atlas and leaves it at
+## real-time quality, so this is not how the game looks)
 ## until the capture (set back to once after it).
 func _refresh_probes(eye: Vector3) -> Array[ReflectionProbe]:
 	var out: Array[ReflectionProbe] = []
 	for n: Node in get_tree().get_nodes_in_group(&"interior_probe"):
 		var p := n as ReflectionProbe
-		if p != null and p.visible and ProbeBudget.box_distance(p, eye) < 2.0:
+		if p != null and _probe_live(_probe_budget(), p) and ProbeBudget.box_distance(p, eye) < 2.0:
 			p.update_mode = ReflectionProbe.UPDATE_ALWAYS
 			out.append(p)
 	return out
@@ -272,6 +326,7 @@ func _run() -> void:
 
 
 func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
+	_world = w
 	var pos: Vector3 = shot["pos"]
 	var look: Vector3 = shot["look"]
 	var ground: float = w.call(&"height_at", pos.x, pos.z)
@@ -440,6 +495,8 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	var refreshed: Array[ReflectionProbe] = []
 	if _probe_always:
 		refreshed = _refresh_probes(cam.global_position)
+	else:
+		await _wait_probes(w, cam.global_position)
 	for i: int in _settle_frames:
 		await get_tree().process_frame
 	var img: Image = get_viewport().get_texture().get_image()
