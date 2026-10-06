@@ -344,6 +344,15 @@ func _update_perf() -> void:
 		fps, 1000.0 / maxf(fps, 1.0), dc, prim / 1000.0, objs, vmem, OS.get_static_memory_usage() / 1048576.0,
 		get_tree().get_node_count(), Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, int(ai.call(&"alive_count")) if ai != null else 0, Settings.graphics_preset]
+	var tm: Variant = world.get(&"terrain")
+	var st: RegionStreamer = (tm as TerrainManager).streamer if tm is TerrainManager else null
+	if st != null:
+		# Streaming (StreamMeter, ADR-0038 §8): this minute's longest frame and costliest step kind.
+		var r: Dictionary = st.meter.report()
+		var worst: Array = st.meter.worst_kind()
+		_perf.text += "\nstream: longest frame %.0f ms (%s)  late %.1f s\nworst step %s %.1f ms  steps queued %d" % [
+			float(r["longest_ms"]), r["longest_at"] if str(r["longest_at"]) != "" else "-", float(r["late_s"]),
+			worst[0] if str(worst[0]) != "" else "-", float(worst[1]), st.steps.pending()]
 
 
 func _line(a: Vector3, b: Vector3, c: Color) -> void:

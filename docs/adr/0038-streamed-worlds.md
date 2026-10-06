@@ -206,6 +206,19 @@ Measured (`make stream-check`, headless container, 5x5 world, seed 7): world rea
   the build ring around the spawn into ModelLibrary (off headless, TD-103).
 * `test_poi_streaming.gd`: a door opened, a container looted, a sleeper killed and one roaming,
   the building freed and rebuilt: state restored, picks pinned.
+* **StreamMeter** (`app/stream_meter.gd`, TD-107): the RegionStreamer owns one
+  (`terrain.streamer.meter`) fed by its StepRunner's `step_ran` and by a call each frame. It keeps
+  per step *kind* (the step name without its id: `attach`, `poi plan`, `poi`, `poi region`,
+  `road markings`, `trader`...) the count, total and max ms; the longest frame (wall time between
+  frames) with the kinds that ran in it; and late seconds (a player on ground whose region isn't
+  attached, at most 0.1 s a frame). Every 60 s of play it logs one `stream` line and starts a new
+  window, keeping a whole-session tally for tools; `over_budget(8.0)` lists the kinds over the
+  per-step budget. F4 shows the window's longest frame, worst kind and queued steps;
+  `stream_walk` prints the session report after each leg.
+  First reading (`stream_walk`, headless, size 4, seed 7, 1 km out and back twice, load ~3):
+  634 steps in 681 s costing 3.2 s; worst steps `attach` 450 ms, `detach` 112 ms, `poi plan`
+  73 ms, `poi` 58 ms, `poi region` 33 ms, `trader` 15 ms (all six over 8 ms); the longest frame,
+  646 ms, ran no streaming step at all; no late seconds.
 
 Measured (`stream_walk`, headless, size 4, seed 11, 2 km out and back twice): no late seconds,
 longest frame 679 ms, static memory flat at 423 MiB, 6,244 nodes against 19,567 when regions
