@@ -14,7 +14,15 @@ extends RefCounted
 ##      "freeboard" above the lake or river they overlap, grade only dry ground and leave the water)
 ##   6. biome map, splat weights (8-layer palette), vegetation mask
 
-const VERSION: int = 10
+const VERSION: int = 11
+## A water edge's profile: the ground falls EDGE_DROP below the water within EDGE_IN metres inside
+## the edge and rises EDGE_RISE above it within EDGE_OUT outside. A slope through the water line
+## keeps the shore off the 1 m sample grid; a step (VERSION 10: bed 0.35 m under, bank 0.22 m over,
+## one sample apart) drew every river and lake edge as a 1 m staircase seen from near the water.
+const EDGE_DROP: float = 0.35
+const EDGE_IN: float = 1.5
+const EDGE_RISE: float = 0.22
+const EDGE_OUT: float = 1.0
 const COARSE: float = 4.0
 const MACRO_STEP: float = 8.0
 const BORDER_FADE: float = 48.0
@@ -525,11 +533,11 @@ class _Build:
 						var bank: float = w_bank[ci]
 						if d < 0.0:
 							var f: float = clampf(-d / maxf(3.0, bank * 0.9), 0.0, 1.0)
-							var bed: float = lvl - 0.35 - w_depth[ci] * (f * f * (3.0 - 2.0 * f))
+							var bed: float = lvl - EDGE_DROP * minf(-d / EDGE_IN, 1.0) - w_depth[ci] * (f * f * (3.0 - 2.0 * f))
 							hv = minf(hv, bed)
 						elif d < bank:
 							var t: float = smoothstep(0.0, bank, d)
-							var shore_h: float = lvl + 0.22 + d * 0.06
+							var shore_h: float = lvl + EDGE_RISE * minf(d / EDGE_OUT, 1.0) + d * 0.06
 							hv = lerpf(shore_h, maxf(hv, shore_h), t)
 				h[row + ix] = hv
 

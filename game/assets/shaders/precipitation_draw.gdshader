@@ -74,7 +74,11 @@ void vertex() {
 		v_alpha *= cu.x > 0.5 ? 1.0 - smoothstep(0.2, 0.6, cu.y) : smoothstep(0.0, 0.6, cu.y) * (1.0 - smoothstep(life - 0.8, life - 0.1, cu.y));
 		v_kind = 2.0;
 	} else {
-		vec3 axis = normalize(MODEL_MATRIX[1].xyz);
+		// An inactive particle comes with a zeroed transform: normalising its axis would make NaN
+		// vertices, which a rasteriser may still turn into a stray NaN pixel (glow then blows each
+		// one up into a white disc). Collapse it instead.
+		float al = length(MODEL_MATRIX[1].xyz);
+		vec3 axis = al > 1e-5 ? MODEL_MATRIX[1].xyz / al : vec3(0.0, 1.0, 0.0);
 		vec3 side = cross(axis, to_cam);
 		float sl = length(side);
 		// Seen end-on a streak collapses: show the drop instead.
@@ -87,6 +91,10 @@ void vertex() {
 		if (mode == 0) {
 			v_alpha *= smoothstep(0.0, 0.15, cu.y);
 		}
+		if (al <= 1e-5) {
+			world = c;
+			v_alpha = 0.0;
+		}
 		v_kind = 0.0;
 	}
 	VERTEX = (VIEW_MATRIX * vec4(world, 1.0)).xyz;
@@ -98,7 +106,9 @@ void fragment() {
 	if (v_kind < 0.5) {
 		// The streak's profile is drawn here, not sampled: a streak a pixel or two wide would take
 		// the generated streak cell's mip, in which the thin line has averaged away to nothing.
-		float x = 1.0 - abs(v_uv.x * 2.0 - 1.0);
+		// Clamped: an interpolated UV can land a hair outside 0..1 on a one-pixel streak's edge, and
+		// pow() of a negative number is NaN.
+		float x = clamp(1.0 - abs(v_uv.x * 2.0 - 1.0), 0.0, 1.0);
 		float ends = smoothstep(0.0, 0.22, v_uv.y) * smoothstep(1.0, 0.7, v_uv.y);
 		if (mode == 2) {
 			// A drip: a round drop stretched by its fall.
@@ -123,9 +133,11 @@ void fragment() {
 		a = smoothstep(1.0, 0.25, length(q));
 	}
 	float alpha = a * v_alpha * (v_kind > 1.5 ? 0.95 : opacity);
-	if (alpha < 0.004) {
+	// Written so that a NaN is discarded too (every comparison with NaN is false).
+	if (!(alpha >= 0.004)) {
 		discard;
 	}
+	alpha = min(alpha, 1.0);
 	vec3 water = vec3(0.5, 0.55, 0.6);
 	ALBEDO = v_kind > 1.5 ? vec3(0.92, 0.94, 0.97) : water;
 	ALPHA = alpha;

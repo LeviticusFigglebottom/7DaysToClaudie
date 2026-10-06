@@ -65,6 +65,16 @@ func is_ready() -> bool:
 	return texture != null
 
 
+## True when the published map is the one round `p` (centred within recentre_m of it), so no
+## rebuild is due there. After a jump (a respawn, a QA shot) the last place's map stays published
+## until the new one is complete: a worker pass and a few frames of rays.
+func covers(p: Vector3) -> bool:
+	if texture == null:
+		return false
+	var size: float = float(cells) * cell_m
+	return Vector2(p.x, p.z).distance_to(origin + Vector2(size, size) * 0.5) <= recentre_m + cell_m
+
+
 ## World rect of the published map as the shaders read it: (x0, z0, 1 / size, base height); zero
 ## if none.
 func shader_rect() -> Vector4:

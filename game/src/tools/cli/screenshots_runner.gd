@@ -320,6 +320,14 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		_seek_view(w, cam, shot)
 	var wx_env: EnvironmentController = w.get(&"env") as EnvironmentController
 	if str(shot["name"]).begins_with("wx_") and wx_env.fx != null:
+		# The weather map (where rain lands, the puddles' hollows, the fog's low ground) is rebuilt
+		# after the jump to the shot by a worker queued behind the streaming and some frames of rays:
+		# software frames are slow enough to capture the last shot's map without this wait.
+		var map_by: int = Time.get_ticks_msec() + 180000
+		while not wx_env.fx.maps.covers(cam.global_position) and Time.get_ticks_msec() < map_by:
+			await get_tree().process_frame
+		if not wx_env.fx.maps.covers(cam.global_position):
+			print("SHOT warning: %s: no weather map round the camera yet" % shot["name"])
 		# Rain and snow held still for the capture, so temporal AA settles on them (ADR-0033).
 		await _wait(2.0)
 		wx_env.fx.hold_still(true)
