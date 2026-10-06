@@ -938,10 +938,15 @@ func _back_lane(ai: int, side: int, sa: float, sb: float, la: int, lb: int, offs
 	if pa == null or pb == null:
 		return
 	var pts := PackedVector2Array([pa])
+	# A leg that slants along the arterial meets the lane's line past the first (or before the last)
+	# station: such stations are skipped, or the lane doubles back on itself there.
+	var from_s: float = art.line.closest(pa).y + 6.0
+	var to_s: float = art.line.closest(pb).y - 6.0
 	var s: float = sa + 18.0
 	while s < sb - 18.0:
-		var t: Vector2 = art.line.tangent_at(s)
-		pts.append(art.line.point_at(s) + Vector2(-t.y, t.x) * side * offset)
+		if s > from_s and s < to_s:
+			var t: Vector2 = art.line.tangent_at(s)
+			pts.append(art.line.point_at(s) + Vector2(-t.y, t.x) * side * offset)
 		s += 24.0
 	pts.append(pb)
 	var lane := make_street("back_lane", pts)

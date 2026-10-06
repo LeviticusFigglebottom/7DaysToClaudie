@@ -73,7 +73,7 @@ func _ready() -> void:
 			(wj["roads"] as Array).size(), g.get(&"warnings"), out])
 		for tw: Dictionary in g.get(&"towns"):
 			var st: Dictionary = (tw["plan"] as Dictionary).get("stats", {})
-			print("  town  %-16s %-8s r %3d  %3d lots %s | side %d loops %d cul %d | %.0f ms" % [str(tw["name"]), str(tw["kind"]), int(tw["radius"]),
+			print("  town  %-16s %-8s at %s r %3d  %3d lots %s | side %d loops %d cul %d | %.0f ms" % [str(tw["name"]), str(tw["kind"]), str(tw["center"].round()), int(tw["radius"]),
 				((tw["plan"] as Dictionary).get("lots", []) as Array).size(), JSON.stringify(st.get("zones", {})), int(st.get("side_streets", 0)),
 				int(st.get("loops", 0)), int(st.get("culdesacs", 0)), float(st.get("ms", 0.0))])
 		print("[rwg] timings %s" % g.get(&"timings"))

@@ -130,12 +130,18 @@ run whose folder is gone regenerates with v2, TD-082):
 * **Main streets through the centres** (§3.4). The road network (spanning tree, loops and exits by
   density, both now per 16 km² / per 4 km of map side) is routed between town centres, towns not
   blocked, with a valley term in the 32 m router (`valley` 0.03: each metre of road costs that much
-  more per metre the ground stands above its 300 m mean). Then every town gets a main street
-  through its centre: the two roads ending there that meet straightest become one road; a lone
-  road carries on past the centre as a stub (`stub`: radius + 150 m, along the heading that keeps
-  lowest and least steep, routed by `route_fine` on 8 m cells, the least winding of the four best
-  headings: a route forced up a slope zigzagged); a town no road reached gets a county road
-  through it; a town (the biggest class) with one road through its core gets a county road across.
+  more per metre the ground stands above its 300 m mean). Routes start and end at the centres,
+  where roads already meet, so a piece of a route that only runs along a road already built
+  (within 6 m all the way) is dropped: on a settled map half the roads were such pieces, each a
+  second road on the first grading the ground with its own profile. Then every town gets a main
+  street through its centre: the two roads ending there that meet straightest become one road
+  (if they leave it more than ~107 degrees apart; two leaving the same way would make a hairpin);
+  otherwise the first carries on past the centre as a stub (`stub`: radius + 150 m, away from the
+  roads there, along the heading that keeps lowest and least steep, routed by `route_fine` on 8 m
+  cells, the least winding of the four best headings: a route forced up a slope zigzagged; points
+  where it doubles back, turning past 120 degrees, are dropped); a town no road reached gets a
+  county road through it; a town (the biggest class) with one road through its core gets a county
+  road across.
   The plan's in-disc `route_fine` refinement of the 32 m arterials is not done (TD-139).
 * **Planned in parallel, on the ground the composer grades.** Each town is planned (up to four
   threads, results by index, byte-identical to one thread) with the world roads within radius +
@@ -217,7 +223,11 @@ run whose folder is gone regenerates with v2, TD-082):
   yards grow grass right up to (and, under a low floor, possibly into) the building (TD-136).
 − Lots are rectangles in irregular parcels; a building never takes a parcel's shape (TD-116).
 − Fixtures are per town in lists of a few hundred; they need Phase 3's per-cell batching.
-− The planner trusts its arterials: a kinked or doubled main street near the centre costs core
-  frontage; the 32 m arterials are not refined in the disc yet (TD-139).
+− The planner trusts its arterials: a kinked main street near the centre costs core frontage; the
+  32 m arterials are not refined in the disc yet, and the 32 m router still leaves the odd hook
+  (a turn past 120 degrees where it skirts a river crossing or a steep bank, 2-4 a settled map),
+  in towns and out of them (TD-139).
+− From above, a town's disc of `town` ground reads as one patch of brown among the meadows: the
+  paint keeps town ambience and spawns over the streets between the lots (TD-136).
 − A town on ground steeper than its class's slope limit (rough small maps) still comes out half
   grown (TD-138).

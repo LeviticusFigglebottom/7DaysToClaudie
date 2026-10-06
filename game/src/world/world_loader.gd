@@ -23,13 +23,23 @@ var world_id: String = ""
 var resolve_lots: bool = false
 var world_seed: int = 0
 var lots: Dictionary = {}
+## The Bloom field over the detailed regions, built here too when resolve_lots is set (about a
+## second of the main thread on a 3x3 random world, ADR-0036); null otherwise.
+var bloom_field: BloomField = null
+## A random world's map image (the loading screen shows it, ADR-0038 §4); "" otherwise.
+var map_path: String = ""
+## Region states for the loading screen's map: rid -> LoadingMap.PENDING/WORKING/DONE.
+var _states: Dictionary = {}
 var _mutex := Mutex.new()
 
 const Lots := preload("res://src/poi/lot_picker.gd")
 
 
 func load_world(world_dir: String, detail_spacing: float = 1.0, coarse_spacing: float = 16.0, only_regions: PackedStringArray = []) -> void:
-	world = WorldDef.load_from(world_dir)
+	var wd: WorldDef = WorldDef.load_from(world_dir)
+	_mutex.lock()
+	world = wd
+	_mutex.unlock()
 	if world == null:
 		error = "cannot load world at %s" % world_dir
 		done = true
@@ -66,6 +76,8 @@ func load_world(world_dir: String, detail_spacing: float = 1.0, coarse_spacing: 
 func _resolve_lots() -> void:
 	if not resolve_lots or ContentDB.instance == null:
 		return
+	_set_stage("Spreading the Bloom", 0.97)
+	bloom_field = BloomField.build(world, detailed, ContentDB.instance.config(&"bloom"))
 	_set_stage("Planning the towns", 0.98)
 	for rid: String in detailed:
 		for pl: Dictionary in (detailed[rid] as RegionTerrain).placements:
@@ -102,6 +114,10 @@ func load_random_world(gen: Dictionary, saved_id: String = "", detail_spacing: f
 			return
 		dir = res["dir"]
 		world_id = res["world_id"]
+	if FileAccess.file_exists(dir.path_join("map.png")):
+		_mutex.lock()
+		map_path = dir.path_join("map.png")
+		_mutex.unlock()
 	load_world(dir, detail_spacing, 16.0, only_regions)
 
 
@@ -124,12 +140,16 @@ func _compose_parallel(ids: Array, detail_spacing: float, coarse_spacing: float,
 				return
 			var rid3: String = jobs[i][0]
 			var built: bool = jobs[i][1]
+			_mutex.lock()
+			_states[rid3] = LoadingMap.WORKING
+			_mutex.unlock()
 			var rt: RegionTerrain = TerrainComposer.get_or_compose(world, rid3, detail_spacing if built else coarse_spacing)
 			_mutex.lock()
 			if built:
 				detailed[rid3] = rt
 			else:
 				coarse[rid3] = rt
+			_states[rid3] = LoadingMap.DONE
 			finished[0] += 1
 			stage = "Shaping the land (%d of %d regions)" % [finished[0], jobs.size()]
 			progress = 0.25 + 0.75 * float(finished[0]) / jobs.size()
@@ -152,6 +172,27 @@ func status() -> Array:
 	var out: Array = [stage, progress]
 	_mutex.unlock()
 	return out
+
+
+func map_file() -> String:
+	_mutex.lock()
+	var out: String = map_path
+	_mutex.unlock()
+	return out
+
+
+## The loading screen's map marks (LoadingMap): every region's state on the world's grid.
+## Read from the main thread while the loader runs: world and map_path are set under the lock.
+func marks() -> Dictionary:
+	_mutex.lock()
+	if world == null:
+		_mutex.unlock()
+		return {}
+	var cells: Dictionary = {}
+	for rid: String in world.regions:
+		cells[WorldDef.cell_coords(str(world.regions[rid]["cell"]))] = int(_states.get(rid, LoadingMap.PENDING))
+	_mutex.unlock()
+	return {"grid": Vector2i(world.cols, world.rows), "cells": cells}
 
 
 func _set_stage(s: String, p: float) -> void:

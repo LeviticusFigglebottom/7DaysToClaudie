@@ -12,9 +12,14 @@ extends Node
 ## Only the fill of rooms the player can see into matters, and those are the near ones; a far
 ## building looks the same without its probes. The MAX_VISIBLE nearest are shown. A probe already
 ## shown keeps its slot while it ranks within KEEP_VISIBLE, so walking down a street does not flip
-## the probes at the edge on and off (a probe shown again renders its cube map again). Probes that
-## enter the tree are capped straight away, before the next ranking, so building a town never
-## shows more than KEEP_VISIBLE even for a frame.
+## the probes at the edge on and off. Probes that enter the tree are capped straight away, before
+## the next ranking, so building a town never shows more than KEEP_VISIBLE even for a frame.
+##
+## Showing an UPDATE_ONCE probe again does not render it (Godot 4.7.2): a probe hidden while far
+## came back with no cube map and no interior fill, so its rooms stayed near-black under SDFGI (QA:
+## the Mile 9 Diner at 14:00 read luma 15 in-world against 61 before the budget, and 60 once its
+## probe rendered). A probe shown again renders for one frame on UPDATE_ALWAYS, RERENDER_PER_FRAME
+## at a time, then goes back to UPDATE_ONCE.
 
 ## Probes shown nearest the camera at each ranking.
 const MAX_VISIBLE: int = 32
@@ -23,10 +28,15 @@ const KEEP_VISIBLE: int = 48
 ## Seconds between rankings.
 const INTERVAL: float = 0.25
 const GROUP: StringName = &"interior_probe"
+## Probes shown again that re-render in one frame (each draws its six faces that frame).
+const RERENDER_PER_FRAME: int = 4
 
 var _t: float = 0.0
 ## Probes visible now (kept current between rankings as probes enter and leave the tree).
 var _shown: int = 0
+## Shown again and waiting to re-render; re-rendering this frame (on UPDATE_ALWAYS).
+var _pending: Array[ReflectionProbe] = []
+var _rendering: Array[ReflectionProbe] = []
 
 
 func _ready() -> void:
@@ -44,6 +54,7 @@ func _exit_tree() -> void:
 
 
 func _process(delta: float) -> void:
+	step_rerenders()
 	_t -= delta
 	if _t > 0.0:
 		return
@@ -68,9 +79,28 @@ func update(eye: Vector3) -> int:
 		var show: bool = i < MAX_VISIBLE or (i < KEEP_VISIBLE and p.visible)
 		if p.visible != show:
 			p.visible = show
+			if show and not _pending.has(p):
+				_pending.append(p)
 		if show:
 			_shown += 1
 	return _shown
+
+
+## Once a frame: probes re-rendered last frame go back to UPDATE_ONCE, and up to RERENDER_PER_FRAME
+## of those shown again since render this frame on UPDATE_ALWAYS.
+func step_rerenders() -> void:
+	for v: Variant in _rendering:
+		if is_instance_valid(v):
+			(v as ReflectionProbe).update_mode = ReflectionProbe.UPDATE_ONCE
+	_rendering.clear()
+	while not _pending.is_empty() and _rendering.size() < RERENDER_PER_FRAME:
+		var v: Variant = _pending.pop_front()
+		if not is_instance_valid(v):
+			continue
+		var p := v as ReflectionProbe
+		if p.visible and p.update_mode == ReflectionProbe.UPDATE_ONCE:
+			p.update_mode = ReflectionProbe.UPDATE_ALWAYS
+			_rendering.append(p)
 
 
 ## Visible interior probes right now.
@@ -100,3 +130,6 @@ func _on_node_added(n: Node) -> void:
 func _on_node_removed(n: Node) -> void:
 	if n.is_in_group(GROUP) and n is ReflectionProbe and (n as ReflectionProbe).visible:
 		_shown = maxi(_shown - 1, 0)
+	if n is ReflectionProbe:
+		_pending.erase(n)
+		_rendering.erase(n)

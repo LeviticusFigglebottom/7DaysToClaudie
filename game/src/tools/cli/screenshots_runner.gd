@@ -441,7 +441,6 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		await _wait(float(shot.get("settle", _settle)))
-	# Typed array: a ternary's untyped [] can't be assigned to it.
 	var refreshed: Array[ReflectionProbe] = []
 	if _probe_always:
 		refreshed = _refresh_probes(cam.global_position)

@@ -19,8 +19,11 @@ signal column_activated(column: Vector2i)
 var terrain: Node
 var chunks: Dictionary = {}
 var columns: Dictionary = {}
-## Column dictionaries replaced by activate_column: [ticks_msec, Dictionary], oldest first.
-var _retired: Array = []
+## Guards `columns`: terrain chunk meshing reads it on worker threads (is_volume_column is the
+## mesher's hole test) while activate_column inserts on the main thread. Copy-and-swap is not
+## enough: assigning a container to a member releases the old one before the new one is stored, so
+## a reader in between dereferences null (TD-104).
+var _columns_lock := Mutex.new()
 var _material: ShaderMaterial
 var _pending: Dictionary = {}
 var _edited: Dictionary = {}
@@ -52,7 +55,10 @@ static func chunk_of(p: Vector3) -> Vector3i:
 
 
 func is_volume_column(x: float, z: float) -> bool:
-	return columns.has(column_of(x, z))
+	_columns_lock.lock()
+	var on: bool = columns.has(column_of(x, z))
+	_columns_lock.unlock()
+	return on
 
 
 ## Converts the 16 m column at (x, z) to volume chunks spanning from below `min_y` to above the
@@ -71,15 +77,9 @@ func activate_column(col: Vector2i, min_y: float) -> void:
 	var span := Vector2i(cy0, cy1)
 	if not had.is_empty():
 		span = Vector2i(mini(cy0, int(had["y0"])), maxi(cy1, int(had["y1"])))
-	# Copy, then swap: terrain chunk meshing reads `columns` on worker threads (is_volume_column as
-	# the mesher's hole test), and inserting into a dictionary another thread is reading can
-	# corrupt it. The replaced dictionary stays referenced a while for a reader still holding it.
-	var next: Dictionary = columns.duplicate()
-	next[col] = {"y0": span.x, "y1": span.y}
-	_retired.append([Time.get_ticks_msec(), columns])
-	columns = next
-	while _retired.size() > 4 and Time.get_ticks_msec() - int(_retired[0][0]) > 20000:
-		_retired.pop_front()
+	_columns_lock.lock()
+	columns[col] = {"y0": span.x, "y1": span.y}
+	_columns_lock.unlock()
 	for cy: int in range(span.x, span.y + 1):
 		var key := Vector3i(col.x, cy, col.y)
 		if not chunks.has(key):
@@ -213,6 +213,13 @@ func _process(_delta: float) -> void:
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
 			_apply(key, job["out"][0])
+
+
+## Joins in-flight mesh tasks: leaving one running past the engine's shutdown aborts it.
+func _exit_tree() -> void:
+	for key: Vector3i in _pending.keys():
+		WorkerThreadPool.wait_for_task_completion(_pending[key]["task"])
+	_pending.clear()
 
 
 ## Builds the mesh and collision of a chunk synchronously (tests, load).
