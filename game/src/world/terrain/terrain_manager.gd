@@ -365,10 +365,10 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 	var out: Array = [null]
 	job["out"] = out
 	var fn := func() -> void:
-		out[0] = TerrainMesher.build_chunk(origin, CHUNK, step, height_at, skirt, Callable(), hole, cut)
+		out[0] = TerrainMesher.build_chunk_job(origin, CHUNK, step, height_at, skirt, Callable(), hole, cut)
 	if synchronous:
 		fn.call()
-		job["mesh"] = out[0]
+		job["mesh"] = TerrainMesher.finish(out[0])
 		_apply_mesh(job)
 		return
 	job["task"] = WorkerThreadPool.add_task(fn, true, "terrain chunk")
@@ -388,7 +388,7 @@ func _collect_finished() -> void:
 		if WorkerThreadPool.is_task_completed(job["task"]):
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
-			job["mesh"] = job["out"][0]
+			job["mesh"] = TerrainMesher.finish(job["out"][0])
 			_apply_mesh(job)
 			if float(Time.get_ticks_usec() - t0) / 1000.0 >= COLLECT_BUDGET_MS:
 				return
@@ -553,7 +553,7 @@ func is_ready_around(pos: Vector3, radius: int = 1) -> bool:
 
 func _build_far_tiles() -> void:
 	for rid: String in world.regions:
-		_add_far_tile(rid, _far_tile_mesh(rid))
+		_add_far_tile(rid, TerrainMesher.finish(_far_tile_mesh(rid)))
 
 
 ## The region streamer (ADR-0038) when this world streams; null otherwise.
@@ -602,14 +602,14 @@ func _finish_far_tiles() -> bool:
 		WorkerThreadPool.wait_for_group_task_completion(_far_task)
 		_far_task = -1
 	for i: int in _far_ids.size():
-		_add_far_tile(_far_ids[i], _far_meshes[i])
+		_add_far_tile(_far_ids[i], TerrainMesher.finish(_far_meshes[i]))
 	_far_meshes.clear()
 	return true
 
 
-## A far tile's mesh (pure data: reads the composed regions only, safe on a worker thread given
+## A far tile's mesh, as TerrainMesher.build_chunk_job gives it (pure data: reads the composed regions only, safe on a worker thread given
 ## `snap`, the `regions` dictionary taken on the main thread; attach and detach replace it).
-func _far_tile_mesh(rid: String, snap: Dictionary = regions) -> ArrayMesh:
+func _far_tile_mesh(rid: String, snap: Dictionary = regions) -> Variant:
 	var built: Array[Rect2] = []
 	for b: String in snap:
 		built.append(world.region_rect(b))
@@ -623,7 +623,7 @@ func _far_tile_mesh(rid: String, snap: Dictionary = regions) -> ArrayMesh:
 		return grid[clampi(int(round((z - rect.position.y) / FAR_STEP)) + 1, 0, n - 1) * n + clampi(int(round((x - rect.position.x) / FAR_STEP)) + 1, 0, n - 1)]
 	var height_fn := func(x: float, z: float) -> float: return height_at(x, z) + (at.call(x, z) as Vector2).x * CANOPY_HEIGHT
 	var color_fn := func(x: float, z: float) -> Color: return _far_color(rt, x, z, at.call(x, z))
-	return TerrainMesher.build_chunk(rect.position, rect.size.x, FAR_STEP, height_fn, 12.0, color_fn)
+	return TerrainMesher.build_chunk_job(rect.position, rect.size.x, FAR_STEP, height_fn, 12.0, color_fn)
 
 
 func _add_far_tile(rid: String, mesh: ArrayMesh) -> void:
