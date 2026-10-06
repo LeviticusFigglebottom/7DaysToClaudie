@@ -257,7 +257,7 @@ func _boot_terrain() -> void:
 	terrain = TerrainManager.new()
 	terrain.name = "Terrain"
 	terrain.defer_far_tiles = true
-	terrain.prebuilt_bloom = _loader.bloom_field
+	terrain.prebuilt_bloom = _loader.bloom_tiles
 	# Buildings come by distance (ADR-0038 §8): a cellar is cut once its building stands.
 	terrain.gate_holes = streaming and _loader.registry != null
 	terrain.remesh_far_tiles = streaming

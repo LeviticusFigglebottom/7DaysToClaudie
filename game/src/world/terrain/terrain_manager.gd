@@ -110,8 +110,18 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	bloom.name = "Bloom"
 	add_child(bloom)
 	# The world loader may have built the field on its thread already.
-	bloom.setup(prebuilt_bloom if prebuilt_bloom != null else BloomField.build(world, regions, ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}))
+	var bcfg: Dictionary = ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}
+	var tiles: BloomTiles = prebuilt_bloom if prebuilt_bloom != null else BloomTiles.build(world, regions, bcfg, false)
 	prebuilt_bloom = null
+	if tiles.lazy:
+		# A tile not composed yet is read from its zones over the ground as it is now (1 m where
+		# attached). Set before any worker reads the field; never replaced.
+		tiles.mask_fn = ground_terrain_at
+	# The window starts over the 1 m regions (a streamed world's first area); it follows the focus.
+	var start := Rect2()
+	for rid: String in regions:
+		start = (regions[rid] as RegionTerrain).rect if start.size == Vector2.ZERO else start.merge((regions[rid] as RegionTerrain).rect)
+	bloom.setup(tiles, self, start.get_center() if start.size != Vector2.ZERO else Vector2(NAN, NAN), bcfg)
 	_canopy = far_canopy(ContentDB.instance)
 	if not defer_far_tiles:
 		_build_far_tiles()
@@ -189,12 +199,18 @@ func canopy_at(x: float, z: float) -> float:
 ## How far the Bloom has taken the ground at world (x, z), 0..1 (ADR-0025): the authored field plus
 ## the rooting mounds, as the shaders draw it. Thread-safe for reads.
 func bloom_at(x: float, z: float) -> float:
-	return bloom.field.at(x, z) if bloom != null and bloom.field != null else 0.0
+	return bloom.tiles.at(x, z) if bloom != null and bloom.tiles != null else 0.0
 
 
 ## The authored Bloom field only (deterministic per world; the vegetation scatter reads this).
 func bloom_base_at(x: float, z: float) -> float:
-	return bloom.field.base_at(x, z) if bloom != null and bloom.field != null else 0.0
+	return bloom.tiles.base_at(x, z) if bloom != null and bloom.tiles != null else 0.0
+
+
+## The terrain that answers height_at at (x, z): the region's 1 m terrain when attached, else its
+## coarse one (null off the map). Thread-safe.
+func ground_terrain_at(x: float, z: float) -> RegionTerrain:
+	return _terrain_for(x, z)
 
 
 ## Terrain height at world (x, z). Thread-safe: the sample is taken under _lock, which edits of
@@ -265,6 +281,15 @@ func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 		_region_holes[rid] = TerrainHoles.from_regions({rid: rt})
 	_publish_holes()
 	t = _part("holes", t)
+	# The Bloom's tiles over the region, masked by its 1 m ground (TD-106): composed on the
+	# streamer's worker, here otherwise (tests, tools). Before the chunks re-mesh, so the scatter
+	# reads the field the region keeps from now on.
+	if bloom != null and bloom.tiles != null and bloom.tiles.lazy:
+		var made: Array = rt.get_meta(&"bloom_tiles") if rt.has_meta(&"bloom_tiles") else bloom.tiles.compose_region(rt)
+		if rt.has_meta(&"bloom_tiles"):
+			rt.remove_meta(&"bloom_tiles")
+		bloom.install(made)
+		t = _part("bloom", t)
 	_refresh_chunks(rt.rect)
 	_remesh_far_tile(rid)
 	t = _part("chunks", t)
@@ -616,8 +641,8 @@ func start_streaming(cfg: Dictionary) -> void:
 	streamer.setup(self, cfg)
 
 
-## Set before setup(): a Bloom field built off the main thread (WorldLoader.bloom_field).
-var prebuilt_bloom: BloomField = null
+## Set before setup(): a Bloom field built off the main thread (WorldLoader.bloom_tiles).
+var prebuilt_bloom: BloomTiles = null
 ## Set before setup() to build the far tiles on worker threads through boot_steps() (ADR-0036:
 ## about 1.5 s of meshing that used to run in the load's one long main-thread frame).
 var defer_far_tiles: bool = false
