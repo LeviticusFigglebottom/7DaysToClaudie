@@ -1,0 +1,25 @@
+{
+ "_doc": "Readable notes of the Ashen highcamp (ADR-0048; items note_<id> in items/ashen.json): what the valley's scavengers and the Remand Program's salvagers saw of the living Ashen - watching the roads from the high timber, taking what comes up them - and the camp's own marks for the taken it keeps.",
+ "defs": [
+  {
+   "id": "ashen_highcamp_flyer",
+   "title": "Note on a Drop Flyer",
+   "style": "handwritten",
+   "author": "R.",
+   "body": "(Pencil on the back of a Program supply-drop flyer, folded small and pushed under a stone by the trail.)\n\nTo whoever comes up here next -\n\nThey've been watching you since the creek. You won't see them. You'll see ash on a rock where somebody sat, and a fire up here every night that never goes out.\n\nWe came up after the drop canister that came down in the timber. Wes went first. They let him walk right up to the gate. Then the drum.\n\nThey don't want the sick and they don't want the Program. They want what you carry, and they want you gone from their hill.\n\nGo back down. If you won't, don't use the gate. The east wall of the long hut is only a hide over a hole.\n\n- R."
+  },
+  {
+   "id": "ashen_highcamp_log",
+   "title": "Observation Log, Torn",
+   "style": "handwritten",
+   "author": "Salvager #3318",
+   "body": "REMAND SALVAGE PROGRAM - OBSERVATION LOG\nSalvager no. 3318. Post: the blind on the ridge above the high timber.\n\nDay 4. Eleven adults, four children. Fires in the long hut and at the gate all night. Someone is always awake.\n\nDay 6. Two of them came down to the river road at first light and sat on the cutbank till noon. Not hunting. Watching the road. Counting the convoy trucks, I think.\n\nDay 9. A trader's cart came up the river road. They let it get to the bend. By dark the cart was in their yard and the trader wasn't anywhere.\n\nDay 11. They keep three of their own in the little hut by the east wall. Chain on the door. The ones inside don't talk anymore. At night the woman with the stripes on her chin sits outside it and sings.\n\nDay 12. They've found the blind. I can smell their fire from here.\n\n(The rest of the page is torn away.)"
+  },
+  {
+   "id": "ashen_highcamp_slate",
+   "title": "Birch-Bark Slate",
+   "style": "scrawl",
+   "body": "(Charcoal on a slab of birch bark, hung on a peg by the chained door, in the Ashen's hand-marks.)\n\nThree hands inside a ring, each with a line drawn through it.\nBeside each hand a row of strokes: days. The rows are long, and the newest strokes are fresh.\nUnder them the pyre, unlit, and a sun coming up behind it.\nAt the bottom someone has pressed a whole palm in ash and drawn nothing else."
+  }
+ ]
+}

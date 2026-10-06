@@ -1,0 +1,67 @@
+{
+ "_doc": "The living Ashen's camp kit (ADR-0048; tools/assetgen/blender/generators/props_ashen_camp.py, defs game/data/props/ashen.json). Built on the shared item texture sets with tints; the camp otherwise uses the watch camp's out_* materials (props_outskirts.json) and ember_glow for the fire's coals. ashen_lichen_ash is the grey-green ash the Ashen smear on their skin and things (the skin shader's ash_color on skin_ashen_living matches it).",
+ "materials": {
+  "ashen_drum_hide": {
+   "shader": "std_surface",
+   "textures": "item_rawhide",
+   "params": {
+    "uv_scale": 1.6,
+    "vertex_ao_strength": 1.0,
+    "tint": "#e6d3ae",
+    "roughness_add": 0.05,
+    "grime_amount": 0.35,
+    "grime_color": "#8e8a80"
+   }
+  },
+  "ashen_flint": {
+   "shader": "std_surface",
+   "textures": "item_flint",
+   "layers": {
+    "wear": "item_flint_edge"
+   },
+   "params": {
+    "uv_scale": 10.0,
+    "normal_strength": 0.9,
+    "roughness_add": 0.2,
+    "wear_amount": 0.55,
+    "wear_uv_scale": 14.0,
+    "vertex_ao_strength": 1.0,
+    "metallic_mult": 0.0
+   }
+  },
+  "ashen_clay": {
+   "shader": "std_surface",
+   "textures": "item_clay",
+   "params": {
+    "uv_scale": 3.0,
+    "normal_strength": 1.1,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b07a52",
+    "grime_amount": 0.5,
+    "grime_color": "#8f8b80"
+   }
+  },
+  "ashen_lichen_ash": {
+   "shader": "std_surface",
+   "textures": "item_ash",
+   "params": {
+    "uv_scale": 3.0,
+    "normal_strength": 0.8,
+    "vertex_ao_strength": 1.0,
+    "tint": "#b9bdae"
+   }
+  },
+  "ashen_meat_dried": {
+   "shader": "std_surface",
+   "textures": "item_meat",
+   "params": {
+    "uv_scale": 4.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#6a2c1e",
+    "roughness_mult": 0.8,
+    "grime_amount": 0.35,
+    "grime_color": "#1c0f0a"
+   }
+  }
+ }
+}

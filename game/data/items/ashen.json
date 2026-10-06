@@ -1,0 +1,35 @@
+{
+ "_doc": "Readables of the Ashen highcamp (ADR-0048): the notes in notes/ashen.json.",
+ "defs": [
+  {
+   "id": "note_ashen_highcamp_flyer",
+   "name": "Note on a Drop Flyer",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_okafor_letter",
+   "note": "ashen_highcamp_flyer"
+  },
+  {
+   "id": "note_ashen_highcamp_log",
+   "name": "Observation Log, Torn",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_page",
+   "note": "ashen_highcamp_log"
+  },
+  {
+   "id": "note_ashen_highcamp_slate",
+   "name": "Birch-Bark Slate",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_page",
+   "note": "ashen_highcamp_slate"
+  }
+ ]
+}
