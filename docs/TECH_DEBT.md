@@ -6,7 +6,6 @@ noticeable quality or perf cost, **L** polish.
 
 | ID | Sev | Area | Debt | Fix |
 |---|---|---|---|---|
-| TD-001 | M | Toolchain | Godot zip SHA-512 is trust-on-first-use from the official download host (GitHub release SUMS file unreachable from the build container). | Verify against `SHA512-SUMS.txt` from the release page when reachable; update `tools/versions.env`. |
 | TD-002 | M | Rendering | Visual QA runs on software Vulkan (lavapipe) under Xvfb: correct but slow (~3–4 min per screenshot) and SDFGI/volumetrics are not representative of GPU cost. | Add a GPU runner for `make screenshots` and perf captures. |
 | TD-003 | H | Performance | No measurements on a real mid-range GPU yet; the 60 FPS @1080p budget is unverified. Draw-call/primitive numbers come from the F4 overlay under software rendering. | Profile on target hardware (GTX 1660 / RX 6600 class); tune presets (`data/config/graphics_presets.json`), vegetation densities and shadow distances. |
 | TD-004 | M | Performance | Heavy work in GDScript: terrain composition (~13 s per 1 km region, cached), vegetation scatter (per chunk, threaded), surface-nets meshing (0.1–0.3 s per volume chunk, threaded), flow-field Dijkstra (~0.2 s, threaded). | Move hot loops to a GDExtension (ADR-0004 criteria) if profiling on target hardware demands it. |
