@@ -96,3 +96,27 @@ func test_freed_probes_give_their_slots_back() -> void:
 		_town.remove_child(probes[i])
 		probes[i].free()
 	assert_eq(_budget.shown(), 6)
+
+
+func test_a_probe_shown_again_renders_once_more() -> void:
+	# Showing an UPDATE_ONCE probe does not render it, so a probe hidden while far came back with no
+	# cube map and no interior fill (a black diner at noon on high). Shown again, it renders for one
+	# frame on UPDATE_ALWAYS, a few probes a frame, then goes back to UPDATE_ONCE.
+	var probes: Array[ReflectionProbe] = _street(150)
+	assert_eq(_budget.update(Vector3(1001.0, 1.5, 0.0)), Budget.MAX_VISIBLE)
+	var again: Array[ReflectionProbe] = []
+	for i: int in range(85, 117):
+		again.append(probes[i])
+	var rendered: int = 0
+	for step: int in 20:
+		_budget.step_rerenders()
+		var now: int = 0
+		for p: ReflectionProbe in again:
+			if p.update_mode == ReflectionProbe.UPDATE_ALWAYS:
+				now += 1
+		assert_lte(now, Budget.RERENDER_PER_FRAME, "a few re-render each frame")
+		rendered += now
+	assert_eq(rendered, again.size(), "every probe shown again re-rendered, each for one frame")
+	for p: ReflectionProbe in again:
+		assert_eq(p.update_mode, ReflectionProbe.UPDATE_ONCE, "and is back to rendering once")
+	assert_eq(probes[0].update_mode, ReflectionProbe.UPDATE_ONCE, "a probe hidden stays as it was")

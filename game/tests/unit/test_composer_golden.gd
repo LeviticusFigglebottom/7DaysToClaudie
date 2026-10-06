@@ -73,7 +73,7 @@ const GOLDEN: Dictionary = {
 		"other": "1351cdaa2b2e1e2441abf2bc1ab94843",
 	},
 	"rwg@4": {
-		"input": "8748d38b30154e0d8f36b3e56a84d3d494750050b4790f22fa45eed2007ec5b9",
+		"input": "9bd33f4f08cb78d7580c4b3bf8481e95ed732ad6559170b2c36efa92b5706fe2",
 		"height": "0eaa8506c0ba2d3484781a920c3d58d080738b9bbd24dd5049779a7212d63783",
 		"splat0": "b57140b9a4a248a8823629c9ae0181ca",
 		"splat1": "19391a95713fd102f71d144d72dba05a",
@@ -86,7 +86,7 @@ const GOLDEN: Dictionary = {
 		"other": "cdea7f25fbe2a5d7db76f5471a367e8b",
 	},
 	"rwg@8": {
-		"input": "c79355e26825833a1949e28f4b612bb22d27557e6a4c9b618d27552044fec75c",
+		"input": "18844feeb55a9d653fc0b88d95c0bce9851ea582bfabfc8a2344f9c976bd2bd6",
 		"height": "9f0d511eee35a49c7efdd8195af376c67a6712bf7b1eb5a9d776476341bd9cc6",
 		"splat0": "e2f1238a5db9a70e67d9a14df759fe79",
 		"splat1": "6c424b2a6dc95535b4b448ddc710896d",
@@ -99,7 +99,7 @@ const GOLDEN: Dictionary = {
 		"other": "db456385e78c1ef69a9e46930f6a7afb",
 	},
 	"rwg@1": {
-		"input": "574a5b8d9074a6baeb8264d0f550a0df4f83fafe8375b29d2b30ea388b63d379",
+		"input": "07b59ebb627250542b65711a33933489a2f3f68fc33a87a51bce722000531170",
 		"height": "25eedd51f00f08b54fc9f90bbef8ce8a6df18f2686f5a8e37b764797fbcbdd91",
 		"splat0": "1136992f426ddc8627f9063f05247d56",
 		"splat1": "dc4ef3215278fddfbda34c6216d78f86",
@@ -112,7 +112,7 @@ const GOLDEN: Dictionary = {
 		"other": "be2cb6d869865cd65c1e45d6db34b512",
 	},
 	"rwg_drop@4": {
-		"input": "41fb9df0ed6c18a123b9f7c542c1d659576182046b7befa4373881842c4bdf53",
+		"input": "e79786585f06742225e7df6d86bf82d43cb3005406f0c17830f576fc1f444010",
 		"height": "d6d973d4cb88199d886ab4b17658b8ac96a6e0d67ad4017eda2ef6979c5c95f8",
 		"splat0": "e730d222f93b7762a60efa7792f53d3e",
 		"splat1": "da47f68660bef05e23e84e3434ff6104",
@@ -125,7 +125,7 @@ const GOLDEN: Dictionary = {
 		"other": "27aec2506dedd3b08659cf99db183294",
 	},
 	"rwg_drop@8": {
-		"input": "ff5adab1d331202dee12ea484c037202da5345547b281ad2160e797933ce0c3c",
+		"input": "16ae5d876ba270524f12edb081153f051d952d19d0b7172d00ba6859e21bedc9",
 		"height": "aac5c29fa4ab97b821f201177c03a55ae3cf05f06c3b151113fc0f1a1dd40503",
 		"splat0": "db6248abb9a635711c764a621a188397",
 		"splat1": "520ea23af1d69e2143a5a881b07113ca",

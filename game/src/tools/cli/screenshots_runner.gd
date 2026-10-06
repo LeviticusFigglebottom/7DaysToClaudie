@@ -437,7 +437,9 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		await _wait(float(shot.get("settle", _settle)))
-	var refreshed: Array[ReflectionProbe] = _refresh_probes(cam.global_position) if _probe_always else []
+	var refreshed: Array[ReflectionProbe] = []
+	if _probe_always:
+		refreshed = _refresh_probes(cam.global_position)
 	for i: int in _settle_frames:
 		await get_tree().process_frame
 	var img: Image = get_viewport().get_texture().get_image()
