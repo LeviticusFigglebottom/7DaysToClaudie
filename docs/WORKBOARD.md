@@ -7,7 +7,7 @@ way it never conflicts.
 ## Sessions
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
-| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Landed: random worlds v1 (O2), weather (Q2, ADR-0033), the pool buildings (P2), the guide's bug batch (S1), the wall-prop facing fix. Running: V (the QA and stabilization round), R2 (RWG v2 Phases 4 and 5: organic towns into generated worlds, generator VERSION 2); R1 (RWG v2 Phase 1: golden composer test, speed-ups, bands, cancel, cache LRU, ADR-0038); T (the organic town planner, ADR-0040); S1 (bugs found while writing `docs/HOW_TO_PLAY.md`) | Random worlds v2 (`docs/RWG_V2_PLAN.md`): Phase 1 (measure and speed up the composer and generator) once O2 lands, then Phase 4's generator side and Phase 5 (organic towns, ADR-0040); the full screenshot QA and stabilization round once O2, P2 and Q2 land |
+| Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Landed: random worlds v1 (O2), weather (Q2, ADR-0033), the pool buildings (P2), the guide's bug batch (S1), the wall-prop facing fix, the QA round (V) and organic towns in generated worlds (R2, generator v2, ADR-0040), both in 86d10a9. Running: W (burnt forest and fen biomes, ADR-0041), X (four wilderness dungeons, round 3); the hub itself: TD-134 (interior probes render nearest-first) and trader posts in generated worlds | Merge session 3's streamed load once it has reconciled R2's hunks; then W and X land |
 | Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife, town content and economy | Traders and contracts (M2, ADR-0039): Waystation 9, the shop, clear/fetch/defend contracts, reputation. Merged: hounds and Murmurs, base building (02cb425), pool round 2, the third block | Then the Corvane caves (likely) |
 | Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Merged: boot-step load, stand-in CI, menu notices, Build workflow (301e85c), terrain thread races (cb83882), the load fixes, the digging-crash fix (TD-104) and the Phase 2 groundwork (StepRunner, RegionRings, region attach/detach, the loading map) in 5fc5f3e. On its branch, not merged yet: RegionStreamer, the streamed load behind the `stream` option, per-region POIs and far vegetation, `make stream-check` (to e1fc43e/7991b5b). Now: the rest of Phase 2 (bridges and markings per region, Bloom tiles, far-tile re-mesh, a cancel button) | Random worlds v2 Phases 2 and 3 (regions and buildings stream; the load path), then Phase 4's save side (v7, the world bundle), then graphics options (ADR-0037) |
 | Session 4 `session_015vPE349hAFMwSqC3TWWqqz` | `claude/blissful-wright-gnc54e` | POI prop placement | Wall-mounted props flush to their walls: 83 sit more than 10 cm off, plus two edge cases. Fixed at the source (wall depth from mesh bounds or PropDef size). Its first fix, the facing, is merged | Ask the hub |
@@ -31,8 +31,8 @@ way it never conflicts.
 ## Active streams and the files they own
 | Stream | Where | Owns |
 |---|---|---|
-| Random worlds v2, generator side (R2: Phases 4 and 5, organic towns wired in; Phase 1 and the planner landed) | integrator | `game/src/worldgen/**`, `game/src/ui/new_game_panel.gd`, `game/data/config/world_gen.json`, `game/data/config/town_planner.json`, `game/src/tools/cli/rwg_*`, `compose_region*` |
-| QA round (V) | integrator | fixes in building JSONs, `game/src/ui/new_game_panel.gd` and `game/src/app/main.gd` (seed handling, World tab label), the storm-night shot in `screenshots_runner.gd` |
+| New biomes: burnt forest and fen (W) | integrator | `game/data/biomes/**`, its additions to species, terrain layers and vegetation data, new vegetation generators and terrain textures in `tools/assetgen`, the generator's biome map (`_biome_map`, `biome_at`, BIOME_COLORS, the biome settings) and the composer's biome painting; small reported hunks in terrain, foliage, bark and water shaders and the weather tables |
+| Wilderness set pieces, round 3 (X) | integrator | its four building JSONs (Camp Tamarack, Elk Ridge Lodge, the Cordon Quarantine Camp, the Haldane Place) with their notes, loot and keys, its new props family, `test_wilderness_round_three.gd`, and its four entries in the wilderness pool of `world_gen.json` |
 | Traders and contracts (ADR-0039) | session 2 | the trader post, shop and contract data and scripts it creates; additive hunks elsewhere reported to the hub; no edits in `game/src/worldgen/**` |
 | Wall-mounted prop offsets | session 4 | the wall-mount math in `PoiBuilder._prop_xf` and `poi_layout.gd`, wall-depth data on prop defs, and a validator check for wall gaps. Session 3 owns the rest of PoiBuilder; keep hunks small and report them |
 | Builds and stability | session 3 | `.github/workflows/` (new export jobs), `game/export_presets.cfg`, the load sequence (`game/src/app/game_world.gd`, `world_loader.gd`, `PoiManager`'s placement path, `PoiBuilder.build`'s validator argument), thread-safety fixes in `game/src/world/terrain/` and `game/src/world/vegetation/`, and fixes it reports to the hub |
@@ -56,19 +56,16 @@ way it never conflicts.
    Murmurs, base building, the playable builds and downloads, the load freeze and both crashes,
    the "how to play" guide.
 2. Running now:
-   * the hub's agent V: the QA round (screenshots, tour, memory, fixes);
-   * the hub's agent R2: RWG v2 Phases 4 and 5 (generator v2, organic towns in generated worlds);
+   * the hub's agent W: new biomes for random worlds (burnt forest and fen, ADR-0041);
+   * the hub's agent X: wilderness set pieces, round 3 (a summer camp, a hunting lodge, a quarantine
+     camp, a fortified homestead);
+   * the hub: TD-134 (interior probes render nearest-first) and trader posts in generated worlds
+     (session 2's `trader:program_relay:<n>` spawn hook);
    * session 2: traders and contracts (ADR-0039; no save bump, v7 is the world bundle);
-   * session 3: RWG v2 Phase 2, streamed load;
+   * session 3: merges R2's landing into its streamed load, then the hub merges the streamed load;
    * session 4: wall-mounted props flush to their walls.
-3. After R2 lands:
-   * session 3 merges it, reconciles PoiManager with its per-region path, and the hub merges the
-     streamed load;
-   * the hub places trader posts in generated worlds (session 2's `trader:program_relay:<n>`
-     spawn hook);
-   * the hub runs two agents: new biomes for random worlds (burnt forest and fen) and wilderness
-     set pieces, round 3 (a summer camp, a hunting lodge, a quarantine camp, a fortified
-     homestead).
+3. Done this round: the QA round (V) and organic towns in generated worlds (R2, generator v2), in
+   86d10a9.
 4. Session 3, in this order:
    * a verified Windows download from the Build workflow, alongside the rest of Phase 2. It boots
      past the load, and buildings and Hollowed show their real models;
