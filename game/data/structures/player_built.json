@@ -22,6 +22,16 @@
     {"id": "bedroll", "name": "Bough Bed", "kind": "shelter", "material": "stick", "hp": 60, "mass": 10, "model": "structures/bough_bed", "size": [0.9, 0.25, 2.0], "cost": {"leaf_bundle": 6, "stick": 4}, "provides": ["sleep", "save_point", "spawn_point"], "flammable": true},
     {"id": "forge", "name": "Forge", "kind": "station", "material": "stone", "hp": 600, "mass": 400, "model": "structures/forge", "size": [1.4, 1.2, 1.2], "cost": {"stone": 30, "scrap_metal": 10}, "provides": ["station:forge"]},
     {"id": "chemistry_bench", "name": "Chemistry Bench", "kind": "station", "material": "wood", "hp": 250, "mass": 120, "model": "structures/chemistry_bench", "size": [1.6, 1.0, 0.7], "cost": {"wood_plank": 8, "nails": 12, "glass_bottle": 4}, "provides": ["station:chemistry_bench"]},
+    {"_doc": "ADR-0035: The Forest's holders. rack:<item>:<capacity> takes only that item and shows how full it is.", "id": "log_rack", "name": "Log Holder", "kind": "storage", "material": "stick", "hp": 220, "mass": 60, "model": "structures/log_rack", "size": [4.2, 1.3, 1.2],
+     "cost": {"log": 2, "stick": 6, "cordage": 2}, "provides": ["rack:log:12"], "damage_mult": {"fire": 1.8}, "flammable": true},
+    {"id": "stick_rack", "name": "Stick Holder", "kind": "storage", "material": "stick", "hp": 120, "mass": 15, "model": "structures/stick_rack", "size": [1.0, 1.2, 0.6],
+     "cost": {"stick": 8, "cordage": 1}, "provides": ["rack:stick:40"], "damage_mult": {"fire": 2.0}, "flammable": true},
+    {"id": "stone_pile", "name": "Rock Pile", "kind": "storage", "material": "stick", "hp": 260, "mass": 30, "model": "structures/stone_pile", "size": [1.2, 0.6, 1.2],
+     "cost": {"stick": 6}, "provides": ["rack:stone:30"]},
+    {"id": "log_stairs", "name": "Log Stairs", "kind": "stairs", "material": "log", "hp": 420, "mass": 180, "model": "structures/log_stairs", "size": [1.2, 2.32, 3.6],
+     "cost": {"log": 4, "stick": 8, "cordage": 2}, "damage_mult": {"fire": 1.6, "zombie": 1.0}, "flammable": true},
+    {"id": "stick_door", "name": "Stick Door", "kind": "door", "material": "stick", "hp": 240, "mass": 40, "model": "structures/stick_door", "size": [1.2, 2.2, 0.2],
+     "cost": {"stick": 14, "cordage": 3}, "damage_mult": {"fire": 1.8, "zombie": 1.0}, "flammable": true},
     {"id": "grill", "name": "Grill Rack", "kind": "station", "material": "metal", "hp": 200, "mass": 30, "model": "structures/grill", "size": [1.0, 0.8, 0.6], "cost": {"scrap_metal": 6, "stone": 6}, "provides": ["station:grill"]}
   ]
 }

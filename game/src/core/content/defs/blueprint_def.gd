@@ -16,10 +16,13 @@ var preview: String = ""
 ## Max ground slope (degrees) at placement.
 var max_slope: float = 25.0
 var unlock: String = "default"
+## Assemblies that may stand on a log floor or platform instead of the ground (furniture, racks,
+## stairs: ADR-0035). They rest on the logs under them and fall with them.
+var on_structures: bool = false
 
 
 func _fields() -> PackedStringArray:
-	return ["mode", "category", "pieces", "result", "cost", "preview", "max_slope", "unlock"]
+	return ["mode", "category", "pieces", "result", "cost", "preview", "max_slope", "unlock", "on_structures"]
 
 
 func _parse(r: DefReader) -> void:
@@ -30,6 +33,7 @@ func _parse(r: DefReader) -> void:
 	preview = r.str_field("preview", "")
 	max_slope = r.num("max_slope", 25.0)
 	unlock = r.str_field("unlock", "default")
+	on_structures = r.boolean("on_structures", false)
 	for p: Variant in r.arr("pieces"):
 		if not p is Dictionary:
 			r.err("pieces must be objects")
