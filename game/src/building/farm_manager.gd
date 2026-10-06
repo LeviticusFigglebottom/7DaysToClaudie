@@ -137,6 +137,9 @@ func env_at(piece: StructurePiece, w: Dictionary) -> Dictionary:
 	var open_sky: bool = true
 	if building != null and building.has_method(&"is_sheltered") and piece.is_inside_tree():
 		open_sky = not bool(building.call(&"is_sheltered", pos + Vector3.UP * piece.def.size.y))
+	var pois: Node = world.get(&"pois") if world != null else null
+	if open_sky and pois != null and pois.has_method(&"is_indoors"):
+		open_sky = not bool(pois.call(&"is_indoors", pos + Vector3.UP))
 	var rules: GameRules = Game.session.rules if Game.session != null else null
 	return {"ambient_c": ambient, "rain": float(w.get("rain", 0.0)) if open_sky else 0.0,
 		"snow": float(w.get("snow", 0.0)) if open_sky else 0.0,
