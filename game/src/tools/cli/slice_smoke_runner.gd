@@ -252,5 +252,5 @@ func _check_real_models(w: GameWorld, p: Player) -> void:
 		if ok(e != null, "spawned a Hollowed for the model check"):
 			await frames(2)
 			ok(e.visual != null and not e.visual._placeholder, "the Hollowed has its generated body")
-			e.queue_free()
+			ai.despawn(e)
 			await frames(2)
