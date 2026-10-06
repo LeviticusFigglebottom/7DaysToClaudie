@@ -340,8 +340,9 @@ func _spawn_gib(limb: String, pos: Vector3, impulse: Vector3) -> Node3D:
 		return null
 	var mesh: Mesh = null
 	var gib_path: String = model_path("characters/gibs")
-	if ResourceLoader.exists(gib_path):
-		var gibs: Node = (load(gib_path) as PackedScene).instantiate()
+	var gib_scene: PackedScene = load(gib_path) as PackedScene if ResourceLoader.exists(gib_path) else null
+	if gib_scene != null:
+		var gibs: Node = gib_scene.instantiate()
 		var src: MeshInstance3D = gibs.find_child(String(GIBS.get(limb, "gib_chunk_a")), true, false) as MeshInstance3D
 		if src != null:
 			mesh = src.mesh

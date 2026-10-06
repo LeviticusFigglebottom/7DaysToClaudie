@@ -5,6 +5,8 @@ extends RefCounted
 ## Cached for the session. Thread-safe for reads after first load (load on main thread).
 
 static var _meshes: Dictionary = {}
+## Model ids whose cached mesh came from the generated model (the rest are placeholders).
+static var _generated: Dictionary = {}
 static var _shapes: Dictionary = {}
 static var _mutex := Mutex.new()
 
@@ -38,16 +40,42 @@ static func mesh(model_id: String, placeholder: String = "box") -> Mesh:
 	_mutex.unlock()
 	if m != null:
 		return m
-	if has_model(model_id):
-		var scene: Node3D = (load(model_path(model_id)) as PackedScene).instantiate()
-		m = merge_meshes(scene)
-		_extract_shapes(model_id, scene)
-		scene.free()
+	m = _load_merged(model_id)
+	var generated: bool = m != null
 	if m == null:
 		m = make_placeholder(placeholder)
 	_mutex.lock()
 	_meshes[model_id] = m
+	if generated:
+		_generated[model_id] = true
 	_mutex.unlock()
+	return m
+
+
+## The merged mesh of the generated model, or null when there is none to load (so the caller can
+## build its own stand-in instead of a box).
+static func generated_mesh(model_id: String) -> Mesh:
+	var m: Mesh = mesh(model_id)
+	_mutex.lock()
+	var generated: bool = _generated.has(model_id)
+	_mutex.unlock()
+	return m if generated else null
+
+
+## A model that exists on disk can still fail to load: one built but not imported yet has only
+## its .import sidecar. That must fall back to a placeholder rather than stop the building or
+## item halfway.
+static func _load_merged(model_id: String) -> Mesh:
+	if not has_model(model_id):
+		return null
+	var ps := load(model_path(model_id)) as PackedScene
+	if ps == null:
+		push_warning("ModelLibrary: %s is on disk but does not load (not imported yet?); using a placeholder" % model_id)
+		return null
+	var scene: Node3D = ps.instantiate()
+	var m: Mesh = merge_meshes(scene)
+	_extract_shapes(model_id, scene)
+	scene.free()
 	return m
 
 
