@@ -160,3 +160,23 @@ hm_bloom_night={
 "type": "float",
 "value": 0.0
 }
+hm_rain={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+hm_weather_map={
+"type": "sampler2D",
+"value": ""
+}
+hm_weather_rect={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}
+hm_terrain_puddle={
+"type": "mat4",
+"value": Projection(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5)
+}
+hm_terrain_porosity={
+"type": "mat4",
+"value": Projection(0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7)
+}

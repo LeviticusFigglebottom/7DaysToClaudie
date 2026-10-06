@@ -1,7 +1,10 @@
 // Hollowmere master surface shader (props, rocks, buildings, structures).
 // Tiling PBR set (albedo / normal / ORM) + layers driven by vertex colour channels from the
 // asset pipeline: R = baked AO, G = wear/edge mask, B = moss/variation mask (see ASSET_PIPELINE.md).
-// Global uniforms hm_* are driven by the weather system (wetness, snow).
+// Global uniforms hm_* are driven by the weather system (wetness, snow). Wet surfaces follow the
+// porosity model (weather.gdshaderinc, ADR-0033): rough, matte materials (wood, concrete, cloth)
+// soak dark before they gloss; smooth, sealed ones (paint, metal) gloss at once and barely darken.
+// What faces up under a roof stays dry; walls still take driven rain.
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
@@ -71,7 +74,7 @@ instance uniform float instance_variation : instance_index(1) = 0.5;
 instance uniform float bloom_glow : instance_index(2) = 0.0;
 uniform float bloom_skin : hint_range(0.0, 1.0) = 0.0;
 
-global uniform float hm_wetness;
+#include "res://assets/shaders/weather.gdshaderinc"
 global uniform float hm_snow;
 // 0 for things under a roof (POI furniture batched as indoor): no rain gloss or snow on them.
 instance uniform float weather_exposure : instance_index(3) = 1.0;
@@ -235,13 +238,24 @@ void fragment() {
 		metal = mix(metal, 0.0, m);
 	}
 
-	// Weather: rain darkens and glosses surfaces facing the sky; snow settles on top.
-	float wet = hm_wetness * weather_exposure * mix(0.45, 1.0, up);
-	alb *= mix(1.0, 0.6, wet);
-	rough = mix(rough, 0.1, wet * 0.85);
-	float snow = hm_snow * weather_exposure * smoothstep(0.55, 0.85, up);
-	alb = mix(alb, vec3(0.86, 0.88, 0.92), snow);
-	rough = mix(rough, 0.7, snow);
+	// Weather: rain soaks and glosses (more on what faces the sky); snow settles on top, its edge
+	// broken by drifts and the surface's own creases.
+	float expo = weather_exposure;
+	if (hm_wetness + hm_snow > 0.001) {
+		expo *= mix(1.0, wx_exposed(v_world_pos, up), up);
+	}
+	float porosity = clamp((rough - 0.35) / 0.5, 0.0, 1.0) * (1.0 - metal);
+	float wet = hm_wetness * expo * mix(0.5, 1.0, up);
+	alb = wx_wet_albedo(alb, wet, porosity);
+	rough = wx_wet_roughness(rough, wet, porosity);
+	float snow = hm_snow * expo * smoothstep(0.5, 0.85, up);
+	if (snow > 0.001) {
+		float drift = wx_noise(v_world_pos.xz * 2.1 + v_world_pos.yy * 0.7);
+		snow = smoothstep(0.0, 0.18, snow * 1.3 - (1.0 - ao) * 0.35 * (1.0 - hm_snow) - (drift - 0.5) * 0.35 * (1.0 - hm_snow));
+		alb = mix(alb, vec3(0.88, 0.9, 0.94) * (0.94 + 0.08 * drift), snow);
+		rough = mix(rough, 0.72, snow);
+		metal *= 1.0 - snow;
+	}
 
 	ALBEDO = clamp(alb, vec3(0.0), vec3(1.0));
 	if (emission_energy > 0.0) {

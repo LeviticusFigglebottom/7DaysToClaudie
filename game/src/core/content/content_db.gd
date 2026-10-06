@@ -138,6 +138,11 @@ func add_runtime_def(def: ContentDef) -> void:
 	(_defs[def.kind] as Dictionary)[def.id] = def
 
 
+## Removes a def added with add_runtime_def (tests, a world unloaded for good).
+func remove_runtime_def(kind: StringName, id: StringName) -> void:
+	(_defs.get(kind, {}) as Dictionary).erase(id)
+
+
 func item(id: StringName) -> ItemDef:
 	return get_def(&"item", id) as ItemDef
 

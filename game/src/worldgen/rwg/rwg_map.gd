@@ -126,10 +126,11 @@ func render(world: Dictionary, regions: Array, fws: Dictionary, size_px: int) ->
 # --- Layers --------------------------------------------------------------------------------------
 
 func _relief(world: Dictionary) -> void:
+	# The land exactly as the game interpolates it (WorldDef: bicubic over the macro grid).
+	var wd := WorldDef.new()
+	wd._parse(world)
 	var macro: Dictionary = world.get("macro", {})
 	var rows: Array = macro.get("corner_heights", [])
-	var n: int = rows.size()
-	var step: float = float(macro.get("step", 32.0))
 	var hs := PackedFloat32Array()
 	for row: Variant in rows:
 		for v: Variant in row:
@@ -148,15 +149,23 @@ func _relief(world: Dictionary) -> void:
 		hmax = maxf(hmax, v2)
 	var light := Vector3(-0.55, 0.62, -0.56).normalized()
 	var mpp: float = wr.size.x / half
+	var exag: float = clampf(160.0 / maxf(1.0, hmax - hmin), 0.8, 3.0)
+	# Heights once per pixel (one row and column of margin), then shading from the neighbours.
+	var hp := PackedFloat32Array()
+	hp.resize((half + 2) * (half + 2))
+	for j0: int in half + 2:
+		for i0: int in half + 2:
+			hp[j0 * (half + 2) + i0] = wd.macro_height(wr.position.x + (i0 - 0.5) * mpp, wr.position.y + (j0 - 0.5) * mpp)
 	for j: int in half:
 		var z: float = wr.position.y + (j + 0.5) * mpp
 		for i: int in half:
 			var x: float = wr.position.x + (i + 0.5) * mpp
-			var hc: float = _h(hs, n, step, x, z)
-			var dx: float = _h(hs, n, step, x + mpp, z) - _h(hs, n, step, x - mpp, z)
-			var dz: float = _h(hs, n, step, x, z + mpp) - _h(hs, n, step, x, z - mpp)
-			# Relief exaggerated 3x so gentle country still reads on a map.
-			var nrm := Vector3(-dx * 3.0, 2.0 * mpp, -dz * 3.0).normalized()
+			var k: int = (j + 1) * (half + 2) + i + 1
+			var hc: float = hp[k]
+			var dx: float = hp[k + 1] - hp[k - 1]
+			var dz: float = hp[k + half + 2] - hp[k - half - 2]
+			# Gentle country exaggerated (up to 3x) so it still reads; mountains as they are.
+			var nrm := Vector3(-dx * exag, 2.0 * mpp, -dz * exag).normalized()
 			var lit: float = clampf(nrm.dot(light) * 1.05 + 0.12, 0.12, 1.2)
 			var col: Color = BIOME_COLORS["conifer_forest"]
 			if bcols > 0:

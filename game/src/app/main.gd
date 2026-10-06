@@ -102,9 +102,19 @@ func _open_new_game(random: bool = false) -> void:
 	add_child(panel)
 	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5
 	_list.visible = false
+	_set_title_visible(false)
 	panel.closed.connect(func() -> void:
 		panel.queue_free()
-		_list.visible = true)
+		_list.visible = true
+		_set_title_visible(true))
+
+
+## The big title would show beside (and under) the wide New Game panel.
+func _set_title_visible(on: bool) -> void:
+	for n: String in ["Title", "Subtitle"]:
+		var c: CanvasItem = get_node_or_null(n) as CanvasItem
+		if c != null:
+			c.visible = on
 
 
 ## Loads a slot; a damaged or newer save says why here instead of failing silently.

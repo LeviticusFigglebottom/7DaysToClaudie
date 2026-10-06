@@ -40,7 +40,7 @@ uniform float bloom_droop : hint_range(0.0, 1.0) = 0.0;
 uniform float bloom_thin : hint_range(0.0, 0.5) = 0.0;
 
 global uniform vec4 hm_season;
-global uniform float hm_wetness;
+#include "res://assets/shaders/weather.gdshaderinc"
 global uniform float hm_snow;
 
 varying vec3 v_world_normal;
@@ -89,8 +89,15 @@ void fragment() {
 		threshold = min(threshold + bloom_thin * w, 0.98);
 	}
 	vec3 orm = texture(orm_tex, UV).rgb;
-	float snow = hm_snow * smoothstep(0.3, 0.8, v_world_normal.y);
-	col = mix(col, vec3(0.85, 0.87, 0.9), snow);
+	// Snow rides the upper faces of fronds and needles, in clumps (ADR-0033); wet leaves darken a
+	// little under their film of water.
+	float snow = hm_snow * smoothstep(0.25, 0.75, v_world_normal.y);
+	if (snow > 0.001) {
+		snow = smoothstep(0.0, 0.3, snow * 1.2 - (wx_noise(UV * 7.0 + COLOR.b * 11.0) - 0.5) * 0.5 * (1.0 - hm_snow));
+	}
+	col = mix(col, vec3(0.88, 0.9, 0.93), snow);
+	col *= mix(1.0, 0.82, hm_wetness * (1.0 - snow));
+	trans *= 1.0 - 0.6 * snow;
 	ALBEDO = col * mix(1.0, COLOR.r, ao_strength);
 	vec2 texel = UV * vec2(textureSize(albedo_tex, 0));
 	vec2 ddx = dFdx(texel);

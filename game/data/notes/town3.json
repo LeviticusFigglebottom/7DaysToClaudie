@@ -1,0 +1,110 @@
+{
+  "_doc": "Readable notes of the town pool buildings (Suds & Spin Laundromat, Hollowmere Grocery, Bracken Lumber & Feed, Pell County Library, KHLW Valley Radio). Pool buildings stand in whatever town a run builds, so the notes name people, not the town. Each advances its building's story and hints at the way through (items: items/town3.json note_<id>).",
+  "defs": [
+    {
+      "id": "t3_suds_notice",
+      "title": "Notice in the Window",
+      "style": "printed",
+      "author": "Suds & Spin",
+      "body": "CLOSED BY ORDER OF THE CORDON\nWater pressure is off until further notice.\nLaundry left after the 14th goes to the relief drive at the grange.\n\nTenants: the stair door stays LOCKED. Knock at the office if you need me. - D. Varga\n\nUnderneath, in marker: WE ARE STILL UPSTAIRS. FRONT FLAT. DO NOT BREAK IN. - BAUER"
+    },
+    {
+      "id": "t3_suds_ledger",
+      "title": "Dee's Change Book",
+      "style": "handwritten",
+      "author": "Dolores Varga",
+      "body": "Quarters out: 40 rolls. Quarters in: who knows, the machines are full of them.\n\nDay 4. Hal in 2 coughing through the wall all night. Brought him soup. He wouldn't open up.\nDay 6. Tom Bauer nailed their door shut from inside and told me to keep the stair locked. I said I would. Stair key stays on the board in here, nowhere else.\nDay 8. Something in the big dryer at the end. I'm not opening it. I put a towel over the glass.\nDay 9. Hal is quiet. The Bauers are knocking on their side of his wall, or he is knocking on theirs.\nDay 10. If you are reading this the back door bolts from the inside. Go out that way. Don't come back for me."
+    },
+    {
+      "id": "t3_suds_bauer",
+      "title": "Anja's Note",
+      "style": "scrawl",
+      "author": "Anja Bauer",
+      "body": "He came through the WALL. Not the door, the wall, behind the couch, with his hands.\nTom held the hole with the fire axe and told me to take Max out the bathroom window onto the sign and down. We did. Max is with the Lindqvists, the library woman, she has a cellar.\nTom wouldn't come. He says he can hold it.\nEverything we saved is on the kitchen shelves. Whoever you are, take it. Just don't let him follow you."
+    },
+    {
+      "id": "t3_grocery_ration",
+      "title": "Ration Notice",
+      "style": "printed",
+      "author": "Tamsin Valley Cordon",
+      "body": "BY ORDER OF THE CORDON - RATION LIMITS IN FORCE\nOne basket per household per day. Cash or relief scrip only.\nNo bulk sales. No sales of bleach, fuel, ammunition.\nCold room stock is requisitioned for the relief drive. Do not sell from the cold room.\n\nScrawled across it: THEY NEVER CAME FOR IT"
+    },
+    {
+      "id": "t3_grocery_log",
+      "title": "Manager's Log",
+      "style": "handwritten",
+      "author": "Ruth Halloran",
+      "body": "Mon. Cordon tagged the cold room for relief. Danny and I counted it twice. Northline's reefer turned back at the roadblock and the driver parked it out back and walked.\nWed. Shelving in 3 came down on a man fighting over the last of the bleach. We never stood it back up.\nFri. Danny bitten on the dock. He won't let me look. He asked to go in the cold room where it's cool. I locked it. I put the alarm from the hardware on the door so I'll hear if he tries.\nSat. Sal won't leave his counter. Keys to the cold room on my desk. The railing on the mezzanine is loose by the stair, I keep meaning to.\nSun. I can hear Danny walking. The alarm hasn't gone. I'm going to sit down for a while."
+    },
+    {
+      "id": "t3_grocery_lading",
+      "title": "Bill of Lading",
+      "style": "typed",
+      "author": "Northline Foods",
+      "body": "NORTHLINE FOODS - BILL OF LADING\nConsignee: Hollowmere Grocery / Cordon Relief (diverted)\nTrailer: reefer pup 28', unit 11\nLoad: 14 plts mixed dry goods, 6 plts frozen protein, 2 plts bottled water\nTemp: hold -18C\n\nDriver's note, pencil: Refused at the roadblock. Unit is out of fuel by Thursday. Parked behind the store, keys in the cab. The frozen is going to go. God help whoever opens it."
+    },
+    {
+      "id": "t3_bracken_order",
+      "title": "Requisition Order",
+      "style": "typed",
+      "author": "Tamsin Valley Cordon",
+      "body": "REQUISITION - CIVIL EMERGENCY\nBracken Lumber & Feed\nAll dimensional lumber 2x4 and up, all fencing wire, all bagged feed, all seed stock, to be held for collection by Cordon engineers.\nOwner to retain receipt. Compensation after the emergency.\n\nWalt's hand at the bottom: Collected nothing. Came for my boy instead. - W.B."
+    },
+    {
+      "id": "t3_bracken_tally",
+      "title": "Yard Tally",
+      "style": "handwritten",
+      "author": "Cal Bracken",
+      "body": "Lumber left: 2x4 x 6 bundles, 2x6 x 3, fence posts 40.\nForklift on its last tank. Feed in the loft.\nEli got scratched in the yard Tuesday, Dad says it's nothing.\nDad's been carrying the good stuff up the leg to the head house, says nobody'll climb a grain leg for it. The catwalk boards in the shed are rotten at the far end, don't step past the tool crate.\nI'm taking the truck to the roadblock for help. Back by dark."
+    },
+    {
+      "id": "t3_bracken_walt",
+      "title": "Note in the Head House",
+      "style": "scrawl",
+      "author": "Walt Bracken",
+      "body": "Cal didn't come back.\nEli is in my office. I locked him in and wired the old 12 gauge to the door so nobody walks in on him the way I nearly did. The key is here with me.\nWhat's worth having is in the office safe with him. I couldn't make myself carry it past him.\nI'm going to sit up here a while where he can't climb. If you need the stash you'll have to go through my son. I'm sorry. Make it quick for him."
+    },
+    {
+      "id": "t3_library_returns",
+      "title": "Returns Book",
+      "style": "handwritten",
+      "author": "Ida Lindqvist",
+      "body": "Overdue and I don't care: Field Medicine (2 copies), Root Cellars, Small Engine Repair, every book on the county's caves.\nCordon came for the county records and the old survey maps. I said the county records stay in the county. They boxed them into the basement cage instead and wired an alarm to it. I have the cage key; they have the code.\nStory time cancelled.\nA boy from over the laundromat came in on his own. Max. He doesn't talk. I read to him in the children's corner every night.\nI nailed the street door's stair shut and bolted the front. The fire-escape ladder at the back is the only way in now."
+    },
+    {
+      "id": "t3_library_ida",
+      "title": "Ida's Diary",
+      "style": "handwritten",
+      "author": "Ida Lindqvist",
+      "body": "They come into the reading room at dusk and sit at the tables like they used to. They don't read. They just sit.\nThe floor in the stacks gives them away, every board, so I always know where they are.\nThe Cordon's clerk was down in the cage boxing the records when it started. He's still down there. I locked the cage on him. The key is on the hook by my door; the cellar stair is in the workroom.\nThis morning Max was gone and the fire-escape ladder was down.\nThe front door bolts from inside. I am going to read for a while."
+    },
+    {
+      "id": "t3_library_archive",
+      "title": "Archive Tag",
+      "style": "printed",
+      "author": "Tamsin Valley Cordon",
+      "body": "CORDON HOLD - COUNTY RECORDS & SURVEY ARCHIVE\nDo not remove. Alarmed.\nContents: deeds, survey plats 1931-, mine maps (Corvane), medical stock (relief)\nAuthorised: Lt. Voss\n\nPencil: the medical stock is in the last box on the left - I.L."
+    },
+    {
+      "id": "t3_khlw_day3",
+      "title": "Transcript, Day 3",
+      "style": "typed",
+      "author": "KHLW 1340",
+      "body": "KHLW EMERGENCY BROADCAST - DAY 3 - READ AS WRITTEN\nThis is the Tamsin Valley Cordon. Remain in your homes. Boil all water.\nAssembly points: the grange hall, St. Ansel's, the school gym.\nBuses will run from the assembly points at first light tomorrow.\nAnyone with a bite or a scratch must report to an aid station. You will be treated.\nThis message repeats on the hour.\n\nHandwritten on the back: buses didn't come. still reading it. - Mel"
+    },
+    {
+      "id": "t3_khlw_day9",
+      "title": "Transcript, Day 9",
+      "style": "typed",
+      "author": "KHLW 1340",
+      "body": "KHLW EMERGENCY BROADCAST - DAY 9 - READ AS WRITTEN\nThe Cordon line holds at Route 9. Do not approach the line.\nThere will be no further evacuations. Shelter in place.\nThe following are listed as missing: ...\n\nThe rest is a list of names, two pages of it. Under the last one, in pencil: Lt. Voss left this morning. Bud says we keep reading it. Somebody out there has a radio. - Mel"
+    },
+    {
+      "id": "t3_khlw_bud",
+      "title": "Engineer's Log",
+      "style": "handwritten",
+      "author": "Bud Kearney",
+      "body": "Generator on the timer: 18:00 to 06:00, the loop plays itself. Diesel for maybe a month more.\nThe STL relay up the mast keeps dropping out. Cordon's emergency kit is in the relay cabinet on the top platform, Voss's orders, key on my ring.\nCut a hole in the back wall of the equipment room for the generator cable, the conduit was crushed. Never patched it.\nMel won't come out of the booth. Keeps the ON AIR light on. Says it's company.\nGot bit fixing the beacon. Going up to fix the relay one last time. If I don't come down, the key's on me. Keep the light burning."
+    }
+  ]
+}

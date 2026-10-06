@@ -71,7 +71,9 @@ const vec3 FLOOR_SUBSTRATE[8] = vec3[](
 	vec3(0.12, 0.08, 0.05), vec3(0.12, 0.08, 0.05), vec3(0.21, 0.19, 0.15), vec3(0.2, 0.19, 0.17));
 const float FLOOR_PEEL[8] = float[](0.3, 0.35, 0.25, 0.4, 0.7, 0.8, 0.2, 0.0);
 
-global uniform float hm_wetness;
+// Weather (ADR-0033): exterior faces take driven rain and darken by their porosity; floors open to
+// the sky soak like the ground. hm_wetness comes with the include.
+#include "res://assets/shaders/weather.gdshaderinc"
 // 0 for pieces under a roof (PoiBuilder batches indoor floors separately): rain never reaches them.
 // Same slot as std_surface's (furniture and fixtures share the indoor batches' instances).
 instance uniform float weather_exposure : instance_index(3) = 1.0;
@@ -303,10 +305,36 @@ void fragment() {
 	} else {
 		albedo *= 1.0 - decay * 0.25;
 	}
+	float wet = 0.0;
+	if (weather_exposure > 0.0 && hm_wetness > 0.0) {
+		if (exterior) {
+			wet = hm_wetness * (edge ? 0.6 : 0.85);
+		} else if (floor_top) {
+			wet = hm_wetness * wx_exposed(v_world, 1.0);
+		}
+		wet *= weather_exposure;
+	}
+	if (wet > 0.0) {
+		float porosity = clamp((rough - 0.35) / 0.5, 0.0, 1.0) * (1.0 - orm.b);
+		if (exterior && hm_rain.x > 0.02) {
+			// Runs: while it rains, water sheets down an outside wall in thin rivulets that wander
+			// and bead, wetter and glossier than the wall round them.
+			float col = m.x * 7.0 + 0.35 * sin(m.y * 2.3 + floor(m.x * 7.0) * 1.7);
+			float lane = floor(col);
+			float on = step(0.55, wx_hash(vec2(lane, 3.7)));
+			float line = 1.0 - smoothstep(0.0, 0.09, abs(fract(col) - 0.5));
+			float bead = 0.6 + 0.4 * smoothstep(0.6, 1.0, fract(-m.y * 1.3 + TIME * (0.5 + wx_hash(vec2(lane, 9.1))) + wx_hash(vec2(lane, 1.3))));
+			float run = line * on * bead * hm_rain.x;
+			wet = min(1.0, wet + run);
+			porosity *= 1.0 - run;
+		}
+		albedo = wx_wet_albedo(albedo, wet, porosity);
+		rough = wx_wet_roughness(rough, wet, porosity);
+	}
 	ALBEDO = albedo;
 	AO = ao;
 	AO_LIGHT_AFFECT = 0.4;
-	ROUGHNESS = clamp(rough - hm_wetness * weather_exposure * 0.2 * float(is_floor), 0.05, 1.0);
+	ROUGHNESS = clamp(rough, 0.05, 1.0);
 	METALLIC = orm.b;
 	NORMAL_MAP = nmap;
 	NORMAL_MAP_DEPTH = 0.8;

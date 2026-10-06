@@ -9,6 +9,9 @@
 // direction at the moon, shaded with the Lommel-Seeliger law (a full moon is flat, not limb-dark).
 // The night side keeps a faint earthshine, strongest at new moon when the Earth is "full" from the
 // moon. Moonlight brightens the night sky, silvers the clouds and drowns the fainter stars.
+// Lightning (ADR-0033) lights the cloud deck from within, most of all over the strike, and a strike
+// near enough draws its bolt: a jagged channel from the cloud base down to the horizon on its
+// bearing, wandering a few hundred metres, with a glow round it.
 shader_type sky;
 render_mode use_half_res_pass;
 
@@ -47,6 +50,30 @@ uniform float moon_sky = 0.0;
 uniform float star_visibility = 1.0;
 // The star sphere turns about the celestial pole once a sidereal day (EnvironmentController).
 uniform mat3 star_rotation = mat3(1.0);
+// Lightning: the flash on the clouds, toward the strike's cloud base; the bolt's brightness, shape
+// seed and distance (m).
+uniform float lightning = 0.0;
+uniform vec3 lightning_dir = vec3(0.0, 1.0, 0.0);
+uniform float bolt = 0.0;
+uniform float bolt_seed = 0.0;
+uniform float bolt_distance = 3000.0;
+
+float bolt_hash(float n) {
+	return fract(sin(n * 12.9898 + bolt_seed * 78.233) * 43758.5453);
+}
+
+float bolt_noise(float x) {
+	float i = floor(x);
+	float f = fract(x);
+	return mix(bolt_hash(i), bolt_hash(i + 1.0), f * f * (3.0 - 2.0 * f));
+}
+
+// Sideways wander of the channel (radians of azimuth) at height t (0 ground .. 1 cloud base).
+float bolt_path(float t) {
+	float w = (bolt_noise(t * 5.0) - 0.5) + (bolt_noise(t * 13.0 + 3.1) - 0.5) * 0.5 + (bolt_noise(t * 37.0 + 7.7) - 0.5) * 0.22
+		+ (bolt_noise(t * 97.0 + 1.3) - 0.5) * 0.08;
+	return w * 380.0 / max(bolt_distance, 100.0);
+}
 
 float cloud_density(vec2 uv, vec2 drift) {
 	vec4 n = texture(cloud_tex, uv);
@@ -128,7 +155,34 @@ void sky() {
 		float streak = texture(cloud_tex, vec2(cuv.x * 0.35, cuv.y * 1.4) + vec2(0.13, 0.57)).g;
 		float cirrus = smoothstep(0.55, 0.9, streak) * (1.0 - cloud_cover) * 0.45 * smoothstep(0.02, 0.3, up);
 		col = mix(col, mix(lit, horizon_color.rgb, 0.3) * mix(1.0, 0.05 + moon_sky * 0.35, night_amount), cirrus);
+		// Lightning lights the deck from inside: thick cores glow, the strike's quarter most.
+		if (lightning > 0.001) {
+			float toward = pow(max(dot(dir, lightning_dir), 0.0), 3.0);
+			cloud_col += vec3(0.7, 0.76, 1.0) * lightning * (0.12 + 0.88 * toward) * (0.35 + 0.65 * core);
+			col += vec3(0.5, 0.55, 0.75) * lightning * 0.08 * (0.3 + toward);
+		}
 		col = mix(col, cloud_col, cloud_alpha);
+	}
+	// The bolt, from the cloud base over the strike down to the horizon.
+	if (bolt > 0.001) {
+		float baz = atan(lightning_dir.z, lightning_dir.x);
+		float top = asin(clamp(lightning_dir.y, -1.0, 1.0));
+		float el = asin(clamp(up, -1.0, 1.0));
+		if (el > -0.005 && el < top) {
+			float t = el / max(top, 1e-3);
+			float daz = mod(atan(dir.z, dir.x) - baz + 3.14159265, 6.2831853) - 3.14159265;
+			float dx = (daz - bolt_path(t)) * cos(el);
+			// A core a pixel or two wide and a glow round it; a fork leaves it halfway down.
+			float w = 0.0012 + 0.0006 * (1.0 - t);
+			float core = exp(-dx * dx / (w * w));
+			float glow = exp(-abs(dx) / (w * 14.0)) * 0.35;
+			float fork = 0.0;
+			if (t > 0.25 && t < 0.62) {
+				float fx = (daz - bolt_path(0.62) - (0.62 - t) * 0.5 * (bolt_hash(5.0) - 0.3) * 600.0 / max(bolt_distance, 100.0) - (bolt_noise(t * 41.0 + 9.0) - 0.5) * 0.06 * 380.0 / max(bolt_distance, 100.0)) * cos(el);
+				fork = exp(-fx * fx / (w * w * 0.4)) * smoothstep(0.25, 0.45, t) * 0.6;
+			}
+			col += vec3(0.85, 0.9, 1.0) * (core * 9.0 + glow + fork * 5.0) * bolt * smoothstep(-0.005, 0.01, up);
+		}
 	}
 
 	// Stars + aurora at night. Moonlight scatters in the air and drowns the faint stars, most of all

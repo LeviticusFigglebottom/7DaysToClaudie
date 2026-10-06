@@ -1,0 +1,25 @@
+{
+  "_doc": "Keys and readable notes of the town pool buildings (Suds & Spin Laundromat, Hollowmere Grocery, Bracken Lumber & Feed, Pell County Library, KHLW Valley Radio). Note items are note_<note id> (notes/town3.json); models come from blender_catalogs/props_town3.py ITEMS (models/items/town3/<id>.glb).",
+  "defs": [
+    {"id": "t3_suds_stair_key", "name": "Stair Door Key", "description": "Brass key on a red tag: 'STAIR - SUDS & SPIN - D.V.'", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/town3/t3_suds_stair_key"},
+    {"id": "t3_grocery_cold_key", "name": "Cold Room Key", "description": "Steel key on a store lanyard, 'WALK-IN' scratched into the bow.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/town3/t3_grocery_cold_key"},
+    {"id": "t3_bracken_office_key", "name": "Walt's Office Key", "description": "Worn steel key on a feed-store tag: 'OFFICE'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/town3/t3_bracken_office_key"},
+    {"id": "t3_library_cage_key", "name": "Archive Cage Key", "description": "Brass key tagged 'BASEMENT CAGE - CORDON HOLD'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/town3/t3_library_cage_key"},
+    {"id": "t3_khlw_relay_key", "name": "Relay Cabinet Key", "description": "Steel key on an engineer's lanyard: 'RELAY - TOP PLATFORM'.", "category": "key", "stack_max": 1, "bulk": 0.0, "value": 0, "tags": ["key"], "model": "items/town3/t3_khlw_relay_key"},
+    {"id": "note_t3_suds_notice", "name": "Notice in the Window", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_suds_notice", "model": "items/town3/note_t3_suds_notice"},
+    {"id": "note_t3_suds_ledger", "name": "Dee's Change Book", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_suds_ledger", "model": "items/town3/note_t3_suds_ledger"},
+    {"id": "note_t3_suds_bauer", "name": "Anja's Note", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_suds_bauer", "model": "items/town3/note_t3_suds_bauer"},
+    {"id": "note_t3_grocery_ration", "name": "Ration Notice", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_grocery_ration", "model": "items/town3/note_t3_grocery_ration"},
+    {"id": "note_t3_grocery_log", "name": "Manager's Log", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_grocery_log", "model": "items/town3/note_t3_grocery_log"},
+    {"id": "note_t3_grocery_lading", "name": "Bill of Lading", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_grocery_lading", "model": "items/town3/note_t3_grocery_lading"},
+    {"id": "note_t3_bracken_order", "name": "Requisition Order", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_bracken_order", "model": "items/town3/note_t3_bracken_order"},
+    {"id": "note_t3_bracken_tally", "name": "Yard Tally", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_bracken_tally", "model": "items/town3/note_t3_bracken_tally"},
+    {"id": "note_t3_bracken_walt", "name": "Note in the Head House", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_bracken_walt", "model": "items/town3/note_t3_bracken_walt"},
+    {"id": "note_t3_library_returns", "name": "Returns Book", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_library_returns", "model": "items/town3/note_t3_library_returns"},
+    {"id": "note_t3_library_ida", "name": "Ida's Diary", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_library_ida", "model": "items/town3/note_t3_library_ida"},
+    {"id": "note_t3_library_archive", "name": "Archive Tag", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_library_archive", "model": "items/town3/note_t3_library_archive"},
+    {"id": "note_t3_khlw_day3", "name": "Transcript, Day 3", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_khlw_day3", "model": "items/town3/note_t3_khlw_day3"},
+    {"id": "note_t3_khlw_day9", "name": "Transcript, Day 9", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_khlw_day9", "model": "items/town3/note_t3_khlw_day9"},
+    {"id": "note_t3_khlw_bud", "name": "Engineer's Log", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "t3_khlw_bud", "model": "items/town3/note_t3_khlw_bud"}
+  ]
+}

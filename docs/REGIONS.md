@@ -75,3 +75,49 @@ Built regions compose at 1 m (cached in `user://cache/worlds/<world>/<region>_10
 input hash incl. composer VERSION); others at 16 m for far tiles. Near terrain streams in 64 m
 chunks around the player, vegetation in 64 m chunks (deterministic scatter), navigation in 32 m
 tiles, SDF volumes in 16 m chunks, POIs per placement.
+
+## Random worlds (ADR-0031)
+A random world is the same structure, written by a generator instead of by hand. `RwgGenerator`
+(`game/src/worldgen/rwg/`) is a pure function of a map seed, the settings of
+`game/data/config/world_gen.json` (size, terrain, roughness, biome mix, rivers, lakes, towns and
+their size, wilderness density, road density; six presets) and its `VERSION`. It writes
+`user://worlds/random/<world id>/`:
+
+```
+world.json        same keys as the main map's, plus:
+                    macro.step     the macro grid's spacing (32 m: the land lives in the grid)
+                    road_grade     "world": world roads graded from macro + world noise, one
+                                   profile on both sides of a region border
+                    biome_map      {ids, step: 64, cols, rows, rows_data: ["0012..", ...]} base biomes
+                    generator      {version, settings, towns, places, drop_site, timings_ms, warnings}
+                    rivers[].level / width   N values spaced evenly along the river (Polyline2.value_at)
+regions/<cell>_<name>/region.json   framework / poi / path / clearing / spawn / bloom features
+frameworks.json   the towns: generated frameworks (lots, streets, fixtures), registered with
+                  ContentDB before the world loads
+map.png, meta.json   the map (RwgMap) and the settings key the folder was made from
+```
+Every region is `built`. Region-local rules still hold: towns and places stay 64-72 m inside their
+region, trails crossing a border are listed in both regions, everything crossing borders (rivers,
+lakes, roads) is world-level. The world id hashes seed + settings + version, so the folder is a
+cache; composed terrain caches under `user://cache/worlds/<world id>/`.
+
+What it makes, in order: the land (ranges, valleys carved by drainage, lakes in basins, rivers
+traced down to a lake or the map edge), towns on level dry ground (row-street or crossroads plans,
+zoned lots, fixtures; LotPicker fills them per run), the road network (spanning tree + loops + exits, joining at
+junctions, bridges at crossings), the drop site and its trail, danger by distance from it, the biome
+map, the places (lookouts on summits, cabins and camps in the forest, the campground and sawmill by
+water, the boathouse over a lake, gas stations, motels and diners on the highways, the Okafor farm,
+the Ashen camp far out) with drives, tracks and trails, and Bloom patches in the far regions.
+
+Tools:
+* `godot --headless --path game -s res://src/tools/cli/rwg_preview.gd -- --seed 1234 --size 5 --out
+  /abs/map.png [--preset highlands] [--set towns=4 --set lakes=many] [--fresh] [--compose]`: the
+  world's summary and map; `--compose` shapes every region into the cache.
+* `... -s res://src/tools/cli/rwg_preview_shots.gd -- --out /abs/dir --world-seed N [--world-set k=v]`
+  under Xvfb: in-world shots of a town street, the town from above, a river valley, a wilderness
+  place, the drop site and the land from the air.
+* `... -s res://src/tools/cli/rwg_preview_menu.gd -- --out /abs/menu.png [--world-seed N]` under Xvfb:
+  the New Game screen's World tab with a generated preview (UI QA).
+* `godot --path game -- --new-game --world random --world-seed 77 --world-set size=3` starts one;
+  `slice_smoke.gd -- --world random --world-seed 7 --world-set size=3` runs the smoke on one.
+* Tuning lives in `world_gen.json` `tuning`; `make validate` checks the file's schema.

@@ -48,7 +48,7 @@
     "rivers": {
       "_doc": "catchment: km² a river must drain at its mouth (a tributary 0.6 of that where it joins); head: km² where a traced river starts; count: most rivers per km² of map (none/few/some/many).",
       "catchment": {"none": 0.0, "few": 0.6, "some": 0.3, "many": 0.15},
-      "head": 0.05,
+      "head": 0.1,
       "count": {"none": 0.0, "few": 0.07, "some": 0.16, "many": 0.32},
       "min_length": 450,
       "width": [6, 24],
@@ -63,12 +63,12 @@
       "shore": 18
     },
     "towns": {
-      "_doc": "Town kinds: rows of streets with lots on both sides. lots: lots per side of a row street between cross streets; rows: parallel row streets; segments: stretches between cross streets.",
+      "_doc": "Town kinds: rows of streets with lots on both sides. lots: lots per side of a row street between cross streets; rows: parallel row streets; segments: stretches between cross streets; crossroads: the chance of a crossroads plan instead (a main and a cross street, lots along all four arms, arm_lots per side of an arm, corner lots in the angles).",
       "mix": {"hamlets": {"hamlet": 1.0}, "villages": {"village": 1.0}, "mixed": {"hamlet": 1.0, "village": 1.2, "town": 0.6}, "towns": {"village": 0.6, "town": 1.0}},
       "kinds": {
         "hamlet": {"rows": 1, "segments": 1, "lots": [3, 4], "commercial": 1, "civic": 0},
-        "village": {"rows": 2, "segments": 1, "lots": [4, 5], "commercial": 2, "civic": 1},
-        "town": {"rows": 2, "segments": 2, "lots": [3, 4], "commercial": 4, "civic": 2}
+        "village": {"rows": 2, "segments": 1, "lots": [4, 5], "commercial": 2, "civic": 1, "crossroads": 0.5, "arm_lots": [2, 3]},
+        "town": {"rows": 2, "segments": 2, "lots": [3, 4], "commercial": 4, "civic": 2, "crossroads": 0.4, "arm_lots": [3, 4]}
       },
       "street": {"main": 8.0, "side": 6.0, "verge": 3.0, "margin": 6.0, "entry": 14.0},
       "lot": {"residential": [20, 23], "commercial": [28, 28], "civic": [32, 32], "industrial": [26, 26], "main_depth": 32, "back_depth": 26},

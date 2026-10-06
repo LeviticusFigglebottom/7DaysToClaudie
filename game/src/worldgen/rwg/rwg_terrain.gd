@@ -192,8 +192,9 @@ func _shape(prof: Dictionary, rough: float) -> void:
 	ridge.seed = Ids.derive_seed(_seed, "rwg:ridge") & 0x7fffffff
 	ridge.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	ridge.fractal_type = FastNoiseLite.FRACTAL_RIDGED
-	ridge.fractal_octaves = 3 + int(round(rough * 2.0))
-	ridge.frequency = 1.0 / 1300.0
+	ridge.fractal_octaves = 3 + int(round(rough))
+	ridge.fractal_gain = 0.42
+	ridge.frequency = 1.0 / 1500.0
 	ridge.domain_warp_enabled = true
 	ridge.domain_warp_amplitude = 180.0
 	ridge.domain_warp_frequency = 1.0 / 1600.0
@@ -350,6 +351,28 @@ func _flood() -> void:
 	for k2: int in count:
 		if lake_of[k2] < 0:
 			h[k2] = fill[k2]
+	# Drain each cell down its steepest fall on the filled surface (the flood's own links follow
+	# the order cells were reached, which can run a stream along a valley side above the floor).
+	# Every filled cell has a lower neighbour, so the links reach an outlet without cycles.
+	for k3: int in count:
+		if down[k3] < 0:
+			continue
+		var ci2: int = k3 % n
+		var cj2: int = k3 / n
+		var best: int = down[k3]
+		var best_fall: float = (fill[k3] - fill[best]) / (step * (1.4142 if (best % n) != ci2 and (best / n) != cj2 else 1.0))
+		for d2: Vector2i in NB8:
+			var ni2: int = ci2 + d2.x
+			var nj2: int = cj2 + d2.y
+			if ni2 < 0 or nj2 < 0 or ni2 >= n or nj2 >= n:
+				continue
+			var nb2: int = nj2 * n + ni2
+			var fall: float = (fill[k3] - fill[nb2]) / (step * (1.4142 if d2.x != 0 and d2.y != 0 else 1.0))
+			if fall > best_fall:
+				best_fall = fall
+				best = nb2
+		down[k3] = best
+	# Upstream before downstream: the flood reached cells in rising order of filled height.
 	for o: int in range(oi - 1, -1, -1):
 		var c2: int = order[o]
 		if down[c2] >= 0:
@@ -511,6 +534,30 @@ func _trace(path: PackedInt32Array, mouth: String, r: RandomNumberGenerator, wor
 		lv.append(run_min)
 		var a: float = accum[c] * cell_km2
 		wd.append(clampf(float(wr[0]) + (float(wr[1]) - float(wr[0])) * sqrt(a / 25.0), float(wr[0]), float(wr[1])))
+	# Carve the bed into the grid and mark the cells (roads pay to cross them). The banks beside it
+	# come down toward the water, but never another river's bed (on a steep stretch a lower cell's
+	# bank would otherwise cut under the water upstream).
+	for k3: int in path.size():
+		var c6: int = path[k3]
+		if lake_of[c6] >= 0:
+			continue
+		if river_of[c6] < 0:
+			river_of[c6] = ri
+		h[c6] = minf(h[c6], lv[k3] + 0.4)
+	for k4: int in path.size():
+		var c8: int = path[k4]
+		if lake_of[c8] >= 0:
+			continue
+		var ci: int = c8 % n
+		var cj: int = c8 / n
+		for d: Vector2i in NB8:
+			var ni: int = ci + d.x
+			var nj: int = cj + d.y
+			if ni < 0 or nj < 0 or ni >= n or nj >= n:
+				continue
+			var nb: int = nj * n + ni
+			if lake_of[nb] < 0 and river_of[nb] < 0:
+				h[nb] = minf(h[nb], lv[k4] + 0.4 + step * 0.12)
 	# Control points every third cell, nudged off the grid's diagonals a little.
 	var ctrl := PackedVector2Array()
 	var nz := FastNoiseLite.new()
@@ -537,14 +584,23 @@ func _trace(path: PackedInt32Array, mouth: String, r: RandomNumberGenerator, wor
 		return
 	var line: Polyline2 = Polyline2.from_array(_arr(ctrl))
 	var total: float = maxf(1.0, line.total_length)
-	var samples: int = clampi(int(ceil(total / 48.0)) + 1, 2, 256)
+	var samples: int = clampi(int(ceil(total / 20.0)) + 1, 2, 400)
 	var levels := PackedFloat32Array()
 	var widths := PackedFloat32Array()
+	# Each sample of the smoothed line takes the level of the cell path where it actually is (its
+	# closest point on the path), not of the same fraction of the path's length: the two lengths
+	# differ, and on a steep stretch that put the water metres above the land.
+	var cell_pts: Array = []
+	for c7: int in path:
+		var cp: Vector2 = pos(c7)
+		cell_pts.append([cp.x, cp.y])
+	var cell_line: Polyline2 = Polyline2.from_array(cell_pts, 0.0)
 	var prev: float = INF
 	for s: int in samples:
-		var f: float = float(s) / (samples - 1)
-		var dd: float = f * acc_d
-		var v: float = _interp(dist, lv, dd)
+		var at: Vector2 = line.point_at(total * float(s) / (samples - 1))
+		var dd: float = cell_line.closest(at).y if cell_line.points.size() > 1 else 0.0
+		# Never above the ground under the line itself (it can cut a bend across lower ground).
+		var v: float = minf(_interp(dist, lv, dd), maxf(height(at.x, at.y) - 0.9, mouth_level))
 		prev = minf(prev, v)
 		levels.append(snappedf(prev, 0.01))
 		widths.append(snappedf(_interp(dist, wd, dd), 0.1))
@@ -558,24 +614,6 @@ func _trace(path: PackedInt32Array, mouth: String, r: RandomNumberGenerator, wor
 	rivers.append({"id": "river_%d" % ri, "name": name, "control": ctrl, "line": line, "levels": levels, "widths": widths,
 		"depth": snappedf(depth, 0.1), "bank": float(cfg.get("bank", 6.0)), "valley_width": snappedf(90.0 + wmax * 3.0, 1.0),
 		"valley_slope": 0.16, "mouth": mouth, "cells": path, "cell_levels": lv})
-	# Carve the bed into the grid and mark the cells (roads pay to cross them).
-	for k3: int in path.size():
-		var c6: int = path[k3]
-		if lake_of[c6] >= 0:
-			continue
-		if river_of[c6] < 0:
-			river_of[c6] = ri
-		h[c6] = minf(h[c6], lv[k3] + 0.4)
-		var ci: int = c6 % n
-		var cj: int = c6 / n
-		for d: Vector2i in NB8:
-			var ni: int = ci + d.x
-			var nj: int = cj + d.y
-			if ni < 0 or nj < 0 or ni >= n or nj >= n:
-				continue
-			var nb: int = nj * n + ni
-			if lake_of[nb] < 0:
-				h[nb] = minf(h[nb], lv[k3] + 0.4 + step * 0.12)
 
 
 func _river_level_at_cell(ri: int, c: int) -> float:

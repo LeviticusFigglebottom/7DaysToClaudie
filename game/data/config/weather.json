@@ -1,0 +1,92 @@
+{
+  "_doc": "Shared weather rates and looks (ADR-0033). Each state's own numbers (rain, snow, wind, gust, lightning, ground_fog, haze) are in data/weather/weather.json. Times are game minutes unless named _s (real seconds) or _m (metres).",
+  "wetness": {
+    "_doc": "Surfaces soak through in wet_minutes of full rain and dry in dry_minutes of still, overcast air; sun (x sun_dry) and wind (x 1 + wind_dry * wind) dry them faster. Standing water starts once surfaces are soaked past puddle_after, fills in puddle_fill_minutes of full rain and drains or dries in puddle_dry_minutes.",
+    "wet_minutes": 30.0,
+    "dry_minutes": 170.0,
+    "sun_dry": 1.6,
+    "wind_dry": 0.8,
+    "puddle_after": 0.55,
+    "puddle_fill_minutes": 70.0,
+    "puddle_dry_minutes": 420.0
+  },
+  "snow": {
+    "_doc": "Snow cover builds over build_minutes of full snowfall and melts over melt_minutes (melt_minutes_winter in winter); rain washes it away over rain_melt_minutes.",
+    "build_minutes": 120.0,
+    "melt_minutes": 300.0,
+    "melt_minutes_winter": 2400.0,
+    "rain_melt_minutes": 90.0
+  },
+  "lightning": {
+    "_doc": "Strikes are a pure function of the world seed and the game clock (LightningModel): each slot_minutes slot holds one with chance rate x slot / 60. A strike lands distance_m away (log-uniform: most are far), on a bearing and with 1..4 return strokes stroke_gap_s apart, each flashing for flash_s. The flash lights the cloud deck (sky_flash) and throws a hard shadow from the sky over the strike (light_energy, fading to nothing by light_far_m); a bolt is drawn in the sky within bolt_within_m. Thunder arrives distance / speed_of_sound real seconds later: a crack and rumble within thunder_near_m, a low roll beyond, from thunder_db[0] close by to thunder_db[1] at the far end.",
+    "slot_minutes": 0.5,
+    "distance_m": [350.0, 9000.0],
+    "strokes": [1, 4],
+    "stroke_gap_s": [0.05, 0.18],
+    "flash_s": 0.11,
+    "sky_flash": 3.0,
+    "light_energy": 2.2,
+    "light_far_m": 6000.0,
+    "bolt_within_m": 6000.0,
+    "speed_of_sound": 343.0,
+    "thunder_near_m": 1600.0,
+    "thunder_db": [0.0, -22.0]
+  },
+  "precipitation": {
+    "_doc": "Rain and snow drawn around the camera (WeatherFx, precipitation.gdshader). Drops and flakes at full strength by graphics preset, spawned in a camera-centred column box = [half-width, metres above, metres below]; they stop where the weather map says rain lands (roofs, ground, water) and rain splashes there. wind_push: metres per second of drift at full wind. Streaks are streak_length x streak_width metres; flakes flake_size metres across.",
+    "rain_drops": {"low": 2500, "medium": 5000, "high": 8000, "ultra": 12000},
+    "snow_flakes": {"low": 2000, "medium": 3500, "high": 5500, "ultra": 8000},
+    "box": [16.0, 12.0, 4.0],
+    "rain_speed": 8.0,
+    "snow_speed": 1.1,
+    "wind_push": 5.0,
+    "streak_length": 0.5,
+    "streak_width": 0.0085,
+    "flake_size": [0.02, 0.045],
+    "splash_size": 0.15,
+    "splash_s": 0.24,
+    "drips": {
+      "_doc": "Drips from roof eaves: found on the weather map where a roof edge stands min_drop_m or more over open ground beside it, at most max_points around the camera within radius_m, each dripping rate times a second at full wetness (they keep dripping a while after the rain, as the roof drains).",
+      "max_points": 256,
+      "radius_m": 22.0,
+      "min_drop_m": 1.8,
+      "rate": 2.5,
+      "count": 900
+    }
+  },
+  "fog": {
+    "_doc": "Ground fog pools in hollows and over water at dawn and dusk. It gathers from dawn[0] hours after sunrise (negative: before), peaks at sunrise and burns off by dawn[1]; at dusk it gathers from sunset over dusk_hours to dusk_strength. Strength x the weather's ground_fog, fading as the wind rises past calm_wind. Near the camera it is a FogVolume whose density fills in below the local fog level (the low ground around, smoothed, plus depth_m; plus water_depth_m over water); far off it is the depth fog's height falloff (height_density) under the same level.",
+    "dawn": [-1.5, 3.2],
+    "dusk_hours": 2.5,
+    "dusk_strength": 0.55,
+    "calm_wind": 0.55,
+    "depth_m": 6.0,
+    "water_depth_m": 4.0,
+    "volume_density": 0.03,
+    "noise_scale": 0.05,
+    "height_density": 0.06,
+    "volume_size": [200.0, 60.0],
+    "god_rays": 2.4
+  },
+  "dust": {
+    "_doc": "Dust motes hanging in the air indoors by day (seen where light shafts cross them): count in a box of [half-width, half-height] metres round the camera, each size metres across, drifting drift metres per second.",
+    "count": 260,
+    "box": [4.0, 1.6],
+    "size": [0.006, 0.014],
+    "drift": 0.035
+  },
+  "maps": {
+    "_doc": "The weather map round the camera (WeatherMaps, shader global hm_weather_map): cells x cells of cell_m metres, rebuilt when the camera moves recentre_m from its centre. R = where rain lands (downward rays within the inner catch_cells, rays_per_frame a frame), G = the ground, B = the ground smoothed over hollow_m (puddles collect where the ground lies below it), A = the water surface.",
+    "cells": 128,
+    "cell_m": 1.5,
+    "catch_cells": 48,
+    "rays_per_frame": 192,
+    "recentre_m": 16.0,
+    "hollow_m": 9.0
+  },
+  "surfaces": {
+    "_doc": "Per terrain layer (data/materials/terrain_layers.json): puddle = how readily standing water collects on it (asphalt and mud hold it, litter and sand drink it); porosity = how much darker it turns soaked (dirt and litter darken most, sealed asphalt least).",
+    "puddle": {"forest_floor": 0.3, "moss_ground": 0.25, "grass_ground": 0.45, "dirt": 0.9, "mud": 1.0, "gravel": 0.65, "rock_cliff": 0.35, "sand": 0.12, "snow": 0.0, "asphalt_cracked": 1.0, "concrete_slab": 0.85},
+    "porosity": {"forest_floor": 0.9, "moss_ground": 0.8, "grass_ground": 0.6, "dirt": 1.0, "mud": 0.5, "gravel": 0.7, "rock_cliff": 0.55, "sand": 0.95, "snow": 0.0, "asphalt_cracked": 0.45, "concrete_slab": 0.8}
+  }
+}

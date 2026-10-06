@@ -18,8 +18,8 @@ var t: Terrain
 var blocked := PackedByteArray()
 ## 1 = on or beside a river (bridge country).
 var water := PackedByteArray()
-## 1 = a road already runs here.
-var on_road := PackedByteArray()
+## Road index + 1 of a road already running here (0: none).
+var on_road := PackedInt32Array()
 var grade_ok: float = 0.07
 var grade_max: float = 0.16
 var bridge_cost: float = 420.0
@@ -71,20 +71,25 @@ func block_polygon(poly: PackedVector2Array, grow: float) -> void:
 				blocked[j * t.n + i] = 1
 
 
-## Marks the cells along a polyline as road (cheaper for later routes).
-func mark(points: PackedVector2Array) -> void:
+## Marks the cells along a polyline as road `road_index` (cheaper for later routes).
+func mark(points: PackedVector2Array, road_index: int) -> void:
 	for k: int in points.size() - 1:
 		var a: Vector2 = points[k]
 		var b: Vector2 = points[k + 1]
 		var steps: int = maxi(1, int(ceil(a.distance_to(b) / (t.step * 0.5))))
 		for s: int in steps + 1:
 			var p: Vector2 = a.lerp(b, float(s) / steps)
-			on_road[t.cell(p.x, p.y)] = 1
+			var c: int = t.cell(p.x, p.y)
+			if on_road[c] == 0:
+				on_road[c] = road_index + 1
 
 
 ## A route from a to b: control points (a and b exact), or empty when there is none. `margin`
-## bounds the search to the pair's box grown by that much.
-func route(a: Vector2, b: Vector2, margin: float = 700.0) -> PackedVector2Array:
+## bounds the search to the pair's box grown by that much; `smooth` (0..1) how freely the grid's
+## corners are cut (highways most).
+func route(a: Vector2, b: Vector2, margin: float = 700.0, smooth: float = 0.5, grade_scale: float = 1.0) -> PackedVector2Array:
+	var g_ok: float = grade_ok * grade_scale
+	var g_max: float = grade_max * grade_scale
 	var n: int = t.n
 	var start: int = t.cell(a.x, a.y)
 	var goal: int = t.cell(b.x, b.y)
@@ -129,10 +134,10 @@ func route(a: Vector2, b: Vector2, margin: float = 700.0) -> PackedVector2Array:
 			var dist: float = t.step * (1.4142 if d.x != 0 and d.y != 0 else 1.0)
 			var gr: float = absf(t.h[nb] - hc) / dist
 			var cost: float = dist * (1.0 + 30.0 * gr * gr)
-			if gr > grade_ok:
-				cost *= 1.0 + (gr - grade_ok) * 25.0
-			if gr > grade_max:
-				cost *= 1.0 + (gr - grade_max) * 120.0
+			if gr > g_ok:
+				cost *= 1.0 + (gr - g_ok) * 25.0
+			if gr > g_max:
+				cost *= 1.0 + (gr - g_max) * 120.0
 			if water[nb] != 0:
 				cost += bridge_cost if water[c] == 0 else dist * 3.0
 			if on_road[nb] != 0:
@@ -143,7 +148,10 @@ func route(a: Vector2, b: Vector2, margin: float = 700.0) -> PackedVector2Array:
 				came[nb] = c
 				heap.push(ng + t.pos(nb).distance_to(gp) * reuse, nb)
 	if not found:
+		_last_cells = PackedInt32Array()
+		last_cost = INF
 		return PackedVector2Array()
+	last_cost = g[goal]
 	var cells := PackedInt32Array()
 	var k: int = goal
 	while k >= 0:
@@ -152,6 +160,16 @@ func route(a: Vector2, b: Vector2, margin: float = 700.0) -> PackedVector2Array:
 			break
 		k = came[k]
 	cells.reverse()
+	_last_cells = cells
+	return _points(cells, a, b, smooth)
+
+
+## The cells of the last route (empty when none was found) and its cost.
+var _last_cells := PackedInt32Array()
+var last_cost: float = INF
+
+
+func _points(cells: PackedInt32Array, a: Vector2, b: Vector2, smooth: float) -> PackedVector2Array:
 	var pts := PackedVector2Array()
 	for c2: int in cells:
 		pts.append(t.pos(c2))
@@ -160,7 +178,85 @@ func route(a: Vector2, b: Vector2, margin: float = 700.0) -> PackedVector2Array:
 		pts[pts.size() - 1] = b
 	if pts.size() == 1:
 		pts.append(b)
-	return simplify(pts, t.step * 0.45)
+	return relax(simplify(pts, t.step * lerpf(0.4, 0.85, smooth)), smooth)
+
+
+## A route split where it would run along roads already built: one piece per stretch over open
+## land, each ending on the road it meets (the caller snaps such ends onto that road's line), plus a
+## short connector wherever the route steps from one road straight onto another. The whole route
+## when it meets none; [] when there is no route. Each piece: {points, start_exact, end_exact}.
+func route_pieces(a: Vector2, b: Vector2, margin: float = 700.0, smooth: float = 0.5) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var whole: PackedVector2Array = route(a, b, margin, smooth)
+	if whole.is_empty():
+		return out
+	var cells: PackedInt32Array = _last_cells
+	var n: int = cells.size()
+	var runs: Array[Vector2i] = []
+	var cur_start: int = -1
+	for k: int in n:
+		var anchor: bool = k == 0 or k == n - 1
+		var road: int = 0 if anchor else on_road[cells[k]]
+		if road == 0:
+			if cur_start < 0:
+				cur_start = maxi(0, k - 1) if k > 0 else 0
+			continue
+		if cur_start >= 0:
+			runs.append(Vector2i(cur_start, k))
+			cur_start = -1
+		elif k > 1 and on_road[cells[k - 1]] != 0 and on_road[cells[k - 1]] != road:
+			runs.append(Vector2i(k - 1, k))
+	if cur_start >= 0:
+		runs.append(Vector2i(cur_start, n - 1))
+	if runs.size() == 1 and runs[0] == Vector2i(0, n - 1):
+		out.append({"points": whole, "start_exact": true, "end_exact": true})
+		return out
+	for r: Vector2i in runs:
+		var pa: Vector2 = a if r.x == 0 else t.pos(cells[r.x])
+		var pb: Vector2 = b if r.y == n - 1 else t.pos(cells[r.y])
+		out.append({"points": _points(cells.slice(r.x, r.y + 1), pa, pb, smooth), "start_exact": r.x == 0, "end_exact": r.y == n - 1})
+	if out.is_empty():
+		out.append({"points": whole, "start_exact": true, "end_exact": true})
+	return out
+
+
+## Cuts sharp corners: a point where the route turns hard is dropped when the straight line between
+## its neighbours is passable (no blocked cell, no steeper than the steepest grade allowed), so a
+## grid route's stair steps and doglegs become one bend.
+func relax(pts: PackedVector2Array, smooth: float) -> PackedVector2Array:
+	var limit: float = lerpf(0.75, 0.35, smooth)
+	for pass_i: int in 4:
+		var changed: bool = false
+		var i: int = 1
+		while i < pts.size() - 1:
+			var d0: Vector2 = (pts[i] - pts[i - 1]).normalized()
+			var d1: Vector2 = (pts[i + 1] - pts[i]).normalized()
+			if d0.dot(d1) < limit and _passable(pts[i - 1], pts[i + 1]):
+				pts.remove_at(i)
+				changed = true
+			else:
+				i += 1
+		if not changed:
+			break
+	return pts
+
+
+func _passable(a: Vector2, b: Vector2) -> bool:
+	var len_ab: float = a.distance_to(b)
+	if len_ab < 1.0:
+		return true
+	var steps: int = maxi(2, int(ceil(len_ab / (t.step * 0.5))))
+	var prev_h: float = t.height(a.x, a.y)
+	for k: int in range(1, steps + 1):
+		var p: Vector2 = a.lerp(b, float(k) / steps)
+		var c: int = t.cell(p.x, p.y)
+		if blocked[c] != 0 or (water[c] != 0 and on_road[c] == 0):
+			return false
+		var hv: float = t.height(p.x, p.y)
+		if absf(hv - prev_h) / (len_ab / steps) > grade_max * 1.1:
+			return false
+		prev_h = hv
+	return true
 
 
 ## Ramer-Douglas-Peucker: drops points within `tol` of the line between kept ones.

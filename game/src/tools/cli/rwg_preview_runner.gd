@@ -1,7 +1,9 @@
 extends Node
 ## The work of rwg_preview.gd, loaded once the autoloads exist: resolves the settings, generates
 ## the world (or reads it from user://worlds/random/), writes its map PNG and prints a summary.
-## `--fresh` removes the cached world first, so the run times a full generation.
+## `--fresh` removes the cached world (and its composed terrain) first, so the run times a full
+## generation; `--compose` also shapes every region into the terrain cache, as the game's first
+## load would (QA renders then start without that wait).
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
@@ -25,15 +27,26 @@ func _ready() -> void:
 	var wid: String = Generator.world_id_for(settings)
 	if a.has("--fresh"):
 		Worlds._remove(Worlds.dir_for(wid))
+		Worlds._remove("user://cache/worlds".path_join(wid))
 	print("[rwg] %s (%s), world %s" % [settings.call(&"summary"), settings.get(&"preset"), wid])
 	var t0: int = Time.get_ticks_msec()
-	var res: Dictionary = Worlds.ensure(settings, func(stage: String, t: float) -> void: print("  [%3d%%] %s (%d ms)" % [int(t * 100), stage, Time.get_ticks_msec() - t0]), false)
+	var res: Dictionary = Worlds.ensure(settings, func(stage: String, t: float) -> void: print("  [%3d%%] %s (%d ms)" % [int(t * 100), stage, Time.get_ticks_msec() - t0]), a.has("--compose"))
 	if not bool(res.get("ok", false)):
 		printerr("[rwg] FAILED: %s" % res.get("error", ""))
 		get_tree().quit(1)
 		return
 	print("[rwg] %s in %d ms -> %s" % ["generated" if bool(res["generated"]) else "read from cache", int(res["ms"]), ProjectSettings.globalize_path(str(res["dir"]))])
 	var img: Image = MapImage.render_dir(str(res["dir"]), px)
+	# --crop x,z,metres: a square of the map around a world point (QA of a town's plan).
+	var crop: String = _arg(a, "--crop", "")
+	if crop != "":
+		var cv: PackedStringArray = crop.split(",")
+		var half_m: float = float(settings.call(&"integer", "size")) * 512.0
+		var mpp: float = half_m * 2.0 / px
+		var cx: int = int((float(cv[0]) + half_m) / mpp)
+		var cz: int = int((float(cv[1]) + half_m) / mpp)
+		var hs: int = int(float(cv[2]) * 0.5 / mpp)
+		img = img.get_region(Rect2i(cx - hs, cz - hs, hs * 2, hs * 2).intersection(Rect2i(0, 0, px, px)))
 	img.save_png(out)
 	var world: Dictionary = MapImage._read(str(res["dir"]).path_join("world.json"))
 	var gen: Dictionary = world.get("generator", {})
@@ -56,6 +69,11 @@ func _ready() -> void:
 	for w: Variant in gen.get("warnings", []):
 		print("[rwg] warning: %s" % w)
 	print("[rwg] timings %s" % gen.get("timings_ms", {}))
+	if a.has("--compose"):
+		var t1: int = Time.get_ticks_msec()
+		var wl := WorldLoader.new()
+		wl.load_world(str(res["dir"]))
+		print("[rwg] composed %d regions in %d ms (%s)" % [wl.detailed.size(), Time.get_ticks_msec() - t1, wl.error if wl.error != "" else "ok"])
 	print("[rwg] map -> %s" % out)
 	get_tree().quit(0)
 

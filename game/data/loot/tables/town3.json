@@ -1,0 +1,58 @@
+{
+  "_doc": "Loot tables of the town pool buildings' containers (loot/containers/town3.json). Room-appropriate: coins in the change machine, a family's hoard behind its barricade, the reefer's undelivered load, Walt Bracken's stash on top of the feed leg, the county's archive behind the library's cage, the Cordon's emergency kit in KHLW's relay cabinet.",
+  "defs": [
+    {"id": "town3_laundry", "rolls": [1, 2], "empty_chance": 0.35, "entries": [
+      {"item": "cloth", "weight": 10, "count": [1, 3]}, {"item": "scrip", "weight": 3, "count": [1, 4]}, {"item": "lighter", "weight": 1},
+      {"item": "duct_tape", "weight": 1}]},
+    {"id": "town3_coins", "rolls": [1, 2], "empty_chance": 0.15, "entries": [
+      {"item": "scrip", "weight": 10, "count": [4, 16]}, {"item": "cloth", "weight": 2}],
+      "guaranteed": [{"item": "scrip", "count": [3, 8]}]},
+    {"id": "town3_family_hoard", "rolls": [3, 5], "empty_chance": 0.0, "entries": [
+      {"table": "food_canned", "weight": 10}, {"item": "water_bottle_clean", "weight": 6}, {"table": "medical_basic", "weight": 4},
+      {"item": "first_aid_kit", "weight": 2}, {"item": "antifungal", "weight": 2, "tier_min": 2}, {"item": "flashlight", "weight": 2},
+      {"item": "ammo_38", "weight": 2, "count": [3, 8]}, {"item": "cordage", "weight": 2}],
+      "guaranteed": [{"item": "canned_beans", "count": [1, 2]}, {"item": "water_bottle_clean", "count": [1, 1]}]},
+    {"id": "town3_household", "rolls": [1, 3], "empty_chance": 0.3, "entries": [
+      {"item": "duct_tape", "weight": 4}, {"item": "cloth", "weight": 5, "count": [1, 3]}, {"item": "lighter", "weight": 3},
+      {"item": "painkillers", "weight": 2}, {"item": "cordage", "weight": 2}, {"item": "dog_food", "weight": 4}, {"item": "glass_bottle", "weight": 2}]},
+    {"id": "town3_cooler", "rolls": [1, 2], "empty_chance": 0.4, "entries": [
+      {"item": "soda_can", "weight": 8}, {"item": "water_bottle_clean", "weight": 5}, {"item": "glass_bottle", "weight": 3}]},
+    {"id": "town3_butcher", "rolls": [1, 2], "empty_chance": 0.3, "entries": [
+      {"item": "kitchen_knife", "weight": 4, "quality_bias": 1}, {"item": "machete", "weight": 1, "tier_min": 2}, {"item": "cloth", "weight": 4},
+      {"item": "canned_stew", "weight": 3}, {"item": "scrip", "weight": 2, "count": [2, 8]}]},
+    {"id": "town3_cold_store", "rolls": [3, 5], "empty_chance": 0.0, "entries": [
+      {"table": "food_canned", "weight": 10}, {"item": "canned_stew", "weight": 6}, {"item": "water_bottle_clean", "weight": 6},
+      {"item": "soda_can", "weight": 3}, {"item": "ration_bar", "weight": 3}, {"item": "first_aid_kit", "weight": 1, "tier_min": 2}],
+      "guaranteed": [{"item": "canned_stew", "count": [1, 2]}]},
+    {"id": "town3_reefer", "rolls": [2, 4], "empty_chance": 0.1, "entries": [
+      {"table": "food_canned", "weight": 10}, {"item": "water_bottle_clean", "weight": 6}, {"item": "ration_bar", "weight": 4},
+      {"item": "soda_can", "weight": 3}, {"item": "cordage", "weight": 2}, {"item": "duct_tape", "weight": 1}]},
+    {"id": "town3_lumber", "rolls": [1, 3], "empty_chance": 0.15, "entries": [
+      {"item": "wood_plank", "weight": 10, "count": [2, 5]}, {"item": "nails", "weight": 5, "count": [6, 20]}, {"item": "cordage", "weight": 1}]},
+    {"id": "town3_feed_store", "rolls": [1, 3], "empty_chance": 0.25, "entries": [
+      {"item": "dog_food", "weight": 6}, {"item": "cordage", "weight": 4, "count": [1, 2]}, {"item": "nails", "weight": 4, "count": [6, 16]},
+      {"item": "duct_tape", "weight": 2}, {"table": "tools_common", "weight": 3}, {"item": "scrip", "weight": 2, "count": [2, 8]}]},
+    {"id": "town3_bracken_stash", "rolls": [3, 5], "empty_chance": 0.0, "entries": [
+      {"table": "weapons_rare", "weight": 6}, {"item": "ammo_38", "weight": 6, "count": [6, 14]}, {"table": "tools_common", "weight": 5},
+      {"item": "nails", "weight": 3, "count": [12, 30]}, {"item": "repair_kit", "weight": 2}, {"item": "scrip", "weight": 4, "count": [15, 40]},
+      {"item": "first_aid_kit", "weight": 2}, {"item": "schematic_spike_barrier", "weight": 1}],
+      "guaranteed": [{"item": "ammo_38", "count": [6, 10]}, {"item": "scrip", "count": [10, 25]}]},
+    {"id": "town3_card_catalog", "rolls": [1, 1], "empty_chance": 0.55, "entries": [
+      {"table": "reading", "weight": 6}, {"item": "scrip", "weight": 2, "count": [1, 4]}, {"item": "cloth", "weight": 1}]},
+    {"id": "town3_archive", "rolls": [3, 5], "empty_chance": 0.0, "entries": [
+      {"table": "reading", "weight": 8}, {"item": "journal_field_medicine", "weight": 3}, {"item": "journal_timber_trade", "weight": 3},
+      {"item": "schematic_log_cabin", "weight": 2}, {"item": "schematic_spike_barrier", "weight": 2}, {"item": "first_aid_kit", "weight": 2},
+      {"item": "antifungal", "weight": 2, "tier_min": 2}, {"item": "scrip", "weight": 3, "count": [5, 20]}],
+      "guaranteed": [{"item": "journal_field_medicine", "count": [1, 1]}]},
+    {"id": "town3_equipment", "rolls": [1, 3], "empty_chance": 0.2, "entries": [
+      {"item": "scrap_metal", "weight": 8, "count": [1, 3]}, {"item": "duct_tape", "weight": 4}, {"item": "flashlight", "weight": 2},
+      {"item": "cordage", "weight": 2}]},
+    {"id": "town3_generator", "rolls": [1, 2], "empty_chance": 0.25, "entries": [
+      {"item": "scrap_metal", "weight": 6, "count": [1, 3]}, {"item": "repair_kit", "weight": 3}, {"item": "duct_tape", "weight": 4}]},
+    {"id": "town3_relay_cabinet", "rolls": [3, 5], "empty_chance": 0.0, "entries": [
+      {"table": "medical_basic", "weight": 6}, {"item": "first_aid_kit", "weight": 4}, {"item": "antifungal", "weight": 3},
+      {"item": "revolver", "weight": 1, "tier_min": 2}, {"item": "ammo_38", "weight": 5, "count": [4, 12]}, {"item": "flashlight", "weight": 3},
+      {"item": "ration_bar", "weight": 4}, {"item": "water_bottle_clean", "weight": 3}],
+      "guaranteed": [{"item": "antifungal", "count": [1, 1]}, {"item": "first_aid_kit", "count": [1, 1]}]}
+  ]
+}

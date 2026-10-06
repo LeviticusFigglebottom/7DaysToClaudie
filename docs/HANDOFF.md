@@ -79,6 +79,24 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     without a pick choose from the pool or generate one. Pell's Crossing's Larch Street is six of
     them, with the school, fire station and bank lots reserved on its corner.
   * `make poi-preview POI="merrow_house gen:cape_cod:3" POI_ARGS="--seed 7"` shows a run's dressing.
+  * **Pool buildings** (DESIGN §11): five authored set pieces only random towns place, picked for
+    commercial, civic and industrial lots by zoning, tier and footprint: Suds & Spin Laundromat (a
+    sleeper curled in a big dryer, a neighbour through the wall), Hollowmere Grocery (aisles of
+    collapsed shelving, a mezzanine gallery, an alarmed walk-in, a reefer at the dock), Bracken
+    Lumber & Feed (a timber shed open to its rafters, a weak catwalk, a grain leg to climb, an
+    office wired to a shotgun), Pell County Library (stacks of creaking boards, a reading room under
+    a two-storey ceiling, a flat reached by its fire-escape ladder, an archive cage in the cellar)
+    and KHLW Valley Radio (a booth under a lit ON AIR sign, a lattice mast climbed platform by
+    platform). Five to seven alternative groups each; `tests/unit/test_pool_buildings.gd`.
+* **Random worlds** (ADR-0031): the main menu's Random World opens the New Game screen's World tab.
+  * Settings and presets in `data/config/world_gen.json`, a map seed and a map preview; a world is
+    generated in about a second and cached in `user://worlds/random/<id>/` in the main map's own
+    format (world.json + region.json files + the towns' frameworks).
+  * Land with valleys carved by its drainage, lakes, rivers to a lake or the edge, a biome map,
+    towns of zoned lots filled per run, roads with bridges, the authored places by site, a drop
+    site by a road. Saves record the world (save version 6).
+  * `rwg_preview.gd -- --seed N --size S --out map.png` draws a map; `--world random` starts or
+    smokes one. Every region is built and composed on first load (minutes for 5 x 5, TD-081).
 * **Surfaces, water and sky** (ADR-0019, ADR-0020):
   * Interiors wear in world space.
   * Roofs have trim and tiles that don't repeat.

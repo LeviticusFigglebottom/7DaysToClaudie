@@ -2,6 +2,11 @@
 // height-based blending (layer height in albedo alpha), slope-driven triplanar rock, snow and
 // wetness. Normals are blended in world space (whiteout), so the mesh needs no tangents.
 // Layer order / tile sizes: game/data/materials/terrain_layers.json (TerrainTextures).
+// Weather (ADR-0033, weather.gdshaderinc): rain soaks each layer by its porosity (litter and dirt
+// darken most, asphalt least) and, once the ground is soaked, water stands in its hollows (the
+// weather map's ground below its smoothed ground) and the layers' own dips, first on the layers that
+// hold it (asphalt, mud), as dark mirrors that ring with the rain. Snow fills the dips first and
+// covers the tops last. Nothing of it under a roof.
 // Where the Bloom field holds the ground (ADR-0025) a white-grey mycelial web binds the litter: a
 // generated thread mask revealed by coverage priority (cords first, then fans, then the cottony
 // mat in the litter's hollows), over litter bleached by the rot; past a pixel or two the share of
@@ -10,6 +15,7 @@ shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_schlick_ggx;
 
 #include "res://assets/shaders/bloom.gdshaderinc"
+#include "res://assets/shaders/weather.gdshaderinc"
 
 uniform sampler2DArray layer_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray layer_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -51,8 +57,10 @@ uniform vec4 bloom_web_fresh : source_color = vec4(0.74, 0.72, 0.64, 1.0);
 uniform vec4 bloom_web_aged : source_color = vec4(0.55, 0.5, 0.4, 1.0);
 uniform float bloom_glow_energy = 0.035;
 
-global uniform float hm_wetness;
 global uniform float hm_snow;
+// Per layer slice (column = slice / 4): how readily water stands on it, how much darker it soaks.
+global uniform mat4 hm_terrain_puddle;
+global uniform mat4 hm_terrain_porosity;
 
 varying vec3 v_world_pos;
 varying vec3 v_world_normal;
@@ -99,6 +107,8 @@ void fragment() {
 	vec3 orm = vec3(0.0);
 	float hgt = 0.0;
 	float bsum = 0.0;
+	float pud_aff = 0.0;
+	float poro = 0.0;
 	float cutoff = best - height_blend_depth;
 	for (int i = 0; i < 8; i++) {
 		if (hb[i] > cutoff) {
@@ -109,6 +119,8 @@ void fragment() {
 			hgt += albs[i].a * b;
 			nrm += whiteout_top(texture(layer_normal, vec3(uv, float(L))).rgb * 2.0 - 1.0, gn) * b;
 			orm += texture(layer_orm, vec3(uv, float(L))).rgb * b;
+			pud_aff += hm_terrain_puddle[L / 4][L % 4] * b;
+			poro += hm_terrain_porosity[L / 4][L % 4] * b;
 			bsum += b;
 		}
 	}
@@ -116,6 +128,8 @@ void fragment() {
 	nrm = normalize(nrm);
 	orm /= max(bsum, 1e-4);
 	hgt /= max(bsum, 1e-4);
+	pud_aff /= max(bsum, 1e-4);
+	poro /= max(bsum, 1e-4);
 
 	// Macro variation breaks up tiling at distance.
 	float mv = texture(macro_variation, v_world_pos.xz * macro_scale).r;
@@ -191,23 +205,64 @@ void fragment() {
 		orm = mix(orm, ro, rock_w);
 	}
 
-	// Snow settles on gentle slopes; wetness darkens and glosses.
-	float snow = hm_snow * smoothstep(0.65, 0.9, gn.y);
-	if (snow > 0.001) {
+	// Snow settles on gentle slopes under the open sky: thin cover fills the dips of the ground's
+	// relief first and lets the tops show through, broken by drifts; deep cover hides it all and
+	// smooths the relief away.
+	float expo = wx_exposed(v_world_pos, gn.y);
+	float cover = hm_snow * smoothstep(0.62, 0.9, gn.y) * expo;
+	float snow = 0.0;
+	if (cover > 0.001) {
+		float drift = wx_noise(v_world_pos.xz * 0.45) * 0.6 + wx_noise(v_world_pos.xz * 2.3 + 7.1) * 0.4;
+		snow = smoothstep(0.0, 0.16, cover * 1.3 - (hgt - 0.45) * 0.45 * (1.0 - cover) - (drift - 0.5) * 0.4 * (1.0 - cover));
 		vec2 suv2 = v_world_pos.xz / max(layer_tile[snow_layer], 0.1);
 		alb = mix(alb, texture(layer_albedo, vec3(suv2, float(snow_layer))).rgb, snow);
 		orm = mix(orm, texture(layer_orm, vec3(suv2, float(snow_layer))).rgb, snow);
+		vec3 sn = whiteout_top(texture(layer_normal, vec3(suv2, float(snow_layer))).rgb * 2.0 - 1.0, gn);
+		nrm = normalize(mix(nrm, sn, snow * 0.85));
+		// Wind-packed drifts and scoured hollows: broad soft swells of brightness, so a covered field
+		// reads as snow lying on ground rather than a white sheet.
+		alb *= mix(1.0, 0.9 + 0.14 * drift, snow);
 	}
-	float wet = hm_wetness * smoothstep(0.5, 0.95, gn.y);
-	alb *= mix(1.0, 0.62, wet);
-	orm.g = mix(orm.g, 0.18, wet * 0.85);
+	// Rain soaks each layer by its porosity (cliff rock as stone), drier on steep ground that sheds it.
+	float flat_w = smoothstep(0.5, 0.95, gn.y);
+	float porous = mix(poro, 0.5, rock_w);
+	float wet = hm_wetness * mix(0.6, 1.0, flat_w) * expo * (1.0 - snow);
+	alb = wx_wet_albedo(alb, wet, porous);
+	orm.g = wx_wet_roughness(orm.g, wet, porous);
+	// Standing water: a fill rank per point (deep in a hollow of the ground, low in the layer's own
+	// relief, broken into separate pools by noise) against the water level on this layer.
+	float level = hm_rain.y * expo * (1.0 - snow) * flat_w * mix(pud_aff, 0.3, rock_w);
+	if (level > 0.005) {
+		float hollow = wx_hollow(v_world_pos.xz);
+		float pn = wx_noise(v_world_pos.xz * 0.37) * 0.65 + wx_noise(v_world_pos.xz * 1.7 + 4.1) * 0.35;
+		float rank = clamp(0.6 * clamp(hollow / 0.14, 0.0, 1.0) + 0.45 * (1.0 - hgt) + 0.35 * (pn - 0.5) + 0.02, 0.0, 1.0);
+		// Full standing water on asphalt pools about a third of a flat road; lighter levels and
+		// thirstier layers keep it to the hollows and the deepest dips.
+		float t = 1.0 - level * 0.85;
+		float puddle = smoothstep(t - 0.025, t + 0.025, rank);
+		// The damp margin round a pool is darker still.
+		float rim = smoothstep(t - 0.12, t, rank) * (1.0 - puddle);
+		alb *= 1.0 - 0.18 * rim;
+		orm.g = mix(orm.g, min(orm.g, 0.2), rim);
+		if (puddle > 0.001) {
+			// Water over the ground: what lies under it reads darker and browner, its top is a flat
+			// mirror (the sky and every light in it) that rings where the rain lands.
+			vec2 rip = wx_ripples(v_world_pos.xz, TIME, hm_rain.x);
+			vec3 wn = normalize(vec3(-rip.x * 0.4, 1.0, -rip.y * 0.4));
+			alb = mix(alb, alb * vec3(0.42, 0.4, 0.37), puddle);
+			orm.g = mix(orm.g, 0.015, puddle);
+			orm.r = mix(orm.r, 1.0, puddle);
+			nrm = normalize(mix(nrm, wn, puddle));
+		}
+	}
 
 	if (bloom_glow_m > 0.0) {
 		// Nothing glows on cliff faces or under snow.
 		EMISSION = hm_bloom_glow(bloom_glow_m * (1.0 - rock_w) * (1.0 - snow), v_world_pos.xz, TIME) * bloom_glow_energy;
 	}
 	ALBEDO = alb;
-	ROUGHNESS = clamp(orm.g, 0.05, 1.0);
+	// Standing water is a near mirror: the floor only stops a zero-roughness speckle.
+	ROUGHNESS = clamp(orm.g, 0.012, 1.0);
 	METALLIC = 0.0;
 	AO = orm.r;
 	AO_LIGHT_AFFECT = 0.2;

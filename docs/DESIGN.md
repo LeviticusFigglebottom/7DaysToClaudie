@@ -239,6 +239,15 @@ towns from the same **frameworks** and **POIs**, wilderness POIs, cave systems, 
 Deterministic per seed + version, generated on a background thread with progress, cached to disk.
 The M1 terrain composer already takes features + seed, which is the same interface RWG feeds.
 
+**Landed (v1, ADR-0031):** world settings with presets on the New Game screen's World tab (size 2-7
+regions, terrain, roughness, biome mix, rivers, lakes, towns and their size, wilderness and road
+density) and a map preview; ranges and valleys carved by drainage, lakes in basins, rivers falling
+to a lake or the map edge, a biome map, towns as generated frameworks of zoned lots on level ground
+(buildings picked or generated per run, ADR-0030), a road network with bridges, the authored places
+by site, a drop site by a road, and Bloom patches far from it. Saves record the settings (save
+v6). Still to come: coasts, burnt/snow/swamp biomes, caves, traders, the Ashen's territory, and
+streaming regions for large worlds (TD-081..084).
+
 ## 11. POIs and buildings
 
 POIs are authored with the **POI spec DSL** (ASCII floor plans + route/sleeper/loot/trap lists,
@@ -311,6 +320,23 @@ the loot. Below-ground rooms are real cellars cut out of the terrain (TD-026, AD
   room), so a street of twelve reads as twelve houses; framework lots without an authored pick
   choose from the pool or generate. Pell's Crossing's **Larch Street** is six such lots, with the
   school, the fire station and the bank reserved on its corner.
+
+*Pool buildings (random towns)*
+
+Authored set pieces with no fixed place: random towns (ADR-0031) fill their commercial, civic and
+industrial lots from them through `LotPicker` by zoning, tier and footprint (sized for the
+generator's 28 x 32 commercial, 32 x 32 civic and 26 x 26 industrial lots), so two towns of one
+world show different landmarks. Each is a full dungeon with room alternatives (ADR-0030), and its
+notes name people, not a town. None stands in the handcrafted map, and Larch Street's residential
+lots never draw one. Props: `data/props/town3.json` (`props_town3.py`).
+
+| POI | Tier | Zoning, footprint | Concept | Route sketch |
+|---|---|---|---|---|
+| Suds & Spin Laundromat | 1 | commercial, 22 x 26 | Coin laundry with three flats over it; one family barricaded in, the neighbour came through the wall | Chained glass doors → round to where a pickup went through the side wall → laundry floor (big dryers stand open; one isn't empty: the change machine or the staff door wakes them) → Dee's change office for the stair key → loose boards upstairs wake Hal's flat (cans across his kicked-in door) → through his clawed hole into the Bauers' front room (guardian, their stores) → bolted back door to the alley |
+| Hollowmere Grocery | 2 | commercial, 28 x 32 | Two-storey grocery hall with a mezzanine office; the stock boy locked in the walk-in | Chained front, carts piled behind it → past Northline's reefer trailer (jaws under its doors) → pried roll-up door → stock room → butcher's counter (Sal stands there, held) → a maze of collapsed shelving: only aisle 2 is clear, cans strung across it → the meat room door wakes the butcher → up to Ruth's office on the mezzanine for the key → drop through the broken railing → walk-in behind a battery alarm (Danny, guardian) → bolted meat-room door |
+| Bracken Lumber & Feed | 3 | industrial, 26 x 26 | Lumber yard and feed store; a timber shed open to its rafters and a grain leg climbing beside the feed bin | Padlocked store, chained shed → through the yard (forklift, stacks, jaws) → the shed's back doors (their cans wake the shed) → ladder to the catwalk (rotten boards past the tool crate) → feed loft (its door wakes the sacks) → mix loft → ladder up the grain leg to the head house: Walt and the office key → back down → Walt's office, wired to his shotgun (Eli, guardian) → bolted yard door |
+| Pell County Library | 2 | civic, 32 x 32 | Carnegie-style library: a reading room two storeys high, the stacks a maze of creaking boards, the librarian's flat over them, the county archive in the basement | Bolted front doors → up the fire-escape ladder to Ida's back porch → her flat (the cage key, her diary) → back stair → the stacks (every board wakes them) → the reading room, where they sit at the tables (ambush as you walk in) → circulation hall → children's corner → cellar → the archive cage, chained and alarmed (the Cordon's clerk, guardian) → out through the bolted front doors |
+| KHLW Valley Radio | 2 | civic or commercial, 26 x 30 | Small AM station where the Cordon read its bulletins; the generator still runs at dusk: the ON AIR sign, the racks and the mast beacon burn | Chained front → the generator shed → the hole Bud cut for the generator cable (jaws in the gap) → equipment room → Bud's office → the hall's boards or the studio door wake the booth (Mel at the console, the transcripts) → out of the office's bolted side door → up the lattice mast's ladders past two rest platforms → the relay cabinet (Bud, guardian) |
 
 **Planned (M2+)**: school, mine office, rail depot, dam control house, lighthouse, fishing co-op,
 lab outpost, survivor compounds, Ashen camps, crashed Program supply drone, quarantine camp.

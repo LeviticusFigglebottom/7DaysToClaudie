@@ -18,6 +18,8 @@ const OPTION_TYPES: PackedStringArray = ["int", "float", "enum"]
 const PRESET_KEYS: PackedStringArray = ["label", "description", "values"]
 const TUNING_KEYS: PackedStringArray = ["macro_step", "biome_step", "region_margin", "terrain", "rivers", "lakes", "towns", "roads", "wilderness", "drop_site", "bloom"]
 const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt"]
+const TOWN_KEYS: PackedStringArray = ["mix", "kinds", "street", "lot", "spacing", "max_relief"]
+const KIND_KEYS: PackedStringArray = ["rows", "segments", "lots", "commercial", "civic", "crossroads", "arm_lots"]
 const SITES: PackedStringArray = ["summit", "forest", "waterside", "lake_shore", "remote", "roadside"]
 const ACCESS: PackedStringArray = ["trail", "track", "drive"]
 const NAME_KEYS: PackedStringArray = ["towns", "regions", "region_words", "lakes", "rivers"]
@@ -163,13 +165,23 @@ static func schema_errors(db: Node = null) -> PackedStringArray:
 		for ok: Variant in (p.get("values", {}) as Dictionary).keys():
 			if not opts.has(str(ok)):
 				out.append("world_gen.json presets.%s: unknown option '%s'" % [pid, ok])
-			elif GameRules.coerce(opts[str(ok)], p["values"][ok]) != p["values"][ok] and not (p["values"][ok] is int and opts[str(ok)].get("type") == "float"):
+			elif GameRules.coerce(opts[str(ok)], p["values"][ok]) != p["values"][ok]:
 				out.append("world_gen.json presets.%s: %s = %s is out of range" % [pid, ok, p["values"][ok]])
 	var t: Dictionary = c.get("tuning", {})
 	_unknown(t, TUNING_KEYS, "world_gen.json tuning", out)
 	for tt: String in ["flat", "rolling", "hilly", "mountainous"]:
 		if not (t.get("terrain", {}) as Dictionary).has(tt):
 			out.append("world_gen.json tuning.terrain: no profile for '%s'" % tt)
+	var towns: Dictionary = t.get("towns", {})
+	_unknown(towns, TOWN_KEYS, "world_gen.json tuning.towns", out)
+	for kind: String in ["hamlet", "village", "town"]:
+		var kd: Dictionary = (towns.get("kinds", {}) as Dictionary).get(kind, {})
+		if kd.is_empty():
+			out.append("world_gen.json tuning.towns.kinds: no '%s'" % kind)
+		_unknown(kd, KIND_KEYS, "world_gen.json tuning.towns.kinds.%s" % kind, out)
+	for mix_id: Variant in (towns.get("mix", {}) as Dictionary).keys():
+		if not (opts.get("town_size", {}) as Dictionary).get("values", []).has(str(mix_id)):
+			out.append("world_gen.json tuning.towns.mix: '%s' is not a town_size value" % mix_id)
 	var wild: Dictionary = t.get("wilderness", {})
 	_unknown(wild, ["pool", "farmsteads", "spacing", "max_relief"], "world_gen.json tuning.wilderness", out)
 	for e: Variant in wild.get("pool", []):

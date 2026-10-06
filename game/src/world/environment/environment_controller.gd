@@ -5,6 +5,10 @@ extends Node3D
 ## Night is meant to be genuinely dark, and no two nights alike: the moon (MoonModel, ADR-0023)
 ## orbits with phases, and the night's ambient light, sky and stars run from a near-black new moon
 ## to a readable full moon over the range in data/config/world_clock.json "moon".
+## Weather (ADR-0033, numbers in data/config/weather.json): lightning flashes the sky and throws a
+## brief hard shadow from the strike, its thunder following at the speed of sound; ground fog pools
+## in hollows and over water at dawn and dusk; rain hangs a grey haze; gusts drive the foliage and the
+## rain. The precipitation, the weather map and the motes are WeatherFx's.
 
 var clock: WorldClock
 var weather: WeatherState
@@ -21,6 +25,27 @@ var moon_model := MoonModel.new()
 var moon_state: Dictionary = {}
 var _moon_cfg: Dictionary = {}
 var _last_snapshot: Dictionary = {}
+## data/config/weather.json.
+var _wcfg: Dictionary = {}
+## The lightning's light: a hard-shadowed directional light from the cloud base over the strike,
+## shown only while a flash lasts.
+var flash_light: DirectionalLight3D
+## How bright the lightning is now (0 .. ~1 at a near strike's first stroke), and the strike
+## lighting the sky.
+var flash: float = 0.0
+var flash_strike: Dictionary = {}
+## Strikes still flashing: {"strike": Dictionary, "t0": real seconds when it began}.
+var _strikes: Array[Dictionary] = []
+## > 0 holds the last strike's flash at this brightness (QA renders, whose frames take seconds).
+var flash_hold: float = 0.0
+var _last_minutes: float = -1.0
+var _real_t: float = 0.0
+## Ground fog now (0 none .. ~2 thick dawn mist), and the level it fills to far from the camera.
+var ground_fog: float = 0.0
+var fog_volume: FogVolume
+var _fog_mat: ShaderMaterial
+## Rain, snow, splashes, eave drips and motes round the camera, and the weather map.
+var fx: WeatherFx
 
 
 func _ready() -> void:
@@ -78,7 +103,28 @@ func _ready() -> void:
 	add_child(moon)
 	_moon_cfg = (Content.config(&"world_clock").get("moon", {}) as Dictionary)
 	moon_model.configure(_moon_cfg)
+	_wcfg = Content.config(&"weather")
+	flash_light = DirectionalLight3D.new()
+	flash_light.name = "Lightning"
+	flash_light.light_color = Color(0.82, 0.86, 1.0)
+	flash_light.shadow_enabled = true
+	# A point-like bolt: a hard shadow edge, and one split is plenty for a tenth of a second.
+	flash_light.light_angular_distance = 0.0
+	flash_light.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	flash_light.directional_shadow_max_distance = 80.0
+	flash_light.shadow_bias = 0.04
+	flash_light.light_volumetric_fog_energy = 2.0
+	flash_light.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY
+	flash_light.visible = false
+	add_child(flash_light)
 	_load_sky_textures()
+	_publish_surface_tables()
+	if DisplayServer.get_name() != "headless":
+		_make_fog_volume()
+	fx = WeatherFx.new()
+	fx.name = "WeatherFx"
+	fx.env = self
+	add_child(fx)
 	Settings.graphics_changed.connect(apply_graphics)
 	apply_graphics()
 
@@ -142,11 +188,14 @@ func _process(delta: float) -> void:
 	# it and peaks while it runs; it was never driven at all.
 	var hum_target: float = 1.0 if clock.is_horde_active() else 0.35 * (1.0 - smoothstep(0.0, 3.0, clock.hours_until_horde()))
 	hum_intensity = move_toward(hum_intensity, hum_target, delta * 0.05)
+	_real_t += delta
+	_update_lightning()
 	update_now()
 
 
 func update_now() -> void:
-	var w: Dictionary = weather.params() if weather != null else {"fog_density": 0.001, "volumetric_density": 0.008, "rain": 0.0, "snow": 0.0, "wind": 0.3, "cloud_cover": 0.3, "wind_dir": Vector2(1, 0), "wetness": 0.0}
+	var w: Dictionary = weather.params() if weather != null else {"fog_density": 0.001, "volumetric_density": 0.008, "rain": 0.0, "snow": 0.0, "wind": 0.3,
+		"cloud_cover": 0.3, "wind_dir": Vector2(1, 0), "wetness": 0.0, "gust": 0.25, "ground_fog": 1.0, "haze": 0.0}
 	var hour: float = clock.hour_f()
 	var elev: float = clock.sun_elevation_deg()
 	var a: float = (hour - 12.0) / 12.0 * PI
@@ -167,6 +216,9 @@ func update_now() -> void:
 	sun.light_energy = smoothstep(-3.0, 18.0, elev) * 1.35 * (1.0 - 0.72 * cover)
 	sun.visible = elev > -4.0
 	sun.shadow_enabled = elev > 0.5
+	if weather != null:
+		# Drying runs on the sun (WeatherState.daylight).
+		weather.daylight = day * (1.0 - 0.8 * cover)
 	# The sky is drawn dimmer at night (background energy); the moon's disc is not.
 	var bg_energy: float = lerpf(0.25, 1.0, day)
 	var moon_sky: float = _update_moon(sun_dir, night, day, cover, bg_energy)
@@ -191,6 +243,17 @@ func update_now() -> void:
 	var wd: Vector2 = w["wind_dir"]
 	sky_mat.set_shader_parameter("cloud_wind", wd * (0.002 + 0.006 * float(w["wind"])))
 	sky_mat.set_shader_parameter("aurora", hum_intensity)
+	# Lightning: the cloud deck lights up, most of all over the strike, and a near enough strike
+	# draws its bolt.
+	var lf: Dictionary = _wcfg.get("lightning", {}) as Dictionary
+	var fdir: Vector3 = LightningModel.light_direction(flash_strike) if not flash_strike.is_empty() else Vector3.UP
+	var fdist: float = float(flash_strike.get("distance", 1e9))
+	# Like the moon's disc, the flash is not dimmed with the night sky's background energy.
+	sky_mat.set_shader_parameter("lightning", flash * float(lf.get("sky_flash", 3.0)) / bg_energy)
+	sky_mat.set_shader_parameter("lightning_dir", fdir)
+	sky_mat.set_shader_parameter("bolt", (flash if fdist < float(lf.get("bolt_within_m", 6000.0)) else 0.0) / bg_energy)
+	sky_mat.set_shader_parameter("bolt_seed", float(int(flash_strike.get("shape", 0)) % 997))
+	sky_mat.set_shader_parameter("bolt_distance", fdist)
 	# Ambient: bright by day; at night the moonlit (or moonless) fill from data, plus the Bloom
 	# aurora's green during the Hum. At night the fill comes from the ambient colour rather than
 	# the near-black sky, so the darkness range in data is what the player gets.
@@ -202,15 +265,25 @@ func update_now() -> void:
 	env.ambient_light_color = Color.BLACK.lerp(night_col, night)
 	env.ambient_light_sky_contribution = lerpf(0.85, 0.25, night)
 	env.ambient_light_energy = lerpf((night_fill + hum_fill) / 0.75, 1.05, dusk) * (1.0 - 0.25 * overcast)
+	# The whole sky lights up in a flash: a cold fill, strongest at night against the dark.
+	_update_flash_light(fdir, fdist, lf)
+	if flash > 0.001:
+		var fill: float = flash * float(lf.get("light_energy", 2.2)) * 0.35 * _flash_reach(fdist, lf)
+		env.ambient_light_color = env.ambient_light_color.lerp(Color(0.72, 0.78, 1.0), clampf(fill * 2.0, 0.0, 1.0))
+		env.ambient_light_energy += fill
 	# Building interiors: a dim daylight fill from their interior probes (PoiBuilder), none at night.
 	var interior_fill: float = lerpf(0.0, 0.55, day) * (1.0 - 0.3 * overcast)
 	for probe: Node in get_tree().get_nodes_in_group(&"interior_probe"):
 		(probe as ReflectionProbe).ambient_color_energy = interior_fill
 	env.background_energy_multiplier = bg_energy
 	# Fog: weather + early-morning valley mist.
-	# A thin valley mist at dawn that burns off by mid-morning (weather fog adds on top).
-	var morning_mist: float = smoothstep(4.0, 6.0, hour) * (1.0 - smoothstep(7.0, 9.5, hour)) * 0.0012
-	var fog_d: float = float(w["fog_density"]) * 0.6 + morning_mist
+	# A thin haze at dawn that burns off by mid-morning (weather fog adds on top); the mist itself
+	# lies in the low ground (ground fog, below).
+	var morning_mist: float = smoothstep(4.0, 6.0, hour) * (1.0 - smoothstep(7.0, 9.5, hour)) * 0.0006
+	# Rain and snow hang a grey haze in the air (the weather's haze, by how hard it falls now).
+	var fall: float = clampf(float(w["rain"]) + float(w["snow"]), 0.0, 1.0)
+	var haze: float = float(w.get("haze", 0.0))
+	var fog_d: float = float(w["fog_density"]) * 0.6 + morning_mist + haze
 	# A light floor of haze keeps sun shafts in the canopy; on a clear noon it veils a pond's far
 	# shore by under a fifth.
 	var vol_d: float = float(w["volumetric_density"]) * 0.5 + morning_mist * 2.0 + 0.001
@@ -220,9 +293,12 @@ func update_now() -> void:
 		fog_d += (vol_d - 0.001) * 0.12
 	env.fog_density = fog_d
 	var fog_col: Color = horizon.lerp(sun_col * 0.7, golden * 0.35)
+	# Haze in rain is grey water in the air, not blue distance.
+	fog_col = fog_col.lerp(Color(0.6, 0.62, 0.64).lerp(horizon, 0.5), fall * 0.6)
 	env.fog_light_color = fog_col
-	env.fog_light_energy = lerpf(0.06 + 0.12 * moon_sky, 1.0, day)
+	env.fog_light_energy = lerpf(0.06 + 0.12 * moon_sky, 1.0, day) + flash * 0.6 * _flash_reach(fdist, lf)
 	env.fog_sun_scatter = 0.25 * day
+	_update_ground_fog(w, hour, day, fog_col, sun_col, golden)
 	env.volumetric_fog_density = vol_d
 	env.volumetric_fog_albedo = Color(0.88, 0.9, 0.92)
 	env.volumetric_fog_emission = Color(0.02, 0.06, 0.04) * hum_intensity
@@ -230,8 +306,15 @@ func update_now() -> void:
 	env.volumetric_fog_ambient_inject = lerpf(0.05, 0.4, day)
 	env.tonemap_exposure = lerpf(1.25, 1.1, day) * Settings.brightness
 	# Globals for every shader.
-	RenderingServer.global_shader_parameter_set(&"hm_wind", Vector4(wd.x, wd.y, float(w["wind"]), 0.3 + 0.5 * float(w["wind"])))
+	# Gusts in seconds over the state's slow swell: the foliage bends and the rain slants with them.
+	var gust_mul: float = WeatherState.gust_at(clock.total_minutes / maxf(0.001, clock.minutes_per_real_second()), float(w.get("gust", 0.25)))
+	var wind_now: float = clampf(float(w["wind"]) * gust_mul, 0.0, 1.0)
+	RenderingServer.global_shader_parameter_set(&"hm_wind", Vector4(wd.x, wd.y, wind_now, 0.3 + 0.5 * float(w["wind"])))
 	RenderingServer.global_shader_parameter_set(&"hm_wetness", float(w.get("wetness", 0.0)))
+	# Rainfall now, standing water, the lightning and snowfall now (weather.gdshaderinc).
+	RenderingServer.global_shader_parameter_set(&"hm_rain", Vector4(float(w["rain"]), float(w.get("puddles", 0.0)), flash, float(w["snow"])))
+	if fx != null:
+		fx.update_weather(w, wind_now, day, flash)
 	# Snow on surfaces is the accumulated cover, not the snowfall (it stays after the snow stops).
 	RenderingServer.global_shader_parameter_set(&"hm_snow", float(w.get("snow_cover", w.get("snow", 0.0))))
 	RenderingServer.global_shader_parameter_set(&"hm_bloom", hum_intensity)
@@ -240,6 +323,10 @@ func update_now() -> void:
 	var sky_e: float = env.background_energy_multiplier
 	var zl: Color = zenith.srgb_to_linear() * sky_e
 	var hl: Color = horizon.lerp(sun_col, golden * 0.3).srgb_to_linear() * sky_e
+	# Water and wet ground mirror the flash.
+	var fl: float = flash * float(lf.get("sky_flash", 3.0)) * 0.12 * _flash_reach(fdist, lf)
+	zl += Color(0.7, 0.75, 0.95) * fl
+	hl += Color(0.7, 0.75, 0.95) * fl * 1.4
 	RenderingServer.global_shader_parameter_set(&"hm_sky_zenith", Vector4(zl.r, zl.g, zl.b, 1.0))
 	RenderingServer.global_shader_parameter_set(&"hm_sky_horizon", Vector4(hl.r, hl.g, hl.b, 1.0))
 	_last_snapshot = {"elev": elev, "day": day, "night": night, "cover": cover, "moon_sky": moon_sky}
@@ -289,6 +376,178 @@ static func star_basis(c: WorldClock, latitude: float) -> Basis:
 	var lat: float = deg_to_rad(latitude)
 	var pole := Vector3(0.0, sin(lat), -cos(lat))
 	return Basis(pole, TAU * fposmod(c.total_minutes / sidereal, 1.0))
+
+
+# --- Lightning (ADR-0033) -------------------------------------------------------------------------
+
+## Starts the strikes the clock passed since the last frame (LightningModel: a pure function of the
+## seed and the game clock) and works out how bright the sky is now. A big step of the clock
+## (sleep, a loaded save) flashes nothing: a night's storm would go off at once.
+func _update_lightning() -> void:
+	var now: float = clock.total_minutes
+	var lf: Dictionary = _wcfg.get("lightning", {}) as Dictionary
+	if weather != null and _last_minutes >= 0.0 and now > _last_minutes and now - _last_minutes < 2.0:
+		var rate: float = float(weather.params().get("lightning", 0.0))
+		var sd: int = Game.session.world_seed if Game.session != null else 0
+		for s: Dictionary in LightningModel.strikes_between(sd, _last_minutes, now, rate, lf):
+			_begin_strike(s)
+	_last_minutes = now
+	flash = 0.0
+	var keep: Array[Dictionary] = []
+	for e: Dictionary in _strikes:
+		var st: Dictionary = e["strike"]
+		var since: float = _real_t - float(e["t0"])
+		if since > LightningModel.duration(st, lf):
+			continue
+		keep.append(e)
+		# Far strikes light only their own corner of the cloud deck.
+		var f: float = LightningModel.flash(st, since, lf) * lerpf(0.35, 1.0, _flash_reach(float(st["distance"]), lf))
+		if f > flash:
+			flash = f
+			flash_strike = st
+	_strikes = keep
+	if flash_hold > 0.0 and not flash_strike.is_empty():
+		flash = flash_hold
+
+
+## A strike now, `bearing` radians round from +X and `distance` metres off (QA shots, debug and
+## scripted moments); it flashes and thunders like any other.
+func strike_now(bearing: float, distance: float, strokes: int = 3) -> void:
+	var offsets: PackedFloat32Array = [0.0]
+	for k: int in range(1, maxi(1, strokes)):
+		offsets.append(0.09 * float(k))
+	var s: Dictionary = {"slot": -1, "at_min": clock.total_minutes if clock != null else 0.0, "bearing": bearing, "distance": distance,
+		"strokes": offsets, "shape": 4471}
+	_begin_strike(s)
+	# A held flash (flash_hold) shows this strike even if a slow frame outlasts it.
+	flash_strike = s
+
+
+func _begin_strike(s: Dictionary) -> void:
+	_strikes.append({"strike": s, "t0": _real_t})
+	var delay: float = LightningModel.thunder_delay(float(s["distance"]), _wcfg.get("lightning", {}) as Dictionary)
+	if is_inside_tree():
+		get_tree().create_timer(delay, false).timeout.connect(_thunder.bind(float(s["distance"])))
+
+
+## 1 for a strike close by, fading to 0 at light_far_m.
+static func _flash_reach(distance: float, lf: Dictionary) -> float:
+	return 1.0 - smoothstep(600.0, float(lf.get("light_far_m", 6000.0)), distance)
+
+
+## The flash's light: from the cloud base over the strike, hard-shadowed, only while it flashes.
+func _update_flash_light(dir: Vector3, distance: float, lf: Dictionary) -> void:
+	var e: float = flash * float(lf.get("light_energy", 2.2)) * _flash_reach(distance, lf)
+	flash_light.visible = e > 0.01
+	if flash_light.visible:
+		_orient(flash_light, dir)
+		flash_light.light_energy = e
+
+
+## Thunder for a strike `distance` metres off, arriving now: a crack and rumble close by, a low roll
+## from far off, quieter with distance and muffled indoors.
+func _thunder(distance: float) -> void:
+	var lf: Dictionary = _wcfg.get("lightning", {}) as Dictionary
+	var near_m: float = float(lf.get("thunder_near_m", 1600.0))
+	var dbs: Array = lf.get("thunder_db", [0.0, -22.0])
+	var dr: Array = lf.get("distance_m", [350.0, 9000.0])
+	var t: float = clampf(log(maxf(distance, 1.0) / float(dr[0])) / log(maxf(float(dr[1]) / float(dr[0]), 1.001)), 0.0, 1.0)
+	var db: float = lerpf(float(dbs[0]), float(dbs[1]), t)
+	var w: Node = Game.world
+	var pl: Node3D = w.get(&"player") as Node3D if w != null else null
+	var pois: Node = w.get(&"pois") as Node if w != null else null
+	if pl != null and pois != null and bool(pois.call(&"is_indoors", pl.global_position)):
+		db -= 8.0
+	Audio.play_2d(&"amb/thunder_near" if distance < near_m else &"amb/thunder_far", db, &"Ambience", randf_range(0.92, 1.05))
+
+
+# --- Fog (ADR-0033) ------------------------------------------------------------------------------
+
+## How much ground fog the hour brings, 0..1 (x the weather's ground_fog and the calm): it gathers
+## at dusk, deepens through the night, peaks at sunrise and burns off through the morning.
+static func ground_fog_at(hour: float, sunrise: float, sunset: float, fcfg: Dictionary) -> float:
+	var dawn: Array = fcfg.get("dawn", [-1.5, 3.2])
+	var dusk_s: float = float(fcfg.get("dusk_strength", 0.55))
+	if hour >= sunset:
+		return dusk_s * smoothstep(sunset, sunset + float(fcfg.get("dusk_hours", 2.5)), hour)
+	if hour <= sunrise:
+		# The small hours: from the dusk level to full at sunrise, building through the last hours.
+		return lerpf(dusk_s, 1.0, smoothstep(sunrise + float(dawn[0]) - 2.0, sunrise, hour))
+	return 1.0 - smoothstep(sunrise, sunrise + float(dawn[1]), hour)
+
+
+func _make_fog_volume() -> void:
+	fog_volume = FogVolume.new()
+	fog_volume.name = "GroundFog"
+	fog_volume.shape = RenderingServer.FOG_VOLUME_SHAPE_BOX
+	var vs: Array = (_wcfg.get("fog", {}) as Dictionary).get("volume_size", [200.0, 60.0])
+	fog_volume.size = Vector3(float(vs[0]), float(vs[1]), float(vs[0]))
+	_fog_mat = ShaderMaterial.new()
+	_fog_mat.shader = load("res://assets/shaders/ground_fog.gdshader")
+	fog_volume.material = _fog_mat
+	fog_volume.visible = false
+	add_child(fog_volume)
+
+
+## Ground fog for the hour, the weather and the wind: a volume round the camera (High and up) that
+## fills the low ground to the local fog level, and the depth fog's height falloff under the same
+## level for everything beyond it (and on Low). God rays come from the sun through this fog.
+func _update_ground_fog(w: Dictionary, hour: float, day: float, fog_col: Color, sun_col: Color, golden: float) -> void:
+	var fc: Dictionary = _wcfg.get("fog", {}) as Dictionary
+	var calm: float = 1.0 - smoothstep(float(fc.get("calm_wind", 0.55)) * 0.4, float(fc.get("calm_wind", 0.55)), float(w["wind"]))
+	# A misty state (ground_fog over 1) keeps a bank in the low ground all day, thinner at noon.
+	var gf: float = float(w.get("ground_fog", 1.0))
+	ground_fog = (ground_fog_at(hour, clock.sunrise_hour, clock.sunset_hour, fc) * gf + maxf(0.0, gf - 1.0) * 0.5) * calm
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var depth: float = float(fc.get("depth_m", 6.0))
+	var level: float = (fx.valley_level() if fx != null else 0.0) + depth
+	if cam != null:
+		# Standing in the fog, the depth fog's falloff would veil your own feet: keep it below you
+		# and let the volume carry the fog you stand in.
+		env.fog_height = minf(level, cam.global_position.y - 3.0)
+	else:
+		env.fog_height = level
+	env.fog_height_density = float(fc.get("height_density", 0.06)) * ground_fog
+	# Sun shafts through the mist and the canopy.
+	sun.light_volumetric_fog_energy = 1.4 + float(fc.get("god_rays", 2.4)) * clampf(ground_fog, 0.0, 1.0) * golden
+	if fog_volume == null:
+		return
+	fog_volume.visible = ground_fog > 0.02 and env.volumetric_fog_enabled
+	if not fog_volume.visible:
+		return
+	if cam != null:
+		fog_volume.global_position = Vector3(cam.global_position.x, level - 4.0, cam.global_position.z)
+	var albedo: Color = Color(0.9, 0.92, 0.95).lerp(sun_col, golden * 0.25)
+	_fog_mat.set_shader_parameter("density", float(fc.get("volume_density", 0.05)) * ground_fog)
+	_fog_mat.set_shader_parameter("albedo", Vector3(albedo.r, albedo.g, albedo.b))
+	_fog_mat.set_shader_parameter("depth_m", depth)
+	_fog_mat.set_shader_parameter("water_depth_m", float(fc.get("water_depth_m", 4.0)))
+	_fog_mat.set_shader_parameter("noise_scale", float(fc.get("noise_scale", 0.05)))
+	_fog_mat.set_shader_parameter("fallback_level", level)
+	var wd: Vector2 = w["wind_dir"]
+	_fog_mat.set_shader_parameter("drift", wd * (0.15 + 1.5 * float(w["wind"])))
+
+
+## Per terrain layer: how readily puddles collect and how much darker it turns soaked (config
+## "surfaces"), as two mat4 globals indexed by the layer's slice (column = slice / 4).
+func _publish_surface_tables() -> void:
+	var sf: Dictionary = _wcfg.get("surfaces", {}) as Dictionary
+	var layers: PackedStringArray = TerrainTextures.DEFAULT_LAYERS
+	if FileAccess.file_exists(TerrainTextures.LAYERS_JSON):
+		var j := JSON.new()
+		if j.parse(FileAccess.get_file_as_string(TerrainTextures.LAYERS_JSON)) == OK and j.data is Dictionary:
+			layers = PackedStringArray((j.data as Dictionary).get("layers", layers))
+	RenderingServer.global_shader_parameter_set(&"hm_terrain_puddle", _layer_table(layers, sf.get("puddle", {}) as Dictionary, 0.5))
+	RenderingServer.global_shader_parameter_set(&"hm_terrain_porosity", _layer_table(layers, sf.get("porosity", {}) as Dictionary, 0.7))
+
+
+static func _layer_table(layers: PackedStringArray, values: Dictionary, fallback: float) -> Projection:
+	var v: PackedFloat32Array = []
+	v.resize(16)
+	v.fill(fallback)
+	for i: int in mini(16, layers.size()):
+		v[i] = float(values.get(layers[i], fallback))
+	return Projection(Vector4(v[0], v[1], v[2], v[3]), Vector4(v[4], v[5], v[6], v[7]), Vector4(v[8], v[9], v[10], v[11]), Vector4(v[12], v[13], v[14], v[15]))
 
 
 func _moon_color(key: String, fallback: String) -> Color:
