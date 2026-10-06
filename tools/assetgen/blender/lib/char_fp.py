@@ -846,7 +846,15 @@ class FPRig:
         deviation (towards the little finger), and the forearm's own axis it rolls about."""
         j = self.sk.j
         a, b, lat = _n(j[f"axis.{sd}"]), _n(j[f"back.{sd}"]), _n(j[f"lat.{sd}"])
-        return _n(np.cross(a, -b)), _n(np.cross(a, -lat)), self.sk.rest[f"forearm.{sd}"][:, 1]
+        ax = _n(self.sk.rest[f"forearm.{sd}"][:, 1])
+        # Both bend axes square to the forearm's: the swing then has no roll in it, and
+        # wrist_rotation inverts wrist_angles exactly (the hand's own axis is a few degrees off the
+        # forearm's at rest, and a bend about axes square to it leaked into the measured roll).
+        fx = _n(np.cross(a, -b))
+        fx = _n(fx - ax * float(fx @ ax))
+        ul = _n(np.cross(a, -lat))
+        ul = _n(ul - ax * float(ul @ ax) - fx * float(ul @ fx))
+        return fx, ul, ax
 
     def wrist_angles(self, sd: str, Qh: np.ndarray):
         """(flexion, ulnar deviation, roll) in degrees of a hand rotation relative to its forearm:
