@@ -504,6 +504,13 @@ static func lot_xf(l: Dictionary, footprint: Vector2i) -> Transform3D:
 ## dressed per run, the authored defaults and the old scatter for a legacy save. A run keeps the
 ## picks it made the first time (pinned in the POI's saved state), even if content gains options.
 static func dress_for(pd: PoiDef, instance_id: StringName, session: GameSession) -> PoiDef:
+	var a: Array = dress_args(pd, instance_id, session)
+	return Dressing.resolve(pd, a[0], a[1])
+
+
+## dress_for's half that reads and pins the run's saved state (main thread): [picks, resolve
+## options]. Dressing.resolve with them is pure and may run on a worker.
+static func dress_args(pd: PoiDef, instance_id: StringName, session: GameSession) -> Array:
 	var mode: int = Dressing.MODE_LEGACY
 	var world_seed: int = 0
 	var st: Dictionary = {}
@@ -522,7 +529,7 @@ static func dress_for(pd: PoiDef, instance_id: StringName, session: GameSession)
 				picks[gid] = str(pinned[gid])
 		if session != null:
 			st["picks"] = picks.duplicate()
-	return Dressing.resolve(pd, picks, {"mode": mode, "seed": seed})
+	return [picks, {"mode": mode, "seed": seed}]
 
 
 func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _pad: Vector2, def: PoiDef = null) -> PoiInstance:
@@ -548,19 +555,28 @@ func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _p
 ## Boot step: compiles a queued building's layout (main thread: the per-run picks are pinned in
 ## the session) and starts its PoiValidator on a worker thread.
 func _prepare_poi(job: Dictionary) -> void:
-	var layout := PoiLayout.compile(dress_for(job["pd"], job["id"], Game.session))
-	for e: String in layout.errors:
-		Log.warn("poi", e)
-	var v := PoiValidator.new()
-	v.layout = layout
-	job["layout"] = layout
-	job["checked"] = v
-	job["task"] = WorkerThreadPool.add_task(v._run, false, "poi check %s" % job["id"])
+	# The picks are pinned here (session state); dressing, compiling and the route check run on a
+	# worker (a big building's compile was ~40 ms of a streaming step). The worker fills `out`
+	# only: a dictionary written from two threads at once can corrupt itself.
+	var a: Array = dress_args(job["pd"], job["id"], Game.session)
+	var pd: PoiDef = job["pd"]
+	var out: Array = [null, null]
+	job["out"] = out
+	job["layout"] = null
+	job["task"] = WorkerThreadPool.add_task(func() -> void:
+		var layout := PoiLayout.compile(Dressing.resolve(pd, a[0], a[1]))
+		var v := PoiValidator.new()
+		v.layout = layout
+		out[0] = layout
+		out[1] = v
+		v._run(), false, "poi check %s" % job["id"])
 	_tasks.append(job["task"])
 
 
 ## Main-thread time a building's build takes per call before it yields to the next frame.
 const BUILD_SLICE_MS: float = 8.0
+## A single PoiBuilder phase longer than this is logged by name.
+const SLOW_PHASE_MS: float = 20.0
 
 
 ## Boot step: builds a prepared building once its check is done, a few PoiBuilder phases per call
@@ -573,11 +589,26 @@ func _finish_poi(job: Dictionary) -> bool:
 		WorkerThreadPool.wait_for_task_completion(task)
 		_tasks.erase(task)
 		job.erase("task")
+		if job.has("out"):
+			job["layout"] = job["out"][0]
+			job["checked"] = job["out"][1]
+			job.erase("out")
+			for e: String in (job["layout"] as PoiLayout).errors:
+				Log.warn("poi", e)
 	if not job.has("builder"):
 		job["builder"] = PoiBuilder.start(job["layout"], job["id"], job.get("checked"))
 	var b: PoiBuilder = job["builder"]
 	var t0: int = Time.get_ticks_usec()
-	while not b.step():
+	while true:
+		var phase: String = b.next_phase()
+		var tp: int = Time.get_ticks_usec()
+		var done: bool = b.step()
+		var ms: float = float(Time.get_ticks_usec() - tp) / 1000.0
+		# One phase over the slice can't be split here: name it (StreamMeter only sees the step).
+		if ms > SLOW_PHASE_MS:
+			Log.info("poi", "%s: phase %s took %.0f ms" % [job["id"], phase, ms])
+		if done:
+			break
 		if float(Time.get_ticks_usec() - t0) / 1000.0 >= BUILD_SLICE_MS:
 			return false
 	_place_built(b.root, job["id"], job["xf"])
