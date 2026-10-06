@@ -59,6 +59,10 @@ func setup_world(w: Node) -> void:
 		_build_r = float(cfg.get("build", 450.0))
 		_free_r = float(cfg.get("free", 560.0))
 		_max_built = int(cfg.get("max_built", 90))
+		# Cellars are cut per built building (TD-107), not for every lot of an attached region.
+		var tm0: TerrainManager = w.get(&"terrain") as TerrainManager
+		if tm0 != null:
+			tm0.start_gating_holes()
 	# Tools and tests that set up a bare world still get every building built here and now.
 	_queueing = w.has_method(&"is_booting") and bool(w.call(&"is_booting"))
 	_place_all(w)
@@ -311,8 +315,48 @@ func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
 	if inst != null and is_instance_valid(inst):
 		if ai != null:
 			inst.despawn_sleepers(ai)
+		_keep_roamers(id, inst)
 		inst.queue_free()
 	instances.erase(id)
+	_grid_remove(id)
+	_set_hole(id, false)
+
+
+## Instance id -> {sleeper id: Enemy}: awake sleepers that followed the player out of a building
+## the ring then freed. Their died hook went with the building's node, so the manager keeps it.
+var _roamers: Dictionary = {}
+## Instance ids whose roamer died while the building was freed (cleared is checked on rebuild).
+var _died_away: Dictionary = {}
+
+
+func _keep_roamers(id: StringName, inst: PoiInstance) -> void:
+	var out: Dictionary = {}
+	for sid: StringName in inst._roaming:
+		var e: Variant = inst._roaming[sid]
+		if is_instance_valid(e) and (e as Enemy).is_alive():
+			out[sid] = e
+			var hook: Callable = _on_roamer_died.bind(id, String(sid))
+			if not (e as Enemy).died.is_connected(hook):
+				(e as Enemy).died.connect(hook)
+	if not out.is_empty():
+		_roamers[id] = out
+
+
+func _on_roamer_died(e: Enemy, id: StringName, sid: String) -> void:
+	var inst: PoiInstance = instances.get(id)
+	if inst != null and is_instance_valid(inst):
+		inst._on_sleeper_died(e, sid)
+		inst._roaming.erase(StringName(sid))
+		return
+	(_roamers.get(id, {}) as Dictionary).erase(StringName(sid))
+	if Game.session == null:
+		return
+	var st: Dictionary = Game.session.world.poi_state(id)
+	var dead: Array = st.get("dead", [])
+	if not dead.has(sid):
+		dead.append(sid)
+	st["dead"] = dead
+	_died_away[id] = true
 
 
 ## Joins the finished tasks of buildings freed on their way (a route check or a generation keeps
@@ -359,6 +403,10 @@ func _place_framework(pl: Dictionary, buildings: bool = true) -> void:
 			continue
 		var xf: Transform3D = fxf * (Lots.lot_local_xf(l, pd.footprint) if l.has("frame") else lot_xf(l, pd.footprint))
 		_place_poi(pd.id, StringName(str(res["instance"])), xf, Vector2(pd.footprint), pd)
+	# Plain fixtures (lamp posts, hydrants, benches) are batched per 64 m cell: one MultiMesh per
+	# model and one body holding every box (TD-107). An organic town has hundreds of them, and a
+	# body and a mesh instance each cost a node, a draw call and a physics object apiece.
+	var cells: Dictionary = {}
 	for fi: int in fw.fixtures.size():
 		var f: Dictionary = fw.fixtures[fi]
 		var pdef: PropDef = Content.get_def(&"prop", StringName(str(f.get("prop", "")))) as PropDef
@@ -369,36 +417,81 @@ func _place_framework(pl: Dictionary, buildings: bool = true) -> void:
 		if only.has_area() and not only.has_point(Vector2(lp.x, lp.z)):
 			continue
 		lp.y = world.height_at(lp.x, lp.z)
+		var xf := Transform3D(fxf.basis * Basis(Vector3.UP, deg_to_rad(float(f.get("rot", 0.0)))), lp)
+		var model: String = pdef.model_for(str(f.get("variant", "worn")))
 		# Street fixtures with a container (dumpster, wrecks, mailbox) are searchable like any
 		# prop indoors: same LootProp, tier 1, its id from the framework and the fixture's own id.
 		var cdef: ContainerDef = Content.get_def(&"container", pdef.container) as ContainerDef if pdef.container != &"" else null
-		var body: StaticBody3D
-		if cdef != null:
-			var lpr := PoiPieces.LootProp.new()
-			lpr.prop = pdef
-			lpr.cdef = cdef
-			lpr.container_id = StringName("c:%s:%s" % [pl["id"], str(f.get("id", "fx%d" % fi))])
-			lpr.tier = 1
-			body = lpr
-		else:
-			body = StaticBody3D.new()
-		body.name = "Fixture_%s_%d" % [pdef.id, fi]
+		if cdef == null:
+			var k := Vector2i(floori(lp.x / GRID_CELL), floori(lp.z / GRID_CELL))
+			if not cells.has(k):
+				cells[k] = {"models": {}, "boxes": []}
+			var models: Dictionary = cells[k]["models"]
+			if not models.has(model):
+				models[model] = []
+			(models[model] as Array).append(xf)
+			if pdef.collision != "none":
+				(cells[k]["boxes"] as Array).append([xf * Transform3D(Basis(), Vector3(0, pdef.size.y * 0.5, 0)), pdef.size])
+			continue
+		var lpr := PoiPieces.LootProp.new()
+		lpr.prop = pdef
+		lpr.cdef = cdef
+		lpr.container_id = StringName("c:%s:%s" % [pl["id"], str(f.get("id", "fx%d" % fi))])
+		lpr.tier = 1
+		lpr.name = "Fixture_%s_%d" % [pdef.id, fi]
 		var mi := MeshInstance3D.new()
-		mi.mesh = ModelLibrary.mesh(pdef.model_for(str(f.get("variant", "worn"))), "box")
-		body.add_child(mi)
+		mi.mesh = ModelLibrary.mesh(model, "box")
+		lpr.add_child(mi)
 		if pdef.collision != "none":
 			var cs := CollisionShape3D.new()
 			var box := BoxShape3D.new()
 			box.size = pdef.size
 			cs.shape = box
 			cs.position = Vector3(0, pdef.size.y * 0.5, 0)
-			body.add_child(cs)
-		add_child(body)
-		body.global_transform = Transform3D(fxf.basis * Basis(Vector3.UP, deg_to_rad(float(f.get("rot", 0.0)))), lp)
-		if _region_now != "":
-			if not _fixtures.has(_region_now):
-				_fixtures[_region_now] = []
-			(_fixtures[_region_now] as Array).append(body)
+			lpr.add_child(cs)
+		add_child(lpr)
+		lpr.global_transform = xf
+		_keep_fixture(lpr)
+	for k2: Vector2i in cells:
+		_keep_fixture(fixture_cell(cells[k2], "Fixtures_%s_%d_%d" % [str(pl["id"]).replace("/", "_"), k2.x, k2.y]))
+
+
+## One cell's batched fixtures ({models: {model id: [Transform3D]}, boxes: [[Transform3D, size]]},
+## world transforms) as a body at the origin: a MultiMesh per model, a box shape per solid one.
+func fixture_cell(cell: Dictionary, node_name: String) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.name = node_name
+	var models: Dictionary = cell["models"]
+	for model: String in models:
+		var xfs: Array = models[model]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = ModelLibrary.mesh(model, "box")
+		mm.instance_count = xfs.size()
+		for i: int in xfs.size():
+			mm.set_instance_transform(i, xfs[i])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = model.get_file()
+		mmi.multimesh = mm
+		body.add_child(mmi)
+	for b: Array in cell["boxes"]:
+		var cs := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = b[1]
+		cs.shape = box
+		cs.transform = b[0]
+		body.add_child(cs)
+	add_child(body)
+	body.global_transform = Transform3D.IDENTITY
+	return body
+
+
+func _keep_fixture(body: Node) -> void:
+	if _region_now == "":
+		return
+	if not _fixtures.has(_region_now):
+		_fixtures[_region_now] = []
+	(_fixtures[_region_now] as Array).append(body)
 
 
 ## A lot's POI frame in its framework: the footprint centred in the rect, its front (+Z) toward
@@ -503,9 +596,27 @@ func _place_built(inst: PoiInstance, instance_id: StringName, xf: Transform3D) -
 	add_child(inst)
 	inst.global_transform = xf
 	instances[instance_id] = inst
+	_grid_add(instance_id, inst)
+	# Its sleepers still out hunting from before it was freed: not spawned again at their posts.
+	if _roamers.has(instance_id):
+		inst._roaming = _roamers[instance_id]
+		_roamers.erase(instance_id)
+	if _died_away.has(instance_id):
+		_died_away.erase(instance_id)
+		inst.check_cleared()
 	_limit_draw_distance(inst)
 	inst.geometry_changed.connect(_on_poi_geometry_changed)
+	_set_hole(instance_id, true)
 	return inst
+
+
+## A streamed world's cellar of this building opens with it and closes when it is freed.
+func _set_hole(id: StringName, open: bool) -> void:
+	if registry == null or world == null:
+		return
+	var tm: TerrainManager = world.get(&"terrain") as TerrainManager
+	if tm != null:
+		tm.set_poi_hole(id, open)
 
 
 ## Draw distances for a building's props, doors, pieces and prop batches (the kit batches keep the
@@ -674,11 +785,50 @@ func footprint_at(pos: Vector3, margin: float = 0.0) -> StringName:
 	return hits[0][0] if not hits.is_empty() else &""
 
 
+## The built building whose box holds pos, tested in the building's own frame (a turned building's
+## world AABB would claim its neighbour's yard), found through a 64 m grid of the built ones: it is
+## asked every frame by the player's survival and audio, and by AI.
 func poi_at(pos: Vector3) -> PoiInstance:
-	for inst: PoiInstance in instances.values():
-		if inst.world_bounds().has_point(pos):
-			return inst
+	for id: StringName in _grid.get(Vector2i(floori(pos.x / GRID_CELL), floori(pos.z / GRID_CELL)), []):
+		var e: Array = _boxes[id]
+		if (e[1] as AABB).has_point((e[0] as Transform3D) * pos):
+			return instances.get(id)
 	return null
+
+
+# --- The built buildings' grid -----------------------------------------------------------------
+
+const GRID_CELL: float = 64.0
+## Vector2i cell -> Array of instance ids whose world box overlaps it.
+var _grid: Dictionary = {}
+## Instance id -> [inverse of its transform, its local box, its cells]. Buildings never move once
+## placed, so the transform is taken once.
+var _boxes: Dictionary = {}
+
+
+func _grid_add(id: StringName, inst: PoiInstance) -> void:
+	_grid_remove(id)
+	var wb: AABB = inst.world_bounds()
+	var cells: Array[Vector2i] = []
+	for cz: int in range(floori(wb.position.z / GRID_CELL), floori(wb.end.z / GRID_CELL) + 1):
+		for cx: int in range(floori(wb.position.x / GRID_CELL), floori(wb.end.x / GRID_CELL) + 1):
+			var k := Vector2i(cx, cz)
+			if not _grid.has(k):
+				_grid[k] = []
+			(_grid[k] as Array).append(id)
+			cells.append(k)
+	_boxes[id] = [inst.global_transform.affine_inverse(), inst.local_bounds(), cells]
+
+
+func _grid_remove(id: StringName) -> void:
+	if not _boxes.has(id):
+		return
+	for k: Vector2i in _boxes[id][2]:
+		var a: Array = _grid.get(k, [])
+		a.erase(id)
+		if a.is_empty():
+			_grid.erase(k)
+	_boxes.erase(id)
 
 
 func is_indoors(pos: Vector3) -> bool:

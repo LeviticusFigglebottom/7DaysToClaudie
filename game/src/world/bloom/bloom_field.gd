@@ -102,6 +102,8 @@ var _mottle_scale: float = 12.0
 var _default_edge: float = 0.5
 var _spot_reach: float = 1.6
 var _spots: Array = []
+## The zones' texel boxes from compose() (mask_ground visits only these).
+var _boxes: Array[Rect2i] = []
 
 
 ## The field of every built region in `regions` (region id -> RegionTerrain, as TerrainManager holds
@@ -303,6 +305,7 @@ func compose(cover: Rect2) -> void:
 				if v > 0.0:
 					clean[j * width + i] *= 1.0 - v
 	# Only the zones' boxes hold anything (the rest of the region stays 0).
+	_boxes = boxes
 	for b: Rect2i in boxes:
 		for j: int in range(b.position.y, b.end.y):
 			for i: int in range(b.position.x, b.end.x):
@@ -318,27 +321,31 @@ func mask_ground(regions: Dictionary) -> void:
 	if width == 0 or depth == 0:
 		return
 	var h: float = texel * 0.25
-	for j: int in depth:
-		var z: float = rect.position.y + (j + 0.5) * texel
-		for i: int in width:
-			var k: int = j * width + i
-			if base[k] == 0:
-				continue
-			var x: float = rect.position.x + (i + 0.5) * texel
-			var veg: float = 0.0
-			var n: int = 0
-			for rv: Variant in regions.values():
-				var rt: RegionTerrain = rv
-				if rt.rect.has_point(Vector2(x, z)):
-					veg = (rt.veg_at(x - h, z - h) + rt.veg_at(x + h, z - h) + rt.veg_at(x - h, z + h) + rt.veg_at(x + h, z + h)) * 0.25
-					n = 1
-					break
-			if n == 0:
-				continue
-			base[k] = int(round(base[k] * smoothstep(0.05, 0.6, veg)))
+	# Only the zones' boxes can hold anything (compose); a whole-map field of a streamed world is
+	# tens of millions of texels, nearly all empty. Boxes overlap: each texel is masked once.
+	var done := PackedByteArray()
+	done.resize(width * depth)
+	for b: Rect2i in _boxes:
+		for j: int in range(b.position.y, b.end.y):
+			var z: float = rect.position.y + (j + 0.5) * texel
+			for i: int in range(b.position.x, b.end.x):
+				var k: int = j * width + i
+				if base[k] == 0 or done[k] != 0:
+					continue
+				done[k] = 1
+				_mask_texel(regions, k, rect.position.x + (i + 0.5) * texel, z, h)
 	data = base.duplicate()
 	if not _spots.is_empty():
 		_apply_spots(Rect2i(0, 0, width, depth))
+
+
+func _mask_texel(regions: Dictionary, k: int, x: float, z: float, h: float) -> void:
+	for rv: Variant in regions.values():
+		var rt: RegionTerrain = rv
+		if rt.rect.has_point(Vector2(x, z)):
+			var veg: float = (rt.veg_at(x - h, z - h) + rt.veg_at(x + h, z - h) + rt.veg_at(x - h, z + h) + rt.veg_at(x + h, z + h)) * 0.25
+			base[k] = int(round(base[k] * smoothstep(0.05, 0.6, veg)))
+			return
 
 
 ## A zone's colonisation at p, before quantisation. The radius swells and shrinks along the

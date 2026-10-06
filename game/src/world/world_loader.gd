@@ -35,6 +35,13 @@ var stream: bool = false
 var spawn_hint: Vector3 = Vector3(NAN, NAN, NAN)
 ## Where the first area was centred (read after the load).
 var spawn_at: Vector3 = Vector3.ZERO
+## Load the models of the buildings around the spawn on this thread (RWG v2 Phase 3): the kit
+## pieces and the props of the authored buildings within the build ring, so the boot's and the
+## ring's first builds find them in ModelLibrary instead of loading them on the main thread. Off
+## under the headless dummy renderer, whose mesh table is not thread-safe (TD-103).
+var warm_models: bool = false
+## Models warmed by the last load (tools, LoadMeter).
+var warmed: int = 0
 ## A random world's map image (the loading screen shows it, ADR-0038 §4); "" otherwise.
 var map_path: String = ""
 ## Region states for the loading screen's map: rid -> LoadingMap.PENDING/WORKING/DONE.
@@ -92,7 +99,13 @@ func _resolve_lots() -> void:
 	if not resolve_lots or ContentDB.instance == null:
 		return
 	_set_stage("Spreading the Bloom", 0.97)
-	bloom_field = BloomField.build(world, detailed, ContentDB.instance.config(&"bloom"))
+	# A streamed world spreads it over every region, the coarse ones too (their 16 m vegetation
+	# mask is blurrier, but a region past the first area must not be Bloom-free, TD-106).
+	var spread: Dictionary = detailed
+	if stream:
+		spread = coarse.duplicate()
+		spread.merge(detailed, true)
+	bloom_field = BloomField.build(world, spread, ContentDB.instance.config(&"bloom"))
 	_set_stage("Planning the towns", 0.98)
 	for rid: String in detailed:
 		for pl: Dictionary in (detailed[rid] as RegionTerrain).placements:
@@ -104,7 +117,9 @@ func _resolve_lots() -> void:
 				continue
 			var out: Array = []
 			for res: Dictionary in Lots.resolve(fw, str(pl["id"]), world_seed):
-				var placed: bool = not str(res["kind"]) in ["reserved", "empty"]
+				# A streamed world generates a lot's building on a worker when it enters the
+				# build ring (PoiManager); only a world built whole at load needs them all now.
+				var placed: bool = not stream and not str(res["kind"]) in ["reserved", "empty"]
 				out.append([res, Lots.def_for(res) if placed else null])
 			lots[str(pl["id"])] = out
 	# Every region's placements, the coarse ones too: a streamed world composes only the first
@@ -112,6 +127,37 @@ func _resolve_lots() -> void:
 	var all: Dictionary = coarse.duplicate()
 	all.merge(detailed, true)
 	registry = PoiRegistry.build(world, all, lots, world_seed)
+	if stream and warm_models:
+		_set_stage("Unpacking the towns", 0.99)
+		_warm_models(spawn_at)
+
+
+## See warm_models. ModelLibrary takes its own mutex; a model the main thread loads meanwhile is
+## at worst loaded twice.
+func _warm_models(at: Vector3) -> void:
+	var db: Node = ContentDB.instance
+	var cfg: Dictionary = (db.call(&"config", &"streaming") as Dictionary).get("poi", {}) if db != null else {}
+	var want: Dictionary = {}
+	for f: String in ResourceLoader.list_directory("res://assets/generated/models/kit"):
+		if f.ends_with(".glb"):
+			want["kit/" + f.get_basename()] = true
+	var defs: Dictionary = {}
+	for hit: Array in registry.near(Vector2(at.x, at.z), float(cfg.get("build", 450.0))):
+		var did: StringName = registry.def_id(hit[0])
+		if did != &"":
+			defs[did] = true
+	for did: StringName in defs:
+		var pd: PoiDef = db.call(&"get_def", &"poi", did) as PoiDef
+		if pd == null:
+			continue
+		for p: Variant in pd.layout.get("props", []):
+			var pdef: PropDef = db.call(&"get_def", &"prop", StringName(str((p as Dictionary).get("prop", "")))) as PropDef
+			if pdef != null:
+				want[pdef.model_for(str((p as Dictionary).get("variant", "worn")))] = true
+	for m: String in want:
+		if m != "" and ModelLibrary.has_model(m):
+			ModelLibrary.mesh(m)
+			warmed += 1
 
 
 ## A random world: the saved world `world_id` when it is still on disk (identical to what the run

@@ -62,7 +62,7 @@ func setup_world(w: Node) -> void:
 				if seen.has(key):
 					continue
 				seen[key] = true
-				_add_lake(wb)
+				_todo.append(_add_lake.bind(wb))
 			else:
 				# Same world river sampled at identical arc lengths in every region: merge by arc.
 				var parts: Dictionary = river_parts.get(str(wb["id"]), {})
@@ -79,7 +79,32 @@ func setup_world(w: Node) -> void:
 			merged["points"].append(parts[k][0])
 			merged["widths"].append(parts[k][1])
 			merged["levels"].append(parts[k][2])
-		_add_river_piece(merged)
+		_todo.append(_add_river_piece.bind(merged))
+	# A tool or test without a booting world gets every body of water now.
+	if not (w.has_method(&"is_booting") and bool(w.call(&"is_booting"))):
+		for c: Callable in _todo:
+			c.call()
+		_todo.clear()
+
+
+## Lakes and river pieces still to build: a 10 km world has dozens, about 2.6 s in one frame.
+var _todo: Array[Callable] = []
+## Main-thread time the boot step spends on them per frame.
+const BOOT_SLICE_MS: float = 30.0
+
+
+## The water bodies as one boot step, a few a frame (GameWorld runs it right after this module's).
+func boot_steps() -> Array:
+	if _todo.is_empty():
+		return []
+	return [["Filling the rivers…", func() -> bool:
+		var t0: int = Time.get_ticks_usec()
+		while not _todo.is_empty():
+			var c: Callable = _todo.pop_front()
+			c.call()
+			if float(Time.get_ticks_usec() - t0) / 1000.0 >= BOOT_SLICE_MS:
+				break
+		return _todo.is_empty(), "water bodies"]]
 
 
 func _make_material(flow: float) -> ShaderMaterial:

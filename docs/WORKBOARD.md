@@ -47,7 +47,9 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
 |---|---|---|
 | The Corvane Field Lab (Y), landing | integrator | `corvane_field_lab.json` with its notes, loot, keys and items, `props_lab.py` with its catalog and `data/props/lab.json`, the `lab_signs` atlas, `test_field_lab.gd`, its pool entry, ADR-0046 |
 | Wilderness set pieces, round 3 (X), landing | integrator | its four building JSONs (Camp Tamarack, Elk Ridge Lodge, the Cordon Quarantine Camp, the Haldane Place) with their notes, loot and keys, its props family, `test_wilderness_round_three.gd`, and its four entries in the wilderness pool of `world_gen.json` |
-| Fidelity round (Z), restarted | integrator | the generators, textures and materials of the assets it upgrades, the impostor bake, the town biome paint in `terrain_composer.gd` (TD-136); small reported hunks in shaders, vegetation (session 3's threading rules), `ambience_director.gd`, biomes and species data |
+| Fidelity round (Z), code side | integrator | landed (ADR-0047); the asset side (fur, impostors: TD-005/006/067) waits for renders |
+| A `mine` wilderness site (TD-169) | integrator, agent | the RWG site kind and placement for buried-level POIs, its pool entry, generator VERSION 6, the random-world goldens, TD-206..210 |
+| Farming and rain collection (ADR-0049) | integrator, agent | new farming/rain systems, structures, crop items and data, their generators and tests, TD-211..220; one module line in `game_world.gd` (reported) |
 | Tier-5 contract, then the Ashen (ADR-0048) | session 2 | contract and trader data and code (`game/data/traders/`, `contracts`), new Ashen data (`game/data/factions/` or `enemies/ashen*`), Ashen AI under `game/src/ai/ashen/`, Ashen camp POIs, their props and generators; `enemy.gd` hunks reported |
 | Streaming default, Phase 3 part 2, Phase 4 (v7) | session 3 | `.github/workflows/`, `game/export_presets.cfg`, the load sequence (`game_world.gd`, `world_loader.gd`, `PoiManager`'s placement path, `PoiBuilder.build`'s validator argument), RegionStreamer, PoiRegistry, `terrain_holes.gd`, `terrain_manager.gd`, thread-safety fixes in `game/src/world/terrain/` and `vegetation/`, `game/src/core/save/` (v7) |
 | Wall-mounted prop offsets | session 4 | the wall-mount math in `PoiBuilder._prop_xf` and `poi_layout.gd`, wall-depth data on prop defs, and a validator check for wall gaps. Session 3 owns the rest of PoiBuilder; keep hunks small and report them |
@@ -59,11 +61,11 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
   0038 (streamed worlds: session 3 adds its phases), 0039 (traders and contracts, S2), 0040
   (organic towns, the hub), 0041 (new biomes, the hub), 0042 (wilderness set pieces, the hub, if
   needed), 0043 (session 4, if needed), 0044 (the Corvane caves, S2), 0045 (first-person hands,
-  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2).
-  Next free: 0049.
+  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub).
+  Next free: 0050.
 * TD: S2 094–101, 111–114, 141–148, 162–171 and 186–195 (contract, the Ashen); session 3 102–109,
   126–130 and 196–205; session 4 159–161 and 172–175 (hands); the hub 110, 115–125, 131–140,
-  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), then 206 up.
+  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), then 221 up.
 * Save version: 6 since random worlds. Traders add `world.traders` and `players[*].contracts`
   without a bump (both load empty from older saves). 7 is reserved for session 3's world bundle
   (RWG v2 Phase 4), which carries those keys through. Anyone else who needs a bump asks the hub

@@ -140,8 +140,11 @@ identical.
 
 ### 7. Terrain streams (Phase 2, session 3)
 
-**Opt-in while it lands.** A random world streams when the new game asks for it (`--stream`,
-the `stream` option) or `HOLLOWMERE_STREAM=1`; everything else loads as before.
+**The default for random worlds** (since round 2; it was opt-in while it landed). A tool turns
+it off with the new-game option `"stream": false` (`--no-stream` in smoke and tour) or
+`HOLLOWMERE_STREAM=0`, which also covers loads; the main map always loads whole. A streamed load
+generates no town lot up front (the ring does, on a worker), spreads the Bloom over every region
+(coarse ones masked at 16 m) and paints a region's road markings when it attaches.
 
 * **Load** (`WorldLoader._compose_streamed`): every region at 16 m (far tiles, water, the
   `height_at` fallback, spawn metadata), then only the built regions within
@@ -185,6 +188,37 @@ Measured (`make stream-check`, headless container, 5x5 world, seed 7): world rea
 * **Readers of "every building"** go through the registry: `all_buildings()` (directives),
   `markers()` (the tether map), `footprint_at()` (wanderer spawns, supply drops). Built-only
   readers (`poi_at`, `instances`) are for things that need the node.
+
+**Part 2 (round 2):**
+* **Fixture cells.** A framework's plain fixtures share one body per 64 m cell: a MultiMesh per
+  model and a box shape per solid one (`PoiManager.fixture_cell`). Searchable ones stay LootProps.
+* **Cellars per built building.** TerrainManager keeps each attached region's cellars
+  (`_region_holes`, compiled once per attach) and, with `gate_holes`, publishes only those of
+  buildings PoiManager has built (`set_poi_hole`, `TerrainHoles.combined`), re-meshing just the
+  chunks over one when it opens or closes. A buried level (ADR-0044) follows its building.
+* **The registry's box** is the larger of the pad and the def's footprint, so the Corvane adit's
+  buried levels (~50 m past its 24 m pad) build and free with the player down in them.
+* **`poi_at`** looks up a 64 m grid of the built buildings and tests the point in each one's own
+  frame (a turned building's world AABB claims its neighbour's yard).
+* **Roamers.** An awake sleeper that followed the player out keeps its building's death record
+  when the ring frees the building: PoiManager holds the hook and hands it back on rebuild.
+* **Model warm-up.** The loader thread loads the kit and the props of the authored buildings in
+  the build ring around the spawn into ModelLibrary (off headless, TD-103).
+* `test_poi_streaming.gd`: a door opened, a container looted, a sleeper killed and one roaming,
+  the building freed and rebuilt: state restored, picks pinned.
+* **StreamMeter** (`app/stream_meter.gd`, TD-107): the RegionStreamer owns one
+  (`terrain.streamer.meter`) fed by its StepRunner's `step_ran` and by a call each frame. It keeps
+  per step *kind* (the step name without its id: `attach`, `poi plan`, `poi`, `poi region`,
+  `road markings`, `trader`...) the count, total and max ms; the longest frame (wall time between
+  frames) with the kinds that ran in it; and late seconds (a player on ground whose region isn't
+  attached, at most 0.1 s a frame). Every 60 s of play it logs one `stream` line and starts a new
+  window, keeping a whole-session tally for tools; `over_budget(8.0)` lists the kinds over the
+  per-step budget. F4 shows the window's longest frame, worst kind and queued steps;
+  `stream_walk` prints the session report after each leg.
+  First reading (`stream_walk`, headless, size 4, seed 7, 1 km out and back twice, load ~3):
+  634 steps in 681 s costing 3.2 s; worst steps `attach` 450 ms, `detach` 112 ms, `poi plan`
+  73 ms, `poi` 58 ms, `poi region` 33 ms, `trader` 15 ms (all six over 8 ms); the longest frame,
+  646 ms, ran no streaming step at all; no late seconds.
 
 Measured (`stream_walk`, headless, size 4, seed 11, 2 km out and back twice): no late seconds,
 longest frame 679 ms, static memory flat at 423 MiB, 6,244 nodes against 19,567 when regions

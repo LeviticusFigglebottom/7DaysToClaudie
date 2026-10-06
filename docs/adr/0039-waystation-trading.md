@@ -76,6 +76,13 @@ The pieces were there but unused:
   * The contract is done once `duration` seconds pass with the player within 30 m.
   * Leaving for 8 s or dying drops the uplink, and it can be started again. A run is never saved
     half-held.
+* **A tier-5 site** (TD-179): `fetch_t5` sends a Trusted player to the Corvane Field Lab (ADR-0046) for
+  a sealed Bloom core. Three fields make a fetch fit a unique site whose payoff is already there:
+  * `place: false`: nothing is set down; the vault's guaranteed core is the item. The contract is
+    ready while the player carries one, wherever it came from, and open again if they drop or sell it.
+  * `target.fresh: false`: offered even after the player has been inside.
+  * `once`: never dealt again once turned in (`ContractLog.done`).
+  It pays 450 scrip, well over the core's 240-scrip sale, plus XP, standing and two antifungals.
 * **Turning in** at the post pays scrip and items (overflow drops at the player's feet), XP
   (`progression.add_xp`) and reputation.
 * **Reputation** is per player and per contract giver. Its tiers (Unknown, Known, Trusted, Program

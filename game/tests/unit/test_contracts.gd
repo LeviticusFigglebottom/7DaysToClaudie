@@ -146,3 +146,15 @@ func test_old_saves_load_with_no_trading() -> void:
 	p.from_dict({"id": "p:1"})
 	assert_eq(p.contracts.active.size(), 0)
 	assert_eq(p.contracts.reputation(&"waystation_9"), 0)
+
+
+func test_a_tier_five_site_has_a_contract() -> void:
+	# TD-179: some contract the board deals targets tier 5, so the field lab is on it.
+	var found: bool = false
+	for qd: QuestDef in Contracts.contract_defs(_td, 3):
+		if qd.tier_band().y >= 5:
+			found = true
+			assert_false(qd.place, "%s: the site's payoff is already there" % qd.id)
+			assert_true(qd.once)
+			assert_gt(int(qd.rewards.get("scrip", 0)), _td.sell_price(Content.item(StringName(qd.item))), "pays over the sale price")
+	assert_true(found)

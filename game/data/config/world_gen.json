@@ -7,7 +7,7 @@
     {"id": "places", "label": "Towns and places"}
   ],
   "options": {
-    "size": {"category": "map", "type": "int", "min": 2, "max": 7, "step": 1, "default": 4, "label": "Size (1 km regions a side)"},
+    "size": {"category": "map", "type": "int", "min": 2, "max": 10, "step": 1, "default": 4, "label": "Size (1 km regions a side)"},
     "terrain": {"category": "land", "type": "enum", "values": ["flat", "rolling", "hilly", "mountainous"], "default": "rolling", "label": "Terrain"},
     "roughness": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.5, "label": "Roughness"},
     "conifer": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.7, "label": "Conifer forest"},

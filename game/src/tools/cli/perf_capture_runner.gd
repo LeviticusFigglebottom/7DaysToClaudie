@@ -14,6 +14,8 @@ var _frames: int = 120
 var _ablate: bool = true
 ## Quit once the load's report and its first frames in the world are logged (LoadMeter).
 var _load_only: bool = false
+## Also measure a Hum night at the town (--hum): the horde's waves on the main thread (TD-003).
+var _hum: bool = false
 ## Headless triangle census per view (what each layer submits within its visibility range).
 var _census: bool = false
 var _model_of: Dictionary = {}
@@ -61,6 +63,8 @@ func _ready() -> void:
 				_load_only = true
 			"--census":
 				_census = true
+			"--hum":
+				_hum = true
 	_run.call_deferred()
 
 
@@ -92,6 +96,9 @@ func _run() -> void:
 			m["modules"] = await _ablate_modules()
 		_report["views"][v["name"]] = m
 		print("[perf] %s %s" % [v["name"], _brief(m)])
+	if _hum:
+		_report["hum"] = await _hum_night()
+		print("[perf] hum %s" % _brief(_report["hum"]))
 	_report["sprint"] = await _sprint(Vector3(-300, 0, 2302), Vector3(1, 0, -0.35).normalized(), 20.0)
 	print("[perf] sprint %s" % _brief(_report["sprint"]))
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out))
@@ -144,6 +151,26 @@ func _measure(n: int) -> Dictionary:
 	return {"frame_ms_avg": _avg(walls), "frame_ms_p95": sorted[int(n * 0.95)], "frame_ms_max": sorted[n - 1],
 		"process_ms": proc / n, "physics_ms": phys / n, "draw_calls": dc / n, "primitives": prim / n, "objects": objs / n,
 		"nodes": get_tree().get_node_count()}
+
+
+## A Hum night at the town street view: the waves spawned and pathing toward the player (in god
+## mode, standing still), measured once the horde reaches `members` bodies or 60 s pass.
+func _hum_night() -> Dictionary:
+	var v: Dictionary = VIEWS[2]
+	await _goto(v["pos"], v["look"])
+	var game: Node = get_node("/root/Game")
+	var ai: Node = w.get(&"ai")
+	var day: int = game.session.clock.next_horde_day(1)
+	game.session.clock.set_time(day, 21.8)
+	var end: int = Time.get_ticks_msec() + 60000
+	while Time.get_ticks_msec() < end and (ai.hum.members as Dictionary).size() < 20:
+		await get_tree().process_frame
+	var m: Dictionary = await _measure(_frames)
+	m["members"] = (ai.hum.members as Dictionary).size()
+	if _ablate:
+		m["modules"] = await _ablate_modules()
+	game.session.clock.set_time(day + 1, 7.0)
+	return m
 
 
 ## Each world module's cost: process + physics time with it on minus with it off.

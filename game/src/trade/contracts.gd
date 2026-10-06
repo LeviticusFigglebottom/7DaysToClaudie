@@ -14,10 +14,14 @@ static var _loot_rooms: Dictionary = {}
 ## Board offers of `trader` on `day`: [{id, def, target, name, pos: [3], tier, day}]. `buildings`
 ## is PoiManager.all_buildings(); `poi_states` WorldState.pois (visited or cleared buildings are
 ## never offered); `rep_tier` caps the contracts dealt; `busy` holds building ids already taken by
-## the player's active contracts.
+## the player's active contracts; `done` the player's turned-in contracts by def id (a `once`
+## contract done is never dealt again).
 static func offers(trader: TraderDef, day: int, world_seed: int, buildings: Array, post_pos: Vector3,
-		rep_tier: int, poi_states: Dictionary, busy: Dictionary = {}) -> Array[Dictionary]:
-	var defs: Array[QuestDef] = contract_defs(trader, rep_tier)
+		rep_tier: int, poi_states: Dictionary, busy: Dictionary = {}, done: Dictionary = {}) -> Array[Dictionary]:
+	var defs: Array[QuestDef] = []
+	for qd: QuestDef in contract_defs(trader, rep_tier):
+		if not (qd.once and int(done.get(String(qd.id), 0)) > 0):
+			defs.append(qd)
 	var out: Array[Dictionary] = []
 	if defs.is_empty():
 		return out
@@ -63,7 +67,8 @@ static func _weighted(defs: Array[QuestDef], rng: RandomNumberGenerator) -> Ques
 
 
 ## The building an offer of `qd` sends the player to: in its tier and distance bands, of its kind,
-## not yet visited or cleared, not `used`, and (for clear) holding sleepers. Among those the one the
+## not yet visited or cleared (unless its target isn't `fresh`), not `used`, and (for clear and
+## fetch) holding sleepers. Among those the one the
 ## seed key ranks first, so the pick does not depend on the order buildings were placed in.
 static func pick_target(qd: QuestDef, buildings: Array, post_pos: Vector3, poi_states: Dictionary,
 		used: Dictionary, key: String) -> Dictionary:
@@ -85,7 +90,7 @@ static func pick_target(qd: QuestDef, buildings: Array, post_pos: Vector3, poi_s
 		if dist < db.x or dist > db.y:
 			continue
 		var st: Dictionary = poi_states.get(bid, {})
-		if bool(st.get("visited", false)) or bool(st.get("cleared", false)):
+		if qd.fresh_only() and (bool(st.get("visited", false)) or bool(st.get("cleared", false))):
 			continue
 		if qd.quest_type != "defend" and sleepers_of(StringName(str(b.get("def", "")))) == 0:
 			continue

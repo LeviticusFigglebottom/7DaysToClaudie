@@ -284,3 +284,25 @@ func test_a_body_stands_on_the_cellar_floor() -> void:
 	player.velocity = Vector3.ZERO
 	await _settle(90)
 	assert_almost_eq(player.global_position.y, PAD_Y, 0.08, "stands on the terrain beside the house")
+
+
+func test_combined_keeps_only_the_built_buildings_cellars() -> void:
+	# A streamed world cuts a cellar only once its building stands (ADR-0038 §8, TD-107).
+	var a := TerrainHoles.new()
+	var cells: Array[Vector2i] = [Vector2i(0, 0), Vector2i(1, 0)]
+	a.add_cells(&"town/lot_1", cells, Vector2.ZERO, Transform3D(Basis(), Vector3(10, 5, 10)), 2.0, 5.0, 4.8)
+	a.add_buried(&"adit@-1", cells, Vector2.ZERO, Transform3D(Basis(), Vector3(50, 5, 50)), 1.0, 3.8)
+	var b := TerrainHoles.new()
+	b.add_cells(&"adit", cells, Vector2.ZERO, Transform3D(Basis(), Vector3(50, 5, 50)), 1.0, 5.0, 4.8)
+	var all: TerrainHoles = TerrainHoles.combined([a, b])
+	assert_eq(all.holes.size(), 2)
+	assert_eq(all.buried.size(), 1)
+	var gated: TerrainHoles = TerrainHoles.combined([a, b], {&"adit": true})
+	assert_eq(gated.holes.size(), 1, "only the built one cuts")
+	assert_eq(gated.holes[0].id, &"adit")
+	assert_eq(gated.buried.size(), 1, "its buried level comes with it")
+	assert_false(gated.contains(10.5, 10.5), "the unbuilt lot is whole")
+	assert_true(gated.contains(50.5, 50.5))
+	assert_true(TerrainHoles.combined([a, b], {}).is_empty(), "nothing built, nothing cut")
+	assert_eq(TerrainHoles.owner_of(&"adit@-1"), &"adit")
+	assert_ne(a.bounds_of(&"adit").size, Vector2.ZERO, "a buried level counts for its POI's bounds")

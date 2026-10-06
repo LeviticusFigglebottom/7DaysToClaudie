@@ -106,8 +106,9 @@ func test_rect_lots_of_a_main_map_framework_match() -> void:
 
 func test_a_turned_poi_footprint_and_nearest_first() -> void:
 	# A 20 x 10 building turned 90 degrees: its footprint runs 10 along x and 20 along z.
-	var p1 := {"kind": "poi", "def": String(PICK), "id": "p1", "origin": [100.0, 5.0, 100.0], "rotation": 90.0, "size": [20, 10]}
-	var p2 := {"kind": "poi", "def": String(PICK), "id": "p2", "origin": [300.0, 5.0, 100.0], "rotation": 0.0, "size": [12, 12]}
+	# No such def: the box is the pad (a known def's footprint would widen it, see below).
+	var p1 := {"kind": "poi", "def": "test_registry_shed", "id": "p1", "origin": [100.0, 5.0, 100.0], "rotation": 90.0, "size": [20, 10]}
+	var p2 := {"kind": "poi", "def": "test_registry_shed", "id": "p2", "origin": [300.0, 5.0, 100.0], "rotation": 0.0, "size": [12, 12]}
 	var reg := PoiRegistry.build(null, {"r0": _rt([p1, p2])}, {}, _seed())
 	var e: Dictionary = reg.entries[&"p1"]
 	var c: Vector2 = e["center"]
@@ -123,3 +124,16 @@ func test_a_turned_poi_footprint_and_nearest_first() -> void:
 	assert_almost_eq(float(near[0][1]), 20.0, 1e-3, "distance to the box edge")
 	assert_eq(reg.near(c, 50.0).size(), 1, "the far one is outside 50 m")
 	assert_eq((reg.by_region["r0"] as Array).size(), 2)
+
+
+func test_a_poi_box_covers_its_buried_levels() -> void:
+	# The Corvane adit (ADR-0044): a 24 x 14 pad, levels running 70 m along its x under the ground.
+	# The ring builds and frees by the box, so the box is the def's footprint, not the pad.
+	var pd: PoiDef = Content.get_def(&"poi", &"corvane_larkspur_adit") as PoiDef
+	assert_not_null(pd)
+	var pl := {"kind": "poi", "def": "corvane_larkspur_adit", "id": "adit", "origin": [0.0, 0.0, 0.0], "rotation": 0.0, "size": [24, 14]}
+	var reg := PoiRegistry.build(null, {"r0": _rt([pl])}, {}, _seed())
+	var e: Dictionary = reg.entries[&"adit"]
+	assert_almost_eq(e["half"], Vector2(pd.footprint) * 0.5, Vector2.ONE * 1e-4, "half extents of the footprint")
+	assert_eq(reg.footprint_at(Vector2(60.0, 7.0)), &"adit", "60 m in, past the pad, is still the adit")
+

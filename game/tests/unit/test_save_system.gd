@@ -164,3 +164,78 @@ func test_a_lone_backup_still_lists() -> void:
 	var mine: Array = SaveSystem.list_slots().filter(func(m: Dictionary) -> bool: return m.get("slot") == SLOT)
 	assert_eq(mine.size(), 1, "listed under its own name")
 	assert_not_null(SaveSystem.load_session(SLOT), "and loadable")
+
+
+# --- Save v7: the generator version and the world bundle (RWG v2 §5) ---------------------------
+
+const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
+const Generator := preload("res://src/worldgen/rwg/rwg_generator.gd")
+
+
+func _gen(seed: int) -> Dictionary:
+	var s: RefCounted = GenSettings.from_dict({"seed": seed, "values": {"size": 2}})
+	return s.call(&"to_dict")
+
+
+func test_v6_random_save_gets_its_generator_version_from_its_id() -> void:
+	var gen: Dictionary = _gen(4242)
+	var settings: RefCounted = GenSettings.from_dict(gen)
+	var old_id: String = Generator.world_id_for_version(settings, 2)
+	var out: Dictionary = SaveSystem.migrate({"save_version": 6, "session": {"world_mode": "random", "world_gen": gen, "world_id": old_id,
+		"world": {"traders": {"t": {"stock": 1}}, "ashen": {"camps": {"a1": {"alive": 3}}}}, "players": {"p:1": {"contracts": [{"id": "c1"}]}}}})
+	assert_eq(int(out["save_version"]), 7)
+	assert_eq(int(out["session"]["generator_version"]), 2, "the version whose hash is the id")
+	assert_eq(out["session"]["world_files"], "shared")
+	assert_eq(out["session"]["world"]["traders"], {"t": {"stock": 1}}, "traders carry through")
+	assert_eq(out["session"]["world"]["ashen"], {"camps": {"a1": {"alive": 3}}}, "a key the migration doesn't know (the Ashen, ADR-0048) carries through")
+	assert_eq(out["session"]["players"]["p:1"]["contracts"], [{"id": "c1"}], "contracts carry through")
+	var odd: Dictionary = SaveSystem.migrate({"save_version": 6, "session": {"world_mode": "random", "world_gen": gen, "world_id": "rwg_000000000000"}})
+	assert_eq(int(odd["session"]["generator_version"]), 1, "an id no version makes counts as generator 1")
+
+
+func test_v6_main_map_save_only_changes_version() -> void:
+	var out: Dictionary = SaveSystem.migrate({"save_version": 6, "session": {"world_mode": "main_map", "world_gen": {}}})
+	assert_eq(int(out["save_version"]), 7)
+	assert_false(out["session"].has("generator_version"))
+	assert_eq(SaveSystem.migrate({"save_version": 8, "session": {}}), {}, "a v8 save is refused")
+	assert_push_error_count(1, "and reported")
+
+
+func test_a_new_random_run_records_the_generator_version() -> void:
+	var s: GameSession = GameSession.create_new({"world_gen": _gen(77), "seed": 1})
+	assert_eq(s.generator_version, Generator.VERSION)
+	assert_eq(GameSession.from_dict(s.to_dict()).generator_version, Generator.VERSION)
+	assert_eq(GameSession.create_new({}).generator_version, 0, "none on the main map")
+
+
+func test_the_bundle_restores_a_deleted_world_folder_byte_for_byte() -> void:
+	var s: GameSession = GameSession.create_new({"world_gen": _gen(31337), "seed": 1})
+	var dir: String = SaveSystem.WORLDS_ROOT.path_join(String(s.world_id))
+	SaveSystem._remove_recursive(dir)
+	# A stand-in world folder: the bundle copies files, whatever they hold.
+	DirAccess.make_dir_recursive_absolute(dir.path_join("regions/r0"))
+	var files: Dictionary = {"world.json": "{\"w\": 1}", "frameworks.json": "{}", "meta.json": "{\"key\": 1}", "regions/r0/region.json": "{\"r\": 0}", "map.png": "png"}
+	for rel: String in files:
+		var f := FileAccess.open(dir.path_join(rel), FileAccess.WRITE)
+		f.store_string(files[rel])
+		f.close()
+	assert_eq(SaveSystem.save_session(s, SLOT), OK)
+	var zip: String = SaveSystem.slot_dir(SLOT).path_join(SaveSystem.bundle_name(String(s.world_id)))
+	assert_true(FileAccess.file_exists(zip), "the slot has its world bundle")
+	# A second save carries the bundle over even with the folder gone.
+	SaveSystem._remove_recursive(dir)
+	assert_eq(SaveSystem.save_session(s, SLOT), OK)
+	assert_true(FileAccess.file_exists(zip), "carried from the previous save")
+	var meta: Dictionary = SaveSystem.list_slots().filter(func(m: Dictionary) -> bool: return m.get("slot") == SLOT)[0]
+	assert_eq(SaveSystem.world_warning(meta), "", "no warning: the bundle has the world")
+	var loaded: GameSession = SaveSystem.load_session(SLOT)
+	assert_not_null(loaded)
+	assert_eq(loaded.world_files, &"slot", "restored from the slot")
+	for rel2: String in files:
+		if rel2 == "map.png":
+			assert_false(FileAccess.file_exists(dir.path_join(rel2)), "the map is not bundled")
+			continue
+		assert_eq(FileAccess.get_file_as_string(dir.path_join(rel2)), files[rel2], "%s restored" % rel2)
+	SaveSystem._remove_recursive(dir)
+	SaveSystem.delete_slot(SLOT)
+	assert_ne(SaveSystem.world_warning(meta), "", "folder and bundle both gone: the menu warns")
