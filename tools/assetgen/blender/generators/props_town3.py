@@ -1509,8 +1509,9 @@ def _face_key(f) -> tuple:
 
 
 def _triangulated(fn):
-    """Runs a builder, then triangulates every part with fixed diagonals: the exporter's own quad split
-    picks between equal diagonals unstably, which broke byte-identical rebuilds (make assets-determinism)."""
+    """Runs a builder, then triangulates every part with fixed diagonals and puts its faces in a canonical
+    order: the exporter's own quad split and the face order some bmesh ops leave both varied from run to
+    run, which broke byte-identical rebuilds (build_assets.py --check-determinism)."""
     def run(p: Prop) -> None:
         fn(p)
         for q in p.parts:
