@@ -36,6 +36,8 @@
     {"id": "hold_tier3", "name": "Clear a hard building", "description": "The ranger station, the grange hall, the Timberline or the Okafor place. Whatever is held there is waiting for you.",
      "chapter": 3, "order": 5, "event": "clear_poi", "targets": ["pell_ranger_station", "pell_grange_hall", "timberline_motel", "okafor_farmhouse"],
      "reward": {"xp": 400, "items": {"first_aid_kit": 1}}},
+    {"id": "hold_contract", "name": "Complete a Waystation contract", "description": "Waystation 9 stands on Route 9, south, short of where the river leaves the valley. The quartermaster pays scrip for work done.",
+     "chapter": 3, "order": 6, "event": "contract", "reward": {"xp": 200, "items": {"scrip": 30}}},
 
     {"id": "bloom_infected", "name": "Put down a Seeded or Bloomed Hollowed", "description": "Pale threads under the skin. They hit harder and take longer to drop.",
      "chapter": 4, "chapter_name": "Into the Bloom", "order": 1, "event": "kill", "min_tier": "seeded", "reward": {"xp": 200}},

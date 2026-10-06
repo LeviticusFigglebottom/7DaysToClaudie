@@ -31,6 +31,8 @@ var ambience: Node = null
 var supply_drops: Node = null
 var directives: Node = null
 var wildlife: Node = null
+## Waystation trading (ADR-0039): trader posts, their shops, contracts and safe zones.
+var traders: Node = null
 var is_ready: bool = false
 ## Framework lots resolved by the world loader (WorldLoader.lots), read by the POI manager.
 var poi_lots: Dictionary = {}
@@ -269,6 +271,7 @@ const MODULES: Array = [
 	["supply_drops", "res://src/world/supply_drops.gd", "Listening…"],
 	["directives", "res://src/progression/directive_tracker.gd", "Listening…"],
 	["wildlife", "res://src/wildlife/wildlife_manager.gd", "Waking the woods…"],
+	["traders", "res://src/trade/trader_manager.gd", "Manning the Waystation…"],
 ]
 
 

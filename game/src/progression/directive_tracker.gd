@@ -31,6 +31,10 @@ func setup_world(w: Node) -> void:
 	Events.trap_disarmed.connect(func(pid: StringName, _poi: StringName, trap_type: StringName, was_armed: bool) -> void:
 		if was_armed and Game.session != null and pid == Game.session.local_player_id:
 			record("disarm_trap", trap_type))
+	# A Waystation contract turned in (ADR-0039).
+	Events.contract_completed.connect(func(pid: StringName, _cid: String, def_id: StringName, _tier: int) -> void:
+		if Game.session != null and pid == Game.session.local_player_id:
+			record("contract", def_id))
 	if p != null:
 		fit_world(p)
 		# A loaded game may already meet a level goal in its open chapter.
@@ -45,11 +49,29 @@ func fit_world(p: PlayerState) -> void:
 	if pois == null or not pois.has_method(&"all_buildings") or Game.session == null:
 		return
 	var fit: Dictionary = Directives.for_world(pois.call(&"all_buildings"), drop_site(), Game.session.world_seed)
+	# A world without a trader post (a random world whose generator places none) can't pay a
+	# contract: those directives are spent (ADR-0039).
+	if not _has_trader():
+		for d: DirectiveDef in Content.all(&"directive"):
+			if d.event == "contract":
+				(fit["spent"] as Dictionary)[d.id] = true
 	for id: Variant in fit["stand_ins"]:
 		Log.info("directives", "%s: this world stands in %s" % [id, (fit["stand_ins"][id] as Dictionary)["targets"]])
 	for id2: Variant in fit["spent"]:
 		Log.info("directives", "%s: spent (no such building in this world)" % id2)
 	p.directives.set_world(fit)
+
+
+## Whether any region places a trader post (a `trader:` spawn feature, TraderManager).
+func _has_trader() -> bool:
+	var terrain: Node = world.get(&"terrain") if world != null else null
+	if terrain == null:
+		return false
+	for rid: Variant in (terrain.get(&"regions") as Dictionary).keys():
+		for sid: Variant in ((terrain.regions[rid] as RegionTerrain).spawns as Dictionary).keys():
+			if str(sid).begins_with("trader:"):
+				return true
+	return false
 
 
 ## The drop site: the "drop_site" spawn of the world's regions (where a new game starts).

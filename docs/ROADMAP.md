@@ -159,7 +159,10 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
 - Full perk trees (rank 4–5 capstones), forge/chemistry bench/grill, more schematics and
   journals (the joinery track has no recipes yet, TD-030). (The Program's supply drone landed
   early, in M1: ADR-0023.)
-- Waystation 9 trader, contracts (clear/fetch/defend), reputation tiers, scrip economy.
+- ✅ Waystation 9 trader (ADR-0039): a safe-zone post in D6 by Route 9 (D7 later), a quartermaster,
+  a scrip shop with restocks and reputation tiers, a contracts board dealing clear/fetch/defend
+  contracts by the day, turn-ins for scrip, XP and standing; `program_relay` camps for random
+  worlds once the generator places them. Gaps: TD-141..148.
 - More POIs (mine office, rail depot, dam control house...) and the Mile 12 framework.
   Church, motel, gas station, bar, clinic, post office, lookout, logging camp, sawmill and the
   Okafor farm landed early, in M1.

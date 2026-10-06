@@ -12,8 +12,8 @@ extends GutTest
 ## `SLOW_TESTS=1` also runs the 1 m variant, with one band and with four.
 ## The random world's digests were re-recorded for generator VERSION 2 (ADR-0040: organic towns,
 ## world-level, which the composer applies where world.json lists `towns`) and VERSION 3 (a trader
-## post by each town: its drive, clearing, spawn and level yard); Larch Hollow's are unchanged by
-## both, the main map having no towns or generated posts.
+## post by each town: its drive, clearing, spawn and level yard). Larch Hollow's were re-recorded
+## when Waystation 9 was placed in it (ADR-0039: a clearing, its spawn and its drive).
 ##
 ## When a digest differs: if the inputs changed on purpose (region.json, a framework or POI the
 ## region places, world_gen.json, the generator), the recorded input hash differs too and the
@@ -35,30 +35,30 @@ const DIGEST_KEYS: PackedStringArray = ["height", "splat0", "splat1", "biome", "
 ## input hash at that spacing, to tell changed inputs from a changed composer.
 const GOLDEN: Dictionary = {
 	"larch@4": {
-		"input": "54ae7a7df64fafb5d6394ccee010f54ba0ed548733580c06e5a6a786968fc4e8",
-		"height": "186327d2896500f5791cba8a7d5631df88bc7c64614494405c6b0effc4777882",
-		"splat0": "2d09afced42733fc9f72dcc058ce4e8d",
-		"splat1": "5227d9078a3b81325cf3cd2b13ddbd5b",
+		"input": "9945857a16cffc9394ac1667de7644ec418c2233b9115dd8e421879b74d3e3f4",
+		"height": "3118b8dc6a4c57459b5caa001d3bdbd07b247f027e5c0b2521387cbdb0956be4",
+		"splat0": "166dc12e4d0cdeb0405a999e1da80552",
+		"splat1": "a0e0f3e9d0ea61b64313f463af34b2c4",
 		"biome": "6c883f031ffa52c00826e72dfa908c54",
-		"vegmask": "e4ee8a66dacfdc806c7af6a6f075570f",
+		"vegmask": "14a18c72f9b7c96582837c7836e606b9",
 		"water": "557e9069b493e19e7402548619659f8b",
-		"roads": "1589f8d00de3c447c0854bcf5ec64778",
+		"roads": "3cd6abe5ddc37e6287223186137e5441",
 		"bridges": "f97bf6a0088f3da534491ebf01e8e086",
 		"placements": "5db5e17fff58e7d5c1b10c4718be4364",
-		"other": "ed9cc80bc633117e93e2656877d48744",
+		"other": "343d7ca5a31189c644d8aca5e9ee0028",
 	},
 	"larch@8": {
-		"input": "c495f4ee3be2d5babb8a027b0eb09edab7f05f71b20608a5832cee6d4ea78f42",
-		"height": "3b691c89e3863f1e97151d5f09ade601007f88aaf8fa47638fcfad14a43f2694",
-		"splat0": "9b0656ece7ac6d94a88996a796ec3121",
-		"splat1": "b73cc7bc1b24466c1e3b14eeab40ade2",
+		"input": "cf53ed68087c6800ecfae744be2fa3dc365513ea38d654157e8bcd3f62f45ce5",
+		"height": "c8c7b635fbb8bf8f35f964228b90db3636ec5cfe244e4be50cd710fd6d8de4b9",
+		"splat0": "61288ee19ae1fa32ce1ee446acf2f753",
+		"splat1": "71f4ef029e083c97ad7fdbac70c5e563",
 		"biome": "5fc178c6cfe7f40e9da4f522d6103c8a",
-		"vegmask": "a445f5690db1b1070a384b431b8df07f",
+		"vegmask": "dd48ddaabc8b0945ed8943fb27f4dbfe",
 		"water": "43ffa565190e27f18b8b0f4c0013ec3a",
-		"roads": "d5c40e8a39e6bfeaecee395e6c034a19",
+		"roads": "b18902326c95c025e50cca0eaa479f9f",
 		"bridges": "10e8c17e881965fe5bc24d68509cbd54",
 		"placements": "2a4dee192c9e6bab95bef493eb2e1af7",
-		"other": "2159e3c6cd82fe9a12597972cd9df77f",
+		"other": "0619089a625a0d5200fa83faa962ee3c",
 	},
 	"larch@1": {
 		"input": "fc909f3c3f5121150c10178203c76978f28de7aa7f13c6c2b46db36640a0f0ac",

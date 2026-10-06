@@ -1,0 +1,18 @@
+{
+ "_doc": "Contract items (ADR-0039).",
+ "defs": [
+  {
+   "id": "program_cache",
+   "name": "Program Cache",
+   "description": "A sealed Remand Program case, survey-orange, a waystation number stencilled on the lid. The quartermaster pays for it unopened.",
+   "category": "quest",
+   "stack_max": 4,
+   "bulk": 2.0,
+   "value": 0,
+   "model": "items/supply_canister",
+   "tags": [
+    "contract"
+   ]
+  }
+ ]
+}
