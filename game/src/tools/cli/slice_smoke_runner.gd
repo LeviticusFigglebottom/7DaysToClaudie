@@ -73,6 +73,10 @@ func _run() -> void:
 	ok(ps.inventory.has(&"lighter"), "start kit given")
 	await seconds(2.0)
 
+	# --- What ships: real models, not stand-ins (-- --expect-assets; the Build workflow's pack run) --
+	if args.has("--expect-assets"):
+		await _check_real_models(w, p)
+
 	# --- Trees: fell one, logs appear ---------------------------------------------------------
 	var veg: VegetationManager = w.vegetation
 	ok(veg != null, "vegetation module")
@@ -225,3 +229,28 @@ func _run() -> void:
 func _finish() -> void:
 	print("[smoke] %s — %d failure(s), %.1fs" % ["PASS" if _fails == 0 else "FAIL", _fails, (Time.get_ticks_msec() - _t0) / 1000.0])
 	get_tree().quit(1 if _fails > 0 else 0)
+
+
+## Fails the run when a build that should carry the generated assets shows stand-ins: every
+## vegetation model, every building kit piece built so far and a Hollowed's body must come from
+## the generated models (the owner's first playtest ran on stand-ins without anyone noticing).
+func _check_real_models(w: GameWorld, p: Player) -> void:
+	var share: float = ModelLibrary.generated_share(get_node("/root/Content"))
+	ok(share >= 1.0, "every vegetation model is generated (%.0f%%)" % (share * 100.0))
+	var kit: int = 0
+	var standins: Array[String] = []
+	for piece: String in PoiParts._meshes:
+		kit += 1
+		if not ModelLibrary._generated.has(PoiParts.KIT + piece):
+			standins.append(piece)
+	ok(kit > 0 and standins.is_empty(), "buildings use generated kit pieces (%d built, stand-ins: %s)" % [kit, ", ".join(standins)])
+	var ai: AIDirector = w.ai as AIDirector
+	if ok(ai != null, "AI module for the model check"):
+		var at: Vector3 = p.global_position + Vector3(8, 0, 0)
+		at.y = w.height_at(at.x, at.z)
+		var e: Enemy = ai.spawn(&"hollow", at)
+		if ok(e != null, "spawned a Hollowed for the model check"):
+			await frames(2)
+			ok(e.visual != null and not e.visual._placeholder, "the Hollowed has its generated body")
+			e.queue_free()
+			await frames(2)

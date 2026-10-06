@@ -67,12 +67,12 @@ jobs:
               --forbid res://tests/ --forbid res://addons/gut/ --forbid res://src/tools/cli/
           done
 
-      - name: Smoke the exported Linux pack (the slice end to end on what ships)
+      - name: Smoke the exported Linux pack (the slice end to end on what ships, real models required)
         run: |
           set -o pipefail
           mkdir -p build/run && cd build/run
           ../../.tools/godot/godot --headless --main-pack ../export/linux/Hollowmere.pck \
-            -s "$GITHUB_WORKSPACE/game/src/tools/cli/slice_smoke.gd" 2>&1 | tee ../smoke_exported.log
+            -s "$GITHUB_WORKSPACE/game/src/tools/cli/slice_smoke.gd" -- --expect-assets 2>&1 | tee ../smoke_exported.log
           ! grep -n "SCRIPT ERROR" ../smoke_exported.log
 
       - name: Upload Windows build
