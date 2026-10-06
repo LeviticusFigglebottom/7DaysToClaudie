@@ -85,21 +85,25 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 	for z2: String in ["commercial", "civic"]:
 		if z2 == "civic" and plaza != null:
 			counts["civic"] += _plaza_civic(lots, plaza, rl, int(quota["civic"]))
-		# Shops nearest the centre on the arterials; civic just beyond them (also on the first
-		# stretch of the side streets); then anywhere in town; then on ground a metre steeper.
-		var want: int = int(quota[z2]) - int(counts[z2])
-		var lo_q: int = int((kd.get(z2, [0, 0]) as Array)[0])
-		var d_at: float = 0.0
+		# Shops nearest the centre on the arterials; civic in a band just beyond them (also on the
+		# side streets' first stretch). Each window is tried on the zone's own ground, then on
+		# ground a metre steeper; the last resort is anywhere in town. Passes: [d_lo, d_hi, extra relief].
 		var d_lo: float = 0.0
+		var passes: Array = [[0.0, radius * 0.6, 0.0], [0.0, radius * 0.6, 1.0], [0.0, radius, 1.0]]
 		if z2 == "civic":
 			d_lo = _mean_distance(lots, "commercial", net.center)
-			d_at = d_lo * 1.05
-		counts[z2] += _frontage_quota(net, lots, rl, z2, want, d_lo, radius * 0.6, d_at, z2 == "civic")
-		# Short of the class's minimum: the inner ring on ground a metre steeper, then anywhere.
-		if int(counts[z2]) < lo_q:
-			counts[z2] += _frontage_quota(net, lots, rl, z2, lo_q - int(counts[z2]), d_lo, radius * 0.6, d_at, true, 1.0)
-		if int(counts[z2]) < lo_q:
-			counts[z2] += _frontage_quota(net, lots, rl, z2, lo_q - int(counts[z2]), 0.0, radius, d_at, true, 1.0)
+			var band: float = maxf(d_lo * 1.5, float(kd.get("core", 80.0)))
+			passes = [[d_lo, band, 0.0], [d_lo, band, 1.0], [d_lo, radius * 0.6, 0.0], [0.0, radius, 1.0]]
+		var lo_q: int = int((kd.get(z2, [0, 0]) as Array)[0])
+		for pi: int in passes.size():
+			var pa: Array = passes[pi]
+			# The first window (civic: both band passes) fills the drawn quota; the later ones only
+			# make up the class minimum.
+			var aim: int = int(quota[z2]) if pi == 0 or (z2 == "civic" and pi == 1) else lo_q
+			var want: int = aim - int(counts[z2])
+			if want <= 0:
+				continue
+			counts[z2] += _frontage_quota(net, lots, rl, z2, want, float(pa[0]), float(pa[1]), d_lo * 1.05, z2 == "civic" or pi > 0, float(pa[2]))
 	counts["industrial"] += _frontage_quota(net, lots, rl, "industrial", int(quota["industrial"]), radius * 0.72, radius + 140.0, radius * 0.92, false)
 	counts["rural"] += _rural(net, lots, rl, int(quota["rural"]), radius, outskirts, lcfg)
 	var fixed: int = lots.lots.size() - (1 if plaza != null else 0)
@@ -250,9 +254,9 @@ static func _plaza_civic(lots: Lots, plaza: Lots.Lot, r: RandomNumberGenerator, 
 	return made
 
 
-## A quota of `zone` lots on arterial frontage (and, for civic, the first stretch of the side
-## streets) between `d_lo` and `d_hi` m from the centre: candidates from walks out from the centre,
-## taken nearest `d_at` first while they still fit.
+## A quota of `zone` lots on arterial frontage (and, with `side_streets`, along the side streets)
+## between `d_lo` and `d_hi` m from the centre: candidates from walks out from the centre, taken
+## nearest `d_at` first while they still fit; `extra_relief` lets them stand on steeper ground.
 static func _frontage_quota(net: Streets, lots: Lots, r: RandomNumberGenerator, zone: String, quota: int, d_lo: float, d_hi: float, d_at: float, side_streets: bool,
 		extra_relief: float = 0.0) -> int:
 	if quota <= 0:
@@ -274,7 +278,7 @@ static func _frontage_quota(net: Streets, lots: Lots, r: RandomNumberGenerator, 
 				cands.append_array(lots.walk(si, side, sc - 0.5, 0.0, zone_at, r, false, 12))
 		elif side_streets and st.gen >= 1 and st.cls in ["street", "lane"] and st.line.points[0].distance_to(center) < d_hi:
 			for side2: int in [1, -1]:
-				cands.append_array(lots.walk(si, side2, 0.0, minf(st.length(), 130.0), zone_at, r, false, 2))
+				cands.append_array(lots.walk(si, side2, 0.0, st.length(), zone_at, r, false, 6))
 	cands.sort_custom(func(a: Lots.Lot, b: Lots.Lot) -> bool: return absf(a.c.distance_to(center) - d_at) < absf(b.c.distance_to(center) - d_at))
 	var made: int = 0
 	for l: Lots.Lot in cands:
