@@ -83,6 +83,10 @@ func _run() -> void:
 
 	# --- Vegetation: one of every kind near the spawn --------------------------------------------
 	var veg: VegetationManager = w.vegetation
+	# "World ready" doesn't wait for the scatter (or, streamed, the buildings past the boot radius):
+	# a quick load reached here with nothing scattered and the tour skipped every kind.
+	if not await wait_until(func() -> bool: return veg.is_settled(1), 60.0):
+		print("[tour] note  vegetation not settled: %s" % veg.settle_report(1))
 	for kind: String in ["tree", "rock", "deadfall", "bush", "fern", "herb", "mushroom", "flower"]:
 		var found: Array = veg.nearest_instance(spawn, kind, 200.0)
 		if found.is_empty():
@@ -106,6 +110,8 @@ func _run() -> void:
 	# A streamed world builds and frees buildings by the player's distance (ADR-0038) while the tour
 	# walks, so each pick is the nearest building still standing, never a list taken up front.
 	var seen_pois: Dictionary = {}
+	if w.pois != null and not await wait_until(func() -> bool: return (w.pois.get(&"_jobs") as Dictionary).is_empty(), 120.0):
+		print("[tour] note  buildings still on their way after 120 s")
 	var live: Dictionary = w.pois.get(&"instances") as Dictionary if w.pois != null else {}
 	for i: int in 6:
 		var poi: Node3D = null
