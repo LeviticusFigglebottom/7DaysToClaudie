@@ -138,7 +138,22 @@ or line of sight. **Dawn rooting**: Hum survivors collapse into the soil as fung
 scouts that observe before attacking, morale and fear of fire, effigies marking territory,
 escalating responses to the player (watchers → raids → war parties).
 
-**Wildlife** (M2) — deer, hare, wolves; birds that flush and give away positions.
+**Wildlife** (ADR-0027, landed early in M1) — the forest moves:
+* **White-tailed deer** in bands of two to five (a buck among the does) at the forest's edge and
+  in the meadows at dawn and dusk; they graze, look up and stamp, bolt together, and bed down at
+  night. They see a standing man at 80 m and won't let one inside 32; downwind they smell you at
+  90; a gunshot or a Hollowed sends them off.
+* **Snowshoe hares** in the brush, sitting tight until you're almost on them.
+* **Songbirds** in the canopy and on the ground, **crows** in the clearings and over Pell's
+  Crossing. They **flush** when you or a Hollowed come close, or at a loud noise: wingbeats, an
+  alarm call, and a sound the Hollowed hear and come to look at. Birds give your position away.
+  Crows circle what put them up, cawing, every caw another mark over your head (the Murmurs, in
+  small).
+* **The Hum night is silent**: from the evening before the Hum the herds leave and the birds go.
+* **Hunting**: a deer or hare killed with any weapon leaves a carcass that bleeds scent the
+  Hollowed follow; butcher it with a knife or an axe for venison or hare, a hide or pelt, bone and
+  sinew; roast the meat at a campfire, twist sinew into cordage, cut rawhide strips.
+* Later: wolves, Hollowed hounds, Murmurs that follow you (TD-066).
 
 ## 7. Progression
 

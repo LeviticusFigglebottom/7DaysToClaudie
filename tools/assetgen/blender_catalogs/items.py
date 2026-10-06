@@ -68,6 +68,15 @@ SPEC: dict[str, tuple[str, dict]] = {
     "scrap_metal": ("item_resources", {"kind": "scrap", "seed": 71}),
     "duct_tape": ("item_resources", {"kind": "duct_tape", "seed": 72}),
     "scrip": ("item_resources", {"kind": "scrip", "seed": 73}),
+    # game (ADR-0027)
+    "raw_venison": ("item_game", {"kind": "venison", "seed": 271}),
+    "cooked_venison": ("item_game", {"kind": "venison_cooked", "seed": 272}),
+    "raw_hare": ("item_game", {"kind": "hare", "seed": 273}),
+    "cooked_hare": ("item_game", {"kind": "hare_cooked", "seed": 274}),
+    "deer_hide": ("item_game", {"kind": "deer_hide", "seed": 275}),
+    "hare_pelt": ("item_game", {"kind": "hare_pelt", "seed": 276}),
+    "sinew": ("item_game", {"kind": "sinew", "seed": 277}),
+    "rawhide_strips": ("item_game", {"kind": "rawhide_strips", "seed": 278}),
     # readables
     "schematic_spike_barrier": ("item_paper", {"kind": "schematic", "seed": 81, "sheet": "item_schematic_a"}),
     "schematic_log_cabin": ("item_paper", {"kind": "schematic", "seed": 82, "sheet": "item_schematic_b"}),
