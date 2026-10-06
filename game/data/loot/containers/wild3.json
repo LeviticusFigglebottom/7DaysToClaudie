@@ -1,0 +1,93 @@
+{
+ "_doc": "Containers of the wilderness set pieces, round 3 (containers/wild3.json -> tables/wild3.json).",
+ "defs": [
+  {
+   "id": "w3_walkin_stores",
+   "name": "Convoy Stores",
+   "loot_table": "w3_walkin_stores",
+   "slots": 10,
+   "search_time": 2.4,
+   "noise": 5
+  },
+  {
+   "id": "w3_camp_footlocker",
+   "name": "Family Footlocker",
+   "loot_table": "w3_camp_footlocker",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 4
+  },
+  {
+   "id": "w3_infirmary_cabinet",
+   "name": "Infirmary Cabinet",
+   "loot_table": "w3_infirmary_cabinet",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 4
+  },
+  {
+   "id": "w3_gun_cabinet",
+   "name": "Gun Cabinet",
+   "loot_table": "w3_gun_cabinet",
+   "slots": 6,
+   "search_time": 2.0,
+   "noise": 6
+  },
+  {
+   "id": "w3_lodge_pantry",
+   "name": "Lodge Pantry",
+   "loot_table": "w3_lodge_pantry",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 4
+  },
+  {
+   "id": "w3_meat_locker",
+   "name": "Meat Locker",
+   "loot_table": "w3_meat_locker",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 4
+  },
+  {
+   "id": "w3_qc_cold_chain",
+   "name": "Cold-Chain Box",
+   "loot_table": "w3_qc_cold_chain",
+   "slots": 8,
+   "search_time": 2.0,
+   "noise": 4
+  },
+  {
+   "id": "w3_qc_supply",
+   "name": "Cordon Supply Crate",
+   "loot_table": "w3_qc_supply",
+   "slots": 8,
+   "search_time": 2.0,
+   "noise": 5
+  },
+  {
+   "id": "w3_qc_command",
+   "name": "Command Locker",
+   "loot_table": "w3_qc_command",
+   "slots": 6,
+   "search_time": 2.0,
+   "noise": 5
+  },
+  {
+   "id": "w3_haldane_stores",
+   "name": "Bunker Stores",
+   "loot_table": "w3_haldane_stores",
+   "slots": 10,
+   "search_time": 2.4,
+   "noise": 5
+  },
+  {
+   "id": "w3_haldane_workshop",
+   "name": "Homestead Workbench",
+   "loot_table": "w3_haldane_workshop",
+   "slots": 8,
+   "search_time": 2.0,
+   "noise": 6
+  }
+ ]
+}

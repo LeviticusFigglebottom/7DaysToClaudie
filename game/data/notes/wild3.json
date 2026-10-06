@@ -1,0 +1,124 @@
+{
+ "_doc": "Readable notes of the wilderness set pieces, round 3 (no note names a town: these places stand anywhere). Items: items/wild3.json note_<id>.",
+ "defs": [
+  {
+   "id": "w3_tamarack_log",
+   "title": "Radio Log, Evacuation Point 6",
+   "style": "handwritten",
+   "author": "Ruth Halvorsen, camp director",
+   "body": "Day 1. Thirty-one families by dark. One family a cabin, the rest in the mess hall on mats. Cpl. Ames has the list.\nDay 3. The buses came for the children at eight. Under fourteen, nobody older. Ames swears the second convoy is Thursday. We sang them out the gate. I will not write the rest of that morning down.\nDay 6. Called Convoy Control at nine. Static. Called at ten. Static.\nDay 9. Mr. Brannigan has a fever. Nell put him in the infirmary.\nDay 12. Infirmary full. Nell says pale threads under the nails. Ames says the antifungal is on the convoy.\nDay 15. I padlock the sick cabins at night now. Ames does the morning count. Nobody touches the walk-in. Those stores are for the convoy and the convoy is coming.\nDay 19. My hands are cold all the time. I am going to sit with the stores. Danny will lock it behind me. Key's on the board. Keep calling at nine."
+  },
+  {
+   "id": "w3_tamarack_notice",
+   "title": "Notice on the Board",
+   "style": "typed",
+   "author": "Cordon Evacuation Office",
+   "body": "FAMILY EVACUATION POINT 6\n\nChildren under 14 will travel on the first convoy. Parents and guardians will follow on the second convoy.\nKeep your registration card on you at all times. One family per cabin. Report fever to the infirmary at once.\nDo not leave the camp. Do not go out on the lake.\n\nUnder it, in pencil, a column of cabin names and the days crossed off."
+  },
+  {
+   "id": "w3_tamarack_letter",
+   "title": "Letter on the Bunk",
+   "style": "handwritten",
+   "author": "Dana Petrakis",
+   "body": "Mia - if you are reading this the bus got you there and they have given you this with your bag. Dad and I are in Kestrel cabin, the bunk by the window, the one with the bird on the sign. We are fine. We are waiting for our turn. Brush your teeth. Do what the nice soldiers say. We will find you by your name on the list. Love you to the lake and back."
+  },
+  {
+   "id": "w3_tamarack_nell",
+   "title": "Infirmary Chart",
+   "style": "handwritten",
+   "author": "Nell Abernathy, RN (volunteer)",
+   "body": "Brannigan, P. - 39.8. Threads under nails, both hands. Sleeping more.\nOkonjo, A. - 39.1. Confused at night.\nLindqvist, E. - 38.6. Asked for her daughter. Told her the bus.\nNo antifungal. Ames says convoy. Ruth says convoy. Moved the cots so they can't reach each other.\nIf you find this and you are not one of us: do not open the infirmary door. They are not asleep."
+  },
+  {
+   "id": "w3_tamarack_ames",
+   "title": "Note Under a Paddle",
+   "style": "handwritten",
+   "author": "Cpl. D. Ames",
+   "body": "Ruth - I locked you in like you said. Key's on your board. I'm taking a green canoe across to the road on the far shore. If there's a phone I'll get the convoy. If there isn't I'll walk to the Cordon gate. Don't let anybody open the walk-in. Back by dark. D."
+  },
+  {
+   "id": "w3_elk_guestbook",
+   "title": "Lodge Guestbook",
+   "style": "handwritten",
+   "author": "Elk Ridge Lodge",
+   "body": "Sept. 9 - Pike party of four. Rifle season, guided. Arne guiding, Marit cooking. Dogs: Belle, Duke, Rosie, Jack.\nSept. 11 - Road closed at the bridge. Cordon says stay put. Pike says good, more days hunting. (M.)\nSept. 12 - Bull elk at the high meadow, six by six. Found standing in the creek with its eyes open. Did not run. Gordon shot it anyway. Dressed it in the shed. (A.)\nSept. 15 - Doc Hensley and both Tulls running fevers. Gordon says flu. (M.)\nSept. 17 - Dogs went through the kennel wire in the night. Heard them on the ridge till morning. (M.)\nSept. 18 - Arne went down to cut the elk. (M.)"
+  },
+  {
+   "id": "w3_elk_marit",
+   "title": "Note on the Kitchen Table",
+   "style": "handwritten",
+   "author": "Marit Solberg",
+   "body": "Arne - I bolted the cellar. I am sorry. You told me if it ever came to it I was not to wait and I did not wait. Your keys are down there with you. The guests are in the big room by the fire. They sit very still. I am taking the rifles into the gun room and I am locking it. If you come up the stairs I will know it is not you."
+  },
+  {
+   "id": "w3_elk_arne",
+   "title": "Tag Book",
+   "style": "handwritten",
+   "author": "Arne Solberg, guide",
+   "body": "Tag 4471 - bull elk, high meadow, Pike. 6x6. Creek. Should have left it.\nHung it in the cellar to cool, quarters on the rail.\nPale stuff in the meat by the bone, like mould but it moves when the light's on it. Burned the hide.\nFever now. Marit, the gun room key is on my ring. I'm putting the ring on the hook by the door so you don't have to come near me."
+  },
+  {
+   "id": "w3_elk_kennel",
+   "title": "Kennel Card",
+   "style": "handwritten",
+   "author": "Arne Solberg",
+   "body": "BELLE - lead hound, 6 yrs. DUKE - 4. ROSIE - 3, bad hip. JACK - pup.\nFed twice a day. Wire checked Sundays.\nAcross the bottom, newer: Wire bent out from inside. All four gone. Do not go up the ridge after them."
+  },
+  {
+   "id": "w3_qc_orders",
+   "title": "Standing Orders, Site Q-4",
+   "style": "typed",
+   "author": "Capt. T. Ruiz, Cordon Command",
+   "body": "SITE Q-4 - STANDING ORDERS\n1. All arrivals screened at the gate. 38.0 or over: HOLD.\n2. HOLD to decontamination, then to Wards A-D.\n3. No discharge without the Medical Officer's signature.\n4. The deceased to the refrigerated trailer. Burn schedule weekly.\n5. Antifungal stocks are held by the M.O. under cold chain.\n6. If the wards are lost, withdraw to the command trailer and await extraction.\n7. The gate is not to be opened for any reason."
+  },
+  {
+   "id": "w3_qc_screening",
+   "title": "Screening Clipboard",
+   "style": "handwritten",
+   "author": "Cordon screening desk",
+   "body": "Kessler, A. 37.2 PASS - bus 3\nKessler, M. 37.0 PASS - bus 3\nDuval, R. 38.4 HOLD - Ward B\nDuval, S. 37.1 PASS (would not go without husband - HOLD by request)\nMarsh, T. 39.0 HOLD - Ward C\nNo bus today.\nNo bus today.\nNo bus today."
+  },
+  {
+   "id": "w3_qc_ruiz",
+   "title": "Radio Log, Command Trailer",
+   "style": "handwritten",
+   "author": "Capt. T. Ruiz",
+   "body": "0100 Extraction request repeated. Denied - 'hold the site'.\n0140 Ward C quiet. Ward B restless. Doubled the straps.\n0200 Sgt. Okoye opened the gate and walked into the trees. Did not stop her.\n0215 Ward B is up. Two of mine at the trailer door.\n0230 Dr. Vance has the reefer key and the doses. Told her go. She went to the reefer.\n0240 They are at the door. Q-4 out."
+  },
+  {
+   "id": "w3_qc_vance",
+   "title": "Note Taped Inside the Reefer",
+   "style": "handwritten",
+   "author": "Dr. I. Vance, Medical Officer",
+   "body": "Forty-one doses of antifungal, cold chain intact. I kept them for the second wave of buses. There was no second wave.\nI have a fever of my own now. The reefer is the coldest place in the camp and the quietest. I rigged the corporal's shotgun on the door so that whatever opens it next is not one of them. If you are reading this, I was wrong about you, and I am sorry.\nThe doses are in the cold-chain box on the shelf. Take all of them."
+  },
+  {
+   "id": "w3_qc_tower",
+   "title": "Notebook at the Tower's Foot",
+   "style": "handwritten",
+   "author": "Pvt. K. Lund",
+   "body": "Night 6. Counted lights on the road. None.\nNight 7. The ground hummed. Everyone in the wards sat up at once.\nNight 9. Okoye says the gate was never going to open for us either.\nNight 11. Coming down. Light's no good. They can see it."
+  },
+  {
+   "id": "w3_haldane_della",
+   "title": "Kitchen Calendar",
+   "style": "handwritten",
+   "author": "Della Haldane",
+   "body": "Week 1. Ray and Tom pulled the tin off the barn and the doors off the cars for the wall.\nWeek 6. The wall's round. Gate on the lane. Platforms at the corners. Pop takes nights.\nMonth 3. Beds are in. Kale, cabbage, potatoes. Rain barrels full. We are going to be all right.\nMonth 7. Walt and his boys took the motorhome down to the river campground in August. Haven't heard.\nMonth 11. Third Hum. They came at the east wall where the ground is soft. Held.\nMonth 14. Seventh night. Something big at the east wall. Ray says get in the hole."
+  },
+  {
+   "id": "w3_haldane_rota",
+   "title": "Watch Rota",
+   "style": "handwritten",
+   "author": "the Haldanes",
+   "body": "NORTH PLATFORM - Pop (nights) / Tom (days)\nEAST PLATFORM - Ray / June\nGATE - whoever's up\nNEVER LEAVE A PLATFORM EMPTY ON A SEVENTH NIGHT.\nNo lights after dark. No fires after dark. Cans on the wire every night."
+  },
+  {
+   "id": "w3_haldane_tom",
+   "title": "Folded in the Bunker",
+   "style": "handwritten",
+   "author": "Tom Haldane",
+   "body": "June - the east wall went. Dad held the gap with the axe till we were all down. He isn't down here. I bolted the bunker from inside like we practised. The key is on the hook by Mum's calendar if anybody comes for us from up top. Pop has a fever. So do I. If you open this door, come in shooting."
+  }
+ ]
+}

@@ -42,8 +42,10 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 2: organic world-level towns (ADR-0040), town density, place caps per 16 km², the drop site away
 ## from region borders, a valley term in the router, RwgStreets.point_in for polygon tests.
 ## 3: a trader post by each town (session 2's `trader:program_relay:<n>` spawns, ADR-0039).
-const VERSION: int = 3
-const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope"]
+## 4: burnt forest (fire scars) and fen (low wet ground, with pools) in the biome map (ADR-0041).
+const VERSION: int = 4
+## Biome map ids by cell value (world.json `biome_map.ids`); append only.
+const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
 
 var settings: GenSettings
@@ -1451,6 +1453,7 @@ func _biome_map() -> void:
 	biome_step = float(tun.get("biome_step", 64.0))
 	biome_cols = int(round(size * 1024.0 / biome_step))
 	biome_cells.resize(biome_cols * biome_cols)
+	var nb: int = BIOMES.size()
 	var w: Array[float] = [settings.num("conifer"), settings.num("birch"), settings.num("meadow"), settings.num("rocky")]
 	if w[0] + w[1] + w[2] + w[3] <= 0.0:
 		w[0] = 1.0
@@ -1463,6 +1466,22 @@ func _biome_map() -> void:
 		nz.fractal_octaves = 3
 		nz.frequency = 1.0 / 650.0
 		noises.append(nz)
+	# Fens (ADR-0041): the flattest, lowest, wettest ground, in patches.
+	var fcfg: Dictionary = tun.get("fen", {})
+	var fen_w: float = settings.num("fen")
+	var fen_low: Array = fcfg.get("low", [0.12, 0.4])
+	var fen_slope: float = float(fcfg.get("max_slope", 0.075))
+	var fen_water: float = float(fcfg.get("water", 420.0))
+	var fen_valley: float = float(fcfg.get("valley", 8.0))
+	var fen_clear: float = float(fcfg.get("town_clear", 80.0))
+	var fen_drop: float = float(fcfg.get("drop_clear", 220.0))
+	var fen_noise := FastNoiseLite.new()
+	fen_noise.seed = Ids.derive_seed(settings.seed, "rwg:fen") & 0x7fffffff
+	fen_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	fen_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	fen_noise.fractal_octaves = 3
+	fen_noise.frequency = 1.0 / float(fcfg.get("patch", 380.0))
+	var drop_p: Vector2 = drop.get("pos", Vector2(1.0e9, 1.0e9))
 	var hmin: float = INF
 	var hmax: float = -INF
 	for v: float in terrain.h:
@@ -1471,12 +1490,14 @@ func _biome_map() -> void:
 	var raw := PackedByteArray()
 	raw.resize(biome_cols * biome_cols)
 	for j: int in biome_cols:
-		_sub("Planting forests", 0.62, 0.7, 0.8 * j / biome_cols)
+		_sub("Planting forests", 0.62, 0.7, 0.7 * j / biome_cols)
 		for i: int in biome_cols:
 			var p := Vector2(-size * 512.0 + (i + 0.5) * biome_step, -size * 512.0 + (j + 0.5) * biome_step)
-			var e: float = (terrain.height(p.x, p.y) - hmin) / maxf(1.0, hmax - hmin)
+			var hp: float = terrain.height(p.x, p.y)
+			var e: float = (hp - hmin) / maxf(1.0, hmax - hmin)
 			var s: float = terrain.slope(p.x, p.y)
-			var wet: float = 1.0 - smoothstep(0.0, 260.0, water_at(p))
+			var wd: float = water_at(p)
+			var wet: float = 1.0 - smoothstep(0.0, 260.0, wd)
 			var town_ring: float = 0.0
 			for tw: Dictionary in towns:
 				var d: float = (tw["center"] as Vector2).distance_to(p)
@@ -1484,12 +1505,12 @@ func _biome_map() -> void:
 				# Cleared ground over a town's disc (yards, pasture), then the trees close in again.
 				town_ring = maxf(town_ring, 1.0 - smoothstep(tr * 0.7, tr + 90.0, d))
 			var nc: float = noises[0].get_noise_2d(p.x, p.y) * 0.5 + 0.5
-			var nb: float = noises[1].get_noise_2d(p.x, p.y) * 0.5 + 0.5
+			var nbr: float = noises[1].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nm: float = noises[2].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nr: float = noises[3].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var sc: Array[float] = [
 				w[0] * (0.55 + 0.6 * nc),
-				w[1] * (0.3 + 0.85 * nb) * (0.8 + 0.6 * wet),
+				w[1] * (0.3 + 0.85 * nbr) * (0.8 + 0.6 * wet),
 				w[2] * (0.25 + 0.95 * nm) * (1.25 - 0.9 * smoothstep(0.05, 0.22, s)) * (1.0 - 0.6 * e) + town_ring * (0.6 + w[2]),
 				# Bare rock on the heights and the steepest ground only: the composer already turns
 				# slopes past ~35 degrees to rock, and highlands should keep their forested sides.
@@ -1499,11 +1520,30 @@ func _biome_map() -> void:
 			for k2: int in range(1, 4):
 				if sc[k2] > sc[bi]:
 					bi = k2
+			# A fen takes the lowest, flattest ground near water, whatever grew there, and keeps off
+			# towns and the drop site: level, low (on the map and against the ground 400 m round)
+			# and damp, broken into patches by its own noise.
+			if fen_w > 0.0 and s < fen_slope and wd < fen_water and town_ring <= 0.0 and drop_p.distance_to(p) > fen_drop \
+					and _town_distance(p) > fen_clear:
+				var around: float = 0.0
+				for q: int in 6:
+					var o := Vector2(cos(q * TAU / 6.0), sin(q * TAU / 6.0)) * 400.0
+					around += terrain.height(p.x + o.x, p.y + o.y)
+				var valley: float = smoothstep(0.0, fen_valley, around / 6.0 - hp)
+				var low: float = 1.0 - smoothstep(float(fen_low[0]), float(fen_low[1]) + 0.12 * fen_w, e)
+				var flat: float = 1.0 - smoothstep(fen_slope * 0.4, fen_slope, s)
+				var damp: float = 1.0 - smoothstep(fen_water * 0.3, fen_water, wd)
+				var nf: float = fen_noise.get_noise_2d(p.x, p.y) * 0.5 + 0.5
+				var f: float = maxf(low, valley * 0.85) * flat * damp * (0.35 + 1.1 * nf) * (0.55 + 1.1 * fen_w)
+				if f > 0.5:
+					bi = 5
 			raw[j * biome_cols + i] = bi
 	# One majority pass: no lone cells.
 	for j2: int in biome_cols:
 		for i2: int in biome_cols:
-			var counts: Array[int] = [0, 0, 0, 0]
+			var counts: Array[int] = []
+			counts.resize(nb)
+			counts.fill(0)
 			for dj: int in range(-1, 2):
 				for di: int in range(-1, 2):
 					var ii: int = clampi(i2 + di, 0, biome_cols - 1)
@@ -1511,15 +1551,21 @@ func _biome_map() -> void:
 					counts[raw[jj * biome_cols + ii]] += 1
 			var own: int = raw[j2 * biome_cols + i2]
 			var top: int = own
-			for k3: int in 4:
+			for k3: int in nb:
 				if counts[k3] > counts[top]:
 					top = k3
 			biome_cells[j2 * biome_cols + i2] = top if counts[own] <= 2 else own
+	# Fire scars after the majority pass: their ragged edges and unburnt islands are the point.
+	if settings.num("burn") > 0.0:
+		_fire_scars()
+	_sub("Planting forests", 0.62, 0.7, 0.95)
 	# Each region's dominant biome (its default and summary), counted over the cells whose centres
 	# lie in it: only cells near it are tested (one of slack each way), not the whole map's.
 	for cell: String in regions:
 		var rect: Rect2 = regions[cell]["rect"]
-		var counts2: Array[int] = [0, 0, 0, 0]
+		var counts2: Array[int] = []
+		counts2.resize(nb)
+		counts2.fill(0)
 		var i0: int = clampi(floori((rect.position.x + size * 512.0) / biome_step) - 1, 0, biome_cols - 1)
 		var i1: int = clampi(ceili((rect.end.x + size * 512.0) / biome_step) + 1, 0, biome_cols - 1)
 		var j0: int = clampi(floori((rect.position.y + size * 512.0) / biome_step) - 1, 0, biome_cols - 1)
@@ -1530,16 +1576,265 @@ func _biome_map() -> void:
 				if rect.has_point(p2):
 					counts2[biome_cells[j3 * biome_cols + i3]] += 1
 		var top2: int = 0
-		for k4: int in 4:
+		for k4: int in nb:
 			if counts2[k4] > counts2[top2]:
 				top2 = k4
 		regions[cell]["biome"] = BIOMES[top2]
+
+
+## Fire scars (ADR-0041): fires lit in the forest burn outwards over the 64 m biome grid (a cheapest-
+## first spread: downwind and uphill run fastest, meadow and rock slow it, noise makes the fingers)
+## until each reaches its size, a few hundred metres to a couple of kilometres across. Rivers, lakes,
+## roads, fens, towns and the drop site stop it, as firebreaks do; it crosses ridges. Burnt forest
+## replaces the forest and the rock it took, meadows stay meadow (grass grows back), and islands the
+## fire skipped stay green.
+func _fire_scars() -> void:
+	var bcfg: Dictionary = tun.get("burn", {})
+	var r := rng("burn")
+	var n: int = biome_cols
+	var want: int = int(floor(settings.num("burn") * size * size / 16.0 * float(bcfg.get("per_16km2", 3.0)) + r.randf()))
+	if want <= 0:
+		return
+	var sizes: Array = bcfg.get("cells", [45, 650])
+	# On a small map a big fire would be most of it: no scar past `max_share` of the map, and the
+	# burns together past twice that.
+	var cap: int = int(float(bcfg.get("max_share", 0.09)) * n * n)
+	var total: int = 0
+	var water_gap: float = float(bcfg.get("water", 48.0))
+	var road_gap: float = float(bcfg.get("road", 48.0))
+	var town_clear: float = float(bcfg.get("town_clear", 120.0))
+	var drop_clear: float = float(bcfg.get("drop_clear", 260.0))
+	var islands: float = float(bcfg.get("islands", 0.72))
+	var drop_p: Vector2 = drop.get("pos", Vector2(1.0e9, 1.0e9))
+	# Firebreaks per cell (computed once, lazily: most of the map is never reached).
+	var brk := PackedByteArray()
+	brk.resize(n * n)
+	brk.fill(255)
+	var nz := FastNoiseLite.new()
+	nz.seed = Ids.derive_seed(settings.seed, "rwg:burn") & 0x7fffffff
+	nz.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	nz.fractal_octaves = 2
+	nz.frequency = 1.0 / 190.0
+	var burnt := PackedByteArray()
+	burnt.resize(n * n)
+	for s_i: int in want:
+		# Ignition: a forest cell far from the start, on dry ground.
+		var start: int = -1
+		for attempt: int in 60:
+			var k0: int = r.randi_range(0, n * n - 1)
+			var b0: int = biome_cells[k0]
+			if b0 != 0 and b0 != 1:
+				continue
+			if burnt[k0] != 0 or _firebreak(k0, brk, water_gap, road_gap, town_clear, drop_clear, drop_p):
+				continue
+			start = k0
+			break
+		if start < 0:
+			continue
+		var target: int = mini(int(lerpf(float(sizes[0]), float(sizes[1]), pow(r.randf(), 1.7))), cap)
+		if total + target > cap * 2:
+			break
+		var wind := Vector2.from_angle(r.randf() * TAU)
+		var cost := PackedFloat32Array()
+		cost.resize(n * n)
+		cost.fill(INF)
+		# The frontier holds each cell once (its cost is lowered in place), so a pop scans only the
+		# fire's edge.
+		var front := PackedInt32Array([start])
+		var in_front := PackedByteArray()
+		in_front.resize(n * n)
+		in_front[start] = 1
+		cost[start] = 0.0
+		var done := PackedByteArray()
+		done.resize(n * n)
+		var count: int = 0
+		while not front.is_empty() and count < target:
+			var bi_f: int = 0
+			for q: int in range(1, front.size()):
+				if cost[front[q]] < cost[front[bi_f]]:
+					bi_f = q
+			var k: int = front[bi_f]
+			front.remove_at(bi_f)
+			in_front[k] = 0
+			done[k] = 1
+			count += 1
+			total += 1
+			burnt[k] = 1
+			var ci: int = k % n
+			var cj: int = k / n
+			var pc := Vector2(-size * 512.0 + (ci + 0.5) * biome_step, -size * 512.0 + (cj + 0.5) * biome_step)
+			var hc: float = terrain.height(pc.x, pc.y)
+			for dj: int in range(-1, 2):
+				for di: int in range(-1, 2):
+					if di == 0 and dj == 0:
+						continue
+					var ni: int = ci + di
+					var nj: int = cj + dj
+					if ni < 0 or nj < 0 or ni >= n or nj >= n:
+						continue
+					var kn: int = nj * n + ni
+					if done[kn] != 0 or _firebreak(kn, brk, water_gap, road_gap, town_clear, drop_clear, drop_p):
+						continue
+					var pn := Vector2(-size * 512.0 + (ni + 0.5) * biome_step, -size * 512.0 + (nj + 0.5) * biome_step)
+					var dir := Vector2(di, dj).normalized()
+					var step_len: float = Vector2(di, dj).length()
+					var fuel: float = 1.0
+					match biome_cells[kn]:
+						2:
+							fuel = 2.6
+						3:
+							fuel = 1.8
+					var up: float = clampf((terrain.height(pn.x, pn.y) - hc) / (biome_step * 0.25), -1.0, 1.0)
+					var c: float = step_len * fuel * (0.45 + 1.3 * (nz.get_noise_2d(pn.x, pn.y) * 0.5 + 0.5)) \
+						* (1.0 - 0.4 * dir.dot(wind)) * (1.0 - 0.3 * up)
+					if cost[k] + c < cost[kn]:
+						cost[kn] = cost[k] + c
+						if in_front[kn] == 0:
+							in_front[kn] = 1
+							front.append(kn)
+	for k2: int in n * n:
+		if burnt[k2] == 0:
+			continue
+		var b: int = biome_cells[k2]
+		if b != 0 and b != 1 and b != 3:
+			continue
+		var pi := Vector2(-size * 512.0 + (k2 % n + 0.5) * biome_step, -size * 512.0 + (k2 / n + 0.5) * biome_step)
+		# Islands the fire skipped (wet hollows, a change of wind) stay green.
+		if nz.get_noise_2d(pi.x * 2.3 + 917.0, pi.y * 2.3 - 411.0) * 0.5 + 0.5 > islands:
+			continue
+		biome_cells[k2] = 4
+
+
+## True where fire stops: water, a road, a fen, a town or the drop site's surroundings (memoised per
+## cell in `brk`, 255 = not yet known).
+func _firebreak(k: int, brk: PackedByteArray, water_gap: float, road_gap: float, town_clear: float, drop_clear: float,
+		drop_p: Vector2) -> bool:
+	if brk[k] != 255:
+		return brk[k] == 1
+	var p := Vector2(-size * 512.0 + (k % biome_cols + 0.5) * biome_step, -size * 512.0 + (k / biome_cols + 0.5) * biome_step)
+	var stop: bool = biome_cells[k] == 5 or water_at(p) < water_gap or drop_p.distance_to(p) < drop_clear \
+		or _town_distance(p) < town_clear or float(nearest_road(p)[0]) < road_gap
+	brk[k] = 1 if stop else 0
+	return stop
 
 
 func biome_at(p: Vector2) -> String:
 	var i: int = clampi(int(floor((p.x + size * 512.0) / biome_step)), 0, biome_cols - 1)
 	var j: int = clampi(int(floor((p.y + size * 512.0) / biome_step)), 0, biome_cols - 1)
 	return BIOMES[biome_cells[j * biome_cols + i]]
+
+
+## The splat layers a region of this world needs (ADR-0041), or [] for the composer's default eight.
+## A region with burnt forest or fen gets ash_char / peat in place of the default layers it can best
+## spare: sand (lake coves fall back to mud and gravel), then asphalt where no paved road, drive or
+## town comes near, else moss (forest moss patches fall back to the floor). Slots keep their order so
+## the other layers keep their splat channels.
+func region_palette(cell: String) -> PackedStringArray:
+	var rect: Rect2 = (regions[cell]["rect"] as Rect2).grow(biome_step * 2.0)
+	var has := {}
+	var i0: int = clampi(floori((rect.position.x + size * 512.0) / biome_step), 0, biome_cols - 1)
+	var i1: int = clampi(floori((rect.end.x + size * 512.0) / biome_step), 0, biome_cols - 1)
+	var j0: int = clampi(floori((rect.position.y + size * 512.0) / biome_step), 0, biome_cols - 1)
+	var j1: int = clampi(floori((rect.end.y + size * 512.0) / biome_step), 0, biome_cols - 1)
+	for j: int in range(j0, j1 + 1):
+		for i: int in range(i0, i1 + 1):
+			has[biome_cells[j * biome_cols + i]] = true
+	var extra: PackedStringArray = []
+	if has.has(4):
+		extra.append("ash_char")
+	if has.has(5):
+		extra.append("peat")
+	if extra.is_empty():
+		return PackedStringArray()
+	var pal: PackedStringArray = TerrainComposer.DEFAULT_PALETTE.duplicate()
+	var spare: PackedStringArray = ["sand"]
+	spare.append("moss_ground" if _paved_near(rect) else "asphalt_cracked")
+	for k: int in extra.size():
+		pal[pal.find(spare[k])] = extra[k]
+	return pal
+
+
+## True if a paved road (highway, drive), a town or a trader post comes into `rect`.
+func _paved_near(rect: Rect2) -> bool:
+	for rd: Dictionary in roads:
+		if str(rd.get("surface", "")) == "asphalt" and (rd["line"] as Polyline2).bounds.grow(12.0).intersects(rect):
+			return true
+	for tw: Dictionary in towns:
+		if (tw.get("bounds", Rect2()) as Rect2).grow(40.0).intersects(rect):
+			return true
+	for pt: Dictionary in posts:
+		if _bounds(pt["poly"]).grow(20.0).intersects(rect):
+			return true
+	return false
+
+
+## The fen's pools in a region (ADR-0041): small irregular local lakes (region `lake` features),
+## brim-full (`drop`: the water stands that far under the ground round it), about a metre deep, so
+## the player wades rather than swims. Placed per fen cell from a stream of the map seed and the
+## cell, inside the fen and the region (local features fade out near borders), on level ground and
+## clear of rivers and lakes, roads and paths, town lots and streets, places, trader posts and the
+## drop site, and of each other.
+func fen_pools(cell: String) -> Array:
+	var out: Array = []
+	var pcfg: Dictionary = (tun.get("fen", {}) as Dictionary).get("pools", {})
+	var chance: float = float(pcfg.get("chance", 0.55))
+	var per: Array = pcfg.get("per_cell", [1, 3])
+	var radius: Array = pcfg.get("radius", [5.0, 15.0])
+	var inner: Rect2 = (regions[cell]["rect"] as Rect2).grow(-float(pcfg.get("border", 72.0)))
+	var drop_p: Vector2 = drop.get("pos", Vector2(1.0e9, 1.0e9))
+	var i0: int = clampi(floori((inner.position.x + size * 512.0) / biome_step), 0, biome_cols - 1)
+	var i1: int = clampi(floori((inner.end.x + size * 512.0) / biome_step), 0, biome_cols - 1)
+	var j0: int = clampi(floori((inner.position.y + size * 512.0) / biome_step), 0, biome_cols - 1)
+	var j1: int = clampi(floori((inner.end.y + size * 512.0) / biome_step), 0, biome_cols - 1)
+	var placed: Array[Vector3] = []
+	for j: int in range(j0, j1 + 1):
+		for i: int in range(i0, i1 + 1):
+			if biome_cells[j * biome_cols + i] != 5:
+				continue
+			var r := RandomNumberGenerator.new()
+			r.seed = Ids.derive_seed(settings.seed, "rwg:fen_pool:%d_%d" % [i, j])
+			if r.randf() > chance:
+				continue
+			var c := Vector2(-size * 512.0 + (i + 0.5) * biome_step, -size * 512.0 + (j + 0.5) * biome_step)
+			for q: int in r.randi_range(int(per[0]), int(per[1])):
+				var pc: Vector2 = c + Vector2(r.randf_range(-0.4, 0.4), r.randf_range(-0.4, 0.4)) * biome_step
+				var rx: float = r.randf_range(float(radius[0]), float(radius[1]))
+				var rz: float = rx * r.randf_range(0.5, 0.95)
+				var rot: float = r.randf_range(0.0, 180.0)
+				if not inner.grow(-rx).has_point(pc) or terrain.slope(pc.x, pc.y) > float(pcfg.get("max_slope", 0.05)):
+					continue
+				# Inside the fen all round, not on its edge.
+				var inside: bool = true
+				for o: Vector2 in [Vector2(rx + 10.0, 0.0), Vector2(-rx - 10.0, 0.0), Vector2(0.0, rx + 10.0), Vector2(0.0, -rx - 10.0)]:
+					if biome_at(pc + o) != "fen":
+						inside = false
+				if not inside:
+					continue
+				var clear: bool = drop_p.distance_to(pc) > rx + 60.0 and water_exact(pc) > rx + 14.0
+				for pq: Vector3 in placed:
+					if Vector2(pq.x, pq.y).distance_to(pc) < pq.z + rx + 6.0:
+						clear = false
+				if not clear:
+					continue
+				var poly: PackedVector2Array = rect_poly(pc - Vector2(rx, rz), Vector2(rx, rz) * 2.0, 0.0)
+				if road_clearance(poly) < 10.0 or _hits_built(poly, 8.0) or _near_path(pc, rx + 8.0):
+					continue
+				placed.append(Vector3(pc.x, pc.y, rx))
+				out.append({"type": "lake", "id": "fen_%s_%d" % [cell.to_lower(), out.size()],
+					"ellipse": [snappedf(pc.x, 0.1), snappedf(pc.y, 0.1), snappedf(rx, 0.1), snappedf(rz, 0.1), snappedf(rot, 1.0)],
+					"irregularity": float(pcfg.get("irregularity", 0.3)), "level": "auto", "drop": float(pcfg.get("drop", 0.28)),
+					"probe": snappedf(maxf(1.0, rz * 0.12), 0.1), "depth": float(pcfg.get("depth", 0.65)), "shore": float(pcfg.get("shore", 4.0))})
+	return out
+
+
+## True if a footpath passes within `gap` of p.
+func _near_path(p: Vector2, gap: float) -> bool:
+	for pt: Dictionary in paths:
+		var pts: PackedVector2Array = pt["points"]
+		for k: int in pts.size() - 1:
+			if p.distance_to(Geometry2D.get_closest_point_to_segment(p, pts[k], pts[k + 1])) < gap:
+				return true
+	return false
 
 
 # --- Places --------------------------------------------------------------------------------------
@@ -1943,7 +2238,8 @@ func _bloom() -> void:
 			for attempt: int in 30:
 				var p := Vector2(r.randf_range(rect.position.x, rect.end.x), r.randf_range(rect.position.y, rect.end.y))
 				var b: String = biome_at(p)
-				if b != "conifer_forest" and b != "birch_grove":
+				# The Bloom takes the forest, and pools in the fens (ADR-0041).
+				if b != "conifer_forest" and b != "birch_grove" and b != "fen":
 					continue
 				if water_at(p) < 40.0 or float(nearest_road(p)[0]) < 40.0:
 					continue
@@ -2184,13 +2480,19 @@ func region_json(cell: String) -> Dictionary:
 		if str(bl["cell"]) == cell:
 			feats.append({"type": "bloom", "id": bl["id"], "at": Terrain._arr(PackedVector2Array([bl["at"]]))[0], "radius": bl["radius"],
 				"strength": bl["strength"], "edge": bl["edge"]})
-	return {
+	# The fen's pools, and the splat layers burnt forest and fen need (ADR-0041).
+	feats.append_array(fen_pools(cell))
+	var out: Dictionary = {
 		"_doc": "Generated region (ADR-0031) of %s; regenerated from its world's seed and settings, never edited." % world_id,
 		"id": rg["id"], "cell": cell, "name": rg["name"], "default_biome": rg["biome"],
 		"detail_noise": {"layers": [{"frequency": 0.012, "octaves": 4, "amplitude": 2.5}, {"frequency": 0.03, "octaves": 3, "amplitude": snappedf(0.5 + 0.9 * rough, 0.01)},
 			{"frequency": 0.075, "octaves": 2, "amplitude": 0.3}]},
 		"features": feats,
 	}
+	var pal: PackedStringArray = region_palette(cell)
+	if not pal.is_empty():
+		out["palette"] = Array(pal)
+	return out
 
 
 ## The towns as frameworks (FrameworkDef, `layout: "organic"`, ADR-0040): the planner's framework

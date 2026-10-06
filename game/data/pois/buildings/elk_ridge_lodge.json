@@ -1,0 +1,2163 @@
+{
+ "_doc": "Tier-3 wilderness set piece for random worlds (site forest). A two-storey log hunting lodge: the kit rooms wear the w3_lodge_shell (chinked bark-on logs saddle-notched at the corners, cut for every door and window: its catalog entry mirrors this plan's lodge rectangle, cols 4..19, rows 4..13) under a cedar gable roof, with a fieldstone chimney stack outside the great room's west wall and the fireplace inside it. The plan ends at the lodge's front so the porch runs along it; the yard in front (the track, the truck, the sign) lies outside the plan. A double-height great room (storeys 2) with the trophy wall, the antler chandelier and a balcony (a rail gallery) over it; kitchen, hall and stairs, the gun room and the boot room; guest rooms and the guide's room upstairs; a cellar (root cellar and meat locker) under the kitchen, cut into the terrain; outside, the skinning shed and two kennel runs. Route: the track -> the porch, its doors piled shut -> round past the kennels -> a kitchen window smashed in behind (jaws under it: their snap wakes the hunters) -> the kitchen, Marit's note -> down to the cellar -> the meat locker: Arne's keys (taking them wakes the locker) -> back up through the great room: the hunters round the hearth rise -> the hall -> the gun room's deadbolt, a shotgun wired behind it -> Marit (guardian) and the guns -> unbolt the gun room's door to the yard. Upstairs is optional: the sick guests, a balcony whose boards have rotted. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "elk_ridge_lodge",
+   "name": "Elk Ridge Lodge",
+   "tier": 3,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    36,
+    32
+   ],
+   "origin": [
+    3,
+    6
+   ],
+   "author": "Hollowmere team (agent X)",
+   "story": "Arne Solberg guided elk hunts out of Elk Ridge Lodge for thirty years and his wife Marit fed the hunters. The Pike party came up for rifle season the week the Cordon closed the bridge, and stayed to hunt. On the high meadow they found a bull elk standing in the creek with its eyes open; it did not run, and Gordon Pike shot it anyway. Arne dressed it in the skinning shed and hung the quarters on the rail in the cellar. Three days later the hunters were running fevers. The hounds went through the kennel wire in the night and were heard on the ridge until morning. Arne went down to the cellar to cut the elk and did not come back up; his keys are on the hook by the locker door, where he hung them so that nobody would have to come near him. The hunters sit round the cold hearth under the antlers. Marit took the rifles into the gun room, wired a shotgun behind its door and turned the deadbolt.",
+   "population": "hunters",
+   "style": {
+    "exterior": "wood_paneling_dark",
+    "interior": "wood_paneling_dark",
+    "floor": "wood_pine",
+    "ceiling": "wood_paneling_dark",
+    "floor_height": 0.45,
+    "decay": 0.55,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "x",
+     "pitch": 38,
+     "overhang": 0.55,
+     "material": "roof_cedar",
+     "gutters": false
+    },
+    "porch": {
+     "side": "S",
+     "from": 4,
+     "to": 12,
+     "depth": 2,
+     "steps": [
+      8
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": -1,
+     "plan": [
+      "..............................",
+      "..............................",
+      "..............................",
+      "..............................",
+      ".............SSSSSSS..........",
+      ".............SSSSSSS..........",
+      ".............SSSSSSS..........",
+      ".............SSSSSSS..........",
+      ".............MMMMMMM..........",
+      ".............MMMMMMM..........",
+      ".............MMMMMMM..........",
+      "..............................",
+      "..............................",
+      ".............................."
+     ],
+     "rooms": {
+      "S": {
+       "name": "Root cellar",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "wood_paneling_dark"
+      },
+      "M": {
+       "name": "Meat locker",
+       "type": "cellar",
+       "wall": "plaster_grey",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      }
+     }
+    },
+    {
+     "level": 0,
+     "plan": [
+      "......................XXXXX...",
+      "......................XXXXX...",
+      "......................XXXXX...",
+      "......................XXXXX...",
+      "....GGGGGGGGGKKKKKKK..........",
+      "....GGGGGGGGGKKKKKKK..........",
+      "....GGGGGGGGGKKKKKKK..........",
+      "....GGGGGGGGGKKKKKKK..........",
+      "....GGGGGGGGGHHHHRRR..........",
+      "....GGGGGGGGGHHHHRRR..........",
+      "....GGGGGGGGGHHHHRRR..........",
+      "....GGGGGGGGGHHHHRRR..........",
+      "....GGGGGGGGGHHHHPPP..........",
+      "....GGGGGGGGGHHHHPPP.........."
+     ],
+     "rooms": {
+      "G": {
+       "name": "Great room",
+       "type": "living",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak",
+       "storeys": 2
+      },
+      "K": {
+       "name": "Lodge kitchen",
+       "type": "kitchen",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_check"
+      },
+      "H": {
+       "name": "Hall",
+       "type": "hallway",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak"
+      },
+      "R": {
+       "name": "Gun room",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak"
+      },
+      "P": {
+       "name": "Boot room",
+       "type": "storage",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "X": {
+       "name": "Skinning shed",
+       "type": "storage",
+       "wall": "wood_paneling_dark",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "..............................",
+      "..............................",
+      "..............................",
+      "..............................",
+      "....^^^^^^^BBTTTVVVV..........",
+      "....^^^^^^^BBTTTVVVV..........",
+      "....^^^^^^^BBTTTVVVV..........",
+      "....^^^^^^^BBTTTVVVV..........",
+      "....^^^^^^^BBUUUUAAA..........",
+      "....^^^^^^^BBUUUUAAA..........",
+      "....^^^^^^^BBUUUUAAA..........",
+      "....^^^^^^^BBUUUUAAA..........",
+      "....^^^^^^^BBUUUUAAA..........",
+      "....^^^^^^^BBUUUUAAA.........."
+     ],
+     "rooms": {
+      "B": {
+       "name": "Balcony",
+       "type": "hallway",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak",
+       "gallery": "rail"
+      },
+      "T": {
+       "name": "Guest room",
+       "type": "bedroom",
+       "wall": "wallpaper_damask_brown",
+       "floor": "wood_pine"
+      },
+      "V": {
+       "name": "Corner guest room",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "U": {
+       "name": "Upstairs hall",
+       "type": "hallway",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "A": {
+       "name": "The Solbergs' room",
+       "type": "bedroom",
+       "wall": "paint_slate_blue",
+       "floor": "wood_oak"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_doors",
+     "at": [
+      7,
+      13
+     ],
+     "side": "S",
+     "type": "door2",
+     "state": "barricaded",
+     "barricade": "furniture"
+    },
+    {
+     "id": "great_tall_s1",
+     "at": [
+      5,
+      13
+     ],
+     "side": "S",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "great_tall_s2",
+     "at": [
+      10,
+      13
+     ],
+     "side": "S",
+     "type": "window_tall",
+     "state": "boarded"
+    },
+    {
+     "id": "great_tall_w1",
+     "at": [
+      4,
+      5
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "great_tall_w2",
+     "at": [
+      4,
+      12
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "great_tall_n1",
+     "at": [
+      6,
+      4
+     ],
+     "side": "N",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "great_tall_n2",
+     "at": [
+      10,
+      4
+     ],
+     "side": "N",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "kitchen_back",
+     "at": [
+      16,
+      4
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "barricaded"
+    },
+    {
+     "id": "kitchen_win_n1",
+     "at": [
+      14,
+      4
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "kitchen_win_n2",
+     "at": [
+      18,
+      4
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "kitchen_win_e",
+     "at": [
+      19,
+      6
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "gun_room_door",
+     "at": [
+      19,
+      9
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_plank"
+    },
+    {
+     "id": "boot_door",
+     "at": [
+      18,
+      13
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "barricaded"
+    },
+    {
+     "id": "boot_window",
+     "at": [
+      17,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "hall_window",
+     "at": [
+      13,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "guest_win_n",
+     "at": [
+      14,
+      4
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "corner_win_n",
+     "at": [
+      18,
+      4
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "corner_win_e",
+     "at": [
+      19,
+      6
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "solberg_win_e1",
+     "at": [
+      19,
+      10
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "solberg_win_e2",
+     "at": [
+      19,
+      13
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken",
+     "level": 1,
+     "cue": "none"
+    },
+    {
+     "id": "solberg_win_s",
+     "at": [
+      18,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "upstairs_win_s",
+     "at": [
+      14,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "balcony_win_s",
+     "at": [
+      12,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "kitchen_great_door",
+     "at": [
+      13,
+      6
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "kitchen_hall_door",
+     "at": [
+      14,
+      7
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "barricaded",
+     "barricade_on": "H"
+    },
+    {
+     "id": "great_hall_arch",
+     "at": [
+      13,
+      10
+     ],
+     "side": "W",
+     "type": "door2",
+     "state": "missing"
+    },
+    {
+     "id": "gun_room_inner",
+     "at": [
+      16,
+      9
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked",
+     "key": "w3_elk_gun_room_key",
+     "lock": "deadbolt"
+    },
+    {
+     "id": "boot_room_door",
+     "at": [
+      16,
+      12
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "locker_door",
+     "at": [
+      19,
+      7
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "level": -1,
+     "model": "door_metal"
+    },
+    {
+     "id": "guest_door",
+     "at": [
+      14,
+      7
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "corner_door",
+     "at": [
+      16,
+      7
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "solberg_door",
+     "at": [
+      16,
+      11
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "balcony_door",
+     "at": [
+      12,
+      9
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open",
+     "level": 1
+    },
+    {
+     "id": "shed_door",
+     "at": [
+      24,
+      3
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "model": "door_plank"
+    },
+    {
+     "id": "shed_window",
+     "at": [
+      26,
+      1
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "shed_window_w",
+     "at": [
+      22,
+      2
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    }
+   ],
+   "stairs": [
+    {
+     "level": 0,
+     "at": [
+      15,
+      13
+     ],
+     "dir": "N"
+    },
+    {
+     "level": -1,
+     "at": [
+      18,
+      7
+     ],
+     "dir": "W"
+    }
+   ],
+   "props": [
+    {
+     "id": "lodge_shell",
+     "prop": "w3_lodge_shell",
+     "pos": [
+      12.0,
+      9.0
+     ],
+     "y": -0.45,
+     "route_ok": true
+    },
+    {
+     "id": "chimney",
+     "prop": "w3_stone_chimney",
+     "pos": [
+      3.27,
+      9.0
+     ],
+     "rot": -90
+    },
+    {
+     "id": "fireplace",
+     "prop": "w3_stone_fireplace",
+     "at": [
+      4,
+      8
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.5
+     ]
+    },
+    {
+     "id": "mantel_candles",
+     "prop": "candle_cluster",
+     "pos": [
+      5.02,
+      8.25
+     ],
+     "y": 1.6,
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "elk_mount",
+     "prop": "w3_trophy_elk",
+     "pos": [
+      5.11,
+      9.0
+     ],
+     "rot": 90,
+     "y": 3.0
+    },
+    {
+     "prop": "w3_trophy_deer",
+     "at": [
+      4,
+      6
+     ],
+     "against": "W",
+     "y": 2.9
+    },
+    {
+     "prop": "w3_trophy_deer",
+     "at": [
+      4,
+      11
+     ],
+     "against": "W",
+     "y": 2.9,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_trophy_deer",
+     "at": [
+      8,
+      4
+     ],
+     "against": "N",
+     "y": 3.2
+    },
+    {
+     "prop": "out_trophy_fish",
+     "at": [
+      12,
+      5
+     ],
+     "against": "E",
+     "height": 1.8
+    },
+    {
+     "prop": "wild_gun_rack",
+     "at": [
+      12,
+      8
+     ],
+     "against": "E",
+     "height": 1.0,
+     "variant": "destroyed"
+    },
+    {
+     "id": "chandelier",
+     "prop": "w3_antler_chandelier",
+     "pos": [
+      8.0,
+      9.0
+     ],
+     "lit": true
+    },
+    {
+     "id": "hearth_couch",
+     "prop": "couch",
+     "pos": [
+      7.65,
+      9.0
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "id": "hearth_chair_n",
+     "prop": "armchair",
+     "pos": [
+      6.35,
+      7.05
+     ],
+     "rot": -125,
+     "variant": "worn"
+    },
+    {
+     "id": "hearth_chair_s",
+     "prop": "armchair",
+     "pos": [
+      6.35,
+      10.95
+     ],
+     "rot": -55
+    },
+    {
+     "prop": "w3_bear_rug",
+     "pos": [
+      6.05,
+      9.0
+     ],
+     "rot": -90
+    },
+    {
+     "prop": "coffee_table",
+     "pos": [
+      6.45,
+      9.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "lodge_table",
+     "prop": "wild_mess_table",
+     "pos": [
+      9.6,
+      5.85
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "table_chair_a",
+     "prop": "chair_wood",
+     "pos": [
+      8.8,
+      5.12
+     ],
+     "rot": 0
+    },
+    {
+     "id": "table_chair_b",
+     "prop": "chair_wood",
+     "pos": [
+      10.3,
+      5.12
+     ],
+     "rot": 0,
+     "variant": "destroyed"
+    },
+    {
+     "id": "table_chair_c",
+     "prop": "chair_wood",
+     "pos": [
+      9.1,
+      6.6
+     ],
+     "rot": 180
+    },
+    {
+     "id": "table_chair_d",
+     "prop": "chair_wood",
+     "pos": [
+      10.5,
+      6.62
+     ],
+     "rot": 170
+    },
+    {
+     "prop": "wild_enamel_dishes",
+     "pos": [
+      9.2,
+      5.9
+     ],
+     "y": 0.78
+    },
+    {
+     "id": "table_lamp",
+     "prop": "farm_oil_lamp",
+     "pos": [
+      10.2,
+      5.8
+     ],
+     "y": 0.78,
+     "lit": true
+    },
+    {
+     "id": "guestbook_desk",
+     "prop": "desk_small",
+     "at": [
+      8,
+      4
+     ],
+     "against": "N",
+     "offset": [
+      0.05,
+      0
+     ]
+    },
+    {
+     "id": "lodge_books",
+     "prop": "bookshelf",
+     "at": [
+      4,
+      13
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      -0.1
+     ]
+    },
+    {
+     "prop": "rug_rect",
+     "pos": [
+      9.6,
+      5.85
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_firewood_stack",
+     "pos": [
+      4.55,
+      6.75
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "bottles_scatter",
+     "pos": [
+      7.2,
+      11.6
+     ]
+    },
+    {
+     "id": "lodge_stove",
+     "prop": "stove_old",
+     "at": [
+      15,
+      4
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "id": "lodge_sink",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      17,
+      4
+     ],
+     "against": "N"
+    },
+    {
+     "id": "lodge_counter",
+     "prop": "kitchen_counter",
+     "at": [
+      19,
+      5
+     ],
+     "against": "E"
+    },
+    {
+     "id": "lodge_fridge",
+     "prop": "fridge_old",
+     "at": [
+      19,
+      4
+     ],
+     "against": "E",
+     "variant": "worn"
+    },
+    {
+     "id": "lodge_pantry",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      13,
+      4
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.22
+     ],
+     "container": "w3_lodge_pantry"
+    },
+    {
+     "id": "marit_table",
+     "prop": "kitchen_table",
+     "pos": [
+      15.0,
+      5.7
+     ],
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      14.15,
+      5.75
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      15.75,
+      5.3
+     ],
+     "rot": -100,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "wild_enamel_dishes",
+     "pos": [
+      15.3,
+      5.6
+     ],
+     "y": 0.76
+    },
+    {
+     "id": "hall_trunk",
+     "prop": "wild_footlocker",
+     "at": [
+      13,
+      12
+     ],
+     "against": "W",
+     "container": "wild_footlocker"
+    },
+    {
+     "id": "boot_coats",
+     "prop": "civic_coat_rack",
+     "pos": [
+      18.4,
+      12.5
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_caulk_boots",
+     "pos": [
+      17.6,
+      13.4
+     ]
+    },
+    {
+     "id": "gun_cabinet",
+     "prop": "w3_gun_cabinet",
+     "at": [
+      19,
+      10
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.25
+     ],
+     "container": "w3_gun_cabinet"
+    },
+    {
+     "id": "gun_locker",
+     "prop": "weapons_locker",
+     "at": [
+      18,
+      8
+     ],
+     "against": "N",
+     "container": "weapons_locker"
+    },
+    {
+     "id": "gun_ammo",
+     "prop": "wild_ammo_box",
+     "pos": [
+      19.45,
+      8.45
+     ],
+     "rot": 10
+    },
+    {
+     "id": "marit_chair",
+     "prop": "chair_wood",
+     "pos": [
+      18.45,
+      10.4
+     ],
+     "rot": -90
+    },
+    {
+     "prop": "wild_gun_rack",
+     "at": [
+      18,
+      11
+     ],
+     "against": "S",
+     "height": 1.0
+    },
+    {
+     "id": "cellar_shelf_0",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      14,
+      4
+     ],
+     "against": "N",
+     "level": -1,
+     "container": "farm_pantry"
+    },
+    {
+     "id": "cellar_shelf_1",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      16,
+      4
+     ],
+     "against": "N",
+     "level": -1,
+     "container": "w3_lodge_pantry"
+    },
+    {
+     "id": "cellar_shelf_2",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      18,
+      4
+     ],
+     "against": "N",
+     "level": -1,
+     "container": "farm_pantry"
+    },
+    {
+     "id": "cellar_potatoes",
+     "prop": "farm_crate_potatoes",
+     "pos": [
+      13.5,
+      6.6
+     ],
+     "level": -1
+    },
+    {
+     "prop": "farm_preserve_jars",
+     "pos": [
+      13.6,
+      5.6
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      19.45,
+      4.6
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "meat_rail_a",
+     "prop": "w3_meat_rail",
+     "pos": [
+      15.0,
+      9.62
+     ],
+     "level": -1,
+     "variant": "worn",
+     "alt": "meat:spoiled"
+    },
+    {
+     "id": "meat_rail_b",
+     "prop": "w3_meat_rail",
+     "pos": [
+      17.85,
+      9.62
+     ],
+     "level": -1,
+     "variant": "worn",
+     "alt": "meat:spoiled"
+    },
+    {
+     "id": "locker_crate",
+     "prop": "crate_wood",
+     "pos": [
+      19.35,
+      10.45
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      13.5,
+      8.5
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "guest_bed",
+     "prop": "bed_single",
+     "pos": [
+      13.65,
+      5.2
+     ],
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "guest_dresser",
+     "prop": "dresser",
+     "at": [
+      15,
+      5
+     ],
+     "against": "E",
+     "level": 1
+    },
+    {
+     "id": "june_chair",
+     "prop": "chair_wood",
+     "pos": [
+      14.75,
+      6.4
+     ],
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "id": "corner_bed",
+     "prop": "bed_double",
+     "pos": [
+      16.95,
+      5.15
+     ],
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "corner_nightstand",
+     "prop": "nightstand",
+     "pos": [
+      18.5,
+      4.38
+     ],
+     "level": 1
+    },
+    {
+     "id": "corner_wardrobe",
+     "prop": "wardrobe",
+     "at": [
+      19,
+      5
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      -0.12
+     ],
+     "level": 1
+    },
+    {
+     "id": "pike_duffel",
+     "prop": "duffel_bag",
+     "pos": [
+      18.6,
+      6.6
+     ],
+     "rot": 30,
+     "level": 1
+    },
+    {
+     "id": "upstairs_books",
+     "prop": "bookshelf",
+     "at": [
+      13,
+      12
+     ],
+     "against": "W",
+     "level": 1
+    },
+    {
+     "id": "solberg_bed",
+     "prop": "farm_quilt_bed",
+     "pos": [
+      18.5,
+      9.12
+     ],
+     "level": 1
+    },
+    {
+     "id": "solberg_dresser",
+     "prop": "dresser",
+     "at": [
+      17,
+      13
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      -0.3
+     ],
+     "level": 1
+    },
+    {
+     "id": "solberg_safe",
+     "prop": "wild_safe_floor",
+     "pos": [
+      19.45,
+      12.3
+     ],
+     "rot": -90,
+     "level": 1
+    },
+    {
+     "id": "balcony_chest",
+     "prop": "farm_hope_chest",
+     "at": [
+      12,
+      4
+     ],
+     "against": "N",
+     "offset": [
+      -0.15,
+      0
+     ],
+     "level": 1
+    },
+    {
+     "prop": "armchair",
+     "pos": [
+      12.4,
+      7.6
+     ],
+     "rot": -90,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "gambrel",
+     "prop": "w3_gambrel",
+     "pos": [
+      24.0,
+      1.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      26.45,
+      3.45
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_pelt_board",
+     "pos": [
+      22.55,
+      2.9
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "wild_chopping_block",
+     "pos": [
+      25.9,
+      2.3
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "kennel_a",
+     "prop": "w3_kennel_run",
+     "pos": [
+      23.5,
+      8.5
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "kennel_b",
+     "prop": "w3_kennel_run",
+     "pos": [
+      26.0,
+      8.5
+     ],
+     "variant": "destroyed"
+    },
+    {
+     "prop": "w3_kennel_sign",
+     "pos": [
+      24.75,
+      11.2
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_lodge_sign",
+     "pos": [
+      16.0,
+      24.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "guide_truck",
+     "prop": "pickup_wreck",
+     "pos": [
+      23.6,
+      17.5
+     ],
+     "rot": 18,
+     "variant": "worn"
+    },
+    {
+     "prop": "woodpile",
+     "pos": [
+      1.45,
+      6.6
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "woodpile",
+     "pos": [
+      1.45,
+      11.3
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "wild_chopping_block",
+     "pos": [
+      2.3,
+      13.2
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_outhouse",
+     "pos": [
+      28.4,
+      1.6
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_hide_frame",
+     "pos": [
+      20.9,
+      1.4
+     ],
+     "rot": 10,
+     "variant": "worn"
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      5.6,
+      14.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      10.6,
+      14.6
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "wild_firewood_stack",
+     "pos": [
+      11.8,
+      14.35
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      0.8,
+      1.2
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      29.2,
+      6.0
+     ],
+     "rot": 53,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      28.6,
+      13.6
+     ],
+     "rot": 106,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      0.8,
+      18.0
+     ],
+     "rot": 159,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      30.6,
+      22.0
+     ],
+     "rot": 212,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      3.0,
+      24.6
+     ],
+     "rot": 265,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      20.6,
+      21.8
+     ],
+     "rot": 318,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      9.0,
+      1.0
+     ],
+     "rot": 11,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      18.4,
+      19.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      27.4,
+      16.4
+     ],
+     "rot": 40
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "pike",
+     "pos": [
+      6.35,
+      7.05
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -125,
+     "group": "party",
+     "alt": "party:by_the_fire"
+    },
+    {
+     "id": "cal_tull",
+     "pos": [
+      7.65,
+      9.4
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -90,
+     "group": "party",
+     "alt": "party:by_the_fire"
+    },
+    {
+     "id": "wes_tull",
+     "pos": [
+      5.8,
+      10.1
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": -80,
+     "group": "party",
+     "alt": "party:by_the_fire"
+    },
+    {
+     "id": "arne",
+     "pos": [
+      16.3,
+      8.55
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 40,
+     "level": -1,
+     "group": "locker"
+    },
+    {
+     "id": "doc_hensley",
+     "pos": [
+      14.3,
+      10.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 100,
+     "level": -1,
+     "group": "locker",
+     "anchor": "floor"
+    },
+    {
+     "id": "marit",
+     "pos": [
+      18.45,
+      10.4
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -90,
+     "guardian": true,
+     "anchor": "marit_chair"
+    },
+    {
+     "id": "june_pike",
+     "pos": [
+      14.75,
+      6.4
+     ],
+     "enemy": "keener",
+     "pose": "sit",
+     "rot": 180,
+     "level": 1,
+     "anchor": "june_chair"
+    },
+    {
+     "id": "earl",
+     "pos": [
+      16.95,
+      5.15
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "id": "lonnie",
+     "pos": [
+      23.0,
+      3.2
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "floor"
+    },
+    {
+     "id": "boot_hunter",
+     "pos": [
+      18.9,
+      12.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "anchor": "floor"
+    },
+    {
+     "id": "pike",
+     "pos": [
+      8.8,
+      5.12
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "group": "party",
+     "alt": "party:at_the_table",
+     "anchor": "table_chair_a"
+    },
+    {
+     "id": "cal_tull",
+     "pos": [
+      9.1,
+      6.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "group": "party",
+     "alt": "party:at_the_table",
+     "anchor": "table_chair_c"
+    },
+    {
+     "id": "wes_tull",
+     "pos": [
+      5.6,
+      12.3
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": -90,
+     "group": "party",
+     "alt": "party:at_the_table"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "arne_keys",
+     "item": "w3_elk_gun_room_key",
+     "pos": [
+      19.85,
+      8.6
+     ],
+     "y": 1.5,
+     "level": -1
+    }
+   ],
+   "notes": [
+    {
+     "note": "w3_elk_guestbook",
+     "pos": [
+      8.6,
+      4.35
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w3_elk_marit",
+     "pos": [
+      15.2,
+      5.85
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w3_elk_arne",
+     "pos": [
+      19.35,
+      10.45
+     ],
+     "y": 0.43,
+     "level": -1
+    },
+    {
+     "note": "w3_elk_kennel",
+     "pos": [
+      24.9,
+      11.7
+     ],
+     "y": 0.03
+    }
+   ],
+   "traps": [
+    {
+     "id": "window_jaws",
+     "type": "bear_trap",
+     "pos": [
+      18.5,
+      3.3
+     ],
+     "rot": 15,
+     "alt": "way_in:kitchen_window"
+    },
+    {
+     "id": "gun_room_rig",
+     "type": "shotgun",
+     "at": [
+      17,
+      9
+     ],
+     "side": "W",
+     "alt": "gun_room:shotgun"
+    },
+    {
+     "id": "balcony_boards",
+     "type": "creaky_floor",
+     "at": [
+      11,
+      7
+     ],
+     "size": [
+      2,
+      3
+     ],
+     "level": 1
+    },
+    {
+     "id": "balcony_rot",
+     "type": "weak_floor",
+     "at": [
+      11,
+      5
+     ],
+     "level": 1,
+     "alt": "balcony:north_end"
+    },
+    {
+     "id": "locker_cans",
+     "type": "can_chime",
+     "at": [
+      19,
+      7
+     ],
+     "side": "S",
+     "level": -1
+    },
+    {
+     "id": "window_jaws",
+     "type": "bear_trap",
+     "pos": [
+      17.5,
+      14.6
+     ],
+     "rot": -20,
+     "alt": "way_in:boot_window"
+    },
+    {
+     "id": "gun_room_rig",
+     "type": "can_chime",
+     "at": [
+      17,
+      9
+     ],
+     "side": "W",
+     "alt": "gun_room:cans"
+    },
+    {
+     "id": "balcony_rot",
+     "type": "weak_floor",
+     "at": [
+      11,
+      12
+     ],
+     "level": 1,
+     "alt": "balcony:south_end"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "party_jaws",
+     "group": "party",
+     "on": "trap",
+     "trap": "window_jaws",
+     "delay": 0.6
+    },
+    {
+     "id": "party_room",
+     "group": "party",
+     "on": "room",
+     "room": "G",
+     "level": 0,
+     "delay": 0.5
+    },
+    {
+     "id": "locker_keys",
+     "group": "locker",
+     "on": "pickup",
+     "pickup": "arne_keys",
+     "delay": 0.5
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      18.2,
+      9.6
+     ],
+     "height": 1.2,
+     "color": "#ffc27a",
+     "energy": 0.4,
+     "range": 4.0,
+     "flicker": 0.2
+    },
+    {
+     "pos": [
+      16.0,
+      9.3
+     ],
+     "level": -1,
+     "height": 2.0,
+     "color": "#a8b6c4",
+     "energy": 0.25,
+     "range": 6.0,
+     "flicker": 0.0
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      16,
+      8
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 90,
+     "level": -1
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      15,
+      9
+     ],
+     "side": "floor",
+     "size": [
+      1.4,
+      1.2
+     ],
+     "level": -1
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      17,
+      9
+     ],
+     "side": "W",
+     "height": 1.4,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "bullet_holes",
+     "at": [
+      16,
+      9
+     ],
+     "side": "E",
+     "height": 1.4,
+     "size": [
+      0.9,
+      0.7
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      14,
+      7
+     ],
+     "side": "S",
+     "height": 1.2,
+     "size": [
+      0.4,
+      0.4
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      5,
+      9
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      19,
+      4
+     ],
+     "side": "N",
+     "height": 2.0,
+     "size": [
+      1.0,
+      0.8
+     ],
+     "level": -1
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      19,
+      13
+     ],
+     "side": "E",
+     "height": 1.9,
+     "size": [
+      1.0,
+      1.2
+     ],
+     "level": 1
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      21,
+      13
+     ],
+     "label": "The track ends in the lodge yard: two storeys of chinked logs, the stone chimney; the porch doors are piled shut from inside"
+    },
+    {
+     "at": [
+      21,
+      11
+     ],
+     "label": "Round the east side past the kennel runs, their wire pushed out from inside"
+    },
+    {
+     "at": [
+      19,
+      2
+     ],
+     "label": "Behind the lodge: a kitchen window smashed in, jaws in the leaves under it"
+    },
+    {
+     "at": [
+      17,
+      5
+     ],
+     "label": "The kitchen: Marit's note on the table, the stairs down to the cellar"
+    },
+    {
+     "at": [
+      19,
+      6
+     ],
+     "label": "The root cellar: the lodge's stores, the meat locker's steel door",
+     "level": -1
+    },
+    {
+     "at": [
+      16,
+      8
+     ],
+     "label": "The meat locker: the elk on the rail, Arne's keys on the hook by the door",
+     "level": -1
+    },
+    {
+     "at": [
+      13,
+      5
+     ],
+     "label": "Back up into the kitchen"
+    },
+    {
+     "at": [
+      9,
+      9
+     ],
+     "label": "The great room: the hunters in the chairs round the cold hearth"
+    },
+    {
+     "at": [
+      14,
+      9
+     ],
+     "label": "The hall: the gun room's deadbolt, and a wire behind the door"
+    },
+    {
+     "at": [
+      18,
+      9
+     ],
+     "label": "The gun room: Marit with the rifles"
+    },
+    {
+     "at": [
+      20,
+      9
+     ],
+     "label": "Unbolt the gun room's door to the yard"
+    }
+   ],
+   "loot_room": {
+    "room": "R",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "gun_room_door"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "party",
+     "label": "Where the hunters sit",
+     "options": [
+      {
+       "id": "by_the_fire",
+       "weight": 2,
+       "label": "Round the hearth"
+      },
+      {
+       "id": "at_the_table",
+       "label": "At the long table"
+      }
+     ]
+    },
+    {
+     "id": "gun_room",
+     "label": "What Marit set behind the gun room door",
+     "options": [
+      {
+       "id": "shotgun",
+       "weight": 2
+      },
+      {
+       "id": "cans",
+       "label": "A string of cans"
+      }
+     ]
+    },
+    {
+     "id": "way_in",
+     "label": "Which window was smashed in",
+     "options": [
+      {
+       "id": "kitchen_window",
+       "weight": 2
+      },
+      {
+       "id": "boot_window",
+       "openings": [
+        {
+         "id": "kitchen_win_n2",
+         "state": "closed"
+        },
+        {
+         "id": "boot_window",
+         "state": "broken"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "balcony",
+     "label": "Where the balcony has rotted",
+     "options": [
+      {
+       "id": "north_end",
+       "weight": 1
+      },
+      {
+       "id": "south_end",
+       "weight": 1
+      }
+     ]
+    },
+    {
+     "id": "meat",
+     "label": "How long the meat has hung",
+     "options": [
+      {
+       "id": "spoiled",
+       "weight": 2
+      },
+      {
+       "id": "taken",
+       "label": "The rail stripped bare"
+      }
+     ]
+    },
+    {
+     "id": "guest_room",
+     "label": "The guest room's paper",
+     "options": [
+      {
+       "id": "damask",
+       "weight": 2
+      },
+      {
+       "id": "floral",
+       "rooms": [
+        {
+         "level": 1,
+         "room": "T",
+         "wall": "wallpaper_floral_rose"
+        }
+       ]
+      },
+      {
+       "id": "panelled",
+       "rooms": [
+        {
+         "level": 1,
+         "room": "T",
+         "wall": "wood_paneling_dark"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "enemies": 12,
+    "props": 220
+   }
+  }
+ ]
+}

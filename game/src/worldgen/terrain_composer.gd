@@ -290,6 +290,9 @@ class _Build:
 	const K_RIVERBANK: int = 4
 	const K_ROCKY: int = 5
 	const K_OTHER: int = 6
+	## ADR-0041: an old burn (ash and char, regrowth) and a fen (peat, sphagnum, its pools).
+	const K_BURN: int = 7
+	const K_FEN: int = 8
 
 	func _init(p_world: WorldDef, p_region_id: String, p_spacing: float, p_progress: Callable) -> void:
 		world = p_world
@@ -701,11 +704,14 @@ class _Build:
 				continue
 			if str(f.get("level", "auto")) == "auto":
 				var c: Vector2 = _v2(f["ellipse"]) if f.has("ellipse") else _poly_centroid(f["polygon"])
+				# A fen pool (ADR-0041) samples its own small ground (`probe` m a step) and stands
+				# brim-full (`drop` under it); a lake sits 1.8 m under the ground 32 m round.
+				var probe: float = float(f.get("probe", 4.0))
 				var acc: float = 0.0
 				for k: int in 9:
-					var o := Vector2(cos(k * 0.7), sin(k * 0.7)) * float(k) * 4.0
+					var o := Vector2(cos(k * 0.7), sin(k * 0.7)) * float(k) * probe
 					acc += _sample(c.x + o.x, c.y + o.y)
-				_lake_levels[fi] = acc / 9.0 - 1.8
+				_lake_levels[fi] = acc / 9.0 - float(f.get("drop", 1.8))
 			else:
 				_lake_levels[fi] = float(f["level"])
 
@@ -1387,6 +1393,10 @@ class _Build:
 					_s_kind.append(K_RIVERBANK)
 				"rocky_slope":
 					_s_kind.append(K_ROCKY)
+				"burnt_forest":
+					_s_kind.append(K_BURN)
+				"fen":
+					_s_kind.append(K_FEN)
 				_:
 					_s_kind.append(K_OTHER)
 		# Paints and pads by bounding box first: a sample outside every box skips the exact tests
@@ -1420,9 +1430,9 @@ class _Build:
 			_cl_pos.append(cl0["pos"])
 			_cl_r.append(float(cl0["r"]))
 		var pal: PackedStringArray = rt.palette
-		# forest_floor, moss_ground, grass_ground, dirt, mud, gravel, asphalt_cracked, sand
+		# forest_floor, moss_ground, grass_ground, dirt, mud, gravel, asphalt_cracked, sand, ash_char, peat
 		_s_layers = PackedInt32Array([pal.find("forest_floor"), pal.find("moss_ground"), pal.find("grass_ground"), pal.find("dirt"),
-			pal.find("mud"), pal.find("gravel"), pal.find("asphalt_cracked"), pal.find("sand")])
+			pal.find("mud"), pal.find("gravel"), pal.find("asphalt_cracked"), pal.find("sand"), pal.find("ash_char"), pal.find("peat")])
 		for ri: int in road_list.size():
 			var surface: String = str(road_list[ri]["surface"])
 			_r_surf.append(_s_layers[6] if surface == "asphalt" else (_s_layers[5] if surface == "gravel" else _s_layers[3]))
@@ -1611,6 +1621,8 @@ class _Build:
 		var L_MUD: int = lay[4]
 		var L_GRAVEL: int = lay[5]
 		var L_SAND: int = lay[7]
+		var L_ASH: int = lay[8]
+		var L_PEAT: int = lay[9]
 		var hh: PackedFloat32Array = h
 		var p1: PackedFloat32Array = _p1
 		var p2: PackedFloat32Array = _p2
@@ -1741,7 +1753,8 @@ class _Build:
 						var wtop: float = wa + (wb - wa) * fx
 						wd = wtop + ((wc + (wdx - wc) * fx) - wtop) * fz
 					wk = wkind[ci]
-				if wd < 14.0 + n2 * 10.0:
+				# A fen keeps its own wet margins (ADR-0041); other ground turns riverbank by water.
+				if wd < 14.0 + n2 * 10.0 and kind[bi] != K_FEN:
 					bi = 1
 				var pad_hit: int = -1
 				var pad_in: float = 0.0
@@ -1818,10 +1831,37 @@ class _Build:
 					am = smoothstep(0.6, 0.8, n1) * 0.4
 					if L_MOSS >= 0 and am > 0.0:
 						w[L_MOSS] += am
+				elif kb == K_BURN:
+					# Ash and char, grass coming back in drifts, bare burnt soil between.
+					if L_ASH >= 0:
+						w[L_ASH] += 1.0
+					elif L_DIRT >= 0:
+						w[L_DIRT] += 1.0
+					am = smoothstep(0.42, 0.78, n1) * 0.85
+					if L_GRASS >= 0 and am > 0.0:
+						w[L_GRASS] += am
+					am = smoothstep(0.62, 0.88, n2) * 0.45
+					if L_DIRT >= 0 and am > 0.0:
+						w[L_DIRT] += am
+				elif kb == K_FEN:
+					# Peat, sphagnum carpets on the rises, sedge meadow, the pools' muddy margins.
+					if L_PEAT >= 0:
+						w[L_PEAT] += 1.0
+					elif L_MUD >= 0:
+						w[L_MUD] += 1.0
+					am = smoothstep(0.42, 0.75, n1) * 0.85
+					if L_MOSS >= 0 and am > 0.0:
+						w[L_MOSS] += am
+					am = smoothstep(0.55, 0.85, n2) * 0.55
+					if L_GRASS >= 0 and am > 0.0:
+						w[L_GRASS] += am
+					am = (1.0 - smoothstep(0.5, 3.5 + n1 * 3.0, wd)) * 0.9
+					if L_MUD >= 0 and am > 0.0:
+						w[L_MUD] += am
 				else:
 					if L_FOREST >= 0:
 						w[L_FOREST] += 1.0
-				if wk == 2 and wd < 6.0 + n1 * 3.0:
+				if wk == 2 and wd < 6.0 + n1 * 3.0 and kb != K_FEN:
 					# Forest lakes and ponds have muddy, stony margins with the odd sandy cove: a sand
 					# ring all the way round read as a beach, and from the trees as a bleached halo.
 					var shore: float = 1.0 - smoothstep(-2.0, 6.0, wd)
@@ -1835,7 +1875,14 @@ class _Build:
 					am = shore * 0.7 * (1.0 - cove)
 					if L_GRAVEL >= 0 and am > 0.0:
 						w[L_GRAVEL] += am
-				if wd < 0.0:
+				if wd < 0.0 and kb == K_FEN:
+					# A fen pool's bed is soft peat and muck.
+					w.fill(0.0)
+					if L_PEAT >= 0:
+						w[L_PEAT] += 0.8
+					if L_MUD >= 0:
+						w[L_MUD] += 0.5
+				elif wd < 0.0:
 					w.fill(0.0)
 					if L_MUD >= 0:
 						w[L_MUD] += 0.7
@@ -1847,7 +1894,11 @@ class _Build:
 					w.fill(0.0)
 					w[dsurf[pad_hit]] += 2.0
 				var veg: float = 1.0
-				if wd < 2.0:
+				if wd < 2.0 and kb == K_FEN:
+					# Cattails, bulrush and drowned snags stand in a fen's pools: the scatter keeps only
+					# species that wade there (SpeciesDef.wade_depth, ADR-0041).
+					veg = 0.55 if wd < -0.25 else 0.55 + 0.45 * smoothstep(-0.25, 2.0, wd)
+				elif wd < 2.0:
 					# Sedges and horsetail grow right down to the waterline (and a little into it);
 					# thinning them over the last two metres left a bare ring round every shore.
 					veg = 0.0 if wd < -0.25 else 0.4 + 0.6 * smoothstep(-0.25, 2.0, wd)

@@ -119,6 +119,28 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "wx_mist_forest_dawn", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 3.0, 2283), "hour": 6.9, "weather": "mist", "wet": 0.4},
 ]
 
+## The wilderness set pieces of round 3 (DESIGN §11), shot on a random world that placed them: run with
+## main.gd's world arguments (`--world random --world-seed 12 --world-set size=4 --world-set wilderness=2.5`)
+## and `--only` naming some of these. Positions are in the building's own footprint (metres from its
+## corner, y above its pad), resolved against wherever the world stood it; a building the world did not
+## place is skipped. Each has its approach by day, its signature room and an interior at night by its
+## own lights.
+const POI_SHOTS: Array[Dictionary] = [
+	{"name": "w3_tamarack_approach", "poi": "camp_tamarack", "at": Vector3(26.0, 1.8, 49.5), "look": Vector3(24.0, 2.5, 40.0), "hour": 10.5, "weather": "clear"},
+	{"name": "w3_tamarack_dining", "poi": "camp_tamarack", "at": Vector3(28.5, 2.05, 33.3), "look": Vector3(20.5, 1.0, 28.0), "hour": 15.0, "weather": "overcast"},
+	{"name": "w3_tamarack_night", "poi": "camp_tamarack", "at": Vector3(21.5, 2.05, 27.6), "look": Vector3(24.0, 1.2, 32.0), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_elk_approach", "poi": "elk_ridge_lodge", "at": Vector3(3.5, 2.0, 28.0), "look": Vector3(13.0, 4.5, 15.0), "hour": 16.0, "weather": "clear"},
+	{"name": "w3_elk_great_room", "poi": "elk_ridge_lodge", "at": Vector3(14.5, 2.15, 18.5), "look": Vector3(7.5, 2.6, 15.0), "hour": 14.0, "weather": "overcast"},
+	{"name": "w3_elk_night", "poi": "elk_ridge_lodge", "at": Vector3(15.3, 5.1, 18.0), "look": Vector3(8.5, 1.5, 14.5), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_qc_approach", "poi": "cordon_quarantine_camp", "at": Vector3(16.0, 2.0, 43.5), "look": Vector3(24.0, 2.5, 30.0), "hour": 11.0, "weather": "overcast"},
+	{"name": "w3_qc_wards", "poi": "cordon_quarantine_camp", "at": Vector3(22.5, 1.95, 15.6), "look": Vector3(22.5, 0.8, 7.0), "hour": 13.0, "weather": "clear"},
+	{"name": "w3_qc_morgue_night", "poi": "cordon_quarantine_camp", "at": Vector3(37.5, 2.0, 13.4), "look": Vector3(37.5, 0.8, 7.0), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_qc_camp_night", "poi": "cordon_quarantine_camp", "at": Vector3(29.0, 3.0, 28.0), "look": Vector3(18.0, 1.5, 14.0), "hour": 22.5, "weather": "clear"},
+	{"name": "w3_haldane_approach", "poi": "haldane_place", "at": Vector3(20.0, 1.8, 39.8), "look": Vector3(20.0, 2.0, 24.0), "hour": 10.0, "weather": "clear"},
+	{"name": "w3_haldane_yard", "poi": "haldane_place", "at": Vector3(32.5, 2.2, 20.0), "look": Vector3(14.0, 1.0, 18.0), "hour": 15.5, "weather": "clear"},
+	{"name": "w3_haldane_bunker_night", "poi": "haldane_place", "at": Vector3(19.6, -0.95, 15.4), "look": Vector3(25.5, -1.8, 17.0), "hour": 23.0, "weather": "clear"},
+]
+
 const ProbeBudget := preload("res://src/poi/interior_probe_budget.gd")
 
 var _out: String = "res://../build/screenshots"
@@ -292,9 +314,14 @@ func _wait_streamed(w: Node) -> void:
 
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
-	game.call(&"start_new_game", {"game_mode": "slice", "skip_intro": true, "slot": "screens"})
+	var start: Dictionary = {"game_mode": "slice", "skip_intro": true, "slot": "screens"}
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	var random_world: bool = args.has("--world") and args.find("--world") + 1 < args.size() and args[args.find("--world") + 1] == "random"
+	if random_world:
+		start["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", args, 7)
+	game.call(&"start_new_game", start)
 	var t0: int = Time.get_ticks_msec()
-	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < 300000:
+	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < (1200000 if random_world else 300000):
 		await get_tree().process_frame
 	var w: Node = game.world
 	if w == null:
@@ -317,12 +344,39 @@ func _run() -> void:
 	# amount every run).
 	(w.get(&"clock_driver") as WorldClockDriver).paused = true
 	_mem_report("world ready")
-	for shot: Dictionary in SHOTS:
+	for shot: Dictionary in (_poi_shots(w) if random_world else SHOTS):
 		if not _only.is_empty() and not _only.has(str(shot["name"])):
 			continue
 		await _shoot(w, cam, p, shot)
 	print("SHOT done in %.1fs" % ((Time.get_ticks_msec() - t0) / 1000.0))
 	get_tree().quit(0)
+
+
+## POI_SHOTS resolved against the buildings the world placed (the first of each kind): positions in
+## world space with y over the ground there, as _shoot takes them.
+func _poi_shots(w: Node) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var pois: Node = w.get(&"pois") as Node
+	var placed: Dictionary = {}
+	if pois != null:
+		for iid: Variant in (pois.get(&"instances") as Dictionary):
+			var inst: PoiInstance = (pois.get(&"instances") as Dictionary)[iid] as PoiInstance
+			if inst != null and inst.layout != null and not placed.has(String(inst.layout.def.id)):
+				placed[String(inst.layout.def.id)] = inst
+	for shot: Dictionary in POI_SHOTS:
+		var inst2: PoiInstance = placed.get(str(shot["poi"])) as PoiInstance
+		if inst2 == null:
+			print("SHOT %s skipped: the world placed no %s" % [shot["name"], shot["poi"]])
+			continue
+		var xf: Transform3D = inst2.global_transform
+		var a: Vector3 = xf * (shot["at"] as Vector3)
+		var b: Vector3 = xf * (shot["look"] as Vector3)
+		var s2: Dictionary = shot.duplicate()
+		s2["pos"] = Vector3(a.x, a.y - float(w.call(&"height_at", a.x, a.z)), a.z)
+		s2["look"] = Vector3(b.x, b.y - float(w.call(&"height_at", b.x, b.z)), b.z)
+		print("SHOT %s: %s at %s, looking at %s" % [shot["name"], inst2.instance_id, a, b])
+		out.append(s2)
+	return out
 
 
 func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:

@@ -85,8 +85,8 @@
     "hollow_m": 9.0
   },
   "surfaces": {
-    "_doc": "Per terrain layer (data/materials/terrain_layers.json): puddle = how readily standing water collects on it (asphalt and mud hold it, litter and sand drink it); porosity = how much darker it turns soaked (dirt and litter darken most, sealed asphalt least).",
-    "puddle": {"forest_floor": 0.3, "moss_ground": 0.25, "grass_ground": 0.45, "dirt": 0.9, "mud": 1.0, "gravel": 0.65, "rock_cliff": 0.35, "sand": 0.12, "snow": 0.0, "asphalt_cracked": 1.0, "concrete_slab": 0.85},
-    "porosity": {"forest_floor": 0.9, "moss_ground": 0.8, "grass_ground": 0.6, "dirt": 1.0, "mud": 0.5, "gravel": 0.7, "rock_cliff": 0.55, "sand": 0.95, "snow": 0.0, "asphalt_cracked": 0.45, "concrete_slab": 0.8}
+    "_doc": "Per terrain layer (data/materials/terrain_layers.json): puddle = how readily standing water collects on it (asphalt, mud and fen peat hold it, litter and sand drink it); porosity = how much darker it turns soaked (dirt, litter and wet ash darken most, sealed asphalt and peat, already near saturated, least).",
+    "puddle": {"forest_floor": 0.3, "moss_ground": 0.25, "grass_ground": 0.45, "dirt": 0.9, "mud": 1.0, "gravel": 0.65, "rock_cliff": 0.35, "sand": 0.12, "snow": 0.0, "asphalt_cracked": 1.0, "concrete_slab": 0.85, "ash_char": 0.55, "peat": 1.0},
+    "porosity": {"forest_floor": 0.9, "moss_ground": 0.8, "grass_ground": 0.6, "dirt": 1.0, "mud": 0.5, "gravel": 0.7, "rock_cliff": 0.55, "sand": 0.95, "snow": 0.0, "asphalt_cracked": 0.45, "concrete_slab": 0.8, "ash_char": 1.0, "peat": 0.3}
   }
 }
