@@ -18,8 +18,11 @@ const OPTION_TYPES: PackedStringArray = ["int", "float", "enum"]
 const PRESET_KEYS: PackedStringArray = ["label", "description", "values"]
 const TUNING_KEYS: PackedStringArray = ["macro_step", "biome_step", "region_margin", "terrain", "rivers", "lakes", "towns", "roads", "wilderness", "drop_site", "bloom"]
 const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt"]
-const TOWN_KEYS: PackedStringArray = ["mix", "kinds", "street", "lot", "spacing", "max_relief"]
-const KIND_KEYS: PackedStringArray = ["rows", "segments", "lots", "commercial", "civic", "crossroads", "arm_lots"]
+## tuning.towns (organic towns, ADR-0040; the planner's own numbers are town_planner.json).
+const TOWN_KEYS: PackedStringArray = ["mix", "spacing", "edge", "candidates", "core_relief", "disc_relief", "water", "score", "core_smoothing", "stub",
+	"authored_max", "clearance"]
+## The size classes a town-size mix may name (town_planner.json `kinds`).
+const KIND_KEYS: PackedStringArray = ["hamlet", "village", "town"]
 const SITES: PackedStringArray = ["summit", "forest", "waterside", "lake_shore", "remote", "roadside"]
 const ACCESS: PackedStringArray = ["trail", "track", "drive"]
 const NAME_KEYS: PackedStringArray = ["towns", "regions", "region_words", "lakes", "rivers"]
@@ -134,9 +137,10 @@ static func from_dict(d: Dictionary) -> RefCounted:
 	return s
 
 
-## One line for menus and logs: "4 x 4 km, rolling, 3 towns (mixed), seed 1234".
+## One line for menus and logs: "4 x 4 km, rolling, 2 towns per 16 km² (mixed), seed 1234".
 func summary() -> String:
-	return "%d x %d km, %s, %d towns (%s), seed %d" % [integer("size"), integer("size"), choice("terrain"), integer("towns"), choice("town_size"), seed]
+	return "%d x %d km, %s, %s towns per 16 km² (%s), seed %d" % [integer("size"), integer("size"), choice("terrain"), String.num(num("town_density"), 2),
+		choice("town_size"), seed]
 
 
 # --- Schema checks (make validate, tests) -------------------------------------------------------
@@ -174,14 +178,15 @@ static func schema_errors(db: Node = null) -> PackedStringArray:
 			out.append("world_gen.json tuning.terrain: no profile for '%s'" % tt)
 	var towns: Dictionary = t.get("towns", {})
 	_unknown(towns, TOWN_KEYS, "world_gen.json tuning.towns", out)
-	for kind: String in ["hamlet", "village", "town"]:
-		var kd: Dictionary = (towns.get("kinds", {}) as Dictionary).get(kind, {})
-		if kd.is_empty():
-			out.append("world_gen.json tuning.towns.kinds: no '%s'" % kind)
-		_unknown(kd, KIND_KEYS, "world_gen.json tuning.towns.kinds.%s" % kind, out)
 	for mix_id: Variant in (towns.get("mix", {}) as Dictionary).keys():
 		if not (opts.get("town_size", {}) as Dictionary).get("values", []).has(str(mix_id)):
 			out.append("world_gen.json tuning.towns.mix: '%s' is not a town_size value" % mix_id)
+		for kind: Variant in ((towns["mix"] as Dictionary)[mix_id] as Dictionary).keys():
+			if not KIND_KEYS.has(str(kind)):
+				out.append("world_gen.json tuning.towns.mix.%s: '%s' is not a size class (%s)" % [mix_id, kind, ", ".join(KIND_KEYS)])
+	for v: Variant in (opts.get("town_size", {}) as Dictionary).get("values", []):
+		if not (towns.get("mix", {}) as Dictionary).has(str(v)):
+			out.append("world_gen.json tuning.towns.mix: no mix for town_size '%s'" % v)
 	var wild: Dictionary = t.get("wilderness", {})
 	_unknown(wild, ["pool", "farmsteads", "spacing", "max_relief"], "world_gen.json tuning.wilderness", out)
 	for e: Variant in wild.get("pool", []):

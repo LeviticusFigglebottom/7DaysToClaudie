@@ -99,7 +99,9 @@ func setup(p_net: Streets, p_cfg: Dictionary) -> void:
 	ground = p_net.ground
 	cfg = p_cfg
 	sizes = cfg.get("sizes", {})
-	reliefs = cfg.get("relief", {})
+	# A copy: the quota passes raise a zone's relief for a while, and the tuning is shared (ContentDB's
+	# config, and every town the generator plans at once on its worker threads).
+	reliefs = (cfg.get("relief", {}) as Dictionary).duplicate()
 	verge = float(cfg.get("verge", 3.0))
 	overlap_gap = float(cfg.get("overlap_gap", 1.0))
 	water_min = float(cfg.get("water", 12.0))

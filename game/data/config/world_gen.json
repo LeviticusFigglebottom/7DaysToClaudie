@@ -16,22 +16,22 @@
     "rocky": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.3, "label": "Rocky ground"},
     "rivers": {"category": "water", "type": "enum", "values": ["none", "few", "some", "many"], "default": "some", "label": "Rivers"},
     "lakes": {"category": "water", "type": "enum", "values": ["none", "few", "some", "many"], "default": "some", "label": "Lakes"},
-    "towns": {"category": "places", "type": "int", "min": 0, "max": 10, "step": 1, "default": 3, "label": "Towns"},
+    "town_density": {"category": "places", "type": "float", "min": 0.0, "max": 6.0, "step": 0.25, "default": 2.0, "label": "Towns per 16 km²"},
     "town_size": {"category": "places", "type": "enum", "values": ["hamlets", "villages", "mixed", "towns"], "default": "mixed", "label": "Town size"},
     "wilderness": {"category": "places", "type": "float", "min": 0.0, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Wilderness places"},
     "roads": {"category": "places", "type": "enum", "values": ["sparse", "normal", "dense"], "default": "normal", "label": "Road density"}
   },
   "presets": {
     "standard": {"label": "Standard", "description": "Rolling forest country, a few rivers and lakes, three towns of mixed size and the usual camps, cabins and lookouts between them.", "values": {}},
-    "small_valley": {"label": "Small valley (3 x 3)", "description": "A 3 km valley with two villages: quick to generate and to cross.", "values": {"size": 3, "towns": 2, "town_size": "villages", "lakes": "few"}},
+    "small_valley": {"label": "Small valley (3 x 3)", "description": "A 3 km valley with two villages: quick to generate and to cross.", "values": {"size": 3, "town_density": 3.5, "town_size": "villages", "lakes": "few"}},
     "highlands": {"label": "Highlands", "description": "Mountain ranges and deep valleys, bare rock above the trees, few lakes and two small settlements on the valley floors.",
-      "values": {"terrain": "mountainous", "roughness": 0.7, "rocky": 0.7, "meadow": 0.15, "birch": 0.2, "lakes": "few", "rivers": "some", "towns": 2, "town_size": "hamlets", "wilderness": 1.25}},
+      "values": {"terrain": "mountainous", "roughness": 0.7, "rocky": 0.7, "meadow": 0.15, "birch": 0.2, "lakes": "few", "rivers": "some", "town_density": 2.0, "town_size": "hamlets", "wilderness": 1.25}},
     "lakeland": {"label": "Lakeland", "description": "Low rolling country full of lakes and slow rivers, birch along the water.",
-      "values": {"terrain": "rolling", "roughness": 0.4, "lakes": "many", "rivers": "many", "birch": 0.6, "meadow": 0.4, "towns": 3}},
+      "values": {"terrain": "rolling", "roughness": 0.4, "lakes": "many", "rivers": "many", "birch": 0.6, "meadow": 0.4, "town_density": 3.0}},
     "settled": {"label": "Settled county", "description": "More towns and bigger ones, open farmland and a dense road net: more to loot, more of them.",
-      "values": {"terrain": "rolling", "towns": 6, "town_size": "towns", "roads": "dense", "meadow": 0.6, "conifer": 0.5, "wilderness": 0.75}},
+      "values": {"terrain": "rolling", "town_density": 5.0, "town_size": "towns", "roads": "dense", "meadow": 0.6, "conifer": 0.5, "wilderness": 0.75}},
     "wild": {"label": "Wild country", "description": "One hamlet, a few tracks and a lot of forest between the camps.",
-      "values": {"terrain": "hilly", "towns": 1, "town_size": "hamlets", "roads": "sparse", "wilderness": 1.75, "conifer": 0.9, "meadow": 0.2}}
+      "values": {"terrain": "hilly", "town_density": 1.0, "town_size": "hamlets", "roads": "sparse", "wilderness": 1.75, "conifer": 0.9, "meadow": 0.2}}
   },
   "tuning": {
     "_doc": "Generator numbers. Lengths in metres. See RwgGenerator / RwgTerrain / RwgTowns.",
@@ -63,20 +63,22 @@
       "shore": 18
     },
     "towns": {
-      "_doc": "Town kinds: rows of streets with lots on both sides. lots: lots per side of a row street between cross streets; rows: parallel row streets; segments: stretches between cross streets; crossroads: the chance of a crossroads plan instead (a main and a cross street, lots along all four arms, arm_lots per side of an arm, corner lots in the angles).",
+      "_doc": "Organic towns (ADR-0040; the planner's own tuning is data/config/town_planner.json). How many towns: the town_density option (towns per 16 km²); their size classes: mix (weights by town_size). Sites (plan §3.3): candidates per town, each disc `spacing` m clear of every other town's and `edge` m inside the map; the centre `water` [0] m from water at least, [1]-[2] m a bonus; core and disc relief at most core_relief and disc_relief m; score: slope (core mean slope), valley (per m above the 1 km mean), water (bonus), central (to the map's middle), edge (per m closer than 300 m to the edge), jitter. core_smoothing: how far the macro grid eases towards its mean over the core. stub: how far past its radius a lone main street runs. authored_max: towns of one world that may hold each authored building. clearance: what places keep off lots and streets (m).",
       "mix": {"hamlets": {"hamlet": 1.0}, "villages": {"village": 1.0}, "mixed": {"hamlet": 1.0, "village": 1.2, "town": 0.6}, "towns": {"village": 0.6, "town": 1.0}},
-      "kinds": {
-        "hamlet": {"rows": 1, "segments": 1, "lots": [3, 4], "commercial": 1, "civic": 0},
-        "village": {"rows": 2, "segments": 1, "lots": [4, 5], "commercial": 2, "civic": 1, "crossroads": 0.5, "arm_lots": [2, 3]},
-        "town": {"rows": 2, "segments": 2, "lots": [3, 4], "commercial": 4, "civic": 2, "crossroads": 0.4, "arm_lots": [3, 4]}
-      },
-      "street": {"main": 8.0, "side": 6.0, "verge": 3.0, "margin": 6.0, "entry": 14.0},
-      "lot": {"residential": [20, 23], "commercial": [28, 28], "civic": [32, 32], "industrial": [26, 26], "main_depth": 32, "back_depth": 26},
-      "spacing": 650,
-      "max_relief": 9.0
+      "spacing": 300,
+      "edge": 120,
+      "candidates": 240,
+      "core_relief": 15.0,
+      "disc_relief": 45.0,
+      "water": [60, 80, 300],
+      "score": {"slope": 120.0, "valley": 0.25, "water": 6.0, "central": 4.0, "edge": 0.02, "jitter": 3.0},
+      "core_smoothing": 0.5,
+      "stub": 150,
+      "authored_max": 3,
+      "clearance": {"lots": 12, "streets": 8}
     },
     "roads": {
-      "_doc": "Road classes and the network: extra: loops added beyond the spanning tree per density; grade: preferred and steepest grades; costs are relative.",
+      "_doc": "Road classes and the network: extra: loops added beyond the spanning tree per density (per 16 km²); exits: roads off the map per density (per 4 km of map side); grade: preferred and steepest grades; costs are relative; valley: extra cost per metre of road per metre above the ground's 300 m mean (roads keep to the valleys).",
       "highway": {"surface": "asphalt", "width": 8.0, "shoulder": 2.5},
       "county": {"surface": "gravel", "width": 5.0, "shoulder": 1.5},
       "track": {"surface": "dirt", "width": 3.5, "shoulder": 1.0},
@@ -85,10 +87,11 @@
       "exits": {"sparse": 1, "normal": 1, "dense": 2},
       "grade": [0.07, 0.16],
       "bridge_cost": 420.0,
-      "reuse": 0.4
+      "reuse": 0.4,
+      "valley": 0.03
     },
     "wilderness": {
-      "_doc": "Authored places outside towns. site: summit | forest | waterside | lake_shore | remote | roadside; per_region: expected count per region at density 1; max: per world; access: trail (footpath) | track (dirt road) | drive (short asphalt drive off the road); min_danger: 1 (start) .. 5 (far edge).",
+      "_doc": "Authored places outside towns. site: summit | forest | waterside | lake_shore | remote | roadside; per_region: expected count per region at density 1; max: per 16 km² of map; access: trail (footpath) | track (dirt road) | drive (short asphalt drive off the road); min_danger: 1 (start) .. 5 (far edge).",
       "pool": [
         {"poi": "cedar_ridge_lookout", "site": "summit", "per_region": 0.22, "max": 4, "access": "trail", "biome": "rocky_slope", "min_danger": 1},
         {"poi": "trappers_cabin", "site": "forest", "per_region": 0.35, "max": 6, "access": "trail", "biome": "meadow", "min_danger": 1},
@@ -105,11 +108,12 @@
       "spacing": 160,
       "max_relief": 7.0
     },
-    "drop_site": {"_doc": "Where a new player lands: away from towns and places, near (not on) a road, on gentle dry ground.", "town_distance": 380, "poi_distance": 160, "road_distance": [40, 220]},
+    "drop_site": {"_doc": "Where a new player lands: away from towns and places, near (not on) a road, on gentle dry ground, `border` m from a region border (the first that has room).", "town_distance": 380, "poi_distance": 160, "road_distance": [40, 220], "border": [300, 200, 120, 60]},
     "bloom": {"_doc": "Bloom patches (ADR-0025) in the far regions: per region at danger 3, 4 and 5.", "per_danger": [0, 0, 0.6, 1.2, 2.0], "radius": [40, 110]}
   },
   "names": {
-    "towns": ["Aldermoor", "Bracken Ford", "Caddis Hill", "Dunlow", "Elkwater", "Fallow", "Greywell", "Harrowgate", "Ivy Bend", "Juniper Flats", "Kestrel", "Lomond", "Marrow Creek", "Nettlefield", "Oxbow", "Pinecrest", "Quarry Hill", "Redfern", "Saltash", "Thistlewood", "Underhill", "Vale End", "Willowby", "Yarrow", "Ashby", "Coldbrook", "Hatchet Lake", "Millbank", "Stonecross", "Tanager"],
+    "towns": ["Aldermoor", "Bracken Ford", "Caddis Hill", "Dunlow", "Elkwater", "Fallow", "Greywell", "Harrowgate", "Ivy Bend", "Juniper Flats", "Kestrel", "Lomond", "Marrow Creek", "Nettlefield", "Oxbow", "Pinecrest", "Quarry Hill", "Redfern", "Saltash", "Thistlewood", "Underhill", "Vale End", "Willowby", "Yarrow", "Ashby", "Coldbrook", "Hatchet Lake", "Millbank", "Stonecross", "Tanager",
+      "Alder Springs", "Barlow", "Birchmont", "Black Rock", "Burnside", "Cedar Gap", "Clearwater", "Copper Falls", "Crane Hollow", "Dawson Mill", "Deer Lick", "Eastbrook", "Fenwick", "Fir Haven", "Glen Ellis", "Granite Falls", "Halford", "Hemlock", "Hollis Ford", "Kettle Rock", "Larkspur", "Lowell Bridge", "Maple Run", "Mossburg", "North Fork", "Orchard Hill", "Pike Crossing", "Quinlan", "Ravensdale", "Rook Hill", "Sawyer", "Shadow Lake", "Silverton", "Sparrow Creek", "Tamarack", "Timber Bend", "Twin Pines", "Wexford", "Whitlow", "Wren Valley"],
     "regions": ["Hollow", "Ridge", "Flats", "Woods", "Bottoms", "Heights", "Fen", "Narrows", "Barrens", "Hills", "Reach", "Draw", "Gulch", "Bench", "Meadows", "Timber"],
     "region_words": ["Black", "Bitter", "Cedar", "Cold", "Crow", "Deer", "Fern", "Fox", "Grey", "Hart", "Iron", "Lark", "Moss", "Owl", "Pike", "Raven", "Rush", "Sorrow", "Spruce", "Stag", "Thorn", "Wolf", "Ash", "Birch", "Elder", "Heron", "Otter", "Quill"],
     "lakes": ["Mere", "Pond", "Lake", "Tarn"],
