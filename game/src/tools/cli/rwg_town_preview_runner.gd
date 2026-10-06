@@ -156,10 +156,14 @@ static func make_arterials(kind: String, radius: float, outskirts: float, world:
 			var p2: PackedVector2Array = Streets.route_fine(g, Vector2.ZERO, b, opts)
 			if p1.is_empty() or p2.is_empty():
 				continue
-			pts.append_array(p1)
-			pts.remove_at(pts.size() - 1)
-			pts.append_array(p2)
-			pts = Streets.relax(g, pts, opts)
+			# Through the centre (the generator routes arterials to town centres): each half is
+			# relaxed on its own, and points crowding the joint go so the line bends smoothly there.
+			for q: Vector2 in p1:
+				if q.length() > 40.0 or q == Vector2.ZERO:
+					pts.append(q)
+			for q2: Vector2 in p2:
+				if q2.length() > 40.0:
+					pts.append(q2)
 		else:
 			var main: Polyline2 = Polyline2.from_array(out[0]["points"])
 			var tee: Vector2 = main.point_at(main.closest(Vector2.ZERO).y + r.randf_range(120.0, 200.0) * (1.0 if r.randf() < 0.5 else -1.0))

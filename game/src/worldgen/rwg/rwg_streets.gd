@@ -447,7 +447,8 @@ func grow(r: RandomNumberGenerator) -> void:
 			var sb: float = r.randf_range(40.0, st.length() - 40.0) if n_br == 1 else (st.length() * (0.3 + 0.4 * b) + r.randf_range(-15.0, 15.0))
 			var bp: Vector2 = st.line.point_at(sb)
 			var nb: Dictionary = {"from": si, "s": sb, "side": 1 if r.randf() < 0.5 else -1, "angle": r.randf_range(float(ba[0]), float(ba[1])),
-				"gen": 2, "budget": r.randf_range(float(bl[0]), float(bl[1])), "prio": bp.distance_to(center) / radius + r.randf_range(0.1, 0.5), "cls": _class_at(bp)}
+				"gen": 2, "budget": r.randf_range(float(bl[0]), float(bl[1])), "prio": bp.distance_to(center) / radius + r.randf_range(0.1, 0.5), "cls": _class_at(bp),
+				"seek": true}
 			var at: int = queue.size()
 			for qi: int in queue.size():
 				if float(queue[qi]["prio"]) > float(nb["prio"]):
@@ -491,7 +492,7 @@ func _arterial_seeds(r: RandomNumberGenerator) -> Array[Dictionary]:
 				# out to the edge instead of being spent round the centre.
 				var prio: float = dist / radius + (0.0 if ring == 0 else r.randf_range(0.0, float(kd.get("seed_mix", 0.6))))
 				out.append({"from": ai, "s": s, "side": side, "angle": angle, "gen": 1, "budget": r.randf_range(float(sl[0]), float(sl[1])),
-					"prio": prio, "cls": cls})
+					"prio": prio, "cls": cls, "seek": not in_core or ground.slope(p) > 0.04})
 				if ring == 0 and r.randf() < cross_chance:
 					out.append({"from": ai, "s": s, "side": -side, "angle": 180.0 - angle, "gen": 1,
 						"budget": r.randf_range(float(sl[0]), float(sl[1])), "prio": prio + 0.001, "cls": cls})
@@ -528,7 +529,19 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 		elif gap < _junction_gap:
 			return -1
 	var tan: Vector2 = par.line.tangent_at(s0)
-	var d: Vector2 = tan.rotated(deg_to_rad(float(sd["angle"])) * side)
+	var angle: float = float(sd["angle"])
+	if bool(sd.get("seek", false)):
+		# Leave at whichever angle of the branching range climbs least over the first 36 m.
+		var ba: Array = cfg.get("branch_angle", [75.0, 105.0])
+		var h0: float = ground.h(p0)
+		var best_g: float = INF
+		for k2: int in 5:
+			var a2: float = lerpf(float(ba[0]), float(ba[1]), k2 / 4.0)
+			var g2: float = absf(ground.h(p0 + tan.rotated(deg_to_rad(a2) * side) * 36.0) - h0) + absf(a2 - angle) * 0.01
+			if g2 < best_g:
+				best_g = g2
+				angle = a2
+	var d: Vector2 = tan.rotated(deg_to_rad(angle) * side)
 	var d0: Vector2 = d
 	var pts := PackedVector2Array([p0])
 	var p: Vector2 = p0
@@ -548,6 +561,10 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 		if straight <= 0.0:
 			wander = clampf(wander + r.randf_range(-_wander, _wander), -_wander_max, _wander_max)
 		var aim: Vector2 = d0.rotated(deg_to_rad(wander))
+		# On a slope the land, not the drift or the core's grid, decides where the street goes.
+		var flat: float = clampf(1.0 - ground.slope(p) / 0.06, 0.0, 1.0)
+		var aim_k: float = _aim_k * flat
+		var straight_k: float = straight * flat
 		k += 1
 		var near_ids: PackedInt32Array = near(p, look)
 		var best: float = INF
@@ -574,8 +591,8 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 			var pr: Array = _probe(p, q, c, near_ids, ignore, length, hp)
 			if not bool(pr[0]):
 				continue
-			var cost: float = _grade_k * g + _turn_k * absf(turn) / 12.0 + _aim_k * rad_to_deg(acos(clampf(c.dot(aim), -1.0, 1.0))) / 12.0 \
-				+ float(pr[2]) + straight * absf(turn) / 12.0
+			var cost: float = _grade_k * g + _turn_k * absf(turn) / 12.0 + aim_k * rad_to_deg(acos(clampf(c.dot(aim), -1.0, 1.0))) / 12.0 \
+				+ float(pr[2]) + straight_k * absf(turn) / 12.0
 			var sn: Dictionary = pr[1]
 			if not sn.is_empty():
 				cost -= _snap_bonus
