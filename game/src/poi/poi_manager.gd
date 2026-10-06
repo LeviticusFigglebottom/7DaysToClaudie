@@ -110,6 +110,9 @@ func _place_region(rt: RegionTerrain) -> void:
 
 # --- Regions in and out (ADR-0038, RWG v2 Phase 2: buildings by region until Phase 3's rings) ---
 
+## Fixtures of one framework placed per streaming step.
+const FIXTURE_STEP: int = 48
+
 ## Region id -> true once its buildings are placed or queued.
 var _placed_regions: Dictionary = {}
 ## Instance id -> the region it stands in; fixture bodies by region.
@@ -135,15 +138,19 @@ func _on_region_attached(rid: String) -> void:
 	if registry != null:
 		# Its pads at 1 m heights; its fixtures in a step of their own (the buildings: _update_ring).
 		registry.refresh_region(rid, rt)
-		# A step per framework (a town's fixtures in one region were ~45 ms in one step).
+		# A step per FIXTURE_STEP fixtures of each framework (a town's in one region were up to
+		# ~70 ms in one step). Fixtures outside the region's rect are skipped inside.
 		for pl: Dictionary in rt.placements:
 			if not str(pl.get("kind", "")) in ["framework", "town"]:
 				continue
-			steps.add(["", func() -> void:
-				if _placed_regions.has(rid) and tm.regions.has(rid):
-					_region_now = rid
-					_place_framework(pl, false)
-					_region_now = "", "poi region %s" % rid])
+			var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(pl["def"]))) as FrameworkDef
+			var n: int = fw.fixtures.size() if fw != null else 0
+			for from: int in range(0, maxi(n, 1), FIXTURE_STEP):
+				steps.add(["", func() -> void:
+					if _placed_regions.has(rid) and tm.regions.has(rid):
+						_region_now = rid
+						_place_framework(pl, false, Vector2i(from, from + FIXTURE_STEP))
+						_region_now = "", "poi region %s" % rid])
 		return
 	var lots: Dictionary = world.get(&"poi_lots") if world.get(&"poi_lots") is Dictionary else {}
 	var seed: int = Game.session.world_seed if Game.session != null else 0
@@ -379,7 +386,9 @@ static func _placement_xf(pl: Dictionary) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, -deg_to_rad(float(pl.get("rotation", 0.0)))), Vector3(float(o[0]), float(o[1]), float(o[2])))
 
 
-func _place_framework(pl: Dictionary, buildings: bool = true) -> void:
+## `fx`: the range of the framework's fixtures to place ([from, to), to -1 = all), so a streamed
+## region can place a big town's fixtures over several steps.
+func _place_framework(pl: Dictionary, buildings: bool = true, fx: Vector2i = Vector2i(0, -1)) -> void:
 	var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(pl["def"]))) as FrameworkDef
 	if fw == null:
 		Log.warn("poi", "framework %s not found" % pl["def"])
@@ -413,7 +422,7 @@ func _place_framework(pl: Dictionary, buildings: bool = true) -> void:
 	# model and one body holding every box (TD-107). An organic town has hundreds of them, and a
 	# body and a mesh instance each cost a node, a draw call and a physics object apiece.
 	var cells: Dictionary = {}
-	for fi: int in fw.fixtures.size():
+	for fi: int in range(fx.x, fw.fixtures.size() if fx.y < 0 else mini(fx.y, fw.fixtures.size())):
 		var f: Dictionary = fw.fixtures[fi]
 		var pdef: PropDef = Content.get_def(&"prop", StringName(str(f.get("prop", "")))) as PropDef
 		if pdef == null:
