@@ -3,21 +3,21 @@
  "defs": [
   {
    "id": "pell_fire_station",
-   "name": "Pell Volunteer Fire Station",
+   "name": "Volunteer Fire Station",
    "tier": 2,
    "zoning": [
     "civic"
    ],
    "footprint": [
     28,
-    33
+    32
    ],
    "origin": [
     3,
     6
    ],
    "author": "Hollowmere team",
-   "story": "Pell Volunteer Fire Department ran one engine, four men and a siren on a pole. In the second week Chief Hal Brekke's crew pulled a woman out of the Merrow place and Pruitt came back with a bite. Hal put him in the dorm, then put Sorensen in with him, then locked the dorm and moved them both down to the bay because the bay doors were steel. The Cordon wanted the engine for the checkpoint; Hal told them it didn't start. Haag, on lookout duty, climbed the hose tower to watch the town and never came down, and the station keys are still on the hook up there beside him. Hal stayed with his crew. The last line in the run log asks whoever reads it to slide down the pole and close the bay doors behind him.",
+   "story": "The volunteer fire company ran one engine, four men and a siren on a pole. In the second week Chief Hal Brekke's crew pulled a woman out of a house on the river road and Pruitt came back with a bite. Hal put him in the dorm, then put Sorensen in with him, then locked the dorm and moved them both down to the bay because the bay doors were steel. The Cordon wanted the engine for the checkpoint; Hal told them it didn't start. Haag, on lookout duty, climbed the hose tower to watch the town and never came down, and the station keys are still on the hook up there beside him. Hal stayed with his crew. The last line in the run log asks whoever reads it to slide down the pole and close the bay doors behind him.",
    "style": {
     "exterior": "brick_red",
     "interior": "paint_slate_blue",

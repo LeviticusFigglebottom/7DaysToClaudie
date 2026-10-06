@@ -3,13 +3,13 @@
   "defs": [
     {
       "id": "pell_crossing_school",
-      "name": "Pell's Crossing School",
+      "name": "Consolidated School",
       "tier": 3,
       "zoning": ["civic"],
       "footprint": [30, 25],
       "origin": [2, 3],
       "author": "Hollowmere team",
-      "story": "The Cordon made Pell's Crossing School the evacuation point for the north valley: families in the gym with one bag each, screening in the nurse's office, buses at nine. One bus came, took forty people and never came back; the one at the curb never left. Principal Agnes Whitlow kept the register. Lieutenant Mara Okonkwo of Cordon Medical moved anyone with a cough to the nurse's office and then down to the boiler room 'for isolation', and kept the antifungals down there under her signature. On the third night something went wrong in the gym, and the soldiers boarded the gym doors from the hall with the families still inside. Agnes took her copy of the boiler-room key up to the lights catwalk to open the doors from above. The lieutenant stayed in the cellar with her patients and wrote on the door not to open it.",
+      "story": "The Cordon made the consolidated school the evacuation point for the north valley: families in the gym with one bag each, screening in the nurse's office, buses at nine. One bus came, took forty people and never came back; the one at the curb never left. Principal Agnes Whitlow kept the register. Lieutenant Mara Okonkwo of Cordon Medical moved anyone with a cough to the nurse's office and then down to the boiler room 'for isolation', and kept the antifungals down there under her signature. On the third night something went wrong in the gym, and the soldiers boarded the gym doors from the hall with the families still inside. Agnes took her copy of the boiler-room key up to the lights catwalk to open the doors from above. The lieutenant stayed in the cellar with her patients and wrote on the door not to open it.",
       "population": "church",
       "style": {"exterior": "brick_red", "interior": "paint_sage", "floor": "linoleum_beige", "ceiling": "plaster_white", "floor_height": 0.45, "decay": 0.55, "damaged_walls": 0.07, "prop_condition": "worn", "scatter": {"density": 0.35},
                 "roof": {"type": "flat", "parapet": 0.7, "flat_material": "roof_membrane",
