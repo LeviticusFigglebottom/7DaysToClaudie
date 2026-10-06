@@ -40,4 +40,5 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0034](0034-hounds-and-murmurs.md) | Hollowed hounds and Murmurs: pack hunters on the Enemy brain, crows that mark you | Accepted |
 | [0036](0036-playable-builds.md) | Playable builds: packaged exports with the generated assets, a stand-in mode we test, a load that keeps the window alive | Accepted |
 | [0037](0037-graphics-options-and-perf.md) | Graphics and controls options for real GPUs, and what the first perf pass found | Accepted |
+| [0038](0038-streamed-worlds.md) | Streamed worlds: Phase 1, a composer 2-2.5x faster with byte-identical output, row bands, cancellation, a crash-safe region cache with an LRU, generator spatial indexes | Accepted (Phase 1) |
 | [0040](0040-organic-towns.md) | Organic towns: streets grown over the land, lots by frontage, zoning by rings | Proposed |
