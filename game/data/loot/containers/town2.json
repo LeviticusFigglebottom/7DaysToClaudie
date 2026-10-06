@@ -1,0 +1,13 @@
+{
+  "_doc": "Containers of Pell's Crossing's third block (the school, the fire station, the Savings & Loan). Tables in loot/tables/town2.json; props in props/town2.json.",
+  "defs": [
+    {"id": "school_locker", "name": "Hall Locker", "loot_table": "town2_school_locker", "slots": 4, "search_time": 1.4, "noise": 7},
+    {"id": "school_nurse_cabinet", "name": "Nurse's Cabinet", "loot_table": "town2_nurse_cabinet", "slots": 6, "search_time": 1.8, "noise": 4},
+    {"id": "school_cordon_stores", "name": "Cordon Relief Stores", "loot_table": "town2_cordon_stores", "slots": 8, "search_time": 2.2, "noise": 5},
+    {"id": "fire_gear", "name": "Turnout Gear", "loot_table": "town2_fire_gear", "slots": 5, "search_time": 1.8, "noise": 5},
+    {"id": "fire_engine", "name": "Engine Compartments", "loot_table": "town2_fire_engine", "slots": 6, "search_time": 2.4, "noise": 9},
+    {"id": "fire_chief_safe", "name": "Chief's Lockbox", "loot_table": "town2_fire_chief", "slots": 6, "search_time": 2.0, "noise": 5},
+    {"id": "bank_deposit_boxes", "name": "Safe-Deposit Boxes", "loot_table": "town2_deposit_boxes", "slots": 6, "search_time": 2.6, "noise": 8},
+    {"id": "bank_vault", "name": "Vault Cash Shelves", "loot_table": "town2_bank_vault", "slots": 10, "search_time": 2.5, "noise": 6}
+  ]
+}

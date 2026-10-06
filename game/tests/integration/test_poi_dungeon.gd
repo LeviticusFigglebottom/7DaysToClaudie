@@ -3,7 +3,7 @@ extends GutTest
 ## (and only once, persisted); a bear trap bites and holds a real player body; a shotgun wire fires
 ## into the doorway; a weak floor gives way under the player and stays a hole through a
 ## world-state save/load; a padlock beaten off frees its door; an alarm rouses every sleeper;
-## disarming pays out the trap's parts.
+## disarming pays out the trap's parts; cutting at a vault door rouses the building (ADR-0026).
 
 const PLAYER_SCENE: String = "res://src/player/player.tscn"
 
@@ -224,6 +224,38 @@ func test_alarm_rouses_every_sleeper() -> void:
 	assert_eq(inst.trap_state("bell"), "sprung", "opening its door set it off")
 	assert_true(alarm.is_ringing())
 	assert_eq(inst.sleeper("g1").state, Enemy.State.WAKING, "the held ambush too")
+	assert_eq(inst.sleeper("loner").state, Enemy.State.WAKING)
+	assert_true(inst.is_trigger_fired("into_b"), "every ambush is spent")
+
+
+func test_cutting_a_vault_door_rouses_the_building() -> void:
+	var inst: PoiInstance = _build(_one_storey({
+		"openings": [
+			{"id": "front", "at": [1, 2], "side": "S", "type": "door"},
+			{"id": "inner", "at": [4, 1], "side": "W", "type": "door", "state": "locked", "key": "town2_vault_combination", "lock": "vault", "hp": 1400}],
+		"pickups": [{"id": "combo", "item": "town2_vault_combination", "at": [1, 0]}],
+		"sleepers": [
+			{"id": "g1", "group": "vault", "at": [6, 1], "enemy": "hollow"},
+			{"id": "loner", "at": [2, 0], "enemy": "hollow"}],
+		"triggers": [{"id": "into_b", "group": "vault", "on": "room", "room": "B"}]}))
+	inst.spawn_sleepers(_ai)
+	await _frames(1)
+	assert_eq(inst.find_children("LockBody_*", "", true, false).size(), 0, "no padlock to beat off a vault")
+	var door: PoiPieces.Door = null
+	for n: Node in inst.find_children("*", "", true, false):
+		if n is PoiPieces.Door and (n as PoiPieces.Door).op_id == "inner":
+			door = n
+	assert_not_null(door)
+	if door == null:
+		return
+	assert_eq(door.lock_kind, "vault")
+	assert_string_contains(door.interact_text(_player_at(Vector3(0, 0.2, 6))), "combination")
+	# A Hollowed at the door (the Hum) is just noise; the player's first blow rouses everything.
+	door.take_damage(DamageInfo.make(25.0, &"blunt", &"melee", &"hollow_1"))
+	assert_false(inst.is_trigger_fired("into_b"), "a Hollowed's blow does not rouse the building")
+	door.take_damage(DamageInfo.make(25.0, &"blunt", &"melee", Game.session.local_player_id))
+	assert_eq(door.state, "locked", "one blow does not cut through a vault")
+	assert_eq(inst.sleeper("g1").state, Enemy.State.WAKING, "the held ambush rises to the cutting")
 	assert_eq(inst.sleeper("loner").state, Enemy.State.WAKING)
 	assert_true(inst.is_trigger_fired("into_b"), "every ambush is spent")
 

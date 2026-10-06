@@ -1,0 +1,852 @@
+{
+ "_doc": "Town props II: Pell's Crossing School, Pell Volunteer Fire Station and Tamsin Valley Savings & Loan. Models: tools/assetgen/blender/generators/props_town2.py -> models/props/<id>[_worn|_destroyed].glb (the vault door leaves are kit pieces: models/kit/door_vault[_broken].glb). size = [width x, height y, depth z] in metres (Godot axes, front +Z), measured from the clean model (school_flagpole: the pole and base only, the flag flies free). Wall-mounted props have their origin on the wall plane at the bottom centre; school_stage_lights hangs below its origin. Props tagged clutter feed PoiBuilder scatter.",
+ "defs": [
+  {
+   "id": "school_desk",
+   "name": "Student Desk",
+   "description": "1960s combo desk: chrome tube sled frame, woodgrain top over a wire book basket, moulded plywood seat.",
+   "tags": [
+    "family_school",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/school_desk",
+    "worn": "props/school_desk_worn",
+    "destroyed": "props/school_desk_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 90,
+   "size": [
+    0.6,
+    0.75,
+    1.04
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "classroom",
+    "office",
+    "hall"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      -0.25
+     ],
+     "height": 0.45,
+     "facing": 0,
+     "lean": "back"
+    }
+   ]
+  },
+  {
+   "id": "school_teacher_desk",
+   "name": "Teacher's Desk",
+   "description": "Grey-green steel tanker desk with a woodgrain top, two drawer pedestals and a pencil drawer.",
+   "tags": [
+    "family_school",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/school_teacher_desk",
+    "worn": "props/school_teacher_desk_worn",
+    "destroyed": "props/school_teacher_desk_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 320,
+   "size": [
+    1.51,
+    0.76,
+    0.81
+   ],
+   "container": "desk",
+   "blocks_sight": false,
+   "rooms": [
+    "classroom",
+    "office"
+   ]
+  },
+  {
+   "id": "school_chalkboard",
+   "name": "Chalkboard",
+   "description": "Slate chalkboard in an oak frame. The Cordon's evacuation tallies are still on it: buses counted, one crossed out (hang ~0.75 m up).",
+   "tags": [
+    "family_school"
+   ],
+   "variants": {
+    "clean": "props/school_chalkboard",
+    "worn": "props/school_chalkboard_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    3.6,
+    1.25,
+    0.11
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "classroom",
+    "office"
+   ]
+  },
+  {
+   "id": "school_locker_bank",
+   "name": "Hallway Lockers",
+   "description": "Bank of four tall steel lockers with louvred doors and padlock hasps.",
+   "tags": [
+    "family_school",
+    "breakable",
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/school_locker_bank",
+    "worn": "props/school_locker_bank_worn",
+    "destroyed": "props/school_locker_bank_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    1.23,
+    1.87,
+    0.52
+   ],
+   "container": "school_locker",
+   "blocks_sight": true,
+   "rooms": [
+    "hallway",
+    "hall",
+    "office"
+   ]
+  },
+  {
+   "id": "school_bleachers",
+   "name": "Gym Bleachers",
+   "description": "Four tiers of varnished fir seats on a grey steel frame.",
+   "tags": [
+    "family_school",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/school_bleachers",
+    "worn": "props/school_bleachers_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    4.0,
+    1.65,
+    2.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "hall"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -1.3,
+      0.895
+     ],
+     "height": 0.45,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      0.895
+     ],
+     "height": 0.45,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      1.3,
+      0.895
+     ],
+     "height": 0.45,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      -1.3,
+      0.295
+     ],
+     "height": 0.85,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      0.295
+     ],
+     "height": 0.85,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      1.3,
+      0.295
+     ],
+     "height": 0.85,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      -1.3,
+      -0.305
+     ],
+     "height": 1.25,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      -0.305
+     ],
+     "height": 1.25,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      1.3,
+      -0.305
+     ],
+     "height": 1.25,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      -1.3,
+      -0.905
+     ],
+     "height": 1.65,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      -0.905
+     ],
+     "height": 1.65,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      1.3,
+      -0.905
+     ],
+     "height": 1.65,
+     "lean": "forward"
+    }
+   ]
+  },
+  {
+   "id": "school_basketball_hoop",
+   "name": "Basketball Hoop",
+   "description": "Wall-mounted backboard on a steel truss with an orange rim and a torn net (hang the bracket bottom 2.4 m up for a 3.05 m rim).",
+   "tags": [
+    "family_school",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/school_basketball_hoop",
+    "worn": "props/school_basketball_hoop_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.8,
+    1.55,
+    1.19
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "hall"
+   ]
+  },
+  {
+   "id": "school_wall_bars",
+   "name": "Wall Bars",
+   "description": "Gym climbing bars: oak uprights with sixteen ash rungs, fixed to the wall.",
+   "tags": [
+    "family_school"
+   ],
+   "variants": {
+    "clean": "props/school_wall_bars",
+    "worn": "props/school_wall_bars_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.97,
+    2.6,
+    0.16
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "hall"
+   ]
+  },
+  {
+   "id": "school_gym_mats",
+   "name": "Gym Mats",
+   "description": "Three folded blue vinyl tumbling mats, stacked.",
+   "tags": [
+    "family_school"
+   ],
+   "variants": {
+    "clean": "props/school_gym_mats",
+    "worn": "props/school_gym_mats_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.85,
+    0.45,
+    1.27
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "hall"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -0.45,
+      0.1
+     ],
+     "height": 0.45,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.45,
+      0.1
+     ],
+     "height": 0.45,
+     "lean": "forward"
+    }
+   ]
+  },
+  {
+   "id": "school_stage_lights",
+   "name": "Stage Lights",
+   "description": "Lighting batten: a pipe with four black fresnel spotlights (origin at the top of the pipe; hang under a ceiling or catwalk rail).",
+   "tags": [
+    "family_school",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/school_stage_lights",
+    "worn": "props/school_stage_lights_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.41,
+    0.4,
+    0.34
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "hall"
+   ]
+  },
+  {
+   "id": "school_boiler",
+   "name": "Boiler",
+   "description": "Sectional cast-iron boiler with an oil burner, gauges, lagged risers and an expansion tank. Cold since the Cordon.",
+   "tags": [
+    "family_school",
+    "metal",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/school_boiler",
+    "worn": "props/school_boiler_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.81,
+    2.27,
+    1.65
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "basement"
+   ]
+  },
+  {
+   "id": "school_card_catalog",
+   "name": "Card Catalog",
+   "description": "Oak library card catalog of thirty small drawers with brass pulls and label holders.",
+   "tags": [
+    "family_school",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/school_card_catalog",
+    "worn": "props/school_card_catalog_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.94,
+    1.3,
+    0.52
+   ],
+   "container": "bookshelf",
+   "blocks_sight": false,
+   "rooms": [
+    "office",
+    "classroom"
+   ]
+  },
+  {
+   "id": "school_flagpole",
+   "name": "Flagpole",
+   "description": "Eight-metre aluminium flagpole on a concrete base; the flag is sun-bleached and torn.",
+   "tags": [
+    "family_school",
+    "street",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/school_flagpole",
+    "worn": "props/school_flagpole_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.76,
+    8.4,
+    0.76
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "school_bus_wreck",
+   "name": "Abandoned School Bus",
+   "description": "A 1970s school bus, the Cordon's last run out of Pell's Crossing: flat tyres, broken windows, the door folded open.",
+   "tags": [
+    "family_school",
+    "vehicle",
+    "street"
+   ],
+   "variants": {
+    "clean": "props/school_bus_wreck",
+    "worn": "props/school_bus_wreck_worn",
+    "destroyed": "props/school_bus_wreck_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.98,
+    3.03,
+    11.0
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -0.66,
+      1.9
+     ],
+     "height": 1.4,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.66,
+      -0.2
+     ],
+     "height": 1.4,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      -0.66,
+      -2.3
+     ],
+     "height": 1.4,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      -0.66,
+      -3.7
+     ],
+     "height": 1.4,
+     "lean": "back"
+    }
+   ]
+  },
+  {
+   "id": "fire_engine_wreck",
+   "name": "Abandoned Fire Engine",
+   "description": "A 1970s rural pumper: faded red cab, pump panel, hose bed and wooden ground ladders. Flat tyres.",
+   "tags": [
+    "family_fire",
+    "vehicle",
+    "street",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/fire_engine_wreck",
+    "worn": "props/fire_engine_wreck_worn",
+    "destroyed": "props/fire_engine_wreck_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    3.05,
+    3.14,
+    8.79
+   ],
+   "container": "fire_engine",
+   "blocks_sight": true,
+   "rooms": [
+    "exterior",
+    "garage"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -0.5,
+      2.85
+     ],
+     "height": 1.45,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.5,
+      2.85
+     ],
+     "height": 1.45,
+     "lean": "back"
+    }
+   ]
+  },
+  {
+   "id": "fire_hose_rack",
+   "name": "Hose Rack",
+   "description": "Wall rack with two rolled canvas hoses and brass nozzles.",
+   "tags": [
+    "family_fire"
+   ],
+   "variants": {
+    "clean": "props/fire_hose_rack",
+    "worn": "props/fire_hose_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.18,
+    1.4,
+    0.21
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "fire_turnout_locker",
+   "name": "Turnout Gear Cubbies",
+   "description": "Three open oak bays of turnout gear: coats with reflective bands, helmets, bunker pants rolled down over the boots.",
+   "tags": [
+    "family_fire",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/fire_turnout_locker",
+    "worn": "props/fire_turnout_locker_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.4,
+    2.0,
+    0.62
+   ],
+   "container": "fire_gear",
+   "blocks_sight": true,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "fire_pole",
+   "name": "Slide Pole",
+   "description": "Polished brass slide pole, 6.2 m, with a floor flange and ceiling bracket.",
+   "tags": [
+    "family_fire",
+    "metal",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/fire_pole",
+    "worn": "props/fire_pole_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.26,
+    6.2,
+    0.24
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "fire_hose_hanging",
+   "name": "Drying Hoses",
+   "description": "Three canvas hoses hung over a bracket in the hose tower to dry (the bracket is 3.9 m up).",
+   "tags": [
+    "family_fire"
+   ],
+   "variants": {
+    "clean": "props/fire_hose_hanging",
+    "worn": "props/fire_hose_hanging_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.0,
+    3.78,
+    0.35
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "fire_siren",
+   "name": "Roof Siren",
+   "description": "Red mechanical siren on a steel post for a roof or a pole.",
+   "tags": [
+    "family_fire",
+    "street",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/fire_siren",
+    "worn": "props/fire_siren_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.43,
+    1.18,
+    0.54
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "fire_extinguisher",
+   "name": "Fire Extinguisher",
+   "description": "Red extinguisher on a wall bracket (hang ~1 m up).",
+   "tags": [
+    "family_fire",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/fire_extinguisher",
+    "worn": "props/fire_extinguisher_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.18,
+    0.54,
+    0.18
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "garage",
+    "hallway",
+    "kitchen",
+    "office"
+   ]
+  },
+  {
+   "id": "bank_vault_door",
+   "name": "Vault Entrance",
+   "description": "Heavy machined-steel vault surround with a 0.9 x 2.1 m opening; the vault door (kit door_vault) hangs in it.",
+   "tags": [
+    "family_bank",
+    "metal",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/bank_vault_door",
+    "worn": "props/bank_vault_door_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.2,
+    2.5,
+    0.53
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "office"
+   ]
+  },
+  {
+   "id": "bank_teller_counter",
+   "name": "Teller Counter",
+   "description": "Mahogany teller counter with a marble top under a brass-and-glass teller cage.",
+   "tags": [
+    "family_bank",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/bank_teller_counter",
+    "worn": "props/bank_teller_counter_worn",
+    "destroyed": "props/bank_teller_counter_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    3.06,
+    2.2,
+    0.83
+   ],
+   "container": "road_register",
+   "blocks_sight": false,
+   "rooms": [
+    "office"
+   ]
+  },
+  {
+   "id": "bank_deposit_boxes",
+   "name": "Safe-Deposit Boxes",
+   "description": "A wall of brass safe-deposit doors, two locks each; some pried open.",
+   "tags": [
+    "family_bank",
+    "breakable",
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/bank_deposit_boxes",
+    "worn": "props/bank_deposit_boxes_worn",
+    "destroyed": "props/bank_deposit_boxes_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 1500,
+   "size": [
+    2.04,
+    2.13,
+    0.54
+   ],
+   "container": "bank_deposit_boxes",
+   "blocks_sight": true,
+   "rooms": [
+    "office"
+   ]
+  },
+  {
+   "id": "bank_stanchions",
+   "name": "Queue Posts",
+   "description": "Three brass stanchions with red velvet ropes.",
+   "tags": [
+    "family_bank",
+    "breakable",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/bank_stanchions",
+    "worn": "props/bank_stanchions_worn"
+   },
+   "collision": "box",
+   "physics": "rigid",
+   "hp": 80,
+   "size": [
+    2.4,
+    1.02,
+    0.32
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "office"
+   ]
+  },
+  {
+   "id": "bank_money_bags",
+   "name": "Money Bags",
+   "description": "Canvas bank bags and banded bricks of cash. Worth nothing now.",
+   "tags": [
+    "family_bank",
+    "clutter"
+   ],
+   "variants": {
+    "clean": "props/bank_money_bags",
+    "worn": "props/bank_money_bags_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.57,
+    0.39,
+    0.46
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "office"
+   ]
+  }
+ ]
+}

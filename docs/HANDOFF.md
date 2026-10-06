@@ -55,9 +55,17 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     * fire fuel, repairs and the horde's routing round buildings.
   * `make smoke`: the slice loop runs fell → carry → build → craft → night → Hum → XP, level,
     supply drop, spending points → save/load of all of it.
-* **POI dungeons** (ADR-0018, TD-026). Larch Hollow has 22 authored buildings (DESIGN §11):
+* **POI dungeons** (ADR-0018, TD-026). Larch Hollow has 25 authored buildings (DESIGN §11):
   * Pell's Crossing grew a church block: St. Ansel, the Northwoods Tavern, the post office, the
     grange hall and a trailer.
+  * And a third block on Larch Street's corner (generated props in `data/props/town2.json`):
+    * **the school** (tier 3), the Cordon's failed evacuation point: a double-height gym of cots
+      with a lights catwalk to drop from, classrooms, a nurse's triage and an isolation cellar;
+    * **the fire station** (tier 2): the engine wreck in a double-height bay, a hose tower to climb
+      and a brass pole from the dorm down into the bay ambush;
+    * **the Savings & Loan** (tier 3): a teller line that turns, and a vault that opens with the
+      combination from the manager's desk, or is cut through with a screech that wakes the whole
+      building (ADR-0026).
   * Route 9 has a gas garage, a clinic and the Timberline Motel.
   * The Okafor farm has a farmhouse and a barn.
   * The wilderness has a fire lookout, a trapper's cabin, a logging camp and the tier-4 sawmill.
@@ -77,7 +85,7 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     Merrow House, the Mile 9 Diner, the Okafor farmhouse and Lou's trailer have five groups each.
   * Seven templates generate tier-1 houses, duplexes, corner stores and workshops; framework lots
     without a pick choose from the pool or generate one. Pell's Crossing's Larch Street is six of
-    them, with the school, fire station and bank lots reserved on its corner.
+    them, south of the third block.
   * `make poi-preview POI="merrow_house gen:cape_cod:3" POI_ARGS="--seed 7"` shows a run's dressing.
   * **Pool buildings** (DESIGN §11): five authored set pieces only random towns place, picked for
     commercial, civic and industrial lots by zoning, tier and footprint: Suds & Spin Laundromat (a

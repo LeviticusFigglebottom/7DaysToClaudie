@@ -85,6 +85,9 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "birds_lift_off", "pos": Vector3(-143, 1.2, 2117), "look": Vector3(-150, 2.2, 2108), "hour": 9.5, "weather": "overcast",
 	 "flock": "crow", "flush_after": 0.9, "fov": 60.0},
 	{"name": "larch_street", "pos": Vector3(-69.0, 2.6, 2330.0), "look": Vector3(-84.0, 1.5, 2262.0), "hour": 10.5, "weather": "clear"},
+	# The third block on Larch Street's corner: the Savings & Loan and the school on the right, the fire
+	# station on the left, the Grange Road corner beyond.
+	{"name": "third_block", "pos": Vector3(-70.0, 3.2, 2254.0), "look": Vector3(-75.0, 3.0, 2196.0), "hour": 15.5, "weather": "clear", "fov": 70.0},
 	# Weather and atmosphere (ADR-0033): rain on Pell's Crossing's street, a storm in the forest at
 	# night lit by a strike, misty dawn over the valley, the town under snow and a puddled road after
 	# rain. The clock stands still between shots, so "wet", "puddles" and "snow_cover" say how long

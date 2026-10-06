@@ -55,6 +55,7 @@
     "disarm_yield": {"scrap_metal": 1},
     "hollowed": {"_doc": "A Hollowed that blunders through rings it like anyone; the ringing wakes sleepers by stimulus (held ambushes only within the ambush wake_radius) instead of rousing the whole building.", "min_weight": "light", "fires_trigger": true}
   },
+  "vault": {"_doc": "Vault doors (lock 'vault', ADR-0026): every blow on one is a screech of steel heard this far (m) as an alarm, and the first blow a player lands rouses the whole building. Its hit points are the opening's 'hp'.", "noise": 48.0},
   "padlock": {"_doc": "Breakable lock cues on locked doors: hit points per kind (deadbolts and bolts cannot be broken off; bash the door).", "hp": 60.0, "chain_hp": 90.0, "noise": 22.0},
   "route_cues": {
     "_doc": "Route cues on windows (ADR-0022, RouteCues): every window the validated route climbs in through gets 'default'; an opening's own \"cue\" (a kind, a list, or \"none\") overrides it. crate: the prop stood under the window outside (two stacked when the sill is more than crate_high above the ground); scuff_decal / sill_decal: decal ids for the boot scuffs up the wall and the handprint on the sill; light_prop: the lantern a \"light\" cue leaves burning on the sill (its light: PropDef.light_for), at most max_lights per building.",

@@ -19,8 +19,10 @@ and clear at least one authored building along its route, survive a night and a 
 (slice mode: Hum on night 3), then save and reload. All visuals use generated assets.
 
 - 🟡 Region D6 *Larch Hollow*: terrain (heightmap chunks + LOD + digging), river, pond, cliffs,
-  forest scatter ✅. 22 authored buildings validated by `make validate` (DESIGN §11):
-  * Pell's Crossing (10 buildings, with the church block on Church Lane).
+  forest scatter ✅. 25 authored buildings validated by `make validate` (DESIGN §11):
+  * Pell's Crossing (13 buildings, with the church block on Church Lane and the third block on
+    Larch Street's corner: the school, the fire station and the Savings & Loan, whose vault opens
+    with a combination or a loud cut that wakes the building, ADR-0026).
   * Three on Route 9: gas garage, clinic, motel.
   * The Okafor farm: farmhouse and barn.
   * Four in the wilderness: lookout, trapper's cabin, logging camp, sawmill.
@@ -30,8 +32,7 @@ and clear at least one authored building along its route, survive a night and a 
     lights, decals, scatter); the Merrow House, the Mile 9 Diner, the Okafor farmhouse and Lou's
     trailer have room alternatives (five groups each); seven templates generate ordinary houses,
     shops and workshops; lots without a pick choose from the pool or generate; Pell's Crossing's
-    Larch Street holds six generated houses and three lots reserved for the school, fire station
-    and bank.
+    Larch Street holds six generated houses south of the third block.
 
   Still pending: in-game visual QA of the town.
 - ✅ Player controller, interaction, gathering, stamina, damage, death/respawn; step-up onto
@@ -159,7 +160,7 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
   journals (the joinery track has no recipes yet, TD-030). (The Program's supply drone landed
   early, in M1: ADR-0023.)
 - Waystation 9 trader, contracts (clear/fetch/defend), reputation tiers, scrip economy.
-- More POIs (school, mine office, rail depot, dam control house...) and the Mile 12 framework.
+- More POIs (mine office, rail depot, dam control house...) and the Mile 12 framework.
   Church, motel, gas station, bar, clinic, post office, lookout, logging camp, sawmill and the
   Okafor farm landed early, in M1.
 - Wolves, Hollowed hounds and Murmurs that follow you (deer, hares, songbirds and crows landed early, in M1:
