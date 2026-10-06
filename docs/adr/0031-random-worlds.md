@@ -97,7 +97,11 @@ zones, shared detail noise), and `frameworks_json()`.
 * `WorldDef.biome_map`: the base biome of a sample (before water, pads and slope rules).
 Plus two pure speed-ups in the surface pass (bounding-box early outs for paints and pads: Larch
 Hollow composes to the identical hash, 13.3 s -> 10.1 s) and the generated `frameworks.json` in the
-input hash. `TerrainComposer.VERSION` is unchanged: the main map composes byte for byte as before.
+input hash. With those alone the main map composed byte for byte as before. One change reaches it
+on purpose (`TerrainComposer.VERSION` 10 -> 11): a water edge is now a slope through the water line
+(0.35 m under within 1.5 m inside, 0.22 m over within 1 m outside) instead of a 0.57 m step between
+two samples, which drew every river and lake edge as a 1 m staircase seen from near the water (the
+first in-world shots of a generated river showed it).
 
 ### 4. On disk, loading and saves
 * `RwgWorlds.ensure(settings)` writes `user://worlds/random/<world id>/` (world.json,
@@ -146,8 +150,8 @@ input hash. `TerrainComposer.VERSION` is unchanged: the main map composes byte f
   drop site by a road. Every town's buildings are picked and generated per run (ADR-0030).
 + Nothing downstream changed: composer, water, roads, bridges, vegetation, the Bloom, POIs, the Hum,
   supply drops and saves run on generated worlds as they are (the slice smoke passes on one).
-+ The main map is untouched: same composer output, same save behaviour (v5 runs migrate to the main
-  map).
++ The main map is untouched but for its smoother water edges: same layout and save behaviour (v5
+  runs migrate to the main map).
 − Every region of a random world is built at 1 m and held in memory, and every building is built at
   load: a 5 x 5 world's first load composes for a few minutes, and large worlds cost memory and
   load time (TD-081).
