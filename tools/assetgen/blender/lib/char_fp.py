@@ -375,6 +375,140 @@ class FPModel:
 
 
 # --------------------------------------------------------------------------------------------
+# Narrow-band meshing: fingers need a ~1 mm cell, which a dense grid over a whole arm cannot afford
+# --------------------------------------------------------------------------------------------
+
+def sparse_surface_nets(sdf, lo, hi, h: float, coarse: int = 4, band: float = 1.6, block: int = 8):
+    """Surface nets of sdf (P (N,3) -> d (N,)) over the box lo..hi at cell h, evaluating the SDF
+    only near the surface: a coarse lattice (every `coarse`-th point) finds the cells within
+    band * coarse cell of the surface, and only their fine points are evaluated (in spatial blocks
+    so the SDF program's AABB culling stays tight). Everything else takes the sign of the nearest
+    coarse point. Same output conventions as char_mesh.surface_nets (verts in cell order, quads
+    wound outward) with a fraction of the evaluations and memory. Returns (verts, quads)."""
+    lo = np.asarray(lo, dtype=np.float64)
+    ext = np.asarray(hi, dtype=np.float64) - lo
+    cs = tuple(int(math.ceil(float(e) / (h * coarse))) + 1 for e in ext)     # coarse points per axis
+    shape = tuple((c - 1) * coarse + 1 for c in cs)                          # fine points per axis
+    H = h * coarse
+    # coarse lattice, in x slabs
+    axes = [lo[a] + np.arange(cs[a]) * H for a in range(3)]
+    dc = np.empty(cs, np.float32)
+    for i in range(cs[0]):
+        gy, gz = np.meshgrid(axes[1], axes[2], indexing="ij")
+        P = np.stack([np.full(gy.size, axes[0][i]), gy.ravel(), gz.ravel()], -1)
+        dc[i] = sdf(P).reshape(cs[1], cs[2])
+    # candidate coarse cells: any corner within the band
+    a = np.abs(dc)
+    m = a[:-1, :-1, :-1]
+    for di in (0, 1):
+        for dj in (0, 1):
+            for dk in (0, 1):
+                m = np.minimum(m, a[di:a.shape[0] - 1 + di, dj:a.shape[1] - 1 + dj, dk:a.shape[2] - 1 + dk])
+    cand = m < band * H
+    del a, m
+    # fine field: nearest coarse sign everywhere, exact values in the candidate cells
+    near = [np.minimum((np.arange(n) + coarse // 2) // coarse, c - 1) for n, c in zip(shape, cs)]
+    d = dc[np.ix_(*near)]
+    ncell = cand.shape
+    f = np.arange(block * coarse + 1)
+    for bi in range(0, ncell[0], block):
+        for bj in range(0, ncell[1], block):
+            for bk in range(0, ncell[2], block):
+                cm = cand[bi:bi + block, bj:bj + block, bk:bk + block]
+                if not cm.any():
+                    continue
+                nb = cm.shape
+                pm = np.zeros(tuple(n * coarse + 1 for n in nb), bool)
+                maps = []
+                for ax_ in range(3):
+                    ff = f[:nb[ax_] * coarse + 1]
+                    ca = np.minimum(ff // coarse, nb[ax_] - 1)
+                    cb = np.where(ff % coarse == 0, np.maximum(ff // coarse - 1, 0), ca)
+                    maps.append((ca, cb))
+                for x in maps[0]:
+                    for y in maps[1]:
+                        for z in maps[2]:
+                            pm |= cm[np.ix_(x, y, z)]
+                I, J, K = np.nonzero(pm)
+                I = I + bi * coarse
+                J = J + bj * coarse
+                K = K + bk * coarse
+                P = lo + np.stack([I, J, K], -1) * h
+                d[I, J, K] = sdf(P)
+    del dc, cand
+    return _sparse_nets(d, lo, h)
+
+
+def _sparse_nets(d: np.ndarray, origin, h: float):
+    """Surface nets from a dense field touching only the sign-crossing edges."""
+    nx, ny, nz = d.shape
+    inside = d < 0.0
+    cy, cz = ny - 1, nz - 1
+
+    def key(i, j, k):
+        return (i.astype(np.int64) * cy + j) * cz + k
+
+    keys, pts, edges = [], [], []
+    for axis in range(3):
+        sl0 = [slice(None)] * 3
+        sl1 = [slice(None)] * 3
+        sl0[axis] = slice(0, -1)
+        sl1[axis] = slice(1, None)
+        I, J, K = np.nonzero(inside[tuple(sl0)] != inside[tuple(sl1)])
+        e = np.zeros(3, np.int64)
+        e[axis] = 1
+        d0 = d[I, J, K].astype(np.float64)
+        d1 = d[I + e[0], J + e[1], K + e[2]].astype(np.float64)
+        den = d0 - d1
+        den = np.where(np.abs(den) < 1e-12, 1e-12, den)
+        t = np.clip(d0 / den, 0.0, 1.0)
+        p = np.stack([I + t * e[0], J + t * e[1], K + t * e[2]], -1)
+        others = [ax for ax in range(3) if ax != axis]
+        for da in (0, 1):
+            for db in (0, 1):
+                c = [I, J, K]
+                c = [c[0].copy(), c[1].copy(), c[2].copy()]
+                c[others[0]] = c[others[0]] - da
+                c[others[1]] = c[others[1]] - db
+                ok = np.ones(len(I), bool)
+                for ax, n in zip(range(3), (nx, ny, nz)):
+                    ok &= (c[ax] >= 0) & (c[ax] <= n - 2)
+                keys.append(key(c[0][ok], c[1][ok], c[2][ok]))
+                pts.append(p[ok])
+        edges.append((axis, I, J, K))
+    allk = np.concatenate(keys)
+    allp = np.concatenate(pts, 0)
+    uk, inv = np.unique(allk, return_inverse=True)
+    cnt = np.bincount(inv, minlength=len(uk)).astype(np.float64)
+    S = np.stack([np.bincount(inv, weights=allp[:, a], minlength=len(uk)) for a in range(3)], -1)
+    verts = np.asarray(origin, dtype=np.float64) + h * (S / cnt[:, None])
+
+    def vid(i, j, k):
+        return np.searchsorted(uk, key(i, j, k))
+
+    quads = []
+    for axis, I, J, K in edges:
+        c = [I, J, K]
+        o0, o1 = [ax for ax in range(3) if ax != axis]
+        n = (nx, ny, nz)
+        ok = (c[o0] >= 1) & (c[o0] <= n[o0] - 2) & (c[o1] >= 1) & (c[o1] <= n[o1] - 2)
+        I, J, K = I[ok], J[ok], K[ok]
+        if not len(I):
+            continue
+        if axis == 0:
+            q = np.stack([vid(I, J - 1, K - 1), vid(I, J, K - 1), vid(I, J, K), vid(I, J - 1, K)], -1)
+        elif axis == 1:
+            q = np.stack([vid(I - 1, J, K - 1), vid(I - 1, J, K), vid(I, J, K), vid(I, J, K - 1)], -1)
+        else:
+            q = np.stack([vid(I - 1, J - 1, K), vid(I, J - 1, K), vid(I, J, K), vid(I - 1, J, K)], -1)
+        flip = ~inside[I, J, K]
+        q[flip] = q[flip][:, ::-1]
+        quads.append(q)
+    quads = np.concatenate(quads, 0) if quads else np.zeros((0, 4), np.int64)
+    return verts, quads
+
+
+# --------------------------------------------------------------------------------------------
 # The tether: a rugged Remand Program wrist unit bolted over the back of the left wrist
 # --------------------------------------------------------------------------------------------
 

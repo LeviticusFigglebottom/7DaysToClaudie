@@ -26,10 +26,9 @@ def _mesh_arm(model, sd: str, sk, h: float, tris: int):
                     j[f"th_tip.{sd}"], j[f"ix_tip.{sd}"], j[f"pk_tip.{sd}"]])
     lo = pts.min(0) - 0.08
     hi = pts.max(0) + 0.08
-    shape = tuple(int(x) for x in np.ceil((hi - lo) / h) + 1)
-    d, _ = model.eval_grid(lo, h, shape)
-    V, Q = M.surface_nets(d, lo, h)
-    del d
+    # The fingers need a ~1 mm cell for the clefts between them to survive: mesh a narrow band
+    # round the surface instead of a dense grid over the whole arm.
+    V, Q = F.sparse_surface_nets(lambda P: model.eval_points(P)[0], lo, hi, h)
     V = M.project_to_surface(V, lambda P: model.eval_points(P)[0], h, iterations=2)
     obj = M.mesh_from_arrays(f"arm_{sd}", V, Q)
     M.remove_small_islands(obj)
@@ -120,7 +119,7 @@ def build(params: dict, outputs: list[str]) -> None:
     s = model.s
     arms = []
     for sd, _ in F.SIDES:
-        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0018)), int(params.get("arm_tris", 9000)))
+        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0011)), int(params.get("arm_tris", 9000)))
         lab = _labels(model, o)
         M.assign_labels(o, lab, F.LABEL_MATERIALS)
         fa = model.fa[sd]
