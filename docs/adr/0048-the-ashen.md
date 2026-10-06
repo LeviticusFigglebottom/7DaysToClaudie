@@ -1,6 +1,6 @@
 # ADR-0048: The Ashen: a human raider faction with camps, scouts, raids, morale and fear of fire
 
-**Status**: Accepted · 2026-10 (phase 1 landed, session 2; phase 2 raids, gardens and saved bands landed; the rest of phase 2 open)
+**Status**: Accepted · 2026-10 (phase 1 and phase 2 landed, session 2: raids that path, gardens, saved bands, Ashen vs Hollowed, living clips; firebrands, territory and alliance open)
 
 ## Context
 DESIGN §1, §4 and §6 promise the Ashen: survivors who fled to the high timber, smear themselves with
