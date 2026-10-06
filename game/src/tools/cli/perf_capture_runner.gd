@@ -1,0 +1,202 @@
+extends Node
+## Perf capture logic (loaded by perf_capture.gd once autoloads exist). See perf_capture.gd.
+
+const VIEWS: Array[Dictionary] = [
+	{"name": "drop_site", "pos": Vector3(-300, 2.0, 2302), "look": Vector3(-240, 0, 2296)},
+	{"name": "forest", "pos": Vector3(-201, 1.8, 2227), "look": Vector3(-160, 3, 2200)},
+	{"name": "town_street", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-95, 2, 2064)},
+	{"name": "town_road", "pos": Vector3(-30, 6.0, 2170), "look": Vector3(-60, 0, 2070)},
+	{"name": "river", "pos": Vector3(150, 1.7, 2075), "look": Vector3(118, 0.0, 2100)},
+]
+
+var _out: String = "res://../build/perf"
+var _frames: int = 120
+var _ablate: bool = true
+var _report: Dictionary = {}
+var w: GameWorld
+var p: Player
+## Stamps taken first and last in every process and physics step (process priorities sort the
+## whole tree), so their difference is the step's script time on the main thread.
+var _first: Stamp
+var _last: Stamp
+
+
+class Stamp:
+	extends Node
+	var proc_us: int = 0
+	var phys_us: int = 0
+	func _process(_d: float) -> void:
+		proc_us = Time.get_ticks_usec()
+	func _physics_process(_d: float) -> void:
+		phys_us = Time.get_ticks_usec()
+
+
+func _stamps() -> void:
+	_first = Stamp.new()
+	_first.process_priority = -1000000
+	_first.process_physics_priority = -1000000
+	_last = Stamp.new()
+	_last.process_priority = 1000000
+	_last.process_physics_priority = 1000000
+	get_tree().root.add_child(_first)
+	get_tree().root.add_child(_last)
+
+
+func _ready() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	for i: int in args.size():
+		match args[i]:
+			"--out":
+				_out = args[i + 1]
+			"--frames":
+				_frames = int(args[i + 1])
+			"--no-ablate":
+				_ablate = false
+	_run.call_deferred()
+
+
+func _run() -> void:
+	var game: Node = get_node("/root/Game")
+	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "perf"})
+	while game.get(&"world") == null or not bool(game.world.is_ready):
+		await get_tree().process_frame
+	w = game.world
+	p = w.player
+	_stamps()
+	p.god_mode = true
+	p.input_enabled = false
+	game.session.clock.set_time(1, 12.0)
+	_report["renderer"] = RenderingServer.get_video_adapter_name()
+	_report["headless"] = DisplayServer.get_name() == "headless"
+	_report["views"] = {}
+	for v: Dictionary in VIEWS:
+		await _goto(v["pos"], v["look"])
+		var m: Dictionary = await _measure(_frames)
+		if _ablate:
+			m["modules"] = await _ablate_modules()
+		_report["views"][v["name"]] = m
+		print("[perf] %s %s" % [v["name"], _brief(m)])
+	_report["sprint"] = await _sprint(Vector3(-300, 0, 2302), Vector3(1, 0, -0.35).normalized(), 20.0)
+	print("[perf] sprint %s" % _brief(_report["sprint"]))
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out))
+	var path: String = ProjectSettings.globalize_path(_out).path_join("perf_%s.json" % ("headless" if _report["headless"] else "rendered"))
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(JSON.stringify(_report, "  "))
+	f.close()
+	print("[perf] done -> %s" % path)
+	get_tree().quit(0)
+
+
+func _goto(pos: Vector3, look: Vector3) -> void:
+	p.global_position = Vector3(pos.x, w.height_at(pos.x, pos.z) + 0.1, pos.z)
+	var d: Vector3 = look - pos
+	p.rotation.y = atan2(-d.x, -d.z)
+	p.head.rotation.x = clampf(atan2(look.y - 1.7 - (pos.y - w.height_at(pos.x, pos.z)), Vector2(d.x, d.z).length()), -1.2, 1.2)
+	w.terrain.update_streaming(p.global_position, true)
+	# Let streaming, scatter and POI sleepers settle before measuring.
+	var end: int = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+		var veg: Node = w.vegetation
+		if veg != null and veg.call(&"is_settled") and w.terrain.is_ready_around(p.global_position, 1):
+			break
+	for i: int in 30:
+		await get_tree().process_frame
+
+
+## Frame wall time, script process/physics time and render counts over n frames.
+func _measure(n: int) -> Dictionary:
+	var walls: PackedFloat32Array = []
+	var proc: float = 0.0
+	var phys: float = 0.0
+	var dc: int = 0
+	var prim: int = 0
+	var objs: int = 0
+	var last: int = Time.get_ticks_usec()
+	for i: int in n:
+		await get_tree().process_frame
+		var now: int = Time.get_ticks_usec()
+		walls.append(float(now - last) / 1000.0)
+		last = now
+		proc += maxf(0.0, float(_last.proc_us - _first.proc_us) / 1000.0)
+		phys += maxf(0.0, float(_last.phys_us - _first.phys_us) / 1000.0)
+		dc += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
+		prim += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)
+		objs += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)
+	var sorted: PackedFloat32Array = walls.duplicate()
+	sorted.sort()
+	return {"frame_ms_avg": _avg(walls), "frame_ms_p95": sorted[int(n * 0.95)], "frame_ms_max": sorted[n - 1],
+		"process_ms": proc / n, "physics_ms": phys / n, "draw_calls": dc / n, "primitives": prim / n, "objects": objs / n,
+		"nodes": get_tree().get_node_count()}
+
+
+## Each world module's cost: process + physics time with it on minus with it off.
+func _ablate_modules() -> Dictionary:
+	var out: Dictionary = {}
+	var n: int = maxi(30, _frames / 2)
+	var base: Dictionary = await _measure(n)
+	var base_ms: float = float(base["process_ms"]) + float(base["physics_ms"])
+	for prop: String in ["terrain", "env", "clock_driver", "stimuli", "actions", "water", "bridges", "road_markings",
+			"vegetation", "loose", "building", "pois", "ai", "ambience", "supply_drops", "directives", "wildlife"]:
+		var c: Node = w.get(prop) as Node
+		if c == null or not is_instance_valid(c):
+			continue
+		var mode: Node.ProcessMode = c.process_mode
+		c.process_mode = Node.PROCESS_MODE_DISABLED
+		var m: Dictionary = await _measure(n)
+		c.process_mode = mode
+		await get_tree().process_frame
+		out[prop] = snappedf(base_ms - (float(m["process_ms"]) + float(m["physics_ms"])), 0.01)
+	out["_total_ms"] = snappedf(base_ms, 0.01)
+	return out
+
+
+## Sprints the player along `dir` for `seconds` with real input: streaming terrain, scatter, POIs.
+func _sprint(start: Vector3, dir: Vector3, seconds: float) -> Dictionary:
+	await _goto(start, start + dir * 10.0)
+	p.input_enabled = true
+	p.rotation.y = atan2(-dir.x, -dir.z)
+	Input.action_press(&"move_forward")
+	Input.action_press(&"sprint")
+	var walls: PackedFloat32Array = []
+	var last: int = Time.get_ticks_usec()
+	var end: int = Time.get_ticks_msec() + int(seconds * 1000.0)
+	while Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+		var now: int = Time.get_ticks_usec()
+		walls.append(float(now - last) / 1000.0)
+		last = now
+		p.state.stats.stamina = 100.0
+	Input.action_release(&"move_forward")
+	Input.action_release(&"sprint")
+	p.input_enabled = false
+	var sorted: PackedFloat32Array = walls.duplicate()
+	sorted.sort()
+	var over: int = 0
+	for f: float in walls:
+		if f > 33.3:
+			over += 1
+	return {"frames": walls.size(), "frame_ms_avg": _avg(walls), "frame_ms_p95": sorted[int(walls.size() * 0.95)],
+		"frame_ms_max": sorted[walls.size() - 1], "frames_over_33ms": over, "distance_m": p.global_position.distance_to(start)}
+
+
+func _avg(a: PackedFloat32Array) -> float:
+	var s: float = 0.0
+	for x: float in a:
+		s += x
+	return snappedf(s / maxf(1.0, a.size()), 0.01)
+
+
+func _brief(m: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	for k: String in ["frame_ms_avg", "frame_ms_p95", "frame_ms_max", "process_ms", "physics_ms", "draw_calls", "primitives", "frames_over_33ms"]:
+		if m.has(k):
+			parts.append("%s=%s" % [k, str(snappedf(float(m[k]), 0.1))])
+	if m.has("modules"):
+		var mods: Array = (m["modules"] as Dictionary).keys().filter(func(k: String) -> bool: return not k.begins_with("_"))
+		mods.sort_custom(func(a: String, b: String) -> bool: return float(m["modules"][a]) > float(m["modules"][b]))
+		var top: PackedStringArray = []
+		for k2: String in mods.slice(0, 5):
+			top.append("%s %.2f" % [k2, float(m["modules"][k2])])
+		parts.append("top: " + ", ".join(top))
+	return " ".join(parts)
