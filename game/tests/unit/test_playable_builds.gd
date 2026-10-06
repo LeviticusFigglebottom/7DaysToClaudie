@@ -64,3 +64,39 @@ func _census(root: Node) -> Dictionary:
 	for n: Node in root.find_children("*", "", true, false):
 		out[n.get_class()] = int(out.get(n.get_class(), 0)) + 1
 	return out
+
+
+# --- Run seeds and the map label (bugs found while writing docs/HOW_TO_PLAY.md) ---------------------
+
+func test_a_text_run_seed_hashes_like_the_map_seed() -> void:
+	assert_eq(NewGamePanel.run_seed_from_text(" 90210 "), 90210, "a whole number is itself")
+	assert_eq(NewGamePanel.run_seed_from_text("-7"), -7)
+	assert_eq(NewGamePanel.run_seed_from_text("larch"), Ids.hash31("larch"), "text hashes as the map seed does")
+	assert_ne(NewGamePanel.run_seed_from_text("larch"), NewGamePanel.run_seed_from_text("pell"))
+	assert_ne(NewGamePanel.run_seed_from_text("larch"), MainMenu.SLICE_DEMO_SEED, "never the old silent 4471")
+	var fresh: int = NewGamePanel.run_seed_from_text("  ")
+	assert_between(fresh, 100000, 999999, "an empty field rolls a fresh run")
+
+
+func test_new_game_without_a_seed_is_fresh_except_the_slice_demo() -> void:
+	assert_eq(MainMenu.cli_default_seed("slice", false), MainMenu.SLICE_DEMO_SEED, "the slice is the curated demo run")
+	assert_eq(MainMenu.SLICE_DEMO_SEED, GameSession.create_new({}).world_seed, "the run smoke and the QA shots play")
+	var seen: Dictionary = {}
+	for i: int in 8:
+		var s: int = MainMenu.cli_default_seed("survival", false)
+		assert_between(s, 100000, 999999)
+		seen[s] = true
+		assert_between(MainMenu.cli_default_seed("slice", true), 100000, 999999, "a random world is never the demo run")
+	assert_gt(seen.size(), 1, "survival rolls a fresh run each time")
+
+
+func test_the_main_map_label_names_what_is_built() -> void:
+	var j := JSON.new()
+	assert_eq(j.parse(FileAccess.get_file_as_string("res://world/main_map/world.json")), OK)
+	var built: int = 0
+	for r: Variant in (j.data as Dictionary).get("regions", []):
+		if str((r as Dictionary).get("status", "")) == "built":
+			built += 1
+			assert_string_contains(NewGamePanel.MAIN_MAP_LABEL, str((r as Dictionary)["name"]))
+	assert_eq(built, 1, "one region built: the label says 1 x 1 km (update it when another is built)")
+	assert_false(NewGamePanel.MAIN_MAP_LABEL.contains("7 x 7"), "the planned size is not what is built")
