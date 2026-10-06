@@ -97,6 +97,9 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "hound_pack", "pos": Vector3(-300, 1.6, 2297), "look": Vector3(-300, 0.5, 2291.5), "hour": 16.5, "weather": "overcast", "fov": 50.0,
 	 "lineup": [["hollow_hound", -1.5, "normal", ""], ["hollow_hound", 0.0, "seeded", ""], ["hollow_hound", 1.5, "normal", ""]],
 	 "cam_height": 0.9, "look_height": 0.45},
+	# The Ashen (ADR-0048): two raiders and a scout, living people in ash paint, at the drop site.
+	{"name": "ashen_lineup", "pos": Vector3(-300, 1.7, 2298), "look": Vector3(-300, 1.1, 2291.5), "hour": 16.5, "weather": "overcast", "fov": 50.0,
+	 "lineup": [["ashen_raider", -1.4, "normal", ""], ["ashen_scout", 0.0, "normal", ""], ["ashen_raider", 1.4, "normal", ""]]},
 	{"name": "murmur_overhead", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-49, 12.0, 2064), "hour": 14.0, "weather": "overcast",
 	 "flock": "crow", "murmur": true, "flush_after": 9.0, "fov": 90.0},
 	# The third block on Larch Street's corner: the Savings & Loan and the school on the right, the fire

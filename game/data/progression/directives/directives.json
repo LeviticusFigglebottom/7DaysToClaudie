@@ -48,6 +48,8 @@
     {"id": "bloom_level", "name": "Reach level 12", "description": "Still here. The Program notes it.",
      "chapter": 4, "order": 4, "event": "level", "count": 12, "reward": {"xp": 0, "items": {"first_aid_kit": 2, "ammo_38": 12}}},
     {"id": "bloom_sawmill", "name": "Clear the sawmill", "description": "Larch Hollow's mill, saw floor to sawdust cellar. The Program wants the payroll office opened.",
-     "chapter": 4, "order": 5, "event": "clear_poi", "targets": ["larch_hollow_sawmill"], "reward": {"xp": 800, "items": {"repair_kit": 1, "ammo_38": 12}}}
+     "chapter": 4, "order": 5, "event": "clear_poi", "targets": ["larch_hollow_sawmill"], "reward": {"xp": 800, "items": {"repair_kit": 1, "ammo_38": 12}}},
+    {"id": "ashen_raid", "name": "Turn back an Ashen raid", "description": "Drums at dusk mean the Ashen are coming for what you built. A fire kept burning and a torch held up are worth more than a wall.",
+     "chapter": 4, "order": 6, "event": "raid", "reward": {"xp": 400, "items": {"first_aid_kit": 1}}}
   ]
 }

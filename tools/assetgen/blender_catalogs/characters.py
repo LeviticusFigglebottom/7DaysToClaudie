@@ -426,6 +426,96 @@ BODIES = {
 }
 
 
+# --- The living Ashen (ADR-0048) -------------------------------------------------------------
+# Raiders and scouts of the high-timber tribes: living people, built by generators/character_living.py
+# (the Hollowed pipeline with the infection left out: no growths, wounds, Bloom or blood, the mouth
+# closed) with the Hollowed's action set so the Enemy plays them. Upright and alert: no hunch, no
+# claw, eyes open, the head carried level. Skin is living skin under lichen-ash (skin_ashen_living:
+# the skin shader's ash dust and paint with the infection switched off), clear eyes; hide, fur and
+# bone over it. Their joint skirts and stump caps (and the parting of the lips) are ashen_inner, a
+# darker blood than the Hollowed's gore. The Hollowed head is wide-eyed: a low eye_open and a heavy lid
+# give the living a hard squint instead (TD-170).
+# Ash-grey from scalp to heel (skin_ashen_living: a grey base under heavy lichen-ash dust, charcoal paint),
+# so they read at 30 m as grey figures; darker worn hide (ashen_hide_dark) and wrapped shins: the
+# "boots" are raised to the knee and drawn as hide strip wraps (ashen_wrap), as is the belt.
+ASHEN_LIVING_REMAP = {"skin_hollow": "skin_ashen_living", "eyes_hollow": "npc_eye", "hide": "ashen_hide_dark",
+                     "leather_boot": "ashen_wrap",
+                     # the closed lips' parting line and the stump caps: dark blood, not the Hollowed's wet red
+                     "gore": "ashen_inner"}
+_LIVING_FACE = {"hunch": 0.0, "head_forward": 0.0, "head_tilt": 0.0, "gaze_down": 2.0, "claw": 0.08, "jaw_drop": 0.0,
+                "mouth_open": 0.0, "eye_open": 0.45, "teeth_missing": 0.0, "gum_recede": 0.0, "bruise": 0.0,
+                "blood": 0.0, "arm_raise": 0.0, "wall_eye": 0.0}
+LIVING = {
+    # Raider: a big, broad man in his prime; a sleeveless hide jerkin under a heavy wolf-grey fur
+    # mantle, hide leggings and wrapped hide boots; a black lichen band across the eyes ear to ear,
+    # a handprint over the heart, rings up both arms; a cord of bone charms and a short beard.
+    "ashen_raider_a": {
+        "seed": 1101, "height": 1.86, "sex": "m", "build": 0.9, "gaunt": 0.15, **_LIVING_FACE, "brow": 0.85,
+        "lid_droop": 0.45, "nose_rot": 0.2, "limp_side": "R",
+        "outfit": {"tops": [{"type": "hide", "sleeve": 0.0, "hem": -0.13, "torn": 0.1, "neck_front": 0.06,
+                             "flare": 0.014, "placket": False, "armhole": 0.01}],
+                   "pants": {"type": "hide", "belt": True, "torn": 0.15, "length": 0.97, "thickness": 0.0045}},
+        "mantle": {"low": 0.25, "reach": 0.26},
+        "boots": {"L": True, "R": True, "height": 0.36},
+        "hair": {"style": "long", "hairline": 0.05, "patchy": 0.0, "locks": 12, "length": 0.11},
+        "beard": {"thickness": 0.0035, "line": -0.028, "moustache": True},
+        "remap": ASHEN_LIVING_REMAP,
+        "paint": [{"kind": "eye_band", "y": 0.012, "width": 0.013},
+                  {"kind": "hand", "at": "chest", "pos": [0.055, 0.15, 0.12], "angle": -10.0},
+                  {"kind": "arm_rings", "side": "L", "seg": "ua", "ts": [0.45, 0.6, 0.75], "width": 0.022},
+                  {"kind": "arm_rings", "side": "R", "seg": "ua", "ts": [0.45, 0.6, 0.75], "width": 0.022},
+                  {"kind": "arm_rings", "side": "L", "seg": "fa", "ts": [0.3, 0.45], "width": 0.02},
+                  {"kind": "arm_rings", "side": "R", "seg": "fa", "ts": [0.3, 0.45], "width": 0.02}],
+        "accessories": [{"kind": "necklace", "beads": "bone"}],
+        "grime": 0.35,
+    },
+    # Raider: a woman, wiry and hard; a long-sleeved hide tunic belted at the hip, a narrow fur
+    # mantle, hide leggings and wrap boots; her hair long and thick, three chin stripes and a band
+    # across the eyes, rings on the forearms; bone charms at her throat and a cord harness crossing
+    # her back (where she slings her spears).
+    "ashen_raider_b": {
+        "seed": 1102, "height": 1.71, "sex": "f", "build": 0.45, "gaunt": 0.0, **_LIVING_FACE, "brow": 0.7,
+        "lid_droop": 0.4, "limp_side": "L",
+        "outfit": {"tops": [{"type": "hide", "sleeve": 0.82, "hem": -0.22, "torn": 0.12, "neck_front": 0.05,
+                             "flare": 0.02, "placket": False}],
+                   "pants": {"type": "hide", "belt": True, "torn": 0.15, "length": 0.97, "thickness": 0.0045}},
+        "mantle": {"low": 0.16, "reach": 0.19},
+        "straps": [{"type": "cord", "x": 0.06, "width": 0.018, "waist": 0.16}],
+        "boots": {"L": True, "R": True, "height": 0.34},
+        "hair": {"style": "long", "hairline": 0.06, "patchy": 0.0, "locks": 14, "length": 0.12},
+        "remap": ASHEN_LIVING_REMAP,
+        "paint": [{"kind": "eye_band", "y": 0.014, "width": 0.013},
+                  {"kind": "chin_stripes", "xs": [-0.017, 0.0, 0.017], "width": 0.011},
+                  {"kind": "arm_rings", "side": "L", "seg": "fa", "ts": [0.7, 0.8], "width": 0.010},
+                  {"kind": "arm_rings", "side": "R", "seg": "fa", "ts": [0.7, 0.8], "width": 0.010}],
+        "accessories": [{"kind": "necklace", "beads": "bone"}],
+        "grime": 0.3,
+    },
+    # Scout: young, lean and long-legged, built to run; bare-chested under a short fur mantle, hide
+    # leggings and wrap boots, almost all of him painted: the eye band, chin stripes, a handprint on
+    # the chest and one on the back, rings from shoulder to wrist; his hair tied short.
+    "ashen_scout_a": {
+        "seed": 1103, "height": 1.77, "sex": "m", "build": 0.12, "gaunt": 0.4, **_LIVING_FACE, "brow": 0.8,
+        "lid_droop": 0.4, "leg_scale": 1.03, "limp_side": "R",
+        "outfit": {"pants": {"type": "hide", "belt": True, "torn": 0.15, "length": 0.97, "waist": 0.06, "thickness": 0.0045}},
+        "mantle": {"low": 0.15, "reach": 0.19},
+        "boots": {"L": True, "R": True, "height": 0.34},
+        "hair": {"style": "short", "hairline": 0.06, "patchy": 0.0},
+        "remap": ASHEN_LIVING_REMAP,
+        "paint": [{"kind": "eye_band", "y": 0.010, "width": 0.016},
+                  {"kind": "chin_stripes", "xs": [-0.021, -0.007, 0.007, 0.021], "width": 0.009},
+                  {"kind": "hand", "at": "chest", "pos": [-0.05, 0.02, 0.12], "angle": 14.0},
+                  {"kind": "hand", "at": "spine", "pos": [0.03, 0.10, -0.11], "angle": 8.0},
+                  {"kind": "arm_rings", "side": "L", "seg": "ua", "ts": [0.3, 0.45, 0.6, 0.75], "width": 0.02},
+                  {"kind": "arm_rings", "side": "R", "seg": "ua", "ts": [0.3, 0.45, 0.6, 0.75], "width": 0.02},
+                  {"kind": "arm_rings", "side": "L", "seg": "fa", "ts": [0.25, 0.4, 0.55, 0.7], "width": 0.018},
+                  {"kind": "arm_rings", "side": "R", "seg": "fa", "ts": [0.25, 0.4, 0.55, 0.7], "width": 0.018}],
+        "accessories": [{"kind": "necklace", "beads": "bone"}],
+        "grime": 0.4,
+    },
+}
+
+
 def tasks() -> list[Task]:
     out = []
     for key, p in BODIES.items():
@@ -433,6 +523,12 @@ def tasks() -> list[Task]:
         rel = f"models/characters/{key}.glb"
         out.append(Task(name=f"model:characters/{key}", group="models", outputs=[rel],
                         sources=blender_sources("character_body"), params=params, blender="character_body",
+                        imports={rel: {"type": "scene", "animation": True}}))
+    for key, p in LIVING.items():
+        params = {"name": key, **p}
+        rel = f"models/characters/{key}.glb"
+        out.append(Task(name=f"model:characters/{key}", group="models", outputs=[rel],
+                        sources=blender_sources("character_living"), params=params, blender="character_living",
                         imports={rel: {"type": "scene", "animation": True}}))
     rel = "models/characters/gibs.glb"
     out.append(Task(name="model:characters/gibs", group="models", outputs=[rel],
