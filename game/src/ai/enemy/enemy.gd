@@ -17,9 +17,12 @@ extends CharacterBody3D
 ## and glow (InfectedTiers, ADR-0014). Hollowed hounds (archetype `hound`, ADR-0034) run on four
 ## legs in a low body: a pack rallies to the first one that sees you (it howls), spreads round you
 ## before it closes, bites and breaks off, tracks you by scent when it loses sight of you, and
-## keeps clear of a flame held up to it.
+## keeps clear of a flame held up to it. The Ashen (archetype `tribe`, ADR-0048) are living people
+## with an AshenMind: scouts OBSERVE before anyone comes, morale breaks into FLEE, they keep off the
+## outsider's fire and throw spears (through the SPIT state).
 
-enum State { SLEEP, WAKING, IDLE, WANDER, INVESTIGATE, CHASE, ATTACK, BREAK, SCREAM, STAGGER, HORDE, DEAD, SPIT, CHARGE }
+enum State { SLEEP, WAKING, IDLE, WANDER, INVESTIGATE, CHASE, ATTACK, BREAK, SCREAM, STAGGER, HORDE, DEAD, SPIT, CHARGE,
+	OBSERVE, FLEE }
 
 const LAYER: int = 1 << 4
 const CORPSE_LAYER: int = 1 << 7
@@ -131,6 +134,8 @@ var _retreat_t: float = 0.0
 var _howl_cd: float = 0.0
 ## Reached its flanking spot this approach: now it goes straight in.
 var _flanked: bool = false
+## The Ashen (ADR-0048): morale, band, job and their own states; null for the Hollowed.
+var tribe: AshenMind = null
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -138,6 +143,9 @@ func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary
 	def = p_def
 	director = p_director
 	quad = def.beh("quadruped", {})
+	if def.archetype == "tribe":
+		tribe = AshenMind.new()
+		tribe.setup(self, opts)
 	_rng.seed = Ids.hash64("enemy:" + String(p_id))
 	var rules: GameRules = GameRules.current()
 	max_health = def.health * rules.num("enemy_health")
@@ -308,6 +316,8 @@ func _physics_process(delta: float) -> void:
 		_perc_t = PERCEPTION_INTERVAL * (1.0 if dist < 60.0 else 3.0)
 		_perceive(p, dist)
 	var want := Vector3.ZERO
+	if tribe != null:
+		tribe.tick(delta, p)
 	match state:
 		State.SLEEP, State.WAKING, State.SCREAM, State.STAGGER:
 			want = Vector3.ZERO
@@ -366,6 +376,8 @@ func _physics_process(delta: float) -> void:
 				want = (global_position - tgt).normalized() * _speed(true) * Vector3(1, 0, 1)
 			elif not quad.is_empty() and p != null:
 				want = _hound_move(p, tgt, dist, seen)
+			elif tribe != null and p != null:
+				want = tribe.chase_move(p, tgt, dist)
 			else:
 				want = _move_dir(tgt) * _speed(true)
 			if p != null and dist <= def.atk("range", 1.5) + 0.2 and _now() - last_seen_time < 1.0 and _may_close(p):
@@ -407,6 +419,8 @@ func _physics_process(delta: float) -> void:
 				if _attack_cd <= 0.0:
 					_attack_cd = def.atk("cooldown", 1.5) * 1.1
 					_strike_structure()
+		State.OBSERVE, State.FLEE:
+			want = tribe.move(p, dist, delta) if tribe != null else Vector3.ZERO
 		State.HORDE:
 			var flow: Vector3 = director.call(&"horde_direction", global_position) if director != null else Vector3.ZERO
 			if flow == Vector3.ZERO and p != null:
@@ -538,6 +552,9 @@ func _vocalize(delta: float, dist: float) -> void:
 			State.CHASE:
 				id = &"voice/lurcher_pant" if def.archetype == "feral" else &"voice/hollow_attack"
 				_voice_t *= 0.5
+		if tribe != null and id != &"":
+			# the Ashen don't groan: a call to the band now and then in a chase
+			id = &"voice/ashen_call" if state == State.CHASE else &""
 		if not quad.is_empty() and id != &"":
 			id = &"" if state == State.SLEEP else (&"voice/hound_pant" if state == State.CHASE else &"voice/hound_growl")
 		if id != &"":
@@ -548,7 +565,7 @@ func _vocalize(delta: float, dist: float) -> void:
 		_step_t -= delta * sp
 		if _step_t <= 0.0:
 			_step_t = 0.9 if not crawling else 1.3
-			Audio.play_3d(&"voice/dragger_drag" if crawling else &"sfx/zombie_footstep_shuffle", global_position, {"volume_db": -10.0, "max_distance": 30.0})
+			Audio.play_3d(&"voice/dragger_drag" if crawling else (&"sfx/footstep_grass" if tribe != null else &"sfx/zombie_footstep_shuffle"), global_position, {"volume_db": -10.0, "max_distance": 30.0})
 
 
 # --- Senses ----------------------------------------------------------------------------------
@@ -754,7 +771,7 @@ func _deliver_hit(p: Player) -> void:
 	if fwd.dot(Vector3(to_p.x, 0.0, to_p.z).normalized()) < 0.3 or not _line_of_sight(p):
 		return
 	var dmg: float = def.atk("damage", 10.0) * damage_mult * (0.5 if severed.has("arm_l") and severed.has("arm_r") else 1.0)
-	var info := DamageInfo.make(dmg, &"zombie", &"zombie", entity_id)
+	var info := DamageInfo.make(dmg, &"zombie", &"zombie" if tribe == null else &"ashen", entity_id)
 	info.hit_pos = p.global_position + Vector3.UP * (1.3 if quad.is_empty() else 0.6)
 	info.source_pos = global_position
 	info.direction = (p.global_position - global_position).normalized()
@@ -793,6 +810,8 @@ func _scream() -> void:
 
 ## A voice for this body: the Hollowed's own, or a hound's.
 func _vid(hollowed: StringName, hound: StringName) -> StringName:
+	if tribe != null:
+		return AshenMind.voice(hollowed)
 	return hollowed if quad.is_empty() else hound
 
 
@@ -854,6 +873,8 @@ func _howl() -> void:
 ## Whether it will go in for the bite now: not while it is breaking off after one, nor in front of
 ## a held flame.
 func _may_close(p: Player) -> bool:
+	if tribe != null:
+		return tribe.may_close(p)
 	if quad.is_empty():
 		return true
 	return _retreat_t <= 0.0 and not _flame_shy(p)
@@ -918,14 +939,22 @@ func _steer_open(dir: Vector3) -> Vector3:
 
 
 func _can_spit(dist: float) -> bool:
+	if tribe != null:
+		return tribe.can_throw(dist, _spit_cd)
 	var spit: Dictionary = def.beh("spit", {})
 	return not spit.is_empty() and _spit_cd <= 0.0 and not crawling \
 		and dist >= float(spit.get("min_range", 4.0)) and dist <= float(spit.get("range", 15.0))
 
 
 func _start_spit() -> void:
-	_spit_cd = float((def.beh("spit", {}) as Dictionary).get("cooldown", 6.0)) * _rng.randf_range(0.85, 1.2)
 	_spit_done = false
+	if tribe != null:
+		# An Ashen spear throw: wind up and let go on the same beat as a spit.
+		_spit_cd = tribe.throw_cooldown() * _rng.randf_range(0.85, 1.2)
+		_set_state(State.SPIT)
+		visual.play_once(&"attack_b", 0.9, [&"attack_a"] as Array[StringName])
+		return
+	_spit_cd = float((def.beh("spit", {}) as Dictionary).get("cooldown", 6.0)) * _rng.randf_range(0.85, 1.2)
 	_set_state(State.SPIT)
 	visual.play_once(&"scream", 1.2, [&"attack_a"] as Array[StringName])
 	Audio.play_3d(&"voice/zombie_alert", global_position + Vector3.UP * 1.5, {"volume_db": -1.0, "pitch": 1.35})
@@ -933,6 +962,9 @@ func _start_spit() -> void:
 
 func _fire_spit(p: Player) -> void:
 	if p == null or get_parent() == null:
+		return
+	if tribe != null:
+		tribe.throw_at(p)
 		return
 	var mouth: Vector3 = global_position + Vector3.UP * 1.55 + global_transform.basis.z * 0.25
 	# Lead the target a little: where they will be when the glob lands.
@@ -1013,6 +1045,8 @@ func take_damage(info: DamageInfo) -> void:
 		amount *= 1.0 - float(armor.get("reduction", 0.6)) * (1.0 - pierce)
 	health -= amount
 	last_hit_cause = info.cause
+	if tribe != null and health > 0.0:
+		tribe.on_hurt(amount / maxf(1.0, max_health), _player())
 	if limb_hp.has(limb):
 		limb_hp[limb] = float(limb_hp[limb]) - amount
 		if float(limb_hp[limb]) <= 0.0 and limb != "torso" and not severed.has(limb) and not bool(def.beh("no_dismember", false)):
@@ -1243,7 +1277,8 @@ func _die(info: DamageInfo) -> void:
 		visual.animate_placeholder(0.0, 0.0, true)
 	Audio.play_3d(_vid(&"voice/zombie_death", &"voice/hound_death"), global_position + Vector3.UP * (1.0 if quad.is_empty() else 0.5), {"volume_db": -2.0})
 	if Game.session != null:
-		Game.session.stats["zombies_killed"] = int(Game.session.stats.get("zombies_killed", 0)) + 1
+		if tribe == null:
+			Game.session.stats["zombies_killed"] = int(Game.session.stats.get("zombies_killed", 0)) + 1
 		var pl: PlayerState = Game.session.players.get(info.source_id)
 		if pl != null:
 			pl.progression.add_xp(int(round(def.xp * xp_mult)))

@@ -44,9 +44,10 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 3: a trader post by each town (session 2's `trader:program_relay:<n>` spawns, ADR-0039).
 ## 4: burnt forest (fire scars) and fen (low wet ground, with pools) in the biome map (ADR-0041).
 ## 5: wilderness pool entries may be `unique` (one per world whatever its size: the field lab).
-## 6: `mine` sites (TD-169): the Corvane adit dug into a hillside, its buried levels under the
+## 6: the Ashen high camp joins the wilderness pool (ADR-0048), so worlds cached at 5 regenerate.
+## 7: `mine` sites (TD-169): the Corvane adit dug into a hillside, its buried levels under the
 ## ground, placed last from their own stream (every other place stays where it was).
-const VERSION: int = 6
+const VERSION: int = 7
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]

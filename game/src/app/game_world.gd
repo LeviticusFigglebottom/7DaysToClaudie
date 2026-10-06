@@ -33,6 +33,7 @@ var directives: Node = null
 var wildlife: Node = null
 ## Waystation trading (ADR-0039): trader posts, their shops, contracts and safe zones.
 var traders: Node = null
+var ashen: Node = null
 var is_ready: bool = false
 ## True when this random world streams its regions (ADR-0038): only the first area is composed at
 ## 1 m at load, the RegionStreamer brings in the rest, and buildings come by distance. The default
@@ -353,6 +354,7 @@ const MODULES: Array = [
 	["directives", "res://src/progression/directive_tracker.gd", "Listening…"],
 	["wildlife", "res://src/wildlife/wildlife_manager.gd", "Waking the woods…"],
 	["traders", "res://src/trade/trader_manager.gd", "Manning the Waystation…"],
+	["ashen", "res://src/ai/ashen/ashen_director.gd", "Watching the treeline…"],
 ]
 
 

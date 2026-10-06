@@ -16,10 +16,12 @@ extends GutTest
 ## forest and fen in the biome map, fen pools, per-region palettes), and again when the Corvane Field
 ## Lab joined the wilderness pool (ADR-0046: a new entry draws from the places stream and so moves the
 ## places after it, their pads, tracks and vegetation masks), and for VERSION 5 (`unique` pool
-## entries; the field lab's placement record carries the key, so only `placements` moved), and for
-## VERSION 6 (TD-169: the `mine` site, placed last from its own stream so every other place stays;
-## the adit lands in neither region, so again only the world id in `placements` and the input hash
-## moved). Larch Hollow's were
+## entries; the field lab's placement record carries the key, so only `placements` moved), for
+## composer VERSION 12 (ADR-0047: town ground only on streets and lots) and for generator VERSION 6
+## (ADR-0048: the Ashen high camp joins the wilderness pool and moves the places drawn after it),
+## and for VERSION 7 (TD-169: the `mine` site, placed last from its own stream so every other place
+## stays; the adit lands in neither region, so only the world id in `placements` and the input
+## hash moved). Larch Hollow's were
 ## re-recorded when Waystation 9 was placed in it (ADR-0039: a clearing, its spawn and its drive;
 ## its 1 m variant, which only SLOW_TESTS=1 runs, a little later), and again when the Corvane
 ## Larkspur Adit was placed by the Larkspur cliffs (ADR-0044: its pad and its track);
@@ -89,46 +91,46 @@ const GOLDEN: Dictionary = {
 		"other": "9042e6121a94f2a29c717a3d15b2b03d",
 	},
 	"rwg@4": {
-		"input": "9ed3cd8938a795f972020987cbd9ba0f6586459db576254241faca223edbc4ea",
-		"height": "a3f403f848325b1a1ac53870645f41dc3f58c1926830f486c333375fe360f1d8",
-		"splat0": "081a5dcd3e7328f29a8f6b00269330c8",
-		"splat1": "df43dcb0e34a5e1502b9eadfcd6e6085",
-		"biome": "bf01f1111789438d98a3c04586a9fead",
-		"vegmask": "fcdb1b7a991db447804bcd262b7a3b69",
+		"input": "fc7cdfdc9338a515d00a11291d4c385f6301fa56193926a89d28fda83e950e6c",
+		"height": "a925f207a617d445c264139a7e702b7f47621981d21b80dd0cc54b9aeaf36e07",
+		"splat0": "098406c5f2209022b523a6bf0ebf9578",
+		"splat1": "c111b88e7e976ef14ad6054fd23ad1f2",
+		"biome": "86cfa0dcc648fb86e785064ec34f706f",
+		"vegmask": "9c0c1a73f255730405073b6c4459f120",
 		"water": "49e108a32077cec749d37e86d197b32f",
-		"roads": "769d0793d5f34a5fe20bc332862e79e3",
+		"roads": "f4c1afcbb64546909bd550a88f36c5df",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "b207b667bb25a5c200507a38c5b1f582",
+		"placements": "65ac6e4dfc325d740a67719defbf0a06",
 		"other": "cec63ec5e9ea167c69260cbaf86a1d0a",
 	},
 	"rwg@8": {
-		"input": "9526f934aa785317504f232f0c1bfaecc9bc00b5628afe8e5fa52a126711d09b",
-		"height": "aaa598ed617dc791436e6e0fb60fdfddd8d9c710ab7a8fc5c80a1562254d4071",
-		"splat0": "ca327c82eb1681b7f39f8712665dd9c9",
-		"splat1": "1df97b211488e2b8d72393e3247d480a",
-		"biome": "c0d4076061381897e0bf01f70b52c4c1",
-		"vegmask": "b45272c16cfe82896123a1684cf99485",
+		"input": "a07742e6179827540dc031997d4b4042cd5af150dee6e0c67829e6db8620ad76",
+		"height": "3ea48f014b854e99a746b0b189b297b1a77d89d25e0d08fd8e194ff064a3225a",
+		"splat0": "ade598dee9008932ac84bee08c1d3820",
+		"splat1": "960ad4f5cd5c5f6c28a80a7c1fed0e1d",
+		"biome": "787269a12fe85a987683ae8e7f7ba80b",
+		"vegmask": "22408f0bfcbdb3d430c54636ae7257de",
 		"water": "fd041168cd7a58fb4b7994caf5864ac8",
-		"roads": "769d0793d5f34a5fe20bc332862e79e3",
+		"roads": "f4c1afcbb64546909bd550a88f36c5df",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "7f94e86209c52280e5298f1669813e0a",
+		"placements": "3fb9fef02c1497aaeb050d3244f3f804",
 		"other": "bcea77cbf3c997af1ab262307621ca3b",
 	},
 	"rwg@1": {
-		"input": "861a6cd01cb5f17d68b95ab0a5a5bcc319b356a9013d93575c37fb9c808c644e",
-		"height": "3ff9acf55cf2c423877cd5c919337834aa44704ccfc39f27f4eee42444a2cfa9",
-		"splat0": "3ef3d8c6adf1dd61e061996c0c4fb5e9",
-		"splat1": "8c3952002580f9f85e2cd0f77eb0e677",
-		"biome": "8b9c73e6a95b6613d722012b143b6d7f",
-		"vegmask": "1f54a4bd0bda2b2684fb105cbff58fe7",
+		"input": "a5a62a958923f69eefc209b4bf56c859840fabcfcd852f80682ea2337a506fef",
+		"height": "1c91067f75bb040f4161a8f75033efa3e9b5f872cda278cbdf24f8f51d558fc1",
+		"splat0": "7a7816b3f63c535ca2486d211fd8216b",
+		"splat1": "36f65ccea354d1e388a30d7c0b7759bc",
+		"biome": "425370b0f0f5d07061fcb5fdec9ac055",
+		"vegmask": "900620724046ce9aa24c95cdfb6a6820",
 		"water": "0815ff0f2b7d71ee76189c656a648066",
-		"roads": "769d0793d5f34a5fe20bc332862e79e3",
+		"roads": "f4c1afcbb64546909bd550a88f36c5df",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "851ba1a4e4ca818f10fd5d586e4346c2",
+		"placements": "f6588eaf1bccb876c64cf75f872a95cc",
 		"other": "445eed2000fca209f9b0b52d17c5924b",
 	},
 	"rwg_drop@4": {
-		"input": "911dc50cfca59bd605218f81ccb28ddb0ea1a78c5d3df963a81b2182d58bb27e",
+		"input": "e3ae8905e1e4eeaf45fc62b97224a8f3f028e324533ef9679457377422dcac1e",
 		"height": "c176d0709f4d21b4aa95532b211d0af63be784541958436e0b00fea36a978488",
 		"splat0": "5e0b93f23957c50754121ac1a52c2f04",
 		"splat1": "4516aea033ac574140369ed02cdb8985",
@@ -137,11 +139,11 @@ const GOLDEN: Dictionary = {
 		"water": "d751713988987e9331980363e24189ce",
 		"roads": "f0db205ae7464b3a50176b11cd609325",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "a32c5da75d2704360f703bcb1b321a1c",
+		"placements": "553c24be63a912b960ce21e157de45b8",
 		"other": "5bc27312937ee0c0680239869cc69b16",
 	},
 	"rwg_drop@8": {
-		"input": "9ed11298daeb80c08fa5a8e1f58e979bc3a4eaebe574e6f4d56b99c67b80829e",
+		"input": "4589627a7e5ccd3bb2702bc3c9830c8f5f1fe528dd4e24401dd1a369a12e92d5",
 		"height": "2627c13e991906fd2eec9fee5bfe187d9f52e2a8c5c6e5232a09a6a6a5e85399",
 		"splat0": "5e80c496aff37e4da35832c26eb881cc",
 		"splat1": "b56557e643b782752c0d4bccd7fc7fe3",
@@ -150,7 +152,7 @@ const GOLDEN: Dictionary = {
 		"water": "d751713988987e9331980363e24189ce",
 		"roads": "f0db205ae7464b3a50176b11cd609325",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "a32c5da75d2704360f703bcb1b321a1c",
+		"placements": "553c24be63a912b960ce21e157de45b8",
 		"other": "e424e63a3b750e476a6e84d0385281dd",
 	},
 }
