@@ -10,6 +10,15 @@ Built in **Godot 4.7.2** (Forward+, Jolt) with statically typed GDScript. **Ever
 material, animation and sound is generated procedurally by this repository** (Blender headless,
 NumPy/SciPy synthesis, Godot shaders) — nothing is downloaded from asset stores.
 
+## Play
+Download a packaged build (Windows or Linux): GitHub Actions → **Build** → the latest run →
+`hollowmere-windows` / `hollowmere-linux`. Unzip and run; the zip includes every generated asset.
+See `docs/BUILDS.md`.
+
+A clone opened straight in the Godot editor has **no generated assets** (they are built by
+`make assets`, which needs Linux) and draws the world with placeholder shapes; the main menu says
+so. Open the project with **Godot 4.7.2** exactly: other versions import and render differently.
+
 ## Build from a clean clone (Linux x86_64)
 ```bash
 make setup      # downloads + verifies pinned Godot 4.7.2, Blender 5.2.2, Python deps, fonts, GUT
