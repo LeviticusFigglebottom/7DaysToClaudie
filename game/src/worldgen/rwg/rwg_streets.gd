@@ -729,7 +729,7 @@ func _probe(p: Vector2, q: Vector2, c: Vector2, near_ids: PackedInt32Array, igno
 
 func _blocked(p: Vector2, q: Vector2) -> bool:
 	for poly: PackedVector2Array in obstacles:
-		if Geometry2D.is_point_in_polygon(q, poly):
+		if point_in(q, poly):
 			return true
 		for k: int in poly.size():
 			if Geometry2D.segment_intersects_segment(p, q, poly[k], poly[(k + 1) % poly.size()]) != null:
@@ -1121,6 +1121,20 @@ static func signed_area(poly: PackedVector2Array) -> float:
 
 
 # --- Helpers -------------------------------------------------------------------------------------
+
+## Whether p lies inside the polygon (crossing number, half-open edges). Geometry2D's
+## is_point_in_polygon casts its ray to a point past the polygon's bounds and was seen to count a
+## point 240 m outside a lot frame as inside; this one has no such corner case.
+static func point_in(p: Vector2, poly: PackedVector2Array) -> bool:
+	var inside: bool = false
+	var n: int = poly.size()
+	for i: int in n:
+		var a: Vector2 = poly[i]
+		var b: Vector2 = poly[(i + 1) % n]
+		if (a.y > p.y) != (b.y > p.y) and p.x < a.x + (b.x - a.x) * (p.y - a.y) / (b.y - a.y):
+			inside = not inside
+	return inside
+
 
 ## [[x, z], ...] or a PackedVector2Array as a PackedVector2Array.
 static func to_points(v: Variant) -> PackedVector2Array:

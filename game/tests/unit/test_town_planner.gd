@@ -180,7 +180,7 @@ static func _area(poly: PackedVector2Array) -> float:
 
 
 static func _seg_poly_distance(a: Vector2, b: Vector2, poly: PackedVector2Array) -> float:
-	if Geometry2D.is_point_in_polygon(a, poly) or Geometry2D.is_point_in_polygon(b, poly):
+	if Streets.point_in(a, poly) or Streets.point_in(b, poly):
 		return 0.0
 	var best: float = INF
 	for k: int in poly.size():
@@ -455,7 +455,7 @@ func test_fixtures_are_real_props_off_the_lots() -> void:
 			ids[fx["id"]] = true
 			var p := Vector2(float(fx["pos"][0]), float(fx["pos"][1]))
 			for fr: PackedVector2Array in frames:
-				if Geometry2D.is_point_in_polygon(p, fr):
+				if Streets.point_in(p, fr):
 					bad.append("%s: %s %s stands in a lot" % [_label(c), fx["id"], fx["prop"]])
 					break
 	assert_eq(bad.size(), 0, _report(bad))

@@ -467,7 +467,7 @@ func parcels(back: float) -> void:
 					continue
 				var best: PackedVector2Array = parts[0]
 				for part: PackedVector2Array in parts:
-					if Geometry2D.is_point_in_polygon(l.c, part):
+					if Streets.point_in(l.c, part):
 						best = part
 						break
 				poly = best
