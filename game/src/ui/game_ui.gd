@@ -492,7 +492,7 @@ func _build_pause() -> void:
 	title.add_theme_font_size_override(&"font_size", 40)
 	box.add_child(title)
 	for spec: Array in [["Resume", toggle_pause], ["Save", func() -> void: Game.save_game()],
-			["Load last save", _confirm_load], ["Options", _open_options],
+			["Load last save", _confirm_load], ["Options", _open_options], ["Controls", _open_options.bind("Controls")],
 			["Save and quit to menu", _save_and_quit], ["Quit without saving", _confirm_quit]]:
 		var b := Button.new()
 		b.text = spec[0]
@@ -537,11 +537,12 @@ func _save_and_quit() -> void:
 	Game.quit_to_menu()
 
 
-func _open_options() -> void:
+func _open_options(tab: String = "General") -> void:
 	var panel := OptionsPanel.new()
+	panel.open_tab = tab
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = (get_viewport().get_visible_rect().size - Vector2(620, 560)) * 0.5
+	panel.position = (get_viewport().get_visible_rect().size - Vector2(680, 660)) * 0.5
 	_pause.visible = false
 	panel.closed.connect(func() -> void: _pause.visible = true)
 

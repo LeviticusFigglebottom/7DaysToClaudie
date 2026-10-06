@@ -81,6 +81,8 @@ jobs:
           name: hollowmere-windows
           path: build/export/hollowmere-windows-*.zip
           compression-level: 0
+          # ~550 MB a build and several builds an hour: keep a week, not the default 90 days.
+          retention-days: 7
 
       - name: Upload Linux build
         uses: actions/upload-artifact@v4
@@ -88,6 +90,8 @@ jobs:
           name: hollowmere-linux
           path: build/export/hollowmere-linux-*.zip
           compression-level: 0
+          # ~550 MB a build and several builds an hour: keep a week, not the default 90 days.
+          retention-days: 7
 
       - name: Upload logs
         if: always()

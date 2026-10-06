@@ -82,18 +82,24 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 		var qr: Array = kd.get(z, [0, 0])
 		quota[z] = rl.randi_range(int(qr[0]), int(qr[1]))
 	var counts: Dictionary = {"commercial": 0, "civic": 0, "industrial": 0, "rural": 0}
-	if plaza != null:
-		counts["civic"] += _plaza_civic(lots, plaza, rl, int(quota["civic"]))
 	for z2: String in ["commercial", "civic"]:
-		# Nearest the centre on the arterials (civic also on the first stretch of the side streets);
-		# then anywhere in town; then on ground a metre steeper than the zone likes.
+		if z2 == "civic" and plaza != null:
+			counts["civic"] += _plaza_civic(lots, plaza, rl, int(quota["civic"]))
+		# Shops nearest the centre on the arterials; civic just beyond them (also on the first
+		# stretch of the side streets); then anywhere in town; then on ground a metre steeper.
 		var want: int = int(quota[z2]) - int(counts[z2])
 		var lo_q: int = int((kd.get(z2, [0, 0]) as Array)[0])
-		counts[z2] += _frontage_quota(net, lots, rl, z2, want, 0.0, radius * 0.6, 0.0, z2 == "civic")
+		var d_at: float = 0.0
+		var d_lo: float = 0.0
+		if z2 == "civic":
+			d_lo = _mean_distance(lots, "commercial", net.center)
+			d_at = d_lo * 1.25
+		counts[z2] += _frontage_quota(net, lots, rl, z2, want, d_lo, radius * 0.6, d_at, z2 == "civic")
+		# Short of the class's minimum: the inner ring on ground a metre steeper, then anywhere.
 		if int(counts[z2]) < lo_q:
-			counts[z2] += _frontage_quota(net, lots, rl, z2, lo_q - int(counts[z2]), 0.0, radius, 0.0, true)
+			counts[z2] += _frontage_quota(net, lots, rl, z2, lo_q - int(counts[z2]), d_lo, radius * 0.6, d_at, true, 1.0)
 		if int(counts[z2]) < lo_q:
-			counts[z2] += _frontage_quota(net, lots, rl, z2, lo_q - int(counts[z2]), 0.0, radius, 0.0, true, 1.0)
+			counts[z2] += _frontage_quota(net, lots, rl, z2, lo_q - int(counts[z2]), 0.0, radius, d_at, true, 1.0)
 	counts["industrial"] += _frontage_quota(net, lots, rl, "industrial", int(quota["industrial"]), radius * 0.72, radius + 140.0, radius * 0.92, false)
 	counts["rural"] += _rural(net, lots, rl, int(quota["rural"]), radius, outskirts, lcfg)
 	var fixed: int = lots.lots.size() - (1 if plaza != null else 0)
@@ -170,8 +176,19 @@ static func config_errors(t: Dictionary) -> PackedStringArray:
 
 # --- The square and the quotas -----------------------------------------------------------------
 
-## The plaza (towns): a paved square on the main street beside the centre (at a corner of the
-## arterial crossing when there is one), on whichever side has room and level ground.
+## Mean distance from the centre of the lots of a zone (0 without any).
+static func _mean_distance(lots: Lots, zone: String, center: Vector2) -> float:
+	var acc: float = 0.0
+	var n: int = 0
+	for l: Lots.Lot in lots.lots:
+		if l.zone == zone:
+			acc += l.c.distance_to(center)
+			n += 1
+	return acc / n if n > 0 else 0.0
+
+
+## The plaza (towns): a paved square on the main street a step out from the crossing (the shops
+## take the corners), on whichever side has room and level ground, in the core.
 static func _plaza(net: Streets, lots: Lots, kd: Dictionary, r: RandomNumberGenerator) -> Lots.Lot:
 	var pr: Array = kd.get("plaza", [0, 0])
 	if float(pr[1]) <= 0.0:
@@ -190,9 +207,9 @@ static func _plaza(net: Streets, lots: Lots, kd: Dictionary, r: RandomNumberGene
 			var si2: int = int(ar[1])
 			var st: Streets.Street = net.streets[si2]
 			var sc: float = st.line.closest(net.center).y
-			for k: float in [0.0, 1.0, -1.0, 2.0, -2.0, 3.0, -3.0]:
+			for k: float in [1.0, -1.0, 2.0, -2.0, 0.0, 3.0, -3.0]:
 				for side: int in [first, -first]:
-					var lo: float = sc + k * (size * 0.5 + 12.0) - size * 0.5
+					var lo: float = sc + k * (size * 0.5 + 18.0) - size * 0.5
 					var hi: float = lo + size
 					if lo < 0.0 or hi > st.length() or not is_nan(Lots._jump(lots.blocked(si2, side), lo, hi, 1.0)):
 						continue
@@ -263,6 +280,8 @@ static func _frontage_quota(net: Streets, lots: Lots, r: RandomNumberGenerator, 
 	for l: Lots.Lot in cands:
 		if made >= quota:
 			break
+		if l.c.distance_to(center) < d_lo:
+			continue
 		if lots.fits(l, lots.relief_of(zone)):
 			l.fixed = true
 			lots.add(l)

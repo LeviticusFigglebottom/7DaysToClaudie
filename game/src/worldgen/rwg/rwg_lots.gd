@@ -85,6 +85,7 @@ var margin: float = 0.4
 var junction_extra: float = 8.0
 var skip: float = 6.0
 var gaps: Array = [1.0, 4.0]
+var _straight_cos: float = 0.87
 ## Arc intervals taken on each street side: "si:side" -> [[s0, s1], ...].
 var occupied: Dictionary = {}
 var _cells: Dictionary = {}
@@ -106,6 +107,7 @@ func setup(p_net: Streets, p_cfg: Dictionary) -> void:
 	junction_extra = float(cfg.get("junction_gap", 8.0))
 	skip = float(cfg.get("skip", 6.0))
 	gaps = cfg.get("side_gap", [1.0, 4.0])
+	_straight_cos = cos(deg_to_rad(float(cfg.get("frontage_bend", 30.0))))
 
 
 ## [[frontage lo, hi], [depth lo, hi]] of a size class.
@@ -364,6 +366,9 @@ func walk(si: int, side: int, from: float, to: float, zone_at: Callable, r: Rand
 			jump = _jump(bl, lo, hi, dir)
 			if not is_nan(jump):
 				break
+			# A frontage must be fairly straight: on a sharp bend no rectangle faces the street.
+			if st.line.tangent_at(lo).dot(st.line.tangent_at(hi)) < _straight_cos:
+				continue
 			var l: Lot = frame_on(si, side, lo, hi, float(attempt[1]))
 			if fits(l, relief, none if commit else out):
 				placed = l
@@ -434,8 +439,10 @@ func head_lots(si: int, key: String, r: RandomNumberGenerator, limit: int = 3) -
 
 
 ## Parcels: each frame grown sideways towards its neighbours (to half the gap, at most 4 m) and back
-## (half the gap behind it, at most `back` m), then clipped by every street corridor.
+## (half the gap behind it, at most `back` m), then clipped by every street corridor (the centre line
+## offset by half its width and its shoulder, with round ends: a bulb is a disc).
 func parcels(back: float) -> void:
+	var corridors: Dictionary = {}
 	for l: Lot in lots:
 		if l.zone == "plaza":
 			l.poly = l.corners()
@@ -446,27 +453,54 @@ func parcels(back: float) -> void:
 		var hx: float = l.w * 0.5
 		var hz: float = l.d * 0.5
 		var poly := PackedVector2Array([l.at(-hx - left, hz), l.at(hx + right, hz), l.at(hx + right, -hz - rear), l.at(-hx - left, -hz - rear)])
+		var seen: Dictionary = {}
 		for sid: int in net.near(l.c, maxf(l.w, l.d) * 0.75 + back + 14.0):
 			var si: int = net.seg_st[sid]
-			if si < 0:
+			if si < 0 or seen.has(si):
 				continue
-			var st: Streets.Street = net.streets[si]
-			var a: Vector2 = net.seg_a[sid]
-			var b: Vector2 = net.seg_b[sid]
-			var t: Vector2 = (b - a).normalized() if a.distance_to(b) > 0.01 else Vector2.RIGHT
-			var n: Vector2 = Vector2(-t.y, t.x) * (st.half() + st.shoulder)
-			var ext: Vector2 = t * (st.half() + st.shoulder if st.cls == "bulb" else 0.5)
-			var corridor := PackedVector2Array([a - ext + n, b + ext + n, b + ext - n, a - ext - n])
-			var parts: Array[PackedVector2Array] = Geometry2D.clip_polygons(poly, corridor)
-			if parts.is_empty():
-				continue
-			var best: PackedVector2Array = parts[0]
-			for part: PackedVector2Array in parts:
-				if Geometry2D.is_point_in_polygon(l.c, part):
-					best = part
-					break
-			poly = best
+			seen[si] = true
+			if not corridors.has(si):
+				corridors[si] = _corridor(si)
+			for corridor: PackedVector2Array in corridors[si]:
+				var parts: Array[PackedVector2Array] = Geometry2D.clip_polygons(poly, corridor)
+				if parts.is_empty():
+					continue
+				var best: PackedVector2Array = parts[0]
+				for part: PackedVector2Array in parts:
+					if Geometry2D.is_point_in_polygon(l.c, part):
+						best = part
+						break
+				poly = best
 		l.poly = poly
+
+
+## A street's corridor as polygons, over the stretch inside the town's area (0.3 m wider than the
+## shoulder: the round joins are drawn with chords, which would cut the corners).
+func _corridor(si: int) -> Array[PackedVector2Array]:
+	var st: Streets.Street = net.streets[si]
+	var reach: float = net.radius + float(cfg.get("outskirts", 400.0)) + 120.0
+	var out: Array[PackedVector2Array] = []
+	var run := PackedVector2Array()
+	for p: Vector2 in st.line.points:
+		if p.distance_to(net.center) <= reach:
+			run.append(p)
+		elif run.size() > 0:
+			out.append_array(_offset(run, st.half() + st.shoulder + 0.3))
+			run = PackedVector2Array()
+	if run.size() > 0:
+		out.append_array(_offset(run, st.half() + st.shoulder + 0.3))
+	return out
+
+
+static func _offset(run: PackedVector2Array, r: float) -> Array[PackedVector2Array]:
+	if run.size() == 1:
+		run.append(run[0] + Vector2(0.01, 0.0))
+	var out: Array[PackedVector2Array] = []
+	for poly: PackedVector2Array in Geometry2D.offset_polyline(run, r, Geometry2D.JOIN_ROUND, Geometry2D.END_ROUND):
+		# offset_polyline also returns holes (clockwise) where a street loops on itself: keep outlines.
+		if not Geometry2D.is_polygon_clockwise(poly):
+			out.append(poly)
+	return out
 
 
 ## How far the frame can grow on one side (-1 left, 1 right: along local x; 0: back) before it

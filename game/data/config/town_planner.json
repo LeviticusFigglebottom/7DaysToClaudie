@@ -11,7 +11,7 @@
 		"village": {
 			"radius": [190, 260], "core": 80, "arterials": [1, 2], "street_class": "street",
 			"side_streets": [3, 7], "street_budget": 1600, "street_length": [80, 240], "seed_spacing": [[55, 75], [70, 100], [90, 130]],
-			"seed_reach": 0.82, "cross_chance": 0.3, "branch_chance": 0.3, "grid_bias": true,
+			"seed_reach": 0.82, "cross_chance": 0.3, "branch_chance": 0.3, "grid_bias": false,
 			"loops": [0, 1], "culdesacs": [1, 2], "plaza": [0, 0], "back_lanes": false,
 			"lots": [22, 45], "commercial": [3, 5], "civic": [1, 2], "civic_pure": 2, "industrial": [1, 2], "rural": [3, 6], "wrecks": [2, 4]
 		},
@@ -24,9 +24,9 @@
 		}
 	},
 	"streets": {
-		"step": 12.0, "grade_cost": 40.0, "turn_cost": 0.6, "core_straight_cost": 0.8, "crowd_cost": 0.35, "crowd_reach": 45.0,
+		"step": 12.0, "grade_cost": 55.0, "turn_cost": 0.6, "core_straight_cost": 0.8, "crowd_cost": 0.35, "crowd_reach": 45.0,
 		"snap": 16.0, "snap_angle": 35.0, "snap_bonus": 0.6, "parallel": 60.0, "parallel_angle": 25.0, "keep_out": 30.0,
-		"water_stop": 15.0, "max_grade": 0.11, "max_turn": 100.0, "curl_gap": 36.0, "min_length": 40.0, "wander": 4.0, "wander_max": 28.0, "aim_cost": 0.35,
+		"water_stop": 15.0, "max_grade": 0.11, "max_turn": 100.0, "curl_gap": 36.0, "min_length": 50.0, "wander": 7.0, "wander_max": 40.0, "aim_cost": 0.6,
 		"junction_spacing": 30.0, "junction_merge": 14.0, "length": [80, 320], "branch_length": [60, 140], "branch_angle": [75, 105],
 		"lane_from": 0.75, "bulb_min": 60.0, "back_lane_offset": 44.0,
 		"classes": {
@@ -37,7 +37,7 @@
 		}
 	},
 	"lots": {
-		"verge": 3.0, "overlap_gap": 1.0, "water": 12.0, "corridor_margin": 0.4, "junction_gap": 8.0, "skip": 6.0, "side_gap": [1.0, 4.0],
+		"verge": 3.0, "overlap_gap": 1.0, "water": 12.0, "corridor_margin": 0.4, "junction_gap": 8.0, "skip": 6.0, "side_gap": [1.0, 4.0], "frontage_bend": 30.0,
 		"sizes": {
 			"inner_residential": [[18, 23], [26, 32]],
 			"outer_residential": [[22, 30], [30, 40]],
