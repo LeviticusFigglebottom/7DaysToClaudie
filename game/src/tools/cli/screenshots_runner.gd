@@ -102,11 +102,12 @@ const SHOTS: Array[Dictionary] = [
 	# Weather and atmosphere (ADR-0033): rain on Pell's Crossing's street, a storm in the forest at
 	# night lit by a strike, misty dawn over the valley, the town under snow and a puddled road after
 	# rain. The clock stands still between shots, so "wet", "puddles" and "snow_cover" say how long
-	# it has rained or snowed; "strike" flashes lightning that many seconds before the capture.
+	# it has rained or snowed; "strike" flashes lightning that many seconds before the capture, and
+	# "strike_frames" renders that many frames more on the held flash.
 	{"name": "wx_rain_street", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-95, 2, 2064), "hour": 15.5, "weather": "rain", "wet": 1.0, "puddles": 0.8,
 		"settle": 10.0},
 	{"name": "wx_storm_night", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 1.5, 2280), "hour": 23.0, "weather": "storm", "wet": 1.0,
-		"puddles": 1.0, "light": true, "strike": 0.12, "settle": 8.0},
+		"puddles": 1.0, "light": true, "strike": 0.12, "strike_frames": 6, "settle": 8.0},
 	{"name": "wx_misty_dawn", "pos": Vector3(-150, 140.0, 2420), "look": Vector3(-60, 0, 2050), "hour": 6.6, "weather": "mist", "wet": 0.3},
 	{"name": "wx_snow_town", "pos": Vector3(-30, 6.0, 2170), "look": Vector3(-60, 0, 2070), "hour": 13.0, "weather": "snow", "snow_cover": 0.9, "settle": 10.0},
 	{"name": "wx_puddled_road", "pos": Vector3(-40, 1.4, 2067), "look": Vector3(-95, 0.6, 2064), "hour": 17.5, "weather": "overcast", "wet": 1.0,
@@ -148,6 +149,30 @@ func _wait(s: float) -> void:
 		await get_tree().process_frame
 
 
+## Memory after a shot (a rendered weather run was OOM-killed at 10.9 GB): the process's resident
+## set (Linux /proc), what the engine allocated itself (static) and for the GPU (video, which
+## lavapipe keeps in RAM), live objects, resources and nodes, and the pipelines compiled so far.
+## Resident memory that grows while the engine's own figures stay flat is the driver's.
+func _mem_report(tag: String) -> void:
+	var rss_kb: int = -1
+	var f := FileAccess.open("/proc/self/status", FileAccess.READ)
+	while f != null and not f.eof_reached():
+		var line: String = f.get_line()
+		if line.begins_with("VmRSS:"):
+			rss_kb = line.substr(6).strip_edges().to_int()
+			break
+	var pipes: PackedStringArray = []
+	for p: Array in LoadMeter.PIPELINES:
+		pipes.append("%s %d" % [p[1], RenderingServer.get_rendering_info(int(p[0]) as RenderingServer.RenderingInfo)])
+	var mb: float = 1048576.0
+	print("SHOT mem %s at %.0f s: rss %.0f MB, static %.0f MB, video %.0f MB (textures %.0f, buffers %.0f), objects %d, resources %d, nodes %d, orphans %d; pipelines %s" % [
+		tag, Time.get_ticks_msec() / 1000.0, rss_kb / 1024.0, Performance.get_monitor(Performance.MEMORY_STATIC) / mb,
+		Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / mb, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / mb,
+		Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / mb, int(Performance.get_monitor(Performance.OBJECT_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)), int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)), ", ".join(pipes)])
+
+
 ## Waits (up to --stream-wait seconds, 4 min by default) until the vegetation within two chunks of
 ## the camera has streamed in
 ## (software rendering leaves the scatter workers little CPU; the far impostors cover the rest).
@@ -187,6 +212,7 @@ func _run() -> void:
 	# length moved a "19.6 h" dusk shot an hour and a half into the night (and by a different
 	# amount every run).
 	(w.get(&"clock_driver") as WorldClockDriver).paused = true
+	_mem_report("world ready")
 	for shot: Dictionary in SHOTS:
 		if not _only.is_empty() and not _only.has(str(shot["name"])):
 			continue
@@ -341,6 +367,10 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 		wx_env.strike_now(atan2(look.z - pos.z, look.x - pos.x) + 0.5, 900.0)
 		wx_env.flash_hold = 0.85
 		await _wait(maxf(float(shot["strike"]), 3.0))
+		# Temporal AA blends each frame into the last ones, and a software frame lasts seconds, so
+		# the wait above is a frame or two and the flash came out dim: let it settle on the flash.
+		for i: int in int(shot.get("strike_frames", 0)):
+			await get_tree().process_frame
 	elif flock != null:
 		await _wait(float(shot.get("settle", _settle)))
 		DebugTools.set_flag(&"invisible", false)
@@ -359,6 +389,7 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	var path: String = _out.path_join("%s.png" % shot["name"])
 	img.save_png(path)
 	print("SHOT %s" % path)
+	_mem_report(str(shot["name"]))
 	if str(shot["name"]).begins_with("wx_") and wx_env.fx != null and wx_env.fx.rain != null:
 		var fx: WeatherFx = wx_env.fx
 		var c: Vector3 = cam.global_position

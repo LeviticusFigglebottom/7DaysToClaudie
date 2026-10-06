@@ -805,7 +805,7 @@ class _Build:
 					continue
 				var hv: float = hb[lrow + ix]
 				var ffx: float = fgx - fcx
-				# _blf(fw_d, fi, ffx, ffz)
+				# fw_d bilinear on the 16 m grid (_bl's arithmetic, its "far" rule included)
 				var fa: float = fwd[fi]
 				var fb: float = fwd[fi + 1]
 				var fc: float = fwd[fi + fnn]
@@ -819,7 +819,7 @@ class _Build:
 				if fd < 1.0e8:
 					var vw: float = fwvw[fi]
 					if fd < vw:
-						# _blf(fw_lvl, fi, ffx, ffz)
+						# fw_lvl bilinear on the 16 m grid
 						var la: float = fwl[fi]
 						var lb: float = fwl[fi + 1]
 						var lc: float = fwl[fi + fnn]
@@ -873,17 +873,6 @@ class _Build:
 							hv = lerpf(shore_h, maxf(hv, shore_h), t)
 				hb[lrow + ix] = hv
 		return [hb]
-
-	func _blf(f: PackedFloat32Array, fi: int, fx: float, fz: float) -> float:
-		var a: float = f[fi]
-		var b: float = f[fi + 1]
-		var c: float = f[fi + fn_]
-		var d: float = f[fi + fn_ + 1]
-		if a > 1.0e8 or b > 1.0e8 or c > 1.0e8 or d > 1.0e8:
-			return minf(minf(a, b), minf(c, d))
-		var top: float = a + (b - a) * fx
-		var bot: float = c + (d - c) * fx
-		return top + (bot - top) * fz
 
 	func _for_far_box(box: Rect2, fn: Callable) -> void:
 		var r: Rect2 = box.intersection(rect.grow(FAR_STEP))
@@ -1550,7 +1539,7 @@ class _Build:
 			var z: float = z_0 + iz * spc
 			var row: int = iz * nn
 			var lrow: int = (iz - z0) * nn
-			var brow: int = clampi(int(floor((z - z_0) / BUCKET)), 0, bk_n - 1) * bk_n
+			var brow: int = clampi(floori((z - z_0) / BUCKET), 0, bk_n - 1) * bk_n
 			var hrow_u: int = maxi(iz - 1, 0) * nn
 			var hrow_d: int = mini(iz + 1, nn - 1) * nn
 			for ix: int in nn:
@@ -1587,8 +1576,8 @@ class _Build:
 					top = a + (q2[ci + 1] - a) * fx
 					c = q2[ci + cnn]
 					var m2: float = top + ((c + (q2[ci + cnn + 1] - c) * fx) - top) * fz
-					var bx: int = clampi(int(floor((x + m1 - wrp.x) / bstep)), 0, bcols - 1)
-					var bz: int = clampi(int(floor((z + m2 - wrp.y) / bstep)), 0, brows - 1)
+					var bx: int = clampi(floori((x + m1 - wrp.x) / bstep), 0, bcols - 1)
+					var bz: int = clampi(floori((z + m2 - wrp.y) / bstep), 0, brows - 1)
 					var mi: int = bcells[bz * bcols + bx]
 					if mi < map_index.size():
 						bi = map_index[mi]
@@ -1634,61 +1623,62 @@ class _Build:
 				# nothing).
 				w.fill(0.0)
 				var am: float
-				match kind[bi]:
-					K_CONIFER:
-						if L_FOREST >= 0:
-							w[L_FOREST] += 1.0
-						am = smoothstep(0.45, 0.75, n1) * 0.9
-						if L_MOSS >= 0 and am > 0.0:
-							w[L_MOSS] += am
-						am = smoothstep(0.7, 0.9, n2) * 0.35
-						if L_DIRT >= 0 and am > 0.0:
-							w[L_DIRT] += am
-					K_BIRCH:
-						if L_GRASS >= 0:
-							w[L_GRASS] += 0.8
-						am = smoothstep(0.4, 0.7, n1)
-						if L_FOREST >= 0 and am > 0.0:
-							w[L_FOREST] += am
-						am = smoothstep(0.65, 0.85, n2) * 0.5
-						if L_MOSS >= 0 and am > 0.0:
-							w[L_MOSS] += am
-					K_MEADOW:
-						if L_GRASS >= 0:
-							w[L_GRASS] += 1.0
-						am = smoothstep(0.68, 0.9, n2) * 0.45
-						if L_DIRT >= 0 and am > 0.0:
-							w[L_DIRT] += am
-					K_TOWN:
-						if L_GRASS >= 0:
-							w[L_GRASS] += 0.9
-						am = smoothstep(0.55, 0.8, n1) * 0.6
-						if L_DIRT >= 0 and am > 0.0:
-							w[L_DIRT] += am
-						am = smoothstep(0.7, 0.9, n2) * 0.5
-						if L_GRAVEL >= 0 and am > 0.0:
-							w[L_GRAVEL] += am
-					K_RIVERBANK:
-						am = smoothstep(2.0, 12.0, wd)
-						if L_GRASS >= 0 and am > 0.0:
-							w[L_GRASS] += am
-						am = 1.0 - smoothstep(1.0, 6.0 + n1 * 4.0, wd)
-						if L_GRAVEL >= 0 and am > 0.0:
-							w[L_GRAVEL] += am
-						am = (1.0 - smoothstep(0.0, 9.0, absf(wd - 3.0))) * smoothstep(0.35, 0.6, n2)
-						if L_MUD >= 0 and am > 0.0:
-							w[L_MUD] += am
-					K_ROCKY:
-						if L_GRAVEL >= 0:
-							w[L_GRAVEL] += 0.8
-						if L_DIRT >= 0:
-							w[L_DIRT] += 0.5
-						am = smoothstep(0.6, 0.8, n1) * 0.4
-						if L_MOSS >= 0 and am > 0.0:
-							w[L_MOSS] += am
-					_:
-						if L_FOREST >= 0:
-							w[L_FOREST] += 1.0
+				# An if chain, not `match` (which is slower and serialises threads).
+				var kb: int = kind[bi]
+				if kb == K_CONIFER:
+					if L_FOREST >= 0:
+						w[L_FOREST] += 1.0
+					am = smoothstep(0.45, 0.75, n1) * 0.9
+					if L_MOSS >= 0 and am > 0.0:
+						w[L_MOSS] += am
+					am = smoothstep(0.7, 0.9, n2) * 0.35
+					if L_DIRT >= 0 and am > 0.0:
+						w[L_DIRT] += am
+				elif kb == K_BIRCH:
+					if L_GRASS >= 0:
+						w[L_GRASS] += 0.8
+					am = smoothstep(0.4, 0.7, n1)
+					if L_FOREST >= 0 and am > 0.0:
+						w[L_FOREST] += am
+					am = smoothstep(0.65, 0.85, n2) * 0.5
+					if L_MOSS >= 0 and am > 0.0:
+						w[L_MOSS] += am
+				elif kb == K_MEADOW:
+					if L_GRASS >= 0:
+						w[L_GRASS] += 1.0
+					am = smoothstep(0.68, 0.9, n2) * 0.45
+					if L_DIRT >= 0 and am > 0.0:
+						w[L_DIRT] += am
+				elif kb == K_TOWN:
+					if L_GRASS >= 0:
+						w[L_GRASS] += 0.9
+					am = smoothstep(0.55, 0.8, n1) * 0.6
+					if L_DIRT >= 0 and am > 0.0:
+						w[L_DIRT] += am
+					am = smoothstep(0.7, 0.9, n2) * 0.5
+					if L_GRAVEL >= 0 and am > 0.0:
+						w[L_GRAVEL] += am
+				elif kb == K_RIVERBANK:
+					am = smoothstep(2.0, 12.0, wd)
+					if L_GRASS >= 0 and am > 0.0:
+						w[L_GRASS] += am
+					am = 1.0 - smoothstep(1.0, 6.0 + n1 * 4.0, wd)
+					if L_GRAVEL >= 0 and am > 0.0:
+						w[L_GRAVEL] += am
+					am = (1.0 - smoothstep(0.0, 9.0, absf(wd - 3.0))) * smoothstep(0.35, 0.6, n2)
+					if L_MUD >= 0 and am > 0.0:
+						w[L_MUD] += am
+				elif kb == K_ROCKY:
+					if L_GRAVEL >= 0:
+						w[L_GRAVEL] += 0.8
+					if L_DIRT >= 0:
+						w[L_DIRT] += 0.5
+					am = smoothstep(0.6, 0.8, n1) * 0.4
+					if L_MOSS >= 0 and am > 0.0:
+						w[L_MOSS] += am
+				else:
+					if L_FOREST >= 0:
+						w[L_FOREST] += 1.0
 				if wk == 2 and wd < 6.0 + n1 * 3.0:
 					# Forest lakes and ponds have muddy, stony margins with the odd sandy cove: a sand
 					# ring all the way round read as a beach, and from the trees as a bleached halo.
@@ -1792,9 +1782,9 @@ class _Build:
 					total = 1.0
 				var o4: int = li * 4
 				for k4: int in 4:
-					s0b[o4 + k4] = int(round(w[k4] / total * 255.0))
-					s1b[o4 + k4] = int(round(w[k4 + 4] / total * 255.0))
-				vgm[li] = int(round(clampf(veg, 0.0, 1.0) * 255.0))
+					s0b[o4 + k4] = roundi(w[k4] / total * 255.0)
+					s1b[o4 + k4] = roundi(w[k4 + 4] / total * 255.0)
+				vgm[li] = roundi(clampf(veg, 0.0, 1.0) * 255.0)
 		return [s0b, s1b, bio, vgm]
 
 	# --- Metadata ----------------------------------------------------------------------------
