@@ -41,14 +41,25 @@ joints (`FINGER_CURL`, the ring and little fingers a little further, as round a 
 swings the thumb across the palm, turns it about its own length so the pad meets the index, and
 wraps its two joints. No game code names a finger bone, so this is the generator's alone.
 
-**3. The solver keeps wrists in range.** `PoseSolver` swings the elbow round the shoulder–wrist
-line to where the forearm best lines up with the hand (near the pose's `elbow` hint), then turns
-what bend is left past the wrist's range (`wrist` in viewmodel.json: an ellipse between
-flexion/extension and radial/ulnar deviation, plus the forearm's roll) out of the hand's turn about
-its grip, so the grip stays where the pose put it. The build log says how far each action's hands
-were turned back: a pose that needs much of that is asking for a wrist nobody has, and its data
-should be rewritten toward what the solver found. test_viewmodel_holds measures every frame of
-every baked action's hands against the range.
+**3. The solver keeps wrists in range.** What a hold must keep is where its tool points; how
+the fist is rolled round the handle, and where exactly the elbow goes, are free within reason.
+`PoseSolver` searches the elbow's swing round the shoulder–wrist line (near the pose's `elbow`
+hint) together with the hand's spin about its handle (near the authored roll) for the least wrist
+bend past its range (`wrist` in viewmodel.json: an ellipse between flexion/extension and
+radial/ulnar deviation, plus the forearm's roll). The first frame of an action searches wide,
+later frames near the last answer so the arm doesn't jump, and wide again when a fast swing
+outruns that. If the wrist is still past its range, the grip moves (at most 6 cm, tool direction
+kept) toward where a straight wrist would put it, and what is left is turned back about the wrist
+in one step. (Turned back about the grip instead, each correction moved the forearm and so the
+angles again; a hand 1° past its range could wander 40° off.) The build log prints how far each
+action's hands were turned and moved, `tools/fp_poses.py report` says the same in seconds without
+Blender, and `tools/fp_poses.py tune` re-places a strike's key grips where an arm can deliver
+them. test_viewmodel_holds measures every frame of every baked action's hands against the range.
+
+Two holds changed because the old ones cannot be held: a spear (and the two-handed hold) point
+forward from a rear fist at the hip needs the shaft to run along the forearm, so they are carried
+diagonally across the body; and `fist` runs past 1 (a grip round a ~3.5 cm handle) to 1.3 for a
+bare fist (the punch, the empty-handed guard).
 
 Rejected: clamping the wrist alone without moving the elbow (it turns tools away from where the
 pose aims them far more often), and per-pose hand-tuned elbow positions (every new hold would have

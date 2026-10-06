@@ -112,14 +112,15 @@ and wide-eyed up close (TD-170). A new NPC is a catalog entry with its own build
   about Y under the camera. Hold poses are written in Godot camera space in
   `game/data/config/viewmodel.json` (`lib/char_fp.py` `g2b()` converts). The rest pose is a working
   grip: elbows bent, hands thumb-up.
-* Poses name the grip, not the arm (`PoseSolver`, ADR-0045): the elbow swings round the
-  shoulder-wrist line to where the forearm best lines up with the hand (near the pose's `elbow`
-  hint), and what bend is left past the wrist's range (`wrist` in viewmodel.json: flexion 65°,
-  extension 55°, radial 18°, ulnar 32°, roll 95° from thumb-up) is taken out of the hand's turn
-  about the grip. The build prints how far each action's hands were turned back; a pose that
-  needs much of that is asking for a wrist nobody has. Curls: `fist` closes each finger at its
-  MCP, PIP and DIP (`FINGER_CURL`, the ring and little fingers a little further), `thumb`
-  opposes the thumb across the palm and wraps it (`THUMB_CURL`).
+* Poses name the grip, not the arm (`PoseSolver`, ADR-0045): the solver picks the elbow (near
+  the pose's `elbow` hint) and the fist's roll round its handle (near the authored one) that bend
+  the wrist least; past the wrist's range (`wrist` in viewmodel.json: flexion 65°, extension 55°,
+  radial 18°, ulnar 32°, roll 95° from thumb-up) it moves the grip up to 6 cm and turns the rest
+  back about the wrist. The build log, and `tools/fp_poses.py report` without Blender, say how far
+  each action was corrected; `tools/fp_poses.py tune <attack>` re-places a strike's key grips.
+  Curls: `fist` closes each finger at its MCP, PIP and DIP (`FINGER_CURL`: 1 round a ~3.5 cm
+  handle, up to 1.3 a bare fist; the ring and little fingers a little further, converging on the
+  middle finger), `thumb` opposes the thumb across the palm and wraps it (`THUMB_CURL`).
 * Arms enter from the lower corners: the Remand jumpsuit sleeves are rolled to just below the
   elbow (`M_fp_sleeve`, cloth shader), bare forearms and hands (`M_fp_skin`, skin shader), nails
   (`M_fp_nail`). The **tether** is bolted over the back of the left wrist, rigid on

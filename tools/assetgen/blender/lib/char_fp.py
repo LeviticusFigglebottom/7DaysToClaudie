@@ -896,7 +896,7 @@ class FPRig:
             elif tw < -math.pi:
                 tw += 2 * math.pi
             Q[f"forearm_twist.{sd}"] = rot_axis(axis, tw * self.TWIST_SHARE)
-            grip = float(prm.get(f"{sd}.fist", 0.3))
+            grip = min(float(prm.get(f"{sd}.fist", 0.3)), FIST_MAX)
             idx = float(prm.get(f"{sd}.index", 0.0))
             thumb = float(prm.get(f"{sd}.thumb", grip))
             lat = sk.j[f"lat.{sd}"]
@@ -953,6 +953,8 @@ def _quat(m: np.ndarray) -> np.ndarray:
 # Actions from the data file
 # --------------------------------------------------------------------------------------------
 
+# A bare fist closes further than a grip round a handle: fist runs up to this.
+FIST_MAX = 1.3
 # Finger curl at fist 1 (degrees at the MCP, PIP and DIP joints: a fist round a ~3.5 cm handle,
 # the end joint following the middle one), scaled per finger: the ring and little fingers close
 # a little further, as they do round a handle.
