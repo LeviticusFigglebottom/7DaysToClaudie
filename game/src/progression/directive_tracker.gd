@@ -35,6 +35,10 @@ func setup_world(w: Node) -> void:
 	Events.contract_completed.connect(func(pid: StringName, _cid: String, def_id: StringName, _tier: int) -> void:
 		if Game.session != null and pid == Game.session.local_player_id:
 			record("contract", def_id))
+	# An Ashen raid turned back (ADR-0048).
+	Events.ashen_raid_ended.connect(func(_rid: String, repelled: bool) -> void:
+		if repelled:
+			record("raid"))
 	if p != null:
 		fit_world(p)
 		# A loaded game may already meet a level goal in its open chapter.
@@ -55,6 +59,11 @@ func fit_world(p: PlayerState) -> void:
 		for d: DirectiveDef in Content.all(&"directive"):
 			if d.event == "contract":
 				(fit["spent"] as Dictionary)[d.id] = true
+	# A world without the Ashen (the setting is off) never raids: those directives are spent.
+	if not GameRules.current().flag("ashen"):
+		for d2: DirectiveDef in Content.all(&"directive"):
+			if d2.event == "raid":
+				(fit["spent"] as Dictionary)[d2.id] = true
 	for id: Variant in fit["stand_ins"]:
 		Log.info("directives", "%s: this world stands in %s" % [id, (fit["stand_ins"][id] as Dictionary)["targets"]])
 	for id2: Variant in fit["spent"]:

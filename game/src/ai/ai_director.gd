@@ -134,6 +134,9 @@ func _on_died(e: Enemy) -> void:
 func _on_minutes(minutes: float) -> void:
 	for t: Dictionary in Game.session.heat.tick(minutes):
 		_heat_response(t)
+		# Heat in an Ashen camp's territory: they heard the outsider too (ADR-0048).
+		if world.get(&"ashen") != null:
+			world.ashen.call(&"on_heat", t)
 
 
 func _heat_response(t: Dictionary) -> void:
@@ -259,7 +262,8 @@ func _process(delta: float) -> void:
 			if e._corpse_t > CORPSE_SECONDS and d > 40.0:
 				despawn(e)
 			continue
-		if e.poi_id != &"" or e.horde:
+		# POI sleepers, the Hum and the Ashen (AshenDirector keeps its own) aren't wanderers.
+		if e.poi_id != &"" or e.horde or e.tribe != null:
 			continue
 		if d > DESPAWN_RANGE:
 			despawn(e)
