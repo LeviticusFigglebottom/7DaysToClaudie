@@ -279,7 +279,8 @@ func _on_action() -> void:
 		var building: Node = Game.world.get(&"building") if Game.world != null else null
 		if building != null and bool(building.call(&"begin_placement", (_selected as BlueprintDef).id)):
 			close()
-			Events.player_status_message.emit("Place the %s — [LMB] place · [R] rotate · [X] cancel" % (_selected as BlueprintDef).display_name, &"info")
+			Events.player_status_message.emit("Place the %s — [%s] place · [%s] rotate · [%s] cancel" % [(_selected as BlueprintDef).display_name,
+				PlayerInteraction.key_label(&"attack"), PlayerInteraction.key_label(&"rotate_piece"), PlayerInteraction.key_label(&"cancel")], &"info")
 
 
 # --- Record tab ---------------------------------------------------------------------------------
