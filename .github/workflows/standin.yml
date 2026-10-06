@@ -64,3 +64,40 @@ jobs:
           path: |
             build/test-results/
             build/*.log
+
+  rendered:
+    name: Rendered town views without renderer errors (software Vulkan)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages (software Vulkan under Xvfb)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q xvfb mesa-vulkan-drivers libvulkan1 libxi6 libxxf86vm1 libxfixes3 \
+            libxrender1 libgl1 libegl1 libxkbcommon0 libsm6 libxcursor1 libxinerama1 libxrandr2
+
+      - name: Cache pinned Godot (.tools/godot)
+        uses: actions/cache@v4
+        with:
+          path: .tools/godot
+          key: godot-${{ runner.os }}-${{ hashFiles('tools/versions.env') }}
+
+      - name: Setup Godot
+        run: make setup-godot
+
+      - name: Import
+        run: make import
+
+      # The first playtest crashed on a reflection probe atlas overflow on Pell's Crossing's street;
+      # only a rendered run shows that class of error.
+      - name: Render the town and fail on renderer errors
+        run: make render-check
+
+      - name: Upload renders and log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-check
+          path: build/render_check/
