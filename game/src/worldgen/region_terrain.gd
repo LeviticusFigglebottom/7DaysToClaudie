@@ -31,10 +31,20 @@ var spawns: Dictionary = {}
 var placements: Array = []
 ## Frontier markers for docs/debug.
 var frontiers: Array = []
+## Milliseconds each step of the compose that made this took ({} when read from the cache). Not
+## saved; for compose_region's timings (ADR-0038).
+var compose_ms: Dictionary = {}
 
 
 func samples() -> int:
 	return height.width
+
+
+## Bytes held by the per-sample arrays (heights, splats, biome, vegetation mask): what a region
+## costs in RAM, metadata aside (ADR-0038's budgets).
+func memory_bytes() -> int:
+	var hb: int = height.heights.size() * 4 if height != null else 0
+	return hb + splat0.size() + splat1.size() + biome.size() + vegmask.size()
 
 
 func index_of(x: float, z: float) -> int:
