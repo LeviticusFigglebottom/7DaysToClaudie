@@ -48,3 +48,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0044](0044-corvane-caves.md) | The Corvane caves: buried POI levels (a mine and a limestone cave under the Larkspur cliffs), underground is night for the Hollowed, rock finishes and a mine kit | Accepted |
 | [0046](0046-tier-five-field-lab.md) | Tier 5: the Corvane Field Lab, keycards as keys, and a compound the validator can walk | Accepted |
 | [0047](0047-town-ground-and-biome-fog.md) | Town ground on the streets, a town mask for ambience and spawns, yard grass off the buildings, fog that follows the biome | Accepted |
+| [0049](0049-farming-and-rain-collection.md) | Farming and rain collection: garden beds that need water, crops as data, rain catchers | Accepted |

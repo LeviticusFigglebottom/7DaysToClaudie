@@ -226,6 +226,15 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
 - Structural tiers: stone, metal; repair/upgrade tools; Rammer breakers that tear through walls.
 - Farming, rain collection, traps (spike pits, deadfalls), electricity (generator, wiring, lights,
   motion turrets).
+  - [x] Farming and rain collection (ADR-0049): a garden bed (four plots, one soil moisture) and a
+    rain catcher; crops as data (`data/crops`: potatoes, carrots, pole beans, huckleberry, yarrow)
+    that grow only in wet soil by season, air temperature and the `crop_growth` world setting,
+    wilt and die when dry, take frost, and ripen in four stages (perennials grow back); watering
+    with bottles and a bucket (which streams and catchers fill); seeds from loot, wild plants and
+    produce; harvests into food, baked potato and garden stew; `farm.*` commands, `WorldState.farms`
+    (no save bump), XP, a chapter 3 directive, the Field Manual's "Gardens and rain"; procedural
+    stand-ins and generators for every model. Gaps: TD-211..220.
+  - [ ] Traps (spike pits, deadfalls), electricity (generator, wiring, lights, motion turrets).
 - Main-map regions: Mile 12, Tamsin Gorge, Harrow (partial).
 
 ## M4+ — Novel systems in full, vehicles, co-op, the rest of the valley ⬜

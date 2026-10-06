@@ -157,12 +157,14 @@ func _fill_water(args: Dictionary) -> Dictionary:
 	if at == Vector3.INF:
 		return _fail("no water in reach")
 	var filled: int = 0
-	while p.inventory.has(&"water_bottle_empty"):
-		p.inventory.remove(&"water_bottle_empty", 1)
-		if p.inventory.add_item(&"water_bottle_dirty", 1) > 0:
-			p.inventory.add_item(&"water_bottle_empty", 1)
-			break
-		filled += 1
+	# Bottles, and a bucket for the garden (ADR-0049).
+	for pair: Array in [[&"water_bottle_empty", &"water_bottle_dirty"], [&"bucket", &"bucket_water"]]:
+		while p.inventory.has(pair[0]):
+			p.inventory.remove(pair[0], 1)
+			if p.inventory.add_item(pair[1], 1) > 0:
+				p.inventory.add_item(pair[0], 1)
+				break
+			filled += 1
 	if filled == 0:
 		Events.player_status_message.emit("No room to carry full bottles.", &"warning")
 		return _fail("no room")
