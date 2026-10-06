@@ -122,7 +122,12 @@ func _process(delta: float) -> void:
 func _drive(p: GPUParticles3D, at: Vector3, amount: float, push: Vector2) -> void:
 	if p == null:
 		return
-	p.global_position = at
+	# The emitter stays at the world origin and the column follows the camera through `focus`, so
+	# the particles are in world space whichever way the engine places them; its culling box moves.
+	var box: Array = _pcfg.get("box", [16.0, 12.0, 4.0])
+	var hw: float = float(box[0]) + 2.0
+	p.visibility_aabb = AABB(at + Vector3(-hw, -float(box[2]) - 30.0, -hw), Vector3(hw * 2.0, float(box[1]) + float(box[2]) + 34.0, hw * 2.0))
+	(p.process_material as ShaderMaterial).set_shader_parameter("focus", at)
 	var on: bool = amount > 0.01
 	if p.emitting != on:
 		if on:
@@ -138,14 +143,14 @@ func _make_precip(node_name: String, mode: int, count: int, life: float) -> GPUP
 	var box: Array = _pcfg.get("box", [16.0, 12.0, 4.0])
 	var p := GPUParticles3D.new()
 	p.name = node_name
+	# At the world origin whatever its parents do (see _drive).
+	p.top_level = true
 	p.amount = maxi(1, count)
 	p.lifetime = life
 	p.local_coords = false
 	p.preprocess = life if mode != 2 else 0.0
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	p.emitting = false
-	var hw: float = float(box[0]) + 2.0
-	p.visibility_aabb = AABB(Vector3(-hw, -float(box[2]) - 30.0, -hw), Vector3(hw * 2.0, float(box[1]) + float(box[2]) + 34.0, hw * 2.0))
 	var pm := ShaderMaterial.new()
 	pm.shader = load("res://assets/shaders/precipitation.gdshader")
 	pm.set_shader_parameter("mode", mode)

@@ -8,8 +8,8 @@ way it never conflicts.
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
 | Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O (random worlds), P (pool buildings), Q (weather) | Random worlds v2 (big streaming maps, organic towns); full screenshot QA |
-| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | School, fire station, bank (ADR-0026) | Hollowed hounds and Murmurs (ADR-0034), then base-building fidelity (ADR-0035) |
-| Session 3 (see the integrator's messages) | `claude/hollowmere-playable` | Playable builds and stability | Downloadable builds with assets; the player-reported freeze and crash | A performance pass for real GPUs (TD-003) |
+| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Third block merged (dd01229); previewing it and checking it with no generated assets | Hollowed hounds and Murmurs (ADR-0034), then base-building fidelity (ADR-0035) |
+| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Downloadable builds with assets; the player-reported freeze and crash | A performance pass for real GPUs (TD-003) |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -33,7 +33,7 @@ way it never conflicts.
 | Random worlds (O, ADR-0031) | integrator | `game/src/worldgen/**`, `game/src/ui/new_game_panel.gd`, `game/data/config/world_gen.json`, `game/src/tools/cli/rwg_*` |
 | Pool buildings (P) | integrator | `game/data/props/town3.json`, `props_town3.py`, the laundromat, grocery, lumber & feed, library and radio station JSONs |
 | Weather (Q, ADR-0033) | integrator | `game/src/world/environment/**`, `game/src/world/fx/` (rain, snow), the weather hunks in every shader, rain and thunder audio |
-| Town buildings (ADR-0026) | session 2 | the school, fire station and bank JSONs, `game/data/props/town2.json` and its generators, the vault lock kind |
+| Town buildings (ADR-0026, merged; polish only) | session 2 | the school, fire station and bank JSONs, `game/data/props/town2.json` and its generators, the vault lock kind |
 | Builds and stability | session 3 | `.github/workflows/` (new export jobs), `game/export_presets.cfg`, the load sequence (`game/src/app/game_world.gd`, `world_loader.gd`) and fixes it reports to the hub |
 
 ## Allocations
@@ -44,7 +44,7 @@ way it never conflicts.
 * Save version: 6 since random worlds. Next bump: merge first, then take 7.
 
 ## Queue (in order)
-1. Land O, P and Q, and merge session 2's town buildings.
+1. Land O, P and Q. (Session 2's school, fire station and bank are merged: dd01229.)
 2. Session 3: downloadable builds that include the generated assets, plus the reported freeze
    and crash (below).
 3. Random worlds v2: compose regions on demand, so maps of 10–16 km stream within bounded

@@ -73,6 +73,9 @@ tint (TD-018):
   * Drops and flakes spawn in a column box round the camera (`box`) and fall with the wind and
     its gusts.
   * The box wraps round the camera, so wind never empties one side.
+  * The emitters stay at the world origin and the column follows the camera through a `focus`
+    uniform, with the culling box moved to match. So the particles are in world space whichever
+    space the engine draws them in, and they don't slide when the camera moves.
   * Counts depend on the graphics preset, from 2,500 to 12,000 drops. `amount_ratio` follows the
     rainfall without restarting the system.
 * **Rain stops where it lands.** The **weather map** (below) holds the height where rain lands

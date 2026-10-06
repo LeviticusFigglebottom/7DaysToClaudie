@@ -1,5 +1,6 @@
 // Rain, snow and eave drips round the camera (WeatherFx, ADR-0033). Particles spawn in a column box
-// round the emitter (it follows the camera; the particles live in world space), fall with the wind,
+// round `focus` (the camera, set every frame; the emitter itself stays at the world origin, so its
+// particles are in world space whichever space the engine draws them in), fall with the wind,
 // and stop where the weather map says rain lands (hm_weather_map R: roofs, ground, the water
 // surface), so nothing falls indoors or under a roof. A drop that lands becomes a splash where it
 // landed (CUSTOM.x = 1, CUSTOM.y its age) until splash_s, then waits for its next cycle; a flake just
@@ -13,6 +14,8 @@ render_mode disable_velocity, disable_force;
 
 // 0 rain, 1 snow, 2 eave drips.
 uniform int mode = 0;
+// The column's centre: the camera.
+uniform vec3 focus = vec3(0.0);
 // Half-width, metres above and below the emitter.
 uniform vec3 box = vec3(16.0, 12.0, 4.0);
 uniform float fall_speed = 8.0;
@@ -60,7 +63,7 @@ void start() {
 	float r2 = wx_rand(seed);
 	float r3 = wx_rand(seed);
 	float r4 = wx_rand(seed);
-	vec3 origin = EMISSION_TRANSFORM[3].xyz;
+	vec3 origin = focus;
 	vec3 p = origin;
 	CUSTOM = vec4(0.0, 0.0, -1e6, r4);
 	VELOCITY = vec3(0.0);
@@ -114,10 +117,10 @@ void process() {
 		if (mode != 2) {
 			// The column moves with the camera and the wind blows across it: whatever leaves one
 			// side comes back in on the other, so it stays evenly filled.
-			vec2 rel = p.xz - EMISSION_TRANSFORM[3].xz;
+			vec2 rel = p.xz - focus.xz;
 			p.xz -= 2.0 * box.x * floor((rel + box.x) / (2.0 * box.x));
 		}
-		float land = mode == 2 ? CUSTOM.z : landing(p.xz, EMISSION_TRANSFORM[3].y - box.z);
+		float land = mode == 2 ? CUSTOM.z : landing(p.xz, focus.y - box.z);
 		if (p.y <= land) {
 			p.y = land + 0.01;
 			CUSTOM.x = 1.0;

@@ -1,7 +1,8 @@
 extends Node
 ## The work of rwg_preview.gd, loaded once the autoloads exist: resolves the settings, generates
 ## the world (or reads it from user://worlds/random/), writes its map PNG and prints a summary.
-## `--fresh` removes the cached world (and its composed terrain) first, so the run times a full
+## `--memory` draws the map straight from the generator without writing the world; `--fresh`
+## removes the cached world (and its composed terrain) first, so the run times a full
 ## generation; `--compose` also shapes every region into the terrain cache, as the game's first
 ## load would (QA renders then start without that wait).
 
@@ -30,6 +31,21 @@ func _ready() -> void:
 		Worlds._remove("user://cache/worlds".path_join(wid))
 	print("[rwg] %s (%s), world %s" % [settings.call(&"summary"), settings.get(&"preset"), wid])
 	var t0: int = Time.get_ticks_msec()
+	# --memory: generate and draw without writing the world to user://worlds (nothing cached or pruned).
+	if a.has("--memory"):
+		var g: RefCounted = Generator.generate(settings)
+		var regions: Array = []
+		var ids: Dictionary = g.call(&"region_ids")
+		for cell: Variant in ids:
+			regions.append(g.call(&"region_json", str(cell)))
+		var wj: Dictionary = g.call(&"world_json")
+		var m: RefCounted = MapImage.new()
+		(m.call(&"render", wj, regions, g.call(&"frameworks_json"), px) as Image).save_png(out)
+		print("[rwg] generated in memory in %d ms: %d towns, %d places, %d rivers, %d lakes, %d roads; timings %s; warnings %s -> %s" % [Time.get_ticks_msec() - t0,
+			(g.get(&"towns") as Array).size(), (g.get(&"places") as Array).size(), (wj["rivers"] as Array).size(), (wj["lakes"] as Array).size(),
+			(wj["roads"] as Array).size(), g.get(&"timings"), g.get(&"warnings"), out])
+		get_tree().quit(0)
+		return
 	var res: Dictionary = Worlds.ensure(settings, func(stage: String, t: float) -> void: print("  [%3d%%] %s (%d ms)" % [int(t * 100), stage, Time.get_ticks_msec() - t0]), a.has("--compose"))
 	if not bool(res.get("ok", false)):
 		printerr("[rwg] FAILED: %s" % res.get("error", ""))
