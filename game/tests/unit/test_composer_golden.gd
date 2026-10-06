@@ -5,10 +5,11 @@ extends GutTest
 ## inputs silently breaks old runs. So every speed-up must give byte-identical regions.
 ##
 ## Larch Hollow (the handcrafted map's built region) and the town region of a fixed random world
-## (seed 2026, size 3) are composed at 4 m and 8 m and digested: the height hash, md5 of the splat,
-## biome and vegetation arrays, and the JSON of the metadata (water, roads, bridges, placements and
-## the rest). The digests were recorded from the composer at VERSION 11 before Phase 1 changed it.
-## `SLOW_TESTS=1` also runs the 1 m variant.
+## (seed 2026, size 3), and its drop-site region, are composed at 4 m and 8 m and digested: the
+## height hash, md5 of the splat, biome and vegetation arrays, and the JSON of the metadata (water,
+## roads, bridges, placements and the rest). The digests were recorded from the composer at VERSION
+## 11 before Phase 1 changed it. Row bands (one thread or four) give the same digests.
+## `SLOW_TESTS=1` also runs the 1 m variant, with one band and with four.
 ##
 ## When a digest differs: if the inputs changed on purpose (region.json, a framework or POI the
 ## region places, world_gen.json, the generator), the recorded input hash differs too and the
@@ -250,9 +251,34 @@ func test_random_world_drop_site_region_at_4_and_8_m() -> void:
 		_check("rwg_drop@%d" % int(sp), _rwg, _rwg_drop_region, sp, TerrainComposer.compose(_rwg, _rwg_drop_region, sp))
 
 
+func test_four_bands_give_the_golden_output() -> void:
+	for sp: float in [4.0, 8.0]:
+		_check("larch@%d" % int(sp), _main, LARCH, sp, TerrainComposer.compose(_main, LARCH, sp, Callable(), [false], 4))
+		_check("rwg@%d" % int(sp), _rwg, _rwg_region, sp, TerrainComposer.compose(_rwg, _rwg_region, sp, Callable(), [false], 4))
+	# An odd count leaves bands of unequal height.
+	_check("rwg_drop@4", _rwg, _rwg_drop_region, 4.0, TerrainComposer.compose(_rwg, _rwg_drop_region, 4.0, Callable(), [false], 3))
+
+
+func test_a_cancelled_compose_returns_null() -> void:
+	assert_null(TerrainComposer.compose(_main, LARCH, 8.0, Callable(), [true]), "cancelled before it starts")
+	# Cancelled from the progress callback partway (as a streaming job is from another thread).
+	var cancel: Array = [false]
+	var stages: Array = []
+	var stop := func(stage: String, _t: float) -> void:
+		stages.append(stage)
+		if stage == "roads":
+			cancel[0] = true
+	assert_null(TerrainComposer.compose(_rwg, _rwg_region, 8.0, stop, cancel, 2), "cancelled at the roads stage")
+	assert_eq(stages, ["macro", "features", "water", "roads"], "and no stage after it ran")
+	# A cancelled compose is not cached, and the next one composes in full.
+	assert_not_null(TerrainComposer.compose(_rwg, _rwg_region, 8.0, Callable(), [false], 2))
+
+
 func test_one_metre_when_slow_tests_are_on() -> void:
 	if OS.get_environment("SLOW_TESTS") != "1":
 		pass_test("1 m variant skipped (set SLOW_TESTS=1)")
 		return
 	_check("larch@1", _main, LARCH, 1.0, TerrainComposer.compose(_main, LARCH, 1.0))
 	_check("rwg@1", _rwg, _rwg_region, 1.0, TerrainComposer.compose(_rwg, _rwg_region, 1.0))
+	_check("larch@1", _main, LARCH, 1.0, TerrainComposer.compose(_main, LARCH, 1.0, Callable(), [false], 4))
+	_check("rwg@1", _rwg, _rwg_region, 1.0, TerrainComposer.compose(_rwg, _rwg_region, 1.0, Callable(), [false], 4))

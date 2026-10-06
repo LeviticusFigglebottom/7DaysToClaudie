@@ -457,7 +457,7 @@ func grow(r: RandomNumberGenerator) -> void:
 			queue.insert(at, nb)
 	var lp: Array = kd.get("loops", [0, 0])
 	if loops < int(lp[0]):
-		_connect_dead_ends(r, int(lp[0]))
+		_connect_dead_ends(int(lp[0]))
 
 
 ## Seeds along each arterial inside the town, from the centre out both ways, alternating sides;
@@ -552,7 +552,6 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 	var snap: Dictionary = {}
 	var at_edge: bool = false
 	var straight: float = _straight_k if p0.distance_to(center) < core and bool(kd.get("grid_bias", true)) else 0.0
-	var k: int = 0
 	var cos_turn: float = _max_turn_cos
 	var look: float = maxf(_parallel, _crowd_reach) + _step + 2.0
 	while length < budget and length_total + length < _budget:
@@ -565,7 +564,6 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 		var flat: float = clampf(1.0 - ground.slope(p) / 0.06, 0.0, 1.0)
 		var aim_k: float = _aim_k * flat
 		var straight_k: float = straight * flat
-		k += 1
 		var near_ids: PackedInt32Array = near(p, look)
 		var best: float = INF
 		var bq := Vector2.ZERO
@@ -724,6 +722,9 @@ func _probe(p: Vector2, q: Vector2, c: Vector2, near_ids: PackedInt32Array, igno
 	var run: float = p.distance_to(sp)
 	if run > 0.5 and absf(ground.h(sp) - hp) / run > _max_grade:
 		return [false, {}, 0.0]
+	# The joining piece is not the step tried: it too must keep out of the plaza.
+	if _blocked(p, sp):
+		return [false, {}, 0.0]
 	return [true, snap, crowd]
 
 
@@ -748,7 +749,7 @@ func _curls(pts: PackedVector2Array, q: Vector2) -> bool:
 
 ## Too few loops: dead ends near another street reach for it (an agent pulled towards the nearest
 ## street, which joins it at a T).
-func _connect_dead_ends(r: RandomNumberGenerator, want: int) -> void:
+func _connect_dead_ends(want: int) -> void:
 	var cands: Array = []
 	for si: int in streets.size():
 		var st: Street = streets[si]
@@ -762,11 +763,11 @@ func _connect_dead_ends(r: RandomNumberGenerator, want: int) -> void:
 	for cd: Array in cands:
 		if loops >= want:
 			break
-		_extend_to_join(int(cd[1]), r)
+		_extend_to_join(int(cd[1]))
 
 
 ## Extends dead-end street si until it joins another street (or gives up, leaving it as it was).
-func _extend_to_join(si: int, r: RandomNumberGenerator) -> void:
+func _extend_to_join(si: int) -> void:
 	var st: Street = streets[si]
 	var pts: PackedVector2Array = st.ctrl.duplicate()
 	var p: Vector2 = pts[pts.size() - 1]
@@ -901,7 +902,7 @@ func add_bulbs() -> void:
 
 ## Back lanes behind the main street's core frontage (towns): between two side streets leaving the
 ## same side of an arterial, at `offset` m from it, so shops back onto a service lane.
-func add_back_lanes(r: RandomNumberGenerator, offset: float) -> void:
+func add_back_lanes(offset: float) -> void:
 	for ai: int in streets.size():
 		var art: Street = streets[ai]
 		if art.cls != "arterial":

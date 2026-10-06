@@ -27,7 +27,10 @@ const TMP_MAX_AGE_S: int = 3600
 ## Cache hits reach index.json at most this often; writes always do.
 const TOUCH_FLUSH_S: int = 10
 
-static var _shared: RegionCache = null
+## By path (not by its class name): new with ADR-0038, so it compiles before the editor registers it.
+const SELF_PATH: String = "res://src/worldgen/region_cache.gd"
+
+static var _shared: RefCounted = null
 static var _shared_mutex := Mutex.new()
 
 ## The cache folder (tests use their own).
@@ -42,11 +45,11 @@ var _mutex := Mutex.new()
 
 
 ## The cache every compose shares (user://cache/worlds).
-static func shared() -> RegionCache:
+static func shared() -> RefCounted:
 	_shared_mutex.lock()
 	if _shared == null:
-		_shared = RegionCache.new()
-	var s: RegionCache = _shared
+		_shared = (load(SELF_PATH) as GDScript).new()
+	var s: RefCounted = _shared
 	_shared_mutex.unlock()
 	return s
 

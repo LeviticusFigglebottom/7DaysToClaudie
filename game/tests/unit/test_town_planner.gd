@@ -652,3 +652,21 @@ func test_planning_time() -> void:
 			worst_case = _label(c)
 	gut.p("town plans: mean %.0f ms, worst %.0f ms (%s)" % [total / maxi(1, cases.size()), worst, worst_case])
 	assert_lt(worst, BUDGET_MS, "every town plans in under a second (%s took %.0f ms)" % [worst_case, worst])
+
+
+func test_plans_on_a_worker_thread() -> void:
+	var c: Dictionary = {}
+	for cc: Dictionary in cases:
+		if str(cc["kind"]) == "town":
+			c = cc
+			break
+	var out: Array = [null]
+	var th := Thread.new()
+	th.start(func() -> void: out[0] = Planner.plan(c["site"], c["world"], c["arterials"], tuning, int(c["seed"])))
+	th.wait_to_finish()
+	var here: Dictionary = Planner.plan(c["site"], c["world"], c["arterials"], tuning, int(c["seed"]))
+	assert_true(out[0] is Dictionary, "the planner runs off the main thread (no scene tree, no autoloads)")
+	for p: Dictionary in [out[0], here]:
+		(p["stats"] as Dictionary).erase("ms")
+		(p["stats"] as Dictionary).erase("ms_parts")
+	assert_eq(JSON.stringify(out[0], "", false).md5_text(), JSON.stringify(here, "", false).md5_text(), "and plans the same town there")
