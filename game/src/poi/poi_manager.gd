@@ -50,6 +50,7 @@ func setup_world(w: Node) -> void:
 	probes.name = "ProbeBudget"
 	add_child(probes)
 	Game.register_command(&"poi.disarm_trap", _cmd_disarm_trap)
+	Settings.graphics_changed.connect(_on_graphics_changed)
 	# Tools and tests that set up a bare world still get every building built here and now.
 	_queueing = w.has_method(&"is_booting") and bool(w.call(&"is_booting"))
 	_place_all(w)
@@ -230,8 +231,57 @@ func _build_poi(pd: PoiDef, instance_id: StringName, xf: Transform3D, layout: Po
 	add_child(inst)
 	inst.global_transform = xf
 	instances[instance_id] = inst
+	_limit_draw_distance(inst)
 	inst.geometry_changed.connect(_on_poi_geometry_changed)
 	return inst
+
+
+## Draw distances for a building's props, doors, pieces and prop batches (the kit batches keep the
+## building's shape at any range). They had none: every prop of every building in the valley was
+## drawn, shadow passes included, about 2.4 M triangles in 2,400 instances from any view (TD-003,
+## ADR-0037). Small things stop at the graphics setting object_distance, door-sized ones at 2.5x,
+## anything over 8 m (a steeple, a silo) is never cut.
+func _limit_draw_distance(root: Node) -> void:
+	var near: float = float(Settings.gfx("object_distance", 140.0))
+	for n: Node in root.find_children("*", "GeometryInstance3D", true, false):
+		var mi: GeometryInstance3D = n
+		var mesh: Mesh = null
+		if mi is MeshInstance3D:
+			mesh = (mi as MeshInstance3D).mesh
+		elif mi is MultiMeshInstance3D and _is_model_batch(mi as MultiMeshInstance3D):
+			mesh = (mi as MultiMeshInstance3D).multimesh.mesh
+		if mesh == null:
+			continue
+		if not mi.has_meta(&"hm_extent"):
+			var b: Basis = mi.global_transform.basis
+			mi.set_meta(&"hm_extent", (mesh.get_aabb().size * b.get_scale()).length())
+		var extent: float = float(mi.get_meta(&"hm_extent"))
+		var end: float = 0.0 if extent > 8.0 else (near * 2.5 if extent > 2.5 else near)
+		mi.visibility_range_end = end
+		# Hysteresis, no fade: a dithered fade would make every prop draw as transparency.
+		mi.visibility_range_end_margin = 0.0 if end == 0.0 else end * 0.08
+		mi.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_DISABLED
+
+
+## PoiBuilder batches props and other models ("@family/id" pieces, named MM_<family>_...) beside
+## the kit pieces (walls, floors, roofs: the building's shape, never cut).
+const MODEL_FAMILIES: PackedStringArray = ["props", "items", "trees", "plants", "rocks", "structures", "animals", "characters"]
+
+
+static func _is_model_batch(mmi: MultiMeshInstance3D) -> bool:
+	if mmi.multimesh == null or mmi.multimesh.mesh == null:
+		return false
+	var n: String = String(mmi.name)
+	for f: String in MODEL_FAMILIES:
+		if n.begins_with("MM_%s_" % f):
+			return true
+	return false
+
+
+func _on_graphics_changed() -> void:
+	for inst: Node in instances.values():
+		if is_instance_valid(inst):
+			_limit_draw_distance(inst)
 
 
 ## A building's walkable geometry changed (a weak floor gave way, ADR-0022): rebake the nav tiles

@@ -59,6 +59,64 @@ func rebind(action: String, specs: Array) -> void:
 	save()
 
 
+## The binding specs of an action as used now (user rebinds over input_bindings.json).
+func bindings(action: String) -> Array:
+	return _cfg.get_value("input", action, _default_bindings.get(action, []))
+
+
+## Binds a keyboard key or mouse button as the action's main (first keyboard/mouse) binding,
+## keeping its gamepad bindings (ADR-0037). Returns false for an event that can't be bound.
+func bind_primary(action: String, ev: InputEvent) -> bool:
+	var spec: Dictionary = spec_from_event(ev)
+	if spec.is_empty():
+		return false
+	# The first keyboard/mouse binding is replaced; other bindings (Ctrl as well as C for crouch,
+	# the gamepad's) stay, unless one is the new input itself.
+	var out: Array = [spec]
+	var replaced: bool = false
+	for old: Variant in bindings(action):
+		var d: Dictionary = old if old is Dictionary else {}
+		if not replaced and (d.has("key") or d.has("mouse")):
+			replaced = true
+			continue
+		if d != spec:
+			out.append(d)
+	rebind(action, out)
+	return true
+
+
+## Every action back to input_bindings.json.
+func reset_bindings() -> void:
+	if _cfg.has_section("input"):
+		_cfg.erase_section("input")
+	register_input_actions()
+	save()
+
+
+static func spec_from_event(ev: InputEvent) -> Dictionary:
+	if ev is InputEventKey:
+		var k: InputEventKey = ev
+		var code: Key = k.physical_keycode if k.physical_keycode != KEY_NONE else k.keycode
+		return {} if code == KEY_NONE else {"key": OS.get_keycode_string(code)}
+	if ev is InputEventMouseButton:
+		return {"mouse": int((ev as InputEventMouseButton).button_index)}
+	return {}
+
+
+## "E", "Mouse 1", "Pad 2"... for the controls screen.
+static func describe(spec: Variant) -> String:
+	var d: Dictionary = spec if spec is Dictionary else {}
+	if d.has("key"):
+		return str(d["key"])
+	if d.has("mouse"):
+		return {1: "Left mouse", 2: "Right mouse", 3: "Middle mouse", 4: "Wheel up", 5: "Wheel down"}.get(int(d["mouse"]), "Mouse %d" % int(d["mouse"]))
+	if d.has("joy_button"):
+		return "Pad %d" % int(d["joy_button"])
+	if d.has("joy_axis"):
+		return "Stick %d%s" % [int(d["joy_axis"]), "+" if float(d.get("dir", 1.0)) > 0.0 else "-"]
+	return "?"
+
+
 static func _event_from_spec(spec: Variant) -> InputEvent:
 	if not spec is Dictionary:
 		return null
@@ -95,13 +153,39 @@ func set_graphics_preset(preset: String) -> void:
 		return
 	graphics_preset = preset
 	_cfg.set_value("graphics", "preset", preset)
+	# A preset is a starting point: picking one drops the per-feature changes made on top of it.
+	if _cfg.has_section("graphics_overrides"):
+		_cfg.erase_section("graphics_overrides")
 	_resolve_graphics()
 	save()
+
+
+## Changes one graphics feature on top of the preset (ADR-0037); saved, applied at once.
+func set_graphics_override(key: String, value: Variant) -> void:
+	_cfg.set_value("graphics_overrides", key, value)
+	_resolve_graphics()
+	save()
+
+
+## Keys changed on top of the active preset.
+func graphics_overrides() -> PackedStringArray:
+	return _cfg.get_section_keys("graphics_overrides") if _cfg.has_section("graphics_overrides") else PackedStringArray()
 
 
 ## Value from the active graphics preset.
 func gfx(key: String, default: Variant) -> Variant:
 	return graphics.get(key, default)
+
+
+## The preset a first run starts on, from the GPU kind (ADR-0037): integrated or software
+## rendering gets low, an unknown kind medium, a discrete GPU high.
+static func preset_for_adapter(adapter_type: RenderingDevice.DeviceType) -> String:
+	match adapter_type:
+		RenderingDevice.DEVICE_TYPE_DISCRETE_GPU:
+			return "high"
+		RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU, RenderingDevice.DEVICE_TYPE_CPU:
+			return "low"
+	return "medium"
 
 
 func _resolve_graphics() -> void:
@@ -132,6 +216,10 @@ func _apply_viewport_graphics() -> void:
 	vp.mesh_lod_threshold = float(graphics.get("mesh_lod_threshold", 1.5))
 	vp.positional_shadow_atlas_size = int(graphics.get("positional_shadow_atlas", 4096))
 	RenderingServer.directional_shadow_atlas_set_size(int(graphics.get("directional_shadow_size", 4096)), true)
+	# Soft shadow filtering (0 hard .. 5 ultra) costs taps per pixel on every shadowed surface.
+	var filt: int = clampi(int(graphics.get("shadow_filter", 3)), 0, 5)
+	RenderingServer.directional_soft_shadow_filter_set_quality(filt as RenderingServer.ShadowQuality)
+	RenderingServer.positional_soft_shadow_filter_set_quality(filt as RenderingServer.ShadowQuality)
 
 
 # --- Audio ---------------------------------------------------------------------------------
@@ -184,7 +272,12 @@ func save() -> void:
 func _load_user_settings() -> void:
 	if _cfg.load(SETTINGS_PATH) != OK:
 		_cfg = ConfigFile.new()
-	graphics_preset = _cfg.get_value("graphics", "preset", graphics_preset)
+	graphics_preset = _cfg.get_value("graphics", "preset", "")
+	if graphics_preset == "":
+		# First run: start from what the GPU can carry, and remember it (ADR-0037).
+		graphics_preset = "high" if DisplayServer.get_name() == "headless" else preset_for_adapter(RenderingServer.get_video_adapter_type())
+		if DisplayServer.get_name() != "headless":
+			_cfg.set_value("graphics", "preset", graphics_preset)
 	mouse_sensitivity = _cfg.get_value("gameplay", "mouse_sensitivity", mouse_sensitivity)
 	invert_y = _cfg.get_value("gameplay", "invert_y", invert_y)
 	fov = _cfg.get_value("gameplay", "fov", fov)
