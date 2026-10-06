@@ -4,6 +4,7 @@ extends Node3D
 ##  * assembly: carry the materials to it and interact; once the cost is delivered it becomes the
 ##    structure (campfire, lean-to, workbench...).
 ##  * pieces:   every piece is a ghost slot; put a carried log into a slot (interact or attack).
+## Holding the cancel key on either takes the ghost down (build.demolish), refunding deliveries.
 ## State lives in WorldState.blueprints[site_id] = {def, pos, rot, delivered, placed}.
 
 const INTERACT_LAYER: int = 1 << 7
@@ -34,6 +35,12 @@ class GhostSlot:
 
 	func interact(player: Player) -> void:
 		site.fill_slot(index, player)
+
+	func alt_interact_text(player: Player) -> String:
+		return site.alt_interact_text(player)
+
+	func alt_interact(player: Player) -> void:
+		site.alt_interact(player)
 
 
 func setup(p_id: StringName, p_bp: BlueprintDef, p_manager: Node, p_delivered: Dictionary = {}, p_placed: Array = []) -> void:
@@ -221,6 +228,28 @@ func interact_text(player: Player) -> String:
 
 func interact(player: Player) -> void:
 	Game.execute(&"build.deliver", {"player": player.state.id, "site": String(site_id)})
+
+
+# --- Second action: take the ghost down (PlayerInteraction holds the cancel key) -----------------
+
+## What taking it down would do, for the line under the prompt: the materials handed over come
+## back; logs already set stay where they are.
+func alt_interact_text(_player: Player) -> String:
+	var back: PackedStringArray = []
+	for k: Variant in delivered.keys():
+		if int(delivered[k]) > 0:
+			var idef: ItemDef = Content.item(StringName(str(k)))
+			back.append("%d %s" % [int(delivered[k]), idef.display_name if idef != null else str(k)])
+	var what: String = "take down the %s blueprint" % bp.display_name
+	if not back.is_empty():
+		return "%s (%s back)" % [what, ", ".join(back)]
+	if not placed.is_empty():
+		return "%s (the logs already set stay)" % what
+	return what
+
+
+func alt_interact(player: Player) -> void:
+	Game.execute(&"build.demolish", {"player": player.state.id, "site": String(site_id)})
 
 
 func to_dict() -> Dictionary:

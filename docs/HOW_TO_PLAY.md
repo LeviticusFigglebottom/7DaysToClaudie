@@ -156,7 +156,7 @@ rebound in game yet.
 | G | Drop a carried log; while looking at a fire, add fuel |
 | R | Rotate: a blueprint by 15°, a carried log by 90° |
 | V | Carried log pose: flat, upright post, pitched (roof) |
-| X | Cancel placement; close the salvage roll, field manual or options |
+| X | Cancel placement; close the salvage roll, field manual or options. Hold it (1 s) on a placed blueprint ghost to take it down |
 | Tab or I | Salvage roll: inventory and crafting |
 | B | Remand Field Manual: blueprints, your Record, notes found, survival pages |
 | T | Raise or lower the tether on your wrist (Left mouse also lowers it) |
@@ -192,9 +192,11 @@ vitals, directives and a map are on the tether (T).
 
 **Where things are:** a dirt trail leads east from the drop site to Route 9 at the south end of
 **Pell's Crossing**, a few hundred metres away. Larch Pond lies a few hundred metres north; the
-Tamsin River runs east of Route 9. The tether's map shows your region, north up: you (the arrow),
-your bed (a yellow dot), supply drops (red diamonds) and buildings (grey squares, orange once
-you've been inside, green once cleared).
+Tamsin River runs east of Route 9. The tether's map shows the region you're in, north up, captioned
+with the world's name and your sector (the region's map cell, D6 at the Larch Hollow drop site): you
+(the arrow), where you wake (your bed as a yellow dot, or the drop site as a yellow ring until you
+have a bed; pinned to the map's edge when it's elsewhere), supply drops (red diamonds) and buildings
+(grey squares, orange once you've been inside, green once cleared).
 
 **A good first day** (the first chapter of Program directives):
 1. **Gather** (hold E): plant fibre from fireweed, ferns, sedge, huckleberry bushes and willows;
@@ -373,8 +375,10 @@ standing in the way, or a tree or rock is in the way.
 
 For material blueprints, E on the ghost hands over whatever it still needs that you carry (the
 prompt shows "Stone 3/6" and so on); it's built when everything is in. For log blueprints, carry
-logs to the ghost and set one in each slot (Left mouse, or E on the slot). A placed ghost can't be
-taken down yet, so place it where you mean to build.
+logs to the ghost and set one in each slot (Left mouse, or E on the slot). To take a placed ghost
+down, look at it and hold X for a second (the line under the prompt says what comes back):
+everything you handed over returns to your pack (or lands at your feet), and logs already set in a
+log blueprint stay where they are, as ordinary logs.
 
 ### Freeform logs, support and collapse
 With a log on your shoulder a preview log follows your aim: pale blue fits, pale green has snapped
@@ -393,7 +397,8 @@ Aim a Claw Hammer at your piece to see its health and what a strike will do:
   2 Nails for 200; anything else: a quarter of its build cost).
 * **Undamaged**: Left mouse twice within 3 seconds reinforces a log (2 Cordage, 6 Nails): 420 HP
   becomes 760, it spans further, and the Hollowed do 20% less to it.
-* **Crouch and hold E**: dismantle it for half its cost (less if damaged); a log comes back whole.
+* **Crouch and hold E**: dismantle it for half its cost, at least one of each thing it took (so a
+  placed Can Chime comes back), less if it's damaged; a log comes back whole.
 
 The Hollowed break whatever stands between them and you: a Hollow does 12 a blow to a 420 HP log, a
 Rammer's charge 450. Wits and the Builder perk make what you build tougher. A **Stake Barricade**
@@ -509,8 +514,9 @@ night, half as many on day 1, more in town and forest.
 * **When**: 22:00 on a Hum day until 04:00. By default the first is on day 7, then every 7 days (the
   slice: day 3, then every 7); the settings can move, jitter or switch it off.
 * **Warnings**: the tether's forecast 24 hours ahead, "The Hum tonight" 6 hours ahead, "Within the
-  hour, they come" 1 hour ahead, and the HUD countdown through the last day. Deer and birds leave
-  two hours before. You can't sleep through it, and the night glows a faint green.
+  hour, they come" 1 hour ahead, "THE HUM HAS BEGUN." at 22:00, and the HUD countdown through the
+  last day. Deer and birds leave two hours before. You can't sleep through it, and the night glows
+  a faint green.
 * **Where and how many**: around your base (the centre of your structures within 40 m of you when
   it starts; if none, around you), from 55–85 m out, in waves from different compass directions over
   five hours: four waves at first, one more every second Hum, up to eight. In all: 12, plus 8 per
@@ -595,7 +601,8 @@ All × the XP multiplier; digging pays nothing. Level *n* to *n*+1 takes 400 × 
   from bad food and stream water).
 * **Keen** (+0.05 loot quality, +3% firearm damage): Scavenger (1/3: +0.3 loot quality, 20% faster
   searching a rank); Sleeper Sense (2: dormant Hollowed within 8 m outlined through walls, guardians
-  in a warm rim); Steady Aim (1/4: +20% firearm damage a rank).
+  in a warm rim); Steady Aim (1/4: +20% firearm damage and 25% less sway a rank: shots land
+  closer to the crosshair).
 * **Quiet** (3% less noise, +1% move speed): Soft Step (1/3: 20% less noise a rank); Shadow Kin (2:
   30% harder to spot); Light Foot (1/3: sprinting costs 20% less a rank).
 * **Wits** (+0.2 crafted quality, +3% structure toughness): Handy (1/3: +1 crafted quality a rank);
@@ -620,8 +627,10 @@ and finishing it opens the next. The tether shows the next two, the Record tab t
 4. **Into the Bloom**: kill a Seeded or Bloomed; kill a Blister, Husk or Rammer; survive three more
    Hums; reach level 12; clear the sawmill.
 
-In a random world the hard-building and sawmill goals need those buildings to exist there; if they
-don't, the chain stops.
+A random world may lack those buildings. Then the nearest building of the same tier to the drop
+site stands in, and the tether and the Record name it ("Clear Tamsin Valley Savings & Loan"); if
+the world has no building of that tier at all, the goal shows as "no such building in this world"
+and its chapter goes on without it.
 
 ## 12. Saving and loading
 
@@ -661,7 +670,3 @@ Options. The packaged build has no frame counter (F4 is a developer tool).
 | Fog, weather or lighting look wrong | Godot fell back to OpenGL: update the GPU driver (Vulkan 1.2 or Direct3D 12 is needed) |
 | "Could not load …" on the menu | The reason follows: the save is "missing or damaged", or "from a newer version of the game" |
 | A crash | Send `logs\godot.log` before starting the game again (Godot keeps a few older logs beside it, dated), the console window's text if you used Hollowmere.console.exe, what you were doing, your GPU and preset, and the run's save folder if a save is involved |
-
-**Known issues in this build:**
-* A placed blueprint ghost can't be removed.
-* The tether's map caption always reads "LARCH HOLLOW · CORDON SECTOR D6", even in a random world.

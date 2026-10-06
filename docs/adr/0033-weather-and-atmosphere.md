@@ -117,8 +117,11 @@ tint (TD-018):
   * **G**: the ground.
   * **B**: the ground smoothed over 9 m.
   * **A**: the water surface.
-* Heights and blurring run on a worker thread (`height_at` and `water_level_at` only read data).
-  Rays run on the main thread. A map is published only once complete.
+* Heights and blurring run on a thread of the map's own (`height_at` and `water_level_at` only
+  read data), not a WorkerThreadPool task: after a jump, a pool task queued behind the streaming's
+  terrain chunks and vegetation scatter waited minutes. Rays run on the main thread. A map is
+  published only once complete, and the last one stays in place until then (`covers()` says
+  whether the published map is the one round a point).
 * **Readers:**
   * the particles (where rain lands);
   * the terrain (puddles where G lies below B; no rain under roofs);
@@ -135,7 +138,10 @@ tint (TD-018):
   * Porosity and puddle-holding come per layer from config `surfaces`. They are published as two
     mat4 globals indexed by layer slice: asphalt and mud hold water; litter and sand drink it.
   * Water stands where a fill rank beats the water level. The rank combines the hollow from the
-    map, the layer's own relief (texture height) and noise that breaks the sheet into pools.
+    map, the layer's own relief (texture height) and noise that breaks the sheet into pools. The
+    threshold falls with the square root of the level: the hollows fill first and fast, a flat
+    road's dips last (its ranks bunch together, so a linear threshold left a road soaked for an
+    hour without a single pool, then flooded it).
   * A damp, darker margin rings each pool.
   * A pool is dark (the ground seen through water), a flat mirror (roughness 0.015) and ringed by
     ripples while it rains. SSR is not needed: the sky radiance and every light's specular show
@@ -194,12 +200,12 @@ Shot keys `wet`, `puddles` and `snow_cover` set what the weather has left (the c
 between shots). `strike` holds a strike's flash for the capture, because software frames take
 longer than a flash (`EnvironmentController.flash_hold`). Weather shots also freeze the rain and
 snow for the capture (`WeatherFx.hold_still`). A software frame takes so long that a moving drop
-never covers the same pixels twice, and temporal AA averaged every streak away. They also wait (up
-to three minutes) until the weather map is the one round the camera (`WeatherMaps.covers`): after
-the jump to a shot it is rebuilt by a worker queued behind the streaming and some frames of rays,
-and the first renders captured the previous shot's map, with rain landing and puddles collecting
-by another place's heights. `--stream-wait` caps the runner's wait for vegetation (240 s by
-default) when the render lock is busy.
+never covers the same pixels twice, and temporal AA averaged every streak away. They also build
+the weather map round the camera before the capture, blocking (`WeatherFx.settle_map`): its rays
+are spread over a dozen frames, which in software take minutes, and the first renders captured the
+previous shot's map, with rain landing and puddles collecting by another place's heights.
+`--stream-wait` caps the runner's wait for vegetation (240 s by default) when the render lock is
+busy.
 
 ## Consequences
 + Rain reads in daylight and at night, and stays out of buildings.

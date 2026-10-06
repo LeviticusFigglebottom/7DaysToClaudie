@@ -237,8 +237,10 @@ void fragment() {
 		float pn = wx_noise(v_world_pos.xz * 0.37) * 0.65 + wx_noise(v_world_pos.xz * 1.7 + 4.1) * 0.35;
 		float rank = clamp(0.6 * clamp(hollow / 0.14, 0.0, 1.0) + 0.45 * (1.0 - hgt) + 0.35 * (pn - 0.5) + 0.02, 0.0, 1.0);
 		// Full standing water on asphalt pools about half of a flat road; lighter levels and
-		// thirstier layers keep it to the hollows and the deepest dips.
-		float t = 1.0 - level * 0.75;
+		// thirstier layers keep it to the hollows and the deepest dips. A flat road's ranks bunch
+		// round 0.25, so the threshold falls fast at first (the hollows fill) and slowly at the end:
+		// falling linearly, a road soaked for an hour (0.8) showed no pools at all.
+		float t = 1.0 - 0.75 * sqrt(level);
 		float puddle = smoothstep(t - 0.025, t + 0.025, rank);
 		// The damp margin round a pool is darker still.
 		float rim = smoothstep(t - 0.12, t, rank) * (1.0 - puddle);

@@ -103,7 +103,7 @@ func _build_menu() -> void:
 	_row(v, [["Hollow", _spawn.bind(&"hollow")], ["Lurcher", _spawn.bind(&"lurcher")], ["Keener", _spawn.bind(&"keener")], ["Dragger", _spawn.bind(&"dragger")]])
 	_row(v, [["Pack of 6", _spawn_pack], ["Kill nearby", _kill_nearby]])
 	_section(v, "Give")
-	_row(v, [["Axe + hammer", _give.bind({"stone_axe": 1, "claw_hammer": 1})], ["4 logs", _give.bind({"log": 2})],
+	_row(v, [["Axe + hammer", _give.bind({"stone_axe": 1, "claw_hammer": 1})], ["4 logs", _give.bind({"log": 4})],
 		["Building kit", _give.bind({"stick": 20, "stone": 12, "leaf_bundle": 12, "cordage": 6, "nails": 30, "plant_fiber": 10})]])
 	_row(v, [["Revolver", _give.bind({"revolver": 1, "ammo_38": 24})], ["Food + water", _give.bind({"ration_bar": 4, "water_bottle_clean": 3})], ["Medkit", _give.bind({"cloth_bandage": 4})]])
 	_section(v, "Time")
@@ -183,10 +183,20 @@ func _kill_nearby() -> void:
 			e.take_damage(info)
 
 
+## Gives the items; what the pack or the shoulder can't take lands in front of you (two logs ride
+## the shoulder, so "4 logs" drops the other two).
 func _give(items: Dictionary) -> void:
 	var p: PlayerState = Game.local_player()
+	var building: Node = world.get(&"building")
+	var node: Node3D = world.get(&"player")
 	for k: Variant in items.keys():
-		p.inventory.add_item(StringName(str(k)), int(items[k]))
+		var id := StringName(str(k))
+		var left: int = p.inventory.add_item(id, int(items[k]))
+		if left > 0 and id == &"log" and building != null:
+			for i: int in left:
+				building.call(&"drop_log", p, i)
+		elif left > 0 and node != null:
+			ItemDrop.spawn(world, ItemStack.make(id, left), node.global_position + Vector3.UP - node.global_transform.basis.z)
 	Events.inventory_changed.emit(p.id)
 
 

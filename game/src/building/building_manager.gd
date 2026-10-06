@@ -10,7 +10,7 @@ extends Node3D
 ##   build.deliver         {player, site}                        -> {ok, complete}
 ##   build.place_log       {player, site?, slot? | pos:[3], rot:[4]} -> {ok, piece}
 ##   build.repair / build.upgrade {player, piece}
-##   build.demolish        {player, site}                        (cancel a ghost, refunds deliveries)
+##   build.demolish        {player, site}                        -> {ok, refund} (take a placed ghost down: hold cancel on it)
 ##   build.dismantle       {player, piece}                       (take a piece down for part of its cost)
 ##   build.add_fuel        {player, piece, item?}                -> {ok, fuel}
 ##   build.light           {player, piece}                       (needs fuel and a lighter or torch)
@@ -660,18 +660,44 @@ func _cmd_upgrade(args: Dictionary) -> Dictionary:
 	return {"ok": true}
 
 
+## Takes a placed ghost down (BlueprintSite.alt_interact: the cancel key held on it). Everything
+## handed over comes back, at your feet if it doesn't fit; logs already set in a log blueprint stay
+## where they are, ordinary logs now.
 func _cmd_demolish(args: Dictionary) -> Dictionary:
 	var p: PlayerState = _player_state(args)
 	var site: BlueprintSite = sites.get(StringName(str(args.get("site", ""))))
 	if p == null or site == null:
 		return _fail("no site")
+	if not p.stats.alive:
+		return _fail("dead")
+	var at: Vector3 = site.global_position
+	var node: Player = world.player_node(p.id) if world != null else null
+	if node != null and node.global_position.distance_to(at) > REACH + 2.0:
+		return _fail("too far")
+	var refund: Dictionary = {}
+	var back: PackedStringArray = []
 	for k: Variant in site.delivered.keys():
-		var left: int = p.inventory.add_item(StringName(str(k)), int(site.delivered[k]))
-		if left > 0:
-			ItemDrop.spawn(world, ItemStack.make(StringName(str(k)), left), site.global_position + Vector3.UP)
+		var item := StringName(str(k))
+		var n: int = int(site.delivered[k])
+		if n <= 0:
+			continue
+		refund[String(item)] = n
+		var idef: ItemDef = Content.item(item)
+		back.append("%d %s" % [n, idef.display_name if idef != null else String(item)])
+		var left: int = p.inventory.add_item(item, n)
+		if left > 0 and world != null:
+			# Logs that don't fit on the shoulder are dropped as logs, stacked so they don't collide.
+			if item == &"log" and world.get(&"loose") != null:
+				for i: int in left:
+					world.loose.spawn_log(at + Vector3.UP * (0.6 + 0.5 * i), Basis(Vector3.UP, site.global_rotation.y), &"")
+			else:
+				ItemDrop.spawn(world, ItemStack.make(item, left), at + Vector3.UP)
+	var name_: String = site.bp.display_name
 	_remove_site(site.site_id)
+	Audio.play_3d(&"sfx/blueprint_place", at, {"volume_db": -8.0})
 	Events.inventory_changed.emit(p.id)
-	return {"ok": true}
+	Events.player_status_message.emit("Took down the %s blueprint%s." % [name_, (": " + ", ".join(back) + " back") if not back.is_empty() else ""], &"info")
+	return {"ok": true, "refund": refund}
 
 
 ## What one hammer repair costs: the def's own repair cost, else a quarter of what it took to
@@ -685,16 +711,16 @@ static func repair_cost(def: StructureDef) -> Dictionary:
 	return out
 
 
-## Half of a piece's build cost (rounded down), returned when it is dismantled whole. A log
-## comes back as the log itself.
+## Half of a piece's build cost (rounded down), returned when it is dismantled whole, but at
+## least one of everything it cost: half of a single item (a placed can chime) is not nothing.
+## A log comes back as the log itself.
 static func dismantle_refund(def: StructureDef) -> Dictionary:
 	if def.piece_kind == "log":
 		return {"log": 1}
 	var out: Dictionary = {}
 	for k: Variant in def.cost.keys():
-		var n: int = int(floor(float(def.cost[k]) * 0.5))
-		if n > 0:
-			out[k] = n
+		if int(def.cost[k]) > 0:
+			out[k] = maxi(1, int(floor(float(def.cost[k]) * 0.5)))
 	return out
 
 

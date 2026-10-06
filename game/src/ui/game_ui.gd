@@ -56,8 +56,7 @@ func _ready() -> void:
 	_build_pause()
 	Events.player_status_message.connect(message)
 	Events.player_damaged.connect(_on_player_damaged)
-	Events.horde_night_warning.connect(func(_d: int, h: float) -> void: message("The ground is humming. %d hour%s." % [int(h), "" if int(h) == 1 else "s"], &"warning"))
-	Events.horde_night_started.connect(func(_d: int) -> void: message("THE HUM HAS BEGUN.", &"danger"))
+	# The Hum's warnings and its start are announced by HumDirector alone (with the forecast).
 	Events.horde_night_ended.connect(_on_hum_ended)
 	Events.game_saved.connect(func(_slot: String, ok: bool) -> void:
 		# Autosaves announce themselves in their own line ("Rested. Progress saved.").
@@ -281,7 +280,9 @@ func _process(delta: float) -> void:
 		_hold.value = ht * 100.0
 		var b: Node = w.get(&"building")
 		var place_why: String = str(b.call(&"placement_hint")) if b != null else ""
-		_tool_hint.text = place_why if place_why != "" else p.interaction.tool_hint
+		# Under the prompt: why a placement can't go, else the held tool's hint, else what holding
+		# the cancel key on the target does (take a blueprint ghost down).
+		_tool_hint.text = place_why if place_why != "" else (p.interaction.tool_hint if p.interaction.tool_hint != "" else p.interaction.alt_prompt)
 	_update_belt(p.state, delta)
 	if not _hits.is_empty():
 		for h: Dictionary in _hits:

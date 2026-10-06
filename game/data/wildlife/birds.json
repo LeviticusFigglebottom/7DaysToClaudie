@@ -17,7 +17,7 @@
      "flush_radius": 11.0, "flush_loudness": 34.0, "return_seconds": 50.0, "fly_speed": 7.0,
      "senses": {"bolt_loudness": 18.0, "hollowed": 9.0},
      "sounds": {"call": "wildlife/songbird_chatter", "alarm": "wildlife/songbird_alarm", "flush": "wildlife/wingbeats_small"}},
-    {"id": "crow", "name": "Crows", "description": "Crows in the clearings and over Pell's Crossing. When they go up, everything for half a mile knows why.",
+    {"id": "crow", "name": "Crows", "description": "Crows in the clearings and over Pell's Crossing. When they go up, everything within sixty metres knows why.",
      "kind": "flock", "model": "animals/crow", "perch": "ground",
      "biomes": {"meadow": 1.0, "town": 2.4, "riverbank": 0.6, "birch_grove": 0.3},
      "density": 10.0, "edge": 1.2, "activity": {"dawn": 1.3, "day": 1.0, "dusk": 1.3, "night": 0.0},
