@@ -1,0 +1,1750 @@
+{
+ "_doc": "Corvane Mining Co. Larkspur Exploration Adit (ADR-0044): the Corvane caves' entrance in D6 at the foot of the Larkspur cliffs. A mine office, changehouse and hoist house on a small pad; below, buried levels run west under the cliff: No. 1 Level (a timbered drift, the powder magazine, the refuge station, the winze station) and No. 2 Level (the stope, and the limestone cave the stope broke into, where the Bloom came up). Route: the office is bolted -> the hoist house door hangs off -> the office for the magazine key -> down the manway -> the drift (jaws between the rails) -> the magazine -> the refuge station: the winze key on the shift boss (taking it wakes the trapped crew) -> the winze gate (cans on it) -> down to the stope (its crew wakes on the loose boards) -> the breach into the cave -> the grotto (the Bloom's mother growth; the shift boss's foreman, guardian) -> back up, out through the office.",
+ "defs": [
+  {
+   "id": "corvane_larkspur_adit",
+   "name": "Corvane Larkspur Adit",
+   "tier": 3,
+   "footprint": [
+    70,
+    14
+   ],
+   "origin": [
+    0,
+    0
+   ],
+   "author": "Hollowmere team",
+   "population": "loggers",
+   "story": "Corvane Mining Co. drove an exploration adit under the Larkspur cliffs, chasing the same ore body as the Deep Mine. Thirty metres in, the No. 2 Level stope broke into an open limestone cave nobody had mapped. The crew sealed the breach, the company sent a survey team, and the survey team sent samples to the Program. Then the shift that went down to reopen the breach didn't come up, and the ones who went after them sealed themselves in the refuge station.",
+   "style": {
+    "exterior": "siding_barn_red",
+    "interior": "wood_paneling_dark",
+    "floor": "concrete",
+    "ceiling": "wood_paneling_dark",
+    "floor_height": 0.2,
+    "decay": 0.55,
+    "damaged_walls": 0.06,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "x",
+     "pitch": 24,
+     "overhang": 0.4,
+     "material": "roof_metal",
+     "color": "#6f6a62"
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "OOOOOOODDDDDDDHHHHHHHH",
+      "OOOOOOODDDDDDDHHHHHHHH",
+      "OOOOOOODDDDDDDHHHHHHHH",
+      "OOOOOOODDDDDDDHHHHHHHH",
+      "OOOOOOODDDDDDDHHHHHHHH",
+      "OOOOOOODDDDDDDSSSSSSSS",
+      "OOOOOOODDDDDDDSSSSSSSS",
+      "OOOOOOODDDDDDDSSSSSSSS",
+      "OOOOOOODDDDDDDSSSSSSSS",
+      "OOOOOOODDDDDDDSSSSSSSS"
+     ],
+     "rooms": {
+      "O": {
+       "name": "Mine office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_beige"
+      },
+      "D": {
+       "name": "Changehouse",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "H": {
+       "name": "Hoist house",
+       "type": "garage",
+       "wall": "siding_barn_red",
+       "floor": "concrete"
+      },
+      "S": {
+       "name": "Shaft house",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": -1,
+     "buried": true,
+     "plan": [
+      "                                                                   ",
+      "                             MMMMMMM                               ",
+      "                             MMMMMMM                               ",
+      "                             MMMMMMM                       WWWWWWWW",
+      "                             MMMMMMM                       WWWWWWWW",
+      "             TTTTTT          MMMMMMM                       WWWWWWWW",
+      "             TTTTTT          MMMMMMM                       WWWWWWWW",
+      "             TTTTTTRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRWWWWWWWW",
+      "             TTTTTTRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRWWWWWWWW",
+      "             TTTTTTRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRWWWWWWWW",
+      "             TTTTTT                        FFFFFFFF        WWWWWWWW",
+      "             TTTTTT                        FFFFFFFF        WWWWWWWW",
+      "                                           FFFFFFFF                ",
+      "                                           FFFFFFFF                "
+     ],
+     "rooms": {
+      "T": {
+       "name": "Shaft station",
+       "type": "cellar",
+       "wall": "rock_drift",
+       "floor": "rock_floor",
+       "ceiling": "rock_drift"
+      },
+      "R": {
+       "name": "No. 1 Level drift",
+       "type": "cellar",
+       "wall": "rock_drift",
+       "floor": "rock_floor",
+       "ceiling": "rock_drift"
+      },
+      "M": {
+       "name": "Powder magazine",
+       "type": "storage",
+       "wall": "rock_drift",
+       "floor": "rock_floor",
+       "ceiling": "rock_drift"
+      },
+      "F": {
+       "name": "Refuge station",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      },
+      "W": {
+       "name": "Winze station",
+       "type": "cellar",
+       "wall": "rock_drift",
+       "floor": "rock_floor",
+       "ceiling": "rock_drift"
+      }
+     }
+    },
+    {
+     "level": -2,
+     "buried": true,
+     "plan": [
+      "                                                GGGGGGGGKKKKKKKKKKKKKK",
+      "                                                GGGGGGGGKKKKKKKKKKKKKK",
+      "                                                GGGGGGGGKKKKKKKKKKKKKK",
+      "                                                GGGGGGGGKKKKKKKKKKKKKK",
+      "                                                GGGGGGGGKKKKKKKKKKKKKK",
+      "                                                GGGGGGGGKKKKKKKKKKKKKK",
+      "                                                GGGGGGGGKKKKKKKKKKKKKK",
+      "                                                        PPPPPPPPPPPPPP",
+      "                                                        PPPPPPPPPPPPPP",
+      "                                                        PPPPPPPPPPPPPP",
+      "                                                        PPPPPPPPPPPPPP",
+      "                                                        PPPPPPPPPPPPPP",
+      "                                                        PPPPPPPPPPPPPP",
+      "                                                        PPPPPPPPPPPPPP"
+     ],
+     "rooms": {
+      "P": {
+       "name": "No. 2 Level stope",
+       "type": "cellar",
+       "wall": "rock_drift",
+       "floor": "rock_floor",
+       "ceiling": "rock_drift"
+      },
+      "K": {
+       "name": "The breakthrough",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "cave_mud",
+       "ceiling": "rock_limestone"
+      },
+      "G": {
+       "name": "The grotto",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "cave_mud",
+       "ceiling": "rock_limestone"
+      }
+     }
+    }
+   ],
+   "stairs": [
+    {
+     "level": -1,
+     "at": [
+      15,
+      9
+     ],
+     "dir": "N"
+    },
+    {
+     "level": -2,
+     "at": [
+      62,
+      10
+     ],
+     "dir": "N"
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      3,
+      9
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked_inside",
+     "lock": "deadbolt"
+    },
+    {
+     "id": "office_window",
+     "at": [
+      1,
+      9
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "office_window_n",
+     "at": [
+      3,
+      0
+     ],
+     "side": "N",
+     "type": "window2",
+     "state": "closed"
+    },
+    {
+     "id": "dry_window",
+     "at": [
+      10,
+      9
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "broken"
+    },
+    {
+     "id": "hoist_door",
+     "at": [
+      17,
+      0
+     ],
+     "side": "N",
+     "type": "door2",
+     "state": "broken",
+     "model": "door_barn_tall"
+    },
+    {
+     "id": "hoist_window",
+     "at": [
+      21,
+      2
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "shaft_window",
+     "at": [
+      21,
+      7
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "office_dry",
+     "at": [
+      6,
+      2
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "office_dry_s",
+     "at": [
+      6,
+      7
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "dry_hoist",
+     "at": [
+      13,
+      2
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "hoist_shaft",
+     "at": [
+      17,
+      4
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "station_drift",
+     "at": [
+      18,
+      8
+     ],
+     "side": "E",
+     "type": "open",
+     "level": -1
+    },
+    {
+     "id": "magazine_door",
+     "at": [
+      32,
+      7
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked",
+     "key": "corvane_magazine_key",
+     "lock": "padlock",
+     "model": "door_metal",
+     "hp": 700,
+     "level": -1
+    },
+    {
+     "id": "refuge_door",
+     "at": [
+      46,
+      9
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal",
+     "level": -1
+    },
+    {
+     "id": "winze_gate",
+     "at": [
+      58,
+      8
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked",
+     "key": "corvane_winze_key",
+     "lock": "chain",
+     "model": "door_metal",
+     "hp": 600,
+     "level": -1
+    },
+    {
+     "id": "breach",
+     "at": [
+      60,
+      7
+     ],
+     "side": "N",
+     "type": "breach",
+     "level": -2
+    },
+    {
+     "id": "grotto_mouth",
+     "at": [
+      56,
+      3
+     ],
+     "side": "W",
+     "type": "open",
+     "level": -2
+    }
+   ],
+   "props": [
+    {
+     "id": "office_desk",
+     "prop": "office_desk",
+     "at": [
+      2,
+      1
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      2.5,
+      2.6
+     ],
+     "rot": 180
+    },
+    {
+     "id": "office_files",
+     "prop": "filing_cabinet",
+     "at": [
+      0,
+      4
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "office_safe",
+     "prop": "safe_small",
+     "at": [
+      0,
+      6
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "prop": "mine_safety_board",
+     "at": [
+      4,
+      0
+     ],
+     "against": "N",
+     "rot": 0,
+     "y": 0.9
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      6,
+      5
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "dry_lockers_1",
+     "prop": "road_staff_locker",
+     "at": [
+      7,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "dry_lockers_2",
+     "prop": "road_staff_locker",
+     "at": [
+      9,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "dry_lockers_3",
+     "prop": "road_staff_locker",
+     "at": [
+      11,
+      0
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "prop": "civic_pew",
+     "pos": [
+      10.0,
+      4.5
+     ],
+     "rot": 90
+    },
+    {
+     "id": "dry_rack",
+     "prop": "mine_tool_rack",
+     "at": [
+      13,
+      6
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "mine_hoist",
+     "pos": [
+      18.0,
+      2.0
+     ],
+     "rot": 90
+    },
+    {
+     "id": "headframe",
+     "prop": "mine_headframe",
+     "pos": [
+      18.0,
+      12.4
+     ],
+     "rot": 180
+    },
+    {
+     "id": "shaft_cage",
+     "prop": "mine_cage",
+     "pos": [
+      19.5,
+      7.2
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      18.0,
+      7.5
+     ],
+     "rot": 90
+    },
+    {
+     "id": "station_cart",
+     "prop": "mine_ore_cart",
+     "pos": [
+      16.8,
+      6.0
+     ],
+     "rot": 90,
+     "level": -1
+    },
+    {
+     "prop": "mine_lamp_string",
+     "pos": [
+      15.5,
+      8.0
+     ],
+     "rot": 0,
+     "level": -1,
+     "lit": true
+    },
+    {
+     "id": "station_rack",
+     "prop": "mine_tool_rack",
+     "at": [
+      13,
+      9
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": -1
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      22.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      26.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      30.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      34.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      38.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      42.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      46.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      50.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      54.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      21.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      24.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      27.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      30.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      33.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      36.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      39.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      42.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      45.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      48.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      51.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      54.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rail_straight",
+     "pos": [
+      57.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_rock_face",
+     "at": [
+      24,
+      7
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": -1
+    },
+    {
+     "prop": "mine_rock_face",
+     "at": [
+      48,
+      7
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": -1
+    },
+    {
+     "prop": "mine_rock_face",
+     "at": [
+      52,
+      7
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": -1
+    },
+    {
+     "prop": "mine_rock_face_b",
+     "at": [
+      28,
+      9
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": -1
+    },
+    {
+     "prop": "mine_rock_face_b",
+     "at": [
+      37,
+      9
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": -1
+    },
+    {
+     "prop": "mine_rock_face_b",
+     "at": [
+      55,
+      9
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": -1
+    },
+    {
+     "id": "drift_cart",
+     "prop": "mine_ore_cart",
+     "pos": [
+      36.0,
+      8.5
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_ore_cart",
+     "pos": [
+      45.5,
+      7.5
+     ],
+     "rot": 70,
+     "variant": "destroyed",
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "prop": "mine_lamp_string",
+     "pos": [
+      31.0,
+      8.5
+     ],
+     "rot": 90,
+     "level": -1,
+     "lit": true
+    },
+    {
+     "id": "mag_box_1",
+     "prop": "mine_powder_box",
+     "at": [
+      30,
+      1
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": -1,
+     "container": "mine_powder_box"
+    },
+    {
+     "id": "mag_box_2",
+     "prop": "mine_powder_box",
+     "at": [
+      34,
+      1
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": -1,
+     "container": "mine_powder_box"
+    },
+    {
+     "id": "mag_box_3",
+     "prop": "mine_powder_box",
+     "at": [
+      35,
+      3
+     ],
+     "against": "E",
+     "rot": 270,
+     "level": -1,
+     "variant": "worn",
+     "container": "mine_powder_box"
+    },
+    {
+     "id": "refuge_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      43,
+      12
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": -1,
+     "container": "civic_pantry_shelf"
+    },
+    {
+     "prop": "civic_pew",
+     "pos": [
+      47.0,
+      12.6
+     ],
+     "rot": 0,
+     "level": -1
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      49.4,
+      11.4
+     ],
+     "level": -1,
+     "lit": true
+    },
+    {
+     "prop": "mine_rock_pile",
+     "pos": [
+      64.5,
+      4.5
+     ],
+     "rot": 30,
+     "level": -1
+    },
+    {
+     "id": "winze_rack",
+     "prop": "mine_tool_rack",
+     "at": [
+      66,
+      9
+     ],
+     "against": "E",
+     "rot": 270,
+     "level": -1
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      62.5,
+      5.0
+     ],
+     "rot": 0,
+     "level": -1
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      58.5,
+      11.0
+     ],
+     "rot": 90,
+     "level": -2
+    },
+    {
+     "prop": "mine_timber_set",
+     "pos": [
+      66.0,
+      11.0
+     ],
+     "rot": 90,
+     "variant": "destroyed",
+     "level": -2
+    },
+    {
+     "prop": "mine_rock_pile",
+     "pos": [
+      66.5,
+      8.5
+     ],
+     "rot": 10,
+     "level": -2
+    },
+    {
+     "prop": "mine_rock_pile",
+     "pos": [
+      58.0,
+      12.8
+     ],
+     "rot": 200,
+     "variant": "worn",
+     "level": -2
+    },
+    {
+     "prop": "mine_ore_cart",
+     "pos": [
+      59.0,
+      9.0
+     ],
+     "rot": 0,
+     "variant": "destroyed",
+     "level": -2
+    },
+    {
+     "prop": "mine_rock_face_c",
+     "at": [
+      69,
+      10
+     ],
+     "against": "E",
+     "rot": 270,
+     "level": -2
+    },
+    {
+     "prop": "mine_stalagmites",
+     "pos": [
+      64.0,
+      2.0
+     ],
+     "rot": 40,
+     "level": -2
+    },
+    {
+     "prop": "mine_stalagmites",
+     "pos": [
+      67.5,
+      4.6
+     ],
+     "rot": 200,
+     "level": -2
+    },
+    {
+     "prop": "mine_stalagmites",
+     "pos": [
+      51.0,
+      1.0
+     ],
+     "rot": 90,
+     "level": -2
+    },
+    {
+     "prop": "mine_rock_face",
+     "at": [
+      69,
+      2
+     ],
+     "against": "E",
+     "rot": 270,
+     "level": -2
+    },
+    {
+     "prop": "mine_rock_face_b",
+     "at": [
+      60,
+      0
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": -2
+    },
+    {
+     "prop": "mine_rock_face_c",
+     "at": [
+      48,
+      4
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": -2
+    },
+    {
+     "prop": "mine_rock_pile",
+     "pos": [
+      49.0,
+      1.5
+     ],
+     "rot": 60,
+     "level": -2
+    },
+    {
+     "id": "survey_cache",
+     "prop": "civic_relief_crate",
+     "pos": [
+      53.5,
+      5.4
+     ],
+     "rot": 15,
+     "level": -2,
+     "container": "mine_survey_cache"
+    },
+    {
+     "id": "survey_box",
+     "prop": "mine_powder_box",
+     "at": [
+      55,
+      1
+     ],
+     "against": "E",
+     "rot": 270,
+     "level": -2,
+     "container": "mine_survey_cache"
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      52.0,
+      4.6
+     ],
+     "level": -2,
+     "lit": true
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "clerk",
+     "pos": [
+      2.5,
+      2.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180
+    },
+    {
+     "id": "miner_1",
+     "pos": [
+      9.5,
+      2.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 20
+    },
+    {
+     "id": "hoistman",
+     "pos": [
+      16.6,
+      2.6
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 90
+    },
+    {
+     "id": "drift_1",
+     "pos": [
+      27.0,
+      7.3
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 270,
+     "level": -1
+    },
+    {
+     "id": "drift_2",
+     "pos": [
+      44.0,
+      7.6
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 90,
+     "level": -1
+    },
+    {
+     "id": "drift_3",
+     "pos": [
+      53.0,
+      8.6
+     ],
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "floor",
+     "level": -1
+    },
+    {
+     "id": "trapped_1",
+     "pos": [
+      44.5,
+      12.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "floor",
+     "group": "trapped",
+     "level": -1,
+     "alt": "trapped:sealed_in"
+    },
+    {
+     "id": "trapped_2",
+     "pos": [
+      47.0,
+      12.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "group": "trapped",
+     "level": -1,
+     "alt": "trapped:sealed_in"
+    },
+    {
+     "id": "trapped_3",
+     "pos": [
+      49.6,
+      12.2
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 270,
+     "group": "trapped",
+     "level": -1,
+     "alt": "trapped:sealed_in"
+    },
+    {
+     "id": "trapped_1",
+     "pos": [
+      60.5,
+      10.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 90,
+     "group": "trapped",
+     "level": -1,
+     "alt": "trapped:at_the_winze"
+    },
+    {
+     "id": "trapped_2",
+     "pos": [
+      64.6,
+      7.0
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 180,
+     "group": "trapped",
+     "level": -1,
+     "alt": "trapped:at_the_winze"
+    },
+    {
+     "id": "trapped_3",
+     "pos": [
+      65.4,
+      10.6
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 270,
+     "group": "trapped",
+     "level": -1,
+     "alt": "trapped:at_the_winze"
+    },
+    {
+     "id": "stope_1",
+     "pos": [
+      60.5,
+      12.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 0,
+     "group": "stope",
+     "level": -2
+    },
+    {
+     "id": "stope_2",
+     "pos": [
+      67.0,
+      12.6
+     ],
+     "enemy": "husk",
+     "pose": "stand",
+     "rot": 270,
+     "group": "stope",
+     "level": -2
+    },
+    {
+     "id": "stope_3",
+     "pos": [
+      64.0,
+      8.4
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 180,
+     "group": "stope",
+     "level": -2
+    },
+    {
+     "id": "grotto_1",
+     "pos": [
+      59.0,
+      3.5
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 90,
+     "group": "grotto",
+     "level": -2
+    },
+    {
+     "id": "grotto_2",
+     "pos": [
+      66.0,
+      1.4
+     ],
+     "enemy": "keener",
+     "pose": "stand",
+     "rot": 220,
+     "group": "grotto",
+     "level": -2
+    },
+    {
+     "id": "foreman",
+     "pos": [
+      51.0,
+      3.5
+     ],
+     "enemy": "husk",
+     "pose": "stand",
+     "rot": 90,
+     "guardian": true,
+     "level": -2
+    }
+   ],
+   "pickups": [
+    {
+     "id": "magazine_key",
+     "item": "corvane_magazine_key",
+     "pos": [
+      2.0,
+      1.0
+     ],
+     "y": 0.78
+    },
+    {
+     "id": "winze_key",
+     "item": "corvane_winze_key",
+     "pos": [
+      45.5,
+      12.6
+     ],
+     "level": -1
+    }
+   ],
+   "notes": [
+    {
+     "note": "corvane_shift_log",
+     "pos": [
+      2.8,
+      1.2
+     ],
+     "y": 0.78
+    },
+    {
+     "note": "corvane_breakthrough",
+     "pos": [
+      63.0,
+      6.0
+     ],
+     "level": -1
+    },
+    {
+     "note": "corvane_refuge",
+     "pos": [
+      48.5,
+      11.6
+     ],
+     "level": -1
+    },
+    {
+     "note": "corvane_program_seal",
+     "pos": [
+      53.0,
+      4.2
+     ],
+     "level": -2
+    }
+   ],
+   "traps": [
+    {
+     "id": "drift_jaws",
+     "type": "bear_trap",
+     "pos": [
+      33.0,
+      8.6
+     ],
+     "level": -1,
+     "alt": "drift:jaws"
+    },
+    {
+     "id": "winze_cans",
+     "type": "can_chime",
+     "at": [
+      58,
+      8
+     ],
+     "side": "E",
+     "level": -1
+    },
+    {
+     "id": "stope_boards",
+     "type": "creaky_floor",
+     "at": [
+      60,
+      9
+     ],
+     "size": [
+      2,
+      2
+     ],
+     "level": -2
+    },
+    {
+     "id": "grotto_cans",
+     "type": "can_chime",
+     "at": [
+      56,
+      3
+     ],
+     "side": "W",
+     "level": -2,
+     "alt": "grotto:canned"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "t_trapped_key",
+     "group": "trapped",
+     "on": "pickup",
+     "pickup": "winze_key",
+     "delay": 1.0
+    },
+    {
+     "id": "t_stope_boards",
+     "group": "stope",
+     "on": "trap",
+     "trap": "stope_boards",
+     "delay": 0.6
+    },
+    {
+     "id": "t_grotto",
+     "group": "grotto",
+     "on": "room",
+     "room": "G",
+     "level": -2,
+     "delay": 0.4
+    }
+   ],
+   "lights": [
+    {
+     "at": [
+      15,
+      8
+     ],
+     "height": 2.2,
+     "color": "#ffcf8a",
+     "energy": 0.35,
+     "range": 4.0,
+     "flicker": 0.2,
+     "level": -1
+    },
+    {
+     "at": [
+      49,
+      11
+     ],
+     "height": 0.6,
+     "color": "#ffcc88",
+     "energy": 0.45,
+     "range": 4.0,
+     "flicker": 0.1,
+     "level": -1
+    },
+    {
+     "at": [
+      52,
+      4
+     ],
+     "height": 0.5,
+     "color": "#ffcc88",
+     "energy": 0.4,
+     "range": 4.0,
+     "flicker": 0.15,
+     "level": -2
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      45,
+      10
+     ],
+     "side": "floor",
+     "size": [
+      1.6,
+      0.7
+     ],
+     "level": -1
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      60,
+      6
+     ],
+     "side": "floor",
+     "size": [
+      1.6,
+      1.6
+     ],
+     "level": -2
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      3,
+      10
+     ],
+     "label": "The office door: bolted from inside"
+    },
+    {
+     "at": [
+      17,
+      -1
+     ],
+     "label": "Round the back: the hoist house door hangs off"
+    },
+    {
+     "at": [
+      17,
+      2
+     ],
+     "label": "The hoist house"
+    },
+    {
+     "at": [
+      3,
+      3
+     ],
+     "label": "The office: the magazine key in the desk"
+    },
+    {
+     "at": [
+      16,
+      5
+     ],
+     "label": "The shaft house: down the manway"
+    },
+    {
+     "at": [
+      15,
+      9
+     ],
+     "label": "The shaft station",
+     "level": -1
+    },
+    {
+     "at": [
+      26,
+      8
+     ],
+     "label": "The No. 1 Level drift (jaws between the rails)",
+     "level": -1
+    },
+    {
+     "at": [
+      32,
+      4
+     ],
+     "label": "The powder magazine",
+     "level": -1
+    },
+    {
+     "at": [
+      46,
+      12
+     ],
+     "label": "The refuge station: the winze key (the crew wakes)",
+     "level": -1
+    },
+    {
+     "at": [
+      57,
+      8
+     ],
+     "label": "The winze gate",
+     "level": -1
+    },
+    {
+     "at": [
+      62,
+      6
+     ],
+     "label": "The winze: down",
+     "level": -1
+    },
+    {
+     "at": [
+      62,
+      11
+     ],
+     "label": "The No. 2 Level stope (loose boards)",
+     "level": -2
+    },
+    {
+     "at": [
+      60,
+      5
+     ],
+     "label": "Through the breach into the cave",
+     "level": -2
+    },
+    {
+     "at": [
+      52,
+      3
+     ],
+     "label": "The grotto (loot) - the foreman",
+     "level": -2
+    },
+    {
+     "at": [
+      62,
+      11
+     ],
+     "label": "Back up",
+     "level": -2
+    },
+    {
+     "at": [
+      15,
+      9
+     ],
+     "label": "Back to the shaft",
+     "level": -1
+    },
+    {
+     "at": [
+      3,
+      8
+     ],
+     "label": "Out through the office: unbolt the door"
+    },
+    {
+     "at": [
+      3,
+      10
+     ],
+     "label": "Out"
+    }
+   ],
+   "loot_room": {
+    "room": "G",
+    "level": -2
+   },
+   "shortcuts": [
+    {
+     "opening": "front_door"
+    }
+   ],
+   "budget": {
+    "lights": 5,
+    "enemies": 20,
+    "pieces": 4200
+   },
+   "alternatives": [
+    {
+     "id": "trapped",
+     "label": "The crew who sealed themselves in",
+     "options": [
+      {
+       "id": "sealed_in",
+       "label": "Still in the refuge station",
+       "weight": 2
+      },
+      {
+       "id": "at_the_winze",
+       "label": "Clawing at the winze gate"
+      }
+     ]
+    },
+    {
+     "id": "drift",
+     "label": "The drift",
+     "options": [
+      {
+       "id": "jaws",
+       "label": "A trap set between the rails",
+       "weight": 2
+      },
+      {
+       "id": "clear",
+       "label": "Clear"
+      }
+     ]
+    },
+    {
+     "id": "grotto",
+     "label": "The grotto mouth",
+     "options": [
+      {
+       "id": "canned",
+       "label": "Cans strung across it",
+       "weight": 1
+      },
+      {
+       "id": "open",
+       "label": "Open",
+       "weight": 1
+      }
+     ]
+    },
+    {
+     "id": "office",
+     "label": "The office",
+     "options": [
+      {
+       "id": "tidy",
+       "label": "As the clerk left it"
+      },
+      {
+       "id": "turned_over",
+       "label": "Turned over for the magazine key",
+       "style": {
+        "decay": 0.65
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

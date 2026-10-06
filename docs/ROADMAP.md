@@ -154,7 +154,12 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
 
 ## M2 — Factions, caves, companion, economy ⬜
 - The Ashen: camps, routines, scouts that observe, morale/fear of fire, raids, effigies.
-- Corvane cave network (SDF volumes, darkness, key items, mine levels) + region C2/C6 entrances.
+- Corvane cave network (darkness, key items, mine levels) + region C2/C6 entrances.
+  - [x] The Corvane Larkspur Adit (ADR-0044): the caves' entrance in D6 at the Larkspur cliffs, a
+    mine office over two buried levels (a timbered drift, a stope broken into a limestone cave);
+    buried POI levels in TerrainHoles; underground is night for the Hollowed; rock finishes and a
+    mine prop kit. Gaps: TD-162..169.
+  - [ ] The Corvane Deep Mine (C2), the sealed passages (C6, C1), organic caves.
 - Companion Ezra Vane: follow/gather/guard/fetch orders.
 - Full perk trees (rank 4–5 capstones), forge/chemistry bench/grill, more schematics and
   journals (the joinery track has no recipes yet, TD-030). (The Program's supply drone landed

@@ -19,7 +19,8 @@ extends GutTest
 ## entries; the field lab's placement record carries the key, so only `placements` moved). Larch
 ## Hollow's were
 ## re-recorded when Waystation 9 was placed in it (ADR-0039: a clearing, its spawn and its drive;
-## its 1 m variant, which only SLOW_TESTS=1 runs, a little later);
+## its 1 m variant, which only SLOW_TESTS=1 runs, a little later), and again when the Corvane
+## Larkspur Adit was placed by the Larkspur cliffs (ADR-0044: its pad and its track);
 ## the generator versions leave them unchanged, the main map having no towns, generated posts or
 ## new biomes.
 ##
@@ -43,42 +44,42 @@ const DIGEST_KEYS: PackedStringArray = ["height", "splat0", "splat1", "biome", "
 ## input hash at that spacing, to tell changed inputs from a changed composer.
 const GOLDEN: Dictionary = {
 	"larch@4": {
-		"input": "9945857a16cffc9394ac1667de7644ec418c2233b9115dd8e421879b74d3e3f4",
-		"height": "3118b8dc6a4c57459b5caa001d3bdbd07b247f027e5c0b2521387cbdb0956be4",
-		"splat0": "166dc12e4d0cdeb0405a999e1da80552",
+		"input": "b4fbc6834b8545490def9f0a2c9714500de403fac3b01044ff442bf377e552dd",
+		"height": "d02d26e81d142f13334430a59a777d48751f494f876d140a5f7090841ff5aa3b",
+		"splat0": "d12f5b596a18cdddd81dd54ef5c36f92",
 		"splat1": "a0e0f3e9d0ea61b64313f463af34b2c4",
-		"biome": "6c883f031ffa52c00826e72dfa908c54",
-		"vegmask": "14a18c72f9b7c96582837c7836e606b9",
+		"biome": "0bf70616a8131ec34824936773207351",
+		"vegmask": "ac4235cfb94e2a91035f0ea29717ea64",
 		"water": "557e9069b493e19e7402548619659f8b",
 		"roads": "3cd6abe5ddc37e6287223186137e5441",
 		"bridges": "f97bf6a0088f3da534491ebf01e8e086",
-		"placements": "5db5e17fff58e7d5c1b10c4718be4364",
+		"placements": "413798e46bb23f59be1a78485122900b",
 		"other": "343d7ca5a31189c644d8aca5e9ee0028",
 	},
 	"larch@8": {
-		"input": "cf53ed68087c6800ecfae744be2fa3dc365513ea38d654157e8bcd3f62f45ce5",
-		"height": "c8c7b635fbb8bf8f35f964228b90db3636ec5cfe244e4be50cd710fd6d8de4b9",
-		"splat0": "61288ee19ae1fa32ce1ee446acf2f753",
+		"input": "63988d66f687b2ed39b9ce9f004db3afa86b6160110a0a8e1269e6f8ebf47aa0",
+		"height": "9e83fffe70ac6033922bc32628cf233346ec3a2c98f760e7043cb1e9dedef150",
+		"splat0": "8ee58b4216332e9f737a5152274f2fb2",
 		"splat1": "71f4ef029e083c97ad7fdbac70c5e563",
-		"biome": "5fc178c6cfe7f40e9da4f522d6103c8a",
-		"vegmask": "dd48ddaabc8b0945ed8943fb27f4dbfe",
+		"biome": "9b5ac13f49b57e97a4f025df3881f248",
+		"vegmask": "cba4af32842677631da2cfa501e5ba50",
 		"water": "43ffa565190e27f18b8b0f4c0013ec3a",
 		"roads": "b18902326c95c025e50cca0eaa479f9f",
 		"bridges": "10e8c17e881965fe5bc24d68509cbd54",
-		"placements": "2a4dee192c9e6bab95bef493eb2e1af7",
+		"placements": "f9288305e6c6ae5a696487ad03a71a53",
 		"other": "0619089a625a0d5200fa83faa962ee3c",
 	},
 	"larch@1": {
-		"input": "4ae2f94e5a9963d9466f220df0789e052413ba5d92c6caab3a38b8f3f8c56055",
-		"height": "96767f7071547db1d30b7bca73abbc8e71e756976c54e001092c19b590d006e1",
-		"splat0": "ad1f08eaacca116410c8ea9de3ae94df",
+		"input": "db8b578eb03eb907f2b3dcb1eb8771e54b709f883f10460e10c0ff9c5ebd0db9",
+		"height": "7440c2c539d199bcd29cfbee12a1ec392fa97e8d2b0240dcd226eb383a27e7b4",
+		"splat0": "9676745eb0d6b01bbe11c9e83b16549f",
 		"splat1": "55b0189d93e9a60ec3392ca26604f9ad",
-		"biome": "667a31082a2f1bcedff760bf568032d6",
-		"vegmask": "f75afd0af3b9647532fdd7a5c74c6b60",
+		"biome": "25de7db4ac719b2a1663ff7b3c8df7c5",
+		"vegmask": "ff3457c9b4e422dfd9387aeaa3f9188f",
 		"water": "11ae9d82d419d86230b8edcb296f0984",
 		"roads": "a708bdec066cd3e76cad905f6bf65e75",
 		"bridges": "ef252ccce52545ebe035c7e9169fe945",
-		"placements": "95351af500c47a2bffd8eb285214c734",
+		"placements": "32d37a62871d59b73bb3623eae8c3d07",
 		"other": "9042e6121a94f2a29c717a3d15b2b03d",
 	},
 	"rwg@4": {

@@ -28,6 +28,10 @@ lots without a pick are [generated](#generated-buildings) from templates.
 * `origin: [x, z]` offsets the plan inside the lot `footprint: [w, d]` (yard space around it).
 * Level `L` floor top is at `floor_height + L × 3.0` (default `floor_height` 0.6 with a porch,
   use 0.15 for slab-on-grade shops). Level −1 is a cellar.
+* A level below ground may say `"buried": true` (ADR-0044): it runs on under the ground beyond the
+  building (a mine level, a cave). Only its cells under a ground-floor room cut the terrain; the rest
+  lie under the hillside. Give the region feature a `size` to level only the surface buildings, and
+  keep at least a storey of ground over buried cells (TD-164). Example: `corvane_larkspur_adit`.
 * Sides: `N` (−z, back), `E` (+x), `S` (+z, front), `W` (−x).
 * Placed things use `"at": [col, row]` = centre of that cell (+ optional `"offset": [dx, dz]` m),
   or `"pos": [x, z]` = exact plan position in metres. `"level"` defaults to 0; `"rot"` is degrees
@@ -68,9 +72,10 @@ one for its open ground with `"population"` in `region.json`.
 Wall finishes (texture-array order is fixed in `data/materials/kit_finishes.json`):
 `plaster_white, plaster_grey, paint_mustard, paint_sage, paint_slate_blue, wallpaper_floral_rose,
 wallpaper_stripe_green, wallpaper_damask_brown, wood_paneling_dark, tile_bathroom_white,
-tile_kitchen_check, siding_white, siding_pale_blue, siding_barn_red, brick_red, concrete_block`.
+tile_kitchen_check, siding_white, siding_pale_blue, siding_barn_red, brick_red, concrete_block,
+rock_drift, rock_limestone` (the two rock walls also serve as ceilings; they never peel).
 Floor finishes: `wood_oak, wood_pine, carpet_brown, carpet_blue_worn, linoleum_check,
-linoleum_beige, tile_white_small, concrete`.
+linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
 
 ### levels
 ```json

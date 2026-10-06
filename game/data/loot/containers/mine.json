@@ -1,0 +1,21 @@
+{
+ "_doc": "Containers of the Corvane Larkspur Adit (ADR-0044). The magazine holds no explosives: none exist yet (TD-112).",
+ "defs": [
+  {
+   "id": "mine_powder_box",
+   "name": "Powder Box",
+   "loot_table": "mine_powder_box",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 5
+  },
+  {
+   "id": "mine_survey_cache",
+   "name": "Survey Cache",
+   "loot_table": "mine_survey_cache",
+   "slots": 8,
+   "search_time": 2.2,
+   "noise": 4
+  }
+ ]
+}

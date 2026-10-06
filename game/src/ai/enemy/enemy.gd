@@ -35,6 +35,10 @@ signal died(enemy: Enemy)
 var entity_id: StringName = &""
 var def: EnemyDef
 var director: Node = null
+## Below the ground surface by more than this counts as underground (is_night).
+const UNDERGROUND_DEPTH: float = 2.5
+var _underground: bool = false
+var _underground_at: int = -100000
 var visual: EnemyVisual
 var agent: NavigationAgent3D
 var state: State = State.IDLE
@@ -255,8 +259,19 @@ func is_alive() -> bool:
 	return state != State.DEAD
 
 
+## Night by the clock, or deep underground (a cellar, a mine level, a cave: ADR-0044), where it is
+## always night for the Hollowed: they see without light and run, so the player's light matters.
 func is_night() -> bool:
-	return Game.session != null and Game.session.clock.is_night()
+	return Game.session != null and (Game.session.clock.is_night() or is_underground())
+
+
+## More than UNDERGROUND_DEPTH below the ground surface (re-checked every second or so).
+func is_underground() -> bool:
+	var now: int = Time.get_ticks_msec()
+	if now - _underground_at > 900:
+		_underground_at = now
+		_underground = Game.world != null and global_position.y < float(Game.world.call(&"height_at", global_position.x, global_position.z)) - UNDERGROUND_DEPTH
+	return _underground
 
 
 # --- Main loop -------------------------------------------------------------------------------

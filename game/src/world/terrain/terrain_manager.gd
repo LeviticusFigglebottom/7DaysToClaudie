@@ -759,12 +759,20 @@ func in_cellar(x: float, z: float) -> bool:
 
 
 ## The ground under a point: the cellar floor when the point is down in a cut-out POI cellar
-## (anywhere under the ground floor's slab, fallen through the cellar floor included), else the
+## (anywhere under the ground floor's slab, fallen through the cellar floor included), the floor of
+## a buried mine level or cave when it is down in one (ADR-0044), else the
 ## terrain height. height_at() keeps reporting the heightfield (ADR-0007); fell-through-the-world
 ## checks and settling things where they are want this.
 func ground_below(pos: Vector3) -> float:
 	var h: float = height_at(pos.x, pos.z)
-	if holes == null or holes.is_empty():
+	if holes == null:
+		return h
+	# Down on a buried mine level or in a cave under the ground (ADR-0044).
+	if holes.has_buried():
+		var bf: float = holes.buried_floor(pos.x, pos.z, pos.y)
+		if not is_nan(bf) and pos.y < h - 1.0:
+			return bf
+	if holes.is_empty():
 		return h
 	var hole: TerrainHoles.Hole = holes.hole_at(pos.x, pos.z)
 	return hole.floor_y if hole != null and pos.y < hole.ceiling_y else h

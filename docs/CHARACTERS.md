@@ -90,6 +90,19 @@ Hollowed wears: its type's `bodies`, or the population of its sleeper post, buil
 | `crawl_attack` | 24 | | grab |
 | `eat` | 60 | ✓ | crouched feeding (environmental) |
 
+## Living people (`models/characters/<id>.glb`, ADR-0039)
+The Waystation quartermaster (`waystation_quartermaster`) is the first living human. He is built by
+`generators/character_npc.py` with `lib/npc_build.py`, on the Hollowed body's rig, bone names and
+`body_*` segments (so EnemyVisual draws him, and his stand-in is the same), with no Bloom:
+* no growths, wounds, nails, blood or bruising; the mouth is closed (`close_mouth()`);
+* the skin is the `skin` shader with bloom, pallor, mottle and bruise at 0 (`npc_skin`), the eyes
+  clear (`npc_eye`), and the Hollowed's gore surfaces remap to a dark neutral (`npc_inner`);
+* clothing from `char_wardrobe` plus NPC pieces: a quilted vest with pouches, an armband, gloves,
+  a short beard (catalog `blender_catalogs/npcs.py`, materials `data/materials/npcs.json`).
+Clips: `idle` (6 s), `idle_b` (5 s, leaning on a 1.05 m counter), `talk` (3 s), `look` (4 s), all
+looping. 15,268 triangles; 1.80 m to the cap. The face still uses the Hollowed head shape, gaunt
+and wide-eyed up close (TD-170). A new NPC is a catalog entry with its own build and clips.
+
 ## First-person arms (`models/characters/fp_arms.glb`, ADR-0029)
 * Separate armature `Armature` with bones `root, upper_arm.L/R, forearm.L/R, forearm_twist.L/R,
   hand.L/R` and finger bones `thumb_1/2.L/R, index_1/2.L/R, fingers_1/2.L/R` (middle+ring+pinky

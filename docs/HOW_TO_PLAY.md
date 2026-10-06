@@ -464,8 +464,14 @@ each run: tier 1, a bolted front, a way in round the back, a small ambush at the
 |---|---|
 | 1 | The Merrow House, Mile 9 Diner, the Post Office, Lou's Trailer, Larch Pond Bait & Boat, Lindqvist's Trapline Cabin, Cedar Ridge Fire Lookout, the Larch Street houses |
 | 2 | Pell Pharmacy, Calder Hardware & Feed, St. Ansel's Church, Northwoods Tavern, the Volunteer Fire Station, Cordon Gas & Garage, Tamsin Valley Clinic, the Okafor Barn, Tamsin Timber Camp 4, Ashen Watch Camp, Tamsin River Campground |
-| 3 | Pell Ranger Station, the Grange Hall, Pell's Crossing School, Tamsin Valley Savings & Loan, Timberline Motel, the Okafor Farmhouse |
+| 3 | Pell Ranger Station, the Grange Hall, Pell's Crossing School, Tamsin Valley Savings & Loan, Timberline Motel, the Okafor Farmhouse, the Corvane Larkspur Adit |
 | 4 | Larch Hollow Sawmill |
+
+**Underground.** Below the ground it is always night for the Hollowed: in a cellar or a mine level they
+see without light and run, whatever the hour, and your light is what they see. The **Corvane Larkspur
+Adit**, at the foot of the Larkspur cliffs west of the drop site (a dirt track leads there), goes two
+levels down: a timbered drift with a powder magazine and a refuge station, then a stope that broke
+into a limestone cave. Bring a light, and the keys you find on the way.
 
 ## 9. The Hollowed and other threats
 

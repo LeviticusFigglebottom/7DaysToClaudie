@@ -1,0 +1,71 @@
+{
+ "_doc": "Keys and notes of the Corvane Larkspur Adit (ADR-0044). Note items are note_<note id> (notes/mine.json); models from tools/assetgen/blender_catalogs/items_mine.py.",
+ "defs": [
+  {
+   "id": "corvane_magazine_key",
+   "name": "Magazine Key",
+   "description": "A brass padlock key on a red fob stamped POWDER MAG. No. 1 LEVEL. Kept in the mine office desk.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/mine/corvane_magazine_key"
+  },
+  {
+   "id": "corvane_winze_key",
+   "name": "Winze Gate Key",
+   "description": "A heavy key on a leather thong, CORVANE stamped into its bow. It was Marsh's.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/mine/corvane_winze_key"
+  },
+  {
+   "id": "note_corvane_shift_log",
+   "name": "Shift Boss's Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "corvane_shift_log",
+   "model": "items/mine/note_corvane_shift_log"
+  },
+  {
+   "id": "note_corvane_breakthrough",
+   "name": "Breakthrough Report",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "corvane_breakthrough",
+   "model": "items/mine/note_corvane_breakthrough"
+  },
+  {
+   "id": "note_corvane_refuge",
+   "name": "Scratched on the Refuge Station Door",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "corvane_refuge",
+   "model": "items/mine/note_corvane_refuge"
+  },
+  {
+   "id": "note_corvane_program_seal",
+   "name": "Remand Program Survey Memo",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "corvane_program_seal",
+   "model": "items/mine/note_corvane_program_seal"
+  }
+ ]
+}

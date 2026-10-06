@@ -141,7 +141,10 @@ func _compile() -> void:
 			room["char"] = str(k)
 			rooms[str(k)] = room
 			_check_room(li, room)
-		levels[li] = {"plan": plan, "w": w, "d": plan.size(), "y": level_y(li), "rooms": rooms}
+		# A buried underground level (ADR-0044) runs on under the ground beyond the building: only
+		# its cells under a ground-floor room cut the surface (TerrainHoles).
+		levels[li] = {"plan": plan, "w": w, "d": plan.size(), "y": level_y(li), "rooms": rooms,
+			"buried": li < 0 and bool(lv.get("buried", false))}
 		level_ids.append(li)
 		for row: String in plan:
 			for ch: String in row:

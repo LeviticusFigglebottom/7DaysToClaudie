@@ -37,6 +37,11 @@ FLOOR_FINISHES = [
     "wood_oak", "wood_pine", "carpet_brown", "carpet_blue_worn", "linoleum_check", "linoleum_beige",
     "tile_white_small", "concrete",
 ]
+# Rock finishes for mine drifts and caves, appended after the house finishes (textures/gen/kit_rock.py).
+from .kit_rock import ROCK_FINISH_FNS, ROCK_FLOOR_FINISHES, ROCK_WALL_FINISHES, rock_finish  # noqa: E402
+WALL_FINISHES += ROCK_WALL_FINISHES
+FLOOR_FINISHES += ROCK_FLOOR_FINISHES
+_ROCK_SOURCES = ["tools/assetgen/textures/gen/kit_rock.py"]
 
 
 def _check_slice_order() -> None:
@@ -970,6 +975,8 @@ FINISH_FNS = {f.__name__: f for f in (
 
 
 def _finish(name: str, size: int, seed: int) -> Finish:
+    if name in ROCK_FINISH_FNS:
+        return rock_finish(name, size, seed)
     return FINISH_FNS[name](size, seed + 1009 * (sorted(FINISH_FNS).index(name) + 1))
 
 
@@ -991,32 +998,32 @@ def _write_array(out, size: int, seed: int, names: list[str], channel: str, slic
     Image.fromarray(strip, "RGB").save(str(out) + ".png", optimize=False, compress_level=1)
 
 
-@texture("kit_wall_finishes_albedo", size=1024, seed=7100, kind="array", import_kind="albedo", slices=len(WALL_FINISHES))
+@texture("kit_wall_finishes_albedo", size=1024, seed=7100, kind="array", import_kind="albedo", slices=len(WALL_FINISHES), sources=_ROCK_SOURCES)
 def kit_wall_finishes_albedo(size: int, seed: int, out, slices: int) -> None:
     _write_array(out, size, seed, WALL_FINISHES, "albedo", slices)
 
 
-@texture("kit_wall_finishes_normal", size=1024, seed=7100, kind="array", import_kind="normal", slices=len(WALL_FINISHES))
+@texture("kit_wall_finishes_normal", size=1024, seed=7100, kind="array", import_kind="normal", slices=len(WALL_FINISHES), sources=_ROCK_SOURCES)
 def kit_wall_finishes_normal(size: int, seed: int, out, slices: int) -> None:
     _write_array(out, size, seed, WALL_FINISHES, "normal", slices)
 
 
-@texture("kit_wall_finishes_orm", size=1024, seed=7100, kind="array", import_kind="data", slices=len(WALL_FINISHES))
+@texture("kit_wall_finishes_orm", size=1024, seed=7100, kind="array", import_kind="data", slices=len(WALL_FINISHES), sources=_ROCK_SOURCES)
 def kit_wall_finishes_orm(size: int, seed: int, out, slices: int) -> None:
     _write_array(out, size, seed, WALL_FINISHES, "orm", slices)
 
 
-@texture("kit_floor_finishes_albedo", size=1024, seed=7200, kind="array", import_kind="albedo", slices=len(FLOOR_FINISHES))
+@texture("kit_floor_finishes_albedo", size=1024, seed=7200, kind="array", import_kind="albedo", slices=len(FLOOR_FINISHES), sources=_ROCK_SOURCES)
 def kit_floor_finishes_albedo(size: int, seed: int, out, slices: int) -> None:
     _write_array(out, size, seed, FLOOR_FINISHES, "albedo", slices)
 
 
-@texture("kit_floor_finishes_normal", size=1024, seed=7200, kind="array", import_kind="normal", slices=len(FLOOR_FINISHES))
+@texture("kit_floor_finishes_normal", size=1024, seed=7200, kind="array", import_kind="normal", slices=len(FLOOR_FINISHES), sources=_ROCK_SOURCES)
 def kit_floor_finishes_normal(size: int, seed: int, out, slices: int) -> None:
     _write_array(out, size, seed, FLOOR_FINISHES, "normal", slices)
 
 
-@texture("kit_floor_finishes_orm", size=1024, seed=7200, kind="array", import_kind="data", slices=len(FLOOR_FINISHES))
+@texture("kit_floor_finishes_orm", size=1024, seed=7200, kind="array", import_kind="data", slices=len(FLOOR_FINISHES), sources=_ROCK_SOURCES)
 def kit_floor_finishes_orm(size: int, seed: int, out, slices: int) -> None:
     _write_array(out, size, seed, FLOOR_FINISHES, "orm", slices)
 
