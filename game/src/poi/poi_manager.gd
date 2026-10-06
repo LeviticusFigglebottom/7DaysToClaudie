@@ -12,10 +12,12 @@ extends Node3D
 ## ADR-0030: every building is dressed for its run before it is built (dress_for: alternatives
 ## picked from the world seed and pinned in its saved state, per-run wear), and lots without an
 ## authored pick hold what LotPicker chooses: an authored building from the pool or a generated one.
+## Its ProbeBudget keeps the buildings' interior reflection probes within the renderer's atlas.
 
 ## New ADR-0030 scripts by path, so this compiles before the editor registers their class names.
 const Dressing := preload("res://src/poi/poi_dressing.gd")
 const Lots := preload("res://src/poi/lot_picker.gd")
+const ProbeBudget := preload("res://src/poi/interior_probe_budget.gd")
 
 const SLEEPER_SPAWN: float = 46.0
 const SLEEPER_DESPAWN: float = 95.0
@@ -24,10 +26,16 @@ var world: Node
 var instances: Dictionary = {}
 var _t: float = 0.0
 var _inside: Dictionary = {}
+## Shows only the interior probes nearest the camera (interior_probe_budget.gd).
+var probes: Node
 
 
 func setup_world(w: Node) -> void:
 	world = w
+	# Before any building enters the tree, so the probe cap holds from the first one built.
+	probes = ProbeBudget.new()
+	probes.name = "ProbeBudget"
+	add_child(probes)
 	Game.register_command(&"poi.disarm_trap", _cmd_disarm_trap)
 	for rid: String in (w.terrain as TerrainManager).regions:
 		var rt: RegionTerrain = w.terrain.regions[rid]

@@ -1255,45 +1255,33 @@
     {
      "id": "bunk_1",
      "prop": "wild_bunk_steel",
-     "at": [
-      21,
-      10
+     "level": 1,
+     "pos": [
+      20.9,
+      10.7
      ],
-     "against": "E",
-     "offset": [
-      0,
-      0.5
-     ],
-     "level": 1
+     "rot": 0
     },
     {
      "id": "bunk_2",
      "prop": "wild_bunk_steel",
-     "at": [
-      21,
-      12
+     "level": 1,
+     "pos": [
+      20.9,
+      12.7
      ],
-     "against": "E",
-     "offset": [
-      0,
-      0.5
-     ],
-     "level": 1
+     "rot": 0
     },
     {
      "id": "bunk_3",
      "prop": "wild_bunk_steel",
-     "at": [
-      21,
-      15
-     ],
-     "against": "E",
-     "offset": [
-      0,
-      0.5
-     ],
      "level": 1,
-     "variant": "worn"
+     "variant": "worn",
+     "pos": [
+      20.9,
+      15.4
+     ],
+     "rot": 0
     },
     {
      "id": "bunk_4",
@@ -1309,7 +1297,7 @@
      "id": "dorm_footlocker_1",
      "prop": "wild_footlocker",
      "pos": [
-      20.0,
+      19.35,
       10.7
      ],
      "rot": 90,
@@ -1319,7 +1307,7 @@
      "id": "dorm_footlocker_2",
      "prop": "wild_footlocker",
      "pos": [
-      20.0,
+      19.35,
       12.7
      ],
      "rot": 90,
@@ -1329,8 +1317,8 @@
      "id": "dorm_footlocker_3",
      "prop": "wild_footlocker",
      "pos": [
-      20.0,
-      15.7
+      19.35,
+      15.4
      ],
      "rot": 90,
      "level": 1
@@ -1428,8 +1416,8 @@
     {
      "id": "dorm_1",
      "pos": [
-      21.2,
-      10.5
+      20.9,
+      10.7
      ],
      "enemy": "hollow",
      "pose": "lie",
@@ -1441,8 +1429,8 @@
     {
      "id": "dorm_2",
      "pos": [
-      21.2,
-      15.5
+      20.9,
+      15.4
      ],
      "enemy": "lurcher",
      "pose": "lie",

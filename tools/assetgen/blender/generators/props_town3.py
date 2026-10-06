@@ -309,9 +309,16 @@ def town3_dryer(p: Prop) -> None:
     anchors), so a Hollowed can be found curled up inside with its legs over the lip. Worn: the door wide,
     clothes dragged out; destroyed: the door torn off, the front kicked in."""
     W, D, H = 0.95, 1.12, 1.95
+    cz, rr = 0.9, 0.4
     p.box((W - 0.02, D - 0.02, 0.1), (0, 0, 0.05), M.STEEL_BLACK, bevel=0.004)
-    body = p.box((W, D, H - 0.1), (0, 0, 0.1 + (H - 0.1) / 2), M.ENAMEL, bevel=0.012)
+    body = p.hollow((W, D - 0.02, H - 0.1), (0, 0.01, 0.1 + (H - 0.1) / 2), M.ENAMEL, wall=0.02, open_face="-Y", bevel=0.008)
     body.floor_wear = 0.6
+    # The front plate with the drum's mouth cut out (two halves, each a simple outline with a half-round
+    # bite), so the open door shows the drum and whoever is curled up in it rather than a solid face.
+    mouth = rr + 0.02
+    for side in (-1.0, 1.0):
+        arc = [(side * mouth * math.sin(math.pi * k / 16), cz + mouth * math.cos(math.pi * k / 16)) for k in range(17)]
+        p.prism([(0.0, 0.1), (side * W / 2, 0.1), (side * W / 2, H), (0.0, H)] + arc, 0.02, M.ENAMEL, plane="XZ", offset=-D / 2)
     # recessed control band
     p.box((W - 0.06, 0.015, 0.3), (0, -D / 2 - 0.007, H - 0.2), M.STAINLESS, bevel=0.004)
     plate(p, 0.5, 0.125, (-0.1, -D / 2 - 0.016, H - 0.17), atlas("coin_panel"), t=0.003)
@@ -321,7 +328,6 @@ def town3_dryer(p: Prop) -> None:
     # lint drawer
     p.box((W - 0.2, 0.02, 0.14), (0, -D / 2 - 0.01, 0.22), M.STAINLESS, bevel=0.004)
     p.box((0.2, 0.03, 0.025), (0, -D / 2 - 0.03, 0.26), M.PL_BLACK, bevel=0.006, tags=("knob",))
-    cz, rr = 0.9, 0.4
     # the drum: a perforated stainless barrel open at the front
     p.lathe([(rr, 0.0), (rr + 0.05, 0.0), (rr + 0.05, -0.02), (rr, -0.02)], (0, -D / 2 + 0.005, cz), M.STEEL_BLACK, segs=28, axis="Y",
             cap_bottom=False, cap_top=False, wear=0.3)

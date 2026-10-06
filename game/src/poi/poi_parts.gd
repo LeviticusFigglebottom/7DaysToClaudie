@@ -97,8 +97,8 @@ static func kit_mesh(piece: String) -> Mesh:
 		return _meshes[piece]
 	var id: String = KIT + piece
 	var mesh: Mesh
-	if ModelLibrary.has_model(id):
-		var src: Mesh = ModelLibrary.mesh(id)
+	var src: Mesh = ModelLibrary.generated_mesh(id)
+	if src != null:
 		var am := ArrayMesh.new()
 		for s: int in src.get_surface_count():
 			am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, src.surface_get_arrays(s))

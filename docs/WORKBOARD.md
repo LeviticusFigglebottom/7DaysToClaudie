@@ -8,8 +8,8 @@ way it never conflicts.
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
 | Integrator `session_018E4KRjV3zJkPMcpffWvXJq` | `claude/compassionate-dirac-8mtvxi` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Agents O (random worlds), P (pool buildings), Q (weather) | Random worlds v2 (big streaming maps, organic towns); full screenshot QA |
-| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Third block merged (dd01229); previewing it and checking it with no generated assets | Hollowed hounds and Murmurs (ADR-0034), then base-building fidelity (ADR-0035) |
-| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | Downloadable builds with assets; the player-reported freeze and crash | A performance pass for real GPUs (TD-003) |
+| Session 2 `session_01FL8uPmvrm73zUGXv6bs3PZ` | `claude/hollowmere-wildlife-town` | Wildlife and town content | Hollowed hounds and Murmurs (ADR-0034); the third block is merged (dd01229, 437535c) | Base-building fidelity (ADR-0035) |
+| Session 3 `session_01WUr5pb2Qqt1f8oLrbvKg1F` | `claude/hollowmere-playable` | Playable builds and stability | The load stall (buildings built in boot steps, validators on workers), thread races in terrain and vegetation | The 4.7.2 notice, a rendered probe-atlas check, downloadable builds, then a performance pass (TD-003) |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -33,8 +33,8 @@ way it never conflicts.
 | Random worlds (O, ADR-0031) | integrator | `game/src/worldgen/**`, `game/src/ui/new_game_panel.gd`, `game/data/config/world_gen.json`, `game/src/tools/cli/rwg_*` |
 | Pool buildings (P) | integrator | `game/data/props/town3.json`, `props_town3.py`, the laundromat, grocery, lumber & feed, library and radio station JSONs |
 | Weather (Q, ADR-0033) | integrator | `game/src/world/environment/**`, `game/src/world/fx/` (rain, snow), the weather hunks in every shader, rain and thunder audio |
-| Town buildings (ADR-0026, merged; polish only) | session 2 | the school, fire station and bank JSONs, `game/data/props/town2.json` and its generators, the vault lock kind |
-| Builds and stability | session 3 | `.github/workflows/` (new export jobs), `game/export_presets.cfg`, the load sequence (`game/src/app/game_world.gd`, `world_loader.gd`) and fixes it reports to the hub |
+| Hounds and Murmurs (ADR-0034) | session 2 | new enemy defs in `game/data/enemies/`, their generators and populations, additive hunks in `game/src/ai/` (quadruped and flock pipelines) |
+| Builds and stability | session 3 | `.github/workflows/` (new export jobs), `game/export_presets.cfg`, the load sequence (`game/src/app/game_world.gd`, `world_loader.gd`, `PoiManager`'s placement path, `PoiBuilder.build`'s validator argument), thread-safety fixes in `game/src/world/terrain/` and `game/src/world/vegetation/`, and fixes it reports to the hub |
 
 ## Allocations
 * ADR: 0026 (vault, S2), 0027 (wildlife, S2), 0031 (random worlds), 0032 (pool, if needed),
@@ -58,13 +58,23 @@ On a fresh setup:
 * every asset was a primitive stand-in, with no textures and no grass;
 * running up to one of them crashed the game.
 
-Diagnosis so far:
-* The generated assets aren't committed, and the toolchain that builds them is Linux-only
-  (`tools/versions.env` pins Linux Godot and Blender). A Windows or macOS clone therefore runs on
-  the procedural stand-ins, a mode nobody had played.
-* "Not responding": the end of the load does a lot of work on the main thread in one frame.
-* The crash is not diagnosed yet. The player's log is at `user://logs/godot.log`; the user dir
-  is named `hollowmere`.
+Their setup: Windows 10, an AMD RX 9070 XT, the project opened in the Godot **4.7.1** editor (the
+project pins 4.7.2).
+
+Diagnosis:
+* **The crash** was the interior reflection probes. The log shows "Reflection probe atlas index
+  invalid ... (64) may have been exceeded", then `FATAL: Index p_index = -1 is out of bounds
+  (size = 64)`. Every building is built at load with up to 8 interior probes: 92 for the main
+  world's 31 buildings, 61 of them within 150 m of one point in Pell's Crossing. More than 64 in
+  view overflow the atlas. Fixed in the hub: PoiManager's probe budget
+  (`game/src/poi/interior_probe_budget.gd`) shows only the nearest 32 to 48 (TD-044).
+* **Primitive stand-ins:** the generated assets aren't committed, and the toolchain that builds
+  them is Linux-only (`tools/versions.env` pins Linux Godot and Blender). A Windows clone runs on
+  the procedural stand-ins. Session 3's downloadable builds fix this.
+* **"Not responding":** the end of the load does a lot of work on the main thread in one frame;
+  `PoiManager.setup_world` builds every building there. Session 3 is on it.
+* A model that exists on disk but doesn't load (built, not imported yet) stopped buildings
+  halfway with script errors. Every generated-model load now falls back to its stand-in.
 
 ## Lessons (read before your first render)
 * Software Vulkan takes minutes per image. Imports and renders take
@@ -76,5 +86,9 @@ Diagnosis so far:
 * A new `class_name` needs an import before `-s` scripts can see it.
 * `compose_region.gd` now loads content (d4d34eb); never cache a region composed without content.
 * The asset manifest merges only the tasks each build touched (c410c49).
+* Reflection probes share a 64-slot atlas, and going past it crashes the engine. Put any new
+  probe in the `interior_probe` group so PoiManager's budget caps it.
+* A generated model can exist on disk and still not load (built, not imported yet). Check the
+  loaded resource for null before `instantiate()`; ModelLibrary does.
 * The instance shader-variable buffer is 262144. std_surface uses instance slots 0–4 (light_lit
   is 4); kit_wall uses 0 and 3. Don't renumber them.
