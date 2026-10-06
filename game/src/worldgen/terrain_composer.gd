@@ -14,6 +14,15 @@ extends RefCounted
 ##      "freeboard" above the lake or river they overlap, grade only dry ground and leave the water)
 ##   6. biome map, splat weights (8-layer palette), vegetation mask
 ##
+## World towns (ADR-0040, random worlds v2): a generated world lists its organic towns in world.json
+## (`towns`, each a framework of frame lots at the world origin). Every region a town's bounds come
+## near adds its streets as world roads (graded from the reference ground, no border fade), a pad
+## per lot at the lot's own height `y` (yard ground, grass at YARD_VEG, giving way to the streets)
+## and its paved square; a lot is placed by the region holding its frame's centre, and each region
+## the town touches places the fixtures standing in it. Both sides of a border compute the same
+## samples from world data alone, so a town may straddle borders. Worlds without `towns` (the main
+## map, v1 worlds) compose exactly as before.
+##
 ## Streaming (ADR-0038): the per-sample passes (macro and noise, water, roads, surface) can run in
 ## row bands, each on a Thread of its own writing its own arrays, merged in row order after the join
 ## (one PackedArray written from several threads can fork). Field rasterisation, cliffs and pads
@@ -39,6 +48,13 @@ const DEFAULT_PALETTE: PackedStringArray = ["forest_floor", "moss_ground", "gras
 const CANCEL_ROWS: int = 64
 ## Cell size (m) of the surface pass's index of pads, paints, paths and clearings.
 const BUCKET: float = 32.0
+## World towns (ADR-0040): a lot pad's skirt (m), the vegetation a yard keeps (grass, 0..1), how far
+## round a town's bounds a region looks for it (m), and how far beyond a street's paved corridor
+## (half width + shoulder) a lot pad eases in (m): on the corridor it grades nothing.
+const LOT_SKIRT: float = 5.0
+const YARD_VEG: float = 0.6
+const TOWN_REACH: float = 40.0
+const LOT_ROAD_YIELD: float = 1.0
 
 ## By path: new with ADR-0038, so this compiles before the editor registers its class name.
 const Cache := preload("res://src/worldgen/region_cache.gd")
@@ -172,6 +188,8 @@ class _Build:
 	## Axis-aligned bounds of each pad (grown 1.5 m), for the pad test's early out.
 	var _pad_boxes: Array[Rect2] = []
 	var paths: Array[Dictionary] = []
+	## World towns near this region (ADR-0040): [{id, fw: FrameworkDef}] in world.json order.
+	var _towns: Array[Dictionary] = []
 	var max_band: float = 0.0
 	## The world detail noise every region shares (and blends to at its borders).
 	var world_noise := FastNoiseLite.new()
@@ -250,6 +268,10 @@ class _Build:
 	var _pad_rot := PackedFloat64Array()
 	var _pad_size := PackedVector2Array()
 	var _pad_bi := PackedInt32Array()
+	## Per pad: the vegetation it keeps (0 but in a world town's yards) and the palette layer it is
+	## paved with (-1: none; a world town's square).
+	var _pad_veg := PackedFloat64Array()
+	var _pad_surf := PackedInt32Array()
 	var _cl_pos := PackedVector2Array()
 	var _cl_r := PackedFloat64Array()
 	## Every path's points in one array: path pi's start at _path_off[pi].
@@ -539,6 +561,46 @@ class _Build:
 					paints.append({"biome": str(f["biome"]), "pos": _v2(f["circle"]), "r": float(f.get("radius", 100.0)), "blend": float(f.get("blend", 30.0))})
 				"path":
 					paths.append({"line": Polyline2.from_array(f["points"]), "width": float(f.get("width", 2.0)), "surface": str(f.get("surface", "dirt"))})
+		_collect_towns()
+
+	## World towns whose bounds come near this region (ADR-0040): a pad per lot (its frame, turned
+	## by -yaw as the composer turns pads; target the lot's `y`) and the square. Their streets join
+	## the roads in _road_fields.
+	func _collect_towns() -> void:
+		if world.towns.is_empty():
+			return
+		var content: Node = _content()
+		if content == null:
+			return
+		for tw: Dictionary in world.towns:
+			if not (tw["bounds"] as Rect2).grow(TOWN_REACH).intersects(rect):
+				continue
+			var fw: FrameworkDef = content.get_def(&"framework", StringName(str(tw["framework"]))) as FrameworkDef
+			if fw == null:
+				push_warning("TerrainComposer: town %s: framework %s not registered" % [tw["id"], tw["framework"]])
+				continue
+			var tid: String = str(tw["id"])
+			_towns.append({"id": tid, "fw": fw})
+			# Town ground over its disc (its streets and what lies between them), as a v1 town's pad
+			# had; the lots are yards.
+			if float(tw["radius"]) > 0.0:
+				paints.append({"biome": "town", "pos": tw["center"], "r": float(tw["radius"]), "blend": 40.0})
+			for lv: Variant in fw.lots:
+				var l: Dictionary = lv
+				if l.has("frame"):
+					pads.append(_frame_pad(l["frame"], float(l.get("y", 0.0)), "lot", String(fw.id), "%s/%s" % [tid, l.get("id", "")], "yard", YARD_VEG, ""))
+			if fw.plaza.has("frame"):
+				pads.append(_frame_pad(fw.plaza["frame"], float(fw.plaza.get("y", 0.0)), "plaza", String(fw.id), "%s/plaza" % tid, "town", 0.0, "asphalt"))
+
+	## A world pad over a frame [cx, cz, w, d, yaw] (yaw as PoiManager.lot_xf turns a building: the
+	## composer's rotation is -yaw, and the pad's corner is the frame's local (-w/2, -d/2)).
+	static func _frame_pad(f: Array, y: float, kind: String, def_id: String, id: String, biome: String, veg: float, surface: String) -> Dictionary:
+		var w: float = float(f[2])
+		var d: float = float(f[3])
+		var a: float = -deg_to_rad(float(f[4]))
+		var c := Vector2(float(f[0]), float(f[1]))
+		return {"kind": kind, "def": def_id, "id": id, "origin": c + Vector2(-w * 0.5, -d * 0.5).rotated(a), "rot": a, "size": Vector2(w, d),
+			"skirt": LOT_SKIRT, "biome": biome, "keep_water": false, "freeboard": 0.0, "world": true, "target": y, "veg": veg, "surface": surface}
 
 	func _pad_for(f: Dictionary) -> Dictionary:
 		var size := Vector2(40, 40)
@@ -902,6 +964,17 @@ class _Build:
 					"markings": bool(f.get("markings", true))})
 			elif str(f.get("type", "")) == "framework":
 				_framework_roads(f)
+		# World towns' streets (ADR-0040): world roads, graded from the reference ground in every
+		# region they cross (one profile, memoised under the town and street).
+		for tw: Dictionary in _towns:
+			var fw: FrameworkDef = tw["fw"]
+			for rv: Variant in fw.roads:
+				if not rv is Dictionary or ((rv as Dictionary).get("points", []) as Array).size() < 2:
+					continue
+				var rd: Dictionary = rv
+				road_list.append({"id": "%s/%s" % [tw["id"], rd.get("id", "street")], "line": Polyline2.from_array(rd["points"]),
+					"width": float(rd.get("width", 6.0)), "shoulder": float(rd.get("shoulder", 0.8)), "surface": str(rd.get("surface", "asphalt")),
+					"bridges": [], "world": true, "markings": bool(rd.get("markings", false)), "profile_key": "town:%s:%s" % [tw["id"], rd.get("id", "")]})
 		var count: int = cn * cn
 		r_d = PackedFloat32Array()
 		r_d.resize(count)
@@ -922,7 +995,8 @@ class _Build:
 			if bool(r["world"]) and world.road_grade == "world":
 				# Graded from world data alone, a world road has one profile in every region it
 				# crosses: built once per world (each region used to build the whole road).
-				var prof: Dictionary = world.road_profile(int(r["world_index"]), _profile_data.bind(r))
+				var key: Variant = r["profile_key"] if r.has("profile_key") else int(r["world_index"])
+				var prof: Dictionary = world.road_profile(key, _profile_data.bind(r))
 				r["profile"] = prof["profile"]
 				r["step"] = prof["step"]
 				r["spans"] = prof["spans"]
@@ -1182,22 +1256,27 @@ class _Build:
 			# to the pad. Its height is the water's plus a freeboard, not the ground's mean: the POI's
 			# docks, piles and boats are authored against the water, which an "auto" lake level moves.
 			var keep_water: bool = pad["keep_water"]
-			# Mean height over the pad.
-			var acc: float = 0.0
-			var cnt: int = 0
-			var wet_lvl: float = 0.0
-			var wet_cnt: int = 0
-			for k: int in 25:
-				var lp := Vector2((k % 5 + 0.5) / 5.0 * size.x, (k / 5 + 0.5) / 5.0 * size.y)
-				var wp: Vector2 = o + lp.rotated(rot)
-				acc += _sample(wp.x, wp.y)
-				cnt += 1
-				if keep_water and _water_d(wp.x, wp.y) < 0.0:
-					wet_lvl += _water_field(w_lvl, wp.x, wp.y)
-					wet_cnt += 1
-			var target: float = acc / cnt + 0.05
-			if wet_cnt > 0:
-				target = wet_lvl / wet_cnt + float(pad["freeboard"])
+			# A world town's pad (ADR-0040) is graded to its own height from world data, everywhere
+			# alike (no border fade), and gives way to the streets.
+			var world_pad: bool = bool(pad.get("world", false))
+			var target: float = float(pad.get("target", 0.0))
+			if not world_pad:
+				# Mean height over the pad.
+				var acc: float = 0.0
+				var cnt: int = 0
+				var wet_lvl: float = 0.0
+				var wet_cnt: int = 0
+				for k: int in 25:
+					var lp := Vector2((k % 5 + 0.5) / 5.0 * size.x, (k / 5 + 0.5) / 5.0 * size.y)
+					var wp: Vector2 = o + lp.rotated(rot)
+					acc += _sample(wp.x, wp.y)
+					cnt += 1
+					if keep_water and _water_d(wp.x, wp.y) < 0.0:
+						wet_lvl += _water_field(w_lvl, wp.x, wp.y)
+						wet_cnt += 1
+				target = acc / cnt + 0.05
+				if wet_cnt > 0:
+					target = wet_lvl / wet_cnt + float(pad["freeboard"])
 			pad["height"] = target
 			var corners: Array[Vector2] = [o, o + Vector2(size.x, 0).rotated(rot), o + size.rotated(rot), o + Vector2(0, size.y).rotated(rot)]
 			var bb := Rect2(corners[0], Vector2.ZERO)
@@ -1215,7 +1294,57 @@ class _Build:
 						# Nothing in the water; the dry ground eases down to the bank over its last 2 m
 						# rather than standing over the water as a step.
 						wgt *= smoothstep(0.0, 2.0, _water_d(x, z))
-					h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
+					if world_pad:
+						# Only the skirt here: the frames are graded last (below).
+						if d > 0.0:
+							h[i] = lerpf(h[i], target, wgt * _yield_to_roads(x, z))
+					else:
+						h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
+		# A world town's lots stand 1 m apart and their skirts reach over each other: each frame is
+		# graded last, all of it at its own height (frames never overlap, so their order is moot),
+		# and a building on it stands on level ground to its corners (ADR-0040).
+		for pad2: Dictionary in pads:
+			if not bool(pad2.get("world", false)):
+				continue
+			var o2: Vector2 = pad2["origin"]
+			var size2: Vector2 = pad2["size"]
+			var rot2: float = pad2["rot"]
+			var target2: float = pad2["height"]
+			var bb2 := Rect2(o2, Vector2.ZERO)
+			for c2: Vector2 in [o2 + Vector2(size2.x, 0).rotated(rot2), o2 + size2.rotated(rot2), o2 + Vector2(0, size2.y).rotated(rot2)]:
+				bb2 = bb2.expand(c2)
+			_for_box(bb2, func(i: int, x: float, z: float) -> void:
+				var lp: Vector2 = (Vector2(x, z) - o2).rotated(-rot2)
+				if lp.x >= 0.0 and lp.y >= 0.0 and lp.x <= size2.x and lp.y <= size2.y:
+					h[i] = lerpf(h[i], target2, _yield_to_roads(x, z)))
+
+	## How much a world town's pad may grade a sample (ADR-0040): nothing on a road's paved corridor
+	## (half width + shoulder), easing to all of it LOT_ROAD_YIELD m beyond, so a yard never bumps a
+	## street. The road and its distance are read from the road fields as _band_roads reads them.
+	func _yield_to_roads(x: float, z: float) -> float:
+		var gx: float = clampf((x - cx0) / cs, 0.0, cn - 1.001)
+		var gz: float = clampf((z - cz0) / cs, 0.0, cn - 1.001)
+		var cx: int = mini(int(gx), cn - 2)
+		var cz: int = mini(int(gz), cn - 2)
+		var ci: int = cz * cn + cx
+		var ri: int = r_idx[ci]
+		if ri < 0:
+			ri = r_idx[ci + cn + 1]
+			if ri < 0:
+				return 1.0
+		var fx: float = gx - cx
+		var fz: float = gz - cz
+		var d: float
+		var i00: int = r_idx[ci]
+		if i00 == r_idx[ci + 1] and i00 == r_idx[ci + cn] and i00 == r_idx[ci + cn + 1]:
+			d = _bl(r_d, ci, fx, fz)
+		else:
+			var nci: int = ci + (1 if fx > 0.5 else 0) + (cn if fz > 0.5 else 0)
+			if r_idx[nci] >= 0:
+				ri = r_idx[nci]
+			d = r_d[nci]
+		var inner: float = _r_half[ri] + _r_sh[ri]
+		return smoothstep(inner, inner + LOT_ROAD_YIELD, d)
 
 	# --- 6. Surface: biome, splat, vegetation ---------------------------------------------------
 
@@ -1246,7 +1375,7 @@ class _Build:
 					_s_kind.append(K_CONIFER)
 				"birch_grove":
 					_s_kind.append(K_BIRCH)
-				"meadow":
+				"meadow", "yard":
 					_s_kind.append(K_MEADOW)
 				"town":
 					_s_kind.append(K_TOWN)
@@ -1279,6 +1408,7 @@ class _Build:
 			_pad_rot.append(float(pad0["rot"]))
 			_pad_size.append(s0)
 			_pad_bi.append(biomes.find(pad0["biome"]))
+			_pad_veg.append(float(pad0.get("veg", 0.0)))
 		var clear_boxes: Array[Rect2] = []
 		for cl0: Dictionary in clearings:
 			var cr: float = float(cl0["r"]) + 6.0
@@ -1292,6 +1422,9 @@ class _Build:
 		for ri: int in road_list.size():
 			var surface: String = str(road_list[ri]["surface"])
 			_r_surf.append(_s_layers[6] if surface == "asphalt" else (_s_layers[5] if surface == "gravel" else _s_layers[3]))
+		for pad1: Dictionary in pads:
+			var psurf: String = str(pad1.get("surface", ""))
+			_pad_surf.append(-1 if psurf == "" else (_s_layers[6] if psurf == "asphalt" else (_s_layers[5] if psurf == "gravel" else _s_layers[3])))
 		for pth: Dictionary in paths:
 			var pl: Polyline2 = pth["line"]
 			_path_off.append(_path_pts.size())
@@ -1513,6 +1646,8 @@ class _Build:
 		var drot: PackedFloat64Array = _pad_rot
 		var dsize: PackedVector2Array = _pad_size
 		var dbi: PackedInt32Array = _pad_bi
+		var dveg: PackedFloat64Array = _pad_veg
+		var dsurf: PackedInt32Array = _pad_surf
 		var cst: PackedInt32Array = _bk_clear_start
 		var cit: PackedInt32Array = _bk_clear_items
 		var clpos: PackedVector2Array = _cl_pos
@@ -1700,6 +1835,10 @@ class _Build:
 					am = 0.5 + n2 * 0.5
 					if L_GRAVEL >= 0 and am > 0.0:
 						w[L_GRAVEL] += am
+				# A paved pad (a world town's square) is its surface, under the roads.
+				if pad_hit >= 0 and dsurf[pad_hit] >= 0:
+					w.fill(0.0)
+					w[dsurf[pad_hit]] += 2.0
 				var veg: float = 1.0
 				if wd < 2.0:
 					# Sedges and horsetail grow right down to the waterline (and a little into it);
@@ -1767,7 +1906,8 @@ class _Build:
 							w[L_DIRT] += am
 						veg = minf(veg, smoothstep(pw - 0.3, pw + 1.5, pd))
 				if pad_hit >= 0:
-					veg = 0.0
+					# Bare under a building's pad; a world town's yard keeps some grass.
+					veg = minf(veg, dveg[pad_hit])
 				for j3: int in range(cst[cell], cst[cell + 1]):
 					var ck: int = cit[j3]
 					var dc: float = Vector2(x, z).distance_to(clpos[ck])
@@ -1833,9 +1973,27 @@ class _Build:
 				"frontier":
 					rt.frontiers.append(f)
 		for pad: Dictionary in pads:
+			if bool(pad.get("world", false)):
+				continue
 			var o: Vector2 = pad["origin"]
 			rt.placements.append({"kind": pad["kind"], "def": pad["def"], "id": pad["id"], "origin": [o.x, float(pad.get("height", hf.sample(o.x, o.y))), o.y],
 				"rotation": rad_to_deg(float(pad["rot"])), "size": [pad["size"].x, pad["size"].y]})
+		# World towns (ADR-0040): a lot is placed by the region holding its frame's centre (one owner
+		# each; origin the frame's centre at the lot's height, rotation -yaw as the composer turns),
+		# and every region the town touches places the fixtures standing in its rect (`town`).
+		for tw: Dictionary in _towns:
+			var fw: FrameworkDef = tw["fw"]
+			for lv: Variant in fw.lots:
+				var l: Dictionary = lv
+				if not l.has("frame"):
+					continue
+				var f: Array = l["frame"]
+				if world.region_at(float(f[0]), float(f[1])) != region_id:
+					continue
+				rt.placements.append({"kind": "lot", "def": String(fw.id), "town": tw["id"], "lot": str(l.get("id", "")), "id": "%s/%s" % [tw["id"], l.get("id", "")],
+					"origin": [float(f[0]), float(l.get("y", 0.0)), float(f[1])], "rotation": -float(f[4]), "size": [float(f[2]), float(f[3])]})
+			rt.placements.append({"kind": "town", "def": String(fw.id), "id": tw["id"], "origin": [0.0, 0.0, 0.0], "rotation": 0.0,
+				"rect": [rect.position.x, rect.position.y, rect.size.x, rect.size.y]})
 		for r: Dictionary in road_list:
 			var line: Polyline2 = r["line"]
 			if not line.bounds.grow(16.0).intersects(margin) or not r.has("profile"):

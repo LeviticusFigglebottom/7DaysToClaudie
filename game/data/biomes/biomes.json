@@ -17,6 +17,9 @@
     {"id": "town", "name": "Town", "description": "Overgrown lots and cracked asphalt.",
      "vegetation": {"meadow_grass": 16.0, "paper_birch": 0.1, "fireweed": 1.5, "deadfall_branches": 0.2, "bloom_caps": 2.0},
      "ground": ["grass", "dirt", "gravel"], "ambience": "town", "temperature_offset": 0.5, "spawns": {"hollow": 10, "lurcher": 2, "keener": 1, "blister": 1.2, "husk": 1.0, "rammer": 0.4}, "spawn_density": 1.4, "fog_tint": "#a6a8a8"},
+    {"id": "yard", "name": "Yard", "description": "Lawns gone to seed round the houses of a town: long grass, no trees.",
+     "vegetation": {"meadow_grass": 24.0},
+     "ground": ["grass", "dirt"], "ambience": "town", "temperature_offset": 0.5, "spawns": {"hollow": 10, "lurcher": 2, "keener": 1, "blister": 1.2, "husk": 1.0, "rammer": 0.4}, "spawn_density": 1.4, "fog_tint": "#a6a8a8"},
     {"id": "rocky_slope", "name": "Rocky Slope", "description": "Talus and stunted fir.",
      "vegetation": {"grey_fir": 0.5, "dead_snag": 0.2, "granite_boulder": 0.6, "loose_stone": 1.2, "sword_fern": 1.0, "forest_moss": 2.0, "forest_litter": 1.0, "bloom_caps": 2.5},
      "ground": ["rock", "gravel"], "ambience": "forest", "temperature_offset": -1.5, "spawns": {"hollow": 10}, "spawn_density": 0.4, "fog_tint": "#9ea4a8"}

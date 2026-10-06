@@ -80,6 +80,9 @@ var timings: Dictionary = {}
 var sub_timings: Dictionary = {}
 var warnings: PackedStringArray = []
 var progress: Callable = Callable()
+## Test hook: town sites to use instead of searching for them ([{kind, center: Vector2, radius}];
+## the seam test puts a town across region borders). Empty in play.
+var test_sites: Array = []
 
 var _t0: int = 0
 var _t_sub: int = 0
@@ -417,6 +420,8 @@ func _town_sites() -> void:
 	var want: int = int(floor(density * size * size / 16.0 + r.randf()))
 	if density > 0.0:
 		want = maxi(want, 1)
+	if not test_sites.is_empty():
+		want = test_sites.size()
 	if want <= 0 or kinds_cfg.is_empty():
 		return
 	var mix: Dictionary = (tcfg.get("mix", {}) as Dictionary).get(settings.choice("town_size"), {"village": 1.0})
@@ -434,9 +439,20 @@ func _town_sites() -> void:
 	var sc: Dictionary = tcfg.get("score", {})
 	var smooth_k: float = float(tcfg.get("core_smoothing", 0.5))
 	var half: float = size * 512.0
+	if not test_sites.is_empty():
+		kinds.clear()
+		for ts: Variant in test_sites:
+			kinds.append(str(ts["kind"]))
 	for ki: int in kinds.size():
 		var kind: String = kinds[ki]
 		_sub("Choosing town sites", 0.3, 0.34, float(ki) / kinds.size())
+		if not test_sites.is_empty():
+			var tc: Vector2 = test_sites[ki]["center"]
+			var tname: String = str(pool.pop_front()) if not pool.is_empty() else "Town %d" % (ki + 1)
+			towns.append({"id": _slug(tname), "name": tname, "kind": kind, "fw_id": "%s_%s" % [world_id, _slug(tname)], "center": tc,
+				"radius": float(test_sites[ki]["radius"]), "core": minf(float((kinds_cfg.get(kind, {}) as Dictionary).get("core", 80.0)), float(test_sites[ki]["radius"]) * 0.6),
+				"cell": cell_at(tc), "tier": [1, 2], "plan": {}, "authored": PackedStringArray(), "bounds": Rect2(tc, Vector2.ZERO)})
+			continue
 		var kd: Dictionary = kinds_cfg.get(kind, {})
 		var rr: Array = kd.get("radius", [200.0, 250.0])
 		var radius: float = minf(r.randf_range(float(rr[0]), float(rr[1])), half - edge - 40.0)
