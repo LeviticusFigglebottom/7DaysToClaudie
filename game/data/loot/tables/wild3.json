@@ -1,0 +1,500 @@
+{
+ "_doc": "Loot tables of the wilderness set pieces, round 3 (containers/wild3.json): the camp's convoy stores and the families' footlockers, the lodge's guns, pantry and meat, the quarantine camp's cold chain and Cordon crates, the Haldanes' bunker and workbench.",
+ "defs": [
+  {
+   "id": "w3_walkin_stores",
+   "rolls": [
+    2,
+    4
+   ],
+   "empty_chance": 0.0,
+   "entries": [
+    {
+     "table": "food_canned",
+     "weight": 8
+    },
+    {
+     "item": "ration_bar",
+     "weight": 6,
+     "count": [
+      1,
+      4
+     ]
+    },
+    {
+     "item": "water_bottle_clean",
+     "weight": 6,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "first_aid_kit",
+     "weight": 2
+    },
+    {
+     "item": "cloth_bandage",
+     "weight": 3,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "antifungal",
+     "weight": 1,
+     "tier_min": 2
+    },
+    {
+     "item": "painkillers",
+     "weight": 2
+    }
+   ]
+  },
+  {
+   "id": "w3_camp_footlocker",
+   "rolls": [
+    1,
+    2
+   ],
+   "empty_chance": 0.25,
+   "entries": [
+    {
+     "item": "cloth",
+     "weight": 4,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "scrip",
+     "weight": 3,
+     "count": [
+      2,
+      8
+     ]
+    },
+    {
+     "item": "lighter",
+     "weight": 2
+    },
+    {
+     "item": "flashlight",
+     "weight": 2
+    },
+    {
+     "item": "canned_beans",
+     "weight": 3
+    },
+    {
+     "item": "water_bottle_dirty",
+     "weight": 2
+    },
+    {
+     "item": "painkillers",
+     "weight": 1
+    },
+    {
+     "table": "reading",
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "id": "w3_infirmary_cabinet",
+   "rolls": [
+    1,
+    3
+   ],
+   "empty_chance": 0.15,
+   "entries": [
+    {
+     "item": "cloth_bandage",
+     "weight": 6,
+     "count": [
+      1,
+      4
+     ]
+    },
+    {
+     "item": "painkillers",
+     "weight": 4
+    },
+    {
+     "item": "first_aid_kit",
+     "weight": 2
+    },
+    {
+     "item": "antifungal",
+     "weight": 1,
+     "tier_min": 2
+    },
+    {
+     "item": "yarrow_poultice",
+     "weight": 2
+    }
+   ]
+  },
+  {
+   "id": "w3_gun_cabinet",
+   "rolls": [
+    2,
+    3
+   ],
+   "empty_chance": 0.0,
+   "entries": [
+    {
+     "item": "revolver",
+     "weight": 3,
+     "tier_min": 2,
+     "quality_bias": 1
+    },
+    {
+     "item": "ammo_38",
+     "weight": 8,
+     "count": [
+      6,
+      18
+     ]
+    },
+    {
+     "item": "machete",
+     "weight": 2,
+     "quality_bias": 1
+    },
+    {
+     "item": "hatchet",
+     "weight": 2
+    },
+    {
+     "item": "kitchen_knife",
+     "weight": 2
+    },
+    {
+     "item": "flashlight",
+     "weight": 2
+    },
+    {
+     "table": "weapons_rare",
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "id": "w3_lodge_pantry",
+   "rolls": [
+    1,
+    3
+   ],
+   "empty_chance": 0.15,
+   "entries": [
+    {
+     "table": "food_canned",
+     "weight": 6
+    },
+    {
+     "item": "farm_preserves",
+     "weight": 3
+    },
+    {
+     "item": "cooked_venison",
+     "weight": 2
+    },
+    {
+     "item": "water_bottle_clean",
+     "weight": 2
+    },
+    {
+     "item": "lighter",
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "id": "w3_meat_locker",
+   "rolls": [
+    1,
+    2
+   ],
+   "empty_chance": 0.2,
+   "entries": [
+    {
+     "item": "raw_venison",
+     "weight": 4,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "deer_hide",
+     "weight": 2
+    },
+    {
+     "item": "sinew",
+     "weight": 3,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "bone",
+     "weight": 2,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "kitchen_knife",
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "id": "w3_qc_cold_chain",
+   "rolls": [
+    2,
+    4
+   ],
+   "empty_chance": 0.0,
+   "entries": [
+    {
+     "item": "antifungal",
+     "weight": 6,
+     "count": [
+      1,
+      2
+     ]
+    },
+    {
+     "item": "first_aid_kit",
+     "weight": 3
+    },
+    {
+     "item": "painkillers",
+     "weight": 3
+    },
+    {
+     "item": "cloth_bandage",
+     "weight": 3,
+     "count": [
+      2,
+      4
+     ]
+    },
+    {
+     "item": "bloom_sample",
+     "weight": 1,
+     "tier_min": 3
+    }
+   ]
+  },
+  {
+   "id": "w3_qc_supply",
+   "rolls": [
+    1,
+    3
+   ],
+   "empty_chance": 0.15,
+   "entries": [
+    {
+     "item": "ration_bar",
+     "weight": 6,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "water_bottle_clean",
+     "weight": 5,
+     "count": [
+      1,
+      2
+     ]
+    },
+    {
+     "item": "cloth_bandage",
+     "weight": 3,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "duct_tape",
+     "weight": 2
+    },
+    {
+     "item": "flashlight",
+     "weight": 1
+    },
+    {
+     "item": "cordage",
+     "weight": 2
+    }
+   ]
+  },
+  {
+   "id": "w3_qc_command",
+   "rolls": [
+    1,
+    3
+   ],
+   "empty_chance": 0.1,
+   "entries": [
+    {
+     "item": "ammo_38",
+     "weight": 6,
+     "count": [
+      4,
+      12
+     ]
+    },
+    {
+     "item": "revolver",
+     "weight": 1,
+     "tier_min": 3
+    },
+    {
+     "item": "flashlight",
+     "weight": 3
+    },
+    {
+     "item": "scrip",
+     "weight": 3,
+     "count": [
+      4,
+      14
+     ]
+    },
+    {
+     "item": "repair_kit",
+     "weight": 1,
+     "tier_min": 2
+    },
+    {
+     "item": "ration_bar",
+     "weight": 2
+    }
+   ]
+  },
+  {
+   "id": "w3_haldane_stores",
+   "rolls": [
+    2,
+    4
+   ],
+   "empty_chance": 0.0,
+   "entries": [
+    {
+     "item": "farm_preserves",
+     "weight": 6,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "farm_potatoes",
+     "weight": 4,
+     "count": [
+      1,
+      4
+     ]
+    },
+    {
+     "table": "food_canned",
+     "weight": 4
+    },
+    {
+     "item": "water_bottle_clean",
+     "weight": 4,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "ammo_38",
+     "weight": 3,
+     "count": [
+      3,
+      10
+     ]
+    },
+    {
+     "item": "schematic_spike_barrier",
+     "weight": 1,
+     "tier_min": 2
+    },
+    {
+     "item": "schematic_can_chime",
+     "weight": 1
+    },
+    {
+     "item": "first_aid_kit",
+     "weight": 1
+    }
+   ]
+  },
+  {
+   "id": "w3_haldane_workshop",
+   "rolls": [
+    1,
+    3
+   ],
+   "empty_chance": 0.1,
+   "entries": [
+    {
+     "item": "nails",
+     "weight": 6,
+     "count": [
+      4,
+      16
+     ]
+    },
+    {
+     "item": "scrap_metal",
+     "weight": 5,
+     "count": [
+      1,
+      4
+     ]
+    },
+    {
+     "item": "cordage",
+     "weight": 4,
+     "count": [
+      1,
+      3
+     ]
+    },
+    {
+     "item": "duct_tape",
+     "weight": 3
+    },
+    {
+     "item": "claw_hammer",
+     "weight": 1
+    },
+    {
+     "item": "can_chime",
+     "weight": 2
+    },
+    {
+     "item": "wood_plank",
+     "weight": 3,
+     "count": [
+      1,
+      3
+     ]
+    }
+   ]
+  }
+ ]
+}

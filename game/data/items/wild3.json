@@ -1,0 +1,227 @@
+{
+ "_doc": "Keys and readable notes of the wilderness set pieces, round 3 (Camp Tamarack, Elk Ridge Lodge, the Cordon quarantine camp, the Haldane Place). Note items are note_<note id> (notes/wild3.json); models from tools/assetgen/blender_catalogs/items_wild3.py.",
+ "defs": [
+  {
+   "id": "w3_tamarack_walkin_key",
+   "name": "Walk-in Key",
+   "description": "A padlock key on a wooden fob shaped like a canoe paddle, KITCHEN WALK-IN burnt into it. It hung on the director's board.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild3/w3_tamarack_walkin_key"
+  },
+  {
+   "id": "w3_elk_gun_room_key",
+   "name": "Gun Room Key",
+   "description": "A brass deadbolt key on a guide's ring with a skinning knife's sheath clip and a tag: GUNS - A.S.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild3/w3_elk_gun_room_key"
+  },
+  {
+   "id": "w3_qc_reefer_key",
+   "name": "Reefer Key",
+   "description": "A padlock key on a red plastic tag: COLD CHAIN - M.O. ONLY.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild3/w3_qc_reefer_key"
+  },
+  {
+   "id": "w3_haldane_bunker_key",
+   "name": "Bunker Key",
+   "description": "A heavy key on a loop of baling wire with a wooden tag burnt HOLE.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild3/w3_haldane_bunker_key"
+  },
+  {
+   "id": "note_w3_tamarack_log",
+   "name": "Radio Log, Evacuation Point 6",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_tamarack_log",
+   "model": "items/wild3/note_w3_tamarack_log"
+  },
+  {
+   "id": "note_w3_tamarack_notice",
+   "name": "Notice on the Board",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_tamarack_notice",
+   "model": "items/wild3/note_w3_tamarack_notice"
+  },
+  {
+   "id": "note_w3_tamarack_letter",
+   "name": "Letter on the Bunk",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_tamarack_letter",
+   "model": "items/wild3/note_w3_tamarack_letter"
+  },
+  {
+   "id": "note_w3_tamarack_nell",
+   "name": "Infirmary Chart",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_tamarack_nell",
+   "model": "items/wild3/note_w3_tamarack_nell"
+  },
+  {
+   "id": "note_w3_tamarack_ames",
+   "name": "Note Under a Paddle",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_tamarack_ames",
+   "model": "items/wild3/note_w3_tamarack_ames"
+  },
+  {
+   "id": "note_w3_elk_guestbook",
+   "name": "Lodge Guestbook",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_elk_guestbook",
+   "model": "items/wild3/note_w3_elk_guestbook"
+  },
+  {
+   "id": "note_w3_elk_marit",
+   "name": "Note on the Kitchen Table",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_elk_marit",
+   "model": "items/wild3/note_w3_elk_marit"
+  },
+  {
+   "id": "note_w3_elk_arne",
+   "name": "Tag Book",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_elk_arne",
+   "model": "items/wild3/note_w3_elk_arne"
+  },
+  {
+   "id": "note_w3_elk_kennel",
+   "name": "Kennel Card",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_elk_kennel",
+   "model": "items/wild3/note_w3_elk_kennel"
+  },
+  {
+   "id": "note_w3_qc_orders",
+   "name": "Standing Orders, Site Q-4",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_qc_orders",
+   "model": "items/wild3/note_w3_qc_orders"
+  },
+  {
+   "id": "note_w3_qc_screening",
+   "name": "Screening Clipboard",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_qc_screening",
+   "model": "items/wild3/note_w3_qc_screening"
+  },
+  {
+   "id": "note_w3_qc_ruiz",
+   "name": "Radio Log, Command Trailer",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_qc_ruiz",
+   "model": "items/wild3/note_w3_qc_ruiz"
+  },
+  {
+   "id": "note_w3_qc_vance",
+   "name": "Note Taped Inside the Reefer",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_qc_vance",
+   "model": "items/wild3/note_w3_qc_vance"
+  },
+  {
+   "id": "note_w3_qc_tower",
+   "name": "Notebook at the Tower's Foot",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_qc_tower",
+   "model": "items/wild3/note_w3_qc_tower"
+  },
+  {
+   "id": "note_w3_haldane_della",
+   "name": "Kitchen Calendar",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_haldane_della",
+   "model": "items/wild3/note_w3_haldane_della"
+  },
+  {
+   "id": "note_w3_haldane_rota",
+   "name": "Watch Rota",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_haldane_rota",
+   "model": "items/wild3/note_w3_haldane_rota"
+  },
+  {
+   "id": "note_w3_haldane_tom",
+   "name": "Folded in the Bunker",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w3_haldane_tom",
+   "model": "items/wild3/note_w3_haldane_tom"
+  }
+ ]
+}

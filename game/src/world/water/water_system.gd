@@ -12,6 +12,7 @@ const TREE_PROBES: PackedFloat32Array = [12.0, 24.0, 40.0, 60.0, 85.0, 120.0, 17
 const FOREST_CANOPY: float = 0.35
 ## Tree-line elevation (sine) with no forest in reach: distant hills and forest.
 const FAR_TREE_LINE: float = 0.035
+const NO_LAKES: Array = []
 
 var world: Node
 var _lakes: Array[Dictionary] = []
@@ -22,6 +23,12 @@ var _rivers: Array[Dictionary] = []
 var _river_grid: Dictionary = {}
 var _lake_mat: ShaderMaterial
 var _river_mat: ShaderMaterial
+## Fen pools (lakes whose id starts "fen_", ADR-0041): tea-dark tannin water.
+var _tannin_mat: ShaderMaterial
+## Grid cell -> indices into _lakes whose bounds reach the cell, ascending, so water_level_at() tests
+## only the lakes near a point (the first that holds it wins, as it did over the whole list). A fen
+## puts dozens of small pools in a world, and the vegetation scatter asks about every plant.
+var _lake_grid: Dictionary = {}
 ## Set by setup_world; null in tests, where water reflects a uniform tree line.
 var _terrain: TerrainManager
 
@@ -31,6 +38,15 @@ func setup_world(w: Node) -> void:
 	_terrain = w.terrain
 	_lake_mat = _make_material(0.0)
 	_river_mat = _make_material(0.35)
+	_tannin_mat = _make_material(0.0)
+	_tannin_mat.set_shader_parameter("shallow_color", Color(0.16, 0.105, 0.05))
+	_tannin_mat.set_shader_parameter("deep_color", Color(0.028, 0.017, 0.008))
+	_tannin_mat.set_shader_parameter("absorption", 1.6)
+	_tannin_mat.set_shader_parameter("treeline", 0.95)
+	# Still water in the peat: no surf at the edge, the margin just goes dark and wet. (The foam band
+	# is measured in view depth: 8 cm still showed a white smear at a pool's near edge, eye level.)
+	_tannin_mat.set_shader_parameter("foam_width", 0.015)
+	_tannin_mat.set_shader_parameter("normal_strength", 0.35)
 	var seen: Dictionary = {}
 	var river_parts: Dictionary = {}
 	var terrain: TerrainManager = w.terrain
@@ -116,8 +132,15 @@ func _add_lake(wb: Dictionary) -> void:
 	# triangulate_polygon emits every triangle with a positive (x, z) cross product whatever the
 	# outline's winding, and that is clockwise seen from above: a front face, as is. (This used to
 	# be flipped, which turned every lake face down, and back-face culling hid it.)
-	_add_mesh("Lake_" + str(wb["id"]), verts, uvs, cols, idx, _lake_mat)
-	_lakes.append({"poly": poly, "level": level, "bounds": _bounds(poly)})
+	_add_mesh("Lake_" + str(wb["id"]), verts, uvs, cols, idx, _tannin_mat if str(wb["id"]).begins_with("fen_") else _lake_mat)
+	var b: Rect2 = _bounds(poly)
+	_lakes.append({"poly": poly, "level": level, "bounds": b})
+	for gz: int in range(floori(b.position.y / GRID), floori(b.end.y / GRID) + 1):
+		for gx: int in range(floori(b.position.x / GRID), floori(b.end.x / GRID) + 1):
+			var key := Vector2i(gx, gz)
+			if not _lake_grid.has(key):
+				_lake_grid[key] = []
+			(_lake_grid[key] as Array).append(_lakes.size() - 1)
 
 
 func _add_river_piece(wb: Dictionary) -> void:
@@ -237,7 +260,8 @@ static func _bounds(p: PackedVector2Array) -> Rect2:
 ## Water surface height at (x, z), or -INF if there is no water there.
 func water_level_at(x: float, z: float) -> float:
 	var p := Vector2(x, z)
-	for l: Dictionary in _lakes:
+	for li: int in _lake_grid.get(Vector2i(floori(x / GRID), floori(z / GRID)), NO_LAKES):
+		var l: Dictionary = _lakes[li]
 		if (l["bounds"] as Rect2).has_point(p) and Geometry2D.is_point_in_polygon(p, l["poly"]):
 			return float(l["level"])
 	# The nearest river segment whose wetted half-width covers the point.
@@ -256,7 +280,8 @@ func water_level_at(x: float, z: float) -> float:
 ## "lake", "river" or "" — what kind of water is at (x, z) (ambience, fishing later).
 func kind_at(pos: Vector3) -> String:
 	var p := Vector2(pos.x, pos.z)
-	for l: Dictionary in _lakes:
+	for li: int in _lake_grid.get(Vector2i(floori(pos.x / GRID), floori(pos.z / GRID)), NO_LAKES):
+		var l: Dictionary = _lakes[li]
 		if (l["bounds"] as Rect2).has_point(p) and Geometry2D.is_point_in_polygon(p, l["poly"]):
 			return "lake"
 	return "river" if water_level_at(pos.x, pos.z) > -INF else ""

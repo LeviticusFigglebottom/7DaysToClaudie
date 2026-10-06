@@ -1,0 +1,2127 @@
+{
+ "_doc": "Tier-2 wilderness set piece for random worlds (site forest): what the player's own base could become, and how it fell. A scrap-and-log palisade (w3_scrap_palisade sections facing out, the chained gate on the lane with TURN BACK over it, stake rows) closes a yard of raised beds, rain catchers, two watch platforms, a coop, a smokehouse and the well; the house (kit rooms, white siding, every window boarded) has a root-cellar bunker cut into the terrain under it, reached down a stair from the kitchen, its steel door deadbolted, with a ladder up through a hatch into the cellar-entry lean-to whose outside door is bolted: the shortcut. Route: the lane -> the chained gate -> round the wall to where it was broken through (jaws in the gap; Ray's axe) -> the yard -> the house's back door, kicked in, cans strung across it (they wake the house) -> the kitchen: Della's calendar, the bunker key on its hook -> down to the cellar -> the bunker's steel door (opening it wakes the family; Tom, guardian) -> the stores -> up the ladder into the lean-to -> draw its bolt. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "haldane_place",
+   "name": "The Haldane Place",
+   "tier": 2,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    40,
+    40
+   ],
+   "origin": [
+    2,
+    2
+   ],
+   "author": "Hollowmere team (agent X)",
+   "story": "The Haldanes held their homestead for fourteen months. Ray and his son Tom pulled the tin off the barn and the doors off the cars and walled the yard with them; Della planted the raised beds and set the rain barrels; old Pop took the north platform at night, and every evening somebody strung the cans. They boarded the windows, dug the root cellar out into a bunker with a steel door and a bolt-hole up through the lean-to, and practised getting into it. They came through three Hums. On the seventh night of the fourteenth month something big came at the east wall where the ground was soft. Ray held the gap with the axe while the others got down the hole. Tom bolted the bunker from inside, left the key on the hook by his mother's calendar for whoever came for them from up top, and wrote that Pop had a fever, and so did he.",
+   "style": {
+    "exterior": "siding_white",
+    "interior": "wallpaper_floral_rose",
+    "floor": "wood_pine",
+    "ceiling": "plaster_white",
+    "floor_height": 0.45,
+    "decay": 0.6,
+    "damaged_walls": 0.08,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.4
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "x",
+     "pitch": 30,
+     "overhang": 0.4,
+     "material": "roof_metal",
+     "gutters": false
+    },
+    "chimney": [
+     11,
+     13
+    ]
+   },
+   "levels": [
+    {
+     "level": -1,
+     "plan": [
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "............AAAAA...................",
+      "............AAAAAXXXXXXXX...........",
+      "............AAAAAXXXXXXXX...........",
+      "............AAAAAXXXXXXXX...........",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "...................................."
+     ],
+     "rooms": {
+      "A": {
+       "name": "Root cellar",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "wood_paneling_dark"
+      },
+      "X": {
+       "name": "The bunker",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "wood_paneling_dark"
+      }
+     }
+    },
+    {
+     "level": 0,
+     "plan": [
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "............KKKKKBBBBB..............",
+      "............KKKKKBBBBBEEE...........",
+      "............KKKKKBBBBBEEE...........",
+      "............KKKKKHHHHHEEE...........",
+      "............LLLLLHHHHH..............",
+      "............LLLLLCCCCC..............",
+      "............LLLLLCCCCC..............",
+      "............LLLLLCCCCC..............",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "...................................."
+     ],
+     "rooms": {
+      "K": {
+       "name": "Kitchen",
+       "type": "kitchen",
+       "wall": "paint_mustard",
+       "floor": "linoleum_check"
+      },
+      "L": {
+       "name": "Front room",
+       "type": "living",
+       "wall": "wallpaper_stripe_green",
+       "floor": "wood_oak"
+      },
+      "B": {
+       "name": "Ray and Della's room",
+       "type": "bedroom",
+       "wall": "wallpaper_floral_rose",
+       "floor": "wood_pine"
+      },
+      "H": {
+       "name": "Hall",
+       "type": "hallway",
+       "wall": "plaster_white",
+       "floor": "wood_pine"
+      },
+      "C": {
+       "name": "Tom and June's room",
+       "type": "bedroom",
+       "wall": "paint_slate_blue",
+       "floor": "wood_pine"
+      },
+      "E": {
+       "name": "Cellar entry",
+       "type": "storage",
+       "wall": "wood_paneling_dark",
+       "floor": "concrete"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      14,
+      19
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "barricaded",
+     "barricade": "furniture"
+    },
+    {
+     "id": "back_door",
+     "at": [
+      14,
+      12
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "broken"
+    },
+    {
+     "id": "kitchen_front",
+     "at": [
+      14,
+      15
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "kitchen_hall",
+     "at": [
+      16,
+      15
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "front_hall",
+     "at": [
+      16,
+      16
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "bedroom_b_door",
+     "at": [
+      19,
+      15
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "bedroom_c_door",
+     "at": [
+      19,
+      16
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "hall_entry",
+     "at": [
+      21,
+      15
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "entry_door",
+     "at": [
+      24,
+      14
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_plank"
+    },
+    {
+     "id": "bunker_door",
+     "at": [
+      16,
+      13
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked",
+     "key": "w3_haldane_bunker_key",
+     "lock": "deadbolt",
+     "model": "door_metal",
+     "level": -1
+    },
+    {
+     "id": "kitchen_win_w",
+     "at": [
+      12,
+      13
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "kitchen_win_n",
+     "at": [
+      16,
+      12
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "front_win_w",
+     "at": [
+      12,
+      17
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "front_win_s1",
+     "at": [
+      12,
+      19
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "front_win_s2",
+     "at": [
+      16,
+      19
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "bed_b_win_n1",
+     "at": [
+      18,
+      12
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "bed_b_win_n2",
+     "at": [
+      20,
+      12
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "bed_c_win_s",
+     "at": [
+      18,
+      19
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "bed_c_win_e",
+     "at": [
+      21,
+      18
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "entry_win_n",
+     "at": [
+      23,
+      13
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    }
+   ],
+   "stairs": [
+    {
+     "level": -1,
+     "at": [
+      12,
+      14
+     ],
+     "dir": "E"
+    }
+   ],
+   "ladders": [
+    {
+     "level": -1,
+     "at": [
+      24,
+      13
+     ],
+     "side": "N",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "kitchen_stove",
+     "prop": "wild_wood_stove",
+     "at": [
+      12,
+      15
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "id": "haldane_sink",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      15,
+      12
+     ],
+     "against": "N"
+    },
+    {
+     "id": "haldane_cabinet",
+     "prop": "kitchen_wall_cabinet",
+     "at": [
+      15,
+      12
+     ],
+     "against": "N",
+     "height": 1.5
+    },
+    {
+     "id": "kitchen_shelf",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      16,
+      13
+     ],
+     "against": "E",
+     "container": "farm_pantry"
+    },
+    {
+     "id": "haldane_table",
+     "prop": "kitchen_table",
+     "pos": [
+      13.6,
+      12.9
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "chair_wood",
+     "pos": [
+      13.1,
+      13.4
+     ],
+     "rot": 90,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "farm_preserve_jars",
+     "pos": [
+      15.7,
+      15.55
+     ],
+     "variant": "destroyed"
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      13,
+      12
+     ],
+     "against": "N",
+     "height": 1.35
+    },
+    {
+     "id": "front_couch",
+     "prop": "couch",
+     "at": [
+      12,
+      17
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.4
+     ],
+     "variant": "destroyed"
+    },
+    {
+     "prop": "armchair",
+     "pos": [
+      15.45,
+      16.85
+     ],
+     "rot": 200,
+     "variant": "destroyed"
+    },
+    {
+     "id": "front_books",
+     "prop": "bookshelf",
+     "at": [
+      16,
+      18
+     ],
+     "against": "E",
+     "variant": "worn"
+    },
+    {
+     "prop": "rug_rect",
+     "pos": [
+      14.3,
+      17.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      14.6,
+      18.5
+     ],
+     "rot": 20,
+     "route_ok": true
+    },
+    {
+     "prop": "wild_gun_rack",
+     "at": [
+      14,
+      16
+     ],
+     "against": "N",
+     "height": 1.3,
+     "variant": "destroyed"
+    },
+    {
+     "id": "haldane_bed",
+     "prop": "farm_quilt_bed",
+     "pos": [
+      18.3,
+      13.75
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "della_dresser",
+     "prop": "dresser",
+     "at": [
+      21,
+      13
+     ],
+     "against": "E"
+    },
+    {
+     "id": "della_nightstand",
+     "prop": "nightstand",
+     "pos": [
+      20.0,
+      12.35
+     ]
+    },
+    {
+     "id": "tom_bed",
+     "prop": "bed_double",
+     "pos": [
+      18.13,
+      18.5
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "june_dresser",
+     "prop": "dresser",
+     "at": [
+      21,
+      17
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.3
+     ]
+    },
+    {
+     "prop": "civic_shelter_board",
+     "at": [
+      18,
+      15
+     ],
+     "against": "N",
+     "height": 1.4
+    },
+    {
+     "id": "entry_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      22,
+      13
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.08
+     ],
+     "container": "w3_haldane_workshop"
+    },
+    {
+     "id": "entry_toolbox",
+     "prop": "toolbox",
+     "pos": [
+      23.0,
+      15.55
+     ],
+     "rot": 10
+    },
+    {
+     "id": "cellar_shelf_a",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      13,
+      12
+     ],
+     "against": "N",
+     "level": -1,
+     "container": "farm_pantry"
+    },
+    {
+     "id": "cellar_shelf_b",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      15,
+      12
+     ],
+     "against": "N",
+     "level": -1,
+     "variant": "destroyed"
+    },
+    {
+     "id": "cellar_crate",
+     "prop": "farm_crate_potatoes",
+     "pos": [
+      16.5,
+      15.5
+     ],
+     "level": -1
+    },
+    {
+     "id": "bunker_shelf_a",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      18,
+      13
+     ],
+     "against": "N",
+     "level": -1,
+     "container": "w3_haldane_stores"
+    },
+    {
+     "id": "bunker_shelf_b",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      20,
+      13
+     ],
+     "against": "N",
+     "level": -1,
+     "container": "w3_haldane_stores"
+    },
+    {
+     "id": "bunker_bunk",
+     "prop": "wild_bunk_steel",
+     "pos": [
+      21.95,
+      15.45
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "pop_cot",
+     "prop": "civic_army_cot",
+     "pos": [
+      18.05,
+      14.95
+     ],
+     "rot": 90,
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "bunker_crate",
+     "prop": "crate_wood",
+     "pos": [
+      19.9,
+      15.4
+     ],
+     "level": -1,
+     "container": "w3_haldane_stores"
+    },
+    {
+     "id": "bunker_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      19.9,
+      15.4
+     ],
+     "y": 0.43,
+     "level": -1,
+     "lit": true
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      24.45,
+      15.5
+     ],
+     "level": -1
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      23.5,
+      13.5
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      3.968,
+      33.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      5.904,
+      33.05
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      7.839,
+      33.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      9.775,
+      33.05
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      11.711,
+      33.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      13.646,
+      33.05
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      15.582,
+      33.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      20.418,
+      33.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      22.354,
+      33.05
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      24.289,
+      33.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      26.225,
+      33.05
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      28.161,
+      33.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      30.096,
+      33.05
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      32.032,
+      33.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "haldane_gate",
+     "prop": "w3_scrap_gate",
+     "pos": [
+      18.0,
+      33.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.0,
+      4.168
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      32.95,
+      6.144
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.0,
+      8.12
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      32.95,
+      10.096
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.0,
+      12.072
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      32.95,
+      14.048
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.0,
+      16.024
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "alt": "breach:north"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      32.95,
+      18.0
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "alt": "breach:north"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.0,
+      19.976
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      32.95,
+      21.952
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.0,
+      23.928
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      32.95,
+      25.904
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.0,
+      27.88
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      32.95,
+      29.856
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.0,
+      31.832
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      4.0,
+      3.0
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      6.0,
+      3.05
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      8.0,
+      3.0
+     ],
+     "rot": 180,
+     "variant": "worn",
+     "alt": "breach:east"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      10.0,
+      3.05
+     ],
+     "rot": 180,
+     "variant": "worn",
+     "alt": "breach:east"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      12.0,
+      3.0
+     ],
+     "rot": 180,
+     "variant": "clean",
+     "alt": "breach:east"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      14.0,
+      3.05
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      16.0,
+      3.0
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      18.0,
+      3.05
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      20.0,
+      3.0
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      22.0,
+      3.05
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      24.0,
+      3.0
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      26.0,
+      3.05
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      28.0,
+      3.0
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      30.0,
+      3.05
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      32.0,
+      3.0
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      3.0,
+      4.168
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      2.95,
+      6.144
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      3.0,
+      8.12
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      2.95,
+      10.096
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      3.0,
+      12.072
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      2.95,
+      14.048
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      3.0,
+      16.024
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      2.95,
+      18.0
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      3.0,
+      19.976
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      2.95,
+      21.952
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      3.0,
+      23.928
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      2.95,
+      25.904
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      3.0,
+      27.88
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      2.95,
+      29.856
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      3.0,
+      31.832
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.6,
+      14.6
+     ],
+     "rot": 78,
+     "variant": "destroyed",
+     "alt": "breach:east"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      33.6,
+      19.4
+     ],
+     "rot": 98,
+     "variant": "destroyed",
+     "alt": "breach:east"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      7.6,
+      2.4
+     ],
+     "rot": 172,
+     "variant": "destroyed",
+     "alt": "breach:north"
+    },
+    {
+     "prop": "w3_scrap_palisade",
+     "pos": [
+      12.4,
+      2.4
+     ],
+     "rot": 190,
+     "variant": "destroyed",
+     "alt": "breach:north"
+    },
+    {
+     "prop": "w3_stake_row",
+     "pos": [
+      9.0,
+      34.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_stake_row",
+     "pos": [
+      27.0,
+      34.6
+     ]
+    },
+    {
+     "prop": "w3_stake_row",
+     "pos": [
+      34.6,
+      26.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_stake_row",
+     "pos": [
+      34.6,
+      9.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w3_stake_row",
+     "pos": [
+      1.4,
+      18.0
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "id": "platform_ne",
+     "prop": "w3_watch_platform",
+     "pos": [
+      30.2,
+      5.8
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "platform_sw",
+     "prop": "w3_watch_platform",
+     "pos": [
+      5.8,
+      30.2
+     ],
+     "rot": 0
+    },
+    {
+     "id": "bed_0",
+     "prop": "w3_raised_bed",
+     "pos": [
+      7.6,
+      9.0
+     ],
+     "variant": "worn",
+     "alt": "garden:gone_to_seed"
+    },
+    {
+     "id": "bed_0",
+     "prop": "w3_raised_bed",
+     "pos": [
+      7.6,
+      9.0
+     ],
+     "variant": "destroyed",
+     "alt": "garden:trampled"
+    },
+    {
+     "id": "bed_1",
+     "prop": "w3_raised_bed",
+     "pos": [
+      7.6,
+      12.4
+     ],
+     "variant": "clean",
+     "alt": "garden:gone_to_seed"
+    },
+    {
+     "id": "bed_1",
+     "prop": "w3_raised_bed",
+     "pos": [
+      7.6,
+      12.4
+     ],
+     "variant": "worn",
+     "alt": "garden:trampled"
+    },
+    {
+     "id": "bed_2",
+     "prop": "w3_raised_bed",
+     "pos": [
+      7.6,
+      15.8
+     ],
+     "variant": "destroyed",
+     "alt": "garden:gone_to_seed"
+    },
+    {
+     "id": "bed_2",
+     "prop": "w3_raised_bed",
+     "pos": [
+      7.6,
+      15.8
+     ],
+     "variant": "destroyed",
+     "alt": "garden:trampled"
+    },
+    {
+     "id": "bed_3",
+     "prop": "w3_raised_bed",
+     "pos": [
+      7.6,
+      19.2
+     ],
+     "variant": "worn",
+     "alt": "garden:gone_to_seed"
+    },
+    {
+     "id": "bed_3",
+     "prop": "w3_raised_bed",
+     "pos": [
+      7.6,
+      19.2
+     ],
+     "variant": "worn",
+     "alt": "garden:trampled"
+    },
+    {
+     "prop": "w3_rain_catcher",
+     "pos": [
+      26.0,
+      24.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_rain_catcher",
+     "pos": [
+      10.8,
+      25.6
+     ]
+    },
+    {
+     "prop": "farm_chicken_coop",
+     "pos": [
+      27.6,
+      9.2
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_smokehouse",
+     "pos": [
+      26.8,
+      29.4
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "well_pump",
+     "pos": [
+      17.2,
+      24.2
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "woodpile",
+     "pos": [
+      14.6,
+      5.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "woodpile",
+     "pos": [
+      19.6,
+      5.0
+     ]
+    },
+    {
+     "prop": "wild_chopping_block",
+     "pos": [
+      17.0,
+      6.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_outhouse",
+     "pos": [
+      30.6,
+      30.4
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "burn_barrel",
+     "prop": "oil_drum_fire",
+     "pos": [
+      21.0,
+      26.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "haldane_truck",
+     "prop": "pickup_wreck",
+     "pos": [
+      22.6,
+      30.0
+     ],
+     "rot": 88,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "wheelbarrow",
+     "pos": [
+      11.2,
+      21.4
+     ],
+     "rot": 60,
+     "variant": "worn"
+    },
+    {
+     "id": "ray_haldane",
+     "prop": "corpse_remains",
+     "pos": [
+      31.4,
+      17.0
+     ],
+     "rot": 95,
+     "variant": "worn",
+     "alt": "breach:east"
+    },
+    {
+     "id": "ray_haldane",
+     "prop": "corpse_remains",
+     "pos": [
+      10.0,
+      4.4
+     ],
+     "rot": 10,
+     "variant": "worn",
+     "alt": "breach:north"
+    },
+    {
+     "prop": "sign_plywood_painted",
+     "pos": [
+      20.6,
+      34.5
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      1.0,
+      1.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      35.0,
+      2.0
+     ],
+     "rot": 61,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      35.2,
+      34.8
+     ],
+     "rot": 122,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      0.8,
+      35.0
+     ],
+     "rot": 183,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      23.0,
+      1.0
+     ],
+     "rot": 244,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      12.0,
+      35.2
+     ],
+     "rot": 305,
+     "variant": "worn"
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "crawler_front",
+     "pos": [
+      13.6,
+      18.2
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 200,
+     "group": "house",
+     "anchor": "floor"
+    },
+    {
+     "id": "stander_hall",
+     "pos": [
+      18.4,
+      15.6
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": -90,
+     "group": "house"
+    },
+    {
+     "id": "crawler_kitchen",
+     "pos": [
+      15.4,
+      13.4
+     ],
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": 160,
+     "group": "house",
+     "anchor": "floor"
+    },
+    {
+     "id": "bedroom_sleeper",
+     "pos": [
+      18.3,
+      13.75
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0
+    },
+    {
+     "id": "tom",
+     "pos": [
+      19.2,
+      14.1
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": -90,
+     "level": -1,
+     "guardian": true
+    },
+    {
+     "id": "june",
+     "pos": [
+      21.95,
+      15.45
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "level": -1,
+     "group": "bunker"
+    },
+    {
+     "id": "pop",
+     "pos": [
+      18.05,
+      14.95
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "level": -1,
+     "group": "bunker",
+     "anchor": "pop_cot"
+    },
+    {
+     "id": "della",
+     "pos": [
+      23.6,
+      14.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -90,
+     "level": -1,
+     "group": "bunker",
+     "anchor": "floor"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "bunker_key",
+     "item": "w3_haldane_bunker_key",
+     "pos": [
+      13.85,
+      12.13
+     ],
+     "y": 1.45
+    },
+    {
+     "id": "ray_axe",
+     "item": "hatchet",
+     "pos": [
+      31.2,
+      18.0
+     ],
+     "y": 0.03,
+     "alt": "breach:east"
+    },
+    {
+     "id": "ray_axe",
+     "item": "hatchet",
+     "pos": [
+      10.9,
+      4.6
+     ],
+     "y": 0.03,
+     "alt": "breach:north"
+    }
+   ],
+   "notes": [
+    {
+     "note": "w3_haldane_della",
+     "pos": [
+      13.4,
+      12.15
+     ],
+     "y": 1.3
+    },
+    {
+     "note": "w3_haldane_rota",
+     "pos": [
+      18.5,
+      15.16
+     ],
+     "y": 1.3
+    },
+    {
+     "note": "w3_haldane_tom",
+     "pos": [
+      19.9,
+      15.45
+     ],
+     "y": 0.43,
+     "level": -1
+    }
+   ],
+   "traps": [
+    {
+     "id": "gap_jaws",
+     "type": "bear_trap",
+     "pos": [
+      32.2,
+      16.2
+     ],
+     "rot": 25,
+     "alt": "breach:east"
+    },
+    {
+     "id": "gap_jaws",
+     "type": "bear_trap",
+     "pos": [
+      9.2,
+      3.8
+     ],
+     "rot": -30,
+     "alt": "breach:north"
+    },
+    {
+     "id": "back_door_cans",
+     "type": "can_chime",
+     "at": [
+      14,
+      12
+     ],
+     "side": "N"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "house_cans",
+     "group": "house",
+     "on": "trap",
+     "trap": "back_door_cans",
+     "delay": 0.4
+    },
+    {
+     "id": "house_key",
+     "group": "house",
+     "on": "pickup",
+     "pickup": "bunker_key",
+     "delay": 0.6
+    },
+    {
+     "id": "bunker_opened",
+     "group": "bunker",
+     "on": "opening",
+     "opening": "bunker_door",
+     "delay": 0.3
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      20.0,
+      14.2
+     ],
+     "level": -1,
+     "height": 1.0,
+     "color": "#ffc27a",
+     "energy": 0.4,
+     "range": 5.0,
+     "flicker": 0.3
+    }
+   ],
+   "decals": [
+    {
+     "decal": "survivor_marks_b",
+     "at": [
+      12,
+      15
+     ],
+     "side": "W",
+     "height": 1.5,
+     "size": [
+      0.9,
+      0.7
+     ]
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      17,
+      13
+     ],
+     "side": "W",
+     "height": 1.3,
+     "size": [
+      0.9,
+      0.7
+     ],
+     "level": -1
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      14,
+      13
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      16,
+      13
+     ],
+     "side": "E",
+     "height": 1.2,
+     "size": [
+      0.4,
+      0.4
+     ],
+     "level": -1
+    },
+    {
+     "decal": "bullet_holes",
+     "at": [
+      14,
+      19
+     ],
+     "side": "S",
+     "height": 1.4,
+     "size": [
+      1.0,
+      0.8
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      21,
+      15
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      0.9
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      18,
+      35
+     ],
+     "label": "The lane ends at a wall of tin, pallets and car doors: TURN BACK over a chained gate"
+    },
+    {
+     "at": [
+      35,
+      24
+     ],
+     "label": "Round the wall to where it was broken through: jaws in the gap, an axe in the mud"
+    },
+    {
+     "at": [
+      28,
+      18
+     ],
+     "label": "Inside: the beds trampled, the rain barrels, the platforms empty"
+    },
+    {
+     "at": [
+      14,
+      11
+     ],
+     "label": "The house: every window boarded; its back door kicked in, cans strung across it"
+    },
+    {
+     "at": [
+      13,
+      13
+     ],
+     "label": "The kitchen: Della's calendar, and a key on the hook beside it"
+    },
+    {
+     "at": [
+      13,
+      13
+     ],
+     "label": "Down the stairs to the root cellar",
+     "level": -1
+    },
+    {
+     "at": [
+      16,
+      13
+     ],
+     "label": "The bunker's steel door, deadbolted",
+     "level": -1
+    },
+    {
+     "at": [
+      20,
+      14
+     ],
+     "label": "The bunker: the Haldanes",
+     "level": -1
+    },
+    {
+     "at": [
+      24,
+      14
+     ],
+     "label": "Up the ladder into the cellar entry"
+    },
+    {
+     "at": [
+      25,
+      14
+     ],
+     "label": "Draw the bolt: out into the yard"
+    }
+   ],
+   "loot_room": {
+    "room": "X",
+    "level": -1
+   },
+   "shortcuts": [
+    {
+     "opening": "entry_door"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "breach",
+     "label": "Where the wall went",
+     "options": [
+      {
+       "id": "east",
+       "weight": 2,
+       "label": "The east wall, where the ground is soft"
+      },
+      {
+       "id": "north",
+       "label": "The north wall, under the platform"
+      }
+     ]
+    },
+    {
+     "id": "garden",
+     "label": "The garden",
+     "options": [
+      {
+       "id": "gone_to_seed",
+       "weight": 2
+      },
+      {
+       "id": "trampled"
+      }
+     ]
+    },
+    {
+     "id": "bunker",
+     "label": "Whether the bunker lamp still burns",
+     "options": [
+      {
+       "id": "as_found",
+       "weight": 2
+      },
+      {
+       "id": "lamp_out",
+       "style": {
+        "lights_on": 0.2
+       }
+      }
+     ]
+    },
+    {
+     "id": "front_room",
+     "label": "The front room's paper",
+     "options": [
+      {
+       "id": "stripe",
+       "weight": 2
+      },
+      {
+       "id": "damask",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "L",
+         "wall": "wallpaper_damask_brown"
+        }
+       ]
+      },
+      {
+       "id": "paint",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "L",
+         "wall": "paint_sage"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "enemies": 10,
+    "props": 220
+   }
+  }
+ ]
+}

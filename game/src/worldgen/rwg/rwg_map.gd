@@ -14,7 +14,11 @@ extends RefCounted
 const BIOME_COLORS: Dictionary = {
 	"conifer_forest": Color(0.25, 0.36, 0.22), "birch_grove": Color(0.45, 0.55, 0.33), "meadow": Color(0.62, 0.64, 0.4),
 	"rocky_slope": Color(0.56, 0.55, 0.5), "riverbank": Color(0.45, 0.52, 0.42), "town": Color(0.6, 0.58, 0.52),
+	# ADR-0041: an old burn's ash grey-brown, a fen's olive peat (its pools drawn as small lakes).
+	"burnt_forest": Color(0.4, 0.36, 0.33), "fen": Color(0.38, 0.38, 0.24),
 }
+## Fen pools (region lake features) on the map: darker, browner water than the lakes.
+const FEN_WATER := Color(0.2, 0.24, 0.22)
 const WATER := Color(0.23, 0.4, 0.55)
 const WATER_EDGE := Color(0.16, 0.28, 0.4)
 const ZONE_COLORS: Dictionary = {
@@ -82,6 +86,13 @@ func render(world: Dictionary, regions: Array, fws: Dictionary, size_px: int) ->
 			var w: float = line.value_at(r.get("width", 10.0), s)
 			_dot(line.point_at(s), maxf(1.6, w / _mpp()), WATER)
 			s += _mpp() * 0.5
+	# Fen pools (region lake features, ADR-0041): ellipses, at least a pixel or two across.
+	for regp: Variant in regions:
+		for fp: Variant in (regp as Dictionary).get("features", []):
+			var fpd: Dictionary = fp
+			if str(fpd.get("type", "")) == "lake" and fpd.has("ellipse"):
+				var el: Array = fpd["ellipse"]
+				_disc(Vector2(float(el[0]), float(el[1])), maxf((float(el[2]) + float(el[3])) * 0.5, _mpp() * 0.8), FEN_WATER)
 	# Bloom patches, faint, under the roads.
 	for reg: Variant in regions:
 		for f: Variant in (reg as Dictionary).get("features", []):

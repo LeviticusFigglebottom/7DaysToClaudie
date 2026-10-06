@@ -3,6 +3,8 @@
   "materials": {
     "rock_granite": {"shader": "std_surface", "textures": "rock_granite", "layers": {"moss": "moss"}, "params": {"uv_scale": 0.5, "triplanar": 0.5, "moss_amount": 0.88, "moss_uv_scale": 0.8, "vertex_ao_strength": 1.0}},
     "rock_moss": {"shader": "std_surface", "textures": "rock_granite", "layers": {"moss": "moss"}, "params": {"uv_scale": 0.5, "triplanar": 0.5, "moss_amount": 1.0, "moss_uv_scale": 0.8}},
-    "stone_river": {"shader": "std_surface", "textures": "rock_granite", "params": {"uv_scale": 2.0, "tint": "#b8b2a8"}}
+    "stone_river": {"shader": "std_surface", "textures": "rock_granite", "params": {"uv_scale": 2.0, "tint": "#b8b2a8"}},
+    "rock_sooted": {"shader": "std_surface", "textures": "rock_granite", "params": {"uv_scale": 0.5, "triplanar": 0.5, "tint": "#8a847c", "vertex_ao_strength": 1.0,
+      "grime_amount": 0.75, "grime_color": "#0f0d0c", "patch_color": "#151311", "patch_cover": 0.5, "patch_scale": 1.1, "patch_roughness": 0.78}}
   }
 }

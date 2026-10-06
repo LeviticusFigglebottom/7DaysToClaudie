@@ -1,0 +1,3720 @@
+{
+ "_doc": "Tier-3 wilderness set piece for random worlds (site roadside: its front faces the road). Mostly outdoor: a fenced Cordon camp - prop fence sections, chain-link and white screens under razor wire, closing the compound; the chained gate; the checkpoint hut standing in the fence line is the only way through the wire. Inside: the screening tent and four ward tents are open-sided kit rooms (every edge an 'open' opening, a plank floor platform, open_roof) under w3_ward_tent props, so their sleepers stand in rooms; the decontamination line, the generator and three light towers (lit, generator-powered), a watchtower; the command trailer and the morgue reefer are kit rooms wearing shell props (w3_command_trailer_shell, w3_reefer_shell: their catalog entries mirror these rooms' sizes and openings) under style roof 'none'. Route: the road -> the checkpoint hut -> its inner door: the screening line turns -> the screening tent -> the decontamination line (jaws in the clothes) -> the wards -> the command trailer: the radio log, the captain's office behind a battery alarm, the reefer key (taking it wakes Ward B) -> the generator and the light towers -> the reefer, padlocked, a shotgun wired behind its door -> the morgue: Dr. Vance (guardian) and the cold-chain box -> the reefer's bolted side door, which opens beyond the wire (the reefer stands in the east fence line, so there is no way round the fence: the checkpoint is the way in). See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "cordon_quarantine_camp",
+   "name": "Cordon Quarantine Camp",
+   "tier": 3,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    44,
+    44
+   ],
+   "origin": [
+    2,
+    2
+   ],
+   "author": "Hollowmere team (agent X)",
+   "story": "Site Q-4 was one of the Cordon Medical Authority's roadside camps: everyone coming down the road was screened at the gate. Under 38.0 went on the buses; over it went through decontamination to the ward tents, strapped to their cots, and stayed until the Medical Officer signed them out. Nobody was ever signed out. The dead went to the refrigerated trailer at the back, which was also where Dr. Imogen Vance kept the last forty-one doses of antifungal on cold chain, for the second wave of buses. There was no second wave. Captain Ruiz asked for extraction every night and was told to hold the site. The night the ground hummed every patient in the wards sat up at once; at two in the morning Sergeant Okoye opened the gate and walked into the trees, and at two-fifteen Ward B was up. The captain gave the doctor the reefer key and told her to go. She went to the reefer, rigged the corporal's shotgun behind its door, and lay down with the dead and the doses.",
+   "population": "clinic",
+   "style": {
+    "exterior": "siding_white",
+    "interior": "plaster_white",
+    "floor": "wood_pine",
+    "ceiling": "plaster_white",
+    "floor_height": 0.35,
+    "decay": 0.5,
+    "damaged_walls": 0.02,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.12
+    },
+    "lights_on": 0.85,
+    "roof": {
+     "type": "none",
+     "roofs": [
+      {
+       "level": 0,
+       "at": [
+        19,
+        35
+       ],
+       "type": "shed",
+       "slope": "S",
+       "pitch": 10,
+       "material": "roof_metal",
+       "overhang": 0.35
+      }
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "...........AAAAA..BBBBB..CCCCC....RRR...",
+      "...........AAAAA..BBBBB..CCCCC....RRR...",
+      "...........AAAAA..BBBBB..CCCCC....RRR...",
+      "...........AAAAA..BBBBB..CCCCC....RRR...",
+      ".....OOOO..AAAAA..BBBBB..CCCCC....RRR...",
+      ".....OOOO..AAAAA..BBBBB..CCCCC....RRR...",
+      ".....OOOO..AAAAA..BBBBB..CCCCC....RRR...",
+      ".....OOOO..AAAAA..BBBBB..CCCCC....RRR...",
+      ".....ZZZZ..AAAAA..BBBBB..CCCCC..........",
+      ".....ZZZZ..AAAAA..BBBBB..CCCCC..........",
+      ".....ZZZZ...............................",
+      ".....ZZZZ...............................",
+      ".....ZZZZ..DDDDD........................",
+      "...........DDDDD........................",
+      "...........DDDDD........................",
+      "...........DDDDD........................",
+      "...........DDDDD........................",
+      "...........DDDDD........................",
+      "...........DDDDD........................",
+      "...........DDDDD........................",
+      "...........DDDDD........................",
+      "...........DDDDD........................",
+      "........................................",
+      "................YYYYYYYYYY..............",
+      "................YYYYYYYYYY..............",
+      "................YYYYYYYYYY..............",
+      "................YYYYYYYYYY..............",
+      "................YYYYYYYYYY..............",
+      "........................................",
+      "........................................",
+      "..................QQQ...................",
+      "..................QQQ...................",
+      "..................QQQ...................",
+      "..................QQQ...................",
+      "........................................",
+      "........................................"
+     ],
+     "rooms": {
+      "A": {
+       "name": "Ward A",
+       "type": "bedroom",
+       "floor": "wood_pine",
+       "open_roof": true
+      },
+      "B": {
+       "name": "Ward B",
+       "type": "bedroom",
+       "floor": "wood_pine",
+       "open_roof": true
+      },
+      "C": {
+       "name": "Ward C",
+       "type": "bedroom",
+       "floor": "wood_pine",
+       "open_roof": true
+      },
+      "D": {
+       "name": "Ward D",
+       "type": "bedroom",
+       "floor": "wood_pine",
+       "open_roof": true
+      },
+      "Y": {
+       "name": "Screening tent",
+       "type": "office",
+       "floor": "wood_pine",
+       "open_roof": true
+      },
+      "Q": {
+       "name": "Checkpoint hut",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "O": {
+       "name": "Captain's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_blue_worn",
+       "ceiling": "plaster_white"
+      },
+      "Z": {
+       "name": "Radio room",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_beige",
+       "ceiling": "plaster_white"
+      },
+      "R": {
+       "name": "Morgue",
+       "type": "storage",
+       "wall": "plaster_white",
+       "floor": "tile_white_small",
+       "ceiling": "plaster_white"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "ward_a_n11",
+     "at": [
+      11,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_s11",
+     "at": [
+      11,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_n12",
+     "at": [
+      12,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_s12",
+     "at": [
+      12,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_n13",
+     "at": [
+      13,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_s13",
+     "at": [
+      13,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_n14",
+     "at": [
+      14,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_s14",
+     "at": [
+      14,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_n15",
+     "at": [
+      15,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_s15",
+     "at": [
+      15,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w4",
+     "at": [
+      11,
+      4
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e4",
+     "at": [
+      15,
+      4
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w5",
+     "at": [
+      11,
+      5
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e5",
+     "at": [
+      15,
+      5
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w6",
+     "at": [
+      11,
+      6
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e6",
+     "at": [
+      15,
+      6
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w7",
+     "at": [
+      11,
+      7
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e7",
+     "at": [
+      15,
+      7
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w8",
+     "at": [
+      11,
+      8
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e8",
+     "at": [
+      15,
+      8
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w9",
+     "at": [
+      11,
+      9
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e9",
+     "at": [
+      15,
+      9
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w10",
+     "at": [
+      11,
+      10
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e10",
+     "at": [
+      15,
+      10
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w11",
+     "at": [
+      11,
+      11
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e11",
+     "at": [
+      15,
+      11
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w12",
+     "at": [
+      11,
+      12
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e12",
+     "at": [
+      15,
+      12
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_w13",
+     "at": [
+      11,
+      13
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_a_e13",
+     "at": [
+      15,
+      13
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_n18",
+     "at": [
+      18,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_s18",
+     "at": [
+      18,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_n19",
+     "at": [
+      19,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_s19",
+     "at": [
+      19,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_n20",
+     "at": [
+      20,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_s20",
+     "at": [
+      20,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_n21",
+     "at": [
+      21,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_s21",
+     "at": [
+      21,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_n22",
+     "at": [
+      22,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_s22",
+     "at": [
+      22,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w4",
+     "at": [
+      18,
+      4
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e4",
+     "at": [
+      22,
+      4
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w5",
+     "at": [
+      18,
+      5
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e5",
+     "at": [
+      22,
+      5
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w6",
+     "at": [
+      18,
+      6
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e6",
+     "at": [
+      22,
+      6
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w7",
+     "at": [
+      18,
+      7
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e7",
+     "at": [
+      22,
+      7
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w8",
+     "at": [
+      18,
+      8
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e8",
+     "at": [
+      22,
+      8
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w9",
+     "at": [
+      18,
+      9
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e9",
+     "at": [
+      22,
+      9
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w10",
+     "at": [
+      18,
+      10
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e10",
+     "at": [
+      22,
+      10
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w11",
+     "at": [
+      18,
+      11
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e11",
+     "at": [
+      22,
+      11
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w12",
+     "at": [
+      18,
+      12
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e12",
+     "at": [
+      22,
+      12
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_w13",
+     "at": [
+      18,
+      13
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_b_e13",
+     "at": [
+      22,
+      13
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_n25",
+     "at": [
+      25,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_s25",
+     "at": [
+      25,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_n26",
+     "at": [
+      26,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_s26",
+     "at": [
+      26,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_n27",
+     "at": [
+      27,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_s27",
+     "at": [
+      27,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_n28",
+     "at": [
+      28,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_s28",
+     "at": [
+      28,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_n29",
+     "at": [
+      29,
+      4
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_s29",
+     "at": [
+      29,
+      13
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w4",
+     "at": [
+      25,
+      4
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e4",
+     "at": [
+      29,
+      4
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w5",
+     "at": [
+      25,
+      5
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e5",
+     "at": [
+      29,
+      5
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w6",
+     "at": [
+      25,
+      6
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e6",
+     "at": [
+      29,
+      6
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w7",
+     "at": [
+      25,
+      7
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e7",
+     "at": [
+      29,
+      7
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w8",
+     "at": [
+      25,
+      8
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e8",
+     "at": [
+      29,
+      8
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w9",
+     "at": [
+      25,
+      9
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e9",
+     "at": [
+      29,
+      9
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w10",
+     "at": [
+      25,
+      10
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e10",
+     "at": [
+      29,
+      10
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w11",
+     "at": [
+      25,
+      11
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e11",
+     "at": [
+      29,
+      11
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w12",
+     "at": [
+      25,
+      12
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e12",
+     "at": [
+      29,
+      12
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_w13",
+     "at": [
+      25,
+      13
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_c_e13",
+     "at": [
+      29,
+      13
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_n11",
+     "at": [
+      11,
+      16
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_s11",
+     "at": [
+      11,
+      25
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_n12",
+     "at": [
+      12,
+      16
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_s12",
+     "at": [
+      12,
+      25
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_n13",
+     "at": [
+      13,
+      16
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_s13",
+     "at": [
+      13,
+      25
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_n14",
+     "at": [
+      14,
+      16
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_s14",
+     "at": [
+      14,
+      25
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_n15",
+     "at": [
+      15,
+      16
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_s15",
+     "at": [
+      15,
+      25
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w16",
+     "at": [
+      11,
+      16
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e16",
+     "at": [
+      15,
+      16
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w17",
+     "at": [
+      11,
+      17
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e17",
+     "at": [
+      15,
+      17
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w18",
+     "at": [
+      11,
+      18
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e18",
+     "at": [
+      15,
+      18
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w19",
+     "at": [
+      11,
+      19
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e19",
+     "at": [
+      15,
+      19
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w20",
+     "at": [
+      11,
+      20
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e20",
+     "at": [
+      15,
+      20
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w21",
+     "at": [
+      11,
+      21
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e21",
+     "at": [
+      15,
+      21
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w22",
+     "at": [
+      11,
+      22
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e22",
+     "at": [
+      15,
+      22
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w23",
+     "at": [
+      11,
+      23
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e23",
+     "at": [
+      15,
+      23
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w24",
+     "at": [
+      11,
+      24
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e24",
+     "at": [
+      15,
+      24
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_w25",
+     "at": [
+      11,
+      25
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "ward_d_e25",
+     "at": [
+      15,
+      25
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "screen_n16",
+     "at": [
+      16,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s16",
+     "at": [
+      16,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_n17",
+     "at": [
+      17,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s17",
+     "at": [
+      17,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_n18",
+     "at": [
+      18,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s18",
+     "at": [
+      18,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_n19",
+     "at": [
+      19,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s19",
+     "at": [
+      19,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_n20",
+     "at": [
+      20,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s20",
+     "at": [
+      20,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_n21",
+     "at": [
+      21,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s21",
+     "at": [
+      21,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_n22",
+     "at": [
+      22,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s22",
+     "at": [
+      22,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_n23",
+     "at": [
+      23,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s23",
+     "at": [
+      23,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_n24",
+     "at": [
+      24,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s24",
+     "at": [
+      24,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_n25",
+     "at": [
+      25,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "screen_s25",
+     "at": [
+      25,
+      31
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "screen_w27",
+     "at": [
+      16,
+      27
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "screen_e27",
+     "at": [
+      25,
+      27
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "screen_w28",
+     "at": [
+      16,
+      28
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "screen_e28",
+     "at": [
+      25,
+      28
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "screen_w29",
+     "at": [
+      16,
+      29
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "screen_e29",
+     "at": [
+      25,
+      29
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "screen_w30",
+     "at": [
+      16,
+      30
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "screen_e30",
+     "at": [
+      25,
+      30
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "screen_w31",
+     "at": [
+      16,
+      31
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "screen_e31",
+     "at": [
+      25,
+      31
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "checkpoint_outer",
+     "at": [
+      19,
+      37
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "checkpoint_inner",
+     "at": [
+      19,
+      34
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "checkpoint_win_w",
+     "at": [
+      18,
+      36
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "checkpoint_win_e",
+     "at": [
+      20,
+      35
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "trailer_door",
+     "at": [
+      8,
+      14
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "trailer_win_e",
+     "at": [
+      8,
+      10
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "trailer_win_w1",
+     "at": [
+      5,
+      10
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "trailer_win_w2",
+     "at": [
+      5,
+      14
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "trailer_win_n",
+     "at": [
+      6,
+      8
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "office_door",
+     "at": [
+      6,
+      11
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "reefer_door",
+     "at": [
+      35,
+      11
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "w3_qc_reefer_key",
+     "model": "door_metal"
+    },
+    {
+     "id": "reefer_side",
+     "at": [
+      36,
+      9
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_metal"
+    }
+   ],
+   "props": [
+    {
+     "id": "trailer_shell",
+     "prop": "w3_command_trailer_shell",
+     "pos": [
+      7.0,
+      12.5
+     ],
+     "y": -0.35,
+     "route_ok": true
+    },
+    {
+     "id": "reefer_shell",
+     "prop": "w3_reefer_shell",
+     "pos": [
+      35.5,
+      8.0
+     ],
+     "y": -0.35,
+     "route_ok": true
+    },
+    {
+     "id": "tent_a",
+     "prop": "w3_ward_tent",
+     "pos": [
+      13.5,
+      9.0
+     ],
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "tent_b",
+     "prop": "w3_ward_tent",
+     "pos": [
+      20.5,
+      9.0
+     ],
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "tent_c",
+     "prop": "w3_ward_tent",
+     "pos": [
+      27.5,
+      9.0
+     ],
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "tent_d",
+     "prop": "w3_ward_tent",
+     "pos": [
+      13.5,
+      21.0
+     ],
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "tent_screening",
+     "prop": "w3_ward_tent",
+     "pos": [
+      21.0,
+      29.5
+     ],
+     "rot": 90,
+     "route_ok": true
+    },
+    {
+     "prop": "w3_ward_a",
+     "pos": [
+      13.5,
+      14.35
+     ]
+    },
+    {
+     "prop": "w3_ward_b",
+     "pos": [
+      20.5,
+      14.35
+     ]
+    },
+    {
+     "prop": "w3_ward_c",
+     "pos": [
+      27.5,
+      14.35
+     ]
+    },
+    {
+     "prop": "w3_ward_d",
+     "pos": [
+      13.5,
+      26.4
+     ]
+    },
+    {
+     "id": "cot_a_w0",
+     "prop": "w3_ward_cot",
+     "pos": [
+      12.04,
+      5.2
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_a_e0",
+     "prop": "w3_ward_cot",
+     "pos": [
+      14.96,
+      5.2
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_a_w1",
+     "prop": "w3_ward_cot",
+     "pos": [
+      12.04,
+      7.6
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_a_e1",
+     "prop": "w3_ward_cot",
+     "pos": [
+      14.96,
+      7.6
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_a_w2",
+     "prop": "w3_ward_cot",
+     "pos": [
+      12.04,
+      10.0
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_a_e2",
+     "prop": "w3_ward_cot",
+     "pos": [
+      14.96,
+      10.0
+     ],
+     "rot": 90,
+     "variant": "destroyed",
+     "route_ok": true
+    },
+    {
+     "id": "cot_a_w3",
+     "prop": "w3_ward_cot",
+     "pos": [
+      12.04,
+      12.4
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_a_e3",
+     "prop": "w3_ward_cot",
+     "pos": [
+      14.96,
+      12.4
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_b_w0",
+     "prop": "w3_ward_cot",
+     "pos": [
+      19.04,
+      5.2
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_b_e0",
+     "prop": "w3_ward_cot",
+     "pos": [
+      21.96,
+      5.2
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_b_w1",
+     "prop": "w3_ward_cot",
+     "pos": [
+      19.04,
+      7.6
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_b_e1",
+     "prop": "w3_ward_cot",
+     "pos": [
+      21.96,
+      7.6
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_b_w2",
+     "prop": "w3_ward_cot",
+     "pos": [
+      19.04,
+      10.0
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_b_e2",
+     "prop": "w3_ward_cot",
+     "pos": [
+      21.96,
+      10.0
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_b_w3",
+     "prop": "w3_ward_cot",
+     "pos": [
+      19.04,
+      12.4
+     ],
+     "rot": 90,
+     "variant": "destroyed",
+     "route_ok": true
+    },
+    {
+     "id": "cot_b_e3",
+     "prop": "w3_ward_cot",
+     "pos": [
+      21.96,
+      12.4
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_c_w0",
+     "prop": "w3_ward_cot",
+     "pos": [
+      26.04,
+      5.2
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_c_e0",
+     "prop": "w3_ward_cot",
+     "pos": [
+      28.96,
+      5.2
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_c_w1",
+     "prop": "w3_ward_cot",
+     "pos": [
+      26.04,
+      7.6
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_c_e1",
+     "prop": "w3_ward_cot",
+     "pos": [
+      28.96,
+      7.6
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_c_w2",
+     "prop": "w3_ward_cot",
+     "pos": [
+      26.04,
+      10.0
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_c_e2",
+     "prop": "w3_ward_cot",
+     "pos": [
+      28.96,
+      10.0
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_c_w3",
+     "prop": "w3_ward_cot",
+     "pos": [
+      26.04,
+      12.4
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_d_w0",
+     "prop": "w3_ward_cot",
+     "pos": [
+      12.04,
+      17.2
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_d_e0",
+     "prop": "w3_ward_cot",
+     "pos": [
+      14.96,
+      17.2
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_d_e1",
+     "prop": "w3_ward_cot",
+     "pos": [
+      14.96,
+      19.6
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_d_w2",
+     "prop": "w3_ward_cot",
+     "pos": [
+      12.04,
+      22.0
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "id": "cot_d_w3",
+     "prop": "w3_ward_cot",
+     "pos": [
+      12.04,
+      24.4
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "cot_d_e3",
+     "prop": "w3_ward_cot",
+     "pos": [
+      14.96,
+      24.4
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "route_ok": true
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      12.05,
+      19.6
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      14.95,
+      22.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "road_iv_stand",
+     "pos": [
+      12.2,
+      6.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "road_iv_stand",
+     "pos": [
+      21.8,
+      8.6
+     ]
+    },
+    {
+     "prop": "road_iv_stand",
+     "pos": [
+      26.2,
+      10.6
+     ],
+     "variant": "destroyed"
+    },
+    {
+     "id": "ward_a_supply",
+     "prop": "civic_relief_crate",
+     "pos": [
+      13.5,
+      13.4
+     ],
+     "rot": 0,
+     "container": "w3_qc_supply"
+    },
+    {
+     "id": "ward_c_supply",
+     "prop": "civic_relief_crate",
+     "pos": [
+      27.5,
+      13.4
+     ],
+     "rot": 0,
+     "container": "w3_qc_supply",
+     "variant": "worn"
+    },
+    {
+     "id": "ward_d_supply",
+     "prop": "civic_relief_crate",
+     "pos": [
+      13.5,
+      16.6
+     ],
+     "rot": 180,
+     "container": "w3_qc_supply"
+    },
+    {
+     "prop": "road_sharps_bin",
+     "pos": [
+      20.5,
+      13.5
+     ]
+    },
+    {
+     "prop": "bloody_bandages",
+     "pos": [
+      20.4,
+      9.6
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      13.4,
+      11.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "civic_blanket_pile",
+     "pos": [
+      27.5,
+      4.6
+     ],
+     "rot": 10
+    },
+    {
+     "id": "screen_table_a",
+     "prop": "civic_folding_table",
+     "pos": [
+      18.6,
+      28.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "screen_table_b",
+     "prop": "civic_folding_table",
+     "pos": [
+      23.4,
+      28.0
+     ]
+    },
+    {
+     "id": "screen_chair_a",
+     "prop": "civic_folding_chair",
+     "pos": [
+      18.6,
+      27.35
+     ],
+     "rot": 0
+    },
+    {
+     "id": "screen_chair_b",
+     "prop": "civic_folding_chair",
+     "pos": [
+      23.4,
+      27.35
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "road_sharps_bin",
+     "pos": [
+      19.6,
+      28.0
+     ],
+     "y": 0.76
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      23.0,
+      29.3
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "bank_stanchions",
+     "pos": [
+      21.0,
+      30.2
+     ],
+     "rot": 0
+    },
+    {
+     "id": "screen_cot",
+     "prop": "w3_ward_cot",
+     "pos": [
+      24.6,
+      30.9
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "id": "sentry_desk",
+     "prop": "desk_small",
+     "at": [
+      18,
+      35
+     ],
+     "against": "W"
+    },
+    {
+     "id": "sentry_chair",
+     "prop": "civic_folding_chair",
+     "pos": [
+      19.0,
+      35.5
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      19.6,
+      36.8
+     ],
+     "rot": 60
+    },
+    {
+     "id": "sentry_ammo",
+     "prop": "wild_ammo_box",
+     "pos": [
+      20.5,
+      34.45
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "road_quarantine_notice",
+     "at": [
+      19,
+      38
+     ],
+     "against": "N",
+     "height": 1.5
+    },
+    {
+     "id": "ruiz_desk",
+     "prop": "office_desk",
+     "at": [
+      6,
+      8
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "id": "ruiz_chair",
+     "prop": "office_chair",
+     "pos": [
+      6.5,
+      9.4
+     ],
+     "rot": 180
+    },
+    {
+     "id": "ruiz_files",
+     "prop": "filing_cabinet",
+     "at": [
+      5,
+      9
+     ],
+     "against": "W"
+    },
+    {
+     "id": "ruiz_locker",
+     "prop": "weapons_locker",
+     "at": [
+      8,
+      11
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      -0.1
+     ],
+     "container": "w3_qc_command"
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      5,
+      11
+     ],
+     "against": "W",
+     "height": 1.4
+    },
+    {
+     "prop": "civic_ham_radio",
+     "pos": [
+      6.0,
+      15.5
+     ],
+     "y": 0.75
+    },
+    {
+     "id": "radio_desk",
+     "prop": "desk_small",
+     "at": [
+      6,
+      16
+     ],
+     "against": "S"
+    },
+    {
+     "id": "radio_chair",
+     "prop": "office_chair",
+     "pos": [
+      6.0,
+      15.0
+     ],
+     "rot": 0
+    },
+    {
+     "id": "radio_cot",
+     "prop": "civic_army_cot",
+     "pos": [
+      5.48,
+      13.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "radio_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      6.6,
+      15.75
+     ],
+     "y": 0.75,
+     "lit": true
+    },
+    {
+     "id": "morgue_rack_a",
+     "prop": "w3_morgue_rack",
+     "at": [
+      34,
+      5
+     ],
+     "against": "W"
+    },
+    {
+     "id": "morgue_rack_b",
+     "prop": "w3_morgue_rack",
+     "at": [
+      34,
+      8
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "id": "cold_chain",
+     "prop": "road_cooler",
+     "at": [
+      36,
+      5
+     ],
+     "against": "E",
+     "container": "w3_qc_cold_chain"
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      35.55,
+      6.9
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      36.35,
+      7.9
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "morgue_lantern",
+     "prop": "lantern_camping",
+     "pos": [
+      36.55,
+      10.5
+     ],
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "decon_0",
+     "prop": "w3_decon_shower",
+     "pos": [
+      18.0,
+      22.0
+     ],
+     "variant": "clean"
+    },
+    {
+     "id": "decon_1",
+     "prop": "w3_decon_shower",
+     "pos": [
+      21.0,
+      22.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "decon_2",
+     "prop": "w3_decon_shower",
+     "pos": [
+      24.0,
+      22.0
+     ],
+     "variant": "clean"
+    },
+    {
+     "prop": "clothes_pile",
+     "pos": [
+      15.8,
+      22.6
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "clothes_pile",
+     "pos": [
+      17.6,
+      19.5
+     ],
+     "rot": -40
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      26.2,
+      21.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      26.4,
+      22.3
+     ]
+    },
+    {
+     "prop": "pallet",
+     "pos": [
+      26.0,
+      23.7
+     ],
+     "rot": 10
+    },
+    {
+     "id": "camp_generator",
+     "prop": "town3_generator",
+     "pos": [
+      31.5,
+      18.0
+     ],
+     "rot": 90,
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "tower_light_a",
+     "prop": "w3_light_tower",
+     "pos": [
+      8.6,
+      24.0
+     ],
+     "rot": 40,
+     "lit": true
+    },
+    {
+     "id": "tower_light_b",
+     "prop": "w3_light_tower",
+     "pos": [
+      24.0,
+      16.5
+     ],
+     "rot": -20,
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "tower_light_c",
+     "prop": "w3_light_tower",
+     "pos": [
+      31.5,
+      27.0
+     ],
+     "rot": 200,
+     "lit": true
+    },
+    {
+     "id": "watchtower",
+     "prop": "w3_watchtower",
+     "pos": [
+      35.5,
+      31.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "tower_guard",
+     "prop": "corpse_remains",
+     "pos": [
+      33.6,
+      29.2
+     ],
+     "rot": 110,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_sandbags",
+     "pos": [
+      16.0,
+      38.6
+     ]
+    },
+    {
+     "prop": "w3_sandbags",
+     "pos": [
+      22.6,
+      38.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_sandbags",
+     "pos": [
+      36.6,
+      33.6
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "jersey_barrier",
+     "pos": [
+      13.6,
+      39.3
+     ],
+     "rot": 8,
+     "variant": "worn"
+    },
+    {
+     "prop": "jersey_barrier",
+     "pos": [
+      28.4,
+      39.2
+     ],
+     "rot": -6
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      33.0,
+      10.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      33.0,
+      12.8
+     ],
+     "rot": 0
+    },
+    {
+     "id": "cordon_truck",
+     "prop": "pickup_wreck",
+     "pos": [
+      9.0,
+      30.5
+     ],
+     "rot": 75,
+     "variant": "worn"
+    },
+    {
+     "id": "camp_trash",
+     "prop": "trash_bag",
+     "pos": [
+      3.2,
+      19.0
+     ]
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      2.4,
+      35.5
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      5.2,
+      35.53
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      8.0,
+      35.5
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      10.8,
+      35.53
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      13.6,
+      35.5
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      16.4,
+      35.53
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      27.269,
+      35.5
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      30.106,
+      35.53
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      32.944,
+      35.5
+     ],
+     "rot": 180,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      35.781,
+      35.53
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.2,
+      3.5
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.2,
+      12.356
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.17,
+      15.067
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.2,
+      17.778
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.17,
+      20.489
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.2,
+      23.2
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.17,
+      25.911
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.2,
+      28.622
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.17,
+      31.333
+     ],
+     "rot": -90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      37.2,
+      34.044
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      2.392,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      5.177,
+      2.03
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      7.962,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      10.746,
+      2.03
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      13.531,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      16.315,
+      2.03
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      19.1,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      21.885,
+      2.03
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      24.669,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      27.454,
+      2.03
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      30.238,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      33.023,
+      2.03
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      35.808,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      1.0,
+      3.487
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      0.97,
+      6.262
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      1.0,
+      9.037
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      0.97,
+      11.812
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      1.0,
+      14.587
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      0.97,
+      17.362
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      1.0,
+      20.137
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      0.97,
+      22.913
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      1.0,
+      25.688
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      0.97,
+      28.462
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      1.0,
+      31.237
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      0.97,
+      34.012
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "id": "camp_gate",
+     "prop": "w3_cordon_gate",
+     "pos": [
+      23.53,
+      35.5
+     ],
+     "rot": 180
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "queue_a",
+     "pos": [
+      21.0,
+      29.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "group": "queue",
+     "alt": "queue:in_line"
+    },
+    {
+     "id": "queue_b",
+     "pos": [
+      20.9,
+      30.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 170,
+     "group": "queue",
+     "alt": "queue:in_line"
+    },
+    {
+     "id": "queue_c",
+     "pos": [
+      21.1,
+      31.0
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 190,
+     "group": "queue",
+     "alt": "queue:in_line"
+    },
+    {
+     "id": "ward_b_1",
+     "pos": [
+      19.04,
+      5.2
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "ward",
+     "alt": "wards:b"
+    },
+    {
+     "id": "ward_b_2",
+     "pos": [
+      21.96,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": -90,
+     "group": "ward",
+     "alt": "wards:b"
+    },
+    {
+     "id": "ward_b_3",
+     "pos": [
+      19.04,
+      10.0
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "ward",
+     "alt": "wards:b"
+    },
+    {
+     "id": "ward_b_4",
+     "pos": [
+      20.5,
+      11.2
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "group": "ward",
+     "alt": "wards:b"
+    },
+    {
+     "id": "ward_a_1",
+     "pos": [
+      12.04,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90
+    },
+    {
+     "id": "ward_a_2",
+     "pos": [
+      14.96,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": -90
+    },
+    {
+     "id": "ward_c_1",
+     "pos": [
+      26.04,
+      5.2
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90
+    },
+    {
+     "id": "ward_c_2",
+     "pos": [
+      28.96,
+      10.0
+     ],
+     "enemy": "keener",
+     "pose": "sit",
+     "rot": -90
+    },
+    {
+     "id": "sentry",
+     "pos": [
+      19.0,
+      35.5
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -90,
+     "anchor": "sentry_chair"
+    },
+    {
+     "id": "radio_operator",
+     "pos": [
+      6.0,
+      15.0
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "anchor": "radio_chair"
+    },
+    {
+     "id": "captain_ruiz",
+     "pos": [
+      7.2,
+      10.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 45
+    },
+    {
+     "id": "dr_vance",
+     "pos": [
+      35.4,
+      9.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "guardian": true,
+     "anchor": "floor"
+    },
+    {
+     "id": "queue_a",
+     "pos": [
+      18.6,
+      27.35
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "group": "queue",
+     "alt": "queue:sat_down",
+     "anchor": "screen_chair_a"
+    },
+    {
+     "id": "queue_b",
+     "pos": [
+      23.4,
+      27.35
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "group": "queue",
+     "alt": "queue:sat_down",
+     "anchor": "screen_chair_b"
+    },
+    {
+     "id": "queue_c",
+     "pos": [
+      24.6,
+      30.9
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "queue",
+     "alt": "queue:sat_down",
+     "anchor": "screen_cot"
+    },
+    {
+     "id": "ward_b_1",
+     "pos": [
+      26.04,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "ward",
+     "alt": "wards:c"
+    },
+    {
+     "id": "ward_b_2",
+     "pos": [
+      28.96,
+      5.2
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": -90,
+     "group": "ward",
+     "alt": "wards:c"
+    },
+    {
+     "id": "ward_b_3",
+     "pos": [
+      26.04,
+      10.0
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "ward",
+     "alt": "wards:c"
+    },
+    {
+     "id": "ward_b_4",
+     "pos": [
+      27.5,
+      11.2
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "group": "ward",
+     "alt": "wards:c"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "reefer_key",
+     "item": "w3_qc_reefer_key",
+     "pos": [
+      5.15,
+      11.5
+     ],
+     "y": 1.45
+    },
+    {
+     "id": "tower_ammo",
+     "item": "ammo_38",
+     "pos": [
+      34.4,
+      29.6
+     ],
+     "y": 0.05
+    }
+   ],
+   "notes": [
+    {
+     "note": "w3_qc_orders",
+     "pos": [
+      6.2,
+      8.4
+     ],
+     "y": 0.78
+    },
+    {
+     "note": "w3_qc_screening",
+     "pos": [
+      18.3,
+      28.05
+     ],
+     "y": 0.77
+    },
+    {
+     "note": "w3_qc_ruiz",
+     "pos": [
+      5.7,
+      15.55
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w3_qc_vance",
+     "pos": [
+      36.4,
+      5.5
+     ],
+     "y": 0.62
+    },
+    {
+     "note": "w3_qc_tower",
+     "pos": [
+      34.0,
+      30.2
+     ],
+     "y": 0.04
+    }
+   ],
+   "traps": [
+    {
+     "id": "decon_jaws",
+     "type": "bear_trap",
+     "pos": [
+      16.6,
+      21.4
+     ],
+     "rot": 30
+    },
+    {
+     "id": "reefer_rig",
+     "type": "shotgun",
+     "at": [
+      35,
+      11
+     ],
+     "side": "S"
+    },
+    {
+     "id": "office_alarm",
+     "type": "alarm",
+     "at": [
+      6,
+      12
+     ],
+     "side": "N",
+     "alt": "office_door:alarm"
+    },
+    {
+     "id": "office_alarm",
+     "type": "can_chime",
+     "at": [
+      6,
+      12
+     ],
+     "side": "N",
+     "alt": "office_door:cans"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "queue_door",
+     "group": "queue",
+     "on": "opening",
+     "opening": "checkpoint_inner",
+     "delay": 0.4
+    },
+    {
+     "id": "queue_tent",
+     "group": "queue",
+     "on": "room",
+     "room": "Y",
+     "level": 0,
+     "delay": 0.3
+    },
+    {
+     "id": "ward_key",
+     "group": "ward",
+     "on": "pickup",
+     "pickup": "reefer_key",
+     "delay": 1.2
+    },
+    {
+     "id": "ward_jaws",
+     "group": "ward",
+     "on": "trap",
+     "trap": "decon_jaws",
+     "delay": 0.8
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      6.5,
+      9.6
+     ],
+     "height": 2.4,
+     "color": "#dfe7ee",
+     "energy": 0.35,
+     "range": 5.0,
+     "flicker": 0.6
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      35,
+      10
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      34,
+      10
+     ],
+     "side": "W",
+     "height": 1.3,
+     "size": [
+      0.9,
+      0.7
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      8,
+      14
+     ],
+     "side": "E",
+     "height": 1.2,
+     "size": [
+      0.4,
+      0.4
+     ]
+    },
+    {
+     "decal": "bullet_holes",
+     "at": [
+      7,
+      13
+     ],
+     "side": "E",
+     "height": 1.4,
+     "size": [
+      1.0,
+      0.8
+     ]
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      7,
+      13
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      18,
+      36
+     ],
+     "side": "W",
+     "height": 1.4,
+     "size": [
+      0.8,
+      0.6
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      19,
+      39
+     ],
+     "label": "The road: a Cordon camp behind white-screened wire, the gate chained, the checkpoint hut in the fence line"
+    },
+    {
+     "at": [
+      19,
+      36
+     ],
+     "label": "The checkpoint hut: the only way through the wire"
+    },
+    {
+     "at": [
+      19,
+      33
+     ],
+     "label": "Through its inner door: the screening line turns"
+    },
+    {
+     "at": [
+      21,
+      29
+     ],
+     "label": "The screening tent: the tables, the thermometers, the clipboard"
+    },
+    {
+     "at": [
+      22,
+      25
+     ],
+     "label": "The decontamination line: STRIP, SHOWER, DRESS, the clothes in piles (jaws in them)"
+    },
+    {
+     "at": [
+      13,
+      9
+     ],
+     "label": "Ward A: the restrained on their cots"
+    },
+    {
+     "at": [
+      20,
+      9
+     ],
+     "label": "Ward B"
+    },
+    {
+     "at": [
+      9,
+      14
+     ],
+     "label": "The command trailer"
+    },
+    {
+     "at": [
+      6,
+      14
+     ],
+     "label": "The radio room: the captain's log"
+    },
+    {
+     "at": [
+      6,
+      9
+     ],
+     "label": "The captain's office behind its alarm: the orders, the reefer key on the board (Ward B wakes)"
+    },
+    {
+     "at": [
+      30,
+      14
+     ],
+     "label": "Past the generator and the light towers"
+    },
+    {
+     "at": [
+      35,
+      13
+     ],
+     "label": "The reefer: MORGUE, padlocked, a wire behind its door"
+    },
+    {
+     "at": [
+      35,
+      7
+     ],
+     "label": "The morgue: Dr. Vance and the cold-chain box"
+    },
+    {
+     "at": [
+      37,
+      9
+     ],
+     "label": "Draw the side door's bolt: out beyond the wire"
+    }
+   ],
+   "loot_room": {
+    "room": "R",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "reefer_side"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "queue",
+     "label": "Who waits in the screening tent",
+     "options": [
+      {
+       "id": "in_line",
+       "weight": 2,
+       "label": "Still in line"
+      },
+      {
+       "id": "sat_down",
+       "label": "Sat down to wait"
+      }
+     ]
+    },
+    {
+     "id": "office_door",
+     "label": "What guards the captain's office",
+     "options": [
+      {
+       "id": "alarm",
+       "weight": 2
+      },
+      {
+       "id": "cans"
+      }
+     ]
+    },
+    {
+     "id": "wards",
+     "label": "Which ward is held",
+     "options": [
+      {
+       "id": "b",
+       "weight": 2
+      },
+      {
+       "id": "c"
+      }
+     ]
+    },
+    {
+     "id": "reefer",
+     "label": "How the reefer is shut",
+     "options": [
+      {
+       "id": "padlock",
+       "weight": 2
+      },
+      {
+       "id": "chain",
+       "openings": [
+        {
+         "id": "reefer_door",
+         "lock": "chain"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "power",
+     "label": "Whether the generator still runs",
+     "options": [
+      {
+       "id": "running",
+       "weight": 3
+      },
+      {
+       "id": "dry",
+       "label": "Out of fuel",
+       "style": {
+        "lights_on": 0.15
+       }
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "enemies": 15,
+    "props": 240
+   }
+  }
+ ]
+}

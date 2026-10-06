@@ -16,7 +16,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: smoke tour export render-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: smoke tour export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview
 
@@ -113,8 +113,16 @@ export: ## Package Windows and Linux builds with the generated assets into build
 	@mkdir -p $(ROOT)/build/export
 	@GODOT="$(GODOT)" LOCK="$(LOCK)" tools/export/export.sh $(EXPORT_TARGETS)
 
+stream-check: ## Streamed random world walk: late seconds, longest frame, memory between laps (ADR-0038): [STREAM_ARGS="--world-seed 7 --world-set size=5 --km 2"]
+	@$(GODOT_HEADLESS) -s res://src/tools/cli/stream_walk.gd -- $(STREAM_ARGS)
+
 render-check: ## Render town views (software Vulkan) and fail on renderer errors such as probe atlas overflow (ADR-0036): [RENDER_CHECK_SHOTS=a,b]
 	@GODOT="$(GODOT)" LOCK="$(LOCK)" tools/qa/render_check.sh $(RENDER_CHECK_SHOTS)
+
+probe-lab: ## How this Godot treats interior reflection probes switched off and on (hide/detach/base); re-run after a Godot upgrade (TD-044)
+	@cd $(ROOT)/tools/probe_lab && for m in hide detach base; do \
+		xvfb-run -a -s "-screen 0 640x480x24" $(GODOT) --path . --rendering-driver vulkan --audio-driver Dummy --resolution 320x240 \
+			-s res://probe_lab.gd -- $$m 2>&1 | grep -E "LAB2|FATAL|atlas index invalid" | head -3; done
 
 clean: ## Remove build output (keeps .tools and generated assets)
 	rm -rf $(ROOT)/build $(GAME)/.godot

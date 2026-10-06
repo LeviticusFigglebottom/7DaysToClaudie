@@ -69,11 +69,12 @@ func current_label() -> String:
 
 
 ## Drops queued steps whose name starts with `prefix` (work no longer wanted: a region that
-## detached before its attach steps ran). Returns how many.
-func cancel(prefix: String) -> int:
+## detached before its attach steps ran), or is exactly it with `exact`. Returns how many.
+func cancel(prefix: String, exact: bool = false) -> int:
 	var n: int = 0
 	for i: int in range(_queue.size() - 1, -1, -1):
-		if str((_queue[i][2] as Array)[2]).begins_with(prefix) and not is_same(_queue[i][2], _running):
+		var nm: String = str((_queue[i][2] as Array)[2])
+		if (nm == prefix if exact else nm.begins_with(prefix)) and not is_same(_queue[i][2], _running):
 			_queue.remove_at(i)
 			n += 1
 	return n

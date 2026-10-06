@@ -1,0 +1,1427 @@
+{
+ "_doc": "Wilderness set pieces, round 3 (agent X): Camp Tamarack, Elk Ridge Lodge, the Cordon quarantine camp and the Haldane Place, the dungeons random worlds place outside towns. Models: tools/assetgen/blender/generators/props_wild3.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_wild3.py; materials game/data/materials/props_wild3.json; the w3_signs lettering atlas textures/gen/wild3.py. size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. Shells (w3_*_shell) wrap a POI's kit rooms: origin at the rooms' plan centre on the ground (place them y = -floor_height); the catalog's SHELLS lists the rooms and openings they are cut for. Wall props hang with their origin on the wall plane; ceiling props hang from it.",
+ "defs": [
+  {
+   "id": "w3_camp_arch",
+   "name": "Camp Gate Arch",
+   "description": "Two bark-on posts and a log beam over the drive, the routed cedar sign CAMP TAMARACK hung under it on chains and a small cross on the beam.",
+   "tags": [
+    "structure",
+    "exterior",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/w3_camp_arch",
+    "worn": "props/w3_camp_arch_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    6.0,
+    4.9,
+    0.7
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_canoe_rack",
+   "name": "Canoe Rack",
+   "description": "Two H-frames of peeled poles with three canoes keel-up on the rungs (destroyed: a frame down and a canoe stove in on the ground).",
+   "tags": [
+    "exterior",
+    "boat",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w3_canoe_rack",
+    "worn": "props/w3_canoe_rack_worn",
+    "destroyed": "props/w3_canoe_rack_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    4.9,
+    1.9,
+    2.3
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_camp_bunk",
+   "name": "Camp Bunk",
+   "description": "A camp double bunk of painted 2x4s and plywood, thin striped mattresses, a sleeping bag below and a quilt above, a ladder at the foot.",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w3_camp_bunk",
+    "worn": "props/w3_camp_bunk_worn",
+    "destroyed": "props/w3_camp_bunk_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    2.1,
+    1.75,
+    0.95
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "bedroom",
+    "bunkhouse",
+    "cabin"
+   ],
+   "anchors": [
+    {
+     "kind": "bed",
+     "pos": [
+      -0.1,
+      0.0
+     ],
+     "height": 0.47,
+     "facing": 90
+    },
+    {
+     "kind": "bed",
+     "pos": [
+      -0.1,
+      0.0
+     ],
+     "height": 1.37,
+     "facing": 90
+    }
+   ]
+  },
+  {
+   "id": "w3_sign_loon",
+   "name": "Plaque: Loon",
+   "description": "A routed cedar plaque, LOON, screwed beside a door (hang it ~2 m up on an outside wall).",
+   "tags": [
+    "decor",
+    "sign",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w3_sign_loon",
+    "worn": "props/w3_sign_loon_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.92,
+    0.25,
+    0.04
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_sign_heron",
+   "name": "Plaque: Heron",
+   "description": "A routed cedar plaque, HERON, screwed beside a door (hang it ~2 m up on an outside wall).",
+   "tags": [
+    "decor",
+    "sign",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w3_sign_heron",
+    "worn": "props/w3_sign_heron_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.92,
+    0.25,
+    0.04
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_sign_osprey",
+   "name": "Plaque: Osprey",
+   "description": "A routed cedar plaque, OSPREY, screwed beside a door (hang it ~2 m up on an outside wall).",
+   "tags": [
+    "decor",
+    "sign",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w3_sign_osprey",
+    "worn": "props/w3_sign_osprey_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.92,
+    0.25,
+    0.04
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_sign_kestrel",
+   "name": "Plaque: Kestrel",
+   "description": "A routed cedar plaque, KESTREL, screwed beside a door (hang it ~2 m up on an outside wall).",
+   "tags": [
+    "decor",
+    "sign",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w3_sign_kestrel",
+    "worn": "props/w3_sign_kestrel_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.92,
+    0.25,
+    0.04
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_sign_mess",
+   "name": "Plaque: Mess Hall",
+   "description": "A routed cedar plaque, MESS HALL, screwed beside a door (hang it ~2 m up on an outside wall).",
+   "tags": [
+    "decor",
+    "sign",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w3_sign_mess",
+    "worn": "props/w3_sign_mess_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.92,
+    0.25,
+    0.04
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_sign_lodge",
+   "name": "Plaque: Staff Lodge",
+   "description": "A routed cedar plaque, STAFF LODGE, screwed beside a door (hang it ~2 m up on an outside wall).",
+   "tags": [
+    "decor",
+    "sign",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w3_sign_lodge",
+    "worn": "props/w3_sign_lodge_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.92,
+    0.25,
+    0.04
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_sign_infirmary",
+   "name": "Plaque: Infirmary",
+   "description": "A routed cedar plaque, INFIRMARY, screwed beside a door (hang it ~2 m up on an outside wall).",
+   "tags": [
+    "decor",
+    "sign",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w3_sign_infirmary",
+    "worn": "props/w3_sign_infirmary_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.92,
+    0.25,
+    0.04
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_sign_canoes",
+   "name": "Plaque: Canoes",
+   "description": "A routed cedar plaque, CANOES, screwed beside a door (hang it ~2 m up on an outside wall).",
+   "tags": [
+    "decor",
+    "sign",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w3_sign_canoes",
+    "worn": "props/w3_sign_canoes_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.92,
+    0.25,
+    0.04
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_evac_board",
+   "name": "Family Registration Board",
+   "description": "The Cordon's board at the evacuation point: a blue FAMILY EVACUATION POINT 6 header, typed lists of families, cabins and convoys, snapshots and notes pinned to cork, a clipboard and a pen on a string, under a tin hood.",
+   "tags": [
+    "exterior",
+    "sign",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_evac_board",
+    "worn": "props/w3_evac_board_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    2.6,
+    2.45,
+    0.35
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_log_bench",
+   "name": "Log Bench",
+   "description": "A split-log bench on two stumps, flat side up.",
+   "tags": [
+    "furniture",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w3_log_bench",
+    "worn": "props/w3_log_bench_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    2.0,
+    0.47,
+    0.45
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior",
+    "church"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -0.6,
+      0.0
+     ],
+     "height": 0.47,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      0.0
+     ],
+     "height": 0.47,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.6,
+      0.0
+     ],
+     "height": 0.47,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      -0.6,
+      0.0
+     ],
+     "height": 0.47,
+     "facing": 180,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      0.0
+     ],
+     "height": 0.47,
+     "facing": 180,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.6,
+      0.0
+     ],
+     "height": 0.47,
+     "facing": 180,
+     "lean": "forward"
+    }
+   ]
+  },
+  {
+   "id": "w3_chapel_cross",
+   "name": "Birch Cross",
+   "description": "A rough cross of peeled logs lashed together on a cairn of river stones by the water (worn: ribbons tied to its arm).",
+   "tags": [
+    "exterior",
+    "wood",
+    "church"
+   ],
+   "variants": {
+    "clean": "props/w3_chapel_cross",
+    "worn": "props/w3_chapel_cross_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.6,
+    3.15,
+    1.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_lodge_shell",
+   "name": "Log Lodge Walls",
+   "description": "Chinked bark-on log walls, saddle-notched at the corners, two storeys round Elk Ridge Lodge's kit rooms (16 x 10 m), cut for its doors and windows; the kit roof sits on it (shell: origin at the rooms' plan centre on the ground, place it y = -floor_height).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell"
+   ],
+   "variants": {
+    "clean": "props/w3_lodge_shell"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    16.6,
+    6.5,
+    10.6
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w3_stone_fireplace",
+   "name": "Fieldstone Fireplace",
+   "description": "A fieldstone fireplace and its breast rising 5.6 m: a raised granite hearth, a deep sooted firebox with andirons and split logs, a log mantel (place it against a wall: its back meets the wall).",
+   "tags": [
+    "structure",
+    "light"
+   ],
+   "variants": {
+    "clean": "props/w3_stone_fireplace",
+    "worn": "props/w3_stone_fireplace_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 0,
+   "size": [
+    2.7,
+    5.6,
+    1.33
+   ],
+   "light": {
+    "color": "#ffae5c",
+    "energy": 2.6,
+    "range": 9.0,
+    "flicker": 0.35,
+    "offset": [
+     0.0,
+     0.42,
+     0.85
+    ],
+    "power": "flame",
+    "fx": "fire",
+    "fx_size": 0.45,
+    "variants": {
+     "worn": false
+    }
+   },
+   "blocks_sight": true,
+   "rooms": [
+    "living",
+    "lodge"
+   ]
+  },
+  {
+   "id": "w3_stone_chimney",
+   "name": "Fieldstone Chimney",
+   "description": "The lodge's outside chimney stack: a broad fieldstone base, stepped shoulders, the stack past the ridge, a cap slab (stands against a wall, origin on the wall plane, front away from it).",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w3_stone_chimney"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 0,
+   "size": [
+    2.2,
+    11.2,
+    1.3
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_antler_chandelier",
+   "name": "Antler Chandelier",
+   "description": "Shed antlers wired round a wrought-iron hoop on a long chain, eight candles in cups (ceiling-mounted: origin on the ceiling, it hangs 2.6 m: for tall rooms).",
+   "tags": [
+    "ceiling_mounted",
+    "light",
+    "decor"
+   ],
+   "variants": {
+    "clean": "props/w3_antler_chandelier",
+    "worn": "props/w3_antler_chandelier_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.5,
+    2.6,
+    1.5
+   ],
+   "light": {
+    "color": "#ffbe78",
+    "energy": 2.4,
+    "range": 11.0,
+    "flicker": 0.2,
+    "offset": [
+     0.0,
+     -2.25,
+     0.0
+    ],
+    "power": "flame",
+    "variants": {
+     "worn": {
+      "energy": 1.4
+     }
+    }
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "living",
+    "lodge"
+   ]
+  },
+  {
+   "id": "w3_lodge_sign",
+   "name": "Lodge Sign",
+   "description": "ELK RIDGE LODGE routed into a cedar board between two bark-on posts, a rack of antlers over it.",
+   "tags": [
+    "exterior",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/w3_lodge_sign",
+    "worn": "props/w3_lodge_sign_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    2.4,
+    2.6,
+    0.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_kennel_sign",
+   "name": "Kennel Board",
+   "description": "The hounds' names on a board on a stake: BELLE, DUKE, ROSIE, JACK.",
+   "tags": [
+    "exterior",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/w3_kennel_sign",
+    "worn": "props/w3_kennel_sign_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.2,
+    1.5,
+    0.15
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_trophy_elk",
+   "name": "Elk Mount",
+   "description": "A bull elk's head on an oak shield, six points a side (worn: a glass eye gone, a tine broken). Place it against a wall with a y: its back meets the wall.",
+   "tags": [
+    "decor"
+   ],
+   "variants": {
+    "clean": "props/w3_trophy_elk",
+    "worn": "props/w3_trophy_elk_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.6,
+    1.65,
+    0.94
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "living",
+    "lodge",
+    "office"
+   ]
+  },
+  {
+   "id": "w3_trophy_deer",
+   "name": "Buck Mount",
+   "description": "A whitetail buck's head on an oak shield, four points a side. Place it against a wall with a y.",
+   "tags": [
+    "decor"
+   ],
+   "variants": {
+    "clean": "props/w3_trophy_deer",
+    "worn": "props/w3_trophy_deer_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.62,
+    0.95,
+    0.68
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "living",
+    "lodge",
+    "office",
+    "bedroom"
+   ]
+  },
+  {
+   "id": "w3_bear_rug",
+   "name": "Bearskin Rug",
+   "description": "A black bear's hide spread on the floor, its head mounted at one end, mouth open.",
+   "tags": [
+    "decor",
+    "rug"
+   ],
+   "variants": {
+    "clean": "props/w3_bear_rug",
+    "worn": "props/w3_bear_rug_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.6,
+    0.3,
+    2.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "living",
+    "lodge"
+   ]
+  },
+  {
+   "id": "w3_gun_cabinet",
+   "name": "Gun Cabinet",
+   "description": "A glass-fronted oak gun cabinet: rifles in a notched rack on green felt, drawers under them (destroyed: glass out, the rack bare).",
+   "tags": [
+    "furniture",
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w3_gun_cabinet",
+    "worn": "props/w3_gun_cabinet_worn",
+    "destroyed": "props/w3_gun_cabinet_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.26,
+    1.98,
+    0.48
+   ],
+   "container": "w3_gun_cabinet",
+   "rooms": [
+    "office",
+    "lodge"
+   ]
+  },
+  {
+   "id": "w3_gambrel",
+   "name": "Skinning Gambrel",
+   "description": "Two pole A-frames and a cross pole, a chain and a steel gambrel, an elk carcass hung by its hind legs with the hide peeled to the shoulders over a tub (worn: gone dark, pale threads in it).",
+   "tags": [
+    "exterior",
+    "wood",
+    "hunting"
+   ],
+   "variants": {
+    "clean": "props/w3_gambrel",
+    "worn": "props/w3_gambrel_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    2.8,
+    3.0,
+    1.3
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "workshop",
+    "storage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_kennel_run",
+   "name": "Kennel Run",
+   "description": "A 2 x 4 m dog run of galvanized pipe and chain-link with a plywood doghouse, a bowl and a chain (worn: a panel pushed out where they dug and the gate open; destroyed: a side flattened).",
+   "tags": [
+    "exterior",
+    "fence",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w3_kennel_run",
+    "worn": "props/w3_kennel_run_worn",
+    "destroyed": "props/w3_kennel_run_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    2.1,
+    1.85,
+    4.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_meat_rail",
+   "name": "Meat Rail",
+   "description": "Two steel posts and a rail with S-hooks, elk quarters hung over a drip pan (worn: black and furred with pale threads).",
+   "tags": [
+    "furniture",
+    "hunting"
+   ],
+   "variants": {
+    "clean": "props/w3_meat_rail",
+    "worn": "props/w3_meat_rail_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    2.65,
+    2.35,
+    0.55
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "cellar",
+    "storage",
+    "kitchen"
+   ]
+  },
+  {
+   "id": "w3_ward_tent",
+   "name": "Ward Tent",
+   "description": "An open-sided olive ward tent, 5 x 9.6 m: three centre poles, the walls rolled up on their ties, guy lines to stakes (no collision: walk in under the eaves; destroyed: half of it fallen in).",
+   "tags": [
+    "structure",
+    "exterior",
+    "tent",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_ward_tent",
+    "worn": "props/w3_ward_tent_worn",
+    "destroyed": "props/w3_ward_tent_destroyed"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    7.9,
+    3.8,
+    9.9
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_ward_cot",
+   "name": "Restraint Cot",
+   "description": "A Cordon field cot, olive canvas on an aluminium frame, two restraint straps across it, a grey blanket and a wristband tag on the foot bar.",
+   "tags": [
+    "furniture",
+    "cordon",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w3_ward_cot",
+    "worn": "props/w3_ward_cot_worn",
+    "destroyed": "props/w3_ward_cot_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 90,
+   "size": [
+    0.8,
+    0.5,
+    1.95
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "clinic",
+    "hall",
+    "exterior"
+   ],
+   "anchors": [
+    {
+     "kind": "bed",
+     "pos": [
+      0.0,
+      0.0
+     ],
+     "height": 0.42
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.22,
+      0.15
+     ],
+     "height": 0.42,
+     "facing": 90,
+     "lean": "forward"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      -0.22,
+      0.15
+     ],
+     "height": 0.42,
+     "facing": -90,
+     "lean": "forward"
+    }
+   ]
+  },
+  {
+   "id": "w3_decon_shower",
+   "name": "Decontamination Shower",
+   "description": "A PVC shower frame with four spray heads, white curtains on two sides, a pallet floor over a catch basin, the feed hose and the yellow 2 SHOWER sign.",
+   "tags": [
+    "structure",
+    "exterior",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_decon_shower",
+    "worn": "props/w3_decon_shower_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.4,
+    2.4,
+    2.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_light_tower",
+   "name": "Light Tower",
+   "description": "A towable light tower: a generator box on a two-wheel trailer with outrigger jacks and a three-stage mast to 7 m carrying four floodlights.",
+   "tags": [
+    "exterior",
+    "machine",
+    "light",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_light_tower",
+    "worn": "props/w3_light_tower_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    1.4,
+    7.3,
+    2.7
+   ],
+   "light": {
+    "color": "#eef2ff",
+    "energy": 7.0,
+    "range": 26.0,
+    "flicker": 0.02,
+    "offset": [
+     0.0,
+     6.85,
+     -0.4
+    ],
+    "power": "generator",
+    "shadow": true
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_cordon_fence",
+   "name": "Cordon Fence",
+   "description": "Three metres of the camp's fence: chain-link on galvanized posts with a white privacy screen, barbed wire and a concertina coil on outriggers leaning out (+Z is inside; destroyed: cut and peeled back).",
+   "tags": [
+    "fence",
+    "metal",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_cordon_fence",
+    "worn": "props/w3_cordon_fence_worn",
+    "destroyed": "props/w3_cordon_fence_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    3.0,
+    2.2,
+    0.12
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_cordon_gate",
+   "name": "Cordon Gate",
+   "description": "The camp's double gate chained shut, the QUARANTINE notice on one leaf, the STOP / CHECKPOINT sign on its post.",
+   "tags": [
+    "fence",
+    "metal",
+    "cordon",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/w3_cordon_gate",
+    "worn": "props/w3_cordon_gate_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    4.65,
+    2.6,
+    0.15
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_sandbags",
+   "name": "Sandbag Wall",
+   "description": "Two metres of sandbag wall three courses high (worn: bags slumped and split).",
+   "tags": [
+    "exterior",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_sandbags",
+    "worn": "props/w3_sandbags_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 800,
+   "size": [
+    2.0,
+    0.55,
+    0.6
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_watchtower",
+   "name": "Watchtower",
+   "description": "A scaffold watchtower: four braced legs, a plank deck at 4.2 m behind sandbags, a tarp roof, a ladder and a searchlight.",
+   "tags": [
+    "structure",
+    "exterior",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_watchtower",
+    "worn": "props/w3_watchtower_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    2.5,
+    6.6,
+    2.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_reefer_shell",
+   "name": "Morgue Reefer",
+   "description": "A refrigerated semi-trailer body round the morgue's kit room (3 x 8 m): white ribbed walls, the reefer unit on its front, rear doors swung back, sat on railway-tie cribbing, MORGUE stencilled on its sides (shell: origin at the room's plan centre on the ground, place it y = -floor_height).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_reefer_shell",
+    "worn": "props/w3_reefer_shell_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.6,
+    3.5,
+    9.0
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w3_command_trailer_shell",
+   "name": "Command Trailer",
+   "description": "A white site-office trailer round the command post's kit rooms (4 x 9 m): ribbed walls on a plywood skirt, an antenna mast, steps to the door, CORDON COMMAND - UNIT 4 on its sides (shell: origin at the rooms' plan centre on the ground, place it y = -floor_height).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_command_trailer_shell",
+    "worn": "props/w3_command_trailer_shell_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    4.6,
+    8.4,
+    9.6
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w3_body_bag",
+   "name": "Body Bag",
+   "description": "A zipped body bag lying flat, the shape of someone inside (clean: the Cordon's white bags; worn: black).",
+   "tags": [
+    "corpse",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_body_bag",
+    "worn": "props/w3_body_bag_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.65,
+    0.3,
+    1.95
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "clinic",
+    "storage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_morgue_rack",
+   "name": "Morgue Rack",
+   "description": "Steel shelving, three shelves, body bags on the lower two.",
+   "tags": [
+    "furniture",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_morgue_rack",
+    "worn": "props/w3_morgue_rack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    2.1,
+    1.8,
+    0.82
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "clinic",
+    "storage"
+   ]
+  },
+  {
+   "id": "w3_ward_a",
+   "name": "Ward Marker A",
+   "description": "An olive board stencilled A on a stake by a ward tent's door.",
+   "tags": [
+    "exterior",
+    "sign",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_ward_a",
+    "worn": "props/w3_ward_a_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.45,
+    1.45,
+    0.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_ward_b",
+   "name": "Ward Marker B",
+   "description": "An olive board stencilled B on a stake by a ward tent's door.",
+   "tags": [
+    "exterior",
+    "sign",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_ward_b",
+    "worn": "props/w3_ward_b_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.45,
+    1.45,
+    0.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_ward_c",
+   "name": "Ward Marker C",
+   "description": "An olive board stencilled C on a stake by a ward tent's door.",
+   "tags": [
+    "exterior",
+    "sign",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_ward_c",
+    "worn": "props/w3_ward_c_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.45,
+    1.45,
+    0.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_ward_d",
+   "name": "Ward Marker D",
+   "description": "An olive board stencilled D on a stake by a ward tent's door.",
+   "tags": [
+    "exterior",
+    "sign",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w3_ward_d",
+    "worn": "props/w3_ward_d_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.45,
+    1.45,
+    0.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_scrap_palisade",
+   "name": "Scrap Wall",
+   "description": "Two metres of a homestead's wall: bark-on posts and rails clad with whatever they had - corrugated sheets, pallets, plywood, a car door - barbed wire along the top (outside is +Z's back, -Z; destroyed: sheets torn off, a post leaning).",
+   "tags": [
+    "fence",
+    "structure",
+    "survivor"
+   ],
+   "variants": {
+    "clean": "props/w3_scrap_palisade",
+    "worn": "props/w3_scrap_palisade_worn",
+    "destroyed": "props/w3_scrap_palisade_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    2.1,
+    2.7,
+    0.35
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_scrap_gate",
+   "name": "Scrap Gate",
+   "description": "A gate of pallets and corrugated tin on a pole frame between two heavy posts, chained, TURN BACK painted on a board over it.",
+   "tags": [
+    "fence",
+    "structure",
+    "survivor",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/w3_scrap_gate",
+    "worn": "props/w3_scrap_gate_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 700,
+   "size": [
+    2.9,
+    2.95,
+    0.35
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_watch_platform",
+   "name": "Watch Platform",
+   "description": "A platform on four posts, its plank deck at 2.4 m behind a plywood-and-tin parapet, a ladder, a tarp over a pole, a can of spent shells.",
+   "tags": [
+    "structure",
+    "exterior",
+    "survivor"
+   ],
+   "variants": {
+    "clean": "props/w3_watch_platform",
+    "worn": "props/w3_watch_platform_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    2.3,
+    4.3,
+    3.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_raised_bed",
+   "name": "Raised Garden Bed",
+   "description": "A raised bed of rough planks, 1.2 x 3 m, kale and cabbage in rows (worn: bolted and yellowing; destroyed: trampled and spilled).",
+   "tags": [
+    "exterior",
+    "garden",
+    "survivor"
+   ],
+   "variants": {
+    "clean": "props/w3_raised_bed",
+    "worn": "props/w3_raised_bed_worn",
+    "destroyed": "props/w3_raised_bed_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    3.05,
+    0.5,
+    1.25
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_rain_catcher",
+   "name": "Rain Catcher",
+   "description": "A blue tarp sagged into a funnel on four poles over a blue drum with a tap.",
+   "tags": [
+    "exterior",
+    "survivor"
+   ],
+   "variants": {
+    "clean": "props/w3_rain_catcher",
+    "worn": "props/w3_rain_catcher_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    2.0,
+    2.1,
+    2.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_stake_row",
+   "name": "Stake Row",
+   "description": "Sharpened stakes driven through a log, angled out at chest height.",
+   "tags": [
+    "exterior",
+    "survivor",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w3_stake_row",
+    "worn": "props/w3_stake_row_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    2.45,
+    1.2,
+    1.3
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  }
+ ]
+}

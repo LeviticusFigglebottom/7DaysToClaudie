@@ -22,6 +22,17 @@
      "ground": ["grass", "dirt"], "ambience": "town", "temperature_offset": 0.5, "spawns": {"hollow": 10, "lurcher": 2, "keener": 1, "blister": 1.2, "husk": 1.0, "rammer": 0.4}, "spawn_density": 1.4, "fog_tint": "#a6a8a8"},
     {"id": "rocky_slope", "name": "Rocky Slope", "description": "Talus and stunted fir.",
      "vegetation": {"grey_fir": 0.5, "dead_snag": 0.2, "granite_boulder": 0.6, "loose_stone": 1.2, "sword_fern": 1.0, "forest_moss": 2.0, "forest_litter": 1.0, "bloom_caps": 2.5},
-     "ground": ["rock", "gravel"], "ambience": "forest", "temperature_offset": -1.5, "spawns": {"hollow": 10}, "spawn_density": 0.4, "fog_tint": "#9ea4a8"}
+     "ground": ["rock", "gravel"], "ambience": "forest", "temperature_offset": -1.5, "spawns": {"hollow": 10}, "spawn_density": 0.4, "fog_tint": "#9ea4a8"},
+    {"id": "burnt_forest", "name": "Burnt Forest", "description": "An old burn: grey snags over ash and char, fireweed and bracken in the gaps, the first pines coming up. Open sky and long sightlines: what sees you, sees you from far off.",
+     "vegetation": {"burnt_snag": 1.1, "grey_fir": 0.07, "hollow_larch": 0.05, "paper_birch": 0.06, "lodgepole_sapling": 1.4, "fir_sapling": 0.25, "huckleberry_bush": 0.2,
+                    "burnt_log": 0.24, "burnt_stump": 0.16, "sooted_boulder": 0.09, "loose_stone": 0.5, "deadfall_branches": 0.7,
+                    "fireweed": 7.0, "bracken": 5.5, "meadow_grass": 13.0, "yarrow_plant": 0.5, "forest_moss": 0.3, "bloom_caps": 2.0},
+     "ground": ["ash_char", "dirt", "grass"], "ambience": "burn", "temperature_offset": 0.5,
+     "spawns": {"hollow": 10, "lurcher": 2.5, "keener": 1.6, "rammer": 0.5, "husk": 0.4}, "spawn_density": 0.8, "fog_tint": "#b4a996"},
+    {"id": "fen", "name": "Fen", "description": "The drowned lowland: black peat, tannin pools, sphagnum hummocks and sedge, cattails, stunted tamarack and black spruce, grey snags standing in the water. The Bloom pools here.",
+     "vegetation": {"black_spruce": 0.75, "tamarack": 0.6, "drowned_snag": 0.32, "cattail": 2.4, "bulrush": 1.1, "pacific_willow": 0.45, "fallen_log": 0.06,
+                    "slough_sedge": 16.0, "sphagnum_hummock": 6.0, "skunk_cabbage": 2.2, "horsetail": 1.6, "meadow_grass": 4.0, "forest_moss": 1.2, "bloom_caps": 9.0},
+     "ground": ["peat", "mud", "moss"], "ambience": "fen", "temperature_offset": -1.0,
+     "spawns": {"hollow": 10, "dragger": 2.0, "blister": 2.4, "husk": 1.3, "lurcher": 0.8}, "spawn_density": 1.3, "fog_tint": "#8f9a90"}
   ]
 }
