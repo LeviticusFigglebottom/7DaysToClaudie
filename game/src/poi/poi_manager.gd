@@ -318,9 +318,7 @@ func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
 			_orphans.append(job[k])
 	# Half built: its root never entered the tree.
 	if job.has("builder"):
-		var half: Node = (job["builder"] as PoiBuilder).root
-		if is_instance_valid(half) and not half.is_inside_tree():
-			half.free()
+		(job["builder"] as PoiBuilder).discard()
 	_jobs.erase(id)
 	_region_of.erase(id)
 	_inside.erase(id)
@@ -584,7 +582,8 @@ func _prepare_poi(job: Dictionary) -> void:
 		v.layout = layout
 		out[0] = layout
 		out[1] = v
-		v._run(), false, "poi check %s" % job["id"])
+		v._run()
+		PoiBuilder.prepare_check(v), false, "poi check %s" % job["id"])
 	_tasks.append(job["task"])
 
 
@@ -594,7 +593,7 @@ const BUILD_SLICE_MS: float = 8.0
 const SLOW_PHASE_MS: float = 20.0
 
 
-## Boot step: builds a prepared building once its check is done, a few PoiBuilder phases per call
+## Boot step: builds a prepared building once its check is done, a few PoiBuilder steps per call
 ## (ADR-0038: no single frame pays for a whole sawmill); false = not done, ask again next frame.
 func _finish_poi(job: Dictionary) -> bool:
 	var task: int = int(job.get("task", -1))
@@ -617,9 +616,11 @@ func _finish_poi(job: Dictionary) -> bool:
 	while true:
 		var phase: String = b.next_phase()
 		var tp: int = Time.get_ticks_usec()
-		var done: bool = b.step()
+		# What is left of the slice: a resumable phase (walls, floors, roof, props...) stops there.
+		var done: bool = b.step(maxf(BUILD_SLICE_MS - float(tp - t0) / 1000.0, 0.5))
 		var ms: float = float(Time.get_ticks_usec() - tp) / 1000.0
-		# One phase over the slice can't be split here: name it (StreamMeter only sees the step).
+		# A step still over the slice is one item too big to split: name it (StreamMeter only sees
+		# the step).
 		if ms > SLOW_PHASE_MS:
 			Log.info("poi", "%s: phase %s took %.0f ms" % [job["id"], phase, ms])
 		if done:
