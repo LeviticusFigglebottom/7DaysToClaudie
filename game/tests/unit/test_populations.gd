@@ -79,7 +79,8 @@ func test_enemy_bodies_are_generated_characters() -> void:
 	var text: String = _catalogs()
 	for d: EnemyDef in Content.all(&"enemy"):
 		for b: String in d.bodies:
-			assert_true(text.contains("\"%s\": {" % b.trim_prefix("characters/")), "%s: body %s is in the character catalog" % [d.id, b])
+			# characters/<id> or animals/<id> (the hounds, ADR-0034): a key in one of the model catalogs
+			assert_true(text.contains("\"%s\": {" % b.get_slice("/", 1)), "%s: body %s is in a model catalog" % [d.id, b])
 
 
 func test_buildings_name_their_people() -> void:

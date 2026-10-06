@@ -115,6 +115,16 @@ Snapshot for the next session. Update it when the state changes; delete it once 
   * Hunting: a carcass bleeds scent; `wildlife.butcher` with a knife or an axe gives venison or
     hare, a hide or pelt, bone and sinew. World settings `wildlife` and `wildlife_density`.
   * QA shots `deer_meadow_dawn`, `hare_brush`, `birds_lift_off`.
+* **Hollowed hounds and Murmurs** (ADR-0034):
+  * Hound packs of 3-5, wandering by gamestage (more at night) and answering heat. The first to
+    see you howls and the pack rallies; they spread round you, bite and break off, track your
+    scent, and keep clear of a torch held up in front of them. Generated dog bodies with Bloom
+    growths and their own voices; a four-legged stand-in without generated assets.
+  * Murmurs: a crow flock you flush may follow you, every caw a mark on you the Hollowed come to;
+    cover, a gunshot, nightfall or time ends it.
+  * World settings `hollowed_hounds` and `murmurs`; tuning in `data/config/hounds.json` and the
+    crow def's `murmur`.
+  * QA shots `hound_pack` and `murmur_overhead`.
 * **Surfaces, water and sky** (ADR-0019, ADR-0020):
   * Interiors wear in world space.
   * Roofs have trim and tiles that don't repeat.

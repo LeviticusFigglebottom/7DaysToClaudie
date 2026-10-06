@@ -29,6 +29,7 @@ from lib import common, export, materials
 from lib import props_int_core as core
 from lib import props_int_furn as F
 from lib import props_int_mesh as G
+from lib import props_ext_kit as K
 from lib import props_ext_parts as EP
 from lib.props_int_core import M, Prop
 
@@ -970,6 +971,7 @@ def _cut(part: core.Part, planes) -> None:
     for co, no in planes:
         geom = list(bm.verts) + list(bm.edges) + list(bm.faces)
         bmesh.ops.bisect_plane(bm, geom=geom, plane_co=co, plane_no=no)
+    K.canon_bm(bm)  # bisect emits new elements in a run-dependent order
     bm.to_mesh(me)
     bm.free()
     me.update()
@@ -1265,6 +1267,7 @@ def _vault_leaf(p: Prop, broken: bool) -> None:
         bm.faces.new([corners["f"][3], corners["f"][0], corners["b"][0], corners["b"][3]])
         bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-5)
         bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+        K.canon_bm(bm)
         slab = G._obj(p._name("slab"), bm)
         part = p.add(slab, C.VAULT, grain="Z")
         hole_faces = lambda poly: (Vector((poly.center.x - hc[0], poly.center.z - hc[1])).length < hole_r + 0.06 and
@@ -2044,8 +2047,45 @@ BUILDERS = {
 }
 
 
+def _open_box(self: Prop, size, center, mat, wall=0.018, open_face="-Y", bevel=0.002, back=None, **kw) -> core.Part:
+    """Deterministic stand-in for Prop.hollow (G.hollow_box's inset + extrude come out in a run-dependent
+    face order, which breaks byte-identical rebuilds): five wall slabs in one mesh, open on open_face."""
+    sx, sy, sz = size
+    ax = "XYZ".index(open_face[1])
+    sign = 1.0 if open_face[0] == "+" else -1.0
+    bk = back if back is not None else wall
+    bm = bmesh.new()
+    slabs = []
+    for a in range(3):
+        for sd in (-1.0, 1.0):
+            if a == ax and sd == sign:
+                continue
+            t = bk if a == ax else wall
+            dims = [sx, sy, sz]
+            dims[a] = t
+            c = [0.0, 0.0, 0.0]
+            c[a] = sd * ([sx, sy, sz][a] / 2 - t / 2)
+            slabs.append((dims, c))
+    for dims, c in slabs:
+        geom = bmesh.ops.create_cube(bm, size=1.0)
+        vs = geom["verts"]
+        bmesh.ops.scale(bm, vec=Vector(dims), verts=vs)
+        bmesh.ops.translate(bm, vec=Vector(c) + Vector(center), verts=vs)
+    obj = G._obj(self._name("openbox"), bm)
+    return self.add(obj, mat, **kw)
+
+
 def build(params: dict, outputs: list[str]) -> None:
     fn = BUILDERS[params.get("builder", params["prop"])]
+    orig_hollow = Prop.hollow
+    Prop.hollow = _open_box
+    try:
+        _build(params, outputs, fn)
+    finally:
+        Prop.hollow = orig_hollow
+
+
+def _build(params: dict, outputs: list[str], fn) -> None:
     if not params.get("no_collision"):
         core.build_variants(params, outputs, fn)
         return

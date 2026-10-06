@@ -1,5 +1,5 @@
 {
-  "_doc": "Bird flocks (ADR-0027, WildlifeDef kind flock): drawn as instances, they flush when you or a Hollowed come close or at a loud noise, and a flush is a sound the Hollowed hear (flush_loudness m): birds give your position away. Crows circle what flushed them, calling, before they settle (DESIGN §6's Murmurs, in small).",
+  "_doc": "Bird flocks (ADR-0027, WildlifeDef kind flock): drawn as instances, they flush when you or a Hollowed come close or at a loud noise, and a flush is a sound the Hollowed hear (flush_loudness m): birds give your position away. Crows circle what flushed them, calling, before they settle. A crow flock you flush may become a Murmur (ADR-0034, `murmur`): chance (bloom_chance where the Bloom is strong) from gamestage_min; it follows you at height m in a ring of radius m, and every caw (seconds apart) is a sound of mark_loudness m on you; it loses you after cover_seconds under a roof or trees, scatters at a gunshot or explosion within scatter_radius m, roosts at nightfall and gives up after max_seconds.",
   "defs": [
     {"id": "songbird_canopy", "name": "Songbirds", "description": "Thrushes and sparrows working the canopy, chattering.",
      "kind": "flock", "model": "animals/songbird", "perch": "canopy",
@@ -24,6 +24,9 @@
      "group": [4, 9], "size": [0.92, 1.08],
      "flush_radius": 24.0, "flush_loudness": 60.0, "circle_seconds": 24.0, "return_seconds": 90.0, "fly_speed": 9.0,
      "senses": {"bolt_loudness": 18.0, "hollowed": 14.0},
-     "sounds": {"call": "wildlife/crow_caw", "alarm": "wildlife/crow_alarm", "flush": "wildlife/wingbeats_large"}}
+     "sounds": {"call": "wildlife/crow_caw", "alarm": "wildlife/crow_alarm", "flush": "wildlife/wingbeats_large"},
+     "murmur": {"chance": 0.2, "bloom_chance": 0.7, "gamestage_min": 3, "caw": [2.5, 5.0], "mark_loudness": 55.0,
+                "radius": [8.0, 13.0], "height": 10.0, "follow": 0.5, "cover_seconds": 12.0, "max_seconds": 300.0,
+                "scatter_radius": 35.0, "scatter_kinds": ["gunshot", "explosion"]}}
   ]
 }

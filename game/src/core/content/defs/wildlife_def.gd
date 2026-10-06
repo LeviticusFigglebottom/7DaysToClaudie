@@ -15,6 +15,8 @@ extends ContentDef
 ## `biomes` {biome id: weight} scales `density` (groups per km² at weight 1) per biome; `edge` is
 ## the multiplier where another biome lies within 40 m (deer at the forest's edge); `activity`
 ## {dawn, day, dusk, night} scales it by the time of day.
+## `murmur` (crows, ADR-0034): the chance a flock you flush turns into a Murmur that follows you
+## and marks you for the Hollowed (see BirdFlock and data/wildlife/birds.json for its keys).
 
 const KINDS: PackedStringArray = ["grazer", "flock"]
 const PERIODS: PackedStringArray = ["dawn", "day", "dusk", "night"]
@@ -51,12 +53,14 @@ var flush_loudness: float = 40.0
 var circle_seconds: float = 0.0
 var return_seconds: float = 60.0
 var fly_speed: float = 8.0
+## Murmur tuning (empty: this flock never marks anyone).
+var murmur: Dictionary = {}
 
 
 func _fields() -> PackedStringArray:
 	return ["kind", "models", "model", "biomes", "density", "edge", "activity", "group", "speed", "anim_speed", "senses",
 		"health", "head_mult", "carcass", "sounds", "alarm_loudness", "beds_at_night", "size", "perch", "flush_radius",
-		"flush_loudness", "circle_seconds", "return_seconds", "fly_speed"]
+		"flush_loudness", "circle_seconds", "return_seconds", "fly_speed", "murmur"]
 
 
 func _parse(r: DefReader) -> void:
@@ -91,6 +95,7 @@ func _parse(r: DefReader) -> void:
 	circle_seconds = r.num("circle_seconds", 0.0)
 	return_seconds = r.num("return_seconds", 60.0)
 	fly_speed = r.num("fly_speed", 8.0)
+	murmur = r.dict("murmur")
 	if wkind == "grazer" and models.is_empty():
 		r.err("a grazer needs models {model id: weight}")
 	if wkind == "flock" and model == "":

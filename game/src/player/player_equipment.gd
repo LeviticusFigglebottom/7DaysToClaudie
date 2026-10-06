@@ -512,6 +512,12 @@ func has_light_on() -> bool:
 	return _light_on
 
 
+## A held flame (torch, lantern, lighter: an omni light, not a flashlight's beam) is burning: the
+## Hollowed hounds keep clear of it (ADR-0034).
+func has_flame_on() -> bool:
+	return _light_on and _light is OmniLight3D
+
+
 ## A held flame lights from where it burns: the torch up in the left hand, swinging with it.
 func _follow_light() -> void:
 	if _light == null or not (_light is OmniLight3D) or viewmodel == null:

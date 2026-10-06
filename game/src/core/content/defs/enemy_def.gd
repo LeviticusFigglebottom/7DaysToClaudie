@@ -2,7 +2,7 @@ class_name EnemyDef
 extends ContentDef
 ## An enemy archetype (Hollowed variants, animals, later Ashen tribe roles).
 
-const ARCHETYPES: PackedStringArray = ["walker", "feral", "screamer", "crawler", "spitter", "armored", "breaker", "animal", "tribe"]
+const ARCHETYPES: PackedStringArray = ["walker", "feral", "screamer", "crawler", "spitter", "armored", "breaker", "hound", "animal", "tribe"]
 const FACTIONS: PackedStringArray = ["hollowed", "ashen", "wildlife"]
 
 var archetype: String = "walker"
