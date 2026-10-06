@@ -154,6 +154,7 @@
     0.95,
     0.62
    ],
+   "back": 0.36,
    "rooms": [
     "store"
    ]
@@ -205,6 +206,7 @@
     1.95,
     0.5
    ],
+   "back": 0.2,
    "blocks_sight": false,
    "rooms": [
     "store"

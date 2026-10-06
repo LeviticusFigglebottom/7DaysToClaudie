@@ -645,24 +645,40 @@ static func prop_plan(p: Dictionary, pd: PropDef) -> Vector3:
 	var against: String = str(p.get("against", ""))
 	if against != "" and SIDES.has(against):
 		var cell: Vector2i = p["cell"]
-		# Origin to wall face: half the wall, 1 cm of air, then the model's own back depth. Round
-		# 1 used half the prop's depth for every prop, which stood wall-mounted ones (origin on the
-		# wall plane) half their depth out in the room: 83 more than 10 cm off their walls.
-		var off: float = PoiBuilder.WALL_T * 0.5 + pd.back_depth() + 0.01
+		var facing: float = AGAINST_ROT[int(SIDES[against])]
+		rot = rot if turned else facing
+		# Origin to wall face: half the wall, 1 cm of air, then how far the footprint reaches toward
+		# the wall (its back depth when it faces the room square). Round 1 used half the prop's
+		# depth for every prop, which stood wall-mounted ones (origin on the wall plane) half their
+		# depth out in the room (round 1 measured 83 more than 10 cm off their walls).
+		var off: float = PoiBuilder.WALL_T * 0.5 + wall_reach(pd, rot - facing) + 0.01
 		match against:
 			"N":
 				pos.y = cell.y + off
-				rot = rot if turned else 0.0
 			"S":
 				pos.y = cell.y + 1.0 - off
-				rot = rot if turned else 180.0
 			"W":
 				pos.x = cell.x + off
-				rot = rot if turned else 90.0
 			"E":
 				pos.x = cell.x + 1.0 - off
-				rot = rot if turned else -90.0
 	return Vector3(pos.x, pos.y, rot)
+
+
+## The facing of a prop with its back to the wall on each side (N, E, S, W): into the room.
+const AGAINST_ROT: Array[float] = [0.0, -90.0, 180.0, 90.0]
+
+
+## How far (m) a prop's footprint reaches behind its origin toward a wall when it is turned
+## `turn` degrees from facing square away from it: its back depth square on, half its width side
+## on (a scatter box turned 25° off its wall puts a back corner nearer the wall than its back).
+static func wall_reach(pd: PropDef, turn: float) -> float:
+	var back: float = pd.back_depth()
+	var toward: Vector3 = Basis(Vector3.UP, deg_to_rad(-turn)) * Vector3(0, 0, -1)
+	var reach: float = -INF
+	for sx: float in [-0.5, 0.5]:
+		for z: float in [-back, pd.size.z - back]:
+			reach = maxf(reach, Vector3(sx * pd.size.x, 0.0, z).dot(toward))
+	return reach
 
 
 ## Cells blocked for the stairwell on the level above (no floor slab there).

@@ -45,6 +45,24 @@ func test_a_wall_mounted_prop_against_a_wall_hangs_on_its_face() -> void:
 	assert_eq(_gaps(PoiValidator.validate(layout.def)), PackedStringArray())
 
 
+func test_a_prop_turned_against_its_wall_keeps_its_whole_footprint_off_it() -> void:
+	# A steel shelf (0.95 m wide, 0.45 m deep) side on to the N wall, and one turned 25° off it as
+	# the builder's wall scatter does: the nearest corner, not the back's middle, comes to the wall.
+	var pd: PropDef = Content.get_def(&"prop", &"metal_shelf") as PropDef
+	var face: float = PoiBuilder.WALL_T * 0.5
+	var side_on: Vector3 = PoiLayout.prop_plan({"pos": Vector2(1.5, 0.5), "cell": Vector2i(1, 0), "against": "N", "rot": 90.0}, pd)
+	assert_almost_eq(side_on.y, face + pd.size.x * 0.5 + 0.01, 0.001, "side on: half its width off the wall")
+	var t: float = deg_to_rad(25.0)
+	var turned: Vector3 = PoiLayout.prop_plan({"pos": Vector2(1.5, 0.5), "cell": Vector2i(1, 0), "against": "N", "rot": 25.0}, pd)
+	assert_almost_eq(turned.y, face + pd.size.z * 0.5 * cos(t) + pd.size.x * 0.5 * sin(t) + 0.01, 0.001,
+		"turned 25°: its back corner 1 cm off the wall")
+	assert_almost_eq(turned.z, 25.0, 0.001, "and it keeps its turn")
+	var v: PoiValidator = PoiValidator.validate(_def({
+		"levels": [{"level": 0, "plan": ["AAA", "AAA", "AAA"], "rooms": {"A": {}}}],
+		"props": [{"id": "side_on", "prop": "metal_shelf", "at": [1, 0], "against": "N", "rot": 90}]}))
+	assert_eq(_gaps(v), PackedStringArray(), "the validator measures it the same way")
+
+
 func test_the_collision_box_covers_the_model_not_the_wall() -> void:
 	var cab: PropDef = Content.get_def(&"prop", &"kitchen_wall_cabinet") as PropDef
 	assert_almost_eq(cab.box_centre().z, cab.size.z * 0.5, 0.001, "wall-mounted: the box stands forward of the wall plane")
@@ -71,22 +89,10 @@ func test_the_validator_reports_a_prop_off_its_wall_in_it_or_on_nothing() -> voi
 	assert_eq(_gaps(v).size(), 3)
 
 
-## Known findings in content another stream owns, by message start, with where they are tracked.
-const KNOWN: Dictionary = {
-	# X's pelt board stands free in the shed (the hub lands it with the rest of round 3).
-	"elk_ridge_lodge: wall gap: 'wild_pelt_board'": "TD-154",
-}
-
-
 func test_every_authored_wall_prop_is_on_its_wall() -> void:
 	var bad: PackedStringArray = []
 	for d: PoiDef in Content.all(&"poi"):
-		for w: String in _gaps(PoiValidator.validate(d)):
-			var known: bool = false
-			for k: String in KNOWN:
-				known = known or w.begins_with(k)
-			if not known:
-				bad.append(w)
+		bad.append_array(_gaps(PoiValidator.validate(d)))
 	assert_eq(bad, PackedStringArray(), "every authored POI's wall props sit on their walls")
 
 

@@ -488,8 +488,8 @@ const WALL_REACH: float = 0.6
 
 
 ## Every wall prop (wall-mounted, or placed `against` a wall) has its back on a wall's face: within
-## WALL_GAP_MAX of it, measured straight back from the prop's back face (PropDef.back_depth) as
-## PoiBuilder places it. A prop `against` a wall stands 1 cm off by construction, so this catches
+## WALL_GAP_MAX of it, measured from the footprint's nearest point (PropDef.back_depth square on)
+## as PoiBuilder places it. A prop `against` a wall stands 1 cm off by construction, so this catches
 ## the hand-placed ones (`pos`), authors' rotations and walls that are not there. Messages start
 ## with "wall gap" (test_poi_wall_gaps.gd collects them across every building).
 func _check_wall_gaps() -> void:
@@ -502,12 +502,21 @@ func _check_wall_gaps() -> void:
 		var plan: Vector3 = PoiLayout.prop_plan(p, pd)
 		var r: float = deg_to_rad(plan.z)
 		var fwd := Vector2(sin(r), cos(r))
-		var back_pt: Vector2 = Vector2(plan.x, plan.y) - fwd * pd.back_depth()
+		# From the footprint's nearest point toward the wall: straight back from a hand-placed
+		# prop, toward the named wall from one `against` it (however it is turned).
+		var dir: Vector2 = -fwd
+		var reach: float = pd.back_depth()
+		var side: String = str(p.get("against", ""))
+		if PoiLayout.SIDES.has(side):
+			var s: int = int(PoiLayout.SIDES[side])
+			dir = Vector2(PoiLayout.DIRS[s])
+			reach = PoiLayout.wall_reach(pd, plan.z - PoiLayout.AGAINST_ROT[s])
+		var back_pt: Vector2 = Vector2(plan.x, plan.y) + dir * reach
 		var li: int = int(p["level"])
 		if pd.wall_mounted:
 			# A prop hung above its storey's walls hangs on the storey above's.
 			li += int(floor((float(p.get("height", 1.4)) + float(p.get("y", 0.0))) / PoiLayout.STOREY))
-		var gap: float = wall_gap(layout, li, back_pt, -fwd)
+		var gap: float = wall_gap(layout, li, back_pt, dir)
 		var what: String = "'%s' (%s) at %s level %d" % [str(p.get("id", pd.id)), pd.id, p["pos"], int(p["level"])]
 		if is_inf(gap):
 			_w("wall gap: %s has no wall within %.1f m behind it" % [what, WALL_REACH])

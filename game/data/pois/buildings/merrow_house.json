@@ -109,7 +109,7 @@
       ],
       "sleepers": [
         {"id": "dad", "at": [8, 4], "enemy": "hollow", "pose": "stand", "rot": 180},
-        {"id": "neighbour", "group": "bedroom", "at": [9, 7], "enemy": "hollow", "pose": "lie", "rot": 90, "alt": ["neighbour:on_bed", "neighbour:both"]},
+        {"id": "neighbour", "group": "bedroom", "at": [10, 6], "enemy": "hollow", "pose": "lie", "rot": 90, "alt": ["neighbour:on_bed", "neighbour:both"]},
         {"id": "sitter", "at": [1, 6], "enemy": "hollow", "pose": "sit", "rot": 90},
         {"id": "neighbour", "group": "bedroom", "pos": [8.3, 7.4], "enemy": "hollow", "pose": "crouch", "rot": 70, "alt": "neighbour:by_wardrobe"},
         {"id": "neighbours_wife", "group": "bedroom", "pos": [7.6, 5.6], "enemy": "hollow", "pose": "stand", "rot": 120, "alt": "neighbour:both"}
