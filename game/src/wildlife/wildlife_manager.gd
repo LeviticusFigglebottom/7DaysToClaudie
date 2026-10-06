@@ -131,9 +131,9 @@ func _collect_loud(st: Stimuli) -> void:
 	for e: Stimuli.SoundEvent in st.sounds:
 		if e.seq <= _seen_seq:
 			continue
-		if e.kind in [&"bird_flush", &"wildlife_alarm"] or e.loudness < 10.0:
+		if e.kind in [&"bird_flush", &"wildlife_alarm", &"murmur"] or e.loudness < 10.0:
 			continue
-		_loud.append({"pos": e.pos, "loudness": e.loudness, "time": st.now()})
+		_loud.append({"pos": e.pos, "loudness": e.loudness, "time": st.now(), "kind": e.kind})
 	_seen_seq = st.last_seq()
 	while not _loud.is_empty() and st.now() - float(_loud[0]["time"]) > 1.5:
 		_loud.pop_front()
@@ -318,6 +318,7 @@ func _check_flocks() -> void:
 	var people: Array = []
 	if ctx.has("person"):
 		people.append(ctx["person"])
+	_check_murmurs(ctx)
 	for fv: Variant in flocks.values():
 		if not is_instance_valid(fv) or not (fv as BirdFlock).is_perched():
 			continue
@@ -334,6 +335,67 @@ func _check_flocks() -> void:
 				"hollowed":
 					from = _nearest(c, ctx.get("hollowed", [] as Array[Vector3]))
 			f.flush(from, cause)
+			if cause == "person" and murmur_rolls(f, from):
+				f.start_murmur(from)
+
+
+# --- Murmurs (ADR-0034) -------------------------------------------------------------------------
+
+## Whether a crow flock just flushed by the player turns into a Murmur: the world setting, the
+## flock's own `murmur` tuning, the gamestage, and more often where the Bloom lies thick. Rolled on
+## the flock's flush count, so the same flush of the same flock in the same world decides the same.
+func murmur_rolls(f: BirdFlock, at: Vector3) -> bool:
+	var m: Dictionary = f.def.murmur
+	if m.is_empty() or not GameRules.current().flag("murmurs") or Game.session == null:
+		return false
+	if Game.session.clock.is_night() or silent:
+		return false
+	if Game.session.gamestage(Game.local_player()) < int(m.get("gamestage_min", 0)):
+		return false
+	var chance: float = float(m.get("chance", 0.2))
+	var terrain: Node = world.get(&"terrain") if world != null else null
+	if terrain != null and terrain.has_method(&"bloom_at"):
+		chance = lerpf(chance, float(m.get("bloom_chance", chance)), clampf(float(terrain.call(&"bloom_at", at.x, at.z)), 0.0, 1.0))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = Ids.hash64("murmur:%d:%s:%d" % [Game.session.world_seed, f.flock_id, f.flush_count])
+	return rng.randf() < chance
+
+
+## Murmurs follow the player: where they are now, and whether they are under cover. One breaks up at
+## a gunshot or explosion close by, at nightfall, on a Hum night, or once the player is lost to it.
+func _check_murmurs(ctx: Dictionary) -> void:
+	var person: Dictionary = ctx.get("person", {})
+	var loud: Dictionary = ctx.get("loud", {})
+	for fv: Variant in flocks.values():
+		if not is_instance_valid(fv) or not (fv as BirdFlock).is_murmur():
+			continue
+		var f: BirdFlock = fv
+		var m: Dictionary = f.def.murmur
+		if silent:
+			f.end_murmur("hum")
+		elif bool(ctx.get("night", false)):
+			f.end_murmur("night")
+		elif person.is_empty():
+			f.end_murmur("lost")
+		elif not loud.is_empty() and (m.get("scatter_kinds", ["gunshot", "explosion"]) as Array).has(String(loud.get("kind", ""))) \
+				and (loud["pos"] as Vector3).distance_to(f.center()) <= float(m.get("scatter_radius", 35.0)):
+			f.end_murmur("scattered")
+		else:
+			var p: Vector3 = person["pos"]
+			f.murmur_update(p, under_cover(p), 0.25)
+
+
+## Whether the crows can lose sight of someone here: a roof, a floor above, or the canopy overhead.
+func under_cover(p: Vector3) -> bool:
+	if not is_inside_tree():
+		return false
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var from: Vector3 = p + Vector3.UP * 1.8
+	var q := PhysicsRayQueryParameters3D.create(from, from + Vector3.UP * 25.0, (1 << 0) | (1 << 1) | (1 << 2) | (1 << 12))
+	var pl: Node = world.get(&"player") as Node if world != null else null
+	if pl is CollisionObject3D:
+		q.exclude = [(pl as CollisionObject3D).get_rid()]
+	return not space.intersect_ray(q).is_empty()
 
 
 static func _nearest(c: Vector3, pts: Array[Vector3]) -> Vector3:
