@@ -53,7 +53,7 @@ func test_config_is_valid() -> void:
 func test_settings_resolve_clamp_and_round_trip() -> void:
 	var s: RefCounted = _settings(42, {"size": 99, "terrain": "volcanic", "town_density": "2.5"}, "highlands")
 	var v: Dictionary = s.get(&"values")
-	assert_eq(int(v["size"]), 7, "size clamped to its range: big worlds wait for streaming")
+	assert_eq(int(v["size"]), 10, "size clamped to its range (10 since streaming; 16 waits for Bloom tiles)")
 	assert_eq(str(v["terrain"]), str(GenSettings.options()["terrain"]["default"]), "an unknown enum value falls back to the option's default")
 	assert_eq(float(v["town_density"]), 2.5, "strings from the command line are coerced")
 	var back: RefCounted = GenSettings.from_dict(s.call(&"to_dict"))

@@ -60,6 +60,9 @@ func _run() -> void:
 			longest = maxf(longest, float(res["longest_ms"]))
 			print("[stream] lap %d leg %d: %.0f m in %.1f s, late %.1f s, longest frame %.0f ms, %s" % [
 				lap + 1, leg + 1, from.distance_to(to), res["seconds"], res["late_s"], res["longest_ms"], st.status()])
+			# The streamer's own meter over the whole walk so far (reported only: the checks below
+			# stay this runner's).
+			print("[stream] StreamMeter: %s" % st.meter.summary(true))
 		# Settle at the start, then read memory.
 		for i: int in 120:
 			await get_tree().process_frame
@@ -71,6 +74,8 @@ func _run() -> void:
 	if mem.size() >= 2 and mem[mem.size() - 1] > mem[0] * 1.05:
 		_fails += 1
 		printerr("[stream] FAIL memory grew %.0f -> %.0f MiB between returns" % [mem[0], mem[mem.size() - 1]])
+	var over: PackedStringArray = st.meter.over_budget(StreamMeter.STEP_BUDGET_MS, true)
+	print("[stream] StreamMeter step kinds over %.0f ms: %s" % [StreamMeter.STEP_BUDGET_MS, ", ".join(over) if not over.is_empty() else "none"])
 	print("[stream] %s: late %.1f s, longest frame %.0f ms, memory %s MiB" % ["PASS" if _fails == 0 else "FAIL", late_total, longest, str(mem)])
 	get_tree().quit(1 if _fails > 0 else 0)
 

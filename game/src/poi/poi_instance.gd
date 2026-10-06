@@ -235,11 +235,15 @@ func room_type_at(world_pos: Vector3) -> String:
 
 
 func world_bounds() -> AABB:
+	return global_transform * local_bounds()
+
+
+## The building's box in its own frame (every level, buried ones too, a roof's height above).
+func local_bounds() -> AABB:
 	var r: Rect2 = layout.extent()
 	var top: float = layout.level_y(layout.level_ids.back()) + PoiLayout.STOREY + 3.0
 	var bottom: float = layout.level_y(layout.level_ids.front()) - 1.0
-	var local := AABB(Vector3(r.position.x, bottom, r.position.y), Vector3(r.size.x, top - bottom, r.size.y))
-	return global_transform * local
+	return AABB(Vector3(r.position.x, bottom, r.position.y), Vector3(r.size.x, top - bottom, r.size.y))
 
 
 # --- Sleepers ---------------------------------------------------------------------------------
@@ -340,6 +344,13 @@ func _on_sleeper_died(_e: Enemy, sid: String) -> void:
 	if not dead.has(sid):
 		dead.append(sid)
 	state["dead"] = dead
+	check_cleared()
+
+
+## Counts the building cleared once every sleeper is dead (also after a rebuild: a sleeper that
+## roamed off can die while its building is freed, PoiManager._on_roamer_died).
+func check_cleared() -> void:
+	var dead: Array = state.get("dead", [])
 	if not bool(state.get("cleared", false)) and dead.size() >= layout.sleepers.size() and Game.session != null:
 		state["cleared"] = true
 		Game.session.stats["pois_cleared"] = int(Game.session.stats.get("pois_cleared", 0)) + 1

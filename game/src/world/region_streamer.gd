@@ -28,6 +28,9 @@ var compose_fn: Callable
 var focus_fn: Callable
 ## Main-thread attach and detach steps, within budget_ms a frame.
 var steps: StepRunner = StepRunner.new()
+## What those steps cost by kind, the longest frames and late seconds, logged every minute and
+## shown in F4 (StreamMeter).
+var meter: StreamMeter = StreamMeter.new()
 
 var _rects: Dictionary = {}
 var _built: Dictionary = {}
@@ -85,6 +88,10 @@ var _accum: float = 0.0
 var _stats: Dictionary = {"attached": 0, "composed": 0, "cancelled": 0, "last_attach_ms": 0.0}
 
 
+func _init() -> void:
+	steps.step_ran.connect(meter.step)
+
+
 ## Starts streaming over `terrain`'s world. cfg: data/config/streaming.json.
 func setup(p_terrain: TerrainManager, cfg: Dictionary, threads: int = -1) -> void:
 	terrain = p_terrain
@@ -129,6 +136,7 @@ func _process(delta: float) -> void:
 	if terrain == null:
 		return
 	_collect()
+	meter.frame(delta, _is_late())
 	_accum += delta
 	if _accum >= INTERVAL:
 		_accum = 0.0
@@ -208,6 +216,14 @@ func is_area_ready(pos: Vector3, radius: float = 0.0) -> bool:
 	return true
 
 
+## True when a player stands on ground whose region isn't attached yet (outrunning the stream).
+func _is_late() -> bool:
+	for p: Vector3 in focus_fn.call():
+		if not is_area_ready(p, 0.0):
+			return true
+	return false
+
+
 func attached() -> Dictionary:
 	return _attached
 
@@ -281,6 +297,8 @@ func _queue_attach(rid: String) -> void:
 		var t0: int = Time.get_ticks_usec()
 		terrain.attach_region(rt)
 		_stats["last_attach_ms"] = float(Time.get_ticks_usec() - t0) / 1000.0
+		if float(_stats["last_attach_ms"]) > 50.0:
+			Log.info("stream", "attach %s %.0f ms: %s" % [rid, _stats["last_attach_ms"], terrain.attach_parts])
 		_ready.erase(rid)
 		_attached[rid] = true, "attach %s" % rid])
 

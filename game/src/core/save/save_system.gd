@@ -7,6 +7,10 @@ extends RefCounted
 ##   session.json     GameSession.to_dict() wrapped as {save_version, session}
 ##   chunks/<k>.bin   per-chunk binary blobs (terrain height deltas, volume densities); a key's
 ##                    ':' is written as '~' (Windows forbids ':' in file names), both read back
+##   world-<id>.zip   a random world's own files (v7, the world bundle): world.json, regions/,
+##                    frameworks.json and meta.json from user://worlds/random/<id>/, restored from
+##                    here when that folder is gone (deleted by hand, a save copied to another
+##                    machine), so the run keeps the world it was played in (TD-082)
 ## Writes are atomic: everything goes to <slot>.tmp, then swaps in. A slot whose session.json is
 ## missing or unreadable falls back to <slot>.old, the previous save kept during the swap.
 ##
@@ -19,7 +23,7 @@ extends RefCounted
 ## upgraded step by step on load. Never edit an existing migration after release.
 
 const SAVE_ROOT: String = "user://saves"
-const CURRENT_VERSION: int = 6
+const CURRENT_VERSION: int = 7
 
 
 ## from_version -> Callable(Dictionary) -> Dictionary
@@ -30,7 +34,28 @@ static func _builtin_migrations() -> Dictionary:
 		3: _v3_to_v4,
 		4: _v4_to_v5,
 		5: _v5_to_v6,
+		6: _v6_to_v7,
 	}
+
+
+## 6 -> 7: a random run records the generator version that made its world (TD-140) and where its
+## files live (RWG v2 §5). The world id hashes the version, so it is recovered from the id; a world
+## id no version reproduces gets 1 (every v6 world was made by generator 1 to 5, and none since).
+## Main-map saves change only in their version. The bump also keeps a v6 build from loading a
+## streamed run. `world.traders` and `players[*].contracts` (traders, ADR-0039) carry through as
+## they are: both load empty from an older save.
+static func _v6_to_v7(d: Dictionary) -> Dictionary:
+	var session: Dictionary = d.get("session", {})
+	var gen: Variant = session.get("world_gen", {})
+	if str(session.get("world_mode", "")) == "random" and gen is Dictionary and not (gen as Dictionary).is_empty() \
+			and not session.has("generator_version"):
+		var settings: RefCounted = (load("res://src/worldgen/rwg/world_gen_settings.gd") as GDScript).call(&"from_dict", gen)
+		var v: int = int((load("res://src/worldgen/rwg/rwg_generator.gd") as GDScript).call(&"version_of", str(session.get("world_id", "")), settings))
+		session["generator_version"] = v if v > 0 else 1
+	if not session.has("world_files"):
+		session["world_files"] = "shared"
+	d["session"] = session
+	return d
 
 
 ## 5 -> 6: a run records which world it is played in (ADR-0031): the handcrafted map or a random
@@ -164,6 +189,9 @@ static func save_session(session: GameSession, slot: String) -> Error:
 	err = _write_json(tmp_dir.path_join("session.json"), {"save_version": CURRENT_VERSION, "session": session.to_dict()})
 	if err != OK:
 		return err
+	err = _carry_world_bundle(session, final_dir, tmp_dir)
+	if err != OK:
+		Log.warn(&"save", "could not bundle world %s into slot '%s' (%s); the save itself is fine" % [session.world_id, slot, error_string(err)])
 	for key: Variant in session.world.chunk_blobs.keys():
 		var f := FileAccess.open(tmp_dir.path_join("chunks").path_join(blob_file_name(str(key))), FileAccess.WRITE)
 		if f == null:
@@ -207,6 +235,8 @@ static func load_session(slot: String) -> GameSession:
 			else "the save could not be upgraded"
 		return null
 	var session: GameSession = GameSession.from_dict(migrated.get("session", {}))
+	if session.is_random_world() and _restore_world_bundle(String(session.world_id), dir):
+		session.world_files = &"slot"
 	var chunk_dir: String = dir.path_join("chunks")
 	if DirAccess.dir_exists_absolute(chunk_dir):
 		for f: String in DirAccess.get_files_at(chunk_dir):
@@ -214,6 +244,118 @@ static func load_session(slot: String) -> GameSession:
 				session.world.chunk_blobs[blob_key(f)] = FileAccess.get_file_as_bytes(chunk_dir.path_join(f))
 	last_error = ""
 	return session
+
+
+# --- The world bundle (save v7, RWG v2 §5) ------------------------------------------------------
+
+const WORLDS_ROOT: String = "user://worlds/random"
+## Files of a world folder left out of its bundle (remade from the rest).
+const BUNDLE_SKIP: PackedStringArray = ["map.png"]
+
+
+static func bundle_name(world_id: String) -> String:
+	return "world-%s.zip" % world_id
+
+
+## A random run's slot gets its world's files once: copied from the previous save of the slot when
+## it has them, else zipped from the world's folder. Main-map runs have none.
+static func _carry_world_bundle(session: GameSession, final_dir: String, tmp_dir: String) -> Error:
+	if not session.is_random_world():
+		return OK
+	var name: String = bundle_name(String(session.world_id))
+	var prev: String = final_dir.path_join(name)
+	if FileAccess.file_exists(prev):
+		return DirAccess.copy_absolute(prev, tmp_dir.path_join(name))
+	var src: String = WORLDS_ROOT.path_join(String(session.world_id))
+	if not FileAccess.file_exists(src.path_join("world.json")):
+		return ERR_FILE_NOT_FOUND
+	return bundle(src, tmp_dir.path_join(name))
+
+
+## Zips a world folder (every file but BUNDLE_SKIP, paths relative to it) into `zip_path`.
+static func bundle(dir: String, zip_path: String) -> Error:
+	var zp := ZIPPacker.new()
+	var err: Error = zp.open(zip_path)
+	if err != OK:
+		return err
+	for rel: String in _files_under(dir, ""):
+		if BUNDLE_SKIP.has(rel):
+			continue
+		err = zp.start_file(rel)
+		if err == OK:
+			err = zp.write_file(FileAccess.get_file_as_bytes(dir.path_join(rel)))
+		zp.close_file()
+		if err != OK:
+			zp.close()
+			return err
+	return zp.close()
+
+
+## Unzips a bundle into `dir` (through a .tmp folder swapped in at the end).
+static func unbundle(zip_path: String, dir: String) -> Error:
+	var zr := ZIPReader.new()
+	var err: Error = zr.open(zip_path)
+	if err != OK:
+		return err
+	var tmp: String = dir + ".tmp"
+	_remove_recursive(tmp)
+	for rel: String in zr.get_files():
+		if rel.ends_with("/") or rel.begins_with("/") or rel.contains(".."):
+			continue
+		var out: String = tmp.path_join(rel)
+		DirAccess.make_dir_recursive_absolute(out.get_base_dir())
+		var f := FileAccess.open(out, FileAccess.WRITE)
+		if f == null:
+			zr.close()
+			return FileAccess.get_open_error()
+		f.store_buffer(zr.read_file(rel))
+		f.close()
+	zr.close()
+	if not FileAccess.file_exists(tmp.path_join("world.json")):
+		_remove_recursive(tmp)
+		return ERR_FILE_CORRUPT
+	_remove_recursive(dir)
+	return DirAccess.rename_absolute(tmp, dir)
+
+
+## Restores a run's world folder from its slot's bundle when the folder is gone. True if it did.
+static func _restore_world_bundle(world_id: String, slot_path: String) -> bool:
+	var dir: String = WORLDS_ROOT.path_join(world_id)
+	var zip: String = slot_path.path_join(bundle_name(world_id))
+	if FileAccess.file_exists(dir.path_join("world.json")) or not FileAccess.file_exists(zip):
+		return false
+	DirAccess.make_dir_recursive_absolute(WORLDS_ROOT)
+	var err: Error = unbundle(zip, dir)
+	if err != OK:
+		Log.warn(&"save", "could not restore world %s from its save (%s)" % [world_id, error_string(err)])
+		return false
+	Log.info(&"save", "restored world %s from its save" % world_id)
+	return true
+
+
+## What the load menu should say about a slot's world ("" when nothing): a random run whose world
+## folder and bundle are both gone is remade by the current generator, which differs when the
+## generator has moved on since.
+static func world_warning(meta: Dictionary) -> String:
+	if str(meta.get("world_mode", "")) != "random":
+		return ""
+	var wid: String = str(meta.get("world_id", ""))
+	if FileAccess.file_exists(WORLDS_ROOT.path_join(wid).path_join("world.json")):
+		return ""
+	var slot: String = str(meta.get("slot", ""))
+	if slot != "" and (FileAccess.file_exists(slot_dir(slot).path_join(bundle_name(wid))) or FileAccess.file_exists((slot_dir(slot) + ".old").path_join(bundle_name(wid)))):
+		return ""
+	return "This run's world is no longer on this computer; loading it makes a new world from the same settings."
+
+
+static func _files_under(root: String, rel: String) -> PackedStringArray:
+	var out := PackedStringArray()
+	var here: String = root.path_join(rel) if rel != "" else root
+	for f: String in DirAccess.get_files_at(here):
+		out.append(rel.path_join(f) if rel != "" else f)
+	for d: String in DirAccess.get_directories_at(here):
+		out.append_array(_files_under(root, rel.path_join(d) if rel != "" else d))
+	return out
 
 
 static func data_is_readable(dir: String) -> bool:

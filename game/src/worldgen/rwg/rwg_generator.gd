@@ -160,7 +160,21 @@ class RefGround extends RefCounted:
 
 
 static func world_id_for(s: GenSettings) -> String:
-	return "rwg_%s" % ("%x" % (Ids.hash64("v%d|%s" % [VERSION, s.key()]) & 0xffffffffffff)).lpad(12, "0")
+	return world_id_for_version(s, VERSION)
+
+
+## The id generator version `version` gave these settings' world.
+static func world_id_for_version(s: GenSettings, version: int) -> String:
+	return "rwg_%s" % ("%x" % (Ids.hash64("v%d|%s" % [version, s.key()]) & 0xffffffffffff)).lpad(12, "0")
+
+
+## Which generator version made world `world_id` from these settings (the id hashes it); 0 when
+## none up to this one did (a world id from somewhere else). Save v7 records it (TD-140).
+static func version_of(world_id: String, s: GenSettings) -> int:
+	for v: int in range(VERSION, 0, -1):
+		if world_id_for_version(s, v) == world_id:
+			return v
+	return 0
 
 
 ## Runs the generator. Returns the generator (an RwgGenerator) with everything it made.

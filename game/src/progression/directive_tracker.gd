@@ -81,6 +81,9 @@ func _has_trader() -> bool:
 
 ## The drop site: the "drop_site" spawn of the world's regions (where a new game starts).
 func drop_site() -> Vector3:
+	# GameWorld's own lookup reads the coarse regions too (a streamed world, ADR-0038).
+	if world != null and world.has_method(&"drop_site"):
+		return world.call(&"drop_site")
 	var terrain: Node = world.get(&"terrain") if world != null else null
 	var regions: Dictionary = terrain.get(&"regions") if terrain != null and terrain.get(&"regions") is Dictionary else {}
 	for rid: Variant in regions:

@@ -104,7 +104,12 @@ func _build_menu() -> void:
 			label += " · %s" % str(s["preset"]).capitalize()
 		if str(s.get("world_mode", "")) == "random":
 			label += " · Random world"
-		_add_button(label, _load.bind(str(s["slot"])))
+		var b: Button = _add_button(label, _load.bind(str(s["slot"])))
+		# Save v7: a run whose world is neither on disk nor bundled in its slot gets a new world.
+		var warn: String = SaveSystem.world_warning(s)
+		if warn != "":
+			b.text += " · world missing"
+			b.tooltip_text = warn
 	_add_button("Options…", _open_options)
 	_add_button("Quit", func() -> void: get_tree().quit())
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
