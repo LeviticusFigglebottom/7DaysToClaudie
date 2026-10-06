@@ -223,14 +223,19 @@ def build(params: dict, outputs: list[str]) -> None:
     # actions, from the hold poses in the data file
     rig = F.FPRig(sk)
     solver = F.PoseSolver(rig, cfg.get("wrist"))
+    turned = []
     for name, n, loop, frames in F.fp_actions(cfg):
+        solver.clamped = {}
         baked = [rig.evaluate(solver.solve(hands)) for hands in frames]
         char_anim.write_action(arm, sk, name, baked)
+        # how far the wrist limits turned each hand from what the pose asked for
+        turned.append(f"{name} " + "/".join(f"{sd}{solver.clamped.get(sd, 0.0):.0f}" for sd in ("R", "L")))
     arm.animation_data.action = None
     for pb in arm.pose.bones:
         pb.rotation_quaternion = (1, 0, 0, 0)
         pb.location = (0, 0, 0)
     scene.frame_set(0)
     export.export_glb(outputs[0], [arm, body, tether] + sockets, animations=True, skins=True)
+    print("[character_fp_arms] hands turned back into the wrist's range (deg): " + ", ".join(turned))
     print(f"[character_fp_arms] tris arms {common.triangle_count(body)} tether {common.triangle_count(tether)} "
           f"actions {len(bpy.data.actions)}")
