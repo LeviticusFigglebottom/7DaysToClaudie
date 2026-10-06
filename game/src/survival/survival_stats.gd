@@ -270,6 +270,13 @@ func revive(at_health: float = 50.0) -> void:
 	health = at_health
 	bleeding = 0.0
 	stamina = stamina_cap()
+	# Turning ends the Bloom in that body. Without this reset the first infection tick after
+	# waking found 100 again and killed the player once more: a death loop with the death penalty
+	# applied every time. Any other death keeps the infection, because waking from a fall doesn't
+	# cure it.
+	if infection >= 100.0:
+		infection = 0.0
+	_update_statuses()
 	changed.emit()
 
 
