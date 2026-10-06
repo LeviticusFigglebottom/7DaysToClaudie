@@ -45,7 +45,9 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 4: burnt forest (fire scars) and fen (low wet ground, with pools) in the biome map (ADR-0041).
 ## 5: wilderness pool entries may be `unique` (one per world whatever its size: the field lab).
 ## 6: the Ashen high camp joins the wilderness pool (ADR-0048), so worlds cached at 5 regenerate.
-const VERSION: int = 6
+## 7: `mine` sites (TD-169): the Corvane adit dug into a hillside, its buried levels under the
+## ground, placed last from their own stream (every other place stays where it was).
+const VERSION: int = 7
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -63,7 +65,7 @@ var size: int = 4
 ##  output, lots settled), authored: PackedStringArray, bounds: Rect2}
 var towns: Array[Dictionary] = []
 ## {id, kind: "poi" | "framework", def, origin: Vector2, rot, size: Vector2, poly, biome, skirt,
-##  keep_water, access: Vector2, site, cell}
+##  keep_water, access: Vector2, site, cell, pad: Vector2 (a mine's levelled surface part; ZERO: all)}
 var places: Array[Dictionary] = []
 ## Trader posts (session 2's TraderManager, ADR-0039): {id, pos, yaw, cell, poly, safe, town}.
 var posts: Array[Dictionary] = []
@@ -118,6 +120,11 @@ var _ref: RefGround = null
 ## How many roads there were when the towns were planned (later ones, tracks and drives to places,
 ## are checked against the lots once more).
 var _roads_at_plan: int = 0
+## Per POI def with buried levels: one sample per 2 m block of their cells outside the ground floor,
+## [local centre: Vector2, ceiling above the floor: float] (the `mine` site's cover check).
+var _buried_samples: Dictionary = {}
+## The reference ground after every other place's levelling, for the mines' cover (dropped after run).
+var _mine_ref: RefGround = null
 
 
 ## The ground the composer grades world roads and world pads from (TerrainComposer's
@@ -281,6 +288,7 @@ func run() -> void:
 	timings["total"] = Time.get_ticks_msec() - t_all
 	# Drop what only generation needed (the planner's closures hold the reference ground).
 	_ref = null
+	_mine_ref = null
 
 
 # --- Regions ---------------------------------------------------------------------------------------
@@ -1878,14 +1886,7 @@ func _places() -> void:
 			var pd: PoiDef = db.call(&"get_def", &"poi", StringName(str(pe.get("poi", "")))) as PoiDef if db != null else null
 			if pd == null:
 				continue
-			var expected: float = float(pe.get("per_region", 0.1)) * size * size * density
-			var cap: int = maxi(1, int(ceil(float(pe.get("max", 2)) * area16 - 0.001)))
-			# A place the story knows as one (the premise's old field lab) stands once in any world;
-			# the rest repeat with the map's area, as 7 Days' named places do.
-			if bool(pe.get("unique", false)):
-				cap = 1
-			var count: int = mini(cap, int(floor(expected + r.randf())))
-			for k: int in count:
+			for k: int in _pool_count(pe, r, density, area16):
 				_place_one(pe, Vector2(pd.footprint), r, wcfg)
 	var farm: Dictionary = wcfg.get("farmsteads", {})
 	var fw: FrameworkDef = db.call(&"get_def", &"framework", StringName(str(farm.get("framework", "")))) as FrameworkDef if db != null and not farm.is_empty() else null
@@ -1897,10 +1898,40 @@ func _places() -> void:
 			fe["site"] = "farm"
 			fe["access"] = "track"
 			_place_one(fe, Vector2(fw.size), r, wcfg)
+	# Mines last, each from its own stream: no other place's pad reshapes the hill over their levels
+	# after the cover is checked, and the places before them draw exactly as they did (generator v5).
+	for e2: Variant in pool:
+		var me: Dictionary = e2
+		if str(me.get("site", "")) != "mine" or int(me.get("min_danger", 1)) > max_danger:
+			continue
+		var mpd: PoiDef = db.call(&"get_def", &"poi", StringName(str(me.get("poi", "")))) as PoiDef if db != null else null
+		if mpd == null:
+			continue
+		var rm := rng("places:mine:%s" % mpd.id)
+		var mcount: int = _pool_count(me, rm, density, area16)
+		# The ground as the composer will read it, every other place's levelling done.
+		if mcount > 0 and _mine_ref == null:
+			_mine_ref = RefGround.new(terrain, settings.seed & 0x7fffffff, size)
+		for k3: int in mcount:
+			if not _place_one(me, Vector2(mpd.footprint), rm, wcfg):
+				warnings.append("no hillside for %s" % mpd.id)
 
 
-## Tries to place one place of a pool entry: candidates for its site, the first that fits.
-func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dictionary) -> void:
+## How many of a pool entry a world gets: its density per region times the map's regions (one more
+## by chance for the fraction), at most its `max` per 16 km².
+func _pool_count(pe: Dictionary, r: RandomNumberGenerator, density: float, area16: float) -> int:
+	var expected: float = float(pe.get("per_region", 0.1)) * size * size * density
+	var cap: int = maxi(1, int(ceil(float(pe.get("max", 2)) * area16 - 0.001)))
+	# A place the story knows as one (the premise's old field lab) stands once in any world;
+	# the rest repeat with the map's area, as 7 Days' named places do.
+	if bool(pe.get("unique", false)):
+		cap = 1
+	return mini(cap, int(floor(expected + r.randf())))
+
+
+## Tries to place one place of a pool entry: candidates for its site, the first that fits (false:
+## none did).
+func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dictionary) -> bool:
 	var site: String = str(pe.get("site", "forest"))
 	var is_fw: bool = pe.has("framework")
 	var def_id: String = str(pe.get("framework", pe.get("poi", "")))
@@ -1909,8 +1940,13 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 	var spacing: float = float(wcfg.get("spacing", 160.0))
 	var max_relief: float = float(wcfg.get("max_relief", 7.0))
 	var margin: float = float(tun.get("region_margin", 72.0)) - 8.0
+	var mcfg: Dictionary = wcfg.get("mine", {})
+	var pad: Vector2 = Vector2.ZERO
+	if site == "mine":
+		var pa: Array = pe.get("pad", [fp.x, fp.y])
+		pad = Vector2(float(pa[0]), float(pa[1]))
 	for attempt: int in 90:
-		var cand: Dictionary = _candidate(site, fp, r)
+		var cand: Dictionary = _candidate(site, fp, r, pad.x, mcfg, min_danger)
 		if cand.is_empty():
 			continue
 		var origin: Vector2 = cand["origin"]
@@ -1927,7 +1963,11 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 		var road_gap: float = road_clearance(poly)
 		if road_gap < (4.0 if site == "roadside" else 18.0):
 			continue
-		if not keep_water:
+		if site == "mine":
+			# Only the pad is levelled (by the composer); the hill over the levels stays as it is.
+			if water_clearance(poly) < 14.0 or is_nan(_mine_pad_height(def_id, origin, rot, pad, mcfg)):
+				continue
+		elif not keep_water:
 			if water_clearance(poly) < 14.0:
 				continue
 			var st: Dictionary = terrain.stats_in(poly)
@@ -1937,20 +1977,65 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 		var pid: String = "%s_%d" % [def_id, places.size()]
 		var fwd: Vector2 = Vector2(0.0, 1.0).rotated(deg_to_rad(rot))
 		var access: Vector2 = origin + Vector2(fp.x * 0.5, fp.y).rotated(deg_to_rad(rot)) + fwd * 3.0
+		if pe.has("door"):
+			var da: Array = pe["door"]
+			access = origin + Vector2(float(da[0]), float(da[1])).rotated(deg_to_rad(rot))
+		if site == "mine":
+			# The track comes along the hillside to the door, from a point out on the contour (local Z),
+			# so neither the router's 32 m cells nor its grading cut over the levels under the hill.
+			var side: float = -1.0 if (access - origin).rotated(-deg_to_rad(rot)).y < fp.y * 0.5 else 1.0
+			cand["approach"] = access + Vector2(0.0, float(mcfg.get("approach", 24.0)) * side).rotated(deg_to_rad(rot))
+			cand["keep_off"] = rect_poly(origin + Vector2(pad.x, 0.0).rotated(deg_to_rad(rot)), Vector2(fp.x - pad.x, fp.y), rot)
 		var place: Dictionary = {"id": pid, "kind": "framework" if is_fw else "poi", "def": def_id, "origin": origin, "rot": rot, "size": fp,
 			"poly": poly, "biome": str(pe.get("biome", "meadow")), "skirt": float(pe.get("skirt", 10.0)), "keep_water": keep_water,
-			"access": access, "site": site, "cell": cell, "center": centre}
+			"access": access, "site": site, "cell": cell, "center": centre, "pad": pad}
 		places.append(place)
 		_place_grid.insert(places.size() - 1, _bounds(poly).grow(1.0))
 		router.block_polygon(poly, 6.0)
 		_access(place, str(pe.get("access", "trail")), cand)
-		return
+		return true
+	return false
 
 
-## A candidate frame {origin, rot} for a site, or {} (the caller tries again).
-func _candidate(site: String, fp: Vector2, r: RandomNumberGenerator) -> Dictionary:
+## A candidate frame {origin, rot} for a site, or {} (the caller tries again). `pad_len`, `mcfg`,
+## `min_danger`: a mine's pad length along local X, tuning.wilderness.mine and its least danger.
+func _candidate(site: String, fp: Vector2, r: RandomNumberGenerator, pad_len: float = 0.0, mcfg: Dictionary = {}, min_danger: int = 1) -> Dictionary:
 	var lim: float = size * 512.0 - 100.0
 	match site:
+		"mine":
+			# A hillside: of a few dry points steep enough, the one where the ground rises most from
+			# the pad's middle to 20 m into the hill. Local +X runs uphill (the plan's levels run on
+			# along +X past the pad), so the pad is at the foot and the levels go into the hill.
+			var min_slope: float = float(mcfg.get("slope", 0.12))
+			var margin_m: float = float(tun.get("region_margin", 72.0)) - 8.0
+			var best_m: Dictionary = {}
+			var best_ms: float = INF
+			for k4: int in 24:
+				var p4 := Vector2(r.randf_range(-lim, lim), r.randf_range(-lim, lim))
+				var c4: String = cell_at(p4)
+				if c4 == "" or int(regions[c4]["danger"]) < min_danger or water_at(p4) < 40.0:
+					continue
+				var st: float = terrain.step
+				var grad := Vector2(terrain.height(p4.x + st, p4.y) - terrain.height(p4.x - st, p4.y),
+					terrain.height(p4.x, p4.y + st) - terrain.height(p4.x, p4.y - st)) / (2.0 * st)
+				if grad.length() < min_slope:
+					continue
+				var up: Vector2 = grad.normalized()
+				var rot4: float = snappedf(rad_to_deg(atan2(up.y, up.x)), 0.1)
+				var origin4: Vector2 = p4 - Vector2(pad_len, fp.y * 0.5).rotated(deg_to_rad(rot4))
+				if not inside_one_region(rect_poly(origin4, fp, rot4), margin_m):
+					continue
+				# Within reach of a road, so the miners' track can come to it (`access` gives up
+				# beyond 900 m, TD-179).
+				var nr4: Array = nearest_road(p4, ["highway", "county", "track"], true)
+				if int(nr4[2]) < 0 or float(nr4[0]) > float(mcfg.get("road", 800.0)):
+					continue
+				var mid: Vector2 = p4 - up * pad_len * 0.5
+				var ms: float = terrain.height(mid.x, mid.y) - terrain.height(p4.x + up.x * 20.0, p4.y + up.y * 20.0)
+				if ms < best_ms:
+					best_ms = ms
+					best_m = {"origin": origin4, "rot": rot4}
+			return best_m
 		"roadside":
 			var cands: Array[int] = []
 			for i: int in roads.size():
@@ -2060,6 +2145,78 @@ static func _bounds(poly: PackedVector2Array) -> Rect2:
 	return bb
 
 
+## The height a mine's pad will be levelled to (the composer's: the mean of 5 x 5 samples, + 5 cm),
+## or NAN when the site does not fit: the ground varies more than pad_relief over the pad, or the
+## reference ground over a buried cell beyond the pad is less than `portal` (at the pad's edge) to
+## `cover` (`taper` m in) above that level's ceiling (TD-164). Buried cells under the pad must not
+## rise above it (the adit's drift meets the pad flush). The composer's pad skirt eases the ground
+## near the pad down to it, and the region's detail noise comes on top; the margins leave room.
+func _mine_pad_height(def_id: String, origin: Vector2, rot: float, pad: Vector2, mcfg: Dictionary) -> float:
+	var a: float = deg_to_rad(rot)
+	var lo: float = INF
+	var hi: float = -INF
+	var acc: float = 0.0
+	for k: int in 25:
+		var wp: Vector2 = origin + Vector2((k % 5 + 0.5) / 5.0 * pad.x, (k / 5 + 0.5) / 5.0 * pad.y).rotated(a)
+		var g: float = _mine_ref.h(wp.x, wp.y)
+		lo = minf(lo, g)
+		hi = maxf(hi, g)
+		acc += g
+	if hi - lo > float(mcfg.get("pad_relief", 9.0)):
+		return NAN
+	var pad_y: float = acc / 25.0 + 0.05
+	# A drift comes out of the hill at the pad, as an adit's portal does: the cover grows from
+	# `portal` at the pad's edge to `cover` `taper` metres in.
+	var cover: float = float(mcfg.get("cover", 4.0))
+	var portal: float = float(mcfg.get("portal", 1.5))
+	var taper: float = float(mcfg.get("taper", 16.0))
+	for s: Array in buried_samples(def_id):
+		var lp: Vector2 = s[0]
+		var ceil_off: float = s[1]
+		if lp.x >= 0.0 and lp.y >= 0.0 and lp.x <= pad.x and lp.y <= pad.y:
+			if ceil_off > 0.01:
+				return NAN
+			continue
+		var wp2: Vector2 = origin + lp.rotated(a)
+		var d: float = Vector2(maxf(maxf(-lp.x, lp.x - pad.x), 0.0), maxf(maxf(-lp.y, lp.y - pad.y), 0.0)).length()
+		if _mine_ref.h(wp2.x, wp2.y) < pad_y + ceil_off + lerpf(portal, cover, smoothstep(0.0, taper, d)):
+			return NAN
+	return pad_y
+
+
+## One sample per 2 m block of a POI's buried-level cells that no ground-floor room covers (those
+## run on under the ground): [local centre, the highest ceiling there above the POI's origin]
+## (TerrainHoles.add_poi's buried holes: a level's floor plus a storey less the slab). Cached.
+func buried_samples(def_id: String) -> Array:
+	if _buried_samples.has(def_id):
+		return _buried_samples[def_id]
+	var out: Array = []
+	var db: Node = ContentDB.instance
+	var pd: PoiDef = db.call(&"get_def", &"poi", StringName(def_id)) as PoiDef if db != null else null
+	if pd != null:
+		var layout: PoiLayout = PoiLayout.compile(pd)
+		var covered: Dictionary = {}
+		for c0: Vector2i in layout.room_cells(0):
+			covered[c0] = true
+		var blocks: Dictionary = {}
+		for li: int in layout.level_ids:
+			if li >= 0 or not bool((layout.levels[li] as Dictionary).get("buried", false)):
+				continue
+			var ceil_off: float = layout.level_y(li) + PoiLayout.STOREY - TerrainHoles.SLAB
+			for c: Vector2i in layout.room_cells(li):
+				if covered.has(c):
+					continue
+				var key := Vector2i(c.x >> 1, c.y >> 1)
+				if not blocks.has(key) or float(blocks[key][1]) < ceil_off:
+					blocks[key] = [layout.origin + Vector2(c) + Vector2(0.5, 0.5), ceil_off]
+		var keys: Array = blocks.keys()
+		keys.sort()
+		for key2: Variant in keys:
+			out.append(blocks[key2])
+	_buried_samples[def_id] = out
+	return out
+
+
 ## The way to a place: a short asphalt drive off the road it fronts, a dirt track or a footpath
 ## from the nearest road to its front.
 func _access(place: Dictionary, kind: String, cand: Dictionary) -> void:
@@ -2069,21 +2226,33 @@ func _access(place: Dictionary, kind: String, cand: Dictionary) -> void:
 		var pts := PackedVector2Array([from, from.lerp(to, 0.5), to + (to - from).normalized() * 2.0])
 		_add_road(pts, "drive", "%s drive" % place["def"], false)
 		return
-	var nr: Array = nearest_road(to, ["highway", "county", "track"] if kind == "track" else [], true)
+	# A mine's way in arrives along the hillside (`approach`, then the door), never over its levels.
+	var via: Vector2 = cand.get("approach", to)
+	var nr: Array = nearest_road(via, ["highway", "county", "track"] if kind == "track" else [], true)
 	# Far from any road a place is reached cross-country: a trail kilometres long reads as a
 	# scribble across the map.
 	if int(nr[2]) < 0 or float(nr[0]) > (900.0 if kind == "track" else 700.0):
 		return
 	var start: Vector2 = nr[1]
-	var route: PackedVector2Array = router.route(start, to, 500.0, 0.6, 1.5 if kind == "trail" else 1.25)
+	var route: PackedVector2Array = router.route(start, via, 500.0, 0.6, 1.5 if kind == "trail" else 1.25)
 	if route.size() < 2:
 		return
+	var graded: bool = true
+	if via != to:
+		# A track's grading would cut into the hill over the levels: where the smoothed route comes
+		# that close it is a footpath instead (painted, not graded).
+		var keep_off: PackedVector2Array = cand["keep_off"]
+		for k2: int in route.size() - 1:
+			if _seg_poly_distance(route[k2], route[k2 + 1], keep_off) < 12.0:
+				graded = false
+				break
+		route.append(to)
 	# A track that would have to wind up a slope (half as long again as the straight line) is a
 	# footpath instead: switchbacks of dirt road read as scribble.
 	var length: float = 0.0
 	for k: int in route.size() - 1:
 		length += route[k].distance_to(route[k + 1])
-	if kind == "track" and length < start.distance_to(to) * 1.5:
+	if kind == "track" and graded and length < start.distance_to(to) * 1.5:
 		_add_road(route, "track", "%s track" % place["def"], false)
 	else:
 		paths.append({"id": "%s_trail" % place["id"], "points": route, "width": 1.6, "surface": "dirt"})
@@ -2474,6 +2643,9 @@ func region_json(cell: String) -> Dictionary:
 		var f: Dictionary = {"type": pl["kind"], "id": pl["id"], "origin": Terrain._arr(PackedVector2Array([pl["origin"]]))[0], "rotation": pl["rot"],
 			"biome": pl["biome"], "skirt": pl["skirt"]}
 		f[pl["kind"]] = pl["def"]
+		# A mine's pad is its surface part; its footprint runs on under the hill (ADR-0044).
+		if (pl.get("pad", Vector2.ZERO) as Vector2) != Vector2.ZERO:
+			f["size"] = [pl["pad"].x, pl["pad"].y]
 		if bool(pl["keep_water"]):
 			f["keep_water"] = true
 			f["freeboard"] = 0.6
