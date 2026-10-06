@@ -73,7 +73,8 @@ jobs:
           mkdir -p build/run && cd build/run
           ../../.tools/godot/godot --headless --main-pack ../export/linux/Hollowmere.pck \
             -s "$GITHUB_WORKSPACE/game/src/tools/cli/slice_smoke.gd" -- --expect-assets 2>&1 | tee ../smoke_exported.log
-          ! grep -n "SCRIPT ERROR" ../smoke_exported.log
+          # Any ERROR / SCRIPT ERROR line not in the engine-noise allowlist fails the build (TD-103).
+          python3 "$GITHUB_WORKSPACE/tools/qa/check_log_errors.py" ../smoke_exported.log
 
       - name: Upload Windows build
         uses: actions/upload-artifact@v4

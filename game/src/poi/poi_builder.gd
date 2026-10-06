@@ -58,14 +58,34 @@ static func build(p_layout: PoiLayout, instance_id: StringName, checked: PoiVali
 	return b.root
 
 
-## The build's phases in order, one per step() (ADR-0038: a building is raised over several frames
-## within the streaming budget, so no single frame pays for a whole sawmill).
+## The build's phases in order (ADR-0038: a building is raised over several frames within the
+## streaming budget, so no single frame pays for a whole sawmill). A step() runs one phase, or as
+## much of a resumable one as its budget allows (TD-107): those walk their items (walls, rows of
+## cells, props, roof stages...) from `_cursor` in the one-shot order and return false until done,
+## so a build cut into any number of steps draws the same random numbers in the same order and
+## adds the same nodes in the same order as one built at once.
 const PHASES: PackedStringArray = ["_begin", "_route", "_walls", "_posts", "_floors", "_galleries",
-	"_stairs_and_ladders", "_openings", "_exterior", "_roof", "_props", "_scatter", "_lights",
+	"_stairs_and_ladders", "_openings", "_roof_plan", "_exterior", "_roof", "_props", "_scatter", "_lights",
 	"_interior_probes", "_pickups", "_decals", "_traps", "_emit_batches", "_wire_weak_floors"]
 
 var _instance_id: StringName = &""
 var _phase: int = 0
+## The current resumable phase's next item (-1: the phase has not started).
+var _cursor: int = -1
+## Time.get_ticks_usec() at which the current step's budget runs out (0: no budget).
+var _deadline: int = 0
+## The current resumable phase's items (wall keys, [level, row] pairs...).
+var _work: Array = []
+## Phase state carried between steps: walls already placed (openings span several edges), the
+## floors' hole and weak-floor cells, stairwells per level, the scatter's clutter by room tag,
+## the probe rectangles so far, the roof in progress.
+var _walls_done: Dictionary = {}
+var _hole_cells: Dictionary = {}
+var _weak_cells: Dictionary = {}
+var _wells: Dictionary = {}
+var _by_room: Dictionary = {}
+var _rects: Array = []
+var _roof_job: RoofBuilder.Job = null
 
 
 ## A builder for one building; call step() until it returns true, then take `root`.
@@ -77,12 +97,41 @@ static func start(p_layout: PoiLayout, instance_id: StringName, checked: PoiVali
 	return b
 
 
-## Runs the next phase; true once the building is complete (root holds it).
-func step() -> bool:
+## Runs the next phase; true once the building is complete (root holds it). `budget_ms` > 0 lets a
+## resumable phase stop once that much time is spent (after at least one item) and go on at the
+## next step; 0 runs the whole phase.
+func step(budget_ms: float = 0.0) -> bool:
 	if _phase < PHASES.size():
-		call(PHASES[_phase])
-		_phase += 1
+		_deadline = Time.get_ticks_usec() + maxi(1, int(budget_ms * 1000.0)) if budget_ms > 0.0 else 0
+		var done: Variant = call(PHASES[_phase])
+		# Resumable phases return false until their last item is in; the others return nothing.
+		if not done is bool or done:
+			_phase += 1
+			_cursor = -1
+			_work = []
 	return _phase >= PHASES.size()
+
+
+## Frees a build given up half way (PoiManager's ring dropped the building): its root, and the
+## roof nodes not in it yet.
+func discard() -> void:
+	if _roof_job != null:
+		_roof_job.free_nodes()
+		_roof_job = null
+	if is_instance_valid(root) and not root.is_inside_tree():
+		root.free()
+
+
+## Whether the current step's budget is spent (a resumable phase then returns false).
+func _spent() -> bool:
+	return _deadline > 0 and Time.get_ticks_usec() >= _deadline
+
+
+## Per level, its stairwell cells (asked for every row and cell of it).
+func _well(li: int) -> Dictionary:
+	if not _wells.has(li):
+		_wells[li] = layout.stairwell_cells(li)
+	return _wells[li]
 
 
 ## Name of the phase the next step() runs ("" when done): for meters.
@@ -94,6 +143,7 @@ func next_phase() -> String:
 func _build(instance_id: StringName) -> PoiInstance:
 	_instance_id = instance_id
 	_phase = 0
+	_cursor = -1
 	while not step():
 		pass
 	return root
@@ -147,29 +197,41 @@ func _add(piece: String, xf: Transform3D, custom: Color = Color(0, 0, 0, 0), ind
 	(_batches[key]["c"] as Array).append(custom)
 
 
-func _emit_batches() -> void:
-	for key: String in _batches:
-		var tag: String = key.get_slice("#", 1) if key.contains("#") else ""
-		var base: String = key.get_slice("#", 0)
-		var piece: String = base.trim_suffix("|in")
-		var xfs: Array = _batches[key]["xf"]
-		var cs: Array = _batches[key]["c"]
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.use_custom_data = true
-		mm.mesh = PoiParts.kit_mesh(piece) if not piece.begins_with("@") else ModelLibrary.mesh(piece.substr(1), "box")
-		mm.instance_count = xfs.size()
-		for i: int in xfs.size():
-			mm.set_instance_transform(i, xfs[i])
-			mm.set_instance_custom_data(i, cs[i])
-		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "MM_" + key.replace("/", "_").replace("@", "").replace("|", "_").replace("#", "_").replace(":", "_")
-		mmi.multimesh = mm
-		if base.ends_with("|in"):
-			mmi.set_instance_shader_parameter(&"weather_exposure", 0.0)
-		root.add_child(mmi)
-		if tag != "":
-			_tagged[tag] = mmi
+## Resumable (see PHASES): one batch an item (a prop's first batch loads its model).
+func _emit_batches() -> bool:
+	if _cursor < 0:
+		_work = _batches.keys()
+		_cursor = 0
+	while _cursor < _work.size():
+		_emit_batch(_work[_cursor])
+		_cursor += 1
+		if _spent():
+			break
+	return _cursor >= _work.size()
+
+
+func _emit_batch(key: String) -> void:
+	var tag: String = key.get_slice("#", 1) if key.contains("#") else ""
+	var base: String = key.get_slice("#", 0)
+	var piece: String = base.trim_suffix("|in")
+	var xfs: Array = _batches[key]["xf"]
+	var cs: Array = _batches[key]["c"]
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_custom_data = true
+	mm.mesh = PoiParts.kit_mesh(piece) if not piece.begins_with("@") else ModelLibrary.mesh(piece.substr(1), "box")
+	mm.instance_count = xfs.size()
+	for i: int in xfs.size():
+		mm.set_instance_transform(i, xfs[i])
+		mm.set_instance_custom_data(i, cs[i])
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = "MM_" + key.replace("/", "_").replace("@", "").replace("|", "_").replace("#", "_").replace(":", "_")
+	mmi.multimesh = mm
+	if base.ends_with("|in"):
+		mmi.set_instance_shader_parameter(&"weather_exposure", 0.0)
+	root.add_child(mmi)
+	if tag != "":
+		_tagged[tag] = mmi
 
 
 func _box(size: Vector3, xf: Transform3D, body: CollisionObject3D = null) -> CollisionShape3D:
@@ -253,12 +315,35 @@ func _route_corridor() -> Dictionary:
 		v.layout = layout
 		v._run()
 	_lock_sides = v.lock_sides
-	_barricade_sides = _barricade_faces(v)
+	# Each barricade's face costs a reachability flood (~7 ms apiece): PoiManager's check worker
+	# finds them (prepare_check); tools and tests that pass no prepared check find them here.
+	_barricade_sides = v.barricade_sides if v == _prepared() else _barricade_faces(v)
 	for path: Array in v.paths:
 		for node: Variant in path:
 			if node is Array:
 				out[PoiValidator.node_key(node[0], node[1])] = true
 	return out
+
+
+## Does the builder's pure-data prework on a run validator, off the main thread (PoiManager's check
+## worker): the faces of its barricades (a reachability flood each), the roof plan and the interior
+## probe boxes, the clutter table and the per-run decals, each up to ~25 ms of a big building.
+## Reads only the layout, the validator and ContentDB.instance.
+static func prepare_check(v: PoiValidator) -> void:
+	var b := PoiBuilder.new()
+	b.layout = v.layout
+	v.barricade_sides = b._barricade_faces(v)
+	b._wings = RoofPlanner.plan(v.layout)
+	v.roof_wings = b._wings
+	v.probe_boxes = b.probe_boxes()
+	v.clutter = clutter_by_room()
+	v.run_decals = Dressing.run_decals(v.layout)
+	v.prepared = true
+
+
+## The validator passed in when it carries prepare_check's prework for this layout, else null.
+func _prepared() -> PoiValidator:
+	return _checked if _checked != null and _checked.prepared and _checked.layout == layout else null
 
 
 ## Which face of its wall each barricaded door's barricade stands on (+1 = the wall's "a" side,
@@ -330,50 +415,63 @@ func _base_y(li: int, cell: Vector2i) -> float:
 
 # --- walls -----------------------------------------------------------------------------------
 
-func _walls() -> void:
-	var done: Dictionary = {}
+## Resumable (see PHASES): one wall edge an item.
+func _walls() -> bool:
+	if _cursor < 0:
+		_work = layout.walls.keys()
+		_walls_done = {}
+		_cursor = 0
 	var damaged_p: float = float(layout.style.get("damaged_walls", 0.04 * layout.def.tier))
-	for key: String in layout.walls:
-		if done.has(key):
-			continue
-		var w: Dictionary = layout.walls[key]
-		var li: int = w["level"]
-		var axis: String = w["axis"]
-		var c: Vector2i = w["cell"]
-		var op: Dictionary = w["opening"]
-		if w.has("covered"):
-			# The two-storey opening one level down stands here too; a third storey above still
-			# needs its band.
-			done[key] = true
-			_band(li, axis, c, w, _wall_custom(li, w, _rng2.randf()))
-			continue
-		_decay_v()
-		var custom: Color = _wall_custom(li, w, _seed())
-		# Up through a tall room (or a storey over it), a damaged piece's floor debris would hang in
-		# the air: those walls stay whole.
-		var tall: bool = str(w["a"]) == PoiLayout.VOID or str(w["b"]) == PoiLayout.VOID
-		if op.is_empty():
-			var piece: String = "wall_1m"
-			if not w["exterior"] and _rng.randf() < damaged_p and not tall:
-				piece = "wall_1m_damaged"
-			_add(piece, _edge_xf(li, axis, c), custom)
-			_wall_collision(li, axis, c, 1, {})
-			_band(li, axis, c, w, custom)
-			done[key] = true
-			continue
-		# Openings: handled once at their first edge.
-		if op["edge"] != c:
-			continue
-		var spec: Dictionary = PoiParts.OPENINGS[op["type"]]
-		var span: int = int(spec["len"])
-		for k: int in span:
-			var ek: Vector2i = c + (Vector2i(k, 0) if axis == "h" else Vector2i(0, k))
-			done[PoiLayout.edge_key(li, axis, ek)] = true
-			if int(spec.get("storeys", 1)) == 1:
-				_band(li, axis, ek, layout.walls.get(PoiLayout.edge_key(li, axis, ek), w), custom)
-		if str(spec["model"]) != "":
-			_add(str(spec["model"]), _edge_xf(li, axis, c, span), custom)
-		_wall_collision(li, axis, c, span, spec)
+	while _cursor < _work.size():
+		_wall(_work[_cursor], damaged_p)
+		_cursor += 1
+		if _spent():
+			break
+	return _cursor >= _work.size()
+
+
+func _wall(key: String, damaged_p: float) -> void:
+	var done: Dictionary = _walls_done
+	if done.has(key):
+		return
+	var w: Dictionary = layout.walls[key]
+	var li: int = w["level"]
+	var axis: String = w["axis"]
+	var c: Vector2i = w["cell"]
+	var op: Dictionary = w["opening"]
+	if w.has("covered"):
+		# The two-storey opening one level down stands here too; a third storey above still
+		# needs its band.
+		done[key] = true
+		_band(li, axis, c, w, _wall_custom(li, w, _rng2.randf()))
+		return
+	_decay_v()
+	var custom: Color = _wall_custom(li, w, _seed())
+	# Up through a tall room (or a storey over it), a damaged piece's floor debris would hang in
+	# the air: those walls stay whole.
+	var tall: bool = str(w["a"]) == PoiLayout.VOID or str(w["b"]) == PoiLayout.VOID
+	if op.is_empty():
+		var piece: String = "wall_1m"
+		if not w["exterior"] and _rng.randf() < damaged_p and not tall:
+			piece = "wall_1m_damaged"
+		_add(piece, _edge_xf(li, axis, c), custom)
+		_wall_collision(li, axis, c, 1, {})
+		_band(li, axis, c, w, custom)
+		done[key] = true
+		return
+	# Openings: handled once at their first edge.
+	if op["edge"] != c:
+		return
+	var spec: Dictionary = PoiParts.OPENINGS[op["type"]]
+	var span: int = int(spec["len"])
+	for k: int in span:
+		var ek: Vector2i = c + (Vector2i(k, 0) if axis == "h" else Vector2i(0, k))
+		done[PoiLayout.edge_key(li, axis, ek)] = true
+		if int(spec.get("storeys", 1)) == 1:
+			_band(li, axis, ek, layout.walls.get(PoiLayout.edge_key(li, axis, ek), w), custom)
+	if str(spec["model"]) != "":
+		_add(str(spec["model"]), _edge_xf(li, axis, c, span), custom)
+	_wall_collision(li, axis, c, span, spec)
 
 
 ## The storey band (2.8 .. 3.0 m) between a wall piece and the one stacked on it on the same edge,
@@ -384,8 +482,8 @@ func _band(li: int, axis: String, c: Vector2i, w: Dictionary, custom: Color) -> 
 	if not layout.walls.has(up):
 		return
 	var cells: Array[Vector2i] = PoiLayout.edge_cells(axis, c)
-	var slab_a: bool = layout.is_room(layout.room_at(li + 1, cells[0])) and not layout.stairwell_cells(li + 1).has(cells[0])
-	var slab_b: bool = layout.is_room(layout.room_at(li + 1, cells[1])) and not layout.stairwell_cells(li + 1).has(cells[1])
+	var slab_a: bool = layout.is_room(layout.room_at(li + 1, cells[0])) and not _well(li + 1).has(cells[0])
+	var slab_b: bool = layout.is_room(layout.room_at(li + 1, cells[1])) and not _well(li + 1).has(cells[1])
 	if slab_a and slab_b:
 		return
 	_rng2.randf()
@@ -423,84 +521,114 @@ func _wall_collision(li: int, axis: String, c: Vector2i, span: int, spec: Dictio
 		_box(Vector3(ow, sill, WALL_T), xf * Transform3D(Basis.IDENTITY, Vector3(0, sill * 0.5, 0)))
 
 
-func _posts() -> void:
-	for li: int in layout.level_ids:
-		var lv: Dictionary = layout.levels[li]
-		for r: int in int(lv["d"]) + 1:
-			for c: int in int(lv["w"]) + 1:
-				var h_l: bool = layout.walls.has(PoiLayout.edge_key(li, "h", Vector2i(c - 1, r)))
-				var h_r: bool = layout.walls.has(PoiLayout.edge_key(li, "h", Vector2i(c, r)))
-				var v_u: bool = layout.walls.has(PoiLayout.edge_key(li, "v", Vector2i(c, r - 1)))
-				var v_d: bool = layout.walls.has(PoiLayout.edge_key(li, "v", Vector2i(c, r)))
-				var n: int = int(h_l) + int(h_r) + int(v_u) + int(v_d)
-				if n == 0 or (n == 2 and ((h_l and h_r) or (v_u and v_d))):
-					continue
-				var p := Vector3(layout.origin.x + c, layout.level_y(li), layout.origin.y + r)
-				var ext: String = str(layout.style.get("exterior", "siding_white"))
-				# A corner that goes on up (a tall room, a storey over this one) is closed through
-				# the storey band: the post is stretched to the next storey's floor.
-				var up: bool = layout.walls.has(PoiLayout.edge_key(li + 1, "h", Vector2i(c - 1, r))) or layout.walls.has(PoiLayout.edge_key(li + 1, "h", Vector2i(c, r))) \
-					or layout.walls.has(PoiLayout.edge_key(li + 1, "v", Vector2i(c, r - 1))) or layout.walls.has(PoiLayout.edge_key(li + 1, "v", Vector2i(c, r)))
-				var b := Basis.IDENTITY.scaled(Vector3(1.0, PoiLayout.STOREY / PoiLayout.WALL_H, 1.0)) if up else Basis.IDENTITY
-				_add("post_corner", Transform3D(b, p), Color(PoiParts.finish_index("wall", ext), PoiParts.finish_index("wall", ext), _decay_v(), _seed()))
+## Resumable (see PHASES): one row of wall vertices of one level an item.
+func _posts() -> bool:
+	if _cursor < 0:
+		_work = []
+		for li: int in layout.level_ids:
+			for r: int in int(layout.levels[li]["d"]) + 1:
+				_work.append(Vector2i(li, r))
+		_cursor = 0
+	while _cursor < _work.size():
+		_post_row(_work[_cursor].x, _work[_cursor].y)
+		_cursor += 1
+		if _spent():
+			break
+	return _cursor >= _work.size()
+
+
+func _post_row(li: int, r: int) -> void:
+	var lv: Dictionary = layout.levels[li]
+	for c: int in int(lv["w"]) + 1:
+		var h_l: bool = layout.walls.has(PoiLayout.edge_key(li, "h", Vector2i(c - 1, r)))
+		var h_r: bool = layout.walls.has(PoiLayout.edge_key(li, "h", Vector2i(c, r)))
+		var v_u: bool = layout.walls.has(PoiLayout.edge_key(li, "v", Vector2i(c, r - 1)))
+		var v_d: bool = layout.walls.has(PoiLayout.edge_key(li, "v", Vector2i(c, r)))
+		var n: int = int(h_l) + int(h_r) + int(v_u) + int(v_d)
+		if n == 0 or (n == 2 and ((h_l and h_r) or (v_u and v_d))):
+			continue
+		var p := Vector3(layout.origin.x + c, layout.level_y(li), layout.origin.y + r)
+		var ext: String = str(layout.style.get("exterior", "siding_white"))
+		# A corner that goes on up (a tall room, a storey over this one) is closed through
+		# the storey band: the post is stretched to the next storey's floor.
+		var up: bool = layout.walls.has(PoiLayout.edge_key(li + 1, "h", Vector2i(c - 1, r))) or layout.walls.has(PoiLayout.edge_key(li + 1, "h", Vector2i(c, r))) \
+			or layout.walls.has(PoiLayout.edge_key(li + 1, "v", Vector2i(c, r - 1))) or layout.walls.has(PoiLayout.edge_key(li + 1, "v", Vector2i(c, r)))
+		var b := Basis.IDENTITY.scaled(Vector3(1.0, PoiLayout.STOREY / PoiLayout.WALL_H, 1.0)) if up else Basis.IDENTITY
+		_add("post_corner", Transform3D(b, p), Color(PoiParts.finish_index("wall", ext), PoiParts.finish_index("wall", ext), _decay_v(), _seed()))
 
 
 # --- floors, ceilings ----------------------------------------------------------------------
 
-func _floors() -> void:
-	var hole_cells: Dictionary = {}
-	for h: Dictionary in layout.holes:
-		hole_cells[PoiValidator.node_key(h["level"], h["cell"])] = true
-	# Weak floors: a fallen one is just a hole; a standing one gets its own rotten slab batch, its
-	# broken twin (hidden) and a collision box it can switch off when it gives way.
-	var weak: Dictionary = layout.weak_floor_cells()
-	for wk: String in weak:
-		if root.trap_state(weak[wk]) == "sprung":
-			hole_cells[wk] = true
-	for li: int in layout.level_ids:
-		var well: Dictionary = layout.stairwell_cells(li)
-		var y: float = layout.level_y(li)
-		var lv: Dictionary = layout.levels[li]
-		for r: int in int(lv["d"]):
-			var run_start: int = -1
-			for c: int in int(lv["w"]) + 1:
-				var cell := Vector2i(c, r)
-				var nk: String = PoiValidator.node_key(li, cell)
-				var weak_tid: String = str(weak.get(nk, "")) if not hole_cells.has(nk) else ""
-				var ch: String = layout.room_at(li, cell) if c < int(lv["w"]) else "."
-				var solid: bool = layout.is_room(ch) and not well.has(cell) and not hole_cells.has(nk) and weak_tid == ""
-				if ch == PoiLayout.VOID:
-					# A tall room rises through: no floor here; its ceiling closes the top storey
-					# (unless it is open to the roof).
-					var vol: Array = layout.volume_of(li, cell)
-					if not vol.is_empty() and not layout.is_built(li + 1, cell) and not layout.open_roof_at(li, cell):
-						var pc := Vector3(layout.origin.x + c + 0.5, y + PoiLayout.STOREY, layout.origin.y + r + 0.5)
-						_add("floor_1m", Transform3D(Basis.IDENTITY, pc), Color(0, _finish_r(vol, "ceiling"), clampf(_decay, 0.0, 1.0), _rng2.randf()))
-				if layout.is_room(ch) and not well.has(cell):
-					var below_v: Array = layout.volume_of(li - 1, cell)
-					var custom := Color(_finish(li, ch, "floor"), _finish_r(below_v, "ceiling") if not below_v.is_empty() else _finish(li, ch, "ceiling"), _decay_v(), _seed())
-					var p := Vector3(layout.origin.x + c + 0.5, y, layout.origin.y + r + 0.5)
-					var indoor: bool = layout.is_built(li + 1, cell) if layout.levels.has(li + 1) else _roofed(li)
-					if weak_tid != "":
-						_add("floor_1m_rotten", Transform3D(Basis.IDENTITY, p), custom, indoor, "weak:" + weak_tid)
-						_add("floor_1m_broken", Transform3D(Basis.IDENTITY, p), custom, indoor, "weakx:" + weak_tid)
-						_weak[weak_tid] = {"shape": _box(Vector3(1.0, 0.2, 1.0), Transform3D(Basis.IDENTITY, p - Vector3.UP * 0.1))}
-					else:
-						_add("floor_1m_broken" if hole_cells.has(nk) else "floor_1m", Transform3D(Basis.IDENTITY, p), custom, indoor)
-					# Ceiling where nothing is built above (a tall room's void continues the room; a room
-					# open to the roof sees the rafters instead).
-					if not layout.is_built(li + 1, cell):
-						if not layout.open_roof_at(li, cell):
-							_add("floor_1m", Transform3D(Basis.IDENTITY, p + Vector3.UP * PoiLayout.STOREY), Color(0, _finish(li, ch, "ceiling"), _decay_v(), _seed()))
-						else:
-							_decay_v()
-							_seed()
-				if solid and run_start < 0:
-					run_start = c
-				elif not solid and run_start >= 0:
-					var n: int = c - run_start
-					_box(Vector3(n, 0.2, 1.0), Transform3D(Basis.IDENTITY, Vector3(layout.origin.x + run_start + n * 0.5, y - 0.1, layout.origin.y + r + 0.5)))
-					run_start = -1
+## Resumable (see PHASES): one row of cells of one level an item.
+func _floors() -> bool:
+	if _cursor < 0:
+		_hole_cells = {}
+		for h: Dictionary in layout.holes:
+			_hole_cells[PoiValidator.node_key(h["level"], h["cell"])] = true
+		# Weak floors: a fallen one is just a hole; a standing one gets its own rotten slab batch,
+		# its broken twin (hidden) and a collision box it can switch off when it gives way.
+		_weak_cells = layout.weak_floor_cells()
+		for wk: String in _weak_cells:
+			if root.trap_state(_weak_cells[wk]) == "sprung":
+				_hole_cells[wk] = true
+		_work = []
+		for li: int in layout.level_ids:
+			for r: int in int(layout.levels[li]["d"]):
+				_work.append(Vector2i(li, r))
+		_cursor = 0
+	while _cursor < _work.size():
+		_floor_row(_work[_cursor].x, _work[_cursor].y)
+		_cursor += 1
+		if _spent():
+			break
+	return _cursor >= _work.size()
+
+
+func _floor_row(li: int, r: int) -> void:
+	var hole_cells: Dictionary = _hole_cells
+	var weak: Dictionary = _weak_cells
+	var well: Dictionary = _well(li)
+	var y: float = layout.level_y(li)
+	var lv: Dictionary = layout.levels[li]
+	var run_start: int = -1
+	for c: int in int(lv["w"]) + 1:
+		var cell := Vector2i(c, r)
+		var nk: String = PoiValidator.node_key(li, cell)
+		var weak_tid: String = str(weak.get(nk, "")) if not hole_cells.has(nk) else ""
+		var ch: String = layout.room_at(li, cell) if c < int(lv["w"]) else "."
+		var solid: bool = layout.is_room(ch) and not well.has(cell) and not hole_cells.has(nk) and weak_tid == ""
+		if ch == PoiLayout.VOID:
+			# A tall room rises through: no floor here; its ceiling closes the top storey
+			# (unless it is open to the roof).
+			var vol: Array = layout.volume_of(li, cell)
+			if not vol.is_empty() and not layout.is_built(li + 1, cell) and not layout.open_roof_at(li, cell):
+				var pc := Vector3(layout.origin.x + c + 0.5, y + PoiLayout.STOREY, layout.origin.y + r + 0.5)
+				_add("floor_1m", Transform3D(Basis.IDENTITY, pc), Color(0, _finish_r(vol, "ceiling"), clampf(_decay, 0.0, 1.0), _rng2.randf()))
+		if layout.is_room(ch) and not well.has(cell):
+			var below_v: Array = layout.volume_of(li - 1, cell)
+			var custom := Color(_finish(li, ch, "floor"), _finish_r(below_v, "ceiling") if not below_v.is_empty() else _finish(li, ch, "ceiling"), _decay_v(), _seed())
+			var p := Vector3(layout.origin.x + c + 0.5, y, layout.origin.y + r + 0.5)
+			var indoor: bool = layout.is_built(li + 1, cell) if layout.levels.has(li + 1) else _roofed(li)
+			if weak_tid != "":
+				_add("floor_1m_rotten", Transform3D(Basis.IDENTITY, p), custom, indoor, "weak:" + weak_tid)
+				_add("floor_1m_broken", Transform3D(Basis.IDENTITY, p), custom, indoor, "weakx:" + weak_tid)
+				_weak[weak_tid] = {"shape": _box(Vector3(1.0, 0.2, 1.0), Transform3D(Basis.IDENTITY, p - Vector3.UP * 0.1))}
+			else:
+				_add("floor_1m_broken" if hole_cells.has(nk) else "floor_1m", Transform3D(Basis.IDENTITY, p), custom, indoor)
+			# Ceiling where nothing is built above (a tall room's void continues the room; a room
+			# open to the roof sees the rafters instead).
+			if not layout.is_built(li + 1, cell):
+				if not layout.open_roof_at(li, cell):
+					_add("floor_1m", Transform3D(Basis.IDENTITY, p + Vector3.UP * PoiLayout.STOREY), Color(0, _finish(li, ch, "ceiling"), _decay_v(), _seed()))
+				else:
+					_decay_v()
+					_seed()
+		if solid and run_start < 0:
+			run_start = c
+		elif not solid and run_start >= 0:
+			var n: int = c - run_start
+			_box(Vector3(n, 0.2, 1.0), Transform3D(Basis.IDENTITY, Vector3(layout.origin.x + run_start + n * 0.5, y - 0.1, layout.origin.y + r + 0.5)))
+			run_start = -1
 
 
 ## Gallery edges (an upper room looking over a tall room): a fascia over the floor slab's edge on
@@ -834,19 +962,35 @@ func _barricade(id: String, wall_xf: Transform3D, side_sign: float, piece: Strin
 
 # --- exterior: foundation, porch, chimney ----------------------------------------------------
 
-func _exterior() -> void:
+## The roof plan (RoofPlanner, a pure function of the layout; prepare_check's when there is one), a
+## step of its own: the chimney (_exterior), the roof and the probes need it.
+func _roof_plan() -> void:
+	var v: PoiValidator = _prepared()
+	if v != null:
+		_wings = v.roof_wings
+	if _wings.is_empty():
+		_wings = RoofPlanner.plan(layout)
+
+
+## Resumable (see PHASES): one foundation wall an item, then the porch and chimney.
+func _exterior() -> bool:
 	var li0: int = 0 if layout.levels.has(0) else layout.level_ids.front()
 	var fh: float = layout.floor_height
-	if fh > 0.12:
-		for key: String in layout.walls:
-			var w: Dictionary = layout.walls[key]
-			if int(w["level"]) != li0 or not w["exterior"]:
-				continue
-			var xf: Transform3D = _edge_xf(li0, w["axis"], w["cell"])
-			xf.origin.y = -0.4
-			var s: float = (fh + 0.4) / 0.6
-			xf.basis = xf.basis.scaled(Vector3(1.0, s, 1.0))
-			_add("foundation_1m", xf, Color(0, 0, _decay_v(), _seed()))
+	if _cursor < 0:
+		_work = layout.walls.keys() if fh > 0.12 else []
+		_cursor = 0
+	while _cursor < _work.size():
+		var w: Dictionary = layout.walls[_work[_cursor]]
+		_cursor += 1
+		if int(w["level"]) != li0 or not w["exterior"]:
+			continue
+		var xf: Transform3D = _edge_xf(li0, w["axis"], w["cell"])
+		xf.origin.y = -0.4
+		var s: float = (fh + 0.4) / 0.6
+		xf.basis = xf.basis.scaled(Vector3(1.0, s, 1.0))
+		_add("foundation_1m", xf, Color(0, 0, _decay_v(), _seed()))
+		if _spent():
+			return false
 	var porch: Dictionary = layout.style.get("porch", {})
 	if not porch.is_empty():
 		_porch(porch, li0)
@@ -861,6 +1005,7 @@ func _exterior() -> void:
 		_add("chimney_brick", Transform3D(Basis.IDENTITY, p + Vector3.UP * float(shafts)), Color(0, 0, _decay_v(), _seed()))
 		var ch_h: float = 4.5 + float(shafts)
 		_box(Vector3(0.8, ch_h, 0.6), Transform3D(Basis.IDENTITY, p + Vector3.UP * (ch_h * 0.5)))
+	return true
 
 
 ## Metres of shaft a chimney needs under its 4.5 m top piece to stand 0.4 m clear of every roof
@@ -955,18 +1100,30 @@ func _ramp(a: Vector3, b: Vector3, width: float) -> void:
 ## The roof plan (RoofPlanner, ADR-0021): wings over the building's tops at their own heights,
 ## each roofed for where it sits, joined along valleys and cut at taller walls. Gable ends and
 ## parapets wear the building's exterior finish and decay (ADR-0019).
-func _roof() -> void:
-	# The chimney (_exterior, which runs first) may have planned it already; the plan is a pure
-	# function of the layout.
-	if _wings.is_empty():
-		_wings = RoofPlanner.plan(layout)
-	var ctx: Dictionary = {"exterior": str(layout.style.get("exterior", "siding_white")), "decay": _decay, "layout": layout,
-		"open_finish": {}, "partitions": []}
-	for w: RoofPlanner.Wing in _wings:
+## Resumable (see PHASES): RoofBuilder.Job's stages, a wing or a face at a time.
+func _roof() -> bool:
+	if _cursor < 0:
+		# _roof_plan planned it (the plan is a pure function of the layout).
+		if _wings.is_empty():
+			_wings = RoofPlanner.plan(layout)
+		var ctx: Dictionary = {"exterior": str(layout.style.get("exterior", "siding_white")), "decay": _decay, "layout": layout,
+			"open_finish": {}, "partitions": []}
+		# The job reads ctx from its first step on: the open wings fill it first.
+		_roof_job = RoofBuilder.Job.new(_wings, layout.origin, ctx)
+		_cursor = 0
+	# Open wings, one an item: the finish under them and the partitions rising to them.
+	while _cursor < _wings.size():
+		var w: RoofPlanner.Wing = _wings[_cursor]
+		_cursor += 1
 		if w.open:
-			(ctx["open_finish"] as Dictionary)[w.index] = _open_finish(w)
-			(ctx["partitions"] as Array).append_array(_open_partitions(w))
-	var built: Array = RoofBuilder.build_plan(_wings, layout.origin, ctx)
+			(_roof_job.ctx["open_finish"] as Dictionary)[w.index] = _open_finish(w)
+			(_roof_job.ctx["partitions"] as Array).append_array(_open_partitions(w))
+			if _spent():
+				return false
+	if not _roof_job.step(_deadline):
+		return false
+	var built: Array = _roof_job.out
+	_roof_job = null
 	for item: Variant in built:
 		if item is MeshInstance3D or item is MultiMeshInstance3D:
 			root.add_child(item)
@@ -974,6 +1131,7 @@ func _roof() -> void:
 			var cs := CollisionShape3D.new()
 			cs.shape = item
 			shell.add_child(cs)
+	return true
 
 
 ## Wall finish of the open room under a wing (the inside face of its gable ends).
@@ -1056,50 +1214,60 @@ func _prop_xf(p: Dictionary, pd: PropDef) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, deg_to_rad(rot)), Vector3(layout.origin.x + pos.x, y, layout.origin.y + pos.y))
 
 
-func _props() -> void:
+## Resumable (see PHASES): one authored prop an item.
+func _props() -> bool:
+	if _cursor < 0:
+		_cursor = 0
+	while _cursor < layout.props.size():
+		_prop(layout.props[_cursor])
+		_cursor += 1
+		if _spent():
+			break
+	return _cursor >= layout.props.size()
+
+
+func _prop(p: Dictionary) -> void:
 	var lr_char: String = str(layout.loot_room.get("room", ""))
 	var lr_level: int = int(layout.loot_room.get("level", 0))
-	for i: int in layout.props.size():
-		var p: Dictionary = layout.props[i]
-		var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
-		if pd == null:
-			continue
-		var cond: String = str(p.get("variant", layout.style.get("prop_condition", "worn")))
-		var model: String = pd.model_for(cond)
-		var xf: Transform3D = _prop_xf(p, pd)
-		_occupied[PoiValidator.node_key(p["level"], p["cell"])] = true
-		var cont: StringName = StringName(str(p.get("container", pd.container)))
-		# A lit light source burns only in a variant that can (a destroyed lantern stays dark) and
-		# glows on its own instance (PropLights, ADR-0023).
-		var light: Dictionary = pd.light_for(cond) if bool(p.get("lit", false)) else {}
-		if cont != &"" and Content.get_def(&"container", cont) != null:
-			var lp := PoiPieces.LootProp.new()
-			lp.poi = root
-			lp.prop = pd
-			lp.cdef = Content.get_def(&"container", cont) as ContainerDef
-			# Keyed by the prop's authored id when it has one (TD-031), else its list index.
-			lp.container_id = StringName("c:%s:%s" % [root.instance_id, p["pkey"]])
-			lp.prop_key = str(p["pkey"])
-			lp.tier = layout.def.tier
-			lp.bonus = int(p["level"]) == lr_level and layout.room_at(p["level"], p["cell"]) == lr_char
-			lp.key = str(p.get("key", ""))
-			lp.transform = xf
-			var mi := MeshInstance3D.new()
-			mi.mesh = ModelLibrary.mesh(model, "box")
-			if not light.is_empty():
-				PropLights.set_lit(mi, true)
-			lp.add_child(mi)
-			_box(pd.size.max(Vector3(0.2, 0.2, 0.2)), Transform3D(Basis.IDENTITY, Vector3(0, pd.size.y * 0.5, 0)), lp)
-			root.add_child(lp)
-		else:
-			if light.is_empty():
-				_add("@" + model, xf, Color(0, 0, 0, 0), layout.is_room(layout.room_at(p["level"], p["cell"])))
-			else:
-				root.add_child(PropLights.lit_mesh(model, xf, layout.is_room(layout.room_at(p["level"], p["cell"]))))
-			if pd.collision != "none":
-				_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, Vector3(0, pd.size.y * 0.5, 0)))
+	var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+	if pd == null:
+		return
+	var cond: String = str(p.get("variant", layout.style.get("prop_condition", "worn")))
+	var model: String = pd.model_for(cond)
+	var xf: Transform3D = _prop_xf(p, pd)
+	_occupied[PoiValidator.node_key(p["level"], p["cell"])] = true
+	var cont: StringName = StringName(str(p.get("container", pd.container)))
+	# A lit light source burns only in a variant that can (a destroyed lantern stays dark) and
+	# glows on its own instance (PropLights, ADR-0023).
+	var light: Dictionary = pd.light_for(cond) if bool(p.get("lit", false)) else {}
+	if cont != &"" and Content.get_def(&"container", cont) != null:
+		var lp := PoiPieces.LootProp.new()
+		lp.poi = root
+		lp.prop = pd
+		lp.cdef = Content.get_def(&"container", cont) as ContainerDef
+		# Keyed by the prop's authored id when it has one (TD-031), else its list index.
+		lp.container_id = StringName("c:%s:%s" % [root.instance_id, p["pkey"]])
+		lp.prop_key = str(p["pkey"])
+		lp.tier = layout.def.tier
+		lp.bonus = int(p["level"]) == lr_level and layout.room_at(p["level"], p["cell"]) == lr_char
+		lp.key = str(p.get("key", ""))
+		lp.transform = xf
+		var mi := MeshInstance3D.new()
+		mi.mesh = ModelLibrary.mesh(model, "box")
 		if not light.is_empty():
-			root.add_child(PropLights.light_node(light, xf))
+			PropLights.set_lit(mi, true)
+		lp.add_child(mi)
+		_box(pd.size.max(Vector3(0.2, 0.2, 0.2)), Transform3D(Basis.IDENTITY, Vector3(0, pd.size.y * 0.5, 0)), lp)
+		root.add_child(lp)
+	else:
+		if light.is_empty():
+			_add("@" + model, xf, Color(0, 0, 0, 0), layout.is_room(layout.room_at(p["level"], p["cell"])))
+		else:
+			root.add_child(PropLights.lit_mesh(model, xf, layout.is_room(layout.room_at(p["level"], p["cell"]))))
+		if pd.collision != "none":
+			_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, Vector3(0, pd.size.y * 0.5, 0)))
+	if not light.is_empty():
+		root.add_child(PropLights.light_node(light, xf))
 
 
 ## Dense, room-appropriate clutter along walls (deterministic per instance), kept off the route.
@@ -1129,47 +1297,77 @@ const ROOM_TAGS: Dictionary = {
 }
 
 
-func _scatter() -> void:
+## Resumable (see PHASES): one room cell an item.
+func _scatter() -> bool:
 	var sc: Dictionary = layout.style.get("scatter", {})
 	var density: float = float(sc.get("density", 0.35))
 	if density <= 0.0:
-		return
+		return true
+	if _cursor < 0:
+		var v: PoiValidator = _prepared()
+		_by_room = v.clutter if v != null else clutter_by_room()
+		# Rows, not layout.room_cells(): listing a big building's cells up front was ~8 ms.
+		_work = []
+		for li: int in layout.level_ids:
+			for r: int in int(layout.levels[li]["d"]):
+				_work.append(Vector2i(li, r))
+		_cursor = 0
+		if _spent():
+			return false
+	while _cursor < _work.size():
+		var li: int = _work[_cursor].x
+		var r: int = _work[_cursor].y
+		# The cells of layout.room_cells(li), in its order.
+		for c: int in int(layout.levels[li]["w"]):
+			if layout.is_room(layout.room_at(li, Vector2i(c, r))):
+				_scatter_cell(li, Vector2i(c, r), density)
+		_cursor += 1
+		if _spent():
+			break
+	return _cursor >= _work.size()
+
+
+## Room tag -> the small clutter props that suit it ("any": untagged ones). Reads ContentDB.instance,
+## so prepare_check can make it on its worker (~4 ms over every prop def).
+static func clutter_by_room() -> Dictionary:
 	var by_room: Dictionary = {}
-	for pd: PropDef in Content.all(&"prop"):
+	for pd: PropDef in ContentDB.instance.all(&"prop"):
 		if not pd.has_tag("clutter") or pd.size.x * pd.size.z > 0.6:
 			continue
 		for room_type: String in (pd.rooms if not pd.rooms.is_empty() else PackedStringArray(["any"])):
 			if not by_room.has(room_type):
 				by_room[room_type] = []
 			(by_room[room_type] as Array).append(pd)
-	for li: int in layout.level_ids:
-		var well: Dictionary = layout.stairwell_cells(li)
-		for c: Vector2i in layout.room_cells(li):
-			var k: String = PoiValidator.node_key(li, c)
-			if _route_cells.has(k) or _occupied.has(k) or well.has(c):
-				continue
-			var room: Dictionary = layout.room_def(li, layout.room_at(li, c))
-			var room_type: String = str(room.get("type", "any"))
-			var pool: Array = by_room.get("any", []).duplicate()
-			for tag: String in ROOM_TAGS.get(room_type, [room_type]):
-				pool.append_array(by_room.get(tag, []))
-			if pool.is_empty():
-				continue
-			for side: int in 4:
-				var e: Array = PoiLayout.side_edge(c, side)
-				var wall: Dictionary = layout.walls.get(PoiLayout.edge_key(li, e[0], e[1]), {})
-				if wall.is_empty() or not (wall["opening"] as Dictionary).is_empty():
-					continue
-				if _rng.randf() > density * 0.5:
-					continue
-				var pd2: PropDef = pool[_rng.randi() % pool.size()]
-				var entry: Dictionary = {"level": li, "cell": c, "pos": Vector2(c.x + 0.5 + _rng.randf_range(-0.25, 0.25), c.y + 0.5 + _rng.randf_range(-0.25, 0.25)),
-					"against": PoiLayout.SIDE_NAMES[side], "rot": [0.0, -90.0, 180.0, 90.0][side] + _rng.randf_range(-25, 25)}
-				var xf: Transform3D = _prop_xf(entry, pd2)
-				var cond: String = "destroyed" if _rng.randf() < _decay * 0.3 else "worn"
-				_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)
-				_occupied[k] = true
-				break
+	return by_room
+
+
+func _scatter_cell(li: int, c: Vector2i, density: float) -> void:
+	var by_room: Dictionary = _by_room
+	var k: String = PoiValidator.node_key(li, c)
+	if _route_cells.has(k) or _occupied.has(k) or _well(li).has(c):
+		return
+	var room: Dictionary = layout.room_def(li, layout.room_at(li, c))
+	var room_type: String = str(room.get("type", "any"))
+	var pool: Array = by_room.get("any", []).duplicate()
+	for tag: String in ROOM_TAGS.get(room_type, [room_type]):
+		pool.append_array(by_room.get(tag, []))
+	if pool.is_empty():
+		return
+	for side: int in 4:
+		var e: Array = PoiLayout.side_edge(c, side)
+		var wall: Dictionary = layout.walls.get(PoiLayout.edge_key(li, e[0], e[1]), {})
+		if wall.is_empty() or not (wall["opening"] as Dictionary).is_empty():
+			continue
+		if _rng.randf() > density * 0.5:
+			continue
+		var pd2: PropDef = pool[_rng.randi() % pool.size()]
+		var entry: Dictionary = {"level": li, "cell": c, "pos": Vector2(c.x + 0.5 + _rng.randf_range(-0.25, 0.25), c.y + 0.5 + _rng.randf_range(-0.25, 0.25)),
+			"against": PoiLayout.SIDE_NAMES[side], "rot": [0.0, -90.0, 180.0, 90.0][side] + _rng.randf_range(-25, 25)}
+		var xf: Transform3D = _prop_xf(entry, pd2)
+		var cond: String = "destroyed" if _rng.randf() < _decay * 0.3 else "worn"
+		_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)
+		_occupied[k] = true
+		break
 
 
 ## SDFGI occludes the sky indoors, which leaves rooms near-black even at noon. Interior reflection
@@ -1180,8 +1378,19 @@ func _scatter() -> void:
 ## storey over storey, and merged pairwise (least waste first) down to MAX_PROBES. A yard inside an
 ## L or a courtyard is in no box, so it keeps the outdoor light. Boxes stop just inside the walls so
 ## facades keep it too.
-func _interior_probes() -> void:
-	for box: AABB in probe_boxes():
+## Resumable (see PHASES): prepare_check's boxes, else one level's rectangles an item, then the
+## merge and the probes.
+func _interior_probes() -> bool:
+	var v: PoiValidator = _prepared()
+	if _cursor < 0:
+		_rects = []
+		_cursor = 0 if v == null else layout.level_ids.size()
+	while _cursor < layout.level_ids.size():
+		_rects.append_array(_probe_rects(layout.level_ids[_cursor]))
+		_cursor += 1
+		if _spent():
+			return false
+	for box: AABB in (v.probe_boxes if v != null else _merge_probe_rects(_rects)):
 		var probe := ReflectionProbe.new()
 		probe.name = "InteriorProbe"
 		probe.interior = true
@@ -1196,23 +1405,36 @@ func _interior_probes() -> void:
 		probe.update_mode = ReflectionProbe.UPDATE_ONCE
 		probe.add_to_group(&"interior_probe")
 		root.add_child(probe)
+	return true
 
 
 ## The interior probe boxes (POI-local), at most MAX_PROBES.
 func probe_boxes() -> Array[AABB]:
 	var rects: Array = []
-	# [level, top level, Rect2i] per rectangle of room cells whose room rises to the same storey.
 	for li: int in layout.level_ids:
-		var groups: Dictionary = {}
-		for c: Vector2i in layout.room_cells(li):
-			var top: int = layout.column_top(li, c)
-			var key: int = top * 2 + (1 if layout.open_roof_at(li, c) and not layout.is_built(top + 1, c) else 0)
-			if not groups.has(key):
-				groups[key] = {}
-			(groups[key] as Dictionary)[c] = true
-		for key2: int in groups:
-			for r: Rect2i in RoofPlanner.decompose(groups[key2]):
-				rects.append([li, key2 >> 1, r, key2 & 1])
+		rects.append_array(_probe_rects(li))
+	return _merge_probe_rects(rects)
+
+
+## [level, top level, Rect2i, open] per rectangle of level `li`'s room cells whose room rises to
+## the same storey.
+func _probe_rects(li: int) -> Array:
+	var rects: Array = []
+	var groups: Dictionary = {}
+	for c: Vector2i in layout.room_cells(li):
+		var top: int = layout.column_top(li, c)
+		var key: int = top * 2 + (1 if layout.open_roof_at(li, c) and not layout.is_built(top + 1, c) else 0)
+		if not groups.has(key):
+			groups[key] = {}
+		(groups[key] as Dictionary)[c] = true
+	for key2: int in groups:
+		for r: Rect2i in RoofPlanner.decompose(groups[key2]):
+			rects.append([li, key2 >> 1, r, key2 & 1])
+	return rects
+
+
+## The probe boxes of every level's rectangles, stacked and merged down to MAX_PROBES.
+func _merge_probe_rects(rects: Array) -> Array[AABB]:
 	# A rectangle repeated storey over storey (stacked floors of one block): one box.
 	var merged: bool = true
 	while merged:
@@ -1304,42 +1526,57 @@ func _pickups() -> void:
 
 
 ## Authored decals, then the per-run ones of a dressed building (Dressing.run_decals, ADR-0030).
-func _decals() -> void:
-	var all: Array = layout.decals.duplicate()
-	all.append_array(Dressing.run_decals(layout))
-	for d: Variant in all:
-		if not d is Dictionary:
-			continue
-		var path: String = "res://assets/generated/textures/decal_%s_albedo.png" % str(d.get("decal", ""))
-		if not ResourceLoader.exists(path):
-			continue
-		var placed: Dictionary = layout._placed(d)
-		var dec := Decal.new()
-		dec.texture_albedo = load(path)
-		var npath: String = path.replace("_albedo.png", "_normal.png")
-		if ResourceLoader.exists(npath):
-			dec.texture_normal = load(npath)
-		var size: Array = d.get("size", [1.0, 1.0])
-		var pos: Vector3 = layout.local_pos(placed["level"], placed["pos"])
-		var side: String = str(d.get("side", "floor"))
-		if side == "floor":
-			pos.y = _base_y(int(placed["level"]), placed["cell"])
-			dec.size = Vector3(float(size[0]), 0.5, float(size[1]))
-			dec.position = pos + Vector3.UP * 0.1
-			dec.rotation.y = deg_to_rad(float(d.get("rot", _rng.randf() * 360.0)))
-		else:
-			var s: int = PoiLayout.SIDES.get(side, 0)
-			var toward := Vector3(PoiLayout.DIRS[s].x, 0, PoiLayout.DIRS[s].y)
-			var cell: Vector2i = placed["cell"]
-			var wall_p: Vector3 = layout.cell_center(placed["level"], cell) + toward * 0.5
-			# A decal projects along its local Y and maps the texture on X/Z: width, a shallow
-			# depth, then height (height and depth were swapped, squashing the art to 0.4 m). The
-			# shallow box sits on the room-side face so it does not show through on the outside.
-			dec.size = Vector3(float(size[0]), 0.12, float(size[1]))
-			dec.position = wall_p + Vector3.UP * float(d.get("height", 1.3)) - toward * (WALL_T * 0.5)
-			dec.basis = Basis.looking_at(toward, Vector3.UP) * Basis(Vector3.RIGHT, PI * 0.5)
-		dec.cull_mask = 1
-		root.add_child(dec)
+## Resumable (see PHASES): one decal an item (each loads its textures). The per-run list is
+## prepare_check's when there is one (listing a big building's wall faces took ~25 ms).
+func _decals() -> bool:
+	if _cursor < 0:
+		var v: PoiValidator = _prepared()
+		_work = layout.decals.duplicate()
+		_work.append_array(v.run_decals if v != null else Dressing.run_decals(layout))
+		_cursor = 0
+		if _spent():
+			return false
+	while _cursor < _work.size():
+		_decal(_work[_cursor])
+		_cursor += 1
+		if _spent():
+			break
+	return _cursor >= _work.size()
+
+
+func _decal(d: Variant) -> void:
+	if not d is Dictionary:
+		return
+	var path: String = "res://assets/generated/textures/decal_%s_albedo.png" % str(d.get("decal", ""))
+	if not ResourceLoader.exists(path):
+		return
+	var placed: Dictionary = layout._placed(d)
+	var dec := Decal.new()
+	dec.texture_albedo = load(path)
+	var npath: String = path.replace("_albedo.png", "_normal.png")
+	if ResourceLoader.exists(npath):
+		dec.texture_normal = load(npath)
+	var size: Array = d.get("size", [1.0, 1.0])
+	var pos: Vector3 = layout.local_pos(placed["level"], placed["pos"])
+	var side: String = str(d.get("side", "floor"))
+	if side == "floor":
+		pos.y = _base_y(int(placed["level"]), placed["cell"])
+		dec.size = Vector3(float(size[0]), 0.5, float(size[1]))
+		dec.position = pos + Vector3.UP * 0.1
+		dec.rotation.y = deg_to_rad(float(d.get("rot", _rng.randf() * 360.0)))
+	else:
+		var s: int = PoiLayout.SIDES.get(side, 0)
+		var toward := Vector3(PoiLayout.DIRS[s].x, 0, PoiLayout.DIRS[s].y)
+		var cell: Vector2i = placed["cell"]
+		var wall_p: Vector3 = layout.cell_center(placed["level"], cell) + toward * 0.5
+		# A decal projects along its local Y and maps the texture on X/Z: width, a shallow
+		# depth, then height (height and depth were swapped, squashing the art to 0.4 m). The
+		# shallow box sits on the room-side face so it does not show through on the outside.
+		dec.size = Vector3(float(size[0]), 0.12, float(size[1]))
+		dec.position = wall_p + Vector3.UP * float(d.get("height", 1.3)) - toward * (WALL_T * 0.5)
+		dec.basis = Basis.looking_at(toward, Vector3.UP) * Basis(Vector3.RIGHT, PI * 0.5)
+	dec.cull_mask = 1
+	root.add_child(dec)
 
 
 func _traps() -> void:

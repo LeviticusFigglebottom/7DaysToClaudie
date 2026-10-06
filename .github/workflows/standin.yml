@@ -44,17 +44,16 @@ jobs:
       - name: Tests
         run: make test
 
+      # `make smoke` / `make tour` log to build/logs/ and fail on any ERROR / SCRIPT ERROR line
+      # not in tools/qa/log_error_allowlist.txt (TD-103), as well as on the run's own exit code.
       - name: Smoke (slice end to end)
-        run: |
-          set -o pipefail
-          make smoke 2>&1 | tee build/smoke.log
-          ! grep -n "SCRIPT ERROR" build/smoke.log
+        run: make smoke
+
+      - name: Smoke (random world)
+        run: make smoke SMOKE_ARGS="--world random --world-seed 7 --world-set size=5" SMOKE_LOG=smoke_random
 
       - name: Walk tour (run into, hit and use everything)
-        run: |
-          set -o pipefail
-          make tour 2>&1 | tee build/tour.log
-          ! grep -n "SCRIPT ERROR" build/tour.log
+        run: make tour
 
       - name: Upload logs
         if: always()
@@ -64,6 +63,7 @@ jobs:
           path: |
             build/test-results/
             build/*.log
+            build/logs/
 
   rendered:
     name: Rendered town views without renderer errors (software Vulkan)
