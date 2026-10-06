@@ -109,6 +109,24 @@ func closest(p: Vector2) -> Vector3:
 	return Vector3(sqrt(best_d2), best_s, best_side)
 
 
+## closest(p).x over the segments `segs` only (indices into points; segment i runs from points[i]
+## to points[i + 1]), with exactly closest()'s arithmetic: the same distance whenever the nearest
+## segment is among them (ADR-0038: the composer's index of segments near each cell). INF if none.
+func closest_among(p: Vector2, segs: PackedInt32Array) -> float:
+	var best_d2: float = INF
+	for i: int in segs:
+		var a: Vector2 = points[i]
+		var b: Vector2 = points[i + 1]
+		var ab: Vector2 = b - a
+		var l2: float = ab.length_squared()
+		var t: float = 0.0 if l2 <= 0.0 else clampf((p - a).dot(ab) / l2, 0.0, 1.0)
+		var q: Vector2 = a + ab * t
+		var d2: float = p.distance_squared_to(q)
+		if d2 < best_d2:
+			best_d2 = d2
+	return sqrt(best_d2)
+
+
 ## A value along the arc: a single number, a [start, end] pair interpolated linearly, or (ADR-0031,
 ## a generated river's level and width) three or more values spaced evenly along the arc and
 ## interpolated piecewise linearly between them.

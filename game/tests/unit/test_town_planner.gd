@@ -133,10 +133,14 @@ static func make_arterials(kind: String, radius: float, outskirts: float, world:
 			var p2: PackedVector2Array = Streets.route_fine(g, Vector2.ZERO, b, opts)
 			if p1.is_empty() or p2.is_empty():
 				continue
-			pts.append_array(p1)
-			pts.remove_at(pts.size() - 1)
-			pts.append_array(p2)
-			pts = Streets.relax(g, pts, opts)
+			# Through the centre (the generator routes arterials to town centres): each half is
+			# relaxed on its own, and points crowding the joint go so the line bends smoothly there.
+			for q: Vector2 in p1:
+				if q.length() > 70.0 or q == Vector2.ZERO:
+					pts.append(q)
+			for q2: Vector2 in p2:
+				if q2.length() > 70.0:
+					pts.append(q2)
 		else:
 			var main: Polyline2 = Polyline2.from_array(out[0]["points"])
 			var tee: Vector2 = main.point_at(main.closest(Vector2.ZERO).y + r.randf_range(120.0, 200.0) * (1.0 if r.randf() < 0.5 else -1.0))
@@ -176,7 +180,7 @@ static func _area(poly: PackedVector2Array) -> float:
 
 
 static func _seg_poly_distance(a: Vector2, b: Vector2, poly: PackedVector2Array) -> float:
-	if Geometry2D.is_point_in_polygon(a, poly) or Geometry2D.is_point_in_polygon(b, poly):
+	if Streets.point_in(a, poly) or Streets.point_in(b, poly):
 		return 0.0
 	var best: float = INF
 	for k: int in poly.size():
@@ -311,13 +315,12 @@ func test_street_grades_within_the_limit() -> void:
 					for o: int in range(-4, 5):
 						acc += cp[clampi(k2 + o, 0, count - 1)]
 					prof[k2] = acc / 9.0
+			# The composer reads the profile at s / 4 m (its last sample stands for the street's end).
 			var worst: float = 0.0
 			for k3: int in count - 1:
-				var run: float = minf(4.0, line.total_length - k3 * 4.0)
-				if run > 0.5:
-					worst = maxf(worst, absf(prof[k3 + 1] - prof[k3]) / run)
+				worst = maxf(worst, absf(prof[k3 + 1] - prof[k3]) / 4.0)
 			if worst > MAX_GRADE:
-				bad.append("%s: %s climbs %.3f" % [_label(c), rd["id"], worst])
+				bad.append("%s: %s (%s) climbs %.3f" % [_label(c), rd["id"], rd["class"], worst])
 	assert_eq(bad.size(), 0, _report(bad))
 
 
@@ -366,12 +369,15 @@ func test_lot_fronts_face_their_streets_as_lot_xf_turns_buildings() -> void:
 			var ctr := Vector2(float(f[0]), float(f[1]))
 			var front3: Vector3 = Basis(Vector3.UP, deg_to_rad(float(f[4]))) * Vector3(0.0, 0.0, 1.0)
 			var front := Vector2(front3.x, front3.z)
+			# The street seen from the middle of the lot's front edge (corner lots in a bend see
+			# their own frontage first): it must lie ahead of the front.
+			var mid: Vector2 = ctr + front * float(f[3]) * 0.5
 			var target: Vector2
 			if str(l["street"]) == "plaza":
 				target = Vector2(float(plaza["frame"][0]), float(plaza["frame"][1]))
 			else:
 				var line: Polyline2 = by_id[str(l["street"])]
-				target = line.point_at(line.closest(ctr).y)
+				target = line.point_at(line.closest(mid).y)
 			if (target - ctr).normalized().dot(front) < 0.7:
 				bad.append("%s: %s faces %.0f degrees off its street %s" % [_label(c), l["id"], rad_to_deg(acos(clampf((target - ctr).normalized().dot(front), -1.0, 1.0))), l["street"]])
 	assert_eq(bad.size(), 0, _report(bad))
@@ -411,9 +417,10 @@ func test_every_lot_holds_a_building() -> void:
 	assert_eq(bad.size(), 0, _report(bad))
 
 
-func test_parcels_hold_their_frames() -> void:
+func test_parcels_hold_their_frames_and_keep_off_the_streets() -> void:
 	var bad: PackedStringArray = []
 	for c: Dictionary in cases:
+		var lines: Array = _lines(c)
 		for l: Dictionary in c["plan"]["lots"]:
 			var parcel := PackedVector2Array()
 			for q: Variant in l["poly"]:
@@ -422,8 +429,14 @@ func test_parcels_hold_their_frames() -> void:
 			var inside: float = 0.0
 			for part: PackedVector2Array in Geometry2D.intersect_polygons(parcel, frame):
 				inside += _area(part)
-			if parcel.size() < 3 or inside < _area(frame) - 2.0:
+			# Frames and parcels are each rounded to 0.1 m: a parcel edge on its frame's may miss a sliver.
+			var slack: float = 0.12 * 2.0 * (float(l["frame"][2]) + float(l["frame"][3]))
+			if parcel.size() < 3 or inside < _area(frame) - slack:
 				bad.append("%s: %s's parcel leaves out %.1f m2 of its frame" % [_label(c), l["id"], _area(frame) - inside])
+			for ln: Dictionary in lines:
+				var d: float = _line_poly_distance(ln["line"], parcel)
+				if d < float(ln["need"]) - 0.25:
+					bad.append("%s: %s's parcel reaches %.2f m into %s" % [_label(c), l["id"], float(ln["need"]) - d, ln["id"]])
 	assert_eq(bad.size(), 0, _report(bad))
 
 
@@ -442,7 +455,7 @@ func test_fixtures_are_real_props_off_the_lots() -> void:
 			ids[fx["id"]] = true
 			var p := Vector2(float(fx["pos"][0]), float(fx["pos"][1]))
 			for fr: PackedVector2Array in frames:
-				if Geometry2D.is_point_in_polygon(p, fr):
+				if Streets.point_in(p, fr):
 					bad.append("%s: %s %s stands in a lot" % [_label(c), fx["id"], fx["prop"]])
 					break
 	assert_eq(bad.size(), 0, _report(bad))
@@ -639,3 +652,21 @@ func test_planning_time() -> void:
 			worst_case = _label(c)
 	gut.p("town plans: mean %.0f ms, worst %.0f ms (%s)" % [total / maxi(1, cases.size()), worst, worst_case])
 	assert_lt(worst, BUDGET_MS, "every town plans in under a second (%s took %.0f ms)" % [worst_case, worst])
+
+
+func test_plans_on_a_worker_thread() -> void:
+	var c: Dictionary = {}
+	for cc: Dictionary in cases:
+		if str(cc["kind"]) == "town":
+			c = cc
+			break
+	var out: Array = [null]
+	var th := Thread.new()
+	th.start(func() -> void: out[0] = Planner.plan(c["site"], c["world"], c["arterials"], tuning, int(c["seed"])))
+	th.wait_to_finish()
+	var here: Dictionary = Planner.plan(c["site"], c["world"], c["arterials"], tuning, int(c["seed"]))
+	assert_true(out[0] is Dictionary, "the planner runs off the main thread (no scene tree, no autoloads)")
+	for p: Dictionary in [out[0], here]:
+		(p["stats"] as Dictionary).erase("ms")
+		(p["stats"] as Dictionary).erase("ms_parts")
+	assert_eq(JSON.stringify(out[0], "", false).md5_text(), JSON.stringify(here, "", false).md5_text(), "and plans the same town there")

@@ -139,8 +139,9 @@ deletes the run. The tether and field manual are never dropped.
 
 ## 3. Controls
 
-Keyboard and mouse (a gamepad can only move, jump, sprint, crouch and interact). Keys can't be
-rebound in game yet.
+Keyboard and mouse (a gamepad can only move, jump, sprint, crouch and interact). Every key and
+mouse button can be rebound under **Options → Controls**, also reachable from the pause menu; the
+keys below are the defaults.
 
 | Key | Action |
 |---|---|
@@ -573,8 +574,21 @@ near black. Moonlight only helps you; the Hollowed see in the dark anyway.
   Bone or Sinew. Roast the meat at a campfire. Animals and carcasses aren't saved: reload and the
   carcass is gone.
 
-Not in the game yet: wolves, Hollowed hounds, the Murmurs (crow flocks that follow you), and the
-Ashen tribes.
+* **Hollowed hounds** (world setting *Hollowed hound packs*, on by default). From gamestage 6 a
+  wandering group may be a pack of 3–5 starved Bloom dogs instead (twice as likely at night), and
+  the heat system can send a pack after you. The first hound to see you howls, which the Hollowed
+  hear too, and every hound of the pack within 90 m joins the chase. They spread round you and
+  close from different sides, bite and break off, then come again, and they track by scent three
+  times better than a Hollow. A lit flame in your hand (torch, lantern or lighter, not the
+  flashlight) keeps a hound in front of you about 4 m off, circling; one behind you still bites.
+* **Murmurs** (world setting *Murmurs*, on by default). By day, a crow flock you flush may follow
+  you instead of settling, more likely where the Bloom is thick. It rings overhead, and every caw
+  marks where you stand for the Hollowed in earshot. Shake it off by staying under cover (a roof, a
+  floor above, thick canopy) for a while, by a gunshot or explosion near the flock (which has its
+  own noise cost), or wait for nightfall, when the crows roost, or for them to give up. A status
+  line tells you when a Murmur starts and ends.
+
+Not in the game yet: wolves and the Ashen tribes.
 
 ## 11. Progression
 

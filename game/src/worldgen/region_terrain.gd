@@ -100,7 +100,11 @@ func save(path: String, input_hash: String) -> Error:
 	var blob := PackedByteArray()
 	blob.append_array(height.to_bytes())
 	var parts: Array[PackedByteArray] = [blob, splat0, splat1, biome, vegmask]
-	var f := FileAccess.open(path, FileAccess.WRITE)
+	# Written beside the file and renamed over it (ADR-0038): a reader on another thread, or a
+	# crash mid-write, sees the old file or the new one, never half of one. The temporary name is
+	# per process and thread, so two writers of one region never share a file.
+	var tmp: String = "%s.%d_%d.tmp" % [path, OS.get_process_id(), OS.get_thread_caller_id()]
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
 		return FileAccess.get_open_error()
 	f.store_buffer(MAGIC.to_ascii_buffer())
@@ -110,31 +114,71 @@ func save(path: String, input_hash: String) -> Error:
 		f.store_64(p.size())
 		f.store_64(c.size())
 		f.store_buffer(c)
+	var werr: Error = f.get_error()
 	f.close()
-	return OK
+	if werr != OK and werr != ERR_FILE_EOF:
+		DirAccess.remove_absolute(tmp)
+		return werr
+	var err: Error = DirAccess.rename_absolute(tmp, path)
+	if err != OK and FileAccess.file_exists(path):
+		# A platform that won't rename over an existing file.
+		DirAccess.remove_absolute(path)
+		err = DirAccess.rename_absolute(tmp, path)
+	if err != OK:
+		DirAccess.remove_absolute(tmp)
+	return err
 
 
-## Loads a cached region; returns null if missing or if the stored hash differs.
+## Loads a cached region; returns null if missing, if the stored hash differs, or if the file is
+## short or malformed (a truncated or half-written file is a miss, never an error).
 static func load_cached(path: String, input_hash: String) -> RegionTerrain:
 	if not FileAccess.file_exists(path):
 		return null
 	var f := FileAccess.open(path, FileAccess.READ)
-	if f == null or f.get_buffer(4).get_string_from_ascii() != MAGIC:
+	if f == null:
 		return null
-	var meta: Variant = JSON.parse_string(f.get_pascal_string())
-	if not meta is Dictionary or str(meta.get("hash", "")) != input_hash:
+	var length: int = f.get_length()
+	if length < 8 or f.get_buffer(4).get_string_from_ascii() != MAGIC:
 		return null
+	var meta_len: int = f.get_32()
+	if meta_len <= 0 or f.get_position() + meta_len > length:
+		return null
+	# Parsed with a JSON instance: bad input is a miss here, not an engine error.
+	var json := JSON.new()
+	if json.parse(f.get_buffer(meta_len).get_string_from_utf8()) != OK or not json.data is Dictionary:
+		return null
+	var meta: Dictionary = json.data
+	if str(meta.get("hash", "")) != input_hash:
+		return null
+	for key: String in ["region", "rect", "spacing", "palette", "biomes", "water", "roads", "bridges", "spawns", "placements"]:
+		if not meta.has(key):
+			return null
 	var parts: Array[PackedByteArray] = []
 	for i: int in 5:
+		if f.get_position() + 16 > length:
+			return null
 		var raw_size: int = f.get_64()
 		var comp_size: int = f.get_64()
-		parts.append(f.get_buffer(comp_size).decompress(raw_size, FileAccess.COMPRESSION_ZSTD))
+		if raw_size <= 0 or comp_size <= 0 or f.get_position() + comp_size > length:
+			return null
+		var raw: PackedByteArray = f.get_buffer(comp_size).decompress(raw_size, FileAccess.COMPRESSION_ZSTD)
+		if raw.size() != raw_size:
+			return null
+		parts.append(raw)
+	# The arrays must agree with the height grid's size.
+	if parts[0].size() < 40 or (parts[0].size() - 40) % 4 != 0:
+		return null
+	var count: int = (parts[0].size() - 40) / 4
+	if parts[1].size() != count * 4 or parts[2].size() != count * 4 or parts[3].size() != count or parts[4].size() != count:
+		return null
 	var rt := RegionTerrain.new()
 	rt.region_id = str(meta["region"])
 	var r: Array = meta["rect"]
 	rt.rect = Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
 	rt.spacing = float(meta["spacing"])
 	rt.height = HeightField.from_bytes(parts[0])
+	if rt.height.width * rt.height.depth != count:
+		return null
 	rt.splat0 = parts[1]
 	rt.splat1 = parts[2]
 	rt.biome = parts[3]
