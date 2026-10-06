@@ -235,11 +235,15 @@ func room_type_at(world_pos: Vector3) -> String:
 
 
 func world_bounds() -> AABB:
+	return global_transform * local_bounds()
+
+
+## The building's box in its own frame (every level, buried ones too, a roof's height above).
+func local_bounds() -> AABB:
 	var r: Rect2 = layout.extent()
 	var top: float = layout.level_y(layout.level_ids.back()) + PoiLayout.STOREY + 3.0
 	var bottom: float = layout.level_y(layout.level_ids.front()) - 1.0
-	var local := AABB(Vector3(r.position.x, bottom, r.position.y), Vector3(r.size.x, top - bottom, r.size.y))
-	return global_transform * local
+	return AABB(Vector3(r.position.x, bottom, r.position.y), Vector3(r.size.x, top - bottom, r.size.y))
 
 
 # --- Sleepers ---------------------------------------------------------------------------------

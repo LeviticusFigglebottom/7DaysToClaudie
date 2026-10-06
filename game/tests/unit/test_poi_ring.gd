@@ -107,3 +107,25 @@ func test_markers_show_every_building_without_touching_saved_state() -> void:
 	assert_false(bool(ms[0]["visited"]))
 	if Game.session != null:
 		assert_eq(Game.session.world.pois.size(), before, "drawing the map adds no saved state")
+
+
+func test_poi_at_tests_turned_neighbours_in_their_own_frames() -> void:
+	# Two buildings turned 45 degrees side by side: each one's world AABB covers the other's
+	# corner, so only a test in the building's own frame tells them apart (TD-107).
+	var pm := PoiManager.new()
+	add_child_autofree(pm)
+	var pd: PoiDef = Content.get_def(&"poi", StringName(PICK)) as PoiDef
+	var turn := Basis(Vector3.UP, PI * 0.25)
+	var a: PoiInstance = pm._build_poi(pd, &"ring_a", Transform3D(turn, Vector3(0.0, 0.0, 0.0)))
+	var b: PoiInstance = pm._build_poi(pd, &"ring_b", Transform3D(turn, Vector3(42.0, 0.0, 0.0)))
+	var la: AABB = a.local_bounds()
+	var mid_a: Vector3 = a.global_transform * la.get_center()
+	assert_eq(pm.poi_at(mid_a), a, "the middle of a")
+	assert_eq(pm.poi_at(b.global_transform * b.local_bounds().get_center()), b, "the middle of b")
+	# Just outside a's box along its own +x, still inside its world AABB.
+	var out_a: Vector3 = a.global_transform * Vector3(la.end.x + 0.5, la.get_center().y, la.position.z + 0.5)
+	assert_true(a.world_bounds().has_point(out_a), "the probe is inside a's world AABB")
+	assert_ne(pm.poi_at(out_a), a, "but outside a itself")
+	pm._free_building(&"ring_a", null, null)
+	assert_null(pm.poi_at(mid_a), "freed buildings leave the grid")
+	assert_eq(pm.poi_at(b.global_transform * b.local_bounds().get_center()), b)

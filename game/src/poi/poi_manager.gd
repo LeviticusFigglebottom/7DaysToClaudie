@@ -59,6 +59,10 @@ func setup_world(w: Node) -> void:
 		_build_r = float(cfg.get("build", 450.0))
 		_free_r = float(cfg.get("free", 560.0))
 		_max_built = int(cfg.get("max_built", 90))
+		# Cellars are cut per built building (TD-107), not for every lot of an attached region.
+		var tm0: TerrainManager = w.get(&"terrain") as TerrainManager
+		if tm0 != null:
+			tm0.start_gating_holes()
 	# Tools and tests that set up a bare world still get every building built here and now.
 	_queueing = w.has_method(&"is_booting") and bool(w.call(&"is_booting"))
 	_place_all(w)
@@ -313,6 +317,8 @@ func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
 			inst.despawn_sleepers(ai)
 		inst.queue_free()
 	instances.erase(id)
+	_grid_remove(id)
+	_set_hole(id, false)
 
 
 ## Joins the finished tasks of buildings freed on their way (a route check or a generation keeps
@@ -503,9 +509,20 @@ func _place_built(inst: PoiInstance, instance_id: StringName, xf: Transform3D) -
 	add_child(inst)
 	inst.global_transform = xf
 	instances[instance_id] = inst
+	_grid_add(instance_id, inst)
 	_limit_draw_distance(inst)
 	inst.geometry_changed.connect(_on_poi_geometry_changed)
+	_set_hole(instance_id, true)
 	return inst
+
+
+## A streamed world's cellar of this building opens with it and closes when it is freed.
+func _set_hole(id: StringName, open: bool) -> void:
+	if registry == null or world == null:
+		return
+	var tm: TerrainManager = world.get(&"terrain") as TerrainManager
+	if tm != null:
+		tm.set_poi_hole(id, open)
 
 
 ## Draw distances for a building's props, doors, pieces and prop batches (the kit batches keep the
@@ -674,11 +691,50 @@ func footprint_at(pos: Vector3, margin: float = 0.0) -> StringName:
 	return hits[0][0] if not hits.is_empty() else &""
 
 
+## The built building whose box holds pos, tested in the building's own frame (a turned building's
+## world AABB would claim its neighbour's yard), found through a 64 m grid of the built ones: it is
+## asked every frame by the player's survival and audio, and by AI.
 func poi_at(pos: Vector3) -> PoiInstance:
-	for inst: PoiInstance in instances.values():
-		if inst.world_bounds().has_point(pos):
-			return inst
+	for id: StringName in _grid.get(Vector2i(floori(pos.x / GRID_CELL), floori(pos.z / GRID_CELL)), []):
+		var e: Array = _boxes[id]
+		if (e[1] as AABB).has_point((e[0] as Transform3D) * pos):
+			return instances.get(id)
 	return null
+
+
+# --- The built buildings' grid -----------------------------------------------------------------
+
+const GRID_CELL: float = 64.0
+## Vector2i cell -> Array of instance ids whose world box overlaps it.
+var _grid: Dictionary = {}
+## Instance id -> [inverse of its transform, its local box, its cells]. Buildings never move once
+## placed, so the transform is taken once.
+var _boxes: Dictionary = {}
+
+
+func _grid_add(id: StringName, inst: PoiInstance) -> void:
+	_grid_remove(id)
+	var wb: AABB = inst.world_bounds()
+	var cells: Array[Vector2i] = []
+	for cz: int in range(floori(wb.position.z / GRID_CELL), floori(wb.end.z / GRID_CELL) + 1):
+		for cx: int in range(floori(wb.position.x / GRID_CELL), floori(wb.end.x / GRID_CELL) + 1):
+			var k := Vector2i(cx, cz)
+			if not _grid.has(k):
+				_grid[k] = []
+			(_grid[k] as Array).append(id)
+			cells.append(k)
+	_boxes[id] = [inst.global_transform.affine_inverse(), inst.local_bounds(), cells]
+
+
+func _grid_remove(id: StringName) -> void:
+	if not _boxes.has(id):
+		return
+	for k: Vector2i in _boxes[id][2]:
+		var a: Array = _grid.get(k, [])
+		a.erase(id)
+		if a.is_empty():
+			_grid.erase(k)
+	_boxes.erase(id)
 
 
 func is_indoors(pos: Vector3) -> bool:
