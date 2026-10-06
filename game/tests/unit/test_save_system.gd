@@ -182,11 +182,12 @@ func test_v6_random_save_gets_its_generator_version_from_its_id() -> void:
 	var settings: RefCounted = GenSettings.from_dict(gen)
 	var old_id: String = Generator.world_id_for_version(settings, 2)
 	var out: Dictionary = SaveSystem.migrate({"save_version": 6, "session": {"world_mode": "random", "world_gen": gen, "world_id": old_id,
-		"world": {"traders": {"t": {"stock": 1}}}, "players": {"p:1": {"contracts": [{"id": "c1"}]}}}})
+		"world": {"traders": {"t": {"stock": 1}}, "ashen": {"camps": {"a1": {"alive": 3}}}}, "players": {"p:1": {"contracts": [{"id": "c1"}]}}}})
 	assert_eq(int(out["save_version"]), 7)
 	assert_eq(int(out["session"]["generator_version"]), 2, "the version whose hash is the id")
 	assert_eq(out["session"]["world_files"], "shared")
 	assert_eq(out["session"]["world"]["traders"], {"t": {"stock": 1}}, "traders carry through")
+	assert_eq(out["session"]["world"]["ashen"], {"camps": {"a1": {"alive": 3}}}, "a key the migration doesn't know (the Ashen, ADR-0048) carries through")
 	assert_eq(out["session"]["players"]["p:1"]["contracts"], [{"id": "c1"}], "contracts carry through")
 	var odd: Dictionary = SaveSystem.migrate({"save_version": 6, "session": {"world_mode": "random", "world_gen": gen, "world_id": "rwg_000000000000"}})
 	assert_eq(int(odd["session"]["generator_version"]), 1, "an id no version makes counts as generator 1")
