@@ -12,6 +12,11 @@ const VIEWS: Array[Dictionary] = [
 var _out: String = "res://../build/perf"
 var _frames: int = 120
 var _ablate: bool = true
+## Quit once the load's report and its first frames in the world are logged (LoadMeter).
+var _load_only: bool = false
+## Headless triangle census per view (what each layer submits within its visibility range).
+var _census: bool = false
+var _model_of: Dictionary = {}
 var _report: Dictionary = {}
 var w: GameWorld
 var p: Player
@@ -52,6 +57,10 @@ func _ready() -> void:
 				_frames = int(args[i + 1])
 			"--no-ablate":
 				_ablate = false
+			"--load-only":
+				_load_only = true
+			"--census":
+				_census = true
 	_run.call_deferred()
 
 
@@ -62,6 +71,11 @@ func _run() -> void:
 		await get_tree().process_frame
 	w = game.world
 	p = w.player
+	if _load_only:
+		for i: int in 40:
+			await get_tree().process_frame
+		get_tree().quit(0)
+		return
 	_stamps()
 	p.god_mode = true
 	p.input_enabled = false
@@ -72,6 +86,8 @@ func _run() -> void:
 	for v: Dictionary in VIEWS:
 		await _goto(v["pos"], v["look"])
 		var m: Dictionary = await _measure(_frames)
+		if _census:
+			m["census"] = _triangle_census(p.global_position + Vector3.UP * 1.65)
 		if _ablate:
 			m["modules"] = await _ablate_modules()
 		_report["views"][v["name"]] = m
@@ -178,6 +194,87 @@ func _sprint(start: Vector3, dir: Vector3, seconds: float) -> Dictionary:
 			over += 1
 	return {"frames": walls.size(), "frame_ms_avg": _avg(walls), "frame_ms_p95": sorted[int(walls.size() * 0.95)],
 		"frame_ms_max": sorted[walls.size() - 1], "frames_over_33ms": over, "distance_m": p.global_position.distance_to(start)}
+
+
+## Triangles each source submits from `eye`: instances x mesh triangles (the base LOD: import LODs
+## make the GPU's share smaller near nothing) for every geometry whose visibility range holds the
+## eye, grouped by a readable source name. Before frustum culling and shadow passes, which multiply.
+func _triangle_census(eye: Vector3) -> Dictionary:
+	var by: Dictionary = {}
+	var tri_cache: Dictionary = {}
+	_model_of.clear()
+	for id: Variant in ModelLibrary._meshes:
+		_model_of[ModelLibrary._meshes[id]] = str(id)
+	for n: Node in get_tree().root.find_children("*", "GeometryInstance3D", true, false):
+		var gi: GeometryInstance3D = n
+		if not gi.is_visible_in_tree():
+			continue
+		var d: float = gi.global_position.distance_to(eye) if not gi is MultiMeshInstance3D else _mm_distance(gi as MultiMeshInstance3D, eye)
+		if gi.visibility_range_end > 0.0 and d > gi.visibility_range_end + gi.visibility_range_end_margin:
+			continue
+		if d < gi.visibility_range_begin - gi.visibility_range_begin_margin:
+			continue
+		var mesh: Mesh = null
+		var count: int = 1
+		if gi is MultiMeshInstance3D:
+			var mm: MultiMesh = (gi as MultiMeshInstance3D).multimesh
+			if mm == null:
+				continue
+			mesh = mm.mesh
+			count = mm.visible_instance_count if mm.visible_instance_count >= 0 else mm.instance_count
+		elif gi is MeshInstance3D:
+			mesh = (gi as MeshInstance3D).mesh
+		if mesh == null:
+			continue
+		if not tri_cache.has(mesh):
+			var t: int = 0
+			for si: int in mesh.get_surface_count():
+				var arr: Array = mesh.surface_get_arrays(si)
+				var idx: Variant = arr[Mesh.ARRAY_INDEX]
+				t += (idx as PackedInt32Array).size() / 3 if idx != null and (idx as PackedInt32Array).size() > 0 else (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array).size() / 3
+			tri_cache[mesh] = t
+		var key: String = _source_name(gi)
+		var e: Array = by.get(key, [0, 0, 0])
+		e[0] += int(tri_cache[mesh]) * count
+		e[1] += count
+		e[2] += 1 if gi.cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF else 0
+		by[key] = e
+	var keys: Array = by.keys()
+	keys.sort_custom(func(a: String, b: String) -> bool: return int(by[a][0]) > int(by[b][0]))
+	var out: Dictionary = {}
+	var total: int = 0
+	for k: String in keys:
+		total += int(by[k][0])
+	for k2: String in keys.slice(0, 25):
+		out[k2] = {"triangles": by[k2][0], "instances": by[k2][1], "shadow_casters": by[k2][2]}
+	out["_total_triangles"] = total
+	return out
+
+
+## Distance from the eye to a MultiMesh's bounds (its node origin is the chunk's or the world's).
+func _mm_distance(mmi: MultiMeshInstance3D, eye: Vector3) -> float:
+	var aabb: AABB = mmi.global_transform * mmi.get_aabb()
+	var c: Vector3 = eye.clamp(aabb.position, aabb.end)
+	return c.distance_to(eye)
+
+
+## "veg tree grey_fir lod0", "poi kit", "terrain chunk"... from the node's path.
+func _source_name(gi: GeometryInstance3D) -> String:
+	var path: String = String(gi.get_path())
+	for sys: String in ["Vegetation", "Terrain", "Pois", "Wildlife", "Water", "Ai", "Building", "Loose", "Environment", "Bridges", "Road_markings"]:
+		if path.contains("/%s/" % sys):
+			var tail: String = gi.name
+			if gi is MultiMeshInstance3D and (gi as MultiMeshInstance3D).multimesh != null and (gi as MultiMeshInstance3D).multimesh.mesh != null:
+				var mesh: Mesh = (gi as MultiMeshInstance3D).multimesh.mesh
+				tail = _model_of.get(mesh, mesh.resource_path.get_file().get_basename())
+				if tail == "":
+					tail = gi.name.rstrip("0123456789@_")
+			elif gi is MeshInstance3D and (gi as MeshInstance3D).mesh != null and (gi as MeshInstance3D).mesh.resource_path != "":
+				tail = (gi as MeshInstance3D).mesh.resource_path.get_file().get_basename()
+			else:
+				tail = tail.rstrip("0123456789@_-")
+			return "%s %s" % [sys.to_lower(), tail]
+	return "other " + String(gi.name).rstrip("0123456789@_-")
 
 
 func _avg(a: PackedFloat32Array) -> float:
