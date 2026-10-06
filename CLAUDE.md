@@ -15,10 +15,13 @@ make check        # compile every script (fast)
 make test         # GUT unit/integration tests (JUnit in build/test-results)
 make validate     # content cross-references + every POI (route, loot, sleepers, footprint, budget)
 make smoke        # headless end-to-end slice run (~30–80 s): fell, carry, build, craft, night, Hum, save/load
+make tour         # headless walk tour (~5 min): sprint into, hit and use one of everything (crash hunt)
+make export       # packaged Windows + Linux builds with the generated assets (docs/BUILDS.md, ADR-0036)
 make run-slice    # play the vertical slice (Hum on night 3)
 make screenshots  # visual QA suite under Xvfb + software Vulkan (slow) -> build/screenshots
 ```
-CI (`.github/workflows/ci.yml`) runs setup → assets → validate → test.
+CI (`.github/workflows/ci.yml`) runs setup → assets → validate → test; `standin.yml` runs import,
+check, test, smoke and tour with no generated assets; `build.yml` exports the playable builds.
 
 ## Repository map
 | Path | What |

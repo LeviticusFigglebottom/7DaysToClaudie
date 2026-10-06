@@ -325,7 +325,7 @@ static func _damage_receiver(o: Object) -> Object:
 			return n
 		if n.has_meta(&"damage_receiver"):
 			var r: Variant = n.get_meta(&"damage_receiver")
-			if r is Object and is_instance_valid(r):
+			if is_instance_valid(r):
 				return r
 		n = n.get_parent()
 		depth += 1

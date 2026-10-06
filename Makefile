@@ -16,7 +16,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: smoke check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: smoke tour export render-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview
 
@@ -73,6 +73,9 @@ import: ## Import project resources headless (required before tests on a fresh c
 smoke: ## Headless end-to-end run of the slice (world, trees, building, crafting, AI, Hum, save/load)
 	@$(GODOT_HEADLESS) -s res://src/tools/cli/slice_smoke.gd
 
+tour: ## Headless walk tour: the player runs into, hits and uses every kind of thing (crash hunt, ADR-0036)
+	@$(GODOT_HEADLESS) -s res://src/tools/cli/walk_tour.gd -- $(TOUR_ARGS)
+
 validate: ## Validate content, asset references and POIs
 	@$(GODOT_HEADLESS) -s res://src/tools/cli/validate.gd -- $(VALIDATE_ARGS)
 
@@ -105,6 +108,13 @@ ci: ## Everything CI runs: setup, assets, import, validate (strict), tests
 	@$(MAKE) --no-print-directory assets
 	@$(MAKE) --no-print-directory validate VALIDATE_ARGS=--strict-assets
 	@$(MAKE) --no-print-directory test
+
+export: ## Package Windows and Linux builds with the generated assets into build/export/*.zip (ADR-0036): make export [EXPORT_TARGETS="windows linux"]
+	@mkdir -p $(ROOT)/build/export
+	@GODOT="$(GODOT)" LOCK="$(LOCK)" tools/export/export.sh $(EXPORT_TARGETS)
+
+render-check: ## Render town views (software Vulkan) and fail on renderer errors such as probe atlas overflow (ADR-0036): [RENDER_CHECK_SHOTS=a,b]
+	@GODOT="$(GODOT)" LOCK="$(LOCK)" tools/qa/render_check.sh $(RENDER_CHECK_SHOTS)
 
 clean: ## Remove build output (keeps .tools and generated assets)
 	rm -rf $(ROOT)/build $(GAME)/.godot

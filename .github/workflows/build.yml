@@ -1,0 +1,99 @@
+name: Build
+
+# Playable Windows and Linux builds with the generated assets (ADR-0036). The assets are built here
+# on Linux (Blender, NumPy, Godot bakes) and packed into each platform's .pck, so a player on any
+# platform gets the real game without the Linux-only toolchain. Builds are workflow artifacts only;
+# nothing is published as a release.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/compassionate-dirac-8mtvxi]
+
+# A build is never cancelled by a newer push: the integration branch gets several pushes an hour,
+# and a full build (assets from cache, import, two exports, pack checks, a smoke run, uploads)
+# takes longer than the gap between them, so cancelling would mean no build ever finishes. A
+# newer push waits; while one waits, a newer one still replaces it.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  export:
+    name: Assets, import, export (Windows + Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages (headless Blender + software Vulkan for bakes)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q xvfb mesa-vulkan-drivers libvulkan1 libxi6 libxxf86vm1 libxfixes3 \
+            libxrender1 libgl1 libegl1 libxkbcommon0 libsm6 libxcursor1 libxinerama1 libxrandr2 zip
+
+      # The same caches as ci.yml, so a build after a CI run starts from its toolchain and assets.
+      - name: Cache pinned toolchain (.tools)
+        uses: actions/cache@v4
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('tools/versions.env', 'tools/requirements.txt') }}
+
+      - name: Cache generated assets (incremental via manifest)
+        uses: actions/cache@v4
+        with:
+          path: game/assets/generated
+          key: assets-${{ runner.os }}-${{ hashFiles('tools/assetgen/**', 'game/data/**', 'tools/versions.env') }}
+          restore-keys: assets-${{ runner.os }}-
+
+      - name: Setup toolchain
+        run: make setup
+
+      - name: Generate assets (includes import and bakes)
+        run: make assets
+
+      - name: Import (self-repairs models imported before their materials)
+        run: make import
+
+      - name: Export Windows and Linux
+        run: make export
+
+      - name: The packs carry the generated assets and leave tests and tools out
+        run: |
+          for p in build/export/windows/Hollowmere.pck build/export/linux/Hollowmere.pck; do
+            python3 tools/export/pck_list.py "$p" \
+              --require res://assets/generated/models/ --require res://assets/generated/textures/ \
+              --require res://assets/generated/audio/ --require res://data/ --require res://world/ \
+              --forbid res://tests/ --forbid res://addons/gut/ --forbid res://src/tools/cli/
+          done
+
+      - name: Smoke the exported Linux pack (the slice end to end on what ships)
+        run: |
+          set -o pipefail
+          mkdir -p build/run && cd build/run
+          ../../.tools/godot/godot --headless --main-pack ../export/linux/Hollowmere.pck \
+            -s "$GITHUB_WORKSPACE/game/src/tools/cli/slice_smoke.gd" 2>&1 | tee ../smoke_exported.log
+          ! grep -n "SCRIPT ERROR" ../smoke_exported.log
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: hollowmere-windows
+          path: build/export/hollowmere-windows-*.zip
+          compression-level: 0
+
+      - name: Upload Linux build
+        uses: actions/upload-artifact@v4
+        with:
+          name: hollowmere-linux
+          path: build/export/hollowmere-linux-*.zip
+          compression-level: 0
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            build/export/*.log
+            build/*.log

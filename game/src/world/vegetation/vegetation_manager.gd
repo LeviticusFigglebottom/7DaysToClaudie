@@ -162,8 +162,11 @@ func _update(pos: Vector3) -> void:
 		var want_ground: bool = absi(off.x) <= GROUND_CHUNKS and absi(off.y) <= GROUND_CHUNKS
 		if not _data.has(key):
 			if not _pending.has(key) and _pending.size() < MAX_JOBS and _rt_for_chunk(key) != null:
-				var job: Dictionary = {"key": key, "res": {}}
-				job["task"] = WorkerThreadPool.add_task(func() -> void: job["res"] = _scatter(key), true, "veg scatter")
+				# The worker fills its own slot: `job` gains "task" on this thread after the task has
+				# started, and a dictionary written from two threads at once can corrupt itself.
+				var out: Array = [{}]
+				var job: Dictionary = {"key": key, "out": out}
+				job["task"] = WorkerThreadPool.add_task(func() -> void: out[0] = _scatter(key), true, "veg scatter")
 				_pending[key] = job
 			continue
 		var n: Dictionary = _nodes.get(key, {})
@@ -207,8 +210,8 @@ func _collect() -> void:
 		if WorkerThreadPool.is_task_completed(job["task"]):
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
-			_data[key] = job["res"]
-			_pickable[key] = _harvestables(job["res"])
+			_data[key] = job["out"][0]
+			_pickable[key] = _harvestables(job["out"][0])
 
 
 ## Small plants and stones with yields, filtered once per chunk instead of on every physics

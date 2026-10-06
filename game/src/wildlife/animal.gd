@@ -181,7 +181,7 @@ func _nearest(points: Array[Vector3]) -> Vector3:
 ## Flight: the whole band goes, each a little apart, away from `from`.
 func bolt(from: Vector3) -> void:
 	for a: Variant in herd:
-		if a is Animal and is_instance_valid(a) and a != self and (a as Animal).is_alive() and (a as Animal).state != State.FLEE:
+		if is_instance_valid(a) and a is Animal and a != self and (a as Animal).is_alive() and (a as Animal).state != State.FLEE:
 			(a as Animal)._start_flee(from, false)
 	if state != State.FLEE:
 		_start_flee(from, true)
@@ -407,7 +407,7 @@ func _die(info: DamageInfo) -> void:
 		if pl != null:
 			pl.progression.award("hunt_kill")
 	for a: Variant in herd:
-		if a is Animal and is_instance_valid(a) and a != self:
+		if is_instance_valid(a) and a is Animal and a != self:
 			(a as Animal).bolt(global_position)
 	Events.wildlife_killed.emit(entity_id, def.id, global_position, String(info.source_id))
 	died.emit(self)

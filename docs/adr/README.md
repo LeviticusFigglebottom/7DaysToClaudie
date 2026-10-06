@@ -38,3 +38,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0031](0031-random-worlds.md) | Random worlds: a seeded generator that writes the handcrafted map's own format | Accepted |
 | [0033](0033-weather-and-atmosphere.md) | Weather you can see: rain that stops at roofs, wet ground and puddles, lightning and thunder, ground fog that pools, falling snow | Accepted |
 | [0034](0034-hounds-and-murmurs.md) | Hollowed hounds and Murmurs: pack hunters on the Enemy brain, crows that mark you | Accepted |
+| [0036](0036-playable-builds.md) | Playable builds: packaged exports with the generated assets, a stand-in mode we test, a load that keeps the window alive | Accepted |
