@@ -85,13 +85,13 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "birds_lift_off", "pos": Vector3(-143, 1.2, 2117), "look": Vector3(-150, 2.2, 2108), "hour": 9.5, "weather": "overcast",
 	 "flock": "crow", "flush_after": 0.9, "fov": 60.0},
 	{"name": "larch_street", "pos": Vector3(-69.0, 2.6, 2330.0), "look": Vector3(-84.0, 1.5, 2262.0), "hour": 10.5, "weather": "clear"},
-	# Hollowed hounds and Murmurs (ADR-0034): a pack at the forest's edge (a Seeded one in the
-	# middle), and a Murmur ringing low over the camera on Pell's Crossing's street.
-	{"name": "hound_pack", "pos": Vector3(-163, 1.0, 2156), "look": Vector3(-170, 0.5, 2160), "hour": 16.5, "weather": "overcast", "fov": 50.0,
+	# Hollowed hounds and Murmurs (ADR-0034): a pack (a Seeded one in the
+	# middle) at the drop site, and a Murmur ringing low over the camera on Pell's Crossing's street.
+	{"name": "hound_pack", "pos": Vector3(-300, 1.6, 2297), "look": Vector3(-300, 0.5, 2291.5), "hour": 16.5, "weather": "overcast", "fov": 50.0,
 	 "lineup": [["hollow_hound", -1.5, "normal", ""], ["hollow_hound", 0.0, "seeded", ""], ["hollow_hound", 1.5, "normal", ""]],
 	 "cam_height": 0.9, "look_height": 0.45},
-	{"name": "murmur_overhead", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-52, 9.0, 2060), "hour": 14.0, "weather": "overcast",
-	 "flock": "crow", "murmur": true, "flush_after": 9.0, "fov": 75.0},
+	{"name": "murmur_overhead", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-49, 12.0, 2064), "hour": 14.0, "weather": "overcast",
+	 "flock": "crow", "murmur": true, "flush_after": 9.0, "fov": 90.0},
 	# The third block on Larch Street's corner: the Savings & Loan and the school on the right, the fire
 	# station on the left, the Grange Road corner beyond.
 	# Render check (ADR-0036, make render-check): the whole valley's buildings in one view from high
