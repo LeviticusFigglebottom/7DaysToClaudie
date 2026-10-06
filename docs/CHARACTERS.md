@@ -119,7 +119,19 @@ and wide-eyed up close (TD-170). A new NPC is a catalog entry with its own build
   `M_fp_tether_metal`, status LED `M_fp_tether_led`, and the screen `M_fp_tether_screen`, a
   landscape quad UV-mapped 0..1 (u along the forearm, v across, image top towards the little-finger
   side) that the game fills with the live tether UI.
-* Vertex colour: R baked AO; G a dirt mask (creases, knuckles, fingertips) for the `fp_grime` layer.
+* Hands (`lib/char_fp.py` `FPModel._hand`): a domed metacarpal block (~2.7 cm thick at the
+  knuckles, the back arched across them) with thenar, hypothenar and distal palm pads, raised MCP
+  knuckles and extensor tendons; four separate fingers (each its own SDF field, so the clefts
+  between them survive the union; middle longest, little finger shortest and slimmest) with
+  knobbly PIP/DIP joints, a pad under each phalanx, rounded tips and inset nails (`M_fp_nail`);
+  the thumb on a thenar mass, joined to the index by its web. Mesh-only shape numbers
+  (`FINGER_SHAPE`, `THUMB_RADII`, `PALM_OUTLINE`) never move a bone; the ring and little fingers
+  are skinned to `fingers_1/2` (the middle finger's bones) and curl with them. Meshed in a narrow
+  band round the surface (`sparse_surface_nets`) at `h` = 1.1 mm, so the clefts resolve, then
+  decimated to `arm_tris` = 14k per arm (~11.5k of it past the wrist).
+* Vertex colour: R baked AO; G a dirt mask (creases, knuckles, the skin over the finger joints,
+  fingertips) for the `fp_grime` layer; B the flush of blood under thin skin (knuckles, finger
+  joints, fingertips) that `fp_skin`'s `flush` reddens (0 on the tether).
 * Socket empties: `socket_hand.R` (tool grip point), `socket_hand.L`. Godot local axes: +Y along the
   gripped handle towards the thumb (tool head), +X towards the knuckles; +Z is the back of the right
   hand and the palm of the left. Viewmodels are modelled in the tool frame (grip at the origin,
