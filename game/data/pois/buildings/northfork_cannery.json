@@ -1,0 +1,1298 @@
+{
+ "_doc": "Tier-3 pool building (random towns, industrial lots): a packing plant the Cordon took over to can rations. Route: the front office is bolted -> round the west side: a truck went through the dock wall -> the dock (jaws among the totes) -> the retort room: two of the night shift in the baskets wake when you come in (ambush) -> the packing floor, two storeys high, the line still on the belts -> up the stair to the gallery (loose boards) -> the foreman's office: the cold-store key (taking it wakes the line below: ambush) -> back down -> the cold store (the Cordon's alarm in one dressing): the quartermaster guards the ration stock -> through the front office, unbolting the street door. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "northfork_cannery",
+   "name": "Northfork Packing Co.",
+   "tier": 3,
+   "zoning": [
+    "industrial"
+   ],
+   "footprint": [
+    26,
+    26
+   ],
+   "origin": [
+    3,
+    4
+   ],
+   "author": "Hollowmere team",
+   "population": "cordon",
+   "story": "Northfork canned beans and river fish for forty years. In the second week the Cordon took it over to pack rations for the evacuation: the night shift kept the retorts going under guard, the trucks backed up to the dock every morning, and a quartermaster held the cold-store key and counted every case out. When the Bloom got into the line the guards chained the front office and left the shift on the floor. The quartermaster locked herself in the cold store with the stock. The foreman hung the spare key in his office on the gallery and wrote the last entry in the tally book.",
+   "style": {
+    "exterior": "concrete_block",
+    "interior": "concrete_block",
+    "floor": "concrete",
+    "ceiling": "plaster_grey",
+    "floor_height": 0.15,
+    "decay": 0.55,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "flat",
+     "parapet": 0.6,
+     "flat_material": "roof_membrane"
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "DDDDDDDDRRRRRRRRRRRR",
+      "DDDDDDDDRRRRRRRRRRRR",
+      "DDDDDDDDRRRRRRRRRRRR",
+      "DDDDDDDDRRRRRRRRRRRR",
+      "DDDDDDDDRRRRRRRRRRRR",
+      "DDDDDDDDRRRRRRRRRRRR",
+      "PPPPPPPPPPPPPPPPPPPP",
+      "PPPPPPPPPPPPPPPPPPPP",
+      "PPPPPPPPPPPPPPPPPPPP",
+      "PPPPPPPPPPPPPPPPPPPP",
+      "PPPPPPPPPPPPPPPPPPPP",
+      "PPPPPPPPPPPPPPPPPPPP",
+      "EEEEEEQQQQQQWWWWWWWW",
+      "EEEEEEQQQQQQWWWWWWWW",
+      "EEEEEEQQQQQQWWWWWWWW",
+      "EEEEEEQQQQQQWWWWWWWW",
+      "EEEEEEQQQQQQWWWWWWWW",
+      "EEEEEEQQQQQQWWWWWWWW"
+     ],
+     "rooms": {
+      "D": {
+       "name": "Receiving dock",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "R": {
+       "name": "Retort room",
+       "type": "workshop",
+       "wall": "tile_bathroom_white",
+       "floor": "concrete"
+      },
+      "P": {
+       "name": "Packing floor",
+       "type": "workshop",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "storeys": 2
+      },
+      "E": {
+       "name": "Front office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_beige"
+      },
+      "Q": {
+       "name": "Cold store",
+       "type": "storage",
+       "wall": "tile_bathroom_white",
+       "floor": "concrete"
+      },
+      "W": {
+       "name": "Case warehouse",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "                    ",
+      "                    ",
+      "                    ",
+      "                    ",
+      "                    ",
+      "                    ",
+      "^^^^^^^^^^^^^^^^^^^^",
+      "^^^^^^^^^^^^^^^^^^^^",
+      "^^^^^^^^^^^^^^^^^^^^",
+      "^^^^^^^^^^^^^^^^^^^^",
+      "^^^^^^^^^^^^^^^^^^^^",
+      "GGGGGGGGGGGGGGGGGGGG",
+      "MMMMMMMMBBBBBTTTTTTT",
+      "MMMMMMMMBBBBBTTTTTTT",
+      "MMMMMMMMBBBBBTTTTTTT",
+      "MMMMMMMMBBBBBTTTTTTT",
+      "MMMMMMMMBBBBBTTTTTTT",
+      "MMMMMMMMBBBBBTTTTTTT"
+     ],
+     "rooms": {
+      "G": {
+       "name": "Gallery",
+       "type": "hallway",
+       "wall": "concrete_block",
+       "floor": "wood_pine",
+       "gallery": "rail"
+      },
+      "M": {
+       "name": "Foreman's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_beige"
+      },
+      "B": {
+       "name": "Break room",
+       "type": "kitchen",
+       "wall": "paint_mustard",
+       "floor": "linoleum_check"
+      },
+      "T": {
+       "name": "Tally room",
+       "type": "office",
+       "wall": "plaster_grey",
+       "floor": "linoleum_beige"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      2,
+      17
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_metal",
+     "lock": "chain"
+    },
+    {
+     "id": "office_window",
+     "at": [
+      4,
+      17
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "warehouse_window",
+     "at": [
+      13,
+      17
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "dock_breach",
+     "at": [
+      0,
+      3
+     ],
+     "side": "W",
+     "type": "breach"
+    },
+    {
+     "id": "dock_window",
+     "at": [
+      3,
+      0
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "retort_door",
+     "at": [
+      7,
+      3
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "dock_floor",
+     "at": [
+      3,
+      5
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "retort_floor",
+     "at": [
+      13,
+      5
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "office_floor",
+     "at": [
+      2,
+      11
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "cold_door",
+     "at": [
+      8,
+      11
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "town4_cannery_cold_key",
+     "lock": "padlock",
+     "model": "door_metal",
+     "hp": 700
+    },
+    {
+     "id": "warehouse_floor",
+     "at": [
+      15,
+      11
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "foreman_door",
+     "at": [
+      3,
+      12
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "break_door",
+     "at": [
+      10,
+      12
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "open",
+     "level": 1
+    },
+    {
+     "id": "tally_door",
+     "at": [
+      13,
+      14
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "mezz_window",
+     "at": [
+      19,
+      15
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    }
+   ],
+   "stairs": [
+    {
+     "level": 0,
+     "at": [
+      1,
+      7
+     ],
+     "dir": "S"
+    }
+   ],
+   "props": [
+    {
+     "id": "retort_1",
+     "prop": "cannery_retort",
+     "pos": [
+      11.5,
+      1.9
+     ],
+     "rot": 90
+    },
+    {
+     "id": "retort_2",
+     "prop": "cannery_retort",
+     "pos": [
+      16.5,
+      1.9
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      19.2,
+      4.9
+     ]
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      9.0,
+      4.6
+     ],
+     "rot": 30
+    },
+    {
+     "id": "dock_totes_1",
+     "prop": "cannery_tote_stack",
+     "pos": [
+      1.2,
+      0.9
+     ],
+     "rot": 10
+    },
+    {
+     "id": "dock_totes_2",
+     "prop": "cannery_tote_stack",
+     "pos": [
+      5.8,
+      0.9
+     ],
+     "rot": -8
+    },
+    {
+     "id": "dock_pallet",
+     "prop": "cannery_can_pallet",
+     "pos": [
+      6.3,
+      4.0
+     ],
+     "rot": 5
+    },
+    {
+     "prop": "pallet",
+     "pos": [
+      4.2,
+      1.2
+     ],
+     "rot": 0
+    },
+    {
+     "id": "dock_truck",
+     "prop": "pickup_wreck",
+     "pos": [
+      -2.0,
+      3.2
+     ],
+     "rot": 95,
+     "alt": "dock:truck_in"
+    },
+    {
+     "prop": "cans_scatter",
+     "pos": [
+      2.6,
+      3.8
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "cannery_conveyor",
+     "pos": [
+      5.5,
+      8.5
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "cannery_conveyor",
+     "pos": [
+      8.5,
+      8.5
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "cannery_conveyor",
+     "pos": [
+      11.5,
+      8.5
+     ],
+     "rot": 0
+    },
+    {
+     "id": "filler",
+     "prop": "cannery_filler",
+     "pos": [
+      15.0,
+      8.6
+     ],
+     "rot": 270
+    },
+    {
+     "id": "sorting_1",
+     "prop": "cannery_sorting_table",
+     "pos": [
+      6.0,
+      7.5
+     ],
+     "rot": 0
+    },
+    {
+     "id": "sorting_2",
+     "prop": "cannery_sorting_table",
+     "pos": [
+      10.5,
+      7.5
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "floor_totes",
+     "prop": "cannery_tote_stack",
+     "pos": [
+      18.6,
+      7.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "cans_scatter",
+     "pos": [
+      9.6,
+      10.3
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "ceiling_light",
+     "pos": [
+      10.0,
+      9.0
+     ],
+     "y": 5.9
+    },
+    {
+     "id": "office_desk",
+     "prop": "office_desk",
+     "at": [
+      4,
+      13
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      3.9,
+      14.2
+     ],
+     "rot": 270
+    },
+    {
+     "id": "office_files",
+     "prop": "filing_cabinet",
+     "at": [
+      0,
+      13
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "office_lockers",
+     "prop": "road_staff_locker",
+     "at": [
+      0,
+      15
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      2,
+      12
+     ],
+     "against": "N",
+     "rot": 0
+    },
+    {
+     "id": "cold_shelf_1",
+     "prop": "metal_shelf",
+     "at": [
+      6,
+      13
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "cold_shelf_2",
+     "prop": "metal_shelf",
+     "at": [
+      11,
+      13
+     ],
+     "against": "E",
+     "rot": 270
+    },
+    {
+     "id": "cold_crates",
+     "prop": "civic_relief_crate",
+     "pos": [
+      8.5,
+      16.6
+     ],
+     "rot": 0
+    },
+    {
+     "id": "cold_crates_2",
+     "prop": "civic_relief_crate",
+     "pos": [
+      8.55,
+      16.6
+     ],
+     "y": 0.55,
+     "rot": 4
+    },
+    {
+     "prop": "civic_army_cot",
+     "pos": [
+      10.4,
+      15.6
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "lantern_camping",
+     "pos": [
+      9.6,
+      14.4
+     ],
+     "lit": true
+    },
+    {
+     "id": "case_pallet_1",
+     "prop": "cannery_can_pallet",
+     "pos": [
+      14.0,
+      13.6
+     ],
+     "rot": 0
+    },
+    {
+     "id": "case_pallet_2",
+     "prop": "cannery_can_pallet",
+     "pos": [
+      17.6,
+      13.6
+     ],
+     "rot": 3,
+     "variant": "worn"
+    },
+    {
+     "id": "case_pallet_3",
+     "prop": "cannery_can_pallet",
+     "pos": [
+      17.6,
+      16.2
+     ],
+     "rot": -2
+    },
+    {
+     "prop": "road_rollup_door",
+     "pos": [
+      16.0,
+      18.09
+     ],
+     "rot": 0
+    },
+    {
+     "id": "foreman_desk",
+     "prop": "office_desk",
+     "at": [
+      1,
+      13
+     ],
+     "against": "W",
+     "level": 1,
+     "rot": 90
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      2.2,
+      13.6
+     ],
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "id": "foreman_files",
+     "prop": "filing_cabinet",
+     "at": [
+      7,
+      17
+     ],
+     "against": "E",
+     "level": 1,
+     "rot": 270
+    },
+    {
+     "prop": "desk_lamp",
+     "pos": [
+      0.9,
+      13.2
+     ],
+     "y": 0.77,
+     "level": 1
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      4,
+      17
+     ],
+     "against": "S",
+     "level": 1,
+     "rot": 180
+    },
+    {
+     "prop": "kitchen_table",
+     "pos": [
+      10.5,
+      15.0
+     ],
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      9.6,
+      15.0
+     ],
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      11.4,
+      15.0
+     ],
+     "rot": 270,
+     "level": 1
+    },
+    {
+     "id": "break_fridge",
+     "prop": "fridge_old",
+     "at": [
+      12,
+      17
+     ],
+     "against": "S",
+     "level": 1,
+     "rot": 180
+    },
+    {
+     "prop": "coffee_machine",
+     "pos": [
+      8.6,
+      17.5
+     ],
+     "y": 0.9,
+     "level": 1,
+     "alt": "break:meal"
+    },
+    {
+     "prop": "barricade_mattress",
+     "pos": [
+      10.4,
+      12.4
+     ],
+     "rot": 0,
+     "level": 1,
+     "alt": "break:barricaded"
+    },
+    {
+     "id": "tally_desk",
+     "prop": "office_desk",
+     "at": [
+      16,
+      17
+     ],
+     "against": "S",
+     "level": 1,
+     "rot": 180
+    },
+    {
+     "id": "tally_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      19,
+      13
+     ],
+     "against": "E",
+     "level": 1,
+     "rot": 270
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      16.0,
+      14.6
+     ],
+     "rot": 60,
+     "level": 1
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "dock_1",
+     "pos": [
+      3.4,
+      1.8
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 30,
+     "anchor": "floor"
+    },
+    {
+     "id": "retort_1",
+     "pos": [
+      13.8,
+      3.6
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 200,
+     "group": "retort"
+    },
+    {
+     "id": "retort_2",
+     "pos": [
+      18.4,
+      3.8
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 250,
+     "group": "retort"
+    },
+    {
+     "id": "line_1",
+     "pos": [
+      5.0,
+      9.7
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 0,
+     "group": "line",
+     "alt": "line:at_the_belts"
+    },
+    {
+     "id": "line_2",
+     "pos": [
+      8.2,
+      9.7
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 10,
+     "group": "line",
+     "alt": "line:at_the_belts"
+    },
+    {
+     "id": "line_3",
+     "pos": [
+      12.0,
+      9.8
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 350,
+     "group": "line",
+     "alt": "line:at_the_belts"
+    },
+    {
+     "id": "line_4",
+     "pos": [
+      16.8,
+      10.2
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 300,
+     "group": "line",
+     "alt": "line:at_the_belts"
+    },
+    {
+     "id": "line_1",
+     "pos": [
+      6.0,
+      8.3
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "group": "line",
+     "alt": "line:at_the_tables"
+    },
+    {
+     "id": "line_2",
+     "pos": [
+      10.4,
+      8.3
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 170,
+     "group": "line",
+     "alt": "line:at_the_tables"
+    },
+    {
+     "id": "line_3",
+     "pos": [
+      13.6,
+      7.2
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 200,
+     "group": "line",
+     "alt": "line:at_the_tables"
+    },
+    {
+     "id": "line_4",
+     "pos": [
+      17.8,
+      8.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "line",
+     "anchor": "floor",
+     "alt": "line:at_the_tables"
+    },
+    {
+     "id": "clerk",
+     "pos": [
+      3.9,
+      14.2
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 270
+    },
+    {
+     "id": "quartermaster",
+     "pos": [
+      9.0,
+      14.0
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 0,
+     "guardian": true
+    }
+   ],
+   "pickups": [
+    {
+     "id": "cold_key",
+     "item": "town4_cannery_cold_key",
+     "pos": [
+      1.2,
+      12.9
+     ],
+     "y": 0.77,
+     "level": 1
+    }
+   ],
+   "notes": [
+    {
+     "note": "town4_cannery_tally",
+     "pos": [
+      16.2,
+      16.9
+     ],
+     "y": 0.77,
+     "level": 1
+    },
+    {
+     "note": "town4_cannery_requisition",
+     "pos": [
+      2.0,
+      12.3
+     ]
+    },
+    {
+     "note": "town4_cannery_quartermaster",
+     "pos": [
+      10.0,
+      15.4
+     ]
+    }
+   ],
+   "traps": [
+    {
+     "id": "dock_jaws",
+     "type": "bear_trap",
+     "pos": [
+      4.6,
+      3.4
+     ],
+     "rot": 15
+    },
+    {
+     "id": "gallery_boards",
+     "type": "creaky_floor",
+     "at": [
+      3,
+      11
+     ],
+     "size": [
+      4,
+      1
+     ],
+     "level": 1
+    },
+    {
+     "id": "gallery_rot",
+     "type": "weak_floor",
+     "at": [
+      17,
+      11
+     ],
+     "size": [
+      2,
+      1
+     ],
+     "level": 1
+    },
+    {
+     "id": "cold_alarm",
+     "type": "alarm",
+     "at": [
+      8,
+      11
+     ],
+     "side": "S",
+     "alt": "cold_alarm:armed"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "t_retort",
+     "group": "retort",
+     "on": "room",
+     "room": "R",
+     "level": 0,
+     "delay": 0.6
+    },
+    {
+     "id": "t_line_key",
+     "group": "line",
+     "on": "pickup",
+     "pickup": "cold_key",
+     "delay": 1.0
+    },
+    {
+     "id": "t_line_boards",
+     "group": "line",
+     "on": "trap",
+     "trap": "gallery_boards",
+     "delay": 0.6
+    }
+   ],
+   "lights": [
+    {
+     "at": [
+      9,
+      15
+     ],
+     "height": 0.5,
+     "color": "#ffcc88",
+     "energy": 0.5,
+     "range": 4.5,
+     "flicker": 0.1
+    },
+    {
+     "at": [
+      1,
+      13
+     ],
+     "height": 0.9,
+     "color": "#ffd9a0",
+     "energy": 0.4,
+     "range": 3.5,
+     "flicker": 0.15,
+     "level": 1
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      2,
+      3
+     ],
+     "side": "floor",
+     "size": [
+      1.8,
+      0.8
+     ]
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      12,
+      0
+     ],
+     "side": "N",
+     "height": 1.4,
+     "size": [
+      1.6,
+      1.2
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      8,
+      11
+     ],
+     "side": "S",
+     "height": 1.1,
+     "size": [
+      0.6,
+      0.6
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      2,
+      18
+     ],
+     "label": "The front office: chained from inside"
+    },
+    {
+     "at": [
+      -1,
+      17
+     ],
+     "label": "Round the west side"
+    },
+    {
+     "at": [
+      -1,
+      3
+     ],
+     "label": "A truck went through the dock wall"
+    },
+    {
+     "at": [
+      2,
+      3
+     ],
+     "label": "The dock - jaws among the totes"
+    },
+    {
+     "at": [
+      9,
+      3
+     ],
+     "label": "The retort room: the night shift wakes"
+    },
+    {
+     "at": [
+      13,
+      6
+     ],
+     "label": "Onto the packing floor"
+    },
+    {
+     "at": [
+      1,
+      6
+     ],
+     "label": "The stair up to the gallery"
+    },
+    {
+     "at": [
+      2,
+      11
+     ],
+     "label": "The gallery - loose boards",
+     "level": 1
+    },
+    {
+     "at": [
+      2,
+      14
+     ],
+     "label": "The foreman's office: the cold-store key (the line wakes below)",
+     "level": 1
+    },
+    {
+     "at": [
+      1,
+      11
+     ],
+     "label": "Back to the stair",
+     "level": 1
+    },
+    {
+     "at": [
+      3,
+      10
+     ],
+     "label": "Down on the floor"
+    },
+    {
+     "at": [
+      8,
+      10
+     ],
+     "label": "The cold-store door"
+    },
+    {
+     "at": [
+      8,
+      14
+     ],
+     "label": "The cold store (loot) - the quartermaster"
+    },
+    {
+     "at": [
+      8,
+      10
+     ],
+     "label": "Back out"
+    },
+    {
+     "at": [
+      2,
+      10
+     ],
+     "label": "The office door"
+    },
+    {
+     "at": [
+      2,
+      15
+     ],
+     "label": "The front office: unbolt the street door"
+    },
+    {
+     "at": [
+      2,
+      18
+     ],
+     "label": "Out"
+    }
+   ],
+   "loot_room": {
+    "room": "Q",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "front_door"
+    }
+   ],
+   "budget": {
+    "lights": 4,
+    "enemies": 13,
+    "pieces": 2800
+   },
+   "alternatives": [
+    {
+     "id": "line",
+     "label": "Where the night shift stands",
+     "options": [
+      {
+       "id": "at_the_belts",
+       "label": "Still at the belts",
+       "weight": 2
+      },
+      {
+       "id": "at_the_tables",
+       "label": "Bent over the sorting tables"
+      }
+     ]
+    },
+    {
+     "id": "dock",
+     "label": "The dock",
+     "options": [
+      {
+       "id": "truck_in",
+       "label": "The truck still in the wall"
+      },
+      {
+       "id": "truck_gone",
+       "label": "The truck gone, the hole left",
+       "style": {
+        "decay": 0.6
+       }
+      }
+     ]
+    },
+    {
+     "id": "cold_alarm",
+     "label": "The Cordon's alarm on the cold store",
+     "options": [
+      {
+       "id": "dead",
+       "label": "Dead",
+       "weight": 2
+      },
+      {
+       "id": "armed",
+       "label": "Armed"
+      }
+     ]
+    },
+    {
+     "id": "break",
+     "label": "The break room",
+     "options": [
+      {
+       "id": "meal",
+       "label": "The last meal on the table"
+      },
+      {
+       "id": "barricaded",
+       "label": "A mattress against the door"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

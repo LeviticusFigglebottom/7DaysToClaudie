@@ -1,0 +1,220 @@
+{
+ "_doc": "Keys and readable notes of pool round 2 (random-town set pieces: the pawn and gun shop, the cannery, the water works, the quarry office, the VFW post). Note items are note_<note id> (notes/town4.json); models from tools/assetgen/blender_catalogs/items_town4.py.",
+ "defs": [
+  {
+   "id": "town4_pawn_vault_key",
+   "name": "Vault Room Key",
+   "description": "A heavy key on a lanyard with a brass tag: HOLLIS - VAULT. There is blood dried in the teeth.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/town4/town4_pawn_vault_key"
+  },
+  {
+   "id": "town4_cannery_cold_key",
+   "name": "Cold Store Key",
+   "description": "A padlock key on a plant tag stamped COLD STORE - SPARE, hung on a nail by the foreman's desk.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/town4/town4_cannery_cold_key"
+  },
+  {
+   "id": "town4_waterworks_store_key",
+   "name": "Stores Key",
+   "description": "A padlock key on a red tag, EMERGENCY STORES, hung on the lab hook.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/town4/town4_waterworks_store_key"
+  },
+  {
+   "id": "town4_quarry_magazine_key",
+   "name": "Magazine Key",
+   "description": "A heavy padlock key on a brass tag stamped MAG 1 - MGR ONLY.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/town4/town4_quarry_magazine_key"
+  },
+  {
+   "id": "town4_vfw_cage_key",
+   "name": "Cage Key",
+   "description": "A padlock key on a bent ring with a cardboard tag: QM CAGE. It was in the till, under the cash tray.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/town4/town4_vfw_cage_key"
+  },
+  {
+   "id": "note_town4_pawn_book",
+   "name": "The Book on the Counter",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_pawn_book",
+   "model": "items/town4/note_town4_pawn_book"
+  },
+  {
+   "id": "note_town4_pawn_order",
+   "name": "Notice Taped to the Door",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_pawn_order",
+   "model": "items/town4/note_town4_pawn_order"
+  },
+  {
+   "id": "note_town4_pawn_ray",
+   "name": "Folded in the Desk Drawer",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_pawn_ray",
+   "model": "items/town4/note_town4_pawn_ray"
+  },
+  {
+   "id": "note_town4_cannery_tally",
+   "name": "Tally Book",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_cannery_tally",
+   "model": "items/town4/note_town4_cannery_tally"
+  },
+  {
+   "id": "note_town4_cannery_requisition",
+   "name": "Requisition Order",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_cannery_requisition",
+   "model": "items/town4/note_town4_cannery_requisition"
+  },
+  {
+   "id": "note_town4_cannery_quartermaster",
+   "name": "Pinned Inside the Cold Store",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_cannery_quartermaster",
+   "model": "items/town4/note_town4_cannery_quartermaster"
+  },
+  {
+   "id": "note_town4_waterworks_log",
+   "name": "Operator's Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_waterworks_log",
+   "model": "items/town4/note_town4_waterworks_log"
+  },
+  {
+   "id": "note_town4_waterworks_boil",
+   "name": "Notice in the Front Hall",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_waterworks_boil",
+   "model": "items/town4/note_town4_waterworks_boil"
+  },
+  {
+   "id": "note_town4_waterworks_gus",
+   "name": "Taped to a Store Shelf",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_waterworks_gus",
+   "model": "items/town4/note_town4_waterworks_gus"
+  },
+  {
+   "id": "note_town4_quarry_ticket",
+   "name": "Scale Ticket",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_quarry_ticket",
+   "model": "items/town4/note_town4_quarry_ticket"
+  },
+  {
+   "id": "note_town4_quarry_seizure",
+   "name": "Seizure Order",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_quarry_seizure",
+   "model": "items/town4/note_town4_quarry_seizure"
+  },
+  {
+   "id": "note_town4_quarry_pete",
+   "name": "Chalked Inside the Magazine",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_quarry_pete",
+   "model": "items/town4/note_town4_quarry_pete"
+  },
+  {
+   "id": "note_town4_vfw_bulletin",
+   "name": "Post Bulletin Board",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_vfw_bulletin",
+   "model": "items/town4/note_town4_vfw_bulletin"
+  },
+  {
+   "id": "note_town4_vfw_minutes",
+   "name": "Minutes of a Special Meeting",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_vfw_minutes",
+   "model": "items/town4/note_town4_vfw_minutes"
+  },
+  {
+   "id": "note_town4_vfw_qm",
+   "name": "Inventory, Pencil on Cardboard",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "town4_vfw_qm",
+   "model": "items/town4/note_town4_vfw_qm"
+  }
+ ]
+}
