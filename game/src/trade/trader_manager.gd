@@ -117,6 +117,7 @@ func _exit_tree() -> void:
 func add_post(post_id: String, td: TraderDef, pos: Vector3, yaw: float, build: bool = true) -> void:
 	var entry: Dictionary = {"def": td, "pos": pos, "yaw": yaw, "node": null}
 	posts[post_id] = entry
+	Log.info("trade", "%s raised at (%.0f, %.0f), facing %.0f°" % [post_id, pos.x, pos.z, yaw])
 	if build:
 		var node := TraderPost.new()
 		node.name = "Post_%s" % post_id.replace(":", "_")
