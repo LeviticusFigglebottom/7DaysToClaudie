@@ -321,3 +321,72 @@ func test_a_building_freed_mid_check_leaves_no_task() -> void:
 		_ring(FAR)
 	assert_eq(_pm._orphans.size(), 0, "joined once done (_prune_tasks)")
 	assert_eq(_pm.instances.size(), 0, "nothing built")
+
+
+## An awake sleeper that followed the player out is a roamer (PoiInstance.despawn_sleepers). When
+## the ring frees its building the manager keeps it (PoiManager._keep_roamers): (a) rebuilt while
+## it still lives, the building doesn't spawn it again at its post; (b) killed while the building
+## is freed, its death lands in the saved state, it doesn't respawn on rebuild, and as the last
+## sleeper standing it leaves the building cleared.
+func test_a_roaming_sleeper_outlives_its_building() -> void:
+	var inst: PoiInstance = await _approach()
+	assert_not_null(inst)
+	if inst == null:
+		return
+	inst.spawn_sleepers(_ai)
+	await get_tree().physics_frame
+	var sid: String = _plain_sleeper(inst)
+	var roamer: Enemy = inst.sleeper(sid)
+	assert_not_null(roamer, "an ungrouped sleeper to wake")
+	if roamer == null:
+		return
+	# Every other sleeper dies in the building: the roamer will be the last one standing.
+	for other: String in _alive(inst):
+		if other != sid:
+			inst.sleeper(other).take_damage(DamageInfo.make(9999.0, &"blunt", &"melee", Game.session.local_player_id))
+	await get_tree().physics_frame
+	assert_eq(_alive(inst), [sid], "only the roamer-to-be left")
+	assert_false(bool(inst.state.get("cleared", false)), "not cleared while it lives")
+	roamer.notice(roamer.global_position + Vector3(3.0, 0.0, 0.0))
+	await get_tree().physics_frame
+	assert_ne(roamer.state, Enemy.State.SLEEP, "awake")
+
+	# Freed: the awake sleeper is handed off as a roamer, not despawned.
+	await _leave()
+	assert_true(is_instance_valid(roamer) and roamer.is_alive(), "still out hunting")
+	assert_false((Game.session.world.poi_state(IID).get("dead", []) as Array).has(sid))
+
+	# (a) Rebuilt while it lives: not spawned again at its post.
+	var again: PoiInstance = await _approach()
+	assert_not_null(again)
+	if again == null:
+		return
+	again.spawn_sleepers(_ai)
+	await get_tree().physics_frame
+	assert_null(again.sleeper(sid), "not duplicated at its post while the original roams")
+	assert_eq(_alive(again), [], "nobody else to spawn")
+	var bodies: int = 0
+	for e: Variant in _ai.enemies.values():
+		if is_instance_valid(e) and (e as Enemy).is_alive() and (e as Enemy).sleeper_id == StringName(sid):
+			bodies += 1
+	assert_eq(bodies, 1, "one body of that sleeper in the world")
+
+	# (b) Freed again, then killed while its building is gone.
+	await _leave()
+	assert_true(is_instance_valid(roamer) and roamer.is_alive(), "handed off again on the second free")
+	roamer.take_damage(DamageInfo.make(9999.0, &"blunt", &"melee", Game.session.local_player_id))
+	await get_tree().physics_frame
+	assert_false(roamer.is_alive())
+	var st: Dictionary = Game.session.world.poi_state(IID)
+	assert_true((st.get("dead", []) as Array).has(sid), "its death is recorded with the building freed")
+	var cleared_before: int = int(Game.session.stats.get("pois_cleared", 0))
+	var third: PoiInstance = await _approach()
+	assert_not_null(third)
+	if third == null:
+		return
+	third.spawn_sleepers(_ai)
+	await get_tree().physics_frame
+	assert_null(third.sleeper(sid), "the killed roamer does not respawn")
+	assert_eq(_alive(third), [], "nobody left in the building")
+	assert_true(bool(third.state.get("cleared", false)), "its last sleeper died away: cleared on rebuild")
+	assert_eq(int(Game.session.stats.get("pois_cleared", 0)), cleared_before + 1, "counted once")
