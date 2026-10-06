@@ -71,6 +71,8 @@ class Chunk:
 	var mesh_instance: MeshInstance3D
 	var body: StaticBody3D
 	var has_collision: bool = false
+	## The collision being built on a worker ({} = none): {task, out: [shape data], kind}.
+	var col_job: Dictionary = {}
 
 
 func _ready() -> void:
@@ -268,14 +270,17 @@ func _refresh_chunks(rect: Rect2) -> void:
 		if ch.lod >= 0 and not _pending.has(key):
 			_request_mesh(key, ch.lod, false)
 		if ch.has_collision:
-			_set_collision(ch, false)
-			_set_collision(ch, true)
+			_rebuild_collision(ch, false)
 
 
 # --- Streaming --------------------------------------------------------------------------------
 
 ## Joins in-flight mesh jobs so no worker touches freed data when the world goes away.
 func _exit_tree() -> void:
+	for ch: Chunk in _col_pending:
+		if ch.col_job.has("task"):
+			WorkerThreadPool.wait_for_task_completion(int(ch.col_job["task"]))
+	_col_pending.clear()
 	if _far_task >= 0:
 		WorkerThreadPool.wait_for_group_task_completion(_far_task)
 		_far_task = -1
@@ -290,6 +295,7 @@ func _process(delta: float) -> void:
 	if world == null or focus == null:
 		return
 	_collect_finished()
+	_collect_collision()
 	_update_accum += delta
 	if _update_accum < 0.2:
 		return
@@ -325,7 +331,7 @@ func update_streaming(pos: Vector3, synchronous: bool = false) -> void:
 				_request_mesh(key, lod, synchronous)
 			var want_col: bool = absi(dx) <= COLLISION_RADIUS and absi(dz) <= COLLISION_RADIUS
 			if want_col != ch.has_collision:
-				_set_collision(ch, want_col)
+				_set_collision(ch, want_col, synchronous)
 
 
 func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
@@ -352,7 +358,14 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 	_pending[key] = job
 
 
+## Main-thread time a frame spends installing finished chunk meshes and collision bodies: the 169
+## meshes and 25 bodies of a spawn otherwise all land in one frame (~0.5 s, ADR-0036); the rest
+## wait for the next frames.
+const COLLECT_BUDGET_MS: float = 6.0
+
+
 func _collect_finished() -> void:
+	var t0: int = Time.get_ticks_usec()
 	for key: Vector2i in _pending.keys():
 		var job: Dictionary = _pending[key]
 		if WorkerThreadPool.is_task_completed(job["task"]):
@@ -360,6 +373,8 @@ func _collect_finished() -> void:
 			_pending.erase(key)
 			job["mesh"] = job["out"][0]
 			_apply_mesh(job)
+			if float(Time.get_ticks_usec() - t0) / 1000.0 >= COLLECT_BUDGET_MS:
+				return
 
 
 func _apply_mesh(job: Dictionary) -> void:
@@ -406,15 +421,74 @@ func _free_chunk(key: Vector2i) -> void:
 	_chunks.erase(key)
 
 
-func _set_collision(ch: Chunk, on: bool) -> void:
+## Turns a chunk's collision on or off. On, unless `sync`: built on a worker (the heights or the
+## cellar trimesh are ~25 ms of GDScript a chunk; the 25 around a spawn took 0.6 s of one frame,
+## ADR-0036) and installed when it comes back (_collect_collision).
+func _set_collision(ch: Chunk, on: bool, sync: bool = true) -> void:
 	ch.has_collision = on
 	if not on:
+		ch.col_job = {}
 		if ch.body != null:
 			ch.body.queue_free()
 			ch.body = null
 		return
+	_rebuild_collision(ch, sync)
+
+
+## Builds a chunk's collision anew, keeping the old body until the new one replaces it (so the
+## ground never disappears under someone). `sync`: now, on this thread (digging, which must
+## collide with the new ground at once; chunks with volume columns, whose height reads volumes).
+func _rebuild_collision(ch: Chunk, sync: bool) -> void:
 	var origin := Vector2(ch.key.x * CHUNK, ch.key.y * CHUNK)
 	var cut: Array[PackedVector2Array] = _cutters(ch.key)
+	var has_volume: bool = _chunk_has_volume(ch.key)
+	var out: Array = [null]
+	var job: Dictionary = {"out": out, "kind": "faces" if not cut.is_empty() else "heights"}
+	var hole: Callable = volume.is_volume_column if has_volume else Callable()
+	var fn := func() -> void:
+		if cut.is_empty():
+			out[0] = TerrainMesher.collision_heights(origin, CHUNK, 1.0, height_at)
+		else:
+			out[0] = TerrainMesher.surface_faces(origin, CHUNK, 1.0, height_at, hole, cut)
+	if sync or has_volume:
+		if cut.is_empty() and has_volume:
+			out[0] = TerrainMesher.collision_heights(origin, CHUNK, 1.0, _collision_height)
+		else:
+			fn.call()
+		ch.col_job = {}
+		_install_collision(ch, job)
+		return
+	ch.col_job = job
+	job["task"] = WorkerThreadPool.add_task(fn, true, "terrain collision")
+	_col_pending.append(ch)
+
+
+## Collision jobs on workers (chunks whose col_job has a task).
+var _col_pending: Array[Chunk] = []
+
+
+func _collect_collision() -> void:
+	var t0: int = Time.get_ticks_usec()
+	for i: int in range(_col_pending.size() - 1, -1, -1):
+		if float(Time.get_ticks_usec() - t0) / 1000.0 >= COLLECT_BUDGET_MS:
+			return
+		var ch: Chunk = _col_pending[i]
+		var job: Dictionary = ch.col_job
+		if job.is_empty() or not job.has("task"):
+			_col_pending.remove_at(i)
+			continue
+		if not WorkerThreadPool.is_task_completed(int(job["task"])):
+			continue
+		WorkerThreadPool.wait_for_task_completion(int(job["task"]))
+		_col_pending.remove_at(i)
+		ch.col_job = {}
+		if ch.has_collision and _chunks.get(ch.key) == ch:
+			_install_collision(ch, job)
+
+
+## A finished collision job in a body, replacing the chunk's old one.
+func _install_collision(ch: Chunk, job: Dictionary) -> void:
+	var origin := Vector2(ch.key.x * CHUNK, ch.key.y * CHUNK)
 	var body := StaticBody3D.new()
 	body.name = "Col_%d_%d" % [ch.key.x, ch.key.y]
 	body.collision_layer = COLLISION_LAYER
@@ -422,12 +496,12 @@ func _set_collision(ch: Chunk, on: bool) -> void:
 	body.set_meta(&"terrain", true)
 	body.set_meta(&"damage_receiver", self)
 	var cs := CollisionShape3D.new()
-	if cut.is_empty():
+	if str(job["kind"]) == "heights":
 		var shape := HeightMapShape3D.new()
 		var vc: int = int(CHUNK) + 1
 		shape.map_width = vc
 		shape.map_depth = vc
-		shape.map_data = TerrainMesher.collision_heights(origin, CHUNK, 1.0, _collision_height if _chunk_has_volume(ch.key) else height_at)
+		shape.map_data = job["out"][0]
 		cs.shape = shape
 		# HeightMapShape3D is centred on its origin.
 		cs.position = Vector3(CHUNK * 0.5, 0.0, CHUNK * 0.5)
@@ -436,22 +510,24 @@ func _set_collision(ch: Chunk, on: bool) -> void:
 		# 1 m); volume columns are left out instead of sunk.
 		var tri := ConcavePolygonShape3D.new()
 		tri.backface_collision = true
-		var hole: Callable = volume.is_volume_column if _chunk_has_volume(ch.key) else Callable()
-		tri.set_faces(TerrainMesher.surface_faces(origin, CHUNK, 1.0, height_at, hole, cut))
+		tri.set_faces(job["out"][0])
 		cs.shape = tri
 	body.add_child(cs)
 	body.position = Vector3(origin.x, 0.0, origin.y)
 	_near_root.add_child(body)
+	if ch.body != null:
+		ch.body.queue_free()
 	ch.body = body
 
 
-## True once every chunk within `radius` chunks of pos has a mesh (and collision where needed).
+## True once every chunk within `radius` chunks of pos has a mesh, and its collision when it wants
+## one (and collision where needed).
 func is_ready_around(pos: Vector3, radius: int = 1) -> bool:
 	var c: Vector2i = chunk_of(pos.x, pos.z)
 	for dz: int in range(-radius, radius + 1):
 		for dx: int in range(-radius, radius + 1):
 			var ch: Chunk = _chunks.get(Vector2i(c.x + dx, c.y + dz))
-			if ch == null or ch.mesh_instance == null:
+			if ch == null or ch.mesh_instance == null or (ch.has_collision and ch.body == null):
 				return false
 	return true
 
@@ -666,8 +742,7 @@ func _on_volume_column(col: Vector2i) -> void:
 	if ch != null:
 		_request_mesh(key, maxi(ch.lod, 0), true)
 		if ch.has_collision:
-			_set_collision(ch, false)
-			_set_collision(ch, true)
+			_rebuild_collision(ch, true)
 
 
 ## Tool hits on the ground: shovels dig the heightmap; past its depth limit, into steep faces or
@@ -765,8 +840,7 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 		if ch != null:
 			_request_mesh(key, ch.lod if ch.lod >= 0 else 0, true)
 			if ch.has_collision:
-				_set_collision(ch, false)
-				_set_collision(ch, true)
+				_rebuild_collision(ch, true)
 	var aabb := AABB(center - Vector3(radius, MAX_DIG_DEPTH, radius), Vector3(radius, MAX_DIG_DEPTH, radius) * 2.0)
 	terrain_changed.emit(aabb)
 	Events.terrain_modified.emit(aabb)
