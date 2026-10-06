@@ -131,6 +131,12 @@ We propose five; **two ship in the M1 core loop**, the rest have hooks now.
 *Dragger* (legless crawler — also produced by severing a Hollow's legs), later *Blister*
 (spits spore blisters), *Husk* (fused with debris/riot gear, armoured), *Rammer* (huge, tears
 through walls), *Hollowed hounds*, *Murmurs* (crow flocks that mark you).
+
+**Hollowed hounds** (ADR-0034): dogs the Bloom took, in packs of three to five, more at night and
+when your noise draws them. The first to see you howls and the pack comes. They spread round
+you, bite and break off, and work your scent trail when they lose you. A torch held up keeps the
+ones in front of you off; the one behind still goes for your legs. Climb, shut a door, or hold
+the flame and turn.
 **Sleepers**: dormant Hollowed in POIs (lying, sitting, standing head-down) wake on noise, light
 or line of sight. **Dawn rooting**: Hum survivors collapse into the soil as fungal mounds.
 
@@ -147,13 +153,16 @@ escalating responses to the player (watchers → raids → war parties).
 * **Songbirds** in the canopy and on the ground, **crows** in the clearings and over Pell's
   Crossing. They **flush** when you or a Hollowed come close, or at a loud noise: wingbeats, an
   alarm call, and a sound the Hollowed hear and come to look at. Birds give your position away.
-  Crows circle what put them up, cawing, every caw another mark over your head (the Murmurs, in
-  small).
+  Crows circle what put them up, cawing, every caw another mark over your head.
+* **Murmurs** (ADR-0034): a crow flock you flush may not settle. It follows you low overhead,
+  and every caw is a mark *on you* that the Hollowed come to; more often where the Bloom lies
+  thick. Get under a roof or the canopy until they lose you, shoot into them (and pay for the
+  noise), or wait for nightfall.
 * **The Hum night is silent**: from the evening before the Hum the herds leave and the birds go.
 * **Hunting**: a deer or hare killed with any weapon leaves a carcass that bleeds scent the
   Hollowed follow; butcher it with a knife or an axe for venison or hare, a hide or pelt, bone and
   sinew; roast the meat at a campfire, twist sinew into cordage, cut rawhide strips.
-* Later: wolves, Hollowed hounds, Murmurs that follow you (TD-066).
+* Later: wolves (TD-066).
 
 ## 7. Progression
 
