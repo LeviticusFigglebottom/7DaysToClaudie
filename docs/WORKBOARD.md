@@ -58,7 +58,7 @@ way it never conflicts.
 2. Running now:
    * the hub's agent V: the QA round (screenshots, tour, memory, fixes);
    * the hub's agent R2: RWG v2 Phases 4 and 5 (generator v2, organic towns in generated worlds);
-   * session 2: traders and contracts (ADR-0039, save v7);
+   * session 2: traders and contracts (ADR-0039; no save bump, v7 is the world bundle);
    * session 3: RWG v2 Phase 2, streamed load;
    * session 4: wall-mounted props flush to their walls.
 3. After R2 lands:
