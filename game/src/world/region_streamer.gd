@@ -106,8 +106,13 @@ func setup(p_terrain: TerrainManager, cfg: Dictionary, threads: int = -1) -> voi
 	for rid2: String in terrain.regions:
 		_attached[rid2] = true
 	if not compose_fn.is_valid():
+		# The region's cellars are compiled here too, on the worker: ~70 ms of attach otherwise.
+		var seed: int = (load("res://src/poi/lot_picker.gd") as GDScript).call(&"session_seed")
 		compose_fn = func(rid: String, cancel: Array) -> RegionTerrain:
-			return TerrainComposer.get_or_compose(world, rid, 1.0, Callable(), cancel)
+			var rt: RegionTerrain = TerrainComposer.get_or_compose(world, rid, 1.0, Callable(), cancel)
+			if rt != null and not bool(cancel[0]):
+				rt.set_meta(&"holes", TerrainHoles.from_regions({rid: rt}, seed))
+			return rt
 	if not focus_fn.is_valid():
 		focus_fn = func() -> Array:
 			return [terrain.focus.global_position] if terrain.focus != null and is_instance_valid(terrain.focus) else []
@@ -312,5 +317,9 @@ func _queue_detach(rid: String) -> void:
 	steps.cancel("detach %s" % rid, true)
 	steps.add(["", func() -> void:
 		if _attached.has(rid):
+			var t0: int = Time.get_ticks_usec()
 			terrain.detach_region(rid)
+			var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+			if ms > 50.0:
+				Log.info("stream", "detach %s %.0f ms: %s" % [rid, ms, terrain.attach_parts])
 			_attached.erase(rid), "detach %s" % rid])

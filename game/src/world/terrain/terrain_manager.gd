@@ -257,7 +257,12 @@ func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 	_materials[rid] = _make_region_material(rt)
 	t = _part("material", t)
 	# Cellars of the region's buildings (a new object: workers hold the old one).
-	_region_holes[rid] = TerrainHoles.from_regions({rid: rt})
+	# Compiled on the compose worker when it streamed in (RegionStreamer), else here.
+	if rt.has_meta(&"holes"):
+		_region_holes[rid] = rt.get_meta(&"holes")
+		rt.remove_meta(&"holes")
+	else:
+		_region_holes[rid] = TerrainHoles.from_regions({rid: rt})
 	_publish_holes()
 	t = _part("holes", t)
 	_refresh_chunks(rt.rect)
@@ -283,6 +288,8 @@ func detach_region(rid: String) -> void:
 		return
 	var rt: RegionTerrain = regions[rid]
 	var rect: Rect2 = rt.rect
+	var t: int = Time.get_ticks_usec()
+	attach_parts = {}
 	var next: Dictionary = regions.duplicate()
 	next.erase(rid)
 	_lock.lock()
@@ -290,12 +297,16 @@ func detach_region(rid: String) -> void:
 	_lock.unlock()
 	_build_grid()
 	_materials.erase(rid)
+	t = _part("grid", t)
 	# _base_cache keeps a dug region's pristine heights (4 MB) across the detach: its digs live on
 	# in _deltas and are re-applied over them on the next attach, whatever the object then holds.
 	_region_holes.erase(rid)
 	_publish_holes()
+	t = _part("holes", t)
 	_refresh_chunks(rect)
+	t = _part("chunks", t)
 	region_detached.emit(rid)
+	_part("listeners", t)
 
 
 ## Re-meshes the live near chunks over a rect (plus one chunk around it, whose skirts and normals
