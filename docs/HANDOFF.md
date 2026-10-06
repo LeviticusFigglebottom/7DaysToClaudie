@@ -123,6 +123,7 @@ Snapshot for the next session. Update it when the state changes; delete it once 
     cover, a gunshot, nightfall or time ends it.
   * World settings `hollowed_hounds` and `murmurs`; tuning in `data/config/hounds.json` and the
     crow def's `murmur`.
+  * QA shots `hound_pack` and `murmur_overhead`.
 * **Surfaces, water and sky** (ADR-0019, ADR-0020):
   * Interiors wear in world space.
   * Roofs have trim and tiles that don't repeat.
