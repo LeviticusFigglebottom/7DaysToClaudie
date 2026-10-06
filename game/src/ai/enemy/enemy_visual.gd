@@ -33,6 +33,8 @@ var _placeholder: bool = false
 var _segments: Dictionary = {}
 var _stumps: Dictionary = {}
 var _bob_t: float = 0.0
+## The stand-in is a four-legged one (a hound's, ADR-0034).
+var _quad: bool = false
 ## Idle and shamble variants this body plays (ADR-0028): action name -> the variant to play.
 var _variants: Dictionary = {}
 const SENSE_SHADER: String = "res://assets/shaders/sleeper_sense.gdshader"
@@ -160,12 +162,12 @@ func build(p_model_id: String, height_scale: float, body_scale := Vector3.ONE) -
 		if anim != null:
 			for a: StringName in anim.get_animation_list():
 				var res: Animation = anim.get_animation(a)
-				if String(a).begins_with("idle") or a in [&"walk", &"walk_b", &"walk_limp", &"run", &"crawl", &"attack_structure", &"eat"]:
+				if String(a).begins_with("idle") or a in [&"walk", &"walk_b", &"walk_limp", &"run", &"crawl", &"attack_structure", &"eat", &"track"]:
 					res.loop_mode = Animation.LOOP_LINEAR
 			_pick_variants()
 	else:
 		_placeholder = true
-		_root = _make_placeholder()
+		_root = _make_quad_placeholder() if model_id.begins_with("animals/") else _make_placeholder()
 		add_child(_root)
 
 
@@ -197,6 +199,40 @@ func _make_placeholder() -> Node3D:
 		m.material = p[3]
 		mi.mesh = m
 		mi.position = p[2]
+		root.add_child(mi)
+		_segments[String(p[0])] = mi
+	return root
+
+
+## A hound's stand-in until `make assets` (ADR-0034): a lean grey-brown body on four legs, its
+## head held low and forward (+Z).
+func _make_quad_placeholder() -> Node3D:
+	_quad = true
+	var root := Node3D.new()
+	var coat := StandardMaterial3D.new()
+	coat.albedo_color = Color(0.36, 0.33, 0.29)
+	var growth := StandardMaterial3D.new()
+	growth.albedo_color = Color(0.78, 0.74, 0.62)
+	var parts: Array = [
+		["body_torso", Vector3(0, 0.55, 0), Vector3(PI * 0.5, 0, 0), Vector2(0.15, 0.85), coat],
+		["body_head", Vector3(0, 0.66, 0.5), Vector3(PI * 0.5, 0, 0), Vector2(0.09, 0.32), coat],
+		["growth", Vector3(0, 0.7, -0.05), Vector3(PI * 0.5, 0, 0), Vector2(0.06, 0.4), growth],
+		["leg_fl", Vector3(-0.09, 0.26, 0.26), Vector3.ZERO, Vector2(0.035, 0.52), coat],
+		["leg_fr", Vector3(0.09, 0.26, 0.26), Vector3.ZERO, Vector2(0.035, 0.52), coat],
+		["leg_hl", Vector3(-0.09, 0.26, -0.28), Vector3.ZERO, Vector2(0.04, 0.52), coat],
+		["leg_hr", Vector3(0.09, 0.26, -0.28), Vector3.ZERO, Vector2(0.04, 0.52), coat],
+	]
+	for p: Array in parts:
+		var mi := MeshInstance3D.new()
+		mi.name = p[0]
+		var c := CapsuleMesh.new()
+		var dims: Vector2 = p[3]
+		c.radius = dims.x
+		c.height = dims.y
+		c.material = p[4]
+		mi.mesh = c
+		mi.position = p[1]
+		mi.rotation = p[2]
 		root.add_child(mi)
 		_segments[String(p[0])] = mi
 	return root
@@ -277,6 +313,11 @@ func animate_placeholder(delta: float, speed: float, lying: bool) -> void:
 	if not _placeholder:
 		return
 	_bob_t += delta * (2.0 + speed * 2.5)
+	if _quad:
+		# a lope: the body rocks nose to tail, lying on its side once down
+		_root.rotation = Vector3(0, 0, PI * 0.5) if lying else Vector3(sin(_bob_t * 1.5) * 0.05 * minf(speed, 4.0), 0, 0)
+		_root.position = Vector3(0, 0.0 if lying else absf(sin(_bob_t * 1.5)) * 0.03 * minf(speed, 4.0), 0)
+		return
 	if lying:
 		_root.rotation = Vector3(-PI * 0.5, 0, 0)
 		_root.position = Vector3(0, 0.2, 0.9)
@@ -310,6 +351,8 @@ func limb_at(world_pos: Vector3, owner_body: Node3D) -> String:
 					best = limb
 		return best
 	var local: Vector3 = owner_body.global_transform.affine_inverse() * world_pos
+	if _quad:
+		return "head" if local.z > 0.38 * scale.z else "torso"
 	var h: float = local.y / maxf(scale.y, 0.5)
 	if h > 1.48:
 		return "head"
