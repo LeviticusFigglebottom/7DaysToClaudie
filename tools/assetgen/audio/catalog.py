@@ -21,7 +21,7 @@ def tasks() -> list[Task]:
     for sid, d in sorted(defs.items()):
         outs = registry.outputs_for(d)
         out.append(Task(name=f"snd:{sid}", group="audio", outputs=outs,
-                        sources=[d.module_file, dsp_file, ASSETGEN / "audio" / "registry.py"],
+                        sources=[d.module_file, dsp_file, ASSETGEN / "audio" / "registry.py", *d.sources],
                         params={"sound": sid, "variants": d.variants, "seed": d.seed, "loop": d.loop, "sr": d.sample_rate, "extra": d.params},
                         fn=_run_sound, imports={o: {"type": "wav", "loop": d.loop} for o in outs}))
     return out

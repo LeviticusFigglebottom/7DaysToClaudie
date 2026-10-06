@@ -280,7 +280,7 @@ func _wanted_wanderers(ppos: Vector3) -> int:
 	var rt: RegionTerrain = world.terrain.region_terrain_at(ppos.x, ppos.z)
 	var density: float = 0.6
 	if rt != null:
-		var b: BiomeDef = Content.get_def(&"biome", StringName(rt.biome_at(ppos.x, ppos.z))) as BiomeDef
+		var b: BiomeDef = Content.get_def(&"biome", StringName(_spawn_biome(rt, ppos.x, ppos.z))) as BiomeDef
 		if b != null:
 			density = b.spawn_density
 	var night: bool = Game.session.clock.is_night()
@@ -298,7 +298,7 @@ func _spawn_group(ppos: Vector3) -> void:
 	var rt: RegionTerrain = world.terrain.region_terrain_at(pos.x, pos.z)
 	var table: Dictionary = {"hollow": 10}
 	if rt != null:
-		var b: BiomeDef = Content.get_def(&"biome", StringName(rt.biome_at(pos.x, pos.z))) as BiomeDef
+		var b: BiomeDef = Content.get_def(&"biome", StringName(_spawn_biome(rt, pos.x, pos.z))) as BiomeDef
 		if b != null and not b.spawns.is_empty():
 			table = b.spawns
 	var gs: int = _gamestage()
@@ -314,6 +314,14 @@ func _spawn_group(ppos: Vector3) -> void:
 		if def == null or def.gamestage_min > gs:
 			id = &"hollow"
 		spawn(id, _ground(pos + Vector3(_rng.randf_range(-4, 4), 0.0, _rng.randf_range(-4, 4))))
+
+
+## The biome whose spawns apply at (x, z): an organic town's whole ground spawns as town, not only
+## its streets, which are all the composer paints `town` (ADR-0047).
+func _spawn_biome(rt: RegionTerrain, x: float, z: float) -> String:
+	var composed: String = rt.biome_at(x, z)
+	var wdef: WorldDef = world.get(&"world_def") as WorldDef
+	return wdef.behaviour_biome(composed, x, z) if wdef != null else composed
 
 
 ## A point on dry land at `min_d..max_d` from `center`, out of the player's view (or INF).

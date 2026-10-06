@@ -121,6 +121,8 @@ right import settings (VRAM compression, normal maps, audio loops, glTF post-imp
   fades (no clicks). Loops must be seamless (`loop=True` in the task; generator crossfades the seam).
 * Variants are numbered `<id>_01.wav`, `<id>_02.wav`, … — the Audio autoload picks one at random.
 * Ids are paths under `audio/`: `sfx/axe_chop_wood`, `amb/forest_day`, `voice/hollow_groan`, `ui/page_turn`.
+* A sound module that imports helpers from another declares it, `@sound(..., sources=["ambience.py"])`
+  (beside the module), so editing the helpers rebuilds its sounds (the biome beds do).
 
 ## Adding an asset (checklist)
 1. Write/extend a generator (`blender/generators/*.py`, `textures/gen/*.py` or `audio/sounds/*.py`).

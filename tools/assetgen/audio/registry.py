@@ -9,6 +9,9 @@ Sound modules live in audio/sounds/*.py and register with @sound(...):
 The orchestrator writes <id>.wav (variants=1) or <id>_01.wav ... <id>_NN.wav, normalized and
 faded by dsp.finish(). Loops (loop=True) are imported with forward looping and must be seamless
 (use dsp.make_loop()). Stereo: return shape (N, 2).
+
+A module that imports helpers from another sound module declares it, so editing the helpers
+rebuilds its sounds: `@sound(..., sources=["ambience.py"])` (paths relative to the module's folder).
 """
 from __future__ import annotations
 
@@ -33,6 +36,8 @@ class SoundDef:
     sample_rate: int = 44100
     peak_db: float = -1.0
     params: dict = field(default_factory=dict)
+    # Extra input files (helper modules it imports), hashed with module_file.
+    sources: list = field(default_factory=list)
 
 
 REGISTRY: dict[str, SoundDef] = {}
@@ -40,12 +45,17 @@ _LOADED = False
 
 
 def sound(sound_id: str, *, variants: int = 1, seed: int = 1, loop: bool = False, sample_rate: int = 44100,
-          peak_db: float = -1.0, **params):
+          peak_db: float = -1.0, sources: list[str] | None = None, **params):
     def deco(fn: Callable) -> Callable:
         if sound_id in REGISTRY:
             raise ValueError(f"sound {sound_id} registered twice")
-        REGISTRY[sound_id] = SoundDef(sound_id, fn, pathlib.Path(inspect.getfile(fn)), variants, seed, loop,
-                                      sample_rate, peak_db, params)
+        module_file = pathlib.Path(inspect.getfile(fn))
+        extra = [module_file.parent / s for s in (sources or [])]
+        for e in extra:
+            if not e.is_file():
+                raise ValueError(f"sound {sound_id}: source {e} not found")
+        REGISTRY[sound_id] = SoundDef(sound_id, fn, module_file, variants, seed, loop,
+                                      sample_rate, peak_db, params, extra)
         return fn
     return deco
 

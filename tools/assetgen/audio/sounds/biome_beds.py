@@ -33,7 +33,7 @@ def _tick(sr, r):
                      body_f=dsp.vary(r, 900.0, 0.3), tail=0.2)
 
 
-@sound("amb/burn_day", seed=10101, loop=True, peak_db=-4.5)
+@sound("amb/burn_day", seed=10101, loop=True, peak_db=-4.5, sources=["ambience.py"])
 def burn_day(seed, variant, sr):
     L = 60.0
     n = dsp.ns(L, sr)
@@ -64,7 +64,7 @@ def burn_day(seed, variant, sr):
     return y + ev
 
 
-@sound("amb/burn_night", seed=10102, loop=True, peak_db=-8.6)
+@sound("amb/burn_night", seed=10102, loop=True, peak_db=-8.6, sources=["ambience.py"])
 def burn_night(seed, variant, sr):
     L = 60.0
     n = dsp.ns(L, sr)
@@ -115,7 +115,7 @@ def _fly(sr, r):
     return dsp.normalize(buzz * env)
 
 
-@sound("amb/fen_day", seed=10201, loop=True, peak_db=-6.0)
+@sound("amb/fen_day", seed=10201, loop=True, peak_db=-6.0, sources=["ambience.py"])
 def fen_day(seed, variant, sr):
     L = 60.0
     n = dsp.ns(L, sr)
@@ -169,7 +169,7 @@ def _green_frog(sr, r):
     return dsp.lp(hit, sr, 1400.0)
 
 
-@sound("amb/fen_night", seed=10202, loop=True, peak_db=-6.5)
+@sound("amb/fen_night", seed=10202, loop=True, peak_db=-6.5, sources=["ambience.py"])
 def fen_night(seed, variant, sr):
     L = 60.0
     n = dsp.ns(L, sr)
