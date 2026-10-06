@@ -245,17 +245,27 @@ func _triangle_census(eye: Vector3) -> Dictionary:
 	var total: int = 0
 	for k: String in keys:
 		total += int(by[k][0])
-	for k2: String in keys.slice(0, 25):
+	for k2: String in keys.slice(0, 400):
 		out[k2] = {"triangles": by[k2][0], "instances": by[k2][1], "shadow_casters": by[k2][2]}
 	out["_total_triangles"] = total
 	return out
 
 
-## Distance from the eye to a MultiMesh's bounds (its node origin is the chunk's or the world's).
+## Distance from the eye to a MultiMesh: headless, the dummy renderer keeps neither its AABB nor
+## its instance transforms, so a vegetation chunk's centre comes from its holder ("V_x_y", 64 m
+## chunks; Godot measures visibility ranges from the bounds' centre) and anything else's from its
+## node (a POI's batches sit under the POI).
 func _mm_distance(mmi: MultiMeshInstance3D, eye: Vector3) -> float:
-	var aabb: AABB = mmi.global_transform * mmi.get_aabb()
-	var c: Vector3 = eye.clamp(aabb.position, aabb.end)
-	return c.distance_to(eye)
+	var holder: String = String(mmi.get_parent().name)
+	if holder.begins_with("V_"):
+		var xy: PackedStringArray = holder.substr(2).split("_")
+		if xy.size() == 2:
+			var c := Vector3((int(xy[0]) + 0.5) * TerrainManager.CHUNK, eye.y, (int(xy[1]) + 0.5) * TerrainManager.CHUNK)
+			return c.distance_to(eye)
+	var n: Node = mmi
+	while n != null and n is Node3D and (n as Node3D).global_position == Vector3.ZERO:
+		n = n.get_parent()
+	return (n as Node3D).global_position.distance_to(eye) if n is Node3D else 0.0
 
 
 ## "veg tree grey_fir lod0", "poi kit", "terrain chunk"... from the node's path.
@@ -271,6 +281,10 @@ func _source_name(gi: GeometryInstance3D) -> String:
 					tail = gi.name.rstrip("0123456789@_")
 			elif gi is MeshInstance3D and (gi as MeshInstance3D).mesh != null and (gi as MeshInstance3D).mesh.resource_path != "":
 				tail = (gi as MeshInstance3D).mesh.resource_path.get_file().get_basename()
+			elif gi is MeshInstance3D and _model_of.has((gi as MeshInstance3D).mesh):
+				tail = "mesh " + str(_model_of[(gi as MeshInstance3D).mesh]).split("/")[0]
+			elif gi is MeshInstance3D:
+				tail = "mesh under " + String(gi.get_parent().name).rstrip("0123456789@_-")
 			else:
 				tail = tail.rstrip("0123456789@_-")
 			return "%s %s" % [sys.to_lower(), tail]
