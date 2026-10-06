@@ -22,7 +22,7 @@ uniform float streak_width = 0.0085;
 uniform float splash_size = 0.15;
 uniform float splash_s = 0.24;
 uniform vec2 flake_size = vec2(0.014, 0.034);
-uniform float opacity = 0.6;
+uniform float opacity = 0.72;
 // Fades out toward the column's edge (its half-width).
 uniform float fade_far = 16.0;
 // The particles' lifetime (s): a flake that never lands fades out before its cycle restarts it.
@@ -69,6 +69,8 @@ void vertex() {
 		vec2 q = mat2(vec2(cos(spin), sin(spin)), vec2(-sin(spin), cos(spin))) * VERTEX.xy;
 		world = c + (right * q.x + up * q.y) * s_px;
 		v_variant = floor(fract(cu.w * 7.31) * 15.999);
+		// How many pixels across the flake is (the fragment picks crystal or soft disc by it).
+		v_frame = s_px / max(dist * px, 1e-6);
 		v_alpha *= min(1.0, s * s / (s_px * s_px) * 1.6);
 		// Settled flakes linger a moment, then go.
 		v_alpha *= cu.x > 0.5 ? 1.0 - smoothstep(0.2, 0.6, cu.y) : smoothstep(0.0, 0.6, cu.y) * (1.0 - smoothstep(life - 0.8, life - 0.1, cu.y));
@@ -125,12 +127,16 @@ void fragment() {
 			vec2 q = v_uv * 2.0 - 1.0;
 			a = smoothstep(1.0, 0.4, length(q * vec2(1.0, 2.5) + vec2(0.0, -1.0))) * 0.6;
 		}
-	} else if (has_flakes) {
-		vec2 cell = vec2(mod(v_variant, 4.0), floor(v_variant / 4.0));
-		a = texture(flake_tex, (cell + v_uv) * 0.25).a * 1.3;
 	} else {
 		vec2 q = v_uv * 2.0 - 1.0;
 		a = smoothstep(1.0, 0.25, length(q));
+		if (has_flakes) {
+			// A crystal's thin arms average away in the mips of a flake a few pixels across, which
+			// left falling snow invisible: the atlas shows only up close, a soft disc further off.
+			vec2 cell = vec2(mod(v_variant, 4.0), floor(v_variant / 4.0));
+			float crystal = texture(flake_tex, (cell + v_uv) * 0.25).a * 1.3;
+			a = mix(a, crystal, smoothstep(10.0, 22.0, v_frame));
+		}
 	}
 	float alpha = a * v_alpha * (v_kind > 1.5 ? 0.95 : opacity);
 	// Written so that a NaN is discarded too (every comparison with NaN is false).
@@ -143,7 +149,8 @@ void fragment() {
 	ALPHA = alpha;
 	ROUGHNESS = v_kind > 1.5 ? 0.85 : 0.15;
 	// Water mirrors the sky around it (dark at night, when only lamps, torches and the lightning
-	// light it); the flash shows in every drop.
-	EMISSION = hm_sky_horizon.rgb * (v_kind > 1.5 ? 0.15 : 0.45) + vec3(0.75, 0.8, 1.0) * hm_rain.z * 0.6;
+	// light it), so by day a streak reads lighter than a wall or the road behind it and fades into
+	// the sky itself; the flash shows in every drop.
+	EMISSION = hm_sky_horizon.rgb * (v_kind > 1.5 ? 0.15 : 0.62) + vec3(0.75, 0.8, 1.0) * hm_rain.z * 0.6;
 	BACKLIGHT = v_kind > 1.5 ? vec3(0.5) : vec3(0.85, 0.88, 0.92);
 }
