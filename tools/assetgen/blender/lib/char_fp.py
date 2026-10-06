@@ -69,8 +69,114 @@ FP_NAMES = [b[0] for b in FP_BONES]
 # finger layout in the hand frame: (lateral offset (+ towards thumb), MCP along, segment lengths, radius)
 FINGERS = {"ix": (0.0245, 0.089, (0.041, 0.025, 0.020), 0.0096),
            "md": (0.0075, 0.093, (0.046, 0.028, 0.021), 0.0100),
-           "rg": (-0.0100, 0.089, (0.043, 0.027, 0.020), 0.0094),
-           "pk": (-0.0255, 0.081, (0.034, 0.021, 0.018), 0.0083)}
+           "rg": (-0.0108, 0.089, (0.043, 0.027, 0.020), 0.0094),
+           "pk": (-0.0280, 0.081, (0.034, 0.021, 0.018), 0.0083)}
+
+# Mesh-only hand shape (the joints above stay the skeleton's): radii (m) at the MCP, PIP, DIP and
+# tip of each finger (middle longest and thickest, little finger slimmest) and the nail half-length.
+FINGER_SHAPE = {"ix": ((0.0090, 0.0079, 0.0073, 0.0064), 0.0055),
+                "md": ((0.0092, 0.0081, 0.0075, 0.0066), 0.0058),
+                "rg": ((0.0087, 0.0079, 0.0072, 0.0063), 0.0054),
+                "pk": ((0.0077, 0.0069, 0.0063, 0.0056), 0.0046)}
+THUMB_RADII = (0.0125, 0.0113, 0.0105, 0.0091)    # CMC, MCP, IP, tip
+TIP_PULL = 0.0025                                  # the distal cone stops this short of the tip joint
+# Palm outline in the hand frame (u towards the thumb, w along the hand; m, counter-clockwise):
+# heel, index metacarpal, over the four knuckles, down the little-finger edge. Rounded by
+# PALM_ROUND, so the outline is the skin's.
+PALM_OUTLINE = ((0.0265, 0.004), (0.0320, 0.062), (0.0325, 0.086), (0.0075, 0.096), (-0.0105, 0.092),
+                (-0.0355, 0.077), (-0.0365, 0.045), (-0.0280, 0.006))
+PALM_ROUND = 0.0065
+
+
+def _palm_top(u, w):
+    """Height of the back of the hand over the hand axis (m): arched across the metacarpals
+    (highest over the middle finger's), rising a little towards the wrist."""
+    return 0.0125 - 4.5 * (u - 0.002) ** 2 + 0.0025 * (1.0 - smoothstep(0.0, 0.040, w))
+
+
+def _inset_poly(V, r: float) -> np.ndarray:
+    """A convex counter-clockwise polygon with every edge moved inwards by r."""
+    V = np.asarray(V, dtype=np.float64)
+    n = len(V)
+    lines = []
+    for i in range(n):
+        e = _n(V[(i + 1) % n] - V[i])
+        lines.append((V[i] + np.array([-e[1], e[0]]) * r, e))
+    out = []
+    for i in range(n):
+        (p0, e0), (p1, e1) = lines[i - 1], lines[i]
+        t = np.linalg.solve(np.array([[e0[0], -e1[0]], [e0[1], -e1[1]]]), p1 - p0)[0]
+        out.append(p0 + e0 * t)
+    return np.array(out)
+
+
+def _sd_poly2(p: np.ndarray, V: np.ndarray) -> np.ndarray:
+    """Exact signed distance to a 2D polygon (iq), p (N,2)."""
+    d = ((p - V[0]) ** 2).sum(-1)
+    sgn = np.ones(len(p))
+    n = len(V)
+    for i in range(n):
+        vi, vj = V[i], V[i - 1]
+        e = vj - vi
+        w = p - vi
+        b = w - e[None, :] * np.clip((w @ e) / float(e @ e), 0.0, 1.0)[:, None]
+        d = np.minimum(d, (b * b).sum(-1))
+        c1 = p[:, 1] >= vi[1]
+        c2 = p[:, 1] < vj[1]
+        c3 = e[0] * w[:, 1] > e[1] * w[:, 0]
+        flip = (c1 & c2 & c3) | (~c1 & ~c2 & ~c3)
+        sgn = np.where(flip, -sgn, sgn)
+    return sgn * np.sqrt(d)
+
+
+def _finger_frames(pts, ref):
+    """Per segment (side, nail side, direction): the nail side is `ref` (the back of the hand for
+    the fingers) made perpendicular to the segment."""
+    out = []
+    for a, b in zip(pts[:-1], pts[1:]):
+        d = _n(np.asarray(b) - np.asarray(a))
+        bk = _n(ref - d * float(ref @ d))
+        out.append((np.cross(bk, d), bk, d))
+    return out
+
+
+def _thumb_frames(tp, lat, back):
+    # the thumb is turned about its own axis against the fingers: its nail faces out and back
+    return _finger_frames(tp, _n(lat * 0.8 + back * 0.6))
+
+
+def _finger_sdf(pts, radii, fr, s, squash: float = 0.88, knobs=(1, 2), pads=(0, 1, 2)):
+    """One digit: three tapering phalanges (a little deeper than wide... flattened palm to back by
+    `squash`), joints slightly wider than the shafts either side and proud on the back, and a fleshy
+    pad under each phalanx (the creases fall between them; the last one is the fingertip pulp)."""
+    pts = [np.asarray(p, dtype=np.float64) for p in pts]
+    segs = [(pts[0], pts[1]), (pts[1], pts[2]), (pts[2], pts[3] - fr[2][2] * TIP_PULL * s)]
+    knob = []
+    for ji in knobs:
+        bk = _n(fr[ji - 1][1] + fr[ji][1])
+        dd = _n(fr[ji - 1][2] + fr[ji][2])
+        r = radii[ji]
+        knob.append((pts[ji] + bk * r * 0.06, (r * 1.0, r * 0.93, r * 0.90), np.stack([_n(np.cross(bk, dd)), bk, dd], 1)))
+    pad = []
+    for si in pads:
+        a, b = segs[si]
+        sl, bk, dd = fr[si]
+        ln = float(np.linalg.norm(b - a))
+        r = 0.5 * (radii[si] + radii[si + 1])
+        c = (a + b) * 0.5 + dd * ln * (0.06 if si < 2 else 0.18) - bk * r * 0.30
+        pad.append((c, (r * 0.86, r * 0.70, ln * 0.40 + (r * 0.35 if si == 2 else 0.0)), np.stack([sl, bk, dd], 1)))
+
+    def fn(P):
+        d = None
+        for si, (a, b) in enumerate(segs):
+            ds = S.sd_round_cone_ellip(P, a, b, radii[si], radii[si + 1], squash, fr[si][1])
+            d = ds if d is None else S.smin(d, ds, 0.0015 * s)
+        for c, rr, Rk in knob:
+            d = S.smin(d, S.sd_ellipsoid(P, c, rr, Rk), 0.0020 * s)
+        for c, rr, Rk in pad:
+            d = S.smin(d, S.sd_ellipsoid(P, c, rr, Rk), 0.0015 * s)
+        return d
+    return fn
 
 
 class FPSkeleton(Skeleton):
@@ -163,6 +269,7 @@ class FPModel:
         # The plane through each elbow between the upper arm and the forearm: the rest elbow is bent
         # past 90 deg, so "past the elbow along the upper arm" would put the hand on the upper arm.
         self.el_n = {sd: _n(self.ua[sd].axis + self.fa[sd].axis) for sd, _ in SIDES}
+        self.palm_fn = {}                  # side -> the metacarpal block's SDF (skinning uses it)
 
     def build(self):
         for sd, sx in SIDES:
@@ -181,7 +288,7 @@ class FPModel:
         self.skin.cone(ua.at(-0.1), ua.at(1.0), 0.050 * s, 0.040 * s, k=0.02 * s, squash=0.9, up_hint=ua.fwd)
         self.skin.sphere(fa.at(0.0) - dor * 0.010 * s, 0.020 * s, k=0.016 * s)
         # forearm: a working man's - full near the elbow, flat and wide at the wrist
-        self.skin.cone(fa.at(0.02), fa.at(1.0), 0.041 * s, 0.0285 * s, k=0.022 * s, squash=0.74, up_hint=dor)
+        self.skin.cone(fa.at(0.02), fa.at(1.0), 0.041 * s, 0.0276 * s, k=0.022 * s, squash=0.74, up_hint=dor)
         self.skin.ellipsoid(fa.at(0.30) + dor * 0.004 * s, np.array([0.035, 0.031, 0.105]) * s, R=Rf, k=0.02 * s)
         # brachioradialis ridge on the thumb side, flexor mass on the palm side
         self.skin.ellipsoid(fa.at(0.22) + rad * 0.020 * s + dor * 0.006 * s, np.array([0.018, 0.020, 0.085]) * s,
@@ -206,7 +313,7 @@ class FPModel:
                 t = t0 + (t1 - t0) * k / 6
                 ang = a0 + (a1 - a0) * k / 6 + float(r.uniform(-0.12, 0.12))
                 # sit on the dorsal / radial surface of the forearm cone
-                rr = (0.041 + (0.0285 - 0.041) * t) * s
+                rr = (0.041 + (0.0276 - 0.041) * t) * s
                 c = math.cos(ang * math.pi)
                 sn = math.sin(ang * math.pi)
                 pts.append(fa.at(t) + dor * c * rr * 0.80 + rad * sn * rr * 1.02)
@@ -214,45 +321,112 @@ class FPModel:
                 self.skin.capsule(a, b, vr * s, k=0.004 * s)
 
     def _hand(self, sd, sx):
+        """The working hand, built in the hand frame (u towards the thumb, v the back, w along):
+        a domed metacarpal block (wider than deep, its back arched across the knuckles) with the
+        thenar, hypothenar and distal palm pads under it, raised MCP knuckles and extensor tendons
+        on the back, four separate fingers (each its own field, so the gaps between them survive
+        the union) with knobbly PIP/DIP joints, phalanx pads and rounded tips with inset nails, and
+        a thumb on a thenar mass joined to the index by its web."""
         s = self.s
         j = self.sk.j
         wr, ax, back, lat = j[f"wrist.{sd}"], j[f"axis.{sd}"], j[f"back.{sd}"], j[f"lat.{sd}"]
         R = np.stack([lat, back, ax], 1)
-        # palm block, the back of the hand's gentle arch, heel of the hand
-        pc = wr + ax * 0.051 * s + back * 0.001 * s
-        self.skin.box(pc, np.array([0.0415, 0.0135, 0.043]) * s, R=R, rounding=0.011 * s, k=0.010 * s)
-        self.skin.ellipsoid(wr + ax * 0.052 * s + back * 0.007 * s, np.array([0.038, 0.010, 0.040]) * s, R=R, k=0.008 * s)
-        self.skin.ellipsoid(wr + ax * 0.016 * s - back * 0.002 * s, np.array([0.033, 0.017, 0.023]) * s, R=R, k=0.012 * s)
-        # thenar (thumb ball) and hypothenar pads on the palm side
-        self.skin.ellipsoid(wr + ax * 0.034 * s + lat * 0.023 * s - back * 0.012 * s, np.array([0.018, 0.014, 0.028]) * s,
-                            R=R, k=0.010 * s)
-        self.skin.ellipsoid(wr + ax * 0.045 * s - lat * 0.027 * s - back * 0.010 * s, np.array([0.011, 0.012, 0.032]) * s,
-                            R=R, k=0.010 * s)
+        sk_ = self.skin
+
+        def world(u, v, w):
+            return wr + (lat * u + back * v + ax * w) * s
+
+        def local(p):
+            return ((np.asarray(p) - wr) @ R) / s
+
+        def box_of(pts, m):
+            pts = np.asarray(pts)
+            return pts.min(0) - m * s, pts.max(0) + m * s
+
+        poly = _inset_poly(PALM_OUTLINE, PALM_ROUND)
+
+        def palm(P):
+            q = ((P - wr) @ R) / s
+            u, v, w = q[:, 0], q[:, 1], q[:, 2]
+            d2 = _sd_poly2(np.stack([u, w], -1), poly)
+            top = _palm_top(u, w) - PALM_ROUND
+            bot = -(0.0100 + 0.0035 * smoothstep(0.050, 0.085, w)) + PALM_ROUND
+            dv = np.maximum(v - top, bot - v)
+            out = np.sqrt(np.maximum(d2, 0.0) ** 2 + np.maximum(dv, 0.0) ** 2)
+            return (out + np.minimum(np.maximum(d2, dv), 0.0) - PALM_ROUND) * s
+
+        corners = [world(u, v, w) for u, w in PALM_OUTLINE for v in (-0.02, 0.02)]
+        sk_.union(palm, *box_of(corners, 0.004), k=0.011 * s)
+        self.palm_fn[sd] = palm
+        # heel of the hand over the carpals, blending into the wrist
+        sk_.ellipsoid(world(-0.001, 0.0005, 0.014), np.array([0.0275, 0.0160, 0.020]) * s, R=R, k=0.010 * s)
+        # pads on the palm side: hypothenar (little-finger edge), the distal pad under the knuckles
+        sk_.ellipsoid(world(-0.0250, -0.0072, 0.043), np.array([0.0115, 0.0100, 0.032]) * s, R=R, k=0.008 * s)
+        a_ = j[f"ix_mcp.{sd}"] - back * 0.0100 * s - ax * 0.011 * s
+        b_ = j[f"pk_mcp.{sd}"] - back * 0.0090 * s - ax * 0.010 * s
+        sk_.capsule(a_, b_, 0.0070 * s, k=0.010 * s)
+        # extensor tendons fanning from the wrist to each knuckle, under the skin of the back
+        for key in ("ix", "md", "rg", "pk"):
+            mu, _, mw = local(j[f"{key}_mcp.{sd}"])
+            a_ = world(mu * 0.5, _palm_top(np.array([mu * 0.5]), np.array([0.030]))[0] - 0.0016, 0.030)
+            b_ = world(mu, _palm_top(np.array([mu]), np.array([mw]))[0] - 0.0012, mw - 0.008)
+            sk_.capsule(a_, b_, 0.0019 * s, k=0.005 * s)
+        # thenar eminence on the thumb's metacarpal, and the adductor mass towards the palm
+        cmc, tmcp = j[f"th_cmc.{sd}"], j[f"th_mcp.{sd}"]
+        t1 = _n(tmcp - cmc)
+        tl = _n(lat - t1 * float(lat @ t1))
+        Rt = np.stack([tl, np.cross(t1, tl) * (1 if float(np.cross(t1, tl) @ back) > 0 else -1), t1], 1)
+        sk_.ellipsoid(cmc + (tmcp - cmc) * 0.42 - back * 0.0085 * s - lat * 0.0065 * s,
+                      np.array([0.0150, 0.0120, 0.0270]) * s, R=Rt, k=0.009 * s)
+        sk_.ellipsoid(world(0.0115, -0.0085, 0.052), np.array([0.0125, 0.0075, 0.019]) * s, R=R, k=0.009 * s)
+        # knuckles (metacarpal heads), riding the arch of the back
         for key, (lo, along, segs, rad) in FINGERS.items():
-            pts = [j[f"{key}_mcp.{sd}"], j[f"{key}_pip.{sd}"], j[f"{key}_dip.{sd}"], j[f"{key}_tip.{sd}"]]
-            # knuckle (MCP head) on the back, tendon from the wrist to it
-            self.skin.sphere(pts[0] + back * 0.0045 * s, rad * 0.98 * s, k=0.005 * s)
-            self.skin.capsule(wr + ax * 0.018 * s + lat * lo * 0.55 * s + back * 0.012 * s,
-                              pts[0] + back * 0.009 * s, 0.0026 * s, k=0.006 * s)
-            for si in range(3):
-                r0 = rad * (1.0 - 0.10 * si) * s
-                self.skin.cone(pts[si], pts[si + 1], r0, r0 * 0.9, k=0.0025 * s)
-                if si < 2:   # joint knuckles on the back of the finger
-                    self.skin.sphere(pts[si + 1] + back * r0 * 0.3, r0 * 0.72, k=0.003 * s)
-            # nail: a flat plate on the back of the distal phalanx, its own material
-            fd = _n(pts[3] - pts[2])
-            nail = pts[3] - fd * 0.008 * s + back * rad * 0.62 * s
-            self.skin.ellipsoid(nail, np.array([rad * 0.78, 0.0020, 0.0085]) * s,
-                                R=np.stack([lat, back, fd], 1), k=0.0012 * s, label=L_NAIL)
+            r0 = FINGER_SHAPE[key][0][0]
+            mu, _, mw = local(j[f"{key}_mcp.{sd}"])
+            top = float(_palm_top(np.array([mu]), np.array([mw]))[0])
+            c = world(mu, top - r0 * 0.70, mw + 0.001)
+            sk_.ellipsoid(c, np.array([r0 * 0.98, r0 * 0.95, r0 * 1.05]) * s, R=R, k=0.0045 * s)
+        # the fingers' roots on the palm side: soft pads that meet as the webs between them (the
+        # palm reaches a third of the way up the first phalanges there; the clefts on the back stay
+        # open)
+        for key in ("ix", "md", "rg", "pk"):
+            m_, p_ = j[f"{key}_mcp.{sd}"], j[f"{key}_pip.{sd}"]
+            r0 = FINGER_SHAPE[key][0][0]
+            fl, fb, fd = _finger_frames([m_, p_], back)[0]
+            ln = float(np.linalg.norm(p_ - m_))
+            sk_.ellipsoid(m_ + (p_ - m_) * 0.18 - fb * r0 * 0.45 * s, np.array([r0 * 0.95, r0 * 0.70, ln * 0.26 / s]) * s,
+                          R=np.stack([fl, fb, fd], 1), k=0.006 * s)
+        # fingers: separate fields, each smooth-unioned on its own so the clefts stay open
+        for key in ("ix", "md", "rg", "pk"):
+            pts = [j[f"{key}_{n}.{sd}"] for n in ("mcp", "pip", "dip", "tip")]
+            radii, nail_hl = FINGER_SHAPE[key]
+            fr = _finger_frames(pts, back)
+            fn = _finger_sdf(pts, [r * s for r in radii], fr, s)
+            sk_.union(fn, *box_of(pts, 0.014), k=0.0035 * s)
+            # the nail: a thin curved plate set into the back of the tip, ending at the free edge
+            fd, fl, fb = fr[2][2], fr[2][0], fr[2][1]
+            end = pts[3] - fd * TIP_PULL * s + fd * radii[3] * s
+            rn = radii[3] + (radii[2] - radii[3]) * 0.25
+            nc = end - fd * (nail_hl + 0.0017) * s + fb * (rn * 0.87 - 0.0008) * s
+            sk_.ellipsoid(nc, np.array([rn * 0.76, 0.0014, nail_hl]) * s, R=np.stack([fl, fb, fd], 1),
+                          k=0.0008 * s, label=L_NAIL)
+        # the thumb, and the web between it and the index
         tp = [j[f"th_cmc.{sd}"], j[f"th_mcp.{sd}"], j[f"th_ip.{sd}"], j[f"th_tip.{sd}"]]
-        for si, (r0, r1) in enumerate(((0.0150, 0.0125), (0.0122, 0.0110), (0.0108, 0.0096))):
-            self.skin.cone(tp[si], tp[si + 1], r0 * s, r1 * s, k=0.005 * s)
-        tfd = _n(tp[3] - tp[2])
-        tback = _n(np.cross(tfd, lat) if sd == "L" else np.cross(lat, tfd))
-        if float(tback @ back) < -0.2:
-            tback = -tback
-        self.skin.ellipsoid(tp[3] - tfd * 0.008 * s + tback * 0.0062 * s, np.array([0.0080, 0.0021, 0.0092]) * s,
-                            R=np.stack([_n(np.cross(tback, tfd)), tback, tfd], 1), k=0.0012 * s, label=L_NAIL)
+        tfr = _thumb_frames(tp, lat, back)
+        fn = _finger_sdf(tp, [r * s for r in THUMB_RADII], tfr, s, squash=0.84, knobs=(1, 2), pads=(1, 2))
+        sk_.union(fn, *box_of(tp, 0.016), k=0.0075 * s)
+        web_a = world(0.0250, 0.0015, 0.064)
+        web_b = tp[1] + (tp[2] - tp[1]) * 0.35 - tfr[1][1] * 0.002 * s
+        sk_.capsule(web_a, web_b, 0.0065 * s, k=0.009 * s)
+        # first dorsal interosseous: the muscle filling the web between the two metacarpals
+        sk_.ellipsoid((world(0.022, -0.001, 0.046) + (cmc + tmcp) * 0.5) * 0.5, np.array([0.0105, 0.0085, 0.019]) * s,
+                      R=R, k=0.009 * s)
+        fd, fl, fb = tfr[2][2], tfr[2][0], tfr[2][1]
+        end = tp[3] - fd * TIP_PULL * s + fd * THUMB_RADII[3] * s
+        rn = THUMB_RADII[3] + (THUMB_RADII[2] - THUMB_RADII[3]) * 0.25
+        nc = end - fd * (0.0064 + 0.0017) * s + fb * (rn * 0.84 - 0.0008) * s
+        sk_.ellipsoid(nc, np.array([rn * 0.76, 0.0015, 0.0064]) * s, R=np.stack([fl, fb, fd], 1),
+                      k=0.0008 * s, label=L_NAIL)
 
     # --- sleeve -----------------------------------------------------------------------------
     def _sleeve(self, sd, sx):
@@ -362,10 +536,15 @@ class FPModel:
             for bn, segs in caps.items():
                 dist[bn] = np.min(np.stack([polyline_dist(P, [a, b]) for a, b in segs], 0), 0)
             wr, axh = j[f"wrist.{sd}"], j[f"axis.{sd}"]
-            palm_d = polyline_dist(P, [wr, wr + axh * 0.085 * s])
+            # The hand bone owns the whole metacarpal block, measured like a bone ~8 mm under its
+            # skin (a line down the hand's axis would lose the back of the hand's thumb side to the
+            # thumb's metacarpal, which then folds through it when the thumb closes).
+            palm_d = polyline_dist(P, [wr, wr + axh * 0.085 * s]) * 0.9
+            if sd in self.palm_fn:
+                palm_d = np.minimum(palm_d, np.maximum(self.palm_fn[sd](P), -0.008 * s) + 0.008 * s)
             names = list(caps) + [f"hand.{sd}"]
-            D = np.stack([dist[n] for n in caps] + [palm_d * 0.9], 1)
-            sig = 0.004 * s
+            D = np.stack([dist[n] for n in caps] + [palm_d], 1)
+            sig = 0.0045 * s
             Ew = np.exp(-(D - D.min(1, keepdims=True)) / sig)
             Ew /= Ew.sum(1, keepdims=True)
             for k, n in enumerate(names):

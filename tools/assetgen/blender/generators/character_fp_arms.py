@@ -40,7 +40,11 @@ def _mesh_arm(model, sd: str, sk, h: float, tris: int):
             break
         Vd = M.mesh_arrays(obj)
         t = ((Vd - el) @ F._n(wr - el)) / np.linalg.norm(wr - el)
-        M.decimate(obj, tris, protect=0.6 * np.clip((t - 0.55) / 0.35, 0.0, 1.0), protect_factor=1.0)
+        M.decimate(obj, tris, protect=np.clip(0.6 * (t - 0.55) / 0.35, 0.0, 0.6) + 0.2 * np.clip((t - 0.95) / 0.1, 0.0, 1.0),
+                   protect_factor=1.0)
+    C = M.face_centers(obj)
+    t = ((C - el) @ F._n(wr - el)) / np.linalg.norm(wr - el)
+    print(f"[character_fp_arms] arm.{sd}: {common.triangle_count(obj)} tris, {int((t > 1.0).sum())} faces past the wrist")
     return obj
 
 
@@ -119,7 +123,7 @@ def build(params: dict, outputs: list[str]) -> None:
     s = model.s
     arms = []
     for sd, _ in F.SIDES:
-        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0011)), int(params.get("arm_tris", 9000)))
+        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0011)), int(params.get("arm_tris", 14000)))
         lab = _labels(model, o)
         M.assign_labels(o, lab, F.LABEL_MATERIALS)
         fa = model.fa[sd]
