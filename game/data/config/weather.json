@@ -66,7 +66,12 @@
     "noise_scale": 0.05,
     "height_density": 0.06,
     "volume_size": [200.0, 60.0],
-    "god_rays": 2.4
+    "god_rays": 2.4,
+    "_biome_doc": "TD-151: the fog takes the biome round the camera (its fog_tint against biome_tint_reference, the conifer forest's, hue only, pulled biome_tint of the way from white; sampled at the camera and four points biome_sample_m round it). In a fen the ground fog is (1 + fen_pool.density) times as thick and fen_pool.depth_m deeper, scaling the hour's fog, so it pools at dawn and dusk.",
+    "biome_tint": 0.6,
+    "biome_tint_reference": "#9aa59c",
+    "biome_sample_m": 40.0,
+    "fen_pool": {"density": 0.9, "depth_m": 2.5}
   },
   "dust": {
     "_doc": "Dust motes hanging in the air indoors by day (seen where light shafts cross them): count in a box of [half-width, half-height] metres round the camera, each size metres across, drifting drift metres per second.",
