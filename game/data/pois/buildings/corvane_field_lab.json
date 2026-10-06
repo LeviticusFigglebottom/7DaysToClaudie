@@ -493,7 +493,7 @@
      ],
      "side": "E",
      "type": "door",
-     "state": "closed"
+     "state": "open"
     },
     {
      "id": "decon_shower_in",
@@ -503,7 +503,7 @@
      ],
      "side": "E",
      "type": "door",
-     "state": "closed"
+     "state": "open"
     },
     {
      "id": "decon_outer",
@@ -529,26 +529,6 @@
      "state": "boarded"
     },
     {
-     "id": "block_win_r",
-     "at": [
-      35,
-      16
-     ],
-     "side": "S",
-     "type": "window",
-     "state": "closed"
-    },
-    {
-     "id": "block_win_h",
-     "at": [
-      25,
-      16
-     ],
-     "side": "S",
-     "type": "window",
-     "state": "closed"
-    },
-    {
      "id": "bso_win_w",
      "at": [
       17,
@@ -556,7 +536,7 @@
      ],
      "side": "W",
      "type": "window",
-     "state": "closed"
+     "state": "boarded"
     },
     {
      "id": "receiving_win_e",
@@ -566,8 +546,7 @@
      ],
      "side": "E",
      "type": "window",
-     "state": "broken",
-     "cue": "none"
+     "state": "boarded"
     },
     {
      "id": "prep_door",
@@ -832,7 +811,7 @@
      ],
      "side": "W",
      "type": "window",
-     "state": "closed"
+     "state": "boarded"
     },
     {
      "id": "airlock_win",
@@ -842,7 +821,7 @@
      ],
      "side": "E",
      "type": "window",
-     "state": "closed"
+     "state": "boarded"
     },
     {
      "id": "walk_w21",
@@ -1689,9 +1668,9 @@
      "prop": "lab_berm",
      "pos": [
       14.6,
-      7.6
+      7.3
      ],
-     "rot": 90,
+     "rot": -90,
      "route_ok": true
     },
     {
@@ -1699,9 +1678,9 @@
      "prop": "lab_berm",
      "pos": [
       39.4,
-      7.6
+      7.3
      ],
-     "rot": -90,
+     "rot": 90,
      "route_ok": true
     },
     {
@@ -1837,7 +1816,7 @@
       27.0,
       48.5
      ],
-     "rot": 180
+     "rot": 0
     },
     {
      "prop": "lab_fence",
@@ -2220,9 +2199,9 @@
      "prop": "lab_sign_fence",
      "pos": [
       9.0,
-      10.62
+      10.38
      ],
-     "rot": 0
+     "rot": 180
     },
     {
      "prop": "jersey_barrier",
@@ -2620,10 +2599,10 @@
      "id": "shed_cores_b",
      "prop": "lab_core_boxes",
      "pos": [
-      12.2,
-      22.2
+      8.9,
+      23.0
      ],
-     "rot": 90,
+     "rot": 0,
      "container": "lab_core_box",
      "variant": "worn"
     },
@@ -2641,11 +2620,12 @@
      "id": "salvager_3907",
      "prop": "corpse_remains",
      "pos": [
-      5.0,
-      25.4
+      5.9,
+      24.0
      ],
-     "rot": 95,
-     "variant": "worn"
+     "rot": 10,
+     "variant": "worn",
+     "route_ok": true
     },
     {
      "prop": "lab_sign_core_shed",
@@ -2824,11 +2804,12 @@
      "id": "microscopist",
      "prop": "corpse_remains",
      "pos": [
-      23.6,
-      32.6
+      23.2,
+      33.4
      ],
-     "rot": 60,
-     "variant": "worn"
+     "rot": 80,
+     "variant": "worn",
+     "route_ok": true
     },
     {
      "id": "micro_light",
@@ -2952,7 +2933,7 @@
      ],
      "against": "S",
      "offset": [
-      0.1,
+      -0.15,
       0
      ]
     },
@@ -2960,10 +2941,10 @@
      "id": "marchetti",
      "prop": "corpse_remains",
      "pos": [
-      34.4,
-      24.5
+      34.6,
+      25.0
      ],
-     "rot": 30,
+     "rot": 90,
      "variant": "worn",
      "route_ok": true
     },
@@ -3004,7 +2985,7 @@
      "prop": "office_chair",
      "pos": [
       29.1,
-      32.1
+      32.3
      ],
      "rot": 180
     },
@@ -3275,7 +3256,7 @@
       44.4,
       38.6
      ],
-     "rot": 90,
+     "rot": -90,
      "lit": true,
      "variant": "worn"
     },
@@ -3318,17 +3299,6 @@
       0.5,
       0
      ],
-     "container": "lab_ppe"
-    },
-    {
-     "id": "ppe_rack_b",
-     "prop": "lab_ppe_rack",
-     "at": [
-      27,
-      20
-     ],
-     "against": "E",
-     "variant": "worn",
      "container": "lab_ppe"
     },
     {
@@ -3407,6 +3377,39 @@
       13.5
      ],
      "lit": true
+    },
+    {
+     "prop": "lab_sign_biohazard",
+     "at": [
+      30,
+      10
+     ],
+     "against": "N",
+     "height": 1.6
+    },
+    {
+     "prop": "lab_biohazard_bin",
+     "pos": [
+      30.6,
+      10.5
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      28.6,
+      15.35
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "lab_biohazard_bin",
+     "pos": [
+      35.5,
+      15.5
+     ]
     },
     {
      "id": "plant_shelf",
@@ -3500,11 +3503,12 @@
      "prop": "corpse_remains",
      "pos": [
       27.6,
-      11.0
+      12.0
      ],
-     "rot": 30,
+     "rot": 0,
      "level": -1,
-     "variant": "worn"
+     "variant": "worn",
+     "route_ok": true
     },
     {
      "id": "ward_cot_0",
@@ -3674,7 +3678,7 @@
      "id": "cell_1_cot",
      "prop": "w3_ward_cot",
      "pos": [
-      36.0,
+      36.45,
       11.0
      ],
      "rot": 0,
@@ -3684,7 +3688,7 @@
      "id": "cell_2_cot",
      "prop": "w3_ward_cot",
      "pos": [
-      36.0,
+      36.45,
       15.0
      ],
      "rot": 0,
@@ -4027,8 +4031,8 @@
     {
      "id": "radio_operator",
      "pos": [
-      29.4,
-      33.0
+      29.1,
+      32.3
      ],
      "enemy": "hollow",
      "pose": "sit",
@@ -4156,7 +4160,7 @@
     {
      "id": "cell_1",
      "pos": [
-      36.0,
+      36.45,
       11.0
      ],
      "enemy": "hollow",
@@ -4170,7 +4174,7 @@
     {
      "id": "cell_2",
      "pos": [
-      36.0,
+      36.45,
       15.0
      ],
      "enemy": "blister",
@@ -4280,8 +4284,8 @@
     {
      "note": "lab_tether_3907",
      "pos": [
-      5.3,
-      25.9
+      6.15,
+      24.9
      ],
      "y": 0.05
     },

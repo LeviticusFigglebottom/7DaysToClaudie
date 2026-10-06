@@ -20,10 +20,12 @@ outdoors) that the validator can still prove in every dressing.
   and loot gated to tiers 4-5, with the Program's quest items as the payoff. `tests/unit/test_field_lab.gd`
   holds the lab to this.
 * **The payoff is data**: sealed Bloom core canisters (`bloom_core_canister`, value 600, the most valuable
-  item in the game) and Program research drives (`lab_research_drive`, 220) are `quest` items tagged
-  `trade`, so the quartermaster buys them at `sell_ratio` of their value (ADR-0039); the vault always holds a
-  core (`guaranteed`). A staff antifungal (`lab_antifungal_ampoule`) is the best non-quest pickup. A fetch
-  contract can target either item without any code.
+  item in the game: 240 scrip at Waystation 9) and Program research drives (`lab_research_drive`, 220: 88
+  scrip) are `resource` items tagged `trade`, not `quest` items, because the posts never buy keys, quest
+  items or notes (ADR-0039's `no_buy`); the vault always holds a core (`guaranteed`). A staff antifungal
+  (`lab_antifungal_ampoule`) is the best consumable. No contract targets tier 5 yet; a story contract with a
+  `fetch` objective on `bloom_core_canister` (as `ranger_samples` does for `bloom_sample`) or a `fetch`
+  template whose target band is tier 5 would need data only.
 * **A keycard is a key.** An item of category `key` with a card model (`items/lab/lab_keycard`), opening a
   `locked` door with a `deadbolt` lock (it can't be broken off: bash the door), and a card reader prop
   (`lab_card_reader`, its red lamp on the battery) beside the door as the lock cue. No engine change; the

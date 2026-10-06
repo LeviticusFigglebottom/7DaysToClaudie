@@ -288,7 +288,7 @@ def lab_module_shell(ctx: K.Ctx) -> None:
             p = c + along * (sgn * 0.6) + out * 0.02 + Vector((0, 0, fh + 2.6))
             W.rod(ctx, f"canopy_brace{sgn}", p, p + out * 0.55 + Vector((0, 0, 0.0)), 0.012, DARK, segs=5)
     for sy in (-1, 1):
-        _face(ctx, f"stencil{sy}", 2.2, 0.92, _rect("module_stencil"), (hw * 0.18, sy * (hd + 0.036), z1 - 0.95), 0.0 if sy < 0 else 180.0,
+        _face(ctx, f"stencil{sy}", 1.9, 0.8, _rect("module_stencil"), (0.0, sy * (hd + 0.036), z1 - 0.62), 0.0 if sy < 0 else 180.0,
               wear=0.7)
     # Rust runs under the windows and a gas bottle chained by the skirting.
     for k in range(2):
@@ -457,7 +457,7 @@ def _fence_bay(ctx, L, *, H=2.2, gap=None):
             barbs = [K.box(f"barbs{sy}{k}{b}", (0.006, 0.03, 0.006), center=(-L / 2 + 0.1 + b * 0.2, y, z - 0.008)) for b in range(int(L / 0.2))]
             ctx.add(K.merge_parts(barbs, f"barbs{sy}{k}"), GALV, uv="box", uv_scale=8.0)
     pts = []
-    n = int(L / 0.06)
+    n = int(L / 0.018)
     for i in range(n + 1):
         t = i / n
         a = t * L / 0.22 * math.tau
@@ -1420,9 +1420,12 @@ def lab_decon_shower(ctx: K.Ctx) -> None:
     ring = K.lathe("nozzle_ring", [(0.4, -0.012), (0.424, -0.012), (0.424, 0.012), (0.4, 0.012)], segs=20, close_profile=True)
     K.place(ring, (0, 0, H - 0.18))
     ctx.add(ring, STAINLESS, uv="box", uv_scale=3.0, smooth=40)
+    # The feed: a pipe from the frame's side to the centre and a drop to the ring's hub, four arms out to it.
+    W.rod(ctx, "feed", (-hs, 0, H), (0, 0, H), 0.02, STAINLESS, segs=8)
+    W.rod(ctx, "drop", (0, 0, H), (0, 0, H - 0.18), 0.02, STAINLESS, segs=8)
     for k in range(4):
-        W.rod(ctx, f"spoke{k}", (0, 0, H), ((0.41 if k < 2 else -0.41) if k % 2 == 0 else 0, (0.41 if k == 1 else -0.41) if k % 2 else 0,
-                                           H - 0.18), 0.01, STAINLESS, segs=6)
+        a = k * math.pi / 2
+        W.rod(ctx, f"spoke{k}", (0, 0, H - 0.18), (math.cos(a) * 0.4, math.sin(a) * 0.4, H - 0.18), 0.01, STAINLESS, segs=6)
     for k in range(8):
         a = k * math.tau / 8
         _cy(ctx, f"nozzle{k}", 0.018, 0.04, (math.cos(a) * 0.41, math.sin(a) * 0.41, H - 0.21), DARK, segs=8)
@@ -1448,20 +1451,21 @@ def lab_decon_shower(ctx: K.Ctx) -> None:
 
 
 def _suit(ctx, name, x, y, z_top, mat, r):
-    """A Tyvek coverall on a hanger (front -Y): a hood, a flattened body with arms hanging and legs."""
+    """A Tyvek coverall hung limp from a hanger (front -Y): the hood folded over the hanger, a flattened body, the
+    arms hanging close and the legs ending well clear of the shelf."""
     W.rod(ctx, f"{name}_hanger", (x - 0.2, y, z_top - 0.04), (x + 0.2, y, z_top - 0.04), 0.006, STEEL, segs=5)
-    body = K.blob(f"{name}_body", 0.2, subdiv=2, scale=(1.0, 0.35, 1.9), center=(x, y, z_top - 0.42), rough=0.08, seed=r.randint(0, 999))
+    body = K.blob(f"{name}_body", 0.2, subdiv=2, scale=(1.0, 0.28, 1.55), center=(x, y, z_top - 0.4), rough=0.1, seed=r.randint(0, 999))
     ctx.add(body, mat, uv="box", uv_scale=2.0, smooth=50, patches=0.6)
-    hood = K.blob(f"{name}_hood", 0.1, subdiv=2, scale=(1.0, 0.8, 1.1), center=(x, y + 0.02, z_top + 0.0), rough=0.1, seed=r.randint(0, 999))
+    hood = K.blob(f"{name}_hood", 0.1, subdiv=2, scale=(1.1, 0.45, 0.8), center=(x, y + 0.03, z_top - 0.06), rough=0.15, seed=r.randint(0, 999))
     ctx.add(hood, mat, uv="box", uv_scale=2.0, smooth=50, patches=0.6)
     for sx in (-1, 1):
-        arm = K.tube(f"{name}_arm{sx}", [(x + sx * 0.17, y, z_top - 0.12), (x + sx * 0.22, y - 0.02, z_top - 0.4), (x + sx * 0.2, y - 0.03, z_top - 0.7)],
-                     0.055, segs=8)
+        arm = K.tube(f"{name}_arm{sx}", [(x + sx * 0.16, y, z_top - 0.12), (x + sx * 0.19, y - 0.01, z_top - 0.38), (x + sx * 0.17, y - 0.02, z_top - 0.62)],
+                     [0.05, 0.045, 0.04], segs=8, flat=(1.0, 0.6))
         ctx.add(arm, mat, uv="box", uv_scale=2.0, smooth=50, patches=0.6)
-        leg = K.tube(f"{name}_leg{sx}", [(x + sx * 0.08, y, z_top - 0.75), (x + sx * 0.09, y - 0.01, z_top - 1.1), (x + sx * 0.08, y, z_top - 1.4)],
-                     0.065, segs=8)
+        leg = K.tube(f"{name}_leg{sx}", [(x + sx * 0.08, y, z_top - 0.7), (x + sx * 0.085, y - 0.01, z_top - 0.9), (x + sx * 0.075, y, z_top - 1.06)],
+                     [0.06, 0.055, 0.05], segs=8, flat=(1.0, 0.6))
         ctx.add(leg, mat, uv="box", uv_scale=2.0, smooth=50, patches=0.6)
-    _bx(ctx, f"{name}_zip", (0.012, 0.004, 0.5), (x, y - 0.075, z_top - 0.4), "road_plastic_white", bevel=0.0)
+    _bx(ctx, f"{name}_zip", (0.012, 0.004, 0.45), (x, y - 0.058, z_top - 0.42), "road_plastic_white", bevel=0.0)
 
 
 def lab_ppe_rack(ctx: K.Ctx) -> None:
@@ -1481,7 +1485,7 @@ def lab_ppe_rack(ctx: K.Ctx) -> None:
         if ctx.worn and k == 2:
             continue
         x = -L / 2 + 0.25 + k * (L - 0.5) / (n - 1)
-        _suit(ctx, f"suit{k}", x, 0.0, H - 0.1, "lab_tyvek" if k % 2 == 0 else "lab_tyvek_yellow", r)
+        _suit(ctx, f"suit{k}", x, 0.06, H - 0.1, "lab_tyvek" if k % 2 == 0 else "lab_tyvek_yellow", r)
     # Respirators on hooks.
     for k in range(3):
         x = -L / 2 + 0.2 + k * 0.5
@@ -1493,14 +1497,26 @@ def lab_ppe_rack(ctx: K.Ctx) -> None:
     # Boots and gloves below.
     for k in range(3):
         for s in (-1, 1):
-            x = -L / 2 + 0.25 + k * 0.5 + s * 0.07
+            x = -L / 2 + 0.3 + k * 0.48 + s * 0.07
             boot = K.box(f"boot{k}{s}", (0.11, 0.28, 0.3), bevel=0.04, cuts=(1, 2, 2))
-            K.place(boot, (x, 0.0, 0.26 + 0.15))
+            K.place(boot, (0, 0, 0), (0, 0, 8 * s))
+            K.place(boot, (x, -0.1, 0.26 + 0.15))
             ctx.add(boot, "road_rubber" if k != 1 else "plastic_yellow", uv="box", uv_scale=2.0, smooth=40)
     _bx(ctx, "filters_box", (0.4, 0.3, 0.2), (0.4, 0.0, H + 0.11), "road_cardboard", bevel=0.006)
     if ctx.worn:
-        pile = K.blob("dropped_suit", 0.35, subdiv=2, scale=(1.4, 1.0, 0.25), center=(0.2, -0.5, 0.08), rough=0.25, seed=ctx.seed)
+        # A suit pulled down and trodden flat in front of the rack: a crumpled sheet with its sleeves out.
+        pile = K.grid("dropped_suit", 0.95, 0.55, 10, 7, center=(0.15, -0.55, 0.0))
+        rr = ctx.drnd("pile")
+        for v in pile.data.vertices:
+            v.co.z = 0.012 + 0.05 * max(0.0, 1.0 - ((v.co.x - 0.15) / 0.5) ** 2 - ((v.co.y + 0.55) / 0.3) ** 2) + rr.uniform(0.0, 0.025)
+        pile.data.update()
+        K.crumple(pile, 0.02, scale=8.0, seed=ctx.seed)
+        K.solidify(pile, 0.004, offset=0.0, even=False)
         ctx.add(pile, "lab_tyvek", uv="box", uv_scale=2.0, smooth=50, patches=0.7)
+        for sx in (-1, 1):
+            sl = K.tube(f"sleeve{sx}", [(0.15 + sx * 0.4, -0.5, 0.03), (0.15 + sx * 0.62, -0.62 + sx * 0.05, 0.025),
+                                        (0.15 + sx * 0.78, -0.55, 0.02)], 0.04, segs=7, flat=(1.0, 0.4))
+            ctx.add(sl, "lab_tyvek", uv="box", uv_scale=2.0, smooth=50, patches=0.7)
     _centre_depth(ctx)
 
 
