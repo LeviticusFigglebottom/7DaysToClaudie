@@ -182,12 +182,13 @@ tint (TD-018):
   distance to grey water in the air.
 
 ### Shots
-The screenshot runner gets five weather shots (`wx_*`):
+The screenshot runner gets six weather shots (`wx_*`):
 * rain on Pell's Crossing's street;
 * a storm in the forest at night lit by a strike;
 * misty dawn over the valley;
 * the town under snow;
-* a puddled road after rain.
+* a puddled road after rain;
+* into the low sun through the wood on a misty morning (ground fog and the canopy's god rays).
 
 Shot keys `wet`, `puddles` and `snow_cover` set what the weather has left (the clock stands still
 between shots). `strike` holds a strike's flash for the capture, because software frames take
@@ -208,7 +209,8 @@ default) when the render lock is busy.
 + Snow falls and drifts.
 + Every number is in `data/config/weather.json` or the state defs. The tests cover wetness and
   drying, puddles, snow, gusts, lightning determinism, frame-rate independence, the flash and
-  thunder delay, and ground fog by hour.
+  thunder delay, ground fog by hour, the map's hollows and eaves, and a map that is published
+  round the camera and kept in place until the next one is complete.
 − Five more shader globals: `hm_rain`, `hm_weather_map`, `hm_weather_rect` and two mat4 tables.
   The surface shaders gain about one texture fetch per fragment where it rains or snows. The
   terrain gains two more (the map, twice) where puddles stand. The fog volume costs a 3-D noise
@@ -220,3 +222,6 @@ default) when the render lock is busy.
 − Temporal AA softens fast, thin streaks. They read at game frame rates because a drop moves along
   its own streak, but a streak's ends fade, and the QA captures must freeze the rain.
 − Thunder plays in 2D: it has no direction (TD-091).
+− Left for later: decals ignore the weather (TD-090), lightning strikes nothing (TD-091), the
+  map's resolution and puddles off the terrain (TD-092), snow depth and flakes beyond the column
+  (TD-093).
