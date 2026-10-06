@@ -6,6 +6,7 @@ extends CanvasLayer
 
 var _loading: Control
 var _loading_label: Label
+var _loading_map: LoadingMap
 var _loading_bar: ProgressBar
 var _hud: Control
 var _crosshair: Control
@@ -104,6 +105,11 @@ func _build_loading() -> void:
 	_loading_bar.size = Vector2(520, 10)
 	_loading_bar.show_percentage = false
 	_loading.add_child(_loading_bar)
+	_loading_map = LoadingMap.new()
+	_loading_map.position = Vector2(680, 80)
+	_loading_map.size = Vector2(520, 520)
+	_loading_map.visible = false
+	_loading.add_child(_loading_map)
 	var tip := Label.new()
 	tip.text = "Night is darker than you think. Carry a light — and remember they see it too."
 	tip.add_theme_color_override(&"font_color", Color(0.45, 0.47, 0.44))
@@ -113,11 +119,15 @@ func _build_loading() -> void:
 	_loading.add_child(tip)
 
 
-func show_loading(text: String, progress: float) -> void:
+## `map`: the world's map (random worlds) and `marks` its region states (LoadingMap); a null map
+## leaves the last one shown.
+func show_loading(text: String, progress: float, map: Texture2D = null, marks: Dictionary = {}) -> void:
 	_loading.visible = true
 	_hud.visible = false
 	_loading_label.text = text
 	_loading_bar.value = progress * 100.0
+	if map != null:
+		_loading_map.set_map(map, marks)
 
 
 ## What the loading screen says now ("" once it is hidden).

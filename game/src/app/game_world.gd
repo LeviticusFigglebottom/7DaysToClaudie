@@ -86,7 +86,7 @@ func _process(_delta: float) -> void:
 		_load_meter.frame(ui.loading_text() if ui != null else "")
 	if _load_task >= 0:
 		var st: Array = _loader.status()
-		ui.show_loading(str(st[0]), float(st[1]) * WORKER_SHARE)
+		ui.show_loading(str(st[0]), float(st[1]) * WORKER_SHARE, _loading_map_texture(), _loader.marks())
 		if WorkerThreadPool.is_task_completed(_load_task):
 			WorkerThreadPool.wait_for_task_completion(_load_task)
 			_load_task = -1
@@ -109,6 +109,17 @@ func _process(_delta: float) -> void:
 ## True while the main-thread half of the load runs (modules may queue work with boot_steps()).
 func is_booting() -> bool:
 	return _boot != null
+
+
+## The random world's map for the loading screen, read once its file exists (null otherwise).
+var _map_tex: Texture2D = null
+func _loading_map_texture() -> Texture2D:
+	var path: String = _loader.map_file() if _map_tex == null else ""
+	if path != "" and FileAccess.file_exists(path):
+		var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+		if img != null and not img.is_empty():
+			_map_tex = ImageTexture.create_from_image(img)
+	return _map_tex
 
 
 ## Runs boot steps within the frame's budget, then shows the next one's label.
