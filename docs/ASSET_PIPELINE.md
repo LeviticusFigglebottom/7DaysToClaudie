@@ -69,7 +69,9 @@ right import settings (VRAM compression, normal maps, audio loops, glTF post-imp
 * Units: metres, real-world scale. Blender Z-up.
 * **Front faces Blender −Y** (becomes Godot +Z = `Vector3.MODEL_FRONT`).
 * **Origin at bottom centre** of the footprint. Wall-mounted props: origin on the wall plane,
-  bottom centre, front facing away from the wall (−Y).
+  bottom centre, front facing away from the wall (−Y). POIs stand a prop off its wall by this
+  (PropDef `back` overrides it for a model that can't follow it); test_poi_wall_gaps.gd measures
+  every generated prop against it.
 * Export only through `lib.export.export_glb()` (fixed settings, no embedded images).
 * **Materials are named `M_<material_id>`** (use `lib.materials.assign*`). Godot swaps in
   `res://assets/generated/materials/<material_id>.tres`, defined in

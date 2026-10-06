@@ -374,6 +374,7 @@
     0.81,
     0.7
    ],
+   "back": 0.32,
    "container": "farm_feed_bin",
    "rooms": [
     "barn",

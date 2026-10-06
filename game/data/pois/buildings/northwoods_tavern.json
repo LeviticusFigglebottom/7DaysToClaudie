@@ -220,7 +220,7 @@
         {"prop": "bottles_scatter", "pos": [13.6, 3.2], "rot": 60, "level": -1},
         {"prop": "glass_shards", "pos": [14.5, 4.6], "route_ok": true, "level": -1},
         {"prop": "bed_double", "at": [0, 1], "against": "W", "variant": "worn", "level": 1},
-        {"prop": "safe_small", "pos": [2.15, 0.6], "rot": 180, "container": "civic_gun_safe", "key": "civic_tavern_keys", "id": "bedroom_safe", "level": 1},
+        {"prop": "safe_small", "pos": [2.15, 0.5], "rot": 180, "container": "civic_gun_safe", "key": "civic_tavern_keys", "id": "bedroom_safe", "level": 1},
         {"prop": "nightstand", "at": [0, 3], "against": "W", "id": "bedroom_nightstand", "level": 1},
         {"prop": "dresser", "at": [4, 0], "against": "N", "id": "bedroom_dresser", "variant": "worn", "level": 1},
         {"prop": "wardrobe", "at": [6, 2], "against": "E", "id": "bedroom_wardrobe", "level": 1},

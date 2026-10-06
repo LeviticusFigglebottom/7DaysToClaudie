@@ -123,7 +123,7 @@
         {"prop": "road_sign_clinic", "pos": [4.6, 15.09], "height": 2.3},
         {"prop": "road_plaque_clinic_hours", "pos": [6.9, 15.09], "height": 1.0},
         {"prop": "road_quarantine_notice", "pos": [4.5, 15.12], "height": 1.0},
-        {"prop": "road_plywood_quarantine", "pos": [4.8, 18.4], "rot": -6, "height": 0.0},
+        {"prop": "road_plywood_quarantine", "wall_ok": true, "pos": [4.8, 18.4], "rot": -6, "height": 0.0},
         {"prop": "sawhorse_barricade", "pos": [4.8, 18.8]},
         {"prop": "sawhorse_barricade", "pos": [8.2, 18.6], "rot": 12, "variant": "destroyed"},
         {"prop": "jersey_barrier", "pos": [0.6, 18.4], "rot": 5},

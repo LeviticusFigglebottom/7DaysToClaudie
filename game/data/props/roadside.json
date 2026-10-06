@@ -334,6 +334,7 @@
     1.6,
     0.5
    ],
+   "back": 0.33,
    "rooms": [
     "garage",
     "workshop",
