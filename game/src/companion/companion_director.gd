@@ -15,7 +15,8 @@ extends Node
 ## culls him.
 
 const BODY_ID: StringName = &"companion:ezra"
-const COMMANDS: Array[StringName] = [&"companion.recruit", &"companion.order", &"companion.revive"]
+const COMMANDS: Array[StringName] = [&"companion.recruit", &"companion.order", &"companion.revive", &"companion.give",
+	&"companion.store"]
 const TICK: float = 0.5
 ## Following, he is brought to the player after a respawn, sleep or load when further than this.
 const REJOIN: float = 20.0
@@ -29,6 +30,12 @@ var _tick: float = 0.0
 var _rejoin: bool = true
 ## Tests stand in their own camp listing: () -> Array of {id, def, pos, xf?}.
 var buildings_source: Callable = Callable()
+## His own pack (ADR-0058 phase 2): gather.slots slots, the items' carry caps (two logs). Lives
+## here, not on the body, so it outlasts a respawned body; saved in WorldState.companion.inventory.
+var inventory: Inventory = null
+## What the player last looked at that he could fetch (a target arg for companion.order fetch:
+## {entity} | {veg}), tracked along the view out to fetch.range ({} for nothing yet).
+var looked: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
@@ -36,6 +43,7 @@ func setup_world(w: Node) -> void:
 	cdef = Content.get_def(&"companion", &"ezra") as CompanionDef
 	if cdef == null:
 		return
+	_load_inventory()
 	for c: StringName in COMMANDS:
 		Game.register_command(c, Callable(self, "_cmd_" + String(c).replace(".", "_")))
 	Events.game_saving.connect(_on_game_saving)
@@ -113,7 +121,8 @@ func tick() -> void:
 		_restore(p)
 		return
 	var m: CompanionMind = body.ally
-	if m.downed or m.rising_t > 0.0 or m.order != "follow":
+	_look(p)
+	if m.downed or m.rising_t > 0.0 or not (m.order == "follow" or m.work.returning()):
 		_rejoin = false
 		return
 	var d: float = body.global_position.distance_to(p.global_position)
@@ -181,6 +190,7 @@ func _spawn(pos: Vector3, yaw: float) -> Enemy:
 	e.health = e.max_health
 	e.damage_mult = 1.0
 	e.ally.recruited = recruited()
+	e.ally.inventory = inventory
 	return e
 
 
@@ -209,6 +219,10 @@ func _restore(p: Player) -> void:
 	body.health = maxf(1.0, body.max_health * clampf(float(st.get("health", 1.0)), 0.0, 1.0))
 	var spot: Vector3 = _vec(st.get("spot"))
 	m.set_order(str(st.get("order", "follow")), spot)
+	if CompanionMind.ERRANDS.has(m.order):
+		m.work.from_dict(st.get("work", {}) if st.get("work", {}) is Dictionary else {})
+		if not m.work.active():
+			m.set_order("follow")
 	var dt: float = float(st.get("downed_t", -1.0))
 	if dt >= 0.0:
 		m.go_down(null, dt)
@@ -243,6 +257,11 @@ func _bled_out() -> void:
 	_remove_body()
 	var st: Dictionary = state()
 	st.erase("position")
+	# He loses what he carried.
+	inventory.clear()
+	st.erase("inventory")
+	st.erase("work")
+	st["order"] = "follow"
 	st["downed_t"] = -1.0
 	if GameRules.current().choice("death_penalty") == "permadeath":
 		st["dead"] = true
@@ -262,6 +281,7 @@ func _come_back(p: Player) -> void:
 	st["health"] = cdef.return_health
 	st["order"] = "stay"
 	st["spot"] = []
+	st.erase("work")
 	st["downed_t"] = -1.0
 	_restore(p)
 	if _has_body():
@@ -306,21 +326,256 @@ func _cmd_companion_recruit(args: Dictionary) -> Dictionary:
 	return {"ok": true, "item": item}
 
 
-## {player, order: follow|stay|guard, spot?: [x, y, z] (default: where he stands)}.
+## {player, order: follow|stay|guard|gather|fetch, spot?: [x, y, z], kind?: (gather) a key of
+## gather.kinds (default wood), target?: (fetch) {entity: id} | {veg: id} (default: what the player
+## last looked at)}. Stay and guard hold `spot` (default: where he stands); gather works within
+## gather.radius of `spot` (default: what the player last looked at within fetch.range, else where
+## the player stands). Store at base is companion.store.
 func _cmd_companion_order(args: Dictionary) -> Dictionary:
 	var ps: PlayerState = _ps(args)
 	var kind: String = str(args.get("order", ""))
 	if ps == null or not recruited() or not _has_body():
-		return {"ok": false, "error": "no companion"}
-	if not CompanionMind.ORDERS.has(kind):
-		return {"ok": false, "error": "unknown order '%s'" % kind}
+		return _err("no companion")
+	if not CompanionMind.ORDERS.has(kind) or kind == "store":
+		return _err("unknown order '%s'" % kind)
 	var m: CompanionMind = body.ally
 	if m.downed or m.rising_t > 0.0:
-		return {"ok": false, "error": "he is down"}
+		return _err("he is down")
 	var spot: Vector3 = _vec(args.get("spot"))
-	m.set_order(kind, spot)
+	var p: Player = _player()
+	match kind:
+		"gather":
+			var gk: String = str(args.get("kind", "wood"))
+			if cdef.gather_items(gk).is_empty():
+				return _err("he can't gather '%s'" % gk)
+			if spot == Vector3.INF:
+				var lt: Dictionary = CompanionWork.resolve(looked)
+				spot = lt["pos"] if not lt.is_empty() and p != null and _flat(lt["pos"], p.global_position) <= _fetch_range() \
+					else (p.global_position if p != null else body.global_position)
+			elif p != null and _flat(spot, p.global_position) > _fetch_range():
+				return _err("too far off")
+			var room: bool = false
+			for it: String in cdef.gather_items(gk):
+				room = room or _room(StringName(it))
+			if not room:
+				m.bark("full")
+				return _err("his pack is full")
+			m.set_order("gather", spot)
+			m.work.start_gather(gk, spot)
+		"fetch":
+			var ft: Dictionary = fetch_target(args)
+			if not bool(ft.get("ok", false)):
+				return ft
+			m.set_order("fetch")
+			m.work.start_fetch(ft["target"])
+		_:
+			m.set_order(kind, spot)
 	m.bark(kind)
 	return {"ok": true, "order": kind}
+
+
+## {player}: he hands the player everything he carries that fits; the rest lands at their feet.
+func _cmd_companion_give(args: Dictionary) -> Dictionary:
+	var ps: PlayerState = _ps(args)
+	if ps == null or not recruited() or not _has_body() or body.ally.downed:
+		return _err("no companion")
+	if inventory.is_empty():
+		return _err("he carries nothing")
+	if not _near(ps, 6.0):
+		return _err("too far")
+	var p: Player = _player()
+	var n: int = 0
+	var dropped: int = 0
+	for s: ItemStack in inventory.stacks.duplicate():
+		var piece: ItemStack = inventory.take_from(s, s.count)
+		n += piece.count
+		dropped += hand_over(piece, p)
+	body.ally.bark("given")
+	return {"ok": true, "moved": n - dropped, "dropped": dropped}
+
+
+## {player}: he takes what he carries to the nearest storage piece of the player's base (within
+## store.range of him) and puts what fits into it.
+func _cmd_companion_store(args: Dictionary) -> Dictionary:
+	var ps: PlayerState = _ps(args)
+	if ps == null or not recruited() or not _has_body():
+		return _err("no companion")
+	var m: CompanionMind = body.ally
+	if m.downed or m.rising_t > 0.0:
+		return _err("he is down")
+	if inventory.is_empty():
+		return _err("he carries nothing")
+	var piece: Node3D = nearest_storage(body.global_position)
+	if piece == null:
+		return _err("no storage at your base within %d m" % int(CompanionDef.fnum(cdef.store, "range", 250.0)))
+	m.set_order("store")
+	m.work.start_store(piece)
+	m.bark("store")
+	return {"ok": true, "order": "store", "container": String(piece.get(&"piece_id"))}
+
+
+static func _err(why: String) -> Dictionary:
+	return {"ok": false, "error": why}
+
+
+# --- Errands: what he may take, where he hands it over ------------------------------------------
+
+## His own pack for a command's `owner` (PlayerActions: the gathering and inventory commands).
+func inventory_of(owner: StringName) -> Inventory:
+	return inventory if owner == BODY_ID else null
+
+
+func _load_inventory() -> void:
+	var saved: Variant = state().get("inventory", {}) if Game.session != null else {}
+	inventory = Inventory.from_dict(saved) if saved is Dictionary and not (saved as Dictionary).is_empty() else Inventory.new()
+	inventory.owner_id = BODY_ID
+	inventory.max_slots = int(CompanionDef.fnum(cdef.gather, "slots", 12.0))
+	inventory.max_bulk = 0.0
+	inventory.enforce_carry_max = true  # two logs on the shoulder, like the player
+
+
+func _room(item: StringName) -> bool:
+	return inventory.capacity_for(ItemStack.make(item, 1)) > 0
+
+
+func _fetch_range() -> float:
+	return CompanionDef.fnum(cdef.fetch, "range", 60.0)
+
+
+## Validates a fetch: args.target (default: what the player last looked at) resolved, within
+## fetch.range of the player, something he can take and has room for. {ok, target} or {ok: false, error}.
+func fetch_target(args: Dictionary = {}) -> Dictionary:
+	var arg: Variant = args.get("target", looked)
+	if not arg is Dictionary or (arg as Dictionary).is_empty():
+		return _err("nothing to fetch: look at it first")
+	var t: Dictionary = CompanionWork.resolve(arg)
+	if t.is_empty():
+		return _err("it's gone")
+	var p: Player = _player()
+	if p == null or _flat(t["pos"], p.global_position) > _fetch_range():
+		return _err("too far off")
+	match str(t["what"]):
+		"log":
+			if not _room(&"log"):
+				return _err("his shoulder is full")
+		"item":
+			if not _room((t["node"] as ItemDrop).stack.item_id):
+				return _err("his pack is full")
+		"plant", "tree":
+			var inst: VegetationScatter.Instance = t["inst"]
+			var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
+			if str(t["what"]) == "tree":
+				var veg: Node = world.get(&"vegetation")
+				if sp.hp > CompanionDef.fnum(cdef.gather, "max_tree_hp", 90.0):
+					return _err("too big a tree for him")
+				if veg == null or veg.call(&"body_for", t["key"], inst) == null:
+					return _err("too far off")
+				if not _room(&"log"):
+					return _err("his shoulder is full")
+			else:
+				if sp.hp > CompanionWork.PLANT_HP:
+					return _err("he can't take that")
+				var room: bool = false
+				for it: Variant in sp.yields.keys():
+					room = room or _room(StringName(str(it)))
+				if not room:
+					return _err("his pack is full")
+	return {"ok": true, "target": t}
+
+
+## A short name for what a target arg is ("the log", "Huckleberry Bush"; "" for nothing).
+func describe(arg: Dictionary) -> String:
+	var t: Dictionary = CompanionWork.resolve(arg)
+	match str(t.get("what", "")):
+		"log":
+			return "the log"
+		"item":
+			var d: ItemDef = (t["node"] as ItemDrop).stack.def()
+			return d.display_name if d != null else "it"
+		"plant", "tree":
+			var sp: SpeciesDef = Content.get_def(&"species", (t["inst"] as VegetationScatter.Instance).species) as SpeciesDef
+			return sp.display_name if sp != null else "it"
+	return ""
+
+
+## The nearest storage piece of the player's base within store.range of `pos` (null for none).
+func nearest_storage(pos: Vector3) -> Node3D:
+	var building: Node = world.get(&"building") if world != null else null
+	if building == null:
+		return null
+	var best: Node3D = null
+	var best_d: float = CompanionDef.fnum(cdef.store, "range", 250.0)
+	for v: Variant in (building.get(&"pieces") as Dictionary).values():
+		var piece: StructurePiece = v as StructurePiece
+		if piece == null or not is_instance_valid(piece) or piece.storage_slots() <= 0 or piece.inventory == null:
+			continue
+		var d: float = piece.global_position.distance_to(pos)
+		if d < best_d:
+			best = piece
+			best_d = d
+	return best
+
+
+## Gives the player `st` (world.pickup_stack); what doesn't fit lands at their feet. -> how many
+## were dropped.
+func hand_over(st: ItemStack, p: Player) -> int:
+	var r: Dictionary = Game.execute(&"world.pickup_stack", {"player": p.state.id, "stack": st})
+	var left: int = int(r.get("left", st.count))
+	if left > 0:
+		var rest: ItemStack = st.duplicate_stack()
+		rest.count = left
+		drop_at_feet(rest, p)
+	return left
+
+
+## Lays a stack down in front of the player: logs as loose logs across their path, anything else
+## as a dropped item.
+func drop_at_feet(st: ItemStack, p: Player) -> void:
+	var fwd: Vector3 = -p.camera.global_transform.basis.z if p.camera != null else Vector3.FORWARD
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length() > 0.01 else Vector3.FORWARD
+	var at: Vector3 = p.global_position + fwd * 1.4 + Vector3.UP * 0.4
+	var loose: Node = world.get(&"loose")
+	if st.item_id == &"log" and loose != null and loose.has_method(&"spawn_log"):
+		for i: int in st.count:
+			loose.call(&"spawn_log", at + fwd * 0.5 * i + Vector3.UP * 0.3 * i, Basis(Vector3.UP, atan2(fwd.x, fwd.z)), &"")
+		return
+	ItemDrop.spawn(world, st, at)
+
+
+## What the player looks at, out to fetch.range: a loose item or log, a tree, or a plant, stone or
+## deadfall along the view (kept while they look at him to give the order).
+func _look(p: Player) -> void:
+	if p.camera == null or not p.is_inside_tree():
+		return
+	var from: Vector3 = p.camera.global_position
+	var dir: Vector3 = -p.camera.global_transform.basis.z
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir * _fetch_range(), PlayerInteraction.MASK)
+	q.exclude = [p.get_rid()]
+	var hit: Dictionary = p.get_world_3d().direct_space_state.intersect_ray(q)
+	var t: Dictionary = {}
+	if not hit.is_empty():
+		var col: Node = hit["collider"] as Node
+		if col != null and _has_body() and (col == body or body.is_ancestor_of(col)):
+			return
+		var it: Object = PlayerInteraction.find_interactable(col)
+		if it is LogEntity or it is ItemDrop:
+			t = {"entity": String(it.get(&"entity_id"))}
+		elif col != null and col.has_meta(&"veg_id"):
+			t = {"veg": String(col.get_meta(&"veg_id"))}
+	if t.is_empty():
+		var veg: Node = world.get(&"vegetation")
+		if veg != null and veg.has_method(&"pick_harvestable"):
+			var reach: float = from.distance_to(hit["position"]) if not hit.is_empty() else _fetch_range()
+			var h: HarvestTarget = veg.call(&"pick_harvestable", from, dir, reach + 0.3) as HarvestTarget
+			if h != null:
+				t = {"veg": String(VegetationScatter.instance_id(h.key, h.inst.index))}
+	if not t.is_empty():
+		looked = t
+
+
+static func _flat(a: Vector3, b: Vector3) -> float:
+	return Vector2(a.x - b.x, a.z - b.z).length()
 
 
 ## {player}: a bandage or first aid kit (consumed) gets him up off the ground.
@@ -375,9 +630,12 @@ func open_card() -> void:
 # --- Save --------------------------------------------------------------------------------------------
 
 func _on_game_saving(_slot: String) -> void:
-	if cdef == null or Game.session == null or not recruited() or is_out() or not _has_body():
+	if cdef == null or Game.session == null or not recruited():
 		return
 	var st: Dictionary = state()
+	st["inventory"] = inventory.to_dict()
+	if is_out() or not _has_body():
+		return
 	var m: CompanionMind = body.ally
 	st["position"] = _arr(body.global_position)
 	st["yaw"] = body.rotation.y
@@ -385,6 +643,7 @@ func _on_game_saving(_slot: String) -> void:
 	st["downed_t"] = m.downed_t if m.downed else -1.0
 	st["order"] = m.order
 	st["spot"] = _arr(m.spot) if m.spot != Vector3.INF else []
+	st["work"] = m.work.to_dict()
 	if not st.has("out_until_day"):
 		st["out_until_day"] = -1
 
