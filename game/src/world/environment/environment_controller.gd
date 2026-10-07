@@ -146,15 +146,7 @@ func _ready() -> void:
 
 func _load_sky_textures() -> void:
 	var base: String = "res://assets/generated/textures/"
-	var cloud: Texture2D = load(base + "sky_cloud_noise.png") if ResourceLoader.exists(base + "sky_cloud_noise.png") else null
-	if cloud == null:
-		var nz := FastNoiseLite.new()
-		nz.frequency = 0.006
-		nz.fractal_octaves = 6
-		var img: Image = nz.get_seamless_image(512, 512)
-		img.convert(Image.FORMAT_RGBA8)
-		img.generate_mipmaps()
-		cloud = ImageTexture.create_from_image(img)
+	var cloud: Texture2D = load(base + "sky_cloud_noise.png") if ResourceLoader.exists(base + "sky_cloud_noise.png") else _fallback_clouds()
 	sky_mat.set_shader_parameter("cloud_tex", cloud)
 	var stars: Texture2D = load(base + "sky_stars.png") if ResourceLoader.exists(base + "sky_stars.png") else _fallback_stars()
 	sky_mat.set_shader_parameter("star_tex", stars)
@@ -167,6 +159,43 @@ func _load_sky_textures() -> void:
 				var d: float = Vector2(x - 31.5, y - 31.5).length() / 31.5
 				m.set_pixel(x, y, Color(0.9, 0.9, 0.85, clampf((1.0 - d) * 8.0, 0.0, 1.0)))
 		sky_mat.set_shader_parameter("moon_tex", ImageTexture.create_from_image(m))
+
+
+## The stand-in cloud noise (no generated assets), kept for the process so a reload reuses it.
+static var _clouds: ImageTexture = null
+## The worker task making its image, until _exit_tree joins it.
+static var _cloud_task: int = -1
+
+
+## A flat grey now, the noise once a worker has made it (TD-197): the 512² seamless noise with
+## mipmaps is ~120 ms, which was nearly all of the boot's `environment` step. set_image runs on
+## the main thread (call_deferred from the worker), as WaterSystem's stand-in normal maps do.
+static func _fallback_clouds() -> Texture2D:
+	if _clouds != null:
+		return _clouds
+	var flat := Image.create_empty(1, 1, false, Image.FORMAT_RGBA8)
+	flat.fill(Color(0.5, 0.5, 0.5))
+	var tex := ImageTexture.create_from_image(flat)
+	_clouds = tex
+	_cloud_task = WorkerThreadPool.add_task(func() -> void:
+		tex.set_image.call_deferred(_cloud_image()), false, "sky clouds")
+	return tex
+
+
+static func _cloud_image() -> Image:
+	var nz := FastNoiseLite.new()
+	nz.frequency = 0.006
+	nz.fractal_octaves = 6
+	var img: Image = nz.get_seamless_image(512, 512)
+	img.convert(Image.FORMAT_RGBA8)
+	img.generate_mipmaps()
+	return img
+
+
+func _exit_tree() -> void:
+	if _cloud_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_cloud_task)
+		_cloud_task = -1
 
 
 static func _fallback_stars() -> Texture2D:

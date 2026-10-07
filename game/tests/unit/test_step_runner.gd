@@ -86,3 +86,18 @@ func test_cancel_drops_queued_steps_by_name() -> void:
 	r.budget_ms = 1000.0
 	r.run_frame()
 	assert_eq(log, ["region b mesh"])
+
+
+func test_a_step_using_solo_share_of_the_budget_ends_the_frame() -> void:
+	var r := StepRunner.new()
+	r.budget_ms = 40.0
+	r.solo_share = 0.25
+	r.add(["Heavy", func() -> void:
+		OS.delay_msec(12)
+		log.append("heavy"), "heavy"])
+	r.add(_step("light"))
+	r.add(_step("lighter"))
+	r.run_frame()
+	assert_eq(log, ["heavy"], "a step over a quarter of the budget runs alone")
+	r.run_frame()
+	assert_eq(log, ["heavy", "light", "lighter"], "light steps still share a frame")

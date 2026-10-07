@@ -199,6 +199,8 @@ func _on_world_loaded() -> void:
 	SaveSystem.fix_composer_changes(session, world_def, TerrainComposer.VERSION)
 	_boot = StepRunner.new()
 	_boot.budget_ms = BOOT_BUDGET_MS
+	# A step that used half the frame ends it: the next may be a heavy one (TD-197).
+	_boot.solo_share = 0.5
 	_boot.step_ran.connect(_on_boot_step)
 	_boot.add_all([
 		["Laying the ground…", _boot_terrain, "terrain"],

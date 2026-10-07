@@ -62,7 +62,7 @@ func setup_world(w: Node) -> void:
 				if seen.has(key):
 					continue
 				seen[key] = true
-				_todo.append(_add_lake.bind(wb))
+				_todo.append(_prepare_lake(wb))
 			else:
 				# Same world river sampled at identical arc lengths in every region: merge by arc.
 				var parts: Dictionary = river_parts.get(str(wb["id"]), {})
@@ -79,32 +79,70 @@ func setup_world(w: Node) -> void:
 			merged["points"].append(parts[k][0])
 			merged["widths"].append(parts[k][1])
 			merged["levels"].append(parts[k][2])
-		_todo.append(_add_river_piece.bind(merged))
+		_todo.append(_prepare_river(merged))
 	# A tool or test without a booting world gets every body of water now.
 	if not (w.has_method(&"is_booting") and bool(w.call(&"is_booting"))):
-		for c: Callable in _todo:
-			c.call()
+		for job: Dictionary in _todo:
+			_finish(job, _tree_lines(job["probes"]))
 		_todo.clear()
+		return
+	# Booting: the tree lines (nearly all of a body's cost: the Tamsin's 543 points were ~105 ms)
+	# are measured on workers while the boot goes on; the boot step below makes the meshes.
+	for job: Dictionary in _todo:
+		_start_tree_lines(job)
 
 
-## Lakes and river pieces still to build: a 10 km world has dozens, about 2.6 s in one frame.
-var _todo: Array[Callable] = []
+## Lakes and river pieces still to build ({kind, wb, probes, parts, ...}, see _prepare_lake and
+## _prepare_river): a 10 km world has dozens, about 2.6 s in one frame.
+var _todo: Array[Dictionary] = []
 ## Main-thread time the boot step spends on them per frame.
 const BOOT_SLICE_MS: float = 30.0
+## Tree-line probe points per worker task (each point is up to 84 terrain samples).
+const PROBES_PER_TASK: int = 48
 
 
 ## The water bodies as one boot step, a few a frame (GameWorld runs it right after this module's).
+## Each waits for its tree-line tasks, so the step waits (and ends the frame) until they finish.
 func boot_steps() -> Array:
 	if _todo.is_empty():
 		return []
 	return [["Filling the rivers…", func() -> bool:
 		var t0: int = Time.get_ticks_usec()
 		while not _todo.is_empty():
-			var c: Callable = _todo.pop_front()
-			c.call()
+			var cols: Variant = _collect_tree_lines(_todo[0])
+			if cols == null:
+				return false
+			_finish(_todo.pop_front(), cols)
 			if float(Time.get_ticks_usec() - t0) / 1000.0 >= BOOT_SLICE_MS:
 				break
 		return _todo.is_empty(), "water bodies"]]
+
+
+## Queues a body's tree lines on worker tasks, each with its own result slot (TD-104's rule:
+## a task writes only into a slot made for it before it starts).
+func _start_tree_lines(job: Dictionary) -> void:
+	var probes: PackedVector3Array = job["probes"]
+	var parts: Array[Dictionary] = []
+	for from: int in range(0, probes.size(), PROBES_PER_TASK):
+		var part: Dictionary = {"out": PackedColorArray(), "task": -1}
+		var chunk: PackedVector3Array = probes.slice(from, from + PROBES_PER_TASK)
+		part["task"] = WorkerThreadPool.add_task(func() -> void: part["out"] = _tree_lines(chunk), false, "water tree line")
+		parts.append(part)
+	job["parts"] = parts
+
+
+## A body's tree-line colours once all its tasks are done (null while any still runs).
+func _collect_tree_lines(job: Dictionary) -> Variant:
+	var parts: Array[Dictionary] = job["parts"]
+	for part: Dictionary in parts:
+		if not WorkerThreadPool.is_task_completed(int(part["task"])):
+			return null
+	var cols := PackedColorArray()
+	for part: Dictionary in parts:
+		WorkerThreadPool.wait_for_task_completion(int(part["task"]))
+		part["task"] = -1
+		cols.append_array(part["out"])
+	return cols
 
 
 func _make_material(flow: float) -> ShaderMaterial:
@@ -161,25 +199,59 @@ func _exit_tree() -> void:
 	for t: int in _noise_tasks:
 		WorkerThreadPool.wait_for_task_completion(t)
 	_noise_tasks.clear()
+	# A world left while still booting: its bodies' tree-line tasks read the terrain.
+	for job: Dictionary in _todo:
+		for part: Dictionary in job.get("parts", []):
+			if int(part["task"]) >= 0:
+				WorkerThreadPool.wait_for_task_completion(int(part["task"]))
+				part["task"] = -1
 
 
+## Builds a body of water now (tests and tools; the boot measures the tree lines on workers).
 func _add_lake(wb: Dictionary) -> void:
+	var job: Dictionary = _prepare_lake(wb)
+	_finish(job, _tree_lines(job["probes"]))
+
+
+func _add_river_piece(wb: Dictionary) -> void:
+	var job: Dictionary = _prepare_river(wb)
+	_finish(job, _tree_lines(job["probes"]))
+
+
+func _finish(job: Dictionary, cols: PackedColorArray) -> void:
+	if job["kind"] == "lake":
+		_finish_lake(job, cols)
+	else:
+		_finish_river(job, cols)
+
+
+## A lake's outline and the points whose tree line its vertices take (x, level, z).
+func _prepare_lake(wb: Dictionary) -> Dictionary:
 	var poly := PackedVector2Array()
 	for p: Array in wb["polygon"]:
 		poly.append(Vector2(float(p[0]), float(p[1])))
 	var grown: Array[PackedVector2Array] = Geometry2D.offset_polygon(poly, LAKE_OFFSET, Geometry2D.JOIN_ROUND)
 	var outline: PackedVector2Array = grown[0] if not grown.is_empty() else poly
+	var level: float = float(wb["level"])
+	var probes := PackedVector3Array()
+	for v: Vector2 in outline:
+		probes.append(Vector3(v.x, level, v.y))
+	return {"kind": "lake", "wb": wb, "poly": poly, "outline": outline, "probes": probes}
+
+
+func _finish_lake(job: Dictionary, cols: PackedColorArray) -> void:
+	var wb: Dictionary = job["wb"]
+	var poly: PackedVector2Array = job["poly"]
+	var outline: PackedVector2Array = job["outline"]
 	var idx: PackedInt32Array = Geometry2D.triangulate_polygon(outline)
 	if idx.is_empty():
 		return
 	var level: float = float(wb["level"])
 	var verts := PackedVector3Array()
 	var uvs := PackedVector2Array()
-	var cols := PackedColorArray()
 	for v: Vector2 in outline:
 		verts.append(Vector3(v.x, level, v.y))
 		uvs.append(v * 0.1)
-		cols.append(_tree_line(v.x, v.y, level))
 	# triangulate_polygon emits every triangle with a positive (x, z) cross product whatever the
 	# outline's winding, and that is clockwise seen from above: a front face, as is. (This used to
 	# be flipped, which turned every lake face down, and back-face culling hid it.)
@@ -194,7 +266,19 @@ func _add_lake(wb: Dictionary) -> void:
 			(_lake_grid[key] as Array).append(_lakes.size() - 1)
 
 
-func _add_river_piece(wb: Dictionary) -> void:
+## A river piece and the points whose tree line its vertex pairs take (centre x, level, centre z).
+func _prepare_river(wb: Dictionary) -> Dictionary:
+	var pts: Array = wb["points"]
+	var levels: Array = wb["levels"]
+	var probes := PackedVector3Array()
+	if pts.size() >= 2:
+		for i: int in pts.size():
+			probes.append(Vector3(float(pts[i][0]), float(levels[i]), float(pts[i][1])))
+	return {"kind": "river", "wb": wb, "probes": probes}
+
+
+func _finish_river(job: Dictionary, tree_lines: PackedColorArray) -> void:
+	var wb: Dictionary = job["wb"]
 	var pts: Array = wb["points"]
 	var widths: Array = wb["widths"]
 	var levels: Array = wb["levels"]
@@ -222,7 +306,7 @@ func _add_river_piece(wb: Dictionary) -> void:
 		var w: float = half * 2.0
 		uvs.append(Vector2(0.0, along / w))
 		uvs.append(Vector2(1.0, along / w))
-		var tl: Color = _tree_line(c.x, c.y, lvl)
+		var tl: Color = tree_lines[i]
 		cols.append(tl)
 		cols.append(tl)
 		if i > 0:
@@ -270,6 +354,16 @@ func _add_mesh(name_: String, verts: PackedVector3Array, uvs: PackedVector2Array
 	mi.material_override = mat
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
+
+
+## _tree_line for each (x, level, z). Pure reads of the terrain (canopy_at reads the regions' biome
+## and vegetation masks, height_at takes the terrain lock, as the far-tile jobs do): worker-safe.
+func _tree_lines(probes: PackedVector3Array) -> PackedColorArray:
+	var out := PackedColorArray()
+	out.resize(probes.size())
+	for i: int in probes.size():
+		out[i] = _tree_line(probes[i].x, probes[i].z, probes[i].y)
+	return out
 
 
 ## How high the far bank's trees stand over the water at (x, z), seen toward +X, +Z, -X and -Z
