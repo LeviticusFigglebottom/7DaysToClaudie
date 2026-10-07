@@ -1,0 +1,303 @@
+{
+ "_doc": "Wilderness set pieces, round 5: props of the Treehouse Holdout (w5_treehouse_holdout), a family's plank huts and decks in three big firs joined by rope bridges, with the burned-out cabin and the frost-killed garden below. Models: tools/assetgen/blender/generators/props_wild5_treehouse.py -> models/props/<id>[_worn].glb; catalog tools/assetgen/blender_catalogs/props_wild5_treehouse.py. Materials are shared sets (no new ones). size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin (shifted by back). The trunk's box is its bole only (roots and crown are visual); railings, rope rails and the pulley lift stand with their back on a deck's open edge.",
+ "defs": [
+  {
+   "id": "w5_treehouse_trunk",
+   "name": "Platform Fir",
+   "description": "A big grey fir the decks were built round: a flared, root-buttressed bole rising through the deck's hole, ledger blocks lag-bolted on where the decks bear at 2.85 m and 5.85 m, dead stubs low down and a drooping crown of bough tiers from 10.8 m to the leader at 18 m, high over the huts (worn: the bark clawed off in long gouges to two metres where the Hollowed stood and waited, a dead branch snapped and hanging). Origin at the foot of the bole; the collision box is the bole.",
+   "tags": [
+    "structure",
+    "vegetation",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_trunk",
+    "worn": "props/w5_treehouse_trunk_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.9,
+    14.0,
+    0.9
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_stilt",
+   "name": "Deck Stilt",
+   "description": "A peeled pole stilt on a flat footing stone, 2.95 m to the underside of a deck, a bearer block on top and two knee braces nailed in under the deck above head height (worn: mossed up one side, a brace split and hanging off its nail).",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_stilt",
+    "worn": "props/w5_treehouse_stilt_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.24,
+    2.95,
+    0.24
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_rail",
+   "name": "Deck Railing",
+   "description": "A metre of pole railing along a deck's open edge: a peeled post and two sapling rails lashed to it at 1.0 m and 0.5 m, so nobody walks off in the dark (worn: the mid rail snapped and hanging).",
+   "tags": [
+    "structure",
+    "stairwell",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_rail",
+    "worn": "props/w5_treehouse_rail_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    1.0,
+    1.06,
+    0.05
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_rope_rail",
+   "name": "Rope Bridge Handline",
+   "description": "A metre of a rope bridge's side: a thin post, a sagging hand line at 1.0 m and a lower line at 0.5 m, cord drops netting them down to the deck edge (worn: the lower line parted and trailing, half the cords gone).",
+   "tags": [
+    "structure",
+    "stairwell",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_rope_rail",
+    "worn": "props/w5_treehouse_rope_rail_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 80,
+   "size": [
+    1.0,
+    1.06,
+    0.05
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_bridge_planks",
+   "name": "Rope Bridge Decking",
+   "description": "A metre of rope-bridge decking: split planks laid across the way with gaps between, rope stringers along both edges tied down at every plank, and under the floor the two foot ropes the bridge hangs from (worn: a plank gone, one cracked through). Laid over a bridge cell's floor; no collision.",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_bridge_planks",
+    "worn": "props/w5_treehouse_bridge_planks_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.0,
+    0.05,
+    1.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_ladder_pulled",
+   "name": "Pulled-Up Ladder",
+   "description": "The front ladder, hauled up for the last time and left lying on its deck: two peeled rails with lashed rungs, the hauling rope still tied to the top rung and coiled beside it, its end cut (worn: a rung broken, the coil kicked loose). It lies flat; no collision.",
+   "tags": [
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_ladder_pulled",
+    "worn": "props/w5_treehouse_ladder_pulled_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.9,
+    0.1,
+    2.8
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_pulley_lift",
+   "name": "Pulley Lift",
+   "description": "A peeled gallows post on a deck's edge with an arm out over the railing and an iron sheave: the rope runs down to a bushel basket waiting on the ground and back up to a cleat, the slack coiled on the deck (worn: the rope cut a metre under the arm, the basket tipped over below). Its back is on the edge; the arm, rope and basket hang out past it. No collision.",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_pulley_lift",
+    "worn": "props/w5_treehouse_pulley_lift_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.3,
+    2.55,
+    0.3
+   ],
+   "back": 0.15,
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_rain_barrel",
+   "name": "Rain Barrel",
+   "description": "A stave barrel under a blue tarp catch lashed to four poles and sagging to a hole over the bung: three iron hoops, half a lid, a wooden spigot and a tin cup on a nail (worn: the tarp torn away to one corner, a hoop slipped, the staves green). The box is the barrel.",
+   "tags": [
+    "exterior",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_rain_barrel",
+    "worn": "props/w5_treehouse_rain_barrel_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    0.7,
+    0.92,
+    0.7
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_garden_bed",
+   "name": "Raised Garden Bed",
+   "description": "A raised bed of split logs filled with dark soil: rows of frost-killed stalks, two bean teepees tied with twine and their dead vines, a rotten squash (worn: a teepee pushed over, the soil scratched up). The box is the bed; the poles are visual.",
+   "tags": [
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_garden_bed",
+    "worn": "props/w5_treehouse_garden_bed_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.45,
+    0.42,
+    1.12
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_garden_fence",
+   "name": "Deer Fence",
+   "description": "Two metres of stick-and-wire deer fence: peeled posts, a top pole and chicken wire stapled from a bottom board to 1.6 m (worn: a post leaning out, the wire sagging off it).",
+   "tags": [
+    "fence",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_garden_fence",
+    "worn": "props/w5_treehouse_garden_fence_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    2.1,
+    1.65,
+    0.12
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_treehouse_fallen_rafters",
+   "name": "Fallen Rafters",
+   "description": "Charred rafters and roof boards fallen in when the cabin burned, lying crossed with the highest leaning up to 1.2 m, over a heap of ash and nails (worn: broken shorter, the ash rained flat). No collision.",
+   "tags": [
+    "debris"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_fallen_rafters",
+    "worn": "props/w5_treehouse_fallen_rafters_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.6,
+    1.25,
+    1.8
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "living",
+    "bedroom"
+   ]
+  },
+  {
+   "id": "w5_treehouse_stores_chest",
+   "name": "Stores Chest",
+   "description": "The family's stores chest: a plank box on runners with rope handles, a hinged lid with a hasp and an open padlock hanging, STORES in white paint and a tally of jars scratched beside it (worn: the lid split along a board, the paint flaked).",
+   "tags": [
+    "furniture",
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w5_treehouse_stores_chest",
+    "worn": "props/w5_treehouse_stores_chest_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.2,
+    0.56,
+    0.6
+   ],
+   "container": "w5_treehouse_stores",
+   "blocks_sight": false,
+   "rooms": [
+    "storage"
+   ]
+  }
+ ]
+}

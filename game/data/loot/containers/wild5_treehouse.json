@@ -1,0 +1,10 @@
+{
+ "_doc": "Containers of the Treehouse Holdout (w5_treehouse_holdout), wilderness set pieces round 5 (containers/wild5_treehouse.json -> tables/wild5_treehouse.json).",
+ "defs": [
+  {"id": "w5_treehouse_pantry", "name": "Kitchen Hut Shelf", "loot_table": "w5_treehouse_pantry", "slots": 6, "search_time": 1.6, "noise": 3},
+  {"id": "w5_treehouse_bunk_locker", "name": "Footlocker", "loot_table": "w5_treehouse_bunk_locker", "slots": 8, "search_time": 1.8, "noise": 4},
+  {"id": "w5_treehouse_shed", "name": "Shed Tool Chest", "loot_table": "w5_treehouse_shed", "slots": 6, "search_time": 2.0, "noise": 5},
+  {"id": "w5_treehouse_cabin", "name": "Scorched Trunk", "loot_table": "w5_treehouse_cabin", "slots": 4, "search_time": 1.8, "noise": 4},
+  {"id": "w5_treehouse_stores", "name": "Stores Chest", "loot_table": "w5_treehouse_stores", "slots": 10, "search_time": 2.2, "noise": 5}
+ ]
+}

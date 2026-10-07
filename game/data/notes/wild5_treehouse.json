@@ -1,0 +1,33 @@
+{
+ "_doc": "Readable notes of the Treehouse Holdout (w5_treehouse_holdout), wilderness set pieces round 5. No note names a town: the firs stand in any forest. Items: items/wild5_treehouse.json note_<id>.",
+ "defs": [
+  {
+   "id": "w5_treehouse_diary",
+   "title": "Josie's Diary, a Page",
+   "style": "handwritten",
+   "author": "Josie Pruett",
+   "body": "Dad has been promising me a treehouse in the big firs since I was eight. He built three in nine days once the Hollowed came round the cabin. Uncle Curtis did the bridges. Mom says it's the ugliest house in the valley and she's never been so glad of anything.\nThey can't climb. That's the whole trick. They stand at the bottom with their faces turned up and wait, all night, and in the morning they're still there, and Dad says good, let them wait.\nThree of them got in the cabin while we were up a tree. They wouldn't come out and Mom couldn't stand the scratching. Dad poured the lamp oil on the porch and we watched it burn from up here. Grandpa Hal cried, it was his mother's cabin. Nobody's allowed to talk about it."
+  },
+  {
+   "id": "w5_treehouse_rules",
+   "title": "Tree Rules, on a Board",
+   "style": "handwritten",
+   "author": "Dale Pruett, and the others after",
+   "body": "TREE RULES\n1. Ladders UP at sundown. No exceptions.\n2. Nobody goes down alone.\n3. Boil the barrel water. The Cordon radio says the Bloom rides the rain.\n4. Garden by daylight. Two on the ground, one on the deck with the rifle.\n5. If you're bitten, you SAY SO.\nUnder it, in pencil: 6. Front ladder stays up. We use the back one and the shed hatch. - D.\nUnder that: 7. Nest key's in the tea tin. Nobody touches the stores but me. - Marnie\nAt the bottom, cut in with a knife: Garden's gone to frost. We're eating the seed potatoes."
+  },
+  {
+   "id": "w5_treehouse_curtis",
+   "title": "Note Under a Pillow",
+   "style": "handwritten",
+   "author": "Curtis Pruett",
+   "body": "Dale. I went down the back ladder Tuesday night, alone, rule two. The old root cellar under the cabin floor had potatoes in it still, I could smell them through the ash. One of the three from the fire was down there. It wasn't dead. It got my hand before I got the hatch shut.\nI didn't say. Rule five. I know. The kids were hungry and the potatoes were good and I thought if I just kept my glove on.\nThere's threads under the skin now, grey, like mould on bread. Hal's coughing too and he never went down at all. Bolt the bunk hut from your side. Don't let Josie in here. I'm sorry about the potatoes. I'm sorry about all of it."
+  },
+  {
+   "id": "w5_treehouse_dale",
+   "title": "Last Page, the Nest",
+   "style": "handwritten",
+   "author": "Dale Pruett",
+   "body": "Josie went down the back ladder at first light with the pack and the .22. I told her keep to the creek and walk till she finds the Cordon trucks at the river, and don't look back up at the trees. She looked back the whole way.\nCurtis and Hal are in the bunk hut. Marnie's in the kitchen hut. She stopped talking on Sunday and stood at the stove all Monday with no fire in it. I came up here with the stores and had Josie padlock the door on me before she went, and put the key back in her mother's tea tin. When I turn I'd sooner be shut in the highest place I ever built than walk off a deck after her.\nThey couldn't climb. I was right about that. It was never the climbing. It was the garden going to frost and the barrels and the potatoes. Hunger's what brought every one of us down. The threads are in my hands now. I'll sit with the stores till I can't.\nIf you're reading this, take the food. It was always meant for whoever made it up here."
+  }
+ ]
+}
