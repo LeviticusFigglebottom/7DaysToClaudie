@@ -418,7 +418,9 @@
     "winter_leaf_loss": 0.0,
     "sway_height": 1000.0,
     "stiffness": 10.0,
-    "flutter_strength": 0.0
+    "flutter_strength": 0.0,
+    "mip_alpha_scale": 0.0,
+    "coverage_dither": 1.0
    }
   },
   "farm_trough_water": {
