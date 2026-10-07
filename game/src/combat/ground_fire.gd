@@ -254,14 +254,18 @@ func _build_fx() -> void:
 	rng.seed = hash(global_position)
 	var n: int = int(spec.get("flames", 7))
 	var size: float = float(spec.get("flame_size", 0.75))
-	# One tall column in the middle where the bottle burst, a ring of lower ones round it.
+	# One tall clump in the middle where the bottle burst, lower clumps where the fuel ran, and a
+	# carpet of short flames over the whole patch so it reads as burning ground, not candles.
 	for i: int in n:
-		var p: GPUParticles3D = _flames(size * (1.25 if i == 0 else rng.randf_range(0.6, 1.0)), radius * (0.18 if i == 0 else 0.5))
+		var p: GPUParticles3D = _flames(size * (1.3 if i == 0 else rng.randf_range(0.65, 1.0)), radius * (0.22 if i == 0 else 0.14), 22)
 		var a: float = TAU * float(i) / float(maxi(1, n - 1)) + rng.randf_range(-0.3, 0.3)
-		var rr: float = 0.0 if i == 0 else radius * rng.randf_range(0.35, 0.7)
+		var rr: float = 0.0 if i == 0 else radius * rng.randf_range(0.3, 0.72)
 		p.position = Vector3(cos(a) * rr, 0.05, sin(a) * rr)
 		add_child(p)
 		_fx.append(p)
+	var carpet: GPUParticles3D = _flames(size * 0.45, radius * 0.75, 90)
+	add_child(carpet)
+	_fx.append(carpet)
 	var embers: GPUParticles3D = _embers()
 	add_child(embers)
 	_fx.append(embers)
@@ -280,9 +284,9 @@ func _build_fx() -> void:
 
 
 ## Licking flames over a patch `spread` m across: flipbook fire, additive, rising and shrinking.
-func _flames(size: float, spread: float) -> GPUParticles3D:
+func _flames(size: float, spread: float, amount: int) -> GPUParticles3D:
 	var p := GPUParticles3D.new()
-	p.amount = 14
+	p.amount = amount
 	p.lifetime = 0.7
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	p.visibility_aabb = AABB(Vector3(-spread - size, -0.2, -spread - size), Vector3(2.0 * (spread + size), size * 3.0, 2.0 * (spread + size)))

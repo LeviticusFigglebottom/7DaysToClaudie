@@ -8,7 +8,7 @@
       "ignite_noise": 18.0, "crackle_noise": 9.0, "crackle_every": 2.5,
       "light": {"color": "#ff8a3c", "energy": 3.2, "range": 12.0, "flicker": 0.45},
       "sight_range": 18.0, "sight_energy": 1.6,
-      "flames": 7, "flame_size": 0.75
+      "flames": 9, "flame_size": 0.9
     }
   }
 }

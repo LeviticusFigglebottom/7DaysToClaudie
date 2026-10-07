@@ -151,7 +151,7 @@ keys below are the defaults.
 | C or Ctrl | Crouch or stand (a toggle): slower, quieter, harder to see. Needed to disarm traps and dismantle |
 | Space | Jump (8 stamina). At a sill, fence or crate 0.3–1.3 m high: climb over or onto it. In deep water: hold to swim up |
 | E | Interact. Hold it to search, harvest, drink or fill bottles at water, butcher and dismantle |
-| Left mouse | Use what you hold: swing, fire, throw a stone, set down a can chime. While building: place the ghost or the carried log |
+| Left mouse | Use what you hold: swing, fire, set down a can chime. A stone or a molotov: hold to draw back (longer throws further), let go to throw; a stone lands as a noise the Hollowed go to look at. A molotov: the first press lights its rag (lighter or torch in your pack; don't hold it lit too long), the next throws it into a patch of fire. While building: place the ghost or the carried log |
 | Right mouse | Hold to guard (melee weapon, light or bare hands). Food, drink or medicine in hand: use it. Revolver: reload. Spear: throw. Placing a blueprint: cancel |
 | 1–6, mouse wheel | Toolbelt slots (press the held one again to put it away); the wheel cycles them |
 | F | Turn the lighter, torch or flashlight in your hand on or off |
