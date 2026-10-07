@@ -40,6 +40,9 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
   tools/setup/vendor_gut.py && git checkout game/addons/gut` (then `make import`) is enough for
   check, validate and test. Add `make setup` and `make assets` (about 2.5 h the first time) only
   when you need generated models or renders.
+* **Never idle.** Keep your container busy: run independent work in parallel with subagents in
+  worktrees (one Godot process each, one render at a time). When your queue runs thin, message the
+  hub for new work instead of ending your turn with nothing running.
 * **Status.** End each turn with a short status to the hub: what landed, what's next, blockers.
 
 ## Active streams and the files they own
