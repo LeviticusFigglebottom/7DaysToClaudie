@@ -393,7 +393,7 @@ func _draw_ai() -> bool:
 	for e: Enemy in ai.call(&"enemies_in_radius", p, 80.0):
 		var st: String = Enemy.State.keys()[e.state]
 		var col: Color = {"CHASE": Color.RED, "ATTACK": Color.RED, "BREAK": Color.ORANGE, "INVESTIGATE": Color.YELLOW, "SLEEP": Color(0.5, 0.5, 1.0), "HORDE": Color.MAGENTA}.get(st, Color(0.7, 0.9, 0.7))
-		_label(e.global_position + Vector3.UP * 2.2, "%s %s\nhp %d aw %.2f" % [e.def.id, st, int(e.health), e.awareness], col, 40)
+		_label(e.global_position + Vector3.UP * 2.2, "%s %s\nhp %d aw %.2f%s" % [e.def.id, st, int(e.health), e.awareness, (" notice %.2f" % e.get(&"_notice")) if float(e.get(&"_notice")) > 0.0 else ""], col, 40)
 		if e.state != Enemy.State.SLEEP and e.state != Enemy.State.DEAD:
 			_line(e.global_position + Vector3.UP, e.target_pos + Vector3.UP * 0.5, col)
 		n += 1

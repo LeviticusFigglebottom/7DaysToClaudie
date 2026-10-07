@@ -9,13 +9,26 @@ extends RefCounted
 enum Threat { NONE, ALERT, FLEE }
 
 
+## The share of this animal's sight at which a person shows. lit: their stance, movement, perks and
+## carried light in full light (Stimuli.detection_range with light 1 and dark_sight 1); light: the
+## light falling on them (Stimuli.light_at, the sky's light fed since 733dd80). The animal keeps
+## senses.dark_sight of its sight in pitch dark (deer and hares see well by moon and starlight;
+## the default 0.15 is a person's eyes); a carried light shows whatever the dark.
+static func visibility(def: WildlifeDef, lit: float, light: float, own_light: bool = false) -> float:
+	if own_light:
+		return clampf(lit, 0.05, 1.25)
+	var dark: float = def.sense("dark_sight", 0.15)
+	return clampf(lit * clampf(dark + light * (1.0 - dark), 0.12, 1.25), 0.05, 1.25)
+
+
 ## How a person at `threat_pos` registers with an animal at `pos`. visibility: the share of the
-## animal's sight range at which this person shows (Stimuli light/stance/movement, 0..1.25).
-## wind: the direction the wind blows towards (XZ, normalised), strength 0..1.5.
+## animal's sight range at which this person shows (visibility() above, 0..1.25: the dark is
+## already in it, so there is no separate night cut). wind: the direction the wind blows towards
+## (XZ, normalised), strength 0..1.5.
 static func person_threat(def: WildlifeDef, pos: Vector3, threat_pos: Vector3, visibility: float, crouched: bool,
-		wind: Vector2, wind_strength: float, night: bool = false) -> Threat:
+		wind: Vector2, wind_strength: float) -> Threat:
 	var d: float = Vector2(pos.x - threat_pos.x, pos.z - threat_pos.z).length()
-	var sight: float = def.sense("sight", 50.0) * clampf(visibility, 0.05, 1.25) * (0.45 if night else 1.0)
+	var sight: float = def.sense("sight", 50.0) * clampf(visibility, 0.05, 1.25)
 	var flee: float = def.sense("flee", 20.0) * (0.55 if crouched else 1.0)
 	var alert: float = def.sense("alert", 40.0) * (0.6 if crouched else 1.0)
 	if downwind(pos, threat_pos, wind, wind_strength) and d < def.sense("smell", 40.0) * clampf(0.5 + wind_strength, 0.5, 1.5):
