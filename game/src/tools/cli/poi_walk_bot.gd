@@ -810,13 +810,13 @@ func _open_doors(op: Dictionary, leg: Dictionary) -> void:
 		_track()
 
 
-## Whether a body at `p` stands where the leaf swings (door-local +Z side, within the leaf's
-## reach of its hinge): opening it there would sweep the leaf through the capsule.
+## Whether a body at `p` stands where the leaf swings (the door-local side Door.swing turns it to,
+## within the leaf's reach of its hinge): opening it there would sweep the leaf through the capsule.
 func _in_sweep(d: PoiPieces.Door, p: Vector3) -> bool:
 	var lp: Vector3 = d.global_transform.affine_inverse() * p
 	var hinge: Vector3 = d.pivot.position
 	var reach: float = d.leaf_local.origin.x * 2.0 + Player.RADIUS + 0.05
-	return lp.z > -Player.RADIUS and Vector2(lp.x - hinge.x, lp.z - hinge.z).length() < reach
+	return lp.z * d.swing > -Player.RADIUS and Vector2(lp.x - hinge.x, lp.z - hinge.z).length() < reach
 
 
 ## Before opening a door whose leaf would swing through the body, steps where a player would stand
