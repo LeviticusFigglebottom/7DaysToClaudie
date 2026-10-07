@@ -408,6 +408,8 @@ func _spawn_player() -> void:
 	player.camera.make_current()
 	player.bind_state(p)
 	player.input_enabled = false
+	# Still until _finish_spawn: the ground's collision arrives while "Finding your feet" waits.
+	player.freeze(true)
 	player.died.connect(_on_player_died)
 	# Bound to the id, not the state: a lambda capturing `p` would form a reference cycle
 	# (state -> progression -> connection -> lambda -> state) and leak the whole player.
@@ -516,6 +518,7 @@ func _finish_spawn() -> void:
 	var ground: float = terrain.ground_below(pos)
 	if pos.y < ground + 0.2 or pos.y > ground + 30.0:
 		player.global_position = Vector3(pos.x, ground + 0.4, pos.z)
+	player.freeze(false)
 	_place_spawn_props()
 	_check_body_budget()
 	_load_meter.spawned()

@@ -229,6 +229,10 @@ func _run() -> void:
 	var pieces_before: int = b.pieces.size()
 	var day_before: int = game.session.clock.day()
 	var old_id: int = w.get_instance_id()
+	# Where and which way the player stands: Continue must put them back there (player report 3).
+	var at_save: Vector3 = w.player.global_position
+	var yaw_save: float = w.player.rotation.y
+	var deaths_save: int = ps.deaths
 	ok(bool(game.call(&"save_game", "smoke")), "saved")
 	ok(bool(game.call(&"load_game", "smoke")), "load started")
 	await frames(3)
@@ -242,6 +246,12 @@ func _run() -> void:
 		var ps2: PlayerState = w2.player.state
 		ok(ps2.progression.perk_rank(&"packhorse") == 1 and is_equal_approx(ps2.inventory.max_bulk, bulk_after), "progression and carry capacity restored")
 		ok(w2.supply_drops != null and (w2.supply_drops as SupplyDrops).drops.size() == 1, "supply drop restored")
+		await seconds(1.0)
+		var at_load: Vector3 = w2.player.global_position
+		ok(Vector2(at_load.x - at_save.x, at_load.z - at_save.z).length() < 0.5 and absf(at_load.y - at_save.y) < 1.0 and w2.player.is_on_floor(),
+			"the player stands where they saved (%.2f m off)" % at_load.distance_to(at_save))
+		ok(absf(angle_difference(w2.player.rotation.y, yaw_save)) < 0.01, "the player faces the saved way")
+		ok(ps2.stats.alive and ps2.deaths == deaths_save, "the player survives arriving (deaths %d)" % ps2.deaths)
 	_finish()
 
 
