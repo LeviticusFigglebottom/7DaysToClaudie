@@ -16,7 +16,7 @@ func test_hold_classes_by_item() -> void:
 	var want: Dictionary = {
 		&"stone_axe": &"one_hand", &"hatchet": &"one_hand", &"machete": &"one_hand", &"kitchen_knife": &"one_hand",
 		&"claw_hammer": &"one_hand", &"crude_spear": &"spear", &"stone_club": &"club", &"steel_pipe": &"club",
-		&"shovel": &"two_hand", &"torch": &"light_left", &"flashlight": &"flashlight", &"lighter": &"light_left",
+		&"shovel": &"two_hand", &"torch": &"light_left", &"flashlight": &"flashlight", &"lighter": &"lighter",
 		&"revolver": &"pistol", &"canned_beans": &"food", &"water_bottle_clean": &"bottle", &"cloth_bandage": &"held",
 		&"stone": &"held", &"can_chime": &"held",
 	}
