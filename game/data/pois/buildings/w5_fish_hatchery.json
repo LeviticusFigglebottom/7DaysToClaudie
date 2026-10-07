@@ -1,0 +1,2701 @@
+{
+ "_doc": "Wilderness set pieces, round 5: the Silver Run state fish hatchery, a trout hatchery on a forest creek the Cordon used as a water-testing post. Route: the track to the front of the raceway shed (boarded, the Cordon's notice) -> round by the creek -> over a pony wall into the shed (the crew: ambush on entering, and on the jaws in the dip nets) -> up the creek walkway past the headbox (two lying still) -> over the pony wall to the creek bank -> up the ladder onto the intake dam's catwalk -> Sato at the sampler, the lab key (taking it wakes the two by the headbox) -> back down -> the manager's cottage (the house key on the table, June in the bedroom) -> the hatch house door (deadbolt, the house key) -> the office's loose boards (the techs) -> the incubation room, the Cordon's field lab (the techs) -> the chiller door (padlock, the lab key; a can chime) -> Lieutenant Okonkwo (guardian) and the cache -> the chiller's bolted back door. Props: props/wild5_hatchery.json. The creek, the dam and the weir are props on the levelled pad (site waterside: the real stream runs 60 m off; no keep_water).",
+ "defs": [
+  {
+   "id": "w5_fish_hatchery",
+   "name": "Silver Run Fish Hatchery",
+   "tier": 2,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    36,
+    34
+   ],
+   "origin": [
+    1,
+    1
+   ],
+   "author": "Hollowmere team (wilderness round 5)",
+   "population": "loggers",
+   "story": "The state hatchery on Silver Run raised rainbow and brook trout for every lake in the valley: a long raceway shed open above its pony walls, the hatch house with its incubator stacks, chiller and feed room, the manager's cottage and a little intake dam with a catwalk over the weir. When the Cordon came up the creek it took the hatchery as a water-testing post: Lieutenant Okonkwo, a contract hydrologist and three soldiers sampled the creek every four hours to learn whether the Bloom travelled in water. It did. The trout died first, then the raceways furred white. Gordon Haskell's crew kept feeding fish that were not there and coughing in their waders. The Cordon boarded the shed, nailed the lab door shut against it and locked its samples and its cache in the chiller; Private Sato kept climbing to the sampler on the intake catwalk, where nothing could follow him, until the day he didn't climb down. Gordon went up the creek to look for the source and never came back. June is still in the cottage.",
+   "style": {
+    "exterior": "siding_white",
+    "interior": "concrete_block",
+    "floor": "concrete",
+    "ceiling": "plaster_grey",
+    "floor_height": 0.15,
+    "decay": 0.5,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "gable",
+     "pitch": 22,
+     "overhang": 0.5,
+     "material": "roof_metal",
+     "gutters": false,
+     "roofs": [
+      {
+       "level": 1,
+       "at": [
+        3,
+        7
+       ],
+       "type": "none"
+      },
+      {
+       "level": 1,
+       "at": [
+        7,
+        8
+       ],
+       "type": "none"
+      }
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      ".........RRRRRRRRRRRRHHHHHHCCC....",
+      ".........RRRRRRRRRRRRHHHHHHCCC....",
+      ".........RRRRRRRRRRRRHHHHHHCCC....",
+      ".........RRRRRRRRRRRRHHHHHHCCC....",
+      ".........RRRRRRRRRRRRHHHHHHFFF....",
+      ".........RRRRRRRRRRRRHHHHHHFFF....",
+      ".........RRRRRRRRRRRRHHHHHHFFF....",
+      ".........RRRRRRRRRRRREEEEEEFFF....",
+      ".........RRRRRRRRRRRREEEEEEFFF....",
+      ".........RRRRRRRRRRRREEEEEEFFF....",
+      ".........RRRRRRRRRRRR.............",
+      ".........RRRRRRRRRRRR.............",
+      ".........RRRRRRRRRRRR.............",
+      ".........RRRRRRRRRRRR.............",
+      ".........RRRRRRRRRRRR.............",
+      ".........RRRRRRRRRRRR.............",
+      ".......................KKKKKBBB...",
+      ".......................KKKKKBBB...",
+      ".......................KKKKKBBB...",
+      ".......................KKKKKTTT...",
+      ".......................KKKKKTTT...",
+      ".......................KKKKKTTT...",
+      "..................................",
+      "..................................",
+      "..................................",
+      ".................................."
+     ],
+     "rooms": {
+      "R": {
+       "name": "Raceway shed",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "H": {
+       "name": "Incubation room",
+       "type": "office",
+       "wall": "tile_bathroom_white",
+       "floor": "concrete",
+       "ceiling": "plaster_white"
+      },
+      "E": {
+       "name": "Hatchery office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_beige",
+       "ceiling": "plaster_white"
+      },
+      "C": {
+       "name": "Chiller room",
+       "type": "storage",
+       "wall": "plaster_grey",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "F": {
+       "name": "Feed room",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "K": {
+       "name": "Cottage kitchen",
+       "type": "kitchen",
+       "wall": "wallpaper_stripe_green",
+       "floor": "linoleum_check",
+       "ceiling": "plaster_white"
+      },
+      "B": {
+       "name": "Cottage bedroom",
+       "type": "bedroom",
+       "wall": "wallpaper_floral_rose",
+       "floor": "carpet_brown",
+       "ceiling": "plaster_white"
+      },
+      "T": {
+       "name": "Cottage bathroom",
+       "type": "bath",
+       "wall": "tile_bathroom_white",
+       "floor": "tile_white_small",
+       "ceiling": "plaster_white"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "WWWWWWWW",
+      "      WW"
+     ],
+     "rooms": {
+      "W": {
+       "name": "Intake catwalk",
+       "type": "hallway",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "shed_w_6",
+     "at": [
+      9,
+      6
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_7",
+     "at": [
+      9,
+      7
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_8",
+     "at": [
+      9,
+      8
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_9",
+     "at": [
+      9,
+      9
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_10",
+     "at": [
+      9,
+      10
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_11",
+     "at": [
+      9,
+      11
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_12",
+     "at": [
+      9,
+      12
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_13",
+     "at": [
+      9,
+      13
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_14",
+     "at": [
+      9,
+      14
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_15",
+     "at": [
+      9,
+      15
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_16",
+     "at": [
+      9,
+      16
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_17",
+     "at": [
+      9,
+      17
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_18",
+     "at": [
+      9,
+      18
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_19",
+     "at": [
+      9,
+      19
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_20",
+     "at": [
+      9,
+      20
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_w_21",
+     "at": [
+      9,
+      21
+     ],
+     "side": "W",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_e_16",
+     "at": [
+      20,
+      16
+     ],
+     "side": "E",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_e_17",
+     "at": [
+      20,
+      17
+     ],
+     "side": "E",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_e_18",
+     "at": [
+      20,
+      18
+     ],
+     "side": "E",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_e_19",
+     "at": [
+      20,
+      19
+     ],
+     "side": "E",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_e_20",
+     "at": [
+      20,
+      20
+     ],
+     "side": "E",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_e_21",
+     "at": [
+      20,
+      21
+     ],
+     "side": "E",
+     "type": "half",
+     "state": "open"
+    },
+    {
+     "id": "shed_doors",
+     "at": [
+      14,
+      21
+     ],
+     "side": "S",
+     "type": "door2",
+     "state": "barricaded"
+    },
+    {
+     "id": "shed_front_win_w",
+     "at": [
+      10,
+      21
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "boarded"
+    },
+    {
+     "id": "shed_front_win_e",
+     "at": [
+      17,
+      21
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "shed_north_door",
+     "at": [
+      20,
+      6
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "shed_lab_door",
+     "at": [
+      21,
+      10
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "barricaded",
+     "barricade_on": "H"
+    },
+    {
+     "id": "house_door",
+     "at": [
+      23,
+      15
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "w5_hatchery_house_key",
+     "lock": "deadbolt"
+    },
+    {
+     "id": "office_win",
+     "at": [
+      25,
+      15
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "office_lab_door",
+     "at": [
+      24,
+      13
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "lab_win_a",
+     "at": [
+      23,
+      6
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "lab_win_b",
+     "at": [
+      25,
+      6
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "chiller_door",
+     "at": [
+      27,
+      8
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "locked",
+     "key": "w5_hatchery_lab_key",
+     "lock": "padlock",
+     "model": "door_metal"
+    },
+    {
+     "id": "feed_door",
+     "at": [
+      27,
+      11
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "chiller_back_door",
+     "at": [
+      29,
+      7
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_metal"
+    },
+    {
+     "id": "feed_loading_door",
+     "at": [
+      29,
+      14
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "barricaded"
+    },
+    {
+     "id": "feed_win",
+     "at": [
+      28,
+      15
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "cottage_door",
+     "at": [
+      25,
+      22
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "cottage_win_w",
+     "at": [
+      23,
+      24
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "cottage_win_s1",
+     "at": [
+      24,
+      27
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "cottage_win_s2",
+     "at": [
+      26,
+      27
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "bedroom_door",
+     "at": [
+      28,
+      23
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "bath_door",
+     "at": [
+      28,
+      26
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "bedroom_win",
+     "at": [
+      30,
+      23
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "bath_win",
+     "at": [
+      30,
+      26
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "catwalk_n0_7",
+     "at": [
+      0,
+      7
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_n1_7",
+     "at": [
+      1,
+      7
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_n2_7",
+     "at": [
+      2,
+      7
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_n3_7",
+     "at": [
+      3,
+      7
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_n4_7",
+     "at": [
+      4,
+      7
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_n5_7",
+     "at": [
+      5,
+      7
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_n6_7",
+     "at": [
+      6,
+      7
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_n7_7",
+     "at": [
+      7,
+      7
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_s0_7",
+     "at": [
+      0,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_s1_7",
+     "at": [
+      1,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_s2_7",
+     "at": [
+      2,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_s3_7",
+     "at": [
+      3,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_s4_7",
+     "at": [
+      4,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_s5_7",
+     "at": [
+      5,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_w0_7",
+     "at": [
+      0,
+      7
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_e7_7",
+     "at": [
+      7,
+      7
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_s6_8",
+     "at": [
+      6,
+      8
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_s7_8",
+     "at": [
+      7,
+      8
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_w6_8",
+     "at": [
+      6,
+      8
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "catwalk_e7_8",
+     "at": [
+      7,
+      8
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    }
+   ],
+   "ladders": [
+    {
+     "level": 0,
+     "at": [
+      7,
+      8
+     ],
+     "side": "N",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "raceway_1",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      12.0,
+      10.5
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "route_ok": true,
+     "alt": "raceways:bloomed"
+    },
+    {
+     "id": "raceway_1",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      12.0,
+      10.5
+     ],
+     "rot": 0,
+     "variant": "clean",
+     "route_ok": true,
+     "alt": "raceways:fish_kill"
+    },
+    {
+     "id": "raceway_2",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      15.0,
+      10.5
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "route_ok": true,
+     "alt": "raceways:bloomed"
+    },
+    {
+     "id": "raceway_2",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      15.0,
+      10.5
+     ],
+     "rot": 0,
+     "variant": "clean",
+     "route_ok": true,
+     "alt": "raceways:fish_kill"
+    },
+    {
+     "id": "raceway_3",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      18.0,
+      10.5
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "route_ok": true,
+     "alt": "raceways:bloomed"
+    },
+    {
+     "id": "raceway_3",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      18.0,
+      10.5
+     ],
+     "rot": 0,
+     "variant": "clean",
+     "route_ok": true,
+     "alt": "raceways:fish_kill"
+    },
+    {
+     "id": "raceway_4",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      12.0,
+      16.7
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "route_ok": true,
+     "alt": "raceways:bloomed"
+    },
+    {
+     "id": "raceway_4",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      12.0,
+      16.7
+     ],
+     "rot": 0,
+     "variant": "clean",
+     "route_ok": true,
+     "alt": "raceways:fish_kill"
+    },
+    {
+     "id": "raceway_5",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      15.0,
+      16.7
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "route_ok": true,
+     "alt": "raceways:bloomed"
+    },
+    {
+     "id": "raceway_5",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      15.0,
+      16.7
+     ],
+     "rot": 0,
+     "variant": "clean",
+     "route_ok": true,
+     "alt": "raceways:fish_kill"
+    },
+    {
+     "id": "raceway_6",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      18.0,
+      16.7
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "route_ok": true,
+     "alt": "raceways:bloomed"
+    },
+    {
+     "id": "raceway_6",
+     "prop": "w5_hatchery_raceway",
+     "pos": [
+      18.0,
+      16.7
+     ],
+     "rot": 0,
+     "variant": "clean",
+     "route_ok": true,
+     "alt": "raceways:fish_kill"
+    },
+    {
+     "id": "headbox",
+     "prop": "w5_hatchery_headbox",
+     "at": [
+      15,
+      6
+     ],
+     "against": "N",
+     "offset": [
+      -0.5,
+      0
+     ]
+    },
+    {
+     "prop": "w5_hatchery_shed_post",
+     "pos": [
+      9.0,
+      8.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w5_hatchery_shed_post",
+     "pos": [
+      9.0,
+      10.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w5_hatchery_shed_post",
+     "pos": [
+      9.0,
+      12.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w5_hatchery_shed_post",
+     "pos": [
+      9.0,
+      14.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w5_hatchery_shed_post",
+     "pos": [
+      9.0,
+      16.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w5_hatchery_shed_post",
+     "pos": [
+      9.0,
+      18.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w5_hatchery_shed_post",
+     "pos": [
+      9.0,
+      20.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w5_hatchery_shed_post",
+     "pos": [
+      20.99,
+      18.0
+     ],
+     "rot": -90
+    },
+    {
+     "prop": "w5_hatchery_shed_post",
+     "pos": [
+      20.99,
+      20.0
+     ],
+     "rot": -90
+    },
+    {
+     "id": "intake_pipe",
+     "prop": "w5_hatchery_intake_pipe",
+     "pos": [
+      8.9,
+      6.4
+     ],
+     "rot": 0
+    },
+    {
+     "id": "fish_tote",
+     "prop": "w5_hatchery_fish_tote",
+     "pos": [
+      12.0,
+      20.7
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "out_net_pile",
+     "pos": [
+      10.2,
+      12.0
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "farm_feed_sacks",
+     "pos": [
+      20.2,
+      8.0
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      13.5,
+      19.8
+     ]
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      16.4,
+      13.6
+     ]
+    },
+    {
+     "id": "shed_feed_cart",
+     "prop": "w5_hatchery_feed_cart",
+     "pos": [
+      19.9,
+      15.6
+     ],
+     "rot": 0,
+     "container": "w5_hatchery_feed"
+    },
+    {
+     "prop": "road_quarantine_notice",
+     "at": [
+      17,
+      22
+     ],
+     "against": "N",
+     "height": 1.5
+    },
+    {
+     "id": "lab_bench",
+     "prop": "lab_bench",
+     "at": [
+      21,
+      6
+     ],
+     "against": "N",
+     "offset": [
+      0.45,
+      0
+     ],
+     "container": "lab_bench"
+    },
+    {
+     "id": "lab_chair",
+     "prop": "office_chair",
+     "pos": [
+      21.9,
+      7.35
+     ],
+     "rot": 200
+    },
+    {
+     "id": "incubator_a",
+     "prop": "w5_hatchery_incubator_stack",
+     "at": [
+      21,
+      7
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.5
+     ]
+    },
+    {
+     "id": "incubator_b",
+     "prop": "w5_hatchery_incubator_stack",
+     "at": [
+      21,
+      12
+     ],
+     "against": "W",
+     "variant": "destroyed"
+    },
+    {
+     "id": "incubator_c",
+     "prop": "w5_hatchery_incubator_stack",
+     "at": [
+      26,
+      6
+     ],
+     "against": "N"
+    },
+    {
+     "id": "hatch_trough",
+     "prop": "w5_hatchery_hatch_trough",
+     "pos": [
+      23.2,
+      9.4
+     ],
+     "rot": 0
+    },
+    {
+     "id": "sample_rack",
+     "prop": "lab_sample_rack",
+     "at": [
+      22,
+      12
+     ],
+     "against": "S",
+     "offset": [
+      0.3,
+      0
+     ],
+     "container": "lab_sample_rack"
+    },
+    {
+     "id": "results_board",
+     "prop": "w5_hatchery_results_board",
+     "at": [
+      26,
+      9
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.5
+     ],
+     "height": 1.0
+    },
+    {
+     "id": "tech_cot",
+     "prop": "civic_army_cot",
+     "pos": [
+      25.9,
+      12.55
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "lab_biohazard_bin",
+     "pos": [
+      26.4,
+      7.5
+     ]
+    },
+    {
+     "prop": "lab_microscope",
+     "pos": [
+      21.95,
+      6.4
+     ],
+     "y": 0.92
+    },
+    {
+     "id": "lab_lamp",
+     "prop": "lantern_camping",
+     "pos": [
+      22.0,
+      6.35
+     ],
+     "y": 0.92,
+     "lit": true,
+     "keep": true,
+     "alt": "lab_lamp:on"
+    },
+    {
+     "id": "chiller",
+     "prop": "w5_hatchery_chiller",
+     "at": [
+      28,
+      6
+     ],
+     "against": "N",
+     "offset": [
+      -0.3,
+      0
+     ]
+    },
+    {
+     "id": "sample_freezer",
+     "prop": "lab_freezer_80",
+     "at": [
+      29,
+      9
+     ],
+     "against": "S",
+     "container": "lab_freezer"
+    },
+    {
+     "id": "cordon_cache",
+     "prop": "weapons_locker",
+     "at": [
+      27,
+      9
+     ],
+     "against": "S",
+     "container": "w5_hatchery_cordon_cache"
+    },
+    {
+     "prop": "w5_hatchery_sample_cooler",
+     "pos": [
+      29.4,
+      6.5
+     ],
+     "rot": -90
+    },
+    {
+     "id": "feed_pallet_a",
+     "prop": "w5_hatchery_feed_pallet",
+     "at": [
+      29,
+      11
+     ],
+     "against": "E"
+    },
+    {
+     "id": "feed_pallet_b",
+     "prop": "w5_hatchery_feed_pallet",
+     "at": [
+      27,
+      14
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "id": "feed_bin",
+     "prop": "farm_feed_bin",
+     "at": [
+      28,
+      10
+     ],
+     "against": "N",
+     "container": "w5_hatchery_feed"
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      28.8,
+      15.4
+     ]
+    },
+    {
+     "id": "office_desk",
+     "prop": "office_desk",
+     "at": [
+      21,
+      14
+     ],
+     "against": "W"
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      22.15,
+      14.5
+     ],
+     "rot": -90
+    },
+    {
+     "id": "office_files",
+     "prop": "filing_cabinet",
+     "at": [
+      26,
+      13
+     ],
+     "against": "E"
+    },
+    {
+     "prop": "water_cooler",
+     "at": [
+      26,
+      14
+     ],
+     "against": "E"
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      26,
+      15
+     ],
+     "against": "S",
+     "height": 1.4
+    },
+    {
+     "prop": "out_trophy_fish",
+     "at": [
+      22,
+      15
+     ],
+     "against": "S",
+     "height": 1.7
+    },
+    {
+     "id": "cottage_counter",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      23,
+      22
+     ],
+     "against": "N",
+     "container": "kitchen_cabinet"
+    },
+    {
+     "id": "cottage_stove",
+     "prop": "stove_old",
+     "at": [
+      24,
+      22
+     ],
+     "against": "N"
+    },
+    {
+     "id": "cottage_fridge",
+     "prop": "fridge_old",
+     "at": [
+      23,
+      23
+     ],
+     "against": "W",
+     "container": "fridge"
+    },
+    {
+     "id": "cottage_table",
+     "prop": "kitchen_table",
+     "pos": [
+      25.3,
+      25.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      25.3,
+      25.75
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      24.4,
+      25.0
+     ],
+     "rot": 90,
+     "variant": "destroyed"
+    },
+    {
+     "id": "cottage_armchair",
+     "prop": "armchair",
+     "at": [
+      27,
+      24
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.2
+     ]
+    },
+    {
+     "prop": "wild_wood_stove",
+     "at": [
+      23,
+      26
+     ],
+     "against": "W"
+    },
+    {
+     "prop": "rug_oval",
+     "pos": [
+      25.4,
+      26.4
+     ],
+     "rot": 0
+    },
+    {
+     "id": "june_bed",
+     "prop": "bed_double",
+     "at": [
+      29,
+      24
+     ],
+     "against": "S",
+     "offset": [
+      0.3,
+      0
+     ]
+    },
+    {
+     "id": "june_nightstand",
+     "prop": "nightstand",
+     "at": [
+      30,
+      22
+     ],
+     "against": "N",
+     "container": "nightstand"
+    },
+    {
+     "prop": "toilet",
+     "at": [
+      29,
+      25
+     ],
+     "against": "N"
+    },
+    {
+     "prop": "sink_pedestal",
+     "at": [
+      30,
+      25
+     ],
+     "against": "N"
+    },
+    {
+     "prop": "bathtub",
+     "at": [
+      29,
+      27
+     ],
+     "against": "S",
+     "offset": [
+      0.3,
+      0
+     ]
+    },
+    {
+     "id": "cottage_lamp",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      25.0,
+      24.8
+     ],
+     "y": 0.76,
+     "lit": true
+    },
+    {
+     "id": "dam",
+     "prop": "w5_hatchery_dam",
+     "pos": [
+      4.0,
+      7.5
+     ],
+     "rot": 0,
+     "keep": true
+    },
+    {
+     "id": "weir_pool",
+     "prop": "w5_hatchery_weir_pool",
+     "pos": [
+      3.0,
+      3.5
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w5_hatchery_creek",
+     "pos": [
+      3.0,
+      12.0
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "prop": "w5_hatchery_creek",
+     "pos": [
+      3.0,
+      20.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w5_hatchery_creek",
+     "pos": [
+      3.0,
+      28.0
+     ],
+     "rot": 180
+    },
+    {
+     "id": "headgate",
+     "prop": "w5_hatchery_headgate",
+     "pos": [
+      7.5,
+      7.45
+     ],
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "id": "sampler",
+     "prop": "w5_hatchery_sampler",
+     "pos": [
+      0.5,
+      7.5
+     ],
+     "rot": 90,
+     "level": 1,
+     "container": "w5_hatchery_sampler"
+    },
+    {
+     "id": "sato",
+     "prop": "corpse_remains",
+     "pos": [
+      2.75,
+      7.5
+     ],
+     "rot": 90,
+     "level": 1,
+     "route_ok": true
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      0,
+      7
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      1,
+      7
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      2,
+      7
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      3,
+      7
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      4,
+      7
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      5,
+      7
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      6,
+      7
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      7,
+      7
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      0,
+      7
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      1,
+      7
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      2,
+      7
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      3,
+      7
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      4,
+      7
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      5,
+      7
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      0,
+      7
+     ],
+     "against": "W",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      7,
+      7
+     ],
+     "against": "E",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      6,
+      8
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      7,
+      8
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      6,
+      8
+     ],
+     "against": "W",
+     "level": 1
+    },
+    {
+     "prop": "w5_hatchery_catwalk_rail",
+     "at": [
+      7,
+      8
+     ],
+     "against": "E",
+     "level": 1
+    },
+    {
+     "id": "hatchery_sign",
+     "prop": "w5_hatchery_sign",
+     "pos": [
+      11.5,
+      29.6
+     ],
+     "rot": 0
+    },
+    {
+     "id": "stocking_truck",
+     "prop": "w5_hatchery_stocking_truck",
+     "pos": [
+      24.5,
+      30.0
+     ],
+     "rot": 90,
+     "alt": "truck:parked"
+    },
+    {
+     "id": "feed_silo",
+     "prop": "w5_hatchery_feed_silo",
+     "pos": [
+      32.0,
+      12.4
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w3_decon_shower",
+     "pos": [
+      26.6,
+      18.6
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w3_sandbags",
+     "pos": [
+      29.6,
+      18.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w3_sandbags",
+     "pos": [
+      31.4,
+      9.6
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      22.4,
+      4.6
+     ]
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      23.1,
+      5.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "w5_hatchery_fish_tote",
+     "pos": [
+      17.0,
+      4.4
+     ],
+     "rot": 70,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      10.0,
+      1.2
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      19.0,
+      0.8
+     ],
+     "rot": 60,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      27.5,
+      1.4
+     ],
+     "rot": 120
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      32.8,
+      3.0
+     ],
+     "rot": 200
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      32.6,
+      22.5
+     ],
+     "rot": 260
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      32.8,
+      30.8
+     ],
+     "rot": 300
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      7.8,
+      30.8
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      19.0,
+      27.5
+     ],
+     "rot": 160
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      14.5,
+      2.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      31.6,
+      16.6
+     ],
+     "rot": 70
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      7.6,
+      24.5
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      21.5,
+      23.6
+     ],
+     "rot": 140
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "crew_waders",
+     "group": "crew",
+     "pos": [
+      13.5,
+      16.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "floor"
+    },
+    {
+     "id": "crew_kid",
+     "group": "crew",
+     "pos": [
+      19.9,
+      11.6
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": -90
+    },
+    {
+     "id": "crew_foreman",
+     "group": "crew",
+     "pos": [
+      16.5,
+      20.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 200
+    },
+    {
+     "id": "creek_feeder",
+     "group": "creek",
+     "pos": [
+      13.6,
+      7.35
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "floor"
+    },
+    {
+     "id": "creek_dragger",
+     "group": "creek",
+     "pos": [
+      17.6,
+      7.4
+     ],
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": -90,
+     "anchor": "floor"
+    },
+    {
+     "id": "tech_varga",
+     "group": "techs",
+     "population": "cordon",
+     "pos": [
+      25.9,
+      12.55
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "tech_cot"
+    },
+    {
+     "id": "tech_lindell",
+     "group": "techs",
+     "population": "cordon",
+     "pos": [
+      25.6,
+      8.6
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 120
+    },
+    {
+     "id": "tech_ames",
+     "group": "techs",
+     "population": "cordon",
+     "pos": [
+      21.9,
+      7.35
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 200,
+     "anchor": "lab_chair",
+     "alt": "ames:at_the_bench"
+    },
+    {
+     "id": "tech_ames",
+     "group": "techs",
+     "population": "cordon",
+     "pos": [
+      22.0,
+      10.9
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 90,
+     "alt": "ames:by_the_incubators"
+    },
+    {
+     "id": "okonkwo",
+     "guardian": true,
+     "population": "cordon",
+     "pos": [
+      28.5,
+      8.1
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 90
+    },
+    {
+     "id": "feed_hand",
+     "pos": [
+      28.4,
+      12.7
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "anchor": "floor"
+    },
+    {
+     "id": "june",
+     "pos": [
+      29.8,
+      24.0
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "june_bed",
+     "alt": "june:in_bed"
+    },
+    {
+     "id": "june",
+     "pos": [
+      29.6,
+      22.6
+     ],
+     "enemy": "dragger",
+     "pose": "stand",
+     "rot": -90,
+     "alt": "june:at_the_window"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "lab_key",
+     "item": "w5_hatchery_lab_key",
+     "pos": [
+      2.2,
+      7.65
+     ],
+     "y": 0.17,
+     "level": 1
+    },
+    {
+     "id": "house_key",
+     "item": "w5_hatchery_house_key",
+     "pos": [
+      25.55,
+      24.85
+     ],
+     "y": 0.77
+    }
+   ],
+   "notes": [
+    {
+     "note": "w5_hatchery_feeding_chart",
+     "pos": [
+      16.3,
+      6.4
+     ],
+     "y": 1.12
+    },
+    {
+     "note": "w5_hatchery_sampler_log",
+     "pos": [
+      0.5,
+      7.3
+     ],
+     "y": 0.92,
+     "level": 1
+    },
+    {
+     "note": "w5_hatchery_manager_letter",
+     "pos": [
+      30.5,
+      22.3
+     ],
+     "y": 0.63
+    },
+    {
+     "note": "w5_hatchery_spawn_log",
+     "pos": [
+      21.45,
+      14.2
+     ],
+     "y": 0.77
+    },
+    {
+     "note": "w5_hatchery_cordon_results",
+     "pos": [
+      22.6,
+      6.45
+     ],
+     "y": 0.92
+    }
+   ],
+   "traps": [
+    {
+     "id": "shed_jaws",
+     "type": "bear_trap",
+     "pos": [
+      10.15,
+      12.6
+     ],
+     "rot": 20
+    },
+    {
+     "id": "office_boards",
+     "type": "creaky_floor",
+     "at": [
+      23,
+      14
+     ],
+     "size": [
+      3,
+      1
+     ]
+    },
+    {
+     "id": "chiller_chime",
+     "type": "can_chime",
+     "at": [
+      27,
+      8
+     ],
+     "side": "W"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "crew_shed",
+     "group": "crew",
+     "on": "room",
+     "room": "R",
+     "level": 0,
+     "delay": 1.2
+    },
+    {
+     "id": "crew_jaws",
+     "group": "crew",
+     "on": "trap",
+     "trap": "shed_jaws",
+     "delay": 0.4
+    },
+    {
+     "id": "creek_key",
+     "group": "creek",
+     "on": "pickup",
+     "pickup": "lab_key",
+     "delay": 0.8
+    },
+    {
+     "id": "techs_boards",
+     "group": "techs",
+     "on": "trap",
+     "trap": "office_boards",
+     "delay": 0.5
+    },
+    {
+     "id": "techs_lab",
+     "group": "techs",
+     "on": "room",
+     "room": "H",
+     "level": 0,
+     "delay": 0.3
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      22.0,
+      6.4
+     ],
+     "height": 1.3,
+     "color": "#e8f0ff",
+     "energy": 0.4,
+     "range": 5.0,
+     "flicker": 0.05,
+     "alt": "lab_lamp:on"
+    },
+    {
+     "pos": [
+      25.0,
+      24.8
+     ],
+     "height": 1.05,
+     "color": "#ffb868",
+     "energy": 0.35,
+     "range": 4.5,
+     "flicker": 0.25
+    }
+   ],
+   "decals": [
+    {
+     "decal": "footprints_mud",
+     "at": [
+      7,
+      9
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      1.6
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      3,
+      7
+     ],
+     "side": "floor",
+     "size": [
+      0.8,
+      1.8
+     ],
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      21,
+      9
+     ],
+     "side": "W",
+     "height": 1.8,
+     "size": [
+      1.2,
+      0.8
+     ]
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      16,
+      22
+     ],
+     "side": "N",
+     "height": 1.4,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      24,
+      6
+     ],
+     "side": "N",
+     "height": 2.0,
+     "size": [
+      1.0,
+      1.2
+     ]
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      28,
+      8
+     ],
+     "side": "floor",
+     "size": [
+      1.1,
+      1.1
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      29,
+      7
+     ],
+     "side": "E",
+     "height": 1.2,
+     "size": [
+      0.4,
+      0.4
+     ]
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      12,
+      21
+     ],
+     "side": "S",
+     "height": 0.6,
+     "size": [
+      1.4,
+      0.6
+     ]
+    },
+    {
+     "decal": "grime_streaks",
+     "at": [
+      27,
+      12
+     ],
+     "side": "E",
+     "height": 1.0,
+     "size": [
+      1.0,
+      1.2
+     ]
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      10,
+      15
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 0
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      16,
+      30
+     ],
+     "label": "The track ends at the hatchery: the carved trout sign, the stocking truck where it was parked, the raceway shed's long roof"
+    },
+    {
+     "at": [
+      15,
+      23
+     ],
+     "label": "The raceway shed's doors: boarded over, the Cordon's quarantine notice beside them"
+    },
+    {
+     "at": [
+      8,
+      18
+     ],
+     "label": "Round by the creek: the shed's creek side is open above its pony walls"
+    },
+    {
+     "at": [
+      10,
+      18
+     ],
+     "label": "Over the pony wall into the shed: the raceways furred white with Bloom, the crew still in their waders"
+    },
+    {
+     "at": [
+      10,
+      8
+     ],
+     "label": "Up the creek walkway (jaws in the dip nets) to the headbox"
+    },
+    {
+     "at": [
+      8,
+      9
+     ],
+     "label": "Over the pony wall again, out onto the creek bank under the dam"
+    },
+    {
+     "at": [
+      7,
+      9
+     ],
+     "label": "The intake dam: a ladder up the abutment to the catwalk"
+    },
+    {
+     "at": [
+      6,
+      8
+     ],
+     "level": 1,
+     "label": "Up onto the catwalk over the weir"
+    },
+    {
+     "at": [
+      1,
+      7
+     ],
+     "level": 1,
+     "label": "The Cordon's sampler at the far end: the private who kept coming up here, the lab key on his belt"
+    },
+    {
+     "at": [
+      7,
+      9
+     ],
+     "label": "Back down the ladder: the two by the headbox were not dead"
+    },
+    {
+     "at": [
+      25,
+      21
+     ],
+     "label": "The manager's cottage"
+    },
+    {
+     "at": [
+      25,
+      24
+     ],
+     "label": "The kitchen: the hatch house key on the table where he left it"
+    },
+    {
+     "at": [
+      29,
+      23
+     ],
+     "label": "The bedroom: June, and his letter"
+    },
+    {
+     "at": [
+      23,
+      17
+     ],
+     "label": "The hatch house door: deadbolted (the house key)"
+    },
+    {
+     "at": [
+      23,
+      14
+     ],
+     "label": "The hatchery office: loose boards, the spawning board"
+    },
+    {
+     "at": [
+      24,
+      10
+     ],
+     "label": "The incubation room, the Cordon's field lab: the techs in their coveralls"
+    },
+    {
+     "at": [
+      26,
+      8
+     ],
+     "label": "The chiller room door: padlocked (the lab key), cans strung inside"
+    },
+    {
+     "at": [
+      28,
+      8
+     ],
+     "label": "The chiller room: the Cordon's samples, their cache and the lieutenant"
+    },
+    {
+     "at": [
+      31,
+      7
+     ],
+     "label": "Draw the bolt on the chiller's back door: out by the feed silo"
+    }
+   ],
+   "loot_room": {
+    "room": "C",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "chiller_back_door"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "raceways",
+     "label": "What is in the raceways",
+     "options": [
+      {
+       "id": "bloomed",
+       "weight": 2,
+       "label": "White Bloom felt from wall to wall"
+      },
+      {
+       "id": "fish_kill",
+       "label": "Still water and the last of the trout, belly up"
+      }
+     ]
+    },
+    {
+     "id": "ames",
+     "label": "Where the hydrologist is",
+     "options": [
+      {
+       "id": "at_the_bench",
+       "weight": 2,
+       "label": "At the bench, over the microscope"
+      },
+      {
+       "id": "by_the_incubators",
+       "label": "Standing by the incubator stacks"
+      }
+     ]
+    },
+    {
+     "id": "june",
+     "label": "Where June is",
+     "options": [
+      {
+       "id": "in_bed",
+       "weight": 2
+      },
+      {
+       "id": "at_the_window",
+       "label": "Up at the bedroom window, looking for him"
+      }
+     ]
+    },
+    {
+     "id": "cottage_door",
+     "label": "The cottage door",
+     "options": [
+      {
+       "id": "shut",
+       "weight": 2
+      },
+      {
+       "id": "kicked_in",
+       "openings": [
+        {
+         "id": "cottage_door",
+         "state": "broken"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "truck",
+     "label": "The stocking truck",
+     "options": [
+      {
+       "id": "parked",
+       "weight": 2
+      },
+      {
+       "id": "gone",
+       "label": "Driven off with its tanks still full"
+      }
+     ]
+    },
+    {
+     "id": "lab_lamp",
+     "label": "The Cordon's lamp",
+     "options": [
+      {
+       "id": "on",
+       "weight": 2,
+       "label": "Its battery still holding"
+      },
+      {
+       "id": "dead",
+       "label": "Flat",
+       "style": {
+        "lights_on": 0.3
+       }
+      }
+     ]
+    },
+    {
+     "id": "office",
+     "label": "The office walls",
+     "options": [
+      {
+       "id": "panelled",
+       "weight": 2
+      },
+      {
+       "id": "painted",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "E",
+         "wall": "paint_sage"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "props": 200,
+    "enemies": 12
+   }
+  }
+ ]
+}

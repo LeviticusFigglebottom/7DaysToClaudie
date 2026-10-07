@@ -1,0 +1,17 @@
+{
+ "_doc": "Silver Run fish hatchery (wilderness set pieces round 5): the trout's skin, olive-backed and silver-bellied (vertex tint carries the pink band), for the dead fish in the raceways and the tote. Models: tools/assetgen/blender/generators/props_wild5_hatchery.py. Shared ids reused: concrete, mine_concrete, farm_trough_water, road_water_grey, bloom_felt, bloom_caps, metal_galvanized, road_alu, road_steel_dark, road_rust, road_paint_green, plastic_*, wood_weathered, wood_creosote, wild_cedar, out_log_peeled, stone_river, out_gravel, moss_ground, road_rubber, road_glass, farm_feed_sack.",
+ "materials": {
+  "w5_hatchery_trout": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "params": {
+    "uv_scale": 3.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#9aa08c",
+    "roughness_add": 0.05,
+    "grime_amount": 0.35,
+    "grime_color": "#3a3d30"
+   }
+  }
+ }
+}
