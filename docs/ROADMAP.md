@@ -234,7 +234,13 @@ slice loop end to end: fell → carry → build → craft → night → Hum → 
     produce; harvests into food, baked potato and garden stew; `farm.*` commands, `WorldState.farms`
     (no save bump), XP, a chapter 3 directive, the Field Manual's "Gardens and rain"; procedural
     stand-ins and generators for every model. Gaps: TD-211..220.
-  - [ ] Traps (spike pits, deadfalls), electricity (generator, wiring, lights, motion turrets).
+  - [x] Traps and electricity (ADR-0052): a spike pit (holds, slows and stakes the Hollowed; the
+    stakes wear), a deadfall (dropped by the first body under it, lifted by hand) and a tripwire
+    bell (heard, and tells you from where); a generator on gas cans whose noise and heat draw the
+    Hollowed, wire spools between pieces, work lights, a motion floodlight and a nail sentry on a
+    grid served in order; `power.*` / `trap.*` commands, `WorldState.base_tech` (no save bump), XP,
+    a chapter 3 directive, two world settings, loot and schematics, the Field Manual's "Traps and
+    power"; procedural stand-ins and generators for every model. Gaps: TD-239..248.
 - Main-map regions: Mile 12, Tamsin Gorge, Harrow (partial).
 
 ## M4+ — Novel systems in full, vehicles, co-op, the rest of the valley ⬜
