@@ -60,6 +60,8 @@ var _loops: Dictionary = {}
 var _swing_t: float = -1.0
 var _swing_len: float = 0.8
 var _recoil: float = 0.0
+## Held-item nodes a use turned (viewmodel.json `uses.<use>.parts`), to put back when it ends.
+var _posed_parts: Array[Node3D] = []
 var _rest := Transform3D(Basis.from_euler(Vector3(deg_to_rad(8.0), deg_to_rad(-12.0), deg_to_rad(4.0))), Vector3(0.28, -0.3, -0.52))
 
 
@@ -855,6 +857,7 @@ func _process(delta: float) -> void:
 				_anim.speed_scale = clampf(left_anim / maxf(0.05, _action_end - _t), 0.5, 4.0)
 	else:
 		_update_base()
+	_animate_parts()
 	# Reading the tether narrows the viewmodel's field of view so the screen fills more of it.
 	var tc: Dictionary = cfg.get("tether", {})
 	var fov: float = lerpf(float(cfg.get("fov", 58.0)), float(tc.get("fov", 42.0)), tether.progress())
@@ -864,6 +867,49 @@ func _process(delta: float) -> void:
 		_screen_mat.emission_energy_multiplier = _screen_energy(tether.progress())
 	if not has_arms():
 		_fallback_motion(delta, speed)
+
+
+## Moving parts of the held item, keyed by the playing use (viewmodel.json `uses.<use>.parts`:
+## {node name: [[frame, [x, y, z] degrees], ...]} at the arms' 30 fps, smoothstepped between keys):
+## the revolver's cylinder swings out on its crane to reload. Back to rest when no such use plays.
+func _animate_parts() -> void:
+	var keys_by_part: Dictionary = {}
+	if _held != null and _anim != null and _action != &"" and String(_action).begins_with("fp_"):
+		var use: Dictionary = (cfg.get("uses", {}) as Dictionary).get(String(_action).substr(3), {})
+		keys_by_part = use.get("parts", {})
+	if keys_by_part.is_empty():
+		for n: Node3D in _posed_parts:
+			if is_instance_valid(n):
+				n.rotation = Vector3.ZERO
+		_posed_parts.clear()
+		return
+	var f: float = _anim.current_animation_position * 30.0
+	for part: String in keys_by_part:
+		var n: Node3D = _held.find_child(part, true, false) as Node3D
+		if n == null:
+			continue
+		n.rotation_degrees = part_rotation(keys_by_part[part], f)
+		if not _posed_parts.has(n):
+			_posed_parts.append(n)
+
+
+## A part's rotation (degrees) at frame `f` of its [[frame, [x, y, z]], ...] keys.
+static func part_rotation(keys: Array, f: float) -> Vector3:
+	if keys.is_empty():
+		return Vector3.ZERO
+	var prev: Array = keys[0]
+	if f <= float(prev[0]):
+		return _vec3(prev[1])
+	for k: Array in keys:
+		if f <= float(k[0]):
+			var t: float = smoothstep(float(prev[0]), float(k[0]), f)
+			return _vec3(prev[1]).lerp(_vec3(k[1]), t)
+		prev = k
+	return _vec3(prev[1])
+
+
+static func _vec3(a: Array) -> Vector3:
+	return Vector3(float(a[0]), float(a[1]), float(a[2]))
 
 
 ## No arms model: the item floats at its rest pose and swings procedurally.
