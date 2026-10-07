@@ -162,6 +162,30 @@ func test_daylight_follows_the_openings() -> void:
 	assert_eq(EnvironmentController.daylight_share(cfg, -1.0), 1.0, "a probe with no ratio")
 
 
+func test_min_share_stands_in_for_the_daylight_floor() -> void:
+	# A cave's probes (CaveLighting) carry a min_share meta: darker than a cellar with no light in.
+	var cfg: Dictionary = Content.config(&"interior_light")
+	var lo: float = float(cfg["cave_min_share"])
+	assert_lt(lo, float(cfg["daylight_min_share"]), "a cave goes darker than a cellar")
+	assert_almost_eq(EnvironmentController.daylight_share(cfg, 0.0, lo), lo, 1e-6)
+	assert_almost_eq(EnvironmentController.daylight_share(cfg, 0.0, -1.0), float(cfg["daylight_min_share"]), 1e-6, "no meta: the rooms' floor")
+	assert_eq(EnvironmentController.daylight_share(cfg, float(cfg["daylight_full_ratio"]), lo), 1.0, "full daylight is full whatever the floor")
+	assert_eq(EnvironmentController.daylight_share(cfg, -1.0, lo), 1.0, "no ratio: all of it")
+	var half: float = EnvironmentController.daylight_share(cfg, float(cfg["daylight_full_ratio"]) * 0.5, lo)
+	assert_almost_eq(half, lerpf(lo, 1.0, 0.5), 1e-6)
+	# The cave's daylight meta: the box at the mouth gets the whole fill, a box one falloff deeper
+	# e^-1 of it, past the floor.
+	var plan_falloff: float = 6.0
+	assert_almost_eq(CaveLighting.daylight_of(1.0, plan_falloff, cfg), float(cfg["daylight_full_ratio"]), 1e-6)
+	var one: float = CaveLighting.daylight_of(exp(-float(cfg["cave_falloff_m"]) / plan_falloff), plan_falloff, cfg)
+	assert_almost_eq(one, exp(-1.0) * float(cfg["daylight_full_ratio"]), 1e-5, "exp(-depth / cave_falloff_m)")
+	assert_lt(CaveLighting.daylight_of(0.02, plan_falloff, cfg), one)
+	var probe: ReflectionProbe = CaveLighting.make_probe(Transform3D(), Vector3(4, 3, 6), 0.5, cfg, plan_falloff)
+	assert_almost_eq(float(probe.get_meta(&"min_share")), lo, 1e-6)
+	assert_true(probe.is_in_group(&"interior_probe"))
+	probe.free()
+
+
 func test_poi_daylight_survey() -> void:
 	# Not a pass/fail on taste: every POI's rooms have a ratio, and the spread is printed for tuning.
 	var ratios: Array[float] = []

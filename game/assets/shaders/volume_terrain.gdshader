@@ -1,6 +1,11 @@
-// SDF volume terrain (tunnels, pits, mined faces): world-space triplanar blend of the terrain
+// SDF volume terrain (tunnels, pits, mined faces, caves): world-space triplanar blend of the terrain
 // layer arrays — dug earth on top faces, packed dirt on the walls, rock deeper down and on
 // steep faces. Shares the layer arrays with the heightmap shader so the hand-off is seamless.
+// Vertex colours from VolumeSurfacePaint (ADR-0056, CAVES_PLAN WS-D): R is the old ground surface,
+// where the region's splat and palette (terrain_splat.gdshaderinc, the heightmap's own colour) take
+// over, so a column that turned into volume looks like the heightmap around it; G is cave interior,
+// tinted as wet limestone. has_splat gates the first (a material without a region's splat), has_paint
+// both (a mesh without colours reads (1, 1, 1, 1); VolumeTerrain always paints its meshes).
 shader_type spatial;
 render_mode blend_mix, depth_draw_opaque, cull_back;
 
@@ -13,13 +18,26 @@ uniform int dirt_layer = 3;
 uniform int top_layer = 0;
 uniform float surface_y_fade = 1.5;
 uniform bool has_layers = true;
+// The region's splat uniforms are set (TerrainManager.volume_material_for).
+uniform bool has_splat = false;
+// The mesh carries VolumeSurfacePaint's vertex colours.
+uniform bool has_paint = true;
+uniform vec4 limestone_color : source_color = vec4(0.56, 0.55, 0.5, 1.0);
+// How far toward limestone deep cave walls go, how much darker and glossier they are wet.
+uniform float limestone_mix = 0.55;
+uniform float wet_darken = 0.78;
+uniform float wet_roughness = 0.38;
+
+#include "res://assets/shaders/terrain_splat.gdshaderinc"
 
 varying vec3 v_world;
 varying vec3 v_wn;
+varying vec2 v_paint;
 
 void vertex() {
 	v_world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_wn = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
+	v_paint = has_paint ? COLOR.rg : vec2(0.0);
 }
 
 vec4 tri(sampler2DArray tex, int layer, vec3 p, vec3 w, float tile) {
@@ -54,8 +72,27 @@ void fragment() {
 	}
 	// Freshly cut earth is darker and wetter.
 	albedo *= 0.82;
+	// Deep in a cave: wet limestone, paler and glossier.
+	float cave = clamp(v_paint.y, 0.0, 1.0);
+	if (cave > 0.001) {
+		albedo = mix(albedo, mix(albedo, limestone_color.rgb, limestone_mix) * wet_darken, cave);
+		orm.g = mix(orm.g, min(orm.g, wet_roughness), cave);
+	}
+	// The old ground surface: the heightmap's own splat, so the hand-off doesn't show.
+	float surf = has_splat ? clamp(v_paint.x, 0.0, 1.0) : 0.0;
+	if (surf > 0.001) {
+		vec3 salb;
+		vec3 snrm;
+		vec3 sorm;
+		float shgt;
+		float spud;
+		float sporo;
+		terrain_splat(v_world, normalize(v_wn), salb, snrm, sorm, shgt, spud, sporo);
+		albedo = mix(albedo, salb, surf);
+		orm = mix(orm, sorm, surf);
+	}
 	ALBEDO = albedo;
 	AO = orm.r;
-	ROUGHNESS = clamp(orm.g, 0.4, 1.0);
+	ROUGHNESS = clamp(orm.g, 0.4 * (1.0 - cave) + wet_roughness * 0.5 * cave, 1.0);
 	METALLIC = 0.0;
 }
