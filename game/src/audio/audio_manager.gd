@@ -82,6 +82,12 @@ func stream(sound_id: StringName) -> AudioStream:
 	return variants[_rng.randi() % variants.size()]
 
 
+## Every variant stream of a sound id, in file order ([] when it isn't generated): a caller that
+## matches a variant to something (Ezra's bark lines, ADR-0058) picks by index.
+func variants(sound_id: StringName) -> Array:
+	return _variants(sound_id)
+
+
 func _variants(sound_id: StringName) -> Array:
 	if _cache.has(sound_id):
 		return _cache[sound_id]

@@ -24,6 +24,14 @@ const TICK: float = 0.5
 const REJOIN: float = 20.0
 ## How far from the point the player looks at a loose item or log still counts as looked at (m).
 const LOOK_SLACK: float = 1.2
+## Placement (TD-299): what he must not stand inside (world incl. POI walls, structures, props,
+## vegetation), what must not stand between him and where he is placed from (walls, not trees),
+## the body he needs, and the water he may stand in (m).
+const SOLID_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 12)
+const WALL_MASK: int = (1 << 0) | (1 << 1) | (1 << 2)
+const BODY_RADIUS: float = 0.4
+const BODY_HEIGHT: float = 1.75
+const WADE: float = 0.45
 
 var world: Node
 var cdef: CompanionDef
@@ -48,6 +56,7 @@ func setup_world(w: Node) -> void:
 	if cdef == null:
 		return
 	_load_inventory()
+	_apply_perks()
 	for c: StringName in COMMANDS:
 		Game.register_command(c, Callable(self, "_cmd_" + String(c).replace(".", "_")))
 	Events.game_saving.connect(_on_game_saving)
@@ -124,6 +133,7 @@ func tick() -> void:
 	if not _has_body():
 		_restore(p)
 		return
+	_apply_perks()
 	var m: CompanionMind = body.ally
 	_look(p)
 	if m.downed or m.rising_t > 0.0 or not (m.order == "follow" or m.work.returning()):
@@ -189,10 +199,12 @@ func _spawn(pos: Vector3, yaw: float) -> Enemy:
 		"tier": "normal", "yaw": yaw}) as Enemy
 	if e == null or e.ally == null:
 		return e
-	# He is no Hollowed: the world settings for enemy health and damage don't apply to him.
-	e.max_health = e.def.health
+	# He is no Hollowed: the world settings for enemy health and damage don't apply to him; his own
+	# (companion_strength, the difficulty presets set it) scales both.
+	var k: float = strength()
+	e.max_health = e.def.health * k
 	e.health = e.max_health
-	e.damage_mult = 1.0
+	e.damage_mult = k
 	e.ally.recruited = recruited()
 	e.ally.inventory = inventory
 	return e
@@ -233,6 +245,12 @@ func _restore(p: Player) -> void:
 	_rejoin = true
 
 
+## The companion_strength world setting: his health and damage (1 when unset).
+static func strength() -> float:
+	var rules: GameRules = GameRules.current()
+	return clampf(rules.num("companion_strength"), 0.1, 4.0) if rules != null and rules.values.has("companion_strength") else 1.0
+
+
 ## Puts him beside the player, out of sight (behind them), on the ground.
 func place_beside(p: Player) -> void:
 	if not _has_body():
@@ -247,10 +265,86 @@ func beside(p: Player) -> Vector3:
 	var fwd: Vector3 = -p.camera.global_transform.basis.z if p.camera != null else Vector3.FORWARD
 	fwd.y = 0.0
 	fwd = fwd.normalized() if fwd.length() > 0.01 else Vector3.FORWARD
-	var at: Vector3 = p.global_position - fwd * 6.0 + Vector3(fwd.z, 0.0, -fwd.x) * 2.0
-	var g: float = _ground(at)
-	at.y = maxf(g, p.global_position.y - 1.0) + 0.3 if g > -INF else p.global_position.y
+	return safe_spot(p.global_position, p.global_position - fwd * 6.0 + Vector3(fwd.z, 0.0, -fwd.x) * 2.0)
+
+
+## A spot near `anchor` (the player, a bed) he can stand on and walk from (TD-299): `prefer` first,
+## then rings round the anchor nearest `prefer` first. A spot is on the floor under it (a storey or
+## a cellar's floor at the anchor's level, else the terrain), within 2.5 m of the anchor's height,
+## not in water deeper than WADE, with room for his body (no wall, prop, piece or tree in it), in
+## the open from the anchor (the same side of any wall) and, where the anchor stands on a baked
+## navmesh, on it too. Nothing fits: the anchor itself.
+func safe_spot(anchor: Vector3, prefer: Vector3 = Vector3.INF) -> Vector3:
+	var cands: Array[Vector3] = []
+	for r: float in [1.8, 3.0, 4.5, 6.5, 9.0]:
+		for i: int in 10:
+			var a: float = TAU * (float(i) + (0.5 if int(r) % 2 == 1 else 0.0)) / 10.0
+			cands.append(anchor + Vector3(cos(a), 0.0, sin(a)) * r)
+	if prefer != Vector3.INF:
+		cands.sort_custom(func(x: Vector3, y: Vector3) -> bool: return _flat(x, prefer) < _flat(y, prefer))
+		cands.push_front(prefer)
+	var floor_y: float = _floor_at(anchor, anchor)
+	var base: Vector3 = Vector3(anchor.x, floor_y if floor_y > -INF else anchor.y, anchor.z)
+	for c: Vector3 in cands:
+		var at: Vector3 = _stand_at(c, base)
+		if at != Vector3.INF:
+			return at + Vector3.UP * 0.1
+	return base + Vector3.UP * 0.1
+
+
+## `c` stood on, or INF where he can't stand (safe_spot).
+func _stand_at(c: Vector3, anchor: Vector3) -> Vector3:
+	var y: float = _floor_at(c, anchor)
+	if y == -INF or absf(y - anchor.y) > 2.5:
+		return Vector3.INF
+	var at := Vector3(c.x, y, c.z)
+	var water: Node = world.get(&"water") if world != null else null
+	if water != null and water.has_method(&"depth_at") and float(water.call(&"depth_at", at)) > WADE:
+		return Vector3.INF
+	var w3: World3D = _world3d()
+	if w3 == null:
+		return at
+	var space: PhysicsDirectSpaceState3D = w3.direct_space_state
+	var cap := CapsuleShape3D.new()
+	cap.radius = BODY_RADIUS
+	cap.height = BODY_HEIGHT
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = cap
+	q.collision_mask = SOLID_MASK
+	q.transform = Transform3D(Basis(), at + Vector3.UP * (BODY_HEIGHT * 0.5 + 0.25))
+	if not space.intersect_shape(q, 1).is_empty():
+		return Vector3.INF
+	var ray := PhysicsRayQueryParameters3D.create(anchor + Vector3.UP * 1.2, at + Vector3.UP * 1.2, WALL_MASK)
+	if not space.intersect_ray(ray).is_empty():
+		return Vector3.INF
+	var nav: RID = w3.navigation_map
+	if NavigationServer3D.map_get_iteration_id(nav) > 0 and not NavigationServer3D.map_get_regions(nav).is_empty():
+		var on: Vector3 = NavigationServer3D.map_get_closest_point(nav, anchor)
+		if _flat(on, anchor) < 1.0 and _flat(NavigationServer3D.map_get_closest_point(nav, at), at) > 1.0:
+			return Vector3.INF  # off the mesh where the anchor is on it: a hole, a ledge, a building's inside
 	return at
+
+
+## The floor under (x, z) at the level of `anchor`: the first surface a ray down from just above
+## the anchor's head meets (a storey, a cellar floor, the ground), else the ground (world).
+func _floor_at(c: Vector3, anchor: Vector3) -> float:
+	var w3: World3D = _world3d()
+	if w3 != null:
+		var top := Vector3(c.x, anchor.y + 1.6, c.z)
+		var ray := PhysicsRayQueryParameters3D.create(top, top + Vector3.DOWN * 5.0, WALL_MASK)
+		var hit: Dictionary = w3.direct_space_state.intersect_ray(ray)
+		if not hit.is_empty():
+			return (hit["position"] as Vector3).y
+	if world != null and world.has_method(&"ground_below"):
+		return float(world.call(&"ground_below", Vector3(c.x, anchor.y + 0.5, c.z)))
+	return _ground(c)
+
+
+func _world3d() -> World3D:
+	var p: Player = _player()
+	if p != null and p.is_inside_tree():
+		return p.get_world_3d()
+	return body.get_world_3d() if _has_body() and body.is_inside_tree() else null
 
 
 ## Nobody revived him: he is out until the next dawn (losing what he carried), or for good under
@@ -281,7 +375,7 @@ func _come_back(p: Player) -> void:
 	var ps: PlayerState = p.state
 	var at: Vector3 = ps.spawn_point if ps.has_spawn_point else (world.call(&"drop_site") as Vector3 if world.has_method(&"drop_site") else p.global_position)
 	at.y = maxf(_ground(at), at.y)
-	st["position"] = [at.x + 1.5, at.y, at.z + 1.0]
+	st["position"] = _arr(safe_spot(at, at + Vector3(1.5, 0.0, 1.0)))
 	st["health"] = cdef.return_health
 	st["order"] = "stay"
 	st["spot"] = []
@@ -321,6 +415,8 @@ func _cmd_companion_recruit(args: Dictionary) -> Dictionary:
 		return {"ok": false, "error": "needs one of %s" % ", ".join(cdef.recruit_items)}
 	Events.inventory_changed.emit(ps.id)
 	state()["recruited"] = true
+	state()["recruited_day"] = Game.session.clock.day()
+	_apply_perks()
 	var m: CompanionMind = body.ally
 	m.recruited = true
 	m.set_order("follow")
@@ -436,6 +532,44 @@ func _load_inventory() -> void:
 	inventory.max_slots = int(CompanionDef.fnum(cdef.gather, "slots", 12.0))
 	inventory.max_bulk = 0.0
 	inventory.enforce_carry_max = true  # two logs on the shoulder, like the player
+	_apply_perks()
+
+
+# --- Perks (ADR-0058 phase 3, a lineman) ------------------------------------------------------
+
+## Whole days since he was recruited (an older save without the day: all of them).
+func days_with() -> int:
+	return maxi(0, Game.session.clock.day() - int(state().get("recruited_day", 0))) if Game.session != null else 0
+
+
+## The perks he has now ([] before he is recruited).
+func active_perks() -> Array:
+	return cdef.perks_after(days_with()) if cdef != null and recruited() else []
+
+
+## A perk effect (CompanionDef.PERK_EFFECTS) over his perks now; `none` when none names it.
+func perk(key: String, none: float) -> float:
+	return CompanionDef.perk_effect(active_perks(), key, none)
+
+
+## His pack as his perks have it: gather.slots + slots, a log more on his shoulder per carry_log.
+func _apply_perks() -> void:
+	if inventory == null:
+		return
+	inventory.max_slots = int(CompanionDef.fnum(cdef.gather, "slots", 12.0)) + int(perk("slots", 0.0))
+	var logs: int = int(perk("carry_log", 0.0))
+	inventory.carry_bonus = {&"log": logs} if logs > 0 else {}
+
+
+## The fuel a running generator at `pos` burns, as a factor (BaseTechManager.tick): his `fuel_use`
+## perk while he is up and within its tune_range, else 1.
+func fuel_factor(pos: Vector3) -> float:
+	if cdef == null or not recruited() or is_out() or not _has_body() or body.ally.downed:
+		return 1.0
+	var r: float = perk("tune_range", 0.0)
+	if r <= 0.0 or body.global_position.distance_to(pos) > r:
+		return 1.0
+	return clampf(perk("fuel_use", 1.0), 0.0, 1.0)
 
 
 func _room(item: StringName) -> bool:
