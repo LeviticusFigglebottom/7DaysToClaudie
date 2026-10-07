@@ -57,6 +57,8 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed(&"light"):
 		toggle_light()
 	var captured: bool = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	if Input.is_action_just_pressed(&"inspect") and captured and _cooldown <= 0.0 and not guarding and viewmodel != null:
+		viewmodel.play_inspect()
 	_update_guard(captured and Input.is_action_pressed(&"block") and not _building_busy())
 	if Input.is_action_pressed(&"attack") and _cooldown <= 0.0 and captured and not guarding:
 		# A raised wrist goes down first; the next press swings.
@@ -369,6 +371,7 @@ func _fire(def: ItemDef) -> void:
 		Stimuli.current.emit_sound(player.global_position, def.equip_num("noise", 120.0), &"gunshot", player.state.id)
 	if viewmodel != null:
 		viewmodel.play_recoil()
+		viewmodel.play_use(StringName("fire_%s" % viewmodel.hold_class))
 	if not hit.is_empty():
 		var gun: ItemStack = player.state.inventory.first(current)
 		var dmg: float = def.equip_num("damage", 50.0) * (1.0 + player.state.progression.modifier("ranged_damage_mult"))
@@ -400,6 +403,8 @@ func _reload(def: ItemDef) -> void:
 	_reload_left = def.equip_num("reload_time", 2.5)
 	_reload_item = current
 	_cooldown = _reload_left
+	if viewmodel != null:
+		viewmodel.play_use(StringName("reload_%s" % viewmodel.hold_class), _reload_left)
 	Audio.play_3d(&"sfx/gun_reload", player.global_position, {"volume_db": -6.0, "occlusion": false})
 
 

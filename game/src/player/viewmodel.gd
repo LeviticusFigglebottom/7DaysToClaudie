@@ -322,6 +322,13 @@ func play_use(use: StringName, duration: float = 0.0) -> bool:
 	return _play_once(&"fp_use", duration) if use in [&"eat", &"drink", &"apply"] else false
 
 
+## Turns the held item over to look at it (viewmodel.json `uses.inspect_<hold class>`): false when
+## the hold has no inspect.
+func play_inspect() -> bool:
+	tether.set_raised(false)
+	return play_use(StringName("inspect_%s" % hold_class))
+
+
 func play_recoil() -> void:
 	_recoil = 1.0
 	motion.gun_recoil(1.0)
