@@ -59,7 +59,11 @@ func before_all() -> void:
 	add_child(_tm)
 	_tm.setup(w, {"a": _rt(w)}, {})
 	_plan = _tm.place_cave(CAVE_ID, SPEC) as CavePlan
-	# Build the cave's volume the way frames do.
+	_drain()
+
+
+## Builds the cave's volume the way frames do.
+func _drain() -> void:
 	var until: int = Time.get_ticks_msec() + 120000
 	while not _tm.volume.is_idle() and Time.get_ticks_msec() < until:
 		_tm.start_queued()
@@ -114,7 +118,7 @@ func test_probe_boxes_stay_under_the_ground_and_in_the_cave() -> void:
 		assert_true(p.interior)
 		assert_eq(p.ambient_mode, ReflectionProbe.AMBIENT_COLOR)
 		assert_eq(p.update_mode, ReflectionProbe.UPDATE_ONCE)
-		assert_eq(p.blend_distance, PoiBuilder.PROBE_BLEND)
+		assert_almost_eq(p.blend_distance, PoiBuilder.PROBE_BLEND, 1e-5)
 		var top_y: float = (p.transform * Vector3(0.0, p.size.y * 0.5, 0.0)).y
 		for c: Vector3 in _corners(p):
 			assert_true(box.has_point(c), "corner %s inside the cave's AABB %s" % [c, box])
@@ -173,6 +177,7 @@ func test_probes_join_the_budget_and_go_with_the_cave() -> void:
 	assert_eq(budget.all_probes().size(), 0, "and forgotten by the budget")
 	# Put back for the tests that follow (the plan is the same object: same probes).
 	_tm.place_cave(CAVE_ID, _plan)
+	_drain()
 	assert_eq(_probes().size(), _plan.probe_boxes().size())
 
 
@@ -218,6 +223,9 @@ func test_the_cave_volume_paints_surface_and_interior() -> void:
 	var c: Vector3 = _chamber()
 	var surf: int = 0
 	var deep: int = 0
+	var near: int = 0
+	var max_g: float = 0.0
+	var min_depth: float = INF
 	for key: Vector3i in _tm.volume.chunks:
 		var ch: VolumeTerrain.VChunk = _tm.volume.chunks[key]
 		if ch.mesh_node == null or ch.mesh_node.mesh == null:
@@ -230,9 +238,14 @@ func test_the_cave_volume_paints_surface_and_interior() -> void:
 			var w: Vector3 = verts[i] + ch.mesh_node.position
 			if cols[i].r > 0.99:
 				surf += 1
-			if cols[i].g > 0.99 and w.distance_to(c) < 6.0:
-				deep += 1
+			if w.distance_to(c) < 6.0:
+				near += 1
+				max_g = maxf(max_g, cols[i].g)
+				min_depth = minf(min_depth, _tm.height_at(w.x, w.z) - w.y)
+				if cols[i].g > 0.99:
+					deep += 1
 	assert_gt(surf, 100, "the hill over the cave keeps the heightmap's look")
+	gut.p("chamber %s: %d verts near, %d deep, max G %.2f, min depth %.2f" % [c, near, deep, max_g, min_depth])
 	assert_gt(deep, 50, "the chamber reads as cave")
 	var mat: ShaderMaterial = _tm.volume_material_for("a")
 	assert_true(bool(mat.get_shader_parameter(&"has_splat")))
