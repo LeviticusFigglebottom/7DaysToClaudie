@@ -97,6 +97,8 @@ signal nest_burned(nest_id: String, def_id: StringName, position: Vector3)
 signal ashen_scout_done(entity_id: StringName, reported: bool)
 ## The faction's escalation level changed (0 unaware, 1 watchers, 2 raids, 3 war parties).
 signal ashen_level_changed(level: int)
+## A companion joined the player (ADR-0058): its CompanionDef id.
+signal companion_recruited(companion_id: StringName)
 signal note_found(note_id: StringName)
 signal schematic_learned(schematic_id: StringName)
 

@@ -157,6 +157,7 @@ keys below are the defaults.
 | 1–6, mouse wheel | Toolbelt slots (press the held one again to put it away); the wheel cycles them |
 | F | Turn the lighter, torch or flashlight in your hand on or off |
 | Y | Look over what you are holding |
+| H | Whistle to your companion, Ezra: follow me, or stay where you are (a toggle; §9) |
 | G | Drop a carried log; while looking at a fire, add fuel |
 | R | Rotate: a blueprint by 15°, a carried log by 90° |
 | V | Carried log pose: flat, upright post, pitched (roof) |
@@ -574,6 +575,29 @@ guarding. Step back from Blisters and Bloomed as they die: the burst weakens wit
 see much farther (a Hollow nearly three times as far) and run: a Hollow does 4.3 m/s, faster than
 you walk. Wanderers appear out of sight 70–120 m away in ones to threes: nearly twice as many at
 night, half as many on day 1, more in town and forest.
+
+### Ezra Vane, the lineman
+You are not the first convict the Program dropped here. **Ezra Vane**, two drops before yours and a
+lineman before that, is holed up in his line truck out in the timber with a broken leg: on the
+main map west of Larch Pond, about 400 m north-west of the drop site; in a random world somewhere
+300–900 m from the drop site, away from the roads (the directive *Find the lineman* points the
+way). Press **E** to talk to him; give him a **first aid kit** or **painkillers** and he walks with
+you.
+
+* **Orders.** E on him opens his card: **Follow me**, **Stay here**, **Guard here** (Gather, Fetch,
+  Give and Store are greyed: not yet). **H** whistles him to follow or to stay without the card.
+* **Following** he keeps 3–6 m behind you, walks when you walk and runs to catch up; left far
+  behind (over 120 m), or after you sleep, respawn or load, he turns up beside you. At night he
+  carries a lantern: his own light, it doesn't give you away.
+* **Fighting.** Following, he goes for Hollowed that are hunting near you and for whatever hits
+  him; guarding, for anything that comes within 20 m of his spot (then he goes back to it);
+  staying, only for what comes at him. The Hollowed and the Ashen fight him too, but they still
+  come for you first when they see you. He never hits you, your blows and traps don't hurt him,
+  and what he kills earns you nothing.
+* **Downed.** At 0 health he goes down and the Hollowed leave him. Get to him with a **bandage**
+  or a **first aid kit** and hold **E** for 4 s (it is used up): he gets up with a third of his
+  health. Leave him three minutes and he's gone; he limps back to your bed (or the drop site) the
+  next dawn with half his health. Under the one-life death penalty he doesn't come back.
 
 ### The Hum
 * **When**: 22:00 on a Hum day until 04:00. By default the first is on day 7, then every 7 days (the

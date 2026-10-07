@@ -175,6 +175,30 @@ leaning 50° towards the fingers, the edge facing the way the knuckles do) and j
 `body_forearm.R` weighted wholly to `hand.R`, so it follows every clip and vanishes with a severed
 arm. The scout carries no spear (TD-187: no wrist in the arm IK, the throw rolls the fist over).
 
+### The companion (`ezra_vane`, ADR-0058)
+`generators/character_companion.py` (catalog `blender_catalogs/companions.py`): the `npc_build`
+body as a weathered lineman in his fifties: faded Program fatigues (`ezra_fatigues`, the ripstop
+washed out to a pale khaki-olive), a leather harness (two shoulder straps, `straps`), work gloves
+and boots, a full grey beard and a receding grey crop (`ezra_hair`, its own texture). Rigid gear is
+joined into the segments that carry it, each weighted wholly to one bone, like the raiders' axe:
+* the tool hatchet (`item_tools.hatchet`) in the right fist (`character_living.add_weapon`,
+  registered there as `"hatchet"`);
+* a canvas pack high on his back with a bedroll under it and a white hard hat clipped to its flap
+  (`body_torso`, bone `chest`);
+* climbing spurs on the inside of both shins: a steel shank from the instep, the gaff at its foot,
+  two leather straps round the calf (`body_shin.*`, bones `shin.*`).
+Clips: the living fighter's set (`living_anim`, as above, so the Enemy plays him like the Ashen),
+`talk` and `look` from `npc_anim` (not its `idle`), and his own from `lib/companion_anim.py`:
+| action | frames | loop | notes |
+|---|---|---|---|
+| `downed` | 90 | ✓ | on his back (the lying sleep's pose, pelvis `LIE_Y` behind the origin, so the game's `lie` capsule fits), three laboured breaths a loop, the left hand pressed to his side, the head rolling over and back once |
+| `revive` | 72 | | up off his back slowly: onto an elbow (14), sitting (26), feet in (36), a hand on the right knee to push up (50), rising (62), the living stance (72); CompanionMind waits the clip out |
+| `sit_injured` | 150 | ✓ | sat on the ground at his camp (the floor sit, sat up, head level), the splinted left leg out, the right knee up; looks off to the treeline and back, rubs the thigh |
+CompanionMind sets `downed`, `sit_injured`, `talk` and `look` to loop (EnemyVisual loops only
+idles and gaits). 14,764 body triangles; 1.81 m. The face is still the shared Hollowed head
+(TD-170/TD-192): heavy-lidded but bulging up close; the splint on his leg is not modelled
+(TD-302).
+
 ## First-person arms (`models/characters/fp_arms.glb`, ADR-0029)
 * Separate armature `Armature` with bones `root, upper_arm.L/R, forearm.L/R, forearm_twist.L/R,
   hand.L/R` and three bones per digit, one per joint: `thumb_1/2/3.L/R` (CMC, MCP, IP) and

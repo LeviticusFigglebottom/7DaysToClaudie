@@ -210,6 +210,8 @@ var tribe: AshenMind = null
 ## TD-186 (ADR-0048 phase 2): a body of a hostile faction (FactionDef.hostile) it has seen or been
 ## hurt by, fought in CHASE/ATTACK (SPIT for a spear) while the player is out of sight (EnemyFoes).
 var foe: Enemy = null
+## Ezra Vane (archetype `companion`, ADR-0058): orders, downed and revive; null for everything else.
+var ally: CompanionMind = null
 var _foe_seen: float = -100.0
 var _foe_scan_t: float = 0.0
 ## A wolf (ADR-0055): its part in its pack (WolfHunt, set by WolfPacks); null for everything else.
@@ -224,6 +226,9 @@ func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary
 	if def.archetype == "tribe":
 		tribe = AshenMind.new()
 		tribe.setup(self, opts)
+	elif def.archetype == "companion":
+		ally = CompanionMind.new()
+		ally.setup(self)
 	_rng.seed = Ids.hash64("enemy:" + String(p_id))
 	_fx_rng.seed = Ids.hash64("enemy_fx:" + String(p_id))
 	_stumble_cd = _fx_rng.randf_range(STUMBLE_EVERY.x, STUMBLE_EVERY.y)
@@ -345,7 +350,7 @@ func _player() -> Player:
 
 
 func is_alive() -> bool:
-	return state != State.DEAD
+	return state != State.DEAD and (ally == null or ally.in_play())  # ADR-0058: Ezra unrecruited or down is no foe
 
 
 ## Night by the clock, or deep underground (a cellar, a mine level, a cave: ADR-0044), where it is
@@ -379,6 +384,8 @@ func _physics_process(delta: float) -> void:
 	_retreat_t = maxf(0.0, _retreat_t - delta)
 	_stagger_lock = maxf(0.0, _stagger_lock - delta)
 	_far = dist > KINEMATIC_BEYOND
+	if ally != null and ally.step(delta, p, dist):  # ADR-0058: the companion's own loop
+		return
 	if _root_t > 0.0:
 		_root_t -= delta
 		if _root_t <= 0.0:
@@ -769,6 +776,8 @@ func _vocalize(delta: float, dist: float) -> void:
 # --- Senses ----------------------------------------------------------------------------------
 
 func _perceive(p: Player, dist: float) -> void:
+	if ally != null:
+		return  # the companion never hunts the player (ADR-0058)
 	if p == null or Stimuli.current == null or not p.state.stats.alive or DebugTools.is_on(&"invisible"):
 		return
 	if wolf != null and wolf.ignores_player():
@@ -1168,6 +1177,8 @@ func _scream() -> void:
 
 ## A voice for this body: the Hollowed's own, or a hound's.
 func _vid(hollowed: StringName, hound: StringName) -> StringName:
+	if ally != null:
+		return CompanionMind.voice(hollowed)
 	if tribe != null:
 		return AshenMind.voice(hollowed)
 	return hollowed if quad.is_empty() else hound
@@ -1389,7 +1400,7 @@ func _charge_impact_structure(wall: Node3D) -> void:
 # --- Damage ----------------------------------------------------------------------------------
 
 func take_damage(info: DamageInfo) -> void:
-	if state == State.DEAD:
+	if state == State.DEAD or (ally != null and ally.shrugs(info)):
 		return
 	var limb: String = visual.limb_at(info.hit_pos, self) if info.hit_pos != Vector3.ZERO else "torso"
 	var mult: float = 2.2 if limb == "head" else (0.7 if limb != "torso" else 1.0)
@@ -1419,6 +1430,9 @@ func take_damage(info: DamageInfo) -> void:
 		Audio.play_3d(&"sfx/blade_hit_flesh" if info.type in [&"slash", &"pierce"] else &"sfx/hit_flesh", info.hit_pos, {"volume_db": -3.0})
 	if health > 0.0 and _rng.randf() < 0.6:
 		Audio.play_3d(_vid(&"voice/zombie_pain", &"voice/hound_yelp"), _mouth(), {"volume_db": -3.0})
+	if ally != null and health <= 0.0:
+		ally.go_down(info)  # downed, not dead (ADR-0058)
+		return
 	if health <= 0.0 or (severed.has("head")):
 		_die(info)
 		return
@@ -1690,16 +1704,23 @@ func _hurt_by_foe(info: DamageInfo) -> void:
 # --- Corpse loot -------------------------------------------------------------------------------
 
 func interact_text(_player: Player) -> String:
+	if ally != null:
+		return ally.interact_text(_player)
 	if state != State.DEAD:
 		return ""
 	return "Search remains" if not _looted else ("Remains" if inventory == null or inventory.stacks.is_empty() else "Search remains")
 
 
 func interact_hold_time(_player: Player) -> float:
+	if ally != null:
+		return ally.interact_hold_time(_player)
 	return 1.2 if not _looted else 0.0
 
 
 func interact(player: Player) -> void:
+	if ally != null:
+		ally.interact(player)
+		return
 	if state != State.DEAD:
 		return
 	if not _looted:
