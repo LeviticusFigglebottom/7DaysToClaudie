@@ -223,6 +223,8 @@ func _make_quad_placeholder() -> Node3D:
 		["leg_hr", Vector3(0.09, 0.26, -0.28), Vector3.ZERO, Vector2(0.04, 0.52), coat],
 	]
 	for p: Array in parts:
+		if p[0] == "growth" and model_id.begins_with("animals/wolf"):
+			continue  # a wolf carries no Bloom (ADR-0055)
 		var mi := MeshInstance3D.new()
 		mi.name = p[0]
 		var c := CapsuleMesh.new()

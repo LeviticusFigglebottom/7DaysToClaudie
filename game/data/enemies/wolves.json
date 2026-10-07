@@ -1,0 +1,16 @@
+{
+  "_doc": "Grey wolves (ADR-0055): living animals on the hound's body and brain (archetype hound, faction wildlife), hunting in packs of 3-6. No infection on a bite (bleed only), no Hum, no rooting at dawn, no heat. When a pack leaves the player alone, hunts deer, feeds and beds down is WolfPack's (data/config/wolves.json); spawning is the WildlifeSpawner's (data/wildlife/wolves.json), never the AI director's. A dead wolf is a carcass the player searches (loot table wolf_remains: the pelt always, meat and bone).",
+  "defs": [
+    {"id": "grey_wolf", "name": "Grey Wolf", "description": "Lean, grey and patient. The pack watches you from the treeline by day and leaves you be, if it has eaten. Hungry, or at night, or near its kill, it comes for you from every side. Keeps off fire.",
+     "archetype": "hound", "faction": "wildlife",
+     "bodies": ["animals/wolf_a", "animals/wolf_b"],
+     "health": 85, "limbs": {"head": 34, "torso": 85},
+     "speed": {"day_walk": 1.6, "day_run": 8.2, "night_walk": 1.8, "night_run": 8.6},
+     "attack": {"damage": 11, "range": 1.8, "cooldown": 1.1, "structure_damage": 0, "infection": 0, "bleed": 0.4},
+     "perception": {"sight_day": 45, "sight_night": 40, "dark_sight": 0.8, "fov": 240, "hearing": 2.0, "smell": 3.5},
+     "behavior": {"quadruped": {"length": 1.35, "radius": 0.32, "eye": 0.72},
+                  "pack": {"size": [3, 6]}, "tracker": true, "no_dismember": true, "crawl_on_leg_loss": false,
+                  "stagger_threshold": 14, "sleeper_poses": ["lie"]},
+     "xp": 35, "loot_table": "wolf_remains", "heat_value": 0.0, "gamestage_min": 0, "scale": [0.95, 1.05]}
+  ]
+}

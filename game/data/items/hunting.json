@@ -8,6 +8,9 @@
     {"id": "deer_hide", "name": "Deer Hide", "description": "A green hide, rolled hair-in. Scrape it, cut it into strips, or wear it against the cold.", "category": "resource", "stack_max": 3, "carry_max": 4, "bulk": 1.2, "value": 6, "tags": ["hide"]},
     {"id": "hare_pelt", "name": "Hare Pelt", "description": "Soft, thin, brown going white at the edges.", "category": "resource", "stack_max": 10, "carry_max": 10, "bulk": 0.15, "value": 2, "tags": ["hide", "fabric"]},
     {"id": "sinew", "name": "Sinew", "description": "Back-strap tendon, dried in strands. Stronger than any cord you can twist from fireweed.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.03, "value": 2, "tags": ["binding", "sinew"]},
-    {"id": "rawhide_strips", "name": "Rawhide Strips", "description": "Hide cut in long strips. Wet it, wrap it, let it dry: it shrinks tight as iron.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.08, "value": 2, "tags": ["binding", "hide"]}
+    {"id": "rawhide_strips", "name": "Rawhide Strips", "description": "Hide cut in long strips. Wet it, wrap it, let it dry: it shrinks tight as iron.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.08, "value": 2, "tags": ["binding", "hide"]},
+    {"id": "wolf_pelt", "name": "Wolf Pelt", "description": "A grey wolf's winter coat, rolled hair-in. Thick enough to sleep warm under; cut it for strips if you must.", "category": "resource", "stack_max": 3, "carry_max": 4, "bulk": 1.0, "value": 9, "tags": ["hide"]},
+    {"id": "raw_wolf_meat", "name": "Raw Wolf Meat", "description": "Dark, stringy meat off a wolf's shoulder. Cook it through.", "category": "food", "stack_max": 6, "carry_max": 6, "bulk": 0.45, "value": 2, "consume": {"fullness": 14, "health": -7}, "tags": ["meat", "raw"]},
+    {"id": "cooked_wolf_meat", "name": "Roast Wolf", "description": "Tough and gamey, but it's meat.", "category": "food", "stack_max": 6, "carry_max": 6, "bulk": 0.4, "value": 5, "consume": {"fullness": 32, "hydration": -3, "health": 3, "stamina": 6}, "tags": ["meat"]}
   ]
 }

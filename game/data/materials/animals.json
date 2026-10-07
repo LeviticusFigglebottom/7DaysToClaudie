@@ -1,6 +1,46 @@
 {
- "_doc": "Wildlife materials (ADR-0027). Coats use the fur shader: vertex colour R = baked AO, G = the pale coat, B = the dark coat (the darkest point, the nose, is wet); base/pale/dark tint a neutral strand texture (animal_fur_short, animal_fur_soft, animal_feathers from tools/assetgen/textures/gen/animals.py). Birds flap in the vertex stage (wing_flap, UV2.x = span). Hooves, antlers and eyes use std_surface (metallic_mult 0: untextured ORM reads as white). The Hollowed hounds: fur_hound_* tint animal_fur_coarse (G = bare, mangy skin rather than a pale coat); hound_bloom_plates are the Bloom's shelf plates on their backs (bloom_fungus, G undersides, B thin margins); their teeth and thread mats use the Hollowed's teeth and bloom_growth.",
+ "_doc": "Wildlife materials (ADR-0027). Coats use the fur shader: vertex colour R = baked AO, G = the pale coat, B = the dark coat (the darkest point, the nose, is wet); base/pale/dark tint a neutral strand texture (animal_fur_short, animal_fur_soft, animal_feathers from tools/assetgen/textures/gen/animals.py). Birds flap in the vertex stage (wing_flap, UV2.x = span). Hooves, antlers and eyes use std_surface (metallic_mult 0: untextured ORM reads as white). The Hollowed hounds: fur_hound_* tint animal_fur_coarse (G = bare, mangy skin rather than a pale coat); hound_bloom_plates are the Bloom's shelf plates on their backs (bloom_fungus, G undersides, B thin margins); their teeth and thread mats use the Hollowed's teeth and bloom_growth. Wolves (ADR-0055): fur_wolf_* tint animal_fur_soft (G = the cream underparts, B = the dark saddle and tail tip), eye_wolf is amber.",
  "materials": {
+  "fur_wolf_a": {
+   "shader": "fur",
+   "textures": "animal_fur_soft",
+   "params": {
+    "uv_scale": 14.0,
+    "base_color": "#504b44",
+    "pale_color": "#cbc2b0",
+    "dark_color": "#1e1b18",
+    "grain": 0.8,
+    "normal_strength": 1.2,
+    "roughness": 0.95,
+    "sheen": 0.4,
+    "sheen_tint": 0.75,
+    "backlight_amount": 0.25,
+    "backlight_color": "#b08a5e",
+    "nose_roughness": 0.2
+   }
+  },
+  "fur_wolf_b": {
+   "shader": "fur",
+   "textures": "animal_fur_soft",
+   "params": {
+    "uv_scale": 14.0,
+    "base_color": "#54493d",
+    "pale_color": "#cdbd9f",
+    "dark_color": "#221b15",
+    "grain": 0.8,
+    "normal_strength": 1.2,
+    "roughness": 0.95,
+    "sheen": 0.4,
+    "sheen_tint": 0.75,
+    "backlight_amount": 0.25,
+    "backlight_color": "#b0784a",
+    "nose_roughness": 0.2
+   }
+  },
+  "eye_wolf": {
+   "shader": "std_surface",
+   "params": {"tint": "#8c5d16", "roughness_mult": 0.05, "metallic_mult": 0.0, "vertex_ao_strength": 0.4}
+  },
   "fur_deer": {
    "shader": "fur",
    "textures": "animal_fur_short",
