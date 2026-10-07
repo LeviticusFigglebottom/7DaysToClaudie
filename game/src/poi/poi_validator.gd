@@ -178,10 +178,20 @@ func _walkable(li: int, c: Vector2i) -> bool:
 	if li != 0 or not layout.room_at(li, c) in [".", " "]:
 		return false
 	var lv: Dictionary = layout.levels.get(0, {})
-	if not (c.x >= -YARD and c.y >= -YARD and c.x < int(lv.get("w", 0)) + YARD and c.y < int(lv.get("d", 0)) + YARD):
+	return c.x >= -YARD and c.y >= -YARD and c.x < int(lv.get("w", 0)) + YARD and c.y < int(lv.get("d", 0)) + YARD
+
+
+## Whether a pickup in cell `c` can be taken: its cell is reached, or (in the yard, where a note
+## lies on a picnic table the route goes round) a cell beside it is.
+func _in_reach(seen: Dictionary, li: int, c: Vector2i) -> bool:
+	if seen.has(node_key(li, c)):
+		return true
+	if li != 0 or layout.is_room(layout.room_at(0, c)):
 		return false
-	# Where a tall yard prop stands the player can't (YARD_WALL_H): no route through its cells.
-	return not _yard_cuts().has(_yard_cell_key(c))
+	for d: Vector2i in PoiLayout.DIRS:
+		if seen.has(node_key(0, c + d)):
+			return true
+	return false
 
 
 ## Whether an outside cell of level 0 is on the yard's outer edge, where the world beyond reaches it.
@@ -240,17 +250,10 @@ func _yard_cuts() -> Dictionary:
 			for y: int in range(lo.y, hi.y + 1):
 				for x: int in range(lo.x, hi.x + 1):
 					var c := Vector2i(x, y)
-					# The capsule (0.33 m) can't stand on the cell's centre: the cell is taken.
-					if seg_hits_box(Vector2(c) + Vector2(0.5, 0.5), Vector2(c) + Vector2(0.5, 0.5), w[0], (w[1] as Vector2) + Vector2(0.33, 0.33), w[2]):
-						_cuts[_yard_cell_key(c)] = true
 					for n: Vector2i in [c + Vector2i(1, 0), c + Vector2i(0, 1)]:
 						if seg_hits_box(Vector2(c) + Vector2(0.5, 0.5), Vector2(n) + Vector2(0.5, 0.5), w[0], w[1], w[2]):
 							_cuts[_yard_edge_key(c, n)] = true
 	return _cuts
-
-
-static func _yard_cell_key(c: Vector2i) -> int:
-	return -(((c.x + 512) << 20) | (c.y + 512)) - 1
 
 
 static func _yard_edge_key(a: Vector2i, b: Vector2i) -> int:
@@ -479,7 +482,7 @@ func _keys_reachable(seen: Dictionary, keys: Dictionary) -> bool:
 		var item: String = str(p.get("item", ""))
 		if item == "" or keys.has(item):
 			continue
-		if seen.has(node_key(p["level"], p["cell"])):
+		if _in_reach(seen, int(p["level"]), p["cell"]):
 			keys[item] = true
 			added = true
 	return added
@@ -647,7 +650,10 @@ func _run() -> void:
 				and float(p.get("y", 0.0)) < 0.5:
 			_e("prop '%s' at %s level %d floats over a stairwell or hatch opening (no floor there)" % [
 				str(p.get("id", pd.id)), p["cell"], p["level"]])
-		if pd.collision != "none" and route_cells.has(node_key(p["level"], p["cell"])) and pd.size.x * pd.size.z > 0.5 and not bool(p.get("route_ok", false)):
+		# Indoors only: in the yard the route goes round tall props by the yard's cuts (_yard_cuts),
+		# and a 1 m cell beside a fence or a bench is no corridor (TraversalAudit walks it).
+		if pd.collision != "none" and route_cells.has(node_key(p["level"], p["cell"])) and pd.size.x * pd.size.z > 0.5 and not bool(p.get("route_ok", false)) \
+				and layout.is_built(int(p["level"]), p["cell"]):
 			_w("prop '%s' at %s sits on the route corridor" % [pd.id, p["cell"]])
 	_check_wall_gaps()
 	for p2: Dictionary in layout.pickups:
@@ -655,7 +661,7 @@ func _run() -> void:
 			_e("pickup '%s' at %s level %d floats in a tall room's open space" % [p2["pid"], p2["cell"], p2["level"]])
 		elif _over_well(int(p2["level"]), p2["cell"]):
 			_e("pickup '%s' at %s level %d floats over a stairwell or hatch opening" % [p2["pid"], p2["cell"], p2["level"]])
-		if not seen.has(node_key(p2["level"], p2["cell"])):
+		if not _in_reach(seen, int(p2["level"]), p2["cell"]):
 			_e("pickup '%s' unreachable" % p2.get("item"))
 		elif not ContentDB.instance.has_def(&"item", StringName(str(p2.get("item", "")))):
 			_e("pickup item '%s' unknown" % p2.get("item"))
