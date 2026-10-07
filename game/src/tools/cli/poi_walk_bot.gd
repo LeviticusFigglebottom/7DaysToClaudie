@@ -126,11 +126,6 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 	_index_steps()
 	_check_corridor()
 	await _settle(3)
-	if OS.has_environment("POI_WALK_PROBE"):
-		var pp: PackedStringArray = OS.get_environment("POI_WALK_PROBE").split(",")
-		var q := PhysicsRayQueryParameters3D.create(Vector3(float(pp[0]), 3.0, float(pp[1])), Vector3(float(pp[0]), -3.0, float(pp[1])), 0xFFFFFFFF)
-		var hit: Dictionary = player.get_world_3d().direct_space_state.intersect_ray(q)
-		print("[poi_walk]     probe %s %s" % [hit, (hit["collider"] as Node).get_path() if not hit.is_empty() else ""])
 	await _walk_route()
 	await _explore()
 	_rooms_report()
@@ -143,6 +138,9 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 	var blocking: int = (_report["blocked"] as Array).size() + (_report["unreached"] as Array).size()
 	_report["blocking"] = blocking
 	_report["frames"] = _frames
+	var rooms: Array = _visited.keys()
+	rooms.sort()
+	_report["visited"] = rooms
 	return _report
 
 
@@ -418,21 +416,57 @@ var _cluttered: Dictionary = {}
 ## cell's middle, or (with `from`, on one level) anywhere along the straight line between two
 ## cells' middles. Cached.
 func _is_cluttered(n: Array, from: Array = []) -> bool:
-	var k: String = _nk(n) + ((">" + _nk(from)) if not from.is_empty() else "")
+	if not from.is_empty() and int(from[0]) == int(n[0]) and (from[1] as Vector2i).distance_squared_to(n[1]) == 1:
+		return is_nan(_lane(from, n))
+	var k: String = _nk(n)
 	if not _cluttered.has(k):
 		var ctr: Vector3 = _cell_pos(n[0], n[1])
-		var zone := AABB(ctr + Vector3(-Player.RADIUS, Player.STEP_HEIGHT, -Player.RADIUS), Vector3(Player.RADIUS * 2.0, Player.STAND_HEIGHT - Player.STEP_HEIGHT, Player.RADIUS * 2.0))
-		if not from.is_empty() and int(from[0]) == int(n[0]):
-			var c2: Vector3 = _cell_pos(from[0], from[1])
-			zone = zone.merge(AABB(c2 + Vector3(-Player.RADIUS, Player.STEP_HEIGHT, -Player.RADIUS), zone.size))
-		var hit: bool = false
-		for pr: Dictionary in _props:
-			var ov: AABB = zone.intersection(pr["box"])
-			if ov.size.x > 0.02 and ov.size.z > 0.02 and ov.size.y > 0.02:
-				hit = true
-				break
-		_cluttered[k] = hit
+		_cluttered[k] = _hits_props(AABB(ctr + Vector3(-Player.RADIUS, Player.STEP_HEIGHT, -Player.RADIUS), Vector3(Player.RADIUS * 2.0, Player.STAND_HEIGHT - Player.STEP_HEIGHT, Player.RADIUS * 2.0)))
 	return bool(_cluttered[k])
+
+
+## Whether a box overlaps any prop's collision box by more than 2 cm each way.
+func _hits_props(zone: AABB) -> bool:
+	for pr: Dictionary in _props:
+		var ov: AABB = zone.intersection(pr["box"])
+		if ov.size.x > 0.02 and ov.size.z > 0.02 and ov.size.y > 0.02:
+			return true
+	return false
+
+
+## The sideways offset (m, across the step) of a clear lane for the capsule from one cell's middle
+## to its neighbour's, above step height: 0 when the middle line is clear, else the smallest offset
+## that is (staying off the walls along either cell); NAN when props close every lane. A chair
+## beside a table leaves room to walk past it off the cells' middle line.
+func _lane(a: Array, b: Array) -> float:
+	var k: String = _nk(a) + ">" + _nk(b)
+	if _cluttered.has(k):
+		return float(_cluttered[k])
+	var pa: Vector3 = _cell_pos(a[0], a[1])
+	var pb: Vector3 = _cell_pos(b[0], b[1])
+	var along: Vector2i = (b[1] as Vector2i) - (a[1] as Vector2i)
+	var across := Vector3(-along.y, 0.0, along.x)
+	var out: float = NAN
+	for o: float in [0.0, 0.12, -0.12, 0.24, -0.24, 0.3, -0.3]:
+		if absf(o) > 0.1:
+			# Off the middle only where neither cell has a wall on that side.
+			var side: int = PoiLayout.DIRS.find(Vector2i(roundi(across.x * signf(o)), roundi(across.z * signf(o))))
+			var walled: bool = false
+			for c: Vector2i in [a[1] as Vector2i, b[1] as Vector2i]:
+				var e: Array = PoiLayout.side_edge(c, side)
+				var ek: String = PoiLayout.edge_key(int(a[0]), e[0], e[1])
+				walled = walled or layout.walls.has(ek) or layout.galleries.has(ek)
+			if walled:
+				continue
+		var qa: Vector3 = pa + across * o
+		var qb: Vector3 = pb + across * o
+		var lo := Vector3(minf(qa.x, qb.x) - Player.RADIUS, maxf(pa.y, pb.y) + Player.STEP_HEIGHT, minf(qa.z, qb.z) - Player.RADIUS)
+		var hi := Vector3(maxf(qa.x, qb.x) + Player.RADIUS, maxf(pa.y, pb.y) + Player.STAND_HEIGHT, maxf(qa.z, qb.z) + Player.RADIUS)
+		if not _hits_props(AABB(lo, hi - lo)):
+			out = o
+			break
+	_cluttered[k] = out
+	return out
 
 
 func _index_steps() -> void:
@@ -610,6 +644,13 @@ func _leg(a: Array, b: Array) -> void:
 	var cls: Dictionary = _classify(a, b)
 	var kind: String = cls["kind"]
 	var leg: Dictionary = _new_leg(a, b, kind)
+	# The plan only goes through a prop when nothing else gets there.
+	if _is_cluttered(b, a):
+		leg["through_props"] = true
+	if int(a[0]) == int(b[0]) and _under_flight(b):
+		leg["note"] = "the plan crosses a stair flight's cell on the floor below it (the validator walks it; nothing else reached the next waypoint)"
+	elif int(a[0]) == int(b[0]) and validator._over_well(int(b[0]), b[1]):
+		leg["note"] = "the plan crosses an open stairwell or hatch (the validator walks it; there is no floor)"
 	if cls.has("opening"):
 		leg["opening"] = str((cls["opening"] as Dictionary)["id"])
 	var ok: bool = true
@@ -671,6 +712,18 @@ func _leg(a: Array, b: Array) -> void:
 				ok = await _go(mid - n * 0.55, false, leg)
 				ok = ok and await _go(mid + n * 0.1, false, leg)
 				ok = ok and await _go(end, true, leg)
+			elif kind == "floor" and (b[1] as Vector2i).distance_squared_to(a[1]) == 1:
+				# Down the clear lane past a chair or a crate (or the middle line when nothing is
+				# in the way, or no lane is clear: then the props are what stops the body).
+				var o: float = _lane(a, b)
+				if not is_nan(o) and absf(o) > 0.01:
+					var d2: Vector2i = (b[1] as Vector2i) - (a[1] as Vector2i)
+					var across := Vector3(-d2.y, 0.0, d2.x) * o
+					ok = await _go(_cell_pos(a[0], a[1]) + across, false, leg)
+					end = _cell_pos(b[0], b[1]) + across
+					ok = ok and await _go(end, true, leg)
+				else:
+					ok = await _go(end, true, leg)
 			else:
 				ok = await _go(end, true, leg)
 	_end_leg(leg, ok, end)
@@ -957,13 +1010,16 @@ func _close_leaf_in_way(needed: Array, own: String) -> bool:
 	return false
 
 
-## A closed door within reach ahead: open it (as the player would, interacting).
+## A closed leaf of this leg's own doorway within reach: open it (as the player would).
 func _open_near(leg: Dictionary) -> bool:
+	var own: String = str(leg.get("opening", ""))
+	if own == "":
+		return false
 	for n: Node in inst.get_children():
 		if not n is PoiPieces.Door:
 			continue
 		var d: PoiPieces.Door = n
-		if d.is_broken() or d.state == "open" or d.global_position.distance_to(player.global_position) > 1.6:
+		if d.opening_id != own or d.is_broken() or d.state == "open" or d.global_position.distance_to(player.global_position) > 1.6:
 			continue
 		var op: Dictionary = layout.opening(d.opening_id)
 		if op.is_empty():
