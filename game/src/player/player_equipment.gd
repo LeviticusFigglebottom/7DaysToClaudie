@@ -29,11 +29,14 @@ var _swing_len: float = 0.6
 var _hit_frac: float = 0.45
 ## Block held with a weapon that has a guard (ViewModelHolds.block_share > 0).
 var guarding: bool = false
+## The bow's draw and loose (ADR-0057): its own file, driven from here every frame.
+var bow: BowHandler
 
 
 func _ready() -> void:
 	player = get_parent() as Player
 	viewmodel = player.get_node_or_null("Head/Camera3D/ViewModel") as ViewModel
+	bow = BowHandler.new(self)
 
 
 func carried_logs() -> int:
@@ -45,6 +48,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_cooldown = maxf(0.0, _cooldown - delta)
 	_sync_equipped()
+	_update_bow(delta)
 	if not player.input_enabled:
 		return
 	for i: int in player.state.toolbelt.size():
@@ -84,6 +88,19 @@ func _physics_process(delta: float) -> void:
 			_resolve_hit()
 
 
+## Hold Attack to draw, let go to loose, Block to let down (BowHandler). Input off or the mouse
+## freed (a menu) mid-draw lets the string down rather than loosing.
+func _update_bow(delta: float) -> void:
+	if bow == null:
+		return
+	var free: bool = player.input_enabled and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	if bow.drawing and not free:
+		bow.let_down()
+	var tether_up: bool = viewmodel != null and viewmodel.tether_raised()
+	bow.update(delta, free and Input.is_action_pressed(&"attack"), free and _cooldown <= 0.0 and not guarding and not tether_up
+		and not _building_busy())
+
+
 func _building_busy() -> bool:
 	var building: Node = Game.world.get(&"building") if Game.world != null else null
 	return building != null and (building.call(&"is_placing") or carried_logs() > 0)
@@ -119,6 +136,8 @@ func _sync_equipped() -> void:
 	guarding = false
 	if viewmodel != null:
 		viewmodel.show_item(item_id)
+	if bow != null:
+		bow.on_equipped()
 	equipped_changed.emit(item_id)
 
 
@@ -153,6 +172,9 @@ func primary() -> void:
 
 
 func secondary() -> void:
+	if bow != null and bow.drawing:
+		bow.let_down()
+		return
 	var def: ItemDef = Content.item(current)
 	if def != null and def.is_consumable():
 		var res: Dictionary = Game.execute(&"inventory.consume", {"player": player.state.id, "item": current})

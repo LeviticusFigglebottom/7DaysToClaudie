@@ -12,6 +12,9 @@
     {"id": "bough_bundle", "result": "leaf_bundle", "ingredients": {"stick": 1, "plant_fiber": 1}, "time": 1.0, "category": "materials"},
     {"id": "sinew_cordage", "result": "cordage", "count": 2, "ingredients": {"sinew": 2}, "time": 2.0, "category": "materials"},
     {"id": "rawhide_strips", "result": "rawhide_strips", "count": 4, "ingredients": {"deer_hide": 1}, "tools": ["knife"], "time": 6.0, "category": "materials"},
+    {"id": "hunting_bow", "result": "hunting_bow", "ingredients": {"stick": 2, "sinew": 4, "rawhide_strips": 1}, "tools": ["knife"], "time": 8.0, "category": "weapons"},
+    {"id": "arrow_stone", "result": "arrow_stone", "count": 3, "ingredients": {"stick": 1, "stone": 1, "plant_fiber": 2}, "time": 3.0, "category": "weapons"},
+    {"id": "arrow_bone", "result": "arrow_bone", "count": 3, "ingredients": {"stick": 1, "bone": 1, "sinew": 1}, "tools": ["knife"], "time": 3.0, "category": "weapons"},
     {"id": "huckleberry_seeds", "result": "huckleberry_seeds", "count": 2, "ingredients": {"huckleberries": 4}, "time": 2.0, "category": "materials"},
     {"id": "hide_wrap_bandage", "result": "cloth_bandage", "count": 2, "ingredients": {"hare_pelt": 1}, "tools": ["knife"], "time": 2.5, "category": "medical"}
   ]
