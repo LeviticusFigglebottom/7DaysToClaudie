@@ -1,0 +1,53 @@
+{
+ "_doc": "Bloom nests (ADR-0055): what a nest (game/data/nests/*.json) is built from. Models: tools/assetgen/blender/generators/props_bloom_nest.py -> models/props/<id>[_destroyed].glb (catalog tools/assetgen/blender_catalogs/props_bloom_nest.py); materials game/data/materials/props_bloom_nest.json. clean is the living nest, destroyed the burned one (BloomNests swaps them when it dies). size = [width x, height y, depth z] in metres (Godot axes, front +Z); before the models exist each prop draws as a box of its size. Collision 'convex' = the model's own hulls (none before it exists, so the stand-in boxes never shut the heart away).",
+ "defs": [
+  {
+   "id": "nest_root_mass",
+   "name": "Bloom Nest",
+   "description": "Pale fungal roots as thick as a man's thigh arch up out of a felted mat and close over a hollow, bracket shelves stepping up them, threads slung between. In the hollow a knot of waxy flesh pulses; at night its veins glow.",
+   "tags": ["bloom", "nest", "exterior"],
+   "variants": {"clean": "props/nest_root_mass", "destroyed": "props/nest_root_mass_destroyed"},
+   "collision": "convex",
+   "physics": "static",
+   "hp": 0,
+   "size": [5.6, 2.9, 5.2],
+   "blocks_sight": true
+  },
+  {
+   "id": "nest_pod",
+   "name": "Bloom Pods",
+   "description": "Sacs of translucent flesh on felt stalks, the biggest as tall as a child and splitting at the top. Something curled up moves inside.",
+   "tags": ["bloom", "nest", "exterior"],
+   "variants": {"clean": "props/nest_pod", "destroyed": "props/nest_pod_destroyed"},
+   "collision": "convex",
+   "physics": "static",
+   "hp": 0,
+   "size": [1.5, 1.55, 1.2],
+   "blocks_sight": false
+  },
+  {
+   "id": "nest_shelf_cluster",
+   "name": "Overgrown Stump",
+   "description": "A snapped stump swallowed in felted mycelium, bracket shelves in tiers round it and pale caps at its foot.",
+   "tags": ["bloom", "nest", "exterior"],
+   "variants": {"clean": "props/nest_shelf_cluster", "destroyed": "props/nest_shelf_cluster_destroyed"},
+   "collision": "convex",
+   "physics": "static",
+   "hp": 0,
+   "size": [1.6, 1.45, 1.6],
+   "blocks_sight": false
+  },
+  {
+   "id": "nest_remains",
+   "name": "Remains",
+   "description": "Bones curled on their side, felt grown through the ribs, a canvas pack torn open beside them.",
+   "tags": ["bloom", "nest", "exterior"],
+   "variants": {"clean": "props/nest_remains"},
+   "collision": "none",
+   "physics": "static",
+   "hp": 0,
+   "size": [1.5, 0.25, 1.5],
+   "blocks_sight": false
+  }
+ ]
+}

@@ -89,6 +89,8 @@ signal trade_made(player_id: StringName, trader_id: StringName, item_id: StringN
 signal ashen_raid_started(raid_id: String, target: Vector3, size: int)
 ## A raid is over: `repelled` when the band broke or fell, false when it gave up or the player left.
 signal ashen_raid_ended(raid_id: String, repelled: bool)
+## A Bloom nest burned to death (ADR-0055): its placement id, its NestDef and where it stood.
+signal nest_burned(nest_id: String, def_id: StringName, position: Vector3)
 ## A scout watched the player long enough and got away (`reported`), or was seen off / killed.
 signal ashen_scout_done(entity_id: StringName, reported: bool)
 ## The faction's escalation level changed (0 unaware, 1 watchers, 2 raids, 3 war parties).

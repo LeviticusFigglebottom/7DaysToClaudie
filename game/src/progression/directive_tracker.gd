@@ -43,6 +43,8 @@ func setup_world(w: Node) -> void:
 	Events.crop_harvested.connect(func(pid: StringName, crop_id: StringName, _items: Dictionary) -> void:
 		if Game.session != null and pid == Game.session.local_player_id:
 			record("harvest", crop_id))
+	# A Bloom nest burned (ADR-0055); its def is the target.
+	Events.nest_burned.connect(func(_nid: String, def_id: StringName, _pos: Vector3) -> void: record("burn_nest", def_id))
 	if p != null:
 		fit_world(p)
 		# A loaded game may already meet a level goal in its open chapter.

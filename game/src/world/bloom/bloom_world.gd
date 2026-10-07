@@ -48,6 +48,30 @@ func refresh(dirty: Rect2i) -> void:
 	_texture.update(_image)
 
 
+## Dynamic spots by source ([{pos: Vector2, radius, strength}] each), merged into the field's one
+## spot list, so the rooting mounds (&"mounds") and the Bloom nests (&"nests", ADR-0055) never
+## clobber each other. An empty list removes the source; fading is calling again with a lower
+## strength. (Same API as the hub's BloomTiles version, f5dbc8a; this one recomposes via
+## BloomField.set_spots.)
+func set_spot_source(source: StringName, spots: Array) -> void:
+	if spots.is_empty():
+		_spot_sources.erase(source)
+	else:
+		_spot_sources[source] = spots.duplicate(true)
+	if field == null:
+		return
+	var keys: Array = _spot_sources.keys()
+	keys.sort()
+	var all: Array = []
+	for k: Variant in keys:
+		all.append_array(_spot_sources[k])
+	refresh(field.set_spots(all))
+
+
+## Source -> its spots (set_spot_source), merged in source order.
+var _spot_sources: Dictionary = {}
+
+
 func _process(_delta: float) -> void:
 	var night: float = 0.0
 	if Game.session != null and Game.session.clock != null:
