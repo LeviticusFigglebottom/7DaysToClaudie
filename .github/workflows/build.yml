@@ -8,7 +8,7 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    branches: [claude/compassionate-dirac-8mtvxi]
+    branches: [ccr-24ba8b7d-fttoi8, claude/compassionate-dirac-8mtvxi]
 
 # A build is never cancelled by a newer push: the integration branch gets several pushes an hour,
 # and a full build (assets from cache, import, two exports, pack checks, a smoke run, uploads)
