@@ -2,7 +2,8 @@ extends GutTest
 ## TraversalAudit (ADR-0051), with the player's capsule walked through a built POI:
 ## * a clear room passes;
 ## * a wardrobe parked in a doorway is an error, a barrel the player vaults only a warning;
-## * a raised sill past what the player climbs is an error;
+## * a raised sill past what the player climbs is an error, and so is a window sill out of a
+##   vault's reach of where the player stands (the route cue's crate counts);
 ## * no shipped POI has anything of the kind on its route or the doorways the route crosses.
 
 const Runner := preload("res://src/tools/cli/traversal_audit_runner.gd")
@@ -64,6 +65,28 @@ func test_a_raised_floor_without_a_step_is_reported() -> void:
 		if steps.size() == 1:
 			# Up to 1.3 m the player climbs it with Jump; higher it closes the way.
 			assert_eq(str(steps[0]["severity"]), "warn" if h <= 1.3 else "error", "%.1f m" % h)
+
+
+func test_a_high_window_needs_its_crate() -> void:
+	# The only way in is a window 1.5 m over the yard (floor 0.6 m up, sill 0.9 m over the floor):
+	# out of a vault's reach from the ground, but the route cue's crate stands under it.
+	for cue: Variant in [null, "none"]:
+		var win: Dictionary = {"id": "win", "at": [1, 2], "side": "S", "type": "window", "state": "broken"}
+		if cue != null:
+			win["cue"] = cue
+		var raw: Dictionary = {"id": "t_audit", "name": "T", "tier": 1, "footprint": [12, 12],
+			"style": {"floor_height": 0.6},
+			"levels": [{"level": 0, "plan": ["AAA", "AAA", "AAA"], "rooms": {"A": {}}}],
+			"openings": [win],
+			"route": [{"at": [1, 4]}, {"at": [1, 0]}]}
+		var d := PoiDef.new()
+		d.parse(raw, &"poi", "test")
+		var found: Array[Dictionary] = await Runner.audit_one(self, d, "t_audit_window")
+		var sills: Array = found.filter(func(f: Dictionary) -> bool: return str(f["kind"]) == "window")
+		if cue == null:
+			assert_eq(sills.size(), 0, "the crate under it: %s" % [found])
+		else:
+			assert_eq(sills.size(), 1, "no crate, no way in: %s" % [found])
 
 
 func test_shipped_pois_keep_their_routes_and_doorways_clear() -> void:

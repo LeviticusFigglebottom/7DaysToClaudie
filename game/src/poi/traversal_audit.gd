@@ -75,6 +75,7 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 				hit.merge({"kind": "route", "level": li2, "cell": first[1], "to": last[1],
 					"severity": "warn" if vault or str(hit["what"]).ends_with("+route_ok") else "error"})
 				out.append(hit)
+	out.append_array(_route_windows(inst, v, l, space, exclude))
 	for op2: Dictionary in l.openings:
 		var t: String = str(op2["type"])
 		if _is_vault(t) or str(op2["state"]) in ["barricaded", "boarded"]:
@@ -377,6 +378,65 @@ static func _top_over_floor(space: PhysicsDirectSpaceState3D, inst: Node3D, l: P
 	if r.is_empty():
 		return -1.0
 	return (inst.global_transform.affine_inverse() * (r["position"] as Vector3)).y - fy
+
+
+## Every window or pony wall the validator's route climbs through: the sill must be within a vault
+## (VAULT_MAX) of the highest thing the player can stand on in front of it on the way in: the ground,
+## a porch, or the route cue's crates (RouteCues: one, or two stacked under a high sill), each of
+## which must itself be within a vault of the ground. A crate is climbed by the same vault.
+static func _route_windows(inst: PoiInstance, v: PoiValidator, l: PoiLayout, space: PhysicsDirectSpaceState3D, exclude: Array[RID]) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	for leg: Variant in v.paths:
+		var nodes: Array = leg
+		for i: int in range(1, nodes.size()):
+			var a: Variant = nodes[i - 1]
+			var b: Variant = nodes[i]
+			if not (a is Array and b is Array) or int(a[0]) != int(b[0]):
+				continue
+			var li: int = a[0]
+			var op: Dictionary = _opening_between(l, li, a[1], b[1])
+			if op.is_empty() or not _is_vault(str(op["type"])):
+				continue
+			var key: String = "%s:%s" % [op["id"], a[1]]
+			if seen.has(key):
+				continue
+			seen[key] = true
+			var from: Vector3 = _at(l, li, a[1], 0.0)
+			var to: Vector3 = _at(l, li, b[1], 0.0)
+			var mid: Vector3 = (from + to) * 0.5
+			var dir: Vector3 = (to - from).normalized()
+			var floor_y: float = l.level_y(li)
+			# The sill: the top of what fills the opening below its glass (a ray down its middle).
+			var sill: float = _ray_down(space, inst, mid + Vector3(0, floor_y + 2.0, 0), floor_y - 1.0, exclude)
+			# Where the climber stands: the highest surface 0.3-0.9 m out in front of the wall.
+			var stand: float = -INF
+			var ground: float = INF
+			# Along the opening too: a 2 m window's crate stands under its middle.
+			var side := Vector3(-dir.z, 0.0, dir.x)
+			for w: float in [-0.5, -0.25, 0.0, 0.25, 0.5]:
+				for d: float in [0.3, 0.5, 0.7, 0.9]:
+					var p: Vector3 = mid - dir * d + side * w
+					var y: float = _ray_down(space, inst, p + Vector3(0, sill - 0.05, 0), floor_y - 3.0, exclude)
+					stand = maxf(stand, y)
+					ground = minf(ground, y)
+			var rise: float = sill - stand
+			var climb: float = stand - ground
+			if rise > VAULT_MAX or climb > VAULT_MAX:
+				out.append({"kind": "window", "level": li, "cell": a[1], "to": b[1], "opening": str(op["id"]),
+					"what": "sill %.2f m over where you stand (%.2f m over the ground)" % [rise, sill - ground], "blocker": "-",
+					"at": mid + Vector3(0, sill, 0), "severity": "error"})
+	return out
+
+
+## The height (POI-local y) of the first surface below `from` (POI-local), down to `bottom`; the
+## ground (0) when nothing is built there.
+static func _ray_down(space: PhysicsDirectSpaceState3D, inst: Node3D, from: Vector3, bottom: float, exclude: Array[RID]) -> float:
+	var q := PhysicsRayQueryParameters3D.create(inst.global_transform * from, inst.global_transform * Vector3(from.x, bottom, from.z), MASK, exclude)
+	var hit: Dictionary = space.intersect_ray(q)
+	if hit.is_empty():
+		return minf(0.0, from.y)
+	return (inst.global_transform.affine_inverse() * (hit["position"] as Vector3)).y
 
 
 ## The edges the validator's route walks across, by _edge_id.

@@ -76,7 +76,7 @@
         {"id": "hall_window", "at": [6, 8], "side": "S", "type": "window", "state": "boarded"},
         {"id": "parlour_front_window", "at": [8, 8], "side": "S", "type": "window2", "state": "boarded"},
         {"id": "parlour_corner_window", "at": [11, 8], "side": "S", "type": "window", "state": "boarded"},
-        {"id": "parlour_side_window", "at": [11, 5], "side": "E", "type": "window2", "state": "broken"},
+        {"id": "parlour_side_window", "at": [11, 5], "side": "E", "type": "window2", "state": "broken", "cue": ["curtain", "crate", "scuffs"]},
         {"id": "parlour_arch", "at": [6, 5], "side": "E", "type": "door2", "state": "missing"},
         {"id": "papa_door", "at": [6, 4], "side": "N", "type": "door", "state": "barricaded"},
         {"id": "dining_door", "at": [4, 4], "side": "W", "type": "door", "state": "open"},
