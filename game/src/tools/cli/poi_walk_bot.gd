@@ -34,6 +34,7 @@ const CLUTTER_COST: float = 25.0
 ## How far clear of a leaf's swing the bot stands to open a door (past REACH's slack).
 const ASIDE_MARGIN: float = 0.4
 const BLOCKED_COST: float = 200.0
+const WINDOW_COST: float = 15.0
 
 ## Print every leg as it is walked.
 var verbose: bool = false
@@ -125,6 +126,11 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 	_index_steps()
 	_check_corridor()
 	await _settle(3)
+	if OS.has_environment("POI_WALK_PROBE"):
+		var pp: PackedStringArray = OS.get_environment("POI_WALK_PROBE").split(",")
+		var q := PhysicsRayQueryParameters3D.create(Vector3(float(pp[0]), 3.0, float(pp[1])), Vector3(float(pp[0]), -3.0, float(pp[1])), 0xFFFFFFFF)
+		var hit: Dictionary = player.get_world_3d().direct_space_state.intersect_ray(q)
+		print("[poi_walk]     probe %s %s" % [hit, (hit["collider"] as Node).get_path() if not hit.is_empty() else ""])
 	await _walk_route()
 	await _explore()
 	_rooms_report()
@@ -189,7 +195,9 @@ func _ground() -> void:
 		if li < 0:
 			below.append(li)
 	for z: int in range(z0, z1):
-		var run: int = -1
+		# (A run start, not a -1 sentinel: the pad starts at negative x.)
+		var running: bool = false
+		var run: int = 0
 		for x: int in range(x0, x1 + 1):
 			var open: bool = false
 			if x < x1:
@@ -198,11 +206,12 @@ func _ground() -> void:
 					for li: int in below:
 						open = open or layout.is_built(li, c)
 			if x < x1 and not open:
-				if run < 0:
+				if not running:
+					running = true
 					run = x
-			elif run >= 0:
+			elif running:
 				_slab(body, Rect2(run, z, x - run, 1))
-				run = -1
+				running = false
 
 
 func _slab(body: StaticBody3D, r: Rect2) -> void:
@@ -238,16 +247,31 @@ func _index_props() -> void:
 		var cp := Vector3(layout.origin.x + float(chim[0]) + 0.5, 0.0, layout.origin.y + float(chim[1]) + 0.5)
 		_props.append({"id": "chimney", "prop": "chimney", "pkey": "style.chimney", "level": 0, "cell": Vector2i(int(chim[0]), int(chim[1])),
 			"box": AABB(cp + Vector3(-0.4, 0.0, -0.3), Vector3(0.8, 6.0, 0.6)), "container": false, "route_ok": false})
-	for n: Node in inst.get_children():
-		if n is StaticBody3D and String(n.name).begins_with("Cue_crate"):
-			for cs: Node in n.get_children():
-				if cs is CollisionShape3D and (cs as CollisionShape3D).shape is BoxShape3D:
-					var sz: Vector3 = ((cs as CollisionShape3D).shape as BoxShape3D).size
-					var xf2: Transform3D = (n as Node3D).transform * (cs as CollisionShape3D).transform
-					var bx: AABB = xf2 * AABB(-sz * 0.5, sz)
-					_props.append({"id": String(n.name), "prop": "route_cue_crate", "pkey": String(n.name), "level": 0,
-						"cell": Vector2i(floori(bx.get_center().x - layout.origin.x), floori(bx.get_center().z - layout.origin.y)), "box": bx,
-						"container": false, "route_ok": true, "cue": true})
+	# Every other solid body the build adds in the body's way (barricade boards and furniture piles,
+	# trap rigs, the crates RouteCues stands under entry windows), so the plan goes round them.
+	_add_bodies(inst)
+
+
+func _add_bodies(n: Node) -> void:
+	for c: Node in n.get_children():
+		_add_bodies(c)
+	if not n is CollisionObject3D or n == inst.shell or n is PoiPieces.Door or n is PoiPieces.LootProp or n is PoiPieces.Ladder:
+		return
+	if (n as CollisionObject3D).collision_layer & player.collision_mask == 0:
+		return
+	if n is PoiPieces.Breakable and (n as PoiPieces.Breakable).kind == "glass":
+		return
+	for cs: Node in n.get_children():
+		if not cs is CollisionShape3D or not (cs as CollisionShape3D).shape is BoxShape3D or (cs as CollisionShape3D).disabled:
+			continue
+		var sz: Vector3 = ((cs as CollisionShape3D).shape as BoxShape3D).size
+		var bx: AABB = (cs as CollisionShape3D).global_transform * AABB(-sz * 0.5, sz)
+		var label: String = str(inst.get_path_to(n))
+		if n is PoiPieces.Breakable:
+			label = "barricade:" + (n as PoiPieces.Breakable).piece_id
+		_props.append({"id": label, "prop": label, "pkey": label, "level": 0,
+			"cell": Vector2i(floori(bx.get_center().x - layout.origin.x), floori(bx.get_center().z - layout.origin.y)), "box": bx,
+			"container": false, "route_ok": true, "cue": true})
 
 
 # --- static corridor check -------------------------------------------------------------------------
@@ -487,6 +511,12 @@ func _step_cost(a: Array, b: Array) -> float:
 			cost += 6.0
 	if _is_cluttered(b, a):
 		cost += CLUTTER_COST
+	# Through a window only when nothing else gets there (the route says when one is the way in).
+	if int(a[0]) == int(b[0]) and (a[1] as Vector2i).distance_squared_to(b[1]) == 1:
+		var e: Array = PoiLayout.side_edge(a[1], PoiLayout.DIRS.find((b[1] as Vector2i) - (a[1] as Vector2i)))
+		var w: Dictionary = layout.walls.get(PoiLayout.edge_key(int(a[0]), e[0], e[1]), {})
+		if not w.is_empty() and not (w["opening"] as Dictionary).is_empty() and PoiLayout.is_window(str(w["opening"]["type"])):
+			cost += WINDOW_COST
 	# The validator walks a stair flight's cells on the floor below it and the open well over it
 	# on the floor above; the body can do neither (the flight is in the way, there is no floor).
 	if int(a[0]) == int(b[0]) and (_under_flight(b) or validator._over_well(int(b[0]), b[1])):
@@ -508,7 +538,17 @@ func _under_flight(n: Array) -> bool:
 func _free_point(li: int, c: Vector2i) -> Vector3:
 	var ctr: Vector3 = _cell_pos(li, c)
 	for off: Vector2 in [Vector2.ZERO, Vector2(0.3, 0), Vector2(-0.3, 0), Vector2(0, 0.3), Vector2(0, -0.3),
-			Vector2(0.3, 0.3), Vector2(-0.3, 0.3), Vector2(0.3, -0.3), Vector2(-0.3, -0.3)]:
+			Vector2(0.34, 0.34), Vector2(-0.34, 0.34), Vector2(0.34, -0.34), Vector2(-0.34, -0.34)]:
+		# Not toward a wall on that side of the cell: the capsule fits its middle only.
+		var walled: bool = false
+		for side: int in 4:
+			var d: Vector2i = PoiLayout.DIRS[side]
+			if (d.x != 0 and off.x * d.x > 0.1) or (d.y != 0 and off.y * d.y > 0.1):
+				var e: Array = PoiLayout.side_edge(c, side)
+				var ek: String = PoiLayout.edge_key(li, e[0], e[1])
+				walled = walled or layout.walls.has(ek) or layout.galleries.has(ek)
+		if walled:
+			continue
 		var p: Vector3 = ctr + Vector3(off.x, 0.0, off.y)
 		var body := AABB(p + Vector3(-Player.RADIUS, Player.STEP_HEIGHT, -Player.RADIUS), Vector3(Player.RADIUS * 2.0, Player.STAND_HEIGHT - Player.STEP_HEIGHT, Player.RADIUS * 2.0))
 		var free: bool = true
@@ -616,7 +656,23 @@ func _leg(a: Array, b: Array) -> void:
 		_:
 			if cls.has("opening"):
 				await _open_doors(cls["opening"], leg)
-			ok = await _go(end, true, leg)
+				# Line up square to the opening, then through its middle: as a player does, and
+				# clear of a leaf swung open beside it.
+				var op: Dictionary = cls["opening"]
+				var spec: Dictionary = PoiParts.OPENINGS[str(op["type"])]
+				var mid: Vector3 = _helper._edge_xf(int(op["level"]), op["axis"], op["edge"], int(spec["len"])).origin
+				var from: Vector3 = _cell_pos(a[0], a[1])
+				mid.y = from.y
+				var n := Vector3(mid.x - from.x, 0.0, mid.z - from.z)
+				if str(op["axis"]) == "h":
+					n = Vector3(0, 0, signf(n.z))
+				else:
+					n = Vector3(signf(n.x), 0, 0)
+				ok = await _go(mid - n * 0.55, false, leg)
+				ok = ok and await _go(mid + n * 0.1, false, leg)
+				ok = ok and await _go(end, true, leg)
+			else:
+				ok = await _go(end, true, leg)
 	_end_leg(leg, ok, end)
 
 
@@ -632,6 +688,7 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 	if not ok:
 		if not leg.has("blocker"):
 			leg["blocker"] = _blocker()
+		leg["category"] = category(kind)
 		(_report["blocked"] as Array).append(leg)
 		# Restart from where the leg should have ended.
 		_place(end, -player.global_transform.basis.z)
@@ -650,6 +707,23 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 			(" blocker " + str(leg["blocker"])) if leg.has("blocker") else ""])
 	_hits.clear()
 	_shut.clear()
+
+
+## What kind of place a leg kind is, for the summary: doorway (a door, arch or breach), climb
+## (stairs, a ladder), window (a vault is the way), drop (a hole, a gallery gap), entrance (from the
+## yard up to the first cell) or floor.
+static func category(kind: String) -> String:
+	if WALK_THROUGH.has(kind):
+		return "doorway"
+	if kind.begins_with("stairs") or kind.begins_with("ladder"):
+		return "climb"
+	if kind.begins_with("window") or kind in ["half", "lancet"]:
+		return "window"
+	if kind.begins_with("drop"):
+		return "drop"
+	if kind == "approach":
+		return "entrance"
+	return "floor"
 
 
 ## Opens (unlocking first, with a key or from the bolt's side) every closed leaf of a door
@@ -856,6 +930,8 @@ func _go(t: Vector3, check_y: bool, leg: Dictionary, assist: bool = true, max_fr
 				if player.crouching and not needed.has("crouch"):
 					needed.append("crouch")
 			_:
+				if OS.has_environment("POI_WALK_DEBUG"):
+					print("[poi_walk]     give up at %s crouching=%s floor=%s vel=%s" % [player.global_position, player.crouching, player.is_on_floor(), player.velocity])
 				break
 	_release()
 	return false

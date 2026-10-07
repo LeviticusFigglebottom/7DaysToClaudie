@@ -147,7 +147,7 @@ func _print_findings(rep: Dictionary) -> void:
 		(rep["climbs"] as Array).size(), (rep["unreached"] as Array).size(), (rep["sealed"] as Array).size(),
 		(rep["corridor"] as Array).size(), float(rep["frames"]) / 60.0])
 	for leg: Dictionary in rep["blocked"]:
-		print("[poi_walk]   blocked  %s %s -> %s%s: %s" % [leg["kind"], leg["from"], leg["to"],
+		print("[poi_walk]   blocked  %s: %s %s -> %s%s: %s" % [leg.get("category", "?"), leg["kind"], leg["from"], leg["to"],
 			(" (" + str(leg["opening"]) + ")") if leg.has("opening") else "", _blk(leg.get("blocker", {}))])
 	for leg2: Dictionary in rep["assisted"]:
 		print("[poi_walk]   needed   %s on %s %s -> %s%s" % [",".join(PackedStringArray(leg2["needed"])), leg2["kind"], leg2["from"], leg2["to"],
