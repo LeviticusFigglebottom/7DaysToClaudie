@@ -626,7 +626,7 @@ class Animal:
                 R = _frame(w, front)
                 if p.get("breed") == "wolf":
                     # short, thick, furred and round-tipped
-                    self.ears.cone(a - w * 0.10, c, 0.046 * s, 0.011 * s, k=0.012 * s, squash=0.34, up_hint=tuple(R[:, 1]))
+                    self.ears.cone(a - w * 0.10, c, 0.040 * s, 0.011 * s, k=0.012 * s, squash=0.34, up_hint=tuple(R[:, 1]))
                     self.ears.cone(a + R[:, 1] * 0.010 * s + w * 0.10, c + R[:, 1] * 0.005 * s - w * 0.12, 0.032 * s, 0.004 * s,
                                    k=0.003 * s, squash=0.22, up_hint=tuple(R[:, 1]), mode="sub")
                     continue
@@ -683,7 +683,8 @@ class Animal:
             # canines: long, curved back, the upper outside the lower
             a = H(sx * 0.0195, mu + 0.012, mf - 0.026)
             m = H(sx * 0.0215, mu - 0.006, mf - 0.025)
-            e = H(sx * 0.0205, mu - 0.019, mf - 0.030)
+            # (a wolf's close behind its lips; a starved hound's hang bared)
+            e = H(sx * 0.0205, mu - (0.009 if self.p.get("breed") == "wolf" else 0.019), mf - 0.030)
             T_UP.cone(a, m, 0.0052 * s, 0.0040 * s, k=0.002 * s, label=0)
             T_UP.cone(m, e, 0.0040 * s, 0.0008 * s, k=0.002 * s, label=0)
             a = H(sx * 0.0150, mu - 0.012, mf - 0.034)

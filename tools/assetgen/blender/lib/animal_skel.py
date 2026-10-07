@@ -122,7 +122,7 @@ _HOUND_SHEPHERD = dict(_HOUND, **{
 # a tail that hangs straight to the hocks.
 _HOUND_WOLF = dict(_HOUND, **{
     "nose": (0, -0.622, 0.664), "chin": (0, -0.592, 0.622),
-    "ear0": (0.050, -0.384, 0.764), "ear1": (0.082, -0.378, 0.826),
+    "ear0": (0.050, -0.384, 0.764), "ear1": (0.080, -0.380, 0.814),
     "tail0": (0, 0.336, 0.548), "tail1": (0, 0.392, 0.420), "tail2": (0, 0.405, 0.250),
 })
 TABLES = {"deer": _DEER, "hare": _HARE, "hound": _HOUND}
