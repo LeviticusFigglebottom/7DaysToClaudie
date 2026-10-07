@@ -1,5 +1,5 @@
 {
-  "_doc": "The Ashen (ADR-0048). camps: POI defs whose placed buildings are living camps (residents spawned awake when the player comes within wake_range, kept until sleep_range; the dead never come back). hostility: one world-wide score; gain per event (kill an Ashen, trespass in a camp's territory, a scout that reports back or is killed, a camp wiped out, heat raised in a territory, a raid repelled), decay_per_day. levels: 0 unaware, 1 watchers (scouts), 2 raids, 3 war parties; a level needs both its hostility and its gamestage. scouts/raids: chance per level per day (deterministic from the world seed and day). morale: 0-1; a fighter flees under `break`. fire: the outsider's fire frightens them (a held flame facing them, the player's lit fires and stations).",
+  "_doc": "The Ashen (ADR-0048). camps: POI defs whose placed buildings are living camps (residents spawned awake when the player comes within wake_range, kept until sleep_range; the dead never come back). hostility: one world-wide score; gain per event (kill an Ashen, trespass in a camp's territory, a scout that reports back or is killed, a camp wiped out, heat raised in a territory, a raid repelled), decay_per_day. levels: 0 unaware, 1 watchers (scouts), 2 raids, 3 war parties; a level needs both its hostility and its gamestage. scouts/raids: chance per level per day (deterministic from the world seed and day). morale: 0-1; a fighter flees under `break`. fire: the outsider's fire frightens them (a held flame facing them, the player's lit fires and stations). relations: {faction: hostile|neutral}, symmetric (TD-186): the Ashen and the Hollowed fight on sight.",
   "defs": [
     {
       "id": "ashen",
@@ -42,9 +42,15 @@
         "max_size": 9,
         "enemies": [{}, {}, {"ashen_raider": 3, "ashen_scout": 1}, {"ashen_raider": 4, "ashen_scout": 1}],
         "give_up": 420.0,
-        "base_range": 60.0
+        "base_range": 60.0,
+        "_doc": "Phase 2 (ADR-0048). dark_side: degrees either side of the bearing the base's lit fires light least that a raid comes in on. flow: the FlowField a raid follows to the base's weakest piece (structures cost structure_cost_per_hp per hit point to cross, lit fires fire_cost out to fire.keep_off). sack_pieces: pieces a raid on a base nobody is home at breaks (after taking every ripe crop) before it leaves. gardens: a raider within `reach` m of a garden bed tramples it once a raid (trample_damage off each growing plant) and takes its ripe crops (loot_crops); the last `looters` of a band go for ripe beds first.",
+        "dark_side": 70.0,
+        "flow": {"radius": 50.0, "cell": 1.5, "structure_cost_per_hp": 0.02, "fire_cost": 60.0, "slope_max_deg": 42.0},
+        "sack_pieces": 2,
+        "gardens": {"loot_crops": true, "trample": true, "trample_damage": 0.5, "looters": 1, "reach": 1.2}
       },
       "morale": {"mate_down": 0.25, "hurt": 0.5, "break": 0.3, "home_floor": 0.6, "recover_per_s": 0.01},
+      "relations": {"hollowed": "hostile", "wildlife": "neutral"},
       "fire": {"radius": 9.0, "keep_off": 4.0, "morale_per_s": 0.06, "behind_angle": 100.0, "station_radius": 7.0}
     }
   ]

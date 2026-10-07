@@ -26,6 +26,8 @@ var duration: float = 150.0
 var waves: int = 4
 var wave_size: Array = [2, 3]
 var enemies: Dictionary = {"hollow": 3}
+## Defend: extra Hollowed per wave per gamestage point (TD-142).
+var wave_growth: float = 0.04
 ## Fetch: the item the Program left in the building (placed when the player gets near).
 var item: String = "program_cache"
 ## Fetch: false when the building already holds `item` (a tier-5 site's guaranteed payoff, TD-179):
@@ -41,7 +43,7 @@ const CONTRACT_TYPES: PackedStringArray = ["clear", "fetch", "defend"]
 
 func _fields() -> PackedStringArray:
 	return ["type", "tier", "objectives", "rewards", "giver", "requires", "target", "rep_tier", "weight",
-		"duration", "waves", "wave_size", "enemies", "item", "place", "once", "briefing"]
+		"duration", "waves", "wave_size", "enemies", "wave_growth", "item", "place", "once", "briefing"]
 
 
 func _parse(r: DefReader) -> void:
@@ -60,6 +62,7 @@ func _parse(r: DefReader) -> void:
 		wave_size = r.arr("wave_size")
 	if r.has("enemies"):
 		enemies = r.dict("enemies")
+	wave_growth = maxf(0.0, r.num("wave_growth", 0.04))
 	item = r.str_field("item", "program_cache")
 	place = r.boolean("place", true)
 	once = r.boolean("once", false)

@@ -89,6 +89,23 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
 7. Needs the owner (a GPU and a human): the M1 playthrough, 60 FPS on target hardware, feel and
    balance (HANDOFF.md "Not verified yet").
 
+## Player report 3 (Windows Build #67, 891830b; round 2)
+Screenshot: `docs/playtest/2026-10-06_build67_lighter_door.webp` (Pell's Crossing, a lit lighter, a
+cottage's front door). The owner said it "looks incredible", but:
+1. **New random world: the player can't move after spawning.** It loads fine, then no movement.
+   (Session 3.)
+2. **In that same new world, looking up detaches the arms**: hands and arms float off into the sky
+   where you look. Not seen on Continue. Probably the same root cause as 1; one suspect is that the
+   warm-up camera or a stand-in camera stays current while the player's camera and viewmodel don't
+   follow. (Session 3, with session 4 for the viewmodel side.)
+3. **Continue keeps progress but not the last location.** (Session 3, saves.)
+4. **Hands still look unnatural holding things**, the lighter worst of all. Its flame looks off and
+   trails behind as you turn (flame particles in world space, not following the hand).
+   (Session 4, ADR-0045.)
+5. **A cottage front door (the intended entrance) has no steps up to its raised sill**, and the
+   door has no "open": it just has no collision. It is likely a door authored `broken` (leaf drawn,
+   passable). (The hub: POI doors and generated buildings.)
+
 ## Player report (the first human playtest)
 On a fresh setup:
 * the game showed "not responding" near the end of the load, then spawned the player;

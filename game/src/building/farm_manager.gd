@@ -361,6 +361,38 @@ func _cmd_drink(args: Dictionary) -> Dictionary:
 	return {"ok": true, "effects": fx}
 
 
+# --- Raiders (ADR-0048 phase 2, TD-211) -----------------------------------------------------------
+
+## Ashen raiders at a bed (AshenDirector calls it): with `loot`, every ripe plot is taken (cut back
+## to regrow, or cleared, as a harvest would); every other living plant loses `trample` health and
+## dies at none. Writes WorldState.farms like the commands; returns {looted: {crop id: plots},
+## trampled: plants}.
+static func raid_bed(piece: StructurePiece, loot: bool, trample: float) -> Dictionary:
+	var looted: Dictionary = {}
+	var trampled: int = 0
+	if piece == null or Farming.plots_of(piece.def) <= 0:
+		return {"looted": looted, "trampled": trampled}
+	for plot: Dictionary in state_of(piece)["plots"]:
+		if Farming.is_empty_plot(plot) or Farming.is_dead(plot):
+			continue
+		var c: CropDef = Farming.crop(plot["crop"])
+		if loot and c != null and Farming.is_ripe(plot):
+			looted[String(c.id)] = int(looted.get(String(c.id), 0)) + 1
+			if c.regrow_stage >= 0:
+				plot["grown"] = Farming.regrow_days(c)
+			else:
+				plot.clear()
+		elif trample > 0.0:
+			plot["health"] = maxf(0.0, float(plot.get("health", 1.0)) - trample)
+			if float(plot["health"]) <= 0.0:
+				plot["dead"] = true
+			trampled += 1
+	if not looted.is_empty() or trampled > 0:
+		if is_instance_valid(piece) and piece.farm_visual != null:
+			piece.farm_visual.refresh()
+	return {"looted": looted, "trampled": trampled}
+
+
 # --- Interaction (StructurePiece hands its prompts here) -------------------------------------------
 
 ## What pressing interact on a farm piece does now: [command, args, prompt]; command &"" = only a

@@ -208,13 +208,20 @@ func throw_cooldown() -> float:
 
 ## Lets the spear go at the player, leading them a little.
 func throw_at(p: Player) -> void:
-	if p == null or enemy.get_parent() == null:
+	if p != null:
+		throw_at_body(p)
+
+
+## Lets the spear go at a body (the player, or a foe of a hostile faction: TD-186), leading it a
+## little. The spear flies past the thrower and its own faction.
+func throw_at_body(b: CharacterBody3D) -> void:
+	if b == null or enemy.get_parent() == null:
 		return
 	var hand: Vector3 = enemy.global_position + Vector3.UP * 1.7 + enemy.global_transform.basis.z * 0.3
 	var spd: float = float(_throw.get("speed", 20.0))
-	var lead: Vector3 = p.velocity * clampf(hand.distance_to(p.global_position) / spd, 0.0, 1.0) * 0.5
-	ThrownSpear.launch(enemy.get_parent(), hand, p.global_position + Vector3(lead.x, 1.1, lead.z), spd,
-		float(_throw.get("damage", 15.0)) * enemy.damage_mult, float(_throw.get("bleed", 0.4)), enemy.entity_id)
+	var lead: Vector3 = b.velocity * clampf(hand.distance_to(b.global_position) / spd, 0.0, 1.0) * 0.5
+	ThrownSpear.launch(enemy.get_parent(), hand, b.global_position + Vector3(lead.x, 1.1, lead.z), spd,
+		float(_throw.get("damage", 15.0)) * enemy.damage_mult, float(_throw.get("bleed", 0.4)), enemy.entity_id, enemy)
 
 
 ## Their voices: a human call for every Hollowed sound (ADR-0048 has no groans).

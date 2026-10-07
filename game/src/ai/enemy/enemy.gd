@@ -136,6 +136,11 @@ var _howl_cd: float = 0.0
 var _flanked: bool = false
 ## The Ashen (ADR-0048): morale, band, job and their own states; null for the Hollowed.
 var tribe: AshenMind = null
+## TD-186 (ADR-0048 phase 2): a body of a hostile faction (FactionDef.hostile) it has seen or been
+## hurt by, fought in CHASE/ATTACK (SPIT for a spear) while the player is out of sight (EnemyFoes).
+var foe: Enemy = null
+var _foe_seen: float = -100.0
+var _foe_scan_t: float = 0.0
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -318,6 +323,8 @@ func _physics_process(delta: float) -> void:
 	var want := Vector3.ZERO
 	if tribe != null:
 		tribe.tick(delta, p)
+	if _foe_step(delta, dist):  # TD-186: fighting a foe of a hostile faction this frame
+		return
 	match state:
 		State.SLEEP, State.WAKING, State.SCREAM, State.STAGGER:
 			want = Vector3.ZERO
@@ -1066,6 +1073,7 @@ func take_damage(info: DamageInfo) -> void:
 	if Game.session != null and Game.session.players.has(info.source_id):
 		last_seen_time = _now()
 		target_pos = info.source_pos
+	_hurt_by_foe(info)  # TD-186: a blow or a spear from a hostile body makes it the foe
 	if state == State.SLEEP:
 		_wake(info.source_pos, true)
 	elif amount >= _stagger_threshold(info) and state != State.STAGGER and _stagger_lock <= 0.0:
@@ -1290,6 +1298,28 @@ func _die(info: DamageInfo) -> void:
 		Spores.burst(get_parent(), global_position, _scaled_spores(burst), entity_id)
 	Events.enemy_killed.emit(entity_id, def.id, global_position, killer)
 	died.emit(self)
+
+
+# --- Foes (TD-186, ADR-0048 phase 2): EnemyFoes holds the logic --------------------------------------
+
+func _foe_step(delta: float, pdist: float) -> bool:
+	return EnemyFoes.step(self, delta, pdist)
+
+
+func fighting_foe() -> bool:
+	return EnemyFoes.fighting(self)
+
+
+func scan_foes(pdist: float) -> void:
+	EnemyFoes.scan(self, pdist)
+
+
+func hit_foe() -> void:
+	EnemyFoes.hit(self)
+
+
+func _hurt_by_foe(info: DamageInfo) -> void:
+	EnemyFoes.hurt_by(self, info)
 
 
 # --- Corpse loot -------------------------------------------------------------------------------
