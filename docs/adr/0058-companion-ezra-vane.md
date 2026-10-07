@@ -1,6 +1,6 @@
 # ADR-0058: Companion Ezra Vane: follow, guard, gather and fetch
 
-**Status**: Accepted · 2026-10 (session 2); phase 1 implemented
+**Status**: Accepted · 2026-10 (session 2); phases 1 and 2 implemented
 
 ## Context
 DESIGN §3 and the M2 roadmap promise one companion: **Ezra Vane**, an earlier Remand convict and an
@@ -93,7 +93,7 @@ and respawned on load with a fixed id `companion:ezra`.
   non-player-hostile target only by faction.
 * The gathering and inventory commands gain a second kind of owner, so they take an owner id that
   may be the companion's (small, additive).
-* Gaps go in TD-299..303.
+* Gaps go in TD-299..303 (phase 1) and TD-304..308 (phase 2).
 
 ## Phase 1 notes (as built)
 * **Data.** `data/companions/ezra.json` is a `companion` content kind (`CompanionDef`: camp, recruit
@@ -132,3 +132,46 @@ and respawned on load with a fixed id `companion:ezra`.
   `ring` round the drop site, `access: none` (RwgGenerator VERSION 8). The directive
   `find_lineman` (chapter 3, event `recruit`, spent in a world without the camp).
 * **Body.** `characters/ezra_vane` (generator `character_companion`, docs/CHARACTERS.md).
+
+## Phase 2 notes (as built)
+* **Data.** `CompanionDef` gains `gather` (radius 30 m, slots 12, share 0.5, max_tree_hp 90, chop
+  power 16, reach, give_up 25 s, settle 4.5 s, `kinds`: wood = log + stick, stone = stone,
+  fibre = plant_fiber), `fetch.range` (60 m) and `store.range` (250 m), and the barks gather,
+  fetch, store, full, done, fetched, cant_reach, stored, store_full, given.
+* **His pack** is an `Inventory` owned by CompanionDirector (12 slots, carry caps on: two logs,
+  15 stones, 30 sticks), handed to the body's mind when it spawns, saved as
+  `WorldState.companion.inventory` and cleared when he bleeds out. The logs show on his right
+  shoulder (one mesh each).
+* **Errands** are `CompanionWork` (game/src/companion/companion_work.gd), which the mind runs instead
+  of its order move while the order is gather, fetch or store and he has no foe (a fight
+  interrupts the clip; the errand picks up after): *seek* (gather: the nearest loose log or item
+  of the kind, then plants and stones whose yields he has room for, then small trees whose
+  collision stands, 12 m costlier) → *go* → *act* (`pickup`, or one `chop` per blow; the effect at
+  50 % / 45 % of the clip; 0.6 s without the clips) → *wait* (a felled tree landing) → *return*
+  to the player, where a gather says "full" or "done" and a fetch hands its haul over
+  (`hand_over`: world.pickup_stack for the player, the rest dropped at their feet, logs as loose
+  logs across their path); then he follows.
+* **Commands.** `companion.order` takes gather (`kind`; `spot`, else what the player last looked at
+  within 60 m, else the player's position; refused when his pack has no room for the kind) and
+  fetch (`target`: {entity: id} | {veg: id}, default what was looked at; validated: still there,
+  within 60 m of the player, something he can take and has room for, a tree small enough and
+  near enough to fell); `companion.give` (within 6 m, instant) and `companion.store` (the nearest
+  player-built storage piece within 250 m). The look is a 60 m camera ray every director tick
+  (`CompanionDirector._look`): a loose item or log (or the one within 1.2 m of the point hit), a
+  vegetation body, else a harvestable along the ray; looking at Ezra himself keeps the last one.
+* **Shared hunks (an owner that may be the companion).** PlayerActions: `_crew_inventory(args)`
+  resolves `owner: "companion:<id>"` to his pack through `world.companion.inventory_of()`;
+  `world.pickup_stack` / `world.pickup_item` fill it and `container.put` empties it (by item, never
+  by index; no player sound, no inventory_changed). VegetationManager: `harvest()` calls the new
+  `harvest_into(key, inst, who)` (`who`: the pickup command's owner args); `_fell` awards
+  `fell_tree` XP times `CompanionDef.share_for(info.source_id)`, and `Events.tree_felled` carries
+  `felled_by` (NavTiles ignores it); DirectiveTracker records it through `record_share`
+  (part-credit adds up to whole events).
+* **Card.** Gather wood / stone / fibre, Fetch <what was looked at> (greyed, with the reason as its
+  tooltip), Give me what you carry, Store at base (greyed without a crate in range), and what he
+  carries.
+* **Save.** `WorldState.companion.work` = {task, kind, spot, target, fetched, phase, bark}; a load
+  resumes it (targets resolve lazily; a fetch is called off if its target isn't back within 10 s).
+  No version bump; older saves load with an empty pack and no errand.
+* **Clips.** `pickup`, `chop`, `carry_walk` (lib/companion_anim.py, docs/CHARACTERS.md); each falls
+  back (no `pickup`: he stands; `chop` → attack_structure / attack_a; `carry_walk` → the walk).
