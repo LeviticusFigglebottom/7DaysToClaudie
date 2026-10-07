@@ -108,11 +108,15 @@ func setup(p_terrain: TerrainManager, cfg: Dictionary, threads: int = -1) -> voi
 		_attached[rid2] = true
 	if not compose_fn.is_valid():
 		# The region's cellars are compiled here too, on the worker: ~70 ms of attach otherwise.
+		# So are its Bloom tiles, masked by its 1 m ground (TD-106); BloomTiles' zones never change.
 		var seed: int = (load("res://src/poi/lot_picker.gd") as GDScript).call(&"session_seed")
+		var bloom: BloomTiles = terrain.bloom.tiles if terrain.bloom != null else null
 		compose_fn = func(rid: String, cancel: Array) -> RegionTerrain:
 			var rt: RegionTerrain = TerrainComposer.get_or_compose(world, rid, 1.0, Callable(), cancel)
 			if rt != null and not bool(cancel[0]):
 				rt.set_meta(&"holes", TerrainHoles.from_regions({rid: rt}, seed))
+			if rt != null and not bool(cancel[0]) and bloom != null and bloom.lazy:
+				rt.set_meta(&"bloom_tiles", bloom.compose_region(rt))
 			return rt
 	if not focus_fn.is_valid():
 		focus_fn = func() -> Array:

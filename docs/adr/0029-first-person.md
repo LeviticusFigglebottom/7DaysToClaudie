@@ -105,7 +105,12 @@ chalky inclusions, flake-scar ripples, and translucent lighter edges revealed by
 its bindings are flat rawhide strips wound over each other and crossed over the stone, instead of
 round plant cord. The torch's burnt cap glows like coals while lit (`item_torch_ember`, a
 `light_source` material lit through the instance's `light_lit`) under a flame of fire-flipbook
-particles with embers, in world space so it trails; its light follows the flame in the left hand.
+particles with embers; its light follows the flame in the left hand. Held flames (the torch, the
+lighter's 2-3 cm teardrop drawn in code; sizes per item in `ViewModel.FLAMES`) emit in the flame
+socket's own space with the viewmodel materials, so they stay on the item and line up with the
+hand: world-space particles trailed behind every turn and, drawn with the world's projection, never
+sat on the hand anyway. The flame is stood up in the world each frame and leans a little against
+the turn and the walk instead.
 
 ### Visual QA
 `src/tools/cli/fp_preview.gd` renders the viewmodel in a lit clearing with no world load (seconds

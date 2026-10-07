@@ -45,6 +45,8 @@ static func light_node(l: Dictionary, xf: Transform3D) -> Node3D:
 	light.light_energy = float(l.get("energy", 1.0))
 	light.omni_range = float(l.get("range", 6.0))
 	light.shadow_enabled = bool(l.get("shadow", false))
+	if light.shadow_enabled:
+		light.add_to_group(&"shadow_light_budget")
 	light.position = at
 	if str(l.get("fx", "")) == "fire":
 		_add_fire(light, float(l.get("fx_size", 0.4)))

@@ -47,6 +47,10 @@ uniform float mottle : hint_range(0.0, 1.0) = 0.0;
 uniform float mottle_scale = 7.0;
 uniform vec4 mottle_livid : source_color = vec4(0.46, 0.38, 0.47, 1.0);
 uniform vec4 mottle_sallow : source_color = vec4(0.62, 0.56, 0.38, 1.0);
+// Living skin flushed where blood runs close under it (knuckles, finger joints, fingertips): vertex
+// B on a skin with no Bloom (the player's arms, bloom_skin 0). Off by default.
+uniform float flush : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 flush_color : source_color = vec4(0.78, 0.40, 0.34, 1.0);
 // Decay: broad patches (a forearm or a cheek across) gone dark, green-brown and slick, so a body
 // reads as rotting rather than evenly pale from twenty metres (rest space: the patches ride the body).
 uniform float rot : hint_range(0.0, 1.0) = 0.0;
@@ -104,6 +108,9 @@ void fragment() {
 		float m = hm_char_noise(mp) * 0.6 + hm_char_noise(mp * 2.3 + 7.1) * 0.4;
 		alb = mix(alb, alb * mottle_livid.rgb * 2.1, smoothstep(0.55, 0.78, m) * mottle * 0.55);
 		alb = mix(alb, alb * mottle_sallow.rgb * 1.7, smoothstep(0.44, 0.22, m) * mottle * 0.45);
+	}
+	if (flush > 0.0) {
+		alb = mix(alb, alb * flush_color.rgb * 1.6, clamp(COLOR.b, 0.0, 1.0) * flush);
 	}
 	if (rot > 0.0) {
 		float rn = hm_char_noise(rest * rot_scale + 11.3) * 0.6 + hm_char_noise(rest * rot_scale * 3.7 + 4.1) * 0.4;
