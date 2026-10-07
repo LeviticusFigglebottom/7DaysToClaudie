@@ -14,7 +14,7 @@ func _cls(id: StringName) -> StringName:
 
 func test_hold_classes_by_item() -> void:
 	var want: Dictionary = {
-		&"stone_axe": &"one_hand", &"hatchet": &"one_hand", &"machete": &"one_hand", &"kitchen_knife": &"one_hand",
+		&"stone_axe": &"one_hand", &"hatchet": &"one_hand", &"machete": &"one_hand", &"kitchen_knife": &"knife",
 		&"claw_hammer": &"one_hand", &"crude_spear": &"spear", &"stone_club": &"club", &"steel_pipe": &"club",
 		&"shovel": &"two_hand", &"torch": &"light_left", &"flashlight": &"flashlight", &"lighter": &"lighter",
 		&"revolver": &"pistol", &"canned_beans": &"food", &"water_bottle_clean": &"bottle", &"cloth_bandage": &"held",
@@ -27,7 +27,7 @@ func test_hold_classes_by_item() -> void:
 
 
 func test_swings_and_uses_follow_the_class() -> void:
-	var swings: Dictionary = {&"stone_axe": &"chop", &"hatchet": &"chop", &"machete": &"slash", &"kitchen_knife": &"slash",
+	var swings: Dictionary = {&"stone_axe": &"chop", &"hatchet": &"chop", &"machete": &"slash", &"kitchen_knife": &"slice",
 		&"crude_spear": &"stab", &"stone_club": &"bash", &"steel_pipe": &"bash", &"shovel": &"dig", &"torch": &"torch", &"flashlight": &"jab"}
 	for id: StringName in swings:
 		assert_eq(ViewModelHolds.attack_style(Content.item(id), _cls(id)), swings[id], "%s swings %s" % [id, swings[id]])
@@ -35,7 +35,7 @@ func test_swings_and_uses_follow_the_class() -> void:
 	assert_eq(ViewModelHolds.use_action(Content.item(&"canned_beans"), &"food"), &"eat")
 	assert_eq(ViewModelHolds.use_action(Content.item(&"water_bottle_clean"), &"bottle"), &"drink")
 	assert_eq(ViewModelHolds.use_action(Content.item(&"cloth_bandage"), &"held"), &"apply", "bandages are wrapped on")
-	for style: StringName in [&"chop", &"slash", &"bash", &"stab", &"dig", &"punch", &"torch", &"jab"]:
+	for style: StringName in [&"chop", &"slash", &"slice", &"bash", &"stab", &"dig", &"punch", &"torch", &"jab"]:
 		var f: float = ViewModelHolds.impact_fraction(style)
 		assert_between(f, 0.2, 0.7, "%s connects partway through its swing" % style)
 
@@ -81,9 +81,15 @@ func test_guards_and_placement() -> void:
 	var tmp := ItemDef.new()
 	tmp.equip = {"kind": "melee", "damage_type": "blunt", "block": 0.8}
 	assert_almost_eq(ViewModelHolds.block_share(tmp, &"club"), 0.8, 1e-6, "equip.block overrides the hold's")
-	# One-handed tools turn their edge towards the palm, so the axe head shows broadside.
+	# One-handed tools lead with their edge on the knuckles' side (+X), and the haft crosses the
+	# palm obliquely: tilted from the socket's handle axis (+Y) toward the knuckles, never the palm.
 	var xf: Transform3D = ViewModelHolds.item_transform(Content.item(&"stone_axe"), &"one_hand")
-	assert_almost_eq((xf.basis * Vector3(0, 0, 1)).dot(Vector3(0, 0, -1)), 1.0, 1e-4, "edge (+Z) faces the palm (-Z)")
+	var edge: Vector3 = xf.basis * Vector3(0, 0, 1)
+	var haft: Vector3 = xf.basis * Vector3(0, 1, 0)
+	assert_gt(edge.dot(Vector3(1, 0, 0)), 0.8, "edge (+Z) leads on the knuckles' side (+X)")
+	assert_almost_eq(haft.z, 0.0, 1e-4, "the haft stays in the plane of the fist")
+	assert_between(rad_to_deg(haft.angle_to(Vector3(0, 1, 0))), 15.0, 60.0, "an oblique grip")
+	assert_gt(haft.x, 0.0, "tilted toward the knuckles")
 	assert_eq(ViewModelHolds.item_hand(&"light_left"), "L", "lights go in the left hand")
 	# The flashlight lies along the fist with its lens out of the little-finger side (-Y).
 	var fl: Transform3D = ViewModelHolds.item_transform(Content.item(&"flashlight"), &"flashlight")

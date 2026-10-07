@@ -194,12 +194,14 @@ sliding at any playback speed.
 * Socket empties: `socket_hand.R` (tool grip point), `socket_hand.L`. Godot local axes: +Y along the
   gripped handle towards the thumb (tool head), +X towards the knuckles; +Z is the back of the right
   hand and the palm of the left. Viewmodels are modelled in the tool frame (grip at the origin,
-  handle +Y, edge or striking face +Z after `equip.grip_rot`); the hold class turns them in the hand.
+  handle +Y, edge or striking face +Z after `equip.grip_rot`); the hold class turns them in the hand
+  (one-handed tools, knives and clubs: edge to the knuckles' side, haft tilted 25-50° toward the
+  knuckles across the palm, an oblique grip that lets the wrist drive the head down).
 * Actions, baked from `viewmodel.json`: per hold class `fp_<class>` (idle loop), `fp_<class>_guard`
   and `fp_<class>_tether` (left wrist raised to read the tether; not for `blueprint` / `carry_log`);
-  attacks `fp_punch`, `fp_chop`, `fp_slash`, `fp_bash`, `fp_stab`, `fp_dig`, `fp_torch`, `fp_jab`;
-  uses `fp_eat`, `fp_drink`, `fp_apply`, `fp_place`, `fp_throw`, `fp_light`. Classes: `empty`,
-  `one_hand`, `club`, `spear`, `two_hand`, `light_left`, `flashlight`, `pistol`, `held`, `food`,
+  attacks `fp_punch`, `fp_chop`, `fp_slash`, `fp_slice`, `fp_bash`, `fp_stab`, `fp_dig`, `fp_torch`, `fp_jab`;
+  uses `fp_eat`, `fp_drink`, `fp_apply`, `fp_place`, `fp_throw`, `fp_light`, `fp_inspect_<class>`. Classes: `empty`,
+  `one_hand`, `knife`, `club`, `spear`, `two_hand`, `light_left`, `flashlight`, `pistol`, `held`, `food`,
   `bottle`, `blueprint`, `carry_log`. Walking, sprinting, sway and breathing are procedural (ViewModelMotion).
 
 ## Wildlife (`models/animals/<id>.glb`, ADR-0027)
