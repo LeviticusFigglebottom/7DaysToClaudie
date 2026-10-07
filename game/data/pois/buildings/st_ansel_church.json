@@ -189,7 +189,7 @@
         {"id": "nave_window_e1", "at": [11, 7], "side": "E", "type": "lancet", "state": "closed"},
         {"id": "nave_window_e2", "at": [11, 10], "side": "E", "type": "lancet", "state": "boarded"},
         {"id": "nave_window_e3", "at": [11, 13], "side": "E", "type": "lancet", "state": "closed"},
-        {"id": "nave_window_e4", "at": [11, 16], "side": "E", "type": "window", "state": "broken"},
+        {"id": "nave_window_e4", "at": [11, 16], "side": "E", "type": "window", "state": "broken", "cue": ["crate", "scuffs"]},
         {"id": "altar_window", "at": [5, 0], "side": "N", "type": "lancet", "state": "closed"},
         {"id": "chapel_window", "at": [0, 2], "side": "W", "type": "window", "state": "boarded"},
         {"id": "vestry_window", "at": [10, 0], "side": "N", "type": "window", "state": "closed"},
