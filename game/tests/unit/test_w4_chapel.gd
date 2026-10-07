@@ -81,6 +81,36 @@ func test_the_climbs_are_real() -> void:
 	assert_eq(str(door.get("model", "")), "door_metal", "an iron door")
 
 
+func test_the_vault_shell_matches_its_room() -> void:
+	# The vault front (w4_chapel_mausoleum_front) wraps the vault porch: plan cols 11..12, rows 1..6, one storey,
+	# its iron door on S at index 1 (props_wild4_chapel.py VAULT mirrors this).
+	const SIDE_NAMES: Array[String] = ["N", "E", "S", "W"]
+	var l: PoiLayout = PoiLayout.compile(_def())
+	for r: int in range(1, 7):
+		for c: int in range(11, 13):
+			assert_eq(l.room_at(0, Vector2i(c, r)), "M", "the shell covers the vault porch at (%d, %d)" % [c, r])
+	var found: bool = false
+	for p: Dictionary in l.props:
+		if str(p.get("prop", "")) == "w4_chapel_mausoleum_front":
+			found = true
+			var pos: Vector2 = p["pos"]
+			assert_almost_eq(pos.x, 12.0, 0.01, "centred in x")
+			assert_almost_eq(pos.y, 4.0, 0.01, "centred in z")
+			assert_almost_eq(float(p.get("y", 0.0)), -l.floor_height, 0.001, "stands on the pad")
+	assert_true(found, "places the vault front")
+	var have: Array = []
+	for op: Dictionary in l.openings:
+		var cell: Vector2i = op["cell"]
+		if int(op["level"]) != 0 or cell.x < 11 or cell.x > 12 or cell.y < 1 or cell.y > 6:
+			continue
+		var side: String = SIDE_NAMES[int(op["side"])]
+		var on_edge: bool = (side == "N" and cell.y == 1) or (side == "S" and cell.y == 6) or (side == "W" and cell.x == 11) \
+			or (side == "E" and cell.x == 12)
+		if on_edge:
+			have.append("%s%d:%s" % [side, cell.x - 11 if side in ["N", "S"] else cell.y - 1, str(op["type"])])
+	assert_eq(have, ["S1:door"], "the shell is cut for exactly the porch's iron door")
+
+
 func test_is_a_full_dungeon() -> void:
 	var l: PoiLayout = PoiLayout.compile(_def())
 	var shortcut_ok: bool = false

@@ -782,20 +782,28 @@ def w4_chapel_mausoleum_front(ctx: K.Ctx) -> None:
     fw = 3.6
     fx0, fx1 = door_c - fw / 2, door_c + fw / 2
     fz1 = top + 0.3
-    # Ashlar courses: wall pieces left and right of the door, and over it.
-    for k, (xa, xb, za, zb) in enumerate([(fx0, door_c - door_w / 2, 0.0, fz1), (door_c + door_w / 2, fx1, 0.0, fz1),
-                                          (door_c - door_w / 2, door_c + door_w / 2, door_top, fz1)]):
+    # The front's doorway is a recess wider than the kit door, so the steps the builder puts up to the door
+    # (PoiBuilder.stoops) stand clear of the granite; the kit wall round the door is faced in granite.
+    gap = max(door_w, 1.6)
+    reveal_y = -hd - 0.11
+    for k, (xa, xb) in enumerate([(door_c - gap / 2, door_c - door_w / 2), (door_c + door_w / 2, door_c + gap / 2)]):
+        _bx(ctx, f"reveal{k}", (xb - xa, 0.02, door_top - 0.0), (((xa + xb) / 2), reveal_y, door_top / 2), GRANITE, bevel=0.0, uv_scale=1.2)
+    _bx(ctx, "reveal_top", (gap, 0.02, fz1 - door_top), (door_c, reveal_y, (door_top + fz1) / 2), GRANITE, bevel=0.0, uv_scale=1.2)
+    # Ashlar courses: wall pieces left and right of the doorway, and over it.
+    for k, (xa, xb, za, zb) in enumerate([(fx0, door_c - gap / 2, 0.0, fz1), (door_c + gap / 2, fx1, 0.0, fz1),
+                                          (door_c - gap / 2, door_c + gap / 2, door_top + 0.25, fz1)]):
         blk = K.box(f"ashlar{k}", (xb - xa, ft, zb - za), center=((xa + xb) / 2, fy0 - ft / 2, (za + zb) / 2), cuts=(3, 0, 5))
         ctx.add(blk, GRANITE, uv="box", uv_scale=1.0, moss=0.3 if ctx.clean else 0.6, patches=0.6)
-    # Door surround: an architrave and a lintel block with a carved panel.
+    # Doorway surround: jambs and a lintel block with a carved panel.
     for k, sx in enumerate((-1, 1)):
-        _bx(ctx, f"jamb{k}", (0.14, 0.08, door_top - fh), (door_c + sx * (door_w / 2 + 0.07), fy0 - ft - 0.04, (door_top + fh) / 2), GRANITE,
+        _bx(ctx, f"jamb{k}", (0.14, 0.08, door_top + 0.25), (door_c + sx * (gap / 2 + 0.07), fy0 - ft - 0.04, (door_top + 0.25) / 2), GRANITE,
             bevel=0.01, uv_scale=1.5)
-    _bx(ctx, "lintel", (door_w + 0.5, 0.12, 0.34), (door_c, fy0 - ft - 0.06, door_top + 0.17), GRANITE, bevel=0.015, uv_scale=1.5)
-    panel = K.box("lintel_panel", (door_w + 0.1, 0.01, 0.2), center=(door_c, fy0 - ft - 0.125, door_top + 0.17))
+    _bx(ctx, "lintel", (gap + 0.5, 0.12, 0.34), (door_c, fy0 - ft - 0.06, door_top + 0.25 + 0.12), GRANITE, bevel=0.015, uv_scale=1.5)
+    panel = K.box("lintel_panel", (gap - 0.1, 0.01, 0.2), center=(door_c, fy0 - ft - 0.125, door_top + 0.37))
     ctx.add(panel, ENGRAVE, uv="planar", uv_axis=1, rect=_engrave_rect(7, 200, 330), ao=False)
-    # The threshold slab the kit's steps arrive at, and a plinth course.
-    _bx(ctx, "plinth", (fw + 0.1, 0.1, 0.3), (door_c, fy0 - ft - 0.05, 0.15), GRANITE, bevel=0.015, uv_scale=1.5)
+    # A plinth course either side of the doorway.
+    for k, (xa, xb) in enumerate([(fx0 - 0.05, door_c - gap / 2 - 0.14), (door_c + gap / 2 + 0.14, fx1 + 0.05)]):
+        _bx(ctx, f"plinth{k}", (xb - xa, 0.1, 0.3), ((xa + xb) / 2, fy0 - ft - 0.05, 0.15), GRANITE, bevel=0.015, uv_scale=1.5)
     # Pilasters at the outer edges.
     for k, x in enumerate((fx0 + 0.15, fx1 - 0.15)):
         _bx(ctx, f"pilaster{k}", (0.3, 0.12, fz1 - 0.3), (x, fy0 - ft - 0.06, 0.3 + (fz1 - 0.3) / 2), GRANITE, bevel=0.012, uv_scale=1.5)
