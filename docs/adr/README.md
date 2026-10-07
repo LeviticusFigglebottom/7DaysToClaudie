@@ -49,3 +49,6 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0046](0046-tier-five-field-lab.md) | Tier 5: the Corvane Field Lab, keycards as keys, and a compound the validator can walk | Accepted |
 | [0047](0047-town-ground-and-biome-fog.md) | Town ground on the streets, a town mask for ambience and spawns, yard grass off the buildings, fog that follows the biome | Accepted |
 | [0049](0049-farming-and-rain-collection.md) | Farming and rain collection: garden beds that need water, crops as data, rain catchers | Accepted |
+| [0050](0050-interior-light.md) | Interior light: data-driven indoor fill and exposure, daylight through openings, reflection probes that reach the walls | Accepted |
+| [0051](0051-poi-traversal.md) | POI traversal: a capsule audit, clear doorways, ladders that are climbed | Accepted |
+| [0053](0053-forest-set-pieces.md) | Forest set pieces (round 4): seven dungeons in the woods, placed late from their own streams | Accepted |
