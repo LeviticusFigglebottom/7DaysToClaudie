@@ -1,0 +1,12 @@
+{
+ "_doc": "Containers of Shiloh Chapel (w4_overgrown_chapel), forest set pieces round 4 (containers/wild4_chapel.json -> tables/wild4_chapel.json).",
+ "defs": [
+  {"id": "w4_chapel_silver", "name": "Church Silver Chest", "loot_table": "w4_chapel_silver", "slots": 8, "search_time": 2.2, "noise": 5},
+  {"id": "w4_chapel_reliquary", "name": "Reliquary", "loot_table": "w4_chapel_reliquary", "slots": 4, "search_time": 1.6, "noise": 3},
+  {"id": "w4_chapel_coffin", "name": "Coffin", "loot_table": "w4_chapel_coffin", "slots": 6, "search_time": 2.4, "noise": 6},
+  {"id": "w4_chapel_vestry", "name": "Vestment Press", "loot_table": "w4_chapel_vestry", "slots": 6, "search_time": 1.8, "noise": 3},
+  {"id": "w4_chapel_ward", "name": "Sick-Room Chest", "loot_table": "w4_chapel_ward", "slots": 6, "search_time": 1.8, "noise": 3},
+  {"id": "w4_chapel_choir", "name": "Choir Chest", "loot_table": "w4_chapel_choir", "slots": 6, "search_time": 1.6, "noise": 3},
+  {"id": "w4_chapel_tools", "name": "Sexton's Tool Chest", "loot_table": "w4_chapel_tools", "slots": 6, "search_time": 1.8, "noise": 5}
+ ]
+}
