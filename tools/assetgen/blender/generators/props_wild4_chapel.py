@@ -2,7 +2,7 @@
 a forest clearing half taken back by the woods.
 
 The chapel: settlers' plank pews, a panelled box pulpit, a plank table altar under a linen frontal. The churchyard:
-the bronze bell where it came down with its bell-cote, round-topped slate headstones, cedar grave crosses and thin
+the bronze bell where it came down with its bell-cote, round-topped granite headstones, cedar grave crosses and thin
 marble tablets (lettered faces from the shared civic_engrave atlas), a family plot's wrought-iron railing and its
 gate, the roofed lych gate, the dry-stone wall, an open grave with its spoil heap, graves the Bloom has broken
 open, ivy and long grass. The Teague vault: the granite front, rubble side walls and turf cap that wrap the vault
@@ -28,7 +28,7 @@ from lib import props_wild_parts as W
 PINE = "wild_lumber_dark"
 PINE_OLD = "wild_lumber_weathered"
 CEDAR = "wild_cedar"
-STONE = "mine_limestone"
+STONE = "civic_marble"
 FIELD = "stone_river"
 GRANITE = "civic_granite"
 IRON = "civic_iron"
@@ -41,7 +41,9 @@ GILT = "civic_brass"
 SILVER = "road_chrome"
 ENGRAVE = "civic_engrave_granite"
 ENGRAVE_MARBLE = "civic_engrave_marble"
-LEAVES = "foliage_birch"
+LEAVES = "plants"
+# The round leafy bush cell of the shared `plants` foliage atlas (textures/gen: plants_albedo), Blender UV rect.
+LEAF_RECT = (0.53, 0.02, 0.98, 0.49)
 GRASS = "grass"
 
 
@@ -354,7 +356,7 @@ def _snap(ctx, keep_below: float, *, fall=(0, -0.55)) -> None:
 
 
 def w4_chapel_headstone(ctx: K.Ctx) -> None:
-    """A round-topped slate headstone on a fieldstone footing, a lettered face (civic_engrave cell `cell`).
+    """A round-topped granite headstone on a fieldstone footing, a lettered face (civic_engrave cell `cell`).
     Worn: leaning with the frost heave, moss up its face. Destroyed: snapped off at the footing and lying face up
     in the grass in front of it."""
     cell = int(ctx.param("cell", 0))
@@ -509,42 +511,53 @@ def w4_chapel_iron_railing_gate(ctx: K.Ctx) -> None:
         ctx.add(o, IRON, uv="box", uv_scale=4.0)
 
 
+def _stone(ctx, name, size, center, r, *, yaw=0.0, moss=0.45):
+    """A roughly squared fieldstone: a bevelled box, its faces pushed about by noise."""
+    st = K.box(name, size, bevel=min(size) * 0.25)
+    K.noise_disp(st, min(size) * 0.12, 7.0, seed=r.randint(0, 9999))
+    K.place(st, (0, 0, 0), (r.uniform(-4, 4), r.uniform(-4, 4), yaw))
+    K.place(st, center)
+    return ctx.add(st, FIELD, uv="box", uv_scale=2.5, moss=moss, patches=0.5)
+
+
 def w4_chapel_stone_wall(ctx: K.Ctx) -> None:
-    """Two metres of dry-stone churchyard wall: fieldstones laid in rough courses without mortar under a row of
-    flat capstones, moss in the joints. Worn: the right-hand end tumbled, its stones in the grass."""
+    """Two metres of dry-stone churchyard wall: squared fieldstones laid in four battered courses on both faces
+    round a rubble core, without mortar, under a row of capstones set on edge, moss in the joints. Worn: the
+    right-hand end tumbled, its stones in the grass."""
     L, D, H = 2.0, 0.5, 0.75
     r = ctx.rnd("wall")
     dr = ctx.drnd("tumble")
     courses = 4
+    ch = 0.15
+    core = K.box("core", (L - 0.1, D * 0.5, H - 0.2), center=(0, 0, (H - 0.2) / 2))
+    ctx.add(core, FIELD, uv="box", uv_scale=2.0, moss=0.3)
     for c in range(courses):
-        z = 0.06 + c * 0.15
-        x = -L / 2 + r.uniform(0.0, 0.12)
-        width = D - c * 0.05
-        while x < L / 2 - 0.05:
-            s = r.uniform(0.22, 0.36)
-            if ctx.worn and x > L / 2 - 0.55 and c >= 2:
-                if dr.random() < 0.7:
-                    st = K.chunk(f"fallen{c}_{x:.2f}", s, dr, n=10, flat=0.6)
-                    K.place(st, (min(L / 2, x + dr.uniform(0.1, 0.5)), dr.uniform(-0.6, -0.3), 0.06))
-                    ctx.add(st, FIELD, uv="box", uv_scale=2.5, moss=0.5)
+        z = c * ch + ch / 2
+        half = D / 2 - c * 0.025
+        for sy in (-1, 1):
+            x = -L / 2 + (r.uniform(0.0, 0.1) if c % 2 == 0 else r.uniform(0.1, 0.2))
+            while x < L / 2 - 0.04:
+                s = min(r.uniform(0.2, 0.34), L / 2 - x)
+                if s < 0.08:
+                    break
+                if ctx.worn and x > L / 2 - 0.55 and c >= 2:
+                    if dr.random() < 0.7:
+                        _stone(ctx, f"fallen{c}{sy}_{x:.2f}", (s, 0.2, ch - 0.02), (min(L / 2, x + dr.uniform(0.1, 0.5)), sy * dr.uniform(0.35, 0.6),
+                               ch / 2), dr, yaw=dr.uniform(-40, 40), moss=0.5)
+                    x += s
+                    continue
+                depth = r.uniform(0.18, 0.24)
+                _stone(ctx, f"st{c}{sy}_{x:.2f}", (s - 0.015, depth, ch - 0.012), (x + s / 2, sy * (half - depth / 2), z), r,
+                       yaw=r.uniform(-3, 3))
                 x += s
-                continue
-            for sy in (-1, 1):
-                st = K.chunk(f"st{c}_{x:.2f}_{sy}", s, r, n=12, flat=0.55, elong=1.3)
-                K.place(st, (x + s / 2, sy * (width / 2 - s * 0.32), z + 0.05))
-                ctx.add(st, FIELD, uv="box", uv_scale=2.5, moss=0.45, patches=0.5)
-            x += s * r.uniform(0.85, 1.0)
     # Capstones on edge along the top.
-    x = -L / 2 + 0.05
+    x = -L / 2 + 0.04
     k = 0
-    while x < L / 2 - 0.1:
+    while x < L / 2 - 0.08:
         if ctx.worn and x > L / 2 - 0.6:
             break
-        w = r.uniform(0.16, 0.24)
-        cap = K.chunk(f"cap{k}", 0.3, r, n=10, flat=0.45)
-        K.place(cap, (0, 0, 0), (90, 0, 0))
-        K.place(cap, (x + w / 2, 0, H - 0.1))
-        ctx.add(cap, FIELD, uv="box", uv_scale=2.5, moss=0.65)
+        w = r.uniform(0.1, 0.16)
+        _stone(ctx, f"cap{k}", (w - 0.01, D * 0.62, 0.2), (x + w / 2, 0, courses * ch + 0.08), r, moss=0.65)
         x += w
         k += 1
     _centre_depth(ctx)
@@ -622,15 +635,16 @@ def w4_chapel_grave_dug(ctx: K.Ctx) -> None:
         rim.append(s)
         ctx.add(s, SOIL, uv="box", uv_scale=2.0, ao=True)
     floor = K.box("pit", (pw - 0.02, pl - 0.02, 0.01), center=(px, 0, 0.004))
-    ctx.add(floor, "paint_black", uv="box", uv_scale=1.0, ao=False)
+    ctx.add(floor, "rubber_black", uv="box", uv_scale=1.0, ao=False)
     for k, y in enumerate((-0.55, 0.45)):
         W.bar(ctx, f"plank{k}", (px - pw / 2 - 0.2, y, 0.11), (px + pw / 2 + 0.15, y + 0.04, 0.11), 0.22, 0.04, "wood_weathered")
     # The spoil heap along the right side.
     hh = 0.5 if ctx.clean else 0.38
-    for k in range(7):
-        y = -pl / 2 + 0.15 + k * (pl - 0.3) / 6
-        b = K.blob(f"spoil{k}", 0.34, subdiv=2, scale=(0.9, 1.1, hh / 0.34), center=(0.42 + r.uniform(-0.04, 0.04), y, 0.0), rough=0.35,
-                   seed=k + 11)
+    heap = K.blob("spoil", 1.0, subdiv=3, scale=(0.34, 1.12, hh), center=(0.42, 0.0, 0.0), rough=0.12, seed=11)
+    ctx.add(heap, SOIL, uv="box", uv_scale=2.0, smooth=50)
+    for k in range(3):
+        b = K.blob(f"spoil{k}", 0.3, subdiv=2, scale=(0.9, 1.4, hh * 0.8 / 0.3), center=(0.45 + r.uniform(-0.05, 0.05), -0.7 + k * 0.7, 0.0),
+                   rough=0.15, seed=k + 21)
         ctx.add(b, SOIL, uv="box", uv_scale=2.0, smooth=50)
     for k in range(8):
         c = K.chunk(f"clod{k}", r.uniform(0.06, 0.12), r, n=9)
@@ -686,7 +700,7 @@ def w4_chapel_ivy(ctx: K.Ctx) -> None:
         stems.append(pts)
         W.pole(ctx, f"stem{k}", pts, 0.012, "bark_dead_static", r_end=0.005, seed=k, segs=5)
     keep = 1.0 if ctx.clean else 0.5
-    n = 46
+    n = 60
     for k in range(n):
         if r.random() > keep:
             continue
@@ -701,7 +715,8 @@ def w4_chapel_ivy(ctx: K.Ctx) -> None:
         uvl = me.uv_layers.active
         for li, loop in enumerate(me.loops):
             co = me.vertices[loop.vertex_index].co
-            uvl.data[li].uv = (co.x / s + 0.5, co.z / s + 0.5)
+            u, v = co.x / s + 0.5, co.z / s + 0.5
+            uvl.data[li].uv = (LEAF_RECT[0] + u * (LEAF_RECT[2] - LEAF_RECT[0]), LEAF_RECT[1] + v * (LEAF_RECT[3] - LEAF_RECT[1]))
         K.place(card, (0, 0, 0), (tilt, 0, yaw))
         K.place(card, (x, -0.06 - r.uniform(0.0, 0.14), max(s / 2, z)))
         ctx.add(card, LEAVES, uv=None, ao=False)
@@ -955,10 +970,9 @@ def w4_chapel_silver_chest(ctx: K.Ctx) -> None:
         K.solidify(body, 0.03, offset=-1.0)
     ctx.add(body, oak, uv="box", uv_scale=1.5, patches=0.6)
     for k, x in enumerate((-0.38, 0.0, 0.38)):
-        band = K.box(f"band{k}", (0.05, D + 0.012, H + 0.006), center=(x, 0, H / 2), bevel=0.002)
-        if ctx.worn:
-            K.delete_faces(band, lambda c, n: n.z > 0.9)
-        ctx.add(band, "wild_cast_iron", uv="box", uv_scale=3.0)
+        for j, sy in enumerate((-1, 1)):
+            band = K.box(f"band{k}{j}", (0.05, 0.008, H - 0.01), center=(x, sy * (hd + 0.004), H / 2), bevel=0.001)
+            ctx.add(band, "wild_cast_iron", uv="box", uv_scale=3.0)
     for k, sx in enumerate((-1, 1)):
         h = K.tube(f"handle{k}", [(sx * (Wd / 2 + 0.01), -0.06, H * 0.62), (sx * (Wd / 2 + 0.06), -0.06, H * 0.55),
                                   (sx * (Wd / 2 + 0.06), 0.06, H * 0.55), (sx * (Wd / 2 + 0.01), 0.06, H * 0.62)], 0.008, segs=5)
