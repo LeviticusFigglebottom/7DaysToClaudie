@@ -85,6 +85,16 @@ func bind_state(p_state: PlayerState) -> void:
 	state.stats.died.connect(_on_died)
 
 
+## Holds the body still (no gravity, no fall building up) while the ground under it may not exist
+## yet. A load places the player at the saved spot before the terrain's collision is there (a real
+## renderer meshes it on worker threads): falling meanwhile, then being put back on the ground at
+## full speed, killed the player on arrival and respawned them at the drop site (player report 3).
+func freeze(on: bool) -> void:
+	set_physics_process(not on)
+	velocity = Vector3.ZERO
+	_fall_speed = 0.0
+
+
 func write_state() -> void:
 	if state == null:
 		return
