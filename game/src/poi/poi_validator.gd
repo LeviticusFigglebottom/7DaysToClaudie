@@ -185,9 +185,44 @@ func _walkable(li: int, c: Vector2i) -> bool:
 func _land(li: int, c: Vector2i) -> Array:
 	if _collapsed and _weak.has(node_key(li, c)):
 		return [li - 1, c]
+	# A ladder's hatch has no floor: stepping onto it drops to the ladder's foot (TD-224).
+	if _hatches().has(node_key(li, c)):
+		return [li - 1, c]
 	if layout.is_void(li, c):
 		return layout.floor_cell(li, c)
 	return [li, c]
+
+
+## node key -> true for every open ladder hatch: the cell over a ladder with "hatch" on the level
+## above it (a hatch into a tall room's void has no floor to be cut and is not one).
+var _hatch_keys: Dictionary = {}
+var _hatch_done: bool = false
+
+
+func _hatches() -> Dictionary:
+	if not _hatch_done:
+		_hatch_done = true
+		for l: Dictionary in layout.ladders:
+			var up: int = int(l["level"]) + 1
+			if bool(l["hatch"]) and layout.is_room(layout.room_at(up, l["cell"])):
+				_hatch_keys[node_key(up, l["cell"])] = true
+	return _hatch_keys
+
+
+## Doorways opening straight onto a ladder hatch: whoever walks through drops down the ladder well.
+func _check_hatch_doors() -> void:
+	for op: Dictionary in layout.openings:
+		var t: String = str(op["type"])
+		if PoiLayout.is_window(t) or t == "half":
+			continue
+		var li: int = int(op["level"])
+		var cells: Array[Vector2i] = PoiLayout.edge_cells(str(op["axis"]), op["edge"])
+		for k: int in 2:
+			var c: Vector2i = cells[k]
+			# Only a doorway someone walks through: the far side is floor (a railing gap over the
+			# drop off a platform is not one).
+			if _hatches().has(node_key(li, c)) and _walkable(li, cells[1 - k]):
+				_e("opening '%s' at %s (level %d) opens onto the ladder hatch at %s: it drops the player down the ladder well; move the door or the ladder" % [op["id"], op["cell"], li, c])
 
 
 ## What stands between two cells across an edge: a wall (passable only through an opening) or a
@@ -520,6 +555,7 @@ func _run() -> void:
 	_check_ids()
 	_check_traps(seen, stair_cells)
 	_check_stair_doors()
+	_check_hatch_doors()
 	_check_triggers(seen)
 	_check_locks(keys)
 	_check_roof()
