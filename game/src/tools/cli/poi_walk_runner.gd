@@ -152,6 +152,10 @@ func _print_findings(rep: Dictionary) -> void:
 	for leg2: Dictionary in rep["assisted"]:
 		print("[poi_walk]   needed   %s on %s %s -> %s%s" % [",".join(PackedStringArray(leg2["needed"])), leg2["kind"], leg2["from"], leg2["to"],
 			(" (" + str(leg2["opening"]) + ")") if leg2.has("opening") else ""])
+	for lf: Dictionary in rep["leaf_in_way"]:
+		print("[poi_walk]   leaf     open door leaf '%s' across %s (shut to get past)" % [lf["leaf"], lf["leg"]])
+	for wp: Dictionary in rep["waypoints_on_props"]:
+		print("[poi_walk]   waypoint '%s' L%d %s stands in a prop (walked beside it)" % [wp["waypoint"], wp["level"], wp["cell"]])
 	for c: Dictionary in rep["climbs"]:
 		print("[poi_walk]   ladder   %s %s (an interact)%s" % [c["dir"], c["ladder"], "" if bool(c["ok"]) else " FAILED"])
 	for r: Dictionary in rep["unreached"]:
@@ -181,11 +185,18 @@ func _blk(b: Dictionary) -> String:
 
 
 func _table(rows: Array[Dictionary]) -> void:
-	print("[poi_walk] %-40s %6s %7s %8s %6s %9s %6s %8s" % ["building", "legs", "blocked", "assisted", "ladder", "unreached", "sealed", "corridor"])
+	print("[poi_walk] %-34s %5s %7s %-26s %8s %6s %6s %9s %6s %8s" % ["building", "legs", "blocked", "(doorway/climb/window/floor)", "assisted",
+		"leaves", "ladder", "unreached", "sealed", "corridor"])
 	for r: Dictionary in rows:
-		print("[poi_walk] %-40s %6d %7d %8d %6d %9d %6d %8d" % [str(r["walk_id"]).left(40), (r["legs"] as Array).size(), (r["blocked"] as Array).size(),
-			(r["assisted"] as Array).size(), (r["climbs"] as Array).size(), (r["unreached"] as Array).size(), (r["sealed"] as Array).size(),
-			(r["corridor"] as Array).size()])
+		var by: Dictionary = {}
+		for leg: Dictionary in r["blocked"]:
+			var c: String = str(leg.get("category", "floor"))
+			by[c] = int(by.get(c, 0)) + 1
+		var split: String = "%d/%d/%d/%d" % [int(by.get("doorway", 0)), int(by.get("climb", 0)), int(by.get("window", 0)),
+			int(by.get("floor", 0)) + int(by.get("drop", 0)) + int(by.get("entrance", 0))]
+		print("[poi_walk] %-34s %5d %7d %-26s %8d %6d %6d %9d %6d %8d" % [str(r["walk_id"]).left(34), (r["legs"] as Array).size(), (r["blocked"] as Array).size(),
+			split, (r["assisted"] as Array).size(), (r["leaf_in_way"] as Array).size(), (r["climbs"] as Array).size(), (r["unreached"] as Array).size(),
+			(r["sealed"] as Array).size(), (r["corridor"] as Array).size()])
 
 
 ## Vector2i / Vector3 / StringName to JSON-friendly values.

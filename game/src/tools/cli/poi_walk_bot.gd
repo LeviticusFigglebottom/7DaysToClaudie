@@ -1001,6 +1001,15 @@ func _close_leaf_in_way(needed: Array, own: String) -> bool:
 		if d.state != "open" or _shut.has(d.get_instance_id()) or d.opening_id == own:
 			continue
 		_shut[d.get_instance_id()] = true
+		# Out of the leaf's way first: swung shut through the body it would shove it about.
+		if _in_sweep(d, player.global_position):
+			var hinge: Vector3 = d.global_transform * d.pivot.position
+			var away := Vector3(player.global_position.x - hinge.x, 0.0, player.global_position.z - hinge.z)
+			if away.length() > 0.05:
+				var reach: float = d.leaf_local.origin.x * 2.0 + Player.RADIUS + ASIDE_MARGIN
+				var to: Vector3 = hinge + away.normalized() * reach
+				to.y = player.global_position.y
+				await _go(to, false, {"needed": []}, false, 90)
 		d.interact(player)
 		needed.append("close_door:" + d.op_id)
 		_door_leaves.append({"opening": d.opening_id, "leaf": d.op_id})
