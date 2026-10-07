@@ -133,7 +133,9 @@ void fragment() {
 		if (side_b && side_b_from_other_array) {
 			// Wall finishes are authored at 1 m per tile; `uv` carries the floors' 2 m scale.
 			albedo = texture(side_b_albedo, vec3(m, slice)).rgb;
-			if (side_b_has_maps) {
+			// Rock ceilings only (slices 16-17): other wall finishes' ORM and normal are authored for
+			// walls, and on a ceiling they darkened wood and plaster (Haldane bunker render).
+			if (side_b_has_maps && slice >= 15.5) {
 				orm = texture(side_b_orm, vec3(m, slice)).rgb;
 				nmap = texture(side_b_normal, vec3(m, slice)).rgb;
 			}
