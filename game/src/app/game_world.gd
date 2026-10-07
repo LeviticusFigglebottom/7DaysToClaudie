@@ -718,7 +718,7 @@ func respawn() -> void:
 ## there is composed and attached and its near chunks meshed (a respawn or a teleport far from
 ## where the player was). The player is frozen meanwhile.
 func await_area(pos: Vector3, then: Callable) -> void:
-	if terrain.streamer == null or (terrain.streamer.is_area_ready(pos, 64.0) and terrain.is_ready_around(pos, 1)):
+	if terrain.streamer == null or (terrain.streamer.is_area_ready(pos, 64.0) and terrain.is_ready_around(pos, 1) and _volume_ready(pos)):
 		then.call()
 		return
 	player.input_enabled = false
@@ -727,6 +727,12 @@ func await_area(pos: Vector3, then: Callable) -> void:
 	terrain.streamer.request_now(pos)
 	_awaiting = {"pos": pos, "then": then}
 	ui.show_loading("Finding your feet…", 0.95)
+
+
+## The volume (caves, tunnels) around `pos` is built and installed: a bed down in a cave must not
+## take the player before its floor exists (ADR-0056).
+func _volume_ready(pos: Vector3) -> bool:
+	return terrain.volume == null or terrain.volume.is_rect_ready(Rect2(pos.x - 16.0, pos.z - 16.0, 32.0, 32.0))
 
 
 ## The area await_area is waiting for ({} = none).
@@ -739,7 +745,7 @@ func _poll_await() -> void:
 	player.global_position = Vector3(pos.x, maxf(player.global_position.y, terrain.height_at(pos.x, pos.z) + 2.0), pos.z)
 	player.velocity = Vector3.ZERO
 	terrain.update_streaming(pos)
-	if not terrain.streamer.is_area_ready(pos, 64.0) or not terrain.is_ready_around(pos, 1):
+	if not terrain.streamer.is_area_ready(pos, 64.0) or not terrain.is_ready_around(pos, 1) or not _volume_ready(pos):
 		return
 	var then: Callable = _awaiting["then"]
 	_awaiting = {}

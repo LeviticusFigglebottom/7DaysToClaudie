@@ -441,13 +441,22 @@ func _physics_process(delta: float) -> void:
 	_update_anim(want)
 
 
+## The ground a far (collision-less) body glides on at `p` (y = where it is now): the surface, or
+## the floor under it when that is nearer (a cave or tunnel, ADR-0056; a POI cellar), so a body
+## walking a cave far from the player is not lifted onto the hillside above it.
+static func far_ground(w: Node, p: Vector3) -> float:
+	var h: float = float(w.call(&"height_at", p.x, p.z))
+	var g: float = float(w.call(&"ground_below", p))
+	return g if absf(p.y - g) < absf(p.y - h) else h
+
+
 func _move(want: Vector3, delta: float, dist: float) -> void:
 	if crawling:
 		want *= 0.35 if def.archetype != "crawler" else 1.0
 	if dist > KINEMATIC_BEYOND:
 		# No terrain collision this far out: glide along the heightfield.
 		var p: Vector3 = global_position + want * delta
-		p.y = Game.world.height_at(p.x, p.z) if Game.world != null else p.y
+		p.y = far_ground(Game.world, Vector3(p.x, global_position.y, p.z)) if Game.world != null else p.y
 		global_position = p
 		if want.length() > 0.05:
 			_yaw_target = atan2(want.x, want.z)
