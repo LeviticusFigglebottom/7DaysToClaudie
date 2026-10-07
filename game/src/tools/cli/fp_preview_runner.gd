@@ -52,6 +52,21 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "shovel_dig_windup", "item": "shovel", "action": "fp_dig", "frame": 8},
 	{"name": "shovel_dig_follow", "item": "shovel", "action": "fp_dig", "frame": 15},
 	{"name": "food_eat_lift", "item": "canned_beans", "action": "fp_eat", "frame": 8},
+	# One-handed tools, knives and clubs: the chop's follow-through, the knife's own hold and
+	# slice, the pipe's blow, and each class's inspect (key Y) at its look and its turn.
+	{"name": "axe_follow", "item": "stone_axe", "action": "fp_chop", "frame": 15},
+	{"name": "hatchet_impact", "item": "hatchet", "action": "fp_chop", "frame": 12},
+	{"name": "knife_guard", "item": "kitchen_knife", "guard": true},
+	{"name": "knife_slice_windup", "item": "kitchen_knife", "action": "fp_slice", "frame": 3},
+	{"name": "knife_slice", "item": "kitchen_knife", "action": "fp_slice", "frame": 6},
+	{"name": "club_guard", "item": "stone_club", "guard": true},
+	{"name": "pipe_bash", "item": "steel_pipe", "action": "fp_bash", "frame": 16},
+	{"name": "axe_inspect", "item": "stone_axe", "action": "fp_inspect_one_hand", "frame": 20},
+	{"name": "hatchet_inspect_turn", "item": "hatchet", "action": "fp_inspect_one_hand", "frame": 40},
+	{"name": "club_inspect", "item": "stone_club", "action": "fp_inspect_club", "frame": 24},
+	{"name": "pipe_inspect_turn", "item": "steel_pipe", "action": "fp_inspect_club", "frame": 44},
+	{"name": "knife_inspect", "item": "kitchen_knife", "action": "fp_inspect_knife", "frame": 20},
+	{"name": "knife_inspect_turn", "item": "kitchen_knife", "action": "fp_inspect_knife", "frame": 40},
 ]
 
 var _out: String = "res://../build/fp_preview"
