@@ -1,0 +1,23 @@
+{
+  "_doc": "Forest encounters (ADR-0054): the scatter of small finds between the towns (data/encounters/*.json). per_km2 = encounters per km² of ground with biome weight 1, times the encounter_density world setting. The world is cut into cell x cell m squares (global grid; a site's id names its cell); a cell rolls once, then tries up to `tries` spots `inset` m inside it. edge: m kept clear of region borders (a neighbour's buildings and roads are not in a region's data). spacing: m between two sites of a region. min_veg: vegetation mask (0..1) a spot needs (0 on roads, water, pads, clearings). spawn_clear: m from spawn points (the drop site). biomes: chance a spot of that biome is used (missing = never). sleepers: m at which an encounter's sleepers spawn and despawn. budget_ms: main-thread build time a frame on the main map (streamed worlds use the streamer's steps).",
+  "per_km2": 10.0,
+  "cell": 128.0,
+  "tries": 8,
+  "inset": 16.0,
+  "edge": 24.0,
+  "spacing": 90.0,
+  "min_veg": 0.35,
+  "spawn_clear": 80.0,
+  "biomes": {
+    "conifer_forest": 1.0,
+    "birch_grove": 1.0,
+    "burnt_forest": 0.8,
+    "fen": 0.7,
+    "rocky_slope": 0.35,
+    "meadow": 0.3,
+    "riverbank": 0.3
+  },
+  "sleeper_spawn": 46.0,
+  "sleeper_despawn": 95.0,
+  "budget_ms": 3.0
+}

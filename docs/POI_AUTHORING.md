@@ -73,7 +73,9 @@ Wall finishes (texture-array order is fixed in `data/materials/kit_finishes.json
 `plaster_white, plaster_grey, paint_mustard, paint_sage, paint_slate_blue, wallpaper_floral_rose,
 wallpaper_stripe_green, wallpaper_damask_brown, wood_paneling_dark, tile_bathroom_white,
 tile_kitchen_check, siding_white, siding_pale_blue, siding_barn_red, brick_red, concrete_block,
-rock_drift, rock_limestone` (the two rock walls also serve as ceilings; they never peel).
+rock_drift, rock_limestone, log_chinked` (the two rock walls also serve as ceilings; they never peel;
+`log_chinked` is bark-on logs with lime chinking for a log building's exterior and gables, weathered as an
+exterior finish).
 Floor finishes: `wood_oak, wood_pine, carpet_brown, carpet_blue_worn, linoleum_check,
 linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
 
@@ -127,9 +129,11 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
   north or south wall, E/W on an east or west one) overrides it, e.g. bay doors whose leaves
   would stand across the aisle the player walks next (poi_walk lists every leaf it had to shut).
 * Exterior doorways (`door*`, `open`) on the ground floor whose sill is more than 0.2 m above the
-  yard (the pad, or the porch deck where it covers the threshold) get steps up to them: the porch
-  step scaled to the rise, out from the foundation, with a ramp under it (PoiBuilder.stoops). Keep
-  the metre outside such a doorway clear of yard props.
+  yard (the pad, or the porch deck where it covers the threshold) get steps up to them, out from the
+  foundation with a ramp under it (PoiBuilder.stoops): a concrete stoop with a landing on a brick,
+  block or rock building, wooden steps on any other, 1-3 steps by the rise, 2 m wide at a double
+  door (PoiBuilder.stoop_piece). Keep the metre outside such a doorway clear of yard props (1.5 m
+  for a concrete stoop of two or three steps).
 * Where a barricade stands: boards go on the face the door is approached from (outside on an
   exterior wall; on an interior wall the side reachable without passing through it, as for lock
   cues — whoever nailed them sealed the room behind), a furniture pile inside on an exterior wall

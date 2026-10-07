@@ -8,7 +8,8 @@ extends Node3D
 ## It is also their senses (one context per frame: the player's visibility, the wind, awake
 ## Hollowed, the loudest recent sound) and the authority for butchering (`wildlife.butcher`).
 ## Nothing is saved: the plans re-roll the same, minus what this session has killed; a carcass
-## left behind is gone after a reload (TD-065).
+## left behind is gone after a reload (TD-065). Wolf packs (ADR-0055) are planned here with the
+## herds and spawned by the `wolves` child (WolfPacks).
 
 const GRAZER_RING := Vector2(70.0, 230.0)
 const FLOCK_RING := Vector2(30.0, 160.0)
@@ -25,17 +26,26 @@ var flocks: Dictionary = {}
 ## Plan id -> how many of that band were killed this session (they don't come back).
 var taken: Dictionary = {}
 var silent: bool = false
+## The wolf packs (ADR-0055): spawned from this manager's `pack` plans.
+var wolves: WolfPacks = null
 
 var _tick_t: float = 0.0
 var _ctx_frame: int = -1
 var _ctx: Dictionary = {}
 var _seen_seq: int = 0
 var _loud: Array[Dictionary] = []
+## The player's latest footstep (Stimuli kind `footstep`, too quiet for `_loud`): animals hear you
+## walk up (docs/AI_TUNING.md, wildlife at night).
+var _step: Dictionary = {}
 var _flock_check_t: float = 0.0
 
 
 func setup_world(w: Node) -> void:
 	world = w
+	wolves = WolfPacks.new()
+	wolves.name = "Wolves"
+	add_child(wolves)
+	wolves.setup(self, w)
 	Game.register_command(&"wildlife.butcher", _butcher)
 	# A region's 1 m terrain answers sample() differently from its coarse one: plan again.
 	var tm: Node = (w.get(&"terrain") as Node) if w != null else null
@@ -148,20 +158,26 @@ func senses_context(_who: Node = null) -> Dictionary:
 		_collect_loud(st)
 		if not _loud.is_empty():
 			_ctx["loud"] = _loud.back()
+		if not _step.is_empty() and st.now() - float(_step["time"]) < 0.6:
+			_ctx["step"] = _step
 	if Game.session != null:
 		_ctx["night"] = Game.session.clock.is_night()
 	var p: Player = world.get(&"player") as Player if world != null else null
 	if p != null and p.state != null and p.state.stats.alive and not DebugTools.is_on(&"invisible"):
 		var light: float = st.light_at(p.global_position + Vector3.UP) if st != null else 1.0
 		var own: bool = p.get_node(^"Equipment").call(&"has_light_on") if p.has_node(^"Equipment") else false
-		var vis: float = st.detection_range(1.0, light, p.crouching, p.horizontal_speed(), own, p.state.progression.modifier("visibility_mult")) if st != null else 1.0
-		_ctx["person"] = {"pos": p.global_position, "visibility": clampf(vis, 0.05, 1.25), "crouched": p.crouching,
+		# Stance, movement, perks and a carried light as seen in full light (dark_sight 1.0): each
+		# species then sees that through its own dark_sight (WildlifeBrain.visibility), now that the
+		# sky's light is fed (733dd80) and a deer's night eyes are not a person's.
+		var lit: float = st.detection_range(1.0, 1.0, p.crouching, p.horizontal_speed(), own, p.state.progression.modifier("visibility_mult"), 1.0) if st != null else 1.0
+		_ctx["person"] = {"pos": p.global_position, "lit": clampf(lit, 0.05, 1.25), "light": light, "own_light": own, "crouched": p.crouching,
 			"speed": p.horizontal_speed()}
 	var hol: Array[Vector3] = []
 	var ai: Node = world.get(&"ai") if world != null else null
 	if ai != null and ai.has_method(&"enemies_in_radius") and p != null:
 		for e: Enemy in ai.call(&"enemies_in_radius", p.global_position, GRAZER_DESPAWN):
-			if e.is_alive() and e.state != Enemy.State.SLEEP:
+			# a stalking wolf is not seen by its prey (ADR-0055)
+			if e.is_alive() and e.state != Enemy.State.SLEEP and not (e.wolf != null and e.wolf.unseen_by_prey()):
 				hol.append(e.global_position)
 	_ctx["hollowed"] = hol
 	return _ctx
@@ -171,6 +187,9 @@ func senses_context(_who: Node = null) -> Dictionary:
 func _collect_loud(st: Stimuli) -> void:
 	for e: Stimuli.SoundEvent in st.sounds:
 		if e.seq <= _seen_seq:
+			continue
+		if e.kind == &"footstep":
+			_step = {"pos": e.pos, "loudness": e.loudness, "time": st.now(), "kind": e.kind}
 			continue
 		if e.kind in [&"bird_flush", &"wildlife_alarm", &"murmur"] or e.loudness < 10.0:
 			continue
@@ -256,14 +275,17 @@ func _process_body(delta: float) -> void:
 	var plans: Array[Dictionary] = _plans_near(center, GRAZER_RING.y, clock.day(), period, defs, GameRules.current().num("wildlife_density"))
 	for plan: Dictionary in plans:
 		var id: StringName = plan["id"]
-		if animals_of(id) > 0 or flocks.has(id):
+		if animals_of(id) > 0 or flocks.has(id) or (wolves != null and wolves.has_plan(id)):
 			continue
 		var d := Content.get_def(&"wildlife", plan["def"]) as WildlifeDef
 		var dist: float = (plan["pos"] as Vector2).distance_to(center)
-		var ring: Vector2 = GRAZER_RING if d.wkind == "grazer" else FLOCK_RING
+		var ring: Vector2 = FLOCK_RING if d.wkind == "flock" else GRAZER_RING
 		if dist < ring.x or dist > ring.y:
 			continue
-		if d.wkind == "grazer":
+		if d.wkind == "pack":
+			if wolves != null:
+				wolves.spawn_plan(d, plan)
+		elif d.wkind == "grazer":
 			spawn_band(d, plan, clock.is_night())
 		else:
 			spawn_flock(d, plan)
@@ -463,6 +485,8 @@ func _clear() -> void:
 			(f as Node).queue_free()
 	animals.clear()
 	flocks.clear()
+	if wolves != null:
+		wolves.clear()
 
 
 # --- Butchering ---------------------------------------------------------------------------------

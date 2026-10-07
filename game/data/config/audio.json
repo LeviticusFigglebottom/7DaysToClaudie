@@ -64,6 +64,13 @@
   ],
   "_aliases_doc": "Gameplay sound ids resolved to generated sound ids (tools/assetgen/audio/sounds). Lets code name events by meaning while several events share one recording.",
   "aliases": {
+    "sfx/generator_loop": "sfx/drone_rotor_loop",
+    "sfx/power_switch": "sfx/door_unlock",
+    "sfx/sentry_shot": "sfx/hammer_nail",
+    "sfx/deadfall_drop": "sfx/tree_fall_impact",
+    "sfx/deadfall_rearm": "sfx/log_pickup",
+    "sfx/tripwire_bell": "sfx/trap_alarm_bell",
+    "sfx/spike_pit_hit": "sfx/spear_thunk",
     "music/hum_wave": "voice/hollow_alert",
     "sfx/blueprint_place": "sfx/item_place_mat",
     "sfx/build_add_material": "sfx/item_place_mat",

@@ -57,13 +57,28 @@ Hollowed wears: its type's `bodies`, or the population of its sleeper post, buil
 * Every body carries the tier growths (caps and filament mats at `char_extras.TIER_SITES`, gated
   Seeded / Bloomed). The Husk's plates (`armour` params) and the Blister's pustules (`pustules`)
   are built by `lib/char_specials.py`.
+* The Bloom is built to read at gameplay distance (~20 m), not only at arm's length: its SDF
+  masses (wound and `bloom` sites) swell `char_body.GROWTH_SWELL` (8 mm; params `growth_swell`,
+  0 on the Husk so its plate seams stay tight) past the skin and burst through any garment over
+  them instead of bulging under it; shelves are drawn `char_extras.SHELF_SCALE` (1.5x) their
+  site's `shelf_size`, often with a second, smaller tier stacked above; filaments are 2.2-3.4 mm
+  cords; the tier growths are `TIER_SCALE` (1.5x) `TIER_SITES`' cluster sizes.
+* Dead skin (`skin_hollow`): a darker grey-green base, broad livid / sallow mottling
+  (`mottle_scale` 4) and decay patches (`rot`, skin shader: green-brown, slick, a forearm across),
+  dark sunken eye sockets and a dark, bruised mouth (the bruise mask, `char_body.skin_masks`). The
+  living (`npc_skin`, `skin_ashen_living`) set `bruise` 0 and leave `rot` at 0, so none of it shows.
+* The specials' silhouettes: the Rammer is bare to the waist with bracket fungus down its hump
+  and over the shoulders; the Husk wears broad, thick pauldrons and a collar plate behind the
+  head; the Blister's pustules are fewer and fatter (36 at 2.2-4.6 cm, were 53) so the torso keeps
+  the triangles its gown needs; the Keener is bare-chested, its throat sac (`throat_sac.size` 1.6)
+  bulging under the gaping jaw.
 * Budget ≤ 16k triangles per body (`char_build.BODY_BUDGET`), extras (nails, buttons, growths,
   plates, pustules) and stump caps included; the head keeps its ~4.2k (extras shrink the other
   segments first) so the face holds its shape at arm's length. Godot's import LODs reduce
   distant bodies. Measured: LOD0 15.27k-15.29k (plus 504 in the hidden stump caps), LOD1
   5.9k-7.5k, LOD2 1.6k-3.5k, LOD3 0.3k-0.8k.
 
-### Animations (actions, 30 fps, in-place — root motion not used)
+### Animations (actions, 30 fps, in place; the committed clips assume the Enemy's root motion, below)
 | action | frames | loop | notes |
 |---|---|---|---|
 | `idle` | 90 | ✓ | swaying, head twitches |
@@ -75,20 +90,46 @@ Hollowed wears: its type's `bodies`, or the population of its sleeper post, buil
 | `idle_sleep_crouch`, `idle_sleep_kneel` | 60 | ✓ | crouched / kneeling sleeper, breathing |
 | `wake_lie`, `wake_sit` | 40 | | sleeper getting up |
 | `wake_seat`, `wake_hunch` | 40 | | pushing up off a seat, feet planted, standing on the origin |
-| `walk` | 36 | ✓ | shamble, slight limp (≈ 0.9 m/s at 1.0 speed) |
-| `walk_b` | 40 | ✓ | variant (drag one foot) |
+| `walk` | 72 | ✓ | shamble, slight limp (≈ 0.9 m/s at 1.0 speed); two cycles, the second a lurch (drops onto the weak leg, pitches, an arm thrown out, the head jerked), so the loop is not a metronome |
+| `walk_b` | 80 | ✓ | variant (drag one foot), two cycles with a smaller lurch; the Enemy swaps `walk` / `walk_b` every 4-9 s |
 | `walk_limp` | 44 | ✓ | hard limp (ADR-0028): a third of the Hollowed play it for `walk_b` |
 | `idle_b`, `idle_c` | 120, 100 | ✓ | idle variants: head loll / twitching; each Hollowed settles on one of `idle`, `idle_b`, `idle_c` (EnemyVisual) |
-| `run` | 20 | ✓ | lurching sprint (≈ 4.5 m/s) |
-| `attack_a`, `attack_b` | 24 | | two-handed swipe / lunge-bite |
+| `run` | 40 | ✓ | lurching sprint (≈ 4.5 m/s), two cycles, the second lurching |
+| `attack_a` | 24 | | lunging grab: coils, steps in on the reaching side while the Enemy carries it forward (root motion below), both hands at the throat, claws close at the hit (frame 11, 45 %), hauls back, back foot drags up |
+| `attack_b` | 24 | | walker: lunge-bite (arms hooking in, head thrust, jaw snaps on the hit); Lurcher (`gaunt` >= 0.95, `hunch` >= 0.6, or param `feral`): a leaping pounce, airborne frames 6-10, lands raking on the hit |
 | `attack_structure` | 30 | ✓ | pounding a wall/door |
 | `scream` | 50 | | Keener: chest heave, head back, jaw wide |
-| `hit_front`, `hit_back` | 14 | | flinch |
-| `stagger` | 30 | | heavy hit stumble |
+| `hit_front`, `hit_back` | 18 | | a blow that moves it: head snaps, torso recoils, arms fly loose, one foot steps out along the blow and the other drags after it |
+| `stagger` | 34 | | thrown off balance: reels back over its heels, feet crossing in two scrambling steps, arms windmilling, catches itself folded over its knees, head shake |
+| `knockdown` | 36 | | heavy blow (blast, falling tree, a weighty blunt blow): driven back, legs go, lands on its backside, slams flat with a head bounce; ends exactly in `lie_pose`, where `wake_lie` gets it up |
+| `stumble` | 30 | | a trip while chasing: toe catches, pitches forward, long catch step, arms flung out, stagger step, lurches upright; its feet travel 1.2 m/s at speed 1 |
 | `death_front`, `death_back` | 40 | | collapse (ragdoll takes over after) |
 | `crawl` | 40 | ✓ | legless pull along the ground (Dragger) |
 | `crawl_attack` | 24 | | grab |
 | `eat` | 60 | ✓ | crouched feeding (environmental) |
+
+`stumble` and `knockdown` are built by `char_anim.hollowed_extras()`, outside `actions_table()`, so the
+living table (which starts from it) does not inherit them. A body without them (not rebuilt) still
+works: the Enemy never trips it or knocks it down, and plays no root motion (below).
+
+**Root motion contract (in-place clips, the Enemy moves the body).** The committed clips are authored
+around a straight-line travel of the root that `Enemy` performs while they play, so planted feet stay
+put (`char_anim`: clip-space foot = world foot - root travel; `enemy.gd` `LUNGE`, `LUNGE_WINDOW`,
+`RECOIL`, `STUMBLE_SPEED` must match):
+
+| clip | travel | frames |
+|---|---|---|
+| `attack_a`, `attack_b` | 0.30 m forward (walker), 0.70 m (Lurcher); stops 0.9 m short of the target | 5-11 of 24 |
+| `hit_front` / `hit_back` | 0.20 m back / forward | 2-10 of 18 |
+| `stagger` | 0.55 m back (also the Rammer off a wall) | 2-22 of 34 |
+| `knockdown` | 0.35 m back along the blow (it turns to face the blow as it falls) | 2-14 of 36 |
+| `stumble` | the chase keeps 1.2 m/s x playback rate (0.6-1.0) | whole clip |
+
+Only plain Hollowed whose body has `stumble` get root motion. A knocked-down body lies
+`KNOCKDOWN_HOLD` (0.6 s) on a lying capsule (`POSE_SHAPES.lie`), plays `wake_lie`, and is a corpse where
+it lies if killed down there. EnemyVisual cross-fades into one-shots per clip (`BLEND_IN`: hits 0.06 s,
+stagger / knockdown 0.08 s, attacks 0.14 s, stumble 0.18 s, wake_lie 0.2 s); a body turning on the spot
+steps the `walk` clip at 0.6 rather than sliding on its idle.
 
 ## Living people (`models/characters/<id>.glb`, ADR-0039)
 The Waystation quartermaster (`waystation_quartermaster`) is the first living human. He is built by

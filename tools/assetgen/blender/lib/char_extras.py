@@ -419,6 +419,11 @@ TIER_SITES = [
 ]
 
 
+# The tier growths are what tells a Seeded or Bloomed Hollowed apart in the dark at range: drawn
+# this much bigger than TIER_SITES' cluster sizes (triangle cost is the same).
+TIER_SCALE = 1.5
+
+
 def tier_growths(model, rng) -> dict[str, Part]:
     """The Bloom erupting as the tier rises (ADR-0028): clusters of pale fruiting caps and creeping
     filament mats from the skull, the nape, the shoulders and the spine. Every body carries them,
@@ -444,7 +449,7 @@ def tier_growths(model, rng) -> dict[str, Part]:
         part = out.setdefault(seg, Part())
         t1 = _n(np.cross(nrm, (0.0, 0.0, 1.0)) if abs(nrm[2]) < 0.9 else np.cross(nrm, (1.0, 0.0, 0.0)))
         t2 = np.cross(nrm, t1)
-        sz = size * s
+        sz = size * TIER_SCALE * s
         for i in range(ncaps):
             ang = rng.uniform(0, 2 * math.pi)
             rad = sz * math.sqrt(rng.uniform(0.0, 1.0)) * 0.9
@@ -457,7 +462,7 @@ def tier_growths(model, rng) -> dict[str, Part]:
             ang = rng.uniform(0, 2 * math.pi)
             tang = t1 * math.cos(ang) + t2 * math.sin(ang)
             root = p + tang * sz * rng.uniform(0.2, 0.7)
-            v, f = filament(root, _n(tang * 1.0 + nrm * 0.35), sz * rng.uniform(1.2, 2.2), rng.uniform(0.0012, 0.0022) * s,
+            v, f = filament(root, _n(tang * 1.0 + nrm * 0.35), sz * rng.uniform(1.2, 2.2), rng.uniform(*FILAMENT_R) * s,
                             rng, sag=0.25)
             part.add(v, f, L_BLOOM, bone=bone, gate=float(gate))
     return out
@@ -498,9 +503,9 @@ def shelf(center, normal, size, rng, up=(0, 0, 1)):
     upv = np.asarray(up, dtype=np.float64)
     upv = _n(upv - n * float(upv @ n)) if abs(float(upv @ n)) < 0.95 else _n(np.cross(n, (1, 0, 0)))
     side = np.cross(upv, n)
-    k = 6
+    k = 8
     top, bot = [], []
-    thick = size * 0.22
+    thick = size * 0.30
     for i in range(k + 1):
         a = math.pi * i / k
         rr = size * (0.75 + 0.25 * rng.random())
@@ -519,6 +524,15 @@ def shelf(center, normal, size, rng, up=(0, 0, 1)):
     return verts, faces
 
 
+# The Bloom's growths have to read at gameplay distance (20 m), not only at arm's length: shelves
+# are drawn this much bigger than their site's `shelf_size` and often stacked in tiers like a
+# bracket fungus on a stump, and filaments are cords a few millimetres thick (at 1-2 mm they
+# vanished past 3 m).
+SHELF_SCALE = 1.5
+SHELF_TIER_P = 0.6
+FILAMENT_R = (0.0022, 0.0034)
+
+
 def bloom(model, rng) -> dict[str, Part]:
     """Filaments + shelf growths at the body's Bloom sites; returns {segment: Part}."""
     out: dict[str, Part] = {}
@@ -531,14 +545,20 @@ def bloom(model, rng) -> dict[str, Part]:
             jitter = _n(nrm + rng.normal(0, 0.45, 3))
             root = c + jitter * site.get("radius", 0.02) * 0.6
             length = rng.uniform(0.6, 1.0) * site.get("length", 0.06)
-            v, f = filament(root, _n(nrm * 0.7 + jitter * 0.6), length, rng.uniform(0.0011, 0.0019) * model.s,
+            v, f = filament(root, _n(nrm * 0.7 + jitter * 0.6), length, rng.uniform(*FILAMENT_R) * model.s,
                             rng, sag=site.get("sag", 0.6))
             part.add(v, f, L_BLOOM)
         for _ in range(int(site.get("shelves", 0))):
             jitter = _n(nrm + rng.normal(0, 0.35, 3))
             sc = c + jitter * site.get("radius", 0.02) * rng.uniform(0.3, 0.9)
-            v, f = shelf(sc, jitter, rng.uniform(0.6, 1.0) * site.get("shelf_size", 0.018) * model.s, rng)
+            size = rng.uniform(0.6, 1.0) * site.get("shelf_size", 0.018) * SHELF_SCALE * model.s
+            v, f = shelf(sc, jitter, size, rng)
             part.add(v, f, L_BLOOM)
+            # a smaller bracket stacked above it (tiers read as fungus from far off)
+            if rng.random() < SHELF_TIER_P:
+                v, f = shelf(sc + np.array([0.0, 0.0, 1.0]) * size * 0.55 - jitter * size * 0.15, jitter,
+                             size * rng.uniform(0.55, 0.75), rng)
+                part.add(v, f, L_BLOOM)
     return out
 
 

@@ -35,6 +35,8 @@ var wildlife: Node = null
 var traders: Node = null
 var ashen: Node = null
 var farming: Node = null
+## Forest encounters (ADR-0054): campsites, wrecks and caches scattered between the towns.
+var encounters: Node = null
 var is_ready: bool = false
 ## True when this random world streams its regions (ADR-0038): only the first area is composed at
 ## 1 m at load, the RegionStreamer brings in the rest, and buildings come by distance. The default
@@ -124,6 +126,10 @@ func _exit_tree() -> void:
 
 func _process(_delta: float) -> void:
 	_load_step()
+	# The sky's light for the Hollowed's eyes (Stimuli.detection_range scales sight by it). It was
+	# never fed: perception saw every night at full daylight with the night sight range.
+	if is_ready and env != null and Stimuli.current != null:
+		Stimuli.current.ambient_light = env.ambient_light_level()
 	# Sampled after this frame's steps: the label shown now names the step the next frame runs,
 	# and the meter attributes the coming frame to it (GameWorld processes last, see _ready).
 	if not is_ready or _load_meter.trailing():
@@ -365,14 +371,17 @@ const MODULES: Array = [
 	["loose", "res://src/world/loose_items.gd", "Scattering what was dropped…"],
 	["building", "res://src/building/building_manager.gd", "Raising what you built…"],
 	["farming", "res://src/building/farm_manager.gd", "Raising what you built…"],
+	["base_tech", "res://src/building/base_tech_manager.gd", "Raising what you built…"],
 	["pois", "res://src/poi/poi_manager.gd", "Raising the town…"],
 	["ai", "res://src/ai/ai_director.gd", "Stirring the Hollowed…"],
+	["nests", "res://src/world/bloom/bloom_nests.gd", "Stirring the Hollowed…"],
 	["ambience", "res://src/audio/ambience_director.gd", "Listening…"],
 	["supply_drops", "res://src/world/supply_drops.gd", "Listening…"],
 	["directives", "res://src/progression/directive_tracker.gd", "Listening…"],
 	["wildlife", "res://src/wildlife/wildlife_manager.gd", "Waking the woods…"],
 	["traders", "res://src/trade/trader_manager.gd", "Manning the Waystation…"],
 	["ashen", "res://src/ai/ashen/ashen_director.gd", "Watching the treeline…"],
+	["encounters", "res://src/world/encounters/encounters.gd", "Leaving things in the woods…"],
 ]
 
 

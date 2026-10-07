@@ -2,6 +2,8 @@
   "defs": [
     {"id": "saw_planks", "result": "wood_plank", "count": 6, "ingredients": {"log": 1}, "station": "workbench", "time": 12.0, "category": "materials", "tools": ["axe"]},
     {"id": "bucket", "result": "bucket", "ingredients": {"scrap_metal": 4, "nails": 2}, "station": "workbench", "time": 10.0, "category": "tools"},
+    {"id": "strip_wire", "result": "copper_wire", "ingredients": {"electrical_parts": 2}, "station": "workbench", "time": 8.0, "category": "materials"},
+    {"id": "small_engine", "result": "small_engine", "ingredients": {"scrap_metal": 14, "electrical_parts": 2, "duct_tape": 2, "nails": 6}, "station": "workbench", "time": 40.0, "category": "tools"},
     {"id": "repair_kit", "result": "repair_kit", "ingredients": {"scrap_metal": 2, "duct_tape": 1}, "station": "workbench", "time": 8.0, "category": "tools"},
     {"id": "first_aid_kit_craft", "result": "first_aid_kit", "ingredients": {"cloth_bandage": 3, "painkillers": 1, "duct_tape": 1}, "station": "workbench", "time": 10.0, "category": "medical", "unlock": "skill:field_medicine:2"}
   ]

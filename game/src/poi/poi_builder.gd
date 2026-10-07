@@ -720,6 +720,7 @@ func _stairs_and_ladders() -> void:
 		lad.basis = basis2
 		lad.bottom_local = cc
 		lad.top_local = layout.cell_center(li2 + 1, l.get("landing", cell))
+		lad.height = PoiLayout.STOREY
 		var mi := MeshInstance3D.new()
 		mi.mesh = PoiParts.kit_mesh("ladder_3m")
 		lad.add_child(mi)
@@ -1025,8 +1026,24 @@ func _exterior() -> bool:
 	var porch: Dictionary = layout.style.get("porch", {})
 	if not porch.is_empty():
 		_porch(porch, li0)
-	for st: Dictionary in stoops(layout):
-		_stoop(st)
+	# A double doorway's two metres of steps become one 2 m stoop (TD-221).
+	var sts: Array = stoops(layout)
+	var merged: Dictionary = {}
+	for i: int in sts.size():
+		if merged.has(i):
+			continue
+		var st: Dictionary = sts[i]
+		var width: int = 1
+		for j: int in range(i + 1, sts.size()):
+			var o: Dictionary = sts[j]
+			if not merged.has(j) and o["op"] == st["op"] and o["side"] == st["side"] and absf(float(o["rise"]) - float(st["rise"])) < 0.001 \
+					and (o["at"] as Vector3).distance_to(st["at"]) < 1.01:
+				st = st.duplicate()
+				st["at"] = ((st["at"] as Vector3) + (o["at"] as Vector3)) * 0.5
+				width = 2
+				merged[j] = true
+				break
+		_stoop(st, width)
 	var chim: Variant = layout.style.get("chimney", null)
 	if chim is Array:
 		var p := Vector3(layout.origin.x + float(chim[0]) + 0.5, 0.0, layout.origin.y + float(chim[1]) + 0.5)
@@ -1125,7 +1142,7 @@ func _porch(porch: Dictionary, li0: int) -> void:
 const STOOP_MIN_RISE: float = 0.2
 ## The foundation's outer face (foundation_1m is 0.2 m deep, centred on the wall line).
 const STOOP_FACE: float = 0.1
-## porch_step_1m: 1 m wide and deep, rising PORCH_H in three steps (its top toward local -Z).
+## The steepest a stoop climbs, rise over run (the porch step's 0.6 m in 1 m): stoops' `run` keeps to it.
 const STEP_UNIT_RISE: float = 0.6
 
 
@@ -1170,24 +1187,56 @@ static func stoops(lay: PoiLayout) -> Array:
 	return out
 
 
-## One metre of steps up to a doorway (see stoops): the porch step scaled to the rise (and, past
-## 0.6 m, lengthened so its steps stay climbable), from the foundation's face out into the yard,
-## with a ramp under it for the player's feet.
-func _stoop(st: Dictionary) -> void:
+## Stoop models (TD-221, kit_stoop.py): "stoop_<wood|concrete>_<steps>_<1|2>m", origin at the wall end
+## at grade, running out along local +Z, STOOP_RISE a step: wooden steps TREAD deep a step, a concrete
+## stoop a LANDING at the sill and TREAD steps below it.
+const STOOP_RISE: float = 0.2
+const STOOP_TREAD: float = 0.3
+const STOOP_LANDING: float = 0.9
+## Exterior finishes that get a concrete stoop (masonry); every other one gets wooden steps.
+const STOOP_CONCRETE: PackedStringArray = ["brick_red", "concrete_block", "rock_drift", "rock_limestone"]
+
+
+## The stoop model for a doorway: its kind by the exterior finish, 1-3 steps by the rise (the model is
+## scaled to the exact rise; past three steps' worth its run is lengthened as much, so the steps
+## stay as climbable as the model's). Pure: {piece, kind, steps, sy, sz, depth (m out from the face)}.
+static func stoop_piece(exterior: String, rise: float, width: int) -> Dictionary:
+	var kind: String = "concrete" if STOOP_CONCRETE.has(exterior) else "wood"
+	var n: int = clampi(roundi(rise / STOOP_RISE), 1, 3)
+	var sy: float = rise / (STOOP_RISE * float(n))
+	var sz: float = maxf(1.0, sy)
+	var d: float = (STOOP_LANDING + STOOP_TREAD * float(n - 1)) if kind == "concrete" else STOOP_TREAD * float(n)
+	return {"piece": "stoop_%s_%d_%dm" % [kind, n, width], "kind": kind, "steps": n, "sy": sy, "sz": sz, "depth": d * sz}
+
+
+## Steps up to a doorway (see stoops), 1 or 2 m wide: a stoop model picked by the building's exterior
+## and the rise (stoop_piece), from the foundation's face out into the yard, with walkable collision
+## for the player's feet (a concrete stoop's landing flat, then a ramp down its steps).
+func _stoop(st: Dictionary, width: int = 1) -> void:
 	var side: int = st["side"]
 	var out_dir := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
 	var rise: float = st["rise"]
-	var run: float = st["run"]
 	var yaw: float = [PI, PI * 0.5, 0.0, -PI * 0.5][side]
 	var at: Vector3 = st["at"]
 	var face: Vector3 = at + out_dir * STOOP_FACE
-	var basis: Basis = Basis(Vector3.UP, yaw).scaled_local(Vector3(1.0, rise / STEP_UNIT_RISE, run))
+	var sp: Dictionary = stoop_piece(str(layout.style.get("exterior", "siding_white")), rise, width)
+	var basis: Basis = Basis(Vector3.UP, yaw).scaled_local(Vector3(1.0, float(sp["sy"]), float(sp["sz"])))
 	# Its wear seed from the doorway, not _rng: steps added to a building must not shift the
 	# random draws everything after them (scatter, decals) takes.
 	var seed_v: float = float(posmod(Ids.hash64("stoop:%s:%s" % [st["op"], st["outside"]]), 1000)) / 1000.0
-	_add("porch_step_1m", Transform3D(basis, face + out_dir * (run * 0.5)), Color(0, 0, clampf(_decay, 0.0, 1.0), seed_v))
-	# From the wall line (the floor slab ends there), over the foundation's top, down to the yard.
-	_ramp(at + Vector3.UP * rise, face + out_dir * run, 1.0)
+	_add(str(sp["piece"]), Transform3D(basis, face), Color(0, 0, clampf(_decay, 0.0, 1.0), seed_v))
+	var w: float = float(width)
+	var foot: Vector3 = face + out_dir * float(sp["depth"])
+	if sp["kind"] == "concrete" and int(sp["steps"]) > 1:
+		# The landing is level: a flat top from the wall line to its edge, then a ramp down the steps.
+		var edge: Vector3 = face + out_dir * (STOOP_LANDING * float(sp["sz"]))
+		var flat: Vector3 = edge - at
+		var xb := Basis(Vector3.UP, yaw)
+		_box(Vector3(w, 0.1, flat.length()), Transform3D(xb, (at + edge) * 0.5 + Vector3.UP * (rise - 0.05)))
+		_ramp(edge + Vector3.UP * rise, foot, w)
+	else:
+		# From the wall line (the floor slab ends there), over the foundation's top, down to the yard.
+		_ramp(at + Vector3.UP * rise, foot, w)
 
 
 ## Walkable ramp collision between two edge-centre points (its top surface on the line).
@@ -1352,7 +1401,8 @@ func _prop(p: Dictionary) -> void:
 			root.add_child(PropLights.lit_mesh(model, xf, layout.is_room(layout.room_at(p["level"], p["cell"]))))
 		if pd.collision != "none":
 			# Tagged for TraversalAudit, which names what blocks a doorway or the route.
-			_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre())).set_meta(&"prop", str(pd.id))
+			var cs: CollisionShape3D = _box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre()))
+			cs.set_meta(&"prop", str(pd.id) + ("+route_ok" if bool(p.get("route_ok", false)) else ""))
 	if not light.is_empty():
 		root.add_child(PropLights.light_node(light, xf))
 
@@ -1452,9 +1502,22 @@ func _scatter_cell(li: int, c: Vector2i, density: float) -> void:
 			"against": PoiLayout.SIDE_NAMES[side], "rot": [0.0, -90.0, 180.0, 90.0][side] + _rng.randf_range(-25, 25)}
 		var xf: Transform3D = _prop_xf(entry, pd2)
 		var cond: String = "destroyed" if _rng.randf() < _decay * 0.3 else "worn"
-		_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)
+		# Not where a door leaf swings (ADR-0051). The draws above still happen, so every other
+		# cell's scatter stays where it was.
+		if not _by_door(li, c):
+			_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)
 		_occupied[k] = true
 		break
+
+
+## Whether a door (a leaf that swings) opens on one of the cell's sides.
+func _by_door(li: int, c: Vector2i) -> bool:
+	for side: int in 4:
+		var e: Array = PoiLayout.side_edge(c, side)
+		var op: Dictionary = (layout.walls.get(PoiLayout.edge_key(li, e[0], e[1]), {}) as Dictionary).get("opening", {})
+		if not op.is_empty() and str(op["type"]).begins_with("door"):
+			return true
+	return false
 
 
 ## SDFGI occludes the sky indoors, which leaves rooms near-black even at noon. Interior reflection

@@ -365,6 +365,9 @@ class Animal:
         bulk = float(p.get("bulk", 1.0))
         gaunt = float(p.get("gaunt", 1.0))
         shep = p.get("breed") == "shepherd"
+        # a living wolf (ADR-0055): the dog's frame in health; no bones showing, no snarl, no Bloom,
+        # and a thick double coat over it (ruff, cheeks, breeches, a brush of a tail)
+        wolf = p.get("breed") == "wolf"
         nz = self.noise
         sp, ch, pe = j["spine0"], j["chest0"], j["pelvis"]
         # --- trunk: a deep, narrow ribcage, a tight loin, a bony croup
@@ -385,18 +388,18 @@ class Animal:
             self._ell(b, sp + self.P(sx * 0.088, 0.085, -0.055), (0.030, 0.055, 0.045), k=0.03 * gaunt + 0.01, mode="sub")
         # --- spine knobs, hip bones and pin bones push up through the skin
         top = []
-        for y in np.linspace(float(ch[1]) - 0.06 * s, float(pe[1]) + 0.13 * s, 19):
+        for y in (np.linspace(float(ch[1]) - 0.06 * s, float(pe[1]) + 0.13 * s, 19) if not wolf else []):
             q = self._surface(b, np.array([0.0, y, 0.9 * s]), (0, 0, -1), reach=0.5)
             if q is not None:
                 top.append(q)
         for i, q in enumerate(top):
             r = (0.0085 + 0.0025 * (i % 2)) * s * (0.6 + 0.4 * gaunt)
             b.sphere(q + self.P(0, 0, -0.004), r, k=0.008 * s)
-        for sx in (1.0, -1.0):
+        for sx in ((1.0, -1.0) if not wolf else ()):
             b.sphere(pe + self.P(sx * 0.056, -0.045, 0.012), 0.019 * s, k=0.016 * s)        # point of the hip
             b.sphere(pe + self.P(sx * 0.040, 0.112, -0.040), 0.017 * s, k=0.014 * s)        # pin bone
         # --- ribs: hoops round the barrel from the spine to the sternum, raking back as they go down
-        n_ribs = 9
+        n_ribs = 9 if not wolf else 0
         ribs = []
         rr = np.random.default_rng(int(p.get("seed", 1)) * 31 + 5)
         jit = rr.uniform(-0.004, 0.004, n_ribs)
@@ -428,8 +431,9 @@ class Animal:
             self._ell(b, self.mid(f"scap0.{side}", f"shoulder.{side}", 0.45) + self.P(sx * 0.010, 0, 0),
                       (0.024, 0.052, 0.098), R=Rs, k=0.05)
             # the spine of the shoulder blade, a ridge down its middle
-            b.capsule(sc0 + self.P(sx * 0.018, 0.0, -0.01), sh + self.P(sx * 0.016, 0.02, 0.03), 0.0065 * s * (0.5 + 0.5 * gaunt),
-                      k=0.012 * s)
+            if not wolf:
+                b.capsule(sc0 + self.P(sx * 0.018, 0.0, -0.01), sh + self.P(sx * 0.016, 0.02, 0.03), 0.0065 * s * (0.5 + 0.5 * gaunt),
+                          k=0.012 * s)
             b.sphere(sh + self.P(sx * 0.004, -0.008, 0), 0.034 * s, k=0.03 * s)                 # point of the shoulder
             self._limb(b, sh, el, 0.038, 0.030, 0.03)
             self._ell(b, self.mid(f"shoulder.{side}", f"elbow.{side}", 0.55) + self.P(0, 0.022, 0), (0.026, 0.030, 0.055),
@@ -488,8 +492,17 @@ class Animal:
         mf = 0.250 * ms
         self._limb(b, H(0, -0.002, 0.100), H(0, -0.010, mf - 0.016), 0.039, 0.026, 0.035, squash=1.05, up=tuple(u_ax))
         self._limb(b, H(0, -0.046, 0.075), H(0, -0.041, mf - 0.026), 0.023, 0.0145, 0.025, squash=0.9, up=tuple(u_ax))
+        if wolf:
+            # a broad skull and a deep, blunt muzzle, not a dog's narrow snout
+            self._ell(b, H(0, 0.004, 0.030), (0.066, 0.046, 0.042), R=Rh, k=0.03)
+            self._ell(b, H(0, -0.018, 0.130 * ms), (0.035, 0.034, 0.085 * ms), R=Rh, k=0.025)
         for sx in (1.0, -1.0):
             self._ell(b, H(sx * 0.034, -0.034, 0.064), (0.020, 0.028, 0.030), R=Rh, k=0.025)       # masseter
+            if wolf:
+                # relaxed lips: the upper hangs over the lower and closes the mouth line
+                b.capsule(H(sx * 0.030, -0.027, 0.082), H(sx * 0.020, -0.030, mf - 0.028), 0.0072 * s, k=0.008 * s)
+                b.capsule(H(sx * 0.023, -0.041, 0.080), H(sx * 0.015, -0.041, mf - 0.040), 0.0050 * s, k=0.007 * s)
+                continue
             # the upper lip, drawn back and bunched in a ridge above the bared gum
             b.capsule(H(sx * 0.031, -0.011, 0.090), H(sx * 0.0225, -0.008, mf - 0.040), 0.0065 * s, k=0.008 * s)
             # the lower lip pulled down off the lower teeth
@@ -497,15 +510,19 @@ class Animal:
         # mouth: a slit from the corner (far back, under the eye) out through the front
         mouth_u = -0.0335
         self.mouth_u, self.mouth_f0 = mouth_u, 0.068
-        b.box(H(0, mouth_u, 0.068 + 0.11 * ms), np.array([0.06, 0.0034, 0.11 * ms]) * s, R=Rh, k=0.0015 * s, mode="sub",
-              label=L_MOUTH)
+        b.box(H(0, mouth_u, 0.068 + 0.11 * ms), np.array([0.06, 0.0034, 0.11 * ms]) * s, R=Rh,
+              k=0.0015 * s, mode="sub", label=L_MOUTH)
         # bared gums above and below the slit (lips retracted)
         gum = lambda u0, h, x0: (lambda P: S.sd_box(P, H(0, u0, 0.07 + 0.105 * ms), np.array([x0, h, 0.105 * ms]) * s, Rh))  # noqa: E731
         lo, hi = H(0, 0, 0) - 0.3 * s, H(0, 0, 0) + 0.4 * s
-        b.paint(gum(-0.0225, 0.0085, 0.06), lo, hi, L_MOUTH)
-        b.paint(gum(-0.0445, 0.0080, 0.06), lo, hi, L_MOUTH)
+        if wolf:
+            # only the black lip line shows along the closed mouth
+            b.paint(gum(-0.0335, 0.0050, 0.06), lo, hi, L_MOUTH)
+        else:
+            b.paint(gum(-0.0225, 0.0085, 0.06), lo, hi, L_MOUTH)
+            b.paint(gum(-0.0445, 0.0080, 0.06), lo, hi, L_MOUTH)
         # snarl wrinkles across the bridge of the nose
-        for f in (0.158, 0.180):
+        for f in ((0.158, 0.180) if not wolf else ()):
             ff = f * ms
             ctr = H(0, -0.008, ff)
             rr = 0.0355 * s * (1.0 - 0.3 * (ff - 0.10) / 0.15)
@@ -531,18 +548,59 @@ class Animal:
             b.capsule(H(sx * 0.031, 0.006, 0.086), H(sx * 0.028, 0.002, 0.112), 0.0045 * s, k=0.006 * s, mode="sub")  # tear trough
         # tail: a thin, mangy whip (a shepherd's is a ragged brush)
         tr = (0.026, 0.024, 0.014) if shep else (0.020, 0.015, 0.0075)
+        if wolf:
+            tr = (0.034, 0.044, 0.026)   # a full brush, thickest two thirds down
         self._limb(b, j["tail0"] + self.P(0, -0.02, 0.004), j["tail1"], tr[0], tr[1], 0.02)
         self._limb(b, j["tail1"], j["tail2"], tr[1], tr[2], 0.015)
-        # hide: mangy, lumpy where the coat has fallen out, matted where it hasn't
-        lo, hi = b.bounds()
-        b.displace(lambda Q: s * (0.0011 * nz.fbm(Q, 26.0 / s, 2) + 0.0009 * nz.noise(Q, 140.0 / s)
-                                  - 0.0012 * self._mange(Q)), lo, hi)
+        if wolf:
+            self._wolf_coat_volume()
+            # hide: a thick, shaggy coat, lying in tufts
+            lo, hi = b.bounds()
+            b.displace(lambda Q: s * (0.0020 * nz.fbm(Q, 18.0 / s, 2) + 0.0010 * nz.noise(Q, 90.0 / s)), lo, hi)
+        else:
+            # hide: mangy, lumpy where the coat has fallen out, matted where it hasn't
+            lo, hi = b.bounds()
+            b.displace(lambda Q: s * (0.0011 * nz.fbm(Q, 26.0 / s, 2) + 0.0009 * nz.noise(Q, 140.0 / s)
+                                      - 0.0012 * self._mange(Q)), lo, hi)
         self._hound_ears()
         self._hound_teeth()
-        self._hound_growths()
+        if not wolf:
+            self._hound_growths()
+
+    def _wolf_coat_volume(self):
+        """A wolf's double coat over the dog's frame: the ruff standing off the neck and shoulders,
+        the cheek tufts, a full chest, breeches on the thighs, a level back without bones."""
+        j, s, b = self.j, self.s, self.body
+        ch, sp, pe = j["chest0"], j["spine0"], j["pelvis"]
+        n0, n1, h0 = j["neck0"], j["neck1"], j["head0"]
+        # a thick neck: the coat makes it as deep as the head
+        self._limb(b, ch + self.P(0, -0.050, -0.010), h0 + self.P(0, 0.030, -0.035), 0.088, 0.066, 0.05, squash=1.15)
+        # the ruff: over the withers and up the back of the neck, and the bib under the throat
+        self._ell(b, (n0 + n1) * 0.5 + self.P(0, 0.020, 0.030), (0.092, 0.115, 0.085), k=0.05)
+        self._ell(b, ch + self.P(0, -0.040, 0.032), (0.088, 0.120, 0.068), k=0.06)
+        self._ell(b, (n0 + n1) * 0.5 + self.P(0, -0.020, -0.060), (0.072, 0.080, 0.085), k=0.05)
+        self._ell(b, ch + self.P(0, -0.120, -0.080), (0.074, 0.070, 0.095), k=0.05)            # chest
+        # a level back over the loin, the barrel filled out
+        self._ell(b, sp + self.P(0, 0.000, 0.010), (0.080, 0.150, 0.060), k=0.07)
+        self._ell(b, ch + self.P(0, 0.010, -0.090), (0.100, 0.135, 0.125), k=0.06)
+        # cheek tufts flaring back below the ears
+        for sx in (1.0, -1.0):
+            self._ell(b, h0 + self.P(sx * 0.050, 0.012, -0.036), (0.044, 0.050, 0.056), k=0.03)
+            # breeches: the long hair down the back of the thigh
+            hp, st = j[f"hip.{'L' if sx > 0 else 'R'}"], j[f"stifle.{'L' if sx > 0 else 'R'}"]
+            self._ell(b, (hp + st) * 0.5 + self.P(sx * 0.006, 0.040, 0.000), (0.046, 0.058, 0.090),
+                      R=_frame(st - hp, (0, 1, 0)), k=0.05)
+            # the coat on the upper foreleg and the gaskin: sturdier legs than a starved dog's
+            sd = "L" if sx > 0 else "R"
+            el, ca, hk = j[f"elbow.{sd}"], j[f"carpus.{sd}"], j[f"hock.{sd}"]
+            self._limb(b, el + self.P(0, 0.006, 0.010), (el + ca) * 0.5, 0.034, 0.024, 0.03)
+            self._limb(b, st, (st + hk) * 0.5 + self.P(0, 0.010, 0), 0.040, 0.028, 0.03)
+        del pe
 
     def _mange(self, Q):
-        """0..1: where the coat has fallen out (rest pose)."""
+        """0..1: where the coat has fallen out (rest pose). A wolf has its coat."""
+        if self.p.get("breed") == "wolf":
+            return np.zeros(len(Q))
         s = self.s
         nz = self.noise
         n = nz.fbm(Q + 3.7, 11.0 / s, 3)
@@ -566,6 +624,12 @@ class Animal:
                 # pricked: a tall cupped triangle, opening forward and a little out
                 front = np.array([sx * 0.45, -1.0, 0.0])
                 R = _frame(w, front)
+                if p.get("breed") == "wolf":
+                    # short, thick, furred and round-tipped
+                    self.ears.cone(a - w * 0.10, c, 0.040 * s, 0.011 * s, k=0.012 * s, squash=0.34, up_hint=tuple(R[:, 1]))
+                    self.ears.cone(a + R[:, 1] * 0.010 * s + w * 0.10, c + R[:, 1] * 0.005 * s - w * 0.12, 0.032 * s, 0.004 * s,
+                                   k=0.003 * s, squash=0.22, up_hint=tuple(R[:, 1]), mode="sub")
+                    continue
                 self.ears.cone(a - w * 0.04, c, 0.042 * s, 0.006 * s, k=0.01 * s, squash=0.26, up_hint=tuple(R[:, 1]))
                 self.ears.cone(a + R[:, 1] * 0.0085 * s + w * 0.12, c + R[:, 1] * 0.004 * s - w * 0.08, 0.033 * s, 0.003 * s,
                                k=0.003 * s, squash=0.20, up_hint=tuple(R[:, 1]), mode="sub")
@@ -619,7 +683,8 @@ class Animal:
             # canines: long, curved back, the upper outside the lower
             a = H(sx * 0.0195, mu + 0.012, mf - 0.026)
             m = H(sx * 0.0215, mu - 0.006, mf - 0.025)
-            e = H(sx * 0.0205, mu - 0.019, mf - 0.030)
+            # (a wolf's close behind its lips; a starved hound's hang bared)
+            e = H(sx * 0.0205, mu - (0.009 if self.p.get("breed") == "wolf" else 0.019), mf - 0.030)
             T_UP.cone(a, m, 0.0052 * s, 0.0040 * s, k=0.002 * s, label=0)
             T_UP.cone(m, e, 0.0040 * s, 0.0008 * s, k=0.002 * s, label=0)
             a = H(sx * 0.0150, mu - 0.012, mf - 0.034)
@@ -742,6 +807,8 @@ class Animal:
         """(pale, dark): pale is bare skin where the mange has taken the coat (and the belly, the
         insides of the legs, round the eyes and the growths); dark is the nose, the muzzle, a back
         stripe (the shepherd's black saddle and mask) and crusted edges round the bare patches."""
+        if self.p.get("breed") == "wolf":
+            return self._wolf_coat(V, N, part)
         j, s = self.j, self.s
         nz = self.noise
         shep = self.p.get("breed") == "shepherd"
@@ -809,6 +876,66 @@ class Animal:
         brk = nz.fbm(V, 40.0 / s, 2) * 0.10
         pale = np.clip(pale + brk * (pale > 0.05) * (pale < 0.95), 0, 1)
         dark = np.clip(dark * (1.0 - 0.6 * pale), 0, 1)
+        return pale, np.clip(np.maximum(dark, nose), 0, 1)
+
+    def _wolf_coat(self, V, N, part: str):
+        """(pale, dark) for a grey wolf: cream under the jaw, on the throat and chest, the belly,
+        the insides and lower legs, the cheeks and the brows; a dark saddle over the back and
+        shoulders, a dark line on the tail and its tip, dark ear backs and rims, the nose; the
+        agouti of the guard hairs broken through all of it."""
+        j, s = self.j, self.s
+        nz = self.noise
+
+        def ss(e0, e1, x):
+            t = np.clip((x - e0) / (e1 - e0), 0.0, 1.0)
+            return t * t * (3 - 2 * t)
+        if part == "ears":
+            pale = np.zeros(len(V))
+            dark = np.zeros(len(V))
+            for side in ("L", "R"):
+                a, c = j[f"ear0.{side}"], j[f"ear1.{side}"]
+                sx = 1.0 if side == "L" else -1.0
+                mine = (V[:, 0] * sx) > 0
+                t = ((V - a) @ _n(c - a)) / max(float(np.linalg.norm(c - a)), 1e-6)
+                inside = ss(0.1, 0.6, N @ _n(np.array([sx * 0.45, -1.0, 0.0]))) * mine
+                pale = np.maximum(pale, inside * 0.9)
+                dark = np.maximum(dark, (1.0 - inside) * mine * 0.55)
+                dark = np.maximum(dark, ss(0.75, 0.98, t) * mine * 0.7)
+            return np.clip(pale, 0, 1), np.clip(dark, 0, 1)
+        y, z = V[:, 1], V[:, 2]
+        brk = nz.fbm(V, 34.0 / s, 2)
+        belly = ss(-0.15, -0.65, N[:, 2]) * ss(0.50 * s, 0.38 * s, z)
+        inner_leg = ss(0.15, 0.6, -N[:, 0] * np.sign(V[:, 0] + 1e-9)) * ss(0.44 * s, 0.30 * s, z)
+        lower_leg = ss(0.26 * s, 0.14 * s, z) * 0.4
+        # throat and chest: the front of the neck and the brisket, facing forward and down
+        front = ss(-0.1, -0.7, N[:, 1] + 0.6 * N[:, 2]) * (y < j["chest0"][1] + 0.02 * s) * (z > 0.30 * s) * \
+            ss(0.07 * s, 0.03 * s, np.abs(V[:, 0]) - 0.02 * s)
+        h0 = j["head0"]
+        hf = (V - h0) @ self.f_ax / s
+        hu = (V - h0) @ self.u_ax / s
+        on_head = (hf > -0.05) & (np.abs(V[:, 0]) < 0.10 * s)
+        ms = float(np.linalg.norm(j["nose"] - h0)) / s / 0.250
+        cheeks = on_head * ss(0.0, -0.035, hu) * ss(-0.04, 0.0, hf)
+        muzzle_side = on_head * ss(0.06 * ms, 0.11 * ms, hf) * ss(-0.005, -0.030, hu)
+        brows = np.zeros(len(V))
+        for c in self.eye_c:
+            brows = np.maximum(brows, ss(0.016 * s, 0.006 * s, np.sqrt(((V - (c + self.u_ax * 0.020 * s)) ** 2).sum(-1))))
+        pale = np.maximum.reduce([belly * 0.95, inner_leg * 0.75, lower_leg, front * 0.9, cheeks * 0.85,
+                                  muzzle_side * 0.8, brows * 0.7])
+        # dark: the saddle (back and shoulders), the muzzle's top line, the tail's top and its tip
+        top = ss(0.25, 0.85, N[:, 2]) * (y > j["neck0"][1] - 0.04 * s) * (y < j["tail0"][1])
+        saddle = top * (0.8 + 0.2 * ss(-0.2, 0.2, brk))
+        muzzle_top = on_head * ss(0.07 * ms, 0.12 * ms, hf) * ss(0.005, 0.025, hu) * 0.45
+        tail = ss(j["tail0"][1] - 0.01 * s, j["tail0"][1] + 0.03 * s, y) * (z < j["tail0"][2] + 0.02 * s)
+        tail_top = tail * ss(-0.3, 0.4, N[:, 1]) * 0.55
+        tail_tip = tail * ss(j["tail2"][2] + 0.09 * s, j["tail2"][2] + 0.02 * s, z) * 0.95
+        tail_gland = tail * ss(j["tail0"][2] - 0.04 * s, j["tail0"][2] - 0.08 * s, z) * \
+            ss(j["tail0"][2] - 0.14 * s, j["tail0"][2] - 0.10 * s, z) * ss(-0.2, 0.4, N[:, 1]) * 0.7
+        nose = ss(0.026 * s, 0.018 * s, np.sqrt(((V - self.nose_c) ** 2).sum(-1)))
+        dark = np.maximum.reduce([saddle * 0.75, muzzle_top, tail_top, tail_tip, tail_gland, nose])
+        # agouti: guard hairs break up every edge
+        pale = np.clip(pale + brk * 0.18 * (pale > 0.05) * (pale < 0.95), 0, 1)
+        dark = np.clip((dark + brk * 0.12 * (dark > 0.05)) * (1.0 - 0.7 * pale), 0, 1)
         return pale, np.clip(np.maximum(dark, nose), 0, 1)
 
     # --- coat ----------------------------------------------------------------------------

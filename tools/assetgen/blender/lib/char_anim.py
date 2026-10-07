@@ -279,16 +279,18 @@ def gait_foot(p_phase, stance, travel, lift, shuffle=0.0, kick=0.0):
     return y, z, pitch, (1.0 if u < 0.2 else 0.0)
 
 
-def locomotion(rig: Rig, p: dict, n: int, speed: float, kind: str):
-    """walk / walk_b / run frames."""
+def locomotion(rig: Rig, p: dict, n: int, speed: float, kind: str, cycles: int = 1, lurch: float = 0.0):
+    """walk / walk_b / run frames: `cycles` gait cycles in the clip; with `lurch` the last one
+    lurches (_lurch: the body drops onto a step and pitches, an arm thrown out, the head jerked),
+    so the loop is not a metronome. The feet keep the clip speed, so it never skates."""
     base = base_stand(p)
     out = []
-    cyc = n / FPS
+    cyc = n / cycles / FPS
     limp = p.get("limp_side", "R")
     seed = int(p.get("seed", 1))
     nz = [Noise1D(seed + i) for i in range(6)]
     for f in range(n + 1):
-        ph = (f / n) % 1.0
+        ph = (f * cycles / n) % 1.0
         prm = dict(base)
         if kind == "run":
             stance = {"L": 0.34, "R": 0.32}
@@ -386,8 +388,41 @@ def locomotion(rig: Rig, p: dict, n: int, speed: float, kind: str):
         bob = prm.get("head.flex", 0.0) - base.get("head.flex", 0.0)
         level_head(prm, p, float(p.get("gaze_down", 8.0)) + (2.0 if kind == "run" else 4.0))
         prm["head.flex"] += 0.5 * bob
+        if lurch > 0.0 and cycles > 1:
+            _lurch(prm, p, f, n, cycles, lurch * (1.4 if kind == "run" else 1.0))
         out.append(prm)
     return out
+
+
+def _lurch(prm: dict, p: dict, f: int, n: int, cycles: int, amt: float) -> None:
+    """A lurch over the last gait cycle (envelope 0 at both ends, so the loop stays seamless): the
+    body drops onto the weak leg and pitches forward, the torso wrenches round, the arm on the good
+    side is thrown out for balance and the head jerks up and over. Upper body only: the feet stay
+    on their stride."""
+    u0 = (cycles - 1) / cycles + 0.06 / cycles
+    u1 = 1.0 - 0.10 / cycles
+    u = f / n
+    if not (u0 < u < u1):
+        return
+    t = (u - u0) / (u1 - u0)
+    e = math.sin(math.pi * t) ** 2                     # the drop and pitch
+    j = smooth_pulse(t * 30.0, 9.0, 2.0, 3.0, 10.0)    # the head jerk, late in it
+    lsx = 1.0 if p.get("limp_side", "R") == "L" else -1.0
+    good = "R" if p.get("limp_side", "R") == "L" else "L"
+    prm["hips.z"] = prm.get("hips.z", 0.0) - 0.035 * amt * e
+    prm["hips.side"] = prm.get("hips.side", 0.0) + lsx * 6.0 * amt * e
+    prm["spine.flex"] = prm.get("spine.flex", 0.0) + 5.0 * amt * e
+    prm["chest.flex"] = prm.get("chest.flex", 0.0) + 11.0 * amt * e
+    prm["chest.twist"] = prm.get("chest.twist", 0.0) - lsx * 9.0 * amt * e
+    prm["chest.side"] = prm.get("chest.side", 0.0) - lsx * 5.0 * amt * e
+    prm["head.flex"] = prm.get("head.flex", 0.0) - 8.0 * amt * e - 10.0 * amt * j
+    prm["head.side"] = prm.get("head.side", 0.0) - lsx * 12.0 * amt * j
+    prm["head.twist"] = prm.get("head.twist", 0.0) + lsx * 10.0 * amt * j
+    prm["jaw.open"] = prm.get("jaw.open", 0.0) + 12.0 * amt * j
+    prm[f"upper_arm.{good}.abd"] = prm.get(f"upper_arm.{good}.abd", 0.0) + 26.0 * amt * e
+    prm[f"upper_arm.{good}.flex"] = prm.get(f"upper_arm.{good}.flex", 0.0) + 22.0 * amt * e
+    prm[f"forearm.{good}.flex"] = prm.get(f"forearm.{good}.flex", 0.0) - 6.0 * amt * e
+    prm[f"hand.{good}.flex"] = prm.get(f"hand.{good}.flex", 0.0) - 18.0 * amt * e
 
 
 # --------------------------------------------------------------------------------------------
@@ -775,44 +810,217 @@ def act_wake_sit(rig, p, n=40):
     return frames
 
 
+# --------------------------------------------------------------------------------------------
+# Root motion contract: clips the Enemy moves the body through (enemy.gd ROOT_MOTION). The body
+# travels `d` metres in a straight line over frames [f0, f1] while the clip plays; the clips are
+# authored around that travel, so a planted foot stays put on the ground (clip y = world y - root).
+# Keep these in step with enemy.gd.
+# --------------------------------------------------------------------------------------------
+
+ATTACK_LUNGE = (0.30, 0.70)        # attack_a / attack_b forward travel: walker, feral (Lurcher)
+LUNGE_FRAMES = (5, 11)             # of 24: the drive ends at the hit (Enemy: dur * 0.45 = 10.8)
+HIT_RECOIL, HIT_FRAMES = 0.20, (2, 10)               # hit_front back / hit_back forward, of 18
+STAGGER_RECOIL, STAGGER_FRAMES = 0.55, (2, 22)       # stagger, back, of 34
+KNOCKDOWN_RECOIL, KNOCKDOWN_FRAMES = 0.35, (2, 14)   # knockdown, back, of 36
+STUMBLE_SPEED = 1.2                # m/s the Enemy keeps while a stumble plays at speed 1 (30 frames)
+
+
+def _feral(p: dict) -> bool:
+    """The Lurcher's build (gaunt, deeply hunched) or params["feral"]: it leaps where a walker lunges."""
+    if "feral" in p:
+        return bool(p["feral"])
+    return float(p.get("gaunt", 0.0)) >= 0.95 and float(p.get("hunch", 0.0)) >= 0.6
+
+
+def lunge_dist(p: dict) -> float:
+    return ATTACK_LUNGE[1] if _feral(p) else ATTACK_LUNGE[0]
+
+
+def _travel(f: float, d: float, frames: tuple) -> float:
+    """Root travel at frame f (linear, the Enemy moves at constant speed over the window)."""
+    f0, f1 = frames
+    return d * min(1.0, max(0.0, (f - f0) / (f1 - f0)))
+
+
+def _track(f: float, keys: list) -> tuple:
+    """World-space foot keys [(frame, y, z, pitch, pivot)] -> (y, z, pitch, pivot) at f, eased.
+    pivot is continuous here (-1 heel .. 0 ankle .. 1 ball); _plant turns it into an offset."""
+    if f <= keys[0][0]:
+        return tuple(keys[0][1:])
+    for a, b in zip(keys, keys[1:]):
+        if f <= b[0]:
+            t = ease((f - a[0]) / max(b[0] - a[0], 1e-6))
+            return tuple(a[i] + (b[i] - a[i]) * t for i in (1, 2, 3, 4))
+    return tuple(keys[-1][1:])
+
+
+def _plant(rig, prm: dict, f: float, tracks: dict, root_y: float, x: dict | None = None,
+           yaw: dict | None = None) -> dict:
+    """Feet on IK from world tracks, seen from a root that has moved root_y (Blender y; -y = forward).
+    The roll pivot is blended (Rig.evaluate only knows ankle / ball / heel, which pops when it
+    changes mid-roll), so it is folded into the ankle offset and the IK pivot left at the ankle."""
+    for sd, sx in SIDES:
+        y, z, pitch, pv = _track(f, tracks[sd])
+        yw = (yaw or {}).get(sd, 0.0)
+        anc = rig.ankle[sd]
+        ball = np.array([rig.ball[sd][0], rig.ball[sd][1], 0.0])
+        heel = np.array([rig.heel[sd][0], rig.heel[sd][1], 0.0])
+        piv = anc + (ball - anc) * max(pv, 0.0) + (heel - anc) * max(-pv, 0.0)
+        extra = piv + R(Z, yw) @ R(X, -pitch) @ (anc - piv) - anc
+        prm[f"ik.{sd}"] = 1.0
+        prm[f"foot.{sd}.x"] = (x or {}).get(sd, 0.0) + float(extra[0])
+        prm[f"foot.{sd}.y"] = y - root_y + float(extra[1])
+        prm[f"foot.{sd}.z"] = z + float(extra[2])
+        prm[f"foot.{sd}.pitch"] = pitch
+        prm[f"foot.{sd}.yaw"] = yw
+        prm[f"foot.{sd}.pivot"] = 0.0
+    return prm
+
+
+def _rel(base: dict, delta: dict, absolute: dict | None = None) -> dict:
+    """A key pose as offsets from the stance (angles), plus absolute values (hips.y / hips.z)."""
+    out = add(base, delta)
+    out.update(absolute or {})
+    return out
+
+
+def _over(pose: dict, base: dict, delta: dict) -> dict:
+    """`pose` with some parameters replaced by stance + delta (a variation of another key)."""
+    out = dict(pose)
+    for k, v in delta.items():
+        out[k] = base.get(k, 0.0) + v
+    return out
+
+
+def _lead(p: dict) -> tuple:
+    """(lead foot, back foot): it steps in on the reaching arm's side."""
+    return ("R", "L") if p.get("raise_side", "R") == "R" else ("L", "R")
+
+
 def act_attack_a(rig, p, n=24):
-    """Two-handed swipe: wind up high, rake down diagonally across, recover."""
+    """Lunging grab. Coils with both hands drawn up by the head, drives off the back foot into a
+    long step while the Enemy carries it lunge_dist() forward (frames 5-11), both arms thrown out
+    at the throat; the claws close at the hit (frame 11, 45 %), haul back toward the open jaw, and
+    the back foot drags up under it. A Lurcher's is longer and lower."""
     base = base_stand(p)
-    feet = _foot_ik_pose(base, (0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
-    wind = merged(base, feet, {"hips.y": 0.05, "hips.z": -0.05, "hips.twist": -10.0, "spine.flex": -2.0, "chest.flex": -6.0,
-                               "chest.twist": -16.0, "neck.flex": -4.0, "head.flex": -14.0, "jaw.open": 22.0,
-                               "upper_arm.L.flex": 135.0, "upper_arm.L.abd": 10.0, "forearm.L.flex": 60.0,
-                               "upper_arm.R.flex": 128.0, "upper_arm.R.abd": 22.0, "forearm.R.flex": 50.0,
-                               "hand.L.flex": -20.0, "hand.R.flex": -20.0, "shoulder.L.shrug": 10.0, "shoulder.R.shrug": 12.0})
-    strike = merged(base, feet, {"hips.y": -0.12, "hips.z": -0.10, "hips.twist": 12.0, "hips.flex": 14.0, "spine.flex": 18.0,
-                                 "chest.flex": 22.0, "chest.twist": 18.0, "neck.flex": 0.0, "head.flex": -22.0, "jaw.open": 30.0,
-                                 "upper_arm.L.flex": 28.0, "upper_arm.L.abd": -48.0, "forearm.L.flex": 18.0,
-                                 "upper_arm.R.flex": 40.0, "upper_arm.R.abd": -34.0, "forearm.R.flex": 30.0,
-                                 "hand.L.flex": 30.0, "hand.R.flex": 26.0, "shoulder.L.fwd": 20.0, "shoulder.R.fwd": 22.0})
-    follow = merged(strike, {"chest.twist": 24.0, "upper_arm.L.flex": 4.0, "upper_arm.R.flex": 10.0, "upper_arm.L.abd": -55.0,
-                             "upper_arm.R.abd": -40.0, "jaw.open": 12.0})
-    ks = Keys(base, [(0, merged(base, feet)), (8, wind, "out"), (12, strike, "in"), (15, follow, "out"),
-                     (24, merged(base, feet), "inout")])
-    return [ks.at(f) for f in range(n + 1)]
+    fer = _feral(p)
+    D = lunge_dist(p)
+    lead, back = _lead(p)
+    reach = 0.24 if not fer else 0.30
+    drag = max(0.12, D - 0.30)             # the back foot drags in behind the lunge
+    tracks = {
+        lead: [(0, 0, 0, 0, 0), (4, 0, 0, 0, 0), (7, -(D + reach) * 0.55, 0.10, -14, 0),
+               (10, -(D + reach), 0.0, 12, -1), (12, -(D + reach), 0, 0, 0), (16, -(D + reach), 0, 0, 0),
+               (19, -(D + reach * 0.5), 0.03, -6, 0), (22, -D, 0, 0, 0)],
+        back: [(0, 0, 0, 0, 0), (6, 0, 0, 0, 0), (9, 0, 0, -26, 1), (11, -drag * 0.5, 0.05, -16, 0.5),
+               (13, -drag, 0, 0, 0), (15, -drag, 0, 0, 0), (18, -(drag + D) * 0.5, 0.07, -10, 0), (21, -D, 0, 0, 0)],
+    }
+    k = 1.2 if fer else 1.0
+    coil = _rel(base, {"hips.flex": -4, "spine.flex": -6, "chest.flex": -10, "chest.twist": -14, "neck.flex": -8,
+                       "head.flex": -6, "jaw.open": 20, "shoulder.L.shrug": 10, "shoulder.R.shrug": 12,
+                       "upper_arm.L.flex": 92, "upper_arm.R.flex": 86, "upper_arm.L.abd": 20, "upper_arm.R.abd": 24,
+                       "forearm.L.flex": 76, "forearm.R.flex": 70, "hand.L.flex": -30, "hand.R.flex": -30},
+                {"hips.y": 0.07, "hips.z": -0.07})
+    drive = _rel(base, {"hips.flex": 8 * k, "spine.flex": 8 * k, "chest.flex": 6 * k, "chest.twist": 8, "neck.flex": -14,
+                        "head.flex": -6, "jaw.open": 30, "shoulder.L.fwd": 20, "shoulder.R.fwd": 20,
+                        "upper_arm.L.flex": 112, "upper_arm.R.flex": 108, "upper_arm.L.abd": 24, "upper_arm.R.abd": 28,
+                        "forearm.L.flex": 30, "forearm.R.flex": 26, "hand.L.flex": -36, "hand.R.flex": -36},
+                 {"hips.y": 0.02, "hips.z": -0.10 - 0.04 * fer})
+    reach_k = _rel(base, {"hips.flex": 10 * k, "spine.flex": 9 * k, "chest.flex": 8 * k, "chest.twist": 12,
+                          "neck.flex": -18, "head.flex": -4, "jaw.open": 38, "shoulder.L.fwd": 28, "shoulder.R.fwd": 28,
+                          "upper_arm.L.flex": 122, "upper_arm.R.flex": 118, "upper_arm.L.abd": 30, "upper_arm.R.abd": 32,
+                          "forearm.L.flex": -4, "forearm.R.flex": -2, "hand.L.flex": -30, "hand.R.flex": -30},
+                   {"hips.y": -0.04, "hips.z": -0.13 - 0.06 * fer})
+    grab = _over(reach_k, base, {"forearm.L.flex": 56, "forearm.R.flex": 60, "hand.L.flex": 46, "hand.R.flex": 46,
+                                 "upper_arm.L.flex": 108, "upper_arm.R.flex": 104, "upper_arm.L.abd": 22,
+                                 "upper_arm.R.abd": 24, "jaw.open": 8, "neck.flex": -24, "chest.flex": 11 * k,
+                                 "head.flex": -2})
+    haul = _rel(base, {"hips.flex": 6, "spine.flex": 8, "chest.flex": 10, "chest.twist": -10, "neck.flex": -16,
+                       "head.flex": -2, "jaw.open": 34, "shoulder.L.fwd": 12, "shoulder.R.fwd": 12,
+                       "upper_arm.L.flex": 62, "upper_arm.R.flex": 66, "upper_arm.L.abd": 14, "upper_arm.R.abd": 12,
+                       "forearm.L.flex": 92, "forearm.R.flex": 96, "hand.L.flex": 40, "hand.R.flex": 40},
+                {"hips.y": 0.0, "hips.z": -0.09})
+    ks = Keys(base, [(0, base), (5, coil, "out"), (9, drive, "in"), (11, reach_k, "lin"), (13, grab, "snap"),
+                     (17, haul, "inout"), (24, base, "inout")])
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        frames.append(_plant(rig, prm, f, tracks, -_travel(f, D, LUNGE_FRAMES)))
+    return frames
 
 
 def act_attack_b(rig, p, n=24):
-    """Lunge-bite: coil, lunge forward with the head thrust and jaw snapping."""
+    """Lunge-bite (a walker) or a leaping pounce (a Lurcher), the Enemy carrying it lunge_dist()
+    forward over frames 5-11. Walker: drops into a crouch with the head drawn back, lunges with
+    the arms hooking in from the sides and the head thrust out, the jaw snapping shut on the hit.
+    Lurcher: sinks low, springs off both feet (airborne frames 6-10, body near level, arms thrown
+    out ahead), lands on the lead foot raking down with both claws and bites."""
     base = base_stand(p)
-    feet = _foot_ik_pose(base)
-    coil = merged(base, feet, {"hips.y": 0.06, "hips.z": -0.09, "spine.flex": 4.0, "chest.flex": 2.0, "neck.flex": -10.0,
-                               "head.flex": -8.0, "jaw.open": 10.0, "upper_arm.L.flex": 40.0, "upper_arm.R.flex": 46.0,
-                               "forearm.L.flex": 60.0, "forearm.R.flex": 64.0, "upper_arm.L.abd": -20.0, "upper_arm.R.abd": -18.0})
-    lunge = merged(base, feet, {"hips.y": -0.20, "hips.z": -0.12, "hips.flex": 18.0, "spine.flex": 20.0, "chest.flex": 22.0,
-                                "neck.flex": -18.0, "head.flex": -24.0, "jaw.open": 38.0,
-                                "upper_arm.L.flex": 88.0, "upper_arm.R.flex": 92.0, "upper_arm.L.abd": -16.0,
-                                "upper_arm.R.abd": -12.0, "forearm.L.flex": 30.0, "forearm.R.flex": 26.0,
-                                "hand.L.flex": -10.0, "hand.R.flex": -10.0, "shoulder.L.fwd": 24.0, "shoulder.R.fwd": 24.0})
-    bite = merged(lunge, {"jaw.open": 2.0, "head.flex": -14.0, "forearm.L.flex": 64.0, "forearm.R.flex": 66.0,
-                          "hand.L.flex": 30.0, "hand.R.flex": 30.0, "hips.y": -0.18})
-    ks = Keys(base, [(0, merged(base, feet)), (6, coil), (10, lunge, "snap"), (13, bite, "snap"), (16, bite),
-                     (24, merged(base, feet))])
-    return [ks.at(f) for f in range(n + 1)]
+    fer = _feral(p)
+    D = lunge_dist(p)
+    lead, back = _lead(p)
+    if fer:
+        tracks = {
+            lead: [(0, 0, 0, 0, 0), (5, 0, 0, 0, 0), (6, 0, 0.02, -30, 1), (8, -(D * 0.6), 0.22, -10, 0),
+                   (10, -(D + 0.22), 0.02, 14, -1), (11, -(D + 0.22), 0, 0, 0), (17, -(D + 0.22), 0, 0, 0),
+                   (21, -(D + 0.11), 0.04, -6, 0), (23, -D, 0, 0, 0)],
+            back: [(0, 0, 0, 0, 0), (3, 0, 0, 0, 0), (6, 0, 0, -30, 1), (7, -0.04, 0.10, -40, 0), (9, -(D * 0.45), 0.26, -30, 0),
+                   (11, -(D - 0.18), 0.03, 0, 0), (12, -(D - 0.18), 0, 0, 0), (15, -(D - 0.18), 0, 0, 0),
+                   (18, -(D - 0.09), 0.06, -8, 0), (20, -D, 0, 0, 0)],
+        }
+        crouch = _rel(base, {"hips.flex": 22, "spine.flex": 14, "chest.flex": 6, "neck.flex": -18, "head.flex": -4,
+                             "jaw.open": 24, "upper_arm.L.flex": -18, "upper_arm.R.flex": -22, "upper_arm.L.abd": 10,
+                             "upper_arm.R.abd": 12, "forearm.L.flex": 30, "forearm.R.flex": 34,
+                             "shoulder.L.shrug": 10, "shoulder.R.shrug": 10, "hand.L.flex": -20, "hand.R.flex": -20},
+                      {"hips.y": 0.08, "hips.z": -0.24})
+        air = _rel(base, {"hips.flex": 34, "spine.flex": 14, "chest.flex": 6, "neck.flex": -30, "head.flex": -8,
+                          "jaw.open": 44, "upper_arm.L.flex": 128, "upper_arm.R.flex": 124, "upper_arm.L.abd": 30,
+                          "upper_arm.R.abd": 34, "forearm.L.flex": 20, "forearm.R.flex": 16, "shoulder.L.fwd": 26,
+                          "shoulder.R.fwd": 26, "hand.L.flex": -40, "hand.R.flex": -40},
+                   {"hips.y": -0.06, "hips.z": 0.09})
+        land = _rel(base, {"hips.flex": 14, "spine.flex": 10, "chest.flex": 8, "neck.flex": -26, "head.flex": -2,
+                           "jaw.open": 6, "upper_arm.L.flex": 96, "upper_arm.R.flex": 92, "upper_arm.L.abd": 12,
+                           "upper_arm.R.abd": 14, "forearm.L.flex": 46, "forearm.R.flex": 52, "shoulder.L.fwd": 30,
+                           "shoulder.R.fwd": 30, "hand.L.flex": 50, "hand.R.flex": 50},
+                    {"hips.y": -0.06, "hips.z": -0.20})
+        settle = _rel(base, {"hips.flex": 10, "spine.flex": 8, "chest.flex": 8, "neck.flex": -12, "jaw.open": 30,
+                             "upper_arm.L.flex": 50, "upper_arm.R.flex": 46, "forearm.L.flex": 60, "forearm.R.flex": 56,
+                             "hand.L.flex": 30, "hand.R.flex": 30},
+                      {"hips.y": -0.02, "hips.z": -0.12})
+        ks = Keys(base, [(0, base), (5, crouch, "inout"), (8, air, "out"), (11, land, "in"), (12, land),
+                         (16, settle, "out"), (24, base, "inout")])
+    else:
+        tracks = {
+            lead: [(0, 0, 0, 0, 0), (5, 0, 0, 0, 0), (7, -(D + 0.2) * 0.5, 0.08, -12, 0), (10, -(D + 0.2), 0, 10, -1),
+                   (12, -(D + 0.2), 0, 0, 0), (17, -(D + 0.2), 0, 0, 0), (20, -(D + 0.1), 0.03, -6, 0), (23, -D, 0, 0, 0)],
+            back: [(0, 0, 0, 0, 0), (7, 0, 0, 0, 0), (10, 0, 0, -24, 1), (12, -0.06, 0.04, -14, 0.5),
+                   (14, -0.12, 0, 0, 0), (16, -0.12, 0, 0, 0), (19, -(0.12 + D) * 0.5, 0.07, -10, 0), (22, -D, 0, 0, 0)],
+        }
+        coil = _rel(base, {"hips.flex": 10, "spine.flex": 4, "chest.flex": -2, "neck.flex": -14, "head.flex": 4,
+                           "jaw.open": 10, "upper_arm.L.flex": 44, "upper_arm.R.flex": 48, "upper_arm.L.abd": 52,
+                           "upper_arm.R.abd": 54, "forearm.L.flex": 60, "forearm.R.flex": 64,
+                           "shoulder.L.shrug": 8, "shoulder.R.shrug": 8},
+                    {"hips.y": 0.07, "hips.z": -0.12})
+        lunge = _rel(base, {"hips.flex": 10, "spine.flex": 9, "chest.flex": 8, "neck.flex": -26, "head.flex": -8,
+                            "jaw.open": 42, "upper_arm.L.flex": 104, "upper_arm.R.flex": 108, "upper_arm.L.abd": 56,
+                            "upper_arm.R.abd": 54, "forearm.L.flex": 40, "forearm.R.flex": 36,
+                            "shoulder.L.fwd": 24, "shoulder.R.fwd": 24, "hand.L.flex": -20, "hand.R.flex": -20},
+                     {"hips.y": -0.04, "hips.z": -0.14})
+        bite = _over(lunge, base, {"jaw.open": 0, "neck.flex": -18, "head.flex": 4, "chest.flex": 12,
+                                   "upper_arm.L.abd": 22, "upper_arm.R.abd": 20, "forearm.L.flex": 76,
+                                   "forearm.R.flex": 78, "hand.L.flex": 34, "hand.R.flex": 34})
+        tear = _rel(base, {"hips.flex": 8, "spine.flex": 8, "chest.flex": 10, "chest.twist": 14, "neck.flex": -10,
+                           "head.flex": 10, "head.twist": -18, "jaw.open": 6, "upper_arm.L.flex": 60,
+                           "upper_arm.R.flex": 54, "forearm.L.flex": 84, "forearm.R.flex": 80,
+                           "hand.L.flex": 30, "hand.R.flex": 30},
+                    {"hips.y": 0.0, "hips.z": -0.10})
+        ks = Keys(base, [(0, base), (5, coil, "inout"), (10, lunge, "snap"), (12, bite, "snap"), (15, bite),
+                         (18, tear, "inout"), (24, base, "inout")])
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        frames.append(_plant(rig, prm, f, tracks, -_travel(f, D, LUNGE_FRAMES)))
+    return frames
 
 
 def act_attack_structure(rig, p, n=30):
@@ -876,56 +1084,235 @@ def act_scream(rig, p, n=50):
     return frames
 
 
-def act_hit(rig, p, n=14, front=True):
+def _whip(f: float, at: float = 1.0, freq: float = 15.0, damp: float = 6.5) -> float:
+    """Damped follow-through after an impulse at frame `at` (0 before; first swing positive)."""
+    t = (f - at) / FPS
+    if t <= 0.0:
+        return 0.0
+    return math.exp(-t * damp) * math.sin(t * freq)
+
+
+def act_hit(rig, p, n=18, front=True):
+    """A blow that moves it: the head snaps (front: back; back: chin up, then thrown forward), the
+    torso recoils, the arms fly up loose and one foot steps out to catch the weight while the Enemy
+    carries the body HIT_RECOIL along the blow (frames 2-10); the other foot drags after it, and
+    the head whips back past centre before it settles."""
     base = base_stand(p)
-    feet = _foot_ik_pose(base)
-    sgn = -1.0 if front else 1.0
+    s = 1.0 if front else -1.0           # +: pushed backwards (+y)
+    seed = int(p.get("seed", 1))
+    side = 1.0 if seed % 2 else -1.0     # which way the blow turns it
+    D = HIT_RECOIL
+    st, other = ("L", "R") if side > 0 else ("R", "L")
+    tracks = {
+        st: [(0, 0, 0, 0, 0), (2, 0, 0, 0, 0), (5, s * 0.17, 0.07, -8 * s, 0), (8, s * 0.32, 0, 0, 0),
+             (12, s * 0.32, 0, 0, 0), (14, s * (0.32 + D) * 0.5, 0.025, 0, 0), (16, s * D, 0, 0, 0)],
+        other: [(0, 0, 0, 0, 0), (8, 0, 0, 0, 0), (10, 0, 0, -16 * s, 1 if s > 0 else -1),
+                (13, s * D * 0.5, 0.05, -8, 0), (16, s * D, 0, 0, 0)],
+    }
+    if front:
+        impact = _rel(base, {"hips.flex": -6, "spine.flex": -8, "chest.flex": -20, "chest.twist": 12 * side,
+                             "neck.flex": -14, "head.flex": -26, "head.twist": 14 * side, "jaw.open": 30,
+                             "upper_arm.L.flex": 30, "upper_arm.R.flex": 34, "upper_arm.L.abd": 22, "upper_arm.R.abd": 20,
+                             "forearm.L.flex": 20, "forearm.R.flex": 24, "hand.L.flex": -30, "hand.R.flex": -30},
+                      {"hips.y": 0.07, "hips.z": -0.04})
+        reel = _rel(base, {"hips.flex": -8, "spine.flex": -6, "chest.flex": -12, "chest.twist": 16 * side,
+                           "hips.side": -6 * side, "neck.flex": -6, "head.flex": -10, "head.twist": 18 * side,
+                           "head.side": 10 * side, "jaw.open": 22, "upper_arm.L.flex": 42, "upper_arm.R.flex": 36,
+                           "upper_arm.L.abd": 30, "upper_arm.R.abd": 34, "forearm.L.flex": 26, "forearm.R.flex": 20},
+                    {"hips.y": 0.10, "hips.z": -0.08})
+        fold = _rel(base, {"hips.flex": 8, "spine.flex": 8, "chest.flex": 10, "chest.twist": 4 * side, "neck.flex": 8,
+                           "head.flex": 8, "head.twist": 6 * side, "jaw.open": 14, "upper_arm.L.flex": 10,
+                           "upper_arm.R.flex": 14, "forearm.L.flex": 14, "forearm.R.flex": 10},
+                    {"hips.y": 0.02, "hips.z": -0.07})
+    else:
+        impact = _rel(base, {"hips.flex": 10, "spine.flex": 10, "chest.flex": 16, "chest.twist": -10 * side,
+                             "neck.flex": -16, "head.flex": -18, "jaw.open": 26, "upper_arm.L.flex": -28,
+                             "upper_arm.R.flex": -24, "upper_arm.L.abd": 18, "upper_arm.R.abd": 22,
+                             "forearm.L.flex": 10, "forearm.R.flex": 8, "hand.L.flex": -20, "hand.R.flex": -20},
+                      {"hips.y": -0.09, "hips.z": -0.03})
+        reel = _rel(base, {"hips.flex": 16, "spine.flex": 14, "chest.flex": 22, "chest.twist": -12 * side,
+                           "hips.side": 5 * side, "neck.flex": 14, "head.flex": 12, "head.twist": -14 * side,
+                           "head.side": -8 * side, "jaw.open": 20, "upper_arm.L.flex": 40, "upper_arm.R.flex": 46,
+                           "upper_arm.L.abd": 14, "upper_arm.R.abd": 18, "forearm.L.flex": 40, "forearm.R.flex": 36},
+                    {"hips.y": -0.10, "hips.z": -0.10})
+        fold = _rel(base, {"hips.flex": 6, "spine.flex": 4, "chest.flex": 4, "neck.flex": -6, "head.flex": -8,
+                           "jaw.open": 14, "upper_arm.L.flex": 14, "upper_arm.R.flex": 10},
+                    {"hips.y": -0.03, "hips.z": -0.05})
+    ks = Keys(base, [(0, base), (2, impact, "snap"), (7, reel, "out"), (12, fold, "inout"), (18, base, "inout")])
     frames = []
     for f in range(n + 1):
-        prm = merged(base, feet)
-        # damped spring response to an impulse at frame 0..2
-        t = f / FPS
-        a = math.exp(-t * 9.0) * math.sin(min(t * 24.0, math.pi * 0.5 + t * 14.0))
-        lag = math.exp(-max(0.0, t - 0.04) * 8.0) * math.sin(max(0.0, t - 0.04) * 22.0)
-        prm["hips.y"] = -sgn * 0.035 * a
-        prm["spine.flex"] = base["spine.flex"] + sgn * 7.0 * a
-        prm["chest.flex"] = base["chest.flex"] + sgn * 14.0 * a
-        prm["neck.flex"] = base["neck.flex"] + sgn * 10.0 * lag
-        prm["head.flex"] = base["head.flex"] + sgn * 16.0 * lag
-        prm["head.twist"] = base["head.twist"] + 8.0 * lag
-        prm["jaw.open"] = base["jaw.open"] + 14.0 * abs(lag)
+        prm = ks.at(f)
+        w = _whip(f, 2.0) * (1.0 - smooth_pulse(f, 14, 4, 99, 0))
+        prm["neck.flex"] = prm.get("neck.flex", 0.0) + s * 8.0 * w
+        prm["head.flex"] = prm.get("head.flex", 0.0) + s * 12.0 * w
+        prm["jaw.open"] = prm.get("jaw.open", 0.0) + 8.0 * abs(w)
         for sd, sx in SIDES:
-            prm[f"upper_arm.{sd}.flex"] = base[f"upper_arm.{sd}.flex"] - sgn * 22.0 * lag
-            prm[f"upper_arm.{sd}.abd"] = base[f"upper_arm.{sd}.abd"] + 12.0 * abs(lag)
-            prm[f"forearm.{sd}.flex"] = base[f"forearm.{sd}.flex"] + 18.0 * abs(lag)
-        frames.append(prm)
-    # ease the last frames exactly back to the base pose
-    for f in range(n - 3, n + 1):
-        w = (f - (n - 4)) / 4.0
-        frames[f] = {k: frames[f].get(k, 0.0) * (1 - w) + merged(base, feet).get(k, 0.0) * w
-                     for k in set(frames[f]) | set(base)}
+            prm[f"forearm.{sd}.flex"] = prm.get(f"forearm.{sd}.flex", 0.0) + 14.0 * w
+            prm[f"hand.{sd}.flex"] = prm.get(f"hand.{sd}.flex", 0.0) + 16.0 * w
+        frames.append(_plant(rig, prm, f, tracks, s * _travel(f, D, HIT_FRAMES)))
     return frames
 
 
-def act_stagger(rig, p, n=30):
+def act_stagger(rig, p, n=34):
+    """Thrown off balance: rocked back with the head snapped and the arms flung up, it reels back
+    over its heels (the Enemy carries it STAGGER_RECOIL back over frames 2-22), the feet crossing
+    in two scrambling steps while the arms windmill, catches itself folded over its knees, shakes
+    its head and comes back up."""
     base = base_stand(p)
-    feet0 = _foot_ik_pose(base)
-    k1 = merged(base, feet0, {"hips.y": 0.06, "hips.z": -0.05, "chest.flex": -14.0, "spine.flex": -4.0, "head.flex": -26.0,
-                              "neck.flex": -8.0, "jaw.open": 26.0, "upper_arm.L.abd": -6.0, "upper_arm.R.abd": 4.0,
-                              "upper_arm.L.flex": 30.0, "upper_arm.R.flex": 50.0, "forearm.L.flex": 30.0,
-                              "forearm.R.flex": 40.0, "hips.side": -6.0, "chest.twist": 10.0})
-    # left foot steps back to catch the fall
-    k2 = merged(k1, _foot_ik_pose(base, (0.02, 0.26, 0.10), (0.0, 0.0, 0.0)),
-                {"hips.y": 0.16, "hips.z": -0.08, "chest.flex": -6.0, "head.flex": -10.0, "hips.side": 4.0})
-    k3 = merged(k1, _foot_ik_pose(base, (0.03, 0.30, 0.0), (0.0, 0.02, 0.0)),
-                {"hips.y": 0.18, "hips.z": -0.11, "chest.flex": 14.0, "spine.flex": 10.0, "head.flex": -20.0,
-                 "upper_arm.L.flex": 20.0, "upper_arm.R.flex": 26.0, "upper_arm.L.abd": -22.0, "upper_arm.R.abd": -20.0,
-                 "jaw.open": 14.0, "chest.twist": -6.0, "hips.side": 2.0})
-    k4 = merged(base, _foot_ik_pose(base, (0.01, 0.12, 0.09), (0.0, 0.0, 0.0)), {"hips.y": 0.06, "hips.z": -0.05})
-    ks = Keys(base, [(0, merged(base, feet0)), (3, k1, "snap"), (9, k2), (14, k3, "out"), (22, k4), (30, merged(base, feet0))])
-    frames = [ks.at(f) for f in range(n + 1)]
-    for prm in frames:
-        prm["foot.L.pitch"] = -10.0 * min(1.0, prm.get("foot.L.z", 0.0) / 0.05)
+    D = STAGGER_RECOIL
+    seed = int(p.get("seed", 1))
+    side = 1.0 if seed % 2 else -1.0
+    a, b = ("L", "R") if side > 0 else ("R", "L")
+    tracks = {
+        a: [(0, 0, 0, 0, 0), (2, 0, 0, 0, 0), (5, 0.18, 0.09, -10, 0), (7, 0.34, 0, 6, 0), (14, 0.34, 0, 0, 0),
+            (17, 0.46, 0.08, -10, 0), (19, 0.56, 0, 4, 0), (26, 0.56, 0, 0, 0), (27.5, 0.555, 0.025, 0, 0), (29, D, 0, 0, 0)],
+        b: [(0, 0, 0, 0, 0), (7, 0, 0, 0, 0), (8, 0.02, 0.02, -24, 1), (10, 0.34, 0.12, -14, 0),
+            (13, 0.66, 0, 8, -1), (15, 0.66, 0, 0, 0), (22, 0.66, 0, 0, 0), (26, 0.6, 0.04, -6, 0), (28, D, 0, 0, 0)],
+    }
+    xs = {a: 0.0, b: 0.0}
+    impact = _rel(base, {"hips.flex": -8, "spine.flex": -8, "chest.flex": -22, "chest.twist": 14 * side,
+                         "neck.flex": -16, "head.flex": -28, "head.twist": 16 * side, "jaw.open": 36,
+                         "upper_arm.L.flex": 60, "upper_arm.R.flex": 66, "upper_arm.L.abd": 30, "upper_arm.R.abd": 26,
+                         "forearm.L.flex": 16, "forearm.R.flex": 20, "hand.L.flex": -36, "hand.R.flex": -36},
+                  {"hips.y": 0.08, "hips.z": -0.05})
+    tip = _rel(base, {"hips.flex": -14, "spine.flex": -12, "chest.flex": -18, "chest.twist": 8 * side,
+                      "hips.side": -8 * side, "neck.flex": 10, "head.flex": -6, "head.side": 14 * side, "jaw.open": 30,
+                      "upper_arm.L.flex": 100, "upper_arm.R.flex": 40, "upper_arm.L.abd": 40, "upper_arm.R.abd": 60,
+                      "forearm.L.flex": 30, "forearm.R.flex": 18, "hand.L.flex": -30, "hand.R.flex": -30},
+               {"hips.y": 0.16, "hips.z": -0.07})
+    cross = _rel(base, {"hips.flex": -10, "spine.flex": -6, "chest.flex": -8, "chest.twist": -14 * side,
+                        "hips.side": 8 * side, "neck.flex": 6, "head.flex": -10, "head.side": -16 * side,
+                        "head.twist": -12 * side, "jaw.open": 26,
+                        "upper_arm.L.flex": 36, "upper_arm.R.flex": 96, "upper_arm.L.abd": 62, "upper_arm.R.abd": 36,
+                        "forearm.L.flex": 20, "forearm.R.flex": 34},
+                 {"hips.y": 0.14, "hips.z": -0.09})
+    catch = _rel(base, {"hips.flex": 24, "spine.flex": 16, "chest.flex": 16, "chest.twist": 4 * side,
+                        "neck.flex": 10, "head.flex": 10, "jaw.open": 20, "upper_arm.L.flex": 34,
+                        "upper_arm.R.flex": 30, "upper_arm.L.abd": 6, "upper_arm.R.abd": 8, "forearm.L.flex": 30,
+                        "forearm.R.flex": 34, "hand.L.flex": 20, "hand.R.flex": 20},
+                 {"hips.y": 0.02, "hips.z": -0.17})
+    shake = _rel(base, {"hips.flex": 10, "spine.flex": 8, "chest.flex": 8, "neck.flex": 4, "head.flex": 2,
+                        "jaw.open": 16, "upper_arm.L.flex": 14, "upper_arm.R.flex": 12, "forearm.L.flex": 16,
+                        "forearm.R.flex": 18},
+                 {"hips.y": 0.0, "hips.z": -0.08})
+    ks = Keys(base, [(0, base), (2, impact, "snap"), (8, tip, "out"), (13, cross, "inout"), (19, catch, "in"),
+                     (25, shake, "out"), (34, base, "inout")])
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        wm = smooth_pulse(f, 4, 3, 8, 5)        # arms windmilling while it reels
+        ph = 2 * math.pi * (f - 4) / 11.0
+        for sd, sx in SIDES:
+            o = 0.0 if sd == a else math.pi
+            prm[f"upper_arm.{sd}.flex"] += 30.0 * wm * math.sin(ph + o)
+            prm[f"upper_arm.{sd}.abd"] += 16.0 * wm * math.cos(ph + o)
+            prm[f"forearm.{sd}.flex"] += 14.0 * wm * math.sin(ph + o + 1.0)
+        hs = smooth_pulse(f, 21, 2, 4, 5)      # head shake
+        prm["head.twist"] = prm.get("head.twist", 0.0) + 16.0 * hs * math.sin((f - 21) * 1.9)
+        w = _whip(f, 2.0)
+        prm["head.flex"] = prm.get("head.flex", 0.0) + 10.0 * w
+        frames.append(_plant(rig, prm, f, tracks, _travel(f, D, STAGGER_FRAMES), xs))
+    return frames
+
+
+def act_knockdown(rig, p, n=36):
+    """Knocked off its feet by a heavy blow (sledge, blast): head snapped, it is driven back (the
+    Enemy carries it KNOCKDOWN_RECOIL over frames 2-14), one foot stabs back and fails, the legs
+    go out from under it, it lands on its backside, slams flat with the head bouncing and ends in
+    lie_pose, where wake_lie (the sleeper's get-up) picks it up."""
+    base = base_stand(p)
+    lie = lie_pose(rig, p)
+    D = KNOCKDOWN_RECOIL
+    pz = -rig.pel_z
+    seed = int(p.get("seed", 1))
+    side = 1.0 if seed % 2 else -1.0
+    end_y = {sd: lie[f"foot.{sd}.y"] + D for sd, _ in SIDES}     # world y of the lying feet
+    a, b = ("L", "R") if side > 0 else ("R", "L")
+    tracks = {
+        a: [(0, 0, 0, 0, 0), (2, 0, 0, 0, 0), (5, 0.16, 0.08, -10, 0), (7, 0.30, 0.0, 0, 0), (9, 0.30, 0.0, -10, 1),
+            (12, 0.12, 0.26, 30, -1), (15, end_y[a], 0.12, 50, -1), (17, end_y[a], 0.0, lie[f"foot.{a}.pitch"], -1),
+            (19, end_y[a], 0.04, lie[f"foot.{a}.pitch"], -1), (21, end_y[a], 0.0, lie[f"foot.{a}.pitch"], -1)],
+        b: [(0, 0, 0, 0, 0), (6, 0, 0, 0, 0), (8, 0.0, 0.02, -20, 1), (11, -0.05, 0.34, 20, -1),
+            (14, end_y[b] - 0.05, 0.22, 46, -1), (17, end_y[b], 0.0, lie[f"foot.{b}.pitch"], -1),
+            (19, end_y[b], 0.05, lie[f"foot.{b}.pitch"], -1), (21, end_y[b], 0.0, lie[f"foot.{b}.pitch"], -1)],
+    }
+    impact = _rel(base, {"hips.flex": -10, "spine.flex": -10, "chest.flex": -26, "chest.twist": 12 * side,
+                         "neck.flex": -18, "head.flex": -30, "head.twist": 14 * side, "jaw.open": 40,
+                         "upper_arm.L.flex": 70, "upper_arm.R.flex": 74, "upper_arm.L.abd": 26, "upper_arm.R.abd": 24,
+                         "forearm.L.flex": 14, "forearm.R.flex": 18, "hand.L.flex": -40, "hand.R.flex": -40},
+                  {"hips.y": 0.10, "hips.z": -0.06})
+    tip = _rel(base, {"hips.flex": -24, "spine.flex": -10, "chest.flex": -10, "chest.twist": 6 * side,
+                      "neck.flex": 18, "head.flex": 4, "jaw.open": 30, "upper_arm.L.flex": 110,
+                      "upper_arm.R.flex": 100, "upper_arm.L.abd": 30, "upper_arm.R.abd": 34,
+                      "forearm.L.flex": 30, "forearm.R.flex": 26},
+               {"hips.y": 0.24, "hips.z": -0.16})
+    seat = merged(lie, {"hips.flex": -40.0, "hips.z": pz + 0.17, "hips.y": 0.40, "spine.flex": 12.0, "chest.flex": 8.0,
+                        "neck.flex": 26.0, "head.flex": -2.0, "head.twist": 4.0 * side, "head.side": 0.0, "jaw.open": 26.0,
+                        "upper_arm.L.flex": -36.0, "upper_arm.R.flex": -32.0, "upper_arm.L.abd": -18.0,
+                        "upper_arm.R.abd": -20.0, "upper_arm.L.twist": 0.0, "upper_arm.R.twist": 0.0,
+                        "forearm.L.flex": 10.0, "forearm.R.flex": 12.0, "hand.L.flex": -50.0, "hand.R.flex": -50.0})
+    slam = merged(lie, {"hips.flex": -84.0, "hips.z": pz + 0.11, "neck.flex": 4.0, "head.flex": -12.0, "jaw.open": 30.0,
+                        "upper_arm.L.flex": -6.0, "upper_arm.R.flex": -10.0, "upper_arm.L.abd": -10.0,
+                        "upper_arm.R.abd": -6.0, "upper_arm.L.twist": 20.0, "forearm.L.flex": 30.0})
+    bounce = merged(slam, {"hips.z": pz + 0.14, "neck.flex": 22.0, "head.flex": -6.0, "jaw.open": 20.0,
+                           "upper_arm.L.abd": -24.0, "forearm.L.flex": 60.0})
+    ks = Keys(base, [(0, base), (2, impact, "snap"), (8, tip, "out"), (13, seat, "in"), (16, slam, "in"),
+                     (19, bounce, "out"), (23, slam, "in"), (28, lie, "inout"), (36, lie)])
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        prm["head.flex"] = prm.get("head.flex", 0.0) + 10.0 * _whip(f, 2.0)
+        if f >= 28:      # lying still, breathing (ends exactly on lie_pose for wake_lie)
+            prm["chest.flex"] = lie["chest.flex"] - 1.2 * math.sin(math.pi * (f - 28) / 8.0)
+        for sd, _ in SIDES:
+            # knees: default pole while standing, the lying pose's (knees up) once it is down
+            w = ease((f - 9) / 7.0)
+            for c in ("px", "py", "pz"):
+                prm[f"knee.{sd}.{c}"] = lie[f"knee.{sd}.{c}"] * w
+        lw = ease((f - 15) / 6.0)
+        xs = {sd: lie[f"foot.{sd}.x"] * lw for sd, _ in SIDES}
+        yws = {sd: lie[f"foot.{sd}.yaw"] * lw for sd, _ in SIDES}
+        frames.append(_plant(rig, prm, f, tracks, _travel(f, D, KNOCKDOWN_FRAMES), xs, yws))
+    return frames
+
+
+def act_stumble(rig, p, n=30):
+    """A trip while it shambles or runs (the Enemy keeps STUMBLE_SPEED forward while it plays):
+    one foot catches, the body pitches forward over it, the other leg throws out a long catch
+    step, the arms fling out for balance, a stagger step after it, and it lurches back upright.
+    The planted feet slide back at exactly the travel speed, so nothing skates."""
+    base = base_stand(p)
+    v = STUMBLE_SPEED / FPS
+    trip = p.get("limp_side", "R")
+    catch = "L" if trip == "R" else "R"
+    tracks = {
+        trip: [(0, 0, 0, 0, 0), (3, 0, 0, -20, 1), (6, -0.06, 0.02, -45, 1), (9, -0.12, 0.04, -40, 1),
+               (13, -0.62, 0.10, -10, 0), (17, -1.20, 0.0, 10, -1), (19, -1.20, 0, 0, 0), (30, -1.20, 0, 0, 0)],
+        catch: [(0, 0, 0, 0, 0), (2, 0, 0, -12, 1), (6, -0.40, 0.11, -10, 0), (10, -0.78, 0.0, 12, -1),
+                (12, -0.78, 0, 0, 0), (19, -0.78, 0, 0, 0), (21, -0.78, 0, -16, 1), (24, -1.0, 0.07, -8, 0),
+                (27, -1.18, 0.0, 0, 0), (30, -1.2, 0, 0, 0)],
+    }
+    lsx = 1.0 if trip == "L" else -1.0
+    pitch = _rel(base, {"hips.flex": 16, "spine.flex": 14, "chest.flex": 16, "chest.twist": 8 * lsx,
+                        "neck.flex": -16, "head.flex": -10, "jaw.open": 22, "upper_arm.L.flex": 60,
+                        "upper_arm.R.flex": 56, "upper_arm.L.abd": 30, "upper_arm.R.abd": 34,
+                        "forearm.L.flex": 10, "forearm.R.flex": 14, "hand.L.flex": -30, "hand.R.flex": -30},
+                 {"hips.y": -0.12, "hips.z": -0.08})
+    low = _rel(base, {"hips.flex": 24, "spine.flex": 18, "chest.flex": 18, "chest.twist": -6 * lsx, "hips.side": 6 * lsx,
+                      "neck.flex": -22, "head.flex": -6, "head.side": -10 * lsx, "jaw.open": 30,
+                      "upper_arm.L.flex": 40, "upper_arm.R.flex": 34, "upper_arm.L.abd": 56, "upper_arm.R.abd": 50,
+                      "forearm.L.flex": 20, "forearm.R.flex": 24},
+               {"hips.y": -0.10, "hips.z": -0.17})
+    stag = _rel(base, {"hips.flex": 12, "spine.flex": 8, "chest.flex": 6, "chest.twist": 10 * lsx, "hips.side": -5 * lsx,
+                       "neck.flex": -6, "head.flex": -12, "head.twist": 14 * lsx, "jaw.open": 18,
+                       "upper_arm.L.flex": 20, "upper_arm.R.flex": 30, "upper_arm.L.abd": 30, "upper_arm.R.abd": 20},
+                {"hips.y": -0.04, "hips.z": -0.08})
+    ks = Keys(base, [(0, base), (6, pitch, "in"), (11, low, "out"), (19, stag, "inout"), (30, base, "inout")])
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        prm["head.flex"] = prm.get("head.flex", 0.0) - 8.0 * _whip(f, 10.0)     # jerked up as it lands
+        frames.append(_plant(rig, prm, f, tracks, -v * f))
     return frames
 
 
@@ -1209,16 +1596,16 @@ def actions_table():
         ("wake_seat", 40, False, act_wake_seat),
         ("idle_sleep_hunch", 60, True, act_sleep_hunch),
         ("wake_hunch", 40, False, lambda r, p, n: act_wake_seat(r, p, n, hunch_pose(r, p))),
-        ("walk", 36, True, lambda r, p, n: locomotion(r, p, n, 0.9, "walk")),
-        ("walk_b", 40, True, lambda r, p, n: locomotion(r, p, n, 0.75, "walk_b")),
-        ("run", 20, True, lambda r, p, n: locomotion(r, p, n, 4.5, "run")),
+        ("walk", 72, True, lambda r, p, n: locomotion(r, p, n, 0.9, "walk", 2, 1.0)),
+        ("walk_b", 80, True, lambda r, p, n: locomotion(r, p, n, 0.75, "walk_b", 2, 0.8)),
+        ("run", 40, True, lambda r, p, n: locomotion(r, p, n, 4.5, "run", 2, 1.0)),
         ("attack_a", 24, False, act_attack_a),
         ("attack_b", 24, False, act_attack_b),
         ("attack_structure", 30, True, act_attack_structure),
         ("scream", 50, False, act_scream),
-        ("hit_front", 14, False, lambda r, p, n: act_hit(r, p, n, True)),
-        ("hit_back", 14, False, lambda r, p, n: act_hit(r, p, n, False)),
-        ("stagger", 30, False, act_stagger),
+        ("hit_front", 18, False, lambda r, p, n: act_hit(r, p, n, True)),
+        ("hit_back", 18, False, lambda r, p, n: act_hit(r, p, n, False)),
+        ("stagger", 34, False, act_stagger),
         ("death_front", 40, False, lambda r, p, n: act_death(r, p, n, True)),
         ("death_back", 40, False, lambda r, p, n: act_death(r, p, n, False)),
         ("crawl", 40, True, act_crawl),
@@ -1288,10 +1675,19 @@ def write_action(arm_obj, skel: Skeleton, name: str, baked: list):
     return act
 
 
+def hollowed_extras():
+    """Clips only the Hollowed have, outside actions_table() so the living table (living_anim,
+    which starts from it) does not inherit them. The Enemy falls back without them (old bodies)."""
+    return [
+        ("stumble", 30, False, act_stumble),
+        ("knockdown", 36, False, act_knockdown),
+    ]
+
+
 def build_all(arm_obj, skel: Skeleton, params: dict, only=None):
     rig = Rig(skel, params)
     lengths = {}
-    for name, nf, loop, fn in actions_table():
+    for name, nf, loop, fn in actions_table() + hollowed_extras():
         if only and name not in only:
             continue
         frames = fn(rig, params, nf)

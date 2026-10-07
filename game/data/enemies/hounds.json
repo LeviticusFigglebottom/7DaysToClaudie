@@ -7,7 +7,7 @@
      "health": 70, "limbs": {"head": 28, "torso": 70},
      "speed": {"day_walk": 1.5, "day_run": 6.0, "night_walk": 1.9, "night_run": 7.6},
      "attack": {"damage": 8, "range": 1.7, "cooldown": 1.0, "structure_damage": 3, "infection": 4, "bleed": 0.35},
-     "perception": {"sight_day": 24, "sight_night": 40, "fov": 220, "hearing": 1.6, "smell": 3.0},
+     "perception": {"sight_day": 24, "sight_night": 40, "dark_sight": 1.0, "fov": 220, "hearing": 1.6, "smell": 3.0},
      "behavior": {"quadruped": {"length": 1.2, "radius": 0.3, "eye": 0.62},
                   "pack": {"size": [3, 5]}, "tracker": true, "no_dismember": true, "crawl_on_leg_loss": false,
                   "stagger_threshold": 12, "sleeper_poses": ["lie"]},

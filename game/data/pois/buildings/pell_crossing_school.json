@@ -192,7 +192,7 @@
         {"prop": "civic_folding_chair", "pos": [8.4, 1.7], "rot": 200, "variant": "destroyed"},
         {"prop": "school_stage_lights", "pos": [6.0, 2.6], "y": 2.95, "rot": 0},
         {"id": "nurse_table", "prop": "road_exam_table", "pos": [12.75, 0.9], "rot": 90},
-        {"id": "nurse_cabinet", "prop": "road_medical_cabinet", "at": [15, 0], "against": "N", "container": "school_nurse_cabinet"},
+        {"id": "nurse_cabinet", "prop": "road_medical_cabinet", "at": [14, 0], "against": "N", "container": "school_nurse_cabinet"},
         {"prop": "road_iv_stand", "pos": [12.5, 1.6], "rot": 0},
         {"id": "nurse_cot", "prop": "civic_army_cot", "pos": [14.0, 2.6], "rot": 90, "variant": "worn"},
         {"prop": "bloody_bandages", "pos": [12.6, 2.6], "rot": 60},

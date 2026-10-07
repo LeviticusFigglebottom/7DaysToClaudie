@@ -1,0 +1,15 @@
+{
+  "_doc": "Wolf packs (ADR-0055, WolfPack / WolfHunt in src/wildlife/wolves). hunger: 0 fed .. 1 starving; it rises per_hour (game hours) and a new pack rolls it in start; at `hungry` a pack hunts. hunt: the nearest grazer of at least min_prey_health within range (m) of the pack: it stalks at stalk_speed (deer don't see a stalking wolf), and once a wolf is within rush_range all of them run in at rush_speed for at most rush_seconds; a wolf within bite m bites for bite_damage every bite_every s; a failed hunt is tried again after retry_seconds. feed: the pack eats the kill for seconds (hunger to 0, the carcass is left as remains), then beds down by it for rest_hours. guard: a player within radius of a feeding or bedded pack's kill is growled at for warn_seconds, then attacked. day: a pack with no reason to attack keeps avoid m off the player and watches (it walks off at avoid_speed). engage: the pack takes the player on (the hound brain hunts them) when hungry and the player is within day_range by day or night_range at night; at night a pack with at least night_hunger hunger does; a wounded pack within wounded_range does, for wounded_seconds; calm_seconds after its reasons go, it lets the player be. blood: a pack with at least min_hunger hunger follows a player bleeding at least `bleeding` whose trail it smells (scent at a wolf above `scent`). fire: at night a lit campfire or station is a no-go zone of radius m (station_radius for a lit station that isn't a fire): wolves circle outside it. howl: at dusk and night a pack howls about every_hours (game hours, +-50 %), audible m; mates join chorus s apart. No howl is a stimulus: it brings neither the Hollowed nor heat. spawn: at most max_packs alive; a pack is dropped when every wolf is despawn m from the player.",
+  "hunger": {"per_hour": 0.05, "hungry": 0.55, "start": [0.15, 0.85]},
+  "hunt": {"range": 170.0, "min_prey_health": 40.0, "stalk_speed": 2.4, "rush_range": 28.0, "rush_speed": 13.5, "rush_seconds": 16.0,
+           "bite": 2.2, "bite_damage": 45.0, "bite_every": 0.7, "retry_seconds": 75.0},
+  "feed": {"seconds": 75.0, "rest_hours": 3.0},
+  "guard": {"radius": 22.0, "warn_seconds": 3.5},
+  "day": {"avoid": 40.0, "avoid_speed": 4.5},
+  "engage": {"day_range": 26.0, "night_range": 60.0, "night_hunger": 0.3, "wounded_range": 120.0, "wounded_seconds": 90.0,
+             "calm_seconds": 12.0},
+  "blood": {"min_hunger": 0.35, "bleeding": 0.05, "scent": 0.6},
+  "fire": {"radius": 13.0, "station_radius": 9.0},
+  "howl": {"every_hours": 2.5, "audible": 320.0, "chorus": [0.6, 2.2]},
+  "spawn": {"max_packs": 2, "despawn": 270.0}
+}

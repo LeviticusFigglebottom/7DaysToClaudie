@@ -25,7 +25,7 @@ func _deer() -> WildlifeDef:
 
 
 func test_wildlife_defs_load() -> void:
-	assert_eq(_defs().size(), 5, "deer, hare, two songbird flocks and crows")
+	assert_eq(_defs().size(), 6, "deer, hare, two songbird flocks, crows and wolf packs")
 	for d: WildlifeDef in _defs():
 		assert_false(d.biomes.is_empty(), "%s lives somewhere" % d.id)
 	assert_eq(_deer().pick_model(0.0), "animals/deer_buck", "models are picked by weight in id order")

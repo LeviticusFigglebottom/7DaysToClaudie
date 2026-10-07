@@ -18,7 +18,8 @@
       {"item": "machete", "weight": 6, "quality_bias": 1}, {"item": "revolver", "weight": 3, "tier_min": 3}, {"item": "ammo_38", "weight": 6, "count": [3, 9], "tier_min": 2}]},
     {"id": "reading", "rolls": [1, 1], "entries": [
       {"item": "journal_timber_trade", "weight": 5}, {"item": "journal_field_medicine", "weight": 5},
-      {"item": "schematic_can_chime", "weight": 3}, {"item": "schematic_spike_barrier", "weight": 2, "tier_min": 2}, {"item": "schematic_log_cabin", "weight": 1, "tier_min": 2}]},
+      {"item": "schematic_can_chime", "weight": 3}, {"item": "schematic_spike_barrier", "weight": 2, "tier_min": 2}, {"item": "schematic_log_cabin", "weight": 1, "tier_min": 2},
+      {"item": "schematic_generator", "weight": 1, "tier_min": 2}, {"item": "schematic_floodlight", "weight": 1, "tier_min": 2}, {"item": "schematic_nail_sentry", "weight": 1, "tier_min": 3}]},
     {"id": "zombie_corpse", "rolls": [1, 1], "empty_chance": 0.55, "entries": [
       {"item": "cloth", "weight": 10, "count": [1, 2]}, {"item": "bone", "weight": 4}, {"item": "bloom_mycelium", "weight": 3},
       {"item": "painkillers", "weight": 1}, {"item": "ammo_38", "weight": 1, "count": [1, 3], "tier_min": 2},

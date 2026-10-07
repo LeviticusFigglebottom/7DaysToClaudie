@@ -116,15 +116,15 @@ BODIES = {
                     "bloom_spec": {"filaments": 3, "shelves": 1}}],
         "blood": 0.7, "grime": 0.65,
     },
-    # Keener: swollen Bloom throat sac, long unhinged jaw hanging open.
+    # Keener: swollen Bloom throat sac bulging out of a torn-down collar, long unhinged jaw hanging
+    # open. Silhouette: a goitred throat under a gaping jaw.
     "keener_a": {
         "seed": 707, "height": 1.72, "sex": "m", "build": 0.18, "gaunt": 0.9, "hunch": 0.35, "head_forward": 0.35,
         "jaw_scale": 1.45, "jaw_drop": 30.0, "mouth_open": 1.0, "jaw_base": 6.0, "claw": 0.7, "eye_open": 1.0,
         "head_tilt": 3.0, "limp_side": "L", "wall_eye": 6.0,
-        "throat_sac": {"size": 1.0, "bloom_lumps": 4}, "neck_cut": 0.86,
-        "outfit": {"tops": [{"type": "tshirt", "sleeve": 0.38, "hem": -0.04, "torn": 0.5, "neck_drop": 0.03,
-                             "neck_front": 0.05}],
-                   "pants": {"type": "denim", "belt": True, "torn": 0.3}},
+        "throat_sac": {"size": 1.6, "bloom_lumps": 7}, "neck_cut": 0.86,
+        # bare-chested: under a T-shirt's collar the sac read as an ordinary neck
+        "outfit": {"pants": {"type": "denim", "belt": True, "torn": 0.3}},
         "boots": {"L": True, "R": True, "height": 0.15},
         "hair": {"style": "medium", "hairline": 0.06, "patchy": 0.6, "locks": 6, "length": 0.065},
         "bloom": [{"at": "head", "side": "L", "dir": [0.3, -0.5, 0.8], "r": 0.016, "filaments": 6, "shelves": 0,
@@ -350,21 +350,21 @@ BODIES = {
         "seed": 811, "height": 1.70, "sex": "f", "build": 1.0, "belly": 2.8, "hunch": 0.30, "head_forward": 0.25,
         "jaw_drop": 16.0, "mouth_open": 0.75, "eye_open": 0.35, "lid_droop": 0.8, "claw": 0.3, "head_tilt": -6.0,
         "limp_side": "R", "throat_sac": {"size": 2.2, "bloom_lumps": 5}, "neck_cut": 0.86,
-        "outfit": {"tops": [{"type": "hospital", "sleeve": 0.25, "hem": -0.20, "torn": 0.7, "neck_front": 0.08, "flare": 0.03,
+        "outfit": {"tops": [{"type": "hospital", "sleeve": 0.25, "hem": -0.20, "torn": 0.55, "neck_front": 0.08, "flare": 0.012,
                              "tears": [{"at": "chest", "side": "L", "t": 0.6, "dir": [0.6, 0.2, 0.8], "r": 0.10},
                                        {"at": "spine", "side": "R", "t": 0.7, "dir": [0.4, 0.0, -1.0], "r": 0.12}]}]},
         "boots": {"L": False, "R": False},
         "hair": {"style": "balding", "hairline": 0.03, "bald": 0.7, "patchy": 0.6},
         "pustules": {"sites": [
-            {"at": "chest", "side": "L", "t": 0.6, "dir": [0.6, 0.2, 0.8], "count": 9, "size": 0.026, "spread": 0.7},
-            {"at": "spine", "side": "R", "t": 0.7, "dir": [0.4, 0.0, -1.0], "count": 10, "size": 0.030, "spread": 0.8},
-            {"at": "spine", "side": "L", "t": 0.3, "dir": [0.9, 0.0, 0.4], "count": 6, "size": 0.024},
-            {"at": "ua", "side": "R", "t": 0.6, "dir": [1.0, 0.2, 0.0], "count": 6, "size": 0.022},
-            {"at": "ua", "side": "L", "t": 0.5, "dir": [1.0, 0.0, 0.3], "count": 5, "size": 0.020},
-            {"at": "head", "side": "R", "dir": [0.8, -0.2, 0.5], "count": 4, "size": 0.016, "spread": 0.4},
-            {"at": "neck", "side": "L", "t": 0.5, "dir": [0.7, 0.0, 0.6], "count": 4, "size": 0.020},
-            {"at": "th", "side": "L", "t": 0.55, "dir": [0.5, 0.0, 1.0], "count": 5, "size": 0.024},
-            {"at": "sh", "side": "R", "t": 0.3, "dir": [0.6, 0.0, 0.8], "count": 4, "size": 0.020}]},
+            {"at": "chest", "side": "L", "t": 0.6, "dir": [0.6, 0.2, 0.8], "count": 6, "size": 0.040, "spread": 0.6},
+            {"at": "spine", "side": "R", "t": 0.7, "dir": [0.4, 0.0, -1.0], "count": 7, "size": 0.046, "spread": 0.7},
+            {"at": "spine", "side": "L", "t": 0.3, "dir": [0.9, 0.0, 0.4], "count": 4, "size": 0.036},
+            {"at": "ua", "side": "R", "t": 0.6, "dir": [1.0, 0.2, 0.0], "count": 4, "size": 0.032},
+            {"at": "ua", "side": "L", "t": 0.5, "dir": [1.0, 0.0, 0.3], "count": 3, "size": 0.030},
+            {"at": "head", "side": "R", "dir": [0.8, -0.2, 0.5], "count": 3, "size": 0.022, "spread": 0.4},
+            {"at": "neck", "side": "L", "t": 0.5, "dir": [0.7, 0.0, 0.6], "count": 3, "size": 0.030},
+            {"at": "th", "side": "L", "t": 0.55, "dir": [0.5, 0.0, 1.0], "count": 3, "size": 0.036},
+            {"at": "sh", "side": "R", "t": 0.3, "dir": [0.6, 0.0, 0.8], "count": 3, "size": 0.030}]},
         "bloom": [{"at": "spine", "side": "L", "t": 0.6, "dir": [0.0, 0.0, -1.0], "r": 0.05, "lumps": 5, "filaments": 3, "shelves": 0}],
         "blood": 0.4, "grime": 0.7, "bruise": 1.2,
     },
@@ -382,10 +382,11 @@ BODIES = {
         "armour": [
             # rows from the top down, each tucking under the one above
             {"at": "chest", "side": "L", "t": 0.62, "dir": [0.0, 0.1, 1.0], "w": 0.33, "h": 0.19, "kind": "riot", "tilt": 0.014},
-            {"at": "chest", "side": "L", "t": 0.96, "dir": [0.8, 0.6, 0.05], "w": 0.19, "h": 0.15, "kind": "riot", "tilt": 0.010},
-            {"at": "chest", "side": "R", "t": 0.96, "dir": [0.8, 0.6, 0.05], "w": 0.19, "h": 0.15, "kind": "riot", "tilt": 0.010},
-            {"at": "ua", "side": "L", "t": 0.22, "dir": [1.0, 0.0, 0.15], "w": 0.14, "h": 0.11, "kind": "riot", "tilt": 0.008},
-            {"at": "ua", "side": "R", "t": 0.22, "dir": [1.0, 0.0, 0.15], "w": 0.14, "h": 0.11, "kind": "riot", "tilt": 0.008},
+            {"at": "chest", "side": "L", "t": 0.96, "dir": [0.8, 0.6, 0.05], "w": 0.24, "h": 0.19, "kind": "riot", "tilt": 0.022, "thick": 0.011},
+            {"at": "chest", "side": "R", "t": 0.96, "dir": [0.8, 0.6, 0.05], "w": 0.24, "h": 0.19, "kind": "riot", "tilt": 0.022, "thick": 0.011},
+            {"at": "chest", "side": "L", "t": 1.0, "dir": [0.0, 0.55, -1.0], "w": 0.26, "h": 0.12, "kind": "metal", "tilt": 0.03, "standoff": 0.014, "thick": 0.008},
+            {"at": "ua", "side": "L", "t": 0.22, "dir": [1.0, 0.0, 0.15], "w": 0.16, "h": 0.13, "kind": "riot", "tilt": 0.014, "thick": 0.010},
+            {"at": "ua", "side": "R", "t": 0.22, "dir": [1.0, 0.0, 0.15], "w": 0.16, "h": 0.13, "kind": "riot", "tilt": 0.014, "thick": 0.010},
             {"at": "spine", "side": "L", "t": 1.0, "dir": [0.45, 0.0, 1.0], "w": 0.17, "h": 0.17, "kind": "metal", "tilt": 0.012},
             {"at": "spine", "side": "R", "t": 0.95, "dir": [0.45, -0.05, 1.0], "w": 0.16, "h": 0.17, "kind": "metal", "tilt": 0.012},
             {"at": "spine", "side": "L", "t": 0.30, "dir": [0.0, 0.0, 1.0], "w": 0.26, "h": 0.12, "kind": "shell", "tilt": 0.008},
@@ -401,27 +402,36 @@ BODIES = {
             {"at": "sh", "side": "R", "t": 0.40, "dir": [0.0, 0.0, 1.0], "w": 0.11, "h": 0.25, "kind": "riot"}],
         "bloom": [{"at": "chest", "side": "R", "t": 0.3, "dir": [0.9, 0.0, 0.3], "r": 0.04, "lumps": 6, "filaments": 2, "shelves": 2, "shelf_size": 0.03},
                   {"at": "neck", "side": "L", "t": 0.3, "dir": [0.6, 0.0, -0.8], "r": 0.03, "lumps": 5, "filaments": 3, "shelves": 1}],
+        # the plates' fused edges are growth too: swollen like a wound's knot they read as
+        # popcorn along every plate, so they stay tight
+        "growth_swell": 0.0,
         "blood": 0.3, "grime": 0.8,
     },
     # Rammer: a 2.3 m Bloom-thickened hulk, its bulk built into the frame (mass): a yoke of shoulders
-    # and a knotted hump the head hangs from, slab forearms, a gut; torn work clothes split by the
-    # growth. Silhouette at 40 m: a low head under a wide hump, arms to the knees.
+    # and a knotted hump the head hangs from, slab forearms, a gut; bare to the waist (the shirt is
+    # long gone), coverall legs split by the growth, bracket fungus stacked down the hump and over
+    # the shoulders. Silhouette at 40 m: a low head under a wide, ridged hump, arms to the knees.
     "rammer_a": {
         "seed": 833, "height": 2.30, "sex": "m", "build": 1.0, "mass": 1.0, "belly": 0.7, "hunch": 0.62,
         "head_forward": 0.6, "brow": 1.0, "arm_scale": 1.22, "shoulder_drop": 0.2, "jaw_drop": 12.0, "mouth_open": 0.6,
         "eye_open": 0.3, "lid_droop": 0.7, "claw": 0.8, "head_tilt": 6.0, "limp_side": "L", "gaunt": 0.0,
-        "outfit": {"tops": [{"type": "tshirt", "sleeve": 0.2, "hem": 0.05, "torn": 0.95, "neck_front": 0.08}],
-                   "pants": {"type": "coverall", "belt": False, "torn": 0.75, "length": 0.78}},
+        "outfit": {"pants": {"type": "coverall", "belt": False, "torn": 0.75, "length": 0.78}},
         "boots": {"L": False, "R": False},
         "hair": {"style": "stubble", "hairline": 0.04, "patchy": 0.7},
-        "bloom": [{"at": "chest", "side": "L", "t": 0.8, "dir": [0.3, 0.5, -1.0], "r": 0.11, "lumps": 16, "filaments": 4, "shelves": 5, "shelf_size": 0.06},
-                  {"at": "ua", "side": "R", "t": 0.2, "dir": [1.0, 0.3, 0.0], "r": 0.10, "lumps": 14, "filaments": 2, "shelves": 3, "shelf_size": 0.05},
-                  {"at": "ua", "side": "L", "t": 0.3, "dir": [1.0, 0.1, -0.2], "r": 0.09, "lumps": 12, "filaments": 2, "shelves": 2, "shelf_size": 0.05},
-                  {"at": "fa", "side": "R", "t": 0.6, "dir": [0.0, 0.0, 1.0], "r": 0.07, "lumps": 10, "filaments": 1, "shelves": 0},
-                  {"at": "neck", "side": "R", "t": 0.5, "dir": [0.5, 0.3, -0.8], "r": 0.08, "lumps": 10, "filaments": 2, "shelves": 0}],
+        "bloom": [{"at": "chest", "side": "L", "t": 0.8, "dir": [0.3, 0.5, -1.0], "r": 0.11, "lumps": 10, "filaments": 4, "shelves": 5, "shelf_size": 0.06},
+                  # (down the arm, clear of the shoulder cut: masses across it decimated into a
+                  # ragged gore-skirted mess)
+                  {"at": "ua", "side": "R", "t": 0.5, "dir": [1.0, 0.3, 0.0], "r": 0.07, "lumps": 9, "filaments": 2, "shelves": 3, "shelf_size": 0.05},
+                  {"at": "ua", "side": "L", "t": 0.55, "dir": [1.0, 0.1, -0.2], "r": 0.065, "lumps": 8, "filaments": 2, "shelves": 2, "shelf_size": 0.05},
+                  {"at": "fa", "side": "R", "t": 0.6, "dir": [0.0, 0.0, 1.0], "r": 0.07, "lumps": 7, "filaments": 1, "shelves": 0},
+                  {"at": "neck", "side": "R", "t": 0.5, "dir": [0.5, 0.3, -0.8], "r": 0.08, "lumps": 7, "filaments": 2, "shelves": 3, "shelf_size": 0.045},
+                  # a knotted ridge of growth down the hump
+                  {"at": "spine", "side": "L", "t": 0.85, "dir": [0.0, 0.2, -1.0], "r": 0.09, "lumps": 8, "filaments": 3, "shelves": 4, "shelf_size": 0.05}],
         "blood": 0.5, "grime": 0.75,
-        "seg_tris": {"body_torso": 4400, "body_upper_arm.L": 640, "body_upper_arm.R": 640, "body_forearm.L": 1350,
-                     "body_forearm.R": 1350, "body_thigh.L": 640, "body_thigh.R": 640, "body_shin.L": 760, "body_shin.R": 760},
+        # The torso (yoke, hump, gut and the growth knotted over them) gets the triangles: at 4.4k it
+        # decimated into big flat facets across the shoulders; hands and shins give some up.
+        "seg_tris": {"body_torso": 5800, "body_upper_arm.L": 600, "body_upper_arm.R": 600, "body_forearm.L": 1050,
+                     "body_forearm.R": 1050, "body_thigh.L": 560, "body_thigh.R": 560, "body_shin.L": 600, "body_shin.R": 600},
     },
 }
 
