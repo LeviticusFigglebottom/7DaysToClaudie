@@ -256,7 +256,7 @@
         {"prop": "wild_footlocker", "pos": [29.4, 3.42], "rot": 180, "variant": "clean", "id": "bunk_footlocker_b"},
         {"prop": "wild_footlocker", "pos": [31.5, 6.9], "rot": -90, "variant": "destroyed", "id": "bunk_footlocker_c"},
         {"prop": "wild_locker_steel", "pos": [25.3, 9.95], "rot": 180, "variant": "worn", "id": "bunk_locker_a"},
-        {"prop": "wild_locker_steel", "pos": [22.35, 8.4], "rot": 90, "variant": "worn", "id": "bunk_locker_b"},
+        {"prop": "wild_locker_steel", "pos": [22.35, 7.35], "rot": 90, "variant": "worn", "id": "bunk_locker_b"},
         {"prop": "wild_wood_stove", "pos": [26.0, 4.4], "rot": 180, "variant": "worn"},
         {"prop": "wild_mess_table", "pos": [29.6, 6.6], "rot": 90, "variant": "worn"},
         {"prop": "chair_wood", "pos": [28.9, 6.2], "rot": 90, "variant": "worn"},

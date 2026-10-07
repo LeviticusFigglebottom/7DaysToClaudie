@@ -732,6 +732,7 @@ func _stairs_and_ladders() -> void:
 		lad.basis = basis2
 		lad.bottom_local = cc
 		lad.top_local = layout.cell_center(li2 + 1, l.get("landing", cell))
+		lad.height = PoiLayout.STOREY
 		var mi := MeshInstance3D.new()
 		mi.mesh = PoiParts.kit_mesh("ladder_3m")
 		lad.add_child(mi)
@@ -1398,7 +1399,8 @@ func _prop(p: Dictionary) -> void:
 			root.add_child(PropLights.lit_mesh(model, xf, layout.is_room(layout.room_at(p["level"], p["cell"]))))
 		if pd.collision != "none":
 			# Tagged for TraversalAudit, which names what blocks a doorway or the route.
-			_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre())).set_meta(&"prop", str(pd.id))
+			var cs: CollisionShape3D = _box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre()))
+			cs.set_meta(&"prop", str(pd.id) + ("+route_ok" if bool(p.get("route_ok", false)) else ""))
 	if not light.is_empty():
 		root.add_child(PropLights.light_node(light, xf))
 
@@ -1498,9 +1500,22 @@ func _scatter_cell(li: int, c: Vector2i, density: float) -> void:
 			"against": PoiLayout.SIDE_NAMES[side], "rot": [0.0, -90.0, 180.0, 90.0][side] + _rng.randf_range(-25, 25)}
 		var xf: Transform3D = _prop_xf(entry, pd2)
 		var cond: String = "destroyed" if _rng.randf() < _decay * 0.3 else "worn"
-		_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)
+		# Not where a door leaf swings (ADR-0051). The draws above still happen, so every other
+		# cell's scatter stays where it was.
+		if not _by_door(li, c):
+			_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)
 		_occupied[k] = true
 		break
+
+
+## Whether a door (a leaf that swings) opens on one of the cell's sides.
+func _by_door(li: int, c: Vector2i) -> bool:
+	for side: int in 4:
+		var e: Array = PoiLayout.side_edge(c, side)
+		var op: Dictionary = (layout.walls.get(PoiLayout.edge_key(li, e[0], e[1]), {}) as Dictionary).get("opening", {})
+		if not op.is_empty() and str(op["type"]).begins_with("door"):
+			return true
+	return false
 
 
 ## SDFGI occludes the sky indoors, which leaves rooms near-black even at noon. Interior reflection

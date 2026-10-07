@@ -670,7 +670,7 @@
      "side": "S",
      "type": "window",
      "state": "broken",
-     "cue": "none"
+     "cue": "crate"
     },
     {
      "id": "kestrel_door",

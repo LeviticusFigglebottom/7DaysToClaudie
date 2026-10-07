@@ -586,7 +586,7 @@
      "id": "loan_desk",
      "prop": "desk_small",
      "pos": [
-      1.5,
+      2.5,
       10.3
      ],
      "rot": 0
@@ -594,15 +594,7 @@
     {
      "prop": "chair_wood",
      "pos": [
-      1.5,
-      9.6
-     ],
-     "rot": 180
-    },
-    {
-     "prop": "chair_wood",
-     "pos": [
-      2.5,
+      2.6,
       11.1
      ],
      "rot": 0,

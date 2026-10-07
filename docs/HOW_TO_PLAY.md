@@ -150,6 +150,7 @@ keys below are the defaults.
 | Shift (hold) | Sprint, forward only; uses stamina. Run it empty and you can't sprint until it's back to 30 |
 | C or Ctrl | Crouch or stand (a toggle): slower, quieter, harder to see. Needed to disarm traps and dismantle |
 | Space | Jump (8 stamina). At a sill, fence or crate 0.3–1.3 m high: climb over or onto it. In deep water: hold to swim up |
+| Ladders | Walk into a ladder to climb it: W climbs, S (or W while looking down) climbs down, and you step off at the top. From upstairs, walk into its hatch to climb down. Space lets go |
 | E | Interact. Hold it to search, harvest, drink or fill bottles at water, butcher and dismantle |
 | Left mouse | Use what you hold: swing, fire, throw a stone, set down a can chime. While building: place the ghost or the carried log |
 | Right mouse | Hold to guard (melee weapon, light or bare hands). Food, drink or medicine in hand: use it. Revolver: reload. Spear: throw. Placing a blueprint: cancel |

@@ -53,17 +53,25 @@ func _run() -> void:
 
 ## Builds `pd` under `parent`, waits for its bodies to enter the physics space, audits it and frees
 ## it. `seed` >= 0 dresses it as a run with that world seed does.
-static func audit_one(parent: Node3D, pd: PoiDef, id: String, seed: int = -1) -> Array[Dictionary]:
+static func audit_one(parent: Node, pd: PoiDef, id: String, seed: int = -1) -> Array[Dictionary]:
 	if seed >= 0:
 		var session: GameSession = GameSession.create_new({"seed": seed, "game_mode": "survival"})
 		pd = PoiManager.dress_for(pd, StringName("audit/%s" % id), session)
-	var v: PoiValidator = PoiValidator.validate(pd)
-	var layout: PoiLayout = PoiLayout.compile(pd)
+	var tv: int = Time.get_ticks_msec()
+	# The route only: PoiValidator.validate also re-validates every alternative (seconds a building).
+	var v := PoiValidator.new()
+	v.layout = PoiLayout.compile(pd)
+	v.call(&"_run")
+	var layout: PoiLayout = v.layout
+	var t0: int = Time.get_ticks_msec()
 	var inst: PoiInstance = PoiBuilder.build(layout, StringName("audit/%s" % id))
 	parent.add_child(inst)
 	for f: int in 3:
 		await parent.get_tree().physics_frame
-	var found: Array[Dictionary] = TraversalAudit.audit(inst, v, parent.get_world_3d().direct_space_state)
+	var t1: int = Time.get_ticks_msec()
+	var found: Array[Dictionary] = TraversalAudit.audit(inst, v, inst.get_world_3d().direct_space_state)
+	if OS.has_environment("TRAVERSAL_TIMING"):
+		print("TRAVERSAL timing %s validate %d ms build %d ms audit %d ms" % [id, t0 - tv, t1 - t0, Time.get_ticks_msec() - t1])
 	inst.queue_free()
 	await parent.get_tree().process_frame
 	return found
