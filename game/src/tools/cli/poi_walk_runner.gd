@@ -11,6 +11,7 @@ extends Node
 ##                    a new game's)
 ##   --out DIR        where the JSON goes (default build/poi_walk)
 ##   --verbose        print every leg
+##   --plan           print each building's plan (levels, openings, stairs, ladders) first
 ## Exit code = buildings with blocking problems (a leg the body could not finish, or a room the
 ## layout reaches that the body never stood in).
 
@@ -20,6 +21,7 @@ var _ids: PackedStringArray = []
 var _seed: int = 4471
 var _out: String = "res://../build/poi_walk"
 var _verbose: bool = false
+var _plan: bool = false
 
 
 func _ready() -> void:
@@ -47,6 +49,8 @@ func _run() -> void:
 			continue
 		var pd: PoiDef = r[0]
 		print("[poi_walk] %s (%s) ..." % [id, pd.display_name])
+		if _plan:
+			_print_plan(pd)
 		var rep: Dictionary = await bot.call(&"walk", pd, r[1])
 		rep["walk_id"] = id
 		rep["seed"] = _seed
@@ -89,6 +93,8 @@ func _parse() -> void:
 				_out = a[i]
 			"--verbose":
 				_verbose = true
+			"--plan":
+				_plan = true
 			_:
 				_ids.append_array(a[i].split(",", false))
 		i += 1
@@ -108,6 +114,26 @@ func _parse() -> void:
 		for t2: String in ts:
 			for s: int in range(1, gen + 1):
 				_ids.append("gen:%s:%d" % [t2, s])
+
+
+## The compiled plan of every level with its openings, stairs, ladders and holes (generated
+## buildings have no JSON to read).
+func _print_plan(pd: PoiDef) -> void:
+	var l: PoiLayout = PoiLayout.compile(pd)
+	print("[poi_walk]   origin %s floor_height %.2f porch %s" % [l.origin, l.floor_height, l.style.get("porch", {})])
+	for li: int in l.level_ids:
+		print("[poi_walk]   level %d:" % li)
+		var plan: PackedStringArray = l.levels[li]["plan"]
+		for r: int in plan.size():
+			print("[poi_walk]   %3d %s" % [r, plan[r]])
+	for op: Dictionary in l.openings:
+		print("[poi_walk]   opening %s %s %s L%d at %s side %s" % [op["id"], op["type"], op["state"], op["level"], op["cell"], PoiLayout.SIDE_NAMES[int(op["side"])]])
+	for s: Dictionary in l.stairs:
+		print("[poi_walk]   stairs L%d from %s dir %s landing %s" % [s["level"], s["cell"], PoiLayout.SIDE_NAMES[int(s["dir"])], s["landing"]])
+	for ld: Dictionary in l.ladders:
+		print("[poi_walk]   ladder L%d at %s side %s landing %s" % [ld["level"], ld["cell"], PoiLayout.SIDE_NAMES[int(ld["side"])], ld.get("landing")])
+	for h: Dictionary in l.holes:
+		print("[poi_walk]   hole L%d at %s" % [h["level"], h["cell"]])
 
 
 func _file_name(id: String) -> String:
