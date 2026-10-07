@@ -1,0 +1,71 @@
+{
+ "_doc": "Keys and readable notes of the Dunmore Timber truck depot (w4_logging_truck_depot), forest set pieces round 4. Note items are note_<note id> (notes/wild4_depot.json); models from tools/assetgen/blender_catalogs/items_wild4_depot.py.",
+ "defs": [
+  {
+   "id": "w4_depot_parts_key",
+   "name": "Shop Key Ring",
+   "description": "Hank's key ring: a steel ring of truck keys and one brass padlock key on a leather fob stamped PARTS. It was in the inspection pit, on the creeper beside him.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_depot/w4_depot_parts_key"
+  },
+  {
+   "id": "w4_depot_office_key",
+   "name": "Dispatch Office Key",
+   "description": "A brass deadbolt key with a paper tag in the dispatcher's hand: OFFICE - SPARE. It hung on a nail over the parts counter.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_depot/w4_depot_office_key"
+  },
+  {
+   "id": "note_w4_depot_dispatch_log",
+   "name": "Dispatch Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_depot_dispatch_log",
+   "model": "items/wild4_depot/note_w4_depot_dispatch_log"
+  },
+  {
+   "id": "note_w4_depot_driver_letter",
+   "name": "Letter to Marla",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_depot_driver_letter",
+   "model": "items/wild4_depot/note_w4_depot_driver_letter"
+  },
+  {
+   "id": "note_w4_depot_closure_order",
+   "name": "Road Closure Order",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_depot_closure_order",
+   "model": "items/wild4_depot/note_w4_depot_closure_order"
+  },
+  {
+   "id": "note_w4_depot_weigh_tickets",
+   "name": "Weigh Ticket Book",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_depot_weigh_tickets",
+   "model": "items/wild4_depot/note_w4_depot_weigh_tickets"
+  }
+ ]
+}
