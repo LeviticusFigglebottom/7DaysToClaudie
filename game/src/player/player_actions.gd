@@ -31,6 +31,14 @@ func _player(args: Dictionary) -> PlayerState:
 	return Game.session.players.get(StringName(str(args.get("player", Game.session.local_player_id)))) if Game.session != null else null
 
 
+## The companion's own pack when `owner` names him (`companion:<id>`, ADR-0058 phase 2: he gathers,
+## fetches and stores through the same commands as the player), else null (the player's).
+func _crew_inventory(args: Dictionary) -> Inventory:
+	var o: String = str(args.get("owner", ""))
+	var c: Node = world.get(&"companion") if world != null and o.begins_with("companion:") else null
+	return c.call(&"inventory_of", StringName(o)) as Inventory if c != null and c.has_method(&"inventory_of") else null
+
+
 static func _fail(why: String) -> Dictionary:
 	return {"ok": false, "error": why}
 
@@ -313,9 +321,15 @@ func _progressed(p: PlayerState) -> void:
 
 func _pickup_stack(args: Dictionary) -> Dictionary:
 	var p: PlayerState = _player(args)
+	var crew: Inventory = _crew_inventory(args)
 	var stack: ItemStack = args.get("stack")
-	if p == null or stack == null:
+	if (p == null and crew == null) or stack == null:
 		return _fail("nothing")
+	if crew != null:
+		var c_left: int = crew.add(stack)
+		if stack.count - c_left > 0:
+			Events.item_picked_up.emit(StringName(str(args["owner"])), stack.item_id, stack.count - c_left)
+		return {"ok": c_left < stack.count, "left": c_left, "took": stack.count - c_left}
 	var left: int = p.inventory.add(stack)
 	var took: int = stack.count - left
 	if took > 0:
@@ -328,7 +342,10 @@ func _pickup_stack(args: Dictionary) -> Dictionary:
 
 
 func _pickup_item(args: Dictionary) -> Dictionary:
-	return _pickup_stack({"player": args.get("player"), "stack": ItemStack.make(StringName(str(args.get("item", ""))), int(args.get("count", 1)))})
+	var a: Dictionary = {"player": args.get("player"), "stack": ItemStack.make(StringName(str(args.get("item", ""))), int(args.get("count", 1)))}
+	if args.has("owner"):
+		a["owner"] = args["owner"]
+	return _pickup_stack(a)
 
 
 ## Containers expose `inventory` (Inventory) and `container_id`.
@@ -370,17 +387,20 @@ func _container_take_all(args: Dictionary) -> Dictionary:
 ## Stashes items: {player?, container, item, count, index?}; the index picks the exact stack.
 func _container_put(args: Dictionary) -> Dictionary:
 	var p: PlayerState = _player(args)
+	var crew: Inventory = _crew_inventory(args)
 	var c: Object = args.get("container")
-	if p == null or c == null or not is_instance_valid(c):
+	if (p == null and crew == null) or c == null or not is_instance_valid(c):
 		return _fail("no container")
+	# The companion stores from his own pack (by item, never by index).
+	var from: Inventory = crew if crew != null else p.inventory
 	var item_id := StringName(str(args.get("item", "")))
 	var n: int = int(args.get("count", 1))
-	var src: ItemStack = _indexed_stack(p, args)
+	var src: ItemStack = _indexed_stack(p, args) if crew == null else null
 	if args.has("index"):
 		if src == null or src.count < n:
 			return _fail("not carried")
 		item_id = src.item_id
-	if n <= 0 or not p.inventory.has(item_id, n):
+	if n <= 0 or not from.has(item_id, n):
 		return _fail("not carried")
 	var inv: Inventory = c.get(&"inventory")
 	var left: int = 0
@@ -391,13 +411,14 @@ func _container_put(args: Dictionary) -> Dictionary:
 		p.inventory.take_from(src, n - left)
 	else:
 		# Whatever does not fit goes back to the player, quality and wear intact.
-		for st: ItemStack in p.inventory.take(item_id, n):
+		for st: ItemStack in from.take(item_id, n):
 			var rest: int = inv.add(st)
 			if rest > 0:
 				st.count = rest
-				p.inventory.add(st)
+				from.add(st)
 				left += rest
-	Events.inventory_changed.emit(p.id)
+	if crew == null:
+		Events.inventory_changed.emit(p.id)
 	if c.has_method(&"on_contents_changed"):
 		c.call(&"on_contents_changed")
 	return {"ok": left < n, "left": left}

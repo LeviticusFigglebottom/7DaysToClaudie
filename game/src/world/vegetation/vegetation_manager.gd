@@ -780,8 +780,9 @@ func _fell(key: Vector2i, inst: VegetationScatter.Instance, sp: SpeciesDef, info
 	Game.session.stats["trees_felled"] = int(Game.session.stats.get("trees_felled", 0)) + 1
 	var p: PlayerState = Game.local_player()
 	if p != null:
-		p.progression.award("fell_tree")
-	Events.tree_felled.emit(id, inst.pos)
+		# The companion's trees pay the player a share (ADR-0058: he is the player's crew).
+		p.progression.award("fell_tree", CompanionDef.share_for(info.source_id))
+	Events.tree_felled.emit(id, inst.pos, info.source_id)
 
 
 ## Nearest loaded instance of a vegetation kind ("tree", "rock", ...): [chunk, Instance] or [].
@@ -882,13 +883,19 @@ func pick_harvestable(from: Vector3, dir: Vector3, reach: float) -> Object:
 
 
 func harvest(key: Vector2i, inst: VegetationScatter.Instance, player: Player) -> void:
+	harvest_into(key, inst, {"player": player.state.id})
+
+
+## Harvests an instance into whoever `who` names for world.pickup_item: {player} or {owner: the
+## companion's id} (ADR-0058 phase 2: he gathers into his own pack).
+func harvest_into(key: Vector2i, inst: VegetationScatter.Instance, who: Dictionary) -> void:
 	var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
 	var rng: RandomNumberGenerator = Game.session.rng.stream("harvest")
 	for item: Variant in sp.yields.keys():
 		var r: Array = sp.yields[item]
 		var n: int = rng.randi_range(int(r[0]), int(r[1]))
 		if n > 0:
-			var res: Dictionary = Game.execute(&"world.pickup_item", {"player": player.state.id, "item": item, "count": n})
+			var res: Dictionary = Game.execute(&"world.pickup_item", who.merged({"item": item, "count": n}))
 			# A full pack leaves the rest on the ground instead of destroying it.
 			var left: int = int(res.get("left", 0))
 			if left > 0:
