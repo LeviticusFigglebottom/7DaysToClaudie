@@ -6,7 +6,7 @@
       "name": "Ezra Vane",
       "description": "An earlier Remand convict, a lineman before that. He can follow, hold a spot and guard it, and he fights.",
       "enemy": "ezra_vane",
-      "camp": {"poi": "ezra_camp", "offset": [7.6, 6.2], "yaw": 160, "wake_range": 140, "sleep_range": 170},
+      "camp": {"poi": "ezra_camp", "offset": [7.4, 7.1], "yaw": 0, "wake_range": 140, "sleep_range": 170},
       "recruit_items": ["first_aid_kit", "painkillers"],
       "revive_items": ["first_aid_kit", "cloth_bandage"],
       "revive_hold": 4.0,
