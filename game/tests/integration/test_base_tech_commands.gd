@@ -238,6 +238,13 @@ func test_a_deadfall_drops_and_is_lifted_again() -> void:
 	assert_lt(e2.health, hp2, "and it drops again")
 
 
+func test_a_loaded_sprung_deadfall_shows_its_log_down() -> void:
+	BaseTech.world_state()["traps"]["s:df"] = {"armed": false}
+	var df: StructurePiece = _spawn(&"deadfall", &"s:df")
+	assert_almost_eq(df.tech._log.position.y, 0.18, 0.001, "the log lies where it fell")
+	assert_false(bool(Game.session.world.base_tech["traps"]["s:df"]["armed"]), "placing it didn't reset the saved state")
+
+
 func test_a_tripwire_rings_once_per_cooldown() -> void:
 	var tw: StructurePiece = _spawn(&"tripwire_bell", &"s:tw")
 	var e: Enemy = _enemy(Vector3(0, 0, 0))

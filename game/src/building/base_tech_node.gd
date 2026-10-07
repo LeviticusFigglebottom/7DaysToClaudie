@@ -62,8 +62,9 @@ static func attach(p: StructurePiece, base: MeshInstance3D) -> BaseTechNode:
 	v.trap = BaseTech.trap_kind(p.def)
 	v.power = BaseTech.power_kind(p.def)
 	p.add_child(base)
-	p.add_child(v)
+	# Built before it enters the tree: _ready shows the saved state (a sprung log, a lit lamp).
 	v._build(base)
+	p.add_child(v)
 	return v
 
 
