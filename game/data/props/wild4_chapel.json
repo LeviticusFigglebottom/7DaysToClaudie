@@ -95,7 +95,7 @@
    "hp": 220,
    "size": [
     1.6,
-    1.0,
+    1.1,
     0.7
    ],
    "blocks_sight": false,
@@ -259,7 +259,7 @@
   {
    "id": "w4_chapel_mausoleum_front",
    "name": "Teague Vault",
-   "description": "The Teague family vault dug into the bank behind the chapel: a dressed granite facade with a pediment and TEAGUE cut in the lintel, rubble wing walls holding the bank back and turf, ferns and young firs over its roof, the iron door's opening (shell over the POI kit room: origin at the room's plan centre on the ground, place it y = -floor_height).",
+   "description": "The Teague family vault dug into the bank behind the chapel: a dressed granite front with pilasters, a carved lintel and a pediment, rubble wing walls holding the bank back and turf, ferns and young firs over its roof, the iron door's opening (shell over the POI kit room: origin at the room's plan centre on the ground, place it y = -floor_height).",
    "tags": [
     "structure",
     "exterior",
@@ -272,9 +272,9 @@
    "collision": "none",
    "physics": "static",
    "size": [
-    5.0,
-    4.6,
-    7.6
+    5.4,
+    4.8,
+    7.5
    ],
    "blocks_sight": false,
    "rooms": [
@@ -528,7 +528,7 @@
    "hp": 150,
    "size": [
     0.6,
-    1.25,
+    1.3,
     0.45
    ],
    "container": "w4_chapel_reliquary",
