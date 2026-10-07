@@ -1,0 +1,21 @@
+{
+	"_doc": "Cave generator settings (ADR-0056, docs/CAVES_PLAN.md). Read by CavePlan.build / CaveSites through the config dictionary passed in (the planner never reads Content itself). Lengths, radii and distances are metres; angles are degrees. A style's ranges are [min, max] picked by the cave's seed. Changing a shape number changes every cave: bump CavePlan.GEN_VERSION with it.",
+	"min_cover": 2.0,
+	"min_clear": 2.2,
+	"min_mouth_r": 1.4,
+	"min_slope_deg": 18.0,
+	"search": 12.0,
+	"region_margin": 32.0,
+	"outside": 1.5,
+	"step": 1.0,
+	"floor_drop": 0.55,
+	"pitch_deg": [-12.0, -4.0],
+	"yaw_wander_deg": 22.0,
+	"pitch_wander_deg": 3.0,
+	"apron": 3.0,
+	"warp": {"_doc": "Seeded 3D lattice (cell metres, cells per side, amplitude metres) warping the capsule distance; precomputed per plan.", "cell": 2.0, "size": 16, "amp": 0.45},
+	"styles": {
+		"shelter": {"length": [6.0, 10.0], "radius": [2.5, 3.5], "taper": 0.85, "points": [3, 4], "chamber": [], "pocket_chance": 0.0},
+		"grotto": {"length": [12.0, 30.0], "radius": [1.9, 2.6], "taper": 1.0, "points": [4, 6], "chamber": [5.0, 9.0], "chamber_height": [3.2, 4.5], "pocket_chance": 0.5, "pocket_radius": [1.6, 2.2]}
+	}
+}

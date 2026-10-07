@@ -1,0 +1,87 @@
+class_name CaveSet
+extends RefCounted
+## An immutable set of CavePlans with a 64 m grid index (TD-104: published whole, never mutated,
+## so worker threads may hold one while the main thread swaps in a new set).
+
+const CELL: float = 64.0
+
+var plans: Array[CavePlan] = []
+var _grid: Dictionary = {}
+
+
+## Combines CaveSets and/or CavePlans (parts) with the runtime plans in `extra` (id -> CavePlan).
+## Failed plans (ok = false) are left out; the first plan of an id wins.
+static func combined(parts: Array, extra: Dictionary) -> CaveSet:
+	var s := CaveSet.new()
+	var seen: Dictionary = {}
+	for part: Variant in parts:
+		if part is CaveSet:
+			for p: CavePlan in (part as CaveSet).plans:
+				s._add(p, seen)
+		elif part is CavePlan:
+			s._add(part as CavePlan, seen)
+	for k: Variant in extra:
+		if extra[k] is CavePlan:
+			s._add(extra[k] as CavePlan, seen)
+	return s
+
+
+func _add(p: CavePlan, seen: Dictionary) -> void:
+	if p == null or not p.ok or seen.has(p.id):
+		return
+	seen[p.id] = true
+	plans.append(p)
+	for c: Vector2i in _cells(p.aabb):
+		if not _grid.has(c):
+			_grid[c] = []
+		(_grid[c] as Array).append(p)
+
+
+static func _cells(box: AABB) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for cz: int in range(int(floor(box.position.z / CELL)), int(floor(box.end.z / CELL)) + 1):
+		for cx: int in range(int(floor(box.position.x / CELL)), int(floor(box.end.x / CELL)) + 1):
+			out.append(Vector2i(cx, cz))
+	return out
+
+
+## The plans whose bounds meet `box`.
+func touching(box: AABB) -> Array[CavePlan]:
+	var out: Array[CavePlan] = []
+	for c: Vector2i in _cells(box):
+		for p: CavePlan in _grid.get(c, []):
+			if not out.has(p) and p.aabb.intersects(box):
+				out.append(p)
+	return out
+
+
+func _at(x: float, z: float) -> Array:
+	return _grid.get(Vector2i(int(floor(x / CELL)), int(floor(z / CELL))), [])
+
+
+func is_inside(p: Vector3, ground_y: float) -> bool:
+	for plan: CavePlan in _at(p.x, p.z):
+		if plan.aabb.has_point(p) and plan.is_inside(p, ground_y):
+			return true
+	return false
+
+
+## The highest cave floor under p over all caves; NAN when p is over no cave air.
+func floor_below(p: Vector3) -> float:
+	var best: float = NAN
+	for plan: CavePlan in _at(p.x, p.z):
+		var f: float = plan.floor_below(p)
+		if not is_nan(f) and (is_nan(best) or f > best):
+			best = f
+	return best
+
+
+func keep_out(x: float, z: float) -> bool:
+	for plan: CavePlan in _at(x, z):
+		if plan.keep_out(x, z):
+			return true
+	return false
+
+
+func is_empty() -> bool:
+	return plans.is_empty()
