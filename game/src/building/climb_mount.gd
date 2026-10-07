@@ -179,10 +179,14 @@ static func _stand_stand_in(s: Dictionary) -> Node3D:
 		mi.mesh = bm
 		mi.position = b[1]
 		root.add_child(mi)
-	# The ladder: two rails 0.09-0.16 m in front of its foot, rungs every 0.3 m.
-	var foot: Vector3 = _v3(s.get("foot", []))
-	var face: Vector3 = _v3(s.get("face", []), Vector3.BACK).normalized()
-	var height: float = float(s.get("height", 3.0))
+	root.add_child(ladder_stand_in(_v3(s.get("foot", [])), _v3(s.get("face", []), Vector3.BACK), float(s.get("height", 3.0))))
+	return root
+
+
+## A plain ladder: two rails 0.09-0.16 m in front of its foot (toward `face`), rungs every 0.3 m.
+static func ladder_stand_in(foot: Vector3, face: Vector3, height: float) -> Node3D:
+	var root := Node3D.new()
+	face = face.normalized()
 	var side: Vector3 = face.cross(Vector3.UP).normalized()
 	var lb := Basis.looking_at(-face, Vector3.UP)
 	var pole: StandardMaterial3D = _mat(Color(0.5, 0.38, 0.25))

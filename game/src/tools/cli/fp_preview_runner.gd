@@ -86,6 +86,16 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "pipe_inspect_turn", "item": "steel_pipe", "action": "fp_inspect_club", "frame": 44},
 	{"name": "knife_inspect", "item": "kitchen_knife", "action": "fp_inspect_knife", "frame": 20},
 	{"name": "knife_inspect_turn", "item": "kitchen_knife", "action": "fp_inspect_knife", "frame": 40},
+	# Climbing (ADR-0057): hand over hand on a ladder's rails (each hand mid-reach, both gripping),
+	# the grab-on, the let-go, and on a rope; the rails/rope stand where Player hangs the climber.
+	{"name": "climb_ladder_a", "item": "", "action": "fp_climb_cycle", "frame": 21, "rails": "ladder"},
+	{"name": "climb_ladder_b", "item": "", "action": "fp_climb_cycle", "frame": 51, "rails": "ladder"},
+	{"name": "climb_ladder_grip", "item": "", "action": "fp_climb_cycle", "frame": 36, "rails": "ladder"},
+	{"name": "climb_grab", "item": "", "action": "fp_climb_grab", "frame": 6, "rails": "ladder"},
+	{"name": "climb_release", "item": "", "action": "fp_climb_release", "frame": 5, "rails": "ladder"},
+	{"name": "climb_rope_a", "item": "", "action": "fp_climb_rope_cycle", "frame": 21, "rails": "rope"},
+	{"name": "climb_rope_b", "item": "", "action": "fp_climb_rope_cycle", "frame": 51, "rails": "rope"},
+	{"name": "climb_rope_grab", "item": "", "action": "fp_climb_rope_grab", "frame": 6, "rails": "rope"},
 ]
 
 var _out: String = "res://../build/fp_preview"
@@ -98,6 +108,8 @@ var _vm: ViewModel
 var _sun: DirectionalLight3D
 var _env: Environment
 var _torch_light: OmniLight3D
+## The climbing shots' ladder or rope in front of the camera (null when none is shown).
+var _rails: Node3D = null
 
 
 func _ready() -> void:
@@ -219,6 +231,7 @@ func _shoot(shot: Dictionary) -> void:
 	_vm.tether.state = TetherRaise.State.LOWERED
 	_vm.qa_base = StringName(str(shot.get("base", "")))
 	_vm.show_item(StringName(str(shot.get("item", ""))))
+	_show_rails(str(shot.get("rails", "")))
 	_vm.motion.equip = 1.0
 	if bool(shot.get("guard", false)):
 		_vm.set_guard(true)
@@ -254,3 +267,27 @@ func _shoot(shot: Dictionary) -> void:
 	img.save_png(path)
 	print("FP_PREVIEW %s" % path)
 	_head.rotation.y = 0.0
+
+
+## A ladder (the kit's, else rails and rungs of its own) or a climbing rope where Player hangs a
+## climber (0.42 m out from the ladder's foot): the rails ~0.3 m ahead of the eye.
+func _show_rails(kind: String) -> void:
+	if _rails != null:
+		_rails.queue_free()
+		_rails = null
+	if kind == "":
+		return
+	_rails = Node3D.new()
+	_head.get_parent().add_child(_rails)
+	var foot := Vector3(0.0, 0.0, -0.42)
+	if kind == "rope":
+		_rails.add_child(ClimbMount.rope_visual(foot + Vector3(0, 0, 0.12), foot + Vector3(0, 3.2, 0.12)))
+		return
+	var kit: Mesh = ModelLibrary.generated_mesh("kit/ladder_3m")
+	if kit != null:
+		var mi := MeshInstance3D.new()
+		mi.mesh = kit
+		mi.position = foot
+		_rails.add_child(mi)
+		return
+	_rails.add_child(ClimbMount.ladder_stand_in(foot, Vector3.BACK, 3.0))
