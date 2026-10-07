@@ -1,5 +1,5 @@
 {
- "_doc": "Farm props family materials (the Okafor farm). Textures from tools/assetgen/textures/gen/farm.py, plus shared sets from the exterior/interior families (car_paint, car_rust, wood_weathered, window_grime, moss). Vertex colour G drives the 'wear' layer (bare wood under paint, rust under galvanising), B drives moss/mould. Models: tools/assetgen/blender/generators/props_farm.py.",
+ "_doc": "Farm props family materials (the Okafor farm). Textures from tools/assetgen/textures/gen/farm.py, plus shared sets from the exterior/interior families (car_paint, car_rust, wood_weathered, window_grime, moss). Vertex colour G drives the 'wear' layer (bare wood under paint, rust under galvanising), B drives moss/mould. Models: tools/assetgen/blender/generators/props_farm.py. farm_jar_glass is tinted dark (TD-238): a near-white tint was a milky diffuse layer that, with the fresnel rise over a jar's facets, hid the preserves, so jars on a dim shelf read as white blocks; its reflection comes from the specular.",
  "materials": {
   "farm_hay": {
    "shader": "std_surface",
@@ -202,8 +202,8 @@
    "params": {
     "uv_scale": 4.0,
     "vertex_ao_strength": 1.0,
-    "tint": "#d8ebe4",
-    "opacity": 0.12,
+    "tint": "#46544f",
+    "opacity": 0.08,
     "roughness_mult": 0.5,
     "grime_amount": 0.12
    }
@@ -418,7 +418,9 @@
     "winter_leaf_loss": 0.0,
     "sway_height": 1000.0,
     "stiffness": 10.0,
-    "flutter_strength": 0.0
+    "flutter_strength": 0.0,
+    "mip_alpha_scale": 0.0,
+    "coverage_dither": 1.0
    }
   },
   "farm_trough_water": {

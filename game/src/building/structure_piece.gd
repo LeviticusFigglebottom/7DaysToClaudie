@@ -40,6 +40,8 @@ var _leaf_shape: CollisionShape3D = null
 var door_open: bool = false
 ## A garden bed's or rain catcher's plants and water (ADR-0049), null for every other piece.
 var farm_visual: FarmVisual = null
+## A base trap's or powered piece's behaviour and look (ADR-0052), null for every other piece.
+var tech: BaseTechNode = null
 ## Stairs: rise and run of the flight (8 courses of logs over 3.6 m).
 const STAIR_RISE: float = 2.32
 const STAIR_RUN: float = 3.6
@@ -77,6 +79,9 @@ func _build_visual() -> void:
 	_mesh = MeshInstance3D.new()
 	if FarmVisual.handles(def):
 		farm_visual = FarmVisual.attach(self, _mesh)
+		return
+	if BaseTechNode.handles(def):
+		tech = BaseTechNode.attach(self, _mesh)
 		return
 	if ClimbMount.handles(def):
 		ClimbMount.build(self, _mesh)  # a hunting stand's ladder, a hung rope (ADR-0057)
@@ -527,6 +532,8 @@ func interact_text(player: Player) -> String:
 		return ""
 	if Farming.is_farm(def):
 		return FarmManager.prompt(self, player)
+	if tech != null:
+		return BaseTechManager.prompt(self, player)
 	if def.piece_kind == "door":
 		return "Close door" if door_open else "Open door"
 	if rack_capacity() > 0:
@@ -579,6 +586,9 @@ func interact(player: Player) -> void:
 	if Farming.is_farm(def):
 		FarmManager.act(self, player)
 		return
+	if tech != null:
+		BaseTechManager.act(self, player)
+		return
 	if def.piece_kind == "door":
 		Game.execute(&"build.toggle_door", {"player": player.state.id, "piece": String(piece_id)})
 		return
@@ -608,12 +618,16 @@ func interact(player: Player) -> void:
 
 ## The second action (hold the cancel key): a garden bed is watered, a rain catcher drunk from.
 func alt_interact_text(player: Player) -> String:
+	if tech != null and not _dismantling(player):
+		return BaseTechManager.alt_prompt(self, player)
 	return FarmManager.alt_prompt(self, player) if Farming.is_farm(def) and not _dismantling(player) else ""
 
 
 func alt_interact(player: Player) -> void:
 	if Farming.is_farm(def):
 		FarmManager.alt_act(self, player)
+	elif tech != null:
+		BaseTechManager.alt_act(self, player)
 
 
 ## Containers: persist contents whenever they change.

@@ -1237,9 +1237,12 @@ def _shell_box_walls(ctx, room, ops, *, z0, z1, mat, off=0.12, rib=0.0, seed=0):
                 p0 = st + along * s0
                 p1 = st + along * s1
                 pan = K.quad_sheet(f"{side}p{i}_{s0:.2f}", (p0.x, p0.y, za), (p1.x, p1.y, za), (p1.x, p1.y, zb), (p0.x, p0.y, zb),
-                                   max(1, int((s1 - s0) / 1.0)), max(1, int((zb - za) / 1.0)))
+                                   max(1, int((s1 - s0) / 0.4)), max(1, int((zb - za) / 0.4)))
                 K.solidify(pan, 0.03, offset=1.0 if side in ("N", "E") else -1.0)
-                ctx.add(pan, mat, uv="box", uv_scale=1.0, patches=0.5)
+                # Wear patches are per-vertex: on a 1 m grid one patch interpolated across a whole
+                # end wall into a single oval of paint in a field of rust (TD-238). A 0.4 m grid and
+                # lighter patches give scattered rust spots and runs on a white body.
+                ctx.add(pan, mat, uv="box", uv_scale=1.0, patches=0.3)
         for (a, b, hz0, hz1) in holes:
             for t in (a, b):
                 p = st + along * t
@@ -1270,8 +1273,10 @@ def w3_reefer_shell(ctx: K.Ctx) -> None:
     z0, z1 = fh - 0.18, fh + 3.02
     _shell_box_walls(ctx, room, ops, z0=z0, z1=z1, mat="t3_trailer_white", rib=0.5, seed=ctx.seed)
     hw, hd = room.w / 2 + 0.15, room.d / 2 + 0.15
-    roof = K.box("roof", (2 * hw + 0.04, 2 * hd + 0.04, 0.05), center=(0, 0, z1 + 0.025))
-    ctx.add(roof, "t3_trailer_white", uv="box", uv_scale=1.0, patches=0.5)
+    # Big flat parts on few vertices: light wear patches, or one interpolated patch rusts them whole
+    # (TD-238, as on the walls).
+    roof = K.box("roof", (2 * hw + 0.04, 2 * hd + 0.04, 0.05), center=(0, 0, z1 + 0.025), cuts=(6, 18, 0))
+    ctx.add(roof, "t3_trailer_white", uv="box", uv_scale=1.0, patches=0.25)
     for sx in (-1, 1):
         W.bar(ctx, f"rail{sx}", (sx * hw, -hd, z1 + 0.06), (sx * hw, hd, z1 + 0.06), 0.06, 0.08, "road_alu")
         W.bar(ctx, f"skirt{sx}", (sx * hw, -hd, z0 - 0.02), (sx * hw, hd, z0 - 0.02), 0.06, 0.12, "road_alu")
@@ -1283,7 +1288,7 @@ def w3_reefer_shell(ctx: K.Ctx) -> None:
             ctx.add(tie, "wood_creosote", uv="box", uv_scale=1.0, patches=0.6)
     # The reefer unit on the north wall, above the kit wall's top.
     unit = K.box("unit", (2.0, 0.55, 1.4), center=(0, hd + 0.3, z1 - 0.8), bevel=0.04)
-    ctx.add(unit, "t3_trailer_white", uv="box", uv_scale=1.0, patches=0.6)
+    ctx.add(unit, "t3_trailer_white", uv="box", uv_scale=1.0, patches=0.2)
     grille = K.box("grille", (1.5, 0.02, 0.6), center=(0, hd + 0.58, z1 - 1.0))
     ctx.add(grille, "road_steel_dark", uv="box", uv_scale=4.0)
     fan = W.ring_obj("fan", 0.2, 0.28, 0.02, segs=18)
@@ -1296,7 +1301,7 @@ def w3_reefer_shell(ctx: K.Ctx) -> None:
     for sx in (-1, 1):
         lf = K.box(f"rear_leaf{sx}", (0.04, hw - 0.05, z1 - z0 - 0.1), center=(sx * (hw + 0.05), -hd + (hw - 0.05) / 2 + 0.05,
                                                                               (z0 + z1) / 2))
-        ctx.add(lf, "t3_trailer_white", uv="box", uv_scale=1.0, patches=0.6)
+        ctx.add(lf, "t3_trailer_white", uv="box", uv_scale=1.0, patches=0.2)
     for sx in (-1, 1):
         _face(ctx, f"stencil{sx}", 1.8, 0.6, _rect("morgue"), (sx * (hw + 0.035), 0.4, z1 - 1.0), 90.0 * sx)
     _ = math

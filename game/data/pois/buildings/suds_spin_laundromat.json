@@ -184,7 +184,7 @@
         {"prop": "pallet", "pos": [3.4, -2.6], "rot": 8},
         {"prop": "shopping_cart", "pos": [-1.4, 16.4], "rot": 70},
         {"prop": "fire_hydrant", "pos": [13.4, 18.4]},
-        {"prop": "chair_wood", "pos": [12.6, 6.4], "level": 1, "rot": -60},
+        {"prop": "chair_wood", "pos": [13.3, 7.1], "level": 1, "rot": -60},
         {"id": "hall_trash", "prop": "trash_bag", "pos": [0.5, 7.4], "level": 1, "rot": 10},
         {"prop": "rug_rect", "pos": [2.3, 6.95], "level": 1, "rot": 0, "variant": "worn", "route_ok": true},
         {"id": "hall_coat_rack", "prop": "civic_coat_rack", "at": [3, 6], "against": "N", "rot": 0, "level": 1, "variant": "worn"},

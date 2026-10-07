@@ -71,18 +71,49 @@ def _write_material(mat_id: str, spec: dict, out_path: pathlib.Path, available: 
         params.append(f'shader_parameter/{slot} = ExtResource("{len(ext)}")')
     for k, v in sorted(spec.get("params", {}).items()):
         params.append(f"shader_parameter/{k} = {_gd_value(v)}")
+    # Fur shells (TD-067): "shells": {"count", "length", ...} chains `count` passes of fur_shell.gdshader
+    # behind the material (next_pass), each a slice higher up the hair, with the coat's params.
+    shells = spec.get("shells")
+    subs: list[list[str]] = []
+    if shells:
+        ext.append(("Shader", f"{SHADER_DIR}/fur_shell.gdshader", ""))
+        shell_shader = len(ext)
+        count = int(shells.get("count", 3))
+        coat = {k: v for k, v in spec.get("params", {}).items() if k in _SHELL_COAT_PARAMS}
+        albedo = [p for p in params if p.startswith("shader_parameter/albedo_tex ")]
+        extra = {k: v for k, v in shells.items() if k != "count"}
+        # Sub-resources must precede their use: the top shell first, each pointing at the next.
+        for i in range(count, 0, -1):
+            sp = [f'[sub_resource type="ShaderMaterial" id="shell_{i}"]', f"render_priority = {i}",
+                  f'shader = ExtResource("{shell_shader}")']
+            if i < count:
+                sp.append(f'next_pass = SubResource("shell_{i + 1}")')
+            sp += albedo
+            for k, v in sorted({**coat, **extra, "shell_k": i / count}.items()):
+                key = {"length": "shell_length"}.get(k, k)
+                sp.append(f"shader_parameter/{key} = {_gd_value(v)}")
+            subs.append(sp)
     uid = uid_for_res_path(f"res://assets/generated/materials/{mat_id}.tres")
-    lines = [f'[gd_resource type="ShaderMaterial" load_steps={len(ext) + 1} format=3 uid="{uid}"]', ""]
+    lines = [f'[gd_resource type="ShaderMaterial" load_steps={len(ext) + len(subs) + 1} format=3 uid="{uid}"]', ""]
     for i, (typ, path, tuid) in enumerate(ext, start=1):
         u = f' uid="{tuid}"' if tuid else ""
         lines.append(f'[ext_resource type="{typ}"{u} path="{path}" id="{i}"]')
+    for sp in subs:
+        lines += [""] + sp
     lines += ["", "[resource]", f'resource_name = "{mat_id}"']
     if "render_priority" in spec:
         lines.append(f"render_priority = {int(spec['render_priority'])}")
+    if subs:
+        lines.append('next_pass = SubResource("shell_1")')
     lines.append('shader = ExtResource("1")')
     lines += params
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text("\n".join(lines) + "\n")
+
+
+# fur.gdshader params a fur material's shells share (fur_shell.gdshader declares the same names).
+_SHELL_COAT_PARAMS = ("base_color", "pale_color", "dark_color", "uv_scale", "grain", "roughness", "vertex_ao_strength",
+                      "sheen", "sheen_tint", "backlight_amount", "backlight_color")
 
 
 def _gd_value(v) -> str:

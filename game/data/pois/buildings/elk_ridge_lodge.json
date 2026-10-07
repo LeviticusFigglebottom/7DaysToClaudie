@@ -20,7 +20,7 @@
    "story": "Arne Solberg guided elk hunts out of Elk Ridge Lodge for thirty years and his wife Marit fed the hunters. The Pike party came up for rifle season the week the Cordon closed the bridge, and stayed to hunt. On the high meadow they found a bull elk standing in the creek with its eyes open; it did not run, and Gordon Pike shot it anyway. Arne dressed it in the skinning shed and hung the quarters on the rail in the cellar. Three days later the hunters were running fevers. The hounds went through the kennel wire in the night and were heard on the ridge until morning. Arne went down to the cellar to cut the elk and did not come back up; his keys are on the hook by the locker door, where he hung them so that nobody would have to come near him. The hunters sit round the cold hearth under the antlers. Marit took the rifles into the gun room, wired a shotgun behind its door and turned the deadbolt.",
    "population": "hunters",
    "style": {
-    "exterior": "wood_paneling_dark",
+    "exterior": "log_chinked",
     "interior": "wood_paneling_dark",
     "floor": "wood_pine",
     "ceiling": "wood_paneling_dark",
@@ -967,7 +967,7 @@
      "id": "boot_coats",
      "prop": "civic_coat_rack",
      "pos": [
-      18.4,
+      19.6,
       12.5
      ],
      "variant": "worn"
