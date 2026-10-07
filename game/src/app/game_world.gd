@@ -358,6 +358,7 @@ const MODULES: Array = [
 	["farming", "res://src/building/farm_manager.gd", "Raising what you built…"],
 	["pois", "res://src/poi/poi_manager.gd", "Raising the town…"],
 	["ai", "res://src/ai/ai_director.gd", "Stirring the Hollowed…"],
+	["nests", "res://src/world/bloom/bloom_nests.gd", "Stirring the Hollowed…"],
 	["ambience", "res://src/audio/ambience_director.gd", "Listening…"],
 	["supply_drops", "res://src/world/supply_drops.gd", "Listening…"],
 	["directives", "res://src/progression/directive_tracker.gd", "Listening…"],

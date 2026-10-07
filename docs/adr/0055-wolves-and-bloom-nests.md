@@ -72,6 +72,49 @@ content kind `nest`) holds its props (generated: `nest_root_mass`, `nest_pod`, `
 * **Save.** `WorldState.nests` (new key, loads empty, no version bump): `{placement id: {burned,
   hp, seeded_dead: [..]}}`.
 
+#### What landed (nests)
+* **Content.** Kind `nest` (`NestDef`, `game/src/core/content/defs/nest_def.gd`; data
+  `game/data/nests/nests.json`): `props` [{prop, offset, rot, scale, pod}], `core` {offset, size},
+  `bloom` {radius, strength}, `seed` {enemies (weighted), count, sleepers, range, leave_range,
+  respawn_hours, tier, ring}, `hp`, `burn` {seconds, scream, fade_hours}, `loot`, `loot_rolls`, `xp`.
+  Unknown keys are errors; props, enemies and the loot table are cross-checked. Two nests:
+  `root_knot` (a young knot, one pod, 80 hp, 3 guards) and `hollow_nest` (the full cage with three
+  pods, two shelf stumps and two sets of remains, 180 hp, 6 Seeded guards). Loot: `nest_loot`
+  (`data/loot/tables/nests.json`: mycelium and a core sample guaranteed, plus `nest_victims_gear`).
+* **Props.** `props_bloom_nest.py` (catalog `blender_catalogs/props_bloom_nest.py`, defs
+  `data/props/bloom_nest.json`, materials `data/materials/props_bloom_nest.json`):
+  `nest_root_mass` (twelve roots out of a fused collar arching over the heart, three curling out as
+  claws, a lintel over the mouth, bracket shelves, slung threads and hanging sacs, the heart a knot
+  of translucent flesh with glowing veins), `nest_pod`, `nest_shelf_cluster`, `nest_remains` (a
+  skeleton bound in felt, a torn pack and a can). The living ones are on the `bloom_fungus` shader,
+  so their threads, veins and gills glow at night with the Bloom's own `hm_bloom_glow`; each has a
+  `destroyed` (burned) variant but the remains. Every prop falls back to a box of its size.
+  `preview_asset.gd --global hm_bloom_night=1` shows the night glow.
+* **Module.** `BloomNests` (`game/src/world/bloom/bloom_nests.gd`, GameWorld module `nests`):
+  `place(id, def_id, pos, yaw)`; the scatter's contract `on_place({id, kind, def, pos, yaw, region,
+  seed})` / `on_unplace(id)`, registered as kind `nest` with `Encounters.register_kind` when a world
+  module `encounters` or a global class `Encounters` exists (yaw in radians); region features
+  `{"type": "nest", "id", "def", "at": [x, z], "yaw": degrees}` placed when their region attaches and
+  un-placed when it detaches (ids `<region>:<id>`). A nest's core is a static box that takes fire
+  damage only (the torch: `damage_type` fire); other hits thud and remind the player. Guards are
+  Enemies with `poi` `nest:<id>` (the director neither counts nor despawns them; they wander within
+  12 m of home), sleepers in the inner ring, wanderers outside; a killed slot is saved with its time
+  and comes back out of a pod after `respawn_hours`. Burning: flames (PropLights fire) on the heart
+  and pods, a pitched-down Keener scream that is a `Stimuli` sound of `burn.scream` metres, the
+  guards `ambush` the player; then loot from the pods, `burn_nest` XP (progression.json) to the
+  burner, `Events.nest_burned` (DirectiveTracker event `burn_nest`, directive `bloom_nest` in
+  chapter 4), the burned props.
+* **Bloom ground.** The field's zones are fixed once built (worker threads read them unlocked), so a
+  nest is a spot: `BloomWorld.set_spot_source(&"nests", spots)` (the rooting mounds are source
+  `&"mounds"`), every placed nest re-sent when one changes, strengths quantised to 0.01, fading to
+  nothing over `burn.fade_hours` once burned. This branch carries a local `set_spot_source` over
+  `BloomField.set_spots`; the hub's BloomTiles version (f5dbc8a) has the same signature.
+* **Save.** `WorldState.nests` {placement id: {burned, hp, seeded_dead: [{i, at}], burned_at}}; loads
+  empty, no version bump. A nest saved mid-burn (hp 0, not burned) catches again when placed.
+* **Map.** `d6_larch_hollow` has a `hollow_nest` (`deep_wood_nest`) at (268, 1694) in the deep larch
+  wood between the Tamsin and the Ashen watch camp, its mouth turned down toward the river.
+* Tests: `tests/integration/test_bloom_nests.gd`. Gaps: TD-254..258.
+
 ### Not in this ADR
 Wolves fighting the Hollowed or hounds; packs claiming territory; Ezra Vane (his own ADR next); nest
 spreading over weeks; the Ashen burning nests.
@@ -81,4 +124,4 @@ spreading over weeks; the Ashen burning nests.
 * The deep woods have places to find and a fire-based objective that rewards preparation.
 * Wolves reuse the hound brain, so the shared AI files take only data and a prey hook; nests are
   a self-contained module behind the hub's scatter.
-* Gaps go in TD-249..258.
+* Gaps go in TD-249..258 (nests: TD-254..258).
