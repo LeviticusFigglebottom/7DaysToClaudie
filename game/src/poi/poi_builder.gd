@@ -1358,9 +1358,22 @@ func _scatter_cell(li: int, c: Vector2i, density: float) -> void:
 			"against": PoiLayout.SIDE_NAMES[side], "rot": [0.0, -90.0, 180.0, 90.0][side] + _rng.randf_range(-25, 25)}
 		var xf: Transform3D = _prop_xf(entry, pd2)
 		var cond: String = "destroyed" if _rng.randf() < _decay * 0.3 else "worn"
-		_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)
+		# Not where a door leaf swings (ADR-0051). The draws above still happen, so every other
+		# cell's scatter stays where it was.
+		if not _by_door(li, c):
+			_add("@" + pd2.model_for(cond), xf, Color(0, 0, 0, 0), true)
 		_occupied[k] = true
 		break
+
+
+## Whether a door (a leaf that swings) opens on one of the cell's sides.
+func _by_door(li: int, c: Vector2i) -> bool:
+	for side: int in 4:
+		var e: Array = PoiLayout.side_edge(c, side)
+		var op: Dictionary = (layout.walls.get(PoiLayout.edge_key(li, e[0], e[1]), {}) as Dictionary).get("opening", {})
+		if not op.is_empty() and str(op["type"]).begins_with("door"):
+			return true
+	return false
 
 
 ## SDFGI occludes the sky indoors, which leaves rooms near-black even at noon. Interior reflection
