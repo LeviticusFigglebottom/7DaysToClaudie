@@ -320,3 +320,31 @@ func _rt(w: WorldDef, rid: String, spacing: float, roads: bool) -> RegionTerrain
 	rt.palette = TerrainComposer.DEFAULT_PALETTE
 	rt.biome_ids = PackedStringArray(["conifer_forest"])
 	return rt
+
+
+## Runtime spots from two sources (rooting mounds, Bloom nests): each source sets or clears its own
+## without clobbering the other's, and a fade is the same source set again at a lower strength.
+func test_spot_sources_merge_and_clear_independently() -> void:
+	var tiles: BloomTiles = BloomTiles.from_zones(_zones(), COVER, _cfg())
+	var bw := BloomWorld.new()
+	add_child_autofree(bw)
+	bw.setup(tiles, null, Vector2(0, 0), _cfg())
+	var mound := Vector2(400, 300)
+	var nest := Vector2(-400, 300)
+	var m0: float = tiles.at(mound.x, mound.y)
+	var n0: float = tiles.at(nest.x, nest.y)
+	bw.set_spots([{"pos": mound, "radius": 3.0, "strength": 0.9}])
+	bw.set_spot_source(&"nests", [{"pos": nest, "radius": 12.0, "strength": 1.0}])
+	var m1: float = tiles.at(mound.x, mound.y)
+	var n1: float = tiles.at(nest.x, nest.y)
+	assert_gt(m1, m0 + 0.3, "the mound shows")
+	assert_gt(n1, n0 + 0.3, "the nest shows beside it")
+	bw.set_spot_source(&"nests", [{"pos": nest, "radius": 12.0, "strength": 0.4}])
+	var n2: float = tiles.at(nest.x, nest.y)
+	assert_between(n2, n0 + 0.05, n1 - 0.1, "a fading nest is weaker")
+	assert_almost_eq(tiles.at(mound.x, mound.y), m1, 1e-6, "the mound is untouched by the nest's fade")
+	bw.set_spot_source(&"nests", [])
+	assert_almost_eq(tiles.at(nest.x, nest.y), n0, 1e-6, "a burned-out nest leaves the authored field")
+	assert_almost_eq(tiles.at(mound.x, mound.y), m1, 1e-6, "and keeps the mound")
+	bw.set_spots([])
+	assert_almost_eq(tiles.at(mound.x, mound.y), m0, 1e-6, "the mounds clear on their own")
