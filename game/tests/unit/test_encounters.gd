@@ -13,7 +13,7 @@ const LARCH: String = "d6_larch_hollow"
 const SEED: int = 4471
 
 var _prev: GameSession
-static var _larch: RegionTerrain = null
+var _larch: RegionTerrain = null
 
 
 ## What Encounters reads from its world.
@@ -51,7 +51,7 @@ func after_each() -> void:
 	Content.remove_runtime_def(&"encounter", &"test_sleepers")
 
 
-static func _region() -> RegionTerrain:
+func _region() -> RegionTerrain:
 	if _larch == null:
 		_larch = TerrainComposer.get_or_compose(WorldDef.load_from(MAIN_MAP), LARCH, 8.0)
 	return _larch
