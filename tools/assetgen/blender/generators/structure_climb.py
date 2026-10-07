@@ -149,16 +149,16 @@ def climbing_rope_coil(p, outputs):
     r = random.Random(seed)
     mb = K.MB()
     for t in range(6):
-        rr = 0.17 + r.uniform(-0.01, 0.01)
+        rr = 0.12 + r.uniform(-0.008, 0.008)
         ph = r.uniform(0, 6.28)
         pts = [G(math.cos(ph + 2 * math.pi * i / 20) * rr, 0.013 + (t % 3) * 0.02, math.sin(ph + 2 * math.pi * i / 20) * rr * 0.92)
                for i in range(20)]
         K.tube(mb, pts, 0.012, sides=6, mat=ROPE, closed=True)
     for k, a in enumerate((0.3, 2.4, 4.4)):
-        _knot(mb, G(math.cos(a) * 0.17, 0.035, math.sin(a) * 0.17 * 0.92), Vector((-math.sin(a), math.cos(a), 0)), 0.012)
+        _knot(mb, G(math.cos(a) * 0.12, 0.035, math.sin(a) * 0.12 * 0.92), Vector((-math.sin(a), math.cos(a), 0)), 0.012)
     # binding round the coil and the stake laid across it
-    L.bind(mb, G(0.17, 0.035, 0.0), (0, 1, 0), 0.04, seed + 1, turns=3, cord=0.006, width=0.04)
-    L.pole(mb, G(-0.24, 0.07, 0.05), G(0.26, 0.07, -0.02), 0.026, 0.022, seed + 2, sides=8, n=3)
+    L.bind(mb, G(0.12, 0.035, 0.0), (0, 1, 0), 0.04, seed + 1, turns=3, cord=0.006, width=0.04)
+    L.pole(mb, G(-0.1, 0.07, 0.03), G(0.13, 0.07, -0.01), 0.022, 0.018, seed + 2, sides=8, n=3)
     L.finish(outputs, "climbing_rope_coil", [mb.build("climbing_rope_coil", sharp_deg=55)], seed, ground=True, ao_samples=12)
 
 
