@@ -1,0 +1,448 @@
+{
+ "_doc": "Wilderness set pieces, round 5: props of Ember Creek Hot Springs (w5_hot_springs_bathhouse), an old timber hot-springs bathhouse resort. Models: tools/assetgen/blender/generators/props_wild5_springs.py -> models/props/<id>[_worn].glb; catalog tools/assetgen/blender_catalogs/props_wild5_springs.py; materials game/data/materials/props_wild5_springs.json (the spring water and its steam). size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. Floor props stand on their origin with their depth centred on it; wall props hang with their origin on the wall plane. rooms: w5_springs keeps them out of the builder's scatter.",
+ "defs": [
+  {
+   "id": "w5_springs_plunge_pool",
+   "name": "Plunge Pool",
+   "description": "The bathhouse's plunge pool: a basin of small white tiles raised knee-high in a cedar-capped surround, steps down at one end, a brass rail and an overflow grate, the spring's mineral water steaming in it (worn: tepid and grey with scum, towels floating, the tiles crazed).",
+   "tags": [
+    "structure",
+    "bath",
+    "tile"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_plunge_pool",
+    "worn": "props/w5_springs_plunge_pool_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 6000,
+   "size": [
+    4.2,
+    0.6,
+    6.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w5_springs"
+   ]
+  },
+  {
+   "id": "w5_springs_rock_pool",
+   "name": "Rock Pool",
+   "description": "An open-air hot pool walled with mossy boulders and mortared stone where the spring wells up: a timber step down into it, a soaked duckboard and the water steaming (worn: silted and green, barely warm).",
+   "tags": [
+    "structure",
+    "exterior",
+    "rock",
+    "bath"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_rock_pool",
+    "worn": "props/w5_springs_rock_pool_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 8000,
+   "size": [
+    6.0,
+    0.7,
+    4.6
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w5_springs"
+   ]
+  },
+  {
+   "id": "w5_springs_steam",
+   "name": "Steam",
+   "description": "Warm mineral steam hanging over hot water in soft, slow veils.",
+   "tags": [
+    "fx",
+    "bath"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_steam",
+    "worn": "props/w5_springs_steam_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 0,
+   "size": [
+    3.0,
+    2.4,
+    3.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w5_springs"
+   ]
+  },
+  {
+   "id": "w5_springs_steam_bench",
+   "name": "Steam Room Bench",
+   "description": "Two tiers of slatted cedar benches built against the steam room wall, the lower one a step to the upper, darkened by sweat and steam (worn: furred white with the Bloom along the slats).",
+   "tags": [
+    "furniture",
+    "wood",
+    "bath"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_steam_bench",
+    "worn": "props/w5_springs_steam_bench_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    2.4,
+    0.95,
+    1.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w5_springs"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -0.6,
+      0.25
+     ],
+     "height": 0.45,
+     "facing": 0,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.6,
+      0.25
+     ],
+     "height": 0.45,
+     "facing": 0,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      -0.3
+     ],
+     "height": 0.9,
+     "facing": 0,
+     "lean": "back"
+    }
+   ]
+  },
+  {
+   "id": "w5_springs_bloom_wall",
+   "name": "Bloom Bank",
+   "description": "The Bloom grown up a steam-soaked wall: a thick white felt of mycelium from the floor to head height and shelves of pale caps through it, glowing faintly green in the dark.",
+   "tags": [
+    "bloom",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_bloom_wall",
+    "worn": "props/w5_springs_bloom_wall_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 0,
+   "size": [
+    1.8,
+    2.0,
+    0.35
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "w5_springs"
+   ],
+   "light": {
+    "color": "#cfeec0",
+    "energy": 0.4,
+    "range": 3.5,
+    "flicker": 0.05,
+    "offset": [
+     0.0,
+     1.0,
+     0.25
+    ],
+    "power": "flame"
+   }
+  },
+  {
+   "id": "w5_springs_bloom_mat",
+   "name": "Bloom Mat",
+   "description": "A low cushion of Bloom felt spreading over wet tiles, a troop of pale caps standing in it and glowing at night.",
+   "tags": [
+    "bloom",
+    "floor"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_bloom_mat",
+    "worn": "props/w5_springs_bloom_mat_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 0,
+   "size": [
+    1.6,
+    0.35,
+    1.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w5_springs"
+   ],
+   "light": {
+    "color": "#d6f0c8",
+    "energy": 0.3,
+    "range": 2.8,
+    "flicker": 0.05,
+    "offset": [
+     0.0,
+     0.2,
+     0.0
+    ],
+    "power": "flame"
+   }
+  },
+  {
+   "id": "w5_springs_boiler",
+   "name": "Bathhouse Boiler",
+   "description": "A riveted horizontal firetube boiler on a brick setting: the firebox doors and ash pit at the front, a pressure gauge and water glass, the safety valve and steam main on top and the flue going up through the ceiling (worn: rust bleeding from the rivets, the fire long out).",
+   "tags": [
+    "machine",
+    "metal",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_boiler",
+    "worn": "props/w5_springs_boiler_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 4000,
+   "size": [
+    1.6,
+    2.5,
+    3.4
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "w5_springs"
+   ]
+  },
+  {
+   "id": "w5_springs_cistern",
+   "name": "Spring Cistern",
+   "description": "A tall stave tank of cedar bound with iron hoops where the spring is piped up out of the rock: a cover of boards, a float gauge, the feed pipe in and the hot main out, mineral crust down its sides.",
+   "tags": [
+    "structure",
+    "wood",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_cistern",
+    "worn": "props/w5_springs_cistern_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    2.2,
+    2.3,
+    2.2
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "w5_springs"
+   ]
+  },
+  {
+   "id": "w5_springs_boardwalk",
+   "name": "Boardwalk",
+   "description": "A section of cedar boardwalk laid on sleepers in the ground, the boards silvered and slick with moss at the edges (worn: boards split and missing).",
+   "tags": [
+    "floor",
+    "wood",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_boardwalk",
+    "worn": "props/w5_springs_boardwalk_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 0,
+   "size": [
+    2.0,
+    0.12,
+    4.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w5_springs"
+   ]
+  },
+  {
+   "id": "w5_springs_towel_shelf",
+   "name": "Towel Shelf",
+   "description": "A tall painted cubby shelf for the bathers' towels and robes, a stack in every square and a basket of soap on top (worn: the towels pulled out, mildewed).",
+   "tags": [
+    "furniture",
+    "container",
+    "breakable",
+    "bath"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_towel_shelf",
+    "worn": "props/w5_springs_towel_shelf_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    1.4,
+    2.05,
+    0.45
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "w5_springs"
+   ],
+   "container": "w5_springs_linen"
+  },
+  {
+   "id": "w5_springs_changing_bench",
+   "name": "Changing Bench",
+   "description": "A slatted bench with a tall back board of pegs over it, robes and a towel still hanging on the pegs (worn: the robes on the floor).",
+   "tags": [
+    "furniture",
+    "wood",
+    "bath"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_changing_bench",
+    "worn": "props/w5_springs_changing_bench_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    1.8,
+    1.75,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w5_springs"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -0.45,
+      0.06
+     ],
+     "height": 0.45,
+     "facing": 0,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.45,
+      0.06
+     ],
+     "height": 0.45,
+     "facing": 0,
+     "lean": "back"
+    }
+   ]
+  },
+  {
+   "id": "w5_springs_key_board",
+   "name": "Cabin Key Board",
+   "description": "A varnished board of brass hooks behind the desk for the cabin keys, each on a wooden fob, the cabin numbers painted over the hooks; most of the hooks are empty.",
+   "tags": [
+    "sign",
+    "office"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_key_board",
+    "worn": "props/w5_springs_key_board_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 100,
+   "size": [
+    0.8,
+    0.6,
+    0.05
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "w5_springs"
+   ]
+  },
+  {
+   "id": "w5_springs_cedar_tub",
+   "name": "Cedar Soaking Tub",
+   "description": "A deep oval soaking tub of cedar staves bound with copper hoops, a step and a brass tap piped from the spring (worn: dry, the staves sprung).",
+   "tags": [
+    "furniture",
+    "wood",
+    "bath"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_cedar_tub",
+    "worn": "props/w5_springs_cedar_tub_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    1.65,
+    0.87,
+    1.25
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w5_springs"
+   ]
+  },
+  {
+   "id": "w5_springs_pipe_run",
+   "name": "Spring Main",
+   "description": "Lagged hot-water mains and a cold feed run along the wall on iron brackets, with gate valves, a thermometer well and a pressure gauge (worn: the lagging hanging off in rags, mineral crust round the joints).",
+   "tags": [
+    "metal",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w5_springs_pipe_run",
+    "worn": "props/w5_springs_pipe_run_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 0,
+   "size": [
+    3.0,
+    1.4,
+    0.3
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "w5_springs"
+   ]
+  }
+ ]
+}
