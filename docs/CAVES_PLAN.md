@@ -175,3 +175,20 @@ VolumeTerrain additions:
   * plan only from pristine heights;
   * store `flags.cave_gen`; the dig wins over a regenerated cave.
 * **`is_indoors` cost:** five systems call it per frame, so it needs the grid index.
+
+## Hub decisions (2026-10-07)
+* **RWG:** WS-E adds a `_caves()` stage hunk in `rwg_generator.gd` plus a `tuning.caves` block in
+  `world_gen.json`. It runs after the mines on its own rng stream, so no other place moves.
+  * VERSION: session 2's `ezra_camp` also plans to bump it to 8. Whoever merges into integration
+    second bumps it again (to 9) and re-records the goldens (`SLOW_TESTS=1`). Check integration's
+    VERSION when merging.
+* **ADR-0054 (forest encounters):** a hub worktree, not pushed yet. Its API is
+  `Encounters.register_kind(kind, on_place, on_unplace)`:
+  * `on_place` gets `{id, kind, def, pos (on the ground), yaw, region, seed}` when the region
+    attaches;
+  * `on_unplace(id)` runs on detach.
+
+  Register kind `cave_mouth`: on_place calls `TerrainManager.place_cave(id, spec)` and on_unplace
+  calls `remove_cave(id)`.
+* **`environment_controller.gd`:** the hub approves WS-D's small `min_share` hunk. Session 5 owns the
+  ADR-0050 fill logic, so tell them what changed.
