@@ -116,7 +116,7 @@ class ProbeWorld:
 
 var _enemies: PackedStringArray = ["hollow", "lurcher"]
 var _dists: Array[float] = [10.0, 20.0, 30.0, 40.0, 60.0]
-var _stances: PackedStringArray = ["still", "walk", "crouch", "sprint", "torch", "cover"]
+var _stances: PackedStringArray = ["still", "walk", "crouch", "sprint", "torch", "cover", "log"]
 var _periods: PackedStringArray = ["day", "night"]
 var _world: ProbeWorld
 var _player: Player
@@ -188,8 +188,9 @@ func _setup(night: bool, stance: String) -> void:
 	var ai := AIDirector.new()
 	_world.add_child(ai)
 	_world.ai = ai
-	if stance == "cover":
+	if stance in ["cover", "log"]:
 		# A fallen log / thicket: vegetation layer (13), as tall as a crouched man's eyes and more.
+		# `log`: the player walks upright behind it (seen over it): the body has to go round.
 		_box(Vector3(0, 0.65, 1.5), Vector3(10, 1.3, 0.6), 1 << 12)
 	_player = (load(PLAYER_SCENE) as PackedScene).instantiate() as Player
 	_player.input_enabled = true

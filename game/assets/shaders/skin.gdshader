@@ -51,6 +51,11 @@ uniform vec4 mottle_sallow : source_color = vec4(0.62, 0.56, 0.38, 1.0);
 // B on a skin with no Bloom (the player's arms, bloom_skin 0). Off by default.
 uniform float flush : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 flush_color : source_color = vec4(0.78, 0.40, 0.34, 1.0);
+// Decay: broad patches (a forearm or a cheek across) gone dark, green-brown and slick, so a body
+// reads as rotting rather than evenly pale from twenty metres (rest space: the patches ride the body).
+uniform float rot : hint_range(0.0, 1.0) = 0.0;
+uniform float rot_scale = 2.6;
+uniform vec4 rot_color : source_color = vec4(0.36, 0.38, 0.24, 1.0);
 // Bruised fingertips, toes, ears, knees and the blood settled in the lower legs (CUSTOM0.w).
 uniform float bruise : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 bruise_color : source_color = vec4(0.27, 0.17, 0.26, 1.0);
@@ -106,6 +111,12 @@ void fragment() {
 	}
 	if (flush > 0.0) {
 		alb = mix(alb, alb * flush_color.rgb * 1.6, clamp(COLOR.b, 0.0, 1.0) * flush);
+	}
+	if (rot > 0.0) {
+		float rn = hm_char_noise(rest * rot_scale + 11.3) * 0.6 + hm_char_noise(rest * rot_scale * 3.7 + 4.1) * 0.4;
+		float rm = smoothstep(0.46, 0.70, rn) * rot;
+		alb = mix(alb, alb * rot_color.rgb * 1.7, rm);
+		rough = mix(rough, rough * 0.75, rm * 0.6);
 	}
 	float br = clamp(v_attr0.w, 0.0, 1.0) * bruise;
 	if (br > 0.0) {

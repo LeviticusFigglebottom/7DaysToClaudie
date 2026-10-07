@@ -63,6 +63,7 @@ STUMPS = {
 OVERLAP = 0.009      # how far each segment extends past its cut (closed there with a gore cap)
 INSET = 0.0035       # how far the overlapping skirt is tucked under the neighbour's surface
 INSET_RAMP = 0.004
+GROWTH_SWELL = 0.008  # how far Bloom masses swell past the skin and any garment (_add_layers; params growth_swell)
 
 
 def smoothstep(e0, e1, x):
@@ -795,12 +796,14 @@ class BodyModel:
 
     def _add_layers(self, P, d, lab, grid=None):
         # Bloom growth masses blend into whatever surface is there
+        grow = None
         if self.growth.ops:
             if grid is not None:
                 dg, lg = self.growth.eval_grid(*grid)
                 dg, lg = dg.ravel(), lg.ravel()
             else:
                 dg, lg = self.growth.eval(P)
+            grow = (dg, lg)
             near = dg < 0.03
             if near.any():
                 k = 0.006 * self.s
@@ -830,6 +833,17 @@ class BodyModel:
                     ls = np.where(better, lg, ls)
                     ds = np.minimum(ds, dg)
                 d[sel], lab[sel] = ds, ls
+        if grow is not None:
+            dg, lg = grow
+            # ...and then burst out through it: the masses swell past the skin (and through any
+            # garment over them) by GROWTH_SWELL, so a Bloom site reads as a pale knot erupting
+            # from the shirt, not a bump under it (the cloth wrapped them and decimated to shards).
+            sw = float(self.p.get("growth_swell", GROWTH_SWELL)) * self.s
+            near = dg < 0.03
+            if near.any():
+                dgi = dg[near] - sw
+                lab[near] = np.where(dgi < d[near] + 0.0005, lg[near], lab[near])
+                d[near] = S.smin(d[near], dgi, 0.004 * self.s)
         if self.boots.ops:
             if grid is not None:
                 db_, lb_ = self.boots.eval_grid(*grid)
@@ -1061,6 +1075,12 @@ class BodyModel:
         bruise = np.maximum(bruise, ears * 0.5)
         nose = 1 - smoothstep(0.004 * s, 0.016 * s, np.sqrt(((V - self.HP(0, -0.030, 0.108)) ** 2).sum(-1)))
         bruise = np.maximum(bruise, nose * 0.35)
+        # sunken, discoloured eye sockets and a dark, bruised mouth: without them the pale lids
+        # ringed milky eyes like goggles and the faces read as masks
+        for sx in (1.0, -1.0):
+            de = np.sqrt(((V - self.HP(sx * 0.032, 0.010, 0.070)) ** 2).sum(-1))
+            bruise = np.maximum(bruise, (1 - smoothstep(0.015 * s, 0.034 * s, de)) * 0.95)
+        bruise = np.maximum(bruise, (1 - smoothstep(0.006 * s, 0.022 * s, d_lip)) * 0.7)
         # wounds: a bruised ring round each bite
         for c, r, amt in self.wounds:
             d = np.sqrt(((V - c) ** 2).sum(-1))

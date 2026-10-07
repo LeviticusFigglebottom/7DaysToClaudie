@@ -131,8 +131,9 @@ func _think() -> void:
 	var threats: Array[Vector3] = []
 	var person: Dictionary = ctx.get("person", {})
 	if not person.is_empty():
-		var t: WildlifeBrain.Threat = WildlifeBrain.person_threat(def, global_position, person["pos"], float(person["visibility"]),
-			bool(person["crouched"]), ctx.get("wind", Vector2.ZERO), float(ctx.get("wind_strength", 0.0)), bool(ctx.get("night", false)))
+		var vis: float = WildlifeBrain.visibility(def, float(person["lit"]), float(person["light"]), bool(person["own_light"]))
+		var t: WildlifeBrain.Threat = WildlifeBrain.person_threat(def, global_position, person["pos"], vis,
+			bool(person["crouched"]), ctx.get("wind", Vector2.ZERO), float(ctx.get("wind_strength", 0.0)))
 		if state in [State.BED, State.BED_DOWN] and t == WildlifeBrain.Threat.ALERT:
 			t = WildlifeBrain.Threat.NONE   # bedded down, it lies tight until you are close
 		if t != WildlifeBrain.Threat.NONE:
@@ -149,6 +150,14 @@ func _think() -> void:
 		if t3 != WildlifeBrain.Threat.NONE:
 			threats.append(loud["pos"])
 		worst = maxi(worst, t3) as WildlifeBrain.Threat
+	# The player's footsteps (walk 6 m, sprint 14, crouch 2, x hearing): it looks up at a tread close
+	# by in the dark, and a hare bolts from a sprint.
+	var step: Dictionary = ctx.get("step", {})
+	if not step.is_empty():
+		var t4: WildlifeBrain.Threat = WildlifeBrain.sound_threat(def, float(step["loudness"]), global_position.distance_to(step["pos"]))
+		if t4 != WildlifeBrain.Threat.NONE:
+			threats.append(step["pos"])
+		worst = maxi(worst, t4) as WildlifeBrain.Threat
 	if bool(ctx.get("silence", false)):
 		# a Hum night: the valley floor empties
 		worst = WildlifeBrain.Threat.FLEE
