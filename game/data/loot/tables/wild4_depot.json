@@ -1,0 +1,37 @@
+{
+ "_doc": "Loot tables of the Dunmore Timber truck depot (w4_logging_truck_depot), forest set pieces round 4 (containers/wild4_depot.json): the parts room's shelves of filters, belts and hardware, the dispatcher's console drawers, the payroll safe in her office and the drivers' lockers on the mezzanine.",
+ "defs": [
+  {"id": "w4_depot_parts", "rolls": [1, 3], "empty_chance": 0.15, "entries": [
+   {"item": "scrap_metal", "weight": 6, "count": [1, 4]},
+   {"item": "nails", "weight": 4, "count": [4, 16]},
+   {"item": "duct_tape", "weight": 4},
+   {"item": "cordage", "weight": 3, "count": [1, 2]},
+   {"item": "repair_kit", "weight": 2, "tier_min": 2},
+   {"item": "steel_pipe", "weight": 1},
+   {"table": "road_auto_shelf", "weight": 3}]},
+  {"id": "w4_depot_dispatch", "rolls": [1, 3], "empty_chance": 0.05, "entries": [
+   {"item": "flashlight", "weight": 4},
+   {"item": "lighter", "weight": 3},
+   {"item": "painkillers", "weight": 3},
+   {"item": "antifungal", "weight": 2, "tier_min": 2},
+   {"item": "ration_bar", "weight": 3, "count": [1, 3]},
+   {"item": "water_bottle_clean", "weight": 3},
+   {"item": "ammo_38", "weight": 2, "count": [3, 8]},
+   {"table": "reading", "weight": 1}]},
+  {"id": "w4_depot_safe", "rolls": [2, 3], "empty_chance": 0.0, "entries": [
+   {"item": "scrip", "weight": 6, "count": [8, 30]},
+   {"item": "revolver", "weight": 2, "tier_min": 2, "quality_bias": 1},
+   {"item": "ammo_38", "weight": 5, "count": [6, 14]},
+   {"item": "first_aid_kit", "weight": 3},
+   {"item": "antifungal", "weight": 2},
+   {"table": "weapons_rare", "weight": 1}]},
+  {"id": "w4_depot_lunch_locker", "rolls": [1, 2], "empty_chance": 0.25, "entries": [
+   {"item": "canned_beans", "weight": 4},
+   {"item": "canned_stew", "weight": 3},
+   {"item": "soda_can", "weight": 3},
+   {"item": "lighter", "weight": 2},
+   {"item": "cloth", "weight": 2, "count": [1, 2]},
+   {"item": "hatchet", "weight": 1},
+   {"table": "junk_common", "weight": 2}]}
+ ]
+}

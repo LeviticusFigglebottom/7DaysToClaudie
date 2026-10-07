@@ -1,0 +1,9 @@
+{
+ "_doc": "Containers of the Dunmore Timber truck depot (w4_logging_truck_depot), forest set pieces round 4 (containers/wild4_depot.json -> tables/wild4_depot.json).",
+ "defs": [
+  {"id": "w4_depot_parts", "name": "Parts Shelf", "loot_table": "w4_depot_parts", "slots": 8, "search_time": 2.0, "noise": 6},
+  {"id": "w4_depot_dispatch", "name": "Dispatch Console", "loot_table": "w4_depot_dispatch", "slots": 6, "search_time": 1.8, "noise": 3},
+  {"id": "w4_depot_safe", "name": "Payroll Safe", "loot_table": "w4_depot_safe", "slots": 6, "search_time": 2.4, "noise": 5},
+  {"id": "w4_depot_lunch_locker", "name": "Driver's Locker", "loot_table": "w4_depot_lunch_locker", "slots": 6, "search_time": 1.6, "noise": 5}
+ ]
+}

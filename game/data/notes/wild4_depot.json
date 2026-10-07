@@ -1,0 +1,33 @@
+{
+ "_doc": "Readable notes of the Dunmore Timber truck depot (w4_logging_truck_depot), forest set pieces round 4. No note names a town: the depot stands at the end of any logging road. Items: items/wild4_depot.json note_<id>.",
+ "defs": [
+  {
+   "id": "w4_depot_dispatch_log",
+   "title": "Dispatch Log",
+   "style": "handwritten",
+   "author": "Vera Lindqvist, dispatch",
+   "body": "06:10 All six trucks out. Ray to the upper landing, Benny and Cole on the ridge spur. Clear skies.\n11:40 Radio says the Cordon is closing the county road at the bridge. Called every truck in. Told them leave the loads if they have to.\n14:05 Ray back loaded anyway. Ray is Ray. Cole back. Benny back with Dutch in the passenger seat coughing.\n17:30 Truck 4 and truck 6 not answering. Calling every fifteen minutes.\nDay 2. Soldiers at the bridge turned Cole around at gunpoint. Nobody in, nobody out. Hank says we have diesel for a month and beans for a week.\nDay 5. Dutch went down in the shop. Hank and the kid put him in the pit and pulled the planks over. I heard Hank go down after him that night with a light. He didn't come up.\nDay 9. The boys upstairs are coughing now. I locked my door. I keep the key on me and the spare is on the parts counter where Hank's keys used to hang, if Hank's keys ever come up out of that pit.\nDay 14. Calling truck 4. Calling truck 6. Calling anyone on the company channel. If you are hearing this, do not come up the logging road."
+  },
+  {
+   "id": "w4_depot_driver_letter",
+   "title": "Letter to Marla",
+   "style": "handwritten",
+   "author": "Ray Tillman",
+   "body": "Marla,\nI made the depot with a full load because I figured if the world was ending somebody would still want lumber, and you can laugh at that when I'm home. The Cordon has the bridge. Cole tried it and a kid in a mask put a rifle on him. We are sleeping on cots up over the shop like it's hunting camp. Vera runs the radio all night and won't let us touch it.\nDutch had the cough when Benny brought him in. Now Benny has it and I think I do. Little white fuzz in the corner of the eye in the morning, you wipe it off and it's back by lunch. Hank called it the Bloom before he went in the pit.\nTell the girls I parked the truck on the scale so the ticket would be honest. Forty-one thousand. Best load of the season. I love you. Don't come looking. Ray"
+  },
+  {
+   "id": "w4_depot_closure_order",
+   "title": "Road Closure Order",
+   "style": "typed",
+   "author": "Cordon Quarantine Authority",
+   "body": "CORDON QUARANTINE AUTHORITY - ROAD CLOSURE ORDER No. 14\nEFFECTIVE IMMEDIATELY\nAll public and private roads leaving the quarantine zone are CLOSED to every vehicle and person. This includes forest service roads, haul roads and logging spurs.\nCommercial operators will cease hauling and shelter in place at their yards. Do not attempt to cross a checkpoint. Persons approaching a checkpoint will be ordered to stop once.\nPersons showing respiratory symptoms, eye discharge or white growth on the skin are to be isolated from others at once. Do not transport them.\nRelief and further instructions will follow by radio.\nIn pencil across the bottom: relief my ass. 3 weeks. - V."
+  },
+  {
+   "id": "w4_depot_weigh_tickets",
+   "title": "Weigh Ticket Book",
+   "style": "typed",
+   "author": "Dunmore Timber scale house",
+   "body": "DUNMORE TIMBER - SCALE TICKETS (carbon copies)\nNo. 4471 Truck 2 (Tillman) gross 79,860 tare 38,200 net 41,660 lb. Fir, upper landing.\nNo. 4472 Truck 5 (Ochoa) gross 71,040 tare 37,900 net 33,140 lb. Lodgepole, ridge spur.\nNo. 4473 Truck 3 (Bishop) EMPTY RETURN. No load. Bridge closed.\nNo. 4474 Truck 2 (Tillman) gross 79,860. Not printed. Scale on battery.\nNo. 4475 - 4490 blank.\nIn the scaler's hand on the back of the last carbon: Ray's truck has sat on my scale three days and the reading has not moved one pound. Nobody is coming for it. The Cordon closed the bridge with Benny's cousin on the far side. I am going up to sit with Vera."
+  }
+ ]
+}
