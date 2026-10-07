@@ -66,10 +66,13 @@ class FakeCaveSet:
 		for part: Variant in parts:
 			if part is FakeCaveSet:
 				all.append_array((part as FakeCaveSet).plans)
-			elif part != null:
+			elif part is FakeCave:
 				all.append(part)
+			# Anything else is the real generator's (CaveSites.from_region planning the synthetic
+			# regions once cave/*.gd exists): the fakes stand in for all of it.
 		for k: Variant in extra:
-			all.append(extra[k])
+			if extra[k] is FakeCave:
+				all.append(extra[k])
 		return FakeCaveSet.new(all)
 
 	func touching(box: AABB) -> Array:
