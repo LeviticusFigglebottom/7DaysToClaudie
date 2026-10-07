@@ -126,3 +126,35 @@ func test_workers_reading_heights_survive_attach_and_detach_churn() -> void:
 		WorkerThreadPool.wait_for_task_completion(t)
 	assert_gt(n, 2, "churned %d times" % n)
 	assert_eq(bad[0], 0, "every read was a real height")
+
+
+## TD-197 / TD-106: the pure-data half of a region's terrain (cellars, splat images) is made on
+## the thread that composed it and only taken on the main thread; with defer_materials the
+## textures and materials are boot steps of their own.
+func test_prepared_holes_and_splats_are_taken_and_materials_come_in_steps() -> void:
+	var w: WorldDef = _world()
+	var a: RegionTerrain = _rt(w, "a", 1.0, A_Y)
+	var th := TerrainHoles.new()
+	a.set_meta(&"holes", th)
+	TerrainManager.prepare_splat(a)
+	var tm := TerrainManager.new()
+	tm.defer_far_tiles = true
+	tm.defer_materials = true
+	tm.prepared_textures = TerrainTextures.prepare()
+	add_child_autofree(tm)
+	tm.setup(w, {"a": a}, {"b": _rt(w, "b", 16.0, COARSE_Y)})
+	assert_false(a.has_meta(&"holes"), "the prepared cellars were taken")
+	assert_same(tm._region_holes["a"], th)
+	assert_false(tm._materials.has("a"), "no material before its boot step")
+	var steps: Array = tm.boot_steps()
+	var names: Array = steps.map(func(s: Array) -> String: return str(s[2]))
+	assert_eq(names.slice(0, 2), ["terrain textures", "terrain material a"])
+	(steps[0][1] as Callable).call()
+	(steps[1][1] as Callable).call()
+	assert_true(tm._materials.has("a"))
+	assert_false(a.has_meta(&"splat"), "the prepared splat images were used")
+	var b: RegionTerrain = _rt(w, "b", 1.0, B_Y)
+	TerrainManager.prepare_splat(b)
+	tm.attach_region(b)
+	assert_false(b.has_meta(&"splat"), "an attach uploads the prepared images")
+	assert_not_null((tm._materials["b"] as ShaderMaterial).get_shader_parameter("splat0"))
