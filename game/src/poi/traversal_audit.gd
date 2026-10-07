@@ -95,8 +95,11 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 			var sev: String = "error" if on_route.has(_edge_id(li3, a2, b2)) else "warn"
 			var rise: float = max_rise(space, inst, _at(l, li3, b2, _cell_y(space, inst, l, li3, b2, exclude)), _at(l, li3, a2, _cell_y(space, inst, l, li3, a2, exclude)), exclude)
 			if rise > STEP_RISE:
+				# Up to VAULT_MAX the player climbs it with Jump (a loading dock, a hole in a wall).
+				var climbable: bool = rise <= VAULT_MAX
 				out.append({"kind": "doorway", "level": li3, "cell": b2, "to": a2, "opening": str(op2["id"]),
-					"what": "step %.2f m" % rise, "blocker": "-", "at": _at(l, li3, a2, l.level_y(li3)), "severity": sev})
+					"what": "step %.2f m%s" % [rise, " (vault)" if climbable else ""], "blocker": "-",
+					"at": _at(l, li3, a2, l.level_y(li3)), "severity": "warn" if climbable else sev})
 				continue
 			var from2: Vector3 = _at(l, li3, b2, _cell_y(space, inst, l, li3, b2, exclude))
 			var to2: Vector3 = _at(l, li3, a2, _cell_y(space, inst, l, li3, a2, exclude))

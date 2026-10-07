@@ -1,7 +1,9 @@
 extends GutTest
-## TraversalAudit (ADR-0051): the player's capsule walked through a built POI finds a wardrobe
-## parked in a doorway, lets a barrel the player vaults through as a warning, passes a clear room,
-## and every shipped POI's route and the doorways it crosses are free of props.
+## TraversalAudit (ADR-0051), with the player's capsule walked through a built POI:
+## * a clear room passes;
+## * a wardrobe parked in a doorway is an error, a barrel the player vaults only a warning;
+## * a raised sill past what the player climbs is an error;
+## * no shipped POI has anything of the kind on its route or the doorways the route crosses.
 
 const Runner := preload("res://src/tools/cli/traversal_audit_runner.gd")
 
@@ -47,31 +49,34 @@ func test_a_barrel_the_player_vaults_is_a_warning() -> void:
 
 
 func test_a_raised_floor_without_a_step_is_reported() -> void:
-	var raw: Dictionary = {"id": "t_audit", "name": "T", "tier": 1, "footprint": [12, 12],
-		"style": {"floor_height": 0.6},
-		"levels": [{"level": 0, "plan": ["AAA", "AAA", "AAA"], "rooms": {"A": {}}}],
-		"openings": [{"id": "front", "at": [1, 2], "side": "S", "type": "door", "state": "open"}],
-		"route": [{"at": [1, 4]}, {"at": [1, 0]}]}
-	var d2 := PoiDef.new()
-	d2.parse(raw, &"poi", "test")
-	var found: Array[Dictionary] = await Runner.audit_one(self, d2, "t_audit_sill")
-	var steps: Array = found.filter(func(f: Dictionary) -> bool: return str(f["what"]).begins_with("step"))
-	assert_eq(steps.size(), 1, "the 0.6 m sill: %s" % [found])
+	for h: float in [0.6, 1.5]:
+		var raw: Dictionary = {"id": "t_audit", "name": "T", "tier": 1, "footprint": [12, 12],
+			"style": {"floor_height": h},
+			"levels": [{"level": 0, "plan": ["AAA", "AAA", "AAA"], "rooms": {"A": {}}}],
+			# A hole knocked in the wall: doors get steps built up to them (PoiBuilder.stoops).
+			"openings": [{"id": "front", "at": [1, 2], "side": "S", "type": "breach"}],
+			"route": [{"at": [1, 4]}, {"at": [1, 0]}]}
+		var d2 := PoiDef.new()
+		d2.parse(raw, &"poi", "test")
+		var found: Array[Dictionary] = await Runner.audit_one(self, d2, "t_audit_sill")
+		var steps: Array = found.filter(func(f: Dictionary) -> bool: return str(f["what"]).begins_with("step"))
+		assert_eq(steps.size(), 1, "the %.1f m sill: %s" % [h, found])
+		if steps.size() == 1:
+			# Up to 1.3 m the player climbs it with Jump; higher it closes the way.
+			assert_eq(str(steps[0]["severity"]), "warn" if h <= 1.3 else "error", "%.1f m" % h)
 
 
 func test_shipped_pois_keep_their_routes_and_doorways_clear() -> void:
-	# Raised sills without steps ("step ...") belong to the entrance-steps work (TD-229) and are
-	# only counted here; any other error is a prop, trap rig or wall in the player's way.
+	# An error is a prop, trap rig, wall or sill the player can't get past on the route; what the
+	# player vaults, off-route doorways and props authored route_ok are warnings (TD-230).
 	var bad: PackedStringArray = []
-	var steps: int = 0
+	var warns: int = 0
 	for v: Variant in Content.all(&"poi"):
 		var pd := v as PoiDef
 		for f: Dictionary in await Runner.audit_one(self, pd, String(pd.id)):
-			if str(f["severity"]) != "error":
-				continue
-			if str(f["what"]).begins_with("step"):
-				steps += 1
-			else:
+			if str(f["severity"]) == "error":
 				bad.append(TraversalAudit.line(String(pd.id), f))
-	gut.p("raised sills without a step on the route: %d" % steps)
+			else:
+				warns += 1
+	gut.p("traversal warnings (TD-230): %d" % warns)
 	assert_eq(bad, PackedStringArray(), "nothing blocks a route or a doorway on it")
