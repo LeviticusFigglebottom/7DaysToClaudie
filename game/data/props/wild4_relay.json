@@ -1,0 +1,367 @@
+{
+ "_doc": "Forest set pieces, round 4 (ADR-0053): props of the Ridge Relay Hut (w4_ridge_relay_hut), an unmanned microwave relay hut on a forested ridge: the concrete equipment shelter's racks, battery bank and propane generator, the 20 m guyed tower with its dishes and platform railings, the fenced compound's propane tank, fuel shed and gate, and the helipad. Models: tools/assetgen/blender/generators/props_wild4_relay.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_wild4_relay.py. Materials are shared sets (no new ones). size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. Floor props stand on their origin with their depth centred on it (back = half the depth); the tower stands at the platforms' centre and the dish at the foot of its mount pipe.",
+ "defs": [
+  {
+   "id": "w4_relay_tower",
+   "name": "Guyed Relay Tower",
+   "description": "A 20 m guyed lattice tower, 2.2 m square, galvanised and rust-streaked: K-braced faces, the platform frames every 3 m round the POI's kit platforms, an antenna whip and a dead red beacon on top, a coax ladder of feeder cables down one leg and four guy wires to concrete anchors 6.5 m out (worn: a guy slack and coiled on the ground, a brace hanging). Origin at the platforms' centre on the ground. Collision none: the kit platforms and their railings carry the climber; the wires are walked under.",
+   "tags": [
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_tower",
+    "worn": "props/w4_relay_tower_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    13.4,
+    21.0,
+    13.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_relay_tower_section",
+   "name": "Spare Tower Section",
+   "description": "A spare 3 m section of lattice mast, 1 m square, lying on its side on two timber sleepers where the crane truck left it, splice plates and a bag of bolts wired to one end (worn: rusted, the bag split).",
+   "tags": [
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_tower_section",
+    "worn": "props/w4_relay_tower_section_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    3.0,
+    1.15,
+    1.05
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_relay_dish",
+   "name": "Microwave Dish",
+   "description": "A 1.2 m microwave relay dish under a grey fabric radome on a galvanised pipe mount with its two clamp brackets, a stiff-arm and the elliptical waveguide looping off the back (worn: the radome split and flapping, the dish knocked off its aim). Origin at the foot of its mount pipe on the platform edge; the dish hangs out over the railing toward the front. Collision none.",
+   "tags": [
+    "structure",
+    "exterior",
+    "radio",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_dish",
+    "worn": "props/w4_relay_dish_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.3,
+    1.6,
+    1.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_relay_equipment_rack",
+   "name": "Equipment Rack",
+   "description": "A 19-inch relay rack bolted to the floor: radio shelves with their faceplates and dead LEDs, a patch panel spilling jumpers, a fan tray and the coax entering through the top (worn: panels pulled, a shelf hanging; destroyed: gutted, the cards on the floor).",
+   "tags": [
+    "machine",
+    "radio",
+    "breakable",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_equipment_rack",
+    "worn": "props/w4_relay_equipment_rack_worn",
+    "destroyed": "props/w4_relay_equipment_rack_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    0.6,
+    2.0,
+    0.6
+   ],
+   "container": "w4_relay_rack",
+   "blocks_sight": true,
+   "rooms": [
+    "studio",
+    "office"
+   ]
+  },
+  {
+   "id": "w4_relay_battery_bank",
+   "name": "Battery Bank",
+   "description": "A two-tier steel rack of big grey standby cells strapped in rows, bus bars and cables along the top, a spill tray and a hydrometer hung on the end (worn: a cell cracked and white with corrosion).",
+   "tags": [
+    "machine",
+    "breakable",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_battery_bank",
+    "worn": "props/w4_relay_battery_bank_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    1.6,
+    1.1,
+    0.6
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "storage"
+   ]
+  },
+  {
+   "id": "w4_relay_propane_tank",
+   "name": "Propane Tank",
+   "description": "A 500-gallon white propane tank on concrete saddles: the dome lid over the regulator and the float gauge, a pipe down to the ground into the shelter's line and a warning stencil (worn: the paint chalked and rust-bloomed, the dome lid off and the gauge on red).",
+   "tags": [
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_propane_tank",
+    "worn": "props/w4_relay_propane_tank_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 800,
+   "size": [
+    2.8,
+    1.4,
+    1.2
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_relay_generator",
+   "name": "Propane Generator",
+   "description": "A standby generator in a grey louvred enclosure on a concrete pad: the hinged lid, the control panel with its hour meter and run lamp, the propane line in through a flex hose and the exhaust out through the wall (worn: the lid up, a plug lead off and the meter stopped).",
+   "tags": [
+    "machine",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_generator",
+    "worn": "props/w4_relay_generator_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    1.6,
+    1.2,
+    0.9
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "w4_relay_helipad",
+   "name": "Helipad",
+   "description": "A square concrete helipad set into the ridge, its edge painted white, a yellow H in a white circle, tie-down rings at the corners and moss in the joints (worn: the paint flaking and a crack across the H). It stands 15 cm proud: walked on.",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_helipad",
+    "worn": "props/w4_relay_helipad_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    6.0,
+    0.15,
+    6.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_relay_tower_platform_rail",
+   "name": "Platform Railing",
+   "description": "1 m of galvanised angle railing with a mid rail and a toe board, along a tower platform's open edge so a climber can't step off (worn: the mid rail bent out).",
+   "tags": [
+    "structure",
+    "stairwell",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_tower_platform_rail",
+    "worn": "props/w4_relay_tower_platform_rail_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.0,
+    1.12,
+    0.06
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_relay_fuel_shed",
+   "name": "Fuel Shed",
+   "description": "A low corrugated shed on a timber frame with a padlock hasp hanging open: shelves of oil, spare filters, a gas can and the propane hose kit; a NO SMOKING board on the door (worn: the door off a hinge).",
+   "tags": [
+    "structure",
+    "exterior",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_fuel_shed",
+    "worn": "props/w4_relay_fuel_shed_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    2.0,
+    2.1,
+    1.5
+   ],
+   "container": "w4_relay_fuel_shed",
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_relay_gate",
+   "name": "Compound Gate",
+   "description": "A chain-link gate leaf on its own galvanised post, swung open and held back against the fence by a twist of wire, its chain and open padlock hanging from the latch.",
+   "tags": [
+    "fence",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_gate",
+    "worn": "props/w4_relay_gate_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    2.0,
+    1.9,
+    0.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_relay_field_radio",
+   "name": "Field Radio",
+   "description": "An olive-drab Cordon field radio set on its battery box: the handset on its curly cord, a whip antenna taped to the railing, a frequency card under a rubber band (worn: the handset down on its cord).",
+   "tags": [
+    "radio",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_field_radio",
+    "worn": "props/w4_relay_field_radio_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 80,
+   "size": [
+    0.5,
+    0.55,
+    0.35
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior",
+    "studio"
+   ]
+  },
+  {
+   "id": "w4_relay_cable_reel",
+   "name": "Cable Reel",
+   "description": "A plywood cable drum on its rim with a few turns of black coax left on it, chocked with a brick.",
+   "tags": [
+    "clutter",
+    "exterior",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_cable_reel",
+    "worn": "props/w4_relay_cable_reel_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    0.7,
+    1.0,
+    1.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_relay_windsock",
+   "name": "Windsock",
+   "description": "An orange windsock on a hinged galvanised pole beside the helipad (worn: the sock torn to a rag). The collision box is the pole.",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_relay_windsock",
+    "worn": "props/w4_relay_windsock_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    0.2,
+    4.6,
+    0.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  }
+ ]
+}

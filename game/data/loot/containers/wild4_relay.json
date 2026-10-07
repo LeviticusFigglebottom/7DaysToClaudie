@@ -1,0 +1,9 @@
+{
+ "_doc": "Containers of the Ridge Relay Hut (w4_ridge_relay_hut), forest set pieces round 4 (containers/wild4_relay.json -> tables/wild4_relay.json).",
+ "defs": [
+  {"id": "w4_relay_rack", "name": "Equipment Rack", "loot_table": "w4_relay_rack", "slots": 6, "search_time": 1.8, "noise": 4},
+  {"id": "w4_relay_footlocker", "name": "Signaller's Footlocker", "loot_table": "w4_relay_footlocker", "slots": 8, "search_time": 1.8, "noise": 4},
+  {"id": "w4_relay_fuel_shed", "name": "Fuel Shed", "loot_table": "w4_relay_fuel_shed", "slots": 6, "search_time": 2.0, "noise": 5},
+  {"id": "w4_relay_cache", "name": "Signals Cache", "loot_table": "w4_relay_cache", "slots": 8, "search_time": 2.2, "noise": 6}
+ ]
+}
