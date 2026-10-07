@@ -80,7 +80,7 @@
         {"id": "office_back_door", "at": [1, 6], "side": "N", "type": "door", "state": "closed"},
         {"id": "back_window", "at": [5, 0], "side": "N", "type": "window", "state": "closed"},
         {"id": "back_west_window", "at": [0, 2], "side": "W", "type": "window", "state": "boarded"},
-        {"id": "bay_doors", "at": [11, 2], "side": "E", "type": "door2", "state": "open"},
+        {"id": "bay_doors", "at": [11, 2], "side": "E", "type": "door2", "state": "open", "swing": "W"},
         {"id": "rollup_door", "at": [13, 0], "side": "N", "type": "door2", "state": "locked", "model": "door_metal", "hp": 1200, "lock": "chain"},
         {"id": "bay_window", "at": [17, 4], "side": "E", "type": "window", "state": "closed"},
         {"id": "hoist_doors", "at": [17, 2], "side": "E", "type": "door2", "state": "locked_inside", "level": 1},

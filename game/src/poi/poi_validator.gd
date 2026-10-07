@@ -6,7 +6,8 @@ extends RefCounted
 ##    stays completable once every weak floor has given way (a fall must never strand the player),
 ##  * the loot room is reachable and holds a container; declared shortcuts exist and lead out,
 ##  * sleepers stand on walkable cells (not stairs, not inside props), props stay inside rooms and
-##    off the route corridor, pickups are reachable,
+##    off the route corridor, pickups are reachable, furniture barricades off the stairs (a
+##    route through one only while it can be broken),
 ##  * dungeon mechanics (ADR-0018): stable ids on sleepers, traps and triggers (TD-031), trap types
 ##    and placement, triggers that name real rooms/openings/pickups/containers/traps and wake a
 ##    group that exists, guardians in the loot room, lock kinds on doors,
@@ -58,6 +59,8 @@ var _collapsed: bool = false
 var _weak: Dictionary = {}
 ## An opening treated as impassable (lock side search).
 var _blocked_op: String = ""
+## Node keys of furniture barricade piles a route leg may not step into (_check_barricades).
+var _pile_block: Dictionary = {}
 ## level -> {cell: true}: cells left open over a stair flight or a ladder hatch from the level
 ## below (PoiLayout.stairwell_cells). They have no floor, so nothing may stand on them.
 var _wells: Dictionary = {}
@@ -258,6 +261,8 @@ func _neighbors(li: int, c: Vector2i, keys: Dictionary) -> Array:
 		if not _edge_passable(li, PoiLayout.side_edge(c, side), c, keys):
 			continue
 		if not _stair_step_ok(li, c, n):
+			continue
+		if not _pile_block.is_empty() and _pile_block.has(node_key(li, n)):
 			continue
 		# Over a gallery's gap (or through a door onto a tall room's void) is a one-way drop.
 		if _walkable(li, n) or layout.is_void(li, n):
@@ -520,6 +525,7 @@ func _run() -> void:
 	_check_ids()
 	_check_traps(seen, stair_cells)
 	_check_stair_doors()
+	_check_barricades(keys)
 	_check_triggers(seen)
 	_check_locks(keys)
 	_check_roof()
@@ -877,6 +883,77 @@ func _check_stair_doors() -> void:
 			var through: bool = not op2.is_empty() and (str(op2["type"]) in ["open", "breach"] or (str(op2["type"]).begins_with("door") and int(p[0]) == li + 1 and c1 == s["landing"]))
 			if not through:
 				_e("stairs at %s (level %d): a wall on level %d between %s and %s stands across the climb" % [s["cell"], li, int(p[0]), c0, c1])
+
+
+## Furniture barricades fill the cell behind their doorway (0.13 to 0.93 m off the wall) until they
+## are broken (PoiLayout.barricade_pile; poi_walk found the lookout's pile over its stair foot):
+##  * a pile on a stair flight, over a well, or across every floor way onto a flight's foot (the
+##    climb starts behind it) is an error: put it elsewhere, nail boards instead, or "barricade_on"
+##    the other side;
+##  * a route leg that only gets through by a pile's cell is fine while the pile can be broken
+##    (PoiLayout.BARRICADE_HP; a warning says the player smashes it), an error otherwise.
+## Boards stand 4 cm off their wall and fill no cell.
+func _check_barricades(keys: Dictionary) -> void:
+	var piles: Dictionary = {}
+	for op: Dictionary in layout.openings:
+		if str(op["state"]) != "barricaded" or not str(op["type"]).begins_with("door") or str(op.get("barricade", "boards")) == "boards":
+			continue
+		var face: float = layout.barricade_face_hint(op)
+		if face == 0.0:
+			continue
+		var li: int = int(op["level"])
+		var under: Dictionary = layout.flight_cells(li)
+		under.merge(layout.stairwell_cells(li))
+		for pc: Vector2i in layout.barricade_pile(op, face)["cells"]:
+			if under.has(pc):
+				_e("furniture barricade on '%s' at %s (level %d) stands on a stair flight or over a well at %s" % [op["id"], op["cell"], li, pc])
+			piles[node_key(li, pc)] = str(op["id"])
+	if piles.is_empty():
+		return
+	for s: Dictionary in layout.stairs:
+		var li2: int = int(s["level"])
+		var foot: Vector2i = (s["cells"] as Array)[0]
+		if piles.has(node_key(li2, foot)):
+			continue
+		var ways: int = 0
+		var through: String = ""
+		for side: int in 4:
+			var n: Vector2i = foot + PoiLayout.DIRS[side]
+			if not _walkable(li2, n) or _upper_steps(li2).has(n) or _stair_wells(li2).has(n):
+				continue
+			if not _edge_passable(li2, PoiLayout.side_edge(foot, side), n, keys):
+				continue
+			if piles.has(node_key(li2, n)):
+				through = piles[node_key(li2, n)]
+			else:
+				ways += 1
+		if ways == 0 and through != "":
+			_e("furniture barricade on '%s' stands across the only way onto the foot of the stairs at %s (level %d): the climb starts behind the pile; put it elsewhere, nail boards instead or set barricade_on" % [
+				through, foot, li2])
+	# Route legs that only get through by a pile's cell.
+	_pile_block = piles
+	var prev: Variant = "out"
+	for i: int in layout.route.size():
+		var wp: Dictionary = layout.route[i]
+		var li3: int = wp["level"]
+		var c: Vector2i = wp["cell"]
+		if not _walkable(li3, c) or _upper_steps(li3).has(c):
+			continue
+		var k: String = node_key(li3, c)
+		if not _bfs([prev], keys).has(k) and not piles.has(k):
+			_pile_block = {}
+			var free: bool = _bfs([prev], keys).has(k)
+			_pile_block = piles
+			if free:
+				var ids: Dictionary = {}
+				for v: String in piles.values():
+					ids[v] = true
+				if PoiLayout.BARRICADE_HP > 0.0:
+					_w("route waypoint %d '%s' is only reached through a furniture barricade (%s): the player smashes it" % [i, wp.get("label", ""), ", ".join(PackedStringArray(ids.keys()))])
+				else:
+					_e("route waypoint %d '%s' is only reached through a furniture barricade (%s) that cannot be broken" % [i, wp.get("label", ""), ", ".join(PackedStringArray(ids.keys()))])
+		prev = [li3, c]
+	_pile_block = {}
 
 
 ## Trap types, keys and placement: cell traps inside rooms (bear traps may sit in the yard), weak
