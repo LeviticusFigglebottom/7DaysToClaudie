@@ -17,7 +17,8 @@
     "brick_red",
     "concrete_block",
     "rock_drift",
-    "rock_limestone"
+    "rock_limestone",
+    "log_chinked"
   ],
   "floor": [
     "wood_oak",
