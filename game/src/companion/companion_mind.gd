@@ -54,6 +54,8 @@ func setup(e: Enemy) -> void:
 ## The body's frame (Enemy._physics_process hands it over). True: nothing else runs this frame.
 func step(delta: float, p: Player, dist: float) -> bool:
 	_fix_anims()
+	if enemy.state != Enemy.State.STAGGER or downed:
+		enemy._state_t += delta  # (Enemy's own frame, which counts it, doesn't run for him)
 	if downed:
 		downed_t -= delta
 		enemy.velocity = Vector3.ZERO
