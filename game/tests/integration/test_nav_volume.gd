@@ -69,12 +69,14 @@ func _bake_map() -> void:
 		NavigationServer3D.region_set_map(r, _map)
 		NavigationServer3D.region_set_navigation_mesh(r, nm)
 		_regions.append(r)
-	# The map syncs on the server's own step; wait for its first iteration.
+	# The map syncs on the server's own step, and the regions join at the first sync after they were
+	# added: wait for the iteration to move past the one before them, then a few steps more.
+	var start: int = NavigationServer3D.map_get_iteration_id(_map)
 	var until: int = Time.get_ticks_msec() + 5000
-	while NavigationServer3D.map_get_iteration_id(_map) == 0 and Time.get_ticks_msec() < until:
+	while NavigationServer3D.map_get_iteration_id(_map) <= start and Time.get_ticks_msec() < until:
 		await get_tree().physics_frame
-	if NavigationServer3D.map_get_iteration_id(_map) == 0 and NavigationServer3D.has_method(&"map_force_update"):
-		NavigationServer3D.call(&"map_force_update", _map)
+	for i: int in 3:
+		await get_tree().physics_frame
 	var polys: int = 0
 	for k: Vector2i in _meshes:
 		polys += (_meshes[k] as NavigationMesh).get_polygon_count()
@@ -83,7 +85,12 @@ func _bake_map() -> void:
 
 
 func _path(from: Vector3, to: Vector3) -> PackedVector3Array:
-	return NavigationServer3D.map_get_path(_map, from, to, true)
+	var path: PackedVector3Array = NavigationServer3D.map_get_path(_map, from, to, true)
+	if path.size() < 2:
+		gut.p("[nav] no path %s -> %s: closest %s / %s, %d regions, iteration %d" % [from, to,
+			NavigationServer3D.map_get_closest_point(_map, from), NavigationServer3D.map_get_closest_point(_map, to),
+			NavigationServer3D.map_get_regions(_map).size(), NavigationServer3D.map_get_iteration_id(_map)])
+	return path
 
 
 func test_a_the_real_grotto_carves_into_the_real_volume() -> void:
