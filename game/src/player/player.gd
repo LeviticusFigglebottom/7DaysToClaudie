@@ -437,6 +437,26 @@ func is_climbing() -> bool:
 	return _ladder != null
 
 
+## The ladder being climbed (a PoiPieces.Ladder), or null: for the viewmodel's climbing hold
+## (its face() is the horizontal direction from the rails toward the climber).
+func climbing_ladder() -> Node3D:
+	return _ladder
+
+
+## How far up the ladder the feet are, 0 at its foot .. 1 at the landing (0 off a ladder).
+func climb_progress() -> float:
+	var lad := _ladder as PoiPieces.Ladder
+	if lad == null or not is_instance_valid(lad):
+		return 0.0
+	return clampf((global_position.y - lad.global_position.y) / maxf(0.1, lad.height), 0.0, 1.0)
+
+
+## Metres a second up (+) or down (-) the rungs this frame (0 holding still or off a ladder): the
+## hand-over-hand cycle runs on it.
+func climb_speed() -> float:
+	return velocity.y if _ladder != null else 0.0
+
+
 func is_vaulting() -> bool:
 	return _vault_t >= 0.0
 
