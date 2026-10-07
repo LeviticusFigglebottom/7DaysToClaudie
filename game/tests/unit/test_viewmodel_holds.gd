@@ -18,7 +18,7 @@ func test_hold_classes_by_item() -> void:
 		&"claw_hammer": &"one_hand", &"crude_spear": &"spear", &"stone_club": &"club", &"steel_pipe": &"club",
 		&"shovel": &"two_hand", &"torch": &"light_left", &"flashlight": &"flashlight", &"lighter": &"lighter",
 		&"revolver": &"pistol", &"canned_beans": &"food", &"water_bottle_clean": &"bottle", &"cloth_bandage": &"held",
-		&"stone": &"held", &"can_chime": &"held",
+		&"stone": &"stone", &"molotov": &"molotov", &"can_chime": &"held",
 	}
 	for id: StringName in want:
 		assert_not_null(Content.item(id), "%s exists" % id)
