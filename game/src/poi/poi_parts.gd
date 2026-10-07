@@ -75,6 +75,13 @@ static func kit_material(kind: String) -> ShaderMaterial:
 		if wall_alb != null:
 			m.set_shader_parameter("side_b_albedo", wall_alb)
 			m.set_shader_parameter("side_b_from_other_array", true)
+			# Its relief too, so a rock ceiling (a mine level's, a cave's) isn't a flat lid.
+			var wall_n: Texture = _tex("res://assets/generated/textures/kit_wall_finishes_normal.png")
+			var wall_orm: Texture = _tex("res://assets/generated/textures/kit_wall_finishes_orm.png")
+			if wall_n != null and wall_orm != null:
+				m.set_shader_parameter("side_b_normal", wall_n)
+				m.set_shader_parameter("side_b_orm", wall_orm)
+				m.set_shader_parameter("side_b_has_maps", true)
 	var dec: Texture = _tex("res://assets/generated/textures/kit_decay_albedo.png")
 	m.set_shader_parameter("has_decay", dec != null)
 	if dec != null:
