@@ -40,6 +40,7 @@ func test_flames_burn_in_the_sockets_space() -> void:
 		assert_gt(ps.size(), 0, "%s: has particles" % id)
 		for p: GPUParticles3D in ps:
 			assert_true(p.local_coords, "%s/%s: local space, so it can't trail behind a turn" % [id, p.name])
+			assert_gt(p.fixed_fps, 0, "%s/%s: fixed steps, so a long frame doesn't put it out" % [id, p.name])
 			assert_eq(p.layers, FpMaterials.LAYER, "%s/%s: on the viewmodel layer" % [id, p.name])
 			var mat: BaseMaterial3D = (p.draw_pass_1 as PrimitiveMesh).material as BaseMaterial3D
 			assert_true(mat.use_fov_override and mat.use_z_clip_scale, "%s/%s: drawn with the viewmodel's FOV" % [id, p.name])

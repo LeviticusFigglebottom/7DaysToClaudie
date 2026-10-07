@@ -492,6 +492,10 @@ const FLAMES: Dictionary = {
 }
 
 
+## The flames' particle step rate (see _flame_particles).
+const FLAME_FPS: int = 30
+
+
 static func flame_spec(item_id: StringName) -> Dictionary:
 	return FLAMES.get(String(item_id), FLAMES["lighter"])
 
@@ -525,7 +529,9 @@ static func _flame_particles(spec: Dictionary) -> GPUParticles3D:
 	p.amount = int(spec["amount"])
 	p.lifetime = float(spec["lifetime"])
 	p.local_coords = true
-	p.fixed_fps = 0
+	# Stepped at a fixed rate (interpolated between steps): a frame longer than the flame's short
+	# lifetime (a hitch, a slow renderer) would otherwise skip every respawn and leave it dark.
+	p.fixed_fps = FLAME_FPS
 	var h: float = flame_height(spec)
 	var r: float = maxf(size.x, size.y) * 0.6 + float(spec["radius"]) + h * 0.15
 	p.visibility_aabb = AABB(Vector3(-r, -size.y * 0.5, -r), Vector3(2.0 * r, h + size.y, 2.0 * r))
@@ -594,6 +600,7 @@ static func _ember_particles(spec: Dictionary) -> GPUParticles3D:
 	p.name = "Embers"
 	p.amount = 6
 	p.lifetime = 0.8
+	p.fixed_fps = FLAME_FPS
 	p.local_coords = true
 	p.visibility_aabb = AABB(Vector3(-0.2, -0.05, -0.2), Vector3(0.4, 0.5, 0.4))
 	var m := ParticleProcessMaterial.new()
