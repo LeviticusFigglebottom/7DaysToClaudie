@@ -20,6 +20,7 @@ func _initialize() -> void:
 	_check_assets(content, strict)
 	_check_pois()
 	_check_world_gen(content)
+	_check_nests()
 	print("[validate] %d errors, %d warnings" % [_errors, _warnings])
 	quit(1 if _errors > 0 else 0)
 
@@ -90,6 +91,18 @@ func _check_world_gen(content: Node) -> void:
 	if planner != null:
 		for e2: String in planner.call(&"config_errors", content.call(&"config", &"town_planner")):
 			_err("town_planner: " + e2)
+
+
+## Bloom nests placed as region features (ADR-0055, TD-258): not on a road or path, in water or on
+## a POI pad. Warnings: the nest is still built where it is put.
+func _check_nests() -> void:
+	var script: Script = load("res://src/world/bloom/bloom_nests.gd")
+	if script == null:
+		return
+	var warns: PackedStringArray = script.call(&"placement_warnings", "res://world/main_map")
+	for w: String in warns:
+		_warn("nest: " + w)
+	print("[validate] nests: %d placement warning(s)" % warns.size())
 
 
 func _err(msg: String) -> void:
