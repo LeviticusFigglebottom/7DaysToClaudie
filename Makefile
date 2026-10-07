@@ -145,6 +145,10 @@ preview: import ## Render generated models in-engine for visual QA: make preview
 	@mkdir -p $(ROOT)/build/previews
 	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/preview_asset.gd -- --out $(ROOT)/build/previews $(PREVIEW_ARGS) $(MODELS) 2>&1 | grep -E "PREVIEW|ERROR|SCRIPT ERROR" || true
 
+poi-walk: ## Walk POIs with the real player body (doorways, stairs, props in the way; docs/DEBUG_TOOLS.md): make poi-walk POI="merrow_house lot:pell_crossing:larch_1" or POI_ARGS="--all --pool"; exit code = buildings with blocking problems
+	@mkdir -p $(ROOT)/build/poi_walk
+	@$(GODOT_HEADLESS) --fixed-fps 60 -s res://src/tools/cli/poi_walk.gd -- --out $(ROOT)/build/poi_walk $(POI_ARGS) $(POI)
+
 poi-preview: ## Render POIs for layout QA (cut-away plans + exteriors): make poi-preview POI="mile9_diner pell_pharmacy" [POI_ARGS="--size 1600x900 --no-exterior"]
 	@mkdir -p $(ROOT)/build/poi_preview
 	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/poi_preview.gd -- --out $(ROOT)/build/poi_preview $(POI_ARGS) $(POI) 2>&1 | grep -E "POI_PREVIEW|ERROR|SCRIPT ERROR" || true
