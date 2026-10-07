@@ -1,0 +1,1613 @@
+{
+ "_doc": "Tier-3 wilderness set piece for random worlds (site forest). A Cordon twin-engine transport down in the timber, broken in two: the forward fuselage is kit rooms wrapped in the w4_plane_fuselage_fwd shell (its catalog entry, tools/assetgen/blender_catalogs/props_wild4_plane.py SHELLS, mirrors this plan's rectangle cols 15..18, rows 4..17 and its outside openings) under style roof 'none': the crew bay and the cargo hold on level 0, the flight deck on level 1 over the crew bay, reached by a ladder through a floor hatch; w4_plane_nose buries the radome in the bank north of it. The tail section (cols 6..12, rows 30..32: the tail cabin and the sample bay) wears w4_plane_fuselage_tail, with w4_plane_tail_cone and its fin beyond. Route: the swath of snapped trunks -> the debris field -> the torn end, a vault over the cargo ramp's lip (a pony wall, 1.0 m off the floor), jaws in the litter (their snap wakes the medics) -> the cargo hold: the medical team's camp rises -> the crew bay -> up the ladder: the flight deck, the pilot's log and the sample key (taking it wakes the aircrew) -> the hold's emergency exit, bolted inside (the shortcut out) -> the tail's side door, cans across it (they, or the door, wake the escort) -> the sample bay's deadbolted hatch, a shotgun wired behind it -> Lt. Vos (guardian) and the sample case. Alternatives: where the medics bed down, where the jaws lie, what is rigged behind the hatch, where the chute came down, the hold's paint, the lamps. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "w4_cordon_plane_wreck",
+   "name": "The Cordon Transport Wreck",
+   "tier": 3,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    36,
+    40
+   ],
+   "origin": [
+    1,
+    1
+   ],
+   "author": "Hollowmere team (agent X)",
+   "story": "In the first week of the quarantine the Cordon flew its medical team out of the valley: Dr. Ama Osei, two nurses, a medic, the flight medic Lt. Ingrid Vos and a case of Bloom samples on cold chain, under a two-man escort, in a twin-engine transport with Capt. Teo Reyes at the controls. Twelve minutes out the Hum came up through the airframe like a bad engine and both engines lost power together. Reyes put her into the timber. The fuselage broke behind the wing: the forward section went on and buried its nose in the bank; the tail stayed fifteen metres back among the trunks it had snapped. Nobody came. The survivors made a camp in the cargo hold and waited for the rescue the radio kept promising. Osei treated the injured, then the feverish, then each other. The pilots stayed on the flight deck with the radio. Vos carried the sample case into the tail's equipment bay, deadbolted the hatch, and sent the key forward to the captain so nobody could make her open it.",
+   "population": "clinic",
+   "style": {
+    "exterior": "plaster_grey",
+    "interior": "paint_sage",
+    "floor": "concrete",
+    "ceiling": "plaster_grey",
+    "floor_height": 0.08,
+    "decay": 0.6,
+    "damaged_walls": 0.0,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.18
+    },
+    "roof": {
+     "type": "none"
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "...............FFFF...............",
+      "...............FFFF...............",
+      "...............FFFF...............",
+      "...............FFFF...............",
+      "...............HHHH...............",
+      "...............HHHH...............",
+      "...............HHHH...............",
+      "...............HHHH...............",
+      "...............HHHH...............",
+      "...............HHHH...............",
+      "...............HHHH...............",
+      "...............HHHH...............",
+      "...............HHHH...............",
+      "...............HHHH...............",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "......SSTTTTT.....................",
+      "......SSTTTTT.....................",
+      "......SSTTTTT.....................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      ".................................."
+     ],
+     "rooms": {
+      "F": {
+       "name": "Crew bay",
+       "type": "storage",
+       "wall": "paint_sage",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "H": {
+       "name": "Cargo hold",
+       "type": "storage",
+       "wall": "paint_sage",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "T": {
+       "name": "Tail cabin",
+       "type": "storage",
+       "wall": "paint_sage",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "S": {
+       "name": "Sample bay",
+       "type": "storage",
+       "wall": "plaster_white",
+       "floor": "concrete",
+       "ceiling": "plaster_white"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "...............CCCC...............",
+      "...............CCCC...............",
+      "...............CCCC...............",
+      "...............CCCC...............",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      ".................................."
+     ],
+     "rooms": {
+      "C": {
+       "name": "Flight deck",
+       "type": "office",
+       "wall": "plaster_grey",
+       "floor": "linoleum_beige",
+       "ceiling": "plaster_grey"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "ramp_lip_a",
+     "at": [
+      15,
+      17
+     ],
+     "side": "S",
+     "type": "half"
+    },
+    {
+     "id": "ramp_lip_b",
+     "at": [
+      16,
+      17
+     ],
+     "side": "S",
+     "type": "half"
+    },
+    {
+     "id": "ramp_lip_c",
+     "at": [
+      17,
+      17
+     ],
+     "side": "S",
+     "type": "half"
+    },
+    {
+     "id": "ramp_lip_d",
+     "at": [
+      18,
+      17
+     ],
+     "side": "S",
+     "type": "half"
+    },
+    {
+     "id": "crew_bulkhead",
+     "at": [
+      16,
+      8
+     ],
+     "side": "N",
+     "type": "door2",
+     "state": "missing"
+    },
+    {
+     "id": "emergency_exit",
+     "at": [
+      15,
+      14
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_metal"
+    },
+    {
+     "id": "windscreen_l",
+     "at": [
+      16,
+      4
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "broken",
+     "level": 1,
+     "cue": "none"
+    },
+    {
+     "id": "windscreen_r",
+     "at": [
+      17,
+      4
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "tail_door",
+     "at": [
+      10,
+      32
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal"
+    },
+    {
+     "id": "sample_hatch",
+     "at": [
+      8,
+      31
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "locked",
+     "key": "w4_plane_sample_key",
+     "lock": "deadbolt",
+     "model": "door_metal"
+    }
+   ],
+   "ladders": [
+    {
+     "level": 0,
+     "at": [
+      18,
+      7
+     ],
+     "side": "E",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "fwd_shell",
+     "prop": "w4_plane_fuselage_fwd",
+     "pos": [
+      17.0,
+      11.0
+     ],
+     "y": -0.08,
+     "route_ok": true
+    },
+    {
+     "id": "nose",
+     "prop": "w4_plane_nose",
+     "pos": [
+      17.0,
+      1.95
+     ]
+    },
+    {
+     "id": "tail_shell",
+     "prop": "w4_plane_fuselage_tail",
+     "pos": [
+      9.5,
+      31.5
+     ],
+     "y": -0.08,
+     "route_ok": true
+    },
+    {
+     "id": "tail_cone",
+     "prop": "w4_plane_tail_cone",
+     "pos": [
+      3.95,
+      31.5
+     ]
+    },
+    {
+     "id": "hold_cabinet",
+     "prop": "road_medical_cabinet",
+     "at": [
+      15,
+      8
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.05
+     ]
+    },
+    {
+     "id": "seats_w",
+     "prop": "w4_plane_seat_row",
+     "at": [
+      15,
+      10
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.5
+     ]
+    },
+    {
+     "id": "seats_e_fwd",
+     "prop": "w4_plane_seat_row",
+     "at": [
+      18,
+      9
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "seats_e_aft",
+     "prop": "w4_plane_seat_row",
+     "at": [
+      18,
+      11
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.0
+     ]
+    },
+    {
+     "id": "cot_e",
+     "prop": "w3_ward_cot",
+     "pos": [
+      18.5,
+      14.05
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "cot_iv",
+     "prop": "road_iv_stand",
+     "pos": [
+      17.75,
+      13.25
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "hold_relief",
+     "prop": "civic_relief_crate",
+     "at": [
+      15,
+      12
+     ],
+     "against": "W",
+     "container": "w4_plane_cargo_crate"
+    },
+    {
+     "id": "hold_lantern",
+     "prop": "lantern_camping",
+     "pos": [
+      15.35,
+      11.85
+     ],
+     "y": 0.55,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "id": "hold_bin",
+     "prop": "lab_biohazard_bin",
+     "pos": [
+      15.4,
+      16.45
+     ]
+    },
+    {
+     "prop": "bloody_bandages",
+     "pos": [
+      16.9,
+      14.8
+     ]
+    },
+    {
+     "prop": "civic_blanket_pile",
+     "pos": [
+      18.6,
+      12.76
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "bag_e",
+     "prop": "sleeping_bag",
+     "pos": [
+      18.5,
+      16.2
+     ],
+     "rot": 90
+    },
+    {
+     "id": "hold_stove",
+     "prop": "camp_stove",
+     "pos": [
+      15.45,
+      15.55
+     ],
+     "rot": 90,
+     "alt": "camp:aft"
+    },
+    {
+     "id": "hold_stove",
+     "prop": "camp_stove",
+     "pos": [
+      15.45,
+      9.5
+     ],
+     "rot": 90,
+     "alt": "camp:forward"
+    },
+    {
+     "id": "loadmaster_desk",
+     "prop": "desk_small",
+     "at": [
+      15,
+      5
+     ],
+     "against": "W"
+    },
+    {
+     "id": "loadmaster_chair",
+     "prop": "chair_wood",
+     "pos": [
+      15.85,
+      5.1
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "id": "crew_locker",
+     "prop": "wild_locker_steel",
+     "at": [
+      15,
+      7
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.15
+     ],
+     "container": "wild_locker"
+    },
+    {
+     "id": "seats_crew",
+     "prop": "w4_plane_seat_row",
+     "at": [
+      16,
+      4
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "id": "flight_kit",
+     "prop": "wild_footlocker",
+     "at": [
+      18,
+      5
+     ],
+     "against": "E",
+     "container": "w4_plane_flight_kit"
+    },
+    {
+     "id": "console",
+     "prop": "w4_plane_cockpit_console",
+     "at": [
+      16,
+      4
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "level": 1
+    },
+    {
+     "id": "seat_pilot",
+     "prop": "w4_plane_pilot_seat",
+     "pos": [
+      16.25,
+      5.45
+     ],
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "id": "seat_copilot",
+     "prop": "w4_plane_pilot_seat",
+     "pos": [
+      17.75,
+      5.45
+     ],
+     "rot": 180,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "nav_desk",
+     "prop": "desk_small",
+     "at": [
+      15,
+      6
+     ],
+     "against": "W",
+     "level": 1
+    },
+    {
+     "prop": "wild_radio_set",
+     "pos": [
+      15.35,
+      6.0
+     ],
+     "y": 0.75,
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "id": "crew_bunk",
+     "prop": "wild_cot_canvas",
+     "pos": [
+      16.0,
+      7.6
+     ],
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "pilot_bag",
+     "prop": "duffel_bag",
+     "pos": [
+      18.55,
+      5.2
+     ],
+     "rot": 80,
+     "level": 1,
+     "container": "duffel_bag"
+    },
+    {
+     "id": "seats_tail",
+     "prop": "w4_plane_seat_row",
+     "at": [
+      10,
+      30
+     ],
+     "against": "N"
+    },
+    {
+     "id": "tail_crate_a",
+     "prop": "civic_relief_crate",
+     "at": [
+      12,
+      30
+     ],
+     "against": "E",
+     "container": "w4_plane_cargo_crate"
+    },
+    {
+     "id": "tail_crate_b",
+     "prop": "civic_relief_crate",
+     "at": [
+      12,
+      32
+     ],
+     "against": "E",
+     "container": "w4_plane_cargo_crate",
+     "variant": "worn"
+    },
+    {
+     "id": "tail_crate_small",
+     "prop": "crate_wood",
+     "pos": [
+      11.65,
+      31.25
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "tail_lantern",
+     "prop": "lantern_camping",
+     "pos": [
+      12.2,
+      30.0
+     ],
+     "y": 0.55,
+     "lit": true
+    },
+    {
+     "id": "sample_case",
+     "prop": "w4_plane_sample_case",
+     "at": [
+      6,
+      31
+     ],
+     "against": "W"
+    },
+    {
+     "id": "sample_dewar",
+     "prop": "lab_dewar",
+     "at": [
+      6,
+      30
+     ],
+     "against": "N",
+     "offset": [
+      -0.1,
+      0
+     ]
+    },
+    {
+     "id": "wing",
+     "prop": "w4_plane_wing_section",
+     "pos": [
+      7.6,
+      12.6
+     ],
+     "rot": 14
+    },
+    {
+     "id": "engine",
+     "prop": "w4_plane_engine",
+     "pos": [
+      24.4,
+      23.2
+     ],
+     "rot": 32
+    },
+    {
+     "id": "med_pallet",
+     "prop": "w4_plane_cargo_pallet",
+     "pos": [
+      21.2,
+      26.2
+     ],
+     "rot": -12,
+     "container": "w4_plane_med_pallet"
+    },
+    {
+     "id": "crate_a",
+     "prop": "civic_relief_crate",
+     "pos": [
+      13.2,
+      20.6
+     ],
+     "rot": 35,
+     "container": "w4_plane_cargo_crate"
+    },
+    {
+     "id": "crate_b",
+     "prop": "civic_relief_crate",
+     "pos": [
+      20.6,
+      19.4
+     ],
+     "rot": -20,
+     "container": "w4_plane_cargo_crate",
+     "variant": "worn"
+    },
+    {
+     "id": "crate_c",
+     "prop": "crate_wood",
+     "pos": [
+      9.4,
+      22.8
+     ],
+     "rot": 12,
+     "container": "w4_plane_cargo_crate"
+    },
+    {
+     "id": "crate_d",
+     "prop": "civic_relief_crate",
+     "pos": [
+      26.4,
+      28.5
+     ],
+     "rot": 70,
+     "container": "w4_plane_cargo_crate"
+    },
+    {
+     "id": "crate_e",
+     "prop": "crate_wood",
+     "pos": [
+      19.6,
+      23.8
+     ],
+     "rot": -30,
+     "variant": "worn"
+    },
+    {
+     "prop": "cardboard_box_open",
+     "pos": [
+      22.9,
+      27.9
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      12.4,
+      9.2
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      21.5,
+      16.4
+     ],
+     "rot": -40
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      18.8,
+      21.4
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "road_suitcase",
+     "pos": [
+      11.6,
+      25.4
+     ],
+     "rot": -25,
+     "variant": "worn",
+     "id": "suitcase"
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      22.6,
+      20.9
+     ],
+     "rot": 15,
+     "variant": "clean"
+    },
+    {
+     "prop": "w3_body_bag",
+     "pos": [
+      23.5,
+      21.4
+     ],
+     "rot": 8,
+     "variant": "clean"
+    },
+    {
+     "id": "chute",
+     "prop": "w4_plane_parachute",
+     "pos": [
+      25.4,
+      12.6
+     ],
+     "rot": 20,
+     "alt": "chute:firs"
+    },
+    {
+     "id": "chute",
+     "prop": "w4_plane_parachute",
+     "pos": [
+      4.4,
+      27.6
+     ],
+     "rot": -70,
+     "alt": "chute:tail"
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      14.2,
+      27.4
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      5.2,
+      25.2
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      20.4,
+      31.0
+     ],
+     "rot": 150,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      22.3,
+      9.2
+     ],
+     "rot": 230
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      10.8,
+      18.3
+     ],
+     "rot": 300,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      26.0,
+      33.6
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      23.6,
+      10.6
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      27.6,
+      14.2
+     ],
+     "rot": 95,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      2.2,
+      24.4
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      1.6,
+      36.4
+     ],
+     "rot": 200
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      30.6,
+      5.6
+     ],
+     "rot": 60
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      31.2,
+      24.8
+     ],
+     "rot": 150
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      8.4,
+      3.2
+     ],
+     "rot": 12
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      26.8,
+      1.6
+     ],
+     "rot": 300,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      2.4,
+      9.0
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      31.6,
+      34.8
+     ],
+     "rot": 220
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      17.8,
+      29.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      7.2,
+      19.4
+     ]
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      29.2,
+      19.6
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      3.6,
+      16.4
+     ],
+     "rot": 110
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "dr_osei",
+     "pos": [
+      15.45,
+      11.0
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "group": "medics",
+     "anchor": "seats_w"
+    },
+    {
+     "id": "nurse_lind",
+     "pos": [
+      18.5,
+      14.05
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "group": "medics",
+     "anchor": "cot_e"
+    },
+    {
+     "id": "medic_ferro",
+     "pos": [
+      16.6,
+      12.3
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 160,
+     "group": "medics"
+    },
+    {
+     "id": "medic_hale",
+     "pos": [
+      18.5,
+      16.2
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "group": "medics",
+     "anchor": "bag_e",
+     "alt": "camp:aft"
+    },
+    {
+     "id": "medic_hale",
+     "pos": [
+      16.25,
+      9.55
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": -90,
+     "group": "medics",
+     "alt": "camp:forward"
+    },
+    {
+     "id": "pilot_reyes",
+     "pos": [
+      16.25,
+      5.45
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "level": 1,
+     "group": "crew",
+     "anchor": "seat_pilot",
+     "population": "cordon"
+    },
+    {
+     "id": "copilot_ash",
+     "pos": [
+      17.75,
+      5.45
+     ],
+     "enemy": "keener",
+     "pose": "sit",
+     "rot": 180,
+     "level": 1,
+     "group": "crew",
+     "anchor": "seat_copilot",
+     "population": "cordon"
+    },
+    {
+     "id": "engineer_dunn",
+     "pos": [
+      17.0,
+      4.3
+     ],
+     "enemy": "husk",
+     "pose": "sit",
+     "rot": 0,
+     "group": "crew",
+     "anchor": "seats_crew",
+     "population": "cordon"
+    },
+    {
+     "id": "escort_kade",
+     "pos": [
+      10.25,
+      30.3
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "group": "tail",
+     "anchor": "seats_tail",
+     "population": "cordon"
+    },
+    {
+     "id": "escort_bram",
+     "pos": [
+      10.9,
+      31.7
+     ],
+     "enemy": "rammer",
+     "pose": "stand",
+     "rot": -100,
+     "group": "tail",
+     "population": "cordon"
+    },
+    {
+     "id": "flight_medic_vos",
+     "pos": [
+      7.0,
+      31.55
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": -90,
+     "guardian": true
+    }
+   ],
+   "pickups": [
+    {
+     "id": "sample_key",
+     "item": "w4_plane_sample_key",
+     "pos": [
+      17.35,
+      4.45
+     ],
+     "y": 1.02,
+     "level": 1
+    }
+   ],
+   "notes": [
+    {
+     "note": "w4_plane_manifest",
+     "pos": [
+      15.3,
+      5.0
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w4_plane_medic",
+     "pos": [
+      17.6,
+      14.7
+     ],
+     "y": 0.02
+    },
+    {
+     "note": "w4_plane_pilot_log",
+     "pos": [
+      16.6,
+      4.45
+     ],
+     "y": 1.02,
+     "level": 1
+    },
+    {
+     "note": "w4_plane_radio",
+     "pos": [
+      11.65,
+      31.25
+     ],
+     "y": 0.44
+    }
+   ],
+   "traps": [
+    {
+     "id": "debris_jaws",
+     "type": "bear_trap",
+     "pos": [
+      16.4,
+      18.65
+     ],
+     "rot": 20,
+     "alt": "jaws:lip"
+    },
+    {
+     "id": "debris_jaws",
+     "type": "bear_trap",
+     "pos": [
+      13.6,
+      14.35
+     ],
+     "rot": -15,
+     "alt": "jaws:exit"
+    },
+    {
+     "id": "pallet_jaws",
+     "type": "bear_trap",
+     "pos": [
+      19.4,
+      25.2
+     ],
+     "rot": 60
+    },
+    {
+     "id": "tail_cans",
+     "type": "can_chime",
+     "at": [
+      10,
+      32
+     ],
+     "side": "S"
+    },
+    {
+     "id": "sample_rig",
+     "type": "shotgun",
+     "at": [
+      7,
+      31
+     ],
+     "side": "E",
+     "alt": "sample_rig:shotgun"
+    },
+    {
+     "id": "sample_rig",
+     "type": "can_chime",
+     "at": [
+      7,
+      31
+     ],
+     "side": "E",
+     "alt": "sample_rig:cans"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "medics_jaws",
+     "group": "medics",
+     "on": "trap",
+     "trap": "debris_jaws",
+     "delay": 0.7
+    },
+    {
+     "id": "medics_hold",
+     "group": "medics",
+     "on": "room",
+     "room": "H",
+     "level": 0,
+     "delay": 0.6
+    },
+    {
+     "id": "crew_key",
+     "group": "crew",
+     "on": "pickup",
+     "pickup": "sample_key",
+     "delay": 0.4
+    },
+    {
+     "id": "tail_cans_rattle",
+     "group": "tail",
+     "on": "trap",
+     "trap": "tail_cans",
+     "delay": 0.5
+    },
+    {
+     "id": "tail_door_opened",
+     "group": "tail",
+     "on": "opening",
+     "opening": "tail_door",
+     "delay": 0.8
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      15.6,
+      11.9
+     ],
+     "height": 0.7,
+     "color": "#ffbb77",
+     "energy": 0.45,
+     "range": 5.0,
+     "flicker": 0.25
+    },
+    {
+     "pos": [
+      12.0,
+      30.4
+     ],
+     "height": 0.7,
+     "color": "#ffbb77",
+     "energy": 0.35,
+     "range": 4.0,
+     "flicker": 0.2
+    },
+    {
+     "pos": [
+      6.9,
+      31.5
+     ],
+     "height": 2.0,
+     "color": "#c8ffd0",
+     "energy": 0.2,
+     "range": 3.5,
+     "flicker": 0.05
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_pool",
+     "at": [
+      16,
+      12
+     ],
+     "side": "floor",
+     "size": [
+      1.3,
+      1.1
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      15,
+      14
+     ],
+     "side": "W",
+     "height": 1.3,
+     "size": [
+      0.4,
+      0.4
+     ]
+    },
+    {
+     "decal": "survivor_marks_b",
+     "at": [
+      9,
+      30
+     ],
+     "side": "N",
+     "height": 1.6,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      7,
+      31
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      1.8
+     ],
+     "rot": 90
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      24,
+      23
+     ],
+     "side": "floor",
+     "size": [
+      3.0,
+      2.4
+     ]
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      16,
+      16
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      1.6
+     ]
+    },
+    {
+     "decal": "bullet_holes",
+     "at": [
+      8,
+      31
+     ],
+     "side": "E",
+     "height": 1.4,
+     "size": [
+      0.9,
+      0.7
+     ]
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      18,
+      16
+     ],
+     "side": "E",
+     "height": 0.6,
+     "size": [
+      1.0,
+      0.7
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      17,
+      36
+     ],
+     "label": "The timber is snapped off at head height in a long swath: the tail of a Cordon transport lies across it, a string of cans across its side door, and the hull beyond with its nose in the bank"
+    },
+    {
+     "at": [
+      17,
+      24
+     ],
+     "label": "The debris field: crates burst out of the hold, a medical pallet split open, a wing in the brush, an engine in the dirt, a parachute in the firs"
+    },
+    {
+     "at": [
+      16,
+      19
+     ],
+     "label": "The torn end of the fuselage: the cargo ramp gone, its lip at chest height; jaws in the litter under it"
+    },
+    {
+     "at": [
+      16,
+      15
+     ],
+     "level": 0,
+     "label": "Over the lip into the cargo hold: the medical team's camp on the jump seats and stretchers"
+    },
+    {
+     "at": [
+      16,
+      7
+     ],
+     "level": 0,
+     "label": "Through the crew bulkhead: the loadmaster's station and his manifest, a ladder up through the flight deck hatch"
+    },
+    {
+     "at": [
+      16,
+      6
+     ],
+     "level": 1,
+     "label": "Up the ladder onto the flight deck: the pilots still in their seats, the log and the sample key on the console"
+    },
+    {
+     "at": [
+      15,
+      14
+     ],
+     "level": 0,
+     "label": "Back down and aft to the emergency exit, bolted from inside"
+    },
+    {
+     "at": [
+      13,
+      14
+     ],
+     "label": "Draw the bolt and step down into the wreckage beside the hull"
+    },
+    {
+     "at": [
+      10,
+      34
+     ],
+     "label": "The tail section's side door, the can string across it"
+    },
+    {
+     "at": [
+      10,
+      31
+     ],
+     "level": 0,
+     "label": "The tail cabin: the Cordon escort's crates and the sample bay's hatch, deadbolted"
+    },
+    {
+     "at": [
+      7,
+      31
+     ],
+     "level": 0,
+     "label": "The sample bay: the flight medic with the sample case"
+    }
+   ],
+   "loot_room": {
+    "room": "S",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "emergency_exit"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "camp",
+     "label": "Where the medical team bedded down",
+     "options": [
+      {
+       "id": "aft",
+       "weight": 2,
+       "label": "By the torn end, round the stove"
+      },
+      {
+       "id": "forward",
+       "label": "Forward by the crew bulkhead"
+      }
+     ]
+    },
+    {
+     "id": "jaws",
+     "label": "Where the jaws lie in the litter",
+     "options": [
+      {
+       "id": "lip",
+       "weight": 2,
+       "label": "Under the ramp lip"
+      },
+      {
+       "id": "exit",
+       "label": "Under the emergency exit"
+      }
+     ]
+    },
+    {
+     "id": "sample_rig",
+     "label": "What the flight medic set behind the hatch",
+     "options": [
+      {
+       "id": "shotgun",
+       "weight": 2,
+       "label": "A sawn-off on a wire"
+      },
+      {
+       "id": "cans",
+       "label": "A string of cans"
+      }
+     ]
+    },
+    {
+     "id": "chute",
+     "label": "Where the cargo chute came down",
+     "options": [
+      {
+       "id": "firs",
+       "weight": 2,
+       "label": "In the firs east of the hull"
+      },
+      {
+       "id": "tail",
+       "label": "Over the tail"
+      }
+     ]
+    },
+    {
+     "id": "hold_paint",
+     "label": "The hold's paint",
+     "options": [
+      {
+       "id": "sage",
+       "weight": 2
+      },
+      {
+       "id": "slate",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "H",
+         "wall": "paint_slate_blue"
+        },
+        {
+         "level": 0,
+         "room": "F",
+         "wall": "paint_slate_blue"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "lamps",
+     "label": "How many lamps still burn",
+     "options": [
+      {
+       "id": "some",
+       "weight": 2
+      },
+      {
+       "id": "dark",
+       "style": {
+        "lights_on": 0.25
+       }
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "props": 160
+   }
+  }
+ ]
+}
