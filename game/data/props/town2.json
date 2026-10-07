@@ -627,7 +627,7 @@
     "clean": "props/fire_pole",
     "worn": "props/fire_pole_worn"
    },
-   "collision": "box",
+   "collision": "none",
    "physics": "static",
    "size": [
     0.26,

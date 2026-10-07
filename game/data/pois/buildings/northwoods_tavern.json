@@ -243,7 +243,7 @@
         {"prop": "side_table", "pos": [9.6, 1.4], "rot": -90, "level": 1},
         {"prop": "toilet", "at": [7, 12], "against": "S", "level": 1},
         {"prop": "sink_pedestal", "at": [9, 12], "against": "S", "level": 1},
-        {"prop": "bathtub", "pos": [8.0, 9.6], "rot": 0, "level": 1},
+        {"prop": "bathtub", "pos": [8.0, 11.5], "rot": 0, "level": 1},
         {"prop": "bed_single", "at": [11, 0], "against": "N", "variant": "worn", "level": 1},
         {"prop": "bed_single", "at": [14, 0], "against": "N", "variant": "destroyed", "level": 1},
         {"prop": "duffel_bag", "pos": [12.5, 3.6], "rot": 40, "id": "drivers_duffel_1", "level": 1},
