@@ -40,6 +40,7 @@ const KINDS: Dictionary = {
 	&"trader": {"dir": "traders", "script": preload("res://src/core/content/defs/trader_def.gd")},
 	&"faction": {"dir": "factions", "script": preload("res://src/core/content/defs/faction_def.gd")},
 	&"crop": {"dir": "crops", "script": preload("res://src/core/content/defs/crop_def.gd")},
+	&"companion": {"dir": "companions", "script": preload("res://src/core/content/defs/companion_def.gd")},
 }
 
 const BASE_PACK: String = "res://data"

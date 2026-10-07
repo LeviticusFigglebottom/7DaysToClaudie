@@ -16,6 +16,7 @@
     "tracker": [{"key": "T"}],
     "light": [{"key": "F"}],
     "inspect": [{"key": "Y"}],
+    "companion_order": [{"key": "H"}],
     "drop": [{"key": "G"}],
     "rotate_piece": [{"key": "R"}],
     "build_mode_toggle": [{"key": "V"}],

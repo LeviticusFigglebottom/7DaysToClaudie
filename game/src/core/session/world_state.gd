@@ -48,6 +48,10 @@ var ashen: Dictionary = {}
 ## bed -> {kind: "bed", water: soil moisture, plots: [{} (empty) | {crop, grown: days, health, dead?}]};
 ## catcher -> {kind: "catcher", water: units}. Loads empty from saves before it (no version bump).
 var farms: Dictionary = {}
+## The companion (ADR-0058, CompanionDirector): {recruited, dead, position: [3], yaw, health (fraction),
+## downed_t (s left, -1 up), order, spot: [3] | [], out_until_day (-1 not out)}. Loads empty from older
+## saves (no version bump).
+var companion: Dictionary = {}
 
 
 func container_state(id: StringName) -> Dictionary:
@@ -100,7 +104,7 @@ func set_tree_state(chunk_key: String, index: int, state: Dictionary) -> void:
 func to_dict() -> Dictionary:
 	return {
 		"structures": structures, "blueprints": blueprints, "containers": containers, "pois": pois,
-		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "mounds": mounds, "traders": traders, "ashen": ashen, "farms": farms, "chunk_keys": chunk_blobs.keys(),
+		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "mounds": mounds, "traders": traders, "ashen": ashen, "farms": farms, "companion": companion, "chunk_keys": chunk_blobs.keys(),
 		"poi_dressing": poi_dressing,
 	}
 
@@ -119,5 +123,6 @@ func from_dict(d: Dictionary) -> void:
 	traders = d.get("traders", {})
 	ashen = d.get("ashen", {})
 	farms = d.get("farms", {})
+	companion = d.get("companion", {})
 	# A world saved without the key predates per-run dressing (the v4 -> v5 migration sets it too).
 	poi_dressing = int(d.get("poi_dressing", 1))

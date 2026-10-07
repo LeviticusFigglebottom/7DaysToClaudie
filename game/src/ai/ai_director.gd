@@ -226,7 +226,7 @@ func on_scream(keener: Enemy, count: int) -> void:
 func _roaming_count() -> int:
 	var n: int = 0
 	for e: Enemy in enemies.values():
-		if is_instance_valid(e) and e.is_alive() and e.poi_id == &"" and not e.horde:
+		if is_instance_valid(e) and e.is_alive() and e.poi_id == &"" and not e.horde and e.ally == null:
 			n += 1
 	return n
 
@@ -262,6 +262,8 @@ func _process_body(delta: float) -> void:
 		if not is_instance_valid(e):
 			enemies.erase(id)
 			continue
+		if e.ally != null:
+			continue  # the companion is CompanionDirector's (ADR-0058)
 		var d: float = e.global_position.distance_to(ppos)
 		if not e.is_alive():
 			corpses.append(e)
@@ -396,7 +398,7 @@ func enemies_in_radius(pos: Vector3, r: float) -> Array[Enemy]:
 func hostiles_near(pos: Vector3, r: float) -> int:
 	var n: int = 0
 	for e: Enemy in enemies_in_radius(pos, r):
-		if e.is_alive() and e.state != Enemy.State.SLEEP:
+		if e.is_alive() and e.state != Enemy.State.SLEEP and e.ally == null:
 			n += 1
 	return n
 
@@ -408,6 +410,6 @@ func horde_direction(pos: Vector3) -> Vector3:
 func alive_count() -> int:
 	var n: int = 0
 	for e: Enemy in enemies.values():
-		if is_instance_valid(e) and e.is_alive():
+		if is_instance_valid(e) and e.is_alive() and e.ally == null:
 			n += 1
 	return n

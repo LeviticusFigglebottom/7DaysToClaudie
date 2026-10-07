@@ -1,0 +1,272 @@
+{
+ "_doc": "Ezra Vane's camp (ADR-0058): a small wilderness set piece by a power line, away from roads and towns, where the companion waits to be found. A lineman's line truck (the pickup) pulled off the line road and barricaded with a power pole he dropped across its open side, a tarp strung off the truck over his bedroll, a fire ring, and a plywood gear shed for his kit (the loot room). Ezra sits by the fire with a splinted leg (not a sleeper: CompanionDirector seats him at data/companions/ezra.json camp.offset). No Hollowed: the barricade and the fire kept them off. Route: up from the line -> the fire, Ezra -> the gear shed. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "ezra_camp",
+   "name": "Lineman's Camp",
+   "tier": 1,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    18,
+    16
+   ],
+   "origin": [
+    0,
+    0
+   ],
+   "author": "Hollowmere team",
+   "story": "Ezra Vane climbed poles for the county for thirty-one years before a bar fight and a judge put him in the Remand Program. They dropped him two runs before you. He found the line truck where its crew had left it, half off the line road, and lived out of it all summer, climbing poles to cut the dead lines down so they couldn't spark the timber. In August a pole he was topping gave way under him. He splinted his own leg, dragged the pole across the open side of the truck, strung a tarp and kept the fire going. He has been waiting for someone with a first aid kit ever since.",
+   "style": {
+    "exterior": "wood_paneling_dark",
+    "interior": "wood_paneling_dark",
+    "floor": "wood_pine",
+    "ceiling": "wood_paneling_dark",
+    "floor_height": 0.15,
+    "decay": 0.4,
+    "damaged_walls": 0.0,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.0
+    },
+    "roof": {
+     "type": "shed",
+     "pitch": 14,
+     "overhang": 0.3,
+     "material": "roof_metal",
+     "gutters": false
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "..................",
+      "..................",
+      ".............SSS..",
+      ".............SSS..",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      ".................."
+     ],
+     "rooms": {
+      "S": {
+       "name": "Gear shed",
+       "type": "storage",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "shed_door",
+     "at": [
+      14,
+      3
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "shed_window",
+     "at": [
+      13,
+      2
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    }
+   ],
+   "props": [
+    {
+     "prop": "pickup_wreck",
+     "id": "line_truck",
+     "pos": [
+      6.0,
+      4.3
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "utility_pole",
+     "pos": [
+      3.0,
+      1.2
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "sawhorse_barricade",
+     "pos": [
+      2.2,
+      7.6
+     ],
+     "rot": 70,
+     "variant": "worn"
+    },
+    {
+     "prop": "plywood_leaning",
+     "pos": [
+      10.6,
+      7.4
+     ],
+     "rot": -60,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_fire_ring",
+     "pos": [
+      7.6,
+      8.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "oil_drum_fire",
+     "pos": [
+      11.2,
+      10.6
+     ],
+     "lit": true
+    },
+    {
+     "prop": "sleeping_bag",
+     "pos": [
+      5.4,
+      6.9
+     ],
+     "rot": 95
+    },
+    {
+     "prop": "camp_stove",
+     "pos": [
+      9.0,
+      7.0
+     ],
+     "rot": 200
+    },
+    {
+     "prop": "cans_scatter",
+     "pos": [
+      9.6,
+      8.0
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "bloody_bandages",
+     "pos": [
+      6.6,
+      7.3
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      4.6,
+      8.2
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      10.2,
+      4.6
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "wild_firewood_stack",
+     "pos": [
+      11.8,
+      8.2
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "duffel_bag",
+     "pos": [
+      4.2,
+      6.4
+     ],
+     "rot": 30,
+     "id": "ezra_duffel"
+    },
+    {
+     "prop": "toolbox",
+     "pos": [
+      14.5,
+      2.4
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "id": "shed_toolbox"
+    },
+    {
+     "prop": "crate_wood",
+     "pos": [
+      13.5,
+      2.4
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "id": "shed_crate"
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      9,
+      15
+     ],
+     "label": "Up from the power line, a fire in the timber"
+    },
+    {
+     "at": [
+      8,
+      10
+     ],
+     "label": "The line truck, barricaded with a dropped pole: a man by the fire, his leg splinted"
+    },
+    {
+     "at": [
+      14,
+      5
+     ],
+     "label": "His gear shed"
+    },
+    {
+     "at": [
+      14,
+      3
+     ],
+     "label": "Inside: his toolbox and a crate"
+    }
+   ],
+   "loot_room": {
+    "room": "S",
+    "level": 0
+   }
+  }
+ ]
+}
