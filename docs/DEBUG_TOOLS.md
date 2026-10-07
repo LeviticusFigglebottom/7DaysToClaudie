@@ -36,3 +36,37 @@ has the command line).
 
 `--sleepers [sid,sid]` spawns the sleepers and shoots a close view of each seated or lying one
 (`<id>_sleeper_<sid>.png`). `--no-exterior` / `--no-plans` / `--inside` choose the other views.
+
+## POI walk: the player body through every building
+
+`make poi-walk POI="merrow_house lot:pell_crossing:larch_1"` (or `POI_ARGS="--all --pool --generated 3"`)
+runs `poi_walk.gd` headless (`godot --headless --fixed-fps 60 --path game -s
+res://src/tools/cli/poi_walk.gd -- [--poi id[,id]] [--all] [--pool] [--generated N] [--seed N]
+[--out DIR] [--plan] [--verbose]`). Ids are POI ids, `gen:<template>:<seed>` and
+`lot:<framework>:<lot>` (what a run with `--seed`, default 4471, stands on that lot; `--pool` is
+every lot of every framework, `--generated N` seeds 1..N of every template). Each building is
+dressed for the run, built with PoiBuilder on a bare flat pad (open over its cellars), and the real
+Player scene, in god mode, walks it with the move action: the route's waypoints in order, then
+every room the layout reaches. Legs are planned over the validator's graph (doors, stairs, ladders,
+holes, keys) but round props, under stair flights and over stairwells only when nothing else gets
+there; the body steers through doorway middles and up stair lines, opens doors as a player does
+(from beside the leaf's swing, closing an open leaf that is in its way), and only when it stalls
+presses Jump (the player's own vault, else a jump), backs off, then crouches. It teleports only to
+restart after a leg it could not finish. Per building it prints, and writes to
+`build/poi_walk/<id>.json`:
+* **blocked**: legs the body could not finish, by category (doorway, climb, window, drop,
+  entrance, floor), with the collider in the way: a door leaf (opening, state, how far open), a
+  barricade, a container or authored prop (prop id, its `id` / list key), a wall edge (and the
+  opening on it), or a shell box (size, and how high it rises over the feet), with its node path
+  and POI-local cell. `[no way round the props]` means the plan had to go through props.
+* **needed**: legs on plain floor, a doorway or stairs that took a jump, a vault or a crouch
+  (window and half-wall vaults are expected and not listed); **ladder** climbs (an interact).
+* **unreached** rooms (the layout reaches them, the body never stood in them) and **sealed** rooms
+  (the layout itself has no way in).
+* **corridor props**: collision boxes standing in a walk-through doorway's clear width or in the
+  middle of a validated route cell (static, from the layout).
+The exit code is the number of buildings with blocked legs or unreached rooms. `--plan` prints
+each building's compiled plan, openings, stairs and ladders first (generated buildings have no
+JSON); `POI_WALK_DEBUG=1` prints the jumps, door handling and give-ups. Not modelled: terrain
+(the pad is flat), sleepers (none are spawned), weak floors giving way, locked doors without
+their key on the route.
