@@ -1,8 +1,9 @@
 {
   "_doc": "The Bloom on the land (ADR-0025, BloomField / BloomWorld / BloomMounds). Zones are authored as region features ({\"type\": \"bloom\", \"at\" | \"points\" | \"poi\"+\"offset\", \"radius\", \"strength\", \"edge\"}, docs/REGIONS.md); this file shapes them and adds the per-POI defaults.",
   "field": {
-    "_doc": "texel: grid spacing (m) of the hm_bloom_map shader global. Each zone's radius swells and shrinks along its boundary (lobe x radius, one lobe per lobe_len x radius of boundary) and shoots out tongues (up to tongue x edge radii, tongue_len x radius apart); the point is warped (warp x radius, wavelength warp_scale x radius) so the tongues bend, the edge frays at edge_scale m (depth edge x 0.35 radii; edge is the default when a zone sets none), the value fades over softness x radius either side of the edge and is mottled inside (mottle, mottle_scale m). spot_reach: how far past its radius a dynamic spot (a rooting mound) spreads.",
+    "_doc": "texel: grid spacing (m) of the hm_bloom_map shader global. Each zone's radius swells and shrinks along its boundary (lobe x radius, one lobe per lobe_len x radius of boundary) and shoots out tongues (up to tongue x edge radii, tongue_len x radius apart); the point is warped (warp x radius, wavelength warp_scale x radius) so the tongues bend, the edge frays at edge_scale m (depth edge x 0.35 radii; edge is the default when a zone sets none), the value fades over softness x radius either side of the edge and is mottled inside (mottle, mottle_scale m). spot_reach: how far past its radius a dynamic spot (a rooting mound) spreads. window: side (m) of the square hm_bloom_map holds around the player (BloomWorld; the field itself is kept in 256 m tiles, BloomTiles).",
     "texel": 2.0,
+    "window": 3072,
     "edge": 0.6,
     "warp": 0.45,
     "warp_scale": 0.8,

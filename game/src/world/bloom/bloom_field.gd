@@ -123,6 +123,13 @@ static func build(world: WorldDef, regions: Dictionary, cfg: Dictionary) -> Bloo
 	return f
 
 
+## An empty field shaped by `cfg` (data/config/bloom.json): BloomTiles composes its tiles with it.
+static func shaped(cfg: Dictionary) -> BloomField:
+	var f := BloomField.new()
+	f._configure(cfg.get("field", {}))
+	return f
+
+
 ## A field from explicit zones over `cover` (tests, tools).
 static func from_zones(p_zones: Array[Zone], cover: Rect2, cfg: Dictionary = {}) -> BloomField:
 	var f := BloomField.new()
@@ -146,6 +153,28 @@ func _configure(c: Dictionary) -> void:
 	_mottle_scale = maxf(1.0, float(c.get("mottle_scale", _mottle_scale)))
 	_default_edge = float(c.get("edge", _default_edge))
 	_spot_reach = maxf(1.0, float(c.get("spot_reach", _spot_reach)))
+
+
+## Takes another field's shape parameters (texel, noise scales, edge, spot reach).
+func copy_shape(o: BloomField) -> void:
+	texel = o.texel
+	_warp = o._warp
+	_warp_scale = o._warp_scale
+	_lobe = o._lobe
+	_lobe_len = o._lobe_len
+	_tongue = o._tongue
+	_tongue_len = o._tongue_len
+	_edge_scale = o._edge_scale
+	_softness = o._softness
+	_mottle = o._mottle
+	_mottle_scale = o._mottle_scale
+	_default_edge = o._default_edge
+	_spot_reach = o._spot_reach
+
+
+## How far past its radius a dynamic spot spreads (radii).
+func spot_reach() -> float:
+	return _spot_reach
 
 
 # --- Authoring -----------------------------------------------------------------------------------
@@ -242,9 +271,51 @@ func reach(z: Zone) -> float:
 	return (1.0 + _lobe * 0.6 + _tongue * z.edge * 0.6) * (1.0 + _softness) + 0.5 * z.edge + _warp
 
 
+## The noise fields that shape a zone: [warp, edge, mottle, lobes, tongues]. Built once per zone
+## by BloomTiles and read from any thread (FastNoiseLite's queries don't change it).
+func noises(z: Zone) -> Array:
+	var warp := FastNoiseLite.new()
+	warp.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	warp.seed = z.seed
+	warp.fractal_octaves = 2
+	warp.frequency = 1.0 / (z.radius * _warp_scale)
+	var edge := FastNoiseLite.new()
+	edge.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	edge.seed = z.seed ^ 0x2c1b
+	edge.fractal_octaves = 3
+	edge.frequency = 1.0 / _edge_scale
+	var mottle := FastNoiseLite.new()
+	mottle.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	mottle.fractal_octaves = 2
+	mottle.frequency = 1.0 / _mottle_scale
+	mottle.seed = z.seed ^ 0x5bd1
+	# Along the boundary: broad lobes, and sparse tongues pushing far out (tapering, since a
+	# spike in the radius narrows the further out it reaches).
+	var lobes := FastNoiseLite.new()
+	lobes.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	lobes.seed = z.seed ^ 0x4e7
+	lobes.fractal_octaves = 2
+	lobes.frequency = 1.0 / (_lobe_len * z.radius)
+	var tongues := FastNoiseLite.new()
+	tongues.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	tongues.seed = z.seed ^ 0x77f3
+	tongues.fractal_octaves = 1
+	tongues.frequency = 1.0 / (_tongue_len * z.radius)
+	return [warp, edge, mottle, lobes, tongues]
+
+
+## A zone's colonisation at p (0..1), as compose() rasterises it at a texel centre: 0 beyond the
+## zone's reach. `n`: its noises().
+func zone_at(z: Zone, p: Vector2, n: Array) -> float:
+	if z.core_distance(p) > reach(z) * z.radius:
+		return 0.0
+	return _zone_value(z, p, n[0], n[1], n[2], n[3], n[4])
+
+
 ## Rasterises every zone onto a grid over `cover` (texel centres), merged as a soft union so overlaps
-## thicken without creasing.
-func compose(cover: Rect2) -> void:
+## thicken without creasing. `zone_noises`: each zone's noises() when the caller keeps them (BloomTiles
+## composes many tiles from the same zones); made here otherwise.
+func compose(cover: Rect2, zone_noises: Array = []) -> void:
 	width = maxi(0, int(ceil(cover.size.x / texel)))
 	depth = maxi(0, int(ceil(cover.size.y / texel)))
 	# The grid's own extent (whole texels), so at() and the shaders map positions the same way.
@@ -258,34 +329,14 @@ func compose(cover: Rect2) -> void:
 	clean.resize(width * depth)
 	clean.fill(1.0)
 	var boxes: Array[Rect2i] = []
-	var mottle := FastNoiseLite.new()
-	mottle.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	mottle.fractal_octaves = 2
-	mottle.frequency = 1.0 / _mottle_scale
-	for z: Zone in zones:
-		mottle.seed = z.seed ^ 0x5bd1
-		var warp := FastNoiseLite.new()
-		warp.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-		warp.seed = z.seed
-		warp.fractal_octaves = 2
-		warp.frequency = 1.0 / (z.radius * _warp_scale)
-		var edge := FastNoiseLite.new()
-		edge.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-		edge.seed = z.seed ^ 0x2c1b
-		edge.fractal_octaves = 3
-		edge.frequency = 1.0 / _edge_scale
-		# Along the boundary: broad lobes, and sparse tongues pushing far out (tapering, since a
-		# spike in the radius narrows the further out it reaches).
-		var lobes := FastNoiseLite.new()
-		lobes.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-		lobes.seed = z.seed ^ 0x4e7
-		lobes.fractal_octaves = 2
-		lobes.frequency = 1.0 / (_lobe_len * z.radius)
-		var tongues := FastNoiseLite.new()
-		tongues.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-		tongues.seed = z.seed ^ 0x77f3
-		tongues.fractal_octaves = 1
-		tongues.frequency = 1.0 / (_tongue_len * z.radius)
+	for zi: int in zones.size():
+		var z: Zone = zones[zi]
+		var n: Array = zone_noises[zi] if zi < zone_noises.size() else noises(z)
+		var warp: FastNoiseLite = n[0]
+		var edge: FastNoiseLite = n[1]
+		var mottle: FastNoiseLite = n[2]
+		var lobes: FastNoiseLite = n[3]
+		var tongues: FastNoiseLite = n[4]
 		var box: Rect2 = z.bounds(z.radius * reach(z) + texel).intersection(cover)
 		if box.size == Vector2.ZERO:
 			continue
@@ -343,9 +394,15 @@ func _mask_texel(regions: Dictionary, k: int, x: float, z: float, h: float) -> v
 	for rv: Variant in regions.values():
 		var rt: RegionTerrain = rv
 		if rt.rect.has_point(Vector2(x, z)):
-			var veg: float = (rt.veg_at(x - h, z - h) + rt.veg_at(x + h, z - h) + rt.veg_at(x - h, z + h) + rt.veg_at(x + h, z + h)) * 0.25
-			base[k] = int(round(base[k] * smoothstep(0.05, 0.6, veg)))
+			base[k] = masked(rt, x, z, h, base[k])
 			return
+
+
+## A texel's value `b` (0..255) at the texel centre (x, z) once `rt`'s ground has masked it (h: a
+## quarter texel; the vegetation allowance is averaged over four points of the texel).
+static func masked(rt: RegionTerrain, x: float, z: float, h: float, b: int) -> int:
+	var veg: float = (rt.veg_at(x - h, z - h) + rt.veg_at(x + h, z - h) + rt.veg_at(x - h, z + h) + rt.veg_at(x + h, z + h)) * 0.25
+	return int(round(b * smoothstep(0.05, 0.6, veg)))
 
 
 ## A zone's colonisation at p, before quantisation. The radius swells and shrinks along the

@@ -1,7 +1,7 @@
 // The Bloom on the land (ADR-0025): the world-space infestation field and its night glow, shared by
 // the terrain, bark, foliage and fungus shaders.
-//   hm_bloom_map    R8 field over the built regions, 0 clean .. 1 fully colonised (BloomField)
-//   hm_bloom_rect   (x0, z0, 1/width, 1/depth) in metres; 1/width is 0 while there is no field
+//   hm_bloom_map    R8 field, 0 clean .. 1 fully colonised: a window of BloomTiles round the player (BloomWorld)
+//   hm_bloom_rect   the window: (x0, z0, 1/width, 1/depth) in metres; 1/width is 0 while there is no field
 //   hm_bloom_night  0 by day .. 1 in full dark (BloomWorld, from the sun's elevation)
 //   hm_bloom        the Hum's glow 0..1 (EnvironmentController): the threads brighten on Hum nights
 global uniform sampler2D hm_bloom_map : filter_linear, repeat_disable;
