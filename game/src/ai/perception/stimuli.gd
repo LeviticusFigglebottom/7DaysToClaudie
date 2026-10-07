@@ -36,8 +36,9 @@ var lights: Dictionary = {}
 var weather_noise_mask: float = 1.0
 var wind := Vector2(1, 0)
 var wind_strength: float = 0.3
-## Sight is not scaled by darkness: the Hollowed see without light after dark (DESIGN §6), their
-## day/night sight ranges encode that. Light still matters as nearby fires and the player's own.
+## The sky's light on the land (0 dark .. 1 day), fed each frame by GameWorld. The Hollowed see
+## in the dark (DESIGN §6): their perception.dark_sight keeps most of their sight after dark, while
+## eyes that need light (the default 0.15) lose it. Fires and the player's own light still count.
 var ambient_light: float = 1.0
 var heat: HeatMap
 var _time: float = 0.0
@@ -233,11 +234,15 @@ func light_at(pos: Vector3) -> float:
 
 ## How far away (m) an observer with base sight range can notice the player.
 ## Combines light on the player, stance, motion and perks. Carried light makes you a beacon.
-func detection_range(base_sight: float, light: float, crouched: bool, moving_speed: float, own_light: bool, visibility_mult: float) -> float:
-	var r: float = base_sight * clampf(0.15 + light * 0.85, 0.12, 1.25)
+## dark_sight: the share of the range kept in pitch dark (0.15 for eyes that need light; the
+## Hollowed see in the dark, EnemyDef perception.dark_sight). beacon: how far a carried light
+## shows (< 0: base_sight x 1.6 + 30). Both defaults are the original curve (docs/AI_TUNING.md).
+func detection_range(base_sight: float, light: float, crouched: bool, moving_speed: float, own_light: bool, visibility_mult: float,
+		dark_sight: float = 0.15, beacon: float = -1.0) -> float:
+	var r: float = base_sight * clampf(dark_sight + light * (1.0 - dark_sight), 0.12, 1.25)
 	if crouched:
 		r *= 0.55
 	r *= 0.75 + clampf(moving_speed / 6.0, 0.0, 1.0) * 0.5
 	if own_light:
-		r = maxf(r, base_sight * 1.6 + 30.0)
+		r = maxf(r, beacon if beacon >= 0.0 else base_sight * 1.6 + 30.0)
 	return r * maxf(0.2, 1.0 + visibility_mult)

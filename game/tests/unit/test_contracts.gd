@@ -101,6 +101,42 @@ func test_stock_follows_the_restock_period() -> void:
 		assert_gt(int((s1[item] as Dictionary)["count"]), 0)
 
 
+func test_relay_camps_roll_their_own_shelves() -> void:
+	# TD-146: a def with stock_per_post rolls each post's shelves from its post id.
+	var relay: TraderDef = Content.get_def(&"trader", &"program_relay") as TraderDef
+	assert_true(relay.stock_per_post)
+	assert_eq(TraderManager.stock_key(relay, "trader:program_relay:3"), "trader:program_relay:3")
+	assert_eq(TraderManager.stock_key(_td, "trader:waystation_9"), "waystation_9", "one shop for a unique post")
+	assert_eq(Contracts.roll_stock(relay, 0, 4471, "program_relay"), Contracts.roll_stock(relay, 0, 4471), "the def key is the old roll")
+	var differs: bool = false
+	for p: int in 4:
+		differs = differs or Contracts.roll_stock(relay, p, 4471, "trader:program_relay:1") != Contracts.roll_stock(relay, p, 4471, "trader:program_relay:2")
+	assert_true(differs, "two camps, two sets of shelves")
+
+
+func test_contracts_expire_and_cost_standing_by_default() -> void:
+	# TD-146: every board contract has a deadline and a price for failing or dropping it.
+	for qd: QuestDef in Contracts.contract_defs(_td, 3):
+		assert_true(qd.expires_days > 0, "%s expires" % qd.id)
+		assert_gt(qd.fail_rep, 0)
+		assert_gt(qd.abandon_rep, 0)
+		assert_true(qd.abandon_rep <= qd.fail_rep, "%s: dropping a job costs less than failing it" % qd.id)
+	var t5: QuestDef = Content.get_def(&"quest", &"fetch_t5") as QuestDef
+	assert_eq(t5.expires_days, 7, "a week for the far lab")
+
+
+func test_a_loot_room_prop_is_found_by_its_key() -> void:
+	# TD-145: the container id's prop key places it in or out of the loot room.
+	var l: PoiLayout = PoiLayout.compile(Content.get_def(&"poi", &"water_works") as PoiDef)
+	var seen: Dictionary = {}
+	for pr: Dictionary in l.props:
+		seen[Contracts.prop_in_loot_room(l, str(pr["pkey"]))] = true
+	assert_true(seen.has(1), "some prop stands in the loot room")
+	assert_true(seen.has(0), "some does not")
+	assert_eq(Contracts.prop_in_loot_room(l, "no_such_prop"), -1)
+	assert_eq(Contracts.prop_in_loot_room(null, "0"), -1)
+
+
 func test_prices_follow_value_and_standing() -> void:
 	var pk: ItemDef = Content.item(&"first_aid_kit")
 	assert_eq(_td.buy_price(pk, 0), ceili(pk.value * _td.buy_markup))

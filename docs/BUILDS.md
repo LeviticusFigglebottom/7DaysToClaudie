@@ -39,6 +39,10 @@ files. Smoke an exported pack (export templates ignore `-s`, so use the editor b
 cd /tmp && /path/to/repo/.tools/godot/godot --headless --main-pack /path/to/Hollowmere.pck \
   -s /path/to/repo/game/src/tools/cli/slice_smoke.gd
 ```
+Give `--main-pack` an **absolute** path. Godot re-opens the pack by that path for every file it
+reads, and `DirAccess` listings (any `user://` scan) `chdir()` the whole process for a moment, so
+a loader thread reading through a relative pack path fails with "Can't open pack-referenced file
+… File not found" (build #80). A shipped executable finds its pack by its own absolute path.
 
 ## Stand-in mode
 What a fresh clone runs before `make assets`: `ModelLibrary.make_placeholder` shapes and the

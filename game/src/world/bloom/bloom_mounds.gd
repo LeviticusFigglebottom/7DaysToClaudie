@@ -140,9 +140,9 @@ func _sync(force: bool) -> void:
 			_nodes.erase(id)
 	# Re-upload the field only when the spots changed (sizes are quantised by the signature).
 	var sig: String = ",".join(spots.map(func(s: Dictionary) -> String: return "%.1f:%.1f:%.2f" % [s["pos"].x, s["pos"].y, s["strength"]]))
-	if (force or sig != _spots_sig) and terrain != null and terrain.bloom != null and terrain.bloom.field != null:
+	if (force or sig != _spots_sig) and terrain != null and terrain.bloom != null and terrain.bloom.tiles != null:
 		_spots_sig = sig
-		terrain.bloom.refresh(terrain.bloom.field.set_spots(spots))
+		terrain.bloom.set_spots(spots)
 
 
 func _make(id: String, st: Dictionary) -> Mound:

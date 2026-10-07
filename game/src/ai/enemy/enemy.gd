@@ -27,11 +27,31 @@ enum State { SLEEP, WAKING, IDLE, WANDER, INVESTIGATE, CHASE, ATTACK, BREAK, SCR
 const LAYER: int = 1 << 4
 const CORPSE_LAYER: int = 1 << 7
 const MOVE_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 12)
-const SIGHT_MASK: int = (1 << 0) | (1 << 1) | (1 << 14)
+## World, structures, sight blockers and vegetation (layer 13: trunks, thickets and logs near the
+## player, VegetationManager), so a tree or a log is cover (docs/AI_TUNING.md).
+const SIGHT_MASK: int = (1 << 0) | (1 << 1) | (1 << 12) | (1 << 14)
 const GRAVITY: float = 18.0
 const PERCEPTION_INTERVAL: float = 0.25
 const KINEMATIC_BEYOND: float = 110.0
 const MEMORY_SECONDS: float = 9.0
+## Plain Hollowed (not hounds, not the Ashen) also notice a moving player this many degrees past
+## each edge of their field of view, at PERIPHERAL_RANGE of their sight (docs/AI_TUNING.md).
+const PERIPHERAL_DEG: float = 45.0
+const PERIPHERAL_RANGE: float = 0.5
+## By day a plain Hollow investigating comes at this fraction of its run speed (a jog, not a stroll).
+const DAY_INVESTIGATE_PACE: float = 0.75
+## First contact is not instant (TD-191): an awake plain Hollow that catches sight of you stops,
+## groans and turns to look, and commits (the alert cry, CHASE) once its suspicion fills. It fills
+## in NOTICE_EDGE x (distance / range)^2 s, at least NOTICE_MIN (one perception tick: within ~38 %
+## of its range it is at once, at the edge ~1.75 s); an investigating one, already roused, fills
+## twice as fast; out of sight it drains at NOTICE_DRAIN a second (docs/AI_TUNING.md).
+const NOTICE_MIN: float = 0.25
+const NOTICE_EDGE: float = 1.75
+const NOTICE_DRAIN: float = 0.5
+## Going round a log, a rock or a trunk it walked into (TD-191): what a clear way on is probed
+## against (world, structures, props, vegetation), and how long a detour holds after the last bump.
+const DETOUR_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 12)
+const DETOUR_HOLD: float = 1.2
 
 signal died(enemy: Enemy)
 
@@ -83,6 +103,18 @@ var _stagger_t: float = 0.0
 var _hit_at: float = -1.0
 var _heard_seq: int = 0
 var _stuck_t: float = 0.0
+## Suspicion before first contact (0..1, NOTICE_*), where it last saw you, and whether it groaned.
+var _notice: float = 0.0
+var _notice_at := Vector3.INF
+var _notice_voiced: bool = false
+## A detour round an obstacle: the side it goes (+1 / -1, kept a while so it doesn't dither), time
+## left, and the obstacle's face (horizontal normal) it slides along.
+var _detour_side: float = 0.0
+var _detour_t: float = 0.0
+var _detour_n := Vector3.ZERO
+var _detour_mem: float = 0.0
+var _detour_goal := Vector3.ZERO
+var _detour_wedged: float = 0.0
 ## Navigation: the goal the agent's current path leads to, and time until a forced re-path.
 var _nav_goal := Vector3.INF
 var _nav_t: float = 0.0
@@ -99,6 +131,8 @@ var _corpse_t: float = 0.0
 var _looted: bool = false
 var _voice_t: float = 0.0
 var _step_t: float = 0.0
+## How long this IDLE lasts before it wanders off (rolled once per IDLE, not every frame).
+var _idle_for: float = 4.0
 ## World-setting and tier multipliers, fixed at spawn (GameRules + infected tier).
 var max_health: float = 100.0
 var damage_mult: float = 1.0
@@ -349,16 +383,21 @@ func _physics_process(delta: float) -> void:
 				_charge_impact_player(p)
 			if _charge_hit or _state_t > float((def.beh("charge", {}) as Dictionary).get("max_time", 2.4)):
 				_set_state(State.CHASE)
+		State.IDLE, State.WANDER when _notice > 0.0 and _notice_at != Vector3.INF:
+			# Something caught its eye: it stops and turns to look before it commits (TD-191).
+			want = Vector3.ZERO
+			_face(_notice_at)
 		State.IDLE:
-			if _state_t > _rng.randf_range(4.0, 9.0):
-				target_pos = home + Vector3(_rng.randf_range(-12, 12), 0, _rng.randf_range(-12, 12))
+			if _state_t > _idle_for:
+				_idle_for = _rng.randf_range(2.5, 6.0)
+				target_pos = _wander_target()
 				_set_state(State.WANDER)
 		State.WANDER:
 			want = _move_dir(target_pos) * _speed(false)
 			if _flat_dist(target_pos) < 1.2 or _state_t > 30.0:
 				_set_state(State.IDLE)
 		State.INVESTIGATE:
-			want = _move_dir(target_pos) * _speed(is_night())
+			want = _move_dir(target_pos) * _investigate_speed()
 			if _flat_dist(target_pos) < 1.5:
 				var grad: Vector3 = Stimuli.current.scent_gradient(global_position) if Stimuli.current != null else Vector3.ZERO
 				if grad != Vector3.ZERO and float(def.perc("smell", 1.0)) > 0.0 and Stimuli.current.scent_at(global_position) > 0.5:
@@ -453,6 +492,8 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 			_yaw_target = atan2(want.x, want.z)
 		rotation.y = lerp_angle(rotation.y, _yaw_target, minf(1.0, delta * 5.0))
 		return
+	if state != State.CHARGE:
+		want = _detour(want, delta)
 	var v: Vector3 = velocity
 	v.x = want.x
 	v.z = want.z
@@ -466,6 +507,8 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 		var wall: Node3D = _blocking_structure()
 		if wall != null:
 			_charge_impact_structure(wall)
+	elif want.length() > 0.05:
+		_check_detour(want, delta)
 	if want.length() > 0.05:
 		_yaw_target = atan2(want.x, want.z)
 		# Walls in the way of something that wants in get torn down.
@@ -499,6 +542,79 @@ func _blocking_structure() -> Node3D:
 		if c is Node and (c as Node).has_meta(&"breakable"):
 			return c
 	return null
+
+
+## Going round what it walked into (TD-191): a fallen log, a boulder, a trunk. The nav tiles carve
+## trunks but only a small square at a fallen log's middle (VegetationManager.obstacles_in_rect),
+## and off the baked tiles there is no path at all, so a body heading for you can meet a log
+## broadside. While a detour is on, it slides along the obstacle's face to its chosen side until
+## the way toward its goal is clear at knee height, or DETOUR_HOLD s after the last bump.
+func _detour(want: Vector3, delta: float) -> Vector3:
+	_detour_mem = maxf(0.0, _detour_mem - delta)
+	if _detour_t <= 0.0 or want.length() < 0.05:
+		_detour_t = 0.0
+		return want
+	_detour_t -= delta
+	_detour_goal = want
+	if _detour_t < DETOUR_HOLD - 0.25 and _way_clear(want.normalized()):
+		_detour_t = 0.0
+		return want
+	var along: Vector3 = _detour_n.cross(Vector3.UP) * _detour_side
+	return (along + _detour_n * 0.05).normalized() * want.length()
+
+
+## After a move: bumped into something it can't break (not a structure: those it tears at, not a
+## body) and made no headway toward its goal, it starts (or renews) a detour. The side is where the
+## goal leans, or either when it meets the thing square on; it is kept for a few seconds (no
+## dithering at a long log) and flipped when it is wedged in a corner.
+func _check_detour(want: Vector3, delta: float) -> void:
+	var n: Vector3 = _wall_normal()
+	if n == Vector3.ZERO:
+		return
+	var goal: Vector3 = (_detour_goal if _detour_t > 0.0 else want).normalized()
+	var flat_v := Vector3(velocity.x, 0.0, velocity.z)
+	if _detour_t <= 0.0 and flat_v.dot(goal) > want.length() * 0.7:
+		return  # glancing off it, still getting on
+	if _detour_t > 0.0 and flat_v.length() < want.length() * 0.25:
+		_detour_wedged += delta
+		if _detour_wedged > 0.8:
+			_detour_wedged = 0.0
+			_detour_side = -_detour_side
+	else:
+		_detour_wedged = 0.0
+	if _detour_side == 0.0 or (_detour_t <= 0.0 and _detour_mem <= 0.0):
+		var lean: float = n.cross(Vector3.UP).dot(goal)
+		_detour_side = signf(lean) if absf(lean) > 0.15 else (1.0 if _rng.randf() < 0.5 else -1.0)
+	_detour_n = n
+	_detour_t = DETOUR_HOLD
+	_detour_mem = 4.0
+
+
+## The face of a static obstacle it is pressed against (horizontal normal), or ZERO: not the ground,
+## not a body, not a structure or breakable (those go to BREAK in _move).
+func _wall_normal() -> Vector3:
+	for i: int in get_slide_collision_count():
+		var c: KinematicCollision3D = get_slide_collision(i)
+		var n: Vector3 = c.get_normal()
+		var o: Object = c.get_collider()
+		if n.y > 0.5 or o is CharacterBody3D or o is RigidBody3D or o is StructurePiece \
+				or (o is Node and (o as Node).has_meta(&"breakable")):
+			continue
+		var h := Vector3(n.x, 0.0, n.z)
+		if h.length() > 0.1:
+			return h.normalized()
+	return Vector3.ZERO
+
+
+## Nothing in the way along `dir` for 3 m at knee height (a hit on a ground-like slope counts as clear).
+func _way_clear(dir: Vector3) -> bool:
+	if not is_inside_tree():
+		return true
+	var from: Vector3 = global_position + Vector3.UP * 0.45
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 3.0, DETOUR_MASK)
+	q.exclude = [get_rid()]
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(q)
+	return hit.is_empty() or (hit["normal"] as Vector3).y > 0.6
 
 
 ## Direction toward `to` along the navmesh (around houses, through doorways). The path is only
@@ -536,6 +652,32 @@ func _face(p: Vector3) -> void:
 	var d: Vector3 = p - global_position
 	if Vector2(d.x, d.z).length() > 0.05:
 		_yaw_target = atan2(d.x, d.z)
+
+
+## Pace toward something heard, smelled or called out: by day a plain Hollow jogs
+## (DAY_INVESTIGATE_PACE of its run), at night it runs; hounds and the Ashen keep their own pace.
+func _investigate_speed() -> float:
+	if is_night() or not _plain_hollowed():
+		return _speed(is_night())
+	return _speed(true) * DAY_INVESTIGATE_PACE
+
+
+## Where an IDLE body wanders next. A plain roaming Hollow ranges 8 m..behavior.roam_radius
+## (default 30 m) and its home drifts along, so it crosses the land instead of pacing a 12 m box;
+## POI bodies, hounds (they keep with the pack) and the Ashen stay within 12 m of home.
+func _wander_target() -> Vector3:
+	if not _plain_hollowed() or poi_id != &"":
+		return home + Vector3(_rng.randf_range(-12, 12), 0, _rng.randf_range(-12, 12))
+	var r: float = float(def.beh("roam_radius", 30.0))
+	var ang: float = _rng.randf() * TAU
+	var to: Vector3 = home + Vector3(sin(ang), 0.0, cos(ang)) * _rng.randf_range(minf(8.0, r * 0.5), r)
+	home = home.lerp(to, 0.5)
+	return to
+
+
+## A Hollowed that is neither a hound (pack logic, ADR-0034) nor an Ashen (AshenMind, ADR-0048).
+func _plain_hollowed() -> bool:
+	return tribe == null and quad.is_empty()
 
 
 func _speed(running: bool) -> float:
@@ -586,20 +728,44 @@ func _perceive(p: Player, dist: float) -> void:
 		return
 	var night: bool = is_night()
 	var base_sight: float = def.perc("sight_night" if night else "sight_day", 15.0)
+	if state == State.SLEEP:
+		# Sleepers keep their own eyes (perception.sleep_sight_*): the awake sight was raised for
+		# the open world (docs/AI_TUNING.md); how close you get to a POI sleeper is unchanged.
+		base_sight = def.perc("sleep_sight_night" if night else "sleep_sight_day", base_sight)
 	var light: float = st.light_at(p.global_position + Vector3.UP)
 	var own_light: bool = p.get_node(^"Equipment").call(&"has_light_on") if p.has_node(^"Equipment") else false
+	# A carried flame is a beacon in the dark, not in daylight (sleepers in a dim POI still see it).
+	own_light = own_light and (night or state == State.SLEEP or not _plain_hollowed())
 	var vis_mult: float = p.state.progression.modifier("visibility_mult")
-	var range_m: float = st.detection_range(base_sight, light, p.crouching, p.horizontal_speed(), own_light, vis_mult)
+	# Darkness (Stimuli.ambient_light) costs a Hollow little of its sight (perception.dark_sight); a
+	# sleeper keeps the sight it had before the sky's light was fed (1.0: light-blind) and the old
+	# beacon. Awake plain Hollowed see a carried light at perception.light_beacon (default 1.6 x
+	# sight_night) instead of sight x 1.6 + 30 (docs/AI_TUNING.md).
+	var dark: float = 1.0 if state == State.SLEEP else def.perc("dark_sight", 0.15)
+	var beacon: float = -1.0
+	if state != State.SLEEP and _plain_hollowed():
+		beacon = def.perc("light_beacon", def.perc("sight_night", 15.0) * 1.6)
+	var range_m: float = st.detection_range(base_sight, light, p.crouching, p.horizontal_speed(), own_light, vis_mult, dark, beacon)
 	if state == State.SLEEP:
 		range_m *= 0.35 * _wake_factor
 	var sees: bool = false
+	var seen_within: float = range_m  # the range it saw them within (half of it at the edge of the eye)
 	if dist < range_m:
 		var to_p: Vector3 = (p.global_position - global_position)
 		var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
 		var ang: float = rad_to_deg(fwd.angle_to(Vector3(to_p.x, 0, to_p.z)))
 		var fov: float = def.perc("fov", 120.0) * (0.6 if state == State.SLEEP else 1.0)
-		if (ang < fov * 0.5 or dist < 2.2) and _line_of_sight(p):
+		var in_view: bool = ang < fov * 0.5 or dist < 2.2
+		if not in_view and state != State.SLEEP and _plain_hollowed():
+			# Peripheral vision: movement just outside the cone, at closer range.
+			in_view = ang < fov * 0.5 + PERIPHERAL_DEG and dist < range_m * PERIPHERAL_RANGE and p.horizontal_speed() > 0.5
+			seen_within = range_m * PERIPHERAL_RANGE
+		if in_view and _line_of_sight(p):
 			sees = true
+	if not sees and _notice > 0.0:
+		_notice = maxf(0.0, _notice - NOTICE_DRAIN * PERCEPTION_INTERVAL * (1.0 if dist < 60.0 else 3.0))
+		if _notice <= 0.0:
+			_notice_voiced = false
 	if sees:
 		if state == State.SLEEP:
 			awareness += 0.25 + (1.0 - dist / maxf(range_m, 0.1)) * 0.6
@@ -607,6 +773,8 @@ func _perceive(p: Player, dist: float) -> void:
 				_wake(p.global_position, true)
 			return
 		var first: bool = _now() - last_seen_time > MEMORY_SECONDS
+		if first and not _noticed(p, dist, seen_within):
+			return  # still making out what it saw (TD-191)
 		last_seen_time = _now()
 		target_pos = p.global_position
 		if not quad.is_empty():
@@ -624,6 +792,7 @@ func _perceive(p: Player, dist: float) -> void:
 				Audio.play_3d(_vid(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", &"voice/hound_bark"),
 					_mouth(), {"volume_db": 0.0})
 				Events.enemy_alerted.emit(entity_id, global_position)
+				_alert_nearby(p.global_position)
 		return
 	# Hearing.
 	var e: Stimuli.SoundEvent = st.loudest_heard(global_position, def.perc("hearing", 1.0) * (0.7 * _wake_factor if state == State.SLEEP else 1.0), _heard_seq, entity_id)
@@ -652,6 +821,41 @@ func _perceive(p: Player, dist: float) -> void:
 			_set_state(State.INVESTIGATE)
 	if state == State.SLEEP:
 		awareness = maxf(0.0, awareness - 0.05)
+
+
+## Group alerting: a plain Hollow that spots you calls out (the alert cry above), and the plain
+## Hollowed within behavior.alert_radius (default 30 m) that are up and idle, wandering or
+## investigating come to look where you are. They only investigate: each must see you itself before
+## it calls out in turn. Sleepers, hounds, the Ashen and the Hum don't answer.
+func _alert_nearby(at: Vector3) -> void:
+	if director == null or not _plain_hollowed():
+		return
+	for e: Enemy in director.call(&"enemies_in_radius", global_position, float(def.beh("alert_radius", 30.0))):
+		if e != self and e._plain_hollowed() and not e.horde and e.state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+			e.notice(at)
+
+
+## First contact (TD-191): whether an awake plain Hollow, seeing the player `dist` m off within
+## `within` m (its range, or the peripheral one), has made them out yet. Each perception tick adds
+## to its suspicion; the first one stops it to look (a low groan; IDLE and WANDER stand and face
+## the spot), and when it fills the sighting goes through (the alert cry and the chase, in
+## _perceive). Hounds, the Ashen, the Hum and a body already hunting commit at once, as before.
+func _noticed(p: Player, dist: float, within: float) -> bool:
+	if not _plain_hollowed() or horde or state not in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+		_notice = 0.0
+		return true
+	var edge: float = clampf(dist / maxf(within, 0.1), 0.0, 1.0)
+	var need: float = maxf(NOTICE_MIN, NOTICE_EDGE * edge * edge * (0.5 if state == State.INVESTIGATE else 1.0))
+	_notice += PERCEPTION_INTERVAL * (1.0 if dist < 60.0 else 3.0) / need
+	_notice_at = p.global_position
+	if _notice >= 0.999:
+		_notice = 0.0
+		_notice_voiced = false
+		return true
+	if not _notice_voiced:
+		_notice_voiced = true
+		Audio.play_3d(&"voice/lurcher_pant" if def.archetype == "feral" else &"voice/hollow_groan_idle", _mouth(), {"volume_db": -3.0, "pitch": 1.15})
+	return false
 
 
 ## A held (ambush) sleeper sees and hears nothing ordinary: only gunfire, explosions or an alarm
@@ -790,6 +994,7 @@ func _deliver_hit(p: Player) -> void:
 func _strike_structure() -> void:
 	visual.play(&"attack_structure", 1.0, 0.2, [&"attack_a"] as Array[StringName])
 	var info := DamageInfo.make(def.atk("structure_damage", 10.0) * structure_mult, &"zombie", &"zombie", entity_id)
+	if tribe != null: tribe.arm_blow(info)  # a firebrand's blows are fire (ADR-0048, TD-189)
 	info.hit_pos = break_target.global_position + Vector3.UP * 0.8
 	info.source_pos = global_position
 	info.direction = (break_target.global_position - global_position).normalized()

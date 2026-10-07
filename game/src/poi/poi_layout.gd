@@ -436,6 +436,64 @@ static func edge_cells(axis: String, c: Vector2i) -> Array[Vector2i]:
 	return [c, Vector2i(c.x - 1, c.y)]
 
 
+## Every edge a compiled opening spans (2 m ones span two): [[a cell, b cell], ...] (edge_cells order).
+static func opening_edges(op: Dictionary) -> Array:
+	var out: Array = []
+	var e: Vector2i = op["edge"]
+	for k: int in int(op.get("width", 1)):
+		var ek: Vector2i = e + (Vector2i(k, 0) if str(op["axis"]) == "h" else Vector2i(0, k))
+		out.append(edge_cells(str(op["axis"]), ek))
+	return out
+
+
+## Cells of the stair flights on a level (their steps rise through them): cell -> the flight's step
+## index there (0 = the foot).
+func flight_cells(li: int) -> Dictionary:
+	var out: Dictionary = {}
+	for s: Dictionary in stairs:
+		if int(s["level"]) == li:
+			var cells: Array = s["cells"]
+			for k: int in cells.size():
+				out[cells[k]] = k
+	return out
+
+
+## Whether the edge between two cells on a level is where a flight from the level below arrives:
+## between its head (the last step's well) and its landing. A gallery railing is left out there
+## (the cannery's gallery stood across the top of its stair, player report 3).
+func is_stair_head_edge(li: int, a: Vector2i, b: Vector2i) -> bool:
+	for s: Dictionary in stairs:
+		if int(s["level"]) + 1 != li:
+			continue
+		var head: Vector2i = (s["cells"] as Array).back()
+		var land: Vector2i = s["landing"]
+		if (a == head and b == land) or (a == land and b == head):
+			return true
+	return false
+
+
+## Which face of its wall a door leaf swings to: +1 toward the edge's "a" cell (south / east, the
+## builder's default), -1 toward "b". A leaf swung open over a stair flight stood in its steps (the
+## owner's "stairs that push against a door", player report 3): it swings the other way when only
+## the "a" side is a flight, or the well over one (a door at the head of a flight would swing out
+## over its top steps).
+func door_swing(op: Dictionary) -> float:
+	var li: int = int(op["level"])
+	var flights: Dictionary = flight_cells(li)
+	for s: Dictionary in stairs:
+		if int(s["level"]) + 1 == li:
+			for c: Vector2i in s["cells"]:
+				flights[c] = true
+	if flights.is_empty():
+		return 1.0
+	var a_hit: bool = false
+	var b_hit: bool = false
+	for pair: Array in opening_edges(op):
+		a_hit = a_hit or flights.has(pair[0])
+		b_hit = b_hit or flights.has(pair[1])
+	return -1.0 if a_hit and not b_hit else 1.0
+
+
 ## Glazed opening types (glass, boards, a sill to vault): windows and lancets.
 static func is_window(t: String) -> bool:
 	return t.begins_with("window") or t == "lancet"

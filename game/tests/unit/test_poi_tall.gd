@@ -116,7 +116,8 @@ func test_gallery_gap_is_a_one_way_drop() -> void:
 	lay["stairs"] = [{"level": 0, "at": [4, 4], "dir": "N"}]
 	var v: PoiValidator = PoiValidator.validate(_def(lay))
 	assert_gt(_count(v.errors, "unreachable from the previous one"), 0, "the railing holds")
-	lay["openings"].append({"id": "loft_gap", "at": [4, 1], "side": "W", "type": "open", "level": 1})
+	# Off the landing: the gallery cells south of it are the well over the flight (no floor).
+	lay["openings"].append({"id": "loft_gap", "at": [4, 0], "side": "W", "type": "open", "level": 1})
 	var v2: PoiValidator = PoiValidator.validate(_def(lay))
 	assert_eq(_count(v2.errors, "unreachable"), 0, "over the gap and down into the hall")
 	assert_eq(_count(v2.errors, "strands the player"), 1, "but the hall's only door is locked")

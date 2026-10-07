@@ -85,6 +85,8 @@ func test_digging_while_workers_mesh_and_sample() -> void:
 		WorkerThreadPool.wait_for_task_completion(t)
 	var until: int = Time.get_ticks_msec() + 60000
 	while not tm._pending.is_empty() and Time.get_ticks_msec() < until:
+		# Chunk jobs wait in TerrainManager's queue until a worker slot is free (TD-196).
+		tm._start_queued()
 		tm._collect_finished()
 		OS.delay_msec(5)
 	assert_true(tm._pending.is_empty(), "every chunk mesh came back")

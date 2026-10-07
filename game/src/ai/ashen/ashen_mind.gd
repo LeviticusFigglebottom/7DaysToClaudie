@@ -4,7 +4,10 @@ extends RefCounted
 ## these. It holds the fighter's morale, its band, its job (a camp's resident, a scout, a raider)
 ## and the two states only the Ashen have: OBSERVE (a scout holds a vantage and watches before
 ## anyone comes) and FLEE (morale broke, the watching is done, or the Hum is coming). It also keeps
-## them off the outsider's fire and throws their spears. Enemy calls it from a handful of hooks;
+## them off the outsider's fire and throws their spears. A war party's firebrand carries a lit
+## brand (a light) and its blows on structures are fire (`strike_type`, phase 2: TD-189); its own
+## brand never frightens its band (only the player's flame and structures count as the outsider's
+## fire). Enemy calls it from a handful of hooks;
 ## the arithmetic is AshenBrain's, the world-wide bookkeeping AshenDirector's.
 
 enum Job { CAMP, SCOUT, RAID }
@@ -36,6 +39,10 @@ var _fear: float = 0.0
 var _fires: Array = []
 var _fires_t: float = 0.0
 var _throw: Dictionary = {}
+## The damage type its blows on structures take ("" = the Hollowed's, as any Enemy's).
+var strike_type: String = ""
+## A firebrand's brand (an OmniLight3D on the body, registered with Stimuli); null for none.
+var brand: OmniLight3D = null
 
 
 func setup(e: Enemy, opts: Dictionary) -> void:
@@ -44,6 +51,9 @@ func setup(e: Enemy, opts: Dictionary) -> void:
 	var t: Dictionary = e.def.beh("tribe", {})
 	role = str(t.get("role", "raider"))
 	_throw = t.get("throw", {})
+	strike_type = str(t.get("strike_type", ""))
+	if t.get("light", null) is Dictionary:
+		_light_brand(t["light"])
 	match str(opts.get("job", "camp")):
 		"scout":
 			job = Job.SCOUT
@@ -57,6 +67,35 @@ func setup(e: Enemy, opts: Dictionary) -> void:
 		territory = float(opts.get("territory", 0.0))
 	if opts.get("goal", null) is Vector3:
 		goal = opts["goal"]
+
+
+## Lights the brand it carries: a warm light at the hand, seen by the AI's light sampling.
+func _light_brand(l: Dictionary) -> void:
+	brand = OmniLight3D.new()
+	brand.name = "Brand"
+	var c: Array = l.get("color", [1.0, 0.62, 0.3])
+	brand.light_color = Color(float(c[0]), float(c[1]), float(c[2]))
+	brand.light_energy = float(l.get("energy", 1.2))
+	brand.omni_range = float(l.get("range", 10.0))
+	brand.position = Vector3(0.35, 1.5, 0.25)
+	enemy.add_child(brand)
+	if Stimuli.current != null:
+		Stimuli.current.register_light(brand, brand.omni_range, brand.light_energy)
+
+
+## The brand goes out (the firebrand fell): no light left to see by.
+func douse() -> void:
+	if brand != null and is_instance_valid(brand):
+		brand.visible = false
+		if Stimuli.current != null:
+			Stimuli.current.unregister_light(brand)
+
+
+## A blow on a structure (Enemy._strike_structure): a firebrand's is fire, so the piece's
+## damage_mult for fire (wood far more than stone) applies in place of the Hollowed's.
+func arm_blow(info: DamageInfo) -> void:
+	if strike_type != "":
+		info.type = StringName(strike_type)
 
 
 ## Whether it stands inside its own camp's territory (it won't break there).

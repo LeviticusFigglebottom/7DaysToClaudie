@@ -110,8 +110,20 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	bloom.name = "Bloom"
 	add_child(bloom)
 	# The world loader may have built the field on its thread already.
-	bloom.setup(prebuilt_bloom if prebuilt_bloom != null else BloomField.build(world, regions, ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}))
+	var bcfg: Dictionary = ContentDB.instance.config(&"bloom") if ContentDB.instance != null else {}
+	var tiles: BloomTiles = prebuilt_bloom if prebuilt_bloom != null else BloomTiles.build(world, regions, bcfg, false)
 	prebuilt_bloom = null
+	if tiles.lazy:
+		# A tile not composed yet is read from its zones over the ground as it is now (1 m where
+		# attached). Set before any worker reads the field; never replaced.
+		tiles.mask_fn = ground_terrain_at
+	# The window starts over the 1 m regions (a streamed world's first area); it follows the focus.
+	var start := Rect2()
+	for rid: String in regions:
+		start = (regions[rid] as RegionTerrain).rect if start.size == Vector2.ZERO else start.merge((regions[rid] as RegionTerrain).rect)
+	# A field composed whole (the main map, a world loaded without streaming) is shown whole, as
+	# before tiles; a streamed world's through a window around the player.
+	bloom.setup(tiles, self, start.get_center() if start.size != Vector2.ZERO else Vector2(NAN, NAN), bcfg, not tiles.lazy)
 	_canopy = far_canopy(ContentDB.instance)
 	if not defer_far_tiles:
 		_build_far_tiles()
@@ -189,12 +201,18 @@ func canopy_at(x: float, z: float) -> float:
 ## How far the Bloom has taken the ground at world (x, z), 0..1 (ADR-0025): the authored field plus
 ## the rooting mounds, as the shaders draw it. Thread-safe for reads.
 func bloom_at(x: float, z: float) -> float:
-	return bloom.field.at(x, z) if bloom != null and bloom.field != null else 0.0
+	return bloom.tiles.at(x, z) if bloom != null and bloom.tiles != null else 0.0
 
 
 ## The authored Bloom field only (deterministic per world; the vegetation scatter reads this).
 func bloom_base_at(x: float, z: float) -> float:
-	return bloom.field.base_at(x, z) if bloom != null and bloom.field != null else 0.0
+	return bloom.tiles.base_at(x, z) if bloom != null and bloom.tiles != null else 0.0
+
+
+## The terrain that answers height_at at (x, z): the region's 1 m terrain when attached, else its
+## coarse one (null off the map). Thread-safe.
+func ground_terrain_at(x: float, z: float) -> RegionTerrain:
+	return _terrain_for(x, z)
 
 
 ## Terrain height at world (x, z). Thread-safe: the sample is taken under _lock, which edits of
@@ -265,6 +283,15 @@ func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 		_region_holes[rid] = TerrainHoles.from_regions({rid: rt})
 	_publish_holes()
 	t = _part("holes", t)
+	# The Bloom's tiles over the region, masked by its 1 m ground (TD-106): composed on the
+	# streamer's worker, here otherwise (tests, tools). Before the chunks re-mesh, so the scatter
+	# reads the field the region keeps from now on.
+	if bloom != null and bloom.tiles != null and bloom.tiles.lazy:
+		var made: Array = rt.get_meta(&"bloom_tiles") if rt.has_meta(&"bloom_tiles") else bloom.tiles.compose_region(rt)
+		if rt.has_meta(&"bloom_tiles"):
+			rt.remove_meta(&"bloom_tiles")
+		bloom.install(made)
+		t = _part("bloom", t)
 	_refresh_chunks(rt.rect)
 	_remesh_far_tile(rid)
 	t = _part("chunks", t)
@@ -323,6 +350,7 @@ func _refresh_chunks(rect: Rect2) -> void:
 			_request_mesh(key, ch.lod, false)
 		if ch.has_collision:
 			_rebuild_collision(ch, false)
+	_start_queued()
 
 
 # --- Streaming --------------------------------------------------------------------------------
@@ -333,6 +361,7 @@ func _exit_tree() -> void:
 		if ch.col_job.has("task"):
 			WorkerThreadPool.wait_for_task_completion(int(ch.col_job["task"]))
 	_col_pending.clear()
+	_task_queue.clear()
 	if _far_task >= 0:
 		WorkerThreadPool.wait_for_group_task_completion(_far_task)
 		_far_task = -1
@@ -357,6 +386,7 @@ func _process_body(delta: float) -> void:
 		return
 	_collect_finished()
 	_collect_collision()
+	_start_queued()
 	if not _far_jobs.is_empty():
 		_collect_far_jobs()
 	_update_accum += delta
@@ -379,12 +409,14 @@ func update_streaming(pos: Vector3, synchronous: bool = false) -> void:
 		for key: Vector2i in _chunks.keys():
 			if absi(key.x - c.x) > NEAR_RADIUS or absi(key.y - c.y) > NEAR_RADIUS:
 				_free_chunk(key)
+	# The graphics preset's terrain_lod_bias scales the LOD rings (low 0.6 .. ultra 1.3).
+	var bias: float = float(Settings.gfx("terrain_lod_bias", 1.0))
 	for dz: int in range(-NEAR_RADIUS, NEAR_RADIUS + 1):
 		for dx: int in range(-NEAR_RADIUS, NEAR_RADIUS + 1):
 			var key := Vector2i(c.x + dx, c.y + dz)
 			var center := Vector2((key.x + 0.5) * CHUNK, (key.y + 0.5) * CHUNK)
 			var dist: float = center.distance_to(Vector2(pos.x, pos.z))
-			var lod: int = 0 if dist < LOD_DIST[0] else (1 if dist < LOD_DIST[1] else 2)
+			var lod: int = 0 if dist < LOD_DIST[0] * bias else (1 if dist < LOD_DIST[1] * bias else 2)
 			var ch: Chunk = _chunks.get(key)
 			if ch == null:
 				ch = Chunk.new()
@@ -395,6 +427,7 @@ func update_streaming(pos: Vector3, synchronous: bool = false) -> void:
 			var want_col: bool = absi(dx) <= COLLISION_RADIUS and absi(dz) <= COLLISION_RADIUS
 			if want_col != ch.has_collision:
 				_set_collision(ch, want_col, synchronous)
+	_start_queued()
 
 
 func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
@@ -417,8 +450,8 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 		job["mesh"] = TerrainMesher.finish(out[0])
 		_apply_mesh(job)
 		return
-	job["task"] = WorkerThreadPool.add_task(fn, true, "terrain chunk")
 	_pending[key] = job
+	_queue_task(job, fn, "terrain chunk")
 
 
 ## Main-thread time a frame spends installing finished chunk meshes and collision bodies: the 169
@@ -431,7 +464,7 @@ func _collect_finished() -> void:
 	var t0: int = Time.get_ticks_usec()
 	for key: Vector2i in _pending.keys():
 		var job: Dictionary = _pending[key]
-		if WorkerThreadPool.is_task_completed(job["task"]):
+		if job.has("task") and WorkerThreadPool.is_task_completed(job["task"]):
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
 			job["mesh"] = TerrainMesher.finish(job["out"][0])
@@ -522,12 +555,76 @@ func _rebuild_collision(ch: Chunk, sync: bool) -> void:
 		_install_collision(ch, job)
 		return
 	ch.col_job = job
-	job["task"] = WorkerThreadPool.add_task(fn, true, "terrain collision")
+	# The key, not the chunk: chunk -> col_job -> chunk would be a reference cycle.
+	job["col_key"] = ch.key
 	_col_pending.append(ch)
+	_queue_task(job, fn, "terrain collision")
 
 
-## Collision jobs on workers (chunks whose col_job has a task).
+## Collision jobs on workers or queued for one (chunks whose col_job is not empty).
 var _col_pending: Array[Chunk] = []
+## Chunk and collision jobs not started yet: [job, fn, task name] (see _start_queued).
+var _task_queue: Array = []
+## Chunk and collision tasks running at once: the pool's threads less two (TD-196/197). A spawn
+## or a reload asks for the whole near square at once (169 meshes, 25 bodies: seconds of work),
+## and Godot's pool runs high-priority tasks in order, so Jolt's physics jobs (high-priority pool
+## tasks too) queued behind them all: with 70-100 chunk and 7-18 collision tasks queued, the
+## physics step (between SceneTree.physics_frame and process_frame) took 0.45-2.1 s, after
+## Jolt's "exceeded the maximum number of jobs" warning ("Finding your feet…" frames). With a
+## short queue there is a thread for Jolt within one task's time; one more is left for the
+## low-priority work (POI checks), which Godot already caps to a share of the pool.
+var max_tasks: int = maxi(1, OS.get_processor_count() - 2)
+
+
+## Queues a job; the caller (or the next frame) starts it with _start_queued().
+func _queue_task(job: Dictionary, fn: Callable, task_name: String) -> void:
+	_task_queue.append([job, fn, task_name])
+
+
+## Starts queued chunk and collision jobs while fewer than max_tasks run: collision first (the
+## ground under someone's feet), then by distance from the streaming centre. Jobs replaced or
+## dropped while they waited are discarded.
+func _start_queued() -> void:
+	if _task_queue.is_empty():
+		return
+	# Task ids, not jobs: a chunk can be in _col_pending twice (rebuilt while its job ran).
+	var running: Dictionary = {}
+	for job: Dictionary in _pending.values():
+		if job.has("task") and not WorkerThreadPool.is_task_completed(int(job["task"])):
+			running[job["task"]] = true
+	for ch: Chunk in _col_pending:
+		if ch.col_job.has("task") and not WorkerThreadPool.is_task_completed(int(ch.col_job["task"])):
+			running[ch.col_job["task"]] = true
+	if running.size() >= max_tasks:
+		return
+	var live: Array = []
+	for e: Array in _task_queue:
+		var job: Dictionary = e[0]
+		if job.has("col_key"):
+			var ch: Chunk = _chunks.get(job["col_key"])
+			if ch != null and is_same(ch.col_job, job):
+				live.append(e)
+		elif is_same(_pending.get(job["key"]), job):
+			if _chunks.has(job["key"]):
+				live.append(e)
+			else:
+				_pending.erase(job["key"])
+	live.sort_custom(func(a: Array, b: Array) -> bool:
+		var ca: bool = (a[0] as Dictionary).has("col_key")
+		var cb: bool = (b[0] as Dictionary).has("col_key")
+		if ca != cb:
+			return ca
+		return _queue_dist(a[0]) < _queue_dist(b[0]))
+	var n: int = mini(max_tasks - running.size(), live.size())
+	for i: int in n:
+		var e: Array = live[i]
+		(e[0] as Dictionary)["task"] = WorkerThreadPool.add_task(e[1], true, e[2])
+	_task_queue = live.slice(n)
+
+
+func _queue_dist(job: Dictionary) -> int:
+	var key: Vector2i = job["col_key"] if job.has("col_key") else job["key"]
+	return (key - _center).length_squared()
 
 
 func _collect_collision() -> void:
@@ -537,10 +634,10 @@ func _collect_collision() -> void:
 			return
 		var ch: Chunk = _col_pending[i]
 		var job: Dictionary = ch.col_job
-		if job.is_empty() or not job.has("task"):
+		if job.is_empty():
 			_col_pending.remove_at(i)
 			continue
-		if not WorkerThreadPool.is_task_completed(int(job["task"])):
+		if not job.has("task") or not WorkerThreadPool.is_task_completed(int(job["task"])):
 			continue
 		WorkerThreadPool.wait_for_task_completion(int(job["task"]))
 		_col_pending.remove_at(i)
@@ -616,8 +713,8 @@ func start_streaming(cfg: Dictionary) -> void:
 	streamer.setup(self, cfg)
 
 
-## Set before setup(): a Bloom field built off the main thread (WorldLoader.bloom_field).
-var prebuilt_bloom: BloomField = null
+## Set before setup(): a Bloom field built off the main thread (WorldLoader.bloom_tiles).
+var prebuilt_bloom: BloomTiles = null
 ## Set before setup() to build the far tiles on worker threads through boot_steps() (ADR-0036:
 ## about 1.5 s of meshing that used to run in the load's one long main-thread frame).
 var defer_far_tiles: bool = false

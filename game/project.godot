@@ -87,6 +87,10 @@ theme/custom_font="res://assets/fonts/IBMPlexMono-Regular.ttf"
 common/physics_ticks_per_second=60
 common/max_physics_steps_per_frame=6
 jolt_physics_3d/simulation/allow_sleep=true
+jolt_physics_3d/limits/max_bodies=65536
+jolt_physics_3d/limits/max_body_pairs=131072
+jolt_physics_3d/limits/max_contact_constraints=40960
+jolt_physics_3d/limits/temporary_memory_buffer_size=64
 3d/default_gravity=9.81
 
 [rendering]

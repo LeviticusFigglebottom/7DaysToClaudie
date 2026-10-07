@@ -35,11 +35,16 @@ var stock: Array = []
 var contracts_from: PackedStringArray = []
 var offers_per_day: int = 4
 var max_active: int = 3
+## Whether each post of this def keeps its own shelves (TD-146): stock keyed by the post's spawn id
+## (`trader:<id>:<n>`) instead of the def id. For a def placed many times (the relay camps); a
+## unique post keeps the def-keyed stock.
+var stock_per_post: bool = false
 
 
 func _fields() -> PackedStringArray:
 	return ["spawn", "safe_radius", "guard_dps", "quartermaster", "props", "counter", "board", "restock_days",
-		"buy_markup", "rep_discount", "sell_ratio", "no_buy", "rep_tiers", "stock", "contracts_from", "offers_per_day", "max_active"]
+		"buy_markup", "rep_discount", "sell_ratio", "no_buy", "rep_tiers", "stock", "contracts_from", "offers_per_day", "max_active",
+		"stock_per_post"]
 
 
 func _parse(r: DefReader) -> void:
@@ -63,6 +68,7 @@ func _parse(r: DefReader) -> void:
 	contracts_from = r.strings("contracts_from") if r.has("contracts_from") else PackedStringArray([String(id)])
 	offers_per_day = maxi(1, r.integer("offers_per_day", 4))
 	max_active = maxi(1, r.integer("max_active", 3))
+	stock_per_post = r.boolean("stock_per_post", false)
 
 
 func _validate(db: Node, out: PackedStringArray) -> void:

@@ -38,7 +38,8 @@ var drops: Dictionary = {}
 ## Fungal mounds where Hum survivors rooted at dawn (BloomMounds, ADR-0025): mound id ->
 ## {pos:[3], yaw, model, day (game day, fractional, when it rooted), harvested: bool}.
 var mounds: Dictionary = {}
-## Trader posts (ADR-0039): trader id -> {period: restock period rolled, stock: {item: {count, rep_tier}}}.
+## Trader posts (ADR-0039): trader id (or post id for a `stock_per_post` def, TD-146) ->
+## {period: restock period rolled, stock: {item: {count, rep_tier}}}.
 var traders: Dictionary = {}
 ## The Ashen (ADR-0048): {hostility, level, last_raid_day, base_marked, camps: {building id: {dead, alerted}}}.
 ## Loads empty from older saves (no version bump).
