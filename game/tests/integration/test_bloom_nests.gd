@@ -115,6 +115,11 @@ func test_defs_load_and_validate() -> void:
 		assert_false(d.props.is_empty())
 		assert_false(d.pods().is_empty(), "%s has a pod" % id)
 		assert_gt(d.hp, 0.0)
+	# The heart follows the root mass's scale (TD-255): the young knot's is 0.6 of the full nest's.
+	var knot: NestDef = Content.get_def(&"nest", &"root_knot") as NestDef
+	assert_almost_eq(knot.core_size, NestDef.HEART_SIZE * 0.6, Vector3.ONE * 0.001)
+	assert_almost_eq(knot.core_offset, NestDef.HEART_OFFSET * 0.6, Vector3.ONE * 0.001)
+	assert_eq((Content.get_def(&"nest", &"hollow_nest") as NestDef).core_size, NestDef.HEART_SIZE)
 	assert_not_null(Content.loot_table(&"nest_loot"))
 	assert_true(DirectiveDef.EVENTS.has("burn_nest"))
 	var bad := NestDef.new()
@@ -328,6 +333,32 @@ func test_its_mat_is_a_clearing_in_the_vegetation() -> void:
 	assert_eq(list[0]["pos"], Vector2(NEST.x, NEST.z))
 	_nests.on_unplace("n1")
 	assert_eq((_veg.clearings.get(BloomNests.SPOT_SOURCE, [-1]) as Array).size(), 0, "given back when it goes")
+
+
+func test_the_vegetation_leaves_out_what_stands_in_a_clearing() -> void:
+	var vm := VegetationManager.new()
+	add_child_autofree(vm)
+	var layers: Dictionary = {"tree": [], "ground": []}
+	for i: int in 6:
+		var inst := VegetationScatter.Instance.new()
+		inst.index = i
+		inst.pos = Vector3(10.0 + i * 4.0, 0.0, 10.0)
+		(layers["tree" if i % 2 == 0 else "ground"] as Array).append(inst)
+	vm._data[Vector2i(0, 0)] = layers
+	vm._data[Vector2i(5, 5)] = {"tree": []}
+	vm.set_clearings(&"nests", [{"pos": Vector2(10, 10), "r": 9.0}])
+	assert_false(vm._data.has(Vector2i(0, 0)), "a loaded chunk it touches is scattered again")
+	assert_true(vm._data.has(Vector2i(5, 5)), "one it does not touch is kept")
+	var kept: Dictionary = vm._cleared(Vector2i(0, 0), layers)
+	var idx: Array = []
+	for layer: String in kept:
+		for inst: VegetationScatter.Instance in kept[layer]:
+			idx.append(inst.index)
+	idx.sort()
+	assert_eq(idx, [3, 4, 5], "the trees and plants within 9 m are left out, indices unchanged")
+	assert_eq(vm._cleared(Vector2i(3, 3), {"tree": [layers["tree"][0]]})["tree"].size(), 1, "far chunks untouched")
+	vm.set_clearings(&"nests", [])
+	assert_true(vm._clearings.is_empty())
 
 
 func test_the_placement_check_finds_roads_water_and_pads() -> void:

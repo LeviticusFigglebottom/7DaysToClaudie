@@ -14,9 +14,14 @@ const BLOOM_KEYS: PackedStringArray = ["radius", "strength"]
 ## [{prop: prop id, offset: [x, y, z] nest-local m (+Z front), rot: yaw degrees, scale: 1.0,
 ## pod: true when the Hollowed come out of it}]
 var props: Array[Dictionary] = []
-## The heart the player burns: nest-local centre [x, y, z] and box size [x, y, z] (m).
-var core_offset: Vector3 = Vector3(0.0, 0.6, 0.0)
-var core_size: Vector3 = Vector3(1.4, 1.2, 1.4)
+## The heart the player burns: nest-local centre [x, y, z] and box size [x, y, z] (m). Without a
+## `core` (or a part of one), the generated root mass's heart (HEART_OFFSET / HEART_SIZE) scaled by
+## the first prop's scale (the root mass, listed first) and moved to its offset.
+## (Where the heart sits in `nest_root_mass` at scale 1: tools/assetgen props_bloom_nest.py.)
+const HEART_OFFSET: Vector3 = Vector3(0.0, 0.6, -0.15)
+const HEART_SIZE: Vector3 = Vector3(1.4, 1.15, 1.3)
+var core_offset: Vector3 = HEART_OFFSET
+var core_size: Vector3 = HEART_SIZE
 ## Bloom ground round it: a spot in the Bloom field (BloomWorld source &"nests"), radius (m) and peak
 ## strength 0..1.
 var bloom_radius: float = 24.0
@@ -64,9 +69,12 @@ func _parse(r: DefReader) -> void:
 			pr.err("a prop entry needs 'prop'")
 		pr.check_unknown(PROP_KEYS)
 		r.errors.append_array(pr.errors)
+	# The heart follows the root mass's scale unless it is given (TD-255).
+	var ms: float = float(props[0]["scale"]) if not props.is_empty() else 1.0
+	var mo: Vector3 = props[0]["offset"] if not props.is_empty() else Vector3.ZERO
 	var cr := DefReader.new(r.dict("core"), "%s core" % ctx())
-	core_offset = cr.vec3("offset", core_offset)
-	core_size = cr.vec3("size", core_size)
+	core_offset = cr.vec3("offset", mo + HEART_OFFSET * ms)
+	core_size = cr.vec3("size", HEART_SIZE * ms)
 	cr.check_unknown(["offset", "size"])
 	r.errors.append_array(cr.errors)
 	var br := DefReader.new(r.dict("bloom"), "%s bloom" % ctx())
