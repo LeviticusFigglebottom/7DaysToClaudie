@@ -50,3 +50,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0047](0047-town-ground-and-biome-fog.md) | Town ground on the streets, a town mask for ambience and spawns, yard grass off the buildings, fog that follows the biome | Accepted |
 | [0049](0049-farming-and-rain-collection.md) | Farming and rain collection: garden beds that need water, crops as data, rain catchers | Accepted |
 | [0052](0052-base-traps-and-electricity.md) | Base traps and electricity: spike pits, deadfalls, a tripwire bell, generators on gas, wires, lights, a motion floodlight and a nail sentry | Accepted |
+| [0057](0057-hunting-and-ranged.md) | Hunting and ranged: a bow whose arrows stick and come back, distraction stones, molotovs and ground fire, a bolt-action rifle with aim and scope, climbing arms, hunting stands and ropes | Accepted |
