@@ -57,6 +57,21 @@ Hollowed wears: its type's `bodies`, or the population of its sleeper post, buil
 * Every body carries the tier growths (caps and filament mats at `char_extras.TIER_SITES`, gated
   Seeded / Bloomed). The Husk's plates (`armour` params) and the Blister's pustules (`pustules`)
   are built by `lib/char_specials.py`.
+* The Bloom is built to read at gameplay distance (~20 m), not only at arm's length: its SDF
+  masses (wound and `bloom` sites) swell `char_body.GROWTH_SWELL` (8 mm; params `growth_swell`,
+  0 on the Husk so its plate seams stay tight) past the skin and burst through any garment over
+  them instead of bulging under it; shelves are drawn `char_extras.SHELF_SCALE` (1.5x) their
+  site's `shelf_size`, often with a second, smaller tier stacked above; filaments are 2.2-3.4 mm
+  cords; the tier growths are `TIER_SCALE` (1.5x) `TIER_SITES`' cluster sizes.
+* Dead skin (`skin_hollow`): a darker grey-green base, broad livid / sallow mottling
+  (`mottle_scale` 4) and decay patches (`rot`, skin shader: green-brown, slick, a forearm across),
+  dark sunken eye sockets and a dark, bruised mouth (the bruise mask, `char_body.skin_masks`). The
+  living (`npc_skin`, `skin_ashen_living`) set `bruise` 0 and leave `rot` at 0, so none of it shows.
+* The specials' silhouettes: the Rammer is bare to the waist with bracket fungus down its hump
+  and over the shoulders; the Husk wears broad, thick pauldrons and a collar plate behind the
+  head; the Blister's pustules are fewer and fatter (36 at 2.2-4.6 cm, were 53) so the torso keeps
+  the triangles its gown needs; the Keener is bare-chested, its throat sac (`throat_sac.size` 1.6)
+  bulging under the gaping jaw.
 * Budget ≤ 16k triangles per body (`char_build.BODY_BUDGET`), extras (nails, buttons, growths,
   plates, pustules) and stump caps included; the head keeps its ~4.2k (extras shrink the other
   segments first) so the face holds its shape at arm's length. Godot's import LODs reduce
