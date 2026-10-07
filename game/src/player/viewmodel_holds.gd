@@ -131,6 +131,10 @@ static func surface_kind(collider: Object, receiver: Object, cfg: Dictionary = {
 
 ## Problems with the hold data (unknown classes, attacks on missing holds, bad item mappings),
 ## for validation and tests.
+## The wrist range the arms generator keeps every baked hand inside (viewmodel.json `wrist`).
+const WRIST_KEYS: PackedStringArray = ["flex", "extend", "radial", "ulnar", "roll"]
+
+
 static func problems(cfg: Dictionary = {}) -> PackedStringArray:
 	var c: Dictionary = cfg if not cfg.is_empty() else config()
 	var out: PackedStringArray = []
@@ -152,6 +156,11 @@ static func problems(cfg: Dictionary = {}) -> PackedStringArray:
 		var use: String = str(h.get("use", ""))
 		if use != "" and not (c.get("uses", {}) as Dictionary).has(use):
 			out.append("viewmodel: hold '%s' use '%s' is not a use" % [cls, use])
+	var wrist: Dictionary = c.get("wrist", {})
+	for k: String in WRIST_KEYS:
+		var v: Variant = wrist.get(k, null)
+		if not (v is float or v is int) or float(v) <= 0.0 or float(v) > 120.0:
+			out.append("viewmodel: wrist.%s must be a number of degrees in (0, 120]" % k)
 	for group: String in ["attacks", "uses"]:
 		var g: Dictionary = c.get(group, {})
 		for name: String in g:

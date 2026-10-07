@@ -18,6 +18,7 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
 | Session 2 `session_018Mc59z7WZz2YkXsyMHsJ75` | `claude/hollowmere-wildlife-town` | Wildlife, town content and economy | A tier-5 contract on `bloom_core_canister` (TD-179), then the Ashen (ADR-0048) | Ashen camps, scouts, raids, fear of fire |
 | Session 3 `session_01Nvn2rfJdMq7iK7ZuQhac7y` | `claude/hollowmere-playable` | Playable builds and stability | Streaming on for random worlds (TD-137, TD-118), then Phase 3 part 2 (TD-107) | Phase 4's save side (v7, the world bundle), then TD-003's headless profile |
 | Session 4 `session_01DYqPNtu8CtWNbHWPmbsFcW` | `claude/blissful-wright-gnc54e` | POI prop placement, then first-person hands | Merge the integration branch (take its side of the facing fix), port the two lost nudges, then wall-mounted props flush to their walls (TD-159–161) | The first-person hands (ADR-0045, TD-172–175) |
+| Session 5 `session_01513iEbtqcsvQd51xVsfx1Q` | `claude/hollowmere-interiors` | Interior lighting and the look of rooms | Player report 3 item 7: interiors too dark on a real GPU; diagnose with renders and fix (indoor fill, exposure, probes, window light) | Ask the hub |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -62,11 +63,11 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
   0038 (streamed worlds: session 3 adds its phases), 0039 (traders and contracts, S2), 0040
   (organic towns, the hub), 0041 (new biomes, the hub), 0042 (wilderness set pieces, the hub, if
   needed), 0043 (session 4, if needed), 0044 (the Corvane caves, S2), 0045 (first-person hands,
-  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub).
-  Next free: 0050.
+  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub), 0050 (interior lighting, session 5, if needed).
+  Next free: 0051.
 * TD: S2 094–101, 111–114, 141–148, 162–171 and 186–195 (contract, the Ashen); session 3 102–109,
   126–130 and 196–205; session 4 159–161 and 172–175 (hands); the hub 110, 115–125, 131–140,
-  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), then 221 up.
+  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub then 236 up.
 * Save version: 6 since random worlds. Traders add `world.traders` and `players[*].contracts`
   without a bump (both load empty from older saves). 7 is reserved for session 3's world bundle
   (RWG v2 Phase 4), which carries those keys through. Anyone else who needs a bump asks the hub

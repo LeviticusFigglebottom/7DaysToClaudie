@@ -1,7 +1,15 @@
 {
-  "_doc": "First-person presentation (ADR-0029). Read by the arms generator (tools/assetgen/blender/lib/char_fp.py bakes one fp_* action per hold pose, attack and use) and by ViewModel at runtime. Positions and directions are in camera space (x right, y up, z back; metres). A hand spec places the hand by its grip: 'grip' point, 'dir' (handle axis, thumb side), 'knuckles' (where the knuckles point), 'fist' / 'thumb' curl 0..1, 'index' extra index curl (-1 points), 'elbow' hint added to the rest elbow direction; or {'on': 'R', 'along': m, 'spin': deg} grips the other hand's handle. Attack and use keys are [frame, channels, ease] with channels relative to the hold: S.move [x,y,z] m, S.rot [pitch, yaw, roll] deg about the camera axes (pivot on the grip), S.elbow, S.along, S.spin and the curls. Edit, then `python tools/build_assets.py --match fp_arms` and import.",
+  "_doc": "First-person presentation (ADR-0029). Read by the arms generator (tools/assetgen/blender/lib/char_fp.py bakes one fp_* action per hold pose, attack and use) and by ViewModel at runtime. Positions and directions are in camera space (x right, y up, z back; metres). A hand spec places the hand by its grip: 'grip' point, 'dir' (handle axis, thumb side), 'knuckles' (where the knuckles point), 'fist' / 'thumb' curl 0..1 (fist 1 closes round a ~3.5 cm handle, up to 1.3 a bare fist), 'index' extra index curl (-1 points), 'elbow' hint added to the rest elbow direction; or {'on': 'R', 'along': m, 'spin': deg} grips the other hand's handle. Attack and use keys are [frame, channels, ease] with channels relative to the hold: S.move [x,y,z] m, S.rot [pitch, yaw, roll] deg about the camera axes (pivot on the grip), S.elbow, S.along, S.spin and the curls. Edit, then `python tools/build_assets.py --match fp_arms` and import.",
   "fov": 58.0,
   "z_clip_scale": 0.04,
+  "wrist": {
+    "_doc": "A wrist's range (degrees, ADR-0045): flexion, extension, radial and ulnar deviation (an ellipse between them) and the forearm's roll either way of the thumb-up rest. PoseSolver keeps every baked hand inside it (the elbow swings to line the forearm up first, then the hand turns back about its grip); test_viewmodel_holds checks the baked arms.",
+    "flex": 65,
+    "extend": 55,
+    "radial": 18,
+    "ulnar": 32,
+    "roll": 95
+  },
   "defaults": {
     "_doc": "Hold class of an item without equip.hold: by equip.kind, then (melee) by damage_type, then by category. use_by_category picks the use action for consumables.",
     "by_kind": {
@@ -98,7 +106,7 @@
             0.2,
             -0.35
           ],
-          "fist": 1.0,
+          "fist": 1.3,
           "thumb": 0.9,
           "elbow": [
             0.4,
@@ -122,7 +130,7 @@
             0.2,
             -0.35
           ],
-          "fist": 1.0,
+          "fist": 1.3,
           "thumb": 0.9,
           "elbow": [
             -0.4,
@@ -354,14 +362,14 @@
             -0.31
           ],
           "dir": [
-            -0.15,
-            0.06,
-            -0.99
+            -0.873,
+            0.022,
+            -0.488
           ],
           "back": [
-            0.2,
-            0.95,
-            0.15
+            0.394,
+            0.622,
+            -0.677
           ],
           "fist": 1.0,
           "thumb": 0.9,
@@ -374,7 +382,7 @@
         "L": {
           "on": "R",
           "along": 0.15,
-          "spin": 0,
+          "spin": -72.0,
           "fist": 0.95,
           "thumb": 0.8,
           "elbow": [
@@ -447,14 +455,14 @@
             -0.32
           ],
           "dir": [
-            -0.15,
-            -0.12,
-            -0.98
+            -0.854,
+            -0.008,
+            -0.521
           ],
           "back": [
-            0.2,
-            0.95,
-            0.15
+            0.421,
+            0.578,
+            -0.699
           ],
           "fist": 1.0,
           "thumb": 0.85,
@@ -467,7 +475,7 @@
         "L": {
           "on": "R",
           "along": 0.15,
-          "spin": 0,
+          "spin": -72.0,
           "fist": 0.95,
           "thumb": 0.8,
           "elbow": [
@@ -1184,14 +1192,14 @@
             -0.313
           ],
           "dir": [
-            0.15,
-            0.45,
-            -0.88
+            0.787,
+            0.309,
+            -0.534
           ],
           "back": [
-            -0.6,
-            -0.8,
-            -0.1
+            -0.525,
+            -0.121,
+            -0.843
           ],
           "fist": 0.65,
           "thumb": 0.5,
@@ -1268,13 +1276,15 @@
               -8,
               0
             ],
-            "R.fist": 1.0,
+            "R.fist": 1.3,
             "L.move": [
               0.03,
               0.05,
               0.0
             ],
-            "L.fist": 1.0
+            "L.fist": 1.3,
+            "R.thumb": 1.0,
+            "L.thumb": 1.0
           },
           "out"
         ],
@@ -1291,13 +1301,15 @@
               15,
               -40
             ],
-            "R.fist": 1.0,
+            "R.fist": 1.3,
             "L.move": [
               0.02,
               0.06,
               0.02
             ],
-            "L.fist": 1.0
+            "L.fist": 1.3,
+            "R.thumb": 1.0,
+            "L.thumb": 1.0
           },
           "snap"
         ],
@@ -1314,13 +1326,15 @@
               15,
               -40
             ],
-            "R.fist": 1.0,
+            "R.fist": 1.3,
             "L.move": [
               0.02,
               0.06,
               0.02
             ],
-            "L.fist": 1.0
+            "L.fist": 1.3,
+            "R.thumb": 1.0,
+            "L.thumb": 1.0
           },
           "out"
         ],
@@ -1410,7 +1424,7 @@
             ],
             "R.fist": 1.0,
             "L.move": [
-              0.0,
+              -0.02,
               -0.02,
               0.0
             ]
@@ -1422,17 +1436,17 @@
           {
             "R.move": [
               -0.12,
-              -0.15,
-              -0.04
+              -0.2,
+              -0.06
             ],
             "R.rot": [
-              -75,
-              20,
-              60
+              -55,
+              15,
+              40
             ],
             "R.fist": 1.0,
             "L.move": [
-              0.0,
+              -0.02,
               -0.025,
               0.0
             ]
@@ -1581,13 +1595,13 @@
           {
             "R.move": [
               -0.08,
-              -0.08,
-              -0.1
+              -0.13,
+              -0.16
             ],
             "R.rot": [
-              -95,
-              25,
-              35
+              -60,
+              20,
+              25
             ]
           },
           "in"
@@ -1596,14 +1610,14 @@
           20,
           {
             "R.move": [
-              -0.15,
-              -0.15,
-              -0.03
+              -0.12,
+              -0.22,
+              -0.08
             ],
             "R.rot": [
-              -120,
-              32,
-              48
+              -75,
+              24,
+              32
             ]
           },
           "out"

@@ -26,10 +26,9 @@ def _mesh_arm(model, sd: str, sk, h: float, tris: int):
                     j[f"th_tip.{sd}"], j[f"ix_tip.{sd}"], j[f"pk_tip.{sd}"]])
     lo = pts.min(0) - 0.08
     hi = pts.max(0) + 0.08
-    shape = tuple(int(x) for x in np.ceil((hi - lo) / h) + 1)
-    d, _ = model.eval_grid(lo, h, shape)
-    V, Q = M.surface_nets(d, lo, h)
-    del d
+    # The fingers need a ~1 mm cell for the clefts between them to survive: mesh a narrow band
+    # round the surface instead of a dense grid over the whole arm.
+    V, Q = F.sparse_surface_nets(lambda P: model.eval_points(P)[0], lo, hi, h)
     V = M.project_to_surface(V, lambda P: model.eval_points(P)[0], h, iterations=2)
     obj = M.mesh_from_arrays(f"arm_{sd}", V, Q)
     M.remove_small_islands(obj)
@@ -41,7 +40,11 @@ def _mesh_arm(model, sd: str, sk, h: float, tris: int):
             break
         Vd = M.mesh_arrays(obj)
         t = ((Vd - el) @ F._n(wr - el)) / np.linalg.norm(wr - el)
-        M.decimate(obj, tris, protect=0.6 * np.clip((t - 0.55) / 0.35, 0.0, 1.0), protect_factor=1.0)
+        M.decimate(obj, tris, protect=np.clip(0.6 * (t - 0.55) / 0.35, 0.0, 0.6) + 0.2 * np.clip((t - 0.95) / 0.1, 0.0, 1.0),
+                   protect_factor=1.0)
+    C = M.face_centers(obj)
+    t = ((C - el) @ F._n(wr - el)) / np.linalg.norm(wr - el)
+    print(f"[character_fp_arms] arm.{sd}: {common.triangle_count(obj)} tris, {int((t > 1.0).sum())} faces past the wrist")
     return obj
 
 
@@ -79,9 +82,11 @@ def _bind(o, arm):
 
 
 def _dirt_mask(model, sk, o) -> None:
-    """Vertex G: where dirt, soot and dried blood gather - skin creases (low AO), knuckles and
-    fingertips, the wrist under the tether, the sleeve's roll and elbow - broken up by noise.
-    The fp_* materials reveal their grime layer by it."""
+    """Vertex G: where dirt, soot and dried blood gather - skin creases (low AO), the knuckles and
+    the creased skin over the finger joints, fingertips and nail folds, the wrist under the tether,
+    the sleeve's roll and elbow - broken up by noise. The fp_* materials reveal their grime layer by
+    it. Vertex B: the flush of blood under thin skin - knuckles, finger joints and the fingertips
+    redden (fp_skin's `flush`)."""
     V = M.mesh_arrays(o)
     lv = np.zeros(len(o.data.loops), np.int32)
     o.data.loops.foreach_get("vertex_index", lv)
@@ -92,19 +97,34 @@ def _dirt_mask(model, sk, o) -> None:
     ao = np.zeros(len(V))
     ao[lv] = cols[:, 0]
     j = sk.j
+    s = model.s
+
+    def near(p, r0, r1):
+        return 1.0 - smoothstep(r0 * s, r1 * s, np.linalg.norm(V - p, axis=1))
+
     tip = np.zeros(len(V))
+    joint = np.zeros(len(V))
+    knuckle = np.zeros(len(V))
     for sd, _ in F.SIDES:
+        back = j[f"back.{sd}"]
         for k in ("ix", "md", "rg", "pk", "th"):
-            d = np.linalg.norm(V - j[f"{k}_tip.{sd}"], axis=1)
-            tip = np.maximum(tip, 1.0 - smoothstep(0.004, 0.016, d))
+            tip = np.maximum(tip, near(j[f"{k}_tip.{sd}"], 0.004, 0.016))
         for k in ("ix", "md", "rg", "pk"):
-            d = np.linalg.norm(V - (j[f"{k}_mcp.{sd}"] + j[f"back.{sd}"] * 0.008), axis=1)
-            tip = np.maximum(tip, 0.6 * (1.0 - smoothstep(0.004, 0.014, d)))
+            knuckle = np.maximum(knuckle, near(j[f"{k}_mcp.{sd}"] + back * 0.010 * s, 0.003, 0.013))
+            # the creased skin over the middle and end joints, on the back of the finger
+            for jn, w in (("pip", 1.0), ("dip", 0.7)):
+                joint = np.maximum(joint, w * near(j[f"{k}_{jn}.{sd}"] + back * 0.007 * s, 0.002, 0.008))
+        for jn in ("mcp", "ip"):
+            joint = np.maximum(joint, 0.8 * near(j[f"th_{jn}.{sd}"], 0.004, 0.013))
     nz = model.noise
     n1 = nz.fbm(V, 22.0, 3) * 0.5 + 0.5
     n2 = nz.fbm(V + 3.1, 7.0, 2) * 0.5 + 0.5
-    g = np.clip((1.0 - ao) * 1.6 * (0.5 + n1) + tip * (0.6 + 0.6 * n1) + 0.35 * smoothstep(0.55, 0.85, n2), 0.0, 1.0)
-    cols[:, 1] = g[lv]
+    n3 = nz.fbm(V + 7.7, 60.0, 2) * 0.5 + 0.5
+    g = (1.0 - ao) * 1.6 * (0.5 + n1) + tip * (0.25 + 0.3 * n1) + 0.6 * knuckle * (0.6 + 0.6 * n1) \
+        + 0.55 * joint * (0.5 + 0.8 * n3) + 0.35 * smoothstep(0.55, 0.85, n2)
+    cols[:, 1] = np.clip(g, 0.0, 1.0)[lv]
+    flush = np.clip(0.85 * knuckle + 0.6 * joint + 0.45 * tip, 0.0, 1.0) * (0.75 + 0.5 * n1)
+    cols[:, 2] = np.clip(flush, 0.0, 1.0)[lv]
     layer.data.foreach_set("color", cols.ravel())
 
 
@@ -120,7 +140,7 @@ def build(params: dict, outputs: list[str]) -> None:
     s = model.s
     arms = []
     for sd, _ in F.SIDES:
-        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0018)), int(params.get("arm_tris", 9000)))
+        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0011)), int(params.get("arm_tris", 14000)))
         lab = _labels(model, o)
         M.assign_labels(o, lab, F.LABEL_MATERIALS)
         fa = model.fa[sd]
@@ -157,7 +177,7 @@ def build(params: dict, outputs: list[str]) -> None:
         for k, li in enumerate(tether.data.polygons[fi].loop_indices):
             uvl.data[li].uv = uv[k]
     common.shade_smooth(tether, angle_deg=35.0)
-    # vertex colours: R = AO, G = dirt mask, B = 0, A = 1
+    # vertex colours: R = AO, G = dirt mask, B = flush (arms; 0 on the tether), A = 1
     vcolor.bake_ao([body, tether], samples=24, distance=0.10, strength=0.9, ground=False)
     _dirt_mask(model, sk, body)
     nz = model.noise
@@ -166,8 +186,8 @@ def build(params: dict, outputs: list[str]) -> None:
     lvt = np.zeros(len(tether.data.loops), np.int32)
     tether.data.loops.foreach_get("vertex_index", lvt)
     vcolor.set_channel(tether, 1, lambda co, n, li, g=gt, lv=lvt: float(g[lv[li]]))
+    vcolor.fill_channel(tether, 2, 0.0)
     for o in (body, tether):
-        vcolor.fill_channel(o, 2, 0.0)
         vcolor.fill_channel(o, 3, 1.0)
     # skinning
     names = sk.names
@@ -202,15 +222,21 @@ def build(params: dict, outputs: list[str]) -> None:
         sockets.append(e)
     # actions, from the hold poses in the data file
     rig = F.FPRig(sk)
-    solver = F.PoseSolver(rig)
+    solver = F.PoseSolver(rig, cfg.get("wrist"))
+    turned = []
     for name, n, loop, frames in F.fp_actions(cfg):
+        solver.reset()
         baked = [rig.evaluate(solver.solve(hands)) for hands in frames]
         char_anim.write_action(arm, sk, name, baked)
+        # how far the wrist limits turned each hand from what the pose asked for
+        turned.append(f"{name} " + "/".join(f"{sd}{solver.clamped.get(sd, 0.0):.0f}deg {solver.moved.get(sd, 0.0) * 100:.0f}cm"
+                                            for sd in ("R", "L")))
     arm.animation_data.action = None
     for pb in arm.pose.bones:
         pb.rotation_quaternion = (1, 0, 0, 0)
         pb.location = (0, 0, 0)
     scene.frame_set(0)
     export.export_glb(outputs[0], [arm, body, tether] + sockets, animations=True, skins=True)
+    print("[character_fp_arms] hands turned back / moved to stay in the wrist's range: " + ", ".join(turned))
     print(f"[character_fp_arms] tris arms {common.triangle_count(body)} tether {common.triangle_count(tether)} "
           f"actions {len(bpy.data.actions)}")
