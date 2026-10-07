@@ -103,7 +103,8 @@ origin, the origin is on the edge line at the gallery floor's top (z = 0), the v
 | model | notes |
 |---|---|
 | `foundation_1m` | 1.0 × 0.2 × 0.6 concrete skirt under exterior walls (`M_concrete`) |
-| `porch_step_1m` | 1 m wide, 3 steps up to 0.6 (`M_wood_painted`) |
+| `porch_step_1m` | 1 m wide, 3 steps up to 0.6 (`M_wood_painted`), up to a porch deck |
+| `stoop_<wood\|concrete>_<1-3>_<1\|2>m` | the steps at a raised exterior doorway (`kit_stoop.py`, PoiBuilder.stoop_piece): origin at the wall end at grade, running out along +Z, 0.2 m a step, scaled to the rise. Wood: 0.3 m treads on sawtooth stringers, a handrail at three steps. Concrete: a 0.9 m landing at the sill, 0.3 m steps below, a footing lip, pipe rails from two steps |
 | `porch_post` | 0.12 × 0.12 × 2.8 turned post |
 | `porch_deck_1m` | 1 × 1 deck boards, top at 0.6 |
 | `chimney_brick` | 0.8 × 0.6 × 4.5 brick chimney (`M_brick`) |

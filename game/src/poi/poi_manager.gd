@@ -757,6 +757,7 @@ func _process_body(delta: float) -> void:
 		return
 	_t = 0.0
 	var ppos: Vector3 = world.player.global_position
+	_budget_shadows(ppos)
 	var ai: Node = world.get(&"ai")
 	for id: StringName in instances:
 		var inst: PoiInstance = instances[id]
@@ -781,6 +782,19 @@ func _process_body(delta: float) -> void:
 					Events.poi_discovered.emit(id)
 			else:
 				Events.poi_exited.emit(id)
+
+
+## Only the nearest lights authored with shadows cast them (graphics preset max_shadowed_lights):
+## a town at night has dozens, and every shadowed omni light renders the scene six times.
+func _budget_shadows(ppos: Vector3) -> void:
+	var lights: Array = get_tree().get_nodes_in_group(&"shadow_light_budget")
+	if lights.is_empty():
+		return
+	var cap: int = int(Settings.gfx("max_shadowed_lights", 12))
+	if lights.size() > cap:
+		lights.sort_custom(func(a: Node3D, b: Node3D) -> bool: return a.global_position.distance_squared_to(ppos) < b.global_position.distance_squared_to(ppos))
+	for i: int in lights.size():
+		(lights[i] as Light3D).shadow_enabled = i < cap
 
 
 # --- Queries ---------------------------------------------------------------------------------

@@ -337,7 +337,7 @@
     {
      "id": "shop_door",
      "at": [
-      15,
+      14,
       4
      ],
      "side": "N",
@@ -367,10 +367,10 @@
     {
      "id": "gear_door",
      "at": [
-      15,
-      6
+      16,
+      4
      ],
-     "side": "E",
+     "side": "N",
      "type": "door",
      "state": "open"
     },
@@ -420,7 +420,7 @@
     {
      "id": "stair_watch_door",
      "at": [
-      15,
+      14,
       7
      ],
      "side": "S",
@@ -452,7 +452,7 @@
     {
      "id": "training_hall_door",
      "at": [
-      15,
+      14,
       4
      ],
      "side": "N",
@@ -464,7 +464,7 @@
      "id": "dayroom_door",
      "at": [
       15,
-      6
+      8
      ],
      "side": "E",
      "type": "door",
@@ -621,7 +621,7 @@
     {
      "level": 0,
      "at": [
-      14,
+      15,
       4
      ],
      "dir": "S"
@@ -1784,7 +1784,7 @@
     },
     {
      "at": [
-      15,
+      14,
       5
      ],
      "level": 1,

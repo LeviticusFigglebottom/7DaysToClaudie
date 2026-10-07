@@ -1,0 +1,19 @@
+{
+ "_doc": "Base traps and electricity (ADR-0052). Traps: spike_pit, deadfall and tripwire are walked through (their colliders only catch the interaction ray); BaseTechNode runs them with data/config/base_tech.json traps. Power: power_source:<watts> makes a generator, power_use:<watts> a consumer; work_light / floodlight / turret say what the consumer does. State in WorldState.base_tech; BaseTechManager runs the commands. Models: tools/assetgen/blender/generators/base_tech.py.",
+ "defs": [
+  {"id": "spike_pit", "name": "Spike Pit", "kind": "defense", "material": "stick", "hp": 240, "mass": 60, "model": "structures/spike_pit", "size": [2.0, 0.4, 2.0],
+   "cost": {"log": 1, "stick": 12, "cordage": 1}, "provides": ["spike_pit"], "damage_mult": {"fire": 1.6, "zombie": 0.5}, "flammable": true},
+  {"id": "deadfall", "name": "Deadfall", "kind": "defense", "material": "log", "hp": 300, "mass": 160, "model": "structures/deadfall", "size": [1.8, 1.6, 1.4],
+   "cost": {"log": 2, "stick": 4, "cordage": 3, "stone": 4}, "provides": ["deadfall"], "damage_mult": {"fire": 1.6, "zombie": 0.6}, "flammable": true},
+  {"id": "tripwire_bell", "name": "Tripwire Bell", "kind": "defense", "material": "stick", "hp": 60, "mass": 4, "model": "structures/tripwire_bell", "size": [3.0, 0.7, 0.2],
+   "cost": {"stick": 3, "cordage": 2, "scrap_metal": 2}, "provides": ["tripwire"], "damage_mult": {"fire": 2.0}, "flammable": true},
+  {"id": "generator", "name": "Generator", "kind": "decor", "material": "metal", "hp": 420, "mass": 90, "model": "structures/generator", "size": [1.0, 0.8, 0.7],
+   "cost": {"small_engine": 1, "electrical_parts": 3, "scrap_metal": 10, "nails": 8}, "provides": ["power_source:400"], "damage_mult": {"fire": 0.6, "zombie": 0.9}},
+  {"id": "work_light", "name": "Work Light", "kind": "decor", "material": "wood", "hp": 120, "mass": 12, "model": "structures/work_light", "size": [0.5, 2.1, 0.5],
+   "cost": {"light_bulb": 1, "electrical_parts": 1, "stick": 3, "cordage": 1}, "provides": ["power_use:60", "work_light"], "damage_mult": {"fire": 1.4}},
+  {"id": "floodlight", "name": "Motion Floodlight", "kind": "decor", "material": "metal", "hp": 160, "mass": 25, "model": "structures/floodlight", "size": [0.6, 2.6, 0.6],
+   "cost": {"light_bulb": 2, "electrical_parts": 2, "scrap_metal": 4, "stick": 2}, "provides": ["power_use:150", "floodlight"]},
+  {"id": "nail_sentry", "name": "Nail Sentry", "kind": "defense", "material": "metal", "hp": 260, "mass": 40, "model": "structures/nail_sentry", "size": [0.8, 1.2, 0.8],
+   "cost": {"electrical_parts": 4, "scrap_metal": 12, "nails": 20, "duct_tape": 2}, "provides": ["power_use:200", "turret"], "damage_mult": {"zombie": 1.2}}
+ ]
+}

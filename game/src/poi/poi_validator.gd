@@ -185,9 +185,44 @@ func _walkable(li: int, c: Vector2i) -> bool:
 func _land(li: int, c: Vector2i) -> Array:
 	if _collapsed and _weak.has(node_key(li, c)):
 		return [li - 1, c]
+	# A ladder's hatch has no floor: stepping onto it drops to the ladder's foot (TD-224).
+	if _hatches().has(node_key(li, c)):
+		return [li - 1, c]
 	if layout.is_void(li, c):
 		return layout.floor_cell(li, c)
 	return [li, c]
+
+
+## node key -> true for every open ladder hatch: the cell over a ladder with "hatch" on the level
+## above it (a hatch into a tall room's void has no floor to be cut and is not one).
+var _hatch_keys: Dictionary = {}
+var _hatch_done: bool = false
+
+
+func _hatches() -> Dictionary:
+	if not _hatch_done:
+		_hatch_done = true
+		for l: Dictionary in layout.ladders:
+			var up: int = int(l["level"]) + 1
+			if bool(l["hatch"]) and layout.is_room(layout.room_at(up, l["cell"])):
+				_hatch_keys[node_key(up, l["cell"])] = true
+	return _hatch_keys
+
+
+## Doorways opening straight onto a ladder hatch: whoever walks through drops down the ladder well.
+func _check_hatch_doors() -> void:
+	for op: Dictionary in layout.openings:
+		var t: String = str(op["type"])
+		if PoiLayout.is_window(t) or t == "half":
+			continue
+		var li: int = int(op["level"])
+		var cells: Array[Vector2i] = PoiLayout.edge_cells(str(op["axis"]), op["edge"])
+		for k: int in 2:
+			var c: Vector2i = cells[k]
+			# Only a doorway someone walks through: the far side is floor (a railing gap over the
+			# drop off a platform is not one).
+			if _hatches().has(node_key(li, c)) and _walkable(li, cells[1 - k]):
+				_e("opening '%s' at %s (level %d) opens onto the ladder hatch at %s: it drops the player down the ladder well; move the door or the ladder" % [op["id"], op["cell"], li, c])
 
 
 ## What stands between two cells across an edge: a wall (passable only through an opening) or a
@@ -205,6 +240,45 @@ func _edge_passable(li: int, e: Array, from_cell: Vector2i, keys: Dictionary) ->
 	return true
 
 
+## Whether a step across one edge on a level keeps off the stairs (player report 3). A flight's
+## collision is a ramp rising 0.75 m a cell from its foot edge, and the player steps up at most
+## Player.STEP_HEIGHT (0.38 m): its foot cell is floor (walked onto from behind, or from a side
+## along its low half), but the steps above it are not, from any side; and the well over a flight on
+## the level above has no floor to cross. Climbing and coming down are the stair links in _neighbors.
+func _stair_step_ok(li: int, c: Vector2i, n: Vector2i) -> bool:
+	var steps: Dictionary = _upper_steps(li)
+	return not steps.has(c) and not steps.has(n) and not _stair_wells(li).has(n)
+
+
+## Level -> {cell: true}: the cells of the flights rising from it, past their foot.
+var _steps: Dictionary = {}
+## Level -> {cell: true}: the wells over the flights rising from the level below (not ladder hatches).
+var _swells: Dictionary = {}
+
+
+func _upper_steps(li: int) -> Dictionary:
+	if not _steps.has(li):
+		var out: Dictionary = {}
+		for s: Dictionary in layout.stairs:
+			if int(s["level"]) == li:
+				var cells: Array = s["cells"]
+				for k: int in range(1, cells.size()):
+					out[cells[k]] = true
+		_steps[li] = out
+	return _steps[li]
+
+
+func _stair_wells(li: int) -> Dictionary:
+	if not _swells.has(li):
+		var out: Dictionary = {}
+		for s: Dictionary in layout.stairs:
+			if int(s["level"]) + 1 == li:
+				for c: Vector2i in s["cells"]:
+					out[c] = true
+		_swells[li] = out
+	return _swells[li]
+
+
 ## Neighbours of a node given the keys held.
 func _neighbors(li: int, c: Vector2i, keys: Dictionary) -> Array:
 	var out: Array = []
@@ -217,6 +291,8 @@ func _neighbors(li: int, c: Vector2i, keys: Dictionary) -> Array:
 	for side: int in 4:
 		var n: Vector2i = c + PoiLayout.DIRS[side]
 		if not _edge_passable(li, PoiLayout.side_edge(c, side), c, keys):
+			continue
+		if not _stair_step_ok(li, c, n):
 			continue
 		# Over a gallery's gap (or through a door onto a tall room's void) is a one-way drop.
 		if _walkable(li, n) or layout.is_void(li, n):
@@ -317,6 +393,8 @@ func _run() -> void:
 		return
 	_weak.clear()
 	_wells.clear()
+	_steps.clear()
+	_swells.clear()
 	for t: Dictionary in layout.traps:
 		if str(t["type"]) == "weak_floor":
 			_weak[node_key(int(t["level"]), t["cell"])] = str(t["tid"])
@@ -372,6 +450,13 @@ func _run() -> void:
 		var wp: Dictionary = layout.route[i]
 		var li: int = wp["level"]
 		var c: Vector2i = wp["cell"]
+		# A flight's foot is a floor cell; the steps above it are not.
+		var on_flight: bool = _upper_steps(li).has(c)
+		if on_flight or _stair_wells(li).has(c):
+			_e("route waypoint %d '%s' at %s (level %d) is %s: put it on the floor beside it" % [
+				i, wp.get("label", ""), c, li, "on a stair flight" if on_flight else "over a stairwell"])
+			route_ok = false
+			continue
 		if not _walkable(li, c):
 			if layout.is_void(li, c):
 				_e("route waypoint %d '%s' at %s (level %d) is in a tall room's open space; put it on its floor (level %d)" % [
@@ -470,6 +555,7 @@ func _run() -> void:
 	_check_ids()
 	_check_traps(seen, stair_cells)
 	_check_stair_doors()
+	_check_hatch_doors()
 	_check_triggers(seen)
 	_check_locks(keys)
 	_check_roof()
@@ -744,27 +830,93 @@ func _check_ids() -> void:
 		seen_ids[key] = true
 
 
-## Trap types, keys and placement: cell traps inside rooms (bear traps may sit in the yard), weak
-## floors over a room, creaky floors wholly indoors, edge traps across a passable edge.
-## A doorway onto a stair flight above its first step meets the steps a metre or more up: the player
-## has to jump onto them (the fire station's bay door, the first playtest). Doors and openings
-## belong at a flight's foot or along the floor beside it.
+## Stairs against doors and steps you would have to jump onto (the first playtest's fire station;
+## player report 3, item 8). The flight's collision is a ramp rising 0.75 m a cell from its foot
+## edge, and the player steps up at most Player.STEP_HEIGHT (0.38 m). So:
+##  * a doorway (or open edge) onto a flight past its first step meets the steps 0.75 m or more up
+##    (ab89797 looked only at an opening's first metre); one beside the first step meets it 0 to
+##    0.75 m up across the doorway, passable only along its foot jamb (a warning);
+##  * on the level above, a doorway onto the stairwell other than at the flight's head drops the
+##    player into the well, with no way back up but a jump;
+##  * a wall across the flight, or between its head and its landing, stops the climb (a wall on the
+##    level above stands 3 m over the foot: at head height from the second step up);
+##  * a door leaf that would swing open into a flight on both sides of its wall stands in the steps
+##    (PoiLayout.door_swing turns a leaf away from a flight on one side).
 func _check_stair_doors() -> void:
 	for s: Dictionary in layout.stairs:
-		var mid: Dictionary = {}
+		var li: int = int(s["level"])
 		var cells: Array = s["cells"]
-		for k: int in range(1, cells.size()):
-			mid[cells[k]] = true
+		var dir: int = int(s["dir"])
+		var on: Dictionary = {}
+		for k: int in cells.size():
+			on[cells[k]] = k
+		var foot_behind: Vector2i = (cells[0] as Vector2i) - PoiLayout.DIRS[dir]
+		var head: Vector2i = cells[cells.size() - 1]
 		for op: Dictionary in layout.openings:
-			if int(op["level"]) != int(s["level"]) or PoiLayout.is_window(str(op["type"])) or str(op["type"]) == "half":
+			if PoiLayout.is_window(str(op["type"])) or str(op["type"]) == "half":
 				continue
-			var c: Vector2i = op["cell"]
-			var n: Vector2i = c + PoiLayout.DIRS[int(op["side"])]
-			if mid.has(c) or mid.has(n):
-				_e("opening '%s' at %s (level %d) opens onto the stair flight from %s above its foot: move it to the foot (%s) or off the flight" % [
-					op["id"], c, int(op["level"]), s["cell"], s["cell"]])
+			var ol: int = int(op["level"])
+			if ol != li and ol != li + 1:
+				continue
+			for pair: Array in PoiLayout.opening_edges(op):
+				var a: Vector2i = pair[0]
+				var b: Vector2i = pair[1]
+				if not (on.has(a) or on.has(b)):
+					continue
+				if ol == li:
+					var foot_edge: bool = (a == cells[0] and b == foot_behind) or (b == cells[0] and a == foot_behind)
+					if foot_edge:
+						continue
+					var k: int = maxi(int(on.get(a, -1)), int(on.get(b, -1)))
+					if k == 0:
+						# The first step rises 0 to 0.75 m across the doorway: passable along its foot
+						# jamb, but a clumsy way in (generated buildings never do it).
+						_w("opening '%s' at %s (level %d) meets the stair flight from %s beside its first step (0 to 0.75 m up across the doorway); better at the foot (the edge behind %s) or off the flight" % [
+							op["id"], op["cell"], ol, s["cell"], s["cell"]])
+					else:
+						_e("opening '%s' at %s (level %d) opens onto the stair flight from %s above its foot: the steps are %.2f m up there; put it at the foot (the edge behind %s) or off the flight" % [
+							op["id"], op["cell"], ol, s["cell"], 0.75 * float(k) + 0.375, s["cell"]])
+					break
+				var head_edge: bool = (a == head and b == s["landing"]) or (b == head and a == s["landing"])
+				# A gap from the well out over the open air (the motel's outside stair) is no doorway.
+				var from_cell: Vector2i = b if on.has(a) else a
+				if not head_edge and _walkable(ol, from_cell) and not on.has(from_cell):
+					_e("opening '%s' at %s (level %d) opens onto the well of the stairs from %s (level %d): it drops the player onto the flight; put it at the head (%s) or off the well" % [
+						op["id"], op["cell"], ol, s["cell"], li, s["landing"]])
+					break
+			if ol == li and str(op["type"]).begins_with("door") and str(op["state"]) != "missing":
+				var swing: float = layout.door_swing(op)
+				for pair2: Array in PoiLayout.opening_edges(op):
+					var into: Vector2i = pair2[0] if swing > 0.0 else pair2[1]
+					if on.has(into):
+						_e("door '%s' at %s (level %d) swings open into the stair flight from %s: its leaf stands in the steps" % [op["id"], op["cell"], ol, s["cell"]])
+						break
+		# Walls across the climb: between its cells on its level; on the level above, where the
+		# wall's foot (3 m over the flight's) comes lower than a head (1.75 m) on the steps, past the
+		# second step; and between its head and its landing.
+		var pairs: Array = []
+		for k2: int in range(1, cells.size()):
+			pairs.append([li, cells[k2 - 1], cells[k2]])
+			if 0.75 * float(k2) + 1.75 > PoiLayout.STOREY:
+				pairs.append([li + 1, cells[k2 - 1], cells[k2]])
+		pairs.append([li + 1, head, s["landing"]])
+		for p: Array in pairs:
+			var c0: Vector2i = p[1]
+			var c1: Vector2i = p[2]
+			var side: int = PoiLayout.DIRS.find(c1 - c0)
+			var e: Array = PoiLayout.side_edge(c0, side)
+			var ek: String = PoiLayout.edge_key(int(p[0]), e[0], e[1])
+			var wall: Dictionary = layout.walls.get(ek, {})
+			if wall.is_empty() and (not layout.galleries.has(ek) or layout.is_stair_head_edge(int(p[0]), c0, c1)):
+				continue
+			var op2: Dictionary = wall.get("opening", {}) if not wall.is_empty() else (layout.galleries[ek] as Dictionary).get("opening", {})
+			var through: bool = not op2.is_empty() and (str(op2["type"]) in ["open", "breach"] or (str(op2["type"]).begins_with("door") and int(p[0]) == li + 1 and c1 == s["landing"]))
+			if not through:
+				_e("stairs at %s (level %d): a wall on level %d between %s and %s stands across the climb" % [s["cell"], li, int(p[0]), c0, c1])
 
 
+## Trap types, keys and placement: cell traps inside rooms (bear traps may sit in the yard), weak
+## floors over a room, creaky floors wholly indoors, edge traps across a passable edge.
 func _check_traps(seen: Dictionary, stair_cells: Dictionary) -> void:
 	for t: Dictionary in layout.traps:
 		var tid: String = str(t["tid"])

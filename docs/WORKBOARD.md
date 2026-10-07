@@ -18,6 +18,7 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
 | Session 2 `session_018Mc59z7WZz2YkXsyMHsJ75` | `claude/hollowmere-wildlife-town` | Wildlife, town content and economy | A tier-5 contract on `bloom_core_canister` (TD-179), then the Ashen (ADR-0048) | Ashen camps, scouts, raids, fear of fire |
 | Session 3 `session_01Nvn2rfJdMq7iK7ZuQhac7y` | `claude/hollowmere-playable` | Playable builds and stability | Streaming on for random worlds (TD-137, TD-118), then Phase 3 part 2 (TD-107) | Phase 4's save side (v7, the world bundle), then TD-003's headless profile |
 | Session 4 `session_01DYqPNtu8CtWNbHWPmbsFcW` | `claude/blissful-wright-gnc54e` | POI prop placement, then first-person hands | Merge the integration branch (take its side of the facing fix), port the two lost nudges, then wall-mounted props flush to their walls (TD-159–161) | The first-person hands (ADR-0045, TD-172–175) |
+| Session 5 `session_01513iEbtqcsvQd51xVsfx1Q` | `claude/hollowmere-interiors` | Interior lighting and the look of rooms | Player report 3 item 7: interiors too dark on a real GPU; diagnose with renders and fix (indoor fill, exposure, probes, window light) | Ask the hub |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -40,6 +41,9 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
   tools/setup/vendor_gut.py && git checkout game/addons/gut` (then `make import`) is enough for
   check, validate and test. Add `make setup` and `make assets` (about 2.5 h the first time) only
   when you need generated models or renders.
+* **Never idle.** Keep your container busy: run independent work in parallel with subagents in
+  worktrees (one Godot process each, one render at a time). When your queue runs thin, message the
+  hub for new work instead of ending your turn with nothing running.
 * **Status.** End each turn with a short status to the hub: what landed, what's next, blockers.
 
 ## Active streams and the files they own
@@ -59,11 +63,11 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
   0038 (streamed worlds: session 3 adds its phases), 0039 (traders and contracts, S2), 0040
   (organic towns, the hub), 0041 (new biomes, the hub), 0042 (wilderness set pieces, the hub, if
   needed), 0043 (session 4, if needed), 0044 (the Corvane caves, S2), 0045 (first-person hands,
-  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub).
-  Next free: 0050.
+  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub), 0050 (interior lighting, session 5), 0051 (POI navigation, session 5, if needed), 0052 (traps and
+  electricity, the hub). Next free: 0053.
 * TD: S2 094–101, 111–114, 141–148, 162–171 and 186–195 (contract, the Ashen); session 3 102–109,
   126–130 and 196–205; session 4 159–161 and 172–175 (hands); the hub 110, 115–125, 131–140,
-  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), then 221 up.
+  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub 236–238 (render review), 239–248 (traps and electricity); S2 249–258; the hub then 259 up (Round 3: the hub 259–268, session 5 269–278, session 3 279–288, session 4 289–298; ADR-0053..0057 as in Round 3 suites).
 * Save version: 6 since random worlds. Traders add `world.traders` and `players[*].contracts`
   without a bump (both load empty from older saves). 7 is reserved for session 3's world bundle
   (RWG v2 Phase 4), which carries those keys through. Anyone else who needs a bump asks the hub
@@ -88,6 +92,54 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
    (Mile 12); perk capstones, the forge and the chemistry bench.
 7. Needs the owner (a GPU and a human): the M1 playthrough, 60 FPS on target hardware, feel and
    balance (HANDOFF.md "Not verified yet").
+
+## Round 3 suites (2026-10-07): more of the game, and the forests full of places
+The wilderness pool holds 17 big set pieces and nothing small: between towns the forest is empty.
+Each session takes its suite when its current priority lands (hands, POI navigation, Hollowed).
+| Who | Suite | Numbers |
+|---|---|---|
+| The hub (agents) | **Forest encounters**: a micro-POI scatter for random worlds and the main map, a 7 Days / The Forest density of small places in the woods (abandoned campsites and tents, hunting stands and blinds, a wrecked car or logging truck on a forest track, a hermit's shack, a Cordon body-bag drop, a survivor's cache, Bloom-grown animal kills), each a few props with loot, sometimes a sleeper; placed by biome, slope and distance from roads; streamed with the regions | ADR-0054, TD-259..268 |
+| Session 5 | **Forest set pieces, round 4** (authored dungeons, every route proven by poi_walk): a ranger station with its fire-weather tower, a crashed Cordon transport plane in the timber, a survivalist bunker under a hillside cabin, a logging truck depot and repair shed, a railway trestle with its collapsed tunnel, an overgrown chapel and cemetery, a radio relay hut on a ridge | ADR-0053, TD-269..278 |
+| Session 2 | **The living forest**: wolves (packs, hunting deer and the player, fear of fire); Bloom nests, horror landmarks in the deep woods that seed Hollowed and spread Bloom; then companion Ezra Vane (follow, gather, guard, fetch) | ADR-0055, TD-249..258 |
+| Session 3 | **Organic caves** through the SDF volume terrain (TD-162/163): cave shelters and grottos in forest hillsides that the encounter scatter and the set pieces can use; the dense-forest perf budget for the new scatter; TD-003 numbers from the owner's GPU | ADR-0056, TD-279..288 |
+| Session 4 | **Hunting and ranged**: a bow and arrows (craftable, recoverable arrows), throwables (stones, molotovs), a hunting rifle, and climbing (ladders, ropes, the hunting stands) with session 5's ladder work | ADR-0057, TD-289..298 |
+
+## The owner's priorities (2026-10-07, after Builds #68/#75: "much better so far")
+1. **The Hollowed: look and behaviour.** They seem passive until you're close. Session 2 (the Ashen's
+   phase-2 remainder, TD-190, waits).
+2. **POI navigation and placement**: doorways blocked, items lying in the way, and "climb up"
+   spots that use an interact instead of a ladder or a jump. Session 5 once the interior light lands,
+   with the hub's doors and steps agent.
+3. **Hands: looks and animations with every tool and weapon.** Session 4 (ADR-0045 follow-ups,
+   TD-172..175).
+Session 3 finishes Player report 3 (Continue position) and its perf items, and supports 1 and 2
+(navmesh, AI ticking, the tour bot).
+
+## Player report 3 (Windows Build #67, 891830b; round 2)
+Screenshot: `docs/playtest/2026-10-06_build67_lighter_door.webp` (Pell's Crossing, a lit lighter, a
+cottage's front door). The owner said it "looks incredible", but:
+1. **New random world: the player can't move after spawning.** It loads fine, then no movement.
+   (Session 3.)
+2. **In that same new world, looking up detaches the arms**: hands and arms float off into the sky
+   where you look. Not seen on Continue. Probably the same root cause as 1; one suspect is that the
+   warm-up camera or a stand-in camera stays current while the player's camera and viewmodel don't
+   follow. (Session 3, with session 4 for the viewmodel side.)
+3. **Continue keeps progress but not the last location.** (Session 3, saves.)
+4. **Hands still look unnatural holding things**, the lighter worst of all. Its flame looks off and
+   trails behind as you turn (flame particles in world space, not following the hand).
+   (Session 4, ADR-0045.)
+5. **A cottage front door (the intended entrance) has no steps up to its raised sill**, and the
+   door has no "open": it just has no collision. It is likely a door authored `broken` (leaf drawn,
+   passable). (The hub: POI doors and generated buildings.)
+6. **Axe grip** (`docs/playtest/2026-10-06_build67_axe_dark_room.webp`): the fingers don't wrap
+   the handle (knuckles show as dots on it) and the off hand floats open, palm down. (Session 4.)
+7. **Interiors still too dark**: a block-walled room is near black apart from the doorway, even by
+   day. Possibly probes still queued or parked, SDFGI not reaching indoors, or the indoor light
+   (instance light_lit, lit props) too weak. (Session 5.)
+8. **Stairs that push against a door or need a jump** are still in places. Not a save artifact:
+   saves store only differences, so buildings are rebuilt from current data on every load, and
+   ab89797's validator check was already in Build #67, so it misses some cases (generated
+   buildings? step rise or collision?). (The hub's doors agent.)
 
 ## Player report (the first human playtest)
 On a fresh setup:

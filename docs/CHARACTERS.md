@@ -177,13 +177,24 @@ arm. The scout carries no spear (TD-187: no wrist in the arm IK, the throw rolls
 
 ## First-person arms (`models/characters/fp_arms.glb`, ADR-0029)
 * Separate armature `Armature` with bones `root, upper_arm.L/R, forearm.L/R, forearm_twist.L/R,
-  hand.L/R` and finger bones `thumb_1/2.L/R, index_1/2.L/R, fingers_1/2.L/R` (middle+ring+pinky
-  merged per hand). `forearm_twist` (child of `forearm`, from mid-forearm to the wrist) takes 70% of
+  hand.L/R` and three bones per digit, one per joint: `thumb_1/2/3.L/R` (CMC, MCP, IP) and
+  `index_, middle_, ring_, pinky_1/2/3.L/R` (MCP, PIP, DIP; ADR-0045). `forearm_twist` (child of `forearm`, from mid-forearm to the wrist) takes 70% of
   the hand's roll about the forearm; the forearm skin ramps onto it towards the wrist.
 * Blender: camera at the origin looking −Y, Z up, the right arm at −X; the game turns the arms 180°
   about Y under the camera. Hold poses are written in Godot camera space in
   `game/data/config/viewmodel.json` (`lib/char_fp.py` `g2b()` converts). The rest pose is a working
   grip: elbows bent, hands thumb-up.
+* Poses name the grip, not the arm (`PoseSolver`, ADR-0045): the solver picks the elbow (near
+  the pose's `elbow` hint) and the fist's roll round its handle (near the authored one) that bend
+  the wrist least; past the wrist's range (`wrist` in viewmodel.json: flexion 65°, extension 55°,
+  radial 18°, ulnar 32°, roll 95° from thumb-up) it moves the grip up to 6 cm and turns the rest
+  back about the wrist. The build log, and `tools/fp_poses.py report` without Blender, say how far
+  each action was corrected; `tools/fp_poses.py tune <attack>` re-places a strike's key grips.
+  Curls: `fist` closes each finger at its MCP, PIP and DIP (`FINGER_CURL`: 1 round a ~3.5 cm
+  handle, up to 1.3 a bare fist; the ring and little fingers a little further, converging on the
+  middle finger), `thumb` opposes the thumb across the palm and wraps it (`THUMB_CURL`). A hold's
+  `item.rot` turns the item in the fist (an oblique grip: the spear's shaft lies 60° across the
+  palm); a hand `on` the other grips along the item's axis and the fist rolls about it.
 * Arms enter from the lower corners: the Remand jumpsuit sleeves are rolled to just below the
   elbow (`M_fp_sleeve`, cloth shader), bare forearms and hands (`M_fp_skin`, skin shader), nails
   (`M_fp_nail`). The **tether** is bolted over the back of the left wrist, rigid on
@@ -191,7 +202,19 @@ arm. The scout carries no spear (TD-187: no wrist in the arm IK, the throw rolls
   `M_fp_tether_metal`, status LED `M_fp_tether_led`, and the screen `M_fp_tether_screen`, a
   landscape quad UV-mapped 0..1 (u along the forearm, v across, image top towards the little-finger
   side) that the game fills with the live tether UI.
-* Vertex colour: R baked AO; G a dirt mask (creases, knuckles, fingertips) for the `fp_grime` layer.
+* Hands (`lib/char_fp.py` `FPModel._hand`): a domed metacarpal block (~2.7 cm thick at the
+  knuckles, the back arched across them) with thenar, hypothenar and distal palm pads, raised MCP
+  knuckles and extensor tendons; four separate fingers (each its own SDF field, so the clefts
+  between them survive the union; middle longest, little finger shortest and slimmest) with
+  knobbly PIP/DIP joints, a pad under each phalanx, rounded tips and inset nails (`M_fp_nail`);
+  the thumb on a thenar mass, joined to the index by its web. Mesh-only shape numbers
+  (`FINGER_SHAPE`, `THUMB_RADII`, `PALM_OUTLINE`) never move a bone; each finger segment is
+  skinned to its own bone. Meshed in a narrow
+  band round the surface (`sparse_surface_nets`) at `h` = 1.1 mm, so the clefts resolve, then
+  decimated to `arm_tris` = 14k per arm (~11.5k of it past the wrist).
+* Vertex colour: R baked AO; G a dirt mask (creases, knuckles, the skin over the finger joints,
+  fingertips) for the `fp_grime` layer; B the flush of blood under thin skin (knuckles, finger
+  joints, fingertips) that `fp_skin`'s `flush` reddens (0 on the tether).
 * Socket empties: `socket_hand.R` (tool grip point), `socket_hand.L`. Godot local axes: +Y along the
   gripped handle towards the thumb (tool head), +X towards the knuckles; +Z is the back of the right
   hand and the palm of the left. Viewmodels are modelled in the tool frame (grip at the origin,

@@ -6,11 +6,11 @@ extends ContentDef
 
 const EVENTS: PackedStringArray = ["fell_tree", "craft", "place_log", "build", "loot", "kill", "enter_poi",
 	"clear_poi", "survive_hum", "read_note", "level", "sleep", "supply_drop", "disarm_trap", "contract", "raid", "harvest",
-	"burn_nest"]
+	"burn_nest", "trap_kill"]
 const TIERS: PackedStringArray = ["", "normal", "seeded", "bloomed"]
 ## Content kind each event's targets must name (build accepts a blueprint or a structure).
 const TARGET_KIND: Dictionary = {"craft": &"item", "kill": &"enemy", "enter_poi": &"poi", "clear_poi": &"poi",
-	"contract": &"quest", "harvest": &"crop", "burn_nest": &"nest"}
+	"contract": &"quest", "harvest": &"crop", "burn_nest": &"nest", "trap_kill": &"structure"}
 
 var chapter: int = 1
 var chapter_name: String = ""

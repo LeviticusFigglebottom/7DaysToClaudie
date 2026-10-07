@@ -1,5 +1,5 @@
 {
- "_doc": "Wildlife materials (ADR-0027). Coats use the fur shader: vertex colour R = baked AO, G = the pale coat, B = the dark coat (the darkest point, the nose, is wet); base/pale/dark tint a neutral strand texture (animal_fur_short, animal_fur_soft, animal_feathers from tools/assetgen/textures/gen/animals.py). Birds flap in the vertex stage (wing_flap, UV2.x = span). Hooves, antlers and eyes use std_surface (metallic_mult 0: untextured ORM reads as white). The Hollowed hounds: fur_hound_* tint animal_fur_coarse (G = bare, mangy skin rather than a pale coat); hound_bloom_plates are the Bloom's shelf plates on their backs (bloom_fungus, G undersides, B thin margins); their teeth and thread mats use the Hollowed's teeth and bloom_growth. Wolves (ADR-0055): fur_wolf_* tint animal_fur_soft (G = the cream underparts, B = the dark saddle and tail tip), eye_wolf is amber.",
+ "_doc": "Wildlife materials (ADR-0027). Coats use the fur shader: vertex colour R = baked AO, G = the pale coat, B = the dark coat (the darkest point, the nose, is wet); base/pale/dark tint a neutral strand texture (animal_fur_short, animal_fur_soft, animal_feathers from tools/assetgen/textures/gen/animals.py). Birds flap in the vertex stage (wing_flap, UV2.x = span). Deer and hare coats add \"shells\" (TD-067): next_pass slices of fur_shell.gdshader up the hair (count, length m, strand_cells per strand tile across/along the lie, strand_width, fade_end m). Hooves, antlers and eyes use std_surface (metallic_mult 0: untextured ORM reads as white). The Hollowed hounds: fur_hound_* tint animal_fur_coarse (G = bare, mangy skin rather than a pale coat); hound_bloom_plates are the Bloom's shelf plates on their backs (bloom_fungus, G undersides, B thin margins); their teeth and thread mats use the Hollowed's teeth and bloom_growth. Wolves (ADR-0055): fur_wolf_* tint animal_fur_soft (G = the cream underparts, B = the dark saddle and tail tip), eye_wolf is amber.",
  "materials": {
   "fur_wolf_a": {
    "shader": "fur",
@@ -43,6 +43,7 @@
   },
   "fur_deer": {
    "shader": "fur",
+   "shells": {"count": 4, "length": 0.012, "strand_cells": [24.0, 8.0], "strand_width": 0.36, "fade_end": 16.0},
    "textures": "animal_fur_short",
    "params": {
     "uv_scale": 9.0,
@@ -61,6 +62,7 @@
   },
   "fur_deer_buck": {
    "shader": "fur",
+   "shells": {"count": 4, "length": 0.014, "strand_cells": [22.0, 7.0], "strand_width": 0.38, "fade_end": 16.0},
    "textures": "animal_fur_short",
    "params": {
     "uv_scale": 9.0,
@@ -79,6 +81,7 @@
   },
   "fur_hare": {
    "shader": "fur",
+   "shells": {"count": 3, "length": 0.0055, "strand_cells": [14.0, 6.0], "strand_width": 0.36, "fade_end": 10.0},
    "textures": "animal_fur_soft",
    "params": {
     "uv_scale": 22.0,

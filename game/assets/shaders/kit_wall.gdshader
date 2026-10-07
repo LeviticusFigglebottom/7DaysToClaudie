@@ -38,39 +38,40 @@ uniform bool has_decay = false;
 uniform float texture_scale = 1.0;
 uniform bool is_floor = false;
 // Fallback palette (when finish arrays are not generated yet): index -> colour.
-const vec3 PALETTE[18] = vec3[](
+const vec3 PALETTE[19] = vec3[](
 	vec3(0.78, 0.76, 0.71), vec3(0.62, 0.66, 0.58), vec3(0.55, 0.6, 0.66), vec3(0.7, 0.62, 0.5),
 	vec3(0.52, 0.36, 0.3), vec3(0.45, 0.5, 0.42), vec3(0.8, 0.78, 0.68), vec3(0.4, 0.38, 0.36),
 	vec3(0.48, 0.34, 0.22), vec3(0.36, 0.26, 0.18), vec3(0.6, 0.6, 0.58), vec3(0.3, 0.3, 0.3),
 	vec3(0.66, 0.54, 0.4), vec3(0.42, 0.44, 0.47), vec3(0.72, 0.7, 0.62), vec3(0.5, 0.45, 0.4),
-	vec3(0.24, 0.22, 0.2), vec3(0.62, 0.58, 0.5));
+	vec3(0.24, 0.22, 0.2), vec3(0.62, 0.58, 0.5), vec3(0.2, 0.14, 0.09));
 
 // Metres per tile of the decay masks (kit.py DECAY_TILE_M).
 const float DECAY_TILE = 2.5;
 const float BASEBOARD_H = 0.11;
 // Wall finish slices (data/materials/kit_finishes.json): 0-1 plaster, 2-4 paint, 5-7 wallpaper,
 // 8 wood panelling, 9-10 tile, 11-13 siding, 14 brick, 15 concrete block, 16-17 rock (drift,
-// limestone: mine levels and caves, ADR-0044; they never peel and take no baseboard). Colours are linear.
+// limestone: mine levels and caves, ADR-0044; they never peel and take no baseboard), 18 chinked logs
+// (log buildings' exterior walls and gables, TD-236: weathers as an exterior finish). Colours are linear.
 // What peeling reveals: brown-coat plaster, white plaster under paint, backing paper and glue,
 // tile backer, grey weathered wood under siding paint, bare block.
-const vec3 WALL_SUBSTRATE[18] = vec3[](
+const vec3 WALL_SUBSTRATE[19] = vec3[](
 	vec3(0.26, 0.2, 0.13), vec3(0.24, 0.2, 0.15),
 	vec3(0.5, 0.46, 0.38), vec3(0.5, 0.46, 0.38), vec3(0.5, 0.46, 0.38),
 	vec3(0.42, 0.35, 0.23), vec3(0.42, 0.35, 0.23), vec3(0.42, 0.35, 0.23),
 	vec3(0.16, 0.1, 0.06), vec3(0.27, 0.25, 0.22), vec3(0.27, 0.25, 0.22),
 	vec3(0.26, 0.24, 0.2), vec3(0.26, 0.24, 0.2), vec3(0.26, 0.24, 0.2),
 	vec3(0.2, 0.1, 0.07), vec3(0.26, 0.25, 0.22),
-	vec3(0.2, 0.19, 0.17), vec3(0.5, 0.47, 0.4));
+	vec3(0.2, 0.19, 0.17), vec3(0.5, 0.47, 0.4), vec3(0.24, 0.22, 0.19));
 // How readily each wall finish peels (0 = never).
-const float WALL_PEEL[18] = float[](0.35, 0.3, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.15, 0.15, 0.9, 0.9, 0.9, 0.0, 0.3, 0.0, 0.0);
+const float WALL_PEEL[19] = float[](0.35, 0.3, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.15, 0.15, 0.9, 0.9, 0.9, 0.0, 0.3, 0.0, 0.0, 0.0);
 // Baseboard per wall finish (a = 0: none): painted trim on plaster and paint, stained wood under
 // wallpaper and panelling, none on tile and exterior finishes.
-const vec4 BASEBOARD[18] = vec4[](
+const vec4 BASEBOARD[19] = vec4[](
 	vec4(0.7, 0.66, 0.56, 1.0), vec4(0.62, 0.6, 0.54, 1.0),
 	vec4(0.7, 0.66, 0.56, 1.0), vec4(0.7, 0.66, 0.56, 1.0), vec4(0.7, 0.66, 0.56, 1.0),
 	vec4(0.11, 0.05, 0.022, 1.0), vec4(0.11, 0.05, 0.022, 1.0), vec4(0.11, 0.05, 0.022, 1.0),
 	vec4(0.045, 0.022, 0.011, 1.0), vec4(0.0), vec4(0.0),
-	vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0));
+	vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0), vec4(0.0));
 // Floor finish slices: 0-1 wood, 2-3 carpet, 4-5 linoleum, 6 tile, 7 concrete, 8-9 rock and cave
 // mud (ADR-0044; nothing wears through). What wears through:
 // bare grey wood under the varnish, jute backing, subfloor boards, mortar bed.
@@ -145,7 +146,7 @@ void fragment() {
 			nmap = texture(finish_normal, vec3(uv, slice)).rgb;
 		}
 	} else {
-		albedo = PALETTE[int(clamp(round(slice), 0.0, 17.0))];
+		albedo = PALETTE[int(clamp(round(slice), 0.0, 18.0))];
 	}
 	if (edge) {
 		albedo *= 0.82;
@@ -160,9 +161,9 @@ void fragment() {
 	bool ceiling = is_floor && side_b;
 	bool floor_top = is_floor && !side_b;
 	bool wall = !is_floor;
-	int wi = int(clamp(round(slice), 0.0, 17.0));
+	int wi = int(clamp(round(slice), 0.0, 18.0));
 	int fi = int(clamp(round(slice), 0.0, 9.0));
-	bool exterior = wall && wi >= 11 && wi <= 15;
+	bool exterior = wall && ((wi >= 11 && wi <= 15) || wi == 18);
 	if (has_decay) {
 		// The two faces of a wall share a projection: offset side B so they don't mirror each other.
 		vec2 dm = m / DECAY_TILE + (side_b ? vec2(0.37, 0.61) : vec2(0.0));

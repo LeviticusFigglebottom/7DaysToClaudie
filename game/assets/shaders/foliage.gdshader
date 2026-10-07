@@ -31,6 +31,13 @@ uniform float roughness = 0.75;
 // towards the background; scaling alpha up by the mip level keeps crowns and ferns dense (after
 // Ben Golus, "Anti-aliased Alpha Test").
 uniform float mip_alpha_scale = 0.25;
+// Wire mesh (chain-link, chicken wire: TD-237) wants the opposite: a thin wire's mip alpha is its
+// true coverage (~0.2), and scaling it up filled the diamonds, so a fence read as a solid panel at
+// distance. With coverage_dither = 1 (and mip_alpha_scale = 0) the alpha test fades from the fixed
+// scissor near to a screen-space ordered dither once the texture minifies, so a far fence keeps
+// the coverage of its mips: a fine see-through screen, not a wall.
+uniform float coverage_dither : hint_range(0.0, 1.0) = 0.0;
+const float BAYER4[16] = float[](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
 // The Bloom: how far this plant wilts at full strength (0 = never), the colour it dies back to
 // (multiplied into its desaturated self), how far its tips droop and curl in (fraction of their
 // height), and how much it thins (alpha threshold).
@@ -104,6 +111,11 @@ void fragment() {
 	vec2 ddy = dFdy(texel);
 	float mip = max(0.0, 0.5 * log2(max(dot(ddx, ddx), dot(ddy, ddy))));
 	ALPHA = min(1.0, a.a * (1.0 + mip * mip_alpha_scale));
+	if (coverage_dither > 0.0) {
+		ivec2 px = ivec2(FRAGCOORD.xy) % 4;
+		float dither = (BAYER4[px.y * 4 + px.x] + 0.5) / 16.0;
+		threshold = mix(threshold, dither, coverage_dither * smoothstep(0.75, 2.25, mip));
+	}
 	ALPHA_SCISSOR_THRESHOLD = threshold;
 	NORMAL_MAP = texture(normal_tex, UV).rgb;
 	NORMAL_MAP_DEPTH = normal_strength;

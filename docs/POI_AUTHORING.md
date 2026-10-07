@@ -73,7 +73,9 @@ Wall finishes (texture-array order is fixed in `data/materials/kit_finishes.json
 `plaster_white, plaster_grey, paint_mustard, paint_sage, paint_slate_blue, wallpaper_floral_rose,
 wallpaper_stripe_green, wallpaper_damask_brown, wood_paneling_dark, tile_bathroom_white,
 tile_kitchen_check, siding_white, siding_pale_blue, siding_barn_red, brick_red, concrete_block,
-rock_drift, rock_limestone` (the two rock walls also serve as ceilings; they never peel).
+rock_drift, rock_limestone, log_chinked` (the two rock walls also serve as ceilings; they never peel;
+`log_chinked` is bark-on logs with lime chinking for a log building's exterior and gables, weathered as an
+exterior finish).
 Floor finishes: `wood_oak, wood_pine, carpet_brown, carpet_blue_worn, linoleum_check,
 linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
 
@@ -115,7 +117,16 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
 * `state`: `closed`, `open`, `locked` (needs `key` item — place it as a pickup), `locked_inside`
   (bolted: only opens from the cell it was authored on — the classic **shortcut**), `broken`,
   `barricaded` (door + boards, or `"barricade": "furniture"` for an inside furniture pile),
-  `boarded` (window boards), `missing`.
+  `boarded` (window boards), `missing`. A `broken` door's leaf hangs open off its top hinge (its
+  smashed model, or the whole leaf where the kit has none), at an angle fixed per door, with no
+  collision; a door smashed in play swings there. The leaf of any door swings to the wall's "a"
+  (south / east) face, or to the other one when only that face is a stair flight.
+* Exterior doorways (`door*`, `open`) on the ground floor whose sill is more than 0.2 m above the
+  yard (the pad, or the porch deck where it covers the threshold) get steps up to them, out from the
+  foundation with a ramp under it (PoiBuilder.stoops): a concrete stoop with a landing on a brick,
+  block or rock building, wooden steps on any other, 1-3 steps by the rise, 2 m wide at a double
+  door (PoiBuilder.stoop_piece). Keep the metre outside such a doorway clear of yard props (1.5 m
+  for a concrete stoop of two or three steps).
 * Where a barricade stands: boards go on the face the door is approached from (outside on an
   exterior wall; on an interior wall the side reachable without passing through it, as for lock
   cues — whoever nailed them sealed the room behind), a furniture pile inside on an exterior wall
@@ -131,6 +142,16 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
   `dir`, arriving on level+1 at the 5th cell. The builder opens the upper floor over the flight
   (and over a ladder's hatch): keep sleepers, props, pickups and traps off those cells upstairs
   (validator error).
+* The flight's collision is a ramp rising 0.75 m a cell from its foot edge, and the player steps up
+  only 0.38 m, so (player report 3; validator):
+  * a flight is entered at its foot: from the cell behind it, or from a side of the first step
+    along its low half. Doorways belong on the foot's back edge or off the flight: one beside a
+    step past the first is an error, one beside the first step a warning;
+  * upstairs, a doorway onto the well is an error except at the head (between the last step's well
+    and the landing); a gallery railing is left out across the head;
+  * no wall across a flight, between its head and its landing, or upstairs over its second step or
+    higher (headroom); a door there is the way off the top;
+  * the route never stands on the steps past the foot or over the well (put waypoints beside them).
 * `{"level": 0, "at": [2, 2], "side": "W", "hatch": true}` — ladder against a wall up through a
   hatch in the ceiling (climb by interacting). Climbers step off upstairs onto the room cell beside
   the hatch, away from the wall (or to either side); the validator errors if there is none.

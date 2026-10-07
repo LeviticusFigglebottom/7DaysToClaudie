@@ -150,11 +150,13 @@ keys below are the defaults.
 | Shift (hold) | Sprint, forward only; uses stamina. Run it empty and you can't sprint until it's back to 30 |
 | C or Ctrl | Crouch or stand (a toggle): slower, quieter, harder to see. Needed to disarm traps and dismantle |
 | Space | Jump (8 stamina). At a sill, fence or crate 0.3–1.3 m high: climb over or onto it. In deep water: hold to swim up |
+| Ladders | Walk into a ladder to climb it: W climbs, S (or W while looking down) climbs down, and you step off at the top. From upstairs, walk into its hatch to climb down. Space lets go |
 | E | Interact. Hold it to search, harvest, drink or fill bottles at water, butcher and dismantle |
 | Left mouse | Use what you hold: swing, fire, throw a stone, set down a can chime. While building: place the ghost or the carried log |
 | Right mouse | Hold to guard (melee weapon, light or bare hands). Food, drink or medicine in hand: use it. Revolver: reload. Spear: throw. Placing a blueprint: cancel |
 | 1–6, mouse wheel | Toolbelt slots (press the held one again to put it away); the wheel cycles them |
 | F | Turn the lighter, torch or flashlight in your hand on or off |
+| Y | Look over what you are holding |
 | G | Drop a carried log; while looking at a fire, add fuel |
 | R | Rotate: a blueprint by 15°, a carried log by 90° |
 | V | Carried log pose: flat, upright post, pitched (roof) |
@@ -431,6 +433,37 @@ and a **Rain Catcher** (1 Log, 8 Sticks, 2 Cordage, 4 Cloth).
 * **The rain catcher** fills when it rains, about two bottles an hour in a downpour, up to 24. Press
   **E** with empty bottles or a bucket to fill them (the water is murky: boil it), or drink straight
   from it. Under a roof it stays dry. Buckets also fill at streams.
+
+### Traps and power
+The Field Manual's **Defense** blueprints add three traps the Hollowed walk into on their own way to
+your walls; its **Power** blueprints light and guard a base. Neither blocks your way: you walk
+through a trap's frame (mind your step).
+* **Spike Pit** (1 Log, 12 Sticks, 1 Cordage): a Hollow that walks in is staked (24), held for a
+  couple of seconds, slowed to a crawl while it climbs out and staked again every second. The
+  stakes dull as they work (half damage below a third of their health): mend them with a hammer.
+  Step in yourself and it hurts.
+* **Deadfall** (2 Logs, 4 Sticks, 3 Cordage, 4 Stones): the first thing under the hanging log brings
+  it down (110, enough to drop a plain Hollow), loud. Press **E** to lift it again.
+* **Tripwire Bell** (3 Sticks, 2 Cordage, 2 Scrap Metal): rings when a Hollow walks through and
+  tells you where ("The tripwire bell is ringing: north-west, 40 m."). Everything near hears it too.
+* **Generator** (schematic; a Small Engine, 3 Electrical Parts, 10 Scrap Metal, 8 Nails): **E** pours
+  in a **Gas Can** (car trunks, auto shops; four hours flat out, longer at a light load, two cans to
+  a tank), **E** again starts and stops it. It is loud and warm: the longer it runs, the more of
+  them come looking. Small engines are built at the workbench too.
+* **Wiring**: with a **Wire Spool** in your pack (toolboxes and hardware shelves; or strip two
+  Electrical Parts at the workbench), hold **X** on a generator or a light to start a wire, then
+  hold **X** on the next piece to connect it. A spool runs 10 m; no run is longer than 14 m. Pieces
+  wired to each other share the power, so you can chain lights. Without a spool, hold **X** to cut a
+  piece's wires (the spools come back).
+* **Work Light** (a Work Lamp, Electrical Parts, Sticks, Cordage; 60 W): shines while it has power;
+  **E** switches it. A lit base is easy to see.
+* **Motion Floodlight** (schematic; 150 W): dark until a Hollow moves within 20 m, then it lights
+  the ground and warns you.
+* **Nail Sentry** (schematic; 200 W): **E** loads it with nails (up to 120); while it has power it
+  shoots the nearest Hollow in sight within 14 m, a nail a shot.
+* A generator gives 400 W: the pieces on its wires are powered in a fixed order until it runs out,
+  so switch something off to free power for the rest. The "Base trap and sentry damage" and
+  "Generator fuel use" world settings scale them.
 
 ## 8. Buildings are dungeons
 

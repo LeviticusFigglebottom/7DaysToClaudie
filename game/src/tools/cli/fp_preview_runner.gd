@@ -28,6 +28,10 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "flashlight_idle", "item": "flashlight"},
 	{"name": "lighter_idle", "item": "lighter", "lit": true},
 	{"name": "torch_swing", "item": "torch", "lit": true, "action": "fp_torch", "frame": 10},
+	# Shot while the view swings round (turn: rad/s of yaw, at 30 fps for 8 frames): the flames
+	# must stay on the item, not trail behind it.
+	{"name": "torch_turn", "item": "torch", "lit": true, "night": true, "turn": 3.0},
+	{"name": "lighter_turn", "item": "lighter", "lit": true, "night": true, "turn": 3.0},
 	{"name": "tether_raised", "item": "stone_axe", "tether": true},
 	{"name": "food_idle", "item": "canned_beans"},
 	{"name": "food_eat", "item": "canned_beans", "action": "fp_eat", "frame": 15},
@@ -40,12 +44,22 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "empty_guard", "item": "", "guard": true},
 	{"name": "carry_log", "item": "", "base": "fp_carry_log"},
 	{"name": "blueprint", "item": "stone_axe", "base": "fp_blueprint"},
+	# Strike phases either side of the contact frames above (TD-172): windup, follow-through.
+	{"name": "machete_slash_windup", "item": "machete", "action": "fp_slash", "frame": 6},
+	{"name": "machete_slash_follow", "item": "machete", "action": "fp_slash", "frame": 12},
+	{"name": "club_bash_windup", "item": "stone_club", "action": "fp_bash", "frame": 13},
+	{"name": "club_bash_follow", "item": "stone_club", "action": "fp_bash", "frame": 20},
+	{"name": "shovel_dig_windup", "item": "shovel", "action": "fp_dig", "frame": 8},
+	{"name": "shovel_dig_follow", "item": "shovel", "action": "fp_dig", "frame": 15},
+	{"name": "food_eat_lift", "item": "canned_beans", "action": "fp_eat", "frame": 8},
 ]
 
 var _out: String = "res://../build/fp_preview"
 var _only: PackedStringArray = []
 var _size := Vector2i(1280, 720)
 var _cam: Camera3D
+## The camera's parent, turned by the turn shots.
+var _head: Node3D
 var _vm: ViewModel
 var _sun: DirectionalLight3D
 var _env: Environment
@@ -126,8 +140,10 @@ func _scene() -> void:
 	_cam.fov = 75.0
 	_cam.near = 0.04
 	_cam.far = 400.0
-	world.add_child(_cam)
-	_cam.position = Vector3(0, 1.65, 0)
+	_head = Node3D.new()
+	world.add_child(_head)
+	_head.position = Vector3(0, 1.65, 0)
+	_head.add_child(_cam)
 	_cam.make_current()
 	_vm = (load("res://src/player/viewmodel.gd") as GDScript).new() as ViewModel
 	_vm.name = "ViewModel"
@@ -186,7 +202,14 @@ func _shoot(shot: Dictionary) -> void:
 	if anchor != null:
 		_torch_light.global_position = anchor.global_position + Vector3.UP * 0.08
 	await _wait(0.4)
+	# Turn the head (the viewmodel drives the camera's own rotation): a few frames of steady yaw.
+	var turn: float = float(shot.get("turn", 0.0))
+	if turn != 0.0:
+		for i: int in 8:
+			await get_tree().process_frame
+			_head.rotation.y += turn / 30.0
 	var img: Image = get_viewport().get_texture().get_image()
 	var path: String = _out.path_join("%s.png" % shot["name"])
 	img.save_png(path)
 	print("FP_PREVIEW %s" % path)
+	_head.rotation.y = 0.0

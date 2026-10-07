@@ -299,7 +299,7 @@
         {"at": [12, 7], "label": "First landing: the Hollowed piled at the locked gate, and Marnie's card on it", "level": 1},
         {"at": [7, 15], "label": "Back down and out the window to the woodshed"},
         {"at": [5, 14], "label": "Woodshed: Ezra by the woodpile, the spare gate key on its nail"},
-        {"at": [13, 6], "label": "Unlock the gate, climb the second flight", "level": 1},
+        {"at": [13, 4], "label": "Unlock the gate, climb the second flight", "level": 1},
         {"at": [11, 7], "label": "Second landing: the ladder up to the trapdoor", "level": 2},
         {"at": [12, 6], "label": "The cab (loot): fire finder, radio, Marnie's footlocker and stores", "level": 3},
         {"at": [13, 5], "label": "Back down to the stair house and slide the bolt on the back door"},

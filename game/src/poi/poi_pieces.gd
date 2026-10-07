@@ -103,6 +103,8 @@ static func opening_of(piece_id: String) -> String:
 
 class Door:
 	extends StaticBody3D
+	## How far a broken leaf tips off the vertical (radians).
+	const SAG: float = 0.07
 	var poi: Node
 	var op_id: String = ""
 	## The authored opening this leaf belongs to (op_id without _l/_r) — triggers and alarms.
@@ -123,6 +125,13 @@ class Door:
 	var lock_body: Node = null
 	## Hinge yaw when closed: PI for the right leaf of a double door (it hangs toward the centre).
 	var flip: float = 0.0
+	## Which face of the wall the leaf swings to (PoiLayout.door_swing): +1 local +Z, -1 local -Z.
+	var swing: float = 1.0
+	## How far open (0..1 of the full swing) a broken leaf hangs, torn off its lower hinge with its
+	## latch corner down on the floor: a doorway you can walk through reads as one (player report 3:
+	## a smashed leaf drawn shut over an open doorway). PoiBuilder picks it from the door's id, so it
+	## needs nothing saved.
+	var broken_open: float = 0.85
 	## The leaf's collision shape. It stays a direct child of this body (a shape under the plain
 	## pivot Node3D never registers with physics) and _apply() moves it with the hinge.
 	var leaf_shape: CollisionShape3D
@@ -139,7 +148,7 @@ class Door:
 		collision_mask = 0
 		set_meta(&"breakable", true)
 		set_meta(&"surface", "wood_floor")
-		_target = 1.0 if state == "open" else 0.0
+		_target = 1.0 if state == "open" else (broken_open if state == "broken" else 0.0)
 		_open_amount = _target
 		_apply()
 
@@ -152,7 +161,16 @@ class Door:
 		if pivot == null:
 			return
 		# Both leaves of a double door swing to the same side of the wall.
-		pivot.rotation.y = flip + _open_amount * PI * 0.55 * (1.0 if flip != 0.0 else -1.0)
+		var yaw: float = flip + _open_amount * PI * 0.55 * (1.0 if flip != 0.0 else -1.0) * swing
+		var basis := Basis(Vector3.UP, yaw)
+		var lift: float = 0.0
+		if state == "broken":
+			# Hanging from its top hinge: the leaf tips about the hinge until its latch corner
+			# rests on the floor (the hinge foot lifts to keep it there).
+			var tip: float = SAG * clampf(_open_amount / maxf(broken_open, 0.01), 0.0, 1.0)
+			basis = basis * Basis(Vector3.BACK, -tip)
+			lift = leaf_local.origin.x * 2.0 * sin(tip)
+		pivot.transform = Transform3D(basis, Vector3(pivot.position.x, lift, pivot.position.z))
 		if leaf_shape != null:
 			leaf_shape.transform = pivot.transform * leaf_local
 
@@ -270,6 +288,8 @@ class Door:
 
 	func smash() -> void:
 		state = "broken"
+		# It swings in and hangs off its top hinge (_process animates it there).
+		_target = broken_open
 		Audio.play_3d(&"sfx/structure_break_wood", global_position + Vector3.UP, {"volume_db": 0.0})
 		FxLibrary.burst(get_parent(), "splinters", global_position + Vector3.UP, Vector3.UP, 1.5)
 		for c: Node in get_children():
@@ -284,8 +304,6 @@ class Door:
 					(c2 as MeshInstance3D).visible = false
 				elif c2 is MeshInstance3D and model_broken != "" and ModelLibrary.has_model(model_broken):
 					(c2 as MeshInstance3D).mesh = ModelLibrary.mesh(model_broken)
-				elif c2 is MeshInstance3D:
-					(c2 as MeshInstance3D).visible = false
 		_save()
 		if poi != null:
 			poi.call(&"on_opening_event", opening_id, global_position + Vector3.UP, _by_player)
@@ -498,28 +516,30 @@ class LootProp:
 
 class Ladder:
 	extends StaticBody3D
-	## Climb by interacting: moves the player to the top/bottom landing (POI-local points).
+	## A wall ladder the player climbs (ADR-0051): walk into it from its foot, or walk into its hatch
+	## from the landing upstairs, and Player climbs it (no interaction, no teleport). Its foot is its
+	## own origin; `bottom_local` (the cell in front of it) and `top_local` (the landing beside the
+	## hatch upstairs) are the POI-local feet points either end. Not solid (layer 8).
 	var top_local: Vector3
 	var bottom_local: Vector3
+	## Metres the ladder stands (PoiLayout.STOREY: from one floor up to the next).
+	var height: float = 3.0
 
 	func _ready() -> void:
 		collision_layer = 1 << 7
 		collision_mask = 0
+		add_to_group(&"ladder")
 
-	func _ends() -> Array:
+	## [the landing upstairs, the cell at its foot] in world space.
+	func ends() -> Array:
 		var p: Node3D = get_parent() as Node3D
 		return [p.to_global(top_local), p.to_global(bottom_local)]
 
-	func interact_text(player: Player) -> String:
-		var e: Array = _ends()
-		return "Climb down" if player.global_position.y > ((e[0] as Vector3).y + (e[1] as Vector3).y) * 0.5 else "Climb up"
-
-	func interact(player: Player) -> void:
-		var e: Array = _ends()
-		var up: bool = player.global_position.y <= ((e[0] as Vector3).y + (e[1] as Vector3).y) * 0.5
-		player.global_position = (e[0] if up else e[1]) + Vector3.UP * 0.1
-		player.velocity = Vector3.ZERO
-		Audio.play_3d(&"sfx/ladder_climb", player.global_position, {"volume_db": -4.0})
+	## The horizontal direction from the rails toward whoever climbs it.
+	func face() -> Vector3:
+		var d: Vector3 = (ends()[1] as Vector3) - global_position
+		d.y = 0.0
+		return d.normalized() if d.length() > 0.01 else global_basis.z
 
 
 class TripLine:

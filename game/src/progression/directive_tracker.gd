@@ -45,6 +45,9 @@ func setup_world(w: Node) -> void:
 			record("harvest", crop_id))
 	# A Bloom nest burned (ADR-0055); its def is the target.
 	Events.nest_burned.connect(func(_nid: String, def_id: StringName, _pos: Vector3) -> void: record("burn_nest", def_id))
+	# A Hollow put down by a player-built trap or sentry (ADR-0052).
+	Events.trap_killed.connect(func(_piece: StringName, structure_id: StringName, _enemy: StringName) -> void:
+		record("trap_kill", structure_id))
 	if p != null:
 		fit_world(p)
 		# A loaded game may already meet a level goal in its open chapter.

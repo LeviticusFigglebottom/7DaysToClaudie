@@ -200,6 +200,14 @@ static func _standin(piece: String) -> Mesh:
 		size = Vector3(1.0, 0.3, 0.9)
 		offset = Vector3(0, 0.15, 0.45)
 		kind = "boards"
+	elif piece.begins_with("stoop_"):
+		# stoop_<kind>_<steps>_<w>m (PoiBuilder.stoop_piece): its block, running out along +Z.
+		var parts: PackedStringArray = piece.split("_")
+		var n: int = int(parts[2]) if parts.size() > 3 else 1
+		var d: float = (PoiBuilder.STOOP_LANDING + PoiBuilder.STOOP_TREAD * float(n - 1)) if parts[1] == "concrete" else PoiBuilder.STOOP_TREAD * float(n)
+		size = Vector3(float(parts[3].trim_suffix("m")) if parts.size() > 3 else 1.0, PoiBuilder.STOOP_RISE * float(n), d)
+		offset = Vector3(0, size.y * 0.5, d * 0.5)
+		kind = "concrete" if parts[1] == "concrete" else "boards"
 	elif piece == "barricade_furniture":
 		size = Vector3(1.6, 1.4, 0.8)
 		offset = Vector3(0, 0.7, 0)

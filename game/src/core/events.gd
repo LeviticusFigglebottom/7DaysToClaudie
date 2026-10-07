@@ -49,6 +49,8 @@ signal structure_destroyed(piece_id: StringName, def_id: StringName, position: V
 signal blueprint_completed(blueprint_id: StringName, def_id: StringName)
 ## A garden plot brought in (ADR-0049): the crop def and what it gave ({item: count}).
 signal crop_harvested(player_id: StringName, crop_id: StringName, items: Dictionary)
+## A Hollow killed by a player-built trap or sentry (ADR-0052): the piece and its structure def.
+signal trap_killed(piece_id: StringName, structure_id: StringName, enemy_id: StringName)
 signal terrain_modified(aabb: AABB)
 signal tree_felled(tree_id: StringName, position: Vector3)
 ## A Remand Program supply canister was released over `position` (lands a little later).
