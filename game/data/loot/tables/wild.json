@@ -34,7 +34,7 @@
       {"item": "ammo_38", "weight": 6, "count": [4, 10]}, {"item": "hatchet", "weight": 3}, {"item": "kitchen_knife", "weight": 3},
       {"item": "cordage", "weight": 6, "count": [2, 4]}, {"item": "cloth", "weight": 4, "count": [2, 4]}, {"item": "antifungal", "weight": 2},
       {"item": "first_aid_kit", "weight": 2}, {"table": "food_canned", "weight": 4}, {"item": "journal_field_medicine", "weight": 2},
-      {"item": "revolver", "weight": 1}],
+      {"item": "revolver", "weight": 1}, {"item": "arrow_stone", "weight": 3, "count": [3, 6]}, {"item": "hunting_bow", "weight": 1}],
       "guaranteed": [{"item": "cordage", "count": [2, 3]}]},
     {"id": "wild_payroll_box", "rolls": [1, 2], "empty_chance": 0.0, "entries": [
       {"item": "scrip", "weight": 10, "count": [10, 40]}, {"table": "reading", "weight": 2}],

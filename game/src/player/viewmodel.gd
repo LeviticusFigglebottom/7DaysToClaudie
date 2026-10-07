@@ -136,6 +136,9 @@ func show_item(item_id: StringName) -> void:
 	motion.start_equip()
 	if _held_def != null:
 		_held = _make_item(_held_def)
+		if str(_held_def.equip.get("kind", "")) == "bow":
+			# ADR-0057: the string and nocked arrow follow the drawing hand.
+			BowRig.attach(_held, _sock.get("R", null), ResourceLoader.exists(VM_PATH % str(_held_def.equip.get("viewmodel", ""))))
 		_set_layers(_held)
 		if has_arms():
 			_attach_held(ViewModelHolds.item_hand(hold_class, cfg))
@@ -146,6 +149,11 @@ func show_item(item_id: StringName) -> void:
 	if _action != &"" and _anim != null:
 		_action = &""
 	_update_base(true)
+
+
+## The held item's node (null with empty hands): the bow's BowRig hangs under it.
+func held_item() -> Node3D:
+	return _held
 
 
 func _make_item(def: ItemDef) -> Node3D:

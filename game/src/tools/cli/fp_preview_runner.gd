@@ -44,6 +44,11 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "food_eat", "item": "canned_beans", "action": "fp_eat", "frame": 15},
 	{"name": "bottle_idle", "item": "water_bottle_clean"},
 	{"name": "bottle_drink", "item": "water_bottle_clean", "action": "fp_drink", "frame": 30},
+	# The bow (ADR-0057): at the ready with an arrow nocked, mid-draw, at full draw, just loosed.
+	{"name": "bow_idle", "item": "hunting_bow"},
+	{"name": "bow_draw_mid", "item": "hunting_bow", "action": "fp_draw_bow", "frame": 12},
+	{"name": "bow_full_draw", "item": "hunting_bow", "action": "fp_bow_drawn", "frame": 0},
+	{"name": "bow_release", "item": "hunting_bow", "action": "fp_release_bow", "frame": 4, "nocked": false},
 	{"name": "held_stone", "item": "stone"},
 	{"name": "stone_throw", "item": "stone", "action": "fp_throw", "frame": 12},
 	{"name": "bandage_apply", "item": "cloth_bandage", "action": "fp_apply", "frame": 20},
@@ -224,6 +229,9 @@ func _shoot(shot: Dictionary) -> void:
 		_vm.set_guard(true)
 	if bool(shot.get("tether", false)):
 		_vm.set_tether_raised(true)
+	var rig: BowRig = BowRig.of(_vm.held_item())
+	if rig != null:
+		rig.nocked = bool(shot.get("nocked", true))
 	var lit: bool = bool(shot.get("lit", false))
 	_vm.set_lit(lit)
 	await _wait(0.6)
