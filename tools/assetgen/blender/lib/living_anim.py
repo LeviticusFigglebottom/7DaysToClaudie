@@ -14,9 +14,19 @@ The living set replaces these Hollowed clips (docs/CHARACTERS.md):
   attack_b          a spear thrust that is also the throw (Enemy releases the spear 0.55 s into
                     the clip at 0.9 speed: the arm is at full extension then)
   attack_structure  two-handed chops at a wall or door (loops)
+  hit_front         a blow from the front: head and chest snap back, weight onto the back foot,
+                    hands up to guard, back in the stance (14 frames; Enemy stuns for the length)
+  hit_back          a blow from behind: shoved forward, the head whips, a glance back over the
+                    shoulder, back in the stance (14 frames)
+  stagger           rocked back, a stumbling step back with each foot, folded over the knees,
+                    a shake of the head, two steps back in (30 frames)
+  death_front       struck from behind: the knees go, onto the knees, pitches onto the face
+  death_back        struck from the front: the knees buckle, sits down hard, over onto the back
+                    (both 40 frames, flat on the ground at the Hollowed's places from frame 34)
 drops the Hollowed-only ones (head loll / twitch idles, the hard limp, feeding, crawling, the
 Keener's scream - none of which a tribe fighter plays, and idle_b / idle_c / walk_limp would be
-picked as variants by EnemyVisual) and keeps the rest (sleep / wake, hits, stagger, deaths).
+picked as variants by EnemyVisual) and keeps the sleep / wake clips (the Ashen are never POI
+sleepers, so nothing plays them; they are the Hollowed's).
 
 Speeds: Enemy plays `walk` / `walk_b` at speed scale sp / 0.9 and `run` at sp / 4.5, so the clips
 travel exactly 0.9 m/s and 4.5 m/s at speed 1 (no foot sliding at any playback speed). The walks'
@@ -38,6 +48,8 @@ WALK_FRAMES = 46        # one cycle, 1.53 s at speed 1: 1.38 m stride -> 1.0 s a
 WALK_B_FRAMES = 84      # two cycles (42 frames, 1.26 m stride) so the head scan spans both
 RUN_FRAMES = 20         # one cycle, 0.67 s: 3.0 m stride, 180 steps a minute
 
+# Clips that key their own IK -> FK leg handoff (_legs_fk), so char_anim's is not applied to them.
+OWN_HANDOFF = ("death_front", "death_back")
 # Hollowed clips a living fighter never plays (EnemyVisual would pick some as variants).
 DROPPED = ("idle_b", "idle_c", "walk_limp", "eat", "crawl", "crawl_attack", "scream")
 
@@ -338,6 +350,285 @@ def act_attack_structure(rig, p, n=30):
     return _arm_offsets(rig, [ks.at(f) for f in range(n + 1)])
 
 
+# --- Hits, stagger, deaths ------------------------------------------------------------------
+# A fit body takes a blow and recovers at once: the head and chest snap with it in two frames, the
+# knees take the weight, the hands come up to guard and it is back in its stance. The clips start
+# and end on fight_stance (the idle's) with FK arms, feet planted (IK) except where they step.
+
+def _step(f: float, f0: float, f1: float, y0: float, y1: float, lift: float) -> tuple[float, float, float]:
+    """A foot stepping from y0 to y1 between frames f0 and f1: (y, z, pitch). Toes up as it lands."""
+    if f <= f0:
+        return y0, 0.0, 0.0
+    if f >= f1:
+        return y1, 0.0, 0.0
+    u = (f - f0) / (f1 - f0)
+    y = y0 + (y1 - y0) * ease(u, "inout")
+    z = lift * math.sin(math.pi * u)
+    pitch = -12.0 * math.sin(math.pi * u) if y1 < y0 else 10.0 * math.sin(math.pi * u)
+    return y, z, pitch
+
+
+def _feet(prm: dict, st: dict, steps: dict, f: float) -> dict:
+    """Puts each foot where its steps take it: steps {side: [(f0, f1, dy, lift), ...]} with dy
+    relative to the foot's place in the stance, accumulating."""
+    for sd, _ in SIDES:
+        y = st.get(f"foot.{sd}.y", 0.0)
+        z = pitch = 0.0
+        for f0, f1, dy, lift in steps.get(sd, []):
+            if f <= f0:
+                break
+            y, z, pitch = _step(f, f0, f1, y, y + dy, lift)
+            if f < f1:
+                break
+        prm[f"ik.{sd}"] = 1.0
+        prm[f"foot.{sd}.y"] = y
+        prm[f"foot.{sd}.z"] = z
+        prm[f"foot.{sd}.pitch"] = pitch
+        prm[f"foot.{sd}.pivot"] = 0.0
+    return prm
+
+
+def _guard(d: dict, up: float = 1.0) -> dict:
+    """Hands up in front of the chest, elbows in (a fighter covering up)."""
+    for sd, sx in SIDES:
+        d[f"upper_arm.{sd}.flex"] = 6.0 + 14.0 * up
+        d[f"upper_arm.{sd}.abd"] = -32.0 - 8.0 * up
+        d[f"upper_arm.{sd}.twist"] = -6.0 - 14.0 * up
+        d[f"forearm.{sd}.flex"] = 26.0 + 94.0 * up
+        d[f"hand.{sd}.flex"] = 4.0 + 6.0 * up
+    return d
+
+
+def act_hit(rig, p, n=14, front=True):
+    """A blow lands: from the front (`hit_front`) the head and chest snap back and the weight rocks
+    onto the back foot; from behind (`hit_back`) the body is shoved forward with the head whipping
+    back and then round to look over the shoulder. Two frames to the peak, the knees take it, the
+    hands come up to guard (frame 8) and it is back in its stance at the end (0.47 s at 30 fps)."""
+    st = fight_stance(p)
+    sg = 1.0 if front else -1.0
+    if front:
+        imp = {"hips.y": 0.055, "hips.z": -0.05, "hips.flex": -3.0, "spine.flex": -5.0, "chest.flex": -11.0,
+               "neck.flex": -4.0, "head.flex": -6.0, "head.twist": 8.0, "head.side": -5.0, "chest.twist": 9.0,
+               "jaw.open": 6.0}
+        for sd, sx in SIDES:
+            imp.update({f"shoulder.{sd}.shrug": 7.0, f"upper_arm.{sd}.flex": -10.0, f"upper_arm.{sd}.abd": -12.0,
+                        f"forearm.{sd}.flex": 24.0, f"hand.{sd}.flex": -6.0})
+    else:
+        imp = {"hips.y": -0.06, "hips.z": -0.045, "hips.flex": 6.0, "spine.flex": 8.0, "chest.flex": 14.0,
+               "neck.flex": -8.0, "head.flex": -14.0, "head.twist": -4.0, "chest.twist": -6.0, "jaw.open": 6.0}
+        for sd, sx in SIDES:
+            imp.update({f"shoulder.{sd}.shrug": 8.0, f"upper_arm.{sd}.flex": -18.0, f"upper_arm.{sd}.abd": -22.0,
+                        f"forearm.{sd}.flex": 30.0, f"hand.{sd}.flex": -8.0})
+    peak = A.add(merged(st, imp), {"hips.y": 0.012 * sg, "chest.flex": -3.0 * sg, "head.flex": 6.0}, 1.0)
+    rec = _guard(merged(st, {"hips.y": 0.02 * sg, "hips.z": -0.06, "hips.flex": 3.0, "spine.flex": 3.0,
+                             "chest.flex": 4.0, "neck.flex": 4.0}))
+    if not front:      # glances back over the shoulder where the blow came from
+        rec.update({"head.twist": 34.0, "chest.twist": 12.0, "hips.twist": st["hips.twist"] + 6.0})
+    # the hands come down by the elbows dropping back (not by reaching out)
+    drop = merged(rec, {f"upper_arm.{sd}.flex": -8.0 for sd, _ in SIDES}, {f"forearm.{sd}.flex": 48.0 for sd, _ in SIDES},
+                  {"head.twist": rec.get("head.twist", 0.0) * 0.5, "chest.twist": (rec.get("chest.twist", 0.0) + st["chest.twist"]) * 0.5})
+    ks = Keys(st, [(0, st), (2, merged(st, imp), "snap"), (4, peak, "out"), (8, rec, "inout"), (11, drop, "inout"),
+                   (n, st, "inout")])
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        if f >= 6:      # the gaze comes back to level as it recovers
+            w = ease((f - 6) / (n - 6))
+            want = dict(prm)
+            A.level_head(want, p, 2.0)
+            prm["head.flex"] = prm["head.flex"] * (1 - w) + want["head.flex"] * w
+        frames.append(_feet(prm, st, {}, f))
+    return frames
+
+
+def act_stagger(rig, p, n=30):
+    """Rocked by a heavy blow (or a charge into a wall): the head and chest thrown back and the arms
+    flung out, the back foot stumbles a long step back to catch the weight, the front foot shuffles
+    after it, the body folds forward over the knees to get its balance, shakes its head, and the two
+    feet step back in to the stance (1.0 s)."""
+    st = fight_stance(p)
+    k1 = merged(st, {"hips.y": 0.08, "hips.z": -0.05, "hips.flex": -4.0, "spine.flex": -7.0, "chest.flex": -18.0,
+                     "neck.flex": -6.0, "head.flex": -10.0, "head.twist": 10.0, "chest.twist": 12.0, "hips.side": -5.0,
+                     "jaw.open": 8.0})
+    for sd, sx in SIDES:
+        k1.update({f"shoulder.{sd}.shrug": 10.0, f"upper_arm.{sd}.flex": 6.0, f"upper_arm.{sd}.abd": -12.0,
+                   f"forearm.{sd}.flex": 30.0, f"hand.{sd}.flex": -10.0})
+    # caught on the back foot, arms out wide for balance
+    k2 = merged(k1, {"hips.y": 0.22, "hips.z": -0.09, "hips.flex": 2.0, "spine.flex": 0.0, "chest.flex": -2.0,
+                     "neck.flex": 2.0, "head.flex": -6.0, "hips.side": 4.0, "chest.twist": 4.0, "jaw.open": 2.0})
+    for sd, sx in SIDES:
+        k2.update({f"upper_arm.{sd}.flex": 12.0, f"upper_arm.{sd}.abd": -4.0, f"forearm.{sd}.flex": 36.0})
+    # folded forward over bent knees, the weight between the feet again
+    k3 = merged(k2, {"hips.y": 0.26, "hips.z": -0.15, "hips.flex": 14.0, "spine.flex": 10.0, "chest.flex": 14.0,
+                     "neck.flex": 6.0, "head.flex": 0.0, "head.twist": -8.0, "hips.side": 1.0, "chest.twist": -4.0})
+    for sd, sx in SIDES:
+        k3.update({f"upper_arm.{sd}.flex": 10.0, f"upper_arm.{sd}.abd": -22.0, f"forearm.{sd}.flex": 46.0})
+    # rising, a shake of the head
+    k4 = merged(k3, {"hips.y": 0.20, "hips.z": -0.08, "hips.flex": 6.0, "spine.flex": 4.0, "chest.flex": 4.0,
+                     "neck.flex": 4.0, "head.flex": -2.0, "head.twist": 12.0})
+    k5 = _guard(merged(st, {"hips.y": 0.08, "hips.z": -0.06, "head.twist": -6.0}), 0.6)
+    ks = Keys(st, [(0, st), (3, k1, "snap"), (9, k2, "out"), (14, k3, "inout"), (19, k4, "inout"), (25, k5, "inout"),
+                   (n, st, "inout")])
+    # feet: R (back) a long step back, L shuffles after it, then L and R step back in
+    steps = {"R": [(4, 9, 0.30, 0.10), (23, 28, -0.30, 0.08)],
+             "L": [(9, 13, 0.16, 0.07), (19, 24, -0.16, 0.07)]}
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        prm["head.twist"] += 10.0 * smooth_shake(f, 16, 24)
+        if f >= 20:
+            want = dict(prm)
+            A.level_head(want, p, 2.0)
+            w = ease((f - 20) / (n - 20))
+            prm["head.flex"] = prm["head.flex"] * (1 - w) + want["head.flex"] * w
+        frames.append(_feet(prm, st, steps, f))
+    return frames
+
+
+def smooth_shake(f: float, f0: float, f1: float) -> float:
+    """A quick shake of the head: two swings inside [f0, f1], zero outside."""
+    if f <= f0 or f >= f1:
+        return 0.0
+    u = (f - f0) / (f1 - f0)
+    return math.sin(2 * math.pi * 2 * u) * math.sin(math.pi * u)
+
+
+def _lying_back(rig) -> dict:
+    """Dead on the back: flat, the pelvis LIE behind the origin, legs out with the knees a little
+    up and apart, the head rolled to one side, arms flung out on the ground."""
+    d = {"hips.flex": -86.0, "hips.z": -rig.pel_z + 0.16, "hips.y": 0.42, "hips.twist": -6.0, "hips.side": 3.0,
+         "spine.flex": 3.0, "chest.flex": 2.0, "chest.twist": 4.0, "neck.flex": 10.0, "head.flex": -2.0,
+         "head.twist": 34.0, "head.side": 8.0, "jaw.open": 7.0}
+    for sd, sx in SIDES:
+        d.update({f"ik.{sd}": 0.0, f"thigh.{sd}.flex": 6.0 if sd == "L" else 12.0, f"thigh.{sd}.abd": 9.0,
+                  f"thigh.{sd}.twist": -12.0, f"shin.{sd}.flex": 8.0 if sd == "L" else 22.0,
+                  f"foot.{sd}.pitch": -24.0, f"toe.{sd}.bend": 0.0,
+                  f"shoulder.{sd}.shrug": 4.0, f"shoulder.{sd}.fwd": 0.0,
+                  f"hand.{sd}.flex": 18.0})
+    d.update({"upper_arm.L.flex": 4.0, "upper_arm.L.abd": -18.0, "upper_arm.L.twist": 30.0, "forearm.L.flex": 8.0,
+              "upper_arm.R.flex": 0.0, "upper_arm.R.abd": -2.0, "upper_arm.R.twist": 80.0, "forearm.R.flex": 6.0})
+    return d
+
+
+def _lying_front(rig) -> dict:
+    """Dead face down: flat, the pelvis in front of the origin, legs straight back with one knee
+    drawn a little out, the face turned to the side, one arm under the body's side, one out."""
+    d = {"hips.flex": 86.0, "hips.z": -rig.pel_z + 0.17, "hips.y": -0.42, "hips.twist": 7.0, "hips.side": 4.0,
+         "spine.flex": -3.0, "chest.flex": -4.0, "chest.twist": -4.0, "neck.flex": -24.0, "head.flex": -6.0,
+         "head.twist": 64.0, "head.side": 6.0, "jaw.open": 7.0}
+    for sd, sx in SIDES:
+        d.update({f"ik.{sd}": 0.0, f"thigh.{sd}.flex": 0.0 if sd == "L" else -6.0, f"thigh.{sd}.abd": 6.0 if sd == "L" else 16.0,
+                  f"thigh.{sd}.twist": 10.0, f"shin.{sd}.flex": 4.0 if sd == "L" else 12.0,
+                  f"foot.{sd}.pitch": -40.0, f"toe.{sd}.bend": 0.0,
+                  f"shoulder.{sd}.shrug": 6.0, f"shoulder.{sd}.fwd": 0.0, f"hand.{sd}.flex": 14.0})
+    d.update({"upper_arm.L.flex": -20.0, "upper_arm.L.abd": -22.0, "upper_arm.L.twist": -20.0, "forearm.L.flex": 6.0,
+              "upper_arm.R.flex": -4.0, "upper_arm.R.abd": 30.0, "upper_arm.R.twist": 70.0, "forearm.R.flex": 12.0})
+    return d
+
+
+def _legs_fk(rig, prm: dict) -> dict:
+    """FK leg angles (thigh flex / abd, shin flex) that put each ankle where the IK legs have it in
+    a pose, solved numerically. Keyed on the last IK frame of a fall, the FK legs then interpolate
+    from where the legs really are. (char_anim._ik_fk_handoff's measured knee angle comes out near
+    straight for these deep buckles, so the legs swung through the ground; the deaths use this
+    instead, see build_all.)"""
+    sk = rig.sk
+    Q, off = rig.evaluate(prm)
+    _, pos = sk.fk(Q, off)
+    fk = {k: v for k, v in prm.items()}
+    out = {}
+    names = ("thigh.{}.flex", "shin.{}.flex", "thigh.{}.abd")
+    for sd, _ in SIDES:
+        fk[f"ik.{sd}"] = 0.0
+    for sd, _ in SIDES:
+        want = pos[f"foot.{sd}"]
+        keys = [n.format(sd) for n in names]
+        x = np.array([40.0, 60.0, 0.0])
+
+        def ankle(v):
+            d = dict(fk)
+            for k, val in zip(keys, v):
+                d[k] = float(val)
+            q, o = rig.evaluate(d)
+            return sk.fk(q, o)[1][f"foot.{sd}"]
+        for _ in range(25):
+            a0 = ankle(x)
+            r = a0 - want
+            if float(np.linalg.norm(r)) < 1e-4:
+                break
+            J = np.zeros((3, 3))
+            for i in range(3):
+                dx = np.zeros(3)
+                dx[i] = 0.5
+                J[:, i] = (ankle(x + dx) - a0) / 0.5
+            step = np.linalg.solve(J.T @ J + np.eye(3) * 1e-4, -J.T @ r)
+            x = x + np.clip(step, -25.0, 25.0)
+        out.update({k: float(v) for k, v in zip(keys, x)})
+    return out
+
+
+def act_death(rig, p, n=40, forward=True):
+    """Killed standing. Struck from behind (`death_front`): shoved forward, the knees go, it drops
+    onto its knees (frame 18) and pitches forward onto its face. Struck from the front
+    (`death_back`): rocked back, the knees buckle, it sits down hard (frame 18) and goes over onto
+    its back. The arms go limp and fall where they will; a small bounce as the chest lands
+    (frames 26-31), then still. Both end flat on the ground (the pelvis 0.16 m up, 0.42 m in
+    front of / behind the origin like the Hollowed's), held from frame 34. The feet stay planted
+    (IK) to frame 18, so the knees fold over them and never pass through the ground; the FK legs
+    of the fall then start from that solution (_legs_fk)."""
+    st = fight_stance(p)
+    pel_z = rig.pel_z
+    sg = 1.0 if forward else -1.0
+    imp = merged(st, {"hips.y": -0.06 * sg, "hips.z": -0.05, "hips.flex": 5.0 * sg, "spine.flex": 7.0 * sg,
+                      "chest.flex": 14.0 * sg, "neck.flex": -8.0, "head.flex": -16.0, "head.twist": 8.0,
+                      "chest.twist": 8.0, "jaw.open": 10.0})
+    for sd, sx in SIDES:
+        imp.update({f"shoulder.{sd}.shrug": 8.0, f"upper_arm.{sd}.flex": -14.0 if forward else 30.0,
+                    f"upper_arm.{sd}.abd": -18.0, f"forearm.{sd}.flex": 30.0 if forward else 44.0})
+    buckle = merged(st, {"hips.y": -0.05 * sg + (0.0 if forward else 0.06), "hips.z": -0.30, "hips.flex": 16.0 if forward else -6.0,
+                         "spine.flex": 12.0 if forward else 2.0, "chest.flex": 14.0 if forward else 0.0,
+                         "neck.flex": 18.0, "head.flex": 8.0, "head.side": 14.0, "head.twist": 4.0, "chest.twist": 2.0,
+                         "jaw.open": 8.0})
+    for sd, sx in SIDES:
+        buckle.update({f"shoulder.{sd}.shrug": -4.0, f"upper_arm.{sd}.flex": 12.0, f"upper_arm.{sd}.abd": -26.0,
+                       f"forearm.{sd}.flex": 18.0, f"hand.{sd}.flex": 16.0})
+    if forward:
+        # on its knees, slumping forward
+        mid = {"hips.flex": 22.0, "hips.z": -pel_z + 0.50, "hips.y": -0.10, "hips.twist": 4.0, "spine.flex": 16.0,
+               "chest.flex": 16.0, "neck.flex": 22.0, "head.flex": 10.0, "head.side": 12.0, "jaw.open": 8.0}
+        for sd, sx in SIDES:     # knees on the ground, shins along it behind
+            mid.update({f"ik.{sd}": 1.0, f"foot.{sd}.x": -sx * 0.03, f"foot.{sd}.y": 0.30 if sd == "L" else 0.36,
+                        f"foot.{sd}.z": 0.04, f"foot.{sd}.yaw": 0.0, f"foot.{sd}.pitch": 0.0, f"foot.{sd}.pivot": 0.0,
+                        f"upper_arm.{sd}.flex": 18.0, f"upper_arm.{sd}.abd": -28.0, f"forearm.{sd}.flex": 20.0})
+        mid.update(_legs_fk(rig, merged(st, mid)))
+        for sd, _ in SIDES:
+            mid.update({f"ik.{sd}": 0.0, f"foot.{sd}.pitch": -45.0})
+        end = _lying_front(rig)
+    else:
+        # sat down hard, going over backwards
+        mid = {"hips.flex": -40.0, "hips.z": -pel_z + 0.21, "hips.y": 0.26, "hips.twist": -4.0, "spine.flex": 6.0,
+               "chest.flex": 6.0, "neck.flex": 16.0, "head.flex": 6.0, "head.side": 10.0, "jaw.open": 8.0}
+        for sd, sx in SIDES:     # feet out in front, knees up
+            mid.update({f"ik.{sd}": 1.0, f"foot.{sd}.x": -sx * 0.06, f"foot.{sd}.y": -0.22 if sd == "L" else -0.12,
+                        f"foot.{sd}.z": 0.0, f"foot.{sd}.yaw": sx * 8.0, f"foot.{sd}.pitch": 0.0, f"foot.{sd}.pivot": 0.0,
+                        f"upper_arm.{sd}.flex": 30.0, f"upper_arm.{sd}.abd": -20.0, f"forearm.{sd}.flex": 30.0})
+        mid.update(_legs_fk(rig, merged(st, mid)))
+        for sd, _ in SIDES:
+            mid.update({f"ik.{sd}": 0.0, f"foot.{sd}.pitch": 10.0})
+        end = _lying_back(rig)
+    bounce = merged(end, {"hips.z": end["hips.z"] + 0.025, "chest.flex": end["chest.flex"] - 5.0 * sg,
+                          "neck.flex": end["neck.flex"] + (8.0 if not forward else -8.0)})
+    ks = Keys(st, [(0, st), (3, imp, "snap"), (10, buckle, "inout"), (18, mid, "in"), (26, end, "in"), (29, bounce, "out"),
+                   (34, end, "in"), (n, end)])
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        for sd, _ in SIDES:
+            prm[f"ik.{sd}"] = 1.0 if f <= 18 else 0.0
+        frames.append(prm)
+    return frames
+
+
 def actions_table() -> list:
     """The Hollowed table with the living clips in place of theirs and the Hollowed-only ones out."""
     living = {
@@ -348,6 +639,11 @@ def actions_table() -> list:
         "attack_a": (24, False, act_attack_a),
         "attack_b": (24, False, act_attack_b),
         "attack_structure": (30, True, act_attack_structure),
+        "hit_front": (14, False, lambda r, p, n: act_hit(r, p, n, True)),
+        "hit_back": (14, False, lambda r, p, n: act_hit(r, p, n, False)),
+        "stagger": (30, False, act_stagger),
+        "death_front": (40, False, lambda r, p, n: act_death(r, p, n, True)),
+        "death_back": (40, False, lambda r, p, n: act_death(r, p, n, False)),
     }
     out = []
     for name, nf, loop, fn in A.actions_table():
@@ -365,7 +661,8 @@ def build_all(arm_obj, skel, params: dict, only=None) -> dict:
         if only and name not in only:
             continue
         frames = fn(rig, params, nf)
-        frames = A._ik_fk_handoff(rig, frames)
+        if name not in OWN_HANDOFF:
+            frames = A._ik_fk_handoff(rig, frames)
         frames = A._fk_ik_handoff(rig, frames)
         A.write_action(arm_obj, skel, name, A.bake_frames(rig, frames))
         lengths[name] = nf / FPS
