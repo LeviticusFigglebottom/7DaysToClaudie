@@ -390,7 +390,7 @@ static func interior_fill(cfg: Dictionary, day: float, overcast: float, night_en
 static func daylight_share(cfg: Dictionary, ratio: float) -> float:
 	if ratio < 0.0:
 		return 1.0
-	var lo: float = float(cfg.get("daylight_min_share", 0.3))
+	var lo: float = float(cfg.get("daylight_min_share", 0.2))
 	return lerpf(lo, 1.0, clampf(ratio / maxf(0.001, float(cfg.get("daylight_full_ratio", 0.1))), 0.0, 1.0))
 
 

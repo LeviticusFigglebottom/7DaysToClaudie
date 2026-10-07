@@ -3,7 +3,7 @@
   "day_fill": 0.6,
   "day_color": "#dbd4c7",
   "overcast_dim": 0.3,
-  "daylight_min_share": 0.3,
+  "daylight_min_share": 0.2,
   "daylight_full_ratio": 0.1,
   "night_share": 0.6,
   "night_floor": 0.012,
