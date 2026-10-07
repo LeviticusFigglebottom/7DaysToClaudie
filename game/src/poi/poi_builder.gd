@@ -1469,6 +1469,9 @@ func _light_at(pos: Vector3, l: Dictionary) -> void:
 	light.light_energy = float(l.get("energy", 1.0))
 	light.omni_range = float(l.get("range", 6.0))
 	light.shadow_enabled = bool(l.get("shadow", false))
+	if light.shadow_enabled:
+		# PoiManager keeps shadows on the nearest of these only (max_shadowed_lights).
+		light.add_to_group(&"shadow_light_budget")
 	light.position = pos
 	root.add_child(light)
 
