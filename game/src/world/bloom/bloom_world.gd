@@ -183,6 +183,27 @@ func redraw(force: bool = false) -> void:
 		_publish()
 
 
+## Dynamic spots by source ([{pos: Vector2, radius, strength}] each), merged into the field's one
+## spot list, so the rooting mounds (&"mounds") and the Bloom nests (&"nests", ADR-0055) never
+## clobber each other. An empty list removes the source; fading is calling again with a lower
+## strength. (Same API as session 3's f5dbc8a; it merges every source into set_spots.)
+func set_spot_source(source: StringName, spots: Array) -> void:
+	if spots.is_empty():
+		_spot_sources.erase(source)
+	else:
+		_spot_sources[source] = spots.duplicate(true)
+	var keys: Array = _spot_sources.keys()
+	keys.sort()
+	var all: Array = []
+	for k: Variant in keys:
+		all.append_array(_spot_sources[k])
+	set_spots(all)
+
+
+## Source -> its spots (set_spot_source), merged in source order.
+var _spot_sources: Dictionary = {}
+
+
 func _process(delta: float) -> void:
 	var night: float = 0.0
 	if Game.session != null and Game.session.clock != null:

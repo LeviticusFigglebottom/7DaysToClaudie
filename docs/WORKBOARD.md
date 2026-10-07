@@ -63,11 +63,11 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
   0038 (streamed worlds: session 3 adds its phases), 0039 (traders and contracts, S2), 0040
   (organic towns, the hub), 0041 (new biomes, the hub), 0042 (wilderness set pieces, the hub, if
   needed), 0043 (session 4, if needed), 0044 (the Corvane caves, S2), 0045 (first-person hands,
-  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub), 0050 (interior lighting, session 5, if needed).
-  Next free: 0051.
+  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub), 0050 (interior lighting, session 5), 0051 (POI navigation, session 5, if needed), 0052 (traps and
+  electricity, the hub). Next free: 0053.
 * TD: S2 094–101, 111–114, 141–148, 162–171 and 186–195 (contract, the Ashen); session 3 102–109,
   126–130 and 196–205; session 4 159–161 and 172–175 (hands); the hub 110, 115–125, 131–140,
-  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub then 236 up.
+  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub 236–238 (render review), 239–248 (traps and electricity); S2 249–258; the hub then 259 up (Round 3: the hub 259–268, session 5 269–278, session 3 279–288, session 4 289–298; ADR-0053..0057 as in Round 3 suites).
 * Save version: 6 since random worlds. Traders add `world.traders` and `players[*].contracts`
   without a bump (both load empty from older saves). 7 is reserved for session 3's world bundle
   (RWG v2 Phase 4), which carries those keys through. Anyone else who needs a bump asks the hub
@@ -92,6 +92,17 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
    (Mile 12); perk capstones, the forge and the chemistry bench.
 7. Needs the owner (a GPU and a human): the M1 playthrough, 60 FPS on target hardware, feel and
    balance (HANDOFF.md "Not verified yet").
+
+## Round 3 suites (2026-10-07): more of the game, and the forests full of places
+The wilderness pool holds 17 big set pieces and nothing small: between towns the forest is empty.
+Each session takes its suite when its current priority lands (hands, POI navigation, Hollowed).
+| Who | Suite | Numbers |
+|---|---|---|
+| The hub (agents) | **Forest encounters**: a micro-POI scatter for random worlds and the main map, a 7 Days / The Forest density of small places in the woods (abandoned campsites and tents, hunting stands and blinds, a wrecked car or logging truck on a forest track, a hermit's shack, a Cordon body-bag drop, a survivor's cache, Bloom-grown animal kills), each a few props with loot, sometimes a sleeper; placed by biome, slope and distance from roads; streamed with the regions | ADR-0054, TD-259..268 |
+| Session 5 | **Forest set pieces, round 4** (authored dungeons, every route proven by poi_walk): a ranger station with its fire-weather tower, a crashed Cordon transport plane in the timber, a survivalist bunker under a hillside cabin, a logging truck depot and repair shed, a railway trestle with its collapsed tunnel, an overgrown chapel and cemetery, a radio relay hut on a ridge | ADR-0053, TD-269..278 |
+| Session 2 | **The living forest**: wolves (packs, hunting deer and the player, fear of fire); Bloom nests, horror landmarks in the deep woods that seed Hollowed and spread Bloom; then companion Ezra Vane (follow, gather, guard, fetch) | ADR-0055, TD-249..258 |
+| Session 3 | **Organic caves** through the SDF volume terrain (TD-162/163): cave shelters and grottos in forest hillsides that the encounter scatter and the set pieces can use; the dense-forest perf budget for the new scatter; TD-003 numbers from the owner's GPU | ADR-0056, TD-279..288 |
+| Session 4 | **Hunting and ranged**: a bow and arrows (craftable, recoverable arrows), throwables (stones, molotovs), a hunting rifle, and climbing (ladders, ropes, the hunting stands) with session 5's ladder work | ADR-0057, TD-289..298 |
 
 ## The owner's priorities (2026-10-07, after Builds #68/#75: "much better so far")
 1. **The Hollowed: look and behaviour.** They seem passive until you're close. Session 2 (the Ashen's

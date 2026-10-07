@@ -8,6 +8,7 @@ extends CanvasLayer
 ##   F6  POI route visualiser: validator routes, waypoints, sleepers (with their ambush group),
 ##       loot rooms, triggers (room outlines / labels, grey once fired), traps and their state
 ##   F7  structural view: per-piece stability and hit points
+##   F8  forest encounters (ADR-0054): every planned site within 400 m, its def, kind and state
 
 const TELEPORTS: Array[Array] = [
 	["Drop site", Vector3(-292, 0, 2296)], ["Pell's Crossing", Vector3(-60, 0, 2070)], ["Okafor farm", Vector3(-190, 0, 1975)],
@@ -79,6 +80,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		DebugTools.toggle(&"poi_routes")
 	elif event.is_action_pressed(&"debug_structure"):
 		DebugTools.toggle(&"structure_view")
+	elif event is InputEventKey and (event as InputEventKey).pressed and not (event as InputEventKey).echo \
+			and (event as InputEventKey).keycode == KEY_F8:
+		DebugTools.toggle(&"encounters")
 	elif _cam != null and event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		var mm: InputEventMouseMotion = event
 		_cam.rotation.y -= mm.relative.x * 0.003
@@ -331,6 +335,40 @@ func _process(delta: float) -> void:
 		any = _draw_routes() or any
 	if DebugTools.is_on(&"structure_view"):
 		_draw_structures()
+	if DebugTools.is_on(&"encounters"):
+		_draw_encounters()
+
+
+## F8: the forest encounters planned round the player (ADR-0054): a ring the size of the site's
+## clearing (green when built, grey when planned but not standing: its region is out, a building
+## or a base took the spot, or nobody registered its kind) and a label with the def, the kind
+## and what happened there.
+func _draw_encounters() -> void:
+	var enc: Node = world.get(&"encounters")
+	if enc == null or not enc.has_method(&"sites_near"):
+		return
+	var near: Array = enc.call(&"sites_near", _player().global_position, 400.0)
+	if near.is_empty():
+		return
+	_mesh.surface_begin(Mesh.PRIMITIVE_LINES)
+	for e: Dictionary in near:
+		var site: Dictionary = e["site"]
+		var def: EncounterDef = Content.get_def(&"encounter", StringName(str(site["def"]))) as EncounterDef
+		var p: Vector3 = site["pos"]
+		var col: Color = Color(0.4, 1.0, 0.5) if bool(e["placed"]) else Color(0.6, 0.6, 0.6)
+		_circle(p, maxf(def.clear_brush if def != null else 3.0, 1.0), col)
+		_line(p, p + Vector3.UP * 6.0, col)
+		var st: Dictionary = e["state"]
+		var notes: PackedStringArray = []
+		if bool(st.get("visited", false)):
+			notes.append("visited")
+		if not (st.get("dead", []) as Array).is_empty():
+			notes.append("dead %s" % ",".join(st["dead"]))
+		if not (st.get("taken", []) as Array).is_empty():
+			notes.append("taken %s" % ",".join(st["taken"]))
+		_label(p + Vector3.UP * 6.4, "%s\n%s (%s) %.0f m%s" % [site["id"], site["def"], site["kind"], float(e["d"]),
+			("\n" + " ".join(notes)) if not notes.is_empty() else ""], col, 40)
+	_mesh.surface_end()
 
 
 func _update_perf() -> void:
@@ -393,7 +431,7 @@ func _draw_ai() -> bool:
 	for e: Enemy in ai.call(&"enemies_in_radius", p, 80.0):
 		var st: String = Enemy.State.keys()[e.state]
 		var col: Color = {"CHASE": Color.RED, "ATTACK": Color.RED, "BREAK": Color.ORANGE, "INVESTIGATE": Color.YELLOW, "SLEEP": Color(0.5, 0.5, 1.0), "HORDE": Color.MAGENTA}.get(st, Color(0.7, 0.9, 0.7))
-		_label(e.global_position + Vector3.UP * 2.2, "%s %s\nhp %d aw %.2f" % [e.def.id, st, int(e.health), e.awareness], col, 40)
+		_label(e.global_position + Vector3.UP * 2.2, "%s %s\nhp %d aw %.2f%s" % [e.def.id, st, int(e.health), e.awareness, (" notice %.2f" % e.get(&"_notice")) if float(e.get(&"_notice")) > 0.0 else ""], col, 40)
 		if e.state != Enemy.State.SLEEP and e.state != Enemy.State.DEAD:
 			_line(e.global_position + Vector3.UP, e.target_pos + Vector3.UP * 0.5, col)
 		n += 1

@@ -64,6 +64,20 @@ PIECES: dict[str, tuple[str, dict]] = {
     "porch_deck_1m": ("kit_exterior", {"kind": "porch_deck", "seed": 73}),
     "chimney_brick": ("kit_exterior", {"kind": "chimney", "seed": 74}),
     "chimney_shaft_1m": ("kit_exterior", {"kind": "chimney_shaft", "seed": 75}),
+    # Stoops up to raised exterior doorways (TD-221, PoiBuilder._stoop): wooden steps or a concrete
+    # stoop with a landing, 1-3 steps, 1 m or 2 m wide.
+    "stoop_wood_1_1m": ("kit_stoop", {"kind": "wood", "steps": 1, "width": 1, "seed": 7600}),
+    "stoop_wood_1_2m": ("kit_stoop", {"kind": "wood", "steps": 1, "width": 2, "seed": 7601}),
+    "stoop_wood_2_1m": ("kit_stoop", {"kind": "wood", "steps": 2, "width": 1, "seed": 7602}),
+    "stoop_wood_2_2m": ("kit_stoop", {"kind": "wood", "steps": 2, "width": 2, "seed": 7603}),
+    "stoop_wood_3_1m": ("kit_stoop", {"kind": "wood", "steps": 3, "width": 1, "seed": 7604}),
+    "stoop_wood_3_2m": ("kit_stoop", {"kind": "wood", "steps": 3, "width": 2, "seed": 7605}),
+    "stoop_concrete_1_1m": ("kit_stoop", {"kind": "concrete", "steps": 1, "width": 1, "seed": 7606}),
+    "stoop_concrete_1_2m": ("kit_stoop", {"kind": "concrete", "steps": 1, "width": 2, "seed": 7607}),
+    "stoop_concrete_2_1m": ("kit_stoop", {"kind": "concrete", "steps": 2, "width": 1, "seed": 7608}),
+    "stoop_concrete_2_2m": ("kit_stoop", {"kind": "concrete", "steps": 2, "width": 2, "seed": 7609}),
+    "stoop_concrete_3_1m": ("kit_stoop", {"kind": "concrete", "steps": 3, "width": 1, "seed": 7610}),
+    "stoop_concrete_3_2m": ("kit_stoop", {"kind": "concrete", "steps": 3, "width": 2, "seed": 7611}),
     # --- tall rooms (ADR-0021): storey band, two-storey openings, galleries ----------------------
     "wall_band_1m": ("kit_tall", {"kind": "band", "seed": 110}),
     "wall_1m_window_tall": ("kit_tall", {"kind": "wall_tall", "length": 1.0, "opening": "window_tall", "seed": 111}),

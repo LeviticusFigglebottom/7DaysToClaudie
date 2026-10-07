@@ -1,0 +1,14 @@
+{
+  "_doc": "What a burned Bloom nest's pods drop (ADR-0055): the Bloom it was made of (samples, mycelium) and what the people it took were carrying. Rolled by BloomNests when a nest dies (NestDef.loot, loot_rolls times).",
+  "defs": [
+    {"id": "nest_loot", "rolls": [2, 3],
+     "guaranteed": [{"item": "bloom_mycelium", "count": [2, 4]}, {"item": "bloom_sample", "count": [1, 1]}],
+     "entries": [{"table": "nest_victims_gear", "weight": 6}, {"item": "bloom_mycelium", "weight": 3, "count": [1, 3]},
+       {"item": "bloom_sample", "weight": 1, "tier_min": 2}, {"item": "bone", "weight": 3, "count": [1, 3]}]},
+    {"id": "nest_victims_gear", "rolls": [1, 1], "entries": [
+      {"item": "cloth", "weight": 6, "count": [1, 3]}, {"item": "cloth_bandage", "weight": 4, "count": [1, 2]},
+      {"item": "canned_beans", "weight": 3}, {"item": "water_bottle_empty", "weight": 3}, {"item": "cordage", "weight": 3, "count": [1, 2]},
+      {"item": "lighter", "weight": 2}, {"item": "painkillers", "weight": 2}, {"item": "ammo_38", "weight": 2, "count": [3, 8]},
+      {"item": "antifungal", "weight": 1}]}
+  ]
+}

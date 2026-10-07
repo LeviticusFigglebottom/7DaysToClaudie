@@ -1,0 +1,11 @@
+{
+  "_doc": "Containers of the forest encounters (ADR-0054, data/encounters): small finds, small loot. Their tier is the encounter's tier.",
+  "defs": [
+    {"id": "enc_cooler", "name": "Camp Cooler", "loot_table": "enc_cooler", "slots": 4, "search_time": 1.0, "noise": 3},
+    {"id": "enc_truck_cab", "name": "Truck Cab", "loot_table": "enc_truck_cab", "slots": 6, "search_time": 2.0, "noise": 8},
+    {"id": "enc_atv_box", "name": "Rack Box", "loot_table": "enc_atv_box", "slots": 4, "search_time": 1.4, "noise": 5},
+    {"id": "enc_survivor_cache", "name": "Survivor's Cache", "loot_table": "enc_survivor_cache", "slots": 8, "search_time": 2.2, "noise": 4},
+    {"id": "enc_bloom_kill", "name": "Bloom-grown Kill", "loot_table": "enc_bloom_kill", "slots": 4, "search_time": 1.8, "noise": 2},
+    {"id": "enc_grave_goods", "name": "Grave Goods", "loot_table": "enc_grave_goods", "slots": 3, "search_time": 1.2, "noise": 1}
+  ]
+}

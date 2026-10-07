@@ -1,0 +1,8 @@
+{
+ "_doc": "Base electricity salvage (ADR-0052): what a toolbox, a hardware shelf or an auto shop shelf gives up toward a generator and its lights. Gas cans also turn up loose in car trunks and on auto shelves; the schematics are in the reading table.",
+ "defs": [
+  {"id": "electrical_salvage", "rolls": [1, 1], "entries": [
+   {"item": "electrical_parts", "weight": 6, "count": [1, 2]}, {"item": "copper_wire", "weight": 5, "count": [1, 2]},
+   {"item": "light_bulb", "weight": 3}, {"item": "gas_can", "weight": 2}, {"item": "small_engine", "weight": 1, "tier_min": 2}]}
+ ]
+}

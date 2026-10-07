@@ -516,28 +516,30 @@ class LootProp:
 
 class Ladder:
 	extends StaticBody3D
-	## Climb by interacting: moves the player to the top/bottom landing (POI-local points).
+	## A wall ladder the player climbs (ADR-0051): walk into it from its foot, or walk into its hatch
+	## from the landing upstairs, and Player climbs it (no interaction, no teleport). Its foot is its
+	## own origin; `bottom_local` (the cell in front of it) and `top_local` (the landing beside the
+	## hatch upstairs) are the POI-local feet points either end. Not solid (layer 8).
 	var top_local: Vector3
 	var bottom_local: Vector3
+	## Metres the ladder stands (PoiLayout.STOREY: from one floor up to the next).
+	var height: float = 3.0
 
 	func _ready() -> void:
 		collision_layer = 1 << 7
 		collision_mask = 0
+		add_to_group(&"ladder")
 
-	func _ends() -> Array:
+	## [the landing upstairs, the cell at its foot] in world space.
+	func ends() -> Array:
 		var p: Node3D = get_parent() as Node3D
 		return [p.to_global(top_local), p.to_global(bottom_local)]
 
-	func interact_text(player: Player) -> String:
-		var e: Array = _ends()
-		return "Climb down" if player.global_position.y > ((e[0] as Vector3).y + (e[1] as Vector3).y) * 0.5 else "Climb up"
-
-	func interact(player: Player) -> void:
-		var e: Array = _ends()
-		var up: bool = player.global_position.y <= ((e[0] as Vector3).y + (e[1] as Vector3).y) * 0.5
-		player.global_position = (e[0] if up else e[1]) + Vector3.UP * 0.1
-		player.velocity = Vector3.ZERO
-		Audio.play_3d(&"sfx/ladder_climb", player.global_position, {"volume_db": -4.0})
+	## The horizontal direction from the rails toward whoever climbs it.
+	func face() -> Vector3:
+		var d: Vector3 = (ends()[1] as Vector3) - global_position
+		d.y = 0.0
+		return d.normalized() if d.length() > 0.01 else global_basis.z
 
 
 class TripLine:

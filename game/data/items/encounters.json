@@ -1,0 +1,12 @@
+{
+ "_doc": "Readable notes of the forest encounters (ADR-0054; texts in notes/encounters.json).",
+ "defs": [
+  {"id": "note_enc_camp_list", "name": "Packing List", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/farm_note_page", "note": "enc_camp_list"},
+  {"id": "note_enc_camp_last", "name": "Torn Notebook Page", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/farm_note_page", "note": "enc_camp_last"},
+  {"id": "note_enc_hunter_log", "name": "Stand Log", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_ranger_log", "note": "enc_hunter_log"},
+  {"id": "note_enc_cache_map", "name": "Cache Note", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/farm_note_page", "note": "enc_cache_map"},
+  {"id": "note_enc_cordon_manifest", "name": "Recovery Manifest", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "enc_cordon_manifest"},
+  {"id": "note_enc_grave_words", "name": "Note Tied to a Cross", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_okafor_letter", "note": "enc_grave_words"},
+  {"id": "note_enc_shack_rules", "name": "Rules Nailed to the Door", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_merrow_fridge", "note": "enc_shack_rules"}
+ ]
+}

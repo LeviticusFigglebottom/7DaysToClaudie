@@ -8,6 +8,7 @@
   "_craft_doc": "Crafting pays craft_<recipe category> when listed, else craft: a stone axe teaches more than a twist of cordage. Digging pays nothing (it is unlimited).",
   "xp": {"craft": 4, "craft_materials": 1, "craft_cooking": 2, "craft_light": 2, "craft_medical": 3, "craft_traps": 6, "craft_tools": 10, "craft_weapons": 8,
          "loot_container": 4, "fell_tree": 10, "build_piece": 5, "upgrade_piece": 8,
-         "complete_blueprint": 30, "dig": 0, "clear_poi_per_tier": 150, "read_note": 15, "discover_poi": 20, "survive_hum": 500, "repel_raid": 250,
-         "hunt_kill": 15, "butcher": 8, "plant_crop": 2, "harvest_crop": 12}
+         "complete_blueprint": 30, "dig": 0, "clear_poi_per_tier": 150, "read_note": 15, "discover_poi": 20, "discover_encounter": 5, "survive_hum": 500, "repel_raid": 250,
+         "hunt_kill": 15, "butcher": 8, "plant_crop": 2, "harvest_crop": 12, "burn_nest": 250,
+         "trap_kill": 10, "wire_power": 3}
 }

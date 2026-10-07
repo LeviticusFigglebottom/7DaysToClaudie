@@ -27,11 +27,52 @@ enum State { SLEEP, WAKING, IDLE, WANDER, INVESTIGATE, CHASE, ATTACK, BREAK, SCR
 const LAYER: int = 1 << 4
 const CORPSE_LAYER: int = 1 << 7
 const MOVE_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 12)
-const SIGHT_MASK: int = (1 << 0) | (1 << 1) | (1 << 14)
+## World, structures, sight blockers and vegetation (layer 13: trunks, thickets and logs near the
+## player, VegetationManager), so a tree or a log is cover (docs/AI_TUNING.md).
+const SIGHT_MASK: int = (1 << 0) | (1 << 1) | (1 << 12) | (1 << 14)
 const GRAVITY: float = 18.0
 const PERCEPTION_INTERVAL: float = 0.25
 const KINEMATIC_BEYOND: float = 110.0
 const MEMORY_SECONDS: float = 9.0
+## Plain Hollowed (not hounds, not the Ashen) also notice a moving player this many degrees past
+## each edge of their field of view, at PERIPHERAL_RANGE of their sight (docs/AI_TUNING.md).
+const PERIPHERAL_DEG: float = 45.0
+const PERIPHERAL_RANGE: float = 0.5
+## By day a plain Hollow investigating comes at this fraction of its run speed (a jog, not a stroll).
+const DAY_INVESTIGATE_PACE: float = 0.75
+## First contact is not instant (TD-191): an awake plain Hollow that catches sight of you stops,
+## groans and turns to look, and commits (the alert cry, CHASE) once its suspicion fills. It fills
+## in NOTICE_EDGE x (distance / range)^2 s, at least NOTICE_MIN (one perception tick: within ~38 %
+## of its range it is at once, at the edge ~1.75 s); an investigating one, already roused, fills
+## twice as fast; out of sight it drains at NOTICE_DRAIN a second (docs/AI_TUNING.md).
+const NOTICE_MIN: float = 0.25
+const NOTICE_EDGE: float = 1.75
+const NOTICE_DRAIN: float = 0.5
+## Going round a log, a rock or a trunk it walked into (TD-191): what a clear way on is probed
+## against (world, structures, props, vegetation), and how long a detour holds after the last bump.
+const DETOUR_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 12)
+const DETOUR_HOLD: float = 1.2
+## Root motion of the Hollowed's committed clips (char_anim "Root motion contract", keep in step):
+## clip -> [metres, from, to] (fractions of the clip). The body travels that far while the clip
+## plays, the clip's feet authored around it so they stay planted. Lunges go forward
+## (LUNGE: walker / feral), hit_front, stagger and knockdown back, hit_back forward.
+const LUNGE: Vector2 = Vector2(0.30, 0.70)
+const LUNGE_WINDOW: Vector2 = Vector2(5.0 / 24.0, 11.0 / 24.0)
+## A lunge stops this close to its target (it grabs, it does not shove through).
+const LUNGE_STOP: float = 0.9
+const RECOIL: Dictionary = {
+	&"hit_front": [0.20, 2.0 / 18.0, 10.0 / 18.0], &"hit_back": [-0.20, 2.0 / 18.0, 10.0 / 18.0],
+	&"stagger": [0.55, 2.0 / 34.0, 22.0 / 34.0], &"knockdown": [0.35, 2.0 / 36.0, 14.0 / 36.0],
+}
+## A stumble (CHASE) plays at this speed's pace: the clip's feet travel 1.2 m/s at speed 1.
+const STUMBLE_SPEED: float = 1.2
+## Seconds between stumble chances while chasing, and the chance each time.
+const STUMBLE_EVERY: Vector2 = Vector2(3.5, 9.0)
+const STUMBLE_CHANCE: float = 0.45
+## Knocked down: how long it lies before wake_lie gets it up; blunt blows of this much (after
+## the hit-zone multiplier, behavior.knockdown_damage) with weight behind them floor it.
+const KNOCKDOWN_HOLD: float = 0.6
+const KNOCKDOWN_DAMAGE: float = 40.0
 
 signal died(enemy: Enemy)
 
@@ -83,6 +124,18 @@ var _stagger_t: float = 0.0
 var _hit_at: float = -1.0
 var _heard_seq: int = 0
 var _stuck_t: float = 0.0
+## Suspicion before first contact (0..1, NOTICE_*), where it last saw you, and whether it groaned.
+var _notice: float = 0.0
+var _notice_at := Vector3.INF
+var _notice_voiced: bool = false
+## A detour round an obstacle: the side it goes (+1 / -1, kept a while so it doesn't dither), time
+## left, and the obstacle's face (horizontal normal) it slides along.
+var _detour_side: float = 0.0
+var _detour_t: float = 0.0
+var _detour_n := Vector3.ZERO
+var _detour_mem: float = 0.0
+var _detour_goal := Vector3.ZERO
+var _detour_wedged: float = 0.0
 ## Navigation: the goal the agent's current path leads to, and time until a forced re-path.
 var _nav_goal := Vector3.INF
 var _nav_t: float = 0.0
@@ -93,12 +146,30 @@ var _stagger_lock: float = 0.0
 ## After the Hum: seconds until this survivor roots into the soil (despawns) when unobserved.
 var _root_t: float = -1.0
 var _resume_state: State = State.IDLE
+## Root motion in progress (RECOIL / LUNGE): direction, speed and its window in _state_t.
+var _rm_dir := Vector3.ZERO
+var _rm_speed: float = 0.0
+var _rm_from: float = 0.0
+var _rm_to: float = 0.0
+## Presentation randomness (stumbles, gait swaps) apart from _rng, so the brain's rolls stay as
+## they were for a given id.
+var _fx_rng := RandomNumberGenerator.new()
+var _stumble_t: float = 0.0
+var _stumble_v: float = 0.0
+var _stumble_cd: float = 0.0
+var _gait_b: bool = false
+var _gait_t: float = 0.0
+## On the ground after a knockdown, until wake_lie starts (at _rise_at in _state_t).
+var _down: bool = false
+var _rise_at: float = -1.0
 var _yaw_target: float = 0.0
 var _shape: CollisionShape3D
 var _corpse_t: float = 0.0
 var _looted: bool = false
 var _voice_t: float = 0.0
 var _step_t: float = 0.0
+## How long this IDLE lasts before it wanders off (rolled once per IDLE, not every frame).
+var _idle_for: float = 4.0
 ## World-setting and tier multipliers, fixed at spawn (GameRules + infected tier).
 var max_health: float = 100.0
 var damage_mult: float = 1.0
@@ -141,6 +212,8 @@ var tribe: AshenMind = null
 var foe: Enemy = null
 var _foe_seen: float = -100.0
 var _foe_scan_t: float = 0.0
+## A wolf (ADR-0055): its part in its pack (WolfHunt, set by WolfPacks); null for everything else.
+var wolf: WolfHunt = null
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -152,6 +225,9 @@ func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary
 		tribe = AshenMind.new()
 		tribe.setup(self, opts)
 	_rng.seed = Ids.hash64("enemy:" + String(p_id))
+	_fx_rng.seed = Ids.hash64("enemy_fx:" + String(p_id))
+	_stumble_cd = _fx_rng.randf_range(STUMBLE_EVERY.x, STUMBLE_EVERY.y)
+	_gait_b = (_rng.seed & 1) == 1
 	var rules: GameRules = GameRules.current()
 	max_health = def.health * rules.num("enemy_health")
 	health = max_health
@@ -325,10 +401,14 @@ func _physics_process(delta: float) -> void:
 		tribe.tick(delta, p)
 	if _foe_step(delta, dist):  # TD-186: fighting a foe of a hostile faction this frame
 		return
+	if wolf != null and wolf.step(delta, p, dist):  # ADR-0055: the pack's business, not the player
+		return
 	match state:
 		State.SLEEP, State.WAKING, State.SCREAM, State.STAGGER:
-			want = Vector3.ZERO
-			if state == State.WAKING and _state_t > 1.3:
+			want = _root_motion() if state == State.STAGGER else Vector3.ZERO
+			if state == State.STAGGER and _rise_at >= 0.0 and _state_t >= _rise_at:
+				_rise()
+			elif state == State.WAKING and _state_t > 1.3:
 				_set_state(State.CHASE if _now() - last_seen_time < MEMORY_SECONDS else State.INVESTIGATE)
 			elif state == State.SCREAM and _state_t > 1.6:
 				_set_state(State.CHASE)
@@ -349,16 +429,21 @@ func _physics_process(delta: float) -> void:
 				_charge_impact_player(p)
 			if _charge_hit or _state_t > float((def.beh("charge", {}) as Dictionary).get("max_time", 2.4)):
 				_set_state(State.CHASE)
+		State.IDLE, State.WANDER when _notice > 0.0 and _notice_at != Vector3.INF:
+			# Something caught its eye: it stops and turns to look before it commits (TD-191).
+			want = Vector3.ZERO
+			_face(_notice_at)
 		State.IDLE:
-			if _state_t > _rng.randf_range(4.0, 9.0):
-				target_pos = home + Vector3(_rng.randf_range(-12, 12), 0, _rng.randf_range(-12, 12))
+			if _state_t > _idle_for:
+				_idle_for = _rng.randf_range(2.5, 6.0)
+				target_pos = _wander_target()
 				_set_state(State.WANDER)
 		State.WANDER:
 			want = _move_dir(target_pos) * _speed(false)
 			if _flat_dist(target_pos) < 1.2 or _state_t > 30.0:
 				_set_state(State.IDLE)
 		State.INVESTIGATE:
-			want = _move_dir(target_pos) * _speed(is_night())
+			want = _move_dir(target_pos) * _investigate_speed()
 			if _flat_dist(target_pos) < 1.5:
 				var grad: Vector3 = Stimuli.current.scent_gradient(global_position) if Stimuli.current != null else Vector3.ZERO
 				if grad != Vector3.ZERO and float(def.perc("smell", 1.0)) > 0.0 and Stimuli.current.scent_at(global_position) > 0.5:
@@ -386,7 +471,7 @@ func _physics_process(delta: float) -> void:
 			elif tribe != null and p != null:
 				want = tribe.chase_move(p, tgt, dist)
 			else:
-				want = _move_dir(tgt) * _speed(true)
+				want = _stumble_step(_move_dir(tgt) * _speed(true), get_physics_process_delta_time())
 			if p != null and dist <= def.atk("range", 1.5) + 0.2 and _now() - last_seen_time < 1.0 and _may_close(p):
 				_set_state(State.ATTACK)
 			elif _now() - last_seen_time > MEMORY_SECONDS:
@@ -396,6 +481,8 @@ func _physics_process(delta: float) -> void:
 				_set_state(State.IDLE)
 				return
 			_face(p.global_position)
+			if _flat_dist(p.global_position) > LUNGE_STOP:
+				want = _root_motion()  # the lunge carries it in (a walker's grab, a Lurcher's leap)
 			if _hit_at >= 0.0 and _state_t >= _hit_at:
 				_hit_at = -1.0
 				_deliver_hit(p)
@@ -458,10 +545,12 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 		var p: Vector3 = global_position + want * delta
 		p.y = far_ground(Game.world, Vector3(p.x, global_position.y, p.z)) if Game.world != null else p.y
 		global_position = p
-		if want.length() > 0.05:
+		if want.length() > 0.05 and state not in [State.ATTACK, State.STAGGER]:
 			_yaw_target = atan2(want.x, want.z)
 		rotation.y = lerp_angle(rotation.y, _yaw_target, minf(1.0, delta * 5.0))
 		return
+	if state != State.CHARGE:
+		want = _detour(want, delta)
 	var v: Vector3 = velocity
 	v.x = want.x
 	v.z = want.z
@@ -475,8 +564,11 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 		var wall: Node3D = _blocking_structure()
 		if wall != null:
 			_charge_impact_structure(wall)
+	elif want.length() > 0.05:
+		_check_detour(want, delta)
 	if want.length() > 0.05:
-		_yaw_target = atan2(want.x, want.z)
+		if state not in [State.ATTACK, State.STAGGER]:  # root motion (a recoil) keeps the facing
+			_yaw_target = atan2(want.x, want.z)
 		# Walls in the way of something that wants in get torn down.
 		if state in [State.CHASE, State.HORDE, State.INVESTIGATE]:
 			var blocked: Node3D = _blocking_structure()
@@ -508,6 +600,79 @@ func _blocking_structure() -> Node3D:
 		if c is Node and (c as Node).has_meta(&"breakable"):
 			return c
 	return null
+
+
+## Going round what it walked into (TD-191): a fallen log, a boulder, a trunk. The nav tiles carve
+## trunks but only a small square at a fallen log's middle (VegetationManager.obstacles_in_rect),
+## and off the baked tiles there is no path at all, so a body heading for you can meet a log
+## broadside. While a detour is on, it slides along the obstacle's face to its chosen side until
+## the way toward its goal is clear at knee height, or DETOUR_HOLD s after the last bump.
+func _detour(want: Vector3, delta: float) -> Vector3:
+	_detour_mem = maxf(0.0, _detour_mem - delta)
+	if _detour_t <= 0.0 or want.length() < 0.05:
+		_detour_t = 0.0
+		return want
+	_detour_t -= delta
+	_detour_goal = want
+	if _detour_t < DETOUR_HOLD - 0.25 and _way_clear(want.normalized()):
+		_detour_t = 0.0
+		return want
+	var along: Vector3 = _detour_n.cross(Vector3.UP) * _detour_side
+	return (along + _detour_n * 0.05).normalized() * want.length()
+
+
+## After a move: bumped into something it can't break (not a structure: those it tears at, not a
+## body) and made no headway toward its goal, it starts (or renews) a detour. The side is where the
+## goal leans, or either when it meets the thing square on; it is kept for a few seconds (no
+## dithering at a long log) and flipped when it is wedged in a corner.
+func _check_detour(want: Vector3, delta: float) -> void:
+	var n: Vector3 = _wall_normal()
+	if n == Vector3.ZERO:
+		return
+	var goal: Vector3 = (_detour_goal if _detour_t > 0.0 else want).normalized()
+	var flat_v := Vector3(velocity.x, 0.0, velocity.z)
+	if _detour_t <= 0.0 and flat_v.dot(goal) > want.length() * 0.7:
+		return  # glancing off it, still getting on
+	if _detour_t > 0.0 and flat_v.length() < want.length() * 0.25:
+		_detour_wedged += delta
+		if _detour_wedged > 0.8:
+			_detour_wedged = 0.0
+			_detour_side = -_detour_side
+	else:
+		_detour_wedged = 0.0
+	if _detour_side == 0.0 or (_detour_t <= 0.0 and _detour_mem <= 0.0):
+		var lean: float = n.cross(Vector3.UP).dot(goal)
+		_detour_side = signf(lean) if absf(lean) > 0.15 else (1.0 if _rng.randf() < 0.5 else -1.0)
+	_detour_n = n
+	_detour_t = DETOUR_HOLD
+	_detour_mem = 4.0
+
+
+## The face of a static obstacle it is pressed against (horizontal normal), or ZERO: not the ground,
+## not a body, not a structure or breakable (those go to BREAK in _move).
+func _wall_normal() -> Vector3:
+	for i: int in get_slide_collision_count():
+		var c: KinematicCollision3D = get_slide_collision(i)
+		var n: Vector3 = c.get_normal()
+		var o: Object = c.get_collider()
+		if n.y > 0.5 or o is CharacterBody3D or o is RigidBody3D or o is StructurePiece \
+				or (o is Node and (o as Node).has_meta(&"breakable")):
+			continue
+		var h := Vector3(n.x, 0.0, n.z)
+		if h.length() > 0.1:
+			return h.normalized()
+	return Vector3.ZERO
+
+
+## Nothing in the way along `dir` for 3 m at knee height (a hit on a ground-like slope counts as clear).
+func _way_clear(dir: Vector3) -> bool:
+	if not is_inside_tree():
+		return true
+	var from: Vector3 = global_position + Vector3.UP * 0.45
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 3.0, DETOUR_MASK)
+	q.exclude = [get_rid()]
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(q)
+	return hit.is_empty() or (hit["normal"] as Vector3).y > 0.6
 
 
 ## Direction toward `to` along the navmesh (around houses, through doorways). The path is only
@@ -545,6 +710,32 @@ func _face(p: Vector3) -> void:
 	var d: Vector3 = p - global_position
 	if Vector2(d.x, d.z).length() > 0.05:
 		_yaw_target = atan2(d.x, d.z)
+
+
+## Pace toward something heard, smelled or called out: by day a plain Hollow jogs
+## (DAY_INVESTIGATE_PACE of its run), at night it runs; hounds and the Ashen keep their own pace.
+func _investigate_speed() -> float:
+	if is_night() or not _plain_hollowed():
+		return _speed(is_night())
+	return _speed(true) * DAY_INVESTIGATE_PACE
+
+
+## Where an IDLE body wanders next. A plain roaming Hollow ranges 8 m..behavior.roam_radius
+## (default 30 m) and its home drifts along, so it crosses the land instead of pacing a 12 m box;
+## POI bodies, hounds (they keep with the pack) and the Ashen stay within 12 m of home.
+func _wander_target() -> Vector3:
+	if not _plain_hollowed() or poi_id != &"":
+		return home + Vector3(_rng.randf_range(-12, 12), 0, _rng.randf_range(-12, 12))
+	var r: float = float(def.beh("roam_radius", 30.0))
+	var ang: float = _rng.randf() * TAU
+	var to: Vector3 = home + Vector3(sin(ang), 0.0, cos(ang)) * _rng.randf_range(minf(8.0, r * 0.5), r)
+	home = home.lerp(to, 0.5)
+	return to
+
+
+## A Hollowed that is neither a hound (pack logic, ADR-0034) nor an Ashen (AshenMind, ADR-0048).
+func _plain_hollowed() -> bool:
+	return tribe == null and quad.is_empty()
 
 
 func _speed(running: bool) -> float:
@@ -589,26 +780,52 @@ func _vocalize(delta: float, dist: float) -> void:
 func _perceive(p: Player, dist: float) -> void:
 	if p == null or Stimuli.current == null or not p.state.stats.alive or DebugTools.is_on(&"invisible"):
 		return
+	if wolf != null and wolf.ignores_player():
+		return  # ADR-0055: a wolf pack that leaves the player be does its own watching (WolfHunt)
 	var st: Stimuli = Stimuli.current
 	if state == State.SLEEP and held:
 		_perceive_held(st)
 		return
 	var night: bool = is_night()
 	var base_sight: float = def.perc("sight_night" if night else "sight_day", 15.0)
+	if state == State.SLEEP:
+		# Sleepers keep their own eyes (perception.sleep_sight_*): the awake sight was raised for
+		# the open world (docs/AI_TUNING.md); how close you get to a POI sleeper is unchanged.
+		base_sight = def.perc("sleep_sight_night" if night else "sleep_sight_day", base_sight)
 	var light: float = st.light_at(p.global_position + Vector3.UP)
 	var own_light: bool = p.get_node(^"Equipment").call(&"has_light_on") if p.has_node(^"Equipment") else false
+	# A carried flame is a beacon in the dark, not in daylight (sleepers in a dim POI still see it).
+	own_light = own_light and (night or state == State.SLEEP or not _plain_hollowed())
 	var vis_mult: float = p.state.progression.modifier("visibility_mult")
-	var range_m: float = st.detection_range(base_sight, light, p.crouching, p.horizontal_speed(), own_light, vis_mult)
+	# Darkness (Stimuli.ambient_light) costs a Hollow little of its sight (perception.dark_sight); a
+	# sleeper keeps the sight it had before the sky's light was fed (1.0: light-blind) and the old
+	# beacon. Awake plain Hollowed see a carried light at perception.light_beacon (default 1.6 x
+	# sight_night) instead of sight x 1.6 + 30 (docs/AI_TUNING.md).
+	var dark: float = 1.0 if state == State.SLEEP else def.perc("dark_sight", 0.15)
+	var beacon: float = -1.0
+	if state != State.SLEEP and _plain_hollowed():
+		beacon = def.perc("light_beacon", def.perc("sight_night", 15.0) * 1.6)
+	var range_m: float = st.detection_range(base_sight, light, p.crouching, p.horizontal_speed(), own_light, vis_mult, dark, beacon)
 	if state == State.SLEEP:
 		range_m *= 0.35 * _wake_factor
 	var sees: bool = false
+	var seen_within: float = range_m  # the range it saw them within (half of it at the edge of the eye)
 	if dist < range_m:
 		var to_p: Vector3 = (p.global_position - global_position)
 		var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
 		var ang: float = rad_to_deg(fwd.angle_to(Vector3(to_p.x, 0, to_p.z)))
 		var fov: float = def.perc("fov", 120.0) * (0.6 if state == State.SLEEP else 1.0)
-		if (ang < fov * 0.5 or dist < 2.2) and _line_of_sight(p):
+		var in_view: bool = ang < fov * 0.5 or dist < 2.2
+		if not in_view and state != State.SLEEP and _plain_hollowed():
+			# Peripheral vision: movement just outside the cone, at closer range.
+			in_view = ang < fov * 0.5 + PERIPHERAL_DEG and dist < range_m * PERIPHERAL_RANGE and p.horizontal_speed() > 0.5
+			seen_within = range_m * PERIPHERAL_RANGE
+		if in_view and _line_of_sight(p):
 			sees = true
+	if not sees and _notice > 0.0:
+		_notice = maxf(0.0, _notice - NOTICE_DRAIN * PERCEPTION_INTERVAL * (1.0 if dist < 60.0 else 3.0))
+		if _notice <= 0.0:
+			_notice_voiced = false
 	if sees:
 		if state == State.SLEEP:
 			awareness += 0.25 + (1.0 - dist / maxf(range_m, 0.1)) * 0.6
@@ -616,6 +833,8 @@ func _perceive(p: Player, dist: float) -> void:
 				_wake(p.global_position, true)
 			return
 		var first: bool = _now() - last_seen_time > MEMORY_SECONDS
+		if first and not _noticed(p, dist, seen_within):
+			return  # still making out what it saw (TD-191)
 		last_seen_time = _now()
 		target_pos = p.global_position
 		if not quad.is_empty():
@@ -633,6 +852,7 @@ func _perceive(p: Player, dist: float) -> void:
 				Audio.play_3d(_vid(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", &"voice/hound_bark"),
 					_mouth(), {"volume_db": 0.0})
 				Events.enemy_alerted.emit(entity_id, global_position)
+				_alert_nearby(p.global_position)
 		return
 	# Hearing.
 	var e: Stimuli.SoundEvent = st.loudest_heard(global_position, def.perc("hearing", 1.0) * (0.7 * _wake_factor if state == State.SLEEP else 1.0), _heard_seq, entity_id)
@@ -661,6 +881,41 @@ func _perceive(p: Player, dist: float) -> void:
 			_set_state(State.INVESTIGATE)
 	if state == State.SLEEP:
 		awareness = maxf(0.0, awareness - 0.05)
+
+
+## Group alerting: a plain Hollow that spots you calls out (the alert cry above), and the plain
+## Hollowed within behavior.alert_radius (default 30 m) that are up and idle, wandering or
+## investigating come to look where you are. They only investigate: each must see you itself before
+## it calls out in turn. Sleepers, hounds, the Ashen and the Hum don't answer.
+func _alert_nearby(at: Vector3) -> void:
+	if director == null or not _plain_hollowed():
+		return
+	for e: Enemy in director.call(&"enemies_in_radius", global_position, float(def.beh("alert_radius", 30.0))):
+		if e != self and e._plain_hollowed() and not e.horde and e.state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+			e.notice(at)
+
+
+## First contact (TD-191): whether an awake plain Hollow, seeing the player `dist` m off within
+## `within` m (its range, or the peripheral one), has made them out yet. Each perception tick adds
+## to its suspicion; the first one stops it to look (a low groan; IDLE and WANDER stand and face
+## the spot), and when it fills the sighting goes through (the alert cry and the chase, in
+## _perceive). Hounds, the Ashen, the Hum and a body already hunting commit at once, as before.
+func _noticed(p: Player, dist: float, within: float) -> bool:
+	if not _plain_hollowed() or horde or state not in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+		_notice = 0.0
+		return true
+	var edge: float = clampf(dist / maxf(within, 0.1), 0.0, 1.0)
+	var need: float = maxf(NOTICE_MIN, NOTICE_EDGE * edge * edge * (0.5 if state == State.INVESTIGATE else 1.0))
+	_notice += PERCEPTION_INTERVAL * (1.0 if dist < 60.0 else 3.0) / need
+	_notice_at = p.global_position
+	if _notice >= 0.999:
+		_notice = 0.0
+		_notice_voiced = false
+		return true
+	if not _notice_voiced:
+		_notice_voiced = true
+		Audio.play_3d(&"voice/lurcher_pant" if def.archetype == "feral" else &"voice/hollow_groan_idle", _mouth(), {"volume_db": -3.0, "pitch": 1.15})
+	return false
 
 
 ## A held (ambush) sleeper sees and hears nothing ordinary: only gunfire, explosions or an alarm
@@ -773,7 +1028,102 @@ func _start_attack() -> void:
 	_attack_cd = def.atk("cooldown", 1.5)
 	var dur: float = visual.play_once(&"crawl_attack" if crawling else (&"attack_a" if _rng.randf() < 0.5 else &"attack_b"), 1.0, [&"attack_a"] as Array[StringName])
 	_hit_at = _state_t + dur * 0.45
+	if not crawling:
+		# A committed lunge, not a swat from where it stands: the wind-up drives it forward to the hit.
+		var d: float = float(def.atk("lunge", LUNGE.y if def.archetype == "feral" else LUNGE.x))
+		_start_root_motion(Vector3(sin(rotation.y), 0.0, cos(rotation.y)), d, _state_t + dur * LUNGE_WINDOW.x, _state_t + dur * LUNGE_WINDOW.y)
 	Audio.play_3d(_vid(&"voice/zombie_attack", &"voice/hound_snarl"), _mouth(), {"volume_db": -2.0})
+
+
+# --- Root motion, stumbles and knockdowns (the Hollowed's committed clips) -----------------------
+
+## Bodies whose clips are authored for root motion: plain Hollowed rebuilt with the stumble /
+## knockdown clip set (an older body's clips stand in place, and would skate).
+func _authored_clips() -> bool:
+	return _plain_hollowed() and visual != null and visual.has_anim(&"stumble")
+
+
+## Travel `dist` along `dir` (flat) between from..to (in _state_t), if the clips are authored for it.
+func _start_root_motion(dir: Vector3, dist: float, from: float, to: float) -> void:
+	_rm_speed = 0.0
+	if not _authored_clips() or to <= from or dir == Vector3.ZERO:
+		return
+	_rm_dir = Vector3(dir.x, 0.0, dir.z).normalized() * signf(dist)
+	_rm_speed = absf(dist) / (to - from)
+	_rm_from = from
+	_rm_to = to
+
+
+## A reaction clip's recoil (RECOIL) from now, along the body's back (+ = backwards).
+func _recoil(clip: StringName, dur: float, back := Vector3.ZERO) -> void:
+	var r: Array = RECOIL.get(clip, [])
+	if not r.is_empty():
+		_start_root_motion(back if back != Vector3.ZERO else -global_transform.basis.z, float(r[0]),
+				dur * float(r[1]), dur * float(r[2]))
+
+
+func _root_motion() -> Vector3:
+	if _rm_speed <= 0.0 or _state_t < _rm_from or _state_t > _rm_to:
+		return Vector3.ZERO
+	return _rm_dir * _rm_speed
+
+
+## Chasing walkers trip now and then: a `stumble` one-shot at irregular intervals, keeping
+## STUMBLE_SPEED (the clip's feet) or less while it plays. Bodies without the clip never stumble.
+func _stumble_step(want: Vector3, delta: float) -> Vector3:
+	if _stumble_t > 0.0:
+		_stumble_t -= delta
+		return want.normalized() * _stumble_v if want != Vector3.ZERO else Vector3.ZERO
+	_stumble_cd -= delta
+	if _stumble_cd > 0.0:
+		return want
+	_stumble_cd = _fx_rng.randf_range(STUMBLE_EVERY.x, STUMBLE_EVERY.y)
+	if _fx_rng.randf() >= STUMBLE_CHANCE or not stumbles(want.length()):
+		return want
+	var rate: float = clampf(want.length() / STUMBLE_SPEED, 0.6, 1.0)
+	_stumble_t = visual.play_once(&"stumble", rate)
+	_stumble_v = STUMBLE_SPEED * rate
+	return want.normalized() * _stumble_v
+
+
+## Whether a body moving at `speed` may trip now (on its feet, on the ground, the clip built).
+func stumbles(speed: float) -> bool:
+	return _authored_clips() and not crawling and not _far and speed > 0.6 and is_on_floor()
+
+
+## A heavy blow floors a plain Hollowed (with the knockdown clip): a blast, a falling tree, or a
+## blunt blow with weight behind it (stagger >= 0.55: club, sledge) that does knockdown_damage.
+func knocks_down(info: DamageInfo, amount: float) -> bool:
+	if not _plain_hollowed() or crawling or not perch.is_empty() or visual == null or not visual.has_anim(&"knockdown"):
+		return false
+	if info.type == &"explosive" or info.stagger >= 0.9:
+		return true
+	return info.type == &"blunt" and info.stagger >= 0.55 and amount >= float(def.beh("knockdown_damage", KNOCKDOWN_DAMAGE))
+
+
+## Down on its back (thrown round to face the blow: it falls away from it), lies KNOCKDOWN_HOLD,
+## then gets up with the sleeper's wake_lie; STAGGER covers all of it.
+func _knockdown(info: DamageInfo) -> void:
+	var away := Vector3(info.direction.x, 0.0, info.direction.z)
+	if away.length() < 0.05:
+		away = -global_transform.basis.z
+	# turns (fast, while it reels) to face back along the blow and is driven away along it
+	_yaw_target = atan2(-away.x, -away.z)
+	var down: float = visual.play_once(&"knockdown", 1.0, [&"stagger", &"hit_front"] as Array[StringName])
+	_set_state(State.STAGGER)
+	_down = true
+	_rise_at = down + KNOCKDOWN_HOLD
+	_stagger_t = _rise_at + visual.clip_length(&"wake_lie", 1.33)
+	_stagger_lock = _stagger_t + 0.6
+	_recoil(&"knockdown", down, away)
+	_fit_pose_shape("lie")
+
+
+func _rise() -> void:
+	_rise_at = -1.0
+	_down = false
+	visual.play_once(&"wake_lie", 1.0, [&"idle"] as Array[StringName])
+	_fit_shape()
 
 
 func _deliver_hit(p: Player) -> void:
@@ -882,7 +1232,7 @@ func _howl() -> void:
 	_set_state(State.SCREAM)
 	visual.play_once(&"scream", 1.0, [&"idle"] as Array[StringName])
 	Audio.play_3d(&"voice/hound_howl", _mouth(), {"volume_db": 4.0, "max_distance": 260.0})
-	if Stimuli.current != null:
+	if Stimuli.current != null and def.faction != "wildlife":  # a wolf's howl is no stimulus: no Hollowed, no heat (ADR-0055)
 		Stimuli.current.emit_sound(global_position, float(c.get("loudness", 70.0)), &"howl", entity_id)
 	Events.enemy_alerted.emit(entity_id, global_position)
 
@@ -1042,6 +1392,7 @@ func _charge_impact_structure(wall: Node3D) -> void:
 	_resume_state = State.CHASE
 	_stagger_t = visual.play_once(&"stagger", 1.0, [&"hit_front"] as Array[StringName])
 	_set_state(State.STAGGER)
+	_recoil(&"stagger", _stagger_t)  # bounces back off the wall
 
 
 # --- Damage ----------------------------------------------------------------------------------
@@ -1092,9 +1443,16 @@ func take_damage(info: DamageInfo) -> void:
 			_resume_state = State.CHASE
 		# Bodies face +Z: a blow from the front travels against it (recoil backwards = hit_front).
 		var from_front: bool = info.direction.dot(global_transform.basis.z) < 0.0
-		_stagger_t = visual.play_once(&"stagger" if amount > 30.0 else (&"hit_front" if from_front else &"hit_back"), 1.0, [&"hit_front"] as Array[StringName])
+		if knocks_down(info, amount):
+			_knockdown(info)
+			return
+		# A heavy blow from the front reels it back (stagger); from behind it is thrown forward.
+		var clip: StringName = &"stagger" if amount > 30.0 and (from_front or not _authored_clips()) \
+			else (&"hit_front" if from_front else &"hit_back")
+		_stagger_t = visual.play_once(clip, 1.0, [&"hit_front"] as Array[StringName])
 		_stagger_lock = _stagger_t + 0.6
 		_set_state(State.STAGGER)
+		_recoil(clip, _stagger_t)
 	elif state in [State.IDLE, State.WANDER, State.INVESTIGATE, State.BREAK]:
 		break_target = null
 		_set_state(State.CHASE)
@@ -1186,7 +1544,12 @@ const POSE_EYES: Dictionary = {
 
 
 func _fit_sleep_shape() -> void:
-	var spec: Array = POSE_SHAPES.get(_pose_key(), [])
+	_fit_pose_shape(_pose_key())
+
+
+## The capsule around a pose of POSE_SHAPES (a dormant one, or "lie" when knocked down).
+func _fit_pose_shape(key: String) -> void:
+	var spec: Array = POSE_SHAPES.get(key, [])
 	if spec.is_empty() or crawling or not quad.is_empty():
 		_fit_shape()
 		return
@@ -1264,8 +1627,9 @@ func _release_perch() -> void:
 func _die(info: DamageInfo) -> void:
 	# Killed in its sleep lying, slumped or seated: it stays as it was (a body dead on its bed or
 	# its pew, ADR-0022). Standing, kneeling and crouching sleepers, and anything awake, fall.
-	var pose: String = _pose_key()
-	var in_pose: bool = state == State.SLEEP and pose in ["lie", "sit", "seat", "hunch"]
+	var pose: String = "lie" if _down else _pose_key()
+	# Killed while knocked down: it stays where it fell.
+	var in_pose: bool = (state == State.SLEEP and pose in ["lie", "sit", "seat", "hunch"]) or _down
 	if not in_pose:
 		_release_perch()
 	_set_state(State.DEAD)
@@ -1295,7 +1659,7 @@ func _die(info: DamageInfo) -> void:
 		visual.animate_placeholder(0.0, 0.0, true)
 	Audio.play_3d(_vid(&"voice/zombie_death", &"voice/hound_death"), global_position + Vector3.UP * (1.0 if quad.is_empty() else 0.5), {"volume_db": -2.0})
 	if Game.session != null:
-		if tribe == null:
+		if tribe == null and def.faction != "wildlife":  # a wolf is no Hollowed (ADR-0055)
 			Game.session.stats["zombies_killed"] = int(Game.session.stats.get("zombies_killed", 0)) + 1
 		var pl: PlayerState = Game.session.players.get(info.source_id)
 		if pl != null:
@@ -1384,6 +1748,13 @@ func _set_state(s: State) -> void:
 	if state == State.ATTACK:
 		# A swing interrupted (stagger, chase) must not land later without its animation.
 		_hit_at = -1.0
+	if state == State.STAGGER and _down and s != State.DEAD:
+		# up off the ground (a knockdown cut short): standing capsule again
+		_down = false
+		_fit_shape()
+	_rise_at = -1.0
+	_rm_speed = 0.0
+	_stumble_t = 0.0
 	state = s
 	_state_t = 0.0
 	_enter_anim()
@@ -1418,6 +1789,15 @@ func _enter_anim() -> void:
 func _update_anim(want: Vector3) -> void:
 	if state in [State.SLEEP, State.WAKING, State.ATTACK, State.SCREAM, State.STAGGER, State.DEAD, State.BREAK, State.SPIT]:
 		return
+	if _stumble_t > 0.0:
+		return  # the stumble one-shot plays out
+	var dt: float = get_physics_process_delta_time()
+	_gait_t -= dt
+	if _gait_t <= 0.0:
+		# swap between the shamble and the drag now and then, so a walker is not a metronome
+		_gait_t = _fx_rng.randf_range(4.0, 9.0)
+		if _fx_rng.randf() < 0.5:
+			_gait_b = not _gait_b
 	if state == State.CHARGE:
 		visual.play(&"run", 1.5, 0.15, [&"walk"] as Array[StringName])
 		return
@@ -1432,7 +1812,10 @@ func _update_anim(want: Vector3) -> void:
 	elif sp > 2.4:
 		visual.play(&"run", clampf(sp / 4.5, 0.6, 1.4), 0.25, [&"walk"] as Array[StringName])
 	elif sp > 0.15:
-		visual.play(&"walk" if (_rng.seed & 1) == 0 else &"walk_b", clampf(sp / 0.9, 0.5, 2.0), 0.3, [&"walk"] as Array[StringName])
+		visual.play(&"walk_b" if _gait_b else &"walk", clampf(sp / 0.9, 0.5, 2.0), 0.4, [&"walk"] as Array[StringName])
+	elif quad.is_empty() and absf(angle_difference(rotation.y, _yaw_target)) > 0.35:
+		# turning on the spot: step the feet round rather than slide them on the idle
+		visual.play(&"walk", 0.6, 0.3)
 	else:
 		visual.play(&"idle", 1.0, 0.4)
 	visual.animate_placeholder(get_physics_process_delta_time(), want.length(), false)
