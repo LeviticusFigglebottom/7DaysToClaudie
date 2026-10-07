@@ -1123,6 +1123,39 @@
      "pose": "crouch",
      "rot": -90,
      "guardian": true
+    },
+    {
+     "id": "debris_bags",
+     "group": "debris",
+     "pos": [
+      21.6,
+      21.9
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 100
+    },
+    {
+     "id": "debris_pallet",
+     "group": "debris",
+     "pos": [
+      19.4,
+      27.9
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 140
+    },
+    {
+     "id": "debris_crates",
+     "group": "debris",
+     "pos": [
+      11.9,
+      21.9
+     ],
+     "enemy": "lurcher",
+     "pose": "kneel",
+     "rot": 215
     }
    ],
    "pickups": [
@@ -1268,6 +1301,20 @@
      "on": "opening",
      "opening": "tail_door",
      "delay": 0.8
+    },
+    {
+     "id": "debris_pallet_searched",
+     "group": "debris",
+     "on": "container",
+     "prop": "med_pallet",
+     "delay": 0.5
+    },
+    {
+     "id": "debris_jaws_snap",
+     "group": "debris",
+     "on": "trap",
+     "trap": "pallet_jaws",
+     "delay": 0.6
     }
    ],
    "lights": [
