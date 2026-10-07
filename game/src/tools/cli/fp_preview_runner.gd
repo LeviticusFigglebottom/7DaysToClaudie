@@ -54,6 +54,17 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "food_eat_lift", "item": "canned_beans", "action": "fp_eat", "frame": 8},
 	# The skin lit only by the flame in hand (falloff over the hand, light through the fingers).
 	{"name": "lighter_night", "item": "lighter", "lit": true, "night": true},
+	# Utility items and bare hands: the other phases of their uses and strikes, and the inspects.
+	{"name": "lighter_light", "item": "lighter", "action": "fp_light", "frame": 10},
+	{"name": "flashlight_jab", "item": "flashlight", "action": "fp_jab", "frame": 7},
+	{"name": "torch_swing_windup", "item": "torch", "lit": true, "action": "fp_torch", "frame": 6},
+	{"name": "punch_windup", "item": "", "action": "fp_punch", "frame": 4},
+	{"name": "stone_throw_windup", "item": "stone", "action": "fp_throw", "frame": 9},
+	{"name": "stone_throw_release", "item": "stone", "action": "fp_throw", "frame": 15},
+	{"name": "bandage_idle", "item": "cloth_bandage"},
+	{"name": "chime_idle", "item": "can_chime"},
+	{"name": "chime_place", "item": "can_chime", "action": "fp_place", "frame": 12},
+	{"name": "bottle_drink_lift", "item": "water_bottle_clean", "action": "fp_drink", "frame": 12},
 ]
 
 var _out: String = "res://../build/fp_preview"
