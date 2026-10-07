@@ -1055,7 +1055,11 @@ func _porch(porch: Dictionary, li0: int) -> void:
 	var depth: int = int(porch.get("depth", 2))
 	var lv: Dictionary = layout.levels[li0]
 	var top: float = layout.floor_height
-	var steps: Array = porch.get("steps", [])
+	# JSON numbers are floats: as ints, or `steps.has(i)` never matched and no authored porch got
+	# its steps (player report 3 item 5, found by poi_walk).
+	var steps: Array[int] = []
+	for v: Variant in porch.get("steps", []):
+		steps.append(int(v))
 	for i: int in range(from, to + 1):
 		for k: int in depth:
 			var cell: Vector2i
