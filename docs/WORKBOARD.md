@@ -63,11 +63,11 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
   0038 (streamed worlds: session 3 adds its phases), 0039 (traders and contracts, S2), 0040
   (organic towns, the hub), 0041 (new biomes, the hub), 0042 (wilderness set pieces, the hub, if
   needed), 0043 (session 4, if needed), 0044 (the Corvane caves, S2), 0045 (first-person hands,
-  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub), 0050 (interior lighting, session 5, if needed).
-  Next free: 0051.
+  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub), 0050 (interior lighting, session 5), 0051 (POI navigation, session 5, if needed), 0052 (traps and
+  electricity, the hub). Next free: 0053.
 * TD: S2 094–101, 111–114, 141–148, 162–171 and 186–195 (contract, the Ashen); session 3 102–109,
   126–130 and 196–205; session 4 159–161 and 172–175 (hands); the hub 110, 115–125, 131–140,
-  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub then 236 up.
+  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub 236–238 (render review), 239–248 (traps and electricity), then 249 up.
 * Save version: 6 since random worlds. Traders add `world.traders` and `players[*].contracts`
   without a bump (both load empty from older saves). 7 is reserved for session 3's world bundle
   (RWG v2 Phase 4), which carries those keys through. Anyone else who needs a bump asks the hub
