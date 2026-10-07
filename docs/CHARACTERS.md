@@ -137,7 +137,9 @@ sliding at any playback speed.
   each action was corrected; `tools/fp_poses.py tune <attack>` re-places a strike's key grips.
   Curls: `fist` closes each finger at its MCP, PIP and DIP (`FINGER_CURL`: 1 round a ~3.5 cm
   handle, up to 1.3 a bare fist; the ring and little fingers a little further, converging on the
-  middle finger), `thumb` opposes the thumb across the palm and wraps it (`THUMB_CURL`).
+  middle finger), `thumb` opposes the thumb across the palm and wraps it (`THUMB_CURL`). A hold's
+  `item.rot` turns the item in the fist (an oblique grip: the spear's shaft lies 60° across the
+  palm); a hand `on` the other grips along the item's axis and the fist rolls about it.
 * Arms enter from the lower corners: the Remand jumpsuit sleeves are rolled to just below the
   elbow (`M_fp_sleeve`, cloth shader), bare forearms and hands (`M_fp_skin`, skin shader), nails
   (`M_fp_nail`). The **tether** is bolted over the back of the left wrist, rigid on
