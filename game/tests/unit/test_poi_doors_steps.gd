@@ -186,7 +186,9 @@ func test_low_sills_get_no_steps_and_the_builder_lays_them() -> void:
 	var b: PoiBuilder = PoiBuilder.start(lay, &"test/stoops")
 	while b.next_phase() != "roof":
 		b.step()
-	assert_eq(((b._batches.get("porch_step_1m", {}) as Dictionary).get("xf", []) as Array).size(), 2, "both laid")
+	var sp: Dictionary = PoiBuilder.stoop_piece(str(lay.style.get("exterior", "siding_white")), 0.6, 1)
+	assert_eq(str(sp["piece"]), "stoop_wood_3_1m", "a sided cottage's 0.6 m sill: three wooden steps")
+	assert_eq(((b._batches.get(sp["piece"], {}) as Dictionary).get("xf", []) as Array).size(), 2, "both laid")
 	var back: Dictionary = st[0] if st[0]["op"] == "back_door" else st[1]
 	assert_eq(int(back["side"]), 0, "the back door's steps run out north")
 	while not b.step():
@@ -330,3 +332,23 @@ func test_generated_buildings_keep_stairs_clear() -> void:
 				if e.contains(n):
 					bad.append("%s: %s" % [pd.id, e])
 	assert_eq(bad, PackedStringArray(), "no stair problems")
+
+
+func test_stoop_piece_by_finish_rise_and_width() -> void:
+	var c: Dictionary = PoiBuilder.stoop_piece("brick_red", 0.45, 2)
+	assert_eq(str(c["piece"]), "stoop_concrete_2_2m", "brick: a concrete stoop, 0.45 m = two steps, 2 m wide")
+	assert_almost_eq(float(c["sy"]) * PoiBuilder.STOOP_RISE * 2.0, 0.45, 0.001, "scaled to the rise")
+	assert_almost_eq(float(c["depth"]), (PoiBuilder.STOOP_LANDING + PoiBuilder.STOOP_TREAD) * float(c["sz"]), 0.001, "landing + a step")
+	assert_eq(str(PoiBuilder.stoop_piece("log_chinked", 0.25, 1)["piece"]), "stoop_wood_1_1m", "a log wall: one wooden step")
+	var tall: Dictionary = PoiBuilder.stoop_piece("siding_white", 0.9, 1)
+	assert_eq(int(tall["steps"]), 3, "never more than three steps")
+	assert_almost_eq(float(tall["sz"]), float(tall["sy"]), 0.001, "a taller rise lengthens the run as much")
+	for k: String in ["wood", "concrete"]:
+		for n: int in [1, 2, 3]:
+			for w: int in [1, 2]:
+				var m: Mesh = PoiParts.kit_mesh("stoop_%s_%d_%dm" % [k, n, w])
+				assert_not_null(m, "stoop_%s_%d_%dm has a mesh (model or stand-in)" % [k, n, w])
+				if m != null:
+					var aabb: AABB = m.get_aabb()
+					assert_almost_eq(aabb.size.x, float(w), 0.12, "%s %d %dm: width" % [k, n, w])
+					assert_true(aabb.position.z > -0.06 and aabb.end.z > 0.25, "%s %d %dm: runs out along +Z from the wall" % [k, n, w])
