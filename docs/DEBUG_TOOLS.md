@@ -61,6 +61,11 @@ restart after a leg it could not finish. Per building it prints, and writes to
   and POI-local cell. `[no way round the props]` means the plan had to go through props.
 * **needed**: legs on plain floor, a doorway or stairs that took a jump, a vault or a crouch
   (window and half-wall vaults are expected and not listed); **ladder** climbs (an interact).
+  A window whose sill is past the vault's 1.3 m from the ground is climbed from a prop under it
+  (a route-cue crate or any solid top within 1.5 m of the window, at most 1.0 m up): the body
+  jumps onto it and vaults in from its top, and the leg is listed here as `crate` with
+  `"assist": "crate"` and `"assist_prop"` in the JSON (the table's `crate` column counts them).
+  With no such prop the leg stays blocked, its note giving the sill height.
 * **unreached** rooms (the layout reaches them, the body never stood in them) and **sealed** rooms
   (the layout itself has no way in).
 * **corridor props**: collision boxes standing in a walk-through doorway's clear width or in the
