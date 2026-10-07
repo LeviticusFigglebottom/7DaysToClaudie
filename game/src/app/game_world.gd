@@ -489,6 +489,17 @@ func _give_start_kit(p: PlayerState) -> void:
 	p.toolbelt[0] = &"lighter"
 
 
+## Jolt refuses bodies past physics/jolt_physics_3d/limits/max_bodies, and the player's, added
+## last, was among them in a random world built whole (22,995 collision objects against 10,240):
+## the player could look but never move, and the arms swung off with its free-fall velocity
+## (player report 3). Warn well before the limit so content growth shows up in the logs.
+func _check_body_budget() -> void:
+	var cap: int = int(ProjectSettings.get_setting("physics/jolt_physics_3d/limits/max_bodies", 10240))
+	var n: int = find_children("*", "CollisionObject3D", true, false).size()
+	if n > cap * 3 / 4:
+		Log.warn("world", "%d collision objects at spawn, %d%% of Jolt's max_bodies (%d)" % [n, n * 100 / cap, cap])
+
+
 func _finish_spawn() -> void:
 	# Drop the player onto the ground (terrain collision now exists). A save made in a POI cellar
 	# keeps the player on the cellar floor: height_at() is the surface above it (TD-026).
@@ -497,6 +508,7 @@ func _finish_spawn() -> void:
 	if pos.y < ground + 0.2 or pos.y > ground + 30.0:
 		player.global_position = Vector3(pos.x, ground + 0.4, pos.z)
 	_place_spawn_props()
+	_check_body_budget()
 	_load_meter.spawned()
 	player.input_enabled = true
 	is_ready = true

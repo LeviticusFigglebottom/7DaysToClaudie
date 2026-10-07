@@ -74,6 +74,21 @@ func _run() -> void:
 	ok(ps.inventory.has(&"lighter"), "start kit given")
 	await seconds(2.0)
 
+	# --- The player can move and the arms stay on the camera (player report 3: a random world past
+	# Jolt's body limit left the player's body out of the physics space, unable to move) ---------
+	ok(p.camera.current, "the player camera is current")
+	ok(p.get_node_or_null("Head/Camera3D/ViewModel") != null, "the viewmodel hangs off the player camera")
+	var walk_from: Vector3 = p.global_position
+	var walk_t: int = 0
+	Input.action_press(&"move_forward")
+	while walk_t < 120:
+		await get_tree().physics_frame
+		walk_t += 1
+	Input.action_release(&"move_forward")
+	var walked: float = Vector2(p.global_position.x - walk_from.x, p.global_position.z - walk_from.z).length()
+	ok(walked > 2.0, "the player walks after spawning (%.1f m in 2 s of physics)" % walked)
+	await seconds(0.5)
+
 	# --- What ships: real models, not stand-ins (-- --expect-assets; the Build workflow's pack run) --
 	if args.has("--expect-assets"):
 		await _check_real_models(w, p)

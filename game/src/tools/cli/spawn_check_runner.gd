@@ -53,6 +53,9 @@ func _check(w: Node) -> void:
 		if c is Camera3D:
 			print("[spawn] note: a camera under the world: %s current=%s" % [c.name, (c as Camera3D).current])
 	print("[spawn] held: %s" % [w.get(&"_held")])
+	var bodies: int = get_tree().root.find_children("*", "CollisionObject3D", true, false).size()
+	print("[spawn] collision objects in the tree: %d" % bodies)
+	ok(PhysicsServer3D.body_get_space(p.get_rid()).is_valid(), "the player body is in a physics space")
 	# The current camera over the first seconds (a warm-up or stand-in camera taking over again).
 	var seen: Dictionary = {}
 	for i: int in 120:
@@ -65,13 +68,13 @@ func _check(w: Node) -> void:
 	await get_tree().physics_frame
 	var start: Vector3 = p.global_position
 	print("[spawn] at %s, on floor %s, ground %.2f" % [start, p.is_on_floor(), float(w.call(&"ground_below", start))])
+	# 3 s of physics ticks, not wall time (a software-rendered frame takes seconds).
 	Input.action_press(&"move_forward")
-	var end_t: int = Time.get_ticks_msec() + 3000
-	while Time.get_ticks_msec() < end_t:
+	for i: int in 180:
 		await get_tree().physics_frame
 	Input.action_release(&"move_forward")
 	var moved: float = Vector2(p.global_position.x - start.x, p.global_position.z - start.z).length()
-	ok(moved > 3.0, "the player walks (%.2f m in 3 s; velocity %s)" % [moved, p.velocity])
+	ok(moved > 3.0, "the player walks (%.2f m in 3 s of physics; velocity %s)" % [moved, p.velocity])
 	# Look up: the head pitches, the viewmodel stays under the camera.
 	var ev := InputEventMouseMotion.new()
 	ev.relative = Vector2(0, -400)
