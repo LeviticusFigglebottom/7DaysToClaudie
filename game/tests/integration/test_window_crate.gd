@@ -3,7 +3,9 @@ extends GutTest
 ## floor 0.7 m up) is the way in only with something to climb on under it, a route cue (ADR-0022).
 ## The traversal bot (poi_walk) walks to a 0.8 m box stood in front of it, jumps onto it with the
 ## player's own moves and vaults in from its top, and reports the leg as assisted by a crate; with
-## nothing under the window the leg stays blocked, as before.
+## nothing under the window the leg stays blocked, as before. Going out, a box under the window
+## inside (a booth table under a diner window) is climbed the same way and the body vaults out from
+## its top and drops into the yard.
 
 const Bot := preload("res://src/tools/cli/poi_walk_bot.gd")
 
@@ -12,6 +14,8 @@ const Bot := preload("res://src/tools/cli/poi_walk_bot.gd")
 class BoxBot:
 	extends "res://src/tools/cli/poi_walk_bot.gd"
 	var box_size: Vector3 = Vector3.ZERO
+	## The box stands inside the room (on its floor) instead of in the yard.
+	var inside: bool = false
 
 	func _build(instance_id: String) -> void:
 		super._build(instance_id)
@@ -28,7 +32,8 @@ class BoxBot:
 		cs.position = Vector3(0, box_size.y * 0.5, 0)
 		body.add_child(cs)
 		# The window is the south side of cell (1, 2): its wall line is z = origin.y + 3.
-		body.position = Vector3(layout.origin.x + 1.5, 0.0, layout.origin.y + 3.0 + RouteCues.WALL_T * 0.5 + box_size.z * 0.5 + 0.02)
+		var off: float = RouteCues.WALL_T * 0.5 + box_size.z * 0.5 + 0.02
+		body.position = Vector3(layout.origin.x + 1.5, layout.level_y(0) if inside else 0.0, layout.origin.y + 3.0 + (-off if inside else off))
 		inst.add_child(body)
 
 
@@ -56,6 +61,47 @@ func _def() -> PoiDef:
 	var d := PoiDef.new()
 	assert_eq(d.parse(raw, &"poi", "test"), PackedStringArray())
 	return d
+
+
+## One room on a slab 15 cm up whose only way in and out is a broken 1 m window (sill 1.05 m over
+## the yard, 0.9 m over the floor) with a 0.45 m box under it inside: in over the sill and down onto
+## the box (a booth table under a diner window), then out again from the room, where the box stands
+## between the body and the wall under the sill.
+func _out_def() -> PoiDef:
+	var raw: Dictionary = {"id": "crate_window_out_test", "name": "Crate Window Out Test", "tier": 1, "footprint": [12, 12],
+		"style": {"floor_height": 0.15, "scatter": {"density": 0.0}, "roof": {"type": "flat"}},
+		"levels": [{"level": 0, "plan": ["AAAA", "AAAA", "AAAA"], "rooms": {"A": {}}}],
+		"openings": [{"id": "way_in", "at": [1, 2], "side": "S", "type": "window", "state": "broken", "cue": "none"}],
+		"route": [{"at": [1, 4]}, {"at": [1, 1]}, {"at": [1, 4]}],
+		"loot_room": {"room": "A", "level": 0}}
+	var d := PoiDef.new()
+	assert_eq(d.parse(raw, &"poi", "test"), PackedStringArray())
+	return d
+
+
+func test_climbs_a_box_under_a_window_inside_and_vaults_out() -> void:
+	var bot: BoxBot = BoxBot.new()
+	bot.box_size = Vector3(0.5, 0.45, 0.4)
+	bot.inside = true
+	add_child_autofree(bot)
+	var rep: Dictionary = await bot.walk(_out_def(), "test/crate_window_out")
+	var leg: Dictionary = {}
+	for l: Dictionary in rep["legs"]:
+		if str(l.get("opening", "")) == "way_in" and str(l["from"]) == "L0(1,2)":
+			leg = l
+	gut.p("window leg: %s" % leg)
+	if leg.is_empty():
+		for l2: Dictionary in rep["legs"]:
+			gut.p("  leg %s -> %s %s %s" % [l2["from"], l2["to"], l2["kind"], l2["ok"]])
+	assert_false(leg.is_empty(), "the route goes out through the window")
+	assert_true(bool(leg.get("ok", false)), "the body got out")
+	assert_eq(str(leg.get("assist", "")), "crate", "climbed from the box")
+	assert_eq(str(leg.get("assist_prop", "")), "Step_box", "the box is named")
+	assert_false(leg.has("sill_m"), "the sill is in a vault's reach from the floor; the box was in the way")
+	assert_has(leg["needed"], "crate")
+	assert_has(leg["needed"], "vault")
+	assert_true((rep["assisted"] as Array).has(leg), "listed as assisted")
+	assert_eq(rep["blocked"], [], "nothing blocked")
 
 
 func _window_leg(rep: Dictionary) -> Dictionary:

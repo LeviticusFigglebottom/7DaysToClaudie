@@ -65,7 +65,10 @@ restart after a leg it could not finish. Per building it prints, and writes to
   (a route-cue crate or any solid top within 1.5 m of the window, at most 1.0 m up): the body
   jumps onto it and vaults in from its top, and the leg is listed here as `crate` with
   `"assist": "crate"` and `"assist_prop"` in the JSON (the table's `crate` column counts them).
-  With no such prop the leg stays blocked, its note giving the sill height.
+  The same goes for a prop standing under a window on the body's side, in the yard or in the room
+  (a booth table under a diner window: climbed, then over the sill or ducked through when the sill
+  is about level with its top), and for landing on a prop on the far side (`"landed_prop"`).
+  With no such prop a high-sill leg stays blocked, its note giving the sill height.
 * **unreached** rooms (the layout reaches them, the body never stood in them) and **sealed** rooms
   (the layout itself has no way in).
 * **corridor props**: collision boxes standing in a walk-through doorway's clear width or in the
