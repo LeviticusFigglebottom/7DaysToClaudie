@@ -605,7 +605,7 @@ func test_his_pack_and_errand_round_trip_through_the_save() -> void:
 	_dir.setup_world(_world)
 	assert_eq(_dir.inventory.count_of(&"log"), 2, "his pack loads")
 	assert_eq(_dir.inventory.count_of(&"plant_fiber"), 9)
-	assert_eq(_dir.inventory.max_slots, 12)
+	assert_eq(_dir.inventory.max_slots, 16, "12 and the Pack mule perk's 4")
 	_dir.tick()
 	var b: Enemy = _dir.body
 	assert_not_null(b)
