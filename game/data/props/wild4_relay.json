@@ -4,7 +4,7 @@
   {
    "id": "w4_relay_tower",
    "name": "Guyed Relay Tower",
-   "description": "A 20 m guyed lattice tower, 2.2 m square, galvanised and rust-streaked: K-braced faces, the platform frames every 3 m round the POI's kit platforms, an antenna whip and a dead red beacon on top, a coax ladder of feeder cables down one leg and four guy wires to concrete anchors 6.5 m out (worn: a guy slack and coiled on the ground, a brace hanging). Origin at the platforms' centre on the ground. Collision none: the kit platforms and their railings carry the climber; the wires are walked under.",
+   "description": "A 20 m guyed lattice tower, 2.2 m square, galvanised and rust-streaked: K-braced faces, the platform frames every 3 m round the POI's kit platforms, an antenna whip and a dead red beacon on top, a coax ladder of feeder cables down one leg and four guy wires to concrete anchors 6.5 m out (worn: a guy slack and coiled on the ground, a brace hanging). Origin at the platforms' centre on the ground. Only its four legs collide (to the top platform): the kit platforms and their railings carry the climber; the wires are walked under.",
    "tags": [
     "structure",
     "exterior",
@@ -14,12 +14,62 @@
     "clean": "props/w4_relay_tower",
     "worn": "props/w4_relay_tower_worn"
    },
-   "collision": "none",
+   "collision": "box",
    "physics": "static",
    "size": [
     13.4,
     21.0,
     13.4
+   ],
+   "boxes": [
+    {
+     "size": [
+      0.12,
+      12.0,
+      0.12
+     ],
+     "at": [
+      -1.1,
+      0,
+      -1.1
+     ]
+    },
+    {
+     "size": [
+      0.12,
+      12.0,
+      0.12
+     ],
+     "at": [
+      -1.1,
+      0,
+      1.1
+     ]
+    },
+    {
+     "size": [
+      0.12,
+      12.0,
+      0.12
+     ],
+     "at": [
+      1.1,
+      0,
+      -1.1
+     ]
+    },
+    {
+     "size": [
+      0.12,
+      12.0,
+      0.12
+     ],
+     "at": [
+      1.1,
+      0,
+      1.1
+     ]
+    }
    ],
    "blocks_sight": false,
    "rooms": [

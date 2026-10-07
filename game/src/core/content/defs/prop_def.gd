@@ -4,8 +4,17 @@ extends ContentDef
 
 ## Model ids for condition variants: {"clean": id, "worn": id, "destroyed": id}
 var variants: Dictionary = {}
-## "box" | "convex" | "mesh" | "none"
+## "box" | "convex" | "mesh" | "none". Every kind but "none" builds as boxes: the one size box
+## (box_centre()), or `boxes` when the def has them.
 var collision: String = "box"
+## Compound collision (TD-270): boxes used instead of the one size box, for shells and structures
+## whose size box would close a doorway or stand in the air. Each {size: Vector3, at: Vector3,
+## yaw: degrees}: `at` is the centre of the box's base in the prop's own frame (origin = the
+## model's origin, +X right, +Y up, +Z the prop's front: box_centre()'s frame), and `yaw` turns the
+## box about its vertical axis through `at` (as a placement's rot turns a prop). The size box
+## would be {size: size, at: [0, 0, size.z / 2 - back_depth()]}. A prop with boxes collides as a
+## "box" prop: leave `collision` out or say "box"; any other kind with boxes is an error.
+var boxes: Array[Dictionary] = []
 ## "static" | "rigid" | "carry"
 var physics: String = "static"
 var hp: float = 0.0
@@ -36,7 +45,7 @@ var anchors: Array[Dictionary] = []
 
 func _fields() -> PackedStringArray:
 	return ["variants", "collision", "physics", "hp", "size", "container", "light", "blocks_sight", "wall_mounted", "rooms",
-		"anchors", "back"]
+		"anchors", "back", "boxes"]
 
 
 func _parse(r: DefReader) -> void:
@@ -53,6 +62,15 @@ func _parse(r: DefReader) -> void:
 	if r.has("back") and (back < 0.0 or back > size.z):
 		r.err("back must be between 0 and the prop's depth (size z, %.2f m)" % size.z)
 	rooms = r.strings("rooms")
+	for b: Variant in r.arr("boxes"):
+		var bp: String = box_problem(b)
+		if bp != "":
+			r.err(bp)
+			continue
+		var bd: Dictionary = b
+		boxes.append({"size": _v3(bd["size"]), "at": _v3(bd["at"]), "yaw": float(bd.get("yaw", 0.0))})
+	if r.has("boxes") and collision != "box":
+		r.err("boxes are a box collision: leave collision out or make it \"box\" (it is \"%s\")" % collision)
 	if variants.is_empty():
 		r.err("prop needs variants {clean|worn|destroyed: model}")
 	for a: Variant in r.arr("anchors"):
@@ -61,6 +79,44 @@ func _parse(r: DefReader) -> void:
 			r.err(problem)
 		else:
 			anchors.append(a as Dictionary)
+
+
+## Keys of one `boxes` entry.
+const BOX_KEYS: PackedStringArray = ["size", "at", "yaw"]
+
+
+## What is wrong with one boxes entry ("" when it is fine).
+static func box_problem(b: Variant) -> String:
+	if not b is Dictionary:
+		return "boxes entries must be objects {size: [x, y, z], at: [x, y, z], yaw}"
+	var d: Dictionary = b
+	for k: Variant in d.keys():
+		if not str(k).begins_with("_") and not BOX_KEYS.has(str(k)):
+			return "box has unknown key '%s' (%s)" % [k, ", ".join(BOX_KEYS)]
+	if not _is_v3(d.get("size", null)):
+		return "box size must be [x, y, z] (metres)"
+	var sz: Vector3 = _v3(d["size"])
+	if sz.x <= 0.0 or sz.y <= 0.0 or sz.z <= 0.0:
+		return "box size must be positive each way (it is %s)" % sz
+	if not _is_v3(d.get("at", null)):
+		return "box at must be [x, y, z] (the centre of its base in the prop's frame)"
+	if d.has("yaw") and not (d["yaw"] is float or d["yaw"] is int):
+		return "box yaw must be degrees"
+	return ""
+
+
+static func _is_v3(v: Variant) -> bool:
+	if not v is Array or (v as Array).size() != 3:
+		return false
+	for c: Variant in v as Array:
+		if not (c is float or c is int):
+			return false
+	return true
+
+
+static func _v3(v: Variant) -> Vector3:
+	var a: Array = v
+	return Vector3(float(a[0]), float(a[1]), float(a[2]))
 
 
 ## Seat / bed anchor schema (ADR-0022). Kept here, free of game classes: Content parses props
@@ -111,6 +167,38 @@ func back_depth() -> float:
 ## plane origin so the box covers the model rather than reaching into the wall behind it.
 func box_centre() -> Vector3:
 	return Vector3(0.0, size.y * 0.5, size.z * 0.5 - back_depth())
+
+
+## The prop's collision boxes in its own frame: [[size: Vector3, centre: Transform3D]], one per
+## `boxes` entry, else the one size box (grown to at least `min_size` each way). Empty for
+## collision "none".
+func collision_boxes(min_size: Vector3 = Vector3(0.05, 0.05, 0.05)) -> Array:
+	if collision == "none":
+		return []
+	if boxes.is_empty():
+		return [[size.max(min_size), Transform3D(Basis.IDENTITY, box_centre())]]
+	var out: Array = []
+	for b: Dictionary in boxes:
+		var sz: Vector3 = b["size"]
+		out.append([sz, Transform3D(Basis(Vector3.UP, deg_to_rad(float(b["yaw"]))), (b["at"] as Vector3) + Vector3.UP * sz.y * 0.5)])
+	return out
+
+
+## Whether a point in the prop's frame (its height ignored) lies within `margin` of the plan
+## footprint of what the prop collides with: the size box centred on the origin (the footprint
+## SleeperAnchors always used), or each of `boxes` whose base is lower than `below` (m).
+func plan_hits(local: Vector3, margin: float, below: float = INF) -> bool:
+	if boxes.is_empty():
+		return absf(local.x) < size.x * 0.5 + margin and absf(local.z) < size.z * 0.5 + margin
+	for b: Dictionary in boxes:
+		var at: Vector3 = b["at"]
+		if at.y >= below:
+			continue
+		var q: Vector3 = Basis(Vector3.UP, -deg_to_rad(float(b["yaw"]))) * (local - at)
+		var sz: Vector3 = b["size"]
+		if absf(q.x) < sz.x * 0.5 + margin and absf(q.z) < sz.z * 0.5 + margin:
+			return true
+	return false
 
 
 func model_for(condition: String) -> String:

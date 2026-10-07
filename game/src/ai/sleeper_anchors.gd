@@ -285,7 +285,7 @@ static func free_floor(layout: PoiLayout, li: int, from: Vector3, q: Vector3, ow
 			continue
 		var lq: Vector3 = pb._prop_xf(p, pd).affine_inverse() * q
 		var margin: float = 0.02 if i == own else (0.1 if in_place else BODY_RADIUS)
-		if absf(lq.x) < pd.size.x * 0.5 + margin and absf(lq.z) < pd.size.z * 0.5 + margin:
+		if pd.plan_hits(lq, margin, 1.2 - float(p.get("y", 0.0))):
 			return false
 	return true
 

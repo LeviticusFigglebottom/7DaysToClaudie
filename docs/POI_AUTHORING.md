@@ -198,6 +198,20 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
   park-model trailer, a fee station): one prop modelled as the walls and roof, with openings where
   the plan's doors are, wrapped round a small kit room under `"roof": {"type": "none"}` (the Ashen
   watch camp, Tamsin River Campground; TD-051).
+* **Collision** is the PropDef's: one box of its `size` (`collision` box, convex or mesh alike;
+  none for `"none"`), standing on the origin (forward off the wall plane for a wall-mounted prop).
+  A shell or a structure whose size box would close a doorway, fill a gate or stand in the air
+  lists **`boxes`** instead (TD-270): `[{"size": [x, y, z], "at": [x, y, z], "yaw": 0}]`, each a
+  box in the prop's own frame (Godot axes: +X right, +Y up, +Z the prop's front; origin the
+  model's origin), `at` the centre of its **base** (`[0, 0, 0]` is a box standing on the origin)
+  and the optional `yaw` (degrees) turning it about its vertical axis as a placement's `rot` turns
+  a prop. They replace the size box (the size still drives the validator's footprints: corridor,
+  stairwell and wall checks). `boxes` implies `"collision": "box"` (leave it out or say "box";
+  "none", "convex" or "mesh" with boxes is an error), sizes must be positive and unknown keys are
+  errors. Every box is tagged with the prop's id, so TraversalAudit names it; the validator's
+  yard cuts and sleeper placement use the boxes too. Read the prop's generator for the geometry
+  (a fuselage's skin beside its kit walls, with the kit doors' gaps; a tower's legs; a gate's
+  posts; a boxcar's walls round its door) and run the traversal audit on the POIs that use it.
 
 ### people and things
 * `sleepers`: `{"id": "s1", "at": [5, 2], "enemy": "hollow", "pose": "lie|sit|stand|kneel|crouch", "rot": 90, "group": "pantry", "guardian": false}`

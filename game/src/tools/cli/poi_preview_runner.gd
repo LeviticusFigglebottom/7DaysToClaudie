@@ -398,6 +398,13 @@ func _build_markers(v: PoiValidator, layout: PoiLayout, inst: PoiInstance) -> Di
 			pcol = Color(0.95, 0.7, 0.15, 0.6)
 		elif pd.collision == "none":
 			pcol = Color(0.75, 0.75, 0.75, 0.35)
+		if not pd.boxes.is_empty():
+			# A compound collision (TD-270): each of its boxes.
+			for b: Array in pd.collision_boxes():
+				var bxf: Transform3D = xf * (b[1] as Transform3D)
+				var part: MeshInstance3D = _marker(by_level[int(p["level"])], BoxMesh.new(), b[0], bxf.origin, pcol)
+				part.basis = bxf.basis
+			continue
 		var box: MeshInstance3D = _marker(by_level[int(p["level"])], BoxMesh.new(), pd.size.max(Vector3(0.05, 0.05, 0.05)),
 			xf * Vector3(0.0, pd.size.y * 0.5, 0.0), pcol)
 		box.basis = xf.basis
