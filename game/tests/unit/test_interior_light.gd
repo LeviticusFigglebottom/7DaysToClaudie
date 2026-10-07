@@ -130,3 +130,52 @@ func test_exposure_opens_indoors() -> void:
 	assert_almost_eq(EnvironmentController.indoor_exposure(cfg, 1.0, 1.0), float(cfg["exposure_day"]), 1e-4)
 	assert_almost_eq(EnvironmentController.indoor_exposure(cfg, 0.0, 1.0), float(cfg["exposure_night"]), 1e-4)
 	assert_gt(float(cfg["exposure_day"]), 1.0)
+
+
+func test_daylight_follows_the_openings() -> void:
+	# Three 3x3 rooms in a row: the west one has a window, the middle one only inside doors, the
+	# east one a boarded window. A cellar under them has none.
+	var lay: Dictionary = {
+		"levels": [{"level": -1, "plan": ["CCC", "CCC", "CCC"], "rooms": {"C": {}}},
+			{"level": 0, "plan": ["AAA BBB DDD", "AAA BBB DDD", "AAA BBB DDD"], "rooms": {"A": {}, "B": {}, "D": {}}}],
+		"openings": [{"at": [0, 1], "side": "W", "type": "window"},
+			{"at": [10, 1], "side": "E", "type": "window", "state": "boarded"}]}
+	var b := PoiBuilder.new()
+	b.layout = PoiLayout.compile(_def(lay, [20, 12]))
+	assert_eq(b.layout.errors, PackedStringArray())
+	var by_room: Dictionary = {}
+	for box: AABB in b.probe_boxes():
+		for ch: String in ["A", "B", "D"]:
+			var c: Vector2i = {"A": Vector2i(1, 1), "B": Vector2i(5, 1), "D": Vector2i(9, 1)}[ch]
+			if box.has_point(b.layout.cell_center(0, c) + Vector3.UP):
+				by_room[ch] = b.daylight_ratio(box)
+		if box.has_point(b.layout.cell_center(-1, Vector2i(1, 1)) + Vector3.UP):
+			by_room["C"] = b.daylight_ratio(box)
+	assert_almost_eq(float(by_room.get("A", -1.0)), 1.2 / (3.14 * 3.14), 0.02, "one window over a 3x3 floor")
+	assert_eq(float(by_room.get("B", -1.0)), 0.0, "no outside opening")
+	assert_lt(float(by_room.get("D", -1.0)), float(by_room["A"]) * 0.5, "boards let little through")
+	assert_gt(float(by_room.get("D", -1.0)), 0.0)
+	assert_eq(float(by_room.get("C", -1.0)), 0.0, "the cellar")
+	var cfg: Dictionary = Content.config(&"interior_light")
+	assert_almost_eq(EnvironmentController.daylight_share(cfg, 0.0), float(cfg["daylight_min_share"]), 1e-4)
+	assert_eq(EnvironmentController.daylight_share(cfg, 1.0), 1.0)
+	assert_eq(EnvironmentController.daylight_share(cfg, -1.0), 1.0, "a probe with no ratio")
+
+
+func test_poi_daylight_survey() -> void:
+	# Not a pass/fail on taste: every POI's rooms have a ratio, and the spread is printed for tuning.
+	var ratios: Array[float] = []
+	for v: Variant in Content.all(&"poi"):
+		var l: PoiLayout = PoiLayout.compile(v as PoiDef)
+		if not l.errors.is_empty():
+			continue
+		var b := PoiBuilder.new()
+		b.layout = l
+		for box: AABB in b.probe_boxes():
+			var r: float = b.daylight_ratio(box)
+			assert_true(r >= 0.0 and is_finite(r))
+			ratios.append(r)
+	ratios.sort()
+	var n: int = ratios.size()
+	gut.p("daylight ratios over %d boxes: p10 %.3f p25 %.3f p50 %.3f p75 %.3f p90 %.3f, zero %d" % [n,
+		ratios[n / 10], ratios[n / 4], ratios[n / 2], ratios[n * 3 / 4], ratios[n * 9 / 10], ratios.count(0.0)])

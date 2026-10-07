@@ -1393,9 +1393,50 @@ func _interior_probes() -> bool:
 		probe.blend_distance = PROBE_BLEND
 		probe.max_distance = maxf(probe.size.x, probe.size.z)
 		probe.update_mode = ReflectionProbe.UPDATE_ONCE
+		# How much daylight its rooms let in: EnvironmentController scales the fill by it, so a
+		# cellar stays dim and a glazed shopfront bright (ADR-0050).
+		probe.set_meta(&"daylight", daylight_ratio(box))
 		probe.add_to_group(&"interior_probe")
 		root.add_child(probe)
 	return true
+
+
+## Square metres of light an opening lets in per cell of its width, by type, while it stands open
+## (OPENING_DAYLIGHT_SHUT scales a shut door, a boarded window...).
+const OPENING_DAYLIGHT: Dictionary = {"door": 2.1, "door2": 2.1, "door2_tall": 4.2, "window": 1.2, "window2": 1.2,
+	"window_tall": 2.4, "lancet": 2.0, "breach": 2.1, "open": 2.1, "half": 1.0}
+## Share of an opening's light that still gets in by its state: a shut door's glass and gaps, light
+## between a window's boards. Windows are glazed: closed is their normal state.
+const OPENING_DAYLIGHT_SHUT: Dictionary = {"closed": 0.3, "locked": 0.3, "locked_inside": 0.3, "barricaded": 0.15, "boarded": 0.15}
+
+
+## The daylight of the rooms in a probe box (POI-local): square metres of outside openings on its
+## walls per square metre of its floor. A room with a window of a tenth of its floor is about 0.1;
+## a cellar is 0.
+func daylight_ratio(box: AABB) -> float:
+	var light: float = 0.0
+	for op: Dictionary in layout.openings:
+		var li: int = int(op["level"])
+		var y: float = layout.level_y(li) + 1.0
+		if y < box.position.y or y > box.end.y:
+			continue
+		var e: Vector2i = op["edge"]
+		var w: int = int(op["width"])
+		var outside: bool = false
+		for c: Vector2i in PoiLayout.edge_cells(str(op["axis"]), e):
+			outside = outside or not layout.is_built(li, c)
+		if not outside:
+			continue
+		var mid: Vector2 = Vector2(e.x + w * 0.5, e.y) if str(op["axis"]) == "h" else Vector2(e.x, e.y + w * 0.5)
+		var at: Vector3 = layout.local_pos(li, mid) + Vector3(0, 1.0, 0)
+		if not box.grow(0.25).has_point(at):
+			continue
+		var t: String = str(op["type"])
+		var share: float = 1.0
+		if not PoiLayout.is_window(t) or str(op["state"]) in ["boarded", "barricaded"]:
+			share = float(OPENING_DAYLIGHT_SHUT.get(str(op["state"]), 1.0))
+		light += float(OPENING_DAYLIGHT.get(t, 1.0)) * w * share
+	return light / maxf(1.0, box.size.x * box.size.z)
 
 
 ## The interior probe boxes (POI-local), at most MAX_PROBES.
@@ -1425,7 +1466,8 @@ func _probe_rects(li: int) -> Array:
 
 ## The probe boxes of every level's rectangles, stacked and merged down to MAX_PROBES.
 func _merge_probe_rects(rects: Array) -> Array[AABB]:
-	# A rectangle repeated storey over storey (stacked floors of one block): one box.
+	# A rectangle repeated storey over storey (stacked floors of one block): one box. Not a cellar
+	# under a ground floor: it would get that room's daylight (ADR-0050).
 	var merged: bool = true
 	while merged:
 		merged = false
@@ -1433,7 +1475,7 @@ func _merge_probe_rects(rects: Array) -> Array[AABB]:
 			for j: int in rects.size():
 				var a: Array = rects[i]
 				var b: Array = rects[j]
-				if i != j and a[2] == b[2] and int(a[1]) + 1 == int(b[0]) and int(a[3]) == 0:
+				if i != j and a[2] == b[2] and int(a[1]) + 1 == int(b[0]) and int(a[3]) == 0 and (int(a[1]) >= 0 or int(b[0]) < 0):
 					rects[i] = [a[0], b[1], a[2], b[3]]
 					rects.remove_at(j)
 					merged = true

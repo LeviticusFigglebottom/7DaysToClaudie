@@ -309,9 +309,11 @@ func update_now() -> void:
 		var ff: float = flash * float(lf.get("light_energy", 2.2)) * float(_interior_cfg.get("flash_share", 0.12)) * _flash_reach(fdist, lf)
 		var fc: Color = Color(room_fill.r, room_fill.g, room_fill.b).lerp(Color(0.72, 0.78, 1.0), clampf(ff / (ff + room_fill.a), 0.0, 1.0))
 		room_fill = Color(fc.r, fc.g, fc.b, room_fill.a + ff)
+	var floor_e: float = float(_interior_cfg.get("night_floor", 0.012))
 	for probe: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+		var share: float = daylight_share(_interior_cfg, float(probe.get_meta(&"daylight")) if probe.has_meta(&"daylight") else -1.0)
 		(probe as ReflectionProbe).ambient_color = Color(room_fill.r, room_fill.g, room_fill.b)
-		(probe as ReflectionProbe).ambient_color_energy = room_fill.a
+		(probe as ReflectionProbe).ambient_color_energy = maxf(floor_e, room_fill.a * share)
 	env.background_energy_multiplier = bg_energy
 	# Fog: weather + early-morning valley mist.
 	# A thin haze at dawn that burns off by mid-morning (weather fog adds on top); the mist itself
@@ -380,6 +382,16 @@ static func interior_fill(cfg: Dictionary, day: float, overcast: float, night_en
 	var night_e: float = maxf(float(cfg.get("night_floor", 0.012)), float(cfg.get("night_share", 0.6)) * night_energy)
 	var col: Color = night_col.lerp(day_col, day)
 	return Color(col.r, col.g, col.b, lerpf(night_e, day_e, day))
+
+
+## How much of the interior fill a room gets by its daylight ratio (PoiBuilder.daylight_ratio:
+## outside openings per floor area): `daylight_min_share` with none, all of it from
+## `daylight_full_ratio` up. A probe with no ratio (-1) gets all of it.
+static func daylight_share(cfg: Dictionary, ratio: float) -> float:
+	if ratio < 0.0:
+		return 1.0
+	var lo: float = float(cfg.get("daylight_min_share", 0.3))
+	return lerpf(lo, 1.0, clampf(ratio / maxf(0.001, float(cfg.get("daylight_full_ratio", 0.1))), 0.0, 1.0))
 
 
 ## The exposure multiplier for an eye `indoors` (0..1) inside a room: exposure_day by day,
