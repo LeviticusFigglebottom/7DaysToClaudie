@@ -84,6 +84,8 @@ tower's legs, the chapel's gates and vault front, the brush truck and the boxcar
   composed ground differs only round the new pads.
 * Leftovers are TD-269 to TD-278 (round 4) and TD-304 to TD-307 (round 5, compound collision). The
   common ones:
-  * no sleepers in yards (TD-269);
+  * no sleepers in yards (TD-269; since done: a sleeper may stand on a reachable yard cell inside
+    the footprint and spawns on the ground, and the plane, the ranger station and the chapel hold
+    a yard ambush each);
   * shells collided only as their single size box (TD-270, now `boxes`);
   * colours were reviewed only in the lead's renders, not by the authors (TD-271).

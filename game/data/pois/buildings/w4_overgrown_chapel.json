@@ -2005,6 +2005,29 @@
      "pose": "crouch",
      "rot": 120,
      "population": "loggers"
+    },
+    {
+     "id": "yard_mourner",
+     "group": "churchyard",
+     "pos": [
+      21.8,
+      24.3
+     ],
+     "enemy": "hollow",
+     "pose": "kneel",
+     "rot": 180
+    },
+    {
+     "id": "yard_digger",
+     "group": "churchyard",
+     "pos": [
+      9.4,
+      25.3
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 150,
+     "population": "loggers"
     }
    ],
    "pickups": [
@@ -2153,6 +2176,13 @@
      "on": "container",
      "prop": "coffin_a",
      "delay": 0.3
+    },
+    {
+     "id": "churchyard_cans",
+     "group": "churchyard",
+     "on": "trap",
+     "trap": "lych_cans",
+     "delay": 0.8
     }
    ],
    "decals": [
@@ -2568,7 +2598,8 @@
     }
    ],
    "budget": {
-    "props": 200
+    "props": 200,
+    "enemies": 16
    }
   }
  ]

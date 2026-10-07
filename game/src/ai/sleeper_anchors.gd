@@ -9,6 +9,7 @@ extends RefCounted
 ##   * "lie" takes a "bed" (a bed, cot, bunk, mattress, sleeping bag, a couch to stretch out on).
 ## Without one it keeps its floor pose (slumped against a wall, lying on the floor). A sleeper may
 ## pin its anchor ("anchor": "<prop id>") or opt out ("anchor": "floor": it lies where it fell).
+## A sleeper in the yard (TD-269) always keeps its floor pose, on the ground.
 ##
 ## The choice is a pure function of the layout (no RNG, no spawn order): every (sleeper, anchor)
 ## pair in reach is sorted by pinned first, distance (plus a small penalty for facing away from the
@@ -133,6 +134,12 @@ static func assign(layout: PoiLayout) -> Dictionary:
 		if kind == "" or pin == "floor":
 			continue
 		var sid: String = str(s["sid"])
+		# A sleeper in the yard (TD-269) keeps its floor pose on the ground: seats and beds are
+		# indoors (_usable), and one just inside a wall is no seat for a body outside it.
+		if layout.is_yard(int(s["level"]), s["cell"]):
+			if pin != "":
+				errors.append("sleeper '%s' in the yard pins anchor '%s': seats and beds are indoors; give it \"anchor\": \"floor\" or none" % [sid, pin])
+			continue
 		wants[sid] = true
 		var spos: Vector3 = layout.local_pos(int(s["level"]), s["pos"])
 		var found: bool = false

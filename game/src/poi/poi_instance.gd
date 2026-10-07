@@ -267,7 +267,7 @@ func spawn_sleepers(ai: Node) -> void:
 		if is_instance_valid(out) and (out as Enemy).is_alive():
 			continue
 		_roaming.erase(StringName(sid))
-		var local: Vector3 = layout.local_pos(s["level"], s["pos"])
+		var local: Vector3 = sleeper_local(layout, s)
 		var yaw: float = global_rotation.y + deg_to_rad(float(s.get("rot", 0.0)))
 		var group: String = str(s["group"])
 		# An ambush whose trigger already fired is spent: survivors are ordinary sleepers now.
@@ -285,7 +285,7 @@ func spawn_sleepers(ai: Node) -> void:
 			roused.erase(sid)
 		elif not seat.is_empty():
 			extra["perch"] = _world_seat(seat)
-		var e: Enemy = ai.call(&"spawn_sleeper", StringName(str(s.get("enemy", "hollow"))), to_global(local) + Vector3.UP * 0.05,
+		var e: Enemy = ai.call(&"spawn_sleeper", StringName(str(s.get("enemy", "hollow"))), _sleeper_spawn_at(s, local),
 			yaw, str(s.get("pose", "stand")), instance_id, StringName(sid), layout.def.tier, extra)
 		if e != null:
 			_sleepers[StringName(sid)] = e
@@ -446,7 +446,32 @@ func _is_held(s: Dictionary) -> bool:
 
 
 func _sleeper_local(s: Dictionary) -> Vector3:
-	return layout.local_pos(int(s["level"]), s["pos"])
+	return sleeper_local(layout, s)
+
+
+## Where an authored sleeper stands, POI-local: on its level's floor in a room (or on the porch
+## deck), on the pad (y = 0: the ground PoiManager levels under a building and its yard) in the yard
+## (TD-269), as PoiBuilder._base_y stands yard props, pickups and bear traps.
+static func sleeper_local(lay: PoiLayout, s: Dictionary) -> Vector3:
+	var p: Vector3 = lay.local_pos(int(s["level"]), s["pos"])
+	if lay.is_yard(int(s["level"]), s["cell"]) and not PoiBuilder.porch_cells(lay).has(s["cell"]):
+		p.y = 0.0
+	return p
+
+
+## A sleeper's spawn point in world space: its floor spot (sleeper_local); in the yard the terrain
+## under it, which is the pad give or take the heightfield's grid and its skirt, so the body is not
+## dropped from (or into) the ground. Lifted a little so it settles onto what is under it.
+func _sleeper_spawn_at(s: Dictionary, local: Vector3) -> Vector3:
+	var at: Vector3 = to_global(local)
+	if layout.is_yard(int(s["level"]), s["cell"]) and not PoiBuilder.porch_cells(layout).has(s["cell"]) \
+			and Game.world != null and Game.world.has_method(&"height_at"):
+		var ground: float = float(Game.world.call(&"height_at", at.x, at.z))
+		# A ground far off the pad is a world the pad does not describe (stand-in terrain, a test
+		# rig): keep the pad.
+		if absf(ground - at.y) < 2.0:
+			at.y = ground
+	return at + Vector3.UP * 0.05
 
 
 ## A weak floor gave way: the nav tiles there are rebaked (PoiManager), so the Hollowed stop

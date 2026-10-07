@@ -2570,6 +2570,28 @@
      "pose": "kneel",
      "rot": 20,
      "alt": "ines:at_the_glass"
+    },
+    {
+     "id": "queue_driver",
+     "group": "queue",
+     "pos": [
+      15.0,
+      32.3
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 0
+    },
+    {
+     "id": "queue_woman",
+     "group": "queue",
+     "pos": [
+      15.2,
+      29.6
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 80
     }
    ],
    "pickups": [
@@ -2688,6 +2710,20 @@
      "on": "trap",
      "trap": "bunk_boards",
      "delay": 0.6
+    },
+    {
+     "id": "queue_sedan_searched",
+     "group": "queue",
+     "on": "container",
+     "prop": "evac_sedan",
+     "delay": 0.5
+    },
+    {
+     "id": "queue_pickup_searched",
+     "group": "queue",
+     "on": "container",
+     "prop": "evac_pickup",
+     "delay": 0.5
     }
    ],
    "lights": [
@@ -3059,7 +3095,7 @@
    ],
    "budget": {
     "props": 200,
-    "enemies": 14
+    "enemies": 16
    }
   }
  ]
