@@ -36,6 +36,8 @@ var god_mode: bool = false
 @onready var collision: CollisionShape3D = $Collision
 @onready var interaction: PlayerInteraction = $Interaction
 @onready var equipment: PlayerEquipment = $Equipment
+## Raising a gun to the eye (ADR-0057): zoom, slower walk and turn.
+var aim: PlayerAim = null
 
 var _pitch: float = 0.0
 var _step_dist: float = 0.0
@@ -45,6 +47,8 @@ var _fall_speed: float = 0.0
 var _scent_t: float = 0.0
 var _eye_height: float = 1.65
 var _base_fov: float = 75.0
+## The field of view before aiming narrows it (the sprint kick eases in and out of it).
+var _fov: float = 75.0
 var _shake: float = 0.0
 ## Active vault: control points (start, over the top, landing) and progress 0..1 (-1 = none).
 var _vault_path: PackedVector3Array = []
@@ -62,6 +66,7 @@ func _ready() -> void:
 	collision_layer = 1 << 3
 	collision_mask = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 12)
 	_base_fov = Settings.fov
+	_fov = _base_fov
 	camera.fov = _base_fov
 	# The options screen can change the field of view mid-game.
 	Settings.settings_changed.connect(_on_settings_changed)
@@ -70,6 +75,9 @@ func _ready() -> void:
 	sense.name = "SleeperSense"
 	sense.player = self
 	add_child(sense)
+	aim = PlayerAim.new()
+	aim.name = "Aim"
+	add_child(aim)
 
 
 
@@ -110,7 +118,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion:
 		var m: InputEventMouseMotion = event
-		var sens: float = Settings.mouse_sensitivity
+		var sens: float = Settings.mouse_sensitivity * (aim.look_mult() if aim != null else 1.0)
 		rotation.y -= m.relative.x * sens
 		_pitch = clampf(_pitch - m.relative.y * sens * (-1.0 if Settings.invert_y else 1.0), deg_to_rad(-88.0), deg_to_rad(88.0))
 		head.rotation.x = _pitch
@@ -142,13 +150,15 @@ func _physics_process(delta: float) -> void:
 		_sprint_locked = true
 	elif _sprint_locked and stats.stamina >= float(Content.config(&"survival").get("stamina", {}).get("sprint_recover", 30.0)):
 		_sprint_locked = false
-	sprinting = want_sprint and not crouching and not _sprint_locked
+	sprinting = want_sprint and not crouching and not _sprint_locked and not (aim != null and aim.wanted)
 	if sprinting:
 		speed = float(cfg.get("sprint_speed", 6.2))
 	elif crouching:
 		speed = float(cfg.get("crouch_speed", 1.7))
 	speed *= 1.0 + mods.modifier("move_speed_mult")
 	speed *= 1.0 - 0.12 * carrying
+	if aim != null:
+		speed *= aim.move_mult()
 	var swimming: bool = in_water_depth > SWIM_DEPTH - 0.1
 	if in_water_depth > 0.5:
 		speed *= 0.55
@@ -453,7 +463,9 @@ func _head_motion(delta: float, speed: float) -> void:
 		camera.h_offset = 0.0
 		camera.v_offset = 0.0
 	var target_fov: float = _base_fov + (6.0 if sprinting and speed > 4.0 else 0.0)
-	camera.fov = lerpf(camera.fov, target_fov, minf(1.0, 6.0 * delta))
+	_fov = lerpf(_fov, target_fov, minf(1.0, 6.0 * delta))
+	# Aiming narrows it by the gun's zoom, eased with the raise itself (PlayerAim).
+	camera.fov = aim.fov(_fov) if aim != null else _fov
 
 
 # --- Damage / death ---------------------------------------------------------------------------

@@ -11,6 +11,8 @@
     "interact": [{"key": "E"}, {"joy_button": 2}],
     "attack": [{"mouse": 1}],
     "block": [{"mouse": 2}],
+    "aim": [{"mouse": 2}],
+    "reload": [{"key": "R"}],
     "inventory": [{"key": "Tab"}, {"key": "I"}],
     "guidebook": [{"key": "B"}],
     "tracker": [{"key": "T"}],
