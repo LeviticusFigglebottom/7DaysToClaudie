@@ -3,15 +3,16 @@ extends Control
 ## Ezra's order card (ADR-0058): a small clipboard over the view, modal like the trade screen.
 ## Before he is recruited it is the talk at his camp (what he says, and giving him a first aid kit
 ## or painkillers: companion.recruit); after, his orders: Follow, Stay here, Guard here
-## (companion.order), with phase 2's Gather, Fetch, Give and Store shown greyed. Everything goes
-## through the commands (ADR-0003); the card only shows state.
+## (companion.order), Gather wood / stone / fibre round what the player last looked at, Fetch what
+## they last looked at (companion.order), Give me what you carry (companion.give) and Store at base
+## (companion.store), with what he carries. Everything goes through the commands (ADR-0003); the
+## card only shows state.
 
 const PAPER := Color(0.83, 0.8, 0.7)
 const INK := Color(0.14, 0.12, 0.1)
 const INK_DIM := Color(0.42, 0.38, 0.32)
-const ORDER_NAMES: Dictionary = {"follow": "Following you", "stay": "Holding his spot", "guard": "Guarding his spot"}
-## Phase 2 orders (ADR-0058): on the card, not yet given.
-const LATER: Array = [["gather", "Gather"], ["fetch", "Fetch"], ["give", "Give me what you carry"], ["store", "Store at base"]]
+const ORDER_NAMES: Dictionary = {"follow": "Following you", "stay": "Holding his spot", "guard": "Guarding his spot",
+	"gather": "Gathering", "fetch": "Fetching", "store": "Taking his load to base"}
 
 var director: Node
 var _open: bool = false
@@ -127,14 +128,41 @@ func _refresh() -> void:
 	_title.text = "EZRA VANE"
 	var hp: int = int(round(100.0 * m.enemy.health / maxf(1.0, m.enemy.max_health)))
 	_status.text = "%s   ·   Health %d%%%s" % [ORDER_NAMES.get(m.order, m.order), hp, "   ·   lantern lit" if m.lantern_on() else ""]
-	_body.text = ""
+	if m.order == "gather" and m.work.kind != "":
+		_status.text = _status.text.replace("Gathering", "Gathering %s" % m.work.kind)
+	_body.text = _carrying(m.inventory)
 	_button("follow", "Follow me", m.order != "follow", func() -> void: _do(&"companion.order", {"order": "follow"}))
 	_button("stay", "Stay here", true, func() -> void: _do(&"companion.order", {"order": "stay"}))
 	_button("guard", "Guard here", true, func() -> void: _do(&"companion.order", {"order": "guard"}))
-	for l: Array in LATER:
-		var b: Button = _button(str(l[0]), str(l[1]), false, Callable())
-		b.tooltip_text = "Not yet (ADR-0058 phase 2)."
+	for k: Variant in (cd.gather.get("kinds", {}) as Dictionary).keys():
+		var gk: String = str(k)
+		_button("gather_%s" % gk, "Gather %s" % gk, true, func() -> void: _do(&"companion.order", {"order": "gather", "kind": gk}))
+	var looked: Dictionary = director.get(&"looked")
+	var ft: Dictionary = director.call(&"fetch_target")
+	var what: String = str(director.call(&"describe", looked))
+	var fb: Button = _button("fetch", "Fetch %s" % what if what != "" else "Fetch (look at something first)", bool(ft.get("ok", false)),
+		func() -> void: _do(&"companion.order", {"order": "fetch", "target": looked}))
+	fb.tooltip_text = str(ft.get("error", ""))
+	var carrying: bool = m.inventory != null and not m.inventory.is_empty()
+	_button("give", "Give me what you carry", carrying, func() -> void: _do(&"companion.give", {}))
+	var crate: Node = director.call(&"nearest_storage", m.enemy.global_position)
+	var sb: Button = _button("store", "Store at base", carrying and crate != null, func() -> void: _do(&"companion.store", {}))
+	sb.tooltip_text = "" if crate != null else "No storage at your base near enough."
 	_msg.text = "[%s] whistles him to follow or to stay without the card." % PlayerInteraction.key_label(&"companion_order")
+
+
+## "Carrying: 2 Log, 12 Stick." from his pack.
+static func _carrying(inv: Inventory) -> String:
+	if inv == null or inv.is_empty():
+		return "Carrying nothing."
+	var counts: Dictionary = {}
+	for s: ItemStack in inv.stacks:
+		counts[s.item_id] = int(counts.get(s.item_id, 0)) + s.count
+	var parts: PackedStringArray = []
+	for id: Variant in counts:
+		var d: ItemDef = Content.item(id)
+		parts.append("%d %s" % [counts[id], d.display_name if d != null else String(id)])
+	return "Carrying: %s." % ", ".join(parts)
 
 
 func _button(id: String, text: String, enabled: bool, on_press: Callable) -> Button:

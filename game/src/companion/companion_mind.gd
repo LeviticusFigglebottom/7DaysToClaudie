@@ -12,9 +12,12 @@ extends RefCounted
 ## within guard.radius of the spot. The fight itself is EnemyFoes' (the chase and the blows at a
 ## `foe`), so his kills are nobody's. At 0 hp he is downed (out of play, lying, bleeding out over
 ## downed.seconds) until revived or gone; CompanionDirector owns the bookkeeping (orders, save,
-## the camp, his return at dawn) and this the body's moment to moment.
+## the camp, his return at dawn) and this the body's moment to moment. Gather, fetch and store are
+## errands run by `work` (CompanionWork, ADR-0058 phase 2) while nothing needs fighting.
 
-const ORDERS: PackedStringArray = ["follow", "stay", "guard"]
+const ORDERS: PackedStringArray = ["follow", "stay", "guard", "gather", "fetch", "store"]
+## Orders that are errands (CompanionWork, ADR-0058 phase 2).
+const ERRANDS: PackedStringArray = ["gather", "fetch", "store"]
 ## Enemy states the fight runs in (EnemyFoes._fight drives CHASE / ATTACK).
 const FIGHT_STATES: Array = [Enemy.State.CHASE, Enemy.State.ATTACK, Enemy.State.SPIT]
 const SCAN_INTERVAL: float = 0.4
@@ -41,6 +44,17 @@ var _bark_n: int = 0
 var _step_t: float = 0.0
 var _anim_fixed: bool = false
 var _hurt_bark_t: float = -1000.0
+## His errands (gather, fetch, store).
+var work: CompanionWork = null
+## His own pack (CompanionDirector.inventory; set when the body is spawned).
+var inventory: Inventory = null:
+	set(v):
+		inventory = v
+		if work != null:
+			work.inventory = v
+## The logs on his shoulder (one mesh per log carried).
+var _shoulder: Node3D = null
+var _shoulder_n: int = 0
 
 
 func setup(e: Enemy) -> void:
@@ -49,6 +63,8 @@ func setup(e: Enemy) -> void:
 		if (c as CompanionDef).enemy == e.def.id:
 			cdef = c
 			break
+	work = CompanionWork.new(self)
+	work.inventory = inventory
 
 
 ## The body's frame (Enemy._physics_process hands it over). True: nothing else runs this frame.
@@ -78,7 +94,8 @@ func step(delta: float, p: Player, dist: float) -> bool:
 	if enemy.state == Enemy.State.BREAK:
 		enemy.break_target = null  # never at the player's walls
 		enemy._set_state(Enemy.State.CHASE)
-	_light(order == "follow" and enemy.is_night())
+	_light((order == "follow" or ERRANDS.has(order)) and enemy.is_night())
+	_shoulder_logs()
 	_scan_t -= delta
 	if _scan_t <= 0.0:
 		_scan_t = SCAN_INTERVAL
@@ -87,17 +104,30 @@ func step(delta: float, p: Player, dist: float) -> bool:
 	if enemy.foe != null:
 		if enemy.state not in FIGHT_STATES:
 			enemy._set_state(Enemy.State.CHASE)
+		work.interrupt()
 		want = EnemyFoes._fight(enemy)
 	else:
 		if enemy.state in FIGHT_STATES:
 			enemy._set_state(Enemy.State.IDLE)
 			_fight_end_t = enemy._now()
-		want = _order_move(p)
+		want = work.step(delta, p) if work.active() else _order_move(p)
 		enemy._set_state(Enemy.State.WANDER if want.length() > 0.05 else Enemy.State.IDLE)
 	enemy._move(want, delta, dist)
-	enemy._update_anim(want)
+	_animate(want)
 	_footsteps(delta)
 	return true
+
+
+## The clip for the frame: an errand's pickup or chop plays itself out; carrying logs he walks
+## with them on his shoulder (`carry_walk`, never running); else the body's own gait and idle.
+func _animate(want: Vector3) -> void:
+	if enemy.foe == null and work.acting:
+		return
+	var sp: float = Vector2(enemy.velocity.x, enemy.velocity.z).length()
+	if enemy.foe == null and work.carrying_logs() and sp > 0.15 and enemy.visual.has_anim(&"carry_walk"):
+		enemy.visual.play(&"carry_walk", clampf(sp / 0.9, 0.5, 2.0), 0.3, [&"walk"] as Array[StringName])
+		return
+	enemy._update_anim(want)
 
 
 # --- Orders ----------------------------------------------------------------------------------------
@@ -105,6 +135,8 @@ func step(delta: float, p: Player, dist: float) -> bool:
 ## Sets an order (validated by the director's command). Stay and guard hold `at` (INF: here).
 func set_order(kind: String, at: Vector3 = Vector3.INF) -> void:
 	order = kind
+	if work != null:
+		work.clear()  # an errand is started by its command after this
 	spot = at if at != Vector3.INF else enemy.global_position
 	if kind == "follow":
 		spot = Vector3.INF
@@ -350,6 +382,33 @@ func _light(on: bool) -> void:
 	lantern.visible = on
 
 
+## His body's id (`companion:<def>`): the owner the gathering commands fill his pack for.
+func body_id() -> StringName:
+	return enemy.entity_id
+
+
+## The logs on his right shoulder, one per log in his pack (like the player's two). A plain node
+## at shoulder height, not on a bone: it doesn't follow the clips (TD-305).
+func _shoulder_logs() -> void:
+	var n: int = inventory.count_of(&"log") if inventory != null else 0
+	if n == _shoulder_n:
+		return
+	_shoulder_n = n
+	if _shoulder == null:
+		_shoulder = Node3D.new()
+		_shoulder.name = "ShoulderLogs"
+		_shoulder.position = Vector3(-0.2, 1.55, -0.05)
+		enemy.add_child(_shoulder)
+	for c: Node in _shoulder.get_children():
+		c.queue_free()
+	for i: int in n:
+		var mi := MeshInstance3D.new()
+		mi.mesh = ModelLibrary.mesh("structures/log_piece", "log")
+		# along his facing (the mesh lies along +X), the far end dipping a little, stacked outward
+		mi.transform = Transform3D(Basis(Vector3.UP, PI * 0.5) * Basis(Vector3.BACK, -0.12), Vector3(-0.17 * i, 0.12 * i, 0.0))
+		_shoulder.add_child(mi)
+
+
 func lantern_on() -> bool:
 	return lantern != null and lantern.visible
 
@@ -362,7 +421,7 @@ func _fix_anims() -> void:
 	var ap: AnimationPlayer = enemy.visual.anim
 	if ap == null:
 		return
-	for n: StringName in [&"downed", &"sit_injured", &"talk", &"look"]:
+	for n: StringName in [&"downed", &"sit_injured", &"talk", &"look", &"carry_walk"]:
 		if ap.has_animation(n):
 			ap.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 

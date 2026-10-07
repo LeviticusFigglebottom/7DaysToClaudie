@@ -52,7 +52,9 @@ signal crop_harvested(player_id: StringName, crop_id: StringName, items: Diction
 ## A Hollow killed by a player-built trap or sentry (ADR-0052): the piece and its structure def.
 signal trap_killed(piece_id: StringName, structure_id: StringName, enemy_id: StringName)
 signal terrain_modified(aabb: AABB)
-signal tree_felled(tree_id: StringName, position: Vector3)
+## A tree came down; `felled_by` is whose blow did it (a player, or the companion: ADR-0058, whose
+## trees count at a share for the player).
+signal tree_felled(tree_id: StringName, position: Vector3, felled_by: StringName)
 ## A Remand Program supply canister was released over `position` (lands a little later).
 signal supply_drop_incoming(drop_id: StringName, position: Vector3)
 signal supply_drop_landed(drop_id: StringName, position: Vector3)

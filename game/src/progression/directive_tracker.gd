@@ -7,13 +7,16 @@ extends Node
 
 var world: Node
 var _announced: int = 0
+## Part-credit per event not yet a whole one (the companion's trees count half, ADR-0058).
+var _shares: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
 	world = w
 	var p: PlayerState = Game.local_player()
 	_announced = p.directives.chapter if p != null else 1
-	Events.tree_felled.connect(func(_id: StringName, _pos: Vector3) -> void: record("fell_tree"))
+	Events.tree_felled.connect(func(_id: StringName, _pos: Vector3, by: StringName) -> void:
+		record_share("fell_tree", CompanionDef.share_for(by)))
 	Events.item_crafted.connect(func(_o: StringName, _r: StringName, item_id: StringName, _n: int) -> void: record("craft", item_id))
 	Events.structure_placed.connect(func(_id: StringName, def_id: StringName, _pos: Vector3) -> void:
 		if def_id == BuildingManager.LOG_DEF:
@@ -143,6 +146,17 @@ func _poi_def(instance_id: StringName) -> StringName:
 		return &""
 	var inst: PoiInstance = (pois.get(&"instances") as Dictionary).get(instance_id)
 	return inst.layout.def.id if inst != null and inst.layout != null else &""
+
+
+## Records `share` of one event (1: a whole one); part-credit adds up until it makes a whole one.
+func record_share(event: String, share: float, target: StringName = &"") -> void:
+	if share >= 1.0:
+		record(event, target)
+		return
+	_shares[event] = float(_shares.get(event, 0.0)) + share
+	while float(_shares[event]) >= 0.999:
+		_shares[event] = float(_shares[event]) - 1.0
+		record(event, target)
 
 
 func record(event: String, target: StringName = &"", amount: int = 1, tier: StringName = &"") -> void:
