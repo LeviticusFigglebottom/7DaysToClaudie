@@ -108,6 +108,15 @@ cottage's front door). The owner said it "looks incredible", but:
 5. **A cottage front door (the intended entrance) has no steps up to its raised sill**, and the
    door has no "open": it just has no collision. It is likely a door authored `broken` (leaf drawn,
    passable). (The hub: POI doors and generated buildings.)
+6. **Axe grip** (`docs/playtest/2026-10-06_build67_axe_dark_room.webp`): the fingers don't wrap
+   the handle (knuckles show as dots on it) and the off hand floats open, palm down. (Session 4.)
+7. **Interiors still too dark**: a block-walled room is near black apart from the doorway, even by
+   day. Possibly probes still queued or parked, SDFGI not reaching indoors, or the indoor light
+   (instance light_lit, lit props) too weak. (Session 5.)
+8. **Stairs that push against a door or need a jump** are still in places. Not a save artifact:
+   saves store only differences, so buildings are rebuilt from current data on every load, and
+   ab89797's validator check was already in Build #67, so it misses some cases (generated
+   buildings? step rise or collision?). (The hub's doors agent.)
 
 ## Player report (the first human playtest)
 On a fresh setup:
