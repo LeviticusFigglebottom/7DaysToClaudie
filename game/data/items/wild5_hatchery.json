@@ -1,0 +1,81 @@
+{
+ "_doc": "Keys and readable notes of the Silver Run fish hatchery (w5_fish_hatchery), wilderness set pieces round 5. Note items are note_<note id> (notes/wild5_hatchery.json); models from tools/assetgen/blender_catalogs/items_wild5_hatchery.py.",
+ "defs": [
+  {
+   "id": "w5_hatchery_lab_key",
+   "name": "Chiller Room Key",
+   "description": "A steel padlock key on a Cordon property tag stamped WATER SECT. - CHILLER. It was on the belt of the soldier at the sampler on the intake catwalk.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild5_hatchery/w5_hatchery_lab_key"
+  },
+  {
+   "id": "w5_hatchery_house_key",
+   "name": "Hatch House Key",
+   "description": "A brass deadbolt key on a cork float with a trout painted on it: HATCH HOUSE. The manager left it on his kitchen table.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild5_hatchery/w5_hatchery_house_key"
+  },
+  {
+   "id": "note_w5_hatchery_feeding_chart",
+   "name": "Feeding Chart",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w5_hatchery_feeding_chart",
+   "model": "items/wild5_hatchery/note_w5_hatchery_feeding_chart"
+  },
+  {
+   "id": "note_w5_hatchery_sampler_log",
+   "name": "Sampler Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w5_hatchery_sampler_log",
+   "model": "items/wild5_hatchery/note_w5_hatchery_sampler_log"
+  },
+  {
+   "id": "note_w5_hatchery_manager_letter",
+   "name": "Letter to June",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w5_hatchery_manager_letter",
+   "model": "items/wild5_hatchery/note_w5_hatchery_manager_letter"
+  },
+  {
+   "id": "note_w5_hatchery_spawn_log",
+   "name": "Spawning Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w5_hatchery_spawn_log",
+   "model": "items/wild5_hatchery/note_w5_hatchery_spawn_log"
+  },
+  {
+   "id": "note_w5_hatchery_cordon_results",
+   "name": "Field Results, Water Section",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w5_hatchery_cordon_results",
+   "model": "items/wild5_hatchery/note_w5_hatchery_cordon_results"
+  }
+ ]
+}
