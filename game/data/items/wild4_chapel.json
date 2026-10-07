@@ -1,0 +1,68 @@
+{
+ "_doc": "Keys and readable notes of Shiloh Chapel (w4_overgrown_chapel), forest set pieces round 4. Note items are note_<note id> (notes/wild4_chapel.json); models from tools/assetgen/blender_catalogs/items_wild4_chapel.py.",
+ "defs": [
+  {
+   "id": "w4_chapel_vault_key",
+   "name": "Vault Key",
+   "description": "A long black iron key with a paper tag tied through the bow: TEAGUE VAULT. It was in the vestry with the pastor's diary.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_chapel/w4_chapel_vault_key"
+  },
+  {
+   "id": "note_w4_chapel_diary",
+   "name": "Pastor Varner's Diary",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_chapel_diary",
+   "model": "items/wild4_chapel/note_w4_chapel_diary"
+  },
+  {
+   "id": "note_w4_chapel_register",
+   "name": "Register of Burials",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_chapel_register",
+   "model": "items/wild4_chapel/note_w4_chapel_register"
+  },
+  {
+   "id": "note_w4_chapel_grave_letter",
+   "name": "Letter Left on a Grave",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_chapel_grave_letter",
+   "model": "items/wild4_chapel/note_w4_chapel_grave_letter"
+  },
+  {
+   "id": "note_w4_chapel_cordon_notice",
+   "name": "Cordon Quarantine Notice",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_chapel_cordon_notice",
+   "model": "items/wild4_chapel/note_w4_chapel_cordon_notice"
+  },
+  {
+   "id": "note_w4_chapel_sexton",
+   "name": "Sexton's Tally",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_chapel_sexton",
+   "model": "items/wild4_chapel/note_w4_chapel_sexton"
+  }
+ ]
+}
