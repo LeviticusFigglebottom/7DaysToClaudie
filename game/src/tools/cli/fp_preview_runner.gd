@@ -52,6 +52,16 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "shovel_dig_windup", "item": "shovel", "action": "fp_dig", "frame": 8},
 	{"name": "shovel_dig_follow", "item": "shovel", "action": "fp_dig", "frame": 15},
 	{"name": "food_eat_lift", "item": "canned_beans", "action": "fp_eat", "frame": 8},
+	# Spear and shovel: thrust windup, dig pry, guards, tether, inspects (turned one way, the other).
+	{"name": "spear_stab_windup", "item": "crude_spear", "action": "fp_stab", "frame": 5},
+	{"name": "spear_guard", "item": "crude_spear", "guard": true},
+	{"name": "spear_inspect_a", "item": "crude_spear", "action": "fp_inspect_spear", "frame": 30},
+	{"name": "spear_inspect_b", "item": "crude_spear", "action": "fp_inspect_spear", "frame": 46},
+	{"name": "shovel_dig_pry", "item": "shovel", "action": "fp_dig", "frame": 17},
+	{"name": "shovel_guard", "item": "shovel", "guard": true},
+	{"name": "shovel_tether", "item": "shovel", "tether": true},
+	{"name": "shovel_inspect_a", "item": "shovel", "action": "fp_inspect_two_hand", "frame": 30},
+	{"name": "shovel_inspect_b", "item": "shovel", "action": "fp_inspect_two_hand", "frame": 46},
 ]
 
 var _out: String = "res://../build/fp_preview"
