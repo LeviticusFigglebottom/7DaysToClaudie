@@ -4,12 +4,12 @@
   {
    "id": "program_cache",
    "name": "Program Cache",
-   "description": "A sealed Remand Program case, survey-orange, a waystation number stencilled on the lid. The quartermaster pays for it unopened.",
+   "description": "A sealed Remand Program field case, olive polymer, the Program roundel stencilled on the lid beside its asset plate and an amber tamper seal on the latch. The quartermaster pays for it unopened.",
    "category": "quest",
    "stack_max": 4,
    "bulk": 2.0,
    "value": 0,
-   "model": "items/supply_canister",
+   "model": "items/contracts/program_cache",
    "tags": [
     "contract"
    ]
