@@ -1,6 +1,6 @@
 # ADR-0055: The living forest: wolf packs and Bloom nests
 
-**Status**: Proposed · 2026-10 (session 2)
+**Status**: Wolves: Accepted with notes · Bloom nests: Proposed · 2026-10 (session 2)
 
 ## Context
 The owner wants the forests alive and full of places (WORKBOARD "Round 3 suites"). Two things are
@@ -49,6 +49,34 @@ flame. What is different, all data in `data/config/wolves.json`:
   like them (nothing; they re-roll). A `wolves` world setting turns them off.
 * **Carcasses.** A dead wolf is a carcass the player butchers (pelt, meat, bone), through the Enemy
   corpse loot table `wolf_remains`.
+
+#### Wolves as built (notes)
+* **Data.** `grey_wolf` (`data/enemies/wolves.json`, archetype hound, faction wildlife, pack 3-6,
+  bite bleed 0.4 and infection 0, loot `wolf_remains`: a `wolf_pelt` and `raw_wolf_meat` always,
+  bone and sinew; new items `wolf_pelt`, `raw_wolf_meat`, `cooked_wolf_meat`, recipes
+  `roast_wolf`, `wolf_rawhide_strips`); tuning in `data/config/wolves.json`; world setting
+  `wolves` (category world).
+* **Spawning.** A new WildlifeDef kind `pack` (`data/wildlife/wolves.json`: `enemy` grey_wolf;
+  conifer forest 1.0, burnt forest 0.8, rocky slope 0.4, fen 0.2 — there is no snow biome yet) is
+  planned by WildlifeSpawner with the herds; `WolfPacks` (a child of the WildlifeManager) spawns
+  the plan through `AIDirector.spawn` (tier normal), wires `Enemy.pack` and `Enemy.wolf`, keeps at
+  most `spawn.max_packs`, drops a pack 270 m off (90 m on a Hum night) and remembers packs killed
+  off. The director skips wolves as wanderers and in its roaming count, and `allowed_enemy` no
+  longer turns a wildlife hound into a Hollow when the hounds setting is off.
+* **Behaviour.** `WolfPack` (pack mind: hunger, ROAM / HUNT / FEED / REST, engagement, howls) and
+  `WolfHunt` (one wolf: the moving, the bite on an Animal, the fire ring) in `src/wildlife/wolves/`.
+  Enemy hooks (5 one-line hunks): the `wolf` var, `wolf.step()` beside the foe step,
+  `wolf.ignores_player()` at the head of `_perceive`, no stimulus from a wildlife howl, no
+  `zombies_killed` for a wolf. The rule for taking the player on is `WolfPack.wants_player`:
+  hungry and close (26 m day / 60 m night), at night unless just fed, wounded (or a mate killed),
+  a player staying by the kill after a growl, or a bleeding player whose trail it smells; then
+  the hound brain hunts them (rally, howl, flank, hit and run, held flame). A stalking wolf is
+  left out of the deer's senses until the rush. Ambient howls (`voice/wolf_howl`) are sound only.
+* **Bodies.** `animals/wolf_a` (grey), `wolf_b` (timber, bigger): the hound generator with
+  `breed: wolf` (wolf skeleton table, no bones showing or Bloom growths, coat volume: ruff,
+  cheeks, breeches, brush; wolf coat masks; amber `eye_wolf`; a level-headed stance); same rig and
+  clips. Previews checked in engine.
+* Gaps: TD-250..253.
 
 ### Bloom nests are world landmarks with a small module
 A Bloom nest is a grown mass of Bloom: a knot of roots and shelves round a hollow, pods hanging from

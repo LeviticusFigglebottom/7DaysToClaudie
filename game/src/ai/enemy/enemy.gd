@@ -212,6 +212,8 @@ var tribe: AshenMind = null
 var foe: Enemy = null
 var _foe_seen: float = -100.0
 var _foe_scan_t: float = 0.0
+## A wolf (ADR-0055): its part in its pack (WolfHunt, set by WolfPacks); null for everything else.
+var wolf: WolfHunt = null
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -398,6 +400,8 @@ func _physics_process(delta: float) -> void:
 	if tribe != null:
 		tribe.tick(delta, p)
 	if _foe_step(delta, dist):  # TD-186: fighting a foe of a hostile faction this frame
+		return
+	if wolf != null and wolf.step(delta, p, dist):  # ADR-0055: the pack's business, not the player
 		return
 	match state:
 		State.SLEEP, State.WAKING, State.SCREAM, State.STAGGER:
@@ -767,6 +771,8 @@ func _vocalize(delta: float, dist: float) -> void:
 func _perceive(p: Player, dist: float) -> void:
 	if p == null or Stimuli.current == null or not p.state.stats.alive or DebugTools.is_on(&"invisible"):
 		return
+	if wolf != null and wolf.ignores_player():
+		return  # ADR-0055: a wolf pack that leaves the player be does its own watching (WolfHunt)
 	var st: Stimuli = Stimuli.current
 	if state == State.SLEEP and held:
 		_perceive_held(st)
@@ -1217,7 +1223,7 @@ func _howl() -> void:
 	_set_state(State.SCREAM)
 	visual.play_once(&"scream", 1.0, [&"idle"] as Array[StringName])
 	Audio.play_3d(&"voice/hound_howl", _mouth(), {"volume_db": 4.0, "max_distance": 260.0})
-	if Stimuli.current != null:
+	if Stimuli.current != null and def.faction != "wildlife":  # a wolf's howl is no stimulus: no Hollowed, no heat (ADR-0055)
 		Stimuli.current.emit_sound(global_position, float(c.get("loudness", 70.0)), &"howl", entity_id)
 	Events.enemy_alerted.emit(entity_id, global_position)
 
@@ -1644,7 +1650,7 @@ func _die(info: DamageInfo) -> void:
 		visual.animate_placeholder(0.0, 0.0, true)
 	Audio.play_3d(_vid(&"voice/zombie_death", &"voice/hound_death"), global_position + Vector3.UP * (1.0 if quad.is_empty() else 0.5), {"volume_db": -2.0})
 	if Game.session != null:
-		if tribe == null:
+		if tribe == null and def.faction != "wildlife":  # a wolf is no Hollowed (ADR-0055)
 			Game.session.stats["zombies_killed"] = int(Game.session.stats.get("zombies_killed", 0)) + 1
 		var pl: PlayerState = Game.session.players.get(info.source_id)
 		if pl != null:

@@ -115,7 +115,7 @@ static func allowed_enemy(enemy_id: StringName, gamestage: int, authored: bool) 
 		return enemy_id
 	if bool(def.beh("special", false)) and not GameRules.current().flag("special_hollowed"):
 		return &"hollow"
-	if def.archetype == "hound" and not GameRules.current().flag("hollowed_hounds"):
+	if def.archetype == "hound" and def.faction != "wildlife" and not GameRules.current().flag("hollowed_hounds"):  # wolves: ADR-0055
 		return &"hollow"
 	if not authored and def.gamestage_min > gamestage:
 		return &"hollow"
@@ -226,7 +226,7 @@ func on_scream(keener: Enemy, count: int) -> void:
 func _roaming_count() -> int:
 	var n: int = 0
 	for e: Enemy in enemies.values():
-		if is_instance_valid(e) and e.is_alive() and e.poi_id == &"" and not e.horde:
+		if is_instance_valid(e) and e.is_alive() and e.poi_id == &"" and not e.horde and e.wolf == null:  # wolves: ADR-0055
 			n += 1
 	return n
 
@@ -268,8 +268,9 @@ func _process_body(delta: float) -> void:
 			if e._corpse_t > CORPSE_SECONDS and d > 40.0:
 				despawn(e)
 			continue
-		# POI sleepers, the Hum and the Ashen (AshenDirector keeps its own) aren't wanderers.
-		if e.poi_id != &"" or e.horde or e.tribe != null:
+		# POI sleepers, the Hum, the Ashen (AshenDirector keeps its own) and wolves (WolfPacks, ADR-0055)
+		# aren't wanderers.
+		if e.poi_id != &"" or e.horde or e.tribe != null or e.wolf != null:
 			continue
 		if d > DESPAWN_RANGE:
 			despawn(e)

@@ -16,6 +16,7 @@
     "wildlife": {"category": "world", "type": "bool", "default": true, "label": "Wildlife (deer, hares, birds)"},
     "wildlife_density": {"category": "world", "type": "float", "min": 0.25, "max": 3.0, "step": 0.25, "default": 1.0, "label": "Wildlife density"},
     "murmurs": {"category": "world", "type": "bool", "default": true, "label": "Murmurs (crows that mark you)"},
+    "wolves": {"category": "world", "type": "bool", "default": true, "label": "Wolf packs"},
 
     "enemy_speed_day": {"category": "hollowed", "type": "enum", "values": ["shamble", "walk", "jog", "run", "sprint"], "default": "walk", "label": "Hollowed speed by day"},
     "enemy_speed_night": {"category": "hollowed", "type": "enum", "values": ["shamble", "walk", "jog", "run", "sprint"], "default": "run", "label": "Hollowed speed at night"},

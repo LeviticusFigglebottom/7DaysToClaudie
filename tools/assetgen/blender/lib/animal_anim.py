@@ -542,6 +542,11 @@ def _ground(rig, prm: dict, center: float = 0.0, clearance: float = 0.0) -> dict
 def hound_stance(rig) -> dict:
     """Head slung low, shoulders up, the tail clamped down between the legs, lips back."""
     s = rig.s
+    if rig.p.get("breed") == "wolf":
+        # a healthy wolf (ADR-0055): head carried level with the back, ears up and forward, the
+        # tail hanging loose, mouth closed
+        return {"body.z": -0.006 * s, "neck.flex": 8.0, "neck2.flex": 2.0, "head.flex": -4.0,
+                "tail.lift": -4.0, "tail2.lift": -2.0, "ear.L.fwd": 6.0, "ear.R.fwd": 6.0, "jaw.open": 0.0}
     return {"body.z": -0.014 * s, "hips.flex": -1.5, "neck.flex": 16.0, "neck2.flex": 4.0, "head.flex": -10.0,
             "tail.lift": -24.0, "tail2.lift": -10.0, "ear.L.fwd": -12.0, "ear.R.fwd": -12.0, "jaw.open": 3.0,
             "scap.FL": -3.0, "scap.FR": -3.0}
