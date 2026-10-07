@@ -1573,6 +1573,124 @@
         "model": "structures/log_piece"
       }
     },
+    "climb": {
+      "_doc": "Climbing a ladder's rails (ViewModelClimb): both hands on it at 0.37 m, phase 0 of the hand-over-hand cycle (climb_cycle). No item: what was in hand is stowed while climbing.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.205,
+            0.14,
+            -0.37
+          ],
+          "dir": [
+            -0.0,
+            1.0,
+            0.0
+          ],
+          "back": [
+            0.55,
+            0.3,
+            0.78
+          ],
+          "fist": 1.0,
+          "thumb": 0.8,
+          "elbow": [
+            0.6,
+            -0.6,
+            0.3
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.205,
+            -0.117,
+            -0.37
+          ],
+          "dir": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "back": [
+            -0.55,
+            0.3,
+            0.78
+          ],
+          "fist": 1.0,
+          "thumb": 0.8,
+          "elbow": [
+            -0.6,
+            -0.6,
+            0.3
+          ]
+        }
+      },
+      "attack": "",
+      "no_tether": true,
+      "fixed_roll": [
+        "R",
+        "L"
+      ]
+    },
+    "climb_rope": {
+      "_doc": "Climbing a rope, one hand above the other (ViewModelClimb): both hands on it at 0.37 m, phase 0 of the hand-over-hand cycle (climb_rope_cycle). No item: what was in hand is stowed while climbing.",
+      "pose": {
+        "R": {
+          "grip": [
+            0.03,
+            0.12,
+            -0.37
+          ],
+          "dir": [
+            -0.6,
+            1.0,
+            0.0
+          ],
+          "back": [
+            0.75,
+            0.3,
+            0.92
+          ],
+          "fist": 1.0,
+          "thumb": 0.8,
+          "elbow": [
+            0.6,
+            -0.6,
+            0.3
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.03,
+            -0.094,
+            -0.37
+          ],
+          "dir": [
+            0.6,
+            1.0,
+            0.0
+          ],
+          "back": [
+            -0.75,
+            0.3,
+            0.92
+          ],
+          "fist": 1.0,
+          "thumb": 0.8,
+          "elbow": [
+            -0.6,
+            -0.6,
+            0.3
+          ]
+        }
+      },
+      "attack": "",
+      "no_tether": true,
+      "fixed_roll": [
+        "R",
+        "L"
+      ]
+    },
     "lighter": {
       "_doc": "Lighter: upright in the left hand in front of the chest, the forearm rising from the lower left, fingers round its body, the thumb up on the wheel and the flame up and a little forward; the right hand down out of view.",
       "pose": {
@@ -3781,6 +3899,966 @@
           24,
           {},
           "inout"
+        ]
+      ]
+    },
+    "climb_cycle": {
+      "_doc": "Hand over hand on a ladder's rails: each hand grips for 70% of the cycle, riding down with the climb (so it stays on the rail), then lets go and reaches up. Not played: ViewModelClimb seeks it to the phase the distance climbed gives (viewmodel.json climb.cycle_m).",
+      "hold": "climb",
+      "frames": 60,
+      "loop": true,
+      "keys": [
+        [
+          0,
+          {
+            "L.move": [
+              0.0,
+              -0.0,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              0.0,
+              -0.103,
+              0.0
+            ],
+            "L.move": [
+              0.0,
+              -0.103,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          15,
+          {
+            "R.move": [
+              0.0,
+              -0.129,
+              0.0
+            ],
+            "L.move": [
+              0.01,
+              -0.076,
+              0.025
+            ],
+            "L.rot": [
+              10.0,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.275,
+            "L.thumb": 0.376
+          },
+          "lin"
+        ],
+        [
+          18,
+          {
+            "R.move": [
+              0.0,
+              -0.154,
+              0.0
+            ],
+            "L.move": [
+              0.017,
+              -0.01,
+              0.043
+            ],
+            "L.rot": [
+              17.3,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.2,
+            "L.thumb": 0.27
+          },
+          "lin"
+        ],
+        [
+          21,
+          {
+            "R.move": [
+              0.0,
+              -0.18,
+              0.0
+            ],
+            "L.move": [
+              0.02,
+              0.077,
+              0.05
+            ],
+            "L.rot": [
+              20.0,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.2,
+            "L.thumb": 0.27
+          },
+          "lin"
+        ],
+        [
+          24,
+          {
+            "R.move": [
+              0.0,
+              -0.206,
+              0.0
+            ],
+            "L.move": [
+              0.017,
+              0.164,
+              0.043
+            ],
+            "L.rot": [
+              17.3,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.2,
+            "L.thumb": 0.27
+          },
+          "lin"
+        ],
+        [
+          27,
+          {
+            "R.move": [
+              0.0,
+              -0.231,
+              0.0
+            ],
+            "L.move": [
+              0.01,
+              0.23,
+              0.025
+            ],
+            "L.rot": [
+              10.0,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.833,
+            "L.thumb": 0.376
+          },
+          "lin"
+        ],
+        [
+          30,
+          {
+            "R.move": [
+              0.0,
+              -0.257,
+              0.0
+            ],
+            "L.move": [
+              0.0,
+              0.257,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          42,
+          {
+            "R.move": [
+              0.0,
+              -0.36,
+              0.0
+            ],
+            "L.move": [
+              0.0,
+              0.154,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          45,
+          {
+            "R.move": [
+              -0.01,
+              -0.333,
+              0.025
+            ],
+            "R.rot": [
+              10.0,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.275,
+            "R.thumb": 0.376,
+            "L.move": [
+              0.0,
+              0.128,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          48,
+          {
+            "R.move": [
+              -0.017,
+              -0.267,
+              0.043
+            ],
+            "R.rot": [
+              17.3,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.2,
+            "R.thumb": 0.27,
+            "L.move": [
+              0.0,
+              0.103,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          51,
+          {
+            "R.move": [
+              -0.02,
+              -0.18,
+              0.05
+            ],
+            "R.rot": [
+              20.0,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.2,
+            "R.thumb": 0.27,
+            "L.move": [
+              0.0,
+              0.077,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          54,
+          {
+            "R.move": [
+              -0.017,
+              -0.093,
+              0.043
+            ],
+            "R.rot": [
+              17.3,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.2,
+            "R.thumb": 0.27,
+            "L.move": [
+              0.0,
+              0.051,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          57,
+          {
+            "R.move": [
+              -0.01,
+              -0.027,
+              0.025
+            ],
+            "R.rot": [
+              10.0,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.833,
+            "R.thumb": 0.376,
+            "L.move": [
+              0.0,
+              0.026,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          60,
+          {
+            "L.move": [
+              0.0,
+              -0.0,
+              0.0
+            ]
+          },
+          "lin"
+        ]
+      ]
+    },
+    "climb_grab": {
+      "_doc": "Grab-on: the hands come up from below the view and close on it.",
+      "hold": "climb",
+      "frames": 10,
+      "keys": [
+        [
+          0,
+          {
+            "R": {
+              "grip": [
+                0.17,
+                -0.34,
+                -0.3
+              ],
+              "dir": [
+                -0.25,
+                0.85,
+                -0.45
+              ],
+              "back": [
+                0.75,
+                0.55,
+                0.1
+              ],
+              "fist": 0.35,
+              "thumb": 0.3,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.5
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.17,
+                -0.35,
+                -0.3
+              ],
+              "dir": [
+                0.25,
+                0.85,
+                -0.45
+              ],
+              "back": [
+                -0.75,
+                0.55,
+                0.1
+              ],
+              "fist": 0.35,
+              "thumb": 0.3,
+              "elbow": [
+                -0.5,
+                -0.4,
+                0.5
+              ]
+            }
+          },
+          "lin"
+        ],
+        [
+          6,
+          {
+            "R.move": [
+              0.0,
+              -0.06,
+              0.06
+            ],
+            "R.fist": 0.3,
+            "R.thumb": 0.3,
+            "L.move": [
+              0.0,
+              -0.08,
+              0.06
+            ],
+            "L.fist": 0.3,
+            "L.thumb": 0.3
+          },
+          "out"
+        ],
+        [
+          10,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "climb_release": {
+      "_doc": "Let-go (off the top, off the foot or Jump): the hands open and drop out of the view.",
+      "hold": "climb",
+      "frames": 12,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          3,
+          {
+            "R.move": [
+              0.0,
+              0.01,
+              0.05
+            ],
+            "R.fist": 0.25,
+            "R.thumb": 0.3,
+            "L.move": [
+              0.0,
+              0.01,
+              0.05
+            ],
+            "L.fist": 0.25,
+            "L.thumb": 0.3
+          },
+          "out"
+        ],
+        [
+          12,
+          {
+            "R": {
+              "grip": [
+                0.17,
+                -0.34,
+                -0.3
+              ],
+              "dir": [
+                -0.25,
+                0.85,
+                -0.45
+              ],
+              "back": [
+                0.75,
+                0.55,
+                0.1
+              ],
+              "fist": 0.35,
+              "thumb": 0.3,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.5
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.17,
+                -0.35,
+                -0.3
+              ],
+              "dir": [
+                0.25,
+                0.85,
+                -0.45
+              ],
+              "back": [
+                -0.75,
+                0.55,
+                0.1
+              ],
+              "fist": 0.35,
+              "thumb": 0.3,
+              "elbow": [
+                -0.5,
+                -0.4,
+                0.5
+              ]
+            }
+          },
+          "in"
+        ]
+      ]
+    },
+    "climb_rope_cycle": {
+      "_doc": "Hand over hand on a rope, one hand above the other: each hand grips for 70% of the cycle, riding down with the climb (so it stays on the rail), then lets go and reaches up. Not played: ViewModelClimb seeks it to the phase the distance climbed gives (viewmodel.json climb.cycle_m).",
+      "hold": "climb_rope",
+      "frames": 60,
+      "loop": true,
+      "keys": [
+        [
+          0,
+          {
+            "L.move": [
+              0.0,
+              -0.0,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              0.0,
+              -0.086,
+              0.0
+            ],
+            "L.move": [
+              0.0,
+              -0.086,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          15,
+          {
+            "R.move": [
+              0.0,
+              -0.107,
+              0.0
+            ],
+            "L.move": [
+              -0.035,
+              -0.064,
+              0.03
+            ],
+            "L.rot": [
+              10.0,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.275,
+            "L.thumb": 0.376
+          },
+          "lin"
+        ],
+        [
+          18,
+          {
+            "R.move": [
+              0.0,
+              -0.129,
+              0.0
+            ],
+            "L.move": [
+              -0.061,
+              -0.008,
+              0.052
+            ],
+            "L.rot": [
+              17.3,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.2,
+            "L.thumb": 0.27
+          },
+          "lin"
+        ],
+        [
+          21,
+          {
+            "R.move": [
+              0.0,
+              -0.15,
+              0.0
+            ],
+            "L.move": [
+              -0.07,
+              0.064,
+              0.06
+            ],
+            "L.rot": [
+              20.0,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.2,
+            "L.thumb": 0.27
+          },
+          "lin"
+        ],
+        [
+          24,
+          {
+            "R.move": [
+              0.0,
+              -0.171,
+              0.0
+            ],
+            "L.move": [
+              -0.061,
+              0.136,
+              0.052
+            ],
+            "L.rot": [
+              17.3,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.2,
+            "L.thumb": 0.27
+          },
+          "lin"
+        ],
+        [
+          27,
+          {
+            "R.move": [
+              0.0,
+              -0.193,
+              0.0
+            ],
+            "L.move": [
+              -0.035,
+              0.192,
+              0.03
+            ],
+            "L.rot": [
+              10.0,
+              0.0,
+              0.0
+            ],
+            "L.fist": 0.833,
+            "L.thumb": 0.376
+          },
+          "lin"
+        ],
+        [
+          30,
+          {
+            "R.move": [
+              0.0,
+              -0.214,
+              0.0
+            ],
+            "L.move": [
+              0.0,
+              0.214,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          42,
+          {
+            "R.move": [
+              0.0,
+              -0.3,
+              0.0
+            ],
+            "L.move": [
+              0.0,
+              0.128,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          45,
+          {
+            "R.move": [
+              0.035,
+              -0.278,
+              0.03
+            ],
+            "R.rot": [
+              10.0,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.275,
+            "R.thumb": 0.376,
+            "L.move": [
+              0.0,
+              0.107,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          48,
+          {
+            "R.move": [
+              0.061,
+              -0.222,
+              0.052
+            ],
+            "R.rot": [
+              17.3,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.2,
+            "R.thumb": 0.27,
+            "L.move": [
+              0.0,
+              0.085,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          51,
+          {
+            "R.move": [
+              0.07,
+              -0.15,
+              0.06
+            ],
+            "R.rot": [
+              20.0,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.2,
+            "R.thumb": 0.27,
+            "L.move": [
+              0.0,
+              0.064,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          54,
+          {
+            "R.move": [
+              0.061,
+              -0.078,
+              0.052
+            ],
+            "R.rot": [
+              17.3,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.2,
+            "R.thumb": 0.27,
+            "L.move": [
+              0.0,
+              0.043,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          57,
+          {
+            "R.move": [
+              0.035,
+              -0.022,
+              0.03
+            ],
+            "R.rot": [
+              10.0,
+              0.0,
+              0.0
+            ],
+            "R.fist": 0.833,
+            "R.thumb": 0.376,
+            "L.move": [
+              0.0,
+              0.021,
+              0.0
+            ]
+          },
+          "lin"
+        ],
+        [
+          60,
+          {
+            "L.move": [
+              0.0,
+              -0.0,
+              0.0
+            ]
+          },
+          "lin"
+        ]
+      ]
+    },
+    "climb_rope_grab": {
+      "_doc": "Grab-on: the hands come up from below the view and close on it.",
+      "hold": "climb_rope",
+      "frames": 10,
+      "keys": [
+        [
+          0,
+          {
+            "R": {
+              "grip": [
+                0.17,
+                -0.34,
+                -0.3
+              ],
+              "dir": [
+                -0.25,
+                0.85,
+                -0.45
+              ],
+              "back": [
+                0.75,
+                0.55,
+                0.1
+              ],
+              "fist": 0.35,
+              "thumb": 0.3,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.5
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.17,
+                -0.35,
+                -0.3
+              ],
+              "dir": [
+                0.25,
+                0.85,
+                -0.45
+              ],
+              "back": [
+                -0.75,
+                0.55,
+                0.1
+              ],
+              "fist": 0.35,
+              "thumb": 0.3,
+              "elbow": [
+                -0.5,
+                -0.4,
+                0.5
+              ]
+            }
+          },
+          "lin"
+        ],
+        [
+          6,
+          {
+            "R.move": [
+              0.0,
+              -0.06,
+              0.06
+            ],
+            "R.fist": 0.3,
+            "R.thumb": 0.3,
+            "L.move": [
+              0.0,
+              -0.08,
+              0.06
+            ],
+            "L.fist": 0.3,
+            "L.thumb": 0.3
+          },
+          "out"
+        ],
+        [
+          10,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "climb_rope_release": {
+      "_doc": "Let-go (off the top, off the foot or Jump): the hands open and drop out of the view.",
+      "hold": "climb_rope",
+      "frames": 12,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          3,
+          {
+            "R.move": [
+              0.0,
+              0.01,
+              0.05
+            ],
+            "R.fist": 0.25,
+            "R.thumb": 0.3,
+            "L.move": [
+              0.0,
+              0.01,
+              0.05
+            ],
+            "L.fist": 0.25,
+            "L.thumb": 0.3
+          },
+          "out"
+        ],
+        [
+          12,
+          {
+            "R": {
+              "grip": [
+                0.17,
+                -0.34,
+                -0.3
+              ],
+              "dir": [
+                -0.25,
+                0.85,
+                -0.45
+              ],
+              "back": [
+                0.75,
+                0.55,
+                0.1
+              ],
+              "fist": 0.35,
+              "thumb": 0.3,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.5
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.17,
+                -0.35,
+                -0.3
+              ],
+              "dir": [
+                0.25,
+                0.85,
+                -0.45
+              ],
+              "back": [
+                -0.75,
+                0.55,
+                0.1
+              ],
+              "fist": 0.35,
+              "thumb": 0.3,
+              "elbow": [
+                -0.5,
+                -0.4,
+                0.5
+              ]
+            }
+          },
+          "in"
         ]
       ]
     },
@@ -6133,6 +7211,16 @@
     "max_deg": 10.0,
     "pos_per_damage": 0.0012,
     "block_deg": 4.0
+  },
+  "climb": {
+    "_doc": "Climbing arms (ViewModelClimb, ADR-0057): the hand-over-hand cycle advances by the metres climbed over cycle_m (a gripping hand rides down 0.89 m of view per metre climbed at the hold's depth, so it stays on the rail), backwards climbing down, still holding on. grab_time / release_time: seconds of the grab-on and let-go. anchor: the arms stay level and square to the ladder, not the view (1 = fully).",
+    "cycle_m": {
+      "climb": 0.578,
+      "climb_rope": 0.482
+    },
+    "grab_time": 0.3,
+    "release_time": 0.35,
+    "anchor": 1.0
   },
   "_doc_off_hand": "Holds that use one hand drop the other below the view (it comes up to guard or read the tether): the owner's playtest found an open hand floating palm-down in the lower corner distracting."
 }

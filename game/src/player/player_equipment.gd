@@ -96,7 +96,8 @@ func _physics_process(delta: float) -> void:
 func _update_bow(delta: float) -> void:
 	if bow == null:
 		return
-	var free: bool = player.input_enabled and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	# Grabbing a ladder needs both hands: a drawn bow is let down.
+	var free: bool = player.input_enabled and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not player.is_climbing()
 	if bow.drawing and not free:
 		bow.let_down()
 	var tether_up: bool = viewmodel != null and viewmodel.tether_raised()
@@ -147,6 +148,8 @@ func _sync_equipped() -> void:
 # --- Actions ------------------------------------------------------------------------------
 
 func primary() -> void:
+	if player.is_climbing():
+		return  # both hands on the ladder (ADR-0057)
 	var def: ItemDef = Content.item(current)
 	var building: Node = Game.world.get(&"building") if Game.world != null else null
 	if building != null and building.call(&"handle_primary", player):
@@ -179,6 +182,8 @@ func primary() -> void:
 
 
 func secondary() -> void:
+	if player.is_climbing():
+		return  # both hands on the ladder (ADR-0057)
 	if bow != null and bow.drawing:
 		bow.let_down()
 		return
