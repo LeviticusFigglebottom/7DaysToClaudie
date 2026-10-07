@@ -56,6 +56,10 @@ var nests: Dictionary = {}
 ## {on: bool, fuel: generator hours, ammo: sentry nails}}, wires: [[piece id, piece id, spools]]}.
 ## Loads empty from saves before it (no version bump).
 var base_tech: Dictionary = {}
+## Forest encounters (ADR-0054), by site id ("enc:<cell>"), only once something changed there:
+## {visited: bool, dead: [sleeper ids], taken: [pickup ids]}. Their containers live in
+## `containers` ("enc:<cell>:<prop key>"). Loads empty from saves before it (no version bump).
+var encounters: Dictionary = {}
 
 
 func container_state(id: StringName) -> Dictionary:
@@ -108,7 +112,7 @@ func set_tree_state(chunk_key: String, index: int, state: Dictionary) -> void:
 func to_dict() -> Dictionary:
 	return {
 		"structures": structures, "blueprints": blueprints, "containers": containers, "pois": pois,
-		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "mounds": mounds, "traders": traders, "ashen": ashen, "farms": farms, "nests": nests, "base_tech": base_tech, "chunk_keys": chunk_blobs.keys(),
+		"trees": trees, "loose": loose, "flags": flags, "drops": drops, "mounds": mounds, "traders": traders, "ashen": ashen, "farms": farms, "nests": nests, "base_tech": base_tech, "encounters": encounters, "chunk_keys": chunk_blobs.keys(),
 		"poi_dressing": poi_dressing,
 	}
 
@@ -129,5 +133,6 @@ func from_dict(d: Dictionary) -> void:
 	farms = d.get("farms", {})
 	nests = d.get("nests", {})
 	base_tech = d.get("base_tech", {})
+	encounters = d.get("encounters", {})
 	# A world saved without the key predates per-run dressing (the v4 -> v5 migration sets it too).
 	poi_dressing = int(d.get("poi_dressing", 1))

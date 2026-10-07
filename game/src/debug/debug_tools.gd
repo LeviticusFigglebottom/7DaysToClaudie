@@ -2,13 +2,13 @@ extends Node
 ## Debug tools hub (autoload `DebugTools`). Owns toggles shared by overlays and tools.
 ## The actual overlay/tool nodes live in src/debug/ and are added by GameWorld in debug builds:
 ##   F1 debug menu (spawn, time, weather, teleport, seed viewer), F2 free cam, F3 AI overlay,
-##   F4 performance overlay, F6 POI route visualizer, F7 structural view. See docs/DEBUG_TOOLS.md.
+##   F4 performance overlay, F6 POI route visualizer, F7 structural view, F8 forest encounters. See docs/DEBUG_TOOLS.md.
 
 signal toggled(flag: StringName, on: bool)
 
 var flags: Dictionary = {
 	&"ai_overlay": false, &"perf_overlay": false, &"poi_routes": false, &"structure_view": false,
-	&"free_cam": false, &"god_mode": false, &"invisible": false, &"no_hunger": false,
+	&"encounters": false, &"free_cam": false, &"god_mode": false, &"invisible": false, &"no_hunger": false,
 }
 
 

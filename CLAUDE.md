@@ -90,6 +90,11 @@ check, test, smoke and tour with no generated assets; `build.yml` exports the pl
 * **A directive (challenge)**: add a def to `game/data/progression/directives/` (chapter, order,
   event from `DirectiveDef.EVENTS`, optional targets/min_tier, count, reward); a new event kind
   also needs a hook in `DirectiveTracker.setup_world()`.
+* **A forest encounter** (a small find between the towns): a def in `game/data/encounters/`
+  (EncounterDef: biomes, slope, road band, props/loose/notes/sleepers or a `poi`); density is
+  `data/config/encounters.json` x the `encounter_density` world setting; list a region's with
+  `list_encounters.gd`, see them with F8. A kind with its own behaviour (nests, dens):
+  `Encounters.register_kind(kind, on_place, on_unplace)` (ADR-0054).
 * **A command**: register in the owning system's setup (`Game.register_command`), unregister in
   `_exit_tree`, validate everything from session state + args.
 

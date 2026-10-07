@@ -797,6 +797,34 @@ func _budget_shadows(ppos: Vector3) -> void:
 		(lights[i] as Light3D).shadow_enabled = i < cap
 
 
+# --- Buildings placed by other systems (ADR-0054) ---------------------------------------------
+
+## A building another system places (a forest encounter's hermit shack): in a streamed world it
+## joins the registry and comes and goes with the ring like the rest; elsewhere it is built now
+## (a one-room def) and freed with its region or by free_extra().
+func place_extra(id: StringName, def_id: StringName, xf: Transform3D, rid: String) -> void:
+	var pd: PoiDef = Content.get_def(&"poi", def_id) as PoiDef
+	if pd == null:
+		Log.warn("poi", "extra %s: poi %s not found" % [id, def_id])
+		return
+	if registry != null:
+		registry.add_extra(id, rid, def_id, xf, Vector2(pd.footprint))
+		return
+	if instances.has(id) or _jobs.has(id):
+		return
+	_region_now = rid
+	_place_poi(def_id, id, xf, Vector2(pd.footprint), pd)
+	_region_now = ""
+
+
+## Takes a building place_extra() built out of the world (a streamed world's ring frees its own).
+func free_extra(id: StringName) -> void:
+	if registry != null:
+		return
+	var steps: StepRunner = world.terrain.streamer.steps if world != null and world.terrain.streamer != null else null
+	_free_building(id, steps, world.get(&"ai") if world != null else null)
+
+
 # --- Queries ---------------------------------------------------------------------------------
 
 ## Every building this world places, whether built yet or not: {id: instance id, def: def id,

@@ -35,6 +35,8 @@ var wildlife: Node = null
 var traders: Node = null
 var ashen: Node = null
 var farming: Node = null
+## Forest encounters (ADR-0054): campsites, wrecks and caches scattered between the towns.
+var encounters: Node = null
 var is_ready: bool = false
 ## True when this random world streams its regions (ADR-0038): only the first area is composed at
 ## 1 m at load, the RegionStreamer brings in the rest, and buildings come by distance. The default
@@ -372,6 +374,7 @@ const MODULES: Array = [
 	["wildlife", "res://src/wildlife/wildlife_manager.gd", "Waking the woods…"],
 	["traders", "res://src/trade/trader_manager.gd", "Manning the Waystation…"],
 	["ashen", "res://src/ai/ashen/ashen_director.gd", "Watching the treeline…"],
+	["encounters", "res://src/world/encounters/encounters.gd", "Leaving things in the woods…"],
 ]
 
 
