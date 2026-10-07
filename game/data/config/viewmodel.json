@@ -969,9 +969,9 @@
       "pose": {
         "R": {
           "grip": [
-            0.165,
-            -0.165,
-            -0.37
+            0.17,
+            -0.185,
+            -0.38
           ],
           "dir": [
             -0.3,
@@ -1036,26 +1036,26 @@
       "attack": ""
     },
     "molotov": {
-      "_doc": "A molotov upright in the right fist round the bottle's shoulder, raised to the chest so the rag burns in view, held a little away from the face (ADR-0057).",
+      "_doc": "A molotov by the neck in the right fist (how one is thrown), low at the right with the body hanging under the hand and the rag burning just above the knuckles, in view (ADR-0057).",
       "pose": {
         "R": {
           "grip": [
-            0.15,
-            -0.16,
+            0.16,
+            -0.14,
             -0.4
           ],
           "dir": [
-            -0.15,
-            0.95,
-            -0.25
+            -0.2,
+            0.93,
+            -0.3
           ],
           "back": [
             0.75,
             0.15,
             -0.6
           ],
-          "fist": 0.72,
-          "thumb": 0.6,
+          "fist": 1.0,
+          "thumb": 0.85,
           "elbow": [
             0.5,
             -0.5,
@@ -1100,7 +1100,7 @@
         ],
         "center": [
           0.5,
-          0.42,
+          0.74,
           0.5
         ],
         "upright": true
@@ -2785,14 +2785,14 @@
           9,
           {
             "R.move": [
-              0.11,
-              0.22,
-              0.16
+              0.1,
+              0.15,
+              0.04
             ],
             "R.rot": [
-              55,
+              45,
               -10,
-              -25
+              -20
             ],
             "R.fist": 0.85,
             "R.elbow": [
@@ -2834,17 +2834,17 @@
           14,
           {
             "R.move": [
-              -0.05,
-              0.08,
-              -0.22
+              -0.04,
+              0.03,
+              -0.24
             ],
             "R.rot": [
-              -30,
+              -55,
               0,
               0
             ],
-            "R.fist": 0.1,
-            "R.thumb": 0.1
+            "R.fist": 0.35,
+            "R.thumb": 0.2
           },
           "lin"
         ],
@@ -2872,11 +2872,11 @@
           {
             "R.move": [
               0.1,
-              0.2,
-              0.18
+              0.15,
+              0.04
             ],
             "R.rot": [
-              50,
+              45,
               -10,
               -20
             ],
@@ -2920,17 +2920,17 @@
           15,
           {
             "R.move": [
-              -0.05,
-              0.08,
-              -0.22
+              -0.04,
+              0.03,
+              -0.24
             ],
             "R.rot": [
-              -30,
+              -50,
               0,
               0
             ],
-            "R.fist": 0.1,
-            "R.thumb": 0.1
+            "R.fist": 0.35,
+            "R.thumb": 0.2
           },
           "lin"
         ],
@@ -2955,9 +2955,9 @@
           9,
           {
             "L.move": [
-              0.24,
-              0.3,
-              -0.12
+              0.26,
+              0.19,
+              -0.1
             ],
             "L.rot": [
               0,
@@ -2978,9 +2978,9 @@
           13,
           {
             "L.move": [
-              0.24,
-              0.3,
-              -0.12
+              0.26,
+              0.19,
+              -0.1
             ],
             "L.rot": [
               0,
@@ -3002,9 +3002,9 @@
           18,
           {
             "L.move": [
-              0.24,
-              0.3,
-              -0.12
+              0.26,
+              0.19,
+              -0.1
             ],
             "L.rot": [
               0,
