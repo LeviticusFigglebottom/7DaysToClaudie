@@ -33,6 +33,10 @@ radius 0.33 m, 1.75 m tall, tested a step (0.42 m) off the floor so thresholds d
   * the capsule must fit on its centre line in an area that reaches both sides;
   * a breach is swept with the crouched capsule;
   * no step across it may exceed 0.38 m (Player.STEP_HEIGHT), up or down.
+* **Windows on the route.** Each window or pony wall the route climbs through is measured. The
+  sill must be within a vault of the highest thing in front of it: the ground, a porch, or the route
+  cue's crates. That thing must be within a vault of the ground. A crate is climbed by the same
+  vault. Session 3's `poi_walk` bot doesn't climb a crate first, so its window blocks over-count.
 * **Naming the blocker.** A straight sweep names what is in the way:
   * `prop:<id>` (PoiBuilder tags the prop's collision shape) or `container:<id>`;
   * `trap:<id>` (a shotgun's chair rig) or `structure`;
@@ -65,6 +69,14 @@ radius 0.33 m, 1.75 m tall, tested a step (0.42 m) off the floor so thresholds d
   clutter never had collision. Heavier things (milk cans, crates, propane tanks) stay solid.
 * **Scatter keeps clear of door swings.** The scatter makes the same draws but places nothing in a
   cell a door opens from, so every other building's scatter is unchanged.
+
+* **The fire station's pole slides.** `fire_pole` has no collision: the brass pole stood in the middle
+  of its 1 m hole and stopped the drop.
+* **Ladder hatches are drops.** In PoiValidator's route graph, stepping onto an open ladder hatch
+  lands at the ladder's foot, as the player does. A doorway onto a hatch is an error (TD-224).
+* **Session 3's `poi_walk`** walks the real player through every room. It complements the audit,
+  and its prop findings in doorways are fixed: the tavern's bathtub, the school nurse's cabinet,
+  the laundromat chair, the Grange sick bay, the lodge's boot room, the barn's workshop door.
 
 ### Ladders are climbed
 A ladder no longer has an interaction. `Player` climbs it:
