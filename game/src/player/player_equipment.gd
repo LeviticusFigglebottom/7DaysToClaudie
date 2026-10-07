@@ -125,6 +125,8 @@ func _sync_equipped() -> void:
 # --- Actions ------------------------------------------------------------------------------
 
 func primary() -> void:
+	if ViewModelClimb.is_climbing(player):
+		return  # both hands on the ladder (ADR-0057)
 	var def: ItemDef = Content.item(current)
 	var building: Node = Game.world.get(&"building") if Game.world != null else null
 	if building != null and building.call(&"handle_primary", player):
@@ -153,6 +155,8 @@ func primary() -> void:
 
 
 func secondary() -> void:
+	if ViewModelClimb.is_climbing(player):
+		return  # both hands on the ladder (ADR-0057)
 	var def: ItemDef = Content.item(current)
 	if def != null and def.is_consumable():
 		var res: Dictionary = Game.execute(&"inventory.consume", {"player": player.state.id, "item": current})

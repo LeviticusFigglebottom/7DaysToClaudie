@@ -22,6 +22,8 @@ const LEGACY_LOOPS: Array[StringName] = [&"fp_idle", &"fp_walk_bob", &"fp_idle_g
 var cfg: Dictionary = {}
 var motion := ViewModelMotion.new()
 var tether := TetherRaise.new()
+## Climbing arms (ADR-0057): hand over hand on a ladder or rope, the item stowed meanwhile.
+var climb := ViewModelClimb.new()
 ## The hold class of what is in hand (ViewModelHolds).
 var hold_class: StringName = ViewModelHolds.EMPTY
 ## QA (fp_preview): forces the base loop (fp_carry_log, fp_blueprint) without a player or building.
@@ -70,7 +72,9 @@ func _ready() -> void:
 	FpMaterials.configure(cfg)
 	motion.setup(cfg)
 	tether.setup(cfg)
+	climb.setup(cfg)
 	_player = owner as Player if owner is Player else null
+	climb.source = _player
 	_rig = Node3D.new()
 	_rig.name = "Rig"
 	add_child(_rig)
@@ -745,7 +749,7 @@ func base_action() -> StringName:
 
 
 func _update_base(force: bool = false) -> void:
-	if _anim == null or _action != &"":
+	if _anim == null or _action != &"" or climb.busy():
 		return
 	var want: StringName = base_action()
 	if not has_action(want) or (want == _base and not force and _anim.current_animation == want):
@@ -844,6 +848,7 @@ func _process(delta: float) -> void:
 		motion.reading = tether.progress()
 		motion.update(delta, look, vel, 0.0, false, false, true, 0.0, 0)
 	_rig.transform = motion.rig_transform()
+	_climb_step(delta, cam)
 	_flame_follow(delta, look, vel)
 	if cam != null and cam.current:
 		cam.rotation = motion.camera_kick()
@@ -867,6 +872,43 @@ func _process(delta: float) -> void:
 		_screen_mat.emission_energy_multiplier = _screen_energy(tether.progress())
 	if not has_arms():
 		_fallback_motion(delta, speed)
+
+
+## Climbing (ViewModelClimb, ADR-0057): the grab-on stows the item and closes the hands on the
+## rails, the hand-over-hand cycle is seeked to the phase the metres climbed give, the let-go
+## drops the hands and the item comes back up. The arms stay level and square to the ladder.
+func _climb_step(delta: float, cam: Camera3D) -> void:
+	if climb.update(delta):
+		_action = &""
+		match climb.state:
+			ViewModelClimb.State.GRAB:
+				tether.set_raised(false)
+				_guard = false
+				_play_once(climb.grab_action(), climb.grab_time)
+			ViewModelClimb.State.RELEASE:
+				_play_once(climb.release_action(), climb.release_time)
+			ViewModelClimb.State.OFF:
+				if _held != null:
+					_held.visible = true
+				motion.start_equip()
+				_update_base(true)
+	if _held != null and climb.stows_item():
+		_held.visible = false
+	var cyc: StringName = climb.cycle_action()
+	if climb.state == ViewModelClimb.State.CLIMB and has_action(cyc):
+		if _anim.current_animation != cyc:
+			_anim.play(cyc, 0.08)
+		_anim.speed_scale = 0.0
+		_anim.seek(climb.cycle_time(_anim.get_animation(cyc).length), true)
+		_action = cyc
+		_action_end = INF
+	if cam != null and climb.anchor > 0.0:
+		_rig.transform = Transform3D(climb.rig_basis(cam.global_transform.basis), Vector3.ZERO) * _rig.transform
+
+
+## Whether the item in hand is put away (climbing).
+func item_stowed() -> bool:
+	return climb.stows_item()
 
 
 ## Moving parts of the held item, keyed by the playing use (viewmodel.json `uses.<use>.parts`:

@@ -1,0 +1,6 @@
+{
+  "_doc": "Climbing gear (ADR-0057). The rope is set down at an edge and hangs to the ground below (ClimbMount).",
+  "defs": [
+    {"id": "climbing_rope", "name": "Climbing Rope", "description": "Twelve metres of braided cordage knotted every half metre, and a stake to tie it off. Set it down at a ledge and it hangs to the ground.", "category": "placeable", "stack_max": 1, "bulk": 1.2, "value": 14, "model": "structures/climbing_rope_coil", "equip": {"slot": "hand", "kind": "placeable", "structure": "climbing_rope"}}
+  ]
+}
