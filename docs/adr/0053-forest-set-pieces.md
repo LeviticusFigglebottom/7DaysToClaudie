@@ -57,7 +57,7 @@ churchyard). PoiValidator's yard ring now walks a POI's unbuilt level-0 cells:
   across;
 * `out` joins only the ring at the footprint's edge, so a fenced compound is entered by its gate.
 
-### Round 5 (generator v10)
+### Round 5 (generator v11)
 Three more, by the same brief and checks (`test_w5_<short>.gd`, namespace `w5_<short>_`,
 `wild5_<short>` files):
 

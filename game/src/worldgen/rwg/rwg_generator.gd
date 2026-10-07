@@ -51,9 +51,10 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## the mines from its own stream, with no way in (every other place stays where it was).
 ## 9: the forest set pieces (ADR-0053) join the wilderness pool as `late` entries, each from its own
 ## stream after the farmsteads.
-## 10: round 5 of the wilderness set pieces (ADR-0053): more `late` entries (the treehouse holdout,
+## 10: (session 3's caves.)
+## 11: round 5 of the wilderness set pieces (ADR-0053): more `late` entries (the treehouse holdout,
 ## the fish hatchery, the hot springs bathhouse); the places before them stay where they were.
-const VERSION: int = 10
+const VERSION: int = 11
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]

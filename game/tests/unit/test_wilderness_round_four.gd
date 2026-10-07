@@ -3,12 +3,12 @@ extends GutTest
 ## from the wilderness pool. Each building's own test (test_w4_/w5_<short>.gd) proves it validates clean, is a full
 ## dungeon and keeps its route clear for the player's capsule; this one checks how they join the
 ## world: one `late` pool entry each on its site, placed from their own streams after the
-## farmsteads (generator v9, v10), in regions as dangerous as their entries ask, and in most worlds.
+## farmsteads (generator v9, v11), in regions as dangerous as their entries ask, and in most worlds.
 
 const Generator := preload("res://src/worldgen/rwg/rwg_generator.gd")
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 
-## id -> [tier, site]. Round 5 (generator v10) added the last three.
+## id -> [tier, site]. Round 5 (generator v11) added the last three.
 const ROUND_FOUR: Dictionary = {
 	"w4_hillside_bunker": [3, "forest"],
 	"w4_cordon_plane_wreck": [3, "forest"],
@@ -52,7 +52,7 @@ func test_each_has_one_late_entry() -> void:
 
 
 func test_generator_version_counts_them() -> void:
-	assert_gte(Generator.VERSION, 10, "worlds cached before the set pieces regenerate")
+	assert_gte(Generator.VERSION, 11, "worlds cached before the set pieces regenerate")
 
 
 func test_worlds_place_them_where_their_entries_allow() -> void:

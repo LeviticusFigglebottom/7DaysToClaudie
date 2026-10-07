@@ -25,7 +25,7 @@ extends GutTest
 ## stream; the town region's ground, roads and masks moved with it), and for VERSION 9 (ADR-0053:
 ## the forest set pieces, `late` pool entries from their own streams; one reaches the town region,
 ## so pads, tracks and masks moved there, and the drop-site region's world id in `placements`), and
-## for VERSION 10 (round 5 of the set pieces: none lands in either region, so only `placements`).
+## for VERSION 11 (round 5 of the set pieces: none lands in either region, so only `placements`).
 ## Larch Hollow's were re-recorded when Ezra's camp was placed west of Larch Pond (ADR-0058: its
 ## pad), and when Waystation 9 was placed in it (ADR-0039: a clearing, its spawn and its drive;
 ## its 1 m variant, which only SLOW_TESTS=1 runs, a little later), and again when the Corvane
