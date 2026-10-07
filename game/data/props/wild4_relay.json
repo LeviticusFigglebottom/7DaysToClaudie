@@ -152,8 +152,8 @@
    "hp": 800,
    "size": [
     2.8,
-    1.4,
-    1.2
+    1.6,
+    1.0
    ],
    "blocks_sight": true,
    "rooms": [
@@ -176,8 +176,8 @@
    "physics": "static",
    "hp": 600,
    "size": [
-    1.6,
-    1.2,
+    1.7,
+    1.0,
     0.9
    ],
    "blocks_sight": true,
