@@ -44,6 +44,12 @@ var spawn_at: Vector3 = Vector3.ZERO
 var warm_models: bool = false
 ## Models warmed by the last load (tools, LoadMeter).
 var warmed: int = 0
+## Set before loading to also prepare the terrain's pure data here (TD-197): the cellars and
+## splat images of the 1 m regions (RegionTerrain meta "holes" / "splat", which TerrainManager
+## takes) and the layer textures' data. They were ~250 ms of the boot's terrain frame.
+var prepare_terrain: bool = false
+## TerrainTextures.prepare() when prepare_terrain is set and none are shared yet; null otherwise.
+var terrain_textures: TerrainTextures = null
 ## A random world's map image (the loading screen shows it, ADR-0038 §4); "" otherwise.
 var map_path: String = ""
 ## Region states for the loading screen's map: rid -> LoadingMap.PENDING/WORKING/DONE.
@@ -67,12 +73,14 @@ func load_world(world_dir: String, detail_spacing: float = 1.0, coarse_spacing: 
 	if not world.generator.is_empty() and stream:
 		_compose_streamed(ids, detail_spacing, coarse_spacing)
 		_resolve_lots()
+		_prepare_terrain()
 		_set_stage("Ready", 1.0)
 		done = true
 		return
 	if not world.generator.is_empty():
 		_compose_parallel(ids, detail_spacing, coarse_spacing, only_regions)
 		_resolve_lots()
+		_prepare_terrain()
 		_set_stage("Ready", 1.0)
 		done = true
 		return
@@ -93,8 +101,22 @@ func load_world(world_dir: String, detail_spacing: float = 1.0, coarse_spacing: 
 			coarse[rid] = ct
 			_mutex.unlock()
 	_resolve_lots()
+	_prepare_terrain()
 	_set_stage("Ready", 1.0)
 	done = true
+
+
+## See prepare_terrain. The detailed regions are this thread's until the load is done.
+func _prepare_terrain() -> void:
+	if not prepare_terrain:
+		return
+	_set_stage("Laying the ground", 0.995)
+	for rid: String in detailed:
+		var rt: RegionTerrain = detailed[rid]
+		rt.set_meta(&"holes", TerrainHoles.from_regions({rid: rt}, world_seed))
+		TerrainManager.prepare_splat(rt)
+	if not TerrainTextures.is_shared_ready():
+		terrain_textures = TerrainTextures.prepare()
 
 
 func _resolve_lots() -> void:

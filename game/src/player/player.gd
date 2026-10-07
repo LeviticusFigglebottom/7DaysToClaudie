@@ -15,6 +15,11 @@ const STEP_HEIGHT: float = 0.38
 ## Obstacles up to this height can be vaulted or mantled with Jump (window sills, fences, crates).
 const VAULT_MAX: float = 1.3
 const VAULT_TIME: float = 0.55
+## The capsule during a dive through an opening the crouched one doesn't fit: a 0.7 x 1.1 m kit
+## window is narrower than the 0.66 m capsule plus Jolt's collision margins, and the crouched body
+## lifted onto its sill is taller than the opening.
+const DIVE_HEIGHT: float = 0.9
+const DIVE_RADIUS: float = 0.25
 const WORLD_MASK: int = (1 << 0) | (1 << 1) | (1 << 2)
 ## Ladders (ADR-0051): metres a second up or down the rungs, how far in front of the rails the body
 ## hangs, and how close (sideways, in front) a ladder must be to grab by walking into it.
@@ -41,6 +46,8 @@ var god_mode: bool = false
 @onready var collision: CollisionShape3D = $Collision
 @onready var interaction: PlayerInteraction = $Interaction
 @onready var equipment: PlayerEquipment = $Equipment
+## Raising a gun to the eye (ADR-0057): zoom, slower walk and turn.
+var aim: PlayerAim = null
 
 var _pitch: float = 0.0
 var _step_dist: float = 0.0
@@ -50,6 +57,8 @@ var _fall_speed: float = 0.0
 var _scent_t: float = 0.0
 var _eye_height: float = 1.65
 var _base_fov: float = 75.0
+## The field of view before aiming narrows it (the sprint kick eases in and out of it).
+var _fov: float = 75.0
 var _shake: float = 0.0
 ## Active vault: control points (start, over the top, landing) and progress 0..1 (-1 = none).
 var _vault_path: PackedVector3Array = []
@@ -72,6 +81,7 @@ func _ready() -> void:
 	collision_layer = 1 << 3
 	collision_mask = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 12)
 	_base_fov = Settings.fov
+	_fov = _base_fov
 	camera.fov = _base_fov
 	# The options screen can change the field of view mid-game.
 	Settings.settings_changed.connect(_on_settings_changed)
@@ -80,6 +90,9 @@ func _ready() -> void:
 	sense.name = "SleeperSense"
 	sense.player = self
 	add_child(sense)
+	aim = PlayerAim.new()
+	aim.name = "Aim"
+	add_child(aim)
 
 
 
@@ -120,7 +133,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseMotion:
 		var m: InputEventMouseMotion = event
-		var sens: float = Settings.mouse_sensitivity
+		var sens: float = Settings.mouse_sensitivity * (aim.look_mult() if aim != null else 1.0)
 		rotation.y -= m.relative.x * sens
 		_pitch = clampf(_pitch - m.relative.y * sens * (-1.0 if Settings.invert_y else 1.0), deg_to_rad(-88.0), deg_to_rad(88.0))
 		head.rotation.x = _pitch
@@ -152,13 +165,15 @@ func _physics_process(delta: float) -> void:
 		_sprint_locked = true
 	elif _sprint_locked and stats.stamina >= float(Content.config(&"survival").get("stamina", {}).get("sprint_recover", 30.0)):
 		_sprint_locked = false
-	sprinting = want_sprint and not crouching and not _sprint_locked
+	sprinting = want_sprint and not crouching and not _sprint_locked and not (aim != null and aim.wanted)
 	if sprinting:
 		speed = float(cfg.get("sprint_speed", 6.2))
 	elif crouching:
 		speed = float(cfg.get("crouch_speed", 1.7))
 	speed *= 1.0 + mods.modifier("move_speed_mult")
 	speed *= 1.0 - 0.12 * carrying
+	if aim != null:
+		speed *= aim.move_mult()
 	var swimming: bool = in_water_depth > SWIM_DEPTH - 0.1
 	if in_water_depth > 0.5:
 		speed *= 0.55
@@ -236,7 +251,8 @@ func _set_crouch(on: bool) -> void:
 ## onto it. The camera eases up instead of popping.
 func _try_step_up(delta: float) -> void:
 	var h := Vector3(velocity.x, 0.0, velocity.z)
-	if h.length() < 0.3:
+	# Crouch speed eases in from a standstill and stayed under 0.3 m/s at a ledge (poi_walk).
+	if h.length() < (0.1 if crouching else 0.3):
 		return
 	var motion: Vector3 = h.normalized() * maxf(h.length() * delta, RADIUS * 0.5)
 	var xf: Transform3D = global_transform
@@ -245,18 +261,24 @@ func _try_step_up(delta: float) -> void:
 		return
 	if hit.get_normal().angle_to(Vector3.UP) <= floor_max_angle:
 		return
-	var up := Vector3.UP * STEP_HEIGHT
-	if test_move(xf, up):
+	# The full step first; under a low header (a breach) only as much as the headroom allows.
+	for lift_h: float in [STEP_HEIGHT, 0.26, 0.16]:
+		var up := Vector3.UP * lift_h
+		if test_move(xf, up):
+			continue
+		var raised: Transform3D = xf.translated(up)
+		if test_move(raised, motion):
+			continue
+		var down := KinematicCollision3D.new()
+		if not test_move(raised.translated(motion), -up, down):
+			continue
+		if down.get_normal().angle_to(Vector3.UP) > floor_max_angle:
+			continue
+		_step_up(lift_h - down.get_travel().length())
 		return
-	var raised: Transform3D = xf.translated(up)
-	if test_move(raised, motion):
-		return
-	var down := KinematicCollision3D.new()
-	if not test_move(raised.translated(motion), -up, down):
-		return
-	if down.get_normal().angle_to(Vector3.UP) > floor_max_angle:
-		return
-	var rise: float = STEP_HEIGHT - down.get_travel().length()
+
+
+func _step_up(rise: float) -> void:
 	if rise < 0.03:
 		return
 	global_position.y += rise
@@ -281,16 +303,20 @@ func _try_vault() -> bool:
 	if state.stats.stamina < cost:
 		return false
 	var face: Vector3 = low["position"]
-	# Top of the obstacle just past its face; several depths so thin fence boards are found too.
+	# Top of the obstacle past its face; several depths so thin fence boards are found too, and
+	# deeper ones so a window over a foundation plinth is measured at its sill, not the plinth
+	# (the vault lifted the body onto the plinth and hit the wall under the sill, poi_walk).
 	var rise: float = -1.0
-	for depth: float in [0.03, 0.08, 0.15]:
+	for depth: float in [0.03, 0.08, 0.15, 0.3, 0.45, 0.6]:
 		var probe: Vector3 = face + fwd * depth
 		var from := Vector3(probe.x, feet.y + VAULT_MAX + 0.15, probe.z)
 		var pq := PhysicsPointQueryParameters3D.new()
 		pq.position = from
 		pq.collision_mask = WORLD_MASK
 		if not space.intersect_point(pq, 1).is_empty():
-			return false  # solid above vault height: a wall, not a sill
+			if depth <= 0.15:
+				return false  # solid above vault height at the face: a wall, not a sill
+			break  # a wall behind what was found: vault onto that, no further
 		var top: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(from, Vector3(probe.x, feet.y + 0.25, probe.z), WORLD_MASK, [get_rid()]))
 		if not top.is_empty():
 			rise = maxf(rise, (top["position"] as Vector3).y - feet.y)
@@ -301,10 +327,23 @@ func _try_vault() -> bool:
 	if not crouching:
 		return false
 	_vault_restand = not was_crouching
+	# Crouched first; then a dive (a lower capsule for the vault only), which a 0.7 x 1.1 m kit
+	# window needs: the crouched capsule lifted onto its sill is taller than the opening (poi_walk).
+	for dims: Vector2 in [Vector2(CROUCH_HEIGHT, RADIUS), Vector2(DIVE_HEIGHT, DIVE_RADIUS)]:
+		_set_capsule(dims.x, dims.y)
+		if _vault_over(feet, face, fwd, rise, cost):
+			return true
+	_set_capsule(CROUCH_HEIGHT)
+	_set_crouch(was_crouching)
+	return false
+
+
+## The vault's moves with the current capsule: up, across (the far side first, then onto the top),
+## down; starts it and returns true if one is clear.
+func _vault_over(feet: Vector3, face: Vector3, fwd: Vector3, rise: float, cost: float) -> bool:
 	var lift := Vector3.UP * (rise + 0.08)
 	var xf: Transform3D = global_transform
 	if test_move(xf, lift):
-		_set_crouch(was_crouching)
 		return false
 	var raised: Transform3D = xf.translated(lift)
 	var to_face: float = maxf(0.0, (face - feet).dot(fwd))
@@ -329,8 +368,14 @@ func _try_vault() -> bool:
 		_emit_noise(float(cfg.get("noise", {}).get("vault", 8.0)), &"vault")
 		Audio.play_3d(&"sfx/land_soft", global_position, {"volume_db": -8.0})
 		return true
-	_set_crouch(was_crouching)
 	return false
+
+
+func _set_capsule(h: float, r: float = RADIUS) -> void:
+	var cap: CapsuleShape3D = collision.shape
+	cap.radius = r
+	cap.height = h
+	collision.position.y = h * 0.5
 
 
 func _vault_step(delta: float) -> void:
@@ -350,6 +395,8 @@ func _vault_step(delta: float) -> void:
 		_vault_path = PackedVector3Array()
 		_was_on_floor = true
 		_fall_speed = 0.0
+		# Back to the crouched capsule after a dive, then up if the vault began standing.
+		_set_capsule(CROUCH_HEIGHT)
 		if _vault_restand:
 			_set_crouch(false)
 
@@ -371,12 +418,15 @@ func _grab_ladder(wish: Vector3, dir: Vector2) -> bool:
 		var face: Vector3 = lad.face()
 		var rel: Vector3 = feet - foot
 		var out: float = rel.dot(face)
-		if absf(rel.dot(face.cross(Vector3.UP))) > 0.45 or wish.normalized().dot(-face) < 0.5:
+		if absf(rel.dot(face.cross(Vector3.UP))) > 0.45:
 			continue
-		if feet.y > foot.y - 0.3 and feet.y < top_y - 0.6 and out > -0.1 and out < LADDER_REACH:
+		var toward: float = wish.normalized().dot(-face)
+		var at_top: bool = absf(feet.y - top_y) < 0.35
+		if toward >= 0.5 and feet.y > foot.y - 0.3 and feet.y < top_y - 0.6 and out > -0.1 and out < LADDER_REACH:
 			_ladder = lad
-		elif absf(feet.y - top_y) < 0.35 and out > -0.1 and out < 1.25:
-			# Down through the hatch: hang on the top rungs, just below the floor.
+		elif at_top and ((toward >= 0.5 and out > -0.1 and out < 1.25) or (toward <= -0.5 and out <= -0.1 and out > -1.25)):
+			# Down through the hatch, or over the top from the landing behind the rails (a stand's
+			# ladder, a rope): hang on the top rungs, just below the floor.
 			_ladder = lad
 			_climb_down_hold = true
 			global_position = foot + face * CLIMB_OFF + Vector3.UP * (lad.height - 0.25)
@@ -569,7 +619,9 @@ func _head_motion(delta: float, speed: float) -> void:
 		camera.h_offset = 0.0
 		camera.v_offset = 0.0
 	var target_fov: float = _base_fov + (6.0 if sprinting and speed > 4.0 else 0.0)
-	camera.fov = lerpf(camera.fov, target_fov, minf(1.0, 6.0 * delta))
+	_fov = lerpf(_fov, target_fov, minf(1.0, 6.0 * delta))
+	# Aiming narrows it by the gun's zoom, eased with the raise itself (PlayerAim).
+	camera.fov = aim.fov(_fov) if aim != null else _fov
 
 
 # --- Damage / death ---------------------------------------------------------------------------

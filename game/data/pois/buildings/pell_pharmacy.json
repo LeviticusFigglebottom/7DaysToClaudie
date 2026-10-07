@@ -65,7 +65,7 @@
         {"id": "sales_east_window", "at": [15, 11], "side": "E", "type": "window2", "state": "boarded"},
         {"id": "dock_door", "at": [2, 0], "side": "N", "type": "door2", "state": "broken", "model": "door_metal"},
         {"id": "bay_window", "at": [0, 3], "side": "W", "type": "window", "state": "boarded"},
-        {"id": "bay_doors", "at": [5, 2], "side": "E", "type": "door2", "state": "open"},
+        {"id": "bay_doors", "at": [5, 2], "side": "E", "type": "door2", "state": "open", "swing": "W"},
         {"id": "stock_window", "at": [15, 2], "side": "E", "type": "window", "state": "boarded"},
         {"id": "stock_door", "at": [12, 4], "side": "S", "type": "door", "state": "closed"},
         {"id": "office_door", "at": [2, 5], "side": "S", "type": "door", "state": "closed"},

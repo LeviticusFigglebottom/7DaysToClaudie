@@ -350,11 +350,11 @@ func test_the_vegetation_leaves_out_what_stands_in_a_clearing() -> void:
 	for i: int in 6:
 		if vm._is_removed(Vector2i(0, 0), i):
 			hidden.append(i)
-	assert_eq(hidden, [0, 1, 2], "the trees and plants within 9 m are left out, indices unchanged")
-	assert_eq(vm.clearing_count(), 1, "one mat, one clearing in the shared store (ADR-0054)")
+	assert_eq(hidden, [0, 1, 2], "the trees and plants within 9 m are hidden, indices unchanged")
+	assert_false(vm._cleared.has(Vector2i(5, 5)), "far chunks untouched")
 	vm.set_clearings(&"nests", [])
-	assert_eq(vm.clearing_count(), 0)
-	assert_false(vm._is_removed(Vector2i(0, 0), 0), "given back when the mat goes")
+	assert_eq(vm.clearing_count(), 0, "given back")
+	assert_false(vm._is_removed(Vector2i(0, 0), 0), "nothing hidden once the nest's mats go")
 
 
 func test_the_placement_check_finds_roads_water_and_pads() -> void:

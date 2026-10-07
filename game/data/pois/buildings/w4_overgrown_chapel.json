@@ -1,0 +1,2575 @@
+{
+ "_doc": "Forest set pieces, round 4 (ADR-0053): Shiloh Chapel, a pioneer timber chapel in a forest clearing half taken back by the woods: its bell-cote fallen into the long grass, ivy in through the lancets, a lych gate in a tumbled churchyard wall, leaning stones, the Teague family plot in its iron railing, an open grave and graves the Bloom has broken. Below: the undercroft where the pastor nursed the sick (level -1, under the nave and the vestry) and the Teague vault dug into the bank (a kit room under the w4_chapel_mausoleum_front shell, a switchback stair down to level -1 and on to the buried vault on level -2: its niche hall, the inner vault and the pastor's passage back up into the undercroft). Route: through the lych gate (cans) -> the front doors boarded by the Cordon -> round the east side past the open grave (jaws in the grass) -> in by a smashed window over a crate -> the nave (the vigil in the pews wakes) -> the narthex ladder up to the choir loft (loose boards; the register) -> down by the gap in the loft rail -> through the broken floor into the undercroft (the sick wake) -> up the ladder into the vestry (barricaded from inside: the diary and the vault key) -> out by the vestry's bolted back door -> the Teague plot (a letter on a grave) -> the vault's chained iron door (the key) -> down the switchback -> the niche hall (the dead in the walls wake) -> the inner vault (the pastor, guardian; the silver and the reliquary) -> the bolted passage back up into the undercroft -> the vestry ladder and out. Props: props/wild4_chapel.json.",
+ "defs": [
+  {
+   "id": "w4_overgrown_chapel",
+   "name": "Shiloh Chapel",
+   "tier": 2,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    30,
+    34
+   ],
+   "origin": [
+    2,
+    2
+   ],
+   "author": "Hollowmere team (forest round 4)",
+   "population": "church",
+   "story": "Shiloh Chapel was raised by the valley's first settlers out of hand-hewn fir in 1871, and by the end it had no congregation but the families up the logging roads and Pastor Elias Varner, who kept its roof on with his own hands. When the Cordon closed the roads, the sick from the ridge cabins were turned back at the checkpoints and came to the only door still open. Varner nursed them in the undercroft. When they died and got up again he could not put them down: he carried them to the Teague vault in the bank behind the chapel, laid them in the niches with the settlers' bones, chained the iron door and wrote them in his register as buried. Their families sat the vigil in the pews and would not leave. The Cordon nailed the doors over them all and drove away. The Bloom came up through the graves of the ones who had died honestly, and the bell-cote, rotten through, came down off the gable into the long grass. In the end Varner carried the church silver and the settlers' reliquary down into the vault, left the key in the vestry with his diary, went down the old passage from the undercroft and bolted it behind him.",
+   "style": {
+    "exterior": "siding_white",
+    "interior": "plaster_white",
+    "floor": "wood_pine",
+    "ceiling": "wood_paneling_dark",
+    "floor_height": 0.6,
+    "decay": 0.7,
+    "damaged_walls": 0.08,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.25
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "z",
+     "pitch": 45,
+     "overhang": 0.4,
+     "material": "roof_cedar",
+     "color": "#5b6050",
+     "gutters": false,
+     "roofs": [
+      {
+       "level": 0,
+       "at": [
+        16,
+        10
+       ],
+       "type": "shed",
+       "slope": "E",
+       "pitch": 22
+      },
+      {
+       "level": 0,
+       "at": [
+        12,
+        3
+       ],
+       "type": "none"
+      },
+      {
+       "level": 0,
+       "at": [
+        21,
+        16
+       ],
+       "type": "shed",
+       "slope": "S",
+       "pitch": 20
+      }
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "..........................",
+      "...........MM.............",
+      "...........MM.............",
+      "...........MM.............",
+      "...........MM.............",
+      "...........MM.............",
+      "...........MM.............",
+      "..........................",
+      "..........................",
+      ".........NNNNNNVVV........",
+      ".........NNNNNNVVV........",
+      ".........NNNNNNVVV........",
+      ".........NNNNNNVVV........",
+      ".........NNNNNN...........",
+      ".........NNNNNN...........",
+      ".........NNNNNN.....TTT...",
+      ".........NNNNNN.....TTT...",
+      ".........NNNNNN.....TTT...",
+      ".........NNNNNN...........",
+      ".........NNNNNN...........",
+      ".........NNNNNN...........",
+      ".........XXXXXX...........",
+      ".........XXXXXX...........",
+      ".........XXXXXX...........",
+      "..........................",
+      "..........................",
+      "..........................",
+      "..........................",
+      "..........................",
+      ".........................."
+     ],
+     "rooms": {
+      "M": {
+       "name": "Vault porch",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "rock_floor",
+       "ceiling": "rock_limestone"
+      },
+      "N": {
+       "name": "Nave",
+       "type": "church",
+       "wall": "plaster_white",
+       "floor": "wood_pine",
+       "storeys": 2,
+       "open_roof": true
+      },
+      "V": {
+       "name": "Vestry",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      },
+      "X": {
+       "name": "Narthex",
+       "type": "hallway",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      },
+      "T": {
+       "name": "Tool shed",
+       "type": "storage",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         ^^^^^^           ",
+      "         LLLLLL           ",
+      "         LLLLLL           ",
+      "         LLLLLL           ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          "
+     ],
+     "rooms": {
+      "L": {
+       "name": "Choir loft",
+       "type": "church",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "open_roof": true,
+       "gallery": "rail"
+      }
+     }
+    },
+    {
+     "level": -1,
+     "plan": [
+      "                          ",
+      "                          ",
+      "           QQ             ",
+      "           QQ             ",
+      "           QQ             ",
+      "           QQ             ",
+      "           QQ             ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "               CCC        ",
+      "         UUUUUUCCC        ",
+      "         UUUUUUCCC        ",
+      "         UUUUUU           ",
+      "         UUUUUU           ",
+      "         UUUUUU           ",
+      "         UUUUUU           ",
+      "         UUUUUU           ",
+      "         UUUUUU           ",
+      "         UUUUUU           ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          "
+     ],
+     "rooms": {
+      "Q": {
+       "name": "Vault stair",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "rock_floor",
+       "ceiling": "rock_limestone"
+      },
+      "U": {
+       "name": "Undercroft",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "cave_mud",
+       "ceiling": "wood_paneling_dark"
+      },
+      "C": {
+       "name": "Vestry cellar",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "cave_mud",
+       "ceiling": "wood_paneling_dark"
+      }
+     }
+    },
+    {
+     "level": -2,
+     "buried": true,
+     "plan": [
+      "    HHHHHHHHFF            ",
+      "    HHHHHHHHFF            ",
+      "    HHHHHHHHFF            ",
+      "    HHHHHHHHFF            ",
+      "    RRRRRR  FF            ",
+      "    RRRRRR  FF            ",
+      "    RRRRRR                ",
+      "    RRRRRR                ",
+      "         P                ",
+      "         P                ",
+      "         P                ",
+      "         P                ",
+      "         P                ",
+      "         P                ",
+      "         P                ",
+      "         P                ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          "
+     ],
+     "rooms": {
+      "H": {
+       "name": "Niche hall",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "rock_floor",
+       "ceiling": "rock_limestone"
+      },
+      "F": {
+       "name": "Stair foot",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "rock_floor",
+       "ceiling": "rock_limestone"
+      },
+      "R": {
+       "name": "Inner vault",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "rock_floor",
+       "ceiling": "rock_limestone"
+      },
+      "P": {
+       "name": "Pastor's passage",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "cave_mud",
+       "ceiling": "rock_limestone"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_doors",
+     "at": [
+      11,
+      23
+     ],
+     "side": "S",
+     "type": "door2",
+     "state": "barricaded"
+    },
+    {
+     "id": "narthex_win_w",
+     "at": [
+      9,
+      23
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "narthex_win_e",
+     "at": [
+      14,
+      23
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "nave_doors",
+     "at": [
+      11,
+      21
+     ],
+     "side": "N",
+     "type": "door2",
+     "state": "open"
+    },
+    {
+     "id": "lancet_w1",
+     "at": [
+      9,
+      11
+     ],
+     "side": "W",
+     "type": "lancet",
+     "state": "closed"
+    },
+    {
+     "id": "lancet_w2",
+     "at": [
+      9,
+      14
+     ],
+     "side": "W",
+     "type": "lancet",
+     "state": "broken"
+    },
+    {
+     "id": "lancet_w3",
+     "at": [
+      9,
+      17
+     ],
+     "side": "W",
+     "type": "lancet",
+     "state": "boarded"
+    },
+    {
+     "id": "lancet_e1",
+     "at": [
+      14,
+      14
+     ],
+     "side": "E",
+     "type": "lancet",
+     "state": "closed"
+    },
+    {
+     "id": "lancet_e2",
+     "at": [
+      14,
+      17
+     ],
+     "side": "E",
+     "type": "lancet",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "entry_window",
+     "at": [
+      14,
+      19
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken",
+     "cue": [
+      "crate",
+      "scuffs"
+     ]
+    },
+    {
+     "id": "altar_lancet_a",
+     "at": [
+      11,
+      9
+     ],
+     "side": "N",
+     "type": "lancet",
+     "state": "closed"
+    },
+    {
+     "id": "altar_lancet_b",
+     "at": [
+      12,
+      9
+     ],
+     "side": "N",
+     "type": "lancet",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "vestry_nave_door",
+     "at": [
+      15,
+      11
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "barricaded",
+     "barricade": "furniture"
+    },
+    {
+     "id": "vestry_back_door",
+     "at": [
+      16,
+      9
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked_inside",
+     "lock": "bolt"
+    },
+    {
+     "id": "vestry_window",
+     "at": [
+      17,
+      9
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "vault_door",
+     "at": [
+      12,
+      6
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "w4_chapel_vault_key",
+     "lock": "chain",
+     "model": "door_metal",
+     "hp": 900
+    },
+    {
+     "id": "shed_door",
+     "at": [
+      20,
+      16
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed",
+     "model": "door_plank"
+    },
+    {
+     "id": "loft_gap",
+     "at": [
+      13,
+      21
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "loft_win_w",
+     "at": [
+      9,
+      23
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "loft_win_e",
+     "at": [
+      14,
+      22
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken",
+     "level": 1,
+     "cue": "none"
+    },
+    {
+     "id": "cellar_arch",
+     "at": [
+      15,
+      11
+     ],
+     "side": "W",
+     "type": "open",
+     "level": -1
+    },
+    {
+     "id": "niche_arch",
+     "at": [
+      11,
+      1
+     ],
+     "side": "E",
+     "type": "open",
+     "level": -2
+    },
+    {
+     "id": "vault_grille",
+     "at": [
+      8,
+      3
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal",
+     "level": -2
+    },
+    {
+     "id": "passage_door",
+     "at": [
+      9,
+      7
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked_inside",
+     "lock": "bolt",
+     "model": "door_metal",
+     "level": -2
+    }
+   ],
+   "stairs": [
+    {
+     "level": -1,
+     "at": [
+      11,
+      5
+     ],
+     "dir": "N"
+    },
+    {
+     "level": -2,
+     "at": [
+      12,
+      2
+     ],
+     "dir": "S"
+    },
+    {
+     "level": -2,
+     "at": [
+      9,
+      12
+     ],
+     "dir": "S"
+    }
+   ],
+   "ladders": [
+    {
+     "level": 0,
+     "at": [
+      9,
+      22
+     ],
+     "side": "W",
+     "hatch": true
+    },
+    {
+     "level": -1,
+     "at": [
+      17,
+      10
+     ],
+     "side": "E",
+     "hatch": true
+    }
+   ],
+   "holes": [
+    {
+     "level": 0,
+     "at": [
+      12,
+      13
+     ]
+    }
+   ],
+   "props": [
+    {
+     "id": "altar",
+     "prop": "w4_chapel_altar",
+     "at": [
+      11,
+      9
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "altar_candles",
+     "prop": "candle_cluster",
+     "pos": [
+      11.45,
+      9.45
+     ],
+     "y": 1.0,
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "pulpit",
+     "prop": "w4_chapel_pulpit",
+     "pos": [
+      9.75,
+      10.95
+     ],
+     "rot": 15,
+     "variant": "worn"
+    },
+    {
+     "id": "pew_l1",
+     "prop": "w4_chapel_pew",
+     "pos": [
+      10.03,
+      14.3
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "pew_r1",
+     "prop": "w4_chapel_pew",
+     "pos": [
+      13.97,
+      14.3
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "pew_l2",
+     "prop": "w4_chapel_pew",
+     "pos": [
+      10.03,
+      15.6
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "pew_r2",
+     "prop": "w4_chapel_pew",
+     "pos": [
+      13.97,
+      15.6
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "pew_l3",
+     "prop": "w4_chapel_pew",
+     "pos": [
+      10.03,
+      16.9
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "pew_r3",
+     "prop": "w4_chapel_pew",
+     "pos": [
+      13.97,
+      16.9
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "pew_l4",
+     "prop": "w4_chapel_pew",
+     "pos": [
+      10.03,
+      18.2
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "pew_r4",
+     "prop": "w4_chapel_pew",
+     "pos": [
+      13.97,
+      18.2
+     ],
+     "rot": 180,
+     "variant": "destroyed"
+    },
+    {
+     "id": "nave_ivy",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      9,
+      15
+     ],
+     "against": "W",
+     "variant": "clean"
+    },
+    {
+     "id": "nave_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      11.2,
+      12.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "narthex_pew",
+     "prop": "w4_chapel_pew",
+     "at": [
+      14,
+      22
+     ],
+     "against": "E",
+     "variant": "worn"
+    },
+    {
+     "id": "narthex_candles",
+     "prop": "candle_cluster",
+     "pos": [
+      10.3,
+      23.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "loft_organ",
+     "prop": "civic_reed_organ",
+     "at": [
+      11,
+      23
+     ],
+     "against": "S",
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "choir_chest",
+     "prop": "farm_hope_chest",
+     "at": [
+      13,
+      23
+     ],
+     "against": "S",
+     "level": 1,
+     "container": "w4_chapel_choir",
+     "variant": "worn"
+    },
+    {
+     "id": "loft_hymnals",
+     "prop": "civic_hymnals",
+     "pos": [
+      14.4,
+      21.6
+     ],
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "vestry_table",
+     "prop": "side_table",
+     "at": [
+      15,
+      10
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "id": "vestry_chair",
+     "prop": "chair_wood",
+     "pos": [
+      15.85,
+      10.55
+     ],
+     "rot": -100,
+     "variant": "worn"
+    },
+    {
+     "id": "vestry_press",
+     "prop": "wardrobe",
+     "at": [
+      16,
+      12
+     ],
+     "against": "S",
+     "container": "w4_chapel_vestry",
+     "variant": "worn"
+    },
+    {
+     "id": "vestry_candles",
+     "prop": "candle_cluster",
+     "pos": [
+      15.4,
+      10.15
+     ],
+     "y": 0.6,
+     "variant": "worn"
+    },
+    {
+     "id": "cot_a",
+     "prop": "wild_cot_canvas",
+     "at": [
+      14,
+      13
+     ],
+     "against": "E",
+     "variant": "worn",
+     "level": -1
+    },
+    {
+     "id": "cot_b",
+     "prop": "wild_cot_canvas",
+     "at": [
+      14,
+      17
+     ],
+     "against": "E",
+     "variant": "worn",
+     "level": -1
+    },
+    {
+     "id": "cot_c",
+     "prop": "civic_army_cot",
+     "at": [
+      11,
+      19
+     ],
+     "against": "S",
+     "variant": "worn",
+     "level": -1
+    },
+    {
+     "id": "ward_chest",
+     "prop": "farm_hope_chest",
+     "at": [
+      12,
+      19
+     ],
+     "against": "S",
+     "level": -1,
+     "container": "w4_chapel_ward",
+     "variant": "worn"
+    },
+    {
+     "id": "ward_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      13.4,
+      18.7
+     ],
+     "level": -1,
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "ward_bucket",
+     "prop": "bucket",
+     "pos": [
+      10.4,
+      19.5
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "cellar_shelf",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      16,
+      12
+     ],
+     "against": "S",
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "niche_a",
+     "prop": "w4_chapel_crypt_niche",
+     "at": [
+      5,
+      0
+     ],
+     "against": "N",
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "niche_b",
+     "prop": "w4_chapel_crypt_niche",
+     "at": [
+      8,
+      0
+     ],
+     "against": "N",
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "niche_c",
+     "prop": "w4_chapel_crypt_niche",
+     "at": [
+      5,
+      3
+     ],
+     "against": "S",
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "niche_d",
+     "prop": "w4_chapel_crypt_niche",
+     "at": [
+      10,
+      3
+     ],
+     "against": "S",
+     "level": -2,
+     "variant": "clean"
+    },
+    {
+     "id": "coffin_a",
+     "prop": "w4_chapel_coffin",
+     "pos": [
+      6.4,
+      1.75
+     ],
+     "rot": 90,
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "hall_bloom",
+     "prop": "w4_chapel_bloom_grave",
+     "pos": [
+      9.9,
+      1.5
+     ],
+     "rot": 80,
+     "level": -2,
+     "lit": true,
+     "keep": true,
+     "variant": "worn"
+    },
+    {
+     "id": "reliquary",
+     "prop": "w4_chapel_reliquary",
+     "at": [
+      4,
+      5
+     ],
+     "against": "W",
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "silver_chest",
+     "prop": "w4_chapel_silver_chest",
+     "at": [
+      5,
+      7
+     ],
+     "against": "S",
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "coffin_b",
+     "prop": "w4_chapel_coffin",
+     "pos": [
+      6.5,
+      5.2
+     ],
+     "rot": 90,
+     "level": -2,
+     "variant": "clean"
+    },
+    {
+     "id": "vault_candles",
+     "prop": "candle_cluster",
+     "pos": [
+      4.45,
+      6.35
+     ],
+     "level": -2,
+     "lit": true,
+     "keep": true,
+     "variant": "worn"
+    },
+    {
+     "id": "passage_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      9.75,
+      9.3
+     ],
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "tool_chest",
+     "prop": "wild_tool_chest",
+     "at": [
+      21,
+      15
+     ],
+     "against": "N",
+     "container": "w4_chapel_tools",
+     "variant": "worn"
+    },
+    {
+     "id": "shed_bucket",
+     "prop": "bucket",
+     "pos": [
+      22.5,
+      17.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "vault_shell",
+     "prop": "w4_chapel_mausoleum_front",
+     "pos": [
+      12.0,
+      4.0
+     ],
+     "y": -0.6,
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "id": "lych_gate",
+     "prop": "w4_chapel_lych_gate",
+     "pos": [
+      12.5,
+      28.0
+     ],
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "id": "yard_wall_0",
+     "prop": "w4_chapel_stone_wall",
+     "pos": [
+      3.5,
+      28.0
+     ],
+     "variant": "clean"
+    },
+    {
+     "id": "yard_wall_1",
+     "prop": "w4_chapel_stone_wall",
+     "pos": [
+      5.5,
+      28.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "yard_wall_2",
+     "prop": "w4_chapel_stone_wall",
+     "pos": [
+      7.5,
+      28.0
+     ],
+     "variant": "clean"
+    },
+    {
+     "id": "yard_wall_3",
+     "prop": "w4_chapel_stone_wall",
+     "pos": [
+      9.5,
+      28.0
+     ],
+     "variant": "clean"
+    },
+    {
+     "id": "yard_wall_4",
+     "prop": "w4_chapel_stone_wall",
+     "pos": [
+      15.5,
+      28.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "yard_wall_5",
+     "prop": "w4_chapel_stone_wall",
+     "pos": [
+      17.5,
+      28.0
+     ],
+     "variant": "clean"
+    },
+    {
+     "id": "yard_wall_6",
+     "prop": "w4_chapel_stone_wall",
+     "pos": [
+      19.5,
+      28.0
+     ],
+     "variant": "clean"
+    },
+    {
+     "id": "yard_wall_7",
+     "prop": "w4_chapel_stone_wall",
+     "pos": [
+      21.5,
+      28.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "plot_rail_n0",
+     "prop": "w4_chapel_iron_railing",
+     "pos": [
+      5.0,
+      1.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "plot_rail_n1",
+     "prop": "w4_chapel_iron_railing",
+     "pos": [
+      7.0,
+      1.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "plot_rail_s0",
+     "prop": "w4_chapel_iron_railing",
+     "pos": [
+      5.0,
+      5.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "plot_gate",
+     "prop": "w4_chapel_iron_railing_gate",
+     "pos": [
+      7.0,
+      5.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "plot_rail_w0",
+     "prop": "w4_chapel_iron_railing",
+     "pos": [
+      4.0,
+      2.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "plot_rail_e0",
+     "prop": "w4_chapel_iron_railing",
+     "pos": [
+      8.0,
+      2.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "plot_rail_w1",
+     "prop": "w4_chapel_iron_railing",
+     "pos": [
+      4.0,
+      4.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "plot_rail_e1",
+     "prop": "w4_chapel_iron_railing",
+     "pos": [
+      8.0,
+      4.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "teague_stone_a",
+     "prop": "w4_chapel_headstone",
+     "pos": [
+      5.0,
+      1.45
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "teague_stone_b",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      6.6,
+      1.35
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "tom_grave",
+     "prop": "civic_grave_mound",
+     "pos": [
+      5.4,
+      3.35
+     ],
+     "variant": "clean"
+    },
+    {
+     "id": "teague_bloom",
+     "prop": "w4_chapel_bloom_grave",
+     "pos": [
+      7.15,
+      3.0
+     ],
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "settler_stone_0",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      16.5,
+      2.5
+     ],
+     "rot": 4,
+     "variant": "worn"
+    },
+    {
+     "id": "settler_stone_1",
+     "prop": "w4_chapel_headstone",
+     "pos": [
+      18.1,
+      2.7
+     ],
+     "rot": -6,
+     "variant": "worn"
+    },
+    {
+     "id": "settler_stone_2",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      19.7,
+      2.4
+     ],
+     "rot": 9,
+     "variant": "worn"
+    },
+    {
+     "id": "settler_stone_3",
+     "prop": "w4_chapel_headstone_cross",
+     "pos": [
+      21.4,
+      2.6
+     ],
+     "rot": -3,
+     "variant": "worn"
+    },
+    {
+     "id": "settler_stone_4",
+     "prop": "w4_chapel_headstone",
+     "pos": [
+      17.2,
+      5.2
+     ],
+     "rot": 3,
+     "variant": "worn"
+    },
+    {
+     "id": "settler_stone_5",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      19.0,
+      5.4
+     ],
+     "rot": -8,
+     "variant": "destroyed"
+    },
+    {
+     "id": "settler_stone_6",
+     "prop": "w4_chapel_headstone",
+     "pos": [
+      20.9,
+      5.1
+     ],
+     "rot": 6,
+     "variant": "worn"
+    },
+    {
+     "id": "settler_stone_7",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      22.8,
+      5.0
+     ],
+     "rot": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_0",
+     "prop": "w4_chapel_headstone",
+     "pos": [
+      2.5,
+      10.6
+     ],
+     "rot": 3,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_1",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      4.6,
+      10.4
+     ],
+     "rot": -5,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_2",
+     "prop": "w4_chapel_headstone_cross",
+     "pos": [
+      6.6,
+      10.7
+     ],
+     "rot": 7,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_3",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      2.4,
+      13.6
+     ],
+     "rot": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_4",
+     "prop": "w4_chapel_headstone",
+     "pos": [
+      4.5,
+      13.5
+     ],
+     "rot": 6,
+     "variant": "destroyed"
+    },
+    {
+     "id": "west_stone_5",
+     "prop": "w4_chapel_headstone",
+     "pos": [
+      6.7,
+      13.4
+     ],
+     "rot": -7,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_6",
+     "prop": "w4_chapel_headstone_cross",
+     "pos": [
+      2.6,
+      16.6
+     ],
+     "rot": 2,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_7",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      4.4,
+      16.5
+     ],
+     "rot": 8,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_8",
+     "prop": "w4_chapel_headstone",
+     "pos": [
+      6.5,
+      16.7
+     ],
+     "rot": -4,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_9",
+     "prop": "w4_chapel_headstone",
+     "pos": [
+      2.5,
+      19.6
+     ],
+     "rot": 5,
+     "variant": "worn"
+    },
+    {
+     "id": "west_stone_10",
+     "prop": "w4_chapel_headstone_cross",
+     "pos": [
+      4.7,
+      19.5
+     ],
+     "rot": -6,
+     "variant": "destroyed"
+    },
+    {
+     "id": "west_stone_11",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      6.6,
+      19.4
+     ],
+     "rot": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "west_mound_0",
+     "prop": "civic_grave_mound",
+     "pos": [
+      4.5,
+      11.8
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "west_mound_1",
+     "prop": "civic_grave_mound",
+     "pos": [
+      2.5,
+      14.8
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "west_mound_2",
+     "prop": "civic_grave_mound",
+     "pos": [
+      6.6,
+      17.9
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "bloom_grave_a",
+     "prop": "w4_chapel_bloom_grave",
+     "pos": [
+      21.0,
+      22.6
+     ],
+     "lit": true,
+     "keep": true,
+     "variant": "worn"
+    },
+    {
+     "id": "bloom_grave_b",
+     "prop": "w4_chapel_bloom_grave",
+     "pos": [
+      22.6,
+      22.6
+     ],
+     "lit": true,
+     "variant": "worn"
+    },
+    {
+     "id": "bloom_grave_c",
+     "prop": "w4_chapel_bloom_grave",
+     "pos": [
+      24.2,
+      22.8
+     ],
+     "lit": true,
+     "variant": "clean"
+    },
+    {
+     "id": "ott_cross",
+     "prop": "w4_chapel_headstone_cross",
+     "pos": [
+      21.0,
+      21.35
+     ],
+     "rot": -4,
+     "variant": "clean"
+    },
+    {
+     "id": "fry_cross",
+     "prop": "w4_chapel_headstone_cross",
+     "pos": [
+      22.6,
+      21.35
+     ],
+     "rot": 5,
+     "variant": "clean"
+    },
+    {
+     "id": "kessler_tablet",
+     "prop": "w4_chapel_headstone_tablet",
+     "pos": [
+      24.2,
+      21.5
+     ],
+     "rot": -3,
+     "variant": "worn"
+    },
+    {
+     "id": "open_grave",
+     "prop": "w4_chapel_grave_dug",
+     "pos": [
+      18.4,
+      21.7
+     ],
+     "variant": "clean"
+    },
+    {
+     "id": "fallen_bell",
+     "prop": "w4_chapel_bell_fallen",
+     "pos": [
+      6.4,
+      25.1
+     ],
+     "rot": 20,
+     "variant": "worn"
+    },
+    {
+     "id": "long_grass_0",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      17.0,
+      20.7
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "id": "long_grass_1",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      17.3,
+      23.4
+     ],
+     "rot": 47,
+     "variant": "worn"
+    },
+    {
+     "id": "long_grass_2",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      19.8,
+      19.9
+     ],
+     "rot": 94,
+     "variant": "clean"
+    },
+    {
+     "id": "long_grass_3",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      16.4,
+      25.6
+     ],
+     "rot": 141,
+     "variant": "worn"
+    },
+    {
+     "id": "long_grass_4",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      23.7,
+      18.6
+     ],
+     "rot": 188,
+     "variant": "clean"
+    },
+    {
+     "id": "long_grass_5",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      1.6,
+      22.4
+     ],
+     "rot": 235,
+     "variant": "worn"
+    },
+    {
+     "id": "long_grass_6",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      4.2,
+      24.6
+     ],
+     "rot": 282,
+     "variant": "clean"
+    },
+    {
+     "id": "long_grass_7",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      8.0,
+      26.4
+     ],
+     "rot": 329,
+     "variant": "worn"
+    },
+    {
+     "id": "long_grass_8",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      20.6,
+      26.2
+     ],
+     "rot": 16,
+     "variant": "clean"
+    },
+    {
+     "id": "long_grass_9",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      24.3,
+      25.6
+     ],
+     "rot": 63,
+     "variant": "worn"
+    },
+    {
+     "id": "long_grass_10",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      1.4,
+      8.4
+     ],
+     "rot": 110,
+     "variant": "clean"
+    },
+    {
+     "id": "long_grass_11",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      23.4,
+      8.2
+     ],
+     "rot": 157,
+     "variant": "worn"
+    },
+    {
+     "id": "long_grass_12",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      2.2,
+      3.6
+     ],
+     "rot": 204,
+     "variant": "clean"
+    },
+    {
+     "id": "long_grass_13",
+     "prop": "w4_chapel_long_grass",
+     "pos": [
+      24.0,
+      13.0
+     ],
+     "rot": 251,
+     "variant": "worn"
+    },
+    {
+     "id": "ivy_w1",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      8,
+      12
+     ],
+     "against": "E",
+     "variant": "clean"
+    },
+    {
+     "id": "ivy_w2",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      8,
+      18
+     ],
+     "against": "E",
+     "variant": "worn"
+    },
+    {
+     "id": "ivy_w3",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      8,
+      22
+     ],
+     "against": "E",
+     "variant": "clean"
+    },
+    {
+     "id": "ivy_e1",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      15,
+      15
+     ],
+     "against": "W",
+     "variant": "clean"
+    },
+    {
+     "id": "ivy_e2",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      15,
+      18
+     ],
+     "against": "W",
+     "variant": "clean"
+    },
+    {
+     "id": "ivy_v",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      18,
+      11
+     ],
+     "against": "W",
+     "variant": "clean"
+    },
+    {
+     "id": "ivy_s",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      13,
+      24
+     ],
+     "against": "N",
+     "variant": "clean"
+    },
+    {
+     "id": "ivy_shed",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      23,
+      16
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "id": "ivy_n",
+     "prop": "w4_chapel_ivy",
+     "at": [
+      13,
+      8
+     ],
+     "against": "S",
+     "variant": "clean"
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "mourner_a",
+     "group": "mourners",
+     "pos": [
+      9.8,
+      14.3
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "anchor": "pew_l1"
+    },
+    {
+     "id": "mourner_b",
+     "group": "mourners",
+     "pos": [
+      14.2,
+      15.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "anchor": "pew_r2"
+    },
+    {
+     "id": "mourner_c",
+     "group": "mourners",
+     "pos": [
+      10.4,
+      16.9
+     ],
+     "enemy": "lurcher",
+     "pose": "sit",
+     "rot": 180,
+     "anchor": "pew_l3"
+    },
+    {
+     "id": "mourner_d",
+     "group": "mourners",
+     "pos": [
+      13.6,
+      16.9
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "anchor": "pew_r3",
+     "alt": "vigil:pews"
+    },
+    {
+     "id": "mourner_d",
+     "group": "mourners",
+     "pos": [
+      11.6,
+      10.7
+     ],
+     "enemy": "hollow",
+     "pose": "kneel",
+     "rot": 180,
+     "alt": "vigil:altar_rail"
+    },
+    {
+     "id": "sick_a",
+     "group": "sick",
+     "pos": [
+      14.5,
+      13.5
+     ],
+     "level": -1,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "cot_a",
+     "population": "loggers"
+    },
+    {
+     "id": "sick_b",
+     "group": "sick",
+     "pos": [
+      14.5,
+      17.5
+     ],
+     "level": -1,
+     "enemy": "blister",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "cot_b",
+     "population": "loggers"
+    },
+    {
+     "id": "sick_c",
+     "group": "sick",
+     "pos": [
+      12.4,
+      16.6
+     ],
+     "level": -1,
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": 30,
+     "anchor": "floor",
+     "population": "loggers"
+    },
+    {
+     "id": "niche_dead_a",
+     "group": "niches",
+     "pos": [
+      5.5,
+      0.5
+     ],
+     "level": -2,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "niche_a",
+     "population": "loggers"
+    },
+    {
+     "id": "niche_dead_b",
+     "group": "niches",
+     "pos": [
+      5.5,
+      0.5
+     ],
+     "level": -2,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "niche_a"
+    },
+    {
+     "id": "niche_dead_c",
+     "group": "niches",
+     "pos": [
+      8.5,
+      0.5
+     ],
+     "level": -2,
+     "enemy": "lurcher",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "niche_b",
+     "population": "loggers"
+    },
+    {
+     "id": "niche_dead_d",
+     "group": "niches",
+     "pos": [
+      5.5,
+      3.5
+     ],
+     "level": -2,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "niche_c"
+    },
+    {
+     "id": "pastor_varner",
+     "guardian": true,
+     "pos": [
+      5.0,
+      6.15
+     ],
+     "level": -2,
+     "enemy": "hollow",
+     "pose": "kneel",
+     "rot": -90
+    },
+    {
+     "id": "sexton_kessler",
+     "pos": [
+      21.6,
+      16.6
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 120,
+     "population": "loggers"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "vault_key",
+     "item": "w4_chapel_vault_key",
+     "pos": [
+      15.37,
+      10.7
+     ],
+     "y": 0.61
+    }
+   ],
+   "notes": [
+    {
+     "note": "w4_chapel_diary",
+     "pos": [
+      15.37,
+      10.35
+     ],
+     "y": 0.61
+    },
+    {
+     "note": "w4_chapel_register",
+     "pos": [
+      13.5,
+      23.6
+     ],
+     "y": 0.52,
+     "level": 1
+    },
+    {
+     "note": "w4_chapel_grave_letter",
+     "pos": [
+      5.45,
+      4.55
+     ],
+     "y": 0.02
+    },
+    {
+     "note": "w4_chapel_cordon_notice",
+     "pos": [
+      11.6,
+      24.12
+     ],
+     "y": 1.35,
+     "alt": "notice:on_door"
+    },
+    {
+     "note": "w4_chapel_cordon_notice",
+     "pos": [
+      14.6,
+      25.3
+     ],
+     "y": 0.02,
+     "alt": "notice:in_grass"
+    },
+    {
+     "note": "w4_chapel_sexton",
+     "pos": [
+      21.5,
+      15.35
+     ],
+     "y": 0.47
+    }
+   ],
+   "traps": [
+    {
+     "id": "lych_cans",
+     "type": "can_chime",
+     "at": [
+      12,
+      27
+     ],
+     "side": "S"
+    },
+    {
+     "id": "grave_jaws",
+     "type": "bear_trap",
+     "pos": [
+      16.35,
+      20.85
+     ],
+     "rot": 25,
+     "alt": "jaws:grave"
+    },
+    {
+     "id": "grave_jaws",
+     "type": "bear_trap",
+     "pos": [
+      15.75,
+      20.35
+     ],
+     "rot": -15,
+     "alt": "jaws:window"
+    },
+    {
+     "id": "loft_boards",
+     "type": "creaky_floor",
+     "at": [
+      11,
+      22
+     ],
+     "size": [
+      2,
+      1
+     ],
+     "level": 1
+    }
+   ],
+   "triggers": [
+    {
+     "id": "mourners_nave",
+     "group": "mourners",
+     "on": "room",
+     "room": "N",
+     "level": 0,
+     "delay": 1.4
+    },
+    {
+     "id": "mourners_loft",
+     "group": "mourners",
+     "on": "trap",
+     "trap": "loft_boards",
+     "delay": 0.6
+    },
+    {
+     "id": "sick_ward",
+     "group": "sick",
+     "on": "room",
+     "room": "U",
+     "level": -1,
+     "delay": 0.8
+    },
+    {
+     "id": "niches_hall",
+     "group": "niches",
+     "on": "room",
+     "room": "H",
+     "level": -2,
+     "delay": 1.6
+    },
+    {
+     "id": "niches_coffin",
+     "group": "niches",
+     "on": "container",
+     "prop": "coffin_a",
+     "delay": 0.3
+    }
+   ],
+   "decals": [
+    {
+     "decal": "mold_patch",
+     "at": [
+      9,
+      16
+     ],
+     "side": "W",
+     "height": 2.2,
+     "size": [
+      1.4,
+      1.0
+     ]
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      12,
+      9
+     ],
+     "side": "N",
+     "height": 2.6,
+     "size": [
+      1.2,
+      1.6
+     ]
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      13,
+      19
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      1.8
+     ],
+     "rot": 90
+    },
+    {
+     "decal": "survivor_marks_b",
+     "at": [
+      12,
+      23
+     ],
+     "side": "S",
+     "height": 1.5,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      12,
+      15
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "level": -1
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      10,
+      11
+     ],
+     "side": "N",
+     "height": 1.6,
+     "size": [
+      1.6,
+      0.9
+     ],
+     "level": -1
+    },
+    {
+     "decal": "grime_streaks",
+     "at": [
+      7,
+      0
+     ],
+     "side": "N",
+     "height": 2.2,
+     "size": [
+      1.0,
+      1.2
+     ],
+     "level": -2
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      9,
+      7
+     ],
+     "side": "E",
+     "height": 1.2,
+     "size": [
+      0.4,
+      0.4
+     ],
+     "level": -2
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      16,
+      9
+     ],
+     "side": "N",
+     "height": 1.6,
+     "size": [
+      0.8,
+      0.6
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      12,
+      29
+     ],
+     "label": "A clearing in the firs: a mossy lych gate in a tumbled churchyard wall, a string of cans across it"
+    },
+    {
+     "at": [
+      12,
+      25
+     ],
+     "label": "The chapel front: the doors boarded over by the Cordon, their notice on them, the bell lying in the grass"
+    },
+    {
+     "at": [
+      16,
+      23
+     ],
+     "label": "Round the east side through the long grass: a grave dug and left open, jaws in the grass by it"
+    },
+    {
+     "at": [
+      15,
+      19
+     ],
+     "label": "A smashed window over a crate, ivy in through the frame"
+    },
+    {
+     "at": [
+      13,
+      19
+     ],
+     "label": "Over the sill into the nave: the vigil still sits in the pews"
+    },
+    {
+     "at": [
+      12,
+      22
+     ],
+     "label": "The narthex: the doors boarded from outside, a ladder up to the choir loft"
+    },
+    {
+     "at": [
+      10,
+      22
+     ],
+     "level": 1,
+     "label": "Up the ladder: the choir loft, loose boards, the burial register on the choir chest"
+    },
+    {
+     "at": [
+      13,
+      22
+     ],
+     "level": 1,
+     "label": "A gap in the loft rail over the nave"
+    },
+    {
+     "at": [
+      12,
+      19
+     ],
+     "label": "Down into the nave again"
+    },
+    {
+     "at": [
+      11,
+      13
+     ],
+     "label": "The broken floor before the pulpit, the boards gone through to the undercroft"
+    },
+    {
+     "at": [
+      12,
+      13
+     ],
+     "level": -1,
+     "label": "Drop through into the undercroft"
+    },
+    {
+     "at": [
+      11,
+      17
+     ],
+     "level": -1,
+     "label": "The undercroft: cots, basins, where he nursed them"
+    },
+    {
+     "at": [
+      16,
+      11
+     ],
+     "level": -1,
+     "label": "The cellar under the vestry: a ladder up through a hatch"
+    },
+    {
+     "at": [
+      16,
+      10
+     ],
+     "label": "The vestry, barricaded from inside: the pastor's diary and the vault key on the table"
+    },
+    {
+     "at": [
+      16,
+      8
+     ],
+     "label": "Draw the bolt on the vestry's back door: out into the old graves behind the chapel"
+    },
+    {
+     "at": [
+      7,
+      4
+     ],
+     "label": "The Teague plot inside its iron railing: a letter left on a new grave, Bloom on an old one"
+    },
+    {
+     "at": [
+      12,
+      7
+     ],
+     "label": "The vault in the bank: a granite front, an iron door, chained"
+    },
+    {
+     "at": [
+      12,
+      4
+     ],
+     "label": "Inside the vault porch: steps going down into the dark"
+    },
+    {
+     "at": [
+      11,
+      6
+     ],
+     "level": -1,
+     "label": "The turn of the stair"
+    },
+    {
+     "at": [
+      12,
+      1
+     ],
+     "level": -2,
+     "label": "The foot of the steps: the smell of bread and cellar"
+    },
+    {
+     "at": [
+      7,
+      1
+     ],
+     "level": -2,
+     "label": "The niche hall: the dead laid in the walls, coffins on the floor"
+    },
+    {
+     "at": [
+      8,
+      5
+     ],
+     "level": -2,
+     "label": "The inner vault: the church silver, the reliquary, the pastor on his knees"
+    },
+    {
+     "at": [
+      9,
+      10
+     ],
+     "level": -2,
+     "label": "Draw the bolt on the pastor's passage"
+    },
+    {
+     "at": [
+      9,
+      17
+     ],
+     "level": -1,
+     "label": "Up the passage steps into the undercroft"
+    },
+    {
+     "at": [
+      16,
+      11
+     ],
+     "level": -1,
+     "label": "Back to the vestry ladder"
+    },
+    {
+     "at": [
+      17,
+      7
+     ],
+     "label": "Up through the vestry and out into the churchyard"
+    }
+   ],
+   "loot_room": {
+    "room": "R",
+    "level": -2
+   },
+   "shortcuts": [
+    {
+     "opening": "passage_door"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "notice",
+     "label": "Where the Cordon notice is",
+     "options": [
+      {
+       "id": "on_door",
+       "weight": 2,
+       "label": "Nailed over the boards on the front doors"
+      },
+      {
+       "id": "in_grass",
+       "label": "Torn off by the wind, in the grass by the steps"
+      }
+     ]
+    },
+    {
+     "id": "vigil",
+     "label": "How the vigil keeps",
+     "options": [
+      {
+       "id": "pews",
+       "weight": 2,
+       "label": "All four in the pews"
+      },
+      {
+       "id": "altar_rail",
+       "label": "One knelt at the altar"
+      }
+     ]
+    },
+    {
+     "id": "jaws",
+     "label": "Where the sexton set his jaws",
+     "options": [
+      {
+       "id": "grave",
+       "weight": 2,
+       "label": "In the long grass by the open grave"
+      },
+      {
+       "id": "window",
+       "label": "Under the smashed window"
+      }
+     ]
+    },
+    {
+     "id": "nave_walls",
+     "label": "The nave's walls",
+     "options": [
+      {
+       "id": "whitewash",
+       "weight": 2
+      },
+      {
+       "id": "boards",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "N",
+         "wall": "wood_paneling_dark"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "candles",
+     "label": "Whether anyone still lights candles",
+     "options": [
+      {
+       "id": "burning",
+       "weight": 2,
+       "label": "A few still burning"
+      },
+      {
+       "id": "out",
+       "label": "All burnt out",
+       "style": {
+        "lights_on": 0.2
+       }
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "props": 200
+   }
+  }
+ ]
+}

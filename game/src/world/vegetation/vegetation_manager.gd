@@ -69,8 +69,9 @@ var _pickable: Dictionary = {}
 ## rid -> {task (-1 once built), jobs: [[rid, chunk key]], chunks: [result per job], holder: Node3D,
 ## mats: [ShaderMaterial], dropped: bool}.
 var _far: Dictionary = {}
-## Clearing ids opened through set_clearings, by source (Bloom nests' mats, ADR-0055).
-var _clearing_sources: Dictionary = {}
+## Clearing ids `set_clearings` opened, by source (Bloom nests' mats, ADR-0055): a thin layer over
+## the runtime clearings below, so nests and forest encounters share one mask.
+var _source_clearings: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
@@ -147,23 +148,6 @@ func remove_clearing(id: StringName) -> void:
 		if ids.is_empty():
 			_clearings_by_chunk.erase(key)
 		_recompute_cleared(key)
-
-
-## Replaces every clearing of `source` with `list` ([{pos: Vector2, r}], trees and undergrowth alike):
-## a whole set of clearings on top of add_clearing (Bloom nests' mats, ADR-0055).
-func set_clearings(source: StringName, list: Array) -> void:
-	for cid: StringName in _clearing_sources.get(source, []):
-		remove_clearing(cid)
-	var ids: Array[StringName] = []
-	for i: int in list.size():
-		var c: Dictionary = list[i]
-		var cid := StringName("%s:%d" % [source, i])
-		add_clearing(cid, c["pos"], float(c["r"]), float(c["r"]))
-		ids.append(cid)
-	if ids.is_empty():
-		_clearing_sources.erase(source)
-	else:
-		_clearing_sources[source] = ids
 
 
 func clearing_count() -> int:
@@ -320,6 +304,23 @@ func _collect() -> void:
 			_pickable[key] = _harvestables(job["out"][0])
 			if _clearings_by_chunk.has(key):
 				_recompute_cleared(key)
+
+
+## Sets one source's clearings ([{pos: Vector2, r}]), replacing the ones it set before; each is a
+## runtime clearing (trees and undergrowth within r) like a forest encounter's.
+func set_clearings(source: StringName, list: Array) -> void:
+	for id: StringName in _source_clearings.get(source, []):
+		remove_clearing(id)
+	var ids: Array[StringName] = []
+	for i: int in list.size():
+		var c: Dictionary = list[i]
+		var id := StringName("%s:%d" % [source, i])
+		add_clearing(id, c["pos"], float(c["r"]), float(c["r"]))
+		ids.append(id)
+	if ids.is_empty():
+		_source_clearings.erase(source)
+	else:
+		_source_clearings[source] = ids
 
 
 ## Small plants and stones with yields, filtered once per chunk instead of on every physics

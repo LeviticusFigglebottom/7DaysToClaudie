@@ -22,9 +22,11 @@ extends GutTest
 ## and for VERSION 7 (TD-169: the `mine` site, placed last from its own stream so every other place
 ## stays; the adit lands in neither region, so only the world id in `placements` and the input
 ## hash moved), and for VERSION 8 (ADR-0058: Ezra Vane's `companion` camp, placed last from its own
-## stream; the town region's ground, roads and masks moved with it). Larch Hollow's were
-## re-recorded when Ezra's camp was placed west of Larch Pond (ADR-0058: its pad), and
-## re-recorded when Waystation 9 was placed in it (ADR-0039: a clearing, its spawn and its drive;
+## stream; the town region's ground, roads and masks moved with it), and for VERSION 9 (ADR-0053:
+## the forest set pieces, `late` pool entries from their own streams; one reaches the town region,
+## so pads, tracks and masks moved there, and the drop-site region's world id in `placements`).
+## Larch Hollow's were re-recorded when Ezra's camp was placed west of Larch Pond (ADR-0058: its
+## pad), and when Waystation 9 was placed in it (ADR-0039: a clearing, its spawn and its drive;
 ## its 1 m variant, which only SLOW_TESTS=1 runs, a little later), and again when the Corvane
 ## Larkspur Adit was placed by the Larkspur cliffs (ADR-0044: its pad and its track);
 ## the generator versions leave them unchanged, the main map having no towns, generated posts or
@@ -54,7 +56,7 @@ const DIGEST_KEYS: PackedStringArray = ["height", "splat0", "splat1", "biome", "
 ## input hash at that spacing, to tell changed inputs from a changed composer.
 const GOLDEN: Dictionary = {
 	"larch@4": {
-		"input": "3e75765fe658c5f05412dae70804e202986b7d589b40b115967d885796d076f3",
+		"input": "836868fda3bdbdc2fe56bdea6e549fe829f1af155bc7cfa5226bc7e5d1ddce06",
 		"height": "e248604a3a8de7f24a32543ec40bf9560ccefc552661a9c885263828e47dce2d",
 		"splat0": "9eaa4a77bd78f034bfd9ff38f1d3aca6",
 		"splat1": "a0e0f3e9d0ea61b64313f463af34b2c4",
@@ -67,7 +69,7 @@ const GOLDEN: Dictionary = {
 		"other": "343d7ca5a31189c644d8aca5e9ee0028",
 	},
 	"larch@8": {
-		"input": "be4c983cad3faeb6262c0b2c96acc5191c161ccad3122cc037a248b6af9f20ef",
+		"input": "5f17fc270f47f45c93b93fbb00c7728b1d8e6b465a2b98117f3ea11e3a7a2343",
 		"height": "2bc10a81f1b49707261a58c7d495f0a3ade56606690d1b0efc7e4f80caf82a35",
 		"splat0": "5af3e41b715d69b44160b1ec75ee5e61",
 		"splat1": "71f4ef029e083c97ad7fdbac70c5e563",
@@ -80,7 +82,7 @@ const GOLDEN: Dictionary = {
 		"other": "0619089a625a0d5200fa83faa962ee3c",
 	},
 	"larch@1": {
-		"input": "bfc781d511a1ca0ee138f004f67f0f17023077b1708e4abfe4d53ffc60e7dbbe",
+		"input": "ce34634044efe95c1c6f9632c1ae47737c8a0fe725221cb4b17f1fb823e2c343",
 		"height": "d3796a5996202fff75c0a023ce00b814da671798d1220690307a4fd1f65f0292",
 		"splat0": "b1547471ef8d74630f9f335902e870b0",
 		"splat1": "55b0189d93e9a60ec3392ca26604f9ad",
@@ -93,46 +95,46 @@ const GOLDEN: Dictionary = {
 		"other": "9042e6121a94f2a29c717a3d15b2b03d",
 	},
 	"rwg@4": {
-		"input": "aaec268256b7ca241574daada1c790e33068cad2cbd32c7806284d48c8abbea3",
-		"height": "e95616bb3bb5ebd3aa01b2168583231674fbb22cca258514ad4d308478250cef",
-		"splat0": "08b2849cf65a8420fa1e34589243bf1e",
-		"splat1": "c111b88e7e976ef14ad6054fd23ad1f2",
+		"input": "67c1de19e62b22d2ae40e01cd40554f23770aab606c9ea03b805cf332176a5ee",
+		"height": "b130224ae7d5bf731ee3db443ecaec3705b9af1094083900c9f917ba2bd813ae",
+		"splat0": "7d3e52400e9a2aa0a02ea7ee9d2e12b4",
+		"splat1": "c502892664be8d0b228da7ecd1db7926",
 		"biome": "5e99f416ed32b7951d90e2fe0d4a6069",
-		"vegmask": "9d508fd7f9a3c5edb4e76caa43343d46",
+		"vegmask": "2877c031c36031b9cbe9ecce3def3ec8",
 		"water": "49e108a32077cec749d37e86d197b32f",
-		"roads": "dffeb26912dec0b02ad9e2694c9569ae",
+		"roads": "fa2e24699dda5d54a8d99ff701e9cdee",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "ab437bd9be24c97cc64fcbe83c0e3796",
+		"placements": "3d3874a6ed8229a7489e13ed2bb112f0",
 		"other": "cec63ec5e9ea167c69260cbaf86a1d0a",
 	},
 	"rwg@8": {
-		"input": "d19d0bf3e3e25f4bbed2749e5e66a62fb994116a07979d1337ac38f177ac751f",
-		"height": "3f2d20efcdaf08e5c5cee42f9c5b67515d723a04e870b959914d0d32160f4708",
-		"splat0": "5cfb388da93427d5a97a53e37eeed064",
-		"splat1": "960ad4f5cd5c5f6c28a80a7c1fed0e1d",
+		"input": "95e46d07cd77a501af832a3d58adc4a7875f640a83066f2fca9616129bec85ff",
+		"height": "78ced5b1c57f51375d964a5147f6991d497002ecc7352ea06538ad44ae6c4a5d",
+		"splat0": "ed1d29bd9d10695742fba7f71666468e",
+		"splat1": "acc6a52aed7ba8a4b8ec55fbc4b7d2df",
 		"biome": "88206e088b975743fe235c342302dd6f",
-		"vegmask": "207ee4a117c9b9f439b8f42cdb453f29",
+		"vegmask": "5a52ef7b01c4d7af39dd22b36f2cb767",
 		"water": "fd041168cd7a58fb4b7994caf5864ac8",
-		"roads": "dffeb26912dec0b02ad9e2694c9569ae",
+		"roads": "fa2e24699dda5d54a8d99ff701e9cdee",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "c179b97cfc33b6d40b9709a7e0d72cc3",
+		"placements": "6dd1036220e0a34c6a749fb62533f123",
 		"other": "bcea77cbf3c997af1ab262307621ca3b",
 	},
 	"rwg@1": {
-		"input": "2930f5c6524b0e16a9b329890fa49466f372ba1750f87dfa87c2fe83d677acf6",
-		"height": "e744edba2d0696ad86381b15783ee1ffbb5b4e08a9372d836df2f6f3ac1ec06c",
-		"splat0": "e786834259ab79b1d4c1b7d0fa00295c",
-		"splat1": "1934dc9dd0d12e25a0d5f277d8e33016",
-		"biome": "91feb6f8070d8d6ee3a82218656fd072",
-		"vegmask": "c8e800c3928de822f65e7d9262fe61e4",
+		"input": "1944594e651aea91f9187ce27eb2efdf80bc9ee475caae4d8de2fbc9e7bebefb",
+		"height": "74d2c6f9ea92241635821a62e4a600f38ab4678f59518dcad108282d3d7f99dd",
+		"splat0": "97c79ab6ff1e26bc3208cf223bbd3305",
+		"splat1": "9fe9e424ec6b8a4f7a55e42340d5058f",
+		"biome": "8f3d6e884ff2cb78b91ea50c2820e56f",
+		"vegmask": "f51998dca8da116532184444ce7b55eb",
 		"water": "0815ff0f2b7d71ee76189c656a648066",
-		"roads": "dffeb26912dec0b02ad9e2694c9569ae",
+		"roads": "fa2e24699dda5d54a8d99ff701e9cdee",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "4f5cf254c61bed03f5fd3e653f4803ee",
+		"placements": "dab7f352d80197f2c45f88fe9f7ba1ae",
 		"other": "445eed2000fca209f9b0b52d17c5924b",
 	},
 	"rwg_drop@4": {
-		"input": "d6523162b7dd060868ef5f73c4c7dc66cded8269657203c48f66de5f4ac8d51c",
+		"input": "ac76dc7d126febc3744da94165b8f7f20c273a0703e41e75996e685c49a6015b",
 		"height": "c176d0709f4d21b4aa95532b211d0af63be784541958436e0b00fea36a978488",
 		"splat0": "5e0b93f23957c50754121ac1a52c2f04",
 		"splat1": "4516aea033ac574140369ed02cdb8985",
@@ -141,11 +143,11 @@ const GOLDEN: Dictionary = {
 		"water": "d751713988987e9331980363e24189ce",
 		"roads": "f0db205ae7464b3a50176b11cd609325",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "55e38ab4fee27a5046d2594c4af1adaf",
+		"placements": "964359ada950c8f2355dc24fe37ccdde",
 		"other": "5bc27312937ee0c0680239869cc69b16",
 	},
 	"rwg_drop@8": {
-		"input": "8323c6cae43fc359632957529fa5da04209ea42a6a7d53a2636c6a58397cdc07",
+		"input": "67c9a31d976553b85e7597e641dfc6118306c386da26a8b4b3b15989b6d9e324",
 		"height": "2627c13e991906fd2eec9fee5bfe187d9f52e2a8c5c6e5232a09a6a6a5e85399",
 		"splat0": "5e80c496aff37e4da35832c26eb881cc",
 		"splat1": "b56557e643b782752c0d4bccd7fc7fe3",
@@ -154,7 +156,7 @@ const GOLDEN: Dictionary = {
 		"water": "d751713988987e9331980363e24189ce",
 		"roads": "f0db205ae7464b3a50176b11cd609325",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "55e38ab4fee27a5046d2594c4af1adaf",
+		"placements": "964359ada950c8f2355dc24fe37ccdde",
 		"other": "e424e63a3b750e476a6e84d0385281dd",
 	},
 }

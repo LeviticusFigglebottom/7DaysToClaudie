@@ -1,0 +1,58 @@
+{
+ "_doc": "Key and readable notes of the Ridge Relay Hut (w4_ridge_relay_hut), forest set pieces round 4. Note items are note_<note id> (notes/wild4_relay.json); models from tools/assetgen/blender_catalogs/items_wild4_relay.py.",
+ "defs": [
+  {
+   "id": "w4_relay_battery_key",
+   "name": "Battery Room Key",
+   "description": "A steel key on a split ring with a stamped aluminium tag: RELAY 4 - BATT RM. Sergeant Reyes carried it up the tower and left it with his log, where the Hollowed can't climb.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_relay/w4_relay_battery_key"
+  },
+  {
+   "id": "note_w4_relay_log",
+   "name": "Signaller's Log, Relay Four",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_relay_log",
+   "model": "items/wild4_relay/note_w4_relay_log"
+  },
+  {
+   "id": "note_w4_relay_schedule",
+   "name": "Relay Schedule, Sheet 3",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_relay_schedule",
+   "model": "items/wild4_relay/note_w4_relay_schedule"
+  },
+  {
+   "id": "note_w4_relay_letter",
+   "name": "Letter Home",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_relay_letter",
+   "model": "items/wild4_relay/note_w4_relay_letter"
+  },
+  {
+   "id": "note_w4_relay_tag",
+   "name": "Generator Service Tag",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_relay_tag",
+   "model": "items/wild4_relay/note_w4_relay_tag"
+  }
+ ]
+}

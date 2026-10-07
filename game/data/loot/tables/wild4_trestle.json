@@ -1,0 +1,82 @@
+{
+ "_doc": "Loot tables of the trestle tunnel (containers/wild4_trestle.json): the refuge niche's stores and the engineer's grip, the work train's freight, the section gang's tools, the watchman's box and a keg of spikes.",
+ "defs": [
+  {
+   "id": "w4_trestle_niche_stores",
+   "rolls": [2, 4],
+   "empty_chance": 0.0,
+   "entries": [
+    {"table": "food_canned", "weight": 6},
+    {"item": "ration_bar", "weight": 5, "count": [1, 3]},
+    {"item": "water_bottle_clean", "weight": 6, "count": [1, 3]},
+    {"item": "first_aid_kit", "weight": 2},
+    {"item": "cloth_bandage", "weight": 4, "count": [1, 3]},
+    {"item": "painkillers", "weight": 2},
+    {"item": "antifungal", "weight": 1, "tier_min": 2},
+    {"item": "flashlight", "weight": 2}
+   ]
+  },
+  {
+   "id": "w4_trestle_engineer_kit",
+   "rolls": [1, 3],
+   "empty_chance": 0.1,
+   "entries": [
+    {"item": "revolver", "weight": 1, "tier_min": 2},
+    {"item": "ammo_38", "weight": 4, "count": [4, 12]},
+    {"item": "lighter", "weight": 3},
+    {"item": "scrip", "weight": 4, "count": [3, 12]},
+    {"item": "canned_stew", "weight": 3},
+    {"item": "journal_timber_trade", "weight": 1}
+   ]
+  },
+  {
+   "id": "w4_trestle_freight",
+   "rolls": [1, 3],
+   "empty_chance": 0.1,
+   "entries": [
+    {"item": "nails", "weight": 6, "count": [4, 16]},
+    {"item": "wood_plank", "weight": 5, "count": [2, 6]},
+    {"item": "scrap_metal", "weight": 4, "count": [1, 4]},
+    {"item": "cordage", "weight": 3, "count": [1, 3]},
+    {"item": "duct_tape", "weight": 2},
+    {"item": "shovel", "weight": 1}
+   ]
+  },
+  {
+   "id": "w4_trestle_section_tools",
+   "rolls": [1, 3],
+   "empty_chance": 0.1,
+   "entries": [
+    {"table": "tools_common", "weight": 5},
+    {"item": "claw_hammer", "weight": 2},
+    {"item": "hatchet", "weight": 1},
+    {"item": "repair_kit", "weight": 2},
+    {"item": "nails", "weight": 4, "count": [3, 10]},
+    {"item": "scrap_metal", "weight": 3, "count": [1, 3]}
+   ]
+  },
+  {
+   "id": "w4_trestle_watchman_box",
+   "rolls": [1, 2],
+   "empty_chance": 0.2,
+   "entries": [
+    {"item": "canned_beans", "weight": 4},
+    {"item": "lighter", "weight": 3},
+    {"item": "cloth", "weight": 3, "count": [1, 2]},
+    {"item": "scrip", "weight": 3, "count": [2, 6]},
+    {"item": "ammo_38", "weight": 1, "count": [2, 6]},
+    {"item": "painkillers", "weight": 1}
+   ]
+  },
+  {
+   "id": "w4_trestle_spike_keg",
+   "rolls": [1, 2],
+   "empty_chance": 0.2,
+   "entries": [
+    {"item": "scrap_metal", "weight": 6, "count": [1, 4]},
+    {"item": "nails", "weight": 4, "count": [2, 8]},
+    {"item": "steel_pipe", "weight": 1}
+   ]
+  }
+ ]
+}

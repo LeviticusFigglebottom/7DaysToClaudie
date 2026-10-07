@@ -129,11 +129,33 @@ func _publish() -> void:
 	_published = true
 
 
-## Replaces the dynamic spots (BloomMounds); the tiles they touch are redrawn next frame (at()
-## reads them at once).
+## Replaces the rooting mounds' spots (BloomMounds): set_spot_source(&"mounds", spots).
 func set_spots(spots: Array) -> void:
-	if tiles != null:
-		tiles.set_spots(spots)
+	set_spot_source(&"mounds", spots)
+
+
+## Dynamic spots by source ([{pos: Vector2, radius, strength}] each), merged into the field's one
+## spot list: the zones are fixed at build (workers read them unlocked), so anything placed or
+## removed at runtime (rooting mounds, Bloom nests) is a spot. Only the tiles the old and new
+## spots touch are recomposed; they are redrawn next frame (at() reads them at once). An empty
+## list removes the source. Fading is calling it again with a lower strength.
+func set_spot_source(source: StringName, spots: Array) -> void:
+	if spots.is_empty():
+		_spot_sources.erase(source)
+	else:
+		_spot_sources[source] = spots.duplicate(true)
+	if tiles == null:
+		return
+	var keys: Array = _spot_sources.keys()
+	keys.sort()
+	var all: Array = []
+	for k: Variant in keys:
+		all.append_array(_spot_sources[k])
+	tiles.set_spots(all)
+
+
+## Source -> its spots (set_spot_source), merged in source order.
+var _spot_sources: Dictionary = {}
 
 
 ## Publishes tiles composed elsewhere (TerrainManager.attach_region); redrawn next frame, so an
@@ -159,27 +181,6 @@ func redraw(force: bool = false) -> void:
 	# Published when the field gains its first spot, switched off when the last one goes.
 	if force or any or _published != (not tiles.is_empty()):
 		_publish()
-
-
-## Dynamic spots by source ([{pos: Vector2, radius, strength}] each), merged into the field's one
-## spot list, so the rooting mounds (&"mounds") and the Bloom nests (&"nests", ADR-0055) never
-## clobber each other. An empty list removes the source; fading is calling again with a lower
-## strength. (Same API as session 3's f5dbc8a; it merges every source into set_spots.)
-func set_spot_source(source: StringName, spots: Array) -> void:
-	if spots.is_empty():
-		_spot_sources.erase(source)
-	else:
-		_spot_sources[source] = spots.duplicate(true)
-	var keys: Array = _spot_sources.keys()
-	keys.sort()
-	var all: Array = []
-	for k: Variant in keys:
-		all.append_array(_spot_sources[k])
-	set_spots(all)
-
-
-## Source -> its spots (set_spot_source), merged in source order.
-var _spot_sources: Dictionary = {}
 
 
 func _process(delta: float) -> void:

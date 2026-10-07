@@ -1,0 +1,53 @@
+{
+ "_doc": "Containers of the trestle tunnel (w4_trestle_tunnel, forest set pieces round 4): containers/wild4_trestle.json -> tables/wild4_trestle.json.",
+ "defs": [
+  {
+   "id": "w4_trestle_niche_stores",
+   "name": "Refuge Niche Stores",
+   "loot_table": "w4_trestle_niche_stores",
+   "slots": 8,
+   "search_time": 2.2,
+   "noise": 5
+  },
+  {
+   "id": "w4_trestle_engineer_kit",
+   "name": "Engineer's Grip",
+   "loot_table": "w4_trestle_engineer_kit",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 4
+  },
+  {
+   "id": "w4_trestle_freight",
+   "name": "Work Train Freight",
+   "loot_table": "w4_trestle_freight",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 6
+  },
+  {
+   "id": "w4_trestle_section_tools",
+   "name": "Section Tool Chest",
+   "loot_table": "w4_trestle_section_tools",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 6
+  },
+  {
+   "id": "w4_trestle_watchman_box",
+   "name": "Watchman's Box",
+   "loot_table": "w4_trestle_watchman_box",
+   "slots": 5,
+   "search_time": 1.4,
+   "noise": 3
+  },
+  {
+   "id": "w4_trestle_spike_keg",
+   "name": "Spike Keg",
+   "loot_table": "w4_trestle_spike_keg",
+   "slots": 4,
+   "search_time": 1.2,
+   "noise": 6
+  }
+ ]
+}

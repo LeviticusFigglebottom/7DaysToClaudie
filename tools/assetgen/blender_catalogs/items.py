@@ -31,6 +31,9 @@ SPEC: dict[str, tuple[str, dict]] = {
     "tether": ("item_gear", {"kind": "tether", "seed": 25}),
     "repair_kit": ("item_gear", {"kind": "repair_kit", "seed": 26}),
     "can_chime": ("item_gear", {"kind": "can_chime", "seed": 27}),
+    # long guns (ADR-0057; pointing frame, origin on the support hand's grip under the fore-end)
+    "hunting_rifle": ("item_firearms", {"kind": "hunting_rifle", "seed": 281}),
+    "ammo_308": ("item_firearms", {"kind": "ammo_308", "seed": 282}),
     # consumables
     "ration_bar": ("item_food", {"kind": "ration_bar", "seed": 31}),
     "canned_beans": ("item_food", {"kind": "can", "seed": 32, "label": "item_can_label_a", "size": [0.0765, 0.112], "dent": 0.6}),
@@ -54,6 +57,10 @@ SPEC: dict[str, tuple[str, dict]] = {
     "yarrow_poultice": ("item_food", {"kind": "poultice", "seed": 50}),
     "bloom_sample": ("item_food", {"kind": "vial", "seed": 51}),
     "bloom_mycelium": ("item_food", {"kind": "mycelium", "seed": 52}),
+    # throwables and fire (ADR-0057; molotov owns its viewmodel: bottle up +Z, socket_flame on the rag)
+    "molotov": ("item_throwables", {"kind": "molotov", "seed": 291}),
+    "kerosene": ("item_throwables", {"kind": "kerosene", "seed": 292}),
+    "rotgut": ("item_throwables", {"kind": "rotgut", "seed": 293}),
     # resources
     "stick": ("item_resources", {"kind": "stick", "seed": 61}),
     "stone": ("item_resources", {"kind": "stone", "seed": 62}),

@@ -1,0 +1,298 @@
+{
+ "_doc": "Forest set pieces, round 4 (ADR-0053): props of the Kell Shelter (w4_hillside_bunker), a prepper's hillside cabin over a two-level concrete bunker. Models: tools/assetgen/blender/generators/props_wild4_bunker.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_wild4_bunker.py. Materials are shared sets (no new ones). size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. Floor props stand on their origin with their depth centred on it (back = half the depth); the map wall hangs with its origin on the wall plane.",
+ "defs": [
+  {
+   "id": "w4_bunker_air_filter",
+   "name": "Air Filtration Unit",
+   "description": "A grey steel NBC filtration cabinet: a hand-crank blower, a gauge, two cartridge housings with their lids clamped down and the ducts up into the ceiling (worn: a housing open and the cartridges furred white with Bloom).",
+   "tags": [
+    "machine",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_air_filter",
+    "worn": "props/w4_bunker_air_filter_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.2,
+    2.3,
+    0.6
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "bunker"
+   ]
+  },
+  {
+   "id": "w4_bunker_generator",
+   "name": "Diesel Generator",
+   "description": "A small diesel generator set on a steel skid: engine, alternator, the control box with its run lamp, an exhaust pipe bent up to the ceiling and a day tank (worn: the lamp dead, the tank open).",
+   "tags": [
+    "machine",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_generator",
+    "worn": "props/w4_bunker_generator_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    1.6,
+    1.3,
+    0.8
+   ],
+   "light": {
+    "color": "#8cff9a",
+    "energy": 0.3,
+    "range": 2.5,
+    "flicker": 0.05,
+    "offset": [
+     0.55,
+     1.05,
+     0.25
+    ],
+    "power": "generator"
+   },
+   "blocks_sight": true,
+   "rooms": [
+    "bunker"
+   ]
+  },
+  {
+   "id": "w4_bunker_water_drum",
+   "name": "Water Drum",
+   "description": "A blue 55-gallon water drum with a hand pump screwed into its bung and ROTATED and a date written on the lid in marker.",
+   "tags": [
+    "barrel",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_water_drum",
+    "worn": "props/w4_bunker_water_drum_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    0.6,
+    1.16,
+    0.6
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "bunker"
+   ]
+  },
+  {
+   "id": "w4_bunker_decon_shower",
+   "name": "Decontamination Shower",
+   "description": "A decontamination stall: a steel shower pan, a galvanized pipe frame with a rain head and a pull chain, a heavy plastic curtain and a scrub brush on a hook.",
+   "tags": [
+    "fixture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_decon_shower",
+    "worn": "props/w4_bunker_decon_shower_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    1.1,
+    2.3,
+    1.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "bunker"
+   ]
+  },
+  {
+   "id": "w4_bunker_radio_desk",
+   "name": "Ham Radio Desk",
+   "description": "A plywood radio desk: an HF transceiver, its power supply and an SWR meter on a shelf, a desk microphone, a clock set to UTC, the logbook and a frequency list taped to the shelf.",
+   "tags": [
+    "furniture",
+    "radio",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_radio_desk",
+    "worn": "props/w4_bunker_radio_desk_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.6,
+    1.3,
+    0.75
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "bunker"
+   ]
+  },
+  {
+   "id": "w4_bunker_solar_pole",
+   "name": "Solar Panel Pole",
+   "description": "A solar panel tilted south on a steel pole set in concrete, the cable taped down the pole to a battery box at its foot (worn: the glass cracked and the box lid hanging).",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_solar_pole",
+    "worn": "props/w4_bunker_solar_pole_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    1.6,
+    3.4,
+    1.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_bunker_chicken_coop",
+   "name": "Chicken Coop",
+   "description": "A board chicken coop on legs with a tin roof, a ramp down to a chicken-wire run and a feeder can (worn: the wire torn and feathers in the run).",
+   "tags": [
+    "structure",
+    "exterior",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_chicken_coop",
+    "worn": "props/w4_bunker_chicken_coop_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    2.6,
+    1.6,
+    1.6
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_bunker_shelf_cans",
+   "name": "Shelf of Canned Food",
+   "description": "Grey steel shelving five shelves high, labelled tins stacked in rows, mylar buckets on the bottom shelf (worn: half emptied; destroyed: pulled over and stripped, empty tins on the floor).",
+   "tags": [
+    "furniture",
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_shelf_cans",
+    "worn": "props/w4_bunker_shelf_cans_worn",
+    "destroyed": "props/w4_bunker_shelf_cans_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.2,
+    2.0,
+    0.45
+   ],
+   "container": "w4_bunker_cans",
+   "blocks_sight": true,
+   "rooms": [
+    "bunker"
+   ]
+  },
+  {
+   "id": "w4_bunker_rain_barrel",
+   "name": "Rain Barrel",
+   "description": "An oak rain barrel on two cinder blocks under the eaves, a screen over its top, a brass spigot and a watering can beside it.",
+   "tags": [
+    "exterior",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_rain_barrel",
+    "worn": "props/w4_bunker_rain_barrel_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    0.7,
+    1.05,
+    0.7
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_bunker_woodshed",
+   "name": "Woodshed",
+   "description": "An open-fronted pole woodshed with a tin lean-to roof, split firewood stacked to the rafters and a maul leant on the end post.",
+   "tags": [
+    "structure",
+    "exterior",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_woodshed",
+    "worn": "props/w4_bunker_woodshed_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 500,
+   "size": [
+    3.1,
+    2.45,
+    1.95
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_bunker_map_wall",
+   "name": "Map Wall",
+   "description": "Topographic map sheets pinned edge to edge on cork, the roads off the mountain crossed out in red marker one by one and the Cordon's checkpoints ringed, with the radio frequencies written down the margin.",
+   "tags": [
+    "decor",
+    "wall"
+   ],
+   "variants": {
+    "clean": "props/w4_bunker_map_wall",
+    "worn": "props/w4_bunker_map_wall_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.6,
+    1.1,
+    0.05
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "bunker"
+   ]
+  }
+ ]
+}

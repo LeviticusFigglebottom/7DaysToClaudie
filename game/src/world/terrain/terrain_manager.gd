@@ -85,17 +85,15 @@ func _ready() -> void:
 
 
 ## Prepares data. `built` = region ids composed at 1 m (others get coarse far tiles only).
+## With defer_materials the textures and the regions' materials are made in boot_steps() instead.
 func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	world = p_world
 	regions = built
 	coarse = p_coarse
-	textures = TerrainTextures.get_shared()
-	for rid: String in regions:
-		_materials[rid] = _make_region_material(regions[rid])
-	_far_material = ShaderMaterial.new()
-	_far_material.shader = load("res://assets/shaders/terrain_far.gdshader")
-	_far_material.set_shader_parameter("macro_variation", textures.macro_variation)
-	_far_material.set_shader_parameter("canopy_height", CANOPY_HEIGHT)
+	if not defer_materials:
+		_make_materials()
+		for rid: String in regions:
+			_make_material_of(rid)
 	# Near chunks in no region at all (off the map). Not the far material: that one discards the
 	# whole near square.
 	var ground := StandardMaterial3D.new()
@@ -104,7 +102,7 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	_fallback_material = ground
 	_build_grid()
 	for rid: String in regions:
-		_region_holes[rid] = TerrainHoles.from_regions({rid: regions[rid]})
+		_region_holes[rid] = _take_holes(regions[rid])
 	_publish_holes()
 	bloom = BloomWorld.new()
 	bloom.name = "Bloom"
@@ -134,12 +132,62 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	volume.column_activated.connect(_on_volume_column)
 
 
+## Set before setup(): the layer textures' data, prepared on the world-load thread
+## (WorldLoader.terrain_textures, TD-197); null makes them here.
+var prepared_textures: TerrainTextures = null
+## Set before setup() to make the layer textures and the regions' materials in boot_steps(), one
+## step each (TD-197: they were ~140 ms of the boot's terrain frame on a first load).
+var defer_materials: bool = false
+
+
+## The shared layer textures and the far tiles' material.
+func _make_materials() -> void:
+	if textures != null:
+		return
+	textures = TerrainTextures.adopt(prepared_textures)
+	prepared_textures = null
+	_far_material = ShaderMaterial.new()
+	_far_material.shader = load("res://assets/shaders/terrain_far.gdshader")
+	_far_material.set_shader_parameter("macro_variation", textures.macro_variation)
+	_far_material.set_shader_parameter("canopy_height", CANOPY_HEIGHT)
+
+
+## A region's material, unless it has one already or is no longer attached (a deferred step).
+func _make_material_of(rid: String) -> void:
+	if regions.has(rid) and not _materials.has(rid):
+		_materials[rid] = _make_region_material(regions[rid])
+
+
+## A region's cellars: compiled on the thread that composed it when it carries them (the world
+## loader, RegionStreamer's compose worker; meta "holes"), else here.
+func _take_holes(rt: RegionTerrain) -> TerrainHoles:
+	if rt.has_meta(&"holes"):
+		var th: TerrainHoles = rt.get_meta(&"holes")
+		rt.remove_meta(&"holes")
+		return th
+	return TerrainHoles.from_regions({rt.region_id: rt})
+
+
+## The splat images of a region's material, pure data, safe on a worker thread: the composing
+## thread stores them as meta "splat" (prepare_splat) so an attach only uploads them (TD-106).
+static func prepare_splat(rt: RegionTerrain) -> void:
+	rt.set_meta(&"splat", rt.splat_images())
+
+
 func _make_region_material(rt: RegionTerrain) -> ShaderMaterial:
+	if textures == null:
+		_make_materials()
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://assets/shaders/terrain.gdshader")
 	textures.apply_to(mat)
 	BloomWorld.apply_web(mat)
-	var imgs: Array[Image] = rt.splat_images()
+	var imgs: Array[Image] = []
+	if rt.has_meta(&"splat"):
+		imgs.assign(rt.get_meta(&"splat"))
+		rt.remove_meta(&"splat")
+	else:
+		imgs = rt.splat_images()
+	# The upload stays here: texture RIDs are made on the main thread (TD-103).
 	mat.set_shader_parameter("splat0", ImageTexture.create_from_image(imgs[0]))
 	mat.set_shader_parameter("splat1", ImageTexture.create_from_image(imgs[1]))
 	mat.set_shader_parameter("region_rect", Vector4(rt.rect.position.x, rt.rect.position.y, rt.rect.size.x, float(rt.height.width - 1)))
@@ -272,15 +320,12 @@ func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 	_lock.unlock()
 	_build_grid()
 	t = _part("grid", t)
+	# Its splat images were made on the compose worker when it streamed in (TD-106).
 	_materials[rid] = _make_region_material(rt)
 	t = _part("material", t)
 	# Cellars of the region's buildings (a new object: workers hold the old one).
 	# Compiled on the compose worker when it streamed in (RegionStreamer), else here.
-	if rt.has_meta(&"holes"):
-		_region_holes[rid] = rt.get_meta(&"holes")
-		rt.remove_meta(&"holes")
-	else:
-		_region_holes[rid] = TerrainHoles.from_regions({rid: rt})
+	_region_holes[rid] = _take_holes(rt)
 	_publish_holes()
 	t = _part("holes", t)
 	# The Bloom's tiles over the region, masked by its 1 m ground (TD-106): composed on the
@@ -398,6 +443,7 @@ func _process_body(delta: float) -> void:
 
 ## Ensures chunks around `pos` exist at the right LOD. Call directly for synchronous warm-up.
 func update_streaming(pos: Vector3, synchronous: bool = false) -> void:
+	_make_materials()
 	var c: Vector2i = chunk_of(pos.x, pos.z)
 	if c != _center:
 		_center = c
@@ -494,6 +540,8 @@ func _material_for(key: Vector2i) -> Material:
 	for rid: String in regions:
 		var rt: RegionTerrain = regions[rid]
 		if rt.rect.has_point(center):
+			# Made now if a chunk lands before its deferred boot step ran.
+			_make_material_of(rid)
 			return _materials[rid]
 	# Within 416 m of a built region's edge the near square reaches unbuilt ones: texture their
 	# chunks from the coarse (16 m) splat, made on first use.
@@ -723,11 +771,19 @@ var _far_ids: Array = []
 var _far_meshes: Array = []
 
 
-## Boot steps for a deferred setup: mesh every far tile in parallel, then add them.
+## Boot steps for a deferred setup: the layer textures and each region's material (defer_materials),
+## then every far tile meshed in parallel and added (defer_far_tiles).
 func boot_steps() -> Array:
-	if not defer_far_tiles:
-		return []
-	return [["Raising the far hills…", _start_far_tiles, "far tiles"], ["Raising the far hills…", _finish_far_tiles, "far tiles (add)"]]
+	var out: Array = []
+	if defer_materials:
+		out.append(["Laying the ground…", _make_materials, "terrain textures"])
+		var ids: Array = regions.keys()
+		ids.sort()
+		for rid: String in ids:
+			out.append(["Laying the ground…", _make_material_of.bind(rid), "terrain material %s" % rid])
+	if defer_far_tiles:
+		out.append_array([["Raising the far hills…", _start_far_tiles, "far tiles"], ["Raising the far hills…", _finish_far_tiles, "far tiles (add)"]])
+	return out
 
 
 func _start_far_tiles() -> void:
@@ -802,6 +858,7 @@ func _collect_far_jobs() -> void:
 
 
 func _add_far_tile(rid: String, mesh: ArrayMesh) -> void:
+	_make_materials()
 	var rect: Rect2 = world.region_rect(rid)
 	var mi := MeshInstance3D.new()
 	mi.name = "Far_" + rid

@@ -21,6 +21,11 @@ func _initialize() -> void:
 	_check_pois()
 	_check_world_gen(content)
 	_check_nests()
+	# Climbable structures (ADR-0057): every "climb" structure has its ladder or rope laid out.
+	var climb: Script = load("res://src/building/climb_mount.gd")
+	if climb != null:
+		for e3: String in climb.call(&"problems", content):
+			_err(e3)
 	print("[validate] %d errors, %d warnings" % [_errors, _warnings])
 	quit(1 if _errors > 0 else 0)
 

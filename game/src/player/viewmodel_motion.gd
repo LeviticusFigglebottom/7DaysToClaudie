@@ -44,6 +44,8 @@ var bob_w: float = 0.0
 var equip: float = 1.0
 ## Narrowing of the viewmodel while reading the tether (0..1), set by the view model.
 var reading: float = 0.0
+## 0..1: how much of the breathing, sway, lag and bob aiming takes out (ViewModel.set_aim).
+var steady: float = 0.0
 
 var _pos := Vector3.ZERO
 var _rot := Vector3.ZERO
@@ -147,6 +149,10 @@ func update(dt: float, look_rate: Vector2, vel: Vector3, speed: float, sprinting
 	var se: float = sprint_w * sprint_w * (3.0 - 2.0 * sprint_w)
 	pos += _v3(sp.get("pos"), Vector3(0.03, -0.07, 0.06)) * se
 	deg += _v3(sp.get("rot"), Vector3(-20, 26, 12)) * se
+	# A gun held up to the eye is steadied (PlayerAim): less breathing, sway, lag and bob.
+	if steady > 0.0:
+		pos *= 1.0 - steady
+		deg *= 1.0 - steady
 	# Landing, recoil, jolts and the camera kick all spring back to rest.
 	land.step(Vector3.ZERO, 120.0, 14.0, dt)
 	recoil.step(Vector3.ZERO, 160.0, 18.0, dt)

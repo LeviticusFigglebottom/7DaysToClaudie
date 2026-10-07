@@ -14,6 +14,10 @@ extends RefCounted
 signal step_ran(step_name: String, usec: int, finished: bool)
 
 var budget_ms: float = 40.0
+## A step that alone took at least this share of budget_ms ends the frame, so the next step (which
+## may be a heavy one) doesn't start on top of it. 1.0 (the default) fills the whole budget; the
+## boot uses 0.5: a 21 ms step followed by a 125 ms one made one 150 ms load frame (TD-197).
+var solo_share: float = 1.0
 ## [priority, sequence, step] sorted by priority then sequence (a float, so insert_next can slot
 ## steps between two others).
 var _queue: Array = []
@@ -80,8 +84,8 @@ func cancel(prefix: String, exact: bool = false) -> int:
 	return n
 
 
-## Runs steps until the frame's budget is spent; at least one runs, so a step that alone overruns
-## still makes progress. Returns how many steps finished.
+## Runs steps until the frame's budget is spent (or one step took solo_share of it); at least one
+## runs, so a step that alone overruns still makes progress. Returns how many steps finished.
 func run_frame() -> int:
 	var t0: int = Time.get_ticks_usec()
 	var finished: int = 0
@@ -99,7 +103,7 @@ func run_frame() -> int:
 			finished += 1
 		step_ran.emit(str(_running[2]), us, not waiting)
 		_running = []
-		if waiting or float(Time.get_ticks_usec() - t0) / 1000.0 >= budget_ms:
+		if waiting or float(Time.get_ticks_usec() - t0) / 1000.0 >= budget_ms or float(us) / 1000.0 >= budget_ms * solo_share:
 			break
 	return finished
 

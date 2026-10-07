@@ -46,6 +46,8 @@ def load_config() -> dict:
 
 # Finger joint prefixes and their bone names.
 FINGER_BONES = (("ix", "index"), ("md", "middle"), ("rg", "ring"), ("pk", "pinky"))
+# The finger names a hand spec's `curls` takes.
+FINGER_NAMES = tuple(n for _, n in FINGER_BONES)
 
 
 def _fp_bones():
@@ -71,8 +73,36 @@ def _fp_bones():
                 (f"{name}_2.{sd}", f"{name}_1.{sd}", f"{k}_pip.{sd}", f"{k}_dip.{sd}", f"palm_back.{sd}"),
                 (f"{name}_3.{sd}", f"{name}_2.{sd}", f"{k}_dip.{sd}", f"{k}_tip.{sd}", f"palm_back.{sd}"),
             ]
+    # Joint helpers (TD-174): a bone at each finger and thumb joint and at the wrist that turns
+    # half as far as the bone past it (FPRig.evaluate). The skin over a joint follows it, so a
+    # knuckle bent 90 deg wraps round in two 45 deg steps instead of linear blend skinning
+    # averaging two positions 90 deg apart into a dent (and the back of a bent wrist into a fold).
+    for sd in ("L", "R"):
+        bones.append((f"wrist_k.{sd}", f"forearm.{sd}", f"wrist.{sd}", f"hand_tip.{sd}", UP))
+        bones += [
+            (f"thumb_k1.{sd}", f"hand.{sd}", f"th_cmc.{sd}", f"th_mcp.{sd}", f"th_up.{sd}"),
+            (f"thumb_k2.{sd}", f"thumb_1.{sd}", f"th_mcp.{sd}", f"th_ip.{sd}", f"th_up.{sd}"),
+            (f"thumb_k3.{sd}", f"thumb_2.{sd}", f"th_ip.{sd}", f"th_tip.{sd}", f"th_up.{sd}"),
+        ]
+        for k, name in FINGER_BONES:
+            bones += [
+                (f"{name}_k1.{sd}", f"hand.{sd}", f"{k}_mcp.{sd}", f"{k}_pip.{sd}", f"palm_back.{sd}"),
+                (f"{name}_k2.{sd}", f"{name}_1.{sd}", f"{k}_pip.{sd}", f"{k}_dip.{sd}", f"palm_back.{sd}"),
+                (f"{name}_k3.{sd}", f"{name}_2.{sd}", f"{k}_dip.{sd}", f"{k}_tip.{sd}", f"palm_back.{sd}"),
+            ]
     return bones
 
+
+def _helper_of(name: str) -> str | None:
+    """The bone a joint helper halves (its sibling, so half that bone's local turn is its own), or
+    None for an ordinary bone."""
+    base, sd = name.rsplit(".", 1)
+    if base == "wrist_k":
+        return f"hand.{sd}"
+    if "_k" in base:
+        digit, kn = base.rsplit("_k", 1)
+        return f"{digit}_{kn}.{sd}"
+    return None
 
 
 FP_BONES = _fp_bones()
@@ -560,8 +590,68 @@ class FPModel:
             Ew /= Ew.sum(1, keepdims=True)
             for k, n in enumerate(names):
                 Wl[:, bi[n]] += hand_w * Ew[:, k]
+            self._joint_bands(P, Wl, bi, sd)
+            # The wrist helper takes the middle of the forearm-to-hand blend from both sides.
+            hs = 0.85 * 4.0 * w_h * (1.0 - w_h) * w_fa
+            Wl *= (1.0 - hs)[:, None]
+            Wl[:, bi[f"wrist_k.{sd}"]] += hs
             W[side] = Wl
         return W
+
+    # How far either side of a finger joint (in joint radii, along the bisector of its two bones)
+    # the skin blends from one bone through the joint's helper to the next, and the helper's share
+    # at the joint itself.
+    JOINT_BAND = 1.3
+    JOINT_HELPER = 0.9
+
+    def _joint_bands(self, P, Wl, bi, sd: str) -> None:
+        """Re-blends the skin across every finger and thumb joint (TD-174): from the nearest-bone
+        weights, which switch bones within a few mm of the joint (so a curled knuckle dented and
+        the clefts between the knuckles opened into slits), to a smooth ramp a joint's radius
+        either side of it with the joint's helper bone in the middle. Skin behind a knuckle goes
+        back to the hand (the palm's pads and the back of the hand stay put as a finger curls).
+        Distal joints first, so each pass only moves weight its own two bones hold."""
+        j = self.sk.j
+        s = self.s
+        ax = j[f"axis.{sd}"]
+        h0 = Wl[:, bi[f"hand.{sd}"]].copy()
+        # Which of the hand's weight each knuckle may take: near its own finger's axis only, and
+        # shared where two fingers' roots meet (a cleft), so the hand's weight is handed out once.
+        gates = {}
+        for k, _name in FINGER_BONES:
+            m, p = j[f"{k}_mcp.{sd}"], j[f"{k}_pip.{sd}"]
+            d = _n(p - m)
+            r = FINGER_SHAPE[k][0][0] * s
+            rel = P - m
+            lat = np.linalg.norm(rel - np.outer(rel @ d, d), axis=1)
+            gates[k] = 1.0 - smoothstep(1.3 * r, 2.2 * r, lat)
+        tot = np.maximum(1.0, sum(gates.values()))
+        joints = []
+        for k, name in FINGER_BONES:
+            radii = FINGER_SHAPE[k][0]
+            pts = [j[f"{k}_{n}.{sd}"] for n in ("mcp", "pip", "dip", "tip")]
+            dirs = [_n(b - a) for a, b in zip(pts[:-1], pts[1:])]
+            joints.append((pts[2], dirs[1], dirs[2], radii[2], f"{name}_2", f"{name}_3", f"{name}_k3", None))
+            joints.append((pts[1], dirs[0], dirs[1], radii[1], f"{name}_1", f"{name}_2", f"{name}_k2", None))
+            joints.append((pts[0], ax, dirs[0], radii[0], "hand", f"{name}_1", f"{name}_k1", gates[k] / tot))
+        tp = [j[f"th_{n}.{sd}"] for n in ("cmc", "mcp", "ip", "tip")]
+        td = [_n(b - a) for a, b in zip(tp[:-1], tp[1:])]
+        joints.append((tp[2], td[1], td[2], THUMB_RADII[2], "thumb_2", "thumb_3", "thumb_k3", None))
+        joints.append((tp[1], td[0], td[1], THUMB_RADII[1], "thumb_1", "thumb_2", "thumb_k2", None))
+        # the thumb's root is deep in the thenar mass: only the thumb's own weight re-blends there
+        joints.append((tp[0], ax, td[0], THUMB_RADII[0] * 1.4, "hand", "thumb_1", "thumb_k1", 0.0))
+        for J, dp, dd, r, pb, db, hb, share in joints:
+            ip, idd, ih = bi[f"{pb}.{sd}"], bi[f"{db}.{sd}"], bi[f"{hb}.{sd}"]
+            b = _n(dp + dd)
+            u = np.clip(((P - J) @ b) / (r * s * self.JOINT_BAND), -1.0, 1.0)
+            wp = Wl[:, ip].copy()
+            take = wp if share is None else h0 * share
+            sl = take + Wl[:, idd]
+            sm = smoothstep(-1.0, 1.0, u)
+            hw = sl * self.JOINT_HELPER * (1.0 - u * u) ** 2
+            Wl[:, idd] = (sl - hw) * sm
+            Wl[:, ip] = wp - take + (sl - hw) * (1.0 - sm)
+            Wl[:, ih] += hw
 
 
 # --------------------------------------------------------------------------------------------
@@ -907,9 +997,14 @@ class FPRig:
             grip = min(float(prm.get(f"{sd}.fist", 0.3)), FIST_MAX)
             idx = float(prm.get(f"{sd}.index", 0.0))
             thumb = float(prm.get(f"{sd}.thumb", grip))
+            # Per-finger curls (a hand spec's or a key's `curls`) replace the fist (for the
+            # index, fist + index) for the fingers they name.
+            own = prm.get(f"{sd}.curls") or {}
             lat = sk.j[f"lat.{sd}"]
             for k, name in FINGER_BONES:
                 c = max(-0.15, grip + idx) if k == "ix" else grip
+                if name in own:
+                    c = max(-0.15, min(float(own[name]), FIST_MAX))
                 for i, deg in enumerate(FINGER_CURL):
                     bn = f"{name}_{i + 1}.{sd}"
                     Q[bn] = _R(sk.rest[bn][:, 0], -deg * c * FINGER_SCALE[k])
@@ -927,7 +1022,23 @@ class FPRig:
                 _R(t1[:, 1], THUMB_CURL[2] * thumb * sx)
             Q[f"thumb_2.{sd}"] = _R(sk.rest[f"thumb_2.{sd}"][:, 0], -THUMB_CURL[3] * thumb)
             Q[f"thumb_3.{sd}"] = _R(sk.rest[f"thumb_3.{sd}"][:, 0], -THUMB_CURL[4] * thumb - float(prm.get(f"{sd}.flick", 0.0)))
+            # Joint helpers: half the turn of the bone each one halves. The wrist's takes half the
+            # hand's bend and a roll between the twist bone's share and the hand's.
+            sw = Qh @ rot_axis(axis, -tw)
+            for bn in HELPERS[sd]:
+                if bn == f"wrist_k.{sd}":
+                    Q[bn] = _half(sw) @ rot_axis(axis, tw * (1.0 + self.TWIST_SHARE) * 0.5)
+                else:
+                    Q[bn] = _half(Q[_helper_of(bn)])
         return Q, np.zeros(3)
+
+
+HELPERS = {sd: [b[0] for b in FP_BONES if b[0].endswith("." + sd) and _helper_of(b[0])] for sd in ("L", "R")}
+
+
+def _half(m: np.ndarray, t: float = 0.5) -> np.ndarray:
+    """The rotation turned `t` of the way from none to m (about the same axis)."""
+    return _qmat(_slerp(np.array([1.0, 0.0, 0.0, 0.0]), _quat(m), t))
 
 
 def _rotvec(m: np.ndarray) -> np.ndarray:
@@ -997,12 +1108,35 @@ class Hand:
         self.item = item
 
 
+def _curls(v, where: str) -> dict:
+    """A `curls` object ({finger: curl}, fingers index / middle / ring / pinky) checked."""
+    if not isinstance(v, dict):
+        raise ValueError(f"{where}: curls must be an object of finger -> curl")
+    bad = [k for k in v if k not in FINGER_NAMES]
+    if bad:
+        raise ValueError(f"{where}: unknown finger(s) {bad} in curls (fingers: {', '.join(FINGER_NAMES)}; "
+                         "the thumb has its own 'thumb' curl)")
+    return {k: float(x) for k, x in v.items()}
+
+
 def _scalars(spec: dict, base: dict | None = None) -> dict:
     out = dict(base) if base else dict(DEFAULT_SCALARS)
     for c in SCALARS:
         if c in spec:
             out[c] = float(spec[c])
+    out["curls"] = dict(out.get("curls") or {})
+    if "curls" in spec:
+        out["curls"].update(_curls(spec["curls"], "hand spec"))
     return out
+
+
+def finger_curl(sc: dict, finger: str) -> float:
+    """What curl a finger closes to for these scalars: its own `curls` entry, else the fist (and
+    the index's extra curl), as FPRig.evaluate reads them."""
+    own = sc.get("curls") or {}
+    if finger in own:
+        return float(own[finger])
+    return float(sc["fist"]) + (float(sc["index"]) if finger == "index" else 0.0)
 
 
 def _spec_hand(sd: str, spec: dict) -> Hand:
@@ -1035,6 +1169,10 @@ def _relative(h: Hand, ch: dict, sd: str) -> Hand:
     for c in SCALARS:
         if f"{sd}.{c}" in ch:
             sc[c] = float(ch[f"{sd}.{c}"])
+    # S.curls overrides those fingers for this key; the others keep the hold's own curls.
+    sc["curls"] = dict(h.sc.get("curls") or {})
+    if f"{sd}.curls" in ch:
+        sc["curls"].update(_curls(ch[f"{sd}.curls"], f"key channel {sd}.curls"))
     if h.on is not None:
         return Hand(None, euler_g(rot), el, sc, on=h.on, along=float(ch.get(f"{sd}.along", h.along)),
                     spin=float(ch.get(f"{sd}.spin", h.spin)), flip=h.flip)
@@ -1073,7 +1211,11 @@ def _qmat(q):
 
 def _lerp_hand(a: Hand, b: Hand, t: float) -> Hand:
     sc = {c: a.sc[c] + (b.sc[c] - a.sc[c]) * t for c in SCALARS}
-    el = a.elbow + (b.elbow - a.elbow) * t
+    # A finger with its own curl at either key eases between what it closes to at each (a key
+    # without one closes it with the fist), so it neither snaps nor waits for the fist.
+    fingers = set(a.sc.get("curls") or {}) | set(b.sc.get("curls") or {})
+    sc["curls"] = {f: finger_curl(a.sc, f) + (finger_curl(b.sc, f) - finger_curl(a.sc, f)) * t for f in fingers}
+    el =a.elbow + (b.elbow - a.elbow) * t
     F = _qmat(_slerp(_quat(a.F), _quat(b.F), t)) if a.F is not None and b.F is not None else None
     if a.on is not None:
         return Hand(None, F, el, sc, on=a.on, along=a.along + (b.along - a.along) * t, spin=a.spin + (b.spin - a.spin) * t,
@@ -1170,7 +1312,7 @@ class PoseSolver:
         c = sh + f * l2
         return c + _n(np.asarray(wrist) - c) * l1, c
 
-    def _fit(self, sd: str, g, F, elbow, movable: bool = True, item=None):
+    def _fit(self, sd: str, g, F, elbow, movable: bool = True, item=None, fixed_roll: bool = False):
         """(wrist, Rh, pole) for a grip at g with its handle along F's z: the elbow and the roll
         round the handle that bend the wrist least; then, if the wrist is still past its range,
         the hand moved (tool direction kept) just far enough toward where a straight wrist would
@@ -1198,12 +1340,16 @@ class PoseSolver:
         def cost(gg, sw, sp):
             return over(gg, sw, sp) + self.SWING_COST * abs(sw) + self.SPIN_COST * abs(sp)
 
+        # A pinned roll (`fixed_roll`: a gun's barrel, an inspect's turn-over) searches the elbow only.
+        spins = (0.0,) if fixed_roll else self.SPINS
+        near_spin = (0.0,) if fixed_roll else self.NEAR
+
         def search(gg, around):
             if around is None:
-                best = min(((a, b) for a in self.SWINGS for b in self.SPINS), key=lambda c: cost(gg, *c))
+                best = min(((a, b) for a in self.SWINGS for b in spins), key=lambda c: cost(gg, *c))
             else:
                 best = around
-            near = ((best[0] + a, best[1] + b) for a in self.NEAR for b in self.NEAR)
+            near = ((best[0] + a, best[1] + b) for a in self.NEAR for b in near_spin)
             # Within the wide search's bounds: walked frame to frame, the fist once spun 160° round
             # its handle and the elbow swung behind the back.
             return min((c for c in near if abs(c[0]) <= self.SWINGS[-1] and abs(c[1]) <= self.SPINS[-1]),
@@ -1277,13 +1423,15 @@ class PoseSolver:
             else:
                 g, F = h.g, h.F
             # A hand on the other's handle stays on it: it can turn, not move.
-            g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None, item=h.item)
+            g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None, item=h.item,
+                                           fixed_roll=sd in hands.get("_fixed_roll", ()))
             # What the hand really ended up gripping (the other hand follows this handle).
             placed[sd] = Hand(g, Rh @ self.rig.S0[sd], h.elbow, h.sc, item=h.item)
             prm[f"{sd}.wrist"], prm[f"{sd}.Rh"] = wrist, Rh
             prm[f"{sd}.pole"] = pole
             for c in SCALARS:
                 prm[f"{sd}.{c}"] = h.sc[c]
+            prm[f"{sd}.curls"] = dict(h.sc.get("curls") or {})
         return prm
 
 
@@ -1369,6 +1517,15 @@ def _keyed(pose: dict, keys: list, n: int) -> list[dict]:
     return frames
 
 
+def _pinned(frames: list[dict], sides: tuple) -> list[dict]:
+    """Frames whose hands on `sides` keep their authored roll about what they hold (`fixed_roll`
+    on a hold or an action): PoseSolver won't spin those fists to spare the wrist."""
+    if sides:
+        for fr in frames:
+            fr["_fixed_roll"] = sides
+    return frames
+
+
 def fp_actions(cfg: dict):
     """[(name, frames, loop, per-frame hands)] for every action the data asks for: per hold class
     its idle (fp_<class>), guard (fp_<class>_guard) and tether-reading (fp_<class>_tether) loops;
@@ -1380,14 +1537,15 @@ def fp_actions(cfg: dict):
         if cls.startswith("_") or "pose" not in h:
             continue
         pose = h["pose"]
-        out.append((f"fp_{cls}", 60, True, _idle(with_item(pose, h))))
+        fixed = tuple(h.get("fixed_roll", ()))
+        out.append((f"fp_{cls}", 60, True, _pinned(_idle(with_item(pose, h)), fixed)))
         if "guard" in h:
-            out.append((f"fp_{cls}_guard", 60, True, _idle(with_item(merge_pose(pose, h["guard"]), h))))
+            out.append((f"fp_{cls}_guard", 60, True, _pinned(_idle(with_item(merge_pose(pose, h["guard"]), h)), fixed)))
         if "pose" in tether and not h.get("no_tether", False):
             over = {"L": tether["pose"]["L"]}
             if "tether_right" in h:
                 over["R"] = h["tether_right"]
-            out.append((f"fp_{cls}_tether", 60, True, _idle(with_item(merge_pose(pose, over), h))))
+            out.append((f"fp_{cls}_tether", 60, True, _pinned(_idle(with_item(merge_pose(pose, over), h)), fixed)))
     for group in ("attacks", "uses"):
         for name, a in cfg.get(group, {}).items():
             if name.startswith("_") or "keys" not in a:
@@ -1396,5 +1554,7 @@ def fp_actions(cfg: dict):
             if "pose" in a:
                 pose = merge_pose(pose, a["pose"])
             n = int(a["frames"])
-            out.append((f"fp_{name}", n, bool(a.get("loop", False)), _keyed(with_item(pose, holds[a["hold"]]), a["keys"], n)))
+            fixed = tuple(a.get("fixed_roll", holds[a["hold"]].get("fixed_roll", ())))
+            out.append((f"fp_{name}", n, bool(a.get("loop", False)),
+                        _pinned(_keyed(with_item(pose, holds[a["hold"]]), a["keys"], n), fixed)))
     return out

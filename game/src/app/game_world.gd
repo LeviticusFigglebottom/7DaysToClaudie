@@ -35,10 +35,10 @@ var wildlife: Node = null
 var traders: Node = null
 var ashen: Node = null
 var farming: Node = null
-## Ezra Vane, the companion (ADR-0058).
-var companion: Node = null
 ## Forest encounters (ADR-0054): campsites, wrecks and caches scattered between the towns.
 var encounters: Node = null
+## Ezra Vane, the companion (ADR-0058).
+var companion: Node = null
 var is_ready: bool = false
 ## True when this random world streams its regions (ADR-0038): only the first area is composed at
 ## 1 m at load, the RegionStreamer brings in the rest, and buildings come by distance. The default
@@ -100,6 +100,7 @@ func _ready() -> void:
 			ResourceLoader.load_threaded_request(str(m[1]))
 	_loader = WorldLoader.new()
 	_loader.resolve_lots = true
+	_loader.prepare_terrain = true
 	_loader.world_seed = session.world_seed
 	var dir: String = MAIN_WORLD_DIR
 	if session.is_random_world():
@@ -206,6 +207,8 @@ func _on_world_loaded() -> void:
 	SaveSystem.fix_composer_changes(session, world_def, TerrainComposer.VERSION)
 	_boot = StepRunner.new()
 	_boot.budget_ms = BOOT_BUDGET_MS
+	# A step that used half the frame ends it: the next may be a heavy one (TD-197).
+	_boot.solo_share = 0.5
 	_boot.step_ran.connect(_on_boot_step)
 	_boot.add_all([
 		["Laying the ground…", _boot_terrain, "terrain"],
@@ -271,6 +274,10 @@ func _boot_terrain() -> void:
 	terrain = TerrainManager.new()
 	terrain.name = "Terrain"
 	terrain.defer_far_tiles = true
+	# Textures and materials in steps of their own, from data the loader prepared (TD-197).
+	terrain.defer_materials = true
+	terrain.prepared_textures = _loader.terrain_textures
+	_loader.terrain_textures = null
 	terrain.prebuilt_bloom = _loader.bloom_tiles
 	# Buildings come by distance (ADR-0038 §8): a cellar is cut once its building stands.
 	terrain.gate_holes = streaming and _loader.registry != null
@@ -376,8 +383,8 @@ const MODULES: Array = [
 	["wildlife", "res://src/wildlife/wildlife_manager.gd", "Waking the woods…"],
 	["traders", "res://src/trade/trader_manager.gd", "Manning the Waystation…"],
 	["ashen", "res://src/ai/ashen/ashen_director.gd", "Watching the treeline…"],
-	["companion", "res://src/companion/companion_director.gd", "Watching the treeline…"],
 	["encounters", "res://src/world/encounters/encounters.gd", "Leaving things in the woods…"],
+	["companion", "res://src/companion/companion_director.gd", "Watching the treeline…"],
 ]
 
 

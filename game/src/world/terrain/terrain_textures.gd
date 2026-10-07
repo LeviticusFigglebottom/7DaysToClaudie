@@ -25,21 +25,88 @@ var albedo: TextureLayered
 var normal: TextureLayered
 var orm: TextureLayered
 var macro_variation: Texture2D
+## True when the layers are the procedural stand-in (no generated arrays).
 var is_fallback: bool = false
 
 
 static func get_shared() -> TerrainTextures:
 	if _cached == null:
-		_cached = TerrainTextures.new()
-		_cached._load()
+		_cached = TerrainTextures.prepare()
+		_cached.finish()
 	return _cached
+
+
+## True once get_shared() has made the textures (later loads reuse them).
+static func is_shared_ready() -> bool:
+	return _cached != null
+
+
+## The pure-data half of the textures, safe on a worker thread (WorldLoader, TD-197): the layer
+## list and tiles, and the stand-in images when there are no generated arrays (~90 ms of
+## per-pixel script). finish() turns it into textures on the main thread (texture RIDs: the
+## headless dummy renderer's tables are not thread-safe, TD-103).
+static func prepare() -> TerrainTextures:
+	var t := TerrainTextures.new()
+	t._prepare()
+	return t
+
+
+## Main thread: makes the textures from what prepare() left and, the first time, shares them.
+## Returns the shared textures (an earlier one if another finish got there first).
+func finish() -> TerrainTextures:
+	if _finished:
+		return self
+	_finished = true
+	if not _pending.is_empty():
+		var arrs: Array[TextureLayered] = []
+		for imgs: Array[Image] in _pending:
+			var arr := Texture2DArray.new()
+			arr.create_from_images(imgs)
+			arrs.append(arr)
+		albedo = arrs[0]
+		normal = arrs[1]
+		orm = arrs[2]
+		is_fallback = true
+		_pending.clear()
+	var base: String = "res://assets/generated/textures/"
+	if _generated:
+		albedo = load(base + "terrain_albedo_array.png")
+		normal = load(base + "terrain_normal_array.png")
+		orm = load(base + "terrain_orm_array.png") if ResourceLoader.exists(base + "terrain_orm_array.png") else null
+		if albedo == null or albedo.get_layers() < layers.size():
+			# Imported but unusable: the stand-in, made here (rare: an out-of-date import).
+			_pending = _fallback_images(layers)
+			_generated = false
+			_finished = false
+			return finish()
+	if _macro_image != null:
+		macro_variation = ImageTexture.create_from_image(_macro_image)
+		_macro_image = null
+	elif ResourceLoader.exists(base + "terrain_macro_variation.png"):
+		macro_variation = load(base + "terrain_macro_variation.png")
+	return self
+
+
+## Shares textures made from a prepare() on another thread (or makes them if `prepared` is null).
+static func adopt(prepared: TerrainTextures) -> TerrainTextures:
+	if _cached == null and prepared != null:
+		_cached = prepared.finish()
+	return get_shared()
+
+
+var _finished: bool = false
+## Whether finish() loads the generated arrays.
+var _generated: bool = false
+## Stand-in layer images [albedo, normal, orm] (each one Image per layer) for finish().
+var _pending: Array = []
+var _macro_image: Image = null
 
 
 func layer_index(name: String) -> int:
 	return layers.find(name)
 
 
-func _load() -> void:
+func _prepare() -> void:
 	layers = DEFAULT_LAYERS
 	var tile_map: Dictionary = DEFAULT_TILES.duplicate()
 	if FileAccess.file_exists(LAYERS_JSON):
@@ -53,20 +120,15 @@ func _load() -> void:
 	for i: int in layers.size():
 		tiles[i] = float(tile_map.get(layers[i], 3.0))
 	var base: String = "res://assets/generated/textures/"
-	if ResourceLoader.exists(base + "terrain_albedo_array.png") and ResourceLoader.exists(base + "terrain_normal_array.png"):
-		albedo = load(base + "terrain_albedo_array.png")
-		normal = load(base + "terrain_normal_array.png")
-		orm = load(base + "terrain_orm_array.png") if ResourceLoader.exists(base + "terrain_orm_array.png") else null
-	if albedo == null or albedo.get_layers() < layers.size():
-		_build_fallback()
-	if ResourceLoader.exists(base + "terrain_macro_variation.png"):
-		macro_variation = load(base + "terrain_macro_variation.png")
-	else:
-		macro_variation = _noise_texture(256, 7)
+	_generated = ResourceLoader.exists(base + "terrain_albedo_array.png") and ResourceLoader.exists(base + "terrain_normal_array.png")
+	if not _generated:
+		_pending = _fallback_images(layers)
+	if not ResourceLoader.exists(base + "terrain_macro_variation.png"):
+		_macro_image = _noise_image(256, 7)
 
 
-func _build_fallback() -> void:
-	is_fallback = true
+## The procedural stand-in's layer images: [albedo, normal, orm], one Image per layer each.
+static func _fallback_images(p_layers: PackedStringArray) -> Array:
 	var size: int = 128
 	var albs: Array[Image] = []
 	var nrms: Array[Image] = []
@@ -74,11 +136,16 @@ func _build_fallback() -> void:
 	var nz := FastNoiseLite.new()
 	nz.frequency = 0.08
 	nz.fractal_octaves = 4
-	for li: int in layers.size():
-		var col: Color = FALLBACK_COLORS.get(layers[li], Color(0.4, 0.4, 0.4))
+	# Flat normal and ORM layers: one fill each, shared by every layer.
+	var nimg := Image.create(size, size, false, Image.FORMAT_RGB8)
+	nimg.fill(Color(0.5, 0.5, 1.0))
+	nimg.generate_mipmaps()
+	var o := Image.create(size, size, false, Image.FORMAT_RGB8)
+	o.fill(Color(1.0, 0.85, 0.0))
+	o.generate_mipmaps()
+	for li: int in p_layers.size():
+		var col: Color = FALLBACK_COLORS.get(p_layers[li], Color(0.4, 0.4, 0.4))
 		var a := Image.create(size, size, false, Image.FORMAT_RGBA8)
-		var nimg := Image.create(size, size, false, Image.FORMAT_RGB8)
-		var o := Image.create(size, size, false, Image.FORMAT_RGB8)
 		nz.seed = 11 + li
 		for y: int in size:
 			for x: int in size:
@@ -86,33 +153,21 @@ func _build_fallback() -> void:
 				var c: Color = col * (0.75 + 0.5 * v)
 				c.a = v
 				a.set_pixel(x, y, c)
-				nimg.set_pixel(x, y, Color(0.5, 0.5, 1.0))
-				o.set_pixel(x, y, Color(1.0, 0.85, 0.0))
 		a.generate_mipmaps()
-		nimg.generate_mipmaps()
-		o.generate_mipmaps()
 		albs.append(a)
 		nrms.append(nimg)
 		orms.append(o)
-	var a_arr := Texture2DArray.new()
-	a_arr.create_from_images(albs)
-	var n_arr := Texture2DArray.new()
-	n_arr.create_from_images(nrms)
-	var o_arr := Texture2DArray.new()
-	o_arr.create_from_images(orms)
-	albedo = a_arr
-	normal = n_arr
-	orm = o_arr
+	return [albs, nrms, orms]
 
 
-static func _noise_texture(size: int, seed: int) -> Texture2D:
+static func _noise_image(size: int, seed: int) -> Image:
 	var nz := FastNoiseLite.new()
 	nz.seed = seed
 	nz.frequency = 0.02
 	nz.fractal_octaves = 5
 	var img: Image = nz.get_seamless_image(size, size)
 	img.generate_mipmaps()
-	return ImageTexture.create_from_image(img)
+	return img
 
 
 ## Applies arrays + tiles to a terrain ShaderMaterial (near or far).

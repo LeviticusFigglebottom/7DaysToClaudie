@@ -128,6 +128,55 @@ def _dirt_mask(model, sk, o) -> None:
     layer.data.foreach_set("color", cols.ravel())
 
 
+def _skin_masks(model, sk, o, W) -> None:
+    """The skin shader's living-skin masks (fp_skin, docs/CHARACTERS.md#first-person-arms):
+    vertex A = the back of the hand and forearm (1) against the palm and the inner forearm (0),
+    which are paler and carry no veins; CUSTOM0.w (char_attrs' bruise slot: fp_skin has no
+    bruising) = how thin the flesh is, light showing through it (fingers 1, the thumb's root 0.7,
+    the hand 0.35, the forearm 0); UV2 / CUSTOM0.x = the rest pose, so the veins on the back of the
+    hand stay put on the skin as the hand moves. Each vertex's back-of-hand direction is its bones'
+    (weighted), so the fingers' own backs count as the back of the hand, however curled."""
+    from lib import char_attrs as A
+    V = M.mesh_arrays(o)
+    me = o.data
+    N = np.zeros(len(me.vertices) * 3)
+    me.vertices.foreach_get("normal", N)
+    N = N.reshape(-1, 3)
+    names = sk.names
+    backs = np.zeros((len(names), 3))
+    thin_w = np.zeros(len(names))
+    for i, bn in enumerate(names):
+        base, sd = bn.rsplit(".", 1) if "." in bn else (bn, "")
+        if base in ("upper_arm", "forearm", "forearm_twist", "root", "wrist_k"):
+            if sd in model.dorsal:
+                backs[i] = model.dorsal[sd]
+        else:
+            backs[i] = sk.rest[bn][:, 2]
+        if base in ("hand",):
+            thin_w[i] = 0.35
+        elif base in ("thumb_1", "thumb_k1"):
+            thin_w[i] = 0.7
+        elif base == "wrist_k":
+            thin_w[i] = 0.12
+        elif base.startswith(("thumb", "index", "middle", "ring", "pinky")):
+            thin_w[i] = 1.0
+    bk = W @ backs
+    bk /= np.maximum(np.linalg.norm(bk, axis=1, keepdims=True), 1e-9)
+    dorsal = smoothstep(-0.35, 0.45, (N * bk).sum(1))
+    thin = np.clip(W @ thin_w, 0.0, 1.0)
+    lv = np.zeros(len(me.loops), np.int32)
+    me.loops.foreach_get("vertex_index", lv)
+    layer = me.color_attributes[vcolor.ATTR]
+    cols = np.zeros(len(layer.data) * 4, np.float32)
+    layer.data.foreach_get("color", cols)
+    cols = cols.reshape(-1, 4)
+    cols[:, 3] = dorsal[lv]
+    layer.data.foreach_set("color", cols.ravel())
+    f = A.Fields(len(V))
+    f.bruise = thin
+    A.write(o, V, f)
+
+
 def build(params: dict, outputs: list[str]) -> None:
     scene = bpy.context.scene
     scene.render.fps = 30
@@ -193,6 +242,7 @@ def build(params: dict, outputs: list[str]) -> None:
     names = sk.names
     V = M.mesh_arrays(body)
     W = normalize_weights(model.weights(V))
+    _skin_masks(model, sk, body, W)
     _apply_weights(body, W, names)
     _bind(body, arm)
     Wt = np.zeros((len(tether.data.vertices), len(names)))

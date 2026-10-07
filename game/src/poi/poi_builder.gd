@@ -366,27 +366,15 @@ func _prepared() -> PoiValidator:
 ## the "a" side on interior ones.
 func _barricade_faces(v: PoiValidator) -> Dictionary:
 	var out: Dictionary = {}
-	var raw: Dictionary = {}
-	for o: Variant in layout.def.layout.get("openings", []):
-		if o is Dictionary and (o as Dictionary).has("id"):
-			raw[str(o["id"])] = o
 	for op: Dictionary in layout.openings:
 		if str(op["state"]) != "barricaded" or not str(op["type"]).begins_with("door"):
 			continue
-		var w: Dictionary = layout.walls.get(PoiLayout.edge_key(op["level"], op["axis"], op["edge"]), {})
-		if w.is_empty():
+		if not layout.walls.has(PoiLayout.edge_key(op["level"], op["axis"], op["edge"])):
 			continue
-		var boards: bool = str(op.get("barricade", "boards")) == "boards"
-		var on: String = str((raw.get(str(op["id"]), {}) as Dictionary).get("barricade_on", ""))
-		var face: float = 1.0
-		if on != "" and on == str(w["a"]):
-			face = 1.0
-		elif on != "" and on == str(w["b"]):
-			face = -1.0
-		elif bool(w["exterior"]):
-			var outside_sign: float = 1.0 if not layout.is_room(str(w["a"])) else -1.0
-			face = outside_sign if boards else -outside_sign
-		elif boards:
+		# The layout knows every face but interior boards' (PoiLayout.barricade_face_hint, which
+		# door_swing turns leaves away from).
+		var face: float = layout.barricade_face_hint(op)
+		if face == 0.0:
 			face = v._approach_side(op, v._keys_found)
 		out[str(op["id"])] = face
 	return out
@@ -765,7 +753,8 @@ func _openings() -> void:
 			var leaf_size := Vector2(float(ls[0]), float(ls[1]))
 			var hp: float = float(op["hp"]) if float(op["hp"]) > 0.0 else (900.0 if leaf == "door_metal" else (380.0 if exterior else 220.0))
 			var oid: String = str(op["id"])
-			# A leaf swings away from a stair flight on one side of its wall (player report 3).
+			# A leaf swings to the side of its wall with room for it: off stairs, never across a
+			# one-cell hall, in rather than out (PoiLayout.door_swing; player report 3, poi_walk).
 			var swing_sign: float = layout.door_swing(op)
 			if span == 1:
 				# TD-023: a leaf hinged beside a wall that runs off on its swing side would open into
@@ -806,7 +795,12 @@ func _openings() -> void:
 			if st == "barricaded":
 				var boards: bool = str(op.get("barricade", "boards")) == "boards"
 				var bar_face: float = float(_barricade_sides.get(oid, outside_sign if boards else -outside_sign))
-				var bar: PoiPieces.Breakable = _barricade(oid + "_bar", xf, bar_face, "boards_door" if boards else "barricade_furniture", 260.0)
+				# A furniture pile spills past a 1 m doorway only onto open floor beside it; elsewhere
+				# (the lookout's stood over its stair foot, poi_walk) it keeps to the doorway's column.
+				var pile_w: float = 0.0
+				if not boards and not bool(layout.barricade_pile(op, bar_face)["wide"]):
+					pile_w = minf(PoiLayout.PILE_W, float(spec["w"]) + PoiLayout.PILE_NARROW_MARGIN)
+				var bar: PoiPieces.Breakable = _barricade(oid + "_bar", xf, bar_face, "boards_door" if boards else "barricade_furniture", PoiLayout.BARRICADE_HP, 0.0, Vector3.ZERO, pile_w)
 				if bar != null:
 					bar.opening_id = oid
 		elif PoiLayout.is_window(t):
@@ -970,7 +964,8 @@ func _glass(id: String, wall_xf: Transform3D, pane: String, st: String, w: float
 	return g
 
 
-func _barricade(id: String, wall_xf: Transform3D, side_sign: float, piece: String, hp: float, sill: float = 0.0, box_size := Vector3.ZERO) -> PoiPieces.Breakable:
+## `pile_w` > 0 narrows a furniture pile to that width (its mesh squeezed to match).
+func _barricade(id: String, wall_xf: Transform3D, side_sign: float, piece: String, hp: float, sill: float = 0.0, box_size := Vector3.ZERO, pile_w: float = 0.0) -> PoiPieces.Breakable:
 	if root.piece_state(id, "intact") == "broken":
 		return null
 	var b := PoiPieces.Breakable.new()
@@ -989,6 +984,9 @@ func _barricade(id: String, wall_xf: Transform3D, side_sign: float, piece: Strin
 		size.x = 1.8
 	if box_size != Vector3.ZERO:
 		size = box_size
+	if pile_w > 0.0 and piece == "barricade_furniture":
+		mi.scale = Vector3(pile_w / size.x, 1.0, 1.0)
+		size.x = pile_w
 	_box(size, Transform3D(Basis.IDENTITY, Vector3(0, size.y * 0.5, 0)), b)
 	root.add_child(b)
 	return b
@@ -1107,7 +1105,11 @@ func _porch(porch: Dictionary, li0: int) -> void:
 	var depth: int = int(porch.get("depth", 2))
 	var lv: Dictionary = layout.levels[li0]
 	var top: float = layout.floor_height
-	var steps: Array = porch.get("steps", [])
+	# JSON numbers are floats: as ints, or `steps.has(i)` never matched and no authored porch got
+	# its steps (player report 3 item 5, found by poi_walk).
+	var steps: Array[int] = []
+	for v: Variant in porch.get("steps", []):
+		steps.append(int(v))
 	for i: int in range(from, to + 1):
 		for k: int in depth:
 			var cell: Vector2i

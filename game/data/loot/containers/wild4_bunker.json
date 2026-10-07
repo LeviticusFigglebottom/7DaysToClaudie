@@ -1,0 +1,10 @@
+{
+ "_doc": "Containers of the Kell Shelter (w4_hillside_bunker), forest set pieces round 4 (containers/wild4_bunker.json -> tables/wild4_bunker.json).",
+ "defs": [
+  {"id": "w4_bunker_cans", "name": "Shelf of Canned Food", "loot_table": "w4_bunker_cans", "slots": 8, "search_time": 2.0, "noise": 5},
+  {"id": "w4_bunker_desk", "name": "Gideon's Desk", "loot_table": "w4_bunker_desk", "slots": 6, "search_time": 1.6, "noise": 3},
+  {"id": "w4_bunker_gun_locker", "name": "Gun Locker", "loot_table": "w4_bunker_gun_locker", "slots": 8, "search_time": 2.2, "noise": 6},
+  {"id": "w4_bunker_ammo", "name": "Ammunition Shelf", "loot_table": "w4_bunker_ammo", "slots": 6, "search_time": 1.8, "noise": 5},
+  {"id": "w4_bunker_go_bag", "name": "Go-Bag Locker", "loot_table": "w4_bunker_go_bag", "slots": 8, "search_time": 2.0, "noise": 4}
+ ]
+}

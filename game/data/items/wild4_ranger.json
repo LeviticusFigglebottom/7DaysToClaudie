@@ -1,0 +1,71 @@
+{
+ "_doc": "Keys and readable notes of the Kettle Creek backcountry ranger station, wilderness round 4 (pois/buildings/w4_backcountry_ranger_station.json). Models: tools/assetgen/blender_catalogs/items_wild4_ranger.py.",
+ "defs": [
+  {
+   "id": "w4_ranger_tower_key",
+   "name": "Tower Hut Key",
+   "description": "A padlock key on a brass tag stamped TWR, from the hook in the radio room: the recorder hut at the foot of the fire-weather tower.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_ranger/w4_ranger_tower_key"
+  },
+  {
+   "id": "w4_ranger_district_key",
+   "name": "District Key",
+   "description": "The district ranger's key ring: the gun safe, the fuel shed, the gates, on a green lanyard printed with the Forest Service shield.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_ranger/w4_ranger_district_key"
+  },
+  {
+   "id": "note_w4_ranger_district_log",
+   "name": "District Log, Kettle Creek",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_ranger_district_log",
+   "model": "items/wild4_ranger/note_w4_ranger_district_log"
+  },
+  {
+   "id": "note_w4_ranger_roster",
+   "name": "Checkpoint 11: Standing Orders",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_ranger_roster",
+   "model": "items/wild4_ranger/note_w4_ranger_roster"
+  },
+  {
+   "id": "note_w4_ranger_letter",
+   "name": "Letter on a Footlocker",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_ranger_letter",
+   "model": "items/wild4_ranger/note_w4_ranger_letter"
+  },
+  {
+   "id": "note_w4_ranger_weather_log",
+   "name": "Fire-Weather Observations",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_ranger_weather_log",
+   "model": "items/wild4_ranger/note_w4_ranger_weather_log"
+  }
+ ]
+}
