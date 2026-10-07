@@ -371,12 +371,15 @@ func _grab_ladder(wish: Vector3, dir: Vector2) -> bool:
 		var face: Vector3 = lad.face()
 		var rel: Vector3 = feet - foot
 		var out: float = rel.dot(face)
-		if absf(rel.dot(face.cross(Vector3.UP))) > 0.45 or wish.normalized().dot(-face) < 0.5:
+		if absf(rel.dot(face.cross(Vector3.UP))) > 0.45:
 			continue
-		if feet.y > foot.y - 0.3 and feet.y < top_y - 0.6 and out > -0.1 and out < LADDER_REACH:
+		var toward: float = wish.normalized().dot(-face)
+		var at_top: bool = absf(feet.y - top_y) < 0.35
+		if toward >= 0.5 and feet.y > foot.y - 0.3 and feet.y < top_y - 0.6 and out > -0.1 and out < LADDER_REACH:
 			_ladder = lad
-		elif absf(feet.y - top_y) < 0.35 and out > -0.1 and out < 1.25:
-			# Down through the hatch: hang on the top rungs, just below the floor.
+		elif at_top and ((toward >= 0.5 and out > -0.1 and out < 1.25) or (toward <= -0.5 and out <= -0.1 and out > -1.25)):
+			# Down through the hatch, or over the top from the landing behind the rails (a stand's
+			# ladder, a rope): hang on the top rungs, just below the floor.
 			_ladder = lad
 			_climb_down_hold = true
 			global_position = foot + face * CLIMB_OFF + Vector3.UP * (lad.height - 0.25)
