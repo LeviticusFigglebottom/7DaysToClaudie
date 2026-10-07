@@ -40,6 +40,12 @@ func _check_assets(content: Node, strict: bool) -> void:
 		for m: Variant in w.models.keys():
 			_need_model(str(m), "wildlife %s" % w.id, missing)
 		_need_model(w.model, "wildlife %s" % w.id, missing)
+	# Garden crops (ADR-0049): every stage, and the dead plant they all share.
+	for c: CropDef in content.all(&"crop"):
+		for i: int in c.stages:
+			_need_model(c.stage_model(i), "crop %s" % c.id, missing)
+	if not content.all(&"crop").is_empty():
+		_need_model("crops/dead_plant", "crops", missing)  # FarmVisual.DEAD_MODEL (no autoload classes in -s scripts)
 	for m: String in missing:
 		if strict:
 			_err("asset: " + m)

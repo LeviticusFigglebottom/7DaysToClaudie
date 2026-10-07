@@ -33,6 +33,8 @@ var directives: Node = null
 var wildlife: Node = null
 ## Waystation trading (ADR-0039): trader posts, their shops, contracts and safe zones.
 var traders: Node = null
+var ashen: Node = null
+var farming: Node = null
 var is_ready: bool = false
 ## True when this random world streams its regions (ADR-0038): only the first area is composed at
 ## 1 m at load, the RegionStreamer brings in the rest, and buildings come by distance. The default
@@ -186,6 +188,8 @@ func _on_world_loaded() -> void:
 	poi_registry = _loader.registry
 	if _loader.world_id != "":
 		session.world_id = StringName(_loader.world_id)
+	# Before the vegetation reads its felled trees: records a newer composer re-scattered (TD-182).
+	SaveSystem.fix_composer_changes(session, world_def, TerrainComposer.VERSION)
 	_boot = StepRunner.new()
 	_boot.budget_ms = BOOT_BUDGET_MS
 	_boot.step_ran.connect(_on_boot_step)
@@ -256,6 +260,7 @@ func _boot_terrain() -> void:
 	terrain.prebuilt_bloom = _loader.bloom_field
 	# Buildings come by distance (ADR-0038 §8): a cellar is cut once its building stands.
 	terrain.gate_holes = streaming and _loader.registry != null
+	terrain.remesh_far_tiles = streaming
 	add_child(terrain)
 	terrain.setup(world_def, _loader.detailed.duplicate(), _loader.coarse)
 	# The terrain owns the regions now (they detach in a streamed world: nothing else may hold them).
@@ -346,6 +351,7 @@ const MODULES: Array = [
 	["vegetation", "res://src/world/vegetation/vegetation_manager.gd", "Growing the forest…"],
 	["loose", "res://src/world/loose_items.gd", "Scattering what was dropped…"],
 	["building", "res://src/building/building_manager.gd", "Raising what you built…"],
+	["farming", "res://src/building/farm_manager.gd", "Raising what you built…"],
 	["pois", "res://src/poi/poi_manager.gd", "Raising the town…"],
 	["ai", "res://src/ai/ai_director.gd", "Stirring the Hollowed…"],
 	["ambience", "res://src/audio/ambience_director.gd", "Listening…"],
@@ -353,6 +359,7 @@ const MODULES: Array = [
 	["directives", "res://src/progression/directive_tracker.gd", "Listening…"],
 	["wildlife", "res://src/wildlife/wildlife_manager.gd", "Waking the woods…"],
 	["traders", "res://src/trade/trader_manager.gd", "Manning the Waystation…"],
+	["ashen", "res://src/ai/ashen/ashen_director.gd", "Watching the treeline…"],
 ]
 
 
@@ -430,7 +437,23 @@ func _find_spawn(id: String) -> Dictionary:
 ## Set dressing named by the drop-site spawn feature (the Remand supply canister). It is pure
 ## data, rebuilt on every load rather than saved. A prop id resolves through its PropDef when one
 ## exists, otherwise to the generated item model `items/<id>`.
+## [body, height above the ground] of the drop-site props: a streamed world may place them over
+## the region's coarse ground (a load far from the drop site), so they settle again when the
+## region's 1 m terrain attaches.
+var _spawn_props: Array = []
+
+
+func _reground_spawn_props(_rid: String) -> void:
+	for e: Array in _spawn_props:
+		var body: Node3D = e[0]
+		if is_instance_valid(body):
+			var p: Vector3 = body.global_position
+			body.global_position = Vector3(p.x, terrain.height_at(p.x, p.z) + float(e[1]), p.z)
+
+
 func _place_spawn_props() -> void:
+	if streaming and not terrain.region_attached.is_connected(_reground_spawn_props):
+		terrain.region_attached.connect(_reground_spawn_props)
 	var spawn: Dictionary = _find_spawn("drop_site")
 	var base: Vector3 = spawn.get("pos", Vector3.ZERO)
 	for v: Variant in spawn.get("props", []):
@@ -446,6 +469,7 @@ func _place_spawn_props() -> void:
 		body.name = "SpawnProp_%s" % id
 		add_child(body)
 		body.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(float(d.get("rot", 0.0)))), at)
+		_spawn_props.append([body, float(off[1])])
 		var mi := MeshInstance3D.new()
 		mi.mesh = ModelLibrary.mesh(model, "box")
 		body.add_child(mi)

@@ -47,6 +47,8 @@ signal structure_placed(piece_id: StringName, def_id: StringName, position: Vect
 signal structure_damaged(piece_id: StringName, hp: float, max_hp: float)
 signal structure_destroyed(piece_id: StringName, def_id: StringName, position: Vector3)
 signal blueprint_completed(blueprint_id: StringName, def_id: StringName)
+## A garden plot brought in (ADR-0049): the crop def and what it gave ({item: count}).
+signal crop_harvested(player_id: StringName, crop_id: StringName, items: Dictionary)
 signal terrain_modified(aabb: AABB)
 signal tree_felled(tree_id: StringName, position: Vector3)
 ## A Remand Program supply canister was released over `position` (lands a little later).
@@ -82,6 +84,15 @@ signal trap_disarmed(player_id: StringName, poi_instance_id: StringName, trap_ty
 signal contract_accepted(player_id: StringName, contract_id: String, def_id: StringName)
 signal contract_completed(player_id: StringName, contract_id: String, def_id: StringName, tier: int)
 signal trade_made(player_id: StringName, trader_id: StringName, item_id: StringName, count: int, scrip: int)
+# The Ashen (ADR-0048)
+## A raid band set out for the base (or the player); `size` fighters.
+signal ashen_raid_started(raid_id: String, target: Vector3, size: int)
+## A raid is over: `repelled` when the band broke or fell, false when it gave up or the player left.
+signal ashen_raid_ended(raid_id: String, repelled: bool)
+## A scout watched the player long enough and got away (`reported`), or was seen off / killed.
+signal ashen_scout_done(entity_id: StringName, reported: bool)
+## The faction's escalation level changed (0 unaware, 1 watchers, 2 raids, 3 war parties).
+signal ashen_level_changed(level: int)
 signal note_found(note_id: StringName)
 signal schematic_learned(schematic_id: StringName)
 

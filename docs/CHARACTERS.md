@@ -103,6 +103,23 @@ Clips: `idle` (6 s), `idle_b` (5 s, leaning on a 1.05 m counter), `talk` (3 s), 
 looping. 15,268 triangles; 1.80 m to the cap. The face still uses the Hollowed head shape, gaunt
 and wide-eyed up close (TD-170). A new NPC is a catalog entry with its own build and clips.
 
+### Living fighters (`ashen_raider_a`, `ashen_raider_b`, `ashen_scout_a`, ADR-0048)
+`generators/character_living.py`: the `npc_build` body with the Hollowed's action *names* so the
+Enemy drives them, but living-human clips from `lib/living_anim.py` (TD-187):
+| action | frames | loop | notes |
+|---|---|---|---|
+| `idle` | 120 | ✓ | alert stance (left foot forward), breathing, weight shift, head scanning |
+| `walk` | 46 | ✓ | upright walk, 0.9 m/s at speed 1 (Enemy plays `sp / 0.9`), 1.38 m stride: natural cadence at 1.4 m/s |
+| `walk_b` | 84 | ✓ | wary walk (two cycles, 1.26 m stride, 0.9 m/s), arms ready, head scanning |
+| `run` | 20 | ✓ | upright run, arms pumping (arm IK), 4.5 m/s at speed 1 (`sp / 4.5`), 3.0 m stride, 180 steps/min |
+| `attack_a` | 24 | | overhead axe chop, right hand, the blow at frame 11 (45%) |
+| `attack_b` | 24 | | spear thrust / throw: draw back, full extension frames 13–16 (the throw lets go at 0.55 s at 0.9 speed) |
+| `attack_structure` | 30 | ✓ | two-handed overhead chops |
+The sleep / wake, hit, stagger and death clips are the Hollowed's; `idle_b`, `idle_c`,
+`walk_limp`, `eat`, `crawl`, `crawl_attack` and `scream` are left out (EnemyVisual would pick the
+first three as variants). Stance feet travel at exactly the clip speed, so there is no foot
+sliding at any playback speed.
+
 ## First-person arms (`models/characters/fp_arms.glb`, ADR-0029)
 * Separate armature `Armature` with bones `root, upper_arm.L/R, forearm.L/R, forearm_twist.L/R,
   hand.L/R` and three bones per digit, one per joint: `thumb_1/2/3.L/R` (CMC, MCP, IP) and

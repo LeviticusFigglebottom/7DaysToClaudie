@@ -2,12 +2,17 @@ class_name TraderScreen
 extends Control
 ## The Waystation trade screen (ADR-0039): the quartermaster's counter (buy, sell) and the
 ## contracts board (today's offers, your contracts, turning them in). A plain clipboard over the
-## view; everything it does goes through the trade.* / contract.* commands.
+## view; everything it does goes through the trade.* / contract.* commands. Shop rows carry the
+## item's icon, a tooltip (description, price each, stock / owned) and a count picker whose number
+## is the `count` of trade.buy / trade.sell; the picked counts are screen state only (ADR-0003).
+
+const TradeIcons := preload("res://src/trade/trade_icons.gd")
 
 const PAPER := Color(0.83, 0.8, 0.7)
 const INK := Color(0.14, 0.12, 0.1)
 const INK_DIM := Color(0.42, 0.38, 0.32)
 const OK_INK := Color(0.16, 0.4, 0.18)
+const ICON_SIZE := 40
 
 var manager: Node
 var _post_id: String = ""
@@ -18,12 +23,18 @@ var _status: Label
 var _list: VBoxContainer
 var _tabs: HBoxContainer
 var _msg: Label
+var _icons: Node
+## Picked count per shop row ("buy:<item>" / "sell:<item>"), kept across refreshes. UI state only.
+var _counts: Dictionary = {}
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
+	_icons = TradeIcons.new()
+	_icons.name = "Icons"
+	add_child(_icons)
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.45)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -76,6 +87,8 @@ func _ready() -> void:
 
 
 func open(post_id: String, where: String) -> void:
+	if post_id != _post_id:
+		_counts.clear()
 	_post_id = post_id
 	_tab = "buy" if where == "shop" else "offers"
 	_open = true
@@ -114,10 +127,11 @@ func _trader() -> TraderDef:
 
 
 func _refresh() -> void:
-	for c: Node in _list.get_children():
-		c.queue_free()
-	for c: Node in _tabs.get_children():
-		c.queue_free()
+	# Detached at once so the rebuilt rows keep their names (tests and tools find them by name).
+	for box: Node in [_list, _tabs]:
+		for c: Node in box.get_children():
+			box.remove_child(c)
+			c.queue_free()
 	var td: TraderDef = _trader()
 	var p: PlayerState = Game.session.local_player()
 	if td == null or p == null:
@@ -161,11 +175,17 @@ func _buy_rows(td: TraderDef, p: PlayerState, tier: int) -> void:
 			continue
 		var need: int = int(e.get("rep_tier", 0))
 		if need > tier:
-			_list.add_child(_label("%s — needs %s standing" % [idef.display_name, td.rep_tier_name(need)], 16, INK_DIM))
+			var locked: HBoxContainer = _icon_row(idef, "%s\n\nNeeds %s standing." % [idef.description, td.rep_tier_name(need)])
+			locked.modulate = Color(1, 1, 1, 0.6)
+			locked.add_child(_label("%s — needs %s standing" % [idef.display_name, td.rep_tier_name(need)], 16, INK_DIM))
+			_list.add_child(locked)
 			continue
 		var price: int = td.buy_price(idef, tier)
-		_row("%s  x%d   —   %d scrip" % [idef.display_name, int(e["count"]), price], "Buy",
-			p.inventory.count_of(&"scrip") >= price, _do.bind(&"trade.buy", {"item": String(idef.id), "count": 1}))
+		var have: int = p.inventory.count_of(idef.id)
+		var afford: int = mini(int(e["count"]), floori(float(p.inventory.count_of(&"scrip")) / float(price)))
+		_trade_row("buy", idef, "%s  x%d   —   %d scrip" % [idef.display_name, int(e["count"]), price],
+			"%s\n\n%d scrip each   ·   %d on the shelf   ·   you have %d" % [idef.description, price, int(e["count"]), have],
+			afford, price)
 		shown += 1
 	if shown == 0:
 		_list.add_child(_label("Nothing on the shelves. Restocks every %d days." % td.restock_days, 16, INK_DIM))
@@ -174,21 +194,16 @@ func _buy_rows(td: TraderDef, p: PlayerState, tier: int) -> void:
 func _sell_rows(td: TraderDef, p: PlayerState) -> void:
 	var seen: Dictionary = {}
 	for s: ItemStack in p.inventory.stacks:
-		if seen.has(s.id):
+		if seen.has(s.item_id):
 			continue
-		seen[s.id] = true
-		var idef: ItemDef = Content.item(s.id)
+		seen[s.item_id] = true
+		var idef: ItemDef = Content.item(s.item_id)
 		var each: int = td.sell_price(idef) if idef != null else 0
 		if each <= 0:
 			continue
-		var n: int = p.inventory.count_of(s.id)
-		var h: HBoxContainer = _row("%s  x%d   —   pays %d each" % [idef.display_name, n, each], "Sell 1", true,
-			_do.bind(&"trade.sell", {"item": String(s.id), "count": 1}))
-		if n > 1:
-			var all := Button.new()
-			all.text = "Sell all"
-			all.pressed.connect(_do.bind(&"trade.sell", {"item": String(s.id), "count": n}))
-			h.add_child(all)
+		var n: int = p.inventory.count_of(s.item_id)
+		_trade_row("sell", idef, "%s  x%d   —   pays %d each" % [idef.display_name, n, each],
+			"%s\n\nPays %d scrip each   ·   you have %d" % [idef.description, each, n], n, each)
 	if seen.is_empty():
 		_list.add_child(_label("You have nothing the Program buys.", 16, INK_DIM))
 
@@ -253,6 +268,77 @@ func _do(cmd: StringName, args: Dictionary) -> void:
 	if bool(r.get("ok", false)):
 		Audio.play_2d(&"ui/page_turn", -12.0)
 	_refresh()
+
+
+## A shop row: icon, text, count picker (SpinBox plus a Max / All shortcut) and the action button,
+## which sends the picked count. `limit` is the most this row can trade now (stock and scrip for a
+## buy, what you carry for a sale); below 1 the row is shown but can't be used. Named
+## "<tab>_<item>" with children "Count", "Most" and "Action".
+func _trade_row(tab: String, idef: ItemDef, text: String, tip: String, limit: int, each: int) -> HBoxContainer:
+	var key: String = "%s:%s" % [tab, idef.id]
+	var h: HBoxContainer = _icon_row(idef, tip)
+	h.name = "%s_%s" % [tab, idef.id]
+	var l: Label = _label(text, 16, INK)
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(l)
+	var n: int = clampi(int(_counts.get(key, 1)), 1, maxi(1, limit))
+	_counts[key] = n
+	var spin := SpinBox.new()
+	spin.name = "Count"
+	spin.min_value = 1
+	spin.max_value = maxi(1, limit)
+	spin.step = 1
+	spin.rounded = true
+	spin.value = n
+	spin.editable = limit > 1
+	spin.custom_minimum_size.x = 76
+	spin.tooltip_text = tip
+	h.add_child(spin)
+	var most := Button.new()
+	most.name = "Most"
+	most.text = "Max" if tab == "buy" else "All"
+	most.tooltip_text = "As many as you can afford (%d)" % limit if tab == "buy" else "Everything you carry (%d)" % limit
+	most.disabled = limit <= 1
+	most.pressed.connect(func() -> void:
+		spin.value = spin.max_value)
+	h.add_child(most)
+	var act := Button.new()
+	act.name = "Action"
+	act.disabled = limit < 1
+	act.custom_minimum_size.x = 130
+	h.add_child(act)
+	var label_action := func(v: float) -> void:
+		var c: int = int(v)
+		act.text = ("Buy %d  (%d)" % [c, c * each]) if tab == "buy" else ("Sell %d  (+%d)" % [c, c * each])
+	label_action.call(spin.value)
+	spin.value_changed.connect(func(v: float) -> void:
+		_counts[key] = int(v)
+		label_action.call(v))
+	act.pressed.connect(_trade.bind(tab, String(idef.id)))
+	_list.add_child(h)
+	return h
+
+
+## Sends the row's picked count through trade.buy / trade.sell.
+func _trade(tab: String, item: String) -> void:
+	var n: int = maxi(1, int(_counts.get("%s:%s" % [tab, item], 1)))
+	_do(&"trade.buy" if tab == "buy" else &"trade.sell", {"item": item, "count": n})
+
+
+## An HBox carrying the item's icon, with the tooltip over the whole row.
+func _icon_row(idef: ItemDef, tip: String) -> HBoxContainer:
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override(&"separation", 10)
+	h.tooltip_text = tip
+	var icon := TextureRect.new()
+	icon.name = "Icon"
+	icon.texture = _icons.call(&"texture", idef.id)
+	icon.custom_minimum_size = Vector2(ICON_SIZE, ICON_SIZE)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(icon)
+	return h
 
 
 func _row(text: String, action: String, enabled: bool, cb: Callable) -> HBoxContainer:

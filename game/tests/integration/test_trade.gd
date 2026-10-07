@@ -258,3 +258,52 @@ func test_the_field_lab_contract_brings_in_a_bloom_core() -> void:
 	assert_eq(_p.inventory.count_of(&"bloom_core_canister"), 0, "the core handed over")
 	assert_eq(_p.inventory.count_of(&"lab_antifungal_ampoule"), 2)
 	assert_true((lab_offer.call() as Dictionary).is_empty(), "a one-off job")
+
+
+func test_a_defence_never_runs_into_the_hum() -> void:
+	# TD-142: no uplink while the Hum is out or when it would come before the hold is done.
+	var c: Dictionary = _take("defend")
+	var clock: WorldClock = Game.session.clock
+	var hd: int = clock.next_horde_day(clock.day())
+	clock.set_time(hd, clock.horde_start_hour - 0.2)
+	_p.position = Vector3(float(c["spot"][0]), float(c["spot"][1]), float(c["spot"][2]))
+	var r: Dictionary = Game.execute(&"contract.start_defend", {"player": String(_p.id), "contract": c["id"]})
+	assert_false(bool(r["ok"]), "the Hum is minutes off")
+	clock.set_time(hd, clock.horde_start_hour + 1.0)
+	assert_false(bool(Game.execute(&"contract.start_defend", {"player": String(_p.id), "contract": c["id"]})["ok"]), "the Hum is out")
+	clock.set_time(hd + 1, 12.0)
+	assert_true(bool(Game.execute(&"contract.start_defend", {"player": String(_p.id), "contract": c["id"]})["ok"]), "the next noon is fine")
+
+
+func test_waves_grow_with_the_gamestage() -> void:
+	var qd: QuestDef = Content.get_def(&"quest", &"defend_t1") as QuestDef
+	var lo: int = 0
+	var hi: int = 0
+	for i: int in 20:
+		var r1 := RandomNumberGenerator.new()
+		r1.seed = i
+		lo += TraderManager.wave_count(qd, 0, r1)
+		var r2 := RandomNumberGenerator.new()
+		r2.seed = i
+		hi += TraderManager.wave_count(qd, 60, r2)
+	assert_gt(hi, lo)
+
+
+func test_the_guards_fire_from_their_towers_and_turn_drifters_aside() -> void:
+	# TD-143: shots come from the towers, and a Hollowed wandering toward the wire is turned along it.
+	var e: Dictionary = _tm.posts["trader:waystation_9"]
+	var towers: Array[Vector3] = TraderManager.towers_of(e)
+	assert_eq(towers.size(), 2, "Waystation 9's two towers")
+	for t: Vector3 in towers:
+		assert_gt(t.y, POST.y + 5.0, "on the deck")
+		assert_lt(Vector2(t.x - POST.x, t.z - POST.z).length(), _td.safe_radius)
+	var gun: Vector3 = _tm._gun_for(e, towers[0] + Vector3(1, -5, 1))
+	assert_eq(gun, towers[0], "the nearest tower fires")
+	var ai := AIDirector.new()
+	add_child_autofree(ai)
+	var en: Enemy = ai.spawn(&"hollow", POST + Vector3(_td.safe_radius + 6.0, 0, 0), {"tier": "normal", "authored": true})
+	await get_tree().physics_frame
+	en.target_pos = POST
+	en._set_state(Enemy.State.INVESTIGATE)
+	TraderManager._steer_off(en, POST, _td.safe_radius)
+	assert_gt(Vector2(en.target_pos.x - POST.x, en.target_pos.z - POST.z).length(), _td.safe_radius, "its goal is outside the wire")

@@ -71,10 +71,18 @@ itself stays C2's.
 
 Random worlds can take the adit as a wilderness site: the hub's generator adds a `mine` site.
 
+**Note (generator v7, TD-169):** the `mine` site does. It reuses this adit as is, once per world
+(`unique`, danger 3+). The generator picks a steep macro slope within 800 m of a road and turns the
+plan so local +X (where the levels run) goes uphill. The region feature's `size` (the entry's `pad`,
+24 x 14) is all that is levelled. Every buried cell beyond the pad must lie under the reference
+ground by 1.5 m at the pad's edge, growing to 4 m 16 m in: TD-164's check, made at placement. The
+track comes along the contour to the hoist-house door. Mines are placed last, from their own stream,
+so no other place moves. Leftovers: TD-206..210.
+
 ## Consequences
 * A dungeon can now go down into the ground without opening it to the sky, and the Hollowed stay
   down there.
 * The caves read as a mine rather than as natural limestone: the POI grid is boxy, and only the rock
   faces, stalagmites and finishes break it.
 * The organic caves beyond the sealed passage (C6) and the Deep Mine (C2) wait for their regions.
-* Gaps: TD-162..169.
+* Gaps: TD-162..169; random-world mines TD-206..210.

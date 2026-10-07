@@ -110,6 +110,9 @@ func _place_region(rt: RegionTerrain) -> void:
 
 # --- Regions in and out (ADR-0038, RWG v2 Phase 2: buildings by region until Phase 3's rings) ---
 
+## Fixtures of one framework placed per streaming step.
+const FIXTURE_STEP: int = 48
+
 ## Region id -> true once its buildings are placed or queued.
 var _placed_regions: Dictionary = {}
 ## Instance id -> the region it stands in; fixture bodies by region.
@@ -135,9 +138,19 @@ func _on_region_attached(rid: String) -> void:
 	if registry != null:
 		# Its pads at 1 m heights; its fixtures in a step of their own (the buildings: _update_ring).
 		registry.refresh_region(rid, rt)
-		steps.add(["", func() -> void:
-			if _placed_regions.has(rid) and tm.regions.has(rid):
-				_place_region(rt), "poi region %s" % rid])
+		# A step per FIXTURE_STEP fixtures of each framework (a town's in one region were up to
+		# ~70 ms in one step). Fixtures outside the region's rect are skipped inside.
+		for pl: Dictionary in rt.placements:
+			if not str(pl.get("kind", "")) in ["framework", "town"]:
+				continue
+			var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(pl["def"]))) as FrameworkDef
+			var n: int = fw.fixtures.size() if fw != null else 0
+			for from: int in range(0, maxi(n, 1), FIXTURE_STEP):
+				steps.add(["", func() -> void:
+					if _placed_regions.has(rid) and tm.regions.has(rid):
+						_region_now = rid
+						_place_framework(pl, false, Vector2i(from, from + FIXTURE_STEP))
+						_region_now = "", "poi region %s" % rid])
 		return
 	var lots: Dictionary = world.get(&"poi_lots") if world.get(&"poi_lots") is Dictionary else {}
 	var seed: int = Game.session.world_seed if Game.session != null else 0
@@ -305,9 +318,7 @@ func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
 			_orphans.append(job[k])
 	# Half built: its root never entered the tree.
 	if job.has("builder"):
-		var half: Node = (job["builder"] as PoiBuilder).root
-		if is_instance_valid(half) and not half.is_inside_tree():
-			half.free()
+		(job["builder"] as PoiBuilder).discard()
 	_jobs.erase(id)
 	_region_of.erase(id)
 	_inside.erase(id)
@@ -316,6 +327,8 @@ func _free_building(id: StringName, steps: StepRunner, ai: Node) -> void:
 		if ai != null:
 			inst.despawn_sleepers(ai)
 		_keep_roamers(id, inst)
+		RouteCues.forget(inst.layout)
+		_mark_nav(inst)
 		inst.queue_free()
 	instances.erase(id)
 	_grid_remove(id)
@@ -373,7 +386,9 @@ static func _placement_xf(pl: Dictionary) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP, -deg_to_rad(float(pl.get("rotation", 0.0)))), Vector3(float(o[0]), float(o[1]), float(o[2])))
 
 
-func _place_framework(pl: Dictionary, buildings: bool = true) -> void:
+## `fx`: the range of the framework's fixtures to place ([from, to), to -1 = all), so a streamed
+## region can place a big town's fixtures over several steps.
+func _place_framework(pl: Dictionary, buildings: bool = true, fx: Vector2i = Vector2i(0, -1)) -> void:
 	var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(pl["def"]))) as FrameworkDef
 	if fw == null:
 		Log.warn("poi", "framework %s not found" % pl["def"])
@@ -407,7 +422,7 @@ func _place_framework(pl: Dictionary, buildings: bool = true) -> void:
 	# model and one body holding every box (TD-107). An organic town has hundreds of them, and a
 	# body and a mesh instance each cost a node, a draw call and a physics object apiece.
 	var cells: Dictionary = {}
-	for fi: int in fw.fixtures.size():
+	for fi: int in range(fx.x, fw.fixtures.size() if fx.y < 0 else mini(fx.y, fw.fixtures.size())):
 		var f: Dictionary = fw.fixtures[fi]
 		var pdef: PropDef = Content.get_def(&"prop", StringName(str(f.get("prop", "")))) as PropDef
 		if pdef == null:
@@ -504,6 +519,13 @@ static func lot_xf(l: Dictionary, footprint: Vector2i) -> Transform3D:
 ## dressed per run, the authored defaults and the old scatter for a legacy save. A run keeps the
 ## picks it made the first time (pinned in the POI's saved state), even if content gains options.
 static func dress_for(pd: PoiDef, instance_id: StringName, session: GameSession) -> PoiDef:
+	var a: Array = dress_args(pd, instance_id, session)
+	return Dressing.resolve(pd, a[0], a[1])
+
+
+## dress_for's half that reads and pins the run's saved state (main thread): [picks, resolve
+## options]. Dressing.resolve with them is pure and may run on a worker.
+static func dress_args(pd: PoiDef, instance_id: StringName, session: GameSession) -> Array:
 	var mode: int = Dressing.MODE_LEGACY
 	var world_seed: int = 0
 	var st: Dictionary = {}
@@ -522,7 +544,7 @@ static func dress_for(pd: PoiDef, instance_id: StringName, session: GameSession)
 				picks[gid] = str(pinned[gid])
 		if session != null:
 			st["picks"] = picks.duplicate()
-	return Dressing.resolve(pd, picks, {"mode": mode, "seed": seed})
+	return [picks, {"mode": mode, "seed": seed}]
 
 
 func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _pad: Vector2, def: PoiDef = null) -> PoiInstance:
@@ -548,22 +570,35 @@ func _place_poi(def_id: StringName, instance_id: StringName, xf: Transform3D, _p
 ## Boot step: compiles a queued building's layout (main thread: the per-run picks are pinned in
 ## the session) and starts its PoiValidator on a worker thread.
 func _prepare_poi(job: Dictionary) -> void:
-	var layout := PoiLayout.compile(dress_for(job["pd"], job["id"], Game.session))
-	for e: String in layout.errors:
-		Log.warn("poi", e)
-	var v := PoiValidator.new()
-	v.layout = layout
-	job["layout"] = layout
-	job["checked"] = v
-	job["task"] = WorkerThreadPool.add_task(v._run, false, "poi check %s" % job["id"])
+	# The picks are pinned here (session state); dressing, compiling and the route check run on a
+	# worker (a big building's compile was ~40 ms of a streaming step). The worker fills `out`
+	# only: a dictionary written from two threads at once can corrupt itself.
+	var a: Array = dress_args(job["pd"], job["id"], Game.session)
+	var pd: PoiDef = job["pd"]
+	var out: Array = [null, null, null]
+	job["out"] = out
+	job["layout"] = null
+	job["task"] = WorkerThreadPool.add_task(func() -> void:
+		var layout := PoiLayout.compile(Dressing.resolve(pd, a[0], a[1]))
+		var v := PoiValidator.new()
+		v.layout = layout
+		out[0] = layout
+		out[1] = v
+		v._run()
+		PoiBuilder.prepare_check(v)
+		# The route-cue windows walk the route's outdoor legs: ~350 ms for the quarantine camp's
+		# 44 m yard, which PoiInstance._ready (RouteCues.build) paid in one streaming frame.
+		out[2] = RouteCues.entry_windows(layout), false, "poi check %s" % job["id"])
 	_tasks.append(job["task"])
 
 
 ## Main-thread time a building's build takes per call before it yields to the next frame.
 const BUILD_SLICE_MS: float = 8.0
+## A single PoiBuilder phase longer than this is logged by name.
+const SLOW_PHASE_MS: float = 20.0
 
 
-## Boot step: builds a prepared building once its check is done, a few PoiBuilder phases per call
+## Boot step: builds a prepared building once its check is done, a few PoiBuilder steps per call
 ## (ADR-0038: no single frame pays for a whole sawmill); false = not done, ask again next frame.
 func _finish_poi(job: Dictionary) -> bool:
 	var task: int = int(job.get("task", -1))
@@ -573,11 +608,29 @@ func _finish_poi(job: Dictionary) -> bool:
 		WorkerThreadPool.wait_for_task_completion(task)
 		_tasks.erase(task)
 		job.erase("task")
+		if job.has("out"):
+			job["layout"] = job["out"][0]
+			job["checked"] = job["out"][1]
+			RouteCues.plan(job["layout"], job["out"][2])
+			job.erase("out")
+			for e: String in (job["layout"] as PoiLayout).errors:
+				Log.warn("poi", e)
 	if not job.has("builder"):
 		job["builder"] = PoiBuilder.start(job["layout"], job["id"], job.get("checked"))
 	var b: PoiBuilder = job["builder"]
 	var t0: int = Time.get_ticks_usec()
-	while not b.step():
+	while true:
+		var phase: String = b.next_phase()
+		var tp: int = Time.get_ticks_usec()
+		# What is left of the slice: a resumable phase (walls, floors, roof, props...) stops there.
+		var done: bool = b.step(maxf(BUILD_SLICE_MS - float(tp - t0) / 1000.0, 0.5))
+		var ms: float = float(Time.get_ticks_usec() - tp) / 1000.0
+		# A step still over the slice is one item too big to split: name it (StreamMeter only sees
+		# the step).
+		if ms > SLOW_PHASE_MS:
+			Log.info("poi", "%s: phase %s took %.0f ms" % [job["id"], phase, ms])
+		if done:
+			break
 		if float(Time.get_ticks_usec() - t0) / 1000.0 >= BUILD_SLICE_MS:
 			return false
 	_place_built(b.root, job["id"], job["xf"])
@@ -607,7 +660,19 @@ func _place_built(inst: PoiInstance, instance_id: StringName, xf: Transform3D) -
 	_limit_draw_distance(inst)
 	inst.geometry_changed.connect(_on_poi_geometry_changed)
 	_set_hole(instance_id, true)
+	_mark_nav(inst)
 	return inst
+
+
+## A streamed world's building comes and goes after the nav tiles round it were baked: bake them
+## again over its whole box (NavTiles marks the 3 x 3 tiles round each point).
+func _mark_nav(inst: PoiInstance) -> void:
+	if registry == null:
+		return
+	var b: AABB = inst.world_bounds()
+	for x: float in [b.position.x, b.end.x]:
+		for z: float in [b.position.z, b.end.z]:
+			_on_poi_geometry_changed(Vector3(x, 0.0, z))
 
 
 ## A streamed world's cellar of this building opens with it and closes when it is freed.
@@ -677,6 +742,12 @@ func _on_poi_geometry_changed(pos: Vector3) -> void:
 
 
 func _process(delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_process_body(delta)
+	StreamMeter.note("pois", t0)
+
+
+func _process_body(delta: float) -> void:
 	_ring_t += delta
 	if registry != null and _ring_t >= RING_INTERVAL and world != null and world.player != null and world.is_ready:
 		_ring_t = 0.0

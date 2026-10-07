@@ -1,0 +1,20 @@
+{
+ "_doc": "Garden crops (ADR-0049). seeds: items that plant it. produce / seed_return: {item: [min, max]} at harvest. grow_days: game days of good growth (watered, in season, warm) to ripe; data/config/farming.json scales it by season and temperature, the crop_growth world setting by a factor. stages: visual stages, the last one ripe (models crops/<id>_s1..). wilt_days: days in dry soil before it dies. min_temp_c: no growth below; frost_c: frost hurts below. seasons: per-season multipliers over the config's. regrow_stage: a perennial drops back to this stage (0-based) after a harvest (-1 = annual).",
+ "defs": [
+  {"id": "potato", "name": "Potatoes", "seeds": ["seed_potato", "potato", "farm_potatoes"], "produce": {"potato": [3, 5]},
+   "grow_days": 5.0, "stages": 4, "wilt_days": 2.0, "min_temp_c": 4.0, "frost_c": -2.0, "seasons": {"autumn": 0.7},
+   "leaf_color": "#4f7a32", "color": "#b48d5e", "height": 0.55},
+  {"id": "carrot", "name": "Carrots", "seeds": ["carrot_seeds"], "produce": {"carrot": [2, 4]}, "seed_return": {"carrot_seeds": [0, 1]},
+   "grow_days": 4.0, "stages": 4, "wilt_days": 1.5, "min_temp_c": 3.0, "frost_c": -4.0, "seasons": {"autumn": 0.8},
+   "leaf_color": "#5c8f3a", "color": "#e07a26", "height": 0.35},
+  {"id": "pole_beans", "name": "Pole Beans", "seeds": ["bean_seeds"], "produce": {"green_beans": [3, 6]}, "seed_return": {"bean_seeds": [1, 2]},
+   "grow_days": 4.5, "stages": 4, "wilt_days": 1.2, "min_temp_c": 8.0, "frost_c": 0.0, "seasons": {"summer": 1.3, "autumn": 0.5},
+   "leaf_color": "#41782c", "color": "#6fa23d", "height": 1.6},
+  {"id": "huckleberry", "name": "Huckleberry Bush", "seeds": ["huckleberry_seeds"], "produce": {"huckleberries": [4, 8]},
+   "grow_days": 7.0, "stages": 4, "wilt_days": 3.0, "min_temp_c": 2.0, "frost_c": -12.0, "regrow_stage": 2,
+   "leaf_color": "#3f6b2e", "color": "#3a2552", "height": 0.8},
+  {"id": "yarrow", "name": "Yarrow", "seeds": ["yarrow_seeds"], "produce": {"yarrow": [2, 4]}, "seed_return": {"yarrow_seeds": [0, 1]},
+   "grow_days": 3.0, "stages": 4, "wilt_days": 3.0, "min_temp_c": 2.0, "frost_c": -8.0, "regrow_stage": 1,
+   "leaf_color": "#6b8f4a", "color": "#efeadb", "height": 0.5}
+ ]
+}

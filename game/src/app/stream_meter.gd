@@ -75,6 +75,10 @@ func frame(delta: float, late: bool = false, wall_ms: float = -1.0) -> bool:
 	if ms < 0.0:
 		ms = float(now - _last_us) / 1000.0 if _last_us >= 0 else 0.0
 	_last_us = now
+	if wall_ms < 0.0 and ms > 100.0:
+		# The engine's own split of the frame being closed: script process vs physics step(s).
+		_frame_kinds["=process"] = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		_frame_kinds["=physics"] = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 	var at: String = _describe_frame()
 	_frame_kinds.clear()
 	for t: Dictionary in [_win, _all]:
@@ -135,11 +139,16 @@ func summary(all: bool = false) -> String:
 		var k: Dictionary = kinds[kind]
 		parts.append("%s %dx max %.1f/total %.0f ms" % [kind, int(k["count"]), float(k["max_ms"]), float(k["total_ms"])])
 	var over: PackedStringArray = over_budget(STEP_BUDGET_MS, all)
-	return "%.0f s, %d frames, longest %.0f ms (%s), late %.1f s; %d steps %.0f ms%s%s" % [
+	# The slowest single step by name ("poi ivy_bend_lot_7"): a kind's max alone can't be traced.
+	var worst: String = ""
+	if not over.is_empty():
+		var wk: Dictionary = kinds[over[0]]
+		worst = "; worst %s %.1f ms" % [wk["max_name"], float(wk["max_ms"])]
+	return "%.0f s, %d frames, longest %.0f ms (%s), late %.1f s; %d steps %.0f ms%s%s%s" % [
 		float(t["seconds"]), int(t["frames"]), float(t["longest_ms"]), t["longest_at"] if str(t["longest_at"]) != "" else "no steps",
 		float(t["late_s"]), int(t["steps"]), float(t["step_ms"]),
 		("; " + ", ".join(parts)) if not parts.is_empty() else "",
-		("; over %.0f ms: %s" % [STEP_BUDGET_MS, ", ".join(over)]) if not over.is_empty() else ""]
+		("; over %.0f ms: %s" % [STEP_BUDGET_MS, ", ".join(over)]) if not over.is_empty() else "", worst]
 
 
 ## The kinds run in the frame being closed, costliest first ("poi 31 ms + attach 4 ms").
@@ -149,9 +158,23 @@ func _describe_frame() -> String:
 	var names: Array = _frame_kinds.keys()
 	names.sort_custom(func(a: String, b: String) -> bool: return float(_frame_kinds[a]) > float(_frame_kinds[b]))
 	var parts: PackedStringArray = []
-	for kind: String in names.slice(0, 3):
+	for kind: String in names.slice(0, 4):
 		parts.append("%s %.0f ms" % [kind, float(_frame_kinds[kind])])
 	return " + ".join(parts)
+
+
+## The meter of the running streamed world (null otherwise), for note().
+static var current: StreamMeter = null
+
+
+## A system's per-frame work outside the steps (vegetation, terrain installs, AI...), noted by name
+## so a long frame says what filled it: "~veg 210 ms". Costs nothing without a streamed world.
+static func note(name: String, t0_usec: int) -> void:
+	if current == null:
+		return
+	var ms: float = float(Time.get_ticks_usec() - t0_usec) / 1000.0
+	if ms >= 2.0:
+		current._frame_kinds["~" + name] = float(current._frame_kinds.get("~" + name, 0.0)) + ms
 
 
 static func _new_tally() -> Dictionary:

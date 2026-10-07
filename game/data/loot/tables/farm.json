@@ -38,6 +38,14 @@
      "weight": 2
     },
     {
+     "table": "garden_seeds",
+     "weight": 4
+    },
+    {
+     "item": "bucket",
+     "weight": 1
+    },
+    {
      "item": "scrip",
      "weight": 1,
      "count": [

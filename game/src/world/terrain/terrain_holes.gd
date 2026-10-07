@@ -96,13 +96,15 @@ func bounds_of(id: StringName) -> Rect2:
 
 ## Holes for every POI placed in `regions` (region id -> RegionTerrain; the detailed regions,
 ## which are the ones PoiManager builds).
-static func from_regions(regions: Dictionary) -> TerrainHoles:
+## `world_seed`: the run's seed (LotPicker resolves lots with it); taken from the session when
+## omitted, which a worker thread must not do (it reads the scene tree): pass it there.
+static func from_regions(regions: Dictionary, world_seed: int = -1) -> TerrainHoles:
 	var th := TerrainHoles.new()
 	var ids: Array = regions.keys()
 	ids.sort()
 	for rid: Variant in ids:
 		var rt: RegionTerrain = regions[rid]
-		for e: Dictionary in placed_pois(rt.placements):
+		for e: Dictionary in placed_pois(rt.placements, world_seed):
 			th.add_poi(e["def"], e["id"], e["xf"])
 	return th
 
@@ -111,8 +113,9 @@ static func from_regions(regions: Dictionary) -> TerrainHoles:
 ## [{def: PoiDef, id: StringName, xf: Transform3D}] with the transform PoiManager gives the
 ## building node: a placement turns its plane by `rotation` degrees (node yaw = -angle), and a
 ## lot centres the POI footprint in its rect with the front (+Z) toward `facing`.
-static func placed_pois(placements: Array) -> Array[Dictionary]:
+static func placed_pois(placements: Array, world_seed: int = -1) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
+	var seed: int = world_seed if world_seed >= 0 else Lots.session_seed()
 	var db: Node = ContentDB.instance
 	if db == null:
 		return out
@@ -137,7 +140,7 @@ static func placed_pois(placements: Array) -> Array[Dictionary]:
 					only = Rect2(float(p["rect"][0]), float(p["rect"][1]), float(p["rect"][2]), float(p["rect"][3]))
 				# Lots without a pick hold what LotPicker chooses (ADR-0030), resolved as PoiManager does;
 				# generated buildings have no cellars, so only authored ones can cut a hole.
-				for res: Dictionary in Lots.resolve(fw, str(p.get("id", fw.id)), Lots.session_seed()):
+				for res: Dictionary in Lots.resolve(fw, str(p.get("id", fw.id)), seed):
 					var l: Dictionary = res["lot"]
 					var lpd: PoiDef = db.call(&"get_def", &"poi", res["def_id"]) as PoiDef if str(res["kind"]) == "authored" else null
 					if lpd == null or (only.has_area() and not only.has_point(Lots.lot_center(l))):

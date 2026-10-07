@@ -1,0 +1,10 @@
+{
+  "_doc": "What a dead Ashen fighter carries (ADR-0048): what they make and what they took off the dead.",
+  "defs": [
+    {"id": "ashen_remains", "rolls": [1, 3], "empty_chance": 0.15, "entries": [
+      {"item": "rawhide_strips", "weight": 6, "count": [2, 5]}, {"item": "sinew", "weight": 5, "count": [1, 2]},
+      {"item": "bone", "weight": 4, "count": [1, 3]}, {"item": "crude_spear", "weight": 3},
+      {"item": "deer_hide", "weight": 2}, {"item": "stone_axe", "weight": 2},
+      {"item": "scrip", "weight": 2, "count": [3, 12]}, {"item": "cloth", "weight": 2, "count": [1, 3]}]}
+  ]
+}

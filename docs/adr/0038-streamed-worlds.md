@@ -220,6 +220,37 @@ Measured (`make stream-check`, headless container, 5x5 world, seed 7): world rea
   73 ms, `poi` 58 ms, `poi region` 33 ms, `trader` 15 ms (all six over 8 ms); the longest frame,
   646 ms, ran no streaming step at all; no late seconds.
 
+**Budgets, round 2** (`stream_walk`, headless, size 4, seed 7, 1 km out and back, load ~3; the
+StreamMeter now also notes per-system time and, for frames over 100 ms, the engine's process and
+physics times):
+* attach 450 → ≤27 ms: the region's cellars compile on its compose worker;
+* `poi plan` 38 → 0.1 ms: dressing, compiling and the route check on one worker;
+* `poi region` 84 → 15 ms: a town's fixtures 48 a step;
+* the longest frames (250-470 ms every minute) were the wildlife tick re-planning every cell
+  round the player: plans are now cached per cell;
+* left over 8 ms: `poi` (single PoiBuilder phases up to ~30 ms; the roof phase of a big building
+  ~40 ms; since split, see "Buildings in steps") and attach on a busy container. Frames of 200-300 ms remain with under 60 ms of process
+  and physics time between them: CPU contention on the shared container, not script time.
+* Loads: the water bodies and the bridges build in boot steps (a 10 km world's water was one
+  2.6 s frame, the main map's bridges one of 470 ms).
+
+**Buildings in steps** (TD-107, round 3): `PoiBuilder.step(budget_ms)` lets a resumable phase stop
+once the budget is spent and go on at the next step; PoiManager passes what is left of its 8 ms
+slice. Walls, posts, floors, the exterior, the roof, props, scatter, probes and batches walk their
+items (a wall, a row of cells, a prop, a roof stage of `RoofBuilder.Job`) from a cursor in the
+one-shot order, so the random streams and the node order are those of a one-shot build
+(`test_poi_builder_phases.gd` builds seven buildings at a 1 µs budget, 250-1,600 steps each, and
+compares them with one-shot builds). Pure-data prework moved to the check worker
+(`PoiBuilder.prepare_check`): barricade faces (a reachability flood each, the motel's route
+phase was 36 ms), the roof plan (11 ms on the sawmill), the probe boxes (13 ms on the Corvane
+lab), the scatter's clutter table (3-6 ms over every prop def) and the per-run decals (the
+sawmill's took 25 ms in the smoke run). Measured with `poi_phase_bench.gd` (headless, 22
+authored + 2 generated buildings dressed per run, no generated assets, fastest of three): the
+worst step went from 35.6 ms (one whole phase a step) to 8.4 ms at an 8 ms budget; at a 1 ms
+budget the largest indivisible item is ~8 ms (a roof item of the sawmill), every other under
+5 ms. Left: one-time loads inside an item (the kit wall shader's first use is ~6 ms) and, with
+generated assets, model and decal texture loads (TD-107).
+
 Measured (`stream_walk`, headless, size 4, seed 11, 2 km out and back twice): no late seconds,
 longest frame 679 ms, static memory flat at 423 MiB, 6,244 nodes against 19,567 when regions
 built all their buildings. Deferred: TD-107.

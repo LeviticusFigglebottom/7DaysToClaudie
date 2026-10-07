@@ -42,6 +42,15 @@ var stats: Dictionary = {}
 ## Locked doors: opening id -> +1 / -1, the side of the wall (local +Z = the "a" room side) the
 ## door is approached from, i.e. where its padlock hangs and its key is used (PoiBuilder lock cues).
 var lock_sides: Dictionary = {}
+## The builder's prework, done on PoiManager's check worker by PoiBuilder.prepare_check (`prepared`):
+## barricaded door id -> +1 / -1 (the face its barricade stands on), the roof plan, the interior
+## probe boxes, the scatter's clutter props by room tag and the per-run decals.
+var prepared: bool = false
+var barricade_sides: Dictionary = {}
+var roof_wings: Array[RoofPlanner.Wing] = []
+var probe_boxes: Array[AABB] = []
+var clutter: Dictionary = {}
+var run_decals: Array[Dictionary] = []
 var _keys_found: Dictionary = {}
 ## Weak floors treated as already collapsed: stepping onto one drops you to the level below.
 var _collapsed: bool = false
@@ -346,6 +355,14 @@ func _run() -> void:
 				has_container = true
 		if not has_container:
 			_e("loot room '%s' has no container" % lr_char)
+		# A contract cache's authored spot (TD-144): in the loot room, on a cell nothing stands in.
+		var cache: Array = layout.loot_room.get("cache", [])
+		if not cache.is_empty():
+			var cc := Vector2i(int(floor(float(cache[0]))), int(floor(float(cache[cache.size() - 1]))))
+			if cache.size() != 2 or layout.room_at(lr_level, cc) != lr_char:
+				_e("loot_room.cache %s is not in loot room '%s'" % [cache, lr_char])
+			elif Contracts.taken_cells(layout, lr_level).has(cc):
+				_e("loot_room.cache %s is on a cell something already stands in" % [cache])
 	# Route.
 	if layout.route.size() < 2:
 		_e("route needs at least two waypoints")

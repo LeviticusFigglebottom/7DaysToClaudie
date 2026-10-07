@@ -287,6 +287,8 @@ func test_generation_scales_to_10x10() -> void:
 		var labs: int = (g.get(&"places") as Array).filter(func(p: Dictionary) -> bool: return str(p["def"]) == "corvane_field_lab").size()
 		assert_lte(labs, 1, "%d x %d: the field lab is unique (%d)" % [sz, sz, labs])
 		assert_eq(labs, 1, "%d x %d: and a world this big has one" % [sz, sz])
+		var adits: int = (g.get(&"places") as Array).filter(func(p: Dictionary) -> bool: return str(p["site"]) == "mine").size()
+		assert_eq(adits, 1, "%d x %d: one Corvane adit, dug into a hillside (TD-169)" % [sz, sz])
 		var ids: Dictionary = g.call(&"region_ids")
 		assert_eq(ids.size(), sz * sz)
 		assert_true(ids.has("%s%d" % [char(64 + sz), sz]), "the last cell is %s%d" % [char(64 + sz), sz])

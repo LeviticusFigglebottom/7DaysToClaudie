@@ -74,15 +74,24 @@ static func _kinds(v: Variant) -> Variant:
 	return out
 
 
-## Opening id -> [cue kinds] for every opening that gets cues.
-static func plan(layout: PoiLayout) -> Dictionary:
+## Drops a building's cached plan when it is freed (a streamed world makes a new dressed def each
+## time it builds one, and an object id can be reused once its object is gone).
+static func forget(layout: PoiLayout) -> void:
+	if layout != null and layout.def != null:
+		_plans.erase(layout.def.get_instance_id())
+
+
+## Opening id -> [cue kinds] for every opening that gets cues. Main thread only (the cache);
+## `windows` is entry_windows(layout) when a worker already walked it (PoiManager._prepare_poi).
+static func plan(layout: PoiLayout, windows: Variant = null) -> Dictionary:
 	var key: int = layout.def.get_instance_id()
 	if _plans.has(key):
 		return _plans[key]
 	var out: Dictionary = {}
 	var raw: Dictionary = authored(layout)
 	var default: PackedStringArray = PackedStringArray(cfg().get("default", ["curtain", "crate", "scuffs"]))
-	for op_id: String in entry_windows(layout):
+	var entry: Dictionary = windows if windows is Dictionary else entry_windows(layout)
+	for op_id: String in entry:
 		out[op_id] = default
 	for op_id: String in raw:
 		var k: Variant = _kinds(raw[op_id])
@@ -99,7 +108,8 @@ static func plan(layout: PoiLayout) -> Dictionary:
 ## Window openings the route climbs in through from outside: opening id -> true. Walks the route
 ## legs that start outside the building with the validator's own graph (without keys: nobody
 ## brings the key in from the street), not the whole validation, which costs seconds for the big
-## buildings and this runs as each one is built at world load.
+## buildings and this runs as each one is built at world load. Reads only the layout: a worker
+## may run it (a 44 m yard's legs took ~350 ms, PoiManager._prepare_poi).
 static func entry_windows(layout: PoiLayout) -> Dictionary:
 	var v := PoiValidator.new()
 	v.layout = layout

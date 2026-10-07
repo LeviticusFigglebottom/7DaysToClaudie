@@ -1,0 +1,66 @@
+{
+ "_doc": "The living Ashen's camp kit (ADR-0048, the Ashen highcamp): a war drum, a spear rack, clay pots of lichen-ash, a drying rack and a fed camp fire. Models: tools/assetgen/blender/generators/props_ashen_camp.py -> models/props/<id>[_worn].glb (catalog tools/assetgen/blender_catalogs/props_outskirts.py); materials game/data/materials/props_ashen_camp.json (plus the watch camp's out_* materials). size = [width x, height y, depth z] in metres (Godot axes, front +Z); before the models exist each prop draws as a box of its size. The camp fire burns where a POI places it with \"lit\": true (PropLights: light, flames, crackle; its embers glow only then); worn is a fire burning low.",
+ "defs": [
+  {
+   "id": "ashen_war_drum",
+   "name": "War Drum",
+   "description": "A log drum with a rawhide head laced on with sinew, tilted in a cradle of crossed poles under a deer skull hung with bone charms. The Ashen beat it to call the camp.",
+   "tags": ["decor", "exterior", "ashen"],
+   "variants": {"clean": "props/ashen_war_drum", "worn": "props/ashen_war_drum_worn"},
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [1.28, 1.45, 1.08],
+   "blocks_sight": false
+  },
+  {
+   "id": "ashen_spear_rack",
+   "name": "Spear Rack",
+   "description": "Spears with knapped flint and bone heads leaning on a lashed crossbar between two forked posts, a hide quiver of throwing sticks on one post.",
+   "tags": ["decor", "exterior", "ashen"],
+   "variants": {"clean": "props/ashen_spear_rack", "worn": "props/ashen_spear_rack_worn"},
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [2.28, 2.26, 0.84],
+   "blocks_sight": false
+  },
+  {
+   "id": "ashen_ash_pots",
+   "name": "Ash Pots",
+   "description": "Coil-built clay pots of grey-green lichen-ash by a grinding stone, a big jar with a hide tied over its mouth. The ash hides the Ashen's scent from the Hollowed.",
+   "tags": ["decor", "exterior", "ashen"],
+   "variants": {"clean": "props/ashen_ash_pots", "worn": "props/ashen_ash_pots_worn"},
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [1.14, 0.66, 0.8],
+   "blocks_sight": false
+  },
+  {
+   "id": "ashen_drying_rack",
+   "name": "Drying Rack",
+   "description": "Strips of venison drying on sinew under a ridge pole between two A-frames, a scraped hide over the rail and another stretched on a sapling hoop.",
+   "tags": ["decor", "exterior", "ashen"],
+   "variants": {"clean": "props/ashen_drying_rack", "worn": "props/ashen_drying_rack_worn"},
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [2.84, 1.87, 1.18],
+   "blocks_sight": false
+  },
+  {
+   "id": "ashen_camp_fire",
+   "name": "Camp Fire",
+   "description": "A ring of river stones round a deep bed of coals, split logs stood in a cone over it, a spit on forked sticks and a clay pot in the ashes. Somebody feeds it.",
+   "tags": ["structure", "exterior", "ashen", "light"],
+   "variants": {"clean": "props/ashen_camp_fire", "worn": "props/ashen_camp_fire_worn"},
+   "collision": "none",
+   "physics": "static",
+   "size": [1.77, 0.96, 1.3],
+   "light": {"color": "#ff7a32", "energy": 3.2, "range": 13.0, "flicker": 0.4, "offset": [0.0, 0.9, 0.0], "shadow": true, "power": "flame", "fx": "fire", "fx_size": 0.62,
+             "variants": {"worn": {"energy": 1.8, "range": 8.0, "flicker": 0.45, "offset": [0.0, 0.6, 0.0], "fx_size": 0.34}}},
+   "blocks_sight": false
+  }
+ ]
+}

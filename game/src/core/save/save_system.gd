@@ -246,6 +246,39 @@ static func load_session(slot: String) -> GameSession:
 	return session
 
 
+# --- Composer changes under an existing run (TD-182) --------------------------------------------
+
+## Composer version from which random worlds' towns paint `town` only on their streets (ADR-0047):
+## the vegetation scatter in town chunks changed, so per-instance records there point elsewhere.
+const TOWN_PAINT_COMPOSER: int = 12
+
+
+## Brings a loaded run's saved state in line with the composer that now composes its world: a
+## random run composed before TOWN_PAINT_COMPOSER loses its felled-tree and harvested-plant
+## records in the 64 m vegetation chunks touching a town (they are addressed by scatter index,
+## which now names other instances; the trees there simply stand again). Records the current
+## version. Returns how many chunks were dropped. `world_def`: the WorldDef being played (its
+## `towns`). Main-map runs only get the version recorded.
+static func fix_composer_changes(session: GameSession, world_def: Object, current: int) -> int:
+	var dropped: int = 0
+	if session.is_random_world() and session.composer_version < TOWN_PAINT_COMPOSER and current >= TOWN_PAINT_COMPOSER and world_def != null:
+		var towns: Array = world_def.get(&"towns")
+		var margin: float = 20.0
+		for key: String in session.world.trees.keys():
+			var c: Vector2i = Ids.parse_chunk_key(key)
+			var r := Rect2(c.x * 64.0, c.y * 64.0, 64.0, 64.0)
+			for tw: Dictionary in towns:
+				var near: Vector2 = (tw["center"] as Vector2).clamp(r.position, r.end)
+				if (tw["bounds"] as Rect2).grow(margin).intersects(r) and near.distance_to(tw["center"]) <= float(tw["radius"]) + margin:
+					session.world.trees.erase(key)
+					dropped += 1
+					break
+		if dropped > 0:
+			Log.info(&"save", "composer %d -> %d: dropped vegetation records in %d town chunks (TD-182)" % [session.composer_version, current, dropped])
+	session.composer_version = current
+	return dropped
+
+
 # --- The world bundle (save v7, RWG v2 §5) ------------------------------------------------------
 
 const WORLDS_ROOT: String = "user://worlds/random"

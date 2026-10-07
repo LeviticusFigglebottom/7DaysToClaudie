@@ -1,0 +1,12 @@
+{
+ "_doc": "Garden family materials (ADR-0049, tools/assetgen/blender/generators/farm_garden.py). No textures of their own: the soil reuses terrain_dirt, produce the farm family's farm_produce skin, the rest are plain tints. Leaves use the shared item_herb atlas; logs, cloth, galvanised steel and water reuse the structure, interior, item and farm families.",
+ "materials": {
+  "garden_soil": {"shader": "std_surface", "textures": "terrain_dirt", "params": {"uv_scale": 1.2, "vertex_ao_strength": 1.0, "tint": "#6e5a48", "normal_strength": 1.2, "roughness_add": 0.05, "grime_amount": 0.25, "grime_color": "#1a130d"}},
+  "garden_carrot": {"shader": "std_surface", "textures": "farm_produce", "params": {"uv_scale": 6.0, "vertex_ao_strength": 1.0, "tint": "#e8813a", "grime_amount": 0.4, "grime_color": "#3a2a1a"}},
+  "garden_potato_baked": {"shader": "std_surface", "textures": "farm_produce", "params": {"uv_scale": 6.0, "vertex_ao_strength": 1.0, "tint": "#6e4a2c", "roughness_add": 0.1, "grime_amount": 0.6, "grime_color": "#1c120a"}},
+  "garden_bean_pod": {"shader": "std_surface", "params": {"tint": "#6f9e3c", "roughness_mult": 0.6, "metallic_mult": 0.0}},
+  "garden_dead_stalk": {"shader": "std_surface", "params": {"tint": "#7a6446", "roughness_mult": 1.0, "metallic_mult": 0.0}},
+  "garden_packet_orange": {"shader": "std_surface", "params": {"tint": "#d9772e", "roughness_mult": 0.7, "metallic_mult": 0.0}},
+  "garden_packet_green": {"shader": "std_surface", "params": {"tint": "#4f8a3a", "roughness_mult": 0.7, "metallic_mult": 0.0}}
+ }
+}

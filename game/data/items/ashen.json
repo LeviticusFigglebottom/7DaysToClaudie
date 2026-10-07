@@ -1,0 +1,48 @@
+{
+ "_doc": "The Ashen highcamp's items (ADR-0048): the readables of notes/ashen.json and the key to the chain on the binding hut.",
+ "defs": [
+  {
+   "id": "ashen_chain_key",
+   "name": "Key on a Rawhide Thong",
+   "description": "A small steel padlock key, Program issue, threaded on a rawhide thong with a bone bead. It opens the chain on the binding hut.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/pharmacy_key",
+   "tags": [
+    "key"
+   ]
+  },
+  {
+   "id": "note_ashen_highcamp_flyer",
+   "name": "Note on a Drop Flyer",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/note_okafor_letter",
+   "note": "ashen_highcamp_flyer"
+  },
+  {
+   "id": "note_ashen_highcamp_log",
+   "name": "Observation Log, Torn",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_page",
+   "note": "ashen_highcamp_log"
+  },
+  {
+   "id": "note_ashen_highcamp_slate",
+   "name": "Birch-Bark Slate",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "model": "items/farm_note_page",
+   "note": "ashen_highcamp_slate"
+  }
+ ]
+}

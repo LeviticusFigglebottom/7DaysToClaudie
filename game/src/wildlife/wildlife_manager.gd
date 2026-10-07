@@ -37,6 +37,47 @@ var _flock_check_t: float = 0.0
 func setup_world(w: Node) -> void:
 	world = w
 	Game.register_command(&"wildlife.butcher", _butcher)
+	# A region's 1 m terrain answers sample() differently from its coarse one: plan again.
+	var tm: Node = (w.get(&"terrain") as Node) if w != null else null
+	if tm != null and tm.has_signal(&"region_attached"):
+		tm.connect(&"region_attached", _on_regions_changed)
+		tm.connect(&"region_detached", _on_regions_changed)
+
+
+func _on_regions_changed(_rid: String) -> void:
+	_plan_cache.clear()
+
+
+# --- Plans, cached per cell -------------------------------------------------------------------
+
+## "cx:cz:day:period:density" -> the cell's plans (WildlifeSpawner.plan_cell is pure for a given
+## world). Planning every cell round the player every tick sampled the terrain ~200 times a
+## second and spiked to 0.4 s in a streamed world; now a cell is planned once, a few a tick.
+var _plan_cache: Dictionary = {}
+## New cells planned per tick at most (the ring is ~25 cells; it fills over a few seconds).
+const PLAN_CELLS_PER_TICK: int = 4
+
+
+func _plans_near(center: Vector2, radius: float, day: int, period: String, defs: Array, density: float) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var c0: Vector2i = WildlifeSpawner.cell_of(center - Vector2(radius, radius))
+	var c1: Vector2i = WildlifeSpawner.cell_of(center + Vector2(radius, radius))
+	var budget: int = PLAN_CELLS_PER_TICK
+	var keep: Dictionary = {}
+	for cz: int in range(c0.y, c1.y + 1):
+		for cx: int in range(c0.x, c1.x + 1):
+			var key: String = "%d:%d:%d:%s:%s" % [cx, cz, day, period, density]
+			if not _plan_cache.has(key):
+				if budget <= 0:
+					continue
+				budget -= 1
+				_plan_cache[key] = WildlifeSpawner.plan_cell(Game.session.world_seed, Vector2i(cx, cz), day, period, defs, sample, density)
+			keep[key] = _plan_cache[key]
+			for p: Dictionary in _plan_cache[key]:
+				if (p["pos"] as Vector2).distance_to(center) <= radius:
+					out.append(p)
+	_plan_cache = keep
+	return out
 
 
 func _exit_tree() -> void:
@@ -177,6 +218,12 @@ func perches_for(d: WildlifeDef, spot: Vector3, n: int, p_seed: int) -> Array[Ve
 # --- Population ---------------------------------------------------------------------------------
 
 func _process(delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
+	_process_body(delta)
+	StreamMeter.note("wildlife", t0)
+
+
+func _process_body(delta: float) -> void:
 	if world == null or not bool(world.get(&"is_ready")):
 		return
 	_flock_check_t -= delta
@@ -206,8 +253,7 @@ func _process(delta: float) -> void:
 	var period: String = WildlifeSpawner.period_of(clock.hour_f(), clock.sunrise_hour, clock.sunset_hour)
 	var defs: Array = Content.all(&"wildlife")
 	var center := Vector2(p.global_position.x, p.global_position.z)
-	var plans: Array[Dictionary] = WildlifeSpawner.plans_near(Game.session.world_seed, center, GRAZER_RING.y, clock.day(), period, defs,
-		sample, GameRules.current().num("wildlife_density"))
+	var plans: Array[Dictionary] = _plans_near(center, GRAZER_RING.y, clock.day(), period, defs, GameRules.current().num("wildlife_density"))
 	for plan: Dictionary in plans:
 		var id: StringName = plan["id"]
 		if animals_of(id) > 0 or flocks.has(id):

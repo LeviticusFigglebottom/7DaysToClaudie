@@ -786,6 +786,36 @@
    },
    "preview": "structures/stick_door",
    "on_structures": true
+  },
+  {
+   "id": "garden_bed",
+   "name": "Garden Bed",
+   "description": "Split logs staked round a bed of turned earth and mulch, four plots long. Plant seeds, keep it wet, and it feeds you. Rain waters it; so does a bottle or a bucket.",
+   "mode": "assembly",
+   "category": "farming",
+   "result": "garden_bed",
+   "cost": {
+    "log": 2,
+    "stick": 6,
+    "leaf_bundle": 4
+   },
+   "preview": "structures/garden_bed",
+   "max_slope": 15.0
+  },
+  {
+   "id": "rain_catcher",
+   "name": "Rain Catcher",
+   "description": "A cloth funnel on a lashed stick frame over a hollowed log. It fills when it rains under open sky; the water is murky, so boil what you bottle.",
+   "mode": "assembly",
+   "category": "farming",
+   "result": "rain_catcher",
+   "cost": {
+    "log": 1,
+    "stick": 8,
+    "cordage": 2,
+    "cloth": 4
+   },
+   "preview": "structures/rain_catcher"
   }
  ]
 }

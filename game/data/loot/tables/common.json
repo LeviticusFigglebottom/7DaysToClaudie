@@ -4,7 +4,7 @@
     {"id": "junk_common", "rolls": [1, 1], "entries": [
       {"item": "empty_can", "weight": 10, "count": [1, 2]}, {"item": "glass_bottle", "weight": 6},
       {"item": "cloth", "weight": 10, "count": [1, 3]}, {"item": "scrap_metal", "weight": 5, "count": [1, 2]},
-      {"item": "duct_tape", "weight": 2}, {"item": "nails", "weight": 3, "count": [3, 10]}]},
+      {"item": "duct_tape", "weight": 2}, {"item": "nails", "weight": 3, "count": [3, 10]}, {"table": "garden_seeds", "weight": 2}]},
     {"id": "food_canned", "rolls": [1, 1], "entries": [
       {"item": "canned_beans", "weight": 10}, {"item": "canned_stew", "weight": 7}, {"item": "dog_food", "weight": 6},
       {"item": "soda_can", "weight": 6}, {"item": "ration_bar", "weight": 2, "tier_min": 2}]},
@@ -13,7 +13,7 @@
       {"item": "first_aid_kit", "weight": 2, "tier_min": 2}, {"item": "antifungal", "weight": 1, "tier_min": 3}]},
     {"id": "tools_common", "rolls": [1, 1], "entries": [
       {"item": "claw_hammer", "weight": 6}, {"item": "shovel", "weight": 4}, {"item": "hatchet", "weight": 4},
-      {"item": "kitchen_knife", "weight": 5}, {"item": "flashlight", "weight": 3}, {"item": "steel_pipe", "weight": 5}]},
+      {"item": "kitchen_knife", "weight": 5}, {"item": "flashlight", "weight": 3}, {"item": "steel_pipe", "weight": 5}, {"item": "bucket", "weight": 3}]},
     {"id": "weapons_rare", "rolls": [1, 1], "entries": [
       {"item": "machete", "weight": 6, "quality_bias": 1}, {"item": "revolver", "weight": 3, "tier_min": 3}, {"item": "ammo_38", "weight": 6, "count": [3, 9], "tier_min": 2}]},
     {"id": "reading", "rolls": [1, 1], "entries": [

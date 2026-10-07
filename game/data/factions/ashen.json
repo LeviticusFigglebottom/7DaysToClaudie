@@ -1,0 +1,57 @@
+{
+  "_doc": "The Ashen (ADR-0048). camps: POI defs whose placed buildings are living camps (residents spawned awake when the player comes within wake_range, kept until sleep_range; the dead never come back). hostility: one world-wide score; gain per event (kill an Ashen, trespass in a camp's territory, a scout that reports back or is killed, a camp wiped out, heat raised in a territory, a raid repelled), decay_per_day. levels: 0 unaware, 1 watchers (scouts), 2 raids, 3 war parties; a level needs both its hostility and its gamestage. scouts/raids: chance per level per day (deterministic from the world seed and day). morale: 0-1; a fighter flees under `break`. fire: the outsider's fire frightens them (a held flame facing them, the player's lit fires and stations). relations: {faction: hostile|neutral}, symmetric (TD-186): the Ashen and the Hollowed fight on sight.",
+  "defs": [
+    {
+      "id": "ashen",
+      "name": "The Ashen",
+      "description": "Tribes of the high timber, painted in lichen-ash against the Hollowed. They burn their dead and kill outsiders who might carry the Bloom.",
+      "camps": [
+        {"poi": "ashen_highcamp", "residents": {"ashen_raider": [3, 5], "ashen_scout": [1, 2]}, "territory": 160.0, "wake_range": 150.0, "sleep_range": 180.0}
+      ],
+      "levels": [
+        {"name": "Unaware", "at": 0, "gamestage": 0},
+        {"name": "Watchers", "at": 10, "gamestage": 4},
+        {"name": "Raids", "at": 35, "gamestage": 10},
+        {"name": "War parties", "at": 80, "gamestage": 30}
+      ],
+      "hostility": {
+        "gain": {"kill": 6, "trespass": 4, "scout_report": 10, "scout_killed": 4, "camp_wiped": 30, "heat": 3, "raid_repelled": 8},
+        "decay_per_day": 3,
+        "max": 150,
+        "_doc": "A world starts at `start` (they have watched the Program's drops for years). Each dawn: below the raid level it rises by `daily_rise` (they grow curious about the outsider; curiosity alone never brings a raid), at or above it falls by `decay_per_day` (a raid needs fresh provocation).",
+        "start": 6,
+        "daily_rise": 1.5
+      },
+      "scouts": {
+        "enemy": "ashen_scout",
+        "chance": [0.0, 0.55, 0.45, 0.35],
+        "hour": [8, 17],
+        "ring": [70, 95],
+        "vantage": [35, 55],
+        "observe": 45.0,
+        "spotted_range": 30.0,
+        "flee_range": 22.0
+      },
+      "raids": {
+        "chance": [0.0, 0.0, 0.3, 0.45],
+        "grace_days": 4,
+        "hour": [18, 20],
+        "ring": [90, 120],
+        "size": [[0, 0], [0, 0], [3, 4], [5, 7]],
+        "per_gamestage": 0.04,
+        "max_size": 9,
+        "enemies": [{}, {}, {"ashen_raider": 3, "ashen_scout": 1}, {"ashen_raider": 4, "ashen_scout": 1}],
+        "give_up": 420.0,
+        "base_range": 60.0,
+        "_doc": "Phase 2 (ADR-0048). dark_side: degrees either side of the bearing the base's lit fires light least that a raid comes in on. flow: the FlowField a raid follows to the base's weakest piece (structures cost structure_cost_per_hp per hit point to cross, lit fires fire_cost out to fire.keep_off). sack_pieces: pieces a raid on a base nobody is home at breaks (after taking every ripe crop) before it leaves. gardens: a raider within `reach` m of a garden bed tramples it once a raid (trample_damage off each growing plant) and takes its ripe crops (loot_crops); the last `looters` of a band go for ripe beds first.",
+        "dark_side": 70.0,
+        "flow": {"radius": 50.0, "cell": 1.5, "structure_cost_per_hp": 0.02, "fire_cost": 60.0, "slope_max_deg": 42.0},
+        "sack_pieces": 2,
+        "gardens": {"loot_crops": true, "trample": true, "trample_damage": 0.5, "looters": 1, "reach": 1.2}
+      },
+      "morale": {"mate_down": 0.25, "hurt": 0.5, "break": 0.3, "home_floor": 0.6, "recover_per_s": 0.01},
+      "relations": {"hollowed": "hostile", "wildlife": "neutral"},
+      "fire": {"radius": 9.0, "keep_off": 4.0, "morale_per_s": 0.06, "behind_angle": 100.0, "station_radius": 7.0}
+    }
+  ]
+}
