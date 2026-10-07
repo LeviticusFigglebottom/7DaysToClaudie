@@ -557,7 +557,7 @@
     "worn": "props/farm_lantern_worn",
     "destroyed": "props/farm_lantern_destroyed"
    },
-   "collision": "box",
+   "collision": "none",
    "physics": "static",
    "hp": 20,
    "size": [

@@ -1,0 +1,81 @@
+{
+  "_doc": "A forest encounter's building (ADR-0054, data/encounters/forest.json hermit_shack): a 5x4 one-room plank shack someone lived out the Cordon in, alone, a long way from any road. Zoning 'encounter': no town lot draws it; the encounter scatter places it (PoiManager.place_extra) on unlevelled forest floor, its floor on the highest ground under the footprint. Route: the trail ends at a shut door with the house rules nailed to it -> inside, the hermit in his chair by the table -> his footlocker under the window wakes him. See docs/POI_AUTHORING.md.",
+  "defs": [
+    {
+      "id": "hermit_shack",
+      "name": "Hermit's Shack",
+      "tier": 1,
+      "zoning": ["encounter"],
+      "footprint": [12, 10],
+      "origin": [0, 0],
+      "author": "Hollowmere team",
+      "story": "Somebody walked up here the week the Cordon went up and never went down again. He built the shack out of a collapsed hunting camp, ran a woodstove, wrote his rules on the door and kept the Hollowed off his trail by never lighting a fire after dark. He kept his good things in the footlocker under the window. He is still in his chair.",
+      "style": {
+        "exterior": "wood_paneling_dark",
+        "interior": "wood_paneling_dark",
+        "floor": "wood_pine",
+        "ceiling": "wood_paneling_dark",
+        "floor_height": 0.3,
+        "decay": 0.6,
+        "damaged_walls": 0.0,
+        "prop_condition": "worn",
+        "scatter": {"density": 0.3},
+        "roof": {"type": "gable", "axis": "x", "pitch": 30, "overhang": 0.45, "material": "roof_cedar", "gutters": false}
+      },
+      "levels": [
+        {
+          "level": 0,
+          "plan": [
+            "............",
+            "............",
+            "............",
+            "...SSSSS....",
+            "...SSSSS....",
+            "...SSSSS....",
+            "...SSSSS....",
+            "............",
+            "............",
+            "............"
+          ],
+          "rooms": {
+            "S": {"name": "Shack", "type": "cabin", "wall": "wood_paneling_dark", "floor": "wood_pine", "ceiling": "wood_paneling_dark"}
+          }
+        }
+      ],
+      "openings": [
+        {"id": "front_door", "at": [5, 6], "side": "S", "type": "door", "state": "closed"},
+        {"id": "win_front", "at": [7, 6], "side": "S", "type": "window", "state": "closed"},
+        {"id": "win_west", "at": [3, 5], "side": "W", "type": "window", "state": "boarded"},
+        {"id": "win_back", "at": [5, 3], "side": "N", "type": "window", "state": "closed"}
+      ],
+      "props": [
+        {"prop": "wild_cot_canvas", "pos": [4.25, 3.45], "rot": 0, "variant": "worn"},
+        {"prop": "wild_wood_stove", "pos": [7.45, 3.35], "rot": 0, "variant": "worn"},
+        {"prop": "wild_firewood_stack", "pos": [6.35, 3.3], "rot": 0},
+        {"prop": "kitchen_table", "pos": [6.6, 5.2], "rot": 0, "variant": "worn", "route_ok": true},
+        {"prop": "chair_wood", "pos": [6.6, 6.05], "rot": 180, "variant": "worn"},
+        {"prop": "wild_oil_lantern", "pos": [6.85, 5.05], "y": 0.76},
+        {"prop": "wild_footlocker", "pos": [3.45, 5.6], "rot": 90, "variant": "worn", "id": "footlocker", "container": "wild_footlocker"},
+        {"prop": "bucket", "pos": [7.6, 6.45]},
+        {"prop": "wild_firewood_stack", "pos": [2.35, 4.4], "rot": 90},
+        {"prop": "wild_chopping_block", "pos": [2.0, 6.6], "variant": "worn"},
+        {"prop": "barrel_metal", "pos": [8.75, 3.6], "variant": "worn"},
+        {"prop": "bucket", "pos": [9.0, 6.3], "variant": "worn"}
+      ],
+      "notes": [
+        {"note": "enc_shack_rules", "pos": [4.5, 7.08], "y": 1.45}
+      ],
+      "sleepers": [
+        {"id": "hermit", "pos": [6.6, 6.05], "enemy": "hollow", "pose": "sit", "rot": 180, "group": "shack"}
+      ],
+      "triggers": [
+        {"id": "footlocker_opened", "group": "shack", "on": "container", "prop": "footlocker", "delay": 0.4}
+      ],
+      "route": [
+        {"at": [5, 8], "label": "The trail ends at a shut door with the house rules nailed to it"},
+        {"at": [5, 5], "label": "Inside: the hermit in his chair by the table, the footlocker under the window"}
+      ],
+      "loot_room": {"room": "S", "level": 0}
+    }
+  ]
+}

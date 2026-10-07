@@ -1,0 +1,46 @@
+{
+ "_doc": "Base traps and electricity (ADR-0052, src/building/base_tech.gd). Distances in metres, real times in seconds, fuel in generator hours at full load, noise = Stimuli loudness (metres a normal listener just hears it). Damage to the Hollowed is scaled by the trap_damage world setting; fuel use by power_fuel_use.",
+ "traps": {
+  "_doc": "Player-built traps. The Hollowed walk into them on their own paths: nothing lures them but the noise a trap makes when it goes off. wear: hit points the piece loses each time it works (repair it with a hammer like any piece); a spike pit below dull_below of its hit points does half damage.",
+  "spike_pit": {
+   "_doc": "A pit lined with sharpened stakes. A Hollow that walks in takes damage at once, is held for stuck_seconds while it claws its way out, moves at slow x its speed while inside and keeps taking tick_damage every tick_seconds. A player who steps in takes player_damage (every player_cooldown at most).",
+   "damage": 24.0, "tick_damage": 8.0, "tick_seconds": 1.0, "stuck_seconds": 1.8, "slow": 0.3,
+   "wear": 5.0, "dull_below": 0.35, "noise": 10.0,
+   "player_damage": 12.0, "player_cooldown": 2.0
+  },
+  "deadfall": {
+   "_doc": "A log hung over a trigger stick. The first body under it heavier than min_weight (traps.json hollowed classes) drops it: every Hollow under it takes damage (blunt, a heavy stagger), a player player_damage. Then it lies sprung until someone lifts it again (trap.rearm, hold [E]).",
+   "damage": 110.0, "stagger": 1.0, "player_damage": 45.0, "noise": 30.0, "wear": 20.0, "min_weight": "light", "rearm_seconds": 1.4
+  },
+  "tripwire": {
+   "_doc": "A bell on a cord strung low across a gap. A Hollow that walks through rings it (no more often than cooldown): the bell is heard by everything within noise, and you get a warning with the direction if you are within warn_radius.",
+   "noise": 34.0, "cooldown": 8.0, "warn_radius": 160.0, "wear": 0.0
+  }
+ },
+ "power": {
+  "_doc": "Electricity. A generator (provides power_source:<watts>) feeds every consumer (power_use:<watts>) wired to it, directly or through other wired pieces; a network's consumers are served in a fixed order until its running generators' watts run out. tick_minutes: game minutes between fuel and grid updates.",
+  "tick_minutes": 2.0,
+  "generator": {
+   "_doc": "fuel_item: what fuels it, can_hours of full-load running per item, up to tank_hours. It burns idle_burn x the full-load rate with nothing drawing, rising to 1 at full load. While running it is heard (noise every noise_interval seconds) and its heat_per_minute (x the same load factor) builds attention on the heat map: a running generator draws the Hollowed to your base.",
+   "fuel_item": "gas_can", "returns": "", "can_hours": 4.0, "tank_hours": 8.0, "idle_burn": 0.35,
+   "noise": 18.0, "noise_interval": 3.0, "heat_per_minute": 0.3
+  },
+  "wire": {
+   "_doc": "Wiring between two pieces: item spools, metres_per_item metres each, a run of at most max_length. Cutting a wire gives its spools back; a wire on a destroyed piece is lost.",
+   "item": "copper_wire", "metres_per_item": 10.0, "max_length": 14.0
+  },
+  "light": {
+   "_doc": "An electric work light: a steady light while powered and switched on. stimulus_range: how far it lights you up for the Hollowed (Stimuli.register_light).",
+   "range": 13.0, "energy": 1.8, "color": "#ffe4b8", "height": 2.0, "shadow": true, "stimulus_range": 24.0, "stimulus_energy": 1.2
+  },
+  "floodlight": {
+   "_doc": "A floodlight on a motion sensor: dark until a Hollow moves within detect_range, then it lights for hold_seconds and warns you (at most every warn_cooldown) when you are within warn_radius.",
+   "detect_range": 20.0, "hold_seconds": 8.0, "range": 28.0, "angle": 38.0, "energy": 5.0, "color": "#f2f4ff", "height": 2.5,
+   "warn_cooldown": 25.0, "warn_radius": 160.0, "stimulus_range": 30.0, "stimulus_energy": 1.6
+  },
+  "turret": {
+   "_doc": "A nail sentry on a motion sensor: while powered and loaded it fires at the nearest Hollow it can see within range, one ammo_item a shot every interval seconds, up to magazine loaded. Each shot is heard (noise).",
+   "range": 14.0, "damage": 16.0, "interval": 0.7, "ammo_item": "nails", "magazine": 120, "noise": 22.0, "height": 1.0
+  }
+ }
+}

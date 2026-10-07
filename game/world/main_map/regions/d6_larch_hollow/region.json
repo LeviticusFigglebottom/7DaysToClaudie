@@ -840,6 +840,17 @@
       "strength": 0.65
     },
     {
+      "type": "nest",
+      "id": "deep_wood_nest",
+      "_doc": "A Bloom nest (ADR-0055, BloomNests) in the deep larch wood, between the Tamsin and the Ashen watch camp: the heart of the worst-colonised ground in the valley, its mouth turned down toward the river.",
+      "def": "hollow_nest",
+      "at": [
+        268,
+        1694
+      ],
+      "yaw": 210
+    },
+    {
       "type": "bloom",
       "id": "bloom_tamsin_seep",
       "_doc": "A seep along the Tamsin east bank, carried down from the deep wood; it stops short of Route 9.",

@@ -13,6 +13,8 @@ extends SceneTree
 ## <model>_<TAG>.png so views of one model don't overwrite each other, --focus-bone NAME,R frames a
 ## radius R round a bone of the posed skeleton (a face close-up whatever the body's height), --elev
 ## E the camera's rise per unit of distance (default 0.42; 0 looks a hanging face in the eye).
+## --global NAME=VALUE (repeatable) sets a float global shader uniform (hm_bloom_night=1 shows the
+## Bloom's night glow on fungus and nest props).
 
 var _out_dir: String = "res://../build/previews"
 var _size := Vector2i(960, 540)
@@ -82,6 +84,10 @@ func _parse_args() -> void:
 				i += 1
 				var kv: PackedStringArray = a[i].split("=")
 				_instance_params[StringName(kv[0])] = float(kv[1])
+			"--global":
+				i += 1
+				var gv: PackedStringArray = a[i].split("=")
+				RenderingServer.global_shader_parameter_set(StringName(gv[0]), float(gv[1]))
 			"--tag":
 				i += 1
 				_tag = a[i]

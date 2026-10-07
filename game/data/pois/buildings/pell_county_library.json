@@ -191,7 +191,7 @@
         {"prop": "rug_rect", "pos": [15.0, 16.4], "rot": 0},
         {"prop": "armchair", "pos": [14.6, 17.0], "rot": 160},
         {"id": "circ_desk", "prop": "town3_circulation_desk", "pos": [8.6, 12.8], "rot": 0},
-        {"prop": "office_chair", "pos": [8.4, 11.9], "rot": 180},
+        {"prop": "office_chair", "pos": [8.4, 13.65], "rot": 0},
         {"id": "catalog_1", "prop": "town3_card_catalog", "at": [6, 11], "against": "N"},
         {"id": "catalog_2", "prop": "town3_card_catalog", "at": [11, 11], "against": "N", "variant": "destroyed"},
         {"id": "hall_cart", "prop": "town3_book_cart", "pos": [6.6, 17.2], "rot": 15},

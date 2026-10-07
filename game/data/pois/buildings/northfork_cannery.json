@@ -396,8 +396,8 @@
      "id": "dock_truck",
      "prop": "pickup_wreck",
      "pos": [
-      -2.0,
-      3.2
+      -2.85,
+      1.9
      ],
      "rot": 95,
      "alt": "dock:truck_in"
@@ -529,7 +529,7 @@
     {
      "prop": "cork_board",
      "at": [
-      2,
+      1,
       12
      ],
      "against": "N",

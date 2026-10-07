@@ -6,7 +6,8 @@ extends ContentDef
 ## mechanics (sleeper groups, triggers, traps, locks, guardians) are part of the layout and checked
 ## by PoiValidator (ADR-0018).
 
-const ZONES: PackedStringArray = ["residential", "commercial", "civic", "industrial", "rural", "wilderness", "roadside"]
+## "encounter": a forest encounter's building (ADR-0054); no lot zones for it, so no town draws it.
+const ZONES: PackedStringArray = ["residential", "commercial", "civic", "industrial", "rural", "wilderness", "roadside", "encounter"]
 
 var tier: int = 1
 var zoning: PackedStringArray = []

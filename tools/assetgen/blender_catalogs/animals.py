@@ -38,6 +38,18 @@ QUADS = {
                        "materials": {"fur": "fur_hound_b", "hoof": "hoof", "nose": "nose_wet", "mouth": "hound_gums",
                                      "eye": "eye_hound_milky", "teeth": "teeth", "gums": "hound_gums",
                                      "plates": "hound_bloom_plates", "threads": "bloom_growth"}},
+    # Grey wolves (ADR-0055): the hound's rig and clips on a healthy animal, no Bloom. A grey
+    # female of ~0.76 m at the withers, and a bigger, browner male (~0.82 m) with a heavier ruff.
+    "wolf_a": {"seed": 51, "species": "hound", "breed": "wolf", "scale": 1.22, "bulk": 1.08, "gaunt": 0.12,
+               "ears": "erect", "torn_ear": "none", "grid": 0.0042,
+               "budget": {"body": 11500, "ears": 700, "teeth": 1400},
+               "materials": {"fur": "fur_wolf_a", "hoof": "hoof", "nose": "nose_wet", "mouth": "nose_wet",
+                             "eye": "eye_wolf", "teeth": "teeth", "gums": "hound_gums"}},
+    "wolf_b": {"seed": 52, "species": "hound", "breed": "wolf", "scale": 1.32, "bulk": 1.2, "gaunt": 0.1,
+               "ears": "erect", "torn_ear": "none", "grid": 0.0042,
+               "budget": {"body": 11500, "ears": 700, "teeth": 1400},
+               "materials": {"fur": "fur_wolf_b", "hoof": "hoof", "nose": "nose_wet", "mouth": "nose_wet",
+                             "eye": "eye_wolf", "teeth": "teeth", "gums": "hound_gums"}},
 }
 
 BIRDS = {
