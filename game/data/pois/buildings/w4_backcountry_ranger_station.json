@@ -1679,6 +1679,7 @@
     },
     {
      "id": "booth_desk",
+     "route_ok": true,
      "prop": "desk_small",
      "at": [
       20,
