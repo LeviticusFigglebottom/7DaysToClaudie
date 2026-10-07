@@ -52,6 +52,6 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0050](0050-interior-light.md) | Interior light: data-driven indoor fill and exposure, daylight through openings, reflection probes that reach the walls | Accepted |
 | [0051](0051-poi-traversal.md) | POI traversal: a capsule audit, clear doorways, ladders that are climbed | Accepted |
 | [0052](0052-base-traps-and-electricity.md) | Base traps and electricity: spike pits, deadfalls, a tripwire bell, generators on gas, wires, lights, a motion floodlight and a nail sentry | Accepted |
-| [0053](0053-forest-set-pieces.md) | Forest set pieces (round 4): seven dungeons in the woods, placed late from their own streams | Accepted |
+| [0053](0053-forest-set-pieces.md) | Wilderness set pieces (rounds 4 and 5): ten dungeons outside towns, placed late from their own streams; compound prop collision | Accepted |
 | [0054](0054-forest-encounters.md) | Forest encounters: small finds scattered through the woods per region from data (campsites, wrecks, stands, caches, graves, a hermit's shack), a runtime vegetation mask, kinds other systems register | Accepted |
 | [0057](0057-hunting-and-ranged.md) | Hunting and ranged: a bow whose arrows stick and come back, distraction stones, molotovs and ground fire, a bolt-action rifle with aim and scope, climbing arms, hunting stands and ropes | Accepted |
