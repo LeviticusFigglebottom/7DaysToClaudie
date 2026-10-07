@@ -101,6 +101,14 @@ func window_image() -> Image:
 	return _image
 
 
+## What the field holds now (tools: stream_walk): tiles, their MB, the window's size in texels.
+func status() -> Dictionary:
+	if tiles == null:
+		return {}
+	return {"tiles": tiles.tile_count(), "tile_mb": snappedf(tiles.memory_bytes() / 1048576.0, 0.01),
+		"window": window.size, "uploads": _uploads}
+
+
 ## Window uploads so far (tests, tools).
 func uploads() -> int:
 	return _uploads
