@@ -698,7 +698,8 @@ func respawn() -> void:
 	p.stats.revive(50.0)
 	await_area(pos, func() -> void:
 		player.global_position = pos + Vector3.UP * 0.5
-		player.velocity = Vector3.ZERO
+		# freeze(false) also clears the fall built up before (velocity and the fall-damage speed).
+		player.freeze(false)
 		terrain.update_streaming(player.global_position, true)
 		player.input_enabled = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -714,6 +715,8 @@ func await_area(pos: Vector3, then: Callable) -> void:
 		then.call()
 		return
 	player.input_enabled = false
+	# Still while the land forms: no gravity, no fall speed to land on (player report 3).
+	player.freeze(true)
 	terrain.streamer.request_now(pos)
 	_awaiting = {"pos": pos, "then": then}
 	ui.show_loading("Finding your feet…", 0.95)
@@ -735,4 +738,5 @@ func _poll_await() -> void:
 	_awaiting = {}
 	terrain.streamer.clear_request()
 	ui.hide_loading()
+	player.freeze(false)
 	then.call()
