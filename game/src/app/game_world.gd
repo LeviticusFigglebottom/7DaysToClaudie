@@ -100,6 +100,7 @@ func _ready() -> void:
 			ResourceLoader.load_threaded_request(str(m[1]))
 	_loader = WorldLoader.new()
 	_loader.resolve_lots = true
+	_loader.prepare_terrain = true
 	_loader.world_seed = session.world_seed
 	var dir: String = MAIN_WORLD_DIR
 	if session.is_random_world():
@@ -206,6 +207,8 @@ func _on_world_loaded() -> void:
 	SaveSystem.fix_composer_changes(session, world_def, TerrainComposer.VERSION)
 	_boot = StepRunner.new()
 	_boot.budget_ms = BOOT_BUDGET_MS
+	# A step that used half the frame ends it: the next may be a heavy one (TD-197).
+	_boot.solo_share = 0.5
 	_boot.step_ran.connect(_on_boot_step)
 	_boot.add_all([
 		["Laying the ground…", _boot_terrain, "terrain"],
@@ -271,6 +274,10 @@ func _boot_terrain() -> void:
 	terrain = TerrainManager.new()
 	terrain.name = "Terrain"
 	terrain.defer_far_tiles = true
+	# Textures and materials in steps of their own, from data the loader prepared (TD-197).
+	terrain.defer_materials = true
+	terrain.prepared_textures = _loader.terrain_textures
+	_loader.terrain_textures = null
 	terrain.prebuilt_bloom = _loader.bloom_tiles
 	# Buildings come by distance (ADR-0038 §8): a cellar is cut once its building stands.
 	terrain.gate_holes = streaming and _loader.registry != null

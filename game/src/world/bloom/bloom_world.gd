@@ -129,11 +129,33 @@ func _publish() -> void:
 	_published = true
 
 
-## Replaces the dynamic spots (BloomMounds); the tiles they touch are redrawn next frame (at()
-## reads them at once).
+## Replaces the rooting mounds' spots (BloomMounds): set_spot_source(&"mounds", spots).
 func set_spots(spots: Array) -> void:
-	if tiles != null:
-		tiles.set_spots(spots)
+	set_spot_source(&"mounds", spots)
+
+
+## Dynamic spots by source ([{pos: Vector2, radius, strength}] each), merged into the field's one
+## spot list: the zones are fixed at build (workers read them unlocked), so anything placed or
+## removed at runtime (rooting mounds, Bloom nests) is a spot. Only the tiles the old and new
+## spots touch are recomposed; they are redrawn next frame (at() reads them at once). An empty
+## list removes the source. Fading is calling it again with a lower strength.
+func set_spot_source(source: StringName, spots: Array) -> void:
+	if spots.is_empty():
+		_spot_sources.erase(source)
+	else:
+		_spot_sources[source] = spots.duplicate(true)
+	if tiles == null:
+		return
+	var keys: Array = _spot_sources.keys()
+	keys.sort()
+	var all: Array = []
+	for k: Variant in keys:
+		all.append_array(_spot_sources[k])
+	tiles.set_spots(all)
+
+
+## Source -> its spots (set_spot_source), merged in source order.
+var _spot_sources: Dictionary = {}
 
 
 ## Publishes tiles composed elsewhere (TerrainManager.attach_region); redrawn next frame, so an

@@ -119,8 +119,15 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
   `barricaded` (door + boards, or `"barricade": "furniture"` for an inside furniture pile),
   `boarded` (window boards), `missing`. A `broken` door's leaf hangs open off its top hinge (its
   smashed model, or the whole leaf where the kit has none), at an angle fixed per door, with no
-  collision; a door smashed in play swings there. The leaf of any door swings to the wall's "a"
-  (south / east) face, or to the other one when only that face is a stair flight.
+  collision; a door smashed in play swings there.
+* Which way a leaf swings (PoiLayout.door_swing): open, it stands out square from its hinge jamb
+  up to a metre deep, so it opens to the side with room for it: never onto a stair flight, the
+  well over one or the cell a flight is climbed from; never across a hall one cell deep (into the
+  room instead, where a metre stays clear beside it); into the building rather than out over the
+  yard unless the inside is such a hall; away from the face a barricade stands on. Otherwise the
+  wall's "a" (south / east) face. `"swing": "N"` (the side of its wall it opens to: N/S on a
+  north or south wall, E/W on an east or west one) overrides it, e.g. bay doors whose leaves
+  would stand across the aisle the player walks next (poi_walk lists every leaf it had to shut).
 * Exterior doorways (`door*`, `open`) on the ground floor whose sill is more than 0.2 m above the
   yard (the pad, or the porch deck where it covers the threshold) get steps up to them, out from the
   foundation with a ramp under it (PoiBuilder.stoops): a concrete stoop with a landing on a brick,
@@ -133,6 +140,11 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
   and on the wall's "a" (south/east) side on an interior one. `"barricade_on": "H"` puts it in that
   room instead (`"."` = outside), e.g. boards nailed on the hall side of a cellar door the player
   first reaches from the cellar.
+* A furniture pile fills the cell behind its doorway (0.13 to 0.93 m off the wall) until it is
+  broken; it is 1.6 m wide, spilling into the cells either side of a 1 m doorway only where they
+  are open floor (no wall, stairs, ladder or doorway there; else it keeps to the doorway's column).
+  The validator rejects a pile on a stair flight or across the only way onto a flight's foot (nail
+  boards there instead), and warns when a route leg only gets through by smashing one.
 * Doors take an optional `"model": "door_metal"`, `"hp"` and `"lock"` (see [Locks](#locks)).
 * Windows the route climbs in by get route cues; `"cue"` overrides them on any opening (see
   [Route cues on windows](#route-cues-on-windows)).
@@ -460,7 +472,7 @@ per run from the world seed (each group from its own stream):
   * `rooms`: `[{"level", "room", ...}]` with `name, type, wall, floor, ceiling, open_to` (the
     room's purpose and finish);
   * `openings`: `[{"id", ...}]` with `state, key, lock, barricade, barricade_on, cue, model, hp`
-    (locked, barricaded, broken open, boarded);
+    (locked, barricaded, broken open, boarded; an authored `swing` stays);
   * `style`: `exterior, interior, floor, ceiling, decay, damaged_walls, prop_condition, scatter,
     lights_on`.
 * **`"alt": "group:option"`** (or a list) on any entry of `props, sleepers, traps, triggers,

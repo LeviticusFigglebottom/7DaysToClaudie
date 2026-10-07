@@ -160,7 +160,8 @@ player (below) and paints a region's road markings when it attaches.
   one terrain lock that every worker read takes (`height_at`); copy-and-swap alone crashed
   (TD-104). `attach_region`/`detach_region`: saved digs applied on attach over the region's
   pristine heights (kept across a detach), material, holes rebuilt, near chunks re-meshed and
-  re-collided. Collision built on workers; finished chunks installed within 6 ms a frame.
+  re-collided. The region's cellars and its material's splat images are made on the compose
+  worker (RegionTerrain meta `holes` / `splat`); the attach only uploads the two textures. Collision built on workers; finished chunks installed within 6 ms a frame.
 * **Per region**: a region brings its framework fixtures on attach and takes them on detach;
   its buildings come by distance (§8). The far impostor layer scatters per region on attach and
   frees it on detach.

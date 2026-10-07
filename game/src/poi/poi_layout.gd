@@ -473,25 +473,148 @@ func is_stair_head_edge(li: int, a: Vector2i, b: Vector2i) -> bool:
 
 
 ## Which face of its wall a door leaf swings to: +1 toward the edge's "a" cell (south / east, the
-## builder's default), -1 toward "b". A leaf swung open over a stair flight stood in its steps (the
-## owner's "stairs that push against a door", player report 3): it swings the other way when only
-## the "a" side is a flight, or the well over one (a door at the head of a flight would swing out
-## over its top steps).
+## builder's default), -1 toward "b". An authored "swing" (the compass side it opens to) wins.
+## Otherwise the leaf opens to the side with room for it (traversal bot poi_walk): open, it stands
+## out square from its hinge jamb up to a metre deep, so
+##  * never into a stair flight or the well over one (it stood in the steps: the owner's "stairs
+##    that push against a door", player report 3), nor onto the cell a flight is climbed from;
+##  * never across a hall one cell deep (merrow's kids' door, the bungalows' bedroom doors on
+##    Larch Street): a leaf a metre deep there walls the hall off; it opens into the room instead,
+##    where a metre is left beside it;
+##  * into the building rather than out over the yard (where the walk round the walls and the
+##    stoop are), unless the inside is a hall;
+##  * away from the face a barricade stands on (the leaf would open through the pile or boards).
+## Ties keep the default ("a").
 func door_swing(op: Dictionary) -> float:
+	if op.has("swing"):
+		return float(op["swing"])
+	var sa: float = _swing_room(op, 1.0)
+	var sb: float = _swing_room(op, -1.0)
+	if str(op.get("state", "")) == "barricaded":
+		var bar: float = barricade_face_hint(op)
+		if bar > 0.0:
+			sa -= 5.0
+		elif bar < 0.0:
+			sb -= 5.0
+	return -1.0 if sb > sa else 1.0
+
+
+## How good a side of a door's wall is for its leaf to open into (higher is better; see
+## door_swing): the worst of the cells the opening's edges have on that side. -10 a stair flight
+## or a well (no floor), 0.5 the cell a flight is climbed from, 1 a hall one cell deep (the cell
+## beyond, away from the wall, is walled off), 1.5 outside, 2 a room with a metre to spare.
+func _swing_room(op: Dictionary, side: float) -> float:
 	var li: int = int(op["level"])
 	var flights: Dictionary = flight_cells(li)
-	for s: Dictionary in stairs:
-		if int(s["level"]) + 1 == li:
-			for c: Vector2i in s["cells"]:
-				flights[c] = true
-	if flights.is_empty():
-		return 1.0
-	var a_hit: bool = false
-	var b_hit: bool = false
+	flights.merge(stairwell_cells(li))
+	var feet: Dictionary = stair_approach_cells(li)
+	var h: bool = str(op["axis"]) == "h"
+	var away: Vector2i = (Vector2i(0, 1) if h else Vector2i(1, 0)) * (1 if side > 0.0 else -1)
+	var worst: float = 2.0
 	for pair: Array in opening_edges(op):
-		a_hit = a_hit or flights.has(pair[0])
-		b_hit = b_hit or flights.has(pair[1])
-	return -1.0 if a_hit and not b_hit else 1.0
+		var c: Vector2i = pair[0] if side > 0.0 else pair[1]
+		var score: float = 2.0
+		if flights.has(c) or is_void(li, c):
+			score = -10.0
+		elif not is_room(room_at(li, c)):
+			score = 1.5
+		elif feet.has(c):
+			score = 0.5
+		else:
+			var n: Vector2i = c + away
+			var e: Array = side_edge(c, DIRS.find(away))
+			var ek: String = edge_key(li, e[0], e[1])
+			if not is_room(room_at(li, n)) or flights.has(n) or walls.has(ek) or galleries.has(ek):
+				score = 1.0
+		worst = minf(worst, score)
+	return worst
+
+
+## Which face of its wall a barricaded door's barricade stands on, as far as the layout alone
+## says (+1 the "a" side, -1 "b", 0 unknown): an authored "barricade_on" (a room char, "." for
+## outside); a furniture pile inside on an exterior wall and on the "a" side of an interior one;
+## boards outside on an exterior wall. Boards on an interior wall go on the side the door is
+## approached from (PoiValidator._approach_side): 0 here. PoiBuilder._barricade_faces agrees.
+func barricade_face_hint(op: Dictionary) -> float:
+	var w: Dictionary = walls.get(edge_key(int(op["level"]), str(op["axis"]), op["edge"]), {})
+	if w.is_empty():
+		return 0.0
+	var on: String = str(op.get("barricade_on", ""))
+	if on != "" and on == str(w["a"]):
+		return 1.0
+	if on != "" and on == str(w["b"]):
+		return -1.0
+	var furniture: bool = str(op.get("barricade", "boards")) != "boards"
+	if bool(w["exterior"]):
+		var outside_sign: float = 1.0 if not is_room(str(w["a"])) else -1.0
+		return -outside_sign if furniture else outside_sign
+	return 1.0 if furniture else 0.0
+
+
+## Cells a stair flight on a level is climbed from: the one behind each flight's foot.
+func stair_approach_cells(li: int) -> Dictionary:
+	var out: Dictionary = {}
+	for s: Dictionary in stairs:
+		if int(s["level"]) == li:
+			var foot: Vector2i = (s["cells"] as Array)[0]
+			out[foot - DIRS[int(s["dir"])]] = true
+	return out
+
+
+## Full width of the furniture pile (barricade_furniture: a dresser, chairs and planks, 1.6 x 1.4 x
+## 0.8 m) where it may spill past its doorway, and how much it overhangs a 1 m door's clear width
+## where it may not.
+const PILE_W: float = 1.6
+## Hit points of a door barricade (boards or a furniture pile): it can be broken while above 0.
+const BARRICADE_HP: float = 260.0
+const PILE_NARROW_MARGIN: float = 0.1
+
+
+## Where a barricaded door's furniture pile stands: {"cells": the cells it fills on its face's side
+## of the wall (one per metre of the opening; it stands 0.13 to 0.93 m off the wall, so it fills
+## them until broken), "wide": whether it may stand its full PILE_W wide, spilling 0.3 m into the
+## cells either side of a 1 m doorway}. Wide only where both those cells are open floor of the
+## same room or yard (no wall, flight, stairwell, ladder, stair approach or doorway there): the
+## lookout's pile stood over the foot of its stairs (poi_walk). Otherwise PoiBuilder narrows it to
+## the doorway's own column.
+func barricade_pile(op: Dictionary, face: float) -> Dictionary:
+	var li: int = int(op["level"])
+	var cells: Array[Vector2i] = []
+	for pair: Array in opening_edges(op):
+		cells.append(pair[0] if face > 0.0 else pair[1])
+	var wide: bool = true
+	if int(op["width"]) == 1:
+		var h: bool = str(op["axis"]) == "h"
+		# The side of the pile's cell its wall is on.
+		var wall_side: int = (0 if face > 0.0 else 2) if h else (3 if face > 0.0 else 1)
+		for ld: int in ([3, 1] if h else [0, 2]):
+			if not _pile_spill_ok(li, cells[0], ld, wall_side):
+				wide = false
+	return {"cells": cells, "wide": wide}
+
+
+func _pile_spill_ok(li: int, pc: Vector2i, ld: int, wall_side: int) -> bool:
+	var n: Vector2i = pc + DIRS[ld]
+	var ch: String = room_at(li, n)
+	if is_room(ch) != is_room(room_at(li, pc)) or ch == VOID or ch == " " or (not is_room(ch) and li != 0):
+		return false
+	var e: Array = side_edge(pc, ld)
+	var ek: String = edge_key(li, e[0], e[1])
+	if walls.has(ek) or galleries.has(ek):
+		return false
+	if flight_cells(li).has(n) or stairwell_cells(li).has(n) or stair_approach_cells(li).has(n):
+		return false
+	for l: Dictionary in ladders:
+		if int(l["level"]) == li and l["cell"] == n:
+			return false
+	# A doorway beside it on the same wall.
+	var we: Array = side_edge(n, wall_side)
+	var w: Dictionary = walls.get(edge_key(li, we[0], we[1]), {})
+	if not w.is_empty():
+		var wop: Dictionary = w["opening"]
+		if not wop.is_empty() and not is_window(str(wop["type"])):
+			return false
+	return true
 
 
 ## Glazed opening types (glass, boards, a sill to vault): windows and lancets.
@@ -543,9 +666,21 @@ func _compile_openings(list: Array) -> void:
 			op["model"] = str(d["model"])
 		if d.has("barricade"):
 			op["barricade"] = str(d["barricade"])
+		if d.has("barricade_on"):
+			op["barricade_on"] = str(d["barricade_on"])
 		var e: Array = side_edge(op["cell"], op["side"])
 		op["axis"] = e[0]
 		op["edge"] = e[1]
+		# An authored leaf swing: the compass side of its wall the leaf opens to (door_swing).
+		if d.has("swing"):
+			var sw: String = str(d["swing"])
+			var along: PackedStringArray = ["N", "S"] if e[0] == "h" else ["W", "E"]
+			if not along.has(sw):
+				err("opening '%s' swing '%s' must be %s or %s (a side of its wall)" % [op["id"], sw, along[0], along[1]])
+			elif not t.begins_with("door"):
+				err("opening '%s': only doors take a swing" % op["id"])
+			else:
+				op["swing"] = 1.0 if sw == along[1] else -1.0
 		openings.append(op)
 		idx += 1
 

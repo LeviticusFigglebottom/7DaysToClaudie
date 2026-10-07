@@ -102,7 +102,7 @@
         }
       ],
       "openings": [
-        {"id": "front_door", "at": [12, 8], "side": "S", "type": "door", "state": "barricaded", "barricade": "furniture"},
+        {"id": "front_door", "at": [12, 8], "side": "S", "type": "door", "state": "barricaded", "barricade_on": "S"},
         {"id": "east_window", "at": [13, 6], "side": "E", "type": "window", "state": "broken"},
         {"id": "back_door", "at": [13, 4], "side": "N", "type": "door", "state": "locked_inside"},
         {"id": "west_window", "at": [11, 6], "side": "W", "type": "window", "state": "boarded"},
