@@ -40,7 +40,7 @@ func after_all() -> void:
 
 ## The tiles the cave and some hillside around it lie in.
 func _tile_keys() -> Array[Vector2i]:
-	var fp := Rect2(_plan.aabb.position.x, _plan.aabb.position.z, _plan.aabb.size.x, _plan.aabb.size.z).grow(10.0)
+	var fp := Rect2(_plan.aabb.position.x, _plan.aabb.position.z, _plan.aabb.size.x, _plan.aabb.size.z).grow(16.0)
 	var lo: Vector2i = NavTiles.tile_of(Vector3(fp.position.x, 0.0, fp.position.y))
 	var hi: Vector2i = NavTiles.tile_of(Vector3(fp.end.x, 0.0, fp.end.y))
 	var out: Array[Vector2i] = []
@@ -69,9 +69,17 @@ func _bake_map() -> void:
 		NavigationServer3D.region_set_map(r, _map)
 		NavigationServer3D.region_set_navigation_mesh(r, nm)
 		_regions.append(r)
-	gut.p("[nav] baked %d tiles in %d ms" % [_meshes.size(), Time.get_ticks_msec() - t0])
-	for i: int in 4:
+	# The map syncs on the server's own step; wait for its first iteration.
+	var until: int = Time.get_ticks_msec() + 5000
+	while NavigationServer3D.map_get_iteration_id(_map) == 0 and Time.get_ticks_msec() < until:
 		await get_tree().physics_frame
+	if NavigationServer3D.map_get_iteration_id(_map) == 0 and NavigationServer3D.has_method(&"map_force_update"):
+		NavigationServer3D.call(&"map_force_update", _map)
+	var polys: int = 0
+	for k: Vector2i in _meshes:
+		polys += (_meshes[k] as NavigationMesh).get_polygon_count()
+	gut.p("[nav] baked %d tiles (%s) in %d ms: %d polygons, map iteration %d; cave %s mouth %s" % [_meshes.size(), _meshes.keys(), Time.get_ticks_msec() - t0,
+		polys, NavigationServer3D.map_get_iteration_id(_map), _plan.aabb, _plan.mouth.origin])
 
 
 func _path(from: Vector3, to: Vector3) -> PackedVector3Array:
