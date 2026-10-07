@@ -1,0 +1,444 @@
+{
+ "_doc": "Forest set pieces, round 4 (ADR-0053): props of the Dunmore Timber truck depot (w4_logging_truck_depot), a logging company's truck shop deep in the timber. Models: tools/assetgen/blender/generators/props_wild4_depot.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_wild4_depot.py. Materials are shared sets (no new ones). size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. Floor props stand on their origin with their depth centred on it (back = half the depth); the truck board hangs with its origin on the wall plane. Vehicles face +Z (the cab at the front).",
+ "defs": [
+  {
+   "id": "w4_depot_log_truck",
+   "name": "Loaded Log Truck",
+   "description": "A conventional-cab log truck in company green, hitched to a pole trailer and loaded with long fir: bunks and stakes, binder chains cinched over the load, mud flaps and a headache rack behind the cab (worn: tyres soft, a window out, moss on the load).",
+   "tags": [
+    "vehicle",
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_log_truck",
+    "worn": "props/w4_depot_log_truck_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 4000,
+   "size": [
+    2.6,
+    3.9,
+    16.0
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_depot_log_tractor",
+   "name": "Log Truck Tractor",
+   "description": "The tractor unit of a log truck without its trailer: long hood, sleeperless cab, twin stacks, a headache rack and the fifth-wheel plate over the drive axles (worn: the hood up, a wheel off the steer axle).",
+   "tags": [
+    "vehicle",
+    "structure",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_log_tractor",
+    "worn": "props/w4_depot_log_tractor_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    2.6,
+    3.4,
+    6.8
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "w4_depot_truck_lift",
+   "name": "Four-Post Truck Lift",
+   "description": "A heavy four-post drive-on lift: yellow posts, two diamond-plate runways raised to chest height, the crossbeams, cables and the power unit on the front post (worn: one runway dropped to its lock).",
+   "tags": [
+    "machine",
+    "garage",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_truck_lift",
+    "worn": "props/w4_depot_truck_lift_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 2000,
+   "size": [
+    4.2,
+    2.6,
+    9.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "w4_depot_weighbridge",
+   "name": "Weighbridge",
+   "description": "A truck scale set flush in the yard: a long steel deck of checker plate on a concrete pit, steel ramps at both ends, the load cell junction box and a painted stop line (worn: the deck rusted through at one corner).",
+   "tags": [
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_weighbridge",
+    "worn": "props/w4_depot_weighbridge_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 5000,
+   "size": [
+    3.4,
+    0.3,
+    14.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_depot_fuel_pump",
+   "name": "Diesel Pump",
+   "description": "A squat red commercial diesel pump: a mechanical register behind scratched glass, a long hose on the hook and a high-flow nozzle (worn: the hose cut, the glass starred; destroyed: knocked off its base).",
+   "tags": [
+    "gas_station",
+    "breakable",
+    "metal",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_fuel_pump",
+    "worn": "props/w4_depot_fuel_pump_worn",
+    "destroyed": "props/w4_depot_fuel_pump_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    0.9,
+    1.9,
+    0.6
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_depot_fuel_tank",
+   "name": "Diesel Storage Tank",
+   "description": "A ten-thousand-litre horizontal steel tank on concrete saddles: a ladder up its end, the fill neck and vent on top, the outlet valve and pipe running off to the pumps and DIESEL - NO SMOKING stencilled on its side.",
+   "tags": [
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_fuel_tank",
+    "worn": "props/w4_depot_fuel_tank_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 4000,
+   "size": [
+    2.8,
+    3.9,
+    7.2
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_depot_fuel_island",
+   "name": "Pump Island",
+   "description": "A raised concrete pump island with steel-capped ends and two yellow bollards.",
+   "tags": [
+    "structure",
+    "exterior",
+    "concrete"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_fuel_island",
+    "worn": "props/w4_depot_fuel_island_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    1.3,
+    0.2,
+    5.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_depot_log_stack",
+   "name": "Log Deck Stack",
+   "description": "A tall deck of long fir and larch logs stacked five courses high between steel stakes on skids, the ends sawn and spray-marked by the scaler (worn: moss on the top course, the ends checked grey).",
+   "tags": [
+    "structure",
+    "wood",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_log_stack",
+    "worn": "props/w4_depot_log_stack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 5000,
+   "size": [
+    7.0,
+    2.5,
+    4.0
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_depot_log_pile_low",
+   "name": "Low Log Pile",
+   "description": "A low pile of cull logs two courses high on skid logs, chocked at the ends: low enough to scramble over.",
+   "tags": [
+    "structure",
+    "wood",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_log_pile_low",
+    "worn": "props/w4_depot_log_pile_low_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 4000,
+   "size": [
+    6.0,
+    1.0,
+    2.7
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_depot_loader",
+   "name": "Log Loader",
+   "description": "A yellow wheel loader fitted with log forks and a top clamp: big lugged tyres, an articulated frame, the cab cage and the counterweight, the forks lowered to the ground (worn: tyres flat, the cab glass gone).",
+   "tags": [
+    "vehicle",
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_loader",
+    "worn": "props/w4_depot_loader_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 3500,
+   "size": [
+    3.0,
+    3.4,
+    8.2
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_depot_welding_cart",
+   "name": "Welding Cart",
+   "description": "A two-wheeled welding cart: oxygen and acetylene bottles chained in, the regulators and twin hose coiled on the handle, and a stick welder on the shelf with its leads.",
+   "tags": [
+    "machine",
+    "breakable",
+    "garage",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_welding_cart",
+    "worn": "props/w4_depot_welding_cart_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    0.6,
+    1.5,
+    0.9
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "w4_depot_parts_shelf",
+   "name": "Parts Shelf",
+   "description": "Heavy steel shelving full of truck parts: oil and air filters in their boxes, fan belts on hooks, brake shoes, hose reels and a bin of bolts (worn: half picked over; destroyed: pulled over and empty).",
+   "tags": [
+    "furniture",
+    "container",
+    "breakable",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_parts_shelf",
+    "worn": "props/w4_depot_parts_shelf_worn",
+    "destroyed": "props/w4_depot_parts_shelf_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    1.8,
+    2.2,
+    0.6
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "garage",
+    "store"
+   ],
+   "container": "w4_depot_parts"
+  },
+  {
+   "id": "w4_depot_dispatch_radio",
+   "name": "Dispatch Console",
+   "description": "The dispatcher's console: a steel desk with a mobile base station radio, its desk microphone and a battery charger, the company channel list taped under the shelf, a clipboard of load sheets and a desk lamp (worn: coffee rings, the logbook open).",
+   "tags": [
+    "furniture",
+    "radio",
+    "container",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_dispatch_radio",
+    "worn": "props/w4_depot_dispatch_radio_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    1.6,
+    1.35,
+    0.8
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "office"
+   ],
+   "container": "w4_depot_dispatch",
+   "light": {
+    "color": "#ffcf8a",
+    "energy": 0.3,
+    "range": 3.0,
+    "flicker": 0.03,
+    "offset": [
+     0.55,
+     1.05,
+     0.05
+    ],
+    "power": "battery"
+   }
+  },
+  {
+   "id": "w4_depot_pit_planks",
+   "name": "Pit Planks",
+   "description": "Thick oak planks laid across an inspection pit to cover it, scuffed with boot prints and oil, the near end pulled back.",
+   "tags": [
+    "wood",
+    "garage"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_pit_planks",
+    "worn": "props/w4_depot_pit_planks_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    2.0,
+    0.08,
+    7.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "garage"
+   ]
+  },
+  {
+   "id": "w4_depot_dispatch_board",
+   "name": "Truck Board",
+   "description": "The dispatch board: a whiteboard ruled into trucks and landings, magnets for the six trucks, the last loads written in and trucks 4 and 6 circled twice in red.",
+   "tags": [
+    "sign",
+    "office"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_dispatch_board",
+    "worn": "props/w4_depot_dispatch_board_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    1.6,
+    1.0,
+    0.06
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "office"
+   ],
+   "wall_mounted": true
+  },
+  {
+   "id": "w4_depot_tire_stack",
+   "name": "Truck Tyre Stack",
+   "description": "Three heavy log-truck tyres stacked flat, the top one on a steel rim.",
+   "tags": [
+    "clutter",
+    "rubber",
+    "garage"
+   ],
+   "variants": {
+    "clean": "props/w4_depot_tire_stack",
+    "worn": "props/w4_depot_tire_stack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.1,
+    0.9,
+    1.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "garage",
+    "exterior"
+   ]
+  }
+ ]
+}

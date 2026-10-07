@@ -59,7 +59,7 @@
         "lead": 5,
         "spread": 30.0
       },
-      "relations": {"hollowed": "hostile", "wildlife": "neutral"},
+      "relations": {"hollowed": "hostile", "wildlife": "neutral", "remand": "hostile"},
       "fire": {"radius": 9.0, "keep_off": 4.0, "morale_per_s": 0.06, "behind_angle": 100.0, "station_radius": 7.0}
     }
   ]

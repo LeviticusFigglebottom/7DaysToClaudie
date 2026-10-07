@@ -1,0 +1,58 @@
+{
+ "_doc": "Keys and readable notes of the Kell Shelter (w4_hillside_bunker), forest set pieces round 4. Note items are note_<note id> (notes/wild4_bunker.json); models from tools/assetgen/blender_catalogs/items_wild4_bunker.py.",
+ "defs": [
+  {
+   "id": "w4_bunker_blast_key",
+   "name": "Blast Door Key",
+   "description": "A heavy brass key on a loop of paracord with a red tag: BLAST DOOR - SPARE. It was under the false bottom of Gideon's desk drawer.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_bunker/w4_bunker_blast_key"
+  },
+  {
+   "id": "note_w4_bunker_journal",
+   "name": "Gideon Kell's Journal",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_bunker_journal",
+   "model": "items/wild4_bunker/note_w4_bunker_journal"
+  },
+  {
+   "id": "note_w4_bunker_letter",
+   "name": "Letter on the Table",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_bunker_letter",
+   "model": "items/wild4_bunker/note_w4_bunker_letter"
+  },
+  {
+   "id": "note_w4_bunker_ledger",
+   "name": "Supply Ledger",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_bunker_ledger",
+   "model": "items/wild4_bunker/note_w4_bunker_ledger"
+  },
+  {
+   "id": "note_w4_bunker_radio_log",
+   "name": "Ham Radio Log",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_bunker_radio_log",
+   "model": "items/wild4_bunker/note_w4_bunker_radio_log"
+  }
+ ]
+}

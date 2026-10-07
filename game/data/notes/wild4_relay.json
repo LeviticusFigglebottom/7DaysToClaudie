@@ -1,0 +1,33 @@
+{
+ "_doc": "Readable notes of the Ridge Relay Hut (w4_ridge_relay_hut), forest set pieces round 4. No note names a town: the hut stands on any ridge. Items: items/wild4_relay.json note_<id>.",
+ "defs": [
+  {
+   "id": "w4_relay_log",
+   "title": "Signaller's Log, Relay Four",
+   "style": "handwritten",
+   "author": "Sgt. D. Reyes, Cordon Signals",
+   "body": "Day 1. Relay Four manned. Two of us, Hale and me. Generator on propane, tank at 80. Traffic heavy: checkpoint to checkpoint, all night.\nDay 6. Relief due. Relief not come. Battalion says hold.\nDay 11. Hale let three walkers in off the trail against orders. One with a bad ankle, one coughing. I wrote him up. I let them stay.\nDay 14. The coughing one stopped coughing. The other two won't wake up right. Shut them in the genny room with the heat. Hale cried.\nDay 19. Last traffic from Battalion: destroy code material, do not abandon post. Burned the books. Didn't abandon post. Nobody to abandon it to.\nDay 23. Hale's gone quiet in his bunk. I've got the threads under my nails now. Locked the ammunition and the spare codes in the battery room and brought the key up here, where they can't climb. If you're Cordon, the key's with this log. If you're not, it's yours anyway. The tank reads 12. Going down to sit with the batteries. It's warm in there."
+  },
+  {
+   "id": "w4_relay_schedule",
+   "title": "Relay Schedule, Sheet 3",
+   "style": "typed",
+   "author": "Cordon Signals Detachment",
+   "body": "RELAY FOUR - TRAFFIC TO BE PASSED ON RECEIPT\n0600 ALL CHECKPOINTS: ROADS OFF THE MOUNTAIN CLOSED. NO CIVILIAN TRAFFIC IN OR OUT.\n1200 ALL CHECKPOINTS: FEVER CASES TO BE HELD AT POINT OF CONTACT. DO NOT TRANSPORT.\n1800 EVACUATION POINTS: SECOND CONVOY POSTPONED.\n0000 ALL UNITS: NO FIRE ON CIVILIANS WITHOUT AN OFFICER PRESENT.\nAMENDED, IN PENCIL: second convoy cancelled. Checkpoints fall back to the river. Officer present not required. Relay Four hold position, relief to follow.\nAt the bottom, in another hand: Passed it all on, Sarge. Every word. Who's listening?"
+  },
+  {
+   "id": "w4_relay_letter",
+   "title": "Letter Home",
+   "style": "handwritten",
+   "author": "Spc. Tobin Hale",
+   "body": "Dear Mom, they put me on a hill with a radio and a sergeant who reads westerns. It's pretty up here. You can see four ridges and not one light on any of them after dark. We pass the orders on, that's the job, we don't make them. I know what some of them mean now and I'd rather not. Three hikers came up the trail on Tuesday and I opened the gate. Sarge was mad and then he gave them his coffee. The girl's name is Pip. Her brother keeps coughing. If the relief truck comes I'll give this to the driver. If it doesn't, I'll keep it in my bunk and you'll know I meant to send it. Tell Dad I kept the generator running. Love, Toby."
+  },
+  {
+   "id": "w4_relay_tag",
+   "title": "Generator Service Tag",
+   "style": "typed",
+   "author": "Ridgeline Telephone Co.",
+   "body": "RELAY HUT 4 - STANDBY GENERATOR\nFuel: propane, 500 gal tank. Exercise weekly 30 min. Service every 200 hrs.\nLast service: tech initials R.D. Oil, plugs, filter. Next due at 1,850 hrs.\nOn the back, in ballpoint: 1,850 hrs - nobody came. 2,100 - running rough, cleaned the plugs myself. 2,400 - tank 31. Shut off the bunk room heater to save it. 2,600 - tank 12. Sarge says run it till it quits. When it quits the dishes go dark and nobody below hears anything from anybody. - T.H."
+  }
+ ]
+}

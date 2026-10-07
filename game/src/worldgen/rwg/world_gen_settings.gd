@@ -23,7 +23,7 @@ const BURN_KEYS: PackedStringArray = ["per_16km2", "cells", "max_share", "water"
 const FEN_KEYS: PackedStringArray = ["max_slope", "water", "low", "valley", "patch", "town_clear", "drop_clear", "pools"]
 const POOL_SPEC_KEYS: PackedStringArray = ["chance", "per_cell", "radius", "depth", "drop", "shore", "irregularity", "max_slope", "border"]
 const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt", "unique",
-	"pad", "door"]
+	"pad", "door", "ring", "late"]
 ## tuning.wilderness.mine: how a `mine` site (a buried-level POI dug into a hillside, TD-169) fits.
 const MINE_KEYS: PackedStringArray = ["slope", "cover", "portal", "taper", "pad_relief", "approach", "road"]
 ## tuning.towns (organic towns, ADR-0040; the planner's own numbers are town_planner.json).
@@ -31,8 +31,8 @@ const TOWN_KEYS: PackedStringArray = ["mix", "spacing", "edge", "candidates", "c
 	"stub", "authored_max", "clearance"]
 ## The size classes a town-size mix may name (town_planner.json `kinds`).
 const KIND_KEYS: PackedStringArray = ["hamlet", "village", "town"]
-const SITES: PackedStringArray = ["summit", "forest", "waterside", "lake_shore", "remote", "roadside", "mine"]
-const ACCESS: PackedStringArray = ["trail", "track", "drive"]
+const SITES: PackedStringArray = ["summit", "forest", "waterside", "lake_shore", "remote", "roadside", "mine", "companion"]
+const ACCESS: PackedStringArray = ["trail", "track", "drive", "none"]
 const NAME_KEYS: PackedStringArray = ["towns", "regions", "region_words", "lakes", "rivers"]
 
 var preset: StringName = &"standard"

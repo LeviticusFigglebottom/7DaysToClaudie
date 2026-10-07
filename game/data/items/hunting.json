@@ -13,6 +13,9 @@
        "arrows": {"arrow_bone": {"damage": 44, "dismember": 0.05, "break": 0.15}, "arrow_stone": {"damage": 36, "dismember": 0.04, "break": 0.3}}}},
     {"id": "arrow_bone", "name": "Bone Arrow", "description": "A straight shoot with a ground bone point bound on in sinew and split-fibre fletching. Heavier and keener than stone.", "model": "hunting/arrow_bone", "category": "ammo", "stack_max": 20, "carry_max": 40, "bulk": 0.05, "value": 2, "tags": ["ammo", "arrow"]},
     {"id": "arrow_stone", "name": "Stone Arrow", "description": "A straight stick, a knapped stone point lashed on with fibre, split-fibre fletching. Flies true enough; the point chips on bone.", "model": "hunting/arrow_stone", "category": "ammo", "stack_max": 20, "carry_max": 40, "bulk": 0.05, "value": 1, "tags": ["ammo", "arrow"]},
-    {"id": "rawhide_strips", "name": "Rawhide Strips", "description": "Hide cut in long strips. Wet it, wrap it, let it dry: it shrinks tight as iron.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.08, "value": 2, "tags": ["binding", "hide"]}
+    {"id": "rawhide_strips", "name": "Rawhide Strips", "description": "Hide cut in long strips. Wet it, wrap it, let it dry: it shrinks tight as iron.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.08, "value": 2, "tags": ["binding", "hide"]},
+    {"id": "wolf_pelt", "name": "Wolf Pelt", "description": "A grey wolf's winter coat, rolled hair-in. Thick enough to sleep warm under; cut it for strips if you must.", "category": "resource", "stack_max": 3, "carry_max": 4, "bulk": 1.0, "value": 9, "tags": ["hide"]},
+    {"id": "raw_wolf_meat", "name": "Raw Wolf Meat", "description": "Dark, stringy meat off a wolf's shoulder. Cook it through.", "category": "food", "stack_max": 6, "carry_max": 6, "bulk": 0.45, "value": 2, "consume": {"fullness": 14, "health": -7}, "tags": ["meat", "raw"]},
+    {"id": "cooked_wolf_meat", "name": "Roast Wolf", "description": "Tough and gamey, but it's meat.", "category": "food", "stack_max": 6, "carry_max": 6, "bulk": 0.4, "value": 5, "consume": {"fullness": 32, "hydration": -3, "health": 3, "stamina": 6}, "tags": ["meat"]}
   ]
 }

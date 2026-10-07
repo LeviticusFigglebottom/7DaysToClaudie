@@ -69,6 +69,9 @@ var _pickable: Dictionary = {}
 ## rid -> {task (-1 once built), jobs: [[rid, chunk key]], chunks: [result per job], holder: Node3D,
 ## mats: [ShaderMaterial], dropped: bool}.
 var _far: Dictionary = {}
+## Clearing ids `set_clearings` opened, by source (Bloom nests' mats, ADR-0055): a thin layer over
+## the runtime clearings below, so nests and forest encounters share one mask.
+var _source_clearings: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
@@ -95,6 +98,8 @@ func _rt_for_chunk(key: Vector2i) -> RegionTerrain:
 
 
 func _is_removed(key: Vector2i, index: int) -> bool:
+	if _cleared.has(key) and (_cleared[key] as Dictionary).has(index):
+		return true
 	var ck: String = Ids.chunk_key(key.x, key.y)
 	var st: Dictionary = (_removed.get(ck, {}) as Dictionary).get(str(index), {})
 	if st.is_empty():
@@ -104,6 +109,81 @@ func _is_removed(key: Vector2i, index: int) -> bool:
 		(_removed[ck] as Dictionary).erase(str(index))
 		return false
 	return true
+
+
+# --- Runtime clearings (ADR-0054) -------------------------------------------------------------
+
+## Clearings other systems open in the forest at runtime (a forest encounter's campsite): id ->
+## [centre: Vector2, tree radius, undergrowth radius]. Their instances count as removed (hidden,
+## no collision, not harvestable) without touching the scatter's indices or the saved trees.
+var _clearings: Dictionary = {}
+## Chunk -> clearing ids over it; chunk -> {instance index: true} hidden by them.
+var _clearings_by_chunk: Dictionary = {}
+var _cleared: Dictionary = {}
+
+
+## Opens (or moves) clearing `id`: trees within `r_trees` m of `at` and everything smaller within
+## `r_brush` m. Chunks already built are rebuilt.
+func add_clearing(id: StringName, at: Vector2, r_trees: float, r_brush: float) -> void:
+	remove_clearing(id)
+	var r: float = maxf(r_trees, r_brush)
+	if r <= 0.0:
+		return
+	_clearings[id] = [at, r_trees, r_brush]
+	for key: Vector2i in _chunks_over(at, r):
+		if not _clearings_by_chunk.has(key):
+			_clearings_by_chunk[key] = []
+		(_clearings_by_chunk[key] as Array).append(id)
+		_recompute_cleared(key)
+
+
+func remove_clearing(id: StringName) -> void:
+	if not _clearings.has(id):
+		return
+	var c: Array = _clearings[id]
+	_clearings.erase(id)
+	for key: Vector2i in _chunks_over(c[0], maxf(float(c[1]), float(c[2]))):
+		var ids: Array = _clearings_by_chunk.get(key, [])
+		ids.erase(id)
+		if ids.is_empty():
+			_clearings_by_chunk.erase(key)
+		_recompute_cleared(key)
+
+
+func clearing_count() -> int:
+	return _clearings.size()
+
+
+static func _chunks_over(at: Vector2, r: float) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for cz: int in range(floori((at.y - r) / CHUNK), floori((at.y + r) / CHUNK) + 1):
+		for cx: int in range(floori((at.x - r) / CHUNK), floori((at.x + r) / CHUNK) + 1):
+			out.append(Vector2i(cx, cz))
+	return out
+
+
+## The instances of chunk `key` its clearings hide (once its scatter is in), and a rebuild of the
+## chunk when that changed what it shows.
+func _recompute_cleared(key: Vector2i) -> void:
+	var had: Dictionary = _cleared.get(key, {})
+	var now: Dictionary = {}
+	var layers: Dictionary = _data.get(key, {})
+	for cid: StringName in _clearings_by_chunk.get(key, []):
+		var c: Array = _clearings[cid]
+		var at: Vector2 = c[0]
+		for layer: String in layers:
+			var r: float = float(c[1]) if layer == "tree" else float(c[2])
+			if r <= 0.0:
+				continue
+			for inst: VegetationScatter.Instance in layers[layer]:
+				if Vector2(inst.pos.x - at.x, inst.pos.z - at.y).length_squared() <= r * r:
+					now[inst.index] = true
+	if now.is_empty():
+		_cleared.erase(key)
+	else:
+		_cleared[key] = now
+	if now.hash() != had.hash() and _nodes.has(key):
+		_rebuild(key)
 
 
 func _water_fn() -> Callable:
@@ -222,6 +302,25 @@ func _collect() -> void:
 			_pending.erase(key)
 			_data[key] = job["out"][0]
 			_pickable[key] = _harvestables(job["out"][0])
+			if _clearings_by_chunk.has(key):
+				_recompute_cleared(key)
+
+
+## Sets one source's clearings ([{pos: Vector2, r}]), replacing the ones it set before; each is a
+## runtime clearing (trees and undergrowth within r) like a forest encounter's.
+func set_clearings(source: StringName, list: Array) -> void:
+	for id: StringName in _source_clearings.get(source, []):
+		remove_clearing(id)
+	var ids: Array[StringName] = []
+	for i: int in list.size():
+		var c: Dictionary = list[i]
+		var id := StringName("%s:%d" % [source, i])
+		add_clearing(id, c["pos"], float(c["r"]), float(c["r"]))
+		ids.append(id)
+	if ids.is_empty():
+		_source_clearings.erase(source)
+	else:
+		_source_clearings[source] = ids
 
 
 ## Small plants and stones with yields, filtered once per chunk instead of on every physics
@@ -402,6 +501,7 @@ func _free_nodes(key: Vector2i) -> void:
 	_nodes.erase(key)
 	_data.erase(key)
 	_pickable.erase(key)
+	_cleared.erase(key)
 
 
 func _rebuild(key: Vector2i) -> void:

@@ -84,6 +84,10 @@ SPEC: dict[str, tuple[str, dict]] = {
     "hare_pelt": ("item_game", {"kind": "hare_pelt", "seed": 276}),
     "sinew": ("item_game", {"kind": "sinew", "seed": 277}),
     "rawhide_strips": ("item_game", {"kind": "rawhide_strips", "seed": 278}),
+    # wolves (ADR-0055): a rolled pelt and the meat, on the deer's builders
+    "wolf_pelt": ("item_game", {"kind": "deer_hide", "seed": 279}),
+    "raw_wolf_meat": ("item_game", {"kind": "venison", "seed": 280}),
+    "cooked_wolf_meat": ("item_game", {"kind": "venison_cooked", "seed": 281}),
     # readables
     "schematic_spike_barrier": ("item_paper", {"kind": "schematic", "seed": 81, "sheet": "item_schematic_a"}),
     "schematic_log_cabin": ("item_paper", {"kind": "schematic", "seed": 82, "sheet": "item_schematic_b"}),

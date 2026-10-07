@@ -1,0 +1,14 @@
+{
+  "_doc": "Bodies that fight alongside the player (ADR-0058): archetype `companion`, faction `remand`. An Enemy body with a CompanionMind: it never targets the player, the AI director never despawns or counts it, it takes no part in the Hum, and what it kills is nobody's kill. The companion's own tuning (camp, orders, downed, barks) is its CompanionDef in data/companions/. Never in a spawn table.",
+  "defs": [
+    {"id": "ezra_vane", "name": "Ezra Vane", "description": "A Remand convict from an earlier drop and a lineman before that. Fifties, grey-bearded, slow to talk and quick with a hatchet.",
+      "archetype": "companion", "faction": "remand",
+      "bodies": ["characters/ezra_vane"],
+      "health": 160, "limbs": {"head": 70, "torso": 160, "arm_l": 70, "arm_r": 70, "leg_l": 80, "leg_r": 80},
+      "speed": {"day_walk": 1.7, "day_run": 5.6, "night_walk": 1.6, "night_run": 5.4},
+      "attack": {"damage": 22, "range": 1.8, "cooldown": 1.2, "structure_damage": 0, "infection": 0, "lunge": 0.25},
+      "perception": {"sight_day": 30, "sight_night": 18, "fov": 160, "hearing": 1.0, "smell": 0.0},
+      "behavior": {"no_dismember": true, "crawl_on_leg_loss": false, "stagger_threshold": 30},
+      "xp": 0, "heat_value": 0.0, "gamestage_min": 0, "scale": [1.0, 1.0]}
+  ]
+}

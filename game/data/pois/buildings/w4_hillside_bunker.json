@@ -1,0 +1,2172 @@
+{
+ "_doc": "Forest set pieces, round 4 (ADR-0053): the Kell Shelter, a prepper's red board cabin on a hillside over a poured concrete bunker two levels down (level -1 the storeroom and generator room, level -2 the living quarters, armory and comms room; buried, so its escape tunnel runs north under the yard to a hatch house in the woods). Route: up the drive -> the front door kicked in -> the front room's loose boards (the Pruitts upstairs wake) -> the study: the blast-door key and Gideon's journal (taking it wakes them too) -> down the ladder under the rug -> the forced shaft door -> the storeroom (the neighbours wake) -> the generator room -> the stairhead -> down to decontamination -> the blast door (deadbolt, the key) with a tripwire shotgun on its far side (the family wakes) -> the living quarters -> the armory -> the comms room (Gideon, guardian; the loot) -> the escape tunnel -> two ladders up into the hatch house (jaws by the hatch) -> draw the bolt, out into the woods. Props: props/wild4_bunker.json.",
+ "defs": [
+  {
+   "id": "w4_hillside_bunker",
+   "name": "The Kell Shelter",
+   "tier": 3,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    30,
+    30
+   ],
+   "origin": [
+    2,
+    2
+   ],
+   "author": "Hollowmere team (forest round 4)",
+   "population": "hunters",
+   "story": "Gideon Kell spent eleven summers pouring a bunker under his cabin on the hill: two levels of concrete, a generator, a year of cans, air filters, a ham set and a blast door. The night the radio said the Cordon had closed the roads, he took Marion and the boys down the shaft under the front-room rug and shot the bolts. The Pruitts from down the hill knew about the bunker. They came up the drive with their grandmother coughing in the truck bed, and Gideon would not open. They found the hatch, forced the storeroom and lived on his cans over his head, and the air intake drew through the storeroom. By spring the filters were furred white with Bloom. Gideon came up the escape tunnel one last night to hunt for spare cartridges, wrote his journal at his desk and went back down to his radio. The spare key to the blast door is still in that desk, where he told his brother-in-law over the radio it would be.",
+   "style": {
+    "exterior": "siding_barn_red",
+    "interior": "wood_paneling_dark",
+    "floor": "wood_pine",
+    "ceiling": "wood_paneling_dark",
+    "floor_height": 0.6,
+    "decay": 0.55,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.35
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "x",
+     "pitch": 26,
+     "overhang": 0.45,
+     "material": "roof_metal",
+     "gutters": false
+    },
+    "porch": {
+     "side": "S",
+     "from": 8,
+     "to": 17,
+     "depth": 2,
+     "steps": [
+      11
+     ]
+    },
+    "chimney": [
+     7,
+     15
+    ]
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "..........................",
+      "..........................",
+      "..........................",
+      "..........PP..............",
+      "..........PP..............",
+      "..........................",
+      "..........................",
+      "..........................",
+      "..........................",
+      "..........................",
+      "..........................",
+      "........BBBBKKKKKK........",
+      "........BBBBKKKKKK........",
+      "........BBBBKKKKKK........",
+      "........LLLLLLOOOO........",
+      "........LLLLLLOOOO........",
+      "........LLLLLLOOOO........",
+      "........LLLLLLOOOO........",
+      "........LLLLLLOOOO........",
+      "..........................",
+      "..........................",
+      "..........................",
+      "..........................",
+      "..........................",
+      "..........................",
+      ".........................."
+     ],
+     "rooms": {
+      "B": {
+       "name": "Back bedroom",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "K": {
+       "name": "Kitchen",
+       "type": "kitchen",
+       "wall": "paint_sage",
+       "floor": "linoleum_beige"
+      },
+      "L": {
+       "name": "Front room",
+       "type": "living",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "O": {
+       "name": "Gideon's study",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "P": {
+       "name": "Hatch house",
+       "type": "storage",
+       "wall": "wood_paneling_dark",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": -1,
+     "plan": [
+      "                          ",
+      "                          ",
+      "                          ",
+      "          HH              ",
+      "          HH              ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "                          ",
+      "        GGGGGGGGTT        ",
+      "        GGGGGGGGTT        ",
+      "        GGGGGGGGTT        ",
+      "        AASSSSSSTT        ",
+      "        AASSSSSSTT        ",
+      "        AASSSSSSTT        ",
+      "        AASSSSSSTT        ",
+      "        AASSSSSSTT        "
+     ],
+     "rooms": {
+      "A": {
+       "name": "Shaft foot",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      },
+      "S": {
+       "name": "Storeroom",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      },
+      "G": {
+       "name": "Generator room",
+       "type": "basement",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      },
+      "T": {
+       "name": "Stairhead",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      },
+      "H": {
+       "name": "Escape shaft",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      }
+     }
+    },
+    {
+     "level": -2,
+     "buried": true,
+     "plan": [
+      "                          ",
+      "                          ",
+      "                          ",
+      "          EE              ",
+      "          EE              ",
+      "          EE              ",
+      "          EE              ",
+      "          EE              ",
+      "          EE              ",
+      "          EE              ",
+      "          EE              ",
+      "        CCCCCRRR          ",
+      "        CCCCCRRR          ",
+      "        CCCCCRRR          ",
+      "        CCCCCRRRDDD       ",
+      "        QQQQQQQQDDD       ",
+      "        QQQQQQQQDDD       ",
+      "        QQQQQQQQDDD       ",
+      "        QQQQQQQQDDD       ",
+      "        QQQQQQQQDDD       ",
+      "        QQQQQQQQDDD       "
+     ],
+     "rooms": {
+      "C": {
+       "name": "Comms room",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige",
+       "ceiling": "concrete_block"
+      },
+      "R": {
+       "name": "Armory",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      },
+      "Q": {
+       "name": "Living quarters",
+       "type": "living",
+       "wall": "paint_sage",
+       "floor": "linoleum_beige",
+       "ceiling": "concrete_block"
+      },
+      "D": {
+       "name": "Decontamination room",
+       "type": "bath",
+       "wall": "tile_bathroom_white",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      },
+      "E": {
+       "name": "Escape tunnel",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      11,
+      18
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "broken",
+     "model": "door_plank"
+    },
+    {
+     "id": "back_door",
+     "at": [
+      16,
+      11
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "barricaded"
+    },
+    {
+     "id": "bedroom_door",
+     "at": [
+      8,
+      14
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "kitchen_door",
+     "at": [
+      13,
+      14
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "study_door",
+     "at": [
+      13,
+      16
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "front_win_a",
+     "at": [
+      9,
+      18
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "front_win_b",
+     "at": [
+      13,
+      18
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "study_win_s",
+     "at": [
+      16,
+      18
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "study_win_e",
+     "at": [
+      17,
+      16
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "bedroom_win_w",
+     "at": [
+      8,
+      12
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "bedroom_win_n",
+     "at": [
+      11,
+      11
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "kitchen_win_n",
+     "at": [
+      14,
+      11
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "kitchen_win_e",
+     "at": [
+      17,
+      13
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "hatch_house_door",
+     "at": [
+      10,
+      4
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_plank"
+    },
+    {
+     "id": "shaft_door",
+     "at": [
+      9,
+      16
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "broken",
+     "model": "door_metal",
+     "level": -1
+    },
+    {
+     "id": "generator_door",
+     "at": [
+      11,
+      14
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "open",
+     "model": "door_metal",
+     "level": -1
+    },
+    {
+     "id": "stairhead_door",
+     "at": [
+      15,
+      14
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal",
+     "level": -1
+    },
+    {
+     "id": "blast_door",
+     "at": [
+      16,
+      19
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "locked",
+     "key": "w4_bunker_blast_key",
+     "lock": "deadbolt",
+     "model": "door_metal",
+     "hp": 1600,
+     "level": -2
+    },
+    {
+     "id": "comms_door",
+     "at": [
+      10,
+      15
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed",
+     "level": -2
+    },
+    {
+     "id": "armory_door",
+     "at": [
+      14,
+      15
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal",
+     "level": -2
+    },
+    {
+     "id": "tunnel_door",
+     "at": [
+      10,
+      11
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal",
+     "level": -2
+    }
+   ],
+   "stairs": [
+    {
+     "level": -2,
+     "at": [
+      17,
+      18
+     ],
+     "dir": "N"
+    }
+   ],
+   "ladders": [
+    {
+     "level": -1,
+     "at": [
+      8,
+      17
+     ],
+     "side": "W",
+     "hatch": true
+    },
+    {
+     "level": -2,
+     "at": [
+      10,
+      3
+     ],
+     "side": "N",
+     "hatch": true
+    },
+    {
+     "level": -1,
+     "at": [
+      11,
+      3
+     ],
+     "side": "N",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "front_couch",
+     "prop": "couch",
+     "at": [
+      10,
+      14
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "front_books",
+     "prop": "bookshelf",
+     "at": [
+      13,
+      18
+     ],
+     "against": "E",
+     "variant": "worn"
+    },
+    {
+     "id": "front_stove",
+     "prop": "wild_wood_stove",
+     "at": [
+      8,
+      15
+     ],
+     "against": "W",
+     "variant": "worn"
+    },
+    {
+     "prop": "wild_gun_rack",
+     "at": [
+      8,
+      16
+     ],
+     "against": "W",
+     "height": 1.3,
+     "variant": "destroyed"
+    },
+    {
+     "id": "hatch_rug",
+     "prop": "rug_rect",
+     "pos": [
+      10.7,
+      17.25
+     ],
+     "rot": 12,
+     "variant": "worn",
+     "route_ok": true
+    },
+    {
+     "prop": "wild_firewood_stack",
+     "pos": [
+      9.55,
+      15.25
+     ],
+     "rot": 90
+    },
+    {
+     "id": "back_bed",
+     "prop": "bed_double",
+     "pos": [
+      10.0,
+      12.06
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "back_nightstand",
+     "prop": "nightstand",
+     "pos": [
+      11.45,
+      11.32
+     ]
+    },
+    {
+     "id": "back_wardrobe",
+     "prop": "wardrobe",
+     "at": [
+      11,
+      12
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.1
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "kitchen_sink",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      12,
+      11
+     ],
+     "against": "N"
+    },
+    {
+     "id": "kitchen_counter",
+     "prop": "kitchen_counter",
+     "at": [
+      13,
+      11
+     ],
+     "against": "N"
+    },
+    {
+     "id": "kitchen_range",
+     "prop": "stove_old",
+     "at": [
+      15,
+      11
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "id": "kitchen_pantry",
+     "prop": "farm_cellar_shelf",
+     "at": [
+      17,
+      12
+     ],
+     "against": "E",
+     "container": "farm_pantry"
+    },
+    {
+     "id": "kitchen_table",
+     "prop": "kitchen_table",
+     "pos": [
+      14.7,
+      12.75
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      14.1,
+      13.35
+     ],
+     "rot": 160,
+     "variant": "worn"
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      15.5,
+      12.1
+     ],
+     "rot": -20,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "dish_clutter",
+     "pos": [
+      14.6,
+      12.7
+     ],
+     "y": 0.76
+    },
+    {
+     "id": "gideon_desk",
+     "prop": "desk_small",
+     "at": [
+      17,
+      15
+     ],
+     "against": "E",
+     "container": "w4_bunker_desk"
+    },
+    {
+     "id": "gideon_chair",
+     "prop": "chair_wood",
+     "pos": [
+      16.55,
+      15.5
+     ],
+     "rot": 90
+    },
+    {
+     "id": "study_files",
+     "prop": "filing_cabinet",
+     "at": [
+      14,
+      18
+     ],
+     "against": "S",
+     "container": "w4_bunker_desk"
+    },
+    {
+     "id": "study_books",
+     "prop": "bookshelf",
+     "at": [
+      15,
+      14
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      16,
+      14
+     ],
+     "against": "N",
+     "height": 1.35
+    },
+    {
+     "prop": "desk_lamp",
+     "pos": [
+      17.55,
+      14.82
+     ],
+     "y": 0.75,
+     "rot": -90
+    },
+    {
+     "id": "solar_pole",
+     "prop": "w4_bunker_solar_pole",
+     "pos": [
+      21.0,
+      20.4
+     ],
+     "rot": 0
+    },
+    {
+     "id": "rain_barrel_sw",
+     "prop": "w4_bunker_rain_barrel",
+     "pos": [
+      7.35,
+      18.3
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "rain_barrel_ne",
+     "prop": "w4_bunker_rain_barrel",
+     "pos": [
+      18.6,
+      11.4
+     ]
+    },
+    {
+     "id": "rain_barrel_se",
+     "prop": "w4_bunker_rain_barrel",
+     "pos": [
+      18.6,
+      18.3
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "woodshed",
+     "prop": "w4_bunker_woodshed",
+     "pos": [
+      16.0,
+      6.6
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "wild_chopping_block",
+     "pos": [
+      14.2,
+      8.3
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "chicken_coop",
+     "prop": "w4_bunker_chicken_coop",
+     "pos": [
+      22.0,
+      14.5
+     ],
+     "rot": -90
+    },
+    {
+     "id": "garden_0",
+     "prop": "w3_raised_bed",
+     "pos": [
+      3.2,
+      13.0
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "alt": "garden:gone_to_seed"
+    },
+    {
+     "id": "garden_1",
+     "prop": "w3_raised_bed",
+     "pos": [
+      4.9,
+      13.0
+     ],
+     "rot": 90,
+     "variant": "clean",
+     "alt": "garden:gone_to_seed"
+    },
+    {
+     "id": "garden_2",
+     "prop": "w3_raised_bed",
+     "pos": [
+      3.2,
+      17.0
+     ],
+     "rot": 90,
+     "variant": "destroyed",
+     "alt": "garden:gone_to_seed"
+    },
+    {
+     "id": "garden_0",
+     "prop": "w3_raised_bed",
+     "pos": [
+      3.2,
+      13.0
+     ],
+     "rot": 90,
+     "variant": "destroyed",
+     "alt": "garden:dug_up"
+    },
+    {
+     "id": "garden_1",
+     "prop": "w3_raised_bed",
+     "pos": [
+      4.9,
+      13.0
+     ],
+     "rot": 90,
+     "variant": "destroyed",
+     "alt": "garden:dug_up"
+    },
+    {
+     "id": "garden_2",
+     "prop": "w3_raised_bed",
+     "pos": [
+      3.2,
+      17.0
+     ],
+     "rot": 90,
+     "variant": "worn",
+     "alt": "garden:dug_up"
+    },
+    {
+     "prop": "wheelbarrow",
+     "pos": [
+      5.6,
+      19.4
+     ],
+     "rot": 30,
+     "variant": "worn"
+    },
+    {
+     "id": "pruitt_truck",
+     "prop": "pickup_wreck",
+     "pos": [
+      17.4,
+      23.4
+     ],
+     "rot": 76,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      1.2,
+      1.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      5.0,
+      2.4
+     ],
+     "rot": 40,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      14.0,
+      1.2
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      19.5,
+      2.2
+     ],
+     "rot": 120
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      24.6,
+      1.4
+     ],
+     "rot": 160,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      0.9,
+      9.5
+     ],
+     "rot": 200
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      24.8,
+      9.0
+     ],
+     "rot": 240
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      0.8,
+      24.6
+     ],
+     "rot": 280,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      24.9,
+      25.0
+     ],
+     "rot": 320
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      8.0,
+      4.6
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      13.4,
+      3.6
+     ],
+     "rot": 70
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      7.4,
+      7.8
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "shaft_locker",
+     "prop": "wild_locker_steel",
+     "at": [
+      8,
+      14
+     ],
+     "against": "N",
+     "level": -1,
+     "container": "wild_locker"
+    },
+    {
+     "prop": "fire_extinguisher",
+     "at": [
+      9,
+      18
+     ],
+     "against": "S",
+     "height": 0.9,
+     "level": -1
+    },
+    {
+     "id": "cans_a",
+     "prop": "w4_bunker_shelf_cans",
+     "at": [
+      10,
+      18
+     ],
+     "against": "S",
+     "level": -1
+    },
+    {
+     "id": "cans_b",
+     "prop": "w4_bunker_shelf_cans",
+     "at": [
+      12,
+      18
+     ],
+     "against": "S",
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "cans_c",
+     "prop": "w4_bunker_shelf_cans",
+     "at": [
+      14,
+      18
+     ],
+     "against": "S",
+     "level": -1,
+     "variant": "destroyed"
+    },
+    {
+     "id": "drum_a",
+     "prop": "w4_bunker_water_drum",
+     "at": [
+      15,
+      16
+     ],
+     "against": "E",
+     "level": -1
+    },
+    {
+     "id": "drum_b",
+     "prop": "w4_bunker_water_drum",
+     "at": [
+      15,
+      17
+     ],
+     "against": "E",
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "pruitt_mattress",
+     "prop": "mattress_dirty",
+     "pos": [
+      12.0,
+      16.75
+     ],
+     "rot": 90,
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "id": "pruitt_crate",
+     "prop": "crate_wood",
+     "pos": [
+      13.4,
+      16.3
+     ],
+     "rot": 20,
+     "level": -1,
+     "container": "w4_bunker_cans"
+    },
+    {
+     "prop": "cans_scatter",
+     "pos": [
+      11.0,
+      15.4
+     ],
+     "level": -1,
+     "route_ok": true
+    },
+    {
+     "id": "generator",
+     "prop": "w4_bunker_generator",
+     "at": [
+      9,
+      11
+     ],
+     "against": "N",
+     "offset": [
+      -0.25,
+      0
+     ],
+     "level": -1,
+     "lit": true,
+     "keep": true,
+     "alt": "power:running"
+    },
+    {
+     "id": "generator",
+     "prop": "w4_bunker_generator",
+     "at": [
+      9,
+      11
+     ],
+     "against": "N",
+     "offset": [
+      -0.25,
+      0
+     ],
+     "level": -1,
+     "variant": "worn",
+     "alt": "power:dead"
+    },
+    {
+     "id": "intake_filter",
+     "prop": "w4_bunker_air_filter",
+     "at": [
+      13,
+      11
+     ],
+     "against": "N",
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "road_oil_drum",
+     "pos": [
+      8.5,
+      13.4
+     ],
+     "level": -1,
+     "variant": "worn"
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      9.3,
+      13.55
+     ],
+     "rot": 30,
+     "level": -1
+    },
+    {
+     "id": "gen_tools",
+     "prop": "toolbox",
+     "pos": [
+      15.4,
+      12.0
+     ],
+     "rot": -80,
+     "level": -1
+    },
+    {
+     "id": "stair_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      16,
+      11
+     ],
+     "against": "N",
+     "level": -1,
+     "container": "hardware_shelf"
+    },
+    {
+     "id": "decon_shower",
+     "prop": "w4_bunker_decon_shower",
+     "at": [
+      18,
+      20
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      -0.15
+     ],
+     "level": -2
+    },
+    {
+     "id": "bunker_filter",
+     "prop": "w4_bunker_air_filter",
+     "at": [
+      18,
+      15
+     ],
+     "against": "E",
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "prop": "road_mop_bucket",
+     "pos": [
+      18.4,
+      18.5
+     ],
+     "level": -2
+    },
+    {
+     "id": "bunk_a",
+     "prop": "wild_bunk_steel",
+     "at": [
+      9,
+      20
+     ],
+     "against": "S",
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "bunk_b",
+     "prop": "wild_bunk_steel",
+     "at": [
+      12,
+      20
+     ],
+     "against": "S",
+     "level": -2
+    },
+    {
+     "id": "quarters_sink",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      8,
+      15
+     ],
+     "against": "N",
+     "level": -2
+    },
+    {
+     "id": "quarters_counter",
+     "prop": "kitchen_counter",
+     "at": [
+      9,
+      15
+     ],
+     "against": "N",
+     "level": -2
+    },
+    {
+     "id": "quarters_cans",
+     "prop": "w4_bunker_shelf_cans",
+     "at": [
+      8,
+      16
+     ],
+     "against": "W",
+     "level": -2
+    },
+    {
+     "id": "quarters_drum_a",
+     "prop": "w4_bunker_water_drum",
+     "at": [
+      8,
+      17
+     ],
+     "against": "W",
+     "level": -2
+    },
+    {
+     "id": "quarters_drum_b",
+     "prop": "w4_bunker_water_drum",
+     "at": [
+      8,
+      18
+     ],
+     "against": "W",
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "quarters_table",
+     "prop": "kitchen_table",
+     "pos": [
+      11.6,
+      17.6
+     ],
+     "rot": 0,
+     "level": -2
+    },
+    {
+     "id": "marion_chair",
+     "prop": "kitchen_chair",
+     "pos": [
+      11.6,
+      18.3
+     ],
+     "rot": 180,
+     "level": -2
+    },
+    {
+     "id": "quarters_chair_b",
+     "prop": "kitchen_chair",
+     "pos": [
+      10.75,
+      17.6
+     ],
+     "rot": 90,
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "prop": "candle_cluster",
+     "pos": [
+      11.95,
+      17.45
+     ],
+     "y": 0.76,
+     "level": -2
+    },
+    {
+     "id": "quarters_footlocker",
+     "prop": "wild_footlocker",
+     "pos": [
+      13.9,
+      19.5
+     ],
+     "rot": 0,
+     "level": -2,
+     "container": "wild_footlocker"
+    },
+    {
+     "prop": "w3_ward_cot",
+     "pos": [
+      14.9,
+      16.6
+     ],
+     "rot": 0,
+     "level": -2,
+     "variant": "worn",
+     "alt": "family:by_the_boys"
+    },
+    {
+     "id": "gun_locker",
+     "prop": "weapons_locker",
+     "at": [
+      14,
+      11
+     ],
+     "against": "N",
+     "level": -2,
+     "container": "w4_bunker_gun_locker"
+    },
+    {
+     "id": "ammo_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      15,
+      12
+     ],
+     "against": "E",
+     "level": -2,
+     "container": "w4_bunker_ammo"
+    },
+    {
+     "id": "ammo_box",
+     "prop": "wild_ammo_box",
+     "pos": [
+      13.45,
+      12.6
+     ],
+     "rot": 10,
+     "level": -2,
+     "container": "wild_ammo_box"
+    },
+    {
+     "id": "radio_desk",
+     "prop": "w4_bunker_radio_desk",
+     "at": [
+      8,
+      12
+     ],
+     "against": "W",
+     "level": -2
+    },
+    {
+     "id": "gideon_seat",
+     "prop": "office_chair",
+     "pos": [
+      9.25,
+      12.5
+     ],
+     "rot": -90,
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "map_wall",
+     "prop": "w4_bunker_map_wall",
+     "at": [
+      11,
+      11
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "height": 1.0,
+     "level": -2
+    },
+    {
+     "id": "go_bag",
+     "prop": "wild_footlocker",
+     "at": [
+      12,
+      13
+     ],
+     "against": "E",
+     "level": -2,
+     "container": "w4_bunker_go_bag"
+    },
+    {
+     "prop": "civic_army_cot",
+     "pos": [
+      12.0,
+      14.55
+     ],
+     "rot": 90,
+     "level": -2,
+     "variant": "worn"
+    },
+    {
+     "id": "tunnel_crate",
+     "prop": "crate_wood",
+     "pos": [
+      11.55,
+      8.5
+     ],
+     "rot": 5,
+     "level": -2,
+     "container": "cardboard_box"
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "pos": [
+      11.55,
+      8.5
+     ],
+     "y": 0.43,
+     "level": -2
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      11.5,
+      6.4
+     ],
+     "level": -2
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "pruitt_couch",
+     "group": "cabin",
+     "pos": [
+      10.9,
+      14.5
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "front_couch"
+    },
+    {
+     "id": "pruitt_bed",
+     "group": "cabin",
+     "pos": [
+      10.0,
+      12.06
+     ],
+     "enemy": "lurcher",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "back_bed"
+    },
+    {
+     "id": "pruitt_mattress",
+     "group": "storeroom",
+     "pos": [
+      12.0,
+      16.75
+     ],
+     "level": -1,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "pruitt_mattress"
+    },
+    {
+     "id": "pruitt_crate",
+     "group": "storeroom",
+     "pos": [
+      13.4,
+      16.3
+     ],
+     "level": -1,
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -70,
+     "anchor": "pruitt_crate"
+    },
+    {
+     "id": "pruitt_gran",
+     "group": "storeroom",
+     "pos": [
+      12.9,
+      12.6
+     ],
+     "level": -1,
+     "enemy": "blister",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "floor"
+    },
+    {
+     "id": "marion",
+     "group": "family",
+     "pos": [
+      11.6,
+      18.3
+     ],
+     "level": -2,
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "anchor": "marion_chair",
+     "alt": "family:at_the_table"
+    },
+    {
+     "id": "marion",
+     "group": "family",
+     "pos": [
+      14.9,
+      16.6
+     ],
+     "level": -2,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "alt": "family:by_the_boys"
+    },
+    {
+     "id": "boy_eli",
+     "group": "family",
+     "pos": [
+      9.4,
+      20.5
+     ],
+     "level": -2,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "bunk_a"
+    },
+    {
+     "id": "boy_sam",
+     "group": "family",
+     "pos": [
+      12.4,
+      20.5
+     ],
+     "level": -2,
+     "enemy": "lurcher",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "bunk_b"
+    },
+    {
+     "id": "gideon",
+     "guardian": true,
+     "pos": [
+      9.25,
+      12.5
+     ],
+     "level": -2,
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -90,
+     "anchor": "gideon_seat"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "blast_key",
+     "item": "w4_bunker_blast_key",
+     "pos": [
+      17.6,
+      15.25
+     ],
+     "y": 0.76
+    }
+   ],
+   "notes": [
+    {
+     "note": "w4_bunker_journal",
+     "pos": [
+      17.6,
+      15.7
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w4_bunker_ledger",
+     "pos": [
+      15.55,
+      16.5
+     ],
+     "y": 1.16,
+     "level": -1
+    },
+    {
+     "note": "w4_bunker_letter",
+     "pos": [
+      11.3,
+      17.65
+     ],
+     "y": 0.77,
+     "level": -2
+    },
+    {
+     "note": "w4_bunker_radio_log",
+     "pos": [
+      8.45,
+      12.2
+     ],
+     "y": 0.78,
+     "level": -2
+    }
+   ],
+   "traps": [
+    {
+     "id": "front_room_boards",
+     "type": "creaky_floor",
+     "at": [
+      10,
+      16
+     ],
+     "size": [
+      2,
+      2
+     ]
+    },
+    {
+     "id": "blast_door_gun",
+     "type": "shotgun",
+     "at": [
+      15,
+      19
+     ],
+     "side": "E",
+     "level": -2
+    },
+    {
+     "id": "hatch_jaws",
+     "type": "bear_trap",
+     "pos": [
+      10.45,
+      3.45
+     ],
+     "rot": 20
+    }
+   ],
+   "triggers": [
+    {
+     "id": "cabin_boards",
+     "group": "cabin",
+     "on": "trap",
+     "trap": "front_room_boards",
+     "delay": 0.5
+    },
+    {
+     "id": "cabin_key",
+     "group": "cabin",
+     "on": "pickup",
+     "pickup": "blast_key",
+     "delay": 0.7
+    },
+    {
+     "id": "storeroom_entered",
+     "group": "storeroom",
+     "on": "room",
+     "room": "S",
+     "level": -1,
+     "delay": 0.4
+    },
+    {
+     "id": "family_gun",
+     "group": "family",
+     "on": "trap",
+     "trap": "blast_door_gun",
+     "delay": 0.3
+    },
+    {
+     "id": "family_quarters",
+     "group": "family",
+     "on": "room",
+     "room": "Q",
+     "level": -2,
+     "delay": 1.2
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      12.5,
+      16.0
+     ],
+     "level": -1,
+     "height": 2.5,
+     "color": "#d8e0c8",
+     "energy": 0.3,
+     "range": 6.0,
+     "flicker": 0.15
+    },
+    {
+     "pos": [
+      17.0,
+      13.0
+     ],
+     "level": -1,
+     "height": 2.5,
+     "color": "#c8d4c0",
+     "energy": 0.25,
+     "range": 5.0,
+     "flicker": 0.0
+    },
+    {
+     "pos": [
+      12.0,
+      17.5
+     ],
+     "level": -2,
+     "height": 2.5,
+     "color": "#e0e4d0",
+     "energy": 0.3,
+     "range": 6.5,
+     "flicker": 0.1
+    },
+    {
+     "pos": [
+      9.0,
+      12.5
+     ],
+     "level": -2,
+     "height": 1.2,
+     "color": "#ffb060",
+     "energy": 0.35,
+     "range": 3.5,
+     "flicker": 0.05
+    },
+    {
+     "pos": [
+      11.5,
+      8.5
+     ],
+     "level": -2,
+     "height": 0.9,
+     "color": "#ffc27a",
+     "energy": 0.4,
+     "range": 5.0,
+     "flicker": 0.25
+    }
+   ],
+   "decals": [
+    {
+     "decal": "footprints_mud",
+     "at": [
+      11,
+      17
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      17,
+      15
+     ],
+     "side": "E",
+     "height": 1.6,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      13,
+      11
+     ],
+     "side": "N",
+     "height": 2.2,
+     "size": [
+      1.4,
+      0.8
+     ],
+     "level": -1
+    },
+    {
+     "decal": "grime_streaks",
+     "at": [
+      12,
+      11
+     ],
+     "side": "N",
+     "height": 1.4,
+     "size": [
+      1.0,
+      1.2
+     ],
+     "level": -1
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      16,
+      19
+     ],
+     "side": "W",
+     "height": 1.1,
+     "size": [
+      1.0,
+      1.2
+     ],
+     "level": -2
+    },
+    {
+     "decal": "bullet_holes",
+     "at": [
+      16,
+      18
+     ],
+     "side": "W",
+     "height": 1.3,
+     "size": [
+      0.8,
+      0.7
+     ],
+     "level": -2
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      16,
+      20
+     ],
+     "side": "W",
+     "height": 1.2,
+     "size": [
+      0.4,
+      0.4
+     ],
+     "level": -2
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      18,
+      15
+     ],
+     "side": "E",
+     "height": 2.3,
+     "size": [
+      1.2,
+      0.7
+     ],
+     "level": -2
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      11,
+      20
+     ],
+     "side": "S",
+     "height": 1.5,
+     "size": [
+      0.8,
+      0.6
+     ],
+     "level": -2
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      11,
+      6
+     ],
+     "side": "E",
+     "height": 1.8,
+     "size": [
+      1.0,
+      1.4
+     ],
+     "level": -2
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      12,
+      15
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 90,
+     "level": -1
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      11,
+      24
+     ],
+     "label": "Up the drive to a red board cabin on the hill: a tin roof, a solar panel on a pole, the garden gone to seed"
+    },
+    {
+     "at": [
+      11,
+      20
+     ],
+     "label": "The porch: the front door kicked in from outside, a neighbour's truck nosed into the yard"
+    },
+    {
+     "at": [
+      11,
+      16
+     ],
+     "label": "The front room: loose boards groan, and the rug is dragged back off a hatch"
+    },
+    {
+     "at": [
+      15,
+      16
+     ],
+     "label": "Gideon's study: his journal and the blast door key under the desk drawer's false bottom"
+    },
+    {
+     "at": [
+      9,
+      17
+     ],
+     "label": "Back to the hatch: a ladder down a concrete shaft"
+    },
+    {
+     "at": [
+      9,
+      17
+     ],
+     "level": -1,
+     "label": "The shaft foot: the steel door forced off its hinges"
+    },
+    {
+     "at": [
+      12,
+      15
+     ],
+     "level": -1,
+     "label": "The storeroom: the neighbours lived on his cans"
+    },
+    {
+     "at": [
+      11,
+      12
+     ],
+     "level": -1,
+     "label": "The generator room: the generator, the air intake furred white with Bloom"
+    },
+    {
+     "at": [
+      16,
+      13
+     ],
+     "level": -1,
+     "label": "The stairhead: down to the living level"
+    },
+    {
+     "at": [
+      17,
+      19
+     ],
+     "level": -2,
+     "label": "Decontamination: the blast door, scorched and dented from this side, deadbolted"
+    },
+    {
+     "at": [
+      13,
+      17
+     ],
+     "level": -2,
+     "label": "Unlock it and mind the wire: the living quarters, the family"
+    },
+    {
+     "at": [
+      14,
+      13
+     ],
+     "level": -2,
+     "label": "The armory: the gun locker"
+    },
+    {
+     "at": [
+      10,
+      12
+     ],
+     "level": -2,
+     "label": "The comms room: Gideon at his radio, the map wall"
+    },
+    {
+     "at": [
+      10,
+      5
+     ],
+     "level": -2,
+     "label": "The escape tunnel north under the woods"
+    },
+    {
+     "at": [
+      10,
+      4
+     ],
+     "level": -1,
+     "label": "Up the first ladder into the escape shaft"
+    },
+    {
+     "at": [
+      11,
+      4
+     ],
+     "label": "Up the second into the hatch house: jaws set in the corner"
+    },
+    {
+     "at": [
+      10,
+      6
+     ],
+     "label": "Draw the bolt: out into the woods behind the cabin"
+    }
+   ],
+   "loot_room": {
+    "room": "C",
+    "level": -2
+   },
+   "shortcuts": [
+    {
+     "opening": "hatch_house_door"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "garden",
+     "label": "The garden",
+     "options": [
+      {
+       "id": "gone_to_seed",
+       "weight": 2,
+       "label": "Gone to seed"
+      },
+      {
+       "id": "dug_up",
+       "label": "Dug over by the neighbours for the last potatoes"
+      }
+     ]
+    },
+    {
+     "id": "front",
+     "label": "How the neighbours left the front door",
+     "options": [
+      {
+       "id": "kicked_in",
+       "weight": 2
+      },
+      {
+       "id": "hanging_open",
+       "openings": [
+        {
+         "id": "front_door",
+         "state": "open"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "power",
+     "label": "Whether the generator still runs",
+     "options": [
+      {
+       "id": "running",
+       "weight": 2,
+       "label": "Ticking over on the last of the diesel"
+      },
+      {
+       "id": "dead",
+       "label": "Out of fuel",
+       "style": {
+        "lights_on": 0.25
+       }
+      }
+     ]
+    },
+    {
+     "id": "family",
+     "label": "Where Marion is",
+     "options": [
+      {
+       "id": "at_the_table",
+       "weight": 2
+      },
+      {
+       "id": "by_the_boys",
+       "label": "On a cot she pulled up by the bunks"
+      }
+     ]
+    },
+    {
+     "id": "quarters",
+     "label": "The living quarters' paint",
+     "options": [
+      {
+       "id": "sage",
+       "weight": 2
+      },
+      {
+       "id": "panelled",
+       "rooms": [
+        {
+         "level": -2,
+         "room": "Q",
+         "wall": "wood_paneling_dark"
+        }
+       ]
+      },
+      {
+       "id": "plaster",
+       "rooms": [
+        {
+         "level": -2,
+         "room": "Q",
+         "wall": "plaster_grey"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "enemies": 12,
+    "props": 220
+   }
+  }
+ ]
+}

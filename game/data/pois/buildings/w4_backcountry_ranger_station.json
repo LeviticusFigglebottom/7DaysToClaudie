@@ -1,0 +1,3066 @@
+{
+ "_doc": "Tier-2 wilderness dungeon (forest site, random worlds): a backcountry ranger district station the Cordon made a checkpoint on the forest road, with a 15 m steel fire-weather tower in its chain-link compound. The tower is four stacked lattice sections (w4_ranger_tower_leg_section, level 0 with y) round a recorder hut (L0) and three 2 x 2 landings (L1-L3, open edges with rails), climbed by four real ladders through hatches into the steel-clad cab (L4, the w4_ranger_tower_cab shell). Route: the road ends at the barrier -> the screening shelter (entering it, or opening the booth door, wakes the held families: ambush) -> the booth and the Cordon's roster -> through the open gate -> the office door (can chime) -> the office and the district log -> the radio room: the weather log and the tower key -> the bunkhouse (opening its door or the loose boards wake the crew: ambush) -> the engine bay past the brush truck (jaws by the back door) -> draw the bolt on the bay's back door (the shortcut) -> the weather yard -> unlock the recorder hut -> four ladders up the tower -> the cab: the radio, the district key, the district ranger (guardian) -> back down, and the district key opens the gun safe in the office. Hollowed don't climb ladders: once the cab is cleared the tower is a refuge. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "w4_backcountry_ranger_station",
+   "name": "Kettle Creek Ranger Station",
+   "tier": 2,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    34,
+    34
+   ],
+   "origin": [
+    0,
+    0
+   ],
+   "author": "Hollowmere team (wilderness round 4)",
+   "story": "Kettle Creek was a backcountry district station at the end of the forest road: an office and a radio room, a bunkhouse for the fire crew, an engine bay for the brush truck and a steel fire-weather tower in the compound where somebody read the instruments at eight and four every day of the season. When the Cordon closed the valley it made the station Checkpoint 11: District Ranger Ines Calloway and her crew lowered the barrier across the road, checked every car against the Cordon's list and held anyone with a fever in a screening shelter for a medical team that never came. On the twelfth day the roads closed for good and the soldiers did not come back. The crew stayed. Dale turned in the engine bay and they barricaded the hall door on him; the families held at the barrier turned on their cots; the crew slept in the bunkhouse with their boots on. Ines kept the radio schedule and kept reading the weather, and on the night of the first Hum she wrote down a wind that was not there, hung the tower key in the radio room, bolted the bay and climbed to the cab with the radio and the district key. Her lamp still burns up there.",
+   "style": {
+    "exterior": "siding_barn_red",
+    "interior": "paint_sage",
+    "floor": "linoleum_beige",
+    "ceiling": "plaster_white",
+    "floor_height": 0.15,
+    "decay": 0.45,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.35
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "x",
+     "pitch": 24,
+     "overhang": 0.45,
+     "material": "roof_metal",
+     "gutters": false,
+     "roofs": [
+      {
+       "level": 4,
+       "at": [
+        26,
+        6
+       ],
+       "type": "pyramid",
+       "pitch": 28,
+       "overhang": 0.35,
+       "material": "roof_metal"
+      },
+      {
+       "level": 0,
+       "at": [
+        23,
+        27
+       ],
+       "type": "shed",
+       "slope": "S",
+       "pitch": 10,
+       "material": "roof_metal"
+      },
+      {
+       "level": 0,
+       "at": [
+        24,
+        15
+       ],
+       "type": "shed",
+       "slope": "E",
+       "pitch": 14,
+       "material": "roof_metal"
+      }
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..........................UU......",
+      "..........................UU......",
+      "..BBBBBBDDDDDDDWWWW...............",
+      "..BBBBBBDDDDDDDWWWW...............",
+      "..BBBBBBDDDDDDDWWWW...............",
+      "..BBBBBBHHHHHHHHHHH...............",
+      "..BBBBBBHHHHHHHHHHH...............",
+      "..BBBBBBOOOOORRRKKK...............",
+      "..BBBBBBOOOOORRRKKK....FFF........",
+      "..BBBBBBOOOOORRRKKK....FFF........",
+      "..BBBBBBOOOOORRRKKK....FFF........",
+      "..BBBBBBOOOOORRRKKK...............",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      "......................SSSS........",
+      "....................CCSSSS........",
+      "....................CCSSSS........",
+      "..................................",
+      "..................................",
+      "..................................",
+      "..................................",
+      ".................................."
+     ],
+     "rooms": {
+      "B": {
+       "name": "Engine bay",
+       "type": "garage",
+       "storeys": 2,
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "D": {
+       "name": "Bunkhouse",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "W": {
+       "name": "Wash room",
+       "type": "bath",
+       "wall": "tile_bathroom_white",
+       "floor": "tile_white_small"
+      },
+      "H": {
+       "name": "Hall",
+       "type": "hallway",
+       "wall": "paint_sage",
+       "floor": "linoleum_beige"
+      },
+      "O": {
+       "name": "District ranger's office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "carpet_brown"
+      },
+      "R": {
+       "name": "Radio room",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige"
+      },
+      "K": {
+       "name": "Kitchen",
+       "type": "kitchen",
+       "wall": "paint_mustard",
+       "floor": "linoleum_check"
+      },
+      "F": {
+       "name": "Fuel shed",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "U": {
+       "name": "Recorder hut",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "C": {
+       "name": "Checkpoint booth",
+       "type": "office",
+       "wall": "plaster_grey",
+       "floor": "concrete"
+      },
+      "S": {
+       "name": "Screening shelter",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "                          PP",
+      "                          PP",
+      "  ^^^^^^",
+      "  ^^^^^^",
+      "  ^^^^^^",
+      "  ^^^^^^",
+      "  ^^^^^^",
+      "  ^^^^^^",
+      "  ^^^^^^",
+      "  ^^^^^^",
+      "  ^^^^^^",
+      "  ^^^^^^"
+     ],
+     "rooms": {
+      "P": {
+       "name": "First landing",
+       "type": "hallway",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 2,
+     "plan": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "                          QQ",
+      "                          QQ"
+     ],
+     "rooms": {
+      "Q": {
+       "name": "Second landing",
+       "type": "hallway",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 3,
+     "plan": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "                          XX",
+      "                          XX"
+     ],
+     "rooms": {
+      "X": {
+       "name": "Third landing",
+       "type": "hallway",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 4,
+     "plan": [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "                          TT",
+      "                          TT"
+     ],
+     "rooms": {
+      "T": {
+       "name": "Tower cab",
+       "type": "office",
+       "wall": "paint_sage",
+       "floor": "wood_oak",
+       "ceiling": "wood_paneling_dark"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      10,
+      17
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "office_window",
+     "at": [
+      8,
+      17
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "office_window_b",
+     "at": [
+      12,
+      17
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "radio_window",
+     "at": [
+      14,
+      17
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "kitchen_window",
+     "at": [
+      17,
+      17
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "kitchen_window_e",
+     "at": [
+      18,
+      15
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "office_hall_door",
+     "at": [
+      10,
+      13
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "radio_door",
+     "at": [
+      14,
+      13
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "kitchen_door",
+     "at": [
+      17,
+      13
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "broken"
+    },
+    {
+     "id": "bunk_door",
+     "at": [
+      11,
+      11
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "wash_door",
+     "at": [
+      16,
+      11
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "bunk_bay_door",
+     "at": [
+      8,
+      9
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "bay_hall_door",
+     "at": [
+      8,
+      11
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "barricaded",
+     "barricade": "furniture"
+    },
+    {
+     "id": "bay_back_door",
+     "at": [
+      6,
+      8
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_metal"
+    },
+    {
+     "id": "bay_door_a",
+     "at": [
+      3,
+      17
+     ],
+     "side": "S",
+     "type": "door2_tall",
+     "state": "closed"
+    },
+    {
+     "id": "bay_door_b",
+     "at": [
+      5,
+      17
+     ],
+     "side": "S",
+     "type": "door2_tall",
+     "state": "closed"
+    },
+    {
+     "id": "bay_window_w",
+     "at": [
+      2,
+      11
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "boarded"
+    },
+    {
+     "id": "bay_window_w2",
+     "at": [
+      2,
+      14
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "bunk_window",
+     "at": [
+      9,
+      8
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "bunk_window_b",
+     "at": [
+      13,
+      8
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "wash_window",
+     "at": [
+      17,
+      8
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "fuel_door",
+     "at": [
+      23,
+      15
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "fuel_window",
+     "at": [
+      24,
+      14
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "hut_door",
+     "at": [
+      26,
+      7
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked",
+     "key": "w4_ranger_tower_key",
+     "lock": "padlock",
+     "model": "door_metal"
+    },
+    {
+     "id": "hut_window",
+     "at": [
+      27,
+      6
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "booth_door",
+     "at": [
+      20,
+      28
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "booth_window",
+     "at": [
+      21,
+      27
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "booth_window_w",
+     "at": [
+      20,
+      27
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "booth_hatch",
+     "at": [
+      22,
+      27
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "missing"
+    },
+    {
+     "id": "booth_gap",
+     "at": [
+      22,
+      28
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "shelter_s22",
+     "at": [
+      22,
+      28
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "shelter_s23",
+     "at": [
+      23,
+      28
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "shelter_s24",
+     "at": [
+      24,
+      28
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "shelter_s25",
+     "at": [
+      25,
+      28
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "shelter_w26",
+     "at": [
+      22,
+      26
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "land1_n266",
+     "at": [
+      26,
+      6
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "land1_n276",
+     "at": [
+      27,
+      6
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "land1_s267",
+     "at": [
+      26,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "land1_s277",
+     "at": [
+      27,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "land1_w266",
+     "at": [
+      26,
+      6
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "land1_w267",
+     "at": [
+      26,
+      7
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "land1_e276",
+     "at": [
+      27,
+      6
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "land1_e277",
+     "at": [
+      27,
+      7
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "land2_n266",
+     "at": [
+      26,
+      6
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "land2_n276",
+     "at": [
+      27,
+      6
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "land2_s267",
+     "at": [
+      26,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "land2_s277",
+     "at": [
+      27,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "land2_w266",
+     "at": [
+      26,
+      6
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "land2_w267",
+     "at": [
+      26,
+      7
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "land2_e276",
+     "at": [
+      27,
+      6
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "land2_e277",
+     "at": [
+      27,
+      7
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "land3_n266",
+     "at": [
+      26,
+      6
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "land3_n276",
+     "at": [
+      27,
+      6
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "land3_s267",
+     "at": [
+      26,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "land3_s277",
+     "at": [
+      27,
+      7
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "land3_w266",
+     "at": [
+      26,
+      6
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "land3_w267",
+     "at": [
+      26,
+      7
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "land3_e276",
+     "at": [
+      27,
+      6
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "land3_e277",
+     "at": [
+      27,
+      7
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "cab_glass_n",
+     "at": [
+      26,
+      6
+     ],
+     "side": "N",
+     "type": "window2",
+     "state": "closed",
+     "level": 4
+    },
+    {
+     "id": "cab_glass_s",
+     "at": [
+      26,
+      7
+     ],
+     "side": "S",
+     "type": "window2",
+     "state": "closed",
+     "level": 4
+    },
+    {
+     "id": "cab_glass_w",
+     "at": [
+      26,
+      6
+     ],
+     "side": "W",
+     "type": "window2",
+     "state": "closed",
+     "level": 4
+    },
+    {
+     "id": "cab_glass_e",
+     "at": [
+      27,
+      6
+     ],
+     "side": "E",
+     "type": "window2",
+     "state": "broken",
+     "level": 4
+    }
+   ],
+   "ladders": [
+    {
+     "level": 0,
+     "at": [
+      26,
+      6
+     ],
+     "side": "N",
+     "hatch": true
+    },
+    {
+     "level": 1,
+     "at": [
+      27,
+      7
+     ],
+     "side": "S",
+     "hatch": true
+    },
+    {
+     "level": 2,
+     "at": [
+      26,
+      6
+     ],
+     "side": "N",
+     "hatch": true
+    },
+    {
+     "level": 3,
+     "at": [
+      27,
+      7
+     ],
+     "side": "S",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "ines_desk",
+     "prop": "office_desk",
+     "at": [
+      8,
+      15
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "ines_chair",
+     "prop": "office_chair",
+     "pos": [
+      9.35,
+      15.0
+     ],
+     "rot": -90
+    },
+    {
+     "id": "ines_gun_safe",
+     "prop": "w4_ranger_gun_safe",
+     "at": [
+      12,
+      15
+     ],
+     "against": "E",
+     "rot": -90,
+     "key": "w4_ranger_district_key"
+    },
+    {
+     "id": "office_files",
+     "prop": "filing_cabinet",
+     "at": [
+      12,
+      13
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      9,
+      13
+     ],
+     "against": "N",
+     "height": 1.5
+    },
+    {
+     "prop": "civic_shelter_board",
+     "at": [
+      8,
+      17
+     ],
+     "against": "W",
+     "rot": 90,
+     "height": 1.45
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      10.4,
+      15.6
+     ],
+     "rot": 40
+    },
+    {
+     "id": "radio_desk",
+     "prop": "lab_radio_desk",
+     "at": [
+      15,
+      15
+     ],
+     "against": "E",
+     "rot": -90,
+     "container": "w4_ranger_radio_desk"
+    },
+    {
+     "id": "radio_chair",
+     "prop": "office_chair",
+     "pos": [
+      14.35,
+      15.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      13,
+      13
+     ],
+     "against": "N",
+     "height": 1.5
+    },
+    {
+     "id": "radio_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      13,
+      17
+     ],
+     "against": "S",
+     "rot": 180
+    },
+    {
+     "id": "radio_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      15.45,
+      15.65
+     ],
+     "y": 0.8,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "id": "kitchen_stove",
+     "prop": "stove_old",
+     "at": [
+      18,
+      14
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "id": "kitchen_fridge",
+     "prop": "fridge_old",
+     "at": [
+      18,
+      16
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "id": "kitchen_sink",
+     "prop": "kitchen_counter_sink",
+     "at": [
+      16,
+      17
+     ],
+     "against": "S",
+     "rot": 180
+    },
+    {
+     "id": "kitchen_table",
+     "prop": "kitchen_table",
+     "pos": [
+      16.9,
+      15.2
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      16.35,
+      15.6
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      17.45,
+      14.8
+     ],
+     "rot": -90,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "dish_clutter",
+     "pos": [
+      16.9,
+      15.2
+     ],
+     "y": 0.76
+    },
+    {
+     "prop": "water_cooler",
+     "at": [
+      14,
+      11
+     ],
+     "against": "N"
+    },
+    {
+     "id": "hall_coats",
+     "prop": "civic_coat_rack",
+     "at": [
+      18,
+      12
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "prop": "fire_extinguisher",
+     "at": [
+      12,
+      12
+     ],
+     "against": "S",
+     "rot": 180,
+     "height": 1.0
+    },
+    {
+     "id": "bunk_a",
+     "prop": "wild_bunk_steel",
+     "pos": [
+      9.4,
+      8.55
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "bunk_b",
+     "prop": "wild_bunk_steel",
+     "pos": [
+      11.65,
+      8.55
+     ],
+     "rot": 0
+    },
+    {
+     "id": "bunk_c",
+     "prop": "wild_bunk_steel",
+     "pos": [
+      13.9,
+      8.55
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "locker_sam",
+     "prop": "wild_footlocker",
+     "pos": [
+      9.4,
+      9.3
+     ],
+     "container": "w4_ranger_footlocker"
+    },
+    {
+     "id": "locker_petra",
+     "prop": "wild_footlocker",
+     "pos": [
+      13.9,
+      9.3
+     ],
+     "container": "w4_ranger_footlocker"
+    },
+    {
+     "prop": "wild_caulk_boots",
+     "pos": [
+      12.2,
+      9.45
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "toilet",
+     "at": [
+      18,
+      8
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "prop": "sink_pedestal",
+     "at": [
+      15,
+      8
+     ],
+     "against": "N"
+    },
+    {
+     "id": "wash_cabinet",
+     "prop": "medicine_cabinet",
+     "at": [
+      15,
+      8
+     ],
+     "against": "N",
+     "height": 1.45
+    },
+    {
+     "id": "engine_6",
+     "prop": "w4_ranger_brush_truck",
+     "pos": [
+      3.6,
+      13.3
+     ],
+     "rot": 0
+    },
+    {
+     "id": "turnout_lockers",
+     "prop": "fire_turnout_locker",
+     "at": [
+      3,
+      8
+     ],
+     "against": "N",
+     "offset": [
+      0.3,
+      0.0
+     ]
+    },
+    {
+     "prop": "fire_hose_rack",
+     "at": [
+      2,
+      16
+     ],
+     "against": "W",
+     "rot": 90,
+     "height": 1.0
+    },
+    {
+     "id": "bay_tools",
+     "prop": "road_tool_chest",
+     "at": [
+      7,
+      16
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      7.35,
+      14.3
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      6.9,
+      13.6
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      5.4,
+      9.5
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "plaster_chunks",
+     "pos": [
+      6.6,
+      9.6
+     ],
+     "rot": 70
+    },
+    {
+     "id": "fuel_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      25,
+      15
+     ],
+     "against": "E",
+     "rot": -90,
+     "container": "w4_ranger_fuel_shelf"
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      24.45,
+      14.45
+     ]
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      25.45,
+      16.45
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      23.5,
+      16.6
+     ],
+     "rot": 70
+    },
+    {
+     "id": "recorder_desk",
+     "prop": "desk_small",
+     "at": [
+      27,
+      7
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "prop": "wild_radio_set",
+     "pos": [
+      27.6,
+      7.15
+     ],
+     "y": 0.75,
+     "rot": -90
+    },
+    {
+     "prop": "w4_ranger_tower_footing",
+     "pos": [
+      27.0,
+      7.0
+     ],
+     "y": -0.15
+    },
+    {
+     "prop": "w4_ranger_tower_leg_section",
+     "pos": [
+      27.0,
+      7.0
+     ],
+     "y": -0.15
+    },
+    {
+     "prop": "w4_ranger_tower_leg_section",
+     "pos": [
+      27.0,
+      7.0
+     ],
+     "y": 2.85
+    },
+    {
+     "prop": "w4_ranger_tower_leg_section",
+     "pos": [
+      27.0,
+      7.0
+     ],
+     "y": 5.85,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_ranger_tower_leg_section",
+     "pos": [
+      27.0,
+      7.0
+     ],
+     "y": 8.85
+    },
+    {
+     "id": "tower_cab",
+     "prop": "w4_ranger_tower_cab",
+     "pos": [
+      27.0,
+      7.0
+     ],
+     "level": 4,
+     "keep": true
+    },
+    {
+     "id": "landing_toolbox",
+     "prop": "toolbox",
+     "pos": [
+      27.55,
+      6.4
+     ],
+     "level": 1,
+     "rot": 30
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      6
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      6
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      7
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      6
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      7
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      6
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 1
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      7
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 1
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      6
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 2
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      7
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 2
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      7
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 2
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      6
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 2
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      7
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 2
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      6
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 2
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      7
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 2
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      6
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 3
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      6
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 3
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      7
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 3
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      6
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 3
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      26,
+      7
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 3
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      6
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 3
+    },
+    {
+     "prop": "town3_mast_rail",
+     "at": [
+      27,
+      7
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 3
+    },
+    {
+     "id": "cab_desk",
+     "prop": "desk_small",
+     "at": [
+      26,
+      7
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 4,
+     "container": "w4_ranger_cab_cache"
+    },
+    {
+     "id": "cab_radio",
+     "prop": "wild_radio_set",
+     "pos": [
+      26.35,
+      7.2
+     ],
+     "y": 0.75,
+     "rot": 90,
+     "level": 4
+    },
+    {
+     "id": "cab_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      26.3,
+      7.42
+     ],
+     "y": 0.75,
+     "level": 4,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "id": "booth_desk",
+     "route_ok": true,
+     "prop": "desk_small",
+     "at": [
+      20,
+      27
+     ],
+     "against": "N"
+    },
+    {
+     "id": "shelter_cot_a",
+     "prop": "civic_army_cot",
+     "pos": [
+      23.75,
+      26.5
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "id": "shelter_cot_c",
+     "prop": "civic_army_cot",
+     "pos": [
+      25.55,
+      27.1
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "shelter_crate",
+     "prop": "civic_relief_crate",
+     "pos": [
+      24.2,
+      27.6
+     ],
+     "container": "w4_ranger_checkpoint_crate"
+    },
+    {
+     "prop": "civic_blanket_pile",
+     "pos": [
+      22.6,
+      27.4
+     ]
+    },
+    {
+     "id": "barrier",
+     "prop": "w4_ranger_checkpoint_barrier",
+     "pos": [
+      17.0,
+      28.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w3_sandbags",
+     "pos": [
+      13.0,
+      27.4
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "road_sign_stop",
+     "pos": [
+      19.7,
+      30.2
+     ],
+     "rot": 0
+    },
+    {
+     "id": "evac_sedan",
+     "prop": "car_sedan_wreck",
+     "pos": [
+      17.3,
+      31.2
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "evac_pickup",
+     "prop": "pickup_wreck",
+     "pos": [
+      12.2,
+      30.9
+     ],
+     "rot": 172,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_ranger_fire_danger_sign",
+     "pos": [
+      10.0,
+      26.6
+     ],
+     "rot": 0
+    },
+    {
+     "id": "compound_gate",
+     "prop": "w4_ranger_compound_gate",
+     "pos": [
+      17.0,
+      25.0
+     ],
+     "rot": 0,
+     "route_ok": true
+    },
+    {
+     "id": "weather_screen",
+     "prop": "w4_ranger_weather_screen",
+     "pos": [
+      23.5,
+      4.0
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "w4_ranger_rain_gauge",
+     "pos": [
+      21.6,
+      4.4
+     ]
+    },
+    {
+     "id": "anemometer",
+     "prop": "w4_ranger_anemometer_mast",
+     "pos": [
+      30.5,
+      4.8
+     ],
+     "rot": 0
+    },
+    {
+     "id": "fuel_tank",
+     "prop": "w4_ranger_fuel_pump",
+     "pos": [
+      24.5,
+      19.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "school_flagpole",
+     "pos": [
+      14.0,
+      21.5
+     ]
+    },
+    {
+     "prop": "picnic_table",
+     "pos": [
+      27.0,
+      22.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "woodpile",
+     "pos": [
+      30.6,
+      13.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      2.6,
+      19.6
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "tire",
+     "pos": [
+      6.8,
+      20.4
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      2.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      4.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      6.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      8.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      10.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      12.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      14.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      20.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      22.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      24.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      26.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      28.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      30.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      32.0,
+      25.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      2.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      4.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      6.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      8.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      10.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      12.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      14.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      16.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      18.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      20.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      22.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      24.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      26.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      28.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      30.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      32.0,
+      2.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      3.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      3.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      5.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      5.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      7.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      7.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      9.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      9.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      11.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      11.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      13.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      13.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      15.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      15.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      17.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      17.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      19.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      19.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      21.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      21.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      23.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      23.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      1.0,
+      24.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      33.0,
+      24.0
+     ],
+     "rot": 90,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      0.5,
+      0.6
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      33.4,
+      0.8
+     ],
+     "rot": 71,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      0.6,
+      32.8
+     ],
+     "rot": 140
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      33.3,
+      33.2
+     ],
+     "rot": 200
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "office_hollow",
+     "pos": [
+      9.35,
+      15.0
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -90
+    },
+    {
+     "id": "kitchen_hollow",
+     "pos": [
+      17.6,
+      16.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 200
+    },
+    {
+     "id": "fuel_dragger",
+     "pos": [
+      24.2,
+      16.3
+     ],
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": 60,
+     "anchor": "floor"
+    },
+    {
+     "id": "wash_hollow",
+     "pos": [
+      16.6,
+      9.6
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 120,
+     "anchor": "floor"
+    },
+    {
+     "id": "dale",
+     "pos": [
+      5.9,
+      12.4
+     ],
+     "enemy": "lurcher",
+     "population": "loggers",
+     "pose": "stand",
+     "rot": 160,
+     "alt": "dale:by_the_truck"
+    },
+    {
+     "id": "dale",
+     "pos": [
+      6.3,
+      16.3
+     ],
+     "enemy": "lurcher",
+     "population": "loggers",
+     "pose": "crouch",
+     "rot": 90,
+     "alt": "dale:at_the_bench"
+    },
+    {
+     "id": "evac_mother",
+     "group": "checkpoint",
+     "pos": [
+      23.75,
+      26.5
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "shelter_cot_a"
+    },
+    {
+     "id": "evac_father",
+     "group": "checkpoint",
+     "pos": [
+      23.3,
+      27.6
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 180,
+     "alt": "evacuees:on_the_cots"
+    },
+    {
+     "id": "evac_father",
+     "group": "checkpoint",
+     "pos": [
+      22.6,
+      28.4
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 0,
+     "alt": "evacuees:at_the_edge"
+    },
+    {
+     "id": "evac_boy",
+     "group": "checkpoint",
+     "pos": [
+      25.55,
+      27.1
+     ],
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "shelter_cot_c"
+    },
+    {
+     "id": "cordon_medic",
+     "group": "checkpoint",
+     "population": "cordon",
+     "pos": [
+      24.6,
+      28.5
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 220
+    },
+    {
+     "id": "sam",
+     "group": "bunkhouse",
+     "population": "loggers",
+     "pos": [
+      9.4,
+      8.55
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "bunk_a"
+    },
+    {
+     "id": "petra",
+     "group": "bunkhouse",
+     "population": "loggers",
+     "pos": [
+      13.9,
+      8.55
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "bunk_c"
+    },
+    {
+     "id": "wes",
+     "group": "bunkhouse",
+     "population": "loggers",
+     "pos": [
+      11.6,
+      9.75
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 200
+    },
+    {
+     "id": "ines",
+     "guardian": true,
+     "pos": [
+      26.6,
+      6.4
+     ],
+     "level": 4,
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 150,
+     "alt": "ines:at_the_radio"
+    },
+    {
+     "id": "ines",
+     "guardian": true,
+     "pos": [
+      27.5,
+      6.35
+     ],
+     "level": 4,
+     "enemy": "hollow",
+     "pose": "kneel",
+     "rot": 20,
+     "alt": "ines:at_the_glass"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "tower_key",
+     "item": "w4_ranger_tower_key",
+     "pos": [
+      13.5,
+      13.12
+     ],
+     "y": 1.45
+    },
+    {
+     "id": "district_key",
+     "item": "w4_ranger_district_key",
+     "pos": [
+      26.4,
+      6.8
+     ],
+     "y": 0.76,
+     "level": 4
+    }
+   ],
+   "notes": [
+    {
+     "note": "w4_ranger_district_log",
+     "pos": [
+      8.55,
+      15.3
+     ],
+     "y": 0.78
+    },
+    {
+     "note": "w4_ranger_roster",
+     "pos": [
+      20.4,
+      27.35
+     ],
+     "y": 0.75
+    },
+    {
+     "note": "w4_ranger_letter",
+     "pos": [
+      13.9,
+      9.3
+     ],
+     "y": 0.41
+    },
+    {
+     "note": "w4_ranger_weather_log",
+     "pos": [
+      15.45,
+      14.6
+     ],
+     "y": 0.8
+    }
+   ],
+   "traps": [
+    {
+     "id": "office_cans",
+     "type": "can_chime",
+     "at": [
+      10,
+      17
+     ],
+     "side": "S"
+    },
+    {
+     "id": "bunk_boards",
+     "type": "creaky_floor",
+     "at": [
+      9,
+      10
+     ],
+     "size": [
+      3,
+      1
+     ]
+    },
+    {
+     "id": "bay_jaws",
+     "type": "bear_trap",
+     "pos": [
+      6.45,
+      8.75
+     ],
+     "rot": 15
+    }
+   ],
+   "triggers": [
+    {
+     "id": "shelter_entered",
+     "group": "checkpoint",
+     "on": "room",
+     "room": "S",
+     "level": 0,
+     "delay": 1.0
+    },
+    {
+     "id": "booth_door_opened",
+     "group": "checkpoint",
+     "on": "opening",
+     "opening": "booth_door",
+     "delay": 0.4
+    },
+    {
+     "id": "bunk_door_opened",
+     "group": "bunkhouse",
+     "on": "opening",
+     "opening": "bunk_door",
+     "delay": 0.5
+    },
+    {
+     "id": "bunk_boards_groan",
+     "group": "bunkhouse",
+     "on": "trap",
+     "trap": "bunk_boards",
+     "delay": 0.6
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      15.45,
+      15.65
+     ],
+     "height": 1.0,
+     "color": "#ffb46e",
+     "energy": 0.4,
+     "range": 4.0,
+     "flicker": 0.3
+    },
+    {
+     "pos": [
+      26.3,
+      7.42
+     ],
+     "level": 4,
+     "height": 0.95,
+     "color": "#ffc27a",
+     "energy": 0.5,
+     "range": 5.0,
+     "flicker": 0.25
+    }
+   ],
+   "decals": [
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      8,
+      11
+     ],
+     "side": "W",
+     "height": 1.5,
+     "size": [
+      0.9,
+      0.7
+     ]
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      6,
+      9
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      1.8
+     ],
+     "rot": 90
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      6,
+      8
+     ],
+     "side": "N",
+     "height": 1.2,
+     "size": [
+      0.4,
+      0.4
+     ]
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      10,
+      15
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      1.6
+     ]
+    },
+    {
+     "decal": "grime_streaks",
+     "at": [
+      12,
+      9
+     ],
+     "side": "N",
+     "height": 1.6,
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      16,
+      15
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      20,
+      28
+     ],
+     "side": "S",
+     "height": 1.4,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      3,
+      13
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.0
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      21,
+      33
+     ],
+     "label": "The forest road ends at a striped barrier, STOP / CHECKPOINT, the cars still nose to tail behind it"
+    },
+    {
+     "at": [
+      23,
+      28
+     ],
+     "label": "The screening shelter: cots in a row, the families the Cordon held at the barrier"
+    },
+    {
+     "at": [
+      21,
+      28
+     ],
+     "label": "The checkpoint booth: the standing orders and the roster, every last line HELD"
+    },
+    {
+     "at": [
+      17,
+      24
+     ],
+     "label": "Through the compound gate, chained open: the station, the engine bay, the tower over it all"
+    },
+    {
+     "at": [
+      10,
+      18
+     ],
+     "label": "The office door: a wire of cans strung behind the glass"
+    },
+    {
+     "at": [
+      9,
+      15
+     ],
+     "label": "The district ranger's office: her log on the desk, the gun safe locked"
+    },
+    {
+     "at": [
+      14,
+      15
+     ],
+     "label": "The radio room: the weather log, the tower key on its hook"
+    },
+    {
+     "at": [
+      11,
+      10
+     ],
+     "label": "The bunkhouse: loose boards, and the crew still in their bunks"
+    },
+    {
+     "at": [
+      7,
+      9
+     ],
+     "label": "The engine bay by the crew door: the brush truck, jaws hidden in the oil-dry"
+    },
+    {
+     "at": [
+      6,
+      8
+     ],
+     "label": "Slide the bolt on the bay's back door"
+    },
+    {
+     "at": [
+      22,
+      6
+     ],
+     "label": "The weather yard: the screen, the rain gauge, the anemometer turning with no wind"
+    },
+    {
+     "at": [
+      26,
+      8
+     ],
+     "label": "The recorder hut under the tower: padlocked"
+    },
+    {
+     "at": [
+      26,
+      6
+     ],
+     "label": "In the hut: the ladder up through the hatch"
+    },
+    {
+     "at": [
+      26,
+      7
+     ],
+     "level": 1,
+     "label": "The first landing"
+    },
+    {
+     "at": [
+      27,
+      6
+     ],
+     "level": 2,
+     "label": "The second landing, the wind in the lattice"
+    },
+    {
+     "at": [
+      26,
+      7
+     ],
+     "level": 3,
+     "label": "The third landing: the cab's hatch overhead"
+    },
+    {
+     "at": [
+      27,
+      6
+     ],
+     "level": 4,
+     "label": "The cab: the radio, the district key, and the district ranger"
+    },
+    {
+     "at": [
+      26,
+      8
+     ],
+     "label": "Back down the tower"
+    },
+    {
+     "at": [
+      9,
+      15
+     ],
+     "label": "The district key opens the gun safe"
+    },
+    {
+     "at": [
+      10,
+      19
+     ],
+     "label": "Out the front and back down the road"
+    }
+   ],
+   "loot_room": {
+    "room": "T",
+    "level": 4
+   },
+   "shortcuts": [
+    {
+     "opening": "bay_back_door"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "evacuees",
+     "label": "How the held families wait",
+     "options": [
+      {
+       "id": "on_the_cots",
+       "weight": 2
+      },
+      {
+       "id": "at_the_edge",
+       "label": "The father at the shelter's edge, facing the road"
+      }
+     ]
+    },
+    {
+     "id": "dale",
+     "label": "Where the engine captain stands in the bay",
+     "options": [
+      {
+       "id": "by_the_truck",
+       "weight": 2
+      },
+      {
+       "id": "at_the_bench",
+       "label": "Crouched by the tool chest"
+      }
+     ]
+    },
+    {
+     "id": "ines",
+     "label": "How the district ranger waits in the cab",
+     "options": [
+      {
+       "id": "at_the_radio",
+       "weight": 2
+      },
+      {
+       "id": "at_the_glass",
+       "label": "Kneeling at the broken east glass"
+      }
+     ]
+    },
+    {
+     "id": "front",
+     "label": "The office door",
+     "options": [
+      {
+       "id": "as_left",
+       "weight": 2
+      },
+      {
+       "id": "kicked_in",
+       "label": "Kicked in, the cans still strung",
+       "openings": [
+        {
+         "id": "front_door",
+         "state": "broken"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "hall",
+     "label": "The hall's paint",
+     "options": [
+      {
+       "id": "sage",
+       "weight": 2
+      },
+      {
+       "id": "mustard",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "H",
+         "wall": "paint_mustard"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "props": 200,
+    "enemies": 14
+   }
+  }
+ ]
+}

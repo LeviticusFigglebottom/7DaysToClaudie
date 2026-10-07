@@ -39,10 +39,16 @@ func setup_world(w: Node) -> void:
 	Events.ashen_raid_ended.connect(func(_rid: String, repelled: bool) -> void:
 		if repelled:
 			record("raid"))
+	# Ezra Vane joins (ADR-0058): the target is his camp's POI def.
+	Events.companion_recruited.connect(func(cid: StringName) -> void:
+		var cd: CompanionDef = Content.get_def(&"companion", cid) as CompanionDef
+		record("recruit", StringName(str(cd.camp.get("poi", ""))) if cd != null else &""))
 	# A garden plot brought in (ADR-0049).
 	Events.crop_harvested.connect(func(pid: StringName, crop_id: StringName, _items: Dictionary) -> void:
 		if Game.session != null and pid == Game.session.local_player_id:
 			record("harvest", crop_id))
+	# A Bloom nest burned (ADR-0055); its def is the target.
+	Events.nest_burned.connect(func(_nid: String, def_id: StringName, _pos: Vector3) -> void: record("burn_nest", def_id))
 	# A Hollow put down by a player-built trap or sentry (ADR-0052).
 	Events.trap_killed.connect(func(_piece: StringName, structure_id: StringName, _enemy: StringName) -> void:
 		record("trap_kill", structure_id))

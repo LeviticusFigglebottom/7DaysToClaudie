@@ -1,0 +1,10 @@
+{
+  "_doc": "Wolf packs (ADR-0055, WildlifeDef kind `pack`): planned like the herds (WildlifeSpawner, per 128 m cell, day and time of day; density = packs per km² at biome weight 1) in the deep woods and the burn, and spawned as `enemy` bodies (an Enemy of faction wildlife) by WolfPacks, group = the pack's size. The `wolves` world setting turns them off; data/config/wolves.json holds the pack's tuning.",
+  "defs": [
+    {"id": "grey_wolf_pack", "name": "Grey Wolves", "description": "A pack of three to six, ranging the conifer woods and the burn after deer.",
+     "kind": "pack", "enemy": "grey_wolf",
+     "biomes": {"conifer_forest": 1.0, "burnt_forest": 0.8, "rocky_slope": 0.4, "fen": 0.2},
+     "density": 1.6, "edge": 1.0, "activity": {"dawn": 1.0, "day": 0.5, "dusk": 1.6, "night": 1.3},
+     "group": [3, 6]}
+  ]
+}

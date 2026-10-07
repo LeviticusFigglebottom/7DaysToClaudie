@@ -52,6 +52,27 @@ const NOTICE_DRAIN: float = 0.5
 ## against (world, structures, props, vegetation), and how long a detour holds after the last bump.
 const DETOUR_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 12)
 const DETOUR_HOLD: float = 1.2
+## Root motion of the Hollowed's committed clips (char_anim "Root motion contract", keep in step):
+## clip -> [metres, from, to] (fractions of the clip). The body travels that far while the clip
+## plays, the clip's feet authored around it so they stay planted. Lunges go forward
+## (LUNGE: walker / feral), hit_front, stagger and knockdown back, hit_back forward.
+const LUNGE: Vector2 = Vector2(0.30, 0.70)
+const LUNGE_WINDOW: Vector2 = Vector2(5.0 / 24.0, 11.0 / 24.0)
+## A lunge stops this close to its target (it grabs, it does not shove through).
+const LUNGE_STOP: float = 0.9
+const RECOIL: Dictionary = {
+	&"hit_front": [0.20, 2.0 / 18.0, 10.0 / 18.0], &"hit_back": [-0.20, 2.0 / 18.0, 10.0 / 18.0],
+	&"stagger": [0.55, 2.0 / 34.0, 22.0 / 34.0], &"knockdown": [0.35, 2.0 / 36.0, 14.0 / 36.0],
+}
+## A stumble (CHASE) plays at this speed's pace: the clip's feet travel 1.2 m/s at speed 1.
+const STUMBLE_SPEED: float = 1.2
+## Seconds between stumble chances while chasing, and the chance each time.
+const STUMBLE_EVERY: Vector2 = Vector2(3.5, 9.0)
+const STUMBLE_CHANCE: float = 0.45
+## Knocked down: how long it lies before wake_lie gets it up; blunt blows of this much (after
+## the hit-zone multiplier, behavior.knockdown_damage) with weight behind them floor it.
+const KNOCKDOWN_HOLD: float = 0.6
+const KNOCKDOWN_DAMAGE: float = 40.0
 
 signal died(enemy: Enemy)
 
@@ -125,6 +146,22 @@ var _stagger_lock: float = 0.0
 ## After the Hum: seconds until this survivor roots into the soil (despawns) when unobserved.
 var _root_t: float = -1.0
 var _resume_state: State = State.IDLE
+## Root motion in progress (RECOIL / LUNGE): direction, speed and its window in _state_t.
+var _rm_dir := Vector3.ZERO
+var _rm_speed: float = 0.0
+var _rm_from: float = 0.0
+var _rm_to: float = 0.0
+## Presentation randomness (stumbles, gait swaps) apart from _rng, so the brain's rolls stay as
+## they were for a given id.
+var _fx_rng := RandomNumberGenerator.new()
+var _stumble_t: float = 0.0
+var _stumble_v: float = 0.0
+var _stumble_cd: float = 0.0
+var _gait_b: bool = false
+var _gait_t: float = 0.0
+## On the ground after a knockdown, until wake_lie starts (at _rise_at in _state_t).
+var _down: bool = false
+var _rise_at: float = -1.0
 var _yaw_target: float = 0.0
 var _shape: CollisionShape3D
 var _corpse_t: float = 0.0
@@ -173,8 +210,12 @@ var tribe: AshenMind = null
 ## TD-186 (ADR-0048 phase 2): a body of a hostile faction (FactionDef.hostile) it has seen or been
 ## hurt by, fought in CHASE/ATTACK (SPIT for a spear) while the player is out of sight (EnemyFoes).
 var foe: Enemy = null
+## Ezra Vane (archetype `companion`, ADR-0058): orders, downed and revive; null for everything else.
+var ally: CompanionMind = null
 var _foe_seen: float = -100.0
 var _foe_scan_t: float = 0.0
+## A wolf (ADR-0055): its part in its pack (WolfHunt, set by WolfPacks); null for everything else.
+var wolf: WolfHunt = null
 
 
 func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary = {}) -> void:
@@ -185,7 +226,13 @@ func setup(p_id: StringName, p_def: EnemyDef, p_director: Node, opts: Dictionary
 	if def.archetype == "tribe":
 		tribe = AshenMind.new()
 		tribe.setup(self, opts)
+	elif def.archetype == "companion":
+		ally = CompanionMind.new()
+		ally.setup(self)
 	_rng.seed = Ids.hash64("enemy:" + String(p_id))
+	_fx_rng.seed = Ids.hash64("enemy_fx:" + String(p_id))
+	_stumble_cd = _fx_rng.randf_range(STUMBLE_EVERY.x, STUMBLE_EVERY.y)
+	_gait_b = (_rng.seed & 1) == 1
 	var rules: GameRules = GameRules.current()
 	max_health = def.health * rules.num("enemy_health")
 	health = max_health
@@ -303,7 +350,7 @@ func _player() -> Player:
 
 
 func is_alive() -> bool:
-	return state != State.DEAD
+	return state != State.DEAD and (ally == null or ally.in_play())  # ADR-0058: Ezra unrecruited or down is no foe
 
 
 ## Night by the clock, or deep underground (a cellar, a mine level, a cave: ADR-0044), where it is
@@ -337,6 +384,8 @@ func _physics_process(delta: float) -> void:
 	_retreat_t = maxf(0.0, _retreat_t - delta)
 	_stagger_lock = maxf(0.0, _stagger_lock - delta)
 	_far = dist > KINEMATIC_BEYOND
+	if ally != null and ally.step(delta, p, dist):  # ADR-0058: the companion's own loop
+		return
 	if _root_t > 0.0:
 		_root_t -= delta
 		if _root_t <= 0.0:
@@ -359,10 +408,14 @@ func _physics_process(delta: float) -> void:
 		tribe.tick(delta, p)
 	if _foe_step(delta, dist):  # TD-186: fighting a foe of a hostile faction this frame
 		return
+	if wolf != null and wolf.step(delta, p, dist):  # ADR-0055: the pack's business, not the player
+		return
 	match state:
 		State.SLEEP, State.WAKING, State.SCREAM, State.STAGGER:
-			want = Vector3.ZERO
-			if state == State.WAKING and _state_t > 1.3:
+			want = _root_motion() if state == State.STAGGER else Vector3.ZERO
+			if state == State.STAGGER and _rise_at >= 0.0 and _state_t >= _rise_at:
+				_rise()
+			elif state == State.WAKING and _state_t > 1.3:
 				_set_state(State.CHASE if _now() - last_seen_time < MEMORY_SECONDS else State.INVESTIGATE)
 			elif state == State.SCREAM and _state_t > 1.6:
 				_set_state(State.CHASE)
@@ -425,7 +478,7 @@ func _physics_process(delta: float) -> void:
 			elif tribe != null and p != null:
 				want = tribe.chase_move(p, tgt, dist)
 			else:
-				want = _move_dir(tgt) * _speed(true)
+				want = _stumble_step(_move_dir(tgt) * _speed(true), get_physics_process_delta_time())
 			if p != null and dist <= def.atk("range", 1.5) + 0.2 and _now() - last_seen_time < 1.0 and _may_close(p):
 				_set_state(State.ATTACK)
 			elif _now() - last_seen_time > MEMORY_SECONDS:
@@ -435,6 +488,8 @@ func _physics_process(delta: float) -> void:
 				_set_state(State.IDLE)
 				return
 			_face(p.global_position)
+			if _flat_dist(p.global_position) > LUNGE_STOP:
+				want = _root_motion()  # the lunge carries it in (a walker's grab, a Lurcher's leap)
 			if _hit_at >= 0.0 and _state_t >= _hit_at:
 				_hit_at = -1.0
 				_deliver_hit(p)
@@ -488,7 +543,7 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 		var p: Vector3 = global_position + want * delta
 		p.y = Game.world.height_at(p.x, p.z) if Game.world != null else p.y
 		global_position = p
-		if want.length() > 0.05:
+		if want.length() > 0.05 and state not in [State.ATTACK, State.STAGGER]:
 			_yaw_target = atan2(want.x, want.z)
 		rotation.y = lerp_angle(rotation.y, _yaw_target, minf(1.0, delta * 5.0))
 		return
@@ -510,7 +565,8 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 	elif want.length() > 0.05:
 		_check_detour(want, delta)
 	if want.length() > 0.05:
-		_yaw_target = atan2(want.x, want.z)
+		if state not in [State.ATTACK, State.STAGGER]:  # root motion (a recoil) keeps the facing
+			_yaw_target = atan2(want.x, want.z)
 		# Walls in the way of something that wants in get torn down.
 		if state in [State.CHASE, State.HORDE, State.INVESTIGATE]:
 			var blocked: Node3D = _blocking_structure()
@@ -720,8 +776,12 @@ func _vocalize(delta: float, dist: float) -> void:
 # --- Senses ----------------------------------------------------------------------------------
 
 func _perceive(p: Player, dist: float) -> void:
+	if ally != null:
+		return  # the companion never hunts the player (ADR-0058)
 	if p == null or Stimuli.current == null or not p.state.stats.alive or DebugTools.is_on(&"invisible"):
 		return
+	if wolf != null and wolf.ignores_player():
+		return  # ADR-0055: a wolf pack that leaves the player be does its own watching (WolfHunt)
 	var st: Stimuli = Stimuli.current
 	if state == State.SLEEP and held:
 		_perceive_held(st)
@@ -968,7 +1028,102 @@ func _start_attack() -> void:
 	_attack_cd = def.atk("cooldown", 1.5)
 	var dur: float = visual.play_once(&"crawl_attack" if crawling else (&"attack_a" if _rng.randf() < 0.5 else &"attack_b"), 1.0, [&"attack_a"] as Array[StringName])
 	_hit_at = _state_t + dur * 0.45
+	if not crawling:
+		# A committed lunge, not a swat from where it stands: the wind-up drives it forward to the hit.
+		var d: float = float(def.atk("lunge", LUNGE.y if def.archetype == "feral" else LUNGE.x))
+		_start_root_motion(Vector3(sin(rotation.y), 0.0, cos(rotation.y)), d, _state_t + dur * LUNGE_WINDOW.x, _state_t + dur * LUNGE_WINDOW.y)
 	Audio.play_3d(_vid(&"voice/zombie_attack", &"voice/hound_snarl"), _mouth(), {"volume_db": -2.0})
+
+
+# --- Root motion, stumbles and knockdowns (the Hollowed's committed clips) -----------------------
+
+## Bodies whose clips are authored for root motion: plain Hollowed rebuilt with the stumble /
+## knockdown clip set (an older body's clips stand in place, and would skate).
+func _authored_clips() -> bool:
+	return _plain_hollowed() and visual != null and visual.has_anim(&"stumble")
+
+
+## Travel `dist` along `dir` (flat) between from..to (in _state_t), if the clips are authored for it.
+func _start_root_motion(dir: Vector3, dist: float, from: float, to: float) -> void:
+	_rm_speed = 0.0
+	if not _authored_clips() or to <= from or dir == Vector3.ZERO:
+		return
+	_rm_dir = Vector3(dir.x, 0.0, dir.z).normalized() * signf(dist)
+	_rm_speed = absf(dist) / (to - from)
+	_rm_from = from
+	_rm_to = to
+
+
+## A reaction clip's recoil (RECOIL) from now, along the body's back (+ = backwards).
+func _recoil(clip: StringName, dur: float, back := Vector3.ZERO) -> void:
+	var r: Array = RECOIL.get(clip, [])
+	if not r.is_empty():
+		_start_root_motion(back if back != Vector3.ZERO else -global_transform.basis.z, float(r[0]),
+				dur * float(r[1]), dur * float(r[2]))
+
+
+func _root_motion() -> Vector3:
+	if _rm_speed <= 0.0 or _state_t < _rm_from or _state_t > _rm_to:
+		return Vector3.ZERO
+	return _rm_dir * _rm_speed
+
+
+## Chasing walkers trip now and then: a `stumble` one-shot at irregular intervals, keeping
+## STUMBLE_SPEED (the clip's feet) or less while it plays. Bodies without the clip never stumble.
+func _stumble_step(want: Vector3, delta: float) -> Vector3:
+	if _stumble_t > 0.0:
+		_stumble_t -= delta
+		return want.normalized() * _stumble_v if want != Vector3.ZERO else Vector3.ZERO
+	_stumble_cd -= delta
+	if _stumble_cd > 0.0:
+		return want
+	_stumble_cd = _fx_rng.randf_range(STUMBLE_EVERY.x, STUMBLE_EVERY.y)
+	if _fx_rng.randf() >= STUMBLE_CHANCE or not stumbles(want.length()):
+		return want
+	var rate: float = clampf(want.length() / STUMBLE_SPEED, 0.6, 1.0)
+	_stumble_t = visual.play_once(&"stumble", rate)
+	_stumble_v = STUMBLE_SPEED * rate
+	return want.normalized() * _stumble_v
+
+
+## Whether a body moving at `speed` may trip now (on its feet, on the ground, the clip built).
+func stumbles(speed: float) -> bool:
+	return _authored_clips() and not crawling and not _far and speed > 0.6 and is_on_floor()
+
+
+## A heavy blow floors a plain Hollowed (with the knockdown clip): a blast, a falling tree, or a
+## blunt blow with weight behind it (stagger >= 0.55: club, sledge) that does knockdown_damage.
+func knocks_down(info: DamageInfo, amount: float) -> bool:
+	if not _plain_hollowed() or crawling or not perch.is_empty() or visual == null or not visual.has_anim(&"knockdown"):
+		return false
+	if info.type == &"explosive" or info.stagger >= 0.9:
+		return true
+	return info.type == &"blunt" and info.stagger >= 0.55 and amount >= float(def.beh("knockdown_damage", KNOCKDOWN_DAMAGE))
+
+
+## Down on its back (thrown round to face the blow: it falls away from it), lies KNOCKDOWN_HOLD,
+## then gets up with the sleeper's wake_lie; STAGGER covers all of it.
+func _knockdown(info: DamageInfo) -> void:
+	var away := Vector3(info.direction.x, 0.0, info.direction.z)
+	if away.length() < 0.05:
+		away = -global_transform.basis.z
+	# turns (fast, while it reels) to face back along the blow and is driven away along it
+	_yaw_target = atan2(-away.x, -away.z)
+	var down: float = visual.play_once(&"knockdown", 1.0, [&"stagger", &"hit_front"] as Array[StringName])
+	_set_state(State.STAGGER)
+	_down = true
+	_rise_at = down + KNOCKDOWN_HOLD
+	_stagger_t = _rise_at + visual.clip_length(&"wake_lie", 1.33)
+	_stagger_lock = _stagger_t + 0.6
+	_recoil(&"knockdown", down, away)
+	_fit_pose_shape("lie")
+
+
+func _rise() -> void:
+	_rise_at = -1.0
+	_down = false
+	visual.play_once(&"wake_lie", 1.0, [&"idle"] as Array[StringName])
+	_fit_shape()
 
 
 func _deliver_hit(p: Player) -> void:
@@ -1022,6 +1177,8 @@ func _scream() -> void:
 
 ## A voice for this body: the Hollowed's own, or a hound's.
 func _vid(hollowed: StringName, hound: StringName) -> StringName:
+	if ally != null:
+		return CompanionMind.voice(hollowed)
 	if tribe != null:
 		return AshenMind.voice(hollowed)
 	return hollowed if quad.is_empty() else hound
@@ -1077,7 +1234,7 @@ func _howl() -> void:
 	_set_state(State.SCREAM)
 	visual.play_once(&"scream", 1.0, [&"idle"] as Array[StringName])
 	Audio.play_3d(&"voice/hound_howl", _mouth(), {"volume_db": 4.0, "max_distance": 260.0})
-	if Stimuli.current != null:
+	if Stimuli.current != null and def.faction != "wildlife":  # a wolf's howl is no stimulus: no Hollowed, no heat (ADR-0055)
 		Stimuli.current.emit_sound(global_position, float(c.get("loudness", 70.0)), &"howl", entity_id)
 	Events.enemy_alerted.emit(entity_id, global_position)
 
@@ -1237,12 +1394,13 @@ func _charge_impact_structure(wall: Node3D) -> void:
 	_resume_state = State.CHASE
 	_stagger_t = visual.play_once(&"stagger", 1.0, [&"hit_front"] as Array[StringName])
 	_set_state(State.STAGGER)
+	_recoil(&"stagger", _stagger_t)  # bounces back off the wall
 
 
 # --- Damage ----------------------------------------------------------------------------------
 
 func take_damage(info: DamageInfo) -> void:
-	if state == State.DEAD:
+	if state == State.DEAD or (ally != null and ally.shrugs(info)):
 		return
 	var limb: String = visual.limb_at(info.hit_pos, self) if info.hit_pos != Vector3.ZERO else "torso"
 	var mult: float = 2.2 if limb == "head" else (0.7 if limb != "torso" else 1.0)
@@ -1272,6 +1430,9 @@ func take_damage(info: DamageInfo) -> void:
 		Audio.play_3d(&"sfx/blade_hit_flesh" if info.type in [&"slash", &"pierce"] else &"sfx/hit_flesh", info.hit_pos, {"volume_db": -3.0})
 	if health > 0.0 and _rng.randf() < 0.6:
 		Audio.play_3d(_vid(&"voice/zombie_pain", &"voice/hound_yelp"), _mouth(), {"volume_db": -3.0})
+	if ally != null and health <= 0.0:
+		ally.go_down(info)  # downed, not dead (ADR-0058)
+		return
 	if health <= 0.0 or (severed.has("head")):
 		_die(info)
 		return
@@ -1287,9 +1448,16 @@ func take_damage(info: DamageInfo) -> void:
 			_resume_state = State.CHASE
 		# Bodies face +Z: a blow from the front travels against it (recoil backwards = hit_front).
 		var from_front: bool = info.direction.dot(global_transform.basis.z) < 0.0
-		_stagger_t = visual.play_once(&"stagger" if amount > 30.0 else (&"hit_front" if from_front else &"hit_back"), 1.0, [&"hit_front"] as Array[StringName])
+		if knocks_down(info, amount):
+			_knockdown(info)
+			return
+		# A heavy blow from the front reels it back (stagger); from behind it is thrown forward.
+		var clip: StringName = &"stagger" if amount > 30.0 and (from_front or not _authored_clips()) \
+			else (&"hit_front" if from_front else &"hit_back")
+		_stagger_t = visual.play_once(clip, 1.0, [&"hit_front"] as Array[StringName])
 		_stagger_lock = _stagger_t + 0.6
 		_set_state(State.STAGGER)
+		_recoil(clip, _stagger_t)
 	elif state in [State.IDLE, State.WANDER, State.INVESTIGATE, State.BREAK]:
 		break_target = null
 		_set_state(State.CHASE)
@@ -1381,7 +1549,12 @@ const POSE_EYES: Dictionary = {
 
 
 func _fit_sleep_shape() -> void:
-	var spec: Array = POSE_SHAPES.get(_pose_key(), [])
+	_fit_pose_shape(_pose_key())
+
+
+## The capsule around a pose of POSE_SHAPES (a dormant one, or "lie" when knocked down).
+func _fit_pose_shape(key: String) -> void:
+	var spec: Array = POSE_SHAPES.get(key, [])
 	if spec.is_empty() or crawling or not quad.is_empty():
 		_fit_shape()
 		return
@@ -1459,8 +1632,9 @@ func _release_perch() -> void:
 func _die(info: DamageInfo) -> void:
 	# Killed in its sleep lying, slumped or seated: it stays as it was (a body dead on its bed or
 	# its pew, ADR-0022). Standing, kneeling and crouching sleepers, and anything awake, fall.
-	var pose: String = _pose_key()
-	var in_pose: bool = state == State.SLEEP and pose in ["lie", "sit", "seat", "hunch"]
+	var pose: String = "lie" if _down else _pose_key()
+	# Killed while knocked down: it stays where it fell.
+	var in_pose: bool = (state == State.SLEEP and pose in ["lie", "sit", "seat", "hunch"]) or _down
 	if not in_pose:
 		_release_perch()
 	_set_state(State.DEAD)
@@ -1490,7 +1664,7 @@ func _die(info: DamageInfo) -> void:
 		visual.animate_placeholder(0.0, 0.0, true)
 	Audio.play_3d(_vid(&"voice/zombie_death", &"voice/hound_death"), global_position + Vector3.UP * (1.0 if quad.is_empty() else 0.5), {"volume_db": -2.0})
 	if Game.session != null:
-		if tribe == null:
+		if tribe == null and def.faction != "wildlife":  # a wolf is no Hollowed (ADR-0055)
 			Game.session.stats["zombies_killed"] = int(Game.session.stats.get("zombies_killed", 0)) + 1
 		var pl: PlayerState = Game.session.players.get(info.source_id)
 		if pl != null:
@@ -1530,16 +1704,23 @@ func _hurt_by_foe(info: DamageInfo) -> void:
 # --- Corpse loot -------------------------------------------------------------------------------
 
 func interact_text(_player: Player) -> String:
+	if ally != null:
+		return ally.interact_text(_player)
 	if state != State.DEAD:
 		return ""
 	return "Search remains" if not _looted else ("Remains" if inventory == null or inventory.stacks.is_empty() else "Search remains")
 
 
 func interact_hold_time(_player: Player) -> float:
+	if ally != null:
+		return ally.interact_hold_time(_player)
 	return 1.2 if not _looted else 0.0
 
 
 func interact(player: Player) -> void:
+	if ally != null:
+		ally.interact(player)
+		return
 	if state != State.DEAD:
 		return
 	if not _looted:
@@ -1579,6 +1760,13 @@ func _set_state(s: State) -> void:
 	if state == State.ATTACK:
 		# A swing interrupted (stagger, chase) must not land later without its animation.
 		_hit_at = -1.0
+	if state == State.STAGGER and _down and s != State.DEAD:
+		# up off the ground (a knockdown cut short): standing capsule again
+		_down = false
+		_fit_shape()
+	_rise_at = -1.0
+	_rm_speed = 0.0
+	_stumble_t = 0.0
 	state = s
 	_state_t = 0.0
 	_enter_anim()
@@ -1613,6 +1801,15 @@ func _enter_anim() -> void:
 func _update_anim(want: Vector3) -> void:
 	if state in [State.SLEEP, State.WAKING, State.ATTACK, State.SCREAM, State.STAGGER, State.DEAD, State.BREAK, State.SPIT]:
 		return
+	if _stumble_t > 0.0:
+		return  # the stumble one-shot plays out
+	var dt: float = get_physics_process_delta_time()
+	_gait_t -= dt
+	if _gait_t <= 0.0:
+		# swap between the shamble and the drag now and then, so a walker is not a metronome
+		_gait_t = _fx_rng.randf_range(4.0, 9.0)
+		if _fx_rng.randf() < 0.5:
+			_gait_b = not _gait_b
 	if state == State.CHARGE:
 		visual.play(&"run", 1.5, 0.15, [&"walk"] as Array[StringName])
 		return
@@ -1627,7 +1824,10 @@ func _update_anim(want: Vector3) -> void:
 	elif sp > 2.4:
 		visual.play(&"run", clampf(sp / 4.5, 0.6, 1.4), 0.25, [&"walk"] as Array[StringName])
 	elif sp > 0.15:
-		visual.play(&"walk" if (_rng.seed & 1) == 0 else &"walk_b", clampf(sp / 0.9, 0.5, 2.0), 0.3, [&"walk"] as Array[StringName])
+		visual.play(&"walk_b" if _gait_b else &"walk", clampf(sp / 0.9, 0.5, 2.0), 0.4, [&"walk"] as Array[StringName])
+	elif quad.is_empty() and absf(angle_difference(rotation.y, _yaw_target)) > 0.35:
+		# turning on the spot: step the feet round rather than slide them on the idle
+		visual.play(&"walk", 0.6, 0.3)
 	else:
 		visual.play(&"idle", 1.0, 0.4)
 	visual.animate_placeholder(get_physics_process_delta_time(), want.length(), false)

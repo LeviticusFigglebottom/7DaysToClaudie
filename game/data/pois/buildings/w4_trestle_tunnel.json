@@ -1,0 +1,2207 @@
+{
+ "_doc": "Forest set piece, round 4 (ADR-0053; tier 2, site forest: a dry ravine). An abandoned logging line: a timber trestle (kit deck room D on level 1 over the ravine, its sides open, the w4_trestle_bent props standing under it) runs from a cribbed embankment into a tunnel (kit rooms T two storeys tall with rock walls on the w4_trestle_hill plinth, the w4_trestle_tunnel_portal on its face) whose far end the Cordon blew. Level 0 holds the watchman's shack, the section tool house and the creek bed under the rotten deck boards (a kit room with open sides so the weak floor drops into it). Route: the embankment stair (its gate bolted from the deck) -> the tool house side door (the section hands; the niche key on the board) -> the watchman's shack through its smashed window (the bulkhead key) -> the ravine (jaws) -> the ladder up a bent (climbed, no hatch) -> the deck (rotten boards) -> the Cordon's chained bulkhead -> cans in the mouth wake the train crew -> the boxcar (vault in at the door: freight, the fireman's letter) -> the padlocked refuge niche: Hank the engineer (guardian) and the stores -> back along the deck, unbolt the gate, down the stair.",
+ "defs": [
+  {
+   "id": "w4_trestle_tunnel",
+   "name": "Tunnel 2 Trestle",
+   "tier": 2,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    40,
+    44
+   ],
+   "origin": [
+    0,
+    0
+   ],
+   "author": "Hollowmere team (agent w4_trestle)",
+   "population": "loggers",
+   "story": "The logging line's work train went into Tunnel 2 on a Monday to clear a slide at the far portal: Engine 4, a flat of cribbing logs and the tool boxcar, Hank Tollefsen at the throttle. The Cordon had told the section foreman to hold all work; the slide would not wait. At eleven the Cordon blew the far portal to close the grade as a road out of the quarantine, and the hill came down on the engine. That evening a Cordon crew framed a bulkhead across the near portal with the train still inside, chained it, and gave the trestle watchman the key and orders never to open it. The crew knocked on the boards for a week. Hank, cut and feverish, had them padlock him in the refuge niche with the stores. The section hands shut themselves in the tool house with the fever, and the watchman nailed his own door and sat by his stove so he would not hear the knocking.",
+   "style": {
+    "exterior": "wood_paneling_dark",
+    "interior": "wood_pine",
+    "floor": "wood_pine",
+    "ceiling": "wood_paneling_dark",
+    "floor_height": 0.15,
+    "decay": 0.5,
+    "damaged_walls": 0.04,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.25
+    },
+    "roof": {
+     "type": "none",
+     "roofs": [
+      {
+       "level": 0,
+       "at": [
+        10,
+        36
+       ],
+       "type": "gable",
+       "axis": "x",
+       "pitch": 30,
+       "overhang": 0.4,
+       "material": "roof_metal",
+       "gutters": false
+      },
+      {
+       "level": 0,
+       "at": [
+        26,
+        37
+       ],
+       "type": "gable",
+       "axis": "x",
+       "pitch": 26,
+       "overhang": 0.45,
+       "material": "roof_metal",
+       "gutters": false
+      }
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "..................RRRR..................",
+      "..................RRRR..................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      ".........SSSS...........HHHHHH..........",
+      ".........SSSS...........HHHHHH..........",
+      ".........SSSS...........HHHHHH..........",
+      ".........SSSS...........HHHHHH..........",
+      "........................HHHHHH..........",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................"
+     ],
+     "rooms": {
+      "S": {
+       "name": "Watchman's shack",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine"
+      },
+      "H": {
+       "name": "Section tool house",
+       "type": "garage",
+       "wall": "wood_paneling_dark",
+       "floor": "concrete"
+      },
+      "R": {
+       "name": "Creek bed under the trestle",
+       "type": "cellar",
+       "wall": "rock_drift",
+       "floor": "cave_mud",
+       "open_roof": true
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "........................................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTTAAA...............",
+      "...............TTTTTTTAAA...............",
+      "...............TTTTTTTAAA...............",
+      "...............TTTTTTTAAA...............",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      "...............TTTTTTT..................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      ".................DDD....................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................"
+     ],
+     "rooms": {
+      "T": {
+       "name": "Tunnel 2",
+       "type": "cellar",
+       "wall": "rock_drift",
+       "floor": "rock_floor",
+       "ceiling": "rock_drift",
+       "storeys": 2
+      },
+      "A": {
+       "name": "Refuge niche",
+       "type": "storage",
+       "wall": "rock_drift",
+       "floor": "concrete",
+       "ceiling": "rock_drift"
+      },
+      "D": {
+       "name": "Trestle deck",
+       "type": "hallway",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "open_roof": true
+      }
+     }
+    },
+    {
+     "level": 2,
+     "plan": [
+      "........................................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "...............^^^^^^^..................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................",
+      "........................................"
+     ],
+     "rooms": {}
+    }
+   ],
+   "openings": [
+    {
+     "id": "deck_w18",
+     "at": [
+      17,
+      18
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e18",
+     "at": [
+      19,
+      18
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w19",
+     "at": [
+      17,
+      19
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e19",
+     "at": [
+      19,
+      19
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w20",
+     "at": [
+      17,
+      20
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e20",
+     "at": [
+      19,
+      20
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w21",
+     "at": [
+      17,
+      21
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e21",
+     "at": [
+      19,
+      21
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w22",
+     "at": [
+      17,
+      22
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e22",
+     "at": [
+      19,
+      22
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w23",
+     "at": [
+      17,
+      23
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e23",
+     "at": [
+      19,
+      23
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w24",
+     "at": [
+      17,
+      24
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e24",
+     "at": [
+      19,
+      24
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w25",
+     "at": [
+      17,
+      25
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e25",
+     "at": [
+      19,
+      25
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w26",
+     "at": [
+      17,
+      26
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e26",
+     "at": [
+      19,
+      26
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w27",
+     "at": [
+      17,
+      27
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e27",
+     "at": [
+      19,
+      27
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w28",
+     "at": [
+      17,
+      28
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e28",
+     "at": [
+      19,
+      28
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w29",
+     "at": [
+      17,
+      29
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e29",
+     "at": [
+      19,
+      29
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w30",
+     "at": [
+      17,
+      30
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e30",
+     "at": [
+      19,
+      30
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w31",
+     "at": [
+      17,
+      31
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e31",
+     "at": [
+      19,
+      31
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w32",
+     "at": [
+      17,
+      32
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e32",
+     "at": [
+      19,
+      32
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_w33",
+     "at": [
+      17,
+      33
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_e33",
+     "at": [
+      19,
+      33
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "deck_end_w",
+     "at": [
+      17,
+      33
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_gate",
+     "at": [
+      18,
+      33
+     ],
+     "side": "S",
+     "type": "door",
+     "level": 1,
+     "state": "locked_inside",
+     "model": "door_plank"
+    },
+    {
+     "id": "deck_end_e",
+     "at": [
+      19,
+      33
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "bulkhead_door",
+     "at": [
+      18,
+      17
+     ],
+     "side": "S",
+     "type": "door",
+     "level": 1,
+     "state": "locked",
+     "key": "w4_trestle_bulkhead_key",
+     "lock": "chain",
+     "model": "door_plank",
+     "hp": 900
+    },
+    {
+     "id": "niche_door",
+     "at": [
+      21,
+      5
+     ],
+     "side": "E",
+     "type": "door",
+     "level": 1,
+     "state": "locked",
+     "key": "w4_trestle_niche_key",
+     "lock": "padlock",
+     "model": "door_metal",
+     "hp": 700
+    },
+    {
+     "id": "creek_n18",
+     "at": [
+      18,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "creek_s18",
+     "at": [
+      18,
+      28
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "creek_n19",
+     "at": [
+      19,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "creek_s19",
+     "at": [
+      19,
+      28
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "creek_n20",
+     "at": [
+      20,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "creek_s20",
+     "at": [
+      20,
+      28
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "creek_n21",
+     "at": [
+      21,
+      27
+     ],
+     "side": "N",
+     "type": "open"
+    },
+    {
+     "id": "creek_s21",
+     "at": [
+      21,
+      28
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "creek_w27",
+     "at": [
+      18,
+      27
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "creek_e27",
+     "at": [
+      21,
+      27
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "creek_w28",
+     "at": [
+      18,
+      28
+     ],
+     "side": "W",
+     "type": "open"
+    },
+    {
+     "id": "creek_e28",
+     "at": [
+      21,
+      28
+     ],
+     "side": "E",
+     "type": "open"
+    },
+    {
+     "id": "shack_door",
+     "at": [
+      12,
+      36
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "barricaded",
+     "barricade": "furniture",
+     "model": "door_plank"
+    },
+    {
+     "id": "shack_window_s",
+     "at": [
+      11,
+      38
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "shack_window_w",
+     "at": [
+      9,
+      38
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "shack_window_n",
+     "at": [
+      11,
+      35
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "tool_big_doors",
+     "at": [
+      25,
+      39
+     ],
+     "side": "S",
+     "type": "door2",
+     "state": "barricaded"
+    },
+    {
+     "id": "tool_side_door",
+     "at": [
+      24,
+      37
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed",
+     "model": "door_plank"
+    },
+    {
+     "id": "tool_window_n",
+     "at": [
+      28,
+      35
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "tool_window_e",
+     "at": [
+      29,
+      37
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "tool_window_s",
+     "at": [
+      28,
+      39
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "broken",
+     "cue": "none"
+    }
+   ],
+   "stairs": [
+    {
+     "level": 0,
+     "at": [
+      18,
+      37
+     ],
+     "dir": "N"
+    }
+   ],
+   "ladders": [
+    {
+     "level": 0,
+     "at": [
+      16,
+      26
+     ],
+     "side": "N",
+     "hatch": false
+    }
+   ],
+   "props": [
+    {
+     "prop": "w4_trestle_hill",
+     "id": "hillside",
+     "pos": [
+      20.0,
+      9.2
+     ],
+     "route_ok": true
+    },
+    {
+     "prop": "w4_trestle_tunnel_portal",
+     "id": "portal",
+     "pos": [
+      18.5,
+      18.09
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w4_trestle_bent",
+     "id": "bent_1",
+     "pos": [
+      18.5,
+      21.75
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w4_trestle_bent",
+     "id": "bent_2",
+     "pos": [
+      18.5,
+      25.75
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "w4_trestle_bent",
+     "id": "bent_3",
+     "pos": [
+      18.5,
+      30.75
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_trestle_crib",
+     "id": "abutment",
+     "pos": [
+      18.5,
+      33.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w4_trestle_crib",
+     "id": "crib_w",
+     "pos": [
+      17.0,
+      36.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w4_trestle_crib",
+     "id": "crib_e",
+     "pos": [
+      20.0,
+      36.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_trestle_deck_section",
+     "id": "deck_0",
+     "pos": [
+      18.5,
+      19.6
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "clean"
+    },
+    {
+     "prop": "w4_trestle_deck_section",
+     "id": "deck_1",
+     "pos": [
+      18.5,
+      22.8
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "clean"
+    },
+    {
+     "prop": "w4_trestle_deck_section",
+     "id": "deck_2",
+     "pos": [
+      18.5,
+      26.0
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_trestle_deck_section",
+     "id": "deck_3",
+     "pos": [
+      18.5,
+      29.2
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_trestle_deck_section",
+     "id": "deck_4",
+     "pos": [
+      18.5,
+      32.4
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "clean"
+    },
+    {
+     "prop": "w4_trestle_rail_section",
+     "id": "track_0",
+     "pos": [
+      18.5,
+      16.5
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_trestle_rail_section",
+     "id": "track_1",
+     "pos": [
+      18.5,
+      13.5
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "clean"
+    },
+    {
+     "prop": "w4_trestle_rail_section",
+     "id": "track_2",
+     "pos": [
+      18.5,
+      10.5
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "clean"
+    },
+    {
+     "prop": "w4_trestle_rail_section",
+     "id": "track_3",
+     "pos": [
+      18.5,
+      7.5
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "clean"
+    },
+    {
+     "prop": "w4_trestle_rail_section",
+     "id": "track_4",
+     "pos": [
+      18.5,
+      4.5
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "clean"
+    },
+    {
+     "prop": "w4_trestle_rubble_wall",
+     "id": "collapse",
+     "pos": [
+      18.5,
+      2.7
+     ],
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "prop": "w4_trestle_boxcar",
+     "id": "boxcar",
+     "pos": [
+      18.5,
+      7.8
+     ],
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "prop": "w4_trestle_lumber_stack",
+     "id": "boxcar_lumber_n",
+     "pos": [
+      18.5,
+      5.5
+     ],
+     "rot": 0,
+     "y": 1.15,
+     "level": 1
+    },
+    {
+     "prop": "w4_trestle_lumber_stack",
+     "id": "boxcar_lumber_s",
+     "pos": [
+      18.5,
+      10.1
+     ],
+     "rot": 0,
+     "y": 1.15,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "civic_relief_crate",
+     "id": "boxcar_freight",
+     "pos": [
+      17.75,
+      7.8
+     ],
+     "rot": 90,
+     "y": 1.15,
+     "level": 1,
+     "container": "w4_trestle_freight"
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "id": "boxcar_lantern",
+     "pos": [
+      18.3,
+      8.5
+     ],
+     "y": 1.15,
+     "level": 1,
+     "lit": true
+    },
+    {
+     "prop": "w4_trestle_flatcar_derailed",
+     "id": "flatcar",
+     "pos": [
+      16.6,
+      14.35
+     ],
+     "rot": 9,
+     "level": 1
+    },
+    {
+     "prop": "mine_rock_pile",
+     "pos": [
+      15.9,
+      6.2
+     ],
+     "rot": 40,
+     "level": 1
+    },
+    {
+     "prop": "mine_rock_pile",
+     "pos": [
+      21.0,
+      2.6
+     ],
+     "rot": 200,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "metal_shelf",
+     "id": "niche_shelf",
+     "at": [
+      24,
+      5
+     ],
+     "against": "E",
+     "level": 1,
+     "container": "w4_trestle_niche_stores"
+    },
+    {
+     "prop": "wild_footlocker",
+     "id": "niche_grip",
+     "at": [
+      23,
+      3
+     ],
+     "against": "N",
+     "level": 1,
+     "container": "w4_trestle_engineer_kit"
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "id": "niche_lantern",
+     "pos": [
+      22.5,
+      3.35
+     ],
+     "level": 1,
+     "lit": true
+    },
+    {
+     "prop": "mine_powder_box",
+     "id": "niche_water",
+     "at": [
+      24,
+      6
+     ],
+     "against": "S",
+     "level": 1,
+     "container": "w4_trestle_niche_stores"
+    },
+    {
+     "prop": "w4_trestle_spike_keg",
+     "id": "deck_keg",
+     "pos": [
+      19.55,
+      30.4
+     ],
+     "level": 1
+    },
+    {
+     "prop": "w4_trestle_rail_section",
+     "id": "spur",
+     "pos": [
+      26.6,
+      37.8
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "w4_trestle_handcar",
+     "id": "handcar",
+     "pos": [
+      26.6,
+      37.8
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "mine_tool_rack",
+     "id": "tool_rack",
+     "at": [
+      25,
+      35
+     ],
+     "against": "N",
+     "offset": [
+      0.3,
+      0
+     ]
+    },
+    {
+     "prop": "w4_trestle_key_board",
+     "id": "key_board",
+     "at": [
+      27,
+      35
+     ],
+     "against": "N",
+     "height": 1.2
+    },
+    {
+     "prop": "wild_tool_chest",
+     "id": "tool_chest",
+     "at": [
+      28,
+      35
+     ],
+     "against": "N",
+     "offset": [
+      0.2,
+      0
+     ],
+     "container": "w4_trestle_section_tools"
+    },
+    {
+     "prop": "road_workbench",
+     "id": "workbench",
+     "at": [
+      29,
+      38
+     ],
+     "against": "E"
+    },
+    {
+     "prop": "w4_trestle_spike_keg",
+     "id": "tool_keg",
+     "at": [
+      24,
+      39
+     ],
+     "against": "S"
+    },
+    {
+     "prop": "wild_crosscut_saw",
+     "at": [
+      29,
+      36
+     ],
+     "against": "E",
+     "height": 1.6
+    },
+    {
+     "prop": "wild_oil_lantern_hanging",
+     "pos": [
+      27.8,
+      38.9
+     ],
+     "y": 0.92
+    },
+    {
+     "prop": "wild_wood_stove",
+     "id": "shack_stove",
+     "at": [
+      9,
+      35
+     ],
+     "against": "N",
+     "offset": [
+      0.15,
+      0
+     ]
+    },
+    {
+     "prop": "wild_bunk_steel",
+     "id": "shack_bunk",
+     "at": [
+      11,
+      35
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "prop": "desk_small",
+     "id": "shack_desk",
+     "at": [
+      9,
+      36
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.2
+     ]
+    },
+    {
+     "prop": "chair_wood",
+     "id": "shack_chair",
+     "pos": [
+      9.95,
+      36.7
+     ],
+     "rot": -90
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "id": "shack_lantern",
+     "pos": [
+      9.3,
+      37.0
+     ],
+     "y": 0.76,
+     "lit": true
+    },
+    {
+     "prop": "wild_footlocker",
+     "id": "watchman_box",
+     "at": [
+      12,
+      38
+     ],
+     "against": "E",
+     "container": "w4_trestle_watchman_box"
+    },
+    {
+     "prop": "wild_firewood_stack",
+     "pos": [
+      10.2,
+      35.25
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w4_trestle_tie_pile",
+     "pos": [
+      22.5,
+      41.6
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "w4_trestle_tie_pile",
+     "pos": [
+      13.2,
+      30.8
+     ],
+     "rot": 75,
+     "variant": "worn"
+    },
+    {
+     "prop": "mine_rock_pile",
+     "pos": [
+      13.8,
+      24.6
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "mine_rock_pile",
+     "pos": [
+      24.6,
+      26.0
+     ],
+     "rot": 150,
+     "variant": "worn"
+    },
+    {
+     "prop": "mine_rock_pile",
+     "pos": [
+      26.0,
+      22.5
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "w4_trestle_rail_section",
+     "pos": [
+      18.5,
+      41.5
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_sandbags",
+     "pos": [
+      15.5,
+      39.2
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "barrel_metal",
+     "pos": [
+      31.0,
+      36.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      2.0,
+      4.0
+     ],
+     "rot": 0,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      6.0,
+      12.0
+     ],
+     "rot": 53,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      3.5,
+      22.0
+     ],
+     "rot": 106,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      7.5,
+      28.5
+     ],
+     "rot": 159,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      30.5,
+      5.0
+     ],
+     "rot": 212,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      35.0,
+      14.0
+     ],
+     "rot": 265,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      32.0,
+      25.0
+     ],
+     "rot": 318,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      36.5,
+      31.0
+     ],
+     "rot": 11,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      4.0,
+      41.5
+     ],
+     "rot": 64,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      35.5,
+      41.0
+     ],
+     "rot": 117,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      10.0,
+      3.0
+     ],
+     "rot": 170,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      28.5,
+      1.5
+     ],
+     "rot": 223,
+     "variant": "clean"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      12.5,
+      19.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      27.4,
+      30.5
+     ]
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      11.0,
+      26.0
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      25.5,
+      32.8
+     ],
+     "rot": 110
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "watchman",
+     "pos": [
+      11.5,
+      35.5
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90
+    },
+    {
+     "id": "hand_ole",
+     "pos": [
+      28.4,
+      37.2
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 220,
+     "group": "hands"
+    },
+    {
+     "id": "hand_birger",
+     "pos": [
+      25.4,
+      36.2
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 160,
+     "group": "hands"
+    },
+    {
+     "id": "hand_knut",
+     "pos": [
+      27.6,
+      39.3
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "group": "hands",
+     "anchor": "floor"
+    },
+    {
+     "id": "crew_jonas",
+     "pos": [
+      20.8,
+      15.3
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 200,
+     "group": "crew",
+     "level": 1,
+     "alt": "crew:by_the_cars"
+    },
+    {
+     "id": "crew_mats",
+     "pos": [
+      21.2,
+      11.8
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "group": "crew",
+     "level": 1,
+     "alt": "crew:by_the_cars"
+    },
+    {
+     "id": "crew_pete",
+     "pos": [
+      20.7,
+      9.4
+     ],
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": 0,
+     "group": "crew",
+     "level": 1,
+     "anchor": "floor",
+     "alt": "crew:by_the_cars"
+    },
+    {
+     "id": "crew_jonas",
+     "pos": [
+      19.4,
+      16.6
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "group": "crew",
+     "level": 1,
+     "alt": "crew:at_the_bulkhead"
+    },
+    {
+     "id": "crew_mats",
+     "pos": [
+      20.9,
+      16.2
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 200,
+     "group": "crew",
+     "level": 1,
+     "alt": "crew:at_the_bulkhead"
+    },
+    {
+     "id": "crew_pete",
+     "pos": [
+      21.0,
+      12.6
+     ],
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": 0,
+     "group": "crew",
+     "level": 1,
+     "anchor": "floor",
+     "alt": "crew:at_the_bulkhead"
+    },
+    {
+     "id": "crew_sorvik",
+     "pos": [
+      21.3,
+      6.8
+     ],
+     "enemy": "husk",
+     "pose": "stand",
+     "rot": 270,
+     "group": "crew",
+     "level": 1
+    },
+    {
+     "id": "engineer",
+     "pos": [
+      23.4,
+      5.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 270,
+     "guardian": true,
+     "level": 1
+    },
+    {
+     "id": "deck_dragger",
+     "pos": [
+      17.5,
+      21.4
+     ],
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": 0,
+     "level": 1,
+     "anchor": "floor"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "niche_key",
+     "item": "w4_trestle_niche_key",
+     "pos": [
+      27.35,
+      35.12
+     ],
+     "y": 1.25
+    },
+    {
+     "id": "bulkhead_key",
+     "item": "w4_trestle_bulkhead_key",
+     "pos": [
+      12.8,
+      37.6
+     ],
+     "y": 1.5
+    }
+   ],
+   "notes": [
+    {
+     "note": "w4_trestle_watch_log",
+     "pos": [
+      9.3,
+      36.5
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w4_trestle_work_order",
+     "pos": [
+      29.45,
+      38.3
+     ],
+     "y": 0.92
+    },
+    {
+     "note": "w4_trestle_demolition_order",
+     "pos": [
+      17.35,
+      18.45
+     ],
+     "level": 1
+    },
+    {
+     "note": "w4_trestle_crew_letter",
+     "pos": [
+      18.9,
+      7.4
+     ],
+     "y": 1.17,
+     "level": 1
+    }
+   ],
+   "traps": [
+    {
+     "id": "deck_rot",
+     "type": "weak_floor",
+     "at": [
+      19,
+      28
+     ],
+     "level": 1,
+     "alt": "deck_rot:east_edge"
+    },
+    {
+     "id": "deck_rot",
+     "type": "weak_floor",
+     "at": [
+      19,
+      27
+     ],
+     "level": 1,
+     "alt": "deck_rot:by_the_bent"
+    },
+    {
+     "id": "mouth_cans",
+     "type": "can_chime",
+     "at": [
+      18,
+      17
+     ],
+     "side": "S",
+     "level": 1
+    },
+    {
+     "id": "creek_jaws",
+     "type": "bear_trap",
+     "pos": [
+      15.3,
+      28.4
+     ],
+     "rot": 20,
+     "alt": "jaws:creek"
+    },
+    {
+     "id": "creek_jaws",
+     "type": "bear_trap",
+     "pos": [
+      14.5,
+      26.5
+     ],
+     "rot": -30,
+     "alt": "jaws:bank"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "t_hands_door",
+     "group": "hands",
+     "on": "opening",
+     "opening": "tool_side_door",
+     "delay": 1.2
+    },
+    {
+     "id": "t_hands_key",
+     "group": "hands",
+     "on": "pickup",
+     "pickup": "niche_key",
+     "delay": 0.5
+    },
+    {
+     "id": "t_crew_cans",
+     "group": "crew",
+     "on": "trap",
+     "trap": "mouth_cans",
+     "delay": 0.8
+    },
+    {
+     "id": "t_crew_freight",
+     "group": "crew",
+     "on": "container",
+     "prop": "boxcar_freight",
+     "delay": 0.4
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      23.2,
+      4.0
+     ],
+     "level": 1,
+     "height": 0.9,
+     "color": "#ffc27a",
+     "energy": 0.35,
+     "range": 4.0,
+     "flicker": 0.15
+    }
+   ],
+   "decals": [
+    {
+     "decal": "blood_trail",
+     "at": [
+      18,
+      19
+     ],
+     "side": "floor",
+     "size": [
+      0.8,
+      1.8
+     ],
+     "level": 1
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      18,
+      3
+     ],
+     "side": "floor",
+     "size": [
+      2.0,
+      1.6
+     ],
+     "level": 1
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      18,
+      17
+     ],
+     "side": "S",
+     "height": 1.3,
+     "size": [
+      0.4,
+      0.4
+     ],
+     "level": 1
+    },
+    {
+     "decal": "survivor_marks_b",
+     "at": [
+      21,
+      5
+     ],
+     "side": "E",
+     "height": 1.5,
+     "size": [
+      0.7,
+      0.5
+     ],
+     "level": 1
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      27,
+      39
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.0
+     ]
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      18,
+      28
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      1.6
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      18,
+      42
+     ],
+     "label": "The old grade runs out under the trestle's near end: a timber stair climbs the cribbed embankment to the deck"
+    },
+    {
+     "at": [
+      18,
+      38
+     ],
+     "label": "The embankment stair: a plank gate across its head, bolted from the deck side"
+    },
+    {
+     "at": [
+      23,
+      37
+     ],
+     "label": "The section tool house: its big doors nailed shut, the side door on the latch"
+    },
+    {
+     "at": [
+      28,
+      36
+     ],
+     "label": "The tool house: the section hands round the handcar, the niche key on the foreman's board"
+    },
+    {
+     "at": [
+      11,
+      39
+     ],
+     "label": "The watchman's shack: his door piled shut inside, the front window smashed"
+    },
+    {
+     "at": [
+      10,
+      37
+     ],
+     "label": "The shack: the watchman in his bunk, his log on the desk, the bulkhead key on the nail"
+    },
+    {
+     "at": [
+      14,
+      29
+     ],
+     "label": "Down in the dry ravine under the trestle: jaws in the creek gravel"
+    },
+    {
+     "at": [
+      16,
+      27
+     ],
+     "label": "The ladder spiked up a bent"
+    },
+    {
+     "at": [
+      17,
+      26
+     ],
+     "level": 1,
+     "label": "Up on the deck: the ties are rotten in places"
+    },
+    {
+     "at": [
+      18,
+      19
+     ],
+     "level": 1,
+     "label": "The bulkhead framed across the portal: the Cordon's chain, and their order nailed up"
+    },
+    {
+     "at": [
+      20,
+      16
+     ],
+     "level": 1,
+     "label": "Inside the mouth: cans on a wire, the work train's crew by the cars"
+    },
+    {
+     "at": [
+      21,
+      8
+     ],
+     "level": 1,
+     "label": "The boxcar's door rolled open: the freight, and a letter up on the lumber"
+    },
+    {
+     "at": [
+      23,
+      5
+     ],
+     "level": 1,
+     "label": "The refuge niche, padlocked: the engineer with the stores"
+    },
+    {
+     "at": [
+      20,
+      15
+     ],
+     "level": 1,
+     "label": "Back out past the derailed flat"
+    },
+    {
+     "at": [
+      18,
+      32
+     ],
+     "level": 1,
+     "label": "The deck end: draw the gate's bolt"
+    },
+    {
+     "at": [
+      18,
+      39
+     ],
+     "label": "Down the embankment stair and away along the grade"
+    }
+   ],
+   "loot_room": {
+    "room": "A",
+    "level": 1
+   },
+   "shortcuts": [
+    {
+     "opening": "deck_gate"
+    }
+   ],
+   "budget": {
+    "enemies": 14,
+    "props": 160
+   },
+   "alternatives": [
+    {
+     "id": "crew",
+     "label": "Where the work train's crew waits",
+     "options": [
+      {
+       "id": "by_the_cars",
+       "label": "By the cars",
+       "weight": 2
+      },
+      {
+       "id": "at_the_bulkhead",
+       "label": "Pressed against the bulkhead"
+      }
+     ]
+    },
+    {
+     "id": "deck_rot",
+     "label": "Where the deck has rotted",
+     "options": [
+      {
+       "id": "east_edge",
+       "weight": 1
+      },
+      {
+       "id": "by_the_bent",
+       "weight": 1
+      }
+     ]
+    },
+    {
+     "id": "jaws",
+     "label": "Where the jaws are set in the ravine",
+     "options": [
+      {
+       "id": "creek",
+       "weight": 2
+      },
+      {
+       "id": "bank",
+       "weight": 1
+      }
+     ]
+    },
+    {
+     "id": "shack_window",
+     "label": "Which shack window was smashed",
+     "options": [
+      {
+       "id": "front",
+       "weight": 2
+      },
+      {
+       "id": "side",
+       "openings": [
+        {
+         "id": "shack_window_s",
+         "state": "closed"
+        },
+        {
+         "id": "shack_window_w",
+         "state": "broken"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "tool_house",
+     "label": "The tool house's big doors",
+     "options": [
+      {
+       "id": "nailed",
+       "weight": 2
+      },
+      {
+       "id": "boarded_inside",
+       "openings": [
+        {
+         "id": "tool_big_doors",
+         "barricade": "furniture"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "lamps",
+     "label": "Lamps still burning",
+     "options": [
+      {
+       "id": "some",
+       "weight": 2
+      },
+      {
+       "id": "dark",
+       "style": {
+        "lights_on": 0.15
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

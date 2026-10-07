@@ -46,11 +46,14 @@ def build(params: dict, outputs: list[str]) -> None:
     teeth = growths = None
     if animal.teeth_upper is not None:
         teeth = _hound_teeth(animal, h, s, budget, mats)
+        parts.append(teeth)
+    if animal.growths is not None:
+        # the Bloom's plates (a Hollowed hound; a wolf has none, ADR-0055)
         growths = AB.mesh_program(animal.growths, "growths", h * 0.5, int(budget.get("growths", 2600)), pad=0.008 * s,
                                   keep_islands=True)
         M.assign_labels(growths, AB.label_faces(animal.growths, growths),
                         {0: mats.get("plates", "hound_bloom_plates"), 1: mats.get("threads", "bloom_growth")})
-        parts += [teeth, growths]
+        parts.append(growths)
     for o in parts:
         common.shade_smooth(o, angle_deg=80.0)
 
@@ -66,8 +69,9 @@ def build(params: dict, outputs: list[str]) -> None:
         AB.uv_by_bone(o, skel, AB.rigid_weights(skel, len(o.data.vertices), "head"), 0.02 * s)
     if teeth is not None:
         Wt = _teeth_weights(skel, teeth)
-        Wg = AB.transfer_weights(M.mesh_arrays(body), Wb, M.mesh_arrays(growths))
         AB.uv_by_bone(teeth, skel, AB.rigid_weights(skel, len(teeth.data.vertices), "head"), 0.01 * s)
+    if growths is not None:
+        Wg = AB.transfer_weights(M.mesh_arrays(body), Wb, M.mesh_arrays(growths))
         AB.uv_by_bone(growths, skel, Wg, 0.02 * s)
 
     vcolor.bake_ao(parts, samples=16, distance=0.25 * s, strength=0.85, ground=True)
@@ -87,6 +91,7 @@ def build(params: dict, outputs: list[str]) -> None:
         AB.apply_skin(antlers, arm, skel, AB.rigid_weights(skel, len(antlers.data.vertices), "head"))
     if teeth is not None:
         AB.apply_skin(teeth, arm, skel, Wt)
+    if growths is not None:
         AB.apply_skin(growths, arm, skel, Wg)
 
     if teeth is None:

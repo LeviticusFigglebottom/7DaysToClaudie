@@ -1,0 +1,6 @@
+{
+  "_doc": "Bloom nests (ADR-0055, TD-256): a burned nest's split pods are searchable remains (BloomNests.Pod). A pod rolls its nest def's loot table (NestDef.loot, loot_rolls times per pod), not this loot_table (it names the same table for the content cross-check); name, slots and search_time are what the pod uses.",
+  "defs": [
+    {"id": "nest_pod", "name": "Split Pod", "loot_table": "nest_loot", "slots": 8, "search_time": 1.6, "noise": 3}
+  ]
+}

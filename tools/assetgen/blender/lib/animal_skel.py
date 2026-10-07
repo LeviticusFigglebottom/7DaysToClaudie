@@ -117,16 +117,26 @@ _HOUND_SHEPHERD = dict(_HOUND, **{
     "hip": (0.064, 0.262, 0.485), "stifle": (0.080, 0.165, 0.320), "hock": (0.074, 0.330, 0.140),
     "fetlock_h": (0.070, 0.316, 0.034), "toe_h": (0.070, 0.266, 0.0),
 })
+# A grey wolf (ADR-0055; scaled to ~0.78 m at the withers by params): the mongrel's straight,
+# long legs under a deeper chest, a long muzzle, short pricked ears set wide on a broad skull, and
+# a tail that hangs straight to the hocks.
+_HOUND_WOLF = dict(_HOUND, **{
+    "nose": (0, -0.622, 0.664), "chin": (0, -0.592, 0.622),
+    "ear0": (0.050, -0.384, 0.764), "ear1": (0.080, -0.380, 0.814),
+    "tail0": (0, 0.336, 0.548), "tail1": (0, 0.392, 0.420), "tail2": (0, 0.405, 0.250),
+})
 TABLES = {"deer": _DEER, "hare": _HARE, "hound": _HOUND}
 
 
 def build_joints(p: dict) -> dict[str, np.ndarray]:
     """Joint positions for params: species (deer / hare / hound) and scale (uniform: a buck is a
     bigger doe; its bulk is the body's, not the skeleton's). A hound's `breed` "shepherd" picks the
-    shepherd table."""
+    shepherd table, "wolf" the wolf's."""
     table = TABLES[p.get("species", "deer")]
     if p.get("species") == "hound" and p.get("breed") == "shepherd":
         table = _HOUND_SHEPHERD
+    elif p.get("species") == "hound" and p.get("breed") == "wolf":
+        table = _HOUND_WOLF
     s = float(p.get("scale", 1.0))
     j: dict[str, np.ndarray] = {}
     for k, v in table.items():

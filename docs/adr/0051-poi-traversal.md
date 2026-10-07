@@ -81,7 +81,8 @@ radius 0.33 m, 1.75 m tall, tested a step (0.42 m) off the floor so thresholds d
 ### Ladders are climbed
 A ladder no longer has an interaction. `Player` climbs it:
 * **Getting on.** Walk into it at its foot, facing its rails, and it takes hold. From the landing
-  upstairs, walk into its hatch.
+  upstairs, walk into its hatch. A ladder whose landing is behind its rails (a hunting stand, a rope) is
+  taken from the top by walking off the landing toward it (TD-295).
 * **Moving.** Forward climbs at 1.9 m/s. Back climbs down, and so does forward while looking down
   more than about 35°. Grabbed from above, forward means down until forward is let go.
 * **Getting off.** Over the top, the vault's scripted path steps you off onto the landing. At the

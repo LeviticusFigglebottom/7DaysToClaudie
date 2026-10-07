@@ -134,7 +134,9 @@ void fragment() {
 		if (side_b && side_b_from_other_array) {
 			// Wall finishes are authored at 1 m per tile; `uv` carries the floors' 2 m scale.
 			albedo = texture(side_b_albedo, vec3(m, slice)).rgb;
-			if (side_b_has_maps) {
+			// Rock ceilings only (wall slices 16-17, not later ones such as log_chinked): other wall finishes' ORM and normal are authored for
+			// walls, and on a ceiling they darkened wood and plaster (Haldane bunker render).
+			if (side_b_has_maps && slice > 15.5 && slice < 17.5) {
 				orm = texture(side_b_orm, vec3(m, slice)).rgb;
 				nmap = texture(side_b_normal, vec3(m, slice)).rgb;
 			}
@@ -181,7 +183,7 @@ void fragment() {
 
 		// Macro tone breaks the finish tiling; interiors yellow with age.
 		albedo *= 0.9 + 0.2 * macro;
-		bool rock = (floor_top && fi >= 8) || (!floor_top && (wi == 16 || wi == 17));
+		bool rock = (floor_top && (fi == 8 || fi == 9)) || (!floor_top && (wi == 16 || wi == 17));
 		if (!exterior && !rock) {
 			albedo = mix(albedo, albedo * vec3(1.02, 0.95, 0.8), decay * 0.45 * smoothstep(0.3, 0.8, macro));
 		}
