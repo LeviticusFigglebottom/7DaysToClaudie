@@ -7,7 +7,9 @@ extends Node
 ## when he bleeds out and brings him back at the player's spawn point the next dawn (or never, under
 ## the permadeath death penalty), and saves him (WorldState.companion) on Events.game_saving. His
 ## orders and the rest go through commands (ADR-0003): companion.recruit, companion.order
-## {order: follow|stay|guard, spot?}, companion.revive. E on him opens the order card
+## {order: follow|stay|guard|gather|fetch, spot?, kind?, target?}, companion.revive, and (phase 2)
+## companion.give and companion.store; it owns his pack (`inventory`) and tracks what the player
+## looks at (`looked`) for fetch and gather. E on him opens the order card
 ## (CompanionScreen); the quick-order key (`companion_order`, H) toggles follow / stay.
 ##
 ## His body is an Enemy spawned by the AI director with the fixed id BODY_ID (so the Hollowed and

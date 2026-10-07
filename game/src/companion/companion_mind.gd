@@ -12,7 +12,8 @@ extends RefCounted
 ## within guard.radius of the spot. The fight itself is EnemyFoes' (the chase and the blows at a
 ## `foe`), so his kills are nobody's. At 0 hp he is downed (out of play, lying, bleeding out over
 ## downed.seconds) until revived or gone; CompanionDirector owns the bookkeeping (orders, save,
-## the camp, his return at dawn) and this the body's moment to moment.
+## the camp, his return at dawn) and this the body's moment to moment. Gather, fetch and store are
+## errands run by `work` (CompanionWork, ADR-0058 phase 2) while nothing needs fighting.
 
 const ORDERS: PackedStringArray = ["follow", "stay", "guard", "gather", "fetch", "store"]
 ## Orders that are errands (CompanionWork, ADR-0058 phase 2).
