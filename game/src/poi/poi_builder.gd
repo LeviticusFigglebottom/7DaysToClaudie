@@ -46,6 +46,17 @@ var _wings: Array[RoofPlanner.Wing] = []
 ## Most interior reflection probes one building gets (each costs a cubemap render at load and a
 ## slot in the reflection atlas).
 const MAX_PROBES: int = 8
+## Metres over which an interior probe's fill fades out at its box's faces. Godot fades the fill
+## as ((1 - d) per axis)^2 inside that band, so a wall face inside it gets almost none and falls
+## back to SDFGI, which is near black indoors: with 0.3 m and boxes 5 cm past the walls' centre
+## lines, walls got 1% of the room's fill (player report 3). The face must lie deeper than this.
+const PROBE_BLEND: float = 0.12
+## How far a probe box reaches past a wall's centre line on an outside side: just short of the
+## wall's outer face, so facades keep the outdoor light and the inner face lies WALL_T - 0.01 deep.
+const PROBE_REACH_OUT: float = WALL_T * 0.5 - 0.01
+## On a side whose neighbours are built (another room, a tall room's void): far enough that the
+## seam between two boxes gets the full fill from each (two boxes don't add up there).
+const PROBE_REACH_IN: float = PROBE_BLEND + 0.02
 
 
 ## `checked`: the layout's PoiValidator, already run (PoiManager runs it on a worker thread while
@@ -1355,8 +1366,8 @@ func _scatter_cell(li: int, c: Vector2i, density: float) -> void:
 ## floors. One probe per rectangle of rooms of one height (TD-040): each level's room cells are
 ## grouped by how high their room rises, split into rectangles, stacked where a rectangle repeats
 ## storey over storey, and merged pairwise (least waste first) down to MAX_PROBES. A yard inside an
-## L or a courtyard is in no box, so it keeps the outdoor light. Boxes stop just inside the walls so
-## facades keep it too.
+## L or a courtyard is in no box, so it keeps the outdoor light. Boxes stop just short of the walls'
+## outer faces so facades keep it too (_probe_box).
 ## Resumable (see PHASES): prepare_check's boxes, else one level's rectangles an item, then the
 ## merge and the probes.
 func _interior_probes() -> bool:
@@ -1379,7 +1390,7 @@ func _interior_probes() -> bool:
 		probe.ambient_color_energy = 0.5
 		probe.size = box.size
 		probe.position = box.get_center()
-		probe.blend_distance = 0.3
+		probe.blend_distance = PROBE_BLEND
 		probe.max_distance = maxf(probe.size.x, probe.size.z)
 		probe.update_mode = ReflectionProbe.UPDATE_ONCE
 		probe.add_to_group(&"interior_probe")
@@ -1448,8 +1459,10 @@ func _merge_probe_rects(rects: Array) -> Array[AABB]:
 	return boxes
 
 
-## The box of one rectangle of room cells: inset 5 cm from the walls' centre lines, from under its
-## floor slab to its ceiling (to the ridge where it is open to the roof).
+## The box of one rectangle of room cells, from under its floor slab to its ceiling (to the ridge
+## where it is open to the roof). Each side reaches past the walls' centre line far enough that
+## the room's wall faces get the full fill (PROBE_BLEND): just short of the outer face where the
+## side looks outside, further where every cell beyond it is built on every level of the box.
 func _probe_box(li: int, top: int, r: Rect2i, open: bool) -> AABB:
 	var lo: float = layout.level_y(li) - 0.2
 	var hi: float = layout.level_y(top) + PoiLayout.STOREY
@@ -1457,8 +1470,31 @@ func _probe_box(li: int, top: int, r: Rect2i, open: bool) -> AABB:
 		for w: RoofPlanner.Wing in _wings:
 			if w.level == top and w.cells.intersects(r):
 				hi = maxf(hi, w.y + w.rise())
-	var p := Vector3(layout.origin.x + r.position.x + 0.05, lo, layout.origin.y + r.position.y + 0.05)
-	return AABB(p, Vector3(maxf(0.5, r.size.x - 0.1), hi - lo, maxf(0.5, r.size.y - 0.1)))
+	var x0: float = _probe_reach(li, top, r, Vector2i(-1, 0))
+	var x1: float = _probe_reach(li, top, r, Vector2i(1, 0))
+	var z0: float = _probe_reach(li, top, r, Vector2i(0, -1))
+	var z1: float = _probe_reach(li, top, r, Vector2i(0, 1))
+	var p := Vector3(layout.origin.x + r.position.x - x0, lo, layout.origin.y + r.position.y - z0)
+	return AABB(p, Vector3(r.size.x + x0 + x1, hi - lo, r.size.y + z0 + z1))
+
+
+## How far a probe box reaches past the side of `r` facing `dir`: PROBE_REACH_IN when every cell
+## beyond that side is built on levels li..top, else PROBE_REACH_OUT.
+func _probe_reach(li: int, top: int, r: Rect2i, dir: Vector2i) -> float:
+	var cells: Array[Vector2i] = []
+	if dir.x != 0:
+		var x: int = r.position.x - 1 if dir.x < 0 else r.end.x
+		for y: int in range(r.position.y, r.end.y):
+			cells.append(Vector2i(x, y))
+	else:
+		var y2: int = r.position.y - 1 if dir.y < 0 else r.end.y
+		for x2: int in range(r.position.x, r.end.x):
+			cells.append(Vector2i(x2, y2))
+	for l: int in range(li, top + 1):
+		for c: Vector2i in cells:
+			if not layout.is_built(l, c):
+				return PROBE_REACH_OUT
+	return PROBE_REACH_IN
 
 
 func _light_at(pos: Vector3, l: Dictionary) -> void:
