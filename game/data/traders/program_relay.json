@@ -405,6 +405,15 @@
      ],
      "rep_tier": 2,
      "chance": 0.4
+    },
+    {
+     "item": "ammo_308",
+     "count": [
+      2,
+      6
+     ],
+     "rep_tier": 2,
+     "chance": 0.4
     }
    ],
    "contracts_from": [

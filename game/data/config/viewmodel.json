@@ -1067,7 +1067,18 @@
       "attack": "",
       "fixed_roll": [
         "R"
-      ]
+      ],
+      "aim": {
+        "socket": "socket_muzzle",
+        "up": 0.0156,
+        "relief": 0.5,
+        "fov": 50.0,
+        "move": [
+          0.0,
+          -0.004,
+          0.0
+        ]
+      }
     },
     "held": {
       "_doc": "Anything small carried on the right palm: resources, medicine, placeables, stones.",
@@ -1898,6 +1909,86 @@
       },
       "attack": "slice",
       "block": 0.3
+    },
+    "rifle": {
+      "_doc": "Bolt-action rifle (ADR-0057): a two-handed long gun at the low ready, the stock in the right shoulder's line, the barrel forward and a touch in. The gun lies in the LEFT fist under the fore-end (hand: L; item rot turns its pointing frame onto the palm, scaled to 0.85 so it fits the arms' reach), so the right hand is free to leave the wrist of the stock and work the bolt; every right-hand key is placed on the gun where it is at that key (tools: scratchpad rifle_vm.py). No tether reading with it up (both hands busy). aim: the scope's ocular (socket_sight) comes up onto the line of sight 7 cm before the eye; the scope picture takes over from there.",
+      "hand": "L",
+      "pose": {
+        "R": {
+          "grip": [
+            0.101,
+            -0.19,
+            -0.158
+          ],
+          "dir": [
+            0.036,
+            0.693,
+            0.72
+          ],
+          "back": [
+            0.999,
+            0.0,
+            -0.05
+          ],
+          "fist": 0.95,
+          "thumb": 0.8,
+          "elbow": [
+            0.45,
+            -0.55,
+            0.35
+          ],
+          "index": -0.9
+        },
+        "L": {
+          "grip": [
+            0.085,
+            -0.155,
+            -0.47
+          ],
+          "dir": [
+            -0.05,
+            0.03,
+            -0.998
+          ],
+          "back": [
+            0.498,
+            -0.866,
+            -0.051
+          ],
+          "fist": 0.8,
+          "thumb": 0.55,
+          "elbow": [
+            -0.35,
+            -0.55,
+            0.3
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          -90.0,
+          -150.01,
+          0.0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.85
+      },
+      "attack": "",
+      "fixed_roll": [
+        "L",
+        "R"
+      ],
+      "no_tether": true,
+      "aim": {
+        "socket": "socket_sight",
+        "up": 0.0,
+        "relief": 0.075,
+        "fov": 52.0
+      }
     }
   },
   "attacks": {
@@ -6996,6 +7087,1324 @@
           "inout"
         ]
       ]
+    },
+    "fire_rifle": {
+      "_doc": "A shot and the bolt (played over equip.attack_time + bolt_time): the rifle bucks up and back into the shoulder, then rolls a little onto its left side and comes up while the right hand goes from the wrist to the bolt knob: up, back (the empty flies), forward, down, and back to the wrist. parts: the rifle's `bolt` node, turned about the bore (deg) and slid along it (m).",
+      "hold": "rifle",
+      "frames": 40,
+      "keys": [
+        [
+          0,
+          {
+            "R.index": -0.35
+          },
+          "lin"
+        ],
+        [
+          2,
+          {
+            "L.move": [
+              0.0,
+              0.012,
+              0.035
+            ],
+            "L.rot": [
+              9.0,
+              1.0,
+              -2.0
+            ],
+            "R": {
+              "grip": [
+                0.103,
+                -0.227,
+                -0.133
+              ],
+              "dir": [
+                0.07,
+                0.57,
+                0.819
+              ],
+              "back": [
+                0.997,
+                -0.027,
+                -0.067
+              ],
+              "fist": 0.95,
+              "thumb": 0.8,
+              "elbow": [
+                0.45,
+                -0.55,
+                0.35
+              ],
+              "index": -0.25
+            }
+          },
+          "out"
+        ],
+        [
+          6,
+          {
+            "L.move": [
+              0.0,
+              0.004,
+              0.012
+            ],
+            "L.rot": [
+              3.0,
+              0.5,
+              -1.0
+            ],
+            "R": {
+              "grip": [
+                0.102,
+                -0.202,
+                -0.149
+              ],
+              "dir": [
+                0.054,
+                0.654,
+                0.755
+              ],
+              "back": [
+                0.998,
+                -0.015,
+                -0.059
+              ],
+              "fist": 0.95,
+              "thumb": 0.8,
+              "elbow": [
+                0.45,
+                -0.55,
+                0.35
+              ],
+              "index": -0.5
+            }
+          },
+          "inout"
+        ],
+        [
+          11,
+          {
+            "L.move": [
+              -0.012,
+              0.025,
+              0.01
+            ],
+            "L.rot": [
+              -3.0,
+              2.0,
+              6.0
+            ],
+            "R": {
+              "grip": [
+                0.173,
+                -0.114,
+                -0.129
+              ],
+              "dir": [
+                -0.139,
+                0.558,
+                0.818
+              ],
+              "back": [
+                0.832,
+                0.514,
+                -0.209
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          15,
+          {
+            "L.move": [
+              -0.012,
+              0.025,
+              0.01
+            ],
+            "L.rot": [
+              -3.0,
+              2.0,
+              6.0
+            ],
+            "R": {
+              "grip": [
+                0.159,
+                -0.063,
+                -0.13
+              ],
+              "dir": [
+                -0.139,
+                0.558,
+                0.818
+              ],
+              "back": [
+                0.832,
+                0.514,
+                -0.209
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          21,
+          {
+            "L.move": [
+              -0.012,
+              0.025,
+              0.01
+            ],
+            "L.rot": [
+              -3.0,
+              2.0,
+              6.0
+            ],
+            "R": {
+              "grip": [
+                0.164,
+                -0.061,
+                -0.066
+              ],
+              "dir": [
+                -0.139,
+                0.558,
+                0.818
+              ],
+              "back": [
+                0.832,
+                0.514,
+                -0.209
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          27,
+          {
+            "L.move": [
+              -0.012,
+              0.025,
+              0.01
+            ],
+            "L.rot": [
+              -3.0,
+              2.0,
+              6.0
+            ],
+            "R": {
+              "grip": [
+                0.159,
+                -0.063,
+                -0.13
+              ],
+              "dir": [
+                -0.139,
+                0.558,
+                0.818
+              ],
+              "back": [
+                0.832,
+                0.514,
+                -0.209
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          31,
+          {
+            "L.move": [
+              -0.012,
+              0.025,
+              0.01
+            ],
+            "L.rot": [
+              -3.0,
+              2.0,
+              6.0
+            ],
+            "R": {
+              "grip": [
+                0.173,
+                -0.114,
+                -0.129
+              ],
+              "dir": [
+                -0.139,
+                0.558,
+                0.818
+              ],
+              "back": [
+                0.832,
+                0.514,
+                -0.209
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          36,
+          {
+            "L.move": [
+              -0.0036,
+              0.0075,
+              0.003
+            ],
+            "L.rot": [
+              -0.9,
+              0.6,
+              1.8
+            ],
+            "R": {
+              "grip": [
+                0.101,
+                -0.177,
+                -0.155
+              ],
+              "dir": [
+                0.021,
+                0.705,
+                0.709
+              ],
+              "back": [
+                0.998,
+                0.031,
+                -0.06
+              ],
+              "fist": 0.95,
+              "thumb": 0.8,
+              "elbow": [
+                0.45,
+                -0.55,
+                0.35
+              ],
+              "index": -0.9
+            }
+          },
+          "inout"
+        ],
+        [
+          40,
+          {},
+          "inout"
+        ]
+      ],
+      "parts": {
+        "bolt": [
+          [
+            11,
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            15,
+            [
+              0,
+              0,
+              -62
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            21,
+            [
+              0,
+              0,
+              -62
+            ],
+            [
+              0,
+              0,
+              -0.075
+            ]
+          ],
+          [
+            27,
+            [
+              0,
+              0,
+              -62
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            31,
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ]
+        ]
+      }
+    },
+    "reload_rifle_open": {
+      "_doc": "Reload, first: the rifle rolls onto its left side and comes up, the right hand lifts the bolt and draws it back (equip.reload_open_time).",
+      "hold": "rifle",
+      "frames": 12,
+      "keys": [
+        [
+          0,
+          {
+            "R.index": -0.9
+          },
+          "lin"
+        ],
+        [
+          4,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.174,
+                -0.099,
+                -0.131
+              ],
+              "dir": [
+                -0.146,
+                0.569,
+                0.809
+              ],
+              "back": [
+                0.81,
+                0.539,
+                -0.232
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          7,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.158,
+                -0.048,
+                -0.132
+              ],
+              "dir": [
+                -0.146,
+                0.569,
+                0.809
+              ],
+              "back": [
+                0.81,
+                0.539,
+                -0.232
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          12,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.164,
+                -0.045,
+                -0.069
+              ],
+              "dir": [
+                -0.146,
+                0.569,
+                0.809
+              ],
+              "back": [
+                0.81,
+                0.539,
+                -0.232
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ]
+      ],
+      "parts": {
+        "bolt": [
+          [
+            4,
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            7,
+            [
+              0,
+              0,
+              -62
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            12,
+            [
+              0,
+              0,
+              -62
+            ],
+            [
+              0,
+              0,
+              -0.075
+            ]
+          ]
+        ]
+      }
+    },
+    "reload_rifle": {
+      "_doc": "Reload, each round (equip.reload_time, repeated up to the magazine): the right hand drops for a round, brings it over the open action and thumbs it down, back to the bolt knob. The bolt stays open (parts).",
+      "hold": "rifle",
+      "frames": 20,
+      "keys": [
+        [
+          0,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.164,
+                -0.045,
+                -0.069
+              ],
+              "dir": [
+                -0.146,
+                0.569,
+                0.809
+              ],
+              "back": [
+                0.81,
+                0.539,
+                -0.232
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          5,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.143,
+                -0.233,
+                -0.108
+              ],
+              "dir": [
+                -0.033,
+                0.744,
+                0.667
+              ],
+              "back": [
+                0.986,
+                0.135,
+                -0.102
+              ],
+              "fist": 0.7,
+              "thumb": 0.5,
+              "elbow": [
+                0.4,
+                -0.6,
+                0.3
+              ]
+            }
+          },
+          "inout"
+        ],
+        [
+          9,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.143,
+                -0.233,
+                -0.108
+              ],
+              "dir": [
+                -0.033,
+                0.744,
+                0.667
+              ],
+              "back": [
+                0.986,
+                0.135,
+                -0.102
+              ],
+              "fist": 0.7,
+              "thumb": 0.5,
+              "elbow": [
+                0.4,
+                -0.6,
+                0.3
+              ]
+            }
+          },
+          "inout"
+        ],
+        [
+          13,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.124,
+                -0.02,
+                -0.248
+              ],
+              "dir": [
+                -0.033,
+                0.744,
+                0.667
+              ],
+              "back": [
+                0.986,
+                0.135,
+                -0.102
+              ],
+              "fist": 0.6,
+              "thumb": 0.35,
+              "elbow": [
+                0.45,
+                -0.5,
+                0.3
+              ],
+              "index": 0.15
+            }
+          },
+          "inout"
+        ],
+        [
+          16,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.129,
+                -0.058,
+                -0.247
+              ],
+              "dir": [
+                -0.033,
+                0.744,
+                0.667
+              ],
+              "back": [
+                0.986,
+                0.135,
+                -0.102
+              ],
+              "fist": 0.6,
+              "thumb": 0.3,
+              "elbow": [
+                0.45,
+                -0.5,
+                0.3
+              ],
+              "index": 0.15
+            }
+          },
+          "out"
+        ],
+        [
+          18,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.131,
+                -0.07,
+                -0.247
+              ],
+              "dir": [
+                -0.033,
+                0.744,
+                0.667
+              ],
+              "back": [
+                0.986,
+                0.135,
+                -0.102
+              ],
+              "fist": 0.6,
+              "thumb": 0.15,
+              "elbow": [
+                0.45,
+                -0.5,
+                0.3
+              ],
+              "index": 0.15
+            }
+          },
+          "inout"
+        ],
+        [
+          20,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.164,
+                -0.045,
+                -0.069
+              ],
+              "dir": [
+                -0.146,
+                0.569,
+                0.809
+              ],
+              "back": [
+                0.81,
+                0.539,
+                -0.232
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ]
+      ],
+      "parts": {
+        "bolt": [
+          [
+            0,
+            [
+              0,
+              0,
+              -62
+            ],
+            [
+              0,
+              0,
+              -0.075
+            ]
+          ],
+          [
+            20,
+            [
+              0,
+              0,
+              -62
+            ],
+            [
+              0,
+              0,
+              -0.075
+            ]
+          ]
+        ]
+      }
+    },
+    "reload_rifle_close": {
+      "_doc": "Reload, last: the bolt runs forward and turns down, the right hand goes back to the wrist and the rifle to the ready (equip.reload_close_time).",
+      "hold": "rifle",
+      "frames": 12,
+      "keys": [
+        [
+          0,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.164,
+                -0.045,
+                -0.069
+              ],
+              "dir": [
+                -0.146,
+                0.569,
+                0.809
+              ],
+              "back": [
+                0.81,
+                0.539,
+                -0.232
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          4,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.158,
+                -0.048,
+                -0.132
+              ],
+              "dir": [
+                -0.146,
+                0.569,
+                0.809
+              ],
+              "back": [
+                0.81,
+                0.539,
+                -0.232
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          7,
+          {
+            "L.move": [
+              -0.015,
+              0.03,
+              0.01
+            ],
+            "L.rot": [
+              -4.0,
+              3.0,
+              8.0
+            ],
+            "R": {
+              "grip": [
+                0.174,
+                -0.099,
+                -0.131
+              ],
+              "dir": [
+                -0.146,
+                0.569,
+                0.809
+              ],
+              "back": [
+                0.81,
+                0.539,
+                -0.232
+              ],
+              "fist": 0.72,
+              "thumb": 0.65,
+              "elbow": [
+                0.5,
+                -0.4,
+                0.3
+              ],
+              "index": 0.0
+            }
+          },
+          "inout"
+        ],
+        [
+          10,
+          {
+            "L.move": [
+              -0.0045,
+              0.009,
+              0.003
+            ],
+            "L.rot": [
+              -1.2,
+              0.9,
+              2.4
+            ],
+            "R": {
+              "grip": [
+                0.102,
+                -0.173,
+                -0.155
+              ],
+              "dir": [
+                0.017,
+                0.709,
+                0.705
+              ],
+              "back": [
+                0.997,
+                0.041,
+                -0.066
+              ],
+              "fist": 0.95,
+              "thumb": 0.8,
+              "elbow": [
+                0.45,
+                -0.55,
+                0.35
+              ],
+              "index": -0.9
+            }
+          },
+          "inout"
+        ],
+        [
+          12,
+          {},
+          "inout"
+        ]
+      ],
+      "parts": {
+        "bolt": [
+          [
+            0,
+            [
+              0,
+              0,
+              -62
+            ],
+            [
+              0,
+              0,
+              -0.075
+            ]
+          ],
+          [
+            4,
+            [
+              0,
+              0,
+              -62
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            7,
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ]
+        ]
+      }
+    },
+    "inspect_rifle": {
+      "_doc": "Look it over (Y): the rifle comes up and in, rolls onto its left side to show the bolt and the scope's turrets, then tips the muzzle up and across to look along the top and the left of the stock, and back to the ready; the right hand stays on the wrist.",
+      "hold": "rifle",
+      "frames": 80,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          16,
+          {
+            "L.move": [
+              -0.06,
+              0.07,
+              0.04
+            ],
+            "L.rot": [
+              6.0,
+              28.0,
+              30.0
+            ],
+            "R": {
+              "grip": [
+                0.195,
+                -0.064,
+                -0.167
+              ],
+              "dir": [
+                0.041,
+                0.733,
+                0.679
+              ],
+              "back": [
+                0.741,
+                0.434,
+                -0.513
+              ],
+              "fist": 0.95,
+              "thumb": 0.8,
+              "elbow": [
+                0.45,
+                -0.55,
+                0.35
+              ],
+              "index": -0.9
+            }
+          },
+          "inout"
+        ],
+        [
+          32,
+          {
+            "L.move": [
+              -0.06,
+              0.075,
+              0.04
+            ],
+            "L.rot": [
+              8.0,
+              30.0,
+              34.0
+            ],
+            "R": {
+              "grip": [
+                0.206,
+                -0.052,
+                -0.175
+              ],
+              "dir": [
+                0.034,
+                0.73,
+                0.683
+              ],
+              "back": [
+                0.693,
+                0.476,
+                -0.542
+              ],
+              "fist": 0.95,
+              "thumb": 0.8,
+              "elbow": [
+                0.45,
+                -0.55,
+                0.35
+              ],
+              "index": -0.9
+            }
+          },
+          "inout"
+        ],
+        [
+          48,
+          {
+            "L.move": [
+              -0.07,
+              0.06,
+              0.05
+            ],
+            "L.rot": [
+              16.0,
+              8.0,
+              -8.0
+            ],
+            "R": {
+              "grip": [
+                0.054,
+                -0.221,
+                -0.135
+              ],
+              "dir": [
+                0.222,
+                0.441,
+                0.87
+              ],
+              "back": [
+                0.975,
+                -0.123,
+                -0.187
+              ],
+              "fist": 0.95,
+              "thumb": 0.8,
+              "elbow": [
+                0.45,
+                -0.55,
+                0.35
+              ],
+              "index": -0.9
+            }
+          },
+          "inout"
+        ],
+        [
+          62,
+          {
+            "L.move": [
+              -0.065,
+              0.055,
+              0.05
+            ],
+            "L.rot": [
+              20.0,
+              10.0,
+              -10.0
+            ],
+            "R": {
+              "grip": [
+                0.059,
+                -0.248,
+                -0.146
+              ],
+              "dir": [
+                0.261,
+                0.365,
+                0.893
+              ],
+              "back": [
+                0.964,
+                -0.153,
+                -0.22
+              ],
+              "fist": 0.95,
+              "thumb": 0.8,
+              "elbow": [
+                0.45,
+                -0.55,
+                0.35
+              ],
+              "index": -0.9
+            }
+          },
+          "inout"
+        ],
+        [
+          80,
+          {},
+          "inout"
+        ]
+      ]
     }
   },
   "tether": {
@@ -7040,6 +8449,15 @@
     "stamina_per_hit": 6.0,
     "stamina_per_damage": 0.4,
     "raise_time": 0.12
+  },
+  "aim": {
+    "_doc": "Aiming a gun (right mouse, ADR-0057): seconds to raise it (time), the view's magnification when up (zoom), multipliers on spread, the arms' sway and walking speed when up, and from what fraction of the raise a scoped gun shows its scope picture. Per item, equip.aim overrides these (the rifle's 4x scope, the revolver's iron sights); where the gun sits when up is its hold's `aim` (the sight socket, its height above it, how far before the eye, the arms' field of view).",
+    "time": 0.25,
+    "zoom": 1.2,
+    "spread": 0.5,
+    "sway": 0.45,
+    "move": 0.65,
+    "scope_from": 0.92
   },
   "motion": {
     "_doc": "Procedural motion on top of the baked poses. breathe: period s, pos m, rot deg. sway: the rig lags the view (deg of lag per rad/s of turn), sprung. move: lag against velocity changes. bob: per footstep (pos m, rot deg), scaled when sprinting / crouched. sprint: the lowered pose (pos m, rot deg) blended in while sprinting. land: dip per m/s of landing speed. equip: seconds to raise a new item.",

@@ -134,6 +134,19 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "climb_rope_b", "item": "", "action": "fp_climb_rope_cycle", "frame": 51, "rails": "rope"},
 	{"name": "climb_rope_grab", "item": "", "action": "fp_climb_rope_grab", "frame": 6, "rails": "rope"},
 	{"name": "hunting_stand", "item": "climbing_rope", "rails": "structures/hunting_stand"},
+	# Hunting rifle (ADR-0057): the ready, the kick, the bolt cycle, a round going in, the inspect;
+	# aim (0..1): raised toward the sights, the scope picture once up; the revolver's iron sights.
+	{"name": "rifle_idle", "item": "hunting_rifle"},
+	{"name": "rifle_fire", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 2},
+	{"name": "rifle_bolt_up", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 15},
+	{"name": "rifle_bolt_back", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 21},
+	{"name": "rifle_reload_open", "item": "hunting_rifle", "action": "fp_reload_rifle_open", "frame": 12},
+	{"name": "rifle_reload_round", "item": "hunting_rifle", "action": "fp_reload_rifle", "frame": 16},
+	{"name": "rifle_inspect_a", "item": "hunting_rifle", "action": "fp_inspect_rifle", "frame": 32},
+	{"name": "rifle_inspect_b", "item": "hunting_rifle", "action": "fp_inspect_rifle", "frame": 62},
+	{"name": "rifle_aim_half", "item": "hunting_rifle", "aim": 0.6},
+	{"name": "rifle_aimed", "item": "hunting_rifle", "aim": 1.0},
+	{"name": "revolver_aimed", "item": "revolver", "aim": 1.0},
 ]
 
 var _out: String = "res://../build/fp_preview"
@@ -148,6 +161,7 @@ var _env: Environment
 var _torch_light: OmniLight3D
 ## The climbing shots' ladder or rope in front of the camera (null when none is shown).
 var _rails: Node3D = null
+var _scope: ScopeOverlay = null
 
 
 func _ready() -> void:
@@ -257,6 +271,21 @@ func _run() -> void:
 	get_tree().quit(0)
 
 
+## A shot's aim (0..1): the camera's zoom, the arms raised toward the sights, the scope picture.
+func _aim_shot(shot: Dictionary) -> void:
+	var a: float = float(shot.get("aim", 0.0))
+	var pa := PlayerAim.new()
+	pa.update(0.0, a > 0.0, StringName(str(shot.get("item", ""))))
+	pa.progress = a
+	_cam.fov = pa.fov(75.0)
+	_vm.set_aim(pa.amount(), 1.0 - pa.sway_mult(), pa.scoped())
+	if _scope == null:
+		_scope = ScopeOverlay.new()
+		add_child(_scope)
+	_scope.visible = pa.scoped()
+	pa.free()
+
+
 func _shoot(shot: Dictionary) -> void:
 	var night: bool = bool(shot.get("night", false))
 	_sun.visible = not night
@@ -271,6 +300,7 @@ func _shoot(shot: Dictionary) -> void:
 	_vm.show_item(StringName(str(shot.get("item", ""))))
 	_show_rails(str(shot.get("rails", "")))
 	_vm.motion.equip = 1.0
+	_aim_shot(shot)
 	if bool(shot.get("guard", false)):
 		_vm.set_guard(true)
 	if bool(shot.get("tether", false)):

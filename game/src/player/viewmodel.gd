@@ -70,6 +70,12 @@ var _swing_len: float = 0.8
 var _recoil: float = 0.0
 ## Held-item nodes a use turned (viewmodel.json `uses.<use>.parts`), to put back when it ends.
 var _posed_parts: Array[Node3D] = []
+## Aiming (PlayerAim, ADR-0057): how far the gun is up 0..1, whether the scope picture hides the
+## arms, and the rig offset that puts the hold's sight on the line of sight (measured off the
+## idle hold, kept while an action plays so a shot's kick still moves the gun).
+var aim: float = 0.0
+var _aim_hidden: bool = false
+var _aim_xf := Transform3D()
 var _rest := Transform3D(Basis.from_euler(Vector3(deg_to_rad(8.0), deg_to_rad(-12.0), deg_to_rad(4.0))), Vector3(0.28, -0.3, -0.52))
 
 
@@ -372,6 +378,14 @@ func play_inspect() -> bool:
 func play_recoil() -> void:
 	_recoil = 1.0
 	motion.gun_recoil(1.0)
+
+
+## The gun raised `amount` (0..1, eased) toward the sights, the arms steadied by `steady` (0..1);
+## `hide` = the scope picture is up, so the arms are not drawn.
+func set_aim(amount: float, steady: float, hide: bool) -> void:
+	aim = amount
+	motion.steady = steady
+	_aim_hidden = hide
 
 
 func set_lit(on: bool) -> void:
@@ -866,7 +880,7 @@ func _process(delta: float) -> void:
 	tether.update(delta)
 	var cam: Camera3D = get_parent() as Camera3D
 	if cam != null:
-		visible = cam.current
+		visible = cam.current and not _aim_hidden
 	var look := Vector2.ZERO
 	if cam != null:
 		var b: Basis = cam.global_transform.basis
@@ -886,7 +900,7 @@ func _process(delta: float) -> void:
 	else:
 		motion.reading = tether.progress()
 		motion.update(delta, look, vel, 0.0, false, false, true, 0.0, 0)
-	_rig.transform = motion.rig_transform()
+	_rig.transform = motion.rig_transform() * _aim_offset()
 	_climb_step(delta, cam)
 	_flame_follow(delta, look, vel)
 	_update_exposure(delta)
@@ -905,7 +919,9 @@ func _process(delta: float) -> void:
 	_animate_parts()
 	# Reading the tether narrows the viewmodel's field of view so the screen fills more of it.
 	var tc: Dictionary = cfg.get("tether", {})
-	var fov: float = lerpf(float(cfg.get("fov", 58.0)), float(tc.get("fov", 42.0)), tether.progress())
+	var base_fov: float = float(cfg.get("fov", 58.0))
+	base_fov = lerpf(base_fov, float(_aim_cfg().get("fov", base_fov)), aim)
+	var fov: float = lerpf(base_fov, float(tc.get("fov", 42.0)), tether.progress())
 	if absf(fov - FpMaterials.fov) > 0.01:
 		FpMaterials.set_fov(fov)
 	if _screen_mat != null:
@@ -963,6 +979,8 @@ func _animate_parts() -> void:
 		for n: Node3D in _posed_parts:
 			if is_instance_valid(n):
 				n.rotation = Vector3.ZERO
+				if n.has_meta(&"rest_pos"):
+					n.position = n.get_meta(&"rest_pos")
 		_posed_parts.clear()
 		return
 	var f: float = _anim.current_animation_position * 30.0
@@ -971,8 +989,36 @@ func _animate_parts() -> void:
 		if n == null:
 			continue
 		n.rotation_degrees = part_rotation(keys_by_part[part], f)
+		# Keys may also slide the part ([frame, [deg], [x, y, z] m]): the rifle's bolt draws back.
+		if not n.has_meta(&"rest_pos"):
+			n.set_meta(&"rest_pos", n.position)
+		n.position = (n.get_meta(&"rest_pos") as Vector3) + part_offset(keys_by_part[part], f)
 		if not _posed_parts.has(n):
 			_posed_parts.append(n)
+
+
+## The hold's aim (viewmodel.json holds.<class>.aim: the sight socket, its height over it, how far
+## in front of the eye it comes up, the arms' field of view when up, an extra offset).
+func _aim_cfg() -> Dictionary:
+	return ViewModelHolds.hold(hold_class, cfg).get("aim", {}) as Dictionary
+
+
+## The rig's aim offset now: none at the hip, the sight on the line of sight when fully up. The
+## sight is measured while the hold's idle plays (the idle's small drift is cancelled with it) and
+## kept while an action plays, so a shot's kick or a bolt cycle still moves the gun off it.
+func _aim_offset() -> Transform3D:
+	if aim <= 0.0 or _held == null or not has_arms():
+		return Transform3D()
+	var ac: Dictionary = _aim_cfg()
+	if ac.is_empty():
+		return Transform3D()
+	if _action == &"":
+		var sight: Node3D = _held.find_child(str(ac.get("socket", "socket_muzzle")), true, false) as Node3D
+		if sight != null and sight.is_inside_tree():
+			var mv: Array = ac.get("move", [0.0, 0.0, 0.0])
+			_aim_xf = PlayerAim.sight_offset(_rig.global_transform.affine_inverse() * sight.global_transform,
+				float(ac.get("up", 0.0)), float(ac.get("relief", 0.3)), Vector3(float(mv[0]), float(mv[1]), float(mv[2])))
+	return Transform3D().interpolate_with(_aim_xf, aim)
 
 
 ## A part's rotation (degrees) at frame `f` of its [[frame, [x, y, z]], ...] keys.
@@ -988,6 +1034,24 @@ static func part_rotation(keys: Array, f: float) -> Vector3:
 			return _vec3(prev[1]).lerp(_vec3(k[1]), t)
 		prev = k
 	return _vec3(prev[1])
+
+
+## A part's slide (m) at frame `f`: the optional third entry of its keys (none = no slide).
+static func part_offset(keys: Array, f: float) -> Vector3:
+	if keys.is_empty():
+		return Vector3.ZERO
+	var prev: Array = keys[0]
+	if f <= float(prev[0]):
+		return _slide(prev)
+	for k: Array in keys:
+		if f <= float(k[0]):
+			return _slide(prev).lerp(_slide(k), smoothstep(float(prev[0]), float(k[0]), f))
+		prev = k
+	return _slide(prev)
+
+
+static func _slide(k: Array) -> Vector3:
+	return _vec3(k[2]) if k.size() > 2 else Vector3.ZERO
 
 
 static func _vec3(a: Array) -> Vector3:

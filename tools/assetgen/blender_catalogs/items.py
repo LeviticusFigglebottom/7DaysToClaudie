@@ -31,6 +31,9 @@ SPEC: dict[str, tuple[str, dict]] = {
     "tether": ("item_gear", {"kind": "tether", "seed": 25}),
     "repair_kit": ("item_gear", {"kind": "repair_kit", "seed": 26}),
     "can_chime": ("item_gear", {"kind": "can_chime", "seed": 27}),
+    # long guns (ADR-0057; pointing frame, origin on the support hand's grip under the fore-end)
+    "hunting_rifle": ("item_firearms", {"kind": "hunting_rifle", "seed": 281}),
+    "ammo_308": ("item_firearms", {"kind": "ammo_308", "seed": 282}),
     # consumables
     "ration_bar": ("item_food", {"kind": "ration_bar", "seed": 31}),
     "canned_beans": ("item_food", {"kind": "can", "seed": 32, "label": "item_can_label_a", "size": [0.0765, 0.112], "dent": 0.6}),

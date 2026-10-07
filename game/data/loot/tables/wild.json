@@ -22,7 +22,8 @@
       "guaranteed": [{"item": "scrip", "count": [10, 25]}]},
     {"id": "wild_lookout_stores", "rolls": [2, 3], "empty_chance": 0.1, "entries": [
       {"table": "food_canned", "weight": 10}, {"item": "water_bottle_clean", "weight": 6}, {"item": "cloth_bandage", "weight": 3},
-      {"item": "lighter", "weight": 2}, {"item": "flashlight", "weight": 2}, {"item": "painkillers", "weight": 2}, {"item": "journal_field_medicine", "weight": 1}]},
+      {"item": "lighter", "weight": 2}, {"item": "flashlight", "weight": 2}, {"item": "painkillers", "weight": 2}, {"item": "journal_field_medicine", "weight": 1},
+      {"item": "ammo_308", "weight": 2, "count": [2, 6]}, {"item": "hunting_rifle", "weight": 1, "tier_min": 3}]},
     {"id": "wild_mill_stores", "rolls": [2, 4], "empty_chance": 0.2, "entries": [
       {"item": "nails", "weight": 8, "count": [4, 12]}, {"item": "scrap_metal", "weight": 8, "count": [2, 5]}, {"item": "duct_tape", "weight": 5},
       {"item": "repair_kit", "weight": 2}, {"item": "steel_pipe", "weight": 2}, {"item": "claw_hammer", "weight": 2}, {"item": "cordage", "weight": 3, "count": [1, 3]},
