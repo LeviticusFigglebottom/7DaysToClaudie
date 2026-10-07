@@ -44,6 +44,14 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "empty_guard", "item": "", "guard": true},
 	{"name": "carry_log", "item": "", "base": "fp_carry_log"},
 	{"name": "blueprint", "item": "stone_axe", "base": "fp_blueprint"},
+	# Strike phases either side of the contact frames above (TD-172): windup, follow-through.
+	{"name": "machete_slash_windup", "item": "machete", "action": "fp_slash", "frame": 6},
+	{"name": "machete_slash_follow", "item": "machete", "action": "fp_slash", "frame": 12},
+	{"name": "club_bash_windup", "item": "stone_club", "action": "fp_bash", "frame": 13},
+	{"name": "club_bash_follow", "item": "stone_club", "action": "fp_bash", "frame": 20},
+	{"name": "shovel_dig_windup", "item": "shovel", "action": "fp_dig", "frame": 8},
+	{"name": "shovel_dig_follow", "item": "shovel", "action": "fp_dig", "frame": 15},
+	{"name": "food_eat_lift", "item": "canned_beans", "action": "fp_eat", "frame": 8},
 ]
 
 var _out: String = "res://../build/fp_preview"
