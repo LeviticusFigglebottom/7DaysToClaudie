@@ -121,19 +121,37 @@ static func has_loot_room(def_id: StringName) -> bool:
 	return bool(_loot_rooms.get(def_id, false))
 
 
+## Whether the container prop `pkey` of a layout stands in its loot room (TD-145): 1 yes, 0 no,
+## -1 when the layout has no such prop. The same test PoiBuilder uses for a loot-room container's
+## bonus roll, so it counts the container wherever the player searched it from.
+static func prop_in_loot_room(l: PoiLayout, pkey: String) -> int:
+	if l == null or l.loot_room.is_empty():
+		return -1 if l == null else 0
+	for p: Dictionary in l.props:
+		if str(p.get("pkey", "")) != pkey:
+			continue
+		var level: int = int(p.get("level", 0))
+		return 1 if level == int(l.loot_room.get("level", 0)) and p.has("cell") \
+			and l.room_at(level, p["cell"]) == str(l.loot_room.get("room", "")) else 0
+	return -1
+
+
 ## The restock period a day falls in (stock re-rolls when it changes).
 static func period(trader: TraderDef, day: int) -> int:
 	return maxi(0, day - 1) / trader.restock_days
 
 
 ## The shop's stock for a period: {item id: {count, rep_tier}}. Every tier is rolled; the counter
-## shows a player only the tiers their reputation has reached.
-static func roll_stock(trader: TraderDef, p: int, world_seed: int) -> Dictionary:
+## shows a player only the tiers their reputation has reached. `key` is the stock's key in
+## WorldState.traders: a post id for a def with `stock_per_post` (each camp rolls its own shelves,
+## TD-146); the def id (or "") otherwise.
+static func roll_stock(trader: TraderDef, p: int, world_seed: int, key: String = "") -> Dictionary:
 	var out: Dictionary = {}
+	var k: String = String(trader.id) if key == "" or key == String(trader.id) else key
 	for i: int in trader.stock.size():
 		var e: Dictionary = trader.stock[i]
 		var rng := RandomNumberGenerator.new()
-		rng.seed = Ids.hash64("stock:%d:%s:%d:%d" % [world_seed, trader.id, p, i])
+		rng.seed = Ids.hash64("stock:%d:%s:%d:%d" % [world_seed, k, p, i])
 		if rng.randf() > float(e.get("chance", 1.0)):
 			continue
 		var c: Array = e.get("count", [1, 1])

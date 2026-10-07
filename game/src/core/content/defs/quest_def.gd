@@ -35,6 +35,12 @@ var item: String = "program_cache"
 var place: bool = true
 ## Offered until the player has turned it in once (a unique building's one-off job).
 var once: bool = false
+## Contracts (TD-146): days an accepted contract has before it fails at dawn (0 = never). Only a
+## contract still open fails; one done and waiting to be reported does not.
+var expires_days: int = 3
+## Reputation with the giver lost when the contract fails (expires) or is abandoned.
+var fail_rep: int = 10
+var abandon_rep: int = 5
 ## Briefing on the board (`{building}` and `{distance}` are filled in).
 var briefing: String = ""
 
@@ -43,7 +49,8 @@ const CONTRACT_TYPES: PackedStringArray = ["clear", "fetch", "defend"]
 
 func _fields() -> PackedStringArray:
 	return ["type", "tier", "objectives", "rewards", "giver", "requires", "target", "rep_tier", "weight",
-		"duration", "waves", "wave_size", "enemies", "wave_growth", "item", "place", "once", "briefing"]
+		"duration", "waves", "wave_size", "enemies", "wave_growth", "item", "place", "once", "briefing",
+		"expires_days", "fail_rep", "abandon_rep"]
 
 
 func _parse(r: DefReader) -> void:
@@ -67,6 +74,9 @@ func _parse(r: DefReader) -> void:
 	place = r.boolean("place", true)
 	once = r.boolean("once", false)
 	briefing = r.str_field("briefing", "")
+	expires_days = r.integer("expires_days", 3)
+	fail_rep = r.integer("fail_rep", 10)
+	abandon_rep = r.integer("abandon_rep", 5)
 
 
 func _validate(db: Node, out: PackedStringArray) -> void:
@@ -75,6 +85,8 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 			out.append("%s: reward item '%s' unknown" % [ctx(), k])
 	if not is_contract():
 		return
+	if expires_days < 0 or fail_rep < 0 or abandon_rep < 0:
+		out.append("%s: expires_days, fail_rep and abandon_rep can't be negative" % ctx())
 	if not db.has_def(&"trader", StringName(giver)):
 		out.append("%s: giver '%s' is not a trader" % [ctx(), giver])
 	if quest_type == "fetch" and not db.has_def(&"item", StringName(item)):

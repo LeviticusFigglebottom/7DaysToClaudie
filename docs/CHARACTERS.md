@@ -115,10 +115,24 @@ Enemy drives them, but living-human clips from `lib/living_anim.py` (TD-187):
 | `attack_a` | 24 | | overhead axe chop, right hand, the blow at frame 11 (45%) |
 | `attack_b` | 24 | | spear thrust / throw: draw back, full extension frames 13–16 (the throw lets go at 0.55 s at 0.9 speed) |
 | `attack_structure` | 30 | ✓ | two-handed overhead chops |
-The sleep / wake, hit, stagger and death clips are the Hollowed's; `idle_b`, `idle_c`,
+| `hit_front` | 14 | | blow from the front: head and chest snap back (2 frames), weight on the back foot, hands up to guard (frame 8), back in the stance; 0.47 s stun |
+| `hit_back` | 14 | | blow from behind: shoved forward, head whips back, a glance over the shoulder, back in the stance |
+| `stagger` | 30 | | rocked back, arms out: the back foot stumbles 0.30 m back, the front foot after it, folded over the knees, a head shake, both feet step back in; 1.0 s |
+| `death_front` | 40 | | struck from behind: knees go (IK feet planted to frame 18), onto the knees, pitches onto the face; flat from frame 34, pelvis 0.17 m up and 0.42 m in front of the origin |
+| `death_back` | 40 | | struck from the front: knees buckle, sits down hard (frame 18), over onto the back; flat from frame 34, pelvis 0.16 m up and 0.42 m behind the origin |
+The deaths key their own IK→FK leg handoff (`_legs_fk` solves the FK angles of the IK pose; the
+shared `_ik_fk_handoff` measured these deep buckles as straight legs, which swung through the
+ground). The sleep / wake clips are the Hollowed's (the Ashen are never POI sleepers); `idle_b`, `idle_c`,
 `walk_limp`, `eat`, `crawl`, `crawl_attack` and `scream` are left out (EnemyVisual would pick the
 first three as variants). Stance feet travel at exactly the clip speed, so there is no foot
 sliding at any playback speed.
+
+The raiders (`"weapon": "stone_axe"`) hold a hafted stone axe in the right fist: built in
+`character_living.py` from `item_kit` pieces with the item materials (`M_item_bark_twig`,
+`M_item_rawhide`, `M_item_flint`, ~500 tris), placed in the rest-pose fist (haft across the palm
+leaning 50° towards the fingers, the edge facing the way the knuckles do) and joined into
+`body_forearm.R` weighted wholly to `hand.R`, so it follows every clip and vanishes with a severed
+arm. The scout carries no spear (TD-187: no wrist in the arm IK, the throw rolls the fist over).
 
 ## First-person arms (`models/characters/fp_arms.glb`, ADR-0029)
 * Separate armature `Armature` with bones `root, upper_arm.L/R, forearm.L/R, forearm_twist.L/R,

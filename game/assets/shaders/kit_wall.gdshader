@@ -24,6 +24,10 @@ uniform sampler2DArray finish_normal : hint_normal, filter_linear_mipmap_anisotr
 uniform sampler2DArray finish_orm : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 // Ceiling finishes come from the wall array when this is a floor material.
 uniform sampler2DArray side_b_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+// The wall finishes' normal and ORM for a floor slab's underside (a ceiling), with side_b_albedo.
+uniform sampler2DArray side_b_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2DArray side_b_orm : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform bool side_b_has_maps = false;
 uniform bool side_b_from_other_array = false;
 uniform bool has_finishes = false;
 // Linear masks (tools/assetgen/textures/gen/kit.py): RGBA coverage priorities (grime, water stains +
@@ -129,6 +133,10 @@ void fragment() {
 		if (side_b && side_b_from_other_array) {
 			// Wall finishes are authored at 1 m per tile; `uv` carries the floors' 2 m scale.
 			albedo = texture(side_b_albedo, vec3(m, slice)).rgb;
+			if (side_b_has_maps) {
+				orm = texture(side_b_orm, vec3(m, slice)).rgb;
+				nmap = texture(side_b_normal, vec3(m, slice)).rgb;
+			}
 		} else {
 			albedo = texture(finish_albedo, vec3(uv, slice)).rgb;
 			orm = texture(finish_orm, vec3(uv, slice)).rgb;
@@ -172,7 +180,8 @@ void fragment() {
 
 		// Macro tone breaks the finish tiling; interiors yellow with age.
 		albedo *= 0.9 + 0.2 * macro;
-		if (!exterior) {
+		bool rock = (floor_top && fi >= 8) || (!floor_top && wi >= 16);
+		if (!exterior && !rock) {
 			albedo = mix(albedo, albedo * vec3(1.02, 0.95, 0.8), decay * 0.45 * smoothstep(0.3, 0.8, macro));
 		}
 
@@ -207,6 +216,13 @@ void fragment() {
 			mould_c = d2 * (0.03 + 0.25 * low * low + 0.15 * high * high) * ((wi == 9 || wi == 10) ? 1.8 : 1.0);
 			grime_c = decay * (0.1 + 0.8 * low * low);
 			substrate = WALL_SUBSTRATE[wi];
+		}
+		// Bare rock (wall and ceiling slices 16-17, floor 8-9: mine levels and caves, ADR-0044) has
+		// no paint to stain: no leak blots or tide lines, which read as stained plaster on pale
+		// limestone. Damp (mould) and dirt stay.
+		if (rock) {
+			peel_c = 0.0;
+			stain_c = 0.0;
 		}
 
 		// Peeling: paint, paper, plaster or flooring gone in clusters, a shadow under the torn edge and

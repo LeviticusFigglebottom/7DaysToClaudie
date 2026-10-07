@@ -15,6 +15,11 @@ extends Node
 ## when the player is away: it breaks in, tramples the garden beds it crosses, takes ripe crops and
 ## leaves. Saved state is WorldState.ashen (no version bump); a raid or scout under way is saved in
 ## it (`live`) and comes back on load.
+##
+## Per-camp standing (TD-190): beside the world-wide hostility (still the escalation driver) each
+## camp keeps its own `anger` (trespass in it, its people killed, heat in its territory, a kin camp
+## wiped out; fading each dawn). A scout or raid comes from the angriest living camp, out of the
+## ring on the bearing toward it; a wiped camp sends nothing.
 
 const TICK: float = 0.5
 ## Seconds between looks at where the player's base is (remembered for raids while they're away).
@@ -121,6 +126,9 @@ func _on_day_started(_day: int) -> void:
 	if fd == null:
 		return
 	state()["hostility"] = AshenBrain.dawn(fd, hostility())
+	for cs: Variant in (state().get("camps", {}) as Dictionary).values():
+		if cs is Dictionary and (cs as Dictionary).has("anger"):
+			cs["anger"] = AshenBrain.anger_at_dawn(fd, float(cs["anger"]))
 	_update_level()
 	_today = {}
 
@@ -192,6 +200,7 @@ func _follow_camps(p: Player) -> void:
 		if d <= float(cfg.get("territory", 160.0)) and int(cs.get("trespass_day", -1)) != day:
 			cs["trespass_day"] = day
 			provoke("trespass")
+			anger_camp(cid, "trespass")
 		if d <= float(cfg.get("wake_range", 150.0)) and not _residents.has(cid):
 			_residents[cid] = spawn_residents(cid, cfg, pos)
 		elif d > float(cfg.get("sleep_range", 180.0)) and _residents.has(cid):
@@ -201,13 +210,49 @@ func _follow_camps(p: Player) -> void:
 			_residents.erase(cid)
 
 
-## A camp's saved state: {dead: [resident indices], trespass_day, wiped}.
+## A camp's saved state: {dead: [resident indices], trespass_day, wiped, anger} (older saves have
+## no anger: 0).
 func camp_state(cid: String) -> Dictionary:
 	var all: Dictionary = state().get("camps", {})
 	state()["camps"] = all
 	if not all.has(cid):
 		all[cid] = {"dead": []}
 	return all[cid]
+
+
+## A camp's own anger at the outsider (TD-190).
+func camp_anger(cid: String) -> float:
+	return float(((state().get("camps", {}) as Dictionary).get(cid, {}) as Dictionary).get("anger", 0.0))
+
+
+## Raises a living camp's anger for an event tied to it (FactionDef.STANDING_EVENTS); a wiped camp
+## has nobody left to be angry.
+func anger_camp(cid: String, event: String, times: float = 1.0) -> void:
+	if fd == null or cid == "":
+		return
+	var cs: Dictionary = camp_state(cid)
+	if bool(cs.get("wiped", false)):
+		return
+	cs["anger"] = AshenBrain.anger(fd, float(cs.get("anger", 0.0)), event, times, aggression())
+
+
+## The camp a scout or raid comes from: the angriest living placed camp ({id, pos, ...} as
+## camps() gives it), {} for none (then they come from anywhere, or the dark side).
+func source_camp() -> Dictionary:
+	var list: Array = camps()
+	var ids: Array = []
+	for c: Dictionary in list:
+		ids.append(c["id"])
+	var best: String = AshenBrain.angriest(fd, state().get("camps", {}), ids)
+	for c2: Dictionary in list:
+		if c2["id"] == best:
+			return c2
+	return {}
+
+
+## The bearing (radians, as _ring_point measures it) from `center` toward a camp.
+static func camp_bearing(center: Vector3, camp_pos: Vector3) -> float:
+	return atan2(camp_pos.z - center.z, camp_pos.x - center.x)
 
 
 ## Who lives at a camp: [enemy ids], fixed by the world seed and the building (index i is always
@@ -288,14 +333,18 @@ func send_scout(p: Player) -> Enemy:
 	var target: Vector3 = base_of(p)
 	var ring: Array = fd.scouts.get("ring", [70, 95])
 	var day: int = Game.session.clock.day()
-	var at: Vector3 = _ring_point(target, float(ring[0]), float(ring[1]), "scout:%d" % day)
+	# From the angriest living camp when one is set on the outsider (TD-190).
+	var src: Dictionary = source_camp()
+	var bearing: float = camp_bearing(target, src["pos"]) if not src.is_empty() else NAN
+	var at: Vector3 = _ring_point(target, float(ring[0]), float(ring[1]), "scout:%d" % day, bearing, _camp_spread())
 	if at == Vector3.INF:
 		return null
 	# A fixed id (not the AI director's running count) so a saved scout comes back as itself.
 	var seq: int = int(state().get("scout_seq", 0)) + 1
 	state()["scout_seq"] = seq
 	var e: Enemy = _ai().call(&"spawn", StringName(str(fd.scouts.get("enemy", "ashen_scout"))), at,
-		{"id": "ash:scout:%d:%d" % [day, seq], "tier": "normal", "authored": true, "job": "scout", "goal": target})
+		{"id": "ash:scout:%d:%d" % [day, seq], "tier": "normal", "authored": true, "job": "scout", "goal": target,
+			"camp": str(src.get("id", ""))})
 	if e == null:
 		return null
 	e.tribe.band = [e]
@@ -340,17 +389,22 @@ func _remember_base(p: Player) -> void:
 		state()["base"] = _arr(b)
 
 
-## A raid band: `members` (enemy ids) come in from 90-120 m out, on the side of the base its fires
-## light least, and make for its weakest piece (or for the player when there is no base).
+## A raid band: `members` (enemy ids) come in from 90-120 m out, from the angriest living camp's
+## side when one is set on the outsider (TD-190), else on the side of the base its fires light
+## least, and make for its weakest piece (or for the player when there is no base).
 func start_raid(p: Player, members: Array) -> Dictionary:
 	var tg: Dictionary = raid_target(p)
 	var target: Vector3 = tg["pos"]
 	var is_base: bool = bool(tg["base"])
 	var ring: Array = fd.raids.get("ring", [90, 120])
 	var day: int = Game.session.clock.day()
+	var src: Dictionary = source_camp()
 	var bearing: float = dark_bearing(target, _lit_fires(target)) if is_base else NAN
-	var at: Vector3 = _ring_point(target, float(ring[0]), float(ring[1]), "raid:%d" % day, bearing,
-		deg_to_rad(float(fd.raids.get("dark_side", 70.0))))
+	var spread: float = deg_to_rad(float(fd.raids.get("dark_side", 70.0)))
+	if not src.is_empty():
+		bearing = camp_bearing(target, src["pos"])
+		spread = _camp_spread()
+	var at: Vector3 = _ring_point(target, float(ring[0]), float(ring[1]), "raid:%d" % day, bearing, spread)
 	if at == Vector3.INF:
 		return {}
 	var seq: int = int(state().get("raid_seq", 0)) + 1
@@ -364,7 +418,7 @@ func start_raid(p: Player, members: Array) -> Dictionary:
 		var pos: Vector3 = at + off
 		pos.y = _height(pos) + 0.4
 		var e: Enemy = _ai().call(&"spawn", StringName(str(members[i])), pos, {"id": "ash:%s:%d" % [rid, i], "tier": "normal",
-			"authored": true, "job": "raid", "goal": target, "target": target})
+			"authored": true, "job": "raid", "goal": target, "target": target, "camp": str(src.get("id", ""))})
 		if e != null:
 			e.home = target
 			band.append(e)
@@ -373,7 +427,8 @@ func start_raid(p: Player, members: Array) -> Dictionary:
 	for e2: Variant in band:
 		(e2 as Enemy).tribe.band = band
 	raid = {"id": rid, "members": band, "jobs": {}, "t": 0.0, "target": target, "base": is_base, "goal": target,
-		"goal_piece": "", "from": at, "size": band.size(), "broken": 0, "trampled": {}, "looted": 0, "arrived": false}
+		"goal_piece": "", "from": at, "size": band.size(), "broken": 0, "trampled": {}, "looted": 0, "arrived": false,
+		"camp": str(src.get("id", ""))}
 	_assign_jobs()
 	_pick_goal()
 	Events.ashen_raid_started.emit(rid, target, band.size())
@@ -700,6 +755,11 @@ func _piece(id: String) -> StructurePiece:
 	return piece if piece is StructurePiece and is_instance_valid(piece) and not (piece as Node).is_queued_for_deletion() else null
 
 
+## Radians either side of the bearing to the camp a band comes from (standing.spread).
+func _camp_spread() -> float:
+	return deg_to_rad(float(fd.standing.get("spread", 30.0)))
+
+
 ## How close a raider must stand to strike a piece.
 static func _reach(piece: StructurePiece) -> float:
 	return maxf(piece.def.size.x, piece.def.size.z) * 0.5 + 1.6
@@ -747,12 +807,13 @@ func live_state() -> Dictionary:
 			out["raid"] = {"id": raid["id"], "t": raid["t"], "target": _arr(raid["target"]), "base": raid["base"],
 				"goal": _arr(raid["goal"]), "goal_piece": raid["goal_piece"], "from": _arr(raid["from"]), "size": raid["size"],
 				"broken": raid["broken"], "trampled": (raid["trampled"] as Dictionary).keys(), "looted": raid["looted"],
-				"arrived": raid["arrived"], "members": ms}
+				"arrived": raid["arrived"], "camp": raid.get("camp", ""), "members": ms}
 	var sc: Array = []
 	for e2: Enemy in _scouts:
 		if _holds(e2):
 			sc.append({"id": String(e2.entity_id), "enemy": String(e2.def.id), "pos": _arr(e2.global_position),
-				"goal": _arr(e2.tribe.goal) if e2.tribe.goal != Vector3.INF else [], "watched": e2.tribe.watched, "morale": e2.tribe.morale})
+				"goal": _arr(e2.tribe.goal) if e2.tribe.goal != Vector3.INF else [], "watched": e2.tribe.watched, "morale": e2.tribe.morale,
+				"camp": e2.tribe.camp_id})
 	if not sc.is_empty():
 		out["scouts"] = sc
 	return out
@@ -785,7 +846,7 @@ func restore_live(live: Dictionary) -> void:
 		var band: Array = []
 		var jobs: Dictionary = {}
 		for m: Variant in rd.get("members", []):
-			var e: Enemy = _respawn(m as Dictionary, {"job": "raid", "goal": target})
+			var e: Enemy = _respawn(m as Dictionary, {"job": "raid", "goal": target, "camp": str(rd.get("camp", ""))})
 			if e != null:
 				e.home = target
 				jobs[String(e.entity_id)] = str((m as Dictionary).get("job", "goal"))
@@ -801,13 +862,13 @@ func restore_live(live: Dictionary) -> void:
 				"base": bool(rd.get("base", false)), "goal": goal if goal != Vector3.INF else target,
 				"goal_piece": str(rd.get("goal_piece", "")), "from": _vec(rd.get("from")), "size": int(rd.get("size", band.size())),
 				"broken": int(rd.get("broken", 0)), "trampled": trampled, "looted": int(rd.get("looted", 0)),
-				"arrived": bool(rd.get("arrived", false))}
+				"arrived": bool(rd.get("arrived", false)), "camp": str(rd.get("camp", ""))}
 			# (its goal piece may have gone meanwhile: the next steer counts that and picks again)
 			_build_flow()
 			Log.info("ashen", "raid %s resumes with %d" % [raid["id"], band.size()])
 	for s: Variant in live.get("scouts", []):
 		var sd: Dictionary = s
-		var opts: Dictionary = {"job": "scout"}
+		var opts: Dictionary = {"job": "scout", "camp": str(sd.get("camp", ""))}
 		if _vec(sd.get("goal")) != Vector3.INF:
 			opts["goal"] = _vec(sd.get("goal"))
 		var sc: Enemy = _respawn(sd, opts)
@@ -868,6 +929,10 @@ func _on_enemy_killed(entity_id: StringName, enemy_id: StringName, _pos: Vector3
 			provoke("scout_killed")
 	if dead == null or dead.tribe == null:
 		return
+	dead.tribe.douse()
+	# Its own camp (a resident's, or the camp a raid or scout came from) holds the death against them.
+	if by_player:
+		anger_camp(dead.tribe.camp_id, "kill")
 	for m: Variant in dead.tribe.band:
 		if m is Enemy and is_instance_valid(m) and m != dead:
 			(m as Enemy).tribe.on_mate_down(_player())
@@ -880,6 +945,10 @@ func _on_enemy_killed(entity_id: StringName, enemy_id: StringName, _pos: Vector3
 			if c["id"] == dead.tribe.camp_id and list.size() >= residents_of(c["id"], c["camp"]).size() and not bool(cs.get("wiped", false)):
 				cs["wiped"] = true
 				provoke("camp_wiped")
+				# A wiped camp sends nothing; its kin camps take up the grudge.
+				for other: Dictionary in camps():
+					if other["id"] != c["id"]:
+						anger_camp(other["id"], "kin_wiped")
 				Events.player_status_message.emit("The camp is silent. The Ashen will remember this.", &"warning")
 
 
@@ -892,6 +961,7 @@ func on_heat(t: Dictionary) -> void:
 		var cp: Vector3 = c["pos"]
 		if Vector2(pos.x - cp.x, pos.z - cp.z).length() <= float((c["camp"] as Dictionary).get("territory", 160.0)):
 			provoke("heat")
+			anger_camp(c["id"], "heat")
 			return
 
 

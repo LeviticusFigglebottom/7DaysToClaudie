@@ -23,7 +23,7 @@ const WAVE_RING: Vector2 = Vector2(50.0, 65.0)
 const TICK: float = 0.5
 
 var world: Node
-## post id -> {def: TraderDef, pos: Vector3, yaw: float (degrees), node: TraderPost}
+## post id -> {id: post id, def: TraderDef, pos: Vector3, yaw: float (degrees), node: TraderPost}
 var posts: Dictionary = {}
 ## contract id -> {node: Node3D (the cache), t: seconds held, next_wave: seconds, wave: n,
 ##   outside: seconds outside, enemies: [entity ids]}
@@ -115,7 +115,7 @@ func _exit_tree() -> void:
 
 ## Raises a post (also used by tests and QA shots). `yaw` in degrees: the post's +Z faces it.
 func add_post(post_id: String, td: TraderDef, pos: Vector3, yaw: float, build: bool = true) -> void:
-	var entry: Dictionary = {"def": td, "pos": pos, "yaw": yaw, "node": null}
+	var entry: Dictionary = {"id": post_id, "def": td, "pos": pos, "yaw": yaw, "node": null}
 	posts[post_id] = entry
 	Log.info("trade", "%s raised at (%.0f, %.0f), facing %.0f°" % [post_id, pos.x, pos.z, yaw])
 	if build:
@@ -159,18 +159,34 @@ func is_safe(pos: Vector3) -> bool:
 
 # --- Shop -----------------------------------------------------------------------------------------
 
-## The shop's stock now (rolled for the current restock period, then changed by trade).
-func stock_of(trader_id: StringName) -> Dictionary:
+## The shop's stock now (rolled for the current restock period, then changed by trade). A def with
+## `stock_per_post` (the relay camps) keeps a stock per post (TD-146): `post_id` names it, or the
+## post nearest the local player when it is "".
+func stock_of(trader_id: StringName, post_id: String = "") -> Dictionary:
 	var td: TraderDef = Content.get_def(&"trader", trader_id) as TraderDef
 	if td == null:
 		return {}
+	if td.stock_per_post and post_id == "":
+		var lp: PlayerState = Game.session.local_player()
+		post_id = str(post_of(td.id, _player_pos(lp) if lp != null else Vector3.ZERO).get("id", ""))
+	var key: String = stock_key(td, post_id)
 	var p: int = Contracts.period(td, Game.session.clock.day())
 	var all: Dictionary = Game.session.world.traders
-	var st: Dictionary = all.get(String(trader_id), {})
+	# Saves from before per-post stock keyed every camp's shelves by the def id: a post with no
+	# entry of its own starts from that one (no save version bump).
+	if key != String(td.id) and not all.has(key) and all.has(String(td.id)):
+		all[key] = (all[String(td.id)] as Dictionary).duplicate(true)
+	var st: Dictionary = all.get(key, {})
 	if int(st.get("period", -1)) != p:
-		st = {"period": p, "stock": Contracts.roll_stock(td, p, Game.session.world_seed)}
-		all[String(trader_id)] = st
+		st = {"period": p, "stock": Contracts.roll_stock(td, p, Game.session.world_seed, key)}
+		all[key] = st
 	return st["stock"]
+
+
+## The key a post's stock is saved under in WorldState.traders: its post id for a def with
+## `stock_per_post`, else the def id (one shop however many times the def is placed).
+static func stock_key(td: TraderDef, post_id: String) -> String:
+	return post_id if td.stock_per_post and post_id != "" else String(td.id)
 
 
 ## Whose standing a post reads and whose contracts it counts: the giver of its contracts (a Program
@@ -192,7 +208,7 @@ func _cmd_trade_buy(args: Dictionary) -> Dictionary:
 	var td: TraderDef = ctx["trader"]
 	var item := StringName(str(args.get("item", "")))
 	var n: int = maxi(1, int(args.get("count", 1)))
-	var stock: Dictionary = stock_of(td.id)
+	var stock: Dictionary = stock_of(td.id, str((ctx["post"] as Dictionary).get("id", "")))
 	var e: Dictionary = stock.get(String(item), {})
 	if e.is_empty() or int(e["count"]) <= 0:
 		return _fail("out of stock")
@@ -237,7 +253,7 @@ func _cmd_trade_sell(args: Dictionary) -> Dictionary:
 	if left > 0:
 		_drop(p, &"scrip", left)
 	# What the post buys it sells on, to anyone.
-	var stock: Dictionary = stock_of(td.id)
+	var stock: Dictionary = stock_of(td.id, str((ctx["post"] as Dictionary).get("id", "")))
 	var e: Dictionary = stock.get(String(item), {"count": 0, "rep_tier": 0})
 	e["count"] = int(e["count"]) + n
 	stock[String(item)] = e
@@ -306,6 +322,8 @@ func _cmd_contract_accept(args: Dictionary) -> Dictionary:
 	var c: Dictionary = {"id": cid, "def": String(qd.id), "giver": qd.giver, "target": offer["target"],
 		"name": offer["name"], "pos": offer["pos"], "tier": offer["tier"], "state": ContractLog.ACTIVE, "day": day,
 		"type": qd.quest_type}
+	if qd.expires_days > 0:
+		c["due"] = day + qd.expires_days
 	if qd.quest_type == "defend":
 		var bp: Array = offer["pos"]
 		var spot: Vector3 = Contracts.defend_spot(Vector3(float(bp[0]), float(bp[1]), float(bp[2])),
@@ -361,11 +379,18 @@ func _cmd_contract_abandon(args: Dictionary) -> Dictionary:
 	if p == null:
 		return _fail("no player")
 	var cid: String = str(args.get("contract", ""))
-	if p.contracts.get_contract(cid).is_empty():
+	var c: Dictionary = p.contracts.get_contract(cid)
+	if c.is_empty():
 		return _fail("no such contract")
 	_end_run(cid)
 	p.contracts.remove(cid)
-	return {"ok": true}
+	# Walking away from a job costs standing (TD-146).
+	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c.get("def", "")))) as QuestDef
+	var cost: int = qd.abandon_rep if qd != null else 0
+	if cost > 0:
+		p.contracts.add_rep(StringName(str(c.get("giver", ""))), -cost)
+		Events.player_status_message.emit("Contract dropped: %s. -%d standing." % [qd.display_name, cost], &"warning")
+	return {"ok": true, "rep": -cost}
 
 
 ## Starts holding a defence's cache: the player must be at it.
@@ -409,8 +434,49 @@ func _process(delta: float) -> void:
 	_guards(dt)
 	for pid: Variant in Game.session.players.keys():
 		var p: PlayerState = Game.session.players[pid]
+		expire_contracts(p)
 		for c: Variant in p.contracts.active:
 			_follow(p, c, dt)
+
+
+# --- Expiry (TD-146) ------------------------------------------------------------------------------
+
+## The day at whose dawn an open contract fails, or 0 when it never does. Taken at accept (`due`);
+## a contract saved before expiry existed takes it from its def and the day it was accepted.
+static func due_day(c: Dictionary) -> int:
+	if c.has("due"):
+		return int(c["due"])
+	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c.get("def", "")))) as QuestDef
+	if qd == null or qd.expires_days <= 0:
+		return 0
+	return int(c.get("day", 1)) + qd.expires_days
+
+
+## Fails every open contract of a player whose dawn has come: it leaves the books, its target is
+## free for the board again, and the giver docks `fail_rep` standing. A contract done and waiting to
+## be reported never fails, nor a defence being held right now.
+func expire_contracts(p: PlayerState) -> void:
+	var clock: WorldClock = Game.session.clock
+	var day: int = clock.day()
+	for c: Variant in p.contracts.active.duplicate():
+		var cd: Dictionary = c
+		var due: int = due_day(cd)
+		if due <= 0 or str(cd.get("state", "")) != ContractLog.ACTIVE or _runs.has(str(cd.get("id", ""))):
+			continue
+		if day > due or (day == due and clock.hour_f() >= clock.sunrise_hour):
+			_fail_contract(p, cd)
+
+
+func _fail_contract(p: PlayerState, c: Dictionary) -> void:
+	var cid: String = str(c.get("id", ""))
+	_end_run(cid)
+	p.contracts.remove(cid)
+	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c.get("def", "")))) as QuestDef
+	var cost: int = qd.fail_rep if qd != null else 0
+	if cost > 0:
+		p.contracts.add_rep(StringName(str(c.get("giver", ""))), -cost)
+	Events.player_status_message.emit("Contract failed: %s — %s ran out of time. -%d standing." % [
+		qd.display_name if qd != null else "Contract", str(c.get("name", "")), cost], &"warning")
 
 
 func _follow(p: PlayerState, c: Dictionary, dt: float) -> void:
@@ -463,19 +529,37 @@ func _on_poi_cleared(instance_id: StringName) -> void:
 				_mark_ready(p, cd)
 
 
-## A container searched in the target's loot room counts it searched.
+## A container of the target's loot room searched counts it searched, wherever the player reached
+## it from (TD-145): the container id (`c:<building>:<prop key>`) names the prop, and the
+## building's layout says where it stands. Only a prop the layout can't name falls back to where
+## the player stands.
 func _on_container_looted(player_id: StringName, container_id: StringName, _tier: int) -> void:
 	var p: PlayerState = Game.session.players.get(player_id)
 	if p == null:
 		return
 	for c: Variant in p.contracts.active:
 		var cd: Dictionary = c
-		if str(cd.get("type", "")) != "clear" or not String(container_id).begins_with("c:%s:" % cd["target"]):
+		var prefix: String = "c:%s:" % cd["target"]
+		if str(cd.get("type", "")) != "clear" or not String(container_id).begins_with(prefix):
 			continue
-		if _in_loot_room(StringName(str(cd["target"])), _player_pos(p)):
+		var target := StringName(str(cd["target"]))
+		var in_room: int = Contracts.prop_in_loot_room(_target_layout(target), String(container_id).substr(prefix.length()))
+		if in_room == 1 or (in_room == -1 and _in_loot_room(target, _player_pos(p))):
 			cd["looted"] = true
 			if str(cd["state"]) == ContractLog.ACTIVE and _clear_done(cd):
 				_mark_ready(p, cd)
+
+
+## A building's layout: its PoiInstance's when built (always so when one of its containers was just
+## searched), else compiled from its def.
+func _target_layout(instance_id: StringName) -> PoiLayout:
+	var pois: Node = world.get(&"pois") if world != null else null
+	if pois != null and pois.get(&"instances") is Dictionary:
+		var inst: PoiInstance = (pois.get(&"instances") as Dictionary).get(instance_id) as PoiInstance
+		if inst != null:
+			return inst.layout
+	var pd: PoiDef = Content.get_def(&"poi", _target_def({"target": String(instance_id)})) as PoiDef
+	return PoiLayout.compile(pd) if pd != null else null
 
 
 func _in_loot_room(instance_id: StringName, pos: Vector3) -> bool:
@@ -887,8 +971,10 @@ func lines() -> PackedStringArray:
 	for c: Variant in p.contracts.active:
 		var cd: Dictionary = c
 		var qd: QuestDef = Content.get_def(&"quest", StringName(str(cd["def"]))) as QuestDef
+		var due: int = due_day(cd)
 		var state: String = "report in" if str(cd["state"]) == ContractLog.READY else (
-			"holding %d%%" % int(run_progress(str(cd["id"])) * 100.0) if _runs.has(str(cd["id"])) else "open")
+			"holding %d%%" % int(run_progress(str(cd["id"])) * 100.0) if _runs.has(str(cd["id"])) else (
+				"open, due by dawn of day %d" % due if due > 0 else "open"))
 		out.append("%s — %s (%s)" % [qd.display_name if qd != null else str(cd["def"]), str(cd.get("name", "")), state])
 	return out
 
