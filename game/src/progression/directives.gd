@@ -89,6 +89,11 @@ static func for_world(buildings: Array, drop_site: Vector3, world_seed: int) -> 
 	var stand_ins_: Dictionary = {}
 	var spent_: Dictionary = {}
 	for d: DirectiveDef in Content.all(&"directive"):
+		if d.event == "recruit":
+			# A companion's camp (ADR-0058) has no stand-in: a world without it spends the directive.
+			if not Array(d.targets).any(func(t: String) -> bool: return present.has(t)):
+				spent_[d.id] = true
+			continue
 		if not BUILDING_EVENTS.has(d.event) or d.targets.is_empty():
 			continue
 		var tiers: Dictionary = {}

@@ -837,7 +837,7 @@ func _guards(dt: float) -> void:
 		var td: TraderDef = e["def"]
 		var centre: Vector3 = e["pos"]
 		for en: Enemy in ai.call(&"enemies_in_radius", centre, td.safe_radius + AVOID_MARGIN):
-			if not is_instance_valid(en) or en.is_queued_for_deletion() or not en.is_alive():
+			if not is_instance_valid(en) or en.is_queued_for_deletion() or not en.is_alive() or en.ally != null:
 				continue
 			var flat: float = Vector2(en.global_position.x - centre.x, en.global_position.z - centre.z).length()
 			if flat > td.safe_radius:

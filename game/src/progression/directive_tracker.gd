@@ -39,6 +39,10 @@ func setup_world(w: Node) -> void:
 	Events.ashen_raid_ended.connect(func(_rid: String, repelled: bool) -> void:
 		if repelled:
 			record("raid"))
+	# Ezra Vane joins (ADR-0058): the target is his camp's POI def.
+	Events.companion_recruited.connect(func(cid: StringName) -> void:
+		var cd: CompanionDef = Content.get_def(&"companion", cid) as CompanionDef
+		record("recruit", StringName(str(cd.camp.get("poi", ""))) if cd != null else &""))
 	# A garden plot brought in (ADR-0049).
 	Events.crop_harvested.connect(func(pid: StringName, crop_id: StringName, _items: Dictionary) -> void:
 		if Game.session != null and pid == Game.session.local_player_id:

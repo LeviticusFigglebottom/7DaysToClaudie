@@ -80,7 +80,9 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 		if at <= prev:
 			out.append("%s: levels must rise" % ctx())
 		prev = at
-	if levels.is_empty():
+	# A faction with camps escalates (the Ashen); one that only takes sides (the Remand, ADR-0058)
+	# needs no levels.
+	if levels.is_empty() and not camps.is_empty():
 		out.append("%s: no levels" % ctx())
 	for k: Variant in (hostility.get("gain", {}) as Dictionary).keys():
 		if not str(k) in GAIN_EVENTS:

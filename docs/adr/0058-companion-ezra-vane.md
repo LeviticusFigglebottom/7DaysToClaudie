@@ -1,6 +1,6 @@
 # ADR-0058: Companion Ezra Vane: follow, guard, gather and fetch
 
-**Status**: Proposed · 2026-10 (session 2)
+**Status**: Accepted · 2026-10 (session 2); phase 1 implemented
 
 ## Context
 DESIGN §3 and the M2 roadmap promise one companion: **Ezra Vane**, an earlier Remand convict and an
@@ -93,4 +93,42 @@ and respawned on load with a fixed id `companion:ezra`.
   non-player-hostile target only by faction.
 * The gathering and inventory commands gain a second kind of owner, so they take an owner id that
   may be the companion's (small, additive).
-* Gaps go in TD-249..258.
+* Gaps go in TD-299..303.
+
+## Phase 1 notes (as built)
+* **Data.** `data/companions/ezra.json` is a `companion` content kind (`CompanionDef`: camp, recruit
+  and revive items, follow / guard / downed tuning, lantern, barks; validated). His body is the
+  EnemyDef `ezra_vane` (`data/enemies/companions.json`, archetype `companion`, faction `remand`).
+  `data/factions/remand.json` is hostile to the Hollowed and the Ashen, and `ashen.json` names
+  `remand` hostile back (FactionDef no longer needs `levels` for a faction without camps).
+* **Hooks in Enemy** (each one line, like `tribe`): `ally: CompanionMind` made for the archetype;
+  `_physics_process` hands the frame to `ally.step()` (so none of the hunting state machine runs
+  for him; the mind counts `_state_t` itself); `_perceive` returns at once; `is_alive()` is false
+  while he is out of play (not yet recruited, or downed), which is how the Hollowed lose interest
+  and the AI director skips him; `take_damage` asks `ally.shrugs()` (the player's blows, traps and
+  the Waystation guns never hurt him; nothing does before he is recruited) and calls
+  `ally.go_down()` at 0 hp instead of `_die`; `_vid` gives him a living man's grunts; the
+  interactable methods go to the mind. AIDirector skips `ally` bodies in its cull loop and in
+  `hostiles_near` (sleeping), `alive_count` and `_roaming_count`; the trader guards skip him.
+* **Fighting** uses EnemyFoes' chase and blows (`EnemyFoes._fight`) on a foe the mind picks by
+  order (follow: hostiles hunting within `follow.engage` of the player or close to him; guard:
+  within `guard.radius` of the spot; stay: what comes at him). A BREAK the shared move starts is
+  cancelled (he never tears at walls).
+* **CompanionDirector** (GameWorld module `companion`): seats him at the camp while the player is
+  within `camp.wake_range` (the building's `PoiInstance` transform plus `camp.offset`), runs the
+  commands `companion.recruit {item?}`, `companion.order {order, spot?}`, `companion.revive`,
+  brings him beside the player past `teleport_beyond` and after a respawn, sleep or load (over
+  20 m), takes him out when he bleeds out and brings him back at the player's spawn point the next
+  morning (`out_until_day`, never under `death_penalty: permadeath`), and saves
+  `WorldState.companion` on `Events.game_saving` (no version bump; old saves load without him).
+  The body always has the id `companion:ezra`.
+* **UI.** E on him opens `CompanionScreen` (a modal card like the trade screen; the talk at his
+  camp before he is recruited). The quick order is the rebindable action `companion_order` (H).
+  A Field Manual page; barks in the status bar.
+* **Recruitment.** The `ezra_camp` POI (a pickup as the line truck, the downed pole
+  `w3_fallen_line_pole` and a tarp `w3_tarp_lean`, a fire ring and a gear shed as its loot room)
+  stands in D6 west of Larch Pond (origin −472, 1940: ~400 m from the drop site); random worlds
+  place it through the wilderness pool's new `companion` site, last, from its own stream, in a
+  `ring` round the drop site, `access: none` (RwgGenerator VERSION 8). The directive
+  `find_lineman` (chapter 3, event `recruit`, spent in a world without the camp).
+* **Body.** `characters/ezra_vane` (generator `character_companion`, docs/CHARACTERS.md).
