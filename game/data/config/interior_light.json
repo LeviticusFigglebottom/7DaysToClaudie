@@ -1,5 +1,5 @@
 {
-  "_doc": "Light inside buildings (EnvironmentController, PoiBuilder's interior probes; ADR-0050). Each room rectangle's reflection probe replaces the sky's ambient with a flat fill, because SDFGI leaves rooms near black. By day the fill is day_fill of day_color (dimmed by overcast_dim under full cloud); at night it is night_share of the outdoor night's ambient (the moon's or the Hum's colour, through the windows), never below night_floor, so a dark room still shows its shapes against what a lamp lights. While the eye is inside a room the exposure opens by exposure_day (by day) or exposure_night (at night), eased over adapt_seconds: the doorway blooms a little and the room reads, as an eye adapts.",
+  "_doc": "Light inside buildings (EnvironmentController, PoiBuilder's interior probes; ADR-0050). Each room rectangle's reflection probe replaces the sky's ambient with a flat fill, because SDFGI leaves rooms near black. By day the fill is day_fill of day_color (dimmed by overcast_dim under full cloud); at night it is night_share of the outdoor night's ambient (the moon's or the Hum's colour, through the windows), never below night_floor, so a dark room still shows its shapes against what a lamp lights. While the eye is inside a room the exposure opens by exposure_day (by day) or exposure_night (at night), eased over adapt_seconds: the doorway blooms a little and the room reads, as an eye adapts. A lightning flash adds flash_share of its fill through the windows.",
   "day_fill": 0.6,
   "day_color": "#dbd4c7",
   "overcast_dim": 0.3,
@@ -7,5 +7,6 @@
   "night_floor": 0.012,
   "exposure_day": 1.3,
   "exposure_night": 1.1,
-  "adapt_seconds": 1.2
+  "adapt_seconds": 1.2,
+  "flash_share": 0.12
 }

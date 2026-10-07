@@ -21,7 +21,9 @@ extends Node
 ## Options: --out DIR, --size WxH, --all (every POI), --no-exterior, --no-plans, --inside,
 ## --sleepers [ids], --seed N (ADR-0030: dress each building as a run with world seed N builds it -
 ## its alternatives, wear, scatter and decals; files get a _s<N> suffix), --views front,back,aerial
-## (the exterior views to shoot). An id "gen:<template>:<n>" previews the building that template
+## (the exterior views to shoot), --game-env HOUR (light the scene as the game does at that hour:
+## EnvironmentController with SDFGI by the graphics preset - pick one with HOLLOWMERE_GFX - and the
+## probes' interior fill; inside views settle longer for SDFGI and the probes). An id "gen:<template>:<n>" previews the building that template
 ## generates from seed n; "lot:<framework>:<lot id>" the building a run with --seed puts on that lot
 ## (LotPicker), dressed as that placement.
 ## Kit pieces / props that have not been generated render as stand-in boxes.
@@ -47,6 +49,9 @@ var _seed: int = -1
 var _views: PackedStringArray = ["front", "back", "aerial"]
 ## The placement id a "lot:" preview is dressed as (the game's "<framework>/<lot>").
 var _instance: String = ""
+## --game-env: the game hour to light the scene at with the game's EnvironmentController (-1 = the
+## preview's own flat sky light).
+var _game_hour: float = -1.0
 var _world: Node3D
 var _sun: DirectionalLight3D
 var _ground: MeshInstance3D
@@ -95,6 +100,9 @@ func _parse_args() -> void:
 			"--seed":
 				i += 1
 				_seed = int(a[i])
+			"--game-env":
+				i += 1
+				_game_hour = float(a[i])
 			"--views":
 				i += 1
 				_views = a[i].split(",", false)
@@ -111,6 +119,31 @@ func _parse_args() -> void:
 
 
 func _setup_environment() -> void:
+	if _game_hour >= 0.0:
+		var clock := WorldClock.new()
+		clock.configure(Content.config(&"world_clock"), Content.config(&"horde"))
+		clock.set_time(2, _game_hour)
+		var ec := EnvironmentController.new()
+		ec.name = "Environment"
+		ec.clock = clock
+		_world.add_child(ec)
+		_sun = ec.sun
+		print("POI_PREVIEW game light at %.2f h, preset %s" % [_game_hour, Settings.graphics_preset])
+	else:
+		_setup_preview_light()
+	_ground = MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(240, 240)
+	_ground.mesh = plane
+	_ground.position.y = -0.02
+	var gm := StandardMaterial3D.new()
+	gm.albedo_color = Color(0.27, 0.29, 0.21)
+	gm.roughness = 0.95
+	_ground.material_override = gm
+	_world.add_child(_ground)
+
+
+func _setup_preview_light() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
@@ -133,16 +166,6 @@ func _setup_environment() -> void:
 	_sun.light_energy = 1.5
 	_sun.light_color = Color(1.0, 0.95, 0.86)
 	_world.add_child(_sun)
-	_ground = MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(240, 240)
-	_ground.mesh = plane
-	_ground.position.y = -0.02
-	var gm := StandardMaterial3D.new()
-	gm.albedo_color = Color(0.27, 0.29, 0.21)
-	gm.roughness = 0.95
-	_ground.material_override = gm
-	_world.add_child(_ground)
 
 
 func _preview(id_arg: String) -> void:
@@ -303,7 +326,8 @@ func _interiors(id: String, layout: PoiLayout) -> void:
 			cam.position = from - (into if view == "a" else -into) * 0.3 + Vector3.UP * 1.6
 			cam.look_at(to + Vector3.UP * 1.0)
 			cam.make_current()
-			await _shoot("%s_inside_L%d_%s" % [id, li, view])
+			# The game's light needs SDFGI to converge and the probes to render (one at a time).
+			await _shoot("%s_inside_L%d_%s" % [id, li, view], 8 if _game_hour < 0.0 else 48)
 			cam.queue_free()
 
 

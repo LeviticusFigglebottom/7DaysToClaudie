@@ -304,6 +304,11 @@ func update_now() -> void:
 	# Building interiors: their probes' flat fill (PoiBuilder), daylight by day and a share of the
 	# night's ambient at night.
 	var room_fill: Color = interior_fill(_interior_cfg, day, overcast, night_fill + hum_fill, night_col)
+	if flash > 0.001:
+		# A flash through the windows lights the room too, a little.
+		var ff: float = flash * float(lf.get("light_energy", 2.2)) * float(_interior_cfg.get("flash_share", 0.12)) * _flash_reach(fdist, lf)
+		var fc: Color = Color(room_fill.r, room_fill.g, room_fill.b).lerp(Color(0.72, 0.78, 1.0), clampf(ff / (ff + room_fill.a), 0.0, 1.0))
+		room_fill = Color(fc.r, fc.g, fc.b, room_fill.a + ff)
 	for probe: Node in get_tree().get_nodes_in_group(&"interior_probe"):
 		(probe as ReflectionProbe).ambient_color = Color(room_fill.r, room_fill.g, room_fill.b)
 		(probe as ReflectionProbe).ambient_color_energy = room_fill.a
