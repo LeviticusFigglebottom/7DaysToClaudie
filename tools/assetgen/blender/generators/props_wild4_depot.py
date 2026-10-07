@@ -281,7 +281,7 @@ def w4_depot_weighbridge(ctx: K.Ctx) -> None:
         K.place(ramp, (0, sy * L / 2, 0))
         ctx.add(ramp, "road_tread", uv_scale=1.0, patches=0.7, low=0.4)
     _bx(ctx, "stop_line", (Wd - 0.2, 0.15, 0.006), (0, -L / 2 + 0.6, h + 0.003), YELLOW, bevel=0.0, ao=False)
-    _bx(ctx, "jbox", (0.25, 0.15, 0.3), (Wd / 2 + 0.06, 2.0, h + 0.19), "road_paint_grey", bevel=0.01)
+    _bx(ctx, "jbox_lid", (0.3, 0.3, 0.012), (Wd / 2 - 0.3, 2.0, h + 0.006), "road_paint_grey", bevel=0.002)
     if ctx.worn:
         hole = K.box("rust_patch", (0.6, 0.8, 0.005), center=(Wd / 2 - 0.4, L / 2 - 0.6, h + 0.002))
         ctx.add(hole, "car_rust", uv_scale=1.0, ao=False)
@@ -573,9 +573,8 @@ def w4_depot_welding_cart(ctx: K.Ctx) -> None:
             K.place(ring, (0.0, D / 2 + 0.02, 1.28 - j * 0.015))
             ctx.add(ring, "road_paint_red" if j % 2 else "road_paint_green", uv_scale=3.0, smooth=40)
     else:
-        hose = [(0.0, D / 2 - 0.2, 1.35), (0.15, D / 2 + 0.05, 1.2), (0.25, D / 2 + 0.1, 0.6), (0.2, D / 2 + 0.05, 0.02)]
+        hose = [(0.0, D / 2 - 0.2, 1.35), (0.15, D / 2 - 0.05, 1.2), (0.25, D / 2 - 0.04, 0.6), (0.2, D / 2 - 0.06, 0.02)]
         ctx.add(K.tube("hose_down", hose, 0.012, segs=6), "road_paint_red", uv_scale=3.0, smooth=50)
-    _centre_depth(ctx)
 
 
 def _filter(ctx, name, x, y, z, rad, h, mat):
@@ -644,7 +643,6 @@ def w4_depot_parts_shelf(ctx: K.Ctx) -> None:
             bx = K.box(f"floorbox{k}", (w, 0.3, 0.2), center=(dr.uniform(-0.6, 0.6), -D / 2 - 0.05, 0.1), bevel=0.004)
             K.place(bx, rot=(0, 0, dr.uniform(-30, 30)))
             ctx.add(bx, "road_cardboard", uv_scale=2.0, patches=0.6)
-    _centre_depth(ctx)
 
 
 def w4_depot_dispatch_radio(ctx: K.Ctx) -> None:
