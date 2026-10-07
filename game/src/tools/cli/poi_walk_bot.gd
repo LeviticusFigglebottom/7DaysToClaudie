@@ -35,6 +35,11 @@ const CLUTTER_COST: float = 25.0
 const ASIDE_MARGIN: float = 0.4
 const BLOCKED_COST: float = 200.0
 const WINDOW_COST: float = 15.0
+## How far out from a window's outside face (m) a prop to climb on may stand (a route cue).
+const CUE_REACH: float = 1.5
+## The highest prop top (m over the feet) the bot climbs onto: under a standing jump's apex
+## (player.json jump_velocity 4.6 m/s at 9.8 m/s² is ~1.08 m) and well inside the vault's reach.
+const CLIMB_MAX: float = 1.0
 
 ## Print every leg as it is walked.
 var verbose: bool = false
@@ -105,7 +110,9 @@ static func pool_ids(world_seed: int) -> PackedStringArray:
 ## Builds `pd` at the origin, walks it and frees it again. Report keys: poi, instance, validator
 ## (its errors), legs [{from, to, kind, opening, ok, needed, blocker, frames}], blocked (legs the
 ## body could not finish: doorways, stairs, ladders, steps), assisted (legs on a walk-through
-## opening, a stair flight or plain floor that needed a jump, a vault or a crouch), climbs (ladder
+## opening, a stair flight or plain floor that needed a jump, a vault or a crouch, and window legs
+## climbed from a prop under a sill past the vault's reach: "assist": "crate", "assist_prop", and
+## "sill_m" on any such leg), climbs (ladder
 ## interacts), unreached (rooms the layout reaches that the body never stood in), sealed (rooms the
 ## layout itself cannot reach), corridor (props in a doorway's clear width or on a route cell),
 ## blocking (the count that fails the building) and frames walked.
@@ -265,9 +272,13 @@ func _add_bodies(n: Node) -> void:
 		var sz: Vector3 = ((cs as CollisionShape3D).shape as BoxShape3D).size
 		var bx: AABB = (cs as CollisionShape3D).global_transform * AABB(-sz * 0.5, sz)
 		var label: String = str(inst.get_path_to(n))
+		var kind: String = label
 		if n is PoiPieces.Breakable:
 			label = "barricade:" + (n as PoiPieces.Breakable).piece_id
-		_props.append({"id": label, "prop": label, "pkey": label, "level": 0,
+			kind = label
+		elif String(n.name).begins_with("Cue_crate"):
+			kind = "route_cue_crate"
+		_props.append({"id": label, "prop": kind, "pkey": label, "level": 0,
 			"cell": Vector2i(floori(bx.get_center().x - layout.origin.x), floori(bx.get_center().z - layout.origin.y)), "box": bx,
 			"container": false, "route_ok": true, "cue": true})
 
@@ -709,8 +720,24 @@ func _leg(a: Array, b: Array) -> void:
 					n = Vector3(0, 0, signf(n.z))
 				else:
 					n = Vector3(signf(n.x), 0, 0)
-				ok = await _go(mid - n * 0.55, false, leg)
-				ok = ok and await _go(mid + n * 0.1, false, leg)
+				var step: Dictionary = {}
+				if category(kind) == "window":
+					# A sill over the vault's reach from where the body stands: a route-cue crate (or
+					# any solid prop) under the window is the way up, as it is for a player.
+					var sill_y: float = layout.level_y(int(op["level"])) + float(spec.get("sill", 0.9))
+					if sill_y - from.y > Player.VAULT_MAX - 0.02:
+						leg["sill_m"] = snappedf(sill_y - from.y, 0.01)
+						step = _step_prop(mid, n, float(spec.get("w", 0.7)), from.y, sill_y)
+						if step.is_empty() and not leg.has("note"):
+							leg["note"] = "sill %.2f m over the ground, past the %.1f m vault; no prop to climb within %.1f m of the window" % [
+								sill_y - from.y, Player.VAULT_MAX, CUE_REACH]
+				if not step.is_empty():
+					ok = await _climb_in(step, mid, n, leg)
+				else:
+					ok = await _go(mid - n * 0.55, false, leg)
+					# Past the wall line will do: a vault lands deeper than 0.1 m in, and steering back
+					# to the point pressed the body on the wall under the sill and vaulted it out again.
+					ok = ok and await _go(mid + n * 0.1, false, leg, true, TARGET_FRAMES, n)
 				ok = ok and await _go(end, true, leg)
 			elif kind == "floor" and (b[1] as Vector2i).distance_squared_to(a[1]) == 1:
 				# Down the clear lane past a chair or a crate (or the middle line when nothing is
@@ -729,6 +756,178 @@ func _leg(a: Array, b: Array) -> void:
 	_end_leg(leg, ok, end)
 
 
+## The prop to climb onto in front of a window whose sill is past the vault's reach from the
+## ground: a solid top (an authored prop's box, or a body the build added such as a route-cue
+## crate) on the body's side of the wall, at most CUE_REACH out from its face and in front of the
+## window, over step height and at most CLIMB_MAX up, from which the sill is a vault, with nothing
+## stood on it. The nearest as {prop, id, box, top, stand (the point on its top to stand on)};
+## {} when there is none. `mid` is the window's middle on the wall line at the body's feet and `n`
+## points through it, away from the body.
+func _step_prop(mid: Vector3, n: Vector3, w: float, feet: float, sill_y: float) -> Dictionary:
+	var along := Vector3(-n.z, 0.0, n.x)
+	var face: Vector3 = mid - n * (RouteCues.WALL_T * 0.5)
+	var best: Dictionary = {}
+	var best_d: float = INF
+	for i: int in _props.size():
+		var pr: Dictionary = _props[i]
+		var box: AABB = pr["box"]
+		var top: float = box.end.y
+		if top - feet < Player.STEP_HEIGHT or top - feet > CLIMB_MAX or sill_y - top > Player.VAULT_MAX - 0.05 or sill_y - top < 0.3:
+			continue
+		# Its footprint in the window's frame: out from the face, and along the wall.
+		var o_lo: float = INF
+		var a_lo: float = INF
+		var a_hi: float = -INF
+		for k: int in 4:
+			var corner: Vector3 = box.position + Vector3(box.size.x * float(k & 1), 0.0, box.size.z * float(k >> 1))
+			var rel: Vector3 = corner - face
+			o_lo = minf(o_lo, -rel.dot(n))
+			a_lo = minf(a_lo, rel.dot(along))
+			a_hi = maxf(a_hi, rel.dot(along))
+		if o_lo < -0.05 or o_lo > CUE_REACH or a_hi < -w * 0.5 - 0.5 or a_lo > w * 0.5 + 0.5:
+			continue
+		if _covered(i):
+			continue
+		# Where to stand: the top's point nearest the window's middle, a little in from its edges.
+		var ix: float = minf(0.15, box.size.x * 0.5 - 0.01)
+		var iz: float = minf(0.15, box.size.z * 0.5 - 0.01)
+		var stand := Vector3(clampf(face.x, box.position.x + ix, box.end.x - ix), top, clampf(face.z, box.position.z + iz, box.end.z - iz))
+		var d: float = Vector2(stand.x - face.x, stand.z - face.z).length()
+		if d < best_d:
+			best_d = d
+			best = {"prop": pr["prop"], "id": pr["id"], "box": box, "top": top, "stand": stand}
+	return best
+
+
+## Whether another prop stands on prop `i`'s top (the lower crate of a stack, a lamp on a table)
+## or hangs low over it: there is no room to stand there.
+func _covered(i: int) -> bool:
+	var box: AABB = _props[i]["box"]
+	var top: float = box.end.y
+	for j: int in _props.size():
+		if j == i:
+			continue
+		var b: AABB = _props[j]["box"]
+		if b.position.y < top - 0.05 or b.position.y > top + Player.CROUCH_HEIGHT:
+			continue
+		var ox: float = minf(box.end.x, b.end.x) - maxf(box.position.x, b.position.x)
+		var oz: float = minf(box.end.z, b.end.z) - maxf(box.position.z, b.position.z)
+		if ox > 0.1 and oz > 0.1:
+			return true
+	return false
+
+
+## In through a high window from the top of `step` (_step_prop) with the player's own moves: walk
+## out in front of the prop, walk at it pressing Jump (the vault mantles onto a crate's top, else a
+## plain jump lands on it), then face the window from the top and press Jump again (the vault over
+## the sill). Never moves the body by hand. Marks the leg "assist": "crate" (with the prop) when the
+## body ends up past the wall line; false when it never got on top or the vault never went.
+func _climb_in(step: Dictionary, mid: Vector3, n: Vector3, leg: Dictionary) -> bool:
+	var needed: Array = leg["needed"]
+	var box: AABB = step["box"]
+	var top: float = float(step["top"])
+	var stand: Vector3 = step["stand"]
+	var feet: float = mid.y
+	leg["assist_prop"] = str(step["prop"])
+	if str(step["id"]) != "" and str(step["id"]) != str(step["prop"]):
+		leg["assist_id"] = str(step["id"])
+	var base := Vector3(stand.x, feet, stand.z)
+	var depth: float = absf(box.size.dot(n))
+	var front: Vector3 = base - n * ((box.get_center() - base).dot(-n) + depth * 0.5 + Player.RADIUS + 0.35)
+	var on_top: bool = false
+	for attempt: int in 2:
+		if not _on(box, top):
+			await _go(front, false, leg, false, 360)
+			on_top = await _mount(box, top, stand, needed)
+		else:
+			on_top = true
+		if on_top:
+			break
+	if not on_top:
+		leg["note"] = "could not get onto the %s under the window (top %.2f m up)" % [step["prop"], top - feet]
+		return false
+	if not needed.has("crate"):
+		needed.append("crate")
+	# Up to the window's end of the top, then square to the window and over the sill.
+	await _go(stand, false, {"needed": []}, false, 40)
+	_release()
+	var through: bool = false
+	for t: int in 3:
+		if not _on(box, top):
+			break
+		player.rotation.y = atan2(-n.x, -n.z)
+		await _settle(2)
+		_frames += 2
+		await _jump(needed)
+		var guard: int = 0
+		while player.is_vaulting() and guard < 90:
+			await get_tree().physics_frame
+			_frames += 1
+			guard += 1
+			_track()
+		await _settle(2)
+		_frames += 2
+		if (player.global_position - mid).dot(n) > 0.0:
+			through = true
+			break
+		# Not near enough the wall for the vault's reach: a short step toward it, on the top.
+		player.rotation.y = atan2(-n.x, -n.z)
+		Input.action_press(&"move_forward")
+		for f: int in 8:
+			await get_tree().physics_frame
+			_frames += 1
+		Input.action_release(&"move_forward")
+	if not through:
+		leg["note"] = "on the %s under the window, but the vault over the sill did not go" % step["prop"]
+		return false
+	leg["assist"] = "crate"
+	return true
+
+
+## Whether the body stands on the top of `box` (on the floor, feet at its top, over its footprint).
+func _on(box: AABB, top: float) -> bool:
+	var p: Vector3 = player.global_position
+	return player.is_on_floor() and not player.is_vaulting() and absf(p.y - top) < 0.15 \
+		and p.x > box.position.x - 0.12 and p.x < box.end.x + 0.12 and p.z > box.position.z - 0.12 and p.z < box.end.z + 0.12
+
+
+## Walks at a prop and onto its top: move held toward `stand`, Jump pressed once the body is close
+## (a vault mantles onto it; a plain jump carries the body up and on). True once on top.
+func _mount(box: AABB, top: float, stand: Vector3, needed: Array) -> bool:
+	Input.action_press(&"move_forward")
+	var last_jump: int = -100
+	var frames: int = 0
+	var ok: bool = false
+	while frames < 300:
+		player.state.stats.stamina = 100.0
+		var pos: Vector3 = player.global_position
+		if not player.is_vaulting():
+			var to := Vector3(stand.x - pos.x, 0.0, stand.z - pos.z)
+			if to.length() > 0.05:
+				player.rotation.y = atan2(-to.x, -to.z)
+		await get_tree().physics_frame
+		frames += 1
+		_frames += 1
+		_track()
+		if player.is_vaulting():
+			if not needed.has("vault"):
+				needed.append("vault")
+			continue
+		if _on(box, top):
+			ok = true
+			break
+		pos = player.global_position
+		var gap: float = Vector2(maxf(maxf(box.position.x - pos.x, pos.x - box.end.x), 0.0), maxf(maxf(box.position.z - pos.z, pos.z - box.end.z), 0.0)).length()
+		if player.is_on_floor() and gap < Player.RADIUS + 0.4 and frames - last_jump > 30:
+			last_jump = frames
+			await _jump(needed)
+			frames += 3
+	Input.action_release(&"move_forward")
+	await _settle(4)
+	_frames += 4
+	return ok or _on(box, top)
+
+
 func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {}) -> void:
 	_release()
 	leg["ok"] = ok
@@ -739,6 +938,7 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 	var kind: String = leg["kind"]
 	var needed: Array = leg["needed"]
 	if not ok:
+		leg.erase("assist")
 		if not leg.has("blocker"):
 			leg["blocker"] = _blocker()
 		leg["category"] = category(kind)
@@ -748,7 +948,8 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 	else:
 		var physical: Array = needed.filter(func(n: String) -> bool: return n in ["jump", "vault", "crouch"])
 		var expected_vault: bool = kind.begins_with("window") or kind in ["half", "lancet"]
-		if not physical.is_empty() and not expected_vault:
+		# In through a window from the top of a prop under it (a route cue): assisted, not blocked.
+		if leg.has("assist") or (not physical.is_empty() and not expected_vault):
 			(_report["assisted"] as Array).append(leg)
 	for n: String in needed:
 		if n.begins_with("close_door:"):
@@ -924,8 +1125,10 @@ func _rooms_report() -> void:
 ## Walks the body to `t` with the move action, turning toward it every frame. When it stalls:
 ## open a door in the way, press Jump (the player's vault, else a jump), back off and come again,
 ## Jump again, then Crouch; after all of that, or TARGET_FRAMES, it gives up. What it needed goes
-## in leg.needed.
-func _go(t: Vector3, check_y: bool, leg: Dictionary, assist: bool = true, max_frames: int = TARGET_FRAMES) -> bool:
+## in leg.needed. With `past` (a unit direction), the body is there once it stands beyond `t` along
+## it, within REACH of the line through `t` (through an opening, however far the vault carried it).
+func _go(t: Vector3, check_y: bool, leg: Dictionary, assist: bool = true, max_frames: int = TARGET_FRAMES,
+		past: Vector3 = Vector3.ZERO) -> bool:
 	var best: float = INF
 	var since: int = 0
 	var tries: int = 0
@@ -937,6 +1140,10 @@ func _go(t: Vector3, check_y: bool, leg: Dictionary, assist: bool = true, max_fr
 		var pos: Vector3 = player.global_position
 		var to := Vector3(t.x - pos.x, 0.0, t.z - pos.z)
 		var d: float = to.length()
+		if past != Vector3.ZERO and not player.is_vaulting():
+			var beyond: float = -to.dot(past)
+			if beyond >= 0.0 and (-to - past * beyond).length() < REACH:
+				return true
 		if d < REACH and (not check_y or absf(pos.y - t.y) < 0.45) and not player.is_vaulting():
 			return true
 		if d > 0.05:
