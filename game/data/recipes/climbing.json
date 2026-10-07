@@ -1,0 +1,6 @@
+{
+  "_doc": "Climbing gear (ADR-0057).",
+  "defs": [
+    {"id": "climbing_rope", "result": "climbing_rope", "ingredients": {"cordage": 8, "stick": 1}, "time": 8.0, "category": "tools"}
+  ]
+}

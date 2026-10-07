@@ -41,6 +41,12 @@ static func make_model(item_id: StringName) -> Node3D:
 		cyl.height = 4.0
 		mi.mesh = cyl
 		mi.rotation_degrees = Vector3(0, 0, 90)
+	elif item_id == &"hunting_rifle":
+		# Before `make assets`: a long box down the pointing frame's +Z (muzzle), so the rifle hold
+		# still reads as a long gun.
+		box.size = Vector3(0.05, 0.1, 0.95)
+		mi.mesh = box
+		mi.position = Vector3(0.0, 0.02, -0.12)
 	elif item_id == &"stick":
 		box.size = Vector3(0.9, 0.035, 0.035)
 		mi.mesh = box

@@ -18,10 +18,14 @@ const MANUAL_MODEL: StringName = &"field_manual"
 const FLIPBOOK: String = "res://assets/generated/textures/fx_fire_flipbook.png"
 ## Loops of the arms built before the hold classes (ADR-0029) existed.
 const LEGACY_LOOPS: Array[StringName] = [&"fp_idle", &"fp_walk_bob", &"fp_idle_grip", &"fp_walk_grip", &"fp_carry_log"]
+## Seconds between shelter checks (weather_exposure).
+const SHELTER_CHECK: float = 0.25
 
 var cfg: Dictionary = {}
 var motion := ViewModelMotion.new()
 var tether := TetherRaise.new()
+## Climbing arms (ADR-0057): hand over hand on a ladder or rope, the item stowed meanwhile.
+var climb := ViewModelClimb.new()
 ## The hold class of what is in hand (ViewModelHolds).
 var hold_class: StringName = ViewModelHolds.EMPTY
 ## QA (fp_preview): forces the base loop (fp_carry_log, fp_blueprint) without a player or building.
@@ -56,10 +60,22 @@ var _screen_surface: int = -1
 var _screen_mat: StandardMaterial3D = null
 var _player: Player = null
 var _loops: Dictionary = {}
+## The weather_exposure the arms and what they hold draw with: 0 indoors or under a roof, so the
+## rain gloss and snow on the skin and sleeves stay outside (as on PoiBuilder's indoor pieces).
+var exposure: float = 1.0
+var _shelter_t: float = 0.0
 # Procedural fallback (no arms model).
 var _swing_t: float = -1.0
 var _swing_len: float = 0.8
 var _recoil: float = 0.0
+## Held-item nodes a use turned (viewmodel.json `uses.<use>.parts`), to put back when it ends.
+var _posed_parts: Array[Node3D] = []
+## Aiming (PlayerAim, ADR-0057): how far the gun is up 0..1, whether the scope picture hides the
+## arms, and the rig offset that puts the hold's sight on the line of sight (measured off the
+## idle hold, kept while an action plays so a shot's kick still moves the gun).
+var aim: float = 0.0
+var _aim_hidden: bool = false
+var _aim_xf := Transform3D()
 var _rest := Transform3D(Basis.from_euler(Vector3(deg_to_rad(8.0), deg_to_rad(-12.0), deg_to_rad(4.0))), Vector3(0.28, -0.3, -0.52))
 
 
@@ -68,7 +84,9 @@ func _ready() -> void:
 	FpMaterials.configure(cfg)
 	motion.setup(cfg)
 	tether.setup(cfg)
+	climb.setup(cfg)
 	_player = owner as Player if owner is Player else null
+	climb.source = _player
 	_rig = Node3D.new()
 	_rig.name = "Rig"
 	add_child(_rig)
@@ -134,6 +152,9 @@ func show_item(item_id: StringName) -> void:
 	motion.start_equip()
 	if _held_def != null:
 		_held = _make_item(_held_def)
+		if str(_held_def.equip.get("kind", "")) == "bow":
+			# ADR-0057: the string and nocked arrow follow the drawing hand.
+			BowRig.attach(_held, _sock.get("R", null), _held_def)
 		_set_layers(_held)
 		if has_arms():
 			_attach_held(ViewModelHolds.item_hand(hold_class, cfg))
@@ -141,9 +162,15 @@ func show_item(item_id: StringName) -> void:
 			_item_root.add_child(_held)
 			_held.rotation_degrees = _rest_pose(_held, _held_def)
 		FpMaterials.apply(_held)
+		_apply_exposure(_held)
 	if _action != &"" and _anim != null:
 		_action = &""
 	_update_base(true)
+
+
+## The held item's node (null with empty hands): the bow's BowRig hangs under it.
+func held_item() -> Node3D:
+	return _held
 
 
 func _make_item(def: ItemDef) -> Node3D:
@@ -287,6 +314,25 @@ func freeze_action(anim_name: StringName, at: float) -> bool:
 	return true
 
 
+## Holds the running action still once it is `at` seconds in (its own time): a throw drawn back
+## while the button is held (ThrowHand calls this each frame). resume_action() lets it go on.
+func hold_action_at(at: float) -> void:
+	if _anim == null or _action == &"" or _anim.current_animation != _action:
+		return
+	if _anim.current_animation_position >= at:
+		_anim.speed_scale = 0.0
+		_action_end = INF
+
+
+## Plays the rest of a held action over `duration` seconds.
+func resume_action(duration: float) -> void:
+	if _anim == null or _action == &"" or _anim.current_animation != _action:
+		return
+	var left: float = _anim.current_animation_length - _anim.current_animation_position
+	_anim.speed_scale = left / duration if duration > 0.05 else 1.0
+	_action_end = _t + (duration if duration > 0.05 else left)
+
+
 func release_action() -> void:
 	if _action == &"":
 		return
@@ -332,6 +378,14 @@ func play_inspect() -> bool:
 func play_recoil() -> void:
 	_recoil = 1.0
 	motion.gun_recoil(1.0)
+
+
+## The gun raised `amount` (0..1, eased) toward the sights, the arms steadied by `steady` (0..1);
+## `hide` = the scope picture is up, so the arms are not drawn.
+func set_aim(amount: float, steady: float, hide: bool) -> void:
+	aim = amount
+	motion.steady = steady
+	_aim_hidden = hide
 
 
 func set_lit(on: bool) -> void:
@@ -496,6 +550,9 @@ const FLAMES: Dictionary = {
 		"speed": [0.0, 0.006], "gravity": 0.0, "radius": 0.0006, "embers": false, "lean_deg": 8.0},
 	"torch": {"style": "fire", "size": [0.085, 0.13], "rise": 0.035, "amount": 16, "lifetime": 0.5,
 		"speed": [0.1, 0.2], "gravity": 0.3, "radius": 0.02, "embers": true, "lean_deg": 20.0},
+	# A molotov's rag (ADR-0057): a ragged hand-high flame off the cloth in the bottle's neck.
+	"molotov": {"style": "fire", "size": [0.06, 0.1], "rise": 0.01, "amount": 14, "lifetime": 0.45,
+		"speed": [0.08, 0.16], "gravity": 0.25, "radius": 0.012, "embers": true, "lean_deg": 22.0},
 }
 
 
@@ -743,7 +800,7 @@ func base_action() -> StringName:
 
 
 func _update_base(force: bool = false) -> void:
-	if _anim == null or _action != &"":
+	if _anim == null or _action != &"" or climb.busy():
 		return
 	var want: StringName = base_action()
 	if not has_action(want) or (want == _base and not force and _anim.current_animation == want):
@@ -789,6 +846,7 @@ func _show_manual(on: bool) -> void:
 		_manual.position = Vector3(float(p[0]), float(p[1]), float(p[2]))
 		_set_layers(_manual)
 		FpMaterials.apply(_manual)
+		_apply_exposure(_manual)
 	if _manual != null:
 		_manual.visible = true
 
@@ -813,6 +871,7 @@ func _show_log(on: bool) -> void:
 		_rig.add_child(_log)
 		_set_layers(_log)
 		FpMaterials.apply(_log)
+		_apply_exposure(_log)
 	_log.visible = true
 
 
@@ -821,7 +880,7 @@ func _process(delta: float) -> void:
 	tether.update(delta)
 	var cam: Camera3D = get_parent() as Camera3D
 	if cam != null:
-		visible = cam.current
+		visible = cam.current and not _aim_hidden
 	var look := Vector2.ZERO
 	if cam != null:
 		var b: Basis = cam.global_transform.basis
@@ -841,8 +900,10 @@ func _process(delta: float) -> void:
 	else:
 		motion.reading = tether.progress()
 		motion.update(delta, look, vel, 0.0, false, false, true, 0.0, 0)
-	_rig.transform = motion.rig_transform()
+	_rig.transform = motion.rig_transform() * _aim_offset()
+	_climb_step(delta, cam)
 	_flame_follow(delta, look, vel)
+	_update_exposure(delta)
 	if cam != null and cam.current:
 		cam.rotation = motion.camera_kick()
 	# Hit-stop: the swing hangs on what it struck, then catches up to finish on time.
@@ -855,15 +916,182 @@ func _process(delta: float) -> void:
 				_anim.speed_scale = clampf(left_anim / maxf(0.05, _action_end - _t), 0.5, 4.0)
 	else:
 		_update_base()
+	_animate_parts()
 	# Reading the tether narrows the viewmodel's field of view so the screen fills more of it.
 	var tc: Dictionary = cfg.get("tether", {})
-	var fov: float = lerpf(float(cfg.get("fov", 58.0)), float(tc.get("fov", 42.0)), tether.progress())
+	var base_fov: float = float(cfg.get("fov", 58.0))
+	base_fov = lerpf(base_fov, float(_aim_cfg().get("fov", base_fov)), aim)
+	var fov: float = lerpf(base_fov, float(tc.get("fov", 42.0)), tether.progress())
 	if absf(fov - FpMaterials.fov) > 0.01:
 		FpMaterials.set_fov(fov)
 	if _screen_mat != null:
 		_screen_mat.emission_energy_multiplier = _screen_energy(tether.progress())
 	if not has_arms():
 		_fallback_motion(delta, speed)
+
+
+## Climbing (ViewModelClimb, ADR-0057): the grab-on stows the item and closes the hands on the
+## rails, the hand-over-hand cycle is seeked to the phase the metres climbed give, the let-go
+## drops the hands and the item comes back up. The arms stay level and square to the ladder.
+func _climb_step(delta: float, cam: Camera3D) -> void:
+	if climb.update(delta):
+		_action = &""
+		match climb.state:
+			ViewModelClimb.State.GRAB:
+				tether.set_raised(false)
+				_guard = false
+				_play_once(climb.grab_action(), climb.grab_time)
+			ViewModelClimb.State.RELEASE:
+				_play_once(climb.release_action(), climb.release_time)
+			ViewModelClimb.State.OFF:
+				if _held != null:
+					_held.visible = true
+				motion.start_equip()
+				_update_base(true)
+	if _held != null and climb.stows_item():
+		_held.visible = false
+	var cyc: StringName = climb.cycle_action()
+	if climb.state == ViewModelClimb.State.CLIMB and has_action(cyc):
+		if _anim.current_animation != cyc:
+			_anim.play(cyc, 0.08)
+		_anim.speed_scale = 0.0
+		_anim.seek(climb.cycle_time(_anim.get_animation(cyc).length), true)
+		_action = cyc
+		_action_end = INF
+	if cam != null and climb.anchor > 0.0:
+		_rig.transform = Transform3D(climb.rig_basis(cam.global_transform.basis), Vector3.ZERO) * _rig.transform
+
+
+## Whether the item in hand is put away (climbing).
+func item_stowed() -> bool:
+	return climb.stows_item()
+
+
+## Moving parts of the held item, keyed by the playing use (viewmodel.json `uses.<use>.parts`:
+## {node name: [[frame, [x, y, z] degrees], ...]} at the arms' 30 fps, smoothstepped between keys):
+## the revolver's cylinder swings out on its crane to reload. Back to rest when no such use plays.
+func _animate_parts() -> void:
+	var keys_by_part: Dictionary = {}
+	if _held != null and _anim != null and _action != &"" and String(_action).begins_with("fp_"):
+		var use: Dictionary = (cfg.get("uses", {}) as Dictionary).get(String(_action).substr(3), {})
+		keys_by_part = use.get("parts", {})
+	if keys_by_part.is_empty():
+		for n: Node3D in _posed_parts:
+			if is_instance_valid(n):
+				n.rotation = Vector3.ZERO
+				if n.has_meta(&"rest_pos"):
+					n.position = n.get_meta(&"rest_pos")
+		_posed_parts.clear()
+		return
+	var f: float = _anim.current_animation_position * 30.0
+	for part: String in keys_by_part:
+		var n: Node3D = _held.find_child(part, true, false) as Node3D
+		if n == null:
+			continue
+		n.rotation_degrees = part_rotation(keys_by_part[part], f)
+		# Keys may also slide the part ([frame, [deg], [x, y, z] m]): the rifle's bolt draws back.
+		if not n.has_meta(&"rest_pos"):
+			n.set_meta(&"rest_pos", n.position)
+		n.position = (n.get_meta(&"rest_pos") as Vector3) + part_offset(keys_by_part[part], f)
+		if not _posed_parts.has(n):
+			_posed_parts.append(n)
+
+
+## The hold's aim (viewmodel.json holds.<class>.aim: the sight socket, its height over it, how far
+## in front of the eye it comes up, the arms' field of view when up, an extra offset).
+func _aim_cfg() -> Dictionary:
+	return ViewModelHolds.hold(hold_class, cfg).get("aim", {}) as Dictionary
+
+
+## The rig's aim offset now: none at the hip, the sight on the line of sight when fully up. The
+## sight is measured while the hold's idle plays (the idle's small drift is cancelled with it) and
+## kept while an action plays, so a shot's kick or a bolt cycle still moves the gun off it.
+func _aim_offset() -> Transform3D:
+	if aim <= 0.0 or _held == null or not has_arms():
+		return Transform3D()
+	var ac: Dictionary = _aim_cfg()
+	if ac.is_empty():
+		return Transform3D()
+	if _action == &"":
+		var sight: Node3D = _held.find_child(str(ac.get("socket", "socket_muzzle")), true, false) as Node3D
+		if sight != null and sight.is_inside_tree():
+			var mv: Array = ac.get("move", [0.0, 0.0, 0.0])
+			_aim_xf = PlayerAim.sight_offset(_rig.global_transform.affine_inverse() * sight.global_transform,
+				float(ac.get("up", 0.0)), float(ac.get("relief", 0.3)), Vector3(float(mv[0]), float(mv[1]), float(mv[2])))
+	return Transform3D().interpolate_with(_aim_xf, aim)
+
+
+## A part's rotation (degrees) at frame `f` of its [[frame, [x, y, z]], ...] keys.
+static func part_rotation(keys: Array, f: float) -> Vector3:
+	if keys.is_empty():
+		return Vector3.ZERO
+	var prev: Array = keys[0]
+	if f <= float(prev[0]):
+		return _vec3(prev[1])
+	for k: Array in keys:
+		if f <= float(k[0]):
+			var t: float = smoothstep(float(prev[0]), float(k[0]), f)
+			return _vec3(prev[1]).lerp(_vec3(k[1]), t)
+		prev = k
+	return _vec3(prev[1])
+
+
+## A part's slide (m) at frame `f`: the optional third entry of its keys (none = no slide).
+static func part_offset(keys: Array, f: float) -> Vector3:
+	if keys.is_empty():
+		return Vector3.ZERO
+	var prev: Array = keys[0]
+	if f <= float(prev[0]):
+		return _slide(prev)
+	for k: Array in keys:
+		if f <= float(k[0]):
+			return _slide(prev).lerp(_slide(k), smoothstep(float(prev[0]), float(k[0]), f))
+		prev = k
+	return _slide(prev)
+
+
+static func _slide(k: Array) -> Vector3:
+	return _vec3(k[2]) if k.size() > 2 else Vector3.ZERO
+
+
+static func _vec3(a: Array) -> Vector3:
+	return Vector3(float(a[0]), float(a[1]), float(a[2]))
+
+
+## Indoors or under a roof every so often (the same tests the ambience and the survival climate
+## use: a POI room, or a built roof overhead): the arms and the held item lose the weather.
+func _update_exposure(delta: float) -> void:
+	_shelter_t -= delta
+	if _shelter_t > 0.0:
+		return
+	_shelter_t = SHELTER_CHECK
+	var at: Vector3 = _player.global_position if _player != null else global_position
+	set_exposure(0.0 if sheltered_at(Game.world, at) else 1.0)
+
+
+## A POI's indoors (PoiManager.is_indoors) or under a built roof (BuildingManager.is_sheltered).
+static func sheltered_at(world: Node, pos: Vector3) -> bool:
+	if world == null:
+		return false
+	var pois: Node = world.get(&"pois") as Node
+	if pois != null and pois.has_method(&"is_indoors") and bool(pois.call(&"is_indoors", pos)):
+		return true
+	var building: Node = world.get(&"building") as Node
+	return building != null and building.has_method(&"is_sheltered") and bool(building.call(&"is_sheltered", pos))
+
+
+func set_exposure(value: float) -> void:
+	if is_equal_approx(value, exposure):
+		return
+	exposure = value
+	_apply_exposure(self)
+
+
+func _apply_exposure(n: Node) -> void:
+	if n is GeometryInstance3D and not n is GPUParticles3D:
+		(n as GeometryInstance3D).set_instance_shader_parameter(&"weather_exposure", exposure)
+	for c: Node in n.get_children():
+		_apply_exposure(c)
 
 
 ## No arms model: the item floats at its rest pose and swings procedurally.

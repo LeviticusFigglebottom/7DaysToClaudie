@@ -152,14 +152,14 @@ keys below are the defaults.
 | Space | Jump (8 stamina). At a sill, fence or crate 0.3–1.3 m high: climb over or onto it. In deep water: hold to swim up |
 | Ladders | Walk into a ladder to climb it: W climbs, S (or W while looking down) climbs down, and you step off at the top. From upstairs, walk into its hatch to climb down. Space lets go |
 | E | Interact. Hold it to search, harvest, drink or fill bottles at water, butcher and dismantle |
-| Left mouse | Use what you hold: swing, fire, throw a stone, set down a can chime. While building: place the ghost or the carried log |
-| Right mouse | Hold to guard (melee weapon, light or bare hands). Food, drink or medicine in hand: use it. Revolver: reload. Spear: throw. Placing a blueprint: cancel |
+| Left mouse | Use what you hold: swing, fire, set down a can chime; hold to draw a bow, let go to loose. A stone or a molotov: hold to draw back (longer throws further), let go to throw; a stone lands as a noise the Hollowed go to look at. A molotov: the first press lights its rag (lighter or torch in your pack; don't hold it lit too long), the next throws it into a patch of fire. While building: place the ghost or the carried log |
+| Right mouse | Hold to guard (melee weapon, light or bare hands). Gun in hand: hold to aim down the sights (the rifle's scope zooms 4x; steadier and tighter, but you walk slowly). Food, drink or medicine in hand: use it. Spear: throw. Bow drawn: let the string down. Placing a blueprint: cancel |
 | 1–6, mouse wheel | Toolbelt slots (press the held one again to put it away); the wheel cycles them |
 | F | Turn the lighter, torch or flashlight in your hand on or off |
 | Y | Look over what you are holding |
 | H | Whistle to your companion, Ezra: follow me, or stay where you are (a toggle; §9) |
 | G | Drop a carried log; while looking at a fire, add fuel |
-| R | Rotate: a blueprint by 15°, a carried log by 90° |
+| R | Gun in hand: reload (the revolver all six at once, the rifle a round at a time: fire to stop). Building: rotate a blueprint by 15°, a carried log by 90° |
 | V | Carried log pose: flat, upright post, pitched (roof) |
 | X | Cancel placement; close the salvage roll, field manual or options. Hold it (1 s) on a placed blueprint ghost to take it down |
 | Tab or I | Salvage roll: inventory and crafting |
@@ -330,6 +330,8 @@ pack; *axe*, a Stone Axe or Hatchet.
 | Cloth Bandage | 2 Cloth (or 2 bandages from a Hare Pelt, with a knife) |
 | Yarrow Poultice | 2 Yarrow, 1 Cloth |
 | Rawhide Strips ×4 | 1 Deer Hide, with a knife |
+| Hunting Bow | 2 Sticks, 4 Sinew, 1 Rawhide Strips, with a knife |
+| Stone Arrow ×3 / Bone Arrow ×3 | 1 Stick, 1 Stone, 2 Plant Fiber / 1 Stick, 1 Bone, 1 Sinew, with a knife |
 | Can Chime | 3 Empty Cans, 1 Cordage; needs *Schematic: Can Chime* |
 | **At a lit campfire** | |
 | Boil Water | 1 Bottle of Stream Water |
@@ -351,7 +353,9 @@ Only the campfire and the workbench can be built as stations for now.
 | Machete / Kitchen Knife | 26 / 13 | knives; the machete takes limbs off, the knife is fast and quiet |
 | Shovel / Claw Hammer | 15 / 12 | dig / repair, reinforce, dismantle (§7) |
 | Torch / Flashlight | 9 / 8 | lights: 10 minutes of flame / a 28 m beam with 30 minutes of batteries |
-| .38 Revolver | 55 | 6 rounds of .38 Rounds; Right mouse reloads; very loud |
+| .38 Revolver | 55 | 6 rounds of .38 Rounds; R reloads, Right mouse aims (iron sights); very loud |
+| Hunting Rifle | 130 | 5 rounds of .308, loaded one by one (R); a bolt to work after every shot; Right mouse: the 4x scope. Carries for 250 m and is louder still: every animal bolts, every Hollowed hears it. Rare: gun safes, lookout stores, Waystation 9 (Program asset) |
+| Hunting Bow | 36 / 44 | Stone / Bone Arrows at full draw: hold Left mouse to draw (under a second), let go to loose; a short draw flies slower and hits softer. Right mouse lets the string down. Arrows drop over distance; pull them out of the ground, or out of a body once it's dead (some break). Quiet |
 | Stone | 12 | thrown |
 
 The lighter gives 15 minutes of light. Quality runs Q1 to Q6 (Scrap, Worn, Serviceable, Good, Fine,

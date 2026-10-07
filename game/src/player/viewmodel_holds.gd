@@ -1,7 +1,7 @@
 class_name ViewModelHolds
 extends RefCounted
 ## How an item is held in first person (ADR-0029), read from data/config/viewmodel.json: its hold
-## class (one_hand, club, spear, two_hand, light_left, pistol, held, food, bottle, blueprint,
+## class (one_hand, knife, club, spear, two_hand, light_left, pistol, held, food, bottle, blueprint,
 ## empty...), the baked arms actions that go with it, its attack style and use action, how it sits
 ## in the hand, and what its guard absorbs. Static and node-free, so tests can ask it directly.
 

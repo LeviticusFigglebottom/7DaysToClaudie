@@ -1,0 +1,14 @@
+{
+  "_doc": "Ground fires (ADR-0057, GroundFire): what a shattered molotov leaves burning. A fire is transient (never saved: it is out long before anyone could save and reload into it). radius / height: the burning disc (m) and how high its flames reach; duration: seconds it burns at full strength, then fade: seconds the flames shrink and the light dims while it still burns (its damage scales down with it); linger: seconds the smoke and the scorch stay after it is out. tick: seconds between damage steps; dps: damage per second to the Hollowed and wildlife standing in it (DamageInfo type fire, cause fire), player_dps to a player. structure_dps: damage per second to flammable structures (StructureDef.flammable; their damage_mult.fire applies) within radius + structure_reach, every structure_tick seconds. ignite_noise: the whoomp it lights with, crackle_noise every crackle_every seconds after (Stimuli kind 'fire', loudness in metres: the Hollowed come to look). light: the flames' omni light; sight_range / sight_energy: how it lights up whoever stands near it for the Hollowed's eyes (Stimuli.register_light). flames: flame columns scattered over the disc, flame_size their height (m).",
+  "ground_fires": {
+    "molotov": {
+      "radius": 2.4, "height": 1.8, "duration": 9.0, "fade": 2.5, "linger": 14.0,
+      "tick": 0.5, "dps": 14.0, "player_dps": 9.0,
+      "structure_dps": 6.0, "structure_reach": 0.6, "structure_tick": 1.5,
+      "ignite_noise": 18.0, "crackle_noise": 9.0, "crackle_every": 2.5,
+      "light": {"color": "#ff8a3c", "energy": 3.2, "range": 12.0, "flicker": 0.45},
+      "sight_range": 18.0, "sight_energy": 1.6,
+      "flames": 9, "flame_size": 0.9
+    }
+  }
+}

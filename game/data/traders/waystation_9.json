@@ -633,6 +633,24 @@
      ],
      "rep_tier": 3,
      "chance": 0.8
+    },
+    {
+     "item": "ammo_308",
+     "count": [
+      3,
+      8
+     ],
+     "rep_tier": 2,
+     "chance": 0.6
+    },
+    {
+     "item": "hunting_rifle",
+     "count": [
+      1,
+      1
+     ],
+     "rep_tier": 3,
+     "chance": 0.35
     }
    ],
    "offers_per_day": 4,

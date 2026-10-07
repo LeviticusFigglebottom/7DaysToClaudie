@@ -24,16 +24,23 @@ var viewmodel: ViewModel
 ## finishes; putting the gun away first cancels it (it used to load instantly).
 var _reload_left: float = -1.0
 var _reload_item: StringName = &""
+## A round-by-round reload (the bolt-action rifle, ADR-0057).
+var _rounds := RoundReload.new()
 ## The swing in progress: its length and the fraction of it at which it connects.
 var _swing_len: float = 0.6
 var _hit_frac: float = 0.45
 ## Block held with a weapon that has a guard (ViewModelHolds.block_share > 0).
 var guarding: bool = false
+## The bow's draw and loose (ADR-0057): its own file, driven from here every frame.
+var bow: BowHandler
+## Throwables: the charged throw and a molotov's rag (ADR-0057).
+var throw_hand := ThrowHand.new(self)
 
 
 func _ready() -> void:
 	player = get_parent() as Player
 	viewmodel = player.get_node_or_null("Head/Camera3D/ViewModel") as ViewModel
+	bow = BowHandler.new(self)
 
 
 func carried_logs() -> int:
@@ -45,6 +52,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_cooldown = maxf(0.0, _cooldown - delta)
 	_sync_equipped()
+	_update_bow(delta)
 	if not player.input_enabled:
 		return
 	for i: int in player.state.toolbelt.size():
@@ -70,6 +78,10 @@ func _physics_process(delta: float) -> void:
 			primary()
 	if Input.is_action_just_pressed(&"block") and captured and not _building_busy():
 		secondary()
+	throw_hand.update(delta, captured and Input.is_action_pressed(&"attack"))
+	if Input.is_action_just_pressed(&"reload") and captured and not _building_busy():
+		reload()
+	_rounds.step(delta, self)
 	if _light_on:
 		_burn_light(delta)
 		_follow_light()
@@ -82,6 +94,20 @@ func _physics_process(delta: float) -> void:
 		if _swing_t >= _swing_len * _hit_frac:
 			_swing_t = -1.0
 			_resolve_hit()
+
+
+## Hold Attack to draw, let go to loose, Block to let down (BowHandler). Input off or the mouse
+## freed (a menu) mid-draw lets the string down rather than loosing.
+func _update_bow(delta: float) -> void:
+	if bow == null:
+		return
+	# Grabbing a ladder needs both hands: a drawn bow is let down.
+	var free: bool = player.input_enabled and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not player.is_climbing()
+	if bow.drawing and not free:
+		bow.let_down()
+	var tether_up: bool = viewmodel != null and viewmodel.tether_raised()
+	bow.update(delta, free and Input.is_action_pressed(&"attack"), free and _cooldown <= 0.0 and not guarding and not tether_up
+		and not _building_busy())
 
 
 func _building_busy() -> bool:
@@ -115,16 +141,21 @@ func _sync_equipped() -> void:
 	_swing_t = -1.0
 	_reload_left = -1.0
 	_reload_item = &""
+	_rounds.cancel()
 	_cooldown = 0.3
 	guarding = false
 	if viewmodel != null:
 		viewmodel.show_item(item_id)
+	if bow != null:
+		bow.on_equipped()
 	equipped_changed.emit(item_id)
 
 
 # --- Actions ------------------------------------------------------------------------------
 
 func primary() -> void:
+	if player.is_climbing():
+		return  # both hands on the ladder (ADR-0057)
 	var def: ItemDef = Content.item(current)
 	var building: Node = Game.world.get(&"building") if Game.world != null else null
 	if building != null and building.call(&"handle_primary", player):
@@ -141,9 +172,15 @@ func primary() -> void:
 			if def.equip.has("damage"):
 				_start_swing(def)
 		"ranged":
-			_fire(def)
+			# Firing mid round-by-round reload stops it (the bolt closes first).
+			if not _rounds.interrupt(self) and not _rounds.active():
+				_fire(def)
 		"throwable":
-			_throw(def)
+			if ThrowHand.needs_light(def) and not _light_on:
+				if throw_hand.light(def):
+					_cooldown = 0.6
+			else:
+				throw_hand.begin(def)
 		"placeable":
 			if Game.world != null and Game.world.get("building") != null:
 				Game.world.building.place_item_structure(player, current)
@@ -153,13 +190,16 @@ func primary() -> void:
 
 
 func secondary() -> void:
+	if player.is_climbing():
+		return  # both hands on the ladder (ADR-0057)
+	if bow != null and bow.drawing:
+		bow.let_down()
+		return
 	var def: ItemDef = Content.item(current)
 	if def != null and def.is_consumable():
 		var res: Dictionary = Game.execute(&"inventory.consume", {"player": player.state.id, "item": current})
 		if bool(res.get("ok", false)) and viewmodel != null:
 			viewmodel.play_use(ViewModelHolds.use_action(def, viewmodel.hold_class))
-	elif def != null and str(def.equip.get("kind", "")) == "ranged":
-		_reload(def)
 	elif def != null and bool(def.equip.get("throwable", false)) and _cooldown <= 0.0:
 		# Melee weapons marked throwable (the spear) are thrown with the secondary button.
 		_throw(def)
@@ -358,20 +398,29 @@ func _fire(def: ItemDef) -> void:
 		_cooldown = 0.4
 		return
 	stack.data["loaded"] = loaded - 1
-	_cooldown = def.equip_num("attack_time", 0.45)
+	# A bolt gun works its bolt after the shot (bolt_time) before it can fire again.
+	var cycle: float = def.equip_num("attack_time", 0.45) + def.equip_num("bolt_time", 0.0)
+	_cooldown = cycle
 	var cam: Camera3D = player.camera
 	var spread: float = shot_spread(def, player.crouching, player.state.progression)
+	if player.aim != null:
+		spread *= player.aim.spread_mult()
 	var dir: Vector3 = (-cam.global_transform.basis.z).rotated(cam.global_transform.basis.x, randf_range(-spread, spread)).rotated(Vector3.UP, randf_range(-spread, spread))
 	var q := PhysicsRayQueryParameters3D.create(cam.global_position, cam.global_position + dir * def.equip_num("range", 60.0), HIT_MASK)
 	q.collide_with_areas = true
 	q.exclude = [player.get_rid()]
 	var hit: Dictionary = player.get_world_3d().direct_space_state.intersect_ray(q)
-	Audio.play_3d(&"sfx/gun_revolver_shot", player.global_position + Vector3.UP * 1.4, {"volume_db": 2.0, "max_distance": 400.0, "occlusion": false})
+	Audio.play_3d(StringName(str(def.equip.get("shot_sound", "sfx/gun_revolver_shot"))), player.global_position + Vector3.UP * 1.4, {"volume_db": 2.0, "max_distance": 400.0, "occlusion": false})
 	if Stimuli.current != null:
 		Stimuli.current.emit_sound(player.global_position, def.equip_num("noise", 120.0), &"gunshot", player.state.id)
+	if def.equip.has("bolt_sound") and player.is_inside_tree():
+		var bolt: StringName = StringName(str(def.equip["bolt_sound"]))
+		player.get_tree().create_timer(def.equip_num("attack_time", 0.3)).timeout.connect(func() -> void:
+			if is_instance_valid(player):
+				Audio.play_3d(bolt, player.global_position, {"volume_db": -6.0, "occlusion": false}))
 	if viewmodel != null:
 		viewmodel.play_recoil()
-		viewmodel.play_use(StringName("fire_%s" % viewmodel.hold_class))
+		viewmodel.play_use(StringName("fire_%s" % viewmodel.hold_class), cycle if def.equip.has("bolt_time") else 0.0)
 	if not hit.is_empty():
 		var gun: ItemStack = player.state.inventory.first(current)
 		var dmg: float = def.equip_num("damage", 50.0) * (1.0 + player.state.progression.modifier("ranged_damage_mult"))
@@ -382,7 +431,7 @@ func _fire(def: ItemDef) -> void:
 		info.direction = dir
 		info.source_pos = cam.global_position
 		info.dismember = float(def.equip.get("dismember", 0.3))
-		info.stagger = 0.6
+		info.stagger = float(def.equip.get("stagger", 0.6))
 		info.collider = hit["collider"]
 		var r: Object = _damage_receiver(hit["collider"])
 		if r != null:
@@ -397,7 +446,22 @@ static func shot_spread(def: ItemDef, crouching: bool, prog: Progression) -> flo
 	return deg_to_rad(def.equip_num("spread_deg", 1.5)) * (0.5 if crouching else 1.0) * steady
 
 
+## Reload (R) the gun in hand: all at once, or round by round (RoundReload).
+func reload() -> void:
+	var def: ItemDef = Content.item(current)
+	if def != null and str(def.equip.get("kind", "")) == "ranged":
+		_reload(def)
+
+
+func is_reloading() -> bool:
+	return _reload_left >= 0.0 or _rounds.active()
+
+
 func _reload(def: ItemDef) -> void:
+	if RoundReload.per_round(def):
+		if _reload_left < 0.0:
+			_rounds.start(def, self)
+		return
 	if _reload_left >= 0.0 or _rounds_to_load(def) <= 0:
 		return
 	_reload_left = def.equip_num("reload_time", 2.5)
@@ -422,23 +486,31 @@ func _finish_reload() -> void:
 	if current != _reload_item or def == null:
 		return
 	_reload_item = &""
-	var n: int = _rounds_to_load(def)
+	load_rounds(def, _rounds_to_load(def))
+
+
+## Moves up to `n` rounds from the inventory into the held gun's magazine; how many went in.
+func load_rounds(def: ItemDef, n: int) -> int:
+	n = mini(n, _rounds_to_load(def))
 	if n <= 0:
-		return
+		return 0
 	var stack: ItemStack = player.state.inventory.first(current)
 	player.state.inventory.remove(StringName(str(def.equip.get("ammo", ""))), n)
 	stack.data["loaded"] = int(stack.data.get("loaded", 0)) + n
 	Events.inventory_changed.emit(player.state.id)
+	return n
 
 
-func _throw(def: ItemDef) -> void:
+## Throws one of the held item at `speed` m/s (a charged throw, ThrowHand), or as the spear's
+## quick throw (speed < 0: its own motion, the old fixed speed).
+func _throw(def: ItemDef, speed: float = -1.0) -> void:
 	if not player.state.stats.spend_stamina(def.equip_num("stamina", 6.0)):
 		return
 	# The very item thrown (its quality and wear) is what lands and can be picked up again.
 	var thrown: Array[ItemStack] = player.state.inventory.take(current, 1)
 	if thrown.is_empty():
 		return
-	if viewmodel != null:
+	if viewmodel != null and speed < 0.0:
 		viewmodel.play_use(&"throw", 0.5)
 	_cooldown = 0.7
 	var proj: Node3D = load("res://src/combat/thrown_item.gd").new()
@@ -447,10 +519,14 @@ func _throw(def: ItemDef) -> void:
 	proj.set(&"thrower", player.state.id)
 	proj.set(&"damage", def.equip_num("damage", 10.0))
 	proj.set(&"origin", player.global_position)
+	proj.set(&"lit", ThrowHand.needs_light(def) and _light_on)
 	player.get_tree().current_scene.add_child(proj)
 	var cam: Camera3D = player.camera
 	proj.global_position = cam.global_position - cam.global_transform.basis.z * 0.6
-	(proj as RigidBody3D).linear_velocity = -cam.global_transform.basis.z * 17.0 + Vector3.UP * 1.5 + player.velocity * 0.5
+	(proj as RigidBody3D).linear_velocity = -cam.global_transform.basis.z * (speed if speed > 0.0 else 17.0) + Vector3.UP * 1.5 + player.velocity * 0.5
+	Audio.play_3d(&"sfx/swing_whoosh", cam.global_position, {"volume_db": -10.0, "occlusion": false})
+	if ThrowHand.needs_light(def):
+		_set_light(false)  # the burning rag went with it
 	Events.inventory_changed.emit(player.state.id)
 
 
@@ -459,6 +535,9 @@ func _throw(def: ItemDef) -> void:
 func toggle_light() -> void:
 	var def: ItemDef = Content.item(current)
 	if def == null or not def.equip.has("light"):
+		return
+	if ThrowHand.needs_light(def) and not _light_on:
+		throw_hand.light(def)
 		return
 	var held: ItemStack = _lit_stack()
 	if not _light_on and held != null and def.durability > 0.0 and held.durability <= 0.0:
