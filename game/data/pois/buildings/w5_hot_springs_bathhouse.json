@@ -100,28 +100,28 @@
       "....................................",
       "....................................",
       "....................................",
-      "....................................",
+      "...........................FFF......",
       "...........................FFF......",
       "..SSSSSRRRRRKKKKKKKK.......FFF......",
       "..SSSSSRRRRRKKKKKKKK.......FFF......",
-      "..SSSSSRRRRRKKKKKKKK.......FFF......",
+      "..SSSSSRRRRRKKKKKKKK................",
       "..SSSSSRRRRRKKKKKKKK................",
       "..PPPPPPPPPPMMMMWWWW.......GGG......",
       "..PPPPPPPPPPMMMMWWWW.......GGG......",
       "..PPPPPPPPPPMMMMWWWW.......GGG......",
       "..PPPPPPPPPPMMMMWWWW.......GGG......",
       "..PPPPPPPPPPMMMMWWWW................",
-      "..PPPPPPPPPPMMMMWWWW.......HHH......",
+      "..PPPPPPPPPPMMMMWWWW................",
+      "..PPPPPPPPPPLLLLLLLL.......HHH......",
       "..PPPPPPPPPPLLLLLLLL.......HHH......",
       "..PPPPPPPPPPLLLLLLLL.......HHH......",
       "..PPPPPPPPPPLLLLLLLL.......HHH......",
       "..PPPPPPPPPPLLLLLLLL................",
-      "..PPPPPPPPPPLLLLLLLL.......JJJ......",
-      "...........................JJJ......",
-      "...........................JJJ......",
-      "...........................JJJ......",
       "....................................",
-      "....................................",
+      "...........................JJJ......",
+      "...........................JJJ......",
+      "...........................JJJ......",
+      "...........................JJJ......",
       "....................................",
       "....................................",
       "....................................",
@@ -564,7 +564,7 @@
      "id": "f_door",
      "at": [
       27,
-      5
+      4
      ],
      "side": "W",
      "type": "door",
@@ -575,7 +575,7 @@
      "id": "f_win",
      "at": [
       29,
-      6
+      5
      ],
      "side": "E",
      "type": "window",
@@ -606,7 +606,7 @@
      "id": "h_door",
      "at": [
       27,
-      15
+      16
      ],
      "side": "W",
      "type": "door",
@@ -617,7 +617,7 @@
      "id": "h_win",
      "at": [
       29,
-      16
+      17
      ],
      "side": "E",
      "type": "window",
@@ -628,7 +628,7 @@
      "id": "j_door",
      "at": [
       27,
-      20
+      22
      ],
      "side": "W",
      "type": "door",
@@ -639,7 +639,7 @@
      "id": "j_win",
      "at": [
       28,
-      22
+      24
      ],
      "side": "S",
      "type": "window",
@@ -1238,7 +1238,7 @@
      "prop": "bed_single",
      "at": [
       29,
-      4
+      3
      ],
      "against": "N",
      "offset": [
@@ -1251,7 +1251,7 @@
      "prop": "desk_small",
      "at": [
       28,
-      7
+      6
      ],
      "against": "S",
      "offset": [
@@ -1264,7 +1264,7 @@
      "prop": "chair_wood",
      "pos": [
       28.5,
-      6.75
+      5.75
      ],
      "rot": 180
     },
@@ -1272,7 +1272,7 @@
      "prop": "wild_oil_lantern",
      "pos": [
       28.2,
-      7.65
+      6.65
      ],
      "y": 0.75,
      "lit": true
@@ -1282,7 +1282,7 @@
      "prop": "wild_wood_stove",
      "at": [
       27,
-      7
+      6
      ],
      "against": "W"
     },
@@ -1322,7 +1322,7 @@
      "prop": "bed_single",
      "at": [
       29,
-      14
+      15
      ],
      "against": "N",
      "offset": [
@@ -1335,7 +1335,7 @@
      "prop": "wild_footlocker",
      "at": [
       28,
-      17
+      18
      ],
      "against": "S",
      "container": "w5_springs_suitcase"
@@ -1345,7 +1345,7 @@
      "prop": "bed_single",
      "at": [
       29,
-      19
+      21
      ],
      "against": "N",
      "offset": [
@@ -1359,7 +1359,7 @@
      "prop": "road_suitcase",
      "pos": [
       28.7,
-      21.9
+      23.9
      ],
      "rot": -8,
      "container": "w5_springs_suitcase"
@@ -1368,7 +1368,7 @@
      "prop": "clothes_pile",
      "pos": [
       27.6,
-      22.3
+      24.3
      ],
      "rot": 30
     },
@@ -1376,7 +1376,7 @@
      "prop": "w5_springs_boardwalk",
      "pos": [
       24.0,
-      5.0
+      4.0
      ],
      "rot": 0,
      "route_ok": true,
@@ -1386,7 +1386,7 @@
      "prop": "w5_springs_boardwalk",
      "pos": [
       24.0,
-      9.0
+      8.0
      ],
      "rot": 0,
      "route_ok": true,
@@ -1396,7 +1396,7 @@
      "prop": "w5_springs_boardwalk",
      "pos": [
       24.0,
-      13.0
+      12.0
      ],
      "rot": 0,
      "route_ok": true,
@@ -1406,7 +1406,7 @@
      "prop": "w5_springs_boardwalk",
      "pos": [
       24.0,
-      17.0
+      16.0
      ],
      "rot": 0,
      "route_ok": true,
@@ -1416,7 +1416,7 @@
      "prop": "w5_springs_boardwalk",
      "pos": [
       24.0,
-      21.0
+      20.0
      ],
      "rot": 0,
      "route_ok": true,
@@ -1426,17 +1426,27 @@
      "prop": "w5_springs_boardwalk",
      "pos": [
       24.0,
-      25.0
+      24.0
      ],
      "rot": 0,
      "route_ok": true,
      "variant": "worn"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      24.0,
+      28.0
+     ],
+     "rot": 0,
+     "route_ok": true,
+     "variant": "clean"
     },
     {
      "prop": "w5_springs_boardwalk",
      "pos": [
       25.0,
-      5.5
+      4.5
      ],
      "rot": 90,
      "route_ok": true,
@@ -1456,7 +1466,7 @@
      "prop": "w5_springs_boardwalk",
      "pos": [
       25.0,
-      15.5
+      16.5
      ],
      "rot": 90,
      "route_ok": true,
@@ -1466,7 +1476,7 @@
      "prop": "w5_springs_boardwalk",
      "pos": [
       25.0,
-      20.5
+      22.5
      ],
      "rot": 90,
      "route_ok": true,
@@ -1477,7 +1487,7 @@
      "prop": "w5_springs_rock_pool",
      "pos": [
       29.5,
-      27.6
+      28.6
      ],
      "rot": 0,
      "alt": "rock_pool:steaming"
@@ -1487,7 +1497,7 @@
      "prop": "w5_springs_rock_pool",
      "pos": [
       29.5,
-      27.6
+      28.6
      ],
      "rot": 0,
      "variant": "worn",
@@ -1498,7 +1508,7 @@
      "prop": "w5_springs_steam",
      "pos": [
       29.5,
-      27.6
+      28.6
      ],
      "rot": 0,
      "y": 0.4,
@@ -1663,7 +1673,7 @@
      "group": "guests",
      "pos": [
       29.45,
-      15.0
+      16.0
      ],
      "enemy": "hollow",
      "pose": "lie",
@@ -1675,7 +1685,7 @@
      "group": "guests",
      "pos": [
       27.8,
-      16.6
+      17.6
      ],
      "enemy": "lurcher",
      "pose": "crouch",
@@ -1811,7 +1821,7 @@
      "item": "w5_springs_staff_key",
      "pos": [
       28.1,
-      7.5
+      6.5
      ],
      "y": 0.76
     },
@@ -1839,7 +1849,7 @@
      "note": "w5_springs_guest_letter",
      "pos": [
       29.4,
-      20.6
+      22.6
      ],
      "y": 0.66
     },
@@ -1847,7 +1857,7 @@
      "note": "w5_springs_caretaker",
      "pos": [
       28.7,
-      7.55
+      6.55
      ],
      "y": 0.76
     },
@@ -1897,7 +1907,7 @@
      "type": "bear_trap",
      "pos": [
       26.4,
-      15.55
+      16.55
      ],
      "rot": 20
     },
@@ -2031,7 +2041,7 @@
     {
      "pos": [
       28.3,
-      7.5
+      6.5
      ],
      "height": 1.0,
      "color": "#ffc27a",
@@ -2176,7 +2186,7 @@
      "decal": "survivor_marks_a",
      "at": [
       28,
-      4
+      3
      ],
      "side": "N",
      "height": 1.6,
@@ -2204,7 +2214,7 @@
     {
      "at": [
       18,
-      30
+      31
      ],
      "label": "The valley road gives out at a resort of grey timber: a bathhouse, a row of cabins on a boardwalk, steam drifting off the rocks"
     },
@@ -2217,29 +2227,29 @@
     },
     {
      "at": [
-      24,
-      27
+      25,
+      28
      ],
      "label": "The boardwalk to the rock pool: still steaming, nobody in it"
     },
     {
      "at": [
       28,
-      21
+      23
      ],
      "label": "Cabin 4, open: a letter on the bed"
     },
     {
      "at": [
       25,
-      15
+      16
      ],
      "label": "Cabin 3: the door kicked in, jaws in the leaves on the step"
     },
     {
      "at": [
       28,
-      6
+      5
      ],
      "label": "The caretaker's cabin: his key ring on the desk (taking it wakes the cabins)"
     },
