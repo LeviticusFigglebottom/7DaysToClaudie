@@ -70,6 +70,8 @@ var bloom: BloomWorld
 ## mutated (volume jobs on workers hold the one they were queued with). Duck-typed here so the
 ## terrain runs without the generator.
 var caves: Object = null
+## The caves' interior reflection probes (CaveLighting, CAVES_PLAN WS-D).
+var cave_lighting: CaveLighting
 var _update_accum: float = 0.0
 
 
@@ -145,6 +147,10 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	# The regions here from the start (load_from activates their saved digs at the boot).
 	for rid3: String in regions:
 		volume.attach_region(rid3, (regions[rid3] as RegionTerrain).rect)
+	cave_lighting = CaveLighting.new()
+	cave_lighting.name = "CaveLighting"
+	add_child(cave_lighting)
+	cave_lighting.setup(self)
 
 
 ## Set before setup(): the layer textures' data, prepared on the world-load thread
@@ -214,6 +220,37 @@ func _make_region_material(rt: RegionTerrain) -> ShaderMaterial:
 	mat.set_shader_parameter("palette0", Vector4i(pal[0], pal[1], pal[2], pal[3]))
 	mat.set_shader_parameter("palette1", Vector4i(pal[4], pal[5], pal[6], pal[7]))
 	return mat
+
+
+## Region id -> its volume chunks' material (volume_material_for).
+var _volume_materials: Dictionary = {}
+const VOLUME_SPLAT_PARAMS: Array[StringName] = [&"splat0", &"splat1", &"region_rect", &"palette0", &"palette1"]
+
+
+## The volume terrain's material over an attached region: volume_terrain.gdshader with the
+## region material's splat uniforms, so a converted column's old ground surface keeps the
+## heightmap's colour (CAVES_PLAN WS-D). Null when the region isn't attached.
+func volume_material_for(rid: String) -> ShaderMaterial:
+	if _volume_materials.has(rid):
+		return _volume_materials[rid]
+	if not regions.has(rid):
+		return null
+	_make_material_of(rid)
+	var src: ShaderMaterial = _materials[rid]
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://assets/shaders/volume_terrain.gdshader")
+	textures.apply_to(mat)
+	for p: StringName in VOLUME_SPLAT_PARAMS:
+		mat.set_shader_parameter(p, src.get_shader_parameter(p))
+	mat.set_shader_parameter(&"has_splat", true)
+	_volume_materials[rid] = mat
+	return mat
+
+
+## The volume material of the attached region at (x, z), or null.
+func volume_material_at(x: float, z: float) -> ShaderMaterial:
+	var rt: RegionTerrain = region_terrain_at(x, z)
+	return volume_material_for(rt.region_id) if rt != null else null
 
 
 # --- Height queries ---------------------------------------------------------------------------
@@ -395,6 +432,7 @@ func detach_region(rid: String) -> void:
 	_lock.unlock()
 	_build_grid()
 	_materials.erase(rid)
+	_volume_materials.erase(rid)
 	t = _part("grid", t)
 	# _base_cache keeps a dug region's pristine heights (4 MB) across the detach: its digs live on
 	# in _deltas and are re-applied over them on the next attach, whatever the object then holds.

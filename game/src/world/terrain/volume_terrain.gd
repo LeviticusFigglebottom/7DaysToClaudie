@@ -218,6 +218,8 @@ static func run_job(key: Vector3i, height_fn: Callable, holes: TerrainHoles, cav
 	var built: bool = data.is_empty()
 	var d: PackedFloat32Array = build_density(key, height_fn, holes, caves, blob) if built else data
 	var res: Dictionary = mesh_density(key, d)
+	# Where the mesh is the old ground the region's splat takes over (WS-D, VolumeSurfacePaint).
+	res["colors"] = VolumeSurfacePaint.weights(res["vertices"], res["normals"], Vector3(key.x * SIZE, key.y * SIZE, key.z * SIZE), height_fn)
 	if built:
 		res["density"] = d
 	return res
@@ -716,13 +718,16 @@ func _apply(key: Vector3i, res: Dictionary) -> void:
 		c.mesh_node = MeshInstance3D.new()
 		c.mesh_node.name = "V_%d_%d_%d" % [key.x, key.y, key.z]
 		c.mesh_node.position = Vector3(key.x * SIZE, key.y * SIZE, key.z * SIZE)
-		c.mesh_node.material_override = _material
+		c.mesh_node.material_override = _material_at(key)
 		c.mesh_node.visibility_range_end = VISIBILITY_END
 		add_child(c.mesh_node)
 	var arr: Array = []
 	arr.resize(Mesh.ARRAY_MAX)
 	arr[Mesh.ARRAY_VERTEX] = verts
 	arr[Mesh.ARRAY_NORMAL] = res["normals"]
+	var colors: PackedColorArray = res.get("colors", PackedColorArray())
+	if colors.size() == verts.size():
+		arr[Mesh.ARRAY_COLOR] = colors
 	arr[Mesh.ARRAY_INDEX] = idx
 	var am := ArrayMesh.new()
 	am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
@@ -734,6 +739,16 @@ func _apply(key: Vector3i, res: Dictionary) -> void:
 	elif _chunk_distance(key, _focus_xz()) <= COLLISION_RANGE:
 		_body_queue[key] = true
 	_try_commit(Vector2i(key.x, key.z))
+
+
+## The region's volume material at a chunk (its splat and palette: TerrainManager.volume_material_for),
+## else the shared one.
+func _material_at(key: Vector3i) -> Material:
+	if terrain != null and terrain.has_method(&"volume_material_at"):
+		var m: Material = terrain.call(&"volume_material_at", (key.x + 0.5) * SIZE, (key.z + 0.5) * SIZE)
+		if m != null:
+			return m
+	return _material
 
 
 ## The chunk's collision from its triangles (made on first use).

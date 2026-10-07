@@ -10,5 +10,8 @@
   "exposure_day": 1.3,
   "exposure_night": 1.1,
   "adapt_seconds": 1.2,
-  "flash_share": 0.12
+  "flash_share": 0.12,
+  "_cave": "Caves (CaveLighting, ADR-0056): each cave probe's daylight is exp(-depth from the mouth / cave_falloff_m) of daylight_full_ratio, so the box at the mouth gets the whole fill; its share never drops below cave_min_share (a probe's min_share meta, in place of daylight_min_share).",
+  "cave_min_share": 0.06,
+  "cave_falloff_m": 6.0
 }

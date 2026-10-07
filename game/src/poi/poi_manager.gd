@@ -918,12 +918,23 @@ func _grid_remove(id: StringName) -> void:
 
 func is_indoors(pos: Vector3) -> bool:
 	var inst: PoiInstance = poi_at(pos)
-	return inst != null and inst.is_indoors(pos)
+	return (inst != null and inst.is_indoors(pos)) or in_cave(pos)
 
 
+## "cave" inside a cave (in_cave), else the building's room type.
 func room_type_at(pos: Vector3) -> String:
 	var inst: PoiInstance = poi_at(pos)
-	return inst.room_type_at(pos) if inst != null else ""
+	var room: String = inst.room_type_at(pos) if inst != null else ""
+	return "cave" if room == "" and in_cave(pos) else room
+
+
+## Inside a cave of the terrain's set (CaveSet.is_inside: air at least 1 m under the ground; ADR-0056).
+## Cheap: the set's 64 m grid answers at once away from caves, and the height is read only near one.
+func in_cave(pos: Vector3) -> bool:
+	var tm: TerrainManager = world.get(&"terrain") as TerrainManager if world != null else null
+	if tm == null or tm.caves == null or bool(tm.caves.call(&"is_empty")):
+		return false
+	return bool(tm.caves.call(&"is_inside", pos, tm.height_at(pos.x, pos.z)))
 
 
 ## Static collision roots of POIs overlapping an XZ rect (navigation baking).
