@@ -40,6 +40,18 @@ const PERIPHERAL_DEG: float = 45.0
 const PERIPHERAL_RANGE: float = 0.5
 ## By day a plain Hollow investigating comes at this fraction of its run speed (a jog, not a stroll).
 const DAY_INVESTIGATE_PACE: float = 0.75
+## First contact is not instant (TD-191): an awake plain Hollow that catches sight of you stops,
+## groans and turns to look, and commits (the alert cry, CHASE) once its suspicion fills. It fills
+## in NOTICE_EDGE x (distance / range)^2 s, at least NOTICE_MIN (one perception tick: within ~38 %
+## of its range it is at once, at the edge ~1.75 s); an investigating one, already roused, fills
+## twice as fast; out of sight it drains at NOTICE_DRAIN a second (docs/AI_TUNING.md).
+const NOTICE_MIN: float = 0.25
+const NOTICE_EDGE: float = 1.75
+const NOTICE_DRAIN: float = 0.5
+## Going round a log, a rock or a trunk it walked into (TD-191): what a clear way on is probed
+## against (world, structures, props, vegetation), and how long a detour holds after the last bump.
+const DETOUR_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 12)
+const DETOUR_HOLD: float = 1.2
 
 signal died(enemy: Enemy)
 
@@ -91,6 +103,18 @@ var _stagger_t: float = 0.0
 var _hit_at: float = -1.0
 var _heard_seq: int = 0
 var _stuck_t: float = 0.0
+## Suspicion before first contact (0..1, NOTICE_*), where it last saw you, and whether it groaned.
+var _notice: float = 0.0
+var _notice_at := Vector3.INF
+var _notice_voiced: bool = false
+## A detour round an obstacle: the side it goes (+1 / -1, kept a while so it doesn't dither), time
+## left, and the obstacle's face (horizontal normal) it slides along.
+var _detour_side: float = 0.0
+var _detour_t: float = 0.0
+var _detour_n := Vector3.ZERO
+var _detour_mem: float = 0.0
+var _detour_goal := Vector3.ZERO
+var _detour_wedged: float = 0.0
 ## Navigation: the goal the agent's current path leads to, and time until a forced re-path.
 var _nav_goal := Vector3.INF
 var _nav_t: float = 0.0
@@ -359,6 +383,10 @@ func _physics_process(delta: float) -> void:
 				_charge_impact_player(p)
 			if _charge_hit or _state_t > float((def.beh("charge", {}) as Dictionary).get("max_time", 2.4)):
 				_set_state(State.CHASE)
+		State.IDLE, State.WANDER when _notice > 0.0 and _notice_at != Vector3.INF:
+			# Something caught its eye: it stops and turns to look before it commits (TD-191).
+			want = Vector3.ZERO
+			_face(_notice_at)
 		State.IDLE:
 			if _state_t > _idle_for:
 				_idle_for = _rng.randf_range(2.5, 6.0)
@@ -464,6 +492,8 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 			_yaw_target = atan2(want.x, want.z)
 		rotation.y = lerp_angle(rotation.y, _yaw_target, minf(1.0, delta * 5.0))
 		return
+	if state != State.CHARGE:
+		want = _detour(want, delta)
 	var v: Vector3 = velocity
 	v.x = want.x
 	v.z = want.z
@@ -477,6 +507,8 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 		var wall: Node3D = _blocking_structure()
 		if wall != null:
 			_charge_impact_structure(wall)
+	elif want.length() > 0.05:
+		_check_detour(want, delta)
 	if want.length() > 0.05:
 		_yaw_target = atan2(want.x, want.z)
 		# Walls in the way of something that wants in get torn down.
@@ -510,6 +542,79 @@ func _blocking_structure() -> Node3D:
 		if c is Node and (c as Node).has_meta(&"breakable"):
 			return c
 	return null
+
+
+## Going round what it walked into (TD-191): a fallen log, a boulder, a trunk. The nav tiles carve
+## trunks but only a small square at a fallen log's middle (VegetationManager.obstacles_in_rect),
+## and off the baked tiles there is no path at all, so a body heading for you can meet a log
+## broadside. While a detour is on, it slides along the obstacle's face to its chosen side until
+## the way toward its goal is clear at knee height, or DETOUR_HOLD s after the last bump.
+func _detour(want: Vector3, delta: float) -> Vector3:
+	_detour_mem = maxf(0.0, _detour_mem - delta)
+	if _detour_t <= 0.0 or want.length() < 0.05:
+		_detour_t = 0.0
+		return want
+	_detour_t -= delta
+	_detour_goal = want
+	if _detour_t < DETOUR_HOLD - 0.25 and _way_clear(want.normalized()):
+		_detour_t = 0.0
+		return want
+	var along: Vector3 = _detour_n.cross(Vector3.UP) * _detour_side
+	return (along + _detour_n * 0.05).normalized() * want.length()
+
+
+## After a move: bumped into something it can't break (not a structure: those it tears at, not a
+## body) and made no headway toward its goal, it starts (or renews) a detour. The side is where the
+## goal leans, or either when it meets the thing square on; it is kept for a few seconds (no
+## dithering at a long log) and flipped when it is wedged in a corner.
+func _check_detour(want: Vector3, delta: float) -> void:
+	var n: Vector3 = _wall_normal()
+	if n == Vector3.ZERO:
+		return
+	var goal: Vector3 = (_detour_goal if _detour_t > 0.0 else want).normalized()
+	var flat_v := Vector3(velocity.x, 0.0, velocity.z)
+	if _detour_t <= 0.0 and flat_v.dot(goal) > want.length() * 0.7:
+		return  # glancing off it, still getting on
+	if _detour_t > 0.0 and flat_v.length() < want.length() * 0.25:
+		_detour_wedged += delta
+		if _detour_wedged > 0.8:
+			_detour_wedged = 0.0
+			_detour_side = -_detour_side
+	else:
+		_detour_wedged = 0.0
+	if _detour_side == 0.0 or (_detour_t <= 0.0 and _detour_mem <= 0.0):
+		var lean: float = n.cross(Vector3.UP).dot(goal)
+		_detour_side = signf(lean) if absf(lean) > 0.15 else (1.0 if _rng.randf() < 0.5 else -1.0)
+	_detour_n = n
+	_detour_t = DETOUR_HOLD
+	_detour_mem = 4.0
+
+
+## The face of a static obstacle it is pressed against (horizontal normal), or ZERO: not the ground,
+## not a body, not a structure or breakable (those go to BREAK in _move).
+func _wall_normal() -> Vector3:
+	for i: int in get_slide_collision_count():
+		var c: KinematicCollision3D = get_slide_collision(i)
+		var n: Vector3 = c.get_normal()
+		var o: Object = c.get_collider()
+		if n.y > 0.5 or o is CharacterBody3D or o is RigidBody3D or o is StructurePiece \
+				or (o is Node and (o as Node).has_meta(&"breakable")):
+			continue
+		var h := Vector3(n.x, 0.0, n.z)
+		if h.length() > 0.1:
+			return h.normalized()
+	return Vector3.ZERO
+
+
+## Nothing in the way along `dir` for 3 m at knee height (a hit on a ground-like slope counts as clear).
+func _way_clear(dir: Vector3) -> bool:
+	if not is_inside_tree():
+		return true
+	var from: Vector3 = global_position + Vector3.UP * 0.45
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 3.0, DETOUR_MASK)
+	q.exclude = [get_rid()]
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(q)
+	return hit.is_empty() or (hit["normal"] as Vector3).y > 0.6
 
 
 ## Direction toward `to` along the navmesh (around houses, through doorways). The path is only
@@ -644,6 +749,7 @@ func _perceive(p: Player, dist: float) -> void:
 	if state == State.SLEEP:
 		range_m *= 0.35 * _wake_factor
 	var sees: bool = false
+	var seen_within: float = range_m  # the range it saw them within (half of it at the edge of the eye)
 	if dist < range_m:
 		var to_p: Vector3 = (p.global_position - global_position)
 		var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
@@ -653,8 +759,13 @@ func _perceive(p: Player, dist: float) -> void:
 		if not in_view and state != State.SLEEP and _plain_hollowed():
 			# Peripheral vision: movement just outside the cone, at closer range.
 			in_view = ang < fov * 0.5 + PERIPHERAL_DEG and dist < range_m * PERIPHERAL_RANGE and p.horizontal_speed() > 0.5
+			seen_within = range_m * PERIPHERAL_RANGE
 		if in_view and _line_of_sight(p):
 			sees = true
+	if not sees and _notice > 0.0:
+		_notice = maxf(0.0, _notice - NOTICE_DRAIN * PERCEPTION_INTERVAL * (1.0 if dist < 60.0 else 3.0))
+		if _notice <= 0.0:
+			_notice_voiced = false
 	if sees:
 		if state == State.SLEEP:
 			awareness += 0.25 + (1.0 - dist / maxf(range_m, 0.1)) * 0.6
@@ -662,6 +773,8 @@ func _perceive(p: Player, dist: float) -> void:
 				_wake(p.global_position, true)
 			return
 		var first: bool = _now() - last_seen_time > MEMORY_SECONDS
+		if first and not _noticed(p, dist, seen_within):
+			return  # still making out what it saw (TD-191)
 		last_seen_time = _now()
 		target_pos = p.global_position
 		if not quad.is_empty():
@@ -720,6 +833,29 @@ func _alert_nearby(at: Vector3) -> void:
 	for e: Enemy in director.call(&"enemies_in_radius", global_position, float(def.beh("alert_radius", 30.0))):
 		if e != self and e._plain_hollowed() and not e.horde and e.state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
 			e.notice(at)
+
+
+## First contact (TD-191): whether an awake plain Hollow, seeing the player `dist` m off within
+## `within` m (its range, or the peripheral one), has made them out yet. Each perception tick adds
+## to its suspicion; the first one stops it to look (a low groan; IDLE and WANDER stand and face
+## the spot), and when it fills the sighting goes through (the alert cry and the chase, in
+## _perceive). Hounds, the Ashen, the Hum and a body already hunting commit at once, as before.
+func _noticed(p: Player, dist: float, within: float) -> bool:
+	if not _plain_hollowed() or horde or state not in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+		_notice = 0.0
+		return true
+	var edge: float = clampf(dist / maxf(within, 0.1), 0.0, 1.0)
+	var need: float = maxf(NOTICE_MIN, NOTICE_EDGE * edge * edge * (0.5 if state == State.INVESTIGATE else 1.0))
+	_notice += PERCEPTION_INTERVAL * (1.0 if dist < 60.0 else 3.0) / need
+	_notice_at = p.global_position
+	if _notice >= 0.999:
+		_notice = 0.0
+		_notice_voiced = false
+		return true
+	if not _notice_voiced:
+		_notice_voiced = true
+		Audio.play_3d(&"voice/lurcher_pant" if def.archetype == "feral" else &"voice/hollow_groan_idle", _mouth(), {"volume_db": -3.0, "pitch": 1.15})
+	return false
 
 
 ## A held (ambush) sleeper sees and hears nothing ordinary: only gunfire, explosions or an alarm
