@@ -1312,7 +1312,7 @@ class PoseSolver:
         c = sh + f * l2
         return c + _n(np.asarray(wrist) - c) * l1, c
 
-    def _fit(self, sd: str, g, F, elbow, movable: bool = True, item=None):
+    def _fit(self, sd: str, g, F, elbow, movable: bool = True, item=None, fixed_roll: bool = False):
         """(wrist, Rh, pole) for a grip at g with its handle along F's z: the elbow and the roll
         round the handle that bend the wrist least; then, if the wrist is still past its range,
         the hand moved (tool direction kept) just far enough toward where a straight wrist would
@@ -1340,12 +1340,16 @@ class PoseSolver:
         def cost(gg, sw, sp):
             return over(gg, sw, sp) + self.SWING_COST * abs(sw) + self.SPIN_COST * abs(sp)
 
+        # A pinned roll (`fixed_roll`: a gun's barrel, an inspect's turn-over) searches the elbow only.
+        spins = (0.0,) if fixed_roll else self.SPINS
+        near_spin = (0.0,) if fixed_roll else self.NEAR
+
         def search(gg, around):
             if around is None:
-                best = min(((a, b) for a in self.SWINGS for b in self.SPINS), key=lambda c: cost(gg, *c))
+                best = min(((a, b) for a in self.SWINGS for b in spins), key=lambda c: cost(gg, *c))
             else:
                 best = around
-            near = ((best[0] + a, best[1] + b) for a in self.NEAR for b in self.NEAR)
+            near = ((best[0] + a, best[1] + b) for a in self.NEAR for b in near_spin)
             # Within the wide search's bounds: walked frame to frame, the fist once spun 160° round
             # its handle and the elbow swung behind the back.
             return min((c for c in near if abs(c[0]) <= self.SWINGS[-1] and abs(c[1]) <= self.SPINS[-1]),
@@ -1419,7 +1423,8 @@ class PoseSolver:
             else:
                 g, F = h.g, h.F
             # A hand on the other's handle stays on it: it can turn, not move.
-            g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None, item=h.item)
+            g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None, item=h.item,
+                                           fixed_roll=sd in hands.get("_fixed_roll", ()))
             # What the hand really ended up gripping (the other hand follows this handle).
             placed[sd] = Hand(g, Rh @ self.rig.S0[sd], h.elbow, h.sc, item=h.item)
             prm[f"{sd}.wrist"], prm[f"{sd}.Rh"] = wrist, Rh
@@ -1512,6 +1517,15 @@ def _keyed(pose: dict, keys: list, n: int) -> list[dict]:
     return frames
 
 
+def _pinned(frames: list[dict], sides: tuple) -> list[dict]:
+    """Frames whose hands on `sides` keep their authored roll about what they hold (`fixed_roll`
+    on a hold or an action): PoseSolver won't spin those fists to spare the wrist."""
+    if sides:
+        for fr in frames:
+            fr["_fixed_roll"] = sides
+    return frames
+
+
 def fp_actions(cfg: dict):
     """[(name, frames, loop, per-frame hands)] for every action the data asks for: per hold class
     its idle (fp_<class>), guard (fp_<class>_guard) and tether-reading (fp_<class>_tether) loops;
@@ -1523,14 +1537,15 @@ def fp_actions(cfg: dict):
         if cls.startswith("_") or "pose" not in h:
             continue
         pose = h["pose"]
-        out.append((f"fp_{cls}", 60, True, _idle(with_item(pose, h))))
+        fixed = tuple(h.get("fixed_roll", ()))
+        out.append((f"fp_{cls}", 60, True, _pinned(_idle(with_item(pose, h)), fixed)))
         if "guard" in h:
-            out.append((f"fp_{cls}_guard", 60, True, _idle(with_item(merge_pose(pose, h["guard"]), h))))
+            out.append((f"fp_{cls}_guard", 60, True, _pinned(_idle(with_item(merge_pose(pose, h["guard"]), h)), fixed)))
         if "pose" in tether and not h.get("no_tether", False):
             over = {"L": tether["pose"]["L"]}
             if "tether_right" in h:
                 over["R"] = h["tether_right"]
-            out.append((f"fp_{cls}_tether", 60, True, _idle(with_item(merge_pose(pose, over), h))))
+            out.append((f"fp_{cls}_tether", 60, True, _pinned(_idle(with_item(merge_pose(pose, over), h)), fixed)))
     for group in ("attacks", "uses"):
         for name, a in cfg.get(group, {}).items():
             if name.startswith("_") or "keys" not in a:
@@ -1539,5 +1554,7 @@ def fp_actions(cfg: dict):
             if "pose" in a:
                 pose = merge_pose(pose, a["pose"])
             n = int(a["frames"])
-            out.append((f"fp_{name}", n, bool(a.get("loop", False)), _keyed(with_item(pose, holds[a["hold"]]), a["keys"], n)))
+            fixed = tuple(a.get("fixed_roll", holds[a["hold"]].get("fixed_roll", ())))
+            out.append((f"fp_{name}", n, bool(a.get("loop", False)),
+                        _pinned(_keyed(with_item(pose, holds[a["hold"]]), a["keys"], n), fixed)))
     return out

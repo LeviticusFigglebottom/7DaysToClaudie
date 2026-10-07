@@ -23,6 +23,13 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "shovel_dig", "item": "shovel", "action": "fp_dig", "frame": 12},
 	{"name": "punch", "item": "", "action": "fp_punch", "frame": 7},
 	{"name": "revolver_idle", "item": "revolver"},
+	{"name": "revolver_fire", "item": "revolver", "action": "fp_fire_pistol", "frame": 2},
+	{"name": "revolver_reload_open", "item": "revolver", "action": "fp_reload_pistol", "frame": 16},
+	{"name": "revolver_reload_eject", "item": "revolver", "action": "fp_reload_pistol", "frame": 22},
+	{"name": "revolver_reload_load", "item": "revolver", "action": "fp_reload_pistol", "frame": 40},
+	{"name": "revolver_reload_close", "item": "revolver", "action": "fp_reload_pistol", "frame": 64},
+	{"name": "revolver_inspect_right", "item": "revolver", "action": "fp_inspect_pistol", "frame": 24},
+	{"name": "revolver_inspect_left", "item": "revolver", "action": "fp_inspect_pistol", "frame": 52},
 	{"name": "torch_day", "item": "torch", "lit": true},
 	{"name": "torch_night", "item": "torch", "lit": true, "night": true},
 	{"name": "flashlight_idle", "item": "flashlight"},
@@ -65,6 +72,16 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "chime_idle", "item": "can_chime"},
 	{"name": "chime_place", "item": "can_chime", "action": "fp_place", "frame": 12},
 	{"name": "bottle_drink_lift", "item": "water_bottle_clean", "action": "fp_drink", "frame": 12},
+	# Spear and shovel: thrust windup, dig pry, guards, tether, inspects (turned one way, the other).
+	{"name": "spear_stab_windup", "item": "crude_spear", "action": "fp_stab", "frame": 5},
+	{"name": "spear_guard", "item": "crude_spear", "guard": true},
+	{"name": "spear_inspect_a", "item": "crude_spear", "action": "fp_inspect_spear", "frame": 30},
+	{"name": "spear_inspect_b", "item": "crude_spear", "action": "fp_inspect_spear", "frame": 46},
+	{"name": "shovel_dig_pry", "item": "shovel", "action": "fp_dig", "frame": 17},
+	{"name": "shovel_guard", "item": "shovel", "guard": true},
+	{"name": "shovel_tether", "item": "shovel", "tether": true},
+	{"name": "shovel_inspect_a", "item": "shovel", "action": "fp_inspect_two_hand", "frame": 30},
+	{"name": "shovel_inspect_b", "item": "shovel", "action": "fp_inspect_two_hand", "frame": 46},
 ]
 
 var _out: String = "res://../build/fp_preview"

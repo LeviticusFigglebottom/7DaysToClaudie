@@ -153,7 +153,7 @@ sliding at any playback speed.
   `"R.curls": {...}` overrides those fingers for that key (the others keep the hold's), and a
   finger named at either key eases between what it closes to at each. A hold's
   `item.rot` turns the item in the fist (an oblique grip: the spear's shaft lies 60° across the
-  palm); a hand `on` the other grips along the item's axis and the fist rolls about it.
+  palm); a hand `on` the other grips along the item's axis and the fist rolls about it. `fixed_roll` (on a hold, or an attack/use) pins a fist's authored roll instead (a gun's barrel stays on aim, an inspect's turn-over shows).
 * Arms enter from the lower corners: the Remand jumpsuit sleeves are rolled to just below the
   elbow (`M_fp_sleeve`, cloth shader), bare forearms and hands (`M_fp_skin`, skin shader), nails
   (`M_fp_nail`). The **tether** is bolted over the back of the left wrist, rigid on

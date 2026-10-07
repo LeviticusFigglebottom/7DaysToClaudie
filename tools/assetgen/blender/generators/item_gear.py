@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import math
 
+import bpy
 from mathutils import Matrix, Vector, noise
 
 from lib import common, item_kit as K, item_props as P
@@ -42,6 +43,10 @@ def _superellipse(n_pts=16, power=4.0):
 
 # ------------------------------------------------------------------------------------------------
 
+# The crane pin (model frame, before the turn): low in the bottom strap, left of centre.
+PIVOT = (-0.003, 0.04, 0.029)
+
+
 def revolver(p):
     mb = K.MB()
     zb = 0.068                    # bore axis height
@@ -61,12 +66,13 @@ def revolver(p):
     # ejector-rod shroud (underlug)
     lug = [Vector((0, f, zb - 0.0108)) for f in (0.074, 0.11, 0.152)]
     K.tube(mb, lug, (0.0052, 0.0072), profile=_superellipse(12, 3.0), mat="item_steel_blued")
-    _lathe_y(mb, [(0.0031, 0.0), (0.0031, 0.0045), (0.0026, 0.0055)], (0, 0.152, zb - 0.0118), segments=10, mat="item_steel_tool",
-             cap_bottom=False, cap_top=True)
     # front sight ramp, rear sight notch block
     _side(mb, [(0.146, zb + 0.0078), (0.167, zb + 0.0078), (0.167, zb + 0.0142), (0.161, zb + 0.0156)], 0.0032, "item_steel_blued")
     K.box(mb, (0.010, 0.006, 0.0018), (0, -0.004, 0.0866), mat="item_steel_blued", bevel=0.0005)
-    # cylinder with flutes and chamber mouths
+    # cylinder with flutes and chamber mouths: its own node `cylinder` (with the crane, the ejector rod
+    # and the rounds' heads on its rear face) that swings out to the left about the crane pin in the
+    # bottom strap, so the reload can open it (viewmodel.json uses.reload_pistol.parts)
+    frame_mb, mb = mb, K.MB()
     segs = 36
 
     def flute(k, i, r, z):
@@ -86,6 +92,21 @@ def revolver(p):
         a = j * math.pi / 3 + math.pi / 2
         _lathe_y(mb, [(0.0044, 0.0), (0.0044, 0.0003)], (math.cos(a) * 0.0118, 0.0613, zc + math.sin(a) * 0.0118), segments=10,
                  mat="item_charcoal", cap_bottom=False, cap_top=True)
+    for j in range(6):
+        a = j * math.pi / 3 + math.pi / 2
+        at = (math.cos(a) * 0.0118, 0.0215 - 0.0007, zc + math.sin(a) * 0.0118)
+        _lathe_y(mb, [(0.0049, 0.0), (0.0049, 0.0007)], at, segments=12, mat="item_brass", cap_bottom=True, cap_top=False)
+        _lathe_y(mb, [(0.0017, 0.0), (0.0017, 0.0002)], (at[0], at[1] - 0.0002, at[2]), segments=8, mat="item_copper",
+                 cap_bottom=True, cap_top=False)
+    # crane (the yoke from the pin up to the cylinder's front) and the ejector rod under the barrel
+    _side(mb, [(0.0613, PIVOT[2] - 0.003), (0.0655, PIVOT[2] - 0.003), (0.0655, zc + 0.004), (0.0613, zc + 0.004)], 0.007,
+          "item_steel_blued", x=PIVOT[0] * 0.5, chamfer=0.001)
+    _lathe_y(mb, [(0.0024, 0.0), (0.0024, 0.0905)], (0, 0.0613, zc), segments=10, mat="item_steel_tool", cap_bottom=False,
+             cap_top=False)
+    _lathe_y(mb, [(0.0031, 0.0), (0.0031, 0.0045), (0.0026, 0.0055)], (0, 0.152, zc), segments=10, mat="item_steel_tool",
+             cap_bottom=False, cap_top=True)
+    cylinder = mb.build("cylinder", sharp_deg=38)
+    mb = frame_mb
     # hammer, trigger, guard
     _side(mb, [(-0.004, 0.058), (0.003, 0.066), (0.000, 0.0772), (-0.009, 0.0832), (-0.019, 0.0868), (-0.030, 0.0892), (-0.0345, 0.0872),
                (-0.028, 0.0828), (-0.020, 0.0768), (-0.016, 0.064), (-0.011, 0.057)], 0.0058, "item_steel_dark", chamfer=0.0012)
@@ -115,8 +136,15 @@ def revolver(p):
     gc = (g0 + g1) / 2
     xf = TURN @ Matrix.Translation(-gc)
     obj.data.transform(xf)
+    cylinder.data.transform(xf)
+    # the cylinder's node origin on the crane pin (its axis along the bore): a turn about its local
+    # Y (Godot Z) swings it out
+    piv = xf @ Vector(PIVOT)
+    cylinder.data.transform(Matrix.Translation(-piv))
+    cylinder.location = piv
+    bpy.context.view_layer.update()
     sockets = [K.socket("socket_muzzle", xf @ Vector((0, 0.1702, zb)), (0, -1, 0))]
-    return [obj], sockets
+    return [obj], sockets, [cylinder]
 
 
 def flashlight(p):
@@ -346,6 +374,9 @@ BUILDERS = {
 
 def build(params: dict, outputs: list[str]) -> None:
     fn, vm, ground, settle = BUILDERS[params["kind"]]
-    parts, sockets = fn(params)
+    out = fn(params)
+    parts, sockets = out[0], out[1]
+    separate = out[2] if len(out) > 2 else ()
     K.publish(outputs, name=params.get("name", params["kind"]), parts=parts, seed=int(params["seed"]), viewmodel=vm,
-              ground_rot=ground, sockets=sockets, settle_deg=settle, wear_deg=float(params.get("wear_deg", 30.0)))
+              ground_rot=ground, sockets=sockets, separate=separate, settle_deg=settle,
+              wear_deg=float(params.get("wear_deg", 30.0)))

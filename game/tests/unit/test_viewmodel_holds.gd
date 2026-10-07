@@ -40,6 +40,27 @@ func test_swings_and_uses_follow_the_class() -> void:
 		assert_between(f, 0.2, 0.7, "%s connects partway through its swing" % style)
 
 
+func test_revolver_fires_reloads_and_inspects() -> void:
+	# The shot, reload and inspect hooks play uses.<kind>_<hold class>: the revolver's must exist,
+	# key on its hold, and the reload must swing the cylinder out and back shut by its last frame.
+	var cls: StringName = _cls(&"revolver")
+	var uses: Dictionary = ViewModelHolds.config().get("uses", {})
+	for kind: String in ["fire", "reload", "inspect"]:
+		var use: Dictionary = uses.get("%s_%s" % [kind, cls], {})
+		assert_false(use.is_empty(), "uses.%s_%s" % [kind, cls])
+		assert_eq(StringName(str(use.get("hold", ""))), cls, "%s keys on the %s hold" % [kind, cls])
+	var reload: Dictionary = uses.get("reload_%s" % cls, {})
+	var cyl: Array = (reload.get("parts", {}) as Dictionary).get("cylinder", [])
+	assert_false(cyl.is_empty(), "the reload opens the cylinder")
+	var opened: float = 0.0
+	for f: int in int(reload.get("frames", 0)) + 1:
+		opened = maxf(opened, ViewModel.part_rotation(cyl, float(f)).length())
+	assert_gt(opened, 60.0, "the cylinder swings well clear")
+	assert_eq(ViewModel.part_rotation(cyl, float(reload.get("frames", 0))), Vector3.ZERO, "and is shut again")
+	assert_almost_eq(float((uses.get("fire_%s" % cls, {}) as Dictionary).get("frames", 0)) / 30.0, 0.27, 0.1,
+		"the shot's own kick is short")
+
+
 func test_every_equippable_item_has_a_known_hold() -> void:
 	var cfg: Dictionary = ViewModelHolds.config()
 	var holds: Dictionary = cfg.get("holds", {})
