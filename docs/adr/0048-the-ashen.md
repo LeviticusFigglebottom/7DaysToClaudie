@@ -1,6 +1,6 @@
 # ADR-0048: The Ashen: a human raider faction with camps, scouts, raids, morale and fear of fire
 
-**Status**: Accepted · 2026-10 (phase 1 and phase 2 landed, session 2: raids that path, gardens, saved bands, Ashen vs Hollowed, living clips; firebrands, territory and alliance open)
+**Status**: Accepted · 2026-10 (phase 1 and phase 2 landed, session 2: raids that path, gardens, saved bands, Ashen vs Hollowed, living clips, firebrands, per-camp standing; a territory map and alliance open)
 
 ## Context
 DESIGN §1, §4 and §6 promise the Ashen: survivors who fled to the high timber, smear themselves with
@@ -161,6 +161,34 @@ A raid or a scout in progress isn't saved; it is simply over after a reload.
 * **Morale.** Seeing a Hollowed doesn't break them (they fight); wounds and fallen mates count as
   ever, and the Hum still sends scouts and raids running.
 * Left (TD-186): threat weighing, offscreen fights, Ashen burning nests, sound and scent of a foe.
+
+### Phase 2: firebrands and per-camp standing (TD-189, TD-190)
+* **The firebrand.** `ashen_firebrand` (`data/enemies/ashen.json`): tribe role `firebrand`, the
+  raiders' bodies, gamestage_min 30. Its `behavior.tribe.strike_type: "fire"` types its blows on
+  structures: `Enemy._strike_structure` hands the DamageInfo to `AshenMind.arm_blow` (a one-line
+  hook), and BuildingManager.damage_piece applies the piece's `damage_mult.fire` where a raider's
+  blow takes `damage_mult.zombie` (wood 1.4-2.5x, a stone fire ring nothing). There is no burning
+  state for pieces, so fire is a damage multiplier only; nothing catches and spreads. Its
+  `light` is the brand: an OmniLight3D on the body registered with Stimuli (it lights the dark
+  round a war party), doused when it falls. Their fear of fire is the outsider's: AshenMind
+  counts only the player's held flame and lit structures, so a band never shies from its own brand.
+* **War parties.** Level 3's raid table lists the firebrand, and `raids.with` (per level,
+  `{enemy: count}`, first in the band, the rest rolled from `enemies`) makes every war party carry
+  one. Level 2's raids are unchanged (same rolls).
+* **Per-camp standing.** Beside the world-wide hostility (still the escalation driver) each camp
+  keeps `anger` in `world.ashen.camps[id]` (no version bump; older saves have none, read as 0),
+  raised by `standing.anger` events tied to it: trespass in its territory (once a day, with the
+  hostility gain), the player killing one of its people (a resident, or a raider or scout it sent:
+  bands carry their camp id), heat in its territory, and `kin_wiped` for every other camp when one
+  is wiped out. Scaled by `ashen_aggression`, capped at `standing.max`, less
+  `standing.decay_per_day` each dawn. A wiped camp's anger never rises again.
+* **Where a band comes from.** A scout or raid comes from the angriest living (not wiped) placed
+  camp whose anger is at least `standing.lead` (ties by id): out of the ring within
+  `standing.spread` degrees of the bearing from the base (or player) toward that camp, in place of
+  the dark side. With none, phase 2's rule stands (the dark side, or anywhere). The raid's camp is
+  saved in `live` with it. A wiped camp sends nothing.
+* Left (TD-190): a territory map that shifts over weeks; a camp's anger choosing only where a band
+  comes from, not how often or how many; the main map's F2/F4 camps.
 
 ## Consequences
 * The wilderness gets a second, thinking enemy that answers to what the player does: where they

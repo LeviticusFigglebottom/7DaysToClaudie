@@ -69,7 +69,15 @@ static func raid_roll(fd: FactionDef, world_seed: int, day: int, level: int, gam
 	if table.is_empty():
 		return {}
 	var members: Array[String] = []
-	for i: int in n:
+	# The level's `with` fighters come first (a war party's firebrand), then the rest are rolled.
+	var musts: Dictionary = FactionDef.per_level(fd.raids.get("with", []), level, {})
+	var must_ids: Array = musts.keys()
+	must_ids.sort()
+	for k: Variant in must_ids:
+		for j: int in int(musts[k]):
+			if members.size() < n:
+				members.append(str(k))
+	while members.size() < n:
 		members.append(String(Weighted.pick_key(table, rng)))
 	return {"hour": rng.randf_range(float(h[0]), float(h[1])), "size": n, "members": members}
 
@@ -82,6 +90,40 @@ static func raid_size(fd: FactionDef, level: int, gamestage: int, rng: RandomNum
 		return 0
 	n += int(floor(float(gamestage) * float(fd.raids.get("per_gamestage", 0.0))))
 	return mini(n, int(fd.raids.get("max_size", 9)))
+
+
+# --- Per-camp standing (TD-190) ---------------------------------------------------------------------
+
+## A camp's anger after an event tied to it (`FactionDef.STANDING_EVENTS`), `times` over, scaled
+## by the aggression setting, capped at standing.max.
+static func anger(fd: FactionDef, current: float, event: String, times: float = 1.0, aggression: String = "normal") -> float:
+	var g: float = float((fd.standing.get("anger", {}) as Dictionary).get(event, 0.0)) * times * float(AGGRESSION.get(aggression, 1.0))
+	return clampf(current + g, 0.0, float(fd.standing.get("max", 100.0)))
+
+
+## A camp's anger at the next dawn: it fades by decay_per_day.
+static func anger_at_dawn(fd: FactionDef, current: float) -> float:
+	return maxf(0.0, current - float(fd.standing.get("decay_per_day", 0.0)))
+
+
+## The camp a band comes from: of `ids` (the placed camps), the living one (not wiped) with the
+## most anger in `camp_states` (WorldState.ashen.camps), at least standing.lead; ties by id. "" for
+## none.
+static func angriest(fd: FactionDef, camp_states: Dictionary, ids: Array) -> String:
+	var lead: float = float(fd.standing.get("lead", 5.0))
+	var best: String = ""
+	var best_a: float = -1.0
+	var sorted: Array = ids.duplicate()
+	sorted.sort()
+	for id: Variant in sorted:
+		var cs: Dictionary = camp_states.get(str(id), {})
+		var a: float = float(cs.get("anger", 0.0))
+		if bool(cs.get("wiped", false)) or a < lead:
+			continue
+		if a > best_a:
+			best = str(id)
+			best_a = a
+	return best
 
 
 # --- Morale -------------------------------------------------------------------------------------

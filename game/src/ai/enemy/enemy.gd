@@ -790,6 +790,7 @@ func _deliver_hit(p: Player) -> void:
 func _strike_structure() -> void:
 	visual.play(&"attack_structure", 1.0, 0.2, [&"attack_a"] as Array[StringName])
 	var info := DamageInfo.make(def.atk("structure_damage", 10.0) * structure_mult, &"zombie", &"zombie", entity_id)
+	if tribe != null: tribe.arm_blow(info)  # a firebrand's blows are fire (ADR-0048, TD-189)
 	info.hit_pos = break_target.global_position + Vector3.UP * 0.8
 	info.source_pos = global_position
 	info.direction = (break_target.global_position - global_position).normalized()
