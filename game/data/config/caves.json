@@ -1,21 +1,27 @@
 {
-	"_doc": "Cave generator settings (ADR-0056, docs/CAVES_PLAN.md). Read by CavePlan.build / CaveSites through the config dictionary passed in (the planner never reads Content itself). Lengths, radii and distances are metres; angles are degrees. A style's ranges are [min, max] picked by the cave's seed. Changing a shape number changes every cave: bump CavePlan.GEN_VERSION with it.",
+	"_doc": "Cave generator settings (ADR-0056, docs/CAVES_PLAN.md). Passed whole to CavePlan.build / CaveSites (the planner never reads Content itself); CavePlan.DEFAULTS mirrors this file. Metres and degrees; [min, max] ranges are picked by the cave's seed. Changing a shape number changes every cave: bump CavePlan.GEN_VERSION with it.",
 	"min_cover": 2.0,
 	"min_clear": 2.2,
 	"min_mouth_r": 1.4,
 	"min_slope_deg": 18.0,
 	"search": 12.0,
 	"region_margin": 32.0,
+	"_outside": "The spine starts this far down the slope from the mouth, so the tube breaks through the surface by itself.",
 	"outside": 1.5,
 	"step": 1.0,
-	"floor_drop": 0.55,
+	"_pitch": "Into the hill (negative = down). A plan short of cover deepens its pitch 2 degrees at a time to pitch_limit_deg, then shortens.",
 	"pitch_deg": [-12.0, -4.0],
+	"pitch_limit_deg": -20.0,
 	"yaw_wander_deg": 22.0,
 	"pitch_wander_deg": 3.0,
+	"_apron": "Vegetation keep-out reaches this far down the slope from the spine's start.",
 	"apron": 3.0,
-	"warp": {"_doc": "Seeded 3D lattice (cell metres, cells per side, amplitude metres) warping the capsule distance; precomputed per plan.", "cell": 2.0, "size": 16, "amp": 0.45},
+	"_daylight_falloff": "Probe daylight_ratio = exp(-depth from the mouth / this).",
+	"daylight_falloff": 6.0,
+	"warp": {"_doc": "Seeded 3D lattice warping the walls (cell in metres, amplitude in metres of wall offset); precomputed per plan, faded out over the first 3 m past the mouth.", "cell": 2.0, "amp": 0.45},
 	"styles": {
-		"shelter": {"length": [6.0, 10.0], "radius": [2.5, 3.5], "taper": 0.85, "points": [3, 4], "chamber": [], "pocket_chance": 0.0},
-		"grotto": {"length": [12.0, 30.0], "radius": [1.9, 2.6], "taper": 1.0, "points": [4, 6], "chamber": [5.0, 9.0], "chamber_height": [3.2, 4.5], "pocket_chance": 0.5, "pocket_radius": [1.6, 2.2]}
+		"_doc": "floor_drop: the floor sits this share of the radius under the spine (flat-floor cut). portal: share of the tunnel (at least portal_min m) past the mouth where the hood may be thinner than min_cover; the back wall is always checked. min_slope_deg: a steeper face for this style. chamber: end-chamber diameter range ([] = none). pocket_chance: odds of a side pocket.",
+		"shelter": {"length": [6.0, 10.0], "radius": [2.5, 3.5], "taper": 0.95, "points": [3, 4], "floor_drop": 0.25, "portal": 0.9, "min_slope_deg": 30.0, "chamber": [], "pocket_chance": 0.0},
+		"grotto": {"length": [12.0, 30.0], "radius": [1.9, 2.6], "taper": 1.0, "points": [4, 6], "floor_drop": 0.5, "portal": 0.35, "portal_min": 10.0, "chamber": [5.0, 9.0], "chamber_height": [3.2, 4.5], "pocket_chance": 0.5, "pocket_radius": [1.6, 2.2]}
 	}
 }

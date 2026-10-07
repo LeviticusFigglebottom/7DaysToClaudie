@@ -1,7 +1,8 @@
 class_name CaveSet
 extends RefCounted
-## An immutable set of CavePlans with a 64 m grid index (TD-104: published whole, never mutated,
-## so worker threads may hold one while the main thread swaps in a new set).
+## An immutable set of CavePlans (TD-104: published whole, never mutated, so worker threads may
+## hold one while the main thread swaps in a new set). Queries go through a 64 m grid, so
+## is_inside / floor_below / keep_out cost one dictionary lookup away from caves.
 
 const CELL: float = 64.0
 
@@ -31,7 +32,9 @@ func _add(p: CavePlan, seen: Dictionary) -> void:
 		return
 	seen[p.id] = true
 	plans.append(p)
-	for c: Vector2i in _cells(p.aabb):
+	# Indexed by the footprint (air plus mouth apron) so keep_out finds the apron too.
+	var fp: Rect2 = p.footprint()
+	for c: Vector2i in _cells(AABB(Vector3(fp.position.x, 0.0, fp.position.y), Vector3(fp.size.x, 0.0, fp.size.y))):
 		if not _grid.has(c):
 			_grid[c] = []
 		(_grid[c] as Array).append(p)
