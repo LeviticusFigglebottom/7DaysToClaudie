@@ -816,6 +816,118 @@
     "cloth": 4
    },
    "preview": "structures/rain_catcher"
+  },
+  {
+   "id": "spike_pit",
+   "name": "Spike Pit",
+   "description": "A pit cut a stride deep and lined with sharpened stakes. The Hollowed walk straight in: the stakes hold them, slow them and bleed them while they climb out. They dull with use; mend them with a hammer.",
+   "mode": "assembly",
+   "category": "defense",
+   "result": "spike_pit",
+   "cost": {
+    "log": 1,
+    "stick": 12,
+    "cordage": 1
+   },
+   "preview": "structures/spike_pit",
+   "max_slope": 15.0
+  },
+  {
+   "id": "deadfall",
+   "name": "Deadfall",
+   "description": "A log hung on a figure-four trigger over a path. The first thing under it brings it down hard. Lift it again by hand after it drops.",
+   "mode": "assembly",
+   "category": "defense",
+   "result": "deadfall",
+   "cost": {
+    "log": 2,
+    "stick": 4,
+    "cordage": 3,
+    "stone": 4
+   },
+   "preview": "structures/deadfall",
+   "max_slope": 15.0
+  },
+  {
+   "id": "tripwire_bell",
+   "name": "Tripwire Bell",
+   "description": "A cord strung low across a gap with a bell on it. When something walks through it rings, and the program tether tells you where. Everything else hears it too.",
+   "mode": "assembly",
+   "category": "defense",
+   "result": "tripwire_bell",
+   "cost": {
+    "stick": 3,
+    "cordage": 2,
+    "scrap_metal": 2
+   },
+   "preview": "structures/tripwire_bell"
+  },
+  {
+   "id": "generator",
+   "name": "Generator",
+   "description": "An engine and an alternator on a scrap frame. Fuel it with gasoline and wire lights and sentries to it. It is loud, and its noise and heat draw the Hollowed in.",
+   "mode": "assembly",
+   "category": "power",
+   "result": "generator",
+   "cost": {
+    "small_engine": 1,
+    "electrical_parts": 3,
+    "scrap_metal": 10,
+    "nails": 8
+   },
+   "preview": "structures/generator",
+   "on_structures": true,
+   "unlock": "schematic"
+  },
+  {
+   "id": "work_light",
+   "name": "Work Light",
+   "description": "A caged work lamp on a stake. Wire it to a running generator for a steady light; switch it off when you would rather not be seen.",
+   "mode": "assembly",
+   "category": "power",
+   "result": "work_light",
+   "cost": {
+    "light_bulb": 1,
+    "electrical_parts": 1,
+    "stick": 3,
+    "cordage": 1
+   },
+   "preview": "structures/work_light",
+   "on_structures": true
+  },
+  {
+   "id": "floodlight",
+   "name": "Motion Floodlight",
+   "description": "A floodlight on a pole with a motion sensor. Dark until something moves in front of it, then it lights the ground and warns you.",
+   "mode": "assembly",
+   "category": "power",
+   "result": "floodlight",
+   "cost": {
+    "light_bulb": 2,
+    "electrical_parts": 2,
+    "scrap_metal": 4,
+    "stick": 2
+   },
+   "preview": "structures/floodlight",
+   "on_structures": true,
+   "unlock": "schematic"
+  },
+  {
+   "id": "nail_sentry",
+   "name": "Nail Sentry",
+   "description": "A framing nailer on a pan-and-tilt head behind a motion sensor. Wired to power and loaded with nails, it shoots the Hollowed that come within reach.",
+   "mode": "assembly",
+   "category": "power",
+   "result": "nail_sentry",
+   "cost": {
+    "electrical_parts": 4,
+    "scrap_metal": 12,
+    "nails": 20,
+    "duct_tape": 2
+   },
+   "preview": "structures/nail_sentry",
+   "on_structures": true,
+   "unlock": "schematic"
   }
  ]
 }

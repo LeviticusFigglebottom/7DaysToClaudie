@@ -365,7 +365,7 @@
     "worn": "props/wild_oil_lantern_worn",
     "destroyed": "props/wild_oil_lantern_destroyed"
    },
-   "collision": "box",
+   "collision": "none",
    "physics": "carry",
    "hp": 15,
    "size": [

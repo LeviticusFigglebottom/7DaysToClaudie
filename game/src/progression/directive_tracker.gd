@@ -43,6 +43,9 @@ func setup_world(w: Node) -> void:
 	Events.crop_harvested.connect(func(pid: StringName, crop_id: StringName, _items: Dictionary) -> void:
 		if Game.session != null and pid == Game.session.local_player_id:
 			record("harvest", crop_id))
+	# A Hollow put down by a player-built trap or sentry (ADR-0052).
+	Events.trap_killed.connect(func(_piece: StringName, structure_id: StringName, _enemy: StringName) -> void:
+		record("trap_kill", structure_id))
 	if p != null:
 		fit_world(p)
 		# A loaded game may already meet a level goal in its open chapter.

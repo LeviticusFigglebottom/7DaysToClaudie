@@ -362,6 +362,7 @@ const MODULES: Array = [
 	["loose", "res://src/world/loose_items.gd", "Scattering what was dropped…"],
 	["building", "res://src/building/building_manager.gd", "Raising what you built…"],
 	["farming", "res://src/building/farm_manager.gd", "Raising what you built…"],
+	["base_tech", "res://src/building/base_tech_manager.gd", "Raising what you built…"],
 	["pois", "res://src/poi/poi_manager.gd", "Raising the town…"],
 	["ai", "res://src/ai/ai_director.gd", "Stirring the Hollowed…"],
 	["ambience", "res://src/audio/ambience_director.gd", "Listening…"],
