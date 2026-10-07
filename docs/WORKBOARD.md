@@ -93,6 +93,17 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
 7. Needs the owner (a GPU and a human): the M1 playthrough, 60 FPS on target hardware, feel and
    balance (HANDOFF.md "Not verified yet").
 
+## The owner's priorities (2026-10-07, after Builds #68/#75: "much better so far")
+1. **The Hollowed: look and behaviour.** They seem passive until you're close. Session 2 (the Ashen's
+   phase-2 remainder, TD-190, waits).
+2. **POI navigation and placement**: doorways blocked, items lying in the way, and "climb up"
+   spots that use an interact instead of a ladder or a jump. Session 5 once the interior light lands,
+   with the hub's doors and steps agent.
+3. **Hands: looks and animations with every tool and weapon.** Session 4 (ADR-0045 follow-ups,
+   TD-172..175).
+Session 3 finishes Player report 3 (Continue position) and its perf items, and supports 1 and 2
+(navmesh, AI ticking, the tour bot).
+
 ## Player report 3 (Windows Build #67, 891830b; round 2)
 Screenshot: `docs/playtest/2026-10-06_build67_lighter_door.webp` (Pell's Crossing, a lit lighter, a
 cottage's front door). The owner said it "looks incredible", but:
