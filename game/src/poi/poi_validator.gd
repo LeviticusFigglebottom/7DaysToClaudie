@@ -178,7 +178,10 @@ func _walkable(li: int, c: Vector2i) -> bool:
 	if li != 0 or not layout.room_at(li, c) in [".", " "]:
 		return false
 	var lv: Dictionary = layout.levels.get(0, {})
-	return c.x >= -YARD and c.y >= -YARD and c.x < int(lv.get("w", 0)) + YARD and c.y < int(lv.get("d", 0)) + YARD
+	if not (c.x >= -YARD and c.y >= -YARD and c.x < int(lv.get("w", 0)) + YARD and c.y < int(lv.get("d", 0)) + YARD):
+		return false
+	# Where a tall yard prop stands the player can't (YARD_WALL_H): no route through its cells.
+	return not _yard_cuts().has(_yard_cell_key(c))
 
 
 ## Whether an outside cell of level 0 is on the yard's outer edge, where the world beyond reaches it.
@@ -237,10 +240,17 @@ func _yard_cuts() -> Dictionary:
 			for y: int in range(lo.y, hi.y + 1):
 				for x: int in range(lo.x, hi.x + 1):
 					var c := Vector2i(x, y)
+					# The capsule (0.33 m) can't stand on the cell's centre: the cell is taken.
+					if seg_hits_box(Vector2(c) + Vector2(0.5, 0.5), Vector2(c) + Vector2(0.5, 0.5), w[0], (w[1] as Vector2) + Vector2(0.33, 0.33), w[2]):
+						_cuts[_yard_cell_key(c)] = true
 					for n: Vector2i in [c + Vector2i(1, 0), c + Vector2i(0, 1)]:
 						if seg_hits_box(Vector2(c) + Vector2(0.5, 0.5), Vector2(n) + Vector2(0.5, 0.5), w[0], w[1], w[2]):
 							_cuts[_yard_edge_key(c, n)] = true
 	return _cuts
+
+
+static func _yard_cell_key(c: Vector2i) -> int:
+	return -(((c.x + 512) << 20) | (c.y + 512)) - 1
 
 
 static func _yard_edge_key(a: Vector2i, b: Vector2i) -> int:
