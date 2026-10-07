@@ -379,12 +379,14 @@ func update_streaming(pos: Vector3, synchronous: bool = false) -> void:
 		for key: Vector2i in _chunks.keys():
 			if absi(key.x - c.x) > NEAR_RADIUS or absi(key.y - c.y) > NEAR_RADIUS:
 				_free_chunk(key)
+	# The graphics preset's terrain_lod_bias scales the LOD rings (low 0.6 .. ultra 1.3).
+	var bias: float = float(Settings.gfx("terrain_lod_bias", 1.0))
 	for dz: int in range(-NEAR_RADIUS, NEAR_RADIUS + 1):
 		for dx: int in range(-NEAR_RADIUS, NEAR_RADIUS + 1):
 			var key := Vector2i(c.x + dx, c.y + dz)
 			var center := Vector2((key.x + 0.5) * CHUNK, (key.y + 0.5) * CHUNK)
 			var dist: float = center.distance_to(Vector2(pos.x, pos.z))
-			var lod: int = 0 if dist < LOD_DIST[0] else (1 if dist < LOD_DIST[1] else 2)
+			var lod: int = 0 if dist < LOD_DIST[0] * bias else (1 if dist < LOD_DIST[1] * bias else 2)
 			var ch: Chunk = _chunks.get(key)
 			if ch == null:
 				ch = Chunk.new()
