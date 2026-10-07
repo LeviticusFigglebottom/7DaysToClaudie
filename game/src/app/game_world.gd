@@ -88,6 +88,12 @@ func _ready() -> void:
 	ui.name = "UI"
 	add_child(ui)
 	ui.show_loading("Entering the Cordon…", 0.0)
+	# The modules' scripts compile on loader threads while the world loads: compiling one (and
+	# the classes it uses) on the main thread when its boot step comes took 120-170 ms each for
+	# PoiManager, WildlifeManager and TraderManager on a first load (TD-197).
+	for m: Array in MODULES:
+		if ResourceLoader.exists(str(m[1])):
+			ResourceLoader.load_threaded_request(str(m[1]))
 	_loader = WorldLoader.new()
 	_loader.resolve_lots = true
 	_loader.world_seed = session.world_seed
@@ -257,7 +263,7 @@ func _boot_terrain() -> void:
 	terrain = TerrainManager.new()
 	terrain.name = "Terrain"
 	terrain.defer_far_tiles = true
-	terrain.prebuilt_bloom = _loader.bloom_field
+	terrain.prebuilt_bloom = _loader.bloom_tiles
 	# Buildings come by distance (ADR-0038 §8): a cellar is cut once its building stands.
 	terrain.gate_holes = streaming and _loader.registry != null
 	terrain.remesh_far_tiles = streaming
@@ -366,7 +372,10 @@ const MODULES: Array = [
 func _spawn_module(prop: String, script: String) -> void:
 	if not ResourceLoader.exists(script):
 		return
-	var node: Node = (load(script) as GDScript).new()
+	# Requested in _ready (load_threaded_get waits if it is still compiling).
+	var requested: bool = ResourceLoader.load_threaded_get_status(script) != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE
+	var gds: GDScript = (ResourceLoader.load_threaded_get(script) if requested else load(script)) as GDScript
+	var node: Node = gds.new()
 	node.name = prop.capitalize()
 	set(prop, node)
 	add_child(node)
@@ -399,6 +408,8 @@ func _spawn_player() -> void:
 	player.camera.make_current()
 	player.bind_state(p)
 	player.input_enabled = false
+	# Still until _finish_spawn: the ground's collision arrives while "Finding your feet" waits.
+	player.freeze(true)
 	player.died.connect(_on_player_died)
 	# Bound to the id, not the state: a lambda capturing `p` would form a reference cycle
 	# (state -> progression -> connection -> lambda -> state) and leak the whole player.
@@ -489,6 +500,17 @@ func _give_start_kit(p: PlayerState) -> void:
 	p.toolbelt[0] = &"lighter"
 
 
+## Jolt refuses bodies past physics/jolt_physics_3d/limits/max_bodies, and the player's, added
+## last, was among them in a random world built whole (22,995 collision objects against 10,240):
+## the player could look but never move, and the arms swung off with its free-fall velocity
+## (player report 3). Warn well before the limit so content growth shows up in the logs.
+func _check_body_budget() -> void:
+	var cap: int = int(ProjectSettings.get_setting("physics/jolt_physics_3d/limits/max_bodies", 10240))
+	var n: int = find_children("*", "CollisionObject3D", true, false).size()
+	if n > cap * 3 / 4:
+		Log.warn("world", "%d collision objects at spawn, %d%% of Jolt's max_bodies (%d)" % [n, n * 100 / cap, cap])
+
+
 func _finish_spawn() -> void:
 	# Drop the player onto the ground (terrain collision now exists). A save made in a POI cellar
 	# keeps the player on the cellar floor: height_at() is the surface above it (TD-026).
@@ -496,7 +518,9 @@ func _finish_spawn() -> void:
 	var ground: float = terrain.ground_below(pos)
 	if pos.y < ground + 0.2 or pos.y > ground + 30.0:
 		player.global_position = Vector3(pos.x, ground + 0.4, pos.z)
+	player.freeze(false)
 	_place_spawn_props()
+	_check_body_budget()
 	_load_meter.spawned()
 	player.input_enabled = true
 	is_ready = true
@@ -674,7 +698,8 @@ func respawn() -> void:
 	p.stats.revive(50.0)
 	await_area(pos, func() -> void:
 		player.global_position = pos + Vector3.UP * 0.5
-		player.velocity = Vector3.ZERO
+		# freeze(false) also clears the fall built up before (velocity and the fall-damage speed).
+		player.freeze(false)
 		terrain.update_streaming(player.global_position, true)
 		player.input_enabled = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -690,6 +715,8 @@ func await_area(pos: Vector3, then: Callable) -> void:
 		then.call()
 		return
 	player.input_enabled = false
+	# Still while the land forms: no gravity, no fall speed to land on (player report 3).
+	player.freeze(true)
 	terrain.streamer.request_now(pos)
 	_awaiting = {"pos": pos, "then": then}
 	ui.show_loading("Finding your feet…", 0.95)
@@ -711,4 +738,5 @@ func _poll_await() -> void:
 	_awaiting = {}
 	terrain.streamer.clear_request()
 	ui.hide_loading()
+	player.freeze(false)
 	then.call()

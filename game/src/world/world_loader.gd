@@ -28,7 +28,9 @@ var lots: Dictionary = {}
 var registry: PoiRegistry = null
 ## The Bloom field over the detailed regions, built here too when resolve_lots is set (about a
 ## second of the main thread on a 3x3 random world, ADR-0036); null otherwise.
-var bloom_field: BloomField = null
+var bloom_tiles: BloomTiles = null
+## What building it took (ms).
+var bloom_ms: int = 0
 ## Streamed loading (ADR-0038): only the first area is composed at 1 m (random worlds; set before
 ## loading). spawn_hint: where the player will stand (a saved position), NAN for the drop site.
 var stream: bool = false
@@ -99,13 +101,17 @@ func _resolve_lots() -> void:
 	if not resolve_lots or ContentDB.instance == null:
 		return
 	_set_stage("Spreading the Bloom", 0.97)
-	# A streamed world spreads it over every region, the coarse ones too (their 16 m vegetation
-	# mask is blurrier, but a region past the first area must not be Bloom-free, TD-106).
+	# A streamed world's field covers every region, the coarse ones too (a region past the first
+	# area must not be Bloom-free), but only the first area's tiles are composed now, at 1 m; the
+	# rest are composed near the player as it goes (BloomTiles, TD-106).
 	var spread: Dictionary = detailed
 	if stream:
 		spread = coarse.duplicate()
 		spread.merge(detailed, true)
-	bloom_field = BloomField.build(world, spread, ContentDB.instance.config(&"bloom"))
+	var tb: int = Time.get_ticks_msec()
+	bloom_tiles = BloomTiles.build(world, spread, ContentDB.instance.config(&"bloom"), stream)
+	bloom_ms = Time.get_ticks_msec() - tb
+	print("[bloom] built in %d ms, %d zones, %d tiles, %.1f MB" % [bloom_ms, bloom_tiles.zones.size(), bloom_tiles.tile_count(), bloom_tiles.memory_bytes() / 1048576.0])
 	_set_stage("Planning the towns", 0.98)
 	for rid: String in detailed:
 		for pl: Dictionary in (detailed[rid] as RegionTerrain).placements:
