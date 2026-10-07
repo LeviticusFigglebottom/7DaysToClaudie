@@ -1,0 +1,1929 @@
+{
+ "_doc": "Forest set piece, round 4 (ADR-0053), tier 1, wilderness pool (site forest on a ridge, or summit): an unmanned microwave relay hut the Cordon used to pass its orders on. Route: the shelter door's can chime -> the hall and the relay schedule -> the bunk room (the signals team: ambush on its door) -> the equipment room -> the generator room (the hikers: ambush on entering; the jaws at the tower foot wake them too) -> out the back door, through the compound's open gate -> up the guyed tower by four real ladders, platform by platform (2x2 kit rooms with open railing edges) -> the top platform: the dishes, the radio, Reyes's log and the battery room key -> back down -> the battery room's steel door (deadbolt, key; a shotgun on its wire inside) -> Reyes (guardian) and the signals cache (loot) -> the bolted yard door out. Hollowed don't climb ladders: the tower is a refuge. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "w4_ridge_relay_hut",
+   "name": "Ridge Relay Hut",
+   "tier": 1,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    24,
+    24
+   ],
+   "origin": [
+    3,
+    5
+   ],
+   "author": "Hollowmere team",
+   "story": "Relay Four is an unmanned microwave hut on a forested ridge: a concrete equipment shelter, a 20 m guyed tower with its dishes, a fenced compound round the propane tank and a helipad the phone company used twice a year. When the Cordon closed the roads off the mountain it took the hut over to pass its orders from checkpoint to checkpoint, and posted a two-man signals team on it: Sergeant Reyes and Specialist Hale. Their relief never came. Hale let three hikers in off the trail against orders, and the coughing one brought the Bloom with him; Reyes shut the other two in the generator room with the heat. A dispatch rider who carried the last sheet of orders up the track stayed the night and never left. The last order was to burn the code books and hold the post. Reyes burned them, locked the ammunition and the spare codes in the battery room, carried the key up the tower where the Hollowed can't climb, and went down to sit with the batteries because it was warm in there. The tank reads empty now and the dishes are dark.",
+   "style": {
+    "exterior": "concrete_block",
+    "interior": "concrete_block",
+    "floor": "concrete",
+    "ceiling": "plaster_grey",
+    "floor_height": 0.15,
+    "decay": 0.4,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "flat",
+     "parapet": 0.45,
+     "flat_color": "#2a2928",
+     "roofs": [
+      {
+       "level": 4,
+       "at": [
+        13,
+        2
+       ],
+       "type": "none"
+      }
+     ]
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      "..................",
+      ".GGGBBBKKKK.......",
+      ".GGGBBBKKKK.......",
+      ".GGGBBBKKKK.......",
+      ".EEEEEEHHHH.......",
+      ".EEEEEEHHHH.......",
+      ".................."
+     ],
+     "rooms": {
+      "G": {
+       "name": "Generator room",
+       "type": "garage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "B": {
+       "name": "Battery room",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "K": {
+       "name": "Bunk room",
+       "type": "bedroom",
+       "wall": "paint_sage",
+       "floor": "concrete"
+      },
+      "E": {
+       "name": "Equipment room",
+       "type": "studio",
+       "wall": "concrete_block",
+       "floor": "linoleum_beige"
+      },
+      "H": {
+       "name": "Hall",
+       "type": "hallway",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "",
+      "",
+      "             PP",
+      "             PP"
+     ],
+     "rooms": {
+      "P": {
+       "name": "Lower rest platform",
+       "type": "hallway",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 2,
+     "plan": [
+      "",
+      "",
+      "             MM",
+      "             MM"
+     ],
+     "rooms": {
+      "M": {
+       "name": "Dish platform",
+       "type": "hallway",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 3,
+     "plan": [
+      "",
+      "",
+      "             RR",
+      "             RR"
+     ],
+     "rooms": {
+      "R": {
+       "name": "Upper rest platform",
+       "type": "hallway",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    },
+    {
+     "level": 4,
+     "plan": [
+      "",
+      "",
+      "             TT",
+      "             TT"
+     ],
+     "rooms": {
+      "T": {
+       "name": "Top platform",
+       "type": "hallway",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      9,
+      13
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal"
+    },
+    {
+     "id": "hall_window",
+     "at": [
+      10,
+      12
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "hall_equipment_door",
+     "at": [
+      7,
+      12
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "bunk_door",
+     "at": [
+      8,
+      12
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "bunk_window",
+     "at": [
+      8,
+      9
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "equipment_generator_door",
+     "at": [
+      2,
+      12
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal"
+    },
+    {
+     "id": "battery_door",
+     "at": [
+      5,
+      12
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked",
+     "key": "w4_relay_battery_key",
+     "lock": "deadbolt",
+     "model": "door_metal"
+    },
+    {
+     "id": "equipment_window",
+     "at": [
+      3,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "generator_back_door",
+     "at": [
+      2,
+      9
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal"
+    },
+    {
+     "id": "generator_vent",
+     "at": [
+      1,
+      9
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "battery_yard_door",
+     "at": [
+      5,
+      9
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_metal"
+    },
+    {
+     "id": "plat1_n132",
+     "at": [
+      13,
+      2
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "plat1_n142",
+     "at": [
+      14,
+      2
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "plat1_s133",
+     "at": [
+      13,
+      3
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "plat1_s143",
+     "at": [
+      14,
+      3
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "plat1_w132",
+     "at": [
+      13,
+      2
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "plat1_w133",
+     "at": [
+      13,
+      3
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "plat1_e142",
+     "at": [
+      14,
+      2
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "plat1_e143",
+     "at": [
+      14,
+      3
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 1
+    },
+    {
+     "id": "plat2_n132",
+     "at": [
+      13,
+      2
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "plat2_n142",
+     "at": [
+      14,
+      2
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "plat2_s133",
+     "at": [
+      13,
+      3
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "plat2_s143",
+     "at": [
+      14,
+      3
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "plat2_w132",
+     "at": [
+      13,
+      2
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "plat2_w133",
+     "at": [
+      13,
+      3
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "plat2_e142",
+     "at": [
+      14,
+      2
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "plat2_e143",
+     "at": [
+      14,
+      3
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 2
+    },
+    {
+     "id": "plat3_n132",
+     "at": [
+      13,
+      2
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "plat3_n142",
+     "at": [
+      14,
+      2
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "plat3_s133",
+     "at": [
+      13,
+      3
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "plat3_s143",
+     "at": [
+      14,
+      3
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "plat3_w132",
+     "at": [
+      13,
+      2
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "plat3_w133",
+     "at": [
+      13,
+      3
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "plat3_e142",
+     "at": [
+      14,
+      2
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "plat3_e143",
+     "at": [
+      14,
+      3
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 3
+    },
+    {
+     "id": "plat4_n132",
+     "at": [
+      13,
+      2
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 4
+    },
+    {
+     "id": "plat4_n142",
+     "at": [
+      14,
+      2
+     ],
+     "side": "N",
+     "type": "open",
+     "level": 4
+    },
+    {
+     "id": "plat4_s133",
+     "at": [
+      13,
+      3
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 4
+    },
+    {
+     "id": "plat4_s143",
+     "at": [
+      14,
+      3
+     ],
+     "side": "S",
+     "type": "open",
+     "level": 4
+    },
+    {
+     "id": "plat4_w132",
+     "at": [
+      13,
+      2
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 4
+    },
+    {
+     "id": "plat4_w133",
+     "at": [
+      13,
+      3
+     ],
+     "side": "W",
+     "type": "open",
+     "level": 4
+    },
+    {
+     "id": "plat4_e142",
+     "at": [
+      14,
+      2
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 4
+    },
+    {
+     "id": "plat4_e143",
+     "at": [
+      14,
+      3
+     ],
+     "side": "E",
+     "type": "open",
+     "level": 4
+    }
+   ],
+   "ladders": [
+    {
+     "level": 0,
+     "at": [
+      13,
+      3
+     ],
+     "side": "W",
+     "hatch": true
+    },
+    {
+     "level": 1,
+     "at": [
+      14,
+      2
+     ],
+     "side": "E",
+     "hatch": true
+    },
+    {
+     "level": 2,
+     "at": [
+      13,
+      3
+     ],
+     "side": "W",
+     "hatch": true
+    },
+    {
+     "level": 3,
+     "at": [
+      14,
+      2
+     ],
+     "side": "E",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "tower",
+     "prop": "w4_relay_tower",
+     "pos": [
+      14.0,
+      3.0
+     ],
+     "rot": 0,
+     "keep": true
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      11.0,
+      0.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      13.0,
+      0.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      15.0,
+      0.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      17.0,
+      0.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      10.0,
+      1.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      10.0,
+      3.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      10.0,
+      5.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      18.0,
+      1.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      18.0,
+      3.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      18.0,
+      5.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      11.0,
+      6.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      15.0,
+      6.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "fence_chainlink_2m",
+     "pos": [
+      17.0,
+      6.0
+     ],
+     "rot": 0
+    },
+    {
+     "id": "compound_gate",
+     "prop": "w4_relay_gate",
+     "pos": [
+      15.0,
+      5.86
+     ],
+     "rot": 0
+    },
+    {
+     "id": "propane_tank",
+     "prop": "w4_relay_propane_tank",
+     "pos": [
+      16.4,
+      1.0
+     ],
+     "rot": 0
+    },
+    {
+     "id": "fuel_shed",
+     "prop": "w4_relay_fuel_shed",
+     "pos": [
+      11.25,
+      1.1
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w4_relay_cable_reel",
+     "pos": [
+      16.9,
+      4.4
+     ],
+     "rot": 80
+    },
+    {
+     "id": "helipad",
+     "prop": "w4_relay_helipad",
+     "pos": [
+      4.0,
+      3.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w4_relay_windsock",
+     "pos": [
+      0.6,
+      6.4
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "w4_relay_tower_section",
+     "pos": [
+      16.5,
+      10.0
+     ],
+     "rot": 90
+    },
+    {
+     "prop": "oil_drum_fire",
+     "pos": [
+      12.3,
+      11.4
+     ],
+     "rot": 0
+    },
+    {
+     "id": "generator",
+     "prop": "w4_relay_generator",
+     "at": [
+      1,
+      10
+     ],
+     "against": "W",
+     "rot": 90,
+     "offset": [
+      0,
+      0.3
+     ]
+    },
+    {
+     "id": "hiker_bag",
+     "prop": "sleeping_bag",
+     "at": [
+      3,
+      10
+     ],
+     "against": "E",
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "prop": "propane_tank_small",
+     "pos": [
+      3.55,
+      11.75
+     ],
+     "rot": 20
+    },
+    {
+     "id": "battery_bank",
+     "prop": "w4_relay_battery_bank",
+     "at": [
+      4,
+      10
+     ],
+     "against": "W",
+     "rot": 90,
+     "offset": [
+      0,
+      -0.35
+     ]
+    },
+    {
+     "id": "signals_cache",
+     "prop": "weapons_locker",
+     "at": [
+      6,
+      9
+     ],
+     "against": "N",
+     "container": "w4_relay_cache"
+    },
+    {
+     "id": "reyes_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      6.55,
+      10.6
+     ],
+     "rot": 0,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "id": "rack_1",
+     "prop": "w4_relay_equipment_rack",
+     "at": [
+      1,
+      13
+     ],
+     "against": "S",
+     "rot": 180
+    },
+    {
+     "id": "rack_2",
+     "prop": "w4_relay_equipment_rack",
+     "at": [
+      2,
+      13
+     ],
+     "against": "S",
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "rack_3",
+     "prop": "w4_relay_equipment_rack",
+     "at": [
+      4,
+      13
+     ],
+     "against": "S",
+     "rot": 180,
+     "variant": "destroyed"
+    },
+    {
+     "id": "operator_desk",
+     "prop": "desk_small",
+     "at": [
+      6,
+      13
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "prop": "office_chair",
+     "pos": [
+      5.5,
+      13.4
+     ],
+     "rot": 70
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      3.2,
+      12.5
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "cork_board",
+     "at": [
+      7,
+      13
+     ],
+     "against": "W",
+     "rot": 90,
+     "height": 1.5
+    },
+    {
+     "id": "hall_coats",
+     "prop": "civic_coat_rack",
+     "at": [
+      10,
+      13
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "id": "hale_bunk",
+     "prop": "wild_bunk_steel",
+     "at": [
+      7,
+      10
+     ],
+     "against": "W",
+     "rot": 90
+    },
+    {
+     "id": "reyes_bunk",
+     "prop": "wild_bunk_steel",
+     "at": [
+      10,
+      10
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "id": "footlocker",
+     "prop": "wild_footlocker",
+     "at": [
+      9,
+      9
+     ],
+     "against": "N",
+     "container": "w4_relay_footlocker"
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "pos": [
+      9.3,
+      9.25
+     ],
+     "y": 0.4,
+     "rot": 0
+    },
+    {
+     "id": "dish_mid",
+     "prop": "w4_relay_dish",
+     "pos": [
+      13.5,
+      2.2
+     ],
+     "level": 2,
+     "rot": 180,
+     "y": 1.2
+    },
+    {
+     "id": "dish_top_e",
+     "prop": "w4_relay_dish",
+     "pos": [
+      14.8,
+      3.5
+     ],
+     "level": 4,
+     "rot": -90,
+     "y": 1.2
+    },
+    {
+     "id": "dish_top_s",
+     "prop": "w4_relay_dish",
+     "pos": [
+      13.5,
+      3.8
+     ],
+     "level": 4,
+     "rot": 0,
+     "y": 1.2
+    },
+    {
+     "id": "field_radio",
+     "prop": "w4_relay_field_radio",
+     "pos": [
+      13.4,
+      2.4
+     ],
+     "level": 4,
+     "rot": 90
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      2
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      2
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      3
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      3
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      2
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      3
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      3
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 1
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      2
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 2
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      2
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 2
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      3
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 2
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      3
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 2
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      2
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 2
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      2
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 2
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      3
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 2
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      2
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 3
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      2
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 3
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      3
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 3
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      3
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 3
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      2
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 3
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      3
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 3
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      3
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 3
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      2
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 4
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      2
+     ],
+     "against": "N",
+     "rot": 0,
+     "level": 4
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      3
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 4
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      3
+     ],
+     "against": "S",
+     "rot": 180,
+     "level": 4
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      2
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 4
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      13,
+      3
+     ],
+     "against": "W",
+     "rot": 90,
+     "level": 4
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      2
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 4
+    },
+    {
+     "prop": "w4_relay_tower_platform_rail",
+     "at": [
+      14,
+      3
+     ],
+     "against": "E",
+     "rot": -90,
+     "level": 4
+    }
+   ],
+   "pickups": [
+    {
+     "id": "battery_key",
+     "item": "w4_relay_battery_key",
+     "pos": [
+      13.7,
+      3.4
+     ],
+     "y": 0.02,
+     "level": 4
+    }
+   ],
+   "notes": [
+    {
+     "note": "w4_relay_log",
+     "pos": [
+      13.35,
+      2.45
+     ],
+     "y": 0.56,
+     "level": 4
+    },
+    {
+     "note": "w4_relay_schedule",
+     "pos": [
+      7.14,
+      13.5
+     ],
+     "y": 1.45
+    },
+    {
+     "note": "w4_relay_letter",
+     "pos": [
+      7.45,
+      11.15
+     ],
+     "y": 0.48
+    },
+    {
+     "note": "w4_relay_tag",
+     "pos": [
+      1.45,
+      11.1
+     ],
+     "y": 1.21
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "hale",
+     "group": "signals",
+     "population": "cordon",
+     "pos": [
+      7.5,
+      10.2
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "hale_bunk"
+    },
+    {
+     "id": "dispatch_rider",
+     "group": "signals",
+     "population": "cordon",
+     "pos": [
+      9.4,
+      10.6
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 200,
+     "alt": "rider:by_the_locker"
+    },
+    {
+     "id": "pip",
+     "group": "hikers",
+     "pos": [
+      3.4,
+      10.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "hiker_bag",
+     "alt": "pip:in_the_bag"
+    },
+    {
+     "id": "pip_brother",
+     "group": "hikers",
+     "pos": [
+      1.45,
+      9.5
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 120,
+     "anchor": "floor"
+    },
+    {
+     "id": "coughing_hiker",
+     "pos": [
+      3.5,
+      13.35
+     ],
+     "enemy": "dragger",
+     "pose": "lie",
+     "rot": 80,
+     "anchor": "floor"
+    },
+    {
+     "id": "reyes",
+     "guardian": true,
+     "population": "cordon",
+     "pos": [
+      5.4,
+      10.35
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 0,
+     "anchor": "floor",
+     "alt": "reyes:with_the_batteries"
+    },
+    {
+     "id": "dispatch_rider",
+     "group": "signals",
+     "population": "cordon",
+     "pos": [
+      8.5,
+      10.5
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 180,
+     "alt": "rider:at_the_door"
+    },
+    {
+     "id": "pip",
+     "group": "hikers",
+     "pos": [
+      2.6,
+      10.4
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 30,
+     "alt": "pip:by_the_door"
+    },
+    {
+     "id": "reyes",
+     "guardian": true,
+     "population": "cordon",
+     "pos": [
+      5.6,
+      9.95
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 170,
+     "alt": "reyes:at_the_cache"
+    }
+   ],
+   "traps": [
+    {
+     "id": "door_chime",
+     "type": "can_chime",
+     "at": [
+      9,
+      13
+     ],
+     "side": "S"
+    },
+    {
+     "id": "tower_jaws",
+     "type": "bear_trap",
+     "pos": [
+      13.45,
+      4.45
+     ],
+     "rot": 0
+    },
+    {
+     "id": "battery_shotgun",
+     "type": "shotgun",
+     "at": [
+      5,
+      11
+     ],
+     "side": "S"
+    }
+   ],
+   "triggers": [
+    {
+     "id": "bunk_door_opened",
+     "group": "signals",
+     "on": "opening",
+     "opening": "bunk_door",
+     "delay": 0.3
+    },
+    {
+     "id": "bunk_room_entered",
+     "group": "signals",
+     "on": "room",
+     "room": "K",
+     "level": 0,
+     "delay": 0.2
+    },
+    {
+     "id": "generator_room_entered",
+     "group": "hikers",
+     "on": "room",
+     "room": "G",
+     "level": 0,
+     "delay": 0.4
+    },
+    {
+     "id": "tower_jaws_snap",
+     "group": "hikers",
+     "on": "trap",
+     "trap": "tower_jaws",
+     "delay": 1.0
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      6.55,
+      10.6
+     ],
+     "height": 0.35,
+     "color": "#ffb46e",
+     "energy": 0.45,
+     "range": 4.0,
+     "flicker": 0.35
+    }
+   ],
+   "decals": [
+    {
+     "decal": "footprints_mud",
+     "at": [
+      9,
+      13
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      1.6
+     ]
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      10,
+      12
+     ],
+     "side": "N",
+     "height": 1.4,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      5,
+      12
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.2
+     ]
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      2,
+      11
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      1.8
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      1,
+      9
+     ],
+     "side": "N",
+     "height": 2.2,
+     "size": [
+      1.0,
+      0.8
+     ]
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      4,
+      13
+     ],
+     "side": "S",
+     "height": 2.0,
+     "size": [
+      1.2,
+      1.2
+     ]
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      5,
+      11
+     ],
+     "side": "S",
+     "height": 1.5,
+     "size": [
+      0.7,
+      0.5
+     ]
+    },
+    {
+     "decal": "grime_streaks",
+     "at": [
+      9,
+      11
+     ],
+     "side": "S",
+     "height": 1.6,
+     "size": [
+      1.2,
+      1.0
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      9,
+      14
+     ],
+     "label": "Relay Four: a tin-can chime strung across the shelter door"
+    },
+    {
+     "at": [
+      8,
+      12
+     ],
+     "label": "The hall: the Cordon's relay schedule pinned on the board"
+    },
+    {
+     "at": [
+      8,
+      10
+     ],
+     "label": "The bunk room: the signals team that was never relieved"
+    },
+    {
+     "at": [
+      4,
+      12
+     ],
+     "label": "The equipment room: dead racks, and the scorch where the code books burned"
+    },
+    {
+     "at": [
+      2,
+      10
+     ],
+     "label": "The generator room: the hikers they let in, shut in with the heat"
+    },
+    {
+     "at": [
+      2,
+      8
+     ],
+     "label": "Out of the generator room's back door"
+    },
+    {
+     "at": [
+      13,
+      7
+     ],
+     "label": "The compound gate stands open"
+    },
+    {
+     "at": [
+      13,
+      3
+     ],
+     "label": "The tower foot: jaws in the leaves by the ladder"
+    },
+    {
+     "at": [
+      14,
+      3
+     ],
+     "level": 1,
+     "label": "The lower rest platform"
+    },
+    {
+     "at": [
+      13,
+      2
+     ],
+     "level": 2,
+     "label": "The dish platform"
+    },
+    {
+     "at": [
+      14,
+      3
+     ],
+     "level": 3,
+     "label": "The upper rest platform"
+    },
+    {
+     "at": [
+      13,
+      3
+     ],
+     "level": 4,
+     "label": "The top platform: the radio, the signaller's log and the battery room key"
+    },
+    {
+     "at": [
+      13,
+      3
+     ],
+     "label": "Back down the tower"
+    },
+    {
+     "at": [
+      5,
+      12
+     ],
+     "label": "The battery room's steel door: a wire at shin height behind it"
+    },
+    {
+     "at": [
+      5,
+      10
+     ],
+     "label": "The battery room: Reyes with the batteries and the signals cache"
+    },
+    {
+     "at": [
+      5,
+      8
+     ],
+     "label": "Slide the bolt on the battery room's yard door"
+    }
+   ],
+   "loot_room": {
+    "room": "B",
+    "level": 0
+   },
+   "shortcuts": [
+    {
+     "opening": "battery_yard_door"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "rider",
+     "label": "Where the dispatch rider waits in the bunk room",
+     "options": [
+      {
+       "id": "by_the_locker",
+       "weight": 2
+      },
+      {
+       "id": "at_the_door",
+       "label": "Standing inside the bunk room door"
+      }
+     ]
+    },
+    {
+     "id": "pip",
+     "label": "Where Pip is in the generator room",
+     "options": [
+      {
+       "id": "in_the_bag",
+       "weight": 2
+      },
+      {
+       "id": "by_the_door",
+       "label": "Up and standing by the back door"
+      }
+     ]
+    },
+    {
+     "id": "reyes",
+     "label": "How Reyes keeps the battery room",
+     "options": [
+      {
+       "id": "with_the_batteries",
+       "weight": 2
+      },
+      {
+       "id": "at_the_cache",
+       "label": "Standing at the signals cache"
+      }
+     ]
+    },
+    {
+     "id": "front",
+     "label": "The shelter door",
+     "options": [
+      {
+       "id": "shut",
+       "weight": 2
+      },
+      {
+       "id": "ajar",
+       "label": "Left open on its chime",
+       "openings": [
+        {
+         "id": "front_door",
+         "state": "open"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "back",
+     "label": "The generator room's back door",
+     "options": [
+      {
+       "id": "shut",
+       "weight": 2
+      },
+      {
+       "id": "forced",
+       "label": "Forced off its hinges from inside",
+       "openings": [
+        {
+         "id": "generator_back_door",
+         "state": "broken"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "paint",
+     "label": "The bunk room's paint",
+     "options": [
+      {
+       "id": "sage",
+       "weight": 2
+      },
+      {
+       "id": "slate",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "K",
+         "wall": "paint_slate_blue"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "lights": 2,
+    "enemies": 8
+   }
+  }
+ ]
+}
