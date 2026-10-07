@@ -54,7 +54,7 @@ const DIGEST_KEYS: PackedStringArray = ["height", "splat0", "splat1", "biome", "
 ## input hash at that spacing, to tell changed inputs from a changed composer.
 const GOLDEN: Dictionary = {
 	"larch@4": {
-		"input": "e0c0ea104fa38282afffe188dad20da56f733f62c377eca299ceed2cd4b7d077",
+		"input": "3e75765fe658c5f05412dae70804e202986b7d589b40b115967d885796d076f3",
 		"height": "e248604a3a8de7f24a32543ec40bf9560ccefc552661a9c885263828e47dce2d",
 		"splat0": "9eaa4a77bd78f034bfd9ff38f1d3aca6",
 		"splat1": "a0e0f3e9d0ea61b64313f463af34b2c4",
@@ -67,7 +67,7 @@ const GOLDEN: Dictionary = {
 		"other": "343d7ca5a31189c644d8aca5e9ee0028",
 	},
 	"larch@8": {
-		"input": "afdfccb469a7ea408e9d2006e06eb3dd2b6c00f1a4e8d1d16b66766a1788d483",
+		"input": "be4c983cad3faeb6262c0b2c96acc5191c161ccad3122cc037a248b6af9f20ef",
 		"height": "2bc10a81f1b49707261a58c7d495f0a3ade56606690d1b0efc7e4f80caf82a35",
 		"splat0": "5af3e41b715d69b44160b1ec75ee5e61",
 		"splat1": "71f4ef029e083c97ad7fdbac70c5e563",
@@ -80,7 +80,7 @@ const GOLDEN: Dictionary = {
 		"other": "0619089a625a0d5200fa83faa962ee3c",
 	},
 	"larch@1": {
-		"input": "2264d429ccee2fa81bacba1f6a83571876faaf332ca5c4efd87ca1f190a79681",
+		"input": "bfc781d511a1ca0ee138f004f67f0f17023077b1708e4abfe4d53ffc60e7dbbe",
 		"height": "d3796a5996202fff75c0a023ce00b814da671798d1220690307a4fd1f65f0292",
 		"splat0": "b1547471ef8d74630f9f335902e870b0",
 		"splat1": "55b0189d93e9a60ec3392ca26604f9ad",
@@ -93,7 +93,7 @@ const GOLDEN: Dictionary = {
 		"other": "9042e6121a94f2a29c717a3d15b2b03d",
 	},
 	"rwg@4": {
-		"input": "3e9322dcb1d9d4cc8e6e25b516150ee858c68dc3bf14b40babf8560ed1590dee",
+		"input": "aaec268256b7ca241574daada1c790e33068cad2cbd32c7806284d48c8abbea3",
 		"height": "e95616bb3bb5ebd3aa01b2168583231674fbb22cca258514ad4d308478250cef",
 		"splat0": "08b2849cf65a8420fa1e34589243bf1e",
 		"splat1": "c111b88e7e976ef14ad6054fd23ad1f2",
@@ -106,7 +106,7 @@ const GOLDEN: Dictionary = {
 		"other": "cec63ec5e9ea167c69260cbaf86a1d0a",
 	},
 	"rwg@8": {
-		"input": "979c294688688f9b056c06370f21b53fe4bf7dd5064bc215d0788caf8b4345fe",
+		"input": "d19d0bf3e3e25f4bbed2749e5e66a62fb994116a07979d1337ac38f177ac751f",
 		"height": "3f2d20efcdaf08e5c5cee42f9c5b67515d723a04e870b959914d0d32160f4708",
 		"splat0": "5cfb388da93427d5a97a53e37eeed064",
 		"splat1": "960ad4f5cd5c5f6c28a80a7c1fed0e1d",
@@ -119,7 +119,7 @@ const GOLDEN: Dictionary = {
 		"other": "bcea77cbf3c997af1ab262307621ca3b",
 	},
 	"rwg@1": {
-		"input": "da44dfa725a16acc865ec74c5f92d5a20ee77c5ce1c2f15cc78236c8fe7e9465",
+		"input": "2930f5c6524b0e16a9b329890fa49466f372ba1750f87dfa87c2fe83d677acf6",
 		"height": "e744edba2d0696ad86381b15783ee1ffbb5b4e08a9372d836df2f6f3ac1ec06c",
 		"splat0": "e786834259ab79b1d4c1b7d0fa00295c",
 		"splat1": "1934dc9dd0d12e25a0d5f277d8e33016",
