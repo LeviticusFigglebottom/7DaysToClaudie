@@ -13,7 +13,9 @@ extends RefCounted
 
 ## Render layer 2 ("viewmodel" in project settings): other cameras can leave the arms out.
 const LAYER: int = 1 << 1
-const FP_UNIFORMS: String = "uniform float fp_fov = 58.0;\nuniform float fp_z_clip_scale = 0.04;\n"
+## HM_VIEWMODEL lets a shader light the arms its own way (skin.gdshader's light(): a flame held a
+## hand's width away, no shadows from the viewmodel itself) without changing anything else it draws.
+const FP_UNIFORMS: String = "#define HM_VIEWMODEL\nuniform float fp_fov = 58.0;\nuniform float fp_z_clip_scale = 0.04;\n"
 const FP_VERTEX: String = """
 	// First-person viewmodel (FpMaterials, ADR-0029): own field of view, depth squeezed forward.
 	Z_CLIP_SCALE = fp_z_clip_scale;

@@ -52,6 +52,8 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "shovel_dig_windup", "item": "shovel", "action": "fp_dig", "frame": 8},
 	{"name": "shovel_dig_follow", "item": "shovel", "action": "fp_dig", "frame": 15},
 	{"name": "food_eat_lift", "item": "canned_beans", "action": "fp_eat", "frame": 8},
+	# The skin lit only by the flame in hand (falloff over the hand, light through the fingers).
+	{"name": "lighter_night", "item": "lighter", "lit": true, "night": true},
 ]
 
 var _out: String = "res://../build/fp_preview"
@@ -197,6 +199,13 @@ func _shoot(shot: Dictionary) -> void:
 		if not _vm.freeze_action(StringName(str(shot["action"])), float(shot.get("frame", 0)) / 30.0):
 			print("FP_PREVIEW warning: no action %s" % shot["action"])
 	_torch_light.visible = lit and night
+	# The held item's own light, as PlayerEquipment makes it (a lighter is far dimmer than a torch).
+	var idef: ItemDef = Content.item(StringName(str(shot.get("item", "")))) if lit else null
+	if idef != null and idef.equip.has("light"):
+		var l: Dictionary = idef.equip["light"]
+		_torch_light.light_color = Color.html(str(l.get("color", "#ffb46b")))
+		_torch_light.light_energy = float(l.get("energy", 1.0))
+		_torch_light.omni_range = float(l.get("range", 8.0))
 	await _wait(1.2)
 	var anchor: Node3D = _vm.light_anchor()
 	if anchor != null:

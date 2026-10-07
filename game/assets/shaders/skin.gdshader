@@ -64,6 +64,36 @@ uniform float ash : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 ash_color : source_color = vec4(0.70, 0.69, 0.66, 1.0);
 uniform float paint : hint_range(0.0, 1.0) = 0.0;
 uniform vec4 paint_color : source_color = vec4(0.30, 0.36, 0.27, 1.0);
+// Living skin (the first-person arms; every one off by default, so other skins draw as before).
+// Vertex A is the back of the hand and forearm (1) against the palm and inner forearm (0), and
+// CUSTOM0.w how thin the flesh is (fingers 1): the arms have no bruising (bruise 0) to read it.
+// Palms and inner forearms paler and less red.
+uniform float palm_pale : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 palm_color : source_color = vec4(0.96, 0.84, 0.76, 1.0);
+// Veins showing blue-grey through the back of the hand and wrist (not the fingers or the palm).
+uniform float back_veins : hint_range(0.0, 1.0) = 0.0;
+uniform float back_vein_scale = 30.0;
+uniform vec4 back_vein_color : source_color = vec4(0.56, 0.62, 0.74, 1.0);
+// Skin stretched over the knuckles and finger joints (vertex B on the back) is smoother: a sheen.
+uniform float knuckle_sheen : hint_range(0.0, 1.0) = 0.0;
+// Light through thin flesh (fingers, the web of the thumb) in transmittance_color, from behind
+// and towards the eye (BACKLIGHT; drawn by light() in the viewmodel, by Godot's backlight
+// elsewhere). Godot's own transmittance needs the screen-space subsurface pass the viewmodel can't
+// use and a shadow the viewmodel doesn't cast.
+uniform float translucency : hint_range(0.0, 2.0) = 0.0;
+// How much the baked AO darkens direct light (the viewmodel casts no shadows on itself, so its
+// fingers lean on their baked AO more), and the dielectric specular (0.5 = Godot's 4 %; skin ~2.8 %).
+uniform float ao_light_affect : hint_range(0.0, 1.0) = 0.3;
+uniform float skin_specular : hint_range(0.0, 1.0) = 0.5;
+// Viewmodel lighting (light() below, compiled only into FpMaterials' copy, HM_VIEWMODEL). A
+// held flame burns a hand's width from the fingers: past vm_light_knee (irradiance) a point
+// light's falloff is compressed (an eye adapting to the flame) so the hand isn't one clipped orange.
+uniform float vm_light_knee = 0.9;
+uniform float vm_light_compress : hint_range(0.1, 1.0) = 0.55;
+// Skin's wrapped diffuse: red light scatters furthest past the terminator.
+uniform vec3 vm_wrap = vec3(0.30, 0.13, 0.08);
+// A second, tighter specular lobe: the oily sheen over the knuckles and fingertips.
+uniform float vm_sheen_lobe = 0.12;
 // The Bloom under the skin: how much this material shows it (skin 1, cloth 0).
 uniform float bloom_skin : hint_range(0.0, 1.0) = 0.0;
 uniform float vein_scale = 11.0;
@@ -106,6 +136,22 @@ void fragment() {
 	}
 	if (flush > 0.0) {
 		alb = mix(alb, alb * flush_color.rgb * 1.6, clamp(COLOR.b, 0.0, 1.0) * flush);
+	}
+	float dorsal = clamp(COLOR.a, 0.0, 1.0);
+	float thin = clamp(v_attr0.w, 0.0, 1.0);
+	if (palm_pale > 0.0) {
+		float pl = (1.0 - dorsal) * palm_pale;
+		alb = mix(alb, mix(alb, vec3(dot(alb, vec3(0.3, 0.59, 0.11))), 0.3) * palm_color.rgb * 1.22, pl);
+	}
+	if (back_veins > 0.0) {
+		float vm = dorsal * (1.0 - smoothstep(0.45, 0.8, thin)) * back_veins;
+		if (vm > 0.01) {
+			float net = hm_bloom_net(rest, back_vein_scale, 0.0);
+			alb = mix(alb, alb * back_vein_color.rgb * 1.3, net * vm);
+		}
+	}
+	if (knuckle_sheen > 0.0) {
+		rough = mix(rough, rough * 0.55, clamp(COLOR.b, 0.0, 1.0) * dorsal * knuckle_sheen);
 	}
 	float br = clamp(v_attr0.w, 0.0, 1.0) * bruise;
 	if (br > 0.0) {
@@ -172,7 +218,8 @@ void fragment() {
 	ROUGHNESS = rough;
 	METALLIC = 0.0;
 	AO = orm.r * vao;
-	AO_LIGHT_AFFECT = 0.3;
+	AO_LIGHT_AFFECT = ao_light_affect;
+	SPECULAR = skin_specular;
 	NORMAL_MAP = nrm;
 	NORMAL_MAP_DEPTH = normal_strength;
 	SSS_STRENGTH = sss_strength;
@@ -181,6 +228,9 @@ void fragment() {
 	SSS_TRANSMITTANCE_BOOST = transmittance_boost;
 	if (backlight > 0.0) {
 		BACKLIGHT = backlight_color.rgb * ALBEDO * backlight;
+	}
+	if (translucency > 0.0) {
+		BACKLIGHT = transmittance_color.rgb * thin * translucency;
 	}
 	if (wet_clearcoat > 0.0) {
 		CLEARCOAT = wet * wet_clearcoat;
@@ -191,3 +241,50 @@ void fragment() {
 		EMISSION = glow_color.rgb * glow * glow_energy * (1.0 + 1.4 * hm_bloom);
 	}
 }
+
+#ifdef HM_VIEWMODEL
+// The first-person arms only (FpMaterials defines HM_VIEWMODEL in its copy of this shader; the
+// Hollowed and the Ashen keep Godot's own lighting). The viewmodel casts no shadow, not even on
+// itself, and a held flame burns a few centimetres from the fingers: Godot's lighting turned the
+// hand one flat, clipped orange under the lighter.
+void light() {
+	float att = ATTENUATION;
+	if (!LIGHT_IS_DIRECTIONAL) {
+		// Irradiance past the knee is compressed (keeps the falloff across the hand, loses the clip).
+		// Measured on the strongest channel: a warm flame clips red first, and a skin clipped in red
+		// alone is the flat orange.
+		float e = att * max(LIGHT_COLOR.r, max(LIGHT_COLOR.g, LIGHT_COLOR.b)) / PI;
+		if (e > vm_light_knee) {
+			att *= vm_light_knee * pow(e / vm_light_knee, vm_light_compress) / e;
+		}
+	}
+	vec3 radiance = LIGHT_COLOR * att / PI;
+	float ndl = dot(NORMAL, LIGHT);
+	// Wrapped per channel, energy-normalised: a warm terminator rather than a hard plastic one.
+	vec3 wrap = clamp((vec3(ndl) + vm_wrap) / (1.0 + vm_wrap), vec3(0.0), vec3(1.0)) / (1.0 + vm_wrap * 0.5);
+	DIFFUSE_LIGHT += radiance * wrap;
+	// Through thin flesh: from behind, brightest looking towards the light (a finger in front of
+	// the flame glows red at its edges).
+	float behind = clamp(0.5 - 0.5 * ndl, 0.0, 1.0);
+	float toward = pow(clamp(dot(VIEW, -LIGHT), 0.0, 1.0), 3.0);
+	DIFFUSE_LIGHT += radiance * BACKLIGHT * behind * (0.35 * behind + 0.9 * toward);
+	if (ndl > 0.0) {
+		float nv = clamp(dot(NORMAL, VIEW), 0.001, 1.0);
+		vec3 h = normalize(LIGHT + VIEW);
+		float nh = clamp(dot(NORMAL, h), 0.0, 1.0);
+		float f0 = 0.16 * skin_specular * skin_specular;
+		float F = f0 + (1.0 - f0) * pow(1.0 - clamp(dot(h, VIEW), 0.0, 1.0), 5.0);
+		float spec = 0.0;
+		for (int i = 0; i < 2; i++) {
+			float r = i == 0 ? ROUGHNESS : ROUGHNESS * 0.55;
+			float a = max(r * r, 0.002);
+			float a2 = a * a;
+			float dn = nh * nh * (a2 - 1.0) + 1.0;
+			float D = a2 / (PI * dn * dn);
+			float V = 0.5 / mix(2.0 * ndl * nv, ndl + nv, a);
+			spec += D * V * (i == 0 ? 1.0 : vm_sheen_lobe);
+		}
+		SPECULAR_LIGHT += LIGHT_COLOR * att * F * spec * ndl * SPECULAR_AMOUNT;
+	}
+}
+#endif
