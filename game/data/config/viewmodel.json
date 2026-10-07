@@ -2691,7 +2691,8 @@
         1.0
       ],
       "stiffness": 45.0,
-      "damping": 10.0
+      "damping": 10.0,
+      "max_mps": 6.0
     },
     "bob": {
       "pos": [
