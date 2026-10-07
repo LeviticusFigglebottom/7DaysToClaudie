@@ -32,7 +32,7 @@
   {
    "id": "w4_trestle_deck_section",
    "name": "Trestle Deck Section",
-   "description": "Three metres of trestle deck dressing: the stringers under the deck, the tie ends past its edges with a guard timber bolted along each side, and the two rails spiked on top (worn: a guard timber gone, rails rusted).",
+   "description": "3.2 metres of trestle deck dressing: the stringers under the deck, the tie ends past its edges with a guard timber bolted along each side, and the two rails spiked on top (worn: a guard timber gone, rails rusted).",
    "_placement": "Place it on a trestle deck kit room (level 1, no y): origin on the deck's top at the track centre, the track along local z; the stringers hang 0.6 m under it.",
    "tags": [
     "structure",
@@ -50,7 +50,7 @@
    "size": [
     3.8,
     0.75,
-    3.0
+    3.2
    ],
    "blocks_sight": false,
    "rooms": [
@@ -86,7 +86,7 @@
   {
    "id": "w4_trestle_flatcar_derailed",
    "name": "Derailed Log Flatcar",
-   "description": "A logging flatcar off the rails at an angle, its front truck dropped into the ballast, three big logs chained on its bunks and a fourth rolled half off (worn: the deck boards split, a chain snapped).",
+   "description": "A logging flatcar off the rails at an angle, its front truck dropped into the ballast, three big logs chained on its bunks and a fourth rolled off beside it (worn: the deck boards split, a chain snapped).",
    "tags": [
     "vehicle",
     "railway",
@@ -223,7 +223,7 @@
   {
    "id": "w4_trestle_tunnel_portal",
    "name": "Tunnel Portal",
-   "description": "The concrete face of a railway tunnel: wing walls, an arched ring and a headwall with the year cast in it, cracked and stained, a Cordon stencil sprayed across it (worn: spalled, the stencil faded). The bore behind it is the POI's own walls; only the face below the bore is solid.",
+   "description": "The concrete face of a railway tunnel: piers, an arched ring and a headwall with the year cast in it, cracked and stained, a Cordon stencil sprayed across it (worn: spalled, the stencil faded). The bore behind it is the POI's own walls; only the face below the bore is solid.",
    "_placement": "Origin on the tunnel's outer wall face at the track centre, on the ground, facing out (+z): place it 0.09 m outside the wall line. The bore opening spans x -3.5..3.5 from 3.15 m to 8.95 m.",
    "tags": [
     "structure",
