@@ -18,6 +18,8 @@ const MANUAL_MODEL: StringName = &"field_manual"
 const FLIPBOOK: String = "res://assets/generated/textures/fx_fire_flipbook.png"
 ## Loops of the arms built before the hold classes (ADR-0029) existed.
 const LEGACY_LOOPS: Array[StringName] = [&"fp_idle", &"fp_walk_bob", &"fp_idle_grip", &"fp_walk_grip", &"fp_carry_log"]
+## Seconds between shelter checks (weather_exposure).
+const SHELTER_CHECK: float = 0.25
 
 var cfg: Dictionary = {}
 var motion := ViewModelMotion.new()
@@ -56,6 +58,10 @@ var _screen_surface: int = -1
 var _screen_mat: StandardMaterial3D = null
 var _player: Player = null
 var _loops: Dictionary = {}
+## The weather_exposure the arms and what they hold draw with: 0 indoors or under a roof, so the
+## rain gloss and snow on the skin and sleeves stay outside (as on PoiBuilder's indoor pieces).
+var exposure: float = 1.0
+var _shelter_t: float = 0.0
 # Procedural fallback (no arms model).
 var _swing_t: float = -1.0
 var _swing_len: float = 0.8
@@ -143,6 +149,7 @@ func show_item(item_id: StringName) -> void:
 			_item_root.add_child(_held)
 			_held.rotation_degrees = _rest_pose(_held, _held_def)
 		FpMaterials.apply(_held)
+		_apply_exposure(_held)
 	if _action != &"" and _anim != null:
 		_action = &""
 	_update_base(true)
@@ -791,6 +798,7 @@ func _show_manual(on: bool) -> void:
 		_manual.position = Vector3(float(p[0]), float(p[1]), float(p[2]))
 		_set_layers(_manual)
 		FpMaterials.apply(_manual)
+		_apply_exposure(_manual)
 	if _manual != null:
 		_manual.visible = true
 
@@ -815,6 +823,7 @@ func _show_log(on: bool) -> void:
 		_rig.add_child(_log)
 		_set_layers(_log)
 		FpMaterials.apply(_log)
+		_apply_exposure(_log)
 	_log.visible = true
 
 
@@ -845,6 +854,7 @@ func _process(delta: float) -> void:
 		motion.update(delta, look, vel, 0.0, false, false, true, 0.0, 0)
 	_rig.transform = motion.rig_transform()
 	_flame_follow(delta, look, vel)
+	_update_exposure(delta)
 	if cam != null and cam.current:
 		cam.rotation = motion.camera_kick()
 	# Hit-stop: the swing hangs on what it struck, then catches up to finish on time.
@@ -910,6 +920,42 @@ static func part_rotation(keys: Array, f: float) -> Vector3:
 
 static func _vec3(a: Array) -> Vector3:
 	return Vector3(float(a[0]), float(a[1]), float(a[2]))
+
+
+## Indoors or under a roof every so often (the same tests the ambience and the survival climate
+## use: a POI room, or a built roof overhead): the arms and the held item lose the weather.
+func _update_exposure(delta: float) -> void:
+	_shelter_t -= delta
+	if _shelter_t > 0.0:
+		return
+	_shelter_t = SHELTER_CHECK
+	var at: Vector3 = _player.global_position if _player != null else global_position
+	set_exposure(0.0 if sheltered_at(Game.world, at) else 1.0)
+
+
+## A POI's indoors (PoiManager.is_indoors) or under a built roof (BuildingManager.is_sheltered).
+static func sheltered_at(world: Node, pos: Vector3) -> bool:
+	if world == null:
+		return false
+	var pois: Node = world.get(&"pois") as Node
+	if pois != null and pois.has_method(&"is_indoors") and bool(pois.call(&"is_indoors", pos)):
+		return true
+	var building: Node = world.get(&"building") as Node
+	return building != null and building.has_method(&"is_sheltered") and bool(building.call(&"is_sheltered", pos))
+
+
+func set_exposure(value: float) -> void:
+	if is_equal_approx(value, exposure):
+		return
+	exposure = value
+	_apply_exposure(self)
+
+
+func _apply_exposure(n: Node) -> void:
+	if n is GeometryInstance3D and not n is GPUParticles3D:
+		(n as GeometryInstance3D).set_instance_shader_parameter(&"weather_exposure", exposure)
+	for c: Node in n.get_children():
+		_apply_exposure(c)
 
 
 ## No arms model: the item floats at its rest pose and swings procedurally.
