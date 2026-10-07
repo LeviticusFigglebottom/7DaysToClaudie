@@ -1,0 +1,34 @@
+{
+  "_doc": "Companions (ADR-0058), run by CompanionDirector / CompanionMind. enemy: the EnemyDef his body is (archetype companion, faction remand). camp: the POI def he waits at to be found, where in it he sits (offset [x, z] building-local, yaw deg) and the ranges he is placed / taken out at while not yet recruited. recruit_items: any one, given at his camp, recruits him; revive_items: any one revives him downed (hold E revive_hold s); each is consumed. *_health: the health fraction he is up with. follow: min / max m he keeps behind the player, run_beyond (runs to catch up), teleport_beyond (placed beside the player out of sight), engage (takes on Hollowed hunting within this of the player), leash (drops a fight this far from the player). guard: radius he engages within round the spot, leash. downed.seconds: bleed-out. lantern: the light he carries at night while following (his own: not registered with the stimulus fields, so it never shows the Hollowed the player). barks: status-bar lines per event (CompanionDef.BARKS).",
+  "defs": [
+    {
+      "id": "ezra",
+      "name": "Ezra Vane",
+      "description": "An earlier Remand convict, a lineman before that. He can follow, hold a spot and guard it, and he fights.",
+      "enemy": "ezra_vane",
+      "camp": {"poi": "ezra_camp", "offset": [7.4, 7.1], "yaw": 0, "wake_range": 140, "sleep_range": 170},
+      "recruit_items": ["first_aid_kit", "painkillers"],
+      "revive_items": ["first_aid_kit", "cloth_bandage"],
+      "revive_hold": 4.0,
+      "revive_health": 0.35,
+      "recruit_health": 0.6,
+      "return_health": 0.5,
+      "follow": {"min": 3.0, "max": 6.0, "run_beyond": 9.0, "teleport_beyond": 120.0, "engage": 15.0, "leash": 22.0},
+      "guard": {"radius": 20.0, "leash": 26.0},
+      "downed": {"seconds": 180.0},
+      "lantern": {"range": 9.0, "energy": 1.1, "color": [1.0, 0.78, 0.48]},
+      "barks": {
+        "recruited": ["Ezra: \"That'll hold the leg. All right. I'm with you.\""],
+        "follow": ["Ezra: \"Right behind you.\"", "Ezra: \"Lead on.\""],
+        "stay": ["Ezra: \"I'll be here.\"", "Ezra: \"Holding.\""],
+        "guard": ["Ezra: \"Nothing gets past this spot.\"", "Ezra: \"I'll watch it.\""],
+        "spotted": ["Ezra: \"Hollowed. Coming in.\"", "Ezra: \"Got movement.\"", "Ezra: \"On your left.\""],
+        "hurt": ["Ezra: \"Ah, hell.\""],
+        "downed": ["Ezra is down. Hold E on him with a bandage or a first aid kit."],
+        "revived": ["Ezra: \"Not dead yet. Thanks.\""],
+        "out": ["Ezra didn't get up. If he lives he'll find his way to your bed by dawn."],
+        "back": ["Ezra limped in at dawn. He's at your bed."]
+      }
+    }
+  ]
+}

@@ -128,8 +128,9 @@ content kind `nest`) holds its props (generated: `nest_root_mass`, `nest_pod`, `
   Enemies with `poi` `nest:<id>` (the director neither counts nor despawns them; they wander within
   12 m of home), sleepers in the inner ring, wanderers outside; a killed slot is saved with its time
   and comes back out of a pod after `respawn_hours`. Burning: flames (PropLights fire) on the heart
-  and pods, a pitched-down Keener scream that is a `Stimuli` sound of `burn.scream` metres, the
-  guards `ambush` the player; then loot from the pods, `burn_nest` XP (progression.json) to the
+  and pods, a scream (first a pitched-down Keener scream; its own since, below) that is a `Stimuli`
+  sound of `burn.scream` metres, the guards `ambush` the player; then loot from the pods (dropped on
+  the ground at first; searchable pods since, below), `burn_nest` XP (progression.json) to the
   burner, `Events.nest_burned` (DirectiveTracker event `burn_nest`, directive `bloom_nest` in
   chapter 4), the burned props.
 * **Bloom ground.** The field's zones are fixed once built (worker threads read them unlocked), so a
@@ -141,7 +142,42 @@ content kind `nest`) holds its props (generated: `nest_root_mass`, `nest_pod`, `
   empty, no version bump. A nest saved mid-burn (hp 0, not burned) catches again when placed.
 * **Map.** `d6_larch_hollow` has a `hollow_nest` (`deep_wood_nest`) at (268, 1694) in the deep larch
   wood between the Tamsin and the Ashen watch camp, its mouth turned down toward the river.
-* Tests: `tests/integration/test_bloom_nests.gd`. Gaps: TD-254..258.
+* **The burn, second pass (TD-256).** *Smoke:* `BloomNests.Smoke`, a dark CPUParticles3D column
+  (FxLibrary has one-shot bursts only; the supply drop's flare smoke is the model) over the heart
+  while it burns; once dead it smoulders paler for `SMOKE_LINGER` (150 s), stops and is freed. It
+  belongs to the module, not the nest node (rebuilt burned when it dies), and goes when the nest is
+  un-placed; none is drawn headless (the node stays as the marker). The PropLights flames are on the
+  heart (sized from the core box, at least 1.6, lifted to the collar) and on every pod. *Sounds:*
+  its own (`tools/assetgen/audio/sounds/bloom_nest.py`): `voice/nest_scream` (2 variants, ~3.7-4.1 s
+  with tail: steam whistling through wet pores over a ring-modulated chestless shriek, bubbling and
+  squelches, guttering into a hiss) replaces the pitched Keener scream; `sfx/nest_burn_loop` (20 s
+  seamless loop: a big wet fire, sizzling fat, boiling sap, pods popping) plays on the nest while it
+  burns; `sfx/nest_collapse` (2 variants, ~2.8-3.1 s: roots cracking, the mass slumping in two deep
+  thuds, a wet squelch, embers ticking) when it dies, with dust and gore bursts at the heart and pods.
+  *Loot as containers:* nothing drops on the ground. A dead nest's pods are `BloomNests.Pod`s
+  (searchable remains, the corpse / LootProp duck type: `interact_text`, `interact_hold_time`,
+  `interact`, `inventory`, `container_id` `nest:<id>:pod<k>`, `cdef` = container `nest_pod` "Split
+  Pod" in `data/loot/containers/nests.json` for its name, slots and search time,
+  `on_contents_changed`), opened on the salvage roll's container flap (or `container.take_all` with
+  no UI). A pod rolls the def's `loot` `loot_rolls` times **per pod** (`hollow_nest` now 1 per pod,
+  three pods) on its first search, seeded by world seed, nest and pod; its contents are kept in
+  `WorldState.nests[id].pods` {prop index: [item dicts]} (no version bump), so a looted pod stays
+  looted and a half-looted one keeps the rest. A nest with no pod leaves one at its heart (index -1).
+* **The mat and placement (TD-258).** `mat_radius(def)` (its props' reach + 1 m) is a clearing in the
+  vegetation: `VegetationManager.set_clearings(&"nests", [{pos, r}])` (a small hunk there: near
+  instances inside a clearing are filtered out of a chunk's data as its scatter arrives, loaded
+  chunks a change touches are dropped and scattered again; indices are unchanged, nothing is saved;
+  the far impostors keep them). `BloomNests.placement_problems(at, r, region, world)` checks a spot
+  against world roads, rivers and lakes and the region's roads, paths, lakes and POI / framework
+  pads (with their skirt); `validate.gd` warns for every region-feature nest that fails it (the main
+  map's is clear).
+* **The heart's box (TD-255, the cheap part).** `core` is optional: without it a def gets the root
+  mass's heart (`NestDef.HEART_OFFSET` / `HEART_SIZE`, the old `hollow_nest` box) scaled by its first
+  prop's scale and moved to its offset, so `root_knot` (root mass at 0.6) no longer carries a
+  hand-scaled box. Area fires still do not reach a nest.
+* Tests: `tests/integration/test_bloom_nests.gd` (burn smoke and sounds, pods as containers through a
+  save, the mat clearing, the vegetation filter, the placement check). Gaps: TD-254, 255, 257 and
+  what is left of 256 and 258.
 
 ### Not in this ADR
 Wolves fighting the Hollowed or hounds; packs claiming territory; Ezra Vane (his own ADR next); nest

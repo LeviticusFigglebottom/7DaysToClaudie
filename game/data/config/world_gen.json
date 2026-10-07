@@ -94,7 +94,7 @@
       "valley": 0.03
     },
     "wilderness": {
-      "_doc": "Authored places outside towns. site: summit | forest | waterside | lake_shore | remote | roadside | mine (pad: the levelled surface part [w, d] of a footprint that runs on under a hill; see `mine`); per_region: expected count per region at density 1; max: per 16 km² of map; access: trail (footpath) | track (dirt road) | drive (short asphalt drive off the road); min_danger: 1 (start) .. 5 (far edge). unique: true caps the entry at one per world whatever its size (a place the story knows as one). door: where the access ends, in footprint metres (default 3 m before the middle of the front).",
+      "_doc": "Authored places outside towns. site: summit | forest | waterside | lake_shore | remote | roadside | companion (ADR-0058: Ezra Vane's camp, placed after everything from its own stream, `ring` [min, max] m round the drop site, access none) | mine (pad: the levelled surface part [w, d] of a footprint that runs on under a hill; see `mine`); per_region: expected count per region at density 1; max: per 16 km² of map; access: trail (footpath) | track (dirt road) | drive (short asphalt drive off the road); min_danger: 1 (start) .. 5 (far edge). unique: true caps the entry at one per world whatever its size (a place the story knows as one). door: where the access ends, in footprint metres (default 3 m before the middle of the front). late: true places the entry after the farmsteads, each from its own stream (ADR-0053), so older places draw the same.",
       "pool": [
         {"poi": "cedar_ridge_lookout", "site": "summit", "per_region": 0.22, "max": 4, "access": "trail", "biome": "rocky_slope", "min_danger": 1},
         {"poi": "trappers_cabin", "site": "forest", "per_region": 0.35, "max": 6, "access": "trail", "biome": "meadow", "min_danger": 1},
@@ -112,7 +112,15 @@
         {"poi": "haldane_place", "site": "forest", "per_region": 0.12, "max": 2, "access": "track", "biome": "meadow", "min_danger": 1, "skirt": 10},
         {"poi": "corvane_field_lab", "site": "remote", "per_region": 0.07, "max": 1, "unique": true, "access": "track", "biome": "town", "min_danger": 4, "skirt": 14},
         {"poi": "ashen_highcamp", "site": "remote", "per_region": 0.08, "max": 1, "access": "trail", "biome": "rocky_slope", "min_danger": 3, "skirt": 12},
-        {"poi": "corvane_larkspur_adit", "site": "mine", "per_region": 0.08, "max": 1, "unique": true, "access": "track", "biome": "rocky_slope", "min_danger": 3, "skirt": 6, "pad": [24, 14], "door": [11, -5]}
+        {"poi": "w4_hillside_bunker", "site": "forest", "per_region": 0.1, "max": 2, "access": "track", "biome": "meadow", "min_danger": 3, "skirt": 10, "late": true},
+        {"poi": "w4_cordon_plane_wreck", "site": "forest", "per_region": 0.08, "max": 1, "access": "track", "biome": "meadow", "min_danger": 3, "skirt": 10, "late": true},
+        {"poi": "w4_backcountry_ranger_station", "site": "forest", "per_region": 0.1, "max": 2, "access": "track", "biome": "meadow", "min_danger": 2, "skirt": 10, "late": true},
+        {"poi": "w4_trestle_tunnel", "site": "forest", "per_region": 0.08, "max": 2, "access": "track", "biome": "conifer_forest", "min_danger": 2, "skirt": 10, "late": true},
+        {"poi": "w4_logging_truck_depot", "site": "forest", "per_region": 0.1, "max": 2, "access": "track", "biome": "town", "min_danger": 2, "skirt": 10, "late": true},
+        {"poi": "w4_ridge_relay_hut", "site": "forest", "per_region": 0.12, "max": 2, "access": "track", "biome": "meadow", "min_danger": 1, "skirt": 10, "late": true},
+        {"poi": "w4_overgrown_chapel", "site": "forest", "per_region": 0.1, "max": 2, "access": "trail", "biome": "meadow", "min_danger": 2, "skirt": 10, "late": true},
+        {"poi": "corvane_larkspur_adit", "site": "mine", "per_region": 0.08, "max": 1, "unique": true, "access": "track", "biome": "rocky_slope", "min_danger": 3, "skirt": 6, "pad": [24, 14], "door": [11, -5]},
+        {"poi": "ezra_camp", "site": "companion", "per_region": 10.0, "max": 1, "unique": true, "access": "none", "biome": "meadow", "min_danger": 1, "skirt": 6, "ring": [300, 900]}
       ],
       "farmsteads": {"framework": "farm_okafor", "per_region": 0.1, "max": 2, "biome": "meadow", "min_danger": 2},
       "spacing": 160,

@@ -1,0 +1,6 @@
+{
+  "_doc": "Climbable structures (ADR-0057): the hunting stand, a raised platform for bow and rifle hunting reached by its own ladder.",
+  "defs": [
+    {"id": "hunting_stand", "name": "Hunting Stand", "description": "Four legs, a log deck three metres up, a pole ladder to a hatch. Above a deer's eyeline and out of a Hollowed's reach.", "mode": "assembly", "category": "survival", "result": "hunting_stand", "cost": {"log": 6, "stick": 12, "cordage": 6}, "preview": "structures/hunting_stand", "max_slope": 18.0}
+  ]
+}

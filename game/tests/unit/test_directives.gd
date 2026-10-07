@@ -166,10 +166,11 @@ func test_a_spent_directive_does_not_hold_up_its_chapter() -> void:
 
 func test_worlds_with_the_targets_keep_them_and_stand_ins_are_stable() -> void:
 	var main: Array = [_b("p/school", "pell_crossing_school", 3, 10.0), _b("p/farm", "okafor_farmhouse", 3, 900.0),
-		_b("p/mill", "larch_hollow_sawmill", 4, 50.0)]
+		_b("p/mill", "larch_hollow_sawmill", 4, 50.0), _b("p/ezra", "ezra_camp", 1, 400.0)]
 	var fit: Dictionary = Directives.for_world(main, Vector3.ZERO, 3)
 	assert_true((fit["stand_ins"] as Dictionary).is_empty(), "a world with the Okafor farmhouse and the sawmill keeps its own targets")
-	assert_true((fit["spent"] as Dictionary).is_empty())
+	assert_true((fit["spent"] as Dictionary).is_empty(), "nor is \"Find the lineman\" spent where his camp stands (ADR-0058)")
+	assert_true(Directives.for_world(main.slice(0, 3), Vector3.ZERO, 3)["spent"].has(&"find_lineman"), "spent without his camp")
 	# Two equally near candidates: the world seed decides, the same way every time and in any order.
 	var twins: Array = [_b("a/x", "pell_crossing_school", 3, 100.0), _b("b/y", "pell_savings_loan", 3, -100.0)]
 	var pick: Variant = ((Directives.for_world(twins, Vector3.ZERO, 42)["stand_ins"] as Dictionary)[&"hold_tier3"] as Dictionary)["targets"]

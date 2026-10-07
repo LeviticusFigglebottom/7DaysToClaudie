@@ -1,0 +1,23 @@
+{
+  "_doc": "Climbable structures (ClimbMount, ADR-0057): a structure that provides \"climb\" carries a PoiPieces.Ladder, so Player climbs it like a POI ladder (ADR-0051) and the climbing arms play. Keyed by structure id. style ladder: a fixed ladder; foot = the ladder's origin (bottom of the rails, piece-local m), face = the horizontal direction from the rails toward the climber, height = metres up the rails, landing = where the feet step off at the top, bottom = the cell at its foot in front of it (both piece-local); deck = the procedural stand-in's platform (half width, top, thickness, the hatch's x0 x1 z0 z1, rail height, leg offset). style rope: hung from where it is set down: the hang point is searched from the anchor forward (piece -Z, the way the player faced) every `step` m up to overhang_max for a drop of min_drop..max_drop m; the rope hangs `lip` m past the edge, rope_off m in front of the ladder's origin, and the top landing is landing_back m behind the anchor; retry_frames: physics frames to keep looking for the ground (terrain still loading). Rails and ropes stand 0.09-0.16 m in front of the ladder origin like the kit ladder, so the climber (0.42 m out) has them ~0.3 m ahead.",
+  "hunting_stand": {
+    "style": "ladder",
+    "foot": [0.0, 0.0, 1.1],
+    "face": [0.0, 0.0, -1.0],
+    "height": 3.0,
+    "landing": [0.0, 3.0, -0.35],
+    "bottom": [0.0, 0.0, 0.5],
+    "deck": {"half": 1.2, "top": 3.0, "thick": 0.14, "hatch": [-0.45, 0.45, 0.25, 1.2], "rail": 1.0, "leg": 1.06}
+  },
+  "climbing_rope": {
+    "style": "rope",
+    "step": 0.1,
+    "overhang_max": 1.4,
+    "lip": 0.06,
+    "min_drop": 1.5,
+    "max_drop": 14.0,
+    "rope_off": 0.12,
+    "landing_back": 0.35,
+    "retry_frames": 240
+  }
+}

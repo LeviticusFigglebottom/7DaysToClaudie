@@ -1,0 +1,34 @@
+{
+ "_doc": "Cordon transport wreck (forest set pieces round 4): the airframe's painted skin (Cordon grey-green over aluminium, rust where the paint went) and the jump seats' red webbing. Models: tools/assetgen/blender/generators/props_wild4_plane.py. Shared ids reused: road_alu, road_steel_dark, road_glass, road_rubber, w3_signs (the CORDON and QUARANTINE stencils), w3_canvas_white, canvas_olive, out_earth, stone_river, w3_log_bark, wood_log_end, out_log_peeled, road_cardboard, road_paint_red, road_paint_white.",
+ "materials": {
+  "w4_plane_skin": {
+   "shader": "std_surface",
+   "textures": "car_paint",
+   "layers": {
+    "wear": "car_rust"
+   },
+   "params": {
+    "uv_scale": 1.5,
+    "vertex_ao_strength": 1.0,
+    "tint": "#7d8476",
+    "wear_amount": 0.4,
+    "wear_uv_scale": 1.2,
+    "grime_amount": 0.55,
+    "grime_color": "#2f2a22",
+    "roughness_add": 0.1
+   }
+  },
+  "w4_plane_webbing": {
+   "shader": "std_surface",
+   "textures": "canvas_tarp",
+   "params": {
+    "uv_scale": 2.0,
+    "vertex_ao_strength": 1.0,
+    "tint": "#8c2c22",
+    "grime_amount": 0.5,
+    "grime_color": "#2a2019",
+    "roughness_mult": 0.9
+   }
+  }
+ }
+}

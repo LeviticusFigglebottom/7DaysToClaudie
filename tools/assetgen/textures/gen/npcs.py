@@ -85,3 +85,18 @@ def npc_hair(size: int, seed: int, out) -> None:
     height = s
     rough = np.clip(0.55 + 0.3 * (1 - s), 0.4, 0.95)
     T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.5)
+
+
+@texture("ezra_hair", size=1024, seed=1241)
+def ezra_hair(size: int, seed: int, out) -> None:
+    """Ezra Vane's hair and beard (ADR-0058; strands along V): an older man's, mostly grey going
+    white, a few darker strands left, coarse and dry."""
+    strands = T.spectral(size, 0.9, seed, anisotropy=(40.0, 1.0))
+    clumps = T.spectral(size, 1.6, seed + 1, anisotropy=(6.0, 1.0))
+    s = T.normalize(0.65 * strands + 0.35 * clumps)
+    col = T.gradient(s, [(0.0, "#4a4640"), (0.4, "#7c7870"), (0.8, "#a8a49c"), (1.0, "#cfcbc2")])
+    dark = T.smoothstep(0.7, 0.92, T.spectral(size, 0.6, seed + 2, anisotropy=(30.0, 1.0)))
+    col = T.mix(col, _c("#3a3229") * np.ones_like(col), dark * 0.5)
+    height = s
+    rough = np.clip(0.6 + 0.3 * (1 - s), 0.45, 0.95)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.5)

@@ -604,6 +604,18 @@
       "biome": "meadow"
     },
     {
+      "type": "poi",
+      "id": "ezra_camp",
+      "poi": "ezra_camp",
+      "_doc": "Ezra Vane's camp (ADR-0058): the companion waits here to be found, out in the timber west of Larch Pond, ~400 m north-west of the drop site, away from the roads.",
+      "origin": [
+        -472,
+        1940
+      ],
+      "rotation": 0,
+      "skirt": 6
+    },
+    {
       "type": "path",
       "id": "lindqvist_trail",
       "surface": "dirt",

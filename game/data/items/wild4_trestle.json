@@ -1,0 +1,71 @@
+{
+ "_doc": "Keys and readable notes of the trestle tunnel (w4_trestle_tunnel, forest set pieces round 4, ADR-0053). Note items are note_<note id> (notes/wild4_trestle.json); models from tools/assetgen/blender_catalogs/items_wild4_trestle.py.",
+ "defs": [
+  {
+   "id": "w4_trestle_bulkhead_key",
+   "name": "Bulkhead Chain Key",
+   "description": "A steel padlock key on a Cordon tag stamped TUNNEL 2 BULKHEAD - CORDON USE ONLY. The watchman kept it on a nail by his door.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_trestle/w4_trestle_bulkhead_key"
+  },
+  {
+   "id": "w4_trestle_niche_key",
+   "name": "Refuge Niche Key",
+   "description": "A brass padlock key with a round brass tag punched 7 - NICHE STA. 40, off the section foreman's key board.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_trestle/w4_trestle_niche_key"
+  },
+  {
+   "id": "note_w4_trestle_watch_log",
+   "name": "Watchman's Log, Mile 31 Trestle",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_trestle_watch_log",
+   "model": "items/wild4_trestle/note_w4_trestle_watch_log"
+  },
+  {
+   "id": "note_w4_trestle_work_order",
+   "name": "Section Work Order No. 118",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_trestle_work_order",
+   "model": "items/wild4_trestle/note_w4_trestle_work_order"
+  },
+  {
+   "id": "note_w4_trestle_demolition_order",
+   "name": "Cordon Demolition Order",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_trestle_demolition_order",
+   "model": "items/wild4_trestle/note_w4_trestle_demolition_order"
+  },
+  {
+   "id": "note_w4_trestle_crew_letter",
+   "name": "Letter in the Boxcar",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_trestle_crew_letter",
+   "model": "items/wild4_trestle/note_w4_trestle_crew_letter"
+  }
+ ]
+}

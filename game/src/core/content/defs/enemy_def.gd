@@ -1,9 +1,10 @@
 class_name EnemyDef
 extends ContentDef
-## An enemy archetype (Hollowed variants, animals, later Ashen tribe roles).
+## An enemy archetype (Hollowed variants, animals, the Ashen's tribe roles) or a body that fights
+## alongside the player (archetype `companion`, faction `remand`: Ezra Vane, ADR-0058).
 
-const ARCHETYPES: PackedStringArray = ["walker", "feral", "screamer", "crawler", "spitter", "armored", "breaker", "hound", "animal", "tribe"]
-const FACTIONS: PackedStringArray = ["hollowed", "ashen", "wildlife"]
+const ARCHETYPES: PackedStringArray = ["walker", "feral", "screamer", "crawler", "spitter", "armored", "breaker", "hound", "animal", "tribe", "companion"]
+const FACTIONS: PackedStringArray = ["hollowed", "ashen", "wildlife", "remand"]
 
 var archetype: String = "walker"
 var faction: String = "hollowed"

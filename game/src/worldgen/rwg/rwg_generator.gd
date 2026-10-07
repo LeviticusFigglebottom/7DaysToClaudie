@@ -47,7 +47,11 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 6: the Ashen high camp joins the wilderness pool (ADR-0048), so worlds cached at 5 regenerate.
 ## 7: `mine` sites (TD-169): the Corvane adit dug into a hillside, its buried levels under the
 ## ground, placed last from their own stream (every other place stays where it was).
-const VERSION: int = 7
+## 8: the `companion` site (ADR-0058): Ezra Vane's camp, once, in a ring round the drop site, after
+## the mines from its own stream, with no way in (every other place stays where it was).
+## 9: the forest set pieces (ADR-0053) join the wilderness pool as `late` entries, each from its own
+## stream after the farmsteads.
+const VERSION: int = 9
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -1881,7 +1885,7 @@ func _places() -> void:
 		_sub("Placing camps and cabins", 0.7, 0.85, float(oi) / order.size())
 		for e: Variant in pool:
 			var pe: Dictionary = e
-			if str(pe.get("site", "")) != site or int(pe.get("min_danger", 1)) > max_danger:
+			if str(pe.get("site", "")) != site or int(pe.get("min_danger", 1)) > max_danger or bool(pe.get("late", false)):
 				continue
 			var pd: PoiDef = db.call(&"get_def", &"poi", StringName(str(pe.get("poi", "")))) as PoiDef if db != null else null
 			if pd == null:
@@ -1898,6 +1902,18 @@ func _places() -> void:
 			fe["site"] = "farm"
 			fe["access"] = "track"
 			_place_one(fe, Vector2(fw.size), r, wcfg)
+	# Places added after a world format shipped (`late`: the forest set pieces, generator v9), each
+	# from its own stream after the farmsteads: every place before them draws exactly as it did.
+	for e3: Variant in pool:
+		var le: Dictionary = e3
+		if not bool(le.get("late", false)) or str(le.get("site", "")) == "mine" or int(le.get("min_danger", 1)) > max_danger:
+			continue
+		var lpd: PoiDef = db.call(&"get_def", &"poi", StringName(str(le.get("poi", "")))) as PoiDef if db != null else null
+		if lpd == null:
+			continue
+		var rl := rng("places:late:%s" % lpd.id)
+		for k4: int in _pool_count(le, rl, density, area16):
+			_place_one(le, Vector2(lpd.footprint), rl, wcfg)
 	# Mines last, each from its own stream: no other place's pad reshapes the hill over their levels
 	# after the cover is checked, and the places before them draw exactly as they did (generator v5).
 	for e2: Variant in pool:
@@ -1915,6 +1931,19 @@ func _places() -> void:
 		for k3: int in mcount:
 			if not _place_one(me, Vector2(mpd.footprint), rm, wcfg):
 				warnings.append("no hillside for %s" % mpd.id)
+	# The companion's camp (ADR-0058) after everything, from its own stream: in a ring round the drop
+	# site (the pool entry's `ring`, m), off the roads, nothing leading to it.
+	for e3: Variant in pool:
+		var ce: Dictionary = e3
+		if str(ce.get("site", "")) != "companion" or int(ce.get("min_danger", 1)) > max_danger:
+			continue
+		var cpd: PoiDef = db.call(&"get_def", &"poi", StringName(str(ce.get("poi", "")))) as PoiDef if db != null else null
+		if cpd == null:
+			continue
+		var rc := rng("places:companion:%s" % cpd.id)
+		for k4: int in _pool_count(ce, rc, density, area16):
+			if not _place_one(ce, Vector2(cpd.footprint), rc, wcfg):
+				warnings.append("no spot for %s" % cpd.id)
 
 
 ## How many of a pool entry a world gets: its density per region times the map's regions (one more
@@ -1946,7 +1975,8 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 		var pa: Array = pe.get("pad", [fp.x, fp.y])
 		pad = Vector2(float(pa[0]), float(pa[1]))
 	for attempt: int in 90:
-		var cand: Dictionary = _candidate(site, fp, r, pad.x, mcfg, min_danger)
+		var ra: Array = pe.get("ring", [300.0, 900.0])
+		var cand: Dictionary = _candidate(site, fp, r, pad.x, mcfg, min_danger, Vector2(float(ra[0]), float(ra[1])))
 		if cand.is_empty():
 			continue
 		var origin: Vector2 = cand["origin"]
@@ -1999,9 +2029,18 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 
 ## A candidate frame {origin, rot} for a site, or {} (the caller tries again). `pad_len`, `mcfg`,
 ## `min_danger`: a mine's pad length along local X, tuning.wilderness.mine and its least danger.
-func _candidate(site: String, fp: Vector2, r: RandomNumberGenerator, pad_len: float = 0.0, mcfg: Dictionary = {}, min_danger: int = 1) -> Dictionary:
+func _candidate(site: String, fp: Vector2, r: RandomNumberGenerator, pad_len: float = 0.0, mcfg: Dictionary = {}, min_danger: int = 1,
+		ring: Vector2 = Vector2(300.0, 900.0)) -> Dictionary:
 	var lim: float = size * 512.0 - 100.0
 	match site:
+		"companion":
+			# Out in the wilds within a walk of the drop site (ADR-0058): a ring round it.
+			var dp: Vector2 = drop.get("pos", Vector2.ZERO)
+			var at: Vector2 = dp + Vector2.from_angle(r.randf() * TAU) * r.randf_range(ring.x, ring.y)
+			if absf(at.x) > lim or absf(at.y) > lim or water_at(at) < 30.0:
+				return {}
+			var rot5: float = 15.0 * float(r.randi() % 24)
+			return {"origin": at - (fp * 0.5).rotated(deg_to_rad(rot5)), "rot": rot5}
 		"mine":
 			# A hillside: of a few dry points steep enough, the one where the ground rises most from
 			# the pad's middle to 20 m into the hill. Local +X runs uphill (the plan's levels run on
@@ -2220,6 +2259,8 @@ func buried_samples(def_id: String) -> Array:
 ## The way to a place: a short asphalt drive off the road it fronts, a dirt track or a footpath
 ## from the nearest road to its front.
 func _access(place: Dictionary, kind: String, cand: Dictionary) -> void:
+	if kind == "none":
+		return  # found, not reached by a path (the companion's camp, ADR-0058)
 	var to: Vector2 = place["access"]
 	if kind == "drive" and cand.has("road_point"):
 		var from: Vector2 = cand["road_point"]

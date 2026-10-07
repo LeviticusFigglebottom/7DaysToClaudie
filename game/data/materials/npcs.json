@@ -1,5 +1,5 @@
 {
-  "_doc": "Living people (trader-post NPCs, the Remand Program's staff). Same shaders and texture sets as the Hollowed (characters.json) with the infection switched off rather than forked: skin on the skin shader with bloom_skin, pallor, mottle and bruise at 0 (no Bloom veins, no dead pallor) and a warm living transmittance; clear eyes (npc_eye); the Program's olive fatigues, padded vest, yellow armband, knit cap and work gloves. Bodies select these with the body params' remap (blender_catalogs/npcs.py).",
+  "_doc": "Living people (trader-post NPCs, the Remand Program's staff). Same shaders and texture sets as the Hollowed (characters.json) with the infection switched off rather than forked: skin on the skin shader with bloom_skin, pallor, mottle and bruise at 0 (no Bloom veins, no dead pallor) and a warm living transmittance; clear eyes (npc_eye); the Program's olive fatigues, padded vest, yellow armband, knit cap and work gloves. Bodies select these with the body params' remap (blender_catalogs/npcs.py). Ezra Vane, the companion (ADR-0058): ezra_fatigues (the ripstop washed out to a pale khaki-olive, worn) and ezra_hair (grey going white; blender_catalogs/companions.py).",
   "materials": {
     "npc_skin": {"shader": "skin", "textures": "skin_human", "layers": {"wear": "blood_grime"},
                  "params": {"uv_scale": 4.0, "tint": "#f2e2d6", "wear_amount": 0.12, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "normal_strength": 0.7,
@@ -25,6 +25,10 @@
     "npc_inner": {"shader": "std_surface", "textures": "gore", "params": {"uv_scale": 6.0, "tint": "#2c2523", "vertex_ao_strength": 0.7, "normal_strength": 0.6, "roughness_add": 0.1}},
     "npc_gloves": {"shader": "cloth", "textures": "cloth_drill", "layers": {"wear": "blood_grime"},
                    "params": {"uv_scale": 7.0, "tint": "#d4ac78", "wear_amount": 0.3, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "grime_amount": 0.35,
-                              "sheen": 0.15, "roughness_add": 0.05, "stitch_color": "#6a5030", "stitch_amount": 0.5, "seam_width": 0.003}}
+                              "sheen": 0.15, "roughness_add": 0.05, "stitch_color": "#6a5030", "stitch_amount": 0.5, "seam_width": 0.003}},
+    "ezra_fatigues": {"shader": "cloth", "textures": "npc_ripstop", "layers": {"wear": "blood_grime"},
+                      "params": {"uv_scale": 4.0, "tint": "#8b8c70", "wear_amount": 0.3, "wear_uv_scale": 3.0, "vertex_ao_strength": 1.0, "grime_amount": 0.28,
+                                 "sheen": 0.2, "stitch_color": "#5a5c44", "stitch_amount": 0.55, "seam_width": 0.0045}},
+    "ezra_hair": {"shader": "std_surface", "textures": "ezra_hair", "params": {"uv_scale": 6.0, "tint": "#ffffff", "vertex_ao_strength": 1.0, "normal_strength": 1.0}}
   }
 }

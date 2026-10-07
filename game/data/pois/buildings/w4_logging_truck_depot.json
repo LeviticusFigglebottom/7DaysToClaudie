@@ -1,0 +1,1920 @@
+{
+ "_doc": "Forest set pieces, round 4 (ADR-0053): the Dunmore Timber truck depot, a logging company's truck shop deep in the timber by a haul road. Route: in off the logging road past Ray's loaded truck on the weighbridge -> the scale house (weigh tickets, the Cordon's road closure order) -> the fuel island -> the shop's side door, bolted -> three bay doors chained, one leaf of bay 2 torn off -> the bays (a log truck up on the lift) -> down the ladder into the inspection pit (jaws in the muck) -> Hank's key ring at the far end (taking it, or the jaws, wakes the mechanics) -> climb out -> the parts room's padlock (the key ring) and a can chime -> the office key on the parts counter -> the welding shop -> stairs up to the break room (loose boards wake the drivers, as does opening the office) -> the dispatch office (deadbolt, the office key; Vera, guardian; the loot) -> back down -> draw the side door's bolt. Props: props/wild4_depot.json.",
+ "defs": [
+  {
+   "id": "w4_logging_truck_depot",
+   "name": "Dunmore Timber Truck Depot",
+   "tier": 2,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    40,
+    36
+   ],
+   "origin": [
+    2,
+    2
+   ],
+   "author": "Hollowmere team (forest round 4)",
+   "population": "loggers",
+   "story": "Dunmore Timber ran six log trucks out of this depot at the end of the haul road: a block-walled truck shop with two tall bays and an inspection pit, a parts room and a welding shop under a mezzanine where the dispatcher kept her office, the scale house on its weighbridge, a fuel island and the log deck. The day the Cordon closed the roads, Vera Lindqvist called every truck in. Four came back. The soldiers at the bridge turned Cole around at gunpoint, and the crews sheltered here on cots over the shop, living on the vending machine and Hank's diesel. Benny had brought Dutch down off the ridge with the cough. When Dutch went down in the shop, Hank and the kid put him in the pit and pulled the planks over him; that night Hank went down after him with a light and his key ring and never came up. Vera locked herself in the dispatch office with the payroll safe and the radio, and kept calling trucks four and six on the company channel long after the boys upstairs had stopped coughing. Ray's last load is still on the scale.",
+   "style": {
+    "exterior": "concrete_block",
+    "interior": "concrete_block",
+    "floor": "concrete",
+    "ceiling": "plaster_grey",
+    "floor_height": 0.15,
+    "decay": 0.5,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.35
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "x",
+     "pitch": 16,
+     "overhang": 0.5,
+     "material": "roof_metal",
+     "gable_finish": "concrete_block",
+     "gutters": false
+    }
+   },
+   "levels": [
+    {
+     "level": -1,
+     "plan": [
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "          PP                        ",
+      "          PP                        ",
+      "          PP                        ",
+      "          PP                        ",
+      "          PP                        ",
+      "          PP                        ",
+      "          PP                        ",
+      "          PP                        ",
+      "          PP                        ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    "
+     ],
+     "rooms": {
+      "P": {
+       "name": "Inspection pit",
+       "type": "garage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block"
+      }
+     }
+    },
+    {
+     "level": 0,
+     "plan": [
+      "....................................",
+      "....................................",
+      "..BBBBBBBBBBBBRRRRRR................",
+      "..BBBBBBBBBBBBRRRRRR................",
+      "..BBBBBBBBBBBBRRRRRR................",
+      "..BBBBBBBBBBBBRRRRRR................",
+      "..BBBBBBBBBBBBRRRRRR................",
+      "..BBBBBBBBBBBBWWWWWW................",
+      "..BBBBBBBBBBBBWWWWWW................",
+      "..BBBBBBBBBBBBWWWWWW................",
+      "..BBBBBBBBBBBBWWWWWW................",
+      "..BBBBBBBBBBBBWWWWWW................",
+      "..BBBBBBBBBBBBWWWWWW................",
+      "..BBBBBBBBBBBBWWWWWW................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "..........................SSSS......",
+      "..........................SSSS......",
+      "..........................SSSS......",
+      "..........................SSSS......",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "...................................."
+     ],
+     "rooms": {
+      "B": {
+       "name": "Truck bays",
+       "type": "garage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "storeys": 2,
+       "open_roof": true
+      },
+      "R": {
+       "name": "Parts room",
+       "type": "storage",
+       "wall": "paint_slate_blue",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "W": {
+       "name": "Welding shop",
+       "type": "garage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "S": {
+       "name": "Scale house",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "linoleum_beige",
+       "ceiling": "plaster_white"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "                                    ",
+      "                                    ",
+      "  ^^^^^^^^^^^^DDDDDD                ",
+      "  ^^^^^^^^^^^^DDDDDD                ",
+      "  ^^^^^^^^^^^^DDDDDD                ",
+      "  ^^^^^^^^^^^^DDDDDD                ",
+      "  ^^^^^^^^^^^^DDDDDD                ",
+      "  ^^^^^^^^^^^^KKKKKK                ",
+      "  ^^^^^^^^^^^^KKKKKK                ",
+      "  ^^^^^^^^^^^^KKKKKK                ",
+      "  ^^^^^^^^^^^^KKKKKK                ",
+      "  ^^^^^^^^^^^^KKKKKK                ",
+      "  ^^^^^^^^^^^^KKKKKK                ",
+      "  ^^^^^^^^^^^^KKKKKK                ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    "
+     ],
+     "rooms": {
+      "D": {
+       "name": "Dispatch office",
+       "type": "office",
+       "wall": "paint_mustard",
+       "floor": "carpet_brown",
+       "ceiling": "plaster_white",
+       "gallery": false
+      },
+      "K": {
+       "name": "Break room",
+       "type": "kitchen",
+       "wall": "paint_sage",
+       "floor": "wood_pine",
+       "ceiling": "plaster_white",
+       "gallery": "rail"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "bay1_door_a",
+     "at": [
+      3,
+      13
+     ],
+     "side": "S",
+     "type": "door2_tall",
+     "state": "locked",
+     "lock": "chain"
+    },
+    {
+     "id": "bay1_door_b",
+     "at": [
+      5,
+      13
+     ],
+     "side": "S",
+     "type": "door2_tall",
+     "state": "locked",
+     "lock": "chain"
+    },
+    {
+     "id": "bay2_door_a",
+     "at": [
+      8,
+      13
+     ],
+     "side": "S",
+     "type": "door2_tall",
+     "state": "locked",
+     "lock": "chain"
+    },
+    {
+     "id": "bay2_door_b",
+     "at": [
+      10,
+      13
+     ],
+     "side": "S",
+     "type": "door2_tall",
+     "state": "broken"
+    },
+    {
+     "id": "side_door",
+     "at": [
+      16,
+      13
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "locked_inside",
+     "model": "door_metal"
+    },
+    {
+     "id": "parts_door",
+     "at": [
+      14,
+      4
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "locked",
+     "key": "w4_depot_parts_key",
+     "lock": "padlock",
+     "model": "door_metal"
+    },
+    {
+     "id": "weld_door",
+     "at": [
+      14,
+      10
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "parts_back_door",
+     "at": [
+      19,
+      3
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "barricaded",
+     "model": "door_metal"
+    },
+    {
+     "id": "bay_win_w1",
+     "at": [
+      2,
+      5
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "bay_win_w2",
+     "at": [
+      2,
+      10
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "boarded"
+    },
+    {
+     "id": "bay_win_n1",
+     "at": [
+      5,
+      2
+     ],
+     "side": "N",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "bay_win_n2",
+     "at": [
+      11,
+      2
+     ],
+     "side": "N",
+     "type": "window_tall",
+     "state": "broken"
+    },
+    {
+     "id": "weld_win_e",
+     "at": [
+      19,
+      8
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "weld_win_s",
+     "at": [
+      18,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "office_door",
+     "at": [
+      16,
+      7
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked",
+     "key": "w4_depot_office_key",
+     "lock": "deadbolt",
+     "level": 1
+    },
+    {
+     "id": "office_win_bay",
+     "at": [
+      14,
+      3
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "office_win_n",
+     "at": [
+      18,
+      2
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "office_win_e",
+     "at": [
+      19,
+      4
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "boarded",
+     "level": 1
+    },
+    {
+     "id": "break_win_s",
+     "at": [
+      16,
+      13
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "broken",
+     "level": 1
+    },
+    {
+     "id": "break_win_e",
+     "at": [
+      19,
+      7
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "scale_door",
+     "at": [
+      27,
+      24
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "scale_win_w",
+     "at": [
+      26,
+      22
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "scale_win_e",
+     "at": [
+      29,
+      22
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "boarded"
+    }
+   ],
+   "stairs": [
+    {
+     "level": 0,
+     "at": [
+      19,
+      12
+     ],
+     "dir": "N"
+    }
+   ],
+   "ladders": [
+    {
+     "level": -1,
+     "at": [
+      11,
+      11
+     ],
+     "side": "S",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "bay_lift",
+     "prop": "w4_depot_truck_lift",
+     "pos": [
+      5.0,
+      7.6
+     ],
+     "rot": 0
+    },
+    {
+     "id": "lift_tractor",
+     "prop": "w4_depot_log_tractor",
+     "pos": [
+      5.0,
+      7.5
+     ],
+     "rot": 0,
+     "y": 1.55,
+     "variant": "worn",
+     "alt": "tractor:hood_up"
+    },
+    {
+     "id": "lift_tractor",
+     "prop": "w4_depot_log_tractor",
+     "pos": [
+      5.0,
+      7.5
+     ],
+     "rot": 0,
+     "y": 1.55,
+     "variant": "clean",
+     "alt": "tractor:finished"
+    },
+    {
+     "id": "pit_planks",
+     "prop": "w4_depot_pit_planks",
+     "pos": [
+      11.0,
+      6.5
+     ],
+     "rot": 0,
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "id": "bay_bench",
+     "prop": "road_workbench",
+     "at": [
+      8,
+      2
+     ],
+     "against": "N",
+     "offset": [
+      0.4,
+      0
+     ],
+     "container": "toolbox"
+    },
+    {
+     "id": "bay_tools",
+     "prop": "road_tool_chest",
+     "at": [
+      2,
+      12
+     ],
+     "against": "W"
+    },
+    {
+     "prop": "road_engine_hoist",
+     "pos": [
+      8.6,
+      6.4
+     ],
+     "rot": 90
+    },
+    {
+     "id": "bay_tyres_a",
+     "prop": "w4_depot_tire_stack",
+     "pos": [
+      2.8,
+      2.8
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "road_tire_stack",
+     "pos": [
+      3.9,
+      2.5
+     ],
+     "rot": 30
+    },
+    {
+     "id": "bay_drum_a",
+     "prop": "road_oil_drum",
+     "pos": [
+      13.35,
+      12.3
+     ]
+    },
+    {
+     "id": "bay_drum_b",
+     "prop": "road_oil_drum",
+     "pos": [
+      13.3,
+      11.55
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "bay_oil_shelf",
+     "prop": "road_oil_shelf",
+     "at": [
+      2,
+      7
+     ],
+     "against": "W",
+     "container": "road_auto_shelf"
+    },
+    {
+     "prop": "wild_choker_cable",
+     "pos": [
+      7.6,
+      11.6
+     ],
+     "rot": 20,
+     "route_ok": true
+    },
+    {
+     "prop": "gas_can",
+     "pos": [
+      12.6,
+      9.0
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "fire_extinguisher",
+     "at": [
+      13,
+      9
+     ],
+     "against": "E",
+     "height": 0.9
+    },
+    {
+     "id": "parts_shelf_a",
+     "prop": "w4_depot_parts_shelf",
+     "at": [
+      15,
+      2
+     ],
+     "against": "N",
+     "offset": [
+      0.4,
+      0
+     ]
+    },
+    {
+     "id": "parts_shelf_b",
+     "prop": "w4_depot_parts_shelf",
+     "at": [
+      18,
+      2
+     ],
+     "against": "N",
+     "offset": [
+      0.0,
+      0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "parts_shelf_c",
+     "prop": "w4_depot_parts_shelf",
+     "at": [
+      19,
+      5
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.5
+     ],
+     "variant": "destroyed"
+    },
+    {
+     "id": "parts_counter",
+     "prop": "road_workbench",
+     "at": [
+      16,
+      6
+     ],
+     "against": "S",
+     "offset": [
+      0.4,
+      0
+     ],
+     "container": "toolbox"
+    },
+    {
+     "prop": "road_tire_stack",
+     "pos": [
+      14.5,
+      2.6
+     ],
+     "rot": 0
+    },
+    {
+     "id": "parts_boxes",
+     "prop": "cardboard_box",
+     "pos": [
+      14.55,
+      6.45
+     ],
+     "rot": 10
+    },
+    {
+     "id": "weld_cart",
+     "prop": "w4_depot_welding_cart",
+     "at": [
+      15,
+      13
+     ],
+     "against": "S"
+    },
+    {
+     "id": "weld_bench",
+     "prop": "road_workbench",
+     "at": [
+      14,
+      8
+     ],
+     "against": "W",
+     "container": "toolbox"
+    },
+    {
+     "id": "weld_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      17,
+      7
+     ],
+     "against": "N",
+     "container": "hardware_shelf"
+    },
+    {
+     "prop": "propane_tank_small",
+     "pos": [
+      14.4,
+      12.55
+     ]
+    },
+    {
+     "prop": "bucket",
+     "pos": [
+      16.6,
+      7.6
+     ]
+    },
+    {
+     "id": "dispatch_radio",
+     "prop": "w4_depot_dispatch_radio",
+     "at": [
+      15,
+      2
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "level": 1,
+     "lit": true,
+     "keep": true,
+     "alt": "radio:on"
+    },
+    {
+     "id": "dispatch_radio",
+     "prop": "w4_depot_dispatch_radio",
+     "at": [
+      15,
+      2
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "level": 1,
+     "variant": "worn",
+     "alt": "radio:dead"
+    },
+    {
+     "id": "vera_chair",
+     "prop": "office_chair",
+     "pos": [
+      16.0,
+      3.35
+     ],
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "id": "truck_board",
+     "prop": "w4_depot_dispatch_board",
+     "at": [
+      14,
+      5
+     ],
+     "against": "W",
+     "height": 1.1,
+     "level": 1
+    },
+    {
+     "id": "dispatch_safe",
+     "prop": "wild_safe_floor",
+     "at": [
+      19,
+      2
+     ],
+     "against": "E",
+     "level": 1,
+     "container": "w4_depot_safe"
+    },
+    {
+     "id": "dispatch_files",
+     "prop": "filing_cabinet",
+     "at": [
+      18,
+      6
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "id": "vera_cot",
+     "prop": "civic_army_cot",
+     "pos": [
+      17.3,
+      4.8
+     ],
+     "rot": 90,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "break_vending",
+     "prop": "road_vending_machine",
+     "at": [
+      19,
+      13
+     ],
+     "against": "E",
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "locker_a",
+     "prop": "wild_locker_steel",
+     "at": [
+      14,
+      7
+     ],
+     "against": "N",
+     "level": 1,
+     "container": "w4_depot_lunch_locker"
+    },
+    {
+     "id": "locker_b",
+     "prop": "wild_locker_steel",
+     "at": [
+      15,
+      7
+     ],
+     "against": "N",
+     "level": 1,
+     "container": "w4_depot_lunch_locker"
+    },
+    {
+     "id": "cot_a",
+     "prop": "wild_cot_canvas",
+     "pos": [
+      15.45,
+      12.55
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "cot_b",
+     "prop": "wild_cot_canvas",
+     "pos": [
+      15.45,
+      11.45
+     ],
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "id": "break_table",
+     "prop": "kitchen_table",
+     "pos": [
+      17.3,
+      10.4
+     ],
+     "rot": 90,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "break_chair",
+     "prop": "kitchen_chair",
+     "pos": [
+      16.55,
+      10.4
+     ],
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "prop": "kitchen_chair",
+     "pos": [
+      17.35,
+      11.45
+     ],
+     "rot": 200,
+     "level": 1,
+     "variant": "destroyed"
+    },
+    {
+     "id": "break_fridge",
+     "prop": "fridge_old",
+     "at": [
+      18,
+      13
+     ],
+     "against": "S",
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "prop": "candle_cluster",
+     "pos": [
+      17.4,
+      10.2
+     ],
+     "y": 0.76,
+     "level": 1
+    },
+    {
+     "prop": "dish_clutter",
+     "pos": [
+      17.2,
+      10.75
+     ],
+     "y": 0.76,
+     "level": 1
+    },
+    {
+     "id": "scale_desk",
+     "prop": "office_desk",
+     "at": [
+      27,
+      21
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "id": "scale_chair",
+     "prop": "office_chair",
+     "pos": [
+      27.5,
+      22.2
+     ],
+     "rot": 180
+    },
+    {
+     "id": "scale_files",
+     "prop": "filing_cabinet",
+     "at": [
+      29,
+      21
+     ],
+     "against": "E"
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "pos": [
+      26.9,
+      21.3
+     ],
+     "y": 0.76
+    },
+    {
+     "id": "weighbridge",
+     "prop": "w4_depot_weighbridge",
+     "pos": [
+      23.0,
+      24.0
+     ],
+     "rot": 0
+    },
+    {
+     "id": "scale_truck",
+     "prop": "w4_depot_log_truck",
+     "pos": [
+      23.0,
+      24.0
+     ],
+     "rot": 180,
+     "y": 0.3,
+     "alt": "scale_truck:on_the_scale"
+    },
+    {
+     "id": "scale_truck",
+     "prop": "w4_depot_log_truck",
+     "pos": [
+      23.0,
+      24.0
+     ],
+     "rot": 180,
+     "y": 0.3,
+     "variant": "worn",
+     "alt": "scale_truck:left_to_rot"
+    },
+    {
+     "id": "yard_truck",
+     "prop": "w4_depot_log_truck",
+     "pos": [
+      33.0,
+      22.5
+     ],
+     "rot": 180,
+     "variant": "worn"
+    },
+    {
+     "id": "fuel_island",
+     "prop": "w4_depot_fuel_island",
+     "pos": [
+      25.5,
+      9.5
+     ],
+     "rot": 0
+    },
+    {
+     "id": "pump_a",
+     "prop": "w4_depot_fuel_pump",
+     "pos": [
+      25.5,
+      8.2
+     ],
+     "rot": 90,
+     "y": 0.2
+    },
+    {
+     "id": "pump_b",
+     "prop": "w4_depot_fuel_pump",
+     "pos": [
+      25.5,
+      10.8
+     ],
+     "rot": 90,
+     "y": 0.2,
+     "variant": "worn"
+    },
+    {
+     "id": "fuel_tank",
+     "prop": "w4_depot_fuel_tank",
+     "pos": [
+      31.5,
+      8.5
+     ],
+     "rot": 0
+    },
+    {
+     "id": "log_stack_a",
+     "prop": "w4_depot_log_stack",
+     "pos": [
+      5.0,
+      19.0
+     ],
+     "rot": 0
+    },
+    {
+     "id": "log_stack_b",
+     "prop": "w4_depot_log_stack",
+     "pos": [
+      5.0,
+      24.2
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "log_pile_low",
+     "prop": "w4_depot_log_pile_low",
+     "pos": [
+      5.0,
+      28.8
+     ],
+     "rot": 0
+    },
+    {
+     "id": "loader",
+     "prop": "w4_depot_loader",
+     "pos": [
+      13.4,
+      22.0
+     ],
+     "rot": -90,
+     "variant": "worn"
+    },
+    {
+     "id": "yard_tyres",
+     "prop": "w4_depot_tire_stack",
+     "pos": [
+      20.6,
+      12.4
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "road_oil_drum",
+     "pos": [
+      20.5,
+      3.0
+     ],
+     "variant": "worn"
+    },
+    {
+     "prop": "road_oil_drum",
+     "pos": [
+      21.2,
+      3.6
+     ]
+    },
+    {
+     "prop": "wild_peavey",
+     "pos": [
+      9.4,
+      18.6
+     ],
+     "rot": 60
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      0.8,
+      0.8
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      8.0,
+      0.6
+     ],
+     "rot": 40,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      16.0,
+      0.7
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      24.5,
+      1.0
+     ],
+     "rot": 120
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      35.0,
+      1.2
+     ],
+     "rot": 160
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      0.7,
+      10.0
+     ],
+     "rot": 200,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      35.2,
+      15.0
+     ],
+     "rot": 240
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      0.8,
+      31.0
+     ],
+     "rot": 280
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      35.0,
+      31.2
+     ],
+     "rot": 320
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      28.0,
+      2.6
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      30.5,
+      28.0
+     ],
+     "rot": 70
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      12.5,
+      30.6
+     ],
+     "rot": 10
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "scale_clerk",
+     "pos": [
+      27.5,
+      22.2
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "anchor": "scale_chair"
+    },
+    {
+     "id": "hank",
+     "group": "mechanics",
+     "pos": [
+      10.6,
+      4.4
+     ],
+     "level": -1,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "floor"
+    },
+    {
+     "id": "mech_kid",
+     "group": "mechanics",
+     "pos": [
+      8.7,
+      3.6
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 0
+    },
+    {
+     "id": "dutch",
+     "group": "mechanics",
+     "pos": [
+      7.6,
+      9.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "floor"
+    },
+    {
+     "id": "parts_man",
+     "pos": [
+      17.0,
+      4.2
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 90
+    },
+    {
+     "id": "ray",
+     "group": "drivers",
+     "pos": [
+      15.45,
+      12.55
+     ],
+     "level": 1,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "cot_a"
+    },
+    {
+     "id": "benny",
+     "group": "drivers",
+     "pos": [
+      15.45,
+      11.45
+     ],
+     "level": 1,
+     "enemy": "lurcher",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "cot_b"
+    },
+    {
+     "id": "cole",
+     "group": "drivers",
+     "pos": [
+      16.55,
+      10.4
+     ],
+     "level": 1,
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "anchor": "break_chair",
+     "alt": "cole:at_the_table"
+    },
+    {
+     "id": "cole",
+     "group": "drivers",
+     "pos": [
+      18.4,
+      11.6
+     ],
+     "level": 1,
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": -90,
+     "alt": "cole:at_the_window"
+    },
+    {
+     "id": "vera",
+     "guardian": true,
+     "pos": [
+      16.0,
+      3.35
+     ],
+     "level": 1,
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 180,
+     "anchor": "vera_chair"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "parts_keys",
+     "item": "w4_depot_parts_key",
+     "pos": [
+      10.45,
+      3.45
+     ],
+     "level": -1,
+     "y": 0.05
+    },
+    {
+     "id": "office_key",
+     "item": "w4_depot_office_key",
+     "pos": [
+      16.3,
+      6.6
+     ],
+     "y": 0.92
+    }
+   ],
+   "notes": [
+    {
+     "note": "w4_depot_weigh_tickets",
+     "pos": [
+      27.8,
+      21.3
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w4_depot_closure_order",
+     "pos": [
+      29.55,
+      21.5
+     ],
+     "y": 1.33
+    },
+    {
+     "note": "w4_depot_driver_letter",
+     "pos": [
+      17.1,
+      10.55
+     ],
+     "y": 0.77,
+     "level": 1
+    },
+    {
+     "note": "w4_depot_dispatch_log",
+     "pos": [
+      16.3,
+      2.45
+     ],
+     "y": 0.78,
+     "level": 1
+    }
+   ],
+   "traps": [
+    {
+     "id": "parts_chime",
+     "type": "can_chime",
+     "at": [
+      14,
+      4
+     ],
+     "side": "W"
+    },
+    {
+     "id": "pit_jaws",
+     "type": "bear_trap",
+     "pos": [
+      11.35,
+      7.4
+     ],
+     "rot": 15,
+     "level": -1
+    },
+    {
+     "id": "mezz_boards",
+     "type": "creaky_floor",
+     "at": [
+      17,
+      7
+     ],
+     "size": [
+      2,
+      2
+     ],
+     "level": 1
+    }
+   ],
+   "triggers": [
+    {
+     "id": "mechanics_keys",
+     "group": "mechanics",
+     "on": "pickup",
+     "pickup": "parts_keys",
+     "delay": 0.6
+    },
+    {
+     "id": "mechanics_jaws",
+     "group": "mechanics",
+     "on": "trap",
+     "trap": "pit_jaws",
+     "delay": 0.4
+    },
+    {
+     "id": "drivers_boards",
+     "group": "drivers",
+     "on": "trap",
+     "trap": "mezz_boards",
+     "delay": 0.5
+    },
+    {
+     "id": "drivers_office",
+     "group": "drivers",
+     "on": "opening",
+     "opening": "office_door",
+     "delay": 0.8
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      16.4,
+      3.0
+     ],
+     "level": 1,
+     "height": 1.2,
+     "color": "#ffcf8a",
+     "energy": 0.35,
+     "range": 4.0,
+     "flicker": 0.04,
+     "alt": "radio:on"
+    },
+    {
+     "pos": [
+      17.4,
+      10.2
+     ],
+     "level": 1,
+     "height": 0.95,
+     "color": "#ffb060",
+     "energy": 0.35,
+     "range": 4.5,
+     "flicker": 0.25
+    },
+    {
+     "pos": [
+      10.6,
+      4.0
+     ],
+     "level": -1,
+     "height": 0.25,
+     "color": "#dfe8ff",
+     "energy": 0.3,
+     "range": 3.5,
+     "flicker": 0.08
+    },
+    {
+     "pos": [
+      27.0,
+      21.4
+     ],
+     "height": 0.95,
+     "color": "#ffc27a",
+     "energy": 0.3,
+     "range": 4.0,
+     "flicker": 0.2
+    }
+   ],
+   "decals": [
+    {
+     "decal": "footprints_mud",
+     "at": [
+      10,
+      12
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      10,
+      10
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "grime_streaks",
+     "at": [
+      5,
+      2
+     ],
+     "side": "N",
+     "height": 1.0,
+     "size": [
+      1.2,
+      1.4
+     ]
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      11,
+      9
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.2
+     ],
+     "level": -1
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      11,
+      10
+     ],
+     "side": "E",
+     "height": 1.4,
+     "size": [
+      0.4,
+      0.4
+     ],
+     "level": -1
+    },
+    {
+     "decal": "survivor_marks_b",
+     "at": [
+      14,
+      9
+     ],
+     "side": "W",
+     "height": 1.5,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      16,
+      7
+     ],
+     "side": "N",
+     "height": 1.6,
+     "size": [
+      0.8,
+      0.6
+     ],
+     "level": 1
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      15,
+      13
+     ],
+     "side": "S",
+     "height": 2.3,
+     "size": [
+      1.2,
+      0.7
+     ],
+     "level": 1
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      19,
+      3
+     ],
+     "side": "E",
+     "height": 1.9,
+     "size": [
+      1.0,
+      1.4
+     ],
+     "level": 1
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      27,
+      23
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      1.6
+     ],
+     "rot": 0
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      26,
+      30
+     ],
+     "label": "The logging road runs into a yard in the timber: a loaded log truck still sitting on the scale, another parked by the fuel tank"
+    },
+    {
+     "at": [
+      27,
+      26
+     ],
+     "label": "The scale house: its door hanging open"
+    },
+    {
+     "at": [
+      27,
+      22
+     ],
+     "label": "The scaler's desk: the weigh ticket book and the Cordon's road closure order"
+    },
+    {
+     "at": [
+      27,
+      10
+     ],
+     "label": "The fuel island: the hoses cut, the tank still half full of diesel nobody could haul out"
+    },
+    {
+     "at": [
+      16,
+      15
+     ],
+     "label": "The shop's side door: bolted from inside"
+    },
+    {
+     "at": [
+      10,
+      15
+     ],
+     "label": "The bay doors: three chained, one leaf of bay 2 torn off its hinges"
+    },
+    {
+     "at": [
+      11,
+      10
+     ],
+     "label": "The bays: a log truck up on the lift, the inspection pit's planks pulled back at the near end"
+    },
+    {
+     "at": [
+      11,
+      9
+     ],
+     "level": -1,
+     "label": "Down the ladder into the pit: jaws in the oily muck"
+    },
+    {
+     "at": [
+      10,
+      4
+     ],
+     "level": -1,
+     "label": "The far end: Hank on his creeper, his key ring beside him"
+    },
+    {
+     "at": [
+      12,
+      9
+     ],
+     "label": "Climb out: the mechanics are up"
+    },
+    {
+     "at": [
+      13,
+      4
+     ],
+     "label": "The parts room door: padlocked, cans strung inside"
+    },
+    {
+     "at": [
+      16,
+      5
+     ],
+     "label": "The parts room: shelves of filters and belts, the office key over the counter"
+    },
+    {
+     "at": [
+      16,
+      10
+     ],
+     "label": "The welding shop: stairs up to the mezzanine"
+    },
+    {
+     "at": [
+      16,
+      9
+     ],
+     "level": 1,
+     "label": "The break room: loose boards over the bays, drivers on the cots"
+    },
+    {
+     "at": [
+      16,
+      4
+     ],
+     "level": 1,
+     "label": "The dispatch office (the office key): Vera at her radio, the payroll safe"
+    },
+    {
+     "at": [
+      18,
+      12
+     ],
+     "label": "Back down to the side door"
+    },
+    {
+     "at": [
+      16,
+      15
+     ],
+     "label": "Draw the bolt: out into the yard"
+    }
+   ],
+   "loot_room": {
+    "room": "D",
+    "level": 1
+   },
+   "shortcuts": [
+    {
+     "opening": "side_door"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "tractor",
+     "label": "The tractor on the lift",
+     "options": [
+      {
+       "id": "hood_up",
+       "weight": 2,
+       "label": "Hood up, a wheel off: Hank's last job"
+      },
+      {
+       "id": "finished",
+       "label": "Finished and washed, waiting for a driver"
+      }
+     ]
+    },
+    {
+     "id": "radio",
+     "label": "Whether the dispatch radio still has battery",
+     "options": [
+      {
+       "id": "on",
+       "weight": 2,
+       "label": "Hissing on the company channel"
+      },
+      {
+       "id": "dead",
+       "label": "Flat",
+       "style": {
+        "lights_on": 0.3
+       }
+      }
+     ]
+    },
+    {
+     "id": "cole",
+     "label": "Where Cole is",
+     "options": [
+      {
+       "id": "at_the_table",
+       "weight": 2
+      },
+      {
+       "id": "at_the_window",
+       "label": "Standing at the window over the yard"
+      }
+     ]
+    },
+    {
+     "id": "scale_truck",
+     "label": "Ray's truck on the scale",
+     "options": [
+      {
+       "id": "on_the_scale",
+       "weight": 2
+      },
+      {
+       "id": "left_to_rot",
+       "label": "A winter on the scale: tyres flat, moss on the load"
+      }
+     ]
+    },
+    {
+     "id": "scale_house",
+     "label": "The scale house door",
+     "options": [
+      {
+       "id": "hanging_open",
+       "weight": 2
+      },
+      {
+       "id": "kicked_in",
+       "openings": [
+        {
+         "id": "scale_door",
+         "state": "broken"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "breakroom",
+     "label": "The break room's paint",
+     "options": [
+      {
+       "id": "sage",
+       "weight": 2
+      },
+      {
+       "id": "panelled",
+       "rooms": [
+        {
+         "level": 1,
+         "room": "K",
+         "wall": "wood_paneling_dark"
+        }
+       ]
+      },
+      {
+       "id": "plaster",
+       "rooms": [
+        {
+         "level": 1,
+         "room": "K",
+         "wall": "plaster_grey"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "enemies": 12,
+    "props": 160
+   }
+  }
+ ]
+}

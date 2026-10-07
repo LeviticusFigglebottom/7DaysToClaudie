@@ -1,0 +1,7 @@
+{
+  "_doc": "Climbable structures (ADR-0057): each provides \"climb\" and has its ladder or rope laid out in data/config/climbing.json (ClimbMount); Player climbs them as it climbs a POI ladder.",
+  "defs": [
+    {"id": "hunting_stand", "name": "Hunting Stand", "description": "A log platform three metres up on four legs, a pole ladder inside the frame up to a hatch in the deck. Deer don't look up; Hollowed can't climb.", "kind": "assembly", "material": "log", "hp": 520, "mass": 260, "model": "structures/hunting_stand", "size": [2.4, 4.0, 2.4], "cost": {"log": 6, "stick": 12, "cordage": 6}, "repair": {"cost": {"stick": 4, "cordage": 1}, "amount": 150}, "damage_mult": {"fire": 1.6, "zombie": 0.9}, "flammable": true, "provides": ["climb"]},
+    {"id": "climbing_rope", "name": "Climbing Rope", "description": "A knotted rope tied off to a stake, hanging over the edge.", "kind": "decor", "material": "stick", "hp": 60, "mass": 4, "model": "structures/climbing_rope", "size": [0.4, 0.3, 0.4], "cost": {"climbing_rope": 1}, "damage_mult": {"fire": 3.0, "slash": 2.0}, "flammable": true, "provides": ["climb"]}
+  ]
+}

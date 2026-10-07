@@ -1,0 +1,11 @@
+{
+  "_doc": "The Remand (ADR-0058): convicts the Program dropped into the valley, the player among them, and those who throw in with them: Ezra Vane, the companion. A faction only so bodies know whose side they are on (relations, symmetric, FactionDef.hostile): the Hollowed and the Ashen fight a Remand body on sight, and it fights them. No camps, levels, raids or morale: nothing escalates.",
+  "defs": [
+    {
+      "id": "remand",
+      "name": "The Remand",
+      "description": "Convicts dropped into the valley by the Remand Program, and anyone who throws in with them.",
+      "relations": {"hollowed": "hostile", "ashen": "hostile", "wildlife": "neutral"}
+    }
+  ]
+}

@@ -1,0 +1,387 @@
+{
+ "_doc": "Forest set pieces, round 4 (ADR-0053): the trestle tunnel (w4_trestle_tunnel), an abandoned logging line's timber trestle over a dry ravine into a tunnel the Cordon blew. Models: tools/assetgen/blender/generators/props_wild4_trestle.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_wild4_trestle.py; shared materials only. size = [width x, height y, depth z] in metres (Godot axes, front +Z) and is the collision box: the boxcar's is its floor block (vault in), the portal's and the hill's are the solid plinth under the tunnel's kit rooms.",
+ "defs": [
+  {
+   "id": "w4_trestle_bent",
+   "name": "Trestle Bent",
+   "description": "One bent of a timber railway trestle: four creosoted posts (the outer two battered out) on a mudsill and concrete footings, a cap under the stringers, sway braces bolted across both faces and a girt half way up (worn: a brace hanging off, a post split).",
+   "_placement": "Stand it on the ground under a trestle deck kit room at level 1 (its cap meets the deck section's stringers 0.6 m under the deck top); the bent's plane runs along x (rot 0 for a track along z).",
+   "tags": [
+    "structure",
+    "exterior",
+    "wood",
+    "railway"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_bent",
+    "worn": "props/w4_trestle_bent_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 1200,
+   "size": [
+    4.6,
+    2.55,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_deck_section",
+   "name": "Trestle Deck Section",
+   "description": "3.2 metres of trestle deck dressing: the stringers under the deck, the tie ends past its edges with a guard timber bolted along each side, and the two rails spiked on top (worn: a guard timber gone, rails rusted).",
+   "_placement": "Place it on a trestle deck kit room (level 1, no y): origin on the deck's top at the track centre, the track along local z; the stringers hang 0.6 m under it.",
+   "tags": [
+    "structure",
+    "exterior",
+    "wood",
+    "railway",
+    "floor"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_deck_section",
+    "worn": "props/w4_trestle_deck_section_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.8,
+    0.75,
+    3.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_rail_section",
+   "name": "Track Section",
+   "description": "Three metres of logging-line track on a ballast bed: rough sawn ties and two light rails spiked to them, weeds and coal dust in the gravel (worn: a rail kinked, ties missing).",
+   "tags": [
+    "exterior",
+    "railway",
+    "floor",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_rail_section",
+    "worn": "props/w4_trestle_rail_section_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.6,
+    0.25,
+    3.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_flatcar_derailed",
+   "name": "Derailed Log Flatcar",
+   "description": "A logging flatcar off the rails at an angle, its front truck dropped into the ballast, three big logs chained on its bunks and a fourth rolled off beside it (worn: the deck boards split, a chain snapped).",
+   "tags": [
+    "vehicle",
+    "railway",
+    "wood",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_flatcar_derailed",
+    "worn": "props/w4_trestle_flatcar_derailed_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 2000,
+   "size": [
+    2.6,
+    2.4,
+    5.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_boxcar",
+   "name": "Boxcar",
+   "description": "A wooden-sided railway boxcar in oxide red on its trucks, the side door rolled open, its plank floor inside 1.15 m up (the collision box is the floor and underframe: vault in through the door). Lettered with the line's reporting marks (worn: boards sprung, rust bleeding from the bolts).",
+   "_placement": "Origin at the car's centre on the rail head plane (y 0 on the tunnel floor); its door is on the +x side; put props inside it with y 1.15 (lumber stacks at the ends keep the walls honest).",
+   "tags": [
+    "vehicle",
+    "railway",
+    "wood",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_boxcar",
+    "worn": "props/w4_trestle_boxcar_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 2500,
+   "size": [
+    2.8,
+    1.15,
+    7.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_lumber_stack",
+   "name": "Lumber Bundle",
+   "description": "A bundle of green rough-sawn boards on two bearers, banded with strap iron and stencilled at the end (worn: a band burst, boards slid).",
+   "tags": [
+    "wood",
+    "freight"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_lumber_stack",
+    "worn": "props/w4_trestle_lumber_stack_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    2.4,
+    1.6,
+    2.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "garage",
+    "store",
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_handcar",
+   "name": "Pump Handcar",
+   "description": "A section crew's pump handcar: a plank platform on four cast wheels, the walking beam on its A-frame with a handle each end, the brake lever and a tool box bolted on (worn: paint gone, a handle missing; destroyed: off one axle).",
+   "tags": [
+    "vehicle",
+    "railway",
+    "wood",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_handcar",
+    "worn": "props/w4_trestle_handcar_worn",
+    "destroyed": "props/w4_trestle_handcar_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    1.7,
+    1.45,
+    2.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "garage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_rubble_wall",
+   "name": "Tunnel Collapse",
+   "description": "Where the far end came down: a slope of shattered rock, broken lagging and split timber sets packed to the crown of the bore, a twisted rail and the cab roof of a locomotive sticking out of it.",
+   "tags": [
+    "rock",
+    "debris",
+    "cave",
+    "railway"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_rubble_wall",
+    "worn": "props/w4_trestle_rubble_wall_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    7.0,
+    5.8,
+    2.6
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "cave"
+   ]
+  },
+  {
+   "id": "w4_trestle_tunnel_portal",
+   "name": "Tunnel Portal",
+   "description": "The concrete face of a railway tunnel: piers, an arched ring and a headwall with the year cast in it, cracked and stained, a Cordon stencil sprayed across it (worn: spalled, the stencil faded). The bore behind it is the POI's own walls; only the face below the bore is solid.",
+   "_placement": "Origin on the tunnel's outer wall face at the track centre, on the ground, facing out (+z): place it 0.09 m outside the wall line. The bore opening spans x -3.5..3.5 from 3.15 m to 8.95 m.",
+   "tags": [
+    "structure",
+    "exterior",
+    "concrete",
+    "railway"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_tunnel_portal",
+    "worn": "props/w4_trestle_tunnel_portal_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    9.6,
+    3.1,
+    0.6
+   ],
+   "back": 0.0,
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_hill",
+   "name": "Tunnel Hillside",
+   "description": "The rock and earth over a railway tunnel: a cut rock face either side and above the portal, a mossy brow with roots and a few boulders. The collision box is its plinth under the bore; above it the POI's own walls hold.",
+   "_placement": "Origin at the plinth's centre on the ground; the tunnel's kit rooms stand on top of the plinth (their floor 3.15 m up).",
+   "tags": [
+    "structure",
+    "exterior",
+    "rock"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_hill"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    10.6,
+    3.1,
+    17.6
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_crib",
+   "name": "Timber Crib",
+   "description": "A crib of squared timbers laid log-cabin fashion and filled with rock: the trestle's abutment at the embankment (worn: timbers rotted, rock spilling).",
+   "tags": [
+    "structure",
+    "exterior",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_crib",
+    "worn": "props/w4_trestle_crib_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 1500,
+   "size": [
+    2.0,
+    2.95,
+    4.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_trestle_key_board",
+   "name": "Key Board",
+   "description": "A painted board of cup hooks for padlock keys, each with a brass tag, the section foreman's stencilled list down the side (hang it ~1.2 m up).",
+   "tags": [
+    "decor",
+    "wall",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_key_board",
+    "worn": "props/w4_trestle_key_board_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.6,
+    0.5,
+    0.06
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true,
+   "rooms": [
+    "garage",
+    "office",
+    "workshop"
+   ]
+  },
+  {
+   "id": "w4_trestle_spike_keg",
+   "name": "Spike Keg",
+   "description": "A nail keg of railway spikes with a claw bar leaning in it.",
+   "tags": [
+    "clutter",
+    "railway",
+    "metal",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_spike_keg",
+    "worn": "props/w4_trestle_spike_keg_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    0.5,
+    0.75,
+    0.5
+   ],
+   "container": "w4_trestle_spike_keg",
+   "blocks_sight": false,
+   "rooms": [
+    "garage",
+    "exterior",
+    "workshop"
+   ]
+  },
+  {
+   "id": "w4_trestle_tie_pile",
+   "name": "Pile of Ties",
+   "description": "A crib-stacked pile of old railway ties, creosote black, weeds through them.",
+   "tags": [
+    "exterior",
+    "wood",
+    "railway"
+   ],
+   "variants": {
+    "clean": "props/w4_trestle_tie_pile",
+    "worn": "props/w4_trestle_tie_pile_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 800,
+   "size": [
+    2.6,
+    0.8,
+    1.3
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  }
+ ]
+}
