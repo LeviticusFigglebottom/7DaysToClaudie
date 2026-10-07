@@ -281,6 +281,21 @@ func play(n: StringName, speed: float = 1.0, blend: float = 0.25, alts: Array[St
 	anim.speed_scale = speed
 
 
+## Seconds an animation lasts at speed 1 (`fallback` when the body lacks it).
+func clip_length(n: StringName, fallback: float = 0.0) -> float:
+	return anim.get_animation(n).length if has_anim(n) else fallback
+
+
+## Cross-fade into a one-shot (s), by clip: a blow cuts in fast but not on the frame, heavier clips
+## ease in, the get-up blends out of the lying pose; anything else ONCE_BLEND.
+const ONCE_BLEND: float = 0.12
+const BLEND_IN: Dictionary = {
+	&"hit_front": 0.06, &"hit_back": 0.06, &"stagger": 0.08, &"knockdown": 0.08, &"stumble": 0.18,
+	&"attack_a": 0.14, &"attack_b": 0.14, &"crawl_attack": 0.14, &"wake_lie": 0.2, &"scream": 0.2,
+	&"death_front": 0.1, &"death_back": 0.1,
+}
+
+
 func play_once(n: StringName, speed: float = 1.0, alts: Array[StringName] = []) -> float:
 	if anim == null:
 		current_anim = n
@@ -297,7 +312,7 @@ func play_once(n: StringName, speed: float = 1.0, alts: Array[StringName] = []) 
 		# whatever kills it bursts the pustules it carries (only the Blister has any)
 		burst()
 	current_anim = name_to_play
-	anim.play(name_to_play, 0.12, 1.0)
+	anim.play(name_to_play, float(BLEND_IN.get(name_to_play, ONCE_BLEND)), 1.0)
 	anim.speed_scale = speed
 	return anim.get_animation(name_to_play).length / maxf(speed, 0.05)
 
