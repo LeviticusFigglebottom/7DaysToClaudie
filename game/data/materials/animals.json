@@ -41,7 +41,7 @@
   },
   "fur_hare": {
    "shader": "fur",
-   "shells": {"count": 4, "length": 0.009, "strand_cells": [14.0, 6.0], "strand_width": 0.4, "fade_end": 10.0},
+   "shells": {"count": 3, "length": 0.0055, "strand_cells": [14.0, 6.0], "strand_width": 0.36, "fade_end": 10.0},
    "textures": "animal_fur_soft",
    "params": {
     "uv_scale": 22.0,

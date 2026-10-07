@@ -65,6 +65,8 @@ void fragment() {
 	vec2 suv = UV * uv_scale * strand_cells;
 	// Strands lean along the lie of the hair (v): shift the cell sample with height.
 	suv.y -= shell_k * 0.6;
+	// Stagger the columns along the hair so the strands don't line up in rows (a woven look).
+	suv.y += hash12(vec2(floor(suv.x), 3.7)) * 4.0;
 	vec2 cell = floor(suv);
 	vec2 f = fract(suv) - 0.5;
 	float h = hash12(cell);
@@ -85,10 +87,10 @@ void fragment() {
 	coat *= 0.92 + 0.16 * instance_variation;
 	vec3 alb = coat * mix(vec3(1.0), tex * 2.0, grain);
 	// Roots sit in the coat's shade; tips catch the light (and bleach a little).
-	alb *= mix(0.72, 1.12, shell_k) * (0.9 + 0.2 * h);
+	alb *= mix(0.86, 1.08, shell_k) * (0.94 + 0.12 * h);
 	alb *= 1.0 - 0.3 * clamp(hm_wetness, 0.0, 1.0);
 	ALBEDO = alb;
-	AO = mix(1.0, COLOR.r, vertex_ao_strength) * mix(0.6, 1.0, shell_k);
+	AO = mix(1.0, COLOR.r, vertex_ao_strength) * mix(0.8, 1.0, shell_k);
 	AO_LIGHT_AFFECT = 0.4;
 	ROUGHNESS = roughness;
 	SPECULAR = 0.3;
