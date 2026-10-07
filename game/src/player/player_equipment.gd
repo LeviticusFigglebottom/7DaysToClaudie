@@ -379,6 +379,11 @@ func _fire(def: ItemDef) -> void:
 	Audio.play_3d(StringName(str(def.equip.get("shot_sound", "sfx/gun_revolver_shot"))), player.global_position + Vector3.UP * 1.4, {"volume_db": 2.0, "max_distance": 400.0, "occlusion": false})
 	if Stimuli.current != null:
 		Stimuli.current.emit_sound(player.global_position, def.equip_num("noise", 120.0), &"gunshot", player.state.id)
+	if def.equip.has("bolt_sound") and player.is_inside_tree():
+		var bolt: StringName = StringName(str(def.equip["bolt_sound"]))
+		player.get_tree().create_timer(def.equip_num("attack_time", 0.3)).timeout.connect(func() -> void:
+			if is_instance_valid(player):
+				Audio.play_3d(bolt, player.global_position, {"volume_db": -6.0, "occlusion": false}))
 	if viewmodel != null:
 		viewmodel.play_recoil()
 		viewmodel.play_use(StringName("fire_%s" % viewmodel.hold_class), cycle if def.equip.has("bolt_time") else 0.0)
