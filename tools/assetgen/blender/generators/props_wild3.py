@@ -1237,9 +1237,12 @@ def _shell_box_walls(ctx, room, ops, *, z0, z1, mat, off=0.12, rib=0.0, seed=0):
                 p0 = st + along * s0
                 p1 = st + along * s1
                 pan = K.quad_sheet(f"{side}p{i}_{s0:.2f}", (p0.x, p0.y, za), (p1.x, p1.y, za), (p1.x, p1.y, zb), (p0.x, p0.y, zb),
-                                   max(1, int((s1 - s0) / 1.0)), max(1, int((zb - za) / 1.0)))
+                                   max(1, int((s1 - s0) / 0.4)), max(1, int((zb - za) / 0.4)))
                 K.solidify(pan, 0.03, offset=1.0 if side in ("N", "E") else -1.0)
-                ctx.add(pan, mat, uv="box", uv_scale=1.0, patches=0.5)
+                # Wear patches are per-vertex: on a 1 m grid one patch interpolated across a whole
+                # end wall into a single oval of paint in a field of rust (TD-238). A 0.4 m grid and
+                # lighter patches give scattered rust spots and runs on a white body.
+                ctx.add(pan, mat, uv="box", uv_scale=1.0, patches=0.3)
         for (a, b, hz0, hz1) in holes:
             for t in (a, b):
                 p = st + along * t
