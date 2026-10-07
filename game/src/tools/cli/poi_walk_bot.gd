@@ -7,7 +7,13 @@ extends Node
 ## pressed only when it stalls (a jump or the player's own vault), Crouch after that. Doors are
 ## opened (and unlocked with the keys the validator finds on the route) the way a player would.
 ## After the route it walks to every room the layout says it can reach. It teleports only to
-## restart after a leg it could not finish.
+## restart after a leg it could not finish. A step the straight line cannot finish (a bed or a cot
+## in the planned cell, an open leaf beside a doorway) is retried round the obstacle on a local A*
+## over where the capsule fits (assist "detour"); it is blocked only when no free path joins its
+## ends. Ladders are climbed by walking into them where the player grabs rails (is_climbing), else
+## by the older ladder interact. Legs stopped in the yard ring by a fence, a berm or a wreck (which
+## the validator's yard, joined by its "out" node, never sees) are category "perimeter" and do not
+## fail the building.
 ##
 ## Each walk returns a report Dictionary (see `walk`): legs with what they needed, the colliders
 ## that stopped the body (node path, prop id, POI-local cell), rooms never reached, ladder climbs
@@ -41,8 +47,24 @@ const CUE_REACH: float = 1.5
 ## (player.json jump_velocity 4.6 m/s at 9.8 m/s² is ~1.08 m) and well inside the vault's reach.
 const CLIMB_MAX: float = 1.0
 
+## Where the body stands to grab a ladder: this far (m) back from its foot cell's middle, away
+## from the rails (they stand 0.23-0.53 m off the middle toward the wall, so the capsule's 0.33 m
+## radius clears them by 0.15 m; the cell's middle is inside them).
+const LADDER_STAND: float = 0.25
+## Frames move is held into a ladder before the player must have grabbed it (1.5 s), and on it
+## before it must have let go at the other end (15 s).
+const LADDER_GRAB_FRAMES: int = 90
+const LADDER_FRAMES: int = 900
+
+## Detours (a local A* round props and open leaves): how far (cells) round a step's ends they may
+## go, and the sample spacing (m; TraversalAudit's grid, so cell middles and edges fall on it).
+const DETOUR_CELLS: int = 4
+const DETOUR_GRID: float = 0.25
+
 ## Print every leg as it is walked.
 var verbose: bool = false
+## Climb ladders by walking into them even where the player has no is_climbing (tests).
+var force_walk_in: bool = false
 
 var layout: PoiLayout
 var validator: PoiValidator
@@ -142,7 +164,9 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 	_world = null
 	inst = null
 	player = null
-	var blocking: int = (_report["blocked"] as Array).size() + (_report["unreached"] as Array).size()
+	# Perimeter legs (the yard's fences) are listed, but do not fail the building.
+	var real: Array = (_report["blocked"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("category", "")) != "perimeter")
+	var blocking: int = real.size() + (_report["unreached"] as Array).size()
 	_report["blocking"] = blocking
 	_report["frames"] = _frames
 	var rooms: Array = _visited.keys()
@@ -354,6 +378,10 @@ func _walk_route() -> void:
 		var path: Array = _plan(_cur, goals)
 		if path.is_empty():
 			var leg: Dictionary = _new_leg(_cur, goal, "route")
+			# The validator's own graph joins them (it validated the route), and the plan here is
+			# that graph without its "out" node, which joins every yard cell at once: the way is
+			# only through the yard, between islands of yard cells nothing walkable connects.
+			leg["yard"] = true
 			_end_leg(leg, false, _cell_pos(goal[0], goal[1]), {"kind": "no way from here in the layout (with the keys found)"})
 			_cur = goal
 			continue
@@ -411,9 +439,14 @@ func _start_outside(start: Array) -> void:
 		waypoints = [target]
 	await _settle(4)
 	var leg: Dictionary = _new_leg("outside", start, "approach")
+	leg["yard"] = true
 	var ok: bool = true
 	for wp: Vector3 in waypoints:
 		ok = ok and await _go(wp, true, leg)
+	if not ok:
+		var here: Vector3 = player.global_position
+		var from: Array = [0, Vector2i(floori(here.x - layout.origin.x), floori(here.z - layout.origin.y))]
+		ok = await _detour_after_fail(from, start, waypoints.back(), leg)
 	_end_leg(leg, ok, waypoints.back())
 
 
@@ -436,9 +469,12 @@ func _is_cluttered(n: Array, from: Array = []) -> bool:
 	return bool(_cluttered[k])
 
 
-## Whether a box overlaps any prop's collision box by more than 2 cm each way.
-func _hits_props(zone: AABB) -> bool:
+## Whether a box overlaps any prop's collision box by more than 2 cm each way (only props whose
+## top stands at least `min_top` m over the zone's bottom, with one: a fence, not a crate).
+func _hits_props(zone: AABB, min_top: float = -INF) -> bool:
 	for pr: Dictionary in _props:
+		if (pr["box"] as AABB).end.y - (zone.position.y - Player.STEP_HEIGHT) < min_top:
+			continue
 		var ov: AABB = zone.intersection(pr["box"])
 		if ov.size.x > 0.02 and ov.size.z > 0.02 and ov.size.y > 0.02:
 			return true
@@ -448,9 +484,10 @@ func _hits_props(zone: AABB) -> bool:
 ## The sideways offset (m, across the step) of a clear lane for the capsule from one cell's middle
 ## to its neighbour's, above step height: 0 when the middle line is clear, else the smallest offset
 ## that is (staying off the walls along either cell); NAN when props close every lane. A chair
-## beside a table leaves room to walk past it off the cells' middle line.
-func _lane(a: Array, b: Array) -> float:
-	var k: String = _nk(a) + ">" + _nk(b)
+## beside a table leaves room to walk past it off the cells' middle line. With `min_top`, only props
+## that tall over the floor count (_walled).
+func _lane(a: Array, b: Array, min_top: float = -INF) -> float:
+	var k: String = _nk(a) + ">" + _nk(b) + ("" if min_top == -INF else "^")
 	if _cluttered.has(k):
 		return float(_cluttered[k])
 	var pa: Vector3 = _cell_pos(a[0], a[1])
@@ -473,11 +510,21 @@ func _lane(a: Array, b: Array) -> float:
 		var qb: Vector3 = pb + across * o
 		var lo := Vector3(minf(qa.x, qb.x) - Player.RADIUS, maxf(pa.y, pb.y) + Player.STEP_HEIGHT, minf(qa.z, qb.z) - Player.RADIUS)
 		var hi := Vector3(maxf(qa.x, qb.x) + Player.RADIUS, maxf(pa.y, pb.y) + Player.STAND_HEIGHT, maxf(qa.z, qb.z) + Player.RADIUS)
-		if not _hits_props(AABB(lo, hi - lo)):
+		if not _hits_props(AABB(lo, hi - lo), min_top):
 			out = o
 			break
 	_cluttered[k] = out
 	return out
+
+
+## Whether props too tall to vault (a fence, a palisade, a berm, a wreck) close every lane of a
+## step between neighbouring yard cells: the plan goes round through a gate or a gap when there is
+## one. Yard only: indoors a wardrobe or a shelf costing as much as a stairwell sent the plan over
+## a ladder hatch instead.
+func _walled(a: Array, b: Array) -> bool:
+	if not _in_yard(a) or not _in_yard(b) or (a[1] as Vector2i).distance_squared_to(b[1]) != 1:
+		return false
+	return is_nan(_lane(a, b, Player.VAULT_MAX))
 
 
 func _index_steps() -> void:
@@ -556,6 +603,8 @@ func _step_cost(a: Array, b: Array) -> float:
 			cost += 6.0
 	if _is_cluttered(b, a):
 		cost += CLUTTER_COST
+		if _walled(a, b):
+			cost += BLOCKED_COST
 	# Through a window only when nothing else gets there (the route says when one is the way in).
 	if int(a[0]) == int(b[0]) and (a[1] as Vector2i).distance_squared_to(b[1]) == 1:
 		var e: Array = PoiLayout.side_edge(a[1], PoiLayout.DIRS.find((b[1] as Vector2i) - (a[1] as Vector2i)))
@@ -606,11 +655,276 @@ func _free_point(li: int, c: Vector2i) -> Vector3:
 	return ctr
 
 
+# --- detours ---------------------------------------------------------------------------------------
+
+## The cells a detour for a step from `a` to `b` (nodes on one level) may cross: the rooms (whole
+## volumes) of both ends near them, minus stair flights and wells; for an end in the yard, the yard
+## ring (and porch) cells near it. Within DETOUR_CELLS of either end.
+func _detour_cells(a: Array, b: Array) -> Dictionary:
+	var li: int = b[0]
+	var lo: Vector2i = Vector2i(mini((a[1] as Vector2i).x, (b[1] as Vector2i).x), mini((a[1] as Vector2i).y, (b[1] as Vector2i).y)) - Vector2i.ONE * DETOUR_CELLS
+	var hi: Vector2i = Vector2i(maxi((a[1] as Vector2i).x, (b[1] as Vector2i).x), maxi((a[1] as Vector2i).y, (b[1] as Vector2i).y)) + Vector2i.ONE * DETOUR_CELLS
+	var vols: Array = []
+	var yard: bool = false
+	for n: Array in [a, b]:
+		var v: Array = layout.volume_of(int(n[0]), n[1])
+		if v.is_empty():
+			yard = yard or int(n[0]) == 0
+		elif not vols.has(v):
+			vols.append(v)
+	var out: Dictionary = {}
+	for z: int in range(lo.y, hi.y + 1):
+		for x: int in range(lo.x, hi.x + 1):
+			var c := Vector2i(x, z)
+			if not validator._walkable(li, c) or validator._over_well(li, c) or _under_flight([li, c]):
+				continue
+			var v2: Array = layout.volume_of(li, c)
+			if (v2.is_empty() and yard) or (not v2.is_empty() and vols.has(v2)):
+				out[c] = true
+	return out
+
+
+## Where the standing capsule fits on level `li` over `cells`: {sample: feet y}, samples every
+## DETOUR_GRID m from the layout origin (cell (x, z) spans samples 4x..4x+3), feet on the first
+## floor under a step's height (TraversalAudit.floor_at), the capsule from a step up to the head
+## (TraversalAudit's query, the player's own collision mask). Open door leaves count: they are in
+## the way until shut.
+func _free_samples(li: int, cells: Dictionary) -> Dictionary:
+	var space: PhysicsDirectSpaceState3D = player.get_world_3d().direct_space_state
+	var ex: Array[RID] = [player.get_rid()]
+	var q: PhysicsShapeQueryParameters3D = TraversalAudit._query(ex)
+	q.collision_mask = player.collision_mask
+	var lift: float = TraversalAudit.STEP + (q.shape as CapsuleShape3D).height * 0.5
+	var out: Dictionary = {}
+	for c: Vector2i in cells:
+		for k: int in 16:
+			var s := Vector2i(c.x * 4 + (k & 3), c.y * 4 + (k >> 2))
+			var p: Vector3 = layout.local_pos(li, Vector2(s) * DETOUR_GRID)
+			if li == 0 and not layout.is_built(0, c):
+				p.y = _cell_pos(0, c).y
+			var fy: float = TraversalAudit.floor_at(space, inst, p, ex)
+			if absf(fy - p.y) > 0.6:
+				continue
+			q.transform = Transform3D(Basis.IDENTITY, inst.global_transform * Vector3(p.x, fy + lift, p.z))
+			if space.intersect_shape(q, 1).is_empty():
+				out[s] = fy
+	return out
+
+
+## Whether the standing capsule fits with its feet at `p` (world; on the first floor under a step
+## up from it).
+func _fits(p: Vector3) -> bool:
+	var space: PhysicsDirectSpaceState3D = player.get_world_3d().direct_space_state
+	var ex: Array[RID] = [player.get_rid()]
+	var q: PhysicsShapeQueryParameters3D = TraversalAudit._query(ex)
+	q.collision_mask = player.collision_mask
+	var lp: Vector3 = inst.global_transform.affine_inverse() * p
+	var fy: float = TraversalAudit.floor_at(space, inst, lp, ex)
+	q.transform = Transform3D(Basis.IDENTITY, inst.global_transform * Vector3(lp.x, fy + TraversalAudit.STEP + (q.shape as CapsuleShape3D).height * 0.5, lp.z))
+	return space.intersect_shape(q, 1).is_empty()
+
+
+## A free path for the capsule from where the body stands to cell `b` (an A* over _free_samples,
+## steps of at most a step's height, diagonals only past two free sides), pulled taut (straight runs
+## a capsule sweep finds clear and level enough); world feet points, [] when no free path joins them.
+func _detour_path(a: Array, b: Array) -> Array[Vector3]:
+	var li: int = b[0]
+	var cells: Dictionary = _detour_cells(a, b)
+	if not cells.has(b[1]):
+		return []
+	var free: Dictionary = _free_samples(li, cells)
+	if OS.has_environment("POI_WALK_DEBUG"):
+		var in_b: int = 0
+		for k0: int in 16:
+			in_b += 1 if free.has(Vector2i((b[1] as Vector2i).x * 4 + (k0 & 3), (b[1] as Vector2i).y * 4 + (k0 >> 2))) else 0
+		print("[poi_walk]     detour grid: %d cells, %d free samples, %d free in b" % [cells.size(), free.size(), in_b])
+	var here: Vector3 = inst.global_transform.affine_inverse() * player.global_position
+	var hs := Vector2((here.x - layout.origin.x) / DETOUR_GRID, (here.z - layout.origin.y) / DETOUR_GRID)
+	var start := Vector2i(-99999, -99999)
+	var sd: float = INF
+	for s: Vector2i in free:
+		var d: float = Vector2(s).distance_to(hs)
+		if d < sd and d <= 3.0:
+			sd = d
+			start = s
+	if sd == INF:
+		return []
+	var bc: Vector2i = b[1]
+	var goal_c := Vector2(bc.x * 4 + 2, bc.y * 4 + 2)
+	# Anywhere in b's cell the capsule fits will do (a bed or a stack of crates may fill its middle:
+	# the next step goes on from beside them).
+	var goals: Dictionary = {}
+	for k: int in 16:
+		var g := Vector2i(bc.x * 4 + (k & 3), bc.y * 4 + (k >> 2))
+		if free.has(g):
+			goals[g] = true
+	if goals.is_empty():
+		return []
+	var g_cost: Dictionary = {start: 0.0}
+	var prev: Dictionary = {start: start}
+	var open: Dictionary = {start: Vector2(start).distance_to(goal_c)}
+	var found := Vector2i(-99999, -99999)
+	var guard: int = 0
+	while not open.is_empty() and guard < 40000:
+		guard += 1
+		var cur: Vector2i = open.keys()[0]
+		for o: Vector2i in open:
+			if float(open[o]) < float(open[cur]):
+				cur = o
+		open.erase(cur)
+		if goals.has(cur):
+			found = cur
+			break
+		for dx: int in [-1, 0, 1]:
+			for dz: int in [-1, 0, 1]:
+				if dx == 0 and dz == 0:
+					continue
+				var n := Vector2i(cur.x + dx, cur.y + dz)
+				if not free.has(n) or absf(float(free[n]) - float(free[cur])) > Player.STEP_HEIGHT:
+					continue
+				if dx != 0 and dz != 0 and (not free.has(Vector2i(cur.x + dx, cur.y)) or not free.has(Vector2i(cur.x, cur.y + dz))):
+					continue
+				var ng: float = float(g_cost[cur]) + (1.4142 if dx != 0 and dz != 0 else 1.0)
+				if not g_cost.has(n) or ng < float(g_cost[n]):
+					g_cost[n] = ng
+					prev[n] = cur
+					open[n] = ng + Vector2(n).distance_to(goal_c)
+	if OS.get_environment("POI_WALK_DEBUG") == "2":
+		_dump_grid(free, start, goals, g_cost)
+	if found.x == -99999:
+		return []
+	var chain: Array[Vector2i] = [found]
+	while chain[0] != start:
+		chain.push_front(prev[chain[0]])
+	var pts: Array[Vector3] = []
+	for s2: Vector2i in chain:
+		var lp: Vector3 = layout.local_pos(li, Vector2(s2) * DETOUR_GRID)
+		pts.append(Vector3(lp.x, float(free[s2]), lp.z))
+	# Pull it taut: from each kept point, the farthest later one a straight sweep reaches.
+	var space: PhysicsDirectSpaceState3D = player.get_world_3d().direct_space_state
+	var ex: Array[RID] = [player.get_rid()]
+	var out: Array[Vector3] = []
+	var i: int = 0
+	while i < pts.size() - 1:
+		var j: int = pts.size() - 1
+		while j > i + 1:
+			if TraversalAudit.sweep(space, inst, pts[i], pts[j], ex).is_empty() and TraversalAudit.max_rise(space, inst, pts[i], pts[j], ex) <= Player.STEP_HEIGHT:
+				break
+			j -= 1
+		out.append(inst.global_transform * pts[j])
+		i = j
+	if out.is_empty():
+		# Already on a free spot of b's cell.
+		out.append(inst.global_transform * pts[0])
+	return out
+
+
+func _dump_grid(free: Dictionary, start: Vector2i, goals: Dictionary, seen: Dictionary) -> void:
+	var lo := Vector2i(999999, 999999)
+	var hi := Vector2i(-999999, -999999)
+	for s: Vector2i in free:
+		lo = Vector2i(mini(lo.x, s.x), mini(lo.y, s.y))
+		hi = Vector2i(maxi(hi.x, s.x), maxi(hi.y, s.y))
+	print("[poi_walk]     grid from sample %s (cell %s)" % [lo, Vector2(lo) / 4.0])
+	for z: int in range(lo.y, hi.y + 1):
+		var row: String = ""
+		for x: int in range(lo.x, hi.x + 1):
+			var v := Vector2i(x, z)
+			row += "S" if v == start else ("G" if goals.has(v) else ("o" if seen.has(v) else ("." if free.has(v) else "#")))
+		print("[poi_walk]     %s" % row)
+
+
+## A step that the straight walk could not finish (or that runs through props): walks the body
+## round whatever is in the way along a free path (_detour_path) to where the capsule fits in b's
+## cell. True when it got there; `leg` gets "detour" (and the needs of the failed straight try are dropped).
+func _detour(a: Array, b: Array, end: Vector3, leg: Dictionary) -> bool:
+	_release()
+	var path: Array[Vector3] = _detour_path(a, b)
+	if OS.has_environment("POI_WALK_DEBUG"):
+		print("[poi_walk]     detour %s -> %s from %s: %s" % [_node_str(a), _node_str(b), player.global_position, path])
+	if path.is_empty():
+		return false
+	var trial: Dictionary = {"needed": []}
+	for p: Vector3 in path:
+		if not await _go(p, false, trial, false, 360):
+			return false
+	# Into b's cell: at the free spot the path ends on, else at the leg's own end.
+	if not _near(end, REACH, true) and not _near(path.back(), REACH, true):
+		return false
+	# On to the leg's own end when the capsule fits there: where the straight walk would have
+	# stood (the next leg, a window's crate or a ladder, starts from there).
+	if not _near(end, REACH, true) and _fits(end):
+		await _go(end, true, {"needed": []}, false, 180)
+	var needed: Array = leg["needed"]
+	needed.clear()
+	needed.append_array(trial["needed"])
+	needed.append("detour")
+	leg["assist"] = "detour"
+	leg.erase("blocker")
+	return true
+
+
+## After a straight try failed: notes what stopped it, then tries a detour; keeps the note when the
+## detour finds no way round either.
+func _detour_after_fail(a: Array, b: Array, end: Vector3, leg: Dictionary) -> bool:
+	var blk: Dictionary = leg.get("blocker", _blocker())
+	_hits.clear()
+	if await _detour(a, b, end, leg):
+		return true
+	leg["blocker"] = blk
+	leg["detour"] = "no free path for the capsule joins the leg's ends"
+	# The leg's own door leaf, swung open beside its doorway (not in its clear width), yet with no
+	# way round it: the leaf closes off the way to the doorway (a nook or a corridor end it swings
+	# into). A layout finding (which side the leaf swings to), not the bot's steering.
+	if str(blk.get("kind", "")) == "door" and leg.has("opening") and str(blk.get("opening", "")).begins_with(str(leg["opening"])) \
+			and float(blk.get("leaf_in_clear_m", 1.0)) < 0.05 and not leg.has("note"):
+		leg["note"] = "own leaf open beside the doorway (%.2f m into its %.2f m clear width) shuts off the way to it" % [
+			float(blk["leaf_in_clear_m"]), float(blk.get("clear_w", 0.0))]
+	return false
+
+
 ## Walks a list of nodes, leg by leg.
 func _walk_nodes(nodes: Array) -> void:
-	for i: int in range(1, nodes.size()):
+	var i: int = 1
+	while i < nodes.size():
+		# Floor cells the plan steps through that props fill (a bed, a wheelchair, a stack of
+		# crates: the capsule fits nowhere in them) are walked past, round them to the next cell.
+		var j: int = await _skip_full(nodes, i)
+		if j > i:
+			_cur = nodes[j]
+			i = j + 1
+			continue
 		await _leg(nodes[i - 1], nodes[i])
 		_cur = nodes[i]
+		i += 1
+
+
+## When nodes[i] (and maybe the ones after it) are plain floor steps into cells that props fill so
+## the capsule fits nowhere in them, walks from nodes[i - 1] straight on to the first cell after
+## them round the props (_detour) as one leg (assisted, "detour", `past` naming the cells skipped).
+## Returns that cell's index, or -1 (nothing walked) when nodes[i] is not like that or no free path
+## goes round.
+func _skip_full(nodes: Array, i: int) -> int:
+	var j: int = i
+	while j + 1 < nodes.size() and _is_cluttered(nodes[j], nodes[j - 1]) and str(_classify(nodes[j - 1], nodes[j])["kind"]) == "floor" \
+			and str(_classify(nodes[j], nodes[j + 1])["kind"]) == "floor" and _free_samples(int(nodes[j][0]), {nodes[j][1]: true}).is_empty():
+		j += 1
+	if j == i:
+		return -1
+	var a: Array = nodes[i - 1]
+	var c: Array = nodes[j]
+	var leg: Dictionary = _new_leg(a, c, "floor")
+	var past: PackedStringArray = []
+	for k: int in range(i, j):
+		past.append(_node_str(nodes[k]))
+	leg["past"] = ",".join(past)
+	if _in_yard(a) and _in_yard(c):
+		leg["yard"] = true
+	var end: Vector3 = _free_point(c[0], c[1])
+	if not await _detour(a, c, end, leg):
+		return -1
+	_end_leg(leg, true, end)
+	return j
 
 
 ## What a step from node a to node b is, from the layout.
@@ -655,6 +969,8 @@ func _leg(a: Array, b: Array) -> void:
 	var cls: Dictionary = _classify(a, b)
 	var kind: String = cls["kind"]
 	var leg: Dictionary = _new_leg(a, b, kind)
+	if _in_yard(a) and _in_yard(b):
+		leg["yard"] = true
 	# The plan only goes through a prop when nothing else gets there.
 	if _is_cluttered(b, a):
 		leg["through_props"] = true
@@ -685,21 +1001,25 @@ func _leg(a: Array, b: Array) -> void:
 				ok = await _go(end, true, leg)
 		"ladder_up", "ladder_down":
 			var l: Dictionary = cls["ladder"]
-			# To the foot (or the landing above), then the ladder's interact: the only way a
-			# ladder climbs (PoiPieces.Ladder moves the body to its other end).
-			ok = await _go(_cell_pos(a[0], a[1]), true, leg)
 			var lad: PoiPieces.Ladder = _ladder_at(l)
+			var how: String = "walk_in"
 			if lad == null:
 				ok = false
 				leg["blocker"] = {"kind": "no ladder node built at %s level %d" % [l["cell"], l["level"]]}
+			elif _walk_in(lad):
+				ok = await _climb_ladder(lad, l, kind == "ladder_up", end, leg)
 			else:
-				lad.interact(player)
+				# The older ladder: to the foot (or the landing above), then its interact moves the
+				# body to its other end.
+				how = "interact"
+				ok = await _go(_ladder_stand(l, kind == "ladder_up"), true, leg)
+				lad.call(&"interact", player)
 				(leg["needed"] as Array).append("interact")
 				await _settle(4)
 				ok = _near(end, 0.8, true)
 				if not ok:
 					ok = await _go(end, true, leg)
-			(_report["climbs"] as Array).append({"ladder": "%s L%d" % [_v2(l["cell"]), int(l["level"])], "dir": kind, "ok": ok})
+			(_report["climbs"] as Array).append({"ladder": "%s L%d" % [_v2(l["cell"]), int(l["level"])], "dir": kind, "ok": ok, "how": how})
 		"drop_hole", "drop":
 			ok = await _go(end, true, leg)
 		"jump":
@@ -739,18 +1059,30 @@ func _leg(a: Array, b: Array) -> void:
 					# to the point pressed the body on the wall under the sill and vaulted it out again.
 					ok = ok and await _go(mid + n * 0.1, false, leg, true, TARGET_FRAMES, n)
 				ok = ok and await _go(end, true, leg)
+				# A doorway the straight line could not get through (a leaf swung open beside it, a
+				# chair by the jamb): round whatever is in the way, as a player would.
+				if not ok and category(kind) == "doorway":
+					ok = await _detour_after_fail(a, b, end, leg)
 			elif kind == "floor" and (b[1] as Vector2i).distance_squared_to(a[1]) == 1:
-				# Down the clear lane past a chair or a crate (or the middle line when nothing is
-				# in the way, or no lane is clear: then the props are what stops the body).
-				var o: float = _lane(a, b)
-				if not is_nan(o) and absf(o) > 0.01:
-					var d2: Vector2i = (b[1] as Vector2i) - (a[1] as Vector2i)
-					var across := Vector3(-d2.y, 0.0, d2.x) * o
-					ok = await _go(_cell_pos(a[0], a[1]) + across, false, leg)
-					end = _cell_pos(b[0], b[1]) + across
-					ok = ok and await _go(end, true, leg)
-				else:
-					ok = await _go(end, true, leg)
+				# Through props (a bed, a cot, a trough fills the cell the plan steps into): round
+				# them first when the room has a way round; then down the clear lane past a chair or
+				# a crate (or the middle line when nothing is in the way, or no lane is clear: then
+				# the props are what stops the body), and round whatever stopped it after that.
+				ok = false
+				if leg.get("through_props", false):
+					ok = await _detour(a, b, end, leg)
+				if not ok:
+					var o: float = _lane(a, b)
+					if not is_nan(o) and absf(o) > 0.01:
+						var d2: Vector2i = (b[1] as Vector2i) - (a[1] as Vector2i)
+						var across := Vector3(-d2.y, 0.0, d2.x) * o
+						ok = await _go(_cell_pos(a[0], a[1]) + across, false, leg)
+						end = _cell_pos(b[0], b[1]) + across
+						ok = ok and await _go(end, true, leg)
+					else:
+						ok = await _go(end, true, leg)
+				if not ok:
+					ok = await _detour_after_fail(a, b, end, leg)
 			else:
 				ok = await _go(end, true, leg)
 	_end_leg(leg, ok, end)
@@ -942,6 +1274,16 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 		if not leg.has("blocker"):
 			leg["blocker"] = _blocker()
 		leg["category"] = category(kind)
+		# Stopped in the yard ring by a fence, a palisade, a berm or a wreck (a prop too tall to
+		# vault) that the validator's yard cells do not know about (it joins every yard cell at
+		# once), or with no way between two yard cells at all without that: a perimeter finding,
+		# apart from the building's own problems.
+		if bool(leg.get("yard", false)) and leg["category"] in ["floor", "entrance"]:
+			var blk: Dictionary = leg["blocker"]
+			var bk: String = str(blk.get("kind", ""))
+			var pdef: PropDef = Content.get_def(&"prop", StringName(str(blk.get("prop", "")))) as PropDef if bk == "prop" else null
+			if (pdef != null and pdef.size.y > Player.VAULT_MAX) or bk.begins_with("no way from here"):
+				leg["category"] = "perimeter"
 		(_report["blocked"] as Array).append(leg)
 		# Restart from where the leg should have ended.
 		_place(end, -player.global_transform.basis.z)
@@ -961,6 +1303,11 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 			(" blocker " + str(leg["blocker"])) if leg.has("blocker") else ""])
 	_hits.clear()
 	_shut.clear()
+
+
+## Whether a node is a yard cell (level 0, outside the building, porch included).
+func _in_yard(n: Variant) -> bool:
+	return n is Array and int(n[0]) == 0 and not layout.is_built(0, n[1])
 
 
 ## What kind of place a leg kind is, for the summary: doorway (a door, arch or breach), climb
@@ -1049,6 +1396,99 @@ func _stand_clear(d: PoiPieces.Door, leg: Dictionary) -> void:
 				(leg["needed"] as Array).append("open_door_aside")
 			return
 		await _go(here, false, leg, false, 150)
+
+
+## Whether ladders are climbed by walking into them (the player grabs the rails: Player.is_climbing)
+## rather than by the ladder's interact (the older PoiPieces.Ladder.interact moved the body to its
+## other end). Called through has_method so the bot compiles against either.
+func _walk_in(lad: PoiPieces.Ladder) -> bool:
+	return force_walk_in or player.has_method(&"is_climbing") or not lad.has_method(&"interact")
+
+
+## Unit direction (world, flat) from the ladder's foot cell toward its rails and the wall they lean
+## on. From the layout's side; Ladder.face() (where it exists) is only trusted for the line, its sign
+## is picked to point at the rails, so either convention of face() works.
+func _ladder_toward(lad: PoiPieces.Ladder, l: Dictionary) -> Vector3:
+	var d: Vector2i = PoiLayout.DIRS[int(l["side"])]
+	var toward := Vector3(d.x, 0.0, d.y)
+	if lad.has_method(&"face"):
+		var f: Variant = lad.call(&"face")
+		if f is Vector3:
+			var fv := Vector3((f as Vector3).x, 0.0, (f as Vector3).z)
+			if fv.length() > 0.01:
+				fv = fv.normalized()
+				toward = fv if fv.dot(toward) >= 0.0 else -fv
+	return toward
+
+
+## Where the body stands to take a ladder: in its foot cell just in front of the rails (they stand
+## 0.38 m off the cell's middle toward the wall, 0.3 m deep) to go up, the landing cell's middle to
+## come down.
+func _ladder_stand(l: Dictionary, up: bool) -> Vector3:
+	if not up:
+		return _cell_pos(int(l["level"]) + 1, l.get("landing", l["cell"]))
+	var d: Vector2i = PoiLayout.DIRS[int(l["side"])]
+	return _cell_pos(int(l["level"]), l["cell"]) - Vector3(d.x, 0.0, d.y) * LADDER_STAND
+
+
+## Climbs a ladder the way a player does where ladders are walked into: to the foot cell in front
+## of the rails (or the top landing), square to the rails (or the hatch) with the view level, move
+## held until the player grabs it (is_climbing) and lets go again at the other end, then on to the
+## leg's end. Forward climbs up from the foot and down from the top. Never moves the body by hand.
+func _climb_ladder(lad: PoiPieces.Ladder, l: Dictionary, up: bool, end: Vector3, leg: Dictionary) -> bool:
+	var toward: Vector3 = _ladder_toward(lad, l)
+	var stand: Vector3 = _ladder_stand(l, up)
+	var ok: bool = await _go(stand, true, leg)
+	if not ok:
+		leg["note"] = "never reached the %s of the ladder" % ("foot" if up else "top landing")
+		return false
+	_release()
+	# Up: facing the rails. Down: from the landing toward the hatch (mostly the cell on the rails'
+	# side of it, else one beside it: PoiLayout._ladder_landing).
+	if not up:
+		var hatch: Vector3 = _cell_pos(int(l["level"]) + 1, l["cell"]) - stand
+		hatch.y = 0.0
+		if hatch.length() > 0.1:
+			toward = hatch.normalized()
+	player.rotation.y = atan2(-toward.x, -toward.z)
+	if &"_pitch" in player:
+		player.set(&"_pitch", 0.0)
+	player.head.rotation.x = 0.0
+	await _settle(2)
+	_frames += 2
+	var needed: Array = leg["needed"]
+	needed.append("climb")
+	Input.action_press(&"move_forward")
+	var grabbed: bool = false
+	var released: bool = false
+	var frames: int = 0
+	while frames < LADDER_FRAMES:
+		player.state.stats.stamina = 100.0
+		if not grabbed:
+			# Keep square to the rails until the hands are on them.
+			player.rotation.y = atan2(-toward.x, -toward.z)
+		await get_tree().physics_frame
+		frames += 1
+		_frames += 1
+		_track()
+		var climbing: bool = player.has_method(&"is_climbing") and bool(player.call(&"is_climbing"))
+		if climbing:
+			grabbed = true
+		elif grabbed and not player.is_vaulting():
+			released = true
+			break
+		elif not grabbed and frames > LADDER_GRAB_FRAMES:
+			break
+	Input.action_release(&"move_forward")
+	await _settle(4)
+	_frames += 4
+	if not grabbed:
+		leg["note"] = "walked into the ladder's %s but the player never grabbed it" % ("rails" if up else "hatch")
+		return false
+	if not released:
+		leg["note"] = "on the ladder but never got off at the other end (%.1f s)" % (LADDER_FRAMES / 60.0)
+		return false
+	return await _go(end, true, leg)
 
 
 func _ladder_at(l: Dictionary) -> PoiPieces.Ladder:
@@ -1372,6 +1812,7 @@ func describe(h: Dictionary) -> Dictionary:
 		out["opening"] = d.op_id
 		out["state"] = d.state
 		out["open"] = snappedf(float(d.get(&"_open_amount")), 0.01)
+		out.merge(_leaf_geom(d))
 		return out
 	if o is PoiPieces.Breakable:
 		out["kind"] = (o as PoiPieces.Breakable).kind
@@ -1421,6 +1862,26 @@ func describe(h: Dictionary) -> Dictionary:
 	if not top.is_empty():
 		out["rise_m"] = snappedf((top["position"] as Vector3).y - player.global_position.y, 0.01)
 	return out
+
+
+## Where a door's leaf stands in its own opening's frame (x along the wall from the opening's
+## middle, z across it): its box's extent, the opening's clear width and how far the leaf reaches
+## into that width within DOOR_DEPTH of the wall line (0 when it stands beside the doorway). The
+## numbers for a game bug report when an open leaf stands in its own doorway.
+func _leaf_geom(d: PoiPieces.Door) -> Dictionary:
+	var op: Dictionary = layout.opening(d.opening_id)
+	if op.is_empty() or d.leaf_shape == null or not d.leaf_shape.shape is BoxShape3D:
+		return {}
+	var spec: Dictionary = PoiParts.OPENINGS[str(op["type"])]
+	var xf: Transform3D = inst.global_transform * _helper._edge_xf(int(op["level"]), op["axis"], op["edge"], int(spec["len"]))
+	var bs: Vector3 = (d.leaf_shape.shape as BoxShape3D).size
+	var loc: AABB = (xf.affine_inverse() * d.leaf_shape.global_transform) * AABB(-bs * 0.5, bs)
+	var w: float = float(spec["w"])
+	var into: float = 0.0
+	if loc.position.z < DOOR_DEPTH and loc.end.z > -DOOR_DEPTH:
+		into = maxf(0.0, minf(loc.end.x, w * 0.5) - maxf(loc.position.x, -w * 0.5))
+	return {"leaf_x": [snappedf(loc.position.x, 0.01), snappedf(loc.end.x, 0.01)], "leaf_z": [snappedf(loc.position.z, 0.01), snappedf(loc.end.z, 0.01)],
+		"clear_w": w, "leaf_in_clear_m": snappedf(into, 0.01)}
 
 
 ## The wall edge key within 15 cm of a POI-local plan point on a level ("" if none).

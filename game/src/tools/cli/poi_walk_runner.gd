@@ -13,7 +13,8 @@ extends Node
 ##   --verbose        print every leg
 ##   --plan           print each building's plan (levels, openings, stairs, ladders) first
 ## Exit code = buildings with blocking problems (a leg the body could not finish, or a room the
-## layout reaches that the body never stood in).
+## layout reaches that the body never stood in). Legs stopped in the yard ring by a fence, a berm or
+## a wreck (category "perimeter") are listed and counted apart, and do not fail a building.
 
 const Bot := preload("res://src/tools/cli/poi_walk_bot.gd")
 
@@ -142,8 +143,9 @@ func _file_name(id: String) -> String:
 
 func _print_findings(rep: Dictionary) -> void:
 	var tag: String = "BLOCKED" if int(rep["blocking"]) > 0 else "ok"
-	print("[poi_walk] %-7s %s: %d legs, %d blocked, %d assisted, %d ladder climbs, %d unreached, %d sealed, %d corridor props (%.0f s walked)" % [
-		tag, rep["walk_id"], (rep["legs"] as Array).size(), (rep["blocked"] as Array).size(), (rep["assisted"] as Array).size(),
+	var perim: int = (rep["blocked"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("category", "")) == "perimeter").size()
+	print("[poi_walk] %-7s %s: %d legs, %d blocked, %d perimeter, %d assisted, %d ladder climbs, %d unreached, %d sealed, %d corridor props (%.0f s walked)" % [
+		tag, rep["walk_id"], (rep["legs"] as Array).size(), (rep["blocked"] as Array).size() - perim, perim, (rep["assisted"] as Array).size(),
 		(rep["climbs"] as Array).size(), (rep["unreached"] as Array).size(), (rep["sealed"] as Array).size(),
 		(rep["corridor"] as Array).size(), float(rep["frames"]) / 60.0])
 	for leg: Dictionary in rep["blocked"]:
@@ -152,13 +154,14 @@ func _print_findings(rep: Dictionary) -> void:
 	for leg2: Dictionary in rep["assisted"]:
 		print("[poi_walk]   needed   %s on %s %s -> %s%s%s" % [",".join(PackedStringArray(leg2["needed"])), leg2["kind"], leg2["from"], leg2["to"],
 			(" (" + str(leg2["opening"]) + ")") if leg2.has("opening") else "",
-			(" [%s: %s]" % [leg2["assist"], leg2.get("assist_id", leg2.get("assist_prop", "?"))]) if leg2.has("assist") else ""])
+			(" [%s: %s]" % [leg2["assist"], leg2.get("assist_id", leg2.get("assist_prop", "?"))]) if str(leg2.get("assist", "")) == "crate" else
+			(" [detour]" if leg2.has("assist") else "")])
 	for lf: Dictionary in rep["leaf_in_way"]:
 		print("[poi_walk]   leaf     open door leaf '%s' across %s (shut to get past)" % [lf["leaf"], lf["leg"]])
 	for wp: Dictionary in rep["waypoints_on_props"]:
 		print("[poi_walk]   waypoint '%s' L%d %s stands in a prop (walked beside it)" % [wp["waypoint"], wp["level"], wp["cell"]])
 	for c: Dictionary in rep["climbs"]:
-		print("[poi_walk]   ladder   %s %s (an interact)%s" % [c["dir"], c["ladder"], "" if bool(c["ok"]) else " FAILED"])
+		print("[poi_walk]   ladder   %s %s (%s)%s" % [c["dir"], c["ladder"], "walked in" if str(c.get("how", "")) == "walk_in" else "an interact", "" if bool(c["ok"]) else " FAILED"])
 	for r: Dictionary in rep["unreached"]:
 		print("[poi_walk]   unreached room '%s' %s level %d" % [r["room"], r["name"], r["level"]])
 	for r2: Dictionary in rep["sealed"]:
@@ -186,8 +189,8 @@ func _blk(b: Dictionary) -> String:
 
 
 func _table(rows: Array[Dictionary]) -> void:
-	print("[poi_walk] %-34s %5s %7s %-26s %8s %6s %6s %9s %6s %8s %5s" % ["building", "legs", "blocked", "(doorway/climb/window/floor)", "assisted",
-		"leaves", "ladder", "unreached", "sealed", "corridor", "crate"])
+	print("[poi_walk] %-34s %5s %7s %-26s %9s %8s %6s %6s %9s %6s %8s %5s %6s" % ["building", "legs", "blocked", "(doorway/climb/window/floor)", "perimeter",
+		"assisted", "leaves", "ladder", "unreached", "sealed", "corridor", "crate", "detour"])
 	for r: Dictionary in rows:
 		var by: Dictionary = {}
 		for leg: Dictionary in r["blocked"]:
@@ -196,10 +199,13 @@ func _table(rows: Array[Dictionary]) -> void:
 		var split: String = "%d/%d/%d/%d" % [int(by.get("doorway", 0)), int(by.get("climb", 0)), int(by.get("window", 0)),
 			int(by.get("floor", 0)) + int(by.get("drop", 0)) + int(by.get("entrance", 0))]
 		# Assisted legs that got in through a window from a prop under it (a route-cue crate).
-		var crates: int = (r["assisted"] as Array).filter(func(l: Dictionary) -> bool: return l.has("assist")).size()
-		print("[poi_walk] %-34s %5d %7d %-26s %8d %6d %6d %9d %6d %8d %5d" % [str(r["walk_id"]).left(34), (r["legs"] as Array).size(), (r["blocked"] as Array).size(),
-			split, (r["assisted"] as Array).size(), (r["leaf_in_way"] as Array).size(), (r["climbs"] as Array).size(), (r["unreached"] as Array).size(),
-			(r["sealed"] as Array).size(), (r["corridor"] as Array).size(), crates])
+		var crates: int = (r["assisted"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("assist", "")) == "crate").size()
+		# Assisted legs a detour round props or an open leaf finished.
+		var detours: int = (r["assisted"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("assist", "")) == "detour").size()
+		var perim: int = int(by.get("perimeter", 0))
+		print("[poi_walk] %-34s %5d %7d %-26s %9d %8d %6d %6d %9d %6d %8d %5d %6d" % [str(r["walk_id"]).left(34), (r["legs"] as Array).size(), (r["blocked"] as Array).size() - perim,
+			split, perim, (r["assisted"] as Array).size(), (r["leaf_in_way"] as Array).size(), (r["climbs"] as Array).size(), (r["unreached"] as Array).size(),
+			(r["sealed"] as Array).size(), (r["corridor"] as Array).size(), crates, detours])
 
 
 ## Vector2i / Vector3 / StringName to JSON-friendly values.
