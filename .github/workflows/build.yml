@@ -71,7 +71,11 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/run && cd build/run
-          ../../.tools/godot/godot --headless --main-pack ../export/linux/Hollowmere.pck \
+          # The pack path must be absolute: Godot re-opens the pack by its path for every file read,
+          # and DirAccess (any user:// listing) chdir()s the whole process for a moment, so a loader
+          # thread reading through a relative pack path then gets "File not found" (build #80).
+          # The shipped executable finds its pack by its own absolute path, so players never hit it.
+          ../../.tools/godot/godot --headless --main-pack "$GITHUB_WORKSPACE/build/export/linux/Hollowmere.pck" \
             -s "$GITHUB_WORKSPACE/game/src/tools/cli/slice_smoke.gd" -- --expect-assets 2>&1 | tee ../smoke_exported.log
           # Any ERROR / SCRIPT ERROR line not in the engine-noise allowlist fails the build (TD-103).
           python3 "$GITHUB_WORKSPACE/tools/qa/check_log_errors.py" ../smoke_exported.log
