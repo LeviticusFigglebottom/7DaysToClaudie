@@ -1,0 +1,33 @@
+{
+ "_doc": "Readable notes of the Kell Shelter (w4_hillside_bunker), forest set pieces round 4. No note names a town: the place stands anywhere. Items: items/wild4_bunker.json note_<id>.",
+ "defs": [
+  {
+   "id": "w4_bunker_journal",
+   "title": "Gideon Kell's Journal",
+   "style": "handwritten",
+   "author": "Gideon Kell",
+   "body": "Night 1. The radio says the Cordon has shut every road off the mountain. Took M. and the boys down at nine. Shot all four bolts. Eleven summers of concrete and it held its breath like it was waiting for this.\nNight 2. Pruitts' truck in the yard. Lyle on the porch camera with his mother coughing in the truck bed. I said no through the speaker. I said it twice. He knows I have a year of cans. He knows I counted.\nNight 9. They found the hatch. They are in the storeroom. I hear them open my cans through the ceiling. The intake draws through that room. I did not think of that when I poured it.\nNight 40. Filters grey. Changed them. Filters grey again in a week.\nNight 71. White fuzz in the cartridges. Sam coughs at night. Eli says the air tastes like bread.\nNight 88. No spares left. Came up the tunnel to write this and look for the cartridges I swore I left in the hatch house. If I don't make it back down, the spare key stays where I told Dale it would be: this drawer, under the false bottom. Dale, open it slow."
+  },
+  {
+   "id": "w4_bunker_letter",
+   "title": "Letter on the Table",
+   "style": "handwritten",
+   "author": "Marion Kell",
+   "body": "Dale, if it's you, I'm sorry about the smell. I can't get the boys up the ladder anymore and Gideon says the tunnel isn't safe with the Pruitts loose upstairs. He sits at that radio all night calling you. He won't say what we're both thinking, which is that we sealed ourselves in with whatever they brought up the hill. Sam's fingernails have gone pale at the roots. So have mine. Tell Mom we had a year of peaches. Tell her the boys were brave. Don't open the blast door without a mask."
+  },
+  {
+   "id": "w4_bunker_ledger",
+   "title": "Supply Ledger",
+   "style": "typed",
+   "author": "Gideon Kell",
+   "body": "SHELTER STORES - LEVEL ONE\nCanned veg: 420 tins. Canned meat: 180. Peaches: 96. Rice, beans (mylar): 14 buckets.\nWater: 6 drums, rotated every spring. Diesel: 4 drums, stabilised.\nFilter cartridges (HEPA + carbon): 12 sets. Change every 60 days or at grey.\n\nUnder it, in pencil, crossed out and written over: cans 420, 380, 290, 160, 71. Water 6, 4, 2. Cartridges 12, 9, 4, 0. And in another hand, big and shaky: WE WERE HUNGRY KELL. YOU HAD ENOUGH FOR ALL OF US."
+  },
+  {
+   "id": "w4_bunker_radio_log",
+   "title": "Ham Radio Log",
+   "style": "handwritten",
+   "author": "Gideon Kell",
+   "body": "21:40 Net control on the repeater: Cordon checkpoints going up on every road off the mountain. Residents to shelter in place. No traffic in or out.\n21:52 Highway patrol relay: the bridge closed, the pass closed, the county road closed. Soldiers in masks at the barricades turning cars back.\n22:15 A woman on simplex asking if anyone has antifungal. Nobody answered her.\n23:30 Repeater down.\nDay 3 on: called Dale on the family frequency at 20:00 every night. No reply. Kept calling.\nDay 90: Calling Dale. Calling Dale. Calling anyone. Filters are gone. If you hear this, the key is in the desk upstairs. Don't bring them down here."
+  }
+ ]
+}
