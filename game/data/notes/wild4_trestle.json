@@ -1,0 +1,33 @@
+{
+ "_doc": "Readable notes of the trestle tunnel (w4_trestle_tunnel, forest set pieces round 4, ADR-0053). No note names a town: the place stands anywhere. Items: items/wild4_trestle.json note_<id>.",
+ "defs": [
+  {
+   "id": "w4_trestle_watch_log",
+   "title": "Watchman's Log, Mile 31 Trestle",
+   "style": "handwritten",
+   "author": "Walt Ingebretsen, trestle watchman",
+   "body": "Oct 2. Fire watch as usual. Line's shut for the season but the company wants the work train through to clear the slide at the far portal before snow.\nOct 4. Soldiers came up the grade in a truck. Cordon. Asked how many men on the line. Told them the section gang and the work train crew, eleven all told.\nOct 6. Work train went in at 7:40. Engine 4, the flat, the tool boxcar. Hank Tollefsen driving.\nOct 6. 11:15. A blast at the far end. The whole hill shook. Dust out of the portal for an hour.\nOct 6. Evening. Cordon lieutenant back with a bulkhead crew. They framed the portal shut with the train still in there. Said the men inside were sick and the far end was sealed by order. Gave me the chain key and a paper. Said: nobody opens it, nobody walks out along the line.\nOct 9. Knocking on the bulkhead at night. I sit in here with the stove going so I can't hear it.\nOct 14. The section hands went in the tool house and shut the doors. They have the fever. I have nailed my own door. The chain key is on the nail. God forgive me, I never opened it."
+  },
+  {
+   "id": "w4_trestle_work_order",
+   "title": "Section Work Order No. 118",
+   "style": "typed",
+   "author": "Section Foreman O. Brekhus",
+   "body": "WORK ORDER 118 - SECTION 4\nJob: clear rock slide at north portal, Tunnel 2. Re-gauge 200 ft of track behind it.\nWork train: Engine 4, flat 112 (cribbing logs), boxcar 31 (tools, powder, lumber).\nCrew: H. Tollefsen (engineer), D. Aasen (fireman), P. Lund (brakeman), J. Sorvik, M. Haugen.\nSection gang to man the handcar at the trestle and keep the near portal clear.\nRefuge niche at station 40 is stocked. Padlock key on the board, tag 7. Do NOT leave the niche key in the niche.\nIn pencil across the bottom: Cordon says hold all work. Tollefsen says the slide won't wait for the Cordon. Train goes Monday."
+  },
+  {
+   "id": "w4_trestle_demolition_order",
+   "title": "Cordon Demolition Order",
+   "style": "typed",
+   "author": "Cordon Engineering Detachment",
+   "body": "ORDER - DEMOLITION OF RAILWAY TUNNEL 2 (NORTH PORTAL)\nUnder quarantine authority the north portal of Tunnel 2 will be closed by demolition at 1100 hours to deny the rail grade as a route out of the controlled zone.\nPersonnel inside the tunnel at the time of closure are to be treated as exposed. The south portal will be bulkheaded and chained. The bulkhead is not to be opened by civilian personnel for any reason. The trestle watchman holds the key for Cordon use only.\nThe charge was set before the work train was reported in the bore. The order stands.\nSigned for the Detachment. A coffee ring over the signature."
+  },
+  {
+   "id": "w4_trestle_crew_letter",
+   "title": "Letter in the Boxcar",
+   "style": "handwritten",
+   "author": "Dag Aasen, fireman",
+   "body": "Ingrid - Hank got out of the cab after the roof came down on the engine, but he was cut bad and by the third day there were pale threads in the cuts. He made us put him in the refuge niche with the stores and snap the padlock on him. Said nobody opens it till the Cordon comes. Jonas and Mats knock on the bulkhead every night and nobody answers. They don't talk right anymore. I am up in the boxcar on the lumber where they can't reach. The key to the niche is on the board in the tool house, tag 7, so it is no use to us in here. Tell my mother I kept the fire hot to the last. Your Dag."
+  }
+ ]
+}
