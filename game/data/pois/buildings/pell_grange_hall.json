@@ -171,7 +171,7 @@
         {"prop": "bookshelf", "at": [3, 1], "against": "E", "id": "office_shelf", "variant": "worn"},
         {"prop": "civic_coat_rack", "pos": [3.45, 2.5], "rot": -90, "id": "office_coats"},
         {"prop": "lantern_camping", "pos": [2.35, 0.6], "y": 0.76},
-        {"prop": "plywood_leaning", "pos": [0.45, 5.35], "rot": 95},
+        {"prop": "plywood_leaning", "pos": [0.45, 5.7], "rot": 95},
         {"prop": "crate_wood", "pos": [2.4, 5.55], "rot": 15, "id": "wing_crate_1"},
         {"prop": "crate_wood", "pos": [2.45, 5.55], "y": 0.43, "rot": -10, "id": "wing_crate_2"},
         {"prop": "paint_can_stack", "pos": [3.5, 5.6], "rot": 30},

@@ -19,6 +19,8 @@ const STEP: float = 0.38 + 0.04
 const MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 12)
 ## Openings crouched through (a knocked-through hole): checked with the crouched capsule.
 const CROUCH_TYPES: PackedStringArray = ["breach"]
+## Player.VAULT_MAX: the tallest obstacle the player vaults or mantles.
+const VAULT_MAX: float = 1.3
 ## Player.CROUCH_HEIGHT.
 const CROUCH_HEIGHT: float = 1.1
 ## The tallest rise a doorway may ask the player to step up without a step (Player.STEP_HEIGHT).
@@ -30,13 +32,16 @@ const GRID: float = 0.25
 
 
 ## Every blocked step of `inst` (built and in a physics space): [{kind: "route"|"doorway", level,
-## cell, to, what, blocker, at}], with `what` "prop:<id>", "container:<prop>", "door_leaf", "piece",
+## cell, to, what, blocker, at, severity}], with `what` "prop:<id>", "container:<prop>", "door_leaf", "piece",
 ## "structure" or "unknown". `v` is the building's validator (its route paths).
 ##
 ## Each level is sampled every GRID metres for where the capsule fits (feet a step off the floor),
 ## and the free samples are joined into connected areas. A route step is blocked when no area
 ## reaches both cells; a doorway when the capsule doesn't fit on its centre line or the line's
 ## area doesn't reach both sides. A straight sweep between the two then names what is in the way.
+## Severity is "error" for what the validator's route walks (its runs, the doorways it crosses) and
+## "warn" for the other doorways, for what the player vaults, and for props authored `route_ok`
+## (named "<id>+route_ok": the author put them on the route on purpose).
 static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceState3D) -> Array[Dictionary]:
 	var l: PoiLayout = inst.layout
 	var out: Array[Dictionary] = []
@@ -45,6 +50,7 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 	for li: int in l.level_ids:
 		grids[li] = _free_grid(l, li, inst, space, exclude)
 	var skip: Dictionary = _special_cells(l)
+	var on_route: Dictionary = _route_edges(v)
 	for leg: Variant in v.paths:
 		for run: Array in _runs(l, leg as Array, skip):
 			var first: Array = run[0]
@@ -61,7 +67,13 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 				ok = ok or from_areas.has(area)
 			if not ok:
 				var hit: Dictionary = _name_run(space, inst, l, run, exclude)
-				hit.merge({"kind": "route", "level": li2, "cell": first[1], "to": last[1]})
+				# Something the player vaults (Player._try_vault) slows the way but doesn't close it.
+				var top: float = _top_over_floor(space, inst, l, li2, hit, exclude)
+				var vault: bool = top >= 0.3 and top <= VAULT_MAX
+				if vault:
+					hit["what"] = "%s (vault %.2f m)" % [hit["what"], top]
+				hit.merge({"kind": "route", "level": li2, "cell": first[1], "to": last[1],
+					"severity": "warn" if vault or str(hit["what"]).ends_with("+route_ok") else "error"})
 				out.append(hit)
 	for op2: Dictionary in l.openings:
 		var t: String = str(op2["type"])
@@ -80,10 +92,11 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 				continue
 			# The sample on the doorway's centre line, where the wall's two cells meet.
 			var s: Vector2i = (a2 + b2) * 2 + Vector2i(2, 2)
+			var sev: String = "error" if on_route.has(_edge_id(li3, a2, b2)) else "warn"
 			var rise: float = max_rise(space, inst, _at(l, li3, b2, _cell_y(space, inst, l, li3, b2, exclude)), _at(l, li3, a2, _cell_y(space, inst, l, li3, a2, exclude)), exclude)
 			if rise > STEP_RISE:
 				out.append({"kind": "doorway", "level": li3, "cell": b2, "to": a2, "opening": str(op2["id"]),
-					"what": "step %.2f m" % rise, "blocker": "-", "at": _at(l, li3, a2, l.level_y(li3))})
+					"what": "step %.2f m" % rise, "blocker": "-", "at": _at(l, li3, a2, l.level_y(li3)), "severity": sev})
 				continue
 			var from2: Vector3 = _at(l, li3, b2, _cell_y(space, inst, l, li3, b2, exclude))
 			var to2: Vector3 = _at(l, li3, a2, _cell_y(space, inst, l, li3, a2, exclude))
@@ -95,7 +108,13 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 				if area2 == null or not (_areas(g3, a2).has(area2) and _areas(g3, b2).has(area2)):
 					hit2 = _name(space, inst, from2, to2, exclude)
 			if not hit2.is_empty() and not _is_closure(str(hit2["what"])):
-				hit2.merge({"kind": "doorway", "level": li3, "cell": b2, "to": a2, "opening": str(op2["id"])})
+				if str(hit2["what"]).ends_with("+route_ok"):
+					sev = "warn"
+				var top2: float = _top_over_floor(space, inst, l, li3, hit2, exclude)
+				if top2 >= 0.3 and top2 <= VAULT_MAX:
+					hit2["what"] = "%s (vault %.2f m)" % [hit2["what"], top2]
+					sev = "warn"
+				hit2.merge({"kind": "doorway", "level": li3, "cell": b2, "to": a2, "opening": str(op2["id"]), "severity": sev})
 				out.append(hit2)
 	return out
 
@@ -153,10 +172,12 @@ static func floor_at(space: PhysicsDirectSpaceState3D, inst: Node3D, p: Vector3,
 
 
 ## The tallest step between floor heights sampled every 5 cm from `from` to `to` (feet positions,
-## POI-local), each found by a ray down from head height: the step a player has to take, up or
+## POI-local), each found by a ray down from a step above the higher floor: the step a player has to take, up or
 ## down (the way in is the way back out).
 static func max_rise(space: PhysicsDirectSpaceState3D, inst: Node3D, from: Vector3, to: Vector3, exclude: Array[RID]) -> float:
-	var top: float = maxf(from.y, to.y) + 1.2
+	# From just above a step over the higher floor: anything taller is an obstacle (the sweeps' job),
+	# not a step (a crate inside the door isn't a sill).
+	var top: float = maxf(from.y, to.y) + STEP_RISE + 0.02
 	var prev: float = NAN
 	var worst: float = 0.0
 	var n: int = maxi(2, int(from.distance_to(to) / 0.05))
@@ -166,6 +187,9 @@ static func max_rise(space: PhysicsDirectSpaceState3D, inst: Node3D, from: Vecto
 		var hit: Dictionary = space.intersect_ray(q)
 		# Nothing built: the ground (the audit has no terrain under the building).
 		var y: float = 0.0 if hit.is_empty() else (inst.global_transform.affine_inverse() * (hit["position"] as Vector3)).y
+		if y >= top - 0.01:
+			# The ray started inside something taller than a step: an obstacle, not a floor.
+			continue
 		if not is_nan(prev):
 			worst = maxf(worst, absf(y - prev))
 		prev = y
@@ -173,8 +197,8 @@ static func max_rise(space: PhysicsDirectSpaceState3D, inst: Node3D, from: Vecto
 
 
 ## A leg of the validator's route split into the runs walked on one level: [[level, cell, is a
-## waypoint], ...] per run, broken at windows (vaults), crouch holes, level changes and stair,
-## ladder and hole cells.
+## waypoint], ...] per run, broken at openings (the doorway check covers them), level changes and
+## stair, ladder and hole cells.
 static func _runs(l: PoiLayout, leg: Array, skip: Dictionary) -> Array:
 	var runs: Array = []
 	var cur: Array = []
@@ -191,7 +215,7 @@ static func _runs(l: PoiLayout, leg: Array, skip: Dictionary) -> Array:
 			var prev: Array = cur[cur.size() - 1]
 			var d: Vector2i = (n[1] as Vector2i) - (prev[1] as Vector2i)
 			var op: Dictionary = _opening_between(l, int(prev[0]), prev[1], n[1]) if int(prev[0]) == int(n[0]) else {}
-			if int(prev[0]) != int(n[0]) or absi(d.x) + absi(d.y) != 1 or (not op.is_empty() and (_is_vault(str(op["type"])) or CROUCH_TYPES.has(str(op["type"])))):
+			if int(prev[0]) != int(n[0]) or absi(d.x) + absi(d.y) != 1 or not op.is_empty():
 				if cur.size() >= 2:
 					runs.append(cur)
 				cur = []
@@ -301,18 +325,20 @@ static func sweep(space: PhysicsDirectSpaceState3D, inst: Node3D, from: Vector3,
 static func _is_closure(what: String) -> bool:
 	if not what.begins_with("prop:"):
 		return false
-	var pd: PropDef = Content.get_def(&"prop", StringName(what.substr(5))) as PropDef
+	var pd: PropDef = Content.get_def(&"prop", StringName(what.substr(5).trim_suffix("+route_ok"))) as PropDef
 	return pd != null and pd.tags.has("door")
 
 
 ## What a collider is: "prop:<id>" (a shape PoiBuilder tagged), "container:<prop>", "door_leaf",
-## "piece" (traps, breakables, cues) or "structure" (walls, floors, stairs, the building's shell).
+## "trap:<id>" (a shotgun's chair rig), "piece" (breakables, cues) or "structure" (walls, floors, stairs, the building's shell).
 static func describe(obj: Object, shape_idx: int) -> String:
 	if obj is PoiPieces.LootProp:
 		var lp := obj as PoiPieces.LootProp
 		return "container:%s" % (str(lp.prop.id) if lp.prop != null else "?")
 	if obj is PoiPieces.Door:
 		return "door_leaf"
+	if obj is Node and (obj as Node).get_parent() is PoiPieces.Trap:
+		return "trap:%s" % str((obj as Node).get_parent().get(&"trap_id"))
 	if obj is CollisionObject3D:
 		var co := obj as CollisionObject3D
 		var owner_id: int = co.shape_find_owner(shape_idx)
@@ -334,6 +360,39 @@ static func _passable_bodies(inst: Node) -> Array[RID]:
 			out.append((n as CollisionObject3D).get_rid())
 		stack.append_array(n.get_children())
 	return out
+
+
+## How high the thing a run ran into rises over the floor at the hit point (a ray down from 2.2 m
+## over the floor); -1 for nothing found.
+static func _top_over_floor(space: PhysicsDirectSpaceState3D, inst: Node3D, l: PoiLayout, li: int, hit: Dictionary, exclude: Array[RID]) -> float:
+	if not hit.has("at") or str(hit.get("what", "")) == "unknown":
+		return -1.0
+	var at: Vector3 = hit["at"]
+	var fy: float = l.level_y(li)
+	var q := PhysicsRayQueryParameters3D.create(inst.global_transform * Vector3(at.x, fy + 2.2, at.z), inst.global_transform * Vector3(at.x, fy - 0.5, at.z), MASK, exclude)
+	var r: Dictionary = space.intersect_ray(q)
+	if r.is_empty():
+		return -1.0
+	return (inst.global_transform.affine_inverse() * (r["position"] as Vector3)).y - fy
+
+
+## The edges the validator's route walks across, by _edge_id.
+static func _route_edges(v: PoiValidator) -> Dictionary:
+	var out: Dictionary = {}
+	for leg: Variant in v.paths:
+		var nodes: Array = leg
+		for i: int in range(1, nodes.size()):
+			var a: Variant = nodes[i - 1]
+			var b: Variant = nodes[i]
+			if a is Array and b is Array and int(a[0]) == int(b[0]):
+				out[_edge_id(int(a[0]), a[1], b[1])] = true
+	return out
+
+
+static func _edge_id(li: int, a: Vector2i, b: Vector2i) -> String:
+	var lo: Vector2i = a.min(b)
+	var hi: Vector2i = a.max(b)
+	return "%d:%d:%d:%d:%d" % [li, lo.x, lo.y, hi.x, hi.y]
 
 
 ## Openings climbed over rather than walked through: windows and the 1 m pony wall ("half").
@@ -364,7 +423,7 @@ static func _walkable(v: PoiValidator, li: int, c: Vector2i) -> bool:
 
 ## One line per finding, for logs and test messages.
 static func line(poi: String, f: Dictionary) -> String:
-	var s: String = "%s %s L%d %s->%s blocked by %s (%s) at %s" % [poi, f["kind"], int(f["level"]), f["cell"], f["to"], f["what"], f["blocker"], f["at"]]
+	var s: String = "%s %s %s L%d %s->%s blocked by %s (%s) at %s" % [str(f.get("severity", "warn")).to_upper(), poi, f["kind"], int(f["level"]), f["cell"], f["to"], f["what"], f["blocker"], f["at"]]
 	if f.has("opening"):
 		s += " opening '%s'" % f["opening"]
 	return s

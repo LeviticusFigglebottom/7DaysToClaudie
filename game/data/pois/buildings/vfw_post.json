@@ -690,7 +690,7 @@
      "id": "back_bar",
      "prop": "civic_back_bar",
      "at": [
-      15,
+      14,
       5
      ],
      "against": "N",
@@ -739,8 +739,8 @@
      "id": "vest_coats",
      "prop": "civic_coat_rack",
      "pos": [
-      13.6,
-      13.4
+      13.35,
+      14.65
      ]
     },
     {
