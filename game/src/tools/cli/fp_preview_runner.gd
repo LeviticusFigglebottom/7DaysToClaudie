@@ -50,7 +50,16 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "bow_full_draw", "item": "hunting_bow", "action": "fp_bow_drawn", "frame": 0},
 	{"name": "bow_release", "item": "hunting_bow", "action": "fp_release_bow", "frame": 4, "nocked": false},
 	{"name": "held_stone", "item": "stone"},
-	{"name": "stone_throw", "item": "stone", "action": "fp_throw", "frame": 12},
+	{"name": "stone_throw", "item": "stone", "action": "fp_throw_stone", "frame": 12},
+	{"name": "stone_windup", "item": "stone", "action": "fp_throw_stone", "frame": 9},
+	{"name": "stone_release", "item": "stone", "action": "fp_throw_stone", "frame": 14},
+	{"name": "molotov_idle", "item": "molotov"},
+	{"name": "molotov_lighting", "item": "molotov", "action": "fp_light_molotov", "frame": 13},
+	{"name": "molotov_lit", "item": "molotov", "lit": true},
+	{"name": "molotov_lit_night", "item": "molotov", "lit": true, "night": true},
+	{"name": "molotov_windup", "item": "molotov", "lit": true, "action": "fp_throw_molotov", "frame": 10},
+	{"name": "molotov_throw", "item": "molotov", "lit": true, "action": "fp_throw_molotov", "frame": 13},
+	{"name": "ground_fire_dusk", "item": "", "ground_fire": "molotov", "night": true},
 	{"name": "bandage_apply", "item": "cloth_bandage", "action": "fp_apply", "frame": 20},
 	{"name": "empty_hands", "item": ""},
 	{"name": "empty_guard", "item": "", "guard": true},
@@ -262,6 +271,10 @@ func _shoot(shot: Dictionary) -> void:
 		if not _vm.freeze_action(StringName(str(shot["action"])), float(shot.get("frame", 0)) / 30.0):
 			print("FP_PREVIEW warning: no action %s" % shot["action"])
 	_torch_light.visible = lit and night
+	# A molotov's ground fire burning a few metres ahead (ADR-0057), to see its flames, smoke and light.
+	var fire: GroundFire = null
+	if shot.has("ground_fire"):
+		fire = GroundFire.spawn(self, Vector3(-0.6, 0.0, -4.0), StringName(str(shot["ground_fire"])))
 	# The held item's own light, as PlayerEquipment makes it (a lighter is far dimmer than a torch).
 	var idef: ItemDef = Content.item(StringName(str(shot.get("item", "")))) if lit else null
 	if idef != null and idef.equip.has("light"):
@@ -284,4 +297,6 @@ func _shoot(shot: Dictionary) -> void:
 	var path: String = _out.path_join("%s.png" % shot["name"])
 	img.save_png(path)
 	print("FP_PREVIEW %s" % path)
+	if fire != null:
+		fire.queue_free()
 	_head.rotation.y = 0.0

@@ -31,6 +31,8 @@ var _hit_frac: float = 0.45
 var guarding: bool = false
 ## The bow's draw and loose (ADR-0057): its own file, driven from here every frame.
 var bow: BowHandler
+## Throwables: the charged throw and a molotov's rag (ADR-0057).
+var throw_hand := ThrowHand.new(self)
 
 
 func _ready() -> void:
@@ -74,6 +76,7 @@ func _physics_process(delta: float) -> void:
 			primary()
 	if Input.is_action_just_pressed(&"block") and captured and not _building_busy():
 		secondary()
+	throw_hand.update(delta, captured and Input.is_action_pressed(&"attack"))
 	if _light_on:
 		_burn_light(delta)
 		_follow_light()
@@ -162,7 +165,11 @@ func primary() -> void:
 		"ranged":
 			_fire(def)
 		"throwable":
-			_throw(def)
+			if ThrowHand.needs_light(def) and not _light_on:
+				if throw_hand.light(def):
+					_cooldown = 0.6
+			else:
+				throw_hand.begin(def)
 		"placeable":
 			if Game.world != null and Game.world.get("building") != null:
 				Game.world.building.place_item_structure(player, current)
@@ -453,14 +460,16 @@ func _finish_reload() -> void:
 	Events.inventory_changed.emit(player.state.id)
 
 
-func _throw(def: ItemDef) -> void:
+## Throws one of the held item at `speed` m/s (a charged throw, ThrowHand), or as the spear's
+## quick throw (speed < 0: its own motion, the old fixed speed).
+func _throw(def: ItemDef, speed: float = -1.0) -> void:
 	if not player.state.stats.spend_stamina(def.equip_num("stamina", 6.0)):
 		return
 	# The very item thrown (its quality and wear) is what lands and can be picked up again.
 	var thrown: Array[ItemStack] = player.state.inventory.take(current, 1)
 	if thrown.is_empty():
 		return
-	if viewmodel != null:
+	if viewmodel != null and speed < 0.0:
 		viewmodel.play_use(&"throw", 0.5)
 	_cooldown = 0.7
 	var proj: Node3D = load("res://src/combat/thrown_item.gd").new()
@@ -469,10 +478,14 @@ func _throw(def: ItemDef) -> void:
 	proj.set(&"thrower", player.state.id)
 	proj.set(&"damage", def.equip_num("damage", 10.0))
 	proj.set(&"origin", player.global_position)
+	proj.set(&"lit", ThrowHand.needs_light(def) and _light_on)
 	player.get_tree().current_scene.add_child(proj)
 	var cam: Camera3D = player.camera
 	proj.global_position = cam.global_position - cam.global_transform.basis.z * 0.6
-	(proj as RigidBody3D).linear_velocity = -cam.global_transform.basis.z * 17.0 + Vector3.UP * 1.5 + player.velocity * 0.5
+	(proj as RigidBody3D).linear_velocity = -cam.global_transform.basis.z * (speed if speed > 0.0 else 17.0) + Vector3.UP * 1.5 + player.velocity * 0.5
+	Audio.play_3d(&"sfx/swing_whoosh", cam.global_position, {"volume_db": -10.0, "occlusion": false})
+	if ThrowHand.needs_light(def):
+		_set_light(false)  # the burning rag went with it
 	Events.inventory_changed.emit(player.state.id)
 
 
@@ -481,6 +494,9 @@ func _throw(def: ItemDef) -> void:
 func toggle_light() -> void:
 	var def: ItemDef = Content.item(current)
 	if def == null or not def.equip.has("light"):
+		return
+	if ThrowHand.needs_light(def) and not _light_on:
+		throw_hand.light(def)
 		return
 	var held: ItemStack = _lit_stack()
 	if not _light_on and held != null and def.durability > 0.0 and held.durability <= 0.0:

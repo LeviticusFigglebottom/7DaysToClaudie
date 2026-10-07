@@ -54,6 +54,10 @@ SPEC: dict[str, tuple[str, dict]] = {
     "yarrow_poultice": ("item_food", {"kind": "poultice", "seed": 50}),
     "bloom_sample": ("item_food", {"kind": "vial", "seed": 51}),
     "bloom_mycelium": ("item_food", {"kind": "mycelium", "seed": 52}),
+    # throwables and fire (ADR-0057; molotov owns its viewmodel: bottle up +Z, socket_flame on the rag)
+    "molotov": ("item_throwables", {"kind": "molotov", "seed": 291}),
+    "kerosene": ("item_throwables", {"kind": "kerosene", "seed": 292}),
+    "rotgut": ("item_throwables", {"kind": "rotgut", "seed": 293}),
     # resources
     "stick": ("item_resources", {"kind": "stick", "seed": 61}),
     "stone": ("item_resources", {"kind": "stone", "seed": 62}),

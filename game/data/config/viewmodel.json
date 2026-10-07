@@ -1141,6 +1141,149 @@
       "attack": "",
       "use": "place"
     },
+    "stone": {
+      "_doc": "A throwing stone low at the right, fingers and thumb wrapped round it, palm in and up a little: ready to draw back and throw (ADR-0057).",
+      "pose": {
+        "R": {
+          "grip": [
+            0.17,
+            -0.185,
+            -0.38
+          ],
+          "dir": [
+            -0.3,
+            0.55,
+            -0.78
+          ],
+          "back": [
+            0.8,
+            -0.45,
+            -0.1
+          ],
+          "fist": 0.75,
+          "thumb": 0.65,
+          "elbow": [
+            0.5,
+            -0.6,
+            0.3
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.21,
+            -0.33,
+            -0.28
+          ],
+          "dir": [
+            0.25,
+            0.85,
+            -0.45
+          ],
+          "back": [
+            -0.75,
+            0.55,
+            0.1
+          ],
+          "fist": 0.4,
+          "thumb": 0.35,
+          "elbow": [
+            -0.5,
+            -0.4,
+            0.5
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          -90,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ],
+        "center": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "attack": ""
+    },
+    "molotov": {
+      "_doc": "A molotov by the neck in the right fist (how one is thrown), low at the right with the body hanging under the hand and the rag burning just above the knuckles, in view (ADR-0057).",
+      "pose": {
+        "R": {
+          "grip": [
+            0.16,
+            -0.14,
+            -0.4
+          ],
+          "dir": [
+            -0.2,
+            0.93,
+            -0.3
+          ],
+          "back": [
+            0.75,
+            0.15,
+            -0.6
+          ],
+          "fist": 1.0,
+          "thumb": 0.85,
+          "elbow": [
+            0.5,
+            -0.5,
+            0.4
+          ]
+        },
+        "L": {
+          "grip": [
+            -0.21,
+            -0.33,
+            -0.28
+          ],
+          "dir": [
+            0.25,
+            0.85,
+            -0.45
+          ],
+          "back": [
+            -0.75,
+            0.55,
+            0.1
+          ],
+          "fist": 0.4,
+          "thumb": 0.35,
+          "elbow": [
+            -0.5,
+            -0.4,
+            0.5
+          ]
+        }
+      },
+      "item": {
+        "rot": [
+          0,
+          0,
+          0
+        ],
+        "pos": [
+          0,
+          0,
+          0
+        ],
+        "center": [
+          0.5,
+          0.74,
+          0.5
+        ],
+        "upright": true
+      },
+      "attack": ""
+    },
     "food": {
       "_doc": "A can, a bar, a mushroom: in the right fist, ready to eat.",
       "pose": {
@@ -3289,6 +3432,267 @@
         ],
         [
           26,
+          {},
+          "inout"
+        ]
+      ],
+      "windup": 9,
+      "release": 14
+    },
+    "throw_stone": {
+      "_doc": "Overhand stone throw: drawn back beside the head (held there while the throw charges, `windup`), whipped forward, the fingers opening at `release`.",
+      "hold": "stone",
+      "frames": 24,
+      "windup": 9,
+      "release": 14,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          9,
+          {
+            "R.move": [
+              0.1,
+              0.15,
+              0.04
+            ],
+            "R.rot": [
+              45,
+              -10,
+              -20
+            ],
+            "R.fist": 0.85,
+            "R.elbow": [
+              0.6,
+              0.6,
+              0.2
+            ],
+            "L.move": [
+              0.05,
+              0.1,
+              -0.08
+            ]
+          },
+          "out"
+        ],
+        [
+          12,
+          {
+            "R.move": [
+              0.0,
+              0.17,
+              -0.1
+            ],
+            "R.rot": [
+              5,
+              0,
+              -10
+            ],
+            "R.fist": 0.85,
+            "L.move": [
+              0.04,
+              0.06,
+              -0.06
+            ]
+          },
+          "in"
+        ],
+        [
+          14,
+          {
+            "R.move": [
+              -0.04,
+              0.03,
+              -0.24
+            ],
+            "R.rot": [
+              -55,
+              0,
+              0
+            ],
+            "R.fist": 0.35,
+            "R.thumb": 0.2
+          },
+          "lin"
+        ],
+        [
+          24,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "throw_molotov": {
+      "_doc": "Overhand molotov throw: drawn back high by the shoulder (`windup`, held while charging), the bottle lobbed forward and let go at `release`.",
+      "hold": "molotov",
+      "frames": 26,
+      "windup": 10,
+      "release": 15,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          10,
+          {
+            "R.move": [
+              0.1,
+              0.15,
+              0.04
+            ],
+            "R.rot": [
+              45,
+              -10,
+              -20
+            ],
+            "R.fist": 0.8,
+            "R.elbow": [
+              0.6,
+              0.6,
+              0.2
+            ],
+            "L.move": [
+              0.05,
+              0.1,
+              -0.08
+            ]
+          },
+          "out"
+        ],
+        [
+          13,
+          {
+            "R.move": [
+              0.0,
+              0.16,
+              -0.1
+            ],
+            "R.rot": [
+              0,
+              0,
+              -8
+            ],
+            "R.fist": 0.8,
+            "L.move": [
+              0.04,
+              0.06,
+              -0.06
+            ]
+          },
+          "in"
+        ],
+        [
+          15,
+          {
+            "R.move": [
+              -0.04,
+              0.03,
+              -0.24
+            ],
+            "R.rot": [
+              -50,
+              0,
+              0
+            ],
+            "R.fist": 0.35,
+            "R.thumb": 0.2
+          },
+          "lin"
+        ],
+        [
+          26,
+          {},
+          "inout"
+        ]
+      ]
+    },
+    "light_molotov": {
+      "_doc": "Lighting the rag: the left hand comes up cupped round the neck, the thumb flicks a lighter, and drops away again; the bottle tips toward it.",
+      "hold": "molotov",
+      "frames": 30,
+      "keys": [
+        [
+          0,
+          {},
+          "lin"
+        ],
+        [
+          9,
+          {
+            "L.move": [
+              0.26,
+              0.19,
+              -0.1
+            ],
+            "L.rot": [
+              0,
+              -20,
+              0
+            ],
+            "L.fist": 0.75,
+            "L.thumb": 0.6,
+            "R.rot": [
+              0,
+              0,
+              12
+            ]
+          },
+          "out"
+        ],
+        [
+          13,
+          {
+            "L.move": [
+              0.26,
+              0.19,
+              -0.1
+            ],
+            "L.rot": [
+              0,
+              -20,
+              0
+            ],
+            "L.fist": 0.75,
+            "L.thumb": 0.6,
+            "L.flick": 60,
+            "R.rot": [
+              0,
+              0,
+              12
+            ]
+          },
+          "snap"
+        ],
+        [
+          18,
+          {
+            "L.move": [
+              0.26,
+              0.19,
+              -0.1
+            ],
+            "L.rot": [
+              0,
+              -20,
+              0
+            ],
+            "L.fist": 0.75,
+            "L.thumb": 0.6,
+            "R.rot": [
+              0,
+              0,
+              12
+            ]
+          },
+          "inout"
+        ],
+        [
+          30,
           {},
           "inout"
         ]
