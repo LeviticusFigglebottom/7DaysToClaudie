@@ -78,6 +78,9 @@ func _build_visual() -> void:
 	if FarmVisual.handles(def):
 		farm_visual = FarmVisual.attach(self, _mesh)
 		return
+	if ClimbMount.handles(def):
+		ClimbMount.build(self, _mesh)  # a hunting stand's ladder, a hung rope (ADR-0057)
+		return
 	if rack_capacity() > 0 or def.piece_kind == "door":
 		_build_parted_visual()
 		return
@@ -158,6 +161,9 @@ func _build_parted_visual() -> void:
 
 
 func _build_collision() -> void:
+	if ClimbMount.handles(def):
+		ClimbMount.build_collision(self)
+		return
 	if def.piece_kind == "stairs":
 		# One ramp along the flight (walkable at 33 degrees), lying under the treads' noses.
 		var ramp := CollisionShape3D.new()
