@@ -67,7 +67,7 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
   electricity, the hub). Next free: 0053.
 * TD: S2 094–101, 111–114, 141–148, 162–171 and 186–195 (contract, the Ashen); session 3 102–109,
   126–130 and 196–205; session 4 159–161 and 172–175 (hands); the hub 110, 115–125, 131–140,
-  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub 236–238 (render review), 239–248 (traps and electricity), then 249 up.
+  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub 236–238 (render review), 239–248 (traps and electricity); S2 249–258; the hub then 259 up.
 * Save version: 6 since random worlds. Traders add `world.traders` and `players[*].contracts`
   without a bump (both load empty from older saves). 7 is reserved for session 3's world bundle
   (RWG v2 Phase 4), which carries those keys through. Anyone else who needs a bump asks the hub
