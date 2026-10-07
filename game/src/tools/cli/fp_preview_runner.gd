@@ -96,6 +96,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "climb_rope_a", "item": "", "action": "fp_climb_rope_cycle", "frame": 21, "rails": "rope"},
 	{"name": "climb_rope_b", "item": "", "action": "fp_climb_rope_cycle", "frame": 51, "rails": "rope"},
 	{"name": "climb_rope_grab", "item": "", "action": "fp_climb_rope_grab", "frame": 6, "rails": "rope"},
+	{"name": "hunting_stand", "item": "climbing_rope", "rails": "structures/hunting_stand"},
 ]
 
 var _out: String = "res://../build/fp_preview"
@@ -280,6 +281,14 @@ func _show_rails(kind: String) -> void:
 	_rails = Node3D.new()
 	_head.get_parent().add_child(_rails)
 	var foot := Vector3(0.0, 0.0, -0.42)
+	if kind.begins_with("structures/"):
+		# A model check: the piece 4.5 m ahead, its front toward the camera.
+		var mi2 := MeshInstance3D.new()
+		mi2.mesh = ModelLibrary.mesh(kind)
+		mi2.position = Vector3(0.6, 0.0, -4.5)
+		mi2.rotation.y = 0.5
+		_rails.add_child(mi2)
+		return
 	if kind == "rope":
 		_rails.add_child(ClimbMount.rope_visual(foot + Vector3(0, 0, 0.12), foot + Vector3(0, 3.2, 0.12)))
 		return
