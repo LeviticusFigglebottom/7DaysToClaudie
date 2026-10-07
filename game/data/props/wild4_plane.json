@@ -17,9 +17,9 @@
    "collision": "none",
    "physics": "static",
    "size": [
-    7.0,
+    7.5,
     6.9,
-    15.0
+    15.5
    ],
    "blocks_sight": false
   },
@@ -39,9 +39,9 @@
    "collision": "none",
    "physics": "static",
    "size": [
-    8.0,
-    4.0,
-    5.2
+    7.9,
+    3.85,
+    4.9
    ],
    "blocks_sight": false
   },
@@ -61,7 +61,7 @@
    "physics": "static",
    "size": [
     5.2,
-    3.6,
+    3.8,
     3.9
    ],
    "blocks_sight": true
@@ -81,9 +81,9 @@
    "collision": "box",
    "physics": "static",
    "size": [
-    3.7,
-    7.6,
-    4.0
+    3.8,
+    7.5,
+    4.5
    ],
    "blocks_sight": true
   },
@@ -103,9 +103,9 @@
    "collision": "box",
    "physics": "static",
    "size": [
-    7.0,
-    0.9,
-    2.6
+    7.8,
+    1.2,
+    3.0
    ],
    "blocks_sight": false,
    "rooms": [
@@ -128,9 +128,9 @@
    "collision": "box",
    "physics": "static",
    "size": [
-    2.6,
-    1.8,
-    3.6
+    2.4,
+    2.3,
+    4.5
    ],
    "blocks_sight": true,
    "rooms": [
@@ -153,9 +153,9 @@
    "collision": "none",
    "physics": "static",
    "size": [
-    7.0,
-    5.6,
-    6.5
+    5.9,
+    5.3,
+    5.6
    ],
    "blocks_sight": false,
    "rooms": [
@@ -178,9 +178,9 @@
    "collision": "box",
    "physics": "static",
    "size": [
-    2.3,
-    1.25,
-    2.8
+    2.4,
+    1.2,
+    2.9
    ],
    "container": "w4_plane_med_pallet",
    "rooms": [
