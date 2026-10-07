@@ -1255,7 +1255,8 @@ func _prop(p: Dictionary) -> void:
 		else:
 			root.add_child(PropLights.lit_mesh(model, xf, layout.is_room(layout.room_at(p["level"], p["cell"]))))
 		if pd.collision != "none":
-			_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre()))
+			# Tagged for TraversalAudit, which names what blocks a doorway or the route.
+			_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre())).set_meta(&"prop", str(pd.id))
 	if not light.is_empty():
 		root.add_child(PropLights.light_node(light, xf))
 
