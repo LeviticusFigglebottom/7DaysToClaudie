@@ -393,6 +393,18 @@ func test_unplacing_frees_it_and_keeps_its_state() -> void:
 	assert_almost_eq(float(_nests.state("enc:1")["hp"]), def.hp - 9.0, 0.01, "its wound stays")
 
 
+func test_the_forest_scatter_plans_and_hands_it_nests() -> void:
+	for nd: Variant in Content.all(&"nest"):
+		var ed: EncounterDef = Content.get_def(&"encounter", (nd as NestDef).id) as EncounterDef
+		assert_not_null(ed, "an encounter of kind nest per nest def (%s)" % (nd as NestDef).id)
+		if ed != null:
+			assert_eq(ed.ekind, &"nest")
+	_nests._encounters_hooked = false
+	_nests._hook_encounters()
+	assert_true(Encounters.is_registered(&"nest"), "BloomNests builds the scatter's nest sites")
+	Encounters.unregister_kind(&"nest")
+
+
 func test_a_region_feature_places_it() -> void:
 	var feats: Array[Dictionary] = BloomNests.region_features({"id": "r1", "features": [
 		{"type": "nest", "id": "deep", "def": "root_knot", "at": [12, 34], "yaw": 90},
