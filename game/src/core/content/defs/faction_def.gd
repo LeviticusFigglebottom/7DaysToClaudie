@@ -17,8 +17,12 @@ var scouts: Dictionary = {}
 ## {chance: [per level], grace_days, hour: [from, to], ring: [min, max] m, size: [[lo, hi] per level],
 ##  per_gamestage: extra fighters per gamestage point, max_size, enemies: [{enemy: weight} per level],
 ##  give_up: s, base_range: m, dark_side: deg, flow: {radius, cell, structure_cost_per_hp, fire_cost,
-##  slope_max_deg}, sack_pieces, gardens: {loot_crops, trample, trample_damage 0-1, looters, reach: m}}
+##  slope_max_deg}, sack_pieces, gardens: {loot_crops, trample, trample_damage 0-1, looters, reach: m},
+##  with: [{enemy: count} per level] (fighters every band at that level carries: the firebrand)}
 var raids: Dictionary = {}
+## Per-camp standing (ADR-0048 phase 2, TD-190): {anger: {STANDING_EVENTS: points}, decay_per_day,
+##  max, lead: anger a camp needs to send a band, spread: deg either side of the bearing to it}.
+var standing: Dictionary = {}
 ## {mate_down, hurt (per fraction of health lost), break, home_floor, recover_per_s}
 var morale: Dictionary = {}
 ## {radius, keep_off, morale_per_s, behind_angle}
@@ -30,10 +34,15 @@ var relations: Dictionary = {}
 
 const RELATIONS: PackedStringArray = ["hostile", "neutral"]
 const GAIN_EVENTS: PackedStringArray = ["kill", "trespass", "scout_report", "scout_killed", "camp_wiped", "heat", "raid_repelled"]
+## Events tied to one camp that raise its anger (kin_wiped: another camp was wiped out).
+const STANDING_EVENTS: PackedStringArray = ["trespass", "kill", "heat", "kin_wiped"]
+## A member's `behavior.tribe` role and the damage types its structure blows may take.
+const TRIBE_ROLES: PackedStringArray = ["raider", "scout", "firebrand"]
+const STRIKE_TYPES: PackedStringArray = ["blunt", "slash", "pierce", "fire", "explosive", "zombie"]
 
 
 func _fields() -> PackedStringArray:
-	return ["camps", "levels", "hostility", "scouts", "raids", "morale", "fire", "relations"]
+	return ["camps", "levels", "hostility", "scouts", "raids", "standing", "morale", "fire", "relations"]
 
 
 func _parse(r: DefReader) -> void:
@@ -42,6 +51,7 @@ func _parse(r: DefReader) -> void:
 	hostility = r.dict("hostility")
 	scouts = r.dict("scouts")
 	raids = r.dict("raids")
+	standing = r.dict("standing")
 	morale = r.dict("morale")
 	fire = r.dict("fire")
 	relations = r.dict("relations")
@@ -83,6 +93,22 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 	var g: Dictionary = raids.get("gardens", {})
 	if float(g.get("trample_damage", 0.0)) < 0.0 or float(g.get("trample_damage", 0.0)) > 1.0 or int(g.get("looters", 0)) < 0:
 		out.append("%s: raids.gardens trample_damage must be 0-1 and looters 0 or more" % ctx())
+	var musts: Array = raids.get("with", [])
+	if not musts.is_empty() and musts.size() != levels.size():
+		out.append("%s: raids.with needs one entry per level" % ctx())
+	for w: Variant in musts:
+		for e3: Variant in (w as Dictionary).keys():
+			_check_member(db, str(e3), out)
+			if int((w as Dictionary)[e3]) < 0:
+				out.append("%s: raids.with count for '%s' must be 0 or more" % [ctx(), e3])
+	for k2: Variant in (standing.get("anger", {}) as Dictionary).keys():
+		if not str(k2) in STANDING_EVENTS:
+			out.append("%s: standing.anger '%s' is not one of %s" % [ctx(), k2, STANDING_EVENTS])
+		elif float(standing["anger"][k2]) < 0.0:
+			out.append("%s: standing.anger '%s' must be 0 or more" % [ctx(), k2])
+	if float(standing.get("decay_per_day", 0.0)) < 0.0 or float(standing.get("spread", 30.0)) < 0.0 \
+			or float(standing.get("spread", 30.0)) > 180.0 or float(standing.get("max", 100.0)) <= 0.0:
+		out.append("%s: standing needs decay_per_day >= 0, spread 0-180 and max > 0" % ctx())
 	for key: String in ["chance"]:
 		for src: Dictionary in [scouts, raids]:
 			if src.has(key) and (src[key] as Array).size() != levels.size():
@@ -95,6 +121,12 @@ func _check_member(db: Node, enemy_id: String, out: PackedStringArray) -> void:
 		out.append("%s: enemy '%s' unknown" % [ctx(), enemy_id])
 	elif ed.faction != String(id):
 		out.append("%s: enemy '%s' is faction %s, not %s" % [ctx(), enemy_id, ed.faction, id])
+	else:
+		var t: Dictionary = ed.beh("tribe", {})
+		if not str(t.get("role", "raider")) in TRIBE_ROLES:
+			out.append("%s: enemy '%s' tribe role '%s' is not one of %s" % [ctx(), enemy_id, t.get("role", ""), TRIBE_ROLES])
+		if t.has("strike_type") and not str(t["strike_type"]) in STRIKE_TYPES:
+			out.append("%s: enemy '%s' strike_type '%s' is not one of %s" % [ctx(), enemy_id, t["strike_type"], STRIKE_TYPES])
 
 
 ## Whether bodies of factions `a` and `b` fight each other: never within a faction; otherwise when

@@ -394,12 +394,17 @@ func _barricade_faces(v: PoiValidator) -> Dictionary:
 
 ## Level-0 cells under the porch deck (mirrors _porch).
 func _porch_cell_set() -> Dictionary:
+	return porch_cells(layout)
+
+
+## Yard cells the porch deck covers (its top is the ground floor's).
+static func porch_cells(lay: PoiLayout) -> Dictionary:
 	var out: Dictionary = {}
-	var porch: Dictionary = layout.style.get("porch", {})
-	if porch.is_empty() or layout.level_ids.is_empty():
+	var porch: Dictionary = lay.style.get("porch", {})
+	if porch.is_empty() or lay.level_ids.is_empty():
 		return out
-	var li0: int = 0 if layout.levels.has(0) else layout.level_ids.front()
-	var lv: Dictionary = layout.levels[li0]
+	var li0: int = 0 if lay.levels.has(0) else lay.level_ids.front()
+	var lv: Dictionary = lay.levels[li0]
 	var side: int = PoiLayout.SIDES.get(str(porch.get("side", "S")), 2)
 	for i: int in range(int(porch.get("from", 0)), int(porch.get("to", 3)) + 1):
 		for k: int in int(porch.get("depth", 2)):
@@ -657,6 +662,9 @@ func _galleries() -> void:
 		var floor_cell: Vector2i = cells[1] if bool(g["void_a"]) else cells[0]
 		if layout.stairwell_cells(li).has(floor_cell):
 			continue
+		# No railing across the top of a flight rising into the open space.
+		if layout.is_stair_head_edge(li, cells[0], cells[1]):
+			continue
 		var xf: Transform3D = _edge_xf(li, axis, c)
 		if not bool(g["void_a"]):
 			xf.basis = xf.basis * Basis(Vector3.UP, PI)
@@ -757,12 +765,14 @@ func _openings() -> void:
 			var leaf_size := Vector2(float(ls[0]), float(ls[1]))
 			var hp: float = float(op["hp"]) if float(op["hp"]) > 0.0 else (900.0 if leaf == "door_metal" else (380.0 if exterior else 220.0))
 			var oid: String = str(op["id"])
+			# A leaf swings away from a stair flight on one side of its wall (player report 3).
+			var swing_sign: float = layout.door_swing(op)
 			if span == 1:
 				# TD-023: a leaf hinged beside a wall that runs off on its swing side would open into
 				# that wall: hang it on the other jamb when that one is clear.
 				var hinge_x: float = -0.43
 				var flip: float = 0.0
-				var swing: Vector3 = xf.basis * Vector3.BACK
+				var swing: Vector3 = xf.basis * Vector3.BACK * swing_sign
 				var sw := Vector2i(roundi(swing.x), roundi(swing.z))
 				var v0: Vector3 = xf * Vector3(-0.5, 0, 0)
 				var v1: Vector3 = xf * Vector3(0.5, 0, 0)
@@ -771,13 +781,13 @@ func _openings() -> void:
 				if _wall_from_vertex(int(op["level"]), lv0, sw) and not _wall_from_vertex(int(op["level"]), lv1, sw):
 					hinge_x = 0.43
 					flip = PI
-				var d1: PoiPieces.Door = _door(oid, xf, Vector3(hinge_x, 0, 0), flip, leaf, st, str(op["key"]), hp, inside_sign, leaf_size)
+				var d1: PoiPieces.Door = _door(oid, xf, Vector3(hinge_x, 0, 0), flip, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign)
 				d1.opening_id = oid
 				_lock_cue(d1, op, inside_sign)
 			else:
 				var hx: float = float(spec["w"]) * 0.5
-				var dl: PoiPieces.Door = _door(oid + "_l", xf, Vector3(-hx, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign, leaf_size)
-				var dr: PoiPieces.Door = _door(oid + "_r", xf, Vector3(hx, 0, 0), PI, leaf, st, str(op["key"]), hp, inside_sign, leaf_size)
+				var dl: PoiPieces.Door = _door(oid + "_l", xf, Vector3(-hx, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign)
+				var dr: PoiPieces.Door = _door(oid + "_r", xf, Vector3(hx, 0, 0), PI, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign)
 				if bool(spec.get("mirror_pair", false)) and not op.has("model"):
 					# A leaf dressed on one face (the barn door's battens, braces and strap hinges),
 					# turned half round on its pivot, showed its plain back outside: the right leaf's
@@ -898,7 +908,11 @@ func _lock_cue(d: PoiPieces.Door, op: Dictionary, inside_sign: float) -> void:
 		d.lock_body = lb
 
 
-func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: String, st: String, key: String, hp: float, inside_sign: float, leaf_size := Vector2(0.82, 2.05)) -> PoiPieces.Door:
+## Broken leaves hang between these fractions of a full swing (per door, from its id).
+const BROKEN_OPEN: Vector2 = Vector2(0.72, 0.98)
+
+
+func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: String, st: String, key: String, hp: float, inside_sign: float, leaf_size := Vector2(0.82, 2.05), swing_sign: float = 1.0) -> PoiPieces.Door:
 	var d := PoiPieces.Door.new()
 	d.poi = root
 	d.op_id = id
@@ -911,23 +925,31 @@ func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: 
 	d.transform = wall_xf
 	d.hp = root.piece_hp(id, hp)
 	d.flip = flip
+	d.swing = swing_sign
+	d.broken_open = broken_open_for(_instance_id, id)
 	d.pivot = Node3D.new()
 	d.pivot.position = hinge
 	d.pivot.rotation.y = flip
 	d.add_child(d.pivot)
 	var mi := MeshInstance3D.new()
-	mi.mesh = PoiParts.kit_mesh(leaf) if d.state != "broken" else PoiParts.kit_mesh(leaf + "_broken")
-	# A broken door with no broken model (metal, wood) has lost its leaf: drawing the stand-in
-	# would hang a slab in a doorway the player walks through (the first playtest). Door.break_open
-	# hides it the same way.
-	if d.state == "broken" and not ModelLibrary.has_model(d.model_broken):
-		mi.visible = false
+	# A broken leaf hangs open off its top hinge (Door._apply): its smashed model, or the whole one
+	# where the kit has none (metal, plain wood). Drawn shut, a smashed leaf over a doorway the player
+	# walks through read as a door with no "open" (the first playtest and player report 3).
+	var broken_model: bool = d.state == "broken" and ModelLibrary.has_model(d.model_broken)
+	mi.mesh = PoiParts.kit_mesh(leaf + "_broken") if broken_model else PoiParts.kit_mesh(leaf)
 	d.pivot.add_child(mi)
 	d.leaf_local = Transform3D(Basis.IDENTITY, Vector3(leaf_size.x * 0.5, leaf_size.y * 0.5, 0))
 	d.leaf_shape = _box(Vector3(leaf_size.x, leaf_size.y, 0.05), d.pivot.transform * d.leaf_local, d)
 	d.leaf_shape.disabled = d.state == "broken"
 	root.add_child(d)
 	return d
+
+
+## How far open a broken leaf hangs (Door.broken_open): fixed per building and door, so it needs
+## nothing saved and every load poses it the same.
+static func broken_open_for(instance_id: StringName, door_id: String) -> float:
+	var h: int = Ids.hash64("door_broken:%s:%s" % [instance_id, door_id])
+	return lerpf(BROKEN_OPEN.x, BROKEN_OPEN.y, float(posmod(h, 1000)) / 999.0)
 
 
 func _glass(id: String, wall_xf: Transform3D, pane: String, st: String, w: float, h: float, sill: float) -> PoiPieces.Breakable:
@@ -1006,6 +1028,8 @@ func _exterior() -> bool:
 	var porch: Dictionary = layout.style.get("porch", {})
 	if not porch.is_empty():
 		_porch(porch, li0)
+	for st: Dictionary in stoops(layout):
+		_stoop(st)
 	var chim: Variant = layout.style.get("chimney", null)
 	if chim is Array:
 		var p := Vector3(layout.origin.x + float(chim[0]) + 0.5, 0.0, layout.origin.y + float(chim[1]) + 0.5)
@@ -1093,6 +1117,76 @@ func _porch(porch: Dictionary, li0: int) -> void:
 				var edge_top := Vector3(p.x, top, p.z) + d4 * 0.5
 				_add("porch_step_1m", Transform3D(Basis(Vector3.UP, yaw), Vector3(edge_top.x, 0.0, edge_top.z)), Color(0, 0, _decay_v(), _seed()))
 				_ramp(edge_top, edge_top + d4 * 0.95 - Vector3.UP * top, 1.0)
+
+
+## Doorway rises above this (m) get steps up to them: a little more than a kerb, well short of
+## Player.STEP_HEIGHT's 0.38 m so nobody hops up a stoop's worth of foundation.
+const STOOP_MIN_RISE: float = 0.2
+## The foundation's outer face (foundation_1m is 0.2 m deep, centred on the wall line).
+const STOOP_FACE: float = 0.1
+## porch_step_1m: 1 m wide and deep, rising PORCH_H in three steps (its top toward local -Z).
+const STEP_UNIT_RISE: float = 0.6
+
+
+## Steps up to every exterior doorway of the ground floor whose sill stands more than STOOP_MIN_RISE
+## above the yard at its threshold (player report 3: a cottage's back door on a 0.6 m foundation
+## with nothing to climb it by). The yard is the pad (y = 0: PoiManager flattens the terrain under
+## a building and its yard) unless the porch deck covers that cell. One entry per metre of
+## doorway: {op, inside, outside (cells), side (outward), at (the threshold on the wall line, at
+## the yard), rise, run}. Pure, so the builder and the tests share it.
+static func stoops(lay: PoiLayout) -> Array:
+	var out: Array = []
+	if lay.level_ids.is_empty():
+		return out
+	var li0: int = 0 if lay.levels.has(0) else lay.level_ids.front()
+	var sill: float = lay.level_y(li0)
+	if sill <= STOOP_MIN_RISE:
+		return out
+	var deck: Dictionary = porch_cells(lay)
+	for op: Dictionary in lay.openings:
+		var t: String = str(op["type"])
+		if int(op["level"]) != li0 or not (t.begins_with("door") or t == "open"):
+			continue
+		var w: Dictionary = lay.walls.get(PoiLayout.edge_key(li0, op["axis"], op["edge"]), {})
+		if w.is_empty() or not bool(w["exterior"]):
+			continue
+		for pair: Array in PoiLayout.opening_edges(op):
+			var a: Vector2i = pair[0]
+			var b: Vector2i = pair[1]
+			var a_in: bool = lay.is_room(lay.room_at(li0, a))
+			if a_in == lay.is_room(lay.room_at(li0, b)):
+				continue
+			var inside: Vector2i = a if a_in else b
+			var outside: Vector2i = b if a_in else a
+			var rise: float = sill - (sill if deck.has(outside) else 0.0)
+			if rise <= STOOP_MIN_RISE:
+				continue
+			# pair[0] is the cell south / east of the edge: the edge's own key cell.
+			var mid := Vector2(lay.origin.x + a.x + 0.5, lay.origin.y + a.y) if str(op["axis"]) == "h" \
+				else Vector2(lay.origin.x + a.x, lay.origin.y + a.y + 0.5)
+			out.append({"op": str(op["id"]), "inside": inside, "outside": outside, "side": PoiLayout.DIRS.find(outside - inside),
+				"at": Vector3(mid.x, 0.0, mid.y), "rise": rise, "run": maxf(1.0, rise / STEP_UNIT_RISE)})
+	return out
+
+
+## One metre of steps up to a doorway (see stoops): the porch step scaled to the rise (and, past
+## 0.6 m, lengthened so its steps stay climbable), from the foundation's face out into the yard,
+## with a ramp under it for the player's feet.
+func _stoop(st: Dictionary) -> void:
+	var side: int = st["side"]
+	var out_dir := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
+	var rise: float = st["rise"]
+	var run: float = st["run"]
+	var yaw: float = [PI, PI * 0.5, 0.0, -PI * 0.5][side]
+	var at: Vector3 = st["at"]
+	var face: Vector3 = at + out_dir * STOOP_FACE
+	var basis: Basis = Basis(Vector3.UP, yaw).scaled_local(Vector3(1.0, rise / STEP_UNIT_RISE, run))
+	# Its wear seed from the doorway, not _rng: steps added to a building must not shift the
+	# random draws everything after them (scatter, decals) takes.
+	var seed_v: float = float(posmod(Ids.hash64("stoop:%s:%s" % [st["op"], st["outside"]]), 1000)) / 1000.0
+	_add("porch_step_1m", Transform3D(basis, face + out_dir * (run * 0.5)), Color(0, 0, clampf(_decay, 0.0, 1.0), seed_v))
+	# From the wall line (the floor slab ends there), over the foundation's top, down to the yard.
+	_ramp(at + Vector3.UP * rise, face + out_dir * run, 1.0)
 
 
 ## Walkable ramp collision between two edge-centre points (its top surface on the line).
@@ -1563,6 +1657,9 @@ func _light_at(pos: Vector3, l: Dictionary) -> void:
 	light.light_energy = float(l.get("energy", 1.0))
 	light.omni_range = float(l.get("range", 6.0))
 	light.shadow_enabled = bool(l.get("shadow", false))
+	if light.shadow_enabled:
+		# PoiManager keeps shadows on the nearest of these only (max_shadowed_lights).
+		light.add_to_group(&"shadow_light_budget")
 	light.position = pos
 	root.add_child(light)
 

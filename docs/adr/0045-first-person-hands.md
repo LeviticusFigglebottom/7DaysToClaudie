@@ -57,10 +57,15 @@ action's hands were turned and moved, `tools/fp_poses.py report` says the same i
 Blender, and `tools/fp_poses.py tune` re-places a strike's key grips where an arm can deliver
 them. test_viewmodel_holds measures every frame of every baked action's hands against the range.
 
-Two holds changed because the old ones cannot be held: a spear (and the two-handed hold) point
-forward from a rear fist at the hip needs the shaft to run along the forearm, so they are carried
-diagonally across the body; and `fist` runs past 1 (a grip round a ~3.5 cm handle) to 1.3 for a
-bare fist (the punch, the empty-handed guard).
+**4. Grips as they are held.** A spear point-forward from a rear fist at the hip would need the
+shaft to run along the forearm; held as a spear really is, the shaft lies diagonally across the
+rear palm. A hold's `item.rot` (already how ViewModelHolds turns the item in the hand) is now
+known to the solver too: a hand `on` the other grips along the item's own axis and the fist rolls
+about it (`item_axis`), so the spear's shaft crosses the palm at 60° and points forward to the
+centre with no wrist correction at all. The lighter has its own hold (upright in a loose fist, the
+thumb over the wheel), `fist` runs past 1 (a grip round a ~3.5 cm handle) to 1.3 for a bare fist,
+and a hold that uses one hand drops the other below the view (it comes up to guard or read the
+tether): the owner's playtest found an open hand floating palm-down in the corner distracting.
 
 Rejected: clamping the wrist alone without moving the elbow (it turns tools away from where the
 pose aims them far more often), and per-pose hand-tuned elbow positions (every new hold would have
@@ -74,4 +79,4 @@ to rediscover the same anatomy).
   the pose (the build log names it) rather than widen the range.
 * 39 bones instead of 21 and 28k triangles for the arms instead of 18k: still small beside a
   Hollowed, and the arms are one draw.
-* TD-172–175 record what is left.
+* TD-172, TD-174 and TD-175 record what is left (TD-173, the spear, is fixed by the oblique grip).

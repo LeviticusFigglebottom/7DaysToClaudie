@@ -27,11 +27,19 @@ enum State { SLEEP, WAKING, IDLE, WANDER, INVESTIGATE, CHASE, ATTACK, BREAK, SCR
 const LAYER: int = 1 << 4
 const CORPSE_LAYER: int = 1 << 7
 const MOVE_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 12)
-const SIGHT_MASK: int = (1 << 0) | (1 << 1) | (1 << 14)
+## World, structures, sight blockers and vegetation (layer 13: trunks, thickets and logs near the
+## player, VegetationManager), so a tree or a log is cover (docs/AI_TUNING.md).
+const SIGHT_MASK: int = (1 << 0) | (1 << 1) | (1 << 12) | (1 << 14)
 const GRAVITY: float = 18.0
 const PERCEPTION_INTERVAL: float = 0.25
 const KINEMATIC_BEYOND: float = 110.0
 const MEMORY_SECONDS: float = 9.0
+## Plain Hollowed (not hounds, not the Ashen) also notice a moving player this many degrees past
+## each edge of their field of view, at PERIPHERAL_RANGE of their sight (docs/AI_TUNING.md).
+const PERIPHERAL_DEG: float = 45.0
+const PERIPHERAL_RANGE: float = 0.5
+## By day a plain Hollow investigating comes at this fraction of its run speed (a jog, not a stroll).
+const DAY_INVESTIGATE_PACE: float = 0.75
 
 signal died(enemy: Enemy)
 
@@ -99,6 +107,8 @@ var _corpse_t: float = 0.0
 var _looted: bool = false
 var _voice_t: float = 0.0
 var _step_t: float = 0.0
+## How long this IDLE lasts before it wanders off (rolled once per IDLE, not every frame).
+var _idle_for: float = 4.0
 ## World-setting and tier multipliers, fixed at spawn (GameRules + infected tier).
 var max_health: float = 100.0
 var damage_mult: float = 1.0
@@ -350,15 +360,16 @@ func _physics_process(delta: float) -> void:
 			if _charge_hit or _state_t > float((def.beh("charge", {}) as Dictionary).get("max_time", 2.4)):
 				_set_state(State.CHASE)
 		State.IDLE:
-			if _state_t > _rng.randf_range(4.0, 9.0):
-				target_pos = home + Vector3(_rng.randf_range(-12, 12), 0, _rng.randf_range(-12, 12))
+			if _state_t > _idle_for:
+				_idle_for = _rng.randf_range(2.5, 6.0)
+				target_pos = _wander_target()
 				_set_state(State.WANDER)
 		State.WANDER:
 			want = _move_dir(target_pos) * _speed(false)
 			if _flat_dist(target_pos) < 1.2 or _state_t > 30.0:
 				_set_state(State.IDLE)
 		State.INVESTIGATE:
-			want = _move_dir(target_pos) * _speed(is_night())
+			want = _move_dir(target_pos) * _investigate_speed()
 			if _flat_dist(target_pos) < 1.5:
 				var grad: Vector3 = Stimuli.current.scent_gradient(global_position) if Stimuli.current != null else Vector3.ZERO
 				if grad != Vector3.ZERO and float(def.perc("smell", 1.0)) > 0.0 and Stimuli.current.scent_at(global_position) > 0.5:
@@ -538,6 +549,32 @@ func _face(p: Vector3) -> void:
 		_yaw_target = atan2(d.x, d.z)
 
 
+## Pace toward something heard, smelled or called out: by day a plain Hollow jogs
+## (DAY_INVESTIGATE_PACE of its run), at night it runs; hounds and the Ashen keep their own pace.
+func _investigate_speed() -> float:
+	if is_night() or not _plain_hollowed():
+		return _speed(is_night())
+	return _speed(true) * DAY_INVESTIGATE_PACE
+
+
+## Where an IDLE body wanders next. A plain roaming Hollow ranges 8 m..behavior.roam_radius
+## (default 30 m) and its home drifts along, so it crosses the land instead of pacing a 12 m box;
+## POI bodies, hounds (they keep with the pack) and the Ashen stay within 12 m of home.
+func _wander_target() -> Vector3:
+	if not _plain_hollowed() or poi_id != &"":
+		return home + Vector3(_rng.randf_range(-12, 12), 0, _rng.randf_range(-12, 12))
+	var r: float = float(def.beh("roam_radius", 30.0))
+	var ang: float = _rng.randf() * TAU
+	var to: Vector3 = home + Vector3(sin(ang), 0.0, cos(ang)) * _rng.randf_range(minf(8.0, r * 0.5), r)
+	home = home.lerp(to, 0.5)
+	return to
+
+
+## A Hollowed that is neither a hound (pack logic, ADR-0034) nor an Ashen (AshenMind, ADR-0048).
+func _plain_hollowed() -> bool:
+	return tribe == null and quad.is_empty()
+
+
 func _speed(running: bool) -> float:
 	var s: float = def.speed_for(is_night(), running) * _speed_scales["hum" if horde else ("night" if is_night() else "day")]
 	if severed.has("leg_l") or severed.has("leg_r"):
@@ -586,10 +623,24 @@ func _perceive(p: Player, dist: float) -> void:
 		return
 	var night: bool = is_night()
 	var base_sight: float = def.perc("sight_night" if night else "sight_day", 15.0)
+	if state == State.SLEEP:
+		# Sleepers keep their own eyes (perception.sleep_sight_*): the awake sight was raised for
+		# the open world (docs/AI_TUNING.md); how close you get to a POI sleeper is unchanged.
+		base_sight = def.perc("sleep_sight_night" if night else "sleep_sight_day", base_sight)
 	var light: float = st.light_at(p.global_position + Vector3.UP)
 	var own_light: bool = p.get_node(^"Equipment").call(&"has_light_on") if p.has_node(^"Equipment") else false
+	# A carried flame is a beacon in the dark, not in daylight (sleepers in a dim POI still see it).
+	own_light = own_light and (night or state == State.SLEEP or not _plain_hollowed())
 	var vis_mult: float = p.state.progression.modifier("visibility_mult")
-	var range_m: float = st.detection_range(base_sight, light, p.crouching, p.horizontal_speed(), own_light, vis_mult)
+	# Darkness (Stimuli.ambient_light) costs a Hollow little of its sight (perception.dark_sight); a
+	# sleeper keeps the sight it had before the sky's light was fed (1.0: light-blind) and the old
+	# beacon. Awake plain Hollowed see a carried light at perception.light_beacon (default 1.6 x
+	# sight_night) instead of sight x 1.6 + 30 (docs/AI_TUNING.md).
+	var dark: float = 1.0 if state == State.SLEEP else def.perc("dark_sight", 0.15)
+	var beacon: float = -1.0
+	if state != State.SLEEP and _plain_hollowed():
+		beacon = def.perc("light_beacon", def.perc("sight_night", 15.0) * 1.6)
+	var range_m: float = st.detection_range(base_sight, light, p.crouching, p.horizontal_speed(), own_light, vis_mult, dark, beacon)
 	if state == State.SLEEP:
 		range_m *= 0.35 * _wake_factor
 	var sees: bool = false
@@ -598,7 +649,11 @@ func _perceive(p: Player, dist: float) -> void:
 		var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
 		var ang: float = rad_to_deg(fwd.angle_to(Vector3(to_p.x, 0, to_p.z)))
 		var fov: float = def.perc("fov", 120.0) * (0.6 if state == State.SLEEP else 1.0)
-		if (ang < fov * 0.5 or dist < 2.2) and _line_of_sight(p):
+		var in_view: bool = ang < fov * 0.5 or dist < 2.2
+		if not in_view and state != State.SLEEP and _plain_hollowed():
+			# Peripheral vision: movement just outside the cone, at closer range.
+			in_view = ang < fov * 0.5 + PERIPHERAL_DEG and dist < range_m * PERIPHERAL_RANGE and p.horizontal_speed() > 0.5
+		if in_view and _line_of_sight(p):
 			sees = true
 	if sees:
 		if state == State.SLEEP:
@@ -624,6 +679,7 @@ func _perceive(p: Player, dist: float) -> void:
 				Audio.play_3d(_vid(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", &"voice/hound_bark"),
 					_mouth(), {"volume_db": 0.0})
 				Events.enemy_alerted.emit(entity_id, global_position)
+				_alert_nearby(p.global_position)
 		return
 	# Hearing.
 	var e: Stimuli.SoundEvent = st.loudest_heard(global_position, def.perc("hearing", 1.0) * (0.7 * _wake_factor if state == State.SLEEP else 1.0), _heard_seq, entity_id)
@@ -652,6 +708,18 @@ func _perceive(p: Player, dist: float) -> void:
 			_set_state(State.INVESTIGATE)
 	if state == State.SLEEP:
 		awareness = maxf(0.0, awareness - 0.05)
+
+
+## Group alerting: a plain Hollow that spots you calls out (the alert cry above), and the plain
+## Hollowed within behavior.alert_radius (default 30 m) that are up and idle, wandering or
+## investigating come to look where you are. They only investigate: each must see you itself before
+## it calls out in turn. Sleepers, hounds, the Ashen and the Hum don't answer.
+func _alert_nearby(at: Vector3) -> void:
+	if director == null or not _plain_hollowed():
+		return
+	for e: Enemy in director.call(&"enemies_in_radius", global_position, float(def.beh("alert_radius", 30.0))):
+		if e != self and e._plain_hollowed() and not e.horde and e.state in [State.IDLE, State.WANDER, State.INVESTIGATE]:
+			e.notice(at)
 
 
 ## A held (ambush) sleeper sees and hears nothing ordinary: only gunfire, explosions or an alarm
@@ -790,6 +858,7 @@ func _deliver_hit(p: Player) -> void:
 func _strike_structure() -> void:
 	visual.play(&"attack_structure", 1.0, 0.2, [&"attack_a"] as Array[StringName])
 	var info := DamageInfo.make(def.atk("structure_damage", 10.0) * structure_mult, &"zombie", &"zombie", entity_id)
+	if tribe != null: tribe.arm_blow(info)  # a firebrand's blows are fire (ADR-0048, TD-189)
 	info.hit_pos = break_target.global_position + Vector3.UP * 0.8
 	info.source_pos = global_position
 	info.direction = (break_target.global_position - global_position).normalized()

@@ -49,7 +49,10 @@ The pieces were there but unused:
 * **Stock** is rolled per restock period (`restock_days`) from the world seed (`Contracts.roll_stock`).
   * Each entry has a reputation tier; the counter shows only the tiers the player's standing has reached.
   * What players buy leaves the shelf; what they sell goes on it.
-  * The live stock is saved in `WorldState.traders`.
+  * The live stock is saved in `WorldState.traders`, keyed by the def id. A def with
+    `stock_per_post` (the relay camps) keys it by the post's spawn id instead, so each camp keeps its
+    own shelves (TD-146). A save from before that has the camps' stock under the def id: a post
+    with no entry of its own starts from it, with no version bump.
 * Trades go through `trade.buy` and `trade.sell`, checked against the player's range from the post.
 
 ### Contracts
@@ -66,7 +69,9 @@ The pieces were there but unused:
   That holds every placed building, never just the ones near the player. TD-118's PoiRegistry
   switch applies here too.
 * **Clear** is done when PoiInstance marks the building cleared (every sleeper down) and a
-  container in its loot room was searched while the player stood in it.
+  container in its loot room was searched. The container id (`c:<building>:<prop key>`) names its
+  prop, and the building's layout says whether that prop stands in the loot room, so reaching in
+  through a doorway counts (TD-145).
 * **Fetch**: a Program cache (`program_cache`) is set down on a loot-room cell once the building
   stands and the player is near. It is a loose item from then on. The contract is done when the
   player picks it up there, and turning it in hands the cache over.
@@ -88,6 +93,11 @@ The pieces were there but unused:
 * **Reputation** is per player and per contract giver. Its tiers (Unknown, Known, Trusted, Program
   asset) unlock stock, harder contracts and a discount. A relay camp reads and pays Waystation 9's
   standing.
+* **Failing** (TD-146): an accepted contract has `expires_days` (QuestDef, default 3, 0 never;
+  `due` on the contract). One still open at the dawn of its due day fails: it leaves the books, its
+  building is free for the board again and the giver docks `fail_rep` (default 10). One done and
+  waiting to be reported never fails, nor a defence being held. `contract.abandon` costs
+  `abandon_rep` (default 5). Standing can now go down; rival givers (factions) are still out of scope.
 * `contract.accept`, `contract.turn_in`, `contract.abandon` and `contract.start_defend` are
   commands.
 * The player's contracts, standing and taken offers are a `ContractLog` saved with the

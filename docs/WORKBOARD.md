@@ -63,11 +63,11 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
   0038 (streamed worlds: session 3 adds its phases), 0039 (traders and contracts, S2), 0040
   (organic towns, the hub), 0041 (new biomes, the hub), 0042 (wilderness set pieces, the hub, if
   needed), 0043 (session 4, if needed), 0044 (the Corvane caves, S2), 0045 (first-person hands,
-  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub), 0050 (interior lighting, session 5, if needed).
-  Next free: 0051.
+  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub), 0050 (interior lighting, session 5), 0051 (POI navigation, session 5, if needed), 0052 (traps and
+  electricity, the hub). Next free: 0053.
 * TD: S2 094–101, 111–114, 141–148, 162–171 and 186–195 (contract, the Ashen); session 3 102–109,
   126–130 and 196–205; session 4 159–161 and 172–175 (hands); the hub 110, 115–125, 131–140,
-  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub then 236 up.
+  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub 236–238 (render review), 239–248 (traps and electricity), then 249 up.
 * Save version: 6 since random worlds. Traders add `world.traders` and `players[*].contracts`
   without a bump (both load empty from older saves). 7 is reserved for session 3's world bundle
   (RWG v2 Phase 4), which carries those keys through. Anyone else who needs a bump asks the hub
@@ -92,6 +92,17 @@ old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b;
    (Mile 12); perk capstones, the forge and the chemistry bench.
 7. Needs the owner (a GPU and a human): the M1 playthrough, 60 FPS on target hardware, feel and
    balance (HANDOFF.md "Not verified yet").
+
+## The owner's priorities (2026-10-07, after Builds #68/#75: "much better so far")
+1. **The Hollowed: look and behaviour.** They seem passive until you're close. Session 2 (the Ashen's
+   phase-2 remainder, TD-190, waits).
+2. **POI navigation and placement**: doorways blocked, items lying in the way, and "climb up"
+   spots that use an interact instead of a ladder or a jump. Session 5 once the interior light lands,
+   with the hub's doors and steps agent.
+3. **Hands: looks and animations with every tool and weapon.** Session 4 (ADR-0045 follow-ups,
+   TD-172..175).
+Session 3 finishes Player report 3 (Continue position) and its perf items, and supports 1 and 2
+(navmesh, AI ticking, the tour bot).
 
 ## Player report 3 (Windows Build #67, 891830b; round 2)
 Screenshot: `docs/playtest/2026-10-06_build67_lighter_door.webp` (Pell's Crossing, a lit lighter, a

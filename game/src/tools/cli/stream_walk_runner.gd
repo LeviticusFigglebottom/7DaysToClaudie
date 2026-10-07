@@ -68,6 +68,7 @@ func _run() -> void:
 			await get_tree().process_frame
 		mem.append(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0)
 		print("[stream] after lap %d: static memory %.0f MiB, %d nodes" % [lap + 1, mem.back(), get_tree().get_node_count()])
+		print("[stream] Bloom: %s" % w.terrain.bloom.status())
 	if late_total > 2.0:
 		_fails += 1
 		printerr("[stream] FAIL the player outran streaming for %.1f s" % late_total)

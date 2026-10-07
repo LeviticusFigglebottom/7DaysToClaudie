@@ -1,5 +1,5 @@
 {
- "_doc": "Program relay camps (ADR-0039): the trader post random worlds place by their roads (a `trader:program_relay:<n>` spawn feature). Smaller than Waystation 9, the same quartermaster's stock up to Trusted, and Waystation 9's contracts. Standing is kept per trader def.",
+ "_doc": "Program relay camps (ADR-0039): the trader post random worlds place by their roads (a `trader:program_relay:<n>` spawn feature). Smaller than Waystation 9, the same quartermaster's stock up to Trusted, and Waystation 9's contracts. Standing is Waystation 9's (contracts_from); each camp keeps its own shelves (stock_per_post, TD-146).",
  "defs": [
   {
    "id": "program_relay",
@@ -411,7 +411,8 @@
     "waystation_9"
    ],
    "offers_per_day": 3,
-   "max_active": 3
+   "max_active": 3,
+   "stock_per_post": true
   }
  ]
 }

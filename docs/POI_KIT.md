@@ -103,7 +103,7 @@ origin, the origin is on the edge line at the gallery floor's top (z = 0), the v
 | model | notes |
 |---|---|
 | `foundation_1m` | 1.0 × 0.2 × 0.6 concrete skirt under exterior walls (`M_concrete`) |
-| `porch_step_1m` | 1 m wide, 3 steps up to 0.6 (`M_wood_painted`) |
+| `porch_step_1m` | 1 m wide, 3 steps up to 0.6 (`M_wood_painted`); also the stoop at every raised exterior doorway, scaled to its rise (TD-221) |
 | `porch_post` | 0.12 × 0.12 × 2.8 turned post |
 | `porch_deck_1m` | 1 × 1 deck boards, top at 0.6 |
 | `chimney_brick` | 0.8 × 0.6 × 4.5 brick chimney (`M_brick`) |

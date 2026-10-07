@@ -156,6 +156,7 @@ keys below are the defaults.
 | Right mouse | Hold to guard (melee weapon, light or bare hands). Food, drink or medicine in hand: use it. Revolver: reload. Spear: throw. Placing a blueprint: cancel |
 | 1–6, mouse wheel | Toolbelt slots (press the held one again to put it away); the wheel cycles them |
 | F | Turn the lighter, torch or flashlight in your hand on or off |
+| Y | Look over what you are holding |
 | G | Drop a carried log; while looking at a fire, add fuel |
 | R | Rotate: a blueprint by 15°, a carried log by 90° |
 | V | Carried log pose: flat, upright post, pitched (roof) |

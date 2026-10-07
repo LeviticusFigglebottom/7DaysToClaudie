@@ -164,7 +164,7 @@ func _refresh() -> void:
 
 
 func _buy_rows(td: TraderDef, p: PlayerState, tier: int) -> void:
-	var stock: Dictionary = manager.call(&"stock_of", td.id)
+	var stock: Dictionary = manager.call(&"stock_of", td.id, _post_id)
 	var ids: Array = stock.keys()
 	ids.sort()
 	var shown: int = 0
@@ -232,12 +232,14 @@ func _mine_rows(td: TraderDef, p: PlayerState) -> void:
 		any = true
 		var qd: QuestDef = Content.get_def(&"quest", StringName(str(cd["def"]))) as QuestDef
 		var ready: bool = str(cd["state"]) == ContractLog.READY
-		_list.add_child(_label("%s — %s%s" % [qd.display_name, cd.get("name", ""), "   (done)" if ready else ""], 18,
-			OK_INK if ready else INK))
+		var due: int = TraderManager.due_day(cd)
+		_list.add_child(_label("%s — %s%s" % [qd.display_name, cd.get("name", ""), "   (done)" if ready else (
+			"   (due by dawn, day %d)" % due if due > 0 else "")], 18, OK_INK if ready else INK))
 		var h: HBoxContainer = _row("Pays %s" % _rewards_text(qd), "Turn in", ready,
 			_do.bind(&"contract.turn_in", {"contract": str(cd["id"])}))
 		var ab := Button.new()
 		ab.text = "Abandon"
+		ab.tooltip_text = "Costs %d standing." % qd.abandon_rep
 		ab.pressed.connect(_do.bind(&"contract.abandon", {"contract": str(cd["id"])}))
 		h.add_child(ab)
 	if not any:

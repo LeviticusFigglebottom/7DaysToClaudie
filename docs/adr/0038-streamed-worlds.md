@@ -143,8 +143,8 @@ identical.
 **The default for random worlds** (since round 2; it was opt-in while it landed). A tool turns
 it off with the new-game option `"stream": false` (`--no-stream` in smoke and tour) or
 `HOLLOWMERE_STREAM=0`, which also covers loads; the main map always loads whole. A streamed load
-generates no town lot up front (the ring does, on a worker), spreads the Bloom over every region
-(coarse ones masked at 16 m) and paints a region's road markings when it attaches.
+generates no town lot up front (the ring does, on a worker), composes the Bloom only near the
+player (below) and paints a region's road markings when it attaches.
 
 * **Load** (`WorldLoader._compose_streamed`): every region at 16 m (far tiles, water, the
   `height_at` fallback, spawn metadata), then only the built regions within
@@ -164,6 +164,31 @@ generates no town lot up front (the ring does, on a worker), spreads the Bloom o
 * **Per region**: a region brings its framework fixtures on attach and takes them on detach;
   its buildings come by distance (§8). The far impostor layer scatters per region on attach and
   frees it on detach.
+* **The Bloom in tiles** (`BloomTiles`, closes TD-106's Bloom item): the field's 2 m grid is cut
+  into 256 m tiles (128² texels, R8). Every zone is known at load (region features and POI
+  defaults are data; 87 zones in a 10 km world, built in 6 ms), each tile knows the zones that
+  reach it, and a tile is composed from those alone: exactly the texels the whole-map
+  `BloomField` gave, masked by the ground of the region it lies on. The first area's tiles are
+  composed by the loader; the rest on a worker as the player comes near (BloomWorld, nearest
+  first, six a task) with the region's 16 m mask, again with its 1 m vegmask on the region
+  streamer's compose worker, installed by `attach_region` (a late coarse tile never replaces a
+  fine one). Tiles more than three past the window are freed, except attached regions'.
+  `bloom_at`/`base_at` answer anywhere from any thread: from a tile, else from the zones
+  directly (the same four texels a tile would hold, masked by `ground_terrain_at`). Mound spots
+  are applied per tile on top of the authored base (a spot in clean ground gets a tile of its
+  own), so mounds work anywhere on the map. Tiles are immutable once published; the tile table
+  and the spots sit behind one Mutex.
+  `hm_bloom_map` is a window (`bloom.json field.window`, 3072 m: 1536² texels, 2.3 MB) on whole
+  tiles around the player, rebuilt on a worker once the player is two tiles off its middle, a
+  changed tile blitted into it and uploaded once a frame. A field composed whole (the main map,
+  `"stream": false`) is shown whole and never moves: the same texture and `hm_bloom_rect` as
+  before (test_bloom_tiles compares the main map both ways).
+  Measured (headless, 4 cores): `slice_smoke --world random --world-seed 2026 --world-set
+  size=10` world ready in 33.4 s before (the whole-map field composed in the load, a 100 MB
+  float array) and 10.6–13.8 s after; peak RSS 776 MB before, 661–690 MB after.
+  `stream_walk --world-seed 7 --world-set size=4 --km 1 --laps 1`: no late seconds, longest
+  frame 230–238 ms (baseline 242–279 ms), static memory 420 MiB (baseline 416–417), 25 tiles
+  (0.4 MB) held after the lap; no step kind over budget that the baseline doesn't show.
 * **GameWorld**: `await_area(pos, then)` holds the player behind "Finding your feet…" until the
   ground at `pos` is attached and meshed (respawn); the loader's region references are dropped
   after setup so detached regions free.

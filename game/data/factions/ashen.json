@@ -40,16 +40,25 @@
         "size": [[0, 0], [0, 0], [3, 4], [5, 7]],
         "per_gamestage": 0.04,
         "max_size": 9,
-        "enemies": [{}, {}, {"ashen_raider": 3, "ashen_scout": 1}, {"ashen_raider": 4, "ashen_scout": 1}],
+        "enemies": [{}, {}, {"ashen_raider": 3, "ashen_scout": 1}, {"ashen_raider": 4, "ashen_scout": 1, "ashen_firebrand": 1}],
+        "with": [{}, {}, {}, {"ashen_firebrand": 1}],
         "give_up": 420.0,
         "base_range": 60.0,
-        "_doc": "Phase 2 (ADR-0048). dark_side: degrees either side of the bearing the base's lit fires light least that a raid comes in on. flow: the FlowField a raid follows to the base's weakest piece (structures cost structure_cost_per_hp per hit point to cross, lit fires fire_cost out to fire.keep_off). sack_pieces: pieces a raid on a base nobody is home at breaks (after taking every ripe crop) before it leaves. gardens: a raider within `reach` m of a garden bed tramples it once a raid (trample_damage off each growing plant) and takes its ripe crops (loot_crops); the last `looters` of a band go for ripe beds first.",
+        "_doc": "Phase 2 (ADR-0048). dark_side: degrees either side of the bearing the base's lit fires light least that a raid comes in on. flow: the FlowField a raid follows to the base's weakest piece (structures cost structure_cost_per_hp per hit point to cross, lit fires fire_cost out to fire.keep_off). sack_pieces: pieces a raid on a base nobody is home at breaks (after taking every ripe crop) before it leaves. gardens: a raider within `reach` m of a garden bed tramples it once a raid (trample_damage off each growing plant) and takes its ripe crops (loot_crops); the last `looters` of a band go for ripe beds first. with: per level, fighters every band at that level carries ({enemy: count}, first in the band, the rest rolled from `enemies`): a war party always has its firebrand.",
         "dark_side": 70.0,
         "flow": {"radius": 50.0, "cell": 1.5, "structure_cost_per_hp": 0.02, "fire_cost": 60.0, "slope_max_deg": 42.0},
         "sack_pieces": 2,
         "gardens": {"loot_crops": true, "trample": true, "trample_damage": 0.5, "looters": 1, "reach": 1.2}
       },
       "morale": {"mate_down": 0.25, "hurt": 0.5, "break": 0.3, "home_floor": 0.6, "recover_per_s": 0.01},
+      "standing": {
+        "_doc": "Per-camp standing (ADR-0048 phase 2, TD-190): each living camp keeps its own `anger` (WorldState.ashen.camps[id].anger) beside the world-wide hostility, which still drives the escalation level. anger: points per event tied to that camp (trespass in its territory, killing one of its people, heat raised in its territory; kin_wiped goes to every other living camp when one is wiped out), scaled by ashen_aggression, capped at max, less decay_per_day each dawn. A scout or raid comes from the angriest living camp whose anger is at least `lead` (ties by id): out of the ring on the bearing toward that camp, within `spread` degrees either side; a wiped camp sends nothing.",
+        "anger": {"trespass": 6, "kill": 15, "heat": 4, "kin_wiped": 25},
+        "decay_per_day": 4,
+        "max": 100,
+        "lead": 5,
+        "spread": 30.0
+      },
       "relations": {"hollowed": "hostile", "wildlife": "neutral"},
       "fire": {"radius": 9.0, "keep_off": 4.0, "morale_per_s": 0.06, "behind_angle": 100.0, "station_radius": 7.0}
     }
