@@ -46,6 +46,17 @@ var _wings: Array[RoofPlanner.Wing] = []
 ## Most interior reflection probes one building gets (each costs a cubemap render at load and a
 ## slot in the reflection atlas).
 const MAX_PROBES: int = 8
+## Metres over which an interior probe's fill fades out at its box's faces. Godot fades the fill
+## as ((1 - d) per axis)^2 inside that band, so a wall face inside it gets almost none and falls
+## back to SDFGI, which is near black indoors: with 0.3 m and boxes 5 cm past the walls' centre
+## lines, walls got 1% of the room's fill (player report 3). The face must lie deeper than this.
+const PROBE_BLEND: float = 0.12
+## How far a probe box reaches past a wall's centre line on an outside side: just short of the
+## wall's outer face, so facades keep the outdoor light and the inner face lies WALL_T - 0.01 deep.
+const PROBE_REACH_OUT: float = WALL_T * 0.5 - 0.01
+## On a side whose neighbours are built (another room, a tall room's void): far enough that the
+## seam between two boxes gets the full fill from each (two boxes don't add up there).
+const PROBE_REACH_IN: float = PROBE_BLEND + 0.02
 
 
 ## `checked`: the layout's PoiValidator, already run (PoiManager runs it on a worker thread while
@@ -1338,7 +1349,8 @@ func _prop(p: Dictionary) -> void:
 		else:
 			root.add_child(PropLights.lit_mesh(model, xf, layout.is_room(layout.room_at(p["level"], p["cell"]))))
 		if pd.collision != "none":
-			_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre()))
+			# Tagged for TraversalAudit, which names what blocks a doorway or the route.
+			_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre())).set_meta(&"prop", str(pd.id))
 	if not light.is_empty():
 		root.add_child(PropLights.light_node(light, xf))
 
@@ -1449,8 +1461,8 @@ func _scatter_cell(li: int, c: Vector2i, density: float) -> void:
 ## floors. One probe per rectangle of rooms of one height (TD-040): each level's room cells are
 ## grouped by how high their room rises, split into rectangles, stacked where a rectangle repeats
 ## storey over storey, and merged pairwise (least waste first) down to MAX_PROBES. A yard inside an
-## L or a courtyard is in no box, so it keeps the outdoor light. Boxes stop just inside the walls so
-## facades keep it too.
+## L or a courtyard is in no box, so it keeps the outdoor light. Boxes stop just short of the walls'
+## outer faces so facades keep it too (_probe_box).
 ## Resumable (see PHASES): prepare_check's boxes, else one level's rectangles an item, then the
 ## merge and the probes.
 func _interior_probes() -> bool:
@@ -1473,12 +1485,53 @@ func _interior_probes() -> bool:
 		probe.ambient_color_energy = 0.5
 		probe.size = box.size
 		probe.position = box.get_center()
-		probe.blend_distance = 0.3
+		probe.blend_distance = PROBE_BLEND
 		probe.max_distance = maxf(probe.size.x, probe.size.z)
 		probe.update_mode = ReflectionProbe.UPDATE_ONCE
+		# How much daylight its rooms let in: EnvironmentController scales the fill by it, so a
+		# cellar stays dim and a glazed shopfront bright (ADR-0050).
+		probe.set_meta(&"daylight", daylight_ratio(box))
 		probe.add_to_group(&"interior_probe")
 		root.add_child(probe)
 	return true
+
+
+## Square metres of light an opening lets in per cell of its width, by type, while it stands open
+## (OPENING_DAYLIGHT_SHUT scales a shut door, a boarded window...).
+const OPENING_DAYLIGHT: Dictionary = {"door": 2.1, "door2": 2.1, "door2_tall": 4.2, "window": 1.2, "window2": 1.2,
+	"window_tall": 2.4, "lancet": 2.0, "breach": 2.1, "open": 2.1, "half": 1.0}
+## Share of an opening's light that still gets in by its state: a shut door's glass and gaps, light
+## between a window's boards. Windows are glazed: closed is their normal state.
+const OPENING_DAYLIGHT_SHUT: Dictionary = {"closed": 0.3, "locked": 0.3, "locked_inside": 0.3, "barricaded": 0.15, "boarded": 0.15}
+
+
+## The daylight of the rooms in a probe box (POI-local): square metres of outside openings on its
+## walls per square metre of its floor. A room with a window of a tenth of its floor is about 0.1;
+## a cellar is 0.
+func daylight_ratio(box: AABB) -> float:
+	var light: float = 0.0
+	for op: Dictionary in layout.openings:
+		var li: int = int(op["level"])
+		var y: float = layout.level_y(li) + 1.0
+		if y < box.position.y or y > box.end.y:
+			continue
+		var e: Vector2i = op["edge"]
+		var w: int = int(op["width"])
+		var outside: bool = false
+		for c: Vector2i in PoiLayout.edge_cells(str(op["axis"]), e):
+			outside = outside or not layout.is_built(li, c)
+		if not outside:
+			continue
+		var mid: Vector2 = Vector2(e.x + w * 0.5, e.y) if str(op["axis"]) == "h" else Vector2(e.x, e.y + w * 0.5)
+		var at: Vector3 = layout.local_pos(li, mid) + Vector3(0, 1.0, 0)
+		if not box.grow(0.25).has_point(at):
+			continue
+		var t: String = str(op["type"])
+		var share: float = 1.0
+		if not PoiLayout.is_window(t) or str(op["state"]) in ["boarded", "barricaded"]:
+			share = float(OPENING_DAYLIGHT_SHUT.get(str(op["state"]), 1.0))
+		light += float(OPENING_DAYLIGHT.get(t, 1.0)) * w * share
+	return light / maxf(1.0, box.size.x * box.size.z)
 
 
 ## The interior probe boxes (POI-local), at most MAX_PROBES.
@@ -1508,7 +1561,8 @@ func _probe_rects(li: int) -> Array:
 
 ## The probe boxes of every level's rectangles, stacked and merged down to MAX_PROBES.
 func _merge_probe_rects(rects: Array) -> Array[AABB]:
-	# A rectangle repeated storey over storey (stacked floors of one block): one box.
+	# A rectangle repeated storey over storey (stacked floors of one block): one box. Not a cellar
+	# under a ground floor: it would get that room's daylight (ADR-0050).
 	var merged: bool = true
 	while merged:
 		merged = false
@@ -1516,7 +1570,7 @@ func _merge_probe_rects(rects: Array) -> Array[AABB]:
 			for j: int in rects.size():
 				var a: Array = rects[i]
 				var b: Array = rects[j]
-				if i != j and a[2] == b[2] and int(a[1]) + 1 == int(b[0]) and int(a[3]) == 0:
+				if i != j and a[2] == b[2] and int(a[1]) + 1 == int(b[0]) and int(a[3]) == 0 and (int(a[1]) >= 0 or int(b[0]) < 0):
 					rects[i] = [a[0], b[1], a[2], b[3]]
 					rects.remove_at(j)
 					merged = true
@@ -1542,8 +1596,10 @@ func _merge_probe_rects(rects: Array) -> Array[AABB]:
 	return boxes
 
 
-## The box of one rectangle of room cells: inset 5 cm from the walls' centre lines, from under its
-## floor slab to its ceiling (to the ridge where it is open to the roof).
+## The box of one rectangle of room cells, from under its floor slab to its ceiling (to the ridge
+## where it is open to the roof). Each side reaches past the walls' centre line far enough that
+## the room's wall faces get the full fill (PROBE_BLEND): just short of the outer face where the
+## side looks outside, further where every cell beyond it is built on every level of the box.
 func _probe_box(li: int, top: int, r: Rect2i, open: bool) -> AABB:
 	var lo: float = layout.level_y(li) - 0.2
 	var hi: float = layout.level_y(top) + PoiLayout.STOREY
@@ -1551,8 +1607,31 @@ func _probe_box(li: int, top: int, r: Rect2i, open: bool) -> AABB:
 		for w: RoofPlanner.Wing in _wings:
 			if w.level == top and w.cells.intersects(r):
 				hi = maxf(hi, w.y + w.rise())
-	var p := Vector3(layout.origin.x + r.position.x + 0.05, lo, layout.origin.y + r.position.y + 0.05)
-	return AABB(p, Vector3(maxf(0.5, r.size.x - 0.1), hi - lo, maxf(0.5, r.size.y - 0.1)))
+	var x0: float = _probe_reach(li, top, r, Vector2i(-1, 0))
+	var x1: float = _probe_reach(li, top, r, Vector2i(1, 0))
+	var z0: float = _probe_reach(li, top, r, Vector2i(0, -1))
+	var z1: float = _probe_reach(li, top, r, Vector2i(0, 1))
+	var p := Vector3(layout.origin.x + r.position.x - x0, lo, layout.origin.y + r.position.y - z0)
+	return AABB(p, Vector3(r.size.x + x0 + x1, hi - lo, r.size.y + z0 + z1))
+
+
+## How far a probe box reaches past the side of `r` facing `dir`: PROBE_REACH_IN when every cell
+## beyond that side is built on levels li..top, else PROBE_REACH_OUT.
+func _probe_reach(li: int, top: int, r: Rect2i, dir: Vector2i) -> float:
+	var cells: Array[Vector2i] = []
+	if dir.x != 0:
+		var x: int = r.position.x - 1 if dir.x < 0 else r.end.x
+		for y: int in range(r.position.y, r.end.y):
+			cells.append(Vector2i(x, y))
+	else:
+		var y2: int = r.position.y - 1 if dir.y < 0 else r.end.y
+		for x2: int in range(r.position.x, r.end.x):
+			cells.append(Vector2i(x2, y2))
+	for l: int in range(li, top + 1):
+		for c: Vector2i in cells:
+			if not layout.is_built(l, c):
+				return PROBE_REACH_OUT
+	return PROBE_REACH_IN
 
 
 func _light_at(pos: Vector3, l: Dictionary) -> void:

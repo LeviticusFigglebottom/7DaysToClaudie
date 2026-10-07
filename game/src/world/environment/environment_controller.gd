@@ -58,6 +58,10 @@ var _biome_check: float = 0.0
 var _biome_fog: Dictionary = {}
 ## Seconds between biome samples; the ease's time constant.
 const BIOME_CHECK: float = 0.5
+## How much the eye is inside a building's room (0 outdoors .. 1 inside one), eased: it opens the
+## exposure indoors (data/config/interior_light.json).
+var indoors: float = 0.0
+var _interior_cfg: Dictionary = {}
 const BIOME_EASE: float = 3.0
 ## Rain, snow, splashes, eave drips and motes round the camera, and the weather map.
 var fx: WeatherFx
@@ -119,6 +123,7 @@ func _ready() -> void:
 	_moon_cfg = (Content.config(&"world_clock").get("moon", {}) as Dictionary)
 	moon_model.configure(_moon_cfg)
 	_wcfg = Content.config(&"weather")
+	_interior_cfg = Content.config(&"interior_light")
 	flash_light = DirectionalLight3D.new()
 	flash_light.name = "Lightning"
 	flash_light.light_color = Color(0.82, 0.86, 1.0)
@@ -212,6 +217,9 @@ func _process(delta: float) -> void:
 	biome_tint = biome_tint.lerp(_tint_target, eased)
 	fen_weight = lerpf(fen_weight, _fen_target, eased)
 	_update_lightning()
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	var inside: float = 1.0 if cam != null and in_interior(cam.global_position) else 0.0
+	indoors = move_toward(indoors, inside, delta / maxf(0.05, float(_interior_cfg.get("adapt_seconds", 1.2))))
 	update_now()
 
 
@@ -293,10 +301,19 @@ func update_now() -> void:
 		var fill: float = flash * float(lf.get("light_energy", 2.2)) * 0.35 * _flash_reach(fdist, lf)
 		env.ambient_light_color = env.ambient_light_color.lerp(Color(0.72, 0.78, 1.0), clampf(fill * 2.0, 0.0, 1.0))
 		env.ambient_light_energy += fill
-	# Building interiors: a dim daylight fill from their interior probes (PoiBuilder), none at night.
-	var interior_fill: float = lerpf(0.0, 0.55, day) * (1.0 - 0.3 * overcast)
+	# Building interiors: their probes' flat fill (PoiBuilder), daylight by day and a share of the
+	# night's ambient at night.
+	var room_fill: Color = interior_fill(_interior_cfg, day, overcast, night_fill + hum_fill, night_col)
+	if flash > 0.001:
+		# A flash through the windows lights the room too, a little.
+		var ff: float = flash * float(lf.get("light_energy", 2.2)) * float(_interior_cfg.get("flash_share", 0.12)) * _flash_reach(fdist, lf)
+		var fc: Color = Color(room_fill.r, room_fill.g, room_fill.b).lerp(Color(0.72, 0.78, 1.0), clampf(ff / (ff + room_fill.a), 0.0, 1.0))
+		room_fill = Color(fc.r, fc.g, fc.b, room_fill.a + ff)
+	var floor_e: float = float(_interior_cfg.get("night_floor", 0.012))
 	for probe: Node in get_tree().get_nodes_in_group(&"interior_probe"):
-		(probe as ReflectionProbe).ambient_color_energy = interior_fill
+		var share: float = daylight_share(_interior_cfg, float(probe.get_meta(&"daylight")) if probe.has_meta(&"daylight") else -1.0)
+		(probe as ReflectionProbe).ambient_color = Color(room_fill.r, room_fill.g, room_fill.b)
+		(probe as ReflectionProbe).ambient_color_energy = maxf(floor_e, room_fill.a * share)
 	env.background_energy_multiplier = bg_energy
 	# Fog: weather + early-morning valley mist.
 	# A thin haze at dawn that burns off by mid-morning (weather fog adds on top); the mist itself
@@ -328,7 +345,7 @@ func update_now() -> void:
 	env.volumetric_fog_emission = Color(0.02, 0.06, 0.04) * hum_intensity
 	env.volumetric_fog_emission_energy = hum_intensity * 0.4
 	env.volumetric_fog_ambient_inject = lerpf(0.05, 0.4, day)
-	env.tonemap_exposure = lerpf(1.25, 1.1, day) * Settings.brightness
+	env.tonemap_exposure = lerpf(1.25, 1.1, day) * Settings.brightness * indoor_exposure(_interior_cfg, day, indoors)
 	# Globals for every shader.
 	# Gusts in seconds over the state's slow swell: the foliage bends and the rain slants with them.
 	var gust_mul: float = WeatherState.gust_at(clock.total_minutes / maxf(0.001, clock.minutes_per_real_second()), float(w.get("gust", 0.25)))
@@ -354,6 +371,47 @@ func update_now() -> void:
 	RenderingServer.global_shader_parameter_set(&"hm_sky_zenith", Vector4(zl.r, zl.g, zl.b, 1.0))
 	RenderingServer.global_shader_parameter_set(&"hm_sky_horizon", Vector4(hl.r, hl.g, hl.b, 1.0))
 	_last_snapshot = {"elev": elev, "day": day, "night": night, "cover": cover, "moon_sky": moon_sky}
+
+
+## The interior probes' fill: colour in rgb, energy in a. By day `day_fill` of `day_color`, dimmed
+## by overcast; at night `night_share` of the outdoor night's ambient energy (`night_energy`, in its
+## colour); never below `night_floor`.
+static func interior_fill(cfg: Dictionary, day: float, overcast: float, night_energy: float, night_col: Color) -> Color:
+	var day_col: Color = Color.html(str(cfg.get("day_color", "#dbd4c7")))
+	var day_e: float = float(cfg.get("day_fill", 0.6)) * (1.0 - float(cfg.get("overcast_dim", 0.3)) * overcast)
+	var night_e: float = maxf(float(cfg.get("night_floor", 0.012)), float(cfg.get("night_share", 0.6)) * night_energy)
+	var col: Color = night_col.lerp(day_col, day)
+	return Color(col.r, col.g, col.b, lerpf(night_e, day_e, day))
+
+
+## How much of the interior fill a room gets by its daylight ratio (PoiBuilder.daylight_ratio:
+## outside openings per floor area): `daylight_min_share` with none, all of it from
+## `daylight_full_ratio` up. A probe with no ratio (-1) gets all of it.
+static func daylight_share(cfg: Dictionary, ratio: float) -> float:
+	if ratio < 0.0:
+		return 1.0
+	var lo: float = float(cfg.get("daylight_min_share", 0.2))
+	return lerpf(lo, 1.0, clampf(ratio / maxf(0.001, float(cfg.get("daylight_full_ratio", 0.1))), 0.0, 1.0))
+
+
+## The exposure multiplier for an eye `indoors` (0..1) inside a room: exposure_day by day,
+## exposure_night at night.
+static func indoor_exposure(cfg: Dictionary, day: float, inside: float) -> float:
+	var open: float = lerpf(float(cfg.get("exposure_night", 1.1)), float(cfg.get("exposure_day", 1.3)), day)
+	return lerpf(1.0, open, clampf(inside, 0.0, 1.0))
+
+
+## Whether `eye` is inside a live interior probe's box: in one of the buildings' rooms.
+func in_interior(eye: Vector3) -> bool:
+	for n: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+		var p := n as ReflectionProbe
+		if p == null or not p.visible:
+			continue
+		var local: Vector3 = p.global_transform.affine_inverse() * eye
+		var h: Vector3 = p.size * 0.5
+		if absf(local.x) <= h.x and absf(local.y) <= h.y and absf(local.z) <= h.z:
+			return true
+	return false
 
 
 ## Places the moon, sets its light by phase and altitude and feeds the sky shader (ADR-0023).
