@@ -44,6 +44,14 @@ SDFGI part looked.
     blend fixed, the probe would otherwise hold every wall at exactly 0, darker than the SDFGI it
     replaced.
   * A lightning flash adds `flash_share` of its fill: a storm lights the room through its windows.
+  * **Each room gets a share of it by its daylight.** `PoiBuilder.daylight_ratio` gives each probe
+    box the square metres of outside openings on its walls per square metre of its floor (a
+    window 1.2 m², a door 2.1 m²; a shut door 30%, a boarded or barricaded one 15%). The share
+    runs from `daylight_min_share` (0.2, a windowless room or a cellar) to all of it at
+    `daylight_full_ratio` (0.1). Across the 42 POIs, 35 of 160 boxes have no outside opening and
+    the median ratio is 0.064. A cellar no longer stacks into the probe box of the ground-floor
+    room over it, which would have handed it that room's windows. That can add a probe to a
+    building, still capped at 8. Lamps carry the dark rooms.
 * **Indoor exposure.** While the camera is inside a live probe's box, the tonemap exposure opens
   by `exposure_day` (1.3) by day and `exposure_night` (1.1) at night, eased over `adapt_seconds`.
   The room reads and the doorway blooms a little, as an eye adapts. There is no auto-exposure:
