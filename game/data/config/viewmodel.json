@@ -353,36 +353,36 @@
       "block": 0.6
     },
     "spear": {
-      "_doc": "Spear: low at the hip, point forward to the centre; rear hand overhand, front hand under the shaft.",
+      "_doc": "Spear: low at the right hip, point forward to the centre. The shaft lies diagonally across the rear palm (item rot: 60 degrees about the palm's normal, an oblique grip), so the wrist can hold it forward; the front hand under the shaft follows the shaft, not the socket (ADR-0045).",
       "pose": {
         "R": {
-          "grip": [
-            0.13,
-            -0.17,
-            -0.31
-          ],
-          "dir": [
-            -0.873,
-            0.022,
-            -0.488
-          ],
-          "back": [
-            0.394,
-            0.622,
-            -0.677
-          ],
           "fist": 1.0,
           "thumb": 0.9,
           "elbow": [
             0.5,
             -0.5,
             0.4
+          ],
+          "grip": [
+            0.23,
+            -0.15,
+            -0.32
+          ],
+          "dir": [
+            -0.726,
+            0.586,
+            -0.361
+          ],
+          "knuckles": [
+            0.246,
+            -0.269,
+            -0.931
           ]
         },
         "L": {
           "on": "R",
-          "along": 0.15,
-          "spin": -72.0,
+          "along": 0.2,
+          "spin": 0,
           "fist": 0.95,
           "thumb": 0.8,
           "elbow": [
@@ -399,22 +399,22 @@
             -0.12,
             -0.32
           ],
-          "dir": [
-            -0.97,
-            0.18,
-            -0.15
-          ],
-          "back": [
-            0.0,
-            0.3,
-            0.95
-          ],
           "fist": 1.0,
           "thumb": 0.9,
           "elbow": [
             0.5,
             -0.6,
             0.2
+          ],
+          "dir": [
+            -0.675,
+            -0.716,
+            0.179
+          ],
+          "knuckles": [
+            -0.733,
+            0.622,
+            -0.277
           ]
         },
         "L": {
@@ -434,7 +434,7 @@
         "rot": [
           0,
           0,
-          0
+          -60.0
         ],
         "pos": [
           0,
