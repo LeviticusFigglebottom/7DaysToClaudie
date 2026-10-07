@@ -724,6 +724,7 @@ func _stairs_and_ladders() -> void:
 		lad.basis = basis2
 		lad.bottom_local = cc
 		lad.top_local = layout.cell_center(li2 + 1, l.get("landing", cell))
+		lad.height = PoiLayout.STOREY
 		var mi := MeshInstance3D.new()
 		mi.mesh = PoiParts.kit_mesh("ladder_3m")
 		lad.add_child(mi)

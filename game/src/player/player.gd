@@ -16,6 +16,11 @@ const STEP_HEIGHT: float = 0.38
 const VAULT_MAX: float = 1.3
 const VAULT_TIME: float = 0.55
 const WORLD_MASK: int = (1 << 0) | (1 << 1) | (1 << 2)
+## Ladders (ADR-0051): metres a second up or down the rungs, how far in front of the rails the body
+## hangs, and how close (sideways, in front) a ladder must be to grab by walking into it.
+const CLIMB_SPEED: float = 1.9
+const CLIMB_OFF: float = RADIUS + 0.09
+const LADDER_REACH: float = 0.75
 
 var state: PlayerState
 var cfg: Dictionary = {}
@@ -50,6 +55,11 @@ var _shake: float = 0.0
 var _vault_path: PackedVector3Array = []
 var _vault_t: float = -1.0
 var _vault_restand: bool = false
+## The ladder being climbed (PoiPieces.Ladder), or null.
+var _ladder: StaticBody3D = null
+var _rung: float = 0.0
+## Grabbed from the landing: forward means down until forward is let go.
+var _climb_down_hold: bool = false
 ## Footsteps taken (the first-person bob alternates its sway with each one, ADR-0029).
 var step_count: int = 0
 
@@ -151,6 +161,9 @@ func _physics_process(delta: float) -> void:
 	var wish: Vector3 = (transform.basis * Vector3(dir.x, 0.0, dir.y))
 	wish.y = 0.0
 	wish = wish.normalized() * speed * minf(dir.length(), 1.0)
+	if _ladder != null or _grab_ladder(wish, dir):
+		_climb(delta, dir, want_jump, alive)
+		return
 	var on_floor: bool = is_on_floor()
 	var accel: float = 10.0 if on_floor else 2.5
 	velocity.x = lerpf(velocity.x, wish.x, minf(1.0, accel * delta))
@@ -329,6 +342,89 @@ func _vault_step(delta: float) -> void:
 		_fall_speed = 0.0
 		if _vault_restand:
 			_set_crouch(false)
+
+
+# --- Ladders -----------------------------------------------------------------------------------
+
+## Starts climbing a ladder the player walks into: at its foot, facing its rails, or on the landing
+## upstairs walking into its hatch. True when a climb started.
+func _grab_ladder(wish: Vector3, dir: Vector2) -> bool:
+	if dir.y > -0.3 or wish.length() < 0.1 or in_water_depth > 0.5:
+		return false
+	var feet: Vector3 = global_position
+	for n: Node in get_tree().get_nodes_in_group(&"ladder"):
+		var lad := n as PoiPieces.Ladder
+		if lad == null or not lad.is_inside_tree():
+			continue
+		var foot: Vector3 = lad.global_position
+		var top_y: float = foot.y + lad.height
+		var face: Vector3 = lad.face()
+		var rel: Vector3 = feet - foot
+		var out: float = rel.dot(face)
+		if absf(rel.dot(face.cross(Vector3.UP))) > 0.45 or wish.normalized().dot(-face) < 0.5:
+			continue
+		if feet.y > foot.y - 0.3 and feet.y < top_y - 0.6 and out > -0.1 and out < LADDER_REACH:
+			_ladder = lad
+		elif absf(feet.y - top_y) < 0.35 and out > -0.1 and out < 1.25:
+			# Down through the hatch: hang on the top rungs, just below the floor.
+			_ladder = lad
+			_climb_down_hold = true
+			global_position = foot + face * CLIMB_OFF + Vector3.UP * (lad.height - 0.25)
+		if _ladder != null:
+			velocity = Vector3.ZERO
+			_fall_speed = 0.0
+			_set_crouch(false)
+			return true
+	return false
+
+
+## One frame on the ladder: forward climbs (down while looking down), back climbs down; the body
+## hangs CLIMB_OFF in front of the rails. Off the top onto the landing (the vault's path), off the
+## foot onto the floor, or off backwards with Jump.
+func _climb(delta: float, dir: Vector2, want_jump: bool, alive: bool) -> void:
+	var lad := _ladder as PoiPieces.Ladder
+	if lad == null or not is_instance_valid(lad) or not lad.is_inside_tree() or not alive:
+		_ladder = null
+		return
+	var foot: Vector3 = lad.global_position
+	var face: Vector3 = lad.face()
+	var top: Vector3 = lad.ends()[0]
+	if want_jump:
+		_ladder = null
+		velocity = face * 2.5 + Vector3.UP * 1.0
+		move_and_slide()
+		return
+	var climb: float = -dir.y
+	if climb <= 0.0:
+		_climb_down_hold = false
+	if climb > 0.0 and (_climb_down_hold or _pitch < -0.6):
+		climb = -climb
+	var hold: Vector3 = foot + face * CLIMB_OFF
+	velocity = Vector3((hold.x - global_position.x) * 12.0, climb * CLIMB_SPEED, (hold.z - global_position.z) * 12.0)
+	move_and_slide()
+	_fall_speed = 0.0
+	_rung += absf(velocity.y) * delta
+	if _rung > 0.42:
+		_rung = 0.0
+		Audio.play_3d(&"sfx/ladder_climb", global_position, {"volume_db": -6.0})
+		_emit_noise(float(cfg.get("noise", {}).get("walk", 6.0)) * 0.6, &"ladder")
+	var feet_y: float = global_position.y
+	if climb > 0.0 and feet_y >= foot.y + lad.height - 0.05:
+		# Over the top: step forward onto the landing.
+		_ladder = null
+		var up := Vector3(global_position.x, top.y + 0.04, global_position.z)
+		_vault_path = PackedVector3Array([global_position, up, up.lerp(top, 0.5), top + Vector3.UP * 0.02])
+		_vault_t = 0.0
+		_vault_restand = false
+		velocity = Vector3.ZERO
+	elif climb < 0.0 and (feet_y <= foot.y + 0.02 or (is_on_floor() and feet_y < foot.y + 0.5)):
+		_ladder = null
+	_head_motion(delta, 0.0)
+
+
+## Whether the player is on a ladder.
+func is_climbing() -> bool:
+	return _ladder != null
 
 
 func is_vaulting() -> bool:
