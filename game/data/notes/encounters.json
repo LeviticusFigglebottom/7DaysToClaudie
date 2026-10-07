@@ -1,0 +1,54 @@
+{
+ "_doc": "Notes found at the forest encounters (ADR-0054; items note_<id> in items/encounters.json). Short and anonymous on purpose: the same encounter turns up all over a world, so none of these names a place.",
+ "defs": [
+  {
+   "id": "enc_camp_list",
+   "title": "Packing List",
+   "style": "handwritten",
+   "author": "",
+   "body": "TRIP — 3 nights, maybe 4\ntent + fly (fly is in the car, DON'T FORGET)\nbags x2, pads x2\ncooler: ice Fri, hot dogs, eggs, coffee!!\nstove + 2 green bottles\nlantern mantles\nbug spray\nradio — check what the Cordon's saying before we go back down\n\n(underneath, in different ink:) Stay up here. Dan says the road's closed at the bridge anyway. We have the creek. We have the cooler. Nobody's coming up this far."
+  },
+  {
+   "id": "enc_camp_last",
+   "title": "Torn Notebook Page",
+   "style": "scrawl",
+   "author": "",
+   "body": "it walked into camp at dusk like it knew the way. Dan went to talk to it. I've been in the tent since. I can hear it out by the fire, going round and round the cooler. If you find this zip the tent up behind you and DON'T open the cooler lid loud."
+  },
+  {
+   "id": "enc_hunter_log",
+   "title": "Stand Log",
+   "style": "handwritten",
+   "author": "",
+   "body": "OCT 2 — 6:10-9:40. Doe + 2 yearlings, 40 yds, passed.\nOCT 3 — 6:00-10:15. Nothing. Crows loud over the ridge all morning.\nOCT 4 — 5:50-8:00. Buck, 8pt, came in walking WRONG. Stiff, head down, no spook when I stood up. Didn't shoot. Something white in his coat.\nOCT 5 — Not climbing down till the people in the cut below quit walking circles. Three of them. One's got blaze orange on. Pete?"
+  },
+  {
+   "id": "enc_cache_map",
+   "title": "Cache Note",
+   "style": "scrawl",
+   "author": "",
+   "body": "FOR WHOEVER COMES NEXT\nTake what you need. Leave the tarp pegged so the rain stays out. Water jugs are boiled. The beans are good, the peaches went bad.\nThey don't come up on the rocks much. They follow the low ground and the roads. Stay off both after dark.\nThere's another one of these where the old skid trail meets the creek. I'll fill it if I'm still around."
+  },
+  {
+   "id": "enc_cordon_manifest",
+   "title": "Recovery Manifest",
+   "style": "typed",
+   "author": "Cordon Recovery Team 4",
+   "body": "CORDON RECOVERY — FIELD MANIFEST\nTeam 4. Grid ref (smudged).\nRecovered: 5 (five). Bagged: 5. Tagged: 5.\nCondition codes: 3x C (inert), 2x B (see note).\nAwaiting pickup by Program vehicle 0600.\n\nNOTE: B-coded remains are NOT to be left unattended. Bags 2 and 4 moving at 0410. Team withdrew to the road per protocol. Vehicle did not arrive. We are not coming back for them."
+  },
+  {
+   "id": "enc_grave_words",
+   "title": "Note Tied to a Cross",
+   "style": "handwritten",
+   "author": "",
+   "body": "Here lies my brother Tomas, who carried me two days on his back after I turned my ankle and never once complained about it.\nHe got sick on the third day. He made me promise to do it before he woke up different. I kept my promise.\nWhoever reads this, please don't dig. There's nothing here worth having but him."
+  },
+  {
+   "id": "enc_shack_rules",
+   "title": "Rules Nailed to the Door",
+   "style": "scrawl",
+   "author": "",
+   "body": "THIS IS MY PLACE\n1. knock\n2. no fires after dark\n3. don't bring them up the trail\n4. if I don't answer I'm not here or I'm not me. go away either way\n5. the stove's yours if you need it. leave wood"
+  }
+ ]
+}

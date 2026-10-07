@@ -42,6 +42,7 @@ const KINDS: Dictionary = {
 	&"crop": {"dir": "crops", "script": preload("res://src/core/content/defs/crop_def.gd")},
 	&"nest": {"dir": "nests", "script": preload("res://src/core/content/defs/nest_def.gd")},
 	&"companion": {"dir": "companions", "script": preload("res://src/core/content/defs/companion_def.gd")},
+	&"encounter": {"dir": "encounters", "script": preload("res://src/core/content/defs/encounter_def.gd")},
 }
 
 const BASE_PACK: String = "res://data"
