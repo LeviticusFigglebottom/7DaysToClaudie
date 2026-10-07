@@ -112,11 +112,17 @@ func setup(p_terrain: TerrainManager, cfg: Dictionary, threads: int = -1) -> voi
 		# and its material's splat images (the attach only uploads them).
 		var seed: int = (load("res://src/poi/lot_picker.gd") as GDScript).call(&"session_seed")
 		var bloom: BloomTiles = terrain.bloom.tiles if terrain.bloom != null else null
+		# Its caves too (ADR-0056), planned on the composed (pristine) heights, once the cave
+		# generator exists (loaded here: scripts are loaded on the main thread).
+		var cave_sites: GDScript = TerrainManager.cave_script(TerrainManager.CAVE_SITES_SCRIPT)
+		var cave_cfg: Dictionary = ContentDB.instance.config(&"caves") if ContentDB.instance != null else {}
 		compose_fn = func(rid: String, cancel: Array) -> RegionTerrain:
 			var rt: RegionTerrain = TerrainComposer.get_or_compose(world, rid, 1.0, Callable(), cancel)
 			if rt != null and not bool(cancel[0]):
 				rt.set_meta(&"holes", TerrainHoles.from_regions({rid: rt}, seed))
 				TerrainManager.prepare_splat(rt)
+			if rt != null and not bool(cancel[0]) and cave_sites != null:
+				rt.set_meta(&"caves", cave_sites.call(&"from_region", world, rid, rt, cave_cfg))
 			if rt != null and not bool(cancel[0]) and bloom != null and bloom.lazy:
 				rt.set_meta(&"bloom_tiles", bloom.compose_region(rt))
 			return rt

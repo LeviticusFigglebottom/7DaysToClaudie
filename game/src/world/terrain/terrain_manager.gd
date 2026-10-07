@@ -20,6 +20,9 @@ signal chunk_ready(key: Vector2i)
 signal region_attached(rid: String)
 signal region_detached(rid: String)
 signal terrain_changed(aabb: AABB)
+## The caves changed over a box (place_cave/remove_cave; ADR-0056): vegetation, nav and probes
+## there rebuild.
+signal caves_changed(aabb: AABB)
 
 const CHUNK: float = 64.0
 const NEAR_RADIUS: int = 6
@@ -62,6 +65,11 @@ var volume: VolumeTerrain
 var holes := TerrainHoles.new()
 ## The Bloom's field over the built regions and its presence on screen (ADR-0025).
 var bloom: BloomWorld
+## The caves over the attached regions plus the runtime ones (ADR-0056): a CaveSet, or null
+## until the cave generator exists. Published like `holes`: a new object on every change, never
+## mutated (volume jobs on workers hold the one they were queued with). Duck-typed here so the
+## terrain runs without the generator.
+var caves: Object = null
 var _update_accum: float = 0.0
 
 
@@ -104,6 +112,9 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	for rid: String in regions:
 		_region_holes[rid] = _take_holes(regions[rid])
 	_publish_holes()
+	for rid2: String in regions:
+		_region_caves[rid2] = _take_caves(regions[rid2])
+	_publish_caves()
 	bloom = BloomWorld.new()
 	bloom.name = "Bloom"
 	add_child(bloom)
@@ -130,6 +141,10 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	add_child(volume)
 	volume.setup(self)
 	volume.column_activated.connect(_on_volume_column)
+	volume.column_deactivated.connect(_on_volume_column_gone)
+	# The regions here from the start (load_from activates their saved digs at the boot).
+	for rid3: String in regions:
+		volume.attach_region(rid3, (regions[rid3] as RegionTerrain).rect)
 
 
 ## Set before setup(): the layer textures' data, prepared on the world-load thread
@@ -311,6 +326,8 @@ func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 	attach_parts = {}
 	if pristine != null:
 		_base_cache[rid] = pristine
+	# Planned on the pristine heights, before the digs are applied (CAVES_PLAN: determinism).
+	_region_caves[rid] = _take_caves(rt)
 	_apply_deltas(rt)
 	t = _part("deltas", t)
 	var next: Dictionary = regions.duplicate()
@@ -337,6 +354,10 @@ func attach_region(rt: RegionTerrain, pristine: HeightField = null) -> void:
 			rt.remove_meta(&"bloom_tiles")
 		bloom.install(made)
 		t = _part("bloom", t)
+	_publish_caves()
+	if volume != null:
+		volume.attach_region(rid, rt.rect)
+		t = _part("volume", t)
 	_refresh_chunks(rt.rect)
 	_remesh_far_tile(rid)
 	t = _part("chunks", t)
@@ -363,6 +384,10 @@ func detach_region(rid: String) -> void:
 	var rect: Rect2 = rt.rect
 	var t: int = Time.get_ticks_usec()
 	attach_parts = {}
+	# Its edited volume chunks become blobs, the rest is freed (before its heights go coarse).
+	if volume != null:
+		volume.detach_region(rid)
+		t = _part("volume", t)
 	var next: Dictionary = regions.duplicate()
 	next.erase(rid)
 	_lock.lock()
@@ -375,6 +400,10 @@ func detach_region(rid: String) -> void:
 	# in _deltas and are re-applied over them on the next attach, whatever the object then holds.
 	_region_holes.erase(rid)
 	_publish_holes()
+	if _region_caves.has(rid):
+		_cave_cache[rid] = _region_caves[rid]
+		_region_caves.erase(rid)
+		_publish_caves()
 	t = _part("holes", t)
 	_refresh_chunks(rect)
 	_remesh_far_tile(rid)
@@ -482,8 +511,8 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 	var skirt: float = [1.0, 2.5, 6.0][lod]
 	var job := {"key": key, "lod": lod, "origin": origin, "step": step, "skirt": skirt, "mesh": null}
 	var hole: Callable = Callable()
-	if volume != null and not volume.columns.is_empty() and _chunk_has_volume(key):
-		hole = volume.is_volume_column
+	if volume != null and not volume.committed.is_empty() and _chunk_has_volume(key):
+		hole = volume.is_hole_column
 	var cut: Array[PackedVector2Array] = _cutters(key)
 	# The worker fills its own slot: `job` gains "task" on this thread after the task has started,
 	# and a dictionary written from two threads at once can corrupt itself.
@@ -515,6 +544,12 @@ func _collect_finished() -> void:
 			_pending.erase(key)
 			job["mesh"] = TerrainMesher.finish(job["out"][0])
 			_apply_mesh(job)
+			if _remesh_again.has(key):
+				# A volume column committed while this mesh was on a worker: its hole may be missing.
+				_remesh_again.erase(key)
+				var ch: Chunk = _chunks.get(key)
+				if ch != null:
+					_request_mesh(key, maxi(ch.lod, 0), false)
 			if float(Time.get_ticks_usec() - t0) / 1000.0 >= COLLECT_BUDGET_MS:
 				return
 
@@ -588,7 +623,7 @@ func _rebuild_collision(ch: Chunk, sync: bool) -> void:
 	var has_volume: bool = _chunk_has_volume(ch.key)
 	var out: Array = [null]
 	var job: Dictionary = {"out": out, "kind": "faces" if not cut.is_empty() else "heights"}
-	var hole: Callable = volume.is_volume_column if has_volume else Callable()
+	var hole: Callable = volume.is_hole_column if has_volume else Callable()
 	var fn := func() -> void:
 		if cut.is_empty():
 			out[0] = TerrainMesher.collision_heights(origin, CHUNK, 1.0, height_at)
@@ -629,6 +664,18 @@ func _queue_task(job: Dictionary, fn: Callable, task_name: String) -> void:
 	_task_queue.append([job, fn, task_name])
 
 
+## A volume chunk job (VolumeTerrain: density and mesh) under the same cap as the chunk and
+## collision jobs (TD-196). Live while the volume still holds it (VolumeTerrain.is_job_live).
+func queue_volume_job(job: Dictionary, fn: Callable) -> void:
+	_queue_task(job, fn, "volume chunk")
+
+
+## Starts queued jobs now (the volume drives this too: its jobs share the queue, and the boot's
+## cave step runs while this node's _process is held).
+func start_queued() -> void:
+	_start_queued()
+
+
 ## Starts queued chunk and collision jobs while fewer than max_tasks run: collision first (the
 ## ground under someone's feet), then by distance from the streaming centre. Jobs replaced or
 ## dropped while they waited are discarded.
@@ -643,6 +690,8 @@ func _start_queued() -> void:
 	for ch: Chunk in _col_pending:
 		if ch.col_job.has("task") and not WorkerThreadPool.is_task_completed(int(ch.col_job["task"])):
 			running[ch.col_job["task"]] = true
+	if volume != null:
+		volume.count_running(running)
 	if running.size() >= max_tasks:
 		return
 	var live: Array = []
@@ -651,6 +700,9 @@ func _start_queued() -> void:
 		if job.has("col_key"):
 			var ch: Chunk = _chunks.get(job["col_key"])
 			if ch != null and is_same(ch.col_job, job):
+				live.append(e)
+		elif job.has("vol"):
+			if volume != null and volume.is_job_live(job):
 				live.append(e)
 		elif is_same(_pending.get(job["key"]), job):
 			if _chunks.has(job["key"]):
@@ -671,7 +723,7 @@ func _start_queued() -> void:
 
 
 func _queue_dist(job: Dictionary) -> int:
-	var key: Vector2i = job["col_key"] if job.has("col_key") else job["key"]
+	var key: Vector2i = job["col_key"] if job.has("col_key") else (job["dist_key"] if job.has("dist_key") else job["key"])
 	return (key - _center).length_squared()
 
 
@@ -737,6 +789,9 @@ func is_ready_around(pos: Vector3, radius: int = 1) -> bool:
 			var ch: Chunk = _chunks.get(Vector2i(c.x + dx, c.y + dz))
 			if ch == null or ch.mesh_instance == null or (ch.has_collision and ch.body == null):
 				return false
+	# Volume columns there (a dig, a cave) are built and installed too.
+	if volume != null and not volume.is_rect_ready(Rect2((c.x - radius) * CHUNK, (c.y - radius) * CHUNK, (radius * 2 + 1) * CHUNK, (radius * 2 + 1) * CHUNK)):
+		return false
 	return true
 
 
@@ -783,6 +838,7 @@ func boot_steps() -> Array:
 			out.append(["Laying the ground…", _make_material_of.bind(rid), "terrain material %s" % rid])
 	if defer_far_tiles:
 		out.append_array([["Raising the far hills…", _start_far_tiles, "far tiles"], ["Raising the far hills…", _finish_far_tiles, "far tiles (add)"]])
+	out.append(["Carving the caves…", _carve_step, "caves"])
 	return out
 
 
@@ -959,13 +1015,14 @@ func base_height_at(x: float, z: float) -> float:
 	return height_at(x, z)
 
 
+## Whether committed volume columns (holes in the heightmap) lie in a near chunk.
 func _chunk_has_volume(key: Vector2i) -> bool:
-	if volume == null or volume.columns.is_empty():
+	if volume == null or volume.committed.is_empty():
 		return false
 	var per: int = int(CHUNK / VolumeTerrain.SIZE)
 	for dz: int in per:
 		for dx: int in per:
-			if volume.columns.has(Vector2i(key.x * per + dx, key.y * per + dz)):
+			if volume.committed.has(Vector2i(key.x * per + dx, key.y * per + dz)):
 				return true
 	return false
 
@@ -973,7 +1030,7 @@ func _chunk_has_volume(key: Vector2i) -> bool:
 ## Heightmap collision sinks out of the way where the volume owns the ground.
 func _collision_height(x: float, z: float) -> float:
 	var h: float = height_at(x, z)
-	return h - 40.0 if volume.is_volume_column(x - 0.01, z - 0.01) and volume.is_volume_column(x + 0.01, z + 0.01) else h
+	return h - 40.0 if volume.is_hole_column(x - 0.01, z - 0.01) and volume.is_hole_column(x + 0.01, z + 0.01) else h
 
 
 # --- POI cellars (TD-026) -------------------------------------------------------------------------
@@ -1030,6 +1087,179 @@ func _publish_holes() -> void:
 		parts.append(_region_holes[rid])
 	holes = TerrainHoles.combined(parts, _hole_gate if gate_holes else null)
 
+# --- Caves (ADR-0056) -----------------------------------------------------------------------------
+
+const CAVE_SET_SCRIPT: String = "res://src/world/terrain/cave/cave_set.gd"
+const CAVE_PLAN_SCRIPT: String = "res://src/world/terrain/cave/cave_plan.gd"
+const CAVE_SITES_SCRIPT: String = "res://src/world/terrain/cave/cave_sites.gd"
+
+## Region id -> its declared caves (a CaveSet: compiled on the compose worker as meta "caves",
+## else here), and the sets of regions that detached (planning them again costs).
+var _region_caves: Dictionary = {}
+var _cave_cache: Dictionary = {}
+## Cave id -> CavePlan placed at runtime (place_cave; not saved: callers re-derive them).
+var _runtime_caves: Dictionary = {}
+var _carve_until: int = -1
+
+
+## The cave generator's script at `path`, or null where it doesn't exist (yet).
+static func cave_script(path: String) -> GDScript:
+	return load(path) as GDScript if ResourceLoader.exists(path) else null
+
+
+func _cave_cfg() -> Dictionary:
+	return ContentDB.instance.config(&"caves") if ContentDB.instance != null else {}
+
+
+## A region's caves: compiled by the thread that composed it (meta "caves"), else planned here on
+## its pristine heights (call before its digs are applied), else none.
+func _take_caves(rt: RegionTerrain) -> Object:
+	if rt.has_meta(&"caves"):
+		var made: Object = rt.get_meta(&"caves")
+		rt.remove_meta(&"caves")
+		return made
+	if _cave_cache.has(rt.region_id):
+		return _cave_cache[rt.region_id]
+	var sites: GDScript = cave_script(CAVE_SITES_SCRIPT)
+	if sites == null or world == null:
+		return null
+	var src: RegionTerrain = rt
+	if _base_cache.has(rt.region_id):
+		# Dug before (the object may carry its digs): plan on the pristine copy.
+		src = RegionTerrain.new()
+		src.region_id = rt.region_id
+		src.rect = rt.rect
+		src.spacing = rt.spacing
+		src.height = _base_cache[rt.region_id]
+	return sites.call(&"from_region", world, rt.region_id, src, _cave_cfg()) as Object
+
+
+## Publishes `caves` from the regions' sets (by region id) and the runtime plans, as a new object:
+## workers and queued volume jobs keep the old one.
+func _publish_caves() -> void:
+	if cave_set_fn.is_valid():
+		caves = _combine_caves(cave_set_fn)
+		return
+	var set_script: GDScript = cave_script(CAVE_SET_SCRIPT)
+	if set_script == null:
+		caves = null
+		return
+	caves = _combine_caves(Callable(set_script, &"combined"))
+
+
+## (parts: Array, extra: Dictionary) -> a cave set; set to stand in for CaveSet.combined (tests).
+var cave_set_fn: Callable = Callable()
+
+
+func _combine_caves(combine: Callable) -> Object:
+	var ids: Array = _region_caves.keys()
+	ids.sort()
+	var parts: Array = []
+	for rid: Variant in ids:
+		if _region_caves[rid] != null:
+			parts.append(_region_caves[rid])
+	return combine.call(parts, _runtime_caves) as Object
+
+
+## Heights a cave is planned on: the pristine ones where the region was dug.
+func _pristine_height_at(x: float, z: float) -> float:
+	var rt: RegionTerrain = region_terrain_at(x, z)
+	if rt != null and _base_cache.has(rt.region_id):
+		return (_base_cache[rt.region_id] as HeightField).sample(x, z)
+	return height_at(x, z)
+
+
+## Places a cave at runtime (ADR-0054's forest scatter, POI set pieces): `spec` is a CavePlan
+## already built, or a spec for CavePlan.build (seeded by spec.seed or CaveSites.shape_seed).
+## Idempotent by id. Returns the plan (null without the generator or when it failed to plan).
+func place_cave(id: StringName, spec: Variant) -> Object:
+	if _runtime_caves.has(id):
+		return _runtime_caves[id]
+	var plan: Object = null
+	if spec is Object and (spec as Object).has_method(&"carve_block"):
+		plan = spec
+	elif spec is Dictionary:
+		var plan_script: GDScript = cave_script(CAVE_PLAN_SCRIPT)
+		if plan_script == null:
+			Log.warn("terrain", "place_cave %s: no cave generator (%s)" % [id, CAVE_PLAN_SCRIPT])
+			return null
+		var d: Dictionary = (spec as Dictionary).duplicate()
+		d["id"] = str(id)
+		var sites: GDScript = cave_script(CAVE_SITES_SCRIPT)
+		var seed: int = int(d["seed"]) if d.has("seed") else (int(sites.call(&"shape_seed", world.id if world != null else "", str(id))) if sites != null else hash(str(id)))
+		plan = plan_script.call(&"build", d, seed, _pristine_height_at, _cave_cfg()) as Object
+	if plan == null or not bool(plan.get(&"ok")):
+		if plan != null:
+			Log.warn("terrain", "place_cave %s failed: %s" % [id, plan.get(&"reason")])
+		return plan
+	_runtime_caves[id] = plan
+	_publish_caves()
+	var box: AABB = plan.get(&"aabb")
+	if volume != null:
+		volume.refresh_caves(box)
+	caves_changed.emit(box)
+	return plan
+
+
+func remove_cave(id: StringName) -> void:
+	if not _runtime_caves.has(id):
+		return
+	var plan: Object = _runtime_caves[id]
+	_runtime_caves.erase(id)
+	_publish_caves()
+	var box: AABB = plan.get(&"aabb")
+	if volume != null:
+		volume.refresh_caves(box)
+	caves_changed.emit(box)
+
+
+## The cave whose air holds `pos`, or null.
+func cave_at(pos: Vector3) -> Object:
+	if caves == null:
+		return null
+	for plan: Variant in caves.call(&"touching", AABB(pos - Vector3.ONE * 0.1, Vector3.ONE * 0.2)):
+		if float((plan as Object).call(&"sdf", pos)) < 0.0:
+			return plan
+	return null
+
+
+## Boot step: where caves reach the spawn, waits until their volume chunks are built and installed
+## (the player must not be dropped onto a heightmap that is about to open). A no-op otherwise.
+func _carve_step() -> bool:
+	if volume == null or caves == null or bool(caves.call(&"is_empty")):
+		return true
+	var at: Vector3 = _boot_spawn()
+	if is_nan(at.x):
+		return true
+	var rect := Rect2(at.x - CHUNK, at.z - CHUNK, CHUNK * 2.0, CHUNK * 2.0)
+	if (caves.call(&"touching", AABB(Vector3(rect.position.x, -100000.0, rect.position.y), Vector3(rect.size.x, 200000.0, rect.size.y))) as Array).is_empty():
+		return true
+	if _carve_until < 0:
+		_carve_until = Time.get_ticks_msec() + 60000
+	_start_queued()
+	volume.pump(VolumeTerrain.APPLY_BUDGET_MS * 4.0)
+	if volume.is_rect_ready(rect):
+		return true
+	if Time.get_ticks_msec() > _carve_until:
+		Log.warn("terrain", "caves around the spawn still building after 60 s; going on")
+		return true
+	return false
+
+
+## Where the player will appear: the saved position, or a new game's drop site.
+func _boot_spawn() -> Vector3:
+	if Game.session == null:
+		return Vector3(NAN, NAN, NAN)
+	if not bool(Game.pending_options.get("is_new_game", false)):
+		var ps: PlayerState = Game.session.local_player()
+		return ps.position if ps != null else Vector3(NAN, NAN, NAN)
+	for rt: RegionTerrain in regions.values() + coarse.values():
+		if rt.spawns.has("drop_site"):
+			var a: Array = (rt.spawns["drop_site"] as Dictionary)["pos"]
+			return Vector3(float(a[0]), float(a[1]), float(a[2]))
+	return Vector3(0.0, height_at(0.0, 0.0), 0.0)
+
+
 ## Cellar footprints (world-XZ convex pieces) that cut a near chunk.
 func _cutters(key: Vector2i) -> Array[PackedVector2Array]:
 	if holes == null or holes.is_empty():
@@ -1048,6 +1278,16 @@ func in_cellar(x: float, z: float) -> bool:
 ## terrain height. height_at() keeps reporting the heightfield (ADR-0007); fell-through-the-world
 ## checks and settling things where they are want this.
 func ground_below(pos: Vector3) -> float:
+	# Dug tunnels and caves where the volume is built: its density (ADR-0056).
+	if volume != null:
+		var vg: float = volume.ground_below(pos)
+		if not is_nan(vg):
+			return vg
+	# A cave not built yet (far off, streaming in): its plan's floor.
+	if caves != null:
+		var cf: float = caves.call(&"floor_below", pos)
+		if not is_nan(cf):
+			return cf
 	var h: float = height_at(pos.x, pos.z)
 	if holes == null:
 		return h
@@ -1062,13 +1302,35 @@ func ground_below(pos: Vector3) -> float:
 	return hole.floor_y if hole != null and pos.y < hole.ceiling_y else h
 
 
+## Phase two of a column's hand-off: its volume meshes are installed, so the heightmap chunk is
+## re-meshed with the hole on a worker (its old mesh draws until then: a moment of double surface,
+## never a hole) and its collision sinks there now.
 func _on_volume_column(col: Vector2i) -> void:
+	var key: Vector2i = chunk_of(col.x * VolumeTerrain.SIZE + 1.0, col.y * VolumeTerrain.SIZE + 1.0)
+	var ch: Chunk = _chunks.get(key)
+	if ch != null:
+		var job: Dictionary = _pending.get(key, {})
+		if job.has("task"):
+			_remesh_again[key] = true
+		else:
+			_request_mesh(key, maxi(ch.lod, 0), false)
+		if ch.has_collision:
+			_rebuild_collision(ch, true)
+		_start_queued()
+
+
+## A column left the volume: the heightmap closes over it at once (its volume mesh is gone).
+func _on_volume_column_gone(col: Vector2i) -> void:
 	var key: Vector2i = chunk_of(col.x * VolumeTerrain.SIZE + 1.0, col.y * VolumeTerrain.SIZE + 1.0)
 	var ch: Chunk = _chunks.get(key)
 	if ch != null:
 		_request_mesh(key, maxi(ch.lod, 0), true)
 		if ch.has_collision:
 			_rebuild_collision(ch, true)
+
+
+## Near chunks whose mesh job was running when a volume column committed (meshed again after).
+var _remesh_again: Dictionary = {}
 
 
 ## Tool hits on the ground: shovels dig the heightmap; past its depth limit, into steep faces or
@@ -1088,13 +1350,20 @@ func take_damage(info: DamageInfo) -> void:
 		var base: HeightField = _base_heights(rt)
 		at_limit = height_at(p.x, p.z) <= base.sample(p.x, p.z) - MAX_DIG_DEPTH + 0.05
 	var moved: float = 0.0
+	var edit_box := AABB()
 	if in_volume or mine > 0.0 or at_limit or n.y < 0.6:
 		var center: Vector3 = p + info.direction.normalized() * 0.35
-		moved = volume.edit_sphere(center, 0.9 if mine <= 0.0 else 0.75, 0.9 * maxf(dig, mine))
+		var radius: float = 0.9 if mine <= 0.0 else 0.75
+		moved = volume.edit_sphere(center, radius, 0.9 * maxf(dig, mine))
+		edit_box = AABB(center - Vector3.ONE * radius, Vector3.ONE * radius * 2.0)
 	else:
 		moved = modify(p, 1.1, 0.3 * dig, "dig")
 	if moved <= 0.01:
 		return
+	if edit_box.size != Vector3.ZERO:
+		# modify() tells its listeners itself; a volume edit does here (TD-163: nav, supports).
+		terrain_changed.emit(edit_box)
+		Events.terrain_modified.emit(edit_box)
 	Audio.play_3d(&"sfx/dig_shovel", p, {"volume_db": -3.0})
 	FxLibrary.burst(self, "dirt", p, n, 0.8)
 	if Stimuli.current != null:
