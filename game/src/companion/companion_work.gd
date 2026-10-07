@@ -198,10 +198,14 @@ func _begin_act() -> void:
 	enemy.velocity = Vector3.ZERO
 	enemy._face(_target_pos())
 	if str(target.get("what", "")) == "tree":
-		_cycle = enemy.visual.play_once(&"chop", 1.0, [&"attack_structure", &"attack_a"] as Array[StringName])
+		# The Faller perk swings faster (ADR-0058 phase 3).
+		var sp: float = maxf(0.2, mind.perk("chop_speed", 1.0))
+		_cycle = enemy.visual.play_once(&"chop", sp, [&"attack_structure", &"attack_a"] as Array[StringName])
+		if enemy.visual.anim == null:
+			_cycle /= sp  # (the clipless stand-in's fixed beat)
+		_cycle = maxf(_cycle, 0.4 / sp)
 	else:
-		_cycle = enemy.visual.play_once(&"pickup", 1.0, [] as Array[StringName])
-	_cycle = maxf(_cycle, 0.4)
+		_cycle = maxf(enemy.visual.play_once(&"pickup", 1.0, [] as Array[StringName]), 0.4)
 	_blow_at = _cycle * (0.45 if str(target.get("what", "")) == "tree" else 0.5)
 
 
@@ -291,7 +295,7 @@ func _blow() -> void:
 	info.source_pos = enemy.global_position
 	var dir: Vector3 = (inst.pos - enemy.global_position) * Vector3(1, 0, 1)
 	info.direction = dir.normalized() if dir.length() > 0.05 else Vector3.FORWARD
-	info.tool_power = {"chop": CompanionDef.fnum(cdef.gather, "chop", 16.0)}
+	info.tool_power = {"chop": CompanionDef.fnum(cdef.gather, "chop", 16.0) * mind.perk("chop_power", 1.0)}
 	veg.call(&"take_damage", info)
 	if veg.call(&"body_for", target["key"], target["inst"]) == null:
 		_felled()

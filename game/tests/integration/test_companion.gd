@@ -10,6 +10,11 @@ extends GutTest
 ## on his shoulder) and stops when it is full; fetch brings what the player looked at back (into
 ## their pack, or at their feet); give and store empty his pack; his pack and errand round-trip
 ## through the save; his trees count half for the player's XP and directives.
+## Phase 3: his barks are voiced from his body (the variant matching the line), rate-limited and
+## silent without the sounds; his perks come with the days (a bigger pack, a third log, faster
+## felling, a generator near him burns less); placed beside the player or at their bed he lands
+## on the floor, out of water, walls and furniture, on the player's side of a wall; downed, the
+## Hollowed keep at him a while (mauling him shortens his bleed-out); companion_strength scales him.
 
 const PLAYER_SCENE: String = "res://src/player/player.tscn"
 const CAMP_AT := Vector3(12, 0, 0)
@@ -26,6 +31,7 @@ class FakeWorld:
 	var ui: Node = null
 	var vegetation: Node = null
 	var loose: Node = null
+	var water: Node = null
 
 	func height_at(_x: float, _z: float) -> float:
 		return 0.0
@@ -269,7 +275,9 @@ func test_downed_then_revived_with_a_kit() -> void:
 	e.take_damage(info)
 	assert_true(e.ally.downed, "downed, not dead")
 	assert_ne(e.state, Enemy.State.DEAD)
-	assert_false(e.is_alive(), "out of play: the Hollowed lose interest")
+	assert_true(e.is_alive(), "the Hollowed keep at him a while (downed.linger)")
+	e.ally._linger_until = e._now() - 0.1
+	assert_false(e.is_alive(), "then out of play: the Hollowed lose interest")
 	h.foe = e
 	assert_false(EnemyFoes.fighting(h), "a downed companion is dropped as a foe")
 	assert_false(bool(Game.execute(&"companion.order", {"order": "stay"}).get("ok", true)), "no orders while down")
@@ -597,7 +605,7 @@ func test_his_pack_and_errand_round_trip_through_the_save() -> void:
 	_dir.setup_world(_world)
 	assert_eq(_dir.inventory.count_of(&"log"), 2, "his pack loads")
 	assert_eq(_dir.inventory.count_of(&"plant_fiber"), 9)
-	assert_eq(_dir.inventory.max_slots, 12)
+	assert_eq(_dir.inventory.max_slots, 16, "12 and the Pack mule perk's 4")
 	_dir.tick()
 	var b: Enemy = _dir.body
 	assert_not_null(b)
@@ -610,3 +618,161 @@ func test_his_pack_and_errand_round_trip_through_the_save() -> void:
 	await _frames(10)
 	_dir.tick()
 	assert_true(_dir.inventory.is_empty(), "lost with him")
+
+
+# --- Phase 3: voice, perks, placement, downed, strength ------------------------------------------
+
+## Stands in for WaterSystem: water deeper than wading everywhere `wet` says so.
+class FakeWater:
+	extends Node
+	var wet: Callable
+
+	func depth_at(pos: Vector3) -> float:
+		return 1.2 if bool(wet.call(pos)) else 0.0
+
+
+func test_his_barks_are_voiced_and_rate_limited() -> void:
+	var e: Enemy = await _recruited()
+	var m: CompanionMind = e.ally
+	assert_eq(m.last_voice, "voice/ezra_recruited", "recruited: his voice too")
+	var lines: Array = []
+	var on_msg := func(t: String, _k: StringName) -> void: lines.append(t)
+	Events.player_status_message.connect(on_msg)
+	m._voice_t = -1000.0
+	m.bark("spotted")
+	assert_eq(lines.size(), 1, "the status-bar line still shows")
+	assert_eq(m.last_voice, "voice/ezra_spotted")
+	var shown: int = (m.cdef.barks["spotted"] as Array).find(lines[0])
+	assert_eq(m.last_voice_variant, shown + 1, "the variant matching the line shown")
+	m.bark("spotted")
+	assert_eq(lines.size(), 1, "said on his own: not again within voice.repeat")
+	m.bark("follow")
+	assert_eq(lines.size(), 2, "an order's answer always shows")
+	assert_eq(m.last_voice, "voice/ezra_spotted", "but not voiced within voice.gap of the last")
+	m._voice_t = -1000.0
+	m.bark("stay")
+	assert_eq(m.last_voice, "voice/ezra_ack")
+	assert_eq(m.last_voice_variant, 4, "id:N picks variant N")
+	m.bark("downed")
+	assert_eq(m.last_voice, "voice/ezra_downed", "urgent barks cut in")
+	Events.player_status_message.disconnect(on_msg)
+	var voice: Node = e.get_node_or_null(^"Voice")
+	if Audio.variants(&"voice/ezra_ack").is_empty():
+		assert_null(voice, "no sounds generated: silent, no player made")
+	else:
+		assert_true(voice is Sound3D and (voice as Sound3D).playing, "played from his body")
+
+
+func test_downed_the_hollowed_keep_at_him_a_while() -> void:
+	var e: Enemy = await _recruited()
+	var h: Enemy = _spawn(&"hollow", e.global_position + Vector3(1.2, 0, 0))
+	await get_tree().physics_frame
+	h.set_physics_process(false)
+	var info := DamageInfo.make(e.health + 50.0, &"zombie", &"zombie", h.entity_id)
+	info.hit_pos = e.global_position + Vector3.UP
+	e.take_damage(info)
+	assert_true(e.ally.downed)
+	h.foe = e
+	h._foe_seen = h._now()
+	h._set_state(Enemy.State.ATTACK)
+	assert_true(EnemyFoes.fighting(h), "still at him just after he went down")
+	var t0: float = e.ally.downed_t
+	e.take_damage(info)
+	assert_almost_eq(e.ally.downed_t, t0 - 6.0, 0.01, "mauled where he lies: he bleeds out the faster")
+	assert_eq(e.health, 0.0, "no health to lose")
+	var pinfo := DamageInfo.make(30.0, &"slash", &"melee", _p.state.id)
+	e.take_damage(pinfo)
+	assert_almost_eq(e.ally.downed_t, t0 - 6.0, 0.01, "the player's blows never count")
+	e.ally._linger_until = e._now() - 0.1
+	assert_false(EnemyFoes.fighting(h), "after downed.linger they lose interest")
+	# A downed body loaded from a save is out of play at once.
+	e.ally.get_up(0.5)
+	e.ally.go_down(null, 60.0)
+	assert_false(e.is_alive())
+
+
+func test_companion_strength_scales_him() -> void:
+	var e: Enemy = await _recruited()
+	assert_almost_eq(e.max_health, e.def.health, 0.01, "1 by default: the enemy settings never apply")
+	after_each()
+	_start({"seed": 5803, "game_mode": "survival", "rules": {"companion_strength": 1.5, "enemy_health": 2.0}})
+	var e2: Enemy = await _recruited()
+	assert_almost_eq(e2.max_health, e2.def.health * 1.5, 0.01, "health x companion_strength")
+	assert_almost_eq(e2.damage_mult, 1.5, 0.001, "his blows too")
+	var preset: GameRules = GameRules.resolve({}, &"hollowed", {})
+	assert_lt(preset.num("companion_strength"), 1.0, "the hard presets weaken him")
+
+
+func test_his_perks_come_with_the_days() -> void:
+	var e: Enemy = await _recruited()
+	assert_eq(_dir.days_with(), 0)
+	var names: Array = _dir.active_perks().map(func(p: Dictionary) -> String: return str(p["id"]))
+	assert_eq(names, ["pack_mule"], "the first from the start")
+	assert_eq(_dir.inventory.max_slots, 16, "four more slots")
+	assert_eq(_dir.inventory.add_item(&"log", 4), 1, "a third log on his shoulder, not a fourth")
+	assert_eq(_dir.inventory.count_of(&"log"), 3)
+	assert_almost_eq(e.ally.perk("chop_speed", 1.0), 1.0, 0.001, "not a faller yet")
+	var gen_at: Vector3 = e.global_position + Vector3(10, 0, 0)
+	assert_eq(_dir.fuel_factor(gen_at), 1.0, "nor a lineman")
+	Game.session.clock.set_time(4, 12.0)
+	_dir.tick()
+	assert_eq(_dir.active_perks().size(), 3, "two days on: all three")
+	assert_almost_eq(e.ally.perk("chop_speed", 1.0), 1.3, 0.001)
+	assert_almost_eq(e.ally.perk("chop_power", 1.0), 1.25, 0.001)
+	assert_almost_eq(_dir.fuel_factor(gen_at), 0.75, 0.001, "a generator near him burns a quarter less")
+	assert_eq(_dir.fuel_factor(e.global_position + Vector3(80, 0, 0)), 1.0, "not one far off")
+	e.ally.go_down(null, 60.0)
+	assert_eq(_dir.fuel_factor(gen_at), 1.0, "nor while he is down")
+	# The card lists his knacks.
+	var cd: CompanionDef = _dir.cdef
+	assert_true(cd.perks_after(0).size() < cd.perks_after(9).size())
+
+
+func test_placed_beside_the_player_he_keeps_out_of_walls_and_water() -> void:
+	var e: Enemy = await _recruited()
+	_p.global_position = Vector3(0, 0, 0)
+	_p.rotation = Vector3.ZERO
+	_p.head.rotation = Vector3.ZERO
+	# A wall right behind the player, across the spot he would be put at.
+	_box(Vector3(0, 1.5, 3.0), Vector3(30, 3, 0.4))
+	await get_tree().physics_frame
+	_dir.place_beside(_p)
+	var at: Vector3 = e.global_position
+	assert_lt(at.z, 3.0 - 0.2 - CompanionDirector.BODY_RADIUS + 0.01, "on the player's side of the wall (%s)" % at)
+	assert_lt(Vector2(at.x, at.z).length(), 10.0, "still beside the player")
+	assert_almost_eq(at.y, 0.1, 0.2, "on the floor")
+	# Water everywhere off a dry strip in front of the player.
+	var water := FakeWater.new()
+	water.wet = func(pos: Vector3) -> bool: return pos.z > -1.5 or absf(pos.x) > 1.0
+	_world.add_child(water)
+	_world.water = water
+	_dir.place_beside(_p)
+	at = e.global_position
+	assert_lte(at.z, -1.5, "not in the water (%s)" % at)
+	assert_lte(absf(at.x), 1.0)
+	_world.water = null
+	water.free()
+
+
+func test_at_dawn_he_comes_back_inside_the_room_with_the_bed() -> void:
+	var e: Enemy = await _recruited()
+	var bed := Vector3(30, 0, 30)
+	_p.state.spawn_point = bed
+	_p.state.has_spawn_point = true
+	# A hut round the bed: four walls, the bed itself where he would be put.
+	for side: Vector3 in [Vector3(2.6, 0, 0), Vector3(-2.6, 0, 0), Vector3(0, 0, 2.6), Vector3(0, 0, -2.6)]:
+		var sz := Vector3(0.3, 3.0, 5.5) if side.x != 0.0 else Vector3(5.5, 3.0, 0.3)
+		_box(bed + side + Vector3.UP * 1.5, sz)
+	_box(bed + Vector3(1.5, 0.3, 1.0), Vector3(1.2, 0.6, 2.2))
+	await get_tree().physics_frame
+	e.ally.go_down(null, 0.05)
+	await _frames(10)
+	_dir.tick()
+	Game.session.clock.set_time(3, 8.0)
+	_dir.tick()
+	var b: Enemy = _dir.body
+	assert_not_null(b, "back at dawn")
+	var d: Vector3 = b.global_position - bed
+	assert_lt(maxf(absf(d.x), absf(d.z)), 2.45 - CompanionDirector.BODY_RADIUS + 0.01, "inside the hut (%s)" % d)
+	var in_bed: bool = absf(d.x - 1.5) < 0.6 + CompanionDirector.BODY_RADIUS and absf(d.z - 1.0) < 1.1 + CompanionDirector.BODY_RADIUS
+	assert_false(in_bed, "not in the bed (%s)" % d)

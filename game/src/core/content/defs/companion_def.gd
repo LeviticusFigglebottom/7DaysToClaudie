@@ -42,14 +42,25 @@ var fetch: Dictionary = {}
 var store: Dictionary = {}
 ## {event: [lines]}; events in BARKS.
 var barks: Dictionary = {}
+## His voice (ADR-0058 phase 3): {gap: s between voiced barks, repeat: s an event keeps quiet after
+##  it was said, lines: {event: "sound id" | "sound id:N" (variant N, 1-based) | "sound id:line"
+##  (the variant matching the bark line shown)}}. A missing sound is silent (the line still shows).
+var voice: Dictionary = {}
+## His perks (ADR-0058 phase 3, a lineman): [{id, name, text, after_days: days with the player
+##  before it shows, effects: {key in PERK_EFFECTS: number}}].
+var perks: Array = []
 
 const BARKS: PackedStringArray = ["recruited", "follow", "stay", "guard", "spotted", "downed", "revived", "out", "back", "hurt",
 	"gather", "fetch", "store", "full", "done", "fetched", "cant_reach", "stored", "store_full", "given"]
+## What a perk may change: slots (+ his pack's slots), carry_log (+ logs on his shoulder),
+## chop_speed (x his chop clip's speed), chop_power (x his blows' tool power), fuel_use (x a running
+## generator's fuel burn while he is within tune_range m of it), tune_range (m).
+const PERK_EFFECTS: PackedStringArray = ["slots", "carry_log", "chop_speed", "chop_power", "fuel_use", "tune_range"]
 
 
 func _fields() -> PackedStringArray:
 	return ["enemy", "camp", "recruit_items", "revive_items", "revive_hold", "revive_health", "recruit_health",
-		"return_health", "follow", "guard", "downed", "lantern", "gather", "fetch", "store", "barks"]
+		"return_health", "follow", "guard", "downed", "lantern", "gather", "fetch", "store", "barks", "voice", "perks"]
 
 
 func _parse(r: DefReader) -> void:
@@ -69,6 +80,8 @@ func _parse(r: DefReader) -> void:
 	fetch = r.dict("fetch")
 	store = r.dict("store")
 	barks = r.dict("barks")
+	voice = r.dict("voice")
+	perks = r.arr("perks")
 
 
 func _validate(db: Node, out: PackedStringArray) -> void:
@@ -101,6 +114,16 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 		for it: Variant in kinds[k]:
 			if not db.has_def(&"item", StringName(str(it))):
 				out.append("%s: gather kind '%s': item '%s' unknown" % [ctx(), k, it])
+	for k2: Variant in (voice.get("lines", {}) as Dictionary).keys():
+		if not BARKS.has(str(k2)):
+			out.append("%s: voice line '%s' is not one of %s" % [ctx(), k2, BARKS])
+	for v: Variant in perks:
+		if not v is Dictionary or str((v as Dictionary).get("id", "")) == "":
+			out.append("%s: a perk needs an id" % ctx())
+			continue
+		for e: Variant in ((v as Dictionary).get("effects", {}) as Dictionary).keys():
+			if not PERK_EFFECTS.has(str(e)):
+				out.append("%s: perk '%s': effect '%s' is not one of %s" % [ctx(), v["id"], e, PERK_EFFECTS])
 	if fnum(gather, "slots", 12.0) < 1.0 or fnum(gather, "radius", 30.0) <= 0.0 or fnum(fetch, "range", 60.0) <= 0.0:
 		out.append("%s: gather.slots, gather.radius and fetch.range must be > 0" % ctx())
 
@@ -126,6 +149,25 @@ func gather_items(kind: String) -> PackedStringArray:
 
 static func fnum(d: Dictionary, key: String, default: float) -> float:
 	return float(d.get(key, default))
+
+
+## The perks he has after `days` with the player (after_days <= days).
+func perks_after(days: int) -> Array:
+	return perks.filter(func(p: Variant) -> bool: return p is Dictionary and int((p as Dictionary).get("after_days", 0)) <= days)
+
+
+## An effect summed (slots, carry_log, tune_range) or multiplied (chop_speed, chop_power, fuel_use)
+## over `active` perks; `none` when no perk names it.
+static func perk_effect(active: Array, key: String, none: float) -> float:
+	var add: bool = key in ["slots", "carry_log", "tune_range"]
+	var v: float = 0.0 if add else 1.0
+	var found: bool = false
+	for p: Variant in active:
+		var fx: Dictionary = (p as Dictionary).get("effects", {})
+		if fx.has(key):
+			found = true
+			v = v + float(fx[key]) if add else v * float(fx[key])
+	return v if found else none
 
 
 ## A line for an event (deterministic by `n`), "" when it has none.
