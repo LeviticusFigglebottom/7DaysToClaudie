@@ -95,6 +95,15 @@ func add_region(world: WorldDef, rid: String, rt: RegionTerrain, lots: Dictionar
 		by_region[rid] = []
 
 
+## A building another system places (ADR-0054: a forest encounter's hermit shack), standing at
+## `xf` (its def's footprint from the origin, like a pad). It joins the ring like any other; a
+## repeat call for the same id is ignored.
+func add_extra(id: StringName, rid: String, def_id: StringName, xf: Transform3D, footprint: Vector2) -> void:
+	var c: Vector3 = xf * Vector3(footprint.x * 0.5, 0.0, footprint.y * 0.5)
+	_add({"id": id, "kind": "poi", "region": rid, "placement": String(id), "def": def_id, "res": {}, "fxf": xf,
+		"center": Vector2(c.x, c.z), "half": footprint * 0.5, "yaw": xf.basis.get_euler().y})
+
+
 func _add(e: Dictionary) -> void:
 	var id: StringName = e["id"]
 	if entries.has(id):

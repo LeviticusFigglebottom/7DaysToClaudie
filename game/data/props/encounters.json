@@ -1,0 +1,110 @@
+{
+ "_doc": "Forest encounter props (ADR-0054): the small finds between the towns (data/encounters). Models: tools/assetgen/blender/generators/props_encounters.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_encounters.py; existing materials only. size = [width x, height y, depth z] in metres (Godot axes, front +Z, origin at the bottom centre). The ladder stand's back (-Z) leans on a trunk: an encounter anchored on a tree measures its props from the trunk's surface.",
+ "defs": [
+  {
+   "id": "enc_camp_cooler",
+   "name": "Camp Cooler",
+   "description": "A two-tone plastic cooler with a swing handle, left by a dead fire.",
+   "tags": ["container", "camp"],
+   "variants": {"clean": "props/enc_camp_cooler", "worn": "props/enc_camp_cooler_worn"},
+   "collision": "box",
+   "size": [0.62, 0.42, 0.4],
+   "container": "enc_cooler",
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "enc_ladder_stand",
+   "name": "Ladder Stand",
+   "description": "A steel ladder stand strapped to a trunk: shooting rail, mesh seat and a camo seat cushion four metres up.",
+   "tags": ["hunting", "climbable"],
+   "variants": {"clean": "props/enc_ladder_stand", "worn": "props/enc_ladder_stand_worn"},
+   "collision": "none",
+   "size": [0.9, 4.6, 1.5],
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "enc_ground_blind",
+   "name": "Ground Blind",
+   "description": "A pop-up hub blind in faded camo, its shooting windows half unzipped.",
+   "tags": ["hunting"],
+   "variants": {"clean": "props/enc_ground_blind", "worn": "props/enc_ground_blind_worn"},
+   "collision": "box",
+   "size": [1.8, 1.75, 1.8],
+   "blocks_sight": true,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "enc_logging_truck_wreck",
+   "name": "Logging Truck",
+   "description": "A log truck run off the track: cab doors open, bunks and stakes, a few logs still chained on.",
+   "tags": ["vehicle", "container"],
+   "variants": {"clean": "props/enc_logging_truck_wreck", "worn": "props/enc_logging_truck_wreck_worn"},
+   "collision": "box",
+   "hp": 2000,
+   "size": [2.6, 3.3, 9.6],
+   "container": "enc_truck_cab",
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "enc_atv_wreck",
+   "name": "Broken-down ATV",
+   "description": "A red quad bike nosed into the brush, a flat tyre and a box strapped to the rear rack.",
+   "tags": ["vehicle", "container"],
+   "variants": {"clean": "props/enc_atv_wreck", "worn": "props/enc_atv_wreck_worn"},
+   "collision": "box",
+   "hp": 600,
+   "size": [1.2, 1.15, 2.05],
+   "container": "enc_atv_box",
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "enc_tarp_cache",
+   "name": "Tarp Cache",
+   "description": "A blue tarp pegged down over crates and jugs, weighted with stones.",
+   "tags": ["container", "camp"],
+   "variants": {"clean": "props/enc_tarp_cache", "worn": "props/enc_tarp_cache_worn"},
+   "collision": "box",
+   "size": [1.6, 0.8, 1.2],
+   "container": "enc_survivor_cache",
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "enc_bloom_kill",
+   "name": "Bloom-grown Kill",
+   "description": "A deer dead on its side, the Bloom's felt and pale caps grown through its coat.",
+   "tags": ["bloom", "corpse", "container"],
+   "variants": {"clean": "props/enc_bloom_kill", "worn": "props/enc_bloom_kill_worn"},
+   "collision": "box",
+   "size": [0.9, 0.6, 1.7],
+   "container": "enc_bloom_kill",
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "enc_grave_cross",
+   "name": "Grave Cross",
+   "description": "Two branches lashed into a cross with cord, a name burnt into the crosspiece.",
+   "tags": ["grave"],
+   "variants": {"clean": "props/enc_grave_cross", "worn": "props/enc_grave_cross_worn"},
+   "collision": "none",
+   "size": [0.62, 1.25, 0.12],
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "enc_cordon_marker",
+   "name": "Cordon Marker",
+   "description": "An orange survey stake with a laminated Cordon placard and a streamer of hazard tape.",
+   "tags": ["cordon"],
+   "variants": {"clean": "props/enc_cordon_marker", "worn": "props/enc_cordon_marker_worn"},
+   "collision": "none",
+   "size": [0.4, 1.3, 0.1],
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  }
+ ]
+}
