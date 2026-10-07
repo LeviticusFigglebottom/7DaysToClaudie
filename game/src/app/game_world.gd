@@ -88,6 +88,12 @@ func _ready() -> void:
 	ui.name = "UI"
 	add_child(ui)
 	ui.show_loading("Entering the Cordon…", 0.0)
+	# The modules' scripts compile on loader threads while the world loads: compiling one (and
+	# the classes it uses) on the main thread when its boot step comes took 120-170 ms each for
+	# PoiManager, WildlifeManager and TraderManager on a first load (TD-197).
+	for m: Array in MODULES:
+		if ResourceLoader.exists(str(m[1])):
+			ResourceLoader.load_threaded_request(str(m[1]))
 	_loader = WorldLoader.new()
 	_loader.resolve_lots = true
 	_loader.world_seed = session.world_seed
@@ -366,7 +372,10 @@ const MODULES: Array = [
 func _spawn_module(prop: String, script: String) -> void:
 	if not ResourceLoader.exists(script):
 		return
-	var node: Node = (load(script) as GDScript).new()
+	# Requested in _ready (load_threaded_get waits if it is still compiling).
+	var requested: bool = ResourceLoader.load_threaded_get_status(script) != ResourceLoader.THREAD_LOAD_INVALID_RESOURCE
+	var gds: GDScript = (ResourceLoader.load_threaded_get(script) if requested else load(script)) as GDScript
+	var node: Node = gds.new()
 	node.name = prop.capitalize()
 	set(prop, node)
 	add_child(node)
