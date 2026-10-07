@@ -12,7 +12,7 @@ Nothing checked traversal in physical space:
 * PoiValidator walks a 1 m cell graph. A prop never blocks one of its edges; it only warns when a
   big one sits on a route cell. Stairs and ladders are single abstract edges.
 * The builder's scattered clutter has no collision. Authored props get a box of their def's size
-  (`collision` box, convex or mesh alike).
+  (`collision` box, convex or mesh alike). A def's `boxes` gives several (ADR-0053, TD-270).
 * Nothing keeps a door's swing, or the space in front of it, clear.
 * A ladder (`PoiPieces.Ladder`) was an interaction that teleported the player to the other floor.
 * The tour bot sprints at a POI's origin and never walks a route.
