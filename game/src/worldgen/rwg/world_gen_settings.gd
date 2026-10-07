@@ -23,7 +23,7 @@ const BURN_KEYS: PackedStringArray = ["per_16km2", "cells", "max_share", "water"
 const FEN_KEYS: PackedStringArray = ["max_slope", "water", "low", "valley", "patch", "town_clear", "drop_clear", "pools"]
 const POOL_SPEC_KEYS: PackedStringArray = ["chance", "per_cell", "radius", "depth", "drop", "shore", "irregularity", "max_slope", "border"]
 const POOL_KEYS: PackedStringArray = ["poi", "site", "per_region", "max", "access", "biome", "min_danger", "keep_water", "skirt", "unique",
-	"pad", "door"]
+	"pad", "door", "late"]
 ## tuning.wilderness.mine: how a `mine` site (a buried-level POI dug into a hillside, TD-169) fits.
 const MINE_KEYS: PackedStringArray = ["slope", "cover", "portal", "taper", "pad_relief", "approach", "road"]
 ## tuning.towns (organic towns, ADR-0040; the planner's own numbers are town_planner.json).
