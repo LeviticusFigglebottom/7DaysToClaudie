@@ -1422,6 +1422,56 @@
    "rooms": [
     "exterior"
    ]
+  },
+  {
+   "id": "w3_fallen_line_pole",
+   "name": "Downed Power Pole",
+   "description": "A creosoted power pole down across the ground, its crossarm askew and a cut line looped off it in the grass.",
+   "tags": [
+    "exterior",
+    "survivor",
+    "barricade",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w3_fallen_line_pole",
+    "worn": "props/w3_fallen_line_pole_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    9.4,
+    0.5,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w3_tarp_lean",
+   "name": "Tarp Lean-to",
+   "description": "A blue tarp strung lean-to fashion from the side of a truck to two peeled poles, guyed out to stakes.",
+   "tags": [
+    "exterior",
+    "survivor"
+   ],
+   "variants": {
+    "clean": "props/w3_tarp_lean",
+    "worn": "props/w3_tarp_lean_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.2,
+    2.0,
+    2.4
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
   }
  ]
 }

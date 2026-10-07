@@ -94,6 +94,9 @@ PROPS: dict[str, tuple[list[str], dict]] = {
     "w3_raised_bed": (CWD, {"seed": 3404}),
     "w3_rain_catcher": (CW, {"seed": 3405}),
     "w3_stake_row": (CW, {"seed": 3406}),
+    # --- Ezra Vane's camp (ADR-0058) ------------------------------------------------------------------
+    "w3_fallen_line_pole": (CW, {"seed": 3501, "ao_dist": 0.8}),
+    "w3_tarp_lean": (CW, {"seed": 3502, "ao_dist": 0.8}),
 }
 
 

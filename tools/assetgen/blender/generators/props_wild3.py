@@ -1603,6 +1603,55 @@ def w3_rain_catcher(ctx: K.Ctx) -> None:
     ctx.add(P.plank("stand", 0.5, 0.2, 0.04), "wood_weathered", long_axis=0, patches=0.6, at=((0, -0.5, 0.02), (0, 0, 0)))
 
 
+def w3_fallen_line_pole(ctx: K.Ctx) -> None:
+    """A power pole down across the ground (Ezra Vane's camp, ADR-0058): the creosoted pole along X
+    (9.4 m, the butt at -X up on a log chock where it was dragged), its crossarm at the top end
+    knocked askew with a glass insulator left on it, a cut drop line looped off it in the grass."""
+    r = ctx.rnd("fpole")
+    L = 9.4
+    # lying along X: the butt (r 0.15) at -X, raised on the chock; the top (r 0.11) on the ground
+    pole = K.cyl("pole", 0.15, L, segs=10, axis="X", center=(0.0, 0.0, 0.0), r_top=0.11, cuts=8)
+    K.place(pole, (0, 0, 0), (0, -1.6, 0))
+    K.place(pole, (0.0, 0.0, 0.27))
+    ctx.add(pole, "wood_creosote", uv="cyl", uv_scale=1.0, smooth=50, patches=0.4, moss=0.25)
+    _log(ctx, "chock", (-L * 0.42, -0.45, 0.1), (-L * 0.42, 0.45, 0.11), 0.11, ctx.seed + 3, moss=0.3)
+    arm = P.plank("crossarm", 2.44, 0.11, 0.09, cuts=2)
+    K.place(arm, (0, 0, 0), (0, 0, 72.0 + r.uniform(-6, 6)))
+    K.place(arm, (L * 0.43, 0.0, 0.2))
+    ctx.add(arm, "wood_weathered", long_axis=0, patches=0.4)
+    ins = K.lathe("insulator", [(0.0, 0.0), (0.055, 0.0), (0.06, 0.03), (0.04, 0.05), (0.05, 0.075),
+                                (0.03, 0.1), (0.022, 0.13), (0.0, 0.135)], segs=10)
+    K.place(ins, (0, 0, 0), (90, 0, 0))
+    K.place(ins, (L * 0.43 - 0.3, -0.85, 0.24))
+    ctx.add(ins, "glass_green", uv="cyl", uv_scale=1.0, smooth=50, wear=0.2)
+    pts = [(L * 0.45, 0.1, 0.28)]
+    for k in range(1, 14):
+        t = k / 13.0
+        pts.append((L * 0.45 - 1.2 * t + 0.5 * math.sin(t * 5.0), 0.3 + 1.1 * math.sin(t * 3.0), 0.03 + 0.25 * (1 - t) ** 2))
+    line = K.tube("dropline", pts, 0.008, segs=4)
+    ctx.add(line, "rubber_black", uv_scale=1.0, wear=0.2)
+
+
+def w3_tarp_lean(ctx: K.Ctx) -> None:
+    """A blue tarp strung lean-to fashion (Ezra Vane's camp, ADR-0058): its back edge tied high (2.0 m)
+    along the side of the line truck it stands against (+Y), the front (-Y) on two peeled poles at
+    1.3 m, guyed out to stakes; sagging between the ties. 3.2 x 2.4 m."""
+    w, d = 3.2, 2.4
+    tarp = K.grid("tarp", w, d, 12, 8, center=(0, 0, 0))
+    for v in tarp.data.vertices:
+        u = (v.co.y + d * 0.5) / d          # 0 front .. 1 back
+        x = v.co.x / (w * 0.5)
+        v.co.z = 1.3 + 0.7 * u - 0.12 * (1.0 - x * x) * math.sin(math.pi * u) - 0.05 * (1.0 - x * x)
+    K.crumple(tarp, 0.02, seed=ctx.seed)
+    K.solidify(tarp, 0.004, offset=0.0, even=False)
+    ctx.add(tarp, "tarp_blue", uv="box", uv_scale=1.0, smooth=35, patches=0.6)
+    for sx in (-1, 1):
+        W.pole(ctx, f"pole{sx}", [(sx * (w * 0.5 - 0.1), -d * 0.5, -0.02), (sx * (w * 0.5 - 0.1), -d * 0.5, 1.36)], 0.035,
+               "out_log_peeled", r_end=0.03, seed=ctx.seed + sx)
+        W.rod(ctx, f"guy{sx}", (sx * (w * 0.5 - 0.1), -d * 0.5, 1.3), (sx * (w * 0.5 + 0.5), -d * 0.5 - 0.9, 0.02), 0.004,
+              "rubber_black", segs=4)
+
+
 def w3_stake_row(ctx: K.Ctx) -> None:
     """Sharpened stakes driven through a log at the foot of the wall, angled out (-Y) at the height of a
     man's chest, the way the player's own stake barricades stand."""
@@ -1686,6 +1735,8 @@ BUILDERS = {
     "w3_raised_bed": w3_raised_bed,
     "w3_rain_catcher": w3_rain_catcher,
     "w3_stake_row": w3_stake_row,
+    "w3_fallen_line_pole": w3_fallen_line_pole,
+    "w3_tarp_lean": w3_tarp_lean,
 }
 
 
