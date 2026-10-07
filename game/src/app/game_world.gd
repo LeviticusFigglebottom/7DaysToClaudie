@@ -117,6 +117,10 @@ func _exit_tree() -> void:
 
 func _process(_delta: float) -> void:
 	_load_step()
+	# The sky's light for the Hollowed's eyes (Stimuli.detection_range scales sight by it). It was
+	# never fed: perception saw every night at full daylight with the night sight range.
+	if is_ready and env != null and Stimuli.current != null:
+		Stimuli.current.ambient_light = env.ambient_light_level()
 	# Sampled after this frame's steps: the label shown now names the step the next frame runs,
 	# and the meter attributes the coming frame to it (GameWorld processes last, see _ready).
 	if not is_ready or _load_meter.trailing():
