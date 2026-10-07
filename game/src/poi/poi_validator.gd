@@ -355,6 +355,14 @@ func _run() -> void:
 				has_container = true
 		if not has_container:
 			_e("loot room '%s' has no container" % lr_char)
+		# A contract cache's authored spot (TD-144): in the loot room, on a cell nothing stands in.
+		var cache: Array = layout.loot_room.get("cache", [])
+		if not cache.is_empty():
+			var cc := Vector2i(int(floor(float(cache[0]))), int(floor(float(cache[cache.size() - 1]))))
+			if cache.size() != 2 or layout.room_at(lr_level, cc) != lr_char:
+				_e("loot_room.cache %s is not in loot room '%s'" % [cache, lr_char])
+			elif Contracts.taken_cells(layout, lr_level).has(cc):
+				_e("loot_room.cache %s is on a cell something already stands in" % [cache])
 	# Route.
 	if layout.route.size() < 2:
 		_e("route needs at least two waypoints")

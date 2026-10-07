@@ -382,6 +382,11 @@ func _cmd_contract_start_defend(args: Dictionary) -> Dictionary:
 	if not bool(args.get("remote", false)) and _player_pos(p).distance_to(spot) > 6.0:
 		return _fail("get to the cache")
 	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c["def"]))) as QuestDef
+	# Never into the Hum (TD-142): not while it is out, nor when it would come before the uplink is done.
+	var clock: WorldClock = Game.session.clock
+	var hold_h: float = qd.duration * clock.minutes_per_real_second() / 60.0
+	if clock.is_horde_active() or clock.hours_until_horde() < hold_h + 0.5:
+		return _fail("not with the Hum coming")
 	_runs[str(c["id"])] = {"t": 0.0, "next_wave": 3.0, "wave": 0, "outside": 0.0, "enemies": [], "player": String(p.id),
 		"duration": qd.duration}
 	c["running"] = true
@@ -419,6 +424,8 @@ func _follow(p: PlayerState, c: Dictionary, dt: float) -> void:
 				_follow_recovery(p, c, qd)
 			elif not bool(c.get("placed", false)):
 				_place_cache(c, p)
+			else:
+				_follow_beacon(c, p)
 		"defend":
 			_follow_defence(p, c, dt)
 
@@ -486,8 +493,9 @@ func _in_loot_room(instance_id: StringName, pos: Vector3) -> bool:
 
 
 ## Sets a fetch contract's cache down in its building once the building stands and the player is
-## near: on the floor of a loot-room cell (any room cell when it has none) the seed picks. It is
-## a loose item from then on (saved with the world's loose items).
+## near: on its authored spot or a free floor cell of its loot room (Contracts.cache_spot, TD-144).
+## It is a loose item from then on (saved with the world's loose items), with a Program beacon
+## blinking over it while the contract is open.
 func _place_cache(c: Dictionary, p: PlayerState) -> void:
 	var pois: Node = world.get(&"pois") if world != null else null
 	if pois == null:
@@ -495,22 +503,60 @@ func _place_cache(c: Dictionary, p: PlayerState) -> void:
 	var inst: PoiInstance = (pois.get(&"instances") as Dictionary).get(StringName(str(c["target"]))) as PoiInstance
 	if inst == null or _player_pos(p).distance_to(_vec(c["pos"])) > PLACE_RANGE:
 		return
-	var l: PoiLayout = inst.layout
-	var level: int = int(l.loot_room.get("level", 0)) if not l.loot_room.is_empty() else 0
-	var cells: Array[Vector2i] = []
-	for cell: Vector2i in l.room_cells(level):
-		if l.loot_room.is_empty() or l.room_at(level, cell) == str(l.loot_room.get("room", "")):
-			cells.append(cell)
-	if cells.is_empty():
+	var spot: Dictionary = Contracts.cache_spot(inst.layout, "%d:%s" % [Game.session.world_seed, c["id"]])
+	if spot.is_empty():
 		return
-	var rng := RandomNumberGenerator.new()
-	rng.seed = Ids.hash64("cache:%d:%s" % [Game.session.world_seed, c["id"]])
-	var cell: Vector2i = cells[rng.randi() % cells.size()]
-	var at: Vector3 = inst.global_transform * (l.cell_center(level, cell) + Vector3.UP * 0.6)
+	var at: Vector3 = inst.global_transform * ((spot["pos"] as Vector3) + Vector3.UP * 0.3)
 	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c["def"]))) as QuestDef
 	ItemDrop.spawn(world, ItemStack.make(StringName(qd.item), 1), at, StringName("cache_%s" % str(c["id"]).replace(":", "_")))
 	c["placed"] = true
 	c["cache_at"] = [at.x, at.y, at.z]
+
+
+## contract id -> the beacon blinking over its cache
+var _beacons: Dictionary = {}
+
+
+## A Program beacon over a placed cache while the contract is open and the player is near, so it
+## can be found in a dark room; gone once it is picked up.
+func _follow_beacon(c: Dictionary, p: PlayerState) -> void:
+	var cid: String = str(c["id"])
+	var want: bool = bool(c.get("placed", false)) and str(c["state"]) == ContractLog.ACTIVE \
+		and _player_pos(p).distance_to(_vec(c.get("cache_at", c["pos"]))) < CACHE_RANGE
+	if want and not _beacons.has(cid):
+		var b := CacheBeacon.new()
+		add_child(b)
+		b.global_position = _vec(c["cache_at"]) + Vector3.UP * 0.25
+		_beacons[cid] = b
+	elif not want and _beacons.has(cid):
+		_drop_beacon(cid)
+
+
+func _drop_beacon(cid: String) -> void:
+	if _beacons.has(cid):
+		var b: Node = _beacons[cid]
+		if is_instance_valid(b):
+			b.queue_free()
+		_beacons.erase(cid)
+
+
+## A small amber lamp that pulses (the Program's cache beacon).
+class CacheBeacon:
+	extends Node3D
+	var _light: OmniLight3D
+	var _t: float = 0.0
+
+	func _ready() -> void:
+		_light = OmniLight3D.new()
+		_light.light_color = Color(1.0, 0.62, 0.2)
+		_light.omni_range = 3.5
+		_light.light_energy = 0.0
+		_light.shadow_enabled = false
+		add_child(_light)
+
+	func _process(delta: float) -> void:
+		_t += delta
+		_light.light_energy = 1.4 * maxf(0.0, sin(_t * 4.0)) if fmod(_t, 2.0) < 0.8 else 0.0
 
 
 ## A fetch whose building already holds the item (the field lab's Bloom core, TD-179): ready while
@@ -583,11 +629,14 @@ func _wave(c: Dictionary, qd: QuestDef, run: Dictionary, spot: Vector3) -> void:
 		return
 	var rng := RandomNumberGenerator.new()
 	rng.seed = Ids.hash64("wave:%d:%s:%d" % [Game.session.world_seed, c["id"], int(run["wave"])])
-	var n: int = rng.randi_range(int(qd.wave_size[0]), int(qd.wave_size[qd.wave_size.size() - 1]))
+	var gs: int = Game.session.gamestage(Game.session.players.get(StringName(str(run.get("player", "")))))
+	var n: int = wave_count(qd, gs, rng)
 	var ang: float = rng.randf() * TAU
 	for i: int in n:
 		var at: Vector3 = _wave_point(ai, spot, ang + rng.randf_range(-0.5, 0.5), rng)
-		var e: Node = ai.call(&"spawn", _pick_enemy(qd, rng), at, {"target": spot, "tier": "normal"})
+		# No fixed tier (TD-142): the AI director rolls it from the gamestage, and holds back types the
+		# gamestage hasn't reached, as it does for heat responses.
+		var e: Node = ai.call(&"spawn", _pick_enemy(qd, rng), at, {"target": spot})
 		if e != null:
 			(run["enemies"] as Array).append(e.get(&"entity_id"))
 
@@ -606,6 +655,12 @@ func _wave_point(ai: Node, spot: Vector3, ang: float, rng: RandomNumberGenerator
 	return fallback
 
 
+## Hollowed in one wave: the def's band, plus `wave_growth` per gamestage point (TD-142).
+static func wave_count(qd: QuestDef, gamestage: int, rng: RandomNumberGenerator) -> int:
+	var n: int = rng.randi_range(int(qd.wave_size[0]), int(qd.wave_size[qd.wave_size.size() - 1]))
+	return n + int(floor(float(gamestage) * qd.wave_growth))
+
+
 static func _pick_enemy(qd: QuestDef, rng: RandomNumberGenerator) -> StringName:
 	var keys: Array = qd.enemies.keys()
 	keys.sort()
@@ -621,6 +676,7 @@ static func _pick_enemy(qd: QuestDef, rng: RandomNumberGenerator) -> StringName:
 
 
 func _end_run(cid: String) -> void:
+	_drop_beacon(cid)
 	_runs.erase(cid)
 	if _caches.has(cid):
 		(_caches[cid] as Node).queue_free()
@@ -684,7 +740,10 @@ func _spot_ok(p: Vector3) -> bool:
 
 # --- Guards ---------------------------------------------------------------------------------------
 
-## The Program's guards keep the post clear: any Hollowed inside a safe zone takes fire.
+## The Program's guards keep the post clear: any Hollowed (or Ashen) inside a safe zone takes fire
+## from the nearest guard tower, with a muzzle flash and a tracer from its deck (TD-143); a post
+## without towers fires from above its centre. Wanderers and investigators heading into a zone
+## are turned to its edge instead, so they skirt the wire rather than walk in and die.
 func _guards(dt: float) -> void:
 	var ai: Node = world.get(&"ai") if world != null else null
 	if ai == null or not ai.has_method(&"enemies_in_radius"):
@@ -692,17 +751,114 @@ func _guards(dt: float) -> void:
 	for pid: Variant in posts.keys():
 		var e: Dictionary = posts[pid]
 		var td: TraderDef = e["def"]
-		for en: Enemy in ai.call(&"enemies_in_radius", e["pos"], td.safe_radius):
-			if not is_instance_valid(en) or en.is_queued_for_deletion():
+		var centre: Vector3 = e["pos"]
+		for en: Enemy in ai.call(&"enemies_in_radius", centre, td.safe_radius + AVOID_MARGIN):
+			if not is_instance_valid(en) or en.is_queued_for_deletion() or not en.is_alive():
+				continue
+			var flat: float = Vector2(en.global_position.x - centre.x, en.global_position.z - centre.z).length()
+			if flat > td.safe_radius:
+				_steer_off(en, centre, td.safe_radius)
 				continue
 			var d := DamageInfo.make(td.guard_dps * dt, &"ballistic", &"firearm", StringName("guard:%s" % pid))
-			d.source_pos = (e["pos"] as Vector3) + Vector3.UP * 7.0
+			d.source_pos = _gun_for(e, en.global_position)
 			d.hit_pos = en.global_position + Vector3.UP * 1.2
 			d.direction = (d.hit_pos - d.source_pos).normalized()
 			d.stagger = 0.4
 			en.take_damage(d)
+			if is_inside_tree():
+				GuardShot.fire(self, d.source_pos, d.hit_pos)
 			if Audio != null:
 				Audio.play_3d(&"sfx/gun_revolver_shot", d.source_pos, {"volume_db": 0.0, "max_distance": 300.0, "occlusion": false})
+
+
+## Metres outside a safe zone where a drifting Hollowed is turned along the wire.
+const AVOID_MARGIN: float = 14.0
+## A guard's gun on a tower deck (waystation_tower: the deck at 4.5 m, a man's shoulder above it).
+const TOWER_GUN_Y: float = 5.9
+
+
+## The gun nearest a target: a guard tower of the post, else a point over its centre.
+func _gun_for(e: Dictionary, target: Vector3) -> Vector3:
+	var best := (e["pos"] as Vector3) + Vector3.UP * 7.0
+	var best_d: float = INF
+	for t: Vector3 in towers_of(e):
+		var d: float = t.distance_to(target)
+		if d < best_d:
+			best = t
+			best_d = d
+	return best
+
+
+## World positions of a post's guard guns (one per waystation_tower in its dressing).
+static func towers_of(e: Dictionary) -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	var td: TraderDef = e["def"]
+	var basis := Basis(Vector3.UP, deg_to_rad(float(e.get("yaw", 0.0))))
+	for v: Variant in td.props:
+		var pd: Dictionary = v
+		if str(pd.get("prop", "")) != "waystation_tower":
+			continue
+		var off: Array = pd.get("offset", [0, 0])
+		out.append((e["pos"] as Vector3) + basis * Vector3(float(off[0]), 0.0, float(off[1])) + Vector3.UP * TOWER_GUN_Y)
+	return out
+
+
+## A Hollowed drifting toward the zone (not hunting the player inside it): its goal moves to the
+## zone's edge, round the side it is on.
+static func _steer_off(en: Enemy, centre: Vector3, radius: float) -> void:
+	if en.state not in [Enemy.State.IDLE, Enemy.State.WANDER, Enemy.State.INVESTIGATE] or en.horde:
+		return
+	var t: Vector3 = en.target_pos
+	var to_t := Vector2(t.x - centre.x, t.z - centre.z)
+	if to_t.length() > radius:
+		return
+	var out := Vector2(en.global_position.x - centre.x, en.global_position.z - centre.z)
+	out = out.normalized() if out.length() > 0.1 else Vector2.RIGHT
+	var edge: Vector2 = Vector2(centre.x, centre.z) + out * (radius + AVOID_MARGIN * 0.5)
+	en.target_pos = Vector3(edge.x, en.global_position.y, edge.y)
+	en.home = en.target_pos
+
+
+## A guard's shot made visible: a muzzle flash on the tower and a tracer to the target, gone in a
+## tenth of a second.
+class GuardShot:
+	extends Node3D
+	var _t: float = 0.0
+	var _light: OmniLight3D
+	var _line: MeshInstance3D
+
+	static func fire(parent: Node, from: Vector3, to: Vector3) -> void:
+		var s := GuardShot.new()
+		parent.add_child(s)
+		s.global_position = from
+		s._build(to - from)
+
+	func _build(rel: Vector3) -> void:
+		_light = OmniLight3D.new()
+		_light.light_color = Color(1.0, 0.78, 0.4)
+		_light.omni_range = 6.0
+		_light.light_energy = 3.0
+		add_child(_light)
+		var im := ImmediateMesh.new()
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.albedo_color = Color(1.0, 0.85, 0.5, 0.8)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		im.surface_begin(Mesh.PRIMITIVE_LINES, mat)
+		# The tracer: the last two thirds of the flight, so it reads as a streak, not a beam.
+		im.surface_add_vertex(rel * 0.35)
+		im.surface_add_vertex(rel)
+		im.surface_end()
+		_line = MeshInstance3D.new()
+		_line.mesh = im
+		_line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_line)
+
+	func _process(delta: float) -> void:
+		_t += delta
+		_light.light_energy = maxf(0.0, 3.0 * (1.0 - _t / 0.08))
+		if _t > 0.12:
+			queue_free()
 
 
 # --- Tether ---------------------------------------------------------------------------------------

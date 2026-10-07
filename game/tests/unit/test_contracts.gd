@@ -158,3 +158,39 @@ func test_a_tier_five_site_has_a_contract() -> void:
 			assert_true(qd.once)
 			assert_gt(int(qd.rewards.get("scrip", 0)), _td.sell_price(Content.item(StringName(qd.item))), "pays over the sale price")
 	assert_true(found)
+
+
+func test_a_fetch_cache_lands_on_free_floor_in_the_loot_room() -> void:
+	# TD-144: never on a shelf or between props: a loot-room cell nothing stands in.
+	var checked: int = 0
+	for def_id: StringName in [&"water_works", &"hollis_pawn_gun", &"northfork_cannery", &"vfw_post"]:
+		var pd: PoiDef = Content.get_def(&"poi", def_id) as PoiDef
+		if pd == null:
+			continue
+		var l: PoiLayout = PoiLayout.compile(pd)
+		var lr_level: int = int(l.loot_room.get("level", 0))
+		var taken: Dictionary = Contracts.taken_cells(l, lr_level)
+		for k: int in 6:
+			var spot: Dictionary = Contracts.cache_spot(l, "test:%d" % k)
+			assert_false(spot.is_empty(), String(def_id))
+			assert_eq(spot, Contracts.cache_spot(l, "test:%d" % k), "deterministic")
+			var pos: Vector3 = spot["pos"]
+			var cell := Vector2i(int(floor(pos.x - l.origin.x)), int(floor(pos.z - l.origin.y)))
+			assert_eq(l.room_at(lr_level, cell), str(l.loot_room.get("room", "")), "%s: in the loot room" % def_id)
+			assert_false(taken.has(cell), "%s: %s is free floor" % [def_id, cell])
+		checked += 1
+	assert_gt(checked, 2)
+
+
+func test_an_authored_cache_spot_wins() -> void:
+	var l: PoiLayout = PoiLayout.compile(Content.get_def(&"poi", &"water_works") as PoiDef)
+	var lr: Dictionary = l.loot_room.duplicate()
+	var cell: Vector2i = Vector2i.ZERO
+	for c: Vector2i in l.room_cells(int(lr.get("level", 0))):
+		if l.room_at(int(lr.get("level", 0)), c) == str(lr.get("room", "")):
+			cell = c
+	lr["cache"] = [cell.x + 0.5, cell.y + 0.5]
+	l.loot_room = lr
+	var spot: Dictionary = Contracts.cache_spot(l, "any")
+	assert_true(bool(spot["authored"]))
+	assert_almost_eq((spot["pos"] as Vector3).x, l.origin.x + cell.x + 0.5, 0.001)

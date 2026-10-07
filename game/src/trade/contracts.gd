@@ -167,3 +167,72 @@ static func defend_spot(building_pos: Vector3, key: String, ok: Callable, dist: 
 		if ok.call(p):
 			return p
 	return building_pos
+
+
+## Where a fetch contract's cache is set down in a building (TD-144), in the layout's local frame:
+## {level, pos: Vector3 (on the floor), authored: bool}, or {} when the building has no floor to
+## put it on. An authored spot wins: `loot_room.cache: [x, z]` (footprint metres, on the loot
+## room's level). Otherwise a free floor cell of the loot room (any room when it has none) that the
+## seed key picks: one no prop stands on (by its def's size and turn), and no stair, ladder, hole,
+## trap, sleeper or pickup takes, so the cache never lands on a shelf or between two of them.
+static func cache_spot(l: PoiLayout, key: String) -> Dictionary:
+	var level: int = int(l.loot_room.get("level", 0)) if not l.loot_room.is_empty() else 0
+	var authored: Array = l.loot_room.get("cache", [])
+	if authored.size() == 2:
+		return {"level": level, "pos": l.local_pos(level, Vector2(float(authored[0]), float(authored[1]))), "authored": true}
+	var room: String = str(l.loot_room.get("room", ""))
+	var taken: Dictionary = taken_cells(l, level)
+	var free: Array[Vector2i] = []
+	var any: Array[Vector2i] = []
+	for cell: Vector2i in l.room_cells(level):
+		if room != "" and l.room_at(level, cell) != room:
+			continue
+		any.append(cell)
+		if not taken.has(cell):
+			free.append(cell)
+	var pool: Array[Vector2i] = free if not free.is_empty() else any
+	if pool.is_empty():
+		return {}
+	var rng := RandomNumberGenerator.new()
+	rng.seed = Ids.hash64("cache:%s" % key)
+	return {"level": level, "pos": l.cell_center(level, pool[rng.randi() % pool.size()]), "authored": false}
+
+
+## Cells of a level something already stands in: props (their def's footprint, turned), stairs,
+## ladders, holes, traps, sleepers and pickups. Wall-mounted props and props without collision
+## leave the floor free.
+static func taken_cells(l: PoiLayout, level: int) -> Dictionary:
+	var out: Dictionary = {}
+	for p: Dictionary in l.props:
+		if int(p.get("level", 0)) != level:
+			continue
+		var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+		if pd != null and (pd.wall_mounted or pd.collision == "none"):
+			continue
+		var size: Vector3 = pd.size if pd != null else Vector3.ONE
+		var pos: Vector2 = p["pos"]
+		var a: float = deg_to_rad(float(p.get("rot", 0.0)))
+		# The turned footprint's extent (half width along x and z), less a margin so a prop
+		# flush to a cell edge doesn't claim its neighbour.
+		var hx: float = absf(cos(a)) * size.x * 0.5 + absf(sin(a)) * size.z * 0.5 - 0.05
+		var hz: float = absf(sin(a)) * size.x * 0.5 + absf(cos(a)) * size.z * 0.5 - 0.05
+		for z: int in range(int(floor(pos.y - hz)), int(floor(pos.y + hz)) + 1):
+			for x: int in range(int(floor(pos.x - hx)), int(floor(pos.x + hx)) + 1):
+				out[Vector2i(x, z)] = true
+	for s: Dictionary in l.stairs:
+		if int(s["level"]) == level or int(s["level"]) + 1 == level:
+			for c: Vector2i in s["cells"]:
+				out[c] = true
+	for ld: Dictionary in l.ladders:
+		if int(ld["level"]) == level or int(ld["level"]) + 1 == level:
+			out[ld["cell"]] = true
+	for t: Dictionary in l.traps:
+		if int(t.get("level", 0)) == level:
+			for c2: Vector2i in t.get("cells", [t["cell"]]):
+				out[c2] = true
+	for list: Array in [l.sleepers, l.pickups, l.holes]:
+		for d: Variant in list:
+			var dd: Dictionary = d
+			if int(dd.get("level", 0)) == level and dd.has("cell"):
+				out[dd["cell"]] = true
+	return out
