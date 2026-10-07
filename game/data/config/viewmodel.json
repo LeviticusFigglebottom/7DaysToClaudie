@@ -1263,17 +1263,17 @@
             -0.37
           ],
           "dir": [
-            0.0,
+            -0.0,
             1.0,
             0.0
           ],
           "back": [
             0.55,
-            0.0,
-            0.83
+            0.3,
+            0.78
           ],
-          "fist": 0.88,
-          "thumb": 0.72,
+          "fist": 1.0,
+          "thumb": 0.8,
           "elbow": [
             0.6,
             -0.6,
@@ -1293,11 +1293,11 @@
           ],
           "back": [
             -0.55,
-            0.0,
-            0.83
+            0.3,
+            0.78
           ],
-          "fist": 0.88,
-          "thumb": 0.72,
+          "fist": 1.0,
+          "thumb": 0.8,
           "elbow": [
             -0.6,
             -0.6,
@@ -1306,7 +1306,11 @@
         }
       },
       "attack": "",
-      "no_tether": true
+      "no_tether": true,
+      "fixed_roll": [
+        "R",
+        "L"
+      ]
     },
     "climb_rope": {
       "_doc": "Climbing a rope, one hand above the other (ViewModelClimb): both hands on it at 0.37 m, phase 0 of the hand-over-hand cycle (climb_rope_cycle). No item: what was in hand is stowed while climbing.",
@@ -1318,17 +1322,17 @@
             -0.37
           ],
           "dir": [
-            0.0,
+            -0.6,
             1.0,
             0.0
           ],
           "back": [
-            0.0,
-            0.0,
+            0.75,
+            0.3,
             0.92
           ],
-          "fist": 0.88,
-          "thumb": 0.72,
+          "fist": 1.0,
+          "thumb": 0.8,
           "elbow": [
             0.6,
             -0.6,
@@ -1342,17 +1346,17 @@
             -0.37
           ],
           "dir": [
-            0.0,
+            0.6,
             1.0,
             0.0
           ],
           "back": [
-            -0.0,
-            0.0,
+            -0.75,
+            0.3,
             0.92
           ],
-          "fist": 0.88,
-          "thumb": 0.72,
+          "fist": 1.0,
+          "thumb": 0.8,
           "elbow": [
             -0.6,
             -0.6,
@@ -1361,7 +1365,11 @@
         }
       },
       "attack": "",
-      "no_tether": true
+      "no_tether": true,
+      "fixed_roll": [
+        "R",
+        "L"
+      ]
     },
     "lighter": {
       "_doc": "Lighter: upright in the left hand at chest height, fingers round its body, the thumb over the wheel and the flame up and a little forward; the right hand down out of view.",
@@ -2850,8 +2858,8 @@
               0.0,
               0.0
             ],
-            "L.fist": 0.264,
-            "L.thumb": 0.36
+            "L.fist": 0.275,
+            "L.thumb": 0.376
           },
           "lin"
         ],
@@ -2942,8 +2950,8 @@
               0.0,
               0.0
             ],
-            "L.fist": 0.738,
-            "L.thumb": 0.36
+            "L.fist": 0.833,
+            "L.thumb": 0.376
           },
           "lin"
         ],
@@ -2992,8 +3000,8 @@
               0.0,
               0.0
             ],
-            "R.fist": 0.264,
-            "R.thumb": 0.36,
+            "R.fist": 0.275,
+            "R.thumb": 0.376,
             "L.move": [
               0.0,
               0.128,
@@ -3084,8 +3092,8 @@
               0.0,
               0.0
             ],
-            "R.fist": 0.738,
-            "R.thumb": 0.36,
+            "R.fist": 0.833,
+            "R.thumb": 0.376,
             "L.move": [
               0.0,
               0.026,
@@ -3330,8 +3338,8 @@
               0.0,
               0.0
             ],
-            "L.fist": 0.264,
-            "L.thumb": 0.36
+            "L.fist": 0.275,
+            "L.thumb": 0.376
           },
           "lin"
         ],
@@ -3422,8 +3430,8 @@
               0.0,
               0.0
             ],
-            "L.fist": 0.738,
-            "L.thumb": 0.36
+            "L.fist": 0.833,
+            "L.thumb": 0.376
           },
           "lin"
         ],
@@ -3472,8 +3480,8 @@
               0.0,
               0.0
             ],
-            "R.fist": 0.264,
-            "R.thumb": 0.36,
+            "R.fist": 0.275,
+            "R.thumb": 0.376,
             "L.move": [
               0.0,
               0.107,
@@ -3564,8 +3572,8 @@
               0.0,
               0.0
             ],
-            "R.fist": 0.738,
-            "R.thumb": 0.36,
+            "R.fist": 0.833,
+            "R.thumb": 0.376,
             "L.move": [
               0.0,
               0.021,
