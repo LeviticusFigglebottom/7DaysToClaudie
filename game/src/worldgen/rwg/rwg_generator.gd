@@ -49,7 +49,9 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## ground, placed last from their own stream (every other place stays where it was).
 ## 8: the `companion` site (ADR-0058): Ezra Vane's camp, once, in a ring round the drop site, after
 ## the mines from its own stream, with no way in (every other place stays where it was).
-const VERSION: int = 8
+## 9: the forest set pieces (ADR-0053) join the wilderness pool as `late` entries, each from its own
+## stream after the farmsteads.
+const VERSION: int = 9
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -1883,7 +1885,7 @@ func _places() -> void:
 		_sub("Placing camps and cabins", 0.7, 0.85, float(oi) / order.size())
 		for e: Variant in pool:
 			var pe: Dictionary = e
-			if str(pe.get("site", "")) != site or int(pe.get("min_danger", 1)) > max_danger:
+			if str(pe.get("site", "")) != site or int(pe.get("min_danger", 1)) > max_danger or bool(pe.get("late", false)):
 				continue
 			var pd: PoiDef = db.call(&"get_def", &"poi", StringName(str(pe.get("poi", "")))) as PoiDef if db != null else null
 			if pd == null:
@@ -1900,6 +1902,18 @@ func _places() -> void:
 			fe["site"] = "farm"
 			fe["access"] = "track"
 			_place_one(fe, Vector2(fw.size), r, wcfg)
+	# Places added after a world format shipped (`late`: the forest set pieces, generator v9), each
+	# from its own stream after the farmsteads: every place before them draws exactly as it did.
+	for e3: Variant in pool:
+		var le: Dictionary = e3
+		if not bool(le.get("late", false)) or str(le.get("site", "")) == "mine" or int(le.get("min_danger", 1)) > max_danger:
+			continue
+		var lpd: PoiDef = db.call(&"get_def", &"poi", StringName(str(le.get("poi", "")))) as PoiDef if db != null else null
+		if lpd == null:
+			continue
+		var rl := rng("places:late:%s" % lpd.id)
+		for k4: int in _pool_count(le, rl, density, area16):
+			_place_one(le, Vector2(lpd.footprint), rl, wcfg)
 	# Mines last, each from its own stream: no other place's pad reshapes the hill over their levels
 	# after the cover is checked, and the places before them draw exactly as they did (generator v5).
 	for e2: Variant in pool:

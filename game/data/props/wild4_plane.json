@@ -1,0 +1,369 @@
+{
+ "_doc": "Forest set pieces, round 4: the Cordon transport wreck (w4_cordon_plane_wreck). Models: tools/assetgen/blender/generators/props_wild4_plane.py -> models/props/<id>[_worn].glb; catalog tools/assetgen/blender_catalogs/props_wild4_plane.py; materials game/data/materials/props_wild4_plane.json. size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. Shells (w4_plane_fuselage_*) wrap the POI's kit rooms: origin at the rooms' plan centre on the ground (place them y = -floor_height); the catalog's SHELLS lists the rooms and openings they are cut for.",
+ "defs": [
+  {
+   "id": "w4_plane_fuselage_fwd",
+   "name": "Transport Fuselage (Forward)",
+   "description": "The forward fuselage of a Cordon twin-engine transport round the wreck's kit rooms (4 x 14 m): a rounded grey-green aluminium tube with rivet lines and frames, the flight deck's hump over the crew bay and its windscreen, the wing roots torn off on top, the torn end round the cargo ramp's lip, the emergency exit, CORDON stencilled on the sides (shell: origin at the rooms' plan centre on the ground, place it y = -floor_height).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_fuselage_fwd"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    7.5,
+    6.9,
+    15.5
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w4_plane_fuselage_tail",
+   "name": "Transport Fuselage (Tail)",
+   "description": "The tail section of the transport lying crosswise round its kit rooms (7 x 3 m): the tube narrowing aft, the torn end lashed shut with a tarp and cargo net, the side door, QUARANTINE on the bay (shell: origin at the rooms' plan centre on the ground, place it y = -floor_height).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_fuselage_tail"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    7.9,
+    3.85,
+    4.9
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w4_plane_nose",
+   "name": "Buried Nose",
+   "description": "The transport's nose cone and radome ploughed into a bank of earth and stones, the nose gear folded under it. It meets the forward fuselage's front.",
+   "tags": [
+    "structure",
+    "exterior",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_nose"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    5.2,
+    3.8,
+    3.9
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "w4_plane_tail_cone",
+   "name": "Tail Cone and Fin",
+   "description": "The transport's tail cone sweeping up to the fin, one tailplane snapped short, the rudder hanging. It meets the tail section's aft end.",
+   "tags": [
+    "structure",
+    "exterior",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_tail_cone"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    3.8,
+    7.5,
+    4.5
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "w4_plane_wing_section",
+   "name": "Wing Section",
+   "description": "Seven metres of torn wing lying in the brush, one end dug in, flap hanging off its tracks, fuel lines and cables out of the torn spar.",
+   "tags": [
+    "exterior",
+    "debris",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_wing_section",
+    "worn": "props/w4_plane_wing_section_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    7.8,
+    1.2,
+    3.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_plane_engine",
+   "name": "Engine Nacelle",
+   "description": "A turboprop engine torn off the wing and nosed into the dirt, its four blades bent back, the cowling split.",
+   "tags": [
+    "exterior",
+    "debris",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_engine",
+    "worn": "props/w4_plane_engine_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.4,
+    2.3,
+    4.5
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_plane_parachute",
+   "name": "Cargo Parachute",
+   "description": "An olive and white cargo canopy caught high in the trees, its skirt hanging, the rigging lines down to a torn harness on the ground (no collision: stand it between trees).",
+   "tags": [
+    "exterior",
+    "cordon",
+    "fabric"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_parachute",
+    "worn": "props/w4_plane_parachute_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    5.9,
+    5.3,
+    5.6
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_plane_cargo_pallet",
+   "name": "Medical Supply Pallet",
+   "description": "An aluminium cargo pallet that burst on landing: its net split, cartons of dressings and saline stacked and spilled, red crosses on the boxes.",
+   "tags": [
+    "exterior",
+    "container",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_cargo_pallet",
+    "worn": "props/w4_plane_cargo_pallet_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.4,
+    1.2,
+    2.9
+   ],
+   "container": "w4_plane_med_pallet",
+   "rooms": [
+    "exterior",
+    "storage"
+   ]
+  },
+  {
+   "id": "w4_plane_seat_row",
+   "name": "Jump Seats",
+   "description": "Two metres of troop jump seats: red nylon webbing on an aluminium tube frame, the backrest webbing laced to the wall rail. Four seats; place it against a wall.",
+   "tags": [
+    "furniture",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_seat_row",
+    "worn": "props/w4_plane_seat_row_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.0,
+    1.1,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "storage"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -0.75,
+      0.02
+     ],
+     "height": 0.42,
+     "facing": 0,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      -0.25,
+      0.02
+     ],
+     "height": 0.42,
+     "facing": 0,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.25,
+      0.02
+     ],
+     "height": 0.42,
+     "facing": 0,
+     "lean": "back"
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.75,
+      0.02
+     ],
+     "height": 0.42,
+     "facing": 0,
+     "lean": "back"
+    }
+   ]
+  },
+  {
+   "id": "w4_plane_cockpit_console",
+   "name": "Cockpit Console",
+   "description": "The transport's instrument panel under its glare shield, the centre pedestal with the throttles and the radio heads, gauges cracked. Place it against the windscreen wall.",
+   "tags": [
+    "furniture",
+    "machine",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_cockpit_console",
+    "worn": "props/w4_plane_cockpit_console_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    3.2,
+    1.0,
+    1.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "office"
+   ]
+  },
+  {
+   "id": "w4_plane_pilot_seat",
+   "name": "Pilot Seat",
+   "description": "A flight deck seat: a steel bucket with a grey cushion, headrest and harness straps.",
+   "tags": [
+    "furniture",
+    "cordon"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_pilot_seat",
+    "worn": "props/w4_plane_pilot_seat_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.6,
+    1.25,
+    0.65
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "office"
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      0.0
+     ],
+     "height": 0.48,
+     "facing": 0,
+     "lean": "back"
+    }
+   ]
+  },
+  {
+   "id": "w4_plane_sample_case",
+   "name": "Sample Case",
+   "description": "A steel cold-chain flight case on a low stand, QUARANTINE on its lid, latched and sealed.",
+   "tags": [
+    "container",
+    "cordon",
+    "lab"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_sample_case",
+    "worn": "props/w4_plane_sample_case_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.9,
+    0.75,
+    0.6
+   ],
+   "container": "w4_plane_sample_case",
+   "rooms": [
+    "storage",
+    "lab"
+   ]
+  },
+  {
+   "id": "w4_plane_snapped_trunk",
+   "name": "Snapped Trunk",
+   "description": "A fir snapped off three metres up by the wreck coming down, the break a fan of raw splinters.",
+   "tags": [
+    "exterior",
+    "vegetation"
+   ],
+   "variants": {
+    "clean": "props/w4_plane_snapped_trunk",
+    "worn": "props/w4_plane_snapped_trunk_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    0.8,
+    3.2,
+    0.8
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  }
+ ]
+}

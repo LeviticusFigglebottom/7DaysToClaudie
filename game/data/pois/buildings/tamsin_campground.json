@@ -375,6 +375,7 @@
     {
      "prop": "desk_small",
      "id": "kiosk_desk",
+     "route_ok": true,
      "at": [
       28,
       37

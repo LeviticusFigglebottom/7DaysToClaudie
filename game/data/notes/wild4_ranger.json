@@ -1,0 +1,33 @@
+{
+ "_doc": "Readable notes of the Kettle Creek backcountry ranger station, wilderness round 4 (pois/buildings/w4_backcountry_ranger_station.json). No note names a town. Items: items/wild4_ranger.json note_<id>.",
+ "defs": [
+  {
+   "id": "w4_ranger_district_log",
+   "title": "District Log, Kettle Creek",
+   "style": "handwritten",
+   "author": "Ines Calloway, District Ranger",
+   "body": "Day 1. Cordon convoy at the station 0600. Lt. Pike says the forest road is now Checkpoint 11 and we are its staff. Barrier down at the culvert. Nobody leaves the zone without a screening card. I said we are rangers, not police. He said we are what is left.\nDay 4. Ninety-one cars turned back. Six held at the barrier for fever. Sam put the families in the screening shelter on the cots.\nDay 9. Pike's truck went down the road for the antifungal and did not come back up it.\nDay 12. Roads closed. The radio says hold. Hold what, I asked. Hold, it said.\nDay 14. Dale turned in the bay. Wes and I barricaded the hall door. The crew sleeps in the bunkhouse now, boots on.\nDay 17. The people in the cars are not people any more. They stay by the barrier as if the card will come.\nDay 20. Still reading the weather at eight and four. Somebody should."
+  },
+  {
+   "id": "w4_ranger_roster",
+   "title": "Checkpoint 11: Standing Orders",
+   "style": "typed",
+   "author": "Cordon Traffic Control",
+   "body": "CHECKPOINT 11 - FOREST ROAD - STANDING ORDERS\n\n1. The barrier stays down. No vehicle passes without a Cordon screening card for every occupant.\n2. Temperature every occupant. Over 38.0, hold the vehicle and its occupants in the screening shelter for the medical team.\n3. Pale threads under the nails or in the eyes: do not touch. Hold. Report by radio.\n4. Civilian staff (Forest Service) assist. Civilian staff do not open the barrier.\n\nUnder it, a roster in pencil: car, plate, how many, temperature. The last eleven lines all say HELD. Somebody has written beside them: medical team not coming."
+  },
+  {
+   "id": "w4_ranger_letter",
+   "title": "Letter on a Footlocker",
+   "style": "handwritten",
+   "author": "Petra Lind",
+   "body": "Jonah - Ines says the radio might take a letter if I read it slow, so I am writing it first. We are fine. We are not fine. The cars are still at the barrier and the kids in the shelter stopped crying on Tuesday, which is worse. Wes plays cribbage with me so I don't go out there. If you get to the coast, tell Mom I did the job. Tell her I kept the engine fuelled and the hose rolled the way Dad showed me, in case the fire comes. Ines thinks something worse than fire is coming. She goes up the tower every four hours and writes down the wind."
+  },
+  {
+   "id": "w4_ranger_weather_log",
+   "title": "Fire-Weather Observations",
+   "style": "handwritten",
+   "author": "Kettle Creek tower, Ines Calloway",
+   "body": "Obs at 0800 and 1600. Dry bulb / wet bulb / RH / wind / fuel stick / danger.\nD18 0800 - 61 / 52 / 55% / SW 4 / 9 / HIGH\nD18 1600 - 74 / 56 / 31% / SW 9 / 6 / VERY HIGH\nD19 0800 - 58 / 51 / 62% / calm / 8 / HIGH\nD19 1600 - 70 / 55 / 36% / N 2 / 6 / HIGH\nD20 1600 - 69 / 54 / 34% / calm. Barograph falling with no front on the radio.\nD20 2140 - not a reading. The anemometer turning with no wind. A sound under everything, low, from the north. The screen louvres are buzzing with it. Every one of them at the barrier has turned to face the same way.\nD20 2205 - Taking the radio and the district key up to the cab. Arrow left on extreme."
+  }
+ ]
+}

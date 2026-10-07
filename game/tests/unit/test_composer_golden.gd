@@ -22,9 +22,11 @@ extends GutTest
 ## and for VERSION 7 (TD-169: the `mine` site, placed last from its own stream so every other place
 ## stays; the adit lands in neither region, so only the world id in `placements` and the input
 ## hash moved), and for VERSION 8 (ADR-0058: Ezra Vane's `companion` camp, placed last from its own
-## stream; the town region's ground, roads and masks moved with it). Larch Hollow's were
-## re-recorded when Ezra's camp was placed west of Larch Pond (ADR-0058: its pad), and
-## re-recorded when Waystation 9 was placed in it (ADR-0039: a clearing, its spawn and its drive;
+## stream; the town region's ground, roads and masks moved with it), and for VERSION 9 (ADR-0053:
+## the forest set pieces, `late` pool entries from their own streams; one reaches the town region,
+## so pads, tracks and masks moved there, and the drop-site region's world id in `placements`).
+## Larch Hollow's were re-recorded when Ezra's camp was placed west of Larch Pond (ADR-0058: its
+## pad), and when Waystation 9 was placed in it (ADR-0039: a clearing, its spawn and its drive;
 ## its 1 m variant, which only SLOW_TESTS=1 runs, a little later), and again when the Corvane
 ## Larkspur Adit was placed by the Larkspur cliffs (ADR-0044: its pad and its track);
 ## the generator versions leave them unchanged, the main map having no towns, generated posts or

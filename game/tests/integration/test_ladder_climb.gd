@@ -115,3 +115,45 @@ func test_jump_lets_go() -> void:
 	Input.action_release(&"jump")
 	_player.input_enabled = false
 	assert_false(_player.is_climbing(), "let go")
+
+
+func test_walk_off_a_landing_behind_the_rails_and_down() -> void:
+	# A stand's ladder or a rope (TD-295): the landing is behind the rails, not beside a hatch, so
+	# the player walks toward the ladder's face from the platform and climbs down.
+	var rig := Node3D.new()
+	add_child_autofree(rig)
+	rig.global_position = Vector3(30, 0, 30)
+	var deck := StaticBody3D.new()
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(2.0, 0.2, 2.0)
+	shape.shape = box
+	deck.add_child(shape)
+	deck.position = Vector3(0, 2.9, -1.05)
+	rig.add_child(deck)
+	var ground := StaticBody3D.new()
+	var gshape := CollisionShape3D.new()
+	var gbox := BoxShape3D.new()
+	gbox.size = Vector3(8.0, 0.2, 8.0)
+	gshape.shape = gbox
+	ground.add_child(gshape)
+	ground.position = Vector3(0, -0.1, 2.0)
+	rig.add_child(ground)
+	var lad := PoiPieces.Ladder.new()
+	lad.bottom_local = Vector3(0, 0, 0.5)
+	lad.top_local = Vector3(0, 3.0, -0.6)
+	lad.height = 3.0
+	rig.add_child(lad)
+	await get_tree().physics_frame
+	var foot: Vector3 = lad.ends()[1]
+	_player.global_position = (lad.ends()[0] as Vector3) + Vector3.UP * 0.05
+	_face(lad.face())
+	await get_tree().physics_frame
+	var held: Array[bool] = [false]
+	await _walk(400, func() -> bool:
+		if _player.climbing_ladder() == lad:
+			held[0] = true
+		return held[0] and not _player.is_climbing())
+	assert_true(held[0], "walking off the landing toward the ladder takes hold of it")
+	assert_false(_player.is_climbing(), "off at the foot")
+	assert_almost_eq(_player.global_position.y, foot.y, 0.15, "down on the ground")

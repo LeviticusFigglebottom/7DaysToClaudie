@@ -1,0 +1,37 @@
+{
+ "_doc": "Containers of the Cordon transport wreck (containers/wild4_plane.json -> tables/wild4_plane.json).",
+ "defs": [
+  {
+   "id": "w4_plane_sample_case",
+   "name": "Cold-Chain Sample Case",
+   "loot_table": "w4_plane_sample_case",
+   "slots": 8,
+   "search_time": 2.2,
+   "noise": 4
+  },
+  {
+   "id": "w4_plane_med_pallet",
+   "name": "Medical Supply Pallet",
+   "loot_table": "w4_plane_med_pallet",
+   "slots": 10,
+   "search_time": 2.4,
+   "noise": 6
+  },
+  {
+   "id": "w4_plane_cargo_crate",
+   "name": "Cordon Cargo Crate",
+   "loot_table": "w4_plane_cargo_crate",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 5
+  },
+  {
+   "id": "w4_plane_flight_kit",
+   "name": "Aircraft Survival Kit",
+   "loot_table": "w4_plane_flight_kit",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 4
+  }
+ ]
+}

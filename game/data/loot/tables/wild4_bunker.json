@@ -1,0 +1,10 @@
+{
+ "_doc": "Loot tables of the Kell Shelter (w4_hillside_bunker), forest set pieces round 4 (containers/wild4_bunker.json): the prepper's cans the neighbours left, his desk, the armory's gun locker and ammunition shelf, and the go-bag locker in the comms room.",
+ "defs": [
+  {"id": "w4_bunker_cans", "rolls": [1, 3], "empty_chance": 0.2, "entries": [{"table": "food_canned", "weight": 8}, {"item": "canned_stew", "weight": 4}, {"item": "canned_beans", "weight": 4}, {"item": "green_beans", "weight": 3}, {"item": "farm_preserves", "weight": 2}, {"item": "water_bottle_clean", "weight": 2}]},
+  {"id": "w4_bunker_desk", "rolls": [1, 2], "empty_chance": 0.15, "entries": [{"item": "scrip", "weight": 4, "count": [3, 12]}, {"item": "flashlight", "weight": 3}, {"item": "lighter", "weight": 3}, {"item": "ammo_38", "weight": 3, "count": [3, 8]}, {"item": "painkillers", "weight": 2}, {"table": "reading", "weight": 2}, {"item": "schematic_log_cabin", "weight": 1, "tier_min": 2}]},
+  {"id": "w4_bunker_gun_locker", "rolls": [2, 3], "empty_chance": 0.0, "entries": [{"item": "revolver", "weight": 4, "tier_min": 2, "quality_bias": 1}, {"item": "ammo_38", "weight": 8, "count": [6, 18]}, {"item": "machete", "weight": 3, "quality_bias": 1}, {"item": "hatchet", "weight": 2}, {"item": "flashlight", "weight": 2}, {"table": "weapons_rare", "weight": 1}]},
+  {"id": "w4_bunker_ammo", "rolls": [1, 3], "empty_chance": 0.1, "entries": [{"item": "ammo_38", "weight": 8, "count": [4, 14]}, {"item": "cordage", "weight": 3, "count": [1, 2]}, {"item": "duct_tape", "weight": 3}, {"item": "repair_kit", "weight": 1, "tier_min": 2}, {"item": "flashlight", "weight": 2}]},
+  {"id": "w4_bunker_go_bag", "rolls": [2, 4], "empty_chance": 0.0, "entries": [{"item": "first_aid_kit", "weight": 4}, {"item": "antifungal", "weight": 3, "tier_min": 2}, {"item": "ration_bar", "weight": 6, "count": [1, 4]}, {"item": "water_bottle_clean", "weight": 5, "count": [1, 3]}, {"item": "ammo_38", "weight": 4, "count": [6, 12]}, {"item": "revolver", "weight": 1, "tier_min": 3, "quality_bias": 1}, {"item": "lighter", "weight": 2}, {"item": "cloth_bandage", "weight": 3, "count": [2, 4]}]}
+ ]
+}

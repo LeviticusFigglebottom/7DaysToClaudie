@@ -1,0 +1,61 @@
+{
+ "_doc": "Containers of the Kettle Creek backcountry ranger station, wilderness round 4 (pois/buildings/w4_backcountry_ranger_station.json) (-> loot/tables/wild4_ranger.json).",
+ "defs": [
+  {
+   "id": "w4_ranger_gun_safe",
+   "name": "Gun Safe",
+   "loot_table": "w4_ranger_gun_safe",
+   "slots": 8,
+   "search_time": 2.0,
+   "noise": 5
+  },
+  {
+   "id": "w4_ranger_cab_cache",
+   "name": "Cab Desk",
+   "loot_table": "w4_ranger_cab_cache",
+   "slots": 8,
+   "search_time": 1.8,
+   "noise": 4
+  },
+  {
+   "id": "w4_ranger_radio_desk",
+   "name": "Radio Desk",
+   "loot_table": "w4_ranger_radio_desk",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 4
+  },
+  {
+   "id": "w4_ranger_truck_lockers",
+   "name": "Engine Lockers",
+   "loot_table": "w4_ranger_truck_lockers",
+   "slots": 8,
+   "search_time": 2.2,
+   "noise": 6
+  },
+  {
+   "id": "w4_ranger_fuel_shelf",
+   "name": "Fuel Shed Shelf",
+   "loot_table": "w4_ranger_fuel_shelf",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 5
+  },
+  {
+   "id": "w4_ranger_checkpoint_crate",
+   "name": "Checkpoint Crate",
+   "loot_table": "w4_ranger_checkpoint_crate",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 5
+  },
+  {
+   "id": "w4_ranger_footlocker",
+   "name": "Crew Footlocker",
+   "loot_table": "w4_ranger_footlocker",
+   "slots": 6,
+   "search_time": 1.4,
+   "noise": 4
+  }
+ ]
+}

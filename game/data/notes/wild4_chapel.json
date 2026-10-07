@@ -1,0 +1,40 @@
+{
+ "_doc": "Readable notes of Shiloh Chapel (w4_overgrown_chapel), forest set pieces round 4: a pioneer timber chapel in a clearing, its pastor, the sick he took in when the Cordon closed the roads and the vault he laid them in. No note names a town: the place stands anywhere. Items: items/wild4_chapel.json note_<id>.",
+ "defs": [
+  {
+   "id": "w4_chapel_diary",
+   "title": "Pastor Varner's Diary",
+   "style": "handwritten",
+   "author": "Elias Varner",
+   "body": "Sept 9. The Cordon has shut the logging roads and the county road both. The Dunmores came down off the ridge at dusk with their boy rolled in a quilt; the soldiers at the bridge turned them back with rifles. Where else would they go. I have opened the undercroft.\nSept 14. Eleven below us now. The fever breaks and then it doesn't. Ruth says the boy's breath smells of bread and cellar.\nSept 20. Tom Dunmore died at four and at six he sat up. God forgive me, I did not have it in me. Ruth and I carried him to the Teague vault in the bank and laid him in a niche and I chained the door. I have entered him in the register as buried. He is not buried.\nOct 2. Nine in the vault. Their people keep the vigil in the pews and will not go home. I have stopped asking them to.\nOct 11. The Cordon came. They nailed the doors over us, read their notice to an empty yard and drove off. I watched them from the loft.\nOct 30. White growth up out of the graves I dug for the ones who died the honest way. It glows a little at night. The families sit at the windows and watch it.\nNov 6. The silver and the reliquary are down in the vault, where no thief will want to go. Tonight I go down by the old passage and bolt it behind me. The key to the iron door stays here, with this book. Whoever finds it: do not open the vault to bring them out. Open it to bring them peace."
+  },
+  {
+   "id": "w4_chapel_register",
+   "title": "Register of Burials",
+   "style": "handwritten",
+   "author": "Elias Varner",
+   "body": "SHILOH CHAPEL - REGISTER OF BURIALS. The first pages in brown ink and a settler's hand: Teagues, Frys, a Kessler infant, a logger crushed at the landing, 1871 onward. Then, in a newer hand:\nThos. Dunmore, 14. Fever. Teague vault, niche 3. (Not buried.)\nAnnie Ott, 61. Fever. Vault, niche 5. (Not buried.)\nWalt Ott, 66. Grief and the cough. East yard, row 2. Truly buried.\nHattie Fry, 40. Fever. Vault, niche 1. (Not buried.)\nThe Kessler baby. East yard, beside her grandmother. Truly buried.\nNine more lines, every one of them Vault. Then the last line, in the same hand, steadier than the rest: Elias Varner, pastor. The vault. By his own choosing."
+  },
+  {
+   "id": "w4_chapel_grave_letter",
+   "title": "Letter Left on a Grave",
+   "style": "handwritten",
+   "author": "Ruth Dunmore",
+   "body": "Tommy,\nPastor dug you a grave out here inside the Teague railing so I would have somewhere to sit. You aren't in it. You're in the bank behind the iron door with the old Teagues, and when the wind comes down off the hill I think I can hear you. I bring the soup anyway. I don't know who it's for anymore.\nThe white stuff has come up through the grass on the old graves. It shines at night like milk in a pail and the others say it's pretty. I hate it. Your father would have known what to do and he isn't here either.\nI'm going to sit in the pews with the others tonight. Pastor says there's no shame in being tired.\nMama"
+  },
+  {
+   "id": "w4_chapel_cordon_notice",
+   "title": "Cordon Quarantine Notice",
+   "style": "typed",
+   "author": "Cordon Medical Authority",
+   "body": "CORDON MEDICAL AUTHORITY - QUARANTINE ORDER\nTHIS STRUCTURE IS UNDER QUARANTINE.\nPersons inside are presumed exposed to the agent. It is an offence to enter or leave this structure or to remove any person, body or article from it. Doors and windows have been sealed by order of the Cordon. Report any infected person to the nearest checkpoint. Do not approach. Do not attempt treatment. Burn bedding.\nAuthority: Cordon Sector 4, Field Team C.\nUnder it, in charcoal, in big uneven letters across the print: WE ARE STILL IN HERE. THERE ARE LIVING PEOPLE IN HERE. - E. VARNER, PASTOR"
+  },
+  {
+   "id": "w4_chapel_sexton",
+   "title": "Sexton's Tally",
+   "style": "scrawl",
+   "author": "Abel Kessler",
+   "body": "Dug for Walt Ott. Dug for Hattie - no, Pastor says not her, fill it back. Dug for my granddaughter, small one, by her nan. Dug for nobody, Pastor says dig one more by the shed, deep, and leave it open. I asked who for. He said he'd tell me when it was wanted. I don't think he means to tell me.\nShovel's gone dull. The white stuff is in the spoil heap now. It comes up on the blade like wet cotton and it smells like the bread my wife used to set to rise."
+  }
+ ]
+}
