@@ -484,7 +484,7 @@ func _sleeper_markers(layout: PoiLayout, inst: PoiInstance, by_level: Dictionary
 		var g: String = str(s["group"])
 		var col: Color = colors.get(g, UNGROUPED)
 		var pose: String = str(s.get("pose", "stand"))
-		var authored: Vector3 = layout.local_pos(li, s["pos"])
+		var authored: Vector3 = PoiInstance.sleeper_local(layout, s)
 		var pelvis: Vector3 = authored
 		var yaw: float = deg_to_rad(float(s.get("rot", 0.0)))
 		var top: float = authored.y + 0.6

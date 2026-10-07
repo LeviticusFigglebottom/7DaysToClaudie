@@ -455,7 +455,7 @@ func _draw_routes() -> bool:
 			var g: String = str(s["group"])
 			var e: Enemy = inst.sleeper(str(s["sid"]))
 			var tag: String = ("G " if bool(s["guardian"]) else "") + (("[%s%s] " % [g, " held" if e != null and e.held else ""]) if g != "" else "")
-			_label(inst.to_global(l.local_pos(s["level"], s["pos"]) + Vector3.UP * 1.2), "zz %s%s" % [tag, s.get("enemy", "hollow")], _group_color(g), 32)
+			_label(inst.to_global(PoiInstance.sleeper_local(l, s) + Vector3.UP * 1.2), "zz %s%s" % [tag, s.get("enemy", "hollow")], _group_color(g), 32)
 		if not l.loot_room.is_empty():
 			for c: Vector2i in l.room_cells(int(l.loot_room.get("level", 0))):
 				if l.room_at(int(l.loot_room.get("level", 0)), c) == str(l.loot_room.get("room", "")):
