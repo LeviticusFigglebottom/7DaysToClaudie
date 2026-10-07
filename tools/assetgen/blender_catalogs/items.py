@@ -77,8 +77,6 @@ SPEC: dict[str, tuple[str, dict]] = {
     "hare_pelt": ("item_game", {"kind": "hare_pelt", "seed": 276}),
     "sinew": ("item_game", {"kind": "sinew", "seed": 277}),
     "rawhide_strips": ("item_game", {"kind": "rawhide_strips", "seed": 278}),
-    # hunting (ADR-0057); its arrows are in items_hunting.py
-    "hunting_bow": ("item_hunting", {"kind": "hunting_bow", "seed": 281}),
     # readables
     "schematic_spike_barrier": ("item_paper", {"kind": "schematic", "seed": 81, "sheet": "item_schematic_a"}),
     "schematic_log_cabin": ("item_paper", {"kind": "schematic", "seed": 82, "sheet": "item_schematic_b"}),

@@ -4,8 +4,9 @@ extends Node3D
 ## than baked, so they follow any arms action: the idle's light hold, a draw frozen at its
 ## fraction, the snap back after a release (the string quivers a moment). Lives under the held bow,
 ## in its tool frame: grip at the origin, limbs along +-Y, the face toward the target along +Z, the
-## string behind on the archer's side (-Z). Before `make assets` (no viewmodel model) it also
-## builds a plain bow (riser and two bent limbs) in place of the placeholder box.
+## string behind on the archer's side (-Z). The bow itself is the item's first-person model
+## (models/<item model>_fp.glb, item_hunting), shown in place of the ground model the viewmodel
+## made; before `make assets` a plain bow (riser and two bent limbs).
 
 ## Tip height above / below the grip, how far the tips sit back of the grip, the string's height
 ## of the nocking point and the arrow rest (on the fist, on the bow's left side).
@@ -39,13 +40,13 @@ var _quiver_t: float = -1.0
 var _quiver_amp: float = 0.0
 
 
-## Strings `held` (a hunting bow just made for the viewmodel) to `hand` (the drawing hand's
-## socket); `has_model` false builds the plain bow too. Built at once so FpMaterials sees the meshes.
-static func attach(held: Node3D, hand: Node3D, has_model: bool) -> BowRig:
+## Strings `held` (a bow `def` just made for the viewmodel) to `hand` (the drawing hand's
+## socket). Built at once so FpMaterials sees the meshes.
+static func attach(held: Node3D, hand: Node3D, def: ItemDef) -> BowRig:
 	var rig := BowRig.new()
 	rig.name = "BowRig"
 	rig._hand = hand
-	rig._build(held, has_model)
+	rig._build(held, fp_model_path(def))
 	held.add_child(rig)
 	return rig
 
@@ -72,19 +73,31 @@ func set_arrow_item(item: StringName) -> void:
 	_apply_fp(_arrow)
 
 
-func _build(held: Node3D, has_model: bool) -> void:
+## The bow's first-person model (tool frame), "" when not built yet.
+static func fp_model_path(def: ItemDef) -> String:
+	if def == null or def.model == "":
+		return ""
+	var path: String = "res://assets/generated/models/%s_fp.glb" % def.model
+	return path if ResourceLoader.exists(path) else ""
+
+
+func _build(held: Node3D, fp_path: String) -> void:
 	var cord := StandardMaterial3D.new()
-	cord.albedo_color = Color(0.78, 0.72, 0.6)
+	cord.albedo_color = Color(0.5, 0.43, 0.32)
 	cord.roughness = 0.8
 	_top = _segment(cord, 0.0017)
 	_bottom = _segment(cord, 0.0017)
 	_arrow = Arrow.make_visual(arrow_item)
 	_arrow.name = "NockedArrow"
 	add_child(_arrow)
-	if not has_model:
-		for c: Node in held.get_children():
-			if c is Node3D:
-				(c as Node3D).visible = false
+	# The ground model the viewmodel made lies on its side: the bow in hand is the canonical one.
+	for c: Node in held.get_children():
+		if c is Node3D:
+			(c as Node3D).visible = false
+	var ps: PackedScene = load(fp_path) as PackedScene if fp_path != "" else null
+	if ps != null:
+		add_child(ps.instantiate())
+	else:
 		_build_plain_bow()
 	_update(0.0)
 
@@ -138,8 +151,8 @@ func nock_point() -> Vector3:
 		return rest
 	var h: Vector3 = global_transform.affine_inverse() * _hand.global_position
 	# Holding the string: close to the bow's plane, level with the grip, behind the string's line.
-	if absf(h.x) < 0.09 and h.y > -0.2 and h.y < 0.25 and h.z < -TIP_BACK + 0.05 and h.z > -0.95:
-		return Vector3(0.0, NOCK_Y, minf(h.z + HAND_IN, -TIP_BACK))
+	if absf(h.x) < 0.05 and h.y > -0.2 and h.y < 0.25 and h.z < -TIP_BACK + 0.05 and h.z > -0.95:
+		return Vector3(0.0, clampf(h.y, -0.06, 0.12), minf(h.z + HAND_IN, -TIP_BACK))
 	return rest
 
 

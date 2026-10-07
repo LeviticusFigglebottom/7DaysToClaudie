@@ -138,7 +138,7 @@ func show_item(item_id: StringName) -> void:
 		_held = _make_item(_held_def)
 		if str(_held_def.equip.get("kind", "")) == "bow":
 			# ADR-0057: the string and nocked arrow follow the drawing hand.
-			BowRig.attach(_held, _sock.get("R", null), ResourceLoader.exists(VM_PATH % str(_held_def.equip.get("viewmodel", ""))))
+			BowRig.attach(_held, _sock.get("R", null), _held_def)
 		_set_layers(_held)
 		if has_arms():
 			_attach_held(ViewModelHolds.item_hand(hold_class, cfg))

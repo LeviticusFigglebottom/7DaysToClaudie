@@ -11,7 +11,7 @@ extends Node3D
 ## ground is saved as a loose item (it comes back lying there).
 ##
 ## Node frame: the tip at the origin, the shaft back along +Z (so -Z, the node's forward, is the
-## flight direction). The model is models/projectiles/<item>.glb in that frame, or a procedural
+## flight direction). The model is models/hunting/<item>_fp.glb in that frame, or a procedural
 ## shaft, head and fletching before `make assets`.
 
 ## World (terrain, structures, props), Enemy.LAYER (Hollowed, Ashen, animals), corpses, structure
@@ -19,7 +19,7 @@ extends Node3D
 const MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 7) | (1 << 9) | (1 << 12)
 ## The pickup layer (ItemDrop's): the interaction ray finds a stuck arrow's nock there.
 const PICK_LAYER: int = 1 << 6
-const MODEL_PATH: String = "res://assets/generated/models/projectiles/%s.glb"
+const MODEL_PATH: String = "res://assets/generated/models/hunting/%s_fp.glb"
 const LENGTH: float = 0.74
 ## Seconds in flight before an arrow that never struck anything (off the edge of the world) goes.
 const MAX_FLIGHT: float = 12.0

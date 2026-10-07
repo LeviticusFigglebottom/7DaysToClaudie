@@ -1,6 +1,6 @@
 """The hunting bow and its arrows (ADR-0057).
 
-hunting_bow (items + first-person viewmodel): a self bow split from a straight branch, sinew-backed,
+hunting_bow (ground item + first-person model): a self bow split from a straight branch, sinew-backed,
 the grip wrapped in rawhide. Modelled in the viewmodel frame of item_tools: grip at the origin,
 limbs along +-Z, the back of the bow (its face toward the target) at -Y, the belly toward the
 archer at +Y; strung, so the limbs sweep back toward the archer (+Y) to the tips. No string: the
@@ -10,7 +10,7 @@ z = +-0.6, 0.1 back of the grip). The ground model lies on its side.
 arrow (kind "arrow", head "stone" | "bone"): a peeled shoot, the point lashed on, three split-fibre
 vanes and a sinew-wrapped nock. Modelled in the projectile frame (game/src/combat/arrow.gd): tip at
 the origin, the shaft back along -Y (Godot +Z). outputs[0] the ground pickup, outputs[1] the
-projectile model (the canonical frame, exported like a viewmodel).
+first-person / projectile model (the canonical frame, exported like a viewmodel).
 
 params: kind, name, seed (+ head for arrows).
 """
