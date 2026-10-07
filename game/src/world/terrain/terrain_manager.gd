@@ -323,6 +323,7 @@ func _refresh_chunks(rect: Rect2) -> void:
 			_request_mesh(key, ch.lod, false)
 		if ch.has_collision:
 			_rebuild_collision(ch, false)
+	_start_queued()
 
 
 # --- Streaming --------------------------------------------------------------------------------
@@ -333,6 +334,7 @@ func _exit_tree() -> void:
 		if ch.col_job.has("task"):
 			WorkerThreadPool.wait_for_task_completion(int(ch.col_job["task"]))
 	_col_pending.clear()
+	_task_queue.clear()
 	if _far_task >= 0:
 		WorkerThreadPool.wait_for_group_task_completion(_far_task)
 		_far_task = -1
@@ -357,6 +359,7 @@ func _process_body(delta: float) -> void:
 		return
 	_collect_finished()
 	_collect_collision()
+	_start_queued()
 	if not _far_jobs.is_empty():
 		_collect_far_jobs()
 	_update_accum += delta
@@ -397,6 +400,7 @@ func update_streaming(pos: Vector3, synchronous: bool = false) -> void:
 			var want_col: bool = absi(dx) <= COLLISION_RADIUS and absi(dz) <= COLLISION_RADIUS
 			if want_col != ch.has_collision:
 				_set_collision(ch, want_col, synchronous)
+	_start_queued()
 
 
 func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
@@ -419,8 +423,8 @@ func _request_mesh(key: Vector2i, lod: int, synchronous: bool) -> void:
 		job["mesh"] = TerrainMesher.finish(out[0])
 		_apply_mesh(job)
 		return
-	job["task"] = WorkerThreadPool.add_task(fn, true, "terrain chunk")
 	_pending[key] = job
+	_queue_task(job, fn, "terrain chunk")
 
 
 ## Main-thread time a frame spends installing finished chunk meshes and collision bodies: the 169
@@ -433,7 +437,7 @@ func _collect_finished() -> void:
 	var t0: int = Time.get_ticks_usec()
 	for key: Vector2i in _pending.keys():
 		var job: Dictionary = _pending[key]
-		if WorkerThreadPool.is_task_completed(job["task"]):
+		if job.has("task") and WorkerThreadPool.is_task_completed(job["task"]):
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
 			job["mesh"] = TerrainMesher.finish(job["out"][0])
@@ -524,12 +528,76 @@ func _rebuild_collision(ch: Chunk, sync: bool) -> void:
 		_install_collision(ch, job)
 		return
 	ch.col_job = job
-	job["task"] = WorkerThreadPool.add_task(fn, true, "terrain collision")
+	# The key, not the chunk: chunk -> col_job -> chunk would be a reference cycle.
+	job["col_key"] = ch.key
 	_col_pending.append(ch)
+	_queue_task(job, fn, "terrain collision")
 
 
-## Collision jobs on workers (chunks whose col_job has a task).
+## Collision jobs on workers or queued for one (chunks whose col_job is not empty).
 var _col_pending: Array[Chunk] = []
+## Chunk and collision jobs not started yet: [job, fn, task name] (see _start_queued).
+var _task_queue: Array = []
+## Chunk and collision tasks running at once: the pool's threads less two (TD-196/197). A spawn
+## or a reload asks for the whole near square at once (169 meshes, 25 bodies: seconds of work),
+## and Godot's pool runs high-priority tasks in order, so Jolt's physics jobs (high-priority pool
+## tasks too) queued behind them all: with 70-100 chunk and 7-18 collision tasks queued, the
+## physics step (between SceneTree.physics_frame and process_frame) took 0.45-2.1 s, after
+## Jolt's "exceeded the maximum number of jobs" warning ("Finding your feet…" frames). With a
+## short queue there is a thread for Jolt within one task's time; one more is left for the
+## low-priority work (POI checks), which Godot already caps to a share of the pool.
+var max_tasks: int = maxi(1, OS.get_processor_count() - 2)
+
+
+## Queues a job; the caller (or the next frame) starts it with _start_queued().
+func _queue_task(job: Dictionary, fn: Callable, task_name: String) -> void:
+	_task_queue.append([job, fn, task_name])
+
+
+## Starts queued chunk and collision jobs while fewer than max_tasks run: collision first (the
+## ground under someone's feet), then by distance from the streaming centre. Jobs replaced or
+## dropped while they waited are discarded.
+func _start_queued() -> void:
+	if _task_queue.is_empty():
+		return
+	# Task ids, not jobs: a chunk can be in _col_pending twice (rebuilt while its job ran).
+	var running: Dictionary = {}
+	for job: Dictionary in _pending.values():
+		if job.has("task") and not WorkerThreadPool.is_task_completed(int(job["task"])):
+			running[job["task"]] = true
+	for ch: Chunk in _col_pending:
+		if ch.col_job.has("task") and not WorkerThreadPool.is_task_completed(int(ch.col_job["task"])):
+			running[ch.col_job["task"]] = true
+	if running.size() >= max_tasks:
+		return
+	var live: Array = []
+	for e: Array in _task_queue:
+		var job: Dictionary = e[0]
+		if job.has("col_key"):
+			var ch: Chunk = _chunks.get(job["col_key"])
+			if ch != null and is_same(ch.col_job, job):
+				live.append(e)
+		elif is_same(_pending.get(job["key"]), job):
+			if _chunks.has(job["key"]):
+				live.append(e)
+			else:
+				_pending.erase(job["key"])
+	live.sort_custom(func(a: Array, b: Array) -> bool:
+		var ca: bool = (a[0] as Dictionary).has("col_key")
+		var cb: bool = (b[0] as Dictionary).has("col_key")
+		if ca != cb:
+			return ca
+		return _queue_dist(a[0]) < _queue_dist(b[0]))
+	var n: int = mini(max_tasks - running.size(), live.size())
+	for i: int in n:
+		var e: Array = live[i]
+		(e[0] as Dictionary)["task"] = WorkerThreadPool.add_task(e[1], true, e[2])
+	_task_queue = live.slice(n)
+
+
+func _queue_dist(job: Dictionary) -> int:
+	var key: Vector2i = job["col_key"] if job.has("col_key") else job["key"]
+	return (key - _center).length_squared()
 
 
 func _collect_collision() -> void:
@@ -539,10 +607,10 @@ func _collect_collision() -> void:
 			return
 		var ch: Chunk = _col_pending[i]
 		var job: Dictionary = ch.col_job
-		if job.is_empty() or not job.has("task"):
+		if job.is_empty():
 			_col_pending.remove_at(i)
 			continue
-		if not WorkerThreadPool.is_task_completed(int(job["task"])):
+		if not job.has("task") or not WorkerThreadPool.is_task_completed(int(job["task"])):
 			continue
 		WorkerThreadPool.wait_for_task_completion(int(job["task"]))
 		_col_pending.remove_at(i)
