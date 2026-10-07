@@ -69,6 +69,10 @@ var _pickable: Dictionary = {}
 ## rid -> {task (-1 once built), jobs: [[rid, chunk key]], chunks: [result per job], holder: Node3D,
 ## mats: [ShaderMaterial], dropped: bool}.
 var _far: Dictionary = {}
+## Runtime clearings by source ({source: [{pos: Vector2, r}]}; Bloom nests' mats, ADR-0055): near
+## instances inside one are left out of a chunk's data as its scatter arrives (indices unchanged,
+## nothing saved; the far impostors keep them).
+var _clearings: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
@@ -220,8 +224,45 @@ func _collect() -> void:
 		if WorkerThreadPool.is_task_completed(job["task"]):
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
-			_data[key] = job["out"][0]
-			_pickable[key] = _harvestables(job["out"][0])
+			_data[key] = _cleared(key, job["out"][0])
+			_pickable[key] = _harvestables(_data[key])
+
+
+## Sets one source's clearings; the loaded chunks they (or the ones they replace) touch are dropped
+## and scattered again (indices are deterministic, so felled-tree records still match).
+func set_clearings(source: StringName, list: Array) -> void:
+	var touched: Array = (_clearings.get(source, []) as Array) + list
+	if list.is_empty():
+		_clearings.erase(source)
+	else:
+		_clearings[source] = list.duplicate(true)
+	for key: Vector2i in _data.keys():
+		var box := Rect2(Vector2(key.x, key.y) * CHUNK, Vector2(CHUNK, CHUNK))
+		for c: Dictionary in touched:
+			var r: float = float(c["r"])
+			if box.grow(r).has_point(c["pos"]):
+				_free_nodes(key)
+				break
+
+
+func _cleared(key: Vector2i, layers: Dictionary) -> Dictionary:
+	if _clearings.is_empty():
+		return layers
+	var box := Rect2(Vector2(key.x, key.y) * CHUNK, Vector2(CHUNK, CHUNK))
+	var near: Array = []
+	for list: Variant in _clearings.values():
+		for c: Dictionary in list:
+			if box.grow(float(c["r"])).has_point(c["pos"]):
+				near.append(c)
+	if near.is_empty():
+		return layers
+	for layer: Variant in layers.keys():
+		layers[layer] = (layers[layer] as Array).filter(func(inst: VegetationScatter.Instance) -> bool:
+			for c: Dictionary in near:
+				if Vector2(inst.pos.x, inst.pos.z).distance_to(c["pos"]) < float(c["r"]):
+					return false
+			return true)
+	return layers
 
 
 ## Small plants and stones with yields, filtered once per chunk instead of on every physics

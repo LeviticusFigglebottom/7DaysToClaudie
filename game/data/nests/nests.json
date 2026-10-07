@@ -1,5 +1,5 @@
 {
-  "_doc": "Bloom nests (ADR-0055, NestDef): grown masses of Bloom in the deep woods. BloomNests builds a placed one (a region feature {\"type\": \"nest\", \"def\": id, \"at\": [x, z], \"yaw\": deg} or a placement from the encounter scatter) from its props (nest-local metres, +Z the mouth; pod: the Hollowed come out of it), puts its Bloom on the ground (a spot in the field: bloom radius m, strength 0..1), keeps seed.count Hollowed round it while the player is within seed.range (seed.sleepers lie in its roots, the rest wander; a killed one comes back from the pods after respawn_hours until it is burned), and burns: only fire hurts its core (a torch blow); at zero hp it burns for burn.seconds with a scream the Hollowed hear at burn.scream metres, its guards wake and come, then it is dead: loot (loot table, loot_rolls times), XP (burn_nest x xp), directive event burn_nest, and its Bloom fades over burn.fade_hours.",
+  "_doc": "Bloom nests (ADR-0055, NestDef): grown masses of Bloom in the deep woods. BloomNests builds a placed one (a region feature {\"type\": \"nest\", \"def\": id, \"at\": [x, z], \"yaw\": deg} or a placement from the encounter scatter) from its props (nest-local metres, +Z the mouth; pod: the Hollowed come out of it), puts its Bloom on the ground (a spot in the field: bloom radius m, strength 0..1), keeps seed.count Hollowed round it while the player is within seed.range (seed.sleepers lie in its roots, the rest wander; a killed one comes back from the pods after respawn_hours until it is burned), and burns: only fire hurts its core (a torch blow); at zero hp it burns for burn.seconds with a scream the Hollowed hear at burn.scream metres, its guards wake and come, then it is dead: its pods split into searchable remains (each holds the loot table rolled loot_rolls times; a nest with no pod leaves one at its heart), XP (burn_nest x xp), directive event burn_nest, and its Bloom fades over burn.fade_hours.",
   "defs": [
     {
       "id": "root_knot",
@@ -39,7 +39,7 @@
       "hp": 180,
       "burn": {"seconds": 20, "scream": 180, "fade_hours": 24},
       "loot": "nest_loot",
-      "loot_rolls": 2,
+      "loot_rolls": 1,
       "xp": 2.0
     }
   ]

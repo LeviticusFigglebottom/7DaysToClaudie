@@ -40,7 +40,8 @@ var hp: float = 100.0
 var burn_seconds: float = 15.0
 var burn_scream: float = 140.0
 var burn_fade_hours: float = 24.0
-## Loot table its pods drop when it is dead, and how many times it is rolled.
+## Loot table its pods hold once it is dead (each pod is searchable remains, BloomNests.Pod), and how
+## many times it is rolled per pod.
 var loot: StringName = &"nest_loot"
 var loot_rolls: int = 1
 ## Times the `burn_nest` XP source is paid (data/config/progression.json xp).
