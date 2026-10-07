@@ -48,7 +48,8 @@ hint) together with the hand's spin about its handle (near the authored roll) fo
 bend past its range (`wrist` in viewmodel.json: an ellipse between flexion/extension and
 radial/ulnar deviation, plus the forearm's roll). The first frame of an action searches wide,
 later frames near the last answer so the arm doesn't jump, and wide again when a fast swing
-outruns that. If the wrist is still past its range, the grip moves (at most 6 cm, tool direction
+outruns that; a jump to another elbow or roll must save more the slower the authored hand is
+turning (mid-strike it is lost in the motion, in an idle it would read as the hand spinning). If the wrist is still past its range, the grip moves (at most 6 cm, tool direction
 kept) toward where a straight wrist would put it, and what is left is turned back about the wrist
 in one step. (Turned back about the grip instead, each correction moved the forearm and so the
 angles again; a hand 1° past its range could wander 40° off.) The build log prints how far each

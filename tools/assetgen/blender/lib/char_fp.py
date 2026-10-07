@@ -1097,7 +1097,7 @@ class PoseSolver:
     # later frames search near the last answer, so the arm doesn't jump between solutions, unless
     # that answer leaves the wrist past its range.
     SWINGS = tuple(range(-100, 101, 10))
-    SPINS = tuple(range(-60, 61, 10))
+    SPINS = tuple(range(-90, 91, 10))
     NEAR = (-12.0, -6.0, -3.0, 0.0, 3.0, 6.0, 12.0)
     # Cost of a degree off the hints relative to a degree of over-bend (so between equally good
     # answers the hinted elbow and the authored roll win).
@@ -1105,6 +1105,11 @@ class PoseSolver:
     # off, and the hand turns instead (and the build log says how far).
     MOVE_MAX = 0.06
     SWING_COST = 0.15
+    # What a jump to another arm configuration between two frames must save (degrees of over-bend):
+    # a jump is seen as the hand spinning in one frame.
+    JUMP_COST = 40.0
+    # An authored hand turning this fast (degrees a frame) hides a jump completely.
+    FAST = 25.0
     SPIN_COST = 0.12
 
     def __init__(self, rig: FPRig, limits: dict | None = None):
@@ -1119,6 +1124,7 @@ class PoseSolver:
     def reset(self) -> None:
         """Start a new action: search wide again and forget how far hands were turned."""
         self.prev = {}                  # side -> (swing, spin) of the last frame
+        self.prev_F = {}                # side -> the hand frame the last frame asked for
         self.clamped = {}               # side -> worst degrees a hand was turned back by
         self.moved = {}                 # side -> furthest (m) a grip was moved to spare the wrist
 
@@ -1189,14 +1195,22 @@ class PoseSolver:
                 best = min(((a, b) for a in self.SWINGS for b in self.SPINS), key=lambda c: cost(gg, *c))
             else:
                 best = around
-            return min(((best[0] + a, best[1] + b) for a in self.NEAR for b in self.NEAR), key=lambda c: cost(gg, *c))
+            near = ((best[0] + a, best[1] + b) for a in self.NEAR for b in self.NEAR)
+            # Within the wide search's bounds: walked frame to frame, the fist once spun 160° round
+            # its handle and the elbow swung behind the back.
+            return min((c for c in near if abs(c[0]) <= self.SWINGS[-1] and abs(c[1]) <= self.SPINS[-1]),
+                       key=lambda c: cost(gg, *c))
 
         sw, sp = search(g, self.prev.get(sd))
         if sd in self.prev and over(g, sw, sp) > 0.5:
             # A fast swing can outrun the local search: look wide again and take a better answer
             # (the arm may change its elbow between two frames of a strike, never in an idle).
             wide = search(g, None)
-            if cost(g, *wide) < cost(g, sw, sp):
+            # Mid-strike the hand already turns fast and a new elbow is lost in it; in a slow
+            # move it reads as the hand spinning in one frame.
+            pf = self.prev_F.get(sd)
+            pace = math.degrees(float(np.linalg.norm(_rotvec(F @ pf.T)))) if pf is not None else 0.0
+            if cost(g, *wide) + self.JUMP_COST * max(0.0, 1.0 - pace / self.FAST) < cost(g, sw, sp):
                 sw, sp = wide
         moved = 0.0
         if movable and over(g, sw, sp) > 0.5:
@@ -1220,6 +1234,7 @@ class PoseSolver:
             sw, sp = fit
             moved = float(np.linalg.norm(shift)) * hi
         self.prev[sd] = (sw, sp)
+        self.prev_F[sd] = F
         wrist, Rh, pole = place(g, sw, sp)
         # Turn the hand back inside the range, about the wrist: in one step, the forearm stays
         # where the arm put it and the grip shifts a little. (Turned about the grip instead, each
