@@ -40,6 +40,8 @@ var _held_hand: String = "R"
 var _manual: Node3D = null
 var _log: Node3D = null
 var _flame: Node3D = null
+## The held flame's current lean (camera frame), springing towards what the turn and walk ask.
+var _flame_lean := Vector3.ZERO
 var _lit: bool = false
 var _base: StringName = &""
 var _action: StringName = &""
@@ -438,26 +440,21 @@ func light_anchor() -> Node3D:
 	return null
 
 
-## A burning torch head: licking flames from the fire flipbook, embers and a thin smoke, all in
-## world space so they trail as you move.
+## A held flame burns on the item's socket_flame, in the socket's own space (local_coords): it
+## moves with the hand exactly, never trailing behind a turn, and draws with the viewmodel's field
+## of view (FpMaterials) like the hand holding it, which world-space particles never could. Each
+## frame the flame is turned to stand up in the world, leaning a little against the view's turn
+## and the player's walk (_flame_follow); being local, that turns the whole flame at once.
 func _update_flame() -> void:
 	if _flame != null and is_instance_valid(_flame):
 		_flame.queue_free()
 	_flame = null
+	_flame_lean = Vector3.ZERO
 	_set_ember(_lit)
 	if not _lit or _held == null or DisplayServer.get_name() == "headless":
 		return
-	var sock: Node3D = _held.find_child("socket_flame", true, false) as Node3D
-	if sock == null:
-		return
-	var small: bool = _held_def != null and _held_def.id != &"torch"
-	_flame = Node3D.new()
-	_flame.name = "Flame"
-	sock.add_child(_flame)
-	_flame.add_child(_flame_particles(small))
-	if not small:
-		_flame.add_child(_ember_particles())
-	FpMaterials.apply(_flame)
+	_flame = attach_flame(_held, _held_def.id if _held_def != null else &"")
+	_flame_follow(0.0, Vector2.ZERO, Vector3.ZERO)
 
 
 ## The torch's burnt top glows like coals while it burns (item_torch_ember is a light_source 1
@@ -469,46 +466,113 @@ func _set_ember(on: bool) -> void:
 		(n as GeometryInstance3D).set_instance_shader_parameter(&"light_lit", 1.0 if on else 0.0)
 
 
-func _flame_particles(small: bool) -> GPUParticles3D:
+## Builds the flame for `item_id` (flame_spec) under `held`'s socket_flame, converted for the
+## viewmodel (FpMaterials). Null when the item has no flame socket.
+static func attach_flame(held: Node3D, item_id: StringName) -> Node3D:
+	var sock: Node3D = held.find_child("socket_flame", true, false) as Node3D if held != null else null
+	if sock == null:
+		return null
+	var f: Node3D = build_flame(item_id)
+	sock.add_child(f)
+	FpMaterials.apply(f)
+	return f
+
+
+## The flame's shape per item: a lighter's is a small steady teardrop (2-3 cm, blue at the base,
+## yellow-orange above); a torch's licks off the flipbook a hand-span or two high, with embers.
+## `rise` lifts the flame's base above the socket (the torch's sits inside the cloth head), `size`
+## is the sprite (m), `speed` / `gravity` how far the licks travel in their `lifetime`, `lean_deg`
+## how far it may lean against a turn. Any other item with a socket_flame (a candle, a match)
+## burns like the lighter until it has its own entry.
+const FLAMES: Dictionary = {
+	"lighter": {"style": "teardrop", "size": [0.012, 0.026], "rise": 0.012, "amount": 5, "lifetime": 0.3,
+		"speed": [0.0, 0.006], "gravity": 0.0, "radius": 0.0006, "embers": false, "lean_deg": 8.0},
+	"torch": {"style": "fire", "size": [0.085, 0.13], "rise": 0.035, "amount": 16, "lifetime": 0.5,
+		"speed": [0.1, 0.2], "gravity": 0.3, "radius": 0.02, "embers": true, "lean_deg": 20.0},
+}
+
+
+static func flame_spec(item_id: StringName) -> Dictionary:
+	return FLAMES.get(String(item_id), FLAMES["lighter"])
+
+
+## How high the flame reaches above its socket (m), for the culling box and the tests.
+static func flame_height(spec: Dictionary) -> float:
+	var t: float = float(spec["lifetime"])
+	var v: float = float((spec["speed"] as Array)[1])
+	var travel: float = v * t + 0.5 * float(spec["gravity"]) * t * t
+	return float(spec["rise"]) + travel + float((spec["size"] as Array)[1]) * 0.5
+
+
+## The flame node ("Flame") for an item: its particles, all local to it, each with a culling box
+## that holds them (not the old metre-wide one).
+static func build_flame(item_id: StringName) -> Node3D:
+	var spec: Dictionary = flame_spec(item_id)
+	var f := Node3D.new()
+	f.name = "Flame"
+	f.set_meta(&"lean_deg", float(spec["lean_deg"]))
+	f.add_child(_flame_particles(spec))
+	if bool(spec["embers"]):
+		f.add_child(_ember_particles(spec))
+	return f
+
+
+static func _flame_particles(spec: Dictionary) -> GPUParticles3D:
+	var size := Vector2(float((spec["size"] as Array)[0]), float((spec["size"] as Array)[1]))
+	var teardrop: bool = str(spec["style"]) == "teardrop"
 	var p := GPUParticles3D.new()
-	p.amount = 10 if small else 22
-	p.lifetime = 0.45 if small else 0.7
-	p.local_coords = false
+	p.name = "Fire"
+	p.amount = int(spec["amount"])
+	p.lifetime = float(spec["lifetime"])
+	p.local_coords = true
 	p.fixed_fps = 0
-	p.visibility_aabb = AABB(Vector3(-1, -1, -1), Vector3(2, 2, 2))
+	var h: float = flame_height(spec)
+	var r: float = maxf(size.x, size.y) * 0.6 + float(spec["radius"]) + h * 0.15
+	p.visibility_aabb = AABB(Vector3(-r, -size.y * 0.5, -r), Vector3(2.0 * r, h + size.y, 2.0 * r))
 	var m := ParticleProcessMaterial.new()
 	m.direction = Vector3(0, 1, 0)
-	m.spread = 12.0
-	m.initial_velocity_min = 0.25
-	m.initial_velocity_max = 0.5
-	m.gravity = Vector3(0, 0.9, 0)
+	m.spread = 4.0 if teardrop else 8.0
+	m.initial_velocity_min = float((spec["speed"] as Array)[0])
+	m.initial_velocity_max = float((spec["speed"] as Array)[1])
+	m.gravity = Vector3(0, float(spec["gravity"]), 0)
 	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	m.emission_sphere_radius = 0.008 if small else 0.028
-	m.scale_min = 0.55
-	m.scale_max = 1.0
+	m.emission_sphere_radius = float(spec["radius"])
+	m.emission_shape_offset = Vector3(0, float(spec["rise"]), 0)
 	var sc := Curve.new()
-	sc.add_point(Vector2(0.0, 0.55))
-	sc.add_point(Vector2(0.35, 1.0))
-	sc.add_point(Vector2(1.0, 0.25))
+	var g := Gradient.new()
+	if teardrop:
+		# Overlapping, nearly still teardrops fading in and out: steady, with a slight flicker.
+		m.scale_min = 0.85
+		m.scale_max = 1.0
+		sc.add_point(Vector2(0.0, 0.85))
+		sc.add_point(Vector2(0.5, 1.0))
+		sc.add_point(Vector2(1.0, 0.9))
+		g.offsets = PackedFloat32Array([0.0, 0.3, 0.7, 1.0])
+		g.colors = PackedColorArray([Color(1, 1, 1, 0), Color(1, 1, 1, 0.75), Color(1, 1, 1, 0.75), Color(1, 1, 1, 0)])
+	else:
+		m.scale_min = 0.6
+		m.scale_max = 1.0
+		sc.add_point(Vector2(0.0, 0.7))
+		sc.add_point(Vector2(0.3, 1.0))
+		sc.add_point(Vector2(1.0, 0.2))
+		g.offsets = PackedFloat32Array([0.0, 0.15, 1.0])
+		g.colors = PackedColorArray([Color(1.0, 0.9, 0.6, 0.0), Color(1.0, 0.85, 0.55, 1.0), Color(0.7, 0.18, 0.05, 0.0)])
 	var st := CurveTexture.new()
 	st.curve = sc
 	m.scale_curve = st
-	var g := Gradient.new()
-	g.set_color(0, Color(1.0, 0.9, 0.6, 1.0))
-	g.set_color(1, Color(0.7, 0.18, 0.05, 0.0))
 	var gt := GradientTexture1D.new()
 	gt.gradient = g
 	m.color_ramp = gt
 	var q := QuadMesh.new()
-	q.size = Vector2(0.07, 0.11) if small else Vector2(0.16, 0.24)
+	q.size = size
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.vertex_color_use_as_albedo = true
-	mat.albedo_color = Color(1.0, 0.85, 0.6) * 1.6
-	if ResourceLoader.exists(FLIPBOOK):
+	if not teardrop and ResourceLoader.exists(FLIPBOOK):
+		mat.albedo_color = Color(1.0, 0.85, 0.6) * 1.5
 		mat.albedo_texture = load(FLIPBOOK)
 		mat.particles_anim_h_frames = 8
 		mat.particles_anim_v_frames = 8
@@ -516,28 +580,33 @@ func _flame_particles(small: bool) -> GPUParticles3D:
 		m.anim_speed_min = 1.0
 		m.anim_speed_max = 1.3
 		m.anim_offset_max = 1.0
+	else:
+		mat.albedo_color = Color(1.0, 1.0, 1.0) * 1.4
+		mat.albedo_texture = teardrop_texture()
 	q.material = mat
 	p.process_material = m
 	p.draw_pass_1 = q
 	return p
 
 
-func _ember_particles() -> GPUParticles3D:
+static func _ember_particles(spec: Dictionary) -> GPUParticles3D:
 	var p := GPUParticles3D.new()
-	p.amount = 10
-	p.lifetime = 1.4
-	p.local_coords = false
-	p.visibility_aabb = AABB(Vector3(-2, -1, -2), Vector3(4, 4, 4))
+	p.name = "Embers"
+	p.amount = 6
+	p.lifetime = 0.8
+	p.local_coords = true
+	p.visibility_aabb = AABB(Vector3(-0.2, -0.05, -0.2), Vector3(0.4, 0.5, 0.4))
 	var m := ParticleProcessMaterial.new()
 	m.direction = Vector3(0, 1, 0)
-	m.spread = 25.0
-	m.initial_velocity_min = 0.4
-	m.initial_velocity_max = 0.9
-	m.gravity = Vector3(0, 0.5, 0)
+	m.spread = 20.0
+	m.initial_velocity_min = 0.15
+	m.initial_velocity_max = 0.35
+	m.gravity = Vector3(0, 0.25, 0)
 	m.turbulence_enabled = true
-	m.turbulence_noise_strength = 0.6
+	m.turbulence_noise_strength = 0.3
 	m.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	m.emission_sphere_radius = 0.03
+	m.emission_sphere_radius = float(spec["radius"])
+	m.emission_shape_offset = Vector3(0, float(spec["rise"]), 0)
 	m.scale_min = 0.4
 	m.scale_max = 1.0
 	var g := Gradient.new()
@@ -547,7 +616,7 @@ func _ember_particles() -> GPUParticles3D:
 	gt.gradient = g
 	m.color_ramp = gt
 	var q := QuadMesh.new()
-	q.size = Vector2(0.008, 0.008)
+	q.size = Vector2(0.006, 0.006)
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
@@ -559,6 +628,64 @@ func _ember_particles() -> GPUParticles3D:
 	p.process_material = m
 	p.draw_pass_1 = q
 	return p
+
+
+static var _teardrop: ImageTexture = null
+
+
+## A lighter's flame drawn in code (no asset needed): a teardrop, round at the base and drawn to a
+## point, blue and dim at the root, yellow-white in the body and orange at the tip.
+static func teardrop_texture() -> Texture2D:
+	if _teardrop != null:
+		return _teardrop
+	var w: int = 32
+	var h: int = 64
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	var blue := Color(0.22, 0.4, 1.0, 0.6)
+	var body := Color(1.0, 0.86, 0.5, 1.0)
+	var tip := Color(1.0, 0.5, 0.12, 0.9)
+	for y: int in h:
+		var t: float = 1.0 - (float(y) + 0.5) / float(h)
+		var half: float
+		if t < 0.3:
+			var k: float = (0.3 - t) / 0.28
+			half = 0.8 * sqrt(maxf(0.0, 1.0 - k * k))
+		else:
+			half = 0.8 * pow(maxf(0.0, 1.0 - (t - 0.3) / 0.66), 1.3)
+		for x: int in w:
+			var u: float = absf((float(x) + 0.5) / float(w) * 2.0 - 1.0)
+			var a: float = 0.0 if half <= 0.0 else 1.0 - smoothstep(half * 0.55, half, u)
+			var c: Color = blue.lerp(body, smoothstep(0.16, 0.36, t)).lerp(tip, smoothstep(0.55, 0.95, t))
+			# The dim core just above the wick: the flame burns on its skin.
+			var core: float = (1.0 - smoothstep(0.0, 0.45, u / maxf(half, 0.001))) * (1.0 - smoothstep(0.2, 0.45, t)) * smoothstep(0.05, 0.15, t)
+			c = c.lerp(Color(0.3, 0.3, 0.6, c.a), core * 0.6)
+			img.set_pixel(x, y, Color(c.r, c.g, c.b, a * c.a))
+	img.generate_mipmaps()
+	_teardrop = ImageTexture.create_from_image(img)
+	return _teardrop
+
+
+## The flame's world orientation: up (plus `lean`, in the camera's frame) and facing the camera.
+static func flame_basis(cam_basis: Basis, lean: Vector3) -> Basis:
+	var y: Vector3 = (Vector3.UP + cam_basis * lean).normalized()
+	var z: Vector3 = cam_basis.z - y * cam_basis.z.dot(y)
+	if z.length_squared() < 1e-6:
+		z = cam_basis.y - y * cam_basis.y.dot(y)
+	z = z.normalized()
+	return Basis(y.cross(z), y, z)
+
+
+## Stands the flame up and leans it against the view's turn (`look`, rad/s) and the walk (`vel`,
+## camera frame), springing back when they stop; the lean is clamped to the flame's lean_deg.
+func _flame_follow(delta: float, look: Vector2, vel: Vector3) -> void:
+	if _flame == null or not is_instance_valid(_flame) or not _flame.is_inside_tree():
+		return
+	var cam: Node3D = get_parent() as Node3D
+	var cam_basis: Basis = cam.global_transform.basis.orthonormalized() if cam != null else Basis()
+	var deg: float = float(_flame.get_meta(&"lean_deg")) if _flame.has_meta(&"lean_deg") else 10.0
+	var want := Vector3(look.x * 0.06 - vel.x * 0.05, 0.0, -vel.z * 0.05).limit_length(tan(deg_to_rad(deg)))
+	_flame_lean = want if delta <= 0.0 else _flame_lean.lerp(want, 1.0 - exp(-delta * 10.0))
+	_flame.global_transform = Transform3D(flame_basis(cam_basis, _flame_lean), _flame.global_position)
 
 
 # --- Per frame -------------------------------------------------------------------------------
@@ -701,6 +828,7 @@ func _process(delta: float) -> void:
 		motion.reading = tether.progress()
 		motion.update(delta, look, vel, 0.0, false, false, true, 0.0, 0)
 	_rig.transform = motion.rig_transform()
+	_flame_follow(delta, look, vel)
 	if cam != null and cam.current:
 		cam.rotation = motion.camera_kick()
 	# Hit-stop: the swing hangs on what it struck, then catches up to finish on time.
