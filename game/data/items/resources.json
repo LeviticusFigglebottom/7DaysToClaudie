@@ -1,7 +1,7 @@
 {
   "defs": [
     {"id": "stick", "name": "Stick", "description": "A straight, dry branch. Kindling, handles, frames.", "category": "resource", "stack_max": 20, "carry_max": 30, "bulk": 0.3, "value": 1, "fuel": 40, "tags": ["wood", "fuel", "building"]},
-    {"id": "stone", "name": "Stone", "description": "Fist-sized river stone. Heavy, honest.", "category": "resource", "stack_max": 10, "carry_max": 15, "bulk": 0.8, "value": 1, "tags": ["stone", "building", "throwable"], "equip": {"slot": "hand", "kind": "throwable", "damage": 12, "damage_type": "blunt", "stamina": 6, "noise": 8}},
+    {"id": "stone", "name": "Stone", "description": "Fist-sized river stone. Heavy, honest.", "category": "resource", "stack_max": 10, "carry_max": 15, "bulk": 0.8, "value": 1, "tags": ["stone", "building", "throwable"], "equip": {"slot": "hand", "kind": "throwable", "hold": "stone", "damage": 12, "damage_type": "blunt", "stamina": 6, "noise": 12, "throw_speed": [10.0, 19.0], "charge_time": 0.7}},
     {"id": "plant_fiber", "name": "Plant Fiber", "description": "Stripped from fireweed and nettle stalks. Twist it into cordage.", "category": "resource", "stack_max": 30, "carry_max": 40, "bulk": 0.05, "value": 1, "tags": ["fiber"]},
     {"id": "cordage", "name": "Cordage", "description": "Hand-twisted fiber cord. Binds blades to handles and logs to logs.", "category": "resource", "stack_max": 20, "carry_max": 20, "bulk": 0.1, "value": 3, "tags": ["fiber", "binding"]},
     {"id": "leaf_bundle", "name": "Bough Bundle", "description": "Fir boughs tied in a bundle. Thatch, bedding, smoke.", "category": "resource", "stack_max": 15, "carry_max": 20, "bulk": 0.4, "value": 1, "fuel": 25, "tags": ["thatch", "fuel"]},

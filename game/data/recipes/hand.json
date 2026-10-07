@@ -13,6 +13,8 @@
     {"id": "sinew_cordage", "result": "cordage", "count": 2, "ingredients": {"sinew": 2}, "time": 2.0, "category": "materials"},
     {"id": "rawhide_strips", "result": "rawhide_strips", "count": 4, "ingredients": {"deer_hide": 1}, "tools": ["knife"], "time": 6.0, "category": "materials"},
     {"id": "huckleberry_seeds", "result": "huckleberry_seeds", "count": 2, "ingredients": {"huckleberries": 4}, "time": 2.0, "category": "materials"},
+    {"id": "molotov", "result": "molotov", "ingredients": {"glass_bottle": 1, "kerosene": 1, "cloth": 1}, "time": 3.0, "category": "weapons"},
+    {"id": "molotov_rotgut", "result": "molotov", "ingredients": {"rotgut": 1, "cloth": 1}, "time": 2.0, "category": "weapons"},
     {"id": "hide_wrap_bandage", "result": "cloth_bandage", "count": 2, "ingredients": {"hare_pelt": 1}, "tools": ["knife"], "time": 2.5, "category": "medical"}
   ]
 }

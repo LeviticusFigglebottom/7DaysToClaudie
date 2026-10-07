@@ -289,6 +289,25 @@ func freeze_action(anim_name: StringName, at: float) -> bool:
 	return true
 
 
+## Holds the running action still once it is `at` seconds in (its own time): a throw drawn back
+## while the button is held (ThrowHand calls this each frame). resume_action() lets it go on.
+func hold_action_at(at: float) -> void:
+	if _anim == null or _action == &"" or _anim.current_animation != _action:
+		return
+	if _anim.current_animation_position >= at:
+		_anim.speed_scale = 0.0
+		_action_end = INF
+
+
+## Plays the rest of a held action over `duration` seconds.
+func resume_action(duration: float) -> void:
+	if _anim == null or _action == &"" or _anim.current_animation != _action:
+		return
+	var left: float = _anim.current_animation_length - _anim.current_animation_position
+	_anim.speed_scale = left / duration if duration > 0.05 else 1.0
+	_action_end = _t + (duration if duration > 0.05 else left)
+
+
 func release_action() -> void:
 	if _action == &"":
 		return
@@ -498,6 +517,9 @@ const FLAMES: Dictionary = {
 		"speed": [0.0, 0.006], "gravity": 0.0, "radius": 0.0006, "embers": false, "lean_deg": 8.0},
 	"torch": {"style": "fire", "size": [0.085, 0.13], "rise": 0.035, "amount": 16, "lifetime": 0.5,
 		"speed": [0.1, 0.2], "gravity": 0.3, "radius": 0.02, "embers": true, "lean_deg": 20.0},
+	# A molotov's rag (ADR-0057): a ragged hand-high flame off the cloth in the bottle's neck.
+	"molotov": {"style": "fire", "size": [0.06, 0.1], "rise": 0.01, "amount": 14, "lifetime": 0.45,
+		"speed": [0.08, 0.16], "gravity": 0.25, "radius": 0.012, "embers": true, "lean_deg": 22.0},
 }
 
 
