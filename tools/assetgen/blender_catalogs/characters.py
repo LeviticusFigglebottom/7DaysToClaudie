@@ -438,6 +438,8 @@ BODIES = {
 # Ash-grey from scalp to heel (skin_ashen_living: a grey base under heavy lichen-ash dust, charcoal paint),
 # so they read at 30 m as grey figures; darker worn hide (ashen_hide_dark) and wrapped shins: the
 # "boots" are raised to the knee and drawn as hide strip wraps (ashen_wrap), as is the belt.
+# The raiders carry a hafted stone axe in the right fist ("weapon": a rigid prop that
+# character_living joins into body_forearm.R on hand.R); the scout goes empty-handed (TD-187).
 ASHEN_LIVING_REMAP = {"skin_hollow": "skin_ashen_living", "eyes_hollow": "npc_eye", "hide": "ashen_hide_dark",
                      "leather_boot": "ashen_wrap",
                      # the closed lips' parting line and the stump caps: dark blood, not the Hollowed's wet red
@@ -467,6 +469,7 @@ LIVING = {
                   {"kind": "arm_rings", "side": "L", "seg": "fa", "ts": [0.3, 0.45], "width": 0.02},
                   {"kind": "arm_rings", "side": "R", "seg": "fa", "ts": [0.3, 0.45], "width": 0.02}],
         "accessories": [{"kind": "necklace", "beads": "bone"}],
+        "weapon": "stone_axe",
         "grime": 0.35,
     },
     # Raider: a woman, wiry and hard; a long-sleeved hide tunic belted at the hip, a narrow fur
@@ -489,6 +492,7 @@ LIVING = {
                   {"kind": "arm_rings", "side": "L", "seg": "fa", "ts": [0.7, 0.8], "width": 0.010},
                   {"kind": "arm_rings", "side": "R", "seg": "fa", "ts": [0.7, 0.8], "width": 0.010}],
         "accessories": [{"kind": "necklace", "beads": "bone"}],
+        "weapon": "stone_axe",
         "grime": 0.3,
     },
     # Scout: young, lean and long-legged, built to run; bare-chested under a short fur mantle, hide
