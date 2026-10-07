@@ -1,0 +1,58 @@
+{
+ "_doc": "Key and readable notes of the Cordon transport wreck (w4_cordon_plane_wreck). Note items are note_<note id> (notes/wild4_plane.json); models from tools/assetgen/blender_catalogs/items_wild4_plane.py.",
+ "defs": [
+  {
+   "id": "w4_plane_sample_key",
+   "name": "Sample Bay Key",
+   "description": "A deadbolt key on a red REMOVE BEFORE FLIGHT streamer, TAIL BAY - LT. VOS written on the tag in marker.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild4_plane/w4_plane_sample_key"
+  },
+  {
+   "id": "note_w4_plane_manifest",
+   "name": "Load Manifest, Flight CM-212",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_plane_manifest",
+   "model": "items/wild4_plane/note_w4_plane_manifest"
+  },
+  {
+   "id": "note_w4_plane_medic",
+   "name": "Pages from a Medic's Notebook",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_plane_medic",
+   "model": "items/wild4_plane/note_w4_plane_medic"
+  },
+  {
+   "id": "note_w4_plane_pilot_log",
+   "name": "Captain's Log, CM-212",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_plane_pilot_log",
+   "model": "items/wild4_plane/note_w4_plane_pilot_log"
+  },
+  {
+   "id": "note_w4_plane_radio",
+   "name": "Radio Transcript, Cordon Air Control",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w4_plane_radio",
+   "model": "items/wild4_plane/note_w4_plane_radio"
+  }
+ ]
+}

@@ -1,0 +1,33 @@
+{
+ "_doc": "Readable notes of the Cordon transport wreck (w4_cordon_plane_wreck, forest set pieces round 4; no note names a town). Items: items/wild4_plane.json note_<id>.",
+ "defs": [
+  {
+   "id": "w4_plane_manifest",
+   "title": "Load Manifest, Flight CM-212",
+   "style": "typed",
+   "author": "Sgt. Owen Pruett, loadmaster",
+   "body": "CORDON AIR TRANSPORT - LOAD MANIFEST\nFlight CM-212, valley strip to the staging field. Priority: MEDICAL.\n\nPAX: 5 medical (Dr. A. Osei, Lt. I. Vos, Nurse M. Lind, Nurse P. Hale, Cpl. J. Ferro), 2 escort (Pvt. Kade, Pvt. Bram). Crew 3.\nPALLET 1: medical supplies, 1,140 lb. Antifungal, saline, dressings, 40 body bags.\nPALLET 2: escort stores, rations, water, ammunition.\nTAIL BAY: 1 x cold-chain case, sealed. BIOHAZARD. Lt. Vos only. Do not open in flight.\n\nUnder it in pencil: CHUTE ON PALLET 1 RIGGED FOR DROP IF WE CAN'T LAND. Then, smaller: we landed."
+  },
+  {
+   "id": "w4_plane_medic",
+   "title": "Pages from a Medic's Notebook",
+   "style": "handwritten",
+   "author": "Cpl. Jo Ferro",
+   "body": "Day 1. Down in the trees. Everyone alive but Hale's leg. Osei set it on the ramp by torchlight. Captain says the beacon is going and they know where we are.\nDay 3. Rain. We put the stretchers in the hold and the stove by the torn end so the smoke goes out. The escort won't come forward from the tail. Vos sleeps in there with the case.\nDay 6. Kade has a fever. Then Lind. Osei says it is not the Bloom, it is the cold. She checks their nails twice a day and does not say what she sees.\nDay 9. Osei's nails. She showed me and laughed.\nDay 11. Everyone sleeps sitting up now. I don't. When I do they are all looking at me."
+  },
+  {
+   "id": "w4_plane_pilot_log",
+   "title": "Captain's Log, CM-212",
+   "style": "handwritten",
+   "author": "Capt. Teo Reyes",
+   "body": "0712 Wheels up, seven souls aft plus the case.\n0724 The ground started humming. Felt it in the yoke. Both engines rolled back together, no fault light, nothing.\n0726 Put her in the timber. Lost the tail.\nDay 2. Beacon on. Radio: Cordon Air says hold position, rescue en route.\nDay 5. Radio: hold position.\nDay 8. Vos came forward with the bay key and gave it to me. Said whatever she says later, don't give it back. I put it on the panel where I can see it.\nDay 10. Ash keeps humming with the ground. I've told him to stop. He doesn't know he's doing it.\nDay 12. Osei came to the ladder. I didn't go down."
+  },
+  {
+   "id": "w4_plane_radio",
+   "title": "Radio Transcript, Cordon Air Control",
+   "style": "typed",
+   "author": "Cordon Air Control (carbon copy)",
+   "body": "CM-212: Control, CM-212, we are down, ten alive, request extraction, over.\nCONTROL: CM-212, copy. Confirm status of priority cargo, over.\nCM-212: Case intact. Two of ours running fevers. Request extraction, over.\nCONTROL: CM-212, hold position. Do not open the case. Do not approach the case. Recovery will be for the case, over.\nCM-212: Say again, recovery for the case, over?\nCONTROL: Hold position, CM-212. Control out.\n\nIn the margin, in pen: FOR THE CASE. The rest of the sheet is a tally, five marks to a gate, up to forty-one."
+  }
+ ]
+}
