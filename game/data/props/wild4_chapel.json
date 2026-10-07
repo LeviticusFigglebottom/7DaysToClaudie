@@ -235,7 +235,7 @@
   {
    "id": "w4_chapel_iron_railing_gate",
    "name": "Iron Railing Gate",
-   "description": "The plot's gate: two heavier posts with ball finials and a scrolled arch between them, the little gate swung open on its pins and rusted fast in the grass (no collision: the gap is the way in).",
+   "description": "The plot's gate: two heavier posts with ball finials and a scrolled arch between them, the little gate swung open on its pins and rusted fast in the grass (only the posts and the picket stubs collide: the gap is the way in).",
    "tags": [
     "fence",
     "exterior"
@@ -244,12 +244,38 @@
     "clean": "props/w4_chapel_iron_railing_gate",
     "worn": "props/w4_chapel_iron_railing_gate_worn"
    },
-   "collision": "none",
+   "collision": "box",
    "physics": "static",
    "size": [
     2.0,
     1.45,
     1.1
+   ],
+   "boxes": [
+    {
+     "size": [
+      0.41,
+      1.32,
+      0.14
+     ],
+     "at": [
+      -0.785,
+      0,
+      0
+     ]
+    },
+    {
+     "size": [
+      0.41,
+      1.32,
+      0.14
+     ],
+     "at": [
+      0.785,
+      0,
+      0
+     ]
+    }
    ],
    "blocks_sight": false,
    "rooms": [
@@ -269,12 +295,38 @@
     "clean": "props/w4_chapel_mausoleum_front",
     "worn": "props/w4_chapel_mausoleum_front_worn"
    },
-   "collision": "none",
+   "collision": "box",
    "physics": "static",
    "size": [
     5.4,
     4.8,
     7.5
+   ],
+   "boxes": [
+    {
+     "size": [
+      1.05,
+      3.9,
+      0.33
+     ],
+     "at": [
+      -0.825,
+      0,
+      3.245
+     ]
+    },
+    {
+     "size": [
+      1.05,
+      3.9,
+      0.33
+     ],
+     "at": [
+      1.825,
+      0,
+      3.245
+     ]
+    }
    ],
    "blocks_sight": false,
    "rooms": [
@@ -354,7 +406,7 @@
   {
    "id": "w4_chapel_lych_gate",
    "name": "Lych Gate",
-   "description": "The roofed gate into the churchyard: four adzed cedar posts on stone pads, a cedar-shingled hood and a coffin bench either side (worn: the hood sagging and furred with moss, a bench board gone). No collision: the gate is the way in.",
+   "description": "The roofed gate into the churchyard: four adzed cedar posts on stone pads, a cedar-shingled hood and a coffin bench either side (worn: the hood sagging and furred with moss, a bench board gone). Only its posts collide: the gate is the way in.",
    "tags": [
     "structure",
     "exterior"
@@ -363,12 +415,62 @@
     "clean": "props/w4_chapel_lych_gate",
     "worn": "props/w4_chapel_lych_gate_worn"
    },
-   "collision": "none",
+   "collision": "box",
    "physics": "static",
    "size": [
     3.4,
     3.2,
     2.2
+   ],
+   "boxes": [
+    {
+     "size": [
+      0.2,
+      2.2,
+      0.2
+     ],
+     "at": [
+      -1.3,
+      0,
+      -0.8
+     ]
+    },
+    {
+     "size": [
+      0.2,
+      2.2,
+      0.2
+     ],
+     "at": [
+      -1.3,
+      0,
+      0.8
+     ]
+    },
+    {
+     "size": [
+      0.2,
+      2.2,
+      0.2
+     ],
+     "at": [
+      1.3,
+      0,
+      -0.8
+     ]
+    },
+    {
+     "size": [
+      0.2,
+      2.2,
+      0.2
+     ],
+     "at": [
+      1.3,
+      0,
+      0.8
+     ]
+    }
    ],
    "blocks_sight": false,
    "rooms": [

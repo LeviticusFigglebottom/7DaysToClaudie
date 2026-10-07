@@ -224,9 +224,18 @@ func _yard_props() -> Array:
 				continue
 			var plan: Vector3 = PoiLayout.prop_plan(p, pd)
 			var a: float = deg_to_rad(plan.z)
-			var bc: Vector3 = pd.box_centre()
-			var off := Vector2(bc.x * cos(a) + bc.z * sin(a), -bc.x * sin(a) + bc.z * cos(a))
-			_yard_walls.append([Vector2(plan.x, plan.y) + off, Vector2(pd.size.x, pd.size.z) * 0.5, a])
+			# Each collision box (the size box, or the def's `boxes`) that stands on the ground
+			# (within the same 0.4 m) and rises past a step.
+			for b: Array in pd.collision_boxes():
+				var bs: Vector3 = b[0]
+				var bx: Transform3D = b[1]
+				var base: float = y + bx.origin.y - bs.y * 0.5
+				if base > 0.4 or base + bs.y <= YARD_WALL_H:
+					continue
+				var bc: Vector3 = bx.origin
+				var off := Vector2(bc.x * cos(a) + bc.z * sin(a), -bc.x * sin(a) + bc.z * cos(a))
+				var yaw: float = atan2(bx.basis.z.x, bx.basis.z.z)
+				_yard_walls.append([Vector2(plan.x, plan.y) + off, Vector2(bs.x, bs.z) * 0.5, a + yaw])
 	return _yard_walls
 
 

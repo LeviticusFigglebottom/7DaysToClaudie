@@ -445,7 +445,10 @@ func _place_framework(pl: Dictionary, buildings: bool = true, fx: Vector2i = Vec
 			if not models.has(model):
 				models[model] = []
 			(models[model] as Array).append(xf)
-			if pdef.collision != "none":
+			if not pdef.boxes.is_empty():
+				for b: Array in pdef.collision_boxes():
+					(cells[k]["boxes"] as Array).append([xf * (b[1] as Transform3D), b[0]])
+			elif pdef.collision != "none":
 				(cells[k]["boxes"] as Array).append([xf * Transform3D(Basis(), Vector3(0, pdef.size.y * 0.5, 0)), pdef.size])
 			continue
 		var lpr := PoiPieces.LootProp.new()
@@ -457,7 +460,15 @@ func _place_framework(pl: Dictionary, buildings: bool = true, fx: Vector2i = Vec
 		var mi := MeshInstance3D.new()
 		mi.mesh = ModelLibrary.mesh(model, "box")
 		lpr.add_child(mi)
-		if pdef.collision != "none":
+		if not pdef.boxes.is_empty():
+			for b: Array in pdef.collision_boxes():
+				var bcs := CollisionShape3D.new()
+				var bb := BoxShape3D.new()
+				bb.size = b[0]
+				bcs.shape = bb
+				bcs.transform = b[1]
+				lpr.add_child(bcs)
+		elif pdef.collision != "none":
 			var cs := CollisionShape3D.new()
 			var box := BoxShape3D.new()
 			box.size = pdef.size
