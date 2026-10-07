@@ -20,6 +20,8 @@ const COMMANDS: Array[StringName] = [&"companion.recruit", &"companion.order", &
 const TICK: float = 0.5
 ## Following, he is brought to the player after a respawn, sleep or load when further than this.
 const REJOIN: float = 20.0
+## How far from the point the player looks at a loose item or log still counts as looked at (m).
+const LOOK_SLACK: float = 1.2
 
 var world: Node
 var cdef: CompanionDef
@@ -563,6 +565,10 @@ func _look(p: Player) -> void:
 			t = {"entity": String(it.get(&"entity_id"))}
 		elif col != null and col.has_meta(&"veg_id"):
 			t = {"veg": String(col.get_meta(&"veg_id"))}
+		else:
+			# A small thing far off is hard to hit dead on: the loose item or log nearest the
+			# point looked at, if close to it.
+			t = _loose_near(hit["position"], LOOK_SLACK)
 	if t.is_empty():
 		var veg: Node = world.get(&"vegetation")
 		if veg != null and veg.has_method(&"pick_harvestable"):
@@ -572,6 +578,25 @@ func _look(p: Player) -> void:
 				t = {"veg": String(VegetationScatter.instance_id(h.key, h.inst.index))}
 	if not t.is_empty():
 		looked = t
+
+
+## {entity: id} for the loose item or log nearest `at` within `r` (a log by its length), {} for none.
+func _loose_near(at: Vector3, r: float) -> Dictionary:
+	var best: Dictionary = {}
+	var best_d: float = r
+	for g: StringName in [&"item_drops", &"logs"]:
+		for n: Node in get_tree().get_nodes_in_group(g):
+			var b: Node3D = n as Node3D
+			if b == null or b.is_queued_for_deletion():
+				continue
+			var d: float = b.global_position.distance_to(at)
+			if g == &"logs":
+				var axis: Vector3 = b.global_transform.basis.x.normalized() * LogEntity.LENGTH * 0.5
+				d = Geometry3D.get_closest_point_to_segment(at, b.global_position - axis, b.global_position + axis).distance_to(at)
+			if d < best_d:
+				best_d = d
+				best = {"entity": String(b.get(&"entity_id"))}
+	return best
 
 
 static func _flat(a: Vector3, b: Vector3) -> float:

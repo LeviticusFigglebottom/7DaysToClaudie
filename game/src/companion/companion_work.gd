@@ -157,6 +157,13 @@ func _go(p: Player) -> Vector3:
 		if _t > CompanionDef.fnum(cdef.gather, "give_up", 25.0) * 0.4:
 			_fail()
 		return Vector3.ZERO
+	if not _still_there():
+		# taken by someone else meanwhile
+		if task == "gather":
+			_begin("seek")
+		else:
+			_fail()
+		return Vector3.ZERO
 	var to: Vector3 = _target_pos()
 	var d: float = enemy._flat_dist(to)
 	if d <= _reach():
@@ -481,8 +488,8 @@ func _resolved() -> bool:
 
 func _still_there() -> bool:
 	if target.has("node"):
-		var n: Node = target["node"]
-		return is_instance_valid(n) and not n.is_queued_for_deletion()
+		var n: Variant = target["node"]
+		return is_instance_valid(n) and not (n as Node).is_queued_for_deletion()
 	if target.has("inst"):
 		var veg: Node = _veg()
 		var inst: VegetationScatter.Instance = target["inst"]
@@ -509,8 +516,8 @@ func _reach() -> float:
 			var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
 			return r + (sp.trunk_radius * inst.scale if sp != null else 0.2)
 		"storage":
-			var piece: Node = target.get("node")
-			var sd: StructureDef = piece.get(&"def") as StructureDef if piece != null and is_instance_valid(piece) else null
+			var piece: Variant = target.get("node")
+			var sd: StructureDef = (piece as Node).get(&"def") as StructureDef if is_instance_valid(piece) else null
 			return r + (maxf(sd.size.x, sd.size.z) * 0.5 if sd != null else 0.6)
 	return r
 
