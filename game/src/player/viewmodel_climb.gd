@@ -9,9 +9,9 @@ extends RefCounted
 ## runs backwards climbing down and holds still when the player does. The arms are kept level and
 ## square to the ladder rather than to the view, so looking around doesn't take the hands off it.
 ##
-## Movement is Player's (it owns the ladder): this only polls its getters each frame, duck-typed
-## (is_climbing, climbing_ladder, climb_speed), and is inert on a player without them. Node-free
-## and Input-free, so tests drive it with a fake player.
+## Movement is Player's (it owns the ladder, ADR-0051): this only polls its getters each frame
+## (is_climbing, climbing_ladder, climb_speed; there is no signal). They are called by name on
+## `source`, so it is node-free and Input-free and tests drive it with a stand-in.
 
 enum State { OFF, GRAB, CLIMB, RELEASE }
 

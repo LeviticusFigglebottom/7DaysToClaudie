@@ -72,9 +72,9 @@ static func _v3(a: Variant, dflt: Vector3 = Vector3.ZERO) -> Vector3:
 static func build(piece: StructurePiece, mesh: MeshInstance3D) -> void:
 	var s: Dictionary = spec_for(piece.def.id)
 	var rope: bool = str(s.get("style", "")) == "rope"
+	piece.add_child(mesh)
 	if ModelLibrary.has_model(piece.def.model):
 		mesh.mesh = ModelLibrary.mesh(piece.def.model)
-		piece.add_child(mesh)
 	elif rope:
 		piece.add_child(_rope_anchor_stand_in())
 	else:
@@ -141,7 +141,7 @@ static func _box_shape(parent: Node3D, size: Vector3, centre: Vector3) -> void:
 
 
 ## The stand's ladder: a PoiPieces.Ladder at `foot`, turned so its +Z faces the climber, with its
-## ends piece-local and a body to aim at (interaction on branches without walk-in climbing).
+## ends piece-local. No shape: it is climbed by walking into it (Player, ADR-0051).
 static func make_ladder(s: Dictionary) -> PoiPieces.Ladder:
 	var foot: Vector3 = _v3(s.get("foot", []))
 	var face: Vector3 = _v3(s.get("face", []), Vector3.BACK)
@@ -154,23 +154,8 @@ static func make_ladder(s: Dictionary) -> PoiPieces.Ladder:
 	lad.basis = Basis.looking_at(-face, Vector3.UP)
 	lad.top_local = _v3(s.get("landing", []), foot + Vector3.UP * height - face * 1.0)
 	lad.bottom_local = _v3(s.get("bottom", []), foot + face * 0.6)
-	set_height(lad, height)
-	lad.add_to_group(&"ladder")
-	_box_shape(lad, Vector3(0.6, height, 0.3), Vector3(0, height * 0.5, 0.12))
+	lad.height = height
 	return lad
-
-
-## Ladder.height arrives with walk-in climbing (ADR-0051); set it where it exists.
-static func set_height(lad: Node, h: float) -> void:
-	if &"height" in lad:
-		lad.set(&"height", h)
-
-
-## [top landing, foot cell] in world space: Ladder.ends(), or the older Ladder's _ends().
-static func ladder_ends(lad: Node) -> Array:
-	if lad.has_method(&"ends"):
-		return lad.call(&"ends")
-	return lad.call(&"_ends")
 
 
 # --- Procedural stand-ins (no `make assets`) -------------------------------------------------------
@@ -321,11 +306,8 @@ static func hang_rope(piece: Node3D, s: Dictionary, drop: Dictionary) -> PoiPiec
 	lad.basis = Basis.looking_at(-face, Vector3.UP)
 	lad.top_local = Vector3(0, 0, float(s.get("landing_back", 0.35)))
 	lad.bottom_local = lad.position + face * 0.6
-	var height: float = -gy_local
-	set_height(lad, height)
+	lad.height = -gy_local
 	lad.set_meta(&"climb_style", "rope")
-	lad.add_to_group(&"ladder")
-	_box_shape(lad, Vector3(0.3, height, 0.3), Vector3(0, height * 0.5, rope_off))
 	piece.add_child(lad)
 	# Over the lip from the stake, then straight down to a hand's breadth off the ground.
 	piece.add_child(rope_visual(Vector3(0, 0.06, 0.05), Vector3(0, 0.03, -d)))
