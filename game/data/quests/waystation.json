@@ -1,5 +1,5 @@
 {
- "_doc": "Waystation contracts (ADR-0039): templates the trader's board deals out by the day; each offer picks its building from target (tier band, distance from the post). Story quests name their targets in objectives.",
+ "_doc": "Waystation contracts (ADR-0039): templates the trader's board deals out by the day; each offer picks its building from target (tier band, distance from the post). An accepted contract still open after expires_days (default 3) fails at dawn and costs fail_rep (default 10) standing; abandoning one costs abandon_rep (default 5) (TD-146). Story quests name their targets in objectives.",
  "defs": [
   {
    "id": "clear_t1",
@@ -137,7 +137,7 @@
    "giver": "waystation_9",
    "rep_tier": 2,
    "weight": 3,
-   "_doc": "TD-179: the one contract on a tier-5 site (the Corvane Field Lab, unique per random world). The lab's vault always holds a sealed core, so nothing is set down (`place` false); the contract is ready while the player carries one and pays well over its 240-scrip sale. `fresh` false: offered even after the player has been inside. Once turned in, never dealt again.",
+   "_doc": "TD-179: the one contract on a tier-5 site (the Corvane Field Lab, unique per random world). The lab's vault always holds a sealed core, so nothing is set down (`place` false); the contract is ready while the player carries one and pays well over its 240-scrip sale. `fresh` false: offered even after the player has been inside. Once turned in, never dealt again. A week to get there and back (expires_days, TD-146).",
    "target": {
     "tier": [
      5,
@@ -152,6 +152,7 @@
    "item": "bloom_core_canister",
    "place": false,
    "once": true,
+   "expires_days": 7,
    "briefing": "The Program lost a field lab: {building}, {distance} out. Its vault holds a sealed Bloom core. Bring one back intact and the Program will remember you.",
    "rewards": {
     "scrip": 450,

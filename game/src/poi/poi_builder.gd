@@ -46,6 +46,17 @@ var _wings: Array[RoofPlanner.Wing] = []
 ## Most interior reflection probes one building gets (each costs a cubemap render at load and a
 ## slot in the reflection atlas).
 const MAX_PROBES: int = 8
+## Metres over which an interior probe's fill fades out at its box's faces. Godot fades the fill
+## as ((1 - d) per axis)^2 inside that band, so a wall face inside it gets almost none and falls
+## back to SDFGI, which is near black indoors: with 0.3 m and boxes 5 cm past the walls' centre
+## lines, walls got 1% of the room's fill (player report 3). The face must lie deeper than this.
+const PROBE_BLEND: float = 0.12
+## How far a probe box reaches past a wall's centre line on an outside side: just short of the
+## wall's outer face, so facades keep the outdoor light and the inner face lies WALL_T - 0.01 deep.
+const PROBE_REACH_OUT: float = WALL_T * 0.5 - 0.01
+## On a side whose neighbours are built (another room, a tall room's void): far enough that the
+## seam between two boxes gets the full fill from each (two boxes don't add up there).
+const PROBE_REACH_IN: float = PROBE_BLEND + 0.02
 
 
 ## `checked`: the layout's PoiValidator, already run (PoiManager runs it on a worker thread while
@@ -383,12 +394,17 @@ func _barricade_faces(v: PoiValidator) -> Dictionary:
 
 ## Level-0 cells under the porch deck (mirrors _porch).
 func _porch_cell_set() -> Dictionary:
+	return porch_cells(layout)
+
+
+## Yard cells the porch deck covers (its top is the ground floor's).
+static func porch_cells(lay: PoiLayout) -> Dictionary:
 	var out: Dictionary = {}
-	var porch: Dictionary = layout.style.get("porch", {})
-	if porch.is_empty() or layout.level_ids.is_empty():
+	var porch: Dictionary = lay.style.get("porch", {})
+	if porch.is_empty() or lay.level_ids.is_empty():
 		return out
-	var li0: int = 0 if layout.levels.has(0) else layout.level_ids.front()
-	var lv: Dictionary = layout.levels[li0]
+	var li0: int = 0 if lay.levels.has(0) else lay.level_ids.front()
+	var lv: Dictionary = lay.levels[li0]
 	var side: int = PoiLayout.SIDES.get(str(porch.get("side", "S")), 2)
 	for i: int in range(int(porch.get("from", 0)), int(porch.get("to", 3)) + 1):
 		for k: int in int(porch.get("depth", 2)):
@@ -646,6 +662,9 @@ func _galleries() -> void:
 		var floor_cell: Vector2i = cells[1] if bool(g["void_a"]) else cells[0]
 		if layout.stairwell_cells(li).has(floor_cell):
 			continue
+		# No railing across the top of a flight rising into the open space.
+		if layout.is_stair_head_edge(li, cells[0], cells[1]):
+			continue
 		var xf: Transform3D = _edge_xf(li, axis, c)
 		if not bool(g["void_a"]):
 			xf.basis = xf.basis * Basis(Vector3.UP, PI)
@@ -745,12 +764,14 @@ func _openings() -> void:
 			var leaf_size := Vector2(float(ls[0]), float(ls[1]))
 			var hp: float = float(op["hp"]) if float(op["hp"]) > 0.0 else (900.0 if leaf == "door_metal" else (380.0 if exterior else 220.0))
 			var oid: String = str(op["id"])
+			# A leaf swings away from a stair flight on one side of its wall (player report 3).
+			var swing_sign: float = layout.door_swing(op)
 			if span == 1:
 				# TD-023: a leaf hinged beside a wall that runs off on its swing side would open into
 				# that wall: hang it on the other jamb when that one is clear.
 				var hinge_x: float = -0.43
 				var flip: float = 0.0
-				var swing: Vector3 = xf.basis * Vector3.BACK
+				var swing: Vector3 = xf.basis * Vector3.BACK * swing_sign
 				var sw := Vector2i(roundi(swing.x), roundi(swing.z))
 				var v0: Vector3 = xf * Vector3(-0.5, 0, 0)
 				var v1: Vector3 = xf * Vector3(0.5, 0, 0)
@@ -759,13 +780,13 @@ func _openings() -> void:
 				if _wall_from_vertex(int(op["level"]), lv0, sw) and not _wall_from_vertex(int(op["level"]), lv1, sw):
 					hinge_x = 0.43
 					flip = PI
-				var d1: PoiPieces.Door = _door(oid, xf, Vector3(hinge_x, 0, 0), flip, leaf, st, str(op["key"]), hp, inside_sign, leaf_size)
+				var d1: PoiPieces.Door = _door(oid, xf, Vector3(hinge_x, 0, 0), flip, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign)
 				d1.opening_id = oid
 				_lock_cue(d1, op, inside_sign)
 			else:
 				var hx: float = float(spec["w"]) * 0.5
-				var dl: PoiPieces.Door = _door(oid + "_l", xf, Vector3(-hx, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign, leaf_size)
-				var dr: PoiPieces.Door = _door(oid + "_r", xf, Vector3(hx, 0, 0), PI, leaf, st, str(op["key"]), hp, inside_sign, leaf_size)
+				var dl: PoiPieces.Door = _door(oid + "_l", xf, Vector3(-hx, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign)
+				var dr: PoiPieces.Door = _door(oid + "_r", xf, Vector3(hx, 0, 0), PI, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign)
 				if bool(spec.get("mirror_pair", false)) and not op.has("model"):
 					# A leaf dressed on one face (the barn door's battens, braces and strap hinges),
 					# turned half round on its pivot, showed its plain back outside: the right leaf's
@@ -886,7 +907,11 @@ func _lock_cue(d: PoiPieces.Door, op: Dictionary, inside_sign: float) -> void:
 		d.lock_body = lb
 
 
-func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: String, st: String, key: String, hp: float, inside_sign: float, leaf_size := Vector2(0.82, 2.05)) -> PoiPieces.Door:
+## Broken leaves hang between these fractions of a full swing (per door, from its id).
+const BROKEN_OPEN: Vector2 = Vector2(0.72, 0.98)
+
+
+func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: String, st: String, key: String, hp: float, inside_sign: float, leaf_size := Vector2(0.82, 2.05), swing_sign: float = 1.0) -> PoiPieces.Door:
 	var d := PoiPieces.Door.new()
 	d.poi = root
 	d.op_id = id
@@ -899,23 +924,31 @@ func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: 
 	d.transform = wall_xf
 	d.hp = root.piece_hp(id, hp)
 	d.flip = flip
+	d.swing = swing_sign
+	d.broken_open = broken_open_for(_instance_id, id)
 	d.pivot = Node3D.new()
 	d.pivot.position = hinge
 	d.pivot.rotation.y = flip
 	d.add_child(d.pivot)
 	var mi := MeshInstance3D.new()
-	mi.mesh = PoiParts.kit_mesh(leaf) if d.state != "broken" else PoiParts.kit_mesh(leaf + "_broken")
-	# A broken door with no broken model (metal, wood) has lost its leaf: drawing the stand-in
-	# would hang a slab in a doorway the player walks through (the first playtest). Door.break_open
-	# hides it the same way.
-	if d.state == "broken" and not ModelLibrary.has_model(d.model_broken):
-		mi.visible = false
+	# A broken leaf hangs open off its top hinge (Door._apply): its smashed model, or the whole one
+	# where the kit has none (metal, plain wood). Drawn shut, a smashed leaf over a doorway the player
+	# walks through read as a door with no "open" (the first playtest and player report 3).
+	var broken_model: bool = d.state == "broken" and ModelLibrary.has_model(d.model_broken)
+	mi.mesh = PoiParts.kit_mesh(leaf + "_broken") if broken_model else PoiParts.kit_mesh(leaf)
 	d.pivot.add_child(mi)
 	d.leaf_local = Transform3D(Basis.IDENTITY, Vector3(leaf_size.x * 0.5, leaf_size.y * 0.5, 0))
 	d.leaf_shape = _box(Vector3(leaf_size.x, leaf_size.y, 0.05), d.pivot.transform * d.leaf_local, d)
 	d.leaf_shape.disabled = d.state == "broken"
 	root.add_child(d)
 	return d
+
+
+## How far open a broken leaf hangs (Door.broken_open): fixed per building and door, so it needs
+## nothing saved and every load poses it the same.
+static func broken_open_for(instance_id: StringName, door_id: String) -> float:
+	var h: int = Ids.hash64("door_broken:%s:%s" % [instance_id, door_id])
+	return lerpf(BROKEN_OPEN.x, BROKEN_OPEN.y, float(posmod(h, 1000)) / 999.0)
 
 
 func _glass(id: String, wall_xf: Transform3D, pane: String, st: String, w: float, h: float, sill: float) -> PoiPieces.Breakable:
@@ -994,6 +1027,8 @@ func _exterior() -> bool:
 	var porch: Dictionary = layout.style.get("porch", {})
 	if not porch.is_empty():
 		_porch(porch, li0)
+	for st: Dictionary in stoops(layout):
+		_stoop(st)
 	var chim: Variant = layout.style.get("chimney", null)
 	if chim is Array:
 		var p := Vector3(layout.origin.x + float(chim[0]) + 0.5, 0.0, layout.origin.y + float(chim[1]) + 0.5)
@@ -1085,6 +1120,76 @@ func _porch(porch: Dictionary, li0: int) -> void:
 				var edge_top := Vector3(p.x, top, p.z) + d4 * 0.5
 				_add("porch_step_1m", Transform3D(Basis(Vector3.UP, yaw), Vector3(edge_top.x, 0.0, edge_top.z)), Color(0, 0, _decay_v(), _seed()))
 				_ramp(edge_top, edge_top + d4 * 0.95 - Vector3.UP * top, 1.0)
+
+
+## Doorway rises above this (m) get steps up to them: a little more than a kerb, well short of
+## Player.STEP_HEIGHT's 0.38 m so nobody hops up a stoop's worth of foundation.
+const STOOP_MIN_RISE: float = 0.2
+## The foundation's outer face (foundation_1m is 0.2 m deep, centred on the wall line).
+const STOOP_FACE: float = 0.1
+## porch_step_1m: 1 m wide and deep, rising PORCH_H in three steps (its top toward local -Z).
+const STEP_UNIT_RISE: float = 0.6
+
+
+## Steps up to every exterior doorway of the ground floor whose sill stands more than STOOP_MIN_RISE
+## above the yard at its threshold (player report 3: a cottage's back door on a 0.6 m foundation
+## with nothing to climb it by). The yard is the pad (y = 0: PoiManager flattens the terrain under
+## a building and its yard) unless the porch deck covers that cell. One entry per metre of
+## doorway: {op, inside, outside (cells), side (outward), at (the threshold on the wall line, at
+## the yard), rise, run}. Pure, so the builder and the tests share it.
+static func stoops(lay: PoiLayout) -> Array:
+	var out: Array = []
+	if lay.level_ids.is_empty():
+		return out
+	var li0: int = 0 if lay.levels.has(0) else lay.level_ids.front()
+	var sill: float = lay.level_y(li0)
+	if sill <= STOOP_MIN_RISE:
+		return out
+	var deck: Dictionary = porch_cells(lay)
+	for op: Dictionary in lay.openings:
+		var t: String = str(op["type"])
+		if int(op["level"]) != li0 or not (t.begins_with("door") or t == "open"):
+			continue
+		var w: Dictionary = lay.walls.get(PoiLayout.edge_key(li0, op["axis"], op["edge"]), {})
+		if w.is_empty() or not bool(w["exterior"]):
+			continue
+		for pair: Array in PoiLayout.opening_edges(op):
+			var a: Vector2i = pair[0]
+			var b: Vector2i = pair[1]
+			var a_in: bool = lay.is_room(lay.room_at(li0, a))
+			if a_in == lay.is_room(lay.room_at(li0, b)):
+				continue
+			var inside: Vector2i = a if a_in else b
+			var outside: Vector2i = b if a_in else a
+			var rise: float = sill - (sill if deck.has(outside) else 0.0)
+			if rise <= STOOP_MIN_RISE:
+				continue
+			# pair[0] is the cell south / east of the edge: the edge's own key cell.
+			var mid := Vector2(lay.origin.x + a.x + 0.5, lay.origin.y + a.y) if str(op["axis"]) == "h" \
+				else Vector2(lay.origin.x + a.x, lay.origin.y + a.y + 0.5)
+			out.append({"op": str(op["id"]), "inside": inside, "outside": outside, "side": PoiLayout.DIRS.find(outside - inside),
+				"at": Vector3(mid.x, 0.0, mid.y), "rise": rise, "run": maxf(1.0, rise / STEP_UNIT_RISE)})
+	return out
+
+
+## One metre of steps up to a doorway (see stoops): the porch step scaled to the rise (and, past
+## 0.6 m, lengthened so its steps stay climbable), from the foundation's face out into the yard,
+## with a ramp under it for the player's feet.
+func _stoop(st: Dictionary) -> void:
+	var side: int = st["side"]
+	var out_dir := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
+	var rise: float = st["rise"]
+	var run: float = st["run"]
+	var yaw: float = [PI, PI * 0.5, 0.0, -PI * 0.5][side]
+	var at: Vector3 = st["at"]
+	var face: Vector3 = at + out_dir * STOOP_FACE
+	var basis: Basis = Basis(Vector3.UP, yaw).scaled_local(Vector3(1.0, rise / STEP_UNIT_RISE, run))
+	# Its wear seed from the doorway, not _rng: steps added to a building must not shift the
+	# random draws everything after them (scatter, decals) takes.
+	var seed_v: float = float(posmod(Ids.hash64("stoop:%s:%s" % [st["op"], st["outside"]]), 1000)) / 1000.0
+	_add("porch_step_1m", Transform3D(basis, face + out_dir * (run * 0.5)), Color(0, 0, clampf(_decay, 0.0, 1.0), seed_v))
+	# From the wall line (the floor slab ends there), over the foundation's top, down to the yard.
+	_ramp(at + Vector3.UP * rise, face + out_dir * run, 1.0)
 
 
 ## Walkable ramp collision between two edge-centre points (its top surface on the line).
@@ -1248,7 +1353,8 @@ func _prop(p: Dictionary) -> void:
 		else:
 			root.add_child(PropLights.lit_mesh(model, xf, layout.is_room(layout.room_at(p["level"], p["cell"]))))
 		if pd.collision != "none":
-			_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre()))
+			# Tagged for TraversalAudit, which names what blocks a doorway or the route.
+			_box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre())).set_meta(&"prop", str(pd.id))
 	if not light.is_empty():
 		root.add_child(PropLights.light_node(light, xf))
 
@@ -1359,8 +1465,8 @@ func _scatter_cell(li: int, c: Vector2i, density: float) -> void:
 ## floors. One probe per rectangle of rooms of one height (TD-040): each level's room cells are
 ## grouped by how high their room rises, split into rectangles, stacked where a rectangle repeats
 ## storey over storey, and merged pairwise (least waste first) down to MAX_PROBES. A yard inside an
-## L or a courtyard is in no box, so it keeps the outdoor light. Boxes stop just inside the walls so
-## facades keep it too.
+## L or a courtyard is in no box, so it keeps the outdoor light. Boxes stop just short of the walls'
+## outer faces so facades keep it too (_probe_box).
 ## Resumable (see PHASES): prepare_check's boxes, else one level's rectangles an item, then the
 ## merge and the probes.
 func _interior_probes() -> bool:
@@ -1383,12 +1489,53 @@ func _interior_probes() -> bool:
 		probe.ambient_color_energy = 0.5
 		probe.size = box.size
 		probe.position = box.get_center()
-		probe.blend_distance = 0.3
+		probe.blend_distance = PROBE_BLEND
 		probe.max_distance = maxf(probe.size.x, probe.size.z)
 		probe.update_mode = ReflectionProbe.UPDATE_ONCE
+		# How much daylight its rooms let in: EnvironmentController scales the fill by it, so a
+		# cellar stays dim and a glazed shopfront bright (ADR-0050).
+		probe.set_meta(&"daylight", daylight_ratio(box))
 		probe.add_to_group(&"interior_probe")
 		root.add_child(probe)
 	return true
+
+
+## Square metres of light an opening lets in per cell of its width, by type, while it stands open
+## (OPENING_DAYLIGHT_SHUT scales a shut door, a boarded window...).
+const OPENING_DAYLIGHT: Dictionary = {"door": 2.1, "door2": 2.1, "door2_tall": 4.2, "window": 1.2, "window2": 1.2,
+	"window_tall": 2.4, "lancet": 2.0, "breach": 2.1, "open": 2.1, "half": 1.0}
+## Share of an opening's light that still gets in by its state: a shut door's glass and gaps, light
+## between a window's boards. Windows are glazed: closed is their normal state.
+const OPENING_DAYLIGHT_SHUT: Dictionary = {"closed": 0.3, "locked": 0.3, "locked_inside": 0.3, "barricaded": 0.15, "boarded": 0.15}
+
+
+## The daylight of the rooms in a probe box (POI-local): square metres of outside openings on its
+## walls per square metre of its floor. A room with a window of a tenth of its floor is about 0.1;
+## a cellar is 0.
+func daylight_ratio(box: AABB) -> float:
+	var light: float = 0.0
+	for op: Dictionary in layout.openings:
+		var li: int = int(op["level"])
+		var y: float = layout.level_y(li) + 1.0
+		if y < box.position.y or y > box.end.y:
+			continue
+		var e: Vector2i = op["edge"]
+		var w: int = int(op["width"])
+		var outside: bool = false
+		for c: Vector2i in PoiLayout.edge_cells(str(op["axis"]), e):
+			outside = outside or not layout.is_built(li, c)
+		if not outside:
+			continue
+		var mid: Vector2 = Vector2(e.x + w * 0.5, e.y) if str(op["axis"]) == "h" else Vector2(e.x, e.y + w * 0.5)
+		var at: Vector3 = layout.local_pos(li, mid) + Vector3(0, 1.0, 0)
+		if not box.grow(0.25).has_point(at):
+			continue
+		var t: String = str(op["type"])
+		var share: float = 1.0
+		if not PoiLayout.is_window(t) or str(op["state"]) in ["boarded", "barricaded"]:
+			share = float(OPENING_DAYLIGHT_SHUT.get(str(op["state"]), 1.0))
+		light += float(OPENING_DAYLIGHT.get(t, 1.0)) * w * share
+	return light / maxf(1.0, box.size.x * box.size.z)
 
 
 ## The interior probe boxes (POI-local), at most MAX_PROBES.
@@ -1418,7 +1565,8 @@ func _probe_rects(li: int) -> Array:
 
 ## The probe boxes of every level's rectangles, stacked and merged down to MAX_PROBES.
 func _merge_probe_rects(rects: Array) -> Array[AABB]:
-	# A rectangle repeated storey over storey (stacked floors of one block): one box.
+	# A rectangle repeated storey over storey (stacked floors of one block): one box. Not a cellar
+	# under a ground floor: it would get that room's daylight (ADR-0050).
 	var merged: bool = true
 	while merged:
 		merged = false
@@ -1426,7 +1574,7 @@ func _merge_probe_rects(rects: Array) -> Array[AABB]:
 			for j: int in rects.size():
 				var a: Array = rects[i]
 				var b: Array = rects[j]
-				if i != j and a[2] == b[2] and int(a[1]) + 1 == int(b[0]) and int(a[3]) == 0:
+				if i != j and a[2] == b[2] and int(a[1]) + 1 == int(b[0]) and int(a[3]) == 0 and (int(a[1]) >= 0 or int(b[0]) < 0):
 					rects[i] = [a[0], b[1], a[2], b[3]]
 					rects.remove_at(j)
 					merged = true
@@ -1452,8 +1600,10 @@ func _merge_probe_rects(rects: Array) -> Array[AABB]:
 	return boxes
 
 
-## The box of one rectangle of room cells: inset 5 cm from the walls' centre lines, from under its
-## floor slab to its ceiling (to the ridge where it is open to the roof).
+## The box of one rectangle of room cells, from under its floor slab to its ceiling (to the ridge
+## where it is open to the roof). Each side reaches past the walls' centre line far enough that
+## the room's wall faces get the full fill (PROBE_BLEND): just short of the outer face where the
+## side looks outside, further where every cell beyond it is built on every level of the box.
 func _probe_box(li: int, top: int, r: Rect2i, open: bool) -> AABB:
 	var lo: float = layout.level_y(li) - 0.2
 	var hi: float = layout.level_y(top) + PoiLayout.STOREY
@@ -1461,8 +1611,31 @@ func _probe_box(li: int, top: int, r: Rect2i, open: bool) -> AABB:
 		for w: RoofPlanner.Wing in _wings:
 			if w.level == top and w.cells.intersects(r):
 				hi = maxf(hi, w.y + w.rise())
-	var p := Vector3(layout.origin.x + r.position.x + 0.05, lo, layout.origin.y + r.position.y + 0.05)
-	return AABB(p, Vector3(maxf(0.5, r.size.x - 0.1), hi - lo, maxf(0.5, r.size.y - 0.1)))
+	var x0: float = _probe_reach(li, top, r, Vector2i(-1, 0))
+	var x1: float = _probe_reach(li, top, r, Vector2i(1, 0))
+	var z0: float = _probe_reach(li, top, r, Vector2i(0, -1))
+	var z1: float = _probe_reach(li, top, r, Vector2i(0, 1))
+	var p := Vector3(layout.origin.x + r.position.x - x0, lo, layout.origin.y + r.position.y - z0)
+	return AABB(p, Vector3(r.size.x + x0 + x1, hi - lo, r.size.y + z0 + z1))
+
+
+## How far a probe box reaches past the side of `r` facing `dir`: PROBE_REACH_IN when every cell
+## beyond that side is built on levels li..top, else PROBE_REACH_OUT.
+func _probe_reach(li: int, top: int, r: Rect2i, dir: Vector2i) -> float:
+	var cells: Array[Vector2i] = []
+	if dir.x != 0:
+		var x: int = r.position.x - 1 if dir.x < 0 else r.end.x
+		for y: int in range(r.position.y, r.end.y):
+			cells.append(Vector2i(x, y))
+	else:
+		var y2: int = r.position.y - 1 if dir.y < 0 else r.end.y
+		for x2: int in range(r.position.x, r.end.x):
+			cells.append(Vector2i(x2, y2))
+	for l: int in range(li, top + 1):
+		for c: Vector2i in cells:
+			if not layout.is_built(l, c):
+				return PROBE_REACH_OUT
+	return PROBE_REACH_IN
 
 
 func _light_at(pos: Vector3, l: Dictionary) -> void:

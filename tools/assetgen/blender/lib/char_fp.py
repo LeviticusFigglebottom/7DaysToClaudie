@@ -987,11 +987,14 @@ class Hand:
     """One hand's placement: grip point g, frame F (columns: knuckles, palm-ish, handle/thumb dir),
     elbow hint, curls; plus, for a hand on the other's handle, where along it and how turned."""
 
-    __slots__ = ("g", "F", "elbow", "sc", "on", "along", "spin", "flip")
+    __slots__ = ("g", "F", "elbow", "sc", "on", "along", "spin", "flip", "item")
 
-    def __init__(self, g, F, elbow, sc, on=None, along=0.0, spin=0.0, flip=False):
+    def __init__(self, g, F, elbow, sc, on=None, along=0.0, spin=0.0, flip=False, item=None):
         self.g, self.F, self.elbow, self.sc = g, F, elbow, sc
         self.on, self.along, self.spin, self.flip = on, along, spin, flip
+        # The held item's turn and offset in this hand's socket (the hold's `item`), for a hand
+        # gripping its handle `on` this one: it follows the item's axis, not the socket's.
+        self.item = item
 
 
 def _scalars(spec: dict, base: dict | None = None) -> dict:
@@ -1014,7 +1017,8 @@ def _spec_hand(sd: str, spec: dict) -> Hand:
         k = np.cross(d, b) if sd == "R" else np.cross(b, d)
     else:
         k = g2b(_n(np.asarray(spec["knuckles"], dtype=np.float64)))
-    return Hand(g2b(spec["grip"]), _frame(k, d), g2b(spec.get("elbow", [0.0, 0.0, 0.0])), _scalars(spec))
+    return Hand(g2b(spec["grip"]), _frame(k, d), g2b(spec.get("elbow", [0.0, 0.0, 0.0])), _scalars(spec),
+                item=spec.get("_item"))
 
 
 def pose_hands(pose: dict) -> dict:
@@ -1034,7 +1038,7 @@ def _relative(h: Hand, ch: dict, sd: str) -> Hand:
     if h.on is not None:
         return Hand(None, euler_g(rot), el, sc, on=h.on, along=float(ch.get(f"{sd}.along", h.along)),
                     spin=float(ch.get(f"{sd}.spin", h.spin)), flip=h.flip)
-    return Hand(h.g + mv, euler_g(rot) @ h.F, el, sc)
+    return Hand(h.g + mv, euler_g(rot) @ h.F, el, sc, item=h.item)
 
 
 def _key_hands(hold: dict, key: dict) -> dict:
@@ -1074,7 +1078,7 @@ def _lerp_hand(a: Hand, b: Hand, t: float) -> Hand:
     if a.on is not None:
         return Hand(None, F, el, sc, on=a.on, along=a.along + (b.along - a.along) * t, spin=a.spin + (b.spin - a.spin) * t,
                     flip=a.flip)
-    return Hand(a.g + (b.g - a.g) * t, F, el, sc)
+    return Hand(a.g + (b.g - a.g) * t, F, el, sc, item=a.item)
 
 
 class PoseSolver:
@@ -1166,7 +1170,7 @@ class PoseSolver:
         c = sh + f * l2
         return c + _n(np.asarray(wrist) - c) * l1, c
 
-    def _fit(self, sd: str, g, F, elbow, movable: bool = True):
+    def _fit(self, sd: str, g, F, elbow, movable: bool = True, item=None):
         """(wrist, Rh, pole) for a grip at g with its handle along F's z: the elbow and the roll
         round the handle that bend the wrist least; then, if the wrist is still past its range,
         the hand moved (tool direction kept) just far enough toward where a straight wrist would
@@ -1176,9 +1180,13 @@ class PoseSolver:
         g = np.asarray(g, dtype=np.float64)
         d, k = F[:, 2], F[:, 0]
         sh = rig.sk.j[f"shoulder.{sd}"]
+        # The fist rolls about what it holds: the item's own axis, which an oblique grip turns off
+        # the socket's (rolled about the socket's, a spear held across the palm would swing away).
+        spin_ax = item_axis(Hand(g, F, None, None, item=item))[0]
 
         def place(gg, sw, sp):
-            Rh = rig.hand(sd, gg, d, _R(d, sp) @ k)[1]
+            Rs = _R(spin_ax, sp)
+            Rh = rig.hand(sd, gg, Rs @ d, Rs @ k)[1]
             wrist = gg - Rh @ rig.grip_off[sd]
             pole = rot_axis(_n(wrist - sh), math.radians(sw)) @ hint
             return wrist, Rh, pole
@@ -1259,8 +1267,8 @@ class PoseSolver:
             h = hands[sd]
             if h.on is not None:
                 o = placed[h.on]
-                d0, k0 = o.F[:, 2], o.F[:, 0]
-                g = o.g + d0 * h.along
+                d0, k0, g0 = item_axis(o)
+                g = g0 + d0 * h.along
                 d = -d0 if h.flip else d0
                 k = _R(d0, h.spin) @ k0
                 if h.F is not None:
@@ -1269,14 +1277,53 @@ class PoseSolver:
             else:
                 g, F = h.g, h.F
             # A hand on the other's handle stays on it: it can turn, not move.
-            g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None)
+            g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None, item=h.item)
             # What the hand really ended up gripping (the other hand follows this handle).
-            placed[sd] = Hand(g, Rh @ self.rig.S0[sd], h.elbow, h.sc)
+            placed[sd] = Hand(g, Rh @ self.rig.S0[sd], h.elbow, h.sc, item=h.item)
             prm[f"{sd}.wrist"], prm[f"{sd}.Rh"] = wrist, Rh
             prm[f"{sd}.pole"] = pole
             for c in SCALARS:
                 prm[f"{sd}.{c}"] = h.sc[c]
         return prm
+
+
+def item_axis(h: Hand):
+    """(axis, knuckle-side reference, origin) for a hand gripping the handle of the item `h` holds,
+    Blender space: the handle's direction is the socket's handle axis turned by the hold's `item`
+    rot (deg, Godot's YXZ Euler in socket space, as ViewModelHolds.item_transform places it). An
+    oblique grip (a spear's shaft across the palm) turns it off the socket's axis, and the second
+    hand follows the shaft. A turn about the handle itself (the club's) moves nothing; `along` is
+    measured from this hand's grip, and the item's `pos` (sliding the model in the fist) is
+    cosmetic."""
+    k, d = h.F[:, 0], h.F[:, 2]
+    rot = list(h.item.get("rot", [0, 0, 0])) if h.item else [0, 0, 0]
+    if not any(float(a) for a in rot):
+        return d, k, h.g
+    # Socket axes in Blender space: +X the knuckles, +Y the handle, +Z = X x Y.
+    M = np.stack([k, d, np.cross(k, d)], 1)
+    rx, ry, rz = (math.radians(float(a)) for a in rot)
+    Rx = np.array([[1, 0, 0], [0, math.cos(rx), -math.sin(rx)], [0, math.sin(rx), math.cos(rx)]])
+    Ry = np.array([[math.cos(ry), 0, math.sin(ry)], [0, 1, 0], [-math.sin(ry), 0, math.cos(ry)]])
+    Rz = np.array([[math.cos(rz), -math.sin(rz), 0], [math.sin(rz), math.cos(rz), 0], [0, 0, 1]])
+    ax = _n((M @ (Ry @ Rx @ Rz))[:, 1])
+    if float(ax @ d) > 0.9999:
+        return d, k, h.g
+    ref = k - ax * float(k @ ax)
+    if float(np.linalg.norm(ref)) < 1e-6:
+        ref = np.cross(ax, d)
+    return ax, _n(ref), h.g
+
+
+def with_item(pose: dict, hold: dict) -> dict:
+    """The pose with the hold's `item` placement on the hand that holds it (for item_axis)."""
+    it = hold.get("item")
+    sd = str(hold.get("hand", "R"))
+    if not it or sd not in pose or "on" in pose[sd]:
+        return pose
+    out = dict(pose)
+    out[sd] = dict(pose[sd])
+    out[sd]["_item"] = it
+    return out
 
 
 def merge_pose(base: dict, over: dict) -> dict:
@@ -1333,14 +1380,14 @@ def fp_actions(cfg: dict):
         if cls.startswith("_") or "pose" not in h:
             continue
         pose = h["pose"]
-        out.append((f"fp_{cls}", 60, True, _idle(pose)))
+        out.append((f"fp_{cls}", 60, True, _idle(with_item(pose, h))))
         if "guard" in h:
-            out.append((f"fp_{cls}_guard", 60, True, _idle(merge_pose(pose, h["guard"]))))
+            out.append((f"fp_{cls}_guard", 60, True, _idle(with_item(merge_pose(pose, h["guard"]), h))))
         if "pose" in tether and not h.get("no_tether", False):
             over = {"L": tether["pose"]["L"]}
             if "tether_right" in h:
                 over["R"] = h["tether_right"]
-            out.append((f"fp_{cls}_tether", 60, True, _idle(merge_pose(pose, over))))
+            out.append((f"fp_{cls}_tether", 60, True, _idle(with_item(merge_pose(pose, over), h))))
     for group in ("attacks", "uses"):
         for name, a in cfg.get(group, {}).items():
             if name.startswith("_") or "keys" not in a:
@@ -1349,5 +1396,5 @@ def fp_actions(cfg: dict):
             if "pose" in a:
                 pose = merge_pose(pose, a["pose"])
             n = int(a["frames"])
-            out.append((f"fp_{name}", n, bool(a.get("loop", False)), _keyed(pose, a["keys"], n)))
+            out.append((f"fp_{name}", n, bool(a.get("loop", False)), _keyed(with_item(pose, holds[a["hold"]]), a["keys"], n)))
     return out

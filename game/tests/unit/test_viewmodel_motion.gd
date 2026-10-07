@@ -118,3 +118,18 @@ func _runtime_copy() -> WeakRef:
 	var w: WeakRef = weakref(FpMaterials.fp_material(tmp))
 	assert_not_null(w.get_ref(), "converted")
 	return w
+
+
+func test_a_fall_or_teleport_never_flings_the_arms() -> void:
+	# Build #67: a player stuck in a -74 m/s free fall, looking up, had the arms fly off into the
+	# sky. Whatever the velocity, the inertia offset stays what walking pace gives.
+	var cfg: Dictionary = ViewModelHolds.config()
+	var walk := ViewModelMotion.new()
+	walk.setup(cfg)
+	var fall := ViewModelMotion.new()
+	fall.setup(cfg)
+	for i: int in 120:
+		walk.update(1.0 / 60.0, Vector2.ZERO, Vector3(0, 0, -6.0), 0.0, false, false, false, 0.0, 0)
+		fall.update(1.0 / 60.0, Vector2.ZERO, Vector3(0, 0, -74.0), 0.0, false, false, false, 0.0, 0)
+	assert_almost_eq(fall.rig_position().distance_to(walk.rig_position()), 0.0, 0.001, "a fall moves the arms no further than a run")
+	assert_lt(fall.rig_position().length(), 0.08, "the arms stay in view")

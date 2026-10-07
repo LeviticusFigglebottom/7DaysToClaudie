@@ -307,3 +307,124 @@ func test_the_guards_fire_from_their_towers_and_turn_drifters_aside() -> void:
 	en._set_state(Enemy.State.INVESTIGATE)
 	TraderManager._steer_off(en, POST, _td.safe_radius)
 	assert_gt(Vector2(en.target_pos.x - POST.x, en.target_pos.z - POST.z).length(), _td.safe_radius, "its goal is outside the wire")
+
+
+class FakePois:
+	extends Node
+	var instances: Dictionary = {}
+
+
+## TD-145: a container standing in the target's loot room counts it searched wherever the player
+## reached it from (here the player is back at the post); one outside the loot room does not.
+func test_a_loot_room_container_counts_without_standing_in_the_room() -> void:
+	var c: Dictionary = _take("clear")
+	assert_false(c.is_empty(), "the board offered a clear")
+	var target := StringName(str(c["target"]))
+	var l: PoiLayout = PoiLayout.compile(Content.get_def(&"poi", _tm._target_def(c)) as PoiDef)
+	assert_false(l.loot_room.is_empty(), "%s has a loot room" % l.def.id)
+	var inside: String = ""
+	var outside: String = ""
+	for pr: Dictionary in l.props:
+		var at: int = Contracts.prop_in_loot_room(l, str(pr["pkey"]))
+		if at == 1 and inside == "":
+			inside = str(pr["pkey"])
+		elif at == 0 and outside == "":
+			outside = str(pr["pkey"])
+	assert_ne(inside, "", "a prop in the loot room")
+	var inst := PoiInstance.new()
+	autofree(inst)
+	inst.layout = l
+	inst.instance_id = target
+	var pois := FakePois.new()
+	add_child_autofree(pois)
+	pois.instances[target] = inst
+	_world.pois = pois
+	_p.position = POST + Vector3(0, 0, 6)
+	Game.session.world.poi_state(target)["cleared"] = true
+	if outside != "":
+		Events.container_looted.emit(_p.id, StringName("c:%s:%s" % [target, outside]), 2)
+		assert_false(bool(c.get("looted", false)), "a container outside the loot room")
+	Events.container_looted.emit(_p.id, StringName("c:%s:%s" % [target, inside]), 2)
+	assert_true(bool(c.get("looted", false)), "the loot room's container, searched from anywhere")
+	assert_eq(str(c["state"]), ContractLog.READY)
+
+
+## TD-146: an open contract fails at the dawn of its due day, costs standing and frees its target;
+## one done and waiting to be reported does not.
+func test_an_open_contract_expires_at_dawn_and_costs_standing() -> void:
+	var c: Dictionary = _take("clear")
+	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c["def"]))) as QuestDef
+	assert_gt(qd.expires_days, 0)
+	var due: int = int(c["day"]) + qd.expires_days
+	assert_eq(TraderManager.due_day(c), due)
+	var rep: int = _p.contracts.reputation(&"waystation_9")
+	var clock: WorldClock = Game.session.clock
+	clock.set_time(due, clock.sunrise_hour - 0.5)
+	_tm.expire_contracts(_p)
+	assert_false(_p.contracts.get_contract(str(c["id"])).is_empty(), "still before dawn")
+	clock.set_time(due, clock.sunrise_hour + 0.1)
+	_tm.expire_contracts(_p)
+	assert_true(_p.contracts.get_contract(str(c["id"])).is_empty(), "failed at dawn")
+	assert_eq(_p.contracts.reputation(&"waystation_9"), rep - qd.fail_rep, "the Program noticed")
+	assert_false(_p.contracts.busy_targets().has(str(c["target"])), "the building is free again")
+	# A contract done before its dawn waits to be reported.
+	var c2: Dictionary = _take("fetch")
+	c2["state"] = ContractLog.READY
+	clock.set_time(TraderManager.due_day(c2) + 2, 12.0)
+	_tm.expire_contracts(_p)
+	assert_false(_p.contracts.get_contract(str(c2["id"])).is_empty(), "done, only not reported")
+	# A contract saved before expiry existed has no `due`: it takes it from its def.
+	c2.erase("due")
+	assert_eq(TraderManager.due_day(c2), int(c2["day"]) + (Content.get_def(&"quest", StringName(str(c2["def"]))) as QuestDef).expires_days)
+
+
+func test_abandoning_a_contract_costs_standing() -> void:
+	var c: Dictionary = _take("clear")
+	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c["def"]))) as QuestDef
+	var rep: int = _p.contracts.reputation(&"waystation_9")
+	var r: Dictionary = Game.execute(&"contract.abandon", _args({"contract": str(c["id"])}))
+	assert_true(bool(r["ok"]), str(r))
+	assert_gt(qd.abandon_rep, 0)
+	assert_eq(_p.contracts.reputation(&"waystation_9"), rep - qd.abandon_rep)
+	assert_true(_p.contracts.get_contract(str(c["id"])).is_empty())
+
+
+## TD-146: each relay camp keeps its own shelves (keyed by its post id); Waystation 9 keeps one.
+func test_two_relay_posts_keep_separate_stock() -> void:
+	var relay: TraderDef = Content.get_def(&"trader", &"program_relay") as TraderDef
+	assert_true(relay.stock_per_post)
+	assert_false(_td.stock_per_post)
+	var a := POST + Vector3(2000, 0, 0)
+	var b := POST + Vector3(-2000, 0, 0)
+	_tm.add_post("trader:program_relay:1", relay, a, 0.0, false)
+	_tm.add_post("trader:program_relay:2", relay, b, 0.0, false)
+	var item: String = "water_bottle_clean"
+	assert_true(_tm.stock_of(&"program_relay", "trader:program_relay:1").has(item))
+	var before_b: int = int((_tm.stock_of(&"program_relay", "trader:program_relay:2")[item] as Dictionary)["count"])
+	var before_a: int = int((_tm.stock_of(&"program_relay", "trader:program_relay:1")[item] as Dictionary)["count"])
+	_p.position = a + Vector3(0, 0, 6)
+	_p.inventory.add_item(&"scrip", 200)
+	var r: Dictionary = Game.execute(&"trade.buy", {"player": String(_p.id), "trader": "program_relay", "item": item})
+	assert_true(bool(r["ok"]), str(r))
+	assert_eq(int((_tm.stock_of(&"program_relay", "trader:program_relay:1")[item] as Dictionary)["count"]), before_a - 1, "off camp 1's shelf")
+	assert_eq(int((_tm.stock_of(&"program_relay", "trader:program_relay:2")[item] as Dictionary)["count"]), before_b, "camp 2 untouched")
+	var keys: Dictionary = Game.session.world.traders
+	assert_true(keys.has("trader:program_relay:1") and keys.has("trader:program_relay:2"))
+	assert_false(keys.has("program_relay"), "no def-keyed relay stock")
+	_tm.stock_of(&"waystation_9", "trader:waystation_9")
+	assert_true(keys.has("waystation_9"), "Waystation 9 keeps its def-keyed stock")
+
+
+## A save from before per-post stock keyed the relay camps' shelves by the def id: each post
+## starts from that entry.
+func test_an_old_def_keyed_relay_stock_still_loads() -> void:
+	var relay: TraderDef = Content.get_def(&"trader", &"program_relay") as TraderDef
+	_tm.add_post("trader:program_relay:1", relay, POST + Vector3(2000, 0, 0), 0.0, false)
+	var p: int = Contracts.period(relay, Game.session.clock.day())
+	var ws := WorldState.new()
+	ws.from_dict(JSON.parse_string(JSON.stringify({"traders": {"program_relay": {"period": p,
+		"stock": {"canned_beans": {"count": 42, "rep_tier": 0}}}}})))
+	Game.session.world.traders = ws.traders
+	var st: Dictionary = _tm.stock_of(&"program_relay", "trader:program_relay:1")
+	assert_eq(int((st.get("canned_beans", {"count": 0}) as Dictionary)["count"]), 42, "the old shelves carried over")
+	assert_true(Game.session.world.traders.has("trader:program_relay:1"))

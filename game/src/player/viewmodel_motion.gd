@@ -121,6 +121,9 @@ func update(dt: float, look_rate: Vector2, vel: Vector3, speed: float, sprinting
 	pos += Vector3(sway.x.y * ppd, -sway.x.x * ppd, 0.0)
 	# Inertia: the arms trail the movement.
 	var mv: Dictionary = cfg.get("move", {})
+	# Only walking pace drives it: a fall, a knockback or a teleport once flung the arms off into
+	# the sky (a player stuck in a -74 m/s free fall, looking up, moved them 0.4 m).
+	vel = vel.limit_length(float(mv.get("max_mps", 6.0)))
 	var pk: Vector3 = _v3(mv.get("pos_per_mps"), Vector3(0.004, 0.0, 0.006))
 	var rk: Vector3 = _v3(mv.get("rot_per_mps"), Vector3(0.6, 0.0, 1.0))
 	move.step(Vector3(-vel.x * pk.x, -vel.y * pk.y, -vel.z * pk.z), float(mv.get("stiffness", 45.0)), float(mv.get("damping", 10.0)), dt)
