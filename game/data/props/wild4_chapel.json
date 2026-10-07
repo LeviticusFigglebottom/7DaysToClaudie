@@ -1,0 +1,565 @@
+{
+ "_doc": "Forest set pieces, round 4 (ADR-0053): props of Shiloh Chapel (w4_overgrown_chapel), a pioneer timber chapel in a forest clearing half taken back by the woods: its pews, pulpit and altar, the bell that came down with its bell-cote, the churchyard's headstones, iron railing and gate, the lych gate and dry-stone wall, an open grave, graves the Bloom has broken, ivy and long grass, and the Teague vault in the bank (a shell round the kit room) with its burial niches, coffins, the church silver and the reliquary. Models: tools/assetgen/blender/generators/props_wild4_chapel.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_wild4_chapel.py. Materials are shared sets (no new ones). size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. Floor props stand on their origin with their depth centred on it (back = half the depth); the ivy hangs with its origin on the wall plane. Rooms tag w4_chapel keeps them out of other buildings' scatter.",
+ "defs": [
+  {
+   "id": "w4_chapel_pew",
+   "name": "Plank Pew",
+   "description": "A settler's pew of two wide pine planks pegged into sawn end boards, a plank backrest and a hymn shelf on its back (worn: grey with damp, moss in the joints, the backrest split).",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_pew",
+    "worn": "props/w4_chapel_pew_worn",
+    "destroyed": "props/w4_chapel_pew_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    1.9,
+    0.95,
+    0.62
+   ],
+   "anchors": [
+    {
+     "kind": "seat",
+     "pos": [
+      -0.6,
+      0.02
+     ],
+     "height": 0.44
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.0,
+      0.02
+     ],
+     "height": 0.44
+    },
+    {
+     "kind": "seat",
+     "pos": [
+      0.6,
+      0.02
+     ],
+     "height": 0.44
+    }
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_pulpit",
+   "name": "Box Pulpit",
+   "description": "A panelled pine box pulpit on a plinth with two steps up its side and a sloped book board, the big Bible still open on it (worn: the panels warped and mildewed, the Bible swollen with damp).",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_pulpit",
+    "worn": "props/w4_chapel_pulpit_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 180,
+   "size": [
+    1.0,
+    1.45,
+    0.9
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_altar",
+   "name": "Plank Altar",
+   "description": "A heavy table altar of adzed planks under a white linen frontal, two brass candlesticks and a turned wooden cross on it (worn: the linen grey and torn, wax run over the boards, a candlestick down).",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_altar",
+    "worn": "props/w4_chapel_altar_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 220,
+   "size": [
+    1.6,
+    1.0,
+    0.7
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_bell_fallen",
+   "name": "Fallen Bell",
+   "description": "The chapel's bronze bell where it came down with its bell-cote: on its side in the grass, its yoke still bolted on, the cote's rotten posts and shingled hood smashed round it.",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_bell_fallen",
+    "worn": "props/w4_chapel_bell_fallen_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.2,
+    1.0,
+    1.8
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_headstone",
+   "name": "Slate Headstone",
+   "description": "A round-topped slate headstone on a fieldstone footing, the lettering lichened over (worn: leaning with the frost heave, moss up its face).",
+   "tags": [
+    "grave",
+    "exterior",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_headstone",
+    "worn": "props/w4_chapel_headstone_worn",
+    "destroyed": "props/w4_chapel_headstone_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 300,
+   "size": [
+    0.6,
+    0.85,
+    0.24
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_headstone_cross",
+   "name": "Grave Cross",
+   "description": "A grave marker of two adzed cedar boards pegged into a cross, a name burned into the crossbar (worn: silver-grey, cracked and leaning).",
+   "tags": [
+    "grave",
+    "exterior",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_headstone_cross",
+    "worn": "props/w4_chapel_headstone_cross_worn",
+    "destroyed": "props/w4_chapel_headstone_cross_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 60,
+   "size": [
+    0.62,
+    1.1,
+    0.16
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_headstone_tablet",
+   "name": "Marble Tablet",
+   "description": "A thin marble tablet with a scalloped top, set straight into the turf, its inscription worn soft by a century of rain (worn: tipped back and furred with moss).",
+   "tags": [
+    "grave",
+    "exterior",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_headstone_tablet",
+    "worn": "props/w4_chapel_headstone_tablet_worn",
+    "destroyed": "props/w4_chapel_headstone_tablet_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    0.5,
+    0.8,
+    0.14
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_iron_railing",
+   "name": "Iron Grave Railing",
+   "description": "Two metres of a family plot's wrought-iron railing: square pickets with cast spear finials between two rails, on a dressed granite kerb (worn: rust bleeding down the kerb, a picket bent).",
+   "tags": [
+    "fence",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_iron_railing",
+    "worn": "props/w4_chapel_iron_railing_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.0,
+    1.1,
+    0.14
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_iron_railing_gate",
+   "name": "Iron Railing Gate",
+   "description": "The plot's gate: two heavier posts with ball finials and a scrolled arch between them, the little gate swung open on its pins and rusted fast in the grass (no collision: the gap is the way in).",
+   "tags": [
+    "fence",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_iron_railing_gate",
+    "worn": "props/w4_chapel_iron_railing_gate_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.0,
+    1.45,
+    1.1
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_mausoleum_front",
+   "name": "Teague Vault",
+   "description": "The Teague family vault dug into the bank behind the chapel: a dressed granite facade with a pediment and TEAGUE cut in the lintel, rubble wing walls holding the bank back and turf, ferns and young firs over its roof, the iron door's opening (shell over the POI kit room: origin at the room's plan centre on the ground, place it y = -floor_height).",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_mausoleum_front",
+    "worn": "props/w4_chapel_mausoleum_front_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    5.0,
+    4.6,
+    7.6
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_coffin",
+   "name": "Pine Coffin",
+   "description": "A six-sided pine coffin on two stone blocks, its lid nailed down with square nails (worn: the lid levered off and lying askew, white Bloom felt along the seams).",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_coffin",
+    "worn": "props/w4_chapel_coffin_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 90,
+   "size": [
+    0.7,
+    0.62,
+    2.0
+   ],
+   "container": "w4_chapel_coffin",
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_crypt_niche",
+   "name": "Burial Niches",
+   "description": "A wall of dressed limestone in the vault with two arched burial niches one above the other, a shroud laid in each and a lettered stone ledge under them (worn: the shrouds stained, Bloom felt in the joints).",
+   "tags": [
+    "structure",
+    "grave"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_crypt_niche",
+    "worn": "props/w4_chapel_crypt_niche_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.2,
+    2.2,
+    0.85
+   ],
+   "anchors": [
+    {
+     "kind": "bed",
+     "pos": [
+      0.0,
+      0.02
+     ],
+     "height": 0.32,
+     "facing": 90
+    },
+    {
+     "kind": "bed",
+     "pos": [
+      0.0,
+      0.02
+     ],
+     "height": 1.22,
+     "facing": 90
+    }
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_lych_gate",
+   "name": "Lych Gate",
+   "description": "The roofed gate into the churchyard: four adzed cedar posts on stone pads, a cedar-shingled hood and a coffin bench either side (worn: the hood sagging and furred with moss, a bench board gone). No collision: the gate is the way in.",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_lych_gate",
+    "worn": "props/w4_chapel_lych_gate_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.4,
+    3.2,
+    2.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_grave_dug",
+   "name": "Open Grave",
+   "description": "A freshly dug grave: the pit shored with two planks across it, a long heap of spoil along one side with the shovel stood in it and the turf squares stacked at its foot (worn: the spoil rained down and white Bloom threads in it).",
+   "tags": [
+    "grave",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_grave_dug",
+    "worn": "props/w4_chapel_grave_dug_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    1.5,
+    0.55,
+    2.7
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_bloom_grave",
+   "name": "Bloomed Grave",
+   "description": "A sunken grave mound broken open by the Bloom: a cushion of white felt and a troop of pale caps pushing up through the turf, glowing faintly at night.",
+   "tags": [
+    "grave",
+    "exterior",
+    "bloom"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_bloom_grave",
+    "worn": "props/w4_chapel_bloom_grave_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.9,
+    0.3,
+    2.0
+   ],
+   "light": {
+    "color": "#d6f0c8",
+    "energy": 0.35,
+    "range": 3.0,
+    "flicker": 0.05,
+    "offset": [
+     0.0,
+     0.2,
+     0.0
+    ],
+    "power": "flame"
+   },
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_ivy",
+   "name": "Ivy",
+   "description": "Ivy climbing a wall: woody stems spreading out from the ground and a dense mat of dark leaves (worn: half of it browned off).",
+   "tags": [
+    "vegetation",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_ivy",
+    "worn": "props/w4_chapel_ivy_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.4,
+    2.8,
+    0.3
+   ],
+   "wall_mounted": true,
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_long_grass",
+   "name": "Long Grass",
+   "description": "A clump of long churchyard grass and seed heads gone over, nobody to scythe it.",
+   "tags": [
+    "vegetation",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_long_grass",
+    "worn": "props/w4_chapel_long_grass_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    1.2,
+    0.85,
+    1.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_silver_chest",
+   "name": "Church Silver Chest",
+   "description": "An iron-bound oak chest with a hasp, the chapel's silver inside: a chalice, a paten, two candlesticks and the alms dish wrapped in a purple cloth (worn: the lid up, the cloth pulled back).",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_silver_chest",
+    "worn": "props/w4_chapel_silver_chest_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    1.0,
+    0.62,
+    0.56
+   ],
+   "container": "w4_chapel_silver",
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_reliquary",
+   "name": "Reliquary",
+   "description": "A little gilt-bronze house-shaped casket on a stone pedestal, a crystal window in its side and a cross on its ridge, brought over by the first settlers (worn: the gilt rubbed through, the window clouded).",
+   "tags": [
+    "furniture",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_reliquary",
+    "worn": "props/w4_chapel_reliquary_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 150,
+   "size": [
+    0.6,
+    1.25,
+    0.45
+   ],
+   "container": "w4_chapel_reliquary",
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  },
+  {
+   "id": "w4_chapel_stone_wall",
+   "name": "Churchyard Wall",
+   "description": "Two metres of the churchyard's dry-stone wall, fieldstones laid without mortar under a row of capstones, moss and ferns in its joints (worn: tumbled at one end).",
+   "tags": [
+    "fence",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_chapel_stone_wall",
+    "worn": "props/w4_chapel_stone_wall_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "size": [
+    2.0,
+    0.75,
+    0.55
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "w4_chapel"
+   ]
+  }
+ ]
+}
