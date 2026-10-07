@@ -347,18 +347,15 @@ func test_the_vegetation_leaves_out_what_stands_in_a_clearing() -> void:
 	vm._data[Vector2i(0, 0)] = layers
 	vm._data[Vector2i(5, 5)] = {"tree": []}
 	vm.set_clearings(&"nests", [{"pos": Vector2(10, 10), "r": 9.0}])
-	assert_false(vm._data.has(Vector2i(0, 0)), "a loaded chunk it touches is scattered again")
-	assert_true(vm._data.has(Vector2i(5, 5)), "one it does not touch is kept")
-	var kept: Dictionary = vm._cleared(Vector2i(0, 0), layers)
-	var idx: Array = []
-	for layer: String in kept:
-		for inst: VegetationScatter.Instance in kept[layer]:
-			idx.append(inst.index)
-	idx.sort()
-	assert_eq(idx, [3, 4, 5], "the trees and plants within 9 m are left out, indices unchanged")
-	assert_eq(vm._cleared(Vector2i(3, 3), {"tree": [layers["tree"][0]]})["tree"].size(), 1, "far chunks untouched")
+	var hidden: Array = []
+	for i: int in 6:
+		if vm._is_removed(Vector2i(0, 0), i):
+			hidden.append(i)
+	assert_eq(hidden, [0, 1, 2], "the trees and plants within 9 m are hidden, indices unchanged")
+	assert_false(vm._cleared.has(Vector2i(5, 5)), "far chunks untouched")
 	vm.set_clearings(&"nests", [])
-	assert_true(vm._clearings.is_empty())
+	assert_eq(vm.clearing_count(), 0, "given back")
+	assert_false(vm._is_removed(Vector2i(0, 0), 0), "nothing hidden once the nest's mats go")
 
 
 func test_the_placement_check_finds_roads_water_and_pads() -> void:
