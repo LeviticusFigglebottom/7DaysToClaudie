@@ -1,0 +1,318 @@
+{
+ "_doc": "Wilderness set pieces, round 4 (ADR-0053): the Kettle Creek backcountry ranger station (pois/buildings/w4_backcountry_ranger_station.json). Models: tools/assetgen/blender/generators/props_wild4_ranger.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_wild4_ranger.py. size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. The tower's lattice sections, piers and cab centre on the tower's axis (the middle of its 2 x 2 landings); the cab shell's origin is on the cab's floor.",
+ "defs": [
+  {
+   "id": "w4_ranger_tower_leg_section",
+   "name": "Tower Lattice Section",
+   "description": "One 3 m storey of the fire-weather tower's galvanised lattice: four angle legs, girts, X-bracing on every face and the landing frame under the next level. Stacked one per kit level round the POI's landings; origin on the tower's axis.",
+   "tags": [
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_tower_leg_section",
+    "worn": "props/w4_ranger_tower_leg_section_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.5,
+    3.0,
+    2.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_ranger_tower_footing",
+   "name": "Tower Piers",
+   "description": "The fire-weather tower's four concrete piers with their anchor bolts and base plates.",
+   "tags": [
+    "structure",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_tower_footing"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    2.8,
+    0.3,
+    2.8
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_ranger_tower_cab",
+   "name": "Tower Cab",
+   "description": "The steel-clad cab on top of the fire-weather tower round the POI's 2 x 2 kit room (origin on its floor, at the room's centre): ribbed green panels cut for a window each side, storm shutters propped open, the floor frame, a whip antenna and the lightning conductor. The kit roof is its hip.",
+   "tags": [
+    "structure",
+    "exterior",
+    "shell",
+    "stairwell"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_tower_cab",
+    "worn": "props/w4_ranger_tower_cab_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    4.25,
+    5.8,
+    4.25
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_ranger_weather_screen",
+   "name": "Stevenson Screen",
+   "description": "A white louvred instrument shelter on four legs with a double roof, the thermometers and the hygrograph inside (destroyed: pushed over on its back).",
+   "tags": [
+    "exterior",
+    "weather",
+    "breakable"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_weather_screen",
+    "worn": "props/w4_ranger_weather_screen_worn",
+    "destroyed": "props/w4_ranger_weather_screen_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 120,
+   "size": [
+    0.95,
+    1.95,
+    0.78
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_ranger_rain_gauge",
+   "name": "Rain Gauge",
+   "description": "The standard 8-inch rain gauge in its ring stand on a cedar post, the measuring stick clipped beside it.",
+   "tags": [
+    "exterior",
+    "weather"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_rain_gauge",
+    "worn": "props/w4_ranger_rain_gauge_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    0.3,
+    1.25,
+    0.3
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_ranger_anemometer_mast",
+   "name": "Anemometer Mast",
+   "description": "A 10 m guyed pipe mast with the cup anemometer and the wind vane on its cross arm and the junction box at chest height.",
+   "tags": [
+    "exterior",
+    "weather",
+    "structure"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_anemometer_mast",
+    "worn": "props/w4_ranger_anemometer_mast_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    3.6,
+    10.5,
+    3.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_ranger_brush_truck",
+   "name": "Brush Truck",
+   "description": "The district's Type 6 brush engine: a green crew-cab one-ton with a white roof, brush guard and winch bumper, light bar, the water tank, pump, hose reel and side lockers on the bed (destroyed: burnt out).",
+   "tags": [
+    "vehicle",
+    "exterior",
+    "container"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_brush_truck",
+    "worn": "props/w4_ranger_brush_truck_worn",
+    "destroyed": "props/w4_ranger_brush_truck_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 900,
+   "size": [
+    2.3,
+    2.4,
+    6.6
+   ],
+   "container": "w4_ranger_truck_lockers",
+   "blocks_sight": true,
+   "rooms": [
+    "garage",
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_ranger_checkpoint_barrier",
+   "name": "Checkpoint Barrier",
+   "description": "A striped barrier arm across the road on its counterweighted pivot post and a fork post, the Cordon's STOP / CHECKPOINT board hung under it (destroyed: the arm snapped).",
+   "tags": [
+    "exterior",
+    "cordon",
+    "sign"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_checkpoint_barrier",
+    "worn": "props/w4_ranger_checkpoint_barrier_worn",
+    "destroyed": "props/w4_ranger_checkpoint_barrier_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 250,
+   "size": [
+    5.0,
+    1.25,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_ranger_fuel_pump",
+   "name": "Fuel Tank Stand",
+   "description": "A red 300-gallon fuel tank on a welded stand over a drip tray, the gravity hose and nozzle on its hook, a rotary hand pump on the leg and an extinguisher (destroyed: a leg buckled, the hose cut).",
+   "tags": [
+    "exterior",
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_fuel_pump",
+    "worn": "props/w4_ranger_fuel_pump_worn",
+    "destroyed": "props/w4_ranger_fuel_pump_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.8,
+    2.55,
+    1.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior",
+    "garage"
+   ]
+  },
+  {
+   "id": "w4_ranger_compound_gate",
+   "name": "Compound Gate (open)",
+   "description": "The compound's double chain-link gate with both leaves swung back inside the fence (-Z) and left open, the chain and open padlock hanging off a post. The way in is the gap between the posts: place it route_ok.",
+   "tags": [
+    "fence",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_compound_gate",
+    "worn": "props/w4_ranger_compound_gate_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "size": [
+    4.6,
+    2.2,
+    2.2
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w4_ranger_gun_safe",
+   "name": "Gun Safe",
+   "description": "A dark green steel gun safe with a combination dial, a three-spoke handle and a keyed lock (destroyed: pried open).",
+   "tags": [
+    "furniture",
+    "container",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_gun_safe",
+    "worn": "props/w4_ranger_gun_safe_worn",
+    "destroyed": "props/w4_ranger_gun_safe_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 600,
+   "size": [
+    0.75,
+    1.52,
+    0.62
+   ],
+   "container": "w4_ranger_gun_safe",
+   "blocks_sight": true,
+   "rooms": [
+    "office"
+   ]
+  },
+  {
+   "id": "w4_ranger_fire_danger_sign",
+   "name": "Fire Danger Sign",
+   "description": "The fire danger rating board on two posts under a little cedar roof: the five-band half-dial with its arrow left on EXTREME.",
+   "tags": [
+    "exterior",
+    "sign",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w4_ranger_fire_danger_sign",
+    "worn": "props/w4_ranger_fire_danger_sign_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 200,
+   "size": [
+    2.2,
+    2.5,
+    0.5
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  }
+ ]
+}
