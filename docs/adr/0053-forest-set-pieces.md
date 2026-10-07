@@ -63,6 +63,8 @@ churchyard). PoiValidator's yard ring now walks a POI's unbuilt level-0 cells:
 * Goldens recorded at v7 or v8 are re-recorded at v9. Places at earlier draws are identical; the
   composed ground differs only round the new pads.
 * Leftovers are TD-269 to TD-278. The common ones:
-  * no sleepers in yards (TD-269);
+  * no sleepers in yards (TD-269; since done: a sleeper may stand on a reachable yard cell inside
+    the footprint and spawns on the ground, and the plane, the ranger station and the chapel hold
+    a yard ambush each);
   * shell and structure props collide only as their single size box (TD-270);
   * colours were reviewed only in the lead's renders, not by the authors (TD-271).

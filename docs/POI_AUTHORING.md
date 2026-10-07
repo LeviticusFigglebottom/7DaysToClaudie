@@ -149,6 +149,10 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
     step past the first is an error, one beside the first step a warning;
   * upstairs, a doorway onto the well is an error except at the head (between the last step's well
     and the landing); a gallery railing is left out across the head;
+  * a door or gate at the head is crossed like any door by the route (TD-274): a `locked_inside`
+    one opens only from the side it was authored on (Tunnel 2 Trestle's gate, bolted from the
+    deck, lets you down the stair but not up it), a `locked` one needs its key, a barricaded one
+    is shut both ways;
   * no wall across a flight, between its head and its landing, or upstairs over its second step or
     higher (headroom); a door there is the way off the top;
   * the route never stands on the steps past the foot or over the well (put waypoints beside them).
@@ -194,6 +198,16 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
   ([Ambushes](#ambushes-sleeper-groups-and-triggers)); `guardian` makes it the loot room's
   keeper ([Guardians](#guardians)). `sit` and `lie` sleepers land on the nearest free seat or bed;
   `"anchor"` pins or opts out ([Seats and beds](#seats-and-beds)).
+* **Sleepers in the yard** (TD-269): a level-0 sleeper may stand on a yard cell (`.` or blank) as
+  well as in a room: the plane's debris field, the ranger station's checkpoint queue, Shiloh's
+  churchyard. It spawns on the ground (the pad, or the terrain under it), not at `floor_height`,
+  and keeps its floor pose: seats and beds are indoors, so a `lie` or `sit` sleeper out there lies
+  or slumps on the ground (no `anchor` needed; pinning one is an error). The validator wants it
+  inside the footprint, on the yard ring the route walks, reachable, and a body's width (0.25 m)
+  clear of any yard prop taller than a step (a fence line, a wall, a wreck: an error; a lower one
+  is a warning). Give the group a trigger it can meet out there: a chime or jaws in the yard
+  (`trap`), a car or a pallet searched (`container`), a door opened (`opening`); `room` triggers
+  only fire indoors.
 * `pickups`: `{"id": "k1", "item": "pharmacy_key", "at": [2, 1], "y": 0.9}` (keys, schematics, journals).
   Give pickups an `id` (taken-state key; pickup triggers name it).
 * `notes`: `{"note": "merrow_fridge", "at": [1, 0], "y": 1.2}` → the readable item `note_<id>`
@@ -410,7 +424,8 @@ POI ships, never reorder its `props`, `sleepers`, `pickups` or `notes` without i
    warnings.
 1. The route is completable start to finish, also once every weak floor has given way; the loot room
    is reachable and has a container; no fall strands the player.
-2. Sleepers stand in rooms, not on stairs or inside furniture, and are reachable. Nothing (sleeper,
+2. Sleepers stand in rooms or on the yard's ground (level 0, inside the footprint, clear of solid
+   yard props), not on stairs or inside furniture, and are reachable. Nothing (sleeper,
    prop, pickup, cell trap, or the `at` cell of a chime or shotgun) stands on the open well a stair
    flight or ladder hatch leaves in the level above: there is no floor there. Wall-mounted props,
    props raised 0.5 m or more with `y` (a ceiling lamp), and props tagged `stairwell` (a railing, a
