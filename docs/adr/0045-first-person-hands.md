@@ -79,4 +79,4 @@ to rediscover the same anatomy).
   the pose (the build log names it) rather than widen the range.
 * 39 bones instead of 21 and 28k triangles for the arms instead of 18k: still small beside a
   Hollowed, and the arms are one draw.
-* TD-172, TD-174 and TD-175 record what is left (TD-173, the spear, is fixed by the oblique grip).
+* TD-172 and TD-174 record what is left (TD-173, the spear, is fixed by the oblique grip; TD-175 by per-finger `curls` in hand specs; TD-174 is down to two close-up creases after the joint helper bones).

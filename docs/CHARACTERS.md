@@ -125,6 +125,14 @@ sliding at any playback speed.
   hand.L/R` and three bones per digit, one per joint: `thumb_1/2/3.L/R` (CMC, MCP, IP) and
   `index_, middle_, ring_, pinky_1/2/3.L/R` (MCP, PIP, DIP; ADR-0045). `forearm_twist` (child of `forearm`, from mid-forearm to the wrist) takes 70% of
   the hand's roll about the forearm; the forearm skin ramps onto it towards the wrist.
+* Joint helpers (TD-174): `wrist_k.L/R` (child of `forearm`: half the hand's bend, 85% of its
+  roll), `thumb_k1/k2/k3.L/R` and `index_, middle_, ring_, pinky_k1/k2/k3.L/R` (at the CMC/MCP,
+  PIP/MCP and DIP/IP), each the sibling of the bone past its joint, turned half as far
+  (`FPRig.evaluate`). The skin a joint's radius either side of a joint ramps from one bone through
+  the helper to the next (`FPModel._joint_bands`, `JOINT_BAND`, `JOINT_HELPER`), and skin behind a
+  knuckle stays on the hand, so a curled knuckle wraps round instead of denting, the clefts between
+  the knuckles don't open into slits, and a bent wrist doesn't fold. Nothing in the game drives
+  them: they are keyed in every action like the other bones.
 * Blender: camera at the origin looking −Y, Z up, the right arm at −X; the game turns the arms 180°
   about Y under the camera. Hold poses are written in Godot camera space in
   `game/data/config/viewmodel.json` (`lib/char_fp.py` `g2b()` converts). The rest pose is a working
@@ -137,7 +145,13 @@ sliding at any playback speed.
   each action was corrected; `tools/fp_poses.py tune <attack>` re-places a strike's key grips.
   Curls: `fist` closes each finger at its MCP, PIP and DIP (`FINGER_CURL`: 1 round a ~3.5 cm
   handle, up to 1.3 a bare fist; the ring and little fingers a little further, converging on the
-  middle finger), `thumb` opposes the thumb across the palm and wraps it (`THUMB_CURL`). A hold's
+  middle finger), `thumb` opposes the thumb across the palm and wraps it (`THUMB_CURL`), `index`
+  adds to the index finger's curl (−1 points it). Per-finger curls: a hand spec's optional
+  `"curls": {"ring": 0.9, "pinky": 0.4}` (fingers `index`, `middle`, `ring`, `pinky`) closes those
+  fingers to their own curl instead of the fist (the index: instead of fist + index), e.g. a knife
+  with the little finger off the handle or a trigger finger resting straight; a key's
+  `"R.curls": {...}` overrides those fingers for that key (the others keep the hold's), and a
+  finger named at either key eases between what it closes to at each. A hold's
   `item.rot` turns the item in the fist (an oblique grip: the spear's shaft lies 60° across the
   palm); a hand `on` the other grips along the item's axis and the fist rolls about it.
 * Arms enter from the lower corners: the Remand jumpsuit sleeves are rolled to just below the
@@ -159,7 +173,24 @@ sliding at any playback speed.
   decimated to `arm_tris` = 14k per arm (~11.5k of it past the wrist).
 * Vertex colour: R baked AO; G a dirt mask (creases, knuckles, the skin over the finger joints,
   fingertips) for the `fp_grime` layer; B the flush of blood under thin skin (knuckles, finger
-  joints, fingertips) that `fp_skin`'s `flush` reddens (0 on the tether).
+  joints, fingertips) that `fp_skin`'s `flush` reddens (0 on the tether); A the back of the hand
+  and forearm (1) against the palm and inner forearm (0), from each vertex's bones' back-of-hand
+  direction (`_skin_masks`). char_attrs layers: the rest pose (UV2, CUSTOM0.x) for the skin's
+  patterns, and in the bruise slot (CUSTOM0.w; `fp_skin` has no bruising) how thin the flesh is
+  (fingers 1, the thumb's root 0.7, the hand 0.35, the forearm 0).
+* Skin (`fp_skin`, skin shader, all its living-skin terms off for every other skin): flushed
+  knuckles, joints and fingertips (`flush`), faint red / sallow mottling (`mottle`), paler palms
+  and inner forearms (`palm_pale`), blue-grey veins on the back of the hand and wrist
+  (`back_veins`, rest space), a sheen over the knuckles (`knuckle_sheen`), light through the
+  fingers in `transmittance_color` (`translucency`, as BACKLIGHT), the baked AO darkening direct
+  light more (`ao_light_affect` 0.6: the viewmodel shadows nothing, not even itself) and a skin
+  specular of ~2.8% (`skin_specular`). In the viewmodel (FpMaterials' copy defines `HM_VIEWMODEL`)
+  the skin lights itself (`light()`): a held flame's irradiance past `vm_light_knee` is compressed
+  (`vm_light_compress`) so the hand keeps its falloff instead of clipping to one orange, a
+  per-channel wrapped diffuse (`vm_wrap`, red scattering furthest), the translucency from behind
+  and towards the eye, and a two-lobe GGX specular (`vm_sheen_lobe`). Godot's screen-space
+  subsurface and transmittance stay off: the squeezed viewmodel depth widens the blur tenfold and
+  the arms cast no shadow for transmittance to measure.
 * Socket empties: `socket_hand.R` (tool grip point), `socket_hand.L`. Godot local axes: +Y along the
   gripped handle towards the thumb (tool head), +X towards the knuckles; +Z is the back of the right
   hand and the palm of the left. Viewmodels are modelled in the tool frame (grip at the origin,

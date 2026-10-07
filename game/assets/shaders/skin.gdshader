@@ -91,7 +91,7 @@ uniform float skin_specular : hint_range(0.0, 1.0) = 0.5;
 uniform float vm_light_knee = 0.9;
 uniform float vm_light_compress : hint_range(0.1, 1.0) = 0.55;
 // Skin's wrapped diffuse: red light scatters furthest past the terminator.
-uniform vec3 vm_wrap = vec3(0.30, 0.13, 0.08);
+uniform vec3 vm_wrap = vec3(0.20, 0.10, 0.07);
 // A second, tighter specular lobe: the oily sheen over the knuckles and fingertips.
 uniform float vm_sheen_lobe = 0.12;
 // The Bloom under the skin: how much this material shows it (skin 1, cloth 0).
@@ -230,7 +230,8 @@ void fragment() {
 		BACKLIGHT = backlight_color.rgb * ALBEDO * backlight;
 	}
 	if (translucency > 0.0) {
-		BACKLIGHT = transmittance_color.rgb * thin * translucency;
+		// Squared: the fingers glow, the hand and wrist hardly.
+		BACKLIGHT = transmittance_color.rgb * thin * thin * translucency;
 	}
 	if (wet_clearcoat > 0.0) {
 		CLEARCOAT = wet * wet_clearcoat;
@@ -267,7 +268,7 @@ void light() {
 	// the flame glows red at its edges).
 	float behind = clamp(0.5 - 0.5 * ndl, 0.0, 1.0);
 	float toward = pow(clamp(dot(VIEW, -LIGHT), 0.0, 1.0), 3.0);
-	DIFFUSE_LIGHT += radiance * BACKLIGHT * behind * (0.35 * behind + 0.9 * toward);
+	DIFFUSE_LIGHT += radiance * BACKLIGHT * behind * (0.15 * behind + 0.85 * toward);
 	if (ndl > 0.0) {
 		float nv = clamp(dot(NORMAL, VIEW), 0.001, 1.0);
 		vec3 h = normalize(LIGHT + VIEW);
