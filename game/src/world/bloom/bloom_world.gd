@@ -50,11 +50,16 @@ var _uploads: int = 0
 
 ## Takes the field and publishes a window of it around `centre` (default: the field's middle). An
 ## empty field switches the Bloom off in every shader.
-func setup(p_tiles: BloomTiles, p_terrain: TerrainManager = null, centre: Vector2 = Vector2(NAN, NAN), cfg: Dictionary = {}) -> void:
+## `whole`: the window is the whole grid and never moves (a field composed whole, as the main map's:
+## the same texture and rect the whole-map field gave).
+func setup(p_tiles: BloomTiles, p_terrain: TerrainManager = null, centre: Vector2 = Vector2(NAN, NAN), cfg: Dictionary = {},
+		whole: bool = false) -> void:
 	tiles = p_tiles
 	terrain = p_terrain
 	var side: float = float((cfg.get("field", {}) as Dictionary).get("window", DEFAULT_WINDOW))
 	window_tiles = maxi(2, int(ceil(side / (BloomTiles.TILE * tiles.texel))))
+	if whole:
+		window_tiles = maxi(window_tiles, maxi(tiles.cols, tiles.rows))
 	if is_nan(centre.x):
 		centre = tiles.rect.get_center()
 	window = window_for(centre)
@@ -234,12 +239,16 @@ func _start_compose(keys: Array) -> void:
 	var jobs: Array = []
 	for k: Variant in keys:
 		var key: Vector2i = k
-		var c: Vector2 = tiles.tile_rect(key).get_center()
+		var tr: Rect2 = tiles.tile_rect(key)
 		var ground: Dictionary = {}
 		if terrain != null:
-			var rt: RegionTerrain = terrain.ground_terrain_at(c.x, c.y)
-			if rt != null:
-				ground[rt.region_id] = rt
+			# Every region the tile lies on (one where regions are whole tiles, as 1024 m ones are).
+			var h: float = tiles.texel * 0.5
+			for q: Vector2 in [tr.position + Vector2(h, h), Vector2(tr.end.x - h, tr.position.y + h),
+					Vector2(tr.position.x + h, tr.end.y - h), tr.end - Vector2(h, h)]:
+				var rt: RegionTerrain = terrain.ground_terrain_at(q.x, q.y)
+				if rt != null:
+					ground[rt.region_id] = rt
 		jobs.append([key, ground])
 	var out: Array = []
 	var cancel: Array = [false]

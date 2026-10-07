@@ -247,6 +247,33 @@ func test_a_10km_world_holds_a_bounded_set_of_tiles() -> void:
 	assert_gt(tiles.at(far.points[0].x, far.points[0].y), 0.2, "a far zone's core reads colonised")
 
 
+## The main map (loaded whole, never streamed): its built regions' field composed as tiles and shown
+## through BloomWorld's whole window is the same texture, over the same rect, as the whole-map
+## BloomField (regions composed at 16 m here to keep the test quick; both sides mask with them).
+func test_the_main_map_is_unchanged() -> void:
+	var world: WorldDef = WorldDef.load_from("res://world/main_map")
+	var regions: Dictionary = {}
+	for rid: String in world.regions:
+		if world.is_region_built(rid):
+			regions[rid] = TerrainComposer.get_or_compose(world, rid, 16.0)
+	assert_gte(regions.size(), 1, "the main map has built regions")
+	var old: BloomField = BloomField.build(world, regions, _cfg())
+	var tiles: BloomTiles = BloomTiles.build(world, regions, _cfg(), false)
+	assert_false(tiles.lazy, "the main map's field is composed whole")
+	assert_eq(tiles.zones.size(), old.zones.size(), "the same zones")
+	_assert_same_texels(tiles, old, "main map")
+	var bw := BloomWorld.new()
+	add_child_autofree(bw)
+	bw.setup(tiles, null, Vector2.ZERO, _cfg(), true)
+	assert_eq(bw.window, Rect2i(0, 0, old.width, old.depth), "the window is the whole field")
+	assert_eq(bw.window_image().get_data(), old.data, "the same texture")
+	assert_eq(bw.shader_rect(), Vector4(old.rect.position.x, old.rect.position.y, 1.0 / (old.width * old.texel), 1.0 / (old.depth * old.texel)),
+		"the same hm_bloom_rect")
+	bw.plan(Vector2(old.rect.end.x - 10.0, old.rect.end.y - 10.0))
+	bw.collect()
+	assert_eq(bw.window, Rect2i(0, 0, old.width, old.depth), "and it never moves")
+
+
 # --- A synthetic 2x1 world of 512 m regions with Bloom features and roads -------------------------
 
 func _world_with_roads() -> Array:

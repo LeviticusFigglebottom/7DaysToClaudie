@@ -121,7 +121,9 @@ func setup(p_world: WorldDef, built: Dictionary, p_coarse: Dictionary) -> void:
 	var start := Rect2()
 	for rid: String in regions:
 		start = (regions[rid] as RegionTerrain).rect if start.size == Vector2.ZERO else start.merge((regions[rid] as RegionTerrain).rect)
-	bloom.setup(tiles, self, start.get_center() if start.size != Vector2.ZERO else Vector2(NAN, NAN), bcfg)
+	# A field composed whole (the main map, a world loaded without streaming) is shown whole, as
+	# before tiles; a streamed world's through a window around the player.
+	bloom.setup(tiles, self, start.get_center() if start.size != Vector2.ZERO else Vector2(NAN, NAN), bcfg, not tiles.lazy)
 	_canopy = far_canopy(ContentDB.instance)
 	if not defer_far_tiles:
 		_build_far_tiles()
