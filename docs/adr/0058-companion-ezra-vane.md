@@ -1,6 +1,6 @@
 # ADR-0058: Companion Ezra Vane: follow, guard, gather and fetch
 
-**Status**: Accepted · 2026-10 (session 2); phases 1 and 2 implemented
+**Status**: Accepted · 2026-10 (session 2); phases 1, 2 and 3 implemented
 
 ## Context
 DESIGN §3 and the M2 roadmap promise one companion: **Ezra Vane**, an earlier Remand convict and an
@@ -175,3 +175,62 @@ and respawned on load with a fixed id `companion:ezra`.
   No version bump; older saves load with an empty pack and no errand.
 * **Clips.** `pickup`, `chop`, `carry_walk` (lib/companion_anim.py, docs/CHARACTERS.md); each falls
   back (no `pickup`: he stands; `chop` → attack_structure / attack_a; `carry_walk` → the walk).
+
+## Phase 3 notes (as built)
+* **His voice (TD-303).** Every bark still shows its status-bar line, and now Ezra says it from his
+  body: a `Sound3D` child at his mouth (one player, so a new bark cuts the last; 60 m, occluded like
+  every 3D sound). The sounds are `voice/ezra_*` (`tools/assetgen/audio/sounds/companion.py`):
+  `spotted` (3 lines), `hurt` (3), `full` (2), `cant_reach`, `downed` (2), `revived`, `recruited`
+  and `ack` (4 short answers: "On it.", "Right.", "Lead on.", "Holding."). They are spoken by a
+  small phoneme sequencer on the shared glottal source + formant cascade (the player's and the
+  Ashen's voice): syllables of phonemes with stress, stops as a closure and a burst, fricatives as
+  bands of noise, nasals and liquids as formant targets, a declining pitch with stressed lifts and
+  a falling, rising or trailing end; a low, worn baritone (f0 ~105-125 Hz, a long tract, rasp). The
+  words half-read: the status bar carries the text. `CompanionDef.voice` maps each bark to its
+  sound: `id` (any variant), `id:N` (variant N) or `id:line` (the variant matching the line shown;
+  the bark lists and the generator's line lists are in the same order). **Rate limits:** a bark he
+  says on his own (spotted, hurt, full, done, cant_reach, store_full) is dropped, line and voice,
+  within `voice.repeat` (6 s) of the same one; nothing is voiced within `voice.gap` (2 s) of the
+  last voiced bark except downed, recruited and revived; the spotted bark keeps its 45 s quiet and
+  hurt its 30 s. Without the generated sounds he is silent and the lines still show
+  (`Audio.variants()` is empty; no player is made). His downed cry is his own now (not the Ashen's
+  pain); blows still use the Ashen's grunts (`CompanionMind.voice`).
+* **Perks: a lineman.** `CompanionDef.perks` (data/companions/ezra.json): each `{id, name, text,
+  after_days, effects}`, his after `after_days` whole days with the player (`WorldState.companion
+  .recruited_day`, set on recruitment; an older save without it has them all). Effects
+  (`PERK_EFFECTS`, summed or multiplied over his perks; `CompanionDirector.perk(key, none)`):
+  * **Pack mule** (from the start): `slots` +4 (16) and `carry_log` +1 (three logs on his
+    shoulder, through `Inventory.carry_bonus`), applied to his pack on load, on recruitment and
+    every director tick (`_apply_perks`).
+  * **Faller** (after a day): `chop_speed` x1.3 (his chop clip and the blow's moment) and
+    `chop_power` x1.25 (his blows' tool power).
+  * **Lineman** (after two days): `fuel_use` x0.75 for a running generator within `tune_range`
+    (30 m) of him while he is up (`CompanionDirector.fuel_factor(pos)`, read by
+    `BaseTechManager.tick`: one shared hunk, the generator's burn rate times the factor).
+  The card lists them ("Knacks: ...", their texts as the tooltip). Climbing (the AI climbs no
+  ladders, TD-011) and repairing power pieces need shared changes: TD-310.
+* **Placement (TD-299).** Every "placed beside the player" (past `teleport_beyond`, after a respawn,
+  sleep or load) and the dawn return at the player's bed go through `CompanionDirector.safe_spot
+  (anchor, prefer)`: the preferred spot (6 m behind the camera, 2 m aside; beside the bed), then
+  rings of 10 points at 1.8-9 m round the anchor, nearest the preferred first. A spot must have a
+  floor under it at the anchor's level (a ray down from above the anchor's head on world,
+  structures and props: a storey, a cellar floor, the ground) within 2.5 m of the anchor's floor;
+  no water deeper than 0.45 m (`world.water.depth_at`); room for his body (a capsule from the lower
+  of the two floors up, against world incl. POI walls, structures, props and vegetation, the
+  terrain itself excepted, so a bed or a table top is no floor); a clear line at chest height from
+  the anchor (the same side of any wall: in the hut with the bed, not outside it); and, where the
+  anchor stands on a baked navmesh, the navmesh within 1 m. Nothing fits: the anchor itself.
+* **Downed (TD-300).** The Hollowed that were on him keep at him for `downed.linger` (8 s):
+  `CompanionMind.in_play()` (Enemy.is_alive) stays true that long after he goes down, so their
+  foe holds; their blows do no damage but take `downed.mauled` (6 s) off his bleed-out each. Then
+  he is out of play and they lose interest. A downed body restored from a save is out of play at
+  once.
+* **Strength.** A world setting `companion_strength` (Survival, 0.5-2, default 1; Drifter 1.5,
+  Remanded / Hollowed / Rooted 0.75) scales his health and the damage of his blows
+  (`CompanionDirector.strength()`, applied when his body spawns; the enemy health and damage
+  settings still don't apply to him).
+* **Shared hunks.** `Audio.variants(id)` (a public read of the variant list); BaseTechManager's
+  generator burn x `world.companion.fuel_factor(pos)`; the `companion_strength` option and preset
+  values in `data/config/game_rules.json`. No save version bump (`recruited_day` is a new key that
+  loads absent).
+* Gaps go in TD-309..313.

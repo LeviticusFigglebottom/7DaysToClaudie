@@ -5,8 +5,8 @@ extends Control
 ## or painkillers: companion.recruit); after, his orders: Follow, Stay here, Guard here
 ## (companion.order), Gather wood / stone / fibre round what the player last looked at, Fetch what
 ## they last looked at (companion.order), Give me what you carry (companion.give) and Store at base
-## (companion.store), with what he carries. Everything goes through the commands (ADR-0003); the
-## card only shows state.
+## (companion.store), with what he carries and his knacks (perks, ADR-0058 phase 3). Everything
+## goes through the commands (ADR-0003); the card only shows state.
 
 const PAPER := Color(0.83, 0.8, 0.7)
 const INK := Color(0.14, 0.12, 0.1)
@@ -131,6 +131,15 @@ func _refresh() -> void:
 	if m.order == "gather" and m.work.kind != "":
 		_status.text = _status.text.replace("Gathering", "Gathering %s" % m.work.kind)
 	_body.text = _carrying(m.inventory)
+	var knacks: PackedStringArray = []
+	var why: PackedStringArray = []
+	for pk: Variant in director.call(&"active_perks"):
+		knacks.append(str((pk as Dictionary).get("name", "")))
+		why.append("%s: %s" % [(pk as Dictionary).get("name", ""), (pk as Dictionary).get("text", "")])
+	if not knacks.is_empty():
+		_body.text += "\nKnacks: %s." % ", ".join(knacks)
+	_body.tooltip_text = "\n".join(why)
+	_body.mouse_filter = Control.MOUSE_FILTER_PASS
 	_button("follow", "Follow me", m.order != "follow", func() -> void: _do(&"companion.order", {"order": "follow"}))
 	_button("stay", "Stay here", true, func() -> void: _do(&"companion.order", {"order": "stay"}))
 	_button("guard", "Guard here", true, func() -> void: _do(&"companion.order", {"order": "guard"}))

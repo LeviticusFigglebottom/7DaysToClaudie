@@ -305,15 +305,21 @@ func _stand_at(c: Vector3, anchor: Vector3) -> Vector3:
 	if w3 == null:
 		return at
 	var space: PhysicsDirectSpaceState3D = w3.direct_space_state
+	# Room for his body from the lower of his floor and the anchor's up: a bed or a table top is no
+	# floor to stand on (its sides are in the way from the anchor's level). The terrain itself
+	# doesn't count (a slope up from the anchor).
+	var low: float = minf(y, anchor.y) + 0.25
 	var cap := CapsuleShape3D.new()
 	cap.radius = BODY_RADIUS
-	cap.height = BODY_HEIGHT
+	cap.height = BODY_HEIGHT + absf(y - anchor.y)
 	var q := PhysicsShapeQueryParameters3D.new()
 	q.shape = cap
 	q.collision_mask = SOLID_MASK
-	q.transform = Transform3D(Basis(), at + Vector3.UP * (BODY_HEIGHT * 0.5 + 0.25))
-	if not space.intersect_shape(q, 1).is_empty():
-		return Vector3.INF
+	q.transform = Transform3D(Basis(), Vector3(at.x, low + cap.height * 0.5, at.z))
+	for hit: Dictionary in space.intersect_shape(q, 8):
+		var col: Object = hit.get("collider")
+		if col != null and not col.has_meta(&"terrain"):
+			return Vector3.INF
 	var ray := PhysicsRayQueryParameters3D.create(anchor + Vector3.UP * 1.2, at + Vector3.UP * 1.2, WALL_MASK)
 	if not space.intersect_ray(ray).is_empty():
 		return Vector3.INF
