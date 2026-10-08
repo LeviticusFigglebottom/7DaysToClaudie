@@ -59,6 +59,11 @@ func setup_world(w: Node) -> void:
 		fit_world(p)
 		# A loaded game may already meet a level goal in its open chapter.
 		record.call_deferred("level", &"", p.progression.level)
+		# Ezra recruited in a save from before recruit counted in any chapter (ADR-0062): his
+		# directive counts now rather than holding its chapter up for good.
+		var cd: CompanionDef = Content.get_def(&"companion", &"ezra") as CompanionDef
+		if cd != null and Game.session != null and bool(Game.session.world.companion.get("recruited", false)):
+			record.call_deferred("recruit", StringName(str(cd.camp.get("poi", ""))))
 
 
 ## Fits the directives aimed at particular buildings to this world (Directives.for_world): a random
