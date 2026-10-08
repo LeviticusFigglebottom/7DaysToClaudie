@@ -46,6 +46,11 @@ var _sheet: CraftSheet
 var _card: ItemCard
 var _toolbar: HBoxContainer
 var _bulk: Label
+var _belt: HBoxContainer
+## A drag in progress: {"stack", "flap", "from" (mouse), "ghost" (Control), "moved"}; empty when none.
+var _drag: Dictionary = {}
+## Pixels the mouse moves with a button down before a click becomes a drag.
+const DRAG_START: float = 8.0
 var _sort: String = "packed"
 var _filter: String = "all"
 var _slots: Array = []
@@ -92,6 +97,7 @@ func _ready() -> void:
 	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_build_toolbar()
+	_build_belt()
 	_sheet = CraftSheet.new()
 	_sheet.craft_requested.connect(_craft)
 	add_child(_sheet)
@@ -116,6 +122,42 @@ func _cloth_label(size: int, f: Font) -> Label:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_overlay.add_child(l)
 	return l
+
+
+## The toolbelt under the cloth: six slots, each a drop target for an item dragged off the cloth.
+func _build_belt() -> void:
+	_belt = HBoxContainer.new()
+	_belt.theme = UiStyle.kit_theme()
+	_belt.add_theme_constant_override(&"separation", 6)
+	_belt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_belt)
+	for i: int in 6:
+		var slot := PanelContainer.new()
+		slot.custom_minimum_size = Vector2(124, 40)
+		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var l := Label.new()
+		l.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE - 4)
+		l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		l.custom_minimum_size = Vector2(100, 0)
+		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		slot.add_child(l)
+		_belt.add_child(slot)
+
+
+func _refresh_belt(p: PlayerState) -> void:
+	for i: int in _belt.get_child_count():
+		var slot: PanelContainer = _belt.get_child(i)
+		var id: StringName = p.toolbelt[i] if i < p.toolbelt.size() else &""
+		var d: ItemDef = Content.item(id) if id != &"" else null
+		var l: Label = slot.get_child(0)
+		l.text = "%d  %s" % [i + 1, d.display_name if d != null else "—"]
+		var hot: bool = not _drag.is_empty() and bool(_drag.get("moved", false)) and slot.get_global_rect().has_point(get_global_mouse_position())
+		var sb: StyleBoxFlat = UiStyle.panel_box(false)
+		sb.set_content_margin_all(6)
+		sb.shadow_size = 0
+		sb.border_width_top = 1
+		sb.border_color = UiStyle.RUST_BRIGHT if hot or i == p.equipped_slot else UiStyle.KIT_LINE
+		slot.add_theme_stylebox_override(&"panel", sb)
 
 
 ## Sort and filter for the cloth: small kit-style toggles above it.
@@ -238,6 +280,7 @@ func _close_silently() -> void:
 	_open = false
 	visible = false
 	_card.visible = false
+	_end_drag()
 	container = null
 	station_node = null
 	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -440,6 +483,11 @@ func _layout_overlay() -> void:
 	if _filter != "all":
 		_bulk.text += "   ·   showing %d of %d" % [shown, p.inventory.stacks.size()]
 	_bulk.position = _screen(ORIGIN + Vector3(0.0, 0.0, ROWS * SLOT + 0.02))
+	_belt.position = _bulk.position + Vector2(0, _bulk.size.y + 10.0)
+	_belt.visible = mode != &"container"
+	_refresh_belt(p)
+	if not _drag.is_empty() and is_instance_valid(_drag.get("ghost")):
+		(_drag["ghost"] as Control).position = get_local_mouse_position() + Vector2(14, 10)
 	_flap_title.text = _flap_name().to_upper()
 	_flap_title.visible = mode == &"container"
 	_flap_title.position = _screen(FLAP_ORIGIN + Vector3(0.02, 0.0, -0.01)) - Vector2(0, _flap_title.size.y)
@@ -454,7 +502,7 @@ func _layout_overlay() -> void:
 	for l: Label in _labels:
 		if is_instance_valid(l):
 			l.position = _screen(l.get_meta(&"anchor"))
-	_info.position = Vector2(size.x * 0.12, minf(size.y - 70.0, _bulk.position.y + _bulk.size.y + 14.0))
+	_info.position = Vector2(size.x * 0.12, minf(size.y - 70.0, _belt.position.y + _belt.size.y + 12.0))
 	_info.size = Vector2(size.x * 0.76, 60)
 	if _card.visible:
 		_place_card()
@@ -504,7 +552,8 @@ func _update_hover() -> void:
 		if _hover.has("holder"):
 			(_hover["holder"] as Node3D).scale = Vector3.ONE * 1.18
 			(_hover["holder"] as Node3D).position.y = 0.02
-			_describe(_hover["stack"], bool(_hover["flap"]))
+			if _drag.is_empty() or not bool(_drag["moved"]):
+				_describe(_hover["stack"], bool(_hover["flap"]))
 		else:
 			_card.visible = false
 
@@ -528,6 +577,7 @@ func _describe(s: ItemStack, in_flap: bool) -> void:
 		actions.append("[1-6] toolbelt")
 	if not in_flap:
 		actions.append("[RMB] drop")
+		actions.append("drag: %s" % ("into the container" if mode == &"container" else "to the belt or the recipes"))
 	_card.show_stack(s, "   ".join(actions))
 	_card.visible = true
 	_place_card()
@@ -537,6 +587,22 @@ func _gui_input(event: InputEvent) -> void:
 	if not _open:
 		return
 	var p: PlayerState = _player()
+	if event is InputEventMouseMotion and not _drag.is_empty():
+		if not bool(_drag["moved"]) and get_local_mouse_position().distance_to(_drag["from"]) > DRAG_START:
+			_begin_drag()
+		accept_event()
+		return
+	if event is InputEventMouseButton and not event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		if not _drag.is_empty():
+			var d: Dictionary = _drag
+			_end_drag()
+			if bool(d["moved"]):
+				_drop(p, d["stack"], bool(d["flap"]))
+			else:
+				_primary(p, d["stack"], bool(d["flap"]))
+			_dirty = true
+			accept_event()
+		return
 	if event is InputEventMouseButton and event.pressed:
 		var mb: InputEventMouseButton = event
 		if mb.button_index in [MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_UP]:
@@ -552,12 +618,79 @@ func _gui_input(event: InputEvent) -> void:
 			var s: ItemStack = _hover["stack"]
 			var flap: bool = bool(_hover["flap"])
 			if mb.button_index == MOUSE_BUTTON_LEFT:
-				_primary(p, s, flap)
+				# A click acts on release; moving first makes it a drag (TD-014).
+				_drag = {"stack": s, "flap": flap, "from": get_local_mouse_position(), "moved": false}
 			elif mb.button_index == MOUSE_BUTTON_RIGHT and not flap:
 				Game.execute(&"inventory.drop", {"item": String(s.item_id), "count": s.count if mb.shift_pressed else 1,
 					"index": p.inventory.stacks.find(s)})
-			_dirty = true
+				_dirty = true
 		accept_event()
+
+
+func _begin_drag() -> void:
+	_drag["moved"] = true
+	var s: ItemStack = _drag["stack"]
+	var ghost := PanelContainer.new()
+	ghost.theme = UiStyle.paper_theme()
+	var sb: StyleBoxFlat = UiStyle.panel_box(true)
+	sb.set_content_margin_all(8)
+	ghost.add_theme_stylebox_override(&"panel", sb)
+	ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var l := UiStyle.label(s.def().display_name + ((" ×%d" % s.count) if s.count > 1 else ""))
+	ghost.add_child(l)
+	add_child(ghost)
+	ghost.position = get_local_mouse_position() + Vector2(14, 10)
+	_drag["ghost"] = ghost
+	_card.visible = false
+
+
+func _end_drag() -> void:
+	if is_instance_valid(_drag.get("ghost")):
+		(_drag["ghost"] as Node).queue_free()
+	_drag = {}
+
+
+## Where a dragged item lands: one of drop_target()'s answers.
+func _drop(p: PlayerState, s: ItemStack, from_flap: bool) -> void:
+	var m: Vector2 = get_local_mouse_position()
+	var mp: Vector3 = _mat_point(m)
+	var belt_slot: int = -1
+	for i: int in _belt.get_child_count():
+		if _belt.visible and (_belt.get_child(i) as Control).get_global_rect().has_point(get_global_mouse_position()):
+			belt_slot = i
+	var on_sheet: bool = _sheet.visible and _sheet.get_global_rect().has_point(get_global_mouse_position())
+	var on_flap: bool = mode == &"container" and _in_grid(mp, FLAP_ORIGIN + Vector3(0.02, 0.0, 0.0), 4)
+	var on_cloth: bool = _in_grid(mp, ORIGIN, COLS) or (mp != Vector3.INF and absf(mp.x) < 0.49 and absf(mp.z) < 0.28)
+	match drop_target(from_flap, belt_slot, on_sheet, on_flap, on_cloth):
+		"belt":
+			Game.execute(&"inventory.equip", {"item": String(s.item_id), "slot": belt_slot})
+			_info.text = "Toolbelt %d: %s" % [belt_slot + 1, s.def().display_name]
+		"sheet":
+			_sheet.filter_uses(s.item_id)
+			_info.text = "Recipes that use %s." % s.def().display_name
+		"put":
+			_primary(p, s, false)
+		"take":
+			_primary(p, s, true)
+		"drop":
+			Game.execute(&"inventory.drop", {"item": String(s.item_id), "count": s.count, "index": p.inventory.stacks.find(s)})
+			_info.text = "Dropped %s." % s.def().display_name
+
+
+## What a drag does, from where it ended: "belt", "sheet", "put" (cloth to a container), "take"
+## (container to the cloth), "drop" (off the cloth) or "" (nothing: back where it was).
+static func drop_target(from_flap: bool, belt_slot: int, on_sheet: bool, on_flap: bool, on_cloth: bool) -> String:
+	if from_flap:
+		return "take" if not on_flap else ""
+	if belt_slot >= 0:
+		return "belt"
+	if on_sheet:
+		return "sheet"
+	if on_flap:
+		return "put"
+	if on_cloth:
+		return ""
+	return "drop"
 
 
 func _unhandled_key_input(event: InputEvent) -> void:

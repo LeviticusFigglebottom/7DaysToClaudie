@@ -15,8 +15,11 @@ extends Control
 signal finished()
 
 const SCRIPT_PATH: String = "res://data/intro/intro.json"
-const KINDS: PackedStringArray = ["caption", "document", "radio", "title"]
-const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound"]
+const KINDS: PackedStringArray = ["caption", "document", "radio", "impact", "title"]
+const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds"]
+## The impact card: seconds of shake and of the flash's fade.
+const SHAKE_TIME: float = 1.6
+const SHAKE_PX: float = 26.0
 const FADE: float = 1.1
 ## Seconds the skip keys are held to skip.
 const SKIP_HOLD: float = 0.9
@@ -42,6 +45,8 @@ var _vars: Dictionary = {}
 var _grain: ColorRect
 ## A line under the cards with the load's progress (set by GameUI while the world loads).
 var _status: Label
+## Seconds into the current impact card (-1: none).
+var _impact_t: float = -1.0
 
 
 func _ready() -> void:
@@ -122,7 +127,7 @@ static func validate(d: Dictionary) -> PackedStringArray:
 		for k2: String in c:
 			if not CARD_KEYS.has(k2):
 				out.append("intro card %d: unknown key '%s'" % [i, k2])
-		if (c.get("lines", []) as Array).is_empty() and str(c.get("kind", "")) != "title":
+		if (c.get("lines", []) as Array).is_empty() and not str(c.get("kind", "")) in ["title", "impact"]:
 			out.append("intro card %d: no lines" % i)
 		var hold: float = float(c.get("hold", 3.0))
 		if hold < 1.0 or hold > 15.0:
@@ -213,6 +218,8 @@ func skip_intro() -> void:
 
 
 func _end() -> void:
+	position = Vector2.ZERO
+	_impact_t = -1.0
 	_playing = false
 	_phase = &"idle"
 	if _music != null:
@@ -243,6 +250,16 @@ func _next() -> void:
 	var snd: String = str(c.get("sound", ""))
 	if snd != "":
 		Audio.play_2d(StringName(snd), -6.0)
+	for k: int in (c.get("sounds", []) as Array).size():
+		Audio.play_2d(StringName(str(c["sounds"][k])), 0.0, &"UI", 1.0 - 0.08 * k)
+	if str(c.get("kind", "")) == "impact":
+		# No fade in: the crash cuts in.
+		_card.modulate.a = 1.0
+		_phase = &"type"
+		_impact_t = 0.0
+		if _music != null:
+			_music.volume_db = -40.0
+			create_tween().tween_property(_music, "volume_db", -14.0, 6.0)
 
 
 ## Shows card `i` fully typed and holding (visual QA, tests).
@@ -265,6 +282,8 @@ func _process(delta: float) -> void:
 	var dt: float = minf(delta, 0.1)
 	_update_skip(delta)
 	_t += dt
+	if _impact_t >= 0.0:
+		_impact(dt)
 	var c: Dictionary = _cards[_index]
 	match _phase:
 		&"in":
@@ -306,6 +325,19 @@ func _type_step(dt: float, kind: String) -> bool:
 	return true
 
 
+## The crash: the frame shakes and a fire-white flash fades to black, decaying together.
+func _impact(dt: float) -> void:
+	_impact_t += dt
+	var k: float = clampf(1.0 - _impact_t / SHAKE_TIME, 0.0, 1.0)
+	var flash: ColorRect = _card.get_node_or_null("Flash") as ColorRect
+	if flash != null:
+		flash.color.a = k * k
+	position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * SHAKE_PX * k * k
+	if _impact_t >= SHAKE_TIME:
+		position = Vector2.ZERO
+		_impact_t = -1.0
+
+
 func _update_skip(delta: float) -> void:
 	var held: bool = Input.is_key_pressed(KEY_ESCAPE) or Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
 	_skip_t = _skip_t + delta if held else maxf(0.0, _skip_t - delta * 2.0)
@@ -329,6 +361,14 @@ func _build_card(c: Dictionary) -> Control:
 			_radio(root, c)
 		"title":
 			_title(root, c)
+		"impact":
+			var flash := ColorRect.new()
+			flash.name = "Flash"
+			flash.color = Color(1.0, 0.82, 0.62, 1.0)
+			flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			root.add_child(flash)
+			_caption(root, c)
 		_:
 			_caption(root, c)
 	return root

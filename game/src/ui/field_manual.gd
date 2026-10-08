@@ -8,7 +8,7 @@ extends Control
 
 const PAPER := Color(0.86, 0.82, 0.71)
 const INK := Color(0.15, 0.12, 0.09)
-const INK_DIM := Color(0.45, 0.4, 0.34)
+const INK_DIM := UiStyle.INK_DIM
 const TIPS: Array[Array] = [
 	["The Remand Program", "You signed the waiver. You are inside the Cordon to find out what the Bloom did to Hollowmere and whether anyone is left. The canister drop is your only resupply. Your tether keeps time, vitals and the Hum forecast."],
 	["Hollowed", "By day they are slow and half blind. After dark they see without light and they run. Anything you carry that glows tells them where you are. Crouch, keep your lights off, and let the wind carry your scent away from them."],
@@ -89,20 +89,21 @@ func _ready() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override(&"separation", 12)
 	book.add_child(v)
-	var title := Label.new()
-	title.text = "REMAND PROGRAM — FIELD MANUAL  (rev. 3)"
-	title.add_theme_font_size_override(&"font_size", 24)
-	title.add_theme_color_override(&"font_color", INK)
+	var title := UiStyle.label("REMAND PROGRAM — FIELD MANUAL  (rev. 3)", &"HeadingLabel")
 	v.add_child(title)
 	_tabs = HBoxContainer.new()
-	_tabs.add_theme_constant_override(&"separation", 18)
+	_tabs.add_theme_constant_override(&"separation", 4)
 	v.add_child(_tabs)
+	var group := ButtonGroup.new()
 	for t: Array in [["build", "Blueprints"], ["record", "Record"], ["notes", "Notes found"], ["tips", "Survival"]]:
 		var b := Button.new()
 		b.text = t[1]
-		b.flat = true
-		b.add_theme_color_override(&"font_color", INK)
-		b.add_theme_font_size_override(&"font_size", 18)
+		b.name = "Tab_" + str(t[0])
+		b.toggle_mode = true
+		b.button_group = group
+		b.focus_mode = Control.FOCUS_NONE
+		b.theme_type_variation = &"ListButton"
+		b.add_theme_font_size_override(&"font_size", 19)
 		b.pressed.connect(_set_tab.bind(str(t[0])))
 		_tabs.add_child(b)
 	var h := HBoxContainer.new()
@@ -124,11 +125,13 @@ func _ready() -> void:
 	_detail.bbcode_enabled = true
 	_detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_detail.add_theme_color_override(&"default_color", INK)
-	_detail.add_theme_font_size_override(&"normal_font_size", 17)
+	_detail.add_theme_font_size_override(&"normal_font_size", 18)
+	_detail.add_theme_font_override(&"bold_font", UiStyle.bold_font())
 	right.add_child(_detail)
 	_action = Button.new()
 	_action.text = "Lay it out"
-	_action.custom_minimum_size = Vector2(200, 40)
+	_action.theme_type_variation = &"PrimaryButton"
+	_action.custom_minimum_size = Vector2(240, 44)
 	_action.pressed.connect(_on_action)
 	right.add_child(_action)
 	Events.ui_modal_closed.connect(func(id: StringName) -> void:
@@ -142,12 +145,18 @@ func _ready() -> void:
 
 func _set_tab(t: String) -> void:
 	_tab = t
+	var b: Button = _tabs.get_node_or_null("Tab_" + t) as Button
+	if b != null:
+		b.set_pressed_no_signal(true)
 	_selected = null
 	_refresh()
 
 
 func open(tab: String = "build") -> void:
 	_tab = tab
+	var tb: Button = _tabs.get_node_or_null("Tab_" + tab) as Button
+	if tb != null:
+		tb.set_pressed_no_signal(true)
 	_open = true
 	visible = true
 	_selected = null
@@ -234,9 +243,9 @@ func _entry(text: String, payload: Variant, enabled: bool) -> void:
 	b.text = "  " + text
 	b.flat = true
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.theme_type_variation = &"ListButton"
 	b.add_theme_color_override(&"font_color", INK if enabled else INK_DIM)
-	b.add_theme_color_override(&"font_hover_color", Color(0.5, 0.15, 0.08))
-	b.add_theme_font_size_override(&"font_size", 17)
+	b.add_theme_font_size_override(&"font_size", 18)
 	b.pressed.connect(_select.bind(payload))
 	_list.add_child(b)
 

@@ -144,3 +144,23 @@ static func _contrast(a: Color, b: Color) -> float:
 	var la: float = a.srgb_to_linear().get_luminance()
 	var lb: float = b.srgb_to_linear().get_luminance()
 	return (maxf(la, lb) + 0.05) / (minf(la, lb) + 0.05)
+
+
+func test_drop_targets() -> void:
+	assert_eq(SalvageRoll.drop_target(false, 2, false, false, true), "belt")
+	assert_eq(SalvageRoll.drop_target(false, -1, true, false, false), "sheet")
+	assert_eq(SalvageRoll.drop_target(false, -1, false, true, false), "put")
+	assert_eq(SalvageRoll.drop_target(false, -1, false, false, true), "", "back on the cloth: nothing")
+	assert_eq(SalvageRoll.drop_target(false, -1, false, false, false), "drop", "off the cloth: dropped")
+	assert_eq(SalvageRoll.drop_target(true, -1, false, false, true), "take")
+	assert_eq(SalvageRoll.drop_target(true, -1, false, true, false), "", "within the container")
+
+
+func test_uses_filter() -> void:
+	var rows: Array[Dictionary] = CraftSheet.rows(Inventory.new(), &"", _knows_default)
+	var n: int = 0
+	for r: Dictionary in rows:
+		if CraftSheet.passes(r, "uses:cordage"):
+			n += 1
+			assert_true((r["recipe"] as RecipeDef).ingredients.has(&"cordage"))
+	assert_gt(n, 1, "the axe, the spear, the club... use cordage")

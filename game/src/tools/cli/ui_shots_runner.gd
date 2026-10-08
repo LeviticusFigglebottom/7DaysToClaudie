@@ -2,7 +2,7 @@ extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
 const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "new_game", "manual",
-	"intro_0", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7"]
+	"loading", "pause", "intro_0", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7"]
 
 var _out: String = "res://../build/ui_shots"
 var _only: PackedStringArray = []
@@ -150,3 +150,20 @@ func _shot_intro(i: int) -> Node:
 	intro.show_card(i)
 	await _settle(2)
 	return layer
+
+
+func _shot_loading() -> Node:
+	var ui := GameUI.new()
+	add_child(ui)
+	await _settle(1)
+	ui.show_loading("Shaping the valley…", 0.42)
+	return ui
+
+
+func _shot_pause() -> Node:
+	var ui := GameUI.new()
+	add_child(ui)
+	await _settle(1)
+	ui.hide_loading()
+	(ui.get(&"_pause") as Control).visible = true
+	return ui

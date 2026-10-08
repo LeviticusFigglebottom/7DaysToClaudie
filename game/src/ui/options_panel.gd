@@ -18,7 +18,7 @@ const ACTIONS: Array = [
 	["sprint", "Sprint"], ["crouch", "Crouch"], ["jump", "Jump / vault"], ["interact", "Interact (hold to search)"],
 	["attack", "Use / attack / place"], ["block", "Block / consume"], ["aim", "Aim (guns)"], ["reload", "Reload"], ["light", "Light"], ["inspect", "Inspect held item"], ["drop", "Drop"],
 	["companion_order", "Companion: follow / stay"],
-	["inventory", "Salvage roll (inventory)"], ["guidebook", "Field manual"], ["tracker", "Tether"],
+	["inventory", "Salvage roll (inventory)"], ["guidebook", "Field manual"], ["tracker", "Tether"], ["map", "Map"],
 	["rotate_piece", "Rotate piece"], ["build_mode_toggle", "Log pose"], ["cancel", "Cancel"],
 	["toolbelt_1", "Toolbelt 1"], ["toolbelt_2", "Toolbelt 2"], ["toolbelt_3", "Toolbelt 3"],
 	["toolbelt_4", "Toolbelt 4"], ["toolbelt_5", "Toolbelt 5"], ["toolbelt_6", "Toolbelt 6"],

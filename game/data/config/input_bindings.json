@@ -16,6 +16,7 @@
     "inventory": [{"key": "Tab"}, {"key": "I"}],
     "guidebook": [{"key": "B"}],
     "tracker": [{"key": "T"}],
+    "map": [{"key": "M"}],
     "light": [{"key": "F"}],
     "inspect": [{"key": "Y"}],
     "companion_order": [{"key": "H"}],

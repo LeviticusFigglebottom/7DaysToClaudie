@@ -27,6 +27,7 @@ var _modals: Array[StringName] = []
 var _wire_t: float = 0.0
 var _damage_flash: float = 0.0
 var roll: SalvageRoll
+var world_map: WorldMap
 var manual: FieldManual
 var tether: Tether
 var _final_death: bool = false
@@ -57,6 +58,9 @@ func _ready() -> void:
 	manual = FieldManual.new()
 	manual.name = "FieldManual"
 	add_child(manual)
+	world_map = WorldMap.new()
+	world_map.name = "WorldMap"
+	add_child(world_map)
 	_build_overlay()
 	_build_pause()
 	_maybe_start_intro()
@@ -94,11 +98,13 @@ func _build_loading() -> void:
 	_loading = ColorRect.new()
 	(_loading as ColorRect).color = Color(0.02, 0.022, 0.025)
 	_loading.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_loading.theme = UiStyle.kit_theme()
 	add_child(_loading)
 	var title := Label.new()
 	title.text = "HOLLOWMERE"
-	title.add_theme_font_size_override(&"font_size", 54)
-	title.add_theme_color_override(&"font_color", Color(0.8, 0.78, 0.7))
+	title.add_theme_font_override(&"font", UiStyle.heading_font())
+	title.add_theme_font_size_override(&"font_size", 72)
+	title.add_theme_color_override(&"font_color", UiStyle.KIT_TEXT)
 	title.position = Vector2(80, 80)
 	_loading.add_child(title)
 	_loading_label = Label.new()
@@ -117,7 +123,9 @@ func _build_loading() -> void:
 	_loading.add_child(_loading_map)
 	var tip := Label.new()
 	tip.text = "Night is darker than you think. Carry a light — and remember they see it too."
-	tip.add_theme_color_override(&"font_color", Color(0.45, 0.47, 0.44))
+	tip.add_theme_font_override(&"font", UiStyle.hand_font())
+	tip.add_theme_font_size_override(&"font_size", 30)
+	tip.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
 	tip.anchor_top = 1.0
 	tip.anchor_bottom = 1.0
 	tip.position = Vector2(84, -80)
@@ -549,22 +557,30 @@ func _build_pause() -> void:
 	(_pause as ColorRect).color = Color(0, 0, 0, 0.6)
 	_pause.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_pause.visible = false
+	_pause.theme = UiStyle.kit_theme()
 	add_child(_pause)
 	var box := VBoxContainer.new()
-	box.position = Vector2(100, 160)
-	box.add_theme_constant_override(&"separation", 8)
+	box.position = Vector2(80, 120)
+	box.add_theme_constant_override(&"separation", 2)
 	_pause.add_child(box)
-	var title := Label.new()
-	title.text = "PAUSED"
-	title.add_theme_font_size_override(&"font_size", 40)
+	var title := UiStyle.label("PAUSED", &"HeadingLabel")
+	title.add_theme_font_size_override(&"font_size", 64)
 	box.add_child(title)
+	var sub := UiStyle.label("The valley waits. It is good at that.", &"HandLabel")
+	sub.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
+	box.add_child(sub)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(0, 24)
+	box.add_child(gap)
 	for spec: Array in [["Resume", toggle_pause], ["Save", func() -> void: Game.save_game()],
 			["Load last save", _confirm_load], ["Options", _open_options], ["Controls", _open_options.bind("Controls")],
 			["Save and quit to menu", _save_and_quit], ["Quit without saving", _confirm_quit]]:
 		var b := Button.new()
 		b.text = spec[0]
 		b.name = String(spec[0]).replace(" ", "_")
-		b.custom_minimum_size = Vector2(320, 40)
+		b.theme_type_variation = &"MenuEntry"
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.custom_minimum_size = Vector2(520, 48)
 		b.pressed.connect(spec[1])
 		box.add_child(b)
 
@@ -655,6 +671,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(&"guidebook") and not manual.is_open() and not roll.is_open():
 		manual.open()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"map") and not roll.is_open() and not manual.is_open():
+		world_map.toggle()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(&"tracker"):
 		_ensure_tether()

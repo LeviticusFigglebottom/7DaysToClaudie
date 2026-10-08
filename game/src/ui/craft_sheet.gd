@@ -136,8 +136,10 @@ static func status_text(missing: Array, tools: PackedStringArray) -> String:
 	return "need " + ", ".join(parts)
 
 
-## Whether a row passes a filter: "all", "ready", or a recipe category.
+## Whether a row passes a filter: "all", "ready", "uses:<item id>" or a recipe category.
 static func passes(r: Dictionary, filter: String) -> bool:
+	if filter.begins_with("uses:"):
+		return (r["recipe"] as RecipeDef).ingredients.has(StringName(filter.substr(5)))
 	match filter:
 		"all":
 			return true
@@ -181,8 +183,18 @@ func refresh(p: PlayerState, station: StringName, title: String) -> void:
 	_show_detail()
 
 
+## Shows only the recipes that use an item (an item dropped on the sheet).
+func filter_uses(item_id: StringName) -> void:
+	_filter = "uses:" + String(item_id)
+	_build_filters()
+	_build_list()
+	_show_detail()
+
+
 func _build_filters() -> void:
 	var names: PackedStringArray = filters_for(_rows)
+	if _filter.begins_with("uses:"):
+		names.append(_filter)
 	if not names.has(_filter):
 		_filter = "all"
 	for c: Node in _filters.get_children():
@@ -194,7 +206,8 @@ func _build_filters() -> void:
 		b.button_group = group
 		b.button_pressed = f == _filter
 		b.focus_mode = Control.FOCUS_NONE
-		b.text = f.capitalize()
+		var d: ItemDef = Content.item(StringName(f.substr(5))) if f.begins_with("uses:") else null
+		b.text = ("Uses %s" % (d.display_name if d != null else f.substr(5))) if f.begins_with("uses:") else f.capitalize()
 		b.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE - 3)
 		b.pressed.connect(func() -> void:
 			_filter = f

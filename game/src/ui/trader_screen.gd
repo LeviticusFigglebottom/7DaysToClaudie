@@ -10,7 +10,7 @@ const TradeIcons := preload("res://src/trade/trade_icons.gd")
 
 const PAPER := Color(0.83, 0.8, 0.7)
 const INK := Color(0.14, 0.12, 0.1)
-const INK_DIM := Color(0.42, 0.38, 0.32)
+const INK_DIM := UiStyle.INK_DIM
 const OK_INK := Color(0.16, 0.4, 0.18)
 const ICON_SIZE := 40
 
