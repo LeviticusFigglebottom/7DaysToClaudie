@@ -714,7 +714,12 @@ func _stairs_and_ladders() -> void:
 		var cc: Vector3 = layout.cell_center(li2, cell)
 		var side: int = l["side"]
 		var toward := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
-		var basis2 := Basis(Vector3.UP, yaws[(side + 2) % 4])
+		# The kit ladder's rails stand 0.09-0.16 m out along its local +Z (Blender -Y, POI_KIT.md),
+		# toward the climber, like ClimbMount's ladders. yaws[side] turns -Z to the wall and +Z
+		# back into the room; turned the other way (as it was) the generated rails stood 0.47-0.54
+		# m from the cell centre, inside the 0.42-0.58 wall slab, and every POI ladder was hidden
+		# in its wall (the old centred box stand-in looked the same either way).
+		var basis2 := Basis(Vector3.UP, yaws[side])
 		var lad := PoiPieces.Ladder.new()
 		lad.position = cc + toward * 0.38
 		lad.basis = basis2
