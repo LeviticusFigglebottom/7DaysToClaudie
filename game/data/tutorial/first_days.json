@@ -1,0 +1,29 @@
+{
+  "_doc": "The optional first-days tutorial (ADR-0062): Remand Program cards on the tether's journal, listed by order. Steps count in any order; the journal's current step is the first not done; once all are done the tether picks up Ezra's distress call (data/config/tutorial.json). event: gather (items picked up or harvested; targets: item ids; count sums them), craft (targets: item ids), build (a blueprint finished; targets: blueprint or structure ids, an assembly blueprint reports its structure: bough_bed builds a bedroll), fell_tree, place_log, sleep, loot, enter_poi, read_note, kill, recruit. body: {key:<input action>} shows the key that action is bound to now (TutorialTracker.render_body). Recipes quoted in a body must match data/recipes and data/blueprints (test_tutorial checks the ones named).",
+  "defs": [
+    {"id": "gather_basics", "order": 1, "title": "Gather sticks, stones and fibre",
+     "body": "REMAND PROGRAM · FIRST DAYS. You were issued nothing that cuts. Make it. Hold {key:interact} on fireweed, ferns and sedge for plant fibre, on deadfall for sticks, on loose stones for stones. Bring in six. You need at least 3 plant fibre, 1 stick and 1 stone for the next card.",
+     "event": "gather", "targets": ["plant_fiber", "stick", "stone"], "count": 6},
+    {"id": "stone_axe", "order": 2, "title": "Make a stone axe",
+     "body": "Open the salvage roll ({key:inventory}), flap Make by hand. Twist Cordage from 3 plant fibre. Then the Stone Axe: 1 stick, 1 stone, 1 cordage. Put it on the toolbelt (a number key over it in the roll). It chops, and it is a weapon. Not a good one.",
+     "event": "craft", "targets": ["stone_axe"]},
+    {"id": "fell_tree", "order": 3, "title": "Fell a tree",
+     "body": "Axe in hand, {key:attack} at the trunk. It falls away from you: never stand along its line. It breaks into logs, with sticks and boughs at the crown. {key:interact} shoulders a log (two at most), {key:drop} sets it down. Felling is loud. Look around between swings.",
+     "event": "fell_tree"},
+    {"id": "campfire", "order": 4, "title": "Build a campfire",
+     "body": "Field manual ({key:guidebook}), Blueprints, Campfire, Lay it out. Aim, {key:attack} to place. {key:interact} on the ghost hands over 6 stones and 4 sticks. {key:interact} again lights it from the lighter in your pack. Look at it and press {key:drop} to feed it. Warmth, cooking, light. Also a beacon.",
+     "event": "build", "targets": ["campfire"]},
+    {"id": "boil_water", "order": 5, "title": "Fill and boil water",
+     "body": "Drink your issued water when thirsty. Keep the bottle. At the pond or the river, hold {key:interact} with the empty bottle to fill it. Stream water makes you sick: boil it. {key:interact} on your lit campfire, Use Campfire, Boil Water: 1 Bottle of Stream Water makes 1 Bottle of Boiled Water.",
+     "event": "craft", "targets": ["water_bottle_clean"]},
+    {"id": "bandage", "order": 6, "title": "Make a cloth bandage",
+     "body": "You were issued 2 cloth. Salvage roll ({key:inventory}), Make by hand, Cloth Bandage: 2 cloth. It stops bleeding. A hare pelt and a knife make two more. Keep one on you. Painkillers and first aid kits are found, not made: medicine cabinets and nightstands in the houses.",
+     "event": "craft", "targets": ["cloth_bandage"]},
+    {"id": "shelter", "order": 7, "title": "Raise a shelter",
+     "body": "Field manual ({key:guidebook}), Blueprints. Lean-to Shelter: 10 sticks, 6 bough bundles, 2 cordage. Bough bundles: fir saplings, felled grey firs, or by hand from 1 stick and 1 plant fibre. Short on time: a Bough Bed, 6 bough bundles and 4 sticks. Either one is a bed.",
+     "event": "build", "targets": ["lean_to", "bough_bed", "bedroll"]},
+    {"id": "sleep", "order": 8, "title": "Sleep in your bed",
+     "body": "{key:interact} on your bed, Sleep. After 19:00 you sleep to 06:00; earlier, two hours. Where you sleep is where the Program wakes you if you die, and it logs your progress. Night falls at 21:00. They see further then, and run. Be at your fire.",
+     "event": "sleep"}
+  ]
+}

@@ -39,6 +39,8 @@ var farming: Node = null
 var encounters: Node = null
 ## Ezra Vane, the companion (ADR-0058).
 var companion: Node = null
+## The optional first-days tutorial (ADR-0062): journal steps, then Ezra's distress call.
+var tutorial: Node = null
 var is_ready: bool = false
 ## True when this random world streams its regions (ADR-0038): only the first area is composed at
 ## 1 m at load, the RegionStreamer brings in the rest, and buildings come by distance. The default
@@ -385,6 +387,7 @@ const MODULES: Array = [
 	["ashen", "res://src/ai/ashen/ashen_director.gd", "Watching the treeline…"],
 	["encounters", "res://src/world/encounters/encounters.gd", "Leaving things in the woods…"],
 	["companion", "res://src/companion/companion_director.gd", "Watching the treeline…"],
+	["tutorial", "res://src/progression/tutorial_tracker.gd", "Listening…"],
 ]
 
 

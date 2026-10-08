@@ -5,10 +5,11 @@
   "starting_points": 1,
   "attribute_cost_step": 3,
   "_xp_doc": "XP per source (Progression.award). Kills pay each enemy def's own xp times its infected tier's xp multiplier. loot_container is x the container's tier, clear_poi_per_tier x the POI tier, discover_poi x the POI tier (first time inside), survive_hum x (1 + 0.5 per earlier Hum).",
+  "_tutorial_doc": "tutorial_step: each first-days tutorial step finished (ADR-0062), small: the directives already pay for the same early work.",
   "_craft_doc": "Crafting pays craft_<recipe category> when listed, else craft: a stone axe teaches more than a twist of cordage. Digging pays nothing (it is unlimited).",
   "xp": {"craft": 4, "craft_materials": 1, "craft_cooking": 2, "craft_light": 2, "craft_medical": 3, "craft_traps": 6, "craft_tools": 10, "craft_weapons": 8,
          "loot_container": 4, "fell_tree": 10, "build_piece": 5, "upgrade_piece": 8,
          "complete_blueprint": 30, "dig": 0, "clear_poi_per_tier": 150, "read_note": 15, "discover_poi": 20, "discover_encounter": 5, "survive_hum": 500, "repel_raid": 250,
          "hunt_kill": 15, "butcher": 8, "plant_crop": 2, "harvest_crop": 12, "burn_nest": 250,
-         "trap_kill": 10, "wire_power": 3}
+         "trap_kill": 10, "wire_power": 3, "tutorial_step": 10}
 }
