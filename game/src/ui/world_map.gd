@@ -238,7 +238,15 @@ static func shade(r: Rect2, sources: Array, rivers: Array, lakes: Array, roads: 
 		_fill(img, r, (lake as Dictionary).get("polygon", PackedVector2Array()), WATER)
 	for river: Variant in rivers:
 		var d: Dictionary = river
-		_line(img, r, d.get("line"), WATER, maxf(1.0, float(d.get("width", 12.0)) * PX_PER_M))
+		# A river's width is a number or a range along it ([from, to]): draw the mean.
+		var wv: Variant = d.get("width", 12.0)
+		var wm: float = float(wv) if (wv is float or wv is int) else 12.0
+		if wv is Array and not (wv as Array).is_empty():
+			wm = 0.0
+			for x: Variant in wv:
+				wm += float(x)
+			wm /= (wv as Array).size()
+		_line(img, r, d.get("line"), WATER, maxf(1.0, wm * PX_PER_M))
 	for road: Variant in roads:
 		_line(img, r, (road as Dictionary).get("line"), ROAD, 1.6)
 	# The Cordon: a red dashed line just inside the sheet's edge.

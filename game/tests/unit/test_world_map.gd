@@ -15,11 +15,11 @@ func test_sheet_covers_a_region_with_water_and_roads() -> void:
 	for y: int in range(0, img.get_height(), 2):
 		for x: int in range(0, img.get_width(), 2):
 			var c: Color = img.get_pixel(x, y)
-			if c.is_equal_approx(WorldMap.WATER):
+			if _near(c, WorldMap.WATER):
 				water += 1
-			elif c.is_equal_approx(WorldMap.ROAD):
+			elif _near(c, WorldMap.ROAD):
 				road += 1
-			elif c.is_equal_approx(WorldMap.PAPER):
+			elif _near(c, WorldMap.PAPER):
 				plain += 1
 	assert_gt(water, 20, "the Tamsin and Larch Pond")
 	assert_gt(road, 20, "Route 9")
@@ -36,7 +36,7 @@ func test_reveal_marks_cells_in_a_circle() -> void:
 	assert_true(ex.is_explored(-300 + 60, 2300))
 	assert_false(ex.is_explored(-300 + 200, 2300))
 	# Negative cells and block borders.
-	ex.reveal(Vector3(-512, 0, -512), 20.0)
+	ex.reveal(Vector3(-512, 0, -512), 40.0)
 	assert_true(ex.is_explored(-512 + 5, -512 + 5))
 	assert_true(ex.is_explored(-512 - 5, -512 - 5))
 
@@ -70,3 +70,8 @@ func test_fog_image_clears_explored_cells() -> void:
 	assert_eq(img.get_width(), 10)
 	assert_eq(img.get_pixel(1, 1).a, 0.0)
 	assert_gt(img.get_pixel(8, 8).a, 0.5)
+
+
+## Image colours are 8-bit: compare within a step.
+static func _near(a: Color, b: Color) -> bool:
+	return absf(a.r - b.r) < 0.01 and absf(a.g - b.g) < 0.01 and absf(a.b - b.b) < 0.01

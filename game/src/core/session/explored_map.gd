@@ -28,7 +28,7 @@ func reveal(pos: Vector3, radius: float) -> int:
 			var dz: float = (cz + 0.5) * CELL - pos.z
 			if dx * dx + dz * dz > r2:
 				continue
-			if _set(cx, cz):
+			if _mark(cx, cz):
 				added += 1
 	return added
 
@@ -47,7 +47,7 @@ func cell_explored(cx: int, cz: int) -> bool:
 	return ((b as PackedByteArray)[i >> 3] >> (i & 7)) & 1 == 1
 
 
-func _set(cx: int, cz: int) -> bool:
+func _mark(cx: int, cz: int) -> bool:
 	var bx: int = floori(float(cx) / BLOCK)
 	var bz: int = floori(float(cz) / BLOCK)
 	var key: String = "%d,%d" % [bx, bz]
