@@ -244,20 +244,30 @@ idles and gaits). 14,764 body triangles; 1.81 m. The face is still the shared Ho
   landscape quad UV-mapped 0..1 (u along the forearm, v across, image top towards the little-finger
   side) that the game fills with the live tether UI.
 * Hands (`lib/char_fp.py` `FPModel._hand`): a domed metacarpal block (~2.7 cm thick at the
-  knuckles, the back arched across them) with thenar, hypothenar and distal palm pads, raised MCP
-  knuckles and extensor tendons; four separate fingers (each its own SDF field, so the clefts
-  between them survive the union; middle longest, little finger shortest and slimmest) with
-  knobbly PIP/DIP joints, a pad under each phalanx, rounded tips and inset nails (`M_fp_nail`);
-  the thumb on a thenar mass, joined to the index by its web. Mesh-only shape numbers
-  (`FINGER_SHAPE`, `THUMB_RADII`, `PALM_OUTLINE`) never move a bone; each finger segment is
-  skinned to its own bone. Meshed in a narrow
-  band round the surface (`sparse_surface_nets`) at `h` = 1.1 mm, so the clefts resolve, then
-  decimated to `arm_tris` = 14k per arm (~11.5k of it past the wrist).
+  knuckles, the back arched across them) with thenar, hypothenar and distal palm pads, bony MCP
+  knuckle domes, extensor tendons that stand up towards the knuckles, the dorsal hollows between
+  the metacarpals and a soft venous arch draining to the wrist; four separate fingers (each its
+  own SDF field, so the clefts between them survive the union; middle longest, little finger
+  shortest and slimmest), flat-backed and full on the palm side (`FINGER_BACK_SQ` /
+  `FINGER_PALM_SQ`), with broad knobs on the back of the PIP/DIP joints, slack-skin folds over
+  them and flexion creases under them, a pad under each phalanx and a broad, flattened pulp. The
+  nails (`_nail`): a plate curved across and a little along, ~65% of the distal phalanx long
+  (`FINGER_SHAPE`'s half-length), its free edge curling over the tip, framed by a proximal fold
+  over its root and lateral folds lapping its sides; the plate shapes the surface, and the
+  generator cuts the mesh along the nail's visible outline (`FPModel.nail_region`,
+  `_cut_nails`) and gives the faces inside `M_fp_nail`, so the edge is a clean curve rather than
+  whole decimated faces. The thumb sits on a thenar mass, joined to the index by its web.
+  Mesh-only shape numbers (`FINGER_SHAPE`, `THUMB_RADII`, `PALM_OUTLINE`) never move a bone;
+  each finger segment is skinned to its own bone. Meshed in a narrow band round the surface
+  (`sparse_surface_nets`) at `h` = 1.1 mm, so the clefts resolve, then decimated to `arm_tris` =
+  18k per arm (~15k of it past the wrist).
 * Vertex colour: R baked AO; G a dirt mask (creases, knuckles, the skin over the finger joints,
   fingertips) for the `fp_grime` layer; B the flush of blood under thin skin (knuckles, finger
   joints, fingertips) that `fp_skin`'s `flush` reddens (0 on the tether); A the back of the hand
   and forearm (1) against the palm and inner forearm (0), from each vertex's bones' back-of-hand
-  direction (`_skin_masks`). char_attrs layers: the rest pose (UV2, CUSTOM0.x) for the skin's
+  direction (`_skin_masks`). The layer is per face corner, and the nails have their own corners
+  (`_nail_colours`): B the pink bed under the plate (`fp_nail`'s `flush`; less over the lunula,
+  none at the pale free edge), G grime under the free edge and in the cuticle. char_attrs layers: the rest pose (UV2, CUSTOM0.x) for the skin's
   patterns, and in the bruise slot (CUSTOM0.w; `fp_skin` has no bruising) how thin the flesh is
   (fingers 1, the thumb's root 0.7, the hand 0.35, the forearm 0).
 * Skin (`fp_skin`, skin shader, all its living-skin terms off for every other skin): flushed
