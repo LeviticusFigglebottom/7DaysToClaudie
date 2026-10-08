@@ -10,17 +10,17 @@
 		},
 		"village": {
 			"radius": [240, 320], "core": 95, "arterials": [1, 2], "street_class": "street",
-			"side_streets": [12, 20], "street_budget": 4500, "street_length": [150, 280], "seed_spacing": [[50, 70], [60, 90], [75, 115]],
-			"seed_reach": 0.7, "first_share": 0.6, "cross_rows": 3, "cross_chance": 0.5, "branch_chance": 0.6, "grid_bias": false,
+			"side_streets": [12, 20], "street_budget": 4500, "street_length": [170, 300], "seed_spacing": [[50, 70], [60, 90], [75, 115]],
+			"seed_reach": 0.62, "arterial_reach": 0.75, "first_share": 0.6, "cross_rows": 3, "cross_chance": 0.5, "branch_chance": 0.6, "grid_bias": false,
 			"loops": [2, 4], "culdesacs": [2, 4], "plaza": [0, 0], "back_lanes": false,
-			"lots": [60, 110], "commercial": [4, 7], "civic": [1, 3], "civic_pure": 2, "industrial": [1, 3], "rural": [4, 7], "wrecks": [3, 5]
+			"lots": [50, 110], "commercial": [4, 7], "civic": [1, 3], "civic_pure": 2, "industrial": [1, 3], "rural": [4, 7], "wrecks": [3, 5]
 		},
 		"town": {
 			"radius": [380, 500], "core": 150, "arterials": [2, 3], "street_class": "street",
-			"side_streets": [28, 42], "street_budget": 10000, "street_length": [200, 400], "seed_spacing": [[50, 70], [65, 95], [85, 120]],
-			"seed_reach": 0.72, "first_share": 0.6, "cross_rows": 4, "cross_chance": 0.6, "branch_chance": 0.75, "grid_bias": true,
+			"side_streets": [24, 42], "street_budget": 10000, "street_length": [200, 400], "seed_spacing": [[50, 70], [65, 95], [85, 120]],
+			"seed_reach": 0.66, "arterial_reach": 0.78, "first_share": 0.6, "cross_rows": 4, "cross_chance": 0.6, "branch_chance": 0.75, "grid_bias": true,
 			"loops": [4, 8], "culdesacs": [3, 7], "plaza": [36, 48], "back_lanes": true,
-			"lots": [140, 260], "commercial": [10, 16], "civic": [3, 5], "civic_pure": 2, "industrial": [3, 5], "rural": [5, 9], "wrecks": [5, 9]
+			"lots": [110, 260], "commercial": [10, 16], "civic": [3, 5], "civic_pure": 2, "industrial": [3, 5], "rural": [5, 9], "wrecks": [5, 9]
 		}
 	},
 	"streets": {

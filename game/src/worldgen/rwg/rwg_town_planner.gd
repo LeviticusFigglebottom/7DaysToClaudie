@@ -114,7 +114,7 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 	counts["industrial"] += _frontage_quota(net, lots, rl, "industrial", int(quota["industrial"]), radius * 0.72, radius + 140.0, radius * 0.92, false)
 	counts["rural"] += _rural(net, lots, rl, int(quota["rural"]), radius, outskirts, lcfg)
 	var fixed: int = lots.lots.size() - (1 if plaza != null else 0)
-	_residential(net, lots, rl, radius)
+	_residential(net, lots, rl, radius, float(kd.get("arterial_reach", 1.0)))
 	var lr: Array = kd.get("lots", [10, 20])
 	var span: int = int(lr[1]) - int(lr[0])
 	var target: int = rl.randi_range(int(lr[0]) + span / 6, int(lr[1]) - span / 8)
@@ -354,12 +354,16 @@ static func _rural(net: Streets, lots: Lots, r: RandomNumberGenerator, quota: in
 
 
 ## Houses on every street side inside the town (inner sizes within 0.6 r, outer beyond), the
-## turning circles' head lots first.
-static func _residential(net: Streets, lots: Lots, r: RandomNumberGenerator, radius: float) -> void:
+## turning circles' head lots first. Along the arterials only out to `arterial_reach` of the radius:
+## past it the town is the streets off them, not a ribbon of houses down the highway (player
+## report 4: towns wider than they are long).
+static func _residential(net: Streets, lots: Lots, r: RandomNumberGenerator, radius: float, arterial_reach: float = 1.0) -> void:
 	var center: Vector2 = net.center
 	var zone_at := func(p: Vector2, _si: int) -> String:
 		var d: float = p.distance_to(center)
 		return "stop" if d > radius else ("inner_residential" if d < radius * 0.6 else "outer_residential")
+	var art_zone_at := func(p: Vector2, si: int) -> String:
+		return "stop" if p.distance_to(center) > radius * arterial_reach else zone_at.call(p, si)
 	for si: int in net.streets.size():
 		var st: Streets.Street = net.streets[si]
 		if st.bulb >= 0:
@@ -371,8 +375,8 @@ static func _residential(net: Streets, lots: Lots, r: RandomNumberGenerator, rad
 			"arterial":
 				var sc: float = st2.line.closest(center).y
 				for side: int in [1, -1]:
-					lots.walk(si2, side, sc + 0.5, st2.length(), zone_at, r, true)
-					lots.walk(si2, side, sc - 0.5, 0.0, zone_at, r, true)
+					lots.walk(si2, side, sc + 0.5, st2.length(), art_zone_at, r, true)
+					lots.walk(si2, side, sc - 0.5, 0.0, art_zone_at, r, true)
 			"street", "lane":
 				for side2: int in [1, -1]:
 					lots.walk(si2, side2, 0.0, st2.length(), zone_at, r, true)

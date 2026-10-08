@@ -624,8 +624,11 @@ func _cross(la: int, sa: float, pb: Vector2, tsi: int, tarc: float) -> int:
 		return -1
 	var pa: Vector2 = streets[la].line.point_at(sa)
 	var dist: float = pa.distance_to(pb)
-	# Cheap refusals before an agent walks it: the far end would come too near a junction on the
-	# street it meets, or a street already runs that way within a block (the row is there).
+	# Cheap refusals before an agent walks it: a sliver, the far end would come too near a junction
+	# on the street it meets, or a street already runs that way within a block (the row is there).
+	if _sliver(la, tsi, pb):
+		_count("cross:sliver")
+		return -1
 	for stn: Array in streets[tsi].stations:
 		var g: float = absf(float(stn[0]) - tarc)
 		if g >= _merge and g < _junction_gap:
@@ -714,9 +717,13 @@ func _cross(la: int, sa: float, pb: Vector2, tsi: int, tarc: float) -> int:
 		hp = bh
 		d = bc
 	_free_joins = false
-	# Only a street that closes a block counts; one that wandered off is no street.
+	# Only a street that closes a block counts; one that wandered off is no street, and one that
+	# turned back to the street its leg leaves, near where it leaves, closes a sliver.
 	if snap.is_empty() or int(snap["street"]) == la or length < 30.0:
 		_count("cross:no_join:" + end_why)
+		return -1
+	if _sliver(la, int(snap["street"]), snap["point"]):
+		_count("cross:sliver")
 		return -1
 	var st := make_street(_class_at(pa), pts)
 	st.gen = streets[la].gen + 1
@@ -738,6 +745,24 @@ func _cross(la: int, sa: float, pb: Vector2, tsi: int, tarc: float) -> int:
 	cross_count += 1
 	_count("cross:ok")
 	return si
+
+
+## Whether a cross street from leg la ending at p on street ts would close a sliver (ts is the
+## street la leaves, or one leaving the same junction, and p is within a block of where it leaves)
+## or cut into the core's frontage on an arterial (the shops' street front).
+func _sliver(la: int, ts: int, p: Vector2) -> bool:
+	if streets[ts].cls == "arterial" and p.distance_to(center) < core:
+		return true
+	var leg: Street = streets[la]
+	var start: Vector2 = leg.line.points[0]
+	if p.distance_to(start) >= 90.0:
+		return false
+	if ts == leg.parent:
+		return true
+	for stn: Array in leg.stations:
+		if float(stn[0]) < 1.5 and junctions[int(stn[1])].streets.has(ts):
+			return true
+	return false
 
 
 ## The arc along street st where it first stands `offset` m from street `from` (NAN: never).
@@ -808,8 +833,10 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 	var side: int = int(sd["side"])
 	# Junctions keep their distance along a street, except a crossing (two streets from one point). A
 	# seed too near another junction slides along its street to the nearest free spot within half
-	# a spacing instead of being dropped (a third of the seeds were).
-	s0 = free_arc(pi, s0, _junction_gap * 0.5)
+	# a spacing instead of being dropped (a third of the seeds were), except on an arterial in the
+	# core: that frontage is the shops', and every junction there costs one.
+	var in_core: bool = par.cls == "arterial" and par.line.point_at(s0).distance_to(center) < core
+	s0 = free_arc(pi, s0, 0.0 if in_core else _junction_gap * 0.5)
 	if is_nan(s0) or s0 < 15.0 or s0 > par.length() - 15.0:
 		_count("seed_junction_gap" if is_nan(s0) else "seed_end")
 		return -1
