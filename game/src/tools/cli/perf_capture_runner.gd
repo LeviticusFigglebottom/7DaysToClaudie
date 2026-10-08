@@ -16,6 +16,10 @@ var _ablate: bool = true
 var _load_only: bool = false
 ## Also measure a Hum night at the town (--hum): the horde's waves on the main thread (TD-003).
 var _hum: bool = false
+## --hum-full: the night's plan is a late game's (gamestage HUM_FULL_STAGE), every wave is due at
+## once and the alive cap is the rule's maximum, so a whole horde is measured, not the first few.
+var _hum_full: bool = false
+const HUM_FULL_STAGE: int = 60
 ## Headless triangle census per view (what each layer submits within its visibility range).
 var _census: bool = false
 var _model_of: Dictionary = {}
@@ -65,12 +69,16 @@ func _ready() -> void:
 				_census = true
 			"--hum":
 				_hum = true
+			"--hum-full":
+				_hum = true
+				_hum_full = true
 	_run.call_deferred()
 
 
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
-	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "perf"})
+	var rules: Dictionary = {"hum_max_alive": 64} if _hum_full else {}
+	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "perf", "rules": rules})
 	while game.get(&"world") == null or not bool(game.world.is_ready):
 		await get_tree().process_frame
 	w = game.world
@@ -162,15 +170,40 @@ func _hum_night() -> Dictionary:
 	var ai: Node = w.get(&"ai")
 	var day: int = game.session.clock.next_horde_day(1)
 	game.session.clock.set_time(day, 21.8)
-	var end: int = Time.get_ticks_msec() + 60000
-	while Time.get_ticks_msec() < end and (ai.hum.members as Dictionary).size() < 20:
+	var want: int = 20
+	if _hum_full:
+		# Wait for the night to start, then hand it a late game's plan with every wave due now.
+		var t_start: int = Time.get_ticks_msec() + 20000
+		while not bool(ai.hum.active) and Time.get_ticks_msec() < t_start:
+			await get_tree().process_frame
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 7
+		var big: Dictionary = game.session.horde.plan(HUM_FULL_STAGE, rng)
+		for wv: Dictionary in big.get("waves", []):
+			wv["start_min"] = 0.0
+		ai.hum.plan = big
+		want = mini(GameRules.current().integer("hum_max_alive"), int(big.get("total", 0)))
+	var end: int = Time.get_ticks_msec() + (120000 if _hum_full else 60000)
+	while Time.get_ticks_msec() < end and _alive(ai) < want:
 		await get_tree().process_frame
 	var m: Dictionary = await _measure(_frames)
 	m["members"] = (ai.hum.members as Dictionary).size()
+	m["alive"] = _alive(ai)
+	m["planned"] = int((ai.hum.plan as Dictionary).get("total", 0))
 	if _ablate:
 		m["modules"] = await _ablate_modules()
 	game.session.clock.set_time(day + 1, 7.0)
 	return m
+
+
+## Hum members still standing.
+func _alive(ai: Node) -> int:
+	var n: int = 0
+	for e: Dictionary in (ai.hum.members as Dictionary).values():
+		var node: Variant = e.get("node")
+		if node != null and is_instance_valid(node) and (node as Enemy).is_alive():
+			n += 1
+	return n
 
 
 ## Each world module's cost: process + physics time with it on minus with it off.
