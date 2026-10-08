@@ -34,6 +34,13 @@ wrist unit with GPS, vitals and a cordon radio — counts down to the next Hum. 
 parachute in at drop sites; the Program's quartermaster trades and issues contracts from
 **Waystation 9**, a relay post built into the Cordon wall where the river leaves the valley.
 
+Your own drop went wrong. Lift 3 crossed the firebreak at first light with you aboard, lost an
+engine over shaking timber and went in short of Larch Hollow. You walked the last mile to the drop
+site with the tether ticking. The new-game intro (ADR-0064) shows only what a convict on that
+flight would know: the Program's deal, the Cordon, the guards' rumours and the drop briefing. Why
+the valley went quiet (the Corvane bore) is never told there; the player pieces it together from
+notes, signs and tethers in the world (docs/LORE_TRAIL.md).
+
 **Tone**: grounded, melancholy dread. A beautiful autumn wilderness with wrongness underneath —
 pale threads on the larches near infested ground, ash effigies at the treeline, a hum in the soil.
 
