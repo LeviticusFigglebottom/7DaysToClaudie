@@ -161,6 +161,12 @@ static func problems(cfg: Dictionary = {}) -> PackedStringArray:
 		var v: Variant = wrist.get(k, null)
 		if not (v is float or v is int) or float(v) <= 0.0 or float(v) > 120.0:
 			out.append("viewmodel: wrist.%s must be a number of degrees in (0, 120]" % k)
+	# ADR-0060: where a wrist rests, inside its range.
+	var comfort: Dictionary = wrist.get("comfort", {})
+	for k: String in WRIST_KEYS:
+		var v: Variant = comfort.get(k, null)
+		if not comfort.is_empty() and (not (v is float or v is int) or float(v) <= 0.0 or float(v) > float(wrist.get(k, 0.0))):
+			out.append("viewmodel: wrist.comfort.%s must be a number of degrees in (0, wrist.%s]" % [k, k])
 	for group: String in ["attacks", "uses"]:
 		var g: Dictionary = c.get(group, {})
 		for name: String in g:

@@ -217,3 +217,48 @@ func test_baked_wrists_stay_in_a_wrists_range() -> void:
 				bad.append("%s %s: wrist bent %.0f°, rolled %.0f°" % [name, sd, worst.x, worst.y])
 	assert_gt(checked, 60, "every action's hands measured")
 	assert_eq(bad, PackedStringArray(), "bend <= %.0f°, roll <= %.0f°" % [bend_max, roll_max])
+
+
+func test_resting_wrists_stay_relaxed() -> void:
+	# ADR-0060: inside the full range every idle settled at 50-60° of flexion and 15-20° of ulnar
+	# deviation, wrists bent hard down and in (player report 4). A hold at rest (its idle, guard
+	# and tether loops) keeps each wrist inside viewmodel.json's comfort range.
+	if not ResourceLoader.exists(ARMS):
+		pending("arms not built (make assets)")
+		return
+	var arms: Node = (load(ARMS) as PackedScene).instantiate()
+	autofree(arms)
+	var anim: AnimationPlayer = arms.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	var skel: Skeleton3D = arms.find_child("Skeleton3D", true, false) as Skeleton3D
+	if anim == null or skel == null or not anim.has_animation(&"fp_empty"):
+		pending("arms predate the hold loops (rebuild fp_arms)")
+		return
+	var cfg: Dictionary = ViewModelHolds.config()
+	var c: Dictionary = (cfg.get("wrist", {}) as Dictionary).get("comfort", {})
+	if c.is_empty():
+		pending("no wrist.comfort in viewmodel.json")
+		return
+	var bend_max: float = maxf(float(c.get("flex", 18)), float(c.get("extend", 30))) + 4.0
+	var roll_max: float = float(c.get("roll", 70)) + 4.0
+	var bad: PackedStringArray = []
+	var checked: int = 0
+	for cls: String in (cfg.get("holds", {}) as Dictionary):
+		for suffix: String in ["", "_guard", "_tether"]:
+			var name := StringName("fp_%s%s" % [cls, suffix])
+			if not anim.has_animation(name):
+				continue
+			var a: Animation = anim.get_animation(name)
+			for sd: String in ["R", "L"]:
+				var tr: int = -1
+				for t: int in a.get_track_count():
+					if a.track_get_type(t) == Animation.TYPE_ROTATION_3D and String(a.track_get_path(t)).ends_with(":hand.%s" % sd):
+						tr = t
+				if tr < 0:
+					continue
+				var rest: Basis = skel.get_bone_rest(skel.find_bone("hand.%s" % sd)).basis
+				var v: Vector2 = _wrist(rest, a.rotation_track_interpolate(tr, 0.0))
+				checked += 1
+				if v.x > bend_max or v.y > roll_max:
+					bad.append("%s %s: wrist bent %.0f°, rolled %.0f°" % [name, sd, v.x, v.y])
+	assert_gt(checked, 30, "every hold's resting hands measured")
+	assert_eq(bad, PackedStringArray(), "at rest: bend <= %.0f°, roll <= %.0f°" % [bend_max, roll_max])

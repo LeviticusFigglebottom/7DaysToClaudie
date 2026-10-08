@@ -3,12 +3,19 @@
   "fov": 58.0,
   "z_clip_scale": 0.04,
   "wrist": {
-    "_doc": "A wrist's range (degrees, ADR-0045): flexion, extension, radial and ulnar deviation (an ellipse between them) and the forearm's roll either way of the thumb-up rest. PoseSolver keeps every baked hand inside it (the elbow swings to line the forearm up first, then the hand turns back about its grip); test_viewmodel_holds checks the baked arms.",
+    "_doc": "A wrist's range (degrees, ADR-0045): flexion, extension, radial and ulnar deviation (an ellipse between them) and the forearm's roll either way of the thumb-up rest. PoseSolver keeps every baked hand inside it (the elbow swings to line the forearm up first, then the hand turns back about its grip); test_viewmodel_holds checks the baked arms. `comfort` (ADR-0060) is where a wrist rests: the same ellipse, smaller and leaning to extension, and the forearm's roll a hand resting on a table has. A hold at rest (idle, guard, tether) is kept inside it; a strike eases from it to the full range as its hand leaves the hold, a use (`relax`, default 0.5) stays at least half way. A hold hand may be written against its own forearm, `wrist`: [flexion, ulnar deviation, roll] in place of dir/back.",
     "flex": 65,
     "extend": 55,
     "radial": 18,
     "ulnar": 32,
-    "roll": 95
+    "roll": 95,
+    "comfort": {
+      "flex": 18,
+      "extend": 30,
+      "radial": 10,
+      "ulnar": 20,
+      "roll": 70
+    }
   },
   "defaults": {
     "_doc": "Hold class of an item without equip.hold: by equip.kind, then (melee) by damage_type, then by category. use_by_category picks the use action for consumables.",
