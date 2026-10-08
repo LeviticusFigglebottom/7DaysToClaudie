@@ -53,6 +53,7 @@ composes it identically.
 | `clearing` | `pos, radius` | no trees/scatter |
 | `spawn` | `id, pos, yaw, props?` | named spawn (e.g. `drop_site`) |
 | `frontier` | `id, pos, kind: road|river|cave|trail|sea, leads_to, note` | where an expansion connects (see below) |
+| `cave` | `id, style: grotto|shelter, mouth:[x,z], heading: "uphill"|deg, search?, length?:[a,b], seed?` | an organic cave carved into the SDF volume (ADR-0056, `data/config/caves.json` styles). Planned at load from the region's pristine heights: the mouth settles on a slope (≥ 18°, a shelter ≥ 30°) within `search` (12) m of `mouth` and runs into the hill; the shape comes from `seed` or `CaveSites.shape_seed(world id, cave id)`. A cave that doesn't fit (no slope, too little cover, < 32 m from the region border) is left out: check it with `CaveSites.from_region`. Trees and undergrowth keep off its mouth's apron. The composer ignores it: the heights stay as they are (the region file's hash still changes) |
 | `bloom` | `id, at:[x,z]` or `points:[[x,z]...]` or `poi:<placement id>, offset:[x,z]`; `radius, strength (0..1), edge (0..1)` | where the Bloom has taken the ground: a patch, a seep along a line, or a patch in a POI's own frame (ADR-0025; `data/config/bloom.json` shapes the edges and holds per-POI defaults). Keep the start area clean |
 
 ## Borders
@@ -91,7 +92,8 @@ world.json        same keys as the main map's, plus:
                     biome_map      {ids, step: 64, cols, rows, rows_data: ["0012..", ...]} base biomes
                     generator      {version, settings, towns, places, drop_site, timings_ms, warnings}
                     rivers[].level / width   N values spaced evenly along the river (Polyline2.value_at)
-regions/<cell>_<name>/region.json   framework / poi / path / clearing / spawn / bloom features
+regions/<cell>_<name>/region.json   framework / poi / path / clearing / spawn / bloom / cave features
+                  (caves: RwgGenerator._caves, tuning.caves, last from their own stream)
 frameworks.json   the towns: generated frameworks (lots, streets, fixtures), registered with
                   ContentDB before the world loads
 map.png, meta.json   the map (RwgMap) and the settings key the folder was made from
