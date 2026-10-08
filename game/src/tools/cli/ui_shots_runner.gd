@@ -124,5 +124,5 @@ func _shot_manual() -> Node:
 	var m := FieldManual.new()
 	layer.add_child(m)
 	await _settle(1)
-	m.open("recipes")
+	m.open("build")
 	return layer

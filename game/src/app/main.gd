@@ -25,6 +25,7 @@ func _ready() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if _handle_cli(args):
 		return
+	_style_menu()
 	_build_menu()
 	_show_notices()
 
@@ -87,6 +88,50 @@ static func _arg_value(args: PackedStringArray, key: String, default: String) ->
 	return args[i + 1] if i >= 0 and i + 1 < args.size() else default
 
 
+## The menu in the game's own style (ADR-0063): the kit theme, the title in the typewriter face,
+## the line under it in the margin hand, entries down the left over a dark wash so they read on
+## whatever the backdrop shows.
+func _style_menu() -> void:
+	theme = UiStyle.kit_theme()
+	var wash := TextureRect.new()
+	wash.name = "Wash"
+	var g := Gradient.new()
+	g.set_color(0, Color(0.02, 0.022, 0.02, 0.92))
+	g.set_color(1, Color(0.02, 0.022, 0.02, 0.0))
+	g.add_point(0.55, Color(0.02, 0.022, 0.02, 0.6))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.width = 256
+	gt.height = 4
+	wash.texture = gt
+	wash.stretch_mode = TextureRect.STRETCH_SCALE
+	wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(wash)
+	move_child(wash, 1)
+	wash.anchor_right = 0.62
+	wash.anchor_bottom = 1.0
+	wash.offset_right = 0
+	wash.offset_bottom = 0
+	var title: Label = $Title
+	title.add_theme_font_override(&"font", UiStyle.heading_font())
+	title.add_theme_font_size_override(&"font_size", 104)
+	title.add_theme_color_override(&"font_color", UiStyle.KIT_TEXT)
+	title.add_theme_color_override(&"font_shadow_color", Color(0, 0, 0, 0.6))
+	title.add_theme_constant_override(&"shadow_offset_y", 3)
+	title.offset_top = 64
+	title.offset_bottom = 190
+	var sub: Label = $Subtitle
+	sub.add_theme_font_override(&"font", UiStyle.hand_font())
+	sub.add_theme_font_size_override(&"font_size", 34)
+	sub.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
+	sub.offset_top = 182
+	sub.offset_bottom = 230
+	_list.offset_top = 290
+	_list.offset_right = 640
+	_list.add_theme_constant_override(&"separation", 2)
+	_status.theme_type_variation = &"DimLabel"
+
+
 func _build_menu() -> void:
 	for c: Node in _list.get_children():
 		c.queue_free()
@@ -94,9 +139,9 @@ func _build_menu() -> void:
 	if not slots.is_empty():
 		_add_button("Continue (Day %d)" % int(slots[0].get("day", 1)), _load.bind(str(slots[0]["slot"])))
 	_add_button("New Game…", _open_new_game)
-	var demo: Button = _add_button("New Game — Vertical Slice demo (seed %d, Hum on night 3)" % SLICE_DEMO_SEED,
+	var demo: Button = _add_button("Vertical Slice demo",
 		func() -> void: Game.start_new_game({"game_mode": "slice", "seed": SLICE_DEMO_SEED}))
-	demo.tooltip_text = "The curated demo run: the same run seed every time, so the same buildings, loot and Hum as the QA screenshots. New Game… rolls a fresh run."
+	demo.tooltip_text = ("The curated demo run (seed %d, the Hum on night 3): the same run seed every time," % SLICE_DEMO_SEED) + " so the same buildings, loot and Hum as the QA screenshots. New Game… rolls a fresh run."
 	_add_button("Random World…", _open_new_game.bind(true))
 	for s: Dictionary in slots:
 		var label: String = "Load %s — Day %d" % [str(s.get("slot", "?")).capitalize(), int(s.get("day", 1))]
@@ -153,16 +198,15 @@ func _show_notices() -> void:
 		return
 	var panel := PanelContainer.new()
 	panel.name = "Notices"
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.16, 0.1, 0.06, 0.92)
-	sb.border_color = Color(0.85, 0.6, 0.25)
-	sb.set_border_width_all(2)
-	sb.set_content_margin_all(16)
+	var sb: StyleBoxFlat = UiStyle.panel_box(false)
+	sb.border_color = UiStyle.RUST_BRIGHT
+	sb.set_content_margin_all(18)
 	panel.add_theme_stylebox_override(&"panel", sb)
 	var label := Label.new()
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size = Vector2(520, 0)
-	label.add_theme_color_override(&"font_color", Color(0.95, 0.85, 0.65))
+	label.add_theme_color_override(&"font_color", Color(0.95, 0.86, 0.68))
+	label.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE - 2)
 	label.text = "\n\n".join(notices)
 	panel.add_child(label)
 	add_child(panel)
@@ -214,7 +258,9 @@ func _open_options() -> void:
 func _add_button(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(420, 44)
+	b.theme_type_variation = &"MenuEntry"
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.custom_minimum_size = Vector2(520, 50)
 	b.pressed.connect(cb)
 	_list.add_child(b)
 	return b

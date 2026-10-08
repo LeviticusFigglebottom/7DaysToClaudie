@@ -67,9 +67,8 @@ func _init() -> void:
 	v.add_child(_detail)
 	_make = Button.new()
 	_make.text = "Make"
-	_make.custom_minimum_size = Vector2(0, 40)
-	_make.add_theme_font_override(&"font", UiStyle.heading_font())
-	_make.add_theme_font_size_override(&"font_size", 22)
+	_make.custom_minimum_size = Vector2(0, 44)
+	_make.theme_type_variation = &"PrimaryButton"
 	_make.pressed.connect(func() -> void: _request(_selected, Input.is_key_pressed(KEY_SHIFT)))
 	v.add_child(_make)
 

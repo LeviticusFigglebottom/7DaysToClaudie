@@ -139,6 +139,12 @@ static func _build(paper: bool) -> Theme:
 		t.set_color(&"font_focus_color", type, fg)
 		t.set_color(&"font_disabled_color", type, dim)
 		t.set_color(&"icon_disabled_color", type, Color(dim, 0.6))
+	# Check boxes: drawn here, so an unchecked box shows on both surfaces (Godot's is dark grey).
+	for type5: StringName in [&"CheckBox", &"CheckButton"]:
+		t.set_icon(&"unchecked", type5, check_icon(false, fg))
+		t.set_icon(&"checked", type5, check_icon(true, fg))
+		t.set_icon(&"unchecked_disabled", type5, check_icon(false, dim))
+		t.set_icon(&"checked_disabled", type5, check_icon(true, dim))
 	# CheckBox / CheckButton draw no frame of their own.
 	for type2: StringName in [&"CheckBox", &"CheckButton"]:
 		t.set_stylebox(&"normal", type2, _box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 4))
@@ -235,6 +241,19 @@ static func _build(paper: bool) -> Theme:
 	lp.border_color = hover
 	t.set_stylebox(&"pressed", &"ListButton", lp)
 	t.set_stylebox(&"hover_pressed", &"ListButton", lp)
+	# The one call to action on a screen (Start, Make): rust with paper type.
+	t.add_type(&"PrimaryButton")
+	t.set_type_variation(&"PrimaryButton", &"Button")
+	t.set_font(&"font", &"PrimaryButton", heading_font())
+	t.set_font_size(&"font_size", &"PrimaryButton", 22)
+	t.set_stylebox(&"normal", &"PrimaryButton", _box(RUST, RUST.darkened(0.3), 1, 8))
+	t.set_stylebox(&"hover", &"PrimaryButton", _box(RUST.lightened(0.12), RUST_BRIGHT, 1, 8))
+	t.set_stylebox(&"pressed", &"PrimaryButton", _box(RUST.darkened(0.15), RUST_BRIGHT, 2, 8))
+	t.set_stylebox(&"hover_pressed", &"PrimaryButton", _box(RUST.darkened(0.15), RUST_BRIGHT, 2, 8))
+	t.set_stylebox(&"disabled", &"PrimaryButton", _box(Color(0, 0, 0, 0), Color(dim, 0.5), 1, 8))
+	for c: StringName in [&"font_color", &"font_hover_color", &"font_pressed_color", &"font_hover_pressed_color", &"font_focus_color"]:
+		t.set_color(c, &"PrimaryButton", PAPER.lightened(0.3))
+	t.set_color(&"font_disabled_color", &"PrimaryButton", dim)
 	# The menu's big entries.
 	t.add_type(&"MenuEntry")
 	t.set_type_variation(&"MenuEntry", &"Button")
@@ -270,6 +289,30 @@ static func panel_box(paper: bool) -> StyleBoxFlat:
 	sb.shadow_size = 12
 	sb.shadow_offset = Vector2(0, 4)
 	return sb
+
+
+## A 20 px check box icon: an inked square, with a tick when checked.
+static func check_icon(checked: bool, c: Color) -> ImageTexture:
+	var n: int = 20
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for i: int in n:
+		for w: int in 2:
+			img.set_pixel(i, w, c)
+			img.set_pixel(i, n - 1 - w, c)
+			img.set_pixel(w, i, c)
+			img.set_pixel(n - 1 - w, i, c)
+	if checked:
+		# A tick from (5, 10) down to (8, 14), then up to (15, 5), three pixels thick.
+		for k: int in 40:
+			var t: float = float(k) / 39.0
+			var p: Vector2 = Vector2(4.5, 10.0).lerp(Vector2(8.0, 14.5), t * 2.0) if t < 0.5 else Vector2(8.0, 14.5).lerp(Vector2(15.5, 4.5), (t - 0.5) * 2.0)
+			for dx: int in range(-1, 2):
+				for dy: int in range(-1, 1):
+					var x: int = clampi(int(p.x) + dx, 0, n - 1)
+					var y: int = clampi(int(p.y) + dy, 0, n - 1)
+					img.set_pixel(x, y, c)
+	return ImageTexture.create_from_image(img)
 
 
 static func _box(bg: Color, border: Color, width: int, margin: int) -> StyleBoxFlat:
