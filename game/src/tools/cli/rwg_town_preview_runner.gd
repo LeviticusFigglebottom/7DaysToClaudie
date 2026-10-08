@@ -32,6 +32,8 @@ func _ready() -> void:
 	var lands: PackedStringArray = _arg(a, "--land", "rolling,hilly").split(",")
 	var seeds: PackedStringArray = _arg(a, "--seeds", "1,2,3").split(",")
 	px = int(_arg(a, "--px", "1400"))
+	# --draw all | core | none: none prints the counts only (fast, for tuning).
+	var draw_mode: String = _arg(a, "--draw", "all")
 	DirAccess.make_dir_recursive_absolute(out)
 	var tuning: Dictionary = Planner.default_tuning()
 	var errs: PackedStringArray = Planner.config_errors(tuning)
@@ -48,14 +50,18 @@ func _ready() -> void:
 				var p: Dictionary = Planner.plan(case["site"], case["world"], case["arterials"], tuning, seed)
 				var ms: float = (Time.get_ticks_usec() - t0) / 1000.0
 				var st: Dictionary = p["stats"]
-				print("[towns] %-7s %-7s seed %-3d r %3d: %3d lots %s | side %d loops %d cul %d back %d | %d m streets, %d blocks, %d fixtures | %.0f ms (arterials %.0f ms)" % [kind, land, seed,
-					int(case["site"]["radius"]), int(st["lots"]), JSON.stringify(st["zones"]), int(st["side_streets"]), int(st["loops"]), int(st["culdesacs"]),
+				print("[towns] %-7s %-7s seed %-3d r %3d: %3d lots %s | side %d cross %d loops %d cul %d back %d | %d m streets, %d blocks, %d fixtures | %.0f ms (arterials %.0f ms)" % [kind, land, seed,
+					int(case["site"]["radius"]), int(st["lots"]), JSON.stringify(st["zones"]), int(st["side_streets"]), int(st.get("cross_streets", 0)), int(st["loops"]), int(st["culdesacs"]),
 					int(st["back_lanes"]), int(st["street_length"]), (p["blocks"] as Array).size(), (p["fixtures"] as Array).size(), ms, float(case["ms"])])
 				print("         parts %s" % JSON.stringify(st["ms_parts"]))
+				print("         why %s" % JSON.stringify(st.get("why", {})))
+				if draw_mode == "none":
+					continue
 				var base: String = out.path_join("%s_%s_%d" % [kind, land, seed])
 				var c := Vector2(float(p["center"][0]), float(p["center"][1]))
 				var r: float = float(p["radius"])
-				draw(p, case, Rect2(c - Vector2.ONE * (r + 300.0), Vector2.ONE * (r + 300.0) * 2.0)).save_png(base + ".png")
+				if draw_mode == "all":
+					draw(p, case, Rect2(c - Vector2.ONE * (r + 300.0), Vector2.ONE * (r + 300.0) * 2.0)).save_png(base + ".png")
 				draw(p, case, Rect2(c - Vector2.ONE * (r + 30.0), Vector2.ONE * (r + 30.0) * 2.0)).save_png(base + "_core.png")
 	get_tree().quit(0)
 

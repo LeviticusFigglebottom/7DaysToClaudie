@@ -130,6 +130,8 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 	var t_end: int = Time.get_ticks_usec()
 	stats = _stats(net, lots, quota, target, candidates)
 	stats["ground_calls"] = ground.calls
+	stats["blocks"] = blocks.size()
+	stats["why"] = net.why
 	stats["ms"] = (t_end - t0) / 1000.0
 	stats["ms_parts"] = {"setup": (t_net - t0) / 1000.0, "streets": (t_lots - t_net) / 1000.0, "lots": (t_parcels - t_lots) / 1000.0,
 		"parcels": (t_fix - t_parcels) / 1000.0, "fixtures": (t_blocks - t_fix) / 1000.0, "blocks": (t_end - t_blocks) / 1000.0}
@@ -648,7 +650,7 @@ static func _stats(net: Streets, lots: Lots, quota: Dictionary, target: int, can
 		if st.gen >= 1 and st.cls != "bulb":
 			length += st.length()
 	return {"lots": n, "zones": zones, "rings": rings, "quota": quota, "lot_target": target, "lot_candidates": candidates, "plaza": lots.lots.any(func(l: Lots.Lot) -> bool: return l.zone == "plaza"),
-		"side_streets": net.side_count, "loops": net.loops, "culdesacs": cul, "back_lanes": back, "street_length": snappedf(length, 1.0),
+		"side_streets": net.side_count, "cross_streets": net.cross_count, "loops": net.loops, "culdesacs": cul, "back_lanes": back, "street_length": snappedf(length, 1.0),
 		"junctions": net.junctions.size()}
 
 

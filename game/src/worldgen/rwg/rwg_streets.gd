@@ -147,6 +147,11 @@ class Street:
 	## 0 arterial, 1 side street, 2 second-generation branch, 3 back lane / bulb.
 	var gen: int = 1
 	var parent: int = -1
+	## The side of its parent it leaves (+1 / -1; 0: none) and the arc there.
+	var side: int = 0
+	var from_s: float = 0.0
+	## A cross street: grown between two neighbouring streets leaving the same side of a parent.
+	var cross: bool = false
 	var dead_end: bool = false
 	var snapped: bool = false
 	var at_edge: bool = false
@@ -179,8 +184,12 @@ var obstacles: Array[PackedVector2Array] = []
 ## Loops closed by agents (T-junctions onto other streets) and side streets grown.
 var loops: int = 0
 var side_count: int = 0
+## Cross streets grown (blocks closed between neighbouring side streets).
+var cross_count: int = 0
 ## Total length of the side streets (m).
 var length_total: float = 0.0
+## Why streets ended or seeds came to nothing, counted by reason (for tuning: the planner's stats).
+var why: Dictionary = {}
 var cfg: Dictionary = {}
 var kd: Dictionary = {}
 
@@ -220,6 +229,14 @@ var _merge: float = 14.0
 var _snap_bonus: float = 0.6
 var _budget: float = 1600.0
 var _max_loops: int = 4
+# The reason the last refused step or probe gave (see `why`).
+var _why: String = ""
+# Streets that have sent their branches, leg pairs a cross street was tried between, and whether
+# joins are allowed past the class's loop count (cross streets: they are the blocks).
+var _branched: Dictionary = {}
+var _crossed: Dictionary = {}
+var _cross_at: Dictionary = {}
+var _free_joins: bool = false
 
 
 ## Prepares an empty network around a town: `reach` is the half size of the area the index covers.
@@ -422,51 +439,315 @@ func arterial_junctions() -> void:
 
 # --- Growth --------------------------------------------------------------------------------------
 
-## Grows the side streets (§3.5): seeds along the arterials, nearest the centre first, each grown to
-## its end by an agent; second-generation branches join the queue as their parents finish. Stops at
-## the class's side-street count or street budget. Then closes loops while there are too few,
-## and gives long dead ends their cul-de-sac bulbs.
+## Grows the street network (§3.5) in three passes. First the side streets: seeds along the
+## arterials, nearest the centre first, each grown to its end by an agent, up to `first_share` of the
+## class's side-street count. Then cross streets join neighbouring side streets leaving the same side
+## of the main street a block or two back (`add_cross_streets`): real blocks instead of a comb.
+## Then branches off the side streets and outwards off the cross streets (and the arterial seeds
+## left) take the count to its target, and a second cross pass joins neighbouring branches. Stops at
+## the street budget. Then closes loops while there are too few (dead ends reaching for a
+## neighbour); the planner then gives long dead ends their cul-de-sac bulbs.
 func grow(r: RandomNumberGenerator) -> void:
 	var want: Array = kd.get("side_streets", [0, 2])
 	var target: int = r.randi_range(int(want[0]), int(want[1]))
 	var queue: Array[Dictionary] = _arterial_seeds(r)
 	queue.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["prio"]) < float(b["prio"]))
-	var branch_chance: float = float(kd.get("branch_chance", 0.0))
-	var bl: Array = cfg.get("branch_length", [60.0, 140.0])
-	var ba: Array = cfg.get("branch_angle", [75.0, 105.0])
-	while not queue.is_empty() and side_count < target and length_total < _budget - _min_len:
-		var sd: Dictionary = queue.pop_front()
-		var si: int = grow_one(sd, r)
-		if si < 0:
-			continue
-		var st: Street = streets[si]
-		# Branches off branches too (generator VERSION 12, player report 4: towns read as one road
-		# with a comb of dead ends), half as often a generation further out.
-		if st.gen > 2 or st.length() < (100.0 if st.gen == 1 else 80.0) or r.randf() >= branch_chance * (1.0 if st.gen == 1 else 0.5):
-			continue
-		# A side street sends a branch every ~70-90 m, alternating sides (a comb off the comb: blocks,
-		# once the loops close), a branch one more.
-		var n_br: int = 1 if st.gen > 1 else clampi(int(st.length() / r.randf_range(70.0, 90.0)), 1, 4)
-		var br_side: int = 1 if r.randf() < 0.5 else -1
-		for b: int in n_br:
-			var sb: float = r.randf_range(40.0, st.length() - 40.0) if n_br == 1 else (st.length() * (b + 0.5) / n_br + r.randf_range(-12.0, 12.0))
-			var bp: Vector2 = st.line.point_at(sb)
-			br_side = -br_side
-			var nb: Dictionary = {"from": si, "s": sb, "side": br_side, "angle": r.randf_range(float(ba[0]), float(ba[1])),
-				"gen": st.gen + 1, "budget": r.randf_range(float(bl[0]), float(bl[1])), "prio": bp.distance_to(center) / radius + r.randf_range(0.1, 0.5), "cls": _class_at(bp),
-				"seek": true}
-			var at: int = queue.size()
-			for qi: int in queue.size():
-				if float(queue[qi]["prio"]) > float(nb["prio"]):
-					at = qi
-					break
-			queue.insert(at, nb)
+	var first: int = maxi(1, int(ceil(target * float(kd.get("first_share", 1.0)))))
+	_grow_queue(queue, first, r)
+	add_cross_streets(r)
+	# Branches: off every side street, and outwards off the cross streets, so the network keeps
+	# growing past the first row of blocks; the arterial seeds left join them. While the count is
+	# short when the seeds run out (one main street gives few), every street branches again, by
+	# chance no longer, and the new streets are joined in turn.
+	var branch_q: Array[Dictionary] = queue
+	for round_i: int in 3:
+		for si: int in streets.size():
+			_branch_seeds(si, r, branch_q, round_i)
+		branch_q.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["prio"]) < float(b["prio"]))
+		var before: int = side_count
+		_grow_queue(branch_q, target, r)
+		if side_count > before:
+			add_cross_streets(r)
+		if side_count >= target or length_total >= _budget - _min_len:
+			break
+	why["target"] = target
+	why["queue_left"] = branch_q.size()
 	# Close loops up to a draw from the class's range, not just its minimum: dead ends that reach for
 	# a neighbour make blocks (VERSION 12).
 	var lp: Array = kd.get("loops", [0, 0])
 	var want_loops: int = r.randi_range(int(lp[0]), int(lp[1]))
 	if loops < want_loops:
 		_connect_dead_ends(want_loops)
+
+
+## Grows the seeds of `queue` in order until `target` side streets (or the budget); a branch grown
+## sends its own branches into the queue (by priority) as it finishes. First-generation side streets
+## branch only after the cross streets have joined them.
+func _grow_queue(queue: Array[Dictionary], target: int, r: RandomNumberGenerator) -> void:
+	while not queue.is_empty() and side_count < target and length_total < _budget - _min_len:
+		var sd: Dictionary = queue.pop_front()
+		var si: int = grow_one(sd, r)
+		if si < 0 or int(sd.get("gen", 1)) == 1:
+			continue
+		var more: Array[Dictionary] = []
+		_branch_seeds(si, r, more, 0)
+		for nb: Dictionary in more:
+			var at: int = queue.size()
+			for qi: int in queue.size():
+				if float(queue[qi]["prio"]) > float(nb["prio"]):
+					at = qi
+					break
+			queue.insert(at, nb)
+
+
+## Branch seeds off street si into `out`. A side street sends a branch every ~70-90 m, alternating
+## sides (a comb off the comb: blocks, once the cross streets join them), a branch one more, half as
+## often a generation further out; a cross street sends its branches outwards only (away from the
+## centre), so the grid grows away from the main street. Each street once a round:
+## round 0 by `branch_chance`, the refill rounds (`round_i` > 0) always, a generation further out.
+func _branch_seeds(si: int, r: RandomNumberGenerator, out: Array[Dictionary], round_i: int) -> void:
+	var st: Street = streets[si]
+	if st.gen < 1 or st.cls in ["bulb", "back_lane"] or int(_branched.get(si, -1)) >= round_i:
+		return
+	_branched[si] = round_i
+	var branch_chance: float = float(kd.get("branch_chance", 0.0))
+	var bl: Array = cfg.get("branch_length", [60.0, 140.0])
+	var ba: Array = cfg.get("branch_angle", [75.0, 105.0])
+	var min_len: float = 100.0 if st.gen == 1 or st.cross else 80.0
+	if st.gen > 2 + mini(round_i, 1) or st.length() < min_len or (round_i == 0 and r.randf() >= branch_chance * (1.0 if st.gen == 1 or st.cross else 0.5)):
+		return
+	var n_br: int = 1 if st.gen > 1 and not st.cross else clampi(int(st.length() / r.randf_range(70.0, 90.0)), 1, 4)
+	var br_side: int = 1 if r.randf() < 0.5 else -1
+	var outward: int = 0
+	if st.cross:
+		# The side facing away from the centre.
+		var mid: Vector2 = st.line.point_at(st.length() * 0.5)
+		var t: Vector2 = st.line.tangent_at(st.length() * 0.5)
+		outward = 1 if Vector2(-t.y, t.x).dot(mid - center) > 0.0 else -1
+	for b: int in n_br:
+		var sb: float = r.randf_range(40.0, st.length() - 40.0) if n_br == 1 else (st.length() * (b + 0.5) / n_br + r.randf_range(-12.0, 12.0))
+		var bp: Vector2 = st.line.point_at(sb)
+		br_side = -br_side
+		out.append({"from": si, "s": sb, "side": outward if outward != 0 else br_side, "angle": r.randf_range(float(ba[0]), float(ba[1])),
+			"gen": st.gen + 1, "budget": r.randf_range(float(bl[0]), float(bl[1])), "prio": bp.distance_to(center) / radius + r.randf_range(0.1, 0.5), "cls": _class_at(bp),
+			"seek": true})
+
+
+# --- Cross streets -------------------------------------------------------------------------------
+
+## Cross streets (player report 4: towns read as one road with a comb of dead ends). Every side
+## street, branch and cross street is walked from its start a block depth at a time (`cross_depth`
+## m by ring: room for a lot facing each street, back to back; the first behind an arterial in the
+## core deeper, for the shops), up to `cross_rows` times a side; at each stop a ray along its normal
+## looks for the next street over (`cross_gap` m away, met at 35 degrees or more), and an agent from
+## there pulled towards it, bending with the land, joins it at a T: a closed block. Streets run
+## parallel a block apart instead of ending side by side. Stops already tried are skipped, so the
+## pass runs again after more branches have grown.
+func add_cross_streets(r: RandomNumberGenerator) -> void:
+	var rows_max: int = int(kd.get("cross_rows", 0))
+	if rows_max <= 0:
+		return
+	var depths: Array = cfg.get("cross_depth", [[78.0, 88.0], [66.0, 76.0], [76.0, 90.0]])
+	var gap: Array = cfg.get("cross_gap", [45.0, 260.0])
+	# Nearest the centre first: the blocks fill out from the middle.
+	var order: Array = []
+	for si: int in streets.size():
+		var st: Street = streets[si]
+		if st.gen >= 1 and not st.cls in ["bulb", "back_lane"]:
+			order.append([st.line.points[0].distance_to(center), si])
+	order.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]) or (float(a[0]) == float(b[0]) and int(a[1]) < int(b[1])))
+	for od: Array in order:
+		var la: int = int(od[1])
+		var leg: Street = streets[la]
+		var behind_art: bool = leg.parent >= 0 and streets[leg.parent].cls == "arterial"
+		for side: int in [1, -1]:
+			var key: String = "%d:%d" % [la, side]
+			var done: int = int(_crossed.get(key, 0))
+			if done < 0 or done >= rows_max:
+				continue
+			# Arc of the next stop: past the last cross street this side, else a first depth.
+			var s: float = float(_cross_at.get(key, 0.0))
+			var made: int = done
+			while made < rows_max:
+				var p: Vector2 = leg.line.point_at(minf(leg.length(), s + 40.0))
+				var ring: int = 1
+				if s == 0.0 and behind_art and p.distance_to(center) < core:
+					ring = 0
+				elif p.distance_to(center) >= radius * 0.6:
+					ring = 2
+				s += r.randf_range(float(depths[ring][0]), float(depths[ring][1]))
+				if s > leg.length() - 2.0 or leg.line.point_at(s).distance_to(center) > radius * 0.95:
+					made = -1
+					break
+				_cross_at[key] = s
+				var target: Variant = _ray_hit(la, s, side, float(gap[0]), float(gap[1]))
+				if target == null:
+					_count("cross:no_target")
+					continue
+				if _cross(la, s, target[0], int(target[1]), float(target[2])) >= 0:
+					made += 1
+			_crossed[key] = made
+
+
+## Where a ray from street si at arc s along its normal on `side` first meets another street
+## (between lo and hi m, at 35 degrees or more): [point, street, arc], or null.
+func _ray_hit(si: int, s: float, side: int, lo: float, hi: float) -> Variant:
+	var st: Street = streets[si]
+	var a: Vector2 = st.line.point_at(s)
+	var t: Vector2 = st.line.tangent_at(s)
+	var n: Vector2 = Vector2(-t.y, t.x) * side
+	var b: Vector2 = a + n * hi
+	var best: float = INF
+	var hit: Variant = null
+	var mid: Vector2 = (a + b) * 0.5
+	for sid: int in near(mid, hi * 0.5 + 2.0):
+		var so: int = seg_st[sid]
+		if so == si or so < 0 or streets[so].cls in ["bulb"]:
+			continue
+		var x: Variant = Geometry2D.segment_intersects_segment(a, b, seg_a[sid], seg_b[sid])
+		if x == null:
+			continue
+		var dx: float = a.distance_to(x)
+		if dx < best:
+			best = dx
+			var u: Vector2 = (seg_b[sid] - seg_a[sid]).normalized()
+			hit = [x, so, seg_s[sid] + seg_a[sid].distance_to(x)] if dx >= lo and rad_to_deg(acos(clampf(absf(n.dot(u)), 0.0, 1.0))) >= _snap_angle else null
+	return hit
+
+
+## One cross street from street la at arc sa towards point pb (on street tsi at arc tarc): its
+## index or -1.
+func _cross(la: int, sa: float, pb: Vector2, tsi: int, tarc: float) -> int:
+	sa = free_arc(la, sa, 12.0)
+	if is_nan(sa) or sa < 20.0 or sa > streets[la].length() - 2.0:
+		_count("cross:no_room")
+		return -1
+	var pa: Vector2 = streets[la].line.point_at(sa)
+	var dist: float = pa.distance_to(pb)
+	# Cheap refusals before an agent walks it: the far end would come too near a junction on the
+	# street it meets, or a street already runs that way within a block (the row is there).
+	for stn: Array in streets[tsi].stations:
+		var g: float = absf(float(stn[0]) - tarc)
+		if g >= _merge and g < _junction_gap:
+			_count("cross:pre_junction")
+			return -1
+	var u: Vector2 = (pb - pa) / maxf(dist, 0.01)
+	var mid: Vector2 = (pa + pb) * 0.5
+	for sid: int in near(mid, _parallel):
+		var so: int = seg_st[sid]
+		if so < 0 or so == la or so == tsi:
+			continue
+		var ab: Vector2 = seg_b[sid] - seg_a[sid]
+		if ab.length_squared() < 1.0e-6 or rad_to_deg(acos(clampf(absf(u.dot(ab.normalized())), 0.0, 1.0))) >= _parallel_angle:
+			continue
+		# Beside the way (not a street carrying on in line with it past either end).
+		var v: Vector2 = Geometry2D.get_closest_point_to_segment(mid, seg_a[sid], seg_b[sid]) - mid
+		if absf(v.dot(u)) < dist * 0.4 and absf(v.cross(u)) < _parallel * 0.6:
+			_count("cross:pre_parallel")
+			return -1
+	var t: Vector2 = streets[la].line.tangent_at(sa)
+	var side: int = 1 if t.cross(pb - pa) > 0.0 else -1
+	# Leave square-ish towards the other leg: at most 30 degrees off the leg's normal.
+	var nrm: Vector2 = Vector2(-t.y, t.x) * side
+	var d: Vector2 = (pb - pa).normalized()
+	var off_ang: float = nrm.angle_to(d)
+	if absf(off_ang) > deg_to_rad(30.0):
+		d = nrm.rotated(signf(off_ang) * deg_to_rad(30.0))
+	var ignore: Dictionary = {la: true}
+	for stn: Array in streets[la].stations:
+		if absf(float(stn[0]) - sa) < 1.5:
+			for so: int in junctions[int(stn[1])].streets:
+				ignore[so] = true
+	var pts := PackedVector2Array([pa])
+	var p: Vector2 = pa
+	var hp: float = ground.h(pa)
+	var length: float = 0.0
+	var snap: Dictionary = {}
+	var budget: float = dist * 1.6 + 24.0
+	var look: float = maxf(_parallel, _crowd_reach) + _step + 2.0
+	var end_why: String = "budget"
+	_free_joins = true
+	while length < budget:
+		var to_b: Vector2 = (pb - p).normalized()
+		var near_ids: PackedInt32Array = near(p, look)
+		var best: float = INF
+		var bq := Vector2.ZERO
+		var bc := Vector2.ZERO
+		var bh: float = 0.0
+		var bsnap: Dictionary = {}
+		var refused: Dictionary = {}
+		for turn: float in TURNS:
+			var c: Vector2 = d.rotated(deg_to_rad(turn))
+			var q: Vector2 = p + c * _step
+			if q.distance_to(center) > radius * 1.05:
+				refused["radius"] = true
+				continue
+			var hq: float = ground.h(q)
+			var g: float = absf(hq - hp) / _step
+			if g > _max_grade or ground.water(q) < _water_stop or _blocked(p, q) or _curls(pts, q):
+				refused["land"] = true
+				continue
+			var pr: Array = _probe(p, q, c, near_ids, ignore, length, hp)
+			if not bool(pr[0]):
+				refused[_why] = true
+				continue
+			var cost: float = _grade_k * g + _turn_k * absf(turn) / 12.0 + 1.2 * rad_to_deg(acos(clampf(c.dot(to_b), -1.0, 1.0))) / 12.0 + float(pr[2])
+			if not (pr[1] as Dictionary).is_empty():
+				cost -= 2.0
+			if cost < best:
+				best = cost
+				bq = q
+				bc = c
+				bh = hq
+				bsnap = pr[1]
+		if best == INF:
+			end_why = ",".join(PackedStringArray(refused.keys()))
+			break
+		if not bsnap.is_empty():
+			snap = bsnap
+			length += p.distance_to(bsnap["point"] as Vector2)
+			pts.append(bsnap["point"] as Vector2)
+			break
+		pts.append(bq)
+		length += _step
+		p = bq
+		hp = bh
+		d = bc
+	_free_joins = false
+	# Only a street that closes a block counts; one that wandered off is no street.
+	if snap.is_empty() or int(snap["street"]) == la or length < 30.0:
+		_count("cross:no_join:" + end_why)
+		return -1
+	var st := make_street(_class_at(pa), pts)
+	st.gen = streets[la].gen + 1
+	st.parent = la
+	st.cross = true
+	st.side = side
+	st.from_s = sa
+	var si: int = add(st)
+	st.id = "st_%d" % si
+	var j0: int = junction_at(pa, 1.5)
+	link(j0, la, sa, side_bit(side))
+	link(j0, si, 0.0, 3)
+	var ts: int = int(snap["street"])
+	var ja: int = int(snap["junction"]) if int(snap["junction"]) >= 0 else junction_at(snap["point"], 1.0)
+	var tt: Vector2 = streets[ts].line.tangent_at(float(snap["arc"]))
+	link(ja, ts, float(snap["arc"]), side_bit(1 if tt.cross(pts[pts.size() - 2] - (snap["point"] as Vector2)) >= 0.0 else -1))
+	link(ja, si, st.length(), 3)
+	length_total += st.length()
+	cross_count += 1
+	_count("cross:ok")
+	return si
+
+
+## The arc along street st where it first stands `offset` m from street `from` (NAN: never).
+func _arc_at_offset(st: Street, from: Street, offset: float) -> float:
+	var s: float = 0.0
+	while s <= st.length():
+		if from.line.closest(st.line.point_at(s)).x >= offset:
+			return s
+		s += 2.0
+	return NAN
 
 
 ## Seeds along each arterial inside the town, from the centre out both ways, alternating sides;
@@ -525,18 +806,19 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 	var par: Street = streets[pi]
 	var s0: float = float(sd["s"])
 	var side: int = int(sd["side"])
-	if s0 < 15.0 or s0 > par.length() - 15.0:
+	# Junctions keep their distance along a street, except a crossing (two streets from one point). A
+	# seed too near another junction slides along its street to the nearest free spot within half
+	# a spacing instead of being dropped (a third of the seeds were).
+	s0 = free_arc(pi, s0, _junction_gap * 0.5)
+	if is_nan(s0) or s0 < 15.0 or s0 > par.length() - 15.0:
+		_count("seed_junction_gap" if is_nan(s0) else "seed_end")
 		return -1
 	var p0: Vector2 = par.line.point_at(s0)
-	# Junctions keep their distance along a street, except a crossing (two streets from one point).
 	var ignore: Dictionary = {pi: true}
 	for stn: Array in par.stations:
-		var gap: float = absf(float(stn[0]) - s0)
-		if gap < 1.5:
+		if absf(float(stn[0]) - s0) < 1.5:
 			for so: int in junctions[int(stn[1])].streets:
 				ignore[so] = true
-		elif gap < _junction_gap:
-			return -1
 	var tan: Vector2 = par.line.tangent_at(s0)
 	var angle: float = float(sd["angle"])
 	if bool(sd.get("seek", false)):
@@ -563,6 +845,7 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 	var straight: float = _straight_k if p0.distance_to(center) < core and bool(kd.get("grid_bias", true)) else 0.0
 	var cos_turn: float = _max_turn_cos
 	var look: float = maxf(_parallel, _crowd_reach) + _step + 2.0
+	var end_why: String = "length_budget"
 	while length < budget and length_total + length < _budget:
 		# The heading the street drifts towards: a slow random walk round its first heading (none in
 		# a gridded core), so streets on open level ground still bend a little.
@@ -579,24 +862,31 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 		var bc := Vector2.ZERO
 		var bh: float = 0.0
 		var bsnap: Dictionary = {}
+		var refused: Dictionary = {}
 		for turn: float in TURNS:
 			var c: Vector2 = d.rotated(deg_to_rad(turn))
 			if c.dot(d0) < cos_turn:
+				refused["turn"] = true
 				continue
 			var q: Vector2 = p + c * _step
 			if q.distance_to(center) > radius:
 				at_edge = true
+				refused["radius"] = true
 				continue
 			var hq: float = ground.h(q)
 			var g: float = absf(hq - hp) / _step
 			if g > _max_grade:
+				refused["grade"] = true
 				continue
 			if ground.water(q) < _water_stop:
+				refused["water"] = true
 				continue
 			if _blocked(p, q) or _curls(pts, q):
+				refused["blocked_or_curl"] = true
 				continue
 			var pr: Array = _probe(p, q, c, near_ids, ignore, length, hp)
 			if not bool(pr[0]):
+				refused[_why] = true
 				continue
 			var cost: float = _grade_k * g + _turn_k * absf(turn) / 12.0 + aim_k * rad_to_deg(acos(clampf(c.dot(aim), -1.0, 1.0))) / 12.0 \
 				+ float(pr[2]) + straight_k * absf(turn) / 12.0
@@ -610,6 +900,7 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 				bh = hq
 				bsnap = sn
 		if best == INF:
+			end_why = "stop:" + ",".join(PackedStringArray(refused.keys()))
 			break
 		if not bsnap.is_empty():
 			snap = bsnap
@@ -623,12 +914,20 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 		hp = bh
 		d = bc
 	# A dead end too short to hold a lot, or a link too short to be a street, is no street.
+	if length_total + length >= _budget:
+		end_why = "town_budget"
+	if not snap.is_empty():
+		end_why = "joined"
 	if length < (_min_len if snap.is_empty() else _min_len * 0.75):
+		_count("short:" + end_why)
 		return -1
+	_count("end:" + end_why)
 	var cls: String = str(sd.get("cls", "street"))
 	var st := make_street(cls, pts)
 	st.gen = int(sd.get("gen", 1))
 	st.parent = pi
+	st.side = side
+	st.from_s = s0
 	st.at_edge = at_edge
 	var si: int = add(st)
 	st.id = "st_%d" % si
@@ -648,6 +947,32 @@ func grow_one(sd: Dictionary, r: RandomNumberGenerator) -> int:
 	length_total += st.length()
 	side_count += 1
 	return si
+
+
+## The arc nearest s (within `slide` m) on street si that keeps `junction_spacing` from every
+## junction along it, or sits on one (within 1.5 m: a crossing); NAN when there is none.
+func free_arc(si: int, s: float, slide: float) -> float:
+	var st: Street = streets[si]
+	var k: int = 0
+	while float(k) * 3.0 <= slide:
+		for sgn: float in ([1.0] if k == 0 else [1.0, -1.0]):
+			var sv: float = s + sgn * k * 3.0
+			if sv < 0.0 or sv > st.length():
+				continue
+			var ok: bool = true
+			for stn: Array in st.stations:
+				var gap: float = absf(float(stn[0]) - sv)
+				if gap >= 1.5 and gap < _junction_gap:
+					ok = false
+					break
+			if ok:
+				return sv
+		k += 1
+	return NAN
+
+
+func _count(reason: String) -> void:
+	why[reason] = int(why.get(reason, 0)) + 1
 
 
 ## A street of a class from its control points (line built, not yet added).
@@ -672,32 +997,38 @@ func _probe(p: Vector2, q: Vector2, c: Vector2, near_ids: PackedInt32Array, igno
 	var crowd: float = 0.0
 	var snap: Dictionary = {}
 	var snap_d: float = INF
-	var loops_ok: bool = loops < _max_loops
+	var loops_ok: bool = loops < _max_loops or _free_joins
+	# Past every rule's reach, and too far for the step to cross it: a piece that cannot matter.
+	var reach: float = maxf(maxf(_snap, _keep_out), maxf(_parallel, _crowd_reach))
+	var pq: float = p.distance_to(q)
 	for sid: int in near_ids:
 		var si: int = seg_st[sid]
 		if si == skip or (length < 30.0 and ignore.has(si)):
 			continue
-		var cls: String = streets[si].cls
 		var a: Vector2 = seg_a[sid]
 		var b: Vector2 = seg_b[sid]
 		var ab: Vector2 = b - a
 		var l2: float = ab.length_squared()
 		if l2 < 1.0e-6:
 			continue
+		var tf: float = (q - a).dot(ab) / l2
+		var cp: Vector2 = a + ab * clampf(tf, 0.0, 1.0)
+		var dist: float = q.distance_to(cp)
+		if dist > reach and dist > pq + 0.5:
+			continue
+		var cls: String = streets[si].cls
 		var u: Vector2 = ab / sqrt(l2)
 		var ang: float = rad_to_deg(acos(clampf(absf(c.dot(u)), 0.0, 1.0)))
 		var x: Variant = Geometry2D.segment_intersects_segment(p, q, a, b)
 		if x != null:
 			if ang < _snap_angle or not loops_ok or cls == "bulb":
+				_why = "cross_shallow" if ang < _snap_angle else ("cross_no_loops" if not loops_ok else "cross_bulb")
 				return [false, {}, 0.0]
 			var dx: float = p.distance_to(x)
 			if dx < snap_d:
 				snap_d = dx
 				snap = {"street": si, "point": x, "arc": seg_s[sid] + a.distance_to(x), "junction": -1}
 			continue
-		var tf: float = (q - a).dot(ab) / l2
-		var cp: Vector2 = a + ab * clampf(tf, 0.0, 1.0)
-		var dist: float = q.distance_to(cp)
 		if dist < _snap:
 			if ang >= _snap_angle and loops_ok and cls != "bulb":
 				var dc: float = p.distance_to(cp)
@@ -705,10 +1036,13 @@ func _probe(p: Vector2, q: Vector2, c: Vector2, near_ids: PackedInt32Array, igno
 					snap_d = dc
 					snap = {"street": si, "point": cp, "arc": seg_s[sid] + a.distance_to(cp), "junction": -1}
 			else:
+				_why = "near_shallow" if ang < _snap_angle else ("near_no_loops" if not loops_ok else "near_bulb")
 				return [false, {}, 0.0]
 		elif not loops_ok and dist < _keep_out and ang >= _snap_angle:
+			_why = "keep_out"
 			return [false, {}, 0.0]
 		if tf >= 0.0 and tf <= 1.0 and dist < _parallel and ang < _parallel_angle:
+			_why = "parallel"
 			return [false, {}, 0.0]
 		if dist < _crowd_reach:
 			var f: float = 1.0 - dist / _crowd_reach
@@ -726,13 +1060,16 @@ func _probe(p: Vector2, q: Vector2, c: Vector2, near_ids: PackedInt32Array, igno
 			snap["junction"] = int(stn[1])
 			break
 		elif gap < _junction_gap:
+			_why = "snap_junction_gap"
 			return [false, {}, 0.0]
 	var sp: Vector2 = snap["point"]
 	var run: float = p.distance_to(sp)
 	if run > 0.5 and absf(ground.h(sp) - hp) / run > _max_grade:
+		_why = "snap_grade"
 		return [false, {}, 0.0]
 	# The joining piece is not the step tried: it too must keep out of the plaza.
 	if _blocked(p, sp):
+		_why = "snap_blocked"
 		return [false, {}, 0.0]
 	return [true, snap, crowd]
 
