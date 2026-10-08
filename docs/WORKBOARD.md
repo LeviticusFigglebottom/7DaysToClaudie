@@ -17,9 +17,10 @@ integration branches `claude/compassionate-dirac-8mtvxi` (891830b) and `ccr-24ba
 ## Sessions
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
-| Hub `session_01PzJeyHzavtYrZ7JLbVLmHS` | `claude/amazing-davinci-60axfh` (integration) | Reviews and merges every branch; the verification gate (import, check, validate, test, smoke, tour on every merge); goldens; this file; delegates | Round 3's leftovers merged (00cada1, 73a4f14, 475fcc6); full verification of the merged tree | Its own stream with agents: POI navigation and placement (the owner's priority 2) |
-| World `WORLD_SESSION` | `claude/hollowmere-r4-world` | Terrain, caves, streaming, performance, saves, builds (round 3 session 3's role) | Finish the organic caves (ADR-0056, docs/CAVES_PLAN.md): WS-C's nav test, WS-D, WS-E, WS-F | TD-279 (the Hum's flow field in caves); TD-003's headless profile with a full Hum; TD-196/197; graphics options (ADR-0037) |
-| Creatures `CREATURES_SESSION` | `claude/hollowmere-r4-creatures` | The Hollowed, characters, hands and combat feel (the owner's priorities 1 and 3) | The Hollowed: look and behaviour (TD-192 heads and hair, TD-027 silhouettes and spit/charge clips, TD-011 crowd avoidance and window links) | Hands with every tool and weapon (ADR-0045 follow-ups, TD-296..298); then the Ashen phase 2 remainder (TD-190) and Ezra follow-ups (TD-299..313) |
+| Hub `session_01PzJeyHzavtYrZ7JLbVLmHS` | `claude/amazing-davinci-60axfh` (integration) | Reviews and merges every branch; the verification gate (import, check, validate, test, smoke, tour on every merge); goldens; this file; delegates | Round 3's leftovers merged (00cada1, 73a4f14, 475fcc6); full verification of the merged tree | Its own stream with agents: report 4 item 6 (interior routes, invisible ladders) |
+| World `WORLD_SESSION` | `claude/hollowmere-r4-world` | Terrain, worldgen, towns, caves, streaming, performance, saves, builds | Report 4 items 4 and 5: roads level across their width, no long slanted cut faces, planted town edges with trees, bigger towns laid out off a single straight road | The organic caves (ADR-0056, docs/CAVES_PLAN.md WS-C..F); TD-279; TD-003 with a full Hum; TD-196/197; graphics options (ADR-0037) |
+| Creatures `CREATURES_SESSION` | `claude/hollowmere-r4-creatures` | The Hollowed, characters, hands and combat feel | Report 4 item 1: the hands and wrists, idle and holding every item (the lighter first) | The Hollowed look and behaviour (TD-192, TD-027, TD-011); the Ashen phase 2 remainder (TD-190); Ezra follow-ups (TD-299..313) |
+| Presentation `PRESENTATION_SESSION` | `claude/hollowmere-r4-presentation` | Menus, HUD and UI, the intro, cinematics | Report 4 item 7 (crafting and inventory readability), then items 3 (main menu styled like the game's other menus, a cinematic camera behind it) and 2 (the intro cutscene) | The rest of TD-014 (drag and drop, tooltips, the tether map); a UI pass over every screen for one style |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -57,17 +58,19 @@ integration branches `claude/compassionate-dirac-8mtvxi` (891830b) and `ccr-24ba
 ## Active streams and the files they own
 | Stream | Who | Owns |
 |---|---|---|
-| Organic caves (ADR-0056), then perf and builds | World | `game/src/world/terrain/**` (incl. `cave/`, `volume_terrain.gd`, `terrain_holes.gd`, `terrain_manager.gd`), threading in `game/src/world/vegetation/`, `game/src/ai/nav/nav_tiles.gd`, `game/src/ai/horde/flow_field*` (TD-279), RegionStreamer, PoiRegistry, the load sequence (`game_world.gd`, `world_loader.gd`), `game/src/core/save/`, `.github/workflows/`, `export_presets.cfg`, perf tooling (`perf_capture`, `stream_walk`, StreamMeter, `streaming.json`), `data/config/caves.json`, `docs/CAVES_PLAN.md`. The RWG `_caves()` stage is a reported hunk in `rwg_generator.gd` (hub's file) |
-| The Hollowed, hands and combat feel | Creatures | `game/src/ai/` except `nav/nav_tiles.gd` and the horde flow field (window NavigationLink3Ds go in as reported hunks there), enemy and character generators (`char_body`, `character_fp_arms.py`, `npc_build`), `game/src/player/viewmodel*.gd`, equipment and combat, `game/src/companion/` (Ezra), Ashen AI and data, `data/enemies/` |
-| POI navigation and placement | Hub | `game/src/poi/**` (except PoiRegistry), `game/data/pois/**`, `game/data/props/**`, prop generators, `poi_walk`/TraversalAudit, `game/src/worldgen/**`, `world_gen.json`, encounters (`game/src/world/encounters/`) |
+| Terrain and towns (report 4), caves (ADR-0056), perf and builds | World | `game/src/world/terrain/**` (incl. `cave/`, `volume_terrain.gd`, `terrain_holes.gd`, `terrain_manager.gd`, `terrain_composer.gd`), `game/src/worldgen/**` (roads, towns, `rwg_town_planner.gd`, `rwg_generator.gd`), `world_gen.json`, `town_planner.json`, vegetation scatter rules and threading in `game/src/world/vegetation/`, `game/src/ai/nav/nav_tiles.gd`, `game/src/ai/horde/flow_field*` (TD-279), RegionStreamer, PoiRegistry, the load sequence (`game_world.gd`, `world_loader.gd`: Presentation's intro needs a hook there, agreed by message), `game/src/core/save/`, `.github/workflows/`, `export_presets.cfg`, perf tooling, `data/config/caves.json`, `docs/CAVES_PLAN.md` |
+| Hands, the Hollowed and combat feel | Creatures | `game/src/ai/` except `nav/nav_tiles.gd` and the horde flow field (window NavigationLink3Ds go in as reported hunks there), enemy and character generators (`char_body`, `character_fp_arms.py`, `npc_build`), `game/src/player/viewmodel*.gd`, equipment and combat, `game/src/companion/` (Ezra), Ashen AI and data, `data/enemies/` |
+| Interiors and ladders | Hub | `game/src/poi/**` (except PoiRegistry), `game/data/pois/**`, `game/data/props/**`, prop generators, `poi_walk`/TraversalAudit, encounters (`game/src/world/encounters/`) |
+| Menus, UI and the intro | Presentation | `game/src/ui/**` (main menu, New Game, options, salvage roll, field manual, HUD, theme), `game/src/app/main*` and the menu scene, the intro (new `game/src/ui/intro/`, `game/data/intro/`), UI fonts and theme resources; a load-sequence hook for the intro agreed with World by message |
 
 ## Allocations
 * ADR: 0001..0058 are taken or retired (0032, 0042, 0043 were never written). 0056 (organic caves,
-  World), 0059 (World, if needed), 0060-0061 (Creatures), 0062 (hub). Next free: 0063.
-* TD: the register runs to TD-317. World 318-337, Creatures 338-357, the hub 358-377. Next free:
-  378.
-* Generator: `RwgGenerator.VERSION` is 11. World takes 12 for the caves stage (re-record
-  test_composer_golden with `SLOW_TESTS=1`). Anyone else asks the hub.
+  World), 0059 (World: roads and towns, if needed), 0060-0061 (Creatures), 0062 (hub), 0063-0064
+  (Presentation: the intro, the menu and UI style). Next free: 0065.
+* TD: the register runs to TD-317. World 318-337, Creatures 338-357, the hub 358-377,
+  Presentation 378-397. Next free: 398.
+* Generator: `RwgGenerator.VERSION` is 11. World owns the generator this round and bumps it as it
+  needs (re-record test_composer_golden with `SLOW_TESTS=1`), telling the hub each time.
 * Save version: 7. Anyone who needs a bump asks the hub first.
 
 ## Queue (in order)
@@ -76,13 +79,17 @@ integration branches `claude/compassionate-dirac-8mtvxi` (891830b) and `ccr-24ba
    climbing (ADR-0057), Ezra Vane phases 1-3 (ADR-0058), traps and electricity (ADR-0052), farming
    (ADR-0049), the Ashen phase 1-2 (ADR-0048), interior light (ADR-0050), POI traversal (ADR-0051),
    save v7; every item of player report 3.
-2. World: caves to ADR-0056 (merge points M1..M4 in docs/CAVES_PLAN.md), then TD-279, TD-003,
-   TD-196/197, ADR-0037. It keeps `make tour` and `make smoke` clean throughout.
-3. Creatures: the Hollowed look and behaviour, then hands, then the Ashen and Ezra follow-ups.
-4. Hub: merge gate; POI navigation and placement (TraversalAudit over every POI, TD-269..278 and
-   TD-314..317 leftovers, generated buildings' doors and steps); then main-map regions D7 and E6,
-   perk capstones, the forge and the chemistry bench.
-5. Needs the owner (a GPU and a human): the M1 playthrough, 60 FPS on target hardware, feel and
+2. World: report 4 items 4 and 5 (terrain and towns), then caves to ADR-0056 (merge points M1..M4
+   in docs/CAVES_PLAN.md), then TD-279, TD-003, TD-196/197, ADR-0037. It keeps `make tour` and
+   `make smoke` clean throughout.
+3. Creatures: report 4 item 1 (hands and wrists), then the Hollowed look and behaviour, then the
+   Ashen and Ezra follow-ups.
+4. Presentation: report 4 item 7 (crafting and inventory), item 3 (the main menu and its
+   cinematic camera), item 2 (the intro cutscene); then TD-014 and a one-style pass over every
+   screen.
+5. Hub: merge gate; report 4 item 6 (interior routes, invisible ladders); then main-map regions D7
+   and E6, perk capstones, the forge and the chemistry bench.
+6. Needs the owner (a GPU and a human): the M1 playthrough, 60 FPS on target hardware, feel and
    balance (HANDOFF.md "Not verified yet").
 
 ## The owner's priorities (2026-10-07, after Builds #68/#75: "much better so far")
@@ -94,6 +101,30 @@ integration branches `claude/compassionate-dirac-8mtvxi` (891830b) and `ccr-24ba
    fixes (ADR-0051); the hub finishes it.
 3. **Hands: looks and animations with every tool and weapon.** Round 3 landed oblique grips, joint
    helper bones and per-finger curls (TD-173..175). Creatures.
+
+## Player report 4 (2026-10-08, the owner, round 4's start)
+Two screenshots (described here; they came in chat): a forest walk with both hands idle, and the
+lighter held up.
+1. **Hands still look primitive.** Idle, both hands are loose fists with the wrists bent hard down
+   and in, so the backs of the hands face the camera like paddles; the fingers read as smooth
+   sausages with flat nails and no knuckle definition. Holding the lighter, the hand is a flat
+   pinch: four straight fingers stacked on the lighter's side, the thumb laid along its top, the
+   wrist cocked down at the strap. Both read unnatural. (Creatures, first.)
+2. **An intro cutscene** that gives the crash and its context before the start. It should play
+   while the world loads, but only if it doesn't stutter or freeze (the load does heavy main-thread
+   steps); otherwise it plays after the load, before control. (Presentation, with World for the load hook.)
+3. **The intro and main menu look primitive** and unlike the rest of the game's menus. A slow
+   panning cinematic camera over the world behind the main menu, as long as it doesn't stutter or
+   cost performance. (Presentation.)
+4. **Terrain anomalies**: roads allowed to run on a cross-slope (tilted sideways); long, slanted
+   faces of rock and road (cut and fill faces stretched over long runs); the ground round towns
+   obvious, with very little grass or plants and no trees at all. (World.)
+5. **Towns should be bigger** and laid out less linearly: today they are often one straight
+   stretch of road. (World.)
+6. **Interiors**: validate that every intended route can be walked fully and intuitively;
+   **ladders appear invisible** for some reason. (Hub.)
+7. **The crafting menu and inventory need work**: recipes that can't be crafted show in white and
+   are almost impossible to read. (Presentation.)
 
 ## Player report 3 (Windows Build #67, 891830b; round 2)
 Screenshot: `docs/playtest/2026-10-06_build67_lighter_door.webp` (Pell's Crossing, a lit lighter, a
