@@ -17,7 +17,7 @@
      "body": "Drink your issued water when thirsty. Keep the bottle. At the pond or the river, hold {key:interact} with the empty bottle to fill it. Stream water makes you sick: boil it. {key:interact} on your lit campfire, Use Campfire, Boil Water: 1 Bottle of Stream Water makes 1 Bottle of Boiled Water.",
      "event": "craft", "targets": ["water_bottle_clean"]},
     {"id": "bandage", "order": 6, "title": "Make a cloth bandage",
-     "body": "You were issued 2 cloth. Salvage roll ({key:inventory}), Make by hand, Cloth Bandage: 2 cloth. It stops bleeding. A hare pelt and a knife make two more. Keep one on you. Painkillers and first aid kits are found, not made: medicine cabinets and nightstands in the houses.",
+     "body": "You were issued 2 cloth. Salvage roll ({key:inventory}), Make by hand, Cloth Bandage: 2 cloth. It stops bleeding. A hare pelt and a knife make two more. Keep one on you: someone out there will need it. Painkillers and first aid kits are found, not made: medicine cabinets and nightstands in the houses.",
      "event": "craft", "targets": ["cloth_bandage"]},
     {"id": "shelter", "order": 7, "title": "Raise a shelter",
      "body": "Field manual ({key:guidebook}), Blueprints. Lean-to Shelter: 10 sticks, 6 bough bundles, 2 cordage. Bough bundles: fir saplings, felled grey firs, or by hand from 1 stick and 1 plant fibre. Short on time: a Bough Bed, 6 bough bundles and 4 sticks. Either one is a bed.",

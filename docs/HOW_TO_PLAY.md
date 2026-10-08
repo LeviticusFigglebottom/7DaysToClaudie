@@ -209,7 +209,8 @@ turn it off yourself in the tether's journal): eight Program cards on the tether
 gather, make a stone axe, fell a tree, build a campfire, fill and boil water, make a cloth bandage,
 raise a shelter and sleep, in any order. Each pays 10 XP. A while after the last one your tether
 picks up a distress call from Ezra Vane (§9), hurt in his line truck, and marks where he is: bring
-him a first aid kit or painkillers (found in medicine cabinets and nightstands, not made).
+him a cloth bandage (the one the cards had you make), or a first aid kit or painkillers if you've
+found any in medicine cabinets and nightstands.
 
 **A good first day** (the first chapter of Program directives):
 1. **Gather** (hold E): plant fibre from fireweed, ferns, sedge, huckleberry bushes and willows;

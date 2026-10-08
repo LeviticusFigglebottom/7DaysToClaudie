@@ -64,6 +64,9 @@ func test_content_validates_and_is_ordered() -> void:
 	assert_eq(_n((Content.get_def(&"blueprint", &"bough_bed") as BlueprintDef).cost), {"leaf_bundle": 6, "stick": 4})
 	assert_eq(int(Content.config(&"player")["start_kit"].get("cloth", 0)), 2, "the bandage card says 2 cloth were issued")
 	assert_not_null(Content.get_def(&"companion", StringName(str(TutorialTracker.cfg()["companion"]))), "the call's companion exists")
+	var ezra: Variant = Content.get_def(&"companion", StringName(str(TutorialTracker.cfg()["companion"])))
+	if ezra != null:
+		assert_true((ezra.get(&"recruit_items") as Array).has("cloth_bandage"), "the bandage card's bandage recruits him (ADR-0062)")
 	assert_true(_p().progression.has_xp_source(str(TutorialTracker.cfg()["xp_source"])), "the XP source is in progression.json")
 
 

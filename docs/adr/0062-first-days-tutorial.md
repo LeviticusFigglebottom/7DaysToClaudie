@@ -60,7 +60,7 @@ When the last step finishes, the call is scheduled `delay_minutes` (45) of game 
 (`data/config/tutorial.json`, saved as `distress_due`). It is delivered on the first tick after that
 which is not during the Hum, not while the player sleeps and not while the world loads:
 `tutorial_distress("ezra", camp)` and the radio text from the config (Ezra, hurt, in his line truck
-by the power line, needing a first aid kit or painkillers, as in ezra.json and *Find the lineman*).
+by the power line, needing first aid: a bandage, a first aid kit or painkillers, as in ezra.json and *Find the lineman*).
 The camp is `CompanionDirector.camp_spot()`, or the camp building's own position from
 `PoiManager.all_buildings()` when it is not built yet (a streamed world). If Ezra is already
 recruited or dead, or the world has no camp, the call is skipped: `received` true, `text` "".
@@ -73,11 +73,12 @@ not unlock or advance *Find the lineman*; following it and giving him the aid si
 with its reward, early. This also fixes the existing stall for players who found him on their own.
 
 ### First aid for him
-`companion.recruit` takes one of ezra.json's `recruit_items` (first aid kit or painkillers); a bandage
-only revives him once he is with you. Neither is craftable early (the first aid kit needs a workbench
-and two medicine quarterlies), so the bandage card says where they are found (medicine cabinets and
-nightstands) and the radio text says a bandage won't hold. Painkillers are in the common medical and
-nightstand loot tables, so a first trip into Pell's Crossing usually finds some (TD-375).
+`companion.recruit` takes one of ezra.json's `recruit_items`. The kit and painkillers are loot
+only (the first aid kit needs a workbench and two medicine quarterlies), so a player answering the
+call on day 1 would often have nothing he takes. The hub therefore added `cloth_bandage` to his
+recruit items (he already took one to revive): the bandage card says to keep one on you because
+someone out there will need it, and his call asks for a bandage to get him on his feet, or a kit or
+painkillers if found. The tutorial's bandage step now pays off at its end. (This closed TD-375.)
 
 ### Saves
 `PlayerState.to_dict` writes an optional `tutorial` ({enabled, progress, done, distress_due,
