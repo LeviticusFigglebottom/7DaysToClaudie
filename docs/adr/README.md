@@ -56,3 +56,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0054](0054-forest-encounters.md) | Forest encounters: small finds scattered through the woods per region from data (campsites, wrecks, stands, caches, graves, a hermit's shack), a runtime vegetation mask, kinds other systems register | Accepted |
 | [0057](0057-hunting-and-ranged.md) | Hunting and ranged: a bow whose arrows stick and come back, distraction stones, molotovs and ground fire, a bolt-action rifle with aim and scope, climbing arms, hunting stands and ropes | Accepted |
 | [0059](0059-roads-banks-and-towns.md) | Roads graded to the land, natural banks, towns that grow, and street networks | Accepted |
+| [0056](0056-organic-caves.md) | Organic caves through the SDF volume terrain: pure cave plans, streamed volume, nav and collision across volume borders, cave light and reverb, authored and random-world caves | Accepted |
