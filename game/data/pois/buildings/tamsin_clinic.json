@@ -170,7 +170,7 @@
         {"id": "exam2_cabinet", "prop": "road_medical_cabinet", "pos": [17.7, 11.6], "rot": -90, "variant": "worn"},
         {"id": "exam2_body", "prop": "corpse_remains", "pos": [16.4, 11.6], "rot": 95},
         {"prop": "road_iv_stand", "pos": [15.5, 12.4]},
-        {"prop": "road_wheelchair", "pos": [14.45, 7.5], "rot": 70},
+        {"prop": "road_wheelchair", "pos": [14.5, 8.42], "rot": 0},
         {"prop": "road_plaque_staff", "pos": [11.5, 7.09], "height": 1.9},
         {"prop": "road_mop_bucket", "pos": [17.4, 7.5]},
         {"prop": "bloody_bandages", "pos": [6.6, 8.0], "rot": 10},
