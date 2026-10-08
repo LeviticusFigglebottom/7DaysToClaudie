@@ -174,9 +174,12 @@ func bake_inputs(k: Vector2i) -> Array:
 	nm.cell_height = 0.25
 	nm.border_size = BORDER
 	nm.region_min_size = 4.0
-	# The bake is clipped to the tile itself; border_size lets Recast see the geometry around it so
-	# neighbouring tiles' edges line up exactly (no overlap) and stitch on the map.
-	nm.filter_baking_aabb = AABB(Vector3(k.x * TILE, -1000.0, k.y * TILE), Vector3(TILE, 3000.0, TILE))
+	# border_size is cut from *inside* the baking box (Godot's Recast setup), so the box is the tile
+	# grown by the border: the polygons then end exactly on the tile's edges, neighbours' edges
+	# line up (no overlap) and stitch on the map. A box of the bare tile left a 2 * BORDER gap
+	# between every pair of tiles, and no path ever crossed a seam (found by the cave nav test).
+	var r: Rect2 = tile_rect(k)
+	nm.filter_baking_aabb = AABB(Vector3(r.position.x, -1000.0, r.position.y), Vector3(r.size.x, 3000.0, r.size.y))
 	var src := NavigationMeshSourceGeometryData3D.new()
 	_add_terrain(src, k)
 	_add_bridges(src, k)
@@ -217,7 +220,7 @@ func _add_terrain(src: NavigationMeshSourceGeometryData3D, k: Vector2i) -> void:
 			for cx: int in range(lo.x, hi.x + 1):
 				if not vol.committed.has(Vector2i(cx, cz)):
 					continue
-				hole_fn = vol.is_hole_column
+				hole_fn = _nav_hole.bind(vol)
 				# Shrunk a hair so faces_in_rect takes this column alone.
 				var faces_v: PackedVector3Array = vol.faces_in_rect(Rect2(cx * VolumeTerrain.SIZE + 0.01, cz * VolumeTerrain.SIZE + 0.01, VolumeTerrain.SIZE - 0.02, VolumeTerrain.SIZE - 0.02))
 				if not faces_v.is_empty():
@@ -253,6 +256,27 @@ func _add_terrain(src: NavigationMeshSourceGeometryData3D, k: Vector2i) -> void:
 			faces[f + 5] = c
 			f += 6
 	src.add_faces(faces, Transform3D.IDENTITY)
+
+
+## The heightfield cells the volume replaces in a tile's source (TerrainMesher's hole test, called
+## with each 1 m cell's centre): the cells over committed columns, except the last strip before a
+## column edge whose neighbour the heightfield still owns. Surface nets put the volume's vertices at
+## voxel centres, so its surface stops VOXEL / 2 short of a column's +X / +Z edge; dropping that
+## cell too left a 0.25 m slit that Recast's agent radius widened into a 1.25 m gap all along the
+## border. There the old surface stays unless a dig took the ground from under it (the volume's
+## density just below it is air), so no lid is left over a hole. Main thread (density_at).
+func _nav_hole(x: float, z: float, vol: VolumeTerrain) -> bool:
+	var col: Vector2i = VolumeTerrain.column_of(x, z)
+	if not vol.committed.has(col):
+		return false
+	var hx: bool = x - col.x * VolumeTerrain.SIZE > VolumeTerrain.SIZE - TERRAIN_STEP
+	var hz: bool = z - col.y * VolumeTerrain.SIZE > VolumeTerrain.SIZE - TERRAIN_STEP
+	var edge: bool = (hx and not vol.committed.has(col + Vector2i(1, 0))) or (hz and not vol.committed.has(col + Vector2i(0, 1))) \
+		or (hx and hz and not vol.committed.has(col + Vector2i(1, 1)))
+	if not edge:
+		return true
+	var d: float = vol.density_at(Vector3(x, world.height_at(x, z) - 0.3, z))
+	return not is_nan(d) and d <= 0.0
 
 
 ## Bridge decks are walkable ground over the river (the terrain below is the riverbed).
