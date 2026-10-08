@@ -75,3 +75,11 @@ func test_fog_image_clears_explored_cells() -> void:
 ## Image colours are 8-bit: compare within a step.
 static func _near(a: Color, b: Color) -> bool:
 	return absf(a.r - b.r) < 0.01 and absf(a.g - b.g) < 0.01 and absf(a.b - b.b) < 0.01
+
+
+func test_bearing_words() -> void:
+	assert_eq(FieldManual.bearing_words(Vector3.ZERO, Vector3(0, 0, -400)), "north, 400 m")
+	assert_eq(FieldManual.bearing_words(Vector3.ZERO, Vector3(300, 0, 0)), "east, 300 m")
+	assert_eq(FieldManual.bearing_words(Vector3.ZERO, Vector3(-283, 0, -283)), "north-west, 400 m")
+	assert_eq(FieldManual.bearing_words(Vector3.ZERO, Vector3(0, 0, 2500)), "south, 2.5 km")
+	assert_eq(FieldManual.bearing_words(Vector3.ZERO, Vector3(5, 0, 5)), "here")

@@ -95,7 +95,7 @@ func _ready() -> void:
 	_tabs.add_theme_constant_override(&"separation", 4)
 	v.add_child(_tabs)
 	var group := ButtonGroup.new()
-	for t: Array in [["build", "Blueprints"], ["record", "Record"], ["notes", "Notes found"], ["tips", "Survival"]]:
+	for t: Array in [["build", "Blueprints"], ["journal", "Journal"], ["record", "Record"], ["notes", "Notes found"], ["tips", "Survival"]]:
 		var b := Button.new()
 		b.text = t[1]
 		b.name = "Tab_" + str(t[0])
@@ -141,6 +141,11 @@ func _ready() -> void:
 	Events.player_progressed.connect(func(_pid: StringName) -> void:
 		if _open and _tab == "record":
 			_refresh())
+	# The tutorial backend's signal (hub contract); connected only once it exists.
+	if Events.has_signal(&"tutorial_changed"):
+		Events.connect(&"tutorial_changed", func() -> void:
+			if _open and _tab == "journal":
+				_refresh())
 
 
 func _set_tab(t: String) -> void:
@@ -224,10 +229,14 @@ func _refresh() -> void:
 		"tips":
 			for t: Array in TIPS:
 				_entry(t[0], t, true)
+		"journal":
+			_journal_list()
 	if _selected != null:
 		_select(_selected)
 	elif _tab == "record":
 		_select("record")
+	elif _tab == "journal":
+		_select("journal")
 
 
 func _header(text: String) -> void:
@@ -281,9 +290,19 @@ func _select(payload: Variant) -> void:
 		_perk_detail(payload as PerkDef)
 	elif payload is String and payload == "record":
 		_record_detail()
+	elif payload is String and payload == "journal":
+		_journal_detail({})
+	elif payload is Dictionary and (payload as Dictionary).has("journal"):
+		_journal_detail(payload)
 
 
 func _on_action() -> void:
+	if _tab == "journal":
+		var t: Object = tutorial()
+		if t != null:
+			Game.execute(&"tutorial.set_enabled", {"enabled": not bool(t.call(&"is_enabled"))})
+			_refresh()
+		return
 	if _selected is AttributeDef:
 		Game.execute(&"progression.raise_attribute", {"attribute": String((_selected as AttributeDef).id)})
 		return
@@ -296,6 +315,92 @@ func _on_action() -> void:
 			close()
 			Events.player_status_message.emit("Place the %s — [%s] place · [%s] rotate · [%s] cancel" % [(_selected as BlueprintDef).display_name,
 				PlayerInteraction.key_label(&"attack"), PlayerInteraction.key_label(&"rotate_piece"), PlayerInteraction.key_label(&"cancel")], &"info")
+
+
+# --- Journal tab (the first days' tutorial, hub contract) ------------------------------------------
+
+## The world's TutorialTracker (world.tutorial), or null in a world without one.
+static func tutorial() -> Object:
+	var w: Node = Game.world
+	if w == null or w.get(&"tutorial") == null:
+		return null
+	return w.get(&"tutorial")
+
+
+## A step's body with its key placeholders named ({action:interact} -> E), the prompts' way.
+static func render_body(t: Object, text: String) -> String:
+	return str(t.call(&"render_body", text)) if t != null and t.has_method(&"render_body") else text
+
+
+func _journal_list() -> void:
+	var t: Object = tutorial()
+	if t == null:
+		_header("No journal in this world.")
+		return
+	var on: bool = bool(t.call(&"is_enabled"))
+	_header("The first days" if on else "The first days (guidance off)")
+	for st: Dictionary in (t.call(&"steps") as Array):
+		var done: bool = bool(st.get("done", false))
+		var current: bool = bool(st.get("current", false))
+		var mark: String = "✓ " if done else ("> " if current else "· ")
+		var label: String = mark + str(st.get("title", ""))
+		if current and int(st.get("count", 1)) > 1:
+			label += "  (%d / %d)" % [int(st.get("progress", 0)), int(st.get("count", 1))]
+		var payload: Dictionary = st.duplicate()
+		payload["journal"] = true
+		_entry(label, payload, not done)
+		if current:
+			var b: Button = _list.get_child(_list.get_child_count() - 1) as Button
+			b.add_theme_color_override(&"font_color", UiStyle.INK_MISSING)
+	var d: Dictionary = t.call(&"distress") as Dictionary
+	if bool(d.get("received", false)):
+		_header("On the tether")
+		_entry("A distress call", {"journal": true, "distress": true}, true)
+
+
+func _journal_detail(st: Dictionary) -> void:
+	var t: Object = tutorial()
+	_action.visible = t != null
+	_action.text = "Turn guidance off" if t != null and bool(t.call(&"is_enabled")) else "Turn guidance on"
+	if t == null:
+		_detail.text = ""
+		return
+	if bool(st.get("distress", false)):
+		var d: Dictionary = t.call(&"distress") as Dictionary
+		_detail.text = "[b][font_size=22]A distress call[/font_size][/b]\n[i]%s[/i]\n\n%s" % [distress_bearing(d.get("position", Vector3.ZERO)), str(d.get("text", ""))]
+		return
+	if st.is_empty():
+		for s2: Dictionary in (t.call(&"steps") as Array):
+			if bool(s2.get("current", false)):
+				st = s2
+		if st.is_empty():
+			_detail.text = "[b][font_size=22]The first days[/font_size][/b]\n\nEvery step is done. The rest is yours."
+			return
+	var state: String = "Done." if bool(st.get("done", false)) else ("%d / %d" % [int(st.get("progress", 0)), int(st.get("count", 1))])
+	_detail.text = "[b][font_size=22]%s[/font_size][/b]   [color=%s]%s[/color]\n\n%s" % [str(st.get("title", "")), UiStyle.hex(UiStyle.INK_DIM),
+		state, render_body(t, str(st.get("body", "")))]
+
+
+## Where a point is from the player, in words: "north-west, 420 m".
+static func distress_bearing(at: Vector3) -> String:
+	var w: Node = Game.world
+	if w == null or w.get(&"player") == null:
+		return ""
+	return bearing_words((w.player as Node3D).global_position, at)
+
+
+const COMPASS: PackedStringArray = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"]
+
+
+## Compass words and distance from `from` to `to` (-Z is north, +X east).
+static func bearing_words(from: Vector3, to: Vector3) -> String:
+	var d := Vector2(to.x - from.x, to.z - from.z)
+	if d.length() < 15.0:
+		return "here"
+	var ang: float = fposmod(atan2(d.x, -d.y), TAU)
+	var i: int = int(round(ang / (TAU / 8.0))) % 8
+	var m: float = d.length()
+	return "%s, %s" % [COMPASS[i], ("%d m" % int(round(m / 10.0) * 10)) if m < 1000.0 else ("%.1f km" % (m / 1000.0))]
 
 
 # --- Record tab ---------------------------------------------------------------------------------

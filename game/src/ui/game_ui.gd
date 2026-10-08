@@ -74,6 +74,12 @@ func _ready() -> void:
 			message("Saved." if ok else "Save failed!", &"info" if ok else &"error"))
 	Events.schematic_learned.connect(func(id: StringName) -> void: message("Learned: %s" % String(id).capitalize(), &"info"))
 	Events.player_leveled.connect(_on_leveled)
+	# The first days' tutorial (hub contract): a nudge when a step is done, a call when the
+	# distress signal comes in. Connected only once the backend's signals exist.
+	if Events.has_signal(&"tutorial_changed"):
+		Events.connect(&"tutorial_changed", _on_tutorial_changed)
+	if Events.has_signal(&"tutorial_distress"):
+		Events.connect(&"tutorial_distress", _on_tutorial_distress)
 	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void: message("A Program drone is overhead. Supplies are coming down.", &"level"))
 
 
@@ -154,6 +160,38 @@ func hide_loading() -> void:
 	_loading.visible = false
 	_hud.visible = true
 	_hold_world_for_intro.call_deferred()
+
+
+# --- The first days' journal (tutorial) ----------------------------------------------------------
+
+## Step ids already done, to tell which ones a change just finished (null until first seen).
+var _tutorial_done: Variant = null
+
+
+func _on_tutorial_changed() -> void:
+	var t: Object = FieldManual.tutorial()
+	if t == null:
+		return
+	var steps: Array = t.call(&"steps")
+	var done: Dictionary = {}
+	var next_title: String = ""
+	for st: Dictionary in steps:
+		if bool(st.get("done", false)):
+			done[str(st.get("id", ""))] = str(st.get("title", ""))
+		elif next_title == "" and bool(st.get("current", false)):
+			next_title = str(st.get("title", ""))
+	if _tutorial_done is Dictionary and bool(t.call(&"is_enabled")):
+		for id: String in done:
+			if not (_tutorial_done as Dictionary).has(id):
+				message("Journal: %s ✓%s" % [done[id], ("   Next: %s (%s)" % [next_title, PlayerInteraction.key_label(&"guidebook")]) if next_title != "" else ""], &"level")
+	_tutorial_done = done
+
+
+func _on_tutorial_distress(_companion_id: StringName, position: Vector3) -> void:
+	var t: Object = FieldManual.tutorial()
+	var text: String = str((t.call(&"distress") as Dictionary).get("text", "")) if t != null else ""
+	Audio.play_2d(&"ui/tether_alarm", -4.0)
+	message("Tether: a distress call crackles in, %s. %s" % [FieldManual.distress_bearing(position), text], &"level")
 
 
 # --- The intro (ADR-0064) -------------------------------------------------------------------------
