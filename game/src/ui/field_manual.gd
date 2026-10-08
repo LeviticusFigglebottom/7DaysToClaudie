@@ -20,7 +20,7 @@ const TIPS: Array[Array] = [
 	["Hammer", "A claw hammer repairs what the Hollowed break (sticks for a log, sticks and nails for a reinforced one, a quarter of its cost for anything else), and reinforces logs once they are whole (cordage and nails)."],
 	["Waystation 9", "The Program's relay post on Route 9, south by the river. Its guards shoot any Hollowed that come inside the wire, and nothing rises there. The quartermaster buys what you carry and sells what the drones bring, for Program scrip. The board posts contracts: clear a building and search its stores, bring back a cache the survey teams left, or hold a relay cache while it uploads. Report back to be paid; standing with the post opens better stock and harder work."],
 	["The Ashen", "Tribes of the high timber, painted in lichen-ash so the Hollowed can't smell them. They burn their dead and kill outsiders who might carry the Bloom. First they watch: a still figure on a ridge, gone when you look again. Let a scout get away and the camp learns where you sleep. Anger them enough and they come at dusk, with drums: raiders who break what is in their way. Hold a torch up at them and keep your fires burning; fire in an outsider's hand frightens them, and a band that loses its nerve runs. They never come on a Hum night. At home in their camps they fight to the last."],
-	["Ezra Vane", "A convict from two drops before yours, a lineman before the Program got him. He is holed up in his line truck by the power line, out in the timber, with a broken leg: bring him a first aid kit or painkillers and he walks with you. Talk to him (E) to give orders: follow, stay here, guard here, gather, fetch, give me what you carry, store at base; [H] whistles him to follow or to stay. Look at the spot or the thing first: he gathers round what you last looked at (wood, stone or fibre, into his own pack: twelve slots and two logs on his shoulder) and fetches it. His trees count half for your XP and directives. Following, he fights whatever comes at you or at him, and carries a lantern at night (his light, not yours: it doesn't give you away). Guarding, he holds the ground round his spot. If he goes down, get to him with a bandage or a first aid kit and hold E: he bleeds out in three minutes, and then he's gone till the next dawn, when he limps back to your bed. Under one-life rules he doesn't come back."],
+	["Ezra Vane", "A convict from two drops before yours, a lineman before the Program got him. He is holed up in his line truck by the power line, out in the timber, with a broken leg: bring him a bandage, a first aid kit or painkillers and he walks with you. Talk to him (E) to give orders: follow, stay here, guard here, gather, fetch, give me what you carry, store at base; [H] whistles him to follow or to stay. Look at the spot or the thing first: he gathers round what you last looked at (wood, stone or fibre, into his own pack: twelve slots and two logs on his shoulder) and fetches it. His trees count half for your XP and directives. Following, he fights whatever comes at you or at him, and carries a lantern at night (his light, not yours: it doesn't give you away). Guarding, he holds the ground round his spot. If he goes down, get to him with a bandage or a first aid kit and hold E: he bleeds out in three minutes, and then he's gone till the next dawn, when he limps back to your bed. Under one-life rules he doesn't come back."],
 	["Your record", "Everything you survive teaches you something: Hollowed put down, places searched, logs set, things made, buildings cleared, a Hum lived through. Each level is a point to spend in the Record — on an attribute, or on a perk once its attribute is high enough. The Cordon notices too: the longer you last and the more you learn, the worse the Hollowed that come for you, and the better what you find."],
 ]
 ## Attribute display order (the data is sorted by id).
@@ -327,9 +327,29 @@ static func tutorial() -> Object:
 	return w.get(&"tutorial")
 
 
-## A step's body with its key placeholders named ({action:interact} -> E), the prompts' way.
-static func render_body(t: Object, text: String) -> String:
-	return str(t.call(&"render_body", text)) if t != null and t.has_method(&"render_body") else text
+## A step's body with its key placeholders named ({key:interact} -> [E]), the prompts' way.
+static func render_body(_t: Object, text: String) -> String:
+	return TutorialTracker.render_body(text)
+
+
+## Whether the world setting allows the tutorial at all (the toggle is greyed out when not).
+static func tutorial_allowed() -> bool:
+	return GameRules.current() == null or GameRules.current().flag("tutorial")
+
+
+## Where the distress call came from, while it still matters: received, not skipped (it has
+## text), and Ezra not yet with you. Empty otherwise.
+static func live_distress() -> Dictionary:
+	var t: Object = tutorial()
+	if t == null:
+		return {}
+	var d: Dictionary = t.call(&"distress") as Dictionary
+	if not bool(d.get("received", false)) or str(d.get("text", "")) == "":
+		return {}
+	var comp: Node = Game.world.get(&"companion") if Game.world != null else null
+	if comp != null and comp.has_method(&"recruited") and bool(comp.call(&"recruited")):
+		return {}
+	return d
 
 
 func _journal_list() -> void:
@@ -352,8 +372,7 @@ func _journal_list() -> void:
 		if current:
 			var b: Button = _list.get_child(_list.get_child_count() - 1) as Button
 			b.add_theme_color_override(&"font_color", UiStyle.INK_MISSING)
-	var d: Dictionary = t.call(&"distress") as Dictionary
-	if bool(d.get("received", false)):
+	if not live_distress().is_empty():
 		_header("On the tether")
 		_entry("A distress call", {"journal": true, "distress": true}, true)
 
@@ -362,6 +381,9 @@ func _journal_detail(st: Dictionary) -> void:
 	var t: Object = tutorial()
 	_action.visible = t != null
 	_action.text = "Turn guidance off" if t != null and bool(t.call(&"is_enabled")) else "Turn guidance on"
+	_action.disabled = not tutorial_allowed()
+	if not tutorial_allowed():
+		_action.text = "Guidance is off for this world"
 	if t == null:
 		_detail.text = ""
 		return

@@ -42,7 +42,7 @@
      "chapter": 3, "order": 7, "event": "harvest", "reward": {"xp": 150, "items": {"bucket": 1}}},
     {"id": "hold_trap_kill", "name": "Let your traps do the work", "description": "Dig a spike pit, hang a deadfall or wire up a nail sentry where they come at your walls. Three of them put down without you lifting a hand.",
      "chapter": 3, "order": 8, "event": "trap_kill", "count": 3, "reward": {"xp": 200, "items": {"copper_wire": 2, "gas_can": 1}}},
-    {"id": "find_lineman", "name": "Find the lineman", "description": "A Remand man from an earlier drop is holed up in his line truck by the power line, out in the timber away from the roads. Follow the line. He's hurt: bring a first aid kit or painkillers.",
+    {"id": "find_lineman", "name": "Find the lineman", "description": "A Remand man from an earlier drop is holed up in his line truck by the power line, out in the timber away from the roads. Follow the line. He's hurt: bring a bandage, a first aid kit or painkillers.",
      "chapter": 3, "order": 9, "event": "recruit", "targets": ["ezra_camp"], "reward": {"xp": 150}},
 
     {"id": "bloom_infected", "name": "Put down a Seeded or Bloomed Hollowed", "description": "Pale threads under the skin. They hit harder and take longer to drop.",

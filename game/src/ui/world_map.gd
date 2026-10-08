@@ -466,17 +466,15 @@ func _draw_markers() -> void:
 		else:
 			_markers.draw_arc(sp, 6.0 * s, 0.0, TAU, 20, Color(0.85, 0.65, 0.1), 2.0)
 	# The distress call (the first days' tutorial): a red pulsing ring with its bearing.
-	var tut: Object = FieldManual.tutorial()
-	if tut != null:
-		var d: Dictionary = tut.call(&"distress") as Dictionary
-		if bool(d.get("received", false)):
-			var at: Vector3 = d.get("position", Vector3.ZERO)
-			var dp: Vector2 = _world_to_sheet(at)
-			var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.006)
-			_markers.draw_arc(dp, (8.0 + 4.0 * pulse) * s, 0.0, TAU, 28, Color(0.75, 0.12, 0.08), 2.5)
-			_markers.draw_circle(dp, 3.5 * s, Color(0.75, 0.12, 0.08))
-			_markers.draw_string(UiStyle.body_font(), dp + Vector2(12, -10) * s, "Distress call · " + FieldManual.distress_bearing(at),
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.6, 0.1, 0.06))
+	var d: Dictionary = FieldManual.live_distress()
+	if not d.is_empty():
+		var at: Vector3 = d.get("position", Vector3.ZERO)
+		var dp: Vector2 = _world_to_sheet(at)
+		var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.006)
+		_markers.draw_arc(dp, (8.0 + 4.0 * pulse) * s, 0.0, TAU, 28, Color(0.75, 0.12, 0.08), 2.5)
+		_markers.draw_circle(dp, 3.5 * s, Color(0.75, 0.12, 0.08))
+		_markers.draw_string(UiStyle.body_font(), dp + Vector2(12, -10) * s, "Distress call · " + FieldManual.distress_bearing(at),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.6, 0.1, 0.06))
 	var pl: Node3D = w.player
 	var me: Vector2 = _world_to_sheet(pl.global_position)
 	var yaw: float = pl.global_rotation.y

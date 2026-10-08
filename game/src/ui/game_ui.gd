@@ -188,8 +188,11 @@ func _on_tutorial_changed() -> void:
 
 
 func _on_tutorial_distress(_companion_id: StringName, position: Vector3) -> void:
-	var t: Object = FieldManual.tutorial()
-	var text: String = str((t.call(&"distress") as Dictionary).get("text", "")) if t != null else ""
+	var d: Dictionary = FieldManual.live_distress()
+	# A skipped call (Ezra already with you, or gone) has no text and no crackle.
+	if d.is_empty():
+		return
+	var text: String = str(d.get("text", ""))
 	Audio.play_2d(&"ui/tether_alarm", -4.0)
 	message("Tether: a distress call crackles in, %s. %s" % [FieldManual.distress_bearing(position), text], &"level")
 

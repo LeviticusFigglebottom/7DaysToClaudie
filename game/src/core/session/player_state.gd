@@ -17,6 +17,8 @@ var progression: Progression
 var directives: Directives
 ## Standing with the Program's traders: reputation and contracts (ADR-0039).
 var contracts: ContractLog
+## The optional first-days tutorial (ADR-0062).
+var tutorial: TutorialProgress
 var spawn_point: Vector3 = Vector3.ZERO
 var has_spawn_point: bool = false
 ## Where this player has been, for the map's fog of war (TD-014; an optional save field).
@@ -34,6 +36,7 @@ func _init() -> void:
 	progression.spent.connect(refresh_derived.bind(true))
 	directives = Directives.new()
 	contracts = ContractLog.new()
+	tutorial = TutorialProgress.new()
 	toolbelt.resize(int(pcfg.get("toolbelt_slots", 6)))
 	toolbelt.fill(&"")
 	refresh_derived()
@@ -66,7 +69,7 @@ func to_dict() -> Dictionary:
 		"stats": stats.to_dict(), "inventory": inventory.to_dict(), "toolbelt": tb, "equipped": equipped_slot,
 		"progression": progression.to_dict(), "spawn": [spawn_point.x, spawn_point.y, spawn_point.z],
 		"has_spawn": has_spawn_point, "notes": read_notes.keys(), "deaths": deaths, "kills": kills,
-		"directives": directives.to_dict(), "contracts": contracts.to_dict(),
+		"directives": directives.to_dict(), "contracts": contracts.to_dict(), "tutorial": tutorial.to_dict(),
 		"explored": explored.to_dict(),
 	}
 
@@ -96,6 +99,13 @@ func from_dict(d: Dictionary) -> void:
 	kills = d.get("kills", {})
 	directives.from_dict(d.get("directives", {}))
 	contracts.from_dict(d.get("contracts", {}))
+	# Optional (no save-version bump): a save from before the tutorial has none, and the tracker
+	# decides from the day whether it is done or starts now (ADR-0062).
+	tutorial = TutorialProgress.new()
+	if d.has("tutorial"):
+		tutorial.from_dict(d["tutorial"])
+	else:
+		tutorial.legacy = true
 	# Optional (round 4): an older save has none, and the map reveals round the bed or drop site.
 	explored.from_dict(d.get("explored", {}))
 	refresh_derived()

@@ -108,6 +108,7 @@ The **New Game — World Settings** screen has a **Game** tab and a **World** ta
 | Loot abundance; loot respawn; XP multiplier | 1×; never; 1× | 0.25–2×; 0–60 days; 0.25–3× |
 | Remand supply drops; mark them on the tether | After the Hum; on | Off, After the Hum, Weekly, Every 3 days |
 | Hunger & thirst rate; Bloom infection rate | 1×; 1× | |
+| First days tutorial (journal cards, then a distress call) | on | |
 | On death | Drop pack | None, XP loss, Drop pack, Drop all, Permadeath |
 
 On death: *None* keeps everything; *XP loss* halves your progress toward the next level; *Drop pack*
@@ -216,6 +217,14 @@ with the world's name and your sector (the region's map cell, D6 at the Larch Ho
 (the arrow), where you wake (your bed as a yellow dot, or the drop site as a yellow ring until you
 have a bed; pinned to the map's edge when it's elsewhere), supply drops (red diamonds) and buildings
 (grey squares, orange once you've been inside, green once cleared).
+
+**The first-days tutorial** (on unless the world setting *First days tutorial* is off; you can
+turn it off yourself in the tether's journal): eight Program cards on the tether that say how to
+gather, make a stone axe, fell a tree, build a campfire, fill and boil water, make a cloth bandage,
+raise a shelter and sleep, in any order. Each pays 10 XP. A while after the last one your tether
+picks up a distress call from Ezra Vane (§9), hurt in his line truck, and marks where he is: bring
+him a cloth bandage (the one the cards had you make), or a first aid kit or painkillers if you've
+found any in medicine cabinets and nightstands.
 
 **A good first day** (the first chapter of Program directives):
 1. **Gather** (hold E): plant fibre from fireweed, ferns, sedge, huckleberry bushes and willows;
