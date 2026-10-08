@@ -18,9 +18,9 @@ integration branches `claude/compassionate-dirac-8mtvxi` (891830b) and `ccr-24ba
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
 | Hub `session_01PzJeyHzavtYrZ7JLbVLmHS` | `claude/amazing-davinci-60axfh` (integration) | Reviews and merges every branch; the verification gate (import, check, validate, test, smoke, tour on every merge); goldens; this file; delegates | Round 3's leftovers merged (00cada1, 73a4f14, 475fcc6); full verification of the merged tree | Its own stream with agents: report 4 item 6 (interior routes, invisible ladders) |
-| World `WORLD_SESSION` | `claude/hollowmere-r4-world` | Terrain, worldgen, towns, caves, streaming, performance, saves, builds | Report 4 items 4 and 5: roads level across their width, no long slanted cut faces, planted town edges with trees, bigger towns laid out off a single straight road | The organic caves (ADR-0056, docs/CAVES_PLAN.md WS-C..F); TD-279; TD-003 with a full Hum; TD-196/197; graphics options (ADR-0037) |
-| Creatures `CREATURES_SESSION` | `claude/hollowmere-r4-creatures` | The Hollowed, characters, hands and combat feel | Report 4 item 1: the hands and wrists, idle and holding every item (the lighter first) | The Hollowed look and behaviour (TD-192, TD-027, TD-011); the Ashen phase 2 remainder (TD-190); Ezra follow-ups (TD-299..313) |
-| Presentation `PRESENTATION_SESSION` | `claude/hollowmere-r4-presentation` | Menus, HUD and UI, the intro, cinematics | Report 4 item 7 (crafting and inventory readability), then items 3 (main menu styled like the game's other menus, a cinematic camera behind it) and 2 (the intro cutscene) | The rest of TD-014 (drag and drop, tooltips, the tether map); a UI pass over every screen for one style |
+| World `session_01JuE8Bvz1jodvFsrJzgkFw2` | `claude/hollowmere-r4-world` | Terrain, worldgen, towns, caves, streaming, performance, saves, builds | Report 4 items 4 and 5: roads level across their width, no long slanted cut faces, planted town edges with trees, bigger towns laid out off a single straight road | The organic caves (ADR-0056, docs/CAVES_PLAN.md WS-C..F); TD-279; TD-003 with a full Hum; TD-196/197; graphics options (ADR-0037) |
+| Creatures `session_013NwRPQ1PsMRu5iFyZAajxk` | `claude/hollowmere-r4-creatures` | The Hollowed, characters, hands and combat feel | Report 4 item 1: the hands and wrists, idle and holding every item (the lighter first) | The Hollowed look and behaviour (TD-192, TD-027, TD-011); the Ashen phase 2 remainder (TD-190); Ezra follow-ups (TD-299..313) |
+| Presentation `session_01B5YS2wWu8LLN1zPzXL88vP` | `claude/hollowmere-r4-presentation` | Menus, HUD and UI, the intro, cinematics | Report 4 item 7 (crafting and inventory readability), then items 3 (main menu styled like the game's other menus, a cinematic camera behind it) and 2 (the intro cutscene) | The rest of TD-014 (drag and drop, tooltips, the tether map); a UI pass over every screen for one style |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
@@ -58,9 +58,9 @@ integration branches `claude/compassionate-dirac-8mtvxi` (891830b) and `ccr-24ba
 ## Active streams and the files they own
 | Stream | Who | Owns |
 |---|---|---|
-| Terrain and towns (report 4), caves (ADR-0056), perf and builds | World | `game/src/world/terrain/**` (incl. `cave/`, `volume_terrain.gd`, `terrain_holes.gd`, `terrain_manager.gd`, `terrain_composer.gd`), `game/src/worldgen/**` (roads, towns, `rwg_town_planner.gd`, `rwg_generator.gd`), `world_gen.json`, `town_planner.json`, vegetation scatter rules and threading in `game/src/world/vegetation/`, `game/src/ai/nav/nav_tiles.gd`, `game/src/ai/horde/flow_field*` (TD-279), RegionStreamer, PoiRegistry, the load sequence (`game_world.gd`, `world_loader.gd`: Presentation's intro needs a hook there, agreed by message), `game/src/core/save/`, `.github/workflows/`, `export_presets.cfg`, perf tooling, `data/config/caves.json`, `docs/CAVES_PLAN.md` |
+| Terrain and towns (report 4), caves (ADR-0056), perf and builds | World | `game/src/world/terrain/**` (incl. `cave/`, `volume_terrain.gd`, `terrain_holes.gd`, `terrain_manager.gd`, `terrain_composer.gd`), `game/src/worldgen/**` (roads, towns, `rwg_town_planner.gd`, `rwg_generator.gd`), `world_gen.json`, `town_planner.json`, the town frameworks (`game/data/pois/frameworks/**`, Pell's Crossing), vegetation scatter rules and threading in `game/src/world/vegetation/`, `game/src/ai/nav/nav_tiles.gd`, `game/src/ai/horde/flow_field*` (TD-279), RegionStreamer, PoiRegistry, the load sequence (`game_world.gd`, `world_loader.gd`: Presentation's intro needs a hook there, agreed by message), `game/src/core/save/`, `.github/workflows/`, `export_presets.cfg`, perf tooling, `data/config/caves.json`, `docs/CAVES_PLAN.md` |
 | Hands, the Hollowed and combat feel | Creatures | `game/src/ai/` except `nav/nav_tiles.gd` and the horde flow field (window NavigationLink3Ds go in as reported hunks there), enemy and character generators (`char_body`, `character_fp_arms.py`, `npc_build`), `game/src/player/viewmodel*.gd`, equipment and combat, `game/src/companion/` (Ezra), Ashen AI and data, `data/enemies/` |
-| Interiors and ladders | Hub | `game/src/poi/**` (except PoiRegistry), `game/data/pois/**`, `game/data/props/**`, prop generators, `poi_walk`/TraversalAudit, encounters (`game/src/world/encounters/`) |
+| Interiors, ladders and the lore trail | Hub | `game/src/poi/**` (except PoiRegistry), `game/data/pois/**` (except frameworks), `game/data/notes/**`, `docs/LORE_TRAIL.md`, `game/data/props/**`, prop generators, `poi_walk`/TraversalAudit, encounters (`game/src/world/encounters/`) |
 | Menus, UI and the intro | Presentation | `game/src/ui/**` (main menu, New Game, options, salvage roll, field manual, HUD, theme), `game/src/app/main*` and the menu scene, the intro (new `game/src/ui/intro/`, `game/data/intro/`), UI fonts and theme resources; a load-sequence hook for the intro agreed with World by message |
 
 ## Allocations
@@ -113,6 +113,10 @@ lighter held up.
 2. **An intro cutscene** that gives the crash and its context before the start. It should play
    while the world loads, but only if it doesn't stutter or freeze (the load does heavy main-thread
    steps); otherwise it plays after the load, before control. (Presentation, with World for the load hook.)
+   **The owner's lore call (2026-10-08):** the intro shows the crash of #4471's Program drop
+   aircraft short of the drop site. The cause of the outbreak (the Corvane bore breaking into the
+   caves) is never told in the intro: the player finds it out from lore in the world (notes,
+   tethers, signs), piece by piece. The hub keeps that trail.
 3. **The intro and main menu look primitive** and unlike the rest of the game's menus. A slow
    panning cinematic camera over the world behind the main menu, as long as it doesn't stutter or
    cost performance. (Presentation.)
