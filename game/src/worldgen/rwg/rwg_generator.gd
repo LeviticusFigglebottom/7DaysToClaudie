@@ -499,7 +499,10 @@ func _town_sites() -> void:
 		kinds.clear()
 		for ts: Variant in test_sites:
 			kinds.append(str(ts["kind"]))
-	for ki: int in kinds.size():
+	# A while loop: a class with no room on this land retries one class smaller at the end.
+	var ki: int = -1
+	while ki + 1 < kinds.size():
+		ki += 1
 		var kind: String = kinds[ki]
 		_sub("Choosing town sites", 0.3, 0.34, float(ki) / kinds.size())
 		if not test_sites.is_empty():
@@ -580,6 +583,10 @@ func _town_sites() -> void:
 					best = {"center": c}
 		if best.is_empty():
 			warnings.append("no room for a %s" % kind)
+			# Bigger towns (VERSION 12) need wider level land; rather than lose the town, try one
+			# class smaller once the others are placed.
+			if KINDS.find(kind) > 0 and test_sites.is_empty():
+				kinds.append(KINDS[KINDS.find(kind) - 1])
 			continue
 		var ti: int = towns.size()
 		var name: String = str(pool.pop_at(r.randi() % pool.size())) if not pool.is_empty() else "Town %d" % (ti + 1)
@@ -2344,7 +2351,8 @@ func _trader_posts() -> void:
 		var best: Dictionary = {}
 		# Just outside the town, farther out where a bend, a slope, water or the town's outer lots
 		# leave no room at the first ring.
-		for extra: float in [30.0, 70.0, 120.0, 190.0]:
+		# (Bigger towns, VERSION 12, farm out further along their roads: up to past the outskirts.)
+		for extra: float in [30.0, 70.0, 120.0, 190.0, 280.0, 380.0, 480.0]:
 			var ring: float = float(tw["radius"]) + safe + extra
 			for i: int in roads.size():
 				if not str(roads[i]["class"]) in ["highway", "county"]:
@@ -2365,6 +2373,28 @@ func _trader_posts() -> void:
 					prev = d
 			if not best.is_empty():
 				break
+		if best.is_empty():
+			# No crossing of those rings fits (a bigger town's farms along its roads, a bend, the
+			# map's edge): anywhere along a highway, county road or track out to 900 m past the
+			# town, nearest and on the bigger roads best.
+			var lo: float = float(tw["radius"]) + safe + 30.0
+			for i2: int in roads.size():
+				var cls2: String = str(roads[i2]["class"])
+				if not cls2 in ["highway", "county", "track"]:
+					continue
+				var line2: Polyline2 = roads[i2]["line"]
+				var s2: float = 0.0
+				while s2 + 12.0 <= line2.total_length:
+					s2 += 12.0
+					var d2: float = c.distance_to(line2.point_at(s2))
+					if d2 < lo or d2 > lo + 900.0:
+						continue
+					for side2: float in [1.0, -1.0]:
+						var cand2: Dictionary = _post_candidate(i2, s2, side2, safe)
+						if not cand2.is_empty():
+							cand2["score"] = float(cand2["score"]) + (d2 - lo) * 0.02 + (8.0 if cls2 == "track" else 0.0) + r.randf()
+							if best.is_empty() or float(cand2["score"]) < float(best["score"]):
+								best = cand2
 		if best.is_empty():
 			warnings.append("no trader post by %s" % tw["name"])
 			continue
