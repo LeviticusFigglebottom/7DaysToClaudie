@@ -270,7 +270,9 @@ def _skin_masks(model, sk, o, W) -> None:
     # grime layer read as grey holes (ADR-0060). Thin it on the palm side of the fingers; nails
     # keep their own corners (_nail_colours).
     thin_l = thin[lv]
-    pad = (1.0 - smoothstep(0.2, 0.8, dorsal[lv])) * smoothstep(0.3, 0.8, thin_l)
+    # the pads and the sides the fingers turn to each other (dorsal ~0.5, the lowest AO of all);
+    # the knuckles and the backs of the joints keep theirs
+    pad = (1.0 - smoothstep(0.6, 0.95, dorsal[lv])) * smoothstep(0.3, 0.8, thin_l)
     skin = np.ones(len(lv), bool)
     nail_slots = [i for i, m in enumerate(me.materials) if m is not None and "fp_nail" in m.name]
     if nail_slots:
