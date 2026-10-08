@@ -1,7 +1,8 @@
 extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
-const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "new_game", "manual"]
+const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "new_game", "manual",
+	"intro_0", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7"]
 
 var _out: String = "res://../build/ui_shots"
 var _only: PackedStringArray = []
@@ -24,7 +25,11 @@ func _run() -> void:
 	for shot: String in ALL:
 		if not _only.is_empty() and not _only.has(shot):
 			continue
-		var node: Node = await call(&"_shot_" + shot)
+		var node: Node = null
+		if shot.begins_with("intro_"):
+			node = await _shot_intro(int(shot.get_slice("_", 1)))
+		else:
+			node = await call(&"_shot_" + shot)
 		await _settle(12)
 		var img: Image = get_viewport().get_texture().get_image()
 		var path: String = ProjectSettings.globalize_path(_out).path_join(shot + ".png")
@@ -133,4 +138,15 @@ func _shot_manual() -> Node:
 	layer.add_child(m)
 	await _settle(1)
 	m.open("build")
+	return layer
+
+
+func _shot_intro(i: int) -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var intro := IntroPlayer.new()
+	layer.add_child(intro)
+	intro.play({}, IntroPlayer.vars_for(Game.session))
+	intro.set_status("Shaping the valley…  42%")
+	intro.show_card(i)
+	await _settle(2)
 	return layer

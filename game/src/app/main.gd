@@ -175,6 +175,7 @@ func _build_menu() -> void:
 			b.text += " · world missing"
 			b.tooltip_text = warn
 	_add_button("Options…", _open_options)
+	_add_button("The Intro", _play_intro)
 	_add_button("Quit", func() -> void: get_tree().quit())
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
 
@@ -263,6 +264,24 @@ func _set_title_visible(on: bool) -> void:
 func _load(slot: String) -> void:
 	if not Game.load_game(slot):
 		_status.text = "Could not load %s: %s." % [slot, SaveSystem.last_error]
+
+
+## Replays the new-game intro over the menu (ADR-0064).
+func _play_intro() -> void:
+	var intro := IntroPlayer.new()
+	add_child(intro)
+	_list.visible = false
+	var music: AudioStreamPlayer = get_node_or_null("Music") as AudioStreamPlayer
+	if music != null:
+		music.stream_paused = true
+	intro.finished.connect(func() -> void:
+		var tw := intro.create_tween()
+		tw.tween_property(intro, "modulate:a", 0.0, 0.8)
+		tw.tween_callback(intro.queue_free)
+		_list.visible = true
+		if music != null:
+			music.stream_paused = false)
+	intro.play({}, IntroPlayer.vars_for(null))
 
 
 func _open_options() -> void:

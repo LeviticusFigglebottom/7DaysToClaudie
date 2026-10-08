@@ -40,6 +40,10 @@ var _level_pending: int = 0
 var _hits: Array[Dictionary] = []
 var _wedges: Control
 var _heart: AudioStreamPlayer
+## The new-game intro (ADR-0064) while it plays, over the loading screen and then the world.
+var intro: IntroPlayer = null
+## Whether the intro paused the world (it outlasted the load) and holds the "intro" modal.
+var _intro_holds_world: bool = false
 
 
 func _ready() -> void:
@@ -55,6 +59,7 @@ func _ready() -> void:
 	add_child(manual)
 	_build_overlay()
 	_build_pause()
+	_maybe_start_intro()
 	Events.player_status_message.connect(message)
 	Events.player_damaged.connect(_on_player_damaged)
 	# The Hum's warnings and its start are announced by HumDirector alone (with the forecast).
@@ -122,6 +127,8 @@ func _build_loading() -> void:
 ## `map`: the world's map (random worlds) and `marks` its region states (LoadingMap); a null map
 ## leaves the last one shown.
 func show_loading(text: String, progress: float, map: Texture2D = null, marks: Dictionary = {}) -> void:
+	if intro != null:
+		intro.set_status("%s  %d%%" % [text, roundi(progress * 100.0)])
 	_loading.visible = true
 	_hud.visible = false
 	_loading_label.text = text
@@ -138,6 +145,56 @@ func loading_text() -> String:
 func hide_loading() -> void:
 	_loading.visible = false
 	_hud.visible = true
+	_hold_world_for_intro.call_deferred()
+
+
+# --- The intro (ADR-0064) -------------------------------------------------------------------------
+
+## A new game plays the intro over the load (not a loaded one, not with skip_intro).
+func _maybe_start_intro() -> void:
+	var opts: Dictionary = Game.pending_options
+	if not bool(opts.get("is_new_game", false)) or bool(opts.get("skip_intro", false)):
+		return
+	if DisplayServer.get_name() == "headless":
+		return
+	intro = IntroPlayer.new()
+	intro.name = "Intro"
+	add_child(intro)
+	intro.finished.connect(_on_intro_finished)
+	intro.play({}, IntroPlayer.vars_for(Game.session))
+
+
+## Whether the load may run a heavy main-thread step now (GameWorld asks each frame of its
+## boot): only while no intro is moving on screen, so a long step never lands mid-fade.
+func load_may_step() -> bool:
+	return intro == null or intro.is_calm()
+
+
+func is_intro_playing() -> bool:
+	return intro != null and intro.is_playing()
+
+
+## The world is ready but the intro is still on: pause the world under it and keep the player's
+## hands off until it ends (the pause menu's pause, so nothing ticks unseen).
+func _hold_world_for_intro() -> void:
+	if not is_intro_playing() or _intro_holds_world:
+		return
+	_intro_holds_world = true
+	push_modal(&"intro")
+	get_tree().paused = true
+
+
+func _on_intro_finished() -> void:
+	var i: IntroPlayer = intro
+	intro = null
+	if i != null:
+		var tw := i.create_tween()
+		tw.tween_property(i, "modulate:a", 0.0, 0.8)
+		tw.tween_callback(i.queue_free)
+	if _intro_holds_world:
+		_intro_holds_world = false
+		get_tree().paused = false
+		pop_modal(&"intro")
 
 
 # --- HUD -----------------------------------------------------------------------------------
@@ -583,7 +640,7 @@ func toggle_pause() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	var w: Node = Game.world
-	if w == null or not bool(w.get(&"is_ready")):
+	if w == null or not bool(w.get(&"is_ready")) or is_intro_playing():
 		return
 	# Handled here, not in GameWorld: this layer keeps processing while the tree is paused, so
 	# Escape also closes the pause menu.

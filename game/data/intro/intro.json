@@ -1,0 +1,27 @@
+{
+  "_doc": "The new-game intro (ADR-0064): cards played in order by IntroPlayer. kind: caption (a stamp line and typed lines on black), document (a typed paper form with a rubber stamp), radio (a transcript, line by line), title (the game's name and where you are). hold: seconds the card stays once fully shown. sound: played when the card starts (UI bus). {day} {time} {sector} are filled from the session.",
+  "music": "music/dread_drone",
+  "type_speed": 42,
+  "cards": [
+    {"kind": "caption", "stamp": "CORVANE DEEP MINE  ·  SAWBACK RANGE  ·  EIGHTEEN MONTHS AGO",
+     "lines": ["Bore Nine broke into a cave older than the mountains.", "What came up was pale, fine as hair, and it wanted nerves."], "hold": 3.5},
+    {"kind": "caption", "stamp": "THE BLOOM",
+     "lines": ["Its hosts lose themselves but keep walking. The Hollowed.", "By day they stumble half-blind. At night they hunt."], "hold": 3.5},
+    {"kind": "caption", "stamp": "EVERY SEVENTH NIGHT", "sound": "amb/the_hum",
+     "lines": ["The ground hums.", "And every Hollowed for miles comes for the brightest fire it can hear."], "hold": 4.0},
+    {"kind": "document", "heading": "NOTICE OF QUARANTINE", "stamp": "CORDON AUTHORITY", "sound": "sfx/book_page_turn",
+     "lines": ["The Hollowmere valley is closed.", "Fence, drones, a burned firebreak: the Cordon.", "No one comes out who has not been cleared.", "A few hundred residents fled to the high timber. Do not approach them."], "hold": 3.5},
+    {"kind": "document", "heading": "REMAND SALVAGE PROGRAM — ENROLMENT", "stamp": "VOLUNTEERED", "sound": "sfx/book_page_turn",
+     "lines": ["Salvager No. 4471.", "Duty: recover Bloom core samples and field-lab records from inside the Cordon.", "Each delivery to Waystation 9 shortens your sentence.", "The tether on your wrist stays locked. It will tell you when the ground is due to hum."], "hold": 4.0},
+    {"kind": "radio", "heading": "CORDON CONTROL  ·  CH 4  ·  05:52", "sound": "ui/tether_beep",
+     "lines": ["LIFT 3|Control, Lift Three, over the firebreak. One package for Larch Hollow.",
+               "CONTROL|Copy, Three. Wind light from the west. Drop and climb.",
+               "LIFT 3|Ground's moving down there. Trees shaking, no wind —",
+               "CONTROL|Three, say again?",
+               "LIFT 3|Winch let go early. Package is down. Package is down hard.",
+               "CONTROL|...Log it. Waystation 9 out."], "hold": 3.0},
+    {"kind": "caption", "stamp": "LARCH HOLLOW  ·  DAY {day}  ·  {time}",
+     "lines": ["You come to on cold ground with the tether ticking against your wrist.", "{hum_in}"], "hold": 3.5},
+    {"kind": "title", "lines": ["The valley breathes on the seventh night."], "hold": 3.0}
+  ]
+}
