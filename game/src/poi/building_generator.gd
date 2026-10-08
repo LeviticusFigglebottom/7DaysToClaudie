@@ -153,13 +153,30 @@ static func fits(tdef: TemplateDef, lot_size: Vector2i) -> bool:
 	return tdef.width.x + 2 * SIDE_YARD <= lot_size.x and tdef.depth.x + tdef.setback.x + BACK_YARD <= lot_size.y
 
 
-# --- Assembly --------------------------------------------------------------------------------------
+## The building's box on its lot in plan cells (x along the street, y from the back; the street
+## side is y = lot.y), as `_make` lays it out from `seed`: the first attempt's, which is what stands
+## unless the validator sends `generate` to a retry. Rect2i() when the template does not fit. The
+## vegetation keeps its yard plants and trees off it without generating the building (player
+## report 4: yards grow grass, brush and trees round the house).
+static func plan_box(tdef: TemplateDef, seed: int, lot_size: Vector2i) -> Rect2i:
+	var g: RefCounted = (load("res://src/poi/building_generator.gd") as GDScript).new()
+	return g.call(&"_plan_box", tdef, seed, lot_size)
 
-func _make(tdef: TemplateDef, seed: int, lot_size: Vector2i, def_id: String) -> PoiDef:
+
+func _plan_box(tdef: TemplateDef, seed: int, lot_size: Vector2i) -> Rect2i:
 	t = tdef
-	seed_v = seed
 	rng.seed = seed
 	lot = lot_size
+	if not _lay_out():
+		return Rect2i()
+	return Rect2i(origin, Vector2i(w, d))
+
+
+# --- Assembly --------------------------------------------------------------------------------------
+
+## The family, the building's size and its place on the lot (the first draws from the seed; shared
+## by `_make` and `plan_box`). False when the template does not fit the lot.
+func _lay_out() -> bool:
 	var fams: Array = _cfg().get("families", ["Hale"])
 	family = str(fams[rng.randi() % maxi(1, fams.size())])
 	w = rng.randi_range(t.width.x, t.width.y)
@@ -171,12 +188,23 @@ func _make(tdef: TemplateDef, seed: int, lot_size: Vector2i, def_id: String) -> 
 		setback = clampi(lot.y - BACK_YARD - t.depth.x, t.setback.x, setback)
 		d = mini(d, lot.y - setback - BACK_YARD)
 		if w < t.width.x or d < t.depth.x:
-			return null
+			return false
 	else:
 		lot = Vector2i(w + 2 * SIDE_YARD + rng.randi_range(0, 4), d + setback + BACK_YARD + rng.randi_range(0, 3))
 	var slack: int = lot.x - w - 2 * SIDE_YARD
 	origin = Vector2i(SIDE_YARD + rng.randi_range(0, slack), lot.y - setback - d)
 	origin.y = maxi(origin.y, BACK_YARD)
+	return true
+
+
+
+func _make(tdef: TemplateDef, seed: int, lot_size: Vector2i, def_id: String) -> PoiDef:
+	t = tdef
+	seed_v = seed
+	rng.seed = seed
+	lot = lot_size
+	if not _lay_out():
+		return null
 	match t.archetype:
 		"duplex":
 			if not _duplex():

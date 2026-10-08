@@ -24,7 +24,8 @@ extends RefCounted
 ## map, v1 worlds) compose exactly as before.
 ## VERSION 12 (ADR-0047): a world town paints `town` only on its streets (TOWN_VERGE past their
 ## shoulders) and square, no longer over its whole disc, and a yard's grass keeps off the largest
-## authored footprint its lot may hold. The main map's output did not change.
+## authored footprint its lot may hold (VERSION 13: the yard grows over its whole frame and the
+## house clears its own box at runtime). The main map's output did not change.
 ##
 ## Streaming (ADR-0038): the per-sample passes (macro and noise, water, roads, surface) can run in
 ## row bands, each on a Thread of its own writing its own arrays, merged in row order after the join
@@ -81,11 +82,9 @@ const LOT_SKIRT: float = 5.0
 ## these two by a value noise, out to LOT_BANK_REACH m from the frame, instead of a 5 m ramp.
 const LOT_BANK: Vector2 = Vector2(0.5, 1.1)
 const LOT_BANK_REACH: float = 14.0
-const YARD_VEG: float = 0.6
+const YARD_VEG: float = 0.85
 const TOWN_REACH: float = 40.0
 const LOT_ROAD_YIELD: float = 2.0
-## A yard's grass grows within this much of its frame's edge (m), and none a metre further in.
-const YARD_EDGE: float = 2.0
 ## A world town's streets paint `town` this far past their shoulders (m, plus up to 2 m of noise);
 ## the ground between the streets and the lots keeps the world's biome (ADR-0047).
 const TOWN_VERGE: float = 3.0
@@ -336,8 +335,6 @@ class _Build:
 	## paved with (-1: none; a world town's square).
 	var _pad_veg := PackedFloat64Array()
 	var _pad_surf := PackedInt32Array()
-	## Per pad: the footprint centred in it that a town yard's grass keeps off (ZERO: none).
-	var _pad_core := PackedVector2Array()
 	## Per road: 1 for a world town's street, 2 for a world road through a town's disc (both paint
 	## `town` round them, the second only inside a disc); the biome index of `town`; the discs.
 	var _r_town := PackedByteArray()
@@ -665,11 +662,9 @@ class _Build:
 			for lv: Variant in fw.lots:
 				var l: Dictionary = lv
 				if l.has("frame"):
-					var lp: Dictionary = _frame_pad(l["frame"], float(l.get("y", 0.0)), "lot", String(fw.id), "%s/%s" % [tid, l.get("id", "")], "yard", YARD_VEG, "")
-					# The largest authored footprint the lot may hold, centred in the frame: no
-					# yard grass under it, whichever building the run's seed stands there.
-					lp["core"] = Vector2(Lots.max_authored_footprint(fw, l))
-					pads.append(lp)
+					# A yard over the whole frame: the house the run stands there clears its own box
+					# at runtime (VegetationManager._footprints, VERSION 13).
+					pads.append(_frame_pad(l["frame"], float(l.get("y", 0.0)), "lot", String(fw.id), "%s/%s" % [tid, l.get("id", "")], "yard", YARD_VEG, ""))
 			if fw.plaza.has("frame"):
 				pads.append(_frame_pad(fw.plaza["frame"], float(fw.plaza.get("y", 0.0)), "plaza", String(fw.id), "%s/plaza" % tid, "town", 0.0, "asphalt"))
 
@@ -1382,7 +1377,9 @@ class _Build:
 					var u11: float = float((((wi + 1) * 73856093) ^ ((wj + 1) * 19349663) ^ bs2) & 0xffff) / 65535.0
 					var nb: float = lerpf(lerpf(u00, u10, wfx), lerpf(u01, u11, wfx), wfz)
 					var dh: float = hv - target
-					var e: float = maxf(0.0, d - inner - nb * BANK_VERGE)
+					# A flat verge of at least 0.8 m before the bank: on the 4 m far LOD the bench then
+					# keeps a vertex or two, and the road does not read as tilted into its bank.
+					var e: float = maxf(0.0, d - inner - 0.8 - nb * BANK_VERGE)
 					var k_s: float = lerpf(BANK_CUT.x, BANK_CUT.y, nk) if dh > 0.0 else lerpf(BANK_FILL.x, BANK_FILL.y, nk)
 					var allow: float = k_s * e
 					# A smooth min of |dh| and the bank's allowance: the crest and toe round off over
@@ -1599,7 +1596,6 @@ class _Build:
 			_pad_size.append(s0)
 			_pad_bi.append(biomes.find(pad0["biome"]))
 			_pad_veg.append(float(pad0.get("veg", 0.0)))
-			_pad_core.append(pad0.get("core", Vector2.ZERO))
 		var clear_boxes: Array[Rect2] = []
 		for cl0: Dictionary in clearings:
 			var cr: float = float(cl0["r"]) + 6.0
@@ -1833,7 +1829,6 @@ class _Build:
 		var town_bi: int = _s_town_bi
 		var town_c: PackedVector2Array = _town_c
 		var town_r: PackedFloat64Array = _town_r
-		var dcore: PackedVector2Array = _pad_core
 		var col_c: PackedInt32Array = _s_col_c
 		var col_f: PackedFloat64Array = _s_col_f
 		var col_b: PackedInt32Array = _s_col_b
@@ -1982,8 +1977,6 @@ class _Build:
 				if wd < 14.0 + n2 * 10.0 and kind[bi] != K_FEN:
 					bi = 1
 				var pad_hit: int = -1
-				var pad_in: float = 0.0
-				var pad_out: float = 1.0e9
 				for j2: int in range(dst[cell], dst[cell + 1]):
 					var pi: int = dit[j2]
 					if not dboxes[pi].has_point(Vector2(x, z)):
@@ -1992,12 +1985,6 @@ class _Build:
 					var size: Vector2 = dsize[pi]
 					if lp.x >= -1.0 and lp.y >= -1.0 and lp.x <= size.x + 1.0 and lp.y <= size.y + 1.0:
 						pad_hit = pi
-						# How far inside the pad's edge (a yard's grass keeps to its edges).
-						pad_in = minf(minf(lp.x, size.x - lp.x), minf(lp.y, size.y - lp.y))
-						# How far outside the footprint its yard's grass keeps off (ADR-0047).
-						var core: Vector2 = dcore[pi]
-						if core.x > 0.0:
-							pad_out = maxf(absf(lp.x - size.x * 0.5) - core.x * 0.5, absf(lp.y - size.y * 0.5) - core.y * 0.5)
 						break
 				if pad_hit >= 0:
 					bi = dbi[pad_hit]
@@ -2183,13 +2170,10 @@ class _Build:
 					# Bare under a building's pad; a world town's yard keeps grass round its edges, where
 					# no building stands (a generated one keeps 3 m from its lot's sides and back and its
 					# setback from the front; a floor 0.15 m up hid no grass).
-					var keep: float = dveg[pad_hit]
-					if keep > 0.0:
-						keep *= 1.0 - smoothstep(YARD_EDGE, YARD_EDGE + 1.0, pad_in)
-						# And none under the largest building its lot may hold, fading in over a metre
-						# past its walls (a frame it fills keeps no yard).
-						keep *= smoothstep(0.0, 1.0, pad_out)
-					veg = minf(veg, keep)
+					# VERSION 13: a world town's yard keeps its plants over the whole frame; the house
+					# that stands there (known only to the run) clears its own box at runtime
+					# (VegetationManager._footprints), so the yard grows up to its walls.
+					veg = minf(veg, dveg[pad_hit])
 				for j3: int in range(cst[cell], cst[cell + 1]):
 					var ck: int = cit[j3]
 					var dc: float = Vector2(x, z).distance_to(clpos[ck])

@@ -55,7 +55,8 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 11: round 5 of the wilderness set pieces (ADR-0053): more `late` entries (the treehouse holdout,
 ## the fish hatchery, the hot springs bathhouse); the places before them stay where they were.
 ## 12: the lake and river valley caps are cut into the macro grid (RwgTerrain._valley_caps), so
-## roads, streets and lots are graded from the ground the composer makes (player report 4).
+## roads, streets and lots are graded from the ground the composer makes (player report 4); only a
+## town's core turns meadow in the biome map (birch round it, the forest past its lots).
 const VERSION: int = 12
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
@@ -1531,20 +1532,28 @@ func _biome_map() -> void:
 			var s: float = terrain.slope(p.x, p.y)
 			var wd: float = water_at(p)
 			var wet: float = 1.0 - smoothstep(0.0, 260.0, wd)
+			# town_ring: a town's disc and its fringe (no fen there). Only the core is cleared to meadow
+			# (the square, the shops); round it second-growth birch, and past the lots the world's own
+			# forest, so the trees come up to the yards (player report 4: a town read as a cleared
+			# patch in the forest when its whole disc and 90 m round it turned meadow).
 			var town_ring: float = 0.0
+			var town_core: float = 0.0
+			var town_edge: float = 0.0
 			for tw: Dictionary in towns:
 				var d: float = (tw["center"] as Vector2).distance_to(p)
 				var tr: float = float(tw["radius"])
-				# Cleared ground over a town's disc (yards, pasture), then the trees close in again.
+				var core: float = float(tw.get("core", tr * 0.4))
 				town_ring = maxf(town_ring, 1.0 - smoothstep(tr * 0.7, tr + 90.0, d))
+				town_core = maxf(town_core, 1.0 - smoothstep(core * 0.5, core * 1.1, d))
+				town_edge = maxf(town_edge, (1.0 - smoothstep(tr * 0.8, tr + 40.0, d)) * smoothstep(core * 0.6, core * 1.2, d))
 			var nc: float = noises[0].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nbr: float = noises[1].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nm: float = noises[2].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nr: float = noises[3].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var sc: Array[float] = [
 				w[0] * (0.55 + 0.6 * nc),
-				w[1] * (0.3 + 0.85 * nbr) * (0.8 + 0.6 * wet),
-				w[2] * (0.25 + 0.95 * nm) * (1.25 - 0.9 * smoothstep(0.05, 0.22, s)) * (1.0 - 0.6 * e) + town_ring * (0.6 + w[2]),
+				w[1] * (0.3 + 0.85 * nbr) * (0.8 + 0.6 * wet) + town_edge * (0.35 + w[1]) * nbr,
+				w[2] * (0.25 + 0.95 * nm) * (1.25 - 0.9 * smoothstep(0.05, 0.22, s)) * (1.0 - 0.6 * e) + town_core * (0.6 + w[2]),
 				# Bare rock on the heights and the steepest ground only: the composer already turns
 				# slopes past ~35 degrees to rock, and highlands should keep their forested sides.
 				w[3] * (smoothstep(0.62, 0.97, e) * 1.5 + smoothstep(0.32, 0.65, s) * 0.8 + 0.1 * nr),

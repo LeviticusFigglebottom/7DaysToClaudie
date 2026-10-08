@@ -69,6 +69,18 @@ var _pickable: Dictionary = {}
 ## rid -> {task (-1 once built), jobs: [[rid, chunk key]], chunks: [result per job], holder: Node3D,
 ## mats: [ShaderMaterial], dropped: bool}.
 var _far: Dictionary = {}
+## The buildings of a world's organic towns (ADR-0040), as yards see them: chunk key -> [[world to
+## building-local Transform2D, local box Rect2, front edge y (the street side)], ...]. Built once in
+## setup_world from the PoiRegistry and never replaced (the far layer's workers read it). A yard
+## grows grass, brush and a few trees (the `yard` biome) right up to its house: what stands in a
+## building's box, or a tree or bush on the walk in front of it, is hidden by index like a clearing,
+## so the scatter and the saved trees keep their indices (player report 4).
+var _footprints: Dictionary = {}
+## How far round a building's box each layer keeps off (m), and how much further on its street side
+## (the front yard and the verge out to the street, as wide as the house: the walk to its door stays
+## clear of trees, brush and boulders).
+const FOOTPRINT_MARGIN: Dictionary = {"tree": 1.6, "medium": 0.8, "ground": 0.25, "bloom": 0.25}
+const FOOTPRINT_FRONT: Dictionary = {"tree": 12.0, "medium": 12.0, "ground": 0.0, "bloom": 0.0}
 ## Clearing ids `set_clearings` opened, by source (Bloom nests' mats, ADR-0055): a thin layer over
 ## the runtime clearings below, so nests and forest encounters share one mask.
 var _source_clearings: Dictionary = {}
@@ -78,6 +90,7 @@ func setup_world(w: Node) -> void:
 	world = w
 	terrain = w.terrain
 	_removed = Game.session.world.trees
+	_build_footprints(w.get(&"poi_registry") as PoiRegistry)
 	_far_root = Node3D.new()
 	_far_root.name = "FarTrees"
 	add_child(_far_root)
@@ -168,6 +181,10 @@ func _recompute_cleared(key: Vector2i) -> void:
 	var had: Dictionary = _cleared.get(key, {})
 	var now: Dictionary = {}
 	var layers: Dictionary = _data.get(key, {})
+	for layer0: String in layers:
+		for inst0: VegetationScatter.Instance in layers[layer0]:
+			if _in_footprint(_footprints.get(key, []), layer0, inst0.pos.x, inst0.pos.z):
+				now[inst0.index] = true
 	for cid: StringName in _clearings_by_chunk.get(key, []):
 		var c: Array = _clearings[cid]
 		var at: Vector2 = c[0]
@@ -302,7 +319,7 @@ func _collect() -> void:
 			_pending.erase(key)
 			_data[key] = job["out"][0]
 			_pickable[key] = _harvestables(job["out"][0])
-			if _clearings_by_chunk.has(key):
+			if _clearings_by_chunk.has(key) or _footprints.has(key):
 				_recompute_cleared(key)
 
 
@@ -535,6 +552,7 @@ func _far_attach(rid: String) -> void:
 	var seed_v: int = Game.session.world_seed
 	var height_fn: Callable = terrain.height_at
 	var removed: Dictionary = _removed.duplicate(true)
+	var fps: Dictionary = _footprints
 	var jobs: Array = []
 	var cx0: int = int(floor(rt.rect.position.x / CHUNK))
 	var cz0: int = int(floor(rt.rect.position.y / CHUNK))
@@ -554,7 +572,7 @@ func _far_attach(rid: String) -> void:
 	# caps low-priority work to a share of the pool, so the near chunks around the player (high
 	# priority scatter jobs, terrain meshing) never queue behind the far layer.
 	var task: int = WorkerThreadPool.add_group_task(func(i: int) -> void:
-		results[i] = _far_buffers(_scatter_far_chunk(rt, jobs[i][1], seed_v, height_fn, removed), dims),
+		results[i] = _far_buffers(_scatter_far_chunk(rt, jobs[i][1], seed_v, height_fn, removed, fps.get(jobs[i][1], [])), dims),
 		jobs.size(), -1, false, "far trees")
 	_far[rid] = {"task": task, "jobs": jobs, "chunks": results, "holder": null, "mats": [], "dropped": false}
 
@@ -597,15 +615,84 @@ static func _far_buffers(insts: Array, dims: Dictionary) -> Dictionary:
 	return out
 
 
-## Trees of one chunk for the far layer (felled ones removed).
-static func _scatter_far_chunk(rt: RegionTerrain, key: Vector2i, seed_v: int, height_fn: Callable, removed: Dictionary) -> Array:
+## Trees of one chunk for the far layer (felled ones and those on a town building removed).
+static func _scatter_far_chunk(rt: RegionTerrain, key: Vector2i, seed_v: int, height_fn: Callable, removed: Dictionary, fps: Array = []) -> Array:
 	var gone: Dictionary = removed.get(Ids.chunk_key(key.x, key.y), {})
 	var keep: Array = []
 	var layers: Dictionary = VegetationScatter.scatter_chunk(key, rt, seed_v, height_fn, Callable(), 1)
 	for inst: VegetationScatter.Instance in layers.get("tree", []):
-		if not gone.has(str(inst.index)):
+		if not gone.has(str(inst.index)) and not _in_footprint(fps, "tree", inst.pos.x, inst.pos.z):
 			keep.append(inst)
 	return keep
+
+
+## Whether a `layer` instance at (x, z) stands on one of `fps` (a chunk's _footprints entry) or its
+## margin, or on the walk in front of it.
+static func _in_footprint(fps: Array, layer: String, x: float, z: float) -> bool:
+	if fps.is_empty():
+		return false
+	var m: float = float(FOOTPRINT_MARGIN.get(layer, 0.5))
+	var front: float = float(FOOTPRINT_FRONT.get(layer, 0.0))
+	for f: Array in fps:
+		var lp: Vector2 = (f[0] as Transform2D) * Vector2(x, z)
+		var box: Rect2 = f[1]
+		if lp.x > box.position.x - m and lp.x < box.end.x + m and lp.y > box.position.y - m and lp.y < box.end.y + m + front:
+			return true
+	return false
+
+
+## _footprints from the registry's town lots (frame lots: an organic town's). An authored building
+## fills its footprint; a generated one stands where BuildingGenerator.plan_box lays it out.
+func _build_footprints(reg: PoiRegistry) -> void:
+	if reg == null:
+		return
+	var db: Node = ContentDB.instance
+	var max_m: float = 0.0
+	for k: String in FOOTPRINT_MARGIN:
+		max_m = maxf(max_m, float(FOOTPRINT_MARGIN[k]) + float(FOOTPRINT_FRONT.get(k, 0.0)))
+	for e: Dictionary in reg.entries.values():
+		if str(e["kind"]) != "lot":
+			continue
+		var res: Dictionary = e["res"]
+		var l: Dictionary = res.get("lot", {})
+		if not l.has("frame"):
+			continue
+		var fp := Vector2i.ZERO
+		var box := Rect2i()
+		match str(res.get("kind", "")):
+			"authored":
+				var pd: PoiDef = db.call(&"get_def", &"poi", StringName(str(res["def_id"]))) as PoiDef if db != null else null
+				if pd == null:
+					continue
+				fp = pd.footprint
+				box = Rect2i(Vector2i.ZERO, fp)
+			"generated":
+				var t: BuildingTemplateDef = db.call(&"get_def", &"building_template", StringName(str(res["template"]))) as BuildingTemplateDef if db != null else null
+				if t == null:
+					continue
+				fp = res["size"]
+				box = BuildingGenerator.plan_box(t, int(res["seed"]), fp)
+				if box.size == Vector2i.ZERO:
+					continue
+			_:
+				continue
+		var xf: Transform3D = (e["fxf"] as Transform3D) * LotPicker.lot_local_xf(l, fp)
+		var x2 := Transform2D(Vector2(xf.basis.x.x, xf.basis.x.z), Vector2(xf.basis.z.x, xf.basis.z.z), Vector2(xf.origin.x, xf.origin.z))
+		var entry: Array = [x2.affine_inverse(), Rect2(box), 0.0]
+		# The chunks the box (grown by the widest margin) reaches.
+		var lo := Vector2(INF, INF)
+		var hi := Vector2(-INF, -INF)
+		var gb: Rect2 = Rect2(box).grow(max_m)
+		for c: Vector2 in [gb.position, Vector2(gb.end.x, gb.position.y), gb.end, Vector2(gb.position.x, gb.end.y)]:
+			var wp: Vector2 = x2 * c
+			lo = lo.min(wp)
+			hi = hi.max(wp)
+		for cz: int in range(floori(lo.y / CHUNK), floori(hi.y / CHUNK) + 1):
+			for cx: int in range(floori(lo.x / CHUNK), floori(hi.x / CHUNK) + 1):
+				var key := Vector2i(cx, cz)
+				if not _footprints.has(key):
+					_footprints[key] = []
+				(_footprints[key] as Array).append(entry)
 
 
 func _collect_far() -> void:
