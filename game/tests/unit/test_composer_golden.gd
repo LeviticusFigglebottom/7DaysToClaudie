@@ -61,7 +61,7 @@ const DIGEST_KEYS: PackedStringArray = ["height", "splat0", "splat1", "biome", "
 ## input hash at that spacing, to tell changed inputs from a changed composer.
 const GOLDEN: Dictionary = {
 	"larch@4": {
-		"input": "57ffe273c26922b3b1a19124cc5a11504d31da5edb039ae4964545db2be55231",
+		"input": "c483a025fa1956254913a48c486e9513bc78b576af5c887ae1a6fc13b4145590",
 		"biome": "920741d7594b667f74a08e6c70014ec5",
 		"bridges": "1f0c533e9edd7d199eef56ffe59942b6",
 		"height": "290e6ea212dc222c9e7a4489199066c621425505213314246d98bcf2100b306e",
@@ -74,7 +74,7 @@ const GOLDEN: Dictionary = {
 		"water": "557e9069b493e19e7402548619659f8b"
 	},
 	"larch@8": {
-		"input": "3a396692450d86bcee2760959c9fb2c81557243be45145574e077359dfd0948d",
+		"input": "a3fe6761ad40b4541dc053aa71a003b200718dc22f91a9097d931381350f0e46",
 		"biome": "00c074e8e4ab91a87a1bea29881e9d38",
 		"bridges": "259591cd5bc276b780c3fd267f0a9a6d",
 		"height": "7e9f36b666ce79176e960777eff2076aa528449970bf815dc674818f45e101e4",
@@ -87,15 +87,15 @@ const GOLDEN: Dictionary = {
 		"water": "43ffa565190e27f18b8b0f4c0013ec3a"
 	},
 	"larch@1": {
-		"input": "321108870c2a7da57e14ae56e3997f9fe6021881ae2002c920ac6086486a6370",
-		"biome": "ad65f8b6b199cc886aa7171b0bb8ab55",
+		"input": "a9a290ed8e335d52b306042e473d16e36d5c349dc51f01b7fcf4f7a12fad0ffa",
+		"biome": "d34986d79e92834b449cd843c9fab04a",
 		"bridges": "428b1b895c7baf5bf0dc14187b1f2176",
-		"height": "2ff0f55f6371f3fb3cafa38f1bc2048d59309c41407a20406a4012dec1c12542",
+		"height": "3bf5267df026630f2e48b67f40e991d8a48b5af885c774f283c754d0f24f86db",
 		"other": "38647b66d9cbf95236cd867703897fd9",
-		"placements": "99bdef0376585ee4873a7a1b717bd1aa",
+		"placements": "6c7d07e73e2ce1f089f4e0d3283009e7",
 		"roads": "3168fb7dc2004183e1d1393d5ac9468c",
-		"splat0": "928422c362586077c4e0f434e7184456",
-		"splat1": "a124600c1ce6283ee1392f187a3372ca",
+		"splat0": "db7535b3aa4744f42516d742c3761f02",
+		"splat1": "673636597c3a2eb51359e062b0c917d7",
 		"vegmask": "ff9844afb27e9e1841e0891e46696e89",
 		"water": "11ae9d82d419d86230b8edcb296f0984"
 	},
@@ -127,14 +127,14 @@ const GOLDEN: Dictionary = {
 	},
 	"rwg@1": {
 		"input": "829b77b432ad2d055f0d9cabb8f0477146893966f3d064a9bfef9d2aa57c6b21",
-		"biome": "68c3bd6bbdc4b234f446a971cd3aabef",
+		"biome": "57ba2dfb17839ef75e809221dd132066",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"height": "a3dd8f46d9642285c4c2243d2eb3677839152c32b79e517b55e9a6f4ac92bd15",
+		"height": "b6400067ef975cfbfb8135e3f4611566da8fb22f95306b4b515b6b9ad2663df7",
 		"other": "bb546e313f91e8b52ded71379f76f9c9",
-		"placements": "4e6b41ae79c773c2002dde98b5c7654b",
+		"placements": "6e7a1216a8f197ae5b746549a70a1ed3",
 		"roads": "e8df081293dce1782eebca3b617d3a0f",
-		"splat0": "820d0c71181763d2715936406b9abb27",
-		"splat1": "e4da6723c7319a972b853cd8b7d13444",
+		"splat0": "96c368ce62443c6ce925d695c89d91f6",
+		"splat1": "944ee5e91f463b081cb47d4ee8c208e2",
 		"vegmask": "91f1eb0f7b7d1e8211f765cfe32f6f79",
 		"water": "646da548e4581b18bc1605655c50b049"
 	},

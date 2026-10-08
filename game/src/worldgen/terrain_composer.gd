@@ -1318,11 +1318,32 @@ class _Build:
 						var stop: float = sa + (sb - sa) * fx
 						s = stop + ((sc + (sd - sc) * fx) - stop) * fz
 				else:
+					# The corners belong to different roads. The road is the nearest corner's; the
+					# distance to the nearest road is continuous across the line where two roads'
+					# cells meet, so it stays bilinear; the arc is interpolated over that road's own
+					# corners. (VERSION 13: both were the nearest corner's, constant over a 4 m cell,
+					# which drew stairs along the wide banks where two streets' fields meet.)
 					var nci: int = ci + (1 if fx > 0.5 else 0) + (cnn if fz > 0.5 else 0)
 					if ridx[nci] >= 0:
 						ri = ridx[nci]
-					d = rdd[nci]
-					s = rss[nci]
+					var ma: float = rdd[ci]
+					var mb: float = rdd[ci + 1]
+					var mc: float = rdd[ci + cnn]
+					var md: float = rdd[ci + cnn + 1]
+					if ma > 1.0e8 or mb > 1.0e8 or mc > 1.0e8 or md > 1.0e8:
+						d = rdd[nci]
+					else:
+						var mtop: float = ma + (mb - ma) * fx
+						d = mtop + ((mc + (md - mc) * fx) - mtop) * fz
+					var w00: float = (1.0 - fx) * (1.0 - fz) if ridx[ci] == ri else 0.0
+					var w10: float = fx * (1.0 - fz) if ridx[ci + 1] == ri else 0.0
+					var w01: float = (1.0 - fx) * fz if ridx[ci + cnn] == ri else 0.0
+					var w11: float = fx * fz if ridx[ci + cnn + 1] == ri else 0.0
+					var wsum: float = w00 + w10 + w01 + w11
+					if wsum > 1e-6:
+						s = (rss[ci] * w00 + rss[ci + 1] * w10 + rss[ci + cnn] * w01 + rss[ci + cnn + 1] * w11) / wsum
+					else:
+						s = rss[nci]
 				var half: float = rhalf[ri]
 				var sh: float = rsh[ri]
 				var outer: float = half + sh + BANK_REACH
@@ -1536,15 +1557,14 @@ class _Build:
 				return 1.0
 		var fx: float = gx - cx
 		var fz: float = gz - cz
-		var d: float
+		# The distance to the nearest road is continuous even where the corners belong to different
+		# roads: bilinear either way (VERSION 13; the nearest corner's stepped every 4 m).
+		var d: float = _bl(r_d, ci, fx, fz)
 		var i00: int = r_idx[ci]
-		if i00 == r_idx[ci + 1] and i00 == r_idx[ci + cn] and i00 == r_idx[ci + cn + 1]:
-			d = _bl(r_d, ci, fx, fz)
-		else:
+		if not (i00 == r_idx[ci + 1] and i00 == r_idx[ci + cn] and i00 == r_idx[ci + cn + 1]):
 			var nci: int = ci + (1 if fx > 0.5 else 0) + (cn if fz > 0.5 else 0)
 			if r_idx[nci] >= 0:
 				ri = r_idx[nci]
-			d = r_d[nci]
 		var inner: float = _r_half[ri] + _r_sh[ri]
 		return smoothstep(inner, inner + LOT_ROAD_YIELD, d)
 
