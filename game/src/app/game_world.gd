@@ -142,13 +142,17 @@ func _load_step() -> void:
 	if _load_task >= 0:
 		var st: Array = _loader.status()
 		ui.show_loading(str(st[0]), float(st[1]) * WORKER_SHARE, _loading_map_texture(), _loader.marks())
-		if WorkerThreadPool.is_task_completed(_load_task):
+		if WorkerThreadPool.is_task_completed(_load_task) and _load_may_step():
 			WorkerThreadPool.wait_for_task_completion(_load_task)
 			_load_task = -1
 			if _loader.error != "":
 				ui.show_loading("Failed: %s" % _loader.error, 1.0)
 				return
 			_on_world_loaded()
+		return
+	# The intro (Presentation, ADR-0064) animates over the load: heavy main-thread work runs only
+	# while it holds still on a card, so a boot step never lands in a fade or in typing text.
+	if not _load_may_step():
 		return
 	if _boot != null:
 		_run_boot_steps()
@@ -162,6 +166,12 @@ func _load_step() -> void:
 			_spawn_settle += 1
 			if _spawn_settle > 3:
 				_finish_spawn()
+
+
+## Whether the load may run a main-thread step now: always, unless the UI's intro is moving
+## (GameUI.load_may_step, Presentation's; true without an intro, and once it ends or is skipped).
+func _load_may_step() -> bool:
+	return ui == null or not ui.has_method(&"load_may_step") or bool(ui.call(&"load_may_step"))
 
 
 ## True while the main-thread half of the load runs (modules may queue work with boot_steps()).
