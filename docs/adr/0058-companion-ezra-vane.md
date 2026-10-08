@@ -1,6 +1,6 @@
 # ADR-0058: Companion Ezra Vane: follow, guard, gather and fetch
 
-**Status**: Accepted · 2026-10 (session 2); phase 1 implemented
+**Status**: Accepted · 2026-10 (session 2); phases 1, 2 and 3 implemented
 
 ## Context
 DESIGN §3 and the M2 roadmap promise one companion: **Ezra Vane**, an earlier Remand convict and an
@@ -93,7 +93,7 @@ and respawned on load with a fixed id `companion:ezra`.
   non-player-hostile target only by faction.
 * The gathering and inventory commands gain a second kind of owner, so they take an owner id that
   may be the companion's (small, additive).
-* Gaps go in TD-299..303.
+* Gaps go in TD-299..303 (phase 1) and TD-304..308 (phase 2).
 
 ## Phase 1 notes (as built)
 * **Data.** `data/companions/ezra.json` is a `companion` content kind (`CompanionDef`: camp, recruit
@@ -132,3 +132,105 @@ and respawned on load with a fixed id `companion:ezra`.
   `ring` round the drop site, `access: none` (RwgGenerator VERSION 8). The directive
   `find_lineman` (chapter 3, event `recruit`, spent in a world without the camp).
 * **Body.** `characters/ezra_vane` (generator `character_companion`, docs/CHARACTERS.md).
+
+## Phase 2 notes (as built)
+* **Data.** `CompanionDef` gains `gather` (radius 30 m, slots 12, share 0.5, max_tree_hp 90, chop
+  power 16, reach, give_up 25 s, settle 4.5 s, `kinds`: wood = log + stick, stone = stone,
+  fibre = plant_fiber), `fetch.range` (60 m) and `store.range` (250 m), and the barks gather,
+  fetch, store, full, done, fetched, cant_reach, stored, store_full, given.
+* **His pack** is an `Inventory` owned by CompanionDirector (12 slots, carry caps on: two logs,
+  15 stones, 30 sticks), handed to the body's mind when it spawns, saved as
+  `WorldState.companion.inventory` and cleared when he bleeds out. The logs show on his right
+  shoulder (one mesh each).
+* **Errands** are `CompanionWork` (game/src/companion/companion_work.gd), which the mind runs instead
+  of its order move while the order is gather, fetch or store and he has no foe (a fight
+  interrupts the clip; the errand picks up after): *seek* (gather: the nearest loose log or item
+  of the kind, then plants and stones whose yields he has room for, then small trees whose
+  collision stands, 12 m costlier) → *go* → *act* (`pickup`, or one `chop` per blow; the effect at
+  50 % / 45 % of the clip; 0.6 s without the clips) → *wait* (a felled tree landing) → *return*
+  to the player, where a gather says "full" or "done" and a fetch hands its haul over
+  (`hand_over`: world.pickup_stack for the player, the rest dropped at their feet, logs as loose
+  logs across their path); then he follows.
+* **Commands.** `companion.order` takes gather (`kind`; `spot`, else what the player last looked at
+  within 60 m, else the player's position; refused when his pack has no room for the kind) and
+  fetch (`target`: {entity: id} | {veg: id}, default what was looked at; validated: still there,
+  within 60 m of the player, something he can take and has room for, a tree small enough and
+  near enough to fell); `companion.give` (within 6 m, instant) and `companion.store` (the nearest
+  player-built storage piece within 250 m). The look is a 60 m camera ray every director tick
+  (`CompanionDirector._look`): a loose item or log (or the one within 1.2 m of the point hit), a
+  vegetation body, else a harvestable along the ray; looking at Ezra himself keeps the last one.
+* **Shared hunks (an owner that may be the companion).** PlayerActions: `_crew_inventory(args)`
+  resolves `owner: "companion:<id>"` to his pack through `world.companion.inventory_of()`;
+  `world.pickup_stack` / `world.pickup_item` fill it and `container.put` empties it (by item, never
+  by index; no player sound, no inventory_changed). VegetationManager: `harvest()` calls the new
+  `harvest_into(key, inst, who)` (`who`: the pickup command's owner args); `_fell` awards
+  `fell_tree` XP times `CompanionDef.share_for(info.source_id)`, and `Events.tree_felled` carries
+  `felled_by` (NavTiles ignores it); DirectiveTracker records it through `record_share`
+  (part-credit adds up to whole events).
+* **Card.** Gather wood / stone / fibre, Fetch <what was looked at> (greyed, with the reason as its
+  tooltip), Give me what you carry, Store at base (greyed without a crate in range), and what he
+  carries.
+* **Save.** `WorldState.companion.work` = {task, kind, spot, target, fetched, phase, bark}; a load
+  resumes it (targets resolve lazily; a fetch is called off if its target isn't back within 10 s).
+  No version bump; older saves load with an empty pack and no errand.
+* **Clips.** `pickup`, `chop`, `carry_walk` (lib/companion_anim.py, docs/CHARACTERS.md); each falls
+  back (no `pickup`: he stands; `chop` → attack_structure / attack_a; `carry_walk` → the walk).
+
+## Phase 3 notes (as built)
+* **His voice (TD-303).** Every bark still shows its status-bar line, and now Ezra says it from his
+  body: a `Sound3D` child at his mouth (one player, so a new bark cuts the last; 60 m, occluded like
+  every 3D sound). The sounds are `voice/ezra_*` (`tools/assetgen/audio/sounds/companion.py`):
+  `spotted` (3 lines), `hurt` (3), `full` (2), `cant_reach`, `downed` (2), `revived`, `recruited`
+  and `ack` (4 short answers: "On it.", "Right.", "Lead on.", "Holding."). They are spoken by a
+  small phoneme sequencer on the shared glottal source + formant cascade (the player's and the
+  Ashen's voice): syllables of phonemes with stress, stops as a closure and a burst, fricatives as
+  bands of noise, nasals and liquids as formant targets, a declining pitch with stressed lifts and
+  a falling, rising or trailing end; a low, worn baritone (f0 ~105-125 Hz, a long tract, rasp). The
+  words half-read: the status bar carries the text. `CompanionDef.voice` maps each bark to its
+  sound: `id` (any variant), `id:N` (variant N) or `id:line` (the variant matching the line shown;
+  the bark lists and the generator's line lists are in the same order). **Rate limits:** a bark he
+  says on his own (spotted, hurt, full, done, cant_reach, store_full) is dropped, line and voice,
+  within `voice.repeat` (6 s) of the same one; nothing is voiced within `voice.gap` (2 s) of the
+  last voiced bark except downed, recruited and revived; the spotted bark keeps its 45 s quiet and
+  hurt its 30 s. Without the generated sounds he is silent and the lines still show
+  (`Audio.variants()` is empty; no player is made). His downed cry is his own now (not the Ashen's
+  pain); blows still use the Ashen's grunts (`CompanionMind.voice`).
+* **Perks: a lineman.** `CompanionDef.perks` (data/companions/ezra.json): each `{id, name, text,
+  after_days, effects}`, his after `after_days` whole days with the player (`WorldState.companion
+  .recruited_day`, set on recruitment; an older save without it has them all). Effects
+  (`PERK_EFFECTS`, summed or multiplied over his perks; `CompanionDirector.perk(key, none)`):
+  * **Pack mule** (from the start): `slots` +4 (16) and `carry_log` +1 (three logs on his
+    shoulder, through `Inventory.carry_bonus`), applied to his pack on load, on recruitment and
+    every director tick (`_apply_perks`).
+  * **Faller** (after a day): `chop_speed` x1.3 (his chop clip and the blow's moment) and
+    `chop_power` x1.25 (his blows' tool power).
+  * **Lineman** (after two days): `fuel_use` x0.75 for a running generator within `tune_range`
+    (30 m) of him while he is up (`CompanionDirector.fuel_factor(pos)`, read by
+    `BaseTechManager.tick`: one shared hunk, the generator's burn rate times the factor).
+  The card lists them ("Knacks: ...", their texts as the tooltip). Climbing (the AI climbs no
+  ladders, TD-011) and repairing power pieces need shared changes: TD-310.
+* **Placement (TD-299).** Every "placed beside the player" (past `teleport_beyond`, after a respawn,
+  sleep or load) and the dawn return at the player's bed go through `CompanionDirector.safe_spot
+  (anchor, prefer)`: the preferred spot (6 m behind the camera, 2 m aside; beside the bed), then
+  rings of 10 points at 1.8-9 m round the anchor, nearest the preferred first. A spot must have a
+  floor under it at the anchor's level (a ray down from above the anchor's head on world,
+  structures and props: a storey, a cellar floor, the ground) within 2.5 m of the anchor's floor;
+  no water deeper than 0.45 m (`world.water.depth_at`); room for his body (a capsule from the lower
+  of the two floors up, against world incl. POI walls, structures, props and vegetation, the
+  terrain itself excepted, so a bed or a table top is no floor); a clear line at chest height from
+  the anchor (the same side of any wall: in the hut with the bed, not outside it); and, where the
+  anchor stands on a baked navmesh, the navmesh within 1 m. Nothing fits: the anchor itself.
+* **Downed (TD-300).** The Hollowed that were on him keep at him for `downed.linger` (8 s):
+  `CompanionMind.in_play()` (Enemy.is_alive) stays true that long after he goes down, so their
+  foe holds; their blows do no damage but take `downed.mauled` (6 s) off his bleed-out each. Then
+  he is out of play and they lose interest. A downed body restored from a save is out of play at
+  once.
+* **Strength.** A world setting `companion_strength` (Survival, 0.5-2, default 1; Drifter 1.5,
+  Remanded / Hollowed / Rooted 0.75) scales his health and the damage of his blows
+  (`CompanionDirector.strength()`, applied when his body spawns; the enemy health and damage
+  settings still don't apply to him).
+* **Shared hunks.** `Audio.variants(id)` (a public read of the variant list); BaseTechManager's
+  generator burn x `world.companion.fuel_factor(pos)`; the `companion_strength` option and preset
+  values in `data/config/game_rules.json`. No save version bump (`recruited_day` is a new key that
+  loads absent).
+* Gaps go in TD-309..313.

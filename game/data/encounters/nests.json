@@ -1,0 +1,13 @@
+{
+  "_doc": "Bloom nests in the forest-encounter scatter (ADR-0054 / ADR-0055): kind 'nest' sites are built by BloomNests (Encounters.register_kind), and each encounter id names the nest def it builds (data/nests). Rare, deep in the woods and where the Bloom is thickest (burnt forest, fen). No clearing of their own: the nest's mat clears the vegetation (VegetationManager.set_clearings).",
+  "defs": [
+    {"id": "root_knot", "kind": "nest", "weight": 0.35,
+     "biomes": {"conifer_forest": 0.6, "birch_grove": 0.5, "burnt_forest": 1.6, "fen": 1.8},
+     "radius": 7.0, "slope_max": 14.0, "road": [60, 1e9], "min_building": 150, "min_water": 15,
+     "clear": {"trees": 0, "brush": 0}, "max_per_region": 2},
+    {"id": "hollow_nest", "kind": "nest", "weight": 0.12,
+     "biomes": {"conifer_forest": 0.4, "burnt_forest": 1.5, "fen": 1.6},
+     "radius": 9.0, "slope_max": 12.0, "road": [90, 1e9], "min_building": 220, "min_water": 15,
+     "clear": {"trees": 0, "brush": 0}, "max_per_region": 1}
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "_doc": "Companions (ADR-0058), run by CompanionDirector / CompanionMind. enemy: the EnemyDef his body is (archetype companion, faction remand). camp: the POI def he waits at to be found, where in it he sits (offset [x, z] building-local, yaw deg) and the ranges he is placed / taken out at while not yet recruited. recruit_items: any one, given at his camp, recruits him; revive_items: any one revives him downed (hold E revive_hold s); each is consumed. *_health: the health fraction he is up with. follow: min / max m he keeps behind the player, run_beyond (runs to catch up), teleport_beyond (placed beside the player out of sight), engage (takes on Hollowed hunting within this of the player), leash (drops a fight this far from the player). guard: radius he engages within round the spot, leash. downed.seconds: bleed-out. lantern: the light he carries at night while following (his own: not registered with the stimulus fields, so it never shows the Hollowed the player). barks: status-bar lines per event (CompanionDef.BARKS).",
+  "_doc": "Companions (ADR-0058), run by CompanionDirector / CompanionMind. enemy: the EnemyDef his body is (archetype companion, faction remand). camp: the POI def he waits at to be found, where in it he sits (offset [x, z] building-local, yaw deg) and the ranges he is placed / taken out at while not yet recruited. recruit_items: any one, given at his camp, recruits him; revive_items: any one revives him downed (hold E revive_hold s); each is consumed. *_health: the health fraction he is up with. follow: min / max m he keeps behind the player, run_beyond (runs to catch up), teleport_beyond (placed beside the player out of sight), engage (takes on Hollowed hunting within this of the player), leash (drops a fight this far from the player). guard: radius he engages within round the spot, leash. downed.seconds: bleed-out; downed.linger: s the Hollowed that were on him keep at him after he goes down (each blow takes downed.mauled s off his bleed-out) before they lose interest. lantern: the light he carries at night while following (his own: not registered with the stimulus fields, so it never shows the Hollowed the player). gather (ADR-0058 phase 2): radius (m round the ordered spot), slots (his own pack; the items' carry caps apply, so two logs on his shoulder), share (of the player's XP and directive credit for a tree he fells), max_tree_hp (the biggest species he fells), chop (tool power of a blow), reach (m), give_up (s at one target he can't reach), settle (s for a felled tree to land), kinds: the items each gather order brings in. fetch.range: m from the player a fetch target may lie. store.range: m from him the storage piece may stand. barks: status-bar lines per event (CompanionDef.BARKS). voice (ADR-0058 phase 3): the sound each bark plays from his body (id:line = the variant matching the line shown, id:N = variant N), no more often than gap s, an event no more often than repeat s (the status-bar line too). perks (phase 3, a lineman): his own, each after after_days with the player; effects CompanionDef.PERK_EFFECTS.",
   "defs": [
     {
       "id": "ezra",
@@ -15,20 +15,53 @@
       "return_health": 0.5,
       "follow": {"min": 3.0, "max": 6.0, "run_beyond": 9.0, "teleport_beyond": 120.0, "engage": 15.0, "leash": 22.0},
       "guard": {"radius": 20.0, "leash": 26.0},
-      "downed": {"seconds": 180.0},
+      "downed": {"seconds": 180.0, "linger": 8.0, "mauled": 6.0},
       "lantern": {"range": 9.0, "energy": 1.1, "color": [1.0, 0.78, 0.48]},
+      "gather": {"radius": 30.0, "slots": 12, "share": 0.5, "max_tree_hp": 90, "chop": 16.0, "reach": 1.3, "give_up": 25.0, "settle": 4.5,
+                 "kinds": {"wood": ["log", "stick"], "stone": ["stone"], "fibre": ["plant_fiber"]}},
+      "fetch": {"range": 60.0},
+      "store": {"range": 250.0},
       "barks": {
+        "gather": ["Ezra: \"I'll bring in what I can find round here.\"", "Ezra: \"On it.\""],
+        "fetch": ["Ezra: \"I'll get it.\"", "Ezra: \"Back in a minute.\""],
+        "store": ["Ezra: \"I'll put it away.\""],
+        "full": ["Ezra: \"That's all I can carry.\"", "Ezra: \"Pack's full. Where do you want it?\""],
+        "done": ["Ezra: \"Nothing more worth taking round here.\""],
+        "fetched": ["Ezra: \"Here.\"", "Ezra: \"This what you wanted?\""],
+        "cant_reach": ["Ezra: \"Can't get to that.\""],
+        "stored": ["Ezra: \"Stowed.\""],
+        "store_full": ["Ezra: \"The crate's full. I kept the rest.\""],
+        "given": ["Ezra: \"All yours.\""],
         "recruited": ["Ezra: \"That'll hold the leg. All right. I'm with you.\""],
         "follow": ["Ezra: \"Right behind you.\"", "Ezra: \"Lead on.\""],
         "stay": ["Ezra: \"I'll be here.\"", "Ezra: \"Holding.\""],
         "guard": ["Ezra: \"Nothing gets past this spot.\"", "Ezra: \"I'll watch it.\""],
         "spotted": ["Ezra: \"Hollowed. Coming in.\"", "Ezra: \"Got movement.\"", "Ezra: \"On your left.\""],
-        "hurt": ["Ezra: \"Ah, hell.\""],
+        "hurt": ["Ezra: \"Ah, hell.\"", "Ezra: \"Agh!\"", "Ezra: \"Damn it.\""],
         "downed": ["Ezra is down. Hold E on him with a bandage or a first aid kit."],
         "revived": ["Ezra: \"Not dead yet. Thanks.\""],
         "out": ["Ezra didn't get up. If he lives he'll find his way to your bed by dawn."],
         "back": ["Ezra limped in at dawn. He's at your bed."]
-      }
+      },
+      "voice": {
+        "gap": 2.0, "repeat": 6.0,
+        "lines": {
+          "spotted": "voice/ezra_spotted:line", "hurt": "voice/ezra_hurt:line", "full": "voice/ezra_full:line",
+          "store_full": "voice/ezra_full:2", "cant_reach": "voice/ezra_cant_reach", "downed": "voice/ezra_downed",
+          "revived": "voice/ezra_revived", "recruited": "voice/ezra_recruited",
+          "follow": "voice/ezra_ack:3", "stay": "voice/ezra_ack:4", "guard": "voice/ezra_ack:2", "gather": "voice/ezra_ack:1",
+          "fetch": "voice/ezra_ack:1", "store": "voice/ezra_ack:2", "fetched": "voice/ezra_ack:2", "stored": "voice/ezra_ack:2",
+          "given": "voice/ezra_ack:2", "done": "voice/ezra_ack:2"
+        }
+      },
+      "perks": [
+        {"id": "pack_mule", "name": "Pack mule", "after_days": 0, "effects": {"slots": 4, "carry_log": 1},
+         "text": "Thirty years of hauling cable drums: a third log on his shoulder and four more slots in his pack."},
+        {"id": "faller", "name": "Faller", "after_days": 1, "effects": {"chop_speed": 1.3, "chop_power": 1.25},
+         "text": "He cleared line corridors for a living: he fells a tree faster and harder."},
+        {"id": "lineman", "name": "Lineman", "after_days": 2, "effects": {"fuel_use": 0.75, "tune_range": 30},
+         "text": "He keeps a running generator within 30 m of him tuned: it burns a quarter less fuel."}
+      ]
     }
   ]
 }

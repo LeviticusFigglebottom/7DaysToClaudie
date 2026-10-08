@@ -588,8 +588,23 @@ main map west of Larch Pond, about 400 m north-west of the drop site; in a rando
 way). Press **E** to talk to him; give him a **first aid kit** or **painkillers** and he walks with
 you.
 
-* **Orders.** E on him opens his card: **Follow me**, **Stay here**, **Guard here** (Gather, Fetch,
-  Give and Store are greyed: not yet). **H** whistles him to follow or to stay without the card.
+* **Orders.** E on him opens his card: **Follow me**, **Stay here**, **Guard here**, **Gather
+  wood / stone / fibre**, **Fetch**, **Give me what you carry** and **Store at base**, with what he
+  carries. **H** whistles him to follow or to stay without the card.
+* **His pack.** He carries his own: 12 slots, and two logs on his shoulder like you (more with
+  his knacks, below). Anything he carries he loses if he bleeds out.
+* **Gather.** Look at the place first (a tree, a bush, a rock, up to 60 m off), then order it: he
+  works within 30 m of it, picking up loose logs and what lies about, stripping bushes, ferns and
+  stones and, for wood, felling small trees (birch, tamarack, spruce, snags; not the big firs and
+  larches) with his hatchet. When there is nothing left he has room for, or his pack is full, he
+  comes back to you and says so. A tree he fells counts half for your XP and the *fell trees*
+  directives (two of his make one of yours). He only fells trees near you.
+* **Fetch.** Look at a loose item, a log, a bush, a stone or a small tree within 60 m, then open
+  his card: he goes for it, brings it back and hands it to you, or drops it at your feet if you have
+  no room (a tree he fells and brings you a log).
+* **Give me what you carry** hands you his whole pack (what doesn't fit lands at your feet).
+  **Store at base** sends him to the nearest storage crate of your base (within 250 m) to put it
+  away; then he comes back to you.
 * **Following** he keeps 3–6 m behind you, walks when you walk and runs to catch up; left far
   behind (over 120 m), or after you sleep, respawn or load, he turns up beside you. At night he
   carries a lantern: his own light, it doesn't give you away.
@@ -598,7 +613,19 @@ you.
   staying, only for what comes at him. The Hollowed and the Ashen fight him too, but they still
   come for you first when they see you. He never hits you, your blows and traps don't hurt him,
   and what he kills earns you nothing.
-* **Downed.** At 0 health he goes down and the Hollowed leave him. Get to him with a **bandage**
+* **He talks.** He tells you what he sees and what he's doing, out loud and in the status bar:
+  Hollowed coming, when he's hurt, when his pack is full, when he can't get to something, when he
+  goes down, and when he takes an order. He doesn't repeat himself every few seconds.
+* **His knacks.** A lineman's: from the start he hauls more (16 slots, three logs on his shoulder);
+  after a day with you he fells trees faster and harder; after two, a running generator within
+  30 m of him burns a quarter less fuel. His card lists them.
+* **Placed beside you** (left far behind, after you sleep, respawn or load, or back at your bed at
+  dawn) he lands on the floor near you, on your side of any wall, never in water, a wall, a bed or
+  a tree.
+* **Strength.** The world setting *Companion's health and damage* (Survival) scales him: the
+  gentle preset makes him tougher, the hard ones weaker.
+* **Downed.** At 0 health he goes down. The Hollowed that were on him keep at him for a few seconds
+  (each blow shortens the time he has) and then leave him. Get to him with a **bandage**
   or a **first aid kit** and hold **E** for 4 s (it is used up): he gets up with a third of his
   health. Leave him three minutes and he's gone; he limps back to your bed (or the drop site) the
   next dawn with half his health. Under the one-life death penalty he doesn't come back.

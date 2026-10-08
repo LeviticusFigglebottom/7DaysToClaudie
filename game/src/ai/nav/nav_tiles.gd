@@ -27,7 +27,7 @@ func setup(w: Node) -> void:
 	world = w
 	Events.structure_placed.connect(func(_id: StringName, _d: StringName, pos: Vector3) -> void: _mark(pos))
 	Events.structure_destroyed.connect(func(_id: StringName, _d: StringName, pos: Vector3) -> void: _mark(pos))
-	Events.tree_felled.connect(func(_id: StringName, pos: Vector3) -> void: _mark(pos))
+	Events.tree_felled.connect(func(_id: StringName, pos: Vector3, _by: StringName) -> void: _mark(pos))
 	Events.terrain_modified.connect(_mark_aabb)
 	# A streamed world (ADR-0038): tiles baked over a region's coarse ground are baked again once its
 	# 1 m terrain attaches.

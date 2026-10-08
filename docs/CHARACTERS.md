@@ -194,7 +194,10 @@ Clips: the living fighter's set (`living_anim`, as above, so the Enemy plays him
 | `downed` | 90 | ✓ | on his back (the lying sleep's pose, pelvis `LIE_Y` behind the origin, so the game's `lie` capsule fits), three laboured breaths a loop, the left hand pressed to his side, the head rolling over and back once |
 | `revive` | 72 | | up off his back slowly: onto an elbow (14), sitting (26), feet in (36), a hand on the right knee to push up (50), rising (62), the living stance (72); CompanionMind waits the clip out |
 | `sit_injured` | 150 | ✓ | sat on the ground at his camp (the floor sit, sat up, head level), the splinted left leg out, the right knee up; looks off to the treeline and back, rubs the thigh |
-CompanionMind sets `downed`, `sit_injured`, `talk` and `look` to loop (EnemyVisual loops only
+| `pickup` | 30 | | down into a crouch over planted feet, the right hand to the ground ahead (11-15), up with it at the chest (24), the stance; CompanionWork takes the thing at 50% |
+| `chop` | 36 | | one felling blow at hip height, both hands on the haft: wound back over the right shoulder (10), into the trunk in front (16, 45%: CompanionWork's blow), worked loose (22), the fight stance; played once a blow |
+| `carry_walk` | 46 | ✓ | the living walk (0.9 m/s at speed 1) with the right hand up at the shoulder steadying a log, that shoulder raised, leaning a little away from it; played while he carries logs (never a run) |
+CompanionMind sets `downed`, `sit_injured`, `talk`, `look` and `carry_walk` to loop (EnemyVisual loops only
 idles and gaits). 14,764 body triangles; 1.81 m. The face is still the shared Hollowed head
 (TD-170/TD-192): heavy-lidded but bulging up close; the splint on his leg is not modelled
 (TD-302).

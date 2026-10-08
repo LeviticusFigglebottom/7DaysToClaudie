@@ -345,7 +345,6 @@ func test_the_vegetation_leaves_out_what_stands_in_a_clearing() -> void:
 		inst.pos = Vector3(10.0 + i * 4.0, 0.0, 10.0)
 		(layers["tree" if i % 2 == 0 else "ground"] as Array).append(inst)
 	vm._data[Vector2i(0, 0)] = layers
-	vm._data[Vector2i(5, 5)] = {"tree": []}
 	vm.set_clearings(&"nests", [{"pos": Vector2(10, 10), "r": 9.0}])
 	var hidden: Array = []
 	for i: int in 6:
@@ -392,6 +391,18 @@ func test_unplacing_frees_it_and_keeps_its_state() -> void:
 	_nests.on_place({"id": &"enc:1", "kind": &"nest", "def": &"root_knot", "pos": NEST, "yaw": 0.5, "region": &"r", "seed": 1})
 	var def: NestDef = Content.get_def(&"nest", &"root_knot") as NestDef
 	assert_almost_eq(float(_nests.state("enc:1")["hp"]), def.hp - 9.0, 0.01, "its wound stays")
+
+
+func test_the_forest_scatter_plans_and_hands_it_nests() -> void:
+	for nd: Variant in Content.all(&"nest"):
+		var ed: EncounterDef = Content.get_def(&"encounter", (nd as NestDef).id) as EncounterDef
+		assert_not_null(ed, "an encounter of kind nest per nest def (%s)" % (nd as NestDef).id)
+		if ed != null:
+			assert_eq(ed.ekind, &"nest")
+	_nests._encounters_hooked = false
+	_nests._hook_encounters()
+	assert_true(Encounters.is_registered(&"nest"), "BloomNests builds the scatter's nest sites")
+	Encounters.unregister_kind(&"nest")
 
 
 func test_a_region_feature_places_it() -> void:

@@ -299,7 +299,10 @@ func tick(minutes: float) -> void:
 		var load: float = float(loads.get(String(id), 0.0))
 		if Stimuli.current != null and Stimuli.current.heat != null:
 			Stimuli.current.heat.add(piece.global_position, BaseTech.heat(minutes, load))
-		if BaseTech.burn(st, minutes, load, rate):
+		# Ezra's Lineman perk keeps a generator near him tuned (ADR-0058 phase 3).
+		var crew: Node = world.get(&"companion") if world != null else null
+		var tuned: float = float(crew.call(&"fuel_factor", piece.global_position)) if crew != null and crew.has_method(&"fuel_factor") else 1.0
+		if BaseTech.burn(st, minutes, load, rate * tuned):
 			dry = true
 			if _near_player(piece.global_position, 60.0):
 				Events.player_status_message.emit("The generator coughs and dies: out of fuel.", &"warning")

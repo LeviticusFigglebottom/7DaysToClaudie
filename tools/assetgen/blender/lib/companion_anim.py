@@ -9,6 +9,16 @@ pose parameters, Rig, Keys, write_action), on the shared skeleton, 30 fps, in pl
                drawn in, a hand on the knee to push up, standing (ends on the living stance)
   sit_injured  sitting on the ground by his fire, the splinted left leg out straight, the right
                knee up with the forearm over it, the head up and watchful (loops)
+Phase 2 (gather, fetch, store):
+  pickup       down into a crouch over the feet, the right hand to the ground in front, a grip, up
+               again with it at the chest (30 frames; the game takes the thing at 50%)
+  chop         a felling blow at a trunk at hip height: both hands on the hatchet wind it back over
+               the right shoulder, the hips and chest turn through and it lands in front at frame 16
+               (45%, where CompanionWork deals the blow), the pull back out, the stance (36 frames,
+               played once a blow)
+  carry_walk   the living walk with a log on the right shoulder: the right hand up at the shoulder
+               steadying it, that shoulder raised, the trunk leaning a little away from the weight,
+               the left arm swinging (loops; 0.9 m/s at speed 1 like the walk)
 """
 from __future__ import annotations
 
@@ -129,11 +139,85 @@ def act_sit_injured(rig, p, n=150):
     return frames
 
 
+def act_pickup(rig, p, n=30):
+    """Crouch, reach, grip, rise: the knees and hips fold over planted feet (leg IK), the back bends
+    over them, the right hand goes to the ground a forearm ahead of the toes (arm IK) and comes up
+    to the chest with the thing; the left hand braces on the left knee on the way down."""
+    st = merged(LA.base_living(p), LA._REST_L, LA._REST_R)
+    low = merged(st, {"hips.z": -0.42, "hips.y": 0.15, "hips.flex": 38.0, "spine.flex": 26.0, "chest.flex": 18.0,
+                      "neck.flex": -6.0, "head.flex": -16.0, "chest.twist": -6.0, "shoulder.R.fwd": 10.0,
+                      "foot.L.y": -0.06, "foot.R.y": 0.06},
+                 LA._arm("R", 1.0, -0.04, -0.34, -0.58, (0.7, 0.5, -0.2)),
+                 LA._arm("L", 1.0, -0.10, -0.30, -0.36, (0.8, 0.2, -0.4)))
+    grip = merged(low, {"hips.z": -0.44, "head.flex": -18.0}, LA._arm("R", 1.0, -0.06, -0.36, -0.62, (0.7, 0.5, -0.2)))
+    rise = merged(st, {"hips.z": -0.10, "hips.y": 0.04, "hips.flex": 12.0, "spine.flex": 8.0, "chest.flex": 4.0},
+                  LA._arm("R", 1.0, -0.12, -0.22, -0.30, (0.7, 0.4, -0.6)))
+    ks = Keys(st, [(0, st), (11, low, "inout"), (15, grip, "out"), (24, rise, "inout"), (n, st, "inout")])
+    frames = LA._arm_offsets(rig, [ks.at(f) for f in range(n + 1)])
+    for prm in frames:
+        A.level_head(prm, p, 8.0, 0.4)
+    return frames
+
+
+def act_chop(rig, p, n=36):
+    """A felling blow at hip height, both hands on the haft (right hand at the head end): wound back
+    over the right shoulder with the weight on the back foot, the turn through, the hatchet into
+    the trunk in front of him at frame 16, worked loose, back to the stance."""
+    st = merged(LA.fight_stance(p), LA._REST_L, LA._REST_R)
+    st.update({"foot.L.y": -0.16, "foot.L.x": 0.06, "foot.R.y": 0.14, "foot.R.x": -0.06})
+    wind = merged(st, {"hips.y": 0.05, "hips.twist": -16.0, "chest.twist": 30.0, "chest.flex": -4.0, "spine.flex": 2.0,
+                       "shoulder.R.shrug": 6.0, "head.twist": -12.0},
+                  LA._arm("R", 1.0, 0.16, 0.06, 0.12, (0.8, 0.3, 0.2)),
+                  LA._arm("L", 1.0, -0.16, -0.02, 0.02, (0.8, 0.2, -0.3)))
+    strike = merged(st, {"hips.y": -0.07, "hips.z": -0.06, "hips.twist": 10.0, "chest.twist": -18.0, "chest.flex": 10.0,
+                         "spine.flex": 6.0, "hips.flex": 6.0, "shoulder.R.fwd": 12.0, "head.twist": 6.0},
+                    LA._arm("R", 1.0, -0.20, -0.56, -0.40, (0.6, 0.4, -0.6)),
+                    LA._arm("L", 1.0, -0.36, -0.46, -0.44, (0.6, 0.4, -0.6)))
+    stuck = merged(strike, {"chest.twist": -14.0, "chest.flex": 8.0},
+                   LA._arm("R", 1.0, -0.16, -0.50, -0.40, (0.6, 0.4, -0.6)),
+                   LA._arm("L", 1.0, -0.32, -0.42, -0.42, (0.6, 0.4, -0.6)))
+    ks = Keys(st, [(0, st), (10, wind, "out"), (16, strike, "in"), (22, stuck, "out"), (n, st, "inout")])
+    frames = LA._arm_offsets(rig, [ks.at(f) for f in range(n + 1)])
+    for prm in frames:
+        A.level_head(prm, p, 10.0, 0.5)
+    return frames
+
+
+def act_carry_walk(rig, p, n=LA.WALK_FRAMES):
+    """The living walk under a log on the right shoulder: that hand up at the shoulder steadying it
+    (arm IK onto the posed shoulder), the shoulder raised, the trunk leaning a little to the left
+    and the head tipped away from the log; a heavier, shorter bob."""
+    frames = LA._walk(rig, p, n, 1, False)
+    s = rig.s
+    for prm in frames:
+        prm["shoulder.R.shrug"] = 9.0
+        prm["shoulder.R.fwd"] = 4.0
+        prm["chest.side"] = prm.get("chest.side", 0.0) + 3.0
+        prm["spine.side"] = prm.get("spine.side", 0.0) + 1.5
+        prm["head.side"] = prm.get("head.side", 0.0) + 7.0
+        prm["chest.twist"] = prm.get("chest.twist", 0.0) * 0.5
+        prm["hips.z"] = prm["hips.z"] - 0.01
+        Q, off = rig.evaluate({k: v for k, v in prm.items() if not k.startswith("aik.R")})
+        _, pos = rig.sk.fk(Q, off)
+        sh = pos["upper_arm.R"]
+        sx = -1.0  # the right side (char_anim.SIDES)
+        prm["aik.R"] = 1.0
+        prm["hand.R.tx"] = float(sh[0] + sx * -0.02 * s)
+        prm["hand.R.ty"] = float(sh[1] - 0.14 * s)
+        prm["hand.R.tz"] = float(sh[2] + 0.04 * s)
+        prm["elbow.R.px"], prm["elbow.R.py"], prm["elbow.R.pz"] = sx * 0.5, -0.4, -1.0
+        prm["hand.R.flex"] = -20.0
+    return frames
+
+
 def actions_table() -> list:
     return [
         ("downed", 90, act_downed),
         ("revive", 72, act_revive),
         ("sit_injured", 150, act_sit_injured),
+        ("pickup", 30, act_pickup),
+        ("chop", 36, act_chop),
+        ("carry_walk", LA.WALK_FRAMES, act_carry_walk),
     ]
 
 

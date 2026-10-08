@@ -12,14 +12,22 @@ extends RefCounted
 ## within guard.radius of the spot. The fight itself is EnemyFoes' (the chase and the blows at a
 ## `foe`), so his kills are nobody's. At 0 hp he is downed (out of play, lying, bleeding out over
 ## downed.seconds) until revived or gone; CompanionDirector owns the bookkeeping (orders, save,
-## the camp, his return at dawn) and this the body's moment to moment.
+## the camp, his return at dawn) and this the body's moment to moment. Gather, fetch and store are
+## errands run by `work` (CompanionWork, ADR-0058 phase 2) while nothing needs fighting.
 
-const ORDERS: PackedStringArray = ["follow", "stay", "guard"]
+const ORDERS: PackedStringArray = ["follow", "stay", "guard", "gather", "fetch", "store"]
+## Orders that are errands (CompanionWork, ADR-0058 phase 2).
+const ERRANDS: PackedStringArray = ["gather", "fetch", "store"]
 ## Enemy states the fight runs in (EnemyFoes._fight drives CHASE / ATTACK).
 const FIGHT_STATES: Array = [Enemy.State.CHASE, Enemy.State.ATTACK, Enemy.State.SPIT]
 const SCAN_INTERVAL: float = 0.4
 ## How long a spotted bark keeps quiet after the last fight (s).
 const SPOTTED_QUIET: float = 45.0
+## Barks he says on his own (not answering an order): an event repeated within voice.repeat s is
+## dropped, line and voice (ADR-0058 phase 3, TD-303).
+const AUTO_BARKS: PackedStringArray = ["spotted", "hurt", "full", "done", "cant_reach", "store_full"]
+## Barks voiced even right after another one.
+const URGENT_BARKS: PackedStringArray = ["downed", "recruited", "revived"]
 
 var enemy: Enemy
 var cdef: CompanionDef
@@ -41,6 +49,29 @@ var _bark_n: int = 0
 var _step_t: float = 0.0
 var _anim_fixed: bool = false
 var _hurt_bark_t: float = -1000.0
+## When each bark event was last said (s, enemy._now()).
+var _said: Dictionary = {}
+## When he last spoke a voiced bark.
+var _voice_t: float = -1000.0
+## The voice sound (and 1-based variant, 0 random) the last voiced bark asked for (tests; set
+## even when the sound isn't generated and he stays silent).
+var last_voice: String = ""
+var last_voice_variant: int = 0
+## His voice: one positional player at his mouth, so a bark follows him (a new one cuts the last).
+var _voice: Sound3D = null
+## Downed, the Hollowed that were on him keep at him until this time (downed.linger, TD-300).
+var _linger_until: float = -1000.0
+## His errands (gather, fetch, store).
+var work: CompanionWork = null
+## His own pack (CompanionDirector.inventory; set when the body is spawned).
+var inventory: Inventory = null:
+	set(v):
+		inventory = v
+		if work != null:
+			work.inventory = v
+## The logs on his shoulder (one mesh per log carried).
+var _shoulder: Node3D = null
+var _shoulder_n: int = 0
 
 
 func setup(e: Enemy) -> void:
@@ -49,6 +80,8 @@ func setup(e: Enemy) -> void:
 		if (c as CompanionDef).enemy == e.def.id:
 			cdef = c
 			break
+	work = CompanionWork.new(self)
+	work.inventory = inventory
 
 
 ## The body's frame (Enemy._physics_process hands it over). True: nothing else runs this frame.
@@ -78,7 +111,8 @@ func step(delta: float, p: Player, dist: float) -> bool:
 	if enemy.state == Enemy.State.BREAK:
 		enemy.break_target = null  # never at the player's walls
 		enemy._set_state(Enemy.State.CHASE)
-	_light(order == "follow" and enemy.is_night())
+	_light((order == "follow" or ERRANDS.has(order)) and enemy.is_night())
+	_shoulder_logs()
 	_scan_t -= delta
 	if _scan_t <= 0.0:
 		_scan_t = SCAN_INTERVAL
@@ -87,17 +121,30 @@ func step(delta: float, p: Player, dist: float) -> bool:
 	if enemy.foe != null:
 		if enemy.state not in FIGHT_STATES:
 			enemy._set_state(Enemy.State.CHASE)
+		work.interrupt()
 		want = EnemyFoes._fight(enemy)
 	else:
 		if enemy.state in FIGHT_STATES:
 			enemy._set_state(Enemy.State.IDLE)
 			_fight_end_t = enemy._now()
-		want = _order_move(p)
+		want = work.step(delta, p) if work.active() else _order_move(p)
 		enemy._set_state(Enemy.State.WANDER if want.length() > 0.05 else Enemy.State.IDLE)
 	enemy._move(want, delta, dist)
-	enemy._update_anim(want)
+	_animate(want)
 	_footsteps(delta)
 	return true
+
+
+## The clip for the frame: an errand's pickup or chop plays itself out; carrying logs he walks
+## with them on his shoulder (`carry_walk`, never running); else the body's own gait and idle.
+func _animate(want: Vector3) -> void:
+	if enemy.foe == null and work.acting:
+		return
+	var sp: float = Vector2(enemy.velocity.x, enemy.velocity.z).length()
+	if enemy.foe == null and work.carrying_logs() and sp > 0.15 and enemy.visual.has_anim(&"carry_walk"):
+		enemy.visual.play(&"carry_walk", clampf(sp / 0.9, 0.5, 2.0), 0.3, [&"walk"] as Array[StringName])
+		return
+	enemy._update_anim(want)
 
 
 # --- Orders ----------------------------------------------------------------------------------------
@@ -105,6 +152,8 @@ func step(delta: float, p: Player, dist: float) -> bool:
 ## Sets an order (validated by the director's command). Stay and guard hold `at` (INF: here).
 func set_order(kind: String, at: Vector3 = Vector3.INF) -> void:
 	order = kind
+	if work != null:
+		work.clear()  # an errand is started by its command after this
 	spot = at if at != Vector3.INF else enemy.global_position
 	if kind == "follow":
 		spot = Vector3.INF
@@ -228,6 +277,11 @@ func take(o: Enemy) -> void:
 ## Blows he ignores: none count before he is recruited or while he is down; the player's own (no
 ## friendly fire), traps and the Waystation guns never hurt him.
 func shrugs(info: DamageInfo) -> bool:
+	if downed and in_play() and not (Game.session != null and Game.session.players.has(info.source_id)):
+		# Mauled where he lies: no health to lose, but he bleeds out the faster (TD-300).
+		downed_t = maxf(0.5, downed_t - CompanionDef.fnum(cdef.downed, "mauled", 6.0))
+		Audio.play_3d(&"sfx/hit_flesh", enemy.global_position + Vector3.UP * 0.3, {"volume_db": -4.0})
+		return true
 	if not recruited or downed or rising_t > 0.0:
 		return true
 	if Game.session != null and Game.session.players.has(info.source_id):
@@ -240,9 +294,12 @@ func shrugs(info: DamageInfo) -> bool:
 	return false
 
 
-## At 0 hp: down on the ground, bleeding out (the Hollowed lose interest: is_alive() is false).
+## At 0 hp: down on the ground, bleeding out. The Hollowed that were on him keep at him for
+## downed.linger s (in_play), then lose interest (is_alive() is false); a downed body restored from
+## a save is out of play at once.
 func go_down(_info: DamageInfo = null, seconds: float = -1.0) -> void:
 	downed = true
+	_linger_until = enemy._now() + CompanionDef.fnum(cdef.downed, "linger", 8.0) if seconds < 0.0 else -1000.0
 	downed_t = seconds if seconds >= 0.0 else CompanionDef.fnum(cdef.downed, "seconds", 180.0)
 	enemy.health = 0.0
 	enemy.foe = null
@@ -252,7 +309,6 @@ func go_down(_info: DamageInfo = null, seconds: float = -1.0) -> void:
 	enemy.visual.animate_placeholder(0.0, 0.0, true)
 	enemy._fit_pose_shape("lie")
 	_light(false)
-	Audio.play_3d(&"voice/ashen_pain", enemy._mouth(), {"volume_db": 0.0})
 	if seconds < 0.0:
 		bark("downed")
 
@@ -269,9 +325,9 @@ func get_up(fraction: float) -> void:
 	enemy.visual.animate_placeholder(0.0, 0.0, false)
 
 
-## Out of play (not recruited yet, or down): nobody's foe, nothing the AI director counts.
+## Out of play (not recruited yet, or down past downed.linger): nobody's foe.
 func in_play() -> bool:
-	return recruited and not downed
+	return recruited and (not downed or enemy._now() < _linger_until)
 
 
 # --- Before he is recruited: hurt, at his camp --------------------------------------------------
@@ -324,12 +380,55 @@ func revive_item(ps: PlayerState) -> StringName:
 
 # --- Presentation ----------------------------------------------------------------------------------
 
-## A status-bar line for an event (cycling through the def's lines).
+## A status-bar line for an event (cycling through the def's lines), spoken in his voice from his
+## body (ADR-0058 phase 3). What he says on his own is not repeated within voice.repeat s.
 func bark(event: String) -> void:
-	var line: String = cdef.bark(event, _bark_n) if cdef != null else ""
+	if cdef == null:
+		return
+	var now: float = enemy._now()
+	if event in AUTO_BARKS and now - float(_said.get(event, -1000.0)) < CompanionDef.fnum(cdef.voice, "repeat", 6.0):
+		return
+	_said[event] = now
+	var n: int = _bark_n
 	_bark_n += 1
+	var line: String = cdef.bark(event, n)
 	if line != "":
 		Events.player_status_message.emit(line, &"warning" if event in ["downed", "out"] else &"info")
+	speak(event, n)
+
+
+## Plays the voice for a bark (voice.lines: "id", "id:N" or "id:line" = the variant of the line
+## `n` shown), at most every voice.gap s (urgent barks cut in). Silent where the sound isn't
+## generated: the status-bar line carries it.
+func speak(event: String, n: int = 0) -> void:
+	var spec: String = str((cdef.voice.get("lines", {}) as Dictionary).get(event, ""))
+	var now: float = enemy._now()
+	if spec == "" or (now - _voice_t < CompanionDef.fnum(cdef.voice, "gap", 2.0) and not event in URGENT_BARKS):
+		return
+	_voice_t = now
+	var id: String = spec
+	var variant: int = 0
+	var colon: int = spec.rfind(":")
+	if colon > 0:
+		id = spec.substr(0, colon)
+		var v: String = spec.substr(colon + 1)
+		var lines: Array = cdef.barks.get(event, [])
+		variant = posmod(n, lines.size()) + 1 if v == "line" and not lines.is_empty() else maxi(0, v.to_int())
+	last_voice = id
+	last_voice_variant = variant
+	var vs: Array = Audio.variants(StringName(id))
+	if vs.is_empty() or not enemy.is_inside_tree():
+		return
+	if _voice == null:
+		_voice = Sound3D.new()
+		_voice.name = "Voice"
+		_voice.bus = Audio.sfx_bus
+		_voice.unit_size = 7.0
+		_voice.max_distance = 60.0
+		_voice.position = Vector3(0.0, 1.6, 0.1)
+		enemy.add_child(_voice)
+	_voice.stream = vs[clampi(variant - 1, 0, vs.size() - 1)] if variant > 0 else vs[randi() % vs.size()]
+	_voice.play()
 
 
 ## The lantern he carries at night while following: his own light (not a stimulus-field light, so
@@ -350,6 +449,39 @@ func _light(on: bool) -> void:
 	lantern.visible = on
 
 
+## A perk effect of his now (CompanionDirector.perk), `none` without a director.
+func perk(key: String, none: float) -> float:
+	var d: Node = _director()
+	return float(d.call(&"perk", key, none)) if d != null and d.has_method(&"perk") else none
+
+
+## His body's id (`companion:<def>`): the owner the gathering commands fill his pack for.
+func body_id() -> StringName:
+	return enemy.entity_id
+
+
+## The logs on his right shoulder, one per log in his pack (like the player's two). A plain node
+## at shoulder height, not on a bone: it doesn't follow the clips (TD-305).
+func _shoulder_logs() -> void:
+	var n: int = inventory.count_of(&"log") if inventory != null else 0
+	if n == _shoulder_n:
+		return
+	_shoulder_n = n
+	if _shoulder == null:
+		_shoulder = Node3D.new()
+		_shoulder.name = "ShoulderLogs"
+		_shoulder.position = Vector3(-0.2, 1.55, -0.05)
+		enemy.add_child(_shoulder)
+	for c: Node in _shoulder.get_children():
+		c.queue_free()
+	for i: int in n:
+		var mi := MeshInstance3D.new()
+		mi.mesh = ModelLibrary.mesh("structures/log_piece", "log")
+		# along his facing (the mesh lies along +X), the far end dipping a little, stacked outward
+		mi.transform = Transform3D(Basis(Vector3.UP, PI * 0.5) * Basis(Vector3.BACK, -0.12), Vector3(-0.17 * i, 0.12 * i, 0.0))
+		_shoulder.add_child(mi)
+
+
 func lantern_on() -> bool:
 	return lantern != null and lantern.visible
 
@@ -362,7 +494,7 @@ func _fix_anims() -> void:
 	var ap: AnimationPlayer = enemy.visual.anim
 	if ap == null:
 		return
-	for n: StringName in [&"downed", &"sit_injured", &"talk", &"look"]:
+	for n: StringName in [&"downed", &"sit_injured", &"talk", &"look", &"carry_walk"]:
 		if ap.has_animation(n):
 			ap.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 

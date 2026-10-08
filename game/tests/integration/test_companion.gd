@@ -6,6 +6,15 @@ extends GutTest
 ## bled out he is gone until the next dawn and comes back at the player's spawn point (never under
 ## permadeath); his state round-trips through the save; the quick order toggles follow / stay; the
 ## AI director neither counts nor culls him.
+## Phase 2: gathering fills his own pack (stones; a small tree he fells with his own blows, its logs
+## on his shoulder) and stops when it is full; fetch brings what the player looked at back (into
+## their pack, or at their feet); give and store empty his pack; his pack and errand round-trip
+## through the save; his trees count half for the player's XP and directives.
+## Phase 3: his barks are voiced from his body (the variant matching the line), rate-limited and
+## silent without the sounds; his perks come with the days (a bigger pack, a third log, faster
+## felling, a generator near him burns less); placed beside the player or at their bed he lands
+## on the floor, out of water, walls and furniture, on the player's side of a wall; downed, the
+## Hollowed keep at him a while (mauling him shortens his bleed-out); companion_strength scales him.
 
 const PLAYER_SCENE: String = "res://src/player/player.tscn"
 const CAMP_AT := Vector3(12, 0, 0)
@@ -20,6 +29,9 @@ class FakeWorld:
 	var traders: Node = null
 	var companion: Node = null
 	var ui: Node = null
+	var vegetation: Node = null
+	var loose: Node = null
+	var water: Node = null
 
 	func height_at(_x: float, _z: float) -> float:
 		return 0.0
@@ -37,6 +49,12 @@ var _world: FakeWorld
 var _ai: AIDirector
 var _dir: CompanionDirector
 var _p: Player
+
+
+## Stands in for BuildingManager: the pieces by id (CompanionDirector.nearest_storage reads them).
+class FakeBuilding:
+	extends Node3D
+	var pieces: Dictionary = {}
 
 
 func before_each() -> void:
@@ -62,6 +80,12 @@ func _start(opts: Dictionary) -> void:
 	_p.global_position = Vector3.ZERO
 	_p.set_physics_process(false)
 	_world.player = _p
+	var acts := PlayerActions.new()
+	acts.world = _world
+	_world.add_child(acts)
+	var loose := LooseItems.new()
+	_world.add_child(loose)
+	_world.loose = loose
 	_dir = CompanionDirector.new()
 	_world.add_child(_dir)
 	_world.companion = _dir
@@ -251,7 +275,9 @@ func test_downed_then_revived_with_a_kit() -> void:
 	e.take_damage(info)
 	assert_true(e.ally.downed, "downed, not dead")
 	assert_ne(e.state, Enemy.State.DEAD)
-	assert_false(e.is_alive(), "out of play: the Hollowed lose interest")
+	assert_true(e.is_alive(), "the Hollowed keep at him a while (downed.linger)")
+	e.ally._linger_until = e._now() - 0.1
+	assert_false(e.is_alive(), "then out of play: the Hollowed lose interest")
 	h.foe = e
 	assert_false(EnemyFoes.fighting(h), "a downed companion is dropped as a foe")
 	assert_false(bool(Game.execute(&"companion.order", {"order": "stay"}).get("ok", true)), "no orders while down")
@@ -366,3 +392,387 @@ func test_the_ai_director_never_culls_him() -> void:
 	assert_eq(_ai.hostiles_near(e.global_position, 5.0), 0, "never keeps the player from sleeping")
 	assert_eq(_ai._roaming_count(), 0)
 	assert_true(is_instance_valid(e) and _ai.enemies.has(CompanionDirector.BODY_ID))
+
+
+# --- Phase 2: gather, fetch, give, store ------------------------------------------------------------
+
+## A vegetation manager with these instances ([species, position]) in chunk (0, 0): trees get their
+## collision bodies (as near the player), the rest are harvestable.
+func _veg(list: Array) -> VegetationManager:
+	var vm := VegetationManager.new()
+	_world.add_child(vm)
+	_world.vegetation = vm
+	var key := Vector2i(0, 0)
+	var layers: Dictionary = {"tree": [], "medium": [], "ground": []}
+	for i: int in list.size():
+		var inst := VegetationScatter.Instance.new()
+		inst.index = i
+		inst.species = StringName(str(list[i][0]))
+		inst.pos = list[i][1]
+		inst.scale = 1.0
+		inst.tilt = Vector2.ZERO
+		var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
+		(layers["tree" if sp.veg_kind == "tree" else "ground"] as Array).append(inst)
+	vm._data[key] = layers
+	vm._pickable[key] = vm._harvestables(layers)
+	for inst2: VegetationScatter.Instance in layers["tree"]:
+		var id: StringName = VegetationScatter.instance_id(key, inst2.index)
+		vm._bodies[id] = vm._make_body(id, key, inst2, Content.get_def(&"species", inst2.species) as SpeciesDef)
+	return vm
+
+
+## Turns the player (yaw) and their head (pitch) to look at `at`.
+func _aim(at: Vector3) -> void:
+	var d: Vector3 = at - _p.camera.global_position
+	_p.rotation.y = atan2(-d.x, -d.z)
+	_p.head.rotation.x = atan2(d.y, Vector2(d.x, d.z).length())
+
+
+## Runs physics frames until `done` holds (or `limit` frames).
+func _until(done: Callable, limit: int) -> void:
+	for i: int in limit:
+		await get_tree().physics_frame
+		if bool(done.call()):
+			return
+
+
+func test_gathering_stone_fills_his_pack_and_stops_when_full() -> void:
+	var e: Enemy = await _recruited()
+	var spot := Vector3(20, 0, 10)
+	var list: Array = []
+	for i: int in 8:
+		list.append(["loose_stone", spot + Vector3(float(i % 4) * 0.7, 0.0, float(i / 4) * 0.7)])
+	var vm: VegetationManager = _veg(list)
+	# Most of a pack's worth already: a few stones more and he is full (15 is the carry cap).
+	_dir.inventory.add_item(&"stone", 11)
+	var lines: Array = []
+	var on_msg := func(t: String, _k: StringName) -> void: lines.append(t)
+	Events.player_status_message.connect(on_msg)
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "gather", "kind": "stone", "spot": [spot.x, 0.0, spot.z]})
+	assert_true(bool(r.get("ok", false)), str(r))
+	assert_eq(e.ally.order, "gather")
+	await _until(func() -> bool: return e.ally.order == "follow", 1500)
+	Events.player_status_message.disconnect(on_msg)
+	assert_eq(e.ally.order, "follow", "full, he came back to follow")
+	assert_eq(_dir.inventory.count_of(&"stone"), 15, "a full pack: the stone carry cap")
+	assert_eq(_p.state.inventory.count_of(&"stone"), 0, "into his own pack, not the player's")
+	var harvested: int = 0
+	for inst: VegetationScatter.Instance in vm._data[Vector2i(0, 0)]["ground"]:
+		if vm._is_removed(Vector2i(0, 0), inst.index):
+			harvested += 1
+	assert_between(harvested, 2, 4, "he stopped when full (%d of 8 picked)" % harvested)
+	assert_lt(e.global_position.distance_to(_p.global_position), 7.0, "back with the player")
+	assert_true(lines.any(func(l: String) -> bool: return l in _dir.cdef.barks["full"]), "and says so: %s" % [lines])
+	assert_false(bool(Game.execute(&"companion.order", {"order": "gather", "kind": "stone"}).get("ok", true)), "no room: refused")
+	assert_false(bool(Game.execute(&"companion.order", {"order": "gather", "kind": "gold"}).get("ok", true)), "unknown kind")
+
+
+func test_gathering_wood_he_fells_a_small_tree_for_half_the_credit() -> void:
+	var e: Enemy = await _recruited()
+	var tracker := DirectiveTracker.new()
+	tracker.world = _world
+	_world.add_child(tracker)
+	tracker.setup_world(_world)
+	var tree_at := Vector3(22, 0, 14)
+	var vm: VegetationManager = _veg([["paper_birch", tree_at], ["hollow_larch", tree_at + Vector3(4, 0, 0)]])
+	_p.global_position = Vector3(0, 0, -6)
+	var felled: Array = []
+	var on_fell := func(_id: StringName, _pos: Vector3, by: StringName) -> void: felled.append(by)
+	Events.tree_felled.connect(on_fell)
+	var xp0: int = _p.state.progression.xp
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "gather", "kind": "wood", "spot": [tree_at.x, 0.0, tree_at.z]})
+	assert_true(bool(r.get("ok", false)), str(r))
+	await _until(func() -> bool: return e.ally.order == "follow", 3000)
+	Events.tree_felled.disconnect(on_fell)
+	assert_eq(felled, [CompanionDirector.BODY_ID], "he felled the birch with his own blows")
+	assert_true(vm._is_removed(Vector2i(0, 0), 0), "a stump")
+	assert_false(vm._is_removed(Vector2i(0, 0), 1), "the larch is too big a tree for him")
+	assert_between(_dir.inventory.count_of(&"log"), 1, 2, "its logs on his shoulder (two at most)")
+	assert_eq(_p.state.inventory.count_of(&"log"), 0)
+	assert_eq(_p.state.progression.xp - xp0, 5, "half a felled tree's XP")
+	assert_eq(_p.state.directives.count_of(&"arrival_fell"), 0, "half a directive tree")
+	Events.tree_felled.emit(&"veg:0_0:9", Vector3.ZERO, CompanionDirector.BODY_ID)
+	assert_eq(_p.state.directives.count_of(&"arrival_fell"), 1, "two of his make one")
+	Events.tree_felled.emit(&"veg:0_0:8", Vector3.ZERO, _p.state.id)
+	assert_eq(_p.state.directives.count_of(&"arrival_fell"), 2, "the player's own count whole")
+	tracker.free()
+
+
+func test_fetch_brings_back_what_the_player_looked_at() -> void:
+	var e: Enemy = await _recruited()
+	await _until(func() -> bool: return e.velocity.length() < 0.05, 240)
+	var drop: ItemDrop = ItemDrop.spawn(_world, ItemStack.make(&"cloth_bandage", 3), _p.global_position + Vector3(14, 0.3, 6))
+	await _frames(30)
+	assert_false(bool(Game.execute(&"companion.order", {"order": "fetch"}).get("ok", true)), "nothing looked at yet")
+	_aim(drop.global_position)
+	await get_tree().physics_frame
+	_dir.tick()
+	assert_eq(_dir.looked, {"entity": String(drop.entity_id)}, "the look ray found it")
+	_aim(e.global_position + Vector3.UP)
+	await get_tree().physics_frame
+	_dir.tick()
+	assert_eq(_dir.looked, {"entity": String(drop.entity_id)}, "looking at him to give the order keeps it")
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "fetch"})
+	assert_true(bool(r.get("ok", false)), str(r))
+	await _until(func() -> bool: return e.ally.order == "follow", 1500)
+	assert_eq(e.ally.order, "follow")
+	assert_false(is_instance_valid(drop) and not drop.is_queued_for_deletion(), "taken off the ground")
+	assert_eq(_p.state.inventory.count_of(&"cloth_bandage"), 3, "handed over")
+	assert_true(_dir.inventory.is_empty(), "nothing kept back")
+	var far: ItemDrop = ItemDrop.spawn(_world, ItemStack.make(&"stone", 1), _p.global_position + Vector3(80, 0.3, 0))
+	await get_tree().physics_frame
+	assert_false(bool(Game.execute(&"companion.order", {"order": "fetch", "target": {"entity": String(far.entity_id)}}).get("ok", true)),
+		"past fetch.range")
+
+
+func test_a_fetched_log_lands_at_the_feet_of_a_full_shoulder() -> void:
+	var e: Enemy = await _recruited()
+	_give(&"log", 2)
+	var lg: LogEntity = _world.loose.spawn_log(_p.global_position + Vector3(12, 0.3, 4), Basis(), &"")
+	await _frames(20)
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "fetch", "target": {"entity": String(lg.entity_id)}})
+	assert_true(bool(r.get("ok", false)), str(r))
+	await _until(func() -> bool: return e.ally.order == "follow", 1500)
+	assert_false(is_instance_valid(lg) and not lg.is_queued_for_deletion(), "he picked it up")
+	assert_eq(_p.state.inventory.count_of(&"log"), 2, "the player's shoulder was full")
+	var near: int = 0
+	for n: Node in get_tree().get_nodes_in_group(&"logs"):
+		if not n.is_queued_for_deletion() and (n as Node3D).global_position.distance_to(_p.global_position) < 4.0:
+			near += 1
+	assert_eq(near, 1, "dropped at the player's feet")
+	assert_eq(_dir.inventory.count_of(&"log"), 0)
+
+
+func test_give_me_what_you_carry() -> void:
+	var e: Enemy = await _recruited()
+	assert_false(bool(Game.execute(&"companion.give", {}).get("ok", true)), "he carries nothing")
+	_dir.inventory.add_item(&"log", 2)
+	_dir.inventory.add_item(&"stick", 7)
+	_give(&"log", 1)
+	e.global_position = _p.global_position + Vector3(2, 0, 0)
+	var logs0: int = get_tree().get_nodes_in_group(&"logs").size()
+	var r: Dictionary = Game.execute(&"companion.give", {})
+	assert_true(bool(r.get("ok", false)), str(r))
+	assert_eq(_p.state.inventory.count_of(&"stick"), 7)
+	assert_eq(_p.state.inventory.count_of(&"log"), 2, "what fits on the player's shoulder")
+	assert_eq(get_tree().get_nodes_in_group(&"logs").size(), logs0 + 1, "the rest at their feet")
+	assert_true(_dir.inventory.is_empty())
+	_dir.inventory.add_item(&"stone", 2)
+	e.global_position = _p.global_position + Vector3(20, 0, 0)
+	assert_false(bool(Game.execute(&"companion.give", {}).get("ok", true)), "too far to hand over")
+
+
+func test_store_at_base_fills_the_nearest_crate() -> void:
+	var e: Enemy = await _recruited()
+	var b := FakeBuilding.new()
+	_world.add_child(b)
+	_world.building = b
+	assert_false(bool(Game.execute(&"companion.store", {}).get("ok", true)), "he carries nothing")
+	_dir.inventory.add_item(&"stone", 5)
+	_dir.inventory.add_item(&"stick", 3)
+	assert_false(bool(Game.execute(&"companion.store", {}).get("ok", true)), "no storage")
+	var crate := StructurePiece.new()
+	crate.setup(&"p:crate", Content.structure(&"storage_crate"), b)
+	b.add_child(crate)
+	crate.global_position = e.global_position + Vector3(-10, 0, 6)
+	b.pieces[&"p:crate"] = crate
+	var r: Dictionary = Game.execute(&"companion.store", {})
+	assert_true(bool(r.get("ok", false)), str(r))
+	assert_eq(e.ally.order, "store")
+	await _until(func() -> bool: return e.ally.order == "follow", 1200)
+	assert_eq(e.ally.order, "follow", "stored, back to following")
+	assert_eq(crate.inventory.count_of(&"stone"), 5)
+	assert_eq(crate.inventory.count_of(&"stick"), 3)
+	assert_true(_dir.inventory.is_empty())
+	assert_eq((Game.session.world.container_state(&"p:crate").get("items", []) as Array).size(), 2, "the crate's contents persist")
+
+
+func test_his_pack_and_errand_round_trip_through_the_save() -> void:
+	var e: Enemy = await _recruited()
+	_dir.inventory.add_item(&"log", 2)
+	_dir.inventory.add_item(&"plant_fiber", 9)
+	Game.execute(&"companion.order", {"order": "gather", "kind": "fibre", "spot": [30.0, 0.0, 12.0]})
+	Events.game_saving.emit("test")
+	var ws := WorldState.new()
+	ws.from_dict(JSON.parse_string(JSON.stringify(Game.session.world.to_dict())))
+	_ai.despawn(e)
+	_dir.free()
+	await get_tree().physics_frame
+	Game.session.world.companion = ws.companion
+	_dir = CompanionDirector.new()
+	_world.add_child(_dir)
+	_world.companion = _dir
+	_dir.setup_world(_world)
+	assert_eq(_dir.inventory.count_of(&"log"), 2, "his pack loads")
+	assert_eq(_dir.inventory.count_of(&"plant_fiber"), 9)
+	assert_eq(_dir.inventory.max_slots, 16, "12 and the Pack mule perk's 4")
+	_dir.tick()
+	var b: Enemy = _dir.body
+	assert_not_null(b)
+	assert_eq(b.ally.order, "gather", "the errand loads")
+	assert_eq(b.ally.work.kind, "fibre")
+	assert_almost_eq(b.ally.work.spot, Vector3(30, 0, 12), Vector3.ONE * 0.01)
+	assert_eq(b.ally.inventory, _dir.inventory)
+	# Bled out, he loses what he carried.
+	b.ally.go_down(null, 0.05)
+	await _frames(10)
+	_dir.tick()
+	assert_true(_dir.inventory.is_empty(), "lost with him")
+
+
+# --- Phase 3: voice, perks, placement, downed, strength ------------------------------------------
+
+## Stands in for WaterSystem: water deeper than wading everywhere `wet` says so.
+class FakeWater:
+	extends Node
+	var wet: Callable
+
+	func depth_at(pos: Vector3) -> float:
+		return 1.2 if bool(wet.call(pos)) else 0.0
+
+
+func test_his_barks_are_voiced_and_rate_limited() -> void:
+	var e: Enemy = await _recruited()
+	var m: CompanionMind = e.ally
+	assert_eq(m.last_voice, "voice/ezra_recruited", "recruited: his voice too")
+	var lines: Array = []
+	var on_msg := func(t: String, _k: StringName) -> void: lines.append(t)
+	Events.player_status_message.connect(on_msg)
+	m._voice_t = -1000.0
+	m.bark("spotted")
+	assert_eq(lines.size(), 1, "the status-bar line still shows")
+	assert_eq(m.last_voice, "voice/ezra_spotted")
+	var shown: int = (m.cdef.barks["spotted"] as Array).find(lines[0])
+	assert_eq(m.last_voice_variant, shown + 1, "the variant matching the line shown")
+	m.bark("spotted")
+	assert_eq(lines.size(), 1, "said on his own: not again within voice.repeat")
+	m.bark("follow")
+	assert_eq(lines.size(), 2, "an order's answer always shows")
+	assert_eq(m.last_voice, "voice/ezra_spotted", "but not voiced within voice.gap of the last")
+	m._voice_t = -1000.0
+	m.bark("stay")
+	assert_eq(m.last_voice, "voice/ezra_ack")
+	assert_eq(m.last_voice_variant, 4, "id:N picks variant N")
+	m.bark("downed")
+	assert_eq(m.last_voice, "voice/ezra_downed", "urgent barks cut in")
+	Events.player_status_message.disconnect(on_msg)
+	var voice: Node = e.get_node_or_null(^"Voice")
+	if Audio.variants(&"voice/ezra_ack").is_empty():
+		assert_null(voice, "no sounds generated: silent, no player made")
+	else:
+		assert_true(voice is Sound3D and (voice as Sound3D).playing, "played from his body")
+
+
+func test_downed_the_hollowed_keep_at_him_a_while() -> void:
+	var e: Enemy = await _recruited()
+	var h: Enemy = _spawn(&"hollow", e.global_position + Vector3(1.2, 0, 0))
+	await get_tree().physics_frame
+	h.set_physics_process(false)
+	var info := DamageInfo.make(e.health + 50.0, &"zombie", &"zombie", h.entity_id)
+	info.hit_pos = e.global_position + Vector3.UP
+	e.take_damage(info)
+	assert_true(e.ally.downed)
+	h.foe = e
+	h._foe_seen = h._now()
+	h._set_state(Enemy.State.ATTACK)
+	assert_true(EnemyFoes.fighting(h), "still at him just after he went down")
+	var t0: float = e.ally.downed_t
+	e.take_damage(info)
+	assert_almost_eq(e.ally.downed_t, t0 - 6.0, 0.01, "mauled where he lies: he bleeds out the faster")
+	assert_eq(e.health, 0.0, "no health to lose")
+	var pinfo := DamageInfo.make(30.0, &"slash", &"melee", _p.state.id)
+	e.take_damage(pinfo)
+	assert_almost_eq(e.ally.downed_t, t0 - 6.0, 0.01, "the player's blows never count")
+	e.ally._linger_until = e._now() - 0.1
+	assert_false(EnemyFoes.fighting(h), "after downed.linger they lose interest")
+	# A downed body loaded from a save is out of play at once.
+	e.ally.get_up(0.5)
+	e.ally.go_down(null, 60.0)
+	assert_false(e.is_alive())
+
+
+func test_companion_strength_scales_him() -> void:
+	var e: Enemy = await _recruited()
+	assert_almost_eq(e.max_health, e.def.health, 0.01, "1 by default: the enemy settings never apply")
+	after_each()
+	_start({"seed": 5803, "game_mode": "survival", "rules": {"companion_strength": 1.5, "enemy_health": 2.0}})
+	var e2: Enemy = await _recruited()
+	assert_almost_eq(e2.max_health, e2.def.health * 1.5, 0.01, "health x companion_strength")
+	assert_almost_eq(e2.damage_mult, 1.5, 0.001, "his blows too")
+	var preset: GameRules = GameRules.resolve({}, &"hollowed", {})
+	assert_lt(preset.num("companion_strength"), 1.0, "the hard presets weaken him")
+
+
+func test_his_perks_come_with_the_days() -> void:
+	var e: Enemy = await _recruited()
+	assert_eq(_dir.days_with(), 0)
+	var names: Array = _dir.active_perks().map(func(p: Dictionary) -> String: return str(p["id"]))
+	assert_eq(names, ["pack_mule"], "the first from the start")
+	assert_eq(_dir.inventory.max_slots, 16, "four more slots")
+	assert_eq(_dir.inventory.add_item(&"log", 4), 1, "a third log on his shoulder, not a fourth")
+	assert_eq(_dir.inventory.count_of(&"log"), 3)
+	assert_almost_eq(e.ally.perk("chop_speed", 1.0), 1.0, 0.001, "not a faller yet")
+	var gen_at: Vector3 = e.global_position + Vector3(10, 0, 0)
+	assert_eq(_dir.fuel_factor(gen_at), 1.0, "nor a lineman")
+	Game.session.clock.set_time(4, 12.0)
+	_dir.tick()
+	assert_eq(_dir.active_perks().size(), 3, "two days on: all three")
+	assert_almost_eq(e.ally.perk("chop_speed", 1.0), 1.3, 0.001)
+	assert_almost_eq(e.ally.perk("chop_power", 1.0), 1.25, 0.001)
+	assert_almost_eq(_dir.fuel_factor(gen_at), 0.75, 0.001, "a generator near him burns a quarter less")
+	assert_eq(_dir.fuel_factor(e.global_position + Vector3(80, 0, 0)), 1.0, "not one far off")
+	e.ally.go_down(null, 60.0)
+	assert_eq(_dir.fuel_factor(gen_at), 1.0, "nor while he is down")
+	# The card lists his knacks.
+	var cd: CompanionDef = _dir.cdef
+	assert_true(cd.perks_after(0).size() < cd.perks_after(9).size())
+
+
+func test_placed_beside_the_player_he_keeps_out_of_walls_and_water() -> void:
+	var e: Enemy = await _recruited()
+	_p.global_position = Vector3(0, 0, 0)
+	_p.rotation = Vector3.ZERO
+	_p.head.rotation = Vector3.ZERO
+	# A wall right behind the player, across the spot he would be put at.
+	_box(Vector3(0, 1.5, 3.0), Vector3(30, 3, 0.4))
+	await get_tree().physics_frame
+	_dir.place_beside(_p)
+	var at: Vector3 = e.global_position
+	assert_lt(at.z, 3.0 - 0.2 - CompanionDirector.BODY_RADIUS + 0.01, "on the player's side of the wall (%s)" % at)
+	assert_lt(Vector2(at.x, at.z).length(), 10.0, "still beside the player")
+	assert_almost_eq(at.y, 0.1, 0.2, "on the floor")
+	# Water everywhere off a dry strip in front of the player.
+	var water := FakeWater.new()
+	water.wet = func(pos: Vector3) -> bool: return pos.z > -1.5 or absf(pos.x) > 1.0
+	_world.add_child(water)
+	_world.water = water
+	_dir.place_beside(_p)
+	at = e.global_position
+	assert_lte(at.z, -1.5, "not in the water (%s)" % at)
+	assert_lte(absf(at.x), 1.0)
+	_world.water = null
+	water.free()
+
+
+func test_at_dawn_he_comes_back_inside_the_room_with_the_bed() -> void:
+	var e: Enemy = await _recruited()
+	var bed := Vector3(30, 0, 30)
+	_p.state.spawn_point = bed
+	_p.state.has_spawn_point = true
+	# A hut round the bed: four walls, the bed itself where he would be put.
+	for side: Vector3 in [Vector3(2.6, 0, 0), Vector3(-2.6, 0, 0), Vector3(0, 0, 2.6), Vector3(0, 0, -2.6)]:
+		var sz := Vector3(0.3, 3.0, 5.5) if side.x != 0.0 else Vector3(5.5, 3.0, 0.3)
+		_box(bed + side + Vector3.UP * 1.5, sz)
+	_box(bed + Vector3(1.5, 0.3, 1.0), Vector3(1.2, 0.6, 2.2))
+	await get_tree().physics_frame
+	e.ally.go_down(null, 0.05)
+	await _frames(10)
+	_dir.tick()
+	Game.session.clock.set_time(3, 8.0)
+	_dir.tick()
+	var b: Enemy = _dir.body
+	assert_not_null(b, "back at dawn")
+	var d: Vector3 = b.global_position - bed
+	assert_lt(maxf(absf(d.x), absf(d.z)), 2.45 - CompanionDirector.BODY_RADIUS + 0.01, "inside the hut (%s)" % d)
+	var in_bed: bool = absf(d.x - 1.5) < 0.6 + CompanionDirector.BODY_RADIUS and absf(d.z - 1.0) < 1.1 + CompanionDirector.BODY_RADIUS
+	assert_false(in_bed, "not in the bed (%s)" % d)
