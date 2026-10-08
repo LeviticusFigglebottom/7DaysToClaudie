@@ -42,16 +42,64 @@ def _mesh_arm(model, sd: str, sk, h: float, tris: int):
         t = ((Vd - el) @ F._n(wr - el)) / np.linalg.norm(wr - el)
         M.decimate(obj, tris, protect=np.clip(0.6 * (t - 0.55) / 0.35, 0.0, 0.6) + 0.2 * np.clip((t - 0.95) / 0.1, 0.0, 1.0),
                    protect_factor=1.0)
+    _cut_nails(model, obj)
     C = M.face_centers(obj)
     t = ((C - el) @ F._n(wr - el)) / np.linalg.norm(wr - el)
     print(f"[character_fp_arms] arm.{sd}: {common.triangle_count(obj)} tris, {int((t > 1.0).sum())} faces past the wrist")
     return obj
 
 
+def _cut_nails(model, obj) -> None:
+    """Splits every edge the nails' visible outline crosses at the crossing and joins the cuts
+    across each face, so the nail material ends on a clean curve instead of on whichever whole
+    1-2 mm face its centre fell in (a ragged edge that read as a pasted-on patch)."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    verts = list(bm.verts)
+    V = np.array([v.co[:] for v in verts])
+    phi = {v: float(p) for v, p in zip(verts, model.nail_region(V))}
+    if min(phi.values()) >= 0.0:
+        bm.free()
+        return
+
+    def crossing(e):
+        a, b = e.verts
+        return (phi[a] < 0.0) != (phi[b] < 0.0) and phi[a] != 0.0 and phi[b] != 0.0
+
+    # A vertex within 12% of an edge of the outline moves onto it instead of leaving a sliver.
+    on = set()
+    for e in [e for e in bm.edges if crossing(e)]:
+        a, b = e.verts
+        if a in on or b in on or not crossing(e):
+            continue
+        t = phi[a] / (phi[a] - phi[b])
+        if t < 0.12 or t > 0.88:
+            v, w = (a, b) if t < 0.12 else (b, a)
+            tt = t if t < 0.12 else 1.0 - t
+            v.co = v.co.lerp(w.co, tt)
+            phi[v] = 0.0
+            on.add(v)
+    cut = set(on)
+    for e in [e for e in bm.edges if crossing(e)]:
+        a, b = e.verts
+        _, nv = bmesh.utils.edge_split(e, a, phi[a] / (phi[a] - phi[b]))
+        phi[nv] = 0.0
+        cut.add(nv)
+    for f in list(bm.faces):
+        vs = [v for v in f.verts if v in cut]
+        if len(vs) == 2 and not any(set(e.verts) == set(vs) for e in f.edges):
+            bmesh.utils.face_split(f, vs[0], vs[1])
+    bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 3])
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+
+
 def _labels(model, obj):
     C = M.face_centers(obj)
     N = M.face_normals(obj)
     _, lab = model.eval_points(C - N * 0.0006)
+    lab = np.where(model.nail_region(C) < 0.0, F.L_NAIL, lab)
     return lab
 
 
@@ -125,7 +173,53 @@ def _dirt_mask(model, sk, o) -> None:
     cols[:, 1] = np.clip(g, 0.0, 1.0)[lv]
     flush = np.clip(0.85 * knuckle + 0.6 * joint + 0.45 * tip, 0.0, 1.0) * (0.75 + 0.5 * n1)
     cols[:, 2] = np.clip(flush, 0.0, 1.0)[lv]
+    _nail_colours(model, o, V, lv, cols, n1)
     layer.data.foreach_set("color", cols.ravel())
+
+
+def _nail_colours(model, o, V, lv, cols, n1) -> None:
+    """The nails' own corners of the vertex colours (the colour layer is per face corner, so the
+    nail's edge stays crisp against the skin's): B = the pink of the bed showing through the
+    plate (fp_nail's `flush`), less over the pale lunula at the root and none at the free edge,
+    which is white-ish where it stands clear of the skin; G = grime packed under the free edge
+    and into the cuticle (the wear layer)."""
+    nail_slots = [i for i, m in enumerate(o.data.materials) if m is not None and "fp_nail" in m.name]
+    if not nail_slots:
+        return
+    me = o.data
+    mi = np.zeros(len(me.polygons), np.int32)
+    me.polygons.foreach_get("material_index", mi)
+    ls = np.zeros(len(me.polygons), np.int32)
+    me.polygons.foreach_get("loop_start", ls)
+    lt = np.zeros(len(me.polygons), np.int32)
+    me.polygons.foreach_get("loop_total", lt)
+    loop_face = np.repeat(np.arange(len(me.polygons)), lt)
+    nail_loop = np.isin(mi[loop_face], nail_slots)
+    if not nail_loop.any():
+        return
+    P = V[lv[nail_loop]]
+    bed = np.zeros(len(P))
+    free = np.zeros(len(P))
+    cuticle = np.zeros(len(P))
+    best = np.full(len(P), np.inf)
+    for infos in model.nails.values():
+        for nl in infos:
+            r = nl["region"](P)
+            mine = r < best
+            best = np.where(mine, r, best)
+            z = (P - nl["end"]) @ nl["fd"]
+            zv0, zv1 = nl["z_vis"]
+            u = np.clip((z - zv0) / (zv1 - zv0), 0.0, 1.0)
+            # the free edge: the last ~1.5 mm, where the plate has left the bed
+            fr = smoothstep(0.80, 0.90, u)
+            lun = 1.0 - smoothstep(0.06, 0.20, u)
+            free = np.where(mine, fr, free)
+            bed = np.where(mine, (1.0 - fr) * (1.0 - 0.65 * lun), bed)
+            cuticle = np.where(mine, 1.0 - smoothstep(0.0, 0.10, u), cuticle)
+    nn = n1[lv[nail_loop]]
+    edge = 1.0 - smoothstep(0.0003 * model.s, 0.0012 * model.s, np.abs(best))   # near the outline
+    cols[nail_loop, 2] = np.clip(0.75 * bed * (0.85 + 0.3 * nn), 0.0, 1.0)
+    cols[nail_loop, 1] = np.clip(np.maximum.reduce([0.25 * edge, 0.55 * cuticle, free * (0.55 + 0.6 * nn)]), 0.0, 1.0)
 
 
 def _skin_masks(model, sk, o, W) -> None:
@@ -189,7 +283,7 @@ def build(params: dict, outputs: list[str]) -> None:
     s = model.s
     arms = []
     for sd, _ in F.SIDES:
-        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0011)), int(params.get("arm_tris", 14000)))
+        o = _mesh_arm(model, sd, sk, float(params.get("h", 0.0011)), int(params.get("arm_tris", 18000)))
         lab = _labels(model, o)
         M.assign_labels(o, lab, F.LABEL_MATERIALS)
         fa = model.fa[sd]
