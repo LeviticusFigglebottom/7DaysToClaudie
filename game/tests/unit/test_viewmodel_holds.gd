@@ -258,7 +258,13 @@ func test_resting_wrists_stay_relaxed() -> void:
 				var rest: Basis = skel.get_bone_rest(skel.find_bone("hand.%s" % sd)).basis
 				var v: Vector2 = _wrist(rest, a.rotation_track_interpolate(tr, 0.0))
 				checked += 1
-				if v.x > bend_max or v.y > roll_max:
+				# A hand on the other's handle keeps the forearm's whole roll (an overhand grip on a
+				# shaft is nearly fully pronated): turned back about its wrist it would leave the shaft.
+				var hold: Dictionary = (cfg["holds"] as Dictionary)[cls]
+				var spec: Dictionary = ((hold.get("guard", {}) if suffix == "_guard" else {}) as Dictionary).get(sd,
+						(hold.get("pose", {}) as Dictionary).get(sd, {}))
+				var roll_ok: float = float((cfg.get("wrist", {}) as Dictionary).get("roll", 95)) + 4.0 if spec.has("on") else roll_max
+				if v.x > bend_max or v.y > roll_ok:
 					bad.append("%s %s: wrist bent %.0f°, rolled %.0f°" % [name, sd, v.x, v.y])
 	assert_gt(checked, 30, "every hold's resting hands measured")
 	assert_eq(bad, PackedStringArray(), "at rest: bend <= %.0f°, roll <= %.0f°" % [bend_max, roll_max])

@@ -1475,7 +1475,7 @@ class PoseSolver:
     def solve(self, hands: dict) -> dict:
         prm = {}
         placed = {}
-        self.relax(hands.get("_relax", 0.0))
+        relax = hands.get("_relax", 0.0)
         for sd, _ in sorted(SIDES, key=lambda s: 1 if hands[s[0]].on is not None else 0):
             h = hands[sd]
             if h.on is not None:
@@ -1489,7 +1489,10 @@ class PoseSolver:
                 F = _frame(k, d)
             else:
                 g, F = h.g, h.F
-            # A hand on the other's handle stays on it: it can turn, not move.
+            # A hand on the other's handle stays on it: it can turn, not move. Turned back into the
+            # comfort range about its wrist, its grip would slide off the shaft, so it keeps the
+            # full range (the comfort cost still picks its straightest elbow and roll).
+            self.relax(0.0 if h.on is not None else relax)
             g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None, item=h.item,
                                            fixed_roll=sd in hands.get("_fixed_roll", ()))
             # What the hand really ended up gripping (the other hand follows this handle).

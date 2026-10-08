@@ -9,6 +9,11 @@ Blender (numpy only, seconds per action).
       re-place each key's grip (S.move, 2 cm steps, within 18 cm) where an arm can deliver the
       key's tool angle: the smallest correction plus 1.5 degrees per cm moved. Rewrites
       viewmodel.json; review the diff and the renders (fp_preview.gd) before keeping it.
+  .tools/venv/bin/python tools/fp_poses.py relax hold[,hold...]
+      ADR-0060: turn and move each hold's own hands (its pose and guard; at most 40 degrees and
+      6 cm) so both wrists rest inside `wrist.comfort` (a hand on the other's handle included),
+      at the least change to where the tool points. Rewrites the hands' grip / dir / knuckles in
+      viewmodel.json; check the renders (fp_dev_render.py, fp_preview.gd) before keeping it.
 
 A hold whose idle needs much correction is asking for a wrist nobody has: rewrite it toward what
 the solver reaches (the report says which) rather than widening `wrist`.
@@ -112,11 +117,100 @@ def tune(names: list[str]) -> None:
     VM.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
 
 
+def _comfort_score(sol, hands) -> tuple[float, dict]:
+    """Degrees outside the comfort range summed over both hands once solved (a hand turned back
+    into it counts what it was turned), and each hand's wrist angles."""
+    sol.reset()
+    sol.clamped = {}
+    prm = sol.solve(hands)
+    total, angs = 0.0, {}
+    for sd in ("R", "L"):
+        A, Qh = sol._arm(sd, prm[f"{sd}.wrist"], prm[f"{sd}.pole"], prm[f"{sd}.Rh"])
+        a = sol.rig.wrist_angles(sd, Qh)
+        angs[sd] = a
+        sol.relax(1.0)
+        total += sol._over(*a) + sol.clamped.get(sd, 0.0)
+    return total, angs
+
+
+ROT_COST, CM_COST, ROT_MAX, MOVE_LIM = 0.25, 1.5, 40.0, 0.06
+
+
+def relax(names: list[str]) -> None:
+    cfg, _rig_, sol = _rig()
+    data = json.loads(VM.read_text())
+    for name in names:
+        h = data["holds"][name]
+        for variant in ("pose", "guard"):
+            if variant not in h:
+                continue
+            spec = h["pose"] if variant == "pose" else F.merge_pose(h["pose"], h["guard"])
+            own = [sd for sd in ("R", "L") if sd in spec and "on" not in spec[sd] and "wrist" not in spec[sd]]
+            if not own:
+                continue
+
+            def hands_for(x):
+                out = {}
+                for i, sd in enumerate(own):
+                    rot, mv = x[i * 6:i * 6 + 3], x[i * 6 + 3:i * 6 + 6]
+                    hd = F.pose_hands(F.with_item(spec, h))[sd]
+                    out[sd] = F.Hand(hd.g + F.g2b(mv), F.euler_g(rot) @ hd.F, hd.elbow, hd.sc, item=hd.item)
+                for sd in ("R", "L"):
+                    if sd not in out:
+                        out[sd] = F.pose_hands(F.with_item(spec, h))[sd]
+                out["_relax"] = 1.0
+                return out
+
+            def score(x):
+                if any(abs(v) > ROT_MAX for i, v in enumerate(x) if i % 6 < 3):
+                    return 1e9
+                if any(np.linalg.norm(x[i * 6 + 3:i * 6 + 6]) > MOVE_LIM for i in range(len(own))):
+                    return 1e9
+                c, _ = _comfort_score(sol, hands_for(x))
+                rot = sum(np.linalg.norm(x[i * 6:i * 6 + 3]) for i in range(len(own)))
+                mv = sum(np.linalg.norm(x[i * 6 + 3:i * 6 + 6]) for i in range(len(own)))
+                return c + ROT_COST * rot + CM_COST * 100 * mv
+
+            x = np.zeros(6 * len(own))
+            best = score(x)
+            start = best
+            for step in (16.0, 8.0, 4.0, 2.0):
+                improved = True
+                while improved:
+                    improved = False
+                    for k in range(len(x)):
+                        for sg in (-1, 1):
+                            y = x.copy()
+                            y[k] += sg * (step if k % 6 < 3 else step / 400.0)
+                            sc = score(y)
+                            if sc < best - 0.25:
+                                x, best, improved = y, sc, True
+            hands = hands_for(x)
+            c, angs = _comfort_score(sol, hands)
+            target = h[variant]
+            for i, sd in enumerate(own):
+                hd = hands[sd]
+                d, k = F.g2b(hd.F[:, 2]), F.g2b(hd.F[:, 0])
+                t = target.get(sd) if variant == "guard" else target[sd]
+                if t is None:
+                    continue
+                t.pop("back", None)
+                t["grip"] = [round(float(v), 3) for v in F.g2b(hd.g)]
+                t["dir"] = [round(float(v), 3) for v in d]
+                t["knuckles"] = [round(float(v), 3) for v in k]
+            print(f"{name}.{variant}: {start:.0f} -> {best:.0f} (outside comfort {c:.0f} deg; " +
+                  ", ".join(f"{sd} f{a[0]:+.0f} u{a[1]:+.0f} r{a[2]:+.0f}" for sd, a in angs.items()) +
+                  f"; turned {[round(float(v)) for v in x]})", flush=True)
+    VM.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2 or sys.argv[1] not in ("report", "tune"):
+    if len(sys.argv) < 2 or sys.argv[1] not in ("report", "tune", "relax"):
         raise SystemExit(__doc__)
     arg = sys.argv[2].split(",") if len(sys.argv) > 2 else []
     if sys.argv[1] == "report":
         report(arg)
+    elif sys.argv[1] == "relax":
+        relax(arg)
     else:
         tune(arg)
