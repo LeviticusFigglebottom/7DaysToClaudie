@@ -1,119 +1,99 @@
 # Workboard — who is doing what, across sessions
 
 The integrator session keeps this file. Other sessions read it after merging the integration
-branch `ccr-24ba8b7d-fttoi8` and send changes as messages; they don't edit it. That way it never
-conflicts.
+branch `claude/amazing-davinci-60axfh` and send changes as messages; they don't edit it. That way
+it never conflicts.
 
-**Round 2 (2026-10-06).** The first round's four sessions are gone, and with them every message
-they sent. A new hub took over from git alone. It merged session 3's last two commits and session
-2's caves. It found agent Z's fidelity round and session 4's wall-gap work lost: nothing was
-committed. It then started three new worker sessions on the old branches with the same roles. The
-old integration branch `claude/compassionate-dirac-8mtvxi` is frozen at 891830b; integrate into
-`ccr-24ba8b7d-fttoi8` instead.
+**Round 4 (2026-10-08).** Round 3's hub and its four workers are gone, and with them every message
+they sent. A new hub took over from git alone. It merged everything round 3 had pushed past its last
+integration (98a01ea): session 3's caves work in progress (ADR-0056 WS-A..D), session 2's Ezra
+phases 2-3 and Bloom nests in the encounter scatter, and session 5's forest set pieces round 5 with
+compound collision (generator VERSION 11). Session 5's round-5 debt was renumbered TD-314..317 (it
+had collided with session 2's TD-304..307). Session 4's branch had nothing unmerged. The old
+integration branches `claude/compassionate-dirac-8mtvxi` (891830b) and `ccr-24ba8b7d-fttoi8`
+(98a01ea) are frozen, and so are the old worker branches: integrate into
+`claude/amazing-davinci-60axfh`.
 
 ## Sessions
 | Session | Branch | Role | Now | Next |
 |---|---|---|---|---|
-| Integrator `session_01F4L1SyEdjgRRBm7g93Yk8J` | `ccr-24ba8b7d-fttoi8` (integration) | Hub: reviews and merges every branch, runs agents, delegates | Landed this round: session 2's caves (ADR-0044), tier-5 contract (TD-179) and the Ashen phase 1 (ADR-0048, generator VERSION 6); session 3's streamed random worlds, Phase 3 part 2, save v7, TD-182 and the stream budgets; agent Z's town ground and biome fog (ADR-0047); the hub's mine site (TD-169, VERSION 7) and farming and rain collection (ADR-0049). Every generated model is built. Now: renders and landing commits for X and Y | The garden and Ashen camp renders (TD-215); Z's asset side (fur, impostors); traps and electricity (M3 part 2) or more pool dungeons |
-| Session 2 `session_018Mc59z7WZz2YkXsyMHsJ75` | `claude/hollowmere-wildlife-town` | Wildlife, town content and economy | A tier-5 contract on `bloom_core_canister` (TD-179), then the Ashen (ADR-0048) | Ashen camps, scouts, raids, fear of fire |
-| Session 3 `session_01Nvn2rfJdMq7iK7ZuQhac7y` | `claude/hollowmere-playable` | Playable builds and stability | Streaming on for random worlds (TD-137, TD-118), then Phase 3 part 2 (TD-107) | Phase 4's save side (v7, the world bundle), then TD-003's headless profile |
-| Session 4 `session_01DYqPNtu8CtWNbHWPmbsFcW` | `claude/blissful-wright-gnc54e` | POI prop placement, then first-person hands | Merge the integration branch (take its side of the facing fix), port the two lost nudges, then wall-mounted props flush to their walls (TD-159–161) | The first-person hands (ADR-0045, TD-172–175) |
-| Session 5 `session_01513iEbtqcsvQd51xVsfx1Q` | `claude/hollowmere-interiors` | Interior lighting and the look of rooms | Player report 3 item 7: interiors too dark on a real GPU; diagnose with renders and fix (indoor fill, exposure, probes, window light) | Ask the hub |
+| Hub `session_01PzJeyHzavtYrZ7JLbVLmHS` | `claude/amazing-davinci-60axfh` (integration) | Reviews and merges every branch; the verification gate (import, check, validate, test, smoke, tour on every merge); goldens; this file; delegates | Round 3's leftovers merged (00cada1, 73a4f14, 475fcc6); full verification of the merged tree | Its own stream with agents: POI navigation and placement (the owner's priority 2) |
+| World `WORLD_SESSION` | `claude/hollowmere-r4-world` | Terrain, caves, streaming, performance, saves, builds (round 3 session 3's role) | Finish the organic caves (ADR-0056, docs/CAVES_PLAN.md): WS-C's nav test, WS-D, WS-E, WS-F | TD-279 (the Hum's flow field in caves); TD-003's headless profile with a full Hum; TD-196/197; graphics options (ADR-0037) |
+| Creatures `CREATURES_SESSION` | `claude/hollowmere-r4-creatures` | The Hollowed, characters, hands and combat feel (the owner's priorities 1 and 3) | The Hollowed: look and behaviour (TD-192 heads and hair, TD-027 silhouettes and spit/charge clips, TD-011 crowd avoidance and window links) | Hands with every tool and weapon (ADR-0045 follow-ups, TD-296..298); then the Ashen phase 2 remainder (TD-190) and Ezra follow-ups (TD-299..313) |
 
 ## Protocol
 * **Talk to the hub.** Use the `send_message` tool of the Claude Code Remote MCP server, with
-  session_id `session_01F4L1SyEdjgRRBm7g93Yk8J`. Message it when you start a stream, when a stream
+  session_id `session_01PzJeyHzavtYrZ7JLbVLmHS`. Message it when you start a stream, when a stream
   lands (with commit hashes), when you're blocked, and before you touch a file outside your
-  ownership below. You can message another session directly when it saves a round trip; copy the
-  hub in.
+  ownership below. The hub relays what the other worker needs to know.
+* **Talk to each other.** Message the other worker directly for a shared file, an interface you
+  need from them, or a second opinion; copy the hub in one line. Ask for a review of anything that
+  crosses into the other's area (a cave rule the Hollowed follow, a new AI cost in a perf budget).
+  Answer a peer's question before you start your next task.
+* **Never duplicate.** Before starting anything not listed under your name, ask the hub; it checks
+  this board and the other branch. When your queue runs thin, ask the hub for the next task rather
+  than picking one.
 * **Commit and push often.** A container can be reclaimed at any time, and with it everything
-  uncommitted. Round 1 lost agent Z's work and session 4's wall-gap fix that way. Push a commit
-  at least every hour of work, and before you end a turn. A WIP commit on your own branch is fine.
+  uncommitted. Rounds 1 and 3 lost work that way. Push a commit at least every hour of work, and
+  before you end a turn. A WIP commit on your own branch is fine.
 * **Branches.** Push only to your own branch; never rebase or force-push. Merge the integration
-  branch into yours about hourly and before you push. The hub merges your branch into the
-  integration branch.
+  branch into yours about hourly and before you tell the hub something landed. The hub merges your
+  branch into the integration branch after running the full gate.
 * **Ownership.** A file belongs to the stream listed below until that stream lands. Outside your
   own files, make only small additive hunks, and say so in your status. Never revert someone
   else's change.
-* **Numbers.** Use only the ADR and TD numbers allocated to you below. Save version: bump only
-  right after merging the integration branch, from what's there, and tell the hub.
+* **Numbers.** Use only the ADR and TD numbers allocated to you below. Generator VERSION and save
+  version: bump only right after merging the integration branch, from what's there, and tell the
+  hub first.
 * **Toolchain.** A fresh container has none. `make setup-godot && python3
-  tools/setup/vendor_gut.py && git checkout game/addons/gut` (then `make import`) is enough for
-  check, validate and test. Add `make setup` and `make assets` (about 2.5 h the first time) only
-  when you need generated models or renders.
-* **Never idle.** Keep your container busy: run independent work in parallel with subagents in
-  worktrees (one Godot process each, one render at a time). When your queue runs thin, message the
-  hub for new work instead of ending your turn with nothing running.
+  tools/setup/vendor_gut.py && git checkout game/addons/gut`, then `make import`, is enough for
+  check, validate and test (the import takes ~10-15 min the first time, without generated assets).
+  Add `make setup` and `make assets` (about 2.5 h the first time) only when you need generated
+  models or renders.
+* **Subagents.** Work through subagents in git worktrees for independent pieces (one Godot process
+  each, one render at a time per container). You review and merge their work into your branch.
 * **Status.** End each turn with a short status to the hub: what landed, what's next, blockers.
 
 ## Active streams and the files they own
-| Stream | Where | Owns |
+| Stream | Who | Owns |
 |---|---|---|
-| The Corvane Field Lab (Y), landing | integrator | `corvane_field_lab.json` with its notes, loot, keys and items, `props_lab.py` with its catalog and `data/props/lab.json`, the `lab_signs` atlas, `test_field_lab.gd`, its pool entry, ADR-0046 |
-| Wilderness set pieces, round 3 (X), landing | integrator | its four building JSONs (Camp Tamarack, Elk Ridge Lodge, the Cordon Quarantine Camp, the Haldane Place) with their notes, loot and keys, its props family, `test_wilderness_round_three.gd`, and its four entries in the wilderness pool of `world_gen.json` |
-| Fidelity round (Z), code side | integrator | landed (ADR-0047); the asset side (fur, impostors: TD-005/006/067) waits for renders |
-| Tier-5 contract, then the Ashen (ADR-0048) | session 2 | contract and trader data and code (`game/data/traders/`, `contracts`), new Ashen data (`game/data/factions/` or `enemies/ashen*`), Ashen AI under `game/src/ai/ashen/`, Ashen camp POIs, their props and generators; `enemy.gd` hunks reported |
-| Streaming default, Phase 3 part 2, Phase 4 (v7) | session 3 | `.github/workflows/`, `game/export_presets.cfg`, the load sequence (`game_world.gd`, `world_loader.gd`, `PoiManager`'s placement path, `PoiBuilder.build`'s validator argument), RegionStreamer, PoiRegistry, `terrain_holes.gd`, `terrain_manager.gd`, thread-safety fixes in `game/src/world/terrain/` and `vegetation/`, `game/src/core/save/` (v7) |
-| Wall-mounted prop offsets | session 4 | the wall-mount math in `PoiBuilder._prop_xf` and `poi_layout.gd`, wall-depth data on prop defs, and a validator check for wall gaps. Session 3 owns the rest of PoiBuilder; keep hunks small and report them |
-| First-person hands (ADR-0045), after the offsets | session 4 | `game/src/player/viewmodel.gd` and `viewmodel_holds.gd` arms and hold poses, the first-person arms generator (`character_fp_arms.py`) and its catalog entries; session 2's npc_build library is shared (additive hunks, reported) |
+| Organic caves (ADR-0056), then perf and builds | World | `game/src/world/terrain/**` (incl. `cave/`, `volume_terrain.gd`, `terrain_holes.gd`, `terrain_manager.gd`), threading in `game/src/world/vegetation/`, `game/src/ai/nav/nav_tiles.gd`, `game/src/ai/horde/flow_field*` (TD-279), RegionStreamer, PoiRegistry, the load sequence (`game_world.gd`, `world_loader.gd`), `game/src/core/save/`, `.github/workflows/`, `export_presets.cfg`, perf tooling (`perf_capture`, `stream_walk`, StreamMeter, `streaming.json`), `data/config/caves.json`, `docs/CAVES_PLAN.md`. The RWG `_caves()` stage is a reported hunk in `rwg_generator.gd` (hub's file) |
+| The Hollowed, hands and combat feel | Creatures | `game/src/ai/` except `nav/nav_tiles.gd` and the horde flow field (window NavigationLink3Ds go in as reported hunks there), enemy and character generators (`char_body`, `character_fp_arms.py`, `npc_build`), `game/src/player/viewmodel*.gd`, equipment and combat, `game/src/companion/` (Ezra), Ashen AI and data, `data/enemies/` |
+| POI navigation and placement | Hub | `game/src/poi/**` (except PoiRegistry), `game/data/pois/**`, `game/data/props/**`, prop generators, `poi_walk`/TraversalAudit, `game/src/worldgen/**`, `world_gen.json`, encounters (`game/src/world/encounters/`) |
 
 ## Allocations
-* ADR: 0026 (vault, S2), 0027 (wildlife, S2), 0031 (random worlds), 0032 (pool, if needed),
-  0033 (weather), 0034 (hounds and Murmurs, S2), 0035 (base building, S2), 0036–0037 (session 3),
-  0038 (streamed worlds: session 3 adds its phases), 0039 (traders and contracts, S2), 0040
-  (organic towns, the hub), 0041 (new biomes, the hub), 0042 (wilderness set pieces, the hub, if
-  needed), 0043 (session 4, if needed), 0044 (the Corvane caves, S2), 0045 (first-person hands,
-  session 4), 0046 (the field lab, the hub), 0047 (agent Z, if needed), 0048 (the Ashen, S2), 0049 (farming and rain collection, the hub), 0050 (interior lighting, session 5), 0051 (POI navigation, session 5, if needed), 0052 (traps and
-  electricity, the hub). Next free: 0053.
-* TD: S2 094–101, 111–114, 141–148, 162–171 and 186–195 (contract, the Ashen); session 3 102–109,
-  126–130 and 196–205; session 4 159–161 and 172–175 (hands); the hub 110, 115–125, 131–140,
-  149–158 (agents W and X), 176–180 (agent Y), 181–185 (agent Z), 206–210 (the mine site), 211–220 (farming and rain), 221–225 (doors and steps); session 5 226–235; the hub 236–238 (render review), 239–248 (traps and electricity); S2 249–258; the hub then 259 up (Round 3: the hub 259–268, session 5 269–278, session 3 279–288, session 4 289–298; ADR-0053..0057 as in Round 3 suites).
-* Save version: 6 since random worlds. Traders add `world.traders` and `players[*].contracts`
-  without a bump (both load empty from older saves). 7 is reserved for session 3's world bundle
-  (RWG v2 Phase 4), which carries those keys through. Anyone else who needs a bump asks the hub
-  first.
+* ADR: 0001..0058 are taken or retired (0032, 0042, 0043 were never written). 0056 (organic caves,
+  World), 0059 (World, if needed), 0060-0061 (Creatures), 0062 (hub). Next free: 0063.
+* TD: the register runs to TD-317. World 318-337, Creatures 338-357, the hub 358-377. Next free:
+  378.
+* Generator: `RwgGenerator.VERSION` is 11. World takes 12 for the caves stage (re-record
+  test_composer_golden with `SLOW_TESTS=1`). Anyone else asks the hub.
+* Save version: 7. Anyone who needs a bump asks the hub first.
 
 ## Queue (in order)
-1. Done: everything in round 1's list (random worlds v1 and v2, weather, the pool buildings, the
-   third block, hounds and Murmurs, base building, the playable builds, the "how to play" guide,
-   traders and contracts, the streamed load behind `stream`, Phase 3 part 1, the burnt forest and
-   fen, every crash and freeze the owner has hit), and in round 2 the Corvane caves (ADR-0044).
-2. The hub: land X and Y (the lab's `plastic_green` material, X's unused meat-locker container
-   and free-standing pelt board; `make assets`; renders; reviewed landing commits; ADR-0046's pool
-   wording); restart Z; then a `mine` wilderness site (TD-169).
-3. Session 2: the tier-5 contract (TD-179), then the Ashen (ADR-0048).
-4. Session 3: streaming on for random worlds; Phase 3 part 2 (TD-107: fixture batching, `poi_at`
-   on a grid, holes per built POI, StreamMeter, ModelLibrary warm-up, `test_poi_streaming.gd`);
-   Phase 4 (v7, the world bundle; then the New Game cap lifts past 7); TD-003 profiled headless
-   (a GPU run is the owner's). It keeps `make tour` clean throughout.
-5. Session 4: the lost nudges (St. Ansel's pantry freezer, the tavern's bedroom safe), wall gaps
-   (TD-159–161), then the hands (ADR-0045, TD-172–175).
-6. Later, unassigned: companion Ezra Vane; main-map regions D7 (Waystation 9's surroundings) and E6
-   (Mile 12); perk capstones, the forge and the chemistry bench.
-7. Needs the owner (a GPU and a human): the M1 playthrough, 60 FPS on target hardware, feel and
+1. Done through round 3: everything in rounds 1 and 2; the forest encounters (ADR-0054), forest set
+   pieces rounds 4 and 5 (ADR-0053), wolves and Bloom nests (ADR-0055), hunting and ranged with
+   climbing (ADR-0057), Ezra Vane phases 1-3 (ADR-0058), traps and electricity (ADR-0052), farming
+   (ADR-0049), the Ashen phase 1-2 (ADR-0048), interior light (ADR-0050), POI traversal (ADR-0051),
+   save v7; every item of player report 3.
+2. World: caves to ADR-0056 (merge points M1..M4 in docs/CAVES_PLAN.md), then TD-279, TD-003,
+   TD-196/197, ADR-0037. It keeps `make tour` and `make smoke` clean throughout.
+3. Creatures: the Hollowed look and behaviour, then hands, then the Ashen and Ezra follow-ups.
+4. Hub: merge gate; POI navigation and placement (TraversalAudit over every POI, TD-269..278 and
+   TD-314..317 leftovers, generated buildings' doors and steps); then main-map regions D7 and E6,
+   perk capstones, the forge and the chemistry bench.
+5. Needs the owner (a GPU and a human): the M1 playthrough, 60 FPS on target hardware, feel and
    balance (HANDOFF.md "Not verified yet").
 
-## Round 3 suites (2026-10-07): more of the game, and the forests full of places
-The wilderness pool holds 17 big set pieces and nothing small: between towns the forest is empty.
-Each session takes its suite when its current priority lands (hands, POI navigation, Hollowed).
-| Who | Suite | Numbers |
-|---|---|---|
-| The hub (agents) | **Forest encounters**: a micro-POI scatter for random worlds and the main map, a 7 Days / The Forest density of small places in the woods (abandoned campsites and tents, hunting stands and blinds, a wrecked car or logging truck on a forest track, a hermit's shack, a Cordon body-bag drop, a survivor's cache, Bloom-grown animal kills), each a few props with loot, sometimes a sleeper; placed by biome, slope and distance from roads; streamed with the regions | ADR-0054, TD-259..268 |
-| Session 5 | **Forest set pieces, round 4** (authored dungeons, every route proven by poi_walk): a ranger station with its fire-weather tower, a crashed Cordon transport plane in the timber, a survivalist bunker under a hillside cabin, a logging truck depot and repair shed, a railway trestle with its collapsed tunnel, an overgrown chapel and cemetery, a radio relay hut on a ridge | ADR-0053, TD-269..278 |
-| Session 2 | **The living forest**: wolves (packs, hunting deer and the player, fear of fire); Bloom nests, horror landmarks in the deep woods that seed Hollowed and spread Bloom; then companion Ezra Vane (follow, gather, guard, fetch) | ADR-0055, TD-249..258 |
-| Session 3 | **Organic caves** through the SDF volume terrain (TD-162/163): cave shelters and grottos in forest hillsides that the encounter scatter and the set pieces can use; the dense-forest perf budget for the new scatter; TD-003 numbers from the owner's GPU | ADR-0056, TD-279..288 |
-| Session 4 | **Hunting and ranged**: a bow and arrows (craftable, recoverable arrows), throwables (stones, molotovs), a hunting rifle, and climbing (ladders, ropes, the hunting stands) with session 5's ladder work | ADR-0057, TD-289..298 |
-
 ## The owner's priorities (2026-10-07, after Builds #68/#75: "much better so far")
-1. **The Hollowed: look and behaviour.** They seem passive until you're close. Session 2 (the Ashen's
-   phase-2 remainder, TD-190, waits).
+1. **The Hollowed: look and behaviour.** They seemed passive until you're close (c619133 now has
+   them notice at 25-40 m, see in the dark and call each other; TD-192 has what the look pass
+   left). Creatures.
 2. **POI navigation and placement**: doorways blocked, items lying in the way, and "climb up"
-   spots that use an interact instead of a ladder or a jump. Session 5 once the interior light lands,
-   with the hub's doors and steps agent.
-3. **Hands: looks and animations with every tool and weapon.** Session 4 (ADR-0045 follow-ups,
-   TD-172..175).
-Session 3 finishes Player report 3 (Continue position) and its perf items, and supports 1 and 2
-(navmesh, AI ticking, the tour bot).
+   spots that use an interact instead of a ladder or a jump. Round 3 landed TraversalAudit and many
+   fixes (ADR-0051); the hub finishes it.
+3. **Hands: looks and animations with every tool and weapon.** Round 3 landed oblique grips, joint
+   helper bones and per-finger curls (TD-173..175). Creatures.
 
 ## Player report 3 (Windows Build #67, 891830b; round 2)
 Screenshot: `docs/playtest/2026-10-06_build67_lighter_door.webp` (Pell's Crossing, a lit lighter, a
