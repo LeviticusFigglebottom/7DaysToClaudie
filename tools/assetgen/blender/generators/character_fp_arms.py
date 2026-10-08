@@ -265,6 +265,21 @@ def _skin_masks(model, sk, o, W) -> None:
     layer.data.foreach_get("color", cols)
     cols = cols.reshape(-1, 4)
     cols[:, 3] = dorsal[lv]
+    # The dirt mask's crease term follows the rest pose's AO, darkest between the fingers and the
+    # palm; a relaxed idle curls the fingers and shows exactly those pads to the camera, where the
+    # grime layer read as grey holes (ADR-0060). Thin it on the palm side of the fingers; nails
+    # keep their own corners (_nail_colours).
+    thin_l = thin[lv]
+    pad = (1.0 - dorsal[lv]) * smoothstep(0.5, 0.9, thin_l)
+    skin = np.ones(len(lv), bool)
+    nail_slots = [i for i, m in enumerate(me.materials) if m is not None and "fp_nail" in m.name]
+    if nail_slots:
+        mi = np.zeros(len(me.polygons), np.int32)
+        me.polygons.foreach_get("material_index", mi)
+        lt = np.zeros(len(me.polygons), np.int32)
+        me.polygons.foreach_get("loop_total", lt)
+        skin = ~np.isin(np.repeat(mi, lt), nail_slots)
+    cols[:, 1] = np.where(skin, cols[:, 1] * (1.0 - 0.7 * pad), cols[:, 1])
     layer.data.foreach_set("color", cols.ravel())
     f = A.Fields(len(V))
     f.bruise = thin

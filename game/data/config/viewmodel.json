@@ -4310,7 +4310,8 @@
           },
           "lin"
         ]
-      ]
+      ],
+      "relax": 0.0
     },
     "climb_grab": {
       "_doc": "Grab-on: the hands come up from below the view and close on it.",
@@ -4396,7 +4397,8 @@
           {},
           "inout"
         ]
-      ]
+      ],
+      "relax": 0.0
     },
     "climb_release": {
       "_doc": "Let-go (off the top, off the foot or Jump): the hands open and drop out of the view.",
@@ -4482,7 +4484,8 @@
           },
           "in"
         ]
-      ]
+      ],
+      "relax": 0.0
     },
     "climb_rope_cycle": {
       "_doc": "Hand over hand on a rope, one hand above the other: each hand grips for 70% of the cycle, riding down with the climb (so it stays on the rail), then lets go and reaches up. Not played: ViewModelClimb seeks it to the phase the distance climbed gives (viewmodel.json climb.cycle_m).",
@@ -4790,7 +4793,8 @@
           },
           "lin"
         ]
-      ]
+      ],
+      "relax": 0.0
     },
     "climb_rope_grab": {
       "_doc": "Grab-on: the hands come up from below the view and close on it.",
@@ -4876,7 +4880,8 @@
           {},
           "inout"
         ]
-      ]
+      ],
+      "relax": 0.0
     },
     "climb_rope_release": {
       "_doc": "Let-go (off the top, off the foot or Jump): the hands open and drop out of the view.",
@@ -4962,7 +4967,8 @@
           },
           "in"
         ]
-      ]
+      ],
+      "relax": 0.0
     },
     "apply": {
       "hold": "held",
