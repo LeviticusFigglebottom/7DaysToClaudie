@@ -54,7 +54,7 @@ func _ready() -> void:
 					int(case["site"]["radius"]), int(st["lots"]), JSON.stringify(st["zones"]), int(st["side_streets"]), int(st.get("cross_streets", 0)), int(st["loops"]), int(st["culdesacs"]),
 					int(st["back_lanes"]), int(st["street_length"]), (p["blocks"] as Array).size(), (p["fixtures"] as Array).size(), ms, float(case["ms"])])
 				print("         parts %s" % JSON.stringify(st["ms_parts"]))
-				print("         why %s" % JSON.stringify(st.get("why", {})))
+				print("         extent along / across the main street %s, why %s" % [JSON.stringify(st.get("extent", [])), JSON.stringify(st.get("why", {}))])
 				if draw_mode == "none":
 					continue
 				var base: String = out.path_join("%s_%s_%d" % [kind, land, seed])

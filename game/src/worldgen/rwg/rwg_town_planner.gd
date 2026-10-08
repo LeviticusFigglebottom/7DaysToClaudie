@@ -649,7 +649,24 @@ static func _stats(net: Streets, lots: Lots, quota: Dictionary, target: int, can
 			back += 1
 		if st.gen >= 1 and st.cls != "bulb":
 			length += st.length()
-	return {"lots": n, "zones": zones, "rings": rings, "quota": quota, "lot_target": target, "lot_candidates": candidates, "plaza": lots.lots.any(func(l: Lots.Lot) -> bool: return l.zone == "plaza"),
+	# How far the lots reach along the main street and across it (the 90th percentiles, m): a town
+	# should be wider than one stretch of road.
+	var along := PackedFloat32Array()
+	var across := PackedFloat32Array()
+	for st2: Streets.Street in net.streets:
+		if st2.cls != "arterial":
+			continue
+		var q: Vector3 = st2.line.closest(net.center)
+		var t: Vector2 = st2.line.tangent_at(q.y)
+		for l2: Lots.Lot in lots.lots:
+			if l2.zone != "plaza" and l2.zone != "rural":
+				along.append(absf((l2.c - net.center).dot(t)))
+				across.append(absf((l2.c - net.center).cross(t)))
+		break
+	along.sort()
+	across.sort()
+	var extent: Array = [0, 0] if along.is_empty() else [snappedf(along[int(along.size() * 0.9)], 1.0), snappedf(across[int(across.size() * 0.9)], 1.0)]
+	return {"lots": n, "extent": extent, "zones": zones, "rings": rings, "quota": quota, "lot_target": target, "lot_candidates": candidates, "plaza": lots.lots.any(func(l: Lots.Lot) -> bool: return l.zone == "plaza"),
 		"side_streets": net.side_count, "cross_streets": net.cross_count, "loops": net.loops, "culdesacs": cul, "back_lanes": back, "street_length": snappedf(length, 1.0),
 		"junctions": net.junctions.size()}
 
