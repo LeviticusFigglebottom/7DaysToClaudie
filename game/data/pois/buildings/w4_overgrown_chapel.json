@@ -1823,6 +1823,18 @@
      ],
      "against": "S",
      "variant": "clean"
+    },
+    {
+     "id": "pastor_candles",
+     "prop": "candle_cluster",
+     "pos": [
+      7.7,
+      4.4
+     ],
+     "level": -2,
+     "lit": true,
+     "keep": true,
+     "variant": "worn"
     }
    ],
    "sleepers": [

@@ -374,7 +374,7 @@
         {"pos": [10.85, 0.35], "height": 0.95, "color": "#f4e2b6", "energy": 0.45, "range": 4.5, "flicker": 0.06},
         {"pos": [5.3, 21.4], "level": 1, "height": 0.35, "color": "#f6e2b4", "energy": 0.4, "range": 4.0, "flicker": 0.05},
         {"pos": [5.9, 13.3], "level": -1, "height": 0.95, "color": "#ffb46e", "energy": 0.5, "range": 5.0, "flicker": 0.35},
-        {"pos": [8.75, 1.4], "level": -1, "height": 0.3, "color": "#ffb46e", "energy": 0.3, "range": 3.0, "flicker": 0.4}
+        {"keep": true, "pos": [8.75, 1.4], "level": -1, "height": 0.3, "color": "#ffb46e", "energy": 0.3, "range": 3.0, "flicker": 0.4}
       ],
       "decals": [
         {"decal": "survivor_marks_a", "at": [3, 22], "side": "N", "height": 1.5, "size": [0.9, 0.8]},

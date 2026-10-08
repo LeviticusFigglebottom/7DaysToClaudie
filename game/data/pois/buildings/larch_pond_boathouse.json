@@ -1161,6 +1161,8 @@
      "variant": "worn"
     },
     {
+     "lit": true,
+     "keep": true,
      "prop": "wild_oil_lantern",
      "pos": [
       7.05,

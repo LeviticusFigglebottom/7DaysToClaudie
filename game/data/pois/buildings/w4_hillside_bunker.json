@@ -445,6 +445,7 @@
      "side": "N",
      "type": "door",
      "state": "closed",
+     "swing": "N",
      "level": -2
     },
     {
@@ -1747,6 +1748,7 @@
      "flicker": 0.1
     },
     {
+     "keep": true,
      "pos": [
       9.0,
       12.5

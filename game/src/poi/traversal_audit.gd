@@ -39,9 +39,14 @@ const GRID: float = 0.25
 ## and the free samples are joined into connected areas. A route step is blocked when no area
 ## reaches both cells; a doorway when the capsule doesn't fit on its centre line or the line's
 ## area doesn't reach both sides. A straight sweep between the two then names what is in the way.
-## Severity is "error" for what the validator's route walks (its runs, the doorways it crosses) and
-## "warn" for the other doorways, for what the player vaults, and for props authored `route_ok`
-## (named "<id>+route_ok": the author put them on the route on purpose).
+## Severity is "error" for what the validator's route walks (its runs, the doorways it crosses),
+## vaultable or not (named "(vault <m>)": the intended way should read without a climb), and
+## "warn" for the other doorways and for props authored `route_ok` (named "<id>+route_ok": the
+## author put them on the route on purpose).
+## Then (round 4 of the owner's traversal reports): every door leaf fully open (_door_swings), the
+## loot room's containers in reach (_loot_reach) and the route's rooms in the light (dark_route).
+## A route step that is a floor break (a gap, a ledge: the free areas join only across a step
+## the player takes) is named "floor step <m>".
 static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceState3D) -> Array[Dictionary]:
 	var l: PoiLayout = inst.layout
 	var out: Array[Dictionary] = []
@@ -67,13 +72,25 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 				ok = ok or from_areas.has(area)
 			if not ok:
 				var hit: Dictionary = _name_run(space, inst, l, run, exclude)
-				# Something the player vaults (Player._try_vault) slows the way but doesn't close it.
+				if str(hit["what"]) == "unknown":
+					# Nothing stands in the way: the floor itself breaks (a gap, a ledge, a drop).
+					var rise: float = _run_rise(space, inst, l, run, exclude)
+					if rise > STEP_RISE:
+						var jump: bool = rise <= VAULT_MAX
+						hit["what"] = "floor step %.2f m%s" % [rise, " (vault)" if jump else ""]
+						hit.merge({"kind": "route", "level": li2, "cell": first[1], "to": last[1],
+							"severity": "error"})
+						out.append(hit)
+						continue
+				# Something the player vaults (Player._try_vault) is named with its height. On the intended
+				# route it is still an error: the way should read without a climb (an author's route_ok
+				# says the climb is the point).
 				var top: float = _top_over_floor(space, inst, l, li2, hit, exclude)
 				var vault: bool = top >= 0.3 and top <= VAULT_MAX
 				if vault:
 					hit["what"] = "%s (vault %.2f m)" % [hit["what"], top]
 				hit.merge({"kind": "route", "level": li2, "cell": first[1], "to": last[1],
-					"severity": "warn" if vault or str(hit["what"]).ends_with("+route_ok") else "error"})
+					"severity": "warn" if str(hit["what"]).contains("+route_ok") else "error"})
 				out.append(hit)
 	out.append_array(_route_windows(inst, v, l, space, exclude))
 	for op2: Dictionary in l.openings:
@@ -117,9 +134,11 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 				var top2: float = _top_over_floor(space, inst, l, li3, hit2, exclude)
 				if top2 >= 0.3 and top2 <= VAULT_MAX:
 					hit2["what"] = "%s (vault %.2f m)" % [hit2["what"], top2]
-					sev = "warn"
 				hit2.merge({"kind": "doorway", "level": li3, "cell": b2, "to": a2, "opening": str(op2["id"]), "severity": sev})
 				out.append(hit2)
+	out.append_array(_door_swings(inst, l, space, on_route))
+	out.append_array(_loot_reach(inst, v, l, grids, space))
+	out.append_array(dark_route(l, v))
 	return out
 
 
@@ -133,14 +152,20 @@ static func _free_grid(l: PoiLayout, li: int, inst: Node3D, space: PhysicsDirect
 	var q: PhysicsShapeQueryParameters3D = _query(exclude)
 	var lift: float = STEP + (q.shape as CapsuleShape3D).height * 0.5
 	var free: Dictionary = {}
+	var floor_y: Dictionary = {}
 	for z: int in range(lo.y, hi.y + 1):
 		for x: int in range(lo.x, hi.x + 1):
 			var p: Vector3 = l.local_pos(li, Vector2(x, z) * GRID)
-			p.y = floor_at(space, inst, p, exclude) + lift
+			var fy: float = floor_at(space, inst, p, exclude)
+			p.y = fy + lift
 			q.transform = Transform3D(Basis.IDENTITY, inst.global_transform * p)
 			if space.intersect_shape(q, 1).is_empty():
 				free[Vector2i(x, z)] = -1
-	# Join the free samples into areas (4-neighbour flood fill).
+				floor_y[Vector2i(x, z)] = fy
+	# Join the free samples into areas (4-neighbour flood fill). Two samples join only where the
+	# floor between them is a step the player takes (STEP_RISE): a gap in a deck, a missing bridge
+	# board or a loft's edge over a drop finds the ground far below, which is free space too, and
+	# used to join the deck's area across the gap.
 	var next: int = 0
 	for s: Vector2i in free.keys():
 		if int(free[s]) >= 0:
@@ -151,11 +176,11 @@ static func _free_grid(l: PoiLayout, li: int, inst: Node3D, space: PhysicsDirect
 			var c: Vector2i = stack.pop_back()
 			for d: Vector2i in PoiLayout.DIRS:
 				var n: Vector2i = c + d
-				if free.has(n) and int(free[n]) < 0:
+				if free.has(n) and int(free[n]) < 0 and absf(float(floor_y[n]) - float(floor_y[c])) <= STEP_RISE:
 					free[n] = next
 					stack.append(n)
 		next += 1
-	return {"free": free}
+	return {"free": free, "y": floor_y}
 
 
 ## The floor under a cell's centre (floor_at).
@@ -238,6 +263,18 @@ static func _name_run(space: PhysicsDirectSpaceState3D, inst: Node3D, l: PoiLayo
 		if not hit.is_empty():
 			return hit
 	return {"what": "unknown", "blocker": "-", "at": l.cell_center(int(run[0][0]), run[0][1])}
+
+
+## The tallest step (up or down) along a run's cells, centre to centre (max_rise).
+static func _run_rise(space: PhysicsDirectSpaceState3D, inst: Node3D, l: PoiLayout, run: Array, exclude: Array[RID]) -> float:
+	var worst: float = 0.0
+	for i: int in range(1, run.size()):
+		var a: Array = run[i - 1]
+		var b: Array = run[i]
+		var fa: Vector3 = _at(l, a[0], a[1], _cell_y(space, inst, l, a[0], a[1], exclude))
+		var fb: Vector3 = _at(l, b[0], b[1], _cell_y(space, inst, l, b[0], b[1], exclude))
+		worst = maxf(worst, maxf(absf(fa.y - fb.y), max_rise(space, inst, fa, fb, exclude)))
+	return worst
 
 
 ## The areas reachable from next to cell `c`: its own and its four neighbours'.
@@ -482,6 +519,313 @@ static func _at(l: PoiLayout, li: int, c: Vector2i, y: float) -> Vector3:
 
 static func _walkable(v: PoiValidator, li: int, c: Vector2i) -> bool:
 	return v.call(&"_walkable", li, c)
+
+
+## How far (m) from its hinge a fully open leaf may touch something: the jamb and the wall it is
+## hung on. Past it, anything the leaf meets is a door swinging into a wall, a stair or a prop.
+const SWING_HINGE: float = 0.25
+
+
+## Every door leaf that, fully open, stands in something: a prop or container (it clips through
+## it, or the prop sits in the clear space the door needs), a stair rail or flight, a wall. An error
+## on a doorway the route crosses (the player opens it there), a warning elsewhere and for floor
+## clutter under SWING_LOW. The leaf's first SWING_HINGE m (its own jamb) doesn't count.
+static func _door_swings(inst: PoiInstance, l: PoiLayout, space: PhysicsDirectSpaceState3D, on_route: Dictionary) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var exclude: Array[RID] = _passable_bodies(inst)
+	var stack: Array[Node] = [inst]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if not n is PoiPieces.Door:
+			continue
+		var d := n as PoiPieces.Door
+		if d.state == "broken" or d.leaf_shape == null or not d.leaf_shape.shape is BoxShape3D:
+			continue
+		var op: Dictionary = l.opening(d.opening_id)
+		if op.is_empty() or str(op["state"]) == "barricaded":
+			continue
+		var size: Vector3 = (d.leaf_shape.shape as BoxShape3D).size
+		var leaf_xf: Transform3D = d.global_transform * d.open_leaf_transform()
+		# Furniture first (SWING_LOW up to the head clearance); then the floor strip under it,
+		# where a rag pile or a body the leaf sweeps over is a warning only.
+		var hit: Dictionary = _leaf_hit(space, leaf_xf, size, SWING_LOW, size.y - 0.06, exclude)
+		var low: bool = hit.is_empty()
+		if low:
+			hit = _leaf_hit(space, leaf_xf, size, 0.03, SWING_LOW, exclude)
+		var obj: Object = null
+		var what: String = ""
+		if hit.is_empty():
+			# Nothing to hit over a stair's well, or beside a flight: a leaf standing out over the
+			# steps closes them (poi_walk shuts it to get past): an error wherever the door is.
+			var flights: Dictionary = _flight_cells(l, int(op["level"]))
+			for t: float in [0.5, 0.95]:
+				var p: Vector3 = inst.global_transform.affine_inverse() * (leaf_xf * Vector3((t - 0.5) * size.x, 0.0, 0.0))
+				var o: Vector3 = l.local_pos(int(op["level"]), Vector2.ZERO)
+				if flights.has(Vector2i(floori(p.x - o.x), floori(p.z - o.z))):
+					what = "stairs"
+					low = false
+			if what == "":
+				continue
+		else:
+			obj = hit.get("collider")
+			what = describe(obj, int(hit.get("shape", 0)))
+		# A stopped leaf (PoiBuilder.DOORSTOP) lies flat against the side wall it stops on.
+		if _is_closure(what) or (what == "structure" and d.max_open < 1.0):
+			continue
+		var li: int = op["level"]
+		var edges: Array = PoiLayout.opening_edges(op)
+		var route: bool = false
+		for pair: Array in edges:
+			route = route or on_route.has(_edge_id(li, pair[0], pair[1]))
+		out.append({"kind": "swing", "level": li, "cell": edges[0][0], "to": edges[0][1], "opening": "%s (leaf %s)" % [op["id"], d.op_id],
+			"what": what + (" (low)" if low else ""), "blocker": str(obj.get(&"name")) if obj != null else "?",
+			"at": inst.global_transform.affine_inverse() * leaf_xf.origin, "severity": "error" if (route and not low) or what == "stairs" else "warn"})
+	return out
+
+
+## Level `li`'s stair cells: the flights rising from it (foot included) and the wells over the
+## ones rising to it.
+static func _flight_cells(l: PoiLayout, li: int) -> Dictionary:
+	var out: Dictionary = l.stairwell_cells(li)
+	for s: Dictionary in l.stairs:
+		if int(s["level"]) == li:
+			out[s["cell"]] = true
+			for fc: Variant in s.get("cells", []):
+				out[fc] = true
+	return out
+
+
+## Below this (m over the floor) what an open leaf sweeps over is floor clutter: a warning.
+const SWING_LOW: float = 0.3
+
+
+## The first thing (intersect_shape's result) in a thin slab of an open leaf (`leaf_xf` the leaf
+## box's centre, `size` its size) from `y0` to `y1` over its bottom edge, past SWING_HINGE.
+static func _leaf_hit(space: PhysicsDirectSpaceState3D, leaf_xf: Transform3D, size: Vector3, y0: float, y1: float, exclude: Array[RID]) -> Dictionary:
+	var box := BoxShape3D.new()
+	box.size = Vector3(maxf(size.x - SWING_HINGE - 0.02, 0.1), maxf(y1 - y0, 0.05), 0.01)
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = box
+	q.collision_mask = MASK
+	q.exclude = exclude
+	q.transform = leaf_xf * Transform3D(Basis.IDENTITY, Vector3((SWING_HINGE - 0.02) * 0.5, -size.y * 0.5 + (y0 + y1) * 0.5, 0.0))
+	var hits: Array[Dictionary] = space.intersect_shape(q, 1)
+	return hits[0] if not hits.is_empty() else {}
+
+
+## The interaction ray (player.json interact_range) from the eyes (EYE m over the feet): a
+## container is searched where it reaches the box from a spot the player stands on.
+const LOOT_REACH: float = 2.6
+const EYE: float = 1.55
+
+
+## The loot room's containers the player can search from the areas the route walks on that level:
+## a free spot whose eyes see the box within LOOT_REACH (the first thing a ray from them meets is
+## the container, not a wall or a prop). None: an error (the route's prize is behind a bed, a
+## counter, a wall or a gap). A single container out of reach while another is in it: a warning.
+static func _loot_reach(inst: PoiInstance, v: PoiValidator, l: PoiLayout, grids: Dictionary, space: PhysicsDirectSpaceState3D) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if l.loot_room.is_empty():
+		return out
+	var li: int = int(l.loot_room.get("level", 0))
+	if not grids.has(li):
+		return out
+	var g: Dictionary = grids[li]
+	var free: Dictionary = g["free"]
+	var route_areas: Dictionary = {}
+	for leg: Variant in v.paths:
+		for n: Variant in leg:
+			if n is Array and int(n[0]) == li:
+				route_areas.merge(_near_areas(g, n[1]))
+	var to_local: Transform3D = inst.global_transform.affine_inverse()
+	var exclude: Array[RID] = _passable_bodies(inst)
+	var far: Array[String] = []
+	var total: int = 0
+	var first_at := Vector3.ZERO
+	for c: Node in inst.get_children():
+		if not c is PoiPieces.LootProp or not (c as PoiPieces.LootProp).bonus:
+			continue
+		var lp := c as PoiPieces.LootProp
+		total += 1
+		var rect := Rect2()
+		var top: float = -INF
+		var bottom: float = INF
+		var started: bool = false
+		for cs: Node in lp.get_children():
+			if not cs is CollisionShape3D or not (cs as CollisionShape3D).shape is BoxShape3D:
+				continue
+			var half: Vector3 = ((cs as CollisionShape3D).shape as BoxShape3D).size * 0.5
+			var xf: Transform3D = to_local * lp.global_transform * (cs as CollisionShape3D).transform
+			for k: int in 8:
+				var p: Vector3 = xf * Vector3(half.x * (1 if k & 1 else -1), half.y * (1 if k & 2 else -1), half.z * (1 if k & 4 else -1))
+				top = maxf(top, p.y)
+				bottom = minf(bottom, p.y)
+				if not started:
+					rect = Rect2(Vector2(p.x, p.z), Vector2.ZERO)
+					started = true
+				else:
+					rect = rect.expand(Vector2(p.x, p.z))
+		if not started:
+			continue
+		var reach: bool = false
+		var aim_y: float = maxf(top - 0.05, bottom + 0.05)
+		for s: Vector2i in free:
+			if not route_areas.has(free[s]):
+				continue
+			var sp: Vector3 = l.local_pos(li, Vector2(s) * GRID)
+			var pt := Vector2(sp.x, sp.z)
+			# Its top, at the middle and part way in from the nearest side of its (level) bounds: a
+			# turned box doesn't fill the corners of those.
+			var nearest := Vector2(clampf(pt.x, rect.position.x, rect.end.x), clampf(pt.y, rect.position.y, rect.end.y))
+			var eye := Vector3(pt.x, float((g["y"] as Dictionary)[s]) + EYE, pt.y)
+			for aim2: Vector2 in [nearest.lerp(rect.get_center(), 0.4), rect.get_center()]:
+				var aim := Vector3(aim2.x, aim_y, aim2.y)
+				if eye.distance_to(aim) > LOOT_REACH:
+					continue
+				var q := PhysicsRayQueryParameters3D.create(inst.global_transform * eye, inst.global_transform * aim, MASK, exclude)
+				var hit: Dictionary = space.intersect_ray(q)
+				reach = reach or (not hit.is_empty() and hit["collider"] == lp)
+			if reach:
+				break
+		if not reach:
+			far.append(lp.prop_key)
+			first_at = Vector3(rect.get_center().x, l.level_y(li), rect.get_center().y)
+	if far.is_empty():
+		return out
+	var o: Vector3 = l.local_pos(li, Vector2.ZERO)
+	var c0 := Vector2i(floori(first_at.x - o.x), floori(first_at.z - o.z))
+	out.append({"kind": "loot", "level": li, "cell": c0, "to": c0, "what": "out of reach: %s (%d of %d loot room containers)" % [", ".join(far), far.size(), total],
+		"blocker": "-", "at": first_at, "severity": "error" if far.size() == total else "warn"})
+	return out
+
+
+## How far past its range (x) a light still shows a route cell the way: shapes, a doorway.
+const LIGHT_REACH: float = 1.5
+
+
+## Route cells in pitch dark by day: in a room (with the rooms open to it) with no outside opening
+## and no burning light (an authored light, a lit prop) within LIGHT_REACH of its range. The player
+## still has a lighter, but a dark room the route has to search reads as a dead end. One finding
+## per such room (its first dark route cell): a warning, except in the loot room, whose light must
+## also be kept ("keep": true; else style.lights_on puts it out in some runs): an error.
+## Pure layout: no physics.
+static func dark_route(l: PoiLayout, v: PoiValidator) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if str((l.style.get("roof", {}) as Dictionary).get("type", "gable")) == "none":
+		return out
+	# Spaces: room volumes joined where nothing walls them apart (open_to, a gallery, an open
+	# arch or a breach).
+	var parent: Dictionary = {}
+	for li: int in l.level_ids:
+		var lv: Dictionary = l.levels[li]
+		for y: int in int(lv["d"]):
+			for x: int in int(lv["w"]):
+				var c := Vector2i(x, y)
+				if not l.is_built(li, c):
+					continue
+				for d: Vector2i in [Vector2i(1, 0), Vector2i(0, 1)]:
+					var n: Vector2i = c + d
+					if not l.is_built(li, n):
+						continue
+					var e: Array = PoiLayout.side_edge(c, PoiLayout.DIRS.find(d))
+					var w: Dictionary = l.walls.get(PoiLayout.edge_key(li, e[0], e[1]), {})
+					var op: Dictionary = w.get("opening", {}) if not w.is_empty() else {}
+					if w.is_empty() or str(op.get("type", "")) in ["open", "breach"]:
+						_union(parent, _space_key(l, li, c), _space_key(l, li, n))
+	var daylit: Dictionary = {}
+	for op2: Dictionary in l.openings:
+		var li2: int = op2["level"]
+		for pair: Array in PoiLayout.opening_edges(op2):
+			var a: bool = l.is_built(li2, pair[0])
+			var b: bool = l.is_built(li2, pair[1])
+			if a != b:
+				daylit[_find(parent, _space_key(l, li2, pair[0] if a else pair[1]))] = true
+	# One doorway on from a daylit room: an arch, a hole, a door standing open or one the route
+	# opens on its way through lets that room's light in (not a stair: a cellar stays dark).
+	var crossed: Dictionary = _route_edges(v)
+	var spill: Dictionary = {}
+	for op3: Dictionary in l.openings:
+		var li4: int = op3["level"]
+		var t3: String = str(op3["type"])
+		if _is_vault(t3) or str(op3["state"]) in ["barricaded", "boarded"]:
+			continue
+		for pair2: Array in PoiLayout.opening_edges(op3):
+			if not (l.is_built(li4, pair2[0]) and l.is_built(li4, pair2[1])):
+				continue
+			var opened: bool = not t3.begins_with("door") or str(op3["state"]) in ["open", "broken", "missing"] or crossed.has(_edge_id(li4, pair2[0], pair2[1]))
+			if not opened:
+				continue
+			var sa: String = _find(parent, _space_key(l, li4, pair2[0]))
+			var sb: String = _find(parent, _space_key(l, li4, pair2[1]))
+			if daylit.has(sa) != daylit.has(sb):
+				spill[sb if daylit.has(sa) else sa] = true
+	daylit.merge(spill)
+	# Lights: [space, layout-local xz, range, kept]. Per run a light burns with style.lights_on
+	# (PoiDressing) unless it is kept ("keep": true).
+	var all_on: bool = float(l.style.get("lights_on", PoiDressing.LIGHTS_ON)) >= 1.0
+	var lights: Array = []
+	for d2: Variant in l.lights:
+		if d2 is Dictionary:
+			var pl: Dictionary = l._placed(d2)
+			lights.append([_find(parent, _space_key(l, int(pl["level"]), pl["cell"])), pl["pos"], float((d2 as Dictionary).get("range", 6.0)),
+				all_on or bool((d2 as Dictionary).get("keep", false))])
+	for p: Dictionary in l.props:
+		if not bool(p.get("lit", false)):
+			continue
+		var pd: PropDef = Content.get_def(&"prop", StringName(str(p.get("prop", "")))) as PropDef
+		var lt: Dictionary = pd.light_for(str(p.get("variant", l.style.get("prop_condition", "worn")))) if pd != null else {}
+		if not lt.is_empty():
+			lights.append([_find(parent, _space_key(l, int(p["level"]), p["cell"])), p["pos"], float(lt.get("range", 3.0)),
+				all_on or bool(p.get("keep", false))])
+	var seen: Dictionary = {}
+	var lr: String = "%d:%s" % [int(l.loot_room.get("level", 0)), str(l.loot_room.get("room", ""))]
+	for leg: Variant in v.paths:
+		for n2: Variant in leg:
+			if not n2 is Array or not l.is_built(int(n2[0]), n2[1]):
+				continue
+			var li3: int = n2[0]
+			var c3: Vector2i = n2[1]
+			var sp: String = _find(parent, _space_key(l, li3, c3))
+			var loot: bool = _space_key(l, li3, c3) == lr
+			if daylit.has(sp) or seen.has(sp + ("/loot" if loot else "")):
+				continue
+			var lit: bool = false
+			var kept: bool = false
+			for lt2: Array in lights:
+				if str(lt2[0]) == sp and (lt2[1] as Vector2).distance_to(Vector2(c3) + Vector2(0.5, 0.5)) <= float(lt2[2]) * LIGHT_REACH:
+					lit = true
+					kept = kept or bool(lt2[3])
+			# The loot room's light must burn every run: the prize is searched, not felt for.
+			if kept or (lit and not loot):
+				continue
+			seen[sp + ("/loot" if loot else "")] = true
+			var vol: Array = l.volume_of(li3, c3)
+			var room: Dictionary = l.room_def(int(vol[0]), str(vol[1]))
+			var why: String = "its only light can go out (keep one)" if lit else "no window, door out or light"
+			out.append({"kind": "dark", "level": li3, "cell": c3, "to": c3, "what": "pitch dark: %s in %s%s" % [
+				why, str(room.get("name", vol[1])), " (the loot room)" if loot else ""], "blocker": "-",
+				"at": l.cell_center(li3, c3), "severity": "error" if loot else "warn"})
+	return out
+
+
+## A room volume's key: "level:char" of the room a cell belongs to (a tall room's base).
+static func _space_key(l: PoiLayout, li: int, c: Vector2i) -> String:
+	var vol: Array = l.volume_of(li, c)
+	return "%d:%s" % [int(vol[0]), str(vol[1])] if not vol.is_empty() else "%d:." % li
+
+
+static func _find(parent: Dictionary, k: String) -> String:
+	while parent.has(k) and str(parent[k]) != k:
+		k = str(parent[k])
+	return k
+
+
+static func _union(parent: Dictionary, a: String, b: String) -> void:
+	var ra: String = _find(parent, a)
+	var rb: String = _find(parent, b)
+	if ra != rb:
+		parent[ra] = rb
 
 
 ## One line per finding, for logs and test messages.

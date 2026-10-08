@@ -665,6 +665,7 @@
      "id": "money_bags_3"
     },
     {
+     "keep": true,
      "prop": "lantern_camping",
      "pos": [
       6.0,
@@ -711,7 +712,7 @@
     {
      "prop": "civic_folding_table",
      "pos": [
-      12.6,
+      12.45,
       2.3
      ],
      "rot": 90
@@ -1025,6 +1026,7 @@
    ],
    "lights": [
     {
+     "keep": true,
      "at": [
       6,
       1
