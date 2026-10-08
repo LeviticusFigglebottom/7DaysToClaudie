@@ -1,10 +1,12 @@
 class_name NavTiles
 extends Node
 ## Outdoor navigation mesh, baked in 32 m tiles around the player on worker threads and rebaked
-## where the world changes (structures built or broken, terrain dug, trees felled). Source
-## geometry is assembled directly — terrain faces from the heightfield, structures/trees/boulders
-## as projected obstructions, POI buildings parsed from their colliders — so baking never walks
-## the whole scene. Tiles bake with a border so neighbours stitch on the navigation map.
+## where the world changes (structures built or broken, terrain dug, trees felled, volume chunks
+## installed, caves placed). Source geometry is assembled directly — terrain faces from the
+## heightfield plus the SDF volume's triangles where it owns the ground (tunnels, caves; ADR-0056),
+## structures/trees/boulders as projected obstructions, POI buildings parsed from their colliders —
+## so baking never walks the whole scene. Tiles bake with a border so neighbours stitch on the
+## navigation map.
 
 const TILE: float = 32.0
 const RADIUS_TILES: int = 2
@@ -26,12 +28,17 @@ func setup(w: Node) -> void:
 	Events.structure_placed.connect(func(_id: StringName, _d: StringName, pos: Vector3) -> void: _mark(pos))
 	Events.structure_destroyed.connect(func(_id: StringName, _d: StringName, pos: Vector3) -> void: _mark(pos))
 	Events.tree_felled.connect(func(_id: StringName, pos: Vector3) -> void: _mark(pos))
-	Events.terrain_modified.connect(func(aabb: AABB) -> void: _mark(aabb.get_center()))
+	Events.terrain_modified.connect(_mark_aabb)
 	# A streamed world (ADR-0038): tiles baked over a region's coarse ground are baked again once its
 	# 1 m terrain attaches.
 	var tm: TerrainManager = w.get(&"terrain") as TerrainManager if w != null else null
 	if tm != null:
 		tm.region_attached.connect(_on_region_attached)
+		# Volume chunks landing (a dig re-meshed, a cave column streaming in) and caves placed or
+		# removed change the walkable ground over their box (ADR-0056).
+		tm.caves_changed.connect(_mark_aabb)
+		if tm.volume != null:
+			tm.volume.chunks_applied.connect(_mark_aabb)
 
 
 func _on_region_attached(rid: String) -> void:
@@ -47,7 +54,13 @@ func _on_region_attached(rid: String) -> void:
 ## region's coarse heights would give the Hollowed a mesh 16 m out of true.
 func _ground_ready(k: Vector2i) -> bool:
 	var tm: TerrainManager = world.get(&"terrain") as TerrainManager
-	if tm == null or tm.streamer == null:
+	if tm == null:
+		return true
+	# Volume columns under the tile still building: baking now would bake the heightfield over a
+	# cave mouth that is about to open (or a hole with no floor yet).
+	if tm.volume != null and not tm.volume.is_rect_ready(tile_rect(k)):
+		return false
+	if tm.streamer == null:
 		return true
 	return tm.region_terrain_at((k.x + 0.5) * TILE, (k.y + 0.5) * TILE) != null
 
@@ -59,6 +72,11 @@ func _exit_tree() -> void:
 
 static func tile_of(p: Vector3) -> Vector2i:
 	return Vector2i(int(floor(p.x / TILE)), int(floor(p.z / TILE)))
+
+
+## The XZ area a tile's bake reads geometry from: the tile plus its border.
+static func tile_rect(k: Vector2i) -> Rect2:
+	return Rect2(k.x * TILE - BORDER, k.y * TILE - BORDER, TILE + BORDER * 2.0, TILE + BORDER * 2.0)
 
 
 ## Something walkable changed at `pos` outside the usual events (a POI weak floor gave way,
@@ -80,6 +98,16 @@ func _mark(pos: Vector3) -> void:
 			var k := Vector2i(t.x + dx, t.y + dz)
 			if _tiles.has(k):
 				_dirty[k] = REBAKE_DELAY
+
+
+## Queues a rebake of every live tile whose bake reads geometry inside `aabb` (its XZ footprint
+## against the tile plus border): an edit, a batch of volume chunks installed, a cave placed.
+## Walks the live tiles, not the box's tile range: a frame's applied box can be large.
+func _mark_aabb(aabb: AABB) -> void:
+	var r := Rect2(aabb.position.x, aabb.position.z, aabb.size.x, aabb.size.z)
+	for k: Vector2i in _tiles:
+		if tile_rect(k).intersects(r, true):
+			_dirty[k] = REBAKE_DELAY
 
 
 func _process(delta: float) -> void:
@@ -127,6 +155,16 @@ func _free_tile(k: Vector2i) -> void:
 func _bake(k: Vector2i) -> void:
 	if not _tiles.has(k):
 		return
+	var inputs: Array = bake_inputs(k)
+	var nm: NavigationMesh = inputs[0]
+	_busy += 1
+	(_tiles[k] as Dictionary)["baking"] = true
+	NavigationServer3D.bake_from_source_geometry_data_async(nm, inputs[1], _on_baked.bind(k, nm))
+
+
+## [NavigationMesh, NavigationMeshSourceGeometryData3D]: a tile's bake settings and its source
+## geometry, assembled on this thread (tests bake them synchronously).
+func bake_inputs(k: Vector2i) -> Array:
 	var nm := NavigationMesh.new()
 	nm.agent_radius = 0.5
 	nm.agent_height = 1.75
@@ -144,9 +182,7 @@ func _bake(k: Vector2i) -> void:
 	_add_bridges(src, k)
 	_add_obstructions(src, k)
 	_add_pois(nm, src, k)
-	_busy += 1
-	(_tiles[k] as Dictionary)["baking"] = true
-	NavigationServer3D.bake_from_source_geometry_data_async(nm, src, _on_baked.bind(k, nm))
+	return [nm, src]
 
 
 func _on_baked(k: Vector2i, nm: NavigationMesh) -> void:
@@ -166,15 +202,35 @@ func _add_terrain(src: NavigationMeshSourceGeometryData3D, k: Vector2i) -> void:
 	var x0: float = k.x * TILE - BORDER - TERRAIN_STEP
 	var z0: float = k.y * TILE - BORDER - TERRAIN_STEP
 	var count: int = int((TILE + BORDER * 2.0) / TERRAIN_STEP) + 2
+	var area := Rect2(x0, z0, count * TERRAIN_STEP, count * TERRAIN_STEP)
+	var terrain: TerrainManager = world.get(&"terrain") as TerrainManager
+	# The SDF volume (dug tunnels, caves; ADR-0056): where a column is committed the heightmap is a
+	# hole and the volume's triangles are the ground, so Recast walks into the tunnel floor instead
+	# of over the hillside's old surface. Owned columns not committed yet keep the heightfield (it
+	# is still what you stand on there).
+	var hole_fn := Callable()
+	if terrain != null and terrain.volume != null and not terrain.volume.committed.is_empty():
+		var vol: VolumeTerrain = terrain.volume
+		var lo: Vector2i = VolumeTerrain.column_of(area.position.x, area.position.y)
+		var hi: Vector2i = VolumeTerrain.column_of(area.end.x, area.end.y)
+		for cz: int in range(lo.y, hi.y + 1):
+			for cx: int in range(lo.x, hi.x + 1):
+				if not vol.committed.has(Vector2i(cx, cz)):
+					continue
+				hole_fn = vol.is_hole_column
+				# Shrunk a hair so faces_in_rect takes this column alone.
+				var faces_v: PackedVector3Array = vol.faces_in_rect(Rect2(cx * VolumeTerrain.SIZE + 0.01, cz * VolumeTerrain.SIZE + 0.01, VolumeTerrain.SIZE - 0.02, VolumeTerrain.SIZE - 0.02))
+				if not faces_v.is_empty():
+					src.add_faces(faces_v, Transform3D.IDENTITY)
 	# POI cellars (TD-026): the terrain is cut away over them, exactly as the collision is, so
 	# Recast walks the cellar floor parsed from the POI's colliders instead of the ground above.
-	var terrain: TerrainManager = world.get(&"terrain") as TerrainManager
+	var cut: Array[PackedVector2Array] = []
 	if terrain != null and terrain.holes != null:
-		var cut: Array[PackedVector2Array] = terrain.holes.pieces_in(Rect2(x0, z0, count * TERRAIN_STEP, count * TERRAIN_STEP))
-		if not cut.is_empty():
-			var faces_cut: PackedVector3Array = TerrainMesher.surface_faces(Vector2(x0, z0), count * TERRAIN_STEP, TERRAIN_STEP, world.height_at, Callable(), cut)
-			src.add_faces(faces_cut, Transform3D(Basis.IDENTITY, Vector3(x0, 0.0, z0)))
-			return
+		cut = terrain.holes.pieces_in(area)
+	if not cut.is_empty() or hole_fn.is_valid():
+		var faces_cut: PackedVector3Array = TerrainMesher.surface_faces(Vector2(x0, z0), count * TERRAIN_STEP, TERRAIN_STEP, world.height_at, hole_fn, cut)
+		src.add_faces(faces_cut, Transform3D(Basis.IDENTITY, Vector3(x0, 0.0, z0)))
+		return
 	var h := PackedFloat32Array()
 	h.resize((count + 1) * (count + 1))
 	for j: int in count + 1:
@@ -204,7 +260,7 @@ func _add_bridges(src: NavigationMeshSourceGeometryData3D, k: Vector2i) -> void:
 	var bridges: Node = world.get(&"bridges")
 	if bridges == null or not bridges.has_method(&"nav_faces_in_rect"):
 		return
-	var faces: PackedVector3Array = bridges.call(&"nav_faces_in_rect", Rect2(k.x * TILE - BORDER, k.y * TILE - BORDER, TILE + BORDER * 2.0, TILE + BORDER * 2.0))
+	var faces: PackedVector3Array = bridges.call(&"nav_faces_in_rect", tile_rect(k))
 	if not faces.is_empty():
 		src.add_faces(faces, Transform3D.IDENTITY)
 
@@ -248,6 +304,6 @@ func _add_pois(nm: NavigationMesh, src: NavigationMeshSourceGeometryData3D, k: V
 		return
 	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
 	nm.geometry_collision_mask = (1 << 0) | (1 << 1) | (1 << 2)
-	var rect := Rect2(k.x * TILE - BORDER, k.y * TILE - BORDER, TILE + BORDER * 2.0, TILE + BORDER * 2.0)
+	var rect: Rect2 = tile_rect(k)
 	for root: Node in pois.call(&"nav_roots_in_rect", rect):
 		NavigationServer3D.parse_source_geometry_data(nm, src, root)

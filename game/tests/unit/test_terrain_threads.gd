@@ -115,3 +115,73 @@ func test_volume_columns_grow_while_workers_read() -> void:
 	assert_true(vol.columns.has(Vector2i(1, 1)))
 	assert_true(vol.is_volume_column(24.0, 24.0), "a worker's hole test sees the new column")
 	vol.flush()
+
+
+## CAVES_PLAN WS-B: a region with a cave attaches and detaches over and over while its volume
+## jobs (density and mesh) run on workers under the terrain's task cap, and digs land in the
+## region that stays. Jobs of freed chunks are retired and joined, never applied.
+func test_volume_jobs_survive_attach_and_detach_churn() -> void:
+	var fakes: GDScript = load("res://tests/unit/helpers/fake_caves.gd")
+	var w := WorldDef.new()
+	w.id = "threads_churn"
+	w.cols = 2
+	w.rows = 1
+	w.region_size = 256.0
+	w.regions = {"t": {"id": "t", "cell": "A1"}, "u": {"id": "u", "cell": "B1"}}
+	w.cells = {"A1": "t", "B1": "u"}
+	var make := func(rid: String) -> RegionTerrain:
+		var rt := RegionTerrain.new()
+		rt.region_id = rid
+		rt.rect = w.region_rect(rid)
+		rt.spacing = 1.0
+		rt.height = HeightField.create(rt.rect.position, 1.0, 257, 257, PAD_Y)
+		rt.splat0.resize(257 * 257 * 4)
+		rt.splat1.resize(257 * 257 * 4)
+		rt.biome.resize(257 * 257)
+		rt.vegmask.resize(257 * 257)
+		rt.palette = TerrainComposer.DEFAULT_PALETTE
+		rt.biome_ids = PackedStringArray(["meadow"])
+		return rt
+	var tm := TerrainManager.new()
+	tm.cave_set_fn = func(parts: Array, extra: Dictionary) -> Object: return fakes.FakeCaveSet.combined(parts, extra)
+	add_child_autofree(tm)
+	tm.setup(w, {"t": make.call("t")}, {})
+	var vol: VolumeTerrain = tm.volume
+	var stop: Array = [false]
+	var readers: Array[int] = []
+	for r: int in 3:
+		readers.append(WorkerThreadPool.add_task(func() -> void:
+			var rng := RandomNumberGenerator.new()
+			rng.seed = r
+			while not stop[0]:
+				vol.is_hole_column(rng.randf_range(0.0, 256.0), rng.randf_range(-128.0, 128.0))
+				tm.height_at(rng.randf_range(-256.0, 256.0), rng.randf_range(-128.0, 128.0))
+		))
+	var end: int = Time.get_ticks_msec() + 3000
+	var n: int = 0
+	while Time.get_ticks_msec() < end:
+		var rt: RegionTerrain = make.call("u")
+		rt.set_meta(&"caves", fakes.FakeCaveSet.new([fakes.FakeCave.new(&"churn", Vector3(60.0 + (n % 3) * 40.0, PAD_Y - 6.0, 0.0), Vector3(8.0, 2.0, 8.0))]))
+		tm.attach_region(rt)
+		for f: int in 3:
+			tm.start_queued()
+			vol.pump(3.0)
+			OS.delay_msec(2)
+		if n % 4 == 0:
+			vol.edit_sphere(Vector3(-128.0 + n % 8, PAD_Y - 1.0, 4.0), 1.0, 1.5)
+		tm.detach_region("u")
+		n += 1
+	stop[0] = true
+	for t: int in readers:
+		WorkerThreadPool.wait_for_task_completion(t)
+	var until: int = Time.get_ticks_msec() + 60000
+	while not vol.is_idle() and Time.get_ticks_msec() < until:
+		tm.start_queued()
+		vol.pump(5.0)
+		OS.delay_msec(2)
+	assert_gt(n, 3, "churned %d times" % n)
+	assert_true(vol.is_idle(), "every volume job came back or was retired")
+	for key: Vector3i in vol.chunks:
+		assert_lt(key.x, 0, "nothing of the detached region is left (%s)" % key)
+	assert_true(vol.committed.has(VolumeTerrain.column_of(-128.0, 4.0)), "the dug column in the region that stayed committed")
+	assert_lt(vol.density_at(Vector3(-128.0, PAD_Y - 1.0, 4.0)), 0.0, "and its dig is there")

@@ -340,7 +340,8 @@ func update_now() -> void:
 		room_fill = Color(fc.r, fc.g, fc.b, room_fill.a + ff)
 	var floor_e: float = float(_interior_cfg.get("night_floor", 0.012))
 	for probe: Node in get_tree().get_nodes_in_group(&"interior_probe"):
-		var share: float = daylight_share(_interior_cfg, float(probe.get_meta(&"daylight")) if probe.has_meta(&"daylight") else -1.0)
+		var share: float = daylight_share(_interior_cfg, float(probe.get_meta(&"daylight")) if probe.has_meta(&"daylight") else -1.0,
+			float(probe.get_meta(&"min_share")) if probe.has_meta(&"min_share") else -1.0)
 		(probe as ReflectionProbe).ambient_color = Color(room_fill.r, room_fill.g, room_fill.b)
 		(probe as ReflectionProbe).ambient_color_energy = maxf(floor_e, room_fill.a * share)
 	env.background_energy_multiplier = bg_energy
@@ -415,11 +416,12 @@ static func interior_fill(cfg: Dictionary, day: float, overcast: float, night_en
 
 ## How much of the interior fill a room gets by its daylight ratio (PoiBuilder.daylight_ratio:
 ## outside openings per floor area): `daylight_min_share` with none, all of it from
-## `daylight_full_ratio` up. A probe with no ratio (-1) gets all of it.
-static func daylight_share(cfg: Dictionary, ratio: float) -> float:
+## `daylight_full_ratio` up. A probe with no ratio (-1) gets all of it. `min_share` (a probe's meta,
+## >= 0) stands in for `daylight_min_share`: a cave's (CaveLighting) is darker than a cellar's.
+static func daylight_share(cfg: Dictionary, ratio: float, min_share: float = -1.0) -> float:
 	if ratio < 0.0:
 		return 1.0
-	var lo: float = float(cfg.get("daylight_min_share", 0.2))
+	var lo: float = min_share if min_share >= 0.0 else float(cfg.get("daylight_min_share", 0.2))
 	return lerpf(lo, 1.0, clampf(ratio / maxf(0.001, float(cfg.get("daylight_full_ratio", 0.1))), 0.0, 1.0))
 
 

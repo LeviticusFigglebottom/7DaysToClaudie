@@ -66,6 +66,7 @@ func _choose() -> void:
 	var pois: Node = world.get(&"pois")
 	var building: Node = world.get(&"building")
 	var indoors: bool = pois != null and bool(pois.call(&"is_indoors", p))
+	var cave: bool = indoors and pois.has_method(&"room_type_at") and str(pois.call(&"room_type_at", p)) == "cave"
 	var sheltered: bool = indoors or (building != null and bool(building.call(&"is_sheltered", p)))
 	_want = {}
 	# Base bed.
@@ -92,7 +93,10 @@ func _choose() -> void:
 	var water: String = _water_near(p)
 	if water != "" and not indoors:
 		_want[&"amb/river" if water == "river" else &"amb/lake_shore"] = -8.0
-	if indoors:
+	if cave:
+		# Rock all round: the outside bed far off through the mouth, no house tone.
+		_want[bed] = -26.0
+	elif indoors:
 		_want[&"amb/interior_house"] = -6.0
 		_want[bed] = -22.0
 	else:
@@ -111,7 +115,15 @@ func _choose() -> void:
 	elif clock.hours_until_horde() < 1.0:
 		_want[&"amb/the_hum"] = -18.0 + (1.0 - clock.hours_until_horde()) * 12.0
 	# Reverb of everything around you follows where you stand.
-	Audio.set(&"sfx_bus", &"ReverbInterior" if indoors else &"SFX")
+	Audio.set(&"sfx_bus", reverb_bus(indoors, cave))
+
+
+## The bus every 3D sound plays through from where the listener stands: a cave's long wet reverb
+## (audio.json ReverbCave), a room's, or the open air.
+static func reverb_bus(indoors: bool, cave: bool) -> StringName:
+	if cave:
+		return &"ReverbCave"
+	return &"ReverbInterior" if indoors else &"SFX"
 
 
 func _water_near(p: Vector3) -> String:

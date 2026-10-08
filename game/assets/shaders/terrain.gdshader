@@ -20,24 +20,16 @@ render_mode blend_mix, depth_draw_opaque, cull_back, diffuse_burley, specular_sc
 uniform sampler2DArray layer_albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray layer_normal : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray layer_orm : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
-uniform sampler2D splat0 : filter_linear, repeat_disable;
-uniform sampler2D splat1 : filter_linear, repeat_disable;
-uniform sampler2D macro_variation : hint_default_white, filter_linear_mipmap, repeat_enable;
-// x0, z0, size, samples-1 (region rect and splat resolution)
-uniform vec4 region_rect = vec4(0.0, 0.0, 1024.0, 1024.0);
-uniform ivec4 palette0 = ivec4(0, 1, 2, 3);
-uniform ivec4 palette1 = ivec4(4, 5, 9, 7);
 uniform float layer_tile[16];
 uniform int rock_layer = 6;
 uniform int snow_layer = 8;
 uniform float rock_start = 0.80;
 uniform float rock_end = 0.62;
-uniform float height_blend_depth = 0.12;
-uniform float macro_scale = 0.0035;
-uniform float macro_strength = 0.35;
 uniform float normal_strength = 1.0;
 // Far-field tiles discard inside the near square (x0, z0, x1, z1); disabled when x1 < x0.
 uniform vec4 discard_rect = vec4(1.0, 1.0, -1.0, -1.0);
+
+#include "res://assets/shaders/terrain_splat.gdshaderinc"
 
 // The Bloom's web (BloomWorld.apply_web; textures/gen/bloom.py). Mask: R coverage priority
 // (rank-equalised: a threshold t shows 1 - t of the ground at full growth), G age (fresh white ..
@@ -58,9 +50,6 @@ uniform vec4 bloom_web_aged : source_color = vec4(0.55, 0.5, 0.4, 1.0);
 uniform float bloom_glow_energy = 0.035;
 
 global uniform float hm_snow;
-// Per layer slice (column = slice / 4): how readily water stands on it, how much darker it soaks.
-global uniform mat4 hm_terrain_puddle;
-global uniform mat4 hm_terrain_porosity;
 
 varying vec3 v_world_pos;
 varying vec3 v_world_normal;
@@ -70,70 +59,21 @@ void vertex() {
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
 
-vec3 whiteout_top(vec3 tn, vec3 gn) {
-	// Tangent-space normal on the XZ plane (u = +X, v = +Z; OpenGL green up = -v).
-	return normalize(vec3(tn.x + gn.x, abs(tn.z) * gn.y, -tn.y + gn.z));
-}
-
 void fragment() {
 	if (discard_rect.z > discard_rect.x && v_world_pos.x > discard_rect.x && v_world_pos.x < discard_rect.z
 			&& v_world_pos.z > discard_rect.y && v_world_pos.z < discard_rect.w) {
 		discard;
 	}
 	vec3 gn = normalize(v_world_normal);
-	vec2 rel = (v_world_pos.xz - region_rect.xy) / region_rect.z;
-	vec2 suv = (rel * region_rect.w + 0.5) / (region_rect.w + 1.0);
-	vec4 w0 = texture(splat0, suv);
-	vec4 w1 = texture(splat1, suv);
-	float wts[8] = float[8](w0.r, w0.g, w0.b, w0.a, w1.r, w1.g, w1.b, w1.a);
-	int ids[8] = int[8](palette0.x, palette0.y, palette0.z, palette0.w, palette1.x, palette1.y, palette1.z, palette1.w);
-
-	// Height-blend: find max(height + weight) over active layers.
-	float hb[8];
-	vec4 albs[8];
-	float best = -1.0;
-	for (int i = 0; i < 8; i++) {
-		hb[i] = -1.0;
-		if (wts[i] > 0.003) {
-			int L = ids[i];
-			vec2 uv = v_world_pos.xz / max(layer_tile[L], 0.1);
-			albs[i] = texture(layer_albedo, vec3(uv, float(L)));
-			hb[i] = albs[i].a * 0.5 + wts[i];
-			best = max(best, hb[i]);
-		}
-	}
-	vec3 alb = vec3(0.0);
-	vec3 nrm = vec3(0.0);
-	vec3 orm = vec3(0.0);
-	float hgt = 0.0;
-	float bsum = 0.0;
-	float pud_aff = 0.0;
-	float poro = 0.0;
-	float cutoff = best - height_blend_depth;
-	for (int i = 0; i < 8; i++) {
-		if (hb[i] > cutoff) {
-			float b = hb[i] - cutoff;
-			int L = ids[i];
-			vec2 uv = v_world_pos.xz / max(layer_tile[L], 0.1);
-			alb += albs[i].rgb * b;
-			hgt += albs[i].a * b;
-			nrm += whiteout_top(texture(layer_normal, vec3(uv, float(L))).rgb * 2.0 - 1.0, gn) * b;
-			orm += texture(layer_orm, vec3(uv, float(L))).rgb * b;
-			pud_aff += hm_terrain_puddle[L / 4][L % 4] * b;
-			poro += hm_terrain_porosity[L / 4][L % 4] * b;
-			bsum += b;
-		}
-	}
-	alb /= max(bsum, 1e-4);
-	nrm = normalize(nrm);
-	orm /= max(bsum, 1e-4);
-	hgt /= max(bsum, 1e-4);
-	pud_aff /= max(bsum, 1e-4);
-	poro /= max(bsum, 1e-4);
-
-	// Macro variation breaks up tiling at distance.
-	float mv = texture(macro_variation, v_world_pos.xz * macro_scale).r;
-	alb *= mix(1.0, 0.75 + mv * 0.5, macro_strength);
+	// The region's splat through its palette, height-blended, with macro variation
+	// (terrain_splat.gdshaderinc, shared with the volume terrain).
+	vec3 alb;
+	vec3 nrm;
+	vec3 orm;
+	float hgt;
+	float pud_aff;
+	float poro;
+	terrain_splat(v_world_pos, gn, alb, nrm, orm, hgt, pud_aff, poro);
 
 	// The Bloom: rot bleaches the litter, then the web binds it. Derivatives are taken here, outside
 	// the (non-uniform) branch, where they are defined; the branch samples with textureGrad.
