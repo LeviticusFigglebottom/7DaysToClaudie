@@ -69,7 +69,7 @@ var _pickable: Dictionary = {}
 ## rid -> {task (-1 once built), jobs: [[rid, chunk key]], chunks: [result per job], holder: Node3D,
 ## mats: [ShaderMaterial], dropped: bool}.
 var _far: Dictionary = {}
-## The buildings of a world's organic towns (ADR-0040), as yards see them: chunk key -> [[world to
+## The buildings on town lots (organic towns, ADR-0040, and frameworks), as yards see them: chunk key -> [[world to
 ## building-local Transform2D, local box Rect2, front edge y (the street side)], ...]. Built once in
 ## setup_world from the PoiRegistry and never replaced (the far layer's workers read it). A yard
 ## grows grass, brush and a few trees (the `yard` biome) right up to its house: what stands in a
@@ -641,7 +641,8 @@ static func _in_footprint(fps: Array, layer: String, x: float, z: float) -> bool
 	return false
 
 
-## _footprints from the registry's town lots (frame lots: an organic town's). An authored building
+## _footprints from the registry's town lots (an organic town's frame lots and a framework's rect
+## lots, Pell's Crossing's on the main map). An authored building
 ## fills its footprint; a generated one stands where BuildingGenerator.plan_box lays it out.
 func _build_footprints(reg: PoiRegistry) -> void:
 	if reg == null:
@@ -655,7 +656,7 @@ func _build_footprints(reg: PoiRegistry) -> void:
 			continue
 		var res: Dictionary = e["res"]
 		var l: Dictionary = res.get("lot", {})
-		if not l.has("frame"):
+		if not l.has("frame") and not l.has("rect"):
 			continue
 		var fp := Vector2i.ZERO
 		var box := Rect2i()
@@ -676,7 +677,8 @@ func _build_footprints(reg: PoiRegistry) -> void:
 					continue
 			_:
 				continue
-		var xf: Transform3D = (e["fxf"] as Transform3D) * LotPicker.lot_local_xf(l, fp)
+		var local: Transform3D = LotPicker.lot_local_xf(l, fp) if l.has("frame") else PoiRegistry.rect_lot_xf(l, fp)
+		var xf: Transform3D = (e["fxf"] as Transform3D) * local
 		var x2 := Transform2D(Vector2(xf.basis.x.x, xf.basis.x.z), Vector2(xf.basis.z.x, xf.basis.z.z), Vector2(xf.origin.x, xf.origin.z))
 		var entry: Array = [x2.affine_inverse(), Rect2(box), 0.0]
 		# The chunks the box (grown by the widest margin) reaches.

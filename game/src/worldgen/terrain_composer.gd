@@ -53,7 +53,11 @@ const BANK_CUT: Vector2 = Vector2(0.6, 1.6)
 const BANK_FILL: Vector2 = Vector2(0.45, 0.8)
 const BANK_CELL: float = 23.0
 const BANK_VERGE: float = 2.0
-const BANK_ROUND: float = 1.2
+const BANK_ROUND: float = 1.5
+## A low bank is gentler: below BANK_LOW m of height the slope eases towards BANK_SOFT, so a road or a
+## pad a metre off the land blends in over a few metres instead of standing on a curb.
+const BANK_SOFT: float = 0.3
+const BANK_LOW: Vector2 = Vector2(1.0, 6.0)
 const BANK_BUMP: float = 0.7
 const BANK_BUMP_CELL: float = 6.5
 const BANK_REACH: float = 26.0
@@ -80,8 +84,13 @@ const BUCKET: float = 32.0
 const LOT_SKIRT: float = 5.0
 ## VERSION 13: a world town's lot meets the land in a bank like a road's (BANK_*), its slope between
 ## these two by a value noise, out to LOT_BANK_REACH m from the frame, instead of a 5 m ramp.
-const LOT_BANK: Vector2 = Vector2(0.5, 1.1)
+const LOT_BANK: Vector2 = Vector2(0.4, 0.75)
 const LOT_BANK_REACH: float = 14.0
+## How far a framework's or a POI's pad banks reach (m; its `skirt` when that is longer).
+const PAD_BANK_REACH: float = 18.0
+## The vegetation a v1 framework's pad keeps (a main-map town such as Pell's Crossing: overgrown
+## lots between its buildings, which clear their own boxes at runtime; VERSION 13, it was bare).
+const FRAMEWORK_VEG: float = 0.75
 const YARD_VEG: float = 0.85
 const TOWN_REACH: float = 40.0
 const LOT_ROAD_YIELD: float = 2.0
@@ -696,6 +705,7 @@ class _Build:
 		return {"kind": str(f["type"]), "def": def_id, "id": str(f.get("id", def_id)), "origin": _v2(f["origin"]),
 			"rot": deg_to_rad(float(f.get("rotation", 0.0))), "size": size, "skirt": float(f.get("skirt", 10.0)),
 			"biome": str(f.get("biome", "town" if str(f["type"]) == "framework" else "meadow")),
+			"veg": FRAMEWORK_VEG if str(f["type"]) == "framework" else 0.0,
 			"keep_water": bool(f.get("keep_water", false)), "freeboard": float(f.get("freeboard", 0.6))}
 
 	func _content() -> Node:
@@ -1381,10 +1391,11 @@ class _Build:
 					# keeps a vertex or two, and the road does not read as tilted into its bank.
 					var e: float = maxf(0.0, d - inner - 0.8 - nb * BANK_VERGE)
 					var k_s: float = lerpf(BANK_CUT.x, BANK_CUT.y, nk) if dh > 0.0 else lerpf(BANK_FILL.x, BANK_FILL.y, nk)
+					var adh: float = absf(dh)
+					k_s = lerpf(BANK_SOFT, k_s, smoothstep(BANK_LOW.x, BANK_LOW.y, adh))
 					var allow: float = k_s * e
 					# A smooth min of |dh| and the bank's allowance: the crest and toe round off over
 					# BANK_ROUND m instead of meeting in a crease.
-					var adh: float = absf(dh)
 					var hk: float = maxf(BANK_ROUND - absf(adh - allow), 0.0) / BANK_ROUND
 					var lim: float = minf(adh, allow) - hk * hk * BANK_ROUND * 0.25
 					lim = maxf(lim, 0.0)
@@ -1440,7 +1451,7 @@ class _Build:
 			var bb := Rect2(corners[0], Vector2.ZERO)
 			for c: Vector2 in corners:
 				bb = bb.expand(c)
-			bb = bb.grow(LOT_BANK_REACH if world_pad else skirt)
+			bb = bb.grow(LOT_BANK_REACH if world_pad else (skirt if keep_water else maxf(skirt, PAD_BANK_REACH)))
 			var bank_seed: int = (world.seed & 0xffffff) ^ 0x3c6ef3
 			_for_box(bb, func(i: int, x: float, z: float) -> void:
 				var lp: Vector2 = (Vector2(x, z) - o).rotated(-rot)
@@ -1451,13 +1462,26 @@ class _Build:
 					# Only the bank here: the frames are graded last (below).
 					if d > 0.0 and d < LOT_BANK_REACH:
 						var dh: float = h[i] - target
-						var k_s: float = lerpf(LOT_BANK.x, LOT_BANK.y, _vnoise(x, z, BANK_CELL, bank_seed))
-						var allow: float = k_s * d
 						var adh: float = absf(dh)
+						var k_s: float = lerpf(BANK_SOFT, lerpf(LOT_BANK.x, LOT_BANK.y, _vnoise(x, z, BANK_CELL, bank_seed)), smoothstep(BANK_LOW.x, BANK_LOW.y, adh))
+						var allow: float = k_s * d
 						var hk: float = maxf(BANK_ROUND - absf(adh - allow), 0.0) / BANK_ROUND
 						var lim: float = maxf(minf(adh, allow) - hk * hk * BANK_ROUND * 0.25, 0.0)
 						var fade: float = 1.0 - smoothstep(LOT_BANK_REACH * 0.7, LOT_BANK_REACH, d)
 						h[i] = lerpf(h[i], target + signf(dh) * lim, fade * _yield_to_roads(x, z))
+					return
+				if not keep_water:
+					# VERSION 13: a pad meets the land in a bank like a road's (on the main map too: Pell's
+					# Crossing stood on one flat plate with 10 m planar ramps round it), out to
+					# PAD_BANK_REACH m, and the pad itself is level to its edges as before.
+					if d < PAD_BANK_REACH:
+						var dh2: float = h[i] - target
+						var adh2: float = absf(dh2)
+						var allow2: float = lerpf(BANK_SOFT, lerpf(LOT_BANK.x, LOT_BANK.y, _vnoise(x, z, BANK_CELL, bank_seed)), smoothstep(BANK_LOW.x, BANK_LOW.y, adh2)) * d
+						var hk2: float = maxf(BANK_ROUND - absf(adh2 - allow2), 0.0) / BANK_ROUND
+						var lim2: float = maxf(minf(adh2, allow2) - hk2 * hk2 * BANK_ROUND * 0.25, 0.0)
+						var fade2: float = 1.0 - smoothstep(PAD_BANK_REACH * 0.7, PAD_BANK_REACH, d)
+						h[i] = lerpf(h[i], target + signf(dh2) * lim2, fade2 * _border_weight(x, z))
 					return
 				if d < skirt:
 					var wgt: float = 1.0 - smoothstep(0.0, skirt, d)

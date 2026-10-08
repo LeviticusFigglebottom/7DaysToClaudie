@@ -66,6 +66,15 @@ func _ready() -> void:
 		_audit_roads(rt, st)
 		if _arg(a, "--probe", "") != "":
 			_probe(rt, _arg(a, "--probe", ""))
+		if _arg(a, "--line", "") != "":
+			var lv: PackedStringArray = _arg(a, "--line", "").split(",")
+			var p0 := Vector2(float(lv[0]), float(lv[1]))
+			var p1 := Vector2(float(lv[2]), float(lv[3]))
+			var row: PackedStringArray = []
+			for k: int in int(p0.distance_to(p1)) + 1:
+				var q: Vector2 = p0.move_toward(p1, float(k))
+				row.append("%.2f" % rt.height.sample(q.x, q.y))
+			print("line: ", " ".join(row))
 		if a.has("--debug"):
 			print("roads %d placements %d rect %s" % [rt.roads.size(), rt.placements.size(), rt.height.rect()])
 		_audit_lots(rt, st)
