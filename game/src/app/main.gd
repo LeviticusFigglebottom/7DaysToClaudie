@@ -93,6 +93,14 @@ static func _arg_value(args: PackedStringArray, key: String, default: String) ->
 ## whatever the backdrop shows.
 func _style_menu() -> void:
 	theme = UiStyle.kit_theme()
+	# The flight over Larch Hollow behind the menu (it builds on a worker and fades in).
+	if Settings.menu_backdrop != "off":
+		var backdrop := MenuBackdrop.new()
+		backdrop.name = "Backdrop"
+		backdrop.mode = Settings.menu_backdrop
+		add_child(backdrop)
+		move_child(backdrop, 1)
+		backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var wash := TextureRect.new()
 	wash.name = "Wash"
 	var g := Gradient.new()
@@ -107,7 +115,7 @@ func _style_menu() -> void:
 	wash.stretch_mode = TextureRect.STRETCH_SCALE
 	wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(wash)
-	move_child(wash, 1)
+	move_child(wash, 2 if has_node("Backdrop") else 1)
 	wash.anchor_right = 0.62
 	wash.anchor_bottom = 1.0
 	wash.offset_right = 0
@@ -130,6 +138,17 @@ func _style_menu() -> void:
 	_list.offset_right = 640
 	_list.add_theme_constant_override(&"separation", 2)
 	_status.theme_type_variation = &"DimLabel"
+	# The menu's own score (generated, music/menu), faded in.
+	var tune: AudioStream = Audio.stream(&"music/menu")
+	if tune != null:
+		var music := AudioStreamPlayer.new()
+		music.name = "Music"
+		music.stream = tune
+		music.bus = &"Music"
+		music.volume_db = -40.0
+		add_child(music)
+		music.play()
+		create_tween().tween_property(music, "volume_db", -10.0, 4.0)
 
 
 func _build_menu() -> void:

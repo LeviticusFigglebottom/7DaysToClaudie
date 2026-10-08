@@ -27,6 +27,8 @@ var brightness: float = 1.0
 ## Size of the 2D interface: 0 follows the window (1 up to 1080p, 2 at 4K), else a fixed factor
 ## (UiStyle.SCALES; ADR-0063).
 var ui_scale: float = 0.0
+## The main menu's backdrop: "moving" (the flight, frozen if it runs slow), "still" or "off".
+var menu_backdrop: String = "moving"
 
 var _cfg := ConfigFile.new()
 var _default_bindings: Dictionary = {}
@@ -282,6 +284,7 @@ func save() -> void:
 	_cfg.set_value("display", "fullscreen", fullscreen)
 	_cfg.set_value("display", "vsync", vsync)
 	_cfg.set_value("display", "ui_scale", ui_scale)
+	_cfg.set_value("display", "menu_backdrop", menu_backdrop)
 	_cfg.save(SETTINGS_PATH)
 	settings_changed.emit()
 
@@ -303,6 +306,7 @@ func _load_user_settings() -> void:
 	fullscreen = _cfg.get_value("display", "fullscreen", fullscreen)
 	vsync = _cfg.get_value("display", "vsync", vsync)
 	ui_scale = float(_cfg.get_value("display", "ui_scale", ui_scale))
+	menu_backdrop = str(_cfg.get_value("display", "menu_backdrop", menu_backdrop))
 	var v: Variant = _cfg.get_value("audio", "volumes", volumes)
 	if v is Dictionary:
 		volumes.merge(v, true)

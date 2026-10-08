@@ -97,6 +97,14 @@ func _shot_menu() -> Node:
 	var menu: Node = (load("res://src/app/main.tscn") as PackedScene).instantiate()
 	add_child(menu)
 	await _settle(30)
+	# The backdrop composes and builds on its own; wait for it to be faded in (or give up).
+	var bd: Node = menu.get_node_or_null("Backdrop")
+	var t0: int = Time.get_ticks_msec()
+	while bd != null and (bd as CanvasItem).modulate.a < 1.0 and Time.get_ticks_msec() - t0 < 120000:
+		await _settle(1)
+	if bd != null:
+		print("UI_SHOT menu backdrop after %d ms (alpha %.2f)" % [Time.get_ticks_msec() - t0, (bd as CanvasItem).modulate.a])
+		await get_tree().create_timer(6.0).timeout
 	return menu
 
 

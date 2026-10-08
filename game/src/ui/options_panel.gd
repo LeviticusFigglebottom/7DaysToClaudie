@@ -139,6 +139,15 @@ func _general() -> void:
 	ui.selected = 0 if Settings.ui_scale <= 0.0 else maxi(0, UiStyle.SCALES.find(Settings.ui_scale) + 1)
 	ui.item_selected.connect(func(i: int) -> void: Settings.set_ui_scale(0.0 if i == 0 else UiStyle.SCALES[i - 1]))
 	_row("Interface size", ui)
+	var bd := OptionButton.new()
+	var bd_modes: PackedStringArray = ["moving", "still", "off"]
+	for m: String in ["Moving (stops if the menu runs slow)", "Still", "Off"]:
+		bd.add_item(m)
+	bd.selected = maxi(0, bd_modes.find(Settings.menu_backdrop))
+	bd.item_selected.connect(func(i: int) -> void:
+		Settings.menu_backdrop = bd_modes[i]
+		Settings.save())
+	_row("Menu backdrop", bd)
 	_check("Fullscreen", Settings.fullscreen, func(on: bool) -> void: Settings.set_display(on, Settings.vsync))
 	_check("Vertical sync", Settings.vsync, func(on: bool) -> void: Settings.set_display(Settings.fullscreen, on))
 
