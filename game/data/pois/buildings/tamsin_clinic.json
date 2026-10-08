@@ -239,7 +239,8 @@
       ],
       "notes": [
         {"note": "road_cordon_memo", "pos": [13.2, 0.45], "y": 0.78, "level": 1},
-        {"note": "road_voss_log", "pos": [8.3, 0.4], "y": 0.75}
+        {"note": "road_voss_log", "pos": [8.3, 0.4], "y": 0.75},
+        {"note": "road_corvane_letter", "pos": [8.05, 0.4], "y": 0.75}
       ],
       "sleepers": [
         {"id": "waiting_1", "pos": [0.45, 12.6], "enemy": "hollow", "pose": "sit", "rot": 90},

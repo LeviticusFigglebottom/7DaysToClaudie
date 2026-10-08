@@ -9,7 +9,7 @@
       "footprint": [26, 24],
       "origin": [2, 1],
       "author": "Hollowmere team",
-      "story": "Marnie Teal had six summers on Cedar Ridge and meant to see a seventh. When the valley went dark she stayed in the cab with the fire finder and the radio, pencilling a bearing for every fire the evacuation left burning and every light that went out. Ezra Coyle, who packed her water up the switchbacks, came up the trail with a bite above his boot; she bedded him down in the woodshed. Two nights later she nailed the stair house door shut from inside, bolted the back, locked the stair gate behind her and climbed to the cab. The spare gate key still hangs on the woodshed nail where it always did. On the night of the first Hum every Hollowed on the ridge walked toward her lantern, broke in through the stair house window and climbed as far as the gate, and they are standing there still. Her logbook is on the map table: every bearing she plotted that night crosses at the Corvane mine.",
+      "story": "Marnie Teal had six summers on Cedar Ridge and meant to see a seventh. When the valley went dark she stayed in the cab with the fire finder and the radio, pencilling a bearing for every fire the evacuation left burning and every light that went out. Abe Sorrell, who packed her water up the switchbacks, came up the trail with a bite above his boot; she bedded him down in the woodshed. Two nights later she nailed the stair house door shut from inside, bolted the back, locked the stair gate behind her and climbed to the cab. The spare gate key still hangs on the woodshed nail where it always did. On the night of the first Hum every Hollowed on the ridge walked toward her lantern, broke in through the stair house window and climbed as far as the gate, and they are standing there still. Her logbook is on the map table: every bearing she plotted that night crosses under the ridges to the north (the Corvane workings; her log does not name them, LORE_TRAIL.md).",
       "style": {
         "exterior": "siding_white",
         "interior": "wood_paneling_dark",
@@ -298,7 +298,7 @@
         {"at": [12, 6], "label": "Stair house: glass on the floor, the first flight up"},
         {"at": [12, 7], "label": "First landing: the Hollowed piled at the locked gate, and Marnie's card on it", "level": 1},
         {"at": [7, 15], "label": "Back down and out the window to the woodshed"},
-        {"at": [5, 14], "label": "Woodshed: Ezra by the woodpile, the spare gate key on its nail"},
+        {"at": [5, 14], "label": "Woodshed: Abe by the woodpile, the spare gate key on its nail"},
         {"at": [13, 4], "label": "Unlock the gate, climb the second flight", "level": 1},
         {"at": [11, 7], "label": "Second landing: the ladder up to the trapdoor", "level": 2},
         {"at": [12, 6], "label": "The cab (loot): fire finder, radio, Marnie's footlocker and stores", "level": 3},

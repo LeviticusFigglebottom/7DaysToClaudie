@@ -13,7 +13,7 @@
    "title": "Notice Taped to the Door",
    "style": "typed",
    "author": "Cordon Command",
-   "body": "ORDER 14 — FIREARMS\n\nAll firearms and ammunition held for sale are to be surrendered to Cordon personnel. Licensed dealers will be issued receipts.\nPremises refusing inspection will be sealed.\n\nUnder it, in marker: SEALED. DO NOT ENTER."
+   "body": "ORDER 22 — FIREARMS\n\nAll firearms and ammunition held for sale are to be surrendered to Cordon personnel. Licensed dealers will be issued receipts.\nPremises refusing inspection will be sealed.\n\nUnder it, in marker: SEALED. DO NOT ENTER."
   },
   {
    "id": "town4_pawn_ray",
@@ -105,6 +105,7 @@
    "style": "handwritten",
    "author": "The Quartermaster",
    "body": "Beans 6 cs. Peaches 4 cs. Coffee 2 cs. Blanks 300 (funeral detail).\nRevolver .38, raffle, boxed: 1. Cartridges for same: 6 bx.\nNight 5. They're coughing up there. I locked the cage. I'll issue by the count when it's over.\nNight 6. Somebody tried the till. I heard the drawer.\n(the last line goes off the edge) the count is the count"
-  }
+  },
+  {"id": "town4_waterworks_discharge", "title": "Notice to the Water Department", "style": "typed", "author": "Corvane Mining Co., Environmental Office", "body": "CORVANE MINING CO. - NOTICE TO THE WATER DEPARTMENT\nDewatering discharge from the Deep Mine settling ponds will rise to about 1,900 gal/min until further notice, following a water inflow met by exploration drilling at depth.\nInflow water is warm (31 C) and slightly cloudy. A white floc may be seen on the settling ponds. It is organic and harmless. No action is needed at your intake.\n\nGus's pencil underneath: Warm water from under a mountain, and harmless. I took a jar off the ponds myself. The white stuff crept to the side of the jar away from the window. Chlorine went up to 4 the same day, a month before the Cordon ever told me to."}
  ]
 }

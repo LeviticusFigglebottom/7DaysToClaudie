@@ -6,7 +6,7 @@
    "title": "Core Log, BH-7",
    "style": "handwritten",
    "author": "T. Brask, senior geologist",
-   "body": "HOLE BH-7  CORVANE DEEP, 4 LEVEL STEP-OUT  LOGGED T.B.\n1,288-1,390 ft. Grey limestone, massive, fossil hash. Good recovery.\n1,390-1,411 ft. Karsted. Calcite on fractures. Core loss 30%.\n1,411-1,412 ft. VOID. Rods dropped 4 ft. Air came up the string, warm, smelled of wet bread.\n1,412-1,413 ft. 0.3 m recovered. Limestone with white filaments on every fracture face, soft, dry. Filaments in the core barrel. Filaments on the saw.\nBoxes 211-214 sealed and sent to the shed. Told Anders to keep the boys off them.\nUnder it, later, in pencil: The threads moved toward the lamp. I am not writing that on the sheet."
+   "body": "HOLE BH-7  CORVANE DEEP, 4 LEVEL STEP-OUT  LOGGED T.B.\n1,288-1,390 ft. Grey limestone, massive, fossil hash. Good recovery.\n1,390-1,411 ft. Karsted. Calcite on fractures. Core loss 30%.\n1,411-1,412 ft. VOID. Rods dropped 4 ft. Air came up the string, warm, smelled of wet bread.\n1,412-1,413 ft. 0.3 m recovered. Limestone with white filaments on every fracture face, soft, dry. Filaments in the core barrel. Filaments on the saw.\nBoxes 211-214 sealed and sent to the shed. Told Anders to keep the boys off them.\nUnder it, later, in pencil: The threads moved away from the lamp. I am not writing that on the sheet."
   },
   {
    "id": "lab_tether_3907",
@@ -20,7 +20,7 @@
    "title": "Station Log, Field Station 2",
    "style": "handwritten",
    "author": "A. Lindqvist, station manager",
-   "body": "Wk 1. Ted's BH-7 boxes in. He won't let anyone saw them. Told head office.\nWk 2. Head office says the Cordon is coming to look. Fuel down to 60%.\nWk 3. They came with a convoy: Dr. Marchetti, six of hers, and a biosafety officer, Torvald, who doesn't smile. They took the old powder store into the hill for a vault and poured a floor over it.\nWk 5. Containment block done. Decon unit on the boardwalk. Ted and two of his men in the ward downstairs 'for observation'. They waved at me through the glass.\nWk 7. No convoy. No fuel. Generator on four hours a night for the freezers. Marchetti says the cores cannot warm up.\nWk 8. The ground hummed. Ted's shed boys got up off their bunks with their eyes open.\nWk 9. Radio says hold. I am putting the keys where I can find them. If you are reading this, the admin key is the red one."
+   "body": "Wk 1. Ted's BH-7 boxes in. He won't let anyone saw them. Told head office.\nWk 2. Head office says the government is sending people to look. Fuel down to 60%.\nWk 3. They came with a convoy: Dr. Marchetti, six of hers, and a biosafety officer, Torvald, who doesn't smile. They took the old powder store into the hill for a vault and poured a floor over it.\nWk 5. Containment block done. Decon unit on the boardwalk. Ted and two of his men in the ward downstairs 'for observation'. They waved at me through the glass.\nWk 7. No convoy. No fuel. Generator on four hours a night for the freezers. Marchetti says the cores cannot warm up.\nWk 8. The ground hummed. Ted's shed boys got up off their bunks with their eyes open.\nWk 9. Radio says hold. I am putting the keys where I can find them. If you are reading this, the admin key is the red one."
   },
   {
    "id": "lab_orders",
@@ -42,6 +42,7 @@
    "style": "typed",
    "author": "BSO I. Torvald",
    "body": "BIOSAFETY LOG - FS-2 - BSO TORVALD\nD40. Ward downstairs: three Corvane men symptomatic. Isolation maintained.\nD47. Hum. Containment suite breached from inside. Two staff lost in the airlock. Cells holding.\nD48. Dr. Marchetti refuses to leave the cold room. Her card stays with her.\nD49. Diesel for a week if it runs for the freezers alone. The suite is awake.\nD50. Securing the vault per Directive 14 para 5. I have changed the combination. The new one is on the card in the specimen lab, for whoever the Program sends. Do not send anyone.\nD50. The escape shaft is clear. I am not using it."
-  }
+  },
+  {"id": "lab_marchetti_report", "title": "Interim Report No. 3 (Draft)", "style": "typed", "author": "Dr. C. Marchetti", "body": "FS-2 INTERIM REPORT No. 3 - DRAFT - DR. C. MARCHETTI\nTo: Cordon Medical Authority. Copy: Remand Program, specimen collection.\n1. ORIGIN. The organism lay sealed in a cave system under the valley until exploration hole BH-7 broke into it at 1,411 ft in March. Corvane went on drilling into it for six weeks after the breakthrough, to measure the find, with the Authority's knowledge.\n2. NATURE. One mycelium, very old, through the whole cave system. What the valley calls the Bloom is its growing edge. The Hollowed are how it walks.\n3. THE HUM. Every seventh night the whole network contracts at once, and every host turns toward it. The centre lies under the ridges north of the Deep Mine.\n4. RECOMMENDATION. Cement BH-7 and its successors. Close the mine. Collect nothing more.\n\nHandwritten under it: Item 4 struck out by the Authority. Collection to proceed. They want it alive. - C.M."}
  ]
 }
