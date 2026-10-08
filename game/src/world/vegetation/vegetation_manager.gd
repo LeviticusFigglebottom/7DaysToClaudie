@@ -81,6 +81,8 @@ var _footprints: Dictionary = {}
 ## clear of trees, brush and boulders).
 const FOOTPRINT_MARGIN: Dictionary = {"tree": 1.6, "medium": 0.8, "ground": 0.25, "bloom": 0.25}
 const FOOTPRINT_FRONT: Dictionary = {"tree": 12.0, "medium": 12.0, "ground": 0.0, "bloom": 0.0}
+## How far past a cave's air box (caves_changed) its mouth apron can reach (m): the chunks to re-mask.
+const CAVE_APRON_REACH: float = 16.0
 ## Clearing ids `set_clearings` opened, by source (Bloom nests' mats, ADR-0055): a thin layer over
 ## the runtime clearings below, so nests and forest encounters share one mask.
 var _source_clearings: Dictionary = {}
@@ -97,6 +99,10 @@ func setup_world(w: Node) -> void:
 	_build_far_layer()
 	terrain.region_attached.connect(_far_attach)
 	terrain.region_detached.connect(_far_detach)
+	# Cave mouths keep their apron clear (ADR-0056 WS-E): a cave placed or removed re-masks the
+	# chunks around it, near and far.
+	if terrain.has_signal(&"caves_changed"):
+		terrain.caves_changed.connect(_on_caves_changed)
 	# The fungal mounds Hum survivors leave where they root at dawn (ADR-0025).
 	var mounds := BloomMounds.new()
 	mounds.name = "BloomMounds"
@@ -185,6 +191,13 @@ func _recompute_cleared(key: Vector2i) -> void:
 		for inst0: VegetationScatter.Instance in layers[layer0]:
 			if _in_footprint(_footprints.get(key, []), layer0, inst0.pos.x, inst0.pos.z):
 				now[inst0.index] = true
+	# Cave mouths' aprons (CaveSet.keep_out): every layer, by index like a clearing.
+	var caves: Object = _caves_over(key)
+	if caves != null:
+		for layer1: String in layers:
+			for inst1: VegetationScatter.Instance in layers[layer1]:
+				if bool(caves.call(&"keep_out", inst1.pos.x, inst1.pos.z)):
+					now[inst1.index] = true
 	for cid: StringName in _clearings_by_chunk.get(key, []):
 		var c: Array = _clearings[cid]
 		var at: Vector2 = c[0]
@@ -201,6 +214,28 @@ func _recompute_cleared(key: Vector2i) -> void:
 		_cleared[key] = now
 	if now.hash() != had.hash() and _nodes.has(key):
 		_rebuild(key)
+
+
+## The terrain's cave set when a cave's footprint reaches chunk `key`, else null. The set is
+## immutable once published (TerrainManager replaces it whole), so workers may hold it too.
+func _caves_over(key: Vector2i) -> Object:
+	var caves: Object = terrain.get(&"caves") if terrain != null else null
+	if caves == null or not caves.has_method(&"any_in_rect") or bool(caves.call(&"is_empty")):
+		return null
+	return caves if bool(caves.call(&"any_in_rect", Rect2(key.x * CHUNK, key.y * CHUNK, CHUNK, CHUNK))) else null
+
+
+## A cave was placed or removed over `box` (its air): the chunks around it (grown to take in the
+## mouth's apron) re-mask, and the far trees of the regions it touches scatter again.
+func _on_caves_changed(box: AABB) -> void:
+	var r := Rect2(box.position.x, box.position.z, box.size.x, box.size.z).grow(CAVE_APRON_REACH)
+	for key: Vector2i in _data.keys():
+		if r.intersects(Rect2(key.x * CHUNK, key.y * CHUNK, CHUNK, CHUNK)):
+			_recompute_cleared(key)
+	for rid: String in _far.keys():
+		var rt: RegionTerrain = terrain.regions.get(rid)
+		if rt != null and rt.rect.intersects(r):
+			_far_redo(rid)
 
 
 func _water_fn() -> Callable:
@@ -319,7 +354,7 @@ func _collect() -> void:
 			_pending.erase(key)
 			_data[key] = job["out"][0]
 			_pickable[key] = _harvestables(job["out"][0])
-			if _clearings_by_chunk.has(key) or _footprints.has(key):
+			if _clearings_by_chunk.has(key) or _footprints.has(key) or _caves_over(key) != null:
 				_recompute_cleared(key)
 
 
@@ -553,6 +588,10 @@ func _far_attach(rid: String) -> void:
 	var height_fn: Callable = terrain.height_at
 	var removed: Dictionary = _removed.duplicate(true)
 	var fps: Dictionary = _footprints
+	# The cave set as published now: immutable, so the workers may read it (a new one replaces it).
+	var caves: Object = terrain.get(&"caves")
+	if caves != null and (not caves.has_method(&"keep_out") or bool(caves.call(&"is_empty"))):
+		caves = null
 	var jobs: Array = []
 	var cx0: int = int(floor(rt.rect.position.x / CHUNK))
 	var cz0: int = int(floor(rt.rect.position.y / CHUNK))
@@ -572,9 +611,39 @@ func _far_attach(rid: String) -> void:
 	# caps low-priority work to a share of the pool, so the near chunks around the player (high
 	# priority scatter jobs, terrain meshing) never queue behind the far layer.
 	var task: int = WorkerThreadPool.add_group_task(func(i: int) -> void:
-		results[i] = _far_buffers(_scatter_far_chunk(rt, jobs[i][1], seed_v, height_fn, removed, fps.get(jobs[i][1], [])), dims),
+		results[i] = _far_buffers(_scatter_far_chunk(rt, jobs[i][1], seed_v, height_fn, removed, fps.get(jobs[i][1], []), caves), dims),
 		jobs.size(), -1, false, "far trees")
 	_far[rid] = {"task": task, "jobs": jobs, "chunks": results, "holder": null, "mats": [], "dropped": false}
+
+
+## Scatters a region's far trees again (a cave placed or removed there). The old impostors stay
+## up until the new ones are built (_far_build frees them), so the region's skyline never blinks;
+## a scatter still running finishes first and starts over (its task must stay joinable).
+func _far_redo(rid: String) -> void:
+	if not _far.has(rid):
+		return
+	var e: Dictionary = _far[rid]
+	if int(e["task"]) >= 0:
+		e["redo"] = true
+		return
+	if bool(e["dropped"]):
+		return
+	_far.erase(rid)
+	_far_attach(rid)
+	if _far.has(rid):
+		_far[rid]["old"] = [e["holder"], e["mats"]]
+		var older: Array = e.get("old", [])
+		if not older.is_empty():
+			_far_free_old(older)
+	else:
+		_far_free_old([e["holder"], e["mats"]])
+
+
+func _far_free_old(old: Array) -> void:
+	if old[0] != null and is_instance_valid(old[0]):
+		(old[0] as Node).queue_free()
+	for m: ShaderMaterial in old[1]:
+		_far_mats.erase(m)
 
 
 ## A region detached: its far trees go (once their scatter, if still running, comes back).
@@ -590,6 +659,8 @@ func _far_detach(rid: String) -> void:
 
 func _far_free(rid: String) -> void:
 	var e: Dictionary = _far[rid]
+	if e.has("old"):
+		_far_free_old(e["old"])
 	if e["holder"] != null and is_instance_valid(e["holder"]):
 		(e["holder"] as Node).queue_free()
 	for m: ShaderMaterial in e["mats"]:
@@ -616,12 +687,13 @@ static func _far_buffers(insts: Array, dims: Dictionary) -> Dictionary:
 
 
 ## Trees of one chunk for the far layer (felled ones and those on a town building removed).
-static func _scatter_far_chunk(rt: RegionTerrain, key: Vector2i, seed_v: int, height_fn: Callable, removed: Dictionary, fps: Array = []) -> Array:
+static func _scatter_far_chunk(rt: RegionTerrain, key: Vector2i, seed_v: int, height_fn: Callable, removed: Dictionary, fps: Array = [], caves: Object = null) -> Array:
 	var gone: Dictionary = removed.get(Ids.chunk_key(key.x, key.y), {})
 	var keep: Array = []
 	var layers: Dictionary = VegetationScatter.scatter_chunk(key, rt, seed_v, height_fn, Callable(), 1)
 	for inst: VegetationScatter.Instance in layers.get("tree", []):
-		if not gone.has(str(inst.index)) and not _in_footprint(fps, "tree", inst.pos.x, inst.pos.z):
+		if not gone.has(str(inst.index)) and not _in_footprint(fps, "tree", inst.pos.x, inst.pos.z) \
+				and (caves == null or not bool(caves.call(&"keep_out", inst.pos.x, inst.pos.z))):
 			keep.append(inst)
 	return keep
 
@@ -707,6 +779,16 @@ func _collect_far() -> void:
 		if bool(e["dropped"]):
 			_far_free(rid0)
 			continue
+		if bool(e.get("redo", false)):
+			# The caves changed while it scattered: its results are dropped and it starts over (a
+			# scatter is never built yet while it runs; the impostors it replaces stay up).
+			_far.erase(rid0)
+			_far_attach(rid0)
+			if e.has("old") and _far.has(rid0):
+				_far[rid0]["old"] = e["old"]
+			elif e.has("old"):
+				_far_free_old(e["old"])
+			continue
 		_far_build(rid0, e)
 		# One region a frame.
 		return
@@ -739,6 +821,9 @@ func _far_build(rid0: String, e: Dictionary) -> void:
 			acc[1] = buf
 	e["jobs"] = []
 	e["chunks"] = []
+	if e.has("old"):
+		_far_free_old(e["old"])
+		e.erase("old")
 	for rid: String in joined:
 		var per_species: Dictionary = joined[rid]
 		for sp_id: StringName in per_species:
