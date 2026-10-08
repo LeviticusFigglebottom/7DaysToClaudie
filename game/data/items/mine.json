@@ -66,6 +66,7 @@
    "value": 0,
    "note": "corvane_program_seal",
    "model": "items/mine/note_corvane_program_seal"
-  }
+  },
+  {"id": "note_corvane_survey_section", "name": "Survey 3, Cross-Section Notes", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "corvane_survey_section"}
  ]
 }
