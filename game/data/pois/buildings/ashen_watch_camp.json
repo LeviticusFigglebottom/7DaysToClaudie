@@ -781,10 +781,10 @@
      "prop": "out_ashen_bundle",
      "id": "longhouse_bundle_b",
      "pos": [
-      13.6,
-      3.45
+      13.45,
+      3.5
      ],
-     "rot": 10,
+     "rot": 95,
      "variant": "worn"
     },
     {

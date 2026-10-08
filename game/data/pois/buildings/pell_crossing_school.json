@@ -215,13 +215,13 @@
         {"prop": "school_chalkboard", "at": [7, 14], "against": "E", "height": 0.9, "offset": [0, 0.5]},
         {"id": "dale_desk", "prop": "school_teacher_desk", "pos": [6.2, 16.6], "rot": 270},
         {"prop": "chair_wood", "pos": [6.9, 16.6], "rot": 270},
-        {"id": "desk_1", "prop": "school_desk", "pos": [2.3, 14.0], "rot": 90},
-        {"id": "desk_2", "prop": "school_desk", "pos": [3.7, 14.0], "rot": 90, "variant": "worn"},
+        {"id": "desk_1", "prop": "school_desk", "pos": [2.3, 14.25], "rot": 90},
+        {"id": "desk_2", "prop": "school_desk", "pos": [3.7, 14.25], "rot": 90, "variant": "worn"},
         {"id": "desk_3", "prop": "school_desk", "pos": [2.3, 15.5], "rot": 90},
         {"id": "desk_4", "prop": "school_desk", "pos": [3.7, 15.5], "rot": 90, "variant": "destroyed"},
         {"id": "desk_5", "prop": "school_desk", "pos": [2.3, 17.0], "rot": 90},
         {"id": "desk_6", "prop": "school_desk", "pos": [3.7, 17.0], "rot": 90},
-        {"id": "desk_7", "prop": "school_desk", "pos": [5.1, 14.0], "rot": 90, "variant": "worn"},
+        {"id": "desk_7", "prop": "school_desk", "pos": [5.1, 14.25], "rot": 90, "variant": "worn"},
         {"prop": "glass_shards", "pos": [0.5, 15.4], "rot": 10},
         {"id": "principal_desk", "prop": "office_desk", "pos": [9.8, 14.3], "rot": 0},
         {"prop": "office_chair", "pos": [9.8, 13.6], "rot": 180},
@@ -268,7 +268,7 @@
         {"id": "iso_stores_2", "prop": "civic_relief_crate", "pos": [24.65, 0.7], "y": 0.55, "rot": 94, "level": -1, "container": "school_cordon_stores"},
         {"id": "iso_med", "prop": "metal_shelf", "at": [22, 0], "against": "N", "level": -1, "container": "school_nurse_cabinet"},
         {"prop": "road_iv_stand", "pos": [21.6, 3.6], "level": -1},
-        {"prop": "lantern_camping", "pos": [23.4, 2.4], "level": -1, "lit": true},
+        {"keep": true, "prop": "lantern_camping", "pos": [23.4, 2.4], "level": -1, "lit": true},
         {"id": "music_piano", "prop": "civic_upright_piano", "at": [12, 0], "against": "N", "offset": [0.5, 0], "level": 1},
         {"prop": "civic_folding_chair", "pos": [13.4, 2.0], "rot": 30, "level": 1},
         {"prop": "civic_folding_chair", "pos": [14.4, 2.2], "rot": -20, "level": 1, "variant": "destroyed"},
@@ -340,7 +340,7 @@
         {"id": "t_gym_floor", "group": "gym", "on": "room", "room": "G", "level": 0}
       ],
       "lights": [
-        {"at": [23, 2], "level": -1, "height": 0.5, "color": "#ffbb77", "energy": 0.6, "range": 5.0, "flicker": 0.2}
+        {"keep": true, "at": [23, 2], "level": -1, "height": 0.5, "color": "#ffbb77", "energy": 0.6, "range": 5.0, "flicker": 0.2}
       ],
       "decals": [
         {"decal": "survivor_marks_c", "at": [4, 11], "side": "N", "height": 1.4, "size": [1.6, 1.0]},

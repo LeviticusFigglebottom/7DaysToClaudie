@@ -151,7 +151,7 @@
         {"id": "kitchen_mess", "at": [8, 3], "side": "E", "type": "door", "state": "open"},
         {"id": "kitchen_pass", "at": [8, 5], "side": "E", "type": "half"},
         {"id": "kitchen_pantry", "at": [4, 6], "side": "S", "type": "door", "state": "closed"},
-        {"id": "kitchen_stair", "at": [6, 6], "side": "S", "type": "door", "state": "open"},
+        {"id": "kitchen_stair", "at": [6, 6], "side": "S", "type": "door", "state": "open", "swing": "S"},
         {"id": "mess_front", "at": [11, 10], "side": "S", "type": "door2", "state": "barricaded", "barricade": "furniture"},
         {"id": "mess_dingle", "at": [14, 7], "side": "E", "type": "door", "state": "closed"},
         {"id": "dingle_n15", "at": [15, 2], "side": "N", "type": "open"},

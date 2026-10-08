@@ -579,7 +579,7 @@
      "prop": "bed_double",
      "pos": [
       18.13,
-      18.5
+      18.62
      ],
      "rot": 90,
      "variant": "worn"
@@ -714,6 +714,7 @@
      "container": "w3_haldane_stores"
     },
     {
+     "keep": true,
      "id": "bunker_lantern",
      "prop": "wild_oil_lantern",
      "pos": [
@@ -1865,6 +1866,7 @@
    ],
    "lights": [
     {
+     "keep": true,
      "pos": [
       20.0,
       14.2

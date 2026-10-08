@@ -203,7 +203,8 @@
         {"id": "yard_trash_bag", "prop": "trash_bag", "pos": [-1.7, 3.0], "rot": 20},
         {"prop": "pallet", "pos": [-1.9, 9.0], "rot": 85},
         {"prop": "tire", "pos": [3.5, -1.6]},
-        {"id": "evidence_room_chair", "prop": "chair_wood", "pos": [1.5, 1.6], "rot": 160, "variant": "worn"}
+        {"id": "evidence_room_chair", "prop": "chair_wood", "pos": [1.5, 1.6], "rot": 160, "variant": "worn"},
+        {"id": "evidence_lantern", "prop": "lantern_camping", "pos": [0.45, 3.5], "lit": true, "keep": true}
       ],
       "pickups": [
         {"id": "evidence_key", "item": "evidence_locker_key", "pos": [14.5, 11.2], "y": 0.78},
