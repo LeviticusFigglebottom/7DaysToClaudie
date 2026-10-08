@@ -81,6 +81,9 @@ uniform float back_vein_scale = 30.0;
 uniform vec4 back_vein_color : source_color = vec4(0.56, 0.62, 0.74, 1.0);
 // Skin stretched over the knuckles and finger joints (vertex B on the back) is smoother: a sheen.
 uniform float knuckle_sheen : hint_range(0.0, 1.0) = 0.0;
+// ...and wrinkled: the texture's crease net and wrinkles are deepened there (the normal map's
+// depth), so the knuckles and finger joints carry their wrinkle patches on a tiling texture.
+uniform float crease_boost : hint_range(0.0, 3.0) = 0.0;
 // Light through thin flesh (fingers, the web of the thumb) in transmittance_color, from behind
 // and towards the eye (BACKLIGHT; drawn by light() in the viewmodel, by Godot's backlight
 // elsewhere). Godot's own transmittance needs the screen-space subsurface pass the viewmodel can't
@@ -232,7 +235,7 @@ void fragment() {
 	AO_LIGHT_AFFECT = ao_light_affect;
 	SPECULAR = skin_specular;
 	NORMAL_MAP = nrm;
-	NORMAL_MAP_DEPTH = normal_strength;
+	NORMAL_MAP_DEPTH = normal_strength * (1.0 + crease_boost * clamp(COLOR.b, 0.0, 1.0) * dorsal);
 	SSS_STRENGTH = sss_strength;
 	SSS_TRANSMITTANCE_COLOR = transmittance_color;
 	SSS_TRANSMITTANCE_DEPTH = transmittance_depth;

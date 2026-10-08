@@ -273,7 +273,9 @@ idles and gaits). 14,764 body triangles; 1.81 m. The face is still the shared Ho
 * Skin (`fp_skin`, skin shader, all its living-skin terms off for every other skin): flushed
   knuckles, joints and fingertips (`flush`), faint red / sallow mottling (`mottle`), paler palms
   and inner forearms (`palm_pale`), blue-grey veins on the back of the hand and wrist
-  (`back_veins`, rest space), a sheen over the knuckles (`knuckle_sheen`), light through the
+  (`back_veins`, rest space), a sheen over the knuckles (`knuckle_sheen`) and the texture's crease
+  net and tension wrinkles deepened there and over the finger joints (`crease_boost`: vertex B on
+  the back scales the normal map's depth), light through the
   fingers in `transmittance_color` (`translucency`, as BACKLIGHT), the baked AO darkening direct
   light more (`ao_light_affect` 0.6: the viewmodel shadows nothing, not even itself) and a skin
   specular of ~2.8% (`skin_specular`). In the viewmodel (FpMaterials' copy defines `HM_VIEWMODEL`)
