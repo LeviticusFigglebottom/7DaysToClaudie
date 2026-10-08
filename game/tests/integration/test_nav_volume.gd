@@ -205,9 +205,43 @@ func test_d_no_polygon_on_the_heightfield_over_the_opening() -> void:
 						bad += 1
 	gut.p("[nav] %d polygon vertices under the opening, %d on the old surface" % [checked, bad])
 	assert_eq(bad, 0, "the heightfield over the opening is gone from the navmesh")
+	# Vertices alone can miss a big polygon spanning the opening: no point of the map lies on the old
+	# surface there either (the nearest is the tunnel floor, >= 1 m below).
+	var lid: int = 0
+	for p: Vector3 in opening:
+		if NavigationServer3D.map_get_closest_point(_map, p).distance_to(p) < 0.4:
+			lid += 1
+	assert_eq(lid, 0, "no navmesh over the opening (%d of %d points)" % [lid, opening.size()])
 
 
-func test_e_volume_events_queue_their_tiles() -> void:
+## A walk along the hillside beside the cave, through the tile seam at x = 0 and the volume's
+## borders (x = -32 where it starts, x = 32 and z = 32 where the heightfield takes the ground back):
+## surface nets stop the volume's surface VOXEL / 2 short of a column's +X / +Z edge, and before the
+## nav source closed that slit (and before the bake box took the tile's border) Recast left a gap
+## there that no path crossed.
+func test_e_paths_cross_the_tile_seams_and_the_volume_borders() -> void:
+	if _plan == null or not _plan.ok:
+		fail_test("no plan")
+		return
+	await _bake_map()
+	var legs: Array = [[Vector2(-30.0, 5.0), Vector2(40.0, 5.0)], [Vector2(8.0, 26.0), Vector2(8.0, 40.0)]]
+	for leg: Array in legs:
+		var a := Vector3(leg[0].x, 0.0, leg[0].y)
+		var b := Vector3(leg[1].x, 0.0, leg[1].y)
+		a.y = _tm.height_at(a.x, a.z)
+		b.y = _tm.height_at(b.x, b.z)
+		var path: PackedVector3Array = _path(a, b)
+		assert_gt(path.size(), 1, "a path %s -> %s" % [a, b])
+		if path.size() < 2:
+			continue
+		assert_lt(path[path.size() - 1].distance_to(b), 1.0, "it gets across to %s (ends %s)" % [b, path[path.size() - 1]])
+		var off: float = 0.0
+		for p: Vector3 in path:
+			off = maxf(off, absf(p.y - _tm.height_at(p.x, p.z)))
+		assert_lt(off, 1.0, "on the surface all the way (worst %.2f m off)" % off)
+
+
+func test_f_volume_events_queue_their_tiles() -> void:
 	var nav := NavTiles.new()
 	nav.enabled = false
 	_hw.add_child(nav)
