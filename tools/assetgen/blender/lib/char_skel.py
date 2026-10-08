@@ -188,13 +188,14 @@ class Skeleton:
 
     # --- inverse kinematics helpers ----------------------------------------------------------
     def solve_two_bone(self, Q: dict, upper: str, lower: str, target, pole, hips_offset=(0, 0, 0),
-                       z_sign: float = 1.0):
+                       z_sign: float = 1.0, base=None):
         """Sets Q[upper], Q[lower] so the end of `lower` reaches `target` with the middle joint
         displaced towards `pole` (armature-space direction). Both bones get frames whose local Z
         lies in the bend plane (z_sign=+1: Z towards the pole, e.g. knees; -1 for elbows), so the
         middle joint is a pure hinge (no twist between the two bones). Parents of `upper` must
-        already be set in Q. Returns the joint position."""
-        acc, pos = self.fk(Q, hips_offset)
+        already be set in Q (or `base` be their fk, which a caller solving many targets on one
+        pose computes once). Returns the joint position."""
+        acc, pos = base if base is not None else self.fk(Q, hips_offset)
         parent = self.parent[upper]
         Pp = acc[parent]
         root = pos[upper]

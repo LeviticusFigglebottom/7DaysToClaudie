@@ -1089,6 +1089,17 @@ THUMB_CURL = (30.0, 30.0, 25.0, 38.0, 48.0)
 # ellipse between them), and the forearm's roll either way of the thumb-up rest. viewmodel.json
 # `wrist` overrides them.
 WRIST_LIMITS = {"flex": 65.0, "extend": 55.0, "radial": 18.0, "ulnar": 32.0, "roll": 95.0}
+# Where a wrist rests when nothing makes it work (ADR-0060): the same ellipse, much smaller and
+# leaning toward extension, the forearm rolled no further than a hand resting on a table. Inside
+# the full range a hand is possible; inside this one it looks relaxed. With only the full range,
+# every idle settled at 50-60° of flexion and 15-20° of ulnar deviation (inside it, so free):
+# the wrists bent hard down and in that player report 4 saw. viewmodel.json `wrist.comfort`
+# overrides it.
+WRIST_COMFORT = {"flex": 18.0, "extend": 30.0, "radial": 10.0, "ulnar": 20.0, "roll": 70.0}
+# Degrees of over-range one degree of bend away from the middle of the comfort range costs: a
+# tie-break between configurations that are all in range (the elbow and roll that keep the wrist
+# straightest win), never a reason to break range.
+COMFORT_COST = 0.25
 
 SCALARS = ("fist", "thumb", "index", "flick")
 DEFAULT_SCALARS = {"fist": 0.4, "thumb": 0.4, "index": 0.0, "flick": 0.0}
@@ -1144,6 +1155,9 @@ def _spec_hand(sd: str, spec: dict) -> Hand:
     if "on" in spec:
         return Hand(None, None, g2b(spec.get("elbow", [0.0, 0.0, 0.0])), _scalars(spec), on=spec["on"],
                     along=float(spec.get("along", 0.2)), spin=float(spec.get("spin", 0.0)), flip=bool(spec.get("flip", False)))
+    if "wrist" in spec:
+        return Hand(g2b(spec["grip"]), _wrist_frame(sd, spec), g2b(spec.get("elbow", [0.0, 0.0, 0.0])), _scalars(spec),
+                    item=spec.get("_item"))
     d = g2b(_n(np.asarray(spec["dir"], dtype=np.float64)))
     if "back" in spec:
         # right hand: (knuckles, thumb, back) is right-handed; the left mirrors it
@@ -1153,6 +1167,29 @@ def _spec_hand(sd: str, spec: dict) -> Hand:
         k = g2b(_n(np.asarray(spec["knuckles"], dtype=np.float64)))
     return Hand(g2b(spec["grip"]), _frame(k, d), g2b(spec.get("elbow", [0.0, 0.0, 0.0])), _scalars(spec),
                 item=spec.get("_item"))
+
+
+_REST_RIG = []
+
+
+def _wrist_frame(sd: str, spec: dict) -> np.ndarray:
+    """The hand frame of a spec written against its own forearm (ADR-0060): `wrist` = [flexion,
+    ulnar deviation, roll] in degrees (wrist_angles' terms; roll + pronates the right hand, - the
+    left), the arm reaching the grip with its elbow at the hint. A hand at rest has no tool to
+    point; what makes it look relaxed is the wrist, so the wrist is what it says."""
+    if not _REST_RIG:
+        sk = FPSkeleton(fp_joints({}), {}, bones=FP_BONES)
+        _REST_RIG.append(PoseSolver(FPRig(sk)))
+    sol = _REST_RIG[0]
+    rig = sol.rig
+    f, u, r = (float(x) for x in spec["wrist"])
+    g = g2b(spec["grip"])
+    pole = _n(sol.pole0[sd] + g2b(spec.get("elbow", [0.0, 0.0, 0.0])))
+    Rh = sol._arm(sd, g - rig.grip_off[sd], pole, np.eye(3))[0] @ rig.wrist_rotation(sd, f, u, r)
+    for _ in range(6):
+        A, _q = sol._arm(sd, g - Rh @ rig.grip_off[sd], pole, Rh)
+        Rh = A @ rig.wrist_rotation(sd, f, u, r)
+    return Rh @ rig.S0[sd]
 
 
 def pose_hands(pose: dict) -> dict:
@@ -1250,6 +1287,9 @@ class PoseSolver:
     # A grip moves at most this far (m) to spare a wrist: past it the pose is wrong, not a little
     # off, and the hand turns instead (and the build log says how far).
     MOVE_MAX = 0.06
+    # ...and a hand at rest this far (m) to keep its wrist relaxed: an idle's grip is where the
+    # hand happens to be, so it gives way before the wrist does.
+    MOVE_RELAXED = 0.10
     SWING_COST = 0.15
     # What a jump to another arm configuration between two frames must save (degrees of over-bend):
     # a jump is seen as the hand spinning in one frame.
@@ -1263,12 +1303,29 @@ class PoseSolver:
         j = rig.sk.j
         self.pole0 = {sd: j[f"pole.{sd}"] for sd, _ in SIDES}
         lim = dict(WRIST_LIMITS)
-        lim.update({k: float(v) for k, v in (limits or {}).items() if not k.startswith("_")})
+        lim.update({k: float(v) for k, v in (limits or {}).items() if not k.startswith("_") and k in WRIST_LIMITS})
+        comfort = dict(WRIST_COMFORT)
+        comfort.update({k: float(v) for k, v in ((limits or {}).get("comfort") or {}).items() if k in WRIST_COMFORT})
+        self.full, self.comfort = lim, comfort
+        self._fk0 = rig.sk.fk({})
         self.lim = lim
         self.reset()
 
+    def relax(self, w: float) -> None:
+        """Limits for a hand `w` (0..1) of the way from the full range to the comfort range: 1 for
+        a hold at rest, fading to 0 as a strike carries the hand away from it (ADR-0060)."""
+        w = max(0.0, min(1.0, float(w)))
+        self.w = w
+        self.lim = {k: self.full[k] + (self.comfort[k] - self.full[k]) * w for k in self.full}
+
+    def _ease(self, flex: float, ulnar: float) -> float:
+        """Degrees a wrist is bent off the middle of its comfort range (the tie-break cost)."""
+        C = self.comfort
+        return math.hypot(flex - 0.5 * (C["flex"] - C["extend"]), ulnar - 0.5 * (C["ulnar"] - C["radial"]))
+
     def reset(self) -> None:
         """Start a new action: search wide again and forget how far hands were turned."""
+        self.relax(0.0)
         self.prev = {}                  # side -> (swing, spin) of the last frame
         self.prev_F = {}                # side -> the hand frame the last frame asked for
         self.clamped = {}               # side -> worst degrees a hand was turned back by
@@ -1297,9 +1354,12 @@ class PoseSolver:
         relative to it)."""
         sk = self.rig.sk
         Q = {}
-        sk.solve_two_bone(Q, f"upper_arm.{sd}", f"forearm.{sd}", wrist, pole, z_sign=-1.0)
-        acc, _ = sk.fk(Q)
-        A = acc[f"forearm.{sd}"]
+        # The shoulders never move: the rest pose's fk serves every candidate, and the forearm's
+        # turn is its parent's (at rest) times the two bones' (a full fk per candidate was most of
+        # the bake's time).
+        up = f"upper_arm.{sd}"
+        sk.solve_two_bone(Q, up, f"forearm.{sd}", wrist, pole, z_sign=-1.0, base=self._fk0)
+        A = self._fk0[0][sk.parent[up]] @ Q[up] @ Q[f"forearm.{sd}"]
         return A, A.T @ Rh
 
     def _straight_wrist(self, sd: str, wrist, Rh):
@@ -1333,12 +1393,17 @@ class PoseSolver:
             pole = rot_axis(_n(wrist - sh), math.radians(sw)) @ hint
             return wrist, Rh, pole
 
-        def over(gg, sw, sp):
+        def angles(gg, sw, sp):
             wrist, Rh, pole = place(gg, sw, sp)
-            return self._over(*rig.wrist_angles(sd, self._arm(sd, wrist, pole, Rh)[1]))
+            return rig.wrist_angles(sd, self._arm(sd, wrist, pole, Rh)[1])
+
+        def over(gg, sw, sp):
+            return self._over(*angles(gg, sw, sp))
 
         def cost(gg, sw, sp):
-            return over(gg, sw, sp) + self.SWING_COST * abs(sw) + self.SPIN_COST * abs(sp)
+            a = angles(gg, sw, sp)
+            return self._over(*a) + COMFORT_COST * self._ease(a[0], a[1]) + self.SWING_COST * abs(sw) + \
+                self.SPIN_COST * abs(sp)
 
         # A pinned roll (`fixed_roll`: a gun's barrel, an inspect's turn-over) searches the elbow only.
         spins = (0.0,) if fixed_roll else self.SPINS
@@ -1373,8 +1438,9 @@ class PoseSolver:
             ws, _c = self._straight_wrist(sd, wrist, Rh)
             shift = ws - wrist
             n = float(np.linalg.norm(shift))
-            if n > self.MOVE_MAX:
-                shift *= self.MOVE_MAX / n
+            reach = self.MOVE_MAX + (self.MOVE_RELAXED - self.MOVE_MAX) * self.w
+            if n > reach:
+                shift *= reach / n
             lo, hi = 0.0, 1.0
             fit = search(g + shift, (sw, sp))
             for _ in range(7):
@@ -1409,6 +1475,7 @@ class PoseSolver:
     def solve(self, hands: dict) -> dict:
         prm = {}
         placed = {}
+        self.relax(hands.get("_relax", 0.0))
         for sd, _ in sorted(SIDES, key=lambda s: 1 if hands[s[0]].on is not None else 0):
             h = hands[sd]
             if h.on is not None:
@@ -1492,12 +1559,42 @@ def _idle(pose: dict, n: int = 60) -> list[dict]:
         ch = {"R.move": [0.0010 * math.sin(w + 0.7), 0.0018 * math.sin(w), 0.0],
               "R.rot": [0.6 * math.sin(w + 0.4), 0.0, 0.0],
               "L.move": [0.0, 0.0016 * math.sin(w + 1.3), 0.0], "L.rot": [0.5 * math.sin(w + 2.0), 0.0, 0.0]}
-        frames.append(_key_hands(hold, ch))
+        fr = _key_hands(hold, ch)
+        fr["_relax"] = 1.0
+        frames.append(fr)
     return frames
 
 
-def _keyed(pose: dict, keys: list, n: int) -> list[dict]:
-    """Per-frame hands from [frame, channels-or-hands, ease] keys (positions eased, frames slerped)."""
+# A keyed hand this far from its hold (degrees of turn; a centimetre of grip counts as RELAX_CM
+# degrees) has left rest and may use the wrist's full range; nearer, its limits ease back toward
+# the comfort range, so a strike starts and ends on the arm its idle bakes.
+RELAX_SPAN = 30.0
+RELAX_CM = 3.0
+USE_RELAX = 0.5
+
+
+def _relax_of(frame: dict, hold: dict, floor: float = 0.0) -> float:
+    d = 0.0
+    for sd, h0 in hold.items():
+        h = frame.get(sd)
+        if h is None or h.F is None or h0.F is None or h.g is None or h0.g is None:
+            continue
+        turn = math.degrees(float(np.linalg.norm(_rotvec(h.F @ h0.F.T))))
+        d = max(d, turn + RELAX_CM * 100.0 * float(np.linalg.norm(h.g - h0.g)))
+    return max(floor, 1.0 - d / RELAX_SPAN)
+
+
+def _keyed(pose: dict, keys: list, n: int, relax: float = 0.0) -> list[dict]:
+    """Per-frame hands from [frame, channels-or-hands, ease] keys (positions eased, frames slerped),
+    each with how relaxed its wrists are kept (`_relax`, at least `relax`)."""
+    frames = _keyed_hands(pose, keys, n)
+    hold = pose_hands(pose)
+    for fr in frames:
+        fr["_relax"] = _relax_of(fr, hold, relax)
+    return frames
+
+
+def _keyed_hands(pose: dict, keys: list, n: int) -> list[dict]:
     from .char_anim import ease
     hold = pose_hands(pose)
     ks = sorted(((int(k[0]), _key_hands(hold, k[1]), k[2] if len(k) > 2 else "inout") for k in keys), key=lambda k: k[0])
@@ -1555,6 +1652,9 @@ def fp_actions(cfg: dict):
                 pose = merge_pose(pose, a["pose"])
             n = int(a["frames"])
             fixed = tuple(a.get("fixed_roll", holds[a["hold"]].get("fixed_roll", ())))
+            # A use (eating, lighting, reloading) is slow and watched: its wrists stay at least
+            # half relaxed throughout; a strike may use the whole range once under way.
+            relax = float(a.get("relax", USE_RELAX if group == "uses" else 0.0))
             out.append((f"fp_{name}", n, bool(a.get("loop", False)),
-                        _pinned(_keyed(with_item(pose, holds[a["hold"]]), a["keys"], n), fixed)))
+                        _pinned(_keyed(with_item(pose, holds[a["hold"]]), a["keys"], n, relax), fixed)))
     return out
