@@ -58,8 +58,9 @@ the composer makes; the composer's own cap finds the ground already under it.
   for these roads (10 m before).
 * The value noise is an integer hash with bilinear smoothing, inlined in `_band_roads` (no calls in a
   band's loop, ADR-0038).
-* The main map's roads are graded as before (its golden held): they are hand-placed on hand-made
-  land, and the owner's report was about generated worlds; Pell's Crossing gets §3's pads.
+* **The main map too** (the owner plays it most): every road keeps the grade cap and meets the land
+  in the same banks; a region's own roads still fade out at its border. Larch Hollow (1 m): road
+  stations tilted over 4% 3.8% -> 3.1% (the rest are roads entering pads), grade p95 17.6% -> 14.1%.
 
 ### 3. Pads (VERSION 13, every world)
 A lot's frame (`LOT_BANK` 0.4-0.75, out to 14 m, giving way to the streets as before) and a
@@ -85,9 +86,32 @@ keep their water (a boathouse's slip) keep the old skirt.
   validator sent to a retry (rare: the test asks for 90% agreement) may stand a little off its
   predicted box.
 
-### 5. Street networks
-(The town planner's part: see the commits merged from the `town-networks` branch and their notes
-below once they land.)
+### 5. Bigger towns and street networks (generator VERSION 12)
+* **Bigger classes** (`town_planner.json`): hamlets 14-26 lots, villages 50-110, towns 110-260, wider
+  radii; a mixed world leans to villages and towns. A class with no room on the land retries one
+  class smaller once the others are placed; town discs keep 180 m apart (300) with a disc relief of
+  60 m (45); a trader post that finds no room where the roads leave town looks along highways,
+  county roads and tracks out to 900 m.
+* **A network, not a comb** (ADR-0040 §2 and §4 have the detail): the reasons streets ended were
+  counted (`stats.why`): seeds dropped near junctions, side streets running out their length without
+  meeting another, and the loop cap forcing every later street 30 m off the others. Now every side
+  street, branch and cross street is walked one block depth at a time (78-88 m behind core shops,
+  66-76 m inner, 76-90 m outer), and at each stop a cross street reaches for the next street over
+  (55-220 m, met at 35 degrees or more) and joins it at a T, past the loop cap; growth runs in rounds
+  (first-generation side streets, cross streets, branches, cross streets again, forced branches);
+  a seed near a junction slides up to 15 m instead of being dropped; side streets are seeded only to
+  ~0.65 of the radius along the main road, so towns grow across it rather than along it.
+  Synthetic land, seeds 1-3: blocks per village 3.5 -> 9.3, per town 8.5 -> 30.5; a hamlet is a
+  crossroads or a small loop. A big town plans in 0.47-0.66 s headless (0.24-0.42 before).
+* **Caves** (ADR-0056 WS-E) are a stage of their own after everything else (forest grottos and
+  shelters per region from `tuning.caves`), so no other place moves.
+
+### 5a. Where two roads meet (VERSION 13)
+Where a 4 m cell's corners belong to different roads, the road pass and a lot's give-way used to take
+the nearest corner's distance and arc, constant over the cell. With banks reaching 26 m that drew
+stair steps along a town's streets. The distance to the nearest road is continuous across the line
+where two roads' cells meet, so it stays bilinear; the arc is interpolated over the chosen road's own
+corners. Hilly seed 21: road stations tilted over 4% went 1.3% -> 0.2%.
 
 ### 6. Saves
 `SaveSystem.fix_composer_changes` (TD-182): a run crossing composer 13 drops its felled-tree and
@@ -108,5 +132,10 @@ composer's side applies to it.
   steeper there.
 − Grades over the cap on a long climb become cuts and fills of several metres; the 32 m router's
   `grade_max` (0.16) is unchanged, so a road may still climb a slope the cap then cuts into.
-− The main map's road profiles are not grade-capped (18% of Larch Hollow's road stations are steeper
-  than 12%); doing so moves its roads' ground under existing saves.
+− Main-map road profiles are grade-capped too, so a road climbing steeper than its cap now runs in a
+  cutting of a few metres (a Larch Hollow spur sits 2.4 m below its old line); saves drop the
+  vegetation records beside it (§6).
+− Pell's Crossing itself is not bigger yet: its land is crowded (the drop site, Okafor's farm, the
+  logging road, Larkspur's cliffs, the river). `src/tools/cli/plan_main_town.gd` plans an organic
+  extension on the main map's own ground with all of that as keep-outs; a west end of 58 houses on
+  the bluff was tried and is parked until Larkspur's cliff stops fading at the D6/C6 border (TD-319).
