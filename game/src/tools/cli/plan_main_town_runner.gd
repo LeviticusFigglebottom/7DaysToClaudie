@@ -12,6 +12,7 @@ const ROAD_MARGIN: float = 10.0
 ## The drop site keeps its opening moment: no lot within 150 m of its marker (the hub's call).
 const SPAWN_R: float = 150.0
 const CAVE_R: float = 70.0
+const CLIFF_MARGIN: float = 30.0
 const EDGE: float = 70.0
 
 var rt: RegionTerrain
@@ -61,6 +62,9 @@ func _ready() -> void:
 		match str(f.get("type", "")):
 			"road":
 				lines.append([Polyline2.from_array(f["points"]), float(f.get("width", 5.0)) * 0.5 + float(f.get("shoulder", 1.5)) + ROAD_MARGIN])
+			"cliff":
+				# Nothing but the arterial crosses a bluff: its face and both brows stay clear.
+				lines.append([Polyline2.from_array(f["points"]), float(f.get("face_width", 9.0)) + CLIFF_MARGIN])
 			"path":
 				lines.append([Polyline2.from_array(f["points"]), float(f.get("width", 2.0)) * 0.5 + 6.0])
 			"cave":
@@ -73,7 +77,8 @@ func _ready() -> void:
 	for r3: RegionTerrain in rts:
 		pls.append_array(r3.placements)
 	for pl: Dictionary in pls:
-		if not pl.has("size") or str(pl.get("kind", "")) == "town":
+		# A town's own lots (one being re-planned) are not in its way.
+		if not pl.has("size") or str(pl.get("kind", "")) in ["town", "lot"]:
 			continue
 		var o: Array = pl["origin"]
 		var sz: Array = pl["size"]
