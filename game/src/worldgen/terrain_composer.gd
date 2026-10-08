@@ -34,7 +34,28 @@ extends RefCounted
 ## (test_composer_golden.gd): saves keep digs, felled trees and POI state against composed regions,
 ## and the cache key hashes the inputs and VERSION, not this code.
 
-const VERSION: int = 12
+## VERSION 13 (player report 4): a generated world's roads (road_grade "world") keep their grade
+## under a cap by surface (ROAD_MAX_GRADE: a profile steeper than the land allows is cut and filled
+## evenly round it) and meet the land in banks no steeper than a natural slope (BANK_*): the ground
+## beside the road is pulled only as far as it stands steeper than the bank's slope, which varies
+## along the road (rocky cuts steeper, fills gentler), with a rounded crest and toe and a little
+## relief on the face, out to BANK_REACH m. They had a fixed 8 m blend: every cut and fill was one
+## uniform plane as long as the road. The main map's output did not change.
+const VERSION: int = 13
+## The steepest grade (rise over run) a generated world's road profile keeps, by surface.
+const ROAD_MAX_GRADE: Dictionary = {"asphalt": 0.12, "gravel": 0.14, "dirt": 0.16}
+## Banks beside a generated world's roads: the slope (rise over run) of a cut and of a fill, between
+## the two values by a value noise along the road (BANK_CELL m across), a flat verge of up to
+## BANK_VERGE m before the bank, the radius (m) of the rounding where the bank meets the land, the
+## relief (m) on the face (BANK_BUMP_CELL m across) and how far from the shoulder a bank may reach.
+const BANK_CUT: Vector2 = Vector2(0.6, 1.6)
+const BANK_FILL: Vector2 = Vector2(0.45, 0.8)
+const BANK_CELL: float = 23.0
+const BANK_VERGE: float = 2.0
+const BANK_ROUND: float = 1.2
+const BANK_BUMP: float = 0.7
+const BANK_BUMP_CELL: float = 6.5
+const BANK_REACH: float = 26.0
 ## A water edge's profile: the ground falls EDGE_DROP below the water within EDGE_IN metres inside
 ## the edge and rises EDGE_RISE above it within EDGE_OUT outside. A slope through the water line
 ## keeps the shore off the 1 m sample grid; a step (VERSION 10: bed 0.35 m under, bank 0.22 m over,
@@ -56,6 +77,10 @@ const BUCKET: float = 32.0
 ## (half width + shoulder) a lot pad's skirt eases in (m): on the corridor it grades nothing, and the
 ## bank between a street and a yard spreads over the verge.
 const LOT_SKIRT: float = 5.0
+## VERSION 13: a world town's lot meets the land in a bank like a road's (BANK_*), its slope between
+## these two by a value noise, out to LOT_BANK_REACH m from the frame, instead of a 5 m ramp.
+const LOT_BANK: Vector2 = Vector2(0.5, 1.1)
+const LOT_BANK_REACH: float = 14.0
 const YARD_VEG: float = 0.6
 const TOWN_REACH: float = 40.0
 const LOT_ROAD_YIELD: float = 2.0
@@ -258,6 +283,8 @@ class _Build:
 	var _r_half := PackedFloat64Array()
 	var _r_sh := PackedFloat64Array()
 	var _r_world := PackedByteArray()
+	## 1: the road meets the land in natural banks (a generated world's roads, VERSION 13).
+	var _r_bank := PackedByteArray()
 	var _r_has := PackedByteArray()
 	var _r_step := PackedFloat64Array()
 	## Every road's profile in one array: road ri's starts at _r_prof_off[ri], _r_prof_n[ri] long.
@@ -1045,7 +1072,8 @@ class _Build:
 		for ri: int in road_list.size():
 			var r: Dictionary = road_list[ri]
 			var line: Polyline2 = r["line"]
-			var reach: float = float(r["width"]) * 0.5 + float(r["shoulder"]) + 10.0
+			var banked: bool = bool(r["world"]) and world.road_grade == "world"
+			var reach: float = float(r["width"]) * 0.5 + float(r["shoulder"]) + (BANK_REACH + 2.0 if banked else 10.0)
 			max_band = maxf(max_band, reach)
 			if not line.bounds.grow(reach).intersects(rect):
 				continue
@@ -1087,6 +1115,7 @@ class _Build:
 			_r_half.append(float(r2["width"]) * 0.5)
 			_r_sh.append(float(r2["shoulder"]))
 			_r_world.append(1 if bool(r2["world"]) else 0)
+			_r_bank.append(1 if bool(r2["world"]) and world.road_grade == "world" else 0)
 			_r_has.append(1 if has else 0)
 			_r_step.append(float(r2["step"]) if has else 0.0)
 			_r_prof_off.append(_r_prof.size())
@@ -1157,6 +1186,8 @@ class _Build:
 					acc += cp[j]
 					wsum += 1.0
 				prof[k] = acc / wsum
+		if by_world:
+			_limit_grade(prof, step, float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
 		var spans: Array = []
 		for bdef: Variant in r["bridges"]:
 			var bd: Dictionary = bdef
@@ -1185,6 +1216,25 @@ class _Build:
 					prof[k] = lerpf(deck, prof[k], smoothstep(s1, s1 + 40.0, s))
 		return {"profile": prof, "step": step, "spans": spans}
 
+	## Keeps a profile's grade under `g` (rise over run), cutting and filling evenly: the mean of the
+	## highest profile under the ground and the lowest over it whose grades stay under g (each is
+	## g-Lipschitz, so their mean is too). Where the land is gentler than g it is the land itself.
+	static func _limit_grade(prof: PackedFloat32Array, step: float, g: float) -> void:
+		var count: int = prof.size()
+		if count < 2:
+			return
+		var rise: float = g * step
+		var lo: PackedFloat32Array = prof.duplicate()
+		var hi: PackedFloat32Array = prof.duplicate()
+		for k: int in range(1, count):
+			lo[k] = minf(lo[k], lo[k - 1] + rise)
+			hi[k] = maxf(hi[k], hi[k - 1] - rise)
+		for k2: int in range(count - 2, -1, -1):
+			lo[k2] = minf(lo[k2], lo[k2 + 1] + rise)
+			hi[k2] = maxf(hi[k2], hi[k2 + 1] - rise)
+		for k3: int in count:
+			prof[k3] = (lo[k3] + hi[k3]) * 0.5
+
 	func _water_level_near(p: Vector2) -> float:
 		var best: float = -1.0e9
 		for r: Dictionary in world.rivers:
@@ -1207,6 +1257,8 @@ class _Build:
 		var rsh: PackedFloat64Array = _r_sh
 		var rhas: PackedByteArray = _r_has
 		var rworld: PackedByteArray = _r_world
+		var rbank: PackedByteArray = _r_bank
+		var bank_seed: int = world.seed & 0xffffff
 		var rstep: PackedFloat64Array = _r_step
 		var rprof: PackedFloat32Array = _r_prof
 		var rpoff: PackedInt32Array = _r_prof_off
@@ -1274,7 +1326,8 @@ class _Build:
 					s = rss[nci]
 				var half: float = rhalf[ri]
 				var sh: float = rsh[ri]
-				var outer: float = half + sh + 8.0
+				var banked: bool = rbank[ri] == 1
+				var outer: float = half + sh + (BANK_REACH if banked else 8.0)
 				if d > outer or rhas[ri] == 0:
 					continue
 				var skip: bool = false
@@ -1293,6 +1346,57 @@ class _Build:
 				var target: float = lerpf(rprof[po + k0], rprof[po + k1], k - k0)
 				target -= 0.06 * minf(1.0, (d / maxf(half, 0.5)) * (d / maxf(half, 0.5)))
 				var inner: float = half + sh
+				if banked:
+					var hv: float = hb[lrow + ix]
+					if d <= inner:
+						hb[lrow + ix] = target
+						continue
+					var bx2: float = x_0 + ix * spc
+					# Value noise (inlined: no calls in a band's loop), BANK_CELL m across, for the
+					# bank's slope, and BANK_BUMP_CELL m across for the verge and the face's relief.
+					var gx2: float = bx2 / BANK_CELL
+					var gz2: float = bz / BANK_CELL
+					var vi: int = floori(gx2)
+					var vj: int = floori(gz2)
+					var vfx: float = gx2 - vi
+					var vfz: float = gz2 - vj
+					vfx = vfx * vfx * (3.0 - 2.0 * vfx)
+					vfz = vfz * vfz * (3.0 - 2.0 * vfz)
+					var v00: float = float(((vi * 73856093) ^ (vj * 19349663) ^ bank_seed) & 0xffff) / 65535.0
+					var v10: float = float((((vi + 1) * 73856093) ^ (vj * 19349663) ^ bank_seed) & 0xffff) / 65535.0
+					var v01: float = float(((vi * 73856093) ^ ((vj + 1) * 19349663) ^ bank_seed) & 0xffff) / 65535.0
+					var v11: float = float((((vi + 1) * 73856093) ^ ((vj + 1) * 19349663) ^ bank_seed) & 0xffff) / 65535.0
+					var nk: float = lerpf(lerpf(v00, v10, vfx), lerpf(v01, v11, vfx), vfz)
+					var gx3: float = bx2 / BANK_BUMP_CELL
+					var gz3: float = bz / BANK_BUMP_CELL
+					var wi: int = floori(gx3)
+					var wj: int = floori(gz3)
+					var wfx: float = gx3 - wi
+					var wfz: float = gz3 - wj
+					wfx = wfx * wfx * (3.0 - 2.0 * wfx)
+					wfz = wfz * wfz * (3.0 - 2.0 * wfz)
+					var bs2: int = bank_seed ^ 0x5bd1e9
+					var u00: float = float(((wi * 73856093) ^ (wj * 19349663) ^ bs2) & 0xffff) / 65535.0
+					var u10: float = float((((wi + 1) * 73856093) ^ (wj * 19349663) ^ bs2) & 0xffff) / 65535.0
+					var u01: float = float(((wi * 73856093) ^ ((wj + 1) * 19349663) ^ bs2) & 0xffff) / 65535.0
+					var u11: float = float((((wi + 1) * 73856093) ^ ((wj + 1) * 19349663) ^ bs2) & 0xffff) / 65535.0
+					var nb: float = lerpf(lerpf(u00, u10, wfx), lerpf(u01, u11, wfx), wfz)
+					var dh: float = hv - target
+					var e: float = maxf(0.0, d - inner - nb * BANK_VERGE)
+					var k_s: float = lerpf(BANK_CUT.x, BANK_CUT.y, nk) if dh > 0.0 else lerpf(BANK_FILL.x, BANK_FILL.y, nk)
+					var allow: float = k_s * e
+					# A smooth min of |dh| and the bank's allowance: the crest and toe round off over
+					# BANK_ROUND m instead of meeting in a crease.
+					var adh: float = absf(dh)
+					var hk: float = maxf(BANK_ROUND - absf(adh - allow), 0.0) / BANK_ROUND
+					var lim: float = minf(adh, allow) - hk * hk * BANK_ROUND * 0.25
+					lim = maxf(lim, 0.0)
+					# Relief on the face only, where the bank moved the land.
+					var moved: float = clampf((adh - lim) / 1.5, 0.0, 1.0)
+					var face: float = target + signf(dh) * lim + (nb - 0.5) * BANK_BUMP * moved
+					var reach_w: float = 1.0 - smoothstep(BANK_REACH * 0.75, BANK_REACH, d - inner)
+					hb[lrow + ix] = lerpf(hv, face, reach_w)
+					continue
 				var wgt: float = 1.0 - smoothstep(inner, outer, d)
 				if rworld[ri] == 0:
 					var bx: float = x_0 + ix * spc
@@ -1339,24 +1443,32 @@ class _Build:
 			var bb := Rect2(corners[0], Vector2.ZERO)
 			for c: Vector2 in corners:
 				bb = bb.expand(c)
-			bb = bb.grow(skirt)
+			bb = bb.grow(LOT_BANK_REACH if world_pad else skirt)
+			var bank_seed: int = (world.seed & 0xffffff) ^ 0x3c6ef3
 			_for_box(bb, func(i: int, x: float, z: float) -> void:
 				var lp: Vector2 = (Vector2(x, z) - o).rotated(-rot)
 				var dx: float = maxf(maxf(-lp.x, lp.x - size.x), 0.0)
 				var dz: float = maxf(maxf(-lp.y, lp.y - size.y), 0.0)
 				var d: float = sqrt(dx * dx + dz * dz)
+				if world_pad:
+					# Only the bank here: the frames are graded last (below).
+					if d > 0.0 and d < LOT_BANK_REACH:
+						var dh: float = h[i] - target
+						var k_s: float = lerpf(LOT_BANK.x, LOT_BANK.y, _vnoise(x, z, BANK_CELL, bank_seed))
+						var allow: float = k_s * d
+						var adh: float = absf(dh)
+						var hk: float = maxf(BANK_ROUND - absf(adh - allow), 0.0) / BANK_ROUND
+						var lim: float = maxf(minf(adh, allow) - hk * hk * BANK_ROUND * 0.25, 0.0)
+						var fade: float = 1.0 - smoothstep(LOT_BANK_REACH * 0.7, LOT_BANK_REACH, d)
+						h[i] = lerpf(h[i], target + signf(dh) * lim, fade * _yield_to_roads(x, z))
+					return
 				if d < skirt:
 					var wgt: float = 1.0 - smoothstep(0.0, skirt, d)
 					if keep_water:
 						# Nothing in the water; the dry ground eases down to the bank over its last 2 m
 						# rather than standing over the water as a step.
 						wgt *= smoothstep(0.0, 2.0, _water_d(x, z))
-					if world_pad:
-						# Only the skirt here: the frames are graded last (below).
-						if d > 0.0:
-							h[i] = lerpf(h[i], target, wgt * _yield_to_roads(x, z))
-					else:
-						h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
+					h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
 		# A world town's lots stand 1 m apart and their skirts reach over each other: each frame is
 		# graded last, all of it at its own height (frames never overlap, so their order is moot; the
 		# planner keeps every frame clear of the street corridors), and a building on it stands on
@@ -1375,6 +1487,22 @@ class _Build:
 				var lp: Vector2 = (Vector2(x, z) - o2).rotated(-rot2)
 				if lp.x >= 0.0 and lp.y >= 0.0 and lp.x <= size2.x and lp.y <= size2.y:
 					h[i] = target2)
+
+	## Smooth value noise in [0, 1], `cell` m across (the banks' variation; _band_roads inlines it).
+	static func _vnoise(x: float, z: float, cell: float, sd: int) -> float:
+		var gx: float = x / cell
+		var gz: float = z / cell
+		var i: int = floori(gx)
+		var j: int = floori(gz)
+		var fx: float = gx - i
+		var fz: float = gz - j
+		fx = fx * fx * (3.0 - 2.0 * fx)
+		fz = fz * fz * (3.0 - 2.0 * fz)
+		var v00: float = float(((i * 73856093) ^ (j * 19349663) ^ sd) & 0xffff) / 65535.0
+		var v10: float = float((((i + 1) * 73856093) ^ (j * 19349663) ^ sd) & 0xffff) / 65535.0
+		var v01: float = float(((i * 73856093) ^ ((j + 1) * 19349663) ^ sd) & 0xffff) / 65535.0
+		var v11: float = float((((i + 1) * 73856093) ^ ((j + 1) * 19349663) ^ sd) & 0xffff) / 65535.0
+		return lerpf(lerpf(v00, v10, fx), lerpf(v01, v11, fx), fz)
 
 	## How much a world town's pad skirt may grade a sample (ADR-0040): nothing on a road's paved
 	## corridor (half width + shoulder), easing to all of it LOT_ROAD_YIELD m beyond, so a yard never

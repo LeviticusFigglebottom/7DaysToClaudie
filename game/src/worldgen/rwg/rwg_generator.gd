@@ -54,7 +54,9 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 10: (session 3's caves.)
 ## 11: round 5 of the wilderness set pieces (ADR-0053): more `late` entries (the treehouse holdout,
 ## the fish hatchery, the hot springs bathhouse); the places before them stay where they were.
-const VERSION: int = 11
+## 12: the lake and river valley caps are cut into the macro grid (RwgTerrain._valley_caps), so
+## roads, streets and lots are graded from the ground the composer makes (player report 4).
+const VERSION: int = 12
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
