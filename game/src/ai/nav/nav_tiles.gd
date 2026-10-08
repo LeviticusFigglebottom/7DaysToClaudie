@@ -259,24 +259,10 @@ func _add_terrain(src: NavigationMeshSourceGeometryData3D, k: Vector2i) -> void:
 
 
 ## The heightfield cells the volume replaces in a tile's source (TerrainMesher's hole test, called
-## with each 1 m cell's centre): the cells over committed columns, except the last strip before a
-## column edge whose neighbour the heightfield still owns. Surface nets put the volume's vertices at
-## voxel centres, so its surface stops VOXEL / 2 short of a column's +X / +Z edge; dropping that
-## cell too left a 0.25 m slit that Recast's agent radius widened into a 1.25 m gap all along the
-## border. There the old surface stays unless a dig took the ground from under it (the volume's
-## density just below it is air), so no lid is left over a hole. Main thread (density_at).
+## with each 1 m cell's centre): VolumeTerrain.is_ground_hole, the collision's own rule, so the
+## navmesh and the ground agree along a converted area's border. Main thread.
 func _nav_hole(x: float, z: float, vol: VolumeTerrain) -> bool:
-	var col: Vector2i = VolumeTerrain.column_of(x, z)
-	if not vol.committed.has(col):
-		return false
-	var hx: bool = x - col.x * VolumeTerrain.SIZE > VolumeTerrain.SIZE - TERRAIN_STEP
-	var hz: bool = z - col.y * VolumeTerrain.SIZE > VolumeTerrain.SIZE - TERRAIN_STEP
-	var edge: bool = (hx and not vol.committed.has(col + Vector2i(1, 0))) or (hz and not vol.committed.has(col + Vector2i(0, 1))) \
-		or (hx and hz and not vol.committed.has(col + Vector2i(1, 1)))
-	if not edge:
-		return true
-	var d: float = vol.density_at(Vector3(x, world.height_at(x, z) - 0.3, z))
-	return not is_nan(d) and d <= 0.0
+	return vol.is_ground_hole(x, z, world.height_at(x, z))
 
 
 ## Bridge decks are walkable ground over the river (the terrain below is the riverbed).
