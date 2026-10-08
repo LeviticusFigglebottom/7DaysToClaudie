@@ -440,14 +440,20 @@ func grow(r: RandomNumberGenerator) -> void:
 		if si < 0:
 			continue
 		var st: Street = streets[si]
-		if st.gen != 1 or st.length() < 100.0 or r.randf() >= branch_chance:
+		# Branches off branches too (generator VERSION 12, player report 4: towns read as one road
+		# with a comb of dead ends), half as often a generation further out.
+		if st.gen > 2 or st.length() < (100.0 if st.gen == 1 else 80.0) or r.randf() >= branch_chance * (1.0 if st.gen == 1 else 0.5):
 			continue
-		var n_br: int = 1 if st.length() < 220.0 else 2
+		# A side street sends a branch every ~70-90 m, alternating sides (a comb off the comb: blocks,
+		# once the loops close), a branch one more.
+		var n_br: int = 1 if st.gen > 1 else clampi(int(st.length() / r.randf_range(70.0, 90.0)), 1, 4)
+		var br_side: int = 1 if r.randf() < 0.5 else -1
 		for b: int in n_br:
-			var sb: float = r.randf_range(40.0, st.length() - 40.0) if n_br == 1 else (st.length() * (0.3 + 0.4 * b) + r.randf_range(-15.0, 15.0))
+			var sb: float = r.randf_range(40.0, st.length() - 40.0) if n_br == 1 else (st.length() * (b + 0.5) / n_br + r.randf_range(-12.0, 12.0))
 			var bp: Vector2 = st.line.point_at(sb)
-			var nb: Dictionary = {"from": si, "s": sb, "side": 1 if r.randf() < 0.5 else -1, "angle": r.randf_range(float(ba[0]), float(ba[1])),
-				"gen": 2, "budget": r.randf_range(float(bl[0]), float(bl[1])), "prio": bp.distance_to(center) / radius + r.randf_range(0.1, 0.5), "cls": _class_at(bp),
+			br_side = -br_side
+			var nb: Dictionary = {"from": si, "s": sb, "side": br_side, "angle": r.randf_range(float(ba[0]), float(ba[1])),
+				"gen": st.gen + 1, "budget": r.randf_range(float(bl[0]), float(bl[1])), "prio": bp.distance_to(center) / radius + r.randf_range(0.1, 0.5), "cls": _class_at(bp),
 				"seek": true}
 			var at: int = queue.size()
 			for qi: int in queue.size():
@@ -455,9 +461,12 @@ func grow(r: RandomNumberGenerator) -> void:
 					at = qi
 					break
 			queue.insert(at, nb)
+	# Close loops up to a draw from the class's range, not just its minimum: dead ends that reach for
+	# a neighbour make blocks (VERSION 12).
 	var lp: Array = kd.get("loops", [0, 0])
-	if loops < int(lp[0]):
-		_connect_dead_ends(int(lp[0]))
+	var want_loops: int = r.randi_range(int(lp[0]), int(lp[1]))
+	if loops < want_loops:
+		_connect_dead_ends(want_loops)
 
 
 ## Seeds along each arterial inside the town, from the centre out both ways, alternating sides;

@@ -66,7 +66,7 @@
     },
     "towns": {
       "_doc": "Organic towns (ADR-0040; the planner's own tuning is data/config/town_planner.json). How many towns: the town_density option (towns per 16 km²); their size classes: mix (weights by town_size). Sites (plan §3.3): candidates per town, each disc `spacing` m clear of every other town's and `edge` m inside the map; the centre `water` [0] m from water at least, [1]-[2] m a bonus; core and disc relief at most core_relief and disc_relief m, the disc's mean slope at most max_slope by class (else the least steep disc found, a little more); score: slope (core mean slope), disc_slope (the disc's), valley (per m above the 1 km mean), water (bonus), central (to the map's middle), edge (per m closer than 300 m to the edge), jitter. core_smoothing: how far the macro grid eases towards its mean over the core. stub: how far past its radius a lone main street runs. authored_max: towns of one world that may hold each authored building. clearance: what places keep off lots and streets (m).",
-      "mix": {"hamlets": {"hamlet": 1.0}, "villages": {"village": 1.0}, "mixed": {"hamlet": 1.0, "village": 1.2, "town": 0.6}, "towns": {"village": 0.6, "town": 1.0}},
+      "mix": {"hamlets": {"hamlet": 1.0}, "villages": {"village": 1.0}, "mixed": {"hamlet": 0.6, "village": 1.2, "town": 0.8}, "towns": {"village": 0.6, "town": 1.0}},
       "spacing": 300,
       "edge": 120,
       "candidates": 240,
