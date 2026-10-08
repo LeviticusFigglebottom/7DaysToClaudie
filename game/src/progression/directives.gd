@@ -8,6 +8,10 @@ extends RefCounted
 const TIER_RANK: Dictionary = {"": 0, "normal": 1, "seeded": 2, "bloomed": 3}
 ## Events whose targets are buildings (POI defs): those directives are fitted to each world.
 const BUILDING_EVENTS: PackedStringArray = ["enter_poi", "clear_poi"]
+## Events that happen once a world (a companion joining): their directives count whichever chapter is
+## open, or one recruited early (the first-days tutorial's distress call leads to Ezra on day 1 or 2,
+## ADR-0062) would hold its chapter up for good.
+const ONCE_EVENTS: PackedStringArray = ["recruit"]
 
 var progress: Dictionary = {}
 var done: Dictionary = {}
@@ -146,7 +150,8 @@ func count_of(id: StringName) -> int:
 ## Returns the directives this completed (the caller pays their rewards).
 func record(event: String, target: StringName = &"", amount: int = 1, tier: StringName = &"") -> Array[DirectiveDef]:
 	var out: Array[DirectiveDef] = []
-	for d: DirectiveDef in chapter_defs(chapter):
+	var defs: Array = Content.all(&"directive") if ONCE_EVENTS.has(event) else chapter_defs(chapter)
+	for d: DirectiveDef in defs:
 		if done.has(d.id) or spent.has(d.id) or d.event != event:
 			continue
 		var targets: PackedStringArray = targets_of(d)
