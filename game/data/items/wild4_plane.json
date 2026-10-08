@@ -53,6 +53,7 @@
    "value": 0,
    "note": "w4_plane_radio",
    "model": "items/wild4_plane/note_w4_plane_radio"
-  }
+  },
+  {"id": "note_w4_plane_custody", "name": "Chain of Custody, Specimen CFL-044/3", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "w4_plane_custody"}
  ]
 }

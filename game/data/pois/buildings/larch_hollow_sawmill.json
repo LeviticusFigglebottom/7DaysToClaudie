@@ -426,7 +426,8 @@
       ],
       "notes": [
         {"note": "wild_mill_filer", "pos": [6.9, 9.45], "y": 0.95, "level": 2},
-        {"note": "wild_mill_watch", "pos": [21.6, 5.6], "y": 0.45, "level": 1}
+        {"note": "wild_mill_watch", "pos": [21.6, 5.6], "y": 0.45, "level": 1},
+        {"note": "wild_mill_engen", "pos": [7.15, 9.45], "y": 0.95, "level": 2}
       ],
       "sleepers": [
         {"id": "deck_walker", "pos": [25.6, 7.6], "enemy": "hollow", "pose": "stand", "rot": 200, "level": 1},

@@ -181,6 +181,8 @@
    "tags": [
     "key"
    ]
-  }
+  },
+  {"id": "note_wild_trapper_anders", "name": "Letter from Anders", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_okafor_letter", "note": "wild_trapper_anders"},
+  {"id": "note_wild_mill_engen", "name": "Statement, Folded in a Glove", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/farm_note_page", "note": "wild_mill_engen"}
  ]
 }

@@ -12,6 +12,7 @@
     {"id": "note_town2_fire_duty_board", "name": "Duty Board", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_fire_duty_board", "model": "items/town2/note_town2_fire_duty_board"},
     {"id": "note_town2_bank_notice", "name": "Disbursement Notice", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_bank_notice", "model": "items/town2/note_town2_bank_notice"},
     {"id": "note_town2_bank_ledger", "name": "Manager's Ledger", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_bank_ledger", "model": "items/town2/note_town2_bank_ledger"},
-    {"id": "note_town2_vault_scratch", "name": "Scratched Inside the Vault Door", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_vault_scratch", "model": "items/town2/note_town2_vault_scratch"}
+    {"id": "note_town2_vault_scratch", "name": "Scratched Inside the Vault Door", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "town2_vault_scratch", "model": "items/town2/note_town2_vault_scratch"},
+    {"id": "note_town2_screening_brief", "name": "Screening Team Brief", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "town2_screening_brief"}
   ]
 }

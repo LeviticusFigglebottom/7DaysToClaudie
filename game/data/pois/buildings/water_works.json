@@ -822,7 +822,8 @@
       5.6
      ],
      "level": -1
-    }
+    },
+    {"note": "town4_waterworks_discharge", "pos": [17.55, 8.6], "y": 0.77}
    ],
    "traps": [
     {

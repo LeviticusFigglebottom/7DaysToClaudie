@@ -27,7 +27,7 @@
     {"item": "water_bottle_dirty", "pos": [1.4, 1.1], "chance": 0.4},
     {"item": "cordage", "pos": [-1.0, 0.9], "count": [1, 2], "chance": 0.3}
    ],
-   "notes": {"chance": 0.4, "items": ["note_enc_camp_list", "note_enc_camp_last"], "pos": [-1.2, 1.4]},
+   "notes": {"chance": 0.4, "items": ["note_enc_camp_list", "note_enc_camp_last", "note_enc_camp_rumours"], "pos": [-1.2, 1.4]},
    "sleepers": {"chance": 0.3, "count": [1, 2], "enemies": {"hollow": 4, "dragger": 1}, "poses": ["lie", "sit", "crouch"], "ring": [1.5, 4.5]}
   },
   {
@@ -157,7 +157,7 @@
     {"prop": "crate_wood", "pos": [2.6, -1.8], "rot": 15, "container": "w3_qc_supply", "id": "crate"},
     {"prop": "w3_sandbags", "pos": [-2.4, -2.2], "rot": 30, "chance": 0.4}
    ],
-   "notes": {"chance": 0.6, "items": ["note_enc_cordon_manifest"], "pos": [0.3, -2.4], "y": 0.0},
+   "notes": {"chance": 0.6, "items": ["note_enc_cordon_manifest", "note_enc_recovery_tag"], "pos": [0.3, -2.4], "y": 0.0},
    "sleepers": {"chance": 0.6, "count": [2, 4], "enemies": {"hollow": 5, "dragger": 2, "lurcher": 1}, "poses": ["lie"], "ring": [0.5, 3.0]}
   },
   {
@@ -175,7 +175,7 @@
    "loose": [
     {"item": "water_bottle_clean", "pos": [-1.0, 0.6], "chance": 0.3}
    ],
-   "notes": {"chance": 0.5, "items": ["note_enc_cache_map"], "pos": [0.6, 0.9]}
+   "notes": {"chance": 0.5, "items": ["note_enc_cache_map", "note_enc_lift_tally"], "pos": [0.6, 0.9]}
   },
   {
    "id": "bloom_kill",
