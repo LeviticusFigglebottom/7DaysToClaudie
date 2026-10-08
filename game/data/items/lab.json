@@ -157,6 +157,7 @@
    "value": 0,
    "note": "lab_torvald",
    "model": "items/lab/note_lab_torvald"
-  }
+  },
+  {"id": "note_lab_marchetti_report", "name": "Interim Report No. 3 (Draft)", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "lab_marchetti_report"}
  ]
 }

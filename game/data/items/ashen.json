@@ -43,6 +43,7 @@
    "value": 0,
    "model": "items/farm_note_page",
    "note": "ashen_highcamp_slate"
-  }
+  },
+  {"id": "note_ashen_highcamp_hide", "name": "Painted Hide", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/farm_note_page", "note": "ashen_highcamp_hide"}
  ]
 }

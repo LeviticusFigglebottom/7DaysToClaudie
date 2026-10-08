@@ -7,6 +7,9 @@
   {"id": "note_enc_cache_map", "name": "Cache Note", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/farm_note_page", "note": "enc_cache_map"},
   {"id": "note_enc_cordon_manifest", "name": "Recovery Manifest", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "enc_cordon_manifest"},
   {"id": "note_enc_grave_words", "name": "Note Tied to a Cross", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_okafor_letter", "note": "enc_grave_words"},
-  {"id": "note_enc_shack_rules", "name": "Rules Nailed to the Door", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_merrow_fridge", "note": "enc_shack_rules"}
+  {"id": "note_enc_shack_rules", "name": "Rules Nailed to the Door", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_merrow_fridge", "note": "enc_shack_rules"},
+  {"id": "note_enc_camp_rumours", "name": "Notebook Page, Things People Said", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/farm_note_page", "note": "enc_camp_rumours"},
+  {"id": "note_enc_recovery_tag", "name": "Remains Tag", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "enc_recovery_tag"},
+  {"id": "note_enc_lift_tally", "name": "Tally Under the Tarp", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/farm_note_page", "note": "enc_lift_tally"}
  ]
 }

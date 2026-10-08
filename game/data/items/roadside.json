@@ -122,6 +122,7 @@
     "key"
    ],
    "model": "items/road/road_key_motel_master"
-  }
+  },
+  {"id": "note_road_corvane_letter", "name": "Letter from Corvane Mining Co.", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "road_corvane_letter"}
  ]
 }

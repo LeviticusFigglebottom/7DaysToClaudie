@@ -222,6 +222,7 @@
    "value": 0,
    "note": "w3_haldane_tom",
    "model": "items/wild3/note_w3_haldane_tom"
-  }
+  },
+  {"id": "note_w3_qc_briefing", "name": "Medical Officer's Briefing", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "w3_qc_briefing"}
  ]
 }
