@@ -53,6 +53,8 @@ var _selected: Variant = null
 func _ready() -> void:
 	# In the tree already: plain set_anchors_preset() would keep the 0x0 rect (offsets follow).
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The paper theme (ADR-0063): disabled entries stay in dim ink, never Godot's white.
+	theme = UiStyle.paper_theme()
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	var dim := ColorRect.new()

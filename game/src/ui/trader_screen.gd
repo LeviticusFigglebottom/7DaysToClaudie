@@ -30,6 +30,8 @@ var _counts: Dictionary = {}
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The paper theme (ADR-0063): disabled entries stay in dim ink, never Godot's white.
+	theme = UiStyle.paper_theme()
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_icons = TradeIcons.new()

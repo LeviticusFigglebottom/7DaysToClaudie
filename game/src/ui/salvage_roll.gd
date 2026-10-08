@@ -8,15 +8,26 @@ extends Control
 ## Rendered in its own SubViewport (own world, own light) so it never clips into walls and reads
 ## the same at night; text is a 2D ink overlay projected onto the cloth.
 ##   LMB item  use / equip / read (in a container view: move to the other side)
-##   RMB item  drop one (Shift: the stack) · 1-6 assign to the toolbelt · wheel scrolls recipes
+##   RMB item  drop one (Shift: the stack) · 1-6 assign to the toolbelt · wheel over the cloth pages
+## The crafting flap is a CraftSheet (a paper panel over the flap) and the hovered item gets an
+## ItemCard; the cloth's sort and filter are a view of the inventory only (its order is state).
 
 const COLS: int = 6
 const ROWS: int = 5
 const SLOT: float = 0.074
 const ORIGIN := Vector3(-0.43, 0.0, -0.17)
 const FLAP_ORIGIN := Vector3(0.07, 0.0, -0.17)
-const INK := Color(0.16, 0.13, 0.1)
-const INK_DIM := Color(0.42, 0.36, 0.3)
+## Ink on the canvas cloth: light type with a dark outline (the cloth is mid-brown).
+const CLOTH_TEXT := Color(0.94, 0.91, 0.82)
+## How the cloth orders and filters stacks (a view: the inventory's order is untouched).
+const SORTS: PackedStringArray = ["packed", "kind", "name"]
+const FILTERS: Dictionary = {
+	"all": [],
+	"gear": ["tool", "weapon", "ammo", "clothing", "light", "throwable", "trap", "placeable"],
+	"food & meds": ["food", "drink", "medical"],
+	"materials": ["resource", "junk"],
+	"papers": ["note", "schematic", "magazine", "quest", "key"],
+}
 
 var mode: StringName = &"inventory"
 var station: StringName = &""
@@ -31,18 +42,18 @@ var _overlay: Control
 var _info: Label
 var _title: Label
 var _flap_title: Label
-var _recipe_box: VBoxContainer
+var _sheet: CraftSheet
+var _card: ItemCard
+var _toolbar: HBoxContainer
 var _bulk: Label
+var _sort: String = "packed"
+var _filter: String = "all"
 var _slots: Array = []
 var _flap_slots: Array = []
 var _hover: Dictionary = {}
-var _scroll: int = 0
-## Recipes in the current list (the scroll stops at the last page of them).
-var _recipe_count: int = 0
 ## Pages of stacks: the cloth shows COLS x ROWS at a time; the mouse wheel over a grid turns it.
 var _page: int = 0
 var _flap_page: int = 0
-const RECIPE_ROWS: int = 11
 var _dirty: bool = true
 var _labels: Array[Label] = []
 
@@ -74,33 +85,72 @@ func _ready() -> void:
 	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_overlay)
-	_title = _ink_label(22, INK)
-	_flap_title = _ink_label(20, INK)
-	_bulk = _ink_label(15, INK_DIM)
-	_info = Label.new()
+	_title = _cloth_label(30, UiStyle.heading_font())
+	_flap_title = _cloth_label(24, UiStyle.heading_font())
+	_bulk = _cloth_label(UiStyle.BODY_SIZE, null)
+	_info = _cloth_label(UiStyle.BODY_SIZE, null)
 	_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_info.add_theme_color_override(&"font_color", Color(0.92, 0.9, 0.84))
-	_info.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.9))
-	_info.add_theme_constant_override(&"outline_size", 5)
-	_info.add_theme_font_size_override(&"font_size", 17)
-	_overlay.add_child(_info)
-	_recipe_box = VBoxContainer.new()
-	_recipe_box.add_theme_constant_override(&"separation", 2)
-	_recipe_box.mouse_filter = Control.MOUSE_FILTER_PASS
-	add_child(_recipe_box)
+	_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_build_toolbar()
+	_sheet = CraftSheet.new()
+	_sheet.craft_requested.connect(_craft)
+	add_child(_sheet)
+	_card = ItemCard.new()
+	_card.visible = false
+	add_child(_card)
 	Events.inventory_changed.connect(func(_o: StringName) -> void: _dirty = true)
 	Events.ui_modal_closed.connect(func(id: StringName) -> void:
 		if id == &"salvage_roll" and _open:
 			_close_silently())
 
 
-func _ink_label(size: int, color: Color) -> Label:
+## Type laid on the canvas: light with a dark outline, readable on the brown cloth at night too.
+func _cloth_label(size: int, f: Font) -> Label:
 	var l := Label.new()
 	l.add_theme_font_size_override(&"font_size", size)
-	l.add_theme_color_override(&"font_color", color)
+	l.add_theme_color_override(&"font_color", CLOTH_TEXT)
+	l.add_theme_color_override(&"font_outline_color", Color(0.05, 0.04, 0.03, 0.95))
+	l.add_theme_constant_override(&"outline_size", 6)
+	if f != null:
+		l.add_theme_font_override(&"font", f)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_overlay.add_child(l)
 	return l
+
+
+## Sort and filter for the cloth: small kit-style toggles above it.
+func _build_toolbar() -> void:
+	_toolbar = HBoxContainer.new()
+	_toolbar.theme = UiStyle.kit_theme()
+	_toolbar.add_theme_constant_override(&"separation", 4)
+	add_child(_toolbar)
+	_toolbar_group(SORTS, "Sort", func(v: String) -> void: _sort = v)
+	var gap := Control.new()
+	gap.custom_minimum_size = Vector2(18, 0)
+	_toolbar.add_child(gap)
+	_toolbar_group(PackedStringArray(FILTERS.keys()), "Show", func(v: String) -> void: _filter = v)
+
+
+func _toolbar_group(values: PackedStringArray, caption: String, set_value: Callable) -> void:
+	var l := UiStyle.label(caption, &"DimLabel")
+	l.add_theme_color_override(&"font_color", CLOTH_TEXT)
+	l.add_theme_color_override(&"font_outline_color", Color(0.05, 0.04, 0.03, 0.95))
+	l.add_theme_constant_override(&"outline_size", 5)
+	_toolbar.add_child(l)
+	var group := ButtonGroup.new()
+	for v: String in values:
+		var b := Button.new()
+		b.text = v.capitalize()
+		b.toggle_mode = true
+		b.button_group = group
+		b.button_pressed = v == values[0]
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE - 3)
+		b.pressed.connect(func() -> void:
+			set_value.call(v)
+			_page = 0
+			_dirty = true)
+		_toolbar.add_child(b)
 
 
 func _build_scene() -> void:
@@ -162,7 +212,6 @@ func open(p_mode: StringName = &"inventory", p_station: StringName = &"", p_cont
 	station = p_station
 	container = p_container
 	station_node = p_container if p_mode == &"station" else null
-	_scroll = 0
 	_page = 0
 	_flap_page = 0
 	_open = true
@@ -188,6 +237,7 @@ func close() -> void:
 func _close_silently() -> void:
 	_open = false
 	visible = false
+	_card.visible = false
 	container = null
 	station_node = null
 	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -217,14 +267,42 @@ func _rebuild() -> void:
 	var p: PlayerState = _player()
 	if p == null:
 		return
-	_page = clampi(_page, 0, _pages(p.inventory.stacks.size(), COLS) - 1)
-	_place_stacks(p.inventory.stacks, ORIGIN, _items_root, _slots, COLS, _page)
+	var view: Array[ItemStack] = view_stacks(p.inventory.stacks, _sort, _filter)
+	_page = clampi(_page, 0, _pages(view.size(), COLS) - 1)
+	_place_stacks(view, ORIGIN, _items_root, _slots, COLS, _page)
 	if mode == &"container" and container != null and is_instance_valid(container):
 		var inv: Inventory = container.get(&"inventory")
 		if inv != null:
 			_flap_page = clampi(_flap_page, 0, _pages(inv.stacks.size(), 4) - 1)
 			_place_stacks(inv.stacks, FLAP_ORIGIN + Vector3(0.02, 0.006, 0.0), _flap_root, _flap_slots, 4, _flap_page)
 	_rebuild_recipes()
+
+
+## The stacks the cloth shows, in its order: as packed (the inventory's own order), by kind
+## (category, then name) or by name; `filter` is a FILTERS key.
+static func view_stacks(stacks: Array[ItemStack], sort: String, filter: String) -> Array[ItemStack]:
+	var cats: Array = FILTERS.get(filter, [])
+	var out: Array[ItemStack] = []
+	for s: ItemStack in stacks:
+		var d: ItemDef = s.def()
+		if cats.is_empty() or (d != null and cats.has(d.category)):
+			out.append(s)
+	if sort == "packed":
+		return out
+	var key := func(s: ItemStack) -> String:
+		var d: ItemDef = s.def()
+		var n: String = d.display_name if d != null else String(s.item_id)
+		var c: String = d.category if d != null else "~"
+		return (c + "|" + n) if sort == "kind" else n
+	# Stable for equal keys: the packed index breaks ties.
+	var idx: Dictionary = {}
+	for i: int in out.size():
+		idx[out[i]] = i
+	out.sort_custom(func(a: ItemStack, b: ItemStack) -> bool:
+		var ka: String = key.call(a)
+		var kb: String = key.call(b)
+		return ka < kb if ka != kb else int(idx[a]) < int(idx[b]))
+	return out
 
 
 static func _pages(n: int, cols: int) -> int:
@@ -284,70 +362,45 @@ func _fit(model: Node3D, size: float) -> void:
 
 
 func _rebuild_recipes() -> void:
-	for c: Node in _recipe_box.get_children():
-		c.queue_free()
+	_sheet.visible = mode != &"container"
 	if mode == &"container":
 		return
-	var p: PlayerState = _player()
-	var list: Array = []
-	for r: RecipeDef in Content.all(&"recipe"):
-		if r.station != station and not (station == &"" and r.station == &"hand"):
-			continue
-		if not p.progression.knows_recipe(r):
-			continue
-		var chk: Crafting.Result = Crafting.check(r, p.inventory, station)
-		list.append([r, chk.ok])
-	list.sort_custom(func(a: Array, b: Array) -> bool:
-		if a[1] != b[1]:
-			return a[1]
-		return String((a[0] as RecipeDef).display_name) < String((b[0] as RecipeDef).display_name))
-	_recipe_count = list.size()
-	_scroll = clampi(_scroll, 0, maxi(0, list.size() - RECIPE_ROWS))
-	var shown: int = 0
-	for i: int in range(_scroll, list.size()):
-		if shown >= RECIPE_ROWS:
+	_sheet.refresh(_player(), station, _flap_name())
+
+
+func _flap_name() -> String:
+	match mode:
+		&"container":
+			var cname: String = "Container"
+			if container != null and container.get(&"cdef") != null:
+				cname = (container.get(&"cdef") as ContainerDef).display_name
+			elif container is Enemy:
+				cname = "Remains"
+			elif container is StructurePiece:
+				cname = (container as StructurePiece).def.display_name
+			return cname
+		&"station":
+			var sd: StationDef = Content.get_def(&"station", station) as StationDef
+			return sd.display_name if sd != null else String(station)
+	return "Make by hand"
+
+
+## Makes a recipe `times` times through the command bus (one craft per command), stopping at the
+## first failure and saying why.
+func _craft(recipe_id: StringName, times: int = 1) -> void:
+	var made: int = 0
+	var last: Dictionary = {}
+	for i: int in maxi(1, times):
+		last = Game.execute(&"inventory.craft", {"recipe": String(recipe_id), "station": String(station)})
+		if not bool(last.get("ok", false)):
 			break
-		var r2: RecipeDef = list[i][0]
-		var ok: bool = list[i][1]
-		var b := Button.new()
-		b.flat = true
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.text = "%s%s  —  %s" % [r2.display_name, (" x%d" % r2.result_count) if r2.result_count > 1 else "", _cost_text(r2, p.inventory)]
-		b.add_theme_color_override(&"font_color", INK if ok else INK_DIM)
-		b.add_theme_color_override(&"font_hover_color", Color(0.45, 0.12, 0.08) if ok else INK_DIM)
-		b.add_theme_font_size_override(&"font_size", 14)
-		b.disabled = not ok
-		b.pressed.connect(_craft.bind(r2.id))
-		b.mouse_entered.connect(func() -> void: _show_recipe(r2))
-		_recipe_box.add_child(b)
-		shown += 1
-	if list.is_empty():
-		var l := Label.new()
-		l.text = "Nothing you know how to make here."
-		l.add_theme_color_override(&"font_color", INK_DIM)
-		_recipe_box.add_child(l)
-
-
-func _cost_text(r: RecipeDef, inv: Inventory) -> String:
-	var parts: PackedStringArray = []
-	for k: Variant in r.ingredients.keys():
-		var d: ItemDef = Content.item(StringName(str(k)))
-		var have: int = inv.count_of(StringName(str(k)))
-		parts.append("%d/%d %s" % [mini(have, int(r.ingredients[k])), int(r.ingredients[k]), d.display_name if d != null else str(k)])
-	for t: Variant in r.tools_required:
-		parts.append("[%s]" % str(t))
-	return ", ".join(parts)
-
-
-func _show_recipe(r: RecipeDef) -> void:
-	var d: ItemDef = Content.item(r.result)
-	_info.text = "%s — %s" % [r.display_name, d.description if d != null else ""]
-
-
-func _craft(recipe_id: StringName) -> void:
-	var res: Dictionary = Game.execute(&"inventory.craft", {"recipe": String(recipe_id), "station": String(station)})
-	if not bool(res.get("ok", false)):
-		_info.text = "Can't make that: %s" % str(res.get("error", ""))
+		made += int(last.get("count", 1))
+	var r: RecipeDef = Content.recipe(recipe_id)
+	var nm: String = r.display_name if r != null else String(recipe_id)
+	if made > 0:
+		_info.text = "Made %s%s." % [nm, (" ×%d" % made) if made > 1 else ""]
+	else:
+		_info.text = "Can't make %s: %s." % [nm, str(last.get("error", "missing materials"))]
 	_dirty = true
 
 
@@ -374,37 +427,48 @@ func _screen(p: Vector3) -> Vector2:
 func _layout_overlay() -> void:
 	var p: PlayerState = _player()
 	_title.text = "SALVAGE ROLL"
-	_title.position = _screen(ORIGIN + Vector3(0.0, 0.0, -0.035))
-	_bulk.text = "Pack %.1f / %.0f   ·   Shoulder: %d log%s" % [p.inventory.total_bulk(), p.inventory.max_bulk, p.inventory.count_of(&"log"), "" if p.inventory.count_of(&"log") == 1 else "s"]
-	var pages: int = _pages(p.inventory.stacks.size(), COLS)
+	var top: Vector2 = _screen(ORIGIN + Vector3(0.0, 0.0, -0.01))
+	_title.position = top - Vector2(0, _title.size.y + 8 + _toolbar.size.y + 6)
+	_toolbar.position = top - Vector2(0, _toolbar.size.y + 6)
+	var bulk: float = p.inventory.total_bulk()
+	_bulk.text = "Pack %.1f / %.0f   ·   Shoulder: %d log%s" % [bulk, p.inventory.max_bulk, p.inventory.count_of(&"log"), "" if p.inventory.count_of(&"log") == 1 else "s"]
+	_bulk.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT if bulk > p.inventory.max_bulk * 0.9 else CLOTH_TEXT)
+	var shown: int = view_stacks(p.inventory.stacks, _sort, _filter).size()
+	var pages: int = _pages(shown, COLS)
 	if pages > 1:
-		_bulk.text += "   ·   page %d/%d (wheel over the cloth)" % [_page + 1, pages]
+		_bulk.text += "   ·   page %d/%d (wheel)" % [_page + 1, pages]
+	if _filter != "all":
+		_bulk.text += "   ·   showing %d of %d" % [shown, p.inventory.stacks.size()]
 	_bulk.position = _screen(ORIGIN + Vector3(0.0, 0.0, ROWS * SLOT + 0.02))
-	match mode:
-		&"container":
-			var cname: String = "Container"
-			if container != null and container.get(&"cdef") != null:
-				cname = (container.get(&"cdef") as ContainerDef).display_name
-			elif container is Enemy:
-				cname = "Remains"
-			elif container is StructurePiece:
-				cname = (container as StructurePiece).def.display_name
-			_flap_title.text = cname.to_upper()
-		&"station":
-			var sd: StationDef = Content.get_def(&"station", station) as StationDef
-			_flap_title.text = (sd.display_name if sd != null else String(station)).to_upper()
-		_:
-			_flap_title.text = "MAKE BY HAND"
-	_flap_title.position = _screen(FLAP_ORIGIN + Vector3(0.02, 0.0, -0.01))
-	var tl: Vector2 = _screen(FLAP_ORIGIN + Vector3(0.02, 0.0, 0.03))
-	_recipe_box.position = tl
-	_recipe_box.size = Vector2(_screen(FLAP_ORIGIN + Vector3(0.38, 0.0, 0.0)).x - tl.x, 0)
-	_recipe_box.visible = mode != &"container"
+	_flap_title.text = _flap_name().to_upper()
+	_flap_title.visible = mode == &"container"
+	_flap_title.position = _screen(FLAP_ORIGIN + Vector3(0.02, 0.0, -0.01)) - Vector2(0, _flap_title.size.y)
+	# The sheet covers the paper flap, and never gets narrower than its contents need.
+	var a: Vector2 = _screen(FLAP_ORIGIN + Vector3(0.0, 0.0, -0.04))
+	var b: Vector2 = _screen(FLAP_ORIGIN + Vector3(0.41, 0.0, 0.44))
+	var w: float = maxf(b.x - a.x, 560.0)
+	var x: float = minf(a.x, size.x - w - 16.0)
+	var y: float = maxf(16.0, top.y - _toolbar.size.y - _title.size.y - 14.0)
+	_sheet.position = Vector2(x, y)
+	_sheet.size = Vector2(w, maxf(b.y - y, 520.0))
 	for l: Label in _labels:
 		if is_instance_valid(l):
 			l.position = _screen(l.get_meta(&"anchor"))
-	_info.position = Vector2(size.x * 0.12, size.y * 0.86)
+	_info.position = Vector2(size.x * 0.12, minf(size.y - 70.0, _bulk.position.y + _bulk.size.y + 14.0))
 	_info.size = Vector2(size.x * 0.76, 60)
+	if _card.visible:
+		_place_card()
+
+
+## The item card sits beside the cursor, flipped to stay on screen.
+func _place_card() -> void:
+	var m: Vector2 = get_local_mouse_position()
+	var cs: Vector2 = _card.get_combined_minimum_size()
+	var pos: Vector2 = m + Vector2(28, 12)
+	if pos.x + cs.x > size.x - 12.0:
+		pos.x = m.x - cs.x - 28.0
+	pos.y = clampf(pos.y, 12.0, maxf(12.0, size.y - cs.y - 12.0))
+	_card.position = pos
 
 
 func _mat_point(mouse: Vector2) -> Vector3:
@@ -441,8 +505,8 @@ func _update_hover() -> void:
 			(_hover["holder"] as Node3D).scale = Vector3.ONE * 1.18
 			(_hover["holder"] as Node3D).position.y = 0.02
 			_describe(_hover["stack"], bool(_hover["flap"]))
-		elif _info.text.begins_with("["):
-			_info.text = ""
+		else:
+			_card.visible = false
 
 
 func _describe(s: ItemStack, in_flap: bool) -> void:
@@ -464,8 +528,9 @@ func _describe(s: ItemStack, in_flap: bool) -> void:
 		actions.append("[1-6] toolbelt")
 	if not in_flap:
 		actions.append("[RMB] drop")
-	var q: String = (" · %s (Q%d)" % [ItemStack.quality_name(s.quality), s.quality]) if s.quality > 0 else ""
-	_info.text = "[%s]%s  %s\n%s" % [d.display_name, q, "   ".join(actions), d.description]
+	_card.show_stack(s, "   ".join(actions))
+	_card.visible = true
+	_place_card()
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -483,9 +548,6 @@ func _gui_input(event: InputEvent) -> void:
 			elif mode == &"container" and _in_grid(mp, FLAP_ORIGIN + Vector3(0.02, 0.0, 0.0), 4):
 				_flap_page += step
 				_dirty = true
-			else:
-				_scroll = clampi(_scroll + step, 0, maxi(0, _recipe_count - RECIPE_ROWS))
-				_rebuild_recipes()
 		elif _hover.has("stack"):
 			var s: ItemStack = _hover["stack"]
 			var flap: bool = bool(_hover["flap"])
