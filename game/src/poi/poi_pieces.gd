@@ -105,6 +105,11 @@ class Door:
 	extends StaticBody3D
 	## How far a broken leaf tips off the vertical (radians).
 	const SAG: float = 0.07
+	## A full swing (radians): 99°, a little past square, so the open leaf leans out of its own
+	## doorway's clear width (poi_walk's bot, and a player, snag on a leaf standing square in it).
+	## Its free end comes 13 cm back past the hinge jamb: keep props against the wall beside a
+	## doorway's hinge side clear of that (TraversalAudit's swing check).
+	const OPEN_ANGLE: float = PI * 0.55
 	var poi: Node
 	var op_id: String = ""
 	## The authored opening this leaf belongs to (op_id without _l/_r) — triggers and alarms.
@@ -132,6 +137,10 @@ class Door:
 	## a smashed leaf drawn shut over an open doorway). PoiBuilder picks it from the door's id, so it
 	## needs nothing saved.
 	var broken_open: float = 0.85
+	## How far (0..1 of OPEN_ANGLE) the leaf opens: square to its wall where a wall runs off its
+	## hinge jamb on the swing side, so it stops flat against that wall instead of swinging 13 cm
+	## into it (PoiBuilder.DOORSTOP; TraversalAudit's swing check).
+	var max_open: float = 1.0
 	## The leaf's collision shape. It stays a direct child of this body (a shape under the plain
 	## pivot Node3D never registers with physics) and _apply() moves it with the hinge.
 	var leaf_shape: CollisionShape3D
@@ -148,7 +157,7 @@ class Door:
 		collision_mask = 0
 		set_meta(&"breakable", true)
 		set_meta(&"surface", "wood_floor")
-		_target = 1.0 if state == "open" else (broken_open if state == "broken" else 0.0)
+		_target = max_open if state == "open" else (broken_open if state == "broken" else 0.0)
 		_open_amount = _target
 		_apply()
 
@@ -160,9 +169,7 @@ class Door:
 	func _apply() -> void:
 		if pivot == null:
 			return
-		# Both leaves of a double door swing to the same side of the wall.
-		var yaw: float = flip + _open_amount * PI * 0.55 * (1.0 if flip != 0.0 else -1.0) * swing
-		var basis := Basis(Vector3.UP, yaw)
+		var basis := Basis(Vector3.UP, _yaw(_open_amount))
 		var lift: float = 0.0
 		if state == "broken":
 			# Hanging from its top hinge: the leaf tips about the hinge until its latch corner
@@ -173,6 +180,17 @@ class Door:
 		pivot.transform = Transform3D(basis, Vector3(pivot.position.x, lift, pivot.position.z))
 		if leaf_shape != null:
 			leaf_shape.transform = pivot.transform * leaf_local
+
+	## The hinge's yaw `amount` (0..1) of the way open. Both leaves of a double door swing to the
+	## same side of the wall.
+	func _yaw(amount: float) -> float:
+		return flip + amount * OPEN_ANGLE * (1.0 if flip != 0.0 else -1.0) * swing
+
+	## Where the leaf's collision box stands (in this body's frame) once it is fully open: what
+	## TraversalAudit checks for anything it would swing into.
+	func open_leaf_transform() -> Transform3D:
+		var p: Vector3 = pivot.position if pivot != null else Vector3.ZERO
+		return Transform3D(Basis(Vector3.UP, _yaw(max_open)), Vector3(p.x, 0.0, p.z)) * leaf_local
 
 	func is_broken() -> bool:
 		return state == "broken"
@@ -223,7 +241,7 @@ class Door:
 				return
 			"broken":
 				return
-		_target = 0.0 if _target > 0.5 else 1.0
+		_target = 0.0 if _target > 0.5 else max_open
 		state = "open" if _target > 0.5 else "closed"
 		Audio.play_3d(&"sfx/door_open" if _target > 0.5 else &"sfx/door_close", global_position + Vector3.UP, {"volume_db": -4.0})
 		if Stimuli.current != null:

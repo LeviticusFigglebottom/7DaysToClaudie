@@ -757,8 +757,6 @@ func _openings() -> void:
 			# one-cell hall, in rather than out (PoiLayout.door_swing; player report 3, poi_walk).
 			var swing_sign: float = layout.door_swing(op)
 			if span == 1:
-				# TD-023: a leaf hinged beside a wall that runs off on its swing side would open into
-				# that wall: hang it on the other jamb when that one is clear.
 				var hinge_x: float = -0.43
 				var flip: float = 0.0
 				var swing: Vector3 = xf.basis * Vector3.BACK * swing_sign
@@ -767,16 +765,48 @@ func _openings() -> void:
 				var v1: Vector3 = xf * Vector3(0.5, 0, 0)
 				var lv0 := Vector2i(roundi(v0.x - layout.origin.x), roundi(v0.z - layout.origin.y))
 				var lv1 := Vector2i(roundi(v1.x - layout.origin.x), roundi(v1.z - layout.origin.y))
-				if _wall_from_vertex(int(op["level"]), lv0, sw) and not _wall_from_vertex(int(op["level"]), lv1, sw):
+				var li_op: int = int(op["level"])
+				var wall0: bool = _wall_from_vertex(li_op, lv0, sw)
+				var wall1: bool = _wall_from_vertex(li_op, lv1, sw)
+				# Which jamb (TD-023, round 4; TraversalAudit's swing check): a leaf hung on the jamb a
+				# wall runs off stops flat against that wall (DOORSTOP), out of the way; hung on the
+				# other one (as TD-023 did) it stood across the room beside the doorway, closing the
+				# way to it from that side (the school's nurse's door). Never against a wall with a
+				# doorway in it next to this one (the fire station's shop door lay across its stair
+				# bay door). With no wall either side, not on a jamb a stair flight or its well runs
+				# along (the leaf leant out over the steps).
+				var door0: bool = _doorway_from_vertex(li_op, lv0, sw)
+				var door1: bool = _doorway_from_vertex(li_op, lv1, sw)
+				wall0 = wall0 and not door0
+				wall1 = wall1 and not door1
+				var on_v1: bool = door0 and not door1
+				if not door0 and not door1:
+					on_v1 = (wall1 and not wall0) or (not wall0 and not wall1 and _stairs_beside(li_op, lv0, sw) and not _stairs_beside(li_op, lv1, sw))
+				if on_v1:
 					hinge_x = 0.43
 					flip = PI
-				var d1: PoiPieces.Door = _door(oid, xf, Vector3(hinge_x, 0, 0), flip, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign)
+				# A wall off its hinge jamb: the leaf stops flat against it.
+				var stop: float = DOORSTOP if (wall1 if flip != 0.0 else wall0) else 1.0
+				if stop < 1.0:
+					hinge_x = signf(hinge_x) * _stop_hinge(0.5)
+				var d1: PoiPieces.Door = _door(oid, xf, Vector3(hinge_x, 0, 0), flip, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign, stop)
 				d1.opening_id = oid
 				_lock_cue(d1, op, inside_sign)
 			else:
 				var hx: float = float(spec["w"]) * 0.5
-				var dl: PoiPieces.Door = _door(oid + "_l", xf, Vector3(-hx, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign)
-				var dr: PoiPieces.Door = _door(oid + "_r", xf, Vector3(hx, 0, 0), PI, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign)
+				var sw2: Vector3 = xf.basis * Vector3.BACK * swing_sign
+				var swv := Vector2i(roundi(sw2.x), roundi(sw2.z))
+				var e0: Vector3 = xf * Vector3(-float(span) * 0.5, 0, 0)
+				var e1: Vector3 = xf * Vector3(float(span) * 0.5, 0, 0)
+				var ve0 := Vector2i(roundi(e0.x - layout.origin.x), roundi(e0.z - layout.origin.y))
+				var ve1 := Vector2i(roundi(e1.x - layout.origin.x), roundi(e1.z - layout.origin.y))
+				var li2: int = int(op["level"])
+				var stop_l: float = DOORSTOP if _wall_from_vertex(li2, ve0, swv) and not _doorway_from_vertex(li2, ve0, swv) else 1.0
+				var stop_r: float = DOORSTOP if _wall_from_vertex(li2, ve1, swv) and not _doorway_from_vertex(li2, ve1, swv) else 1.0
+				var hx_l: float = _stop_hinge(float(span) * 0.5) if stop_l < 1.0 else hx
+				var hx_r: float = _stop_hinge(float(span) * 0.5) if stop_r < 1.0 else hx
+				var dl: PoiPieces.Door = _door(oid + "_l", xf, Vector3(-hx_l, 0, 0), 0.0, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign, stop_l)
+				var dr: PoiPieces.Door = _door(oid + "_r", xf, Vector3(hx_r, 0, 0), PI, leaf, st, str(op["key"]), hp, inside_sign, leaf_size, swing_sign, stop_r)
 				if bool(spec.get("mirror_pair", false)) and not op.has("model"):
 					# A leaf dressed on one face (the barn door's battens, braces and strap hinges),
 					# turned half round on its pivot, showed its plain back outside: the right leaf's
@@ -845,6 +875,37 @@ func _wall_from_vertex(li: int, v: Vector2i, toward: Vector2i) -> bool:
 	return layout.walls.has(k) or layout.galleries.has(k)
 
 
+## Whether the wall leaving plan vertex `v` toward `toward` has a way through it (a door, an arch, a
+## hole: not a window) in its first metre: a leaf resting there would stand across it.
+func _doorway_from_vertex(li: int, v: Vector2i, toward: Vector2i) -> bool:
+	var k: String = ""
+	if toward == Vector2i(1, 0):
+		k = PoiLayout.edge_key(li, "h", v)
+	elif toward == Vector2i(-1, 0):
+		k = PoiLayout.edge_key(li, "h", v - Vector2i(1, 0))
+	elif toward == Vector2i(0, 1):
+		k = PoiLayout.edge_key(li, "v", v)
+	else:
+		k = PoiLayout.edge_key(li, "v", v - Vector2i(0, 1))
+	var w: Dictionary = layout.walls.get(k, layout.galleries.get(k, {}))
+	var op: Dictionary = w.get("opening", {}) if not w.is_empty() else {}
+	return not op.is_empty() and not PoiLayout.is_window(str(op["type"]))
+
+
+## Whether a stair flight (foot included) or the well over one lies either side of the line from
+## plan vertex `v` toward `toward` on a level: a leaf hung on that jamb leans out over the steps.
+func _stairs_beside(li: int, v: Vector2i, toward: Vector2i) -> bool:
+	var side := Vector2i(absi(toward.y), absi(toward.x))
+	var base: Vector2i = v + Vector2i(mini(toward.x, 0), mini(toward.y, 0))
+	var cells: Dictionary = layout.stairwell_cells(li)
+	for s: Dictionary in layout.stairs:
+		if int(s["level"]) == li:
+			cells[s["cell"]] = true
+			for fc: Variant in s.get("cells", []):
+				cells[fc] = true
+	return cells.has(base) or cells.has(base - side)
+
+
 ## Lock cue heights on the leaf (m): the hasp and chain above the knob (0.95), a sliding bolt
 ## higher still, all at the latch edge (leaf x = 0.82, origin of the lock models).
 const LOCK_X: float = 0.82
@@ -902,12 +963,28 @@ func _lock_cue(d: PoiPieces.Door, op: Dictionary, inside_sign: float) -> void:
 		d.lock_body = lb
 
 
+## How far a leaf opens (of its full Door.OPEN_ANGLE, 99 degrees) where a wall runs off its hinge
+## jamb on the side it swings to (a one-cell hall's end): square to its own wall, flat against
+## that one (_stop_hinge), instead of 13 cm into it (TraversalAudit's swing check).
+const DOORSTOP: float = 90.0 / 99.0
+## Half a leaf's thickness (its collision box is 5 cm).
+const LEAF_HALF_T: float = 0.025
+
+
+## Where (m from the opening's middle) a stopped leaf hangs on an opening `half` m wide each side:
+## its inner face on the side wall's face, so open it neither stands in the doorway's clear width
+## nor juts out of the wall.
+static func _stop_hinge(half: float) -> float:
+	return half - WALL_T * 0.5 + LEAF_HALF_T
+
+
 ## Broken leaves hang between these fractions of a full swing (per door, from its id).
 const BROKEN_OPEN: Vector2 = Vector2(0.72, 0.98)
 
 
-func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: String, st: String, key: String, hp: float, inside_sign: float, leaf_size := Vector2(0.82, 2.05), swing_sign: float = 1.0) -> PoiPieces.Door:
+func _door(id: String, wall_xf: Transform3D, hinge: Vector3, flip: float, leaf: String, st: String, key: String, hp: float, inside_sign: float, leaf_size := Vector2(0.82, 2.05), swing_sign: float = 1.0, max_open: float = 1.0) -> PoiPieces.Door:
 	var d := PoiPieces.Door.new()
+	d.max_open = max_open
 	d.poi = root
 	d.op_id = id
 	d.opening_id = PoiPieces.opening_of(id)
@@ -1918,7 +1995,14 @@ func _shotgun_trap(t: Dictionary, tid: String) -> void:
 	# (a room cell, not the open well over a stair or hatch).
 	var sgn: float = 0.0
 	var well: Dictionary = layout.stairwell_cells(li)
-	for k: float in [1.0, -1.0]:
+	# A door that opens into the gun's room stands open along the wall from its hinge: the chair
+	# goes to the latch side, where the leaf never reaches (TraversalAudit's swing check found six
+	# leaves opening into their own rigs).
+	var sides: Array[float] = [1.0, -1.0]
+	var leaf_side: float = _leaf_hinge_side(f, li, c, t)
+	if leaf_side != 0.0:
+		sides = [-leaf_side, leaf_side]
+	for k: float in sides:
 		var nc: Vector2i = c + step * int(k)
 		var wall_between: Dictionary = layout.walls.get(PoiLayout.edge_key(li, "v" if step.x != 0 else "h", c + (step if k > 0.0 else Vector2i.ZERO)), {})
 		if layout.is_room(layout.room_at(li, nc)) and wall_between.is_empty() and not well.has(nc):
@@ -1974,6 +2058,28 @@ func _shotgun_trap(t: Dictionary, tid: String) -> void:
 	else:
 		wire.visible = false
 	root.add_child(sg)
+
+
+## Which way along the wall (+1 / -1 of the edge frame's `along`) the hinge of the single door leaf
+## on trap `t`'s edge is, when that leaf opens into the "at" cell's room; 0 for no such leaf.
+func _leaf_hinge_side(f: Dictionary, li: int, c: Vector2i, t: Dictionary) -> float:
+	var e: Array = PoiLayout.side_edge(c, int(t["side_i"]))
+	var w: Dictionary = layout.walls.get(PoiLayout.edge_key(li, e[0], e[1]), {})
+	var op: Dictionary = w.get("opening", {}) if not w.is_empty() else {}
+	if op.is_empty():
+		return 0.0
+	var centre: Vector3 = f["center"]
+	var across: Vector3 = f["across"]
+	for n: Node in root.get_children():
+		if not n is PoiPieces.Door or (n as PoiPieces.Door).op_id != str(op["id"]):
+			continue
+		var d := n as PoiPieces.Door
+		var leaf: Vector3 = d.transform * d.open_leaf_transform().origin
+		if (leaf - centre).dot(-across) <= 0.0:
+			return 0.0
+		var hinge: Vector3 = d.transform * Vector3(d.pivot.position.x, 0.0, d.pivot.position.z)
+		return signf((hinge - centre).dot(f["along"] as Vector3))
+	return 0.0
 
 
 ## A taut cord between two points (local to its parent): a thin box, dark and slightly glossy.
