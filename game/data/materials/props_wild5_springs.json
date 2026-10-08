@@ -1,0 +1,8 @@
+{
+ "_doc": "Ember Creek Hot Springs (wilderness set pieces round 5): the spring's mineral water (clear blue-green, and tepid with a grey scum when the pumps stop) and the steam that hangs over it, all on the shared std_glass shader and window_grime set. Models: tools/assetgen/blender/generators/props_wild5_springs.py. Shared ids reused: ceramic_white (the pool tiles), wild_cedar, wood_weathered, wild_lumber_weathered, rock_moss, stone_river, rock_granite, brick, wild_cast_iron(_rust), road_brass, road_steel(_dark), road_paint_*, canvas_*, bloom_felt, bloom_caps, furn_towel, road_towel_white, metal_galvanized, chrome_pitted.",
+ "materials": {
+  "w5_springs_water": {"shader": "std_glass", "textures": "window_grime", "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "tint": "#4f8379", "opacity": 0.8, "roughness_mult": 0.08, "grime_amount": 0.15}},
+  "w5_springs_water_scum": {"shader": "std_glass", "textures": "window_grime", "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "tint": "#5e6450", "opacity": 0.92, "roughness_mult": 0.35, "grime_amount": 0.7}},
+  "w5_springs_steam": {"shader": "std_glass", "textures": "window_grime", "params": {"uv_scale": 1.0, "vertex_ao_strength": 0.0, "tint": "#e8eeec", "opacity": 0.12, "roughness_mult": 1.0, "grime_amount": 0.0}}
+ }
+}

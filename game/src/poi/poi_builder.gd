@@ -1392,17 +1392,24 @@ func _prop(p: Dictionary) -> void:
 		if not light.is_empty():
 			PropLights.set_lit(mi, true)
 		lp.add_child(mi)
-		_box(pd.size.max(Vector3(0.2, 0.2, 0.2)), Transform3D(Basis.IDENTITY, pd.box_centre()), lp)
+		# A container is always solid (it is searched by its box), as its `boxes` when it has them.
+		if pd.boxes.is_empty():
+			_box(pd.size.max(Vector3(0.2, 0.2, 0.2)), Transform3D(Basis.IDENTITY, pd.box_centre()), lp)
+		else:
+			for b: Array in pd.collision_boxes():
+				_box(b[0], b[1], lp)
 		root.add_child(lp)
 	else:
 		if light.is_empty():
 			_add("@" + model, xf, Color(0, 0, 0, 0), layout.is_room(layout.room_at(p["level"], p["cell"])))
 		else:
 			root.add_child(PropLights.lit_mesh(model, xf, layout.is_room(layout.room_at(p["level"], p["cell"]))))
-		if pd.collision != "none":
-			# Tagged for TraversalAudit, which names what blocks a doorway or the route.
-			var cs: CollisionShape3D = _box(pd.size.max(Vector3(0.05, 0.05, 0.05)), xf * Transform3D(Basis.IDENTITY, pd.box_centre()))
-			cs.set_meta(&"prop", str(pd.id) + ("+route_ok" if bool(p.get("route_ok", false)) else ""))
+		# The size box, or the def's compound `boxes` (TD-270), each tagged for TraversalAudit, which
+		# names what blocks a doorway or the route.
+		var tag: String = str(pd.id) + ("+route_ok" if bool(p.get("route_ok", false)) else "")
+		for b: Array in pd.collision_boxes():
+			var cs: CollisionShape3D = _box(b[0], xf * (b[1] as Transform3D))
+			cs.set_meta(&"prop", tag)
 	if not light.is_empty():
 		root.add_child(PropLights.light_node(light, xf))
 

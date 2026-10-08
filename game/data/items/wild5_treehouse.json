@@ -1,0 +1,58 @@
+{
+ "_doc": "Key and readable notes of the Treehouse Holdout (w5_treehouse_holdout), wilderness set pieces round 5. Note items are note_<note id> (notes/wild5_treehouse.json); models from tools/assetgen/blender_catalogs/items_wild5_treehouse.py.",
+ "defs": [
+  {
+   "id": "w5_treehouse_nest_key",
+   "name": "Nest Padlock Key",
+   "description": "A small brass padlock key on a loop of fishing line, kept in a tea tin in the kitchen hut. It opens the padlock on the nest, the highest hut, where the family kept its stores.",
+   "category": "key",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "tags": [
+    "key"
+   ],
+   "model": "items/wild5_treehouse/w5_treehouse_nest_key"
+  },
+  {
+   "id": "note_w5_treehouse_diary",
+   "name": "Josie's Diary, a Page",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w5_treehouse_diary",
+   "model": "items/wild5_treehouse/note_w5_treehouse_diary"
+  },
+  {
+   "id": "note_w5_treehouse_rules",
+   "name": "Tree Rules, on a Board",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w5_treehouse_rules",
+   "model": "items/wild5_treehouse/note_w5_treehouse_rules"
+  },
+  {
+   "id": "note_w5_treehouse_curtis",
+   "name": "Note Under a Pillow",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w5_treehouse_curtis",
+   "model": "items/wild5_treehouse/note_w5_treehouse_curtis"
+  },
+  {
+   "id": "note_w5_treehouse_dale",
+   "name": "Last Page, the Nest",
+   "category": "note",
+   "stack_max": 1,
+   "bulk": 0.0,
+   "value": 0,
+   "note": "w5_treehouse_dale",
+   "model": "items/wild5_treehouse/note_w5_treehouse_dale"
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+{
+ "_doc": "Readable notes of the Silver Run fish hatchery (w5_fish_hatchery), wilderness set pieces round 5. No note names a town: the hatchery stands on a creek in any valley. Items: items/wild5_hatchery.json note_<id>.",
+ "defs": [
+  {
+   "id": "w5_hatchery_feeding_chart",
+   "title": "Feeding Chart",
+   "style": "handwritten",
+   "author": "Raceway crew",
+   "body": "RACEWAY FEEDING - 4 TIMES DAILY - INITIAL WHEN FED\nRW1 rainbows 3 in. 2.1 kg  RW2 rainbows 5 in. 3.4 kg  RW3 brookies 4 in. 2.6 kg\nMon AT, DT, AT, GH. Tue AT, DT, DT, AT. Wed DT, AT, - , GH (creek samples all afternoon, soldiers on the catwalk).\nThu GH: RW2 off feed. Fish riding high, gasping at the inflow. Pulled 40 morts.\nFri GH: RW1 and RW3 off feed. White on the gill plates. Cordon says do not touch the morts with bare hands.\nSat: no initials. Somebody wrote FEED THEM ANYWAY across the column.\nSun, in Arlo's hand, very large: they are still in there Gordon I can hear them moving under the white. I fed them."
+  },
+  {
+   "id": "w5_hatchery_sampler_log",
+   "title": "Sampler Log",
+   "style": "handwritten",
+   "author": "Pvt. K. Sato, Cordon water section",
+   "body": "INTAKE STATION 2 - grab sample every 4 h, auto sampler every 1 h. Log time, temp, clarity, swab result.\n0400 6.1 C clear. Swab neg.\n0800 6.3 C clear. Swab neg.\n1200 6.8 C slight film at the weir lip. Swab POS. Called it in.\n1600 6.6 C film on both banks. POS.\nDay 4. Everything up here is POS. The Lt says keep logging so the people downstream know. I said what people. She did not answer.\nDay 6. The crew in the shed have stopped coughing. They stand at the raceways in the dark. I sleep up here now with the ladder hatch shut. They can't climb. The lab key stays on my belt like the Lt said, so nobody opens the chiller who shouldn't.\nDay 7. My eyes are doing the white thing. 0400 sample taken. 0800"
+  },
+  {
+   "id": "w5_hatchery_manager_letter",
+   "title": "Letter to June",
+   "style": "handwritten",
+   "author": "Gordon Haskell",
+   "body": "June,\nThe soldiers say the water is the problem and that the Bloom comes down the creek from somewhere up past the falls. If it comes from somewhere, it can be found, and I know that creek better than any of them. I'm going up to look. Twenty-two years I've walked it counting redds.\nThe key to the hatch house is on the kitchen table. Don't give it to the Cordon, they've sealed themselves in there with their microscopes and boarded the door against my own shed. If the boys in the shed come to the cottage, don't open up. They aren't the boys any more.\nKeep the stove going and the door shut. I'll be back by dark. If I'm not back by dark I'll be back in the morning.\nGordon"
+  },
+  {
+   "id": "w5_hatchery_spawn_log",
+   "title": "Spawning Log",
+   "style": "typed",
+   "author": "State fish hatchery, Silver Run station",
+   "body": "SILVER RUN STATION - EGG TAKE AND INCUBATION RECORD\nLot 31 brook trout, 41,000 eyed eggs, incubator stacks 1-4. Water 6.2 C. Mortality 3 pct.\nLot 32 rainbow trout, 58,000 green eggs, stacks 5-8, chiller holding 7 C. Mortality 4 pct.\nLot 33 rainbow trout, 22,000 green eggs. NOT TAKEN. Hatchery closed to all transfers by Cordon order.\nIn the manager's hand below: Stacks 1-8 lost in two days. Every tray furred over, the eggs gone white like they'd been cooked. The lieutenant took trays for her microscopes and won't tell me what she sees. We have stocked every lake in this valley for twenty years. If this is in the fish it is in every lake."
+  },
+  {
+   "id": "w5_hatchery_cordon_results",
+   "title": "Field Results, Water Section",
+   "style": "typed",
+   "author": "Cordon Quarantine Authority, water section",
+   "body": "CORDON QUARANTINE AUTHORITY - WATER SECTION - FIELD RESULTS (RESTRICTED)\nPost: state fish hatchery, intake and raceways. Officer: Lt. A. Okonkwo. Analyst: R. Ames (contract).\nQ1. Does the agent persist in moving surface water? YES. Spores viable after 6 h at 6 C.\nQ2. Does it colonise fish? YES. Gill and egg tissue. Total loss of stock in 72 h.\nQ3. Is the creek downstream a vector? PROBABLE. Recommend no stocking, no drinking, no fishing in any connected water.\nNote for HQ: our last relief vehicle turned back at the checkpoint. Samples and the cache are locked in the chiller room. Lab door boarded against the shed. Pvt. Sato holds the chiller key. In pencil: Ames coughing since Tuesday. So am I. - A.O."
+  }
+ ]
+}

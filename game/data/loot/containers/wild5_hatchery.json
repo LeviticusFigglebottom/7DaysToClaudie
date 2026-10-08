@@ -1,0 +1,8 @@
+{
+ "_doc": "Containers of the Silver Run fish hatchery (w5_fish_hatchery), wilderness set pieces round 5 (containers/wild5_hatchery.json -> tables/wild5_hatchery.json).",
+ "defs": [
+  {"id": "w5_hatchery_feed", "name": "Feed Cart", "loot_table": "w5_hatchery_feed", "slots": 6, "search_time": 1.6, "noise": 4},
+  {"id": "w5_hatchery_sampler", "name": "Water Sampler", "loot_table": "w5_hatchery_sampler", "slots": 6, "search_time": 1.8, "noise": 3},
+  {"id": "w5_hatchery_cordon_cache", "name": "Cordon Cache", "loot_table": "w5_hatchery_cordon_cache", "slots": 8, "search_time": 2.2, "noise": 6}
+ ]
+}

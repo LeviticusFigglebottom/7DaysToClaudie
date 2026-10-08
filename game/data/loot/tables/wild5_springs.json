@@ -1,0 +1,49 @@
+{
+ "_doc": "Loot tables of Ember Creek Hot Springs (w5_hot_springs_bathhouse), wilderness set pieces round 5 (containers/wild5_springs.json): the towel shelves, the bathers' lockers, the front desk, the boiler man's chest, the guests' luggage and the owner's strongbox in her suite.",
+ "defs": [
+  {"id": "w5_springs_linen", "rolls": [1, 2], "empty_chance": 0.2, "entries": [
+   {"item": "cloth", "weight": 6, "count": [1, 3]},
+   {"item": "cloth_bandage", "weight": 3, "count": [1, 2]},
+   {"item": "cordage", "weight": 1},
+   {"table": "junk_common", "weight": 2}]},
+  {"id": "w5_springs_locker", "rolls": [1, 2], "empty_chance": 0.25, "entries": [
+   {"item": "lighter", "weight": 3},
+   {"item": "painkillers", "weight": 3},
+   {"item": "scrip", "weight": 3, "count": [2, 8]},
+   {"item": "water_bottle_clean", "weight": 2},
+   {"item": "soda_can", "weight": 2},
+   {"item": "kitchen_knife", "weight": 1},
+   {"table": "junk_common", "weight": 2}]},
+  {"id": "w5_springs_till", "rolls": [1, 3], "empty_chance": 0.05, "entries": [
+   {"item": "scrip", "weight": 6, "count": [5, 20]},
+   {"item": "flashlight", "weight": 3},
+   {"item": "lighter", "weight": 2},
+   {"item": "ammo_38", "weight": 2, "count": [3, 8]},
+   {"item": "painkillers", "weight": 2},
+   {"table": "reading", "weight": 1}]},
+  {"id": "w5_springs_tools", "rolls": [1, 3], "empty_chance": 0.1, "entries": [
+   {"item": "scrap_metal", "weight": 5, "count": [1, 4]},
+   {"item": "steel_pipe", "weight": 3},
+   {"item": "duct_tape", "weight": 3},
+   {"item": "nails", "weight": 3, "count": [4, 12]},
+   {"item": "claw_hammer", "weight": 1},
+   {"item": "repair_kit", "weight": 2, "tier_min": 2},
+   {"item": "copper_wire", "weight": 2}]},
+  {"id": "w5_springs_suitcase", "rolls": [1, 2], "empty_chance": 0.2, "entries": [
+   {"item": "cloth", "weight": 4, "count": [1, 2]},
+   {"item": "canned_beans", "weight": 2},
+   {"item": "ration_bar", "weight": 2},
+   {"item": "painkillers", "weight": 2},
+   {"item": "antifungal", "weight": 1, "tier_min": 2},
+   {"item": "lighter", "weight": 2},
+   {"table": "junk_common", "weight": 2}]},
+  {"id": "w5_springs_safe", "rolls": [2, 4], "empty_chance": 0.0, "entries": [
+   {"item": "scrip", "weight": 6, "count": [15, 45]},
+   {"item": "revolver", "weight": 2, "tier_min": 2, "quality_bias": 1},
+   {"item": "ammo_38", "weight": 5, "count": [8, 18]},
+   {"item": "first_aid_kit", "weight": 3},
+   {"item": "antifungal", "weight": 3},
+   {"item": "lab_antifungal_ampoule", "weight": 1, "tier_min": 3},
+   {"table": "weapons_rare", "weight": 1}]}
+ ]
+}

@@ -1,0 +1,2510 @@
+{
+ "_doc": "Wilderness set pieces, round 5: Ember Creek Hot Springs, an old timber hot-springs bathhouse resort up a remote valley that the Cordon made a holding site. Route: up the valley road -> the bathhouse's front doors, boarded by the Cordon -> along the boardwalk past the steaming rock pool -> cabin 4 (a guest's letter) -> cabin 3, kicked in, jaws on its step -> the caretaker's cabin (his key ring: taking it, opening cabin 2 or the jaws wake the guests) -> in over the ladies' changing room's broken window -> the lobby (the Cordon's man) -> the men's changing room -> the plunge hall (loose boards round the pool wake the bathers) -> the steam room, taken by the Bloom (a can chime on its door wakes the sitters) -> the pump room's padlock (the key ring) -> down the hatch ladder to the boiler room (Emil and the suite key: taking it wakes the boilermen) and the cistern -> back up -> the lobby stair -> the gallery -> the owner's suite (deadbolt, the suite key; a shotgun on the door; Connie, guardian; the strongbox) -> down -> draw the lobby's side door bolt. Props: props/wild5_springs.json.",
+ "defs": [
+  {
+   "id": "w5_hot_springs_bathhouse",
+   "name": "Ember Creek Hot Springs",
+   "tier": 3,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    40,
+    36
+   ],
+   "origin": [
+    2,
+    2
+   ],
+   "author": "Hollowmere team (wilderness round 5)",
+   "story": "The Ember Creek hot springs come up through the rock at the head of a remote valley, and for sixty years the Vail family ran a bathhouse over them: a plunge hall round a tiled pool, a steam room fed off the spring, the boiler and pump room in the cellar, four guest cabins along a boardwalk and a rock pool out in the open air. When the Bloom came down the valley the Cordon made the springs a holding site. Guests and travellers off the road were ordered to stay, the front doors were nailed shut from outside and a soldier was left on the desk. Connie Vail kept the water hot because she believed the heat would cook the sickness out; Emil kept the boiler fed for her and Walt kept the cabins. The warm, wet dark was the best thing that ever happened to the Bloom: it took the steam room first and glows there still. Connie locked herself in the owner's suite with the strongbox and the spare key went down to Emil in the cellar. Nobody came back for the guests.",
+   "style": {
+    "exterior": "siding_white",
+    "interior": "wood_paneling_dark",
+    "floor": "wood_pine",
+    "ceiling": "plaster_white",
+    "floor_height": 0.15,
+    "decay": 0.6,
+    "damaged_walls": 0.05,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.3
+    },
+    "roof": {
+     "type": "gable",
+     "axis": "x",
+     "pitch": 30,
+     "overhang": 0.5,
+     "material": "roof_metal_red",
+     "gutters": false
+    }
+   },
+   "levels": [
+    {
+     "level": -1,
+     "plan": [
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "  CCCCCBBBBB                        ",
+      "  CCCCCBBBBB                        ",
+      "  CCCCCBBBBB                        ",
+      "  CCCCCBBBBB                        ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    "
+     ],
+     "rooms": {
+      "C": {
+       "name": "Cistern room",
+       "type": "cellar",
+       "wall": "rock_limestone",
+       "floor": "rock_floor",
+       "ceiling": "concrete_block"
+      },
+      "B": {
+       "name": "Boiler room",
+       "type": "cellar",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "concrete_block",
+       "open_to": "C"
+      }
+     }
+    },
+    {
+     "level": 0,
+     "plan": [
+      "....................................",
+      "....................................",
+      "....................................",
+      "...........................FFF......",
+      "...........................FFF......",
+      "..SSSSSRRRRRKKKKKKKK.......FFF......",
+      "..SSSSSRRRRRKKKKKKKK.......FFF......",
+      "..SSSSSRRRRRKKKKKKKK................",
+      "..SSSSSRRRRRKKKKKKKK................",
+      "..PPPPPPPPPPMMMMWWWW.......GGG......",
+      "..PPPPPPPPPPMMMMWWWW.......GGG......",
+      "..PPPPPPPPPPMMMMWWWW.......GGG......",
+      "..PPPPPPPPPPMMMMWWWW.......GGG......",
+      "..PPPPPPPPPPMMMMWWWW................",
+      "..PPPPPPPPPPMMMMWWWW................",
+      "..PPPPPPPPPPLLLLLLLL.......HHH......",
+      "..PPPPPPPPPPLLLLLLLL.......HHH......",
+      "..PPPPPPPPPPLLLLLLLL.......HHH......",
+      "..PPPPPPPPPPLLLLLLLL.......HHH......",
+      "..PPPPPPPPPPLLLLLLLL................",
+      "....................................",
+      "...........................JJJ......",
+      "...........................JJJ......",
+      "...........................JJJ......",
+      "...........................JJJ......",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "...................................."
+     ],
+     "rooms": {
+      "S": {
+       "name": "Steam room",
+       "type": "bath",
+       "wall": "wood_paneling_dark",
+       "floor": "tile_white_small",
+       "ceiling": "wood_paneling_dark"
+      },
+      "R": {
+       "name": "Pump room",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "K": {
+       "name": "Laundry",
+       "type": "storage",
+       "wall": "paint_sage",
+       "floor": "linoleum_beige",
+       "ceiling": "plaster_white"
+      },
+      "P": {
+       "name": "Plunge hall",
+       "type": "bath",
+       "wall": "tile_bathroom_white",
+       "floor": "tile_white_small",
+       "storeys": 2,
+       "open_roof": true
+      },
+      "M": {
+       "name": "Men's changing room",
+       "type": "bath",
+       "wall": "paint_slate_blue",
+       "floor": "tile_white_small",
+       "ceiling": "plaster_white"
+      },
+      "W": {
+       "name": "Ladies' changing room",
+       "type": "bath",
+       "wall": "paint_mustard",
+       "floor": "tile_white_small",
+       "ceiling": "plaster_white"
+      },
+      "L": {
+       "name": "Lobby",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak",
+       "ceiling": "plaster_white"
+      },
+      "F": {
+       "name": "Caretaker's cabin",
+       "type": "bedroom",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_pine",
+       "ceiling": "wood_paneling_dark"
+      },
+      "G": {
+       "name": "Cabin 2",
+       "type": "bedroom",
+       "wall": "wallpaper_stripe_green",
+       "floor": "wood_pine",
+       "ceiling": "plaster_white"
+      },
+      "H": {
+       "name": "Cabin 3",
+       "type": "bedroom",
+       "wall": "wallpaper_floral_rose",
+       "floor": "wood_pine",
+       "ceiling": "plaster_white"
+      },
+      "J": {
+       "name": "Cabin 4",
+       "type": "bedroom",
+       "wall": "paint_sage",
+       "floor": "wood_pine",
+       "ceiling": "plaster_white"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "  ^^^^^^^^^^UUOOOOOO                ",
+      "  ^^^^^^^^^^UUOOOOOO                ",
+      "  ^^^^^^^^^^UUOOOOOO                ",
+      "  ^^^^^^^^^^UUOOOOOO                ",
+      "  ^^^^^^^^^^UUOOOOOO                ",
+      "  ^^^^^^^^^^UUOOOOOO                ",
+      "  ^^^^^^^^^^UUUQQQQQ                ",
+      "  ^^^^^^^^^^UUUQQQQQ                ",
+      "  ^^^^^^^^^^UUUQQQQQ                ",
+      "  ^^^^^^^^^^UUUQQQQQ                ",
+      "  ^^^^^^^^^^UUUQQQQQ                ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    ",
+      "                                    "
+     ],
+     "rooms": {
+      "U": {
+       "name": "Gallery",
+       "type": "hallway",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak",
+       "ceiling": "plaster_white",
+       "gallery": "balustrade"
+      },
+      "O": {
+       "name": "Owner's suite",
+       "type": "bedroom",
+       "wall": "wallpaper_damask_brown",
+       "floor": "carpet_brown",
+       "ceiling": "plaster_white",
+       "gallery": false
+      },
+      "Q": {
+       "name": "Office",
+       "type": "office",
+       "wall": "wood_paneling_dark",
+       "floor": "wood_oak",
+       "ceiling": "plaster_white",
+       "gallery": false
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_doors",
+     "at": [
+      15,
+      19
+     ],
+     "side": "S",
+     "type": "door2",
+     "state": "barricaded"
+    },
+    {
+     "id": "lobby_win_s",
+     "at": [
+      18,
+      19
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "side_door",
+     "at": [
+      19,
+      16
+     ],
+     "side": "E",
+     "type": "door",
+     "state": "locked_inside"
+    },
+    {
+     "id": "hall_tall_s1",
+     "at": [
+      4,
+      19
+     ],
+     "side": "S",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "hall_tall_s2",
+     "at": [
+      8,
+      19
+     ],
+     "side": "S",
+     "type": "window_tall",
+     "state": "boarded"
+    },
+    {
+     "id": "hall_tall_w1",
+     "at": [
+      2,
+      11
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "hall_tall_w2",
+     "at": [
+      2,
+      16
+     ],
+     "side": "W",
+     "type": "window_tall",
+     "state": "closed"
+    },
+    {
+     "id": "ladies_window",
+     "at": [
+      19,
+      11
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken"
+    },
+    {
+     "id": "ladies_window_b",
+     "at": [
+      19,
+      13
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "laundry_back",
+     "at": [
+      15,
+      5
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "barricaded",
+     "barricade": "furniture"
+    },
+    {
+     "id": "laundry_win_n",
+     "at": [
+      18,
+      5
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "laundry_win_e",
+     "at": [
+      19,
+      7
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "pump_win_n",
+     "at": [
+      8,
+      5
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "steam_win_w",
+     "at": [
+      2,
+      6
+     ],
+     "side": "W",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "lobby_men",
+     "at": [
+      13,
+      15
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "lobby_ladies",
+     "at": [
+      17,
+      15
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "men_hall",
+     "at": [
+      12,
+      11
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "men_laundry",
+     "at": [
+      13,
+      9
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "steam_door",
+     "at": [
+      4,
+      9
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "pump_door",
+     "at": [
+      9,
+      9
+     ],
+     "side": "N",
+     "type": "door",
+     "state": "locked",
+     "key": "w5_springs_staff_key",
+     "lock": "padlock",
+     "model": "door_metal"
+    },
+    {
+     "id": "suite_door",
+     "at": [
+      14,
+      11
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "locked",
+     "key": "w5_springs_suite_key",
+     "lock": "deadbolt",
+     "level": 1
+    },
+    {
+     "id": "office_door",
+     "at": [
+      15,
+      15
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "suite_win_e1",
+     "at": [
+      19,
+      10
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "suite_win_e2",
+     "at": [
+      19,
+      13
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "boarded",
+     "level": 1
+    },
+    {
+     "id": "office_win_s",
+     "at": [
+      17,
+      19
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "office_win_e",
+     "at": [
+      19,
+      17
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken",
+     "level": 1,
+     "cue": "none"
+    },
+    {
+     "id": "gallery_win_s",
+     "at": [
+      12,
+      19
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "f_door",
+     "at": [
+      27,
+      4
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed",
+     "model": "door_plank"
+    },
+    {
+     "id": "f_win",
+     "at": [
+      29,
+      5
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "closed"
+    },
+    {
+     "id": "g_door",
+     "at": [
+      27,
+      10
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed",
+     "model": "door_plank"
+    },
+    {
+     "id": "g_win",
+     "at": [
+      28,
+      12
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "boarded"
+    },
+    {
+     "id": "h_door",
+     "at": [
+      27,
+      16
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "broken",
+     "model": "door_plank"
+    },
+    {
+     "id": "h_win",
+     "at": [
+      29,
+      17
+     ],
+     "side": "E",
+     "type": "window",
+     "state": "broken",
+     "cue": "none"
+    },
+    {
+     "id": "j_door",
+     "at": [
+      27,
+      22
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "open",
+     "model": "door_plank"
+    },
+    {
+     "id": "j_win",
+     "at": [
+      28,
+      24
+     ],
+     "side": "S",
+     "type": "window",
+     "state": "closed"
+    }
+   ],
+   "stairs": [
+    {
+     "level": 0,
+     "at": [
+      14,
+      19
+     ],
+     "dir": "N"
+    }
+   ],
+   "ladders": [
+    {
+     "level": -1,
+     "at": [
+      10,
+      5
+     ],
+     "side": "N",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "plunge_pool",
+     "prop": "w5_springs_plunge_pool",
+     "pos": [
+      6.5,
+      14.5
+     ],
+     "rot": 0,
+     "alt": "pool:steaming"
+    },
+    {
+     "id": "plunge_pool",
+     "prop": "w5_springs_plunge_pool",
+     "pos": [
+      6.5,
+      14.5
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "alt": "pool:scummed"
+    },
+    {
+     "id": "pool_steam",
+     "prop": "w5_springs_steam",
+     "pos": [
+      6.5,
+      14.5
+     ],
+     "rot": 0,
+     "y": 0.5,
+     "alt": "pool:steaming"
+    },
+    {
+     "id": "hall_bench_w",
+     "prop": "w5_springs_changing_bench",
+     "at": [
+      2,
+      13
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.5
+     ]
+    },
+    {
+     "id": "hall_towels",
+     "prop": "w5_springs_towel_shelf",
+     "at": [
+      10,
+      19
+     ],
+     "against": "S",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "id": "hall_bench_e",
+     "prop": "w3_log_bench",
+     "pos": [
+      11.0,
+      17.0
+     ],
+     "rot": -90
+    },
+    {
+     "prop": "w5_springs_bloom_mat",
+     "pos": [
+      9.4,
+      18.8
+     ],
+     "rot": 10,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "prop": "towel_rack",
+     "at": [
+      11,
+      13
+     ],
+     "against": "E",
+     "height": 1.0
+    },
+    {
+     "prop": "clothes_pile",
+     "pos": [
+      3.4,
+      18.7
+     ],
+     "rot": 20
+    },
+    {
+     "prop": "road_mop_bucket",
+     "pos": [
+      2.6,
+      9.6
+     ],
+     "rot": 30
+    },
+    {
+     "id": "steam_bench_n",
+     "prop": "w5_springs_steam_bench",
+     "at": [
+      4,
+      5
+     ],
+     "against": "N"
+    },
+    {
+     "id": "steam_bench_w",
+     "prop": "w5_springs_steam_bench",
+     "at": [
+      2,
+      7
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.0
+     ]
+    },
+    {
+     "id": "steam_bloom_e",
+     "prop": "w5_springs_bloom_wall",
+     "at": [
+      6,
+      6
+     ],
+     "against": "E",
+     "height": 0.2,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "id": "steam_bloom_floor",
+     "prop": "w5_springs_bloom_mat",
+     "pos": [
+      5.9,
+      8.0
+     ],
+     "rot": 40,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "id": "steam_haze",
+     "prop": "w5_springs_steam",
+     "pos": [
+      4.6,
+      7.2
+     ],
+     "rot": 0,
+     "y": 0.2
+    },
+    {
+     "id": "pump_pipes",
+     "prop": "w5_springs_pipe_run",
+     "at": [
+      8,
+      5
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "height": 0.3
+    },
+    {
+     "id": "pump_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      7,
+      7
+     ],
+     "against": "W",
+     "container": "hardware_shelf"
+    },
+    {
+     "prop": "road_mop_bucket",
+     "pos": [
+      11.5,
+      8.4
+     ],
+     "rot": 0
+    },
+    {
+     "id": "washer_a",
+     "prop": "road_washer",
+     "at": [
+      16,
+      5
+     ],
+     "against": "N"
+    },
+    {
+     "id": "washer_b",
+     "prop": "road_washer",
+     "at": [
+      17,
+      5
+     ],
+     "against": "N",
+     "variant": "worn"
+    },
+    {
+     "id": "laundry_dryer",
+     "prop": "road_dryer",
+     "at": [
+      19,
+      6
+     ],
+     "against": "E"
+    },
+    {
+     "id": "laundry_linen",
+     "prop": "w5_springs_towel_shelf",
+     "at": [
+      17,
+      8
+     ],
+     "against": "S",
+     "offset": [
+      0.5,
+      0
+     ]
+    },
+    {
+     "prop": "clothes_pile",
+     "pos": [
+      13.4,
+      6.2
+     ],
+     "rot": -15
+    },
+    {
+     "id": "laundry_basket",
+     "prop": "cardboard_box",
+     "pos": [
+      18.4,
+      7.2
+     ],
+     "rot": 10
+    },
+    {
+     "id": "men_locker_a",
+     "prop": "wild_locker_steel",
+     "at": [
+      15,
+      10
+     ],
+     "against": "E",
+     "container": "w5_springs_locker"
+    },
+    {
+     "id": "men_locker_b",
+     "prop": "wild_locker_steel",
+     "at": [
+      15,
+      11
+     ],
+     "against": "E",
+     "container": "w5_springs_locker"
+    },
+    {
+     "id": "men_locker_c",
+     "prop": "wild_locker_steel",
+     "at": [
+      15,
+      12
+     ],
+     "against": "E",
+     "container": "w5_springs_locker",
+     "variant": "worn"
+    },
+    {
+     "id": "men_bench",
+     "prop": "w5_springs_changing_bench",
+     "at": [
+      12,
+      13
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.4
+     ]
+    },
+    {
+     "id": "ladies_locker_a",
+     "prop": "wild_locker_steel",
+     "at": [
+      17,
+      9
+     ],
+     "against": "N",
+     "container": "w5_springs_locker"
+    },
+    {
+     "id": "ladies_locker_b",
+     "prop": "wild_locker_steel",
+     "at": [
+      18,
+      9
+     ],
+     "against": "N",
+     "container": "w5_springs_locker"
+    },
+    {
+     "id": "ladies_bench",
+     "prop": "w5_springs_changing_bench",
+     "at": [
+      16,
+      12
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.5
+     ]
+    },
+    {
+     "prop": "towel_rack",
+     "at": [
+      19,
+      14
+     ],
+     "against": "E",
+     "height": 1.0
+    },
+    {
+     "id": "front_desk",
+     "prop": "counter_reception",
+     "at": [
+      19,
+      18
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.3
+     ],
+     "container": "w5_springs_till"
+    },
+    {
+     "id": "key_board",
+     "prop": "w5_springs_key_board",
+     "at": [
+      19,
+      15
+     ],
+     "against": "E",
+     "height": 1.3
+    },
+    {
+     "id": "lobby_chairs",
+     "prop": "road_waiting_chairs",
+     "at": [
+      12,
+      17
+     ],
+     "against": "W"
+    },
+    {
+     "prop": "road_plywood_quarantine",
+     "at": [
+      15,
+      15
+     ],
+     "against": "N",
+     "height": 0.9
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "pos": [
+      19.4,
+      19.0
+     ],
+     "y": 1.26,
+     "lit": true,
+     "alt": "lobby:lamp_lit"
+    },
+    {
+     "id": "suite_bed",
+     "prop": "bed_double",
+     "at": [
+      17,
+      9
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "level": 1
+    },
+    {
+     "id": "suite_nightstand",
+     "prop": "nightstand",
+     "at": [
+      16,
+      9
+     ],
+     "against": "N",
+     "offset": [
+      -0.05,
+      0
+     ],
+     "level": 1
+    },
+    {
+     "id": "suite_safe",
+     "prop": "wild_safe_floor",
+     "at": [
+      19,
+      14
+     ],
+     "against": "S",
+     "container": "w5_springs_safe",
+     "level": 1
+    },
+    {
+     "id": "suite_dresser",
+     "prop": "dresser",
+     "at": [
+      16,
+      14
+     ],
+     "against": "S",
+     "offset": [
+      0.3,
+      0
+     ],
+     "level": 1
+    },
+    {
+     "id": "suite_armchair",
+     "prop": "armchair",
+     "pos": [
+      17.3,
+      12.0
+     ],
+     "rot": -90,
+     "level": 1
+    },
+    {
+     "id": "suite_tub",
+     "prop": "w5_springs_cedar_tub",
+     "pos": [
+      18.8,
+      12.2
+     ],
+     "rot": -90,
+     "level": 1
+    },
+    {
+     "prop": "candle_cluster",
+     "pos": [
+      16.25,
+      9.25
+     ],
+     "y": 0.62,
+     "level": 1,
+     "lit": true
+    },
+    {
+     "id": "office_desk",
+     "prop": "office_desk",
+     "at": [
+      19,
+      16
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.5
+     ],
+     "level": 1
+    },
+    {
+     "id": "office_chair",
+     "prop": "office_chair",
+     "pos": [
+      18.6,
+      16.9
+     ],
+     "rot": 90,
+     "level": 1
+    },
+    {
+     "id": "office_files",
+     "prop": "filing_cabinet",
+     "at": [
+      15,
+      19
+     ],
+     "against": "S",
+     "level": 1
+    },
+    {
+     "id": "boiler",
+     "prop": "w5_springs_boiler",
+     "pos": [
+      9.0,
+      8.1
+     ],
+     "rot": 90,
+     "level": -1
+    },
+    {
+     "id": "boiler_chest",
+     "prop": "wild_tool_chest",
+     "at": [
+      11,
+      6
+     ],
+     "against": "E",
+     "level": -1,
+     "container": "w5_springs_tools"
+    },
+    {
+     "id": "cistern",
+     "prop": "w5_springs_cistern",
+     "pos": [
+      3.6,
+      6.4
+     ],
+     "rot": 0,
+     "level": -1
+    },
+    {
+     "id": "cistern_pipes",
+     "prop": "w5_springs_pipe_run",
+     "at": [
+      5,
+      8
+     ],
+     "against": "S",
+     "height": 0.3,
+     "level": -1
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "pos": [
+      11.55,
+      6.2
+     ],
+     "y": 0.46,
+     "level": -1,
+     "lit": true
+    },
+    {
+     "prop": "w5_springs_bloom_mat",
+     "pos": [
+      2.8,
+      8.3
+     ],
+     "rot": -20,
+     "level": -1,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "id": "f_bed",
+     "prop": "bed_single",
+     "at": [
+      29,
+      3
+     ],
+     "against": "N",
+     "offset": [
+      -0.05,
+      0
+     ]
+    },
+    {
+     "id": "f_desk",
+     "prop": "desk_small",
+     "at": [
+      28,
+      6
+     ],
+     "against": "S",
+     "offset": [
+      0,
+      0
+     ]
+    },
+    {
+     "id": "f_chair",
+     "prop": "chair_wood",
+     "pos": [
+      28.5,
+      5.75
+     ],
+     "rot": 180
+    },
+    {
+     "prop": "wild_oil_lantern",
+     "pos": [
+      28.2,
+      6.65
+     ],
+     "y": 0.75,
+     "lit": true
+    },
+    {
+     "id": "f_stove",
+     "prop": "wild_wood_stove",
+     "at": [
+      27,
+      6
+     ],
+     "against": "W"
+    },
+    {
+     "id": "g_bed",
+     "prop": "bed_single",
+     "at": [
+      29,
+      9
+     ],
+     "against": "N",
+     "offset": [
+      -0.05,
+      0
+     ]
+    },
+    {
+     "id": "g_suitcase",
+     "prop": "road_suitcase",
+     "pos": [
+      28.0,
+      12.3
+     ],
+     "rot": 10
+    },
+    {
+     "id": "g_nightstand",
+     "prop": "nightstand",
+     "at": [
+      29,
+      12
+     ],
+     "against": "E"
+    },
+    {
+     "id": "h_bed",
+     "prop": "bed_single",
+     "at": [
+      29,
+      15
+     ],
+     "against": "N",
+     "offset": [
+      -0.05,
+      0
+     ]
+    },
+    {
+     "id": "h_footlocker",
+     "prop": "wild_footlocker",
+     "at": [
+      28,
+      18
+     ],
+     "against": "S",
+     "container": "w5_springs_suitcase"
+    },
+    {
+     "id": "j_bed",
+     "prop": "bed_single",
+     "at": [
+      29,
+      21
+     ],
+     "against": "N",
+     "offset": [
+      -0.05,
+      0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "j_suitcase",
+     "prop": "road_suitcase",
+     "pos": [
+      28.7,
+      23.9
+     ],
+     "rot": -8,
+     "container": "w5_springs_suitcase"
+    },
+    {
+     "prop": "clothes_pile",
+     "pos": [
+      27.6,
+      24.3
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      24.0,
+      4.0
+     ],
+     "rot": 0,
+     "route_ok": true,
+     "variant": "clean"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      24.0,
+      8.0
+     ],
+     "rot": 0,
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      24.0,
+      12.0
+     ],
+     "rot": 0,
+     "route_ok": true,
+     "variant": "clean"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      24.0,
+      16.0
+     ],
+     "rot": 0,
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      24.0,
+      20.0
+     ],
+     "rot": 0,
+     "route_ok": true,
+     "variant": "clean"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      24.0,
+      24.0
+     ],
+     "rot": 0,
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      24.0,
+      28.0
+     ],
+     "rot": 0,
+     "route_ok": true,
+     "variant": "clean"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      25.0,
+      4.5
+     ],
+     "rot": 90,
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      25.0,
+      10.5
+     ],
+     "rot": 90,
+     "route_ok": true,
+     "variant": "clean"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      25.0,
+      16.5
+     ],
+     "rot": 90,
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "prop": "w5_springs_boardwalk",
+     "pos": [
+      25.0,
+      22.5
+     ],
+     "rot": 90,
+     "route_ok": true,
+     "variant": "clean"
+    },
+    {
+     "id": "rock_pool",
+     "prop": "w5_springs_rock_pool",
+     "pos": [
+      29.5,
+      28.6
+     ],
+     "rot": 0,
+     "alt": "rock_pool:steaming"
+    },
+    {
+     "id": "rock_pool",
+     "prop": "w5_springs_rock_pool",
+     "pos": [
+      29.5,
+      28.6
+     ],
+     "rot": 0,
+     "variant": "worn",
+     "alt": "rock_pool:cooling"
+    },
+    {
+     "id": "rock_steam",
+     "prop": "w5_springs_steam",
+     "pos": [
+      29.5,
+      28.6
+     ],
+     "rot": 0,
+     "y": 0.4,
+     "alt": "rock_pool:steaming"
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      8.5,
+      23.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w3_cordon_fence",
+     "pos": [
+      11.6,
+      23.0
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "w3_sandbags",
+     "pos": [
+      21.6,
+      23.4
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      0.8,
+      1.0
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      9.0,
+      1.2
+     ],
+     "rot": 40
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      21.5,
+      1.0
+     ],
+     "rot": 80,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      33.5,
+      1.4
+     ],
+     "rot": 120
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      34.6,
+      12.0
+     ],
+     "rot": 160
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      0.8,
+      27.0
+     ],
+     "rot": 200
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      34.8,
+      22.5
+     ],
+     "rot": 240,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      4.5,
+      30.6
+     ],
+     "rot": 280
+    },
+    {
+     "prop": "out_stump",
+     "pos": [
+      33.4,
+      30.4
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      20.8,
+      3.4
+     ],
+     "rot": 70
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      1.0,
+      20.5
+     ],
+     "rot": 10
+    }
+   ],
+   "sleepers": [
+    {
+     "id": "desk_soldier",
+     "pos": [
+      16.8,
+      17.6
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "population": "cordon",
+     "alt": "lobby:lamp_lit"
+    },
+    {
+     "id": "desk_soldier",
+     "pos": [
+      18.2,
+      19.3
+     ],
+     "enemy": "hollow",
+     "pose": "stand",
+     "rot": 180,
+     "population": "cordon",
+     "alt": "lobby:lamp_out"
+    },
+    {
+     "id": "guest_ruth",
+     "group": "guests",
+     "pos": [
+      29.45,
+      10.0
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 180,
+     "anchor": "g_bed"
+    },
+    {
+     "id": "guest_amos",
+     "group": "guests",
+     "pos": [
+      29.45,
+      16.0
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 180,
+     "anchor": "h_bed"
+    },
+    {
+     "id": "guest_boy",
+     "group": "guests",
+     "pos": [
+      27.8,
+      17.6
+     ],
+     "enemy": "lurcher",
+     "pose": "crouch",
+     "rot": 90
+    },
+    {
+     "id": "bather_a",
+     "group": "bathers",
+     "pos": [
+      3.2,
+      17.4
+     ],
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 0,
+     "anchor": "floor"
+    },
+    {
+     "id": "bather_b",
+     "group": "bathers",
+     "pos": [
+      2.4,
+      13.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "anchor": "hall_bench_w"
+    },
+    {
+     "id": "bather_c",
+     "group": "bathers",
+     "pos": [
+      10.0,
+      15.6
+     ],
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": -90
+    },
+    {
+     "id": "bather_d",
+     "group": "bathers",
+     "pos": [
+      6.5,
+      18.7
+     ],
+     "enemy": "lurcher",
+     "pose": "stand",
+     "rot": 0
+    },
+    {
+     "id": "steam_a",
+     "group": "steamers",
+     "pos": [
+      4.2,
+      5.8
+     ],
+     "enemy": "blister",
+     "pose": "sit",
+     "rot": 0,
+     "anchor": "steam_bench_n"
+    },
+    {
+     "id": "steam_b",
+     "group": "steamers",
+     "pos": [
+      2.8,
+      7.6
+     ],
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": 90,
+     "anchor": "steam_bench_w"
+    },
+    {
+     "id": "emil",
+     "group": "boilermen",
+     "pos": [
+      8.2,
+      6.1
+     ],
+     "level": -1,
+     "enemy": "husk",
+     "pose": "lie",
+     "rot": 90,
+     "anchor": "floor"
+    },
+    {
+     "id": "stoker",
+     "group": "boilermen",
+     "pos": [
+      5.6,
+      7.9
+     ],
+     "level": -1,
+     "enemy": "hollow",
+     "pose": "crouch",
+     "rot": 90
+    },
+    {
+     "id": "connie",
+     "guardian": true,
+     "pos": [
+      17.3,
+      12.0
+     ],
+     "level": 1,
+     "enemy": "hollow",
+     "pose": "sit",
+     "rot": -90,
+     "anchor": "suite_armchair",
+     "alt": "owner:in_her_chair"
+    },
+    {
+     "id": "connie",
+     "guardian": true,
+     "pos": [
+      17.5,
+      10.0
+     ],
+     "level": 1,
+     "enemy": "hollow",
+     "pose": "lie",
+     "rot": 180,
+     "anchor": "suite_bed",
+     "alt": "owner:in_bed"
+    }
+   ],
+   "pickups": [
+    {
+     "id": "staff_keys",
+     "item": "w5_springs_staff_key",
+     "pos": [
+      28.1,
+      6.5
+     ],
+     "y": 0.76
+    },
+    {
+     "id": "suite_key",
+     "item": "w5_springs_suite_key",
+     "pos": [
+      8.9,
+      6.0
+     ],
+     "level": -1,
+     "y": 0.05
+    }
+   ],
+   "notes": [
+    {
+     "note": "w5_springs_holding_order",
+     "pos": [
+      19.55,
+      18.4
+     ],
+     "y": 1.27
+    },
+    {
+     "note": "w5_springs_guest_letter",
+     "pos": [
+      29.4,
+      22.6
+     ],
+     "y": 0.66
+    },
+    {
+     "note": "w5_springs_caretaker",
+     "pos": [
+      28.7,
+      6.55
+     ],
+     "y": 0.76
+    },
+    {
+     "note": "w5_springs_water_log",
+     "pos": [
+      11.6,
+      6.75
+     ],
+     "y": 0.47,
+     "level": -1
+    },
+    {
+     "note": "w5_springs_owner_diary",
+     "pos": [
+      16.55,
+      9.4
+     ],
+     "y": 0.63,
+     "level": 1
+    }
+   ],
+   "traps": [
+    {
+     "id": "pool_boards",
+     "type": "creaky_floor",
+     "at": [
+      5,
+      9
+     ],
+     "size": [
+      4,
+      2
+     ]
+    },
+    {
+     "id": "steam_chime",
+     "type": "can_chime",
+     "at": [
+      4,
+      9
+     ],
+     "side": "N"
+    },
+    {
+     "id": "cabin_jaws",
+     "type": "bear_trap",
+     "pos": [
+      26.4,
+      16.55
+     ],
+     "rot": 20
+    },
+    {
+     "id": "suite_gun",
+     "type": "shotgun",
+     "at": [
+      14,
+      11
+     ],
+     "side": "W",
+     "level": 1
+    },
+    {
+     "id": "office_rot",
+     "type": "weak_floor",
+     "at": [
+      17,
+      17
+     ],
+     "level": 1
+    }
+   ],
+   "triggers": [
+    {
+     "id": "guests_keys",
+     "group": "guests",
+     "on": "pickup",
+     "pickup": "staff_keys",
+     "delay": 0.8
+    },
+    {
+     "id": "guests_door",
+     "group": "guests",
+     "on": "opening",
+     "opening": "g_door",
+     "delay": 0.3,
+     "alt": "cabin_two:shut"
+    },
+    {
+     "id": "guests_jaws",
+     "group": "guests",
+     "on": "trap",
+     "trap": "cabin_jaws",
+     "delay": 0.5
+    },
+    {
+     "id": "bathers_boards",
+     "group": "bathers",
+     "on": "trap",
+     "trap": "pool_boards",
+     "delay": 0.6
+    },
+    {
+     "id": "bathers_pump_door",
+     "group": "bathers",
+     "on": "opening",
+     "opening": "pump_door",
+     "delay": 1.0
+    },
+    {
+     "id": "steamers_chime",
+     "group": "steamers",
+     "on": "trap",
+     "trap": "steam_chime",
+     "delay": 0.2
+    },
+    {
+     "id": "steamers_door",
+     "group": "steamers",
+     "on": "opening",
+     "opening": "steam_door",
+     "delay": 0.4
+    },
+    {
+     "id": "boilermen_key",
+     "group": "boilermen",
+     "on": "pickup",
+     "pickup": "suite_key",
+     "delay": 0.5
+    }
+   ],
+   "lights": [
+    {
+     "pos": [
+      4.8,
+      6.6
+     ],
+     "height": 0.6,
+     "color": "#cfeec0",
+     "energy": 0.45,
+     "range": 4.5,
+     "flicker": 0.05
+    },
+    {
+     "pos": [
+      6.5,
+      14.5
+     ],
+     "height": 0.7,
+     "color": "#bfe4dc",
+     "energy": 0.3,
+     "range": 6.0,
+     "flicker": 0.03,
+     "alt": "pool:steaming"
+    },
+    {
+     "pos": [
+      11.5,
+      6.4
+     ],
+     "level": -1,
+     "height": 0.8,
+     "color": "#ffb060",
+     "energy": 0.35,
+     "range": 4.5,
+     "flicker": 0.2
+    },
+    {
+     "pos": [
+      16.3,
+      9.3
+     ],
+     "level": 1,
+     "height": 0.8,
+     "color": "#ffbb77",
+     "energy": 0.3,
+     "range": 4.0,
+     "flicker": 0.3
+    },
+    {
+     "pos": [
+      28.3,
+      6.5
+     ],
+     "height": 1.0,
+     "color": "#ffc27a",
+     "energy": 0.3,
+     "range": 3.5,
+     "flicker": 0.2
+    },
+    {
+     "pos": [
+      19.4,
+      19.0
+     ],
+     "height": 1.5,
+     "color": "#ffc27a",
+     "energy": 0.3,
+     "range": 4.0,
+     "flicker": 0.15,
+     "alt": "lobby:lamp_lit"
+    }
+   ],
+   "decals": [
+    {
+     "decal": "footprints_mud",
+     "at": [
+      19,
+      11
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      1.6
+     ],
+     "rot": 90
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      7,
+      19
+     ],
+     "side": "S",
+     "height": 2.0,
+     "size": [
+      1.4,
+      1.8
+     ]
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      3,
+      9
+     ],
+     "side": "N",
+     "height": 2.2,
+     "size": [
+      1.6,
+      1.0
+     ]
+    },
+    {
+     "decal": "mold_patch",
+     "at": [
+      6,
+      7
+     ],
+     "side": "E",
+     "height": 1.8,
+     "size": [
+      1.4,
+      1.2
+     ]
+    },
+    {
+     "decal": "blood_trail",
+     "at": [
+      9,
+      12
+     ],
+     "side": "floor",
+     "size": [
+      0.9,
+      2.0
+     ],
+     "rot": 0
+    },
+    {
+     "decal": "survivor_marks_c",
+     "at": [
+      13,
+      9
+     ],
+     "side": "N",
+     "height": 1.5,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "blood_handprint",
+     "at": [
+      14,
+      12
+     ],
+     "side": "W",
+     "height": 1.3,
+     "size": [
+      0.4,
+      0.4
+     ],
+     "level": 1
+    },
+    {
+     "decal": "blood_pool",
+     "at": [
+      8,
+      6
+     ],
+     "side": "floor",
+     "size": [
+      1.2,
+      1.2
+     ],
+     "level": -1
+    },
+    {
+     "decal": "grime_streaks",
+     "at": [
+      10,
+      5
+     ],
+     "side": "N",
+     "height": 1.4,
+     "size": [
+      1.2,
+      1.4
+     ],
+     "level": -1
+    },
+    {
+     "decal": "survivor_marks_a",
+     "at": [
+      28,
+      3
+     ],
+     "side": "N",
+     "height": 1.6,
+     "size": [
+      0.8,
+      0.6
+     ]
+    },
+    {
+     "decal": "water_stain",
+     "at": [
+      18,
+      9
+     ],
+     "side": "N",
+     "height": 2.1,
+     "size": [
+      1.2,
+      1.2
+     ],
+     "level": 1
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      18,
+      31
+     ],
+     "label": "The valley road gives out at a resort of grey timber: a bathhouse, a row of cabins on a boardwalk, steam drifting off the rocks"
+    },
+    {
+     "at": [
+      16,
+      21
+     ],
+     "label": "The bathhouse doors: boarded by the Cordon, a holding-site notice inside the glass"
+    },
+    {
+     "at": [
+      25,
+      28
+     ],
+     "label": "The boardwalk to the rock pool: still steaming, nobody in it"
+    },
+    {
+     "at": [
+      28,
+      23
+     ],
+     "label": "Cabin 4, open: a letter on the bed"
+    },
+    {
+     "at": [
+      25,
+      16
+     ],
+     "label": "Cabin 3: the door kicked in, jaws in the leaves on the step"
+    },
+    {
+     "at": [
+      28,
+      5
+     ],
+     "label": "The caretaker's cabin: his key ring on the desk (taking it wakes the cabins)"
+    },
+    {
+     "at": [
+      21,
+      11
+     ],
+     "label": "The ladies' changing room window, smashed, a crate under it"
+    },
+    {
+     "at": [
+      18,
+      12
+     ],
+     "label": "Over the sill into the ladies' changing room"
+    },
+    {
+     "at": [
+      16,
+      16
+     ],
+     "label": "The lobby: the Cordon's man still at the desk"
+    },
+    {
+     "at": [
+      13,
+      12
+     ],
+     "label": "The men's changing room: lockers hanging open"
+    },
+    {
+     "at": [
+      10,
+      11
+     ],
+     "label": "The plunge hall: bodies round the pool, loose boards on the deck"
+    },
+    {
+     "at": [
+      4,
+      7
+     ],
+     "label": "The steam room: the Bloom grows on the benches and glows in the steam"
+    },
+    {
+     "at": [
+      9,
+      10
+     ],
+     "label": "The pump room door: padlocked (the caretaker's key ring)"
+    },
+    {
+     "at": [
+      10,
+      7
+     ],
+     "label": "The pump room: a hatch and a ladder down"
+    },
+    {
+     "at": [
+      9,
+      6
+     ],
+     "level": -1,
+     "label": "The boiler room: Emil by his boiler, the suite key on the floor beside him"
+    },
+    {
+     "at": [
+      5,
+      6
+     ],
+     "level": -1,
+     "label": "The cistern: the spring comes up through the rock here"
+    },
+    {
+     "at": [
+      11,
+      7
+     ],
+     "label": "Back up the ladder"
+    },
+    {
+     "at": [
+      13,
+      16
+     ],
+     "label": "Back through the changing room to the lobby stairs"
+    },
+    {
+     "at": [
+      13,
+      13
+     ],
+     "level": 1,
+     "label": "The gallery over the plunge hall"
+    },
+    {
+     "at": [
+      16,
+      11
+     ],
+     "level": 1,
+     "label": "The owner's suite (the suite key): a shotgun on the door, Connie in her chair, the strongbox"
+    },
+    {
+     "at": [
+      18,
+      16
+     ],
+     "label": "Down to the lobby"
+    },
+    {
+     "at": [
+      20,
+      16
+     ],
+     "label": "Draw the side door's bolt: out onto the boardwalk"
+    }
+   ],
+   "loot_room": {
+    "room": "O",
+    "level": 1
+   },
+   "shortcuts": [
+    {
+     "opening": "side_door"
+    }
+   ],
+   "alternatives": [
+    {
+     "id": "pool",
+     "label": "The plunge pool",
+     "options": [
+      {
+       "id": "steaming",
+       "weight": 2,
+       "label": "Still fed by the spring, steaming"
+      },
+      {
+       "id": "scummed",
+       "label": "The pump room valve shut: tepid, grey scum on the water",
+       "style": {
+        "lights_on": 0.5
+       }
+      }
+     ]
+    },
+    {
+     "id": "rock_pool",
+     "label": "The outdoor rock pool",
+     "options": [
+      {
+       "id": "steaming",
+       "weight": 2
+      },
+      {
+       "id": "cooling",
+       "label": "Silted up, barely warm"
+      }
+     ]
+    },
+    {
+     "id": "lobby",
+     "label": "The Cordon's man in the lobby",
+     "options": [
+      {
+       "id": "lamp_lit",
+       "weight": 2,
+       "label": "At the desk by his lamp"
+      },
+      {
+       "id": "lamp_out",
+       "label": "At the boarded window, the lamp burnt out"
+      }
+     ]
+    },
+    {
+     "id": "owner",
+     "label": "Where Connie is",
+     "options": [
+      {
+       "id": "in_her_chair",
+       "weight": 2
+      },
+      {
+       "id": "in_bed",
+       "label": "In her bed"
+      }
+     ]
+    },
+    {
+     "id": "cabin_two",
+     "label": "Cabin 2's door",
+     "options": [
+      {
+       "id": "shut",
+       "weight": 2
+      },
+      {
+       "id": "kicked_in",
+       "openings": [
+        {
+         "id": "g_door",
+         "state": "broken"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "hall_walls",
+     "label": "The plunge hall's walls",
+     "options": [
+      {
+       "id": "tile",
+       "weight": 2
+      },
+      {
+       "id": "panelled",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "P",
+         "wall": "wood_paneling_dark"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "ladies",
+     "label": "The ladies' changing room",
+     "options": [
+      {
+       "id": "mustard",
+       "weight": 2
+      },
+      {
+       "id": "rose",
+       "rooms": [
+        {
+         "level": 0,
+         "room": "W",
+         "wall": "wallpaper_floral_rose"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "enemies": 14,
+    "props": 160
+   }
+  }
+ ]
+}

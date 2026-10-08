@@ -354,6 +354,12 @@ func is_void(li: int, c: Vector2i) -> bool:
 	return room_at(li, c) == VOID
 
 
+## A ground-floor cell nothing is built in ('.' or ' '): the yard. Things placed there stand on the
+## ground (the pad), not on a floor: yard props, pickups, bear traps and sleepers (TD-269).
+func is_yard(li: int, c: Vector2i) -> bool:
+	return li == 0 and not is_built(0, c)
+
+
 ## Something is built in this cell on this level: a room, or a tall room rising through it.
 func is_built(li: int, c: Vector2i) -> bool:
 	var ch: String = room_at(li, c)

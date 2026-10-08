@@ -3,9 +3,11 @@ extends RefCounted
 ## Static checks for an authored POI (run by `make validate`, the editor tool and GUT):
 ##  * the intended route is completable waypoint to waypoint (doors, breaches, stairs, ladders,
 ##    drop holes, keys picked up along the way; barricades and intact glass do not count), and
-##    stays completable once every weak floor has given way (a fall must never strand the player),
+##    stays completable once every weak floor has given way (a fall must never strand the player);
+##    a door or gate across a stair's head is crossed as a door edge is (TD-274),
 ##  * the loot room is reachable and holds a container; declared shortcuts exist and lead out,
-##  * sleepers stand on walkable cells (not stairs, not inside props), props stay inside rooms and
+##  * sleepers stand on walkable cells: in rooms, or on the yard's ground inside the footprint
+##    (TD-269) (not stairs, not inside props), props stay inside rooms and
 ##    off the route corridor, pickups are reachable, furniture barricades off the stairs (a
 ##    route through one only while it can be broken),
 ##  * dungeon mechanics (ADR-0018): stable ids on sleepers, traps and triggers (TD-031), trap types
@@ -227,10 +229,69 @@ func _yard_props() -> Array:
 				continue
 			var plan: Vector3 = PoiLayout.prop_plan(p, pd)
 			var a: float = deg_to_rad(plan.z)
-			var bc: Vector3 = pd.box_centre()
-			var off := Vector2(bc.x * cos(a) + bc.z * sin(a), -bc.x * sin(a) + bc.z * cos(a))
-			_yard_walls.append([Vector2(plan.x, plan.y) + off, Vector2(pd.size.x, pd.size.z) * 0.5, a])
+			# Each collision box (the size box, or the def's `boxes`) that stands on the ground
+			# (within the same 0.4 m) and rises past a step.
+			for b: Array in pd.collision_boxes():
+				var bs: Vector3 = b[0]
+				var bx: Transform3D = b[1]
+				var base: float = y + bx.origin.y - bs.y * 0.5
+				if base > 0.4 or base + bs.y <= YARD_WALL_H:
+					continue
+				var bc: Vector3 = bx.origin
+				var off := Vector2(bc.x * cos(a) + bc.z * sin(a), -bc.x * sin(a) + bc.z * cos(a))
+				var yaw: float = atan2(bx.basis.z.x, bx.basis.z.z)
+				_yard_walls.append([Vector2(plan.x, plan.y) + off, Vector2(bs.x, bs.z) * 0.5, a + yaw])
 	return _yard_walls
+
+
+## A yard prop's collision box in plan: [centre: Vector2, half extents: Vector2, turn (rad)].
+static func _yard_box(p: Dictionary, pd: PropDef) -> Array:
+	var plan: Vector3 = PoiLayout.prop_plan(p, pd)
+	var a: float = deg_to_rad(plan.z)
+	var bc: Vector3 = pd.box_centre()
+	var off := Vector2(bc.x * cos(a) + bc.z * sin(a), -bc.x * sin(a) + bc.z * cos(a))
+	return [Vector2(plan.x, plan.y) + off, Vector2(pd.size.x, pd.size.z) * 0.5, a]
+
+
+## How far a yard sleeper's spot keeps off a yard prop's box (about a body's radius), m.
+const YARD_SLEEPER_CLEAR: float = 0.25
+
+
+## The id (or prop def id) of a yard prop with collision standing on the ground whose box comes
+## within YARD_SLEEPER_CLEAR of plan point `at`: the tall ones (a fence, a wall, a wreck: a body
+## there would stand inside it) when `tall`, else the low ones (a log, a crate, a body bag).
+## route_ok props count: a fence flap the route peels back is still a fence to stand in.
+func _yard_prop_at(at: Vector2, tall: bool) -> String:
+	var db: Node = ContentDB.instance
+	for p: Dictionary in layout.props:
+		if int(p["level"]) != 0 or not layout.is_yard(0, p["cell"]):
+			continue
+		var pd: PropDef = db.call(&"get_def", &"prop", StringName(str(p.get("prop", "")))) as PropDef if db != null else null
+		var y: float = float(p.get("y", 0.0))
+		if pd == null or pd.collision == "none" or pd.wall_mounted or y > 0.4 or (pd.size.y + y > YARD_WALL_H) != tall:
+			continue
+		var box: Array = _yard_box(p, pd)
+		if seg_hits_box(at, at, box[0], (box[1] as Vector2) + Vector2.ONE * YARD_SLEEPER_CLEAR, box[2]):
+			return str(p.get("id", pd.id))
+	return ""
+
+
+## Why a sleeper on a yard cell (PoiLayout.is_yard) can't stand there, or "": it must be inside the
+## footprint (the levelled pad), on the yard ring the validator walks, and not inside a tall yard
+## prop or across a fence line (its box, widened by a body's radius). Reachability, stairs, traps and
+## the rest are checked as for every sleeper.
+func _yard_sleeper_error(sl: Dictionary) -> String:
+	var c: Vector2i = sl["cell"]
+	var fp: Vector2 = Vector2(layout.def.footprint)
+	var at: Vector2 = layout.origin + (sl["pos"] as Vector2)
+	if at.x < 0.0 or at.y < 0.0 or at.x > fp.x or at.y > fp.y:
+		return "is off the footprint %s: the pad ends there" % [layout.def.footprint]
+	if not _walkable(0, c):
+		return "is beyond the yard ring the route walks (%d cells round the plan)" % YARD
+	var tall: String = _yard_prop_at(sl["pos"], true)
+	if tall != "":
+		return "stands inside yard prop '%s' (a fence line, a wall or a wreck): keep %.2f m off it" % [tall, YARD_SLEEPER_CLEAR]
+	return ""
 
 
 ## Whether a step between two yard cells (centre to centre) runs into a prop (YARD_WALL_H).
@@ -413,9 +474,11 @@ func _neighbors(li: int, c: Vector2i, keys: Dictionary) -> Array:
 			out.append(_land(li, n))
 	for s: Dictionary in layout.stairs:
 		if int(s["level"]) == li and s["cell"] == c:
-			out.append(_land(li + 1, s["landing"]))
+			if _stair_head_passable(s, true, keys):
+				out.append(_land(li + 1, s["landing"]))
 		elif int(s["level"]) + 1 == li and s["landing"] == c:
-			out.append([li - 1, s["cell"]])
+			if _stair_head_passable(s, false, keys):
+				out.append([li - 1, s["cell"]])
 	for l: Dictionary in layout.ladders:
 		var lc: Vector2i = l["cell"]
 		var land: Vector2i = l.get("landing", lc)
@@ -427,6 +490,28 @@ func _neighbors(li: int, c: Vector2i, keys: Dictionary) -> Array:
 		if int(h["level"]) == li and h["cell"] == c:
 			out.append(_land(li - 1, c))
 	return out
+
+
+## Whether a flight's head (the edge on the level above between its last step's well and its
+## landing) lets the climber through (TD-274): a wall there passes only through its opening, as a
+## door edge does: a closed door opens, a locked one needs its key, one bolted (`locked_inside`)
+## opens only from the side it was authored on (a gate bolted from the deck lets you down the stair
+## but not up it), a barricade or intact glass does not. `up`: climbing from the foot (standing on
+## the head's well) rather than coming down from the landing. A gallery railing is left out across
+## a head (PoiLayout.is_stair_head_edge); a plain wall there is _check_stair_doors' error.
+func _stair_head_passable(s: Dictionary, up: bool, keys: Dictionary) -> bool:
+	var cells: Array = s["cells"]
+	var head: Vector2i = cells[cells.size() - 1]
+	var landing: Vector2i = s["landing"]
+	var side: int = PoiLayout.DIRS.find(landing - head)
+	if side < 0:
+		return true
+	var e: Array = PoiLayout.side_edge(head, side)
+	var wall: Dictionary = layout.walls.get(PoiLayout.edge_key(int(s["level"]) + 1, e[0], e[1]), {})
+	if wall.is_empty():
+		return true
+	var op: Dictionary = wall["opening"]
+	return not op.is_empty() and _opening_passable(op, head if up else landing, keys)
 
 
 func _opening_passable(op: Dictionary, from_cell: Vector2i, keys: Dictionary) -> bool:
@@ -608,18 +693,27 @@ func _run() -> void:
 	for i: int in layout.sleepers.size():
 		var sl: Dictionary = layout.sleepers[i]
 		var k2: String = node_key(sl["level"], sl["cell"])
+		# TD-269: a sleeper may also stand in the yard (on the ground, PoiInstance.sleeper_local).
+		var yard: bool = layout.is_yard(int(sl["level"]), sl["cell"])
+		var yard_err: String = _yard_sleeper_error(sl) if yard else ""
 		if layout.is_void(sl["level"], sl["cell"]):
 			_e("sleeper '%s' at %s (level %d) floats in a tall room's open space (no floor there)" % [sl.get("sid", i), sl["cell"], sl["level"]])
-		elif not layout.is_room(layout.room_at(sl["level"], sl["cell"])):
-			_e("sleeper %d is not inside a room (%s level %d)" % [i, sl["cell"], sl["level"]])
+		elif not yard and not layout.is_room(layout.room_at(sl["level"], sl["cell"])):
+			_e("sleeper %d is not inside a room or on the yard's ground (%s level %d)" % [i, sl["cell"], sl["level"]])
+		elif yard_err != "":
+			_e("sleeper '%s' at %s in the yard %s" % [sl["sid"], sl["pos"], yard_err])
 		elif stair_cells.has(k2):
 			_e("sleeper %d stands on stairs" % i)
 		elif _over_well(int(sl["level"]), sl["cell"]):
 			_e("sleeper '%s' at %s (level %d) floats over a stairwell or hatch opening" % [sl.get("sid", i), sl["cell"], sl["level"]])
-		elif blocked.has(k2) and str(sl.get("pose", "stand")) != "lie" and not landed.has(str(sl.get("sid", ""))):
+		elif not yard and blocked.has(k2) and str(sl.get("pose", "stand")) != "lie" and not landed.has(str(sl.get("sid", ""))):
 			_w("sleeper %d shares a cell with a prop" % i)
 		elif not seen.has(k2):
 			_e("sleeper %d is in an unreachable cell" % i)
+		elif yard:
+			var low: String = _yard_prop_at(sl["pos"], false)
+			if low != "":
+				_w("sleeper '%s' at %s in the yard lies or stands in low prop '%s'" % [sl["sid"], sl["pos"], low])
 		if _weak.has(k2):
 			_w("sleeper '%s' stands on weak floor '%s'" % [sl["sid"], _weak[k2]])
 		for bt: Dictionary in layout.traps:

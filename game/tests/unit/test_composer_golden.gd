@@ -24,7 +24,8 @@ extends GutTest
 ## hash moved), and for VERSION 8 (ADR-0058: Ezra Vane's `companion` camp, placed last from its own
 ## stream; the town region's ground, roads and masks moved with it), and for VERSION 9 (ADR-0053:
 ## the forest set pieces, `late` pool entries from their own streams; one reaches the town region,
-## so pads, tracks and masks moved there, and the drop-site region's world id in `placements`).
+## so pads, tracks and masks moved there, and the drop-site region's world id in `placements`), and
+## for VERSION 11 (round 5 of the set pieces: none lands in either region, so only `placements`).
 ## Larch Hollow's were re-recorded when Ezra's camp was placed west of Larch Pond (ADR-0058: its
 ## pad), and when Waystation 9 was placed in it (ADR-0039: a clearing, its spawn and its drive;
 ## its 1 m variant, which only SLOW_TESTS=1 runs, a little later), and again when the Corvane
@@ -95,7 +96,7 @@ const GOLDEN: Dictionary = {
 		"other": "9042e6121a94f2a29c717a3d15b2b03d",
 	},
 	"rwg@4": {
-		"input": "67c1de19e62b22d2ae40e01cd40554f23770aab606c9ea03b805cf332176a5ee",
+		"input": "9a62ce705f3b849ebb7bb21fedf936145e7b2f66c392b8f570b841d2af537acc",
 		"height": "b130224ae7d5bf731ee3db443ecaec3705b9af1094083900c9f917ba2bd813ae",
 		"splat0": "7d3e52400e9a2aa0a02ea7ee9d2e12b4",
 		"splat1": "c502892664be8d0b228da7ecd1db7926",
@@ -104,11 +105,11 @@ const GOLDEN: Dictionary = {
 		"water": "49e108a32077cec749d37e86d197b32f",
 		"roads": "fa2e24699dda5d54a8d99ff701e9cdee",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "3d3874a6ed8229a7489e13ed2bb112f0",
+		"placements": "801eb9d8b075c1e59ffab8235b1f22fc",
 		"other": "cec63ec5e9ea167c69260cbaf86a1d0a",
 	},
 	"rwg@8": {
-		"input": "95e46d07cd77a501af832a3d58adc4a7875f640a83066f2fca9616129bec85ff",
+		"input": "d8b7d1e988d1dedb08b38d57ad150e6f943560b1ee18662fe7acfb8cebea38e4",
 		"height": "78ced5b1c57f51375d964a5147f6991d497002ecc7352ea06538ad44ae6c4a5d",
 		"splat0": "ed1d29bd9d10695742fba7f71666468e",
 		"splat1": "acc6a52aed7ba8a4b8ec55fbc4b7d2df",
@@ -117,11 +118,11 @@ const GOLDEN: Dictionary = {
 		"water": "fd041168cd7a58fb4b7994caf5864ac8",
 		"roads": "fa2e24699dda5d54a8d99ff701e9cdee",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "6dd1036220e0a34c6a749fb62533f123",
+		"placements": "00da36f4abe177858cbeb26ae3ef2fbd",
 		"other": "bcea77cbf3c997af1ab262307621ca3b",
 	},
 	"rwg@1": {
-		"input": "1944594e651aea91f9187ce27eb2efdf80bc9ee475caae4d8de2fbc9e7bebefb",
+		"input": "aea451788a411a1dcfbeda2410eda650744588d7e2c07ac3ed35763f0e397bb1",
 		"height": "74d2c6f9ea92241635821a62e4a600f38ab4678f59518dcad108282d3d7f99dd",
 		"splat0": "97c79ab6ff1e26bc3208cf223bbd3305",
 		"splat1": "9fe9e424ec6b8a4f7a55e42340d5058f",
@@ -130,11 +131,11 @@ const GOLDEN: Dictionary = {
 		"water": "0815ff0f2b7d71ee76189c656a648066",
 		"roads": "fa2e24699dda5d54a8d99ff701e9cdee",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "dab7f352d80197f2c45f88fe9f7ba1ae",
+		"placements": "ff3ae98899b42d277a30aae9570d461a",
 		"other": "445eed2000fca209f9b0b52d17c5924b",
 	},
 	"rwg_drop@4": {
-		"input": "ac76dc7d126febc3744da94165b8f7f20c273a0703e41e75996e685c49a6015b",
+		"input": "a65b20b88c12352cee9106f92b0c847c42a5e9ea2459398d8b44c3864b46619e",
 		"height": "c176d0709f4d21b4aa95532b211d0af63be784541958436e0b00fea36a978488",
 		"splat0": "5e0b93f23957c50754121ac1a52c2f04",
 		"splat1": "4516aea033ac574140369ed02cdb8985",
@@ -143,11 +144,11 @@ const GOLDEN: Dictionary = {
 		"water": "d751713988987e9331980363e24189ce",
 		"roads": "f0db205ae7464b3a50176b11cd609325",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "964359ada950c8f2355dc24fe37ccdde",
+		"placements": "2ff79ac207370fc9ec7316874040b766",
 		"other": "5bc27312937ee0c0680239869cc69b16",
 	},
 	"rwg_drop@8": {
-		"input": "67c9a31d976553b85e7597e641dfc6118306c386da26a8b4b3b15989b6d9e324",
+		"input": "1b611ff48f8929910e89585305dee9e8d2479d9380a28e1f2133388adb3d8853",
 		"height": "2627c13e991906fd2eec9fee5bfe187d9f52e2a8c5c6e5232a09a6a6a5e85399",
 		"splat0": "5e80c496aff37e4da35832c26eb881cc",
 		"splat1": "b56557e643b782752c0d4bccd7fc7fe3",
@@ -156,7 +157,7 @@ const GOLDEN: Dictionary = {
 		"water": "d751713988987e9331980363e24189ce",
 		"roads": "f0db205ae7464b3a50176b11cd609325",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"placements": "964359ada950c8f2355dc24fe37ccdde",
+		"placements": "2ff79ac207370fc9ec7316874040b766",
 		"other": "e424e63a3b750e476a6e84d0385281dd",
 	},
 }

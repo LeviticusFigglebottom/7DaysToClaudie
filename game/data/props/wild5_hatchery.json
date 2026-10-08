@@ -1,0 +1,499 @@
+{
+ "_doc": "Wilderness set pieces, round 5: props of the Silver Run fish hatchery (w5_fish_hatchery), a state trout hatchery on a forest creek the Cordon used as a water-testing post. Models: tools/assetgen/blender/generators/props_wild5_hatchery.py -> models/props/<id>[_worn|_destroyed].glb; catalog tools/assetgen/blender_catalogs/props_wild5_hatchery.py. Materials: shared sets plus w5_hatchery_trout (materials/props_wild5_hatchery.json). size = [width x, height y, depth z] in metres (Godot axes, front +Z); PoiBuilder's collision box is the size centred over the origin. Floor props stand on their origin with their depth centred on it; the sample board hangs with its origin on the wall plane.",
+ "defs": [
+  {
+   "id": "w5_hatchery_raceway",
+   "name": "Concrete Raceway",
+   "description": "A 5 m section of poured concrete raceway, 1.8 m wide and waist deep: thick walls with a chamfered cap, keyway slots for the dam boards at both ends, a screen frame and the water to within a hand of the top. Clean: still green water and the last of the trout belly up along the screens. Worn: the water furred over from wall to wall with white Bloom felt, capped with fruiting heads along the walls. Low enough to vault.",
+   "tags": [
+    "structure",
+    "concrete",
+    "story"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_raceway",
+    "worn": "props/w5_hatchery_raceway_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    1.8,
+    0.9,
+    5.0
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w5_hatchery_headbox",
+   "name": "Raceway Headbox",
+   "description": "The concrete headbox along the head of the raceways: a covered channel fed by the intake pipe, three gate valves with handwheels letting water down into the raceways through splash boards, and a galvanised cover with a feed scoop left on it (worn: the cover off one bay, Bloom felt in the channel).",
+   "tags": [
+    "structure",
+    "concrete",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_headbox",
+    "worn": "props/w5_hatchery_headbox_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    9.0,
+    1.1,
+    0.7
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w5_hatchery_shed_post",
+   "name": "Shed Post",
+   "description": "A creosoted timber post on the pony wall of an open-sided shed, carrying the top plate a metre each way under the eave with two knee braces (worn: a brace split off and hanging). Collision is the post alone; the plate is overhead.",
+   "tags": [
+    "structure",
+    "wood"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_shed_post",
+    "worn": "props/w5_hatchery_shed_post_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.2,
+    2.85,
+    0.2
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w5_hatchery_intake_pipe",
+   "name": "Intake Pipe",
+   "description": "A 600 mm riveted steel intake pipe on concrete saddles: a bellmouth and trash screen at the dam end, a gate valve with a handwheel on a stand, and an elbow down through the shed's pony wall into the headbox (worn: rust-streaked, the screen choked with leaves and white growth).",
+   "tags": [
+    "structure",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_intake_pipe",
+    "worn": "props/w5_hatchery_intake_pipe_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    2.8,
+    0.9,
+    0.8
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w5_hatchery_fish_tote",
+   "name": "Fish Tote",
+   "description": "A grey plastic fish tote on a pallet with a dip net across it, full of dead trout packed in melted ice (worn: the fish furred white, spores dusting the rim and the pallet).",
+   "tags": [
+    "plastic",
+    "story"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_fish_tote",
+    "worn": "props/w5_hatchery_fish_tote_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.1,
+    0.75,
+    0.9
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "w5_hatchery_feed_cart",
+   "name": "Feed Cart",
+   "description": "A galvanised feed cart on two wheels and a caster: a hopper of pelleted fish feed with a hinged lid, a scoop on a chain and the day's feeding weights chalked on its side (worn: the lid off, the feed caked and green).",
+   "tags": [
+    "metal",
+    "garage"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_feed_cart",
+    "worn": "props/w5_hatchery_feed_cart_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.8,
+    1.1,
+    1.3
+   ],
+   "blocks_sight": true,
+   "container": "w5_hatchery_feed"
+  },
+  {
+   "id": "w5_hatchery_incubator_stack",
+   "name": "Incubator Stack",
+   "description": "A vertical-flow egg incubator: eight shallow green fibreglass trays in a stainless frame, the supply line and valve at the top and the drain spout at the foot (worn: trays furred white, the water off; destroyed: the frame racked over and half the trays pulled out across the floor).",
+   "tags": [
+    "machine",
+    "plastic",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_incubator_stack",
+    "worn": "props/w5_hatchery_incubator_stack_worn",
+    "destroyed": "props/w5_hatchery_incubator_stack_destroyed"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.7,
+    1.9,
+    0.65
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "w5_hatchery_hatch_trough",
+   "name": "Hatching Trough",
+   "description": "A long shallow aluminium hatching trough on a steel stand, divided into baskets with perforated bottoms, a supply pipe with a valve at the head and a standpipe drain at the foot (worn: the baskets empty and filmed white, a sample jar left in one).",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_hatch_trough",
+    "worn": "props/w5_hatchery_hatch_trough_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.8,
+    0.95,
+    3.0
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w5_hatchery_results_board",
+   "name": "Sample Board",
+   "description": "A whiteboard screwed to the wall with the Cordon's sampling grid ruled on it in marker: stations down the side, the hours across, a red cross in nearly every square (worn: smeared, the bottom rows wiped with a hand).",
+   "tags": [
+    "office",
+    "story"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_results_board",
+    "worn": "props/w5_hatchery_results_board_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.2,
+    0.9,
+    0.05
+   ],
+   "blocks_sight": false,
+   "wall_mounted": true
+  },
+  {
+   "id": "w5_hatchery_chiller",
+   "name": "Water Chiller",
+   "description": "A packaged water chiller against the wall: a louvred steel cabinet with the compressor and condenser fans, insulated supply and return lines up to the ceiling, a dial thermometer and a red isolator switch (worn: a fan guard off, the lines sweating rust).",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_chiller",
+    "worn": "props/w5_hatchery_chiller_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.6,
+    1.8,
+    0.9
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "w5_hatchery_sample_cooler",
+   "name": "Sample Coolers",
+   "description": "Two white sample coolers stacked on a third, each strapped shut and taped with a Cordon chain-of-custody label (worn: the top one open and empty, its ice packs on the floor).",
+   "tags": [
+    "plastic",
+    "story"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_sample_cooler",
+    "worn": "props/w5_hatchery_sample_cooler_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.7,
+    0.9,
+    0.5
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "w5_hatchery_feed_pallet",
+   "name": "Feed Pallet",
+   "description": "A pallet of pelleted trout feed in 20 kg paper sacks, stacked six courses high and stretch-wrapped (worn: the wrap slit, the top sacks torn open and the pellets spilled).",
+   "tags": [
+    "storage",
+    "paper"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_feed_pallet",
+    "worn": "props/w5_hatchery_feed_pallet_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.2,
+    1.15,
+    1.0
+   ],
+   "blocks_sight": true
+  },
+  {
+   "id": "w5_hatchery_dam",
+   "name": "Intake Weir",
+   "description": "A small concrete weir across the creek: an 8 m wall with a notched spillway and the water sheeting over it, wing walls into both banks, a stone apron below, the east abutment wide enough for the intake gate, and two steel legs carrying the catwalk's landing over the bank (worn: moss and white film on the lip). Its collision is the wall and the abutment under the POI's kit catwalk.",
+   "tags": [
+    "structure",
+    "concrete",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_dam",
+    "worn": "props/w5_hatchery_dam_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    8.0,
+    2.95,
+    1.0
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_hatchery_weir_pool",
+   "name": "Weir Pool",
+   "description": "The pool the weir holds back: still brown water at waist height between dry-laid stone banks, a boulder riffle where the creek comes in and lily pads in the slack water (worn: white scum in the corners). No collision: waded through.",
+   "tags": [
+    "exterior",
+    "stone"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_weir_pool",
+    "worn": "props/w5_hatchery_weir_pool_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    6.0,
+    1.0,
+    7.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_hatchery_creek",
+   "name": "Creek Bed",
+   "description": "8 m of shallow forest creek: a water ribbon over a cobble bed, mossy stones and gravel bars along both banks and a snag or two (worn: a scum of white spores in the eddies). Walked through: no collision.",
+   "tags": [
+    "exterior",
+    "stone"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_creek",
+    "worn": "props/w5_hatchery_creek_worn"
+   },
+   "collision": "none",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    6.0,
+    0.1,
+    8.0
+   ],
+   "blocks_sight": false,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_hatchery_headgate",
+   "name": "Intake Headgate",
+   "description": "The intake gate's lifting stand on the catwalk: a cast-iron pedestal, a geared handwheel and the threaded stem down through the deck to the gate (worn: the wheel chained and padlocked by the Cordon).",
+   "tags": [
+    "machine",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_headgate",
+    "worn": "props/w5_hatchery_headgate_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.6,
+    1.3,
+    0.6
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w5_hatchery_sampler",
+   "name": "Water Sampler",
+   "description": "A Cordon automatic water sampler: a grey hard case on its legs with the pump, a carousel of bottles under the lid, a battery box, a little solar panel on a pole and the intake hose over the rail into the weir pool (worn: the panel cracked, the hose cut).",
+   "tags": [
+    "machine",
+    "plastic",
+    "story"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_sampler",
+    "worn": "props/w5_hatchery_sampler_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    0.6,
+    0.9,
+    0.5
+   ],
+   "blocks_sight": true,
+   "container": "w5_hatchery_sampler"
+  },
+  {
+   "id": "w5_hatchery_catwalk_rail",
+   "name": "Catwalk Railing",
+   "description": "1 m of galvanised pipe railing with a knee rail and a toe board, along the open edge of the intake catwalk (worn: the knee rail sagging, the toe board split).",
+   "tags": [
+    "structure",
+    "stairwell",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_catwalk_rail",
+    "worn": "props/w5_hatchery_catwalk_rail_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    1.0,
+    1.1,
+    0.06
+   ],
+   "blocks_sight": false
+  },
+  {
+   "id": "w5_hatchery_sign",
+   "name": "Hatchery Sign",
+   "description": "A routed cedar sign between two peeled log posts under a little shingled cap: a carved rainbow trout leaping over painted ripples (worn: the paint gone grey, a corner split, the Cordon's orange quarantine tape wound round one post).",
+   "tags": [
+    "sign",
+    "wood",
+    "exterior"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_sign",
+    "worn": "props/w5_hatchery_sign_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 400,
+   "size": [
+    2.8,
+    2.3,
+    0.3
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_hatchery_stocking_truck",
+   "name": "Fish Stocking Truck",
+   "description": "A state fish stocking truck: a green cab-over with a flatbed carrying two insulated aluminium fish tanks, their aerators, oxygen bottles in a rack and the release chutes folded at the back (worn: tyres flat, a window out, the tank lids open and white inside).",
+   "tags": [
+    "vehicle",
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_stocking_truck",
+    "worn": "props/w5_hatchery_stocking_truck_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    2.5,
+    3.0,
+    7.6
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  },
+  {
+   "id": "w5_hatchery_feed_silo",
+   "name": "Feed Silo",
+   "description": "A galvanised bulk feed bin on four legs: a ribbed tank, a conical hopper with the auger boot underneath, a ladder up the side to the lid and the feed line running off to the raceways (worn: streaked, the lid hanging open).",
+   "tags": [
+    "structure",
+    "exterior",
+    "metal"
+   ],
+   "variants": {
+    "clean": "props/w5_hatchery_feed_silo",
+    "worn": "props/w5_hatchery_feed_silo_worn"
+   },
+   "collision": "box",
+   "physics": "static",
+   "hp": 3000,
+   "size": [
+    2.4,
+    5.4,
+    2.4
+   ],
+   "blocks_sight": true,
+   "rooms": [
+    "exterior"
+   ]
+  }
+ ]
+}

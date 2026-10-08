@@ -1,4 +1,4 @@
-# ADR-0053: Forest set pieces (round 4): seven dungeons in the woods, placed late from their own streams
+# ADR-0053: Wilderness set pieces (rounds 4 and 5): ten dungeons outside towns, placed late from their own streams
 
 **Status**: Accepted · 2026-10
 
@@ -57,12 +57,35 @@ churchyard). PoiValidator's yard ring now walks a POI's unbuilt level-0 cells:
   across;
 * `out` joins only the ring at the footprint's edge, so a fenced compound is entered by its gate.
 
+### Round 5 (generator v11)
+Three more, by the same brief and checks (`test_w5_<short>.gd`, namespace `w5_<short>_`,
+`wild5_<short>` files):
+
+| POI | Tier | Site, footprint | What is climbed |
+|---|---|---|---|
+| The Pruett Treehouses (`w5_treehouse_holdout`) | 2 | forest, 32 x 32 | Three hatch ladders: round the back of the big fir (the front one is pulled up), from the shed, and up to the nest; rope bridges between the huts |
+| Silver Run Fish Hatchery (`w5_fish_hatchery`) | 2 | waterside, 36 x 34 | The raceway shed's pony walls (1.15 m from the ground), a hatch ladder up the abutment onto the intake catwalk |
+| Ember Creek Hot Springs (`w5_hot_springs_bathhouse`) | 3 | remote, 40 x 36 | A changing-room window (1.05 m sill), the lobby stair to the gallery, the pump room's hatch ladder to the boiler room |
+
+Tree huts, the catwalk and the gallery are kit rooms with rail props on their open edges. The
+Hollowed can't climb, so the treehouses' story is told by that.
+
+### Compound collision (TD-270)
+A prop def may give `boxes`: `[{size, at, yaw}]` in its own frame (`at` is the centre of the box's
+base). They replace its single size box, so shells collide as walls and leave their openings clear.
+Each box keeps the `prop` meta the audit names blockers by. The validator's yard walls and
+`SleeperAnchors` read the same boxes. The round-4 shells, the trestle's hill and portal, the relay
+tower's legs, the chapel's gates and vault front, the brush truck and the boxcar use them.
+
 ## Consequences
-* Random worlds gain seven kinds of forest dungeon at danger 1-3; 8 x 8 worlds hold most of them
+* Random worlds gain ten kinds of wilderness dungeon at danger 1-3; 8 x 8 worlds hold most of them
   (`test_wilderness_round_four`).
 * Goldens recorded at v7 or v8 are re-recorded at v9. Places at earlier draws are identical; the
   composed ground differs only round the new pads.
-* Leftovers are TD-269 to TD-278. The common ones:
-  * no sleepers in yards (TD-269);
-  * shell and structure props collide only as their single size box (TD-270);
+* Leftovers are TD-269 to TD-278 (round 4) and TD-314 to TD-317 (round 5, compound collision). The
+  common ones:
+  * no sleepers in yards (TD-269; since done: a sleeper may stand on a reachable yard cell inside
+    the footprint and spawns on the ground, and the plane, the ranger station and the chapel hold
+    a yard ambush each);
+  * shells collided only as their single size box (TD-270, now `boxes`);
   * colours were reviewed only in the lead's renders, not by the authors (TD-271).
