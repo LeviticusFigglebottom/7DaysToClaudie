@@ -186,8 +186,10 @@ static func _standin(piece: String) -> Mesh:
 		offset = Vector3(0, size.y * 0.5, 0)
 		kind = "boards"
 	elif piece == "ladder_3m":
-		size = Vector3(0.5, 3.0, 0.06)
-		offset = Vector3(0, 1.5, 0)
+		# Where the generated ladder's rails are (0.09-0.16 m out along +Z), so a builder that
+		# turns it the wrong way buries the stand-in in the wall too and the tests see it.
+		size = Vector3(0.5, 3.0, 0.07)
+		offset = Vector3(0, 1.5, 0.125)
 		kind = "boards"
 	elif piece.begins_with("porch_deck"):
 		size = Vector3(1.0, 0.1, 1.0)
