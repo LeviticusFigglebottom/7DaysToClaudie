@@ -39,7 +39,8 @@ streets, lanes, back lanes and cul-de-sac bulbs: `{id, class, points, width, sur
 markings: false}`), `fixtures` (`{id: fx_N, prop, pos, rot}`), `plaza` (`{frame, y}` or `{}`),
 `junctions`, `blocks`, `size`, `bounds`, `center`, `radius`, `tier_range` and `stats`.
 `to_framework(plan, fw_id, name)` keeps exactly the §3.12 keys. No scene tree, no autoloads; a
-town plans in about 0.1 s (a big hilly town in under 0.4 s) headless on the shared container.
+town plans in about 0.25 s (a big hilly town in under 0.7 s since its street network, VERSION 12)
+headless on the shared container.
 
 Frames follow `PoiManager.lot_xf` (plan assumption A10, now tested): `yaw` in degrees with
 `Basis(Vector3.UP, yaw)` as the building's basis, so the front (local +Z) points along
@@ -67,6 +68,27 @@ composer's 2D `rot` and a placement's `rotation` turn the other way (`Vector2.ro
   (`{points: [end, end + dir * 0.1], width: 18}`), interior ones first, up to the class's count;
   towns get back lanes behind the main street's core frontage (44 m off it, between two side
   streets leaving the same side).
+* **A network, not a comb** (generator VERSION 12, player report 4: towns read as one straight
+  road with a comb of dead ends; instrumented, a third of the seeds were dropped next to another
+  junction, side streets ended at their drawn length without meeting anything, and past the loop
+  count nothing could join up: villages had 3-4 blocks, towns 7-10). Growth now runs in rounds:
+  first-generation side streets (`first_share` of the count; seeds to `seed_reach` 0.62-0.7 of the
+  radius, so a town grows across its main street rather than along it), then **cross streets**,
+  then branches (cross streets branch outwards, away from the centre) with the arterial seeds
+  left, then cross streets again; while the count is short when the seeds run out, every street
+  branches again. A cross street: each side street, branch and cross street is walked a block
+  depth at a time (`cross_depth` by ring: core 78-88 m behind an arterial for the shops, inner
+  66-76, outer 76-90: a lot facing each street, back to back), up to `cross_rows` a side; a ray
+  along its normal finds the next street over (`cross_gap` 55-220 m, met at 35 degrees or more)
+  and an agent pulled towards it, under the same grade, water and probe rules, joins it at a T.
+  It may join past the loop count; it is not built when it would close a sliver (back onto the
+  street its leg leaves, within 90 m of where it leaves), end on an arterial in the core (the
+  shops' frontage), land its far end 14-30 m from a junction, or run beside a street already there
+  (within 36 m, under 25 degrees). A seed too near a junction slides up to 15 m to a free arc
+  (not on an arterial in the core). Houses line the arterials only out to `arterial_reach`
+  (0.75-0.78 r). The plan's stats count `cross_streets`, `blocks`, the lots' `extent` along and
+  across the main street (90th percentiles) and `why`: how each street ended or seed failed.
+  Measured over the tests' seeds (SLOW_TESTS): 1.9 blocks a hamlet, 9.7 a village, 27.6 a town.
 * Blocks are the bounded faces of the planar street graph (a rightmost-turn face walk, dead-end
   spurs dropped), for the map; lots never depend on them.
 * `route_fine(ground, a, b, opts)`: A* on an 8 m local grid (length, grade, a valley term against
@@ -101,7 +123,8 @@ on arterials round 0.92 r; rural out along the arterials past the radius, every 
 outskirts, §3.9); then houses on every street side. Quotas short of the class minimum retry on
 ground a metre steeper, then anywhere in town. The houses are then thinned to the class's lot count
 by a weighted draw without replacement, the weight falling with distance from the centre, so the
-core stays full and the edge goes ragged. Lots: hamlet 6-14, village 22-45, town 70-120.
+core stays full and the edge goes ragged. Lots: hamlet 14-26, village 50-110, town 110-260 (the
+targets drawn from the middle of the range; the minimums are what the steepest test land holds).
 
 ### 5. Fixtures (§3.9)
 Lamps every 30-38 m and hydrants every 60-90 m in the core and inner rings; utility poles along
