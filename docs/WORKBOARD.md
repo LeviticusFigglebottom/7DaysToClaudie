@@ -113,6 +113,10 @@ lighter held up.
 2. **An intro cutscene** that gives the crash and its context before the start. It should play
    while the world loads, but only if it doesn't stutter or freeze (the load does heavy main-thread
    steps); otherwise it plays after the load, before control. (Presentation, with World for the load hook.)
+   **The owner's lore call (2026-10-08):** the intro shows the crash of #4471's Program drop
+   aircraft short of the drop site. The cause of the outbreak (the Corvane bore breaking into the
+   caves) is never told in the intro: the player finds it out from lore in the world (notes,
+   tethers, signs), piece by piece. The hub keeps that trail.
 3. **The intro and main menu look primitive** and unlike the rest of the game's menus. A slow
    panning cinematic camera over the world behind the main menu, as long as it doesn't stutter or
    cost performance. (Presentation.)
