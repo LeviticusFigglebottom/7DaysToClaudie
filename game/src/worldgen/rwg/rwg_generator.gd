@@ -87,6 +87,8 @@ var paths: Array[Dictionary] = []
 var drop: Dictionary = {}
 ## {id, at: Vector2, radius, strength, edge, cell}
 var blooms: Array[Dictionary] = []
+## Forest caves (ADR-0056): {id, cell, style, mouth: Vector2}, region `cave` features.
+var caves: Array[Dictionary] = []
 ## cell -> {cell, id, name, biome, danger, rect}
 var regions: Dictionary = {}
 var biome_cols: int = 0
@@ -292,6 +294,8 @@ func run() -> void:
 	_name_regions()
 	_finalize_town_heights()
 	_mark("town_heights")
+	_caves()
+	_mark("caves")
 	_assign_authored()
 	_mark("authored")
 	_stage("Mapping", 1.0)
@@ -2500,6 +2504,104 @@ func _bloom() -> void:
 				break
 
 
+# --- Caves -----------------------------------------------------------------------------------------
+
+## Forest caves (ADR-0056, docs/CAVES_PLAN.md WS-E): a few grottos and rock shelters per region in
+## its steep forest and rocky ground, off roads, towns, places and the drop site. Last, from its own
+## stream, and they change nothing else (a cave is carved into the volume at load; the heights
+## stay), so every other place stays where it was. Each is checked here with the real planner over
+## the composer's reference ground. The game plans it again from the composed region (the mouth
+## settles within `search` m, the shape from CaveSites.shape_seed(world id, cave id)) and leaves out
+## one that no longer fits.
+func _caves() -> void:
+	var ccfg: Dictionary = tun.get("caves", {})
+	var per: float = float(ccfg.get("per_region", 0.0)) * settings.num("wilderness")
+	if per <= 0.0:
+		return
+	var r := rng("caves")
+	var ground: RefGround = _ref if _ref != null else RefGround.new(terrain, settings.seed & 0x7fffffff, size)
+	var height_fn: Callable = ground.h
+	var db: Node = ContentDB.instance
+	var cfg: Dictionary = db.call(&"config", &"caves") if db != null else CavePlan.DEFAULTS
+	var styles: Dictionary = ccfg.get("styles", {"grotto": 1.0})
+	var biomes: Array = ccfg.get("biomes", ["conifer_forest", "birch_grove", "rocky_slope", "burnt_forest"])
+	var clear: Dictionary = ccfg.get("clearance", {})
+	var cmax: int = int(ccfg.get("max_per_region", 2))
+	var inset: float = float(ccfg.get("inset", 96.0))
+	var tries: int = int(ccfg.get("tries", 24))
+	var search: float = float(ccfg.get("search", 12.0))
+	var style_cfg: Dictionary = cfg.get("styles", {})
+	var cells: Array = regions.keys()
+	cells.sort()
+	for cell: String in cells:
+		var want: int = mini(cmax, int(floor(per + r.randf())))
+		var rect: Rect2 = (regions[cell]["rect"] as Rect2).grow(-inset)
+		var made: int = 0
+		for attempt: int in tries:
+			if made >= want:
+				break
+			# Drawn every attempt whatever happens next, so one try's luck never shifts the next's.
+			var near := Vector2(r.randf_range(rect.position.x, rect.end.x), r.randf_range(rect.position.y, rect.end.y))
+			var pick: float = r.randf()
+			var style: String = _pick_style(styles, pick)
+			if not biomes.has(biome_at(near)) or not _cave_clear(near, clear):
+				continue
+			var slope: float = float((style_cfg.get(style, {}) as Dictionary).get("min_slope_deg", cfg.get("min_slope_deg", 18.0)))
+			var got: Dictionary = CaveSites.settle_mouth(height_fn, near, NAN, search, {"min_slope_deg": slope})
+			if got.is_empty():
+				continue
+			var mp: Vector3 = got["pos"]
+			# Snapped as region.json will hold it, so the plan checked is the one the game makes.
+			var m := Vector2(snappedf(mp.x, 0.1), snappedf(mp.z, 0.1))
+			if not biomes.has(biome_at(m)) or not _cave_clear(m, clear):
+				continue
+			var id: String = "cave_%s_%d" % [cell.to_lower(), made]
+			var spec: Dictionary = {"id": id, "style": style, "mouth": [m.x, m.y], "heading": "uphill", "search": search,
+				"region_id": str(regions[cell]["id"]), "region_rect": regions[cell]["rect"]}
+			# The shape the game will give it (CaveSites.from_region: per world and cave id).
+			if not CavePlan.build(spec, CaveSites.shape_seed(world_id, id), height_fn, cfg).ok:
+				continue
+			caves.append({"id": id, "cell": cell, "style": style, "mouth": m})
+			made += 1
+
+
+## A style by weight (tuning.caves.styles), `pick` in 0..1; keys in sorted order so the draw is stable.
+static func _pick_style(styles: Dictionary, pick: float) -> String:
+	var keys: Array = styles.keys()
+	keys.sort()
+	var total: float = 0.0
+	for k: String in keys:
+		total += float(styles[k])
+	var acc: float = 0.0
+	for k2: String in keys:
+		acc += float(styles[k2]) / maxf(total, 1e-6)
+		if pick <= acc:
+			return k2
+	return str(keys[keys.size() - 1]) if not keys.is_empty() else "grotto"
+
+
+## Whether a cave mouth at p keeps off what it must (tuning.caves.clearance, m): water, towns and
+## their lots, roads, the drop site, places, trader posts and the other caves.
+func _cave_clear(p: Vector2, c: Dictionary) -> bool:
+	if water_at(p) < float(c.get("water", 30.0)) or _town_distance(p) < float(c.get("town", 150.0)) or _near_lots(p, float(c.get("lots", 60.0))):
+		return false
+	if not roads.is_empty() and float(nearest_road(p)[0]) < float(c.get("road", 40.0)):
+		return false
+	if not drop.is_empty() and (drop["pos"] as Vector2).distance_to(p) < float(c.get("drop", 200.0)):
+		return false
+	var place_gap: float = float(c.get("place", 80.0))
+	for pl: Dictionary in places:
+		if (pl["center"] as Vector2).distance_to(p) < place_gap:
+			return false
+	for pt: Dictionary in posts:
+		if (pt["pos"] as Vector2).distance_to(p) < place_gap:
+			return false
+	for cv: Dictionary in caves:
+		if (cv["mouth"] as Vector2).distance_to(p) < float(c.get("cave", 200.0)):
+			return false
+	return true
+
+
 # --- Names -----------------------------------------------------------------------------------------
 
 func _name_regions() -> void:
@@ -2727,6 +2829,10 @@ func region_json(cell: String) -> Dictionary:
 		if str(bl["cell"]) == cell:
 			feats.append({"type": "bloom", "id": bl["id"], "at": Terrain._arr(PackedVector2Array([bl["at"]]))[0], "radius": bl["radius"],
 				"strength": bl["strength"], "edge": bl["edge"]})
+	for cv: Dictionary in caves:
+		if str(cv["cell"]) == cell:
+			feats.append({"type": "cave", "id": cv["id"], "style": cv["style"], "mouth": Terrain._arr(PackedVector2Array([cv["mouth"]]))[0],
+				"heading": "uphill", "search": float((tun.get("caves", {}) as Dictionary).get("search", 12.0))})
 	# The fen's pools, and the splat layers burnt forest and fen need (ADR-0041).
 	feats.append_array(fen_pools(cell))
 	var out: Dictionary = {
