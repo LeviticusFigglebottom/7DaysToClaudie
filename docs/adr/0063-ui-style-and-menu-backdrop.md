@@ -108,6 +108,26 @@ Under lavapipe the menu runs at about 10 fps and freezes, as intended. A GPU run
 Without generated assets the backdrop draws the stand-in trees and the procedural terrain layers.
 It still reads as a valley at dusk.
 
+### The full map and its fog of war (TD-014)
+`WorldMap` (M, or the gamepad's Back) shows the whole world on a survey sheet:
+* shaded on a worker from the terrain the world already holds: every region's coarse 16 m terrain,
+  plus copies of the built regions' heights (digging edits those in place);
+* drawn with the world's rivers, lakes and roads, contours every 20 m, and the Cordon as a dashed
+  red border;
+* cached per world for the session.
+
+The markers are you, where you wake, buildings (only where you have been), waystations and supply
+drops. The wheel zooms on the cursor and drag pans.
+
+**Fog of war** is per player: `PlayerState.explored`, an `ExploredMap` of 32 m cells in 512 m
+blocks. It is saved as an optional `explored` field
+(`{"cell": 32, "blocks": {"bx,bz": base64}}`), additive like the traders' fields (ADR-0039), so
+there is no save-version bump. An older save loads with nothing explored.
+
+Exploring goes through the command bus. Once a second the map runs `map.explore`, which reveals
+90 m round the player. The first time (a new game, or an older save) it also reveals 300 m round
+the bed or drop site. Round-trip and old-save tests cover the field.
+
 ### make ui-shots
 `make ui-shots` renders the roll, a station sheet, the main menu with its backdrop, options,
 New Game and the field manual without loading a world (`ui_shots.gd`, about 30 s plus about 40 s

@@ -18,6 +18,12 @@ const WATER := Color(0.42, 0.55, 0.62)
 const ROAD := Color(0.55, 0.27, 0.14)
 const CONTOUR_INK := Color(0.52, 0.38, 0.26)
 
+## How far round the player the map uncovers as you walk, and round the bed or drop site the first
+## time (a new game, or a save from before the fog of war).
+const SIGHT: float = 90.0
+const FIRST_REVEAL: float = 300.0
+const FOG := Color(0.8, 0.76, 0.66, 0.93)
+
 static var _cache_key: String = ""
 static var _cache_img: Image = null
 
@@ -32,6 +38,10 @@ var _rect: Rect2
 var _zoom: float = 1.0
 var _pan: Vector2 = Vector2.ZERO
 var _dragging: bool = false
+var _fog: TextureRect
+var _explore_t: float = 0.0
+## Revealed cells counted at the last fog redraw (redrawn only when it changes).
+var _fog_count: int = -1
 
 
 func _ready() -> void:
@@ -54,6 +64,11 @@ func _ready() -> void:
 	_tex.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_tex.stretch_mode = TextureRect.STRETCH_SCALE
 	_sheet.add_child(_tex)
+	_fog = TextureRect.new()
+	_fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_fog.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_fog.stretch_mode = TextureRect.STRETCH_SCALE
+	_sheet.add_child(_fog)
 	_markers = Control.new()
 	_markers.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_markers.draw.connect(_draw_markers)
@@ -71,7 +86,23 @@ func _ready() -> void:
 	add_child(_status)
 
 
+func _enter_tree() -> void:
+	if not Game.has_command(&"map.explore"):
+		Game.register_command(&"map.explore", _cmd_explore)
+
+
+## map.explore {pos: Vector3, radius: float}: uncovers the map round a point for the local player.
+func _cmd_explore(args: Dictionary) -> Dictionary:
+	var p: PlayerState = Game.local_player()
+	if p == null or not (args.get("pos") is Vector3):
+		return {"ok": false, "error": "no player or position"}
+	var n: int = p.explored.reveal(args["pos"], clampf(float(args.get("radius", SIGHT)), 1.0, 2000.0))
+	return {"ok": true, "revealed": n}
+
+
 func _exit_tree() -> void:
+	if Game.has_command(&"map.explore"):
+		Game.unregister_command(&"map.explore")
 	if _task >= 0:
 		WorkerThreadPool.wait_for_task_completion(_task)
 		_task = -1
@@ -114,6 +145,10 @@ func open() -> void:
 		_pending_key = key
 	_zoom = 1.0
 	_pan = Vector2.ZERO
+	_fog_count = -1
+	var lp: PlayerState = Game.local_player()
+	if lp != null:
+		_refresh_fog(lp)
 	_centre_on_player()
 	var ui: Node = get_parent()
 	if ui != null and ui.has_method(&"push_modal"):
@@ -269,7 +304,11 @@ func _show(img: Image) -> void:
 	_layout()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_explore_t -= delta
+	if _explore_t <= 0.0:
+		_explore_t = 1.0
+		_explore()
 	if _task >= 0 and WorkerThreadPool.is_task_completed(_task):
 		WorkerThreadPool.wait_for_task_completion(_task)
 		_task = -1
@@ -285,6 +324,48 @@ func _process(_delta: float) -> void:
 		_markers.queue_redraw()
 
 
+## Once a second: uncover the map round the player (and round where they wake, the first time).
+func _explore() -> void:
+	var w: Node = Game.world
+	var p: PlayerState = Game.local_player()
+	if w == null or p == null or w.get(&"player") == null or not bool(w.get(&"is_ready")):
+		return
+	if p.explored.is_empty():
+		var at: Vector3 = p.spawn_point if p.spawn_point != Vector3.ZERO else (w.player as Node3D).global_position
+		Game.execute(&"map.explore", {"pos": at, "radius": FIRST_REVEAL})
+	Game.execute(&"map.explore", {"pos": (w.player as Node3D).global_position, "radius": SIGHT})
+	if _open:
+		_refresh_fog(p)
+
+
+## The fog over the sheet: one pixel a 32 m cell, paper where you haven't been.
+func _refresh_fog(p: PlayerState) -> void:
+	var count: int = 0
+	for k: String in p.explored.blocks:
+		for byte: int in (p.explored.blocks[k] as PackedByteArray):
+			while byte:
+				count += byte & 1
+				byte >>= 1
+	if count == _fog_count and _fog.texture != null:
+		return
+	_fog_count = count
+	_fog.texture = ImageTexture.create_from_image(fog_image(p.explored, _rect))
+
+
+## The fog image for a world rect: FOG on unexplored cells, clear on explored ones.
+static func fog_image(ex: ExploredMap, r: Rect2) -> Image:
+	var cw: int = int(ceil(r.size.x / ExploredMap.CELL))
+	var ch: int = int(ceil(r.size.y / ExploredMap.CELL))
+	var img := Image.create(cw, ch, false, Image.FORMAT_RGBA8)
+	img.fill(FOG)
+	var c0 := Vector2i(int(floor(r.position.x / ExploredMap.CELL)), int(floor(r.position.y / ExploredMap.CELL)))
+	for y: int in ch:
+		for x: int in cw:
+			if ex.cell_explored(c0.x + x, c0.y + y):
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+	return img
+
+
 ## The sheet's rect on screen: fit to the screen at zoom 1, then zoomed and panned.
 func _layout() -> void:
 	var avail := Rect2(Vector2(48, 84), size - Vector2(96, 150))
@@ -296,6 +377,8 @@ func _layout() -> void:
 	_tex.position = (avail.size - px) * 0.5 + _pan
 	_markers.position = _tex.position
 	_markers.size = px
+	_fog.position = _tex.position
+	_fog.size = px
 
 
 func _world_to_sheet(p: Vector3) -> Vector2:
@@ -351,6 +434,9 @@ func _draw_markers() -> void:
 				col = Color(0.18, 0.45, 0.2)
 			elif bool(m["visited"]):
 				col = Color(0.75, 0.4, 0.1)
+			# The fog hides what you haven't seen for yourself.
+			if p != null and not p.explored.is_explored((m["pos"] as Vector3).x, (m["pos"] as Vector3).z):
+				continue
 			var mp: Vector2 = _world_to_sheet(m["pos"])
 			_markers.draw_rect(Rect2(mp - Vector2(3, 3) * s, Vector2(6, 6) * s), col)
 	var traders: Node = w.get(&"traders")

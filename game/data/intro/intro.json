@@ -1,29 +1,119 @@
 {
-  "_doc": "The new-game intro (ADR-0064): cards played in order by IntroPlayer. kind: caption (a stamp line and typed lines on black), document (a typed paper form with a rubber stamp), radio (a transcript, line by line: 'SPEAKER|text'), impact (the crash: a shake, a flash and sounds, then the lines), title (the game's name). hold: seconds a card stays once fully shown. sound: played when the card starts (UI bus; impact cards may list several in 'sounds'). {day} {time} {hum_in} are filled from the session. The owner's lore call (2026-10-08): the intro shows #4471's drop aircraft going down short of the drop site; the outbreak's cause is never told here (the player finds it in the world).",
+  "_doc": "The new-game intro (ADR-0064): cards played in order by IntroPlayer. kind: caption (a stamp line and typed lines on black), document (a typed paper form with a rubber stamp), radio (a transcript, line by line: 'SPEAKER|text'), impact (the crash: a shake, a flash and sounds, then the lines), title (the game's name). hold: seconds a card stays once fully shown. sound: played when the card starts (UI bus; impact cards may list several in 'sounds'). {day} {time} {hum_in} are filled from the session. The owner's lore call (2026-10-08): the intro shows #4471's drop aircraft going down short of the drop site; the outbreak's cause is never told here: only what a convict on that flight would know (the Program's deal, the Cordon, rumours, the drop briefing), with hints but no answers (the player finds the cause in the world).",
   "music": "music/dread_drone",
   "type_speed": 42,
   "cards": [
-    {"kind": "caption", "stamp": "THE HOLLOWMERE VALLEY  ·  SAWBACK RANGE",
-     "lines": ["Eighteen months ago the valley went quiet.", "Then the people in it started walking at night."], "hold": 3.5},
-    {"kind": "caption", "stamp": "EVERY SEVENTH NIGHT", "sound": "amb/the_hum",
-     "lines": ["The ground hums.", "And everything that walks at night comes for the brightest fire it can hear."], "hold": 4.0},
-    {"kind": "document", "heading": "NOTICE OF QUARANTINE", "stamp": "CORDON AUTHORITY", "sound": "sfx/book_page_turn",
-     "lines": ["The Hollowmere valley is closed. Hazard: biological, unidentified.", "Fence, drones, a burned firebreak: the Cordon.", "No one comes out who has not been cleared.", "Residents who fled to the high timber are not to be approached."], "hold": 3.5},
-    {"kind": "document", "heading": "REMAND SALVAGE PROGRAM — ENROLMENT", "stamp": "VOLUNTEERED", "sound": "sfx/book_page_turn",
-     "lines": ["Salvager No. 4471.", "Duty: recover samples and field records from inside the Cordon.", "Each delivery to Waystation 9 shortens your sentence.", "The tether on your wrist stays locked. It will tell you when the ground is due to hum."], "hold": 4.0},
-    {"kind": "radio", "heading": "CORDON CONTROL  ·  CH 4  ·  05:41", "sound": "ui/tether_beep",
-     "lines": ["LIFT 3|Control, Lift Three, over the firebreak. One salvager for Larch Hollow.",
-               "CONTROL|Copy, Three. Wind light from the west.",
-               "LIFT 3|Ground's moving down there. Whole treeline shaking, no wind —",
-               "LIFT 3|Losing number two. Losing height.",
-               "CONTROL|Three, say again?",
-               "LIFT 3|Mayday, mayday, Lift Three going in short of the drop —"], "hold": 1.5},
-    {"kind": "impact", "sounds": ["sfx/tree_fall_crash", "sfx/metal_clang", "sfx/structure_break_wood"],
-     "lines": [""], "hold": 2.5},
-    {"kind": "radio", "heading": "CORDON CONTROL  ·  CH 4  ·  05:44", "sound": "ui/tether_beep",
-     "lines": ["CONTROL|Lift Three, Control.", "CONTROL|Lift Three, Control. Respond.", "CONTROL|...Log it. Tether 4471 still reads a pulse. Waystation 9 out."], "hold": 3.0},
-    {"kind": "caption", "stamp": "LARCH HOLLOW  ·  DAY {day}  ·  {time}",
-     "lines": ["The wreck burned out before first light. Nobody came for it.", "You walked the last mile to the drop site with the tether ticking.", "{hum_in}"], "hold": 4.0},
-    {"kind": "title", "lines": ["The valley breathes on the seventh night."], "hold": 3.0}
+    {
+      "kind": "caption",
+      "stamp": "THE HOLLOWMERE VALLEY  ·  SAWBACK RANGE",
+      "lines": [
+        "Eighteen months ago the valley stopped answering.",
+        "The stories that came out of it didn't agree on much. Only that the people in there were still walking."
+      ],
+      "hold": 3.5
+    },
+    {
+      "kind": "caption",
+      "stamp": "WHAT THE GUARDS SAY",
+      "lines": [
+        "That the ground hums every seventh night.",
+        "That on those nights, whatever is still walking in there comes for the brightest fire it can hear."
+      ],
+      "hold": 4.0,
+      "sound": "amb/the_hum"
+    },
+    {
+      "kind": "document",
+      "heading": "NOTICE OF QUARANTINE",
+      "stamp": "CORDON AUTHORITY",
+      "sound": "sfx/book_page_turn",
+      "lines": [
+        "The Hollowmere valley is closed. Hazard: biological, unidentified.",
+        "Fence, drones, a burned firebreak: the Cordon.",
+        "No one comes out who has not been cleared.",
+        "Residents who fled to the high timber are not to be approached."
+      ],
+      "hold": 3.5
+    },
+    {
+      "kind": "document",
+      "heading": "REMAND SALVAGE PROGRAM — ENROLMENT",
+      "stamp": "VOLUNTEERED",
+      "sound": "sfx/book_page_turn",
+      "lines": [
+        "Salvager No. 4471.",
+        "Duty: recover samples and field records from inside the Cordon.",
+        "Each delivery to Waystation 9 shortens your sentence.",
+        "The tether on your wrist stays locked. It will tell you when the ground is due to hum."
+      ],
+      "hold": 4.0
+    },
+    {
+      "kind": "document",
+      "heading": "DROP BRIEFING — LIFT 3",
+      "stamp": "RESTRICTED",
+      "sound": "sfx/book_page_turn",
+      "lines": [
+        "Drop site: Larch Hollow, sector D6. At first light.",
+        "Pell's Crossing (abandoned) is a short walk north-east. Waystation 9 is at the river gate.",
+        "Corvane Mining property is out of bounds. Do not ask why.",
+        "Do not travel at night. Do not light what you cannot put out."
+      ],
+      "hold": 4.0
+    },
+    {
+      "kind": "radio",
+      "heading": "CORDON CONTROL  ·  CH 4  ·  05:41",
+      "sound": "ui/tether_beep",
+      "lines": [
+        "LIFT 3|Control, Lift Three, over the firebreak. One salvager for Larch Hollow.",
+        "CONTROL|Copy, Three. Wind light from the west.",
+        "LIFT 3|Ground's moving down there. Whole treeline shaking, no wind —",
+        "LIFT 3|Losing number two. Losing height.",
+        "CONTROL|Three, say again?",
+        "LIFT 3|Mayday, mayday, Lift Three going in short of the drop —"
+      ],
+      "hold": 1.5
+    },
+    {
+      "kind": "impact",
+      "sounds": [
+        "sfx/tree_fall_crash",
+        "sfx/metal_clang",
+        "sfx/structure_break_wood"
+      ],
+      "lines": [
+        ""
+      ],
+      "hold": 2.5
+    },
+    {
+      "kind": "radio",
+      "heading": "CORDON CONTROL  ·  CH 4  ·  05:44",
+      "sound": "ui/tether_beep",
+      "lines": [
+        "CONTROL|Lift Three, Control.",
+        "CONTROL|Lift Three, Control. Respond.",
+        "CONTROL|...Log it. Tether 4471 still reads a pulse. Waystation 9 out."
+      ],
+      "hold": 3.0
+    },
+    {
+      "kind": "caption",
+      "stamp": "LARCH HOLLOW  ·  DAY {day}  ·  {time}",
+      "lines": [
+        "The wreck burned out before first light. Nobody came for it.",
+        "You walked the last mile to the drop site with the tether ticking.",
+        "{hum_in}"
+      ],
+      "hold": 4.0
+    },
+    {
+      "kind": "title",
+      "lines": [
+        "The valley breathes on the seventh night."
+      ],
+      "hold": 3.0
+    }
   ]
 }

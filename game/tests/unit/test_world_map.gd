@@ -24,3 +24,49 @@ func test_sheet_covers_a_region_with_water_and_roads() -> void:
 	assert_gt(water, 20, "the Tamsin and Larch Pond")
 	assert_gt(road, 20, "Route 9")
 	assert_lt(plain, img.get_width() * img.get_height() / 8, "the region is shaded, not blank paper")
+
+
+func test_reveal_marks_cells_in_a_circle() -> void:
+	var ex := ExploredMap.new()
+	assert_true(ex.is_empty())
+	var n: int = ex.reveal(Vector3(-300, 80, 2300), 90.0)
+	assert_gt(n, 20)
+	assert_eq(ex.reveal(Vector3(-300, 80, 2300), 90.0), 0, "nothing new the second time")
+	assert_true(ex.is_explored(-300, 2300))
+	assert_true(ex.is_explored(-300 + 60, 2300))
+	assert_false(ex.is_explored(-300 + 200, 2300))
+	# Negative cells and block borders.
+	ex.reveal(Vector3(-512, 0, -512), 20.0)
+	assert_true(ex.is_explored(-512 + 5, -512 + 5))
+	assert_true(ex.is_explored(-512 - 5, -512 - 5))
+
+
+func test_explored_survives_a_save_round_trip() -> void:
+	var p := PlayerState.new()
+	p.explored.reveal(Vector3(100, 0, 100), 150.0)
+	var d: Dictionary = p.to_dict()
+	var json: String = JSON.stringify(d)
+	var back := PlayerState.new()
+	back.from_dict(JSON.parse_string(json))
+	assert_eq(back.explored.blocks.size(), p.explored.blocks.size())
+	assert_true(back.explored.is_explored(100, 100))
+	assert_false(back.explored.is_explored(400, 400))
+
+
+func test_an_old_save_without_the_field_loads_unexplored() -> void:
+	var p := PlayerState.new()
+	var d: Dictionary = p.to_dict()
+	d.erase("explored")
+	var back := PlayerState.new()
+	back.explored.reveal(Vector3.ZERO, 50.0)
+	back.from_dict(d)
+	assert_true(back.explored.is_empty(), "the map reveals round the bed or drop site on its first tick")
+
+
+func test_fog_image_clears_explored_cells() -> void:
+	var ex := ExploredMap.new()
+	ex.reveal(Vector3(48, 0, 48), 10.0)
+	var img: Image = WorldMap.fog_image(ex, Rect2(0, 0, 320, 320))
+	assert_eq(img.get_width(), 10)
+	assert_eq(img.get_pixel(1, 1).a, 0.0)
+	assert_gt(img.get_pixel(8, 8).a, 0.5)
