@@ -215,6 +215,7 @@
    "value": 0,
    "note": "town4_vfw_qm",
    "model": "items/town4/note_town4_vfw_qm"
-  }
+  },
+  {"id": "note_town4_waterworks_discharge", "name": "Notice to the Water Department", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "model": "items/note_pharmacy_ledger", "note": "town4_waterworks_discharge"}
  ]
 }

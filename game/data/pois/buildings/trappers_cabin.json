@@ -135,7 +135,8 @@
       ],
       "notes": [
         {"note": "wild_trapper_warning", "pos": [10.5, 11.1], "y": 1.45},
-        {"note": "wild_trapper_journal", "pos": [9.55, 8.62], "y": 0.77}
+        {"note": "wild_trapper_journal", "pos": [9.55, 8.62], "y": 0.77},
+        {"note": "wild_trapper_anders", "pos": [9.8, 8.5], "y": 0.77}
       ],
       "sleepers": [
         {"id": "breach_dragger", "pos": [7.65, 9.65], "enemy": "dragger", "pose": "lie", "rot": -100, "anchor": "floor"},
