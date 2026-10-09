@@ -19,6 +19,20 @@ func test_the_pan_alternates_and_moves() -> void:
 	assert_lt(MenuBackdrop.pan_drift(1, 1.0).x, MenuBackdrop.pan_drift(1, 0.0).x)
 
 
+func test_the_dissolve_dips_instead_of_doubling_the_pictures() -> void:
+	assert_eq(MenuBackdrop.dissolve_alphas(0.0), Vector2(1, 0), "starts on the old picture")
+	assert_eq(MenuBackdrop.dissolve_alphas(1.0), Vector2(0, 1), "ends on the new one")
+	var mid: Vector2 = MenuBackdrop.dissolve_alphas(0.5)
+	assert_lt(mid.x, 0.3, "the old picture is mostly gone halfway")
+	assert_lt(mid.y, 0.3, "and the new one barely up: never two riverbeds at half strength")
+	assert_gt(mid.x + mid.y, 0.4, "a dip through dusk, not a blink to black")
+	var last: Vector2 = Vector2(1, 0)
+	for i: int in range(1, 21):
+		var a: Vector2 = MenuBackdrop.dissolve_alphas(i / 20.0)
+		assert_true(a.x <= last.x and a.y >= last.y, "fades only one way")
+		last = a
+
+
 func test_stills_are_spread_along_the_flight() -> void:
 	var last: float = -1.0
 	for share: float in MenuFlight.STILLS:
