@@ -1,8 +1,8 @@
 # ADR-0056: Organic caves through the SDF volume terrain
 
 **Status**: Accepted · 2026-10 (rounds 3-4). docs/CAVES_PLAN.md was the working plan the parallel
-streams coded against; this record keeps what landed and why. WS-F (GPU profiling, per-kind stream
-budgets) is still open: see the end.
+streams coded against; this record keeps what landed and why. What WS-F still needs is a real GPU:
+see the end.
 
 ## Context
 The world's caves were a POI's buried levels on the 1 m kit grid (TD-162): drifts and chambers that
@@ -77,9 +77,13 @@ ambience switches to the `ReverbCave` bus; `environment_controller.gd` gained on
 − TD-010 narrowed: the render mesh keeps the per-column hole test (its skirts hide the half-voxel
   slit); only collision and nav use the strip rule.
 − `faces_in_rect` returns every triangle of a whole column (about 194k vertices of source for one
-  cave tile, assembled on the main thread; 9 tiles bake in ~125 ms): clipping to the tile is a WS-F
-  measurement to make.
+  cave tile; 9 tiles bake in ~125 ms). Not clipped, on purpose: a 16 m column nearly always lies
+  inside a tile's 36 m bake area, Recast filters by the bake box itself, and a per-triangle filter in
+  GDScript would cost the main thread more than the array append it saves.
 − A random world's cave is planned on the generator's reference ground; in game it is re-planned on
   the composed region, whose detail noise can fail it, and then it is left out silently.
-− Open (WS-F): `perf_capture` dense-forest and cave-mouth views and a GPU profile, `stream_walk
-  --route forest`, per-kind budgets in `streaming.json`, docs/GPU_PROFILE.md.
++ WS-F (round 4): `perf_capture` has dense-forest, cave-mouth and cave-chamber views (headless they
+  sit with the others, 6.9 ms a frame, p95 10-11 ms) and `--hum-full`; `stream_walk` passes on a
+  generator-12 world (late 0 s).
+− Still open: a GPU profile and docs/GPU_PROFILE.md need a real GPU (TD-003, the owner); per-kind
+  budgets in `streaming.json` wait for numbers from one.
