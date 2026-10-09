@@ -1031,6 +1031,7 @@ func _leg(a: Array, b: Array) -> void:
 					for k0: int in range(1, cells.size()):
 						await _go(_cell_pos(int(s["level"]), cells[k0]), false, leg)
 				await _open_doors(hw["opening"], leg)
+			var pts: Array[Vector3] = []
 			if kind == "stairs_up":
 				for k: int in range(1, cells.size()):
 					pts.append(_cell_pos(int(s["level"]), cells[k]))
