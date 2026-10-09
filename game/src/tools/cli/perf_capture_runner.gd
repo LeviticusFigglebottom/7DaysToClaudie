@@ -108,6 +108,21 @@ func _run() -> void:
 			m["modules"] = await _ablate_modules()
 		_report["views"][v["name"]] = m
 		print("[perf] %s %s" % [v["name"], _brief(m)])
+	var ridge: Dictionary = _ridge_view()
+	if not ridge.is_empty():
+		await _goto(ridge["pos"], ridge["look"])
+		await _coarse_settle()
+		var mr: Dictionary = await _measure(_frames)
+		mr["coarse_quads"] = int(w.vegetation.call(&"coarse_count"))
+		if _census:
+			mr["census"] = _triangle_census(p.global_position + Vector3.UP * 1.65)
+		# The same view without the coarse forest (TD-006): its cost is the difference.
+		w.vegetation.set(&"coarse_enabled", false)
+		await get_tree().process_frame
+		mr["without_coarse"] = await _measure(_frames)
+		w.vegetation.set(&"coarse_enabled", true)
+		_report["views"]["ridge"] = mr
+		print("[perf] ridge %s coarse_quads=%d | without coarse: %s" % [_brief(mr), mr["coarse_quads"], _brief(mr["without_coarse"])])
 	for cv: Dictionary in _cave_views():
 		await _goto_at(cv["pos"], cv["look"])
 		var mc: Dictionary = await _measure(_frames)
@@ -161,6 +176,43 @@ func _cave_views() -> Array[Dictionary]:
 		if spine.size() > 2:
 			out.append({"name": "cave_chamber", "pos": spine[spine.size() - 1], "look": mouth.origin})
 	return out
+
+
+## The ridge view (TD-006): the highest ground of the player's region within 160 m of its edge,
+## looking out over the next regions (coarse on the main map: the far forest's cluster layer).
+func _ridge_view() -> Dictionary:
+	var rt: RegionTerrain = w.terrain.region_terrain_at(p.global_position.x, p.global_position.z)
+	if rt == null:
+		return {}
+	var r: Rect2 = rt.rect
+	var best := Vector3(0, -INF, 0)
+	for z: float in range(int(r.position.y) + 16, int(r.end.y) - 16, 32):
+		for x: float in range(int(r.position.x) + 16, int(r.end.x) - 16, 32):
+			var edge: float = minf(minf(x - r.position.x, r.end.x - x), minf(z - r.position.y, r.end.y - z))
+			var h: float = w.height_at(x, z)
+			if edge < 160.0 and h > best.y:
+				best = Vector3(x, h, z)
+	if best.y == -INF:
+		return {}
+	var out_dir := Vector2(best.x, best.z) - r.get_center()
+	out_dir = out_dir.normalized() if out_dir.length() > 1.0 else Vector2(1, 0)
+	# _goto pitches by look.y + ground - 3.4 over the distance: about 2 degrees down.
+	var look := Vector3(best.x + out_dir.x * 800.0, 3.4 - best.y - 30.0, best.z + out_dir.y * 800.0)
+	return {"pos": Vector3(best.x, 1.7, best.z), "look": look}
+
+
+## Waits (up to 60 s) for the coarse regions in view to be built.
+func _coarse_settle() -> void:
+	var veg: Node = w.vegetation
+	if veg == null or not veg.has_method(&"coarse_pending"):
+		return
+	var end: int = Time.get_ticks_msec() + 60000
+	while Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+		if int(veg.call(&"coarse_pending")) == 0 and int(veg.call(&"coarse_count")) > 0:
+			break
+	for i: int in 30:
+		await get_tree().process_frame
 
 
 ## As _goto, standing on the ground below `pos` (a cave's floor) rather than on the surface.

@@ -83,6 +83,37 @@ const FOOTPRINT_MARGIN: Dictionary = {"tree": 1.6, "medium": 0.8, "ground": 0.25
 const FOOTPRINT_FRONT: Dictionary = {"tree": 12.0, "medium": 12.0, "ground": 0.0, "bloom": 0.0}
 ## How far past a cave's air box (caves_changed) its mouth apron can reach (m): the chunks to re-mask.
 const CAVE_APRON_REACH: float = 16.0
+## Coarse far forest (TD-006, HLOD): the regions held only at 16 m (never built on the main map,
+## beyond the attach rings in a streamed world) get cluster impostors, one quad standing for a few
+## trees, so the forest runs on to the view distance. rid -> {task (-1 once built), rect, blocks:
+## [per-block {species: [count, buffer]}], holder, redo}. Built near the player, freed far off.
+var _coarse: Dictionary = {}
+var _coarse_mats: Dictionary = {}
+var _coarse_accum: float = 0.0
+## Off hides every coarse cluster (perf_capture's with/without measure of the ridge view).
+var coarse_enabled: bool = true:
+	set(v):
+		coarse_enabled = v
+		for rid: String in _coarse.keys():
+			_coarse_show(rid)
+		if world != null and world.player != null:
+			var pp: Vector3 = world.player.global_position
+			_coarse_ring(Vector2(pp.x, pp.z), float(Settings.gfx("view_distance", 1400.0)))
+## Trees per cluster quad (the quads are COARSE_SPREAD wider and COARSE_LIFT taller, so the crowns
+## still meet at a distance), the block a MultiMesh covers (visibility range culls by block), how
+## many region scatters run at once, and how far past the view distance a built one is kept.
+const COARSE_TREES: float = 4.0
+const COARSE_SPREAD: float = 1.55
+const COARSE_LIFT: float = 1.12
+const COARSE_BLOCK: float = 512.0
+const COARSE_JOBS: int = 2
+const COARSE_FREE_PAST: float = 1200.0
+const COARSE_MAX_SLOPE: float = 34.0
+const COARSE_MINOR: float = 0.15
+const COARSE_PER_CELL: int = 4
+## Clusters grow in from this far round the player (an unbuilt region has no near trees, so it
+## keeps no near square; closer than this a billboard cluster reads as one).
+const COARSE_INNER: float = 90.0
 ## Clearing ids `set_clearings` opened, by source (Bloom nests' mats, ADR-0055): a thin layer over
 ## the runtime clearings below, so nests and forest encounters share one mask.
 var _source_clearings: Dictionary = {}
@@ -236,6 +267,13 @@ func _on_caves_changed(box: AABB) -> void:
 		var rt: RegionTerrain = terrain.regions.get(rid)
 		if rt != null and rt.rect.intersects(r):
 			_far_redo(rid)
+	for rid: String in _coarse.keys():
+		var e: Dictionary = _coarse[rid]
+		if (e["rect"] as Rect2).intersects(r):
+			if int(e["task"]) >= 0:
+				e["redo"] = true
+			else:
+				_coarse_free(rid)
 
 
 func _water_fn() -> Callable:
@@ -262,6 +300,10 @@ func _exit_tree() -> void:
 		if int(e["task"]) >= 0:
 			WorkerThreadPool.wait_for_group_task_completion(int(e["task"]))
 			e["task"] = -1
+	for e: Dictionary in _coarse.values():
+		if int(e["task"]) >= 0:
+			WorkerThreadPool.wait_for_group_task_completion(int(e["task"]))
+			e["task"] = -1
 
 
 # --- Streaming --------------------------------------------------------------------------------
@@ -274,12 +316,17 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_collect_far()
+	_collect_coarse()
 	if world == null or world.player == null:
 		return
 	_collect()
 	_accum += delta
 	_col_accum += delta
+	_coarse_accum += delta
 	var pos: Vector3 = world.player.global_position
+	if _coarse_accum > 1.0:
+		_coarse_accum = 0.0
+		_coarse_update(pos)
 	if _accum > 0.25:
 		_accum = 0.0
 		_update(pos)
@@ -666,6 +713,7 @@ func _far_free(rid: String) -> void:
 	for m: ShaderMaterial in e["mats"]:
 		_far_mats.erase(m)
 	_far.erase(rid)
+	_coarse_show(rid)
 
 
 ## A chunk's far trees as MultiMesh transform buffers per species ({species: [count,
@@ -828,38 +876,289 @@ func _far_build(rid0: String, e: Dictionary) -> void:
 		var per_species: Dictionary = joined[rid]
 		for sp_id: StringName in per_species:
 			var sp: SpeciesDef = Content.get_def(&"species", sp_id) as SpeciesDef
-			var mat := ShaderMaterial.new()
-			mat.shader = load("res://assets/shaders/impostor.gdshader")
-			mat.set_shader_parameter("atlas", ImpostorLibrary.atlas_for(sp))
-			var nrm: Texture2D = ImpostorLibrary.normal_atlas_for(sp)
-			mat.set_shader_parameter("has_normals", nrm != null)
-			if nrm != null:
-				mat.set_shader_parameter("normal_atlas", nrm)
-			mat.set_shader_parameter("frames", ImpostorLibrary.FRAMES)
-			mat.set_shader_parameter("discard_rect", _near_rect())
-			if ImpostorLibrary.is_baked(sp):
-				var tints: Dictionary = ImpostorLibrary.season_tints(sp)
-				for k: String in tints:
-					mat.set_shader_parameter(k, tints[k])
+			var mat: ShaderMaterial = _impostor_mat(sp)
 			_far_mats.append(mat)
 			(e["mats"] as Array).append(mat)
-			var quad := QuadMesh.new()
-			quad.size = Vector2(1.0, 1.0)
-			quad.center_offset = Vector3(0, 0.5, 0)
-			quad.material = mat
-			var e2: Array = per_species[sp_id]
-			var mm := MultiMesh.new()
-			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = quad
-			mm.instance_count = int(e2[0])
-			if int(e2[0]) > 0:
-				mm.buffer = e2[1]
-			var mmi := MultiMeshInstance3D.new()
-			mmi.name = "Far_%s_%s" % [rid, sp_id]
-			mmi.multimesh = mm
-			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			mmi.visibility_range_end = float(Settings.gfx("view_distance", 1400.0))
-			holder.add_child(mmi)
+			holder.add_child(_impostor_mmi("Far_%s_%s" % [rid, sp_id], mat, per_species[sp_id]))
+	# Its coarse clusters (TD-006) give way now that the region's own far trees are up.
+	_coarse_show(rid0)
+
+
+## The far impostor material of a species (its atlas, normals and season tints).
+func _impostor_mat(sp: SpeciesDef) -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://assets/shaders/impostor.gdshader")
+	mat.set_shader_parameter("atlas", ImpostorLibrary.atlas_for(sp))
+	var nrm: Texture2D = ImpostorLibrary.normal_atlas_for(sp)
+	mat.set_shader_parameter("has_normals", nrm != null)
+	if nrm != null:
+		mat.set_shader_parameter("normal_atlas", nrm)
+	mat.set_shader_parameter("frames", ImpostorLibrary.FRAMES)
+	mat.set_shader_parameter("discard_rect", _near_rect())
+	if ImpostorLibrary.is_baked(sp):
+		var tints: Dictionary = ImpostorLibrary.season_tints(sp)
+		for k: String in tints:
+			mat.set_shader_parameter(k, tints[k])
+	return mat
+
+
+## A MultiMesh of impostor quads from a [count, transform buffer] pair, drawn to the view distance.
+func _impostor_mmi(node_name: String, mat: ShaderMaterial, e2: Array) -> MultiMeshInstance3D:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(1.0, 1.0)
+	quad.center_offset = Vector3(0, 0.5, 0)
+	quad.material = mat
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = quad
+	mm.instance_count = int(e2[0])
+	if int(e2[0]) > 0:
+		mm.buffer = e2[1]
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = node_name
+	mmi.multimesh = mm
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mmi.visibility_range_end = float(Settings.gfx("view_distance", 1400.0))
+	return mmi
+
+
+# --- Coarse far forest (TD-006) ---------------------------------------------------------------
+
+## Starts the cluster scatter of coarse regions coming into view (nearest first, COARSE_JOBS at a
+## time) and frees those well past it.
+func _coarse_update(pos: Vector3) -> void:
+	var p := Vector2(pos.x, pos.z)
+	var view: float = float(Settings.gfx("view_distance", 1400.0))
+	var running: int = 0
+	for e: Dictionary in _coarse.values():
+		if int(e["task"]) >= 0:
+			running += 1
+	var want: Array = []
+	for rid: String in terrain.coarse:
+		var rt: RegionTerrain = terrain.coarse[rid]
+		var d: float = RegionRings.rect_distance(rt.rect, p)
+		if _coarse.has(rid):
+			if d > view + COARSE_FREE_PAST and int(_coarse[rid]["task"]) < 0:
+				_coarse_free(rid)
+		elif d < view:
+			want.append([d, rid])
+	_coarse_ring(p, view)
+	want.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	for w: Array in want:
+		if running >= COARSE_JOBS:
+			break
+		_coarse_attach(str(w[1]))
+		running += 1
+
+
+## Scatters a coarse region's clusters on workers, a block per element (low priority).
+func _coarse_attach(rid: String) -> void:
+	var rt: RegionTerrain = terrain.coarse.get(rid)
+	if rt == null:
+		return
+	VegetationScatter.warm()
+	var seed_v: int = Game.session.world_seed
+	var fps: Dictionary = _footprints
+	var caves: Object = terrain.get(&"caves")
+	if caves != null and (not caves.has_method(&"keep_out") or bool(caves.call(&"is_empty"))):
+		caves = null
+	var dims: Dictionary = {}
+	var heights: Dictionary = {}
+	for d: ContentDef in Content.all(&"species"):
+		var sp := d as SpeciesDef
+		if sp.veg_kind == "tree":
+			dims[sp.id] = ImpostorLibrary.size_for(sp)
+			heights[sp.id] = sp.height_range
+	var n: int = maxi(1, int(ceil(rt.rect.size.x / COARSE_BLOCK)))
+	var results: Array = []
+	results.resize(n * n)
+	var task: int = WorkerThreadPool.add_group_task(func(i: int) -> void:
+		var o: Vector2 = rt.rect.position + Vector2(i % n, floori(float(i) / n)) * COARSE_BLOCK
+		var block := Rect2(o, Vector2(COARSE_BLOCK, COARSE_BLOCK)).intersection(rt.rect)
+		results[i] = _coarse_block(rt, block, seed_v, fps, caves, dims, heights),
+		n * n, -1, false, "coarse trees")
+	_coarse[rid] = {"task": task, "rect": rt.rect, "blocks": results, "holder": null}
+
+
+## One block's cluster quads as {species: [count, transform buffer]}, on a worker. A 16 m cell
+## (the coarse spacing) expects the trees the near scatter would put there (its biome's tree
+## density under the vegetation mask); every COARSE_TREES of them make a cluster quad, the
+## remainder by chance. Steep ground, town buildings and cave mouths stay bare as they do near.
+static func _coarse_block(rt: RegionTerrain, block: Rect2, seed_v: int, fps: Dictionary, caves: Object, dims: Dictionary, heights: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	var tables: Dictionary = VegetationScatter._biome_tables()
+	var cell: float = maxf(rt.spacing, 8.0)
+	var tree_cell: float = float(VegetationScatter.LAYERS["tree"]["cell"])
+	var rng := RandomNumberGenerator.new()
+	rng.seed = Ids.derive_seed(seed_v, "veg_coarse:%d_%d" % [int(block.position.x), int(block.position.y)])
+	var steps_x: int = int(block.size.x / cell)
+	var steps_z: int = int(block.size.y / cell)
+	for gz: int in steps_z:
+		for gx: int in steps_x:
+			# The same draws every cell, so a cell's clusters don't hang on its neighbours'.
+			var r_count: float = rng.randf()
+			var draws: PackedFloat32Array = []
+			for k: int in COARSE_PER_CELL * 4:
+				draws.append(rng.randf())
+			var cx: float = block.position.x + (gx + 0.5) * cell
+			var cz: float = block.position.y + (gz + 0.5) * cell
+			var veg: float = rt.veg_at(cx, cz)
+			if veg <= 0.05:
+				continue
+			var table: Dictionary = (tables.get(rt.biome_at(cx, cz), {}) as Dictionary).get("tree", {})
+			if table.is_empty():
+				continue
+			var p_place: float = minf(1.0, float(table["_total"]) * tree_cell * tree_cell / 100.0) * veg
+			var trees: float = p_place * (cell / tree_cell) * (cell / tree_cell)
+			var q: float = trees / COARSE_TREES
+			var count: int = mini(COARSE_PER_CELL, int(q) + (1 if r_count < q - floorf(q) else 0))
+			for k: int in count:
+				var x: float = cx + (draws[k * 4] - 0.5) * cell
+				var z: float = cz + (draws[k * 4 + 1] - 0.5) * cell
+				if not rt.rect.has_point(Vector2(x, z)) or rt.height.slope_deg(x, z) > COARSE_MAX_SLOPE:
+					continue
+				var key := Vector2i(floori(x / CHUNK), floori(z / CHUNK))
+				if _in_footprint(fps.get(key, []), "tree", x, z):
+					continue
+				if caves != null and bool(caves.call(&"keep_out", x, z)):
+					continue
+				var sp_id: StringName = VegetationScatter._pick_species(table, draws[k * 4 + 2])
+				if not dims.has(sp_id):
+					continue
+				var dim: Vector2 = dims[sp_id]
+				var hr: Vector2 = heights[sp_id]
+				var sc: float = lerpf(hr.x, hr.y, draws[k * 4 + 3]) / 20.0
+				var yaw: float = draws[k * 4 + 3] * 977.0
+				var b := Basis(Vector3.UP, yaw).scaled(Vector3(dim.x * COARSE_SPREAD, dim.y * COARSE_LIFT, dim.x * COARSE_SPREAD) * sc)
+				# Sunk a little more than a near tree: the 16 m ground is smoother than the real one.
+				var y: float = rt.height.sample(x, z) - 0.6
+				if not out.has(sp_id):
+					out[sp_id] = [0, PackedFloat32Array()]
+				var e: Array = out[sp_id]
+				var buf: PackedFloat32Array = e[1]
+				buf.append_array([b.x.x, b.y.x, b.z.x, x, b.x.y, b.y.y, b.z.y, y, b.x.z, b.y.z, b.z.z, z])
+				e[1] = buf
+				e[0] = int(e[0]) + 1
+	return _coarse_fold(out)
+
+
+## Folds a block's minor species (under COARSE_MINOR of its quads) into its main one: at range a
+## few snags or birches among the firs don't show, and each species is a draw call a block.
+static func _coarse_fold(out: Dictionary) -> Dictionary:
+	var total: int = 0
+	var main: Variant = null
+	for k: Variant in out:
+		total += int(out[k][0])
+		if main == null or int(out[k][0]) > int(out[main][0]):
+			main = k
+	if main == null:
+		return out
+	for k: Variant in out.keys():
+		if k != main and float(out[k][0]) < float(total) * COARSE_MINOR:
+			var into: Array = out[main]
+			var buf: PackedFloat32Array = into[1]
+			buf.append_array(out[k][1])
+			into[1] = buf
+			into[0] = int(into[0]) + int(out[k][0])
+			out.erase(k)
+	return out
+
+
+## Builds the coarse regions whose scatter came back (one a frame).
+func _collect_coarse() -> void:
+	for rid: String in _coarse.keys():
+		var e: Dictionary = _coarse[rid]
+		if int(e["task"]) < 0 or not WorkerThreadPool.is_group_task_completed(int(e["task"])):
+			continue
+		WorkerThreadPool.wait_for_group_task_completion(int(e["task"]))
+		e["task"] = -1
+		if bool(e.get("redo", false)):
+			_coarse.erase(rid)
+			continue
+		var holder := Node3D.new()
+		holder.name = "Coarse_%s" % rid
+		_far_root.add_child(holder)
+		e["holder"] = holder
+		var blocks: Array = e["blocks"]
+		for i: int in blocks.size():
+			var per_species: Dictionary = blocks[i] if blocks[i] != null else {}
+			for sp_id: StringName in per_species:
+				var mmi: MultiMeshInstance3D = _impostor_mmi("Coarse_%s_%d_%s" % [rid, i, sp_id], _coarse_mat(sp_id), per_species[sp_id])
+				# The range is measured to the block's centre: half its diagonal more keeps the
+				# block's near corner drawn out to the view distance (fade_ring shrinks the rest).
+				mmi.visibility_range_end += COARSE_BLOCK * 0.71
+				holder.add_child(mmi)
+		e["blocks"] = []
+		_coarse_show(rid)
+		return
+
+
+## Where the clusters stand on the ground and shrink away (impostor fade_ring), the far terrain
+## takes its canopy raise down (terrain_far canopy_flat), so they hand over to it at the view
+## distance instead of popping or being buried in it.
+func _coarse_ring(p: Vector2, view: float) -> void:
+	var ring := Vector3(p.x, p.y, view if coarse_enabled else 0.0)
+	for m: ShaderMaterial in _coarse_mats.values():
+		m.set_shader_parameter("fade_ring", ring)
+	if terrain.has_method(&"set_canopy_flat"):
+		terrain.set_canopy_flat(ring)
+
+
+## The coarse layer's material for a species: one per species, shared by every coarse region.
+func _coarse_mat(sp_id: StringName) -> ShaderMaterial:
+	if not _coarse_mats.has(sp_id):
+		var mat: ShaderMaterial = _impostor_mat(Content.get_def(&"species", sp_id) as SpeciesDef)
+		# No near square: a coarse region has no near trees to take over (fade_inner instead).
+		mat.set_shader_parameter("discard_rect", Vector4.ZERO)
+		mat.set_shader_parameter("fade_inner", COARSE_INNER)
+		if world != null and world.player != null:
+			var pp: Vector3 = world.player.global_position
+			mat.set_shader_parameter("fade_ring", Vector3(pp.x, pp.z, float(Settings.gfx("view_distance", 1400.0)) if coarse_enabled else 0.0))
+		_coarse_mats[sp_id] = mat
+	return _coarse_mats[sp_id]
+
+
+## Hides a region's clusters while its own far trees are up (it attached at 1 m), shows them again
+## once those go.
+func _coarse_show(rid: String) -> void:
+	if not _coarse.has(rid):
+		return
+	var holder: Variant = _coarse[rid]["holder"]
+	if holder == null or not is_instance_valid(holder):
+		return
+	var far_up: bool = _far.has(rid) and _far[rid]["holder"] != null and is_instance_valid(_far[rid]["holder"])
+	(holder as Node3D).visible = coarse_enabled and not far_up
+
+
+func _coarse_free(rid: String) -> void:
+	var e: Dictionary = _coarse[rid]
+	if int(e["task"]) >= 0:
+		e["redo"] = true
+		return
+	if e["holder"] != null and is_instance_valid(e["holder"]):
+		(e["holder"] as Node).queue_free()
+	_coarse.erase(rid)
+
+
+## Coarse regions still scattering or waiting to be built.
+func coarse_pending() -> int:
+	var n: int = 0
+	for e: Dictionary in _coarse.values():
+		if e["holder"] == null:
+			n += 1
+	return n
+
+
+## Coarse cluster quads standing (for perf views and tests).
+func coarse_count() -> int:
+	var n: int = 0
+	for e: Dictionary in _coarse.values():
+		var holder: Variant = e["holder"]
+		if holder == null or not is_instance_valid(holder) or not (holder as Node3D).visible:
+			continue
+		for c: Node in (holder as Node).get_children():
+			n += (c as MultiMeshInstance3D).multimesh.instance_count
+	return n
 
 
 func _near_rect() -> Vector4:

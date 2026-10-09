@@ -11,6 +11,14 @@ uniform bool has_normals = false;
 uniform int frames = 8;
 // World-space XZ rectangle (x0, z0, x1, z1) whose instances are hidden.
 uniform vec4 discard_rect = vec4(0.0);
+// Coarse far forest (TD-006): instances shrink away over the last fade_band metres before
+// (x, z, range) from the player, as the far terrain's canopy rises (terrain_far canopy_flat).
+// fade_inner: they also grow in from this many metres round the player over fade_band_inner (no
+// near trees replace them in a coarse region, so they keep no near square).
+uniform vec3 fade_ring = vec3(0.0);
+uniform float fade_band = 200.0;
+uniform float fade_inner = 0.0;
+uniform float fade_band_inner = 40.0;
 uniform float alpha_cut : hint_range(0.0, 1.0) = 0.42;
 uniform float roughness_value : hint_range(0.0, 1.0) = 0.92;
 // The atlas is baked in summer colours; these are the species' foliage tints (foliage.gdshader),
@@ -41,6 +49,13 @@ void vertex() {
 	vec3 right = normalize(cross(up, to_cam));
 	float sx = length(MODEL_MATRIX[0].xyz);
 	float sy = length(MODEL_MATRIX[1].xyz);
+	if (fade_ring.z > 0.0) {
+		float dr = length(origin.xz - fade_ring.xy);
+		float s = (1.0 - smoothstep(fade_ring.z - fade_band, fade_ring.z, dr)) * smoothstep(fade_inner, fade_inner + fade_band_inner, dr);
+		sx *= s;
+		sy *= s;
+		hidden = hidden || s <= 0.0;
+	}
 	vec3 world = origin + right * VERTEX.x * sx + up * VERTEX.y * sy;
 	// Local view azimuth relative to the instance's yaw picks the frame.
 	vec3 ax = MODEL_MATRIX[0].xyz / max(sx, 0.0001);

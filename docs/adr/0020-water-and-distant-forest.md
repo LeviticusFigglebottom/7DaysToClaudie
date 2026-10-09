@@ -56,6 +56,27 @@
 * **Instance uniforms pin explicit indices.** `weather_exposure` is index 3 in both `std_surface`
   and `kit_wall`, because materials batched on one instance must agree on each name's slot.
 
+## Coarse far forest (round 4, TD-006)
+The canopy raise kept the hills' silhouette, but within the view distance an unbuilt region read as
+smooth green felt next to the built one's impostor trees. Such regions now get **cluster
+impostors** (VegetationManager `_coarse_*`):
+* A 16 m cell of the region's coarse terrain expects as many trees as the near scatter would put
+  there (biome tree density × vegetation mask). Every `COARSE_TREES` (4) of them make one impostor
+  quad, `COARSE_SPREAD` 1.55x wider and `COARSE_LIFT` 1.12x taller, so crowns still meet at range.
+  Steep ground (> 34°), town buildings (the vegetation's footprints) and cave mouths stay bare.
+* One MultiMesh per species per 512 m block, so the visibility range culls by block; species under
+  15% of a block fold into its main one (each species is a draw call).
+* Built on low-priority workers, nearest first and two regions at a time, once a region comes
+  within the view distance; freed 1.2 km past it. A region that attaches at 1 m keeps its clusters
+  hidden while its own far trees are up.
+* **The hand-over**: clusters shrink away over the last 200 m of the view distance (impostor
+  `fade_ring`) while the far tiles' canopy raise, taken down under them (terrain_far `canopy_flat`),
+  rises back over the same band; past it the raised canopy carries the silhouette as before.
+  Clusters also grow in from 90 m round the player instead of keeping the near square clear: no near
+  trees replace them in an unbuilt region (Pell's Crossing's west end stands in C6).
+* `view_distance` (graphics preset) is the one setting that scales it: range, and so count.
+  On Medium (1000 m) the main map draws ~71k cluster quads in 64 MultiMeshes.
+
 ## Consequences
 + Larch Pond, the Tamsin and Hollowmere Lake exist. Forest water reads dark, with a broken
   reflection of the tree line.
@@ -66,3 +87,7 @@
 − Canopy edges step with the far tile's 16 m grid, and both packed values have only 16 levels.
 − Near the edge of the built region, the canopy beyond the near square recedes as the player
   approaches, because its fade follows the moving square.
++ The forest runs on to the view distance in every direction (round 4).
+− Walking in an unbuilt region shows billboard clusters from 90 m and no trees nearer: unbuilt
+  regions have no near scatter. Cluster quads stand on the 16 m ground, so on broken slopes their
+  feet can float or sink a metre or two at range.
