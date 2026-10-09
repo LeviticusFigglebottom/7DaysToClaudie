@@ -52,3 +52,11 @@ func test_calm_only_while_a_card_holds() -> void:
 	assert_true(done[0])
 	assert_false(intro.is_playing())
 	assert_true(intro.is_calm())
+
+
+func test_world_card_targets_the_lift3_wreck() -> void:
+	var d: Dictionary = IntroPlayer.load_script()
+	var world: Array = (d["cards"] as Array).filter(func(c: Dictionary) -> bool: return str(c.get("kind", "")) == "world")
+	assert_eq(world.size(), 1)
+	assert_eq(str(world[0]["poi"]), "lift3_crash_site")
+	assert_null(IntroPlayer.shot_target(world[0]), "no world up: the card plays as a caption on black")
