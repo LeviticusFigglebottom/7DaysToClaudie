@@ -213,3 +213,30 @@ func test_the_manual_gives_a_journal_card_room_at_720p() -> void:
 	var wide: Dictionary = FieldManual.book_fit(1920.0)
 	assert_eq(float(wide["left"]), 0.14, "a wide window keeps the roomy margins")
 	assert_eq(float(wide["list"]), 380.0)
+
+
+func test_a_held_action_says_hold_in_its_prompt() -> void:
+	assert_eq(PlayerInteraction.prompt_line("E", "Harvest Sword Fern", true), "Hold [E] Harvest Sword Fern")
+	assert_eq(PlayerInteraction.prompt_line("E", "Use Campfire", false), "[E] Use Campfire")
+	assert_eq(PlayerInteraction.prompt_line("A", "Search Refrigerator", true), "Hold [A] Search Refrigerator", "the pad's button too")
+	assert_eq(PlayerInteraction.prompt_line("E", "", true), "", "nothing to act on: no prompt")
+
+
+func test_lines_wait_under_the_roll_and_show_after_it() -> void:
+	if Game.local_player() == null:
+		Game.new_session({"game_mode": "survival", "seed": 4471})
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	await get_tree().process_frame
+	var feed: VBoxContainer = ui.get(&"_messages")
+	ui.roll.open(&"inventory", &"")
+	ui.message("Journal: Make a stone axe ✓   Next: Fell a tree  [B]", &"level")
+	ui.message("Picked up 3 Stick.")
+	await get_tree().process_frame
+	assert_false(feed.visible, "no feed behind the roll's title")
+	assert_eq(feed.get_child_count(), 0, "the lines wait")
+	ui.roll.close()
+	await get_tree().process_frame
+	assert_true(feed.visible)
+	assert_eq(feed.get_child_count(), 2, "both lines show once the roll closes, none lost")
+	assert_string_starts_with((feed.get_child(0) as Label).text, "Journal: Make a stone axe")

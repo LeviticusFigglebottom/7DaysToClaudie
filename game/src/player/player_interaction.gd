@@ -21,6 +21,9 @@ const ALT_HOLD: float = 1.0
 var player: Player
 var target: Object = null
 var prompt: String = ""
+## Whether the target's interact is held to complete (its interact_hold_time > 0: harvesting,
+## filling, searching): the prompt then says "Hold [E]", as the journal's cards do.
+var prompt_hold: bool = false
 var hold_t: float = 0.0
 var hold_needed: float = 0.0
 var last_hit: Dictionary = {}
@@ -132,10 +135,20 @@ func _scan() -> void:
 		if text == "":
 			found = null
 	alt_prompt = alt_text(found, player)
-	if found != target or text != prompt:
+	var hold: bool = found != null and found.has_method(&"interact_hold_time") and float(found.call(&"interact_hold_time", player)) > 0.0
+	if found != target or text != prompt or hold != prompt_hold:
 		target = found
 		prompt = text
+		prompt_hold = hold
 		focus_changed.emit(target, prompt)
+
+
+## The prompt line for an interact `key` and `text`: "[E] Use Campfire", or "Hold [E] Harvest
+## Sword Fern" for an action held to complete (a tap does nothing visible there). Pure.
+static func prompt_line(key: String, text: String, hold: bool) -> String:
+	if text == "":
+		return ""
+	return ("Hold [%s] %s" if hold else "[%s] %s") % [key, text]
 
 
 ## "hold [X] to take down the Campfire blueprint (3 Stone back)" for a target with a second
