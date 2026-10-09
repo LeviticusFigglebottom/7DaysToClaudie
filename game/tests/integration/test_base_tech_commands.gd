@@ -369,3 +369,41 @@ func test_traps_never_trigger_on_the_companion() -> void:
 	assert_false(bool(Game.session.world.base_tech["traps"]["s:df"]["armed"]), "the Hollow sprang it")
 	assert_false(e.is_alive(), "the log killed the Hollow")
 	assert_eq(ezra.health, hp, "and missed him")
+
+
+## M2: an unpowered light's prompt says its real switch state, and why it's dark; the switch does
+## what the prompt says, powered or not.
+func test_an_unpowered_light_says_its_switch_state_and_why_it_is_dark() -> void:
+	var pl := Player.new()
+	pl.state = _p
+	autofree(pl)
+	var light: StructurePiece = _spawn(&"work_light", &"s:light", Vector3(3, 0, 0))
+	assert_eq(BaseTechManager.prompt(light, pl), "Switch the work light off (it's on, but there's no power: wire it to a running generator)",
+		"a new light is switched on: it lights the moment it is wired")
+	assert_false(bool(Game.execute(&"power.toggle", _args("s:light"))["on"]), "pressing switches it off, as said")
+	assert_eq(BaseTechManager.prompt(light, pl), "Switch the work light on (no power: wire it to a running generator)")
+	assert_true(bool(Game.execute(&"power.toggle", _args("s:light"))["on"]), "and on again")
+	# Wired to a running generator: lit, and no excuse.
+	_lit_generator()
+	_p.inventory.add_item(&"copper_wire", 3)
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:light"})
+	assert_true(light.tech.is_lit())
+	assert_eq(BaseTechManager.prompt(light, pl), "Switch the work light off")
+	Game.execute(&"power.toggle", _args("s:light"))
+	assert_eq(BaseTechManager.prompt(light, pl), "Switch the work light on", "off, on a live grid: nothing to explain")
+	Game.execute(&"power.toggle", _args("s:light"))
+	# More draw than the generator's watts: the one left over is told so.
+	var gw: float = BaseTech.source_watts(Content.structure(&"generator"))
+	var draw: float = 0.0
+	for d: StringName in [&"work_light", &"floodlight", &"nail_sentry"]:
+		draw += BaseTech.draw_watts(Content.structure(d))
+	if draw <= gw:
+		pass_test("the generator carries all three: no overload case to check")
+		return
+	_spawn(&"floodlight", &"s:flood", Vector3(-3, 0, 0))
+	var sentry: StructurePiece = _spawn(&"nail_sentry", &"s:sentry", Vector3(0, 0, 3))
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:flood"})
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:sentry"})
+	var dark: StructurePiece = sentry if not _tm.has_power(sentry) else light
+	assert_false(_tm.has_power(dark), "one of them doesn't fit")
+	assert_string_contains(BaseTechManager.prompt(dark, pl), "it's on, but the generator can't carry it too")
