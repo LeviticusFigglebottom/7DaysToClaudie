@@ -287,3 +287,8 @@ func test_a_dragged_item_stays_on_screen_over_the_belt() -> void:
 	var low: Vector2 = SalvageRoll.ghost_pos(Vector2(215, 675), gs, view)
 	assert_lt(low.y + gs.y, 675.0, "over the belt it goes above the cursor")
 	assert_lt(SalvageRoll.ghost_pos(Vector2(1250, 300), gs, view).x + gs.x, 1250.0)
+
+
+func test_a_long_need_wraps_instead_of_being_cut() -> void:
+	assert_false(CraftSheet.status_wraps("need 1 Potato"))
+	assert_true(CraftSheet.status_wraps("need 1 Bottle of Stream Water"), "two lines, never cut mid-word")
