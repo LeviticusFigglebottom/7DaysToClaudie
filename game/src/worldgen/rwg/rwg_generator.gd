@@ -63,8 +63,10 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 14: a town lot's height stays within LOT_STREET_STEP of its street's profile where it meets it
 ## (TerrainComposer.town_street_profiles, composer 14): no lip between a yard and its street (TD-318).
 ## 15: the world roads a town's lots and streets meet are the composer's pinned ones (composer 15);
-## world.json lists the places levelled from world data (`pads`), which the world roads pin to (TD-320).
-const VERSION: int = 15
+## world.json lists the places levelled from world data (`pads`), which the world roads pin to (TD-320);
+## 16: a roadside place's pad stands at its road's level where its drive leaves it (`level_at`,
+## composer 16; TD-320).
+const VERSION: int = 16
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -2063,6 +2065,9 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 		var place: Dictionary = {"id": pid, "kind": "framework" if is_fw else "poi", "def": def_id, "origin": origin, "rot": rot, "size": fp,
 			"poly": poly, "biome": str(pe.get("biome", "meadow")), "skirt": float(pe.get("skirt", 10.0)), "keep_water": keep_water,
 			"access": access, "site": site, "cell": cell, "center": centre, "pad": pad}
+		if cand.has("road_point"):
+			# A roadside place stands at its road's level where its drive leaves it (TD-320).
+			place["level_at"] = cand["road_point"]
 		places.append(place)
 		_place_grid.insert(places.size() - 1, _bounds(poly).grow(1.0))
 		router.block_polygon(poly, 6.0)
@@ -2738,8 +2743,11 @@ func _world_pads() -> Array:
 	for pl: Dictionary in places:
 		if bool(pl["keep_water"]) or (pl.get("pad", Vector2.ZERO) as Vector2) != Vector2.ZERO:
 			continue
-		out.append({"id": pl["id"], "origin": Terrain._arr(PackedVector2Array([pl["origin"]]))[0], "rotation": pl["rot"],
-			"size": [(pl["size"] as Vector2).x, (pl["size"] as Vector2).y]})
+		var e: Dictionary = {"id": pl["id"], "origin": Terrain._arr(PackedVector2Array([pl["origin"]]))[0], "rotation": pl["rot"],
+			"size": [(pl["size"] as Vector2).x, (pl["size"] as Vector2).y]}
+		if pl.has("level_at"):
+			e["level_at"] = Terrain._arr(PackedVector2Array([pl["level_at"]]))[0]
+		out.append(e)
 	return out
 
 
@@ -2747,8 +2755,11 @@ func _world_pads() -> Array:
 func _world_pads_read() -> Array:
 	var out: Array = []
 	for pd: Dictionary in _world_pads():
-		out.append({"id": pd["id"], "origin": Vector2(float(pd["origin"][0]), float(pd["origin"][1])), "rot": deg_to_rad(float(pd["rotation"])),
-			"size": Vector2(float(pd["size"][0]), float(pd["size"][1]))})
+		var e: Dictionary = {"id": pd["id"], "origin": Vector2(float(pd["origin"][0]), float(pd["origin"][1])), "rot": deg_to_rad(float(pd["rotation"])),
+			"size": Vector2(float(pd["size"][0]), float(pd["size"][1]))}
+		if pd.has("level_at"):
+			e["level_at"] = Vector2(float(pd["level_at"][0]), float(pd["level_at"][1]))
+		out.append(e)
 	return out
 
 

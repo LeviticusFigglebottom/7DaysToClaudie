@@ -50,7 +50,9 @@ extends RefCounted
 ## cul-de-sac's bulb is paved and graded across its whole circle where its street ends in it; and a
 ## road running onto a POI's or framework's pad ramps to its level (PAD_RAMP_*); a random world's
 ## places are levelled from world data and its world roads pinned to them (WorldDef.pads, TD-320).
-const VERSION: int = 15
+## VERSION 16 (TD-320): a random world's roadside place stands at its road's level where its drive
+## leaves it (world_pad_heights, within ROADSIDE_LEVEL m of its ground).
+const VERSION: int = 16
 ## The steepest grade (rise over run) a generated world's road profile keeps, by surface.
 const ROAD_MAX_GRADE: Dictionary = {"asphalt": 0.12, "gravel": 0.14, "dirt": 0.16}
 ## Road profiles are sampled every PROFILE_STEP m. A town street within JUNCTION_REACH m of an
@@ -59,6 +61,8 @@ const PROFILE_STEP: float = 4.0
 const JUNCTION_REACH: float = 3.0
 const JUNCTION_EASE: float = 32.0
 const TOWN_ROAD_REACH: float = 60.0
+## How far a roadside place's pad may stand off its own ground's mean to meet its road (m, TD-320).
+const ROADSIDE_LEVEL: float = 3.0
 ## A road running onto a POI's or framework's pad ramps to its level at PAD_RAMP_GRADE (rise over
 ## run), over PAD_RAMP_MIN..PAD_RAMP_MAX m, its banks with it out to PAD_RAMP_SIDE m past its
 ## shoulder (VERSION 15).
@@ -298,19 +302,46 @@ static func _pin_profile(prof: PackedFloat32Array, line: Polyline2, other: Polyl
 ## or generator roads [{id, line, surface}]; `pads`: WorldDef.pads [{origin, rot, size}].
 static func world_road_profiles(roads: Array, h_fn: Callable, pads: Array = []) -> Dictionary:
 	var out: Dictionary = {}
-	var heights: PackedFloat32Array = []
-	for pd: Dictionary in pads:
-		heights.append(world_pad_height(pd["origin"], pd["size"], float(pd["rot"]), h_fn))
+	var base: Dictionary = {}
+	for r0: Dictionary in roads:
+		base[str(r0["id"])] = smoothed_profile(r0["line"], h_fn, float(ROAD_MAX_GRADE.get(str(r0.get("surface", "")), 0.14)))
+	var heights: PackedFloat32Array = world_pad_heights(roads, base, pads, h_fn)
 	for i: int in roads.size():
 		var r: Dictionary = roads[i]
 		var line: Polyline2 = r["line"]
-		var prof: PackedFloat32Array = smoothed_profile(line, h_fn, float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
+		var prof: PackedFloat32Array = (base[str(r["id"])] as PackedFloat32Array).duplicate()
 		for pi: int in pads.size():
 			pin_profile_to_pad(prof, line, pads[pi]["origin"], pads[pi]["size"], float(pads[pi]["rot"]), heights[pi])
 		var ease: float = minf(JUNCTION_EASE, line.total_length * 0.5)
 		for j: int in i:
 			_pin_profile(prof, line, roads[j]["line"], out[str(roads[j]["id"])], ease, float(roads[j].get("width", 0.0)))
 		out[str(r["id"])] = prof
+	out["_pad_heights"] = heights
+	return out
+
+
+## Each pad's level (world_road_profiles): the mean of its ground (world_pad_height), or for a
+## roadside place (`level_at`) its road's profile there, held within ROADSIDE_LEVEL m of that mean
+## (TD-320: a diner stood 2 m off the highway 10 m away). `base`: the roads' unpinned profiles.
+static func world_pad_heights(roads: Array, base: Dictionary, pads: Array, h_fn: Callable) -> PackedFloat32Array:
+	var out: PackedFloat32Array = []
+	for pd: Dictionary in pads:
+		var h: float = world_pad_height(pd["origin"], pd["size"], float(pd["rot"]), h_fn)
+		if pd.has("level_at"):
+			var at: Vector2 = pd["level_at"]
+			var best: float = INF
+			var rh: float = NAN
+			for r: Dictionary in roads:
+				var line: Polyline2 = r["line"]
+				if line.total_length < 30.0 or not line.bounds.grow(4.0).has_point(at):
+					continue
+				var c: Vector3 = line.closest(at)
+				if c.x < best:
+					best = c.x
+					rh = profile_at(base[str(r["id"])], c.y)
+			if best < 8.0:
+				h = clampf(rh + 0.1, h - ROADSIDE_LEVEL, h + ROADSIDE_LEVEL)
+		out.append(h)
 	return out
 
 
@@ -1465,8 +1496,14 @@ class _Build:
 			# A random world's place is levelled from world data (TD-320), so the world roads, graded
 			# once per world, can be pinned to it; the main map's from its region's own ground.
 			var by_world: bool = world.road_grade == "world" and world.pad_ids.has(str(pad["id"]))
-			pad["height"] = TerrainComposer.world_pad_height(pad["origin"], pad["size"], float(pad["rot"]),
-				_reference_ground if by_world else _sample)
+			if by_world:
+				var hs: PackedFloat32Array = _world_profiles()["_pad_heights"]
+				for k: int in world.pads.size():
+					if str(world.pads[k]["id"]) == str(pad["id"]):
+						pad["height"] = hs[k]
+						break
+			else:
+				pad["height"] = TerrainComposer.world_pad_height(pad["origin"], pad["size"], float(pad["rot"]), _sample)
 
 	## Pins a region-graded road's profile to the pads it runs onto or beside (VERSION 15): within
 	## PAD_PIN_REACH m of a pad the road is at the pad's level, easing back to its own profile at

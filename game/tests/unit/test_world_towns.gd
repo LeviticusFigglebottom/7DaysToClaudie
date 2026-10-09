@@ -157,7 +157,7 @@ func test_lot_heights_come_from_the_composers_ground() -> void:
 	assert_eq(worst, 0.0, "the reference ground is the composer's to the bit")
 	var clamped: int = 0
 	# The world roads with their pinned profiles, as the composer reads them (VERSION 15).
-	var wprofs: Dictionary = TerrainComposer.world_road_profiles(world.roads, b._reference_ground)
+	var wprofs: Dictionary = TerrainComposer.world_road_profiles(world.roads, b._reference_ground, world.pads)
 	var wroads: Array = []
 	for wr: Dictionary in world.roads:
 		var e: Dictionary = wr.duplicate()

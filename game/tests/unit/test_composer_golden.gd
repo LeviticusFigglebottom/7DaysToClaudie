@@ -66,7 +66,7 @@ const GOLDEN: Dictionary = {
 		"biome": "7f67ee84edfe913d73903431f7843522",
 		"bridges": "1f0c533e9edd7d199eef56ffe59942b6",
 		"height": "f9c6c1884198e012349054b57e5e3709a0441a6bb4b3429fc8ec2a1af7010f4d",
-		"input": "4ef7decdd9907d310cee75b9d87bb569ff843add665f8c121a551b60742b8854",
+		"input": "dc3f19d4046f0c739e49cbd3d1c6d2e5a319fbf65a99ce371480a744c79a71a8",
 		"other": "84e51cfda745fea8a7d5370868731670",
 		"placements": "3c6c87a5bc023e347ea01b7b4965d83d",
 		"roads": "850e80503f2ffa187bbfd74325b5e1af",
@@ -79,7 +79,7 @@ const GOLDEN: Dictionary = {
 		"biome": "457906b117b2d6ceb4e07af1ac06dacd",
 		"bridges": "259591cd5bc276b780c3fd267f0a9a6d",
 		"height": "087bbf62c787f87f28ad89b55b5f15aad33bb0a3b0e12e1b894d911d4a9b2344",
-		"input": "ffd8247f4230f7cb0ebe0b866259a51e7ac35922bd9df41e00fed2860990bce5",
+		"input": "04632547cd803e0cb77fdc837f1b7fb466611a90cb7122c995e6a2de2678f719",
 		"other": "06e2c0ba7f50dc80174ec52b304f5dff",
 		"placements": "5d8d0f5191d2528ac4acbbf8ba41e551",
 		"roads": "e699bc7e99ac30ff1d160f772ed7f56f",
@@ -92,7 +92,7 @@ const GOLDEN: Dictionary = {
 		"biome": "1f0fd142d7d33a311acc5a88ab9211d5",
 		"bridges": "428b1b895c7baf5bf0dc14187b1f2176",
 		"height": "86fd205d2914c956645997da3648ae40bca366d9f31e60fa8ac94684f6510e61",
-		"input": "bc4ae51242aea0411eaa6ba0fb0efa0db8baa53a0e97c022c0edb580cd652a49",
+		"input": "856c4116be64cbb5bcade7abb3767bb57e1ce2c9b6471fe0a7aebec6094a346b",
 		"other": "fe5db9c3321433ec164d5b3876385b7f",
 		"placements": "bea32a60ae46d802f60494d512d92342",
 		"roads": "5c81af800e03dcee66b7a0112656d03b",
@@ -104,10 +104,10 @@ const GOLDEN: Dictionary = {
 	"rwg@4": {
 		"biome": "423f701a2ad6a1eeae4150f595500be8",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"height": "96e73e60a188bc0dcaf6125ed075d3b9ddfafe0bcbaeb20e3a8b856456298441",
-		"input": "2e5e34764dd2db7d524e1e5fbe20520e42acb28e33d1f42dface4139d378bf43",
+		"height": "610dcbd4a7fc99c7f196a75864fd5a39689fb41f44716003315deb4a60bbbc98",
+		"input": "12305468d75cd7dfc0476fba953d4fbe5990af6f996341d44bd2f5653bf111f4",
 		"other": "843b397c22a45284092e175cebfbdee7",
-		"placements": "6ccb724030d27a906effd70dedfd14eb",
+		"placements": "672f316014b7fc0a1b88363034569ab8",
 		"roads": "0f14b9a56183158fe13951d3f82c258e",
 		"splat0": "c1302a02295bb64ccc8c78656d903eca",
 		"splat1": "c3609448e8d6a7079a0b6310211db7fe",
@@ -117,10 +117,10 @@ const GOLDEN: Dictionary = {
 	"rwg@8": {
 		"biome": "85ed8304d70982bc2fc3bc2bde33e4c5",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"height": "ba494487d521b5238620c5bd343ca806de5ffd78fd3ce8d6c1c137cea36076ae",
-		"input": "b389517f598101acd802ca326109a3487d354ea32a1f3aea2c5fa6c0f450d817",
+		"height": "7f1b8b76e5a6350cd1ab3861d8ea9d19495f5e0a2b6b2bd4cb143e0c4405f7d7",
+		"input": "9b28258c7fa8b146540b8f4ca382b8d0f01372e87b278980eee4247dc013bd29",
 		"other": "b2f7269e94d2e05e8dd16db583bc017e",
-		"placements": "6ccb724030d27a906effd70dedfd14eb",
+		"placements": "672f316014b7fc0a1b88363034569ab8",
 		"roads": "0f14b9a56183158fe13951d3f82c258e",
 		"splat0": "fd5f2dac79ce34ab99fafa2c0bc34e90",
 		"splat1": "160cf580bda9aa2a61e588408fa05c8b",
@@ -130,10 +130,10 @@ const GOLDEN: Dictionary = {
 	"rwg@1": {
 		"biome": "a938c0f2dec997620d1f1dca087221a4",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"height": "42fb94ec1b8751f7d77ee41ed228c7f9ef4302137cd5d7dd9decf2b641175d2b",
-		"input": "433552f32b6e38e8c6b03be23f0aa7491ea8a176319f9298413087c9e0e6096b",
+		"height": "809b32aab4cc4e27186efe4bebd1e7c2d347f3fb995415de5e182ecfd65af187",
+		"input": "31cddca1bff18c5dbec344275662e36b1a408c84a0dff6de4cb1e7fa0d7b024c",
 		"other": "bb546e313f91e8b52ded71379f76f9c9",
-		"placements": "6ccb724030d27a906effd70dedfd14eb",
+		"placements": "672f316014b7fc0a1b88363034569ab8",
 		"roads": "0f14b9a56183158fe13951d3f82c258e",
 		"splat0": "48de993e423bdb9f3ed0056b232988ff",
 		"splat1": "a73f6ab29c2c062cb95f389141ef8b4e",
@@ -143,10 +143,10 @@ const GOLDEN: Dictionary = {
 	"rwg_drop@4": {
 		"biome": "8a6e68d5177b478ed44b3818a3fc3944",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"height": "9ba64507a36f981c0a13b5244b0fe0b8c7a7d1e7d48a883e88afa3ee2bf98a73",
-		"input": "3a8bd7c8bb7ab54e0aa4844bc6c0bb4e80ceb770cd63edc95dac9ea42ea7625e",
+		"height": "061d0a142ddcc9c676d6a5fc31411a62bb500d32345802a1c973c559828f2e38",
+		"input": "486f8c8e11435b7bde40d8745f0ec58b5b7489ff54513d670a89e5cb073e4342",
 		"other": "bd5dd8f87b34ef046099a6c509be10ef",
-		"placements": "305896f858d96269340d2636f9333d67",
+		"placements": "632225aa9a7c2ba63a21e6091365bf43",
 		"roads": "a9428c19054647de40763bb1a32b6cf4",
 		"splat0": "410f28b0fb2c6c8271ef5eae2b6b8717",
 		"splat1": "b201819613ac9aee4d8c5b0a162daf52",
@@ -156,10 +156,10 @@ const GOLDEN: Dictionary = {
 	"rwg_drop@8": {
 		"biome": "3ea92f3174b1b2d540bf6a390d41c512",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"height": "0a4d9a4e39933e7439b1dbc68282f5b4c8a10e87c286ab959e573223ea729642",
-		"input": "e5a069b06f30ec2d95e504e3f2797bd85eb0fe66e86ae67050455bf51c27f442",
+		"height": "682a9e09024f139d4d9df05b790135f4f670be7b7219fd77fef32f891bd56bdb",
+		"input": "ff1d44f463cba9a88a22e9f985fdb438fd9154beb3e19df6df5c0ee4c39c095a",
 		"other": "5325eb8bd2048bedde87d89a064766fa",
-		"placements": "305896f858d96269340d2636f9333d67",
+		"placements": "632225aa9a7c2ba63a21e6091365bf43",
 		"roads": "a9428c19054647de40763bb1a32b6cf4",
 		"splat0": "7f3df6ae7473e98299a42d7733a16256",
 		"splat1": "8948a44b3e220888410e893e01191c59",
@@ -271,8 +271,8 @@ func _check(key: String, world: WorldDef, rid: String, spacing: float, rt: Regio
 	fail_test("%s differs in %s: %s" % [key, ", ".join(differs), why])
 
 
-func test_version_is_15() -> void:
-	assert_eq(TerrainComposer.VERSION, 15, "Phase 1 changed no output; VERSION 12 is ADR-0047's town paint, 13 ADR-0059's banks and yards, 14 TD-318's street junctions, 15 world road junctions and bulbs")
+func test_version_is_16() -> void:
+	assert_eq(TerrainComposer.VERSION, 16, "Phase 1 changed no output; VERSION 12 is ADR-0047's town paint, 13 ADR-0059's banks and yards, 14 TD-318's street junctions, 15 world road junctions and bulbs, 16 roadside places at their road's level")
 
 
 func test_larch_hollow_at_4_and_8_m() -> void:
