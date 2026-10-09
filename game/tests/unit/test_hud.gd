@@ -204,3 +204,12 @@ func test_sound_captions_say_where_and_merge_repeats() -> void:
 	Events.sound_caption.emit("an engine starting", Vector3.INF)
 	assert_eq((ui.get(&"_messages") as Node).get_child_count(), 2, "captions off: nothing")
 	Settings.sound_captions = was
+
+
+func test_the_manual_gives_a_journal_card_room_at_720p() -> void:
+	var fit: Dictionary = FieldManual.book_fit(1280.0)
+	var inner: float = 1280.0 * (float(fit["right"]) - float(fit["left"])) - 80.0
+	assert_gt(inner - float(fit["list"]) - 24.0, 600.0, "the card's text gets 600 px or more at 1280 wide")
+	var wide: Dictionary = FieldManual.book_fit(1920.0)
+	assert_eq(float(wide["left"]), 0.14, "a wide window keeps the roomy margins")
+	assert_eq(float(wide["list"]), 380.0)
