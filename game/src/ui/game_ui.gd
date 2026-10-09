@@ -319,22 +319,38 @@ var _tutorial_done: Variant = null
 
 
 func _on_tutorial_changed() -> void:
+	# A frame later: when the tutorial hears a deed before the directives do, the step's folded
+	# reward is set only after this signal (call_deferred runs too soon).
+	await get_tree().process_frame
 	var t: Object = FieldManual.tutorial()
-	if t == null:
+	if t == null or not is_inside_tree():
 		return
 	var steps: Array = t.call(&"steps")
 	var done: Dictionary = {}
+	var rewards: Dictionary = {}
 	var next_title: String = ""
 	for st: Dictionary in steps:
 		if bool(st.get("done", false)):
 			done[str(st.get("id", ""))] = str(st.get("title", ""))
+			rewards[str(st.get("id", ""))] = str(st.get("reward", ""))
 		elif next_title == "" and bool(st.get("current", false)):
 			next_title = str(st.get("title", ""))
 	if _tutorial_done is Dictionary and bool(t.call(&"is_enabled")):
 		for id: String in done:
 			if not (_tutorial_done as Dictionary).has(id):
-				message("Journal: %s ✓%s" % [done[id], ("   Next: %s  [%s]" % [next_title, PlayerInteraction.key_label(&"guidebook")]) if next_title != "" else ""], &"level")
+				message(journal_line(done[id], rewards[id], next_title, PlayerInteraction.key_label(&"guidebook")), &"level")
 	_tutorial_done = done
+
+
+## "Journal: Make a stone axe ✓  +40 XP   Next: Fell a tree  [B]": the step, what the deed paid
+## (the Program directive it also finished, folded in), and the next card. Pure.
+static func journal_line(title: String, reward: String, next_title: String, key: String) -> String:
+	var line: String = "Journal: %s ✓" % title
+	if reward != "":
+		line += "  " + reward
+	if next_title != "":
+		line += "   Next: %s  [%s]" % [next_title, key]
+	return line
 
 
 ## A new run's first card, said once the player can act (the load and the intro both over):

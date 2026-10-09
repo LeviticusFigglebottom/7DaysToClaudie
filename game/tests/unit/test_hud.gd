@@ -110,3 +110,8 @@ func test_roll_strips_shrink_to_fit_a_small_window() -> void:
 	assert_eq(SalvageRoll.strip_scale(600.0, 800.0), 1.0)
 	assert_almost_eq(SalvageRoll.strip_scale(800.0, 640.0), 0.8, 0.001)
 	assert_eq(SalvageRoll.strip_scale(800.0, 100.0), 0.7, "never smaller than 70%")
+
+
+func test_journal_line_folds_the_reward() -> void:
+	assert_eq(GameUI.journal_line("Make a stone axe", "+40 XP", "Fell a tree", "B"), "Journal: Make a stone axe ✓  +40 XP   Next: Fell a tree  [B]")
+	assert_eq(GameUI.journal_line("Sleep in your bed", "", "", "B"), "Journal: Sleep in your bed ✓")
