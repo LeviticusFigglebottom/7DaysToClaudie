@@ -280,12 +280,20 @@ static func fix_composer_changes(session: GameSession, world_def: Object, curren
 	if session.is_random_world() and session.composer_version >= TOWN_PAINT_COMPOSER and session.composer_version < JUNCTIONS_COMPOSER \
 			and current >= JUNCTIONS_COMPOSER and world_def != null:
 		dropped += _drop_town_chunks(session, world_def, current)
+	# Composer 15 moved the ground where roads meet (world roads pinned to each other; the nearest
+	# road is the nearest edge, so bulbs and wide roads keep their width where a narrow one meets
+	# them): any run drops the records by its roads again (a run crossing 13 just did).
+	if session.composer_version >= BANKS_COMPOSER and session.composer_version < ROAD_EDGE_COMPOSER \
+			and current >= ROAD_EDGE_COMPOSER and world_def != null:
+		dropped += _drop_bank_chunks(session, world_def)
 	session.composer_version = current
 	return dropped
 
 
 ## Composer version from which a world town's streets are pinned together at their junctions.
 const JUNCTIONS_COMPOSER: int = 14
+## Composer version from which world roads meet at one height and the nearest road is the nearest edge.
+const ROAD_EDGE_COMPOSER: int = 15
 
 
 ## Drops the felled-tree and harvested-plant records of the 64 m chunks touching a town.

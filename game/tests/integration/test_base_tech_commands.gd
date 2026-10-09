@@ -4,7 +4,8 @@ extends GutTest
 ## generator burns its fuel down and the light goes out with it; a sentry is loaded and shoots a
 ## Hollow, a kill credited to the trap directive; a spike pit stakes, holds and slows a Hollow and
 ## wears; a deadfall drops on what walks under it and is lifted again; a tripwire bell rings; the
-## traps are walked through; a destroyed piece takes its state and wires along.
+## traps are walked through; a destroyed piece takes its state and wires along; none of it touches
+## the companion (mid-game audit M1, TD-300).
 
 var _prev: GameSession
 var _bm: BuildingManager
@@ -56,6 +57,19 @@ func _enemy(at: Vector3) -> Enemy:
 	add_child_autofree(e)
 	e.global_position = at
 	e.set_physics_process(false)
+	return e
+
+
+## Ezra's body (ADR-0058), recruited: in the "enemies" group like any Hollow, but an ally.
+func _ezra(at: Vector3) -> Enemy:
+	var e := Enemy.new()
+	e.setup(&"test:ezra", Content.enemy(&"ezra_vane"), null, {"tier": "normal"})
+	add_child_autofree(e)
+	e.global_position = at
+	e.set_physics_process(false)
+	assert_not_null(e.ally, "the companion's body carries its mind")
+	e.ally.recruited = true
+	assert_true(e.is_alive(), "recruited and up: in play")
 	return e
 
 
@@ -293,3 +307,151 @@ func test_prompts_follow_the_state() -> void:
 	var df: StructurePiece = _spawn(&"deadfall", &"s:df")
 	Game.session.world.base_tech["traps"]["s:df"]["armed"] = false
 	assert_eq(BaseTechManager.action(df, pl)[0], &"trap.rearm")
+
+
+## M1: the sentry and the floodlight walk the "enemies" group, which holds Ezra too. Neither
+## aims at him; both still take the Hollow beside him.
+func test_a_powered_sentry_and_floodlight_ignore_the_companion() -> void:
+	_lit_generator()
+	var sentry: StructurePiece = _spawn(&"nail_sentry", &"s:sentry", Vector3(2, 0, 0))
+	var flood: StructurePiece = _spawn(&"floodlight", &"s:flood", Vector3(-2, 0, 0))
+	_p.inventory.add_item(&"copper_wire", 2)
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:sentry"})
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:flood"})
+	assert_true(_tm.has_power(sentry) and _tm.has_power(flood), "both powered")
+	_p.inventory.add_item(&"nails", 30)
+	Game.execute(&"power.load", _args("s:sentry"))
+	var ezra: Enemy = _ezra(Vector3(5, 0, 0))
+	var hp: float = ezra.health
+	sentry.tech._turret_step(1.0)
+	sentry.tech.fire_at(ezra)
+	assert_eq(ezra.health, hp, "the sentry never shoots him")
+	assert_eq(int(Game.session.world.base_tech["power"]["s:sentry"]["ammo"]), 30, "not a nail spent on him")
+	flood.tech._scan_t = 0.0
+	flood.tech._flood_step(0.5)
+	assert_false(flood.tech.is_lit(), "his moving about the base doesn't trip the floodlight")
+	assert_eq(flood.tech._hold_t, 0.0)
+	# A Hollow further off than him: both take it.
+	var e: Enemy = _enemy(Vector3(9, 0, 0))
+	var ehp: float = e.health
+	sentry.tech._fire_t = 0.0
+	sentry.tech._turret_step(1.0)
+	assert_lt(e.health, ehp, "the sentry fires at the Hollow")
+	assert_eq(ezra.health, hp, "and still not at him, though he is nearer")
+	flood.tech._scan_t = 0.0
+	flood.tech._flood_step(0.5)
+	assert_true(flood.tech.is_lit(), "the floodlight catches the Hollow")
+
+
+## M1, the traps: a spike pit, a deadfall and a tripwire bell neither trigger on nor hurt him.
+func test_traps_never_trigger_on_the_companion() -> void:
+	var pit: StructurePiece = _spawn(&"spike_pit", &"s:pit", Vector3(20, 0, 0))
+	var ezra: Enemy = _ezra(Vector3(20.2, 0, 0))
+	var hp: float = ezra.health
+	var pit_hp: float = pit.hp
+	pit.tech._on_body_entered(ezra)
+	assert_eq(ezra.health, hp, "no stake for him")
+	assert_eq(pit.hp, pit_hp, "and no wear")
+	assert_true(pit.tech._inside.is_empty(), "nor held or slowed")
+	var df: StructurePiece = _spawn(&"deadfall", &"s:df", Vector3(-20, 0, 0))
+	df.tech._on_body_entered(ezra)
+	assert_true(bool(Game.session.world.base_tech["traps"]["s:df"]["armed"]), "he doesn't spring the deadfall")
+	var tw: StructurePiece = _spawn(&"tripwire_bell", &"s:tw", Vector3(0, 0, 20))
+	var st := Stimuli.new()
+	add_child_autofree(st)
+	var seq0: int = st.last_seq()
+	tw.tech._on_body_entered(ezra)
+	assert_eq(st.last_seq(), seq0, "he steps over the tripwire")
+	# Under a deadfall a Hollow springs, the log spares him.
+	ezra.global_position = Vector3(-20, 0, 0)
+	var e: Enemy = _enemy(Vector3(-20, 0, 0.2))
+	await wait_physics_frames(4)
+	assert_false(bool(Game.session.world.base_tech["traps"]["s:df"]["armed"]), "the Hollow sprang it")
+	assert_false(e.is_alive(), "the log killed the Hollow")
+	assert_eq(ezra.health, hp, "and missed him")
+
+
+## M2: an unpowered light's prompt says its real switch state, and why it's dark; the switch does
+## what the prompt says, powered or not.
+func test_an_unpowered_light_says_its_switch_state_and_why_it_is_dark() -> void:
+	var pl := Player.new()
+	pl.state = _p
+	autofree(pl)
+	var light: StructurePiece = _spawn(&"work_light", &"s:light", Vector3(3, 0, 0))
+	assert_eq(BaseTechManager.prompt(light, pl), "Switch the work light off (it's on, but there's no power: wire it to a running generator)",
+		"a new light is switched on: it lights the moment it is wired")
+	assert_false(bool(Game.execute(&"power.toggle", _args("s:light"))["on"]), "pressing switches it off, as said")
+	assert_eq(BaseTechManager.prompt(light, pl), "Switch the work light on (no power: wire it to a running generator)")
+	assert_true(bool(Game.execute(&"power.toggle", _args("s:light"))["on"]), "and on again")
+	# Wired to a running generator: lit, and no excuse.
+	_lit_generator()
+	_p.inventory.add_item(&"copper_wire", 3)
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:light"})
+	assert_true(light.tech.is_lit())
+	assert_eq(BaseTechManager.prompt(light, pl), "Switch the work light off")
+	Game.execute(&"power.toggle", _args("s:light"))
+	assert_eq(BaseTechManager.prompt(light, pl), "Switch the work light on", "off, on a live grid: nothing to explain")
+	Game.execute(&"power.toggle", _args("s:light"))
+	# More draw than the generator's watts: the one left over is told so.
+	var gw: float = BaseTech.source_watts(Content.structure(&"generator"))
+	var draw: float = 0.0
+	for d: StringName in [&"work_light", &"floodlight", &"nail_sentry"]:
+		draw += BaseTech.draw_watts(Content.structure(d))
+	if draw <= gw:
+		pass_test("the generator carries all three: no overload case to check")
+		return
+	_spawn(&"floodlight", &"s:flood", Vector3(-3, 0, 0))
+	var sentry: StructurePiece = _spawn(&"nail_sentry", &"s:sentry", Vector3(0, 0, 3))
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:flood"})
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:sentry"})
+	var dark: StructurePiece = sentry if not _tm.has_power(sentry) else light
+	assert_false(_tm.has_power(dark), "one of them doesn't fit")
+	assert_string_contains(BaseTechManager.prompt(dark, pl), "it's on, but the generator can't carry it too")
+
+
+var _queued: Array = []
+
+
+func _on_queued(text: String, kind: StringName, priority: int) -> void:
+	_queued.append([text, kind, priority])
+
+
+## M3: a generator says when it runs low (low_fuel_fraction of a full tank) and when it stops,
+## once each, as queued warnings.
+func test_the_generator_warns_low_fuel_and_sputters_out() -> void:
+	_queued.clear()
+	Events.status_message_queued.connect(_on_queued)
+	_lit_generator()
+	var g: Dictionary = BaseTech.power_cfg("generator")
+	var line: float = BaseTech.tank_hours() * float(g.get("low_fuel_fraction", 0.1))
+	var st: Dictionary = Game.session.world.base_tech["power"]["s:gen"]
+	st["fuel"] = line + 0.05
+	_tm.tick(2.0)
+	assert_true(_queued.is_empty(), "above the line: quiet")
+	_tm.tick(30.0)
+	assert_lte(float(st["fuel"]), line)
+	assert_gt(float(st["fuel"]), 0.0)
+	assert_eq(_queued.size(), 1, "low once")
+	if _queued.size() == 1:
+		assert_eq(str(_queued[0][0]), str(g.get("low_text")))
+		assert_eq(_queued[0][1], &"warning")
+		assert_eq(int(_queued[0][2]), StatusFeed.PRIORITY_WARNING)
+	_tm.tick(10.0)
+	assert_eq(_queued.size(), 1, "not again while it burns on")
+	_tm.tick(60.0 * 12.0)
+	assert_eq(float(st["fuel"]), 0.0)
+	assert_eq(_queued.size(), 2, "and a line when it stops")
+	if _queued.size() == 2:
+		assert_eq(str(_queued[1][0]), str(g.get("dry_text")))
+	_tm.tick(60.0)
+	assert_eq(_queued.size(), 2, "a dead generator says nothing more")
+	# A can poured from dry straight past the line (no low line), then burnt down again (low again).
+	_p.inventory.add_item(&"gas_can", 1)
+	Game.execute(&"power.fuel", _args("s:gen"))
+	assert_true(_tm.has_power(_bm.pieces[&"s:gen"]), "still switched on: the can starts it again")
+	_tm.tick(2.0)
+	assert_eq(_queued.size(), 2)
+	st["fuel"] = line + 0.01
+	_tm.tick(30.0)
+	assert_eq(_queued.size(), 3, "low again after a refill")
+	Events.status_message_queued.disconnect(_on_queued)

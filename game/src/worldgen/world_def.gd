@@ -25,6 +25,10 @@ var roads: Array[Dictionary] = []
 ## frames in world XZ); the composer applies it in every region its bounds come near, graded from
 ## world data alone, so it may straddle region borders. Empty on the main map and v1 worlds.
 var towns: Array[Dictionary] = []
+## A random world's places levelled from world data (TD-320): [{id, origin: Vector2 (corner), rot
+## (radians), size: Vector2}], and their ids. The world roads are pinned to them.
+var pads: Array[Dictionary] = []
+var pad_ids: Dictionary = {}
 ## How far past a town's built bounds its ground reaches for town_at (m).
 const TOWN_MARGIN: float = 20.0
 ## region id -> summary dict (from world.json)
@@ -126,6 +130,11 @@ func _parse(d: Dictionary) -> void:
 			b = b.expand(p)
 		lakes.append({"id": str(l.get("id", "")), "polygon": poly, "level": float(l.get("level", 0.0)),
 			"depth": float(l.get("depth", 10.0)), "shore": float(l.get("shore", 20.0)), "bounds": b})
+	for pv: Variant in d.get("pads", []):
+		var pd: Dictionary = pv
+		pads.append({"id": str(pd["id"]), "origin": Vector2(float(pd["origin"][0]), float(pd["origin"][1])),
+			"rot": deg_to_rad(float(pd.get("rotation", 0.0))), "size": Vector2(float(pd["size"][0]), float(pd["size"][1]))})
+		pad_ids[str(pd["id"])] = true
 	for r: Dictionary in d.get("roads", []):
 		roads.append({"id": str(r.get("id", "")), "line": Polyline2.from_array(r["points"]), "width": float(r.get("width", 7.0)),
 			"shoulder": float(r.get("shoulder", 2.0)), "surface": str(r.get("surface", "asphalt")), "bridges": r.get("bridges", []),

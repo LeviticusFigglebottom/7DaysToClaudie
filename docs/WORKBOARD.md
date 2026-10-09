@@ -71,7 +71,7 @@ until it lands.
 ## Allocations
 * ADR: 0001..0058 are taken or retired (0032, 0042, 0043 were never written). 0056 (organic caves,
   World), 0059 (World: roads and towns, if needed), 0060-0061 (Creatures), 0062 (hub), 0063-0064
-  (Presentation: the intro, the menu and UI style). Next free: 0065.
+  (Presentation: the intro, the menu and UI style), 0065 (hub: pre-rendered backdrops). Next free: 0066.
 * TD: the register runs to TD-317. World 318-337, Creatures 338-357, the hub 358-377,
   Presentation 378-397. Next free: 398.
 * Generator: `RwgGenerator.VERSION` is 11. World owns the generator this round and bumps it as it
@@ -214,6 +214,17 @@ Same setup, now on the downloadable build:
   this next (ADR-0045, TD-172–175).
 
 ## Lessons (read before your first render)
+* A container can be reclaimed when its session sits idle, even with a background job running:
+  background jobs don't count as activity (Creatures lost three asset rebuilds this way; first
+  blamed on memory). For a long job (`make assets`, a full suite, renders), keep the session active
+  until it ends (poll it in the foreground), push before waiting, and keep `make assets` incremental
+  so a lost run resumes. `make assets JOBS=2` is still the safer setting for character rebuilds. Never run two Godot processes at once in one
+  container either (another restart cause); queue them.
+* `gut_cmdln.gd -gtest=...` without `-gconfig=` loads `.gutconfig.json` and runs the whole suite
+  (~2 h): always pass `-gconfig=` for single files.
+* `make validate` must reach its POI stage: since Pell's west end (frame lots) it crashed there
+  until c655840, so a "0 errors" before that never checked a building.
+* Push your branch at least hourly, mid-gate included; a push is not a request to merge.
 * Every checkout and worktree of this project shares one `user://` folder (Godot keys it by the
   project name). Two test runs at once can clobber each other's random-world cache and fail
   `test_rwg` with "cannot parse world.json": run one full suite per machine at a time.
@@ -249,3 +260,14 @@ Same setup, now on the downloadable build:
   loaded resource for null before `instantiate()`; ModelLibrary does.
 * The instance shader-variable buffer is 262144. std_surface uses instance slots 0–4 (light_lit
   is 4); kit_wall uses 0 and 3. Don't renumber them.
+* Never draw a live 3D scene behind a menu or under a cutscene: Build #94's live menu backdrop left
+  the menu unresponsive while it built, and froze it on the owner's machine. Render pictures offline
+  (`make stills`, ADR-0065). A filmed video would need a GPU: lavapipe takes ~30 s for a 1440p
+  frame of a forest.
+* Some containers have no software Vulkan: Godot then quietly falls back to OpenGL on llvmpipe
+  (the log says "switching to OpenGL 3"), which renders differently and far slower. Fix it with
+  `apt-get update && apt-get install -y mesa-vulkan-drivers`.
+* The exported game runs any CLI script from the source tree:
+  `godot --main-pack <abs path>/Hollowmere.pck -s <abs path>/script.gd`. This uses the build's
+  real generated assets, without running `make assets` locally. Classes newer than the pack have
+  to be loaded by path.

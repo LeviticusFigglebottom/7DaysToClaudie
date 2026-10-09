@@ -77,6 +77,19 @@ func stamina_cap() -> float:
 	return maxf(cap, max_stamina * 0.2)
 
 
+## Share of cold_damage_per_hour the body takes now: by how far below hypothermia it is, from
+## cold_damage_min_frac just under the line to all of it cold_damage_full_below degrees down
+## (survival.json; without those keys, all of it at once).
+func cold_damage_frac() -> float:
+	var depth: float = _c("temperature", "hypothermia", 35.0) - body_temp
+	if depth <= 0.0:
+		return 0.0
+	var full: float = _c("temperature", "cold_damage_full_below", 0.0)
+	if full <= 0.0:
+		return 1.0
+	return clampf(depth / full, _c("temperature", "cold_damage_min_frac", 1.0), 1.0)
+
+
 func has_status(s: StringName) -> bool:
 	return _statuses.has(s)
 
@@ -156,7 +169,7 @@ func tick_game(minutes: float, env: Dictionary) -> void:
 	if hydration <= 0.0:
 		apply_damage(_c("hydration", "dehydrated_damage_per_hour", 10.0) * hours, &"dehydration")
 	if body_temp < _c("temperature", "hypothermia", 35.0):
-		apply_damage(_c("temperature", "cold_damage_per_hour", 8.0) * hours, &"cold")
+		apply_damage(_c("temperature", "cold_damage_per_hour", 8.0) * cold_damage_frac() * hours, &"cold")
 	if body_temp > _c("temperature", "hyperthermia", 39.5):
 		apply_damage(_c("temperature", "heat_damage_per_hour", 6.0) * hours, &"heat")
 

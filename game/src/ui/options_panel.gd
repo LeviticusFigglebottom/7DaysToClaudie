@@ -148,7 +148,7 @@ func _general() -> void:
 	_row("Interface size", ui)
 	var bd := OptionButton.new()
 	var bd_modes: PackedStringArray = ["moving", "still", "off"]
-	for m: String in ["Moving (stops if the menu runs slow)", "Still", "Off"]:
+	for m: String in ["Moving (a slow drift over the valley)", "Still", "Off"]:
 		bd.add_item(m)
 	bd.selected = maxi(0, bd_modes.find(Settings.menu_backdrop))
 	bd.item_selected.connect(func(i: int) -> void:

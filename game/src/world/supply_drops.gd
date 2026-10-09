@@ -20,6 +20,10 @@ const DROP_HOUR: int = 12
 ## How far the landing is heard (Stimuli loudness, metres).
 const LANDING_NOISE: float = 45.0
 const FLARE_COLOR := Color(1.0, 0.3, 0.16)
+## The canister's size (diameter, height): its stand-in and the least its search box covers.
+const CANISTER := Vector2(0.58, 1.1)
+## Within this many metres of the camera the smoke's puffs fade out (5 m more to full).
+const SMOKE_CLEAR_M: float = 2.5
 
 var world: Node
 ## drop id -> Drop node
@@ -282,14 +286,29 @@ class Drop:
 		crate.tier = tier
 		crate.respawns = false
 		var mi := MeshInstance3D.new()
-		mi.mesh = ModelLibrary.mesh("items/supply_canister", "box")
+		mi.mesh = ModelLibrary.generated_mesh("items/supply_canister")
+		if mi.mesh == null:
+			# Before `make assets`: a canister-sized olive drum standing on its base (a box
+			# centred on the origin was half in the ground and under the eye's aim: W4).
+			var cyl := CylinderMesh.new()
+			cyl.top_radius = SupplyDrops.CANISTER.x * 0.5
+			cyl.bottom_radius = SupplyDrops.CANISTER.x * 0.5
+			cyl.height = SupplyDrops.CANISTER.y
+			var cmat := StandardMaterial3D.new()
+			cmat.albedo_color = Color(0.3, 0.33, 0.2)
+			cyl.material = cmat
+			mi.mesh = cyl
+			mi.position.y = SupplyDrops.CANISTER.y * 0.5
 		crate.add_child(mi)
 		var aabb: AABB = mi.mesh.get_aabb()
+		aabb.position += mi.position
+		# The search box stands on the ground, at least the canister's size whatever the model,
+		# so a look at it from where you stand always finds it (W4).
 		var cs := CollisionShape3D.new()
 		var box := BoxShape3D.new()
-		box.size = aabb.size.max(Vector3(0.3, 0.3, 0.3))
+		box.size = aabb.size.max(Vector3(SupplyDrops.CANISTER.x, SupplyDrops.CANISTER.y, SupplyDrops.CANISTER.x))
 		cs.shape = box
-		cs.position = aabb.get_center()
+		cs.position = Vector3(aabb.get_center().x, maxf(aabb.position.y, 0.0) + box.size.y * 0.5, aabb.get_center().z)
 		crate.add_child(cs)
 		add_child(crate)
 		_height = aabb.size.y
@@ -475,7 +494,7 @@ class Drop:
 		p.scale_amount_max = 1.6
 		var grow := Curve.new()
 		grow.max_value = 3.0
-		grow.add_point(Vector2(0.0, 0.4))
+		grow.add_point(Vector2(0.0, 0.25))
 		grow.add_point(Vector2(1.0, 2.6))
 		p.scale_amount_curve = grow
 		p.anim_speed_min = 0.6
@@ -494,6 +513,11 @@ class Drop:
 		mat.billboard_keep_scale = true
 		mat.vertex_color_use_as_albedo = true
 		mat.albedo_color = Color(0.92, 0.42, 0.3, 0.8)
+		# Clear close up (W4): within a few metres the puffs fade out, so a player at the
+		# canister sees it and the crate rather than a screen of red; the column still reads from afar.
+		mat.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
+		mat.distance_fade_min_distance = SupplyDrops.SMOKE_CLEAR_M
+		mat.distance_fade_max_distance = SupplyDrops.SMOKE_CLEAR_M + 5.0
 		var tex: String = "res://assets/generated/textures/fx_smoke_flipbook.png"
 		if ResourceLoader.exists(tex):
 			mat.albedo_texture = load(tex)

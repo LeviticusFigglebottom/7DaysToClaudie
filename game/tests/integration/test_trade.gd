@@ -352,6 +352,8 @@ func test_a_loot_room_container_counts_without_standing_in_the_room() -> void:
 ## TD-146: an open contract fails at the dawn of its due day, costs standing and frees its target;
 ## one done and waiting to be reported does not.
 func test_an_open_contract_expires_at_dawn_and_costs_standing() -> void:
+	# The run's first lapse is spared (test below): this one tests a later lapse.
+	_p.contracts.lapsed = 1
 	var c: Dictionary = _take("clear")
 	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c["def"]))) as QuestDef
 	assert_gt(qd.expires_days, 0)
@@ -376,6 +378,36 @@ func test_an_open_contract_expires_at_dawn_and_costs_standing() -> void:
 	# A contract saved before expiry existed has no `due`: it takes it from its def.
 	c2.erase("due")
 	assert_eq(TraderManager.due_day(c2), int(c2["day"]) + (Content.get_def(&"quest", StringName(str(c2["def"]))) as QuestDef).expires_days)
+
+
+## First-week audit W12: the first contract a run lets lapse costs no standing (data:
+## config/contracts.json spared_lapses), and says so; the next one costs as usual.
+func test_a_runs_first_lapsed_contract_is_spared() -> void:
+	assert_eq(int(Content.config(&"contracts").get("spared_lapses", 0)), 1)
+	var lines: Array[String] = []
+	var on_msg := func(text: String, _kind: StringName) -> void: lines.append(text)
+	Events.player_status_message.connect(on_msg)
+	var clock: WorldClock = Game.session.clock
+	var c: Dictionary = _take("clear")
+	var rep: int = _p.contracts.reputation(&"waystation_9")
+	clock.set_time(TraderManager.due_day(c) + 1, 12.0)
+	_tm.expire_contracts(_p)
+	assert_true(_p.contracts.get_contract(str(c["id"])).is_empty(), "it still lapses")
+	assert_eq(_p.contracts.reputation(&"waystation_9"), rep, "no standing lost the first time")
+	assert_eq(_p.contracts.lapsed, 1)
+	assert_true(lines.size() > 0 and lines.back().contains("lets it go this once"), str(lines))
+	assert_eq(ContractLog.new().lapsed, 0)
+	var saved := ContractLog.new()
+	saved.from_dict(_p.contracts.to_dict())
+	assert_eq(saved.lapsed, 1, "the spared lapse is remembered across a save")
+	var c2: Dictionary = _take("clear")
+	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c2["def"]))) as QuestDef
+	rep = _p.contracts.reputation(&"waystation_9")
+	clock.set_time(TraderManager.due_day(c2) + 1, 12.0)
+	_tm.expire_contracts(_p)
+	assert_eq(_p.contracts.reputation(&"waystation_9"), rep - qd.fail_rep, "the second lapse costs")
+	assert_true(lines.back().contains("-%d standing" % qd.fail_rep), lines.back())
+	Events.player_status_message.disconnect(on_msg)
 
 
 func test_abandoning_a_contract_costs_standing() -> void:

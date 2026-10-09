@@ -269,3 +269,26 @@ func test_small_things_on_the_ground_keep_no_rain_off() -> void:
 	for i: int in cases.size():
 		var top := Vector3(i * 10.0, 10.0 + float(cases[i][1]) + (cases[i][0] as Vector3).y, 0.0)
 		assert_eq(WeatherMaps._small_and_low({"position": top, "collider": body, "shape": i}, 10.0), bool(cases[i][2]), str(cases[i][3]))
+
+
+func test_gentle_start_bars_storms_and_snow() -> void:
+	# gentle_start (default on): through its days the weather never turns to a barred state.
+	assert_true(GameRules.current().flag("gentle_start"), "on by default")
+	var g: Dictionary = Content.config(&"weather").get("gentle_start", {})
+	var barred := PackedStringArray(g.get("barred", []))
+	assert_true(barred.has("storm") and barred.has("snow"))
+	var ws := _state()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	for i: int in 400:
+		assert_false(barred.has(String(ws._pick("winter", rng, barred))), "never picked")
+	# A storm already blowing ends at the next tick and something milder comes in.
+	ws._start(&"storm", 0.5)
+	ws.blend = 1.0
+	ws.current = &"storm"
+	ws.tick(1.0, "autumn", rng, barred)
+	assert_false(barred.has(String(ws.target)), "the storm gives way (%s)" % ws.target)
+	# The brutal presets play without it.
+	assert_false(GameRules.resolve({}, &"hollowed", {}).flag("gentle_start"))
+	assert_false(GameRules.resolve({}, &"rooted", {}).flag("gentle_start"))
+	assert_true(GameRules.resolve({}, &"remanded", {}).flag("gentle_start"))

@@ -8,8 +8,34 @@
   "rest": {"decay_per_hour": 3.0, "sleep_restore_per_hour": 14.0, "exhausted_threshold": 15.0, "sleep_needs_mult": 0.45},
   "temperature": {
     "hypothermia": 35.0, "hyperthermia": 39.5, "adapt_per_hour": 1.4, "cold_damage_per_hour": 8.0, "heat_damage_per_hour": 6.0,
+    "_cold_damage": "Below hypothermia the cold hurts by how deep the body has gone: cold_damage_per_hour x (degrees below / cold_damage_full_below), at least cold_damage_min_frac of it. First-week audit W7: the full 8/h began the moment the body crossed 35.0, so an ordinary overcast autumn night in starting gear (body settles at ~34.7) cost a player without food regen 44 health, and a rainy night killed one outright. Now: overcast ~11, steady rain or a storm (body ~32-33, full rate) still kills an unfed player left out in it from dusk to the next noon (8:00 before), and a fed one keeps 75+.",
+    "cold_damage_full_below": 2.0, "cold_damage_min_frac": 0.25,
     "comfort_low": 14.0, "comfort_high": 30.0, "wind_chill": 6.0, "wet_chill": 8.0, "shelter_bonus": 3.0,
     "wetting_per_hour": 0.8, "drying_per_hour": 0.35
+  },
+  "warnings": {
+    "_doc": "SurvivalWarnings: one ladder per need. A line as the stat falls below each level (in order, each once, even when it drops past several at once); while it lasts the current one again only once the stat has fallen a further worse_by since the last line, or after repeat_minutes of game time (a level's own repeat_minutes overrides the ladder's: the deepest waits longer), whichever is first (mid-game audit M7: 'freezing' every 90 min all night at a steady body temperature); reset once the stat is back above reset_above. Cold: at 1.4 C/h a soaked player hears the first ~35 game minutes in and the second ~20 before the cold starts to hurt (hypothermia 35.0). Thirst (6/h): from full, 'thirsty' ~10.8 h in (health stopped mending at 40), 'parched' ~14.2 h in, harm at 16.7 h. Hunger (4/h): 'hungry' ~17.5 h in, 'starving' ~22.5 h in, harm at 25 h. First-week audit W7, W18, W19.",
+    "cold": {
+      "stat": "body_temp", "repeat_minutes": 120.0, "worse_by": 1.0, "reset_above": 36.6,
+      "levels": [
+        {"below": 36.2, "text": "You're cold. Find shelter or a fire.", "kind": "warning"},
+        {"below": 35.5, "text": "You're freezing. Find a fire, now.", "kind": "danger", "repeat_minutes": 180.0}
+      ]
+    },
+    "thirst": {
+      "stat": "hydration", "repeat_minutes": 120.0, "worse_by": 8.0, "reset_above": 45.0,
+      "levels": [
+        {"below": 35.0, "text": "You're thirsty.", "kind": "warning"},
+        {"below": 15.0, "text": "You're parched. Drink, now.", "kind": "danger", "repeat_minutes": 150.0}
+      ]
+    },
+    "hunger": {
+      "stat": "fullness", "repeat_minutes": 150.0, "worse_by": 8.0, "reset_above": 40.0,
+      "levels": [
+        {"below": 30.0, "text": "You're hungry.", "kind": "warning"},
+        {"below": 10.0, "text": "You're starving. Eat something.", "kind": "danger", "repeat_minutes": 180.0}
+      ]
+    }
   },
   "bleeding": {"damage_per_min": 1.5, "clot_per_min": 0.005},
   "infection": {"dormant_below": 12.0, "fight_off_per_hour": 1.0, "growth_per_hour": 0.25},

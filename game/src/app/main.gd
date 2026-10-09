@@ -28,6 +28,9 @@ func _ready() -> void:
 	_style_menu()
 	_build_menu()
 	_show_notices()
+	# Once per new entry (a new build's notes), over the menu.
+	if WhatsNewPanel.should_show(str(WhatsNewPanel.newest().get("id", "")), Settings.whats_new_seen):
+		_open_whats_new.call_deferred()
 
 
 ## A gamepad press with nothing focused focuses the first entry of what is open (the menu, New
@@ -200,6 +203,8 @@ func _build_menu() -> void:
 		_add_button("Load…", _open_load.bind(slots))
 	_add_button("Options…", _open_options)
 	_add_button("The Intro", _play_intro)
+	if not WhatsNewPanel.newest().is_empty():
+		_add_button("What's New", _open_whats_new)
 	_add_button("Quit", func() -> void: get_tree().quit())
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
 
@@ -267,6 +272,20 @@ func _open_new_game(random: bool = false) -> void:
 	panel.start_random = random
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	add_child(panel)
+	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5
+	_list.visible = false
+	_set_title_visible(false)
+	panel.closed.connect(func() -> void:
+		panel.queue_free()
+		_list.visible = true
+		_set_title_visible(true))
+
+
+## The newest build's notes (WhatsNewPanel); closing marks them seen.
+func _open_whats_new() -> void:
+	var panel := WhatsNewPanel.new()
+	add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5
 	_list.visible = false
 	_set_title_visible(false)

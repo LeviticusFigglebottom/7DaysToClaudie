@@ -217,6 +217,24 @@ func _run() -> void:
 		for d: SupplyDrops.Drop in drops.drops.values():
 			d._process(60.0)
 			ok(d.landed and d.global_position.distance_to(ps.position) > 50.0, "the canister lands away from the player (%.0f m)" % d.global_position.distance_to(w.player.global_position))
+			# W4 (first-week audit): walked up to and looked at, the canister offers its search.
+			var back: Vector3 = w.player.global_position
+			var at: Vector3 = d.crate.global_position + Vector3.UP * 0.5
+			var stand: Vector3 = at + Vector3(1.0, 0.0, 0.3).normalized() * 1.8
+			stand.y = w.height_at(stand.x, stand.z)
+			w.player.global_position = stand + Vector3.UP * 0.05
+			w.player.velocity = Vector3.ZERO
+			w.terrain.update_streaming(w.player.global_position, true)
+			for k: int in 2:
+				var eye: Vector3 = w.player.global_position + Vector3.UP * 1.65
+				var to: Vector3 = at - eye
+				w.player.rotation.y = atan2(-to.x, -to.z)
+				w.player.head.rotation.x = atan2(to.y, Vector2(to.x, to.z).length())
+				await frames(6)
+			var hit: Dictionary = w.player.interaction.last_hit
+			ok(str(w.player.interaction.prompt).begins_with("Search"), "the landed canister offers its search ('%s'; the ray hit %s)" % [w.player.interaction.prompt,
+				str((hit["collider"] as Node).get_path()) if not hit.is_empty() and hit["collider"] is Node else "nothing"])
+			w.player.global_position = back
 	ps.progression.skill_points += 2
 	var bulk0: float = ps.inventory.max_bulk
 	var rs: Dictionary = game.call(&"execute", &"progression.raise_attribute", {"attribute": "sinew"})

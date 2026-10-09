@@ -1,29 +1,38 @@
 extends GutTest
-## The menu backdrop's pure parts (ADR-0063): the cost verdict, the loop's fade, water winding and
-## the flight's path over the real D6 region.
+## The menu backdrop's pure parts (ADR-0063, ADR-0065): the pan over the pictures, and the
+## photographed flight's stills, water winding and path over the real D6 region.
 
 
-func test_too_slow_is_a_mean_under_min_fps() -> void:
-	assert_false(MenuBackdrop.too_slow(PackedFloat32Array()))
-	assert_false(MenuBackdrop.too_slow(PackedFloat32Array([0.016, 0.017, 0.02])))
-	assert_true(MenuBackdrop.too_slow(PackedFloat32Array([0.03, 0.03, 0.026])))
-	# One long frame among quick ones doesn't freeze it; a slow average does.
-	assert_false(MenuBackdrop.too_slow(PackedFloat32Array([0.016, 0.016, 0.016, 0.016, 0.05])))
+func test_the_pan_never_shows_a_picture_edge() -> void:
+	for i: int in MenuBackdrop.COUNT:
+		for step: int in 11:
+			var k: float = step / 10.0
+			var spare: float = (MenuBackdrop.pan_zoom(i, k) - 1.0) * 0.5
+			var d: Vector2 = MenuBackdrop.pan_drift(i, k)
+			assert_true(absf(d.x) <= spare and absf(d.y) <= spare, "picture %d at %.1f stays inside its zoom" % [i, k])
 
 
-func test_loop_black_fades_out_at_the_end_and_in_on_later_loops() -> void:
-	var span: float = MenuBackdrop.SPEED * MenuBackdrop.LOOP_FADE
-	assert_eq(MenuBackdrop.loop_black(100.0, 500.0, true), 0.0, "mid flight is clear")
-	assert_almost_eq(MenuBackdrop.loop_black(500.0, 500.0, true), 1.0, 0.001, "black at the end")
-	assert_almost_eq(MenuBackdrop.loop_black(500.0 - span * 0.5, 500.0, false), 0.5, 0.001)
-	assert_eq(MenuBackdrop.loop_black(0.0, 500.0, false), 0.0, "the first loop fades in with the menu")
-	assert_almost_eq(MenuBackdrop.loop_black(0.0, 500.0, true), 1.0, 0.001, "later loops fade in from black")
+func test_the_pan_alternates_and_moves() -> void:
+	assert_gt(MenuBackdrop.pan_zoom(0, 1.0), MenuBackdrop.pan_zoom(0, 0.0), "even pictures zoom in")
+	assert_lt(MenuBackdrop.pan_zoom(1, 1.0), MenuBackdrop.pan_zoom(1, 0.0), "odd ones zoom out")
+	assert_gt(MenuBackdrop.pan_drift(0, 1.0).x, MenuBackdrop.pan_drift(0, 0.0).x)
+	assert_lt(MenuBackdrop.pan_drift(1, 1.0).x, MenuBackdrop.pan_drift(1, 0.0).x)
+
+
+func test_stills_are_spread_along_the_flight() -> void:
+	var last: float = -1.0
+	for share: float in MenuFlight.STILLS:
+		var s: float = MenuFlight.still_distance(share, 1000.0)
+		assert_gt(s, last)
+		assert_lte(s, 880.0, "kept back from the path's end (the camera looks 110 m ahead)")
+		last = s
+	assert_eq(MenuFlight.STILLS.size(), MenuBackdrop.COUNT, "the menu shows every still")
 
 
 func test_water_surfaces_face_up() -> void:
 	var river: Dictionary = {"points": [[0.0, 0.0], [0.0, 10.0], [3.0, 20.0]], "levels": [5.0, 5.0, 5.0], "widths": [8.0, 8.0, 8.0]}
 	var lake: Dictionary = {"level": 2.0, "polygon": [[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]]}
-	for arrays: Array in [MenuBackdrop.river_arrays(river), MenuBackdrop.lake_arrays(lake), MenuBackdrop.lake_arrays(
+	for arrays: Array in [MenuFlight.river_arrays(river), MenuFlight.lake_arrays(lake), MenuFlight.lake_arrays(
 			{"level": 2.0, "polygon": [[0.0, 0.0], [0.0, 10.0], [10.0, 10.0], [10.0, 0.0]]})]:
 		var v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
@@ -34,15 +43,17 @@ func test_water_surfaces_face_up() -> void:
 
 
 func test_path_follows_the_river_above_its_banks() -> void:
-	var world: WorldDef = WorldDef.load_from(MenuBackdrop.MAIN_WORLD_DIR)
-	var rt: RegionTerrain = TerrainComposer.get_or_compose(world, MenuBackdrop.REGION, 16.0)
+	var world: WorldDef = WorldDef.load_from(MenuFlight.MAIN_WORLD_DIR)
+	var rt: RegionTerrain = TerrainComposer.get_or_compose(world, MenuFlight.REGION, 16.0)
 	var river: Dictionary = {}
 	for w: Variant in rt.water:
-		if str((w as Dictionary).get("id", "")) == MenuBackdrop.RIVER:
+		if str((w as Dictionary).get("id", "")) == MenuFlight.RIVER:
 			river = w
 	assert_false(river.is_empty(), "the Tamsin runs through D6")
-	var path: PackedVector3Array = MenuBackdrop.river_path(river, rt)
+	var path: PackedVector3Array = MenuFlight.river_path(river, rt)
 	assert_gt(path.size(), 50)
+	# Long enough that the stills are well apart.
+	assert_gt((path.size() - 1) * 6.0 - 120.0, 300.0)
 	for p: Vector3 in path:
 		assert_true(rt.rect.has_point(Vector2(p.x, p.z)))
 		assert_gt(p.y, rt.height.sample(p.x, p.z) + 10.0, "the camera clears the ground")

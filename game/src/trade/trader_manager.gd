@@ -483,7 +483,8 @@ static func due_day(c: Dictionary) -> int:
 
 
 ## Fails every open contract of a player whose dawn has come: it leaves the books, its target is
-## free for the board again, and the giver docks `fail_rep` standing. A contract done and waiting to
+## free for the board again, and the giver docks `fail_rep` standing (not for the run's first lapses:
+## config/contracts.json spared_lapses). A contract done and waiting to
 ## be reported never fails, nor a defence being held right now.
 func expire_contracts(p: PlayerState) -> void:
 	var clock: WorldClock = Game.session.clock
@@ -503,10 +504,18 @@ func _fail_contract(p: PlayerState, c: Dictionary) -> void:
 	p.contracts.remove(cid)
 	var qd: QuestDef = Content.get_def(&"quest", StringName(str(c.get("def", "")))) as QuestDef
 	var cost: int = qd.fail_rep if qd != null else 0
-	if cost > 0:
+	# A run's first lapse is forgiven (first-week audit W12): a new player is still learning how
+	# long a job takes, and -10 for the first contract read as steep.
+	var rules: Dictionary = Content.config(&"contracts")
+	var spared: bool = p.contracts.lapsed < int(rules.get("spared_lapses", 0))
+	p.contracts.lapsed += 1
+	var line: String = "Contract failed: %s — %s ran out of time." % [qd.display_name if qd != null else "Contract", str(c.get("name", ""))]
+	if spared:
+		line += " " + str(rules.get("spared_line", "No standing lost."))
+	elif cost > 0:
 		p.contracts.add_rep(StringName(str(c.get("giver", ""))), -cost)
-	Events.player_status_message.emit("Contract failed: %s — %s ran out of time. -%d standing." % [
-		qd.display_name if qd != null else "Contract", str(c.get("name", "")), cost], &"warning")
+		line += " -%d standing." % cost
+	Events.player_status_message.emit(line, &"warning")
 
 
 func _follow(p: PlayerState, c: Dictionary, dt: float) -> void:

@@ -31,6 +31,14 @@ signal player_died(player_id: StringName, cause: String)
 signal player_slept(player_id: StringName, hours: float)
 signal player_entered_region(player_id: StringName, region_id: StringName)
 signal player_status_message(text: String, kind: StringName)
+## A status line that can wait its turn: StatusFeed lets these out as player_status_message, paced
+## and highest priority first (StatusFeed.PRIORITY_*), so lines arriving together don't bury
+## each other (first-week audit W15).
+signal status_message_queued(text: String, kind: StringName, priority: int)
+## A sound worth a caption (accessibility, mid-game audit G4): the source emits it where the sound
+## plays, and the UI shows "[text, <bearing>]" when sound captions are on. `text` is lowercase,
+## without brackets ("wolves howling"); `at` is the sound's world position (the bearing is the UI's).
+signal sound_caption(text: String, at: Vector3)
 signal player_leveled(player_id: StringName, level: int)
 ## Points went into an attribute or perk (derived stats changed; Record tab and tether refresh).
 signal player_progressed(player_id: StringName)

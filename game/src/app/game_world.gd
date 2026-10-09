@@ -18,6 +18,8 @@ var stimuli: Stimuli
 var actions: PlayerActions
 var player: Player
 var ui: GameUI
+## Paces queued status lines (Events.status_message_queued).
+var status_feed: StatusFeed
 ## Optional systems (registered by their modules as they come online).
 var water: Node = null
 var bridges: Node = null
@@ -124,6 +126,9 @@ func _exit_tree() -> void:
 	if _load_task >= 0:
 		WorkerThreadPool.wait_for_task_completion(_load_task)
 		_load_task = -1
+	# Leaving from the death screen: the menu must not keep the world's sound ducked.
+	if not _death_duck.is_empty():
+		_hold_world_while_down(false)
 	if Game.world == self:
 		Game.world = null
 
@@ -368,6 +373,9 @@ func _boot_clock() -> void:
 
 func _boot_hooks() -> void:
 	Events.game_saving.connect(_on_game_saving)
+	status_feed = StatusFeed.new()
+	status_feed.name = "StatusFeed"
+	add_child(status_feed)
 	if DebugTools.enabled():
 		var dbg := DebugOverlay.new()
 		dbg.name = "Debug"
@@ -613,6 +621,15 @@ func _on_game_minutes(minutes: float) -> void:
 	if p == null or player == null or not is_ready or DebugTools.is_on(&"no_hunger"):
 		return
 	p.stats.tick_game(minutes, survival_env(player.global_position))
+	# Said before the cold, thirst or hunger bites (first-week audit W7, W18), every step in order
+	# (W19), queued so none buries another line.
+	if _survival_warnings == null:
+		_survival_warnings = SurvivalWarnings.new()
+	for warn: Dictionary in _survival_warnings.update(p.stats, minutes, sleeping):
+		Events.status_message_queued.emit(str(warn["text"]), warn["kind"], StatusFeed.PRIORITY_WARNING)
+
+
+var _survival_warnings: SurvivalWarnings = null
 
 
 ## Environment the body feels at a position (SurvivalStats.tick_game env contract).
@@ -683,6 +700,7 @@ func _on_woke(hours: float) -> void:
 func _on_player_died(cause: String) -> void:
 	var p: PlayerState = player.state
 	p.deaths += 1
+	_hold_world_while_down(true)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var penalty: String = session.rules.choice("death_penalty")
 	var note: String = _apply_death_penalty(p, penalty)
@@ -696,6 +714,50 @@ func _on_player_died(cause: String) -> void:
 		ui.call(&"show_death", cause, note, false)
 	else:
 		get_tree().create_timer(4.0).timeout.connect(respawn)
+
+
+## While every player is down (the death screen), the world waits for them (first-week audit
+## W7: the Hum's warnings, its start and its dawn played on under the death screen, and the night
+## could resolve, report and pay out while nobody was standing). The clock stops, so nothing on
+## it fires (no Hum starts, waves or ends; no warnings), and the world's sound ducks under the
+## death screen's own music. Respawning lets it go on.
+func _hold_world_while_down(down: bool) -> void:
+	if down:
+		for pid: StringName in session.players:
+			if (session.players[pid] as PlayerState).stats.alive:
+				return
+	if clock_driver != null and down != _held_for_death:
+		if down:
+			_clock_paused_before_death = clock_driver.paused
+			clock_driver.paused = true
+		else:
+			clock_driver.paused = _clock_paused_before_death
+	_held_for_death = down
+	for bus: StringName in DEATH_DUCK_BUSES:
+		var idx: int = AudioServer.get_bus_index(bus)
+		if idx < 0:
+			continue
+		var fx: AudioEffect = _death_duck.get(bus)
+		if down and fx == null:
+			var amp := AudioEffectAmplify.new()
+			amp.volume_db = DEATH_DUCK_DB
+			AudioServer.add_bus_effect(idx, amp)
+			_death_duck[bus] = amp
+		elif not down and fx != null:
+			for i: int in AudioServer.get_bus_effect_count(idx):
+				if AudioServer.get_bus_effect(idx, i) == fx:
+					AudioServer.remove_bus_effect(idx, i)
+					break
+			_death_duck.erase(bus)
+
+
+## The world's buses ducked under the death screen (its music plays on Music), and by how much.
+const DEATH_DUCK_BUSES: Array[StringName] = [&"SFX", &"Ambience"]
+const DEATH_DUCK_DB: float = -18.0
+var _held_for_death: bool = false
+var _clock_paused_before_death: bool = false
+## bus -> the AudioEffectAmplify ducking it
+var _death_duck: Dictionary = {}
 
 
 ## World setting death_penalty. Returns the line shown on the death screen.
@@ -728,6 +790,7 @@ func respawn() -> void:
 	var p: PlayerState = player.state
 	var pos: Vector3 = p.spawn_point if p.has_spawn_point else _find_spawn("drop_site").get("pos", Vector3.ZERO)
 	p.stats.revive(50.0)
+	_hold_world_while_down(false)
 	await_area(pos, func() -> void:
 		player.global_position = pos + Vector3.UP * 0.5
 		# freeze(false) also clears the fall built up before (velocity and the fall-damage speed).
