@@ -12,9 +12,10 @@ signal closed
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
-## The handcrafted map as it is today: the planned 7 x 7 km valley has one region built (D6,
-## world.json `status`); the rest is coarse terrain. A test keeps it naming every built region.
-const MAIN_MAP_LABEL: String = "Hollowmere Valley (handcrafted: Larch Hollow, 1 x 1 km)"
+## The handcrafted map as it is today: the planned 7 x 7 km valley has two regions built (D6 and
+## D7 below it, world.json `status`); the rest is coarse terrain. A test keeps it naming every built
+## region.
+const MAIN_MAP_LABEL: String = "Hollowmere Valley (handcrafted: Larch Hollow and Waystation 9, 1 x 2 km)"
 
 ## Open on the World tab with a random world chosen (the main menu's Random World button).
 var start_random: bool = false
@@ -244,6 +245,13 @@ func _build_world_tab() -> void:
 	top.columns = 2
 	left.add_child(top)
 	_map = OptionButton.new()
+	# The label is long (every built region by name): sized to it, the button widened the whole
+	# panel past a 1280 px window and pushed Back off screen (the menu guard caught it). It clips
+	# instead, with the full label as its tooltip.
+	_map.fit_to_longest_item = false
+	_map.clip_text = true
+	_map.custom_minimum_size = Vector2(320, 0)
+	_map.tooltip_text = MAIN_MAP_LABEL
 	_map.add_item(MAIN_MAP_LABEL)
 	_map.add_item("Random world")
 	_map.item_selected.connect(_on_map_changed)
