@@ -314,7 +314,7 @@ func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
 		if pts.size() < 2:
 			continue
 		for ep: Variant in [pts[0], pts[pts.size() - 1]]:
-			var e := Vector2(float(ep[0]), float(ep[1]))
+			var e := Vector2(float(ep[0]), float(ep[ep.size() - 1]))
 			if not inner_rect.has_point(e):
 				continue
 			var on_other: bool = false
@@ -323,8 +323,8 @@ func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
 					continue
 				var p2: Array = r2["points"]
 				for i: int in p2.size() - 1:
-					var a := Vector2(float(p2[i][0]), float(p2[i][1]))
-					var b := Vector2(float(p2[i + 1][0]), float(p2[i + 1][1]))
+					var a := Vector2(float(p2[i][0]), float(p2[i][p2[i].size() - 1]))
+					var b := Vector2(float(p2[i + 1][0]), float(p2[i + 1][p2[i + 1].size() - 1]))
 					if Geometry2D.get_closest_point_to_segment(e, a, b).distance_to(e) < 4.0:
 						on_other = true
 						break
@@ -349,8 +349,8 @@ func _nearest_road_point(rt: RegionTerrain, c: Vector2) -> Vector2:
 	for r: Dictionary in rt.roads:
 		var pts: Array = r["points"]
 		for i: int in pts.size() - 1:
-			var a := Vector2(float(pts[i][0]), float(pts[i][1]))
-			var b := Vector2(float(pts[i + 1][0]), float(pts[i + 1][1]))
+			var a := Vector2(float(pts[i][0]), float(pts[i][pts[i].size() - 1]))
+			var b := Vector2(float(pts[i + 1][0]), float(pts[i + 1][pts[i + 1].size() - 1]))
 			var q: Vector2 = Geometry2D.get_closest_point_to_segment(c, a, b)
 			var d: float = q.distance_to(c)
 			if d < bd:
