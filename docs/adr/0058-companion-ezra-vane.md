@@ -74,7 +74,7 @@ he carried and turns up at the player's spawn point (bed or drop site) the next 
 He is found, not given. On the main map he waits in a lineman's camp by the power line west of
 Larch Hollow (a small authored set piece, `ezra_camp`), barricaded in a line truck with a broken leg
 splinted; random worlds place `ezra_camp` once, through the hub's wilderness pool, 300–900 m from
-the drop site. Talking to him (E) and giving him a first aid kit or painkillers recruits him; a
+the drop site. Talking to him (E) and giving him a first aid kit, painkillers or (since ADR-0062) a cloth bandage recruits him; a
 directive "Find the lineman" points the way.
 
 ### Save

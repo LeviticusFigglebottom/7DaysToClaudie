@@ -409,6 +409,7 @@
      "state": "closed"
     },
     {
+     "swing": "W",
      "id": "bunk_common_door",
      "at": [
       38,
@@ -863,6 +864,7 @@
      "rot": -90
     },
     {
+     "keep": true,
      "id": "walkin_lantern",
      "prop": "lantern_camping",
      "pos": [

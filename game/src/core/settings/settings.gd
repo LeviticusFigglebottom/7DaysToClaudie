@@ -24,6 +24,11 @@ var fullscreen: bool = false
 var vsync: bool = true
 ## Exposure multiplier for the picture (options screen); nights stay dark, just less so.
 var brightness: float = 1.0
+## Size of the 2D interface: 0 follows the window (1 up to 1080p, 2 at 4K), else a fixed factor
+## (UiStyle.SCALES; ADR-0063).
+var ui_scale: float = 0.0
+## The main menu's backdrop: "moving" (the flight, frozen if it runs slow), "still" or "off".
+var menu_backdrop: String = "moving"
 
 var _cfg := ConfigFile.new()
 var _default_bindings: Dictionary = {}
@@ -34,6 +39,19 @@ func _ready() -> void:
 	_load_user_settings()
 	register_input_actions()
 	_resolve_graphics()
+	get_tree().root.size_changed.connect(apply_ui_scale)
+	apply_ui_scale.call_deferred()
+
+
+## Scales the 2D interface to the window (or the player's fixed choice).
+func apply_ui_scale() -> void:
+	UiStyle.apply_scale(get_tree().root, ui_scale)
+
+
+func set_ui_scale(v: float) -> void:
+	ui_scale = v
+	apply_ui_scale()
+	save()
 
 
 # --- Input ---------------------------------------------------------------------------------
@@ -265,6 +283,8 @@ func save() -> void:
 	_cfg.set_value("audio", "volumes", volumes)
 	_cfg.set_value("display", "fullscreen", fullscreen)
 	_cfg.set_value("display", "vsync", vsync)
+	_cfg.set_value("display", "ui_scale", ui_scale)
+	_cfg.set_value("display", "menu_backdrop", menu_backdrop)
 	_cfg.save(SETTINGS_PATH)
 	settings_changed.emit()
 
@@ -285,6 +305,8 @@ func _load_user_settings() -> void:
 	brightness = _cfg.get_value("graphics", "brightness", brightness)
 	fullscreen = _cfg.get_value("display", "fullscreen", fullscreen)
 	vsync = _cfg.get_value("display", "vsync", vsync)
+	ui_scale = float(_cfg.get_value("display", "ui_scale", ui_scale))
+	menu_backdrop = str(_cfg.get_value("display", "menu_backdrop", menu_backdrop))
 	var v: Variant = _cfg.get_value("audio", "volumes", volumes)
 	if v is Dictionary:
 		volumes.merge(v, true)

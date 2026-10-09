@@ -1,0 +1,8 @@
+{
+  "_doc": "The first-days tutorial's culmination (ADR-0062, TutorialTracker). Once every step in data/tutorial is done the tether picks up a distress call from `companion` (a CompanionDef) after delay_minutes of game time, never while the Hum is on or while the player sleeps; it points at his camp. Skipped (and marked received) when he is already recruited or dead, or the world has no camp. old_save_done_after_day: a save from before the tutorial counts it done when it is past this day. xp_source: the progression.json source each finished step pays (ADR-0015).",
+  "companion": "ezra",
+  "delay_minutes": 45,
+  "old_save_done_after_day": 2,
+  "xp_source": "tutorial_step",
+  "distress_text": "Static on the tether, then a man's voice, low: \"...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the power line, out in the timber away from the roads. Follow the line. Bring something for it: a bandage'll get me on my feet, a first aid kit or painkillers if you've found any. I'll hear you coming.\""
+}

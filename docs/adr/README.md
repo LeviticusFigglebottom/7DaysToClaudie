@@ -57,3 +57,6 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0056](0056-organic-caves.md) | Organic caves through the SDF volume terrain: pure cave plans, streamed volume, nav and collision across volume borders, cave light and reverb, authored and random-world caves | Accepted |
 | [0057](0057-hunting-and-ranged.md) | Hunting and ranged: a bow whose arrows stick and come back, distraction stones, molotovs and ground fire, a bolt-action rifle with aim and scope, climbing arms, hunting stands and ropes | Accepted |
 | [0059](0059-roads-banks-and-towns.md) | Roads graded to the land, natural banks, towns that grow, and street networks | Accepted |
+| [0062](0062-first-days-tutorial.md) | The first-days tutorial: Program cards on the tether, any order, then Ezra's distress call; Find the lineman counts in any chapter | Accepted |
+| [0063](0063-ui-style-and-menu-backdrop.md) | One UI style (paper and kit themes, readable disabled states, a UI scale), the crafting sheet and item cards, a flight over the real valley behind the main menu that freezes if it costs too much | Accepted |
+| [0064](0064-new-game-intro.md) | The new-game intro: data-driven cards over the load, with the load's heavy steps held to the cards' quiet moments | Accepted |

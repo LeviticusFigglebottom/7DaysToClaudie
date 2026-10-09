@@ -221,7 +221,7 @@
         {"prop": "crate_wood", "at": [13, 4], "level": 3, "against": "N", "id": "lookout_stores", "container": "wild_lookout_stores"},
         {"prop": "wild_ammo_box", "pos": [14.55, 4.35], "level": 3, "id": "cab_ammo", "rot": 10},
         {"prop": "chair_wood", "pos": [11.8, 6.1], "level": 3, "rot": 200},
-        {"prop": "wild_oil_lantern", "pos": [12.85, 6.25], "level": 3, "y": 1.12, "lit": true},
+        {"keep": true, "prop": "wild_oil_lantern", "pos": [12.85, 6.25], "level": 3, "y": 1.12, "lit": true},
         {"prop": "bucket", "pos": [10.5, 8.5], "level": 3},
         {"prop": "books_scatter", "pos": [13.6, 7.4], "level": 3, "rot": 30},
         {"prop": "paper_scatter", "pos": [11.6, 5.8], "level": 3, "rot": 70},

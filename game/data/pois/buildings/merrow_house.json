@@ -81,7 +81,7 @@
         {"id": "bathroom_medicine_cabinet", "prop": "medicine_cabinet", "at": [6, 1], "against": "E", "container": "medicine_cabinet", "height": 1.3},
         {"prop": "bed_single", "at": [11, 0], "against": "E", "rot": -90},
         {"id": "kids_dresser", "prop": "dresser", "at": [7, 0], "against": "N", "container": "dresser"},
-        {"id": "kids_nightstand", "prop": "nightstand", "at": [10, 0], "against": "N", "container": "nightstand"},
+        {"id": "kids_nightstand", "prop": "nightstand", "at": [9, 0], "against": "N", "container": "nightstand"},
         {"prop": "crib", "at": [7, 3], "against": "W"},
         {"prop": "rug_oval", "at": [9, 2]},
         {"id": "kids_duffel", "prop": "duffel_bag", "at": [10, 3], "against": "S", "container": "duffel_bag"},

@@ -112,6 +112,8 @@ var lot := Vector2i.ZERO
 var origin := Vector2i.ZERO
 ## "L:c:r" -> true: cells furniture must stay off (door swings, stairs and wells, the route).
 var blocked: Dictionary = {}
+## "L:c:r" -> true: the cells either side of a doorway (blocked too).
+var doorway: Dictionary = {}
 ## "L:c:r" -> true: cells furniture stands on.
 var occupied: Dictionary = {}
 var ids: Dictionary = {}
@@ -356,6 +358,8 @@ func _open(li: int, c: Vector2i, side: int, type: String, state: String, extra: 
 		# The cells each side of a doorway stay clear of furniture (swing, passage).
 		blocked[_nk(li, cc)] = true
 		blocked[_nk(li, cc + PoiLayout.DIRS[side])] = true
+		doorway[_nk(li, cc)] = true
+		doorway[_nk(li, cc + PoiLayout.DIRS[side])] = true
 	openings.append(op)
 	return op
 
@@ -963,6 +967,11 @@ func _place_wall(r: Room, pid: String) -> Dictionary:
 					if not _solid(r.level, c + a * i, side):
 						ok = false
 						break
+				# Beside a doorway, against the same wall, a prop keeps 7 cm off the cell's edge: an
+				# open leaf leans 13 cm back past its hinge jamb (Door.OPEN_ANGLE), into a 1 m counter
+				# filling the cell or a 1.16 m wardrobe spilling past it (TraversalAudit's swing check).
+				if ok and pd.size.x > float(along) - 0.14:
+					ok = not doorway.has(_nk(r.level, c - a)) and not doorway.has(_nk(r.level, c + a * along))
 				if ok:
 					cands.append([c, side, cells])
 	if cands.is_empty():

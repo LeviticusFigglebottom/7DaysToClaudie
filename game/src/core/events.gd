@@ -101,6 +101,12 @@ signal ashen_scout_done(entity_id: StringName, reported: bool)
 signal ashen_level_changed(level: int)
 ## A companion joined the player (ADR-0058): its CompanionDef id.
 signal companion_recruited(companion_id: StringName)
+## The first-days tutorial changed (ADR-0062): a step advanced or finished, it was turned on or
+## off, or the distress call came. Read the state from GameWorld.tutorial.
+signal tutorial_changed()
+## The tutorial's last step led to a distress call on the tether: the companion's CompanionDef id
+## and his camp's position (TutorialTracker.distress() has the radio text).
+signal tutorial_distress(companion_id: StringName, position: Vector3)
 signal note_found(note_id: StringName)
 signal schematic_learned(schematic_id: StringName)
 

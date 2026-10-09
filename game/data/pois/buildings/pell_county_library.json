@@ -199,7 +199,7 @@
         {"prop": "town3_sign_library", "at": [8, 19], "against": "N", "height": 2.6},
         {"prop": "rug_oval", "pos": [2.6, 15.4], "rot": 0},
         {"id": "kids_table", "prop": "town3_kids_table", "pos": [2.6, 15.2], "rot": 20},
-        {"id": "story_chair", "prop": "armchair", "pos": [1.0, 12.2], "rot": 140},
+        {"id": "story_chair", "prop": "armchair", "pos": [0.95, 12.75], "rot": 140},
         {"id": "kids_shelf_1", "prop": "bookshelf", "at": [0, 17], "against": "W", "rot": 90},
         {"id": "kids_shelf_2", "prop": "bookshelf", "at": [5, 18], "against": "S", "rot": 180},
         {"prop": "books_scatter", "pos": [4.2, 13.2], "rot": 60},
@@ -258,7 +258,7 @@
         {"id": "archive_box_3", "prop": "cardboard_box", "pos": [9.5, 5.5], "level": -1, "y": 0.34, "rot": 20},
         {"id": "clerk_desk", "prop": "desk_small", "at": [11, 5], "against": "E", "rot": -90, "level": -1},
         {"id": "clerk_cot", "prop": "civic_army_cot", "pos": [7.4, 5.3], "level": -1, "rot": 90},
-        {"prop": "lantern_camping", "pos": [9.6, 1.4], "level": -1, "lit": true},
+        {"keep": true, "prop": "lantern_camping", "pos": [9.6, 1.4], "level": -1, "lit": true},
         {"id": "stack_1", "prop": "town3_library_stack", "pos": [7.5, 2.5], "rot": 0, "alt": "stacks:reshelved"},
         {"id": "stack_2", "prop": "town3_library_stack_b", "pos": [8.5, 2.5], "rot": 0, "alt": "stacks:reshelved"},
         {"id": "stack_3", "prop": "town3_library_stack", "pos": [9.5, 2.5], "rot": 0, "alt": "stacks:reshelved"},
@@ -305,7 +305,7 @@
       ],
       "lights": [
         {"pos": [8.3, 5.45], "level": 1, "height": 0.75, "color": "#ffb46e", "energy": 0.45, "range": 4.0, "flicker": 0.3},
-        {"pos": [9.6, 1.4], "level": -1, "height": 0.45, "color": "#f4e4bc", "energy": 0.45, "range": 5.0, "flicker": 0.05}
+        {"keep": true, "pos": [9.6, 1.4], "level": -1, "height": 0.45, "color": "#f4e4bc", "energy": 0.45, "range": 5.0, "flicker": 0.05}
       ],
       "decals": [
         {"decal": "footprints_mud", "at": [2, 1], "side": "floor", "level": 1, "size": [1.0, 1.4]},

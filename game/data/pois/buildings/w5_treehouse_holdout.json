@@ -333,6 +333,7 @@
      "side": "S",
      "type": "door",
      "state": "closed",
+     "swing": "N",
      "level": 1
     },
     {
@@ -388,6 +389,7 @@
      "side": "S",
      "type": "door",
      "state": "closed",
+     "swing": "N",
      "level": 1
     },
     {

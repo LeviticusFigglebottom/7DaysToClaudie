@@ -1111,6 +1111,7 @@
      "container": "mine_survey_cache"
     },
     {
+     "keep": true,
      "prop": "lantern_camping",
      "pos": [
       52.0,
@@ -1488,6 +1489,7 @@
      "level": -1
     },
     {
+     "keep": true,
      "at": [
       52,
       4

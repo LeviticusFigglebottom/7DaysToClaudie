@@ -654,6 +654,17 @@
       0.6
      ],
      "level": -1
+    },
+    {
+     "id": "stores_lantern",
+     "prop": "lantern_camping",
+     "pos": [
+      18.3,
+      2.6
+     ],
+     "level": -1,
+     "lit": true,
+     "keep": true
     }
    ],
    "sleepers": [

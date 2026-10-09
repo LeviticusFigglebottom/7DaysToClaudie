@@ -192,7 +192,8 @@
         {"id": "aisle_4_2", "prop": "town3_grocery_shelf_4", "pos": [13.5, 11.0], "rot": 90, "alt": "shelving:fell_high"},
         {"prop": "town3_grocery_shelf_fallen", "pos": [4.75, 9.4], "rot": -10, "alt": "shelving:fell_high"},
         {"prop": "town3_grocery_shelf_fallen", "pos": [11.75, 12.6], "rot": 5, "variant": "worn", "alt": "shelving:fell_high"},
-        {"id": "reefer", "prop": "town3_reefer_trailer", "pos": [8.4, -4.4], "rot": -90, "variant": "clean", "alt": "reefer:doors_shut"}
+        {"id": "reefer", "prop": "town3_reefer_trailer", "pos": [8.4, -4.4], "rot": -90, "variant": "clean", "alt": "reefer:doors_shut"},
+        {"id": "walkin_lantern", "prop": "wild_oil_lantern", "pos": [17.0, 0.4], "lit": true, "keep": true}
       ],
       "pickups": [
         {"id": "cold_key", "item": "t3_grocery_cold_key", "pos": [3.3, 0.45], "y": 0.78, "level": 1}

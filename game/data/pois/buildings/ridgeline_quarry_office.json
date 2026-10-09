@@ -319,6 +319,7 @@
      "container": "town4_magazine"
     },
     {
+     "keep": true,
      "prop": "lantern_camping",
      "pos": [
       11.0,
@@ -707,6 +708,7 @@
    ],
    "lights": [
     {
+     "keep": true,
      "at": [
       11,
       2

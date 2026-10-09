@@ -107,7 +107,7 @@
         {"prop": "gas_can", "pos": [16.4, 0.4], "rot": 30},
         {"prop": "pallet", "pos": [8.6, -1.5], "rot": 5},
         {"prop": "crate_wood", "pos": [8.4, -1.5], "y": 0.14, "rot": 20, "id": "yard_crate_2"},
-        {"prop": "wheelbarrow", "pos": [1.8, -1.0], "rot": 95},
+        {"prop": "wheelbarrow", "pos": [1.8, -1.55], "rot": 90},
         {"prop": "bucket", "pos": [13.2, -1.0]},
         {"prop": "trash_pile", "pos": [14.8, -1.8], "rot": 40, "id": "yard_trash_pile"},
         {"prop": "fence_wood_2m", "pos": [5.0, -2.0], "rot": 0, "variant": "worn"},

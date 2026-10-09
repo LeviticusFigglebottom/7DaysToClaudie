@@ -128,6 +128,11 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
   wall's "a" (south / east) face. `"swing": "N"` (the side of its wall it opens to: N/S on a
   north or south wall, E/W on an east or west one) overrides it, e.g. bay doors whose leaves
   would stand across the aisle the player walks next (poi_walk lists every leaf it had to shut).
+  An open leaf stands at 90° (86° where a wall runs off its hinge jamb: it stops against it), so
+  keep the metre in front of the doorway on its swing side clear of furniture: TraversalAudit
+  checks every leaf fully open and names what it would swing into (an error on the route; a
+  warning off it, and for floor clutter under 0.3 m that it sweeps over). The layout can't see
+  props: move the prop, or give the door a `swing` toward the clear side.
 * Exterior doorways (`door*`, `open`) on the ground floor whose sill is more than 0.2 m above the
   yard (the pad, or the porch deck where it covers the threshold) get steps up to them, out from the
   foundation with a ramp under it (PoiBuilder.stoops): a concrete stoop with a landing on a brick,
@@ -254,6 +259,13 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
   and drop holes count; keys count once their pickup is reachable. Intact glass and barricades do
   **not** count — the intended route must not require breaking things unless you add a breach.
 * `loot_room`: `{"room": "C", "level": -1}` — must be reachable and contain a container.
+  TraversalAudit also wants the player able to search one: a spot the route's areas reach whose
+  eyes see the container's box within the 2.6 m interaction reach (not a nightstand buried in a
+  bed or a box walled in behind a counter); and the room lit: an outside opening on it or on a
+  room open to it, one doorway on from a daylit room (an arch, a hole, a door standing open or
+  the door the route opens), or a light with `"keep": true` (a lantern, candles:
+  `style.lights_on` puts the others out in some runs). Elsewhere on the route a pitch-dark room
+  is a warning.
 * `shortcuts`: `[{"opening": "back_door"}]` — a `locked_inside` door from the loot side back out.
 
 ## Ambushes: sleeper groups and triggers
@@ -320,8 +332,10 @@ be **disarmed crouched** (interact) for its parts; tuning lives in `data/config/
 * Edge traps must cross a passable edge (an opening, or two cells of one room) — never a solid wall.
   The alarm box and the shotgun hang on the `at` side: put that on the side the player comes from
   if a careful player should see it in time (alarms), or inside the room (shotguns).
-* The shotgun's chair goes into the neighbouring cell along the wall (whichever side has floor), so
-  leave that cell free; it is a solid body the player walks round.
+* The shotgun's chair goes into the neighbouring cell along the wall (whichever side has floor; the
+  latch side of a door that opens into the gun's room, clear of its leaf), so leave that cell
+  free; it is a solid body the player walks round. Where only the hinge side has floor, give the
+  door a `swing` into the other room.
 * Weak floors: the validator walks the route again with **every weak floor collapsed** (stepping on
   one drops you below) and errors if a waypoint becomes unreachable, and it errors if the room under
   a weak floor has no way back out. Never put one on the only path; use them to punish a shortcut

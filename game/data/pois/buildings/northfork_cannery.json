@@ -352,8 +352,8 @@
     {
      "prop": "debris_pile",
      "pos": [
-      9.0,
-      4.6
+      10.5,
+      5.0
      ],
      "rot": 30
     },
@@ -583,6 +583,7 @@
      "rot": 0
     },
     {
+     "keep": true,
      "prop": "lantern_camping",
      "pos": [
       9.6,
@@ -1029,6 +1030,7 @@
    ],
    "lights": [
     {
+     "keep": true,
      "at": [
       9,
       15

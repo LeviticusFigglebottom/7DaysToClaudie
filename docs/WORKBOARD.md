@@ -130,6 +130,17 @@ lighter held up.
 7. **The crafting menu and inventory need work**: recipes that can't be crafted show in white and
    are almost impossible to read. (Presentation.)
 
+## Owner request: the first-days tutorial (2026-10-08)
+An optional, basic tutorial in a dedicated Journal tab of the Field Manual: how to make the
+essential early items, ending with a distress signal on the tether that leads to Ezra. Split:
+* the hub (an agent): data `game/data/tutorial/first_days.json`, `TutorialTracker` (world.tutorial:
+  is_enabled, steps, distress), `Events.tutorial_changed` / `tutorial_distress(companion_id,
+  position)`, the `tutorial.set_enabled` command, the `tutorial` world setting, PlayerState's optional
+  `tutorial` field, ADR-0062;
+* Presentation: the Journal tab, a HUD nudge per step, the tether's distress message and a marker
+  on the tether and the map (closes TD-301's missing marker);
+* Creatures: Ezra's radio voice lines if wanted (optional).
+
 ## Player report 3 (Windows Build #67, 891830b; round 2)
 Screenshot: `docs/playtest/2026-10-06_build67_lighter_door.webp` (Pell's Crossing, a lit lighter, a
 cottage's front door). The owner said it "looks incredible", but:
