@@ -28,7 +28,12 @@ const PLANT_HP: float = 40.0
 ## Where his blows land on a trunk (m above its foot).
 const CHOP_HEIGHT: float = 0.9
 
-var mind: CompanionMind
+## The mind that owns this (held weakly: it holds us, and a strong ref both ways was a cycle
+## that leaked him, his def and his pack at exit).
+var mind: CompanionMind:
+	get:
+		return _mind_ref.get_ref() as CompanionMind if _mind_ref != null else null
+var _mind_ref: WeakRef = null
 var enemy: Enemy
 var cdef: CompanionDef
 ## His own pack (CompanionDirector.inventory).
@@ -58,7 +63,7 @@ var _end_bark: String = ""
 
 
 func _init(m: CompanionMind) -> void:
-	mind = m
+	_mind_ref = weakref(m)
 	enemy = m.enemy
 	cdef = m.cdef
 

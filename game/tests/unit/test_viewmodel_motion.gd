@@ -133,3 +133,26 @@ func test_a_fall_or_teleport_never_flings_the_arms() -> void:
 		fall.update(1.0 / 60.0, Vector2.ZERO, Vector3(0, 0, -74.0), 0.0, false, false, false, 0.0, 0)
 	assert_almost_eq(fall.rig_position().distance_to(walk.rig_position()), 0.0, 0.001, "a fall moves the arms no further than a run")
 	assert_lt(fall.rig_position().length(), 0.08, "the arms stay in view")
+
+
+func test_empty_hands_sink_when_still_and_come_back() -> void:
+	# ADR-0060: bare hands standing still sink mostly out of the frame after rest.delay seconds;
+	# moving brings them back at once. Holding something (rest_ok false) never sinks.
+	var cfg: Dictionary = ViewModelHolds.config()
+	var delay: float = float(((cfg.get("motion", {}) as Dictionary).get("rest", {}) as Dictionary).get("delay", 4.0))
+	var m := ViewModelMotion.new()
+	m.setup(cfg)
+	m.rest_ok = true
+	_run(m, delay * 0.5, false, 0.0)
+	assert_eq(m.rest_w, 0.0, "not before the delay")
+	_run(m, delay * 0.5 + 3.0, false, 0.0)
+	assert_gt(m.rest_w, 0.9, "sunk after standing still")
+	var sunk_y: float = m.rig_position().y
+	_run(m, 0.5, false, 3.0)
+	assert_lt(m.rest_w, 0.1, "walking brings the hands back")
+	assert_gt(m.rig_position().y, sunk_y + 0.05)
+	var held := ViewModelMotion.new()
+	held.setup(cfg)
+	held.rest_ok = false
+	_run(held, delay + 3.0, false, 0.0)
+	assert_eq(held.rest_w, 0.0, "a held item stays up")

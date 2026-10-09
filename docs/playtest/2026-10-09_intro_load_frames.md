@@ -75,3 +75,11 @@ both runs:
 
 Watched to the end, the intro stretches the main-thread half of the load under its cards: the
 world was ready at 76 s of a ~92 s intro. That time is spent while the player watches.
+
+## The wreck shot (2026-10-09)
+
+`2026-10-09_intro_wreck_shot.webp`: the world card over the Lift 3 crash site, main map, 07:31 on
+day 1. Rendered by `intro_load_probe.gd --shot-after-load` on lavapipe, 10 s into the card. The
+camera flies 9 m up the cleared swath toward the nose (the card's `from`/`to` plan cells). This
+container has no generated assets, so the fuselage and debris are procedural stand-ins. Earlier
+orbiting cameras sat among the trunks round the clearing and rendered black.

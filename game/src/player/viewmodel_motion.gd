@@ -46,6 +46,12 @@ var equip: float = 1.0
 var reading: float = 0.0
 ## 0..1: how much of the breathing, sway, lag and bob aiming takes out (ViewModel.set_aim).
 var steady: float = 0.0
+## Whether empty hands may sink out of the way when the player stands still (set each frame by
+## the view model: nothing held, no action, not reading the tether, not climbing).
+var rest_ok: bool = false
+## 0..1: how far the resting hands have sunk.
+var rest_w: float = 0.0
+var _still: float = 0.0
 
 var _pos := Vector3.ZERO
 var _rot := Vector3.ZERO
@@ -149,6 +155,16 @@ func update(dt: float, look_rate: Vector2, vel: Vector3, speed: float, sprinting
 	var se: float = sprint_w * sprint_w * (3.0 - 2.0 * sprint_w)
 	pos += _v3(sp.get("pos"), Vector3(0.03, -0.07, 0.06)) * se
 	deg += _v3(sp.get("rot"), Vector3(-20, 26, 12)) * se
+	# Empty hands at rest (ADR-0060): after a few still seconds they sink mostly out of the frame,
+	# as a player's own would hang; moving, looking round or acting brings them straight back.
+	var rs: Dictionary = cfg.get("rest", {})
+	var still: bool = rest_ok and speed < 0.2 and look_rate.length() < 0.35
+	_still = _still + dt if still else 0.0
+	var sink: bool = _still > float(rs.get("delay", 4.0))
+	rest_w = move_toward(rest_w, 1.0 if sink else 0.0, dt * float(rs.get("sink", 0.6) if sink else rs.get("wake", 5.0)))
+	var re: float = rest_w * rest_w * (3.0 - 2.0 * rest_w)
+	pos += _v3(rs.get("pos")) * re
+	deg += _v3(rs.get("rot")) * re
 	# A gun held up to the eye is steadied (PlayerAim): less breathing, sway, lag and bob.
 	if steady > 0.0:
 		pos *= 1.0 - steady

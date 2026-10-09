@@ -27,6 +27,11 @@ The pieces were there but unused:
 * **Waystation 9 stands in D6** by Route 9, at (-30, 2522), short of where the river leaves the
   valley. It sits there until D7 is built: then its spawn moves to the culvert in the Cordon
   wall and nothing else changes. A clearing and a drive from Route 9 come with it.
+  * D7's post is a POI built into the wall (`waystation_9_post`, TD-369). The def's `in_poi` names it
+    and the anchor in its plan where the spawn stands (`TraderDef.spawn_in` turns a placement into
+    the spawn's position and yaw). A spawn inside a placement of that POI raises only the counter
+    (in the post's hatch recess), the board and the quartermaster: the building and the wall are
+    its dressing (`TraderManager.in_building`).
 * **Random worlds** use the generic `program_relay` def, a smaller camp. The generator emits
   `trader:program_relay:<n>` spawns, with a clearing and a road stub to the gate, along its roads.
   That generator side is the hub's: no worldgen code here.

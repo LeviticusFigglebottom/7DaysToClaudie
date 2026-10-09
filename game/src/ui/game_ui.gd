@@ -51,6 +51,7 @@ var _intro_holds_world: bool = false
 ## The last clean frame of play (no menu over it), kept for the save's thumbnail on the Load
 ## screen: taken as the pause menu opens and every THUMB_EVERY seconds of free play.
 var _last_frame: Image = null
+var _relief_done: bool = false
 var _tip_box: Control
 var _tip_title: Label
 var _tip_text: Label
@@ -223,6 +224,69 @@ func show_loading(text: String, progress: float, map: Texture2D = null, marks: D
 	_loading_bar.value = progress * 100.0
 	if map != null:
 		_loading_map.set_map(map, marks)
+		_relief_done = true
+	elif not _relief_done:
+		_show_relief()
+
+
+## The main map's loading screen (a random world brings its own map.png): the survey sheet the
+## world map shades, kept per world on disk (WorldMap.cache_file), under the save's fog, so only
+## what the player has walked shows. A world's first load shows the blank sheet. The drop site is
+## marked, and on a Continue the place the run was saved.
+func _show_relief() -> void:
+	var w: Node = Game.world
+	var tm: Object = w.get(&"terrain") if w != null else null
+	var wd: WorldDef = tm.get(&"world") as WorldDef if tm != null else null
+	var lp: PlayerState = Game.local_player()
+	if Game.session == null or Game.session.world_mode != &"main_map":
+		_relief_done = true
+		return
+	if wd == null or lp == null or not w.has_method(&"drop_site"):
+		return
+	_relief_done = true
+	var sheet: Image = null
+	var file: String = WorldMap.cache_file(wd)
+	if FileAccess.file_exists(file):
+		sheet = Image.load_from_file(ProjectSettings.globalize_path(file))
+	var drop: Vector3 = w.call(&"drop_site")
+	var here: Variant = lp.position if not lp.explored.is_empty() else null
+	var r: Rect2 = wd.world_rect()
+	var img: Image = relief_image(sheet, WorldMap.fog_image(lp.explored, r), r, here)
+	var side: float = maxf(r.size.x, r.size.y)
+	var origin: Vector2 = r.get_center() - Vector2(side, side) * 0.5
+	_loading_map.set_map(ImageTexture.create_from_image(img), {"point": (Vector2(drop.x, drop.z) - origin) / side})
+
+
+## The loading screen's sheet: `sheet` (or blank paper) under `fog`, centred on a square of the
+## loading screen's dark, with a ring where the run was saved (`here`, a Vector3 or null). Pure.
+static func relief_image(sheet: Image, fog: Image, r: Rect2, here: Variant) -> Image:
+	var w: int = maxi(int(r.size.x * WorldMap.PX_PER_M), 1)
+	var h: int = maxi(int(r.size.y * WorldMap.PX_PER_M), 1)
+	var paper := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	if sheet != null and not sheet.is_empty():
+		paper = sheet.duplicate() as Image
+		paper.convert(Image.FORMAT_RGBA8)
+		if paper.get_width() != w or paper.get_height() != h:
+			paper.resize(w, h, Image.INTERPOLATE_BILINEAR)
+	else:
+		paper.fill(WorldMap.PAPER)
+	var f: Image = fog.duplicate() as Image
+	f.resize(w, h, Image.INTERPOLATE_NEAREST)
+	paper.blend_rect(f, Rect2i(0, 0, w, h), Vector2i.ZERO)
+	if here is Vector3:
+		var p: Vector2 = (Vector2((here as Vector3).x, (here as Vector3).z) - r.position) * WorldMap.PX_PER_M
+		for dy: int in range(-9, 10):
+			for dx: int in range(-9, 10):
+				var d: float = Vector2(dx, dy).length()
+				var x: int = int(p.x) + dx
+				var y: int = int(p.y) + dy
+				if x >= 0 and y >= 0 and x < w and y < h and d <= 9.0:
+					paper.set_pixel(x, y, Color(0.1, 0.05, 0.02) if d > 6.0 or d < 2.5 else WorldMap.PAPER)
+	var side: int = maxi(w, h)
+	var out := Image.create(side, side, false, Image.FORMAT_RGBA8)
+	out.fill(Color(0.02, 0.022, 0.025))
+	out.blit_rect(paper, Rect2i(0, 0, w, h), Vector2i((side - w) / 2, (side - h) / 2))
+	return out
 
 
 ## What the loading screen says now ("" once it is hidden).
@@ -232,6 +296,8 @@ func loading_text() -> String:
 
 func hide_loading() -> void:
 	_loading.visible = false
+	# Shade this world's sheet now (on a worker), so the next loading screen shows it.
+	world_map.prepare.call_deferred()
 	_hud.visible = true
 	_hold_world_for_intro.call_deferred()
 

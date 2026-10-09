@@ -42,6 +42,8 @@ static func mesh(model_id: String, placeholder: String = "box") -> Mesh:
 		return m
 	m = _load_merged(model_id)
 	var generated: bool = m != null
+	if m == null and placeholder == "box":
+		m = prop_standin(model_id)
 	if m == null:
 		m = make_placeholder(placeholder)
 	_mutex.lock()
@@ -203,6 +205,49 @@ static func _global_xf(n: Node3D, root: Node) -> Transform3D:
 
 
 ## Simple stand-ins so the world is playable before `make assets`.
+## model id -> PropDef, for props whose def draws its collision boxes before `make assets`.
+static var _standins: Dictionary = {}
+static var _standins_indexed: bool = false
+
+
+## The stand-in of a model whose PropDef has `standin: "boxes"` (the Cordon wall's 6 m pieces): its
+## collision boxes in a flat concrete grey, so a wall still reads, lines up and shows what blocks.
+## Null for any other model (it gets the generic placeholder).
+static func prop_standin(model_id: String) -> Mesh:
+	var db: ContentDB = ContentDB.instance as ContentDB
+	if db == null:
+		return null
+	_mutex.lock()
+	if not _standins_indexed:
+		var defs: Array = db.all(&"prop")
+		for d: Variant in defs:
+			var pd: PropDef = d as PropDef
+			if pd != null and pd.standin == "boxes":
+				for v: Variant in pd.variants.values():
+					_standins[str(v)] = pd
+		_standins_indexed = not defs.is_empty()
+	var found: PropDef = _standins.get(model_id)
+	_mutex.unlock()
+	if found == null:
+		return null
+	return boxes_mesh(found.collision_boxes(), Color(0.56, 0.55, 0.52))
+
+
+## One mesh of boxes ([[size: Vector3, centre: Transform3D]], PropDef.collision_boxes()) in one colour.
+static func boxes_mesh(boxes: Array, color: Color) -> Mesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for b: Variant in boxes:
+		var bm := BoxMesh.new()
+		bm.size = (b as Array)[0]
+		st.append_from(bm, 0, (b as Array)[1])
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.roughness = 0.9
+	st.set_material(mat)
+	return st.commit()
+
+
 static func make_placeholder(kind: String) -> Mesh:
 	var mat := StandardMaterial3D.new()
 	mat.roughness = 0.9

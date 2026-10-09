@@ -1,0 +1,19 @@
+{
+ "_doc": "Readable notes of Waystation 9 (POI waystation_9_post, region D7): the Program's notice to salvagers on the board by the guard-room door, and the guard's standing orders on the duty desk. Tier 1: they say what the Program and the Cordon are to a salvager - the hatch, scrip, the tether, the wall, the seventh night - and never what started it (docs/LORE_TRAIL.md 'What early places must not say'). Items: items/waystation.json note_<id>.",
+ "defs": [
+  {
+   "id": "ws9_salvager_notice",
+   "title": "Notice to Salvagers, Waystation 9",
+   "style": "typed",
+   "author": "Remand Program, Quartermaster's Office, Waystation 9",
+   "body": "REMAND PROGRAM - NOTICE TO SALVAGERS\nWaystation 9. Posted by the Quartermaster's Office. Read it, it is the only copy.\n\n1. You trade at the hatch. You do not come into the post. The guard-room door is not for you.\n2. Scrip only. The Quartermaster buys what the Program can use and sells what the Program can spare. Prices are on the board and they are not a conversation.\n3. Contracts are posted on the contracts board each morning. Take what you can finish. A contract not reported by its date is struck and so is your standing.\n4. Your tether stays on. It is your record, your release date and the only way anyone finds you. A cut tether is a struck salvager (see the manifest, Lift 3).\n5. Do not approach the wall. The wire is live after dark and the deck does not ask who you are.\n6. Every seventh night the post goes dark at dusk. Find walls of your own before then. The hatch does not open until first light.\n7. Lifts fly from the strip on the far side. Nobody from the valley side boards one.\n\nServe your time. Bring it in. Get paid.\n\nPinned under it, a slip in pencil: HATCH OPENS AT FIRST LIGHT. NOT BEFORE. DON'T KNOCK."
+  },
+  {
+   "id": "ws9_standing_orders",
+   "title": "Standing Orders, Waystation 9 Guard",
+   "style": "typed",
+   "author": "Cordon Authority, Line 9 Detachment",
+   "body": "CORDON AUTHORITY - LINE 9 DETACHMENT\nSTANDING ORDERS, WAYSTATION 9. To be read by every guard at the start of every duty.\n\n1. Nobody crosses the line from the valley side. Not salvagers, not civilians, not Program staff without a pass from the far side. The building is part of the wall. Treat every door on the valley side as the wall.\n2. The Route 9 gate and the sluice grates stay locked under Order 14. Their keys are not kept at this post.\n3. Salvagers are served at the hatch by the Quartermaster only. Nothing changes hands at the guard-room door.\n4. Floods on at dusk, generator checked every watch, the radio manned from the battery bank if the generator stops.\n5. On the seventh night: floods off and shutters down at dusk, radio silent, both watches awake. Whatever comes up to the wire that night, you do not answer it and you do not fire unless it climbs.\n6. Anything at the wire after dark that does not answer the challenge is not a person. Fire.\n7. Log every lift, every contract handed in and every round fired. The log goes out on the first lift of the week.\n\nUnder it, in biro, two different hands: The hum came through the floor again on the 7th. Count it in the log. - Sgt. D. Mercer\nAnd under that: Logged. Still don't know what it is. Nobody out here does. - Cpl. R. Hale"
+  }
+ ]
+}

@@ -13,6 +13,9 @@ const TURN_SPEED: float = 2.0
 var manager: Node
 var post_id: String = ""
 var def: TraderDef
+## Whether to raise the def's set dressing (its `props`): false for a post built into its building
+## (TraderDef.in_poi), whose walls, towers and floodlights are the POI's.
+var dress: bool = true
 var counter_body: StaticBody3D
 var board_body: StaticBody3D
 var quartermaster: EnemyVisual
@@ -24,8 +27,9 @@ var _world: Node
 ## Raises the dressing on the ground under each piece.
 func build(w: Node) -> void:
 	_world = w
-	for v: Variant in def.props:
-		_prop(v as Dictionary)
+	if dress:
+		for v: Variant in def.props:
+			_prop(v as Dictionary)
 	if not def.counter.is_empty():
 		counter_body = _prop(def.counter, Station.new(self, "shop", "Trade with the quartermaster"))
 	if not def.board.is_empty():

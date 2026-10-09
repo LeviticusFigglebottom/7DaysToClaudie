@@ -41,11 +41,15 @@ var rooms: PackedStringArray = []
 ## lean: "back" (against a backrest, default) | "forward" (hunched on a backless seat) | "low" (sat
 ## legs out on a low surface: in a bathtub, on a mattress; pos under the pelvis, facing the legs)}].
 var anchors: Array[Dictionary] = []
+## What draws before `make assets` (ModelLibrary.mesh's placeholder): "" the generic small box,
+## "boxes" the prop's collision boxes (a 6 m wall panel or a culvert bay that must still read and
+## line up as a wall). Needs `boxes`.
+var standin: String = ""
 
 
 func _fields() -> PackedStringArray:
 	return ["variants", "collision", "physics", "hp", "size", "container", "light", "blocks_sight", "wall_mounted", "rooms",
-		"anchors", "back", "boxes"]
+		"anchors", "back", "boxes", "standin"]
 
 
 func _parse(r: DefReader) -> void:
@@ -71,6 +75,9 @@ func _parse(r: DefReader) -> void:
 		boxes.append({"size": _v3(bd["size"]), "at": _v3(bd["at"]), "yaw": float(bd.get("yaw", 0.0))})
 	if r.has("boxes") and collision != "box":
 		r.err("boxes are a box collision: leave collision out or make it \"box\" (it is \"%s\")" % collision)
+	standin = r.enum_str("standin", ["", "boxes"], "")
+	if standin == "boxes" and boxes.is_empty():
+		r.err("standin \"boxes\" draws the prop's boxes: give it boxes")
 	if variants.is_empty():
 		r.err("prop needs variants {clean|worn|destroyed: model}")
 	for a: Variant in r.arr("anchors"):

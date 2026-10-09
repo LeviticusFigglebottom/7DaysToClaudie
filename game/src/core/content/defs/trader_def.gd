@@ -39,12 +39,18 @@ var max_active: int = 3
 ## (`trader:<id>:<n>`) instead of the def id. For a def placed many times (the relay camps); a
 ## unique post keeps the def-keyed stock.
 var stock_per_post: bool = false
+## The building the post is built into (TD-369; Waystation 9 in the Cordon wall, region D7):
+## {poi: a PoiDef id, anchor: [x, z] plan metres in that POI where the post's spawn stands}. The
+## spawn's yaw is the placement's (spawn_in()). A post whose spawn lies inside a placement of that
+## POI raises only its counter, board and quartermaster: the building is its dressing, and the
+## `props` ring would stand in its walls. Empty: the post always raises its props.
+var in_poi: Dictionary = {}
 
 
 func _fields() -> PackedStringArray:
 	return ["spawn", "safe_radius", "guard_dps", "quartermaster", "props", "counter", "board", "restock_days",
 		"buy_markup", "rep_discount", "sell_ratio", "no_buy", "rep_tiers", "stock", "contracts_from", "offers_per_day", "max_active",
-		"stock_per_post"]
+		"stock_per_post", "in_poi"]
 
 
 func _parse(r: DefReader) -> void:
@@ -69,6 +75,11 @@ func _parse(r: DefReader) -> void:
 	offers_per_day = maxi(1, r.integer("offers_per_day", 4))
 	max_active = maxi(1, r.integer("max_active", 3))
 	stock_per_post = r.boolean("stock_per_post", false)
+	in_poi = r.dict("in_poi")
+	if not in_poi.is_empty():
+		var a: Variant = in_poi.get("anchor", null)
+		if str(in_poi.get("poi", "")) == "" or not a is Array or (a as Array).size() != 2:
+			r.err("in_poi needs {poi: id, anchor: [x, z]}")
 
 
 func _validate(db: Node, out: PackedStringArray) -> void:
@@ -84,6 +95,8 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 		if pid != &"" and not seen.has(pid) and not db.has_def(&"prop", pid):
 			out.append("%s: prop '%s' unknown" % [ctx(), pid])
 		seen[pid] = true
+	if not in_poi.is_empty() and not db.has_def(&"poi", StringName(str(in_poi.get("poi", "")))):
+		out.append("%s: in_poi names no POI '%s'" % [ctx(), in_poi.get("poi", "")])
 	for g: String in contracts_from:
 		if not db.has_def(&"trader", StringName(g)):
 			out.append("%s: contracts_from '%s' is not a trader" % [ctx(), g])
@@ -93,6 +106,18 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 		if at <= last:
 			out.append("%s: rep_tiers must rise" % ctx())
 		last = at
+
+
+## Where a region puts this post's `trader:` spawn for a placement of its `in_poi` building, from the
+## placement's origin (the pad corner, region metres) and rotation (degrees, Vector2.rotated as the
+## composer turns the plan): {pos: Vector2, yaw: degrees (the spawn feature's yaw)}. Empty without
+## in_poi.
+func spawn_in(origin: Vector2, rotation_deg: float) -> Dictionary:
+	if in_poi.is_empty():
+		return {}
+	var a: Array = in_poi["anchor"]
+	var local := Vector2(float(a[0]), float(a[1]))
+	return {"pos": origin + local.rotated(deg_to_rad(rotation_deg)), "yaw": -rotation_deg}
 
 
 ## The reputation tier (index into rep_tiers) a reputation score reaches.

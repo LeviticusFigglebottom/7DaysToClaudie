@@ -60,14 +60,26 @@ func setup_world(w: Node) -> void:
 	for c: StringName in COMMANDS:
 		Game.register_command(c, Callable(self, "_cmd_" + String(c).replace(".", "_")))
 	Events.game_saving.connect(_on_game_saving)
-	Events.player_spawned.connect(func(_pid: StringName) -> void: _rejoin = true)
-	Events.player_slept.connect(func(_pid: StringName, _h: float) -> void: _rejoin = true)
+	Events.player_spawned.connect(_on_rejoin)
+	Events.player_slept.connect(_on_rejoin.unbind(1))
 
 
 func _exit_tree() -> void:
 	for c: StringName in COMMANDS:
 		Game.unregister_command(c)
+	if Events.game_saving.is_connected(_on_game_saving):
+		Events.game_saving.disconnect(_on_game_saving)
+	if Events.player_spawned.is_connected(_on_rejoin):
+		Events.player_spawned.disconnect(_on_rejoin)
+	for con: Dictionary in Events.player_slept.get_connections():
+		if (con["callable"] as Callable).get_object() == self:
+			Events.player_slept.disconnect(con["callable"])
 	body = null
+
+
+## A respawn or a night's sleep brings him back to the player's side.
+func _on_rejoin(_pid: StringName) -> void:
+	_rejoin = true
 
 
 ## The saved state (WorldState.companion): {recruited, dead, position: [3], yaw, health (fraction),

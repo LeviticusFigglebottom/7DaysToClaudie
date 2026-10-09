@@ -130,19 +130,12 @@ func open() -> void:
 	_rect = world.world_rect()
 	(get_node("Head") as Label).text = "%s  ·  SURVEY SHEET" % (world.display_name if world.display_name != "" else "HOLLOWMERE").to_upper()
 	_status.text = "Wheel: zoom   ·   drag: pan   ·   M / Esc: close"
-	var key: String = "%s|%d" % [world.id, world.regions.size()]
+	var key: String = cache_key(world)
 	if _cache_key == key and _cache_img != null:
 		_show(_cache_img)
 	elif _task < 0:
 		_status.text = "Drawing the sheet…"
-		var sources: Array = sources_for(tm)
-		var roads: Array = world.roads.duplicate()
-		var lakes: Array = world.lakes.duplicate()
-		var rivers: Array = world.rivers.duplicate()
-		var r: Rect2 = _rect
-		_task = WorkerThreadPool.add_task(func() -> void:
-			_img = shade(r, sources, rivers, lakes, roads), false, "world map")
-		_pending_key = key
+		_start_shade(tm)
 	_zoom = 1.0
 	_pan = Vector2.ZERO
 	_fog_count = -1
@@ -156,6 +149,44 @@ func open() -> void:
 
 
 var _pending_key: String = ""
+
+
+## Which world a shaded sheet belongs to (its id and region count).
+static func cache_key(world: WorldDef) -> String:
+	return "%s|%d" % [world.id, world.regions.size()]
+
+
+## Where a world's sheet is kept between runs, for the loading screen (LoadingRelief): the 1.6 s
+## of shading is paid once per world, not per load.
+static func cache_file(world: WorldDef) -> String:
+	return "user://cache/maps/%s_%d.webp" % [String(world.id).validate_filename(), world.regions.size()]
+
+
+## Shades the sheet on a worker without opening it (after a load, so the next loading screen has
+## it); does nothing while one is being drawn or once this world's is kept.
+func prepare() -> void:
+	var w: Node = Game.world
+	if w == null or w.get(&"terrain") == null or _task >= 0:
+		return
+	var tm: TerrainManager = w.terrain
+	if tm.world == null or (_cache_key == cache_key(tm.world) and _cache_img != null):
+		return
+	_start_shade(tm)
+
+
+func _start_shade(tm: TerrainManager) -> void:
+	var world: WorldDef = tm.world
+	var sources: Array = sources_for(tm)
+	var roads: Array = world.roads.duplicate()
+	var lakes: Array = world.lakes.duplicate()
+	var rivers: Array = world.rivers.duplicate()
+	var r: Rect2 = world.world_rect()
+	var file: String = ProjectSettings.globalize_path(cache_file(world))
+	_task = WorkerThreadPool.add_task(func() -> void:
+		_img = shade(r, sources, rivers, lakes, roads)
+		DirAccess.make_dir_recursive_absolute(file.get_base_dir())
+		_img.save_webp(file, false, 0.85), false, "world map")
+	_pending_key = cache_key(world)
 
 
 func close() -> void:

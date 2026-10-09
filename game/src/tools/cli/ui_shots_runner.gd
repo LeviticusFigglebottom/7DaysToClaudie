@@ -193,6 +193,14 @@ func _shot_loading() -> Node:
 	add_child(ui)
 	await _settle(1)
 	ui.show_loading("Shaping the valley…", 0.42)
+	# A Continue on the main map: a blank sheet (the world not yet shaded) under the save's fog,
+	# a walked trail from the drop site, and where the run was saved.
+	var r := Rect2(-3072, -3072, 6144, 6144)
+	var ex := ExploredMap.new()
+	for i: int in 14:
+		ex.reveal(Vector3(400.0 + i * 70.0, 0.0, 2300.0 - i * 110.0), 90.0)
+	var img: Image = GameUI.relief_image(null, WorldMap.fog_image(ex, r), r, Vector3(1310.0, 0.0, 870.0))
+	(ui.get(&"_loading_map") as LoadingMap).set_map(ImageTexture.create_from_image(img), {"point": (Vector2(400, 2300) - r.position) / r.size.x})
 	return ui
 
 
