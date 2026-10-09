@@ -1523,6 +1523,21 @@ func road_clearance(poly: PackedVector2Array, skip: int = -1) -> float:
 			continue
 		var d: float = 0.0 if Streets.point_in(q, poly) else Terrain._poly_distance(poly, q)
 		best = minf(best, d - half)
+	# A two-point road (Polyline2 subdivides only three or more control points) has no vertices
+	# along its length: a long straight track passed over a fen pool between them. Its long
+	# segments are measured whole.
+	for sid: int in _seg_grid.query(bb.grow(_max_half + 61.0)):
+		var si: int = sid >> Grid.PART_BITS
+		if si == skip:
+			continue
+		var sline: Polyline2 = roads[si]["line"]
+		var sk: int = sid & Grid.PART_MASK
+		var a: Vector2 = sline.points[sk]
+		var b: Vector2 = sline.points[sk + 1]
+		if a.distance_to(b) <= 12.0:
+			continue
+		var shalf: float = float(roads[si]["width"]) * 0.5 + float(roads[si]["shoulder"])
+		best = minf(best, _seg_poly_distance(a, b, poly) - shalf)
 	return best
 
 
