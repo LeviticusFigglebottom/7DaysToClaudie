@@ -1,0 +1,1141 @@
+{
+ "_doc": "Tier-1 set piece: the Lift 3 crash site (DESIGN \u00a71 and \u00a711), the Remand Salvage Program lift the player came in on, down in the timber short of the drop. The main map stands it about 0.7 km east of the drop site (d6_larch_hollow region.json, back along the approach); random worlds place it near their drop the same way (World's generator). Mostly outdoors: a long swath of snapped trunks and scorched ground (plan rows 20..53) leading to the burned-out forward fuselage, which reuses the Cordon transport wreck's props (data/props/wild4_plane.json): the w4_plane_fuselage_fwd shell wraps kit rooms on exactly the rectangle and outside openings its catalog cuts (tools/assetgen/blender_catalogs/props_wild4_plane.py SHELLS; here cols 12..15, rows 5..18: crew bay rows 5..8 with the flight deck over it on level 1, reached by a ladder through a hatch, the cargo hold rows 9..18 open over the ramp lip), w4_plane_nose in the bank north of it, the tail cone, one wing and the dead number two engine back in the swath. No Hollowed, no traps: the crew are remains (corpse_remains), the loot is early gear (loot tables lift3_*: cloth, a bottle, a light, a little food). Route: the swath -> the engine and the tail -> the debris field (canisters, stores, the wing) -> the torn end and over the lip -> the hold's empty seats (the seat-back) -> the crew bay's salvager seats -> up the ladder: the flight deck, the kneeboard card, the manifest, the captain's kit (the loot room) -> out the blown emergency exit. Alternatives: where the first officer lies, where the one chute came down, whether the hold still smoulders. See docs/POI_AUTHORING.md.",
+ "defs": [
+  {
+   "id": "lift3_crash_site",
+   "name": "The Lift 3 Wreck",
+   "tier": 1,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    30,
+    56
+   ],
+   "origin": [
+    1,
+    1
+   ],
+   "author": "Hollowmere team",
+   "story": "Lift 3 was a Remand Salvage Program aircraft, flown out of Waystation 9 by Capt. N. Whitlock and F/O J. Iredale with one salvager aboard where three were manifested: No. 4466 had died in holding before dawn and No. 4479 had cut off the tether and missed muster. It crossed the firebreak at first light with a rack of supply canisters for the drop. Over the timber the ground moved with no wind, the number two engine rolled back, and Whitlock could not hold height on one. It went in short of the drop through a long swath of trees, lost its tail and a wing, ploughed its nose into a bank and burned. The salvager in seat 1 walked out of the torn end with the tether ticking and went on toward the drop on foot. The crew did not. The wreck burned out before first light, and nobody came for it.",
+   "style": {
+    "exterior": "plaster_grey",
+    "interior": "plaster_grey",
+    "floor": "concrete",
+    "ceiling": "plaster_grey",
+    "floor_height": 0.08,
+    "decay": 0.95,
+    "damaged_walls": 0.0,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.08
+    },
+    "roof": {
+     "type": "none"
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............FFFF............",
+      "............FFFF............",
+      "............FFFF............",
+      "............FFFF............",
+      "............HHHH............",
+      "............HHHH............",
+      "............HHHH............",
+      "............HHHH............",
+      "............HHHH............",
+      "............HHHH............",
+      "............HHHH............",
+      "............HHHH............",
+      "............HHHH............",
+      "............HHHH............",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................"
+     ],
+     "rooms": {
+      "F": {
+       "name": "Crew bay",
+       "type": "storage",
+       "wall": "plaster_grey",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      },
+      "H": {
+       "name": "Cargo hold",
+       "type": "storage",
+       "wall": "plaster_grey",
+       "floor": "concrete",
+       "ceiling": "plaster_grey"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............CCCC............",
+      "............CCCC............",
+      "............CCCC............",
+      "............CCCC............",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................",
+      "............................"
+     ],
+     "rooms": {
+      "C": {
+       "name": "Flight deck",
+       "type": "office",
+       "wall": "plaster_grey",
+       "floor": "linoleum_beige",
+       "ceiling": "plaster_grey"
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "ramp_lip_a",
+     "at": [
+      12,
+      18
+     ],
+     "side": "S",
+     "type": "half"
+    },
+    {
+     "id": "ramp_lip_b",
+     "at": [
+      13,
+      18
+     ],
+     "side": "S",
+     "type": "half"
+    },
+    {
+     "id": "ramp_lip_c",
+     "at": [
+      14,
+      18
+     ],
+     "side": "S",
+     "type": "half"
+    },
+    {
+     "id": "ramp_lip_d",
+     "at": [
+      15,
+      18
+     ],
+     "side": "S",
+     "type": "half"
+    },
+    {
+     "id": "crew_bulkhead",
+     "at": [
+      13,
+      9
+     ],
+     "side": "N",
+     "type": "door2",
+     "state": "missing"
+    },
+    {
+     "id": "emergency_exit",
+     "at": [
+      12,
+      15
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "missing",
+     "model": "door_metal"
+    },
+    {
+     "id": "windscreen_l",
+     "at": [
+      13,
+      5
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "broken",
+     "level": 1,
+     "cue": "none"
+    },
+    {
+     "id": "windscreen_r",
+     "at": [
+      14,
+      5
+     ],
+     "side": "N",
+     "type": "window",
+     "state": "broken",
+     "level": 1,
+     "cue": "none"
+    }
+   ],
+   "ladders": [
+    {
+     "level": 0,
+     "at": [
+      15,
+      8
+     ],
+     "side": "E",
+     "hatch": true
+    }
+   ],
+   "props": [
+    {
+     "id": "fwd_shell",
+     "prop": "w4_plane_fuselage_fwd",
+     "pos": [
+      14.0,
+      12.0
+     ],
+     "y": -0.08,
+     "route_ok": true
+    },
+    {
+     "id": "nose",
+     "prop": "w4_plane_nose",
+     "pos": [
+      14.0,
+      2.95
+     ]
+    },
+    {
+     "id": "tail_cone",
+     "prop": "w4_plane_tail_cone",
+     "pos": [
+      8.6,
+      34.5
+     ],
+     "rot": 200
+    },
+    {
+     "id": "wing",
+     "prop": "w4_plane_wing_section",
+     "pos": [
+      21.0,
+      26.0
+     ],
+     "rot": 25
+    },
+    {
+     "id": "engine_two",
+     "prop": "w4_plane_engine",
+     "pos": [
+      19.5,
+      42.5
+     ],
+     "rot": 35
+    },
+    {
+     "id": "seats_salvagers",
+     "prop": "w4_plane_seat_row",
+     "at": [
+      13,
+      5
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "seats_hold_w",
+     "prop": "w4_plane_seat_row",
+     "at": [
+      12,
+      10
+     ],
+     "against": "W",
+     "offset": [
+      0,
+      0.5
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "hold_stores",
+     "prop": "waystation_supply_stack",
+     "at": [
+      15,
+      11
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.5
+     ],
+     "variant": "worn",
+     "container": "lift3_cargo"
+    },
+    {
+     "id": "seats_hold_e",
+     "prop": "w4_plane_seat_row",
+     "at": [
+      15,
+      15
+     ],
+     "against": "E",
+     "offset": [
+      0,
+      0.5
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "console",
+     "prop": "w4_plane_cockpit_console",
+     "at": [
+      13,
+      5
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0
+     ],
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "seat_pilot",
+     "prop": "w4_plane_pilot_seat",
+     "pos": [
+      13.4,
+      6.45
+     ],
+     "rot": 180,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "seat_copilot",
+     "prop": "w4_plane_pilot_seat",
+     "pos": [
+      14.75,
+      6.45
+     ],
+     "rot": 180,
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "captain_remains",
+     "prop": "corpse_remains",
+     "pos": [
+      12.5,
+      7.45
+     ],
+     "rot": 0,
+     "level": 1,
+     "variant": "worn",
+     "container": "lift3_flight_kit"
+    },
+    {
+     "id": "fo_remains",
+     "prop": "corpse_remains",
+     "pos": [
+      9.6,
+      16.6
+     ],
+     "rot": 15,
+     "variant": "worn",
+     "alt": "fo:exit"
+    },
+    {
+     "id": "fo_remains",
+     "prop": "corpse_remains",
+     "pos": [
+      9.8,
+      3.6
+     ],
+     "rot": 80,
+     "variant": "worn",
+     "alt": "fo:nose"
+    },
+    {
+     "id": "cargo_stack",
+     "prop": "waystation_supply_stack",
+     "pos": [
+      18.2,
+      21.6
+     ],
+     "rot": -25,
+     "variant": "worn",
+     "container": "lift3_cargo"
+    },
+    {
+     "id": "cargo_crate",
+     "prop": "crate_wood",
+     "pos": [
+      9.0,
+      23.0
+     ],
+     "rot": 15,
+     "variant": "worn",
+     "container": "lift3_cargo"
+    },
+    {
+     "id": "canister_a",
+     "prop": "lift3_supply_canister",
+     "pos": [
+      17.0,
+      31.0
+     ],
+     "rot": 10,
+     "y": -0.3
+    },
+    {
+     "id": "canister_b",
+     "prop": "lift3_supply_canister",
+     "pos": [
+      10.6,
+      44.0
+     ],
+     "rot": 50,
+     "y": -0.25
+    },
+    {
+     "id": "canister_c",
+     "prop": "lift3_supply_canister",
+     "pos": [
+      22.5,
+      35.5
+     ],
+     "rot": 120,
+     "y": -0.35
+    },
+    {
+     "id": "chute",
+     "prop": "w4_plane_parachute",
+     "pos": [
+      24.4,
+      45.5
+     ],
+     "rot": 20,
+     "variant": "worn",
+     "alt": "chute:trees"
+    },
+    {
+     "id": "chute",
+     "prop": "w4_plane_parachute",
+     "pos": [
+      8.0,
+      41.0
+     ],
+     "rot": -60,
+     "variant": "worn",
+     "alt": "chute:tail"
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      10.4,
+      20.6
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "debris_pile",
+     "pos": [
+      18.0,
+      17.0
+     ],
+     "rot": -40
+    },
+    {
+     "prop": "paper_scatter",
+     "pos": [
+      16.0,
+      22.6
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "w5_treehouse_fallen_rafters",
+     "pos": [
+      9.4,
+      27.6
+     ],
+     "rot": 70
+    },
+    {
+     "prop": "w5_treehouse_fallen_rafters",
+     "pos": [
+      17.8,
+      14.0
+     ],
+     "rot": 90,
+     "variant": "worn"
+    },
+    {
+     "prop": "w5_treehouse_fallen_rafters",
+     "pos": [
+      18.8,
+      37.2
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      8.2,
+      50.5
+     ],
+     "rot": 0
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      20.6,
+      49.8
+     ],
+     "rot": 140
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      11.6,
+      48.6
+     ],
+     "rot": 260,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      7.4,
+      46.0
+     ],
+     "rot": 80,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      22.2,
+      45.0
+     ],
+     "rot": 200
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      6.8,
+      40.2
+     ],
+     "rot": 320
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      23.6,
+      40.0
+     ],
+     "rot": 30,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      5.6,
+      30.5
+     ],
+     "rot": 110
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      25.4,
+      31.8
+     ],
+     "rot": 250
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      6.0,
+      25.0
+     ],
+     "rot": 170,
+     "variant": "worn"
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      4.8,
+      19.0
+     ],
+     "rot": 60
+    },
+    {
+     "prop": "w4_plane_snapped_trunk",
+     "pos": [
+      22.6,
+      19.6
+     ],
+     "rot": 300,
+     "variant": "worn"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      4.2,
+      36.0
+     ],
+     "rot": 40,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      26.0,
+      21.6
+     ],
+     "rot": 150,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      3.8,
+      12.0
+     ],
+     "rot": 220,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      20.6,
+      8.0
+     ],
+     "rot": 300,
+     "variant": "destroyed"
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      2.0,
+      48.0
+     ],
+     "rot": 10
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      26.0,
+      50.6
+     ],
+     "rot": 95
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      1.6,
+      28.0
+     ],
+     "rot": 200
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      26.6,
+      38.0
+     ],
+     "rot": 60
+    },
+    {
+     "prop": "out_tree_birch",
+     "pos": [
+      2.4,
+      5.0
+     ],
+     "rot": 12
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      25.6,
+      4.0
+     ],
+     "rot": 300
+    },
+    {
+     "prop": "out_tree_fir",
+     "pos": [
+      6.6,
+      1.4
+     ],
+     "rot": 80
+    },
+    {
+     "prop": "out_tree_larch",
+     "pos": [
+      21.4,
+      1.2
+     ],
+     "rot": 160
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      3.0,
+      42.0
+     ],
+     "rot": 30
+    },
+    {
+     "prop": "out_shrub",
+     "pos": [
+      25.0,
+      13.0
+     ],
+     "rot": 110
+    }
+   ],
+   "sleepers": [],
+   "pickups": [],
+   "notes": [
+    {
+     "note": "lift3_kneeboard",
+     "pos": [
+      13.6,
+      5.45
+     ],
+     "y": 1.02,
+     "level": 1
+    },
+    {
+     "note": "lift3_manifest",
+     "pos": [
+      14.1,
+      7.75
+     ],
+     "y": 0.02,
+     "level": 1
+    },
+    {
+     "note": "lift3_seatback",
+     "pos": [
+      12.95,
+      12.6
+     ],
+     "y": 0.02
+    }
+   ],
+   "traps": [],
+   "triggers": [],
+   "lights": [
+    {
+     "pos": [
+      14.4,
+      14.2
+     ],
+     "height": 0.25,
+     "color": "#ff7a3a",
+     "energy": 0.35,
+     "range": 3.0,
+     "flicker": 0.6
+    }
+   ],
+   "decals": [
+    {
+     "decal": "scorch",
+     "at": [
+      14,
+      45
+     ],
+     "side": "floor",
+     "size": [
+      3.5,
+      3.0
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      12,
+      37
+     ],
+     "side": "floor",
+     "size": [
+      3.0,
+      3.0
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      15,
+      30
+     ],
+     "side": "floor",
+     "size": [
+      3.5,
+      3.0
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      13,
+      22
+     ],
+     "side": "floor",
+     "size": [
+      4.0,
+      3.5
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      19,
+      42
+     ],
+     "side": "floor",
+     "size": [
+      3.0,
+      3.0
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      10,
+      32
+     ],
+     "side": "floor",
+     "size": [
+      3.0,
+      3.0
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      13,
+      13
+     ],
+     "side": "floor",
+     "size": [
+      2.5,
+      2.5
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      14,
+      17
+     ],
+     "side": "floor",
+     "size": [
+      2.5,
+      2.0
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      13,
+      6
+     ],
+     "side": "floor",
+     "size": [
+      2.0,
+      2.0
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      12,
+      12
+     ],
+     "side": "W",
+     "height": 1.4,
+     "size": [
+      1.6,
+      1.2
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      15,
+      13
+     ],
+     "side": "E",
+     "height": 1.5,
+     "size": [
+      1.8,
+      1.4
+     ]
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      14,
+      7
+     ],
+     "side": "floor",
+     "size": [
+      2.0,
+      1.6
+     ],
+     "level": 1
+    },
+    {
+     "decal": "scorch",
+     "at": [
+      12,
+      6
+     ],
+     "side": "W",
+     "height": 1.3,
+     "size": [
+      1.4,
+      1.2
+     ],
+     "level": 1
+    },
+    {
+     "decal": "footprints_mud",
+     "at": [
+      13,
+      19
+     ],
+     "side": "floor",
+     "size": [
+      1.0,
+      1.6
+     ]
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      14,
+      52
+     ],
+     "label": "A swath of timber snapped off at head height runs on ahead, and a smell of burned fuel: something came down through here low and fast"
+    },
+    {
+     "at": [
+      14,
+      40
+     ],
+     "label": "Scorched ground, a tail fin on its side in the swath, an engine nosed into the dirt with its blades bent back, a canister standing in the ground where it fell"
+    },
+    {
+     "at": [
+      13,
+      24
+     ],
+     "label": "The debris field: Program stores burst open, unopened drop canisters, a torn wing in the brush, and the burned-out hull with its nose in the bank"
+    },
+    {
+     "at": [
+      13,
+      20
+     ],
+     "label": "The torn end of the fuselage, black with soot: the cargo ramp gone, its lip at chest height, boot prints in the ash going away"
+    },
+    {
+     "at": [
+      13,
+      16
+     ],
+     "level": 0,
+     "label": "Over the lip into the burned-out hold: jump seats with their harnesses hanging open, the drop rig's stores charred on their pallet"
+    },
+    {
+     "at": [
+      13,
+      8
+     ],
+     "level": 0,
+     "label": "Through the bulkhead into the crew bay: four seats under SEAT 1-4, one harness unbuckled; a ladder up through the hatch"
+    },
+    {
+     "at": [
+      13,
+      7
+     ],
+     "level": 1,
+     "label": "Up onto the flight deck: the windscreen gone, the captain where the fire left him, a kneeboard card still on the panel"
+    },
+    {
+     "at": [
+      13,
+      14
+     ],
+     "level": 0,
+     "label": "Back down and aft to the emergency exit, its hatch blown out"
+    },
+    {
+     "at": [
+      10,
+      14
+     ],
+     "label": "Out through the exit into the litter beside the hull"
+    }
+   ],
+   "loot_room": {
+    "room": "C",
+    "level": 1
+   },
+   "shortcuts": [],
+   "alternatives": [
+    {
+     "id": "fo",
+     "label": "Where the first officer lies",
+     "options": [
+      {
+       "id": "exit",
+       "weight": 2,
+       "label": "Outside the emergency exit: he got out, and no further"
+      },
+      {
+       "id": "nose",
+       "label": "Under the windscreen, thrown clear"
+      }
+     ]
+    },
+    {
+     "id": "chute",
+     "label": "Where the one chute that opened came down",
+     "options": [
+      {
+       "id": "trees",
+       "weight": 2,
+       "label": "In the trees beside the swath"
+      },
+      {
+       "id": "tail",
+       "label": "Over the tail fin"
+      }
+     ]
+    },
+    {
+     "id": "embers",
+     "label": "Whether the hold still smoulders",
+     "options": [
+      {
+       "id": "smoulder",
+       "weight": 1,
+       "label": "Embers under the stores"
+      },
+      {
+       "id": "cold",
+       "weight": 2,
+       "label": "Burned out cold",
+       "style": {
+        "lights_on": 0.0
+       }
+      }
+     ]
+    }
+   ],
+   "budget": {
+    "props": 120
+   }
+  }
+ ]
+}

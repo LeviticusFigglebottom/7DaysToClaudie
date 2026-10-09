@@ -1,0 +1,8 @@
+{
+ "_doc": "Readable notes of the Lift 3 crash site (lift3_crash_site). Note items are note_<note id> (notes/lift3.json), on the generic note models.",
+ "defs": [
+  {"id": "note_lift3_manifest", "name": "Lift Manifest, Lift 3", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "lift3_manifest", "model": "items/note_pharmacy_ledger"},
+  {"id": "note_lift3_kneeboard", "name": "Kneeboard Card, Lift 3", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "lift3_kneeboard", "model": "items/farm_note_page"},
+  {"id": "note_lift3_seatback", "name": "Seat-Back, Scratched", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "lift3_seatback", "model": "items/farm_note_page"}
+ ]
+}

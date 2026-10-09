@@ -36,7 +36,8 @@ parachute in at drop sites; the Program's quartermaster trades and issues contra
 
 Your own drop went wrong. Lift 3 crossed the firebreak at first light with you aboard, lost an
 engine over shaking timber and went in short of Larch Hollow. You walked the last mile to the drop
-site with the tether ticking. The new-game intro (ADR-0064) shows only what a convict on that
+site with the tether ticking. The wreck is there to be found (`lift3_crash_site`, §11), back along
+the approach. The new-game intro (ADR-0064) shows only what a convict on that
 flight would know: the Program's deal, the Cordon, the guards' rumours and the drop briefing. Why
 the valley went quiet (the Corvane bore) is never told there; the player pieces it together from
 notes, signs and tethers in the world (docs/LORE_TRAIL.md).
@@ -329,6 +330,7 @@ the loot. Below-ground rooms are real cellars cut out of the terrain (TD-026, AD
 | POI | Tier | Concept | Route sketch |
 |---|---|---|---|
 | Cedar Ridge Lookout | 1 | Fire lookout tower on the summit | Trail → stair house window → held group at the locked gate → woodshed for the spare key (bear trap) → ladder into the cab (Marnie rises) → bolted back door |
+| The Lift 3 Wreck | 1 | The Program lift the player came in on (§1), down in the timber ~0.7 km east of the drop site, back along its approach; burned out, the crew dead, no Hollowed (`lift3_crash_site`, the Cordon wreck's props) | A long swath of snapped trunks and scorched ground → the dead engine and the tail fin → the debris field: burst Program stores, canisters that never dropped, a torn wing → over the torn end's lip into the burned hold: the empty salvager seats (a scratched seat-back) → the crew bay (SEAT 1-4) → ladder to the flight deck: the captain, his kneeboard card, the manifest, the crew kit → out the blown emergency exit, where the first officer got to |
 | The Trapper's Cabin | 1 | One-room cabin, boarded from outside with a warning | Bear trap at the corner → clawed hole under the lean-to → held trio (journal, bolt or cache wakes them) → smokehouse key (second trap) → cache |
 | Tamsin Logging Camp | 2 | Camp house and office at the end of the logging road | Kitchen door → office keys wake the cookhouse → padlocked drying room (chime) → creaky bunkroom aisle → foreman's room (guardian) → bolted side door |
 | Larch Hollow Sawmill | 4 | A three-level mill on the pond: the valley's hardest building | Barred doors → log-haul stairs → deck boards wake the saw floor → offices for the keys → lunchroom ambush → one-way dust chute → basement ambush → payroll office behind a shotgun (husk guardian); a weak floor punishes greed |

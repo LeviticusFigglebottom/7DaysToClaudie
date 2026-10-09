@@ -1,0 +1,41 @@
+{
+ "_doc": "Loot tables of the Lift 3 crash site: the burst Program cargo, the canisters that never dropped and the crew's survival kit on the flight deck. Early gear only: cloth, a bottle, a light (the lighter stands in for a flare until the game has one: TD-377), a little food.",
+ "defs": [
+  {
+   "id": "lift3_cargo",
+   "rolls": [1, 2],
+   "empty_chance": 0.15,
+   "entries": [
+    {"item": "cloth", "weight": 5, "count": [1, 3]},
+    {"item": "ration_bar", "weight": 4},
+    {"item": "canned_beans", "weight": 3},
+    {"item": "water_bottle_empty", "weight": 3},
+    {"item": "cordage", "weight": 2, "count": [1, 2]},
+    {"item": "duct_tape", "weight": 1}
+   ]
+  },
+  {
+   "id": "lift3_canister",
+   "rolls": [1, 2],
+   "empty_chance": 0.1,
+   "entries": [
+    {"item": "ration_bar", "weight": 4},
+    {"item": "water_bottle_clean", "weight": 4},
+    {"item": "cloth_bandage", "weight": 3, "count": [1, 2]},
+    {"item": "cloth", "weight": 2, "count": [1, 2]}
+   ]
+  },
+  {
+   "id": "lift3_flight_kit",
+   "rolls": [1, 2],
+   "empty_chance": 0.0,
+   "guaranteed": [{"item": "lighter"}],
+   "entries": [
+    {"item": "water_bottle_clean", "weight": 4},
+    {"item": "ration_bar", "weight": 3},
+    {"item": "cloth_bandage", "weight": 3},
+    {"item": "flashlight", "weight": 1}
+   ]
+  }
+ ]
+}
