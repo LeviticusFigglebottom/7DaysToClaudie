@@ -263,7 +263,7 @@ func open(p_mode: StringName = &"inventory", p_station: StringName = &"", p_cont
 	var ui: Node = get_parent()
 	if ui != null and ui.has_method(&"push_modal"):
 		ui.call(&"push_modal", &"salvage_roll")
-	Audio.play_2d(&"ui/roll_open", -6.0)
+	Audio.play_2d(&"ui/roll_open", UiStyle.level("roll_open", -6.0))
 
 
 func close() -> void:
@@ -273,7 +273,7 @@ func close() -> void:
 	var ui: Node = get_parent()
 	if ui != null and ui.has_method(&"pop_modal"):
 		ui.call(&"pop_modal", &"salvage_roll")
-	Audio.play_2d(&"ui/roll_close", -8.0)
+	Audio.play_2d(&"ui/roll_close", UiStyle.level("roll_close", -8.0))
 
 
 func _close_silently() -> void:
@@ -510,7 +510,10 @@ func _layout_overlay() -> void:
 
 ## The item card sits beside the cursor, flipped to stay on screen.
 func _place_card() -> void:
+	# Beside the cursor; with the pad, beside the item the pad cursor is on.
 	var m: Vector2 = get_local_mouse_position()
+	if _pad_index >= 0 and _hover.has("center"):
+		m = _screen(_hover["center"])
 	var cs: Vector2 = _card.get_combined_minimum_size()
 	var pos: Vector2 = m + Vector2(28, 12)
 	if pos.x + cs.x > size.x - 12.0:
@@ -535,7 +538,105 @@ static func _in_grid(mp: Vector3, origin: Vector3, cols: int) -> bool:
 		and mp.z >= origin.z and mp.z <= origin.z + ROWS * SLOT
 
 
+## Gamepad: the D-pad (or left stick) moves a cursor over the cloth's items (and a container's,
+## to the right of them); A uses or moves the item, X drops one, Y puts it on the first free
+## toolbelt slot, RB moves to the recipe sheet, LB back to the cloth. -1 while the mouse leads.
+var _pad_index: int = -1
+
+
+## The item the pad cursor is on after a move (pure: index, columns of the cloth, of the flap,
+## counts): left/right walk a row and cross from the cloth to the flap, up/down move a row.
+static func pad_step(index: int, dir: Vector2i, cloth_n: int, flap_n: int, cols: int, flap_cols: int) -> int:
+	var total: int = cloth_n + flap_n
+	if total == 0:
+		return -1
+	if index < 0:
+		return 0
+	var on_flap: bool = index >= cloth_n
+	var i: int = index - cloth_n if on_flap else index
+	var c: int = flap_cols if on_flap else cols
+	var n: int = flap_n if on_flap else cloth_n
+	var col: int = i % c
+	var row: int = i / c
+	if dir.x != 0:
+		col += dir.x
+		if col >= c and not on_flap and flap_n > 0:
+			return cloth_n + mini(row * flap_cols, flap_n - 1)
+		if col < 0 and on_flap and cloth_n > 0:
+			return mini(row * cols + cols - 1, cloth_n - 1)
+		col = clampi(col, 0, c - 1)
+	row += dir.y
+	var j: int = clampi(row * c + col, 0, n - 1)
+	return (cloth_n + j) if on_flap else j
+
+
+func _input(event: InputEvent) -> void:
+	if not _open:
+		return
+	if event is InputEventMouseMotion:
+		_pad_index = -1
+		return
+	if not UiStyle.is_pad_event(event):
+		return
+	var focus: Control = get_viewport().gui_get_focus_owner()
+	var on_sheet: bool = focus != null and _sheet.is_ancestor_of(focus)
+	var jb := event as InputEventJoypadButton
+	if jb != null and jb.button_index == JOY_BUTTON_RIGHT_SHOULDER and _sheet.visible:
+		UiStyle.focus_first(_sheet)
+		get_viewport().set_input_as_handled()
+		return
+	if jb != null and jb.button_index == JOY_BUTTON_LEFT_SHOULDER and on_sheet:
+		focus.release_focus()
+		get_viewport().set_input_as_handled()
+		return
+	if on_sheet or (focus != null and is_ancestor_of(focus)):
+		return
+	var dir := Vector2i.ZERO
+	if event.is_action_pressed(&"ui_left"):
+		dir = Vector2i(-1, 0)
+	elif event.is_action_pressed(&"ui_right"):
+		dir = Vector2i(1, 0)
+	elif event.is_action_pressed(&"ui_up"):
+		dir = Vector2i(0, -1)
+	elif event.is_action_pressed(&"ui_down"):
+		dir = Vector2i(0, 1)
+	if dir != Vector2i.ZERO:
+		_pad_index = pad_step(_pad_index, dir, _slots.size(), _flap_slots.size(), COLS, 4)
+		get_viewport().set_input_as_handled()
+		return
+	if jb == null or not _hover.has("stack"):
+		return
+	var p: PlayerState = _player()
+	var s: ItemStack = _hover["stack"]
+	var flap: bool = bool(_hover["flap"])
+	match jb.button_index:
+		JOY_BUTTON_A:
+			_primary(p, s, flap)
+		JOY_BUTTON_X:
+			if not flap:
+				Game.execute(&"inventory.drop", {"item": String(s.item_id), "count": 1, "index": p.inventory.stacks.find(s)})
+		JOY_BUTTON_Y:
+			if not flap:
+				var slot: int = maxi(0, p.toolbelt.find(&""))
+				Game.execute(&"inventory.equip", {"item": String(s.item_id), "slot": slot})
+				_info.text = "Toolbelt %d: %s" % [slot + 1, s.def().display_name]
+		_:
+			return
+	_dirty = true
+	get_viewport().set_input_as_handled()
+
+
 func _update_hover() -> void:
+	if _pad_index >= 0:
+		var all: Array = _slots + _flap_slots
+		if all.is_empty():
+			_pad_index = -1
+		else:
+			_pad_index = mini(_pad_index, all.size() - 1)
+			var e: Dictionary = all[_pad_index]
+			e["flap"] = _pad_index >= _slots.size()
+			_set_hover(e)
+			return
 	var mp: Vector3 = _mat_point(get_local_mouse_position())
 	var found: Dictionary = {}
 	for list: Array in [_slots, _flap_slots]:
@@ -544,6 +645,11 @@ func _update_hover() -> void:
 			if absf(mp.x - c.x) < SLOT * 0.5 and absf(mp.z - c.z) < SLOT * 0.5:
 				found = e
 				found["flap"] = list == _flap_slots
+	_set_hover(found)
+
+
+## Lifts the item under the cursor (mouse or pad) and shows its card; puts the last one down.
+func _set_hover(found: Dictionary) -> void:
 	if found.get("holder") != _hover.get("holder"):
 		if _hover.has("holder") and is_instance_valid(_hover["holder"]):
 			(_hover["holder"] as Node3D).scale = Vector3.ONE

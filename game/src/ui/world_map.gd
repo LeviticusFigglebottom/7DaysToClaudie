@@ -328,8 +328,28 @@ func _process(delta: float) -> void:
 				_show(_cache_img)
 				_status.text = "Wheel: zoom   ·   drag: pan   ·   M / Esc: close"
 	if _open:
+		_pad_steer(delta)
 		_layout()
 		_markers.queue_redraw()
+
+
+## Gamepad: the left stick pans, the triggers zoom (right in, left out).
+func _pad_steer(delta: float) -> void:
+	var pads: Array[int] = Input.get_connected_joypads()
+	if pads.is_empty():
+		return
+	var j: int = pads[0]
+	var stick := Vector2(Input.get_joy_axis(j, JOY_AXIS_LEFT_X), Input.get_joy_axis(j, JOY_AXIS_LEFT_Y))
+	if stick.length() > 0.2:
+		_pan -= stick * 600.0 * delta
+	var zoom_in: float = Input.get_joy_axis(j, JOY_AXIS_TRIGGER_RIGHT)
+	var zoom_out: float = Input.get_joy_axis(j, JOY_AXIS_TRIGGER_LEFT)
+	if zoom_in > 0.2 or zoom_out > 0.2:
+		var old: float = _zoom
+		_zoom = clampf(_zoom * (1.0 + (zoom_in - zoom_out) * 1.5 * delta), 1.0, 8.0)
+		_pan *= _zoom / old
+		if _zoom == 1.0:
+			_pan = Vector2.ZERO
 
 
 ## Once a second: uncover the map round the player (and round where they wake, the first time).

@@ -1,8 +1,8 @@
 extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
-const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "new_game", "manual",
-	"loading", "pause", "intro_0", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7"]
+const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "options_graphics", "options_controls", "new_game", "manual",
+	"loading", "pause", "trader", "death", "hud", "vignette", "note_handwritten", "note_scrawl", "note_typed", "note_printed", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
 var _only: PackedStringArray = []
@@ -26,7 +26,9 @@ func _run() -> void:
 		if not _only.is_empty() and not _only.has(shot):
 			continue
 		var node: Node = null
-		if shot.begins_with("intro_"):
+		if shot.begins_with("note_"):
+			node = await _shot_note(shot.substr(5))
+		elif shot.begins_with("intro_"):
 			node = await _shot_intro(int(shot.get_slice("_", 1)))
 		else:
 			node = await call(&"_shot_" + shot)
@@ -167,3 +169,116 @@ func _shot_pause() -> Node:
 	ui.hide_loading()
 	(ui.get(&"_pause") as Control).visible = true
 	return ui
+
+
+## A stand-in trader manager: one post with the Waystation 9 def, its stock, no board offers.
+class FakeTraders:
+	extends Node
+	var posts: Dictionary = {}
+
+	func stock_of(_tid: StringName, _post: String) -> Dictionary:
+		# Three of each of a few early items, as a restocked counter shows them.
+		var out: Dictionary = {}
+		for k: String in ["canned_beans", "cloth_bandage", "water_bottle", "torch", "stone_axe", "cordage"]:
+			if Content.item(StringName(k)) != null:
+				out[StringName(k)] = {"count": 3, "rep_tier": 2 if k == "stone_axe" else 0}
+		return out
+
+	func board_offers(_p: PlayerState, _td: TraderDef) -> Array:
+		return []
+
+
+func _shot_trader() -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var fake := FakeTraders.new()
+	fake.posts = {"wp9": {"def": Content.get_def(&"trader", &"waystation_9")}}
+	layer.add_child(fake)
+	var t := TraderScreen.new()
+	t.manager = fake
+	layer.add_child(t)
+	await _settle(1)
+	t.open("wp9", "shop")
+	return layer
+
+
+func _shot_death() -> Node:
+	var ui := GameUI.new()
+	add_child(ui)
+	await _settle(1)
+	ui.hide_loading()
+	ui.show_death("zombie", "Your pack lies where you fell.")
+	await get_tree().create_timer(2.3).timeout
+	return ui
+
+
+## The HUD with a toolbelt and a few messages over a mid-grey field (no world).
+func _shot_hud() -> Node:
+	var bg := ColorRect.new()
+	bg.color = Color(0.32, 0.36, 0.3)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var layer: CanvasLayer = _ui_layer()
+	layer.layer = 0
+	layer.add_child(bg)
+	var ui := GameUI.new()
+	add_child(ui)
+	await _settle(1)
+	ui.hide_loading()
+	var p: PlayerState = Game.local_player()
+	p.toolbelt[0] = &"stone_axe"
+	p.toolbelt[1] = &"torch"
+	p.equipped_slot = 0
+	ui.message("Journal: Make a stone axe ✓   Next: Fell a tree ([B])", &"level")
+	ui.message("Picked up 3 Stick.", &"info")
+	if ui.has_method(&"show_belt"):
+		ui.call(&"show_belt")
+	await _settle(4)
+	bg.set_meta(&"ui", ui)
+	return layer
+
+
+## The HUD's hurt and cold edges at once (the vignette shader), over a mid-grey field.
+func _shot_vignette() -> Node:
+	var layer: Node = await _shot_hud()
+	var ui: GameUI = (layer.get_child(0) as Node).get_meta(&"ui")
+	var vm: ShaderMaterial = (ui.get(&"_vignette") as CanvasItem).material
+	vm.set_shader_parameter("damage", 0.6)
+	vm.set_shader_parameter("cold", 0.7)
+	(ui.get(&"_hum_label") as Label).text = "THE HUM IN 05:42"
+	await _settle(3)
+	return layer
+
+
+func _shot_options_graphics() -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var p := OptionsPanel.new()
+	p.open_tab = "Graphics"
+	layer.add_child(p)
+	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	await _settle(2)
+	p.position = (get_viewport().get_visible_rect().size - p.size) * 0.5
+	return layer
+
+
+## A real note of each style in the reader.
+func _shot_note(style: String) -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var r := NoteReader.new()
+	layer.add_child(r)
+	await _settle(1)
+	var pick: NoteDef = null
+	for n: NoteDef in Content.all(&"note"):
+		if n.style == style and (pick == null or n.body.length() > pick.body.length()):
+			pick = n
+	r.show_note(pick, {"where": "Pell's Crossing Post Office", "day": 3})
+	return layer
+
+
+func _shot_options_controls() -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var p := OptionsPanel.new()
+	p.open_tab = "Controls"
+	layer.add_child(p)
+	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	await _settle(2)
+	p.position = (get_viewport().get_visible_rect().size - p.size) * 0.5
+	return layer

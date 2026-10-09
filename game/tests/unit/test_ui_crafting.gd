@@ -164,3 +164,30 @@ func test_uses_filter() -> void:
 			n += 1
 			assert_true((r["recipe"] as RecipeDef).ingredients.has(&"cordage"))
 	assert_gt(n, 1, "the axe, the spear, the club... use cordage")
+
+
+func test_ready_and_missing_never_rely_on_colour_alone() -> void:
+	# Colour-blind safe: every row says it in words and a mark, besides red and green.
+	var inv := Inventory.new()
+	inv.add_item(&"plant_fiber", 3)
+	for r: Dictionary in CraftSheet.rows(inv, &"", _knows_default):
+		var text: String = CraftSheet.detail_bbcode(r)
+		if bool(r["ok"]):
+			assert_eq(str(r["status"]), "ready")
+			assert_false(text.contains("×"), "a ready recipe has no missing mark")
+		else:
+			assert_string_starts_with(str(r["status"]), "need ")
+			assert_true(text.contains("×") and text.contains("more"), "missing ingredients say so")
+	assert_gt(_contrast(UiStyle.PAPER, UiStyle.INK_OK), 4.5, "the 'have' ink is legible too")
+
+
+func test_pad_cursor_walks_the_cloth_and_the_flap() -> void:
+	# 8 items on a 6-wide cloth (rows 0-1), 3 in a container's 4-wide flap.
+	assert_eq(SalvageRoll.pad_step(-1, Vector2i(1, 0), 8, 3, 6, 4), 0, "the first press lands on the first item")
+	assert_eq(SalvageRoll.pad_step(0, Vector2i(1, 0), 8, 3, 6, 4), 1)
+	assert_eq(SalvageRoll.pad_step(1, Vector2i(0, 1), 8, 3, 6, 4), 7, "down a row")
+	assert_eq(SalvageRoll.pad_step(7, Vector2i(0, 1), 8, 3, 6, 4), 7, "no row below: stays")
+	assert_eq(SalvageRoll.pad_step(5, Vector2i(1, 0), 8, 3, 6, 4), 8, "off the cloth's right edge into the flap")
+	assert_eq(SalvageRoll.pad_step(8, Vector2i(-1, 0), 8, 3, 6, 4), 5, "and back")
+	assert_eq(SalvageRoll.pad_step(5, Vector2i(1, 0), 8, 0, 6, 4), 5, "no flap: the edge holds")
+	assert_eq(SalvageRoll.pad_step(0, Vector2i(1, 0), 0, 0, 6, 4), -1)

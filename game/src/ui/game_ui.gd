@@ -28,11 +28,14 @@ var _wire_t: float = 0.0
 var _damage_flash: float = 0.0
 var roll: SalvageRoll
 var world_map: WorldMap
+var reader: NoteReader
 var manual: FieldManual
 var tether: Tether
 var _final_death: bool = false
 var _overlay: ColorRect
 var _overlay_label: Label
+var _overlay_head: Label
+var _overlay_note: Label
 var _death_button: Button
 ## Highest level reached since the last announcement (several can arrive in one award).
 var _level_pending: int = 0
@@ -61,6 +64,14 @@ func _ready() -> void:
 	world_map = WorldMap.new()
 	world_map.name = "WorldMap"
 	add_child(world_map)
+	reader = NoteReader.new()
+	reader.name = "NoteReader"
+	add_child(reader)
+	# Notes (the lore trail): where each was found, and the reader straight from picking one up.
+	if not Game.has_command(&"notes.mark_found"):
+		Game.register_command(&"notes.mark_found", _cmd_mark_found)
+	Events.note_found.connect(_on_note_found)
+	Events.item_picked_up.connect(_on_item_picked_up)
 	_build_overlay()
 	_build_pause()
 	_maybe_start_intro()
@@ -193,8 +204,9 @@ func _on_tutorial_distress(_companion_id: StringName, position: Vector3) -> void
 	if d.is_empty():
 		return
 	var text: String = str(d.get("text", ""))
-	Audio.play_2d(&"ui/tether_alarm", -4.0)
-	message("Tether: a distress call crackles in, %s. %s" % [FieldManual.distress_bearing(position), text], &"level")
+	Audio.play_2d(&"ui/tether_alarm", UiStyle.level("tether_alarm", -4.0))
+	var cap: String = "[radio crackle] " if Settings.sound_captions else ""
+	message("%sTether: a distress call crackles in, %s. %s" % [cap, FieldManual.distress_bearing(position), text], &"level")
 
 
 # --- The intro (ADR-0064) -------------------------------------------------------------------------
@@ -204,7 +216,8 @@ func _maybe_start_intro() -> void:
 	var opts: Dictionary = Game.pending_options
 	if not bool(opts.get("is_new_game", false)) or bool(opts.get("skip_intro", false)):
 		return
-	if DisplayServer.get_name() == "headless":
+	# Headless runs skip it, unless a probe asks (intro_load_probe measures its frames).
+	if DisplayServer.get_name() == "headless" and not bool(opts.get("force_intro", false)):
 		return
 	intro = IntroPlayer.new()
 	intro.name = "Intro"
@@ -322,7 +335,9 @@ func _build_hud() -> void:
 	# Above the vitals bars (bottom left at -46) so long belts never run into them.
 	_belt.position = Vector2(-450, -96)
 	_belt.size = Vector2(900, 30)
-	_belt.add_theme_font_size_override(&"normal_font_size", 15)
+	_belt.add_theme_font_size_override(&"normal_font_size", 17)
+	_belt.add_theme_font_size_override(&"bold_font_size", 17)
+	_belt.add_theme_font_override(&"bold_font", UiStyle.bold_font())
 	_belt.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.85))
 	_belt.add_theme_constant_override(&"outline_size", 4)
 	_belt.modulate.a = 0.0
@@ -360,7 +375,12 @@ func _build_hud() -> void:
 	_hum_label.position = Vector2(-360, 40)
 	_hum_label.size = Vector2(320, 30)
 	_hum_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_hum_label.add_theme_color_override(&"font_color", Color(0.75, 0.85, 0.75, 0.85))
+	# The Hum in the typewriter face and the rust accent (ADR-0063), outlined for daylight.
+	_hum_label.add_theme_font_override(&"font", UiStyle.heading_font())
+	_hum_label.add_theme_font_size_override(&"font_size", 26)
+	_hum_label.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
+	_hum_label.add_theme_color_override(&"font_outline_color", Color(0.03, 0.03, 0.02, 0.9))
+	_hum_label.add_theme_constant_override(&"outline_size", 6)
 	_hud.add_child(_hum_label)
 
 
@@ -371,14 +391,31 @@ shader_type canvas_item;
 uniform float damage = 0.0;
 uniform float cold = 0.0;
 uniform float low_health = 0.0;
+// Value noise: the edges are ragged (blood seeping in, frost creeping in), never a clean ring.
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
 void fragment() {
 	vec2 d = UV - 0.5;
 	float r = length(d * vec2(1.6, 1.0));
-	float edge = smoothstep(0.35, 0.95, r);
-	vec3 col = mix(vec3(0.0), vec3(0.45, 0.02, 0.02), clamp(damage + low_health * (0.6 + 0.4 * sin(TIME * 3.0)), 0.0, 1.0));
-	col = mix(col, vec3(0.75, 0.85, 0.95), cold);
-	float a = edge * clamp(damage * 0.9 + low_health * 0.6 + cold * 0.7, 0.0, 0.85);
-	COLOR = vec4(col, a);
+	// Square noise cells whatever the screen's shape.
+	vec2 q = UV * vec2(SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x, 1.0);
+	float n = vnoise(q * 9.0) * 0.6 + vnoise(q * 31.0) * 0.4;
+	// Hurt: dark red seeping from the edge, the pulse quickening as health falls.
+	float hurt = clamp(damage + low_health * (0.6 + 0.4 * sin(TIME * (3.0 + 3.0 * low_health))), 0.0, 1.0);
+	float hurt_edge = smoothstep(0.42 - 0.12 * n, 0.98, r);
+	// Cold: frost crystals creeping in, pale blue-white, sharper grain.
+	float frost_n = vnoise(q * 70.0 + vec2(3.1, 7.7)) * 0.5 + vnoise(q * 160.0) * 0.5;
+	float frost_edge = smoothstep(0.55 - 0.35 * cold - 0.1 * n, 0.9, r) * (0.65 + 0.35 * frost_n);
+	vec3 col = vec3(0.4, 0.02, 0.02) * (0.8 + 0.2 * n);
+	float a = hurt_edge * clamp(damage * 0.9 + low_health * 0.6, 0.0, 0.85);
+	float fa = frost_edge * cold * 0.8;
+	col = mix(col, vec3(0.82, 0.9, 0.97), fa / max(a + fa, 0.001));
+	COLOR = vec4(col, clamp(a + fa, 0.0, 0.88));
 }
 """
 	return s
@@ -425,8 +462,10 @@ func _process(delta: float) -> void:
 	var hrs: float = clock.hours_until_horde()
 	if clock.is_horde_active():
 		_hum_label.text = "THE HUM"
+		_hum_label.modulate.a = 0.7 + 0.3 * sin(Time.get_ticks_msec() * 0.004)
 	elif hrs < 24.0:
-		_hum_label.text = "Hum in %02d:%02d" % [int(hrs), int(fmod(hrs, 1.0) * 60.0)]
+		_hum_label.text = "THE HUM IN %02d:%02d" % [int(hrs), int(fmod(hrs, 1.0) * 60.0)]
+		_hum_label.modulate.a = 1.0
 	else:
 		_hum_label.text = ""
 	_crosshair.visible = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
@@ -440,11 +479,15 @@ func _update_belt(ps: PlayerState, delta: float) -> void:
 		var name_: String = d.display_name if d != null else "—"
 		if d != null and ps.inventory.count_of(id) > 1:
 			name_ += " ×%d" % ps.inventory.count_of(id)
+		# In hand: the kit's rust accent and bold; the rest the kit's light type, never so dim it
+		# reads as empty against bright ground (the outline carries it).
 		if i == ps.equipped_slot and d != null:
-			parts.append("[color=#f2e6c4][b]%d %s[/b][/color]" % [i + 1, name_])
+			parts.append("[color=%s][b]%d %s[/b][/color]" % [UiStyle.hex(UiStyle.RUST_BRIGHT), i + 1, name_])
+		elif d != null:
+			parts.append("[color=%s]%d %s[/color]" % [UiStyle.hex(UiStyle.KIT_TEXT), i + 1, name_])
 		else:
-			parts.append("[color=#9a9282]%d %s[/color]" % [i + 1, name_])
-	var key: String = "   ".join(parts)
+			parts.append("[color=%s]%d —[/color]" % [UiStyle.hex(UiStyle.KIT_TEXT_DIM), i + 1])
+	var key: String = "    ·    ".join(parts)
 	if key != _belt_key:
 		_belt_key = key
 		_belt.text = "[center]%s[/center]" % key
@@ -522,9 +565,12 @@ func message(text: String, kind: StringName = &"info") -> void:
 	var l := Label.new()
 	l.text = text
 	l.set_meta(&"text", text)
-	l.add_theme_color_override(&"font_color", {&"info": Color(0.85, 0.85, 0.8), &"warning": Color(0.95, 0.8, 0.45), &"danger": Color(0.95, 0.35, 0.3), &"error": Color(1, 0.4, 0.4), &"level": Color(0.62, 0.95, 0.66)}.get(kind, Color.WHITE))
-	l.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
-	l.add_theme_constant_override(&"outline_size", 4)
+	# The kit's palette (ADR-0063): light type, amber warnings, red danger, rust for progress (a
+	# level, a journal step); a heavy outline so a line reads over snow or a bright sky.
+	l.add_theme_color_override(&"font_color", {&"info": UiStyle.KIT_TEXT, &"warning": Color(0.95, 0.8, 0.45), &"danger": Color(0.95, 0.35, 0.3), &"error": Color(1, 0.4, 0.4), &"level": UiStyle.RUST_BRIGHT}.get(kind, UiStyle.KIT_TEXT))
+	l.add_theme_color_override(&"font_outline_color", Color(0.03, 0.03, 0.02, 0.9))
+	l.add_theme_constant_override(&"outline_size", 6)
+	l.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE + 1)
 	_messages.add_child(l)
 	_fade_message(l)
 	while _messages.get_child_count() > 6:
@@ -560,7 +606,7 @@ func _announce_level() -> void:
 		return
 	var pts: int = p.progression.skill_points
 	message("Level %d. %d point%s to spend — field manual (B), Record." % [_level_pending, pts, "" if pts == 1 else "s"], &"level")
-	Audio.play_2d(&"ui/level_up", -4.0)
+	Audio.play_2d(&"ui/level_up", UiStyle.level("level_up", -4.0))
 	_level_pending = 0
 
 
@@ -695,6 +741,49 @@ func toggle_pause() -> void:
 
 # --- Diegetic UIs --------------------------------------------------------------------------
 
+## A gamepad press with nothing focused focuses the first control of the screen on top (the
+## reader, the map, the roll's recipe sheet, the manual, the trader, pause, the death screen).
+func _input(event: InputEvent) -> void:
+	# The pad's B puts away whatever is on top (the screens' own keys are keyboard keys).
+	var jb := event as InputEventJoypadButton
+	if jb != null and jb.pressed and jb.button_index == JOY_BUTTON_B and close_top_screen():
+		get_viewport().set_input_as_handled()
+		return
+	if not UiStyle.is_pad_event(event) or get_viewport().gui_get_focus_owner() != null:
+		return
+	for i: int in range(get_child_count() - 1, -1, -1):
+		var c: Control = get_child(i) as Control
+		if c == null or not c.visible or c == _hud or c == _loading:
+			continue
+		# The roll steers its cloth with the pad itself; its recipe sheet takes focus on RB.
+		if c == roll:
+			return
+		if UiStyle.focus_first(c):
+			get_viewport().set_input_as_handled()
+			return
+
+
+## Closes the screen on top, if one is open (gamepad B). True when something closed.
+func close_top_screen() -> bool:
+	if reader.is_open():
+		reader.close_reader()
+	elif world_map.is_open():
+		world_map.close()
+	elif manual.is_open():
+		manual.close()
+	elif roll.is_open():
+		roll.close()
+	elif _pause.visible:
+		toggle_pause()
+	else:
+		for c: Node in get_children():
+			if c is TraderScreen and (c as TraderScreen).is_open():
+				(c as TraderScreen).close_screen()
+				return true
+		return false
+	return true
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	var w: Node = Game.world
 	if w == null or not bool(w.get(&"is_ready")) or is_intro_playing():
@@ -758,7 +847,62 @@ func open_container(node: Object) -> void:
 func show_note(note_id: StringName) -> void:
 	if roll.is_open():
 		roll.close()
-	manual.show_note(note_id)
+	var p: PlayerState = Game.local_player()
+	reader.show_note(Content.get_def(&"note", note_id) as NoteDef, p.notes_found.get(note_id, {}) if p != null else {})
+
+
+func _exit_tree() -> void:
+	if Game.has_command(&"notes.mark_found"):
+		Game.unregister_command(&"notes.mark_found")
+
+
+## notes.mark_found {note, where, day}: records where and when the local player found a note,
+## once (the first find stands).
+func _cmd_mark_found(args: Dictionary) -> Dictionary:
+	var p: PlayerState = Game.local_player()
+	var id := StringName(str(args.get("note", "")))
+	if p == null or id == &"":
+		return {"ok": false, "error": "no player or note"}
+	if not p.notes_found.has(id):
+		p.notes_found[id] = {"where": str(args.get("where", "")), "day": int(args.get("day", 1)), "order": p.notes_found.size()}
+	return {"ok": true}
+
+
+func _on_note_found(note_id: StringName) -> void:
+	var day: int = Game.session.clock.day() if Game.session != null and Game.session.clock != null else 1
+	Game.execute(&"notes.mark_found", {"note": String(note_id), "where": place_name(), "day": day})
+
+
+## Where the player stands, as a note's finding place: the building they're in, else the region.
+static func place_name() -> String:
+	var w: Node = Game.world
+	if w == null or w.get(&"player") == null:
+		return ""
+	var at: Vector3 = (w.player as Node3D).global_position
+	var pois: Node = w.get(&"pois")
+	if pois != null and pois.has_method(&"poi_at"):
+		var inst: Object = pois.call(&"poi_at", at)
+		if inst != null and inst.get(&"layout") != null and (inst.get(&"layout") as Object).get(&"def") != null:
+			return str(((inst.get(&"layout") as Object).get(&"def") as Object).get(&"display_name"))
+	var tm: Object = w.get(&"terrain")
+	var wd: WorldDef = tm.get(&"world") as WorldDef if tm != null else null
+	if wd != null:
+		var rid: String = wd.region_at(at.x, at.z)
+		var name_: String = str((wd.regions.get(rid, {}) as Dictionary).get("name", ""))
+		if name_ != "":
+			return "the woods of %s" % name_
+	return "the woods"
+
+
+## A note just picked up opens in the reader (it counts as read: inventory.read).
+func _on_item_picked_up(owner_id: StringName, item_id: StringName, _count: int) -> void:
+	var p: PlayerState = Game.local_player()
+	var d: ItemDef = Content.item(item_id)
+	if p == null or owner_id != p.id or d == null or d.category != "note" or d.note == &"":
+		return
+	var res: Dictionary = Game.execute(&"inventory.read", {"item": String(item_id)})
+	if bool(res.get("ok", false)):
+		show_note.call_deferred(d.note)
 
 
 func _build_overlay() -> void:
@@ -766,28 +910,46 @@ func _build_overlay() -> void:
 	_overlay.color = Color(0, 0, 0, 0.0)
 	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_overlay.visible = false
+	_overlay.theme = UiStyle.kit_theme()
 	add_child(_overlay)
+	var centre := CenterContainer.new()
+	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(centre)
+	var v := VBoxContainer.new()
+	v.custom_minimum_size = Vector2(760, 0)
+	v.add_theme_constant_override(&"separation", 14)
+	centre.add_child(v)
+	_overlay_head = UiStyle.label("", &"HeadingLabel")
+	_overlay_head.add_theme_font_size_override(&"font_size", 54)
+	_overlay_head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(_overlay_head)
 	_overlay_label = Label.new()
-	_overlay_label.set_anchors_preset(Control.PRESET_CENTER)
-	_overlay_label.position = Vector2(-300, -40)
-	_overlay_label.size = Vector2(600, 80)
 	_overlay_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_overlay_label.add_theme_font_size_override(&"font_size", 26)
-	_overlay_label.add_theme_color_override(&"font_color", Color(0.85, 0.82, 0.75))
-	_overlay.add_child(_overlay_label)
+	_overlay_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_overlay_label.add_theme_font_size_override(&"font_size", 24)
+	_overlay_label.add_theme_color_override(&"font_color", UiStyle.KIT_TEXT)
+	v.add_child(_overlay_label)
+	_overlay_note = UiStyle.label("", &"DimLabel")
+	_overlay_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_overlay_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_overlay_note.add_theme_font_size_override(&"font_size", 19)
+	v.add_child(_overlay_note)
+	var row := CenterContainer.new()
+	v.add_child(row)
 	_death_button = Button.new()
 	_death_button.text = "Wake up"
-	_death_button.set_anchors_preset(Control.PRESET_CENTER)
-	_death_button.position = Vector2(-90, 60)
-	_death_button.size = Vector2(180, 44)
+	_death_button.theme_type_variation = &"PrimaryButton"
+	_death_button.custom_minimum_size = Vector2(280, 48)
 	_death_button.visible = false
 	_death_button.pressed.connect(_on_wake_after_death)
-	_overlay.add_child(_death_button)
+	row.add_child(_death_button)
 
 
 func show_sleep(on: bool) -> void:
 	_overlay.visible = true
 	_death_button.visible = false
+	_overlay_head.text = ""
+	_overlay_note.text = ""
 	var tw: Tween = create_tween()
 	if on:
 		_overlay_label.text = "You sleep."
@@ -798,17 +960,32 @@ func show_sleep(on: bool) -> void:
 		tw.tween_callback(func() -> void: _overlay.visible = false)
 
 
+## What the death screen says, as the tether's incident log would: [heading, the cause, the
+## consequence and where you wake]. Pure, for tests.
+static func death_text(cause: String, note: String, final: bool, day: int, deaths: int, has_bed: bool) -> Array[String]:
+	var why: String = {"zombie": "The Hollowed got you.", "ashen": "The Ashen killed you.", "bleeding": "You bled out.", "cold": "The cold took you.",
+		"starvation": "You starved.", "dehydration": "You died of thirst.", "fall": "You fell.", "tree": "The tree came down on you.",
+		"turned": "The Bloom took you. You are one of them now.", "spores": "The spores filled your lungs."}.get(cause, "You died.")
+	var log: String = "TETHER 4471  ·  DAY %d  ·  VITALS FLAT" % day
+	var wake: String = "" if final else ("The Program will wake you at your bed." if has_bed else "The Program will wake you at the drop site.")
+	var count: String = "" if deaths <= 1 else ("  Deaths logged: %d." % deaths)
+	return [log, why, note + ((" " + wake) if wake != "" else "") + count]
+
+
 func show_death(cause: String, note: String = "Your pack lies where you fell.", final: bool = false) -> void:
 	_overlay.visible = true
 	_overlay.color = Color(0.08, 0.0, 0.0, 0.0)
 	var tw: Tween = create_tween()
 	tw.tween_property(_overlay, "color:a", 0.92, 2.0)
-	var why: String = {"zombie": "The Hollowed got you.", "ashen": "The Ashen killed you.", "bleeding": "You bled out.", "cold": "The cold took you.",
-		"starvation": "You starved.", "dehydration": "You died of thirst.", "fall": "You fell.", "tree": "The tree came down on you.",
-		"turned": "The Bloom took you. You are one of them now.", "spores": "The spores filled your lungs."}.get(cause, "You died.")
-	_overlay_label.text = why + "\n" + note
+	var p: PlayerState = Game.local_player()
+	var day: int = Game.session.clock.day() if Game.session != null and Game.session.clock != null else 1
+	var t: Array[String] = death_text(cause, note, final, day, p.deaths if p != null else 1, p != null and p.has_spawn_point)
+	_overlay_head.text = "SIGNAL LOST" if not final else "SIGNAL LOST  ·  FILE CLOSED"
+	_overlay_head.tooltip_text = ""
+	_overlay_label.text = t[1]
+	_overlay_note.text = t[0] + "\n" + t[2]
 	_final_death = final
-	_death_button.text = "Return to the menu" if final else _death_button.text
+	_death_button.text = "Return to the menu" if final else "Wake up"
 	_death_button.visible = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
