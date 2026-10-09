@@ -22,6 +22,11 @@ uniform float macro_scale = 0.0035;
 uniform float canopy_height = 17.0;
 uniform float crown_size = 7.0;
 uniform float canopy_edge_fade = 96.0;
+// The coarse far forest (TD-006): within (x, z, range) of the player the cluster impostors stand on
+// the ground, so the raise is taken down there; it comes back over the last canopy_flat_band metres
+// as the clusters shrink away (impostor.gdshader fade_ring). Range 0: no clusters, raise everywhere.
+uniform vec3 canopy_flat = vec3(0.0);
+uniform float canopy_flat_band = 200.0;
 
 // Crown colours (linear albedo, lit tops; gaps are a third of it).
 const vec3 CONIFER = vec3(0.085, 0.12, 0.062);
@@ -55,12 +60,18 @@ void vertex() {
 	float canopy = floor(packed / 16.0) / 15.0;
 	v_decid = mod(packed, 16.0) / 15.0;
 	float keep = 1.0;
+	vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	if (discard_rect.z > discard_rect.x) {
-		vec3 wp = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 		vec2 out_d = max(max(discard_rect.xy - wp.xz, wp.xz - discard_rect.zw), vec2(0.0));
 		keep = smoothstep(0.0, canopy_edge_fade, length(out_d));
 	}
-	VERTEX.y -= canopy * (1.0 - keep) * canopy_height;
+	// Under the clusters the ground stays flat but keeps its crown shading (the forest floor
+	// between them reads dark).
+	float raise = keep;
+	if (canopy_flat.z > 0.0) {
+		raise *= smoothstep(canopy_flat.z - canopy_flat_band, canopy_flat.z, length(wp.xz - canopy_flat.xy));
+	}
+	VERTEX.y -= canopy * (1.0 - raise) * canopy_height;
 	v_canopy = canopy * keep;
 	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);

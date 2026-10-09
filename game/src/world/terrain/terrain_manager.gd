@@ -173,6 +173,13 @@ func _make_materials() -> void:
 	_far_material.set_shader_parameter("canopy_height", CANOPY_HEIGHT)
 
 
+## Takes the far tiles' canopy raise down within `ring` (x, z, range) of the player, where the
+## vegetation's coarse cluster impostors stand on the ground (TD-006); range 0 restores it.
+func set_canopy_flat(ring: Vector3) -> void:
+	if _far_material != null:
+		_far_material.set_shader_parameter("canopy_flat", ring)
+
+
 ## A region's material, unless it has one already or is no longer attached (a deferred step).
 func _make_material_of(rid: String) -> void:
 	if regions.has(rid) and not _materials.has(rid):

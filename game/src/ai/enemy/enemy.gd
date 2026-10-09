@@ -638,6 +638,17 @@ func _lod_every(p: Player, dist: float) -> int:
 		return 1
 	if state in [State.ATTACK, State.CHARGE, State.SPIT, State.STAGGER, State.BREAK, State.SCREAM, State.WAKING]:
 		return 1
+	# Hunting something other than the player (a wolf pack's prey, a foe of a hostile faction):
+	# ticked by how close it is to that, so a chase away from the player still closes and kills.
+	var target: Node3D = null
+	if foe != null and is_instance_valid(foe):
+		target = foe
+	elif wolf != null and wolf.pack != null and wolf.pack.mode == WolfPack.Mode.HUNT and wolf.pack.valid_prey():
+		target = wolf.pack.prey as Node3D
+	if target != null:
+		dist = minf(dist, global_position.distance_to(target.global_position))
+		if dist < LOD_FULL:
+			return 1
 	var seen: bool = true
 	var cam: Camera3D = p.camera if p.camera != null and p.camera.is_inside_tree() else null
 	if cam != null:
