@@ -1627,7 +1627,8 @@ class _Build:
 			for c: Vector2 in corners:
 				bb = bb.expand(c)
 			# Roads that run onto a pad (not a lot's: its height is held to its street) ramp to it.
-			var ramp_roads: bool = not world_pad and not keep_water and _road_near(bb, PAD_RAMP_MAX)
+			var onto: Dictionary = {} if world_pad or keep_water else _roads_onto(o, size, rot, bb)
+			var ramp_roads: bool = not onto.is_empty()
 			bb = bb.grow(LOT_BANK_REACH if world_pad else (skirt if keep_water else maxf(skirt, PAD_RAMP_MAX if ramp_roads else PAD_BANK_REACH)))
 			var bank_seed: int = (world.seed & 0xffffff) ^ 0x3c6ef3
 			_for_box(bb, func(i: int, x: float, z: float) -> void:
@@ -1667,7 +1668,7 @@ class _Build:
 					# meeting the pad's edge in a step (the banks above give way to the road, and the
 					# road is graded before the pad: Pell's Crossing's west entry stood 3.7 m under it).
 					if d > 0.0 and ramp_roads and d < PAD_RAMP_MAX:
-						var rw: float = _road_reach(x, z, PAD_RAMP_SIDE)
+						var rw: float = _road_reach(x, z, PAD_RAMP_SIDE, onto)
 						if rw > 0.0:
 							var rl: float = clampf(absf(h[i] - target) / PAD_RAMP_GRADE, PAD_RAMP_MIN, PAD_RAMP_MAX)
 							h[i] = lerpf(h[i], target, rw * (1.0 - smoothstep(0.0, rl, d)) * _border_weight(x, z))
@@ -1716,17 +1717,29 @@ class _Build:
 
 	## 1 on a road's paved corridor (half width + shoulder), easing to 0 `side` m beyond it; 0 off
 	## the roads. Read from the road fields as _yield_to_roads reads them.
-	func _road_reach(x: float, z: float, side: float) -> float:
-		return 1.0 - _yield_to_roads_by(x, z, side)
+	func _road_reach(x: float, z: float, side: float, only: Dictionary) -> float:
+		return 1.0 - _yield_to_roads_by(x, z, side, only)
 
-	## Whether any road's line comes within `reach` m of the box.
-	func _road_near(box: Rect2, reach: float) -> bool:
-		var g: Rect2 = box.grow(reach)
-		for r: Dictionary in road_list:
-			var line: Polyline2 = r["line"]
-			if line.bounds.intersects(g) and line.closest(g.get_center()).x < reach + g.size.length() * 0.5:
-				return true
-		return false
+	## The roads (road_list indices, as keys) that run onto a pad: their centre line comes within
+	## 1 m of its rectangle (origin, size, rot). Roads only passing by are left alone (a ramp along a
+	## pad's side would tilt them across).
+	func _roads_onto(o: Vector2, size: Vector2, rot: float, box: Rect2) -> Dictionary:
+		var out: Dictionary = {}
+		var g: Rect2 = box.grow(2.0)
+		for ri: int in road_list.size():
+			var line: Polyline2 = road_list[ri]["line"]
+			if not line.bounds.intersects(g):
+				continue
+			var s: float = 0.0
+			while s <= line.total_length:
+				var p: Vector2 = line.point_at(s)
+				if g.has_point(p):
+					var lp: Vector2 = (p - o).rotated(-rot)
+					if lp.x > -1.0 and lp.y > -1.0 and lp.x < size.x + 1.0 and lp.y < size.y + 1.0:
+						out[ri] = true
+						break
+				s += 2.0
+		return out
 
 	## How much a world town's pad skirt may grade a sample (ADR-0040): nothing on a road's paved
 	## corridor (half width + shoulder), easing to all of it LOT_ROAD_YIELD m beyond, so a yard never
@@ -1734,7 +1747,7 @@ class _Build:
 	func _yield_to_roads(x: float, z: float) -> float:
 		return _yield_to_roads_by(x, z, LOT_ROAD_YIELD)
 
-	func _yield_to_roads_by(x: float, z: float, ease: float) -> float:
+	func _yield_to_roads_by(x: float, z: float, ease: float, only: Dictionary = {}) -> float:
 		var gx: float = clampf((x - cx0) / cs, 0.0, cn - 1.001)
 		var gz: float = clampf((z - cz0) / cs, 0.0, cn - 1.001)
 		var cx: int = mini(int(gx), cn - 2)
@@ -1755,6 +1768,8 @@ class _Build:
 			var nci: int = ci + (1 if fx > 0.5 else 0) + (cn if fz > 0.5 else 0)
 			if r_idx[nci] >= 0:
 				ri = r_idx[nci]
+		if not only.is_empty() and not only.has(ri):
+			return 1.0
 		d += _r_half[ri]
 		var inner: float = _r_half[ri] + _r_sh[ri]
 		return smoothstep(inner, inner + ease, d)
