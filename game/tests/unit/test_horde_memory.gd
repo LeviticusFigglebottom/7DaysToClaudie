@@ -77,3 +77,24 @@ func test_round_trip() -> void:
 	var n := HordeMemory.new()
 	n.from_dict(JSON.parse_string(JSON.stringify(m.to_dict())))
 	assert_eq(JSON.stringify(JSON.parse_string(JSON.stringify(n.to_dict())), "", true), JSON.stringify(JSON.parse_string(JSON.stringify(m.to_dict())), "", true))
+
+
+func test_the_first_wave_is_front_loaded() -> void:
+	var m := HordeMemory.new()
+	var share: float = float((Content.config(&"horde").get("planner", {}) as Dictionary).get("first_wave_share", 0.25))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var plan: Dictionary = m.plan(5, rng)
+	var sizes: Array[int] = []
+	for w: Dictionary in plan["waves"]:
+		var n: int = 0
+		for k: String in w["units"]:
+			n += int(w["units"][k])
+		sizes.append(n)
+	var total: int = 0
+	for n: int in sizes:
+		total += n
+	assert_eq(total, int(plan["total"]), "every planned Hollowed is in a wave")
+	assert_almost_eq(float(sizes[0]), total * share, 1.0, "the first wave carries its share")
+	for i: int in range(1, sizes.size()):
+		assert_gt(sizes[0], sizes[i], "the first wave is the biggest")
