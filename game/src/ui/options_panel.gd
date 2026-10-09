@@ -193,12 +193,12 @@ func _build_graphics() -> void:
 	_gfx_choice("Shadow resolution", "directional_shadow_size", [[2048, "Low"], [4096, "High"], [8192, "Ultra"]],
 		func(v: Variant) -> void: Settings.set_graphics_override("positional_shadow_atlas", v))
 	_gfx_choice("Shadow softness", "shadow_filter", [[0, "Hard"], [1, "Very low"], [2, "Low"], [3, "Medium"], [4, "High"], [5, "Ultra"]])
-	_gfx_slider("Shadow distance", "shadow_distance", 40.0, 200.0, 10.0)
-	_gfx_slider("View distance", "view_distance", 500.0, 2500.0, 100.0)
-	_gfx_slider("Tree detail distance (under 50%: no full-detail trees)", "tree_lod_scale", 0.3, 1.5, 0.05)
+	_gfx_slider("Shadow distance", "shadow_distance", 40.0, 260.0, 10.0)
+	_gfx_slider("View distance (as the world streams)", "view_distance", 500.0, 2500.0, 100.0)
+	_gfx_slider("Tree detail (under 50%: no full-detail trees; as chunks rebuild)", "tree_lod_scale", 0.3, 2.0, 0.05)
 	_gfx_slider("Object draw distance", "object_distance", 50.0, 300.0, 10.0)
 	_gfx_slider("Grass density", "grass_density", 0.0, 1.0, 0.05)
-	_gfx_slider("Grass distance", "grass_distance", 20.0, 90.0, 5.0)
+	_gfx_slider("Grass distance (as you move)", "grass_distance", 20.0, 52.0, 2.0)
 	var note := Label.new()
 	note.text = "Grass and tree changes show as the forest around you rebuilds."
 	note.theme_type_variation = &"DimLabel"
