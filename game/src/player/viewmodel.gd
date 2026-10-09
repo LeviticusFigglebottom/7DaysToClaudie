@@ -891,7 +891,9 @@ func _process(delta: float) -> void:
 		_have_basis = true
 	var vel := Vector3.ZERO
 	var speed: float = 0.0
+	motion.rest_ok = _held == null and _action == &"" and tether.progress() <= 0.0 and not _aim_hidden
 	if _player != null and cam != null:
+		motion.rest_ok = motion.rest_ok and not _player.is_climbing()
 		vel = cam.global_transform.basis.inverse() * _player.velocity
 		speed = _player.horizontal_speed()
 		motion.reading = tether.progress()

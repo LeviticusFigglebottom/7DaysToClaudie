@@ -60,7 +60,8 @@ def _crease_net(size: int, cells: int, seed: int, width: float = 1.4) -> np.ndar
 @texture("fp_skin", size=1024, seed=4471)
 def fp_skin(size: int, seed: int, out) -> None:
     """A working man's forearms and hands (0.2 m tile): sun-weathered warm skin, freckles and the odd
-    mole, dark forearm hair along the arm, faint veins, pores and the crease net."""
+    mole, dark forearm hair along the arm, faint veins, pores, the crease net at two scales and fine
+    tension wrinkles across the arm."""
     broad = T.spectral(size, 2.6, seed)
     mid = T.spectral(size, 1.7, seed + 1)
     fine = T.spectral(size, 0.9, seed + 2)
@@ -90,17 +91,34 @@ def fp_skin(size: int, seed: int, out) -> None:
     hair = _strokes(size, 2600, seed + 12, (9.0, 20.0), 1.0, np.pi / 2, 0.35)
     hair *= T.smoothstep(0.25, 0.65, T.spectral(size, 2.0, seed + 13))
     col = T.mix(col, _c("#2e1d14") * np.ones_like(col), hair * 0.55)
-    # pores and the crease net, a touch redder in the creases
+    # pores and the crease net (two scales: the ~3.5 mm net and the ~2 mm one inside it, which is
+    # what stops skin reading as smooth plastic at arm's length), a touch redder in the creases
     crease = _crease_net(size, 3200, seed + 14)
+    micro = _crease_net(size, 11000, seed + 19, 1.0) * (0.6 + 0.4 * T.spectral(size, 1.6, seed + 20))
     deep = _crease_net(size, 220, seed + 15, 1.0) * T.smoothstep(0.45, 0.75, T.spectral(size, 1.8, seed + 16))
     p1, _, _ = T.worley(size, 7000, seed + 17)
     pore = 1.0 - T.smoothstep(0.6, 1.6, p1)
-    col = T.mix(col, col * np.array([0.9, 0.82, 0.8], np.float32), np.clip(0.35 * crease + 0.6 * deep, 0, 1) * 0.4)
-    col *= (1.0 - 0.07 * pore)[..., None]
+    p2, _, _ = T.worley(size, 22000, seed + 21)
+    pore2 = (1.0 - T.smoothstep(0.3, 1.0, p2)) * 0.6
+    # tension wrinkles: long, fine, wavy lines across the arm (v runs along it), in patches - the
+    # skin's slack over the wrist and the backs of the joints; the shader's `crease_boost` deepens
+    # them (and the nets) where vertex B marks the knuckles and finger joints
+    wn = T.warp(T.spectral(size, 1.0, seed + 22, anisotropy=(1.0, 8.0), fmin=8.0, fmax=20.0), T.spectral(size, 2.0, seed + 23),
+                T.spectral(size, 2.0, seed + 24), size * 0.012)
+    # the noise's mid-level contours, ~1 px wide (distance to the contour in pixels)
+    wgx = (np.roll(wn, -1, 1) - np.roll(wn, 1, 1)) * 0.5
+    wgy = (np.roll(wn, -1, 0) - np.roll(wn, 1, 0)) * 0.5
+    wrinkle = 1.0 - T.smoothstep(0.4, 1.4, np.abs(wn - 0.5) / (np.sqrt(wgx * wgx + wgy * wgy) + 1e-6))
+    wrinkle *= 0.35 + 0.65 * T.smoothstep(0.35, 0.7, T.spectral(size, 2.0, seed + 25, fmin=2.0))
+    lines = np.clip(0.35 * crease + 0.25 * micro + 0.6 * deep + 0.3 * wrinkle, 0, 1)
+    col = T.mix(col, col * np.array([0.9, 0.82, 0.8], np.float32), lines * 0.4)
+    col *= (1.0 - 0.07 * pore - 0.04 * pore2)[..., None]
     col *= (0.95 + 0.07 * fine)[..., None]
-    height = T.normalize(0.30 * mid + 0.25 * fine + 0.08 * T.blur(vein, 3.0) - 0.07 * crease - 0.12 * deep - 0.06 * pore + 0.05 * hair)
-    rough = np.clip(0.50 + 0.10 * (1 - tone) + 0.06 * crease + 0.08 * deep - 0.06 * vein + 0.05 * fine, 0.32, 0.8)
-    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=2.8, ao_strength=0.6)
+    height = T.normalize(0.30 * mid + 0.25 * fine + 0.08 * T.blur(vein, 3.0) - 0.08 * crease - 0.06 * micro
+                         - 0.12 * deep - 0.10 * wrinkle - 0.06 * pore - 0.03 * pore2 + 0.05 * hair)
+    rough = np.clip(0.50 + 0.10 * (1 - tone) + 0.06 * crease + 0.04 * micro + 0.08 * deep + 0.04 * wrinkle
+                    - 0.06 * vein + 0.05 * fine, 0.32, 0.8)
+    T.save_pbr_set(out, np.clip(col, 0, 1), height, rough, normal_strength=3.2, ao_strength=0.7)
 
 
 @texture("fp_grime", size=1024, seed=4472)
