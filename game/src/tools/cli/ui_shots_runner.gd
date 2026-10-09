@@ -2,7 +2,7 @@ extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
 const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "new_game", "manual",
-	"loading", "pause", "intro_0", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7"]
+	"loading", "pause", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
 var _only: PackedStringArray = []
