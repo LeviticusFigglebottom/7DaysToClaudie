@@ -52,9 +52,10 @@ extends RefCounted
 ## places are levelled from world data and its world roads pinned to them (WorldDef.pads, TD-320).
 ## VERSION 16 (TD-320): a random world's roadside place stands at its road's level where its drive
 ## leaves it (world_pad_heights, within ROADSIDE_LEVEL m of its ground).
-## VERSION 17 (owner report 4, main map): a bridged road ramps up to its deck at BRIDGE_RAMP of its
-## grade cap, and a road pinned to a pad back to its own profile at PAD_RAMP_GRADE, each as long as
-## the difference needs (they were a fixed 40 m smoothstep and a smoothstep capped at 60 m); a pad
+## VERSION 17 (owner report 4, main map): on a region-graded world a bridged road ramps up to its
+## deck at BRIDGE_RAMP of its grade cap, and a road pinned to a pad back to its own profile at
+## PAD_RAMP_GRADE, each as long as the difference needs (they were a fixed 40 m smoothstep and a
+## smoothstep capped at 60 m; a random world keeps them: longer ramps there made long fills); a pad
 ## that keeps its water is levelled before the roads so they pin to it; a region-graded street is
 ## level over its last metres into its cul-de-sac's bulb.
 const VERSION: int = 17
@@ -72,10 +73,11 @@ const TOWN_ROAD_REACH: float = 60.0
 ## How far a roadside place's pad may stand off its own ground's mean to meet its road (m, TD-320).
 const ROADSIDE_LEVEL: float = 3.0
 ## A road running onto a POI's or framework's pad ramps to its level at PAD_RAMP_GRADE (rise over
-## run; VERSION 17: no steeper anywhere, as long as the difference needs), its banks with it out to
-## PAD_RAMP_SIDE m past its shoulder (VERSION 15). PAD_RAMP_MAX bounds the search for pads near a
-## road and the pad's bank box.
+## run), over PAD_RAMP_MIN..PAD_RAMP_MAX m, its banks with it out to PAD_RAMP_SIDE m past its
+## shoulder (VERSION 15); on a region-graded world (VERSION 17) no steeper anywhere, as long as the
+## difference needs.
 const PAD_RAMP_GRADE: float = 0.08
+const PAD_RAMP_MIN: float = 12.0
 const PAD_RAMP_MAX: float = 60.0
 const PAD_RAMP_SIDE: float = 10.0
 ## A region-graded road whose centre line comes within PAD_PIN_REACH m of a pad (its corridor all
@@ -367,7 +369,7 @@ static func world_pad_height(o: Vector2, size: Vector2, rot: float, h_fn: Callab
 ## Pins a road's profile to a pad (corner `o`, `size`, `rot` radians, level `target`): within
 ## PAD_PIN_REACH m of the pad the road is at its level, easing back to its own profile at
 ## PAD_RAMP_GRADE over 12-60 m (VERSION 15).
-static func pin_profile_to_pad(prof: PackedFloat32Array, line: Polyline2, o: Vector2, size: Vector2, rot: float, target: float) -> void:
+static func pin_profile_to_pad(prof: PackedFloat32Array, line: Polyline2, o: Vector2, size: Vector2, rot: float, target: float, cone: bool = false) -> void:
 	var corners: Array[Vector2] = [o, o + Vector2(size.x, 0).rotated(rot), o + size.rotated(rot), o + Vector2(0, size.y).rotated(rot)]
 	var bb := Rect2(corners[0], Vector2.ZERO)
 	for c: Vector2 in corners:
@@ -386,13 +388,27 @@ static func pin_profile_to_pad(prof: PackedFloat32Array, line: Polyline2, o: Vec
 		touches = touches or dist[k] < PAD_PIN_REACH
 	if not touches:
 		return
-	# At the pad's level within PAD_PIN_REACH, then held within PAD_RAMP_GRADE of it per metre out
-	# (VERSION 17): a smoothstep ease capped at PAD_RAMP_MAX m climbed a 5 m difference at ~15%
-	# (Route 9 off Pell's Crossing's pad, where its cap is 12%). Distance from the pad grows no
-	# faster than the road's arc, so the ramp keeps under PAD_RAMP_GRADE along it.
+	if cone:
+		# A region-graded road (the main map, VERSION 17): at the pad's level within PAD_PIN_REACH,
+		# then held within PAD_RAMP_GRADE of it per metre out. The smoothstep below, capped at
+		# PAD_RAMP_MAX m, took Route 9 off Pell's Crossing's pad at ~15% where its cap is 12%.
+		# Distance from the pad grows no faster than the road's arc, so the ramp keeps under
+		# PAD_RAMP_GRADE along it. A random world keeps the smoothstep: its places, levelled from
+		# world data, can stand 10 m off their road, and a cone that long made long planar fills.
+		for k4: int in n:
+			var out_m: float = maxf(0.0, dist[k4] - PAD_PIN_REACH)
+			prof[k4] = clampf(prof[k4], target - PAD_RAMP_GRADE * out_m, target + PAD_RAMP_GRADE * out_m)
+		return
+	# The ease's length from the largest difference at the pad.
+	var diff: float = 0.0
+	for k2: int in n:
+		if dist[k2] < PAD_PIN_REACH:
+			diff = maxf(diff, absf(prof[k2] - target))
+	var ease: float = clampf(diff / PAD_RAMP_GRADE, PAD_RAMP_MIN, PAD_RAMP_MAX)
 	for k3: int in n:
-		var out_m: float = maxf(0.0, dist[k3] - PAD_PIN_REACH)
-		prof[k3] = clampf(prof[k3], target - PAD_RAMP_GRADE * out_m, target + PAD_RAMP_GRADE * out_m)
+		var w: float = 1.0 - smoothstep(PAD_PIN_REACH, PAD_PIN_REACH + ease, dist[k3])
+		if w > 0.0:
+			prof[k3] = lerpf(prof[k3], target, w)
 
 
 ## The world roads that pass within TOWN_ROAD_REACH m of a town's disc ({id, line, surface}, by id),
@@ -1544,7 +1560,7 @@ class _Build:
 		for pad: Dictionary in pads:
 			if not pad.has("height") or bool(pad.get("world", false)):
 				continue
-			TerrainComposer.pin_profile_to_pad(prof, line, pad["origin"], pad["size"], float(pad["rot"]), float(pad["height"]))
+			TerrainComposer.pin_profile_to_pad(prof, line, pad["origin"], pad["size"], float(pad["rot"]), float(pad["height"]), true)
 
 	## Pins a region-graded road's profile to the roads before it in road_list (whose profiles are
 	## built) where it meets them, eased over JUNCTION_EASE m or half its length, whichever is
@@ -1930,15 +1946,21 @@ class _Build:
 					# over the last PAD_RAMP_GRADE of rise (12-60 m), its banks with it, instead of
 					# meeting the pad's edge in a step (the banks above give way to the road, and the
 					# road is graded before the pad: Pell's Crossing's west entry stood 3.7 m under it).
-					# VERSION 17: the same cone as the road's profile (pin_profile_to_pad), level within
-					# PAD_PIN_REACH and PAD_RAMP_GRADE per metre past it; the smoothstep peaked at 1.5x.
-					if d > 0.0 and ramp_roads:
+					# VERSION 17: on a region-graded world the same cone as the road's profile
+					# (pin_profile_to_pad), level within PAD_PIN_REACH and PAD_RAMP_GRADE per metre past
+					# it; the smoothstep peaked at 1.5x. A random world keeps the smoothstep (see there).
+					if d > 0.0 and ramp_roads and world.road_grade != "world":
 						var out_m: float = maxf(0.0, d - PAD_PIN_REACH)
 						var lim3: float = PAD_RAMP_GRADE * out_m
 						if absf(h[i] - target) > lim3:
 							var rw: float = _road_reach(x, z, PAD_RAMP_SIDE, onto)
 							if rw > 0.0:
 								h[i] = lerpf(h[i], clampf(h[i], target - lim3, target + lim3), rw * _border_weight(x, z))
+					elif d > 0.0 and ramp_roads and d < PAD_RAMP_MAX:
+						var rw2: float = _road_reach(x, z, PAD_RAMP_SIDE, onto)
+						if rw2 > 0.0:
+							var rl: float = clampf(absf(h[i] - target) / PAD_RAMP_GRADE, PAD_RAMP_MIN, PAD_RAMP_MAX)
+							h[i] = lerpf(h[i], target, rw2 * (1.0 - smoothstep(0.0, rl, d)) * _border_weight(x, z))
 					return
 				if d < skirt:
 					var wgt: float = 1.0 - smoothstep(0.0, skirt, d)
