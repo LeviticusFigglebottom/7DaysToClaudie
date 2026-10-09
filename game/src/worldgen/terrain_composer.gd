@@ -1632,11 +1632,20 @@ class _Build:
 			# Ramps up to the deck at BRIDGE_RAMP of the road's grade cap, as long as the lift needs
 			# (VERSION 17): a fixed 40 m smoothstep climbed a 5-8 m lift at 20-30% (Route 9 east of the
 			# Tamsin bridge, 20% where its cap is 12%).
+			# A world-graded road keeps the 40 m ramp: its profile is pinned to the roads meeting it
+			# before the decks are lifted (world_road_profiles), so a longer ramp ran past a junction
+			# and left the road meeting it metres below, and on a hilly world's deep valleys the long
+			# fills made long planar banks (seed 21: faces 250 -> 552 m).
 			var g: float = ramp_g
 			for k: int in count:
 				var s: float = k * step
 				if s >= s0 and s <= s1:
 					prof[k] = deck
+				elif by_world:
+					if s > s0 - 40.0 and s < s0:
+						prof[k] = lerpf(prof[k], deck, smoothstep(s0 - 40.0, s0, s))
+					elif s > s1 and s < s1 + 40.0:
+						prof[k] = lerpf(deck, prof[k], smoothstep(s1, s1 + 40.0, s))
 				elif s < s0:
 					prof[k] = clampf(prof[k], deck - g * (s0 - s), deck + g * (s0 - s))
 				else:
