@@ -191,3 +191,16 @@ func test_pad_cursor_walks_the_cloth_and_the_flap() -> void:
 	assert_eq(SalvageRoll.pad_step(8, Vector2i(-1, 0), 8, 3, 6, 4), 5, "and back")
 	assert_eq(SalvageRoll.pad_step(5, Vector2i(1, 0), 8, 0, 6, 4), 5, "no flap: the edge holds")
 	assert_eq(SalvageRoll.pad_step(0, Vector2i(1, 0), 0, 0, 6, 4), -1)
+
+
+func test_opens_on_what_the_journal_asks_for() -> void:
+	var inv := Inventory.new()
+	inv.add_item(&"plant_fiber", 3)
+	inv.add_item(&"stick", 1)
+	inv.add_item(&"stone", 1)
+	var hand: Array[Dictionary] = CraftSheet.rows(inv, &"", _knows_default)
+	# The axe needs cordage first: open on Cordage, the ready step toward it.
+	assert_eq(CraftSheet.preferred(hand, PackedStringArray(["stone_axe"])), &"cordage")
+	inv.add_item(&"cordage", 1)
+	assert_eq(CraftSheet.preferred(CraftSheet.rows(inv, &"", _knows_default), PackedStringArray(["stone_axe"])), &"stone_axe")
+	assert_eq(CraftSheet.preferred(hand, PackedStringArray()), &"")
