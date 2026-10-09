@@ -160,10 +160,16 @@ storefronts facing it, and 1.9 m under the Timberline Motel's.
   are levelled (`PAD_RAMP_*`); its spur still meets the pad in a step where the pad stands far from
   the road's grade (TD-320).
 
-Measured: main map, carriageway step at junctions p95 1.29 → 0.23 m and max 1.98 → 0.56 m, cross
-slope p95 0.023 → 0.011; hilly seed 7 p95 0.92 → 0.24 m; seed 21 1.44 → 0.53 m, all of what is left
-there access spurs onto place pads (TD-320). Saves crossing composer 15 drop their vegetation
-records by the roads, as at 13.
+* **Where one road meets another** the reach is the other road's half width + 1.5 m (at least 3 m):
+  an authored road starts at the edge of the road it leaves, not its centre line (the Waystation
+  drive started 3.6 m off Route 9's and was never pinned).
+* **Random worlds' places** are listed in world.json `pads`, levelled from the reference ground
+  (`world_pad_height`) and the world roads pinned to them (TD-320).
+
+Measured (carriageways within 10 m of where one road ends on another): main map p95 1.29 → 0.21 m,
+max 1.98 → 0.23 m, cross slope p95 0.023 → 0.011; hilly seed 7 p95 0.92 → 0.24 m, max 1.72 →
+0.55 m; seed 21 p95 1.44 → 0.49 m, max 2.75 → 2.15 m (a roadside diner levelled 2 m off its highway
+10 m away, TD-320). Saves crossing composer 15 drop their vegetation records by the roads, as at 13.
 
 ## Consequences
 + Measured on hilly seeds (size 4): bank heights p95 38.7 m → 6-7 m, the steepest 2 m step beside
