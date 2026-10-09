@@ -16,6 +16,14 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "pell_edge_west", "pos": Vector3(-172, 1.7, 2190), "look": Vector3(-105, 2, 2160), "hour": 14.0, "weather": "clear"},
 	{"name": "pell_west_end_aerial", "pos": Vector3(-800, 42.0, 2230), "look": Vector3(-640, 0, 2100), "hour": 14.0, "weather": "clear"},
 	{"name": "pell_west_end_edge", "pos": Vector3(-735, 1.7, 2140), "look": Vector3(-660, 2, 2090), "hour": 14.0, "weather": "clear"},
+	# Walking west out of Pell's Crossing along Mill Street West into its west end (C6), and what the
+	# west end's streets see of the regions beyond C6.
+	{"name": "pell_walk_west_1", "pos": Vector3(-130, 1.7, 2064), "look": Vector3(-260, 2, 2045), "hour": 14.0, "weather": "clear"},
+	{"name": "pell_walk_west_2", "pos": Vector3(-410, 1.7, 1983), "look": Vector3(-560, 2, 2000), "hour": 14.0, "weather": "clear"},
+	{"name": "pell_walk_west_3", "pos": Vector3(-570, 1.7, 2004), "look": Vector3(-660, 2, 2040), "hour": 14.0, "weather": "clear"},
+	{"name": "pell_west_end_south", "pos": Vector3(-610, 1.7, 2330), "look": Vector3(-620, 4, 2600), "hour": 14.0, "weather": "clear"},
+	{"name": "pell_west_end_north", "pos": Vector3(-612, 1.7, 1900), "look": Vector3(-640, 8, 1600), "hour": 14.0, "weather": "clear"},
+	{"name": "larkspur_cave_west", "pos": Vector3(-600, 1.7, 2176), "look": Vector3(-540, 3, 2176), "hour": 14.0, "weather": "clear"},
 	{"name": "pond_dusk", "pos": Vector3(-200, 4.0, 1880), "look": Vector3(-262, 0, 1915), "hour": 19.6, "weather": "mist"},
 	{"name": "pond_noon", "pos": Vector3(-204, 2.5, 1884), "look": Vector3(-262, 0, 1915), "hour": 12.5, "weather": "clear"},
 	{"name": "cliffs_overview", "pos": Vector3(-300, 40.0, 2130), "look": Vector3(-420, 10, 2220), "hour": 16.5, "weather": "clear"},
