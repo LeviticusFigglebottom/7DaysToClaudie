@@ -491,6 +491,9 @@ func _run() -> void:
 func _week() -> void:
 	var ps: PlayerState = p.state
 	Settings.sound_captions = true
+	# The driver teleports (into a cave, out of it): blows and falls would be its own doing, so
+	# the player takes none this week. Cold, hunger and thirst still count.
+	p.god_mode = true
 	ps.inventory.add_item(&"log", 2)
 	for kv: Array in [["stick", 20], ["stone", 12], ["plant_fiber", 12], ["leaf_bundle", 8], ["cordage", 4], ["nails", 20], ["claw_hammer", 1]]:
 		if Content.item(StringName(kv[0])) != null:
@@ -699,6 +702,10 @@ func _week() -> void:
 	# audit wants the Hum's screens, so the player is kept alive from here.
 	note("health %.0f, warmth %s before the night" % [ps.stats.health, str(ps.stats.get(&"body_temp")) if ps.stats.get(&"body_temp") != null else "?"])
 	p.god_mode = true
+	# Days were skipped, not lived: fed and watered as a player who lived them would be.
+	ps.stats.hydration = 100.0
+	ps.stats.fullness = 100.0
+	ps.stats.health = ps.stats.max_health if ps.stats.get(&"max_health") != null else 100.0
 	var hum_day: int = Game.session.clock.next_horde_day(Game.session.clock.day())
 	note("first Hum on day %d (now day %d)" % [hum_day, Game.session.clock.day()])
 	# Through the day before and the day itself on the clock, as play would: the warnings fire as
@@ -707,11 +714,30 @@ func _week() -> void:
 	var marks: Dictionary = {}
 	while Game.session.clock.day() < hum_day or Game.session.clock.hour_f() < 21.9:
 		w.clock_driver.advance(30.0)
+		# A player drinks and eats through a day (a day without water kills: finding W18).
+		ps.stats.hydration = maxf(ps.stats.hydration, 60.0)
+		ps.stats.fullness = maxf(ps.stats.fullness, 60.0)
 		await frames(2)
 		var tag: String = "w_hum_d%d_%02d" % [Game.session.clock.day() - hum_day, Game.session.clock.hour()]
 		if not _msgs.is_empty() and not marks.has(tag):
 			marks[tag] = true
 			await snap(tag)
+	# And a fire, as a player should have by now: god mode stops blows, not the cold.
+	ps.inventory.add_item(&"stone", 6)
+	ps.inventory.add_item(&"stick", 8)
+	var fire_at: Vector3 = p.global_position + Vector3(1.6, 0, 0)
+	fire_at.y = w.height_at(fire_at.x, fire_at.z)
+	var fb: Dictionary = ex(&"build.place_blueprint", {"blueprint": "campfire", "pos": [fire_at.x, fire_at.y, fire_at.z], "yaw": 0.0})
+	if fb.has("site"):
+		ex(&"build.deliver", {"site": fb["site"]})
+	for piece: StructurePiece in w.building.pieces_in_radius(fire_at, 2.0):
+		if piece.provides("light"):
+			piece.set_lit(true)
+			ps.inventory.add_item(&"stick", 6)
+			for i: int in 6:
+				ex(&"build.add_fuel", {"piece": String(piece.piece_id)})
+	ps.stats.hydration = 100.0
+	ps.stats.fullness = 100.0
 	w.clock_driver.advance(20.0)
 	await seconds(3.0)
 	await snap("w_hum_start")
@@ -725,6 +751,8 @@ func _week() -> void:
 	var shot: Dictionary = {}
 	while ai.hum.active and not (Game.session.clock.day() > hum_day and Game.session.clock.hour_f() >= 4.5):
 		w.clock_driver.advance(15.0)
+		ps.stats.hydration = maxf(ps.stats.hydration, 60.0)
+		ps.stats.fullness = maxf(ps.stats.fullness, 60.0)
 		await seconds(1.0)
 		for id: StringName in ai.hum.members.keys():
 			seen[id] = true
@@ -737,7 +765,7 @@ func _week() -> void:
 		if not shot.has(hour) and (not _msgs.is_empty() or hour in [23, 1, 3]):
 			shot[hour] = true
 			await snap("w_hum_night_%02d" % hour)
-	note("Hum night: %d Hollowed seen across its waves" % seen.size())
+	note("Hum night: %d Hollowed seen across its waves; player alive at dawn: %s (health %.0f)" % [seen.size(), ps.stats.alive, ps.stats.health])
 	Game.session.clock.set_time(Game.session.clock.day(), maxf(Game.session.clock.hour_f(), 3.9))
 	w.clock_driver.advance(12.0)
 	await seconds(4.0)

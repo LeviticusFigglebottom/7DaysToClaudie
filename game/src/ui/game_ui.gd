@@ -119,7 +119,8 @@ func _ready() -> void:
 	Events.horde_night_started.connect(func(_d: int) -> void:
 		if Settings.sound_captions:
 			message("[a deep hum rises through the ground]", &"danger"))
-	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void: message("A Program drone is overhead. Supplies are coming down.", &"level"))
+	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void:
+		Events.status_message_queued.emit("A Program drone is overhead. Supplies are coming down.", &"level", 0))
 
 
 ## Dawn after a Hum: the run is saved (a night survived is the progress most worth keeping).
@@ -131,10 +132,11 @@ func _on_hum_ended(_day: int, _report: Dictionary) -> void:
 
 func _autosave_after_hum() -> void:
 	var lp: PlayerState = Game.local_player()
+	# Through the paced feed (first-week W15): the night's report goes first, then this.
 	if lp != null and lp.stats.alive and Game.autosave():
-		message("Dawn. The Hollowed root into the soil. Progress saved.", &"info")
+		Events.status_message_queued.emit("Dawn. The Hollowed root into the soil. Progress saved.", &"info", 5)
 	else:
-		message("Dawn. The Hollowed root into the soil.", &"info")
+		Events.status_message_queued.emit("Dawn. The Hollowed root into the soil.", &"info", 5)
 
 
 # --- Loading --------------------------------------------------------------------------------
@@ -881,7 +883,7 @@ func _announce_level() -> void:
 		_level_pending = 0
 		return
 	var pts: int = p.progression.skill_points
-	message("Level %d. %d point%s to spend — field manual (B), Record." % [_level_pending, pts, "" if pts == 1 else "s"], &"level")
+	Events.status_message_queued.emit("Level %d. %d point%s to spend — field manual [%s], Record." % [_level_pending, pts, "" if pts == 1 else "s", PlayerInteraction.key_label(&"guidebook")], &"level", 3)
 	Audio.play_2d(&"ui/level_up", UiStyle.level("level_up", -4.0))
 	_level_pending = 0
 
