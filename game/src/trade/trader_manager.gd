@@ -88,11 +88,12 @@ func _on_region_attached(rid: String) -> void:
 		_by_region[rid] = built
 		var at := Vector3(float(a[0]), float(a[1]), float(a[2]))
 		var yaw: float = float(s.get("yaw", 0.0))
+		var dress: bool = not in_building(rt.placements, td, at)
 		var streamer: Variant = terrain.get(&"streamer")
 		if streamer != null:
-			(streamer.get(&"steps")).call(&"add", ["Manning the Waystation…", add_post.bind(post_id, td, at, yaw), "trader %s" % post_id])
+			(streamer.get(&"steps")).call(&"add", ["Manning the Waystation…", add_post.bind(post_id, td, at, yaw, true, dress), "trader %s" % post_id])
 		else:
-			add_post(post_id, td, at, yaw)
+			add_post(post_id, td, at, yaw, true, dress)
 
 
 func _on_region_detached(rid: String) -> void:
@@ -113,8 +114,36 @@ func _exit_tree() -> void:
 		Game.unregister_command(c)
 
 
+## Whether a post's spawn stands inside a placement of the building its def is built into
+## (TraderDef.in_poi; RegionTerrain.placements entries). Warns when it is off the building's anchor:
+## the counter would not stand at the post's hatch.
+static func in_building(placements: Array, td: TraderDef, at: Vector3) -> bool:
+	if td.in_poi.is_empty():
+		return false
+	var want := StringName(str(td.in_poi.get("poi", "")))
+	var pd: PoiDef = Content.get_def(&"poi", want) as PoiDef
+	if pd == null:
+		return false
+	for pl: Variant in placements:
+		var p: Dictionary = pl
+		if str(p.get("kind", "")) != "poi" or StringName(str(p.get("def", ""))) != want:
+			continue
+		var o: Array = p["origin"]
+		var xf := Transform3D(Basis(Vector3.UP, -deg_to_rad(float(p.get("rotation", 0.0)))), Vector3(float(o[0]), float(o[1]), float(o[2])))
+		var local: Vector3 = xf.affine_inverse() * at
+		if local.x < 0.0 or local.z < 0.0 or local.x > float(pd.footprint.x) or local.z > float(pd.footprint.y):
+			continue
+		var a: Array = td.in_poi["anchor"]
+		var off: float = Vector2(local.x, local.z).distance_to(Vector2(float(a[0]), float(a[1])))
+		if off > 0.5:
+			Log.warn("trade", "%s spawn is %.1f m off its anchor in %s (%s): its counter won't stand at the hatch" % [td.id, off, want, p.get("id", "")])
+		return true
+	return false
+
+
 ## Raises a post (also used by tests and QA shots). `yaw` in degrees: the post's +Z faces it.
-func add_post(post_id: String, td: TraderDef, pos: Vector3, yaw: float, build: bool = true) -> void:
+## `dress` false: the post stands in its building (in_building) and raises no set dressing.
+func add_post(post_id: String, td: TraderDef, pos: Vector3, yaw: float, build: bool = true, dress: bool = true) -> void:
 	var entry: Dictionary = {"id": post_id, "def": td, "pos": pos, "yaw": yaw, "node": null}
 	posts[post_id] = entry
 	Log.info("trade", "%s raised at (%.0f, %.0f), facing %.0f°" % [post_id, pos.x, pos.z, yaw])
@@ -124,6 +153,7 @@ func add_post(post_id: String, td: TraderDef, pos: Vector3, yaw: float, build: b
 		node.manager = self
 		node.post_id = post_id
 		node.def = td
+		node.dress = dress
 		add_child(node)
 		node.global_transform = Transform3D(Basis(Vector3.UP, deg_to_rad(yaw)), pos)
 		node.build(world)

@@ -1,5 +1,5 @@
 {
- "_doc": "Waystation 9 (ADR-0039): the Remand Program's trader relay post. DESIGN puts it at the Cordon wall where the river leaves the valley (region D7); until D7 is built it stands in D6 by Route 9, short of the river's exit (spawn feature trader:waystation_9). Offsets are post-local metres; +Z faces the road.",
+ "_doc": "Waystation 9 (ADR-0039): the Remand Program's trader relay post. DESIGN puts it at the Cordon wall where the river leaves the valley (region D7), built into the wall as the POI waystation_9_post; until D7 is built it stands in D6 by Route 9, short of the river's exit (spawn feature trader:waystation_9). Offsets are post-local metres; +Z faces the road (the valley). in_poi: where the spawn stands in a placement of waystation_9_post (at its anchor, plan metres (18.0, 21.04), facing the placement's front: TraderDef.spawn_in), the post raises only the counter (in the building's hatch recess), the board and the quartermaster - the building and the wall are its dressing, and the props ring below stands only at the D6 stand-in (TD-369).",
  "defs": [
   {
    "id": "waystation_9",
@@ -7,6 +7,13 @@
    "description": "The Remand Program's relay post on Route 9: a quartermaster, a counter and a contracts board inside a ring of barriers the Program's guards keep clear.",
    "safe_radius": 40.0,
    "guard_dps": 60.0,
+   "in_poi": {
+    "poi": "waystation_9_post",
+    "anchor": [
+     18.0,
+     21.04
+    ]
+   },
    "quartermaster": {
     "model": "characters/waystation_quartermaster",
     "offset": [
