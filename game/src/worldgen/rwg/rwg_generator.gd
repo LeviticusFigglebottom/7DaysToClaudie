@@ -62,7 +62,8 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## placed last from its own stream, so every other place stays where it was.
 ## 14: a town lot's height stays within LOT_STREET_STEP of its street's profile where it meets it
 ## (TerrainComposer.town_street_profiles, composer 14): no lip between a yard and its street (TD-318).
-const VERSION: int = 14
+## 15: the world roads a town's lots and streets meet are the composer's pinned ones (composer 15).
+const VERSION: int = 15
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -2703,9 +2704,7 @@ func _finalize_town_heights() -> void:
 		var plan: Dictionary = tw["plan"]
 		var streets: Array = plan.get("roads", [])
 		# The world roads through or by it, as the composer will pick them (by its written points).
-		var world_roads: Array = []
-		for rd: Dictionary in roads:
-			world_roads.append({"id": rd["id"], "line": Polyline2.from_array(Terrain._arr(rd["points"])), "surface": rd["surface"]})
+		var world_roads: Array = _world_roads_profiled()
 		var cw: Array = Terrain._arr(PackedVector2Array([tw["center"]]))[0]
 		var fixed: Array = TerrainComposer.town_world_roads(world_roads, Vector2(float(cw[0]), float(cw[1])), float(tw["radius"]))
 		var profiles: Dictionary = TerrainComposer.town_street_profiles(streets, _ref.h, fixed)
@@ -2729,6 +2728,24 @@ func _finalize_town_heights() -> void:
 			l["y"] = y
 		if not (plan.get("plaza", {}) as Dictionary).is_empty():
 			plan["plaza"]["y"] = _frame_height(plan["plaza"]["frame"])
+
+
+## The world roads as the composer reads them (by their written points), each with its pinned
+## profile (TerrainComposer.world_road_profiles), built once.
+var _world_profiled: Array = []
+
+
+func _world_roads_profiled() -> Array:
+	if not _world_profiled.is_empty():
+		return _world_profiled
+	var rs: Array = []
+	for rd: Dictionary in roads:
+		rs.append({"id": rd["id"], "line": Polyline2.from_array(Terrain._arr(rd["points"])), "surface": rd["surface"]})
+	var profs: Dictionary = TerrainComposer.world_road_profiles(rs, _ref.h)
+	for e: Dictionary in rs:
+		e["profile"] = profs[str(e["id"])]
+	_world_profiled = rs
+	return rs
 
 
 ## How far a lot's yard may stand above or below its street where it meets it (m, TD-318).
