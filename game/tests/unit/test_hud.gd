@@ -127,3 +127,10 @@ func test_prompt_hangs_centred_under_the_crosshair() -> void:
 	var mid: float = l.get_parent_control().size.x * 0.5
 	assert_almost_eq(l.position.x + l.size.x * 0.5, mid, 1.0)
 	assert_almost_eq(l.position.y, l.get_parent_control().size.y * 0.5 + 28.0, 1.0)
+
+
+func test_build_controls_and_drop_line() -> void:
+	assert_string_contains(GameUI.build_controls(true, false), "place")
+	assert_string_contains(GameUI.build_controls(false, true), "set the log")
+	assert_eq(GameUI.build_controls(false, false), "")
+	assert_eq(GameUI.drop_landed_line("north-west, 140 m"), "The canister is down, north-west, 140 m. Its smoke marks the spot.")
