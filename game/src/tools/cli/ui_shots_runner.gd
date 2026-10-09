@@ -1,7 +1,7 @@
 extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
-const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "options_graphics", "options_controls", "new_game", "manual",
+const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "options_graphics", "options_controls", "new_game", "load", "manual",
 	"loading", "pause", "trader", "death", "hud", "vignette", "note_handwritten", "note_scrawl", "note_typed", "note_printed", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
@@ -131,6 +131,40 @@ func _shot_new_game() -> Node:
 	layer.add_child(p)
 	await _settle(2)
 	p.position = (get_viewport().get_visible_rect().size - p.size) * 0.5
+	return layer
+
+
+## Two runs as the Load screen shows them, their thumbnails cut from earlier playtest frames (the
+## same crop a save makes), and one from before thumbnails.
+func _shot_load() -> Node:
+	var now: int = int(Time.get_unix_time_from_system())
+	var runs: Array[Dictionary] = [
+		{"slot": "qa_shot_run_a", "day": 6, "hour": 22.4, "preset": "survivor", "world_mode": "main", "play_seconds": 14820, "saved_unix": now - 600,
+			"thumb": "2026-10-06_build67_axe_dark_room.webp", "card": {"place": "Volunteer Fire Station", "region": "Pell's Crossing"}},
+		{"slot": "qa_shot_run_b", "day": 2, "hour": 9.1, "preset": "normal", "world_mode": "random", "play_seconds": 3300, "saved_unix": now - 3 * 86400,
+			"thumb": "2026-10-07_interiors_low_preset_and_night.webp", "card": {"place": "the woods of Larch Hollow", "region": "Larch Hollow"}},
+		{"slot": "qa_shot_run_c", "day": 1, "hour": 7.5, "preset": "normal", "world_mode": "main", "play_seconds": 400, "saved_unix": now - 9 * 86400},
+	]
+	var slots: Array[Dictionary] = []
+	for r: Dictionary in runs:
+		var dir: String = SaveSystem.slot_dir(str(r["slot"]))
+		DirAccess.make_dir_recursive_absolute(dir)
+		if r.has("thumb"):
+			var img := Image.load_from_file(ProjectSettings.globalize_path("res://../docs/playtest").path_join(str(r["thumb"])))
+			if img != null:
+				LoadPanel.thumbnail(img).save_webp(dir.path_join(LoadPanel.THUMB_FILE), true, 0.8)
+			var f := FileAccess.open(dir.path_join(LoadPanel.CARD_FILE), FileAccess.WRITE)
+			f.store_string(JSON.stringify(r["card"]))
+			f.close()
+		slots.append(r)
+	var layer: CanvasLayer = _ui_layer()
+	var p := LoadPanel.new()
+	p.slots = slots
+	layer.add_child(p)
+	await _settle(2)
+	p.position = (get_viewport().get_visible_rect().size - p.size) * 0.5
+	for r: Dictionary in runs:
+		SaveSystem.delete_slot(str(r["slot"]))
 	return layer
 
 

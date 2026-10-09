@@ -16,11 +16,17 @@ signal finished()
 
 const SCRIPT_PATH: String = "res://data/intro/intro.json"
 const KINDS: PackedStringArray = ["caption", "document", "radio", "impact", "world", "title"]
-const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds", "caption", "poi", "at"]
+const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds", "caption", "poi", "at", "from", "to", "height"]
 ## The world card's camera: metres out from its target, up, and degrees it turns over the card.
-const SHOT_RADIUS: float = 34.0
-const SHOT_HEIGHT: float = 11.0
-const SHOT_TURN: float = 24.0
+const SHOT_RADIUS: float = 38.0
+const SHOT_HEIGHT: float = 15.0
+const SHOT_TURN: float = 14.0
+## Where the camera starts round its target (degrees, 0 = +Z, 90 = +X: east, up the wreck's
+## swath of snapped trees, which trails east of the nose; the swath is the clear line of sight).
+const SHOT_START: float = 82.0
+## A shot framed on its POI's plan (`from`/`to` cells): the camera starts `height` m over `from`,
+## looks at `to`, and moves this share of the way toward it over the card (a slow push in).
+const SHOT_PUSH: float = 0.22
 ## The impact card: seconds of shake and of the flash's fade.
 const SHAKE_TIME: float = 1.6
 const SHAKE_PX: float = 26.0
@@ -57,6 +63,10 @@ var _shot_cam: Camera3D = null
 var _prev_cam: Camera3D = null
 var _shot_at: Vector3 = Vector3.ZERO
 var _shot_yaw: float = 0.0
+## A framed shot's camera start and end (empty: orbit `_shot_at` instead), and its time so far.
+var _shot_path: PackedVector3Array = []
+var _shot_t: float = 0.0
+var _shot_len: float = 1.0
 var _bg: ColorRect
 
 
@@ -364,12 +374,38 @@ static func shot_target(c: Dictionary) -> Variant:
 	return null
 
 
+## A framed shot in world space: [camera start, camera end, look-at], from the card's `from`/`to`
+## cells on its POI's plan (empty when the card has none, or the POI isn't built).
+static func shot_frame(c: Dictionary) -> PackedVector3Array:
+	var w: Node = Game.world
+	var from: Array = c.get("from", [])
+	var to: Array = c.get("to", [])
+	if w == null or from.size() != 2 or to.size() != 2 or w.get(&"pois") == null:
+		return PackedVector3Array()
+	var poi_id := StringName(str(c.get("poi", "")))
+	for inst: Variant in (w.get(&"pois").get(&"instances") as Dictionary).values():
+		var n: Node3D = inst as Node3D
+		if n == null or not is_instance_valid(n) or n.get(&"layout") == null:
+			continue
+		var layout: PoiLayout = n.get(&"layout") as PoiLayout
+		if layout.def == null or layout.def.id != poi_id:
+			continue
+		var a: Vector3 = n.global_transform * layout.cell_center(0, Vector2i(int(from[0]), int(from[1])))
+		var b: Vector3 = n.global_transform * layout.cell_center(0, Vector2i(int(to[0]), int(to[1])))
+		var up := Vector3.UP * float(c.get("height", SHOT_HEIGHT))
+		return PackedVector3Array([a + up, a.lerp(b, SHOT_PUSH) + up, b + Vector3.UP * 1.5])
+	return PackedVector3Array()
+
+
 func _begin_shot(c: Dictionary) -> void:
 	var at: Variant = shot_target(c)
 	if at == null:
 		return
 	_shot_at = at
-	_shot_yaw = deg_to_rad(200.0)
+	_shot_path = shot_frame(c)
+	_shot_t = 0.0
+	_shot_len = maxf(float(c.get("hold", 6.0)) + 2.0 * FADE, 1.0)
+	_shot_yaw = deg_to_rad(SHOT_START)
 	_prev_cam = get_viewport().get_camera_3d()
 	_shot_cam = Camera3D.new()
 	_shot_cam.fov = 52.0
@@ -384,6 +420,11 @@ func _begin_shot(c: Dictionary) -> void:
 
 
 func _turn_shot(dt: float) -> void:
+	if _shot_path.size() == 3:
+		_shot_t += dt
+		var k: float = smoothstep(0.0, 1.0, clampf(_shot_t / _shot_len, 0.0, 1.0))
+		_shot_cam.look_at_from_position(_shot_path[0].lerp(_shot_path[1], k), _shot_path[2], Vector3.UP)
+		return
 	_shot_yaw += deg_to_rad(SHOT_TURN) / 14.0 * dt
 	var off := Vector3(sin(_shot_yaw), 0.0, cos(_shot_yaw)) * SHOT_RADIUS
 	var pos: Vector3 = _shot_at + off

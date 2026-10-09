@@ -48,6 +48,17 @@ var _heart: AudioStreamPlayer
 var intro: IntroPlayer = null
 ## Whether the intro paused the world (it outlasted the load) and holds the "intro" modal.
 var _intro_holds_world: bool = false
+## The last clean frame of play (no menu over it), kept for the save's thumbnail on the Load
+## screen: taken as the pause menu opens and every THUMB_EVERY seconds of free play.
+var _last_frame: Image = null
+var _tip_box: Control
+var _tip_title: Label
+var _tip_text: Label
+var _tips: Array[Array] = []
+var _tip_i: int = 0
+var _tip_left: float = 0.0
+var _frame_t: float = 0.0
+const THUMB_EVERY: float = 90.0
 
 
 func _ready() -> void:
@@ -79,6 +90,7 @@ func _ready() -> void:
 	Events.player_damaged.connect(_on_player_damaged)
 	# The Hum's warnings and its start are announced by HumDirector alone (with the forecast).
 	Events.horde_night_ended.connect(_on_hum_ended)
+	Events.game_saved.connect(_write_thumb)
 	Events.game_saved.connect(func(_slot: String, ok: bool) -> void:
 		# Autosaves announce themselves in their own line ("Rested. Progress saved.").
 		if not ok or not Game.autosaving:
@@ -138,15 +150,66 @@ func _build_loading() -> void:
 	_loading_map.size = Vector2(520, 520)
 	_loading_map.visible = false
 	_loading.add_child(_loading_map)
-	var tip := Label.new()
-	tip.text = "Night is darker than you think. Carry a light — and remember they see it too."
-	tip.add_theme_font_override(&"font", UiStyle.hand_font())
-	tip.add_theme_font_size_override(&"font_size", 30)
-	tip.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
-	tip.anchor_top = 1.0
-	tip.anchor_bottom = 1.0
-	tip.position = Vector2(84, -80)
-	_loading.add_child(tip)
+	# A Survival page from the Field Manual at a time, turned at reading pace (never one that
+	# gives away a find: FieldManual.TIPS_NOT_WHILE_LOADING).
+	var tip_box := VBoxContainer.new()
+	tip_box.add_theme_constant_override(&"separation", 6)
+	tip_box.anchor_top = 1.0
+	tip_box.anchor_bottom = 1.0
+	tip_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	tip_box.offset_left = 84
+	tip_box.offset_right = 84 + 1000
+	tip_box.offset_bottom = -64
+	_loading.add_child(tip_box)
+	_tip_title = Label.new()
+	_tip_title.add_theme_font_override(&"font", UiStyle.hand_font())
+	_tip_title.add_theme_font_size_override(&"font_size", 32)
+	_tip_title.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
+	tip_box.add_child(_tip_title)
+	_tip_text = Label.new()
+	_tip_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tip_text.custom_minimum_size = Vector2(1000, 0)
+	_tip_text.add_theme_font_size_override(&"font_size", 19)
+	_tip_text.add_theme_color_override(&"font_color", Color(0.72, 0.73, 0.68))
+	tip_box.add_child(_tip_text)
+	_tip_box = tip_box
+	_tips = FieldManual.loading_tips()
+	_tip_i = randi() % maxi(_tips.size(), 1)
+	_show_tip()
+
+
+## How long a tip stays up: reading time at a calm pace, at least 8 s.
+static func tip_seconds(text: String) -> float:
+	return maxf(8.0, text.split(" ", false).size() / 3.2 + 2.0)
+
+
+func _show_tip() -> void:
+	if _tips.is_empty():
+		return
+	var t: Array = _tips[_tip_i % _tips.size()]
+	_tip_title.text = str(t[0])
+	_tip_text.text = str(t[1])
+	_tip_left = tip_seconds(str(t[1]))
+	_tip_box.modulate.a = 0.0
+	var tw := _tip_box.create_tween()
+	tw.tween_property(_tip_box, "modulate:a", 1.0, 0.6)
+
+
+func _turn_tip(delta: float) -> void:
+	if _loading == null or not _loading.visible or _tips.is_empty():
+		return
+	_tip_left -= delta
+	if _tip_left <= 0.0:
+		_tip_i = (_tip_i + 1) % _tips.size()
+		_tip_left = 1.0e9
+		var tw := _tip_box.create_tween()
+		tw.tween_property(_tip_box, "modulate:a", 0.0, 0.6)
+		tw.tween_callback(_show_tip)
+
+
+## The tip on the loading screen now ([title, text]).
+func loading_tip() -> Array:
+	return [_tip_title.text, _tip_text.text] if _tip_title != null else []
 
 
 ## `map`: the world's map (random worlds) and `marks` its region states (LoadingMap); a null map
@@ -425,6 +488,7 @@ void fragment() {
 
 
 func _process(delta: float) -> void:
+	_turn_tip(delta)
 	var w: Node = Game.world
 	if w == null or w.get("player") == null or w.player == null:
 		return
@@ -440,6 +504,9 @@ func _process(delta: float) -> void:
 		# the cancel key on the target does (take a blueprint ghost down).
 		_tool_hint.text = place_why if place_why != "" else (p.interaction.tool_hint if p.interaction.tool_hint != "" else p.interaction.alt_prompt)
 	_update_belt(p.state, delta)
+	_frame_t += delta
+	if _frame_t >= THUMB_EVERY and not has_modal() and not _overlay.visible and not is_intro_playing():
+		_grab_frame()
 	if not _hits.is_empty():
 		for h: Dictionary in _hits:
 			h["t"] = float(h["t"]) - delta
@@ -731,6 +798,9 @@ func toggle_pause() -> void:
 		Events.ui_modal_closed.emit(top)
 		pop_modal(top)
 		return
+	if on:
+		# The frame just drawn, before the menu covers it: what a save from the menu shows.
+		_grab_frame()
 	_pause.visible = on
 	get_tree().paused = on
 	if on:
@@ -874,6 +944,48 @@ func _cmd_mark_found(args: Dictionary) -> Dictionary:
 func _on_note_found(note_id: StringName) -> void:
 	var day: int = Game.session.clock.day() if Game.session != null and Game.session.clock != null else 1
 	Game.execute(&"notes.mark_found", {"note": String(note_id), "where": place_name(), "day": day})
+
+
+func _grab_frame() -> void:
+	_frame_t = 0.0
+	# The headless (dummy) renderer has no frame to read: its saves get the plain plate.
+	if DisplayServer.get_name() == "headless":
+		return
+	var tex: ViewportTexture = get_viewport().get_texture()
+	var img: Image = tex.get_image() if tex != null else null
+	if img != null and not img.is_empty():
+		_last_frame = img
+
+
+## After a save: the slot's thumbnail and where it was made, beside the save (LoadPanel reads them).
+## Additive files the loader ignores; a save without them shows a plain plate.
+func _write_thumb(slot: String, ok: bool) -> void:
+	if not ok:
+		return
+	var dir: String = SaveSystem.slot_dir(slot)
+	if not DirAccess.dir_exists_absolute(dir):
+		return
+	var f := FileAccess.open(dir.path_join(LoadPanel.CARD_FILE), FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify({"place": place_name(), "region": region_name()}))
+		f.close()
+	if _last_frame == null:
+		_grab_frame()
+	if _last_frame != null:
+		LoadPanel.thumbnail(_last_frame).save_webp(dir.path_join(LoadPanel.THUMB_FILE), true, 0.8)
+
+
+## The region the player stands in ("" before the world exists).
+static func region_name() -> String:
+	var w: Node = Game.world
+	if w == null or w.get(&"player") == null:
+		return ""
+	var at: Vector3 = (w.player as Node3D).global_position
+	var tm: Object = w.get(&"terrain")
+	var wd: WorldDef = tm.get(&"world") as WorldDef if tm != null else null
+	if wd == null:
+		return ""
+	return str((wd.regions.get(wd.region_at(at.x, at.z), {}) as Dictionary).get("name", ""))
 
 
 ## Where the player stands, as a note's finding place: the building they're in, else the region.
