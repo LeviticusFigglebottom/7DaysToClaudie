@@ -1176,7 +1176,10 @@ class FPRig:
                 bn = f"{name}_1.{sd}"
                 r = sk.rest[bn]
                 toward_thumb = 1.0 if float(np.cross(r[:, 2], r[:, 1]) @ lat) > 0 else -1.0
-                Q[bn] = _R(r[:, 2], FINGER_CONVERGE[k] * max(0.0, c) * toward_thumb) @ Q[bn]
+                # A relaxed hand also keeps its fingers together whatever their curl (`together`,
+                # ADR-0060): splayed at rest, a lightly curled hand read as hovering over keys.
+                tog = float(prm.get(f"{sd}.together", 0.0))
+                Q[bn] = _R(r[:, 2], (FINGER_CONVERGE[k] * max(0.0, c) + FINGER_TOGETHER[k] * tog) * toward_thumb) @ Q[bn]
             # The thumb opposes as it closes: its metacarpal swings across the palm and turns
             # about its own length so the pad, not the side, meets the index finger; then its
             # two joints wrap the handle.
@@ -1244,6 +1247,9 @@ FINGER_CURL = (68.0, 92.0, 58.0)
 FINGER_SCALE = {"ix": 1.0, "md": 1.0, "rg": 1.05, "pk": 1.12}
 # How far each finger swings toward the thumb side (degrees, + towards it) at curl 1.
 FINGER_CONVERGE = {"ix": -5.0, "md": 0.0, "rg": 4.0, "pk": 9.0}
+# How far each finger swings toward the middle one at `together` 1 (degrees, + towards the thumb):
+# the rest pose's splay closed, the fingers touching.
+FINGER_TOGETHER = {"ix": -6.0, "md": 0.0, "rg": 5.0, "pk": 10.0}
 # Thumb at curl 1: metacarpal flexion across the palm, swing toward the fingers, opposition about
 # its own axis; then MCP and IP flexion (degrees).
 THUMB_CURL = (30.0, 30.0, 25.0, 38.0, 48.0)
@@ -1264,8 +1270,8 @@ WRIST_COMFORT = {"flex": 18.0, "extend": 30.0, "radial": 10.0, "ulnar": 20.0, "r
 # straightest win), never a reason to break range.
 COMFORT_COST = 0.25
 
-SCALARS = ("fist", "thumb", "index", "flick")
-DEFAULT_SCALARS = {"fist": 0.4, "thumb": 0.4, "index": 0.0, "flick": 0.0}
+SCALARS = ("fist", "thumb", "index", "flick", "together")
+DEFAULT_SCALARS = {"fist": 0.4, "thumb": 0.4, "index": 0.0, "flick": 0.0, "together": 0.0}
 
 
 class Hand:
