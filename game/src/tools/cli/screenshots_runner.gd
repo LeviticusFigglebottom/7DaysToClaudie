@@ -96,8 +96,10 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "furnished_base", "pos": Vector3(-290.8, 2.1, 2302.8), "look": Vector3(-286.4, 0.7, 2297.4), "hour": 16.0, "weather": "overcast", "base_kit": true, "fov": 58.0},
 	# Waystation 9 (ADR-0039) from Route 9's drive: the gate, the barriers, the counter with the
 	# quartermaster behind it and the contracts board.
-	{"name": "waystation_9", "pos": Vector3(-54.0, 2.4, 2530.0), "look": Vector3(-27.0, 1.4, 2521.0), "hour": 17.5, "weather": "clear", "fov": 62.0},
-	{"name": "waystation_counter", "pos": Vector3(-36.5, 1.6, 2524.5), "look": Vector3(-25.5, 1.3, 2521.5), "hour": 11.0, "weather": "overcast", "fov": 55.0},
+	{"name": "waystation_9", "pos": Vector3(-74.0, 2.4, 3405.0), "look": Vector3(-58.0, 3.0, 3440.0), "hour": 17.5, "weather": "clear", "fov": 62.0},
+	{"name": "cordon_wall", "pos": Vector3(-150.0, 3.0, 3395.0), "look": Vector3(-40.0, 4.0, 3450.0), "hour": 15.0, "weather": "clear", "fov": 70.0},
+	{"name": "cordon_river_gate", "pos": Vector3(-8.0, 3.0, 3380.0), "look": Vector3(-8.0, 3.0, 3450.0), "hour": 15.0, "weather": "clear", "fov": 70.0},
+	{"name": "waystation_counter", "pos": Vector3(-58.0, 1.6, 3431.5), "look": Vector3(-58.0, 1.3, 3438.5), "hour": 11.0, "weather": "overcast", "fov": 55.0},
 	{"name": "hound_pack", "pos": Vector3(-300, 1.6, 2297), "look": Vector3(-300, 0.5, 2291.5), "hour": 16.5, "weather": "overcast", "fov": 50.0,
 	 "lineup": [["hollow_hound", -1.5, "normal", ""], ["hollow_hound", 0.0, "seeded", ""], ["hollow_hound", 1.5, "normal", ""]],
 	 "cam_height": 0.9, "look_height": 0.45},

@@ -1,0 +1,558 @@
+{
+  "_doc": "Region D7 Waystation 9 (x -512..512, z 2560..3584): Route 9 and the Tamsin run south to the Cordon wall, where the river leaves the valley through its gate and the Program keeps Waystation 9 in the wall. North of the wall a burnt firebreak; forest beyond. See docs/REGIONS.md for the feature vocabulary.",
+  "id": "d7_waystation_9",
+  "cell": "D7",
+  "name": "Waystation 9",
+  "default_biome": "conifer_forest",
+  "detail_noise": {
+    "layers": [
+      {
+        "frequency": 0.0042,
+        "octaves": 3,
+        "amplitude": 6.0
+      },
+      {
+        "frequency": 0.016,
+        "octaves": 4,
+        "amplitude": 2.0
+      },
+      {
+        "frequency": 0.07,
+        "octaves": 2,
+        "amplitude": 0.3
+      }
+    ]
+  },
+  "features": [
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        -460,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        -380,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        -300,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        -220,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        -140,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        -60,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        20,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        100,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        180,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        260,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        340,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "burnt_forest",
+      "circle": [
+        420,
+        3400
+      ],
+      "radius": 62,
+      "blend": 22
+    },
+    {
+      "type": "biome",
+      "biome": "meadow",
+      "circle": [
+        -60,
+        3330
+      ],
+      "radius": 70,
+      "blend": 30
+    },
+    {
+      "type": "biome",
+      "biome": "meadow",
+      "circle": [
+        0,
+        3330
+      ],
+      "radius": 70,
+      "blend": 30
+    },
+    {
+      "type": "biome",
+      "biome": "meadow",
+      "circle": [
+        60,
+        3330
+      ],
+      "radius": 70,
+      "blend": 30
+    },
+    {
+      "_doc": "The firebreak: burnt and bare for ~80 m north of the wall (the clearings take the trees and brush; the burnt_forest paint gives the ground).",
+      "type": "clearing",
+      "pos": [
+        -480,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        -420,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        -360,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        -300,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        -240,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        -180,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        -120,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        -60,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        0,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        60,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        120,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        180,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        240,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        300,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        360,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        420,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "type": "clearing",
+      "pos": [
+        480,
+        3412
+      ],
+      "radius": 42
+    },
+    {
+      "_doc": "The Cordon wall where the Tamsin leaves the valley (DESIGN \u00a71): concrete panels on the line z 3450, listed west-bound so their valley side (+Z) faces north. Gaps on the 6 m pitch: the Route 9 gate (x -88), Waystation 9 built into the wall (x -40..-76) and the river gate (x 14..-28).",
+      "type": "prop_line",
+      "id": "cordon_wall",
+      "prop": "cordon_wall_panel",
+      "pitch": 6.0,
+      "points": [
+        [
+          500,
+          3450
+        ],
+        [
+          -500,
+          3450
+        ]
+      ],
+      "gaps": [
+        [
+          -88,
+          3450,
+          6.01
+        ],
+        [
+          -58,
+          3450,
+          18.01
+        ],
+        [
+          -7,
+          3450,
+          21.01
+        ]
+      ],
+      "clear": 6.0
+    },
+    {
+      "_doc": "The Cordon's road gate on Route 9 and its river gate: six culvert bays between two abutments on the Tamsin's bed (54.7 m here; the banks stand ~5 m over it, so the river section's tops sit ~3 m under the bank panels'). See data/props/cordon.json _tiling.",
+      "type": "props",
+      "id": "cordon_gates",
+      "items": [
+        {
+          "prop": "cordon_wall_gate",
+          "pos": [
+            -88,
+            3450
+          ],
+          "rot": 180,
+          "clear": 8
+        },
+        {
+          "prop": "cordon_river_abutment",
+          "pos": [
+            12.5,
+            3450
+          ],
+          "rot": 180,
+          "ground_at": [
+            -8,
+            3450
+          ],
+          "y_offset": 0.0
+        },
+        {
+          "prop": "cordon_river_gate",
+          "pos": [
+            8,
+            3450
+          ],
+          "rot": 180,
+          "ground_at": [
+            -8,
+            3450
+          ],
+          "y_offset": 0.0
+        },
+        {
+          "prop": "cordon_river_gate",
+          "pos": [
+            2,
+            3450
+          ],
+          "rot": 180,
+          "ground_at": [
+            -8,
+            3450
+          ],
+          "y_offset": 0.0
+        },
+        {
+          "prop": "cordon_river_gate",
+          "pos": [
+            -4,
+            3450
+          ],
+          "rot": 180,
+          "ground_at": [
+            -8,
+            3450
+          ],
+          "y_offset": 0.0
+        },
+        {
+          "prop": "cordon_river_gate",
+          "pos": [
+            -10,
+            3450
+          ],
+          "rot": 180,
+          "ground_at": [
+            -8,
+            3450
+          ],
+          "y_offset": 0.0
+        },
+        {
+          "prop": "cordon_river_gate",
+          "pos": [
+            -16,
+            3450
+          ],
+          "rot": 180,
+          "ground_at": [
+            -8,
+            3450
+          ],
+          "y_offset": 0.0
+        },
+        {
+          "prop": "cordon_river_gate",
+          "pos": [
+            -22,
+            3450
+          ],
+          "rot": 180,
+          "ground_at": [
+            -8,
+            3450
+          ],
+          "y_offset": 0.0
+        },
+        {
+          "prop": "cordon_river_abutment",
+          "pos": [
+            -26.5,
+            3450
+          ],
+          "rot": 0,
+          "ground_at": [
+            -8,
+            3450
+          ],
+          "y_offset": 0.0
+        },
+        {
+          "prop": "cordon_notice_board",
+          "pos": [
+            -80,
+            3438
+          ],
+          "rot": 0
+        }
+      ]
+    },
+    {
+      "_doc": "Waystation 9, the Program's relay post built into the wall (36 x 28, plan +Z to the valley, the wall line at plan z 9): corner at plan (0, 0) = world (-40, 3459), turned 180.",
+      "type": "poi",
+      "id": "waystation_9_post",
+      "poi": "waystation_9_post",
+      "origin": [
+        -40,
+        3459
+      ],
+      "rotation": 180,
+      "biome": "meadow",
+      "skirt": 10
+    },
+    {
+      "_doc": "Waystation 9's quartermaster (data/traders/waystation_9.json in_poi anchor [18, 21.04] in the post): origin + anchor turned 180.",
+      "type": "spawn",
+      "id": "trader:waystation_9",
+      "pos": [
+        -58.0,
+        3437.96
+      ],
+      "yaw": -180
+    },
+    {
+      "type": "road",
+      "id": "waystation_9_drive",
+      "surface": "asphalt",
+      "width": 5.5,
+      "shoulder": 0.8,
+      "markings": false,
+      "points": [
+        [
+          -84.5,
+          3420
+        ],
+        [
+          -70,
+          3420
+        ],
+        [
+          -58,
+          3424
+        ]
+      ]
+    },
+    {
+      "_doc": "The Cordon's relay hut on the rise west of the road: the orders came through it.",
+      "type": "poi",
+      "id": "d7_ridge_relay_hut",
+      "poi": "w4_ridge_relay_hut",
+      "origin": [
+        -300,
+        3150
+      ],
+      "rotation": 90,
+      "biome": "conifer_forest",
+      "skirt": 10
+    },
+    {
+      "type": "frontier",
+      "id": "cordon_gate_south",
+      "pos": [
+        -88,
+        3480
+      ],
+      "kind": "road",
+      "leads_to": "outside",
+      "note": "Route 9 through the Cordon's gate: closed."
+    },
+    {
+      "type": "frontier",
+      "id": "route9_north",
+      "pos": [
+        -92,
+        2570
+      ],
+      "kind": "road",
+      "leads_to": "d6_larch_hollow",
+      "note": "Route 9 north to Larch Hollow and Pell's Crossing."
+    }
+  ]
+}

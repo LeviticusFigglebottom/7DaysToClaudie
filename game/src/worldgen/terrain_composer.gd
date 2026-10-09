@@ -896,7 +896,8 @@ class _Build:
 		return out
 
 	## A `props` feature's pieces (TD-369): each item {prop, pos: [x, z], rot, y?: absolute height,
-	## else the composed ground at pos plus `y_offset`, variant?}.
+	## else the composed ground at pos (or at `ground_at` [x, z]: a river gate's bays all set from
+	## one bank) plus `y_offset`, variant?}.
 	func _props_items(f: Dictionary, hf: HeightField) -> Array:
 		var out: Array = []
 		for it: Variant in f.get("items", []):
@@ -904,7 +905,8 @@ class _Build:
 			var p: Vector2 = _v2(d["pos"])
 			if not rect.has_point(p):
 				continue
-			var y: float = float(d["y"]) if d.has("y") else hf.sample(p.x, p.y) + float(d.get("y_offset", 0.0))
+			var at: Vector2 = _v2(d["ground_at"]) if d.has("ground_at") else p
+			var y: float = float(d["y"]) if d.has("y") else hf.sample(at.x, at.y) + float(d.get("y_offset", 0.0))
 			out.append({"prop": str(d["prop"]), "pos": [p.x, y, p.y], "rot": float(d.get("rot", 0.0)), "variant": str(d.get("variant", "worn"))})
 		return out
 
