@@ -159,6 +159,23 @@ func _run() -> void:
 	await seconds(3.0)
 	await snap("wake")
 	var ps: PlayerState = p.state
+	if OS.get_cmdline_user_args().has("--week-only"):
+		# Straight to the week (rendered frames of it without the hour's 48 minutes): the
+		# journal finished and Ezra recruited by command.
+		ps.tutorial.finish_all()
+		ps.inventory.add_item(&"cloth_bandage", 1)
+		var camp: Vector3 = w.tutorial.camp_position()
+		p.global_position = camp + Vector3(2, 0.5, 2)
+		w.terrain.update_streaming(p.global_position, true)
+		await seconds(3.0)
+		ex(&"companion.recruit", {})
+		await seconds(1.0)
+		p.global_position = w.drop_site() + Vector3(0, 0.5, 0)
+		w.terrain.update_streaming(p.global_position, true)
+		await seconds(3.0)
+		await _week()
+		_finish()
+		return
 	note("start kit: " + ", ".join(ps.inventory.stacks.map(func(s: ItemStack) -> String: return "%s x%d" % [s.item_id, s.count])))
 
 	# --- The tether and the first card -----------------------------------------------------------
@@ -225,9 +242,25 @@ func _run() -> void:
 				note("swing %d: hp %s, stamina %.0f, ray hits %s" % [i, str((veg.get(&"_tree_hp") as Dictionary).values()), ps.stats.stamina, str(p.interaction.target)])
 			p.equipment.primary()
 			swings += 1
-			await frames(int(0.9 * Engine.physics_ticks_per_second))
+			# A player's cadence: 0.9 s of physics ticks between presses (process frames ran
+			# faster than the swing, so presses landed mid-swing and were dropped).
+			for t: int in int(0.9 * Engine.physics_ticks_per_second):
+				await get_tree().physics_frame
 		note("felled after %d swings: %s (tree hp now %s, stamina %.0f)" % [swings, int(Game.session.stats.get("trees_felled", 0)) >= 1,
 			str((veg.get(&"_tree_hp") as Dictionary).values()), ps.stats.stamina])
+		# Swings that didn't fell it (finding 7): finish it as the smoke run does, so the
+		# tutorial's chain (and the distress call after it) still runs.
+		var body: Node = veg.body_for(trees[0], ti)
+		for i: int in 20:
+			if int(Game.session.stats.get("trees_felled", 0)) >= 1 or body == null or not is_instance_valid(body):
+				break
+			var info := DamageInfo.make(20.0, &"slash", &"melee", ps.id)
+			info.tool_power = {"chop": 30.0, "wood": 30.0}
+			info.hit_pos = ti.pos + Vector3.UP
+			info.direction = Vector3(-1, 0, 0.2).normalized()
+			info.collider = body
+			veg.take_damage(info)
+			await frames(2)
 		await seconds(3.0)
 		await snap("tree_felled")
 		var logs: Array = get_tree().get_nodes_in_group(&"logs")
@@ -446,7 +479,268 @@ func _run() -> void:
 	ui = w.ui
 	await seconds(3.0)
 	await snap("continued")
+	if OS.get_cmdline_user_args().has("--through") and OS.get_cmdline_user_args().has("hum"):
+		await _week()
 	_finish()
+
+
+# --- The first week (--through hum) --------------------------------------------------------------
+
+## Day 2 to the morning after the first Hum: building, the trader, Ezra's orders, hunting, a cave,
+## the supply drop, levelling, the Hum's warnings, the night and the morning after.
+func _week() -> void:
+	var ps: PlayerState = p.state
+	Settings.sound_captions = true
+	ps.inventory.add_item(&"log", 2)
+	for kv: Array in [["stick", 20], ["stone", 12], ["plant_fiber", 12], ["leaf_bundle", 8], ["cordage", 4], ["nails", 20], ["claw_hammer", 1]]:
+		if Content.item(StringName(kv[0])) != null:
+			ps.inventory.add_item(StringName(kv[0]), int(kv[1]))
+	var base: Vector3 = p.global_position + Vector3(6, 0, 0)
+	base.y = w.height_at(base.x, base.z)
+
+	# --- Building ---------------------------------------------------------------------------------
+	await face(base + Vector3.UP * 0.5, 4.0)
+	ui.manual.open("build")
+	await frames(4)
+	await snap("w_build_menu")
+	ui.close_top_screen()
+	var b: BuildingManager = w.building
+	note("begin placement lean_to: %s" % b.begin_placement(&"lean_to"))
+	await frames(10)
+	await snap("w_ghost_lean_to")
+	note("placement hint: '%s'" % b.placement_hint())
+	b.handle_primary(p)
+	await frames(6)
+	await snap("w_lean_to_placed")
+	b.cancel_placement()
+	for site: Node in get_tree().get_nodes_in_group(&"blueprint_sites"):
+		await face((site as Node3D).global_position + Vector3.UP * 0.5, 2.2)
+		await snap("w_lean_to_site_aim")
+		await use()
+		await snap("w_lean_to_site_filled")
+		break
+	# Freeform logs: one on the ground, one carried to snap onto it.
+	var lpos: Vector3 = base + Vector3(-2, 0, 3)
+	await face(lpos, 2.5)
+	ps.inventory.add_item(&"log", 2)
+	note("place a carried log: %s" % b.try_place_carried(p))
+	await frames(6)
+	await snap("w_log_placed")
+	note("second log (snaps onto the first): %s" % b.try_place_carried(p))
+	await frames(6)
+	await snap("w_log_snapped")
+	# Damage one piece and look at it with the hammer out: the repair prompt.
+	var pieces: Array = b.pieces.values()
+	if not pieces.is_empty():
+		var piece: StructurePiece = pieces[0]
+		var hit := DamageInfo.make(40.0, &"blunt", &"melee", &"")
+		hit.hit_pos = piece.global_position
+		b.damage_piece(piece, hit)
+		var hs: int = ps.toolbelt.find(&"claw_hammer")
+		if hs < 0:
+			ps.toolbelt[3] = &"claw_hammer"
+			hs = 3
+		p.equipment.select_slot(hs)
+		await face(piece.global_position + Vector3.UP * 0.3, 2.0)
+		await snap("w_repair_aim")
+		await use()
+		await snap("w_repaired")
+
+	# --- The trader at Waystation 9 -------------------------------------------------------------------
+	var tm: Node = w.get(&"traders")
+	var posts: Dictionary = tm.get(&"posts") if tm != null else {}
+	note("trader posts: %s" % str(posts.keys()))
+	if not posts.is_empty():
+		var post: Dictionary = posts[posts.keys()[0]]
+		var td: TraderDef = post["def"]
+		await face((post["pos"] as Vector3) + Vector3.UP * 1.2, 3.0)
+		await seconds(1.0)
+		await snap("w_trader_aim")
+		ps.inventory.add_item(&"scrip", 200)
+		ps.inventory.add_item(&"huckleberries", 4)
+		tm.call(&"open_screen", str(post["id"]), "shop")
+		await frames(6)
+		await snap("w_trader_buy")
+		var st: Dictionary = tm.call(&"stock_of", td.id, str(post["id"]))
+		note("stock: %s" % str(st.keys().slice(0, 8)))
+		if not st.is_empty():
+			ex(&"trade.buy", {"trader": String(td.id), "item": str(st.keys()[0]), "count": 1})
+		ex(&"trade.sell", {"trader": String(td.id), "item": "huckleberries", "count": 2})
+		await frames(4)
+		await snap("w_trader_after_trade")
+		ui.close_top_screen()
+		tm.call(&"open_screen", str(post["id"]), "board")
+		await frames(6)
+		await snap("w_trader_board")
+		var offers: Array = tm.call(&"board_offers", ps, td)
+		note("board offers: %d" % offers.size())
+		if not offers.is_empty():
+			ex(&"contract.accept", {"trader": String(td.id), "offer": str((offers[0] as Dictionary).get("id", ""))})
+			await frames(4)
+			await snap("w_contract_accepted")
+		ui.close_top_screen()
+
+	# --- Ezra's orders ----------------------------------------------------------------------------
+	var cd: Node = w.companion
+	var ezra: Node3D = cd.get(&"body") as Node3D
+	if ezra != null:
+		await face(ezra.global_position + Vector3.UP * 0.9, 2.0)
+		await snap("w_ezra_aim")
+		cd.call(&"open_card")
+		await frames(6)
+		await snap("w_ezra_card")
+		ui.close_top_screen()
+		for order: String in ["follow", "gather", "guard", "stay"]:
+			ex(&"companion.order", {"order": order})
+			await seconds(2.0)
+			await snap("w_ezra_" + order)
+	else:
+		note("Ezra has no body after the Continue")
+
+	# --- Hunting -------------------------------------------------------------------------------------
+	ps.inventory.add_item(&"hunting_bow", 1)
+	ps.inventory.add_item(&"arrow_stone", 10)
+	ps.inventory.add_item(&"kitchen_knife", 1)
+	var bslot: int = ps.toolbelt.find(&"hunting_bow")
+	if bslot < 0:
+		ps.toolbelt[4] = &"hunting_bow"
+		bslot = 4
+	p.equipment.select_slot(bslot)
+	var wm: WildlifeManager = w.get(&"wildlife") as WildlifeManager
+	var deer_def := Content.get_def(&"wildlife", &"white_tailed_deer") as WildlifeDef
+	if wm != null and deer_def != null:
+		var at: Vector3 = p.global_position + Vector3(0, 0, -14)
+		var herd: Array = wm.spawn_band(deer_def, {"id": &"qa:first_week", "def": deer_def.id, "pos": Vector2(at.x, at.z), "count": 1, "seed": 7})
+		if not herd.is_empty():
+			var deer: Node3D = herd[0]
+			look(deer.global_position + Vector3.UP * 0.8)
+			await frames(6)
+			await snap("w_bow_aim")
+			p.equipment.primary()
+			await seconds(1.5)
+			await snap("w_bow_shot")
+			if is_instance_valid(deer) and deer.has_method(&"take_damage"):
+				var kill := DamageInfo.make(500.0, &"pierce", &"ranged", ps.id)
+				kill.hit_pos = deer.global_position + Vector3.UP * 0.8
+				deer.call(&"take_damage", kill)
+			await seconds(2.0)
+			if is_instance_valid(deer):
+				await face(deer.global_position + Vector3.UP * 0.4, 1.6)
+				note("butcher prompt at %.1f m from the carcass" % p.global_position.distance_to(deer.global_position))
+				await snap("w_carcass_aim")
+				await use()
+				await seconds(1.0)
+				await snap("w_butchered")
+	else:
+		note("no wildlife manager or deer def")
+
+	# --- A cave ----------------------------------------------------------------------------------------
+	var caves: Object = w.terrain.get(&"caves")
+	var plans: Array = caves.get(&"plans") if caves != null else []
+	note("caves planned: %d" % plans.size())
+	if not plans.is_empty():
+		var cp: CavePlan = plans[0]
+		var mouth: Vector3 = cp.mouth.origin
+		var outside: Vector3 = mouth + cp.mouth.basis.z * 8.0
+		outside.y = w.height_at(outside.x, outside.z)
+		p.global_position = outside + Vector3.UP * 0.1
+		w.terrain.update_streaming(p.global_position, true)
+		await seconds(3.0)
+		look(mouth + Vector3.UP * 1.0)
+		await frames(6)
+		await snap("w_cave_mouth")
+		if cp.spine.size() > 0:
+			var deep: Vector3 = cp.spine[cp.spine.size() - 1]
+			deep.y = cp.floor_y[cp.floor_y.size() - 1] + 0.1
+			p.global_position = deep
+			look(mouth + Vector3.UP * 1.5)
+			await seconds(2.0)
+			await snap("w_cave_inside")
+
+	# --- The supply drop ---------------------------------------------------------------------------------
+	var drops: SupplyDrops = w.get(&"supply_drops") as SupplyDrops
+	if drops != null:
+		p.global_position = base + Vector3(0, 0.5, 4)
+		w.terrain.update_streaming(p.global_position, true)
+		var did: StringName = drops.dispatch(Game.session.clock.day())
+		note("supply drop dispatched: %s" % did)
+		await seconds(3.0)
+		await snap("w_drop_incoming")
+		for d: SupplyDrops.Drop in drops.drops.values():
+			for i: int in 30:
+				if d.landed:
+					break
+				d._process(10.0)
+				await frames(1)
+			await frames(4)
+			var crate: Node3D = d.get(&"crate") as Node3D
+			note("drop landed: %s, crate %s" % [d.landed, crate != null])
+			await face((crate.global_position if crate != null else d.global_position) + Vector3.UP * 0.5, 1.8)
+			await snap("w_drop_landed_aim")
+			await use()
+			await snap("w_drop_opened")
+			ui.close_top_screen()
+			break
+
+	# --- Levelling ------------------------------------------------------------------------------------------
+	ps.progression.skill_points += 2
+	ui.manual.open("record")
+	await frames(6)
+	await snap("w_record")
+	ex(&"progression.raise_attribute", {"attribute": "sinew"})
+	await frames(4)
+	await snap("w_record_after_point")
+	ui.close_top_screen()
+
+	# --- The Hum ----------------------------------------------------------------------------------------------
+	p.global_position = base + Vector3(0, 0.5, 3)
+	w.terrain.update_streaming(p.global_position, true)
+	# The night before, outside with no fire, the cold kills (finding: the first run froze); the
+	# audit wants the Hum's screens, so the player is kept alive from here.
+	note("health %.0f, warmth %s before the night" % [ps.stats.health, str(ps.stats.get(&"body_temp")) if ps.stats.get(&"body_temp") != null else "?"])
+	p.god_mode = true
+	var hum_day: int = Game.session.clock.next_horde_day(Game.session.clock.day())
+	note("first Hum on day %d (now day %d)" % [hum_day, Game.session.clock.day()])
+	# Through the day before and the day itself on the clock, as play would: the warnings fire as
+	# their hours pass (setting the time jumps over them).
+	Game.session.clock.set_time(hum_day - 1, 18.0)
+	var marks: Dictionary = {}
+	while Game.session.clock.day() < hum_day or Game.session.clock.hour_f() < 21.9:
+		w.clock_driver.advance(30.0)
+		await frames(2)
+		var tag: String = "w_hum_d%d_%02d" % [Game.session.clock.day() - hum_day, Game.session.clock.hour()]
+		if not _msgs.is_empty() and not marks.has(tag):
+			marks[tag] = true
+			await snap(tag)
+	w.clock_driver.advance(20.0)
+	await seconds(3.0)
+	await snap("w_hum_start")
+	var ai: AIDirector = w.ai
+	await wait_until(func() -> bool: return ai.hum.members.size() > 0, 30.0)
+	await seconds(6.0)
+	note("Hum members: %d" % ai.hum.members.size())
+	await snap("w_hum_night")
+	for id: StringName in ai.hum.members.keys().slice(0, 4):
+		var e: Enemy = ai.hum.members[id]["node"]
+		if is_instance_valid(e) and e.is_alive():
+			var k := DamageInfo.make(999.0, &"blunt", &"melee", ps.id)
+			k.hit_pos = e.global_position + Vector3.UP
+			e.take_damage(k)
+	await seconds(2.0)
+	await snap("w_hum_kills")
+	p.god_mode = true
+	Game.session.clock.set_time(hum_day + 1, 3.9)
+	w.clock_driver.advance(12.0)
+	await seconds(4.0)
+	await snap("w_hum_dawn")
+	Game.session.clock.set_time(hum_day + 1, 7.0)
+	w.clock_driver.advance(5.0)
+	await seconds(3.0)
+	await snap("w_morning_after")
+	ui.manual.open("record")
+	await frames(6)
+	await snap("w_morning_record")
+	ui.close_top_screen()
 
 
 func _finish() -> void:

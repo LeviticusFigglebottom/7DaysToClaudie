@@ -113,6 +113,12 @@ func _ready() -> void:
 		Events.connect(&"tutorial_changed", _on_tutorial_changed)
 	if Events.has_signal(&"tutorial_distress"):
 		Events.connect(&"tutorial_distress", _on_tutorial_distress)
+	Events.supply_drop_landed.connect(func(_id: StringName, at: Vector3) -> void:
+		message(drop_landed_line(FieldManual.distress_bearing(at)), &"level"))
+	# Sound captions (Options): the Hum's rise is music, which nothing else puts into words.
+	Events.horde_night_started.connect(func(_d: int) -> void:
+		if Settings.sound_captions:
+			message("[a deep hum rises through the ground]", &"danger"))
 	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void: message("A Program drone is overhead. Supplies are coming down.", &"level"))
 
 
@@ -585,6 +591,23 @@ func _build_hud() -> void:
 	_hud.add_child(_hum_label)
 
 
+## "The canister is down, north-west, 140 m. Its smoke marks the spot.", or without the bearing
+## when the player's position isn't known.
+static func drop_landed_line(bearing: String) -> String:
+	return "The canister is down%s. Its smoke marks the spot." % ((", " + bearing) if bearing != "" else "")
+
+
+## The keys while laying out a blueprint ("[Left mouse] place  ·  [R] turn  ·  [Esc] cancel") or
+## carrying logs; "" otherwise.
+static func build_controls(placing: bool, carrying_logs: bool) -> String:
+	var k: Callable = func(a: StringName) -> String: return "[%s]" % PlayerInteraction.key_label(a)
+	if placing:
+		return "%s place  ·  %s turn  ·  %s cancel" % [k.call(&"attack"), k.call(&"rotate_piece"), k.call(&"cancel")]
+	if carrying_logs:
+		return "%s set the log  ·  %s turn  ·  %s stand / pitch  ·  %s drop" % [k.call(&"attack"), k.call(&"rotate_piece"), k.call(&"build_mode_toggle"), k.call(&"drop")]
+	return ""
+
+
 ## A quiet dark plate behind a prompt line, so it reads over a lit fire, snow or a pale ghost.
 static func prompt_box(alpha: float) -> StyleBoxFlat:
 	var sb := StyleBoxFlat.new()
@@ -666,6 +689,11 @@ func _process(delta: float) -> void:
 		# Under the prompt: why a placement can't go, else the held tool's hint, else what holding
 		# the cancel key on the target does (take a blueprint ghost down).
 		_tool_hint.text = place_why if place_why != "" else (p.interaction.tool_hint if p.interaction.tool_hint != "" else p.interaction.alt_prompt)
+		# Laying out a blueprint or carrying logs: the keys, which nothing else on screen names.
+		if place_why == "" and b != null and b.has_method(&"is_placing"):
+			var ctl: String = build_controls(bool(b.call(&"is_placing")), p.state.inventory.count_of(&"log") > 0)
+			if ctl != "" and _prompt.text == "":
+				_tool_hint.text = ctl
 		if _overlay.visible:
 			_tool_hint.text = ""
 		_hug(_prompt, 28.0)
@@ -808,10 +836,12 @@ func message(text: String, kind: StringName = &"info") -> void:
 	l.add_theme_color_override(&"font_outline_color", Color(0.03, 0.03, 0.02, 0.9))
 	l.add_theme_constant_override(&"outline_size", 6)
 	l.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE + 1)
-	# A long line (the distress call) wraps instead of running off the screen.
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.custom_minimum_size = Vector2(minf(820.0, 11.0 * text.length()), 0)
 	_messages.add_child(l)
+	# A long line (the distress call) wraps at 820 px instead of running off the screen; a short
+	# one never wraps (a guessed width once put "[B]" on its own line).
+	if text.length() > 80:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(820, 0)
 	_fade_message(l)
 	while _messages.get_child_count() > 6:
 		_messages.get_child(0).queue_free()
