@@ -307,8 +307,10 @@ func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
 				if inner_rect.has_point(a1):
 					lip = maxf(lip, absf(hf.sample(a1.x, a1.y) - hf.sample(a0.x, a0.y)))
 		st.add(&"lot_lip", lip)
-	# TD-318: creases where a road ends on another: the steepest 1 m step in a 10 m disc round the
-	# junction.
+		if lip > 0.5 and OS.get_cmdline_user_args().has("--worst"):
+			print("[worst] lip %.2f lot %s at %.0f,%.0f y %.2f road %.0f,%.0f" % [lip, p.get("id", ""), c.x, c.y, y, q.x, q.y])
+	# TD-318: creases where a road ends on another: the steepest 1 m step on either carriageway
+	# within 10 m of the junction.
 	for r: Dictionary in rt.roads:
 		var pts: Array = r["points"]
 		if pts.size() < 2:
@@ -317,30 +319,40 @@ func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
 			var e := Vector2(float(ep[0]), float(ep[ep.size() - 1]))
 			if not inner_rect.has_point(e):
 				continue
-			var on_other: bool = false
+			var other: Dictionary = {}
 			for r2: Dictionary in rt.roads:
-				if r2 == r:
-					continue
-				var p2: Array = r2["points"]
-				for i: int in p2.size() - 1:
-					var a := Vector2(float(p2[i][0]), float(p2[i][p2[i].size() - 1]))
-					var b := Vector2(float(p2[i + 1][0]), float(p2[i + 1][p2[i + 1].size() - 1]))
-					if Geometry2D.get_closest_point_to_segment(e, a, b).distance_to(e) < 4.0:
-						on_other = true
-						break
-				if on_other:
+				if r2 != r and _road_dist(r2, e) < 4.0:
+					other = r2
 					break
-			if not on_other:
+			if other.is_empty():
 				continue
+			# Only on the two carriageways: the banks beside a junction are not its crease.
 			var crease: float = 0.0
-			for gz: int in range(-10, 11, 2):
+			for gz: int in range(-10, 11):
 				for gx: int in range(-10, 10):
 					var a2 := e + Vector2(gx, gz)
 					if a2.distance_to(e) > 10.0:
 						continue
-					var h0: float = hf.sample(a2.x, a2.y)
-					crease = maxf(crease, maxf(absf(hf.sample(a2.x + 1.0, a2.y) - h0), absf(hf.sample(a2.x, a2.y + 1.0) - h0)))
+					for nb: Vector2 in [a2 + Vector2(1, 0), a2 + Vector2(0, 1)]:
+						var on: bool = true
+						for q2: Vector2 in [a2, nb]:
+							if _road_dist(r, q2) > float(r["width"]) * 0.5 and _road_dist(other, q2) > float(other["width"]) * 0.5:
+								on = false
+						if on:
+							crease = maxf(crease, absf(hf.sample(nb.x, nb.y) - hf.sample(a2.x, a2.y)))
 			st.add(&"junction_step", crease)
+			if crease > 0.6 and OS.get_cmdline_user_args().has("--worst"):
+				print("[worst] junction %.2f road %s at %.0f,%.0f" % [crease, r.get("id", ""), e.x, e.y])
+
+
+func _road_dist(r: Dictionary, p: Vector2) -> float:
+	var pts: Array = r["points"]
+	var best: float = INF
+	for i: int in pts.size() - 1:
+		var a := Vector2(float(pts[i][0]), float(pts[i][pts[i].size() - 1]))
+		var b := Vector2(float(pts[i + 1][0]), float(pts[i + 1][pts[i + 1].size() - 1]))
+		best = minf(best, Geometry2D.get_closest_point_to_segment(p, a, b).distance_to(p))
+	return best
 
 
 func _nearest_road_point(rt: RegionTerrain, c: Vector2) -> Vector2:

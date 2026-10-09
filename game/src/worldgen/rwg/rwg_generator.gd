@@ -60,7 +60,9 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 13: the lift's crash site (`crash` site, the hub's lift3_crash_site): once, 600-1600 m out from
 ## the drop site toward the nearest map edge (where the lift came in over), its nose to the drop;
 ## placed last from its own stream, so every other place stays where it was.
-const VERSION: int = 13
+## 14: a town lot's height stays within LOT_STREET_STEP of its street's profile where it meets it
+## (TerrainComposer.town_street_profiles, composer 14): no lip between a yard and its street (TD-318).
+const VERSION: int = 14
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -2699,10 +2701,38 @@ func _finalize_town_heights() -> void:
 	_ref = RefGround.new(terrain, settings.seed & 0x7fffffff, size)
 	for tw: Dictionary in towns:
 		var plan: Dictionary = tw["plan"]
+		var streets: Array = plan.get("roads", [])
+		# The world roads through or by it, as the composer will pick them (by its written points).
+		var world_roads: Array = []
+		for rd: Dictionary in roads:
+			world_roads.append({"id": rd["id"], "line": Polyline2.from_array(Terrain._arr(rd["points"])), "surface": rd["surface"]})
+		var cw: Array = Terrain._arr(PackedVector2Array([tw["center"]]))[0]
+		var fixed: Array = TerrainComposer.town_world_roads(world_roads, Vector2(float(cw[0]), float(cw[1])), float(tw["radius"]))
+		var profiles: Dictionary = TerrainComposer.town_street_profiles(streets, _ref.h, fixed)
+		var lines: Dictionary = {}
+		for fr: Dictionary in fixed:
+			lines[str(fr["id"])] = fr["line"]
+		for rv: Variant in streets:
+			if (rv as Dictionary).has("points") and ((rv as Dictionary)["points"] as Array).size() >= 2:
+				lines[str(rv["id"])] = Polyline2.from_array(rv["points"])
 		for lv: Variant in plan.get("lots", []):
-			(lv as Dictionary)["y"] = _frame_height(lv["frame"])
+			var l: Dictionary = lv
+			var y: float = _frame_height(l["frame"])
+			# Within LOT_STREET_STEP of its street where the lot meets it (TD-318): the yard meets
+			# the street flush and any difference with the ground is graded out behind it.
+			var sid: String = str(l.get("street", ""))
+			if lines.has(sid) and profiles.has(sid):
+				var f: Array = l["frame"]
+				var at: Vector3 = (lines[sid] as Polyline2).closest(Vector2(float(f[0]), float(f[1])))
+				var sy: float = TerrainComposer.profile_at(profiles[sid], at.y)
+				y = snappedf(clampf(y, sy - LOT_STREET_STEP, sy + LOT_STREET_STEP), 0.01)
+			l["y"] = y
 		if not (plan.get("plaza", {}) as Dictionary).is_empty():
 			plan["plaza"]["y"] = _frame_height(plan["plaza"]["frame"])
+
+
+## How far a lot's yard may stand above or below its street where it meets it (m, TD-318).
+const LOT_STREET_STEP: float = 0.3
 
 
 func _frame_height(f: Array) -> float:

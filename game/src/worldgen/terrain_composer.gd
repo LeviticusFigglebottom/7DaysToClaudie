@@ -42,9 +42,18 @@ extends RefCounted
 ## along the road (rocky cuts steeper, fills gentler), with a rounded crest and toe and a little
 ## relief on the face, out to BANK_REACH m. They had a fixed 8 m blend: every cut and fill was one
 ## uniform plane as long as the road. A region's own roads still fade out at its border.
-const VERSION: int = 13
+## VERSION 14 (TD-318): a world town's streets are profiled together (town_street_profiles): a street
+## that meets an earlier one is pinned to its height there, so junctions have no crease; the
+## generator (v14) sets each lot's height within LOT_STREET_STEP of its street's profile at the lot.
+const VERSION: int = 14
 ## The steepest grade (rise over run) a generated world's road profile keeps, by surface.
 const ROAD_MAX_GRADE: Dictionary = {"asphalt": 0.12, "gravel": 0.14, "dirt": 0.16}
+## Road profiles are sampled every PROFILE_STEP m. A town street within JUNCTION_REACH m of an
+## earlier one is pinned to it there, eased over JUNCTION_EASE m (TD-318).
+const PROFILE_STEP: float = 4.0
+const JUNCTION_REACH: float = 3.0
+const JUNCTION_EASE: float = 32.0
+const TOWN_ROAD_REACH: float = 60.0
 ## Banks beside a generated world's roads: the slope (rise over run) of a cut and of a fill, between
 ## the two values by a value noise along the road (BANK_CELL m across), a flat verge of up to
 ## BANK_VERGE m before the bank, the radius (m) of the rounding where the bank meets the land, the
@@ -201,6 +210,100 @@ static func get_or_compose(world: WorldDef, region_id: String, spacing: float = 
 ## Composes a region. `cancel`: set cancel[0] = true from any thread to stop it (it returns null
 ## within about CANCEL_ROWS rows). `bands`: threads for the per-sample passes (1 = this thread
 ## only); the output is identical for any count.
+## Street profiles of a world town ({street id: PackedFloat32Array, every PROFILE_STEP m}, TD-318):
+## each street's reference ground smoothed and grade-capped as any world road's, then pinned to the
+## streets before it in plan order wherever it meets one (a tee at its end, or a crossing), eased
+## over JUNCTION_EASE m, so two streets meet at one height instead of in a crease. The generator
+## reads the same profiles to set its lots' heights, so a yard meets its street flush.
+## `streets`: the framework's roads [{id, points, surface}]; `fixed`: the world roads through or by
+## the town (town_world_roads), profiled first and never pinned (the town's streets and lots meet
+## them); h_fn(x, z) the reference ground.
+static func town_street_profiles(streets: Array, h_fn: Callable, fixed: Array = []) -> Dictionary:
+	var out: Dictionary = {}
+	var lines: Array[Polyline2] = []
+	var ids: PackedStringArray = []
+	for fv: Variant in fixed:
+		var fr: Dictionary = fv
+		var fline: Polyline2 = fr["line"] if fr.has("line") else Polyline2.from_array(fr["points"])
+		out[str(fr["id"])] = smoothed_profile(fline, h_fn, float(ROAD_MAX_GRADE.get(str(fr.get("surface", "")), 0.14)))
+		lines.append(fline)
+		ids.append(str(fr["id"]))
+	for sv: Variant in streets:
+		var st: Dictionary = sv
+		if (st.get("points", []) as Array).size() < 2:
+			continue
+		var line: Polyline2 = Polyline2.from_array(st["points"])
+		var prof: PackedFloat32Array = smoothed_profile(line, h_fn, float(ROAD_MAX_GRADE.get(str(st.get("surface", "")), 0.14)))
+		# Where this street touches an earlier one: the arc of each local closest approach within
+		# JUNCTION_REACH, pinned to the earlier street's height there.
+		for j: int in lines.size():
+			var other: Polyline2 = lines[j]
+			var oprof: PackedFloat32Array = out.get(ids[j], PackedFloat32Array())
+			if oprof.is_empty() or not line.bounds.grow(JUNCTION_REACH).intersects(other.bounds):
+				continue
+			var n: int = prof.size()
+			var dist := PackedFloat32Array()
+			dist.resize(n)
+			for k: int in n:
+				dist[k] = other.closest(line.point_at(k * PROFILE_STEP)).x
+			for k2: int in n:
+				var dk: float = dist[k2]
+				if dk > JUNCTION_REACH or (k2 > 0 and dist[k2 - 1] < dk) or (k2 < n - 1 and dist[k2 + 1] <= dk):
+					continue
+				var at: Vector3 = other.closest(line.point_at(k2 * PROFILE_STEP))
+				var delta: float = profile_at(oprof, at.y) - prof[k2]
+				for k3: int in n:
+					var off: float = absf(float(k3 - k2)) * PROFILE_STEP
+					if off < JUNCTION_EASE:
+						prof[k3] += delta * (1.0 - smoothstep(0.0, JUNCTION_EASE, off))
+		lines.append(line)
+		ids.append(str(st["id"]))
+		out[str(st["id"])] = prof
+	return out
+
+
+## The world roads that pass within TOWN_ROAD_REACH m of a town's disc ({id, line, surface}, by id),
+## for town_street_profiles: the generator and the composer pick the same ones.
+static func town_world_roads(roads: Array, center: Vector2, radius: float) -> Array:
+	var out: Array = []
+	for rv: Variant in roads:
+		var r: Dictionary = rv
+		var line: Polyline2 = r["line"]
+		if line.bounds.grow(radius + TOWN_ROAD_REACH).has_point(center) and line.closest(center).x < radius + TOWN_ROAD_REACH:
+			out.append({"id": str(r["id"]), "line": line, "surface": str(r.get("surface", ""))})
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["id"]) < str(b["id"]))
+	return out
+
+
+## A road's centre-line heights every PROFILE_STEP m: h_fn sampled, smoothed (3 passes of a 9-sample
+## moving average, ~36 m) and capped to grade g (_Build._limit_grade).
+static func smoothed_profile(line: Polyline2, h_fn: Callable, g: float) -> PackedFloat32Array:
+	var count: int = int(ceil(line.total_length / PROFILE_STEP)) + 1
+	var prof := PackedFloat32Array()
+	prof.resize(count)
+	for k: int in count:
+		var p: Vector2 = line.point_at(k * PROFILE_STEP)
+		prof[k] = float(h_fn.call(p.x, p.y))
+	for pass_i: int in 3:
+		var cp: PackedFloat32Array = prof.duplicate()
+		for k: int in count:
+			var acc: float = 0.0
+			for o: int in range(-4, 5):
+				acc += cp[clampi(k + o, 0, count - 1)]
+			prof[k] = acc / 9.0
+	_Build._limit_grade(prof, PROFILE_STEP, g)
+	return prof
+
+
+## A profile's height at arc length s (linear between samples).
+static func profile_at(prof: PackedFloat32Array, s: float) -> float:
+	if prof.is_empty():
+		return 0.0
+	var f: float = clampf(s / PROFILE_STEP, 0.0, float(prof.size() - 1))
+	var i: int = mini(int(f), prof.size() - 2) if prof.size() > 1 else 0
+	return lerpf(prof[i], prof[mini(i + 1, prof.size() - 1)], f - float(i))
+
+
 static func compose(world: WorldDef, region_id: String, spacing: float = 1.0, progress: Callable = Callable(),
 		cancel: Array = [false], bands: int = 1) -> RegionTerrain:
 	var b := _Build.new(world, region_id, spacing, progress)
@@ -659,7 +762,7 @@ class _Build:
 				push_warning("TerrainComposer: town %s: framework %s not registered" % [tw["id"], tw["framework"]])
 				continue
 			var tid: String = str(tw["id"])
-			_towns.append({"id": tid, "fw": fw})
+			_towns.append({"id": tid, "fw": fw, "center": tw["center"], "radius": float(tw["radius"])})
 			_town_c.append(tw["center"])
 			_town_r.append(float(tw["radius"]))
 			# `town` is painted on its streets (_band_surface) and its square; the lots are yards, and
@@ -1055,13 +1158,15 @@ class _Build:
 		# region they cross (one profile, memoised under the town and street).
 		for tw: Dictionary in _towns:
 			var fw: FrameworkDef = tw["fw"]
+			var fixed: Array = TerrainComposer.town_world_roads(world.roads, tw["center"], float(tw["radius"]))
 			for rv: Variant in fw.roads:
 				if not rv is Dictionary or ((rv as Dictionary).get("points", []) as Array).size() < 2:
 					continue
 				var rd: Dictionary = rv
 				road_list.append({"id": "%s/%s" % [tw["id"], rd.get("id", "street")], "line": Polyline2.from_array(rd["points"]),
 					"width": float(rd.get("width", 6.0)), "shoulder": float(rd.get("shoulder", 0.8)), "surface": str(rd.get("surface", "asphalt")),
-					"bridges": [], "world": true, "markings": bool(rd.get("markings", false)), "profile_key": "town:%s:%s" % [tw["id"], rd.get("id", "")]})
+					"bridges": [], "world": true, "markings": bool(rd.get("markings", false)), "profile_key": "town:%s:%s" % [tw["id"], rd.get("id", "")],
+					"town": tw["id"], "street": str(rd.get("id", "")), "town_streets": fw.roads, "town_fixed": fixed})
 		var count: int = cn * cn
 		r_d = PackedFloat32Array()
 		r_d.resize(count)
@@ -1168,26 +1273,19 @@ class _Build:
 	## {profile, step, spans} of a road (see _build_profile).
 	func _profile_data(r: Dictionary) -> Dictionary:
 		var line: Polyline2 = r["line"]
-		var step: float = 4.0
-		var count: int = int(ceil(line.total_length / step)) + 1
-		var prof := PackedFloat32Array()
-		prof.resize(count)
+		var step: float = PROFILE_STEP
 		var by_world: bool = bool(r["world"]) and world.road_grade == "world"
-		for k: int in count:
-			var p: Vector2 = line.point_at(k * step)
-			prof[k] = _reference_ground(p.x, p.y) if by_world else _sample_or_macro(p.x, p.y)
-		# Smooth (moving average, 3 passes ~ gaussian, window ~ 36 m).
-		for pass_i: int in 3:
-			var cp: PackedFloat32Array = prof.duplicate()
-			for k: int in count:
-				var acc: float = 0.0
-				var wsum: float = 0.0
-				for o: int in range(-4, 5):
-					var j: int = clampi(k + o, 0, count - 1)
-					acc += cp[j]
-					wsum += 1.0
-				prof[k] = acc / wsum
-		_limit_grade(prof, step, float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
+		var prof: PackedFloat32Array
+		if by_world and r.has("town_streets"):
+			# A world town's street: its town's profiles, pinned at the junctions (TD-318),
+			# built once per town.
+			var town: Dictionary = world.road_profile("town:%s:*" % r["town"], func() -> Dictionary:
+				return {"profiles": TerrainComposer.town_street_profiles(r["town_streets"], _reference_ground, r["town_fixed"])})
+			prof = ((town["profiles"] as Dictionary).get(str(r["street"]), PackedFloat32Array()) as PackedFloat32Array).duplicate()
+		if prof.is_empty():
+			prof = TerrainComposer.smoothed_profile(line, _reference_ground if by_world else _sample_or_macro,
+				float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
+		var count: int = prof.size()
 		var spans: Array = []
 		for bdef: Variant in r["bridges"]:
 			var bd: Dictionary = bdef
