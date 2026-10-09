@@ -56,3 +56,39 @@ not reachable from the driver).
 ## Frames
 `2026-10-09_mid_game_frames.webp` (rendered run): the powered base, the workbench, the garden,
 the school, the Ashen, the hounds, the nest, and the day-14 Hum.
+
+---
+
+# Part 2: the gaps (routes walked, a random world, wolves, a Murmur)
+
+`--gaps` walks a building's intended route (its POI `route` cells, in order, each on its own
+level), logs the screen's words at every point, frames every third one, and uses whatever the
+interaction ray offers. Then it puts down the sleepers. Afterwards it sends a wolf pack at the
+player at night and sets a crow flock following them. God mode is on throughout.
+* **Main map:** `… -- --out <dir> --gaps`, the Corvane Larkspur adit (18 route points over 3
+  levels).
+* **Random world:** `… --gaps --world random --world-seed 1 --world-set size=5`. Every size-5 seed
+  tried (1, 2, 3, 4, 6, 8, 9, 11) places the field lab; seed 1 puts it in region A4. The run took
+  the field lab (22 points over 2 levels, tier 5) and, as "a pool building in a random town",
+  the first tier-2+ building of the world's own pool that the main map doesn't have: the Ashen
+  Watch Camp (12 points).
+
+**What the route walk can't judge.** It stands on each route cell and looks at the next; it
+doesn't pick up the keys and keycards the route names, or try the readers they open. So "the
+route can be walked" is checked by poi_walk and TraversalAudit, not here. Here: what the player
+sees and is told on the way.
+
+| # | Step | Issue | Severity | Owner | Proposed fix / status |
+|---|---|---|---|---|---|
+| G1 | Adit, field lab, watch camp | All three routes ran end to end and each building cleared ("Corvane Larkspur Adit cleared.", 15 of 15; "Corvane Field Lab cleared.", 24 of 24; "Ashen Watch Camp cleared.", 9 of 9). The exits named their action: "[E] Slide the bolt back". | — | — | Works. |
+| G2 | All three routes | Between the doors, the route gave the player almost no prompts. In the lab, only "[E] Open door" (the admin module), "[E] Search Minus-80 Freezer" and the escape hatch's bolt over 22 points. The keys, keycard readers and airlocks the route turns on weren't offered from the route cell itself. This is a limit of the walk, not a finding against the buildings. | — | Presentation (driver) | Next round: walk to each route point's interactive (key, reader, hatch) rather than its cell. |
+| G3 | Watch camp | A bear trap's line said "Struggle free (Jump)", the only line in the game that names an action instead of its key. | Low | Presentation (text in poi_pieces.gd) | **Fixed:** "A bear trap has your leg. Struggle free: [Space]." (the bound key). |
+| G4 | Wolves | The pack hunted as it should: 10 m, then 5, 3 and 2 m within 16 s, at night, in both worlds. Nothing said so: no line, and with sound captions on no caption for the howls (the pack plays `voice/wolf_howl`). Captions only reach sounds that GameUI hooks one by one. | Med | hub (an Events signal) + Creatures | A generic `Events.sound_caption(text, at)` that any system can emit with a sound. GameUI shows it with its bearing when captions are on ("[wolves howling, north-east]"). WolfPacks emits it from `play_howl`. I'll do the GameUI side as soon as the signal exists. |
+| G5 | A Murmur | Clear and in the game's voice: "Crows are circling over you, calling. Everything can hear where you are." | — | — | Works. |
+| G6 | The roll at 720p | An item's card, shown beside the cursor, covered the recipe sheet (frame `m_workbench_roll`). | Low | Presentation | **Fixed:** the card flips to the cursor's left when it would cover the sheet (a test checks it). |
+| G7 | Streaming and the roll | On the random world, a building streamed out while one of its containers was open in the roll. The roll then read the freed container every frame (one script error a frame) until it closed. | Med | Presentation | **Fixed:** the roll closes before reading a freed container (a freed object compares equal to null, so it tests validity), with a test. |
+| G8 | Lore trail | No line on screen named the cause of the outbreak in the adit, the lab or the camp. The lab's own words (container and door names) keep to its tier-5 place in the trail. | — | — | Clean. |
+
+The mid game's frames: `2026-10-09_mid_game_frames.webp` (the powered base, the workbench roll at
+720p, the garden in the rain, the Ashen raid and the torch, the school, the adit mouth, hounds,
+the nest, the day-14 Hum).
