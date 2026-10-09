@@ -135,7 +135,7 @@ button, plus a frame cap.
 
 ## 13. Felling
 **Changed:** every swing lands before the next begins, and steady chopping regains stamina. A
-full-grown fir takes about seven swings of the stone axe. When you're too winded, it says so.
+full-grown fir takes seven to eleven swings of the stone axe. When you're too winded, it says so.
 **Try:** fell three trees in a row.
 **Still broken if:** swings miss a trunk you're facing, or stamina runs out before a tree
 falls.

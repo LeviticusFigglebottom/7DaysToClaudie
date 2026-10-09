@@ -115,7 +115,7 @@ func test_roll_strips_shrink_to_fit_a_small_window() -> void:
 
 func test_journal_line_folds_the_reward() -> void:
 	assert_eq(GameUI.journal_line("Make a stone axe", "+40 XP", "Fell a tree", "B"), "Journal: Make a stone axe ✓  +40 XP   Next: Fell a tree  [B]")
-	assert_eq(GameUI.journal_line("Sleep in your bed", "", "", "B"), "Journal: Sleep in your bed ✓")
+	assert_eq(GameUI.journal_line("Sleep in your bed", "", "", "B"), "Journal: Sleep in your bed ✓   The journal is done. Keep an ear on your tether.", "the last card says the journal is over and what comes next")
 
 
 func test_prompt_hangs_centred_under_the_crosshair() -> void:
@@ -240,3 +240,9 @@ func test_lines_wait_under_the_roll_and_show_after_it() -> void:
 	assert_true(feed.visible)
 	assert_eq(feed.get_child_count(), 2, "both lines show once the roll closes, none lost")
 	assert_string_starts_with((feed.get_child(0) as Label).text, "Journal: Make a stone axe")
+
+
+func test_lines_wait_under_the_death_and_sleep_screens() -> void:
+	assert_true(GameUI.feed_held(false, true), "not over SIGNAL LOST or You sleep.")
+	assert_false(GameUI.feed_held(false, false))
+	assert_true(GameUI.feed_held(true, false))
