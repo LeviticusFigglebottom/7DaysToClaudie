@@ -126,7 +126,13 @@ def add_hair(model, spec: dict, rng):
     prog = model.hair
     thick = {"short": 0.0045, "medium": 0.0075, "long": 0.009, "balding": 0.0035, "stubble": 0.0030}.get(style, 0.005)
     hc = model.HP(0, 0.035, -0.012)
-    radii = np.array([0.074, 0.088, 0.096]) * s * float(model.p.get("head_scale", 1.0))
+    # the cap follows the skull's own dials (TD-192 face variants), or it sinks in or floats
+    fw = model.face("skull_w") if hasattr(model, "face") else 0.0
+    fl_ = model.face("skull_len") if hasattr(model, "face") else 0.0
+    radii = np.array([0.074 * (1 + 0.06 * fw), 0.088 * (1 + 0.07 * fl_), 0.096]) * s * float(model.p.get("head_scale", 1.0))
+    # A Hollowed's hair is matted, thinned and torn (TD-192: it read as a smooth helmet): a raggeder
+    # hairline, deeper hanks and tufts standing off the scalp. The living keep theirs groomed.
+    rough = 1.0 if model.p.get("face_vary") else 0.0
     Rl = R @ np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])
     line = float(spec.get("hairline", 0.055))        # front hairline height (head-local y)
     bald = float(spec.get("bald", 0.0))
@@ -142,7 +148,7 @@ def add_hair(model, spec: dict, rng):
         edge_y = np.where(z > 0, line - 0.30 * np.maximum(0.05 - np.abs(x), 0) * 0.0 + 0.0 * z,
                           line - 0.075 * np.clip(-z / 0.09, 0, 1) - 0.035)
         edge_y = edge_y - 0.045 * np.clip((np.abs(x) - 0.03) / 0.05, 0, 1) * (z > -0.02)
-        reg = (edge_y + nz.noise(P, 40.0) * 0.006) - y
+        reg = (edge_y + nz.noise(P, 40.0) * (0.006 + 0.006 * rough) + nz.noise(P, 11.0) * 0.008 * rough) - y
         # balding crown / missing patches
         crown = bald * 0.06 - np.sqrt(x * x + (z + 0.01) ** 2 + np.maximum(0.11 - y, 0) ** 2 * 4) + nz.noise(P, 18.0) * 0.01
         patches = nz.fbm(P, 14.0, 2) - (0.75 - 0.6 * patchy)
@@ -150,12 +156,26 @@ def add_hair(model, spec: dict, rng):
         # greasy, matted hanks (the fine strands come from the texture): clumps a few millimetres
         # proud, stretched along the way the hair lies
         lie = P + np.outer(nz.noise(P, 6.0), R[:, 1]) * 0.01 * s
-        d = d - np.maximum(nz.fbm(lie * np.array([1.0, 1.0, 1.6]), 24.0, 3) + 0.15, 0) * 0.0032 * s
+        d = d - np.maximum(nz.fbm(lie * np.array([1.0, 1.0, 1.6]), 24.0, 3) + 0.15, 0) * (0.0032 + 0.0030 * rough) * s
+        # matted ridges running down the way the hair lies, and gaps between them
+        if rough > 0.0:
+            ridge = np.abs(np.sin(((P - hcen) @ R[:, 0]) / s * 140.0 + nz.noise(P, 9.0) * 3.0))
+            d = d + (ridge - 0.55) * 0.0022 * s
         return np.maximum(d, reg * s)
 
     lo = hc - radii - 0.03 * s
     hi = hc + radii + 0.03 * s
     prog.union(cap, lo, hi, k=0.0, label=B.L_HAIR)
+    if rough > 0.0 and style not in ("stubble", "none"):
+        # stray tufts lifting off the crown and the back, a few centimetres each
+        for i in range(int(spec.get("tufts", 9))):
+            ang = rng.uniform(-math.pi, math.pi)
+            up_k = rng.uniform(0.35, 0.95)
+            u = R @ np.array([math.sin(ang) * math.sqrt(1 - up_k * up_k), up_k, math.cos(ang) * math.sqrt(1 - up_k * up_k)])
+            root = hc + u * (np.min(radii) + 0.002 * s)
+            d = _n(u * 0.6 + R @ np.array([0.0, -0.3, -0.6]) + rng.normal(0, 0.25, 3))
+            ln = rng.uniform(0.018, 0.045) * s
+            prog.capsule(root, root + d * ln, rng.uniform(0.0022, 0.0034) * s, k=0.003 * s, label=B.L_HAIR)
     if style in ("long", "medium"):
         n = int(spec.get("locks", 12 if style == "long" else 7))
         length = float(spec.get("length", 0.16 if style == "long" else 0.08)) * s
