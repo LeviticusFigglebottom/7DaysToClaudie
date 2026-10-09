@@ -113,11 +113,13 @@ func tick_realtime(dt: float, exertion: float = 0.0) -> void:
 
 
 ## Spend a burst of stamina (swing, jump). Returns false (and spends nothing) if not enough.
-func spend_stamina(amount: float) -> bool:
+## regen_delay: how long before stamina starts coming back (< 0: survival.json's regen_delay;
+## swings pass their own, shorter, so steady chopping isn't starved).
+func spend_stamina(amount: float, regen_delay: float = -1.0) -> bool:
 	if stamina < amount * 0.5:
 		return false
 	stamina = maxf(0.0, stamina - amount)
-	_stamina_regen_block = _c("stamina", "regen_delay", 0.8)
+	_stamina_regen_block = regen_delay if regen_delay >= 0.0 else _c("stamina", "regen_delay", 0.8)
 	changed.emit()
 	return true
 

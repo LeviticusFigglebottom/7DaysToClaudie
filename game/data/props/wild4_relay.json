@@ -147,9 +147,9 @@
    "physics": "static",
    "hp": 250,
    "size": [
-    0.6,
+    0.58,
     2.0,
-    0.6
+    0.56
    ],
    "container": "w4_relay_rack",
    "blocks_sight": true,

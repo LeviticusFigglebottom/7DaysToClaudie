@@ -68,6 +68,8 @@ func _ready() -> void:
 	close.text = "Done"
 	close.pressed.connect(close_screen)
 	v.add_child(close)
+	# Recruited with the card open (the give button): the plea gives way to his orders at once.
+	Events.companion_recruited.connect(_on_recruited)
 	Events.ui_modal_closed.connect(func(id: StringName) -> void:
 		if id == &"companion" and _open:
 			_open = false
@@ -83,6 +85,11 @@ func open() -> void:
 	if ui != null and ui.has_method(&"push_modal"):
 		ui.call(&"push_modal", &"companion")
 	Audio.play_2d(&"ui/page_turn", -8.0)
+
+
+func _on_recruited(_id: StringName) -> void:
+	if _open:
+		_refresh()
 
 
 func close_screen() -> void:

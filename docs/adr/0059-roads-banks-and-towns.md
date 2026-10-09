@@ -120,6 +120,26 @@ road, within 30 m past any pad that does not keep its water, and over every orga
 there simply stand again. A random run keeps its own world folder (generator 11 land), so only the
 composer's side applies to it.
 
+### Yards meet their streets, streets meet each other (TD-318, composer 14, generator 14)
+A lot stood at the mean of the reference ground over its frame and its street at the street's own
+smoothed, grade-capped profile; on hills the yard met the street in a lip of a metre or more. Now
+`TerrainComposer.town_street_profiles` profiles a world town's streets together, after the world
+roads through or by it (`town_world_roads`, within 60 m of its disc), which are profiled first and
+never moved: a street that meets an earlier one (a tee or a crossing, within 3 m) is pinned to its
+height there, eased over 32 m. The generator reads the same profiles and keeps each lot within
+`LOT_STREET_STEP` (0.3 m) of its street where the lot meets it; the difference with the ground goes
+to the back of the lot. The composer and the generator call the same static code on the same
+reference ground, so the lot, its pad and its building agree. Random-world saves drop the
+vegetation records of their town chunks on the way to composer 14. The main map is unchanged
+(its streets are graded per region).
+
+Measured (terrain_audit, hilly seeds 21 and 7, size 4): the steepest 1 m step between a yard and
+its street, p95 1.01 → 0.44 m and 0.81 → 0.30 m (max 1.53 → 0.80 and 0.95 → 0.56). On the
+carriageways within 10 m of where one road ends on another, p95 1.44 → 1.41 m and 0.92 → 0.84 m:
+the town junctions that led that list before (1.25-1.29 m) are gone from its top; what is left
+there is where two world roads meet (not pinned) and the edge of cul-de-sac bulbs, whose paved
+circle drops off before its radius (TD-318 follow-ups).
+
 ## Consequences
 + Measured on hilly seeds (size 4): bank heights p95 38.7 m → 6-7 m, the steepest 2 m step beside
   roads p95 1.57 → 0.85-0.9, grades capped (max 0.13-0.17 by surface, bridge ramps aside), face runs
