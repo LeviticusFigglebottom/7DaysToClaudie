@@ -38,9 +38,9 @@ confirm the first run. The game opens in a 1280 × 720 window (Options has Fulls
 * The developer tools (F1–F7, §3) work only in these debug runs.
 
 ### The main menu
-Behind the menu the camera flies slowly up the Tamsin through Larch Hollow at dusk (the real
-valley, built in the background the first time; if your machine runs the menu below 40 fps it
-stops and holds a still frame). *Options… → Menu backdrop* picks moving, still or off.
+Behind the menu, pictures of Larch Hollow at dusk drift slowly and dissolve one into the next
+(rendered ahead of time from the game itself, so the menu draws nothing heavy).
+*Options… → Menu backdrop* picks moving, still or off.
 
 | Button | What it does |
 |---|---|
