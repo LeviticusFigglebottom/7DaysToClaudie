@@ -64,6 +64,10 @@ static func wants_streaming() -> bool:
 var poi_lots: Dictionary = {}
 ## Every building of the world as data (WorldLoader.registry, RWG v2 Phase 3).
 var poi_registry: PoiRegistry = null
+## Buildings come and go by distance (PoiManager's ring over poi_registry): a streamed world, and
+## the main map, built whole, whose boot raised every building of its built regions (owner report
+## 4). Off with the new-game option "poi_ring": false (tools that want every building at once).
+var poi_ring: bool = false
 ## Where the player will stand when the boot ends (the warm-up camera's spot): a streamed world
 ## builds the buildings around it during the boot.
 var boot_focus := Vector3.ZERO
@@ -117,8 +121,12 @@ func _ready() -> void:
 		Log.info("world", "random world %s: %s" % [saved_id if saved_id != "" else "(new)", "streamed (ADR-0038)" if streaming else "built whole (streaming off)"])
 		if streaming and not bool(Game.pending_options.get("is_new_game", false)):
 			_loader.spawn_hint = session.local_player().position
+		poi_ring = streaming
+		_loader.poi_ring = poi_ring
 		_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_random_world(gen, saved_id), true, "world load")
 		return
+	poi_ring = bool(Game.pending_options.get("poi_ring", true))
+	_loader.poi_ring = poi_ring
 	_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_world(dir), true, "world load")
 
 
@@ -297,7 +305,7 @@ func _boot_terrain() -> void:
 	_loader.terrain_textures = null
 	terrain.prebuilt_bloom = _loader.bloom_tiles
 	# Buildings come by distance (ADR-0038 §8): a cellar is cut once its building stands.
-	terrain.gate_holes = streaming and _loader.registry != null
+	terrain.gate_holes = poi_ring and _loader.registry != null
 	terrain.remesh_far_tiles = streaming
 	add_child(terrain)
 	terrain.setup(world_def, _loader.detailed.duplicate(), _loader.coarse)

@@ -376,6 +376,8 @@ func _run() -> void:
 		# Random worlds stream by default (ADR-0038), and a streamed world builds only the buildings
 		# near the player, so POI_SHOTS would find none of theirs: shots build the whole world.
 		start["stream"] = false
+	# The main map builds by distance too (GameWorld.poi_ring): shots build it whole as well.
+	start["poi_ring"] = false
 	game.call(&"start_new_game", start)
 	var t0: int = Time.get_ticks_msec()
 	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < (1200000 if random_world else 300000):
