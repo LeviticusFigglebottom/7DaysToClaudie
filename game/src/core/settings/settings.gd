@@ -31,6 +31,9 @@ var ui_scale: float = 0.0
 var menu_backdrop: String = "moving"
 ## Bracketed captions for sounds that carry meaning (the intro's cues, the tether's radio).
 var sound_captions: bool = false
+## Frames a second the game may draw (0 = no cap): saves power and heat on a fast GPU.
+var max_fps: int = 0
+const FPS_CAPS: PackedInt32Array = [0, 30, 60, 90, 120, 144, 165, 240]
 
 var _cfg := ConfigFile.new()
 var _default_bindings: Dictionary = {}
@@ -199,13 +202,40 @@ func gfx(key: String, default: Variant) -> Variant:
 
 ## The preset a first run starts on, from the GPU kind (ADR-0037): integrated or software
 ## rendering gets low, an unknown kind medium, a discrete GPU high.
-static func preset_for_adapter(adapter_type: RenderingDevice.DeviceType) -> String:
+static func preset_for_adapter(adapter_type: RenderingDevice.DeviceType, adapter_name: String = "") -> String:
 	match adapter_type:
 		RenderingDevice.DEVICE_TYPE_DISCRETE_GPU:
-			return "high"
+			return discrete_tier(adapter_name)
 		RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU, RenderingDevice.DEVICE_TYPE_CPU:
 			return "low"
 	return "medium"
+
+
+## A discrete GPU's preset from its name (ADR-0037): recent high-end cards get Ultra, cards from
+## before about 2018 get Medium, everything else High. Only a first-run default; the player can
+## change it, and a name we don't know is High.
+const ULTRA_GPUS: PackedStringArray = ["RX 9070", "RX 7900", "RX 7800", "RX 6950", "RX 6900", "RX 6800",
+	"RTX 5090", "RTX 5080", "RTX 5070", "RTX 4090", "RTX 4080", "RTX 4070", "RTX 3090", "RTX 3080"]
+const MEDIUM_GPUS: PackedStringArray = ["GTX 9", "GTX 10", "GTX 16", "GTX 7", "RX 4", "RX 5", "R9 ", "R7 ", "MX1", "MX2", "MX3", "MX4",
+	"QUADRO K", "QUADRO M", "RADEON PRO WX"]
+
+
+static func discrete_tier(adapter_name: String) -> String:
+	var n: String = adapter_name.to_upper()
+	for u: String in ULTRA_GPUS:
+		if n.contains(u):
+			return "ultra"
+	for m: String in MEDIUM_GPUS:
+		if n.contains(m):
+			return "medium"
+	return "high"
+
+
+## The preset this machine would get on a first run (the Graphics page offers it back).
+static func recommended_preset() -> String:
+	if DisplayServer.get_name() == "headless":
+		return "high"
+	return preset_for_adapter(RenderingServer.get_video_adapter_type(), RenderingServer.get_video_adapter_name())
 
 
 func _resolve_graphics() -> void:
@@ -266,6 +296,12 @@ func set_display(p_fullscreen: bool, p_vsync: bool) -> void:
 	save()
 
 
+func set_max_fps(v: int) -> void:
+	max_fps = maxi(0, v)
+	Engine.max_fps = max_fps
+	save()
+
+
 func _apply_display() -> void:
 	# Headless runs (tests, CI, the smoke) have no window to change.
 	if DisplayServer.get_name() == "headless":
@@ -288,6 +324,7 @@ func save() -> void:
 	_cfg.set_value("display", "ui_scale", ui_scale)
 	_cfg.set_value("display", "menu_backdrop", menu_backdrop)
 	_cfg.set_value("audio", "sound_captions", sound_captions)
+	_cfg.set_value("display", "max_fps", max_fps)
 	_cfg.save(SETTINGS_PATH)
 	settings_changed.emit()
 
@@ -298,7 +335,7 @@ func _load_user_settings() -> void:
 	graphics_preset = _cfg.get_value("graphics", "preset", "")
 	if graphics_preset == "":
 		# First run: start from what the GPU can carry, and remember it (ADR-0037).
-		graphics_preset = "high" if DisplayServer.get_name() == "headless" else preset_for_adapter(RenderingServer.get_video_adapter_type())
+		graphics_preset = recommended_preset()
 		if DisplayServer.get_name() != "headless":
 			_cfg.set_value("graphics", "preset", graphics_preset)
 	mouse_sensitivity = _cfg.get_value("gameplay", "mouse_sensitivity", mouse_sensitivity)
@@ -311,6 +348,8 @@ func _load_user_settings() -> void:
 	ui_scale = float(_cfg.get_value("display", "ui_scale", ui_scale))
 	menu_backdrop = str(_cfg.get_value("display", "menu_backdrop", menu_backdrop))
 	sound_captions = bool(_cfg.get_value("audio", "sound_captions", sound_captions))
+	max_fps = int(_cfg.get_value("display", "max_fps", max_fps))
+	Engine.max_fps = max_fps
 	var v: Variant = _cfg.get_value("audio", "volumes", volumes)
 	if v is Dictionary:
 		volumes.merge(v, true)

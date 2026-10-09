@@ -57,3 +57,32 @@ has a Controls button that opens the panel there.
   environment effects and grass.
 * Props pop in at `object_distance`; the hysteresis margin keeps them from flickering at the edge.
 * Still unmeasured on a GPU (TD-003 stays open). Remaining costs found here: TD-105.
+
+## Addendum: round 4 (Presentation, 2026-10)
+
+The options moved to the Presentation stream (the hub's call; World stays the perf adviser).
+
+**First-run default.** `Settings.recommended_preset()` uses the adapter's type and also its name
+(`RenderingServer.get_video_adapter_name()`):
+* integrated GPUs and CPUs get Low, and unknown types get Medium (unchanged);
+* a discrete GPU gets High unless its name says otherwise:
+  * Ultra for the cards in `ULTRA_GPUS`: RX 9070, RX 7800/7900, RX 6800/6900/6950, RTX 3080 and
+    up, RTX 4070 and up, RTX 5070 and up;
+  * Medium for older lines (`MEDIUM_GPUS`): GTX 7xx–16xx, RX 4xx/5xx, R7/R9, MX, old Quadro and
+    Radeon Pro.
+
+The owner's RX 9070 XT now starts on Ultra instead of High. It is only a first-run default: the
+Graphics page shows the detected adapter and a "Use <preset> (recommended)" button to return to
+it.
+
+**Frame rate cap.** `Settings.max_fps` (no cap, 30, 60, 90, 120, 144, 165, 240) sets
+`Engine.max_fps` and is saved under `display`. It saves power and heat on a fast GPU, and it caps
+the menu's backdrop too.
+
+**A display bug.** Choice rows (shadow resolution, shadow softness) compared the preset's value
+with `str()`. JSON numbers are floats, so 4096.0 never matched the 4096 choice, and every preset
+showed "Low" and "Hard". `OptionsPanel.same_choice` now compares numbers by value.
+
+The Graphics page takes the shared kit theme (ADR-0063). The rest of this ADR's options are
+unchanged. Tuning Ultra's ceiling on a 9070 XT (shadow and view distances, grass, tree LOD) waits
+for World's per-setting costs and a GPU run (TD-003).

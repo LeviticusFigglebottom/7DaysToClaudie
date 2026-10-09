@@ -1,8 +1,8 @@
 extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
-const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "new_game", "manual",
-	"loading", "pause", "trader", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
+const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "options_graphics", "new_game", "manual",
+	"loading", "pause", "trader", "death", "hud", "vignette", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
 var _only: PackedStringArray = []
@@ -196,4 +196,62 @@ func _shot_trader() -> Node:
 	layer.add_child(t)
 	await _settle(1)
 	t.open("wp9", "shop")
+	return layer
+
+
+func _shot_death() -> Node:
+	var ui := GameUI.new()
+	add_child(ui)
+	await _settle(1)
+	ui.hide_loading()
+	ui.show_death("zombie", "Your pack lies where you fell.")
+	await get_tree().create_timer(2.3).timeout
+	return ui
+
+
+## The HUD with a toolbelt and a few messages over a mid-grey field (no world).
+func _shot_hud() -> Node:
+	var bg := ColorRect.new()
+	bg.color = Color(0.32, 0.36, 0.3)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var layer: CanvasLayer = _ui_layer()
+	layer.layer = 0
+	layer.add_child(bg)
+	var ui := GameUI.new()
+	add_child(ui)
+	await _settle(1)
+	ui.hide_loading()
+	var p: PlayerState = Game.local_player()
+	p.toolbelt[0] = &"stone_axe"
+	p.toolbelt[1] = &"torch"
+	p.equipped_slot = 0
+	ui.message("Journal: Make a stone axe ✓   Next: Fell a tree ([B])", &"level")
+	ui.message("Picked up 3 Stick.", &"info")
+	if ui.has_method(&"show_belt"):
+		ui.call(&"show_belt")
+	await _settle(4)
+	bg.set_meta(&"ui", ui)
+	return layer
+
+
+## The HUD's hurt and cold edges at once (the vignette shader), over a mid-grey field.
+func _shot_vignette() -> Node:
+	var layer: Node = await _shot_hud()
+	var ui: GameUI = (layer.get_child(0) as Node).get_meta(&"ui")
+	var vm: ShaderMaterial = (ui.get(&"_vignette") as CanvasItem).material
+	vm.set_shader_parameter("damage", 0.6)
+	vm.set_shader_parameter("cold", 0.7)
+	(ui.get(&"_hum_label") as Label).text = "THE HUM IN 05:42"
+	await _settle(3)
+	return layer
+
+
+func _shot_options_graphics() -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var p := OptionsPanel.new()
+	p.open_tab = "Graphics"
+	layer.add_child(p)
+	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	await _settle(2)
+	p.position = (get_viewport().get_visible_rect().size - p.size) * 0.5
 	return layer

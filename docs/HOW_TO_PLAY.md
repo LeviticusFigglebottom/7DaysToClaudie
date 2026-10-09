@@ -46,9 +46,9 @@ stops and holds a still frame). *Options… → Menu backdrop* picks moving, sti
 |---|---|
 | Continue (Day N) | Loads your most recent save |
 | New Game… | The world settings screen (§2) |
-| Vertical Slice demo | Starts the slice's curated demo run at once: Survivor difficulty, 30-minute days, the first Hum on day 3, always run seed 4471 (New Game… rolls a fresh seed) |
+| Vertical Slice demo (dev) | Developers only (the editor, or `-- --dev`): starts the slice's curated demo run at once: Survivor difficulty, 30-minute days, the first Hum on day 3, always run seed 4471 (New Game… rolls a fresh seed) |
 | Random World… | The world settings screen, open on its World tab with a random world chosen |
-| Load RunN — Day N · Preset | Each saved run, newest first ("· Random world" marks those) |
+| Load RunN — Day N · Preset | Each saved run, newest first ("· Random world" marks those). The test runs' own saves (smoke, tour…) show only to developers |
 | Options… | Mouse sensitivity and invert, field of view, head bob, five volumes, brightness, interface size (Auto grows the text above 1080p; or 75–200%), the menu backdrop, graphics preset, fullscreen, V-sync |
 | The Intro | Replays the new-game intro |
 

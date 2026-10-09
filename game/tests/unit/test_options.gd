@@ -92,3 +92,21 @@ func test_the_panel_builds_every_tab() -> void:
 		assert_eq(panel._tabs.current_tab, OptionsPanel.TABS.find(tab))
 		assert_gt((panel._graphics_page.get_child(0) as GridContainer).get_child_count(), 20, "graphics rows")
 		assert_gt((panel._controls_page.get_child(0) as GridContainer).get_child_count(), 40, "a row per action")
+
+
+func test_discrete_gpus_by_name() -> void:
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "AMD Radeon RX 9070 XT"), "ultra", "the owner's card")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "NVIDIA GeForce RTX 4070 SUPER"), "ultra")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "NVIDIA GeForce RTX 3060"), "high")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "NVIDIA GeForce GTX 1060 6GB"), "medium")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "Radeon RX 580 Series"), "medium")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "Something New 9000"), "high", "unknown names default to High")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU, "AMD Radeon RX 9070 XT"), "low")
+
+
+func test_numeric_choices_match_json_floats() -> void:
+	assert_true(OptionsPanel.same_choice(4096, 4096.0), "a preset's 4096.0 is the 4096 choice")
+	assert_true(OptionsPanel.same_choice(3, 3.0))
+	assert_false(OptionsPanel.same_choice(2048, 4096.0))
+	assert_true(OptionsPanel.same_choice("fsr2", "fsr2"))
+	assert_false(OptionsPanel.same_choice("fsr", "fsr2"))
