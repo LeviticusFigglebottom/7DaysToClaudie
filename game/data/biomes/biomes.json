@@ -15,7 +15,7 @@
                     "loose_stone": 1.8, "granite_boulder": 0.2, "deadfall_branches": 0.4, "driftwood_log": 0.35, "forest_moss": 0.8, "bloom_caps": 4.0},
      "ground": ["gravel", "mud", "grass"], "ambience": "river", "temperature_offset": -1.0, "spawns": {"hollow": 10}, "spawn_density": 0.6, "fog_tint": "#a0aab0"},
     {"id": "town", "name": "Town", "description": "Overgrown lots and cracked asphalt.",
-     "vegetation": {"meadow_grass": 16.0, "paper_birch": 0.1, "fireweed": 1.5, "deadfall_branches": 0.2, "bloom_caps": 2.0},
+     "vegetation": {"meadow_grass": 28.0, "yarrow_plant": 0.9, "fireweed": 2.4, "huckleberry_bush": 0.25, "fir_sapling": 0.18, "paper_birch": 0.14, "loose_stone": 0.1, "deadfall_branches": 0.2, "bloom_caps": 2.0},
      "ground": ["grass", "dirt", "gravel"], "ambience": "town", "temperature_offset": 0.5, "spawns": {"hollow": 10, "lurcher": 2, "keener": 1, "blister": 1.2, "husk": 1.0, "rammer": 0.4}, "spawn_density": 1.4, "fog_tint": "#a6a8a8"},
     {"id": "yard", "name": "Yard", "description": "Lawns gone to seed round the houses of a town: long grass, fireweed, a few shrubs and young trees (the house clears its own ground).",
      "vegetation": {"meadow_grass": 26.0, "yarrow_plant": 1.2, "fireweed": 1.4, "huckleberry_bush": 0.45, "fir_sapling": 0.3, "paper_birch": 0.22, "grey_fir": 0.06, "loose_stone": 0.12},
