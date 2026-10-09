@@ -43,9 +43,19 @@ func advance(minutes: float) -> void:
 		_dispatch(e)
 	if weather != null:
 		var season: String = session.clock.season()
-		if weather.tick(minutes, season, session.rng.stream("weather")):
+		if weather.tick(minutes, season, session.rng.stream("weather"), _barred_weather()):
 			Events.weather_changed.emit(weather.target)
 	game_minutes_passed.emit(minutes)
+
+
+## The weather the gentle_start rule keeps away in the first days (data/config/weather.json).
+func _barred_weather() -> PackedStringArray:
+	if not GameRules.current().flag("gentle_start"):
+		return PackedStringArray()
+	var g: Dictionary = Content.config(&"weather").get("gentle_start", {})
+	if session.clock.day() > int(g.get("days", 3)):
+		return PackedStringArray()
+	return PackedStringArray(g.get("barred", []))
 
 
 ## Fast-forwards `hours` of game time over ~real_seconds, then calls on_done.

@@ -71,8 +71,12 @@ func force(id: StringName) -> void:
 	_start(id, 0.5)
 
 
-func tick(game_minutes: float, season: String, rng: RandomNumberGenerator) -> bool:
+## `barred`: states the next pick may not turn to (the gentle_start rule's first days); one that is
+## already blowing ends now rather than at its time.
+func tick(game_minutes: float, season: String, rng: RandomNumberGenerator, barred: PackedStringArray = []) -> bool:
 	var changed: bool = false
+	if not barred.is_empty() and forced == &"" and barred.has(String(target)):
+		minutes_left = minf(minutes_left, 0.0)
 	if blend < 1.0:
 		blend = minf(1.0, blend + game_minutes / BLEND_MINUTES)
 		if blend >= 1.0:
@@ -80,7 +84,7 @@ func tick(game_minutes: float, season: String, rng: RandomNumberGenerator) -> bo
 			changed = true
 	minutes_left -= game_minutes
 	if minutes_left <= 0.0 and blend >= 1.0:
-		var next: StringName = forced if forced != &"" else _pick(season, rng)
+		var next: StringName = forced if forced != &"" else _pick(season, rng, barred)
 		_start(next, rng.randf())
 		changed = true
 	wind_angle += rng.randf_range(-0.002, 0.002) * game_minutes
@@ -134,10 +138,10 @@ func _start(id: StringName, roll: float) -> void:
 	minutes_left = lerpf(dur.x, dur.y, clampf(roll, 0.0, 1.0)) * 60.0
 
 
-func _pick(season: String, rng: RandomNumberGenerator) -> StringName:
+func _pick(season: String, rng: RandomNumberGenerator, barred: PackedStringArray = []) -> StringName:
 	var weights: Dictionary = {}
 	for d: WeatherDef in Content.all(&"weather"):
-		var w: float = float(d.season_weights.get(season, 1.0))
+		var w: float = float(d.season_weights.get(season, 1.0)) if not barred.has(String(d.id)) else 0.0
 		# Avoid repeating the same state back to back.
 		if d.id == target:
 			w *= 0.35

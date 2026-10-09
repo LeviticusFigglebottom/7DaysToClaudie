@@ -17,6 +17,7 @@
     "wildlife_density": {"category": "world", "type": "float", "min": 0.25, "max": 3.0, "step": 0.25, "default": 1.0, "label": "Wildlife density"},
     "murmurs": {"category": "world", "type": "bool", "default": true, "label": "Murmurs (crows that mark you)"},
     "wolves": {"category": "world", "type": "bool", "default": true, "label": "Wolf packs"},
+    "gentle_start": {"category": "world", "type": "bool", "default": true, "label": "Gentle first days (no storms or snow before day 4)"},
     "encounter_density": {"category": "world", "type": "float", "min": 0.0, "max": 3.0, "step": 0.25, "default": 1.0, "label": "Forest encounters (camps, wrecks, caches)"},
 
     "enemy_speed_day": {"category": "hollowed", "type": "enum", "values": ["shamble", "walk", "jog", "run", "sprint"], "default": "walk", "label": "Hollowed speed by day"},
@@ -64,9 +65,9 @@
     "remanded": {"label": "Remanded — hard", "description": "Tougher Hollowed that jog by day, larger Hums, scarcer loot. Death drops everything.",
       "values": {"enemy_speed_day": "jog", "enemy_health": 1.25, "enemy_damage": 1.5, "structure_damage": 1.25, "hum_size": 1.5, "loot_abundance": 0.75, "needs_rate": 1.25, "death_penalty": "drop_all", "gamestage_bonus": 1.2, "companion_strength": 0.75}},
     "hollowed": {"label": "Hollowed — brutal", "description": "They run by day and sprint by night. A Hum every five days.",
-      "values": {"enemy_speed_day": "run", "enemy_speed_night": "sprint", "enemy_health": 1.5, "enemy_damage": 2.0, "structure_damage": 1.5, "wanderer_density": 1.5, "sleeper_alertness": "light", "hum_every_days": 5, "hum_size": 2.0, "loot_abundance": 0.5, "needs_rate": 1.5, "death_penalty": "drop_all", "gamestage_bonus": 1.4, "companion_strength": 0.75}},
+      "values": {"gentle_start": false, "enemy_speed_day": "run", "enemy_speed_night": "sprint", "enemy_health": 1.5, "enemy_damage": 2.0, "structure_damage": 1.5, "wanderer_density": 1.5, "sleeper_alertness": "light", "hum_every_days": 5, "hum_size": 2.0, "loot_abundance": 0.5, "needs_rate": 1.5, "death_penalty": "drop_all", "gamestage_bonus": 1.4, "companion_strength": 0.75}},
     "rooted": {"label": "Rooted — permadeath", "description": "Brutal, and one life. The save is deleted when you die.",
-      "values": {"enemy_speed_day": "run", "enemy_speed_night": "sprint", "enemy_health": 1.5, "enemy_damage": 2.0, "structure_damage": 1.5, "wanderer_density": 1.5, "sleeper_alertness": "light", "hum_every_days": 5, "hum_size": 2.0, "loot_abundance": 0.5, "needs_rate": 1.5, "death_penalty": "permadeath", "gamestage_bonus": 1.4, "companion_strength": 0.75}}
+      "values": {"gentle_start": false, "enemy_speed_day": "run", "enemy_speed_night": "sprint", "enemy_health": 1.5, "enemy_damage": 2.0, "structure_damage": 1.5, "wanderer_density": 1.5, "sleeper_alertness": "light", "hum_every_days": 5, "hum_size": 2.0, "loot_abundance": 0.5, "needs_rate": 1.5, "death_penalty": "permadeath", "gamestage_bonus": 1.4, "companion_strength": 0.75}}
   },
   "speed_factors": {"_doc": "Hollowed speed options as multipliers of a type's own run speed (its walk speed is scaled alike).", "shamble": 0.45, "walk": 0.6, "jog": 0.8, "run": 1.0, "sprint": 1.25},
   "sleeper_wake_factors": {"deep": 0.6, "normal": 1.0, "light": 1.5}
