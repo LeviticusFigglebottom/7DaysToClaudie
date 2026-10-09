@@ -717,19 +717,28 @@ func _week() -> void:
 	await snap("w_hum_start")
 	var ai: AIDirector = w.ai
 	await wait_until(func() -> bool: return ai.hum.members.size() > 0, 30.0)
-	await seconds(6.0)
-	note("Hum members: %d" % ai.hum.members.size())
-	await snap("w_hum_night")
-	for id: StringName in ai.hum.members.keys().slice(0, 4):
-		var e: Enemy = ai.hum.members[id]["node"]
-		if is_instance_valid(e) and e.is_alive():
-			var k := DamageInfo.make(999.0, &"blunt", &"melee", ps.id)
-			k.hit_pos = e.global_position + Vector3.UP
-			e.take_damage(k)
-	await seconds(2.0)
-	await snap("w_hum_kills")
-	p.god_mode = true
-	Game.session.clock.set_time(hum_day + 1, 3.9)
+	await seconds(4.0)
+	await snap("w_hum_wave1")
+	# The night on the clock, 15 minutes at a time: every wave comes (a jump to dawn skipped
+	# waves 2-4), and the player puts down whatever reaches them.
+	var seen: Dictionary = {}
+	var shot: Dictionary = {}
+	while ai.hum.active and not (Game.session.clock.day() > hum_day and Game.session.clock.hour_f() >= 4.5):
+		w.clock_driver.advance(15.0)
+		await seconds(1.0)
+		for id: StringName in ai.hum.members.keys():
+			seen[id] = true
+			var e: Enemy = ai.hum.members[id]["node"]
+			if is_instance_valid(e) and e.is_alive() and e.global_position.distance_to(p.global_position) < 12.0:
+				var k := DamageInfo.make(999.0, &"blunt", &"melee", ps.id)
+				k.hit_pos = e.global_position + Vector3.UP
+				e.take_damage(k)
+		var hour: int = Game.session.clock.hour()
+		if not shot.has(hour) and (not _msgs.is_empty() or hour in [23, 1, 3]):
+			shot[hour] = true
+			await snap("w_hum_night_%02d" % hour)
+	note("Hum night: %d Hollowed seen across its waves" % seen.size())
+	Game.session.clock.set_time(Game.session.clock.day(), maxf(Game.session.clock.hour_f(), 3.9))
 	w.clock_driver.advance(12.0)
 	await seconds(4.0)
 	await snap("w_hum_dawn")
