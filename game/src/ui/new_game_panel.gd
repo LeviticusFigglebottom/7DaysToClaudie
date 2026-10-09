@@ -12,9 +12,10 @@ signal closed
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
-## The handcrafted map as it is today: the planned 7 x 7 km valley has one region built (D6,
-## world.json `status`); the rest is coarse terrain. A test keeps it naming every built region.
-const MAIN_MAP_LABEL: String = "Hollowmere Valley (handcrafted: Larch Hollow, 1 x 1 km)"
+## The handcrafted map as it is today: the planned 7 x 7 km valley has two regions built (D6 and
+## D7 below it, world.json `status`); the rest is coarse terrain. A test keeps it naming every built
+## region.
+const MAIN_MAP_LABEL: String = "Hollowmere Valley (handcrafted: Larch Hollow and Waystation 9, 1 x 2 km)"
 
 ## Open on the World tab with a random world chosen (the main menu's Random World button).
 var start_random: bool = false
