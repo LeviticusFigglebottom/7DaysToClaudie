@@ -2472,31 +2472,47 @@ func _access(place: Dictionary, kind: String, cand: Dictionary) -> void:
 
 
 ## A route from a vertex of road `ri` keeps to that road's cells (cheap to reuse) before it turns
-## off, 6-20 m beside the road: a second road along the first (TD-139). It starts where it leaves
-## instead: from the road's nearest point to the first point of the route over LEAVE_ROAD m out.
+## off, 6-20 m beside the road: a second road along the first (TD-139). It starts where it last
+## leaves instead: from the road's nearest point to the first point past LEAVE_ROAD m out after the
+## last one within it (scanning until the route is twice that far out), when that is over 1.5 x
+## LEAVE_ROAD along the route (a route turning straight off keeps its start).
 func _leave_road(route: PackedVector2Array, ri: int) -> PackedVector2Array:
 	if route.size() < 2 or ri < 0:
 		return route
 	var line: Polyline2 = roads[ri]["line"]
 	var walked: float = 0.0
+	var cut_k: int = -1
+	var cut_q := Vector2.ZERO
+	var cut_s: float = 0.0
+	var inside: bool = true
+	var gone: bool = false
 	for k: int in route.size() - 1:
 		var seg: float = route[k].distance_to(route[k + 1])
 		var n: int = maxi(1, int(ceil(seg / 4.0)))
 		for st: int in range(1, n + 1):
 			var q: Vector2 = route[k].lerp(route[k + 1], float(st) / n)
-			var on: Vector3 = line.closest(q)
-			if on.x <= LEAVE_ROAD:
-				continue
-			if walked + seg * st / n < LEAVE_ROAD * 1.5:
-				return route  # it turns off at once
-			var out := PackedVector2Array([line.point_at(on.y), q])
-			if q.distance_to(route[k + 1]) > 1.0:
-				out.append(route[k + 1])
-			out.append_array(route.slice(k + 2))
-			# Where the route had run on along the road and turned back, the new start is a hook.
-			return _despike(out)
+			var d: float = line.closest(q).x
+			if d <= LEAVE_ROAD:
+				inside = true
+			elif inside:
+				inside = false
+				cut_k = k
+				cut_q = q
+				cut_s = walked + seg * st / n
+			if d > LEAVE_ROAD * 2.0:
+				gone = true
+				break
+		if gone:
+			break
 		walked += seg
-	return route
+	if cut_k < 0 or inside or cut_s < LEAVE_ROAD * 1.5:
+		return route
+	var out := PackedVector2Array([line.point_at(line.closest(cut_q).y), cut_q])
+	if cut_q.distance_to(route[cut_k + 1]) > 1.0:
+		out.append(route[cut_k + 1])
+	out.append_array(route.slice(cut_k + 2))
+	# Where the route had run on along the road and turned back, the new start is a hook.
+	return _despike(out)
 
 
 # --- Trader posts ----------------------------------------------------------------------------------
@@ -2521,7 +2537,13 @@ func _trader_posts() -> void:
 	var spacing: float = float(tcfg.get("spacing", 600.0))
 	var safe: float = float(tcfg.get("safe_radius", 40.0))
 	var r := rng("traders")
-	for tw: Dictionary in towns:
+	# Smallest towns first: a big town has rings far out along its roads, and taking first it could
+	# take the one spot a smaller neighbour had (seed 7, generator 17: Fallow's lots took its own
+	# spot on a straighter road, so it took Marrow Creek's). A spot within `spacing` of a post is
+	# passed over in the search, not after it, so a town takes its next best.
+	var order: Array = towns.duplicate()
+	order.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["radius"]) < float(b["radius"]) or (float(a["radius"]) == float(b["radius"]) and str(a["id"]) < str(b["id"])))
+	for tw: Dictionary in order:
 		var c: Vector2 = tw["center"]
 		var best: Dictionary = {}
 		# Just outside the town, farther out where a bend, a slope, water or the town's outer lots
@@ -2541,7 +2563,7 @@ func _trader_posts() -> void:
 					if prev * d <= 0.0:
 						for side: float in [1.0, -1.0]:
 							var cand: Dictionary = _post_candidate(i, s, side, safe)
-							if not cand.is_empty():
+							if not cand.is_empty() and not _crowded(cand["pos"], spacing):
 								cand["score"] = float(cand["score"]) + r.randf()
 								if best.is_empty() or float(cand["score"]) < float(best["score"]):
 									best = cand
@@ -2566,7 +2588,7 @@ func _trader_posts() -> void:
 						continue
 					for side2: float in [1.0, -1.0]:
 						var cand2: Dictionary = _post_candidate(i2, s2, side2, safe)
-						if not cand2.is_empty():
+						if not cand2.is_empty() and not _crowded(cand2["pos"], spacing):
 							cand2["score"] = float(cand2["score"]) + (d2 - lo) * 0.02 + (8.0 if cls2 == "track" else 0.0) + r.randf()
 							if best.is_empty() or float(cand2["score"]) < float(best["score"]):
 								best = cand2
@@ -2574,13 +2596,6 @@ func _trader_posts() -> void:
 			warnings.append("no trader post by %s" % tw["name"])
 			continue
 		var pos: Vector2 = best["pos"]
-		var crowded: bool = false
-		for pt: Dictionary in posts:
-			if (pt["pos"] as Vector2).distance_to(pos) < spacing:
-				crowded = true
-				break
-		if crowded:
-			continue
 		var poly: PackedVector2Array = best["poly"]
 		terrain.flatten(poly, float(best["ground"]), 18.0)
 		router.block_polygon(poly, 6.0)
@@ -2589,6 +2604,14 @@ func _trader_posts() -> void:
 		_add_road(PackedVector2Array([from, from.lerp(gate, 0.5), gate + (gate - from).normalized() * 2.0]), "drive", "%s trader drive" % tw["name"], false)
 		posts.append({"id": "trader:%s:%d" % [TRADER_DEF, posts.size()], "pos": pos, "yaw": best["yaw"], "cell": cell_at(pos),
 			"poly": poly, "safe": best["safe"], "town": tw["id"]})
+
+
+## True when a trader post already stands within `spacing` of p.
+func _crowded(p: Vector2, spacing: float) -> bool:
+	for pt: Dictionary in posts:
+		if (pt["pos"] as Vector2).distance_to(p) < spacing:
+			return true
+	return false
 
 
 ## A post beside road `ri` at arc `s`, on the `side` (+1 left, -1 right) of its travel: {pos, yaw,
