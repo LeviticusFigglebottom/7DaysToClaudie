@@ -189,6 +189,15 @@ static func status_text(missing: Array, tools: PackedStringArray) -> String:
 	return "need " + ", ".join(parts)
 
 
+## Status lines longer than this wrap to two lines (the status column holds about this many
+## characters at the sheet's narrowest, 560 px).
+const STATUS_ONE_LINE: int = 24
+
+
+static func status_wraps(text: String) -> bool:
+	return text.length() > STATUS_ONE_LINE
+
+
 ## Whether a row passes a filter: "all", "ready", "uses:<item id>" or a recipe category.
 static func passes(r: Dictionary, filter: String) -> bool:
 	if filter.begins_with("uses:"):
@@ -344,6 +353,12 @@ func _row(r: Dictionary) -> Button:
 	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	st.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	st.size_flags_stretch_ratio = 0.9
+	# A long need ("need 1 Bottle of Stream Water") wraps to a second line in a taller row: cut
+	# mid-word it read as an unreadable recipe (owner report 4, item 7).
+	if status_wraps(st.text):
+		st.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		st.max_lines_visible = 2
+		b.custom_minimum_size.y = 54
 	st.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	st.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	h.add_child(st)
