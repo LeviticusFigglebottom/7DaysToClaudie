@@ -22,6 +22,13 @@ const STALL: float = 20.0
 var seconds: float = 20.0
 var limit: float = 1.5
 var expect_pictures: bool = false
+## A player's menu (no developer entries, even from the editor's binary): every entry must fit.
+var player: bool = false
+## A saved run in place first, so the menu has Continue and Load… (a player's longest menu).
+var with_continue: bool = false
+const PROBE_SLOT: String = "menu_guard_probe"
+## A PNG of the menu as it first settles (--shot <path>), for the record.
+var shot: String = ""
 
 var _main: Control
 var _list: Control
@@ -48,6 +55,9 @@ func _ready() -> void:
 			"--seconds": seconds = float(args[i + 1])
 			"--limit": limit = float(args[i + 1])
 			"--expect-pictures": expect_pictures = true
+			"--player": player = true
+			"--with-continue": with_continue = true
+			"--shot": shot = args[i + 1]
 	_watchdog = Thread.new()
 	_watchdog.start(_watch)
 	_run.call_deferred()
@@ -88,6 +98,8 @@ func _process(_delta: float) -> void:
 func _run() -> void:
 	print("MENU_GUARD start: %s, renderer %s, %.0f s, limit %.2f s" % [DisplayServer.get_name(),
 		RenderingServer.get_current_rendering_driver_name(), seconds, limit])
+	if with_continue:
+		_write_probe_save()
 	var scene := load("res://src/app/main.tscn") as PackedScene
 	_main = scene.instantiate() as Control
 	get_tree().root.add_child(_main)
@@ -102,6 +114,11 @@ func _run() -> void:
 		await _close(auto, "What's New (auto)")
 	_phase = "backdrop"
 	await _report_backdrop()
+	_check_fit()
+	if shot != "":
+		await _seconds(2.5)
+		get_viewport().get_texture().get_image().save_png(shot)
+		print("MENU_GUARD shot %s" % shot)
 	var start: int = Time.get_ticks_msec()
 	var rounds: int = 0
 	while Time.get_ticks_msec() - start < int(seconds * 1000.0) and _failures.is_empty():
@@ -112,10 +129,9 @@ func _run() -> void:
 			var b: Button = _entries()[i]
 			i += 1
 			var name: String = b.text
-			# The editor's dev entry pushes the list down: the last can sit below a 720p window.
+			# The editor's dev entry pushes the list down: the last can sit below a 720p window
+			# (a player's menu that does so fails in _check_fit).
 			if not get_viewport().get_visible_rect().has_point(b.get_global_rect().get_center()):
-				if rounds == 1:
-					print("MENU_GUARD note: %s is off screen at %s" % [name, str(get_viewport().get_visible_rect().size)])
 				continue
 			_phase = "hover %s" % name
 			if not await _hover(b):
@@ -146,7 +162,49 @@ func _run() -> void:
 	_finish()
 
 
+## Every entry inside the window and above the version line. A player's menu (--player) that
+## doesn't fit fails; the editor's (one more entry) is only noted.
+func _check_fit() -> void:
+	var view: Rect2 = get_viewport().get_visible_rect()
+	var status: Control = _main.get_node_or_null("%Status") as Control
+	var floor_y: float = status.get_global_rect().position.y if status != null and status.text != "" else view.end.y
+	var names: PackedStringArray = []
+	var bad: PackedStringArray = []
+	for b: Button in _entries():
+		names.append(b.text)
+		var r: Rect2 = b.get_global_rect()
+		if not view.encloses(r) or r.end.y > floor_y + 0.5:
+			bad.append("%s (%d-%d px)" % [b.text, int(r.position.y), int(r.end.y)])
+	print("MENU_GUARD menu: %d entries at %s%s: %s" % [names.size(), str(view.size), "" if player else " (developer menu)", ", ".join(names)])
+	if bad.is_empty():
+		return
+	var msg: String = "entries off the window or over the version line (from %d px): %s" % [int(floor_y), ", ".join(bad)]
+	if player:
+		_failures.append(msg)
+	else:
+		print("MENU_GUARD note: %s" % msg)
+
+
+func _write_probe_save() -> void:
+	var dir: String = "user://saves".path_join(PROBE_SLOT)
+	DirAccess.make_dir_recursive_absolute(dir)
+	var f := FileAccess.open(dir.path_join("meta.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify({"slot": PROBE_SLOT, "day": 3, "hour": 9.0, "saved_unix": int(Time.get_unix_time_from_system()),
+		"play_seconds": 600, "preset": "normal", "world_mode": "main"}))
+	f.close()
+
+
+func _remove_probe_save() -> void:
+	var dir: String = "user://saves".path_join(PROBE_SLOT)
+	if DirAccess.dir_exists_absolute(dir):
+		for n: String in DirAccess.get_files_at(dir):
+			DirAccess.remove_absolute(dir.path_join(n))
+		DirAccess.remove_absolute(dir)
+
+
 func _finish() -> void:
+	if with_continue:
+		_remove_probe_save()
 	for f: String in _failures:
 		print("MENU_GUARD FAIL: %s" % f)
 	print("MENU_GUARD done: %s" % ("PASS" if _failures.is_empty() else "FAIL (%d)" % _failures.size()))
