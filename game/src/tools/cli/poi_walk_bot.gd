@@ -618,7 +618,34 @@ func _step_cost(a: Array, b: Array) -> float:
 	# on the floor above; the body can do neither (the flight is in the way, there is no floor).
 	if int(a[0]) == int(b[0]) and (_under_flight(b) or validator._over_well(int(b[0]), b[1])):
 		cost += BLOCKED_COST
+	# Across the edge a ladder stands on (a deck ladder with no wall behind it): walking at its rails
+	# takes hold of it and climbs, so a player walks round it.
+	if int(a[0]) == int(b[0]) and _across_ladder(int(a[0]), a[1], b[1]):
+		cost += BLOCKED_COST
 	return cost
+
+
+## Whether a cell on level `li` is a broken-floor hole (a one-way drop).
+func _over_hole(li: int, c: Vector2i) -> bool:
+	for h: Dictionary in layout.holes:
+		if int(h["level"]) == li and h["cell"] == c:
+			return true
+	return false
+
+
+## Whether a step between neighbouring cells on level `li` crosses the edge a ladder's rails stand
+## on (the ladder's cell's `side` edge).
+func _across_ladder(li: int, ca: Vector2i, cb: Vector2i) -> bool:
+	if ca.distance_squared_to(cb) != 1:
+		return false
+	for l: Dictionary in layout.ladders:
+		if int(l["level"]) != li:
+			continue
+		var c: Vector2i = l["cell"]
+		var d: Vector2i = PoiLayout.DIRS[int(l["side"])]
+		if (ca == c and cb == c + d) or (cb == c and ca == c + d):
+			return true
+	return false
 
 
 ## A cell a stair flight rises over on its base level (all but its foot, where the climb starts).
@@ -1480,6 +1507,10 @@ func _stand_clear(d: PoiPieces.Door, leg: Dictionary) -> void:
 		# Only somewhere in the room the body is in (never round through another doorway).
 		var wl: Array = _locate(wp + Vector3.UP * 0.1)
 		if room.is_empty() or wl.is_empty() or layout.volume_of(wl[0], wl[1]) != room:
+			continue
+		# Never over a stairwell or a ladder hatch: a player steps aside onto floor (Cedar Ridge's
+		# cab door sent the body down the hatch beside it, and on down the tower).
+		if validator._over_well(int(wl[0]), wl[1]) or _over_hole(int(wl[0]), wl[1]):
 			continue
 		var reached: bool = await _go(wp, false, leg, false, 150)
 		if OS.has_environment("POI_WALK_DEBUG"):

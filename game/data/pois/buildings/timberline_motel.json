@@ -191,7 +191,7 @@
         {"id": "r2_suitcase", "prop": "road_suitcase", "pos": [6.9, 3.5], "rot": 70},
         {"prop": "bottles_scatter", "pos": [4.8, 3.6], "rot": 10},
         {"id": "r3_bed", "prop": "road_motel_bed", "pos": [9.155, 5.0], "rot": 90, "variant": "destroyed"},
-        {"id": "r3_nightstand", "prop": "road_motel_nightstand", "pos": [8.29, 6.17], "rot": 90},
+        {"id": "r3_nightstand", "prop": "road_motel_nightstand", "pos": [8.29, 3.85], "rot": 90},
         {"id": "r3_dresser", "prop": "road_tv_dresser", "pos": [11.68, 4.95], "rot": -90, "variant": "destroyed"},
         {"prop": "sink_pedestal", "pos": [9.0, 0.31], "rot": 0},
         {"id": "r3_med", "prop": "medicine_cabinet", "pos": [9.0, 0.09], "rot": 0, "height": 1.25},

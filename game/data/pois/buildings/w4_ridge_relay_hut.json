@@ -1051,8 +1051,8 @@
      "id": "field_radio",
      "prop": "w4_relay_field_radio",
      "pos": [
-      13.4,
-      2.4
+      14.45,
+      3.6
      ],
      "level": 4,
      "rot": 90
@@ -1364,8 +1364,8 @@
     {
      "note": "w4_relay_log",
      "pos": [
-      13.35,
-      2.45
+      14.45,
+      3.6
      ],
      "y": 0.56,
      "level": 4

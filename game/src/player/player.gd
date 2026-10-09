@@ -278,7 +278,7 @@ func _try_step_up(delta: float) -> void:
 	var ahead: Vector3 = h.normalized() * (RADIUS + 0.05)
 	if _floor_rise(xf.origin + h.normalized() * (motion.length() + RADIUS + 0.05)) <= STEP_HEIGHT:
 		var rise2: float = _step_rise(xf, STEP_HEIGHT + SLOPE_LIFT, ahead)
-		if rise2 > STEP_HEIGHT:
+		if rise2 >= 0.0:
 			_step_up(rise2)
 
 
