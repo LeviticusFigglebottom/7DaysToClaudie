@@ -31,6 +31,9 @@ var building: Node
 ## running generator's load (0..1).
 var powered: Dictionary = {}
 var loads: Dictionary = {}
+## Derived each solve: piece id (String) -> true for every power piece on a network with a running
+## generator (whether or not that piece is switched on or fits in its watts), for the prompts.
+var live_grid: Dictionary = {}
 var _accum: float = 0.0
 var _noise_t: float = 0.0
 ## A wire being run: player id -> the piece it starts at (presentation; the command validates).
@@ -183,6 +186,16 @@ func refresh_grid() -> void:
 	var res: Dictionary = BaseTech.solve(nodes, BaseTech.world_state()["wires"])
 	powered = res["powered"]
 	loads = res["load"]
+	live_grid = {}
+	for net: Array in res["networks"]:
+		var runs: bool = false
+		for id0: String in net:
+			if BaseTech.running(nodes[id0]["def"], nodes[id0]["st"]):
+				runs = true
+				break
+		if runs:
+			for id1: String in net:
+				live_grid[id1] = true
 	for id: String in nodes:
 		var piece2: StructurePiece = pieces.get(StringName(id))
 		if piece2 != null and piece2.tech != null:
@@ -201,6 +214,11 @@ func has_power(piece: StructurePiece) -> bool:
 
 static func is_powered(piece: StructurePiece) -> bool:
 	return current != null and current.has_power(piece)
+
+
+## Whether the piece is wired (directly or through others) to a running generator.
+static func on_live_grid(piece: StructurePiece) -> bool:
+	return current != null and piece != null and current.live_grid.has(String(piece.piece_id))
 
 
 ## Where a wire meets a piece.
@@ -302,10 +320,12 @@ func tick(minutes: float) -> void:
 		# Ezra's Lineman perk keeps a generator near him tuned (ADR-0058 phase 3).
 		var crew: Node = world.get(&"companion") if world != null else null
 		var tuned: float = float(crew.call(&"fuel_factor", piece.global_position)) if crew != null and crew.has_method(&"fuel_factor") else 1.0
+		var before: float = float(st.get("fuel", 0.0))
 		if BaseTech.burn(st, minutes, load, rate * tuned):
 			dry = true
-			if _near_player(piece.global_position, 60.0):
-				Events.player_status_message.emit("The generator coughs and dies: out of fuel.", &"warning")
+			_fuel_line(piece, "dry_text", "The generator sputters out.")
+		elif BaseTech.fuel_low(before, float(st.get("fuel", 0.0))):
+			_fuel_line(piece, "low_text", "The generator's running low on fuel.")
 	if dry:
 		refresh_grid()
 
@@ -322,6 +342,18 @@ func _process(delta: float) -> void:
 		var piece: StructurePiece = pieces[id]
 		if is_instance_valid(piece) and BaseTech.power_kind(piece.def) == "generator" and BaseTech.running(piece.def, peek(piece)):
 			Stimuli.current.emit_sound(piece.global_position + Vector3.UP * 0.5, float(g.get("noise", 18.0)), &"generator", id)
+
+
+## A generator's fuel line (mid-game audit M3: it ran its can dry with no word): queued as a
+## warning (StatusFeed), and only within the generator's warn_radius of the player. There is no
+## base ownership in the game (every piece is the player's), so "his base" can't decide it: a
+## generator across the map that dies is told when he comes back and finds it, not mid-fight
+## somewhere else; within the radius he would hear the engine change anyway.
+func _fuel_line(piece: StructurePiece, key: String, fallback: String) -> void:
+	var g: Dictionary = BaseTech.power_cfg("generator")
+	if not _near_player(piece.global_position, float(g.get("warn_radius", 60.0))):
+		return
+	Events.status_message_queued.emit(str(g.get(key, fallback)), &"warning", StatusFeed.PRIORITY_WARNING)
 
 
 static func _near_player(pos: Vector3, r: float) -> bool:
@@ -406,7 +438,10 @@ func _cmd_toggle(args: Dictionary) -> Dictionary:
 	Audio.play_3d(&"sfx/power_switch", piece.global_position + Vector3.UP, {"volume_db": -6.0})
 	refresh_grid()
 	if on and BaseTech.power_kind(piece.def) != "generator" and not has_power(piece):
-		Events.player_status_message.emit("Switched on, but there's no power: wire it to a running generator.", &"info")
+		if live_grid.has(String(piece.piece_id)):
+			Events.player_status_message.emit("Switched on, but the generator can't carry it too: switch something else off.", &"info")
+		else:
+			Events.player_status_message.emit("Switched on, but there's no power: wire it to a running generator.", &"info")
 	return {"ok": true, "on": on}
 
 
@@ -520,6 +555,7 @@ static func action(piece: StructurePiece, player: Player) -> Array:
 			return [&"", args, "%s (strung)" % nm]
 	var on: bool = bool(st.get("on", false))
 	var live: bool = is_powered(piece)
+	var grid: bool = on_live_grid(piece)
 	match BaseTech.power_kind(piece.def):
 		"generator":
 			var fuel: float = float(st.get("fuel", 0.0))
@@ -539,12 +575,21 @@ static func action(piece: StructurePiece, player: Player) -> Array:
 			var item := StringName(str(t.get("ammo_item", "nails")))
 			if ammo < mag and p.inventory.has(item):
 				return [&"power.load", args, "Load %s (%d / %d)" % [Content.item(item).display_name.to_lower(), ammo, mag]]
-			return [&"power.toggle", args, "Switch the sentry %s · %d %s%s" % ["off" if on else "on", ammo, Content.item(item).display_name.to_lower(), _no_power(on, live)]]
-	return [&"power.toggle", args, "Switch the %s %s%s" % [nm.to_lower(), "off" if on else "on", _no_power(on, live)]]
+			return [&"power.toggle", args, "Switch the sentry %s · %d %s%s" % ["off" if on else "on", ammo, Content.item(item).display_name.to_lower(), _no_power(on, live, grid)]]
+	return [&"power.toggle", args, "Switch the %s %s%s" % [nm.to_lower(), "off" if on else "on", _no_power(on, live, grid)]]
 
 
-static func _no_power(on: bool, live: bool) -> String:
-	return " (no power)" if on and not live else ""
+## Why a consumer is dark, said with its real switch state (mid-game audit M2: an unpowered light
+## that is switched on read "Switch the work light off (no power)", which sounded like the switch
+## was inverted). The verb stays what pressing does: a new consumer is switched on, so it lights
+## the moment it is wired; switching it off first is how you keep it dark.
+## `grid`: wired to a running generator (on_live_grid).
+static func _no_power(on: bool, live: bool, grid: bool) -> String:
+	if live:
+		return ""
+	if on:
+		return " (it's on, but the generator can't carry it too)" if grid else " (it's on, but there's no power: wire it to a running generator)"
+	return "" if grid else " (no power: wire it to a running generator)"
 
 
 static func prompt(piece: StructurePiece, player: Player) -> String:

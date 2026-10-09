@@ -190,3 +190,17 @@ func test_the_faction_survives_a_save() -> void:
 	var old := WorldState.new()
 	old.from_dict({})
 	assert_eq(old.ashen, {}, "older saves load with no Ashen state")
+
+
+func test_shying_from_fire_shows_and_says_so_once() -> void:
+	# Mid-game audit M10: nothing told the player a torch turns the Ashen.
+	var e: Enemy = _spawn(&"ashen_raider", Vector3(0, 0, 6))
+	await get_tree().physics_frame
+	Game.session.world.flags.erase("ashen_fire_hint")
+	watch_signals(Events)
+	e.tribe._shy(_p)
+	assert_signal_emitted(Events, "player_status_message", "a bark and the hint")
+	assert_true(bool(Game.session.world.flags.get("ashen_fire_hint", false)), "the hint is shown once per save")
+	var n: int = get_signal_emit_count(Events, "player_status_message")
+	e.tribe._shy(_p)
+	assert_eq(get_signal_emit_count(Events, "player_status_message"), n, "not again straight away")

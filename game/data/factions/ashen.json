@@ -60,7 +60,7 @@
         "spread": 30.0
       },
       "relations": {"hollowed": "hostile", "wildlife": "neutral", "remand": "hostile"},
-      "fire": {"radius": 9.0, "keep_off": 4.0, "morale_per_s": 0.06, "behind_angle": 100.0, "station_radius": 7.0}
+      "fire": {"radius": 9.0, "keep_off": 4.0, "morale_per_s": 0.06, "behind_angle": 100.0, "station_radius": 7.0, "_doc_shy": "The tell when a held flame turns one (AshenMind._shy): it flinches back (recoil m/s, at most every `every` s a body), one of them shouts a bark when the player is within `hear` m (at most every say_every s), and the first time the hint shows.", "shy": {"every": 8.0, "recoil": 2.5, "hear": 25.0, "say_every": 6.0, "barks": ["Ashen: \"Fire! Back!\"", "Ashen: \"Keep from the flame!\"", "Ashen: \"He carries fire. Wait.\""], "hint": "The Ashen shy from your fire."}}
     }
   ]
 }

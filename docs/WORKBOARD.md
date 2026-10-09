@@ -214,6 +214,17 @@ Same setup, now on the downloadable build:
   this next (ADR-0045, TD-172–175).
 
 ## Lessons (read before your first render)
+* A container can be reclaimed when its session sits idle, even with a background job running:
+  background jobs don't count as activity (Creatures lost three asset rebuilds this way; first
+  blamed on memory). For a long job (`make assets`, a full suite, renders), keep the session active
+  until it ends (poll it in the foreground), push before waiting, and keep `make assets` incremental
+  so a lost run resumes. `make assets JOBS=2` is still the safer setting for character rebuilds. Never run two Godot processes at once in one
+  container either (another restart cause); queue them.
+* `gut_cmdln.gd -gtest=...` without `-gconfig=` loads `.gutconfig.json` and runs the whole suite
+  (~2 h): always pass `-gconfig=` for single files.
+* `make validate` must reach its POI stage: since Pell's west end (frame lots) it crashed there
+  until c655840, so a "0 errors" before that never checked a building.
+* Push your branch at least hourly, mid-gate included; a push is not a request to merge.
 * Every checkout and worktree of this project shares one `user://` folder (Godot keys it by the
   project name). Two test runs at once can clobber each other's random-world cache and fail
   `test_rwg` with "cannot parse world.json": run one full suite per machine at a time.

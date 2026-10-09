@@ -29,6 +29,8 @@ var brightness: float = 1.0
 var ui_scale: float = 0.0
 ## The main menu's backdrop: "moving" (the flight, frozen if it runs slow), "still" or "off".
 var menu_backdrop: String = "moving"
+## The What's new entry the player last closed (WhatsNewPanel; "" before the first).
+var whats_new_seen: String = ""
 ## Bracketed captions for sounds that carry meaning (the intro's cues, the tether's radio).
 var sound_captions: bool = false
 ## Frames a second the game may draw (0 = no cap): saves power and heat on a fast GPU.
@@ -405,6 +407,7 @@ func save() -> void:
 	_cfg.set_value("display", "vsync", vsync)
 	_cfg.set_value("display", "ui_scale", ui_scale)
 	_cfg.set_value("display", "menu_backdrop", menu_backdrop)
+	_cfg.set_value("display", "whats_new_seen", whats_new_seen)
 	_cfg.set_value("audio", "sound_captions", sound_captions)
 	_cfg.set_value("display", "max_fps", max_fps)
 	_cfg.save(SETTINGS_PATH)
@@ -429,6 +432,7 @@ func _load_user_settings() -> void:
 	vsync = _cfg.get_value("display", "vsync", vsync)
 	ui_scale = float(_cfg.get_value("display", "ui_scale", ui_scale))
 	menu_backdrop = str(_cfg.get_value("display", "menu_backdrop", menu_backdrop))
+	whats_new_seen = str(_cfg.get_value("display", "whats_new_seen", whats_new_seen))
 	sound_captions = bool(_cfg.get_value("audio", "sound_captions", sound_captions))
 	max_fps = int(_cfg.get_value("display", "max_fps", max_fps))
 	Engine.max_fps = max_fps

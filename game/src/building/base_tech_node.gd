@@ -2,6 +2,7 @@ class_name BaseTechNode
 extends Node3D
 ## What a base trap or powered piece shows and does in the world (ADR-0052). A child of its
 ## StructurePiece, made by StructurePiece for every def BaseTech.handles():
+## None of them touches the companion (BaseTech.is_target, TD-300).
 ##  * spike pit: the Hollowed that walk in are hurt, held for a moment and slowed while inside;
 ##    the stakes wear with use. A player who steps in is hurt too.
 ##  * deadfall: the first body under it drops the log (damage, a stagger, a crash heard far off);
@@ -416,8 +417,8 @@ func _on_body_entered(body: Node) -> void:
 	if piece == null or not is_instance_valid(piece) or piece.hp <= 0.0:
 		return
 	var enemy := body as Enemy
-	if enemy != null and not enemy.is_alive():
-		return
+	if enemy != null and not BaseTech.is_target(enemy):
+		return  # a dead body, or the companion: he never springs or feels a trap (TD-300)
 	match trap:
 		"spike_pit":
 			if enemy != null:
@@ -509,7 +510,7 @@ func _pit_step(delta: float) -> void:
 	var slow: float = clampf(float(c.get("slow", 0.3)), 0.0, 1.0)
 	for e: Variant in _inside.keys():
 		var enemy := e as Enemy
-		if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive() or piece.hp <= 0.0:
+		if not BaseTech.is_target(enemy) or piece.hp <= 0.0:
 			_inside.erase(e)
 			continue
 		var s: Dictionary = _inside[e]
@@ -551,7 +552,7 @@ func drop() -> void:
 			_log.transform = down
 	for b: Node3D in _area.get_overlapping_bodies() if _area != null and _area.is_inside_tree() else []:
 		var enemy := b as Enemy
-		if enemy != null and enemy.is_alive():
+		if BaseTech.is_target(enemy):
 			var info := DamageInfo.make(BaseTech.trap_damage(float(c.get("damage", 110.0))), &"blunt", &"base_trap", piece.piece_id)
 			info.hit_pos = enemy.global_position + Vector3.UP * 1.4
 			info.source_pos = at + Vector3.UP
@@ -584,13 +585,14 @@ func _warn(what: String, at: Vector3, radius: float) -> void:
 
 # --- Sensors ---------------------------------------------------------------------------------------
 
-## The nearest living Hollow within `r` of `from` (in sight when `sight`).
+## The nearest living Hollow within `r` of `from` (in sight when `sight`); never the companion,
+## who shares the "enemies" group (BaseTech.is_target).
 func _nearest_enemy(from: Vector3, r: float, sight: bool) -> Enemy:
 	var best: Enemy = null
 	var best_d: float = r
 	for n: Node in get_tree().get_nodes_in_group(&"enemies"):
 		var e := n as Enemy
-		if e == null or not e.is_alive():
+		if not BaseTech.is_target(e):
 			continue
 		var d: float = e.global_position.distance_to(from)
 		if d >= best_d:
@@ -654,6 +656,8 @@ func _turret_step(delta: float) -> void:
 
 ## One nail into `e`: damage, a nail spent, the shot heard.
 func fire_at(e: Enemy) -> void:
+	if not BaseTech.is_target(e):
+		return
 	var t: Dictionary = BaseTech.power_cfg("turret")
 	var st: Dictionary = BaseTechManager.state_of(piece)
 	if int(st.get("ammo", 0)) <= 0:

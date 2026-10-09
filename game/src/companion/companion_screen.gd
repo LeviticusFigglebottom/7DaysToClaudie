@@ -201,3 +201,7 @@ func _do(command: StringName, args: Dictionary) -> void:
 	else:
 		_refresh()
 		_msg.text = str(r.get("error", "He doesn't move."))
+		# ...and he says so, on the HUD, in his own voice (the card may be closed next).
+		var m: CompanionMind = director.call(&"mind") as CompanionMind
+		if m != null and bool(director.call(&"recruited")):
+			m.bark("refused")

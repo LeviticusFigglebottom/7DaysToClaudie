@@ -122,6 +122,7 @@ func test_prompt_hangs_centred_under_the_crosshair() -> void:
 	var ui := GameUI.new()
 	add_child_autofree(ui)
 	var l: Label = ui.get(&"_prompt") as Label
+	assert_false(l.visible, "no plate before there are words for it")
 	l.text = "[E] Use Campfire · burns 58m · [G] add fuel"
 	ui.call(&"_hug", l, 28.0)
 	var mid: float = l.get_parent_control().size.x * 0.5
@@ -143,3 +144,63 @@ func test_a_short_message_stays_on_one_line() -> void:
 	await get_tree().process_frame
 	var l: Label = ui.get(&"_messages").get_child(0) as Label
 	assert_eq(l.get_line_count(), 1)
+
+
+func test_dawn_lines_come_paced_report_first() -> void:
+	# The four dawn lines arrive in one frame; the StatusFeed lets them out report first, then the
+	# autosave line, the level-up and the drone, each at least min_gap apart (first-week W15).
+	var feed := StatusFeed.new()
+	add_child_autofree(feed)
+	feed.set_process(false)
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	var shown: Array = []
+	var t: Array[float] = [0.0]
+	var rec: Callable = func(text: String, _k: StringName) -> void: shown.append([text, t[0]])
+	Events.player_status_message.connect(rec)
+	Events.supply_drop_incoming.emit(&"qa", Vector3.ZERO)
+	Events.status_message_queued.emit("Level 3. 4 points to spend.", &"level", GameUI.PRIO_LEVEL)
+	ui.call(&"_autosave_after_hum")
+	Events.status_message_queued.emit("The Hum fades. 16 of them came; 8 lie still.", &"info", StatusFeed.PRIORITY_REPORT)
+	for i: int in 80:
+		t[0] += 0.1
+		feed.tick(0.1)
+	Events.player_status_message.disconnect(rec)
+	var order: Array = shown.map(func(x: Array) -> String: return str(x[0]).get_slice(".", 0))
+	assert_eq(order, ["The Hum fades", "Dawn", "Level 3", "A Program drone is overhead"])
+	for i: int in range(1, shown.size()):
+		assert_gte(float(shown[i][1]) - float(shown[i - 1][1]), feed.min_gap - 0.01, "paced")
+
+
+func test_a_burst_of_levels_is_said_once() -> void:
+	# Each level-up restarts the wait; the line goes out once the burst has settled.
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	ui.set(&"_level_pending", 4)
+	ui.set(&"_level_wait", GameUI.LEVEL_SETTLE)
+	ui._process(1.0)
+	ui.set(&"_level_pending", 5)
+	ui.set(&"_level_wait", GameUI.LEVEL_SETTLE)
+	ui._process(2.0)
+	assert_eq(int(ui.get(&"_level_pending")), 5, "still waiting: the last level came 2 s ago")
+	ui._process(1.0)
+	assert_eq(int(ui.get(&"_level_pending")), 0, "said (and cleared) once the burst settled")
+
+
+func test_sound_captions_say_where_and_merge_repeats() -> void:
+	assert_eq(GameUI.caption_line("wolves howling", "north-east, 140 m"), "[wolves howling, north-east]")
+	assert_eq(GameUI.caption_line("a door slamming", "here"), "[a door slamming]")
+	assert_eq(GameUI.caption_line("drums in the trees", ""), "[drums in the trees]")
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	var was: bool = Settings.sound_captions
+	Settings.sound_captions = true
+	Events.sound_caption.emit("wolves howling", Vector3.INF)
+	Events.sound_caption.emit("wolves howling", Vector3.INF)
+	Events.sound_caption.emit("drums in the trees", Vector3.INF)
+	var lines: Array = (ui.get(&"_messages") as Node).get_children().map(func(l: Node) -> String: return (l as Label).text)
+	assert_eq(lines, ["[wolves howling]", "[drums in the trees]"], "a repeat within the limit is the same line")
+	Settings.sound_captions = false
+	Events.sound_caption.emit("an engine starting", Vector3.INF)
+	assert_eq((ui.get(&"_messages") as Node).get_child_count(), 2, "captions off: nothing")
+	Settings.sound_captions = was

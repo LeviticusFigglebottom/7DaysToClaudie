@@ -21,9 +21,11 @@
   "_doc": "Electricity. A generator (provides power_source:<watts>) feeds every consumer (power_use:<watts>) wired to it, directly or through other wired pieces; a network's consumers are served in a fixed order until its running generators' watts run out. tick_minutes: game minutes between fuel and grid updates.",
   "tick_minutes": 2.0,
   "generator": {
-   "_doc": "fuel_item: what fuels it, can_hours of full-load running per item, up to tank_hours. It burns idle_burn x the full-load rate with nothing drawing, rising to 1 at full load. While running it is heard (noise every noise_interval seconds) and its heat_per_minute (x the same load factor) builds attention on the heat map: a running generator draws the Hollowed to your base.",
+   "_doc": "fuel_item: what fuels it, can_hours of full-load running per item, up to tank_hours. It burns idle_burn x the full-load rate with nothing drawing, rising to 1 at full load. As the fuel falls to low_fuel_fraction of a full tank the player hears low_text, and dry_text when it stops (StatusFeed warnings, only within warn_radius: about where its engine is heard; there is no base ownership to go by, so a generator dying across the map is found, not announced). While running it is heard (noise every noise_interval seconds) and its heat_per_minute (x the same load factor) builds attention on the heat map: a running generator draws the Hollowed to your base.",
    "fuel_item": "gas_can", "returns": "", "can_hours": 4.0, "tank_hours": 8.0, "idle_burn": 0.35,
-   "noise": 18.0, "noise_interval": 3.0, "heat_per_minute": 0.3
+   "noise": 18.0, "noise_interval": 3.0, "heat_per_minute": 0.3,
+   "low_fuel_fraction": 0.1, "warn_radius": 60.0,
+   "low_text": "The generator's running low on fuel.", "dry_text": "The generator sputters out."
   },
   "wire": {
    "_doc": "Wiring between two pieces: item spools, metres_per_item metres each, a run of at most max_length. Cutting a wire gives its spools back; a wire on a destroyed piece is lost.",

@@ -425,7 +425,9 @@ func _flap_name() -> String:
 	match mode:
 		&"container":
 			var cname: String = "Container"
-			if container != null and container.get(&"cdef") != null:
+			if container == null or not is_instance_valid(container):
+				return cname
+			if container.get(&"cdef") != null:
 				cname = (container.get(&"cdef") as ContainerDef).display_name
 			elif container is Enemy:
 				cname = "Remains"
@@ -462,10 +464,14 @@ func _craft(recipe_id: StringName, times: int = 1) -> void:
 func _process(_delta: float) -> void:
 	if not _open:
 		return
+	# A container whose building streamed out is freed under the open roll: close before
+	# anything reads it (the rebuild below named the flap from it: errors every frame).
+	# (A freed object compares equal to null: test validity, not null.)
+	if mode == &"container" and not is_instance_valid(container):
+		close()
+		return
 	if _dirty:
 		_rebuild()
-	if container != null and not is_instance_valid(container):
-		close()
 		return
 	_layout_overlay()
 	_update_hover()
@@ -537,12 +543,20 @@ func _place_card() -> void:
 	var m: Vector2 = get_local_mouse_position()
 	if _pad_index >= 0 and _hover.has("center"):
 		m = _screen(_hover["center"])
-	var cs: Vector2 = _card.get_combined_minimum_size()
+	var avoid := Rect2(_sheet.position, _sheet.size) if _sheet.visible else Rect2()
+	_card.position = card_pos(m, _card.get_combined_minimum_size(), size, avoid)
+
+
+## Where the item card goes for a cursor at `m`: to its right, flipped left when it would leave
+## the screen or cover the recipe sheet (`avoid`; at 720p the right side is the sheet), kept on
+## screen top to bottom. Pure.
+static func card_pos(m: Vector2, cs: Vector2, view: Vector2, avoid: Rect2) -> Vector2:
 	var pos: Vector2 = m + Vector2(28, 12)
-	if pos.x + cs.x > size.x - 12.0:
-		pos.x = m.x - cs.x - 28.0
-	pos.y = clampf(pos.y, 12.0, maxf(12.0, size.y - cs.y - 12.0))
-	_card.position = pos
+	var right := Rect2(pos, cs)
+	if pos.x + cs.x > view.x - 12.0 or (avoid.size != Vector2.ZERO and right.intersects(avoid)):
+		pos.x = maxf(12.0, m.x - cs.x - 28.0)
+	pos.y = clampf(pos.y, 12.0, maxf(12.0, view.y - cs.y - 12.0))
+	return pos
 
 
 func _mat_point(mouse: Vector2) -> Vector3:

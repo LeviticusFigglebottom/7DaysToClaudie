@@ -49,11 +49,16 @@ stops and holds a still frame). *Options… → Menu backdrop* picks moving, sti
 | Vertical Slice demo (dev) | Developers only (the editor, or `-- --dev`): starts the slice's curated demo run at once: Survivor difficulty, 30-minute days, the first Hum on day 3, always run seed 4471 (New Game… rolls a fresh seed) |
 | Random World… | The world settings screen, open on its World tab with a random world chosen |
 | Load… | Every saved run as a card, newest first: the frame it was saved on, the day and hour, where you were, the difficulty, the world and the time played. **Delete** asks once more before it deletes. The test runs' own saves (smoke, tour…) show only to developers |
-| Options… | Mouse sensitivity and invert, field of view, head bob, five volumes, brightness, interface size (Auto grows the text above 1080p; or 75–200%), the menu backdrop, graphics preset, fullscreen, V-sync |
+| Options… | Mouse sensitivity and invert, field of view, head bob, five volumes, brightness, interface size (Auto grows the text above 1080p; or 75–200%), the menu backdrop, sound captions, graphics preset (your GPU and the preset it suits, a **Recommended** button, a frame cap), fullscreen, V-sync; **Controls**: every key and pad button |
 | The Intro | Replays the new-game intro |
+| What's New | This build's changes in a few lines each (it also opens by itself, once, the first time a new build starts) |
+
+*Sound captions* (Options) put the sounds that carry meaning into words: the intro's radio and
+impacts, a distress call's crackle on the tether, the Hum rising through the ground, and the big
+sounds you can't see, with where they came from ("[wolves howling, north-east]").
 
 **The intro.** A new game opens with a short intro (the Cordon, the Remand Program and how your
-drop went wrong) while the world loads. Hold **Esc** (or Space, Enter) or click **Skip** to skip
+drop went wrong) while the world loads. Hold **Esc** (or Space, Enter; B or Start on a pad) or click **Skip** to skip
 it. If the world is ready before it ends, the world waits, paused, until it does. Skipped (or
 when you load a save), the loading screen turns through the Field Manual's Survival pages while
 the world comes up.
@@ -152,9 +157,10 @@ deletes the run. The tether and field manual are never dropped.
 
 ## 3. Controls
 
-Keyboard and mouse (a gamepad can only move, jump, sprint, crouch and interact). Every key and
-mouse button can be rebound under **Options → Controls**, also reachable from the pause menu; the
-keys below are the defaults.
+Keyboard and mouse, or a gamepad: every screen takes the pad's focus, **B** backs out of whatever is
+open, and the salvage roll moves by stick (RB to the recipe sheet). Every key, mouse button and pad
+button can be rebound under **Options → Controls**, also reachable from the pause menu; a binding
+another action already uses is flagged. The keys below are the defaults.
 
 | Key | Action |
 |---|---|
@@ -177,7 +183,7 @@ keys below are the defaults.
 | Tab or I | Salvage roll: inventory and crafting |
 | B | Remand Field Manual: blueprints, the Journal (the first days' steps), your Record, notes found, survival pages |
 | T | Raise or lower the tether on your wrist (Left mouse also lowers it) |
-| M | The map: the whole valley on a survey sheet, you, where you wake, buildings, waystations and drops (wheel zooms, drag pans) |
+| M | The map: the valley on a survey sheet, under fog except where you've walked; you, where you wake, buildings, waystations, drops and a distress call (wheel zooms, drag pans; on a pad the stick pans and the triggers zoom) |
 | Esc | Close what's open, else pause. Only the pause menu stops the world: it keeps running while the roll, manual or tether is up |
 | F5 / F9 / F12 | Quicksave / quickload this run / screenshot |
 
@@ -208,8 +214,10 @@ Program's supply canister, with food 80, water 80, rest 85, health 100 and:
 * 2 **Program Ration Bars** (25 food each), a **Bottle of Boiled Water** (35 water; keep the
   bottle), 2 **Cloth** (a torch or a bandage), the **Remand Field Manual** and the **Tether**.
 
-The HUD is minimal: the prompt under the crosshair, messages top left, vitals bars bottom left when
-something is low, and "Hum in hh:mm" top right in the last day before a Hum. Time, weather,
+The HUD is minimal: the prompt under the crosshair (with the keys for laying out a blueprint or
+setting a log while you do), messages top left, what you just picked up bottom right ("+3 Stick"),
+vitals bars bottom left when something is low, and "Hum in hh:mm" top right in the last day before
+a Hum. Time, weather,
 vitals, directives and a map are on the tether (T).
 
 **Where things are:** a dirt trail leads east from the drop site to Route 9 at the south end of
@@ -223,8 +231,8 @@ have a bed; pinned to the map's edge when it's elsewhere), supply drops (red dia
 **The first-days tutorial** (on unless the world setting *First days tutorial* is off; you can
 turn it off yourself on the Field Manual's **Journal** tab, B): eight Program cards in the Journal that say how to
 gather, make a stone axe, fell a tree, build a campfire, fill and boil water, make a cloth bandage,
-raise a shelter and sleep, in any order. Each pays 10 XP, and a line at the top of the screen names
-the next. A while after the last one your tether picks up a distress call from Ezra Vane (§9), hurt
+raise a shelter and sleep, in any order. The first is named as you wake; each pays 10 XP, and a
+line at the top of the screen names the next. A while after the last one your tether picks up a distress call from Ezra Vane (§9), hurt
 in his line truck: a red ring pulses on the tether's minimap and the map (M) with its bearing, and
 the Journal keeps the call. Bring
 him a cloth bandage (the one the cards had you make), or a first aid kit or painkillers if you've
@@ -252,6 +260,10 @@ found any in medicine cabinets and nightstands.
 7. **Before dark.** Night falls at 21:00, when the Hollowed see much farther and run. Be at your
    fire. Sleep in the lean-to (E) after 19:00: you wake at 06:00, it becomes your respawn point and
    the game saves.
+
+**The Lift 3 wreck.** About 700 m east of the drop site, a long swath of snapped trees ends at
+what is left of the aircraft you came in on. Its crew didn't walk away, and what they carried is
+still there. It's a short walk on a quiet first afternoon.
 
 Next, Pell's Crossing has what the woods don't: nails (hardware shelves and toolboxes; a workbench
 needs 12), tools, canned food and medicine. Start with tier-1 buildings (§8). The first Hum comes at
@@ -294,6 +306,10 @@ that under a roof) and up to 8 °C when soaked, plus 3 °C under a roof (your st
 building's inside) and up to 14 °C beside a lit fire (nothing beyond 4.5 m of a campfire). Rain
 soaks you outdoors and uncovered (WET on the tether); you dry slowly, three times faster by a fire.
 The tether shows COLD under 35.8 °C, and the screen frosts at the edges.
+
+**Warnings.** Cold, thirst and hunger say so before they hurt, in two steps each ("You're cold. Find
+shelter or a fire.", then "You're freezing. Find a fire, now."); cold hurts more the colder you
+are. Nothing kills you without a line first.
 
 **Fires.** A campfire must be lit to cook on: E, with a lighter or torch in your pack. Fuel burns in
 real time: a stick 40 seconds, a bough bundle 25, cloth 30 (only when you hold it), a plank
@@ -690,7 +706,7 @@ first.
 By default a Program drone brings one when each Hum ends (or at noon every 7th or 3rd day, by the
 setting): "A Program drone is overhead. Supplies are coming down." The canister falls under a chute
 110–300 m from you with a red flare and smoke, and lands loudly enough for the Hollowed to come and
-look. The tether lists each drop's distance, direction and state (INBOUND, FALLING, LANDED, OPENED)
+look: "The canister is down, north-west, 140 m. Its smoke marks the spot." The tether lists each drop's distance, direction and state (INBOUND, FALLING, LANDED, OPENED)
 and marks it on the map. Hold E to search it; its contents improve with gamestage.
 
 ## 10. The Bloom, weather and wildlife
@@ -790,8 +806,9 @@ All × the XP multiplier; digging pays nothing. Level *n* to *n*+1 takes 400 × 
 and in the Record. The higher it is, the worse what hunts you (tiers, specials, Hum size) and the
 better what you find.
 
-**Learning.** Reading a schematic (Left mouse in the roll) teaches its blueprint or recipe; notes go
-to *Notes found* in the manual. Two *Backcountry Medicine Quarterly* unlock the First Aid Kit;
+**Learning.** Reading a schematic (Left mouse in the roll) teaches its blueprint or recipe. A note
+opens as you pick it up, in its own hand (a scrawl, typed, printed), a page at a time; *Notes found*
+in the manual lists them by where you found them, to read again. Two *Backcountry Medicine Quarterly* unlock the First Aid Kit;
 *Timber & Trade Monthly* unlocks nothing yet.
 
 **Program directives** are chapters of goals that pay XP and supplies; only the open chapter counts,
@@ -831,9 +848,11 @@ and its chapter goes on without it.
 | Low | 67% render scale with FSR 1; no global illumination, SSAO or volumetric fog; shadows to 60 m; 700 m view; a quarter of the grass |
 | Medium | 80% with FSR 2; SSAO and volumetric fog; shadows to 90 m; 1 km view; half the grass |
 | High (default) | Full resolution with TAA; SDFGI global illumination; shadows to 130 m; 1.4 km view |
-| Ultra | Adds SSIL and screen-space reflections, sharper shadows; 2 km view; all the grass |
+| Ultra | Adds SSIL and screen-space reflections, sharper shadows to 220 m, trees in detail half as far again; 2 km view; all the grass |
 
-If it stutters, try Medium, then Low (rain and snow density follow the preset too). V-sync is on by
+The first start picks a preset from your graphics card's name (a recent high-end card, such as an
+RX 9070 XT, gets Ultra); Options shows the card it detected and **Recommended** puts that preset
+back. A frame cap (30–240, or none) saves power and heat. If it stutters, try Medium, then Low (rain and snow density follow the preset too). V-sync is on by
 default. A world's first load shapes and caches its terrain, so later loads are quicker; random
 worlds of 5 × 5 or less load comfortably. Setting the environment variable `HOLLOWMERE_GFX` to
 `low`, `medium`, `high` or `ultra` forces a preset at start, if the game fails before you reach

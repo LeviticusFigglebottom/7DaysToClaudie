@@ -143,7 +143,13 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out))
 	game = get_node("/root/Game")
 	Events.player_status_message.connect(func(text: String, kind: StringName) -> void: _msgs.append("[%s] %s" % [kind, text]))
-	game.call(&"start_new_game", {"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_first_hour"})
+	var opts: Dictionary = {"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_first_hour"}
+	# `--world random --world-seed N [--world-set k=v]`: a random world, read as the game reads it.
+	var ra: PackedStringArray = OS.get_cmdline_user_args()
+	if ra.find("--world") >= 0 and ra.find("--world") + 1 < ra.size() and ra[ra.find("--world") + 1] == "random":
+		opts["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", ra, 7)
+		opts["stream"] = not ra.has("--no-stream")
+	game.call(&"start_new_game", opts)
 	await frames(3)
 	ui = (game.world as Node).get(&"ui") as GameUI if game.get(&"world") != null else null
 	await seconds(2.0)
@@ -159,7 +165,7 @@ func _run() -> void:
 	await seconds(3.0)
 	await snap("wake")
 	var ps: PlayerState = p.state
-	if OS.get_cmdline_user_args().has("--week-only"):
+	if OS.get_cmdline_user_args().has("--week-only") or OS.get_cmdline_user_args().has("--mid-only") or OS.get_cmdline_user_args().has("--gaps"):
 		# Straight to the week (rendered frames of it without the hour's 48 minutes): the
 		# journal finished and Ezra recruited by command.
 		ps.tutorial.finish_all()
@@ -173,7 +179,12 @@ func _run() -> void:
 		p.global_position = w.drop_site() + Vector3(0, 0.5, 0)
 		w.terrain.update_streaming(p.global_position, true)
 		await seconds(3.0)
-		await _week()
+		if OS.get_cmdline_user_args().has("--gaps"):
+			await _gaps()
+		elif OS.get_cmdline_user_args().has("--mid-only"):
+			await _midgame()
+		else:
+			await _week()
 		_finish()
 		return
 	note("start kit: " + ", ".join(ps.inventory.stacks.map(func(s: ItemStack) -> String: return "%s x%d" % [s.item_id, s.count])))
@@ -479,8 +490,11 @@ func _run() -> void:
 	ui = w.ui
 	await seconds(3.0)
 	await snap("continued")
-	if OS.get_cmdline_user_args().has("--through") and OS.get_cmdline_user_args().has("hum"):
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if args.has("--through") and (args.has("hum") or args.has("day21")):
 		await _week()
+	if args.has("--through") and args.has("day21"):
+		await _midgame()
 	_finish()
 
 
@@ -491,6 +505,9 @@ func _run() -> void:
 func _week() -> void:
 	var ps: PlayerState = p.state
 	Settings.sound_captions = true
+	# The driver teleports (into a cave, out of it): blows and falls would be its own doing, so
+	# the player takes none this week. Cold, hunger and thirst still count.
+	p.god_mode = true
 	ps.inventory.add_item(&"log", 2)
 	for kv: Array in [["stick", 20], ["stone", 12], ["plant_fiber", 12], ["leaf_bundle", 8], ["cordage", 4], ["nails", 20], ["claw_hammer", 1]]:
 		if Content.item(StringName(kv[0])) != null:
@@ -699,6 +716,10 @@ func _week() -> void:
 	# audit wants the Hum's screens, so the player is kept alive from here.
 	note("health %.0f, warmth %s before the night" % [ps.stats.health, str(ps.stats.get(&"body_temp")) if ps.stats.get(&"body_temp") != null else "?"])
 	p.god_mode = true
+	# Days were skipped, not lived: fed and watered as a player who lived them would be.
+	ps.stats.hydration = 100.0
+	ps.stats.fullness = 100.0
+	ps.stats.health = ps.stats.max_health if ps.stats.get(&"max_health") != null else 100.0
 	var hum_day: int = Game.session.clock.next_horde_day(Game.session.clock.day())
 	note("first Hum on day %d (now day %d)" % [hum_day, Game.session.clock.day()])
 	# Through the day before and the day itself on the clock, as play would: the warnings fire as
@@ -707,29 +728,59 @@ func _week() -> void:
 	var marks: Dictionary = {}
 	while Game.session.clock.day() < hum_day or Game.session.clock.hour_f() < 21.9:
 		w.clock_driver.advance(30.0)
+		# A player drinks and eats through a day (a day without water kills: finding W18).
+		ps.stats.hydration = maxf(ps.stats.hydration, 60.0)
+		ps.stats.fullness = maxf(ps.stats.fullness, 60.0)
 		await frames(2)
 		var tag: String = "w_hum_d%d_%02d" % [Game.session.clock.day() - hum_day, Game.session.clock.hour()]
 		if not _msgs.is_empty() and not marks.has(tag):
 			marks[tag] = true
 			await snap(tag)
+	# And a fire, as a player should have by now: god mode stops blows, not the cold.
+	ps.inventory.add_item(&"stone", 6)
+	ps.inventory.add_item(&"stick", 8)
+	var fire_at: Vector3 = p.global_position + Vector3(1.6, 0, 0)
+	fire_at.y = w.height_at(fire_at.x, fire_at.z)
+	var fb: Dictionary = ex(&"build.place_blueprint", {"blueprint": "campfire", "pos": [fire_at.x, fire_at.y, fire_at.z], "yaw": 0.0})
+	if fb.has("site"):
+		ex(&"build.deliver", {"site": fb["site"]})
+	for piece: StructurePiece in w.building.pieces_in_radius(fire_at, 2.0):
+		if piece.provides("light"):
+			piece.set_lit(true)
+			ps.inventory.add_item(&"stick", 6)
+			for i: int in 6:
+				ex(&"build.add_fuel", {"piece": String(piece.piece_id)})
+	ps.stats.hydration = 100.0
+	ps.stats.fullness = 100.0
 	w.clock_driver.advance(20.0)
 	await seconds(3.0)
 	await snap("w_hum_start")
 	var ai: AIDirector = w.ai
 	await wait_until(func() -> bool: return ai.hum.members.size() > 0, 30.0)
-	await seconds(6.0)
-	note("Hum members: %d" % ai.hum.members.size())
-	await snap("w_hum_night")
-	for id: StringName in ai.hum.members.keys().slice(0, 4):
-		var e: Enemy = ai.hum.members[id]["node"]
-		if is_instance_valid(e) and e.is_alive():
-			var k := DamageInfo.make(999.0, &"blunt", &"melee", ps.id)
-			k.hit_pos = e.global_position + Vector3.UP
-			e.take_damage(k)
-	await seconds(2.0)
-	await snap("w_hum_kills")
-	p.god_mode = true
-	Game.session.clock.set_time(hum_day + 1, 3.9)
+	await seconds(4.0)
+	await snap("w_hum_wave1")
+	# The night on the clock, 15 minutes at a time: every wave comes (a jump to dawn skipped
+	# waves 2-4), and the player puts down whatever reaches them.
+	var seen: Dictionary = {}
+	var shot: Dictionary = {}
+	while ai.hum.active and not (Game.session.clock.day() > hum_day and Game.session.clock.hour_f() >= 4.5):
+		w.clock_driver.advance(15.0)
+		ps.stats.hydration = maxf(ps.stats.hydration, 60.0)
+		ps.stats.fullness = maxf(ps.stats.fullness, 60.0)
+		await seconds(1.0)
+		for id: StringName in ai.hum.members.keys():
+			seen[id] = true
+			var e: Enemy = ai.hum.members[id]["node"]
+			if is_instance_valid(e) and e.is_alive() and e.global_position.distance_to(p.global_position) < 12.0:
+				var k := DamageInfo.make(999.0, &"blunt", &"melee", ps.id)
+				k.hit_pos = e.global_position + Vector3.UP
+				e.take_damage(k)
+		var hour: int = Game.session.clock.hour()
+		if not shot.has(hour) and (not _msgs.is_empty() or hour in [23, 1, 3]):
+			shot[hour] = true
+			await snap("w_hum_night_%02d" % hour)
+	note("Hum night: %d Hollowed seen across its waves; player alive at dawn: %s (health %.0f)" % [seen.size(), ps.stats.alive, ps.stats.health])
+	Game.session.clock.set_time(Game.session.clock.day(), maxf(Game.session.clock.hour_f(), 3.9))
 	w.clock_driver.advance(12.0)
 	await seconds(4.0)
 	await snap("w_hum_dawn")
@@ -741,6 +792,490 @@ func _week() -> void:
 	await frames(6)
 	await snap("w_morning_record")
 	ui.close_top_screen()
+
+
+# --- The mid game (--through day21) ---------------------------------------------------------------
+
+## Keeps the player fed and watered over skipped days (the audit is about the screens, not the
+## driver's diet) and keeps damage off them (god mode, stated in the audit).
+func _sustain() -> void:
+	var ps: PlayerState = p.state
+	ps.stats.hydration = maxf(ps.stats.hydration, 70.0)
+	ps.stats.fullness = maxf(ps.stats.fullness, 70.0)
+	if ps.stats.has_method(&"revive") and not ps.stats.alive:
+		note("the player was dead: revived to go on (%s)" % str(ps.stats.get(&"last_cause")))
+		ps.stats.revive(100.0)
+
+
+func _teleport(at: Vector3) -> void:
+	at.y = w.height_at(at.x, at.z) + 0.3
+	p.global_position = at
+	p.velocity = Vector3.ZERO
+	w.terrain.update_streaming(at, true)
+	await seconds(3.0)
+
+
+func _kill_near(at: Vector3, r: float) -> int:
+	var n: int = 0
+	for e: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var en := e as Enemy
+		if en != null and is_instance_valid(en) and en.is_alive() and en.global_position.distance_to(at) < r:
+			var k := DamageInfo.make(999.0, &"blunt", &"melee", p.state.id)
+			k.hit_pos = en.global_position + Vector3.UP
+			en.take_damage(k)
+			n += 1
+	return n
+
+
+func _building(def_id: String) -> Dictionary:
+	for b: Dictionary in w.pois.call(&"all_buildings"):
+		if String(b.get("def", "")) == def_id:
+			return b
+	return {}
+
+
+## Clears a building room by room as a player would: in at its door, each sleeper put down where
+## it lies, until the POI calls itself cleared.
+func _clear(def_id: String, tag: String) -> void:
+	var b: Dictionary = _building(def_id)
+	if b.is_empty():
+		note("%s: no such building on this map" % def_id)
+		return
+	await _teleport(b["pos"] + Vector3(0, 0, 0))
+	await wait_until(func() -> bool: return w.pois.instances.has(StringName(str(b["id"]))), 60.0)
+	var inst: PoiInstance = w.pois.instances.get(StringName(str(b["id"])))
+	if inst == null:
+		note("%s: not built after 60 s" % def_id)
+		return
+	await seconds(3.0)
+	look(inst.global_position + Vector3.UP * 1.5)
+	await snap(tag + "_arrive")
+	var total: int = inst.layout.sleepers.size()
+	note("%s (tier %d): %d sleepers; spawned %s, bodies %d, enemies in group %d" % [inst.layout.def.display_name, inst.tier, total,
+		inst.sleepers_spawned, (inst.get(&"_sleepers") as Dictionary).size(), get_tree().get_nodes_in_group(&"enemies").size()])
+	for i: int in 30:
+		if bool(inst.state.get("cleared", false)):
+			break
+		var live: Array = []
+		for sid: Variant in (inst.get(&"_sleepers") as Dictionary).keys():
+			var en: Enemy = inst.call(&"sleeper", str(sid)) as Enemy
+			if en != null and is_instance_valid(en) and en.is_alive():
+				live.append(en)
+		if live.is_empty():
+			# Sleepers rise only near the player: walk the building's levels.
+			var cells: Array = inst.layout.sleepers
+			if i < cells.size():
+				var sp: Dictionary = cells[i]
+				var lp: Vector3 = inst.global_transform * inst.layout.cell_center(int(sp.get("level", 0)), sp.get("cell", Vector2i.ZERO))
+				p.global_position = lp + Vector3.UP * 0.3
+				w.terrain.update_streaming(lp, true)
+			await seconds(2.0)
+			continue
+		var en: Enemy = live[0]
+		await face(en.global_position + Vector3.UP * 1.2, 2.0)
+		if i < 2:
+			await snap("%s_fight_%d" % [tag, i])
+		var kd := DamageInfo.make(999.0, &"blunt", &"melee", p.state.id)
+		kd.hit_pos = en.global_position + Vector3.UP
+		en.take_damage(kd)
+		await seconds(1.0)
+	note("%s cleared: %s (%d of %d dead)" % [def_id, inst.state.get("cleared", false), (inst.state.get("dead", []) as Array).size(), total])
+	await snap(tag + "_cleared")
+
+
+func _place(bp: String, at: Vector3) -> StringName:
+	at.y = w.height_at(at.x, at.z)
+	# Logs ride on the shoulder, two at a time: fetched again for each piece.
+	p.state.inventory.add_item(&"log", maxi(0, 2 - p.state.inventory.count_of(&"log")))
+	await face(at + Vector3.UP * 0.4, 2.4)
+	var r: Dictionary = ex(&"build.place_blueprint", {"blueprint": bp, "pos": [at.x, at.y, at.z], "yaw": 0.0})
+	if not r.has("site"):
+		return &""
+	var d: Dictionary = ex(&"build.deliver", {"site": r["site"]})
+	await frames(4)
+	if not bool(d.get("complete", false)):
+		note("%s: not complete after delivering (%s); prompt: '%s'" % [bp, str(d), p.interaction.prompt])
+	for piece: StructurePiece in w.building.pieces_in_radius(at, 2.5):
+		if piece.def != null and String(piece.def.id).begins_with(bp):
+			return piece.piece_id
+	return &""
+
+
+func _midgame() -> void:
+	var ps: PlayerState = p.state
+	p.god_mode = true
+	Settings.sound_captions = true
+	note("mid game from day %d (god mode on: the audit wants every screen, not a run's end)" % Game.session.clock.day())
+	Game.session.clock.set_time(maxi(Game.session.clock.day(), 8), 8.0)
+	_sustain()
+	ps.inventory.max_bulk = maxf(ps.inventory.max_bulk, 400.0)
+	ps.inventory.add_item(&"stone_axe", 1)
+	for kv: Array in [["log", 2], ["stick", 40], ["stone", 30], ["nails", 80], ["plant_fiber", 20], ["cordage", 10], ["gas_can", 4],
+			["copper_wire", 4], ["scrap_metal", 60], ["leaf_bundle", 12], ["torch", 2], ["seed_potato", 4], ["carrot_seeds", 4],
+			["water_bottle_dirty", 2], ["claw_hammer", 1], ["planks", 20], ["cloth", 12], ["small_engine", 1], ["electrical_parts", 12],
+			["light_bulb", 4], ["duct_tape", 4]]:
+		if Content.item(StringName(kv[0])) != null:
+			ps.inventory.add_item(StringName(kv[0]), int(kv[1]))
+	ps.inventory.max_bulk = maxf(ps.inventory.max_bulk, 400.0)
+	for bid: String in ["generator", "floodlight", "nail_sentry"]:
+		ps.progression.known_blueprints[StringName(bid)] = true
+	ps.progression.skill_points += 6
+
+	# --- Perks and the Record -----------------------------------------------------------------------
+	for attr: String in ["sinew", "wits"]:
+		ex(&"progression.raise_attribute", {"attribute": attr})
+	for perk: String in ["packhorse", "timberwright", "scavenger", "handy"]:
+		ex(&"progression.buy_perk", {"perk": perk})
+	ui.manual.open("record")
+	await frames(6)
+	await snap("m_record_perks")
+	ui.close_top_screen()
+
+	# --- A base: defences, power, a workbench, a garden -----------------------------------------------
+	var base: Vector3 = w.drop_site() + Vector3(10, 0, 10)
+	await _teleport(base)
+	var pieces: Dictionary = {}
+	var spots: Dictionary = {"workbench": Vector3(0, 0, -4), "spike_pit": Vector3(8, 0, 0), "deadfall": Vector3(-8, 0, 0), "tripwire_bell": Vector3(0, 0, 8),
+		"generator": Vector3(4, 0, -6), "work_light": Vector3(6, 0, -3), "floodlight": Vector3(-5, 0, -5), "nail_sentry": Vector3(3, 0, 5),
+		"garden_bed": Vector3(-4, 0, 5), "rain_catcher": Vector3(-7, 0, 4)}
+	for bp: String in spots:
+		pieces[bp] = await _place(bp, base + spots[bp])
+		if String(pieces[bp]) != "":
+			await snap("m_built_" + bp)
+	note("base pieces: %s" % str(pieces))
+	# Power: fuel, wire, switch on.
+	if String(pieces.get("generator", "")) != "":
+		var g: StringName = pieces["generator"]
+		await face(base + spots["generator"] + Vector3.UP * 0.5, 2.0)
+		await snap("m_generator_aim")
+		ex(&"power.fuel", {"piece": String(g)})
+		for to: String in ["work_light", "nail_sentry", "floodlight"]:
+			if String(pieces.get(to, "")) != "":
+				ex(&"power.wire", {"from": String(g), "to": String(pieces[to])})
+		ex(&"power.toggle", {"piece": String(g)})
+		if String(pieces.get("nail_sentry", "")) != "":
+			await face(base + spots["nail_sentry"] + Vector3.UP * 0.6, 1.8)
+			ex(&"power.load", {"piece": String(pieces["nail_sentry"])})
+			await snap("m_sentry_loaded")
+		await frames(6)
+		await face(base + spots["work_light"] + Vector3.UP * 0.8, 2.2)
+		await snap("m_power_on")
+	# Workbench crafting.
+	if String(pieces.get("workbench", "")) != "":
+		await face(base + spots["workbench"] + Vector3.UP * 0.8, 1.8)
+		await snap("m_workbench_aim")
+		ui.roll.open(&"station", &"workbench")
+		await frames(6)
+		await snap("m_workbench_roll")
+		for rec: String in ["bucket", "repair_kit", "saw_planks"]:
+			ex(&"inventory.craft", {"recipe": rec, "station": "workbench"})
+		await frames(4)
+		await snap("m_workbench_crafted")
+		ui.close_top_screen()
+	# The garden and the rain.
+	if String(pieces.get("garden_bed", "")) != "":
+		var gb: String = String(pieces["garden_bed"])
+		await face(base + spots["garden_bed"] + Vector3.UP * 0.3, 1.8)
+		await snap("m_garden_aim")
+		ex(&"farm.plant", {"piece": gb, "seed": "seed_potato"})
+		ex(&"farm.plant", {"piece": gb, "seed": "carrot_seeds"})
+		ex(&"farm.water", {"piece": gb})
+		await frames(4)
+		await snap("m_garden_planted")
+		if Game.session.get(&"weather") != null and Game.session.weather.has_method(&"force"):
+			Game.session.weather.force(&"rain")
+		for h: int in 12:
+			w.clock_driver.advance(60.0)
+			_sustain()
+			await frames(2)
+		await face(base + spots["garden_bed"] + Vector3.UP * 0.3, 1.8)
+		await snap("m_garden_after_rain")
+		if String(pieces.get("rain_catcher", "")) != "":
+			await face(base + spots["rain_catcher"] + Vector3.UP * 0.6, 1.8)
+			await snap("m_rain_catcher_aim")
+			ex(&"farm.draw_water", {"piece": String(pieces["rain_catcher"])})
+			await snap("m_rain_catcher_drawn")
+
+	# --- Ezra on errands ------------------------------------------------------------------------------
+	var cd: Node = w.companion
+	if cd != null and cd.get(&"body") != null:
+		ex(&"companion.order", {"order": "gather", "kind": "wood"})
+		for h: int in 6:
+			w.clock_driver.advance(30.0)
+			_sustain()
+			await frames(10)
+		await snap("m_ezra_gathered")
+		ex(&"companion.store", {})
+		await seconds(2.0)
+		await snap("m_ezra_stored")
+		ex(&"companion.order", {"order": "follow"})
+	else:
+		note("Ezra has no body here (not recruited in this run)")
+
+	# --- The Ashen ------------------------------------------------------------------------------------
+	var ash: Node = w.ashen
+	if ash != null and bool(ash.call(&"enabled")):
+		var scout: Node = ash.call(&"send_scout", p)
+		await seconds(3.0)
+		if scout != null and is_instance_valid(scout):
+			look((scout as Node3D).global_position + Vector3.UP * 1.5)
+			await frames(6)
+		await snap("m_ashen_scout")
+		_kill_near(p.global_position, 200.0)
+		ash.call(&"debug_raid", 4)
+		await seconds(4.0)
+		await snap("m_ashen_raid")
+		# A torch held up at them.
+		ps.inventory.add_item(&"torch", 1)
+		var ts: int = ps.toolbelt.find(&"torch")
+		if ts < 0:
+			ps.toolbelt[5] = &"torch"
+			ts = 5
+		p.equipment.select_slot(ts)
+		await frames(6)
+		if p.equipment.has_method(&"toggle_light"):
+			p.equipment.toggle_light()
+		for e: Node in get_tree().get_nodes_in_group(&"enemies"):
+			if (e as Enemy) != null and (e as Enemy).def != null and String((e as Enemy).def.id).begins_with("ashen"):
+				look((e as Node3D).global_position + Vector3.UP * 1.5)
+				break
+		await seconds(4.0)
+		await snap("m_ashen_torch")
+		_kill_near(p.global_position, 200.0)
+		await seconds(3.0)
+		await snap("m_ashen_after")
+	else:
+		note("the Ashen are off on these rules")
+
+	# --- Contracts over several days --------------------------------------------------------------------
+	var tm: Node = w.traders
+	var post: Dictionary = (tm.get(&"posts") as Dictionary).values()[0] if tm != null and not (tm.get(&"posts") as Dictionary).is_empty() else {}
+	if not post.is_empty():
+		var td: TraderDef = post["def"]
+		await _teleport(post["pos"] + Vector3(3, 0, 3))
+		var offers: Array = tm.call(&"board_offers", ps, td)
+		note("board offer keys: %s" % (str((offers[0] as Dictionary).keys()) if not offers.is_empty() else "none"))
+		for o: Dictionary in offers:
+			var qid: String = str(o.get("def", ""))
+			note("offer: %s (%s) -> %s" % [o.get("name", "?"), qid, str(o.get("target", ""))])
+			if qid.contains("clear") or qid.begins_with("fetch"):
+				ex(&"contract.accept", {"trader": String(td.id), "offer": str(o.get("id", ""))})
+		tm.call(&"open_screen", str(post["id"]), "board")
+		await frames(6)
+		await snap("m_contracts_taken")
+		ui.close_top_screen()
+
+	# --- Dungeons ---------------------------------------------------------------------------------------
+	_sustain()
+	await _clear("pell_crossing_school", "m_school")
+	_sustain()
+	await _clear("larch_hollow_sawmill", "m_sawmill")
+	# The adit: its mouth and its buried levels.
+	var adit: Dictionary = _building("corvane_larkspur_adit")
+	if not adit.is_empty():
+		await _teleport(adit["pos"] + Vector3(0, 0, 8))
+		look(adit["pos"] + Vector3.UP * 2.0)
+		await seconds(2.0)
+		await snap("m_adit_mouth")
+		var ai2: PoiInstance = w.pois.instances.get(StringName(str(adit["id"])))
+		if ai2 != null:
+			note("adit levels: %d, sleepers %d" % [ai2.layout.levels.size() if ai2.layout.get(&"levels") != null else -1, ai2.layout.sleepers.size()])
+	# Turn in what's ready.
+	if not post.is_empty():
+		var td2: TraderDef = post["def"]
+		for c: Variant in ps.contracts.active:
+			var cdict: Dictionary = c
+			if str(cdict.get("state", "")) == "ready":
+				ex(&"contract.turn_in", {"trader": String(td2.id), "contract": str(cdict["id"]), "remote": true})
+		await frames(4)
+		await snap("m_contracts_after")
+
+	# --- Hounds, wolves, a nest ------------------------------------------------------------------------
+	await _teleport(base + Vector3(0, 0, 20))
+	for i: int in 3:
+		var at: Vector3 = p.global_position + Vector3(10 + i * 2, 0, -6)
+		at.y = w.height_at(at.x, at.z)
+		w.ai.spawn(&"hollow_hound", at, {"authored": true})
+	await seconds(2.0)
+	look(p.global_position + Vector3(11, 0.5, -6))
+	await frames(6)
+	await snap("m_hounds")
+	_kill_near(p.global_position, 60.0)
+	var wolf_at: Vector3 = p.global_position + Vector3(-12, 0, -8)
+	wolf_at.y = w.height_at(wolf_at.x, wolf_at.z)
+	var wolf: Node = w.ai.spawn(&"grey_wolf", wolf_at, {"authored": true})
+	note("a grey wolf spawned: %s" % (wolf != null))
+	await seconds(2.0)
+	look(wolf_at + Vector3.UP * 0.6)
+	await frames(6)
+	await snap("m_wolf")
+	_kill_near(p.global_position, 60.0)
+	await _teleport(Vector3(268, 0, 1694) + Vector3(8, 0, 8))
+	look(Vector3(268, w.height_at(268, 1694) + 1.0, 1694))
+	await seconds(3.0)
+	await snap("m_nest")
+
+	# --- The second and third Hums --------------------------------------------------------------------
+	for hum_day: int in [Game.session.clock.next_horde_day(maxi(Game.session.clock.day(), 8)), 0]:
+		if hum_day == 0:
+			hum_day = Game.session.clock.next_horde_day(Game.session.clock.day() + 1)
+		await _teleport(base + Vector3(0, 0, 2))
+		Game.session.clock.set_time(hum_day, 21.9)
+		_sustain()
+		w.clock_driver.advance(10.0)
+		await seconds(2.0)
+		var ai: AIDirector = w.ai
+		await wait_until(func() -> bool: return ai.hum.active, 30.0)
+		var at2: Vector3 = base + Vector3(14, 0, 0)
+		at2.y = w.height_at(at2.x, at2.z)
+		var ram: Node = ai.spawn(&"rammer", at2, {"authored": true, "target": base})
+		note("Hum on day %d; a Rammer joins: %s" % [hum_day, ram != null])
+		await seconds(3.0)
+		await snap("m_hum%d_start" % hum_day)
+		var seen: Dictionary = {}
+		var shot_n: int = 0
+		while ai.hum.active and Game.session.clock.day() <= hum_day + 1:
+			w.clock_driver.advance(15.0)
+			_sustain()
+			await seconds(1.0)
+			for id: StringName in ai.hum.members.keys():
+				seen[id] = true
+			if not _msgs.is_empty() and shot_n < 4:
+				shot_n += 1
+				await snap("m_hum%d_night_%02d" % [hum_day, Game.session.clock.hour()])
+			_kill_near(p.global_position, 10.0)
+		note("Hum %d: %d came" % [hum_day, seen.size()])
+		# The morning: what's broken, a repair.
+		var damaged: Array = []
+		for pc: StructurePiece in w.building.pieces_in_radius(base, 20.0):
+			if pc.hp < pc.max_hp() - 0.5:
+				damaged.append(pc)
+		note("after Hum %d: %d of %d pieces damaged" % [hum_day, damaged.size(), w.building.pieces_in_radius(base, 20.0).size()])
+		if not damaged.is_empty():
+			var hs: int = ps.toolbelt.find(&"claw_hammer")
+			if hs < 0:
+				ps.toolbelt[3] = &"claw_hammer"
+				hs = 3
+			p.equipment.select_slot(hs)
+			await face((damaged[0] as Node3D).global_position + Vector3.UP * 0.4, 2.0)
+			await snap("m_hum%d_repair_aim" % hum_day)
+			for kv: Array in [["log", 2], ["stick", 10], ["cordage", 4], ["nails", 20], ["stone", 10]]:
+				ps.inventory.add_item(StringName(kv[0]), int(kv[1]))
+			ex(&"build.repair", {"piece": String((damaged[0] as StructurePiece).piece_id)})
+		await seconds(3.0)
+		await snap("m_hum%d_morning" % hum_day)
+
+
+# --- The mid game's gaps (--gaps): routes walked, the adit inside, a wolf pack, a Murmur -------------
+
+## Walks a building's intended route (its `route` cells, in order, on each one's level): at each
+## point the screen's words are logged, every third point framed, and whatever the ray offers
+## used (doors, keycard readers, hatches). Then its sleepers are put down (_clear).
+func _walk_route(def_id: String, tag: String) -> void:
+	var b: Dictionary = _building(def_id)
+	if b.is_empty():
+		note("%s: not in this world" % def_id)
+		return
+	await _teleport(b["pos"])
+	await wait_until(func() -> bool: return w.pois.instances.has(StringName(str(b["id"]))), 90.0)
+	var inst: PoiInstance = w.pois.instances.get(StringName(str(b["id"])))
+	if inst == null:
+		note("%s: not built after 90 s" % def_id)
+		return
+	var route: Array = inst.layout.route
+	note("%s (%s, tier %d): %d route points, %d levels, %d sleepers" % [def_id, inst.layout.def.display_name, inst.tier, route.size(), inst.layout.levels.size(), inst.layout.sleepers.size()])
+	for i: int in route.size():
+		var r: Dictionary = route[i]
+		var at: Array = r.get("at", [0, 0])
+		var lv: int = int(r.get("level", 0))
+		var here: Vector3 = inst.global_transform * inst.layout.cell_center(lv, Vector2i(int(at[0]), int(at[1])))
+		var nxt: Vector3 = here + Vector3(0, 0, -2)
+		if i + 1 < route.size():
+			var at2: Array = (route[i + 1] as Dictionary).get("at", [0, 0])
+			nxt = inst.global_transform * inst.layout.cell_center(int((route[i + 1] as Dictionary).get("level", 0)), Vector2i(int(at2[0]), int(at2[1])))
+		p.global_position = here + Vector3.UP * 0.2
+		p.velocity = Vector3.ZERO
+		look(nxt + Vector3.UP * 1.4)
+		await seconds(1.0)
+		look(nxt + Vector3.UP * 1.4)
+		await frames(4)
+		_log.append("    route %d/%d: %s" % [i + 1, route.size(), str(r.get("label", "")).left(140)])
+		if i % 3 == 0 or i == route.size() - 1:
+			await snap("%s_route_%02d" % [tag, i + 1])
+		else:
+			await snap("%s_r%02d" % [tag, i + 1])
+		if p.interaction.target != null and p.interaction.prompt != "":
+			await use()
+		_kill_near(p.global_position, 6.0)
+	await _clear(def_id, tag)
+
+
+func _gaps() -> void:
+	var ps: PlayerState = p.state
+	p.god_mode = true
+	_sustain()
+	ps.inventory.max_bulk = maxf(ps.inventory.max_bulk, 400.0)
+	for kv: Array in [["torch", 2], ["keycard_corvane", 1], ["lockpick", 6], ["crowbar", 1]]:
+		if Content.item(StringName(kv[0])) != null:
+			ps.inventory.add_item(StringName(kv[0]), int(kv[1]))
+	var random: bool = Game.session.world_mode == &"random"
+	note("gaps run on %s" % ("random world %s" % Game.session.world_id if random else "the main map"))
+	if random:
+		await _walk_route("corvane_field_lab", "g_lab")
+		# A building from the world's pool in a random town (one the main map doesn't have).
+		var main_ids: PackedStringArray = ["pell_crossing_school", "larch_hollow_sawmill", "corvane_larkspur_adit"]
+		var picked: String = ""
+		for bd: Dictionary in w.pois.call(&"all_buildings"):
+			var did: String = String(bd.get("def", ""))
+			if int(bd.get("tier", 0)) >= 2 and not main_ids.has(did) and did != "corvane_field_lab" and str(bd.get("kind", "")) != "trader":
+				picked = did
+				break
+		note("pool building picked: %s" % picked)
+		if picked != "":
+			await _walk_route(picked, "g_pool")
+	else:
+		await _walk_route("corvane_larkspur_adit", "g_adit")
+	# A wolf pack hunting the player.
+	var wm: WildlifeManager = w.get(&"wildlife") as WildlifeManager
+	var pack_def := Content.get_def(&"wildlife", &"grey_wolf_pack") as WildlifeDef
+	if wm != null and wm.wolves != null and pack_def != null:
+		await _teleport(p.global_position + Vector3(30, 0, 30))
+		Game.session.clock.set_time(Game.session.clock.day(), 22.5)
+		var at: Vector3 = p.global_position + Vector3(25, 0, -20)
+		var pack: Variant = wm.wolves.spawn_plan(pack_def, {"id": &"qa:wolves", "def": pack_def.id, "pos": Vector2(at.x, at.z), "count": 4, "seed": 3})
+		note("wolf pack spawned: %s" % (pack != null))
+		for k: int in 6:
+			await seconds(4.0)
+			var nearest: Node3D = null
+			for e: Node in get_tree().get_nodes_in_group(&"enemies"):
+				var en2 := e as Enemy
+				if en2 != null and en2.get(&"wolf") != null and en2.is_alive() and (nearest == null or en2.global_position.distance_to(p.global_position) < nearest.global_position.distance_to(p.global_position)):
+					nearest = e as Node3D
+			if nearest != null:
+				look(nearest.global_position + Vector3.UP * 0.6)
+				note("nearest wolf %.0f m" % nearest.global_position.distance_to(p.global_position))
+			await snap("g_wolves_%d" % k)
+		_kill_near(p.global_position, 80.0)
+	else:
+		note("no wolf pack def or manager")
+	# A Murmur: crows flushed by the player follow them.
+	var crow := Content.get_def(&"wildlife", &"crow") as WildlifeDef
+	if wm != null and crow != null:
+		Game.session.clock.set_time(Game.session.clock.day() + 1, 10.0)
+		var c_at: Vector3 = p.global_position + Vector3(8, 0, -8)
+		var flock: BirdFlock = wm.spawn_flock(crow, {"id": &"qa:crows", "def": crow.id, "pos": Vector2(c_at.x, c_at.z), "count": 8, "seed": 5})
+		await seconds(2.0)
+		if flock != null:
+			flock.start_murmur(p.global_position)
+			for k: int in 3:
+				await _teleport(p.global_position + Vector3(12, 0, 0))
+				look(p.global_position + Vector3(0, 8, -6))
+				if flock != null and is_instance_valid(flock):
+					flock.set(&"murmur_target", p.global_position)
+				await seconds(3.0)
+				await snap("g_murmur_%d" % k)
+		else:
+			note("no crow flock spawned")
 
 
 func _finish() -> void:

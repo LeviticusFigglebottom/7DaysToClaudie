@@ -55,7 +55,18 @@ var _relief_done: bool = false
 var _pickups: VBoxContainer
 ## Whether this run's first journal card has been announced (once, as the player first stands).
 var _first_card_said: bool = false
+## StatusFeed priorities of the lines GameUI queues (the Hum's report is StatusFeed.PRIORITY_REPORT,
+## 10): at dawn the report, then the autosave line, the level-up, the drone.
+const PRIO_DAWN: int = 5
+const PRIO_LEVEL: int = 3
+const PRIO_DROP: int = 0
 var _ov_tween: Tween = null
+## Caption text -> when it was last shown (the repeat limit).
+var _captions_said: Dictionary = {}
+const CAPTION_REPEAT: float = 8.0
+## Seconds left before the waiting level-up is said (see _on_leveled).
+var _level_wait: float = 0.0
+const LEVEL_SETTLE: float = 2.5
 var _tip_box: Control
 var _tip_title: Label
 var _tip_text: Label
@@ -116,10 +127,12 @@ func _ready() -> void:
 	Events.supply_drop_landed.connect(func(_id: StringName, at: Vector3) -> void:
 		message(drop_landed_line(FieldManual.distress_bearing(at)), &"level"))
 	# Sound captions (Options): the Hum's rise is music, which nothing else puts into words.
+	Events.sound_caption.connect(_on_sound_caption)
 	Events.horde_night_started.connect(func(_d: int) -> void:
 		if Settings.sound_captions:
 			message("[a deep hum rises through the ground]", &"danger"))
-	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void: message("A Program drone is overhead. Supplies are coming down.", &"level"))
+	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void:
+		Events.status_message_queued.emit("A Program drone is overhead. Supplies are coming down.", &"level", PRIO_DROP))
 
 
 ## Dawn after a Hum: the run is saved (a night survived is the progress most worth keeping).
@@ -131,10 +144,11 @@ func _on_hum_ended(_day: int, _report: Dictionary) -> void:
 
 func _autosave_after_hum() -> void:
 	var lp: PlayerState = Game.local_player()
+	# Through the paced feed (first-week W15): the night's report goes first, then this.
 	if lp != null and lp.stats.alive and Game.autosave():
-		message("Dawn. The Hollowed root into the soil. Progress saved.", &"info")
+		Events.status_message_queued.emit("Dawn. The Hollowed root into the soil. Progress saved.", &"info", PRIO_DAWN)
 	else:
-		message("Dawn. The Hollowed root into the soil.", &"info")
+		Events.status_message_queued.emit("Dawn. The Hollowed root into the soil.", &"info", PRIO_DAWN)
 
 
 # --- Loading --------------------------------------------------------------------------------
@@ -499,6 +513,8 @@ func _build_hud() -> void:
 	_prompt.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_prompt.add_theme_constant_override(&"outline_size", 4)
 	_prompt.add_theme_stylebox_override(&"normal", prompt_box(0.55))
+	# Hidden until _hug gives it words: an empty label would still draw its plate.
+	_prompt.visible = false
 	_hud.add_child(_prompt)
 	_tool_hint = Label.new()
 	_tool_hint.anchor_left = 0.5
@@ -513,6 +529,7 @@ func _build_hud() -> void:
 	_tool_hint.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_tool_hint.add_theme_constant_override(&"outline_size", 4)
 	_tool_hint.add_theme_stylebox_override(&"normal", prompt_box(0.45))
+	_tool_hint.visible = false
 	_hud.add_child(_tool_hint)
 	_belt = RichTextLabel.new()
 	_belt.bbcode_enabled = true
@@ -597,6 +614,30 @@ static func drop_landed_line(bearing: String) -> String:
 	return "The canister is down%s. Its smoke marks the spot." % ((", " + bearing) if bearing != "" else "")
 
 
+## A big unseen sound put into words (Events.sound_caption), when captions are on: "[wolves
+## howling, north-east]". The same sound again within CAPTION_REPEAT seconds is the same caption:
+## a pack howling round you is one line, not ten.
+func _on_sound_caption(text: String, at: Vector3) -> void:
+	if not Settings.sound_captions or text == "":
+		return
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if now - float(_captions_said.get(text, -INF)) < CAPTION_REPEAT:
+		return
+	_captions_said[text] = now
+	var w: Node = Game.world
+	var bearing: String = ""
+	if w != null and w.get(&"player") != null and at != Vector3.INF:
+		bearing = FieldManual.bearing_words((w.player as Node3D).global_position, at)
+	message(caption_line(text, bearing), &"info")
+
+
+## "[wolves howling, north-east]" from a caption and FieldManual.bearing_words ("north-east,
+## 140 m": the distance is left out, a sound only says where); "here" or no bearing: no direction.
+static func caption_line(text: String, bearing: String) -> String:
+	var dir: String = bearing.get_slice(",", 0).strip_edges()
+	return "[%s]" % text if dir == "" or dir == "here" else "[%s, %s]" % [text, dir]
+
+
 ## The keys while laying out a blueprint ("[Left mouse] place  ·  [R] turn  ·  [Esc] cancel") or
 ## carrying logs; "" otherwise.
 static func build_controls(placing: bool, carrying_logs: bool) -> String:
@@ -660,10 +701,12 @@ void fragment() {
 	float hurt_edge = smoothstep(0.42 - 0.12 * n, 0.98, r);
 	// Cold: frost crystals creeping in, pale blue-white, sharper grain.
 	float frost_n = vnoise(q * 70.0 + vec2(3.1, 7.7)) * 0.5 + vnoise(q * 160.0) * 0.5;
-	float frost_edge = smoothstep(0.55 - 0.35 * cold - 0.1 * n, 0.9, r) * (0.65 + 0.35 * frost_n);
+	// At its worst it keeps to the outer ring (from 0.38 out, at most 60%): a freezing player must
+	// still see the night (first-week frames: the frost hid the Hum).
+	float frost_edge = smoothstep(0.55 - 0.17 * cold - 0.08 * n, 0.95, r) * (0.65 + 0.35 * frost_n);
 	vec3 col = vec3(0.4, 0.02, 0.02) * (0.8 + 0.2 * n);
 	float a = hurt_edge * clamp(damage * 0.9 + low_health * 0.6, 0.0, 0.85);
-	float fa = frost_edge * cold * 0.8;
+	float fa = frost_edge * cold * 0.6;
 	col = mix(col, vec3(0.82, 0.9, 0.97), fa / max(a + fa, 0.001));
 	COLOR = vec4(col, clamp(a + fa, 0.0, 0.88));
 }
@@ -673,6 +716,10 @@ void fragment() {
 
 func _process(delta: float) -> void:
 	_turn_tip(delta)
+	if _level_wait > 0.0:
+		_level_wait -= delta
+		if _level_wait <= 0.0:
+			_announce_level()
 	_fade_pickups(delta)
 	var w: Node = Game.world
 	if w == null or w.get("player") == null or w.player == null:
@@ -869,9 +916,10 @@ func _fade_message(l: Label) -> void:
 func _on_leveled(player_id: StringName, level: int) -> void:
 	if Game.session == null or player_id != Game.session.local_player_id:
 		return
-	if _level_pending == 0:
-		_announce_level.call_deferred()
+	# A burst (a dungeon cleared pays for several levels over a few seconds) is said once, at its
+	# highest, when no new level has come for LEVEL_SETTLE seconds (mid-game audit M8).
 	_level_pending = maxi(_level_pending, level)
+	_level_wait = LEVEL_SETTLE
 
 
 ## One message and one chime however many levels a single award crossed.
@@ -881,7 +929,7 @@ func _announce_level() -> void:
 		_level_pending = 0
 		return
 	var pts: int = p.progression.skill_points
-	message("Level %d. %d point%s to spend — field manual (B), Record." % [_level_pending, pts, "" if pts == 1 else "s"], &"level")
+	Events.status_message_queued.emit("Level %d. %d point%s to spend — field manual [%s], Record." % [_level_pending, pts, "" if pts == 1 else "s", PlayerInteraction.key_label(&"guidebook")], &"level", PRIO_LEVEL)
 	Audio.play_2d(&"ui/level_up", UiStyle.level("level_up", -4.0))
 	_level_pending = 0
 
