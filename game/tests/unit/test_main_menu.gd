@@ -37,3 +37,16 @@ func test_the_menu_fits_a_720p_window() -> void:
 		assert_lte(bottom, 720.0 - Main.BOTTOM_ROOM, "%d entries end above the version line" % n)
 		assert_gte(float(fit["top"]), Main.MENU_TOP_MIN, "and stay under the subtitle")
 	assert_eq(Main.menu_fit(1080.0, 8), {"top": Main.MENU_TOP, "entry": Main.ENTRY_HEIGHT}, "a tall window keeps the roomy layout")
+
+
+func test_every_menu_panel_fits_a_720p_window() -> void:
+	var view := Vector2(1280, 720)
+	var ng: Vector2 = NewGamePanel.panel_size(view)
+	assert_lte(ng.y, 680.0, "New Game leaves room above and below")
+	assert_lte(ng.x, 1232.0)
+	assert_eq(NewGamePanel.panel_size(Vector2(1920, 1080)), NewGamePanel.FULL_SIZE, "a big window keeps the full panel")
+	assert_eq(NewGamePanel.preview_side(ng.y), NewGamePanel.PREVIEW_SHORT)
+	assert_lte(OptionsPanel.tab_height(720.0) + 210.0, 720.0, "Options' Back stays on screen")
+	assert_eq(OptionsPanel.tab_height(1080.0), 600.0)
+	assert_eq(Main.centred(view, Vector2(1400, 800)), Vector2.ZERO, "a panel too big still starts on screen")
+	assert_eq(Main.centred(view, Vector2(1000, 600)), Vector2(140, 60))

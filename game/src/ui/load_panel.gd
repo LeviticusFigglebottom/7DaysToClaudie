@@ -18,7 +18,8 @@ var _list: VBoxContainer
 
 func _ready() -> void:
 	theme = UiStyle.kit_theme()
-	custom_minimum_size = Vector2(1000, 720)
+	# 720 tall filled a 720p window to its edges; the card list scrolls, so it keeps a margin.
+	custom_minimum_size = Vector2(1000, minf(720.0, get_viewport_rect().size.y - 40.0) if is_inside_tree() else 720.0)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override(&"separation", 12)
 	add_child(v)
@@ -176,10 +177,14 @@ func _card(meta: Dictionary) -> Control:
 		if not del.has_meta(&"armed"):
 			del.set_meta(&"armed", true)
 			del.text = "Delete for good? Press again"
+			# By id: the panel can close within the 3 s, and a lambda holding the freed button
+			# errors when the timer fires ("Lambda capture ... was freed").
+			var did: int = del.get_instance_id()
 			get_tree().create_timer(3.0).timeout.connect(func() -> void:
-				if is_instance_valid(del):
-					del.remove_meta(&"armed")
-					del.text = "Delete")
+				var d: Button = instance_from_id(did) as Button
+				if d != null:
+					d.remove_meta(&"armed")
+					d.text = "Delete")
 			return
 		SaveSystem.delete_slot(slot)
 		slots = slots.filter(func(m: Dictionary) -> bool: return str(m.get("slot", "")) != slot)

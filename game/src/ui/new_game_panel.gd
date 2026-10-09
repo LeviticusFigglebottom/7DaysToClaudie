@@ -53,8 +53,29 @@ var _shown_key: String = ""
 var _mutex := Mutex.new()
 
 
+## The panel's size on a roomy window, the room it keeps from the window's edges, and the map
+## preview's side (smaller on a short window).
+const FULL_SIZE: Vector2 = Vector2(1100, 760)
+const EDGE: Vector2 = Vector2(48, 40)
+const PREVIEW_FULL: float = 400.0
+const PREVIEW_SHORT: float = 300.0
+
+
+## The panel's size in a `view`-sized window: 1100 x 760 where it fits, else the window less EDGE
+## (both tabs' option lists scroll, so only they get shorter). Pure.
+static func panel_size(view: Vector2) -> Vector2:
+	return Vector2(minf(FULL_SIZE.x, view.x - EDGE.x), minf(FULL_SIZE.y, view.y - EDGE.y))
+
+
+## The map preview's side for a panel `h` tall: 760 px holds 400 px of map, a 720p window's 680
+## holds 300 (with its button and status under it). Pure.
+static func preview_side(h: float) -> float:
+	return PREVIEW_FULL if h >= FULL_SIZE.y else PREVIEW_SHORT
+
+
 func _ready() -> void:
-	custom_minimum_size = Vector2(1100, 760)
+	# 1100 x 760 is taller than a 1280x720 window: it had Back and Start below the screen's edge.
+	custom_minimum_size = panel_size(get_viewport_rect().size) if is_inside_tree() else FULL_SIZE
 	# The kit theme (ADR-0063): an opaque dark canvas panel, like every other menu.
 	theme = UiStyle.kit_theme()
 	var root := VBoxContainer.new()
@@ -312,12 +333,13 @@ func _build_world_tab() -> void:
 	right.add_theme_constant_override(&"separation", 8)
 	tab.add_child(right)
 	var frame := PanelContainer.new()
-	frame.custom_minimum_size = Vector2(400, 400)
+	var side: float = preview_side(custom_minimum_size.y)
+	frame.custom_minimum_size = Vector2(side, side)
 	right.add_child(frame)
 	_preview = TextureRect.new()
 	_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_preview.custom_minimum_size = Vector2(400, 400)
+	_preview.custom_minimum_size = Vector2(side, side)
 	frame.add_child(_preview)
 	_preview_btn = Button.new()
 	_preview_btn.text = "Generate preview"
