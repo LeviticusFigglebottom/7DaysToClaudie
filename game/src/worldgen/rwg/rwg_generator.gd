@@ -747,6 +747,7 @@ func _road_network() -> void:
 				mid[0] = _snap_to_road(mid[0])
 			if not bool(pc["end_exact"]):
 				mid[mid.size() - 1] = _snap_to_road(mid[mid.size() - 1])
+			mid = _leave_roads(mid, bool(pc["start_exact"]), bool(pc["end_exact"]))
 			if not _along_roads(mid):
 				added = _add_road(mid, "highway", "%s road" % tw["name"], bool(pc["end_exact"])) or added
 		if added:
@@ -783,6 +784,7 @@ func _connect(ta: Dictionary, tb: Dictionary, cls: String, name: String) -> void
 			mid[0] = _snap_to_road(mid[0])
 		if not bool(pc["end_exact"]):
 			mid[mid.size() - 1] = _snap_to_road(mid[mid.size() - 1])
+		mid = _leave_roads(mid, bool(pc["start_exact"]), bool(pc["end_exact"]))
 		if not _along_roads(mid):
 			_add_road(mid, cls, name, false)
 
@@ -791,6 +793,22 @@ func _connect(ta: Dictionary, tb: Dictionary, cls: String, name: String) -> void
 func _snap_to_road(p: Vector2) -> Vector2:
 	var nr: Array = nearest_road(p)
 	return nr[1] if float(nr[0]) < terrain.step * 1.5 else p
+
+
+## A route piece snapped onto a road at either end starts (or ends) where it leaves that road,
+## not after running beside it on the road's cheap cells (_leave_road; TD-139).
+func _leave_roads(pts: PackedVector2Array, start_exact: bool, end_exact: bool) -> PackedVector2Array:
+	if not start_exact:
+		var nr: Array = nearest_road(pts[0])
+		if float(nr[0]) < 1.0:
+			pts = _leave_road(pts, int(nr[2]))
+	if not end_exact and pts.size() >= 2:
+		var nr2: Array = nearest_road(pts[pts.size() - 1])
+		if float(nr2[0]) < 1.0:
+			pts.reverse()
+			pts = _leave_road(pts, int(nr2[2]))
+			pts.reverse()
+	return pts
 
 
 ## True when a route piece only runs along roads already built (within 6 m all the way). Routes
@@ -2475,7 +2493,8 @@ func _leave_road(route: PackedVector2Array, ri: int) -> PackedVector2Array:
 			if q.distance_to(route[k + 1]) > 1.0:
 				out.append(route[k + 1])
 			out.append_array(route.slice(k + 2))
-			return out
+			# Where the route had run on along the road and turned back, the new start is a hook.
+			return _despike(out)
 		walked += seg
 	return route
 
