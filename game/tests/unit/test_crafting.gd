@@ -72,3 +72,45 @@ func test_crafted_quality_scales_with_skill() -> void:
 	assert_eq(Crafting.quality_for(r, 3), 4)
 	assert_eq(Crafting.quality_for(r, 20), 6)
 	assert_eq(Crafting.quality_for(Content.recipe(&"cordage"), 5), 0, "non-quality result")
+
+
+## A crafted tool or weapon goes on the first empty toolbelt slot (first-hour audit #8): never over
+## something already there, never a second copy, and materials stay in the pack.
+func test_crafted_tool_goes_on_the_first_empty_belt_slot() -> void:
+	var prev: GameSession = Game.session
+	var s: GameSession = GameSession.create_new({"seed": 7, "game_mode": "slice"})
+	Game.session = s
+	var p: PlayerState = s.local_player()
+	p.toolbelt.fill(&"")
+	p.toolbelt[0] = &"lighter"
+	p.equipped_slot = 0
+	p.inventory.add_item(&"plant_fiber", 6)
+	p.inventory.add_item(&"stick", 2)
+	p.inventory.add_item(&"stone", 2)
+	var pa := PlayerActions.new()
+	var res: Dictionary = pa._craft({"recipe": "cordage"})
+	assert_true(bool(res["ok"]), str(res))
+	assert_eq(int(res.get("belt_slot", -2)), -1, "cordage is a material: it stays in the pack")
+	assert_false(p.toolbelt.has(&"cordage"))
+	res = pa._craft({"recipe": "stone_axe"})
+	assert_true(bool(res["ok"]), str(res))
+	assert_eq(int(res.get("belt_slot", -2)), 1, "the first empty slot, not over the lighter")
+	assert_eq(p.toolbelt[0], &"lighter")
+	assert_eq(p.toolbelt[1], &"stone_axe")
+	assert_eq(p.equipped_slot, 0, "what is held doesn't change")
+	# A second axe: one is on the belt already, so it isn't belted twice.
+	pa._craft({"recipe": "cordage"})
+	res = pa._craft({"recipe": "stone_axe"})
+	assert_true(bool(res["ok"]), str(res))
+	assert_eq(int(res.get("belt_slot", -2)), -1)
+	assert_eq(p.toolbelt.count(&"stone_axe"), 1)
+	# A full belt: nothing is displaced.
+	p.toolbelt[1] = &""
+	for i: int in p.toolbelt.size():
+		if p.toolbelt[i] == &"":
+			p.toolbelt[i] = &"stick"
+	var before: Array[StringName] = p.toolbelt.duplicate()
+	assert_eq(PlayerActions.auto_belt(p, &"stone_axe"), -1, "no free slot")
+	assert_eq(p.toolbelt, before, "nothing displaced")
+	pa.free()
+	Game.session = prev
