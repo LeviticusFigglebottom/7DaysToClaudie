@@ -887,8 +887,7 @@ func _main_streets() -> void:
 			if axis.size() >= 2:
 				_add_road(axis, "county", "%s road" % tw["name"], false)
 		if str(tw["kind"]) == "town" and _roads_near(c, float(tw["core"]) * 0.5) < 2:
-			var main_dir: Vector2 = _road_dir_at(c)
-			var cross: PackedVector2Array = _through_road(ground, c, reach, Vector2(-main_dir.y, main_dir.x))
+			var cross: PackedVector2Array = _through_road(ground, c, reach, _cross_axis(c), CROSS_SPREAD)
 			if cross.size() >= 2:
 				_add_road(cross, "county", "%s cross road" % tw["name"], false)
 		_leave_through(c)
@@ -897,7 +896,8 @@ func _main_streets() -> void:
 
 ## A road still ending at a town centre beside the road through it (both came in from the same
 ## side, so they were not merged) runs 6-20 m beside it into the centre: a fork with a sliver of
-## ground between (TD-139). It ends where it leaves the through road instead (_leave_road).
+## ground between (TD-139). It ends where it leaves the through road instead (_leave_road), and a
+## piece that never leaves it goes. With no road through the centre the first ending there leads.
 func _leave_through(c: Vector2) -> void:
 	var ends: Array = _ends_at(c)
 	if ends.is_empty():
@@ -912,35 +912,58 @@ func _leave_through(c: Vector2) -> void:
 			best = d
 			through = ri
 	if through < 0:
-		return
+		if ends.size() < 2:
+			return
+		through = int(ends[0][0])
+		ends = ends.slice(1)
+	var gone: Array[int] = []
 	for e: Array in ends:
 		var ri2: int = int(e[0])
 		var pts: PackedVector2Array = (roads[ri2]["points"] as PackedVector2Array).duplicate()
 		if not bool(e[1]):
 			pts.reverse()
 		var left: PackedVector2Array = _leave_road(pts, through)
-		if left.size() == pts.size() and left[1] == pts[1]:
+		var beside: bool = _within(pts, roads[through]["line"], LEAVE_ROAD)
+		if not beside and left.size() == pts.size() and left[1] == pts[1]:
 			continue
 		if not bool(e[1]):
 			left.reverse()
 		var old_line: Polyline2 = roads[ri2]["line"]
-		roads[ri2]["points"] = left
-		roads[ri2]["line"] = Polyline2.from_array(Terrain._arr(left))
+		if beside:
+			gone.append(ri2)
+		else:
+			roads[ri2]["points"] = left
+			roads[ri2]["line"] = Polyline2.from_array(Terrain._arr(left))
 		# A road that met the trimmed stretch meets the through road (or what is left) instead.
-		var keep: Polyline2 = roads[ri2]["line"]
+		var keep: Polyline2 = null if beside else roads[ri2]["line"]
 		var main: Polyline2 = roads[through]["line"]
 		for rj: int in roads.size():
-			if rj == ri2 or rj == through:
+			if rj == ri2 or rj == through or gone.has(rj):
 				continue
 			var pj: PackedVector2Array = roads[rj]["points"]
 			for k: int in [0, pj.size() - 1]:
-				if old_line.closest(pj[k]).x > 1.5 or keep.closest(pj[k]).x < 1.5:
+				if old_line.closest(pj[k]).x > 1.5 or (keep != null and keep.closest(pj[k]).x < 1.5):
 					continue
 				var qa: Vector3 = main.closest(pj[k])
-				var qb: Vector3 = keep.closest(pj[k])
+				var qb: Vector3 = keep.closest(pj[k]) if keep != null else Vector3(INF, 0, 0)
 				pj[k] = main.point_at(qa.y) if qa.x <= qb.x else keep.point_at(qb.y)
 			roads[rj]["points"] = pj
 			roads[rj]["line"] = Polyline2.from_array(Terrain._arr(pj))
+	gone.sort()
+	for k2: int in range(gone.size() - 1, -1, -1):
+		roads.remove_at(gone[k2])
+	if not gone.is_empty():
+		_reindex_roads()
+
+
+## True when every point along pts (every 4 m) lies within `reach` of `line`.
+static func _within(pts: PackedVector2Array, line: Polyline2, reach: float) -> bool:
+	for k: int in pts.size() - 1:
+		var n: int = maxi(1, int(ceil(pts[k].distance_to(pts[k + 1]) / 4.0)))
+		for st: int in n + 1:
+			if line.closest(pts[k].lerp(pts[k + 1], float(st) / n)).x > reach:
+				return false
+	return true
 
 
 ## The land the towns are planned over: the composer's macro ground (RefGround.m; built on demand,
@@ -974,17 +997,30 @@ func _roads_near(p: Vector2, r: float) -> int:
 	return n
 
 
-## The direction of the road passing nearest p (east when there is none).
-func _road_dir_at(p: Vector2) -> Vector2:
-	var best: float = INF
-	var dir := Vector2.RIGHT
+## The axis for a town's cross road: of 16 headings, the one whose two ends keep farthest from
+## every road leaving c (each leg's direction 40 m out). A perpendicular to the main street's
+## tangent ran back along one leg where the street bends at the centre (TD-139).
+func _cross_axis(c: Vector2) -> Vector2:
+	var legs: Array[Vector2] = []
 	for rd: Dictionary in roads:
 		var line: Polyline2 = rd["line"]
-		var q: Vector3 = line.closest(p)
-		if q.x < best:
-			best = q.x
-			dir = line.tangent_at(q.y)
-	return dir
+		var q: Vector3 = line.closest(c)
+		if q.x > 30.0:
+			continue
+		for s: float in [q.y - 40.0, q.y + 40.0]:
+			if s > 0.0 and s < line.total_length:
+				legs.append((line.point_at(s) - c).normalized())
+	var best := Vector2.RIGHT
+	var best_gap: float = -INF
+	for k: int in 16:
+		var u: Vector2 = Vector2.from_angle(k * PI / 16.0)
+		var gap: float = INF
+		for leg: Vector2 in legs:
+			gap = minf(gap, minf(absf(u.angle_to(leg)), absf((-u).angle_to(leg))))
+		if gap > best_gap + 0.001:
+			best_gap = gap
+			best = u
+	return best
 
 
 ## Joins two roads that end at a town centre into one road through it (the first keeps its place
@@ -1088,7 +1124,7 @@ static func _despike(pts: PackedVector2Array) -> PackedVector2Array:
 
 ## A road through c both ways: out along `axis` (or the town's lowest axis when ZERO) and back
 ## out the other side, as one line through c.
-func _through_road(g: Streets.Ground, c: Vector2, length: float, axis: Vector2) -> PackedVector2Array:
+func _through_road(g: Streets.Ground, c: Vector2, length: float, axis: Vector2, spread: float = 50.0) -> PackedVector2Array:
 	var dir: Vector2 = axis
 	if dir == Vector2.ZERO:
 		var best: float = INF
@@ -1101,8 +1137,8 @@ func _through_road(g: Streets.Ground, c: Vector2, length: float, axis: Vector2) 
 			if s < best:
 				best = s
 				dir = u
-	var a: PackedVector2Array = _stub(g, c, dir, length, 50.0)
-	var b: PackedVector2Array = _stub(g, c, -dir, length, 50.0)
+	var a: PackedVector2Array = _stub(g, c, dir, length, spread)
+	var b: PackedVector2Array = _stub(g, c, -dir, length, spread)
 	if a.size() < 2 or b.size() < 2:
 		return a if a.size() >= 2 else b
 	a.reverse()
@@ -2863,6 +2899,8 @@ func _world_roads_profiled() -> Array:
 const LOT_STREET_STEP: float = 0.3
 ## How far from its road a track or trail has left it (m, _leave_road; TD-139).
 const LEAVE_ROAD: float = 20.0
+## How far a town's cross road may turn off its axis (degrees, _cross_axis; TD-139).
+const CROSS_SPREAD: float = 25.0
 
 
 func _frame_height(f: Array) -> float:
