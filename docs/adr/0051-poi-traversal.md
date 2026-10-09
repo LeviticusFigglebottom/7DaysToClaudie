@@ -225,3 +225,19 @@ drop onto whatever stands under the hole (the sawmill's conveyor, Calder's feed 
 bolt it drew drawn, never steps aside onto a hatch or out through another doorway to work a door
 (Cedar Ridge's cab door sent it down the hatch; the Grange's and the ranger station's out of the
 building), and drops off any ladder or vault when it restarts a failed leg (TD-368).
+
+### Results
+* `poi_walk --seed 4471`, all 54 authored POIs: 0 blocked legs, 0 unreached rooms (on integration,
+  of the 39 that finished first: 12 failed, 19 blocked legs and 8 unreached rooms; 10 of the other
+  15 failed when first walked here, 22 of 54 in all). Listed apart: the motel's yard ring
+  (perimeter) and the cannery's barricaded break room.
+* `--seed 77`: 52 of 54 at first; the farmhouse (its linen closet's door, a milk can in the
+  'junk' sewing room's doorway) and Camp Tamarack (Heron cabin's only way in when it is the
+  boarded one, a window 1.35 m up with no cue) were then fixed and re-walked clean on both
+  seeds: 54 of 54 on 77 too.
+* TraversalAudit on every changed POI, base dressing and seed 77: no errors.
+
+### Still open
+* TD-365, TD-366, TD-367 (a leaf's sweep, and a leaf shoving the player: nothing checks for a
+  drop beside a leaf).
+* The bot shuts an open leaf only when it can't go round it; a player may shut more of them.
