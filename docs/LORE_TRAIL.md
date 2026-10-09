@@ -39,7 +39,8 @@ Read it before writing a note, sign, tether log, radio transcript or trader line
   in March; **#3907 (C. Pruitt, contract 77-B)** dies at FS-2's core shed; **#4471** (the player)
   arrives in the autumn, eighteen months after BH-7, on Program aircraft **Lift 3**: it crossed the
   firebreak at first light, lost an engine over shaking timber and went down short of Larch Hollow;
-  #4471 walked the last mile to the drop site (the intro, DESIGN §1).
+  #4471 walked the last mile to the drop site (the intro, DESIGN §1). The wreck burned out where
+  it fell (`lift3_crash_site`); its two pilots, Capt. N. Whitlock and F/O J. Iredale, died in it.
 
 Rules that follow from it:
 * **The cover story is "a chemical spill/release at the Corvane works".** Civilians repeat it or
@@ -71,6 +72,7 @@ region), so **no beat may rest on one building**.
 | Tamsin Valley Courier (`road_courier`) | Cordon Gas & Garage | 2 | both | illness first seen among Corvane Deep Mine crews |
 | Returns Book, Archive Tag (`t3_library_returns`, `t3_library_archive`) | Pell County Library (pool) | 2 | random towns | every book on the county's caves is out; the Cordon boxed the Corvane mine maps |
 | Letter to June (`w5_hatchery_manager_letter`) | Silver Run Hatchery | 2 | random | the Bloom "comes down the creek from somewhere up past the falls" |
+| Lift Manifest, Kneeboard Card, Seat-Back (`lift3_manifest`, `lift3_kneeboard`, `lift3_seatback`) | The Lift 3 Wreck (`lift3_crash_site`) | 1 | main (~0.7 km east of the drop); random once World places it | the player's own lift: one salvager for three seats (#4466 dead in holding, #4479 cut the tether), "only one we're paid for"; over the firebreak at 0541, "treeline moving, no wind, ground moving", number two lost; earlier salvagers' numbers scratched on a seat (#2271, #3318, #3907): "nobody says how many come back empty" |
 
 ### Beat 2. Company paper and sick miners (tier 2-3)
 
@@ -139,7 +141,11 @@ barks, Waystation 9's contract briefings and the HUD tip say nothing of the caus
   Medical Authority) = FS-2's requisition. Field Directive 7 = the clinic.
 * **Depths**: the void at 1,411 ft; the core and specimens at 1,412 ft. BH-7 to BH-10.
 * **Salvager numbers**: #2271 (the Ashen pit), #3318 (the highcamp blind), #3907 (C. Pruitt, FS-2,
-  contract 77-B), #4471 (the player). Tag/ticket numbers 4471 elsewhere are deliberate echoes.
+  contract 77-B), #4471 (the player). Lift 3's manifest struck two more: #4466 (R. Dace, died in
+  holding the night before) and #4479 (E. Sowa, cut the tether, absent at muster); neither came in.
+  Tag/ticket numbers 4471 elsewhere are deliberate echoes.
+* **Lift 3**: a Program lift out of Waystation 9, crew Capt. N. Whitlock and F/O J. Iredale; wheels
+  up 0530, over the firebreak 0541, number two engine lost 0542-0543, Control's last call 0544.
 * **People who recur**: Ted Brask (geologist, BH-7), Lars Engen (driller's helper), Anders
   Lindqvist (FS-2 manager) and his brother Arvid (the trapper), Dr. C. Marchetti, BSO I. Torvald,
   Dr. Anneliese Voss (clinic), Lt. M. Okonkwo (school, Cordon Medical) and Lt. A. Okonkwo (hatchery,

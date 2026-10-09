@@ -63,6 +63,11 @@ integration branches `claude/compassionate-dirac-8mtvxi` (891830b) and `ccr-24ba
 | Interiors, ladders and the lore trail | Hub | `game/src/poi/**` (except PoiRegistry), `game/data/pois/**` (except frameworks), `game/data/notes/**`, `docs/LORE_TRAIL.md`, `game/data/props/**`, prop generators, `poi_walk`/TraversalAudit, encounters (`game/src/world/encounters/`) |
 | Menus, UI and the intro | Presentation | `game/src/ui/**` (main menu, New Game, options, salvage roll, field manual, HUD, theme), `game/src/app/main*` and the menu scene, the intro (new `game/src/ui/intro/`, `game/data/intro/`), UI fonts and theme resources; a load-sequence hook for the intro agreed with World by message |
 
+**Exception (2026-10-09):** the horde perf fix (TD-003, a full Hum: p95 42 ms, physics 12.7
+ms a frame, dawn-release hitches to 122 ms) is World's: distance- and visibility-based LOD ticking
+in `game/src/ai/enemy/**`, with Creatures reviewing behaviour. Nobody else changes enemy ticking
+until it lands.
+
 ## Allocations
 * ADR: 0001..0058 are taken or retired (0032, 0042, 0043 were never written). 0056 (organic caves,
   World), 0059 (World: roads and towns, if needed), 0060-0061 (Creatures), 0062 (hub), 0063-0064

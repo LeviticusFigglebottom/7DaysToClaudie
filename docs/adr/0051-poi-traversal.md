@@ -175,3 +175,69 @@ five blind spots.
   instead of standing across the room.
 * Still blind (TD-365): a route path through furniture between a run's ends, and a window
   vaulted from a prop whose top leaves the sill too low for the vault's ray.
+
+## Addendum (2026-10, round 5): every intended route walked by the real body
+The owner, again: "interiors need more validation to ensure the intended path can be fully and
+intuitively navigated; ladders appear invisible" (the invisible ladders: 96c4320, kit ladders
+turned to face the room). Goal: `poi_walk` walks every authored POI's route and explores every
+room with 0 blocked legs and 0 unreached rooms, fixing the building wherever it is at fault and
+the bot only where it misjudges something a player manages.
+
+### The player
+* **A ladder climbed down with forward held could not be climbed back up.** Walking into a hatch
+  sets the climb-down hold (forward climbs down until let go); only back or no input on the rungs
+  cleared it, so it outlived the climb, and the next grab at the foot climbed down and let go at
+  once. Every ladder the route takes down and back up failed this way (the depot pit, Cedar
+  Ridge, the bunker shafts, the bathhouse, the treehouse: most of TD-363). It clears on a grab
+  from the foot and on letting go there.
+* **Onto a flight from its side.** The ramp's floor under the body's middle rises under a step
+  over the first step's low half, but the capsule's round bottom rests 8 cm higher on a 37°
+  slope, and the step-up landed on the slab's edge or not at all (TD-364). After the plain steps,
+  one more try lifts `STEP_HEIGHT + SLOPE_LIFT` (0.5 m) and carries the body a radius on, onto the
+  slope's face, when the floor a radius past where it presses stands within a step of the feet:
+  a 0.49 m ledge is still a vault.
+
+### The audit
+* **Ladders** (`TraversalAudit._ladders`): the standing capsule fits in front of the rails, the
+  landing holds it, and a hatch ladder's landing lies across the hatch from the rails (the player
+  takes a ladder down only walking at its rails, so from a landing beside the hatch the way down
+  is the hole). Errors where the route climbs (down, for the landing's side), warnings elsewhere.
+
+### The buildings
+* Cedar Ridge: the stair gate hung in the side wall of the second flight's first step, where the
+  floor rises 0.3-0.45 m under a 2.1 m header. The tower is three cells wide, so its flights are
+  entered from the side; the gate now closes the flight's head on the second landing.
+* Relay tower: the field radio stood on the top platform's landing. Fish hatchery: the catwalk
+  ladder's landing was beside its hatch (it leans east now). Library: the same for the fire
+  escape.
+* Motel: room 3's nightstand under its broken window (the way in) left the sill 0.22 m over its
+  top; June's armchair left 0.56 m to her bathroom door. Bunker: the firewood leaned on the
+  couch's front, closing the bedroom door's corner. Grange: the office door opens into the office.
+  Tunnel 2 Trestle: rails on the deck's last metre, where the gate's leaf shoved a body off.
+
+### The bot (`poi_walk`)
+Off the route a player walks round what the plan walked into: weak floors and holes (the explore
+walk fell through the motel's room 7 and the chapel nave), a ladder's rails on an open edge (the
+treehouse deck), a barricade across a door (a room only a barricade closes is listed apart as
+"barricaded"), a window whose sill is past the vault with nothing under it (St. Ansel's lancets).
+It opens a door at a flight's head on the stairs leg, ducks through a breach (1.7 m), takes a
+drop onto whatever stands under the hole (the sawmill's conveyor, Calder's feed sacks), keeps a
+bolt it drew drawn, never steps aside onto a hatch or out through another doorway to work a door
+(Cedar Ridge's cab door sent it down the hatch; the Grange's and the ranger station's out of the
+building), and drops off any ladder or vault when it restarts a failed leg (TD-368).
+
+### Results
+* `poi_walk --seed 4471`, all 54 authored POIs: 0 blocked legs, 0 unreached rooms (on integration,
+  of the 39 that finished first: 12 failed, 19 blocked legs and 8 unreached rooms; 10 of the other
+  15 failed when first walked here, 22 of 54 in all). Listed apart: the motel's yard ring
+  (perimeter) and the cannery's barricaded break room.
+* `--seed 77`: 52 of 54 at first; the farmhouse (its linen closet's door, a milk can in the
+  'junk' sewing room's doorway) and Camp Tamarack (Heron cabin's only way in when it is the
+  boarded one, a window 1.35 m up with no cue) were then fixed and re-walked clean on both
+  seeds: 54 of 54 on 77 too.
+* TraversalAudit on every changed POI, base dressing and seed 77: no errors.
+
+### Still open
+* TD-365, TD-366, TD-367 (a leaf's sweep, and a leaf shoving the player: nothing checks for a
+  drop beside a leaf).
+* The bot shuts an open leaf only when it can't go round it; a player may shut more of them.
