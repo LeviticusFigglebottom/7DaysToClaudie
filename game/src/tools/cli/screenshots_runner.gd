@@ -17,6 +17,8 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "river_noon", "pos": Vector3(150, 1.7, 2075), "look": Vector3(118, 0.0, 2100), "hour": 13.0, "weather": "clear"},
 	# TD-006: from Pell's west end out over Larkspur Ridge (C6, a coarse region): its cluster impostors.
 	{"name": "far_forest_west", "pos": Vector3(-470, 60.0, 2240), "look": Vector3(-1400, 0, 2050), "hour": 15.5, "weather": "clear"},
+	# W9 (first-week audit): Larch Hollow's grotto 8 m out from its mouth, where the audit's frame stood.
+	{"name": "grotto_mouth", "pos": Vector3(238.8, 1.7, 2283.0), "look": Vector3(248.0, 0.5, 2275.5), "hour": 14.0, "weather": "clear"},
 	{"name": "valley_aerial", "pos": Vector3(-150, 140.0, 2420), "look": Vector3(-60, 0, 2050), "hour": 17.5, "weather": "clear"},
 	{"name": "night_forest", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 1.5, 2280), "hour": 23.0, "weather": "clear", "light": true},
 	{"name": "base_building", "pos": Vector3(-296, 2.2, 2302), "look": Vector3(-286, 0.5, 2294), "hour": 11.0, "weather": "clear", "build": true},
