@@ -122,6 +122,7 @@ func test_prompt_hangs_centred_under_the_crosshair() -> void:
 	var ui := GameUI.new()
 	add_child_autofree(ui)
 	var l: Label = ui.get(&"_prompt") as Label
+	assert_false(l.visible, "no plate before there are words for it")
 	l.text = "[E] Use Campfire · burns 58m · [G] add fuel"
 	ui.call(&"_hug", l, 28.0)
 	var mid: float = l.get_parent_control().size.x * 0.5

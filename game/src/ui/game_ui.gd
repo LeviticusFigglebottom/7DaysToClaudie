@@ -506,6 +506,8 @@ func _build_hud() -> void:
 	_prompt.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_prompt.add_theme_constant_override(&"outline_size", 4)
 	_prompt.add_theme_stylebox_override(&"normal", prompt_box(0.55))
+	# Hidden until _hug gives it words: an empty label would still draw its plate.
+	_prompt.visible = false
 	_hud.add_child(_prompt)
 	_tool_hint = Label.new()
 	_tool_hint.anchor_left = 0.5
@@ -520,6 +522,7 @@ func _build_hud() -> void:
 	_tool_hint.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_tool_hint.add_theme_constant_override(&"outline_size", 4)
 	_tool_hint.add_theme_stylebox_override(&"normal", prompt_box(0.45))
+	_tool_hint.visible = false
 	_hud.add_child(_tool_hint)
 	_belt = RichTextLabel.new()
 	_belt.bbcode_enabled = true
@@ -667,10 +670,12 @@ void fragment() {
 	float hurt_edge = smoothstep(0.42 - 0.12 * n, 0.98, r);
 	// Cold: frost crystals creeping in, pale blue-white, sharper grain.
 	float frost_n = vnoise(q * 70.0 + vec2(3.1, 7.7)) * 0.5 + vnoise(q * 160.0) * 0.5;
-	float frost_edge = smoothstep(0.55 - 0.35 * cold - 0.1 * n, 0.9, r) * (0.65 + 0.35 * frost_n);
+	// At its worst it keeps to the outer ring (from 0.38 out, at most 60%): a freezing player must
+	// still see the night (first-week frames: the frost hid the Hum).
+	float frost_edge = smoothstep(0.55 - 0.17 * cold - 0.08 * n, 0.95, r) * (0.65 + 0.35 * frost_n);
 	vec3 col = vec3(0.4, 0.02, 0.02) * (0.8 + 0.2 * n);
 	float a = hurt_edge * clamp(damage * 0.9 + low_health * 0.6, 0.0, 0.85);
-	float fa = frost_edge * cold * 0.8;
+	float fa = frost_edge * cold * 0.6;
 	col = mix(col, vec3(0.82, 0.9, 0.97), fa / max(a + fa, 0.001));
 	COLOR = vec4(col, clamp(a + fa, 0.0, 0.88));
 }
