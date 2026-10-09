@@ -848,7 +848,65 @@ class _Build:
 					paints.append({"biome": str(f["biome"]), "pos": _v2(f["circle"]), "r": float(f.get("radius", 100.0)), "blend": float(f.get("blend", 30.0))})
 				"path":
 					paths.append({"line": Polyline2.from_array(f["points"]), "width": float(f.get("width", 2.0)), "surface": str(f.get("surface", "dirt"))})
+				"prop_line":
+					# No trees or brush on the line (TD-369): a clearing every pitch along it.
+					var pl: Polyline2 = Polyline2.from_array(f["points"])
+					var pitch: float = float(f.get("pitch", 6.0))
+					var s0: float = 0.0
+					while s0 <= pl.total_length:
+						clearings.append({"pos": pl.point_at(s0), "r": float(f.get("clear", 5.0))})
+						s0 += pitch
+				"props":
+					for it: Variant in f.get("items", []):
+						if float((it as Dictionary).get("clear", 0.0)) > 0.0:
+							clearings.append({"pos": _v2((it as Dictionary)["pos"]), "r": float(it["clear"])})
 		_collect_towns()
+
+	## A `prop_line` feature's pieces (TD-369): `prop` every `pitch` m along `points` (piece i at arc
+	## (i + 0.5) x pitch), its local +X along the line (+Z to the line's left: list the points so the
+	## side you want faces +Z), turned a further `rot` degrees; none within a `gaps` entry's
+	## [x, z, half width]. Each stands on the composed ground: `base` "min" (default) at the lowest
+	## ground under its ends and middle, "mid" at its middle's, less `sink` m (0.15).
+	func _prop_line_items(f: Dictionary, hf: HeightField) -> Array:
+		var out: Array = []
+		var line: Polyline2 = Polyline2.from_array(f["points"])
+		var pitch: float = float(f.get("pitch", 6.0))
+		var sink: float = float(f.get("sink", 0.15))
+		var lowest: bool = str(f.get("base", "min")) == "min"
+		var gaps: Array = f.get("gaps", [])
+		var n: int = int(floor(line.total_length / pitch + 1e-4))
+		for i: int in n:
+			var sc: float = (i + 0.5) * pitch
+			var c: Vector2 = line.point_at(sc)
+			var skip: bool = false
+			for g: Variant in gaps:
+				if c.distance_to(Vector2(float(g[0]), float(g[1]))) < float(g[2]):
+					skip = true
+					break
+			if skip or not rect.has_point(c):
+				continue
+			var a: Vector2 = line.point_at(sc - pitch * 0.5)
+			var b: Vector2 = line.point_at(sc + pitch * 0.5)
+			var dir: Vector2 = (b - a).normalized()
+			var y: float = hf.sample(c.x, c.y)
+			if lowest:
+				y = minf(y, minf(hf.sample(a.x, a.y), hf.sample(b.x, b.y)))
+			out.append({"prop": str(f["prop"]), "pos": [c.x, y - sink, c.y], "rot": rad_to_deg(atan2(-dir.y, dir.x)) + float(f.get("rot", 0.0)),
+				"variant": str(f.get("variant", "worn"))})
+		return out
+
+	## A `props` feature's pieces (TD-369): each item {prop, pos: [x, z], rot, y?: absolute height,
+	## else the composed ground at pos plus `y_offset`, variant?}.
+	func _props_items(f: Dictionary, hf: HeightField) -> Array:
+		var out: Array = []
+		for it: Variant in f.get("items", []):
+			var d: Dictionary = it
+			var p: Vector2 = _v2(d["pos"])
+			if not rect.has_point(p):
+				continue
+			var y: float = float(d["y"]) if d.has("y") else hf.sample(p.x, p.y) + float(d.get("y_offset", 0.0))
+			out.append({"prop": str(d["prop"]), "pos": [p.x, y, p.y], "rot": float(d.get("rot", 0.0)), "variant": str(d.get("variant", "worn"))})
+		return out
 
 	## World towns whose bounds come near this region (ADR-0040): a pad per lot (its frame, turned
 	## by -yaw as the composer turns pads; target the lot's `y`) and the square. Their streets join
@@ -2593,6 +2651,10 @@ class _Build:
 					rt.spawns[str(f["id"])] = {"pos": [sp2.x, hf.sample(sp2.x, sp2.y), sp2.y], "yaw": float(f.get("yaw", 0.0)), "props": f.get("props", [])}
 				"frontier":
 					rt.frontiers.append(f)
+				"prop_line":
+					rt.placements.append({"kind": "props", "id": str(f.get("id", "line")), "items": _prop_line_items(f, hf)})
+				"props":
+					rt.placements.append({"kind": "props", "id": str(f.get("id", "props")), "items": _props_items(f, hf)})
 		for pad: Dictionary in pads:
 			if bool(pad.get("world", false)):
 				continue
