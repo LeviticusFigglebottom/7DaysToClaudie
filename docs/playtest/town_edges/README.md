@@ -13,3 +13,8 @@ no `make assets`) of the shots `pell_edge_aerial` and `pell_edge_west` before an
 `pell_west_end_edge_c6_planned.jpg`: Pell's west end from (-735, 2140). C6 is a `planned` region, so
 only its coarse far terrain streams: no houses (32 of the west end's 36 lots stand in C6), no grass,
 the impostor forest faded out round the camera.
+
+**C6 built** (a75b412, so the west end stands in play; shots build the map whole): `pell_walk_west_1`
+to `_3` walk Mill Street West from Pell's pad into the west end; `pell_west_end_edge_c6_built` is
+the spot of `pell_west_end_edge_c6_planned` (houses, forest floor, ground cover); `_south` and
+`_north` look from the west end's streets toward C7 and C5: forest, no wall of bare ground.
