@@ -271,8 +271,8 @@ func _check(key: String, world: WorldDef, rid: String, spacing: float, rt: Regio
 	fail_test("%s differs in %s: %s" % [key, ", ".join(differs), why])
 
 
-func test_version_is_16() -> void:
-	assert_eq(TerrainComposer.VERSION, 16, "Phase 1 changed no output; VERSION 12 is ADR-0047's town paint, 13 ADR-0059's banks and yards, 14 TD-318's street junctions, 15 world road junctions and bulbs, 16 roadside places at their road's level")
+func test_version_is_17() -> void:
+	assert_eq(TerrainComposer.VERSION, 17, "Phase 1 changed no output; VERSION 12 is ADR-0047's town paint, 13 ADR-0059's banks and yards, 14 TD-318's street junctions, 15 world road junctions and bulbs, 16 roadside places at their road's level, 17 bridge ramps at the grade cap")
 
 
 func test_larch_hollow_at_4_and_8_m() -> void:

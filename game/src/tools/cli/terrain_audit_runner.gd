@@ -9,6 +9,8 @@ extends Node
 ## * uniform: within a face run, the spread of the bank's slope (a low spread is a planar ramp).
 ## Stations within JUNCTION m of another road's centre line are skipped (junctions blend two roads).
 ## Lots: each town lot's four sides, the steepest 2 m step from its edge out 8 m, and its bank height.
+## --fit-lots out.json writes the heights that would hold each lot within LOT_STREET_STEP of the road
+## it faces (to refit a main-map town's authored lots).
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Worlds := preload("res://src/worldgen/rwg/rwg_worlds.gd")
@@ -84,6 +86,10 @@ func _ready() -> void:
 		per[rid] = st.summary()
 		print("[audit] %-24s %s (%d ms)" % [rid, st.line(), Time.get_ticks_msec() - t0])
 	print("[audit] ALL %s" % total.line())
+	if _arg(a, "--fit-lots", "") != "":
+		var ff := FileAccess.open(_arg(a, "--fit-lots", ""), FileAccess.WRITE)
+		ff.store_string(JSON.stringify(fits, "\t", true))
+		print("[audit] %d lot heights to refit -> %s" % [fits.size(), _arg(a, "--fit-lots", "")])
 	var out: String = _arg(a, "--json", "")
 	if out != "":
 		var f := FileAccess.open(out, FileAccess.WRITE)
@@ -131,7 +137,7 @@ func _audit_roads(rt: RegionTerrain, st: _Stats) -> void:
 			var c: Vector2 = stations[k]
 			if not inner_rect.has_point(c) or _near_other(c, ri, lines, JUNCTION + half) or _on_bridge(c, rt.bridges):
 				for side: int in 2:
-					_close_run(st, runs, run_slopes, side, town)
+					_close_run(st, runs, run_slopes, side, town, c)
 				prev_h = NAN
 				continue
 			var nrm := Vector2(-dirs[k].y, dirs[k].x)
@@ -145,6 +151,8 @@ func _audit_roads(rt: RegionTerrain, st: _Stats) -> void:
 				if g > st.worst_grade:
 					st.worst_grade = g
 					st.worst_at = "%s at (%.0f, %.0f)" % [r["id"], c.x, c.y]
+				if g > 0.12 and OS.get_cmdline_user_args().has("--worst"):
+					print("[audit] grade %.3f %s at (%.0f, %.0f) h %.1f" % [g, r["id"], c.x, c.y, hc])
 				prev_h = hc
 				prev_p = c
 			elif is_nan(prev_h):
@@ -172,9 +180,9 @@ func _audit_roads(rt: RegionTerrain, st: _Stats) -> void:
 					rs.append(slope)
 					run_slopes[side] = rs
 				else:
-					_close_run(st, runs, run_slopes, side, town)
+					_close_run(st, runs, run_slopes, side, town, c)
 		for side: int in 2:
-			_close_run(st, runs, run_slopes, side, town)
+			_close_run(st, runs, run_slopes, side, town, stations[stations.size() - 1] if not stations.is_empty() else Vector2.INF)
 
 
 ## Prints the road profile and the ground across it near a point (x,z): debugging an outlier.
@@ -208,10 +216,12 @@ func _shade(rt: RegionTerrain, path: String) -> void:
 	img.save_png(path)
 
 
-func _close_run(st: _Stats, runs: Array, run_slopes: Array, side: int, town: bool) -> void:
+func _close_run(st: _Stats, runs: Array, run_slopes: Array, side: int, town: bool, at: Vector2 = Vector2.INF) -> void:
 	var len_m: float = runs[side]
 	if len_m >= 10.0:
 		st.add(&"face_run", len_m)
+		if len_m >= 30.0 and at != Vector2.INF and OS.get_cmdline_user_args().has("--worst"):
+			print("[worst] face run %.0f m side %d ending at %.0f,%.0f" % [len_m, side, at.x, at.y])
 		var sl: PackedFloat32Array = run_slopes[side]
 		var mean: float = 0.0
 		for v: float in sl:
@@ -244,6 +254,10 @@ static func _near_other(c: Vector2, ri: int, lines: Array[PackedVector2Array], r
 			if q.distance_squared_to(c) < reach * reach:
 				return true
 	return false
+
+
+## Lot id -> the height that holds it within LOT_STREET_STEP of the road it faces (--fit-lots).
+var fits: Dictionary = {}
 
 
 func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
@@ -307,6 +321,14 @@ func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
 				if inner_rect.has_point(a1):
 					lip = maxf(lip, absf(hf.sample(a1.x, a1.y) - hf.sample(a0.x, a0.y)))
 		st.add(&"lot_lip", lip)
+		# --fit-lots: the height each lot would take to stand within LOT_STREET_STEP of the road it
+		# faces (for refitting a main-map town's authored lot `y`s, plan_main_town.gd's output).
+		var qs: Vector2 = _own_street_point(rt, p, c)
+		if qs.x != INF:
+			var hq: float = hf.sample(qs.x, qs.y)
+			var fit: float = clampf(y, hq - RwgGenerator.LOT_STREET_STEP, hq + RwgGenerator.LOT_STREET_STEP)
+			if absf(fit - y) > 0.005:
+				fits[str(p.get("id", ""))] = snappedf(fit, 0.01)
 		if lip > 0.5 and OS.get_cmdline_user_args().has("--worst"):
 			print("[worst] lip %.2f lot %s at %.0f,%.0f y %.2f road %.0f,%.0f" % [lip, p.get("id", ""), c.x, c.y, y, q.x, q.y])
 	# TD-318: creases where a road ends on another: the steepest 1 m step on either carriageway
@@ -328,6 +350,7 @@ func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
 				continue
 			# Only on the two carriageways: the banks beside a junction are not its crease.
 			var crease: float = 0.0
+			var crease_at := Vector2.ZERO
 			for gz: int in range(-10, 11):
 				for gx: int in range(-10, 10):
 					var a2 := e + Vector2(gx, gz)
@@ -339,10 +362,36 @@ func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
 							if _road_dist(r, q2) > float(r["width"]) * 0.5 and _road_dist(other, q2) > float(other["width"]) * 0.5:
 								on = false
 						if on:
-							crease = maxf(crease, absf(hf.sample(nb.x, nb.y) - hf.sample(a2.x, a2.y)))
+							var dstep: float = absf(hf.sample(nb.x, nb.y) - hf.sample(a2.x, a2.y))
+							if dstep > crease:
+								crease = dstep
+								crease_at = a2
 			st.add(&"junction_step", crease)
-			if crease > 0.45 and OS.get_cmdline_user_args().has("--worst"):
-				print("[worst] junction %.2f road %s at %.0f,%.0f" % [crease, r.get("id", ""), e.x, e.y])
+			if crease > 0.3 and OS.get_cmdline_user_args().has("--worst"):
+				print("[worst] junction %.2f road %s at %.0f,%.0f (step at %.0f,%.0f, other %s)" % [crease, r.get("id", ""), e.x, e.y, crease_at.x, crease_at.y, other.get("id", "")])
+
+
+## The nearest point to c on the street lot placement `p` fronts (its framework lot's `street`),
+## or INF when the street is not in this region.
+func _own_street_point(rt: RegionTerrain, p: Dictionary, c: Vector2) -> Vector2:
+	var fw: FrameworkDef = Content.get_def(&"framework", StringName(str(p.get("def", "")))) as FrameworkDef
+	if fw == null:
+		return Vector2.INF
+	var street: String = ""
+	for l: Variant in fw.lots:
+		if str((l as Dictionary).get("id", "")) == str(p.get("lot", "")):
+			street = str((l as Dictionary).get("street", ""))
+	var want: String = "%s/%s" % [p.get("town", ""), street]
+	for r: Dictionary in rt.roads:
+		if str(r.get("id", "")) != want:
+			continue
+		var pts: Array = r["points"]
+		var arr: Array = []
+		for pt: Variant in pts:
+			arr.append([float(pt[0]), float(pt[pt.size() - 1])])
+		var line: Polyline2 = Polyline2.from_array(arr, 0.0)
+		return line.point_at(line.closest(c).y)
+	return Vector2.INF
 
 
 func _road_dist(r: Dictionary, p: Vector2) -> float:
