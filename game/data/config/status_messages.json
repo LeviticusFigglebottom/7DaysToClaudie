@@ -1,0 +1,5 @@
+{
+  "_doc": "StatusFeed (game/src/app/status_feed.gd): lines sent through Events.status_message_queued come out at least min_gap_seconds apart (and that long after any line shown straight away), highest priority first; at most max_queued wait. First-week audit W15: four lines at dawn within a second.",
+  "min_gap_seconds": 1.5,
+  "max_queued": 8
+}
