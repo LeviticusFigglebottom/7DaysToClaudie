@@ -183,7 +183,8 @@ func _select_first() -> void:
 		return
 	for c: Node in _list.get_children():
 		var b: Button = c as Button
-		if b != null and b.visible:
+		# The last tab's entries are still there, queued for deletion, until the frame ends.
+		if b != null and b.visible and not b.is_queued_for_deletion():
 			b.pressed.emit()
 			return
 
