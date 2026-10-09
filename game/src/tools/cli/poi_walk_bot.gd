@@ -88,6 +88,8 @@ var _hits: Array[Dictionary] = []
 var _keys: Dictionary = {}
 ## Door leaves shut on the current leg (instance ids), so one is not toggled back and forth.
 var _shut: Dictionary = {}
+## An open leaf in the way that _close_leaf_in_way left open (no clear step back out of its sweep).
+var _leaf_pending: PoiPieces.Door = null
 ## Open leaves the walk had to shut to get past: {opening, leaf}.
 var _door_leaves: Array = []
 var _frames: int = 0
@@ -954,7 +956,23 @@ func _detour_after_fail(a: Array, b: Array, end: Vector3, leg: Dictionary) -> bo
 	var blk: Dictionary = leg.get("blocker", _blocker())
 	_hits.clear()
 	if await _detour(a, b, end, leg):
+		_leaf_pending = null
 		return true
+	# An open leaf left open for want of a clear step back (_close_leaf_in_way), with no way round
+	# it either: shut it from where the body stands, as a player squeezed against it would, and try
+	# again.
+	if _leaf_pending != null and is_instance_valid(_leaf_pending) and _leaf_pending.state == "open":
+		var d: PoiPieces.Door = _leaf_pending
+		_leaf_pending = null
+		d.interact(player)
+		(leg["needed"] as Array).append("close_door:" + d.op_id)
+		_door_leaves.append({"opening": d.opening_id, "leaf": d.op_id})
+		await _settle(30)
+		_hits.clear()
+		if await _go(end, true, leg) or await _detour(_locate_node(a), b, end, leg):
+			leg.erase("blocker")
+			return true
+	_leaf_pending = null
 	leg["blocker"] = blk
 	leg["detour"] = "no free path for the capsule joins the leg's ends"
 	# The leg's own door leaf, swung open beside its doorway (not in its clear width), yet with no
@@ -965,6 +983,14 @@ func _detour_after_fail(a: Array, b: Array, end: Vector3, leg: Dictionary) -> bo
 		leg["note"] = "own leaf open beside the doorway (%.2f m into its %.2f m clear width) shuts off the way to it" % [
 			float(blk["leaf_in_clear_m"]), float(blk.get("clear_w", 0.0))]
 	return false
+
+
+## The node the body stands on now ([level, cell] on `fallback`'s level when it is built there),
+## for a detour from wherever a shove left it.
+func _locate_node(fallback: Array) -> Array:
+	var p: Vector3 = player.global_position
+	var c := Vector2i(floori(p.x - layout.origin.x), floori(p.z - layout.origin.y))
+	return [int(fallback[0]), c] if validator._walkable(int(fallback[0]), c) else fallback
 
 
 ## Walks a list of nodes, leg by leg.
@@ -1066,6 +1092,14 @@ func _leg(a: Array, b: Array) -> void:
 		leg["opening"] = str((cls["opening"] as Dictionary)["id"])
 	var ok: bool = true
 	var end: Vector3 = _free_point(b[0], b[1])
+	# Onto a flight's first step from its side: a player steps on at its low end (a quarter metre
+	# from the foot edge, 0.2 m up), not where the ramp is already 0.4 m up mid-cell.
+	if int(a[0]) == int(b[0]) and (b[1] as Vector2i).distance_squared_to(a[1]) == 1:
+		for s0: Dictionary in layout.stairs:
+			if int(s0["level"]) == int(b[0]) and s0["cell"] == b[1]:
+				var fd: Vector2i = PoiLayout.DIRS[int(s0["dir"])]
+				if (b[1] as Vector2i) - (a[1] as Vector2i) != fd:
+					end = _cell_pos(b[0], b[1]) - Vector3(fd.x, 0, fd.y) * 0.25
 	match kind:
 		"stairs_up", "stairs_down":
 			var s: Dictionary = cls["stairs"]
@@ -1475,6 +1509,7 @@ func _mount(box: AABB, top: float, stand: Vector3, needed: Array) -> bool:
 
 func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {}) -> void:
 	_release()
+	_leaf_pending = null
 	leg["ok"] = ok
 	leg["frames"] = _frames - int(leg["_t0"])
 	leg.erase("_t0")
@@ -1895,27 +1930,23 @@ func _close_leaf_in_way(needed: Array, own: String) -> bool:
 			continue
 		_shut[d.get_instance_id()] = true
 		# Out of the leaf's way first: swung shut through the body it would shove it about. Only
-		# within the room the body stands in, on its floor: the way back from a leaf standing out
-		# beside a doorway ran out through the doorway behind (the Grange's stage door, the ranger
-		# station's cell block door) and the shut leaf shoved the body on out. With nowhere to stand
-		# clear it is left open, and the leg goes round it (a detour) as a player would.
+		# straight back onto clear floor: the way back from a leaf standing out beside a doorway ran
+		# out through the doorway behind (the Grange's stage door, the ranger station's cell block
+		# door) or into a stairwell (Cedar Ridge's stair head), and the leaf swung shut shoved the body
+		# on. With no such step back the leg first goes round the open leaf.
 		if _in_sweep(d, player.global_position):
 			var hinge: Vector3 = d.global_transform * d.pivot.position
 			var away := Vector3(player.global_position.x - hinge.x, 0.0, player.global_position.z - hinge.z)
-			if away.length() <= 0.05:
-				return false
-			var reach: float = d.leaf_local.origin.x * 2.0 + Player.RADIUS + ASIDE_MARGIN
-			var to: Vector3 = hinge + away.normalized() * reach
-			to.y = player.global_position.y
-			var here: Array = _locate(player.global_position + Vector3.UP * 0.1)
-			var there: Array = _locate(to + Vector3.UP * 0.1)
-			if here.is_empty() or there.is_empty() or layout.volume_of(here[0], here[1]) != layout.volume_of(there[0], there[1]):
-				return false
-			if validator._over_well(int(there[0]), there[1]) or _over_hole(int(there[0]), there[1]) or not _fits(to):
-				return false
-			await _go(to, false, {"needed": []}, false, 90)
-			if _in_sweep(d, player.global_position):
-				return false
+			if away.length() > 0.05:
+				var reach: float = d.leaf_local.origin.x * 2.0 + Player.RADIUS + ASIDE_MARGIN
+				var to: Vector3 = hinge + away.normalized() * reach
+				to.y = player.global_position.y
+				if not _clear_step(to):
+					# Left open for now: the leg goes round it, and only when there is no way round
+					# is it shut from where the body stands (_detour_after_fail).
+					_leaf_pending = d
+					return false
+				await _go(to, false, {"needed": []}, false, 90)
 		d.interact(player)
 		needed.append("close_door:" + d.op_id)
 		_door_leaves.append({"opening": d.opening_id, "leaf": d.op_id})
@@ -1923,6 +1954,24 @@ func _close_leaf_in_way(needed: Array, own: String) -> bool:
 		_hits.clear()
 		return true
 	return false
+
+
+## Whether the body can step straight to `to` (world) on the floor it stands on: the capsule fits
+## there, nothing is in the way, the floor there is level with the feet (within a step) and is not
+## a stairwell, a hatch or a hole.
+func _clear_step(to: Vector3) -> bool:
+	var loc: Array = _locate(to + Vector3.UP * 0.1)
+	if not loc.is_empty() and (validator._over_well(int(loc[0]), loc[1]) or _over_hole(int(loc[0]), loc[1])):
+		return false
+	var space: PhysicsDirectSpaceState3D = player.get_world_3d().direct_space_state
+	var ex: Array[RID] = [player.get_rid()]
+	var inv: Transform3D = inst.global_transform.affine_inverse()
+	var a: Vector3 = inv * player.global_position
+	var b: Vector3 = inv * to
+	b.y = TraversalAudit.floor_at(space, inst, Vector3(b.x, a.y, b.z), ex)
+	if absf(b.y - a.y) > Player.STEP_HEIGHT:
+		return false
+	return _fits(to) and TraversalAudit.sweep(space, inst, a, b, ex).is_empty()
 
 
 ## A closed leaf of this leg's own doorway within reach: open it (as the player would).

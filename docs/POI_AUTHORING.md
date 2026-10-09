@@ -162,8 +162,11 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
 * The flight's collision is a ramp rising 0.75 m a cell from its foot edge, and the player steps up
   only 0.38 m, so (player report 3; validator):
   * a flight is entered at its foot: from the cell behind it, or from a side of the first step
-    along its low half. Doorways belong on the foot's back edge or off the flight: one beside a
-    step past the first is an error, one beside the first step a warning;
+    along its low half (the player steps onto the ramp's side there: Player.SLOPE_LIFT). Doorways
+    belong on the foot's back edge or off the flight: one beside a step past the first is an
+    error, one beside the first step a warning. Treat that warning as an error for a door: in a
+    1 m doorway the floor already rises 0.3-0.45 m, and under a 2.1 m header nobody standing gets
+    through (Cedar Ridge's stair gate moved to the flight's head for that);
   * upstairs, a doorway onto the well is an error except at the head (between the last step's well
     and the landing); a gallery railing is left out across the head;
   * a door or gate at the head is crossed like any door by the route (TD-274): a `locked_inside`
@@ -174,9 +177,15 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
     higher (headroom); a door there is the way off the top;
   * the route never stands on the steps past the foot or over the well (put waypoints beside them).
 * `{"level": 0, "at": [2, 2], "side": "W", "hatch": true}` — ladder against a wall up through a
-  hatch in the ceiling (climb by interacting). Climbers step off upstairs onto the room cell beside
-  the hatch, away from the wall (or to either side); the validator errors if there is none.
-  Hollowed do not climb ladders: lofts are refuges.
+  hatch in the ceiling (walked into: the player climbs it walking at its rails, and comes down it
+  walking from the landing across the hatch at them). Climbers step off upstairs onto the room
+  cell beside the hatch, away from the wall (or to either side); the validator errors if there is
+  none. Lean it (`side`) so that cell exists: from a landing to the side of the hatch the way down
+  is a hole, and TraversalAudit errors where the route climbs down it (the hatchery catwalk, the
+  library fire escape). Keep the landing and the metre in front of the rails clear of solid props
+  (the relay tower's radio stood on its top landing: an audit error now). A ladder whose rails
+  stand on an open edge between two floor cells is grabbed by anyone walking at it there: lean it
+  on a wall or a rail where you can. Hollowed do not climb ladders: lofts are refuges.
 * `{"level": 1, "at": [4, 3]}` — broken floor: a one-way drop to the level below.
 
 ### props
