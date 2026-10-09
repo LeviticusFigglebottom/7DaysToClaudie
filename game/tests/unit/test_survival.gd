@@ -257,8 +257,9 @@ func test_need_warnings_quiet_asleep_and_dead_and_reset_when_recovered() -> void
 	s.hydration = 10.0
 	assert_true(w.update(s, 30.0, true).is_empty(), "quiet while asleep")
 	assert_eq(_texts(w.update(s, 5.0)), ["You're thirsty.", "You're parched. Drink, now."] as Array[String], "said on waking, in order")
-	# Rate limited: the current line again only after repeat_minutes (60 for thirst).
-	assert_true(w.update(s, 55.0).is_empty())
+	# Rate limited: at a steady value the current line again only after the level's repeat_minutes
+	# (parched: 150; it was the ladder's 60 before the M7 repeat rule).
+	assert_true(w.update(s, 145.0).is_empty())
 	assert_eq(_texts(w.update(s, 5.0)), ["You're parched. Drink, now."] as Array[String])
 	# A sip that leaves the player thirsty doesn't reset the ladder...
 	s.hydration = 40.0
@@ -278,3 +279,36 @@ func test_need_warnings_quiet_asleep_and_dead_and_reset_when_recovered() -> void
 	assert_true(w.update(s, 5.0).is_empty(), "quiet while dead")
 	s.revive(50.0)
 	assert_eq(_texts(w.update(s, 5.0)), ["You're thirsty.", "You're hungry.", "You're starving. Eat something."] as Array[String])
+
+
+## Mid-game audit M7: "You're freezing" every 90 minutes all night at a steady body temperature.
+## A repeat comes sooner only when the stat has got a worse_by worse since the last line; the
+## deepest level otherwise waits its own, longer, repeat_minutes.
+func test_a_warning_repeats_when_it_gets_worse_or_after_a_long_while() -> void:
+	var cfg: Dictionary = Content.config(&"survival")["warnings"]["cold"]
+	var worse: float = float(cfg["worse_by"])
+	var deep: float = float((cfg["levels"] as Array)[1]["repeat_minutes"])
+	assert_gte(deep, 120.0, "the deepest level waits two hours or more")
+	var s := SurvivalStats.new()
+	var w := SurvivalWarnings.new()
+	s.body_temp = 35.3
+	s.hydration = 100.0
+	s.fullness = 100.0
+	assert_eq(_texts(w.update(s, 5.0)).size(), 2, "cold, then freezing: the first-time ladder as before")
+	# A steady night: quiet until the long interval is up.
+	var said: int = 0
+	for i: int in int(deep / 30.0) - 1:
+		said += w.update(s, 30.0).size()
+	assert_eq(said, 0, "no hourly 'freezing' while it is no colder")
+	assert_eq(_texts(w.update(s, 30.0)), ["You're freezing. Find a fire, now."] as Array[String], "then once again")
+	# Colder by less than worse_by: still quiet; by worse_by: said at once.
+	s.body_temp = 35.3 - worse * 0.5
+	assert_true(w.update(s, 10.0).is_empty(), "a little colder is not news")
+	s.body_temp = 35.3 - worse
+	assert_eq(_texts(w.update(s, 10.0)), ["You're freezing. Find a fire, now."] as Array[String], "a lot colder is")
+	assert_true(w.update(s, 10.0).is_empty(), "and the new value is the mark to beat")
+	# Warming a little (still freezing) says nothing and doesn't move the mark.
+	s.body_temp = 35.3
+	assert_true(w.update(s, 10.0).is_empty())
+	s.body_temp = 35.3 - worse - 0.01
+	assert_true(w.update(s, 10.0).is_empty(), "back down to about the mark: no news")
