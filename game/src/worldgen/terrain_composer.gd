@@ -65,6 +65,8 @@ const PAD_RAMP_GRADE: float = 0.08
 const PAD_RAMP_MIN: float = 12.0
 const PAD_RAMP_MAX: float = 60.0
 const PAD_RAMP_SIDE: float = 10.0
+## A region-graded road within PAD_PIN_REACH m of a pad is pinned to its level (VERSION 15).
+const PAD_PIN_REACH: float = 6.0
 ## Banks beside a generated world's roads: the slope (rise over run) of a cut and of a fill, between
 ## the two values by a value noise along the road (BANK_CELL m across), a flat verge of up to
 ## BANK_VERGE m before the bank, the radius (m) of the rounding where the bank meets the land, the
@@ -584,6 +586,7 @@ class _Build:
 		_mark("apply_water")
 		if not _report("roads", 0.6):
 			return null
+		_pad_targets()
 		_road_fields()
 		_mark("road_fields")
 		_apply_roads()
@@ -1330,6 +1333,64 @@ class _Build:
 			return {"profiles": TerrainComposer.world_road_profiles(world.roads, _reference_ground)})
 		return memo["profiles"]
 
+	## The level of every POI's and framework's pad, from the ground before the roads are cut
+	## (VERSION 15: it was read after them), so a region-graded road can be pinned to it
+	## (_pin_to_pads). Pads that keep their water and world towns' pads keep their own rules.
+	func _pad_targets() -> void:
+		for pad: Dictionary in pads:
+			if bool(pad.get("world", false)) or bool(pad["keep_water"]):
+				continue
+			var o: Vector2 = pad["origin"]
+			var size: Vector2 = pad["size"]
+			var rot: float = pad["rot"]
+			var acc: float = 0.0
+			for k: int in 25:
+				var lp := Vector2((k % 5 + 0.5) / 5.0 * size.x, (k / 5 + 0.5) / 5.0 * size.y)
+				var wp: Vector2 = o + lp.rotated(rot)
+				acc += _sample(wp.x, wp.y)
+			pad["height"] = acc / 25.0 + 0.05
+
+	## Pins a region-graded road's profile to the pads it runs onto or beside (VERSION 15): within
+	## PAD_PIN_REACH m of a pad the road is at the pad's level, easing back to its own profile at
+	## PAD_RAMP_GRADE over 12-60 m. A road along a town's pad (Route 9 by Pell's Crossing) stood
+	## metres under the storefronts facing it.
+	func _pin_to_pads(prof: PackedFloat32Array, line: Polyline2) -> void:
+		for pad: Dictionary in pads:
+			if not pad.has("height") or bool(pad.get("world", false)):
+				continue
+			var o: Vector2 = pad["origin"]
+			var size: Vector2 = pad["size"]
+			var rot: float = pad["rot"]
+			var target: float = float(pad["height"])
+			var corners: Array[Vector2] = [o, o + Vector2(size.x, 0).rotated(rot), o + size.rotated(rot), o + Vector2(0, size.y).rotated(rot)]
+			var bb := Rect2(corners[0], Vector2.ZERO)
+			for c: Vector2 in corners:
+				bb = bb.expand(c)
+			if not line.bounds.intersects(bb.grow(PAD_PIN_REACH + PAD_RAMP_MAX)):
+				continue
+			var n: int = prof.size()
+			var dist := PackedFloat32Array()
+			dist.resize(n)
+			var touches: bool = false
+			for k: int in n:
+				var lp: Vector2 = (line.point_at(k * PROFILE_STEP) - o).rotated(-rot)
+				var dx: float = maxf(maxf(-lp.x, lp.x - size.x), 0.0)
+				var dz: float = maxf(maxf(-lp.y, lp.y - size.y), 0.0)
+				dist[k] = sqrt(dx * dx + dz * dz)
+				touches = touches or dist[k] < PAD_PIN_REACH
+			if not touches:
+				continue
+			# The ease's length from the largest difference at the pad.
+			var diff: float = 0.0
+			for k2: int in n:
+				if dist[k2] < PAD_PIN_REACH:
+					diff = maxf(diff, absf(prof[k2] - target))
+			var ease: float = clampf(diff / PAD_RAMP_GRADE, PAD_RAMP_MIN, PAD_RAMP_MAX)
+			for k3: int in n:
+				var w: float = 1.0 - smoothstep(PAD_PIN_REACH, PAD_PIN_REACH + ease, dist[k3])
+				if w > 0.0:
+					prof[k3] = lerpf(prof[k3], target, w)
+
 	## {profile, step, spans} of a road (see _build_profile).
 	func _profile_data(r: Dictionary) -> Dictionary:
 		var line: Polyline2 = r["line"]
@@ -1348,6 +1409,8 @@ class _Build:
 		if prof.is_empty():
 			prof = TerrainComposer.smoothed_profile(line, _reference_ground if by_world else _sample_or_macro,
 				float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
+			if not by_world:
+				_pin_to_pads(prof, line)
 		var count: int = prof.size()
 		var spans: Array = []
 		for bdef: Variant in r["bridges"]:
@@ -1604,7 +1667,10 @@ class _Build:
 			# alike (no border fade), and gives way to the streets.
 			var world_pad: bool = bool(pad.get("world", false))
 			var target: float = float(pad.get("target", 0.0))
-			if not world_pad:
+			if pad.has("height"):
+				# Levelled before the roads (_pad_targets, VERSION 15), so the roads could meet it.
+				target = float(pad["height"])
+			elif not world_pad:
 				# Mean height over the pad.
 				var acc: float = 0.0
 				var cnt: int = 0
