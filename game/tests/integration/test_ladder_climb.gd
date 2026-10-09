@@ -98,6 +98,29 @@ func test_walk_into_the_hatch_and_down() -> void:
 	assert_almost_eq(_player.global_position.y, foot.y, 0.15, "down on the floor")
 
 
+## Down through the hatch with forward held, then (turned round to the rails) forward again: back
+## up. The climb-down hold used to outlive the climb, so the next grab at the foot climbed down and
+## let go at once (poi_walk: every pit, cellar and bunker shaft entered by its ladder was a trap).
+func test_down_then_back_up_with_forward_held() -> void:
+	var lad: PoiPieces.Ladder = _ladder()
+	if lad == null:
+		fail_test("no ladder")
+		return
+	var top: Vector3 = lad.ends()[0]
+	_player.global_position = top + Vector3.UP * 0.05
+	_face(-lad.face())
+	await get_tree().physics_frame
+	var held: Array[bool] = [false]
+	await _walk(400, func() -> bool:
+		held[0] = held[0] or _player.is_climbing()
+		return held[0] and not _player.is_climbing())
+	assert_true(held[0], "down the ladder")
+	_face(-lad.face())
+	await get_tree().physics_frame
+	await _walk(360, func() -> bool: return _player.global_position.y > top.y - 0.05 and not _player.is_climbing() and not _player.is_vaulting())
+	assert_almost_eq(_player.global_position.y, top.y, 0.15, "back upstairs")
+
+
 func test_jump_lets_go() -> void:
 	var lad: PoiPieces.Ladder = _ladder()
 	if lad == null:

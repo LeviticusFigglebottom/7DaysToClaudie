@@ -424,6 +424,10 @@ func _grab_ladder(wish: Vector3, dir: Vector2) -> bool:
 		var at_top: bool = absf(feet.y - top_y) < 0.35
 		if toward >= 0.5 and feet.y > foot.y - 0.3 and feet.y < top_y - 0.6 and out > -0.1 and out < LADDER_REACH:
 			_ladder = lad
+			# Up from the foot. The hold left over from the last climb down (forward held all the
+			# way, never let go on the rungs) turned this into a climb down, which lets go at once
+			# at the foot: nobody who came down a hatch with forward held could climb back up.
+			_climb_down_hold = false
 		elif at_top and ((toward >= 0.5 and out > -0.1 and out < 1.25) or (toward <= -0.5 and out <= -0.1 and out > -1.25)):
 			# Down through the hatch, or over the top from the landing behind the rails (a stand's
 			# ladder, a rope): hang on the top rungs, just below the floor.
@@ -479,6 +483,7 @@ func _climb(delta: float, dir: Vector2, want_jump: bool, alive: bool) -> void:
 		velocity = Vector3.ZERO
 	elif climb < 0.0 and (feet_y <= foot.y + 0.02 or (is_on_floor() and feet_y < foot.y + 0.5)):
 		_ladder = null
+		_climb_down_hold = false
 	_head_motion(delta, 0.0)
 
 

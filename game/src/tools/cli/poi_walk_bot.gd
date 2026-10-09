@@ -1572,6 +1572,10 @@ func _climb_ladder(lad: PoiPieces.Ladder, l: Dictionary, up: bool, end: Vector3,
 			break
 		elif not grabbed and frames > LADDER_GRAB_FRAMES:
 			break
+		if OS.has_environment("POI_WALK_DEBUG") and not grabbed and frames % 15 == 1:
+			var rel: Vector3 = player.global_position - lad.global_position
+			print("[poi_walk]     ladder grab? feet %s foot %s face %s out %.2f side %.2f fwd %s floor %s vel %s" % [player.global_position, lad.global_position, lad.face(),
+				rel.dot(lad.face()), rel.dot(lad.face().cross(Vector3.UP)), -player.global_basis.z, player.is_on_floor(), player.velocity])
 	Input.action_release(&"move_forward")
 	await _settle(4)
 	_frames += 4
@@ -1826,6 +1830,13 @@ func _release() -> void:
 
 
 func _place(pos: Vector3, forward: Vector3) -> void:
+	# Off any ladder and out of any vault first (TD-368): a body left holding the rungs of a
+	# failed climb was pulled straight back to them, and every later leg failed with it.
+	if &"_ladder" in player:
+		player.set(&"_ladder", null)
+		player.set(&"_climb_down_hold", false)
+	if &"_vault_t" in player:
+		player.set(&"_vault_t", -1.0)
 	player.global_position = pos + Vector3.UP * 0.05
 	if Vector2(forward.x, forward.z).length() > 0.01:
 		player.rotation.y = atan2(-forward.x, -forward.z)
