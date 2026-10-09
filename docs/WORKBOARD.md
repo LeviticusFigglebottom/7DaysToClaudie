@@ -260,3 +260,14 @@ Same setup, now on the downloadable build:
   loaded resource for null before `instantiate()`; ModelLibrary does.
 * The instance shader-variable buffer is 262144. std_surface uses instance slots 0–4 (light_lit
   is 4); kit_wall uses 0 and 3. Don't renumber them.
+* Never draw a live 3D scene behind a menu or under a cutscene: Build #94's live menu backdrop left
+  the menu unresponsive while it built, and froze it on the owner's machine. Render pictures offline
+  (`make stills`, ADR-0065). A filmed video would need a GPU: lavapipe takes ~30 s for a 1440p
+  frame of a forest.
+* Some containers have no software Vulkan: Godot then quietly falls back to OpenGL on llvmpipe
+  (the log says "switching to OpenGL 3"), which renders differently and far slower. Fix it with
+  `apt-get update && apt-get install -y mesa-vulkan-drivers`.
+* The exported game runs any CLI script from the source tree:
+  `godot --main-pack <abs path>/Hollowmere.pck -s <abs path>/script.gd`. This uses the build's
+  real generated assets, without running `make assets` locally. Classes newer than the pack have
+  to be loaded by path.
