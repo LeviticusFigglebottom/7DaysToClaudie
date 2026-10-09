@@ -169,7 +169,7 @@ func primary() -> void:
 	# A swing in progress lands before the next begins: restarting its clock lost the pending hit
 	# (the first-hour audit's felling: one swing in four connected) and still cost the stamina.
 	var melee: bool = def == null or (str(def.equip.get("kind", "")) in ["melee", "light"] and def.equip.has("damage"))
-	if melee and (_swing_t >= 0.0 or _cooldown > 0.0):
+	if melee and _swing_t >= 0.0:
 		return
 	if def == null:
 		_punch()
