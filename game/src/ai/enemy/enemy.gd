@@ -33,6 +33,12 @@ const SIGHT_MASK: int = (1 << 0) | (1 << 1) | (1 << 12) | (1 << 14)
 const GRAVITY: float = 18.0
 const PERCEPTION_INTERVAL: float = 0.25
 const KINEMATIC_BEYOND: float = 110.0
+## Level of detail for the tick (TD-003: a 64-body Hum broke the frame budget, physics 12.7 ms):
+## past LOD_FULL m, and not mid-strike, a body thinks and moves every few physics frames on its
+## own phase, with the time it skipped (so timers, cooldowns and speeds keep real time); one out of
+## the player's view ticks less often. [distance, ticks in view, ticks out of view], nearest first.
+const LOD_FULL: float = 18.0
+const LOD_TIERS: Array = [[40.0, 1, 2], [80.0, 2, 3], [KINEMATIC_BEYOND, 3, 4], [INF, 6, 6]]
 const MEMORY_SECONDS: float = 9.0
 ## Plain Hollowed (not hounds, not the Ashen) also notice a moving player this many degrees past
 ## each edge of their field of view, at PERIPHERAL_RANGE of their sight (docs/AI_TUNING.md).
@@ -141,6 +147,11 @@ var _nav_goal := Vector3.INF
 var _nav_t: float = 0.0
 ## Beyond collision range the body glides on the heightfield; no path queries out there.
 var _far: bool = false
+## LOD tick (see LOD_TIERS): time skipped since the last tick, this body's phase, and how many
+## frames the current move covers (move_and_slide scales the velocity by it).
+var _lod_acc: float = 0.0
+var _lod_phase: int = 0
+var _lod_span: float = 1.0
 ## No new stagger until this runs out (a fast weapon could otherwise stun-lock).
 var _stagger_lock: float = 0.0
 ## After the Hum: seconds until this survivor roots into the soil (despawns) when unobserved.
@@ -332,6 +343,8 @@ func _ready() -> void:
 	target_pos = global_position
 	_yaw_target = rotation.y
 	_perc_t = _rng.randf() * PERCEPTION_INTERVAL
+	# Its own phase for the LOD tick, so bodies far off don't all think on the same frame.
+	_lod_phase = int(Ids.hash64(String(entity_id)) & 0xffff)
 	_heard_seq = Stimuli.current.last_seq() if Stimuli.current != null else 0
 	if state == State.SLEEP:
 		_fit_sleep_shape()
@@ -370,12 +383,20 @@ func is_underground() -> bool:
 
 # --- Main loop -------------------------------------------------------------------------------
 
-func _physics_process(delta: float) -> void:
+func _physics_process(frame_delta: float) -> void:
 	if state == State.DEAD:
-		_corpse_t += delta
+		_corpse_t += frame_delta
 		return
 	var p: Player = _player()
 	var dist: float = global_position.distance_to(p.global_position) if p != null else 9999.0
+	# LOD tick: skip this frame, or run with the time skipped since the last one.
+	_lod_acc += frame_delta
+	var every: int = _lod_every(p, dist)
+	if every > 1 and (Engine.get_physics_frames() + _lod_phase) % every != 0:
+		return
+	var delta: float = minf(_lod_acc, 0.25)
+	_lod_span = delta / maxf(frame_delta, 1e-4)
+	_lod_acc = 0.0
 	_attack_cd = maxf(0.0, _attack_cd - delta)
 	_scream_cd = maxf(0.0, _scream_cd - delta)
 	_spit_cd = maxf(0.0, _spit_cd - delta)
@@ -566,7 +587,14 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 	else:
 		v.y = maxf(v.y, -1.0)
 	velocity = v
-	move_and_slide()
+	# A LOD tick covers the frames it skipped: one move as long as all of them (the body steps
+	# 2-6 frames' worth at once, 20-30 Hz past LOD_FULL m, where it isn't looked at closely).
+	if _lod_span > 1.001:
+		velocity = Vector3(v.x * _lod_span, v.y, v.z * _lod_span)
+		move_and_slide()
+		velocity = Vector3(velocity.x / _lod_span, velocity.y, velocity.z / _lod_span)
+	else:
+		move_and_slide()
 	if state == State.CHARGE:
 		var wall: Node3D = _blocking_structure()
 		if wall != null:
@@ -597,6 +625,25 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 	if global_position.y < ground - 3.0:
 		global_position.y = ground + 0.5
 		velocity = Vector3.ZERO
+
+
+## How many physics frames apart this body ticks (1: every frame). Full rate near the player, for
+## the companion and in the states whose timing the player feels (a strike, a charge, a spit, a
+## stagger, tearing at a wall); otherwise by distance, less often out of the player's view.
+func _lod_every(p: Player, dist: float) -> int:
+	if p == null or ally != null or dist < LOD_FULL:
+		return 1
+	if state in [State.ATTACK, State.CHARGE, State.SPIT, State.STAGGER, State.BREAK, State.SCREAM, State.WAKING]:
+		return 1
+	var seen: bool = true
+	var cam: Camera3D = p.camera if p.camera != null and p.camera.is_inside_tree() else null
+	if cam != null:
+		var to: Vector3 = global_position - cam.global_position
+		seen = (-cam.global_transform.basis.z).dot(to) > to.length() * 0.35
+	for tier: Array in LOD_TIERS:
+		if dist < float(tier[0]):
+			return int(tier[1]) if seen else int(tier[2])
+	return 6
 
 
 func _blocking_structure() -> Node3D:

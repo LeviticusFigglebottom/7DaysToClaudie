@@ -123,7 +123,8 @@
         {"poi": "w5_fish_hatchery", "site": "waterside", "per_region": 0.1, "max": 2, "access": "track", "biome": "conifer_forest", "min_danger": 2, "skirt": 10, "late": true},
         {"poi": "w5_hot_springs_bathhouse", "site": "remote", "per_region": 0.08, "max": 1, "access": "track", "biome": "meadow", "min_danger": 3, "skirt": 10, "late": true},
         {"poi": "corvane_larkspur_adit", "site": "mine", "per_region": 0.08, "max": 1, "unique": true, "access": "track", "biome": "rocky_slope", "min_danger": 3, "skirt": 6, "pad": [24, 14], "door": [11, -5]},
-        {"poi": "ezra_camp", "site": "companion", "per_region": 10.0, "max": 1, "unique": true, "access": "none", "biome": "meadow", "min_danger": 1, "skirt": 6, "ring": [300, 900]}
+        {"poi": "ezra_camp", "site": "companion", "per_region": 10.0, "max": 1, "unique": true, "access": "none", "biome": "meadow", "min_danger": 1, "skirt": 6, "ring": [300, 900]},
+        {"poi": "lift3_crash_site", "site": "crash", "per_region": 10.0, "max": 1, "unique": true, "access": "none", "biome": "meadow", "min_danger": 1, "skirt": 8, "ring": [600, 1600]}
       ],
       "farmsteads": {"framework": "farm_okafor", "per_region": 0.1, "max": 2, "biome": "meadow", "min_danger": 2},
       "spacing": 160,
