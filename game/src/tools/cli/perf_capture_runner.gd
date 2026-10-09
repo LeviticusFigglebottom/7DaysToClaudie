@@ -77,7 +77,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
-	var rules: Dictionary = {"hum_max_alive": 64} if _hum_full else {}
+	var rules: Dictionary = {"hum_max_alive": 64, "hum_size": 2.0} if _hum_full else {}
 	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "perf", "rules": rules})
 	while game.get(&"world") == null or not bool(game.world.is_ready):
 		await get_tree().process_frame
@@ -173,23 +173,43 @@ func _hum_night() -> Dictionary:
 	var want: int = 20
 	if _hum_full:
 		# Wait for the night to start, then hand it a late game's plan with every wave due now.
-		var t_start: int = Time.get_ticks_msec() + 20000
+		var t_start: int = Time.get_ticks_msec() + 120000
 		while not bool(ai.hum.active) and Time.get_ticks_msec() < t_start:
 			await get_tree().process_frame
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
+		# A seventh Hum's plan at a late gamestage (the horde grows by Hums survived as well).
+		game.session.horde.horde_index = 6
 		var big: Dictionary = game.session.horde.plan(HUM_FULL_STAGE, rng)
+		ai.hum.set(&"_wave_i", 0)
 		for wv: Dictionary in big.get("waves", []):
 			wv["start_min"] = 0.0
 		ai.hum.plan = big
 		want = mini(GameRules.current().integer("hum_max_alive"), int(big.get("total", 0)))
+	if _hum_full:
+		print("[perf] hum: forced plan of %d, waiting for %d alive (cap %d)" % [int((ai.hum.plan as Dictionary).get("total", 0)), want, GameRules.current().integer("hum_max_alive")])
 	var end: int = Time.get_ticks_msec() + (120000 if _hum_full else 60000)
+	var next_log: int = 0
 	while Time.get_ticks_msec() < end and _alive(ai) < want:
 		await get_tree().process_frame
+		if _hum_full and Time.get_ticks_msec() > next_log:
+			next_log = Time.get_ticks_msec() + 10000
+			print("[perf] hum: active %s, wave %d/%d, queued %d, spawned %d, alive %d, hour %.2f" % [ai.hum.active, int(ai.hum.get(&"_wave_i")),
+				((ai.hum.plan as Dictionary).get("waves", []) as Array).size(), (ai.hum.get(&"_queue") as Array).size(), int(ai.hum.get(&"_spawned_total")),
+				_alive(ai), float(game.session.clock.hour())])
+	if _hum_full:
+		print("[perf] hum: waited until %d ms left, alive %d, spawned %d, queued %d" % [end - Time.get_ticks_msec(), _alive(ai), int(ai.hum.get(&"_spawned_total")), (ai.hum.get(&"_queue") as Array).size()])
+	if _hum_full:
+		# Let them run in and path round the town before measuring (spawned 55-85 m out).
+		var settle: int = Time.get_ticks_msec() + 20000
+		while Time.get_ticks_msec() < settle:
+			await get_tree().process_frame
 	var m: Dictionary = await _measure(_frames)
 	m["members"] = (ai.hum.members as Dictionary).size()
 	m["alive"] = _alive(ai)
 	m["planned"] = int((ai.hum.plan as Dictionary).get("total", 0))
+	m["spawned"] = int(ai.hum.get(&"_spawned_total"))
+	m["queued"] = (ai.hum.get(&"_queue") as Array).size()
 	if _ablate:
 		m["modules"] = await _ablate_modules()
 	game.session.clock.set_time(day + 1, 7.0)
