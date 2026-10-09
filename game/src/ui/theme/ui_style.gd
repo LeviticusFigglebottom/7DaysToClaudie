@@ -244,6 +244,10 @@ static func _build(paper: bool) -> Theme:
 	lp.border_color = hover
 	t.set_stylebox(&"pressed", &"ListButton", lp)
 	t.set_stylebox(&"hover_pressed", &"ListButton", lp)
+	var lf := _box(Color(0, 0, 0, 0), hover, 1, 4)
+	lf.content_margin_left = 8
+	lf.border_width_left = 3
+	t.set_stylebox(&"focus", &"ListButton", lf)
 	# The one call to action on a screen (Start, Make): rust with paper type.
 	t.add_type(&"PrimaryButton")
 	t.set_type_variation(&"PrimaryButton", &"Button")
@@ -254,6 +258,7 @@ static func _build(paper: bool) -> Theme:
 	t.set_stylebox(&"pressed", &"PrimaryButton", _box(RUST.darkened(0.15), RUST_BRIGHT, 2, 8))
 	t.set_stylebox(&"hover_pressed", &"PrimaryButton", _box(RUST.darkened(0.15), RUST_BRIGHT, 2, 8))
 	t.set_stylebox(&"disabled", &"PrimaryButton", _box(Color(0, 0, 0, 0), Color(dim, 0.5), 1, 8))
+	t.set_stylebox(&"focus", &"PrimaryButton", _box(Color(0, 0, 0, 0), PAPER.lightened(0.3), 2, 8))
 	for c: StringName in [&"font_color", &"font_hover_color", &"font_pressed_color", &"font_hover_pressed_color", &"font_focus_color"]:
 		t.set_color(c, &"PrimaryButton", PAPER.lightened(0.3))
 	t.set_color(&"font_disabled_color", &"PrimaryButton", dim)
@@ -266,7 +271,13 @@ static func _build(paper: bool) -> Theme:
 	mb.content_margin_left = 18
 	t.set_stylebox(&"normal", &"MenuEntry", mb)
 	t.set_stylebox(&"disabled", &"MenuEntry", mb)
-	t.set_stylebox(&"focus", &"MenuEntry", _box(Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 6))
+	# Gamepad focus looks like hover: the rust bar (an empty focus box hid where the pad was).
+	var mf := _box(Color(0.0, 0.0, 0.0, 0.0), Color(0, 0, 0, 0), 0, 6)
+	mf.content_margin_left = 18
+	mf.border_width_left = 3
+	mf.border_color = RUST_BRIGHT
+	t.set_stylebox(&"focus", &"MenuEntry", mf)
+	t.set_color(&"font_focus_color", &"MenuEntry", RUST_BRIGHT)
 	var mh := _box(Color(0.0, 0.0, 0.0, 0.35), Color(0, 0, 0, 0), 0, 6)
 	mh.content_margin_left = 18
 	mh.border_width_left = 3
@@ -361,3 +372,42 @@ static func level(key: String, fallback: float) -> float:
 	if db == null:
 		return fallback
 	return float((db.call(&"config", &"audio").get("ui_levels", {}) as Dictionary).get(key, fallback))
+
+
+
+# --- Gamepad focus ----------------------------------------------------------------------------
+
+## Whether an event comes from a gamepad (a button, or a stick pushed past the dead zone).
+static func is_pad_event(ev: InputEvent) -> bool:
+	if ev is InputEventJoypadButton:
+		return (ev as InputEventJoypadButton).pressed
+	if ev is InputEventJoypadMotion:
+		return absf((ev as InputEventJoypadMotion).axis_value) > 0.5
+	return false
+
+
+## The first visible, enabled control under `root` that takes focus (depth first, in order).
+static func first_focusable(root: Node) -> Control:
+	for c: Node in root.get_children():
+		var ctl := c as Control
+		if ctl != null and not ctl.is_visible_in_tree():
+			continue
+		if ctl != null and ctl.focus_mode == Control.FOCUS_ALL and not (ctl is BaseButton and (ctl as BaseButton).disabled):
+			return ctl
+		var deeper: Control = first_focusable(c)
+		if deeper != null:
+			return deeper
+	return null
+
+
+## Gives the first focusable control of `root` the focus when nothing has it (a pad was used).
+static func focus_first(root: Node) -> bool:
+	if root == null or not root.is_inside_tree():
+		return false
+	if root.get_viewport().gui_get_focus_owner() != null:
+		return false
+	var c: Control = first_focusable(root)
+	if c != null:
+		c.grab_focus()
+		return true
+	return false

@@ -741,6 +741,49 @@ func toggle_pause() -> void:
 
 # --- Diegetic UIs --------------------------------------------------------------------------
 
+## A gamepad press with nothing focused focuses the first control of the screen on top (the
+## reader, the map, the roll's recipe sheet, the manual, the trader, pause, the death screen).
+func _input(event: InputEvent) -> void:
+	# The pad's B puts away whatever is on top (the screens' own keys are keyboard keys).
+	var jb := event as InputEventJoypadButton
+	if jb != null and jb.pressed and jb.button_index == JOY_BUTTON_B and close_top_screen():
+		get_viewport().set_input_as_handled()
+		return
+	if not UiStyle.is_pad_event(event) or get_viewport().gui_get_focus_owner() != null:
+		return
+	for i: int in range(get_child_count() - 1, -1, -1):
+		var c: Control = get_child(i) as Control
+		if c == null or not c.visible or c == _hud or c == _loading:
+			continue
+		# The roll steers its cloth with the pad itself; its recipe sheet takes focus on RB.
+		if c == roll:
+			return
+		if UiStyle.focus_first(c):
+			get_viewport().set_input_as_handled()
+			return
+
+
+## Closes the screen on top, if one is open (gamepad B). True when something closed.
+func close_top_screen() -> bool:
+	if reader.is_open():
+		reader.close_reader()
+	elif world_map.is_open():
+		world_map.close()
+	elif manual.is_open():
+		manual.close()
+	elif roll.is_open():
+		roll.close()
+	elif _pause.visible:
+		toggle_pause()
+	else:
+		for c: Node in get_children():
+			if c is TraderScreen and (c as TraderScreen).is_open():
+				(c as TraderScreen).close_screen()
+				return true
+		return false
+	return true
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	var w: Node = Game.world
 	if w == null or not bool(w.get(&"is_ready")) or is_intro_playing():

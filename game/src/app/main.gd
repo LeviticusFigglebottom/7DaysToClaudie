@@ -30,6 +30,13 @@ func _ready() -> void:
 	_show_notices()
 
 
+## A gamepad press with nothing focused focuses the first entry of what is open (the menu, New
+## Game, Options), so the menu can be driven by the pad alone.
+func _input(event: InputEvent) -> void:
+	if UiStyle.is_pad_event(event) and UiStyle.focus_first(self):
+		get_viewport().set_input_as_handled()
+
+
 func _handle_cli(args: PackedStringArray) -> bool:
 	if args.has("--new-game"):
 		var opts: Dictionary = {"game_mode": _arg_value(args, "--mode", "survival")}
