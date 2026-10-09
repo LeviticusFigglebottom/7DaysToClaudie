@@ -135,6 +135,7 @@ func _resolve_lots() -> void:
 	bloom_ms = Time.get_ticks_msec() - tb
 	print("[bloom] built in %d ms, %d zones, %d tiles, %.1f MB" % [bloom_ms, bloom_tiles.zones.size(), bloom_tiles.tile_count(), bloom_tiles.memory_bytes() / 1048576.0])
 	_set_stage("Planning the towns", 0.98)
+	var to_make: Array = []
 	for rid: String in detailed:
 		for pl: Dictionary in (detailed[rid] as RegionTerrain).placements:
 			# An organic town (ADR-0040) has a "town" placement in every region it touches: resolved once.
@@ -148,8 +149,20 @@ func _resolve_lots() -> void:
 				# A streamed world generates a lot's building on a worker when it enters the
 				# build ring (PoiManager); only a world built whole at load needs them all now.
 				var placed: bool = not stream and not str(res["kind"]) in ["reserved", "empty"]
-				out.append([res, Lots.def_for(res) if placed else null])
+				var pair: Array = [res, null]
+				if placed:
+					to_make.append(pair)
+				out.append(pair)
 			lots[str(pl["id"])] = out
+	# The buildings of a world built whole, made on the worker pool at once: a generated house takes
+	# tens of milliseconds (its validator retries more), and Pell's Crossing's west end (ADR-0059)
+	# made one after another added 5-10 s to the main map's load. Each task writes only its own
+	# pair's slot; the defs are pure (BuildingGenerator and LotPicker read ContentDB.instance).
+	if not to_make.is_empty():
+		var task: int = WorkerThreadPool.add_group_task(func(i: int) -> void:
+			var pr: Array = to_make[i]
+			pr[1] = Lots.def_for(pr[0]), to_make.size(), -1, true, "lot buildings")
+		WorkerThreadPool.wait_for_group_task_completion(task)
 	# Every region's placements, the coarse ones too: a streamed world composes only the first
 	# area at 1 m, and the rest of its towns still need their lots resolved (not generated).
 	var all: Dictionary = coarse.duplicate()

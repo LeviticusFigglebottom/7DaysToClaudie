@@ -336,6 +336,9 @@
       ]
     }
   ],
+  "towns": [
+    {"bounds": [-803.6, 1771.5, 700.0, 625.0], "center": [-640.0, 2080.0], "framework": "pell_outskirts", "id": "pell_outskirts", "kind": "village", "name": "Pell's Crossing", "origin": [0.0, 0.0], "radius": 320.0, "rotation": 0.0}
+  ],
   "regions": [
     {
       "cell": "A1",
