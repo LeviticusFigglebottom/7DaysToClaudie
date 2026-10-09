@@ -199,6 +199,8 @@ var _spit_cd: float = 0.0
 var _spit_done: bool = false
 ## The Blister's pustules have burst (TD-027): once, on a heavy blow (`hit_burst`) or its death.
 var _popped: bool = false
+## The crowd's push on this body (Crowd.push), rescanned every Crowd.EVERY ticks.
+var _crowd_push := Vector3.ZERO
 var _charge_cd: float = 0.0
 var _charge_dir := Vector3.ZERO
 var _charge_hit: bool = false
@@ -611,9 +613,15 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 	if state != State.CHARGE:
 		want = _detour(want, delta)
 		# TD-011: lean off the bodies crowding it (doorways, the pack on the player's heels).
-		var me: int = get_instance_id()
-		want = Crowd.steer(want, global_position, _cap_radius, me, Crowd.near(global_position))
-		Crowd.enter(me, global_position, _cap_radius)
+		if Crowd.enabled and dist < Crowd.RANGE:
+			var tc: int = Time.get_ticks_usec()
+			var me: int = get_instance_id()
+			if (Engine.get_physics_frames() + me) % Crowd.EVERY == 0:
+				_crowd_push = Crowd.push(global_position, _cap_radius, me, Crowd.near(global_position))
+			want = Crowd.apply(want, _crowd_push)
+			Crowd.enter(me, global_position, _cap_radius)
+			if prof_on:
+				_prof_add(&"crowd", tc)
 	var v: Vector3 = velocity
 	v.x = want.x
 	v.z = want.z
