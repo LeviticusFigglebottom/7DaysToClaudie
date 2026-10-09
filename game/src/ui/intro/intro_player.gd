@@ -16,7 +16,7 @@ signal finished()
 
 const SCRIPT_PATH: String = "res://data/intro/intro.json"
 const KINDS: PackedStringArray = ["caption", "document", "radio", "impact", "title"]
-const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds"]
+const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds", "caption"]
 ## The impact card: seconds of shake and of the flash's fade.
 const SHAKE_TIME: float = 1.6
 const SHAKE_PX: float = 26.0
@@ -354,6 +354,17 @@ func _build_card(c: Dictionary) -> Control:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Sound captions (Options): what the card's sound says, for players who can't hear it.
+	if captions_on() and str(c.get("caption", "")) != "":
+		var cap := UiStyle.label(str(c["caption"]), &"DimLabel")
+		cap.add_theme_font_size_override(&"font_size", 22)
+		cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cap.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+		cap.offset_top = -130
+		cap.offset_bottom = -96
+		cap.offset_left = -500
+		cap.offset_right = 500
+		root.add_child(cap)
 	match str(c.get("kind", "caption")):
 		"document":
 			_document(root, c)
@@ -372,6 +383,12 @@ func _build_card(c: Dictionary) -> Control:
 		_:
 			_caption(root, c)
 	return root
+
+
+## Whether sound captions are on (Options; off when the Settings autoload isn't there).
+static func captions_on() -> bool:
+	var st: Node = Engine.get_main_loop().root.get_node_or_null(^"/root/Settings") if Engine.get_main_loop() is SceneTree else null
+	return st != null and bool(st.get(&"sound_captions"))
 
 
 func _typed_label(text: String, size: int, color: Color, f: Font = null) -> Label:

@@ -148,6 +148,9 @@ func _general() -> void:
 		Settings.menu_backdrop = bd_modes[i]
 		Settings.save())
 	_row("Menu backdrop", bd)
+	_check("Sound captions ([radio crackle], [a low hum])", Settings.sound_captions, func(on: bool) -> void:
+		Settings.sound_captions = on
+		Settings.save())
 	_check("Fullscreen", Settings.fullscreen, func(on: bool) -> void: Settings.set_display(on, Settings.vsync))
 	_check("Vertical sync", Settings.vsync, func(on: bool) -> void: Settings.set_display(Settings.fullscreen, on))
 
