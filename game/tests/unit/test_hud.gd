@@ -58,3 +58,88 @@ func test_loading_relief_shows_only_what_was_walked() -> void:
 
 func _diff(a: Color, b: Color) -> float:
 	return absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b)
+
+
+func test_pickups_show_and_add_up() -> void:
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	ui.feed_pickup("Plant Fibre", 2)
+	ui.feed_pickup("Plant Fibre", 1)
+	ui.feed_pickup("Stick", 3)
+	assert_eq(ui.pickup_lines(), PackedStringArray(["+3 Plant Fibre", "+3 Stick"]))
+	for i: int in 8:
+		ui.feed_pickup("Thing %d" % i, 1)
+	assert_eq(ui.pickup_lines().size(), 5, "a burst keeps the last few lines")
+
+
+func test_pad_b_closes_the_companion_card() -> void:
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	var card := CompanionScreen.new()
+	ui.add_child(card)
+	# Opened as its director would leave it (open() reads the companion's state).
+	card.set(&"_open", true)
+	card.visible = true
+	assert_true(card.is_open())
+	assert_true(ui.close_top_screen(), "B finds the card")
+	assert_false(card.is_open())
+
+
+func test_long_messages_wrap_and_stay_to_be_read() -> void:
+	assert_eq(GameUI.message_seconds("Saved."), 4.0)
+	var call: String = " ".join(PackedStringArray(range(60).map(func(i: int) -> String: return "word")))
+	assert_gt(GameUI.message_seconds(call), 20.0)
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	ui.message(call, &"level")
+	var l: Label = ui.get(&"_messages").get_child(0) as Label
+	assert_eq(l.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART)
+	assert_lte(l.custom_minimum_size.x, 820.0)
+
+
+func test_manual_lights_one_tab() -> void:
+	var m := FieldManual.new()
+	add_child_autofree(m)
+	m.open("journal")
+	m.close()
+	m.open("build")
+	assert_eq(m.lit_tabs(), PackedStringArray(["build"]))
+	assert_true(m.get(&"_selected") is BlueprintDef, "Blueprints opens on a blueprint, not the last tab's page")
+
+
+func test_roll_strips_shrink_to_fit_a_small_window() -> void:
+	assert_eq(SalvageRoll.strip_scale(600.0, 800.0), 1.0)
+	assert_almost_eq(SalvageRoll.strip_scale(800.0, 640.0), 0.8, 0.001)
+	assert_eq(SalvageRoll.strip_scale(800.0, 100.0), 0.7, "never smaller than 70%")
+
+
+func test_journal_line_folds_the_reward() -> void:
+	assert_eq(GameUI.journal_line("Make a stone axe", "+40 XP", "Fell a tree", "B"), "Journal: Make a stone axe ✓  +40 XP   Next: Fell a tree  [B]")
+	assert_eq(GameUI.journal_line("Sleep in your bed", "", "", "B"), "Journal: Sleep in your bed ✓")
+
+
+func test_prompt_hangs_centred_under_the_crosshair() -> void:
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	var l: Label = ui.get(&"_prompt") as Label
+	l.text = "[E] Use Campfire · burns 58m · [G] add fuel"
+	ui.call(&"_hug", l, 28.0)
+	var mid: float = l.get_parent_control().size.x * 0.5
+	assert_almost_eq(l.position.x + l.size.x * 0.5, mid, 1.0)
+	assert_almost_eq(l.position.y, l.get_parent_control().size.y * 0.5 + 28.0, 1.0)
+
+
+func test_build_controls_and_drop_line() -> void:
+	assert_string_contains(GameUI.build_controls(true, false), "place")
+	assert_string_contains(GameUI.build_controls(false, true), "set the log")
+	assert_eq(GameUI.build_controls(false, false), "")
+	assert_eq(GameUI.drop_landed_line("north-west, 140 m"), "The canister is down, north-west, 140 m. Its smoke marks the spot.")
+
+
+func test_a_short_message_stays_on_one_line() -> void:
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	ui.message("Journal: Gather sticks, stones and fibre  [B]", &"level")
+	await get_tree().process_frame
+	var l: Label = ui.get(&"_messages").get_child(0) as Label
+	assert_eq(l.get_line_count(), 1)

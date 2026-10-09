@@ -52,6 +52,10 @@ var _intro_holds_world: bool = false
 ## screen: taken as the pause menu opens and every THUMB_EVERY seconds of free play.
 var _last_frame: Image = null
 var _relief_done: bool = false
+var _pickups: VBoxContainer
+## Whether this run's first journal card has been announced (once, as the player first stands).
+var _first_card_said: bool = false
+var _ov_tween: Tween = null
 var _tip_box: Control
 var _tip_title: Label
 var _tip_text: Label
@@ -89,6 +93,11 @@ func _ready() -> void:
 	_maybe_start_intro()
 	Events.player_status_message.connect(message)
 	Events.player_damaged.connect(_on_player_damaged)
+	# Standing again after a death: nothing of the death screen may stay over the world.
+	Events.player_spawned.connect(func(_id: StringName) -> void:
+		if _overlay.visible and not _death_button.visible and not (Game.world != null and bool(Game.world.get(&"sleeping"))):
+			_overlay_tween().kill()
+			_overlay.visible = false)
 	# The Hum's warnings and its start are announced by HumDirector alone (with the forecast).
 	Events.horde_night_ended.connect(_on_hum_ended)
 	Events.game_saved.connect(_write_thumb)
@@ -104,6 +113,12 @@ func _ready() -> void:
 		Events.connect(&"tutorial_changed", _on_tutorial_changed)
 	if Events.has_signal(&"tutorial_distress"):
 		Events.connect(&"tutorial_distress", _on_tutorial_distress)
+	Events.supply_drop_landed.connect(func(_id: StringName, at: Vector3) -> void:
+		message(drop_landed_line(FieldManual.distress_bearing(at)), &"level"))
+	# Sound captions (Options): the Hum's rise is music, which nothing else puts into words.
+	Events.horde_night_started.connect(func(_d: int) -> void:
+		if Settings.sound_captions:
+			message("[a deep hum rises through the ground]", &"danger"))
 	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void: message("A Program drone is overhead. Supplies are coming down.", &"level"))
 
 
@@ -296,6 +311,7 @@ func loading_text() -> String:
 
 func hide_loading() -> void:
 	_loading.visible = false
+	_say_first_card.call_deferred()
 	# Shade this world's sheet now (on a worker), so the next loading screen shows it.
 	world_map.prepare.call_deferred()
 	_hud.visible = true
@@ -309,22 +325,63 @@ var _tutorial_done: Variant = null
 
 
 func _on_tutorial_changed() -> void:
+	# A frame later: when the tutorial hears a deed before the directives do, the step's folded
+	# reward is set only after this signal (call_deferred runs too soon).
+	await get_tree().process_frame
 	var t: Object = FieldManual.tutorial()
-	if t == null:
+	if t == null or not is_inside_tree():
 		return
 	var steps: Array = t.call(&"steps")
 	var done: Dictionary = {}
+	var rewards: Dictionary = {}
 	var next_title: String = ""
 	for st: Dictionary in steps:
 		if bool(st.get("done", false)):
 			done[str(st.get("id", ""))] = str(st.get("title", ""))
+			rewards[str(st.get("id", ""))] = str(st.get("reward", ""))
 		elif next_title == "" and bool(st.get("current", false)):
 			next_title = str(st.get("title", ""))
 	if _tutorial_done is Dictionary and bool(t.call(&"is_enabled")):
 		for id: String in done:
 			if not (_tutorial_done as Dictionary).has(id):
-				message("Journal: %s ✓%s" % [done[id], ("   Next: %s (%s)" % [next_title, PlayerInteraction.key_label(&"guidebook")]) if next_title != "" else ""], &"level")
+				message(journal_line(done[id], rewards[id], next_title, PlayerInteraction.key_label(&"guidebook")), &"level")
 	_tutorial_done = done
+
+
+## "Journal: Make a stone axe ✓  +40 XP   Next: Fell a tree  [B]": the step, what the deed paid
+## (the Program directive it also finished, folded in), and the next card. Pure.
+static func journal_line(title: String, reward: String, next_title: String, key: String) -> String:
+	var line: String = "Journal: %s ✓" % title
+	if reward != "":
+		line += "  " + reward
+	if next_title != "":
+		line += "   Next: %s  [%s]" % [next_title, key]
+	return line
+
+
+## A new run's first card, said once the player can act (the load and the intro both over):
+## nothing else tells a new player the journal exists or what to do first.
+func _say_first_card() -> void:
+	if _first_card_said or is_intro_playing() or (_loading != null and _loading.visible):
+		return
+	_first_card_said = true
+	var line: String = first_card_line()
+	if line != "":
+		message(line, &"level")
+
+
+## "Journal: <first step>  [B]" for a run with the tutorial on and no step done yet, else "".
+static func first_card_line() -> String:
+	var t: Object = FieldManual.tutorial()
+	if t == null or not bool(t.call(&"is_enabled")):
+		return ""
+	var first: String = ""
+	for st: Dictionary in t.call(&"steps"):
+		if bool(st.get("done", false)):
+			return ""
+		if first == "":
+			first = str(st.get("title", ""))
+	return "" if first == "" else "Journal: %s  [%s]" % [first, PlayerInteraction.key_label(&"guidebook")]
 
 
 func _on_tutorial_distress(_companion_id: StringName, position: Vector3) -> void:
@@ -389,6 +446,7 @@ func _on_intro_finished() -> void:
 		get_tree().paused = false
 		_hud.visible = true
 		pop_modal(&"intro")
+	_say_first_card.call_deferred()
 
 
 # --- HUD -----------------------------------------------------------------------------------
@@ -440,6 +498,7 @@ func _build_hud() -> void:
 	_prompt.add_theme_color_override(&"font_color", Color(0.92, 0.9, 0.82))
 	_prompt.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_prompt.add_theme_constant_override(&"outline_size", 4)
+	_prompt.add_theme_stylebox_override(&"normal", prompt_box(0.55))
 	_hud.add_child(_prompt)
 	_tool_hint = Label.new()
 	_tool_hint.anchor_left = 0.5
@@ -453,6 +512,7 @@ func _build_hud() -> void:
 	_tool_hint.add_theme_color_override(&"font_color", Color(0.8, 0.78, 0.7, 0.9))
 	_tool_hint.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_tool_hint.add_theme_constant_override(&"outline_size", 4)
+	_tool_hint.add_theme_stylebox_override(&"normal", prompt_box(0.45))
 	_hud.add_child(_tool_hint)
 	_belt = RichTextLabel.new()
 	_belt.bbcode_enabled = true
@@ -501,6 +561,21 @@ func _build_hud() -> void:
 		b.modulate = {"health": Color(0.8, 0.25, 0.2), "stamina": Color(0.85, 0.85, 0.8), "fullness": Color(0.8, 0.6, 0.3), "hydration": Color(0.35, 0.6, 0.85)}[k]
 		_vitals.add_child(b)
 		_bars[k] = b
+	_pickups = VBoxContainer.new()
+	_pickups.anchor_left = 1.0
+	_pickups.anchor_right = 1.0
+	_pickups.anchor_top = 1.0
+	_pickups.anchor_bottom = 1.0
+	_pickups.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_pickups.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	# A zero-height rect at its bottom edge that grows upward with each line.
+	_pickups.offset_left = -360
+	_pickups.offset_right = -40
+	_pickups.offset_top = -110
+	_pickups.offset_bottom = -110
+	_pickups.alignment = BoxContainer.ALIGNMENT_END
+	_pickups.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hud.add_child(_pickups)
 	_hum_label = Label.new()
 	_hum_label.anchor_left = 1.0
 	_hum_label.anchor_right = 1.0
@@ -514,6 +589,49 @@ func _build_hud() -> void:
 	_hum_label.add_theme_color_override(&"font_outline_color", Color(0.03, 0.03, 0.02, 0.9))
 	_hum_label.add_theme_constant_override(&"outline_size", 6)
 	_hud.add_child(_hum_label)
+
+
+## "The canister is down, north-west, 140 m. Its smoke marks the spot.", or without the bearing
+## when the player's position isn't known.
+static func drop_landed_line(bearing: String) -> String:
+	return "The canister is down%s. Its smoke marks the spot." % ((", " + bearing) if bearing != "" else "")
+
+
+## The keys while laying out a blueprint ("[Left mouse] place  ·  [R] turn  ·  [Esc] cancel") or
+## carrying logs; "" otherwise.
+static func build_controls(placing: bool, carrying_logs: bool) -> String:
+	var k: Callable = func(a: StringName) -> String: return "[%s]" % PlayerInteraction.key_label(a)
+	if placing:
+		return "%s place  ·  %s turn  ·  %s cancel" % [k.call(&"attack"), k.call(&"rotate_piece"), k.call(&"cancel")]
+	if carrying_logs:
+		return "%s set the log  ·  %s turn  ·  %s stand / pitch  ·  %s drop" % [k.call(&"attack"), k.call(&"rotate_piece"), k.call(&"build_mode_toggle"), k.call(&"drop")]
+	return ""
+
+
+## A quiet dark plate behind a prompt line, so it reads over a lit fire, snow or a pale ghost.
+static func prompt_box(alpha: float) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.02, 0.02, 0.02, alpha)
+	sb.set_corner_radius_all(3)
+	sb.content_margin_left = 10
+	sb.content_margin_right = 10
+	sb.content_margin_top = 2
+	sb.content_margin_bottom = 3
+	return sb
+
+
+## Shrinks a centred prompt line to its text (its plate hugs the words) and keeps it centred
+## under the crosshair, `below` px down; hidden when empty, plate and all.
+func _hug(l: Label, below: float) -> void:
+	l.visible = l.text != ""
+	if not l.visible:
+		return
+	# Offsets, not position: the line hangs off the screen's centre anchor.
+	var m: Vector2 = l.get_combined_minimum_size()
+	l.offset_left = -m.x * 0.5
+	l.offset_right = m.x * 0.5
+	l.offset_top = below
+	l.offset_bottom = below + m.y
 
 
 static func _vignette_shader() -> Shader:
@@ -555,12 +673,14 @@ void fragment() {
 
 func _process(delta: float) -> void:
 	_turn_tip(delta)
+	_fade_pickups(delta)
 	var w: Node = Game.world
 	if w == null or w.get("player") == null or w.player == null:
 		return
 	var p: Player = w.player
 	if p.interaction != null:
-		_prompt.text = ("[%s] %s" % [PlayerInteraction.key_label(&"interact"), p.interaction.prompt]) if p.interaction.prompt != "" else ""
+		# Nothing to act on through the death or sleep screen.
+		_prompt.text = ("[%s] %s" % [PlayerInteraction.key_label(&"interact"), p.interaction.prompt]) if p.interaction.prompt != "" and not _overlay.visible else ""
 		var ht: float = p.interaction.hold_t / maxf(p.interaction.hold_needed, 0.001) if p.interaction.hold_needed > 0.0 else 0.0
 		_hold.visible = ht > 0.0
 		_hold.value = ht * 100.0
@@ -569,6 +689,15 @@ func _process(delta: float) -> void:
 		# Under the prompt: why a placement can't go, else the held tool's hint, else what holding
 		# the cancel key on the target does (take a blueprint ghost down).
 		_tool_hint.text = place_why if place_why != "" else (p.interaction.tool_hint if p.interaction.tool_hint != "" else p.interaction.alt_prompt)
+		# Laying out a blueprint or carrying logs: the keys, which nothing else on screen names.
+		if place_why == "" and b != null and b.has_method(&"is_placing"):
+			var ctl: String = build_controls(bool(b.call(&"is_placing")), p.state.inventory.count_of(&"log") > 0)
+			if ctl != "" and _prompt.text == "":
+				_tool_hint.text = ctl
+		if _overlay.visible:
+			_tool_hint.text = ""
+		_hug(_prompt, 28.0)
+		_hug(_tool_hint, 72.0)
 	_update_belt(p.state, delta)
 	_frame_t += delta
 	if _frame_t >= THUMB_EVERY and not has_modal() and not _overlay.visible and not is_intro_playing():
@@ -708,10 +837,21 @@ func message(text: String, kind: StringName = &"info") -> void:
 	l.add_theme_constant_override(&"outline_size", 6)
 	l.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE + 1)
 	_messages.add_child(l)
+	# A long line (the distress call) wraps at 820 px instead of running off the screen; a short
+	# one never wraps (a guessed width once put "[B]" on its own line).
+	if text.length() > 80:
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(820, 0)
 	_fade_message(l)
 	while _messages.get_child_count() > 6:
 		_messages.get_child(0).queue_free()
 		_messages.remove_child(_messages.get_child(0))
+
+
+## How long a message stays before it fades: 4 s, or its reading time when longer (a distress
+## call is fifty words).
+static func message_seconds(text: String) -> float:
+	return maxf(4.0, text.split(" ", false).size() / 3.0 + 1.5)
 
 
 func _fade_message(l: Label) -> void:
@@ -720,7 +860,7 @@ func _fade_message(l: Label) -> void:
 		if prev != null and prev.is_valid():
 			prev.kill()
 	var tw: Tween = l.create_tween()
-	tw.tween_interval(4.0)
+	tw.tween_interval(message_seconds(str(l.get_meta(&"text", l.text))))
 	tw.tween_property(l, "modulate:a", 0.0, 1.2)
 	tw.tween_callback(l.queue_free)
 	l.set_meta(&"tween", tw)
@@ -919,6 +1059,10 @@ func close_top_screen() -> bool:
 			if c is TraderScreen and (c as TraderScreen).is_open():
 				(c as TraderScreen).close_screen()
 				return true
+			# Ezra's order card (CompanionScreen): B on a pad closes it like Esc.
+			if c is CompanionScreen and (c as CompanionScreen).is_open():
+				(c as CompanionScreen).close_screen()
+				return true
 		return false
 	return true
 
@@ -1076,14 +1220,68 @@ static func place_name() -> String:
 
 
 ## A note just picked up opens in the reader (it counts as read: inventory.read).
-func _on_item_picked_up(owner_id: StringName, item_id: StringName, _count: int) -> void:
+func _on_item_picked_up(owner_id: StringName, item_id: StringName, count: int) -> void:
 	var p: PlayerState = Game.local_player()
 	var d: ItemDef = Content.item(item_id)
-	if p == null or owner_id != p.id or d == null or d.category != "note" or d.note == &"":
+	if p == null or owner_id != p.id or d == null:
+		return
+	if d.category != "note":
+		feed_pickup(d.display_name, count)
+	if d.category != "note" or d.note == &"":
 		return
 	var res: Dictionary = Game.execute(&"inventory.read", {"item": String(item_id)})
 	if bool(res.get("ok", false)):
 		show_note.call_deferred(d.note)
+
+
+## The quiet line for what just went into the pack ("+2 Plant Fibre", bottom right), so a
+## harvest or a pickup is never silent on screen. Repeats within a moment add up on one line.
+func feed_pickup(item_name: String, count: int) -> void:
+	if _pickups == null or count <= 0:
+		return
+	for c: Node in _pickups.get_children():
+		var l: Label = c as Label
+		if l != null and l.get_meta(&"item", "") == item_name and float(l.get_meta(&"t", 0.0)) > Time.get_ticks_msec() / 1000.0 - 2.0:
+			l.set_meta(&"n", int(l.get_meta(&"n", 0)) + count)
+			l.set_meta(&"t", Time.get_ticks_msec() / 1000.0)
+			l.text = "+%d %s" % [int(l.get_meta(&"n")), item_name]
+			l.modulate.a = 1.0
+			return
+	var line := Label.new()
+	line.text = "+%d %s" % [count, item_name]
+	line.set_meta(&"item", item_name)
+	line.set_meta(&"n", count)
+	line.set_meta(&"t", Time.get_ticks_msec() / 1000.0)
+	line.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	line.add_theme_font_size_override(&"font_size", 17)
+	line.add_theme_color_override(&"font_color", Color(0.9, 0.88, 0.8))
+	line.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.85))
+	line.add_theme_constant_override(&"outline_size", 4)
+	_pickups.add_child(line)
+	while _pickups.get_child_count() > 5:
+		_pickups.get_child(0).free()
+
+
+func _fade_pickups(delta: float) -> void:
+	if _pickups == null:
+		return
+	var now: float = Time.get_ticks_msec() / 1000.0
+	for c: Node in _pickups.get_children():
+		var l: Label = c as Label
+		var age: float = now - float(l.get_meta(&"t", now))
+		if age > 2.5:
+			l.modulate.a -= delta * 1.5
+			if l.modulate.a <= 0.0:
+				l.queue_free()
+
+
+## What the pickup feed shows now (tests).
+func pickup_lines() -> PackedStringArray:
+	var out: PackedStringArray = []
+	for c: Node in _pickups.get_children() if _pickups != null else []:
+		if not c.is_queued_for_deletion():
+			out.append((c as Label).text)
+	return out
 
 
 func _build_overlay() -> void:
@@ -1126,12 +1324,21 @@ func _build_overlay() -> void:
 	row.add_child(_death_button)
 
 
+## One tween drives the overlay at a time: a death's fade-in still running when Wake up is
+## pressed must not fight the fade-out (the first-hour run saw the death screen linger).
+func _overlay_tween() -> Tween:
+	if _ov_tween != null and _ov_tween.is_valid():
+		_ov_tween.kill()
+	_ov_tween = create_tween()
+	return _ov_tween
+
+
 func show_sleep(on: bool) -> void:
 	_overlay.visible = true
 	_death_button.visible = false
 	_overlay_head.text = ""
 	_overlay_note.text = ""
-	var tw: Tween = create_tween()
+	var tw: Tween = _overlay_tween()
 	if on:
 		_overlay_label.text = "You sleep."
 		tw.tween_property(_overlay, "color:a", 0.96, 0.8)
@@ -1156,7 +1363,7 @@ static func death_text(cause: String, note: String, final: bool, day: int, death
 func show_death(cause: String, note: String = "Your pack lies where you fell.", final: bool = false) -> void:
 	_overlay.visible = true
 	_overlay.color = Color(0.08, 0.0, 0.0, 0.0)
-	var tw: Tween = create_tween()
+	var tw: Tween = _overlay_tween()
 	tw.tween_property(_overlay, "color:a", 0.92, 2.0)
 	var p: PlayerState = Game.local_player()
 	var day: int = Game.session.clock.day() if Game.session != null and Game.session.clock != null else 1
@@ -1176,7 +1383,11 @@ func _on_wake_after_death() -> void:
 	if _final_death:
 		Game.quit_to_menu()
 		return
-	var tw: Tween = create_tween()
+	# The words go at once; the red fades behind them.
+	_overlay_head.text = ""
+	_overlay_label.text = ""
+	_overlay_note.text = ""
+	var tw: Tween = _overlay_tween()
 	tw.tween_property(_overlay, "color:a", 0.0, 1.5)
 	tw.tween_callback(func() -> void: _overlay.visible = false)
 	if Game.world != null and Game.world.has_method(&"respawn"):

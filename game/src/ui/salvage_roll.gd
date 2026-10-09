@@ -43,6 +43,7 @@ var _info: Label
 var _title: Label
 var _flap_title: Label
 var _sheet: CraftSheet
+var _flap_empty: Label
 var _card: ItemCard
 var _toolbar: HBoxContainer
 var _bulk: Label
@@ -91,6 +92,12 @@ func _ready() -> void:
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_overlay)
 	_title = _cloth_label(30, UiStyle.heading_font())
+	_flap_empty = _cloth_label(20, UiStyle.hand_font())
+	_flap_empty.text = "Nothing left in here."
+	# Ink on the flap's paper, not the cloth's outlined type.
+	_flap_empty.add_theme_color_override(&"font_color", UiStyle.INK_DIM)
+	_flap_empty.add_theme_constant_override(&"outline_size", 0)
+	_flap_empty.visible = false
 	_flap_title = _cloth_label(24, UiStyle.heading_font())
 	_bulk = _cloth_label(UiStyle.BODY_SIZE, null)
 	_info = _cloth_label(UiStyle.BODY_SIZE, null)
@@ -318,6 +325,9 @@ func _rebuild() -> void:
 		if inv != null:
 			_flap_page = clampi(_flap_page, 0, _pages(inv.stacks.size(), 4) - 1)
 			_place_stacks(inv.stacks, FLAP_ORIGIN + Vector3(0.02, 0.006, 0.0), _flap_root, _flap_slots, 4, _flap_page)
+	# An emptied (or empty) container says so: a blank flap reads as a broken screen.
+	_flap_empty.visible = mode == &"container" and container != null and is_instance_valid(container) \
+		and container.get(&"inventory") != null and (container.get(&"inventory") as Inventory).stacks.is_empty()
 	_rebuild_recipes()
 
 
@@ -461,6 +471,13 @@ func _process(_delta: float) -> void:
 	_update_hover()
 
 
+## The scale that fits a strip `width` wide into `room` (1 when it fits; never under 0.7).
+static func strip_scale(width: float, room: float) -> float:
+	if width <= 0.0 or room >= width:
+		return 1.0
+	return clampf(room / width, 0.7, 1.0)
+
+
 func _screen(p: Vector3) -> Vector2:
 	var vs: Vector2 = Vector2(_vp.size)
 	var s: Vector2 = _cam.unproject_position(p)
@@ -490,6 +507,7 @@ func _layout_overlay() -> void:
 		(_drag["ghost"] as Control).position = get_local_mouse_position() + Vector2(14, 10)
 	_flap_title.text = _flap_name().to_upper()
 	_flap_title.visible = mode == &"container"
+	_flap_empty.position = _screen(FLAP_ORIGIN + Vector3(0.06, 0.0, 0.12))
 	_flap_title.position = _screen(FLAP_ORIGIN + Vector3(0.02, 0.0, -0.01)) - Vector2(0, _flap_title.size.y)
 	# The sheet covers the paper flap, and never gets narrower than its contents need.
 	var a: Vector2 = _screen(FLAP_ORIGIN + Vector3(0.0, 0.0, -0.04))
@@ -499,6 +517,11 @@ func _layout_overlay() -> void:
 	var y: float = maxf(16.0, top.y - _toolbar.size.y - _title.size.y - 14.0)
 	_sheet.position = Vector2(x, y)
 	_sheet.size = Vector2(w, maxf(b.y - y, 520.0))
+	# A small window (1280x720) leaves the toolbar and the belt wider than the room left of the
+	# sheet: they shrink to fit (to 70% at most) instead of running under it.
+	for strip: Control in [_toolbar, _belt]:
+		var room: float = (x - 10.0) - strip.position.x if _sheet.visible else size.x
+		strip.scale = Vector2.ONE * strip_scale(strip.size.x, room)
 	for l: Label in _labels:
 		if is_instance_valid(l):
 			l.position = _screen(l.get_meta(&"anchor"))

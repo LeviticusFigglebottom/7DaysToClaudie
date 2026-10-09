@@ -61,7 +61,10 @@ func _consume(args: Dictionary) -> Dictionary:
 	var tmp := ItemDef.new()
 	tmp.consume = fx
 	p.inventory.remove(item_id, 1)
+	var before: Dictionary = _vitals(p)
 	p.stats.consume(tmp)
+	if def.category == "drink":
+		_say_drank(p, before)
 	var ret: String = str(def.consume.get("returns", ""))
 	if ret != "":
 		var left: int = p.inventory.add_item(StringName(ret), 1)
@@ -151,9 +154,30 @@ func _drink_water(args: Dictionary) -> Dictionary:
 	var tmp := ItemDef.new()
 	tmp.consume = sw.duplicate()
 	tmp.consume["health"] = float(sw.get("health", 0.0)) * (1.0 - clampf(p.progression.modifier("food_poison_resist"), 0.0, 0.9))
+	var before: Dictionary = _vitals(p)
 	p.stats.consume(tmp)
+	_say_drank(p, before)
 	Audio.play_2d(&"sfx/drink_gulp", -4.0, &"SFX")
 	return {"ok": true, "effects": tmp.consume}
+
+
+func _vitals(p: PlayerState) -> Dictionary:
+	return {"water": p.stats.hydration, "health": p.stats.health}
+
+
+## "You drink. (Water +35)": a drink only moved the hydration bar, which a new player missed
+## (first-hour audit #25). The amounts are what it really did (capped at full), and stream water's
+## cost to health is said too.
+func _say_drank(p: PlayerState, before: Dictionary) -> void:
+	Events.player_status_message.emit(drink_line(roundi(p.stats.hydration - float(before["water"])),
+		roundi(p.stats.health - float(before["health"]))), &"info")
+
+
+static func drink_line(water: int, health: int) -> String:
+	var parts: PackedStringArray = ["Water %+d" % water]
+	if health < 0:
+		parts.append("Health %d" % health)
+	return "You drink. (%s)" % ", ".join(parts)
 
 
 ## Fills every carried empty bottle that still fits in the pack (full ones weigh more).
@@ -257,9 +281,28 @@ func _craft(args: Dictionary) -> Dictionary:
 	var src: String = "craft_%s" % r.category
 	p.progression.award(src if p.progression.has_xp_source(src) else "craft")
 	Audio.play_2d(&"ui/craft_success", -4.0)
+	var slot: int = auto_belt(p, r.result)
 	Events.item_crafted.emit(p.id, r.id, r.result, r.result_count)
 	Events.inventory_changed.emit(p.id)
-	return {"ok": true, "item": String(r.result), "count": r.result_count, "quality": res.stack.quality if res.stack != null else 0}
+	return {"ok": true, "item": String(r.result), "count": r.result_count, "quality": res.stack.quality if res.stack != null else 0,
+		"belt_slot": slot}
+
+
+## Puts a just-made tool, weapon or light (player.json `auto_belt_categories`) on the first empty
+## toolbelt slot: new players never found the stone axe in the pack (first-hour audit #8). It
+## never displaces what is on the belt, doesn't change what is held, and skips an item already
+## there. Returns the slot, or -1.
+static func auto_belt(p: PlayerState, item_id: StringName) -> int:
+	var def: ItemDef = Content.item(item_id)
+	var cats: Array = Content.config(&"player").get("auto_belt_categories", [])
+	if def == null or not def.is_equippable() or not cats.has(def.category):
+		return -1
+	if p.toolbelt.has(item_id) or not p.inventory.has(item_id):
+		return -1
+	var slot: int = p.toolbelt.find(&"")
+	if slot >= 0:
+		p.toolbelt[slot] = item_id
+	return slot
 
 
 func _read(args: Dictionary) -> Dictionary:

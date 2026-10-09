@@ -97,6 +97,12 @@ func _ready() -> void:
 	bar.add_child(_next)
 
 
+## The share of a page that fits a window `height` px tall (in UI units): 1 from 1000 up, less
+## below (about 0.66 at 720p). Pure.
+static func page_room(height: float) -> float:
+	return clampf((height - 210.0) / 790.0, 0.45, 1.0)
+
+
 ## Splits a note's body into pages of at most `per_page` characters, at paragraph breaks, else at
 ## sentence ends, else at spaces. Pure, for tests.
 static func paginate(body: String, per_page: int) -> PackedStringArray:
@@ -184,7 +190,11 @@ func show_note(n: NoteDef, found: Dictionary = {}) -> void:
 	_title.text = n.title
 	_byline.text = n.author
 	_byline.visible = n.author != ""
-	_pages = paginate(n.body, int(st["page"]))
+	# A short window (720p) gets shorter pages and a shorter sheet: the paper must fit above the
+	# buttons, never run off the bottom of the screen.
+	var room: float = page_room(get_viewport_rect().size.y)
+	_sheet.custom_minimum_size = Vector2(760, 640.0 * room)
+	_pages = paginate(n.body, maxi(120, int(float(st["page"]) * room)))
 	_page = 0
 	var where: String = str(found.get("where", ""))
 	_foot.set_meta(&"where", ("Found: %s, day %d" % [where, int(found.get("day", 1))]) if where != "" else "")

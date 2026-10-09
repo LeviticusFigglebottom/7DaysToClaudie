@@ -9,7 +9,7 @@
      "chapter": 1, "order": 3, "event": "build", "targets": ["campfire"], "reward": {"xp": 60, "items": {"water_bottle_clean": 1}}},
     {"id": "arrival_shelter", "name": "Raise a lean-to", "description": "A roof is a place to sleep, save and come back to.",
      "chapter": 1, "order": 4, "event": "build", "targets": ["lean_to"], "reward": {"xp": 80, "items": {"cordage": 2}}},
-    {"id": "arrival_sleep", "name": "Sleep under your roof", "description": "Rest in your shelter. The Program logs your position while you sleep.",
+    {"id": "arrival_sleep", "name": "Sleep in your bed", "description": "A lean-to or a bough bed: rest in it. The Program logs your position while you sleep.",
      "chapter": 1, "order": 5, "event": "sleep", "reward": {"xp": 40}},
 
     {"id": "cordon_search", "name": "Search ten containers", "description": "Cupboards, glove boxes, cash registers. People left in a hurry.",

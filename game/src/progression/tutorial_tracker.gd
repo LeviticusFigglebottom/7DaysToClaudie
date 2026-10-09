@@ -19,6 +19,12 @@ var world: Node
 var _tick: float = 0.0
 ## Tests stand in the camp: () -> Vector3 (Vector3.INF: this world has no camp).
 var camp_source: Callable = Callable()
+## Steps finished in frame `_finished_frame`: [{id, event, target}] (fold_reward matches them).
+var _finished_now: Array[Dictionary] = []
+var _finished_frame: int = -1
+## Step id -> the reward of the Program directive the same deed completed ("+40 XP"): one deed,
+## one line (first-hour audit #10). Not saved: it is for the line said when the step is done.
+var _rewards: Dictionary = {}
 
 
 func setup_world(w: Node) -> void:
@@ -86,7 +92,9 @@ func is_enabled() -> bool:
 
 
 ## Every step, by order: {id, title, body (raw: render_body() shows its keys), done, current (the
-## first not done), progress (capped at count), count}.
+## first not done), progress (capped at count), count, reward (what the Program directive done by
+## the same deed paid, "+40 XP" or "", for the step's done line: that directive says no line of
+## its own)}.
 func steps() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var p: PlayerState = Game.local_player()
@@ -96,7 +104,8 @@ func steps() -> Array[Dictionary]:
 	var cur: TutorialStepDef = t.current()
 	for d: TutorialStepDef in TutorialProgress.step_defs():
 		out.append({"id": d.id, "title": d.display_name, "body": d.body, "done": t.done.has(d.id),
-			"current": cur != null and cur.id == d.id, "progress": mini(t.count_of(d.id), d.count), "count": d.count})
+			"current": cur != null and cur.id == d.id, "progress": mini(t.count_of(d.id), d.count), "count": d.count,
+			"reward": str(_rewards.get(d.id, ""))})
 	return out
 
 
@@ -140,14 +149,41 @@ func record(event: String, target: StringName = &"", amount: int = 1) -> void:
 	var before: Dictionary = t.progress.duplicate()
 	var finished: Array[TutorialStepDef] = t.record(event, target, amount)
 	var src: String = str(cfg().get("xp_source", "tutorial_step"))
+	var frame: int = Engine.get_process_frames()
+	if frame != _finished_frame:
+		_finished_frame = frame
+		_finished_now.clear()
 	for d: TutorialStepDef in finished:
 		if p.progression.has_xp_source(src):
 			p.progression.award(src)
 		Log.info(&"tutorial", "step done: %s" % d.id)
+		_finished_now.append({"id": d.id, "event": event, "target": target})
+		# A directive the same deed paid just now (the directives heard it first): its reward
+		# rides on this step's journal line instead of a line of its own.
+		var directives: Node = world.get(&"directives") if world != null else null
+		if directives != null and directives.has_method(&"claim_reward"):
+			var reward: String = directives.call(&"claim_reward", event, target)
+			if reward != "":
+				_rewards[d.id] = reward
 	if not finished.is_empty() and t.all_done():
 		_schedule_distress(t)
 	if t.progress != before:
 		Events.tutorial_changed.emit()
+
+
+## A directive's reward ("+40 XP") for the journal step that `event` on `target` finished this
+## frame (DirectiveTracker, when it heard the deed after us): true when a step took it, and the
+## directive then says no line of its own.
+func fold_reward(event: String, target: StringName, reward: String) -> bool:
+	if _finished_frame != Engine.get_process_frames():
+		return false
+	for f: Dictionary in _finished_now:
+		if str(f["event"]) == event and StringName(f["target"]) == target:
+			if reward != "":
+				_rewards[StringName(f["id"])] = reward
+				Events.tutorial_changed.emit()
+			return true
+	return false
 
 
 func _on_recruited(cid: StringName) -> void:

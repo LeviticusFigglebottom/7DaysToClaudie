@@ -231,10 +231,11 @@ him a cloth bandage (the one the cards had you make), or a first aid kit or pain
 found any in medicine cabinets and nightstands.
 
 **A good first day** (the first chapter of Program directives):
-1. **Gather** (hold E): plant fibre from fireweed, ferns, sedge, huckleberry bushes and willows;
+1. **Gather** (hold E): plant fibre from ferns and huckleberry bushes under the trees, fireweed in
+   clearings, sedge and willows by the water;
    sticks from deadfall, saplings and willows; stones from loose stones.
-2. **Craft** (Tab, the *Make by hand* flap): Cordage (3 Plant Fiber), then a Stone Axe (Stick,
-   Stone, Cordage). Put it on the toolbelt.
+2. **Craft** (Tab, the *Make by hand* flap): Cordage (3 Plant Fibre), then a Stone Axe (Stick,
+   Stone, Cordage). A crafted tool, weapon or light goes on the toolbelt's first free slot.
 3. **Fell trees.** Swing at the trunk. The tree falls away from you; anything along its trunk takes
    a heavy blow (45). It breaks into logs along the fall line, with sticks and boughs by the crown.
    E puts a log on your shoulder (two at most).
@@ -242,7 +243,7 @@ found any in medicine cabinets and nightstands.
    ghost hands over 6 Stones and 4 Sticks; E again lights it (lighter or torch in your pack). It
    starts with an hour of fuel; G feeds it.
 5. **Lean-to**: 10 Sticks, 6 Bough Bundles, 2 Cordage. Bough Bundles come from fir saplings and
-   felled grey firs, or from a Stick and a Plant Fiber. A Bough Bed (6 Bough Bundles, 4 Sticks) is a
+   felled grey firs, or from a Stick and a Plant Fibre. A Bough Bed (6 Bough Bundles, 4 Sticks) is a
    bed without the roof.
 6. **Water.** Drink the boiled water when thirsty. At the pond or river, hold E with the empty
    bottle to fill it, then boil it at the lit fire (*Use Campfire* → Boil Water). You can drink
@@ -333,7 +334,7 @@ permadeath the button returns you to the menu.
 * Logs ride on your shoulder: two, three with Timberwright rank 2. They take no pack space but each
   slows you 12%, and with one on your shoulder Left mouse places it (§7) instead of swinging and you
   can't guard: drop logs (G) before a fight.
-* **Harvest** (hold E): fireweed and slough sedge give 2–3 Plant Fiber, sword ferns 1; huckleberry
+* **Harvest** (hold E): fireweed and slough sedge give 2–3 Plant Fibre, sword ferns 1; huckleberry
   bushes 2–5 Huckleberries and some fibre; willows 2–4 Sticks and some fibre; fir saplings 1–2
   Sticks and a Bough Bundle; deadfall ("Gather sticks") 2–4 Sticks; loose stones 1–2 Stones;
   yarrow 1–2 Yarrow; shelf mushrooms 1–2. Most plants grow back in 2–6 days; ferns, saplings and
@@ -351,8 +352,8 @@ pack; *axe*, a Stone Axe or Hatchet.
 
 | By hand | Needs |
 |---|---|
-| Cordage | 3 Plant Fiber (or 2 Sinew for 2) |
-| Bough Bundle | 1 Stick, 1 Plant Fiber |
+| Cordage | 3 Plant Fibre (or 2 Sinew for 2) |
+| Bough Bundle | 1 Stick, 1 Plant Fibre |
 | Stone Axe | 1 Stick, 1 Stone, 1 Cordage |
 | Crude Spear / Stone Club | 2 Sticks, 1 Cordage / 1 Stick, 2 Stones, 1 Cordage |
 | Torch | 1 Stick, 1 Cloth |
@@ -360,7 +361,7 @@ pack; *axe*, a Stone Axe or Hatchet.
 | Yarrow Poultice | 2 Yarrow, 1 Cloth |
 | Rawhide Strips ×4 | 1 Deer Hide, with a knife |
 | Hunting Bow | 2 Sticks, 4 Sinew, 1 Rawhide Strips, with a knife |
-| Stone Arrow ×3 / Bone Arrow ×3 | 1 Stick, 1 Stone, 2 Plant Fiber / 1 Stick, 1 Bone, 1 Sinew, with a knife |
+| Stone Arrow ×3 / Bone Arrow ×3 | 1 Stick, 1 Stone, 2 Plant Fibre / 1 Stick, 1 Bone, 1 Sinew, with a knife |
 | Can Chime | 3 Empty Cans, 1 Cordage; needs *Schematic: Can Chime* |
 | **At a lit campfire** | |
 | Boil Water | 1 Bottle of Stream Water |
@@ -795,7 +796,7 @@ to *Notes found* in the manual. Two *Backcountry Medicine Quarterly* unlock the 
 
 **Program directives** are chapters of goals that pay XP and supplies; only the open chapter counts,
 and finishing it opens the next. The tether shows the next two, the Record tab the whole chapter.
-1. **Arrival**: fell three trees; make a stone axe; build a campfire; raise a lean-to; sleep.
+1. **Arrival**: fell three trees; make a stone axe; build a campfire; raise a lean-to; sleep in your bed.
 2. **The Cordon**: search ten containers; go inside a building; put down ten Hollowed; read two
    notes; clear a building; disarm two armed traps.
 3. **Holding Ground**: set twenty logs; survive a Hum; recover a supply drop; reach level 7; clear a

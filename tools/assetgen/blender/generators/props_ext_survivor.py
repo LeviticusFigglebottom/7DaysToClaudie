@@ -46,7 +46,9 @@ def sleeping_bag(ctx: K.Ctx) -> None:
     ctx.add(base, "nylon_navy", uv_scale=1.0, smooth=50, patches=0.0, edge=0.3)
     # Top half: puffy quilted layer; its underside carries the plaid flannel lining (solidify
     # material offset). The foot-side corner is folded back over itself (a 180 deg turn about the
-    # fold line), so the lining shows on top.
+    # fold line), so the lining shows on top. The zip side and the turned-back corner (whose flap
+    # lands past the bag's edge) are at the front (-Y), the litter too: the plain back edge is the
+    # model's back (PropDef back 0.39), so a bag laid `against` a wall lies along it.
     top = K.grid("top", L - 0.02, W - 0.02, 18, 7)
     K.uv_planar(top, 2, scale=1.0)
     th = 0.035
@@ -62,8 +64,8 @@ def sleeping_bag(ctx: K.Ctx) -> None:
     M.assign(top, "nylon_navy")
     M.assign(top, "flannel_red")
     K.solidify(top, 0.012, offset=-1.0, mat_offset=1)
-    p0 = Vector((L / 2 - (0.75 if ctx.clean else 1.15), -W / 2, 0.0))
-    p1 = Vector((L / 2 - (0.2 if ctx.clean else 0.35), W / 2, 0.0))
+    p0 = Vector((L / 2 - (0.75 if ctx.clean else 1.15), W / 2, 0.0))
+    p1 = Vector((L / 2 - (0.2 if ctx.clean else 0.35), -W / 2, 0.0))
     d = (p1 - p0).normalized()
     nrm = Vector((d.y, -d.x, 0.0))
     if nrm.dot(Vector((1, 0, 0))) < 0:
@@ -82,13 +84,13 @@ def sleeping_bag(ctx: K.Ctx) -> None:
     K.map_verts(top, fold)
     K.crumple(top, 0.008 if ctx.clean else 0.02, scale=4.0, seed=r.randint(0, 999))
     ctx.add(top, None, uv=None, smooth=50, patches=0.0, edge=0.3)
-    zipper = K.box("zip", (L - 0.25, 0.012, 0.008), center=(-0.1, W / 2 - 0.006, 0.05), cuts=(6, 0, 0))
+    zipper = K.box("zip", (L - 0.25, 0.012, 0.008), center=(-0.1, -W / 2 + 0.006, 0.05), cuts=(6, 0, 0))
     ctx.add(zipper, "plastic_black", uv_scale=1.0, wear=0.2)
     pillow = K.blob("pillow", 0.5, subdiv=2, scale=(0.32, 0.55, 0.16), rough=0.25, seed=r.randint(0, 999),
                     center=(-L / 2 - 0.02, 0.0, 0.07))
     ctx.add(pillow, "canvas_olive", uv_scale=1.0, smooth=55, patches=0.0, edge=0.3)
     if ctx.worn:
-        P.add_litter(ctx, ctx.drnd("cans"), 4, extent=(0.25, 0.15), center=(0.2, -0.65), kinds=("can", "wad", "can", "paper"))
+        P.add_litter(ctx, ctx.drnd("cans"), 4, extent=(0.25, 0.15), center=(-0.55, -0.62), kinds=("can", "wad", "can", "paper"))
     ctx.col_box((-L / 2 - 0.2, -W / 2, 0), (L / 2, W / 2, 0.12))
 
 

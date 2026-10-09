@@ -164,22 +164,48 @@ func _ready() -> void:
 
 func _set_tab(t: String) -> void:
 	_tab = t
-	var b: Button = _tabs.get_node_or_null("Tab_" + t) as Button
-	if b != null:
-		b.set_pressed_no_signal(true)
+	_mark_tab(t)
 	_selected = null
 	_refresh()
+	_select_first()
+
+
+## Lights one tab. set_pressed_no_signal() doesn't release the group's other buttons, so a manual
+## opened on Blueprints after the Journal showed both lit.
+func _mark_tab(t: String) -> void:
+	for c: Node in _tabs.get_children():
+		(c as Button).set_pressed_no_signal(c.name == "Tab_" + t)
+
+
+## A list tab opens on its first page, not on an empty right-hand side.
+func _select_first() -> void:
+	if _selected != null or not (_tab in ["build", "tips", "notes"]):
+		return
+	for c: Node in _list.get_children():
+		var b: Button = c as Button
+		# The last tab's entries are still there, queued for deletion, until the frame ends.
+		if b != null and b.visible and not b.is_queued_for_deletion():
+			b.pressed.emit()
+			return
+
+
+## The tab lit now (tests).
+func lit_tabs() -> PackedStringArray:
+	var out: PackedStringArray = []
+	for c: Node in _tabs.get_children():
+		if (c as Button).button_pressed:
+			out.append(String(c.name).trim_prefix("Tab_"))
+	return out
 
 
 func open(tab: String = "build") -> void:
 	_tab = tab
-	var tb: Button = _tabs.get_node_or_null("Tab_" + tab) as Button
-	if tb != null:
-		tb.set_pressed_no_signal(true)
+	_mark_tab(tab)
 	_open = true
 	visible = true
 	_selected = null
 	_refresh()
+	_select_first()
 	var ui: Node = get_parent()
 	if ui != null and ui.has_method(&"push_modal"):
 		ui.call(&"push_modal", &"field_manual")

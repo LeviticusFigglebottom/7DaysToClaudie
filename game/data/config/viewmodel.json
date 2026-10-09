@@ -238,10 +238,10 @@
           "fist": 0.55,
           "thumb": 0.15,
           "curls": {
-            "index": 0.35,
-            "middle": 0.5,
-            "ring": 0.62,
-            "pinky": 0.72
+            "index": 0.45,
+            "middle": 0.6,
+            "ring": 0.72,
+            "pinky": 0.85
           },
           "elbow": [
             0.5,
@@ -264,10 +264,10 @@
           "fist": 0.55,
           "thumb": 0.15,
           "curls": {
-            "index": 0.35,
-            "middle": 0.5,
-            "ring": 0.62,
-            "pinky": 0.72
+            "index": 0.45,
+            "middle": 0.6,
+            "ring": 0.72,
+            "pinky": 0.85
           },
           "elbow": [
             -0.5,
