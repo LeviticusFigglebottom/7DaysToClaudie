@@ -15,8 +15,18 @@ extends Control
 signal finished()
 
 const SCRIPT_PATH: String = "res://data/intro/intro.json"
-const KINDS: PackedStringArray = ["caption", "document", "radio", "impact", "title"]
-const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds", "caption"]
+const KINDS: PackedStringArray = ["caption", "document", "radio", "impact", "world", "title"]
+const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds", "caption", "poi", "at", "from", "to", "height"]
+## The world card's camera: metres out from its target, up, and degrees it turns over the card.
+const SHOT_RADIUS: float = 38.0
+const SHOT_HEIGHT: float = 15.0
+const SHOT_TURN: float = 14.0
+## Where the camera starts round its target (degrees, 0 = +Z, 90 = +X: east, up the wreck's
+## swath of snapped trees, which trails east of the nose; the swath is the clear line of sight).
+const SHOT_START: float = 82.0
+## A shot framed on its POI's plan (`from`/`to` cells): the camera starts `height` m over `from`,
+## looks at `to`, and moves this share of the way toward it over the card (a slow push in).
+const SHOT_PUSH: float = 0.22
 ## The impact card: seconds of shake and of the flash's fade.
 const SHAKE_TIME: float = 1.6
 const SHAKE_PX: float = 26.0
@@ -47,6 +57,17 @@ var _grain: ColorRect
 var _status: Label
 ## Seconds into the current impact card (-1: none).
 var _impact_t: float = -1.0
+## The world card's shot: its camera, the camera it took over, the target, the angle now, and the
+## black backdrop that it lifts while it shows the world.
+var _shot_cam: Camera3D = null
+var _prev_cam: Camera3D = null
+var _shot_at: Vector3 = Vector3.ZERO
+var _shot_yaw: float = 0.0
+## A framed shot's camera start and end (empty: orbit `_shot_at` instead), and its time so far.
+var _shot_path: PackedVector3Array = []
+var _shot_t: float = 0.0
+var _shot_len: float = 1.0
+var _bg: ColorRect
 
 
 func _ready() -> void:
@@ -55,6 +76,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	theme = UiStyle.kit_theme()
 	var bg := ColorRect.new()
+	_bg = bg
 	bg.color = Color(0.012, 0.012, 0.011)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -218,6 +240,7 @@ func skip_intro() -> void:
 
 
 func _end() -> void:
+	_end_shot()
 	position = Vector2.ZERO
 	_impact_t = -1.0
 	_playing = false
@@ -247,6 +270,9 @@ func _next() -> void:
 	_card.modulate.a = 0.0
 	_phase = &"in"
 	_t = 0.0
+	_end_shot()
+	if str(c.get("kind", "")) == "world":
+		_begin_shot(c)
 	var snd: String = str(c.get("sound", ""))
 	if snd != "":
 		Audio.play_2d(StringName(snd), UiStyle.level("intro_card", -6.0), &"SFX")
@@ -284,6 +310,8 @@ func _process(delta: float) -> void:
 	_t += dt
 	if _impact_t >= 0.0:
 		_impact(dt)
+	if _shot_cam != null:
+		_turn_shot(dt)
 	var c: Dictionary = _cards[_index]
 	match _phase:
 		&"in":
@@ -323,6 +351,103 @@ func _type_step(dt: float, kind: String) -> bool:
 		_stamp.visible = true
 		Audio.play_2d(&"sfx/item_place_mat", UiStyle.level("intro_stamp", -2.0), &"SFX", 0.7)
 	return true
+
+
+# --- The world card (an in-world shot: the Lift 3 wreck) ----------------------------------------
+
+## Where a world card looks: its POI's built instance, else its `at` [x, z]; null when the world
+## isn't up (the card then plays as a caption on black).
+static func shot_target(c: Dictionary) -> Variant:
+	var w: Node = Game.world
+	if w == null or not bool(w.get(&"is_ready")):
+		return null
+	var poi_id := StringName(str(c.get("poi", "")))
+	var pois: Node = w.get(&"pois")
+	if poi_id != &"" and pois != null:
+		for inst: Variant in (pois.get(&"instances") as Dictionary).values():
+			var n: Node3D = inst as Node3D
+			if n != null and is_instance_valid(n) and n.get(&"layout") != null and ((n.get(&"layout") as Object).get(&"def") as Object).get(&"id") == poi_id:
+				return n.global_position
+	var at: Array = c.get("at", [])
+	if at.size() == 2 and w.has_method(&"height_at"):
+		return Vector3(float(at[0]), float(w.call(&"height_at", float(at[0]), float(at[1]))), float(at[1]))
+	return null
+
+
+## A framed shot in world space: [camera start, camera end, look-at], from the card's `from`/`to`
+## cells on its POI's plan (empty when the card has none, or the POI isn't built).
+static func shot_frame(c: Dictionary) -> PackedVector3Array:
+	var w: Node = Game.world
+	var from: Array = c.get("from", [])
+	var to: Array = c.get("to", [])
+	if w == null or from.size() != 2 or to.size() != 2 or w.get(&"pois") == null:
+		return PackedVector3Array()
+	var poi_id := StringName(str(c.get("poi", "")))
+	for inst: Variant in (w.get(&"pois").get(&"instances") as Dictionary).values():
+		var n: Node3D = inst as Node3D
+		if n == null or not is_instance_valid(n) or n.get(&"layout") == null:
+			continue
+		var layout: PoiLayout = n.get(&"layout") as PoiLayout
+		if layout.def == null or layout.def.id != poi_id:
+			continue
+		var a: Vector3 = n.global_transform * layout.cell_center(0, Vector2i(int(from[0]), int(from[1])))
+		var b: Vector3 = n.global_transform * layout.cell_center(0, Vector2i(int(to[0]), int(to[1])))
+		var up := Vector3.UP * float(c.get("height", SHOT_HEIGHT))
+		return PackedVector3Array([a + up, a.lerp(b, SHOT_PUSH) + up, b + Vector3.UP * 1.5])
+	return PackedVector3Array()
+
+
+func _begin_shot(c: Dictionary) -> void:
+	var at: Variant = shot_target(c)
+	if at == null:
+		return
+	_shot_at = at
+	_shot_path = shot_frame(c)
+	_shot_t = 0.0
+	_shot_len = maxf(float(c.get("hold", 6.0)) + 2.0 * FADE, 1.0)
+	_shot_yaw = deg_to_rad(SHOT_START)
+	_prev_cam = get_viewport().get_camera_3d()
+	_shot_cam = Camera3D.new()
+	_shot_cam.fov = 52.0
+	_shot_cam.far = 1500.0
+	_shot_cam.process_mode = Node.PROCESS_MODE_ALWAYS
+	(Game.world as Node).add_child(_shot_cam)
+	_turn_shot(0.0)
+	_shot_cam.make_current()
+	# Lift the black: the card's words sit over the wreck (a dark band keeps them legible).
+	var tw := create_tween()
+	tw.tween_property(_bg, "color:a", 0.0, FADE * 1.5)
+
+
+func _turn_shot(dt: float) -> void:
+	if _shot_path.size() == 3:
+		_shot_t += dt
+		var k: float = smoothstep(0.0, 1.0, clampf(_shot_t / _shot_len, 0.0, 1.0))
+		_shot_cam.look_at_from_position(_shot_path[0].lerp(_shot_path[1], k), _shot_path[2], Vector3.UP)
+		return
+	_shot_yaw += deg_to_rad(SHOT_TURN) / 14.0 * dt
+	var off := Vector3(sin(_shot_yaw), 0.0, cos(_shot_yaw)) * SHOT_RADIUS
+	var pos: Vector3 = _shot_at + off
+	var w: Node = Game.world
+	var ground: float = float(w.call(&"height_at", pos.x, pos.z)) if w != null and w.has_method(&"height_at") else _shot_at.y
+	pos.y = maxf(ground, _shot_at.y) + SHOT_HEIGHT
+	_shot_cam.look_at_from_position(pos, _shot_at + Vector3.UP * 2.0, Vector3.UP)
+
+
+func _end_shot() -> void:
+	if _shot_cam == null:
+		return
+	if _prev_cam != null and is_instance_valid(_prev_cam):
+		_prev_cam.make_current()
+	_shot_cam.queue_free()
+	_shot_cam = null
+	_prev_cam = null
+	_bg.color.a = 1.0
+
+
+## Whether the world card is showing the world now (tests, QA).
+func is_showing_world() -> bool:
+	return _shot_cam != null
 
 
 ## The crash: the frame shakes and a fire-white flash fades to black, decaying together.
@@ -374,6 +499,16 @@ func _build_card(c: Dictionary) -> Control:
 			_radio(root, c)
 		"title":
 			_title(root, c)
+		"world":
+			# A dark band under the words: the world behind them can be bright.
+			var band := ColorRect.new()
+			band.color = Color(0.0, 0.0, 0.0, 0.55)
+			band.anchor_top = 0.5
+			band.anchor_right = 1.0
+			band.anchor_bottom = 0.86
+			band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			root.add_child(band)
+			_caption(root, c)
 		"impact":
 			var flash := ColorRect.new()
 			flash.name = "Flash"
