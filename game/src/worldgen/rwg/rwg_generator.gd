@@ -2487,7 +2487,7 @@ func _leave_road(route: PackedVector2Array, ri: int) -> PackedVector2Array:
 			var on: Vector3 = line.closest(q)
 			if on.x <= LEAVE_ROAD:
 				continue
-			if walked + seg * st / n < 16.0:
+			if walked + seg * st / n < LEAVE_ROAD * 1.5:
 				return route  # it turns off at once
 			var out := PackedVector2Array([line.point_at(on.y), q])
 			if q.distance_to(route[k + 1]) > 1.0:
