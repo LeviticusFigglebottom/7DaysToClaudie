@@ -620,12 +620,14 @@ func _on_game_minutes(minutes: float) -> void:
 	var p: PlayerState = session.local_player()
 	if p == null or player == null or not is_ready or DebugTools.is_on(&"no_hunger"):
 		return
-	p.stats.tick_game(minutes, survival_env(player.global_position))
+	var env: Dictionary = survival_env(player.global_position)
+	p.stats.tick_game(minutes, env)
 	# Said before the cold, thirst or hunger bites (first-week audit W7, W18), every step in order
-	# (W19), queued so none buries another line.
+	# (W19), queued so none buries another line. Under a roof a line can say so (the first-hour
+	# pass: "Find shelter" greeted a player waking in their own lean-to).
 	if _survival_warnings == null:
 		_survival_warnings = SurvivalWarnings.new()
-	for warn: Dictionary in _survival_warnings.update(p.stats, minutes, sleeping):
+	for warn: Dictionary in _survival_warnings.update(p.stats, minutes, sleeping, bool(env.get("sheltered", false))):
 		Events.status_message_queued.emit(str(warn["text"]), warn["kind"], StatusFeed.PRIORITY_WARNING)
 
 

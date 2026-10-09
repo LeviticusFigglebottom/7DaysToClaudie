@@ -11,7 +11,9 @@ extends RefCounted
 ## nothing again until the stat is back above `reset_above`. Every step of a
 ## ladder is said once and in order, even when the stat drops past several at once (W19: waking
 ## in a blizzard went straight to "freezing"); the StatusFeed spaces them. Quiet while asleep (the
-## lines come on waking) and while dead.
+## lines come on waking) and while dead. A level may give a `sheltered_text`, said instead when
+## the player is under a roof ("Find shelter" to a player waking in their own lean-to read as a
+## mistake; the final first-hour pass).
 
 var _ladders: Array[Ladder] = []
 
@@ -33,10 +35,11 @@ func ladder(id: StringName) -> Ladder:
 
 
 ## Called after each survival tick. Returns the lines due now, in order: [{text, kind, stat}].
-func update(stats: SurvivalStats, minutes: float, quiet: bool = false) -> Array[Dictionary]:
+## `sheltered`: the player is under a roof (a level's `sheltered_text` is said instead).
+func update(stats: SurvivalStats, minutes: float, quiet: bool = false, sheltered: bool = false) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for l: Ladder in _ladders:
-		out.append_array(l.lines(stats, minutes, quiet))
+		out.append_array(l.lines(stats, minutes, quiet, sheltered))
 	return out
 
 
@@ -71,17 +74,17 @@ class Ladder:
 			_levels = []
 
 	## Every line due now, in order (all the steps a sudden drop went past, one after another).
-	func lines(stats: SurvivalStats, minutes: float, quiet: bool = false) -> Array[Dictionary]:
+	func lines(stats: SurvivalStats, minutes: float, quiet: bool = false, sheltered: bool = false) -> Array[Dictionary]:
 		var out: Array[Dictionary] = []
-		var line: Dictionary = update(stats, minutes, quiet)
+		var line: Dictionary = update(stats, minutes, quiet, sheltered)
 		while not line.is_empty():
 			out.append(line)
-			line = update(stats, 0.0, quiet)
+			line = update(stats, 0.0, quiet, sheltered)
 		return out
 
 	## Advances the clock by `minutes` and returns the next line due ({text, kind, stat}), or {}.
 	## A stat below several unspoken levels gets the first of them; call again for the next.
-	func update(stats: SurvivalStats, minutes: float, quiet: bool = false) -> Dictionary:
+	func update(stats: SurvivalStats, minutes: float, quiet: bool = false, sheltered: bool = false) -> Dictionary:
 		if not stats.alive:
 			level = 0
 			_since = INF
@@ -103,7 +106,8 @@ class Ladder:
 		_since = 0.0
 		_said_at = value
 		var l: Dictionary = _levels[level - 1]
-		return {"text": str(l.get("text", "")), "kind": StringName(str(l.get("kind", "warning"))), "stat": id}
+		var text: String = str(l.get("sheltered_text", "")) if sheltered else ""
+		return {"text": text if text != "" else str(l.get("text", "")), "kind": StringName(str(l.get("kind", "warning"))), "stat": id}
 
 	## Whether the level last said is due again: the stat a further worse_by down since then, or
 	## its repeat interval (the level's own repeat_minutes, else the ladder's) gone by.
