@@ -23,6 +23,10 @@ uniform float normal_strength : hint_range(0.0, 3.0) = 1.0;
 uniform float roughness_add = 0.0;
 uniform float vertex_ao_strength : hint_range(0.0, 1.0) = 1.0;
 uniform float variation_strength = 0.06;
+// TD-192: the crowd had one skin. With tone_strength > 0, instance_variation (0..1, set per body by
+// EnemyVisual from its id) also shifts the hue: livid purple-grey (0) through the material's own
+// pallor (0.5) to sallow yellow (1). 0 leaves the skin as tinted (the first-person hands, the living).
+uniform float tone_strength = 0.0;
 
 // Blood and grime soaked in where vertex G is high (std_surface's wear layer).
 uniform sampler2D wear_albedo_tex : source_color, hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -131,6 +135,11 @@ void fragment() {
 	float rough = clamp(orm.g + roughness_add, 0.02, 1.0);
 	vec3 rest = v_rest;
 	alb *= 1.0 + (instance_variation - 0.5) * variation_strength * 2.0;
+	if (tone_strength > 0.0) {
+		float tv = instance_variation * 2.0 - 1.0;
+		vec3 tone = tv < 0.0 ? mix(vec3(1.0), vec3(0.88, 0.80, 0.98), -tv) : mix(vec3(1.0), vec3(1.08, 1.0, 0.74), tv);
+		alb *= mix(vec3(1.0), tone, tone_strength);
+	}
 	float luma = dot(alb, vec3(0.3, 0.59, 0.11));
 
 	if (pallor > 0.0) {

@@ -308,6 +308,8 @@ func _ready() -> void:
 	var bs: Array = def.beh("body_scale", [1.0, 1.0, 1.0])
 	var size: float = _rng.randf_range(def.scale_range.x, def.scale_range.y)
 	visual.build(body, size, Vector3(float(bs[0]), float(bs[1]), float(bs[2])))
+	# Its own skin tone and wear (TD-192): two of one body in a crowd don't look like twins.
+	visual.set_variation(float(Ids.hash64(String(entity_id) + ":tone") & 0xffff) / 65535.0)
 	# The capsule is also what weapons hit: as tall as this body really is (a tall Hollow's head
 	# stuck out of a fixed 1.75 m capsule), lying down for crawlers.
 	_shape = CollisionShape3D.new()
