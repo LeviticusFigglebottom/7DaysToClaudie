@@ -151,16 +151,43 @@ func _style_menu() -> void:
 		create_tween().tween_property(music, "volume_db", UiStyle.level("menu_music", -10.0), 4.0)
 
 
+## Save slots the QA runners write (smoke, tour, screenshots, probes); "qa_" marks any new one.
+## Players never see them on the menu; a developer does (the editor, or `--dev`).
+const QA_SLOTS: PackedStringArray = ["smoke", "tour", "screens", "perf", "intro_probe", "continue_check",
+	"rwg_shots", "exterior_qa", "aggro_probe", "stream_walk"]
+
+
+## Whether this run shows developer entries (QA saves, the slice demo): the editor's binary or
+## `-- --dev`. A packaged build shows a player's menu only.
+static func dev_menu(args: PackedStringArray) -> bool:
+	return OS.has_feature("editor") or args.has("--dev")
+
+
+## The slots the menu lists: everything for a developer, the player's own runs otherwise.
+static func menu_slots(slots: Array[Dictionary], dev: bool) -> Array[Dictionary]:
+	if dev:
+		return slots
+	var out: Array[Dictionary] = []
+	for s: Dictionary in slots:
+		var name: String = str(s.get("slot", ""))
+		if not QA_SLOTS.has(name) and not name.begins_with("qa_"):
+			out.append(s)
+	return out
+
+
 func _build_menu() -> void:
 	for c: Node in _list.get_children():
 		c.queue_free()
-	var slots: Array[Dictionary] = SaveSystem.list_slots()
+	var dev: bool = dev_menu(OS.get_cmdline_user_args())
+	var slots: Array[Dictionary] = menu_slots(SaveSystem.list_slots(), dev)
 	if not slots.is_empty():
 		_add_button("Continue (Day %d)" % int(slots[0].get("day", 1)), _load.bind(str(slots[0]["slot"])))
 	_add_button("New Game…", _open_new_game)
-	var demo: Button = _add_button("Vertical Slice demo",
-		func() -> void: Game.start_new_game({"game_mode": "slice", "seed": SLICE_DEMO_SEED}))
-	demo.tooltip_text = ("The curated demo run (seed %d, the Hum on night 3): the same run seed every time," % SLICE_DEMO_SEED) + " so the same buildings, loot and Hum as the QA screenshots. New Game… rolls a fresh run."
+	var demo: Button = null
+	if dev:
+		demo = _add_button("Vertical Slice demo (dev)",
+			func() -> void: Game.start_new_game({"game_mode": "slice", "seed": SLICE_DEMO_SEED}))
+		demo.tooltip_text = ("The curated demo run (seed %d, the Hum on night 3): the same run seed every time," % SLICE_DEMO_SEED) + " so the same buildings, loot and Hum as the QA screenshots. New Game… rolls a fresh run."
 	_add_button("Random World…", _open_new_game.bind(true))
 	for s: Dictionary in slots:
 		var label: String = "Load %s — Day %d" % [str(s.get("slot", "?")).capitalize(), int(s.get("day", 1))]
