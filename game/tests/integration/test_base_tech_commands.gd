@@ -407,3 +407,51 @@ func test_an_unpowered_light_says_its_switch_state_and_why_it_is_dark() -> void:
 	var dark: StructurePiece = sentry if not _tm.has_power(sentry) else light
 	assert_false(_tm.has_power(dark), "one of them doesn't fit")
 	assert_string_contains(BaseTechManager.prompt(dark, pl), "it's on, but the generator can't carry it too")
+
+
+var _queued: Array = []
+
+
+func _on_queued(text: String, kind: StringName, priority: int) -> void:
+	_queued.append([text, kind, priority])
+
+
+## M3: a generator says when it runs low (low_fuel_fraction of a full tank) and when it stops,
+## once each, as queued warnings.
+func test_the_generator_warns_low_fuel_and_sputters_out() -> void:
+	_queued.clear()
+	Events.status_message_queued.connect(_on_queued)
+	_lit_generator()
+	var g: Dictionary = BaseTech.power_cfg("generator")
+	var line: float = BaseTech.tank_hours() * float(g.get("low_fuel_fraction", 0.1))
+	var st: Dictionary = Game.session.world.base_tech["power"]["s:gen"]
+	st["fuel"] = line + 0.05
+	_tm.tick(2.0)
+	assert_true(_queued.is_empty(), "above the line: quiet")
+	_tm.tick(30.0)
+	assert_lte(float(st["fuel"]), line)
+	assert_gt(float(st["fuel"]), 0.0)
+	assert_eq(_queued.size(), 1, "low once")
+	if _queued.size() == 1:
+		assert_eq(str(_queued[0][0]), str(g.get("low_text")))
+		assert_eq(_queued[0][1], &"warning")
+		assert_eq(int(_queued[0][2]), StatusFeed.PRIORITY_WARNING)
+	_tm.tick(10.0)
+	assert_eq(_queued.size(), 1, "not again while it burns on")
+	_tm.tick(60.0 * 12.0)
+	assert_eq(float(st["fuel"]), 0.0)
+	assert_eq(_queued.size(), 2, "and a line when it stops")
+	if _queued.size() == 2:
+		assert_eq(str(_queued[1][0]), str(g.get("dry_text")))
+	_tm.tick(60.0)
+	assert_eq(_queued.size(), 2, "a dead generator says nothing more")
+	# A can poured from dry straight past the line (no low line), then burnt down again (low again).
+	_p.inventory.add_item(&"gas_can", 1)
+	Game.execute(&"power.fuel", _args("s:gen"))
+	assert_true(_tm.has_power(_bm.pieces[&"s:gen"]), "still switched on: the can starts it again")
+	_tm.tick(2.0)
+	assert_eq(_queued.size(), 2)
+	st["fuel"] = line + 0.01
+	_tm.tick(30.0)
+	assert_eq(_queued.size(), 3, "low again after a refill")
+	Events.status_message_queued.disconnect(_on_queued)

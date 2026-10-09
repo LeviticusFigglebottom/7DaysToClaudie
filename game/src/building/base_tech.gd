@@ -223,6 +223,13 @@ static func heat(minutes: float, load: float) -> float:
 	return float(power_cfg("generator").get("heat_per_minute", 0.3)) * minutes * lerpf(idle, 1.0, clampf(load, 0.0, 1.0))
 
 
+## Whether a burn from `before` to `after` hours of fuel just crossed the low-fuel line
+## (low_fuel_fraction of a full tank) and the engine still runs.
+static func fuel_low(before: float, after: float) -> bool:
+	var line: float = tank_hours() * float(power_cfg("generator").get("low_fuel_fraction", 0.1))
+	return before > line and after <= line and after > 0.0
+
+
 static func tank_hours() -> float:
 	return float(power_cfg("generator").get("tank_hours", 8.0))
 

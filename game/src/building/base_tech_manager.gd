@@ -320,10 +320,12 @@ func tick(minutes: float) -> void:
 		# Ezra's Lineman perk keeps a generator near him tuned (ADR-0058 phase 3).
 		var crew: Node = world.get(&"companion") if world != null else null
 		var tuned: float = float(crew.call(&"fuel_factor", piece.global_position)) if crew != null and crew.has_method(&"fuel_factor") else 1.0
+		var before: float = float(st.get("fuel", 0.0))
 		if BaseTech.burn(st, minutes, load, rate * tuned):
 			dry = true
-			if _near_player(piece.global_position, 60.0):
-				Events.player_status_message.emit("The generator coughs and dies: out of fuel.", &"warning")
+			_fuel_line(piece, "dry_text", "The generator sputters out.")
+		elif BaseTech.fuel_low(before, float(st.get("fuel", 0.0))):
+			_fuel_line(piece, "low_text", "The generator's running low on fuel.")
 	if dry:
 		refresh_grid()
 
@@ -340,6 +342,18 @@ func _process(delta: float) -> void:
 		var piece: StructurePiece = pieces[id]
 		if is_instance_valid(piece) and BaseTech.power_kind(piece.def) == "generator" and BaseTech.running(piece.def, peek(piece)):
 			Stimuli.current.emit_sound(piece.global_position + Vector3.UP * 0.5, float(g.get("noise", 18.0)), &"generator", id)
+
+
+## A generator's fuel line (mid-game audit M3: it ran its can dry with no word): queued as a
+## warning (StatusFeed), and only within the generator's warn_radius of the player. There is no
+## base ownership in the game (every piece is the player's), so "his base" can't decide it: a
+## generator across the map that dies is told when he comes back and finds it, not mid-fight
+## somewhere else; within the radius he would hear the engine change anyway.
+func _fuel_line(piece: StructurePiece, key: String, fallback: String) -> void:
+	var g: Dictionary = BaseTech.power_cfg("generator")
+	if not _near_player(piece.global_position, float(g.get("warn_radius", 60.0))):
+		return
+	Events.status_message_queued.emit(str(g.get(key, fallback)), &"warning", StatusFeed.PRIORITY_WARNING)
 
 
 static func _near_player(pos: Vector3, r: float) -> bool:
