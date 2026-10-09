@@ -166,6 +166,22 @@ func _build_graphics() -> void:
 		_build_graphics.call_deferred())
 	var custom: int = Settings.graphics_overrides().size()
 	_row("Preset" + (" (%d changed)" % custom if custom > 0 else ""), preset)
+	# What this machine was given on its first run, and a way back to it.
+	var rec: String = Settings.recommended_preset()
+	var gpu: String = RenderingServer.get_video_adapter_name() if DisplayServer.get_name() != "headless" else "headless"
+	var back := Button.new()
+	back.text = "Use %s (recommended)" % rec.capitalize()
+	back.disabled = rec == Settings.graphics_preset and custom == 0
+	back.pressed.connect(func() -> void:
+		Settings.set_graphics_preset(rec)
+		_build_graphics.call_deferred())
+	_row("Detected: %s" % gpu, back)
+	var cap := OptionButton.new()
+	for f: int in Settings.FPS_CAPS:
+		cap.add_item("No cap" if f == 0 else "%d fps" % f)
+	cap.selected = maxi(0, Settings.FPS_CAPS.find(Settings.max_fps))
+	cap.item_selected.connect(func(i: int) -> void: Settings.set_max_fps(Settings.FPS_CAPS[i]))
+	_row("Frame rate cap", cap)
 	_gfx_slider("Render scale", "render_scale", 0.5, 1.0, 0.05)
 	_gfx_choice("Upscaler", "upscaler", [["bilinear", "Bilinear"], ["fsr", "FSR 1"], ["fsr2", "FSR 2 (sharper, own AA)"]])
 	_gfx_check("Temporal anti-aliasing", "taa")
@@ -232,13 +248,23 @@ func _gfx_choice(label: String, key: String, choices: Array, also_set: Callable 
 	var cur: Variant = Settings.gfx(key, choices[0][0])
 	for i: int in choices.size():
 		ob.add_item(str(choices[i][1]), i)
-		if str(choices[i][0]) == str(cur):
+		if same_choice(choices[i][0], cur):
 			ob.selected = i
 	ob.item_selected.connect(func(i: int) -> void:
 		Settings.set_graphics_override(key, choices[i][0])
 		if also_set.is_valid():
 			also_set.call(choices[i][0]))
 	_row(label, ob)
+
+
+## Whether a choice is the current value: numbers by value (presets come from JSON as floats, so
+## 4096.0 is the 4096 choice; str() made them differ and showed every shadow choice as its first).
+static func same_choice(a: Variant, b: Variant) -> bool:
+	var na: bool = a is int or a is float
+	var nb: bool = b is int or b is float
+	if na and nb:
+		return is_equal_approx(float(a), float(b))
+	return str(a) == str(b)
 
 
 func _row(label: String, control: Control) -> void:

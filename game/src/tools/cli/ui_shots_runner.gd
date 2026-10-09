@@ -1,7 +1,7 @@
 extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
-const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "new_game", "manual",
+const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "options_graphics", "new_game", "manual",
 	"loading", "pause", "trader", "death", "hud", "vignette", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
@@ -243,4 +243,15 @@ func _shot_vignette() -> Node:
 	vm.set_shader_parameter("cold", 0.7)
 	(ui.get(&"_hum_label") as Label).text = "THE HUM IN 05:42"
 	await _settle(3)
+	return layer
+
+
+func _shot_options_graphics() -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var p := OptionsPanel.new()
+	p.open_tab = "Graphics"
+	layer.add_child(p)
+	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	await _settle(2)
+	p.position = (get_viewport().get_visible_rect().size - p.size) * 0.5
 	return layer
