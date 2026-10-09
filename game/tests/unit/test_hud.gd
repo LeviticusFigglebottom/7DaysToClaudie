@@ -95,3 +95,18 @@ func test_long_messages_wrap_and_stay_to_be_read() -> void:
 	var l: Label = ui.get(&"_messages").get_child(0) as Label
 	assert_eq(l.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART)
 	assert_lte(l.custom_minimum_size.x, 820.0)
+
+
+func test_manual_lights_one_tab() -> void:
+	var m := FieldManual.new()
+	add_child_autofree(m)
+	m.open("journal")
+	m.close()
+	m.open("build")
+	assert_eq(m.lit_tabs(), PackedStringArray(["build"]))
+
+
+func test_roll_strips_shrink_to_fit_a_small_window() -> void:
+	assert_eq(SalvageRoll.strip_scale(600.0, 800.0), 1.0)
+	assert_almost_eq(SalvageRoll.strip_scale(800.0, 640.0), 0.8, 0.001)
+	assert_eq(SalvageRoll.strip_scale(800.0, 100.0), 0.7, "never smaller than 70%")

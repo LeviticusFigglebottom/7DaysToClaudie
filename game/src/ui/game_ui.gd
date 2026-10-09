@@ -55,6 +55,7 @@ var _relief_done: bool = false
 var _pickups: VBoxContainer
 ## Whether this run's first journal card has been announced (once, as the player first stands).
 var _first_card_said: bool = false
+var _ov_tween: Tween = null
 var _tip_box: Control
 var _tip_title: Label
 var _tip_text: Label
@@ -92,6 +93,11 @@ func _ready() -> void:
 	_maybe_start_intro()
 	Events.player_status_message.connect(message)
 	Events.player_damaged.connect(_on_player_damaged)
+	# Standing again after a death: nothing of the death screen may stay over the world.
+	Events.player_spawned.connect(func(_id: StringName) -> void:
+		if _overlay.visible and not _death_button.visible and not (Game.world != null and bool(Game.world.get(&"sleeping"))):
+			_overlay_tween().kill()
+			_overlay.visible = false)
 	# The Hum's warnings and its start are announced by HumDirector alone (with the forecast).
 	Events.horde_night_ended.connect(_on_hum_ended)
 	Events.game_saved.connect(_write_thumb)
@@ -470,6 +476,7 @@ func _build_hud() -> void:
 	_prompt.add_theme_color_override(&"font_color", Color(0.92, 0.9, 0.82))
 	_prompt.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_prompt.add_theme_constant_override(&"outline_size", 4)
+	_prompt.add_theme_stylebox_override(&"normal", prompt_box(0.55))
 	_hud.add_child(_prompt)
 	_tool_hint = Label.new()
 	_tool_hint.anchor_left = 0.5
@@ -483,6 +490,7 @@ func _build_hud() -> void:
 	_tool_hint.add_theme_color_override(&"font_color", Color(0.8, 0.78, 0.7, 0.9))
 	_tool_hint.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_tool_hint.add_theme_constant_override(&"outline_size", 4)
+	_tool_hint.add_theme_stylebox_override(&"normal", prompt_box(0.45))
 	_hud.add_child(_tool_hint)
 	_belt = RichTextLabel.new()
 	_belt.bbcode_enabled = true
@@ -538,8 +546,10 @@ func _build_hud() -> void:
 	_pickups.anchor_bottom = 1.0
 	_pickups.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_pickups.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	# A zero-height rect at its bottom edge that grows upward with each line.
 	_pickups.offset_left = -360
 	_pickups.offset_right = -40
+	_pickups.offset_top = -110
 	_pickups.offset_bottom = -110
 	_pickups.alignment = BoxContainer.ALIGNMENT_END
 	_pickups.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -557,6 +567,28 @@ func _build_hud() -> void:
 	_hum_label.add_theme_color_override(&"font_outline_color", Color(0.03, 0.03, 0.02, 0.9))
 	_hum_label.add_theme_constant_override(&"outline_size", 6)
 	_hud.add_child(_hum_label)
+
+
+## A quiet dark plate behind a prompt line, so it reads over a lit fire, snow or a pale ghost.
+static func prompt_box(alpha: float) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.02, 0.02, 0.02, alpha)
+	sb.set_corner_radius_all(3)
+	sb.content_margin_left = 10
+	sb.content_margin_right = 10
+	sb.content_margin_top = 2
+	sb.content_margin_bottom = 3
+	return sb
+
+
+## Shrinks a centred prompt line to its text (its plate hugs the words) and keeps it centred
+## under the crosshair, `below` px down; hidden when empty, plate and all.
+func _hug(l: Label, below: float) -> void:
+	l.visible = l.text != ""
+	if not l.visible:
+		return
+	l.size = Vector2.ZERO
+	l.position = Vector2(-l.size.x * 0.5, below)
 
 
 static func _vignette_shader() -> Shader:
@@ -604,7 +636,8 @@ func _process(delta: float) -> void:
 		return
 	var p: Player = w.player
 	if p.interaction != null:
-		_prompt.text = ("[%s] %s" % [PlayerInteraction.key_label(&"interact"), p.interaction.prompt]) if p.interaction.prompt != "" else ""
+		# Nothing to act on through the death or sleep screen.
+		_prompt.text = ("[%s] %s" % [PlayerInteraction.key_label(&"interact"), p.interaction.prompt]) if p.interaction.prompt != "" and not _overlay.visible else ""
 		var ht: float = p.interaction.hold_t / maxf(p.interaction.hold_needed, 0.001) if p.interaction.hold_needed > 0.0 else 0.0
 		_hold.visible = ht > 0.0
 		_hold.value = ht * 100.0
@@ -613,6 +646,10 @@ func _process(delta: float) -> void:
 		# Under the prompt: why a placement can't go, else the held tool's hint, else what holding
 		# the cancel key on the target does (take a blueprint ghost down).
 		_tool_hint.text = place_why if place_why != "" else (p.interaction.tool_hint if p.interaction.tool_hint != "" else p.interaction.alt_prompt)
+		if _overlay.visible:
+			_tool_hint.text = ""
+		_hug(_prompt, 28.0)
+		_hug(_tool_hint, 72.0)
 	_update_belt(p.state, delta)
 	_frame_t += delta
 	if _frame_t >= THUMB_EVERY and not has_modal() and not _overlay.visible and not is_intro_playing():
@@ -1237,12 +1274,21 @@ func _build_overlay() -> void:
 	row.add_child(_death_button)
 
 
+## One tween drives the overlay at a time: a death's fade-in still running when Wake up is
+## pressed must not fight the fade-out (the first-hour run saw the death screen linger).
+func _overlay_tween() -> Tween:
+	if _ov_tween != null and _ov_tween.is_valid():
+		_ov_tween.kill()
+	_ov_tween = create_tween()
+	return _ov_tween
+
+
 func show_sleep(on: bool) -> void:
 	_overlay.visible = true
 	_death_button.visible = false
 	_overlay_head.text = ""
 	_overlay_note.text = ""
-	var tw: Tween = create_tween()
+	var tw: Tween = _overlay_tween()
 	if on:
 		_overlay_label.text = "You sleep."
 		tw.tween_property(_overlay, "color:a", 0.96, 0.8)
@@ -1267,7 +1313,7 @@ static func death_text(cause: String, note: String, final: bool, day: int, death
 func show_death(cause: String, note: String = "Your pack lies where you fell.", final: bool = false) -> void:
 	_overlay.visible = true
 	_overlay.color = Color(0.08, 0.0, 0.0, 0.0)
-	var tw: Tween = create_tween()
+	var tw: Tween = _overlay_tween()
 	tw.tween_property(_overlay, "color:a", 0.92, 2.0)
 	var p: PlayerState = Game.local_player()
 	var day: int = Game.session.clock.day() if Game.session != null and Game.session.clock != null else 1
@@ -1287,7 +1333,11 @@ func _on_wake_after_death() -> void:
 	if _final_death:
 		Game.quit_to_menu()
 		return
-	var tw: Tween = create_tween()
+	# The words go at once; the red fades behind them.
+	_overlay_head.text = ""
+	_overlay_label.text = ""
+	_overlay_note.text = ""
+	var tw: Tween = _overlay_tween()
 	tw.tween_property(_overlay, "color:a", 0.0, 1.5)
 	tw.tween_callback(func() -> void: _overlay.visible = false)
 	if Game.world != null and Game.world.has_method(&"respawn"):
