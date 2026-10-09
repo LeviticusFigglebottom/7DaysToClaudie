@@ -173,7 +173,7 @@ keys below are the defaults.
 | V | Carried log pose: flat, upright post, pitched (roof) |
 | X | Cancel placement; close the salvage roll, field manual or options. Hold it (1 s) on a placed blueprint ghost to take it down |
 | Tab or I | Salvage roll: inventory and crafting |
-| B | Remand Field Manual: blueprints, your Record, notes found, survival pages |
+| B | Remand Field Manual: blueprints, the Journal (the first days' steps), your Record, notes found, survival pages |
 | T | Raise or lower the tether on your wrist (Left mouse also lowers it) |
 | M | The map: the whole valley on a survey sheet, you, where you wake, buildings, waystations and drops (wheel zooms, drag pans) |
 | Esc | Close what's open, else pause. Only the pause menu stops the world: it keeps running while the roll, manual or tether is up |
@@ -219,10 +219,12 @@ have a bed; pinned to the map's edge when it's elsewhere), supply drops (red dia
 (grey squares, orange once you've been inside, green once cleared).
 
 **The first-days tutorial** (on unless the world setting *First days tutorial* is off; you can
-turn it off yourself in the tether's journal): eight Program cards on the tether that say how to
+turn it off yourself on the Field Manual's **Journal** tab, B): eight Program cards in the Journal that say how to
 gather, make a stone axe, fell a tree, build a campfire, fill and boil water, make a cloth bandage,
-raise a shelter and sleep, in any order. Each pays 10 XP. A while after the last one your tether
-picks up a distress call from Ezra Vane (§9), hurt in his line truck, and marks where he is: bring
+raise a shelter and sleep, in any order. Each pays 10 XP, and a line at the top of the screen names
+the next. A while after the last one your tether picks up a distress call from Ezra Vane (§9), hurt
+in his line truck: a red ring pulses on the tether's minimap and the map (M) with its bearing, and
+the Journal keeps the call. Bring
 him a cloth bandage (the one the cards had you make), or a first aid kit or painkillers if you've
 found any in medicine cabinets and nightstands.
 

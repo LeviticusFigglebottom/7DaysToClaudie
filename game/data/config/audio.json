@@ -100,5 +100,19 @@
     "voice/zombie_death": "voice/hollow_death",
     "voice/zombie_wake": "voice/hollow_groan_idle",
     "voice/zombie_pain": "voice/hollow_pain"
+  },
+  "_ui_levels_doc": "The UI's and the music's levels (dB at the player, before the bus): the menus, the intro and the tether (ADR-0063/0064). Bus levels are above; Options' sliders scale the buses.",
+  "ui_levels": {
+    "menu_music": -10.0,
+    "intro_music": -14.0,
+    "intro_card": -6.0,
+    "intro_impact": 0.0,
+    "intro_stamp": -2.0,
+    "tether_alarm": -4.0,
+    "tether_beep": -10.0,
+    "page_turn": -6.0,
+    "roll_open": -6.0,
+    "roll_close": -8.0,
+    "level_up": -4.0
   }
 }

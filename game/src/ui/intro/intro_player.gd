@@ -16,7 +16,7 @@ signal finished()
 
 const SCRIPT_PATH: String = "res://data/intro/intro.json"
 const KINDS: PackedStringArray = ["caption", "document", "radio", "impact", "title"]
-const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds"]
+const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds", "caption"]
 ## The impact card: seconds of shake and of the flash's fade.
 const SHAKE_TIME: float = 1.6
 const SHAKE_PX: float = 26.0
@@ -190,7 +190,7 @@ func play(script: Dictionary = {}, vars: Dictionary = {}) -> void:
 		_music = AudioStreamPlayer.new()
 		_music.stream = Audio.stream(StringName(music))
 		_music.bus = &"Music"
-		_music.volume_db = -14.0
+		_music.volume_db = UiStyle.level("intro_music", -14.0)
 		add_child(_music)
 		_music.play()
 	_next()
@@ -249,9 +249,9 @@ func _next() -> void:
 	_t = 0.0
 	var snd: String = str(c.get("sound", ""))
 	if snd != "":
-		Audio.play_2d(StringName(snd), -6.0)
+		Audio.play_2d(StringName(snd), UiStyle.level("intro_card", -6.0), &"SFX")
 	for k: int in (c.get("sounds", []) as Array).size():
-		Audio.play_2d(StringName(str(c["sounds"][k])), 0.0, &"UI", 1.0 - 0.08 * k)
+		Audio.play_2d(StringName(str(c["sounds"][k])), UiStyle.level("intro_impact", 0.0), &"SFX", 1.0 - 0.08 * k)
 	if str(c.get("kind", "")) == "impact":
 		# No fade in: the crash cuts in.
 		_card.modulate.a = 1.0
@@ -259,7 +259,7 @@ func _next() -> void:
 		_impact_t = 0.0
 		if _music != null:
 			_music.volume_db = -40.0
-			create_tween().tween_property(_music, "volume_db", -14.0, 6.0)
+			create_tween().tween_property(_music, "volume_db", UiStyle.level("intro_music", -14.0), 6.0)
 
 
 ## Shows card `i` fully typed and holding (visual QA, tests).
@@ -321,7 +321,7 @@ func _type_step(dt: float, kind: String) -> bool:
 		return false
 	if _stamp != null and not _stamp.visible:
 		_stamp.visible = true
-		Audio.play_2d(&"sfx/item_place_mat", -2.0, &"UI", 0.7)
+		Audio.play_2d(&"sfx/item_place_mat", UiStyle.level("intro_stamp", -2.0), &"SFX", 0.7)
 	return true
 
 
@@ -354,6 +354,17 @@ func _build_card(c: Dictionary) -> Control:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Sound captions (Options): what the card's sound says, for players who can't hear it.
+	if captions_on() and str(c.get("caption", "")) != "":
+		var cap := UiStyle.label(str(c["caption"]), &"DimLabel")
+		cap.add_theme_font_size_override(&"font_size", 22)
+		cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cap.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+		cap.offset_top = -130
+		cap.offset_bottom = -96
+		cap.offset_left = -500
+		cap.offset_right = 500
+		root.add_child(cap)
 	match str(c.get("kind", "caption")):
 		"document":
 			_document(root, c)
@@ -372,6 +383,12 @@ func _build_card(c: Dictionary) -> Control:
 		_:
 			_caption(root, c)
 	return root
+
+
+## Whether sound captions are on (Options; off when the Settings autoload isn't there).
+static func captions_on() -> bool:
+	var st: Node = Engine.get_main_loop().root.get_node_or_null(^"/root/Settings") if Engine.get_main_loop() is SceneTree else null
+	return st != null and bool(st.get(&"sound_captions"))
 
 
 func _typed_label(text: String, size: int, color: Color, f: Font = null) -> Label:

@@ -263,7 +263,7 @@ func open(p_mode: StringName = &"inventory", p_station: StringName = &"", p_cont
 	var ui: Node = get_parent()
 	if ui != null and ui.has_method(&"push_modal"):
 		ui.call(&"push_modal", &"salvage_roll")
-	Audio.play_2d(&"ui/roll_open", -6.0)
+	Audio.play_2d(&"ui/roll_open", UiStyle.level("roll_open", -6.0))
 
 
 func close() -> void:
@@ -273,7 +273,7 @@ func close() -> void:
 	var ui: Node = get_parent()
 	if ui != null and ui.has_method(&"pop_modal"):
 		ui.call(&"pop_modal", &"salvage_roll")
-	Audio.play_2d(&"ui/roll_close", -8.0)
+	Audio.play_2d(&"ui/roll_close", UiStyle.level("roll_close", -8.0))
 
 
 func _close_silently() -> void:

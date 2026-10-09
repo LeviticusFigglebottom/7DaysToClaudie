@@ -148,7 +148,7 @@ func _style_menu() -> void:
 		music.volume_db = -40.0
 		add_child(music)
 		music.play()
-		create_tween().tween_property(music, "volume_db", -10.0, 4.0)
+		create_tween().tween_property(music, "volume_db", UiStyle.level("menu_music", -10.0), 4.0)
 
 
 func _build_menu() -> void:

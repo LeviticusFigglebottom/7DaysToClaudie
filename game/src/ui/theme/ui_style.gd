@@ -160,6 +160,9 @@ static func _build(paper: bool) -> Theme:
 		t.set_color(&"font_color", type3, fg)
 		t.set_color(&"font_placeholder_color", type3, dim)
 		t.set_color(&"caret_color", type3, hover)
+		# Read-only (a disabled count): dim ink on no fill, never pale on grey.
+		t.set_stylebox(&"read_only", type3, _box(Color(0, 0, 0, 0), Color(line, 0.35), 1, 6))
+		t.set_color(&"font_uneditable_color", type3, dim)
 		t.set_color(&"selection_color", type3, Color(hover, 0.35))
 
 	# Sliders and bars.
@@ -350,3 +353,11 @@ static func label(text: String, variation: StringName = &"") -> Label:
 ## Colour as a BBCode hex for RichTextLabel text.
 static func hex(c: Color) -> String:
 	return "#" + c.to_html(false)
+
+
+## A UI or music sound's level in dB (data/config/audio.json `ui_levels`), `fallback` when unset.
+static func level(key: String, fallback: float) -> float:
+	var db: Object = ContentDB.instance
+	if db == null:
+		return fallback
+	return float((db.call(&"config", &"audio").get("ui_levels", {}) as Dictionary).get(key, fallback))

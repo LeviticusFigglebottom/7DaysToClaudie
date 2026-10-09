@@ -193,8 +193,9 @@ func _on_tutorial_distress(_companion_id: StringName, position: Vector3) -> void
 	if d.is_empty():
 		return
 	var text: String = str(d.get("text", ""))
-	Audio.play_2d(&"ui/tether_alarm", -4.0)
-	message("Tether: a distress call crackles in, %s. %s" % [FieldManual.distress_bearing(position), text], &"level")
+	Audio.play_2d(&"ui/tether_alarm", UiStyle.level("tether_alarm", -4.0))
+	var cap: String = "[radio crackle] " if Settings.sound_captions else ""
+	message("%sTether: a distress call crackles in, %s. %s" % [cap, FieldManual.distress_bearing(position), text], &"level")
 
 
 # --- The intro (ADR-0064) -------------------------------------------------------------------------
@@ -204,7 +205,8 @@ func _maybe_start_intro() -> void:
 	var opts: Dictionary = Game.pending_options
 	if not bool(opts.get("is_new_game", false)) or bool(opts.get("skip_intro", false)):
 		return
-	if DisplayServer.get_name() == "headless":
+	# Headless runs skip it, unless a probe asks (intro_load_probe measures its frames).
+	if DisplayServer.get_name() == "headless" and not bool(opts.get("force_intro", false)):
 		return
 	intro = IntroPlayer.new()
 	intro.name = "Intro"
@@ -560,7 +562,7 @@ func _announce_level() -> void:
 		return
 	var pts: int = p.progression.skill_points
 	message("Level %d. %d point%s to spend — field manual (B), Record." % [_level_pending, pts, "" if pts == 1 else "s"], &"level")
-	Audio.play_2d(&"ui/level_up", -4.0)
+	Audio.play_2d(&"ui/level_up", UiStyle.level("level_up", -4.0))
 	_level_pending = 0
 
 
