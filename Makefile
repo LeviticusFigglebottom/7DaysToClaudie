@@ -61,6 +61,8 @@ assets-determinism: ## Rebuild assets into a scratch dir and compare hashes with
 
 bake: ## Godot-side bakes that need the renderer (item icons, tree impostors, region data, backdrop stills)
 	@mkdir -p $(ROOT)/build; if [ -f $(GAME)/src/tools/cli/bake.gd ]; then $(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/bake.gd; fi
+	@$(MAKE) --no-print-directory import
+	@# After the import: the wreck's far forest draws the impostors baked just above.
 	@GODOT="$(GODOT)" $(ROOT)/tools/stills.sh || echo "stills: FAILED (the menu and the intro show no pictures; see build/stills_*.log)"
 	@$(MAKE) --no-print-directory import
 
