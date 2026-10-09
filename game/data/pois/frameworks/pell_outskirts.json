@@ -1266,7 +1266,7 @@
      ],
      "ring": "core",
      "street": "mill_street_west",
-     "y": 88.24,
+     "y": 88.08,
      "zoning": [
       "residential"
      ]
@@ -1350,7 +1350,7 @@
      ],
      "ring": "core",
      "street": "st_2",
-     "y": 87.8,
+     "y": 87.23,
      "zoning": [
       "residential"
      ]
@@ -1392,7 +1392,7 @@
      ],
      "ring": "core",
      "street": "st_2",
-     "y": 85.65,
+     "y": 86.38,
      "zoning": [
       "residential"
      ]
@@ -1446,7 +1446,7 @@
      ],
      "ring": "core",
      "street": "st_1",
-     "y": 87.89,
+     "y": 86.71,
      "zoning": [
       "residential"
      ]
@@ -1480,7 +1480,7 @@
      ],
      "ring": "outer",
      "street": "mill_street_west",
-     "y": 73.4,
+     "y": 73.99,
      "zoning": [
       "residential"
      ]
@@ -1624,7 +1624,7 @@
      ],
      "ring": "outer",
      "street": "st_4",
-     "y": 83.63,
+     "y": 81.24,
      "zoning": [
       "residential"
      ]
@@ -1736,7 +1736,7 @@
      ],
      "ring": "inner",
      "street": "mill_street_west",
-     "y": 84.33,
+     "y": 83.66,
      "zoning": [
       "residential"
      ]
@@ -1790,7 +1790,7 @@
      ],
      "ring": "inner",
      "street": "mill_street_west",
-     "y": 79.34,
+     "y": 79.67,
      "zoning": [
       "residential"
      ]
@@ -1824,7 +1824,7 @@
      ],
      "ring": "inner",
      "street": "mill_street_west",
-     "y": 78.61,
+     "y": 78.56,
      "zoning": [
       "residential"
      ]
@@ -1882,7 +1882,7 @@
      ],
      "ring": "core",
      "street": "st_1",
-     "y": 85.82,
+     "y": 86.01,
      "zoning": [
       "residential"
      ]
@@ -1990,7 +1990,7 @@
      ],
      "ring": "inner",
      "street": "st_1",
-     "y": 86.26,
+     "y": 86.66,
      "zoning": [
       "residential"
      ]
@@ -2028,7 +2028,7 @@
      ],
      "ring": "inner",
      "street": "st_1",
-     "y": 88.16,
+     "y": 87.26,
      "zoning": [
       "residential"
      ]
@@ -2062,7 +2062,7 @@
      ],
      "ring": "outer",
      "street": "st_1",
-     "y": 88.72,
+     "y": 87.85,
      "zoning": [
       "residential"
      ]
@@ -2096,7 +2096,7 @@
      ],
      "ring": "core",
      "street": "st_2",
-     "y": 87.96,
+     "y": 87.23,
      "zoning": [
       "residential"
      ]
@@ -2134,7 +2134,7 @@
      ],
      "ring": "inner",
      "street": "st_2",
-     "y": 85.4,
+     "y": 86.7,
      "zoning": [
       "residential"
      ]
@@ -2268,7 +2268,7 @@
      ],
      "ring": "outer",
      "street": "st_4",
-     "y": 81.38,
+     "y": 80.23,
      "zoning": [
       "residential"
      ]
@@ -2314,7 +2314,7 @@
      ],
      "ring": "inner",
      "street": "st_4",
-     "y": 79.79,
+     "y": 79.02,
      "zoning": [
       "residential"
      ]
@@ -2348,7 +2348,7 @@
      ],
      "ring": "inner",
      "street": "st_5",
-     "y": 81.8,
+     "y": 81.29,
      "zoning": [
       "residential"
      ]
@@ -2382,7 +2382,7 @@
      ],
      "ring": "core",
      "street": "st_6",
-     "y": 84.37,
+     "y": 85.92,
      "zoning": [
       "residential"
      ]
@@ -2416,7 +2416,7 @@
      ],
      "ring": "inner",
      "street": "st_7",
-     "y": 89.4,
+     "y": 88.06,
      "zoning": [
       "residential"
      ]
@@ -2450,7 +2450,7 @@
      ],
      "ring": "inner",
      "street": "st_7",
-     "y": 90.37,
+     "y": 89.22,
      "zoning": [
       "residential"
      ]
@@ -2596,7 +2596,7 @@
      ],
      "ring": "outer",
      "street": "st_11",
-     "y": 87.07,
+     "y": 87.18,
      "zoning": [
       "residential"
      ]
@@ -2638,7 +2638,7 @@
      ],
      "ring": "inner",
      "street": "st_11",
-     "y": 86.51,
+     "y": 88.48,
      "zoning": [
       "residential"
      ]
@@ -2672,7 +2672,7 @@
      ],
      "ring": "outer",
      "street": "st_11",
-     "y": 84.09,
+     "y": 85.62,
      "zoning": [
       "residential"
      ]
@@ -2710,7 +2710,7 @@
      ],
      "ring": "inner",
      "street": "st_12",
-     "y": 89.54,
+     "y": 89.5,
      "zoning": [
       "residential"
      ]
@@ -2756,7 +2756,7 @@
      ],
      "ring": "inner",
      "street": "st_12",
-     "y": 88.31,
+     "y": 88.79,
      "zoning": [
       "residential"
      ]
@@ -2790,7 +2790,7 @@
      ],
      "ring": "inner",
      "street": "st_12",
-     "y": 89.72,
+     "y": 89.59,
      "zoning": [
       "residential"
      ]
@@ -2824,7 +2824,7 @@
      ],
      "ring": "inner",
      "street": "st_15",
-     "y": 89.7,
+     "y": 89.9,
      "zoning": [
       "residential"
      ]
@@ -2892,7 +2892,7 @@
      ],
      "ring": "outer",
      "street": "st_18",
-     "y": 77.13,
+     "y": 79.67,
      "zoning": [
       "residential"
      ]

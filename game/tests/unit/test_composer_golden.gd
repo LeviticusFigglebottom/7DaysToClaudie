@@ -63,41 +63,41 @@ const DIGEST_KEYS: PackedStringArray = ["height", "splat0", "splat1", "biome", "
 ## input hash at that spacing, to tell changed inputs from a changed composer.
 const GOLDEN: Dictionary = {
 	"larch@4": {
-		"biome": "7f67ee84edfe913d73903431f7843522",
+		"biome": "d731973bf8a57c82bd7c313e338e1716",
 		"bridges": "1f0c533e9edd7d199eef56ffe59942b6",
-		"height": "f9c6c1884198e012349054b57e5e3709a0441a6bb4b3429fc8ec2a1af7010f4d",
-		"input": "dc3f19d4046f0c739e49cbd3d1c6d2e5a319fbf65a99ce371480a744c79a71a8",
+		"height": "ac548940736dd9a37405dd3ce85a69bdb810f97250b6c5fbe7b80b99c045d743",
+		"input": "3b42d57dffdb4f492369bc802c7c3da71f77c29ed4eb5ba984acf4ef662a6f24",
 		"other": "84e51cfda745fea8a7d5370868731670",
-		"placements": "3c6c87a5bc023e347ea01b7b4965d83d",
-		"roads": "850e80503f2ffa187bbfd74325b5e1af",
-		"splat0": "648d41d13e951c10a0157203795bcaca",
-		"splat1": "a1a09a7904a0dfc5eb9c85b4905e6c5d",
+		"placements": "10fdb25c0c5551ac9945f5d3b0c3c4b6",
+		"roads": "1786358cb60fd5f1e7352b77247a095e",
+		"splat0": "f392f44dacea7028a79e8a5928b61bcc",
+		"splat1": "0e70915c66e5e7eb03ff81cdab1db81d",
 		"vegmask": "2b0d60d408b305a3c9f0be6d041b2182",
 		"water": "557e9069b493e19e7402548619659f8b"
 	},
 	"larch@8": {
 		"biome": "457906b117b2d6ceb4e07af1ac06dacd",
 		"bridges": "259591cd5bc276b780c3fd267f0a9a6d",
-		"height": "087bbf62c787f87f28ad89b55b5f15aad33bb0a3b0e12e1b894d911d4a9b2344",
-		"input": "04632547cd803e0cb77fdc837f1b7fb466611a90cb7122c995e6a2de2678f719",
+		"height": "48a66073712742f44a0a51735756c0da61b3b51c742bb6550672e9869bbb4551",
+		"input": "d7a7c900ba97e8d6ae9ede91908fb36f0c92cf1f69252907a815c379175e8c43",
 		"other": "06e2c0ba7f50dc80174ec52b304f5dff",
-		"placements": "5d8d0f5191d2528ac4acbbf8ba41e551",
-		"roads": "e699bc7e99ac30ff1d160f772ed7f56f",
+		"placements": "1ac7c2aed165d3215ca6eebbe0b9a9a1",
+		"roads": "92d31bac40768b560b2cafe205bad4c5",
 		"splat0": "47dc50eee0c9764774fb4d695648164c",
 		"splat1": "2e9789e6a6e70c18f50a7be117a67933",
 		"vegmask": "cfde862a92b383675e61a51947ae8de6",
 		"water": "43ffa565190e27f18b8b0f4c0013ec3a"
 	},
 	"larch@1": {
-		"biome": "1f0fd142d7d33a311acc5a88ab9211d5",
+		"biome": "131e839607e6257ae651b8048ea71db1",
 		"bridges": "428b1b895c7baf5bf0dc14187b1f2176",
-		"height": "86fd205d2914c956645997da3648ae40bca366d9f31e60fa8ac94684f6510e61",
-		"input": "856c4116be64cbb5bcade7abb3767bb57e1ce2c9b6471fe0a7aebec6094a346b",
+		"height": "923753d0c2b41c14ec646f37a60e38dba4da1acbe7d8d65660227355a936287f",
+		"input": "3f6f82642da1443557de8476dc519236f98775c6d0702194cba021e4132872df",
 		"other": "fe5db9c3321433ec164d5b3876385b7f",
-		"placements": "bea32a60ae46d802f60494d512d92342",
-		"roads": "5c81af800e03dcee66b7a0112656d03b",
-		"splat0": "a621bff2257e5c8f310bb39f9a2b60b8",
-		"splat1": "c47cde60f3c4e1c20447325f469a8ded",
+		"placements": "ce5b38764945ba90256b7ad8aaca2480",
+		"roads": "4c543157e6a842d4a3722a73dca1c92b",
+		"splat0": "924db4b9f2571030073fda0ff13da4e1",
+		"splat1": "21d2911d2b680bfaebaeaff7cb6d58d5",
 		"vegmask": "3e727b9e729df563b4e908de0705fdc7",
 		"water": "11ae9d82d419d86230b8edcb296f0984"
 	},
@@ -105,7 +105,7 @@ const GOLDEN: Dictionary = {
 		"biome": "423f701a2ad6a1eeae4150f595500be8",
 		"bridges": "d751713988987e9331980363e24189ce",
 		"height": "610dcbd4a7fc99c7f196a75864fd5a39689fb41f44716003315deb4a60bbbc98",
-		"input": "fed3aa73cb664fdb4e55b5e54fa73ebdd75397e49a4659045d4b88cce2b94414",
+		"input": "b23bd762fc0bd09f2708e32f0e1bee557ace179ebcaed1e631d64cea5750ff51",
 		"other": "843b397c22a45284092e175cebfbdee7",
 		"placements": "3da5b316ebd83e080aed1d2f49afce35",
 		"roads": "d225f27768c714916a06da8606183fb3",
@@ -118,7 +118,7 @@ const GOLDEN: Dictionary = {
 		"biome": "85ed8304d70982bc2fc3bc2bde33e4c5",
 		"bridges": "d751713988987e9331980363e24189ce",
 		"height": "7f1b8b76e5a6350cd1ab3861d8ea9d19495f5e0a2b6b2bd4cb143e0c4405f7d7",
-		"input": "c0ac80f8ec2f1631ca4f1ab43c803825df8e07ba0a2d71b7f1b0f72c3729c7d1",
+		"input": "1df69fba57e8ab7bec115ec53de8d42bab45cefde1a46223f37ee83bcb7f19dd",
 		"other": "b2f7269e94d2e05e8dd16db583bc017e",
 		"placements": "3da5b316ebd83e080aed1d2f49afce35",
 		"roads": "d225f27768c714916a06da8606183fb3",
@@ -131,7 +131,7 @@ const GOLDEN: Dictionary = {
 		"biome": "a938c0f2dec997620d1f1dca087221a4",
 		"bridges": "d751713988987e9331980363e24189ce",
 		"height": "809b32aab4cc4e27186efe4bebd1e7c2d347f3fb995415de5e182ecfd65af187",
-		"input": "64bab4fb7359b6000b458c662bae60f822f3bf946b8993621e25c5bb43537a24",
+		"input": "bd758443103e1b60b7e28c9b5503ea9190b270914273510d67e18d1dbd649d5a",
 		"other": "bb546e313f91e8b52ded71379f76f9c9",
 		"placements": "3da5b316ebd83e080aed1d2f49afce35",
 		"roads": "d225f27768c714916a06da8606183fb3",
@@ -144,7 +144,7 @@ const GOLDEN: Dictionary = {
 		"biome": "8a6e68d5177b478ed44b3818a3fc3944",
 		"bridges": "d751713988987e9331980363e24189ce",
 		"height": "82d18d2a78a3af8483a7bb83ac191b7c0f86b5319f6e5492b6854e2bf9f3c719",
-		"input": "74f708a1533e83a84b39bb5603112b19b97bce1cb950d8ced021d3fdac4db774",
+		"input": "04b4843eaa6463a68cda98673485535ec052e65757f44d793641d305a29b67f8",
 		"other": "bd5dd8f87b34ef046099a6c509be10ef",
 		"placements": "632225aa9a7c2ba63a21e6091365bf43",
 		"roads": "df31ee8383d917034c3a79712508ae1f",
@@ -157,7 +157,7 @@ const GOLDEN: Dictionary = {
 		"biome": "3ea92f3174b1b2d540bf6a390d41c512",
 		"bridges": "d751713988987e9331980363e24189ce",
 		"height": "ea8f7a76125cbb985e5c0a440bbe8f113f714e6478f6df363f475af955c25f01",
-		"input": "f636e0b150eb241d37ff5167ff6e55bce8eff6168fa96b5a9eb481b7996d52e6",
+		"input": "4c1923d15338c0b581756640b054630cff53ec74dabbbc7906883174cddc8dec",
 		"other": "5325eb8bd2048bedde87d89a064766fa",
 		"placements": "632225aa9a7c2ba63a21e6091365bf43",
 		"roads": "df31ee8383d917034c3a79712508ae1f",
@@ -271,8 +271,8 @@ func _check(key: String, world: WorldDef, rid: String, spacing: float, rt: Regio
 	fail_test("%s differs in %s: %s" % [key, ", ".join(differs), why])
 
 
-func test_version_is_16() -> void:
-	assert_eq(TerrainComposer.VERSION, 16, "Phase 1 changed no output; VERSION 12 is ADR-0047's town paint, 13 ADR-0059's banks and yards, 14 TD-318's street junctions, 15 world road junctions and bulbs, 16 roadside places at their road's level")
+func test_version_is_17() -> void:
+	assert_eq(TerrainComposer.VERSION, 17, "Phase 1 changed no output; VERSION 12 is ADR-0047's town paint, 13 ADR-0059's banks and yards, 14 TD-318's street junctions, 15 world road junctions and bulbs, 16 roadside places at their road's level, 17 bridge ramps at the grade cap")
 
 
 func test_larch_hollow_at_4_and_8_m() -> void:
