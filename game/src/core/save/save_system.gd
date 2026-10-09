@@ -160,6 +160,10 @@ static func blob_key(file_name: String) -> String:
 	return file_name.get_basename().replace("~", ":")
 
 
+## Files other systems keep in a slot that a save carries over (the Load screen's thumbnail and card).
+const SLOT_EXTRAS: PackedStringArray = ["thumb.webp", "card.json"]
+
+
 static func save_session(session: GameSession, slot: String) -> Error:
 	var final_dir: String = slot_dir(slot)
 	var tmp_dir: String = final_dir + ".tmp"
@@ -189,6 +193,11 @@ static func save_session(session: GameSession, slot: String) -> Error:
 	err = _write_json(tmp_dir.path_join("session.json"), {"save_version": CURRENT_VERSION, "session": session.to_dict()})
 	if err != OK:
 		return err
+	# The Load screen's card (Presentation's GameUI writes them after each save): carried over, so a
+	# slot never shows without its picture between the swap and the next write.
+	for extra: String in SLOT_EXTRAS:
+		if FileAccess.file_exists(final_dir.path_join(extra)):
+			DirAccess.copy_absolute(final_dir.path_join(extra), tmp_dir.path_join(extra))
 	err = _carry_world_bundle(session, final_dir, tmp_dir)
 	if err != OK:
 		Log.warn(&"save", "could not bundle world %s into slot '%s' (%s); the save itself is fine" % [session.world_id, slot, error_string(err)])
