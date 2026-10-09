@@ -1,7 +1,7 @@
 extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
-const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "options_graphics", "options_controls", "new_game", "load", "manual",
+const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "options_graphics", "options_controls", "new_game", "load", "whats_new", "manual",
 	"loading", "pause", "trader", "death", "hud", "vignette", "note_handwritten", "note_scrawl", "note_typed", "note_printed", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
@@ -101,6 +101,8 @@ func _motion(at: Vector2) -> InputEventMouseMotion:
 
 
 func _shot_menu() -> Node:
+	# The menu itself, not the What's new over it (that has its own shot).
+	Settings.whats_new_seen = str(WhatsNewPanel.newest().get("id", ""))
 	var menu: Node = (load("res://src/app/main.tscn") as PackedScene).instantiate()
 	add_child(menu)
 	await _settle(30)
@@ -165,6 +167,15 @@ func _shot_load() -> Node:
 	p.position = (get_viewport().get_visible_rect().size - p.size) * 0.5
 	for r: Dictionary in runs:
 		SaveSystem.delete_slot(str(r["slot"]))
+	return layer
+
+
+func _shot_whats_new() -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var p := WhatsNewPanel.new()
+	layer.add_child(p)
+	await _settle(2)
+	p.position = (get_viewport().get_visible_rect().size - p.size) * 0.5
 	return layer
 
 
