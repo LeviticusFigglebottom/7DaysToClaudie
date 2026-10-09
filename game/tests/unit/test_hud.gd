@@ -30,3 +30,14 @@ func test_skipping_the_intro_opens_the_load_gate_at_once() -> void:
 	assert_true(ui.load_may_step(), "skipped: the gate is open the same frame")
 	assert_null(ui.intro, "and the intro is let go (it fades out on its own)")
 	assert_false(ui.is_intro_playing())
+
+
+func test_loading_tips_keep_the_finds_hidden() -> void:
+	var tips: Array[Array] = FieldManual.loading_tips()
+	assert_gt(tips.size(), 5)
+	for t: Array in tips:
+		assert_false(FieldManual.TIPS_NOT_WHILE_LOADING.has(str(t[0])), "%s gives away a find" % t[0])
+		for hidden: String in FieldManual.TIPS_NOT_WHILE_LOADING:
+			assert_false(str(t[1]).contains(hidden), "%s names %s" % [t[0], hidden])
+	assert_eq(GameUI.tip_seconds("a b c"), 8.0)
+	assert_gt(GameUI.tip_seconds(str(FieldManual.TIPS[6][1])), 30.0)

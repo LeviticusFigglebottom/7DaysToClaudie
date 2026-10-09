@@ -196,18 +196,8 @@ func _build_menu() -> void:
 			func() -> void: Game.start_new_game({"game_mode": "slice", "seed": SLICE_DEMO_SEED}))
 		demo.tooltip_text = ("The curated demo run (seed %d, the Hum on night 3): the same run seed every time," % SLICE_DEMO_SEED) + " so the same buildings, loot and Hum as the QA screenshots. New Game… rolls a fresh run."
 	_add_button("Random World…", _open_new_game.bind(true))
-	for s: Dictionary in slots:
-		var label: String = "Load %s — Day %d" % [str(s.get("slot", "?")).capitalize(), int(s.get("day", 1))]
-		if str(s.get("preset", "")) != "":
-			label += " · %s" % str(s["preset"]).capitalize()
-		if str(s.get("world_mode", "")) == "random":
-			label += " · Random world"
-		var b: Button = _add_button(label, _load.bind(str(s["slot"])))
-		# Save v7: a run whose world is neither on disk nor bundled in its slot gets a new world.
-		var warn: String = SaveSystem.world_warning(s)
-		if warn != "":
-			b.text += " · world missing"
-			b.tooltip_text = warn
+	if not slots.is_empty():
+		_add_button("Load…", _open_load.bind(slots))
 	_add_button("Options…", _open_options)
 	_add_button("The Intro", _play_intro)
 	_add_button("Quit", func() -> void: get_tree().quit())
@@ -284,6 +274,24 @@ func _open_new_game(random: bool = false) -> void:
 		panel.queue_free()
 		_list.visible = true
 		_set_title_visible(true))
+
+
+## Every run as a card (thumbnail, day, place, play time, world; delete with confirm).
+func _open_load(slots: Array[Dictionary]) -> void:
+	var panel := LoadPanel.new()
+	panel.slots = slots
+	add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5
+	_list.visible = false
+	_set_title_visible(false)
+	panel.load_requested.connect(_load)
+	panel.closed.connect(func() -> void:
+		panel.queue_free()
+		_list.visible = true
+		_set_title_visible(true)
+		# A run deleted there leaves Continue and Load… pointing at it.
+		_build_menu())
 
 
 ## The big title would show beside (and under) the wide New Game panel.

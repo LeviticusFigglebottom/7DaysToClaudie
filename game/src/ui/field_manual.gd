@@ -23,6 +23,20 @@ const TIPS: Array[Array] = [
 	["Ezra Vane", "A convict from two drops before yours, a lineman before the Program got him. He is holed up in his line truck by the power line, out in the timber, with a broken leg: bring him a bandage, a first aid kit or painkillers and he walks with you. Talk to him (E) to give orders: follow, stay here, guard here, gather, fetch, give me what you carry, store at base; [H] whistles him to follow or to stay. Look at the spot or the thing first: he gathers round what you last looked at (wood, stone or fibre, into his own pack: twelve slots and two logs on his shoulder) and fetches it. His trees count half for your XP and directives. Following, he fights whatever comes at you or at him, and carries a lantern at night (his light, not yours: it doesn't give you away). Guarding, he holds the ground round his spot. If he goes down, get to him with a bandage or a first aid kit and hold E: he bleeds out in three minutes, and then he's gone till the next dawn, when he limps back to your bed. Under one-life rules he doesn't come back."],
 	["Your record", "Everything you survive teaches you something: Hollowed put down, places searched, logs set, things made, buildings cleared, a Hum lived through. Each level is a point to spend in the Record — on an attribute, or on a perk once its attribute is high enough. The Cordon notices too: the longer you last and the more you learn, the worse the Hollowed that come for you, and the better what you find."],
 ]
+## Survival pages the loading screen never shows: they give away a find (a person, a people) that
+## the player should meet in the world first. The manual still has them.
+const TIPS_NOT_WHILE_LOADING: PackedStringArray = ["Ezra Vane", "The Ashen"]
+
+
+## The Survival pages the loading screen rotates through ([title, text]).
+static func loading_tips() -> Array[Array]:
+	var out: Array[Array] = []
+	for t: Array in TIPS:
+		if not TIPS_NOT_WHILE_LOADING.has(str(t[0])):
+			out.append(t)
+	return out
+
+
 ## Attribute display order (the data is sorted by id).
 const ATTR_ORDER: PackedStringArray = ["sinew", "grit", "keen", "quiet", "wits"]
 ## Perk/attribute effect keys -> [format, scale] for the Record tab.

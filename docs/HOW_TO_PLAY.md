@@ -48,13 +48,15 @@ stops and holds a still frame). *Options… → Menu backdrop* picks moving, sti
 | New Game… | The world settings screen (§2) |
 | Vertical Slice demo (dev) | Developers only (the editor, or `-- --dev`): starts the slice's curated demo run at once: Survivor difficulty, 30-minute days, the first Hum on day 3, always run seed 4471 (New Game… rolls a fresh seed) |
 | Random World… | The world settings screen, open on its World tab with a random world chosen |
-| Load RunN — Day N · Preset | Each saved run, newest first ("· Random world" marks those). The test runs' own saves (smoke, tour…) show only to developers |
+| Load… | Every saved run as a card, newest first: the frame it was saved on, the day and hour, where you were, the difficulty, the world and the time played. **Delete** asks once more before it deletes. The test runs' own saves (smoke, tour…) show only to developers |
 | Options… | Mouse sensitivity and invert, field of view, head bob, five volumes, brightness, interface size (Auto grows the text above 1080p; or 75–200%), the menu backdrop, graphics preset, fullscreen, V-sync |
 | The Intro | Replays the new-game intro |
 
 **The intro.** A new game opens with a short intro (the Cordon, the Remand Program and how your
 drop went wrong) while the world loads. Hold **Esc** (or Space, Enter) or click **Skip** to skip
-it. If the world is ready before it ends, the world waits, paused, until it does.
+it. If the world is ready before it ends, the world waits, paused, until it does. Skipped (or
+when you load a save), the loading screen turns through the Field Manual's Survival pages while
+the world comes up.
 
 A boxed **notice** on the menu means something is off with your copy (the packaged build shows
 none):
