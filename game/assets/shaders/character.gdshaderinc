@@ -6,7 +6,8 @@
 //   CUSTOM0  rest-pose z, gate, wet (0..1), bruise (0..1)
 //   CUSTOM1  trim (signed distance, m), seam (signed distance, m), paint (signed distance, m),
 //            edge (distance to the nearest garment edge, m: + hemmed, - torn)
-//   COLOR    R baked AO, G dirt / blood, B where the Bloom has spread
+//   COLOR    R baked AO, G blood, B where the Bloom has spread, A dirt (bodies; 1 on meshes that
+//            don't bake it, and the first-person arms' dorsal mask: only bodies set dirt_amount)
 // Patterns read the rest pose, so veins, mottling, seams and paint stay put on the skin and the
 // cloth as the limbs move (std_surface patterns from the skinned position and they slid: TD-027).
 // A mesh without these attributes reads zeros: nothing gated, but every distance is 0 (on a seam,
@@ -117,6 +118,21 @@ float hm_bloom_net(vec3 rest, float scale, float fine) {
 		v = max(v, v2 * 0.65);
 	}
 	return v;
+}
+
+// Dirt, apart from blood (TD-192: one blood-and-grime layer turned whole bodies red when the grime
+// was raised): earth ground in where vertex A is high (the body's grime, the mud on its lower legs)
+// and in the creases (baked AO), broken into smudges by rest-space noise. Blood stays the wear
+// layer (vertex G) and goes over it.
+void hm_char_dirt(inout vec3 alb, inout float rough, float mask, float ao, vec3 rest, float amount, vec3 color) {
+	if (amount <= 0.001) {
+		return;
+	}
+	float n = hm_char_noise(rest * 9.0 + 3.1) * 0.65 + hm_char_noise(rest * 31.0 + 1.7) * 0.35;
+	float m = clamp(mask, 0.0, 1.0) * 1.3 + (1.0 - ao) * 0.6;
+	float d = smoothstep(0.3, 0.8, m * amount * (0.45 + 1.1 * n));
+	alb = mix(alb, color * (0.8 + 0.4 * n), d * 0.85);
+	rough = mix(rough, 0.92, d * 0.8);
 }
 
 // Crisp mask from a signed distance (negative inside), anti-aliased over a pixel.

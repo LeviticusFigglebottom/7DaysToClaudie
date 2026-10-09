@@ -29,6 +29,9 @@ uniform sampler2D wear_normal_tex : hint_normal, filter_linear_mipmap_anisotropi
 uniform sampler2D wear_orm_tex : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float wear_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float wear_uv_scale = 1.0;
+// Dirt where vertex A is high (bodies only: hm_char_dirt). 0 = none.
+uniform float dirt_amount : hint_range(0.0, 2.0) = 0.0;
+uniform vec4 dirt_color : source_color = vec4(0.22, 0.18, 0.13, 1.0);
 // Grime gathers in the creases (low baked AO).
 uniform vec4 grime_color : source_color = vec4(0.16, 0.14, 0.11, 1.0);
 uniform float grime_amount : hint_range(0.0, 1.0) = 0.0;
@@ -120,7 +123,9 @@ void fragment() {
 		alb = mix(alb, grime_color.rgb, t * 0.35);
 	}
 
-	// Blood and grime.
+	// Dirt, then blood over it.
+	hm_char_dirt(alb, rough, COLOR.a, COLOR.r, rest, dirt_amount, dirt_color.rgb);
+	// Blood.
 	float wear_level = instance_wear >= 0.0 ? instance_wear : wear_amount;
 	if (wear_level > 0.001) {
 		vec2 wuv = UV * wear_uv_scale;

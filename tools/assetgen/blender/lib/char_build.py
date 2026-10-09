@@ -299,7 +299,8 @@ def _set_part_uvs(obj, part: X.Part, f0: int):
 
 
 def _vertex_colors(model, objs, caps, rng):
-    """R = AO, G = dirt/blood mask, B = Bloom mask, A = 1."""
+    """R = AO, G = blood mask, B = Bloom mask, A = dirt mask (grime and mud: the skin and cloth
+    shaders' dirt layer, apart from blood since TD-192)."""
     vcolor.bake_ao(objs + caps, samples=14, distance=0.22, strength=0.9, ground=False)
     nz = model.noise
     s = model.s
@@ -309,8 +310,9 @@ def _vertex_colors(model, objs, caps, rng):
     grime = float(model.p.get("grime", 0.4))
     for o in objs + caps:
         V = M.mesh_arrays(o)
-        g = grime * (0.35 + 0.65 * np.clip(nz.fbm(V, 6.0, 3) * 0.5 + 0.5, 0, 1))
-        g += np.clip(0.30 - V[:, 2] / s, 0, 0.3) * 1.6 * grime          # mud on the lower legs
+        dirt = grime * (0.35 + 0.65 * np.clip(nz.fbm(V, 6.0, 3) * 0.5 + 0.5, 0, 1))
+        dirt += np.clip(0.30 - V[:, 2] / s, 0, 0.3) * 1.6 * grime       # mud on the lower legs
+        g = np.zeros(len(V))
         for c, r, amt in wounds:
             d = np.sqrt(((V - c) ** 2).sum(-1))
             spread = 1 - np.clip((d - r) / (r * 2.5 + 0.03), 0, 1)
@@ -337,7 +339,7 @@ def _vertex_colors(model, objs, caps, rng):
             g[:] = 1.0
         vcolor.set_channel(o, 1, lambda co, n, li, g=g, lv=_loop_verts(o): float(g[lv[li]]))
         vcolor.set_channel(o, 2, lambda co, n, li, bl=bl, lv=_loop_verts(o): float(bl[lv[li]]))
-        vcolor.fill_channel(o, 3, 1.0)
+        vcolor.set_channel(o, 3, lambda co, n, li, a=np.clip(dirt, 0, 1), lv=_loop_verts(o): float(a[lv[li]]))
 
 
 def _loop_verts(o):
