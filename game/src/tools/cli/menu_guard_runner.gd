@@ -15,6 +15,9 @@ const HOVER_ONLY: PackedStringArray = ["Continue", "The Intro", "Quit", "Vertica
 const INPUT_TIMEOUT: float = 3.0
 ## How long the pictures may take to load before the backdrop counts as having none.
 const PICTURE_WAIT: float = 10.0
+## Seconds with no frame at all before the watchdog calls the menu frozen and ends the run (Build
+## #98's live backdrop stopped the main thread for minutes: no frame ever came back to report).
+const STALL: float = 20.0
 
 var seconds: float = 20.0
 var limit: float = 1.5
@@ -29,7 +32,11 @@ var _worst: float = 0.0
 var _worst_phase: String = ""
 var _slow: Array[String] = []
 var _failures: Array[String] = []
+## Kept apart until the end, so a build without pictures still has its input and frames tested.
+var _backdrop_fail: Array[String] = []
 var _mouse: Vector2 = Vector2.ZERO
+var _watchdog: Thread
+var _watching: bool = true
 
 
 func _ready() -> void:
@@ -41,7 +48,28 @@ func _ready() -> void:
 			"--seconds": seconds = float(args[i + 1])
 			"--limit": limit = float(args[i + 1])
 			"--expect-pictures": expect_pictures = true
+	_watchdog = Thread.new()
+	_watchdog.start(_watch)
 	_run.call_deferred()
+
+
+func _exit_tree() -> void:
+	_watching = false
+	if _watchdog != null and _watchdog.is_started():
+		_watchdog.wait_to_finish()
+
+
+## On its own thread: a main thread that draws no frame for STALL seconds is reported and the run
+## ended, so a frozen menu fails with a reason instead of hanging until a CI timeout.
+func _watch() -> void:
+	while _watching:
+		OS.delay_msec(500)
+		var last: int = _last_us
+		if last > 0 and float(Time.get_ticks_usec() - last) / 1e6 > STALL:
+			print("MENU_GUARD FAIL: the menu froze: no frame for %.0f s (during %s)" % [STALL, _phase])
+			print("MENU_GUARD done: FAIL (frozen)")
+			OS.kill(OS.get_process_id())
+			return
 
 
 func _process(_delta: float) -> void:
@@ -113,6 +141,7 @@ func _run() -> void:
 			# A list rebuilt on closing (Load…) lays its new entries out over the next frames.
 			await _frames_pass(3)
 	var report := _report(rounds)
+	_failures.append_array(_backdrop_fail)
 	print(report)
 	_finish()
 
@@ -262,7 +291,13 @@ func _report_backdrop() -> void:
 	if bd == null:
 		print("MENU_GUARD backdrop: none (Options sets it off)")
 		if expect_pictures:
-			_failures.append("backdrop: none, and pictures were expected")
+			_backdrop_fail.append("backdrop: none, and pictures were expected")
+		return
+	# A pack from before ADR-0065 has the live 3D backdrop: no pictures to report.
+	if bd.get(&"_paths") == null:
+		print("MENU_GUARD backdrop: a live 3D scene (a build from before the pictures, ADR-0065)")
+		if expect_pictures:
+			_backdrop_fail.append("backdrop: a live 3D scene, and pictures were expected")
 		return
 	var paths: PackedStringArray = bd.get(&"_paths")
 	var end: int = Time.get_ticks_msec() + int(PICTURE_WAIT * 1000.0)
@@ -278,7 +313,7 @@ func _report_backdrop() -> void:
 		state = "%d of %d pictures loaded, mode %s" % [loaded, paths.size(), str(bd.get(&"mode"))]
 	print("MENU_GUARD backdrop: %s" % state)
 	if expect_pictures and (paths.is_empty() or loaded < paths.size()):
-		_failures.append("backdrop: %s, and pictures were expected" % state)
+		_backdrop_fail.append("backdrop: %s, and pictures were expected" % state)
 
 
 func _report(rounds: int) -> String:
