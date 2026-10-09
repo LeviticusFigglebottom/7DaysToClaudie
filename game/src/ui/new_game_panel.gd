@@ -245,6 +245,13 @@ func _build_world_tab() -> void:
 	top.columns = 2
 	left.add_child(top)
 	_map = OptionButton.new()
+	# The label is long (every built region by name): sized to it, the button widened the whole
+	# panel past a 1280 px window and pushed Back off screen (the menu guard caught it). It clips
+	# instead, with the full label as its tooltip.
+	_map.fit_to_longest_item = false
+	_map.clip_text = true
+	_map.custom_minimum_size = Vector2(320, 0)
+	_map.tooltip_text = MAIN_MAP_LABEL
 	_map.add_item(MAIN_MAP_LABEL)
 	_map.add_item("Random world")
 	_map.item_selected.connect(_on_map_changed)
