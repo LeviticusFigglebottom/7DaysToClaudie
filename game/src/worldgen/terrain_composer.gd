@@ -65,8 +65,9 @@ const PAD_RAMP_GRADE: float = 0.08
 const PAD_RAMP_MIN: float = 12.0
 const PAD_RAMP_MAX: float = 60.0
 const PAD_RAMP_SIDE: float = 10.0
-## A region-graded road within PAD_PIN_REACH m of a pad is pinned to its level (VERSION 15).
-const PAD_PIN_REACH: float = 6.0
+## A region-graded road whose centre line comes within PAD_PIN_REACH m of a pad (its corridor all
+## but touching it) is pinned to its level (VERSION 15).
+const PAD_PIN_REACH: float = 8.0
 ## Banks beside a generated world's roads: the slope (rise over run) of a cut and of a fill, between
 ## the two values by a value noise along the road (BANK_CELL m across), a flat verge of up to
 ## BANK_VERGE m before the bank, the radius (m) of the rounding where the bank meets the land, the
@@ -260,7 +261,7 @@ static func town_street_profiles(streets: Array, h_fn: Callable, fixed: Array = 
 
 ## Pins `prof` (along `line`) to `oprof` (along `other`) wherever the two lines come within
 ## JUNCTION_REACH m (each local closest approach), eased over JUNCTION_EASE m along `line`.
-static func _pin_profile(prof: PackedFloat32Array, line: Polyline2, other: Polyline2, oprof: PackedFloat32Array) -> void:
+static func _pin_profile(prof: PackedFloat32Array, line: Polyline2, other: Polyline2, oprof: PackedFloat32Array, ease: float = JUNCTION_EASE) -> void:
 	if oprof.is_empty() or not line.bounds.grow(JUNCTION_REACH).intersects(other.bounds):
 		return
 	var n: int = prof.size()
@@ -276,10 +277,11 @@ static func _pin_profile(prof: PackedFloat32Array, line: Polyline2, other: Polyl
 			continue
 		var at: Vector3 = other.closest(line.point_at(k2 * PROFILE_STEP))
 		var delta: float = profile_at(oprof, at.y) - prof[k2]
-		for k3: int in range(maxi(0, k2 - int(JUNCTION_EASE / PROFILE_STEP)), mini(n, k2 + int(JUNCTION_EASE / PROFILE_STEP) + 1)):
+		var e: float = maxf(ease, PROFILE_STEP)
+		for k3: int in range(maxi(0, k2 - int(e / PROFILE_STEP)), mini(n, k2 + int(e / PROFILE_STEP) + 1)):
 			var off: float = absf(float(k3 - k2)) * PROFILE_STEP
-			if off < JUNCTION_EASE:
-				prof[k3] += delta * (1.0 - smoothstep(0.0, JUNCTION_EASE, off))
+			if off < e:
+				prof[k3] += delta * (1.0 - smoothstep(0.0, e, off))
 
 
 ## Every world road's profile ({id: PackedFloat32Array}, before bridges) on a world graded from
@@ -1237,6 +1239,7 @@ class _Build:
 				r["step"] = prof["step"]
 				r["spans"] = prof["spans"]
 			else:
+				r["_ri"] = ri
 				_build_profile(r)
 			for si: int in line.points.size() - 1:
 				var a: Vector2 = line.points[si]
@@ -1391,6 +1394,20 @@ class _Build:
 				if w > 0.0:
 					prof[k3] = lerpf(prof[k3], target, w)
 
+	## Pins a region-graded road's profile to the roads before it in road_list (whose profiles are
+	## built) where it meets them, eased over JUNCTION_EASE m or half its length, whichever is
+	## shorter, so a short lane from the highway to a pad keeps the pad's level at its far end
+	## (VERSION 15).
+	func _pin_to_roads(prof: PackedFloat32Array, line: Polyline2, upto: int) -> void:
+		if upto <= 0:
+			return
+		var ease: float = minf(JUNCTION_EASE, line.total_length * 0.5)
+		for j: int in upto:
+			var o: Dictionary = road_list[j]
+			if not o.has("profile") or not (o["spans"] as Array).is_empty():
+				continue
+			TerrainComposer._pin_profile(prof, line, o["line"], o["profile"], ease)
+
 	## {profile, step, spans} of a road (see _build_profile).
 	func _profile_data(r: Dictionary) -> Dictionary:
 		var line: Polyline2 = r["line"]
@@ -1411,6 +1428,7 @@ class _Build:
 				float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
 			if not by_world:
 				_pin_to_pads(prof, line)
+				_pin_to_roads(prof, line, int(r.get("_ri", -1)))
 		var count: int = prof.size()
 		var spans: Array = []
 		for bdef: Variant in r["bridges"]:
