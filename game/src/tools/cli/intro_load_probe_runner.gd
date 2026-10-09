@@ -10,6 +10,10 @@ var _frames: Array[Dictionary] = []
 var _t0: int = 0
 var _ready_ms: int = -1
 var _done: bool = false
+## --shot <png>: saves a frame of the intro's world card (a rendered run) once it has shown 3 s.
+var _shot_path: String = ""
+var _world_shot_s: float = 0.0
+var _saw_world_shot: bool = false
 
 
 func _ready() -> void:
@@ -18,6 +22,9 @@ func _ready() -> void:
 	process_priority = 100000
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	_with_intro = args.has("--intro")
+	var si: int = args.find("--shot")
+	if si >= 0 and si + 1 < args.size():
+		_shot_path = args[si + 1]
 	var opts: Dictionary = {"game_mode": "survival", "seed": 4471, "slot": "intro_probe",
 		"skip_intro": not _with_intro, "force_intro": _with_intro}
 	var wi: int = args.find("--world")
@@ -40,6 +47,13 @@ func _process(_delta: float) -> void:
 	var intro: Object = ui.get(&"intro") if ui != null else null
 	var moving: bool = intro != null and (intro as Node).is_inside_tree() and bool(intro.call(&"is_playing")) and not bool(intro.call(&"is_calm"))
 	var loading: bool = w == null or not bool(w.get(&"is_ready"))
+	if intro != null and is_instance_valid(intro) and bool(intro.call(&"is_showing_world")):
+		_saw_world_shot = true
+		_world_shot_s += ms / 1000.0
+		if _shot_path != "" and _world_shot_s > 3.0:
+			get_viewport().get_texture().get_image().save_png(_shot_path)
+			print("INTRO_PROBE world shot saved to %s" % _shot_path)
+			_shot_path = ""
 	if not loading and _ready_ms < 0:
 		_ready_ms = Time.get_ticks_msec() - _t0
 	var what: String = ""
@@ -77,6 +91,7 @@ func _report() -> void:
 				mv_hist.append(ms)
 				print("INTRO_PROBE slow moving frame %.1f ms at %d ms: %s" % [ms, int(f["t"]), str(f["what"])])
 	var total: int = Time.get_ticks_msec() - _t0
+	print("INTRO_PROBE world_shot=%s" % _saw_world_shot)
 	print("INTRO_PROBE intro=%s world_ready_ms=%d control_ms=%d load_frames=%d load_worst_ms=%.1f load_frames_over_50ms=%d intro_moving_frames=%d intro_moving_worst_ms=%.1f intro_moving_over_50ms=%d %s" % [
 		_with_intro, _ready_ms, total, load_n, load_worst, load_slow, mv_n, mv_worst, mv_slow, str(mv_hist.slice(0, 12))])
 	get_tree().quit(0)

@@ -244,6 +244,8 @@ func _hold_world_for_intro() -> void:
 	_intro_holds_world = true
 	push_modal(&"intro")
 	get_tree().paused = true
+	# The intro's world shot shows the world: not the HUD over it.
+	_hud.visible = false
 
 
 func _on_intro_finished() -> void:
@@ -256,6 +258,7 @@ func _on_intro_finished() -> void:
 	if _intro_holds_world:
 		_intro_holds_world = false
 		get_tree().paused = false
+		_hud.visible = true
 		pop_modal(&"intro")
 
 
