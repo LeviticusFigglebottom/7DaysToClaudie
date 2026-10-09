@@ -147,7 +147,7 @@
         {"level": -1, "at": [3, 2], "dir": "S"}
       ],
       "ladders": [
-        {"level": 0, "at": [2, 0], "side": "S", "hatch": true}
+        {"level": 0, "at": [2, 0], "side": "E", "hatch": true}
       ],
       "props": [
         {"id": "stack_1", "prop": "town3_library_stack", "pos": [4.5, 2.5], "rot": 0, "alt": "stacks:as_shelved"},
