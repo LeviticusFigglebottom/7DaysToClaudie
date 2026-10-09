@@ -1,0 +1,108 @@
+{
+ "_doc": "The Cordon wall (DESIGN §1): the precast line round the valley, its Route 9 gate and the culvert that carries it over the Tamsin where the river leaves the valley (main-map region D7, placed by the region), and the Program notice board of Waystation 9 (POI waystation_9_post). Models: tools/assetgen/blender/generators/props_cordon_wall.py -> models/props/<id>[_worn].glb. Axes (Godot): +X along the wall, +Y up, +Z = the VALLEY side (inside the Cordon; the stencilled QUARANTINE BOUNDARY face), -Z = outside. The wall pieces' origin is ON THE WALL LINE at the foot (the river pieces': on the river bed), not the centre of their footprint, so they tile along a polyline: put each piece's origin on the line, rot = the line's direction (rot 0 runs along +X with the valley to +Z). size = [x, y, z] in metres measured from the clean model; boxes are the collision (they mirror the generator's colliders) and their `at` is each box's base centre. standin 'boxes': before `make assets` the model is drawn as its boxes (ModelLibrary), so the wall still reads and blocks.",
+ "defs": [
+  {
+   "id": "cordon_wall_panel",
+   "name": "Cordon Wall",
+   "description": "Six metres of the Cordon: four grey precast T-wall segments six metres tall on one line, a concertina coil and barbed strands on outrigger posts along the top, QUARANTINE BOUNDARY - DO NOT APPROACH THE WALL sprayed on the valley side, CORDON AUTHORITY - RESTRICTED LINE on the other.",
+   "_tiling": "PITCH 6.0 m: the panel runs x -3.0..+3.0 with flush ends (the concrete stops at +-2.985, a 3 cm joint like the joints between its own segments; the wire runs to +-3.0 so neighbours' coils meet). Panel i of a straight run stands at start + (i + 0.5) * 6.0 along the line. The inverted-T base is 1.5 m deep (z -0.75..+0.75), 0.36 m high; the stem 0.36 m thick at its foot, 0.22 m at the top (6.0 m); wire to 6.9 m. At a bend, turn the next panel about the shared end point; the bases overlap on the inside of the bend.",
+   "tags": ["cordon", "wall", "structure", "concrete"],
+   "variants": {"clean": "props/cordon_wall_panel", "worn": "props/cordon_wall_panel_worn"},
+   "physics": "static",
+   "size": [6.0, 6.9, 1.5],
+   "boxes": [
+    {"size": [6.0, 0.36, 1.5], "at": [0.0, 0.0, 0.0]},
+    {"size": [6.0, 5.64, 0.36], "at": [0.0, 0.36, 0.0]},
+    {"size": [6.0, 0.9, 0.7], "at": [0.0, 6.0, 0.0]}
+   ],
+   "standin": "boxes",
+   "blocks_sight": true,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "cordon_wall_gate",
+   "name": "Cordon Gate, Route 9",
+   "description": "Where Route 9 met the Cordon: a T-wall pier at each side, a steel gantry between them with the red CORDON GATE - ROUTE 9 / CLOSED BY ORDER 14 plate and two floodlights, two barred swing leaves chained and padlocked in the middle under a coil of razor wire, and the checkpoint booth on the valley side.",
+   "_tiling": "Two panels' pitch: 12.0 m, x -6.0..+6.0 flush, so it replaces two cordon_wall_panel in a run (its origin where the shared end of those two would be). Piers x +-4.5..+-6.0 (as the panel's segments); the leaves fill the 9.0 m between them (closed: nothing passes); the road's centreline is x 0. The booth stands on the valley side in front of the right pier (x 3.85..5.85, z +1.05..+3.05; door on its road side, -X, z 1.45..2.35, enterable). The footprint is not centred: z -0.75 (the piers' base) .. +3.56 (the booth's sandbags).",
+   "tags": ["cordon", "wall", "gate", "structure", "metal"],
+   "variants": {"clean": "props/cordon_wall_gate", "worn": "props/cordon_wall_gate_worn"},
+   "physics": "static",
+   "size": [12.0, 6.9, 4.31],
+   "boxes": [
+    {"size": [1.5, 0.36, 1.5], "at": [-5.25, 0.0, 0.0]},
+    {"size": [1.5, 5.64, 0.36], "at": [-5.25, 0.36, 0.0]},
+    {"size": [1.5, 0.9, 0.7], "at": [-5.25, 6.0, 0.0]},
+    {"size": [1.5, 0.36, 1.5], "at": [5.25, 0.0, 0.0]},
+    {"size": [1.5, 5.64, 0.36], "at": [5.25, 0.36, 0.0]},
+    {"size": [1.5, 0.9, 0.7], "at": [5.25, 6.0, 0.0]},
+    {"size": [9.0, 4.86, 0.2], "at": [0.0, 0.0, 0.0]},
+    {"size": [9.0, 0.45, 0.3], "at": [0.0, 5.375, 0.0]},
+    {"size": [2.0, 2.55, 0.1], "at": [4.85, 0.0, 1.07]},
+    {"size": [0.1, 2.55, 2.0], "at": [5.83, 0.0, 2.05]},
+    {"size": [2.0, 2.55, 0.1], "at": [4.85, 0.0, 3.03]},
+    {"size": [0.1, 2.55, 0.7], "at": [3.87, 0.0, 2.7]},
+    {"size": [0.1, 2.55, 0.4], "at": [3.87, 0.0, 1.25]},
+    {"size": [2.3, 0.15, 2.4], "at": [4.85, 2.595, 2.05]},
+    {"size": [1.8, 0.34, 0.32], "at": [4.85, 0.0, 3.4]}
+   ],
+   "standin": "boxes",
+   "light": {"color": "#eef2ff", "energy": 5.0, "range": 24.0, "flicker": 0.02, "offset": [0.0, 5.3, 0.5], "shadow": true, "power": "generator", "variants": {"worn": {"energy": 3.0, "flicker": 0.08}}},
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "cordon_river_gate",
+   "name": "Cordon Sluice",
+   "description": "One bay of the culvert that carries the Cordon over the river: concrete half-piers with cutwaters on the upstream side, a lintel wall over a water opening five metres wide and three and a half high, filled by a steel trash rack the water runs through and nobody does, DANGER - SLUICE 9 - NO ENTRY stencilled over it, a dark waterline.",
+   "_tiling": "PITCH 6.0 m like the panels: x -3.0..+3.0 flush; side by side, two bays' half-piers make one 0.8 m pier and their half cutwaters one full nose. The origin is on the river BED under the wall line (the apron's top); the water opening is x -2.6..+2.6, y 0..3.6 (keep the water surface under ~3 m); the concrete tops out at 8.0 m, wire to 8.9 m. Depth z -1.2..+1.2 (+1.75 at the cutwaters, which point upstream: +Z, the valley side, since the river leaves the valley). A 14-26 m river takes 3-5 bays between two cordon_river_abutment. Set the bays' y so their top meets the bank panels' (bed = bank - 2 m keeps the tops level: 8.0 vs 6.0).",
+   "tags": ["cordon", "wall", "structure", "concrete", "water"],
+   "variants": {"clean": "props/cordon_river_gate", "worn": "props/cordon_river_gate_worn"},
+   "physics": "static",
+   "size": [6.0, 8.9, 2.95],
+   "boxes": [
+    {"size": [0.4, 8.0, 2.4], "at": [-2.8, 0.0, 0.0]},
+    {"size": [0.4, 8.0, 2.4], "at": [2.8, 0.0, 0.0]},
+    {"size": [0.4, 4.45, 0.55], "at": [-2.8, 0.0, 1.475]},
+    {"size": [0.4, 4.45, 0.55], "at": [2.8, 0.0, 1.475]},
+    {"size": [5.2, 4.4, 0.9], "at": [0.0, 3.6, 0.0]},
+    {"size": [5.2, 3.6, 0.14], "at": [0.0, 0.0, 0.42]},
+    {"size": [6.0, 0.9, 0.7], "at": [0.0, 8.0, 0.0]}
+   ],
+   "standin": "boxes",
+   "blocks_sight": true,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "cordon_river_abutment",
+   "name": "Cordon Sluice Abutment",
+   "description": "The mass concrete end of the Cordon's sluice, standing in the bank, with wingwalls stepping down along the river upstream and down to hold the bank.",
+   "_tiling": "3.0 m along the wall (x -1.5..+1.5); its river face is x +1.5, where the first cordon_river_gate bay butts on (that bay's origin 4.5 m on from the abutment's). The far bank's abutment is the same prop turned 180 (it is symmetric front to back). Origin on the river bed like the bays; 8.0 m of concrete, wire to 8.9 m; the wingwalls run from the river-face corners outward to z +-3.5, flared 32 degrees toward the land, stepping down from 7.7 to 3.0 m. The bank panels continue from x -1.5 (they stand on the bank: put the abutment's y at bank - 2 m for level tops).",
+   "tags": ["cordon", "wall", "structure", "concrete", "water"],
+   "variants": {"clean": "props/cordon_river_abutment", "worn": "props/cordon_river_abutment_worn"},
+   "physics": "static",
+   "size": [3.0, 8.9, 7.05],
+   "boxes": [
+    {"size": [3.0, 8.0, 2.4], "at": [0.0, 0.0, 0.0]},
+    {"size": [3.0, 0.9, 0.7], "at": [0.0, 8.0, 0.0]},
+    {"size": [2.6, 5.5, 0.45], "at": [0.586, 0.0, -2.303], "yaw": 122.0},
+    {"size": [2.6, 5.5, 0.45], "at": [0.586, 0.0, 2.303], "yaw": -122.0}
+   ],
+   "standin": "boxes",
+   "blocks_sight": true,
+   "rooms": ["exterior"]
+  },
+  {
+   "id": "cordon_notice_board",
+   "name": "Program Notice Board",
+   "description": "A steel-framed board bolted to the wall under a tin hood: PROGRAM NOTICES between two Remand Program roundels, typed notices to salvagers, a sheet of standing orders and a few scrawled slips.",
+   "tags": ["cordon", "sign", "metal"],
+   "variants": {"clean": "props/cordon_notice_board", "worn": "props/cordon_notice_board_worn"},
+   "collision": "box",
+   "physics": "static",
+   "size": [1.7, 1.54, 0.27],
+   "wall_mounted": true,
+   "blocks_sight": false,
+   "rooms": ["exterior", "office"]
+  }
+ ]
+}
