@@ -23,8 +23,9 @@ const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold
 ## it needs no world. SHOT_ZOOM is the zoom at the card's end (the old live shot's push in).
 const SHOT_STILL: String = "res://assets/generated/stills/intro_wreck.png"
 const SHOT_ZOOM: float = 1.12
-## The hour the picture is taken at (first light: the wreck burned out before it).
-const SHOT_HOUR: float = 6.4
+## The hour the picture is taken at: just after first light (the wreck burned out before it; at
+## 06:24 the hull was a dark shape under the card's words).
+const SHOT_HOUR: float = 7.0
 ## The world card's camera (rendered): its field of view, metres out from its target, up, and
 ## degrees it turns over the card.
 const SHOT_FOV: float = 52.0
