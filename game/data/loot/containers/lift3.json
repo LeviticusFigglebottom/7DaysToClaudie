@@ -1,0 +1,29 @@
+{
+ "_doc": "Containers of the Lift 3 crash site (lift3_crash_site; containers/lift3.json -> tables/lift3.json). A tier-1 find on the player's first days: modest early gear (cloth, a bottle, a light, a little food), nothing that outclasses a town house.",
+ "defs": [
+  {
+   "id": "lift3_cargo",
+   "name": "Program Cargo",
+   "loot_table": "lift3_cargo",
+   "slots": 6,
+   "search_time": 1.8,
+   "noise": 4
+  },
+  {
+   "id": "lift3_canister",
+   "name": "Unopened Supply Canister",
+   "loot_table": "lift3_canister",
+   "slots": 6,
+   "search_time": 1.5,
+   "noise": 4
+  },
+  {
+   "id": "lift3_flight_kit",
+   "name": "Crew Survival Kit",
+   "loot_table": "lift3_flight_kit",
+   "slots": 6,
+   "search_time": 1.6,
+   "noise": 3
+  }
+ ]
+}

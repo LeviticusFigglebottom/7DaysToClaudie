@@ -1,0 +1,26 @@
+{
+ "_doc": "Readable notes of the Lift 3 crash site (lift3_crash_site): the Program lift the player came in on (DESIGN §1, the intro's radio cards: over the firebreak at 0541, number two lost, down short of the drop; Control at 0544). Tier 1: they deepen the crash and the Program, never the outbreak's cause (docs/LORE_TRAIL.md 'What early places must not say'). Random worlds place it too, so no note names a town. Items: items/lift3.json note_<id>.",
+ "defs": [
+  {
+   "id": "lift3_manifest",
+   "title": "Lift Manifest, Lift 3",
+   "style": "typed",
+   "author": "Remand Salvage Program, Waystation 9 (flight copy)",
+   "body": "REMAND SALVAGE PROGRAM - LIFT MANIFEST (FLIGHT COPY)\nLift 3. Waystation 9 to the drop. Wheels up 0530, over the drop at first light.\n\nCREW: Capt. N. Whitlock (pilot in command). F/O J. Iredale.\n\nSALVAGERS, YEAR 2 INTAKE:\nNo. 4466 DACE, R. - STRUCK. Deceased in holding, 0310. Seat 2 to be cleaned.\nNo. 4471 - BOARDED. Tether locked and reading. Seat 1.\nNo. 4479 SOWA, E. - STRUCK. Absent at muster. Tether found cut, wash block. Refer to the Cordon.\n\nCARGO: drop rig, 6 x supply canister, chutes packed. 1 x pallet, Program stores, for the drop site.\nFUEL: there and back. No reserve for a second pass.\n\nUnder it in pencil, the captain's hand: One for three seats. They still want every canister out on the first pass.\nAnd smaller, in another hand: put 4471 by the door. Only one we're paid for."
+  },
+  {
+   "id": "lift3_kneeboard",
+   "title": "Kneeboard Card, Lift 3",
+   "style": "handwritten",
+   "author": "Capt. N. Whitlock",
+   "body": "(A route card clipped to a pilot's kneeboard, one corner burned away. Grease pencil, written fast, the last lines across the printed boxes.)\n\nROUTE: Waystation 9 - the wall - FIREBREAK - drop. 14 min.\nWIND light, west. VIS good at first light. FUEL: no second pass.\n\n0530 Wheels up. 1 aft + the rig.\n0541 Over the firebreak. Called it in. Control copies.\nTreeline below is moving. No wind. Ground moving. Whole stands shaking from the roots up, a mile of it.\nJ. says don't look at it. Looking at it.\n0542 No. 2 temp climbing, torque falling off. Nothing in the book for this.\n0543 No. 2 rolling back. Feathered. Can't hold height on one. Short of the drop. No field. Trees.\nTold 4471 to brace. Tether's on. They'll know where we land."
+  },
+  {
+   "id": "lift3_seatback",
+   "title": "Seat-Back, Scratched",
+   "style": "scrawl",
+   "author": "",
+   "body": "(A seat-back panel the fire buckled off its frame, SEAT 3 stencilled across the top. The paint on the back is scratched all over with a nail or a buckle tongue: numbers, initials, tallies, most of them older than the soot.)\n\n2271 - MARCH. BACK BY SUMMER.\n3318 WAS HERE\nC.P. 3907 77-B. ONE MORE RUN AND I'M OUT.\nIIII IIII IIII II\nTHEY SAY THE LIFTS COME EVERY WEEK. NOBODY SAYS HOW MANY COME BACK EMPTY.\nIF YOU'RE READING THIS YOU'RE STRAPPED IN. EAT WHAT THEY GIVE YOU. COUNT THE NIGHTS. WHEN THE TETHER STARTS COUNTING DOWN, GET OFF THE GROUND.\n\nNobody has scratched anything under that."
+  }
+ ]
+}

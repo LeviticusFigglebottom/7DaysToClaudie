@@ -1,0 +1,18 @@
+{
+ "_doc": "The Lift 3 crash site (lift3_crash_site, DESIGN §1 and §11): the Program lift #4471 came in on, down short of the drop. The wreck itself reuses the Cordon transport's props (data/props/wild4_plane.json). The supply canister is the Program's drop canister (models/items/supply_canister.glb, tools/assetgen/blender_catalogs/items.py, the model SupplyDrops lands under a chute) stood in the dirt as a prop: these came off the rack in the crash with their chutes still packed. Until `make assets` it stands in as a box.",
+ "defs": [
+  {
+   "id": "lift3_supply_canister",
+   "name": "Unopened Supply Canister",
+   "description": "An olive Program drop canister driven nose-first into the dirt, its chute pack still strapped shut on the lid and the stencil scuffed: it came off the rack in the crash and never dropped.",
+   "tags": ["exterior", "container", "program"],
+   "variants": {"clean": "items/supply_canister"},
+   "collision": "box",
+   "physics": "static",
+   "size": [0.6, 1.1, 0.6],
+   "container": "lift3_canister",
+   "blocks_sight": false,
+   "rooms": ["exterior"]
+  }
+ ]
+}
