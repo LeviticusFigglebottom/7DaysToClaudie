@@ -261,3 +261,58 @@ func test_recruit_counts_for_find_lineman_in_any_chapter() -> void:
 	assert_eq(dr.record("recruit", &"ezra_camp").size(), 1, "Ezra found on day 1 still counts")
 	assert_true(dr.done.has(&"find_lineman"))
 	assert_eq(dr.chapter, 1, "and opens no chapter early")
+
+
+## One deed that finishes a journal step and a Program directive says one line (first-hour audit
+## #10): the journal step carries the directive's reward, whichever tracker hears the deed first;
+## with the tutorial off the directive says its own line.
+func test_a_directive_done_with_a_step_rides_on_its_journal_line() -> void:
+	var ws := GDScript.new()
+	ws.source_code = "extends Node\nvar directives: Node\nvar tutorial: Node\n"
+	assert_eq(ws.reload(), OK)
+	var w: Node = ws.new()
+	add_child_autofree(w)
+	var dt := DirectiveTracker.new()
+	add_child_autofree(dt)
+	w.set(&"directives", dt)
+	w.set(&"tutorial", _tracker)
+	dt.world = w
+	dt._announced = 1
+	_tracker.world = w
+	var said: Array[String] = []
+	var on_msg := func(text: String, _k: StringName) -> void: said.append(text)
+	Events.player_status_message.connect(on_msg)
+	# The directives hear it first (GameWorld wires them first).
+	dt.record("craft", &"stone_axe")
+	_tracker.record("craft", &"stone_axe")
+	await get_tree().process_frame
+	assert_eq(_tracker.steps()[1]["reward"], "+40 XP", "the axe's journal line carries the directive's XP")
+	assert_eq(said, [] as Array[String], "and the directive says no line of its own")
+	# The tutorial hears it first.
+	_tracker.record("build", &"campfire")
+	dt.record("build", &"campfire")
+	await get_tree().process_frame
+	assert_eq(_tracker.steps()[3]["reward"], "+60 XP, and a Bottle of Boiled Water")
+	assert_eq(said, [] as Array[String])
+	# A directive the step doesn't share: its own line.
+	for i: int in 3:
+		dt.record("fell_tree")
+	await get_tree().process_frame
+	assert_eq(said, ["Directive complete: Fell three trees.  +60 XP, and a Program Ration Bar"] as Array[String])
+	# Tutorial off: nothing folds.
+	said.clear()
+	_p().tutorial.enabled = false
+	_tracker.record("build", &"lean_to")
+	dt.record("build", &"lean_to")
+	await get_tree().process_frame
+	assert_eq(said, ["Directive complete: Raise a lean-to.  +80 XP, and 2 Cordage"] as Array[String])
+	Events.player_status_message.disconnect(on_msg)
+
+
+func test_reward_text_reads_as_one_reward() -> void:
+	assert_eq(DirectiveTracker.reward_text(60, ["a Bottle of Boiled Water"] as Array[String]), "+60 XP, and a Bottle of Boiled Water")
+	assert_eq(DirectiveTracker.reward_text(40, [] as Array[String]), "+40 XP")
+	assert_eq(DirectiveTracker.reward_text(200, ["2 Wire Spool", "a Gas Can"] as Array[String]), "+200 XP, and 2 Wire Spool and a Gas Can")
+	assert_eq(DirectiveTracker.reward_text(0, ["a Repair Kit"] as Array[String]), "a Repair Kit", "a level goal pays no XP")
+	assert_eq(DirectiveTracker.item_phrase(1, "Antifungal Tablets"), "1 Antifungal Tablets", "a plural name keeps its count")
+	assert_eq(DirectiveTracker.item_phrase(1, "Empty Can"), "an Empty Can")

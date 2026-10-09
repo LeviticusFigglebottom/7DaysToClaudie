@@ -1,6 +1,8 @@
 {
   "base_bulk": 40.0,
   "toolbelt_slots": 6,
+  "_auto_belt_categories": "A crafted item of these categories (and equippable) goes on the first empty toolbelt slot (PlayerActions.auto_belt).",
+  "auto_belt_categories": ["tool", "weapon", "light"],
   "walk_speed": 3.4,
   "sprint_speed": 6.2,
   "crouch_speed": 1.7,

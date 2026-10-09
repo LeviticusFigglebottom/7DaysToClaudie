@@ -9,6 +9,12 @@ var world: Node
 var _announced: int = 0
 ## Part-credit per event not yet a whole one (the companion's trees count half, ADR-0058).
 var _shares: Dictionary = {}
+## Directives paid this frame and not yet announced ({text, reward, event, target}), and a chapter
+## opened ({text}). They are
+## said at the frame's end, unless the first-days tutorial finished a journal step on the same
+## deed: then the journal's line carries the reward instead (claim_reward / TutorialTracker's
+## fold_reward), so one deed prints one line (first-hour audit #10).
+var _unsaid: Array[Dictionary] = []
 
 
 func setup_world(w: Node) -> void:
@@ -169,16 +175,17 @@ func record(event: String, target: StringName = &"", amount: int = 1, tier: Stri
 	if p == null:
 		return
 	for d: DirectiveDef in p.directives.record(event, target, amount, tier):
-		_pay(p, d)
+		_pay(p, d, event, target)
 	if p.directives.chapter > _announced:
 		_announced = p.directives.chapter
-		Events.player_status_message.emit("New Program directives: %s. Check your tether." % Directives.chapter_name(_announced), &"level")
+		# After the lines of the directives that opened it (said at the frame's end).
+		_say_later({"text": "New Program directives: %s. Check your tether." % Directives.chapter_name(_announced)})
 		# A level goal in the new chapter may already be met.
 		record("level", &"", p.progression.level)
 
 
-func _pay(p: PlayerState, d: DirectiveDef) -> void:
-	var got: PackedStringArray = []
+func _pay(p: PlayerState, d: DirectiveDef, event: String = "", target: StringName = &"") -> void:
+	var got: Array[String] = []
 	for k: Variant in d.reward_items.keys():
 		var item := StringName(str(k))
 		var n: int = int(d.reward_items[k])
@@ -186,11 +193,67 @@ func _pay(p: PlayerState, d: DirectiveDef) -> void:
 		if left > 0 and world != null and world.get(&"player") != null:
 			ItemDrop.spawn(world, ItemStack.make(item, left), (world.player as Node3D).global_position + Vector3.UP)
 		var idef: ItemDef = Content.item(item)
-		got.append("%d %s" % [n, idef.display_name if idef != null else String(item)])
+		got.append(item_phrase(n, idef.display_name if idef != null else String(item)))
 	if not got.is_empty():
 		Events.inventory_changed.emit(p.id)
 	Audio.play_2d(&"ui/learned", -5.0)
-	Events.player_status_message.emit("Directive complete: %s.  +%d XP%s" % [p.directives.label(d), d.reward_xp,
-		("  ·  " + ", ".join(got)) if not got.is_empty() else ""], &"level")
+	var reward: String = reward_text(d.reward_xp, got)
+	_say_later({"text": "Directive complete: %s.%s" % [p.directives.label(d), ("  " + reward) if reward != "" else ""],
+		"reward": reward, "event": event, "target": target})
 	if d.reward_xp > 0:
 		p.progression.add_xp(d.reward_xp)
+
+
+## "+60 XP, and a Bottle of Boiled Water": the XP, then what came with it as one phrase (the old
+## "+60 XP  ·  1 Bottle of Boiled Water" read like a list of deeds, first-hour audit #11).
+static func reward_text(xp: int, items: Array[String]) -> String:
+	var things: String = ""
+	if items.size() == 1:
+		things = items[0]
+	elif items.size() > 1:
+		things = ", ".join(PackedStringArray(items.slice(0, items.size() - 1))) + " and " + items[-1]
+	if xp <= 0:
+		return things
+	return "+%d XP%s" % [xp, (", and " + things) if things != "" else ""]
+
+
+## "a Bottle of Boiled Water", "an Antifungal…", "2 Cordage". A name already plural
+## ("Painkillers", ".38 Rounds") keeps its count rather than taking an article.
+static func item_phrase(n: int, item_name: String) -> String:
+	if n != 1 or item_name == "" or item_name.ends_with("s"):
+		return "%d %s" % [n, item_name]
+	return ("an " if "AEIOUaeiou".contains(item_name[0]) else "a ") + item_name
+
+
+## Takes back the rewards of directives this frame's `event` on `target` paid and that are still
+## to be said (they won't be said now): the tutorial folds them into the journal step the same deed
+## just finished. "" when there are none.
+func claim_reward(event: String, target: StringName) -> String:
+	var parts: PackedStringArray = []
+	for i: int in range(_unsaid.size() - 1, -1, -1):
+		var u: Dictionary = _unsaid[i]
+		if u.has("event") and str(u["event"]) == event and StringName(u["target"]) == target:
+			if str(u["reward"]) != "":
+				parts.insert(0, str(u["reward"]))
+			_unsaid.remove_at(i)
+	return "; ".join(parts)
+
+
+## Queues a line for the frame's end: {text, and for a directive paid: reward, event, target}.
+func _say_later(line: Dictionary) -> void:
+	if _unsaid.is_empty():
+		_say_unsaid.call_deferred()
+	_unsaid.append(line)
+
+
+## Says this frame's lines. One whose deed also finished a journal step (the tutorial heard the
+## event after us) goes to that step instead of being a second line.
+func _say_unsaid() -> void:
+	var tutorial: Node = world.get(&"tutorial") if world != null else null
+	for u: Dictionary in _unsaid:
+		var folded: bool = false
+		if u.has("event") and tutorial != null and tutorial.has_method(&"fold_reward"):
+			folded = bool(tutorial.call(&"fold_reward", str(u["event"]), StringName(u["target"]), str(u["reward"])))
+		if not folded:
+			Events.player_status_message.emit(str(u["text"]), &"level")
+	_unsaid.clear()

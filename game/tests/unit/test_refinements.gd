@@ -198,6 +198,30 @@ func test_repair_kit_restores_the_most_worn_tool() -> void:
 	Game.session = prev
 
 
+## Drinking says what it did (first-hour audit #25): the real gain, capped at full.
+func test_drinking_says_how_much_water() -> void:
+	var prev: GameSession = Game.session
+	var s: GameSession = GameSession.create_new({"seed": 7, "game_mode": "slice"})
+	Game.session = s
+	var p: PlayerState = s.local_player()
+	p.inventory.add_item(&"water_bottle_clean", 2)
+	p.stats.hydration = 40.0
+	var gain: int = roundi(float(Content.item(&"water_bottle_clean").consume.get("hydration", 0.0)))
+	var said: Array[String] = []
+	var on_msg := func(text: String, _k: StringName) -> void: said.append(text)
+	Events.player_status_message.connect(on_msg)
+	var pa := PlayerActions.new()
+	assert_true(bool(pa._consume({"item": "water_bottle_clean"})["ok"]))
+	assert_eq(said, ["You drink. (Water +%d)" % gain] as Array[String])
+	p.stats.hydration = 95.0
+	pa._consume({"item": "water_bottle_clean"})
+	assert_eq(said[-1], "You drink. (Water +5)", "the real amount: it stops at full")
+	assert_eq(PlayerActions.drink_line(18, -3), "You drink. (Water +18, Health -3)", "stream water's cost is said")
+	Events.player_status_message.disconnect(on_msg)
+	pa.free()
+	Game.session = prev
+
+
 func test_weather_lengths_vary_and_snow_lingers() -> void:
 	var ws := WeatherState.new()
 	var rng := RandomNumberGenerator.new()
