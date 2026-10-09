@@ -204,3 +204,28 @@ func test_opens_on_what_the_journal_asks_for() -> void:
 	inv.add_item(&"cordage", 1)
 	assert_eq(CraftSheet.preferred(CraftSheet.rows(inv, &"", _knows_default), PackedStringArray(["stone_axe"])), &"stone_axe")
 	assert_eq(CraftSheet.preferred(hand, PackedStringArray()), &"")
+
+
+func test_roll_closes_when_its_container_is_freed() -> void:
+	# A building streams out with one of its containers open in the roll.
+	var roll := SalvageRoll.new()
+	add_child_autofree(roll)
+	var box := Node3D.new()
+	add_child(box)
+	roll.open(&"container", &"", box)
+	box.free()
+	roll._process(0.016)
+	assert_false(roll.is_open(), "closed before anything read the freed container")
+	assert_eq(roll.call(&"_flap_name"), "Container")
+
+
+func test_item_card_keeps_off_the_recipe_sheet() -> void:
+	var view := Vector2(1280, 720)
+	var sheet := Rect2(690, 90, 560, 520)
+	var cs := Vector2(220, 120)
+	# Clear of the sheet: right of the cursor.
+	assert_eq(SalvageRoll.card_pos(Vector2(200, 300), cs, view, sheet), Vector2(228, 312))
+	# Would cover the sheet: flipped to the cursor's left.
+	var p: Vector2 = SalvageRoll.card_pos(Vector2(600, 300), cs, view, sheet)
+	assert_lt(p.x + cs.x, 600.0)
+	assert_false(Rect2(p, cs).intersects(sheet))

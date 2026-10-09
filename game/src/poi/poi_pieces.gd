@@ -759,7 +759,7 @@ class BearTrap:
 			_held = player
 			_hold_t = float(t.get("root_seconds", 2.5))
 			_hold_at = player.global_position
-			Events.player_status_message.emit("A bear trap has your leg. Struggle free (Jump).", &"warning")
+			Events.player_status_message.emit("A bear trap has your leg. Struggle free: [%s]." % PlayerInteraction.key_label(&"jump"), &"warning")
 		elif enemy != null:
 			var info2 := DamageInfo.make(float(t.get("enemy_damage", 60.0)), &"pierce", &"trap", StringName(trap_id))
 			info2.hit_pos = enemy.global_position + Vector3.UP * 0.3
