@@ -190,7 +190,7 @@ func play(script: Dictionary = {}, vars: Dictionary = {}) -> void:
 		_music = AudioStreamPlayer.new()
 		_music.stream = Audio.stream(StringName(music))
 		_music.bus = &"Music"
-		_music.volume_db = -14.0
+		_music.volume_db = UiStyle.level("intro_music", -14.0)
 		add_child(_music)
 		_music.play()
 	_next()
@@ -249,9 +249,9 @@ func _next() -> void:
 	_t = 0.0
 	var snd: String = str(c.get("sound", ""))
 	if snd != "":
-		Audio.play_2d(StringName(snd), -6.0)
+		Audio.play_2d(StringName(snd), UiStyle.level("intro_card", -6.0), &"SFX")
 	for k: int in (c.get("sounds", []) as Array).size():
-		Audio.play_2d(StringName(str(c["sounds"][k])), 0.0, &"UI", 1.0 - 0.08 * k)
+		Audio.play_2d(StringName(str(c["sounds"][k])), UiStyle.level("intro_impact", 0.0), &"SFX", 1.0 - 0.08 * k)
 	if str(c.get("kind", "")) == "impact":
 		# No fade in: the crash cuts in.
 		_card.modulate.a = 1.0
@@ -259,7 +259,7 @@ func _next() -> void:
 		_impact_t = 0.0
 		if _music != null:
 			_music.volume_db = -40.0
-			create_tween().tween_property(_music, "volume_db", -14.0, 6.0)
+			create_tween().tween_property(_music, "volume_db", UiStyle.level("intro_music", -14.0), 6.0)
 
 
 ## Shows card `i` fully typed and holding (visual QA, tests).
@@ -321,7 +321,7 @@ func _type_step(dt: float, kind: String) -> bool:
 		return false
 	if _stamp != null and not _stamp.visible:
 		_stamp.visible = true
-		Audio.play_2d(&"sfx/item_place_mat", -2.0, &"UI", 0.7)
+		Audio.play_2d(&"sfx/item_place_mat", UiStyle.level("intro_stamp", -2.0), &"SFX", 0.7)
 	return true
 
 

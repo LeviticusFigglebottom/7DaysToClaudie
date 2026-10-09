@@ -350,3 +350,11 @@ static func label(text: String, variation: StringName = &"") -> Label:
 ## Colour as a BBCode hex for RichTextLabel text.
 static func hex(c: Color) -> String:
 	return "#" + c.to_html(false)
+
+
+## A UI or music sound's level in dB (data/config/audio.json `ui_levels`), `fallback` when unset.
+static func level(key: String, fallback: float) -> float:
+	var db: Object = ContentDB.instance
+	if db == null:
+		return fallback
+	return float((db.call(&"config", &"audio").get("ui_levels", {}) as Dictionary).get(key, fallback))

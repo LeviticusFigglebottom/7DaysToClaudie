@@ -42,7 +42,13 @@ func _process(_delta: float) -> void:
 	var loading: bool = w == null or not bool(w.get(&"is_ready"))
 	if not loading and _ready_ms < 0:
 		_ready_ms = Time.get_ticks_msec() - _t0
-	_frames.append({"ms": ms, "moving": moving, "loading": loading, "intro": intro != null})
+	var what: String = ""
+	if moving:
+		what = "card %d %s" % [int(intro.get(&"_index")), str(intro.get(&"_phase"))]
+	if ui != null and loading:
+		what += " | " + str(ui.call(&"loading_text"))
+	_frames.append({"ms": ms, "moving": moving, "loading": loading, "intro": intro != null,
+		"t": Time.get_ticks_msec() - _t0, "what": what})
 	var intro_over: bool = not _with_intro or (ui != null and ui.get(&"intro") == null and _frames.size() > 10)
 	if not loading and intro_over:
 		_done = true
@@ -69,6 +75,7 @@ func _report() -> void:
 			if ms > SLOW_MS:
 				mv_slow += 1
 				mv_hist.append(ms)
+				print("INTRO_PROBE slow moving frame %.1f ms at %d ms: %s" % [ms, int(f["t"]), str(f["what"])])
 	var total: int = Time.get_ticks_msec() - _t0
 	print("INTRO_PROBE intro=%s world_ready_ms=%d control_ms=%d load_frames=%d load_worst_ms=%.1f load_frames_over_50ms=%d intro_moving_frames=%d intro_moving_worst_ms=%.1f intro_moving_over_50ms=%d %s" % [
 		_with_intro, _ready_ms, total, load_n, load_worst, load_slow, mv_n, mv_worst, mv_slow, str(mv_hist.slice(0, 12))])

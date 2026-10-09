@@ -157,7 +157,7 @@ func toggle() -> void:
 		visible = true
 		_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 		_refresh()
-		Audio.play_2d(&"ui/tether_beep", -10.0)
+		Audio.play_2d(&"ui/tether_beep", UiStyle.level("tether_beep", -10.0))
 	elif _on_arms:
 		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 

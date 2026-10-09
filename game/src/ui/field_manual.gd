@@ -169,7 +169,7 @@ func open(tab: String = "build") -> void:
 	var ui: Node = get_parent()
 	if ui != null and ui.has_method(&"push_modal"):
 		ui.call(&"push_modal", &"field_manual")
-	Audio.play_2d(&"ui/page_turn", -6.0)
+	Audio.play_2d(&"ui/page_turn", UiStyle.level("page_turn", -6.0))
 
 
 func close() -> void:
