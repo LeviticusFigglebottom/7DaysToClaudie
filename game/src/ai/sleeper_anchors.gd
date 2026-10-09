@@ -100,7 +100,10 @@ static func _usable(layout: PoiLayout, placed: Array, a: Dictionary) -> bool:
 		var size: Vector3 = (e[2] as PropDef).size
 		if size.y < 0.15:
 			continue
-		if o.y > pt.y - 0.12 and o.y < pt.y + 0.3 and Vector2(o.x - pt.x, o.z - pt.z).length() < maxf(size.x, size.z) * 0.5 + 0.15:
+		# Not one standing behind a wall: its radius reaches through it (the relay hut's battery
+		# bank, on the far side of the wall the hiker's bag lies along).
+		if o.y > pt.y - 0.12 and o.y < pt.y + 0.3 and Vector2(o.x - pt.x, o.z - pt.z).length() < maxf(size.x, size.z) * 0.5 + 0.15 \
+				and not _crosses_wall(layout, li, pt, o):
 			return false
 	return true
 

@@ -1454,9 +1454,12 @@ static func validate_all() -> Dictionary:
 	for fw: FrameworkDef in Content.all(&"framework"):
 		for lot: Variant in fw.lots:
 			var l: Dictionary = lot
-			var r: Array = l["rect"]
-			var rect := Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
-			if rect.position.x < 0 or rect.position.y < 0 or rect.end.x > fw.size.x or rect.end.y > fw.size.y:
+			# A `frame` lot ([cx, cz, w, d, yaw], world XZ: pell_outskirts) has no rect in the
+			# framework's size; only its w x d matters for the fit below.
+			var framed: bool = l.has("frame")
+			var r: Array = l["frame"] if framed else l["rect"]
+			var rect := Rect2(0.0, 0.0, float(r[2]), float(r[3])) if framed else Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+			if not framed and (rect.position.x < 0 or rect.position.y < 0 or rect.end.x > fw.size.x or rect.end.y > fw.size.y):
 				errors.append("%s: lot '%s' %s outside framework size %s" % [fw.id, l["id"], rect, fw.size])
 			var pick: String = str(l.get("pick", ""))
 			if pick == "":

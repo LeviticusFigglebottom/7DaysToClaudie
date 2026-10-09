@@ -153,7 +153,7 @@
   {
    "id": "w5_treehouse_pulley_lift",
    "name": "Pulley Lift",
-   "description": "A peeled gallows post on a deck's edge with an arm out over the railing and an iron sheave: the rope runs down to a bushel basket waiting on the ground and back up to a cleat, the slack coiled on the deck (worn: the rope cut a metre under the arm, the basket tipped over below). Its back is on the edge; the arm, rope and basket hang out past it. No collision.",
+   "description": "A peeled gallows post on a deck's edge with an arm out over the railing and an iron sheave: the rope runs down to a bushel basket waiting on the ground and back up to a cleat, the slack coiled on the deck (worn: the rope cut a metre under the arm, the basket tipped over below). Its origin is the post's foot and the arm, rope and basket hang 1.1 m out behind it past the deck's edge, so it is placed by hand (`pos`), never `against` a wall: no back depth would stand it on a wall with its model reaching that far past it. No collision.",
    "tags": [
     "structure",
     "exterior"
@@ -169,7 +169,6 @@
     2.55,
     0.3
    ],
-   "back": 0.15,
    "blocks_sight": false,
    "rooms": [
     "exterior"

@@ -46,17 +46,6 @@ def _rods(ctx, name, segs_list, r, mat, *, segs=6, **kw):
     return ctx.add(K.merge_parts(objs, name), mat, uv="box", uv_scale=2.0, smooth=50, **kw)
 
 
-def _centre_depth(ctx) -> None:
-    """Moves every part so the model's depth (Blender Y) is centred on the origin."""
-    lo, hi = 1e9, -1e9
-    for o in ctx.parts:
-        for v in o.data.vertices:
-            lo = min(lo, v.co.y)
-            hi = max(hi, v.co.y)
-    for o in ctx.parts:
-        K.place(o, (0, -(lo + hi) * 0.5, 0))
-
-
 def _lattice(ctx, name, z0, z1, h0, h1, bays, mat, *, leg_r=0.045, brace_r=0.016, skip=None):
     """A square lattice from z0 (half-width h0) to z1 (half-width h1): legs, a girt at every bay's top and an X
     brace on every face. skip(face, bay) -> True leaves that face's brace out (a hanging brace)."""
@@ -265,7 +254,10 @@ def w4_relay_tower_platform_rail(ctx: K.Ctx) -> None:
 def w4_relay_equipment_rack(ctx: K.Ctx) -> None:
     """A 19-inch relay rack bolted to the floor: radio shelves with their faceplates and dead LEDs, a patch
     panel spilling jumpers, a fan tray and the coax entering through the top. Worn: two units pulled and a
-    shelf hanging; destroyed: gutted, the frame racked over and the cards on the floor."""
+    shelf hanging; destroyed: gutted, the frame racked over and the cards on the floor.
+    The frame is built centred on the origin, so its back is half its depth (the def's 0.28 m) in every
+    condition: centring the whole bounding box let the jumpers spilling 12 cm out of the front push the back
+    6 cm further behind the origin than the def said, into the wall the rack stands against."""
     r = ctx.rnd("rack")
     dr = ctx.drnd("rack")
     Wd, D, H = 0.58, 0.56, 1.98
@@ -331,7 +323,6 @@ def w4_relay_equipment_rack(ctx: K.Ctx) -> None:
         ctx.add(K.tube(f"coax{k}", [(-0.15 + k * 0.1, 0.15, H + 0.4), (-0.15 + k * 0.1, 0.15, H - 0.05),
                                     (-0.15 + k * 0.1, 0.2, H - 0.25)], 0.012, segs=6), "plastic_black", uv="box",
                 uv_scale=3.0, smooth=40)
-    _centre_depth(ctx)
 
 
 def w4_relay_battery_bank(ctx: K.Ctx) -> None:
@@ -395,7 +386,10 @@ def w4_relay_generator(ctx: K.Ctx) -> None:
     hose = [(Wd / 2, 0.15, 0.3), (Wd / 2 + 0.2, 0.2, 0.25), (Wd / 2 + 0.25, 0.3, 0.05)]
     ctx.add(K.tube("propane_hose", hose, 0.02, segs=6), "plastic_black", uv="box", uv_scale=3.0, smooth=40)
     _cy(ctx, "regulator", 0.05, 0.08, (Wd / 2 + 0.06, 0.15, 0.32), "road_paint_red", axis="X", segs=10)
-    ex = [(-0.5, D / 2, 0.75), (-0.5, D / 2 + 0.06, 0.75), (-0.5, D / 2 + 0.06, 0.9)]
+    # The exhaust runs straight out of the back and stops at the pad's back edge: the pad is the model's back
+    # (PropDef: half its 0.9 m depth), so placed against the hut wall the pipe meets the wall it vents through
+    # instead of standing 5 cm into it (an elbow up behind the body stuck out to 0.5 m; test_poi_wall_gaps).
+    ex = [(-0.5, D / 2 - 0.02, 0.75), (-0.5, (D + 0.1) / 2, 0.75)]
     ctx.add(K.tube("exhaust", ex, 0.04, segs=8), RUST, uv="box", uv_scale=3.0, smooth=40)
 
 

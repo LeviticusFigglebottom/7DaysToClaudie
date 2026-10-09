@@ -202,17 +202,21 @@ def w5_treehouse_stilt(ctx: K.Ctx) -> None:
 
 def w5_treehouse_rail(ctx: K.Ctx) -> None:
     """1 m of deck railing along an open edge: a peeled post at the left end and a sapling top rail at 1.0 m and
-    a mid rail at 0.5 m lashed to it, overlapping the next metre's. Worn: the mid rail snapped and hanging."""
-    W.pole(ctx, "post", [(-0.44, 0, 0.0), (-0.44, 0, 1.06)], 0.045, PEELED, r_end=0.04, segs=8)
-    W.pole(ctx, "top", [(-0.53, 0, 1.0), (0, 0.004, 1.005), (0.53, 0, 1.0)], 0.038, PEELED, r_end=0.034, segs=8,
+    a mid rail at 0.5 m lashed to it, overlapping the next metre's. Worn: the mid rail snapped and hanging.
+    Slim (about 4 cm either side of the origin, within test_poi_wall_gaps' 3 cm of its def's 5 cm deep box): a
+    9 cm post lashed round stood 11 cm deep, and a def sized to that stood every rail 3 cm further onto its
+    deck, where the player's capsule no longer fit past it at the main ladder's foot and two deck doors
+    (traversal audit). The snapped mid rail hangs toward the deck (-Y), not into the edge behind it."""
+    W.pole(ctx, "post", [(-0.44, 0, 0.0), (-0.44, 0, 1.06)], 0.032, PEELED, r_end=0.028, segs=8)
+    W.pole(ctx, "top", [(-0.53, 0, 1.0), (0, 0.004, 1.005), (0.53, 0, 1.0)], 0.03, PEELED, r_end=0.027, segs=8,
            seed=ctx.seed, wobble=0.004)
     if ctx.worn:
-        W.pole(ctx, "mid_a", [(-0.53, 0, 0.5), (-0.1, 0, 0.47), (0.02, 0.02, 0.2)], 0.03, PEELED, r_end=0.026, segs=7)
-        W.pole(ctx, "mid_b", [(0.53, 0, 0.5), (0.25, 0.01, 0.38), (0.12, 0.02, 0.1)], 0.03, PEELED, r_end=0.026, segs=7)
+        W.pole(ctx, "mid_a", [(-0.53, 0, 0.5), (-0.1, 0, 0.47), (0.02, -0.02, 0.2)], 0.026, PEELED, r_end=0.022, segs=7)
+        W.pole(ctx, "mid_b", [(0.53, 0, 0.5), (0.25, -0.01, 0.38), (0.12, -0.02, 0.1)], 0.026, PEELED, r_end=0.022, segs=7)
     else:
-        W.pole(ctx, "mid", [(-0.53, 0, 0.5), (0.53, 0, 0.5)], 0.03, PEELED, r_end=0.028, segs=7, seed=ctx.seed + 1, wobble=0.004)
-    _lash(ctx, "lash_top", (-0.44, 0, 1.0), 0.05)
-    _lash(ctx, "lash_mid", (-0.44, 0, 0.5), 0.05)
+        W.pole(ctx, "mid", [(-0.53, 0, 0.5), (0.53, 0, 0.5)], 0.026, PEELED, r_end=0.024, segs=7, seed=ctx.seed + 1, wobble=0.004)
+    _lash(ctx, "lash_top", (-0.44, 0, 1.0), 0.034)
+    _lash(ctx, "lash_mid", (-0.44, 0, 0.5), 0.034)
 
 
 def w5_treehouse_rope_rail(ctx: K.Ctx) -> None:
