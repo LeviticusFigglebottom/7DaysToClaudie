@@ -231,10 +231,11 @@ him a cloth bandage (the one the cards had you make), or a first aid kit or pain
 found any in medicine cabinets and nightstands.
 
 **A good first day** (the first chapter of Program directives):
-1. **Gather** (hold E): plant fibre from fireweed, ferns, sedge, huckleberry bushes and willows;
+1. **Gather** (hold E): plant fibre from ferns and huckleberry bushes under the trees, fireweed in
+   clearings, sedge and willows by the water;
    sticks from deadfall, saplings and willows; stones from loose stones.
 2. **Craft** (Tab, the *Make by hand* flap): Cordage (3 Plant Fiber), then a Stone Axe (Stick,
-   Stone, Cordage). Put it on the toolbelt.
+   Stone, Cordage). A crafted tool, weapon or light goes on the toolbelt's first free slot.
 3. **Fell trees.** Swing at the trunk. The tree falls away from you; anything along its trunk takes
    a heavy blow (45). It breaks into logs along the fall line, with sticks and boughs by the crown.
    E puts a log on your shoulder (two at most).
@@ -795,7 +796,7 @@ to *Notes found* in the manual. Two *Backcountry Medicine Quarterly* unlock the 
 
 **Program directives** are chapters of goals that pay XP and supplies; only the open chapter counts,
 and finishing it opens the next. The tether shows the next two, the Record tab the whole chapter.
-1. **Arrival**: fell three trees; make a stone axe; build a campfire; raise a lean-to; sleep.
+1. **Arrival**: fell three trees; make a stone axe; build a campfire; raise a lean-to; sleep in your bed.
 2. **The Cordon**: search ten containers; go inside a building; put down ten Hollowed; read two
    notes; clear a building; disarm two armed traps.
 3. **Holding Ground**: set twenty logs; survive a Hum; recover a supply drop; reach level 7; clear a
