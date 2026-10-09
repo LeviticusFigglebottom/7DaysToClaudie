@@ -150,7 +150,8 @@ func _run() -> void:
 	if w.wildlife != null:
 		var animals: Array = (w.wildlife.get(&"animals") as Dictionary).values()
 		for a: Variant in animals.slice(0, 2):
-			if a is Node3D and is_instance_valid(a):
+			# Validity first: an animal the last swing killed is freed, and `is` on a freed one errors.
+			if is_instance_valid(a) and a is Node3D:
 				await visit("animal %s" % (a as Node).name, (a as Node3D).global_position, 0.6, a)
 				await swing(3)
 

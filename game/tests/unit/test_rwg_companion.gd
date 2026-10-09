@@ -38,7 +38,11 @@ func test_one_camp_in_a_ring_round_the_drop_site_off_the_roads() -> void:
 		var d: float = (c["center"] as Vector2).distance_to(drop)
 		assert_between(d, 280.0, 920.0, "seed %d: %.0f m from the drop site" % [seed, d])
 		assert_gte(float(g.call(&"road_clearance", c["poly"])), 18.0, "seed %d: off the roads" % seed)
-		assert_eq(c, (g.get(&"places") as Array).back(), "seed %d: placed last" % seed)
+		# The camp is placed after every other wilderness place; only later stages (the Lift 3
+		# wreck's `crash` site, generator VERSION 13) may come after it.
+		var places: Array = g.get(&"places") as Array
+		for later: Dictionary in places.slice(places.find(c) + 1):
+			assert_eq(str(later.get("site", "")), "crash", "seed %d: only the crash site is placed after the camp" % seed)
 
 
 func test_deterministic() -> void:

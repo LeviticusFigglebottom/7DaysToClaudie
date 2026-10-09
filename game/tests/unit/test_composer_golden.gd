@@ -63,7 +63,7 @@ const DIGEST_KEYS: PackedStringArray = ["height", "splat0", "splat1", "biome", "
 ## input hash at that spacing, to tell changed inputs from a changed composer.
 const GOLDEN: Dictionary = {
 	"larch@4": {
-		"input": "a0353e5282aea29036cb71e6caab44c38be51bf2fddf07ba16b975c61835acd8",
+		"input": "ed28d58534c11094a667c808e2601c677889f6136ed07e63d874462d8b7c5efa",
 		"biome": "d10a0754b564f1e48a8578415db87927",
 		"bridges": "1f0c533e9edd7d199eef56ffe59942b6",
 		"height": "b4cdb1f3f29522c6693694a2f1952d8702f155cfb8f642e846705c6182bc884b",
@@ -76,7 +76,7 @@ const GOLDEN: Dictionary = {
 		"water": "557e9069b493e19e7402548619659f8b"
 	},
 	"larch@8": {
-		"input": "201ae38e17aca7b6996d12cf14ea309c2e4f235a48dc90f3c750a01d9c1d5e79",
+		"input": "98c1cdd749f09d37d0bf522189f5ced1ee7d45cfc49df074480f157f7b839f5e",
 		"biome": "3cd0fcfdd57a6d57ab9ae1a95b21339d",
 		"bridges": "259591cd5bc276b780c3fd267f0a9a6d",
 		"height": "289cb366f7a53a577ac4df7c1cf41f3c5319244ad5ae3a4b562ee5638f1fab65",
@@ -89,7 +89,7 @@ const GOLDEN: Dictionary = {
 		"water": "43ffa565190e27f18b8b0f4c0013ec3a"
 	},
 	"larch@1": {
-		"input": "ca8346fcdf9750f7e91adbef5930bb3273048b3aaad9d7c9311605c8e52c89a7",
+		"input": "d724ce2976cd5790ef77adf677080873f1ed9f698190e8ea9da8a9e109bb4c1f",
 		"biome": "931a7d963866420f685440cbfbedbda0",
 		"bridges": "428b1b895c7baf5bf0dc14187b1f2176",
 		"height": "a397ace96904a87987cb913eaf2bed42a31a3cac197af60bd69f15adbd3c34a7",
@@ -102,12 +102,12 @@ const GOLDEN: Dictionary = {
 		"water": "11ae9d82d419d86230b8edcb296f0984"
 	},
 	"rwg@4": {
-		"input": "13263c198deff4df175752845ae61f170cf1da242db6ee0201da77ed0f5bd941",
+		"input": "1e26a1e6cbee08bdc2eb7e63b6c4086c3be42b34137ee946d6fd065a1e3aaea6",
 		"biome": "59b215d374c2472eec9acf664ea339a4",
 		"bridges": "d751713988987e9331980363e24189ce",
 		"height": "a1e73cf216adcdaa6cd510e43115cf98d7855a9c0ba1ff628a1c2e6c6190f646",
 		"other": "843b397c22a45284092e175cebfbdee7",
-		"placements": "bd8c00ced8fc2d64411f080dc5dc6b74",
+		"placements": "190095164b37852d9a11b507803cd262",
 		"roads": "e8df081293dce1782eebca3b617d3a0f",
 		"splat0": "99ac32a84c01aa52f1e326697f1b01f4",
 		"splat1": "3cee15c228d224aa2c7be9936710f581",
@@ -115,12 +115,12 @@ const GOLDEN: Dictionary = {
 		"water": "646da548e4581b18bc1605655c50b049"
 	},
 	"rwg@8": {
-		"input": "d4278bb4ddde92c2e1e328a09de97ac448ca2c5a06d79defd41adc861648da36",
+		"input": "bbe958a117aa905ce62edca76ae0ba41d8b30899202573908f48d9b0eaadb8e7",
 		"biome": "18f3d6146340bc426628f856157874ca",
 		"bridges": "d751713988987e9331980363e24189ce",
 		"height": "f52c23cf5a4c01f5b516bdfb054696b19f5cd09e2e88405490af6677925256a5",
 		"other": "b2f7269e94d2e05e8dd16db583bc017e",
-		"placements": "e8a5138e7ab2c6141a75b807ed7cae15",
+		"placements": "0e2bfdd0e7a17b3b6f3248d579533007",
 		"roads": "e8df081293dce1782eebca3b617d3a0f",
 		"splat0": "023234e9ee9cebb2897bada3406a3d34",
 		"splat1": "752f21cfa6e86788f1ff82d42ae7db4a",
@@ -128,12 +128,12 @@ const GOLDEN: Dictionary = {
 		"water": "646da548e4581b18bc1605655c50b049"
 	},
 	"rwg@1": {
-		"input": "f0d17cd8acae7a02f49177022aba0bc80baec73a114ff5754bdd1f8eaa166884",
+		"input": "9ac5c1c5ff5323254e19e97c70c1de82f1ed054ad0dfa9e7f09123f1490feee3",
 		"biome": "57ba2dfb17839ef75e809221dd132066",
 		"bridges": "d751713988987e9331980363e24189ce",
 		"height": "b6400067ef975cfbfb8135e3f4611566da8fb22f95306b4b515b6b9ad2663df7",
 		"other": "bb546e313f91e8b52ded71379f76f9c9",
-		"placements": "6e7a1216a8f197ae5b746549a70a1ed3",
+		"placements": "4bb70767b0c4dbeb31a8cd5c8128af23",
 		"roads": "e8df081293dce1782eebca3b617d3a0f",
 		"splat0": "96c368ce62443c6ce925d695c89d91f6",
 		"splat1": "944ee5e91f463b081cb47d4ee8c208e2",
@@ -141,29 +141,29 @@ const GOLDEN: Dictionary = {
 		"water": "646da548e4581b18bc1605655c50b049"
 	},
 	"rwg_drop@4": {
-		"input": "d08b6cad138c9f1c16c306d448a980e2b8d9cc6a77f363495a44b2591035e0e6",
-		"biome": "23afec1bed1b8777e5cdb7c1e14b3357",
+		"input": "9c2f51617dd3585ffaefd32f7e7213f52c1755c8f585328dfa91df9fa70e3462",
+		"biome": "8a6e68d5177b478ed44b3818a3fc3944",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"height": "fe007424f9604e034d8542da20c23f6d9c2b6b9e76fa5c7daea8a4f5d9d02397",
+		"height": "acfe15d555c7c7a5b65279a54e3473de2047c5a9b34f1a3006ca39bcfa671715",
 		"other": "bd5dd8f87b34ef046099a6c509be10ef",
-		"placements": "884b75752da8a65b692a0db6b26d8d6e",
+		"placements": "ef665652ddcc833db124a234a8d2f088",
 		"roads": "998f3ba510836c93cb814af923f128ed",
-		"splat0": "1c1d6f46f813373d787706ff505fd563",
+		"splat0": "410f28b0fb2c6c8271ef5eae2b6b8717",
 		"splat1": "b201819613ac9aee4d8c5b0a162daf52",
-		"vegmask": "0d194fce5318b50f780f3df4740bdc70",
+		"vegmask": "49078bf68aed8c4c14737892a1447675",
 		"water": "da6dc40f877b3f4b8c97f6d6f6bf3340"
 	},
 	"rwg_drop@8": {
-		"input": "aaa6dd4e8c2f8cb6042e28018373ae1819040c00e9071174e1b2f88169512ba2",
-		"biome": "f10b3334755a84d901d4fb11fbc14339",
+		"input": "14db445405d73aefd570eb9a453dae55166935146a2008e6ee235a07d1e5194a",
+		"biome": "3ea92f3174b1b2d540bf6a390d41c512",
 		"bridges": "d751713988987e9331980363e24189ce",
-		"height": "ccca23d04f334e9a5e9860d380d967dc6b40e773fb9dc0b6ced317f81d0d737a",
+		"height": "b8c0be62eb073e7340bcea36f40c39b4379ad355fa78ec97e0114d022498fb56",
 		"other": "5325eb8bd2048bedde87d89a064766fa",
-		"placements": "9157d3b423910f0953bbf39280de1354",
+		"placements": "b0ad336161ce5e53ba7c7c827faa094e",
 		"roads": "998f3ba510836c93cb814af923f128ed",
-		"splat0": "7f50231df9a5d63cf20e34e3817b9daf",
+		"splat0": "7f3df6ae7473e98299a42d7733a16256",
 		"splat1": "8948a44b3e220888410e893e01191c59",
-		"vegmask": "8271a317ed21c2a902a233363adbcd77",
+		"vegmask": "5cd031debfed54144ab5304f227f8e3d",
 		"water": "da6dc40f877b3f4b8c97f6d6f6bf3340"
 	}
 }

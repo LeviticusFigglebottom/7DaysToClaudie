@@ -57,7 +57,10 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 12: the lake and river valley caps are cut into the macro grid (RwgTerrain._valley_caps), so
 ## roads, streets and lots are graded from the ground the composer makes (player report 4); only a
 ## town's core turns meadow in the biome map (birch round it, the forest past its lots).
-const VERSION: int = 12
+## 13: the lift's crash site (`crash` site, the hub's lift3_crash_site): once, 600-1600 m out from
+## the drop site toward the nearest map edge (where the lift came in over), its nose to the drop;
+## placed last from its own stream, so every other place stays where it was.
+const VERSION: int = 13
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -1969,6 +1972,18 @@ func _places() -> void:
 		for k4: int in _pool_count(ce, rc, density, area16):
 			if not _place_one(ce, Vector2(cpd.footprint), rc, wcfg):
 				warnings.append("no spot for %s" % cpd.id)
+	# The lift's crash site (VERSION 13) last of all, from its own stream.
+	for e5: Variant in pool:
+		var xe: Dictionary = e5
+		if str(xe.get("site", "")) != "crash" or int(xe.get("min_danger", 1)) > max_danger:
+			continue
+		var xpd: PoiDef = db.call(&"get_def", &"poi", StringName(str(xe.get("poi", "")))) as PoiDef if db != null else null
+		if xpd == null:
+			continue
+		var rx := rng("places:crash:%s" % xpd.id)
+		for k5: int in _pool_count(xe, rx, density, area16):
+			if not _place_one(xe, Vector2(xpd.footprint), rx, wcfg):
+				warnings.append("no spot for %s" % xpd.id)
 
 
 ## How many of a pool entry a world gets: its density per region times the map's regions (one more
@@ -2066,6 +2081,24 @@ func _candidate(site: String, fp: Vector2, r: RandomNumberGenerator, pad_len: fl
 				return {}
 			var rot5: float = 15.0 * float(r.randi() % 24)
 			return {"origin": at - (fp * 0.5).rotated(deg_to_rad(rot5)), "rot": rot5}
+		"crash":
+			# The lift came in over the nearest map edge and went down short of the drop: a point
+			# `ring` m out from the drop site toward that edge (a little either side), its nose (the
+			# plan's -Z) to the drop and its swath trailing back the way it came.
+			var dp6: Vector2 = drop.get("pos", Vector2.ZERO)
+			var half6: float = size * 512.0
+			var edges: Array[Vector2] = [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1)]
+			var dists: Array[float] = [dp6.x + half6, half6 - dp6.x, dp6.y + half6, half6 - dp6.y]
+			var out6: Vector2 = edges[dists.find(dists.min())]
+			# Most tries toward that edge; the rest from anywhere round (a drop site hard by the edge
+			# leaves no room out that way).
+			var spread6: float = 35.0 if r.randf() < 0.6 else 180.0
+			var at6: Vector2 = dp6 + out6.rotated(deg_to_rad(r.randf_range(-spread6, spread6))) * r.randf_range(ring.x, ring.y)
+			if absf(at6.x) > lim or absf(at6.y) > lim or water_at(at6) < 40.0:
+				return {}
+			var to_drop: Vector2 = (dp6 - at6).normalized()
+			var rot6: float = snappedf(rad_to_deg(to_drop.angle()) + 90.0, 0.1)
+			return {"origin": at6 - (fp * 0.5).rotated(deg_to_rad(rot6)), "rot": rot6}
 		"mine":
 			# A hillside: of a few dry points steep enough, the one where the ground rises most from
 			# the pad's middle to 20 m into the hill. Local +X runs uphill (the plan's levels run on

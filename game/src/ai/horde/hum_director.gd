@@ -218,12 +218,13 @@ func _rebuild_flow() -> void:
 				pieces.append({"a": seg[0], "b": seg[1], "hp": p.hp})
 			else:
 				pieces.append({"a": p.global_position, "b": p.global_position, "hp": p.hp})
-	var targets: Array[Vector3] = [(w.player as Node3D).global_position]
+	# A player in a cave is reached through its mouth (TD-279: the field is one surface layer).
+	var targets: Array[Vector3] = FlowField.surface_targets([(w.player as Node3D).global_position], w.get(&"terrain"))
 	# Buildings the horde should walk around (not the one the player is sheltering in).
 	var houses: Array = []
 	var pois: Node = w.get(&"pois")
 	if pois != null:
-		var inside: PoiInstance = pois.call(&"poi_at", targets[0]) as PoiInstance
+		var inside: PoiInstance = pois.call(&"poi_at", (w.player as Node3D).global_position) as PoiInstance
 		for inst: PoiInstance in (pois.get(&"instances") as Dictionary).values():
 			if inst != inside and inst.global_position.distance_to(base) < f.cell * f.n:
 				houses.append({"xf": inst.global_transform, "rect": inst.layout.extent()})
