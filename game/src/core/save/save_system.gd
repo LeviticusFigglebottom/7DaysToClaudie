@@ -286,10 +286,16 @@ static func fix_composer_changes(session: GameSession, world_def: Object, curren
 	if session.composer_version >= BANKS_COMPOSER and session.composer_version < ROAD_EDGE_COMPOSER \
 			and current >= ROAD_EDGE_COMPOSER and world_def != null:
 		dropped += _drop_bank_chunks(session, world_def)
+	# Composer 16 moved a random world's roadside places to their roads' level (TD-320).
+	if session.is_random_world() and session.composer_version >= ROAD_EDGE_COMPOSER and session.composer_version < ROADSIDE_COMPOSER \
+			and current >= ROADSIDE_COMPOSER and world_def != null:
+		dropped += _drop_bank_chunks(session, world_def)
 	session.composer_version = current
 	return dropped
 
 
+## Composer version from which a random world's roadside places stand at their road's level.
+const ROADSIDE_COMPOSER: int = 16
 ## Composer version from which a world town's streets are pinned together at their junctions.
 const JUNCTIONS_COMPOSER: int = 14
 ## Composer version from which world roads meet at one height and the nearest road is the nearest edge.

@@ -270,10 +270,23 @@ func relax(pts: PackedVector2Array, smooth: float) -> PackedVector2Array:
 				i += 1
 		if not changed:
 			break
+	# A hook (the route turns back by more than 120 degrees: a wiggle round a steep cell that the
+	# simplified path keeps as a spike) goes even where the cut is steep: the composer grades the
+	# road to its capped profile anyway, and a hairpin of tarmac is worse than a short steep pitch.
+	var i2: int = 1
+	while i2 < pts.size() - 1:
+		if (pts[i2] - pts[i2 - 1]).normalized().dot((pts[i2 + 1] - pts[i2]).normalized()) < -0.5 \
+				and _passable(pts[i2 - 1], pts[i2 + 1], false):
+			pts.remove_at(i2)
+			i2 = maxi(1, i2 - 1)
+		else:
+			i2 += 1
 	return pts
 
 
-func _passable(a: Vector2, b: Vector2) -> bool:
+## True when the straight line a-b crosses no blocked cell and no water off a road (and, with
+## `graded`, nowhere steeper than the steepest grade allowed).
+func _passable(a: Vector2, b: Vector2, graded: bool = true) -> bool:
 	var len_ab: float = a.distance_to(b)
 	if len_ab < 1.0:
 		return true
@@ -285,7 +298,7 @@ func _passable(a: Vector2, b: Vector2) -> bool:
 		if blocked[c] != 0 or (water[c] != 0 and on_road[c] == 0):
 			return false
 		var hv: float = t.height(p.x, p.y)
-		if absf(hv - prev_h) / (len_ab / steps) > grade_max * 1.1:
+		if graded and absf(hv - prev_h) / (len_ab / steps) > grade_max * 1.1:
 			return false
 		prev_h = hv
 	return true

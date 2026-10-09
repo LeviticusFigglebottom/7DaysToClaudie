@@ -26,7 +26,8 @@ var roads: Array[Dictionary] = []
 ## world data alone, so it may straddle region borders. Empty on the main map and v1 worlds.
 var towns: Array[Dictionary] = []
 ## A random world's places levelled from world data (TD-320): [{id, origin: Vector2 (corner), rot
-## (radians), size: Vector2}], and their ids. The world roads are pinned to them.
+## (radians), size: Vector2, level_at?: Vector2 (a roadside place: its road's edge where its drive
+## leaves it)}], and their ids. The world roads are pinned to them.
 var pads: Array[Dictionary] = []
 var pad_ids: Dictionary = {}
 ## How far past a town's built bounds its ground reaches for town_at (m).
@@ -134,6 +135,8 @@ func _parse(d: Dictionary) -> void:
 		var pd: Dictionary = pv
 		pads.append({"id": str(pd["id"]), "origin": Vector2(float(pd["origin"][0]), float(pd["origin"][1])),
 			"rot": deg_to_rad(float(pd.get("rotation", 0.0))), "size": Vector2(float(pd["size"][0]), float(pd["size"][1]))})
+		if pd.has("level_at"):
+			pads.back()["level_at"] = Vector2(float(pd["level_at"][0]), float(pd["level_at"][1]))
 		pad_ids[str(pd["id"])] = true
 	for r: Dictionary in d.get("roads", []):
 		roads.append({"id": str(r.get("id", "")), "line": Polyline2.from_array(r["points"]), "width": float(r.get("width", 7.0)),

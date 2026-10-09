@@ -171,6 +171,15 @@ max 1.98 → 0.23 m, cross slope p95 0.023 → 0.011; hilly seed 7 p95 0.92 → 
 0.55 m; seed 21 p95 1.44 → 0.49 m, max 2.75 → 2.15 m (a roadside diner levelled 2 m off its highway
 10 m away, TD-320). Saves crossing composer 15 drop their vegetation records by the roads, as at 13.
 
+### Roadside places at their road's level (composer 16, generator 16)
+
+A random world's roadside place (a diner by the highway, a trader post) records the road point it
+fronts (`level_at` in world.json `pads`); `world_pad_heights` sets its pad to that road's profile
+height there + 0.1 m, held within `ROADSIDE_LEVEL` (3 m) of the pad's mean ground, before the roads
+are pinned to the pads. Seed 21's worst carriageway step 2.15 → 1.16 m (p95 0.49 → 0.47 m); seed 7
+unchanged (its 0.55 m is a trader drive beside a lot). Random-world saves crossing composer 16 drop
+their bank-chunk records.
+
 ## Consequences
 + Measured on hilly seeds (size 4): bank heights p95 38.7 m → 6-7 m, the steepest 2 m step beside
   roads p95 1.57 → 0.85-0.9, grades capped (max 0.13-0.17 by surface, bridge ramps aside), face runs
