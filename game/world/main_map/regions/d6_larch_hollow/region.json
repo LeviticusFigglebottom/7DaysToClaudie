@@ -1071,6 +1071,26 @@
           1960.3
         ]
       ]
+    },
+    {
+      "type": "cave",
+      "id": "larch_hollow_grotto",
+      "_doc": "A grotto (ADR-0056) in the larch slopes between the motel and the Lindqvist trail, ~100 m off every trail: a ~25 m tunnel down into a chamber. Planned from the pristine heights by CavePlan; the mouth settles on the slope within `search` m of this point and runs uphill.",
+      "style": "grotto",
+      "mouth": [245, 2278],
+      "heading": "uphill",
+      "search": 12,
+      "seed": 1308
+    },
+    {
+      "type": "cave",
+      "id": "logging_hill_grotto",
+      "_doc": "A grotto (ADR-0056) in the hill beyond the west logging road, ~80 m from it and from Larch Pond road: a ~25 m tunnel into the hillside ending in a chamber. Seeds are explicit so the shapes stay the ones checked when placed.",
+      "style": "grotto",
+      "mouth": [-318, 1614],
+      "heading": "uphill",
+      "search": 12,
+      "seed": 1050
     }
   ]
 }

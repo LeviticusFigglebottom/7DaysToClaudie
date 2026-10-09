@@ -98,7 +98,8 @@ func test_town_count_and_size_follow_the_settings() -> void:
 	for w: String in big.get(&"warnings"):
 		if w.begins_with("no room"):
 			no_room += 1
-	assert_eq(nb + no_room, 6, "6.25 towns per 5 x 5 world: six sites tried (%d placed, %d without room)" % [nb, no_room])
+	# A class with no room retries one class smaller (VERSION 12), so a site can be tried twice.
+	assert_gte(nb + no_room, 6, "6.25 towns per 5 x 5 world: six sites tried (%d placed, %d without room)" % [nb, no_room])
 	assert_gt(nb, 3, "most big towns fit a 5 x 5 world")
 	for t3: Dictionary in big.get(&"towns"):
 		assert_true(str(t3["kind"]) in ["village", "town"], "the 'towns' mix makes villages and towns")

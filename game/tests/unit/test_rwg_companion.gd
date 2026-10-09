@@ -22,7 +22,7 @@ func test_config_has_one_unique_companion_entry() -> void:
 		assert_eq(str(entries[0]["poi"]), CAMP)
 		assert_true(bool(entries[0].get("unique", false)))
 		assert_eq(str(entries[0]["access"]), "none", "found, not reached by a path")
-	assert_gte(Generator.VERSION, 8, "the companion's camp moved the output (ADR-0058)")
+	assert_gte(Generator.VERSION, 8, "the companion's camp moved the output (ADR-0058); later versions keep it")
 
 
 func test_one_camp_in_a_ring_round_the_drop_site_off_the_roads() -> void:

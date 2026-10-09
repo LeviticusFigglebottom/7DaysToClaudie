@@ -26,6 +26,8 @@ const N: int = 32
 const VOXEL: float = 0.5
 const SIZE: float = N * VOXEL
 const CLAMP: float = 2.0
+## The heightmap ground cells (1 m) kept along a converted area's +X / +Z border (is_ground_hole).
+const EDGE_STRIP: float = 1.0
 ## Main-thread time a frame spends installing finished chunks (StreamMeter kind "volume").
 const APPLY_BUDGET_MS: float = 3.0
 ## Collision bodies exist within this distance of the focus (Jolt's max_bodies, physics cost)...
@@ -132,7 +134,51 @@ func is_hole_column(x: float, z: float) -> bool:
 	return on
 
 
-# --- Density (pure, worker-safe) ------------------------------------------------------------------
+## Whether the heightmap's *ground* (collision, navigation) leaves out the 1 m cell centred at
+## (x, z), whose old surface lies at `h`: the cells over committed columns, except the last strip
+## before a column edge whose neighbour the heightmap still owns (+X, +Z or the corner between).
+## Surface nets put the vertices at voxel centres, so the volume's surface stops VOXEL / 2 short of
+## a column's +X / +Z edge: dropping that cell too left a 0.25 m slit along the border that small
+## bodies fell through and Recast widened to a 1.25 m gap (TD-010). The strip stays unless a dig
+## took the ground from under it (the density just below the old surface is air), so no lid is
+## left over a hole. The render mesh keeps is_hole_column: its skirts hide the slit, and an
+## overlapping strip would z-fight. Main thread (density_at).
+func is_ground_hole(x: float, z: float, h: float) -> bool:
+	var col: Vector2i = column_of(x, z)
+	if not committed.has(col):
+		return false
+	var hx: bool = x - col.x * SIZE > SIZE - EDGE_STRIP
+	var hz: bool = z - col.y * SIZE > SIZE - EDGE_STRIP
+	var edge: bool = (hx and not committed.has(col + Vector2i(1, 0))) or (hz and not committed.has(col + Vector2i(0, 1))) \
+		or (hx and hz and not committed.has(col + Vector2i(1, 1)))
+	if not edge:
+		return true
+	var d: float = density_at(Vector3(x, h - 0.3, z))
+	return not is_nan(d) and d <= 0.0
+
+
+## Whether an XZ rect reaches one of the heightmap ground strips is_ground_hole keeps (an edit
+## there may have taken the strip's ground away: the heightmap collision is rebuilt). Main thread.
+func touches_ground_strip(r: Rect2) -> bool:
+	var lo: Vector2i = column_of(r.position.x, r.position.y)
+	var hi: Vector2i = column_of(r.end.x, r.end.y)
+	for cz: int in range(lo.y, hi.y + 1):
+		for cx: int in range(lo.x, hi.x + 1):
+			var col := Vector2i(cx, cz)
+			if not committed.has(col):
+				continue
+			var x1: float = (cx + 1) * SIZE
+			var z1: float = (cz + 1) * SIZE
+			if not committed.has(col + Vector2i(1, 0)) and r.intersects(Rect2(x1 - EDGE_STRIP, cz * SIZE, EDGE_STRIP, SIZE)):
+				return true
+			if not committed.has(col + Vector2i(0, 1)) and r.intersects(Rect2(cx * SIZE, z1 - EDGE_STRIP, SIZE, EDGE_STRIP)):
+				return true
+			if not committed.has(col + Vector2i(1, 1)) and r.intersects(Rect2(x1 - EDGE_STRIP, z1 - EDGE_STRIP, EDGE_STRIP, EDGE_STRIP)):
+				return true
+	return false
+
+
+# --- Density (pure, worker-safe)------------------------------------------------------------------
 
 ## A chunk's padded density block: the heightfield (height_fn(x, z), pristine-or-dug heights)
 ## minus the POI cellars in `holes` and the caves of `caves` (an object with touching(AABB) whose

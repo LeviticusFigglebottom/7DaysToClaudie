@@ -265,3 +265,26 @@ func test_a_pre_12_random_run_drops_town_vegetation_records() -> void:
 	main.world.set_tree_state(Ids.chunk_key(7, 7), 3, {"state": "stump", "day": 1})
 	assert_eq(SaveSystem.fix_composer_changes(main, FakeWorldDef.new(), 12), 0, "the main map is unchanged")
 	assert_eq(GameSession.from_dict(s.to_dict()).composer_version, 12, "saved")
+
+
+class FakeRoadWorldDef:
+	extends RefCounted
+	var towns: Array[Dictionary] = []
+	var roads: Array[Dictionary] = [{"id": "r", "line": Polyline2.from_array([[0.0, 1000.0], [2000.0, 1000.0]])}]
+
+
+func test_crossing_composer_13_drops_records_by_changed_roads() -> void:
+	# Composer 13 (player report 4): a generated world's roads bank into the land, which moves the
+	# scatter beside them; records there point elsewhere. The main map's roads did not change.
+	var s: GameSession = GameSession.create_new({"world_gen": _gen(5), "seed": 1})
+	s.composer_version = 12
+	s.world.set_tree_state(Ids.chunk_key(10, 15), 3, {"state": "stump", "day": 1})    # z 960..1024: on the road
+	s.world.set_tree_state(Ids.chunk_key(10, 2), 5, {"state": "stump", "day": 1})     # z 128..192: far from it
+	assert_eq(SaveSystem.fix_composer_changes(s, FakeRoadWorldDef.new(), 13), 1)
+	assert_false(s.world.trees.has(Ids.chunk_key(10, 15)), "the chunk by the road is dropped")
+	assert_true(s.world.trees.has(Ids.chunk_key(10, 2)), "a chunk far from it is kept")
+	assert_eq(s.composer_version, 13)
+	var main: GameSession = GameSession.create_new({})
+	main.composer_version = 12
+	main.world.set_tree_state(Ids.chunk_key(10, 15), 3, {"state": "stump", "day": 1})
+	assert_eq(SaveSystem.fix_composer_changes(main, FakeRoadWorldDef.new(), 13), 0, "the main map's roads are graded as before")

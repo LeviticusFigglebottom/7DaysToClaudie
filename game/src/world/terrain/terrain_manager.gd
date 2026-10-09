@@ -661,7 +661,8 @@ func _rebuild_collision(ch: Chunk, sync: bool) -> void:
 	var has_volume: bool = _chunk_has_volume(ch.key)
 	var out: Array = [null]
 	var job: Dictionary = {"out": out, "kind": "faces" if not cut.is_empty() else "heights"}
-	var hole: Callable = volume.is_hole_column if has_volume else Callable()
+	# Built here on the main thread whenever the volume is in it (is_ground_hole reads densities).
+	var hole: Callable = _ground_hole if has_volume else Callable()
 	var fn := func() -> void:
 		if cut.is_empty():
 			out[0] = TerrainMesher.collision_heights(origin, CHUNK, 1.0, height_at)
@@ -1065,10 +1066,35 @@ func _chunk_has_volume(key: Vector2i) -> bool:
 	return false
 
 
-## Heightmap collision sinks out of the way where the volume owns the ground.
+## Heightmap collision sinks out of the way where the volume owns the ground: a vertex sinks when
+## all four 1 m cells around it are ground holes (VolumeTerrain.is_ground_hole), so the strip along a
+## converted area's +X / +Z border stays solid up to the volume's own surface (TD-010). Main thread.
 func _collision_height(x: float, z: float) -> float:
 	var h: float = height_at(x, z)
-	return h - 40.0 if volume.is_hole_column(x - 0.01, z - 0.01) and volume.is_hole_column(x + 0.01, z + 0.01) else h
+	for o: Vector2 in [Vector2(-0.5, -0.5), Vector2(0.5, -0.5), Vector2(-0.5, 0.5), Vector2(0.5, 0.5)]:
+		if not _ground_hole(x + o.x, z + o.y):
+			return h
+	return h - 40.0
+
+
+## Rebuilds the heightmap collision of the chunks a volume edit box reaches when it touches a kept
+## border strip (VolumeTerrain.touches_ground_strip).
+func _rebuild_strip_collision(box: AABB) -> void:
+	var r := Rect2(box.position.x, box.position.z, box.size.x, box.size.z).grow(0.5)
+	if volume == null or not volume.touches_ground_strip(r):
+		return
+	var lo: Vector2i = chunk_of(r.position.x, r.position.y)
+	var hi: Vector2i = chunk_of(r.end.x, r.end.y)
+	for kz: int in range(lo.y, hi.y + 1):
+		for kx: int in range(lo.x, hi.x + 1):
+			var ch: Chunk = _chunks.get(Vector2i(kx, kz))
+			if ch != null and ch.has_collision:
+				_rebuild_collision(ch, true)
+
+
+## The collision's hole test for a 1 m cell centred at (x, z). Main thread.
+func _ground_hole(x: float, z: float) -> bool:
+	return volume.is_ground_hole(x, z, height_at(x, z))
 
 
 # --- POI cellars (TD-026) -------------------------------------------------------------------------
@@ -1399,6 +1425,9 @@ func take_damage(info: DamageInfo) -> void:
 	if moved <= 0.01:
 		return
 	if edit_box.size != Vector3.ZERO:
+		# A dig into the heightmap strip kept along a converted area's border (is_ground_hole) opens
+		# it: the collision there is rebuilt so no lid is left over the hole.
+		_rebuild_strip_collision(edit_box)
 		# modify() tells its listeners itself; a volume edit does here (TD-163: nav, supports).
 		terrain_changed.emit(edit_box)
 		Events.terrain_modified.emit(edit_box)

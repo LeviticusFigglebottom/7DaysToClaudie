@@ -17,7 +17,10 @@ const OPTION_KEYS: PackedStringArray = ["category", "type", "min", "max", "step"
 const OPTION_TYPES: PackedStringArray = ["int", "float", "enum"]
 const PRESET_KEYS: PackedStringArray = ["label", "description", "values"]
 const TUNING_KEYS: PackedStringArray = ["macro_step", "biome_step", "region_margin", "terrain", "rivers", "lakes", "towns", "roads", "wilderness", "drop_site", "bloom",
-	"burn", "fen"]
+	"burn", "fen", "caves"]
+## tuning.caves (forest caves, ADR-0056, RwgGenerator._caves) and its clearance.
+const CAVE_KEYS: PackedStringArray = ["per_region", "max_per_region", "styles", "biomes", "inset", "tries", "search", "clearance"]
+const CAVE_CLEAR_KEYS: PackedStringArray = ["water", "town", "lots", "road", "drop", "place", "cave"]
 ## tuning.burn and tuning.fen (burnt forest and fen biomes, ADR-0041) and the fen's pools.
 const BURN_KEYS: PackedStringArray = ["per_16km2", "cells", "max_share", "water", "road", "town_clear", "drop_clear", "islands"]
 const FEN_KEYS: PackedStringArray = ["max_slope", "water", "low", "valley", "patch", "town_clear", "drop_clear", "pools"]
@@ -198,6 +201,12 @@ static func schema_errors(db: Node = null) -> PackedStringArray:
 	_unknown(t.get("burn", {}), BURN_KEYS, "world_gen.json tuning.burn", out)
 	_unknown(t.get("fen", {}), FEN_KEYS, "world_gen.json tuning.fen", out)
 	_unknown((t.get("fen", {}) as Dictionary).get("pools", {}), POOL_SPEC_KEYS, "world_gen.json tuning.fen.pools", out)
+	var caves: Dictionary = t.get("caves", {})
+	_unknown(caves, CAVE_KEYS, "world_gen.json tuning.caves", out)
+	_unknown(caves.get("clearance", {}), CAVE_CLEAR_KEYS, "world_gen.json tuning.caves.clearance", out)
+	for b: Variant in caves.get("biomes", []):
+		if db != null and not bool(db.call(&"has_def", &"biome", StringName(str(b)))):
+			out.append("world_gen.json tuning.caves.biomes: unknown biome '%s'" % b)
 	var wild: Dictionary = t.get("wilderness", {})
 	_unknown(wild, ["pool", "farmsteads", "spacing", "max_relief", "mine"], "world_gen.json tuning.wilderness", out)
 	_unknown(wild.get("mine", {}), MINE_KEYS, "world_gen.json tuning.wilderness.mine", out)

@@ -77,6 +77,17 @@ func _bake_map() -> void:
 		await get_tree().physics_frame
 	for i: int in 3:
 		await get_tree().physics_frame
+	# On a loaded machine the map can still answer from before the regions joined (closest point at
+	# the origin): wait until a polygon vertex of the first mesh is found where it is.
+	var probe := Vector3.ZERO
+	for k0: Vector2i in _meshes:
+		var vs: PackedVector3Array = (_meshes[k0] as NavigationMesh).get_vertices()
+		if not vs.is_empty():
+			probe = vs[0]
+			break
+	until = Time.get_ticks_msec() + 15000
+	while NavigationServer3D.map_get_closest_point(_map, probe).distance_to(probe) > 0.5 and Time.get_ticks_msec() < until:
+		await get_tree().physics_frame
 	var polys: int = 0
 	for k: Vector2i in _meshes:
 		polys += (_meshes[k] as NavigationMesh).get_polygon_count()

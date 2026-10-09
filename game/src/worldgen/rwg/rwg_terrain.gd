@@ -87,6 +87,7 @@ func build(settings: GenSettings, tun: Dictionary, names: Dictionary, progress: 
 	_flood(0.6, 0.85)
 	_done("flood2", 0.85)
 	_rivers(settings, tun.get("rivers", {}), names)
+	_valley_caps()
 	_done("rivers", 1.0)
 	# The caller's callable may hold its owner (the generator, which holds this): let it go.
 	_progress = Callable()
@@ -651,6 +652,94 @@ func _trace(path: PackedInt32Array, mouth: String, r: RandomNumberGenerator, wor
 	rivers.append({"id": "river_%d" % ri, "name": name, "control": ctrl, "line": line, "levels": levels, "widths": widths,
 		"depth": snappedf(depth, 0.1), "bank": float(cfg.get("bank", 6.0)), "valley_width": snappedf(90.0 + wmax * 3.0, 1.0),
 		"valley_slope": 0.16, "mouth": mouth, "cells": path, "cell_levels": lv})
+
+
+## The composer caps the ground round every river and lake with a cone (TerrainComposer
+## `_band_water`: the water's level + 0.5 m + VALLEY_SLOPE per metre out, eased off between 0.55 and
+## 1 of the valley's width), so a hillside rising from a lake is cut back to that slope. The roads,
+## the town streets and the lots are graded from this grid (the reference ground), which did not
+## have the cap: a road along a lake shore stood on a 60 m dyke over the capped ground, and lots
+## near water on plinths (player report 4, generator VERSION 12). The same cap, noise-free and from
+## exact distances, is cut into the grid here, so the composer's own cap finds the ground already
+## under it.
+const LAKE_VALLEY: float = 160.0
+const LAKE_VALLEY_SLOPE: float = 0.2
+
+
+func _valley_caps() -> void:
+	var count: int = n * n
+	var bd := PackedFloat32Array()
+	bd.resize(count)
+	bd.fill(INF)
+	var blvl := PackedFloat32Array()
+	blvl.resize(count)
+	var bvw := PackedFloat32Array()
+	bvw.resize(count)
+	var bvs := PackedFloat32Array()
+	bvs.resize(count)
+	# Plain loops, no lambdas: a lambda captures a local packed array by value, and its writes would
+	# be lost.
+	for rv: Dictionary in rivers:
+		var line: Polyline2 = rv["line"]
+		var vw: float = float(rv["valley_width"])
+		var vs: float = float(rv["valley_slope"])
+		var levels: Array = Array(rv["levels"])
+		var widths: Array = Array(rv["widths"])
+		for si: int in line.points.size() - 1:
+			var a: Vector2 = line.points[si]
+			var b: Vector2 = line.points[si + 1]
+			var ab: Vector2 = b - a
+			var l2: float = maxf(ab.length_squared(), 1e-6)
+			var seg_len: float = sqrt(l2)
+			var s0: float = line.lengths[si]
+			var box: Rect2i = _cells_in(Rect2(a, Vector2.ZERO).expand(b).grow(vw + 40.0))
+			for j: int in range(box.position.y, box.end.y):
+				for i: int in range(box.position.x, box.end.x):
+					var c: int = j * n + i
+					var p := Vector2(x0 + i * step, z0 + j * step)
+					var t: float = clampf((p - a).dot(ab) / l2, 0.0, 1.0)
+					var sv: float = s0 + seg_len * t
+					var d: float = p.distance_to(a + ab * t) - line.value_at(widths, sv) * 0.5
+					if d < bd[c]:
+						bd[c] = d
+						blvl[c] = line.value_at(levels, sv)
+						bvw[c] = vw
+						bvs[c] = vs
+	for l: Dictionary in lakes:
+		var poly: PackedVector2Array = l["polygon"]
+		var level: float = float(l["level"])
+		var bb := Rect2(poly[0], Vector2.ZERO)
+		for q: Vector2 in poly:
+			bb = bb.expand(q)
+		var box2: Rect2i = _cells_in(bb.grow(LAKE_VALLEY + 40.0))
+		for j2: int in range(box2.position.y, box2.end.y):
+			for i2: int in range(box2.position.x, box2.end.x):
+				var c2: int = j2 * n + i2
+				var p2 := Vector2(x0 + i2 * step, z0 + j2 * step)
+				var d2: float = _poly_distance(poly, p2)
+				if Streets.point_in(p2, poly):
+					d2 = -d2
+				if d2 < bd[c2]:
+					bd[c2] = d2
+					blvl[c2] = level
+					bvw[c2] = LAKE_VALLEY
+					bvs[c2] = LAKE_VALLEY_SLOPE
+	for c3: int in count:
+		var d3: float = bd[c3]
+		if d3 == INF or lake_of[c3] >= 0 or d3 >= bvw[c3]:
+			continue
+		var cap: float = blvl[c3] + 0.5 + maxf(d3, 0.0) * bvs[c3]
+		var w: float = 1.0 - smoothstep(bvw[c3] * 0.55, bvw[c3], d3)
+		h[c3] = lerpf(h[c3], minf(h[c3], cap), w)
+
+
+## The grid points inside `box`, as a cell rectangle (end exclusive).
+func _cells_in(box: Rect2) -> Rect2i:
+	var i0: int = clampi(int(ceil((box.position.x - x0) / step)), 0, n)
+	var i1: int = clampi(int(floor((box.end.x - x0) / step)) + 1, 0, n)
+	var j0: int = clampi(int(ceil((box.position.y - z0) / step)), 0, n)
+	var j1: int = clampi(int(floor((box.end.y - z0) / step)) + 1, 0, n)
+	return Rect2i(i0, j0, maxi(0, i1 - i0), maxi(0, j1 - j0))
 
 
 func _river_level_at_cell(ri: int, c: int) -> float:
