@@ -284,6 +284,79 @@ func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
 					bank = maxf(bank, absf(hf.sample(far.x, far.y) - y))
 			st.add(&"lot_steep", steep)
 			st.add(&"lot_bank", bank)
+		# TD-318: the lip between the yard and its street, on the side facing the nearest road:
+		# the steepest 1 m step from the frame's edge to the road's centre line (three lines).
+		var q: Vector2 = _nearest_road_point(rt, c)
+		if q.x == INF or c.distance_to(q) > maxf(hw, hd) + 14.0:
+			continue
+		var to: Vector2 = (q - c).normalized()
+		var best_n: Vector2 = ax
+		for n2: Vector2 in [ax, -ax, az, -az]:
+			if n2.dot(to) > best_n.dot(to):
+				best_n = n2
+		var ext2: float = hw if absf(best_n.dot(ax)) > 0.5 else hd
+		var along2: Vector2 = az if absf(best_n.dot(ax)) > 0.5 else ax
+		var span2: float = hd if absf(best_n.dot(ax)) > 0.5 else hw
+		var reach: float = maxf(2.0, (q - c).dot(best_n) - ext2)
+		var lip: float = 0.0
+		for t2: int in 3:
+			var from: Vector2 = c + best_n * (ext2 - 2.0) + along2 * span2 * (t2 - 1.0) * 0.5
+			for m: int in int(reach + 2.0):
+				var a0: Vector2 = from + best_n * float(m)
+				var a1: Vector2 = a0 + best_n
+				if inner_rect.has_point(a1):
+					lip = maxf(lip, absf(hf.sample(a1.x, a1.y) - hf.sample(a0.x, a0.y)))
+		st.add(&"lot_lip", lip)
+	# TD-318: creases where a road ends on another: the steepest 1 m step in a 10 m disc round the
+	# junction.
+	for r: Dictionary in rt.roads:
+		var pts: Array = r["points"]
+		if pts.size() < 2:
+			continue
+		for ep: Variant in [pts[0], pts[pts.size() - 1]]:
+			var e := Vector2(float(ep[0]), float(ep[1]))
+			if not inner_rect.has_point(e):
+				continue
+			var on_other: bool = false
+			for r2: Dictionary in rt.roads:
+				if r2 == r:
+					continue
+				var p2: Array = r2["points"]
+				for i: int in p2.size() - 1:
+					var a := Vector2(float(p2[i][0]), float(p2[i][1]))
+					var b := Vector2(float(p2[i + 1][0]), float(p2[i + 1][1]))
+					if Geometry2D.get_closest_point_to_segment(e, a, b).distance_to(e) < 4.0:
+						on_other = true
+						break
+				if on_other:
+					break
+			if not on_other:
+				continue
+			var crease: float = 0.0
+			for gz: int in range(-10, 11, 2):
+				for gx: int in range(-10, 10):
+					var a2 := e + Vector2(gx, gz)
+					if a2.distance_to(e) > 10.0:
+						continue
+					var h0: float = hf.sample(a2.x, a2.y)
+					crease = maxf(crease, maxf(absf(hf.sample(a2.x + 1.0, a2.y) - h0), absf(hf.sample(a2.x, a2.y + 1.0) - h0)))
+			st.add(&"junction_step", crease)
+
+
+func _nearest_road_point(rt: RegionTerrain, c: Vector2) -> Vector2:
+	var best := Vector2(INF, INF)
+	var bd: float = INF
+	for r: Dictionary in rt.roads:
+		var pts: Array = r["points"]
+		for i: int in pts.size() - 1:
+			var a := Vector2(float(pts[i][0]), float(pts[i][1]))
+			var b := Vector2(float(pts[i + 1][0]), float(pts[i + 1][1]))
+			var q: Vector2 = Geometry2D.get_closest_point_to_segment(c, a, b)
+			var d: float = q.distance_to(c)
+			if d < bd:
+				bd = d
+				best = q
+	return best
 
 
 class _Stats:
@@ -343,10 +416,11 @@ class _Stats:
 
 	func line() -> String:
 		return ("cross p95 %.3f max %.3f >4%% %.1f%% | town cross p95 %.3f >4%% %.1f%% | grade p95 %.3f max %.3f >12%% %.1f%% | bank_h p95 %.1f steep p95 %.2f "
-			+ "| faces %d runs, longest %.0f m, total %.0f m, spread p50 %.3f | lots steep p95 %.2f max %.2f bank p95 %.1f | worst grade %s") % [
+			+ "| faces %d runs, longest %.0f m, total %.0f m, spread p50 %.3f | lots steep p95 %.2f max %.2f bank p95 %.1f | lip p95 %.2f max %.2f (n %d) | junction step p95 %.2f max %.2f (n %d) | worst grade %s") % [
 			pct(&"cross", 0.95), pct(&"cross", 1.0), frac_over(&"cross", 0.04) * 100.0, pct(&"cross_town", 0.95), frac_over(&"cross_town", 0.04) * 100.0,
 			pct(&"grade", 0.95), pct(&"grade", 1.0), frac_over(&"grade", 0.12) * 100.0, pct(&"bank_h", 0.95), pct(&"bank_steep", 0.95),
-			count(&"face_run"), pct(&"face_run", 1.0), total(&"face_run"), pct(&"face_spread", 0.5), pct(&"lot_steep", 0.95), pct(&"lot_steep", 1.0), pct(&"lot_bank", 0.95), worst_at]
+			count(&"face_run"), pct(&"face_run", 1.0), total(&"face_run"), pct(&"face_spread", 0.5), pct(&"lot_steep", 0.95), pct(&"lot_steep", 1.0), pct(&"lot_bank", 0.95),
+			pct(&"lot_lip", 0.95), pct(&"lot_lip", 1.0), count(&"lot_lip"), pct(&"junction_step", 0.95), pct(&"junction_step", 1.0), count(&"junction_step"), worst_at]
 
 
 static func _arg(args: PackedStringArray, key: String, default: String) -> String:
