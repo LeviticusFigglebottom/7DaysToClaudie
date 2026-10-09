@@ -48,7 +48,9 @@ func _ready() -> void:
 	add_child(box)
 	box.add_child(UiStyle.label("OPTIONS", &"HeadingLabel"))
 	_tabs = TabContainer.new()
-	_tabs.custom_minimum_size = Vector2(720, 600)
+	# 600 px of tab on a 720p window made the panel 731 tall, its Back under the window's edge
+	# (the menu guard caught it); every page scrolls, so a short window gets a shorter one.
+	_tabs.custom_minimum_size = Vector2(720, tab_height(get_viewport_rect().size.y))
 	box.add_child(_tabs)
 	_tabs.add_child(_page("General"))
 	_general()
@@ -64,6 +66,12 @@ func _ready() -> void:
 	back.custom_minimum_size = Vector2(160, 40)
 	back.pressed.connect(close)
 	box.add_child(back)
+
+
+## The tab area's height for a window `view_h` tall: 600 px where it fits, else what leaves the
+## heading, Back and the margins on screen (360 at least). Pure.
+static func tab_height(view_h: float) -> float:
+	return clampf(view_h - 210.0, 360.0, 600.0)
 
 
 func close() -> void:

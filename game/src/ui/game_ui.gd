@@ -1036,7 +1036,8 @@ func _open_options(tab: String = "General") -> void:
 	panel.open_tab = tab
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = (get_viewport().get_visible_rect().size - Vector2(680, 660)) * 0.5
+	# Centred by its laid-out size (1050 wide, not the 680 once assumed: it ran off a 1280 window).
+	panel.position = ((get_viewport().get_visible_rect().size - panel.get_combined_minimum_size()) * 0.5).max(Vector2.ZERO)
 	_pause.visible = false
 	panel.closed.connect(func() -> void: _pause.visible = true)
 
