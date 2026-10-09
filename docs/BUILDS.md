@@ -52,7 +52,11 @@ closes New Game, Random World, Options, What's New and Load with mouse events se
 `Input`, and it times every frame. It fails on any frame over 1.5 s, or on a hover or click that
 nothing answers within 3 s. It prints the backdrop's state: the pictures loaded, or none. The
 Build workflow runs it on the exported Linux pack with `--expect-pictures`, after the smoke step.
-Run it on a pack yourself: `make menu-guard MENU_PACK=/abs/Hollowmere.pck MENU_GUARD_ARGS=--expect-pictures`.
+`--player` shows a player's menu even from the editor's binary (which adds a developer entry), and
+`--with-continue` puts a probe save in place first so Continue and Load… are on it. That menu
+must fit 1280x720, every entry above the version line, or the guard fails. `--shot <png>` saves
+the menu's frame. CI passes `--expect-pictures --player --with-continue`. Run it on a pack yourself:
+`make menu-guard MENU_PACK=/abs/Hollowmere.pck MENU_GUARD_ARGS="--expect-pictures --player --with-continue"`.
 
 ## Stand-in mode
 What a fresh clone runs before `make assets`: `ModelLibrary.make_placeholder` shapes and the

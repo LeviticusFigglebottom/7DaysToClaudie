@@ -90,12 +90,13 @@ jobs:
           # headless and never opens the menu. This runs the shipped main menu on software Vulkan,
           # with the shipped pictures behind it, hovers every entry and opens and closes every
           # panel for ~20 s. A frame over 1.5 s, input nothing answers, or a backdrop with no
-          # pictures fails the build.
+          # pictures fails the build. --player --with-continue: the menu a player with a saved run sees
+          # (no developer entries from the editor binary) must fit 1280x720.
           # A menu that hangs outright never reports: give it five minutes, then fail.
           timeout 300 xvfb-run -a -s "-screen 0 1280x720x24" ../../.tools/godot/godot \
             --main-pack "$GITHUB_WORKSPACE/build/export/linux/Hollowmere.pck" \
             --rendering-driver vulkan --audio-driver Dummy --resolution 1280x720 \
-            -s "$GITHUB_WORKSPACE/game/src/tools/cli/menu_guard.gd" -- --expect-pictures 2>&1 | tee ../menu_guard.log
+            -s "$GITHUB_WORKSPACE/game/src/tools/cli/menu_guard.gd" -- --expect-pictures --player --with-continue 2>&1 | tee ../menu_guard.log
           if grep -q "switching to OpenGL" ../menu_guard.log; then
             echo "::error::no software Vulkan: the guard ran on OpenGL, which is not what players run"; exit 1
           fi
