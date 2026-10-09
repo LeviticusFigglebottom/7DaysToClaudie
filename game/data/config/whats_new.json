@@ -2,7 +2,7 @@
   "_doc": "The main menu's What's new panel (WhatsNewPanel). entries: newest first; each {id, title, date, items: [{head, text}]}. The panel opens by itself once when the newest entry's id differs from the last one the player closed (Settings.whats_new_seen), and from the menu's What's New any time. Keep each item to a line or two and in the player's words; no lore-trail spoilers (docs/LORE_TRAIL.md).",
   "entries": [
     {
-      "id": "round-4",
+      "id": "round-4b",
       "title": "What's new in this build",
       "date": "2026-10-09",
       "items": [

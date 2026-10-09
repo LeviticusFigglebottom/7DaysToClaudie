@@ -179,8 +179,6 @@ the wall, or the trader can't be reached.
 
 ## Known gaps
 * **TD-377:** the Lift 3 wreck's art (above).
-* **Menu pictures at 4K:** they are rendered 3200 px wide, so on a 4K screen they are slightly
-  soft. The interface itself is sharp.
 * **Generated assets** are needed for the full look: hands, the wreck, the tether's screen and
   the trees only look right in the packaged build.
 * **TD-378:** the menu backdrop is a slow pan over still pictures, not a filmed camera move: a

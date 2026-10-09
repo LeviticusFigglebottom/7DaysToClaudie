@@ -8,7 +8,7 @@ extends Node
 ## Each is drawn supersampled (SUPER) into a SubViewport and scaled down to SIZE: larger than a
 ## 1080p screen, so the slow pan and zoom never magnify it.
 
-const SIZE: Vector2i = Vector2i(3200, 1800)
+const SIZE: Vector2i = Vector2i(3840, 2160)
 const SUPER: float = 1.2
 ## Frames drawn before the capture: the first after a cut fills shadows and the ubershader cache.
 const SETTLE: int = 2
