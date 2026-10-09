@@ -155,14 +155,41 @@ func test_lot_heights_come_from_the_composers_ground() -> void:
 		var z: float = r.randf_range(-1536.0, 1536.0)
 		worst = maxf(worst, absf(float(ref.call(&"h", x, z)) - b._reference_ground(x, z)))
 	assert_eq(worst, 0.0, "the reference ground is the composer's to the bit")
+	var clamped: int = 0
 	for tw: Dictionary in towns:
+		# The street profiles as the composer builds them (TD-318): the town's streets after the
+		# world roads by it, from the world as written.
+		var wt: Dictionary = {}
+		for t2: Dictionary in world.towns:
+			if str(t2["id"]) == str(tw["id"]):
+				wt = t2
+		assert_false(wt.is_empty(), "%s is in world.json" % tw["id"])
+		var fixed: Array = TerrainComposer.town_world_roads(world.roads, wt["center"], float(wt["radius"]))
+		var streets: Array = tw["plan"].get("roads", [])
+		var profiles: Dictionary = TerrainComposer.town_street_profiles(streets, b._reference_ground, fixed)
+		var lines: Dictionary = {}
+		for fr: Dictionary in fixed:
+			lines[str(fr["id"])] = fr["line"]
+		for st: Dictionary in streets:
+			lines[str(st["id"])] = Polyline2.from_array(st["points"])
 		for l: Dictionary in tw["plan"]["lots"]:
 			var poly: PackedVector2Array = _frame_poly(l["frame"])
 			var acc: float = 0.0
 			for k2: int in 25:
 				var p: Vector2 = poly[3].lerp(poly[2], (k2 % 5) / 4.0).lerp(poly[0].lerp(poly[1], (k2 % 5) / 4.0), (k2 / 5) / 4.0)
 				acc += b._reference_ground(p.x, p.y)
-			assert_almost_eq(float(l["y"]), acc / 25.0, 0.011, "%s/%s: y is the mean ground over its frame" % [tw["id"], l["id"]])
+			var want: float = acc / 25.0
+			var sid: String = str(l.get("street", ""))
+			if lines.has(sid) and profiles.has(sid):
+				var f: Array = l["frame"]
+				var at: Vector3 = (lines[sid] as Polyline2).closest(Vector2(float(f[0]), float(f[1])))
+				var sy: float = TerrainComposer.profile_at(profiles[sid], at.y)
+				var c: float = clampf(want, sy - Generator.LOT_STREET_STEP, sy + Generator.LOT_STREET_STEP)
+				if absf(c - want) > 0.011:
+					clamped += 1
+				want = c
+			assert_almost_eq(float(l["y"]), want, 0.011, "%s/%s: y is the mean ground over its frame, within LOT_STREET_STEP of its street" % [tw["id"], l["id"]])
+	gut.p("%d lots held to their street's height" % clamped)
 
 
 # --- Lots and buildings ---------------------------------------------------------------------------
