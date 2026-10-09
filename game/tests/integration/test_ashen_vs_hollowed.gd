@@ -202,3 +202,29 @@ func test_an_ashen_killed_by_a_hollowed_is_nobodys_kill() -> void:
 	assert_eq(_p.state.progression.xp, xp, "no XP for the player")
 	assert_true(_p.state.kills.is_empty(), "no kill counted")
 	assert_eq(_dir.hostility(), hostility, "the Ashen don't blame the player")
+
+
+func test_a_scout_picks_no_fight() -> void:
+	# Mid-game audit M11: a scout downed Ezra within seconds. Scouts watch and report (ADR-0048).
+	_wall()
+	var sc: Enemy = _spawn(&"ashen_scout", Vector3(0, 0, 30), {"job": "scout"})
+	var h: Enemy = _spawn(&"hollow", Vector3(4, 0, 30))
+	await get_tree().physics_frame
+	sc.scan_foes(_pdist(sc))
+	assert_null(sc.foe, "it doesn't go for a hostile body it sees")
+	assert_ne(sc.state, Enemy.State.CHASE)
+	assert_true(h.is_alive(), "the Hollow it saw")
+
+
+func test_a_scout_struck_in_the_open_runs() -> void:
+	_wall()
+	var sc: Enemy = _spawn(&"ashen_scout", Vector3(0, 0, 30), {"job": "scout"})
+	var h: Enemy = _spawn(&"hollow", Vector3(1.5, 0, 30))
+	await get_tree().physics_frame
+	var info := DamageInfo.make(5.0, &"zombie", &"zombie", h.entity_id)
+	info.source_pos = h.global_position
+	sc.take_damage(info)
+	assert_null(sc.foe, "it doesn't trade blows")
+	assert_eq(sc.state, Enemy.State.FLEE, "it runs, away from what struck it")
+	var away: Vector3 = sc.tribe.flee_to - h.global_position
+	assert_gt(away.length(), 100.0)
