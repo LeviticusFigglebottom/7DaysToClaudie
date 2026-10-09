@@ -237,6 +237,7 @@ static func town_street_profiles(streets: Array, h_fn: Callable, fixed: Array = 
 	var out: Dictionary = {}
 	var lines: Array[Polyline2] = []
 	var ids: PackedStringArray = []
+	var widths: PackedFloat32Array = []
 	for fv: Variant in fixed:
 		var fr: Dictionary = fv
 		var fline: Polyline2 = fr["line"] if fr.has("line") else Polyline2.from_array(fr["points"])
@@ -244,6 +245,7 @@ static func town_street_profiles(streets: Array, h_fn: Callable, fixed: Array = 
 			else smoothed_profile(fline, h_fn, float(ROAD_MAX_GRADE.get(str(fr.get("surface", "")), 0.14)))
 		lines.append(fline)
 		ids.append(str(fr["id"]))
+		widths.append(float(fr.get("width", 0.0)))
 	for sv: Variant in streets:
 		var st: Dictionary = sv
 		if (st.get("points", []) as Array).size() < 2:
@@ -253,20 +255,24 @@ static func town_street_profiles(streets: Array, h_fn: Callable, fixed: Array = 
 		# Where this street touches an earlier one: the arc of each local closest approach within
 		# JUNCTION_REACH, pinned to the earlier street's height there.
 		for j: int in lines.size():
-			_pin_profile(prof, line, lines[j], out.get(ids[j], PackedFloat32Array()))
+			_pin_profile(prof, line, lines[j], out.get(ids[j], PackedFloat32Array()), JUNCTION_EASE, widths[j])
 		lines.append(line)
 		ids.append(str(st["id"]))
+		widths.append(float(st.get("width", 0.0)))
 		out[str(st["id"])] = prof
 	return out
 
 
 ## Pins `prof` (along `line`) to `oprof` (along `other`) wherever the two lines come within
 ## JUNCTION_REACH m (each local closest approach), eased over JUNCTION_EASE m along `line`.
-static func _pin_profile(prof: PackedFloat32Array, line: Polyline2, other: Polyline2, oprof: PackedFloat32Array, ease: float = JUNCTION_EASE) -> void:
-	if oprof.is_empty() or not line.bounds.grow(JUNCTION_REACH).intersects(other.bounds):
+static func _pin_profile(prof: PackedFloat32Array, line: Polyline2, other: Polyline2, oprof: PackedFloat32Array, ease: float = JUNCTION_EASE,
+		other_width: float = 0.0) -> void:
+	# A road authored to start at the other's edge is that far off its centre line.
+	var reach: float = maxf(JUNCTION_REACH, other_width * 0.5 + 1.5)
+	if oprof.is_empty() or not line.bounds.grow(reach).intersects(other.bounds):
 		return
 	var n: int = prof.size()
-	var near: Rect2 = other.bounds.grow(JUNCTION_REACH)
+	var near: Rect2 = other.bounds.grow(reach)
 	var dist := PackedFloat32Array()
 	dist.resize(n)
 	for k: int in n:
@@ -274,7 +280,7 @@ static func _pin_profile(prof: PackedFloat32Array, line: Polyline2, other: Polyl
 		dist[k] = other.closest(p).x if near.has_point(p) else 1.0e9
 	for k2: int in n:
 		var dk: float = dist[k2]
-		if dk > JUNCTION_REACH or (k2 > 0 and dist[k2 - 1] < dk) or (k2 < n - 1 and dist[k2 + 1] <= dk):
+		if dk > reach or (k2 > 0 and dist[k2 - 1] < dk) or (k2 < n - 1 and dist[k2 + 1] <= dk):
 			continue
 		var at: Vector3 = other.closest(line.point_at(k2 * PROFILE_STEP))
 		var delta: float = profile_at(oprof, at.y) - prof[k2]
@@ -303,7 +309,7 @@ static func world_road_profiles(roads: Array, h_fn: Callable, pads: Array = []) 
 			pin_profile_to_pad(prof, line, pads[pi]["origin"], pads[pi]["size"], float(pads[pi]["rot"]), heights[pi])
 		var ease: float = minf(JUNCTION_EASE, line.total_length * 0.5)
 		for j: int in i:
-			_pin_profile(prof, line, roads[j]["line"], out[str(roads[j]["id"])], ease)
+			_pin_profile(prof, line, roads[j]["line"], out[str(roads[j]["id"])], ease, float(roads[j].get("width", 0.0)))
 		out[str(r["id"])] = prof
 	return out
 
@@ -361,7 +367,7 @@ static func town_world_roads(roads: Array, center: Vector2, radius: float) -> Ar
 		var r: Dictionary = rv
 		var line: Polyline2 = r["line"]
 		if line.bounds.grow(radius + TOWN_ROAD_REACH).has_point(center) and line.closest(center).x < radius + TOWN_ROAD_REACH:
-			var e: Dictionary = {"id": str(r["id"]), "line": line, "surface": str(r.get("surface", ""))}
+			var e: Dictionary = {"id": str(r["id"]), "line": line, "surface": str(r.get("surface", "")), "width": float(r.get("width", 0.0))}
 			if r.has("profile"):
 				e["profile"] = r["profile"]
 			out.append(e)
@@ -1422,9 +1428,10 @@ class _Build:
 		var ease: float = minf(JUNCTION_EASE, line.total_length * 0.5)
 		for j: int in upto:
 			var o: Dictionary = road_list[j]
-			if not o.has("profile") or not (o["spans"] as Array).is_empty():
+			# A bridged road's profile carries its decks: a road meeting one there meets the deck.
+			if not o.has("profile"):
 				continue
-			TerrainComposer._pin_profile(prof, line, o["line"], o["profile"], ease)
+			TerrainComposer._pin_profile(prof, line, o["line"], o["profile"], ease, float(o["width"]))
 
 	## {profile, step, spans} of a road (see _build_profile).
 	func _profile_data(r: Dictionary) -> Dictionary:

@@ -2762,7 +2762,7 @@ func _world_roads_profiled() -> Array:
 		return _world_profiled
 	var rs: Array = []
 	for rd: Dictionary in roads:
-		rs.append({"id": rd["id"], "line": Polyline2.from_array(Terrain._arr(rd["points"])), "surface": rd["surface"]})
+		rs.append({"id": rd["id"], "line": Polyline2.from_array(Terrain._arr(rd["points"])), "surface": rd["surface"], "width": float(rd["width"])})
 	var profs: Dictionary = TerrainComposer.world_road_profiles(rs, _ref.h, _world_pads_read())
 	for e: Dictionary in rs:
 		e["profile"] = profs[str(e["id"])]
