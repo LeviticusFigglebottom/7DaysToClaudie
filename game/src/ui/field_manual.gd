@@ -61,6 +61,8 @@ var _list: VBoxContainer
 var _detail: RichTextLabel
 var _action: Button
 var _tab: String = "build"
+var _book: PanelContainer
+var _list_scroll: ScrollContainer
 var _selected: Variant = null
 
 
@@ -76,8 +78,7 @@ func _ready() -> void:
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 	var book := PanelContainer.new()
-	book.anchor_left = 0.14
-	book.anchor_right = 0.86
+	_book = book
 	book.anchor_top = 0.08
 	book.anchor_bottom = 0.92
 	var sb := StyleBoxTexture.new()
@@ -125,6 +126,7 @@ func _ready() -> void:
 	h.add_theme_constant_override(&"separation", 24)
 	v.add_child(h)
 	var scroll := ScrollContainer.new()
+	_list_scroll = scroll
 	scroll.custom_minimum_size = Vector2(380, 0)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -148,6 +150,8 @@ func _ready() -> void:
 	_action.custom_minimum_size = Vector2(240, 44)
 	_action.pressed.connect(_on_action)
 	right.add_child(_action)
+	_fit_book()
+	get_viewport().size_changed.connect(_fit_book)
 	Events.ui_modal_closed.connect(func(id: StringName) -> void:
 		if id == &"field_manual" and _open:
 			_open = false
@@ -160,6 +164,27 @@ func _ready() -> void:
 		Events.connect(&"tutorial_changed", func() -> void:
 			if _open and _tab == "journal":
 				_refresh())
+
+
+## The book's left and right edges (shares of the window width) and the page list's width for a
+## window `view_w` wide. At 1280 the 72%-wide book with a 380 px list left a journal card about 27
+## characters a line, its last lines (what the next card needs) below a scroll: a narrow window
+## gets a wider book and a list of about a third of it. Pure.
+static func book_fit(view_w: float) -> Dictionary:
+	var edge: float = 0.14 if view_w >= 1600.0 else 0.06
+	var inner: float = view_w * (1.0 - 2.0 * edge) - 80.0
+	return {"left": edge, "right": 1.0 - edge, "list": clampf(inner * 0.34, 300.0, 380.0)}
+
+
+func _fit_book() -> void:
+	if _book == null:
+		return
+	var fit: Dictionary = book_fit(get_viewport_rect().size.x)
+	_book.anchor_left = float(fit["left"])
+	_book.anchor_right = float(fit["right"])
+	_book.offset_left = 0
+	_book.offset_right = 0
+	_list_scroll.custom_minimum_size.x = float(fit["list"])
 
 
 func _set_tab(t: String) -> void:

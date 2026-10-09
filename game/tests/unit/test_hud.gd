@@ -115,7 +115,7 @@ func test_roll_strips_shrink_to_fit_a_small_window() -> void:
 
 func test_journal_line_folds_the_reward() -> void:
 	assert_eq(GameUI.journal_line("Make a stone axe", "+40 XP", "Fell a tree", "B"), "Journal: Make a stone axe ✓  +40 XP   Next: Fell a tree  [B]")
-	assert_eq(GameUI.journal_line("Sleep in your bed", "", "", "B"), "Journal: Sleep in your bed ✓")
+	assert_eq(GameUI.journal_line("Sleep in your bed", "", "", "B"), "Journal: Sleep in your bed ✓   The journal is done. Keep an ear on your tether.", "the last card says the journal is over and what comes next")
 
 
 func test_prompt_hangs_centred_under_the_crosshair() -> void:
@@ -204,3 +204,45 @@ func test_sound_captions_say_where_and_merge_repeats() -> void:
 	Events.sound_caption.emit("an engine starting", Vector3.INF)
 	assert_eq((ui.get(&"_messages") as Node).get_child_count(), 2, "captions off: nothing")
 	Settings.sound_captions = was
+
+
+func test_the_manual_gives_a_journal_card_room_at_720p() -> void:
+	var fit: Dictionary = FieldManual.book_fit(1280.0)
+	var inner: float = 1280.0 * (float(fit["right"]) - float(fit["left"])) - 80.0
+	assert_gt(inner - float(fit["list"]) - 24.0, 600.0, "the card's text gets 600 px or more at 1280 wide")
+	var wide: Dictionary = FieldManual.book_fit(1920.0)
+	assert_eq(float(wide["left"]), 0.14, "a wide window keeps the roomy margins")
+	assert_eq(float(wide["list"]), 380.0)
+
+
+func test_a_held_action_says_hold_in_its_prompt() -> void:
+	assert_eq(PlayerInteraction.prompt_line("E", "Harvest Sword Fern", true), "Hold [E] Harvest Sword Fern")
+	assert_eq(PlayerInteraction.prompt_line("E", "Use Campfire", false), "[E] Use Campfire")
+	assert_eq(PlayerInteraction.prompt_line("A", "Search Refrigerator", true), "Hold [A] Search Refrigerator", "the pad's button too")
+	assert_eq(PlayerInteraction.prompt_line("E", "", true), "", "nothing to act on: no prompt")
+
+
+func test_lines_wait_under_the_roll_and_show_after_it() -> void:
+	if Game.local_player() == null:
+		Game.new_session({"game_mode": "survival", "seed": 4471})
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	await get_tree().process_frame
+	var feed: VBoxContainer = ui.get(&"_messages")
+	ui.roll.open(&"inventory", &"")
+	ui.message("Journal: Make a stone axe ✓   Next: Fell a tree  [B]", &"level")
+	ui.message("Picked up 3 Stick.")
+	await get_tree().process_frame
+	assert_false(feed.visible, "no feed behind the roll's title")
+	assert_eq(feed.get_child_count(), 0, "the lines wait")
+	ui.roll.close()
+	await get_tree().process_frame
+	assert_true(feed.visible)
+	assert_eq(feed.get_child_count(), 2, "both lines show once the roll closes, none lost")
+	assert_string_starts_with((feed.get_child(0) as Label).text, "Journal: Make a stone axe")
+
+
+func test_lines_wait_under_the_death_and_sleep_screens() -> void:
+	assert_true(GameUI.feed_held(false, true), "not over SIGNAL LOST or You sleep.")
+	assert_false(GameUI.feed_held(false, false))
+	assert_true(GameUI.feed_held(true, false))

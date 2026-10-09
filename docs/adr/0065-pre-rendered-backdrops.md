@@ -29,9 +29,9 @@ wreck shot while the load's last steps ran.
 asset pipeline.
 
 * **`make stills`** (also run by `make bake`, so by `make assets` and CI) runs
-  `src/tools/cli/stills.gd` under Xvfb. Each picture is drawn supersampled (3840×2160, MSAA 4×,
-  four shadow splits) and saved at 3200×1800, larger than a 1080p screen, so the slow pan never
-  magnifies it. `tools/stills.sh` writes lossy, mipmapped import sidecars. Each shot is redrawn
+  `src/tools/cli/stills.gd` under Xvfb. Each picture is drawn supersampled (4608×2592, MSAA 4×,
+  four shadow splits) and saved at 3840×2160, sharp on a 4K screen (3200×1800 at first: soft at
+  4K, Presentation's check). `tools/stills.sh` writes lossy, mipmapped import sidecars. Each shot is redrawn
   only when its stamp changes: a hash of the code, data, world, shaders and generated-asset hashes
   it is drawn from.
   * **The menu:** four stills of `MenuFlight` (the old live flight, moved to `src/tools/stills/`)

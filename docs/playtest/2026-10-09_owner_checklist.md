@@ -23,28 +23,33 @@ paddles, or the fingers read as smooth sausages.
 **Changed:** a new game opens with an intro over the loading screen: rumours of the Cordon, your
 Order 14 papers, the radio as Lift 3 goes down, and a shot of the wreck. The load waits for it
 and never stutters it. The wreck is a picture rendered when the build is made, slowly zoomed in on,
-so nothing in the intro draws 3D. Hold **Esc** (or **B**) to skip; skipping costs you no load
+so nothing in the intro draws 3D. The words sit low on that card, so the wreck shows above them. Hold **Esc** (or **B**) to skip; skipping costs you no load
 time.
 **Where:** New Game. It can be replayed from the menu's **The Intro**.
 **Try:** watch it once to the end, then skip one early.
 **Still broken if:** a card stutters or freezes mid-fade, skipping leaves you waiting longer
-than no intro would, or the wreck shot is black.
+than no intro would, the wreck shot is black, or the words cover the aircraft.
 
 ## 3. The main menu (item 3)
 **Changed:** the menu and every screen share one style. Behind the menu, the view drifts slowly
-across four pictures of Larch Hollow at dusk, one dissolving into the next. Build #94's menu froze
-as soon as you used it: it built and drew the whole valley in 3D behind the menu. The pictures are
-now rendered when the build is made, so the menu draws no 3D at all (ADR-0065).
+across four pictures of Larch Hollow at dusk; between two pictures it dims briefly toward dusk
+rather than showing both at once. Build #94's menu froze as soon as you used it: it built and drew
+the whole valley in 3D behind the menu. The pictures are now rendered when the build is made, so
+the menu draws no 3D at all (ADR-0065). Every build now has to pass a check that uses the real
+menu for 20 seconds and fails on any freeze. The menu, New Game, Options and Load fit a
+1280x720 window, Back and Start included; on a 1440p or 4K screen the whole interface scales up
+(Options → Interface size, "Auto").
 **Where:** the main menu. **Options → Menu backdrop** switches moving / still / off.
 **Try:** hover and click every entry right away, then leave it on the menu for a minute; open
-Options and New Game over it.
-**Still broken if:** the menu freezes or stutters at any point, or any screen still looks like
-plain Godot grey.
+Options, New Game and Random World over it; try a small window too.
+**Still broken if:** the menu freezes or stutters at any point, a panel's Back or Start is off
+the screen, text looks tiny on your monitor, or any screen still looks like plain Godot grey.
 
 ## 4. Roads, banks and town edges (item 4)
 **Changed:** roads stay level across their width and climb within a grade cap, cutting into
-steep ground. Cuts and fills meet the land in short, varied natural banks instead of long
-planar faces. Town lots keep their overgrowth and trees.
+steep ground. Bridge ramps and the level pads under buildings by the road keep to the same caps.
+Cuts and fills meet the land in short, varied natural banks instead of long planar faces. Town
+lots keep their overgrowth and trees.
 **Where:** the road from the drop site north-east into Pell's Crossing (~350 m), then any road
 that climbs a hill.
 **Try:** walk the road's edge on a slope and look along it; stand at a town's edge and look
@@ -73,21 +78,31 @@ open.
 
 ## 7. Crafting and inventory (item 7)
 **Changed:** the salvage roll's recipe sheet shows ready recipes first, in dark ink. Ones you
-can't make show what's missing in readable dim ink, never white. Items can be dragged, with
-tooltips, sorting and filters. Crafted tools go on your belt.
+can't make show what's missing in readable dim ink, never white; a long "need" line wraps to a
+second line instead of being cut. Make by hand also lists, at the end, what a campfire or a
+workbench makes ("at a Workbench"), with an **At a station** filter. Items can be dragged, with
+tooltips, sorting and filters; the Sort and Show buttons sit above the cloth, clear of the
+recipes, and a dragged item's label stays on screen over the belt. Crafted tools go on your belt.
+While the roll is open the messages at the top left wait, and show once you close it.
 **Where:** **Tab** (the salvage roll), the Make by hand flap; a lit campfire's Use.
-**Try:** make cordage and a stone axe; drag an item to the belt.
-**Still broken if:** any text is white on paper, or you can't tell what a recipe still needs.
+**Try:** make cordage and a stone axe; drag an item to the belt; pick Food & Meds, then hover an
+item; look at At a station.
+**Still broken if:** any text is white on paper, you can't tell what a recipe still needs or
+where it is made, or a message you expected never shows.
 
 ---
 
 ## 8. The first days: tutorial, Ezra's call
 **Changed:** an optional journal of eight Program cards (Field Manual **B → Journal**). The
 first card is announced as you wake; each step done names the next. When all eight are done,
-Ezra's distress call comes in on the tether with a bearing.
+Ezra's distress call comes in on the tether with a bearing. Every card was walked to the call:
+each one names the prompts you will see ("Pick up log", "[G] add fuel", "Use Campfire"), and the
+whole card fits the page at 1280x720. Things you hold the key for (harvesting, filling a bottle,
+searching) now say so: **Hold [E] Harvest Sword Fern**.
 **Where:** from the start. Ezra's camp is about 390 m north-west of the drop.
 **Try:** follow the cards; bring him a cloth bandage.
-**Still broken if:** a card names a label that isn't on screen, or the call never comes.
+**Still broken if:** a card names a label that isn't on screen, a card's text runs off its page,
+a "Hold" prompt finishes on a tap (or a tap prompt needs holding), or the call never comes.
 
 ## 9. The Lift 3 wreck
 **Changed:** the aircraft you came in on is a place: a swath of snapped trees ending in the
@@ -120,7 +135,7 @@ button, plus a frame cap.
 
 ## 13. Felling
 **Changed:** every swing lands before the next begins, and steady chopping regains stamina. A
-full-grown fir takes about seven swings of the stone axe. When you're too winded, it says so.
+full-grown fir takes seven to eleven swings of the stone axe. When you're too winded, it says so.
 **Try:** fell three trees in a row.
 **Still broken if:** swings miss a trunk you're facing, or stamina runs out before a tree
 falls.
@@ -141,6 +156,16 @@ captioned.
 **Still broken if:** a wave never comes, or the morning's lines pile up and the report scrolls
 away.
 
+## 16. Waystation 9 in the Cordon wall (D7)
+**Changed:** the valley's south end is built (region D7): Route 9 and the river run down to the
+Cordon wall, the river through its own gate, with a burnt firebreak before it. Waystation 9 is
+now the Program's post in the wall itself, and the trader (counter and contract board) stands
+there, not in the old ring of barriers.
+**Where:** about 1.2 km south of the drop site, down Route 9.
+**Try:** walk Route 9 south to the wall; trade at the counter; take a contract from the board.
+**Still broken if:** the road or river ends in a cliff or a gap at the wall, you can walk through
+the wall, or the trader can't be reached.
+
 ---
 
 ## Also new
@@ -148,11 +173,12 @@ away.
   day, where you were, play time and world. **Delete** asks twice.
 * **Loading screen:** turns through the Field Manual's Survival pages. On the main map it shows
   the survey sheet under your save's fog.
+* **What's New:** a panel on the menu with this list in short; it opens by itself once per build.
+* **Sound captions** (Options): the Hum rising, the crackle of a call on the tether and the intro's
+  sounds are put into words. Other sounds (wolves howling) aren't captioned yet.
 
 ## Known gaps
 * **TD-377:** the Lift 3 wreck's art (above).
-* **D7 isn't built yet:** Waystation 9's own building in the Cordon wall exists, but the trader
-  still stands in D6's stand-in ring of hesco, about 350 m south-east of the drop.
 * **Generated assets** are needed for the full look: hands, the wreck, the tether's screen and
   the trees only look right in the packaged build.
 * **TD-378:** the menu backdrop is a slow pan over still pictures, not a filmed camera move: a

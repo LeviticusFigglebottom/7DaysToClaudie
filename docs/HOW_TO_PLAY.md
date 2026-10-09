@@ -38,8 +38,10 @@ confirm the first run. The game opens in a 1280 × 720 window (Options has Fulls
 * The developer tools (F1–F7, §3) work only in these debug runs.
 
 ### The main menu
-Behind the menu, pictures of Larch Hollow at dusk drift slowly and dissolve one into the next
-(rendered ahead of time from the game itself, so the menu draws nothing heavy).
+Behind the menu, pictures of Larch Hollow at dusk drift slowly, the screen dimming toward dusk
+between one and the next (rendered ahead of time from the game itself, so the menu draws nothing
+heavy). The menu and its screens fit a 1280x720 window; on a bigger screen everything scales up
+with it (*Interface size: Auto*).
 *Options… → Menu backdrop* picks moving, still or off.
 
 | Button | What it does |
@@ -54,8 +56,8 @@ Behind the menu, pictures of Larch Hollow at dusk drift slowly and dissolve one 
 | What's New | This build's changes in a few lines each (it also opens by itself, once, the first time a new build starts) |
 
 *Sound captions* (Options) put the sounds that carry meaning into words: the intro's radio and
-impacts, a distress call's crackle on the tether, the Hum rising through the ground, and the big
-sounds you can't see, with where they came from ("[wolves howling, north-east]").
+impacts, a distress call's crackle on the tether and the Hum rising through the ground. Other
+sounds (wolves howling) aren't captioned yet.
 
 **The intro.** A new game opens with a short intro (the Cordon, the Remand Program and how your
 drop went wrong) while the world loads. Hold **Esc** (or Space, Enter; B or Start on a pad) or click **Skip** to skip
@@ -169,7 +171,7 @@ another action already uses is flagged. The keys below are the defaults.
 | C or Ctrl | Crouch or stand (a toggle): slower, quieter, harder to see. Needed to disarm traps and dismantle |
 | Space | Jump (8 stamina). At a sill, fence or crate 0.3–1.3 m high: climb over or onto it. In deep water: hold to swim up |
 | Ladders | Walk into a ladder to climb it: W climbs, S (or W while looking down) climbs down, and you step off at the top. From upstairs, walk into its hatch to climb down. Space lets go |
-| E | Interact. Hold it to search, harvest, drink or fill bottles at water, butcher and dismantle |
+| E | Interact. Hold it to search, harvest, drink or fill bottles at water, butcher and dismantle: the prompt says so (**Hold [E]** *Harvest Sword Fern*) |
 | Left mouse | Use what you hold: swing, fire, set down a can chime; hold to draw a bow, let go to loose. A stone or a molotov: hold to draw back (longer throws further), let go to throw; a stone lands as a noise the Hollowed go to look at. A molotov: the first press lights its rag (lighter or torch in your pack; don't hold it lit too long), the next throws it into a patch of fire. While building: place the ghost or the carried log |
 | Right mouse | Hold to guard (melee weapon, light or bare hands). Gun in hand: hold to aim down the sights (the rifle's scope zooms 4x; steadier and tighter, but you walk slowly). Food, drink or medicine in hand: use it. Spear: throw. Bow drawn: let the string down. Placing a blueprint: cancel |
 | 1–6, mouse wheel | Toolbelt slots (press the held one again to put it away); the wheel cycles them |
@@ -193,7 +195,8 @@ the wheel over the cloth turns pages. Hovering an item shows its card (damage, f
 bulk, worth). **Drag** an item onto a toolbelt slot (under the cloth), onto the recipe sheet (it
 lists what uses it), into an open container, or off the cloth to drop it. *Sort* and *Show* above
 the cloth order and filter what you see. On the recipe sheet: click a recipe to see it, **Make**
-(or double-click, or Enter) makes one, Shift + Make as many as you can.
+(or double-click, or Enter) makes one, Shift + Make as many as you can. While the roll is open the
+messages at the top left wait; they show when you close it.
 
 **Developer tools** (the editor and other debug builds only, not the packaged game):
 
@@ -361,7 +364,8 @@ Open the salvage roll (Tab): your pack on the left (bulk out of 40 to start, plu
 logs), and on the right the recipe sheet: what you know how to make here, ready ones first (✓), the
 rest in grey with what they lack in red (× *need 2 Stick, a knife*). Filter by *Ready* or a
 category. Click a recipe for its card (each ingredient as have / need, tools, time, what it makes)
-and press **Make**. At a station, E
+and press **Make**. *Make by hand* ends with what you know that is made at a station, in grey
+with where (*at a Workbench*); the *At a station* filter shows only those. At a station, E
 (*Use Campfire*, *Use Workbench*) opens the roll with its recipes. Crafted tools and weapons come out
 at quality 1 until Wits and the Handy perk raise it. *Knife* means a Kitchen Knife or Machete in your
 pack; *axe*, a Stone Axe or Hatchet.
@@ -718,9 +722,10 @@ After a Hum, survivors leave **fungal mounds** for six days; E (*Tear open the m
 Bloom Mycelium and a 12% chance of a Bloom Core Sample. Waystation 9 buys both, and pays in Program
 Scrip.
 
-**Waystation 9** stands on Route 9 in the south of Larch Hollow, just short of where the river
-leaves the valley: a ring of barriers, two towers, a hatch counter and a contracts board (a yellow
-square on the tether). Inside the wire nothing rises, and the guards shoot any Hollowed that follow
+**Waystation 9** is the Program's post in the Cordon wall, at the valley's south end (about 1.2 km
+south of the drop, down Route 9). The wall closes the valley there: a road gate on Route 9, the
+Tamsin running out under a row of culverts, and a burnt firebreak before it. The post is built into
+the wall, with a hatch counter and a contracts board (a yellow square on the tether). Inside the wire nothing rises, and the guards shoot any Hollowed that follow
 you in. At the **counter** (E) the quartermaster buys what you carry (keys, notes and Program
 caches aside) and sells what the drones bring, for scrip; the shelves restock every three days.
 At the **board** (E) he posts four contracts a day; you can hold three:

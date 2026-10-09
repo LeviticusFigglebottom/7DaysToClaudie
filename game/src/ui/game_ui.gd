@@ -18,6 +18,9 @@ var _belt_key: String = ""
 var _belt_t: float = 0.0
 var _hold: ProgressBar
 var _messages: VBoxContainer
+## Lines that came while the salvage roll was open ([text, kind]): the feed is hidden under the
+## roll (it ran behind the roll's title and sort row) and plays them once it closes.
+var _held_messages: Array = []
 var _vitals: HBoxContainer
 var _bars: Dictionary = {}
 var _hum_label: Label
@@ -370,6 +373,9 @@ static func journal_line(title: String, reward: String, next_title: String, key:
 		line += "  " + reward
 	if next_title != "":
 		line += "   Next: %s  [%s]" % [next_title, key]
+	else:
+		# The last card: nothing said the journal was over or that the tether is what comes next.
+		line += "   The journal is done. Keep an ear on your tether."
 	return line
 
 
@@ -721,13 +727,14 @@ func _process(delta: float) -> void:
 		if _level_wait <= 0.0:
 			_announce_level()
 	_fade_pickups(delta)
+	_update_feed()
 	var w: Node = Game.world
 	if w == null or w.get("player") == null or w.player == null:
 		return
 	var p: Player = w.player
 	if p.interaction != null:
 		# Nothing to act on through the death or sleep screen.
-		_prompt.text = ("[%s] %s" % [PlayerInteraction.key_label(&"interact"), p.interaction.prompt]) if p.interaction.prompt != "" and not _overlay.visible else ""
+		_prompt.text = PlayerInteraction.prompt_line(PlayerInteraction.key_label(&"interact"), p.interaction.prompt, p.interaction.prompt_hold) if not _overlay.visible else ""
 		var ht: float = p.interaction.hold_t / maxf(p.interaction.hold_needed, 0.001) if p.interaction.hold_needed > 0.0 else 0.0
 		_hold.visible = ht > 0.0
 		_hold.value = ht * 100.0
@@ -863,6 +870,9 @@ func _flash_damage(amount: float) -> void:
 
 
 func message(text: String, kind: StringName = &"info") -> void:
+	if feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible):
+		_held_messages.append([text, kind])
+		return
 	# The same line again (a full pack, a locked door) refreshes the one on screen with a count
 	# instead of stacking copies.
 	for c: Node in _messages.get_children():
@@ -893,6 +903,24 @@ func message(text: String, kind: StringName = &"info") -> void:
 	while _messages.get_child_count() > 6:
 		_messages.get_child(0).queue_free()
 		_messages.remove_child(_messages.get_child(0))
+
+
+## Whether the message feed waits: while the salvage roll is open, and under the death or sleep
+## screen (a level-up said itself over "SIGNAL LOST"). Pure.
+static func feed_held(roll_open: bool, overlay_up: bool = false) -> bool:
+	return roll_open or overlay_up
+
+
+## Hides the feed under the roll and, once it closes, plays what came meanwhile in order (a
+## repeat still collapses into one line with a count).
+func _update_feed() -> void:
+	var held: bool = feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible)
+	_messages.visible = not held
+	if not held and not _held_messages.is_empty():
+		var lines: Array = _held_messages
+		_held_messages = []
+		for m: Array in lines:
+			message(str(m[0]), m[1])
 
 
 ## How long a message stays before it fades: 4 s, or its reading time when longer (a distress
@@ -1036,7 +1064,8 @@ func _open_options(tab: String = "General") -> void:
 	panel.open_tab = tab
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = (get_viewport().get_visible_rect().size - Vector2(680, 660)) * 0.5
+	# Centred by its laid-out size (1050 wide, not the 680 once assumed: it ran off a 1280 window).
+	panel.position = ((get_viewport().get_visible_rect().size - panel.get_combined_minimum_size()) * 0.5).max(Vector2.ZERO)
 	_pause.visible = false
 	panel.closed.connect(func() -> void: _pause.visible = true)
 

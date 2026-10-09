@@ -141,7 +141,13 @@ func _run() -> void:
 	# --- Blueprint: campfire --------------------------------------------------------------------
 	ps.inventory.add_item(&"stone", 6)
 	ps.inventory.add_item(&"stick", 4)
-	var cpos: Vector3 = p.global_position + Vector3(-3, 0, 2)
+	# Back in the drop site's clearing, where a player lays the first fire (journal card 4), not by
+	# the tree just felled: that one stands at the forest's edge, and whether the spot beside it was clear
+	# depended on where the generator put the drop (random seed 7 moved 330 m with generator 17 and
+	# its neighbour stood in the way). test_drop_clearing keeps the clearing clear on every world.
+	p.global_position = walk_from + Vector3.UP * 0.5
+	await frames(3)
+	var cpos: Vector3 = walk_from + Vector3(-3, 0, 2)
 	cpos.y = w.height_at(cpos.x, cpos.z)
 	var r3: Dictionary = game.execute(&"build.place_blueprint", {"blueprint": "campfire", "pos": [cpos.x, cpos.y, cpos.z], "yaw": 0.0})
 	if ok(bool(r3.get("ok", false)), "campfire blueprint laid out (%s)" % r3.get("error", "")):
