@@ -48,7 +48,7 @@ func interact_text(_player: Player) -> String:
 	var def: ItemDef = stack.def()
 	if def == null:
 		return ""
-	return "Pick up %s%s" % [def.display_name, (" x%d" % stack.count) if stack.count > 1 else ""]
+	return "Pick up %s%s" % [def.display_name, (" ×%d" % stack.count) if stack.count > 1 else ""]
 
 
 func interact(player: Player) -> void:

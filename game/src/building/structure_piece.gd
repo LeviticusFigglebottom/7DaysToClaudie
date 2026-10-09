@@ -542,7 +542,7 @@ func interact_text(player: Player) -> String:
 		var carried: int = player.state.inventory.count_of(rack_item())
 		var room: int = rack_capacity() - rack_count()
 		if carried > 0 and room > 0:
-			return "Store %s x%d (%d/%d)" % [nm, mini(carried, room), rack_count(), rack_capacity()]
+			return "Store %s ×%d (%d/%d)" % [nm, mini(carried, room), rack_count(), rack_capacity()]
 		if rack_count() > 0:
 			return "Take %s (%d/%d)" % [nm, rack_count(), rack_capacity()]
 		return "%s (empty, holds %d %s)" % [def.display_name, rack_capacity(), nm]
