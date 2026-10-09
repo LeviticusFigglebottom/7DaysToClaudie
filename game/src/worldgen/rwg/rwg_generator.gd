@@ -2526,8 +2526,9 @@ func _leave_road(route: PackedVector2Array, ri: int) -> PackedVector2Array:
 	if cut_q.distance_to(route[cut_k + 1]) > 1.0:
 		out.append(route[cut_k + 1])
 	out.append_array(route.slice(cut_k + 2))
-	# Where the route had run on along the road and turned back, the new start is a hook.
-	return _despike(out)
+	# Where the route had run on along the road and turned back, the new start is a hook (cut only
+	# where the router could pass: a plain despike drew a 376 m track straight over a fen pool).
+	return router.unhook(out)
 
 
 # --- Trader posts ----------------------------------------------------------------------------------

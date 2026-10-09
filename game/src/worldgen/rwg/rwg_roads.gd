@@ -270,9 +270,14 @@ func relax(pts: PackedVector2Array, smooth: float) -> PackedVector2Array:
 				i += 1
 		if not changed:
 			break
-	# A hook (the route turns back by more than 120 degrees: a wiggle round a steep cell that the
-	# simplified path keeps as a spike) goes even where the cut is steep: the composer grades the
-	# road to its capped profile anyway, and a hairpin of tarmac is worse than a short steep pitch.
+	return unhook(pts)
+
+
+## Drops each hook (the route turns back by more than 120 degrees: a wiggle round a steep cell
+## that the simplified path keeps as a spike) where the cut crosses no blocked cell or water, even
+## where it is steep: the composer grades the road to its capped profile anyway, and a hairpin of
+## tarmac is worse than a short steep pitch.
+func unhook(pts: PackedVector2Array) -> PackedVector2Array:
 	var i2: int = 1
 	while i2 < pts.size() - 1:
 		if (pts[i2] - pts[i2 - 1]).normalized().dot((pts[i2 + 1] - pts[i2]).normalized()) < -0.5 \
