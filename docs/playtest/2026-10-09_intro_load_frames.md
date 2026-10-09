@@ -60,3 +60,18 @@ feet…") running under a moving card.
 ## Before this ships
 Integration needs World's 7566162 (the gate). Without it the intro still plays and nothing breaks,
 but the boot steps can stutter it: 280 ms at worst in these runs.
+
+## Skipping (2026-10-09, after World's batch)
+
+A player who holds Esc (or B) pays nothing for the intro. Skipping opens the gate the same frame
+(`test_hud.gd`: `load_may_step()` turns true as `skip_intro()` returns). The rest of the load then
+runs at full speed behind the loading screen. Main map, headless, the same container load for
+both runs:
+
+| Run | World ready |
+|---|---|
+| No intro | 55.4 s |
+| Intro, skipped at 5 s (`--skip-at 5`) | 54.8 s |
+
+Watched to the end, the intro stretches the main-thread half of the load under its cards: the
+world was ready at 76 s of a ~92 s intro. That time is spent while the player watches.

@@ -17,6 +17,8 @@ var _saw_world_shot: bool = false
 ## --shot-after-load: no intro during the load; once the world is up, show the intro's world
 ## card on its own (a still of the shot on a renderer too slow to reach it in time).
 var _after_load: bool = false
+## --skip-at <s>: skips the intro that many seconds in (a player holding Esc).
+var _skip_at: float = -1.0
 var _shot_intro: Node = null
 
 
@@ -29,6 +31,9 @@ func _ready() -> void:
 	_after_load = args.has("--shot-after-load")
 	if _after_load:
 		_with_intro = false
+	var ki: int = args.find("--skip-at")
+	if ki >= 0 and ki + 1 < args.size():
+		_skip_at = float(args[ki + 1])
 	var si: int = args.find("--shot")
 	if si >= 0 and si + 1 < args.size():
 		_shot_path = args[si + 1]
@@ -54,6 +59,10 @@ func _process(_delta: float) -> void:
 	var intro: Object = _shot_intro if _shot_intro != null else (ui.get(&"intro") if ui != null else null)
 	var moving: bool = intro != null and (intro as Node).is_inside_tree() and bool(intro.call(&"is_playing")) and not bool(intro.call(&"is_calm"))
 	var loading: bool = w == null or not bool(w.get(&"is_ready"))
+	if _skip_at >= 0.0 and (Time.get_ticks_msec() - _t0) / 1000.0 >= _skip_at and intro != null and is_instance_valid(intro) and bool(intro.call(&"is_playing")):
+		intro.call(&"skip_intro")
+		print("INTRO_PROBE skipped at %d ms" % (Time.get_ticks_msec() - _t0))
+		_skip_at = -1.0
 	if intro != null and is_instance_valid(intro) and bool(intro.call(&"is_showing_world")):
 		_saw_world_shot = true
 		_world_shot_s += ms / 1000.0
