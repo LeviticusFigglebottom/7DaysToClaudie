@@ -45,8 +45,10 @@ var _flap_title: Label
 var _sheet: CraftSheet
 var _flap_empty: Label
 var _card: ItemCard
-var _toolbar: HBoxContainer
+var _toolbar: VBoxContainer
 var _bulk: Label
+## Beside the sort buttons: how many of the pack the filter shows, and the page.
+var _view_note: Label
 var _belt: HBoxContainer
 ## A drag in progress: {"stack", "flap", "from" (mouse), "ghost" (Control), "moved"}; empty when none.
 var _drag: Dictionary = {}
@@ -164,28 +166,41 @@ func _refresh_belt(p: PlayerState) -> void:
 		sb.shadow_size = 0
 		sb.border_width_top = 1
 		sb.border_color = UiStyle.RUST_BRIGHT if hot or i == p.equipped_slot else UiStyle.KIT_LINE
+		# The slot a dragged item would land in: a full rust frame, not just the top line.
+		if hot:
+			sb.set_border_width_all(2)
 		slot.add_theme_stylebox_override(&"panel", sb)
 
 
-## Sort and filter for the cloth: small kit-style toggles above it.
+## Sort and filter for the cloth: small kit-style toggles above it, one row each (side by side
+## they ran under the recipe sheet at 1280x720 even shrunk).
 func _build_toolbar() -> void:
-	_toolbar = HBoxContainer.new()
+	_toolbar = VBoxContainer.new()
 	_toolbar.theme = UiStyle.kit_theme()
 	_toolbar.add_theme_constant_override(&"separation", 4)
 	add_child(_toolbar)
 	_toolbar_group(SORTS, "Sort", func(v: String) -> void: _sort = v)
-	var gap := Control.new()
-	gap.custom_minimum_size = Vector2(18, 0)
-	_toolbar.add_child(gap)
 	_toolbar_group(PackedStringArray(FILTERS.keys()), "Show", func(v: String) -> void: _filter = v)
+	# On the shorter Sort row: at 720p the pack line under the cloth has no room left for it.
+	_view_note = UiStyle.label("", &"DimLabel")
+	_view_note.add_theme_color_override(&"font_color", CLOTH_TEXT)
+	_view_note.add_theme_color_override(&"font_outline_color", Color(0.05, 0.04, 0.03, 0.95))
+	_view_note.add_theme_constant_override(&"outline_size", 5)
+	_view_note.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE - 3)
+	(_toolbar.get_child(0) as HBoxContainer).add_child(_view_note)
 
 
 func _toolbar_group(values: PackedStringArray, caption: String, set_value: Callable) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override(&"separation", 4)
+	_toolbar.add_child(row)
 	var l := UiStyle.label(caption, &"DimLabel")
+	# One width for both captions, so the two rows' buttons line up.
+	l.custom_minimum_size = Vector2(48, 0)
 	l.add_theme_color_override(&"font_color", CLOTH_TEXT)
 	l.add_theme_color_override(&"font_outline_color", Color(0.05, 0.04, 0.03, 0.95))
 	l.add_theme_constant_override(&"outline_size", 5)
-	_toolbar.add_child(l)
+	row.add_child(l)
 	var group := ButtonGroup.new()
 	for v: String in values:
 		var b := Button.new()
@@ -199,7 +214,7 @@ func _toolbar_group(values: PackedStringArray, caption: String, set_value: Calla
 			set_value.call(v)
 			_page = 0
 			_dirty = true)
-		_toolbar.add_child(b)
+		row.add_child(b)
 
 
 func _build_scene() -> void:
@@ -305,6 +320,10 @@ func _player() -> PlayerState:
 
 func _rebuild() -> void:
 	_dirty = false
+	# The hovered item's model is freed below; a freed object compares equal to null, so the
+	# hover would never see it go and the card would keep describing an item a filter just hid.
+	_hover = {}
+	_card.visible = false
 	for c: Node in _items_root.get_children():
 		c.queue_free()
 	for c2: Node in _flap_root.get_children():
@@ -477,6 +496,28 @@ func _process(_delta: float) -> void:
 	_update_hover()
 
 
+## Where a dragged item's ghost goes for a cursor at `m`: below and right of it, flipped above
+## (and left) where it would leave the screen; over the belt, at the bottom, it hung half off. Pure.
+static func ghost_pos(m: Vector2, gs: Vector2, view: Vector2) -> Vector2:
+	var pos: Vector2 = m + Vector2(14, 10)
+	if pos.y + gs.y > view.y - 8.0:
+		pos.y = m.y - gs.y - 10.0
+	if pos.x + gs.x > view.x - 8.0:
+		pos.x = m.x - gs.x - 14.0
+	return pos
+
+
+## The note beside the sort buttons: "showing 3 of 9" under a filter, the page when there are
+## several ("page 2/3, wheel"), else nothing. Pure.
+static func view_note(shown: int, total: int, page: int, pages: int) -> String:
+	var parts: PackedStringArray = []
+	if shown != total:
+		parts.append("showing %d of %d" % [shown, total])
+	if pages > 1:
+		parts.append("page %d/%d, wheel" % [page + 1, pages])
+	return ("   " + "  ·  ".join(parts)) if not parts.is_empty() else ""
+
+
 ## The scale that fits a strip `width` wide into `room` (1 when it fits; never under 0.7).
 static func strip_scale(width: float, room: float) -> float:
 	if width <= 0.0 or room >= width:
@@ -493,24 +534,22 @@ func _screen(p: Vector3) -> Vector2:
 func _layout_overlay() -> void:
 	var p: PlayerState = _player()
 	_title.text = "SALVAGE ROLL"
-	var top: Vector2 = _screen(ORIGIN + Vector3(0.0, 0.0, -0.01))
+	# Above the cloth's far edge, clear of the first row of items (a tall can stands up into it).
+	var top: Vector2 = _screen(Vector3(ORIGIN.x, 0.0, -0.29))
 	_title.position = top - Vector2(0, _title.size.y + 8 + _toolbar.size.y + 6)
 	_toolbar.position = top - Vector2(0, _toolbar.size.y + 6)
 	var bulk: float = p.inventory.total_bulk()
 	_bulk.text = "Pack %.1f / %.0f   ·   Shoulder: %d log%s" % [bulk, p.inventory.max_bulk, p.inventory.count_of(&"log"), "" if p.inventory.count_of(&"log") == 1 else "s"]
 	_bulk.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT if bulk > p.inventory.max_bulk * 0.9 else CLOTH_TEXT)
 	var shown: int = view_stacks(p.inventory.stacks, _sort, _filter).size()
-	var pages: int = _pages(shown, COLS)
-	if pages > 1:
-		_bulk.text += "   ·   page %d/%d (wheel)" % [_page + 1, pages]
-	if _filter != "all":
-		_bulk.text += "   ·   showing %d of %d" % [shown, p.inventory.stacks.size()]
+	_view_note.text = view_note(shown, p.inventory.stacks.size(), _page, _pages(shown, COLS))
 	_bulk.position = _screen(ORIGIN + Vector3(0.0, 0.0, ROWS * SLOT + 0.02))
 	_belt.position = _bulk.position + Vector2(0, _bulk.size.y + 10.0)
 	_belt.visible = mode != &"container"
 	_refresh_belt(p)
 	if not _drag.is_empty() and is_instance_valid(_drag.get("ghost")):
-		(_drag["ghost"] as Control).position = get_local_mouse_position() + Vector2(14, 10)
+		var ghost: Control = _drag["ghost"]
+		ghost.position = ghost_pos(get_local_mouse_position(), ghost.size, size)
 	_flap_title.text = _flap_name().to_upper()
 	_flap_title.visible = mode == &"container"
 	_flap_empty.position = _screen(FLAP_ORIGIN + Vector3(0.06, 0.0, 0.12))

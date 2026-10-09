@@ -79,16 +79,28 @@ func _init() -> void:
 
 ## One row per known recipe for `station` ("" = by hand), ready ones first, then by how little
 ## they lack, then by name: {recipe, ok, max, missing: [{item, name, have, need}], tools: [kind],
-## status}. `knows` is (RecipeDef) -> bool.
-static func rows(inv: Inventory, station: StringName, knows: Callable) -> Array[Dictionary]:
+## status, at}. `knows` is (RecipeDef) -> bool. With `elsewhere`, the hand list also ends with the
+## known recipes made at a station, so the player learns where the rest is made: they are never
+## ready here, `at` names their station and their status says where ("at a Workbench").
+static func rows(inv: Inventory, station: StringName, knows: Callable, elsewhere: bool = false) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for r: RecipeDef in Content.all(&"recipe"):
-		if r.station != station and not (station == &"" and r.station == &"hand"):
+		var here: bool = r.station == station or (station == &"" and r.station == &"hand")
+		if not here and not (elsewhere and station == &"" and r.station != &"hand" and r.station != &""):
 			continue
 		if not knows.call(r):
 			continue
-		out.append(row(r, inv))
+		var e: Dictionary = row(r, inv)
+		if not here:
+			e["at"] = r.station
+			e["ok"] = false
+			e["max"] = 0
+			e["status"] = "at " + station_phrase(r.station)
+		out.append(e)
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var aa: bool = a.has("at")
+		if aa != b.has("at"):
+			return not aa
 		if bool(a["ok"]) != bool(b["ok"]):
 			return bool(a["ok"])
 		var la: int = int(a["lack"])
@@ -124,6 +136,13 @@ static func row(r: RecipeDef, inv: Inventory) -> Dictionary:
 	var ok: bool = missing.is_empty() and tools.is_empty()
 	return {"recipe": r, "ok": ok, "max": most if ok else 0, "lack": lack, "ingredients": have_all,
 		"missing": missing, "tools": tools, "status": status_text(missing, tools)}
+
+
+## "a Workbench", "a Campfire": a station by its display name, with its article.
+static func station_phrase(id: StringName) -> String:
+	var sd: ContentDef = Content.get_def(&"station", id) if Content != null else null
+	var n: String = sd.display_name if sd != null else String(id).capitalize()
+	return ("an " if "AEIOU".contains(n.left(1).to_upper()) else "a ") + n
 
 
 ## What the journal's current step asks the player to make (its craft targets), else [].
@@ -179,6 +198,8 @@ static func passes(r: Dictionary, filter: String) -> bool:
 			return true
 		"ready":
 			return bool(r["ok"])
+		"stations":
+			return r.has("at")
 		_:
 			return (r["recipe"] as RecipeDef).category == filter
 
@@ -197,6 +218,10 @@ static func filters_for(list: Array[Dictionary]) -> PackedStringArray:
 	for c3: String in cats:
 		if not out.has(c3):
 			out.append(c3)
+	for r2: Dictionary in list:
+		if r2.has("at"):
+			out.append("stations")
+			break
 	return out
 
 
@@ -208,11 +233,13 @@ func refresh(p: PlayerState, station: StringName, title: String) -> void:
 	_title.text = title.to_upper()
 	if p == null:
 		return
-	_rows = rows(p.inventory, station, p.progression.knows_recipe)
+	_rows = rows(p.inventory, station, p.progression.knows_recipe, station == &"")
 	var ready: int = 0
+	var here: int = 0
 	for r: Dictionary in _rows:
 		ready += 1 if bool(r["ok"]) else 0
-	_summary.text = "%d of %d ready" % [ready, _rows.size()]
+		here += 0 if r.has("at") else 1
+	_summary.text = "%d of %d ready" % [ready, here]
 	_build_filters()
 	_build_list()
 	_show_detail()
@@ -242,7 +269,7 @@ func _build_filters() -> void:
 		b.button_pressed = f == _filter
 		b.focus_mode = Control.FOCUS_NONE
 		var d: ItemDef = Content.item(StringName(f.substr(5))) if f.begins_with("uses:") else null
-		b.text = ("Uses %s" % (d.display_name if d != null else f.substr(5))) if f.begins_with("uses:") else f.capitalize()
+		b.text = ("Uses %s" % (d.display_name if d != null else f.substr(5))) if f.begins_with("uses:") else ("At a station" if f == "stations" else f.capitalize())
 		b.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE - 3)
 		b.pressed.connect(func() -> void:
 			_filter = f
@@ -297,8 +324,10 @@ func _row(r: Dictionary) -> Button:
 	h.add_theme_constant_override(&"separation", 10)
 	b.add_child(h)
 	# A filled mark for ready, a hollow one for not: the state reads without colour too.
-	var mark := UiStyle.label("✓" if ok else "×")
-	mark.add_theme_color_override(&"font_color", UiStyle.INK_OK if ok else UiStyle.INK_MISSING)
+	# A station's recipe isn't missing anything here: it is made elsewhere (a dim dash, dim ink).
+	var away: bool = r.has("at")
+	var mark := UiStyle.label("✓" if ok else ("–" if away else "×"))
+	mark.add_theme_color_override(&"font_color", UiStyle.INK_OK if ok else (UiStyle.INK_DIM if away else UiStyle.INK_MISSING))
 	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	h.add_child(mark)
 	var name_l := UiStyle.label(rd.display_name + ((" ×%d" % rd.result_count) if rd.result_count > 1 else ""))
@@ -310,7 +339,7 @@ func _row(r: Dictionary) -> Button:
 	h.add_child(name_l)
 	var st := UiStyle.label(str(r["status"]) if not ok else ("ready ×%d" % int(r["max"]) if int(r["max"]) > 1 else "ready"))
 	st.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE - 4)
-	st.add_theme_color_override(&"font_color", UiStyle.INK_OK if ok else UiStyle.INK_MISSING)
+	st.add_theme_color_override(&"font_color", UiStyle.INK_OK if ok else (UiStyle.INK_DIM if away else UiStyle.INK_MISSING))
 	st.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	st.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -348,7 +377,7 @@ func _show_detail() -> void:
 	var ok: bool = r["ok"]
 	_make.disabled = not ok
 	var rd: RecipeDef = r["recipe"]
-	_make.text = ("Make %s" % rd.display_name) if ok else "Missing materials"
+	_make.text = ("Make %s" % rd.display_name) if ok else ("Made at %s" % station_phrase(r["at"]) if r.has("at") else "Missing materials")
 	if ok and int(r["max"]) > 1:
 		_make.text += "   (Shift: all %d)" % int(r["max"])
 
@@ -381,6 +410,9 @@ static func detail_bbcode(r: Dictionary) -> String:
 		var lacks: bool = (r["tools"] as PackedStringArray).has(t)
 		lines.append("[color=%s]%s[/color]  Tool: %s%s" % [miss_c if lacks else ok_c, "×" if lacks else "✓", t,
 			("   [color=%s]— not in your roll[/color]" % miss_c) if lacks else ""])
+	if r.has("at"):
+		lines.append("")
+		lines.append("[color=%s]Made at %s: use one to open this roll beside it.[/color]" % [dim_c, station_phrase(r["at"])])
 	return "\n".join(lines)
 
 
