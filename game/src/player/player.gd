@@ -12,6 +12,9 @@ const CROUCH_HEIGHT: float = 1.1
 const RADIUS: float = 0.33
 ## Ledges up to this height are climbed by walking (door thresholds, porch steps, roots).
 const STEP_HEIGHT: float = 0.38
+## Extra lift (m) allowed onto a slope whose floor under the body's middle is within STEP_HEIGHT: the
+## capsule's round bottom sits r(1/cos a - 1) = 0.083 m over a 37 degree stair ramp, plus slack.
+const SLOPE_LIFT: float = 0.12
 ## Obstacles up to this height can be vaulted or mantled with Jump (window sills, fences, crates).
 const VAULT_MAX: float = 1.3
 const VAULT_TIME: float = 0.55
@@ -263,19 +266,46 @@ func _try_step_up(delta: float) -> void:
 		return
 	# The full step first; under a low header (a breach) only as much as the headroom allows.
 	for lift_h: float in [STEP_HEIGHT, 0.26, 0.16]:
-		var up := Vector3.UP * lift_h
-		if test_move(xf, up):
-			continue
-		var raised: Transform3D = xf.translated(up)
-		if test_move(raised, motion):
-			continue
-		var down := KinematicCollision3D.new()
-		if not test_move(raised.translated(motion), -up, down):
-			continue
-		if down.get_normal().angle_to(Vector3.UP) > floor_max_angle:
-			continue
-		_step_up(lift_h - down.get_travel().length())
-		return
+		var rise: float = _step_rise(xf, lift_h, motion)
+		if rise >= 0.0:
+			_step_up(rise)
+			return
+	# Then onto a slope from its side (a stair flight's ramp from beside its foot): the capsule's
+	# round bottom rests up to SLOPE_LIFT higher on it than the ramp under its middle, so a step
+	# whose floor under the body's middle rises no more than STEP_HEIGHT may lift that much more
+	# (player report 4: the body stopped at a flight's edge 0.3 m up, under a step). Carried a
+	# radius on, so the body lands on the slope's face, not on its edge.
+	var ahead: Vector3 = h.normalized() * (RADIUS + 0.05)
+	if _floor_rise(xf.origin + h.normalized() * (motion.length() + RADIUS + 0.05)) <= STEP_HEIGHT:
+		var rise2: float = _step_rise(xf, STEP_HEIGHT + SLOPE_LIFT, ahead)
+		if rise2 > STEP_HEIGHT:
+			_step_up(rise2)
+
+
+## The rise (m) of a step up by `lift_h` and on by `motion` from `xf`, when there is headroom, the
+## way on is clear and it lands on a floor; -1 otherwise.
+func _step_rise(xf: Transform3D, lift_h: float, motion: Vector3) -> float:
+	var up := Vector3.UP * lift_h
+	if test_move(xf, up):
+		return -1.0
+	var raised: Transform3D = xf.translated(up)
+	if test_move(raised, motion):
+		return -1.0
+	var down := KinematicCollision3D.new()
+	if not test_move(raised.translated(motion), -up, down):
+		return -1.0
+	if down.get_normal().angle_to(Vector3.UP) > floor_max_angle:
+		return -1.0
+	return lift_h - down.get_travel().length()
+
+
+## How far the floor under a point (the body's middle, at its feet) stands over the feet now: a ray
+## from a step and a half up down to the feet (INF when it finds nothing there).
+func _floor_rise(feet: Vector3) -> float:
+	var q := PhysicsRayQueryParameters3D.create(Vector3(feet.x, global_position.y + STEP_HEIGHT + SLOPE_LIFT + 0.05, feet.z),
+		Vector3(feet.x, global_position.y - 0.05, feet.z), collision_mask, [get_rid()])
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(q)
+	return INF if hit.is_empty() else (hit["position"] as Vector3).y - global_position.y
 
 
 func _step_up(rise: float) -> void:

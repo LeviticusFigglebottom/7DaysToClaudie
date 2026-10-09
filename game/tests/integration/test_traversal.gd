@@ -74,6 +74,52 @@ func test_does_not_step_up_a_wall() -> void:
 	assert_almost_eq(_player.global_position.y, 0.0, 0.01)
 
 
+## A stair flight's collision is a thin ramp (PoiBuilder._ramp: 0.1 m slab, 0.75 m a metre). From
+## its side over the low half of the first metre the floor under the body rises under a step, but
+## the capsule's round bottom sits 8 cm higher on the slope: it used to stop at the slab's edge.
+func test_steps_onto_a_stair_ramp_from_its_side() -> void:
+	var b := StaticBody3D.new()
+	b.collision_layer = 1
+	var cs := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	var run := Vector3(0, 3.0, 4.0)
+	shape.size = Vector3(1.0, 0.1, run.length() + 0.1)
+	cs.shape = shape
+	b.add_child(cs)
+	add_child_autofree(b)
+	# Rising along +Z from z = 0, x from 1.5 to 2.5.
+	var z: Vector3 = run.normalized()
+	var x := Vector3.RIGHT
+	var y: Vector3 = z.cross(x).normalized()
+	b.global_transform = Transform3D(Basis(x, y, z), Vector3(2.0, 0, 0) + run * 0.5 - y * 0.05)
+	await _settle()
+	# Beside the flight, level with the middle of its first metre (0.34 m up there).
+	_place(Vector3(0.8, 0.0, 0.45), Vector3.RIGHT)
+	await _settle()
+	_player.input_enabled = true
+	Input.action_press(&"move_forward")
+	for i: int in 50:
+		await get_tree().physics_frame
+	Input.action_release(&"move_forward")
+	_player.input_enabled = false
+	assert_gt(_player.global_position.x, 1.5 + Player.RADIUS, "onto the flight")
+	assert_gt(_player.global_position.y, 0.2, "standing on its slope")
+
+
+func test_no_step_onto_a_ledge_above_a_step() -> void:
+	_box(Vector3(2, 0.49, 3), Vector3(3.0, 0.245, 0))
+	await _settle()
+	_place(Vector3(1.0, 0.0, 0.0), Vector3.RIGHT)
+	await _settle()
+	_player.input_enabled = true
+	Input.action_press(&"move_forward")
+	for i: int in 60:
+		await get_tree().physics_frame
+	Input.action_release(&"move_forward")
+	_player.input_enabled = false
+	assert_almost_eq(_player.global_position.y, 0.0, 0.02, "a 0.49 m ledge (under the slope lift) is a vault, not a step")
+
+
 func test_vaults_through_a_window() -> void:
 	# Wall along X at z = -5 (0.2 m thick) with a 1.0 m wide opening from 0.9 m to 2.1 m.
 	_box(Vector3(4, 0.9, 0.2), Vector3(0, 0.45, -5))
