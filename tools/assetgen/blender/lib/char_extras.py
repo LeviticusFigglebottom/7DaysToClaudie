@@ -85,10 +85,10 @@ def eyes(model) -> Part:
     R = model.hR
     wall = float(model.p.get("wall_eye", 4.0))
     for sx in (1.0, -1.0):
-        c = model.HP(sx * 0.032, 0.012, 0.073)
+        c, er = model.eye(sx) if hasattr(model, "eye") else (model.HP(sx * 0.032, 0.012, 0.073), 0.0116 * s)
         gaze = rot_axis(R[:, 1], sx * math.radians(wall)) @ R[:, 2]
         gaze = rot_axis(R[:, 0], math.radians(-3)) @ gaze
-        v, f, uv = uv_sphere(c, 0.0116 * s, gaze, seg=12, rings=8)
+        v, f, uv = uv_sphere(c, er, gaze, seg=12, rings=8)
         p.add(v, f, L_EYES, bone="head", uvs=uv)
     return p
 
