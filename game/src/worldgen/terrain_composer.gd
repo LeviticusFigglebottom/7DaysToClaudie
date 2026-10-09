@@ -50,18 +50,32 @@ extends RefCounted
 ## cul-de-sac's bulb is paved and graded across its whole circle where its street ends in it; and a
 ## road running onto a POI's or framework's pad ramps to its level (PAD_RAMP_*); a random world's
 ## places are levelled from world data and its world roads pinned to them (WorldDef.pads, TD-320).
-const VERSION: int = 15
+## VERSION 16 (TD-320): a random world's roadside place stands at its road's level where its drive
+## leaves it (world_pad_heights, within ROADSIDE_LEVEL m of its ground).
+## VERSION 17 (owner report 4, main map): on a region-graded world a bridged road ramps up to its
+## deck at BRIDGE_RAMP of its grade cap, and a road pinned to a pad back to its own profile at
+## PAD_RAMP_GRADE, each as long as the difference needs (they were a fixed 40 m smoothstep and a
+## smoothstep capped at 60 m; a random world keeps them: longer ramps there made long fills); a pad
+## that keeps its water is levelled before the roads so they pin to it; a region-graded street is
+## level over its last metres into its cul-de-sac's bulb.
+const VERSION: int = 17
 ## The steepest grade (rise over run) a generated world's road profile keeps, by surface.
 const ROAD_MAX_GRADE: Dictionary = {"asphalt": 0.12, "gravel": 0.14, "dirt": 0.16}
+## A bridge's ramps climb to its deck at this share of the road's grade cap (headroom for the
+## profile's own grade where the ramp meets it).
+const BRIDGE_RAMP: float = 0.8
 ## Road profiles are sampled every PROFILE_STEP m. A town street within JUNCTION_REACH m of an
 ## earlier one is pinned to it there, eased over JUNCTION_EASE m (TD-318).
 const PROFILE_STEP: float = 4.0
 const JUNCTION_REACH: float = 3.0
 const JUNCTION_EASE: float = 32.0
 const TOWN_ROAD_REACH: float = 60.0
+## How far a roadside place's pad may stand off its own ground's mean to meet its road (m, TD-320).
+const ROADSIDE_LEVEL: float = 3.0
 ## A road running onto a POI's or framework's pad ramps to its level at PAD_RAMP_GRADE (rise over
 ## run), over PAD_RAMP_MIN..PAD_RAMP_MAX m, its banks with it out to PAD_RAMP_SIDE m past its
-## shoulder (VERSION 15).
+## shoulder (VERSION 15); on a region-graded world (VERSION 17) no steeper anywhere, as long as the
+## difference needs.
 const PAD_RAMP_GRADE: float = 0.08
 const PAD_RAMP_MIN: float = 12.0
 const PAD_RAMP_MAX: float = 60.0
@@ -298,19 +312,46 @@ static func _pin_profile(prof: PackedFloat32Array, line: Polyline2, other: Polyl
 ## or generator roads [{id, line, surface}]; `pads`: WorldDef.pads [{origin, rot, size}].
 static func world_road_profiles(roads: Array, h_fn: Callable, pads: Array = []) -> Dictionary:
 	var out: Dictionary = {}
-	var heights: PackedFloat32Array = []
-	for pd: Dictionary in pads:
-		heights.append(world_pad_height(pd["origin"], pd["size"], float(pd["rot"]), h_fn))
+	var base: Dictionary = {}
+	for r0: Dictionary in roads:
+		base[str(r0["id"])] = smoothed_profile(r0["line"], h_fn, float(ROAD_MAX_GRADE.get(str(r0.get("surface", "")), 0.14)))
+	var heights: PackedFloat32Array = world_pad_heights(roads, base, pads, h_fn)
 	for i: int in roads.size():
 		var r: Dictionary = roads[i]
 		var line: Polyline2 = r["line"]
-		var prof: PackedFloat32Array = smoothed_profile(line, h_fn, float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
+		var prof: PackedFloat32Array = (base[str(r["id"])] as PackedFloat32Array).duplicate()
 		for pi: int in pads.size():
 			pin_profile_to_pad(prof, line, pads[pi]["origin"], pads[pi]["size"], float(pads[pi]["rot"]), heights[pi])
 		var ease: float = minf(JUNCTION_EASE, line.total_length * 0.5)
 		for j: int in i:
 			_pin_profile(prof, line, roads[j]["line"], out[str(roads[j]["id"])], ease, float(roads[j].get("width", 0.0)))
 		out[str(r["id"])] = prof
+	out["_pad_heights"] = heights
+	return out
+
+
+## Each pad's level (world_road_profiles): the mean of its ground (world_pad_height), or for a
+## roadside place (`level_at`) its road's profile there, held within ROADSIDE_LEVEL m of that mean
+## (TD-320: a diner stood 2 m off the highway 10 m away). `base`: the roads' unpinned profiles.
+static func world_pad_heights(roads: Array, base: Dictionary, pads: Array, h_fn: Callable) -> PackedFloat32Array:
+	var out: PackedFloat32Array = []
+	for pd: Dictionary in pads:
+		var h: float = world_pad_height(pd["origin"], pd["size"], float(pd["rot"]), h_fn)
+		if pd.has("level_at"):
+			var at: Vector2 = pd["level_at"]
+			var best: float = INF
+			var rh: float = NAN
+			for r: Dictionary in roads:
+				var line: Polyline2 = r["line"]
+				if line.total_length < 30.0 or not line.bounds.grow(4.0).has_point(at):
+					continue
+				var c: Vector3 = line.closest(at)
+				if c.x < best:
+					best = c.x
+					rh = profile_at(base[str(r["id"])], c.y)
+			if best < 8.0:
+				h = clampf(rh + 0.1, h - ROADSIDE_LEVEL, h + ROADSIDE_LEVEL)
+		out.append(h)
 	return out
 
 
@@ -328,7 +369,7 @@ static func world_pad_height(o: Vector2, size: Vector2, rot: float, h_fn: Callab
 ## Pins a road's profile to a pad (corner `o`, `size`, `rot` radians, level `target`): within
 ## PAD_PIN_REACH m of the pad the road is at its level, easing back to its own profile at
 ## PAD_RAMP_GRADE over 12-60 m (VERSION 15).
-static func pin_profile_to_pad(prof: PackedFloat32Array, line: Polyline2, o: Vector2, size: Vector2, rot: float, target: float) -> void:
+static func pin_profile_to_pad(prof: PackedFloat32Array, line: Polyline2, o: Vector2, size: Vector2, rot: float, target: float, cone: bool = false) -> void:
 	var corners: Array[Vector2] = [o, o + Vector2(size.x, 0).rotated(rot), o + size.rotated(rot), o + Vector2(0, size.y).rotated(rot)]
 	var bb := Rect2(corners[0], Vector2.ZERO)
 	for c: Vector2 in corners:
@@ -346,6 +387,17 @@ static func pin_profile_to_pad(prof: PackedFloat32Array, line: Polyline2, o: Vec
 		dist[k] = sqrt(dx * dx + dz * dz)
 		touches = touches or dist[k] < PAD_PIN_REACH
 	if not touches:
+		return
+	if cone:
+		# A region-graded road (the main map, VERSION 17): at the pad's level within PAD_PIN_REACH,
+		# then held within PAD_RAMP_GRADE of it per metre out. The smoothstep below, capped at
+		# PAD_RAMP_MAX m, took Route 9 off Pell's Crossing's pad at ~15% where its cap is 12%.
+		# Distance from the pad grows no faster than the road's arc, so the ramp keeps under
+		# PAD_RAMP_GRADE along it. A random world keeps the smoothstep: its places, levelled from
+		# world data, can stand 10 m off their road, and a cone that long made long planar fills.
+		for k4: int in n:
+			var out_m: float = maxf(0.0, dist[k4] - PAD_PIN_REACH)
+			prof[k4] = clampf(prof[k4], target - PAD_RAMP_GRADE * out_m, target + PAD_RAMP_GRADE * out_m)
 		return
 	# The ease's length from the largest difference at the pad.
 	var diff: float = 0.0
@@ -848,7 +900,67 @@ class _Build:
 					paints.append({"biome": str(f["biome"]), "pos": _v2(f["circle"]), "r": float(f.get("radius", 100.0)), "blend": float(f.get("blend", 30.0))})
 				"path":
 					paths.append({"line": Polyline2.from_array(f["points"]), "width": float(f.get("width", 2.0)), "surface": str(f.get("surface", "dirt"))})
+				"prop_line":
+					# No trees or brush on the line (TD-369): a clearing every pitch along it.
+					var pl: Polyline2 = Polyline2.from_array(f["points"])
+					var pitch: float = float(f.get("pitch", 6.0))
+					var s0: float = 0.0
+					while s0 <= pl.total_length:
+						clearings.append({"pos": pl.point_at(s0), "r": float(f.get("clear", 5.0))})
+						s0 += pitch
+				"props":
+					for it: Variant in f.get("items", []):
+						if float((it as Dictionary).get("clear", 0.0)) > 0.0:
+							clearings.append({"pos": _v2((it as Dictionary)["pos"]), "r": float(it["clear"])})
 		_collect_towns()
+
+	## A `prop_line` feature's pieces (TD-369): `prop` every `pitch` m along `points` (piece i at arc
+	## (i + 0.5) x pitch), its local +X along the line (+Z to the line's left: list the points so the
+	## side you want faces +Z), turned a further `rot` degrees; none within a `gaps` entry's
+	## [x, z, half width]. Each stands on the composed ground: `base` "min" (default) at the lowest
+	## ground under its ends and middle, "mid" at its middle's, less `sink` m (0.15).
+	func _prop_line_items(f: Dictionary, hf: HeightField) -> Array:
+		var out: Array = []
+		var line: Polyline2 = Polyline2.from_array(f["points"])
+		var pitch: float = float(f.get("pitch", 6.0))
+		var sink: float = float(f.get("sink", 0.15))
+		var lowest: bool = str(f.get("base", "min")) == "min"
+		var gaps: Array = f.get("gaps", [])
+		var n: int = int(floor(line.total_length / pitch + 1e-4))
+		for i: int in n:
+			var sc: float = (i + 0.5) * pitch
+			var c: Vector2 = line.point_at(sc)
+			var skip: bool = false
+			for g: Variant in gaps:
+				if c.distance_to(Vector2(float(g[0]), float(g[1]))) < float(g[2]):
+					skip = true
+					break
+			if skip or not rect.has_point(c):
+				continue
+			var a: Vector2 = line.point_at(sc - pitch * 0.5)
+			var b: Vector2 = line.point_at(sc + pitch * 0.5)
+			var dir: Vector2 = (b - a).normalized()
+			var y: float = hf.sample(c.x, c.y)
+			if lowest:
+				y = minf(y, minf(hf.sample(a.x, a.y), hf.sample(b.x, b.y)))
+			out.append({"prop": str(f["prop"]), "pos": [c.x, y - sink, c.y], "rot": rad_to_deg(atan2(-dir.y, dir.x)) + float(f.get("rot", 0.0)),
+				"variant": str(f.get("variant", "worn"))})
+		return out
+
+	## A `props` feature's pieces (TD-369): each item {prop, pos: [x, z], rot, y?: absolute height,
+	## else the composed ground at pos (or at `ground_at` [x, z]: a river gate's bays all set from
+	## one bank) plus `y_offset`, variant?}.
+	func _props_items(f: Dictionary, hf: HeightField) -> Array:
+		var out: Array = []
+		for it: Variant in f.get("items", []):
+			var d: Dictionary = it
+			var p: Vector2 = _v2(d["pos"])
+			if not rect.has_point(p):
+				continue
+			var at: Vector2 = _v2(d["ground_at"]) if d.has("ground_at") else p
+			var y: float = float(d["y"]) if d.has("y") else hf.sample(at.x, at.y) + float(d.get("y_offset", 0.0))
+			out.append({"prop": str(d["prop"]), "pos": [p.x, y, p.y], "rot": float(d.get("rot", 0.0)), "variant": str(d.get("variant", "worn"))})
+		return out
 
 	## World towns whose bounds come near this region (ADR-0040): a pad per lot (its frame, turned
 	## by -yaw as the composer turns pads; target the lot's `y`) and the square. Their streets join
@@ -1400,13 +1512,45 @@ class _Build:
 	## (_pin_to_pads). Pads that keep their water and world towns' pads keep their own rules.
 	func _pad_targets() -> void:
 		for pad: Dictionary in pads:
-			if bool(pad.get("world", false)) or bool(pad["keep_water"]):
+			if bool(pad.get("world", false)):
+				continue
+			if bool(pad["keep_water"]):
+				# VERSION 17: a pad that keeps its water is levelled here too (the water is known), so
+				# a road running onto it is pinned to it: the larch pond road met the boathouse's
+				# pad at 17% where its cap is 14%.
+				pad["height"] = _pad_level(pad)
 				continue
 			# A random world's place is levelled from world data (TD-320), so the world roads, graded
 			# once per world, can be pinned to it; the main map's from its region's own ground.
 			var by_world: bool = world.road_grade == "world" and world.pad_ids.has(str(pad["id"]))
-			pad["height"] = TerrainComposer.world_pad_height(pad["origin"], pad["size"], float(pad["rot"]),
-				_reference_ground if by_world else _sample)
+			if by_world:
+				var hs: PackedFloat32Array = _world_profiles()["_pad_heights"]
+				for k: int in world.pads.size():
+					if str(world.pads[k]["id"]) == str(pad["id"]):
+						pad["height"] = hs[k]
+						break
+			else:
+				pad["height"] = TerrainComposer.world_pad_height(pad["origin"], pad["size"], float(pad["rot"]), _sample)
+
+	## A pad's level from the ground over it (25 samples, + 5 cm), or, where it keeps its water and
+	## overlaps it, the water's level plus its freeboard.
+	func _pad_level(pad: Dictionary) -> float:
+		var o: Vector2 = pad["origin"]
+		var size: Vector2 = pad["size"]
+		var rot: float = pad["rot"]
+		var acc: float = 0.0
+		var wet_lvl: float = 0.0
+		var wet_cnt: int = 0
+		for k: int in 25:
+			var lp := Vector2((k % 5 + 0.5) / 5.0 * size.x, (k / 5 + 0.5) / 5.0 * size.y)
+			var wp: Vector2 = o + lp.rotated(rot)
+			acc += _sample(wp.x, wp.y)
+			if bool(pad["keep_water"]) and _water_d(wp.x, wp.y) < 0.0:
+				wet_lvl += _water_field(w_lvl, wp.x, wp.y)
+				wet_cnt += 1
+		if wet_cnt > 0:
+			return wet_lvl / wet_cnt + float(pad["freeboard"])
+		return acc / 25.0 + 0.05
 
 	## Pins a region-graded road's profile to the pads it runs onto or beside (VERSION 15): within
 	## PAD_PIN_REACH m of a pad the road is at the pad's level, easing back to its own profile at
@@ -1416,7 +1560,7 @@ class _Build:
 		for pad: Dictionary in pads:
 			if not pad.has("height") or bool(pad.get("world", false)):
 				continue
-			TerrainComposer.pin_profile_to_pad(prof, line, pad["origin"], pad["size"], float(pad["rot"]), float(pad["height"]))
+			TerrainComposer.pin_profile_to_pad(prof, line, pad["origin"], pad["size"], float(pad["rot"]), float(pad["height"]), true)
 
 	## Pins a region-graded road's profile to the roads before it in road_list (whose profiles are
 	## built) where it meets them, eased over JUNCTION_EASE m or half its length, whichever is
@@ -1432,6 +1576,32 @@ class _Build:
 			if not o.has("profile"):
 				continue
 			TerrainComposer._pin_profile(prof, line, o["line"], o["profile"], ease, float(o["width"]))
+
+	## A cul-de-sac's bulb (a road of no length, `radius` its half width) on a region-graded street:
+	## the street ending at it is level over its last `radius` m, at its height where it enters the
+	## bulb, and so is the bulb (VERSION 17). The bulb took the street's end height as one flat disc
+	## while the street climbed into it, so they met in a step at the disc's edge (Pell's Crossing's
+	## west end, 0.71 m).
+	func _level_into_bulb(prof: PackedFloat32Array, c: Vector2, radius: float, upto: int) -> void:
+		for j: int in maxi(upto, 0):
+			var o: Dictionary = road_list[j]
+			if not o.has("profile"):
+				continue
+			var ol: Polyline2 = o["line"]
+			var at_start: bool = ol.point_at(0.0).distance_to(c) < 1.5
+			if not at_start and ol.point_at(ol.total_length).distance_to(c) >= 1.5:
+				continue
+			var oprof: PackedFloat32Array = o["profile"]
+			var s_in: float = minf(radius, ol.total_length) if at_start else maxf(0.0, ol.total_length - radius)
+			var h_in: float = TerrainComposer.profile_at(oprof, s_in)
+			for k: int in oprof.size():
+				var sk: float = k * PROFILE_STEP
+				if (at_start and sk <= s_in) or (not at_start and sk >= s_in):
+					oprof[k] = h_in
+			o["profile"] = oprof
+			for k2: int in prof.size():
+				prof[k2] = h_in
+			return
 
 	## {profile, step, spans} of a road (see _build_profile).
 	func _profile_data(r: Dictionary) -> Dictionary:
@@ -1454,8 +1624,11 @@ class _Build:
 			if not by_world:
 				_pin_to_pads(prof, line)
 				_pin_to_roads(prof, line, int(r.get("_ri", -1)))
+				if line.total_length < 1.0:
+					_level_into_bulb(prof, line.points[0], float(r["width"]) * 0.5, int(r.get("_ri", -1)))
 		var count: int = prof.size()
 		var spans: Array = []
+		var ramp_g: float = float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)) * BRIDGE_RAMP
 		for bdef: Variant in r["bridges"]:
 			var bd: Dictionary = bdef
 			var s0: float = line.closest(_v2(bd["from"])).y
@@ -1472,15 +1645,27 @@ class _Build:
 			else:
 				deck = float(bd["deck"])
 			spans.append([s0, s1, deck])
-			# Ramps 40 m each side up to the deck.
+			# Ramps up to the deck at BRIDGE_RAMP of the road's grade cap, as long as the lift needs
+			# (VERSION 17): a fixed 40 m smoothstep climbed a 5-8 m lift at 20-30% (Route 9 east of the
+			# Tamsin bridge, 20% where its cap is 12%).
+			# A world-graded road keeps the 40 m ramp: its profile is pinned to the roads meeting it
+			# before the decks are lifted (world_road_profiles), so a longer ramp ran past a junction
+			# and left the road meeting it metres below, and on a hilly world's deep valleys the long
+			# fills made long planar banks (seed 21: faces 250 -> 552 m).
+			var g: float = ramp_g
 			for k: int in count:
 				var s: float = k * step
 				if s >= s0 and s <= s1:
 					prof[k] = deck
-				elif s > s0 - 40.0 and s < s0:
-					prof[k] = lerpf(prof[k], deck, smoothstep(s0 - 40.0, s0, s))
-				elif s > s1 and s < s1 + 40.0:
-					prof[k] = lerpf(deck, prof[k], smoothstep(s1, s1 + 40.0, s))
+				elif by_world:
+					if s > s0 - 40.0 and s < s0:
+						prof[k] = lerpf(prof[k], deck, smoothstep(s0 - 40.0, s0, s))
+					elif s > s1 and s < s1 + 40.0:
+						prof[k] = lerpf(deck, prof[k], smoothstep(s1, s1 + 40.0, s))
+				elif s < s0:
+					prof[k] = clampf(prof[k], deck - g * (s0 - s), deck + g * (s0 - s))
+				else:
+					prof[k] = clampf(prof[k], deck - g * (s - s1), deck + g * (s - s1))
 		return {"profile": prof, "step": step, "spans": spans}
 
 	## Keeps a profile's grade under `g` (rise over run), cutting and filling evenly: the mean of the
@@ -1714,22 +1899,7 @@ class _Build:
 				# Levelled before the roads (_pad_targets, VERSION 15), so the roads could meet it.
 				target = float(pad["height"])
 			elif not world_pad:
-				# Mean height over the pad.
-				var acc: float = 0.0
-				var cnt: int = 0
-				var wet_lvl: float = 0.0
-				var wet_cnt: int = 0
-				for k: int in 25:
-					var lp := Vector2((k % 5 + 0.5) / 5.0 * size.x, (k / 5 + 0.5) / 5.0 * size.y)
-					var wp: Vector2 = o + lp.rotated(rot)
-					acc += _sample(wp.x, wp.y)
-					cnt += 1
-					if keep_water and _water_d(wp.x, wp.y) < 0.0:
-						wet_lvl += _water_field(w_lvl, wp.x, wp.y)
-						wet_cnt += 1
-				target = acc / cnt + 0.05
-				if wet_cnt > 0:
-					target = wet_lvl / wet_cnt + float(pad["freeboard"])
+				target = _pad_level(pad)
 			pad["height"] = target
 			var corners: Array[Vector2] = [o, o + Vector2(size.x, 0).rotated(rot), o + size.rotated(rot), o + Vector2(0, size.y).rotated(rot)]
 			var bb := Rect2(corners[0], Vector2.ZERO)
@@ -1776,11 +1946,21 @@ class _Build:
 					# over the last PAD_RAMP_GRADE of rise (12-60 m), its banks with it, instead of
 					# meeting the pad's edge in a step (the banks above give way to the road, and the
 					# road is graded before the pad: Pell's Crossing's west entry stood 3.7 m under it).
-					if d > 0.0 and ramp_roads and d < PAD_RAMP_MAX:
-						var rw: float = _road_reach(x, z, PAD_RAMP_SIDE, onto)
-						if rw > 0.0:
+					# VERSION 17: on a region-graded world the same cone as the road's profile
+					# (pin_profile_to_pad), level within PAD_PIN_REACH and PAD_RAMP_GRADE per metre past
+					# it; the smoothstep peaked at 1.5x. A random world keeps the smoothstep (see there).
+					if d > 0.0 and ramp_roads and world.road_grade != "world":
+						var out_m: float = maxf(0.0, d - PAD_PIN_REACH)
+						var lim3: float = PAD_RAMP_GRADE * out_m
+						if absf(h[i] - target) > lim3:
+							var rw: float = _road_reach(x, z, PAD_RAMP_SIDE, onto)
+							if rw > 0.0:
+								h[i] = lerpf(h[i], clampf(h[i], target - lim3, target + lim3), rw * _border_weight(x, z))
+					elif d > 0.0 and ramp_roads and d < PAD_RAMP_MAX:
+						var rw2: float = _road_reach(x, z, PAD_RAMP_SIDE, onto)
+						if rw2 > 0.0:
 							var rl: float = clampf(absf(h[i] - target) / PAD_RAMP_GRADE, PAD_RAMP_MIN, PAD_RAMP_MAX)
-							h[i] = lerpf(h[i], target, rw * (1.0 - smoothstep(0.0, rl, d)) * _border_weight(x, z))
+							h[i] = lerpf(h[i], target, rw2 * (1.0 - smoothstep(0.0, rl, d)) * _border_weight(x, z))
 					return
 				if d < skirt:
 					var wgt: float = 1.0 - smoothstep(0.0, skirt, d)
@@ -2593,6 +2773,10 @@ class _Build:
 					rt.spawns[str(f["id"])] = {"pos": [sp2.x, hf.sample(sp2.x, sp2.y), sp2.y], "yaw": float(f.get("yaw", 0.0)), "props": f.get("props", [])}
 				"frontier":
 					rt.frontiers.append(f)
+				"prop_line":
+					rt.placements.append({"kind": "props", "id": str(f.get("id", "line")), "items": _prop_line_items(f, hf)})
+				"props":
+					rt.placements.append({"kind": "props", "id": str(f.get("id", "props")), "items": _props_items(f, hf)})
 		for pad: Dictionary in pads:
 			if bool(pad.get("world", false)):
 				continue

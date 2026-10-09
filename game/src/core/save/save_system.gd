@@ -286,10 +286,56 @@ static func fix_composer_changes(session: GameSession, world_def: Object, curren
 	if session.composer_version >= BANKS_COMPOSER and session.composer_version < ROAD_EDGE_COMPOSER \
 			and current >= ROAD_EDGE_COMPOSER and world_def != null:
 		dropped += _drop_bank_chunks(session, world_def)
+	# Composer 16 moved a random world's roadside places to their roads' level (TD-320).
+	if session.is_random_world() and session.composer_version >= ROAD_EDGE_COMPOSER and session.composer_version < ROADSIDE_COMPOSER \
+			and current >= ROADSIDE_COMPOSER and world_def != null:
+		dropped += _drop_bank_chunks(session, world_def)
+	# Composer 17 ramps bridged roads to their decks and pinned roads off their pads at the grade
+	# cap, pins roads to pads that keep their water and levels streets into their bulbs (owner
+	# report 4, main map), and Pell's Crossing's west end lots were refitted to their streets: the
+	# ground round every bridge's ends, pad and town moved (any world).
+	if session.composer_version < BRIDGE_RAMP_COMPOSER and current >= BRIDGE_RAMP_COMPOSER and world_def != null:
+		dropped += _drop_bridge_chunks(session, world_def)
+		dropped += _drop_bank_chunks(session, world_def)
 	session.composer_version = current
 	return dropped
 
 
+## Composer version from which a random world's roadside places stand at their road's level.
+const ROADSIDE_COMPOSER: int = 16
+## Composer version from which a bridged road ramps to its deck at the grade cap (was 40 m).
+const BRIDGE_RAMP_COMPOSER: int = 17
+## How far round a bridge's ends a 64 m chunk's records are dropped (a ramp up to ~120 m for a
+## 9 m lift, plus the bank).
+const BRIDGE_REACH: float = 160.0
+
+
+## Drops the felled-tree and harvested-plant records of the 64 m chunks round every world road's
+## bridge ends (composer 17 moved the ground there). Returns how many chunks were dropped.
+static func _drop_bridge_chunks(session: GameSession, world_def: Object) -> int:
+	if not "roads" in world_def:
+		return 0
+	var ends: Array[Vector2] = []
+	for rd: Dictionary in world_def.get(&"roads"):
+		for bd: Variant in rd.get("bridges", []):
+			for key: String in ["from", "to"]:
+				var p: Variant = (bd as Dictionary).get(key)
+				if p is Array and (p as Array).size() >= 2:
+					ends.append(Vector2(float(p[0]), float(p[(p as Array).size() - 1])))
+				elif p is Vector2:
+					ends.append(p)
+	var dropped: int = 0
+	for key2: String in session.world.trees.keys():
+		var c: Vector2i = Ids.parse_chunk_key(key2)
+		var r := Rect2(c.x * 64.0, c.y * 64.0, 64.0, 64.0)
+		for e: Vector2 in ends:
+			if e.clamp(r.position, r.end).distance_to(e) <= BRIDGE_REACH:
+				session.world.trees.erase(key2)
+				dropped += 1
+				break
+	if dropped > 0:
+		Log.info(&"save", "composer -> %d: dropped vegetation records in %d chunks by bridges" % [BRIDGE_RAMP_COMPOSER, dropped])
+	return dropped
 ## Composer version from which a world town's streets are pinned together at their junctions.
 const JUNCTIONS_COMPOSER: int = 14
 ## Composer version from which world roads meet at one height and the nearest road is the nearest edge.

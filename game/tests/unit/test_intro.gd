@@ -73,3 +73,12 @@ func test_the_world_card_film_pushes_in_along_its_framing() -> void:
 	var ahead: Vector3 = -start.basis.z
 	assert_gt(ahead.dot((path[2] - path[0]).normalized()), 0.99, "looking at `to`")
 	assert_gt(IntroPlayer.shot_length({"hold": 7.0}), 7.0 + 2.0 * IntroPlayer.FADE, "long enough for the card's fades and its words")
+
+
+func test_the_world_card_keeps_its_words_off_the_wreck() -> void:
+	# The picture is framed on the wreck at its centre: the words and their shade stay low.
+	assert_gt(IntroPlayer.WORLD_TEXT_AT, 0.7)
+	assert_gt(IntroPlayer.WORLD_SHADE_TOP, 0.5)
+	var g: Gradient = IntroPlayer.world_shade().gradient
+	assert_almost_eq(g.sample(0.0).a, 0.0, 0.01, "clear where it starts")
+	assert_gt(g.sample(0.7).a, 0.6, "dark behind the words")

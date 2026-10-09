@@ -171,6 +171,44 @@ max 1.98 → 0.23 m, cross slope p95 0.023 → 0.011; hilly seed 7 p95 0.92 → 
 0.55 m; seed 21 p95 1.44 → 0.49 m, max 2.75 → 2.15 m (a roadside diner levelled 2 m off its highway
 10 m away, TD-320). Saves crossing composer 15 drop their vegetation records by the roads, as at 13.
 
+### Roadside places at their road's level (composer 16, generator 16)
+
+A random world's roadside place (a diner by the highway, a trader post) records the road point it
+fronts (`level_at` in world.json `pads`); `world_pad_heights` sets its pad to that road's profile
+height there + 0.1 m, held within `ROADSIDE_LEVEL` (3 m) of the pad's mean ground, before the roads
+are pinned to the pads. Seed 21's worst carriageway step 2.15 → 1.16 m (p95 0.49 → 0.47 m); seed 7
+unchanged (its 0.55 m is a trader drive beside a lot). Random-world saves crossing composer 16 drop
+their bank-chunk records.
+
+### The main map within its caps (composer 17)
+
+Owner report 4's "roads on slants" and "long slanted faces", checked with terrain_audit over all 49
+main-map regions (roads run through D6, D7 and E6; Pell's Crossing's west end is in C6). Cross-slope
+was already level (max 3.9%) and no long planar faces stood anywhere. The grades did not hold:
+* **Bridge ramps** (region-graded worlds): up to the deck at `BRIDGE_RAMP` (0.8) of the road's cap,
+  as long as the lift needs; the fixed 40 m smoothstep climbed Route 9 east of the Tamsin bridge at
+  20% (its cap is 12%).
+* **Pad ramps** (region-graded worlds): within `PAD_PIN_REACH` of the pad at its level, then a cone at
+  `PAD_RAMP_GRADE` per metre out, for the road's profile and the pad's ramp under it alike; the
+  smoothstep, capped at 60 m, took Route 9 off Pell's Crossing's pad at 15%.
+* **Pads that keep their water** are levelled before the roads (their water is known), so a road
+  running onto one is pinned to it: the larch pond road met the boathouse at 17% (gravel cap 14%).
+* **Bulbs**: a region-graded street is level over its last metres into its cul-de-sac's bulb.
+* **Pell's Crossing's west end**: its lots (plan_main_town.gd's output, heights from the ground as it
+  was) are refitted to within `LOT_STREET_STEP` of their own streets' composed heights
+  (`terrain_audit --fit-lots`).
+
+Random worlds keep composer 16's ramps: their places, levelled from world data, can stand 10 m off
+their road, and on seed 21 the longer cones made long tall fills (bank height p95 6.4 -> 8.4 m, face
+runs 250 -> 552 m) and ran past a junction (a 3.07 m step); with them kept, seed 21's audit is
+identical to composer 16's.
+
+Measured on the main map: grade max 20.1% -> 14.4% (Route 9 within 12% everywhere; the gravel
+logging and pond roads at their 14% cap), stations over 12% 11.4% -> 7.4% (all on gravel); C6 yard
+to street lips p95 0.75 -> 0.24 m (lot banks p95 2.6 -> 3.3 m, the yards held to their streets);
+one face run, 56 m, the fill under Route 9's longer east bridge ramp. Saves crossing composer 17 drop
+their vegetation records round bridges, pads and towns. Left: TD-323.
+
 ## Consequences
 + Measured on hilly seeds (size 4): bank heights p95 38.7 m → 6-7 m, the steepest 2 m step beside
   roads p95 1.57 → 0.85-0.9, grades capped (max 0.13-0.17 by surface, bridge ramps aside), face runs

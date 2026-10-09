@@ -17,6 +17,8 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "river_noon", "pos": Vector3(150, 1.7, 2075), "look": Vector3(118, 0.0, 2100), "hour": 13.0, "weather": "clear"},
 	# TD-006: from Pell's west end out over Larkspur Ridge (C6, a coarse region): its cluster impostors.
 	{"name": "far_forest_west", "pos": Vector3(-470, 60.0, 2240), "look": Vector3(-1400, 0, 2050), "hour": 15.5, "weather": "clear"},
+	# W9 (first-week audit): Larch Hollow's grotto 8 m out from its mouth, where the audit's frame stood.
+	{"name": "grotto_mouth", "pos": Vector3(238.8, 1.7, 2283.0), "look": Vector3(248.0, 0.5, 2275.5), "hour": 14.0, "weather": "clear"},
 	{"name": "valley_aerial", "pos": Vector3(-150, 140.0, 2420), "look": Vector3(-60, 0, 2050), "hour": 17.5, "weather": "clear"},
 	{"name": "night_forest", "pos": Vector3(-240, 1.7, 2290), "look": Vector3(-200, 1.5, 2280), "hour": 23.0, "weather": "clear", "light": true},
 	{"name": "base_building", "pos": Vector3(-296, 2.2, 2302), "look": Vector3(-286, 0.5, 2294), "hour": 11.0, "weather": "clear", "build": true},
@@ -94,8 +96,10 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "furnished_base", "pos": Vector3(-290.8, 2.1, 2302.8), "look": Vector3(-286.4, 0.7, 2297.4), "hour": 16.0, "weather": "overcast", "base_kit": true, "fov": 58.0},
 	# Waystation 9 (ADR-0039) from Route 9's drive: the gate, the barriers, the counter with the
 	# quartermaster behind it and the contracts board.
-	{"name": "waystation_9", "pos": Vector3(-54.0, 2.4, 2530.0), "look": Vector3(-27.0, 1.4, 2521.0), "hour": 17.5, "weather": "clear", "fov": 62.0},
-	{"name": "waystation_counter", "pos": Vector3(-36.5, 1.6, 2524.5), "look": Vector3(-25.5, 1.3, 2521.5), "hour": 11.0, "weather": "overcast", "fov": 55.0},
+	{"name": "waystation_9", "pos": Vector3(-74.0, 2.4, 3405.0), "look": Vector3(-58.0, 3.0, 3440.0), "hour": 17.5, "weather": "clear", "fov": 62.0},
+	{"name": "cordon_wall", "pos": Vector3(-150.0, 3.0, 3395.0), "look": Vector3(-40.0, 4.0, 3450.0), "hour": 15.0, "weather": "clear", "fov": 70.0},
+	{"name": "cordon_river_gate", "pos": Vector3(-8.0, 3.0, 3380.0), "look": Vector3(-8.0, 3.0, 3450.0), "hour": 15.0, "weather": "clear", "fov": 70.0},
+	{"name": "waystation_counter", "pos": Vector3(-58.0, 1.6, 3431.5), "look": Vector3(-58.0, 1.3, 3438.5), "hour": 11.0, "weather": "overcast", "fov": 55.0},
 	{"name": "hound_pack", "pos": Vector3(-300, 1.6, 2297), "look": Vector3(-300, 0.5, 2291.5), "hour": 16.5, "weather": "overcast", "fov": 50.0,
 	 "lineup": [["hollow_hound", -1.5, "normal", ""], ["hollow_hound", 0.0, "seeded", ""], ["hollow_hound", 1.5, "normal", ""]],
 	 "cam_height": 0.9, "look_height": 0.45},

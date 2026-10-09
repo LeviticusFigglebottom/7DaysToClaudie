@@ -544,15 +544,19 @@ func _build_card(c: Dictionary) -> Control:
 		"title":
 			_title(root, c)
 		"world":
-			# A dark band under the words: the world behind them can be bright.
-			var band := ColorRect.new()
-			band.color = Color(0.0, 0.0, 0.0, 0.55)
-			band.anchor_top = 0.5
-			band.anchor_right = 1.0
-			band.anchor_bottom = 0.86
-			band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			root.add_child(band)
-			_caption(root, c)
+			# The words sit low, over a shade that darkens only the bottom of the frame: a band
+			# across the middle covered the wreck itself (the picture is framed on it), so the
+			# card read as trees over a black bar.
+			var shade := TextureRect.new()
+			shade.texture = world_shade()
+			shade.stretch_mode = TextureRect.STRETCH_SCALE
+			shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			shade.anchor_top = WORLD_SHADE_TOP
+			shade.anchor_right = 1.0
+			shade.anchor_bottom = 1.0
+			shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			root.add_child(shade)
+			_caption(root, c, WORLD_TEXT_AT)
 		"impact":
 			var flash := ColorRect.new()
 			flash.name = "Flash"
@@ -600,8 +604,28 @@ func _centre_box(root: Control, width: float, top: float) -> VBoxContainer:
 	return v
 
 
-func _caption(root: Control, c: Dictionary) -> void:
-	var v: VBoxContainer = _centre_box(root, 1100.0, 0.62)
+## Where the world card's words are centred (a share of the height) and where its shade starts.
+const WORLD_TEXT_AT: float = 0.77
+const WORLD_SHADE_TOP: float = 0.56
+
+
+## The world card's shade: clear at its top, darkest behind the words (vertical, 1 x 64).
+static func world_shade() -> GradientTexture2D:
+	var g := Gradient.new()
+	g.set_color(0, Color(0, 0, 0, 0.0))
+	g.set_color(1, Color(0, 0, 0, 0.78))
+	g.add_point(0.35, Color(0, 0, 0, 0.62))
+	var t := GradientTexture2D.new()
+	t.gradient = g
+	t.width = 1
+	t.height = 64
+	t.fill_from = Vector2(0, 0)
+	t.fill_to = Vector2(0, 1)
+	return t
+
+
+func _caption(root: Control, c: Dictionary, at: float = 0.62) -> void:
+	var v: VBoxContainer = _centre_box(root, 1100.0, at)
 	v.add_theme_constant_override(&"separation", 14)
 	if str(c.get("stamp", "")) != "":
 		var st := UiStyle.label(fill(str(c["stamp"]), _vars), &"SubheadingLabel")

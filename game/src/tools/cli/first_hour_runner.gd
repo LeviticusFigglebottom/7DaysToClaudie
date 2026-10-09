@@ -30,6 +30,13 @@ func frames(n: int) -> void:
 		await get_tree().process_frame
 
 
+## The value after `key` on the command line (after `--`), else `default`.
+func _arg(key: String, default: String) -> String:
+	var a: PackedStringArray = OS.get_cmdline_user_args()
+	var i: int = a.find(key)
+	return a[i + 1] if i >= 0 and i + 1 < a.size() else default
+
+
 func seconds(s: float) -> void:
 	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
 	while Time.get_ticks_msec() < end:
@@ -67,8 +74,11 @@ func snap(step: String) -> void:
 	var shown: PackedStringArray = []
 	for n: Node in ui.find_children("*", "Label", true, false) if ui != null else []:
 		var l2 := n as Label
-		if l2.is_visible_in_tree() and l2.text.strip_edges() != "" and l2.text.length() < 400:
-			shown.append(l2.text.replace("\n", " / "))
+		# A long one (the distress call, ~450 characters) is shortened, not dropped: dropping it
+		# once made the call look like it never reached the screen.
+		if l2.is_visible_in_tree() and l2.text.strip_edges() != "":
+			var tx: String = l2.text.replace("\n", " / ")
+			shown.append(tx if tx.length() < 400 else tx.left(240) + " …")
 	for n: Node in ui.find_children("*", "RichTextLabel", true, false) if ui != null else []:
 		var r := n as RichTextLabel
 		if r.is_visible_in_tree() and r.get_parsed_text().strip_edges() != "":
@@ -90,7 +100,7 @@ func face(at: Vector3, dist: float = 1.8, from: Vector3 = Vector3.INF) -> void:
 	stand.y = w.height_at(stand.x, stand.z)
 	p.global_position = stand + Vector3.UP * 0.05
 	p.velocity = Vector3.ZERO
-	w.terrain.update_streaming(p.global_position, true)
+	await _stream(p.global_position)
 	look(at)
 	await frames(6)
 	look(at)
@@ -141,6 +151,11 @@ func ex(cmd: StringName, args: Dictionary) -> Dictionary:
 
 func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out))
+	# --no-3d: frames of the screens and words over black. Software Vulkan drawing the real
+	# assets' forest starves the game's own threads (26 s frames on Build 102's pack); without
+	# the 3D the run takes minutes and still shows every card, prompt and line.
+	if OS.get_cmdline_user_args().has("--no-3d"):
+		get_viewport().disable_3d = true
 	game = get_node("/root/Game")
 	Events.player_status_message.connect(func(text: String, kind: StringName) -> void: _msgs.append("[%s] %s" % [kind, text]))
 	var opts: Dictionary = {"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_first_hour"}
@@ -155,7 +170,10 @@ func _run() -> void:
 	await seconds(2.0)
 	if ui != null:
 		await snap("loading_new_game")
-	if not await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), 900.0):
+	# --load-wait <s>: a rendered run of an exported pack (real assets, software Vulkan) raises
+	# its towns at about a second a frame and can need far longer than the default.
+	var load_wait: float = float(_arg("--load-wait", "900"))
+	if not await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), load_wait):
 		note("the world never became ready")
 		_finish()
 		return
@@ -172,12 +190,12 @@ func _run() -> void:
 		ps.inventory.add_item(&"cloth_bandage", 1)
 		var camp: Vector3 = w.tutorial.camp_position()
 		p.global_position = camp + Vector3(2, 0.5, 2)
-		w.terrain.update_streaming(p.global_position, true)
+		await _stream(p.global_position)
 		await seconds(3.0)
 		ex(&"companion.recruit", {})
 		await seconds(1.0)
 		p.global_position = w.drop_site() + Vector3(0, 0.5, 0)
-		w.terrain.update_streaming(p.global_position, true)
+		await _stream(p.global_position)
 		await seconds(3.0)
 		if OS.get_cmdline_user_args().has("--gaps"):
 			await _gaps()
@@ -661,7 +679,7 @@ func _week() -> void:
 		var outside: Vector3 = mouth + cp.mouth.basis.z * 8.0
 		outside.y = w.height_at(outside.x, outside.z)
 		p.global_position = outside + Vector3.UP * 0.1
-		w.terrain.update_streaming(p.global_position, true)
+		await _stream(p.global_position)
 		await seconds(3.0)
 		look(mouth + Vector3.UP * 1.0)
 		await frames(6)
@@ -670,6 +688,7 @@ func _week() -> void:
 			var deep: Vector3 = cp.spine[cp.spine.size() - 1]
 			deep.y = cp.floor_y[cp.floor_y.size() - 1] + 0.1
 			p.global_position = deep
+			await _stream(deep)
 			look(mouth + Vector3.UP * 1.5)
 			await seconds(2.0)
 			await snap("w_cave_inside")
@@ -678,7 +697,7 @@ func _week() -> void:
 	var drops: SupplyDrops = w.get(&"supply_drops") as SupplyDrops
 	if drops != null:
 		p.global_position = base + Vector3(0, 0.5, 4)
-		w.terrain.update_streaming(p.global_position, true)
+		await _stream(p.global_position)
 		var did: StringName = drops.dispatch(Game.session.clock.day())
 		note("supply drop dispatched: %s" % did)
 		await seconds(3.0)
@@ -711,7 +730,7 @@ func _week() -> void:
 
 	# --- The Hum ----------------------------------------------------------------------------------------------
 	p.global_position = base + Vector3(0, 0.5, 3)
-	w.terrain.update_streaming(p.global_position, true)
+	await _stream(p.global_position)
 	# The night before, outside with no fire, the cold kills (finding: the first run froze); the
 	# audit wants the Hum's screens, so the player is kept alive from here.
 	note("health %.0f, warmth %s before the night" % [ps.stats.health, str(ps.stats.get(&"body_temp")) if ps.stats.get(&"body_temp") != null else "?"])
@@ -811,8 +830,17 @@ func _teleport(at: Vector3) -> void:
 	at.y = w.height_at(at.x, at.z) + 0.3
 	p.global_position = at
 	p.velocity = Vector3.ZERO
-	w.terrain.update_streaming(at, true)
+	await _stream(at)
 	await seconds(3.0)
+
+
+## Streams the world in around a spot the player was just moved to and waits until the chunks
+## around it have their meshes and collision: a frame taken before then shows streaming gaps that
+## read like terrain bugs (World's W9 note).
+func _stream(at: Vector3) -> void:
+	w.terrain.update_streaming(at, true)
+	if not await wait_until(func() -> bool: return w.terrain.is_ready_around(at, 1), 30.0):
+		note("terrain not ready around %s after 30 s" % str(at.round()))
 
 
 func _kill_near(at: Vector3, r: float) -> int:
@@ -868,7 +896,7 @@ func _clear(def_id: String, tag: String) -> void:
 				var sp: Dictionary = cells[i]
 				var lp: Vector3 = inst.global_transform * inst.layout.cell_center(int(sp.get("level", 0)), sp.get("cell", Vector2i.ZERO))
 				p.global_position = lp + Vector3.UP * 0.3
-				w.terrain.update_streaming(lp, true)
+				await _stream(lp)
 			await seconds(2.0)
 			continue
 		var en: Enemy = live[0]
@@ -1195,6 +1223,7 @@ func _walk_route(def_id: String, tag: String) -> void:
 			nxt = inst.global_transform * inst.layout.cell_center(int((route[i + 1] as Dictionary).get("level", 0)), Vector2i(int(at2[0]), int(at2[1])))
 		p.global_position = here + Vector3.UP * 0.2
 		p.velocity = Vector3.ZERO
+		await _stream(here)
 		look(nxt + Vector3.UP * 1.4)
 		await seconds(1.0)
 		look(nxt + Vector3.UP * 1.4)

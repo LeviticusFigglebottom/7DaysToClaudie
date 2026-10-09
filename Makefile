@@ -18,7 +18,7 @@ GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
 .PHONY: smoke tour check-logs export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake stills \
-        import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview
+        import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview menu-guard
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -61,6 +61,8 @@ assets-determinism: ## Rebuild assets into a scratch dir and compare hashes with
 
 bake: ## Godot-side bakes that need the renderer (item icons, tree impostors, region data, backdrop stills)
 	@mkdir -p $(ROOT)/build; if [ -f $(GAME)/src/tools/cli/bake.gd ]; then $(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/bake.gd; fi
+	@$(MAKE) --no-print-directory import
+	@# After the import: the wreck's far forest draws the impostors baked just above.
 	@GODOT="$(GODOT)" $(ROOT)/tools/stills.sh || echo "stills: FAILED (the menu and the intro show no pictures; see build/stills_*.log)"
 	@$(MAKE) --no-print-directory import
 
@@ -129,6 +131,9 @@ ui-shots: ## Screenshots of the menus and UI screens without a world (software V
 first-hour: ## The first-hour UX audit: a new game driven through its first hour, a frame and the screen's words per step (software Vulkan, ~20 min) -> build/first_hour
 	@mkdir -p $(ROOT)/build/first_hour
 	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution $(or $(UI_RES),1280x720) -s res://src/tools/cli/first_hour.gd -- --out $(ROOT)/build/first_hour $(FIRST_HOUR_ARGS)
+
+menu-guard: ## The menu freeze guard: the real main menu hovered and clicked for ~20 s under software Vulkan; fails on a frame over 1.5 s or input nothing answers [MENU_GUARD_ARGS="--expect-pictures"; MENU_PACK=/abs/Hollowmere.pck runs an exported pack]
+	@$(LOCK) $(XVFB) $(GODOT) $(if $(MENU_PACK),--main-pack $(MENU_PACK),--path $(GAME)) --rendering-driver vulkan --audio-driver Dummy --resolution 1280x720 -s $(if $(MENU_PACK),$(GAME)/src/tools/cli/menu_guard.gd,res://src/tools/cli/menu_guard.gd) $(if $(MENU_GUARD_ARGS),-- $(MENU_GUARD_ARGS))
 
 first-week: ## The first-week audit: the first hour, then building, the trader, Ezra's orders, hunting, a cave, the supply drop, levelling and the first Hum (headless text; FIRST_WEEK_ARGS=--week-only for a rendered run of the week alone via first-hour) -> build/first_week
 	@mkdir -p $(ROOT)/build/first_week

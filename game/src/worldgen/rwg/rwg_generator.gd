@@ -63,8 +63,12 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 14: a town lot's height stays within LOT_STREET_STEP of its street's profile where it meets it
 ## (TerrainComposer.town_street_profiles, composer 14): no lip between a yard and its street (TD-318).
 ## 15: the world roads a town's lots and streets meet are the composer's pinned ones (composer 15);
-## world.json lists the places levelled from world data (`pads`), which the world roads pin to (TD-320).
-const VERSION: int = 15
+## world.json lists the places levelled from world data (`pads`), which the world roads pin to (TD-320);
+## 16: a roadside place's pad stands at its road's level where its drive leaves it (`level_at`,
+## composer 16; TD-320).
+## 17: road shape (TD-139): a routed road's hooks (turns back over 120 degrees) are cut even up a
+## steep pitch, and a track or trail off a road starts where it leaves the road's cells, not beside it.
+const VERSION: int = 17
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -743,6 +747,7 @@ func _road_network() -> void:
 				mid[0] = _snap_to_road(mid[0])
 			if not bool(pc["end_exact"]):
 				mid[mid.size() - 1] = _snap_to_road(mid[mid.size() - 1])
+			mid = _leave_roads(mid, bool(pc["start_exact"]), bool(pc["end_exact"]))
 			if not _along_roads(mid):
 				added = _add_road(mid, "highway", "%s road" % tw["name"], bool(pc["end_exact"])) or added
 		if added:
@@ -779,6 +784,7 @@ func _connect(ta: Dictionary, tb: Dictionary, cls: String, name: String) -> void
 			mid[0] = _snap_to_road(mid[0])
 		if not bool(pc["end_exact"]):
 			mid[mid.size() - 1] = _snap_to_road(mid[mid.size() - 1])
+		mid = _leave_roads(mid, bool(pc["start_exact"]), bool(pc["end_exact"]))
 		if not _along_roads(mid):
 			_add_road(mid, cls, name, false)
 
@@ -787,6 +793,22 @@ func _connect(ta: Dictionary, tb: Dictionary, cls: String, name: String) -> void
 func _snap_to_road(p: Vector2) -> Vector2:
 	var nr: Array = nearest_road(p)
 	return nr[1] if float(nr[0]) < terrain.step * 1.5 else p
+
+
+## A route piece snapped onto a road at either end starts (or ends) where it leaves that road,
+## not after running beside it on the road's cheap cells (_leave_road; TD-139).
+func _leave_roads(pts: PackedVector2Array, start_exact: bool, end_exact: bool) -> PackedVector2Array:
+	if not start_exact:
+		var nr: Array = nearest_road(pts[0])
+		if float(nr[0]) < 1.0:
+			pts = _leave_road(pts, int(nr[2]))
+	if not end_exact and pts.size() >= 2:
+		var nr2: Array = nearest_road(pts[pts.size() - 1])
+		if float(nr2[0]) < 1.0:
+			pts.reverse()
+			pts = _leave_road(pts, int(nr2[2]))
+			pts.reverse()
+	return pts
 
 
 ## True when a route piece only runs along roads already built (within 6 m all the way). Routes
@@ -883,11 +905,83 @@ func _main_streets() -> void:
 			if axis.size() >= 2:
 				_add_road(axis, "county", "%s road" % tw["name"], false)
 		if str(tw["kind"]) == "town" and _roads_near(c, float(tw["core"]) * 0.5) < 2:
-			var main_dir: Vector2 = _road_dir_at(c)
-			var cross: PackedVector2Array = _through_road(ground, c, reach, Vector2(-main_dir.y, main_dir.x))
+			var cross: PackedVector2Array = _through_road(ground, c, reach, _cross_axis(c), CROSS_SPREAD)
 			if cross.size() >= 2:
 				_add_road(cross, "county", "%s cross road" % tw["name"], false)
+		_leave_through(c)
 	_reindex_roads()
+
+
+## A road still ending at a town centre beside the road through it (both came in from the same
+## side, so they were not merged) runs 6-20 m beside it into the centre: a fork with a sliver of
+## ground between (TD-139). It ends where it leaves the through road instead (_leave_road), and a
+## piece that never leaves it goes. With no road through the centre the first ending there leads.
+func _leave_through(c: Vector2) -> void:
+	var ends: Array = _ends_at(c)
+	if ends.is_empty():
+		return
+	var through: int = -1
+	var best: float = 1.0
+	for ri: int in roads.size():
+		if ends.any(func(e: Array) -> bool: return int(e[0]) == ri):
+			continue
+		var d: float = (roads[ri]["line"] as Polyline2).closest(c).x
+		if d < best:
+			best = d
+			through = ri
+	if through < 0:
+		if ends.size() < 2:
+			return
+		through = int(ends[0][0])
+		ends = ends.slice(1)
+	var gone: Array[int] = []
+	for e: Array in ends:
+		var ri2: int = int(e[0])
+		var pts: PackedVector2Array = (roads[ri2]["points"] as PackedVector2Array).duplicate()
+		if not bool(e[1]):
+			pts.reverse()
+		var left: PackedVector2Array = _leave_road(pts, through)
+		var beside: bool = _within(pts, roads[through]["line"], LEAVE_ROAD)
+		if not beside and left.size() == pts.size() and left[1] == pts[1]:
+			continue
+		if not bool(e[1]):
+			left.reverse()
+		var old_line: Polyline2 = roads[ri2]["line"]
+		if beside:
+			gone.append(ri2)
+		else:
+			roads[ri2]["points"] = left
+			roads[ri2]["line"] = Polyline2.from_array(Terrain._arr(left))
+		# A road that met the trimmed stretch meets the through road (or what is left) instead.
+		var keep: Polyline2 = null if beside else roads[ri2]["line"]
+		var main: Polyline2 = roads[through]["line"]
+		for rj: int in roads.size():
+			if rj == ri2 or rj == through or gone.has(rj):
+				continue
+			var pj: PackedVector2Array = roads[rj]["points"]
+			for k: int in [0, pj.size() - 1]:
+				if old_line.closest(pj[k]).x > 1.5 or (keep != null and keep.closest(pj[k]).x < 1.5):
+					continue
+				var qa: Vector3 = main.closest(pj[k])
+				var qb: Vector3 = keep.closest(pj[k]) if keep != null else Vector3(INF, 0, 0)
+				pj[k] = main.point_at(qa.y) if qa.x <= qb.x else keep.point_at(qb.y)
+			roads[rj]["points"] = pj
+			roads[rj]["line"] = Polyline2.from_array(Terrain._arr(pj))
+	gone.sort()
+	for k2: int in range(gone.size() - 1, -1, -1):
+		roads.remove_at(gone[k2])
+	if not gone.is_empty():
+		_reindex_roads()
+
+
+## True when every point along pts (every 4 m) lies within `reach` of `line`.
+static func _within(pts: PackedVector2Array, line: Polyline2, reach: float) -> bool:
+	for k: int in pts.size() - 1:
+		var n: int = maxi(1, int(ceil(pts[k].distance_to(pts[k + 1]) / 4.0)))
+		for st: int in n + 1:
+			if line.closest(pts[k].lerp(pts[k + 1], float(st) / n)).x > reach:
+				return false
+	return true
 
 
 ## The land the towns are planned over: the composer's macro ground (RefGround.m; built on demand,
@@ -921,17 +1015,30 @@ func _roads_near(p: Vector2, r: float) -> int:
 	return n
 
 
-## The direction of the road passing nearest p (east when there is none).
-func _road_dir_at(p: Vector2) -> Vector2:
-	var best: float = INF
-	var dir := Vector2.RIGHT
+## The axis for a town's cross road: of 16 headings, the one whose two ends keep farthest from
+## every road leaving c (each leg's direction 40 m out). A perpendicular to the main street's
+## tangent ran back along one leg where the street bends at the centre (TD-139).
+func _cross_axis(c: Vector2) -> Vector2:
+	var legs: Array[Vector2] = []
 	for rd: Dictionary in roads:
 		var line: Polyline2 = rd["line"]
-		var q: Vector3 = line.closest(p)
-		if q.x < best:
-			best = q.x
-			dir = line.tangent_at(q.y)
-	return dir
+		var q: Vector3 = line.closest(c)
+		if q.x > 30.0:
+			continue
+		for s: float in [q.y - 40.0, q.y + 40.0]:
+			if s > 0.0 and s < line.total_length:
+				legs.append((line.point_at(s) - c).normalized())
+	var best := Vector2.RIGHT
+	var best_gap: float = -INF
+	for k: int in 16:
+		var u: Vector2 = Vector2.from_angle(k * PI / 16.0)
+		var gap: float = INF
+		for leg: Vector2 in legs:
+			gap = minf(gap, minf(absf(u.angle_to(leg)), absf((-u).angle_to(leg))))
+		if gap > best_gap + 0.001:
+			best_gap = gap
+			best = u
+	return best
 
 
 ## Joins two roads that end at a town centre into one road through it (the first keeps its place
@@ -1035,7 +1142,7 @@ static func _despike(pts: PackedVector2Array) -> PackedVector2Array:
 
 ## A road through c both ways: out along `axis` (or the town's lowest axis when ZERO) and back
 ## out the other side, as one line through c.
-func _through_road(g: Streets.Ground, c: Vector2, length: float, axis: Vector2) -> PackedVector2Array:
+func _through_road(g: Streets.Ground, c: Vector2, length: float, axis: Vector2, spread: float = 50.0) -> PackedVector2Array:
 	var dir: Vector2 = axis
 	if dir == Vector2.ZERO:
 		var best: float = INF
@@ -1048,8 +1155,8 @@ func _through_road(g: Streets.Ground, c: Vector2, length: float, axis: Vector2) 
 			if s < best:
 				best = s
 				dir = u
-	var a: PackedVector2Array = _stub(g, c, dir, length, 50.0)
-	var b: PackedVector2Array = _stub(g, c, -dir, length, 50.0)
+	var a: PackedVector2Array = _stub(g, c, dir, length, spread)
+	var b: PackedVector2Array = _stub(g, c, -dir, length, spread)
 	if a.size() < 2 or b.size() < 2:
 		return a if a.size() >= 2 else b
 	a.reverse()
@@ -1416,6 +1523,21 @@ func road_clearance(poly: PackedVector2Array, skip: int = -1) -> float:
 			continue
 		var d: float = 0.0 if Streets.point_in(q, poly) else Terrain._poly_distance(poly, q)
 		best = minf(best, d - half)
+	# A two-point road (Polyline2 subdivides only three or more control points) has no vertices
+	# along its length: a long straight track passed over a fen pool between them. Its long
+	# segments are measured whole.
+	for sid: int in _seg_grid.query(bb.grow(_max_half + 61.0)):
+		var si: int = sid >> Grid.PART_BITS
+		if si == skip:
+			continue
+		var sline: Polyline2 = roads[si]["line"]
+		var sk: int = sid & Grid.PART_MASK
+		var a: Vector2 = sline.points[sk]
+		var b: Vector2 = sline.points[sk + 1]
+		if a.distance_to(b) <= 12.0:
+			continue
+		var shalf: float = float(roads[si]["width"]) * 0.5 + float(roads[si]["shoulder"])
+		best = minf(best, _seg_poly_distance(a, b, poly) - shalf)
 	return best
 
 
@@ -2063,6 +2185,9 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 		var place: Dictionary = {"id": pid, "kind": "framework" if is_fw else "poi", "def": def_id, "origin": origin, "rot": rot, "size": fp,
 			"poly": poly, "biome": str(pe.get("biome", "meadow")), "skirt": float(pe.get("skirt", 10.0)), "keep_water": keep_water,
 			"access": access, "site": site, "cell": cell, "center": centre, "pad": pad}
+		if cand.has("road_point"):
+			# A roadside place stands at its road's level where its drive leaves it (TD-320).
+			place["level_at"] = cand["road_point"]
 		places.append(place)
 		_place_grid.insert(places.size() - 1, _bounds(poly).grow(1.0))
 		router.block_polygon(poly, 6.0)
@@ -2337,7 +2462,7 @@ func _access(place: Dictionary, kind: String, cand: Dictionary) -> void:
 	if int(nr[2]) < 0 or float(nr[0]) > (900.0 if kind == "track" else 700.0):
 		return
 	var start: Vector2 = nr[1]
-	var route: PackedVector2Array = router.route(start, via, 500.0, 0.6, 1.5 if kind == "trail" else 1.25)
+	var route: PackedVector2Array = _leave_road(router.route(start, via, 500.0, 0.6, 1.5 if kind == "trail" else 1.25), int(nr[2]))
 	if route.size() < 2:
 		return
 	var graded: bool = true
@@ -2359,6 +2484,51 @@ func _access(place: Dictionary, kind: String, cand: Dictionary) -> void:
 		_add_road(route, "track", "%s track" % place["def"], false)
 	else:
 		paths.append({"id": "%s_trail" % place["id"], "points": route, "width": 1.6, "surface": "dirt"})
+
+
+## A route from a vertex of road `ri` keeps to that road's cells (cheap to reuse) before it turns
+## off, 6-20 m beside the road: a second road along the first (TD-139). It starts where it last
+## leaves instead: from the road's nearest point to the first point past LEAVE_ROAD m out after the
+## last one within it (scanning until the route is twice that far out), when that is over 1.5 x
+## LEAVE_ROAD along the route (a route turning straight off keeps its start).
+func _leave_road(route: PackedVector2Array, ri: int) -> PackedVector2Array:
+	if route.size() < 2 or ri < 0:
+		return route
+	var line: Polyline2 = roads[ri]["line"]
+	var walked: float = 0.0
+	var cut_k: int = -1
+	var cut_q := Vector2.ZERO
+	var cut_s: float = 0.0
+	var inside: bool = true
+	var gone: bool = false
+	for k: int in route.size() - 1:
+		var seg: float = route[k].distance_to(route[k + 1])
+		var n: int = maxi(1, int(ceil(seg / 4.0)))
+		for st: int in range(1, n + 1):
+			var q: Vector2 = route[k].lerp(route[k + 1], float(st) / n)
+			var d: float = line.closest(q).x
+			if d <= LEAVE_ROAD:
+				inside = true
+			elif inside:
+				inside = false
+				cut_k = k
+				cut_q = q
+				cut_s = walked + seg * st / n
+			if d > LEAVE_ROAD * 2.0:
+				gone = true
+				break
+		if gone:
+			break
+		walked += seg
+	if cut_k < 0 or inside or cut_s < LEAVE_ROAD * 1.5:
+		return route
+	var out := PackedVector2Array([line.point_at(line.closest(cut_q).y), cut_q])
+	if cut_q.distance_to(route[cut_k + 1]) > 1.0:
+		out.append(route[cut_k + 1])
+	out.append_array(route.slice(cut_k + 2))
+	# Where the route had run on along the road and turned back, the new start is a hook (cut only
+	# where the router could pass: a plain despike drew a 376 m track straight over a fen pool).
+	return router.unhook(out)
 
 
 # --- Trader posts ----------------------------------------------------------------------------------
@@ -2383,7 +2553,13 @@ func _trader_posts() -> void:
 	var spacing: float = float(tcfg.get("spacing", 600.0))
 	var safe: float = float(tcfg.get("safe_radius", 40.0))
 	var r := rng("traders")
-	for tw: Dictionary in towns:
+	# Smallest towns first: a big town has rings far out along its roads, and taking first it could
+	# take the one spot a smaller neighbour had (seed 7, generator 17: Fallow's lots took its own
+	# spot on a straighter road, so it took Marrow Creek's). A spot within `spacing` of a post is
+	# passed over in the search, not after it, so a town takes its next best.
+	var order: Array = towns.duplicate()
+	order.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["radius"]) < float(b["radius"]) or (float(a["radius"]) == float(b["radius"]) and str(a["id"]) < str(b["id"])))
+	for tw: Dictionary in order:
 		var c: Vector2 = tw["center"]
 		var best: Dictionary = {}
 		# Just outside the town, farther out where a bend, a slope, water or the town's outer lots
@@ -2403,7 +2579,7 @@ func _trader_posts() -> void:
 					if prev * d <= 0.0:
 						for side: float in [1.0, -1.0]:
 							var cand: Dictionary = _post_candidate(i, s, side, safe)
-							if not cand.is_empty():
+							if not cand.is_empty() and not _crowded(cand["pos"], spacing):
 								cand["score"] = float(cand["score"]) + r.randf()
 								if best.is_empty() or float(cand["score"]) < float(best["score"]):
 									best = cand
@@ -2428,7 +2604,7 @@ func _trader_posts() -> void:
 						continue
 					for side2: float in [1.0, -1.0]:
 						var cand2: Dictionary = _post_candidate(i2, s2, side2, safe)
-						if not cand2.is_empty():
+						if not cand2.is_empty() and not _crowded(cand2["pos"], spacing):
 							cand2["score"] = float(cand2["score"]) + (d2 - lo) * 0.02 + (8.0 if cls2 == "track" else 0.0) + r.randf()
 							if best.is_empty() or float(cand2["score"]) < float(best["score"]):
 								best = cand2
@@ -2436,13 +2612,6 @@ func _trader_posts() -> void:
 			warnings.append("no trader post by %s" % tw["name"])
 			continue
 		var pos: Vector2 = best["pos"]
-		var crowded: bool = false
-		for pt: Dictionary in posts:
-			if (pt["pos"] as Vector2).distance_to(pos) < spacing:
-				crowded = true
-				break
-		if crowded:
-			continue
 		var poly: PackedVector2Array = best["poly"]
 		terrain.flatten(poly, float(best["ground"]), 18.0)
 		router.block_polygon(poly, 6.0)
@@ -2451,6 +2620,14 @@ func _trader_posts() -> void:
 		_add_road(PackedVector2Array([from, from.lerp(gate, 0.5), gate + (gate - from).normalized() * 2.0]), "drive", "%s trader drive" % tw["name"], false)
 		posts.append({"id": "trader:%s:%d" % [TRADER_DEF, posts.size()], "pos": pos, "yaw": best["yaw"], "cell": cell_at(pos),
 			"poly": poly, "safe": best["safe"], "town": tw["id"]})
+
+
+## True when a trader post already stands within `spacing` of p.
+func _crowded(p: Vector2, spacing: float) -> bool:
+	for pt: Dictionary in posts:
+		if (pt["pos"] as Vector2).distance_to(p) < spacing:
+			return true
+	return false
 
 
 ## A post beside road `ri` at arc `s`, on the `side` (+1 left, -1 right) of its travel: {pos, yaw,
@@ -2738,8 +2915,11 @@ func _world_pads() -> Array:
 	for pl: Dictionary in places:
 		if bool(pl["keep_water"]) or (pl.get("pad", Vector2.ZERO) as Vector2) != Vector2.ZERO:
 			continue
-		out.append({"id": pl["id"], "origin": Terrain._arr(PackedVector2Array([pl["origin"]]))[0], "rotation": pl["rot"],
-			"size": [(pl["size"] as Vector2).x, (pl["size"] as Vector2).y]})
+		var e: Dictionary = {"id": pl["id"], "origin": Terrain._arr(PackedVector2Array([pl["origin"]]))[0], "rotation": pl["rot"],
+			"size": [(pl["size"] as Vector2).x, (pl["size"] as Vector2).y]}
+		if pl.has("level_at"):
+			e["level_at"] = Terrain._arr(PackedVector2Array([pl["level_at"]]))[0]
+		out.append(e)
 	return out
 
 
@@ -2747,8 +2927,11 @@ func _world_pads() -> Array:
 func _world_pads_read() -> Array:
 	var out: Array = []
 	for pd: Dictionary in _world_pads():
-		out.append({"id": pd["id"], "origin": Vector2(float(pd["origin"][0]), float(pd["origin"][1])), "rot": deg_to_rad(float(pd["rotation"])),
-			"size": Vector2(float(pd["size"][0]), float(pd["size"][1]))})
+		var e: Dictionary = {"id": pd["id"], "origin": Vector2(float(pd["origin"][0]), float(pd["origin"][1])), "rot": deg_to_rad(float(pd["rotation"])),
+			"size": Vector2(float(pd["size"][0]), float(pd["size"][1]))}
+		if pd.has("level_at"):
+			e["level_at"] = Vector2(float(pd["level_at"][0]), float(pd["level_at"][1]))
+		out.append(e)
 	return out
 
 
@@ -2772,6 +2955,10 @@ func _world_roads_profiled() -> Array:
 
 ## How far a lot's yard may stand above or below its street where it meets it (m, TD-318).
 const LOT_STREET_STEP: float = 0.3
+## How far from its road a track or trail has left it (m, _leave_road; TD-139).
+const LEAVE_ROAD: float = 20.0
+## How far a town's cross road may turn off its axis (degrees, _cross_axis; TD-139).
+const CROSS_SPREAD: float = 25.0
 
 
 func _frame_height(f: Array) -> float:

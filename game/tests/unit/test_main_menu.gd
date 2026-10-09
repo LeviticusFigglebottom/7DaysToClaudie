@@ -25,3 +25,15 @@ func test_every_runner_slot_is_listed() -> void:
 
 func test_dev_menu_flag() -> void:
 	assert_true(Main.dev_menu(PackedStringArray(["--dev"])))
+	assert_false(Main.dev_menu(PackedStringArray(["--player"])), "a player's menu, even from the editor")
+
+
+func test_the_menu_fits_a_720p_window() -> void:
+	# A player's longest menu: Continue, New Game, Random World, Load, Options, The Intro,
+	# What's New, Quit. It must end above the version line at 720p (it ran 4 px into it).
+	for n: int in [8, 9]:
+		var fit: Dictionary = Main.menu_fit(720.0, n)
+		var bottom: float = float(fit["top"]) + n * float(fit["entry"]) + (n - 1) * Main.ENTRY_GAP
+		assert_lte(bottom, 720.0 - Main.BOTTOM_ROOM, "%d entries end above the version line" % n)
+		assert_gte(float(fit["top"]), Main.MENU_TOP_MIN, "and stay under the subtitle")
+	assert_eq(Main.menu_fit(1080.0, 8), {"top": Main.MENU_TOP, "entry": Main.ENTRY_HEIGHT}, "a tall window keeps the roomy layout")

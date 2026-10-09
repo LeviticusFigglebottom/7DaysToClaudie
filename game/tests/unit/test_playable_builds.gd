@@ -98,5 +98,5 @@ func test_the_main_map_label_names_what_is_built() -> void:
 		if str((r as Dictionary).get("status", "")) == "built":
 			built += 1
 			assert_string_contains(NewGamePanel.MAIN_MAP_LABEL, str((r as Dictionary)["name"]))
-	assert_eq(built, 1, "one region built: the label says 1 x 1 km (update it when another is built)")
+	assert_eq(built, 2, "two regions built (D6, D7): the label says 1 x 2 km (update it when another is built)")
 	assert_false(NewGamePanel.MAIN_MAP_LABEL.contains("7 x 7"), "the planned size is not what is built")

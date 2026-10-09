@@ -70,7 +70,10 @@ for shot in "${SHOTS[@]}"; do
   rm -rf "$WORK/$shot"
   mkdir -p "$WORK/$shot"
   echo "stills: drawing $shot"
-  flock "$ROOT/build/.godot.lock" xvfb-run -a -s "-screen 0 1920x1080x24" "$GODOT" --path "$GAME" \
+  # The exit watchdog: after a loaded world, engine shutdown sometimes never returns (it held CI's
+  # build for 1 h 40 min once the wreck was saved); the done line is what counts.
+  flock "$ROOT/build/.godot.lock" timeout -k 30 3600 "$ROOT/tools/qa_watchdog.sh" "^STILLS $shot done" \
+    xvfb-run -a -s "-screen 0 1920x1080x24" "$GODOT" --path "$GAME" \
     --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/stills.gd -- --shot "$shot" --out "$WORK/$shot" \
     > "$ROOT/build/stills_$shot.log" 2>&1 || { tail -40 "$ROOT/build/stills_$shot.log"; echo "stills: $shot failed" >&2; exit 1; }
   grep "^STILLS" "$ROOT/build/stills_$shot.log" || true
