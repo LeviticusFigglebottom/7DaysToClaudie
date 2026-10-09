@@ -41,6 +41,17 @@ def _parts_for(model, seg: str):
     """Decimation budget per segment. Uniform QEM decimation already spends triangles on the
     face, fingers and toes (high curvature), so no locked parts are used."""
     tris = model.p.get("seg_tris", {}).get(seg, SEG_CFG[seg]["tris"])
+    yoke = float(model.p.get("yoke_share", 0.0))
+    if seg == "body_torso" and yoke > 0.0:
+        # A hulk's yoke and hump are broad and gently curved: uniform QEM spent their share on the
+        # growth knots and torn cloth below and left the shoulders as a few big flat facets
+        # (TD-192), so the band from mid-chest up keeps a share of its own.
+        sk = model.skel
+        z0 = float(sk.j["chest0"][2] + (sk.j["shoulder.L"][2] - sk.j["chest0"][2]) * 0.35)
+
+        def band(V, z0=z0):
+            return V[:, 2] > z0
+        return [(band, int(tris * yoke))], tris
     return [], tris
 
 

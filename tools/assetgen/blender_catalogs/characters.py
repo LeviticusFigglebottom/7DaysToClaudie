@@ -430,6 +430,8 @@ BODIES = {
         "blood": 0.5, "grime": 0.75,
         # The torso (yoke, hump, gut and the growth knotted over them) gets the triangles: at 4.4k it
         # decimated into big flat facets across the shoulders; hands and shins give some up.
+        # the band from mid-chest up (yoke, hump) keeps this share of the torso's (char_build)
+        "yoke_share": 0.5,
         "seg_tris": {"body_torso": 5800, "body_upper_arm.L": 600, "body_upper_arm.R": 600, "body_forearm.L": 1050,
                      "body_forearm.R": 1050, "body_thigh.L": 560, "body_thigh.R": 560, "body_shin.L": 600, "body_shin.R": 600},
     },

@@ -737,7 +737,10 @@ class BodyModel:
         out["head"] = self.head_region(P, P2)
         for side, sx in (("L", 1.0), ("R", -1.0)):
             ap = self.arm_poly[side]
-            tube = np.maximum(0.095 * s - polyline_dist(P, ap[:3], P2), 0.135 * s - polyline_dist(P, ap[2:], P2))
+            # the tube holds the arm's whole girth: a Rammer's deltoid and slab arm stand ~0.12 s off
+            # the bone, and a 0.095 s tube cut through them into a curved gore cap (TD-192)
+            tube = np.maximum(0.095 * s * (1.0 + 0.45 * self.mass) - polyline_dist(P, ap[:3], P2),
+                              0.135 * s - polyline_dist(P, ap[2:], P2))
             arm = np.minimum(self._plane(P, f"shoulder.{side}"), tube)
             out[f"arm.{side}"] = arm
             out[f"forearm.{side}"] = np.minimum(arm, self._plane(P, f"elbow.{side}"))
