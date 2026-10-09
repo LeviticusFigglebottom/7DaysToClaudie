@@ -122,6 +122,7 @@ func test_prompt_hangs_centred_under_the_crosshair() -> void:
 	var ui := GameUI.new()
 	add_child_autofree(ui)
 	var l: Label = ui.get(&"_prompt") as Label
+	assert_false(l.visible, "no plate before there are words for it")
 	l.text = "[E] Use Campfire · burns 58m · [G] add fuel"
 	ui.call(&"_hug", l, 28.0)
 	var mid: float = l.get_parent_control().size.x * 0.5
@@ -169,3 +170,18 @@ func test_dawn_lines_come_paced_report_first() -> void:
 	assert_eq(order, ["The Hum fades", "Dawn", "Level 3", "A Program drone is overhead"])
 	for i: int in range(1, shown.size()):
 		assert_gte(float(shown[i][1]) - float(shown[i - 1][1]), feed.min_gap - 0.01, "paced")
+
+
+func test_a_burst_of_levels_is_said_once() -> void:
+	# Each level-up restarts the wait; the line goes out once the burst has settled.
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	ui.set(&"_level_pending", 4)
+	ui.set(&"_level_wait", GameUI.LEVEL_SETTLE)
+	ui._process(1.0)
+	ui.set(&"_level_pending", 5)
+	ui.set(&"_level_wait", GameUI.LEVEL_SETTLE)
+	ui._process(2.0)
+	assert_eq(int(ui.get(&"_level_pending")), 5, "still waiting: the last level came 2 s ago")
+	ui._process(1.0)
+	assert_eq(int(ui.get(&"_level_pending")), 0, "said (and cleared) once the burst settled")

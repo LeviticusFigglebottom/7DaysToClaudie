@@ -61,6 +61,9 @@ const PRIO_DAWN: int = 5
 const PRIO_LEVEL: int = 3
 const PRIO_DROP: int = 0
 var _ov_tween: Tween = null
+## Seconds left before the waiting level-up is said (see _on_leveled).
+var _level_wait: float = 0.0
+const LEVEL_SETTLE: float = 2.5
 var _tip_box: Control
 var _tip_title: Label
 var _tip_text: Label
@@ -506,6 +509,8 @@ func _build_hud() -> void:
 	_prompt.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_prompt.add_theme_constant_override(&"outline_size", 4)
 	_prompt.add_theme_stylebox_override(&"normal", prompt_box(0.55))
+	# Hidden until _hug gives it words: an empty label would still draw its plate.
+	_prompt.visible = false
 	_hud.add_child(_prompt)
 	_tool_hint = Label.new()
 	_tool_hint.anchor_left = 0.5
@@ -520,6 +525,7 @@ func _build_hud() -> void:
 	_tool_hint.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.8))
 	_tool_hint.add_theme_constant_override(&"outline_size", 4)
 	_tool_hint.add_theme_stylebox_override(&"normal", prompt_box(0.45))
+	_tool_hint.visible = false
 	_hud.add_child(_tool_hint)
 	_belt = RichTextLabel.new()
 	_belt.bbcode_enabled = true
@@ -667,10 +673,12 @@ void fragment() {
 	float hurt_edge = smoothstep(0.42 - 0.12 * n, 0.98, r);
 	// Cold: frost crystals creeping in, pale blue-white, sharper grain.
 	float frost_n = vnoise(q * 70.0 + vec2(3.1, 7.7)) * 0.5 + vnoise(q * 160.0) * 0.5;
-	float frost_edge = smoothstep(0.55 - 0.35 * cold - 0.1 * n, 0.9, r) * (0.65 + 0.35 * frost_n);
+	// At its worst it keeps to the outer ring (from 0.38 out, at most 60%): a freezing player must
+	// still see the night (first-week frames: the frost hid the Hum).
+	float frost_edge = smoothstep(0.55 - 0.17 * cold - 0.08 * n, 0.95, r) * (0.65 + 0.35 * frost_n);
 	vec3 col = vec3(0.4, 0.02, 0.02) * (0.8 + 0.2 * n);
 	float a = hurt_edge * clamp(damage * 0.9 + low_health * 0.6, 0.0, 0.85);
-	float fa = frost_edge * cold * 0.8;
+	float fa = frost_edge * cold * 0.6;
 	col = mix(col, vec3(0.82, 0.9, 0.97), fa / max(a + fa, 0.001));
 	COLOR = vec4(col, clamp(a + fa, 0.0, 0.88));
 }
@@ -680,6 +688,10 @@ void fragment() {
 
 func _process(delta: float) -> void:
 	_turn_tip(delta)
+	if _level_wait > 0.0:
+		_level_wait -= delta
+		if _level_wait <= 0.0:
+			_announce_level()
 	_fade_pickups(delta)
 	var w: Node = Game.world
 	if w == null or w.get("player") == null or w.player == null:
@@ -876,9 +888,10 @@ func _fade_message(l: Label) -> void:
 func _on_leveled(player_id: StringName, level: int) -> void:
 	if Game.session == null or player_id != Game.session.local_player_id:
 		return
-	if _level_pending == 0:
-		_announce_level.call_deferred()
+	# A burst (a dungeon cleared pays for several levels over a few seconds) is said once, at its
+	# highest, when no new level has come for LEVEL_SETTLE seconds (mid-game audit M8).
 	_level_pending = maxi(_level_pending, level)
+	_level_wait = LEVEL_SETTLE
 
 
 ## One message and one chime however many levels a single award crossed.

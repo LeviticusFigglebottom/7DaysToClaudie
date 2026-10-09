@@ -52,6 +52,8 @@ Severity: **High** blocks or misleads a new player; **Med** costs them time or r
 | W18 | Thirst | The run-up to the Hum (day 6 18:00 to day 7, on the clock) killed a player who didn't drink: "You died of thirst." No line warned first, only the vitals bar. It also happened to my driver twice. | High | hub (survival warnings) | Thirst and hunger lines like the new cold ones ("You're thirsty." / "You're parched. Drink, now."). |
 | W19 | Cold | With the hub's new cold lines, waking in the day-2 blizzard went straight to "You're freezing. Find a fire, now.", with no "You're cold" first. | Low | hub | Say the first step once even when the drop past it is quick. |
 
+| W20 | The Hum night, frames | A freezing player's frost vignette covered all but a small circle in the middle of the screen at 80% (frames `w_hum_*`), so the Hum couldn't be seen. | Med | Presentation | **Fixed:** the frost keeps to the outer ring (from 0.38 of the way out) at 60% at most. An empty prompt line no longer draws its plate (seen in a UI shot). |
+
 ## Frames
 `2026-10-09_first_week_frames.webp`: the build controls, the trader, butchering, the grotto
 mouth, the canister's flare up close, and the Hum's night. Rerun the commands above for the
