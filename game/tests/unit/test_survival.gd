@@ -127,3 +127,62 @@ func test_round_trip() -> void:
 	var t := SurvivalStats.new()
 	t.from_dict(JSON.parse_string(JSON.stringify(s.to_dict())))
 	assert_eq(t.to_dict(), s.to_dict())
+
+
+## First-week audit W7: the cold hurts by how deep the body has gone below hypothermia, so a
+## mildly chilled night costs little and a soaking one still does real harm.
+func test_cold_damage_grows_with_depth_below_hypothermia() -> void:
+	var s := SurvivalStats.new()
+	s.body_temp = 35.5
+	assert_eq(s.cold_damage_frac(), 0.0, "no harm above the line")
+	s.body_temp = 34.8
+	assert_almost_eq(s.cold_damage_frac(), 0.25, 0.001, "a little below: a quarter")
+	s.body_temp = 34.0
+	assert_almost_eq(s.cold_damage_frac(), 0.5, 0.001)
+	s.body_temp = 32.0
+	assert_eq(s.cold_damage_frac(), 1.0, "two degrees down: all of it")
+
+
+## A player in starting gear outside a whole rainy autumn night (12 h at the night's low): unfed,
+## badly hurt but alive; fed, in danger but keeping most of their health.
+func test_a_wet_night_outside_is_dangerous_not_certain_death() -> void:
+	var hungry := SurvivalStats.new()
+	hungry.fullness = 49.0
+	var fed := SurvivalStats.new()
+	fed.fullness = 100.0
+	fed.hydration = 100.0
+	var env: Dictionary = _env({"ambient_c": -2.5, "wind": 0.5, "raining": true})
+	for i: int in 12 * 6:
+		hungry.tick_game(10.0, env)
+		fed.tick_game(10.0, env)
+	assert_true(hungry.alive, "a night of rain doesn't kill outright")
+	assert_lt(hungry.health, 50.0, "but it hurts")
+	assert_gt(fed.health, 60.0, "fed, the body holds")
+
+
+func test_cold_warnings_speak_before_the_cold_hurts_and_rate_limit() -> void:
+	var s := SurvivalStats.new()
+	var w := ColdWarnings.new()
+	var said: Array[String] = []
+	var freezing_body: float = 0.0
+	for minute: int in range(0, 240, 5):
+		s.tick_game(5.0, _env({"ambient_c": -2.5, "wind": 0.5, "raining": true}))
+		var line: Dictionary = w.update(s, 5.0)
+		if not line.is_empty():
+			said.append(str(line["text"]))
+			if str(line["text"]).contains("freezing") and freezing_body == 0.0:
+				freezing_body = s.body_temp
+	assert_gt(said.size(), 1, str(said))
+	assert_eq(said[0], "You're cold. Find shelter or a fire.")
+	assert_eq(said[1], "You're freezing. Find a fire, now.")
+	assert_gt(freezing_body, 35.0, "freezing is said before the body reaches hypothermia")
+	assert_lt(said.size(), 5, "rate limited over four hours: %s" % [said])
+	# Warm again: quiet, and the next chill is announced afresh.
+	s.body_temp = 37.0
+	assert_true(w.update(s, 5.0).is_empty())
+	s.body_temp = 36.0
+	assert_eq(str(w.update(s, 5.0).get("text", "")), "You're cold. Find shelter or a fire.")
+	# Asleep: nothing until waking.
+	s.body_temp = 35.2
+	assert_true(w.update(s, 5.0, true).is_empty(), "quiet while asleep")
+	assert_eq(str(w.update(s, 5.0).get("text", "")), "You're freezing. Find a fire, now.", "said on waking")
