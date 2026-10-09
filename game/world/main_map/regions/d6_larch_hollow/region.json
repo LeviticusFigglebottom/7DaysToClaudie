@@ -1071,6 +1071,18 @@
           1960.3
         ]
       ]
+    },
+    {
+      "type": "poi",
+      "id": "lift3_crash_site",
+      "poi": "lift3_crash_site",
+      "_doc": "The Lift 3 wreck (DESIGN §1): the Program lift the player came in on, down in the timber east of the Tamsin about 0.7 km east of the drop site, back along its approach (the region's far edge: the intro's 'last mile'). Rotation 270 lays the swath east-west with the nose toward the drop.",
+      "origin": [
+        397,
+        2315
+      ],
+      "rotation": 270,
+      "skirt": 10
     }
   ]
 }
