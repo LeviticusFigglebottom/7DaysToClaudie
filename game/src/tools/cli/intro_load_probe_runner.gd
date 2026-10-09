@@ -14,6 +14,10 @@ var _done: bool = false
 var _shot_path: String = ""
 var _world_shot_s: float = 0.0
 var _saw_world_shot: bool = false
+## --shot-after-load: no intro during the load; once the world is up, show the intro's world
+## card on its own (a still of the shot on a renderer too slow to reach it in time).
+var _after_load: bool = false
+var _shot_intro: Node = null
 
 
 func _ready() -> void:
@@ -22,6 +26,9 @@ func _ready() -> void:
 	process_priority = 100000
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	_with_intro = args.has("--intro")
+	_after_load = args.has("--shot-after-load")
+	if _after_load:
+		_with_intro = false
 	var si: int = args.find("--shot")
 	if si >= 0 and si + 1 < args.size():
 		_shot_path = args[si + 1]
@@ -44,7 +51,7 @@ func _process(_delta: float) -> void:
 	_last = now
 	var w: Node = get_node("/root/Game").get(&"world")
 	var ui: Node = w.get(&"ui") if w != null else null
-	var intro: Object = ui.get(&"intro") if ui != null else null
+	var intro: Object = _shot_intro if _shot_intro != null else (ui.get(&"intro") if ui != null else null)
 	var moving: bool = intro != null and (intro as Node).is_inside_tree() and bool(intro.call(&"is_playing")) and not bool(intro.call(&"is_calm"))
 	var loading: bool = w == null or not bool(w.get(&"is_ready"))
 	if intro != null and is_instance_valid(intro) and bool(intro.call(&"is_showing_world")):
@@ -64,6 +71,18 @@ func _process(_delta: float) -> void:
 	_frames.append({"ms": ms, "moving": moving, "loading": loading, "intro": intro != null,
 		"t": Time.get_ticks_msec() - _t0, "what": what})
 	var intro_over: bool = not _with_intro or (ui != null and ui.get(&"intro") == null and _frames.size() > 10)
+	if _after_load and not loading and _shot_intro == null:
+		_shot_intro = IntroPlayer.new()
+		ui.add_child(_shot_intro)
+		_shot_intro.call(&"play")
+		var cards: Array = IntroPlayer.load_script()["cards"]
+		for i: int in cards.size():
+			if str((cards[i] as Dictionary).get("kind", "")) == "world":
+				_shot_intro.call(&"show_card", i)
+		intro = _shot_intro
+		intro_over = false
+	if _after_load and _shot_intro != null:
+		intro_over = _shot_path == ""
 	if not loading and intro_over:
 		_done = true
 		_report()
