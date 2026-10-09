@@ -24,6 +24,8 @@ var _detail: RichTextLabel
 var _make: Button
 var _filter: String = "all"
 var _selected: StringName = &""
+## Whose pack the sheet was last drawn for (its journal picks the recipe it opens on).
+var _for: PlayerState = null
 var _rows: Array[Dictionary] = []
 var _group := ButtonGroup.new()
 var _row_buttons: Dictionary = {}
@@ -124,6 +126,38 @@ static func row(r: RecipeDef, inv: Inventory) -> Dictionary:
 		"missing": missing, "tools": tools, "status": status_text(missing, tools)}
 
 
+## What the journal's current step asks the player to make (its craft targets), else [].
+static func journal_targets(p: PlayerState) -> PackedStringArray:
+	if p == null or p.tutorial == null or not p.tutorial.enabled:
+		return PackedStringArray()
+	var step: TutorialStepDef = p.tutorial.current()
+	return step.targets if step != null and step.event == "craft" else PackedStringArray()
+
+
+## The recipe to open on for a journal step that asks for `targets`: a ready recipe that makes
+## one, else a ready recipe for one of their ingredients (Cordage before the Stone Axe), else the
+## target's own recipe to show what it needs; &"" with no targets. Pure.
+static func preferred(rows_: Array, targets: PackedStringArray) -> StringName:
+	if targets.is_empty():
+		return &""
+	var inputs: Dictionary = {}
+	var target_row: StringName = &""
+	for r: Dictionary in rows_:
+		var rd: RecipeDef = r["recipe"]
+		if targets.has(String(rd.result)):
+			if bool(r["ok"]):
+				return rd.id
+			if target_row == &"":
+				target_row = rd.id
+			for k: Variant in rd.ingredients:
+				inputs[String(k)] = true
+	for r: Dictionary in rows_:
+		var rd: RecipeDef = r["recipe"]
+		if bool(r["ok"]) and inputs.has(String(rd.result)):
+			return rd.id
+	return target_row
+
+
 ## The short line a row shows on the right: "ready", or what's missing ("need 2 Stick, a knife").
 static func status_text(missing: Array, tools: PackedStringArray) -> String:
 	if missing.is_empty() and tools.is_empty():
@@ -170,6 +204,7 @@ static func filters_for(list: Array[Dictionary]) -> PackedStringArray:
 
 ## Re-reads the inventory. `title` names the station (or "Make by hand").
 func refresh(p: PlayerState, station: StringName, title: String) -> void:
+	_for = p
 	_title.text = title.to_upper()
 	if p == null:
 		return
@@ -234,7 +269,8 @@ func _build_list() -> void:
 		if rd.id == _selected:
 			still_there = true
 	if not still_there:
-		_selected = first
+		var want: StringName = preferred(_rows.filter(func(r: Dictionary) -> bool: return passes(r, _filter)), journal_targets(_for))
+		_selected = want if want != &"" else first
 	if _row_buttons.has(_selected):
 		(_row_buttons[_selected] as Button).button_pressed = true
 	if not any:

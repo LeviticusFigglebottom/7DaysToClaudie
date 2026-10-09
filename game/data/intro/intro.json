@@ -1,5 +1,5 @@
 {
-  "_doc": "The new-game intro (ADR-0064): cards played in order by IntroPlayer. kind: caption (a stamp line and typed lines on black), document (a typed paper form with a rubber stamp), radio (a transcript, line by line: 'SPEAKER|text'), impact (the crash: a shake, a flash and sounds, then the lines), world (an in-world shot once the world is up: a camera turning round `poi`'s built instance, else `at` [x, z]; a caption on black until then), title (the game's name). hold: seconds a card stays once fully shown. sound: played when the card starts; caption: its words when sound captions are on (Options) (UI bus; impact cards may list several in 'sounds'). {day} {time} {hum_in} are filled from the session. The owner's lore call (2026-10-08): the intro shows #4471's drop aircraft going down short of the drop site; the outbreak's cause is never told here: only what a convict on that flight would know (the Program's deal, the Cordon, rumours, the drop briefing), with hints but no answers (the player finds the cause in the world). Names, dates and numbers follow docs/LORE_TRAIL.md (Order 14 on Sept 1; Lifts 1 and 2 already lost; #4471 arrives in Year 2's autumn).",
+  "_doc": "The new-game intro (ADR-0064): cards played in order by IntroPlayer. kind: caption (a stamp line and typed lines on black), document (a typed paper form with a rubber stamp), radio (a transcript, line by line: 'SPEAKER|text'), impact (the crash: a shake, a flash and sounds, then the lines), world (an in-world shot once the world is up: a camera turning round `poi`'s built instance, else `at` [x, z]; a caption on black until then), title (the game's name). hold: seconds a card stays once fully shown. sound: played when the card starts; caption: its words when sound captions are on (Options) (UI bus; impact cards may list several in 'sounds'). {day} {time} {hum_in} are filled from the session; {place} is the drop site's region once the world is up (THE TIMBER before). The owner's lore call (2026-10-08): the intro shows #4471's drop aircraft going down short of the drop site; the outbreak's cause is never told here: only what a convict on that flight would know (the Program's deal, the Cordon, rumours, the drop briefing), with hints but no answers (the player finds the cause in the world). Names, dates and numbers follow docs/LORE_TRAIL.md (Order 14 on Sept 1; Lifts 1 and 2 already lost; #4471 arrives in Year 2's autumn).",
   "music": "music/dread_drone",
   "type_speed": 55,
   "cards": [
@@ -107,7 +107,7 @@
     },
     {
       "kind": "world",
-      "stamp": "LARCH HOLLOW  ·  DAY {day}  ·  {time}",
+      "stamp": "{place}  ·  DAY {day}  ·  {time}",
       "lines": [
         "The wreck burned out before first light. Nobody came for it.",
         "You walked the last mile to the drop site with the tether ticking.",

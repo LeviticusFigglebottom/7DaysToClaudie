@@ -179,7 +179,20 @@ static func vars_for(session: GameSession) -> Dictionary:
 		day = c.day()
 		time = "%02d:%02d" % [c.hour(), c.minute()]
 		hum_in = hum_line(c.hordes_enabled(), c.next_horde_day(day) - day)
-	return {"day": day, "time": time, "hum_in": hum_in}
+	return {"day": day, "time": time, "hum_in": hum_in, "place": drop_place()}
+
+
+## The region of the drop site in capitals ("LARCH HOLLOW"), else "THE TIMBER" before the world
+## exists or where it has no name.
+static func drop_place() -> String:
+	var w: Node = Game.world if Game != null else null
+	var tm: Object = w.get(&"terrain") if w != null else null
+	var wd: WorldDef = tm.get(&"world") as WorldDef if tm != null else null
+	if wd == null or not w.has_method(&"drop_site"):
+		return "THE TIMBER"
+	var at: Vector3 = w.call(&"drop_site")
+	var name_: String = str((wd.regions.get(wd.region_at(at.x, at.z), {}) as Dictionary).get("name", ""))
+	return name_.to_upper() if name_ != "" else "THE TIMBER"
 
 
 const NUMBER_WORDS: PackedStringArray = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven",
@@ -264,6 +277,8 @@ func _next() -> void:
 	_typed.clear()
 	_stamp = null
 	_chars = 0.0
+	# Where the drop was, read from the world once it is up (a random world's region, not ours).
+	_vars["place"] = drop_place()
 	_card = _build_card(c)
 	add_child(_card)
 	move_child(_card, 2)
