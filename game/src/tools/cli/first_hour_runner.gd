@@ -74,8 +74,11 @@ func snap(step: String) -> void:
 	var shown: PackedStringArray = []
 	for n: Node in ui.find_children("*", "Label", true, false) if ui != null else []:
 		var l2 := n as Label
-		if l2.is_visible_in_tree() and l2.text.strip_edges() != "" and l2.text.length() < 400:
-			shown.append(l2.text.replace("\n", " / "))
+		# A long one (the distress call, ~450 characters) is shortened, not dropped: dropping it
+		# once made the call look like it never reached the screen.
+		if l2.is_visible_in_tree() and l2.text.strip_edges() != "":
+			var tx: String = l2.text.replace("\n", " / ")
+			shown.append(tx if tx.length() < 400 else tx.left(240) + " …")
 	for n: Node in ui.find_children("*", "RichTextLabel", true, false) if ui != null else []:
 		var r := n as RichTextLabel
 		if r.is_visible_in_tree() and r.get_parsed_text().strip_edges() != "":
@@ -148,6 +151,11 @@ func ex(cmd: StringName, args: Dictionary) -> Dictionary:
 
 func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out))
+	# --no-3d: frames of the screens and words over black. Software Vulkan drawing the real
+	# assets' forest starves the game's own threads (26 s frames on Build 102's pack); without
+	# the 3D the run takes minutes and still shows every card, prompt and line.
+	if OS.get_cmdline_user_args().has("--no-3d"):
+		get_viewport().disable_3d = true
 	game = get_node("/root/Game")
 	Events.player_status_message.connect(func(text: String, kind: StringName) -> void: _msgs.append("[%s] %s" % [kind, text]))
 	var opts: Dictionary = {"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_first_hour"}
