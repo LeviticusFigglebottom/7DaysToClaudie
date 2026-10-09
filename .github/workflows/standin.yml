@@ -2,7 +2,9 @@ name: Stand-ins
 
 # The game as a fresh clone runs it: no Blender, no `make assets`, every model, texture and sound
 # a procedural stand-in (ADR-0036). The first human playtest ran exactly this mode on Windows and
-# crashed; nothing else in CI exercised it. Cheap (Godot only, ~10 min), so it runs on every push.
+# crashed; nothing else in CI exercised it. Godot only, so it runs on every push; the full GUT suite
+# has grown to about two hours, so the job's limit allows for it (it timed out at 45 min on every
+# branch from 2026-10-09).
 
 on:
   push:
@@ -17,7 +19,7 @@ jobs:
   standin:
     name: Import, check, tests, smoke and walk tour without generated assets
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 210
     steps:
       - uses: actions/checkout@v4
 
