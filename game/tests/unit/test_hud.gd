@@ -185,3 +185,22 @@ func test_a_burst_of_levels_is_said_once() -> void:
 	assert_eq(int(ui.get(&"_level_pending")), 5, "still waiting: the last level came 2 s ago")
 	ui._process(1.0)
 	assert_eq(int(ui.get(&"_level_pending")), 0, "said (and cleared) once the burst settled")
+
+
+func test_sound_captions_say_where_and_merge_repeats() -> void:
+	assert_eq(GameUI.caption_line("wolves howling", "north-east, 140 m"), "[wolves howling, north-east]")
+	assert_eq(GameUI.caption_line("a door slamming", "here"), "[a door slamming]")
+	assert_eq(GameUI.caption_line("drums in the trees", ""), "[drums in the trees]")
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	var was: bool = Settings.sound_captions
+	Settings.sound_captions = true
+	Events.sound_caption.emit("wolves howling", Vector3.INF)
+	Events.sound_caption.emit("wolves howling", Vector3.INF)
+	Events.sound_caption.emit("drums in the trees", Vector3.INF)
+	var lines: Array = (ui.get(&"_messages") as Node).get_children().map(func(l: Node) -> String: return (l as Label).text)
+	assert_eq(lines, ["[wolves howling]", "[drums in the trees]"], "a repeat within the limit is the same line")
+	Settings.sound_captions = false
+	Events.sound_caption.emit("an engine starting", Vector3.INF)
+	assert_eq((ui.get(&"_messages") as Node).get_child_count(), 2, "captions off: nothing")
+	Settings.sound_captions = was

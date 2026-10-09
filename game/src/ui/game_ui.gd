@@ -61,6 +61,9 @@ const PRIO_DAWN: int = 5
 const PRIO_LEVEL: int = 3
 const PRIO_DROP: int = 0
 var _ov_tween: Tween = null
+## Caption text -> when it was last shown (the repeat limit).
+var _captions_said: Dictionary = {}
+const CAPTION_REPEAT: float = 8.0
 ## Seconds left before the waiting level-up is said (see _on_leveled).
 var _level_wait: float = 0.0
 const LEVEL_SETTLE: float = 2.5
@@ -124,6 +127,7 @@ func _ready() -> void:
 	Events.supply_drop_landed.connect(func(_id: StringName, at: Vector3) -> void:
 		message(drop_landed_line(FieldManual.distress_bearing(at)), &"level"))
 	# Sound captions (Options): the Hum's rise is music, which nothing else puts into words.
+	Events.sound_caption.connect(_on_sound_caption)
 	Events.horde_night_started.connect(func(_d: int) -> void:
 		if Settings.sound_captions:
 			message("[a deep hum rises through the ground]", &"danger"))
@@ -608,6 +612,30 @@ func _build_hud() -> void:
 ## when the player's position isn't known.
 static func drop_landed_line(bearing: String) -> String:
 	return "The canister is down%s. Its smoke marks the spot." % ((", " + bearing) if bearing != "" else "")
+
+
+## A big unseen sound put into words (Events.sound_caption), when captions are on: "[wolves
+## howling, north-east]". The same sound again within CAPTION_REPEAT seconds is the same caption:
+## a pack howling round you is one line, not ten.
+func _on_sound_caption(text: String, at: Vector3) -> void:
+	if not Settings.sound_captions or text == "":
+		return
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if now - float(_captions_said.get(text, -INF)) < CAPTION_REPEAT:
+		return
+	_captions_said[text] = now
+	var w: Node = Game.world
+	var bearing: String = ""
+	if w != null and w.get(&"player") != null and at != Vector3.INF:
+		bearing = FieldManual.bearing_words((w.player as Node3D).global_position, at)
+	message(caption_line(text, bearing), &"info")
+
+
+## "[wolves howling, north-east]" from a caption and FieldManual.bearing_words ("north-east,
+## 140 m": the distance is left out, a sound only says where); "here" or no bearing: no direction.
+static func caption_line(text: String, bearing: String) -> String:
+	var dir: String = bearing.get_slice(",", 0).strip_edges()
+	return "[%s]" % text if dir == "" or dir == "here" else "[%s, %s]" % [text, dir]
 
 
 ## The keys while laying out a blueprint ("[Left mouse] place  ·  [R] turn  ·  [Esc] cancel") or

@@ -53,7 +53,8 @@ stops and holds a still frame). *Options… → Menu backdrop* picks moving, sti
 | The Intro | Replays the new-game intro |
 
 *Sound captions* (Options) put the sounds that carry meaning into words: the intro's radio and
-impacts, a distress call's crackle on the tether, the Hum rising through the ground.
+impacts, a distress call's crackle on the tether, the Hum rising through the ground, and the big
+sounds you can't see, with where they came from ("[wolves howling, north-east]").
 
 **The intro.** A new game opens with a short intro (the Cordon, the Remand Program and how your
 drop went wrong) while the world loads. Hold **Esc** (or Space, Enter; B or Start on a pad) or click **Skip** to skip
