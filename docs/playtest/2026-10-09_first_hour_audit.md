@@ -55,7 +55,7 @@ Severity: **High** blocks or misleads a new player; **Med** costs them time or r
 | 24 | Gathering | The card names fireweed first, but the nearest is 125 m from the drop (ferns are 17 m away). | Low | hub (tutorial text) | Name ferns first: "Hold [E] on ferns, fireweed and sedge…". |
 | 25 | Drinking | Drinking the issued water says nothing; only the hydration bar moves. | Low | hub (PlayerActions) | A short line, "You drink. (Water +35)", as the boil card's numbers do. |
 | 26 | Ezra's card | After recruiting, the card kept his "Get me something for this" plea until reopened. | Low | Creatures (companion screen) | Refresh the card on `companion_recruited`. |
-| 27 | Tether | Raising the wrist tether (the HUD's `_raise_wrist`) showed nothing in either rendered run. The wrist model may need the viewmodel, which stand-ins lack, so it may be fine in the packaged build. | Med | Presentation | Recheck on a build with generated assets; if it doesn't show, fall back to a 2D tether panel. |
+| 27 | Tether | Raising the wrist tether showed nothing in either stand-in run. **Stand-ins only:** Creatures rendered it with the real viewmodel (docs/playtest/2026-10-09_tether/tether_raised_fp_preview.webp on claude/hollowmere-r4-creatures, 6a5fa6a). The tether's screen sits on the arm's mesh, lit and placed right. | — | — | Resolved: no change needed. |
 
 ### What worked
 * The prompts name what they do and what is missing: "[E] Campfire — Add materials: Stone 0/6,
