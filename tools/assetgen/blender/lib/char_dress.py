@@ -364,17 +364,24 @@ def add_bloom(model, b: dict, rng):
 
 
 def add_throat_sac(model, spec: dict, rng):
-    """Keener: swollen, veined resonating sac on the front/sides of the throat."""
+    """Keener: swollen, veined resonating sac on the front/sides of the throat, high up under the
+    jaw so it shoves the open jaw up and out, and blended tightly into the neck so it reads as a
+    bulb with a crease round its base rather than a thick throat (TD-192)."""
     s = model.s
     sk = model.skel
     R = sk.rest["neck"]
     size = float(spec.get("size", 1.0))
-    c = sk.head["neck"] + R @ np.array([0.0, 0.036, 0.058]) * s
+    lift = float(spec.get("lift", 0.05))
+    # forward of the neck: at 0.058 its front barely cleared the chest line in profile
+    c = sk.head["neck"] + R @ np.array([0.0, lift, float(spec.get("fwd", 0.095))]) * s
     Rl = R @ np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])
-    model.skin.ellipsoid(c, np.array([0.056, 0.048, 0.046]) * s * size, R=Rl, k=0.03 * s, label=B.L_SKIN)
+    model.skin.ellipsoid(c, np.array([0.054, 0.046, 0.048]) * s * size, R=Rl, k=0.012 * s, label=B.L_SKIN)
     for sx in (1.0, -1.0):
-        model.skin.ellipsoid(c + R @ np.array([sx * 0.030, 0.006, -0.008]) * s, np.array([0.034, 0.034, 0.036]) * s * size,
-                             R=Rl, k=0.02 * s, label=B.L_SKIN)
+        model.skin.ellipsoid(c + R @ np.array([sx * 0.032, -0.004, -0.010]) * s, np.array([0.034, 0.034, 0.036]) * s * size,
+                             R=Rl, k=0.010 * s, label=B.L_SKIN)
+    # the crease where its lower edge folds onto the chest
+    model.skin.capsule(c + R @ np.array([-0.05, -0.050, -0.006]) * s * size, c + R @ np.array([0.05, -0.050, -0.006]) * s * size,
+                       0.006 * s, k=0.008 * s, label=B.L_SKIN, mode="sub")
     # veins over the sac (ridges)
     nz = model.noise
 
