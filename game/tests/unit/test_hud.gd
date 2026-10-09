@@ -41,3 +41,20 @@ func test_loading_tips_keep_the_finds_hidden() -> void:
 			assert_false(str(t[1]).contains(hidden), "%s names %s" % [t[0], hidden])
 	assert_eq(GameUI.tip_seconds("a b c"), 8.0)
 	assert_gt(GameUI.tip_seconds(str(FieldManual.TIPS[6][1])), 30.0)
+
+
+func test_loading_relief_shows_only_what_was_walked() -> void:
+	var r := Rect2(0, 0, 1024, 512)
+	var ex := ExploredMap.new()
+	ex.reveal(Vector3(200, 0, 200), 60.0)
+	var img: Image = GameUI.relief_image(null, WorldMap.fog_image(ex, r), r, null)
+	assert_eq(img.get_size(), Vector2i(128, 128), "square, the sheet's long side")
+	var walked: Color = img.get_pixel(25, 25 + 32)
+	var unwalked: Color = img.get_pixel(110, 20 + 32)
+	assert_lt(_diff(walked, WorldMap.PAPER), 0.01, "walked ground is clear")
+	assert_gt(_diff(unwalked, WorldMap.PAPER), 0.02, "the rest is under fog")
+	assert_true(img.get_pixel(2, 2).r < 0.05, "the square's margin is the loading screen's dark")
+
+
+func _diff(a: Color, b: Color) -> float:
+	return absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b)
