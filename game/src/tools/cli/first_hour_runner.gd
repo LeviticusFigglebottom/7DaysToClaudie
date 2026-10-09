@@ -143,7 +143,13 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out))
 	game = get_node("/root/Game")
 	Events.player_status_message.connect(func(text: String, kind: StringName) -> void: _msgs.append("[%s] %s" % [kind, text]))
-	game.call(&"start_new_game", {"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_first_hour"})
+	var opts: Dictionary = {"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_first_hour"}
+	# `--world random --world-seed N [--world-set k=v]`: a random world, read as the game reads it.
+	var ra: PackedStringArray = OS.get_cmdline_user_args()
+	if ra.find("--world") >= 0 and ra.find("--world") + 1 < ra.size() and ra[ra.find("--world") + 1] == "random":
+		opts["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", ra, 7)
+		opts["stream"] = not ra.has("--no-stream")
+	game.call(&"start_new_game", opts)
 	await frames(3)
 	ui = (game.world as Node).get(&"ui") as GameUI if game.get(&"world") != null else null
 	await seconds(2.0)
@@ -159,7 +165,7 @@ func _run() -> void:
 	await seconds(3.0)
 	await snap("wake")
 	var ps: PlayerState = p.state
-	if OS.get_cmdline_user_args().has("--week-only") or OS.get_cmdline_user_args().has("--mid-only"):
+	if OS.get_cmdline_user_args().has("--week-only") or OS.get_cmdline_user_args().has("--mid-only") or OS.get_cmdline_user_args().has("--gaps"):
 		# Straight to the week (rendered frames of it without the hour's 48 minutes): the
 		# journal finished and Ezra recruited by command.
 		ps.tutorial.finish_all()
@@ -173,7 +179,9 @@ func _run() -> void:
 		p.global_position = w.drop_site() + Vector3(0, 0.5, 0)
 		w.terrain.update_streaming(p.global_position, true)
 		await seconds(3.0)
-		if OS.get_cmdline_user_args().has("--mid-only"):
+		if OS.get_cmdline_user_args().has("--gaps"):
+			await _gaps()
+		elif OS.get_cmdline_user_args().has("--mid-only"):
 			await _midgame()
 		else:
 			await _week()
@@ -1028,7 +1036,7 @@ func _midgame() -> void:
 		if p.equipment.has_method(&"toggle_light"):
 			p.equipment.toggle_light()
 		for e: Node in get_tree().get_nodes_in_group(&"enemies"):
-			if str((e as Node).get(&"enemy_id")).begins_with("ashen"):
+			if (e as Enemy) != null and (e as Enemy).def != null and String((e as Enemy).def.id).begins_with("ashen"):
 				look((e as Node3D).global_position + Vector3.UP * 1.5)
 				break
 		await seconds(4.0)
@@ -1156,6 +1164,118 @@ func _midgame() -> void:
 			ex(&"build.repair", {"piece": String((damaged[0] as StructurePiece).piece_id)})
 		await seconds(3.0)
 		await snap("m_hum%d_morning" % hum_day)
+
+
+# --- The mid game's gaps (--gaps): routes walked, the adit inside, a wolf pack, a Murmur -------------
+
+## Walks a building's intended route (its `route` cells, in order, on each one's level): at each
+## point the screen's words are logged, every third point framed, and whatever the ray offers
+## used (doors, keycard readers, hatches). Then its sleepers are put down (_clear).
+func _walk_route(def_id: String, tag: String) -> void:
+	var b: Dictionary = _building(def_id)
+	if b.is_empty():
+		note("%s: not in this world" % def_id)
+		return
+	await _teleport(b["pos"])
+	await wait_until(func() -> bool: return w.pois.instances.has(StringName(str(b["id"]))), 90.0)
+	var inst: PoiInstance = w.pois.instances.get(StringName(str(b["id"])))
+	if inst == null:
+		note("%s: not built after 90 s" % def_id)
+		return
+	var route: Array = inst.layout.route
+	note("%s (%s, tier %d): %d route points, %d levels, %d sleepers" % [def_id, inst.layout.def.display_name, inst.tier, route.size(), inst.layout.levels.size(), inst.layout.sleepers.size()])
+	for i: int in route.size():
+		var r: Dictionary = route[i]
+		var at: Array = r.get("at", [0, 0])
+		var lv: int = int(r.get("level", 0))
+		var here: Vector3 = inst.global_transform * inst.layout.cell_center(lv, Vector2i(int(at[0]), int(at[1])))
+		var nxt: Vector3 = here + Vector3(0, 0, -2)
+		if i + 1 < route.size():
+			var at2: Array = (route[i + 1] as Dictionary).get("at", [0, 0])
+			nxt = inst.global_transform * inst.layout.cell_center(int((route[i + 1] as Dictionary).get("level", 0)), Vector2i(int(at2[0]), int(at2[1])))
+		p.global_position = here + Vector3.UP * 0.2
+		p.velocity = Vector3.ZERO
+		look(nxt + Vector3.UP * 1.4)
+		await seconds(1.0)
+		look(nxt + Vector3.UP * 1.4)
+		await frames(4)
+		_log.append("    route %d/%d: %s" % [i + 1, route.size(), str(r.get("label", "")).left(140)])
+		if i % 3 == 0 or i == route.size() - 1:
+			await snap("%s_route_%02d" % [tag, i + 1])
+		else:
+			await snap("%s_r%02d" % [tag, i + 1])
+		if p.interaction.target != null and p.interaction.prompt != "":
+			await use()
+		_kill_near(p.global_position, 6.0)
+	await _clear(def_id, tag)
+
+
+func _gaps() -> void:
+	var ps: PlayerState = p.state
+	p.god_mode = true
+	_sustain()
+	ps.inventory.max_bulk = maxf(ps.inventory.max_bulk, 400.0)
+	for kv: Array in [["torch", 2], ["keycard_corvane", 1], ["lockpick", 6], ["crowbar", 1]]:
+		if Content.item(StringName(kv[0])) != null:
+			ps.inventory.add_item(StringName(kv[0]), int(kv[1]))
+	var random: bool = Game.session.world_mode == &"random"
+	note("gaps run on %s" % ("random world %s" % Game.session.world_id if random else "the main map"))
+	if random:
+		await _walk_route("corvane_field_lab", "g_lab")
+		# A building from the world's pool in a random town (one the main map doesn't have).
+		var main_ids: PackedStringArray = ["pell_crossing_school", "larch_hollow_sawmill", "corvane_larkspur_adit"]
+		var picked: String = ""
+		for bd: Dictionary in w.pois.call(&"all_buildings"):
+			var did: String = String(bd.get("def", ""))
+			if int(bd.get("tier", 0)) >= 2 and not main_ids.has(did) and did != "corvane_field_lab" and str(bd.get("kind", "")) != "trader":
+				picked = did
+				break
+		note("pool building picked: %s" % picked)
+		if picked != "":
+			await _walk_route(picked, "g_pool")
+	else:
+		await _walk_route("corvane_larkspur_adit", "g_adit")
+	# A wolf pack hunting the player.
+	var wm: WildlifeManager = w.get(&"wildlife") as WildlifeManager
+	var pack_def := Content.get_def(&"wildlife", &"grey_wolf_pack") as WildlifeDef
+	if wm != null and wm.wolves != null and pack_def != null:
+		await _teleport(p.global_position + Vector3(30, 0, 30))
+		Game.session.clock.set_time(Game.session.clock.day(), 22.5)
+		var at: Vector3 = p.global_position + Vector3(25, 0, -20)
+		var pack: Variant = wm.wolves.spawn_plan(pack_def, {"id": &"qa:wolves", "def": pack_def.id, "pos": Vector2(at.x, at.z), "count": 4, "seed": 3})
+		note("wolf pack spawned: %s" % (pack != null))
+		for k: int in 6:
+			await seconds(4.0)
+			var nearest: Node3D = null
+			for e: Node in get_tree().get_nodes_in_group(&"enemies"):
+				var en2 := e as Enemy
+				if en2 != null and en2.get(&"wolf") != null and en2.is_alive() and (nearest == null or en2.global_position.distance_to(p.global_position) < nearest.global_position.distance_to(p.global_position)):
+					nearest = e as Node3D
+			if nearest != null:
+				look(nearest.global_position + Vector3.UP * 0.6)
+				note("nearest wolf %.0f m" % nearest.global_position.distance_to(p.global_position))
+			await snap("g_wolves_%d" % k)
+		_kill_near(p.global_position, 80.0)
+	else:
+		note("no wolf pack def or manager")
+	# A Murmur: crows flushed by the player follow them.
+	var crow := Content.get_def(&"wildlife", &"crow") as WildlifeDef
+	if wm != null and crow != null:
+		Game.session.clock.set_time(Game.session.clock.day() + 1, 10.0)
+		var c_at: Vector3 = p.global_position + Vector3(8, 0, -8)
+		var flock: BirdFlock = wm.spawn_flock(crow, {"id": &"qa:crows", "def": crow.id, "pos": Vector2(c_at.x, c_at.z), "count": 8, "seed": 5})
+		await seconds(2.0)
+		if flock != null:
+			flock.start_murmur(p.global_position)
+			for k: int in 3:
+				await _teleport(p.global_position + Vector3(12, 0, 0))
+				look(p.global_position + Vector3(0, 8, -6))
+				if flock != null and is_instance_valid(flock):
+					flock.set(&"murmur_target", p.global_position)
+				await seconds(3.0)
+				await snap("g_murmur_%d" % k)
+		else:
+			note("no crow flock spawned")
 
 
 func _finish() -> void:
