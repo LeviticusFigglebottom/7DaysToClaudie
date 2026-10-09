@@ -921,6 +921,7 @@ func _perceive(p: Player, dist: float) -> void:
 			if first:
 				Audio.play_3d(_vid(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", &"voice/hound_bark"),
 					_mouth(), {"volume_db": 0.0})
+				_caption_call()
 				Events.enemy_alerted.emit(entity_id, global_position)
 				_alert_nearby(p.global_position)
 		return
@@ -1069,6 +1070,7 @@ func ambush(target: Vector3) -> void:
 	_wake(target, true)
 	Audio.play_3d(_vid(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", &"voice/hound_bark"), _mouth(),
 		{"volume_db": 2.0})
+	_caption_call()
 	Events.enemy_alerted.emit(entity_id, global_position)
 
 
@@ -1304,6 +1306,7 @@ func _howl() -> void:
 	_set_state(State.SCREAM)
 	visual.play_once(&"scream", 1.0, [&"idle"] as Array[StringName])
 	Audio.play_3d(&"voice/hound_howl", _mouth(), {"volume_db": 4.0, "max_distance": 260.0})
+	SoundCaptions.say(SoundCaptions.cell_key("hounds", global_position), "hounds howling", global_position)
 	if Stimuli.current != null and def.faction != "wildlife":  # a wolf's howl is no stimulus: no Hollowed, no heat (ADR-0055)
 		Stimuli.current.emit_sound(global_position, float(c.get("loudness", 70.0)), &"howl", entity_id)
 	Events.enemy_alerted.emit(entity_id, global_position)
@@ -1397,6 +1400,7 @@ func _start_spit() -> void:
 	_set_state(State.SPIT)
 	visual.play_once(&"scream", 1.2, [&"attack_a"] as Array[StringName])
 	Audio.play_3d(&"voice/zombie_alert", global_position + Vector3.UP * 1.5, {"volume_db": -1.0, "pitch": 1.35})
+	SoundCaptions.say("spit:%s" % entity_id, "a wet retching", global_position)
 
 
 func _fire_spit(p: Player) -> void:
@@ -1433,6 +1437,7 @@ func _start_charge(p: Player) -> void:
 	_charge_hit = false
 	_set_state(State.CHARGE)
 	Audio.play_3d(&"voice/zombie_alert", global_position + Vector3.UP * 2.0, {"volume_db": 4.0, "pitch": 0.6, "max_distance": 90.0})
+	SoundCaptions.say("charge:%s" % entity_id, "something heavy charging", global_position, 6.0)
 	if Stimuli.current != null:
 		Stimuli.current.emit_sound(global_position, 30.0, &"roar", entity_id)
 
@@ -1745,6 +1750,7 @@ func _die(info: DamageInfo) -> void:
 		burst = _tier_burst
 	if not burst.is_empty() and get_parent() != null:
 		Spores.burst(get_parent(), global_position, _scaled_spores(burst), entity_id)
+		SoundCaptions.say("burst:%s" % entity_id, "a wet burst", global_position)
 	Events.enemy_killed.emit(entity_id, def.id, global_position, killer)
 	died.emit(self)
 
@@ -1901,3 +1907,12 @@ func _update_anim(want: Vector3) -> void:
 	else:
 		visual.play(&"idle", 1.0, 0.4)
 	visual.animate_placeholder(get_physics_process_delta_time(), want.length(), false)
+
+
+## Caption for a call the player may not see (G4): the Hollowed calling (a lurcher's screech, a
+## hound's bark, the Ashen's war cry), one caption per 40 m and kind every 10 s.
+func _caption_call() -> void:
+	var kind: String = "ashen" if def.faction == "ashen" else ("hounds" if def.archetype == "hound" else "hollowed")
+	var text: String = {"ashen": "ashen war cries", "hounds": "hounds baying"}.get(kind,
+		"a hollowed screeching" if def.archetype == "feral" else "hollowed calling")
+	SoundCaptions.say(SoundCaptions.cell_key(kind, global_position), text, global_position)
