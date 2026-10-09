@@ -63,3 +63,19 @@ func test_the_queue_is_bounded() -> void:
 	assert_eq(_feed.pending(), _feed.max_queued)
 	_feed.tick(0.1)
 	assert_eq(_lines.back(), "urgent", "a higher priority is never the one dropped")
+
+
+## W19: waking in a blizzard, the cold ladder's steps leave the feed in order, each its gap apart.
+func test_a_warning_ladder_comes_out_in_order() -> void:
+	_feed.tick(5.0)
+	var s := SurvivalStats.new()
+	s.body_temp = 35.2
+	for warn: Dictionary in SurvivalWarnings.new().update(s, 5.0):
+		Events.status_message_queued.emit(str(warn["text"]), warn["kind"], StatusFeed.PRIORITY_WARNING)
+	assert_eq(_feed.pending(), 2)
+	_feed.tick(0.016)
+	assert_eq(_lines, ["You're cold. Find shelter or a fire."] as Array[String])
+	_feed.tick(1.0)
+	assert_eq(_lines.size(), 1, "spaced")
+	_feed.tick(0.6)
+	assert_eq(_lines.back(), "You're freezing. Find a fire, now.")

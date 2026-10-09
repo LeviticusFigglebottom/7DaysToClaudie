@@ -621,15 +621,15 @@ func _on_game_minutes(minutes: float) -> void:
 	if p == null or player == null or not is_ready or DebugTools.is_on(&"no_hunger"):
 		return
 	p.stats.tick_game(minutes, survival_env(player.global_position))
-	# Said before the cold bites (first-week audit W7), queued so it never buries another line.
-	if _cold_warnings == null:
-		_cold_warnings = ColdWarnings.new()
-	var warn: Dictionary = _cold_warnings.update(p.stats, minutes, sleeping)
-	if not warn.is_empty():
+	# Said before the cold, thirst or hunger bites (first-week audit W7, W18), every step in order
+	# (W19), queued so none buries another line.
+	if _survival_warnings == null:
+		_survival_warnings = SurvivalWarnings.new()
+	for warn: Dictionary in _survival_warnings.update(p.stats, minutes, sleeping):
 		Events.status_message_queued.emit(str(warn["text"]), warn["kind"], StatusFeed.PRIORITY_WARNING)
 
 
-var _cold_warnings: ColdWarnings = null
+var _survival_warnings: SurvivalWarnings = null
 
 
 ## Environment the body feels at a position (SurvivalStats.tick_game env contract).
