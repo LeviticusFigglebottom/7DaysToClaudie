@@ -10,7 +10,7 @@ var _frames: Array[Dictionary] = []
 var _t0: int = 0
 var _ready_ms: int = -1
 var _done: bool = false
-## --shot <png>: saves a frame of the intro's world card (a rendered run) once it has shown 3 s.
+## --shot <png>: saves a frame of the intro's world card (a rendered run) once it has shown 10 s (auto exposure settles).
 var _shot_path: String = ""
 var _world_shot_s: float = 0.0
 var _saw_world_shot: bool = false
@@ -66,7 +66,7 @@ func _process(_delta: float) -> void:
 	if intro != null and is_instance_valid(intro) and bool(intro.call(&"is_showing_world")):
 		_saw_world_shot = true
 		_world_shot_s += ms / 1000.0
-		if _shot_path != "" and _world_shot_s > 3.0:
+		if _shot_path != "" and _world_shot_s > 10.0:
 			get_viewport().get_texture().get_image().save_png(_shot_path)
 			print("INTRO_PROBE world shot saved to %s" % _shot_path)
 			_shot_path = ""
@@ -83,7 +83,7 @@ func _process(_delta: float) -> void:
 	if _after_load and not loading and _shot_intro == null:
 		_shot_intro = IntroPlayer.new()
 		ui.add_child(_shot_intro)
-		_shot_intro.call(&"play")
+		_shot_intro.call(&"play", {}, IntroPlayer.vars_for(Game.session))
 		var cards: Array = IntroPlayer.load_script()["cards"]
 		for i: int in cards.size():
 			if str((cards[i] as Dictionary).get("kind", "")) == "world":
