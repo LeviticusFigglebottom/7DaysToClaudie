@@ -135,7 +135,11 @@ composer's side applies to it.
 − Main-map road profiles are grade-capped too, so a road climbing steeper than its cap now runs in a
   cutting of a few metres (a Larch Hollow spur sits 2.4 m below its old line); saves drop the
   vegetation records beside it (§6).
-− Pell's Crossing itself is not bigger yet: its land is crowded (the drop site, Okafor's farm, the
-  logging road, Larkspur's cliffs, the river). `src/tools/cli/plan_main_town.gd` plans an organic
-  extension on the main map's own ground with all of that as keep-outs; a west end of 58 houses on
-  the bluff was tried and is parked until Larkspur's cliff stops fading at the D6/C6 border (TD-319).
++ Pell's Crossing grew a west end (TD-319): Mill Street West continues Mill Street from the pad's west
+  edge round the north end of the Larkspur cliffs (left as they are) into C6, and 40 houses grew round
+  it (`src/tools/cli/plan_main_town.gd`: the organic planner on the main map's own composed ground,
+  every pad, road, path, cliff, cave and water a keep-out, 150 m off the drop marker; houses only, so
+  the old core stays the centre). A world-level town on the main map (`world.json` towns,
+  `pell_outskirts`). Boot, main map headless: 41.0-43.5 s before, 46.8-53.6 s with the houses made
+  one after another on the loader thread, 42.6-43.4 s once WorldLoader made every lot's building on
+  the worker pool at once.

@@ -6,8 +6,15 @@ extends RefCounted
 ## to their remaining hit points, so the horde converges on the weakest (or most damaged) part
 ## of the defences instead of walking the long way round — weak-point targeting falls out of the
 ## field for free. Pure model: built from callables, safe to integrate on a worker thread.
+##
+## Caves (ADR-0056, TD-279): the field is one layer over the surface. A target in a cave is reached
+## through its mouth (`surface_targets`), and a body more than UNDERGROUND m below the surface the
+## field was built on gets no direction: it is in a cave or a tunnel, where close pursuit on the
+## nav mesh (which bakes the volume) takes over.
 
 const SQRT2: float = 1.41421356
+## A body this far below the field's surface is underground (no flow direction for it).
+const UNDERGROUND: float = 2.5
 
 var cell: float = 1.5
 var n: int = 0
@@ -19,6 +26,8 @@ var cost := PackedFloat32Array()
 var structure_cost := PackedFloat32Array()
 ## Integrated cost to the nearest target.
 var dist := PackedFloat32Array()
+## The surface height per cell the field was built on (build_terrain).
+var surface := PackedFloat32Array()
 var ready: bool = false
 
 
@@ -56,6 +65,7 @@ func build_terrain(height_fn: Callable, water_fn: Callable, max_slope_deg: float
 	for y: int in n:
 		for x: int in n:
 			heights[y * n + x] = float(height_fn.call(origin.x + x * cell, origin.y + y * cell))
+	surface = heights
 	var max_grad: float = tan(deg_to_rad(max_slope_deg))
 	for y: int in n:
 		for x: int in n:
@@ -162,6 +172,8 @@ func integrate(targets: Array[Vector3]) -> void:
 ## heads for the centre; ZERO when already at a target.
 func direction_at(pos: Vector3) -> Vector3:
 	var c: Vector2i = cell_of(pos)
+	if ready and in_grid(c) and surface.size() == n * n and pos.y < surface[c.y * n + c.x] - UNDERGROUND:
+		return Vector3.ZERO
 	if not ready or not in_grid(c):
 		var d: Vector3 = center - pos
 		d.y = 0.0
@@ -182,6 +194,22 @@ func direction_at(pos: Vector3) -> Vector3:
 	var to: Vector3 = cell_pos(best_c) - Vector3(pos.x, 0.0, pos.z)
 	to.y = 0.0
 	return to.normalized() if to.length() > 0.001 else Vector3.ZERO
+
+
+## The surface points a field should lead to for `targets`: a target in a cave (its air holds a
+## point a little over its feet: `terrain.cave_at`, TerrainManager's) is reached through that
+## cave's mouth; the rest stand as they are. Main thread (the cave set is the terrain's).
+static func surface_targets(targets: Array[Vector3], terrain: Object) -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	for t: Vector3 in targets:
+		var cave: Object = terrain.call(&"cave_at", t + Vector3.UP * 0.8) if terrain != null and terrain.has_method(&"cave_at") else null
+		if cave != null and cave.get(&"mouth") is Transform3D:
+			var m: Vector3 = (cave.get(&"mouth") as Transform3D).origin
+			if not out.has(m):
+				out.append(m)
+		else:
+			out.append(t)
+	return out
 
 
 func distance_at(pos: Vector3) -> float:

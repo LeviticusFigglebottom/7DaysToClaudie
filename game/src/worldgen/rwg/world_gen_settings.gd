@@ -34,7 +34,7 @@ const TOWN_KEYS: PackedStringArray = ["mix", "spacing", "edge", "candidates", "c
 	"stub", "authored_max", "clearance"]
 ## The size classes a town-size mix may name (town_planner.json `kinds`).
 const KIND_KEYS: PackedStringArray = ["hamlet", "village", "town"]
-const SITES: PackedStringArray = ["summit", "forest", "waterside", "lake_shore", "remote", "roadside", "mine", "companion"]
+const SITES: PackedStringArray = ["summit", "forest", "waterside", "lake_shore", "remote", "roadside", "mine", "companion", "crash"]
 const ACCESS: PackedStringArray = ["trail", "track", "drive", "none"]
 const NAME_KEYS: PackedStringArray = ["towns", "regions", "region_words", "lakes", "rivers"]
 
