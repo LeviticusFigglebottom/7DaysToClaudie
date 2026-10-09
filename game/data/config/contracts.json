@@ -1,0 +1,5 @@
+{
+  "_doc": "Contract rules that span a whole run (TraderManager). spared_lapses: how many of a run's contracts may lapse (run out of time) before a lapse costs the giver's fail_rep standing; the first-week audit (W12) found -10 for a first contract steep while a new player is still learning how long a job takes. spared_line is added to the lapse message in place of the standing cost. Abandoning a contract by hand still costs its abandon_rep.",
+  "spared_lapses": 1,
+  "spared_line": "The Quartermaster lets it go this once."
+}

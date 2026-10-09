@@ -24,6 +24,8 @@ var _flow_task: int = -1
 var _flow_next: FlowField = null
 var _flow_t: float = 0.0
 var _spawned_total: int = 0
+## player id -> deaths when the night began (a death during it forfeits the survival award).
+var _deaths_at_start: Dictionary = {}
 
 
 func _ready() -> void:
@@ -95,6 +97,9 @@ func _on_start(d: int) -> void:
 	_queue.clear()
 	_wave_i = 0
 	_spawned_total = 0
+	_deaths_at_start.clear()
+	for pid: StringName in Game.session.players:
+		_deaths_at_start[pid] = (Game.session.players[pid] as PlayerState).deaths
 	_started_min = Game.session.clock.total_minutes
 	flow = null
 	_rebuild_flow()
@@ -120,9 +125,11 @@ func _on_end(_d: int, _r: Dictionary) -> void:
 	# Everyone still standing at dawn earns it; each later Hum pays half again more.
 	for pid: StringName in Game.session.players:
 		var ps: PlayerState = Game.session.players[pid]
-		if ps.stats.alive:
+		# Not one who died during the night and stood up again at their bed (first-week audit W7).
+		if ps.stats.alive and ps.deaths <= int(_deaths_at_start.get(pid, ps.deaths)):
 			ps.progression.award("survive_hum", 1.0 + 0.5 * float(survived - 1))
-	Events.player_status_message.emit("The Hum fades. %d of them came; %d lie still." % [_spawned_total, _sum(report["killed"])], &"info")
+	# First of the dawn's lines (the drop, the autosave, a level-up follow it): StatusFeed paces them.
+	Events.status_message_queued.emit("The Hum fades. %d of them came; %d lie still." % [_spawned_total, _sum(report["killed"])], &"info", StatusFeed.PRIORITY_REPORT)
 	members.clear()
 	_queue.clear()
 	flow = null
