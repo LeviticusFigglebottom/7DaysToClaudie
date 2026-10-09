@@ -16,6 +16,9 @@ var active: Array = []
 var taken: Dictionary = {}
 ## contracts turned in, by def id
 var done: Dictionary = {}
+## Contracts that ran out of time this run (the first few are spared their standing cost:
+## config/contracts.json spared_lapses).
+var lapsed: int = 0
 
 
 func reputation(trader_id: StringName) -> int:
@@ -75,7 +78,7 @@ func total_done() -> int:
 
 
 func to_dict() -> Dictionary:
-	return {"rep": rep.duplicate(), "active": active.duplicate(true), "taken": taken.duplicate(), "done": done.duplicate()}
+	return {"rep": rep.duplicate(), "active": active.duplicate(true), "taken": taken.duplicate(), "done": done.duplicate(), "lapsed": lapsed}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -83,6 +86,7 @@ func from_dict(d: Dictionary) -> void:
 	active = (d.get("active", []) as Array).duplicate(true)
 	taken = (d.get("taken", {}) as Dictionary).duplicate()
 	done = (d.get("done", {}) as Dictionary).duplicate()
+	lapsed = int(d.get("lapsed", 0))
 	# A defence is never saved half-held: it starts again from the beginning.
 	for c: Variant in active:
 		(c as Dictionary).erase("running")
