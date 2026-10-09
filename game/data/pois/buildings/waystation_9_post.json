@@ -1,0 +1,1244 @@
+{
+ "_doc": "Waystation 9 (DESIGN §1, ADR-0039; TD-369): the Remand Program's trader post built into the Cordon wall where the river leaves the valley, main-map region D7 (World places it and the wall). A SAFE place, tier 1: no Hollowed, no traps, no triggers; the guards' safe zone is the trader def's (data/traders/waystation_9.json, safe_radius 40). The plan's +Z (front, rows 19-27) is the VALLEY side; rows 0-8 lie OUTSIDE the Cordon. WALL LINE: plan z = 9.0 (the edge between rows 8 and 9), from x 0 to x 36. The post's two-storey block (x 12-24, z 5-19) straddles it, and four cordon_wall_panel props (pitch 6.0) carry it from the footprint's west edge (x 0) and east edge (x 36) to the block: the region's wall continues from those two points, (0, 9) and (36, 9) in plan metres, i.e. panel centres at x -3, -9, ... and 39, 45, ... on z = 9 (rot 0 in the plan frame). Nothing on the block opens outward (no doors or windows on its north face or on the side walls north of the line), so the post is no way out of the valley. TRADER ANCHOR: the post is not in this file - TraderManager raises the quartermaster's kiosk (waystation_counter), the contracts board and the quartermaster from the region's `trader:waystation_9` spawn feature. Put that spawn at plan (18.0, 21.04) with the placement's facing: spawn pos = origin + Vector2(18.0, 21.04).rotated(deg_to_rad(rotation)), spawn yaw = -rotation (TraderDef.spawn_in(), in_poi). The kiosk then stands in the hatch recess (plan cells 16-19 x 16-18, its origin at (18.0, 17.04), backed onto the quartermaster's store), the quartermaster inside it at (17.7, 16.99), and the contracts board in the forecourt at (24.0, 22.54); keep those clear. The def's ring of hesco, towers and floodlights is not raised inside this building (TraderManager.in_building). Route: forecourt -> notice board -> guard room -> the hall on the wall line -> the Program stores (loot room) -> the radio room -> up the stair -> the lookout deck and its floodlight.",
+ "defs": [
+  {
+   "id": "waystation_9_post",
+   "name": "Waystation 9",
+   "tier": 1,
+   "zoning": [
+    "wilderness"
+   ],
+   "footprint": [
+    36,
+    28
+   ],
+   "origin": [
+    0,
+    0
+   ],
+   "author": "Hollowmere team",
+   "story": "Waystation 9 was a relay post on the Cordon line before it was anything else: a block of a building cast into the wall where the river runs out of the valley under it, a radio room on the outside, a hall along the line itself, a deck on top with a floodlight that sweeps the valley side every night. When the Remand Program came it set its quartermaster up in the recess by the guard-room door with a hatch, a price board and a list of contracts, and the post became the only place in the valley that still pays. The guards sleep in shifts in the bunk rooms, keep the floods on a generator and the radio on a battery bank, fly the lifts out from the strip on the far side, and never open the gate. Salvagers trade at the hatch. Nobody from the valley side has been through the building to the other side, and the standing orders on the guard-room desk say nobody will.",
+   "style": {
+    "exterior": "concrete_block",
+    "interior": "paint_sage",
+    "floor": "concrete",
+    "ceiling": "plaster_grey",
+    "floor_height": 0.15,
+    "decay": 0.3,
+    "damaged_walls": 0.0,
+    "prop_condition": "worn",
+    "scatter": {
+     "density": 0.1
+    },
+    "lights_on": 1.0,
+    "roof": {
+     "type": "flat",
+     "parapet": 0.6
+    }
+   },
+   "levels": [
+    {
+     "level": 0,
+     "plan": [
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "............RRRRRRPPPPPP............",
+      "............RRRRRRPPPPPP............",
+      "............RRRRRRPPPPPP............",
+      "............RRRRRRPPPPPP............",
+      "............HHHHHHHHHHHH............",
+      "............HHHHHHHHHHHH............",
+      "............HHHHHHHHHHHH............",
+      "............HHHHHHHHHHHH............",
+      "............BBBBSSSSGGGG............",
+      "............BBBBSSSSGGGG............",
+      "............BBBBSSSSGGGG............",
+      "............BBBB....GGGG............",
+      "............BBBB....GGGG............",
+      "............BBBB....GGGG............",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "...................................."
+     ],
+     "rooms": {
+      "R": {
+       "name": "Radio room",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige"
+      },
+      "P": {
+       "name": "Program stores",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "H": {
+       "name": "Hall",
+       "type": "hallway",
+       "wall": "paint_sage",
+       "floor": "concrete"
+      },
+      "B": {
+       "name": "Bunk room",
+       "type": "bedroom",
+       "wall": "paint_sage",
+       "floor": "concrete"
+      },
+      "S": {
+       "name": "Quartermaster's store",
+       "type": "store",
+       "wall": "concrete_block",
+       "floor": "concrete"
+      },
+      "G": {
+       "name": "Guard room",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige"
+      }
+     }
+    },
+    {
+     "level": 1,
+     "plan": [
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "............AAAAAACCCCCC............",
+      "............AAAAAACCCCCC............",
+      "............AAAAAACCCCCC............",
+      "............AAAAAACCCCCC............",
+      "............UUUUUUUUUUUU............",
+      "............UUUUUUUUUUUU............",
+      "............UUUUUUUUUUUU............",
+      "............UUUUUUUUUUUU............",
+      "............DDDDDDDDDDDD............",
+      "............DDDDDDDDDDDD............",
+      "............DDDDDDDDDDDD............",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "....................................",
+      "...................................."
+     ],
+     "rooms": {
+      "A": {
+       "name": "Upper bunk room",
+       "type": "bedroom",
+       "wall": "paint_sage",
+       "floor": "concrete"
+      },
+      "C": {
+       "name": "Officer's room",
+       "type": "office",
+       "wall": "paint_slate_blue",
+       "floor": "linoleum_beige"
+      },
+      "U": {
+       "name": "Upper hall",
+       "type": "hallway",
+       "wall": "paint_sage",
+       "floor": "concrete"
+      },
+      "D": {
+       "name": "Lookout deck",
+       "type": "storage",
+       "wall": "concrete_block",
+       "floor": "concrete",
+       "open_roof": true
+      }
+     }
+    }
+   ],
+   "openings": [
+    {
+     "id": "front_door",
+     "at": [
+      21,
+      18
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal"
+    },
+    {
+     "id": "side_door",
+     "at": [
+      12,
+      11
+     ],
+     "side": "W",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal"
+    },
+    {
+     "id": "guard_window_s",
+     "at": [
+      22,
+      18
+     ],
+     "side": "S",
+     "type": "window"
+    },
+    {
+     "id": "guard_window_e",
+     "at": [
+      23,
+      15
+     ],
+     "side": "E",
+     "type": "window"
+    },
+    {
+     "id": "bunk_window_s",
+     "at": [
+      13,
+      18
+     ],
+     "side": "S",
+     "type": "window"
+    },
+    {
+     "id": "bunk_window_w",
+     "at": [
+      12,
+      15
+     ],
+     "side": "W",
+     "type": "window"
+    },
+    {
+     "id": "hall_window_e",
+     "at": [
+      23,
+      10
+     ],
+     "side": "E",
+     "type": "window"
+    },
+    {
+     "id": "radio_door",
+     "at": [
+      17,
+      8
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open",
+     "swing": "N"
+    },
+    {
+     "id": "stores_door",
+     "at": [
+      21,
+      8
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "model": "door_metal",
+     "swing": "N"
+    },
+    {
+     "id": "bunk_door",
+     "at": [
+      14,
+      12
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open"
+    },
+    {
+     "id": "store_door",
+     "at": [
+      17,
+      12
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed"
+    },
+    {
+     "id": "guard_door",
+     "at": [
+      21,
+      12
+     ],
+     "side": "S",
+     "type": "open"
+    },
+    {
+     "id": "upper_bunk_door",
+     "at": [
+      12,
+      8
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open",
+     "level": 1
+    },
+    {
+     "id": "officer_door",
+     "at": [
+      21,
+      8
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "closed",
+     "level": 1
+    },
+    {
+     "id": "deck_door",
+     "at": [
+      21,
+      12
+     ],
+     "side": "S",
+     "type": "door",
+     "state": "open",
+     "level": 1,
+     "model": "door_metal",
+     "swing": "N"
+    },
+    {
+     "id": "upper_window_w",
+     "at": [
+      12,
+      11
+     ],
+     "side": "W",
+     "type": "window",
+     "level": 1
+    },
+    {
+     "id": "upper_window_e",
+     "at": [
+      23,
+      11
+     ],
+     "side": "E",
+     "type": "window",
+     "level": 1
+    },
+    {
+     "id": "deck_s12",
+     "at": [
+      12,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s13",
+     "at": [
+      13,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s14",
+     "at": [
+      14,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s15",
+     "at": [
+      15,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s16",
+     "at": [
+      16,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s17",
+     "at": [
+      17,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s18",
+     "at": [
+      18,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s19",
+     "at": [
+      19,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s20",
+     "at": [
+      20,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s21",
+     "at": [
+      21,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s22",
+     "at": [
+      22,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_s23",
+     "at": [
+      23,
+      15
+     ],
+     "side": "S",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_w13",
+     "at": [
+      12,
+      13
+     ],
+     "side": "W",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_e13",
+     "at": [
+      23,
+      13
+     ],
+     "side": "E",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_w14",
+     "at": [
+      12,
+      14
+     ],
+     "side": "W",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_e14",
+     "at": [
+      23,
+      14
+     ],
+     "side": "E",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_w15",
+     "at": [
+      12,
+      15
+     ],
+     "side": "W",
+     "type": "half",
+     "level": 1
+    },
+    {
+     "id": "deck_e15",
+     "at": [
+      23,
+      15
+     ],
+     "side": "E",
+     "type": "half",
+     "level": 1
+    }
+   ],
+   "stairs": [
+    {
+     "level": 0,
+     "at": [
+      13,
+      10
+     ],
+     "dir": "E"
+    }
+   ],
+   "props": [
+    {
+     "id": "wall_w2",
+     "prop": "cordon_wall_panel",
+     "pos": [
+      3.0,
+      9.0
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "wall_w1",
+     "prop": "cordon_wall_panel",
+     "pos": [
+      9.0,
+      9.0
+     ],
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "id": "wall_e1",
+     "prop": "cordon_wall_panel",
+     "pos": [
+      27.0,
+      9.0
+     ],
+     "route_ok": true
+    },
+    {
+     "id": "wall_e2",
+     "prop": "cordon_wall_panel",
+     "pos": [
+      33.0,
+      9.0
+     ],
+     "route_ok": true,
+     "variant": "worn"
+    },
+    {
+     "id": "radio_mast",
+     "prop": "civic_antenna_mast",
+     "pos": [
+      14.5,
+      2.4
+     ],
+     "variant": "worn"
+    },
+    {
+     "id": "radio_desk",
+     "prop": "w4_bunker_radio_desk",
+     "at": [
+      14,
+      5
+     ],
+     "against": "N"
+    },
+    {
+     "id": "radio_chair",
+     "prop": "office_chair",
+     "pos": [
+      14.6,
+      6.6
+     ],
+     "rot": 160
+    },
+    {
+     "id": "radio_batteries",
+     "prop": "w4_relay_battery_bank",
+     "at": [
+      12,
+      7
+     ],
+     "against": "W"
+    },
+    {
+     "id": "radio_files",
+     "prop": "filing_cabinet",
+     "at": [
+      16,
+      5
+     ],
+     "against": "N"
+    },
+    {
+     "id": "radio_set",
+     "prop": "w4_relay_field_radio",
+     "at": [
+      17,
+      6
+     ],
+     "against": "E"
+    },
+    {
+     "id": "radio_map",
+     "prop": "w4_bunker_map_wall",
+     "at": [
+      16,
+      8
+     ],
+     "against": "S",
+     "height": 1.0,
+     "wall_ok": true
+    },
+    {
+     "id": "radio_lamp",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      13.6,
+      5.35
+     ],
+     "y": 0.75,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "id": "stores_locker",
+     "prop": "wild_locker_steel",
+     "at": [
+      19,
+      5
+     ],
+     "against": "N"
+    },
+    {
+     "id": "stores_stack_a",
+     "prop": "waystation_supply_stack",
+     "at": [
+      22,
+      5
+     ],
+     "against": "N"
+    },
+    {
+     "id": "stores_generator",
+     "prop": "w4_relay_generator",
+     "at": [
+      23,
+      7
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "id": "stores_crate",
+     "prop": "crate_wood",
+     "pos": [
+      18.45,
+      7.5
+     ]
+    },
+    {
+     "id": "stores_drum",
+     "prop": "barrel_metal",
+     "pos": [
+      18.45,
+      6.6
+     ]
+    },
+    {
+     "id": "hall_shelf",
+     "prop": "metal_shelf",
+     "at": [
+      23,
+      12
+     ],
+     "against": "E"
+    },
+    {
+     "id": "hall_cooler",
+     "prop": "water_cooler",
+     "at": [
+      22,
+      9
+     ],
+     "against": "N"
+    },
+    {
+     "id": "hall_stack",
+     "prop": "waystation_supply_stack",
+     "at": [
+      19,
+      12
+     ],
+     "against": "S",
+     "variant": "worn"
+    },
+    {
+     "id": "bunk_a",
+     "prop": "wild_bunk_steel",
+     "at": [
+      12,
+      13
+     ],
+     "against": "W",
+     "offset": [
+      0.0,
+      0.5
+     ]
+    },
+    {
+     "id": "bunk_b",
+     "prop": "wild_bunk_steel",
+     "at": [
+      12,
+      16
+     ],
+     "against": "W",
+     "offset": [
+      0.0,
+      0.5
+     ]
+    },
+    {
+     "id": "bunk_footlocker_a",
+     "prop": "wild_footlocker",
+     "pos": [
+      13.35,
+      14.0
+     ],
+     "rot": 90
+    },
+    {
+     "id": "bunk_footlocker_b",
+     "prop": "wild_footlocker",
+     "pos": [
+      13.35,
+      17.0
+     ],
+     "rot": 90
+    },
+    {
+     "id": "bunk_lockers",
+     "prop": "wild_locker_steel",
+     "at": [
+      15,
+      15
+     ],
+     "against": "E"
+    },
+    {
+     "id": "bunk_stove",
+     "prop": "wild_wood_stove",
+     "at": [
+      15,
+      17
+     ],
+     "against": "E"
+    },
+    {
+     "id": "qm_shelf_a",
+     "prop": "metal_shelf",
+     "at": [
+      16,
+      13
+     ],
+     "against": "W"
+    },
+    {
+     "id": "qm_shelf_b",
+     "prop": "metal_shelf",
+     "at": [
+      16,
+      15
+     ],
+     "against": "W"
+    },
+    {
+     "id": "qm_shelf_c",
+     "prop": "metal_shelf",
+     "at": [
+      19,
+      15
+     ],
+     "against": "E"
+    },
+    {
+     "id": "qm_crate",
+     "prop": "crate_wood",
+     "pos": [
+      18.0,
+      15.6
+     ]
+    },
+    {
+     "id": "qm_stack",
+     "prop": "waystation_supply_stack",
+     "at": [
+      19,
+      13
+     ],
+     "against": "E",
+     "rot": -90
+    },
+    {
+     "id": "guard_desk",
+     "prop": "office_desk",
+     "at": [
+      23,
+      14
+     ],
+     "against": "E"
+    },
+    {
+     "id": "guard_chair",
+     "prop": "office_chair",
+     "pos": [
+      22.3,
+      14.0
+     ],
+     "rot": 90
+    },
+    {
+     "id": "guard_rack",
+     "prop": "wild_gun_rack",
+     "at": [
+      23,
+      16
+     ],
+     "against": "E",
+     "height": 1.0
+    },
+    {
+     "id": "guard_lockers",
+     "prop": "road_staff_locker",
+     "at": [
+      20,
+      15
+     ],
+     "against": "W"
+    },
+    {
+     "id": "guard_board",
+     "prop": "cork_board",
+     "at": [
+      20,
+      13
+     ],
+     "against": "W",
+     "height": 1.4
+    },
+    {
+     "id": "notice_board",
+     "prop": "cordon_notice_board",
+     "at": [
+      22,
+      19
+     ],
+     "against": "N",
+     "offset": [
+      0.5,
+      0.0
+     ],
+     "height": 0.9
+    },
+    {
+     "id": "bags_post_a",
+     "prop": "w3_sandbags",
+     "pos": [
+      28.2,
+      21.6
+     ],
+     "rot": 90
+    },
+    {
+     "id": "bags_post_b",
+     "prop": "w3_sandbags",
+     "pos": [
+      29.6,
+      20.2
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "bags_west_a",
+     "prop": "w3_sandbags",
+     "pos": [
+      10.0,
+      18.6
+     ],
+     "rot": 90
+    },
+    {
+     "id": "bags_west_b",
+     "prop": "w3_sandbags",
+     "pos": [
+      11.2,
+      20.2
+     ],
+     "rot": 0,
+     "variant": "worn"
+    },
+    {
+     "id": "forecourt_barrier_w",
+     "prop": "jersey_barrier",
+     "pos": [
+      9.0,
+      25.5
+     ],
+     "rot": 20
+    },
+    {
+     "id": "forecourt_barrier_e",
+     "prop": "jersey_barrier",
+     "pos": [
+      29.0,
+      25.0
+     ],
+     "rot": -15
+    },
+    {
+     "id": "upper_bunk_a",
+     "prop": "wild_bunk_steel",
+     "pos": [
+      13.0,
+      5.55
+     ],
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "id": "upper_bunk_b",
+     "prop": "wild_bunk_steel",
+     "pos": [
+      16.0,
+      5.55
+     ],
+     "rot": 180,
+     "level": 1
+    },
+    {
+     "id": "upper_footlocker",
+     "prop": "wild_footlocker",
+     "pos": [
+      16.6,
+      7.4
+     ],
+     "rot": 0,
+     "level": 1
+    },
+    {
+     "id": "officer_desk",
+     "prop": "office_desk",
+     "at": [
+      20,
+      5
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "id": "officer_cot",
+     "prop": "wild_cot_canvas",
+     "at": [
+      23,
+      6
+     ],
+     "against": "E",
+     "level": 1
+    },
+    {
+     "id": "officer_files",
+     "prop": "filing_cabinet",
+     "at": [
+      18,
+      5
+     ],
+     "against": "N",
+     "level": 1
+    },
+    {
+     "id": "deck_flood",
+     "prop": "waystation_floodlight",
+     "pos": [
+      17.0,
+      14.9
+     ],
+     "level": 1,
+     "lit": true,
+     "keep": true
+    },
+    {
+     "id": "deck_bags_a",
+     "prop": "w3_sandbags",
+     "pos": [
+      13.4,
+      15.6
+     ],
+     "level": 1
+    },
+    {
+     "id": "deck_bags_b",
+     "prop": "w3_sandbags",
+     "pos": [
+      22.6,
+      15.6
+     ],
+     "level": 1,
+     "variant": "worn"
+    },
+    {
+     "id": "deck_radio",
+     "prop": "w4_relay_field_radio",
+     "pos": [
+      12.6,
+      13.4
+     ],
+     "level": 1,
+     "rot": 90
+    }
+   ],
+   "sleepers": [],
+   "traps": [],
+   "triggers": [],
+   "notes": [
+    {
+     "note": "ws9_salvager_notice",
+     "pos": [
+      22.25,
+      19.3
+     ],
+     "y": 1.4
+    },
+    {
+     "note": "ws9_standing_orders",
+     "pos": [
+      23.45,
+      14.3
+     ],
+     "y": 0.78
+    }
+   ],
+   "lights": [
+    {
+     "at": [
+      14,
+      7
+     ],
+     "level": 0,
+     "color": "#ffd9a0",
+     "energy": 0.7,
+     "range": 5.0,
+     "keep": true
+    },
+    {
+     "at": [
+      20,
+      7
+     ],
+     "level": 0,
+     "color": "#e8ecf2",
+     "energy": 0.8,
+     "range": 6.0,
+     "keep": true
+    },
+    {
+     "at": [
+      15,
+      10
+     ],
+     "level": 0,
+     "color": "#e8ecf2",
+     "energy": 0.7,
+     "range": 6.0,
+     "keep": true
+    },
+    {
+     "at": [
+      21,
+      10
+     ],
+     "level": 0,
+     "color": "#e8ecf2",
+     "energy": 0.7,
+     "range": 6.0,
+     "keep": true
+    },
+    {
+     "at": [
+      17,
+      14
+     ],
+     "level": 0,
+     "color": "#ffe2b0",
+     "energy": 0.6,
+     "range": 4.5,
+     "keep": true
+    },
+    {
+     "at": [
+      21,
+      15
+     ],
+     "level": 0,
+     "color": "#e8ecf2",
+     "energy": 0.7,
+     "range": 5.0,
+     "keep": true
+    },
+    {
+     "at": [
+      14,
+      6
+     ],
+     "level": 1,
+     "color": "#ffd9a0",
+     "energy": 0.5,
+     "range": 5.0
+    },
+    {
+     "at": [
+      21,
+      6
+     ],
+     "level": 1,
+     "color": "#ffd9a0",
+     "energy": 0.6,
+     "range": 5.0,
+     "keep": true
+    },
+    {
+     "at": [
+      19,
+      10
+     ],
+     "level": 1,
+     "color": "#e8ecf2",
+     "energy": 0.6,
+     "range": 6.0,
+     "keep": true
+    }
+   ],
+   "route": [
+    {
+     "at": [
+      18,
+      24
+     ],
+     "label": "The forecourt: the post in the Cordon wall, the quartermaster's hatch in its recess, the floodlit deck over it"
+    },
+    {
+     "at": [
+      21,
+      19
+     ],
+     "label": "The Program's notice board by the guard-room door"
+    },
+    {
+     "at": [
+      21,
+      16
+     ],
+     "label": "The guard room: the duty desk, the standing orders, the empty rack"
+    },
+    {
+     "at": [
+      21,
+      11
+     ],
+     "label": "The hall along the wall line: everything north of it is outside the Cordon"
+    },
+    {
+     "at": [
+      21,
+      6
+     ],
+     "label": "The Program's stores: the generator, the post's issue locker"
+    },
+    {
+     "at": [
+      14,
+      7
+     ],
+     "label": "The radio room: the set that talks to the lifts and the drones"
+    },
+    {
+     "at": [
+      12,
+      10
+     ],
+     "label": "The foot of the stair"
+    },
+    {
+     "at": [
+      18,
+      10
+     ],
+     "level": 1,
+     "label": "The upper hall"
+    },
+    {
+     "at": [
+      20,
+      14
+     ],
+     "level": 1,
+     "label": "The lookout deck: the floodlight over the valley, the Route 9 gate and the sluice along the wall"
+    }
+   ],
+   "loot_room": {
+    "room": "P",
+    "level": 0
+   }
+  }
+ ]
+}
