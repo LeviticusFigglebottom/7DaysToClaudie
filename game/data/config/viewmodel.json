@@ -226,14 +226,14 @@
       "pose": {
         "R": {
           "grip": [
-            0.175,
-            -0.145,
-            -0.37
+            0.2,
+            -0.175,
+            -0.36
           ],
           "wrist": [
-            -12,
-            6,
-            40
+            12,
+            8,
+            -38
           ],
           "fist": 0.55,
           "thumb": 0.3,
@@ -251,14 +251,14 @@
         },
         "L": {
           "grip": [
+            -0.2,
             -0.175,
-            -0.145,
-            -0.37
+            -0.36
           ],
           "wrist": [
-            -12,
-            6,
-            -40
+            12,
+            8,
+            38
           ],
           "fist": 0.55,
           "thumb": 0.3,
@@ -8477,7 +8477,7 @@
     "scope_from": 0.92
   },
   "motion": {
-    "_doc": "Procedural motion on top of the baked poses. breathe: period s, pos m, rot deg. sway: the rig lags the view (deg of lag per rad/s of turn), sprung. move: lag against velocity changes. bob: per footstep (pos m, rot deg), scaled when sprinting / crouched. sprint: the lowered pose (pos m, rot deg) blended in while sprinting. land: dip per m/s of landing speed. equip: seconds to raise a new item.",
+    "_doc": "Procedural motion on top of the baked poses. breathe: period s, pos m, rot deg. sway: the rig lags the view (deg of lag per rad/s of turn), sprung. move: lag against velocity changes. bob: per footstep (pos m, rot deg), scaled when sprinting / crouched. sprint: the lowered pose (pos m, rot deg) blended in while sprinting. land: dip per m/s of landing speed. equip: seconds to raise a new item. rest (ADR-0060): empty hands standing still for `delay` s sink by pos (m) / rot (deg), at `sink` (per s, eased) and come back at `wake`.",
     "breathe": {
       "period": 4.2,
       "pos": [
@@ -8548,7 +8548,22 @@
       "per_mps": 0.006,
       "max": 0.05
     },
-    "equip": 0.3
+    "equip": 0.3,
+    "rest": {
+      "delay": 4.0,
+      "pos": [
+        0.0,
+        -0.09,
+        0.03
+      ],
+      "rot": [
+        -10.0,
+        0.0,
+        0.0
+      ],
+      "sink": 0.6,
+      "wake": 5.0
+    }
   },
   "impact": {
     "_doc": "Feedback when a swing connects, by what it hit: hitstop (s the swing freezes), camera kick (pitch, yaw, roll deg; sprung back), rig recoil (m), and particles where the target makes none of its own.",
