@@ -242,7 +242,10 @@ func _run() -> void:
 				note("swing %d: hp %s, stamina %.0f, ray hits %s" % [i, str((veg.get(&"_tree_hp") as Dictionary).values()), ps.stats.stamina, str(p.interaction.target)])
 			p.equipment.primary()
 			swings += 1
-			await frames(int(0.9 * Engine.physics_ticks_per_second))
+			# A player's cadence: 0.9 s of physics ticks between presses (process frames ran
+			# faster than the swing, so presses landed mid-swing and were dropped).
+			for t: int in int(0.9 * Engine.physics_ticks_per_second):
+				await get_tree().physics_frame
 		note("felled after %d swings: %s (tree hp now %s, stamina %.0f)" % [swings, int(Game.session.stats.get("trees_felled", 0)) >= 1,
 			str((veg.get(&"_tree_hp") as Dictionary).values()), ps.stats.stamina])
 		# Swings that didn't fell it (finding 7): finish it as the smoke run does, so the
