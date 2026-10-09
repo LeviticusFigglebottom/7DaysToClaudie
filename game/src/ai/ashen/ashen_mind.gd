@@ -11,6 +11,8 @@ extends RefCounted
 ## the arithmetic is AshenBrain's, the world-wide bookkeeping AshenDirector's.
 
 enum Job { CAMP, SCOUT, RAID }
+## Fear of a held flame past which it won't close to strike (and shows it: _shy).
+const FEAR_CLOSE: float = 0.35
 
 var enemy: Enemy
 var fd: FactionDef
@@ -36,6 +38,10 @@ var unseen_t: float = 0.0
 ## Set when the director should take this body out of the world (it got away).
 var gone: bool = false
 var _fear: float = 0.0
+## When this body last shied from a held flame (s, its clock): the tell plays once per approach.
+var _shied_t: float = -1000.0
+## When any of the Ashen last said so (shared, so a band doesn't shout over itself).
+static var _said_t: float = -1000.0
 var _fires: Array = []
 var _fires_t: float = 0.0
 var _throw: Dictionary = {}
@@ -112,7 +118,10 @@ func tick(delta: float, p: Player) -> void:
 	if _fires_t <= 0.0:
 		_fires_t = 1.0
 		_fires = AshenMind.player_fires(enemy.global_position, float(fd.fire.get("radius", 9.0)) + 4.0)
+	var was: float = _fear
 	_fear = AshenBrain.fire_fear(fd, enemy.global_position, flame_of(p), facing_of(p), _fires)
+	if was < FEAR_CLOSE and _fear >= FEAR_CLOSE and flame_of(p) != Vector3.INF:
+		_shy(p)
 	morale = AshenBrain.near_fire(fd, morale, _fear, delta, at_home())
 	if enemy.state != Enemy.State.FLEE and AshenBrain.breaks(fd, morale):
 		flee(p)
@@ -140,9 +149,14 @@ func on_mate_down(p: Player) -> void:
 
 ## Turns to run: home to its camp, else straight away from the player.
 func flee(p: Player) -> void:
+	flee_from(p.global_position if p != null else enemy.global_position)
+
+
+## Turns to run from a point (the player, or a body that struck it): home to its camp, else
+## straight away from the point.
+func flee_from(from: Vector3) -> void:
 	if enemy.state == Enemy.State.DEAD or enemy.state == Enemy.State.FLEE:
 		return
-	var from: Vector3 = p.global_position if p != null else enemy.global_position
 	if camp_pos != Vector3.INF and job == Job.CAMP:
 		flee_to = camp_pos
 	else:
@@ -228,7 +242,34 @@ func chase_move(p: Player, tgt: Vector3, dist: float) -> Vector3:
 
 ## Whether it goes in to strike: not into a flame held up at it.
 func may_close(p: Player) -> bool:
-	return _fear < 0.35 or p == null
+	return _fear < FEAR_CLOSE or p == null
+
+
+## The tell that fire turned it (mid-game audit M10: nothing showed the player that a torch works
+## on them): it flinches back from the flame and one of them shouts it, and the first time the
+## screen says so. Tuning and lines in the faction's fire.shy.
+func _shy(p: Player) -> void:
+	var sh: Dictionary = fd.fire.get("shy", {})
+	var now: float = enemy._now()
+	if now - _shied_t < float(sh.get("every", 8.0)):
+		return
+	_shied_t = now
+	if enemy.state in [Enemy.State.IDLE, Enemy.State.WANDER, Enemy.State.INVESTIGATE, Enemy.State.CHASE] and enemy.visual != null:
+		enemy.visual.play_once(&"hit_front", 0.9, [&"stagger"] as Array[StringName])
+	var away := Vector3(enemy.global_position.x - p.global_position.x, 0.0, enemy.global_position.z - p.global_position.z)
+	if away.length() > 0.05:
+		enemy.velocity += away.normalized() * float(sh.get("recoil", 2.5))
+	if enemy.global_position.distance_to(p.global_position) > float(sh.get("hear", 25.0)) or now - _said_t < float(sh.get("say_every", 6.0)):
+		return
+	_said_t = now
+	var lines: Array = sh.get("barks", [])
+	if not lines.is_empty():
+		Events.player_status_message.emit(str(lines[enemy._rng.randi() % lines.size()]), &"warning")
+	Audio.play_3d(&"voice/ashen_call", enemy._mouth(), {"volume_db": -1.0})
+	var hint: String = str(sh.get("hint", ""))
+	if hint != "" and Game.session != null and not bool(Game.session.world.flags.get("ashen_fire_hint", false)):
+		Game.session.world.flags["ashen_fire_hint"] = true
+		Events.player_status_message.emit(hint, &"info")
 
 
 ## A spear throw is ready and the quarry is in its band of range (a raider throws now and then;
@@ -238,7 +279,7 @@ func can_throw(dist: float, cooldown_left: float) -> bool:
 		return false
 	if dist < float(_throw.get("min_range", 5.0)) or dist > float(_throw.get("range", 15.0)):
 		return false
-	return _fear >= 0.35 or enemy._rng.randf() < float(_throw.get("chance", 0.5))
+	return _fear >= FEAR_CLOSE or enemy._rng.randf() < float(_throw.get("chance", 0.5))
 
 
 func throw_cooldown() -> float:

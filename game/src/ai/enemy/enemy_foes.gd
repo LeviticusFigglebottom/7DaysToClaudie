@@ -40,6 +40,8 @@ static func fighting(e: Enemy) -> bool:
 ## Keeps the foe in view, or picks the nearest hostile body in sight (none past SCAN_RANGE of the
 ## player, nor while asleep, in the Hum, watching or running: the cost stays small).
 static func scan(e: Enemy, pdist: float) -> void:
+	if _scout(e):
+		return  # a scout watches and reports (ADR-0048): it picks no fights
 	var f: Enemy = e.foe
 	if f != null and is_instance_valid(f) and f.is_alive() and sees(e, f):
 		e._foe_seen = e._now()
@@ -80,6 +82,12 @@ static func hurt_by(e: Enemy, info: DamageInfo) -> void:
 		return
 	var o: Enemy = (enemies as Dictionary).get(info.source_id) as Enemy
 	if o != null and o != e and is_instance_valid(o) and o.is_alive() and FactionDef.hostile(e.def.faction, o.def.faction):
+		if _scout(e):
+			# Engaged, a scout breaks off and runs rather than trading blows (mid-game audit M11: a
+			# scout downed Ezra within seconds); only cornered, with nowhere to run, does it fight.
+			if not _cornered(e, o):
+				e.tribe.flee_from(o.global_position)
+				return
 		e.foe = o
 		e._foe_seen = e._now()
 		e.target_pos = o.global_position
@@ -149,3 +157,21 @@ static func sees(e: Enemy, b: Node3D) -> bool:
 	var q := PhysicsRayQueryParameters3D.create(e._eye(), b.global_position + Vector3.UP * 1.2, Enemy.SIGHT_MASK)
 	q.exclude = [e.get_rid()]
 	return e.get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
+## An Ashen scout (ADR-0048: scouts observe and report, they don't fight).
+static func _scout(e: Enemy) -> bool:
+	return e.tribe != null and e.tribe.job == AshenMind.Job.SCOUT
+
+
+## No way out: its attacker is on it and the way straight away from it is blocked within a few
+## metres (a wall, a cliff edge), so running would only turn its back to the blows.
+static func _cornered(e: Enemy, o: Enemy) -> bool:
+	if e.global_position.distance_to(o.global_position) > 2.5:
+		return false
+	var away := Vector3(e.global_position.x - o.global_position.x, 0.0, e.global_position.z - o.global_position.z)
+	if away.length() < 0.05:
+		return false
+	var from: Vector3 = e.global_position + Vector3.UP * 0.9
+	var q := PhysicsRayQueryParameters3D.create(from, from + away.normalized() * 4.0, Enemy.DETOUR_MASK, [e.get_rid()])
+	return not e.get_world_3d().direct_space_state.intersect_ray(q).is_empty()
