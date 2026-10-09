@@ -4,7 +4,8 @@ extends GutTest
 ## generator burns its fuel down and the light goes out with it; a sentry is loaded and shoots a
 ## Hollow, a kill credited to the trap directive; a spike pit stakes, holds and slows a Hollow and
 ## wears; a deadfall drops on what walks under it and is lifted again; a tripwire bell rings; the
-## traps are walked through; a destroyed piece takes its state and wires along.
+## traps are walked through; a destroyed piece takes its state and wires along; none of it touches
+## the companion (mid-game audit M1, TD-300).
 
 var _prev: GameSession
 var _bm: BuildingManager
@@ -56,6 +57,19 @@ func _enemy(at: Vector3) -> Enemy:
 	add_child_autofree(e)
 	e.global_position = at
 	e.set_physics_process(false)
+	return e
+
+
+## Ezra's body (ADR-0058), recruited: in the "enemies" group like any Hollow, but an ally.
+func _ezra(at: Vector3) -> Enemy:
+	var e := Enemy.new()
+	e.setup(&"test:ezra", Content.enemy(&"ezra_vane"), null, {"tier": "normal"})
+	add_child_autofree(e)
+	e.global_position = at
+	e.set_physics_process(false)
+	assert_not_null(e.ally, "the companion's body carries its mind")
+	e.ally.recruited = true
+	assert_true(e.is_alive(), "recruited and up: in play")
 	return e
 
 
@@ -293,3 +307,65 @@ func test_prompts_follow_the_state() -> void:
 	var df: StructurePiece = _spawn(&"deadfall", &"s:df")
 	Game.session.world.base_tech["traps"]["s:df"]["armed"] = false
 	assert_eq(BaseTechManager.action(df, pl)[0], &"trap.rearm")
+
+
+## M1: the sentry and the floodlight walk the "enemies" group, which holds Ezra too. Neither
+## aims at him; both still take the Hollow beside him.
+func test_a_powered_sentry_and_floodlight_ignore_the_companion() -> void:
+	_lit_generator()
+	var sentry: StructurePiece = _spawn(&"nail_sentry", &"s:sentry", Vector3(2, 0, 0))
+	var flood: StructurePiece = _spawn(&"floodlight", &"s:flood", Vector3(-2, 0, 0))
+	_p.inventory.add_item(&"copper_wire", 2)
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:sentry"})
+	Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:flood"})
+	assert_true(_tm.has_power(sentry) and _tm.has_power(flood), "both powered")
+	_p.inventory.add_item(&"nails", 30)
+	Game.execute(&"power.load", _args("s:sentry"))
+	var ezra: Enemy = _ezra(Vector3(5, 0, 0))
+	var hp: float = ezra.health
+	sentry.tech._turret_step(1.0)
+	sentry.tech.fire_at(ezra)
+	assert_eq(ezra.health, hp, "the sentry never shoots him")
+	assert_eq(int(Game.session.world.base_tech["power"]["s:sentry"]["ammo"]), 30, "not a nail spent on him")
+	flood.tech._scan_t = 0.0
+	flood.tech._flood_step(0.5)
+	assert_false(flood.tech.is_lit(), "his moving about the base doesn't trip the floodlight")
+	assert_eq(flood.tech._hold_t, 0.0)
+	# A Hollow further off than him: both take it.
+	var e: Enemy = _enemy(Vector3(9, 0, 0))
+	var ehp: float = e.health
+	sentry.tech._fire_t = 0.0
+	sentry.tech._turret_step(1.0)
+	assert_lt(e.health, ehp, "the sentry fires at the Hollow")
+	assert_eq(ezra.health, hp, "and still not at him, though he is nearer")
+	flood.tech._scan_t = 0.0
+	flood.tech._flood_step(0.5)
+	assert_true(flood.tech.is_lit(), "the floodlight catches the Hollow")
+
+
+## M1, the traps: a spike pit, a deadfall and a tripwire bell neither trigger on nor hurt him.
+func test_traps_never_trigger_on_the_companion() -> void:
+	var pit: StructurePiece = _spawn(&"spike_pit", &"s:pit", Vector3(20, 0, 0))
+	var ezra: Enemy = _ezra(Vector3(20.2, 0, 0))
+	var hp: float = ezra.health
+	var pit_hp: float = pit.hp
+	pit.tech._on_body_entered(ezra)
+	assert_eq(ezra.health, hp, "no stake for him")
+	assert_eq(pit.hp, pit_hp, "and no wear")
+	assert_true(pit.tech._inside.is_empty(), "nor held or slowed")
+	var df: StructurePiece = _spawn(&"deadfall", &"s:df", Vector3(-20, 0, 0))
+	df.tech._on_body_entered(ezra)
+	assert_true(bool(Game.session.world.base_tech["traps"]["s:df"]["armed"]), "he doesn't spring the deadfall")
+	var tw: StructurePiece = _spawn(&"tripwire_bell", &"s:tw", Vector3(0, 0, 20))
+	var st := Stimuli.new()
+	add_child_autofree(st)
+	var seq0: int = st.last_seq()
+	tw.tech._on_body_entered(ezra)
+	assert_eq(st.last_seq(), seq0, "he steps over the tripwire")
+	# Under a deadfall a Hollow springs, the log spares him.
+	ezra.global_position = Vector3(-20, 0, 0)
+	var e: Enemy = _enemy(Vector3(-20, 0, 0.2))
+	await wait_physics_frames(4)
+	assert_false(bool(Game.session.world.base_tech["traps"]["s:df"]["armed"]), "the Hollow sprang it")
+	assert_false(e.is_alive(), "the log killed the Hollow")
+	assert_eq(ezra.health, hp, "and missed him")

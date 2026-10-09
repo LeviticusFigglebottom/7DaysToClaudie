@@ -241,6 +241,15 @@ static func hours_text(h: float) -> String:
 
 # --- Traps -----------------------------------------------------------------------------------------
 
+## Whether a body is something the base's traps and sensors act on: a living body in the
+## "enemies" group that is not the companion. Ezra (ADR-0058) shares that group as an ally
+## (Enemy.ally); TD-300 says no friendly fire at all, so no stake, log, bell, floodlight or nail
+## is ever for him (mid-game audit M1: the floodlight warned of him and the sentry shot him in a
+## Hum). Wolves (ADR-0055) do count: they come for the player and his base like the Hollowed.
+static func is_target(e: Enemy) -> bool:
+	return e != null and is_instance_valid(e) and e.is_alive() and e.ally == null
+
+
 ## A trap's damage to the Hollowed after the world setting; a spike pit below dull_below of its
 ## hit points does half.
 static func trap_damage(base: float, hp_frac: float = 1.0, dull_below: float = 0.0) -> float:
