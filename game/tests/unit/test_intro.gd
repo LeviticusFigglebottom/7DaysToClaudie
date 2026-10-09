@@ -59,4 +59,17 @@ func test_world_card_targets_the_lift3_wreck() -> void:
 	var world: Array = (d["cards"] as Array).filter(func(c: Dictionary) -> bool: return str(c.get("kind", "")) == "world")
 	assert_eq(world.size(), 1)
 	assert_eq(str(world[0]["poi"]), "lift3_crash_site")
-	assert_null(IntroPlayer.shot_target(world[0]), "no world up: the card plays as a caption on black")
+	assert_null(IntroPlayer.shot_target(world[0]), "no world up: nothing to frame (the film is made from a loaded world)")
+
+
+func test_the_world_card_film_pushes_in_along_its_framing() -> void:
+	var path := PackedVector3Array([Vector3(0, 10, 50), Vector3(0, 10, 40), Vector3(0, 1.5, 6)])
+	var length: float = 13.0
+	var start: Transform3D = IntroPlayer.shot_pose(path, Vector3.ZERO, 0.0, length, null)
+	var end: Transform3D = IntroPlayer.shot_pose(path, Vector3.ZERO, length, length, null)
+	assert_almost_eq(start.origin.distance_to(path[0]), 0.0, 0.001, "starts over `from`")
+	assert_almost_eq(end.origin.distance_to(path[1]), 0.0, 0.001, "ends the push in")
+	assert_almost_eq(IntroPlayer.shot_pose(path, Vector3.ZERO, length * 2.0, length, null).origin.distance_to(path[1]), 0.0, 0.001, "then holds")
+	var ahead: Vector3 = -start.basis.z
+	assert_gt(ahead.dot((path[2] - path[0]).normalized()), 0.99, "looking at `to`")
+	assert_gt(IntroPlayer.shot_length({"hold": 7.0}), 7.0 + 2.0 * IntroPlayer.FADE, "long enough for the card's fades and its words")

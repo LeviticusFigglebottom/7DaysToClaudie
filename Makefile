@@ -17,7 +17,7 @@ LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
 .PHONY: smoke tour check-logs export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
-        assets assets-force assets-list assets-clean assets-determinism bake \
+        assets assets-force assets-list assets-clean assets-determinism bake stills \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview
 
 help: ## Show this help
@@ -59,8 +59,13 @@ assets-clean: ## Delete game/assets/generated
 assets-determinism: ## Rebuild assets into a scratch dir and compare hashes with the manifest
 	@$(PYTHON) tools/build_assets.py --check-determinism --jobs $(JOBS) --blender "$(BLENDER)"
 
-bake: ## Godot-side bakes that need the renderer (item icons, tree impostors, region data)
+bake: ## Godot-side bakes that need the renderer (item icons, tree impostors, region data, backdrop stills)
 	@mkdir -p $(ROOT)/build; if [ -f $(GAME)/src/tools/cli/bake.gd ]; then $(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy -s res://src/tools/cli/bake.gd; fi
+	@GODOT="$(GODOT)" $(ROOT)/tools/stills.sh || echo "stills: FAILED (the menu and the intro show no pictures; see build/stills_*.log)"
+	@$(MAKE) --no-print-directory import
+
+stills: ## The menu's and the intro's pre-rendered pictures (ADR-0065; STILLS_FORCE=1 redraws)
+	@GODOT="$(GODOT)" $(ROOT)/tools/stills.sh $(STILLS)
 	@$(MAKE) --no-print-directory import
 
 import: ## Import project resources headless (required before tests on a fresh clone)

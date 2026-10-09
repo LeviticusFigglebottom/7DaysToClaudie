@@ -71,7 +71,7 @@ until it lands.
 ## Allocations
 * ADR: 0001..0058 are taken or retired (0032, 0042, 0043 were never written). 0056 (organic caves,
   World), 0059 (World: roads and towns, if needed), 0060-0061 (Creatures), 0062 (hub), 0063-0064
-  (Presentation: the intro, the menu and UI style). Next free: 0065.
+  (Presentation: the intro, the menu and UI style), 0065 (hub: pre-rendered backdrops). Next free: 0066.
 * TD: the register runs to TD-317. World 318-337, Creatures 338-357, the hub 358-377,
   Presentation 378-397. Next free: 398.
 * Generator: `RwgGenerator.VERSION` is 11. World owns the generator this round and bumps it as it
