@@ -104,6 +104,7 @@ func test_manual_lights_one_tab() -> void:
 	m.close()
 	m.open("build")
 	assert_eq(m.lit_tabs(), PackedStringArray(["build"]))
+	assert_true(m.get(&"_selected") is BlueprintDef, "Blueprints opens on a blueprint, not the last tab's page")
 
 
 func test_roll_strips_shrink_to_fit_a_small_window() -> void:
@@ -115,3 +116,14 @@ func test_roll_strips_shrink_to_fit_a_small_window() -> void:
 func test_journal_line_folds_the_reward() -> void:
 	assert_eq(GameUI.journal_line("Make a stone axe", "+40 XP", "Fell a tree", "B"), "Journal: Make a stone axe ✓  +40 XP   Next: Fell a tree  [B]")
 	assert_eq(GameUI.journal_line("Sleep in your bed", "", "", "B"), "Journal: Sleep in your bed ✓")
+
+
+func test_prompt_hangs_centred_under_the_crosshair() -> void:
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	var l: Label = ui.get(&"_prompt") as Label
+	l.text = "[E] Use Campfire · burns 58m · [G] add fuel"
+	ui.call(&"_hug", l, 28.0)
+	var mid: float = l.get_parent_control().size.x * 0.5
+	assert_almost_eq(l.position.x + l.size.x * 0.5, mid, 1.0)
+	assert_almost_eq(l.position.y, l.get_parent_control().size.y * 0.5 + 28.0, 1.0)

@@ -394,6 +394,9 @@ func _run() -> void:
 			await snap("container_aim")
 			await use()
 			await frames(6)
+			var cinv: Inventory = c.get(&"inventory") as Inventory
+			note("container holds %s; roll mode %s, flap empty line %s" % [str(cinv.stacks.map(func(x: ItemStack) -> String: return "%s x%d" % [x.item_id, x.count])) if cinv != null else "no inventory",
+				ui.roll.mode, (ui.roll.get(&"_flap_empty") as Label).visible])
 			await snap("container_open")
 			ui.close_top_screen()
 	else:

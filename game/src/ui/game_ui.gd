@@ -603,8 +603,12 @@ func _hug(l: Label, below: float) -> void:
 	l.visible = l.text != ""
 	if not l.visible:
 		return
-	l.size = Vector2.ZERO
-	l.position = Vector2(-l.size.x * 0.5, below)
+	# Offsets, not position: the line hangs off the screen's centre anchor.
+	var m: Vector2 = l.get_combined_minimum_size()
+	l.offset_left = -m.x * 0.5
+	l.offset_right = m.x * 0.5
+	l.offset_top = below
+	l.offset_bottom = below + m.y
 
 
 static func _vignette_shader() -> Shader:
