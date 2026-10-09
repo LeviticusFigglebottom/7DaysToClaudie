@@ -140,6 +140,31 @@ the town junctions that led that list before (1.25-1.29 m) are gone from its top
 there is where two world roads meet (not pinned) and the edge of cul-de-sac bulbs, whose paved
 circle drops off before its radius (TD-318 follow-ups).
 
+### Roads meet roads and pads at one height (composer 15, generator 15)
+The carriageway steps left (measured on the carriageways only, within 10 m of where one road ends
+on another) were where two world roads met, at cul-de-sac bulbs, and above all where a road met a
+pad: since VERSION 13 a pad's bank gives way to the roads, and a road graded on its own met a pad at
+another height in a wall. Route 9 ran 3.7 m under Pell's Crossing's pad, 4 m off its edge, under the
+storefronts facing it, and 1.9 m under the Timberline Motel's.
+* **World roads** are profiled together in road order (`world_road_profiles`) and pinned to the
+  earlier roads they meet; the generator reads the same profiles for the lots by them.
+* **The nearest road is the nearest edge**: the road fields hold the distance to a road's edge, so a
+  bulb keeps its whole circle where its narrow street ends in it, and the distance stays continuous
+  where two roads of different widths meet. Readers add the road's half width back.
+* **On a region-graded world** (the main map) the POI and framework pads are levelled before the
+  roads are cut (`_pad_targets`; heights moved by at most 15 cm, Pell's 2 cm), a road whose centre
+  line comes within 8 m of a pad is pinned to its level and eases back at 8% over 12-60 m
+  (`_pin_to_pads`), and a road pins to the roads before it where they meet, over 32 m or half its
+  length (`_pin_to_roads`), so a lane between the highway and a pad meets both.
+* **On a world-graded world** (random worlds) a road that runs onto a pad ramps to it after the pads
+  are levelled (`PAD_RAMP_*`); its spur still meets the pad in a step where the pad stands far from
+  the road's grade (TD-320).
+
+Measured: main map, carriageway step at junctions p95 1.29 → 0.23 m and max 1.98 → 0.56 m, cross
+slope p95 0.023 → 0.011; hilly seed 7 p95 0.92 → 0.24 m; seed 21 1.44 → 0.53 m, all of what is left
+there access spurs onto place pads (TD-320). Saves crossing composer 15 drop their vegetation
+records by the roads, as at 13.
+
 ## Consequences
 + Measured on hilly seeds (size 4): bank heights p95 38.7 m → 6-7 m, the steepest 2 m step beside
   roads p95 1.57 → 0.85-0.9, grades capped (max 0.13-0.17 by surface, bridge ramps aside), face runs
