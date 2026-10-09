@@ -2,7 +2,7 @@ extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
 const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "new_game", "manual",
-	"loading", "pause", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
+	"loading", "pause", "trader", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
 var _only: PackedStringArray = []
@@ -167,3 +167,33 @@ func _shot_pause() -> Node:
 	ui.hide_loading()
 	(ui.get(&"_pause") as Control).visible = true
 	return ui
+
+
+## A stand-in trader manager: one post with the Waystation 9 def, its stock, no board offers.
+class FakeTraders:
+	extends Node
+	var posts: Dictionary = {}
+
+	func stock_of(_tid: StringName, _post: String) -> Dictionary:
+		# Three of each of a few early items, as a restocked counter shows them.
+		var out: Dictionary = {}
+		for k: String in ["canned_beans", "cloth_bandage", "water_bottle", "torch", "stone_axe", "cordage"]:
+			if Content.item(StringName(k)) != null:
+				out[StringName(k)] = {"count": 3, "rep_tier": 2 if k == "stone_axe" else 0}
+		return out
+
+	func board_offers(_p: PlayerState, _td: TraderDef) -> Array:
+		return []
+
+
+func _shot_trader() -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var fake := FakeTraders.new()
+	fake.posts = {"wp9": {"def": Content.get_def(&"trader", &"waystation_9")}}
+	layer.add_child(fake)
+	var t := TraderScreen.new()
+	t.manager = fake
+	layer.add_child(t)
+	await _settle(1)
+	t.open("wp9", "shop")
+	return layer
