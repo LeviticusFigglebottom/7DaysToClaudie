@@ -39,6 +39,8 @@
       {"gs": 60, "add": {"husk": 0.04, "rammer": 0.03, "blister": 0.03}}
     ],
     "waves": 4,
+    "_first_wave_share": "Share of the Hum's total in its first wave (the rest split evenly over the others): the first contact should feel like the Hum, not a skirmish.",
+    "first_wave_share": 0.38,
     "window_minutes": 300.0,
     "flank_bias": 1.6,
     "fast_clear_threshold": 0.45

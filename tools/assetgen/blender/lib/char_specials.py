@@ -115,21 +115,26 @@ def plate(model, spec: dict, rng):
         faces = [tuple(reversed(f)) for f in faces]
         fuv = [list(reversed(u)) for u in fuv]
     part.add(verts, faces, label, bone=bone, uvs=fuv)
-    edge = [top[iv, iu] for iv, iu in ring[::2]]
+    # the seam: the underside's rim, standoff off the body (where growth wedges plate to flesh)
+    edge = [bot[iv, iu] for iv, iu in ring]
     return part, seg, edge
 
 
 def add_armour(model, specs: list, rng) -> None:
     """Plates in the order given (top rows first, so each lower plate tucks under the one above),
-    fused into the body with Bloom growth along their edges."""
+    fused into the body by growth wedged under their rims: a few knots, each about as big as the
+    gap between plate and body, so it fills the seam and barely shows past the edge (TD-192: big
+    blobs along the top edges read as popcorn up close, and every extra knot is surface detail the
+    torso's decimation budget pays for)."""
     s = model.s
     for spec in specs:
         part, seg, edge = plate(model, spec, rng)
         model.extra_parts.setdefault(seg, Part()).merge(part)
         fuse = float(spec.get("fuse", 0.6))
+        gap = max(float(spec.get("standoff", 0.010)) * s, 0.006 * s)
         for p in edge:
-            if rng.random() < fuse:
-                model.growth.sphere(p + rng.normal(0, 0.004, 3) * s, rng.uniform(0.008, 0.016) * s, k=0.006 * s,
+            if rng.random() < fuse * 0.35:
+                model.growth.sphere(p + rng.normal(0, 0.002, 3) * s, gap * rng.uniform(0.9, 1.3), k=0.005 * s,
                                     label=B.L_BLOOM)
 
 
