@@ -1,7 +1,7 @@
 {
-  "_doc": "Survival tuning. Rates are per GAME hour unless noted (stamina: per real second; bleeding: per game minute). Infection below dormant_below is fought off (one or two bites fade); above it the Bloom grows until treated.",
+  "_doc": "Survival tuning. Rates are per GAME hour unless noted (stamina: per real second; regen_delay_melee: the shorter wait after a swing, so steady chopping regains some (a stone axe fells a fir in ~7-11 swings without emptying the bar); bleeding: per game minute). Infection below dormant_below is fought off (one or two bites fade); above it the Bloom grows until treated.",
   "health": {"max": 100, "regen_per_hour": 6.0, "regen_min_fullness": 50, "regen_min_hydration": 40},
-  "stamina": {"max": 100, "regen_per_sec": 14.0, "regen_delay": 0.8, "sprint_per_sec": 9.0, "jump": 8.0, "max_penalty_hunger": 0.4, "max_penalty_fatigue": 0.35, "sprint_recover": 30.0},
+  "stamina": {"max": 100, "regen_per_sec": 14.0, "regen_delay": 0.8, "regen_delay_melee": 0.35, "sprint_per_sec": 9.0, "jump": 8.0, "max_penalty_hunger": 0.4, "max_penalty_fatigue": 0.35, "sprint_recover": 30.0},
   "stream_water": {"hydration": 18.0, "health": -3.0},
   "fullness": {"decay_per_hour": 4.0, "starving_damage_per_hour": 6.0},
   "hydration": {"decay_per_hour": 6.0, "dehydrated_damage_per_hour": 10.0},
