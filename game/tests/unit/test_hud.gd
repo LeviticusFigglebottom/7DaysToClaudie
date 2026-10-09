@@ -58,3 +58,40 @@ func test_loading_relief_shows_only_what_was_walked() -> void:
 
 func _diff(a: Color, b: Color) -> float:
 	return absf(a.r - b.r) + absf(a.g - b.g) + absf(a.b - b.b)
+
+
+func test_pickups_show_and_add_up() -> void:
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	ui.feed_pickup("Plant Fibre", 2)
+	ui.feed_pickup("Plant Fibre", 1)
+	ui.feed_pickup("Stick", 3)
+	assert_eq(ui.pickup_lines(), PackedStringArray(["+3 Plant Fibre", "+3 Stick"]))
+	for i: int in 8:
+		ui.feed_pickup("Thing %d" % i, 1)
+	assert_eq(ui.pickup_lines().size(), 5, "a burst keeps the last few lines")
+
+
+func test_pad_b_closes_the_companion_card() -> void:
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	var card := CompanionScreen.new()
+	ui.add_child(card)
+	# Opened as its director would leave it (open() reads the companion's state).
+	card.set(&"_open", true)
+	card.visible = true
+	assert_true(card.is_open())
+	assert_true(ui.close_top_screen(), "B finds the card")
+	assert_false(card.is_open())
+
+
+func test_long_messages_wrap_and_stay_to_be_read() -> void:
+	assert_eq(GameUI.message_seconds("Saved."), 4.0)
+	var call: String = " ".join(PackedStringArray(range(60).map(func(i: int) -> String: return "word")))
+	assert_gt(GameUI.message_seconds(call), 20.0)
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	ui.message(call, &"level")
+	var l: Label = ui.get(&"_messages").get_child(0) as Label
+	assert_eq(l.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART)
+	assert_lte(l.custom_minimum_size.x, 820.0)

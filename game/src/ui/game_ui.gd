@@ -52,6 +52,9 @@ var _intro_holds_world: bool = false
 ## screen: taken as the pause menu opens and every THUMB_EVERY seconds of free play.
 var _last_frame: Image = null
 var _relief_done: bool = false
+var _pickups: VBoxContainer
+## Whether this run's first journal card has been announced (once, as the player first stands).
+var _first_card_said: bool = false
 var _tip_box: Control
 var _tip_title: Label
 var _tip_text: Label
@@ -296,6 +299,7 @@ func loading_text() -> String:
 
 func hide_loading() -> void:
 	_loading.visible = false
+	_say_first_card.call_deferred()
 	# Shade this world's sheet now (on a worker), so the next loading screen shows it.
 	world_map.prepare.call_deferred()
 	_hud.visible = true
@@ -323,8 +327,33 @@ func _on_tutorial_changed() -> void:
 	if _tutorial_done is Dictionary and bool(t.call(&"is_enabled")):
 		for id: String in done:
 			if not (_tutorial_done as Dictionary).has(id):
-				message("Journal: %s ✓%s" % [done[id], ("   Next: %s (%s)" % [next_title, PlayerInteraction.key_label(&"guidebook")]) if next_title != "" else ""], &"level")
+				message("Journal: %s ✓%s" % [done[id], ("   Next: %s  [%s]" % [next_title, PlayerInteraction.key_label(&"guidebook")]) if next_title != "" else ""], &"level")
 	_tutorial_done = done
+
+
+## A new run's first card, said once the player can act (the load and the intro both over):
+## nothing else tells a new player the journal exists or what to do first.
+func _say_first_card() -> void:
+	if _first_card_said or is_intro_playing() or (_loading != null and _loading.visible):
+		return
+	_first_card_said = true
+	var line: String = first_card_line()
+	if line != "":
+		message(line, &"level")
+
+
+## "Journal: <first step>  [B]" for a run with the tutorial on and no step done yet, else "".
+static func first_card_line() -> String:
+	var t: Object = FieldManual.tutorial()
+	if t == null or not bool(t.call(&"is_enabled")):
+		return ""
+	var first: String = ""
+	for st: Dictionary in t.call(&"steps"):
+		if bool(st.get("done", false)):
+			return ""
+		if first == "":
+			first = str(st.get("title", ""))
+	return "" if first == "" else "Journal: %s  [%s]" % [first, PlayerInteraction.key_label(&"guidebook")]
 
 
 func _on_tutorial_distress(_companion_id: StringName, position: Vector3) -> void:
@@ -389,6 +418,7 @@ func _on_intro_finished() -> void:
 		get_tree().paused = false
 		_hud.visible = true
 		pop_modal(&"intro")
+	_say_first_card.call_deferred()
 
 
 # --- HUD -----------------------------------------------------------------------------------
@@ -501,6 +531,19 @@ func _build_hud() -> void:
 		b.modulate = {"health": Color(0.8, 0.25, 0.2), "stamina": Color(0.85, 0.85, 0.8), "fullness": Color(0.8, 0.6, 0.3), "hydration": Color(0.35, 0.6, 0.85)}[k]
 		_vitals.add_child(b)
 		_bars[k] = b
+	_pickups = VBoxContainer.new()
+	_pickups.anchor_left = 1.0
+	_pickups.anchor_right = 1.0
+	_pickups.anchor_top = 1.0
+	_pickups.anchor_bottom = 1.0
+	_pickups.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_pickups.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_pickups.offset_left = -360
+	_pickups.offset_right = -40
+	_pickups.offset_bottom = -110
+	_pickups.alignment = BoxContainer.ALIGNMENT_END
+	_pickups.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hud.add_child(_pickups)
 	_hum_label = Label.new()
 	_hum_label.anchor_left = 1.0
 	_hum_label.anchor_right = 1.0
@@ -555,6 +598,7 @@ void fragment() {
 
 func _process(delta: float) -> void:
 	_turn_tip(delta)
+	_fade_pickups(delta)
 	var w: Node = Game.world
 	if w == null or w.get("player") == null or w.player == null:
 		return
@@ -707,11 +751,20 @@ func message(text: String, kind: StringName = &"info") -> void:
 	l.add_theme_color_override(&"font_outline_color", Color(0.03, 0.03, 0.02, 0.9))
 	l.add_theme_constant_override(&"outline_size", 6)
 	l.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE + 1)
+	# A long line (the distress call) wraps instead of running off the screen.
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(minf(820.0, 11.0 * text.length()), 0)
 	_messages.add_child(l)
 	_fade_message(l)
 	while _messages.get_child_count() > 6:
 		_messages.get_child(0).queue_free()
 		_messages.remove_child(_messages.get_child(0))
+
+
+## How long a message stays before it fades: 4 s, or its reading time when longer (a distress
+## call is fifty words).
+static func message_seconds(text: String) -> float:
+	return maxf(4.0, text.split(" ", false).size() / 3.0 + 1.5)
 
 
 func _fade_message(l: Label) -> void:
@@ -720,7 +773,7 @@ func _fade_message(l: Label) -> void:
 		if prev != null and prev.is_valid():
 			prev.kill()
 	var tw: Tween = l.create_tween()
-	tw.tween_interval(4.0)
+	tw.tween_interval(message_seconds(str(l.get_meta(&"text", l.text))))
 	tw.tween_property(l, "modulate:a", 0.0, 1.2)
 	tw.tween_callback(l.queue_free)
 	l.set_meta(&"tween", tw)
@@ -919,6 +972,10 @@ func close_top_screen() -> bool:
 			if c is TraderScreen and (c as TraderScreen).is_open():
 				(c as TraderScreen).close_screen()
 				return true
+			# Ezra's order card (CompanionScreen): B on a pad closes it like Esc.
+			if c is CompanionScreen and (c as CompanionScreen).is_open():
+				(c as CompanionScreen).close_screen()
+				return true
 		return false
 	return true
 
@@ -1076,14 +1133,68 @@ static func place_name() -> String:
 
 
 ## A note just picked up opens in the reader (it counts as read: inventory.read).
-func _on_item_picked_up(owner_id: StringName, item_id: StringName, _count: int) -> void:
+func _on_item_picked_up(owner_id: StringName, item_id: StringName, count: int) -> void:
 	var p: PlayerState = Game.local_player()
 	var d: ItemDef = Content.item(item_id)
-	if p == null or owner_id != p.id or d == null or d.category != "note" or d.note == &"":
+	if p == null or owner_id != p.id or d == null:
+		return
+	if d.category != "note":
+		feed_pickup(d.display_name, count)
+	if d.category != "note" or d.note == &"":
 		return
 	var res: Dictionary = Game.execute(&"inventory.read", {"item": String(item_id)})
 	if bool(res.get("ok", false)):
 		show_note.call_deferred(d.note)
+
+
+## The quiet line for what just went into the pack ("+2 Plant Fibre", bottom right), so a
+## harvest or a pickup is never silent on screen. Repeats within a moment add up on one line.
+func feed_pickup(item_name: String, count: int) -> void:
+	if _pickups == null or count <= 0:
+		return
+	for c: Node in _pickups.get_children():
+		var l: Label = c as Label
+		if l != null and l.get_meta(&"item", "") == item_name and float(l.get_meta(&"t", 0.0)) > Time.get_ticks_msec() / 1000.0 - 2.0:
+			l.set_meta(&"n", int(l.get_meta(&"n", 0)) + count)
+			l.set_meta(&"t", Time.get_ticks_msec() / 1000.0)
+			l.text = "+%d %s" % [int(l.get_meta(&"n")), item_name]
+			l.modulate.a = 1.0
+			return
+	var line := Label.new()
+	line.text = "+%d %s" % [count, item_name]
+	line.set_meta(&"item", item_name)
+	line.set_meta(&"n", count)
+	line.set_meta(&"t", Time.get_ticks_msec() / 1000.0)
+	line.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	line.add_theme_font_size_override(&"font_size", 17)
+	line.add_theme_color_override(&"font_color", Color(0.9, 0.88, 0.8))
+	line.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.85))
+	line.add_theme_constant_override(&"outline_size", 4)
+	_pickups.add_child(line)
+	while _pickups.get_child_count() > 5:
+		_pickups.get_child(0).free()
+
+
+func _fade_pickups(delta: float) -> void:
+	if _pickups == null:
+		return
+	var now: float = Time.get_ticks_msec() / 1000.0
+	for c: Node in _pickups.get_children():
+		var l: Label = c as Label
+		var age: float = now - float(l.get_meta(&"t", now))
+		if age > 2.5:
+			l.modulate.a -= delta * 1.5
+			if l.modulate.a <= 0.0:
+				l.queue_free()
+
+
+## What the pickup feed shows now (tests).
+func pickup_lines() -> PackedStringArray:
+	var out: PackedStringArray = []
+	for c: Node in _pickups.get_children() if _pickups != null else []:
+		if not c.is_queued_for_deletion():
+			out.append((c as Label).text)
+	return out
 
 
 func _build_overlay() -> void:
