@@ -3,7 +3,8 @@ extends Control
 ## The new-game intro (player report 4, item 2; ADR-0064): the Bloom, the Cordon, the Remand
 ## Program and how #4471 comes to be lying at the drop site, as a sequence of cards from
 ## data/intro/intro.json. Captions are typed on black, the Program's forms are typed on paper and
-## stamped, the drop is a radio log, and the title closes it.
+## stamped, the drop is a radio log, the wreck is a picture rendered offline and slowly zoomed
+## (ADR-0065: nothing in the intro draws 3D), and the title closes it.
 ##
 ## It plays over the loading screen while the world loads. The load's main-thread half does heavy
 ## steps (up to ~0.5 s a frame headless, more with new models), so the intro tells GameWorld when
@@ -17,7 +18,17 @@ signal finished()
 const SCRIPT_PATH: String = "res://data/intro/intro.json"
 const KINDS: PackedStringArray = ["caption", "document", "radio", "impact", "world", "title"]
 const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds", "caption", "poi", "at", "from", "to", "height"]
-## The world card's camera: metres out from its target, up, and degrees it turns over the card.
+## The world card's picture, rendered offline (`make stills`, ADR-0065) and slowly zoomed in on over
+## the card: the shot is never drawn live, so the load's work and a slow GPU can't stutter it, and
+## it needs no world. SHOT_ZOOM is the zoom at the card's end (the old live shot's push in).
+const SHOT_STILL: String = "res://assets/generated/stills/intro_wreck.png"
+const SHOT_ZOOM: float = 1.12
+## The hour the picture is taken at: just after first light (the wreck burned out before it; at
+## 06:24 the hull was a dark shape under the card's words).
+const SHOT_HOUR: float = 7.0
+## The world card's camera (rendered): its field of view, metres out from its target, up, and
+## degrees it turns over the card.
+const SHOT_FOV: float = 52.0
 const SHOT_RADIUS: float = 38.0
 const SHOT_HEIGHT: float = 15.0
 const SHOT_TURN: float = 14.0
@@ -57,14 +68,8 @@ var _grain: ColorRect
 var _status: Label
 ## Seconds into the current impact card (-1: none).
 var _impact_t: float = -1.0
-## The world card's shot: its camera, the camera it took over, the target, the angle now, and the
-## black backdrop that it lifts while it shows the world.
-var _shot_cam: Camera3D = null
-var _prev_cam: Camera3D = null
-var _shot_at: Vector3 = Vector3.ZERO
-var _shot_yaw: float = 0.0
-## A framed shot's camera start and end (empty: orbit `_shot_at` instead), and its time so far.
-var _shot_path: PackedVector3Array = []
+## The world card's picture while it shows, and seconds into it.
+var _shot_still: TextureRect = null
 var _shot_t: float = 0.0
 var _shot_len: float = 1.0
 var _bg: ColorRect
@@ -216,6 +221,7 @@ func play(script: Dictionary = {}, vars: Dictionary = {}) -> void:
 	_type_speed = float(_script.get("type_speed", 42.0))
 	_vars = vars
 	_playing = not _cards.is_empty()
+	_request_shot_still()
 	_index = -1
 	if not _playing:
 		finished.emit.call_deferred()
@@ -235,9 +241,10 @@ func is_playing() -> bool:
 	return _playing
 
 
-## True when nothing on screen is moving: the moment for the load to run a heavy step.
+## True when nothing on screen is moving: the moment for the load to run a heavy step (never while
+## the world card's picture zooms: a step would stall it).
 func is_calm() -> bool:
-	return not _playing or _phase == &"hold"
+	return not _playing or (_phase == &"hold" and _shot_still == null)
 
 
 ## Shown under the cards while the world loads ("Entering the Cordon… 40%").
@@ -325,8 +332,8 @@ func _process(delta: float) -> void:
 	_t += dt
 	if _impact_t >= 0.0:
 		_impact(dt)
-	if _shot_cam != null:
-		_turn_shot(dt)
+	if _shot_still != null:
+		_zoom_shot(dt)
 	var c: Dictionary = _cards[_index]
 	match _phase:
 		&"in":
@@ -412,57 +419,79 @@ static func shot_frame(c: Dictionary) -> PackedVector3Array:
 	return PackedVector3Array()
 
 
+## How long the world card's film runs (s): the card's hold, its fades and time for its words to
+## type; the push in ends there and the last frame holds.
+static func shot_length(c: Dictionary) -> float:
+	return maxf(float(c.get("hold", 6.0)) + 2.0 * FADE + 4.0, 1.0)
+
+
+## The world card's camera `t` seconds into its shot (filmed by FilmRunner): along the framed
+## `path` (shot_frame) with an eased push in, else turning slowly round `at`, `w`'s ground under it.
+static func shot_pose(path: PackedVector3Array, at: Vector3, t: float, length: float, w: Node) -> Transform3D:
+	if path.size() == 3:
+		var k: float = smoothstep(0.0, 1.0, clampf(t / length, 0.0, 1.0))
+		return Transform3D(Basis.IDENTITY, path[0].lerp(path[1], k)).looking_at(path[2], Vector3.UP)
+	var yaw: float = deg_to_rad(SHOT_START) + deg_to_rad(SHOT_TURN) / 14.0 * t
+	var pos: Vector3 = at + Vector3(sin(yaw), 0.0, cos(yaw)) * SHOT_RADIUS
+	var ground: float = float(w.call(&"height_at", pos.x, pos.z)) if w != null and w.has_method(&"height_at") else at.y
+	pos.y = maxf(ground, at.y) + SHOT_HEIGHT
+	return Transform3D(Basis.IDENTITY, pos).looking_at(at + Vector3.UP * 2.0, Vector3.UP)
+
+
+## Whether the world card has its picture (generated assets; without it the card is a caption on
+## black).
+static func has_shot_still() -> bool:
+	return ResourceLoader.exists(SHOT_STILL)
+
+
+## Starts loading the world card's picture off the main thread (a 3200 px image would hitch the card
+## it starts on).
+func _request_shot_still() -> void:
+	if has_shot_still():
+		ResourceLoader.load_threaded_request(SHOT_STILL, "Texture2D")
+
+
 func _begin_shot(c: Dictionary) -> void:
-	var at: Variant = shot_target(c)
-	if at == null:
+	if not has_shot_still() or ResourceLoader.load_threaded_get_status(SHOT_STILL) != ResourceLoader.THREAD_LOAD_LOADED:
 		return
-	_shot_at = at
-	_shot_path = shot_frame(c)
+	var tex: Texture2D = ResourceLoader.load_threaded_get(SHOT_STILL) as Texture2D
+	if tex == null:
+		return
+	_shot_still = TextureRect.new()
+	_shot_still.texture = tex
+	_shot_still.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_shot_still.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_shot_still.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shot_still.modulate.a = 0.0
+	add_child(_shot_still)
+	_shot_still.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Above the black, under the grain and the card's words.
+	move_child(_shot_still, _bg.get_index() + 1)
 	_shot_t = 0.0
-	_shot_len = maxf(float(c.get("hold", 6.0)) + 2.0 * FADE, 1.0)
-	_shot_yaw = deg_to_rad(SHOT_START)
-	_prev_cam = get_viewport().get_camera_3d()
-	_shot_cam = Camera3D.new()
-	_shot_cam.fov = 52.0
-	_shot_cam.far = 1500.0
-	_shot_cam.process_mode = Node.PROCESS_MODE_ALWAYS
-	(Game.world as Node).add_child(_shot_cam)
-	_turn_shot(0.0)
-	_shot_cam.make_current()
-	# Lift the black: the card's words sit over the wreck (a dark band keeps them legible).
-	var tw := create_tween()
-	tw.tween_property(_bg, "color:a", 0.0, FADE * 1.5)
+	_shot_len = shot_length(c)
+	_zoom_shot(0.0)
+	create_tween().tween_property(_shot_still, "modulate:a", 1.0, FADE * 1.5)
 
 
-func _turn_shot(dt: float) -> void:
-	if _shot_path.size() == 3:
-		_shot_t += dt
-		var k: float = smoothstep(0.0, 1.0, clampf(_shot_t / _shot_len, 0.0, 1.0))
-		_shot_cam.look_at_from_position(_shot_path[0].lerp(_shot_path[1], k), _shot_path[2], Vector3.UP)
-		return
-	_shot_yaw += deg_to_rad(SHOT_TURN) / 14.0 * dt
-	var off := Vector3(sin(_shot_yaw), 0.0, cos(_shot_yaw)) * SHOT_RADIUS
-	var pos: Vector3 = _shot_at + off
-	var w: Node = Game.world
-	var ground: float = float(w.call(&"height_at", pos.x, pos.z)) if w != null and w.has_method(&"height_at") else _shot_at.y
-	pos.y = maxf(ground, _shot_at.y) + SHOT_HEIGHT
-	_shot_cam.look_at_from_position(pos, _shot_at + Vector3.UP * 2.0, Vector3.UP)
+## The picture's slow push in: eased to SHOT_ZOOM over the shot's length, about its centre (the
+## camera looked at the wreck).
+func _zoom_shot(dt: float) -> void:
+	_shot_t += dt
+	_shot_still.pivot_offset = _shot_still.size * 0.5
+	var k: float = smoothstep(0.0, 1.0, clampf(_shot_t / _shot_len, 0.0, 1.0))
+	_shot_still.scale = Vector2.ONE * lerpf(1.0, SHOT_ZOOM, k)
 
 
 func _end_shot() -> void:
-	if _shot_cam == null:
+	if _shot_still == null:
 		return
-	if _prev_cam != null and is_instance_valid(_prev_cam):
-		_prev_cam.make_current()
-	_shot_cam.queue_free()
-	_shot_cam = null
-	_prev_cam = null
-	_bg.color.a = 1.0
+	_shot_still.queue_free()
+	_shot_still = null
 
 
 ## Whether the world card is showing the world now (tests, QA).
 func is_showing_world() -> bool:
-	return _shot_cam != null
+	return _shot_still != null
 
 
 ## The crash: the frame shakes and a fire-white flash fades to black, decaying together.

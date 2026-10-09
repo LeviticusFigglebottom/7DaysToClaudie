@@ -22,19 +22,24 @@ paddles, or the fingers read as smooth sausages.
 ## 2. The intro (item 2)
 **Changed:** a new game opens with an intro over the loading screen: rumours of the Cordon, your
 Order 14 papers, the radio as Lift 3 goes down, and a shot of the wreck. The load waits for it
-and never stutters it. Hold **Esc** (or **B**) to skip; skipping costs you no load time.
+and never stutters it. The wreck is a picture rendered when the build is made, slowly zoomed in on,
+so nothing in the intro draws 3D. Hold **Esc** (or **B**) to skip; skipping costs you no load
+time.
 **Where:** New Game. It can be replayed from the menu's **The Intro**.
 **Try:** watch it once to the end, then skip one early.
 **Still broken if:** a card stutters or freezes mid-fade, skipping leaves you waiting longer
 than no intro would, or the wreck shot is black.
 
 ## 3. The main menu (item 3)
-**Changed:** the menu and every screen share one style, and the menu flies slowly over Larch
-Hollow behind its entries.
+**Changed:** the menu and every screen share one style. Behind the menu, the view drifts slowly
+across four pictures of Larch Hollow at dusk, one dissolving into the next. Build #94's menu froze
+as soon as you used it: it built and drew the whole valley in 3D behind the menu. The pictures are
+now rendered when the build is made, so the menu draws no 3D at all (ADR-0065).
 **Where:** the main menu. **Options → Menu backdrop** switches moving / still / off.
-**Try:** leave it on the menu for a minute; open Options and New Game over it.
-**Still broken if:** it stutters (it drops to a still frame by itself under 40 fps), or any
-screen still looks like plain Godot grey.
+**Try:** hover and click every entry right away, then leave it on the menu for a minute; open
+Options and New Game over it.
+**Still broken if:** the menu freezes or stutters at any point, or any screen still looks like
+plain Godot grey.
 
 ## 4. Roads, banks and town edges (item 4)
 **Changed:** roads stay level across their width and climb within a grade cap, cutting into
@@ -150,7 +155,7 @@ away.
   still stands in D6's stand-in ring of hesco, about 350 m south-east of the drop.
 * **Generated assets** are needed for the full look: hands, the wreck, the tether's screen and
   the trees only look right in the packaged build.
-* **TD-378:** the menu backdrop has only been measured on a software renderer. Its cost on your
-  GPU is new information: the log's `[menu] backdrop` line.
+* **TD-378:** the menu backdrop is a slow pan over still pictures, not a filmed camera move: a
+  video would take about 16 hours of software rendering a minute to make.
 * **TD-376:** a save from before the tutorial starts it from the first card, even with an axe
   and a bed already made.
