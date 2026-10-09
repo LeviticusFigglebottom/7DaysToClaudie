@@ -843,14 +843,15 @@ func _clear(def_id: String, tag: String) -> void:
 	look(inst.global_position + Vector3.UP * 1.5)
 	await snap(tag + "_arrive")
 	var total: int = inst.layout.sleepers.size()
-	note("%s (tier %d): %d sleepers" % [inst.layout.def.display_name, inst.tier, total])
+	note("%s (tier %d): %d sleepers; spawned %s, bodies %d, enemies in group %d" % [inst.layout.def.display_name, inst.tier, total,
+		inst.sleepers_spawned, (inst.get(&"_sleepers") as Dictionary).size(), get_tree().get_nodes_in_group(&"enemies").size()])
 	for i: int in 30:
 		if bool(inst.state.get("cleared", false)):
 			break
 		var live: Array = []
-		for e: Node in get_tree().get_nodes_in_group(&"enemies"):
-			var en := e as Enemy
-			if en != null and is_instance_valid(en) and en.is_alive() and en.global_position.distance_to(inst.global_position) < 60.0:
+		for sid: Variant in (inst.get(&"_sleepers") as Dictionary).keys():
+			var en: Enemy = inst.call(&"sleeper", str(sid)) as Enemy
+			if en != null and is_instance_valid(en) and en.is_alive():
 				live.append(en)
 		if live.is_empty():
 			# Sleepers rise only near the player: walk the building's levels.
@@ -866,7 +867,9 @@ func _clear(def_id: String, tag: String) -> void:
 		await face(en.global_position + Vector3.UP * 1.2, 2.0)
 		if i < 2:
 			await snap("%s_fight_%d" % [tag, i])
-		_kill_near(en.global_position, 1.0)
+		var kd := DamageInfo.make(999.0, &"blunt", &"melee", p.state.id)
+		kd.hit_pos = en.global_position + Vector3.UP
+		en.take_damage(kd)
 		await seconds(1.0)
 	note("%s cleared: %s (%d of %d dead)" % [def_id, inst.state.get("cleared", false), (inst.state.get("dead", []) as Array).size(), total])
 	await snap(tag + "_cleared")
@@ -874,18 +877,20 @@ func _clear(def_id: String, tag: String) -> void:
 
 func _place(bp: String, at: Vector3) -> StringName:
 	at.y = w.height_at(at.x, at.z)
+	# Logs ride on the shoulder, two at a time: fetched again for each piece.
+	p.state.inventory.add_item(&"log", maxi(0, 2 - p.state.inventory.count_of(&"log")))
 	await face(at + Vector3.UP * 0.4, 2.4)
 	var r: Dictionary = ex(&"build.place_blueprint", {"blueprint": bp, "pos": [at.x, at.y, at.z], "yaw": 0.0})
 	if not r.has("site"):
 		return &""
 	var d: Dictionary = ex(&"build.deliver", {"site": r["site"]})
 	await frames(4)
+	if not bool(d.get("complete", false)):
+		note("%s: not complete after delivering (%s); prompt: '%s'" % [bp, str(d), p.interaction.prompt])
 	for piece: StructurePiece in w.building.pieces_in_radius(at, 2.5):
-		if String(piece.def_id) == bp or String(piece.get(&"def_id")).begins_with(bp):
+		if piece.def != null and String(piece.def.id).begins_with(bp):
 			return piece.piece_id
-	var near: Array[StructurePiece] = w.building.pieces_in_radius(at, 2.5)
-	note("%s: delivered (%s) but no piece found; %d pieces near" % [bp, str(d.get("complete", "?")), near.size()])
-	return near.back().piece_id if not near.is_empty() else &""
+	return &""
 
 
 func _midgame() -> void:
@@ -895,9 +900,12 @@ func _midgame() -> void:
 	note("mid game from day %d (god mode on: the audit wants every screen, not a run's end)" % Game.session.clock.day())
 	Game.session.clock.set_time(maxi(Game.session.clock.day(), 8), 8.0)
 	_sustain()
+	ps.inventory.max_bulk = maxf(ps.inventory.max_bulk, 400.0)
+	ps.inventory.add_item(&"stone_axe", 1)
 	for kv: Array in [["log", 2], ["stick", 40], ["stone", 30], ["nails", 80], ["plant_fiber", 20], ["cordage", 10], ["gas_can", 4],
-			["copper_wire", 4], ["scrap_metal", 20], ["leaf_bundle", 12], ["torch", 2], ["seed_potato", 4], ["carrot_seeds", 4],
-			["water_bottle_dirty", 2], ["claw_hammer", 1], ["planks", 20], ["cloth", 6]]:
+			["copper_wire", 4], ["scrap_metal", 60], ["leaf_bundle", 12], ["torch", 2], ["seed_potato", 4], ["carrot_seeds", 4],
+			["water_bottle_dirty", 2], ["claw_hammer", 1], ["planks", 20], ["cloth", 12], ["small_engine", 1], ["electrical_parts", 12],
+			["light_bulb", 4], ["duct_tape", 4]]:
 		if Content.item(StringName(kv[0])) != null:
 			ps.inventory.add_item(StringName(kv[0]), int(kv[1]))
 	ps.inventory.max_bulk = maxf(ps.inventory.max_bulk, 400.0)
@@ -906,6 +914,8 @@ func _midgame() -> void:
 	ps.progression.skill_points += 6
 
 	# --- Perks and the Record -----------------------------------------------------------------------
+	for attr: String in ["sinew", "wits"]:
+		ex(&"progression.raise_attribute", {"attribute": attr})
 	for perk: String in ["packhorse", "timberwright", "scavenger", "handy"]:
 		ex(&"progression.buy_perk", {"perk": perk})
 	ui.manual.open("record")
@@ -936,7 +946,9 @@ func _midgame() -> void:
 				ex(&"power.wire", {"from": String(g), "to": String(pieces[to])})
 		ex(&"power.toggle", {"piece": String(g)})
 		if String(pieces.get("nail_sentry", "")) != "":
+			await face(base + spots["nail_sentry"] + Vector3.UP * 0.6, 1.8)
 			ex(&"power.load", {"piece": String(pieces["nail_sentry"])})
+			await snap("m_sentry_loaded")
 		await frames(6)
 		await face(base + spots["work_light"] + Vector3.UP * 0.8, 2.2)
 		await snap("m_power_on")
@@ -1016,7 +1028,7 @@ func _midgame() -> void:
 		if p.equipment.has_method(&"toggle_light"):
 			p.equipment.toggle_light()
 		for e: Node in get_tree().get_nodes_in_group(&"enemies"):
-			if String((e as Node).get(&"enemy_id")).begins_with("ashen"):
+			if str((e as Node).get(&"enemy_id")).begins_with("ashen"):
 				look((e as Node3D).global_position + Vector3.UP * 1.5)
 				break
 		await seconds(4.0)
@@ -1034,11 +1046,12 @@ func _midgame() -> void:
 		var td: TraderDef = post["def"]
 		await _teleport(post["pos"] + Vector3(3, 0, 3))
 		var offers: Array = tm.call(&"board_offers", ps, td)
-		note("board: %s" % str(offers.map(func(o: Dictionary) -> String: return "%s (%s)" % [o.get("title", o.get("id", "?")), o.get("type", "?")])))
+		note("board offer keys: %s" % (str((offers[0] as Dictionary).keys()) if not offers.is_empty() else "none"))
 		for o: Dictionary in offers:
-			if str(o.get("type", "")).begins_with("clear") or str(o.get("id", "")).contains("clear"):
+			var qid: String = str(o.get("def", ""))
+			note("offer: %s (%s) -> %s" % [o.get("name", "?"), qid, str(o.get("target", ""))])
+			if qid.contains("clear") or qid.begins_with("fetch"):
 				ex(&"contract.accept", {"trader": String(td.id), "offer": str(o.get("id", ""))})
-				break
 		tm.call(&"open_screen", str(post["id"]), "board")
 		await frames(6)
 		await snap("m_contracts_taken")
@@ -1099,9 +1112,9 @@ func _midgame() -> void:
 		if hum_day == 0:
 			hum_day = Game.session.clock.next_horde_day(Game.session.clock.day() + 1)
 		await _teleport(base + Vector3(0, 0, 2))
-		Game.session.clock.set_time(hum_day, 20.5)
+		Game.session.clock.set_time(hum_day, 21.9)
 		_sustain()
-		w.clock_driver.advance(60.0)
+		w.clock_driver.advance(10.0)
 		await seconds(2.0)
 		var ai: AIDirector = w.ai
 		await wait_until(func() -> bool: return ai.hum.active, 30.0)
@@ -1138,6 +1151,8 @@ func _midgame() -> void:
 			p.equipment.select_slot(hs)
 			await face((damaged[0] as Node3D).global_position + Vector3.UP * 0.4, 2.0)
 			await snap("m_hum%d_repair_aim" % hum_day)
+			for kv: Array in [["log", 2], ["stick", 10], ["cordage", 4], ["nails", 20], ["stone", 10]]:
+				ps.inventory.add_item(StringName(kv[0]), int(kv[1]))
 			ex(&"build.repair", {"piece": String((damaged[0] as StructurePiece).piece_id)})
 		await seconds(3.0)
 		await snap("m_hum%d_morning" % hum_day)

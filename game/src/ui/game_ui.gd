@@ -61,6 +61,9 @@ const PRIO_DAWN: int = 5
 const PRIO_LEVEL: int = 3
 const PRIO_DROP: int = 0
 var _ov_tween: Tween = null
+## Seconds left before the waiting level-up is said (see _on_leveled).
+var _level_wait: float = 0.0
+const LEVEL_SETTLE: float = 2.5
 var _tip_box: Control
 var _tip_title: Label
 var _tip_text: Label
@@ -685,6 +688,10 @@ void fragment() {
 
 func _process(delta: float) -> void:
 	_turn_tip(delta)
+	if _level_wait > 0.0:
+		_level_wait -= delta
+		if _level_wait <= 0.0:
+			_announce_level()
 	_fade_pickups(delta)
 	var w: Node = Game.world
 	if w == null or w.get("player") == null or w.player == null:
@@ -881,9 +888,10 @@ func _fade_message(l: Label) -> void:
 func _on_leveled(player_id: StringName, level: int) -> void:
 	if Game.session == null or player_id != Game.session.local_player_id:
 		return
-	if _level_pending == 0:
-		_announce_level.call_deferred()
+	# A burst (a dungeon cleared pays for several levels over a few seconds) is said once, at its
+	# highest, when no new level has come for LEVEL_SETTLE seconds (mid-game audit M8).
 	_level_pending = maxi(_level_pending, level)
+	_level_wait = LEVEL_SETTLE
 
 
 ## One message and one chime however many levels a single award crossed.
