@@ -352,6 +352,17 @@ class BodyModel:
         rng = np.random.default_rng(int(self.p.get("seed", 1)) * 7919 + zlib.crc32(name.encode()))
         return float(rng.uniform(-1.0, 1.0))
 
+    def damage(self, name: str, chance: float) -> bool:
+        """A seeded facial injury for a Hollowed (TD-192): present with `chance` unless the body
+        names it (`face_damage`: {name: bool}); never on the living."""
+        fd = self.p.get("face_damage", {}) or {}
+        if name in fd:
+            return bool(fd[name])
+        if not self.p.get("face_vary"):
+            return False
+        rng = np.random.default_rng(int(self.p.get("seed", 1)) * 104729 + zlib.crc32(name.encode()))
+        return bool(rng.random() < chance)
+
     def eye(self, sx: float):
         """(centre, eyeball radius) of an eye: a Hollowed's sit smaller and deeper in their orbits
         (TD-192: bulging milky spheres ringed by thick lids)."""
@@ -429,7 +440,8 @@ class BodyModel:
                      label=L_SKIN)
         # ears: a rim (helix) round a hollow bowl (concha), and a lobe
         for sx in (1.0, -1.0):
-            if self.p.get("missing_ear") == ("L" if sx > 0 else "R"):
+            gone = self.p.get("missing_ear", "R" if self.damage("ear", 0.2) else None)
+            if gone == ("L" if sx > 0 else "R"):
                 continue
             ec = HP(sx * 0.072, 0.004, -0.008)
             # bigger ears stand out further from the skull, and turn forward
@@ -456,7 +468,7 @@ class BodyModel:
                 prog.ellipsoid(HP(sx * 0.030, -0.009, 0.083), np.array([0.013, 0.006, 0.006]) * s * (0.6 + 0.6 * g), R=Rl,
                                k=0.004 * s, label=None, mode="sub")
         # nose rot: the cartilage eaten away to a dark hole
-        rot = float(self.p.get("nose_rot", 0.0))
+        rot = float(self.p.get("nose_rot", 0.55 if self.damage("nose", 0.25) else 0.0))
         if rot > 0.0:
             prog.sphere(HP(0, -0.028, 0.110), (0.006 + 0.010 * rot) * s, k=0.003 * s, label=L_GORE, mode="sub")
         # eyelid shells around the eyeballs, with the palpebral slit cut out: heavy, half-closed lids
@@ -481,6 +493,11 @@ class BodyModel:
         cav = mc + R[:, 2] * (-0.028 * s)
         prog.ellipsoid(cav, np.array([0.022, 0.030, max(0.013 + 0.012 * mo, half + 0.008)]) * s, R=Rl, k=0.006 * s,
                        label=L_GORE, mode="sub")
+        # a cheek torn open back from the mouth's corner onto the teeth (a bite that healed wrong)
+        if self.damage("cheek", 0.35):
+            sx = 1.0 if self.face("tear_side") >= 0.0 else -1.0
+            prog.ellipsoid(mc + R[:, 0] * sx * 0.026 * s - R[:, 2] * 0.006 * s, np.array([0.016, 0.012, 0.010]) * s, R=Rl,
+                           k=0.003 * s, label=L_GORE, mode="sub")
 
     def _arm(self, prog: S.Program, side: str, sx: float, detail: bool):
         s, t, g = self.s, self.t, self.gaunt

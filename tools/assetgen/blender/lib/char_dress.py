@@ -135,8 +135,10 @@ def add_hair(model, spec: dict, rng):
     rough = 1.0 if model.p.get("face_vary") else 0.0
     Rl = R @ np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])
     line = float(spec.get("hairline", 0.055))        # front hairline height (head-local y)
-    bald = float(spec.get("bald", 0.0))
-    patchy = float(spec.get("patchy", 0.35))
+    # A Hollowed's own balding and bare patches from its seed when the body doesn't say (TD-192).
+    vary = model.p.get("face_vary") and hasattr(model, "face")
+    bald = float(spec.get("bald", max(0.0, model.face("bald")) * 0.7 if vary else 0.0))
+    patchy = float(spec.get("patchy", 0.35 + (0.25 * model.face("patchy") if vary else 0.0)))
     nz = model.noise
     hcen = model.hc
 
