@@ -590,9 +590,12 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 	# A LOD tick covers the frames it skipped: one move as long as all of them (the body steps
 	# 2-6 frames' worth at once, 20-30 Hz past LOD_FULL m, where it isn't looked at closely).
 	if _lod_span > 1.001:
-		velocity = Vector3(v.x * _lod_span, v.y, v.z * _lod_span)
+		# Falling too (Creatures' review): gravity built v.y over the whole span, so the drop covers it;
+		# on the floor v.y stays as is, so the floor snap behaves.
+		var vy_k: float = 1.0 if is_on_floor() else _lod_span
+		velocity = Vector3(v.x * _lod_span, v.y * vy_k, v.z * _lod_span)
 		move_and_slide()
-		velocity = Vector3(velocity.x / _lod_span, velocity.y, velocity.z / _lod_span)
+		velocity = Vector3(velocity.x / _lod_span, velocity.y / vy_k, velocity.z / _lod_span)
 	else:
 		move_and_slide()
 	if state == State.CHARGE:
