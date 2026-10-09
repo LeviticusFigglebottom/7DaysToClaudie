@@ -229,3 +229,66 @@ func test_item_card_keeps_off_the_recipe_sheet() -> void:
 	var p: Vector2 = SalvageRoll.card_pos(Vector2(600, 300), cs, view, sheet)
 	assert_lt(p.x + cs.x, 600.0)
 	assert_false(Rect2(p, cs).intersects(sheet))
+
+
+func test_the_hand_sheet_names_where_station_recipes_are_made() -> void:
+	var all: Callable = func(_r: RecipeDef) -> bool: return true
+	var inv := Inventory.new()
+	inv.add_item(&"plant_fiber", 7)
+	var rows: Array[Dictionary] = CraftSheet.rows(inv, &"", all, true)
+	var seen_away: bool = false
+	var away: int = 0
+	for r: Dictionary in rows:
+		if r.has("at"):
+			seen_away = true
+			away += 1
+			assert_false(bool(r["ok"]), "never makeable by hand")
+			assert_string_starts_with(str(r["status"]), "at a")
+			assert_true(CraftSheet.passes(r, "stations"))
+			assert_string_contains(CraftSheet.detail_bbcode(r), "Made at a")
+		else:
+			assert_false(seen_away, "the hand's own recipes come first")
+			assert_false(CraftSheet.passes(r, "stations"))
+	assert_gt(away, 0, "a campfire's and a workbench's recipes are listed")
+	assert_true(CraftSheet.filters_for(rows).has("stations"))
+	assert_false(CraftSheet.filters_for(CraftSheet.rows(inv, &"", all)).has("stations"), "opt-in only")
+	assert_eq(CraftSheet.station_phrase(&"workbench"), "a Workbench")
+
+
+func test_the_view_note_says_what_the_filter_hides() -> void:
+	assert_eq(SalvageRoll.view_note(9, 9, 0, 1), "")
+	assert_string_contains(SalvageRoll.view_note(1, 9, 0, 1), "showing 1 of 9")
+	assert_string_contains(SalvageRoll.view_note(40, 40, 1, 2), "page 2/2")
+
+
+func test_a_filter_drops_the_card_of_the_item_it_hides() -> void:
+	if Game.local_player() == null:
+		Game.new_session({"game_mode": "survival", "seed": 4471})
+	var roll := SalvageRoll.new()
+	add_child_autofree(roll)
+	roll.open(&"inventory", &"")
+	roll._process(0.016)
+	var card: Control = roll.get(&"_card")
+	card.visible = true
+	var gone := Node3D.new()
+	roll.set(&"_hover", {"holder": gone, "stack": null, "flap": false})
+	roll.set(&"_dirty", true)
+	roll._process(0.016)
+	assert_false(card.visible, "the rebuilt cloth starts with no stale card")
+	assert_true((roll.get(&"_hover") as Dictionary).is_empty())
+	gone.free()
+	roll.close()
+
+
+func test_a_dragged_item_stays_on_screen_over_the_belt() -> void:
+	var view := Vector2(1280, 720)
+	var gs := Vector2(120, 36)
+	assert_eq(SalvageRoll.ghost_pos(Vector2(300, 300), gs, view), Vector2(314, 310), "below and right of the cursor")
+	var low: Vector2 = SalvageRoll.ghost_pos(Vector2(215, 675), gs, view)
+	assert_lt(low.y + gs.y, 675.0, "over the belt it goes above the cursor")
+	assert_lt(SalvageRoll.ghost_pos(Vector2(1250, 300), gs, view).x + gs.x, 1250.0)
+
+
+func test_a_long_need_wraps_instead_of_being_cut() -> void:
+	assert_false(CraftSheet.status_wraps("need 1 Potato"))
+	assert_true(CraftSheet.status_wraps("need 1 Bottle of Stream Water"), "two lines, never cut mid-word")

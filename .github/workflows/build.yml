@@ -82,6 +82,30 @@ jobs:
           # Any ERROR / SCRIPT ERROR line not in the engine-noise allowlist fails the build (TD-103).
           python3 "$GITHUB_WORKSPACE/tools/qa/check_log_errors.py" ../smoke_exported.log
 
+      - name: Menu freeze guard (the exported Linux pack's real menu, rendered, hovered and clicked)
+        run: |
+          set -o pipefail
+          mkdir -p build/run && cd build/run
+          # Build #94's menu froze as soon as it was used, and nothing here caught it: the smoke runs
+          # headless and never opens the menu. This runs the shipped main menu on software Vulkan,
+          # with the shipped pictures behind it, hovers every entry and opens and closes every
+          # panel for ~20 s. A frame over 1.5 s, input nothing answers, or a backdrop with no
+          # pictures fails the build. --player --with-continue: the menu a player with a saved run sees
+          # (no developer entries from the editor binary) must fit 1280x720.
+          # A menu that hangs outright never reports: give it five minutes, then fail.
+          timeout 300 xvfb-run -a -s "-screen 0 1280x720x24" ../../.tools/godot/godot \
+            --main-pack "$GITHUB_WORKSPACE/build/export/linux/Hollowmere.pck" \
+            --rendering-driver vulkan --audio-driver Dummy --resolution 1280x720 \
+            -s "$GITHUB_WORKSPACE/game/src/tools/cli/menu_guard.gd" -- --expect-pictures --player --with-continue 2>&1 | tee ../menu_guard.log
+          if grep -q "switching to OpenGL" ../menu_guard.log; then
+            echo "::error::no software Vulkan: the guard ran on OpenGL, which is not what players run"; exit 1
+          fi
+          # The menu's run is checked, up to the guard's verdict; engine shutdown after it can print
+          # "resources still in use at exit" (run 37972621670 failed on that after a PASS).
+          grep -q "^MENU_GUARD done: PASS" ../menu_guard.log
+          sed '/^MENU_GUARD done/q' ../menu_guard.log > ../menu_guard_run.log
+          python3 "$GITHUB_WORKSPACE/tools/qa/check_log_errors.py" ../menu_guard_run.log
+
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:

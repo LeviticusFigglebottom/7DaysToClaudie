@@ -27,6 +27,7 @@ func _ready() -> void:
 		return
 	_style_menu()
 	_build_menu()
+	get_viewport().size_changed.connect(_fit_menu)
 	_show_notices()
 	# Once per new entry (a new build's notes), over the menu.
 	if WhatsNewPanel.should_show(str(WhatsNewPanel.newest().get("id", "")), Settings.whats_new_seen):
@@ -144,7 +145,7 @@ func _style_menu() -> void:
 	sub.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
 	sub.offset_top = 182
 	sub.offset_bottom = 230
-	_list.offset_top = 290
+	_list.offset_top = MENU_TOP
 	_list.offset_right = 640
 	_list.add_theme_constant_override(&"separation", 2)
 	_status.theme_type_variation = &"DimLabel"
@@ -170,7 +171,8 @@ const QA_SLOTS: PackedStringArray = ["smoke", "tour", "screens", "perf", "intro_
 ## Whether this run shows developer entries (QA saves, the slice demo): the editor's binary or
 ## `-- --dev`. A packaged build shows a player's menu only.
 static func dev_menu(args: PackedStringArray) -> bool:
-	return OS.has_feature("editor") or args.has("--dev")
+	# `--player` shows a player's menu from the editor's binary (the menu guard checks that it fits).
+	return (OS.has_feature("editor") and not args.has("--player")) or args.has("--dev")
 
 
 ## The slots the menu lists: everything for a developer, the player's own runs otherwise.
@@ -183,6 +185,39 @@ static func menu_slots(slots: Array[Dictionary], dev: bool) -> Array[Dictionary]
 		if not QA_SLOTS.has(name) and not name.begins_with("qa_"):
 			out.append(s)
 	return out
+
+
+## The list's top and an entry's height on a tall window; a short one (1280x720 with Continue:
+## 8 entries) moves the list up and then thins the entries so Quit stays above the version line.
+const MENU_TOP: float = 290.0
+const ENTRY_HEIGHT: float = 50.0
+const MENU_TOP_MIN: float = 236.0
+const ENTRY_HEIGHT_MIN: float = 40.0
+const ENTRY_GAP: float = 2.0
+## Room kept under the list for the version line (Status, 50 px up from the bottom).
+const BOTTOM_ROOM: float = 58.0
+
+
+## {top, entry} for `n` entries in a window `view_h` tall: the list ends at least BOTTOM_ROOM
+## above the bottom, moving up first (not past the subtitle), then with thinner entries. Pure.
+static func menu_fit(view_h: float, n: int) -> Dictionary:
+	var room: float = view_h - BOTTOM_ROOM
+	var gaps: float = ENTRY_GAP * maxf(0.0, n - 1)
+	var top: float = MENU_TOP
+	var entry: float = ENTRY_HEIGHT
+	if top + n * entry + gaps > room:
+		top = maxf(MENU_TOP_MIN, room - n * entry - gaps)
+	if top + n * entry + gaps > room and n > 0:
+		entry = maxf(ENTRY_HEIGHT_MIN, floorf((room - top - gaps) / n))
+	return {"top": top, "entry": entry}
+
+
+func _fit_menu() -> void:
+	var entries: Array[Node] = _list.get_children().filter(func(c: Node) -> bool: return c is Button and not c.is_queued_for_deletion())
+	var fit: Dictionary = menu_fit(get_viewport_rect().size.y, entries.size())
+	_list.offset_top = float(fit["top"])
+	for b: Node in entries:
+		(b as Button).custom_minimum_size.y = float(fit["entry"])
 
 
 func _build_menu() -> void:
@@ -206,6 +241,7 @@ func _build_menu() -> void:
 	if not WhatsNewPanel.newest().is_empty():
 		_add_button("What's New", _open_whats_new)
 	_add_button("Quit", func() -> void: get_tree().quit())
+	_fit_menu.call_deferred()
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
 
 
@@ -359,7 +395,7 @@ func _add_button(text: String, cb: Callable) -> Button:
 	b.text = text
 	b.theme_type_variation = &"MenuEntry"
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.custom_minimum_size = Vector2(520, 50)
+	b.custom_minimum_size = Vector2(520, ENTRY_HEIGHT)
 	b.pressed.connect(cb)
 	_list.add_child(b)
 	return b

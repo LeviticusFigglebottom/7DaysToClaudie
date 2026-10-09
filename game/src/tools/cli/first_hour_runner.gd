@@ -90,7 +90,7 @@ func face(at: Vector3, dist: float = 1.8, from: Vector3 = Vector3.INF) -> void:
 	stand.y = w.height_at(stand.x, stand.z)
 	p.global_position = stand + Vector3.UP * 0.05
 	p.velocity = Vector3.ZERO
-	w.terrain.update_streaming(p.global_position, true)
+	await _stream(p.global_position)
 	look(at)
 	await frames(6)
 	look(at)
@@ -172,12 +172,12 @@ func _run() -> void:
 		ps.inventory.add_item(&"cloth_bandage", 1)
 		var camp: Vector3 = w.tutorial.camp_position()
 		p.global_position = camp + Vector3(2, 0.5, 2)
-		w.terrain.update_streaming(p.global_position, true)
+		await _stream(p.global_position)
 		await seconds(3.0)
 		ex(&"companion.recruit", {})
 		await seconds(1.0)
 		p.global_position = w.drop_site() + Vector3(0, 0.5, 0)
-		w.terrain.update_streaming(p.global_position, true)
+		await _stream(p.global_position)
 		await seconds(3.0)
 		if OS.get_cmdline_user_args().has("--gaps"):
 			await _gaps()
@@ -661,7 +661,7 @@ func _week() -> void:
 		var outside: Vector3 = mouth + cp.mouth.basis.z * 8.0
 		outside.y = w.height_at(outside.x, outside.z)
 		p.global_position = outside + Vector3.UP * 0.1
-		w.terrain.update_streaming(p.global_position, true)
+		await _stream(p.global_position)
 		await seconds(3.0)
 		look(mouth + Vector3.UP * 1.0)
 		await frames(6)
@@ -670,6 +670,7 @@ func _week() -> void:
 			var deep: Vector3 = cp.spine[cp.spine.size() - 1]
 			deep.y = cp.floor_y[cp.floor_y.size() - 1] + 0.1
 			p.global_position = deep
+			await _stream(deep)
 			look(mouth + Vector3.UP * 1.5)
 			await seconds(2.0)
 			await snap("w_cave_inside")
@@ -678,7 +679,7 @@ func _week() -> void:
 	var drops: SupplyDrops = w.get(&"supply_drops") as SupplyDrops
 	if drops != null:
 		p.global_position = base + Vector3(0, 0.5, 4)
-		w.terrain.update_streaming(p.global_position, true)
+		await _stream(p.global_position)
 		var did: StringName = drops.dispatch(Game.session.clock.day())
 		note("supply drop dispatched: %s" % did)
 		await seconds(3.0)
@@ -711,7 +712,7 @@ func _week() -> void:
 
 	# --- The Hum ----------------------------------------------------------------------------------------------
 	p.global_position = base + Vector3(0, 0.5, 3)
-	w.terrain.update_streaming(p.global_position, true)
+	await _stream(p.global_position)
 	# The night before, outside with no fire, the cold kills (finding: the first run froze); the
 	# audit wants the Hum's screens, so the player is kept alive from here.
 	note("health %.0f, warmth %s before the night" % [ps.stats.health, str(ps.stats.get(&"body_temp")) if ps.stats.get(&"body_temp") != null else "?"])
@@ -811,8 +812,17 @@ func _teleport(at: Vector3) -> void:
 	at.y = w.height_at(at.x, at.z) + 0.3
 	p.global_position = at
 	p.velocity = Vector3.ZERO
-	w.terrain.update_streaming(at, true)
+	await _stream(at)
 	await seconds(3.0)
+
+
+## Streams the world in around a spot the player was just moved to and waits until the chunks
+## around it have their meshes and collision: a frame taken before then shows streaming gaps that
+## read like terrain bugs (World's W9 note).
+func _stream(at: Vector3) -> void:
+	w.terrain.update_streaming(at, true)
+	if not await wait_until(func() -> bool: return w.terrain.is_ready_around(at, 1), 30.0):
+		note("terrain not ready around %s after 30 s" % str(at.round()))
 
 
 func _kill_near(at: Vector3, r: float) -> int:
@@ -868,7 +878,7 @@ func _clear(def_id: String, tag: String) -> void:
 				var sp: Dictionary = cells[i]
 				var lp: Vector3 = inst.global_transform * inst.layout.cell_center(int(sp.get("level", 0)), sp.get("cell", Vector2i.ZERO))
 				p.global_position = lp + Vector3.UP * 0.3
-				w.terrain.update_streaming(lp, true)
+				await _stream(lp)
 			await seconds(2.0)
 			continue
 		var en: Enemy = live[0]
@@ -1195,6 +1205,7 @@ func _walk_route(def_id: String, tag: String) -> void:
 			nxt = inst.global_transform * inst.layout.cell_center(int((route[i + 1] as Dictionary).get("level", 0)), Vector2i(int(at2[0]), int(at2[1])))
 		p.global_position = here + Vector3.UP * 0.2
 		p.velocity = Vector3.ZERO
+		await _stream(here)
 		look(nxt + Vector3.UP * 1.4)
 		await seconds(1.0)
 		look(nxt + Vector3.UP * 1.4)

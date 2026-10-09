@@ -98,12 +98,15 @@ func _process(delta: float) -> void:
 		if _b.texture != _textures[next]:
 			_show(_b, next)
 		var k: float = clampf((_t - (HOLD - DISSOLVE)) / DISSOLVE, 0.0, 1.0)
-		_b.modulate.a = k
+		var alphas: Vector2 = dissolve_alphas(k)
+		_a.modulate.a = alphas.x
+		_b.modulate.a = alphas.y
 		_pose(_b, next, (_t - (HOLD - DISSOLVE)) / HOLD)
 		if k >= 1.0:
 			var old: TextureRect = _a
 			_a = _b
 			_b = old
+			_a.modulate.a = 1.0
 			_b.modulate.a = 0.0
 			_index = next
 			_t = DISSOLVE
@@ -140,6 +143,15 @@ func _pose(r: TextureRect, i: int, k: float) -> void:
 	r.pivot_offset = r.size * 0.5
 	r.scale = Vector2.ONE * pan_zoom(i, e)
 	r.position = pan_drift(i, e) * r.size
+
+
+## How strongly the outgoing (x) and incoming (y) pictures show at `k` (0..1) of a dissolve: a dip
+## through the dusk behind them, not an even crossfade. Every picture frames the river down the
+## middle, and two of them at half strength showed two riverbeds at once, which reads as a
+## rendering fault. Here each is about a quarter strength halfway, so the frame dims toward
+## dusk (not to black: that blinked every 13 s) and the old one is mostly gone as the new one rises.
+static func dissolve_alphas(k: float) -> Vector2:
+	return Vector2(1.0 - smoothstep(0.0, 0.75, k), smoothstep(0.25, 1.0, k))
 
 
 ## The zoom of picture `i` at `k`: in on even pictures, out on odd ones.

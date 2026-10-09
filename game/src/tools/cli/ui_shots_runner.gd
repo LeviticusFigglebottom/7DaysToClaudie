@@ -1,7 +1,7 @@
 extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
-const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "options_graphics", "options_controls", "new_game", "load", "whats_new", "manual",
+const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "roll_sorted", "roll_stations", "roll_drag", "menu", "options", "options_graphics", "options_controls", "new_game", "load", "whats_new", "manual",
 	"loading", "pause", "trader", "death", "hud", "vignette", "note_handwritten", "note_scrawl", "note_typed", "note_printed", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
@@ -91,6 +91,69 @@ func _shot_roll_hover() -> Node:
 		get_viewport().warp_mouse(at)
 		Input.parse_input_event(_motion(at))
 	return layer
+
+
+## The cloth sorted by kind and showing food and meds only (its toolbar's own buttons, pressed).
+func _shot_roll_sorted() -> Node:
+	var layer: Node = await _roll(&"inventory", &"")
+	await _settle(2)
+	_press(layer.get_child(0), "Kind")
+	_press(layer.get_child(0), "Food & Meds")
+	return layer
+
+
+## The hand sheet on its "At a station" filter, a station's recipe chosen.
+func _shot_roll_stations() -> Node:
+	var layer: Node = await _roll(&"inventory", &"")
+	await _settle(2)
+	var roll: SalvageRoll = layer.get_child(0)
+	_press(roll, "At a station")
+	await _settle(2)
+	var sheet: Node = roll.get(&"_sheet")
+	for r: Dictionary in sheet.get(&"_rows"):
+		if r.has("at") and String(r["at"]) == "workbench":
+			sheet.call(&"select", (r["recipe"] as RecipeDef).id)
+			break
+	return layer
+
+
+## An item mid-drag from the cloth onto the toolbelt's second slot (the ghost and the lit slot).
+func _shot_roll_drag() -> Node:
+	var layer: Node = await _roll(&"inventory", &"")
+	await _settle(4)
+	var roll: SalvageRoll = layer.get_child(0)
+	var slots: Array = roll.get(&"_slots")
+	if slots.size() < 5:
+		return layer
+	var from: Vector2 = roll.call(&"_screen", (slots[4] as Dictionary)["center"])
+	var belt: Control = roll.get(&"_belt")
+	var to: Vector2 = (belt.get_child(1) as Control).get_global_rect().get_center()
+	get_viewport().warp_mouse(from)
+	Input.parse_input_event(_motion(from))
+	await _settle(3)
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_LEFT
+	down.pressed = true
+	down.position = from
+	down.global_position = from
+	Input.parse_input_event(down)
+	await _settle(2)
+	for k: int in range(1, 9):
+		var at: Vector2 = from.lerp(to, k / 8.0)
+		get_viewport().warp_mouse(at)
+		Input.parse_input_event(_motion(at))
+		await _settle(1)
+	return layer
+
+
+func _press(root_node: Node, text: String) -> void:
+	for c: Node in root_node.find_children("*", "Button", true, false):
+		var b := c as Button
+		if b != null and b.text == text:
+			b.button_pressed = true
+			b.pressed.emit()
+			return
+	print("UI_SHOT no button '%s'" % text)
 
 
 func _motion(at: Vector2) -> InputEventMouseMotion:

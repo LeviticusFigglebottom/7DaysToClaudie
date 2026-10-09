@@ -44,6 +44,20 @@ reads, and `DirAccess` listings (any `user://` scan) `chdir()` the whole process
 a loader thread reading through a relative pack path fails with "Can't open pack-referenced file
 … File not found" (build #80). A shipped executable finds its pack by its own absolute path.
 
+### The menu freeze guard
+Build #94 shipped a main menu that froze as soon as it was used, and the headless smoke run never
+opens the menu. `make menu-guard` runs the real main menu (main.tscn, with its backdrop, music
+and What's New) on software Vulkan under Xvfb. For about 20 s it hovers every entry and opens and
+closes New Game, Random World, Options, What's New and Load with mouse events sent through
+`Input`, and it times every frame. It fails on any frame over 1.5 s, or on a hover or click that
+nothing answers within 3 s. It prints the backdrop's state: the pictures loaded, or none. The
+Build workflow runs it on the exported Linux pack with `--expect-pictures`, after the smoke step.
+`--player` shows a player's menu even from the editor's binary (which adds a developer entry), and
+`--with-continue` puts a probe save in place first so Continue and Load… are on it. That menu
+must fit 1280x720, every entry above the version line, or the guard fails. `--shot <png>` saves
+the menu's frame. CI passes `--expect-pictures --player --with-continue`. Run it on a pack yourself:
+`make menu-guard MENU_PACK=/abs/Hollowmere.pck MENU_GUARD_ARGS="--expect-pictures --player --with-continue"`.
+
 ## Stand-in mode
 What a fresh clone runs before `make assets`: `ModelLibrary.make_placeholder` shapes and the
 other procedural fallbacks. CI keeps it working (the **Stand-ins** workflow: import, check, tests,
