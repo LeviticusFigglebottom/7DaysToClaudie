@@ -272,22 +272,38 @@ const TOWN_PAINT_COMPOSER: int = 12
 static func fix_composer_changes(session: GameSession, world_def: Object, current: int) -> int:
 	var dropped: int = 0
 	if session.is_random_world() and session.composer_version < TOWN_PAINT_COMPOSER and current >= TOWN_PAINT_COMPOSER and world_def != null:
-		var towns: Array = world_def.get(&"towns")
-		var margin: float = 20.0
-		for key: String in session.world.trees.keys():
-			var c: Vector2i = Ids.parse_chunk_key(key)
-			var r := Rect2(c.x * 64.0, c.y * 64.0, 64.0, 64.0)
-			for tw: Dictionary in towns:
-				var near: Vector2 = (tw["center"] as Vector2).clamp(r.position, r.end)
-				if (tw["bounds"] as Rect2).grow(margin).intersects(r) and near.distance_to(tw["center"]) <= float(tw["radius"]) + margin:
-					session.world.trees.erase(key)
-					dropped += 1
-					break
-		if dropped > 0:
-			Log.info(&"save", "composer %d -> %d: dropped vegetation records in %d town chunks (TD-182)" % [session.composer_version, current, dropped])
+		dropped += _drop_town_chunks(session, world_def, current)
 	if session.composer_version < BANKS_COMPOSER and current >= BANKS_COMPOSER and world_def != null:
 		dropped += _drop_bank_chunks(session, world_def)
+	# Composer 14 moved the ground at a town's street junctions (TD-318): the town chunks again (a
+	# run already dropped them on the way through 12 has nothing there left to drop).
+	if session.is_random_world() and session.composer_version >= TOWN_PAINT_COMPOSER and session.composer_version < JUNCTIONS_COMPOSER \
+			and current >= JUNCTIONS_COMPOSER and world_def != null:
+		dropped += _drop_town_chunks(session, world_def, current)
 	session.composer_version = current
+	return dropped
+
+
+## Composer version from which a world town's streets are pinned together at their junctions.
+const JUNCTIONS_COMPOSER: int = 14
+
+
+## Drops the felled-tree and harvested-plant records of the 64 m chunks touching a town.
+static func _drop_town_chunks(session: GameSession, world_def: Object, current: int) -> int:
+	var dropped: int = 0
+	var towns: Array = world_def.get(&"towns")
+	var margin: float = 20.0
+	for key: String in session.world.trees.keys():
+		var c: Vector2i = Ids.parse_chunk_key(key)
+		var r := Rect2(c.x * 64.0, c.y * 64.0, 64.0, 64.0)
+		for tw: Dictionary in towns:
+			var near: Vector2 = (tw["center"] as Vector2).clamp(r.position, r.end)
+			if (tw["bounds"] as Rect2).grow(margin).intersects(r) and near.distance_to(tw["center"]) <= float(tw["radius"]) + margin:
+				session.world.trees.erase(key)
+				dropped += 1
+				break
+	if dropped > 0:
+		Log.info(&"save", "composer %d -> %d: dropped vegetation records in %d town chunks (TD-182)" % [session.composer_version, current, dropped])
 	return dropped
 
 
