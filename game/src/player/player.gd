@@ -2,7 +2,8 @@ class_name Player
 extends CharacterBody3D
 ## First-person player body: movement, stances, stamina, footsteps, noise & scent emission into
 ## the stimulus fields, fall damage, damage intake and death. Presentation of the authoritative
-## PlayerState (position/rotation are written back on save).
+## PlayerState (its position follows the body every physics frame; yaw and pitch are written back on
+## save).
 
 signal died(cause: String)
 signal landed(impact_speed: float)
