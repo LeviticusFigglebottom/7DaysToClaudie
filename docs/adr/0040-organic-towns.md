@@ -164,7 +164,10 @@ run whose folder is gone regenerates with v2, TD-082):
   cells, the least winding of the four best headings: a route forced up a slope zigzagged; points
   where it doubles back, turning past 120 degrees, are dropped); a town no road reached gets a
   county road through it; a town (the biggest class) with one road through its core gets a county
-  road across.
+  road across, along the axis that keeps farthest from every road leaving the centre (each leg 40 m
+  out), turning at most 25 degrees off it (generator 17: a perpendicular to the street's tangent
+  ran back along one leg where the street bends at the centre). A road still ending at a centre
+  beside the road through it ends where it leaves it (or goes, if it never does).
   The plan's in-disc `route_fine` refinement of the 32 m arterials is not done (TD-139).
 * **Planned in parallel, on the ground the composer grades.** Each town is planned (up to four
   threads, results by index, byte-identical to one thread) with the world roads within radius +
@@ -248,9 +251,11 @@ run whose folder is gone regenerates with v2, TD-082):
 − Lots are rectangles in irregular parcels; a building never takes a parcel's shape (TD-116).
 − Fixtures are per town in lists of a few hundred; they need Phase 3's per-cell batching.
 − The planner trusts its arterials: a kinked main street near the centre costs core frontage; the
-  32 m arterials are not refined in the disc yet, and the 32 m router still leaves the odd hook
-  (a turn past 120 degrees where it skirts a river crossing or a steep bank, 2-4 a settled map),
-  in towns and out of them (TD-139).
+  32 m arterials are not refined in the disc yet (TD-139). Generator 17 cuts the router's hooks
+  (a turn past 120 degrees round a steep cell: 38 -> 1 over 8 worlds) even up a steep pitch, since
+  the composer grades the road to its capped profile anyway, and a track, trail or route piece
+  snapped onto a road starts where it last leaves it instead of running 6-20 m beside it
+  (parallel runs 32 -> 4).
 − From above, a town's disc of `town` ground reads as one patch of brown among the meadows: the
   paint keeps town ambience and spawns over the streets between the lots (TD-136; since ADR-0047
   `town` is painted on the streets only and a town mask keys ambience and spawns).
