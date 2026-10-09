@@ -7,7 +7,11 @@ const VIEWS: Array[Dictionary] = [
 	{"name": "town_street", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-95, 2, 2064)},
 	{"name": "town_road", "pos": Vector3(-30, 6.0, 2170), "look": Vector3(-60, 0, 2070)},
 	{"name": "river", "pos": Vector3(150, 1.7, 2075), "look": Vector3(118, 0.0, 2100)},
+	# Caves WS-F: deep conifer forest away from every place (the scatter at its densest).
+	{"name": "dense_forest", "pos": Vector3(300, 1.7, 1650), "look": Vector3(340, 3.0, 1610)},
 ]
+## Caves WS-F: Larch Hollow's grotto, from its mouth and from its chamber (ADR-0056).
+const CAVE_VIEW: StringName = &"larch_hollow_grotto"
 
 var _out: String = "res://../build/perf"
 var _frames: int = 120
@@ -104,6 +108,11 @@ func _run() -> void:
 			m["modules"] = await _ablate_modules()
 		_report["views"][v["name"]] = m
 		print("[perf] %s %s" % [v["name"], _brief(m)])
+	for cv: Dictionary in _cave_views():
+		await _goto_at(cv["pos"], cv["look"])
+		var mc: Dictionary = await _measure(_frames)
+		_report["views"][cv["name"]] = mc
+		print("[perf] %s %s" % [cv["name"], _brief(mc)])
 	if _hum:
 		_report["hum"] = await _hum_night()
 		print("[perf] hum %s" % _brief(_report["hum"]))
@@ -132,6 +141,42 @@ func _goto(pos: Vector3, look: Vector3) -> void:
 		if veg != null and veg.call(&"is_settled") and w.terrain.is_ready_around(p.global_position, 1):
 			break
 	for i: int in 30:
+		await get_tree().process_frame
+
+
+## The cave views: 8 m out from CAVE_VIEW's mouth looking in, and on its spine's last point (the
+## chamber) looking back out. Empty when the world has no such cave.
+func _cave_views() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var caves: Object = w.terrain.get(&"caves")
+	if caves == null:
+		return out
+	for plan: Variant in caves.get(&"plans"):
+		if StringName(str((plan as Object).get(&"id"))) != CAVE_VIEW:
+			continue
+		var mouth: Transform3D = (plan as Object).get(&"mouth")
+		var spine: PackedVector3Array = (plan as Object).get(&"spine")
+		var outside: Vector3 = mouth.origin + mouth.basis.z * 8.0
+		out.append({"name": "cave_mouth", "pos": outside, "look": mouth.origin - mouth.basis.z * 4.0})
+		if spine.size() > 2:
+			out.append({"name": "cave_chamber", "pos": spine[spine.size() - 1], "look": mouth.origin})
+	return out
+
+
+## As _goto, standing on the ground below `pos` (a cave's floor) rather than on the surface.
+func _goto_at(pos: Vector3, look: Vector3) -> void:
+	var g: float = float(w.call(&"ground_below", pos + Vector3.UP * 1.0))
+	p.global_position = Vector3(pos.x, (g if not is_nan(g) else w.height_at(pos.x, pos.z)) + 0.1, pos.z)
+	var d: Vector3 = look - pos
+	p.rotation.y = atan2(-d.x, -d.z)
+	w.terrain.update_streaming(p.global_position, true)
+	var end: int = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+		var veg: Node = w.vegetation
+		if veg != null and veg.call(&"is_settled") and w.terrain.is_ready_around(p.global_position, 1):
+			break
+	for i: int in 60:
 		await get_tree().process_frame
 
 
