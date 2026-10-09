@@ -616,7 +616,9 @@ func _step_cost(a: Array, b: Array) -> float:
 			cost += WINDOW_COST
 	# The validator walks a stair flight's cells on the floor below it and the open well over it
 	# on the floor above; the body can do neither (the flight is in the way, there is no floor).
-	if int(a[0]) == int(b[0]) and (_under_flight(b) or validator._over_well(int(b[0]), b[1])):
+	# A broken-floor hole too: the body falls through it (the chapel nave's), so a player walks
+	# round it unless the drop is the way on (that step is the hole's own drop, not this one).
+	if int(a[0]) == int(b[0]) and (_under_flight(b) or validator._over_well(int(b[0]), b[1]) or _over_hole(int(b[0]), b[1])):
 		cost += BLOCKED_COST
 	# Across the edge a ladder stands on (a deck ladder with no wall behind it): walking at its rails
 	# takes hold of it and climbs, so a player walks round it.
@@ -1016,7 +1018,19 @@ func _leg(a: Array, b: Array) -> void:
 		"stairs_up", "stairs_down":
 			var s: Dictionary = cls["stairs"]
 			var cells: Array = s["cells"]
-			var pts: Array[Vector3] = []
+			# A door or gate at the head, between the landing and the flight's top step (TD-274):
+			# opened like any door on the way (Tunnel 2 Trestle's deck gate, bolted on the deck side).
+			var head: Vector2i = cells.back()
+			var landing: Vector2i = s["landing"]
+			var he: Array = PoiLayout.side_edge(landing, PoiLayout.DIRS.find(head - landing))
+			var hw: Dictionary = layout.walls.get(PoiLayout.edge_key(int(s["level"]) + 1, he[0], he[1]), {})
+			if not hw.is_empty() and not (hw["opening"] as Dictionary).is_empty():
+				leg["opening"] = str(hw["opening"]["id"])
+				if kind == "stairs_up":
+					# Up the steps to just under the head first, then open it.
+					for k0: int in range(1, cells.size()):
+						await _go(_cell_pos(int(s["level"]), cells[k0]), false, leg)
+				await _open_doors(hw["opening"], leg)
 			if kind == "stairs_up":
 				for k: int in range(1, cells.size()):
 					pts.append(_cell_pos(int(s["level"]), cells[k]))
@@ -1050,7 +1064,18 @@ func _leg(a: Array, b: Array) -> void:
 				if not ok:
 					ok = await _go(end, true, leg)
 			(_report["climbs"] as Array).append({"ladder": "%s L%d" % [_v2(l["cell"]), int(l["level"])], "dir": kind, "ok": ok, "how": how})
-		"drop_hole", "drop":
+		"drop_hole":
+			# Down through the hole and onto whatever is under it: the sawmill's dust chute drops
+			# onto the waste conveyor, and a player steps off it with the next step. Done once the
+			# body is over the cell and a storey down, whatever it stands on.
+			ok = await _go(end, false, leg)
+			for f: int in 60:
+				if player.is_on_floor() and player.global_position.y < layout.level_y(int(a[0])) - 1.0:
+					break
+				await get_tree().physics_frame
+				_frames += 1
+			ok = ok and player.global_position.y < layout.level_y(int(a[0])) - 1.0
+		"drop":
 			ok = await _go(end, true, leg)
 		"jump":
 			ok = false
@@ -1085,8 +1110,19 @@ func _leg(a: Array, b: Array) -> void:
 						if step.is_empty() and high and not leg.has("note"):
 							leg["note"] = "sill %.2f m over the ground, past the %.1f m vault; no prop to climb within %.1f m of the window" % [
 								sill_y - from.y, Player.VAULT_MAX, CUE_REACH]
+				# A hole lower than the standing body over the step up into it (a breach, 1.7 m from
+				# the floor of a cabin on a raised floor): through it crouched, as a player ducks, not
+				# by stalling at its header first (Trapper's Cabin's lean-to breach).
+				var low: bool = category(kind) == "doorway" and float(spec.get("h", 2.8)) + layout.level_y(int(op["level"])) - maxf(from.y, layout.level_y(int(op["level"]))) < Player.STAND_HEIGHT + 0.05
 				if not step.is_empty():
 					ok = await _climb_in(step, mid, n, leg)
+				elif low:
+					ok = await _go(mid - n * 0.55, false, leg)
+					_crouch(true)
+					if player.crouching and not (leg["needed"] as Array).has("crouch"):
+						(leg["needed"] as Array).append("crouch")
+					ok = ok and await _go(mid + n * (Player.RADIUS + 0.15), false, leg)
+					_crouch(false)
 				else:
 					ok = await _go(mid - n * 0.55, false, leg)
 					# Past the wall line will do: a vault lands deeper than 0.1 m in, and steering back

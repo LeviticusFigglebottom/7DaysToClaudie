@@ -349,7 +349,7 @@
         {"id": "back_trash_2", "prop": "trash_bag", "pos": [12.6, -1.9], "rot": 110},
         {"prop": "pallet", "pos": [15.0, -1.4], "rot": 6},
         {"id": "walkway_chair_7", "prop": "civic_folding_chair", "pos": [10.4, 8.6], "level": 1, "rot": 175, "variant": "worn"},
-        {"id": "june_armchair", "prop": "armchair", "pos": [19.5, 3.05], "level": 1, "rot": 200, "variant": "worn"}
+        {"id": "june_armchair", "prop": "armchair", "pos": [19.4, 3.38], "level": 1, "rot": 185, "variant": "worn"}
       ],
       "pickups": [
         {"id": "master_key", "item": "road_key_motel_master", "pos": [15.3, 7.3], "y": 1.1, "level": 1, "rot": 20}
