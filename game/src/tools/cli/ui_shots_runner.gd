@@ -2,7 +2,7 @@ extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
 const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "menu", "options", "options_graphics", "new_game", "manual",
-	"loading", "pause", "trader", "death", "hud", "vignette", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
+	"loading", "pause", "trader", "death", "hud", "vignette", "note_handwritten", "note_scrawl", "note_typed", "note_printed", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
 var _only: PackedStringArray = []
@@ -26,7 +26,9 @@ func _run() -> void:
 		if not _only.is_empty() and not _only.has(shot):
 			continue
 		var node: Node = null
-		if shot.begins_with("intro_"):
+		if shot.begins_with("note_"):
+			node = await _shot_note(shot.substr(5))
+		elif shot.begins_with("intro_"):
 			node = await _shot_intro(int(shot.get_slice("_", 1)))
 		else:
 			node = await call(&"_shot_" + shot)
@@ -254,4 +256,18 @@ func _shot_options_graphics() -> Node:
 	p.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	await _settle(2)
 	p.position = (get_viewport().get_visible_rect().size - p.size) * 0.5
+	return layer
+
+
+## A real note of each style in the reader.
+func _shot_note(style: String) -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var r := NoteReader.new()
+	layer.add_child(r)
+	await _settle(1)
+	var pick: NoteDef = null
+	for n: NoteDef in Content.all(&"note"):
+		if n.style == style and (pick == null or n.body.length() > pick.body.length()):
+			pick = n
+	r.show_note(pick, {"where": "Pell's Crossing Post Office", "day": 3})
 	return layer

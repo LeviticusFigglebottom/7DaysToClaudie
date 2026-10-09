@@ -28,6 +28,7 @@ var _wire_t: float = 0.0
 var _damage_flash: float = 0.0
 var roll: SalvageRoll
 var world_map: WorldMap
+var reader: NoteReader
 var manual: FieldManual
 var tether: Tether
 var _final_death: bool = false
@@ -63,6 +64,14 @@ func _ready() -> void:
 	world_map = WorldMap.new()
 	world_map.name = "WorldMap"
 	add_child(world_map)
+	reader = NoteReader.new()
+	reader.name = "NoteReader"
+	add_child(reader)
+	# Notes (the lore trail): where each was found, and the reader straight from picking one up.
+	if not Game.has_command(&"notes.mark_found"):
+		Game.register_command(&"notes.mark_found", _cmd_mark_found)
+	Events.note_found.connect(_on_note_found)
+	Events.item_picked_up.connect(_on_item_picked_up)
 	_build_overlay()
 	_build_pause()
 	_maybe_start_intro()
@@ -795,7 +804,62 @@ func open_container(node: Object) -> void:
 func show_note(note_id: StringName) -> void:
 	if roll.is_open():
 		roll.close()
-	manual.show_note(note_id)
+	var p: PlayerState = Game.local_player()
+	reader.show_note(Content.get_def(&"note", note_id) as NoteDef, p.notes_found.get(note_id, {}) if p != null else {})
+
+
+func _exit_tree() -> void:
+	if Game.has_command(&"notes.mark_found"):
+		Game.unregister_command(&"notes.mark_found")
+
+
+## notes.mark_found {note, where, day}: records where and when the local player found a note,
+## once (the first find stands).
+func _cmd_mark_found(args: Dictionary) -> Dictionary:
+	var p: PlayerState = Game.local_player()
+	var id := StringName(str(args.get("note", "")))
+	if p == null or id == &"":
+		return {"ok": false, "error": "no player or note"}
+	if not p.notes_found.has(id):
+		p.notes_found[id] = {"where": str(args.get("where", "")), "day": int(args.get("day", 1)), "order": p.notes_found.size()}
+	return {"ok": true}
+
+
+func _on_note_found(note_id: StringName) -> void:
+	var day: int = Game.session.clock.day() if Game.session != null and Game.session.clock != null else 1
+	Game.execute(&"notes.mark_found", {"note": String(note_id), "where": place_name(), "day": day})
+
+
+## Where the player stands, as a note's finding place: the building they're in, else the region.
+static func place_name() -> String:
+	var w: Node = Game.world
+	if w == null or w.get(&"player") == null:
+		return ""
+	var at: Vector3 = (w.player as Node3D).global_position
+	var pois: Node = w.get(&"pois")
+	if pois != null and pois.has_method(&"poi_at"):
+		var inst: Object = pois.call(&"poi_at", at)
+		if inst != null and inst.get(&"layout") != null and (inst.get(&"layout") as Object).get(&"def") != null:
+			return str(((inst.get(&"layout") as Object).get(&"def") as Object).get(&"display_name"))
+	var tm: Object = w.get(&"terrain")
+	var wd: WorldDef = tm.get(&"world") as WorldDef if tm != null else null
+	if wd != null:
+		var rid: String = wd.region_at(at.x, at.z)
+		var name_: String = str((wd.regions.get(rid, {}) as Dictionary).get("name", ""))
+		if name_ != "":
+			return "the woods of %s" % name_
+	return "the woods"
+
+
+## A note just picked up opens in the reader (it counts as read: inventory.read).
+func _on_item_picked_up(owner_id: StringName, item_id: StringName, _count: int) -> void:
+	var p: PlayerState = Game.local_player()
+	var d: ItemDef = Content.item(item_id)
+	if p == null or owner_id != p.id or d == null or d.category != "note" or d.note == &"":
+		return
+	var res: Dictionary = Game.execute(&"inventory.read", {"item": String(item_id)})
+	if bool(res.get("ok", false)):
+		show_note.call_deferred(d.note)
 
 
 func _build_overlay() -> void:
