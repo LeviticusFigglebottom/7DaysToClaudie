@@ -51,7 +51,7 @@ var voice: Dictionary = {}
 var perks: Array = []
 
 const BARKS: PackedStringArray = ["recruited", "follow", "stay", "guard", "spotted", "downed", "revived", "out", "back", "hurt",
-	"gather", "fetch", "store", "full", "done", "fetched", "cant_reach", "stored", "store_full", "given"]
+	"gather", "fetch", "store", "full", "done", "fetched", "cant_reach", "stored", "store_full", "given", "refused"]
 ## What a perk may change: slots (+ his pack's slots), carry_log (+ logs on his shoulder),
 ## chop_speed (x his chop clip's speed), chop_power (x his blows' tool power), fuel_use (x a running
 ## generator's fuel burn while he is within tune_range m of it), tune_range (m).

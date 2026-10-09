@@ -18,7 +18,6 @@ const FLOCK_DESPAWN: float = 200.0
 const TICK: float = 1.0
 ## The valley falls silent this many hours before the Hum.
 const SILENCE_HOURS: float = 2.0
-const BUTCHER_REACH: float = 3.5
 
 var world: Node = null
 var animals: Dictionary = {}
@@ -531,6 +530,14 @@ static func butcher_yields(d: WildlifeDef, animal_id: StringName, world_seed: in
 	return out
 
 
+## How far from a carcass's origin the player may butcher it: the reach of the interaction ray
+## that shows its prompt (player.json interact_range, from the eyes) plus half the body's length,
+## since the ray meets the near end of a long body. One reach for the prompt and the command.
+static func butcher_reach(def: WildlifeDef) -> float:
+	var ray: float = float(Content.config(&"player").get("interact_range", 2.6))
+	return ray + 0.5 * maxf(def.size.x, def.size.y) + 0.3
+
+
 func _butcher(args: Dictionary) -> Dictionary:
 	var p: PlayerState = Game.session.players.get(StringName(str(args.get("player", Game.session.local_player_id)))) if Game.session != null else null
 	if p == null:
@@ -542,7 +549,7 @@ func _butcher(args: Dictionary) -> Dictionary:
 		return {"ok": false, "error": "It's still alive"}
 	if a.butchered:
 		return {"ok": false, "error": "Already butchered"}
-	if p.position.distance_to(a.global_position) > BUTCHER_REACH:
+	if p.position.distance_to(a.global_position) > butcher_reach(a.def):
 		return {"ok": false, "error": "Too far away"}
 	var tool: StringName = butcher_tool(p, a.def)
 	if tool == &"":

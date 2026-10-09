@@ -129,3 +129,25 @@ func test_butchering_needs_a_blade_and_pays_once() -> void:
 		assert_eq(st.inventory.count_of(StringName(k)), int(want[k]), "%s in the pack" % k)
 	var r3: Dictionary = Game.execute(&"wildlife.butcher", {"player": st.id, "animal": a.entity_id})
 	assert_false(bool(r3["ok"]), "only once")
+
+
+func test_butcher_reach_matches_the_prompt_and_follows_the_player() -> void:
+	# First-week audit W3: the prompt showed at 1.6 m but the command said "Too far away". The
+	# command measured from PlayerState.position, written only on save, and the two reaches
+	# differed. The state follows the body every frame, and the reach is the interaction ray's
+	# plus half the carcass.
+	var herd: Array = _deer_band(1, Vector3(3, 0, 0))
+	await get_tree().physics_frame
+	var a: Animal = herd[0]
+	var p: Player = _player_at(a.global_position + Vector3(30, 0, 0))
+	var st: PlayerState = p.state
+	st.inventory.add_item(&"kitchen_knife", 1)
+	a.take_damage(DamageInfo.make(500.0, &"slash", &"melee", st.id))
+	var ray: float = float(Content.config(&"player").get("interact_range", 2.6))
+	assert_gt(WildlifeManager.butcher_reach(a.def), ray, "at least as far as the prompt shows")
+	# Walk up to it (the body moves; nothing writes the state but the player's own frame).
+	p.global_position = a.global_position + Vector3(1.6, 0, 0)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var r: Dictionary = Game.execute(&"wildlife.butcher", {"player": st.id, "animal": a.entity_id})
+	assert_true(bool(r["ok"]), "butchered from 1.6 m: %s" % str(r))

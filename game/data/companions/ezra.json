@@ -28,7 +28,7 @@
         "full": ["Ezra: \"That's all I can carry.\"", "Ezra: \"Pack's full. Where do you want it?\""],
         "done": ["Ezra: \"Nothing more worth taking round here.\""],
         "fetched": ["Ezra: \"Here.\"", "Ezra: \"This what you wanted?\""],
-        "cant_reach": ["Ezra: \"Can't get to that.\""],
+        "cant_reach": ["Ezra: \"Can't get to that.\""], "refused": ["Ezra: \"Show me what you mean first.\"", "Ezra: \"Can't do that one.\""],
         "stored": ["Ezra: \"Stowed.\""],
         "store_full": ["Ezra: \"The crate's full. I kept the rest.\""],
         "given": ["Ezra: \"All yours.\""],
