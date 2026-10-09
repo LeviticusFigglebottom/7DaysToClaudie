@@ -145,6 +145,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if state == null:
 		return
+	# Commands measure reach from the state (ADR-0003): kept current every frame, not only when a
+	# save writes it (the butcher prompt showed at 1.6 m while its command said "Too far away").
+	state.position = global_position
 	if _vault_t >= 0.0:
 		_vault_step(delta)
 		return
