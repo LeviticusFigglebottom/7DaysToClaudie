@@ -191,7 +191,7 @@
         {"id": "r2_suitcase", "prop": "road_suitcase", "pos": [6.9, 3.5], "rot": 70},
         {"prop": "bottles_scatter", "pos": [4.8, 3.6], "rot": 10},
         {"id": "r3_bed", "prop": "road_motel_bed", "pos": [9.155, 5.0], "rot": 90, "variant": "destroyed"},
-        {"id": "r3_nightstand", "prop": "road_motel_nightstand", "pos": [8.29, 6.17], "rot": 90},
+        {"id": "r3_nightstand", "prop": "road_motel_nightstand", "pos": [8.29, 3.85], "rot": 90},
         {"id": "r3_dresser", "prop": "road_tv_dresser", "pos": [11.68, 4.95], "rot": -90, "variant": "destroyed"},
         {"prop": "sink_pedestal", "pos": [9.0, 0.31], "rot": 0},
         {"id": "r3_med", "prop": "medicine_cabinet", "pos": [9.0, 0.09], "rot": 0, "height": 1.25},
@@ -349,7 +349,7 @@
         {"id": "back_trash_2", "prop": "trash_bag", "pos": [12.6, -1.9], "rot": 110},
         {"prop": "pallet", "pos": [15.0, -1.4], "rot": 6},
         {"id": "walkway_chair_7", "prop": "civic_folding_chair", "pos": [10.4, 8.6], "level": 1, "rot": 175, "variant": "worn"},
-        {"id": "june_armchair", "prop": "armchair", "pos": [19.5, 3.05], "level": 1, "rot": 200, "variant": "worn"}
+        {"id": "june_armchair", "prop": "armchair", "pos": [19.4, 3.38], "level": 1, "rot": 185, "variant": "worn"}
       ],
       "pickups": [
         {"id": "master_key", "item": "road_key_motel_master", "pos": [15.3, 7.3], "y": 1.1, "level": 1, "rot": 20}

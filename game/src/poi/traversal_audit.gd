@@ -137,8 +137,66 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 				hit2.merge({"kind": "doorway", "level": li3, "cell": b2, "to": a2, "opening": str(op2["id"]), "severity": sev})
 				out.append(hit2)
 	out.append_array(_door_swings(inst, l, space, on_route))
+	out.append_array(_ladders(inst, v, l, grids, space, exclude))
 	out.append_array(_loot_reach(inst, v, l, grids, space))
 	out.append_array(dark_route(l, v))
+	return out
+
+
+## Ladders (ADR-0051 round 5): the player takes one walking at its rails from the foot, or from the landing
+## upstairs walking across the hatch toward them (Player._grab_ladder). So the spot in front of the
+## rails must hold the standing capsule, the landing must too, and a hatch ladder's landing must
+## lie across the hatch from the rails: from a landing beside it, walking into the hatch is walking
+## past the rails, and the way down is a hole (the hatchery catwalk's). Errors on a ladder the
+## validator's route climbs, warnings elsewhere.
+static func _ladders(inst: PoiInstance, v: PoiValidator, l: PoiLayout, grids: Dictionary, space: PhysicsDirectSpaceState3D, exclude: Array[RID]) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	# Climbs on the route: "<level below>:<foot>:<landing>".
+	var used: Dictionary = {}
+	for leg: Variant in v.paths:
+		var nodes: Array = leg
+		for i: int in range(1, nodes.size()):
+			var a: Variant = nodes[i - 1]
+			var b: Variant = nodes[i]
+			if not (a is Array and b is Array) or absi(int(a[0]) - int(b[0])) != 1:
+				continue
+			var lo: Array = a if int(a[0]) < int(b[0]) else b
+			var hi: Array = b if int(a[0]) < int(b[0]) else a
+			used["%d:%s:%s" % [int(lo[0]), lo[1], hi[1]]] = true
+			if lo == b:
+				used["down:%d:%s:%s" % [int(lo[0]), lo[1], hi[1]]] = true
+	for ld: Dictionary in l.ladders:
+		var li: int = ld["level"]
+		var c: Vector2i = ld["cell"]
+		var land: Vector2i = ld.get("landing", c)
+		var d: Vector2i = PoiLayout.DIRS[int(ld["side"])]
+		var sev: String = "error" if used.has("%d:%s:%s" % [li, c, land]) else "warn"
+		# The foot: somewhere the body stands facing the rails within their reach (the cell's middle,
+		# 0.38 m out from them, or 0.25 m further back: Player.LADDER_REACH is 0.75 m).
+		var g: Dictionary = grids.get(li, {})
+		var mid := Vector2i(c.x * 4 + 2, c.y * 4 + 2)
+		var stand := Vector2i(c.x * 4 + 2 - d.x, c.y * 4 + 2 - d.y)
+		if not g.is_empty() and not (g["free"] as Dictionary).has(stand) and not (g["free"] as Dictionary).has(mid):
+			var y0: float = _cell_y(space, inst, l, li, c, exclude)
+			var hit: Dictionary = _name(space, inst, _at(l, li, c - d, y0), _at(l, li, c, y0) - Vector3(d.x, 0, d.y) * 0.25, exclude)
+			hit["what"] = "foot of the ladder: %s" % hit["what"]
+			hit.merge({"kind": "ladder", "level": li, "cell": c, "to": land, "severity": sev}, true)
+			out.append(hit)
+		if not bool(ld["hatch"]):
+			continue
+		if land != c - d and land != c:
+			# Up it, the climber still steps off sideways onto the landing: an error only where
+			# the route climbs down.
+			var sev2: String = "error" if used.has("down:%d:%s:%s" % [li, c, land]) else "warn"
+			out.append({"kind": "ladder", "level": li, "cell": c, "to": land, "severity": sev2, "blocker": "-", "at": l.cell_center(li + 1, land),
+				"what": "landing beside the hatch, not across it from the rails: from there the way down is a hole"})
+		var g2: Dictionary = grids.get(li + 1, {})
+		if not g2.is_empty() and land != c and not (g2["free"] as Dictionary).has(Vector2i(land.x * 4 + 2, land.y * 4 + 2)):
+			var y1: float = l.level_y(li + 1)
+			var hit2: Dictionary = _name(space, inst, _at(l, li + 1, c, y1), _at(l, li + 1, land, y1), exclude)
+			hit2["what"] = "ladder landing: %s" % hit2["what"]
+			hit2.merge({"kind": "ladder", "level": li, "cell": c, "to": land, "severity": sev}, true)
+			out.append(hit2)
 	return out
 
 
