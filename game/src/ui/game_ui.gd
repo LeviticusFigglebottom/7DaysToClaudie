@@ -55,6 +55,11 @@ var _relief_done: bool = false
 var _pickups: VBoxContainer
 ## Whether this run's first journal card has been announced (once, as the player first stands).
 var _first_card_said: bool = false
+## StatusFeed priorities of the lines GameUI queues (the Hum's report is StatusFeed.PRIORITY_REPORT,
+## 10): at dawn the report, then the autosave line, the level-up, the drone.
+const PRIO_DAWN: int = 5
+const PRIO_LEVEL: int = 3
+const PRIO_DROP: int = 0
 var _ov_tween: Tween = null
 var _tip_box: Control
 var _tip_title: Label
@@ -120,7 +125,7 @@ func _ready() -> void:
 		if Settings.sound_captions:
 			message("[a deep hum rises through the ground]", &"danger"))
 	Events.supply_drop_incoming.connect(func(_id: StringName, _p: Vector3) -> void:
-		Events.status_message_queued.emit("A Program drone is overhead. Supplies are coming down.", &"level", 0))
+		Events.status_message_queued.emit("A Program drone is overhead. Supplies are coming down.", &"level", PRIO_DROP))
 
 
 ## Dawn after a Hum: the run is saved (a night survived is the progress most worth keeping).
@@ -134,9 +139,9 @@ func _autosave_after_hum() -> void:
 	var lp: PlayerState = Game.local_player()
 	# Through the paced feed (first-week W15): the night's report goes first, then this.
 	if lp != null and lp.stats.alive and Game.autosave():
-		Events.status_message_queued.emit("Dawn. The Hollowed root into the soil. Progress saved.", &"info", 5)
+		Events.status_message_queued.emit("Dawn. The Hollowed root into the soil. Progress saved.", &"info", PRIO_DAWN)
 	else:
-		Events.status_message_queued.emit("Dawn. The Hollowed root into the soil.", &"info", 5)
+		Events.status_message_queued.emit("Dawn. The Hollowed root into the soil.", &"info", PRIO_DAWN)
 
 
 # --- Loading --------------------------------------------------------------------------------
@@ -883,7 +888,7 @@ func _announce_level() -> void:
 		_level_pending = 0
 		return
 	var pts: int = p.progression.skill_points
-	Events.status_message_queued.emit("Level %d. %d point%s to spend — field manual [%s], Record." % [_level_pending, pts, "" if pts == 1 else "s", PlayerInteraction.key_label(&"guidebook")], &"level", 3)
+	Events.status_message_queued.emit("Level %d. %d point%s to spend — field manual [%s], Record." % [_level_pending, pts, "" if pts == 1 else "s", PlayerInteraction.key_label(&"guidebook")], &"level", PRIO_LEVEL)
 	Audio.play_2d(&"ui/level_up", UiStyle.level("level_up", -4.0))
 	_level_pending = 0
 

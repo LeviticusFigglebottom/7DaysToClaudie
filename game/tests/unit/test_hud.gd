@@ -143,3 +143,29 @@ func test_a_short_message_stays_on_one_line() -> void:
 	await get_tree().process_frame
 	var l: Label = ui.get(&"_messages").get_child(0) as Label
 	assert_eq(l.get_line_count(), 1)
+
+
+func test_dawn_lines_come_paced_report_first() -> void:
+	# The four dawn lines arrive in one frame; the StatusFeed lets them out report first, then the
+	# autosave line, the level-up and the drone, each at least min_gap apart (first-week W15).
+	var feed := StatusFeed.new()
+	add_child_autofree(feed)
+	feed.set_process(false)
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	var shown: Array = []
+	var t: Array[float] = [0.0]
+	var rec: Callable = func(text: String, _k: StringName) -> void: shown.append([text, t[0]])
+	Events.player_status_message.connect(rec)
+	Events.supply_drop_incoming.emit(&"qa", Vector3.ZERO)
+	Events.status_message_queued.emit("Level 3. 4 points to spend.", &"level", GameUI.PRIO_LEVEL)
+	ui.call(&"_autosave_after_hum")
+	Events.status_message_queued.emit("The Hum fades. 16 of them came; 8 lie still.", &"info", StatusFeed.PRIORITY_REPORT)
+	for i: int in 80:
+		t[0] += 0.1
+		feed.tick(0.1)
+	Events.player_status_message.disconnect(rec)
+	var order: Array = shown.map(func(x: Array) -> String: return str(x[0]).get_slice(".", 0))
+	assert_eq(order, ["The Hum fades", "Dawn", "Level 3", "A Program drone is overhead"])
+	for i: int in range(1, shown.size()):
+		assert_gte(float(shown[i][1]) - float(shown[i - 1][1]), feed.min_gap - 0.01, "paced")
