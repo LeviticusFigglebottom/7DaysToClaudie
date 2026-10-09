@@ -1835,11 +1835,11 @@
     {
      "id": "pulley_lift",
      "prop": "w5_treehouse_pulley_lift",
-     "at": [
-      18,
-      9
+     "_pos": "By hand, not against the deck's south edge: the arm and basket hang 1.1 m out past the post (not a wall prop). The post stands where `against` put it: 8 cm half wall + its 0.15 m half depth + 1 cm in from the edge.",
+     "pos": [
+      18.5,
+      9.76
      ],
-     "against": "S",
      "rot": 180,
      "level": 1
     },
