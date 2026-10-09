@@ -214,9 +214,11 @@ Same setup, now on the downloadable build:
   this next (ADR-0045, TD-172–175).
 
 ## Lessons (read before your first render)
-* `make assets` at the default JOBS=4 runs four Blender character builds at once and can run a 15 GB
-  container out of memory, which restarts the whole container (Creatures, twice in 25 min). Use
-  `make assets JOBS=2` when characters rebuild. Never run two Godot processes at once in one
+* A container can be reclaimed when its session sits idle, even with a background job running:
+  background jobs don't count as activity (Creatures lost three asset rebuilds this way; first
+  blamed on memory). For a long job (`make assets`, a full suite, renders), keep the session active
+  until it ends (poll it in the foreground), push before waiting, and keep `make assets` incremental
+  so a lost run resumes. `make assets JOBS=2` is still the safer setting for character rebuilds. Never run two Godot processes at once in one
   container either (another restart cause); queue them.
 * `gut_cmdln.gd -gtest=...` without `-gconfig=` loads `.gutconfig.json` and runs the whole suite
   (~2 h): always pass `-gconfig=` for single files.
