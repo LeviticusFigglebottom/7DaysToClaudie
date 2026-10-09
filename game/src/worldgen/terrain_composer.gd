@@ -45,7 +45,12 @@ extends RefCounted
 ## VERSION 14 (TD-318): a world town's streets are profiled together (town_street_profiles): a street
 ## that meets an earlier one is pinned to its height there, so junctions have no crease; the
 ## generator (v14) sets each lot's height within LOT_STREET_STEP of its street's profile at the lot.
-const VERSION: int = 14
+## VERSION 15 (TD-318 follow-ups): world roads are pinned to the world roads before them where they
+## meet (world_road_profiles); the nearest road is the one whose EDGE is nearest (r_d), so a
+## cul-de-sac's bulb is paved and graded across its whole circle where its street ends in it; and a
+## road running onto a POI's or framework's pad ramps to its level (PAD_RAMP_*); a random world's
+## places are levelled from world data and its world roads pinned to them (WorldDef.pads, TD-320).
+const VERSION: int = 15
 ## The steepest grade (rise over run) a generated world's road profile keeps, by surface.
 const ROAD_MAX_GRADE: Dictionary = {"asphalt": 0.12, "gravel": 0.14, "dirt": 0.16}
 ## Road profiles are sampled every PROFILE_STEP m. A town street within JUNCTION_REACH m of an
@@ -54,6 +59,16 @@ const PROFILE_STEP: float = 4.0
 const JUNCTION_REACH: float = 3.0
 const JUNCTION_EASE: float = 32.0
 const TOWN_ROAD_REACH: float = 60.0
+## A road running onto a POI's or framework's pad ramps to its level at PAD_RAMP_GRADE (rise over
+## run), over PAD_RAMP_MIN..PAD_RAMP_MAX m, its banks with it out to PAD_RAMP_SIDE m past its
+## shoulder (VERSION 15).
+const PAD_RAMP_GRADE: float = 0.08
+const PAD_RAMP_MIN: float = 12.0
+const PAD_RAMP_MAX: float = 60.0
+const PAD_RAMP_SIDE: float = 10.0
+## A region-graded road whose centre line comes within PAD_PIN_REACH m of a pad (its corridor all
+## but touching it) is pinned to its level (VERSION 15).
+const PAD_PIN_REACH: float = 8.0
 ## Banks beside a generated world's roads: the slope (rise over run) of a cut and of a fill, between
 ## the two values by a value noise along the road (BANK_CELL m across), a flat verge of up to
 ## BANK_VERGE m before the bank, the radius (m) of the rounding where the bank meets the land, the
@@ -222,12 +237,15 @@ static func town_street_profiles(streets: Array, h_fn: Callable, fixed: Array = 
 	var out: Dictionary = {}
 	var lines: Array[Polyline2] = []
 	var ids: PackedStringArray = []
+	var widths: PackedFloat32Array = []
 	for fv: Variant in fixed:
 		var fr: Dictionary = fv
 		var fline: Polyline2 = fr["line"] if fr.has("line") else Polyline2.from_array(fr["points"])
-		out[str(fr["id"])] = smoothed_profile(fline, h_fn, float(ROAD_MAX_GRADE.get(str(fr.get("surface", "")), 0.14)))
+		out[str(fr["id"])] = fr["profile"] if fr.has("profile") \
+			else smoothed_profile(fline, h_fn, float(ROAD_MAX_GRADE.get(str(fr.get("surface", "")), 0.14)))
 		lines.append(fline)
 		ids.append(str(fr["id"]))
+		widths.append(float(fr.get("width", 0.0)))
 	for sv: Variant in streets:
 		var st: Dictionary = sv
 		if (st.get("points", []) as Array).size() < 2:
@@ -237,29 +255,108 @@ static func town_street_profiles(streets: Array, h_fn: Callable, fixed: Array = 
 		# Where this street touches an earlier one: the arc of each local closest approach within
 		# JUNCTION_REACH, pinned to the earlier street's height there.
 		for j: int in lines.size():
-			var other: Polyline2 = lines[j]
-			var oprof: PackedFloat32Array = out.get(ids[j], PackedFloat32Array())
-			if oprof.is_empty() or not line.bounds.grow(JUNCTION_REACH).intersects(other.bounds):
-				continue
-			var n: int = prof.size()
-			var dist := PackedFloat32Array()
-			dist.resize(n)
-			for k: int in n:
-				dist[k] = other.closest(line.point_at(k * PROFILE_STEP)).x
-			for k2: int in n:
-				var dk: float = dist[k2]
-				if dk > JUNCTION_REACH or (k2 > 0 and dist[k2 - 1] < dk) or (k2 < n - 1 and dist[k2 + 1] <= dk):
-					continue
-				var at: Vector3 = other.closest(line.point_at(k2 * PROFILE_STEP))
-				var delta: float = profile_at(oprof, at.y) - prof[k2]
-				for k3: int in n:
-					var off: float = absf(float(k3 - k2)) * PROFILE_STEP
-					if off < JUNCTION_EASE:
-						prof[k3] += delta * (1.0 - smoothstep(0.0, JUNCTION_EASE, off))
+			_pin_profile(prof, line, lines[j], out.get(ids[j], PackedFloat32Array()), JUNCTION_EASE, widths[j])
 		lines.append(line)
 		ids.append(str(st["id"]))
+		widths.append(float(st.get("width", 0.0)))
 		out[str(st["id"])] = prof
 	return out
+
+
+## Pins `prof` (along `line`) to `oprof` (along `other`) wherever the two lines come within
+## JUNCTION_REACH m (each local closest approach), eased over JUNCTION_EASE m along `line`.
+static func _pin_profile(prof: PackedFloat32Array, line: Polyline2, other: Polyline2, oprof: PackedFloat32Array, ease: float = JUNCTION_EASE,
+		other_width: float = 0.0) -> void:
+	# A road authored to start at the other's edge is that far off its centre line.
+	var reach: float = maxf(JUNCTION_REACH, other_width * 0.5 + 1.5)
+	if oprof.is_empty() or not line.bounds.grow(reach).intersects(other.bounds):
+		return
+	var n: int = prof.size()
+	var near: Rect2 = other.bounds.grow(reach)
+	var dist := PackedFloat32Array()
+	dist.resize(n)
+	for k: int in n:
+		var p: Vector2 = line.point_at(k * PROFILE_STEP)
+		dist[k] = other.closest(p).x if near.has_point(p) else 1.0e9
+	for k2: int in n:
+		var dk: float = dist[k2]
+		if dk > reach or (k2 > 0 and dist[k2 - 1] < dk) or (k2 < n - 1 and dist[k2 + 1] <= dk):
+			continue
+		var at: Vector3 = other.closest(line.point_at(k2 * PROFILE_STEP))
+		var delta: float = profile_at(oprof, at.y) - prof[k2]
+		var e: float = maxf(ease, PROFILE_STEP)
+		for k3: int in range(maxi(0, k2 - int(e / PROFILE_STEP)), mini(n, k2 + int(e / PROFILE_STEP) + 1)):
+			var off: float = absf(float(k3 - k2)) * PROFILE_STEP
+			if off < e:
+				prof[k3] += delta * (1.0 - smoothstep(0.0, e, off))
+
+
+## Every world road's profile ({id: PackedFloat32Array}, before bridges) on a world graded from
+## world data alone: smoothed and grade-capped, pinned to the world-levelled pads it runs onto or
+## beside (TD-320), then, in road order, to every earlier road it meets (over 32 m or half its
+## length), so two world roads meet at one height (TD-318 follow-up, VERSION 15). `roads`: WorldDef
+## or generator roads [{id, line, surface}]; `pads`: WorldDef.pads [{origin, rot, size}].
+static func world_road_profiles(roads: Array, h_fn: Callable, pads: Array = []) -> Dictionary:
+	var out: Dictionary = {}
+	var heights: PackedFloat32Array = []
+	for pd: Dictionary in pads:
+		heights.append(world_pad_height(pd["origin"], pd["size"], float(pd["rot"]), h_fn))
+	for i: int in roads.size():
+		var r: Dictionary = roads[i]
+		var line: Polyline2 = r["line"]
+		var prof: PackedFloat32Array = smoothed_profile(line, h_fn, float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
+		for pi: int in pads.size():
+			pin_profile_to_pad(prof, line, pads[pi]["origin"], pads[pi]["size"], float(pads[pi]["rot"]), heights[pi])
+		var ease: float = minf(JUNCTION_EASE, line.total_length * 0.5)
+		for j: int in i:
+			_pin_profile(prof, line, roads[j]["line"], out[str(roads[j]["id"])], ease, float(roads[j].get("width", 0.0)))
+		out[str(r["id"])] = prof
+	return out
+
+
+## A world-levelled pad's height (TD-320): the mean of h_fn over 5 x 5 samples of its rectangle
+## (corner `o`, `size`, `rot` radians), + 5 cm, as _pad_targets levels a region's own pads.
+static func world_pad_height(o: Vector2, size: Vector2, rot: float, h_fn: Callable) -> float:
+	var acc: float = 0.0
+	for k: int in 25:
+		var lp := Vector2((k % 5 + 0.5) / 5.0 * size.x, (k / 5 + 0.5) / 5.0 * size.y)
+		var wp: Vector2 = o + lp.rotated(rot)
+		acc += float(h_fn.call(wp.x, wp.y))
+	return acc / 25.0 + 0.05
+
+
+## Pins a road's profile to a pad (corner `o`, `size`, `rot` radians, level `target`): within
+## PAD_PIN_REACH m of the pad the road is at its level, easing back to its own profile at
+## PAD_RAMP_GRADE over 12-60 m (VERSION 15).
+static func pin_profile_to_pad(prof: PackedFloat32Array, line: Polyline2, o: Vector2, size: Vector2, rot: float, target: float) -> void:
+	var corners: Array[Vector2] = [o, o + Vector2(size.x, 0).rotated(rot), o + size.rotated(rot), o + Vector2(0, size.y).rotated(rot)]
+	var bb := Rect2(corners[0], Vector2.ZERO)
+	for c: Vector2 in corners:
+		bb = bb.expand(c)
+	if not line.bounds.intersects(bb.grow(PAD_PIN_REACH + PAD_RAMP_MAX)):
+		return
+	var n: int = prof.size()
+	var dist := PackedFloat32Array()
+	dist.resize(n)
+	var touches: bool = false
+	for k: int in n:
+		var lp: Vector2 = (line.point_at(k * PROFILE_STEP) - o).rotated(-rot)
+		var dx: float = maxf(maxf(-lp.x, lp.x - size.x), 0.0)
+		var dz: float = maxf(maxf(-lp.y, lp.y - size.y), 0.0)
+		dist[k] = sqrt(dx * dx + dz * dz)
+		touches = touches or dist[k] < PAD_PIN_REACH
+	if not touches:
+		return
+	# The ease's length from the largest difference at the pad.
+	var diff: float = 0.0
+	for k2: int in n:
+		if dist[k2] < PAD_PIN_REACH:
+			diff = maxf(diff, absf(prof[k2] - target))
+	var ease: float = clampf(diff / PAD_RAMP_GRADE, PAD_RAMP_MIN, PAD_RAMP_MAX)
+	for k3: int in n:
+		var w: float = 1.0 - smoothstep(PAD_PIN_REACH, PAD_PIN_REACH + ease, dist[k3])
+		if w > 0.0:
+			prof[k3] = lerpf(prof[k3], target, w)
 
 
 ## The world roads that pass within TOWN_ROAD_REACH m of a town's disc ({id, line, surface}, by id),
@@ -270,7 +367,10 @@ static func town_world_roads(roads: Array, center: Vector2, radius: float) -> Ar
 		var r: Dictionary = rv
 		var line: Polyline2 = r["line"]
 		if line.bounds.grow(radius + TOWN_ROAD_REACH).has_point(center) and line.closest(center).x < radius + TOWN_ROAD_REACH:
-			out.append({"id": str(r["id"]), "line": line, "surface": str(r.get("surface", ""))})
+			var e: Dictionary = {"id": str(r["id"]), "line": line, "surface": str(r.get("surface", "")), "width": float(r.get("width", 0.0))}
+			if r.has("profile"):
+				e["profile"] = r["profile"]
+			out.append(e)
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return str(a["id"]) < str(b["id"]))
 	return out
 
@@ -349,7 +449,11 @@ class _Build:
 	var fw_lvl: PackedFloat32Array
 	var fw_vw: PackedFloat32Array
 	var fw_vs: PackedFloat32Array
-	# road fields (coarse)
+	# road fields (coarse). r_d is the distance to the nearest road's EDGE (centre line distance less
+	# half its width; negative on it): the nearest road is the one whose edge is nearest, so a wide
+	# road (a cul-de-sac's bulb) keeps its whole width where a narrow one ends in it, and the edge
+	# distance stays continuous where two roads' cells meet. Readers add the road's half width back
+	# (VERSION 15; it was the centre line's).
 	var r_d: PackedFloat32Array
 	var r_s: PackedFloat32Array
 	var r_idx: PackedInt32Array
@@ -543,6 +647,7 @@ class _Build:
 		_mark("apply_water")
 		if not _report("roads", 0.6):
 			return null
+		_pad_targets()
 		_road_fields()
 		_mark("road_fields")
 		_apply_roads()
@@ -1158,7 +1263,7 @@ class _Build:
 		# region they cross (one profile, memoised under the town and street).
 		for tw: Dictionary in _towns:
 			var fw: FrameworkDef = tw["fw"]
-			var fixed: Array = TerrainComposer.town_world_roads(world.roads, tw["center"], float(tw["radius"]))
+			var fixed: Array = TerrainComposer.town_world_roads(_world_roads_profiled(), tw["center"], float(tw["radius"]))
 			for rv: Variant in fw.roads:
 				if not rv is Dictionary or ((rv as Dictionary).get("points", []) as Array).size() < 2:
 					continue
@@ -1193,6 +1298,7 @@ class _Build:
 				r["step"] = prof["step"]
 				r["spans"] = prof["spans"]
 			else:
+				r["_ri"] = ri
 				_build_profile(r)
 			for si: int in line.points.size() - 1:
 				var a: Vector2 = line.points[si]
@@ -1207,10 +1313,11 @@ class _Build:
 				var seg_len: float = sqrt(l2)
 				var s0: float = line.lengths[si]
 				var idx: int = ri
+				var hw: float = float(r["width"]) * 0.5
 				_for_coarse_box(seg, func(ci: int, x: float, z: float) -> void:
 					var p := Vector2(x, z)
 					var t: float = clampf((p - a).dot(ab) / l2, 0.0, 1.0)
-					var dist: float = p.distance_to(a + ab * t)
+					var dist: float = p.distance_to(a + ab * t) - hw
 					if dist < r_d[ci]:
 						r_d[ci] = dist
 						r_s[ci] = s0 + seg_len * t
@@ -1270,6 +1377,62 @@ class _Build:
 		r["step"] = prof["step"]
 		r["spans"] = prof["spans"]
 
+	## world.roads with their pinned profiles (`profile`) on a world graded from world data alone.
+	func _world_roads_profiled() -> Array:
+		if world.road_grade != "world":
+			return world.roads
+		var profs: Dictionary = _world_profiles()
+		var out: Array = []
+		for r: Dictionary in world.roads:
+			var e: Dictionary = r.duplicate()
+			e["profile"] = profs.get(str(r["id"]), PackedFloat32Array())
+			out.append(e)
+		return out
+
+	## Every world road's pinned profile (world_road_profiles), built once per world.
+	func _world_profiles() -> Dictionary:
+		var memo: Dictionary = world.road_profile("world:*", func() -> Dictionary:
+			return {"profiles": TerrainComposer.world_road_profiles(world.roads, _reference_ground, world.pads)})
+		return memo["profiles"]
+
+	## The level of every POI's and framework's pad, from the ground before the roads are cut
+	## (VERSION 15: it was read after them), so a region-graded road can be pinned to it
+	## (_pin_to_pads). Pads that keep their water and world towns' pads keep their own rules.
+	func _pad_targets() -> void:
+		for pad: Dictionary in pads:
+			if bool(pad.get("world", false)) or bool(pad["keep_water"]):
+				continue
+			# A random world's place is levelled from world data (TD-320), so the world roads, graded
+			# once per world, can be pinned to it; the main map's from its region's own ground.
+			var by_world: bool = world.road_grade == "world" and world.pad_ids.has(str(pad["id"]))
+			pad["height"] = TerrainComposer.world_pad_height(pad["origin"], pad["size"], float(pad["rot"]),
+				_reference_ground if by_world else _sample)
+
+	## Pins a region-graded road's profile to the pads it runs onto or beside (VERSION 15): within
+	## PAD_PIN_REACH m of a pad the road is at the pad's level, easing back to its own profile at
+	## PAD_RAMP_GRADE over 12-60 m. A road along a town's pad (Route 9 by Pell's Crossing) stood
+	## metres under the storefronts facing it.
+	func _pin_to_pads(prof: PackedFloat32Array, line: Polyline2) -> void:
+		for pad: Dictionary in pads:
+			if not pad.has("height") or bool(pad.get("world", false)):
+				continue
+			TerrainComposer.pin_profile_to_pad(prof, line, pad["origin"], pad["size"], float(pad["rot"]), float(pad["height"]))
+
+	## Pins a region-graded road's profile to the roads before it in road_list (whose profiles are
+	## built) where it meets them, eased over JUNCTION_EASE m or half its length, whichever is
+	## shorter, so a short lane from the highway to a pad keeps the pad's level at its far end
+	## (VERSION 15).
+	func _pin_to_roads(prof: PackedFloat32Array, line: Polyline2, upto: int) -> void:
+		if upto <= 0:
+			return
+		var ease: float = minf(JUNCTION_EASE, line.total_length * 0.5)
+		for j: int in upto:
+			var o: Dictionary = road_list[j]
+			# A bridged road's profile carries its decks: a road meeting one there meets the deck.
+			if not o.has("profile"):
+				continue
+			TerrainComposer._pin_profile(prof, line, o["line"], o["profile"], ease, float(o["width"]))
+
 	## {profile, step, spans} of a road (see _build_profile).
 	func _profile_data(r: Dictionary) -> Dictionary:
 		var line: Polyline2 = r["line"]
@@ -1282,9 +1445,15 @@ class _Build:
 			var town: Dictionary = world.road_profile("town:%s:*" % r["town"], func() -> Dictionary:
 				return {"profiles": TerrainComposer.town_street_profiles(r["town_streets"], _reference_ground, r["town_fixed"])})
 			prof = ((town["profiles"] as Dictionary).get(str(r["street"]), PackedFloat32Array()) as PackedFloat32Array).duplicate()
+		elif by_world and r.has("world_index"):
+			# A world road: pinned to the world roads before it where they meet (VERSION 15).
+			prof = ((_world_profiles().get(str(r["id"]), PackedFloat32Array())) as PackedFloat32Array).duplicate()
 		if prof.is_empty():
 			prof = TerrainComposer.smoothed_profile(line, _reference_ground if by_world else _sample_or_macro,
 				float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
+			if not by_world:
+				_pin_to_pads(prof, line)
+				_pin_to_roads(prof, line, int(r.get("_ri", -1)))
 		var count: int = prof.size()
 		var spans: Array = []
 		for bdef: Variant in r["bridges"]:
@@ -1443,6 +1612,7 @@ class _Build:
 					else:
 						s = rss[nci]
 				var half: float = rhalf[ri]
+				d += half
 				var sh: float = rsh[ri]
 				var outer: float = half + sh + BANK_REACH
 				if d > outer or rhas[ri] == 0:
@@ -1540,7 +1710,10 @@ class _Build:
 			# alike (no border fade), and gives way to the streets.
 			var world_pad: bool = bool(pad.get("world", false))
 			var target: float = float(pad.get("target", 0.0))
-			if not world_pad:
+			if pad.has("height"):
+				# Levelled before the roads (_pad_targets, VERSION 15), so the roads could meet it.
+				target = float(pad["height"])
+			elif not world_pad:
 				# Mean height over the pad.
 				var acc: float = 0.0
 				var cnt: int = 0
@@ -1562,7 +1735,10 @@ class _Build:
 			var bb := Rect2(corners[0], Vector2.ZERO)
 			for c: Vector2 in corners:
 				bb = bb.expand(c)
-			bb = bb.grow(LOT_BANK_REACH if world_pad else (skirt if keep_water else maxf(skirt, PAD_BANK_REACH)))
+			# Roads that run onto a pad (not a lot's: its height is held to its street) ramp to it.
+			var onto: Dictionary = {} if world_pad or keep_water else _roads_onto(o, size, rot, bb)
+			var ramp_roads: bool = not onto.is_empty()
+			bb = bb.grow(LOT_BANK_REACH if world_pad else (skirt if keep_water else maxf(skirt, PAD_RAMP_MAX if ramp_roads else PAD_BANK_REACH)))
 			var bank_seed: int = (world.seed & 0xffffff) ^ 0x3c6ef3
 			_for_box(bb, func(i: int, x: float, z: float) -> void:
 				var lp: Vector2 = (Vector2(x, z) - o).rotated(-rot)
@@ -1596,6 +1772,15 @@ class _Build:
 						# graded first, and a bank across one tilted it: Pell's Crossing's corner); the
 						# pad itself stays level over a road inside it (a campground's loop).
 						h[i] = lerpf(h[i], target + signf(dh2) * lim2, fade2 * _border_weight(x, z) * (_yield_to_roads(x, z) if d > 0.0 else 1.0))
+					# VERSION 15 (TD-318 follow-up): a road that runs onto the pad ramps to its level
+					# over the last PAD_RAMP_GRADE of rise (12-60 m), its banks with it, instead of
+					# meeting the pad's edge in a step (the banks above give way to the road, and the
+					# road is graded before the pad: Pell's Crossing's west entry stood 3.7 m under it).
+					if d > 0.0 and ramp_roads and d < PAD_RAMP_MAX:
+						var rw: float = _road_reach(x, z, PAD_RAMP_SIDE, onto)
+						if rw > 0.0:
+							var rl: float = clampf(absf(h[i] - target) / PAD_RAMP_GRADE, PAD_RAMP_MIN, PAD_RAMP_MAX)
+							h[i] = lerpf(h[i], target, rw * (1.0 - smoothstep(0.0, rl, d)) * _border_weight(x, z))
 					return
 				if d < skirt:
 					var wgt: float = 1.0 - smoothstep(0.0, skirt, d)
@@ -1639,10 +1824,39 @@ class _Build:
 		var v11: float = float((((i + 1) * 73856093) ^ ((j + 1) * 19349663) ^ sd) & 0xffff) / 65535.0
 		return lerpf(lerpf(v00, v10, fx), lerpf(v01, v11, fx), fz)
 
+	## 1 on a road's paved corridor (half width + shoulder), easing to 0 `side` m beyond it; 0 off
+	## the roads. Read from the road fields as _yield_to_roads reads them.
+	func _road_reach(x: float, z: float, side: float, only: Dictionary) -> float:
+		return 1.0 - _yield_to_roads_by(x, z, side, only)
+
+	## The roads (road_list indices, as keys) that run onto a pad: their centre line comes within
+	## 1 m of its rectangle (origin, size, rot). Roads only passing by are left alone (a ramp along a
+	## pad's side would tilt them across).
+	func _roads_onto(o: Vector2, size: Vector2, rot: float, box: Rect2) -> Dictionary:
+		var out: Dictionary = {}
+		var g: Rect2 = box.grow(2.0)
+		for ri: int in road_list.size():
+			var line: Polyline2 = road_list[ri]["line"]
+			if not line.bounds.intersects(g):
+				continue
+			var s: float = 0.0
+			while s <= line.total_length:
+				var p: Vector2 = line.point_at(s)
+				if g.has_point(p):
+					var lp: Vector2 = (p - o).rotated(-rot)
+					if lp.x > -1.0 and lp.y > -1.0 and lp.x < size.x + 1.0 and lp.y < size.y + 1.0:
+						out[ri] = true
+						break
+				s += 2.0
+		return out
+
 	## How much a world town's pad skirt may grade a sample (ADR-0040): nothing on a road's paved
 	## corridor (half width + shoulder), easing to all of it LOT_ROAD_YIELD m beyond, so a yard never
 	## bumps a street. The road and its distance are read from the road fields as _band_roads reads them.
 	func _yield_to_roads(x: float, z: float) -> float:
+		return _yield_to_roads_by(x, z, LOT_ROAD_YIELD)
+
+	func _yield_to_roads_by(x: float, z: float, ease: float, only: Dictionary = {}) -> float:
 		var gx: float = clampf((x - cx0) / cs, 0.0, cn - 1.001)
 		var gz: float = clampf((z - cz0) / cs, 0.0, cn - 1.001)
 		var cx: int = mini(int(gx), cn - 2)
@@ -1663,8 +1877,11 @@ class _Build:
 			var nci: int = ci + (1 if fx > 0.5 else 0) + (cn if fz > 0.5 else 0)
 			if r_idx[nci] >= 0:
 				ri = r_idx[nci]
+		if not only.is_empty() and not only.has(ri):
+			return 1.0
+		d += _r_half[ri]
 		var inner: float = _r_half[ri] + _r_sh[ri]
-		return smoothstep(inner, inner + LOT_ROAD_YIELD, d)
+		return smoothstep(inner, inner + ease, d)
 
 	# --- 6. Surface: biome, splat, vegetation ---------------------------------------------------
 
@@ -2086,6 +2303,7 @@ class _Build:
 					else:
 						var rtop: float = ra + (rb - ra) * fx
 						rd = rtop + ((rc + (rdx - rc) * fx) - rtop) * fz
+					rd += rhalf[ri]
 					# A world town's street and its verges are town ground (ADR-0047).
 					var tk: int = rtown[ri]
 					if tk > 0 and rd < rhalf[ri] + rsh[ri] + TOWN_VERGE + n2 * 2.0:

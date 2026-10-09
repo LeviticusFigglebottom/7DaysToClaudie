@@ -341,7 +341,7 @@ func _audit_lots(rt: RegionTerrain, st: _Stats) -> void:
 						if on:
 							crease = maxf(crease, absf(hf.sample(nb.x, nb.y) - hf.sample(a2.x, a2.y)))
 			st.add(&"junction_step", crease)
-			if crease > 0.6 and OS.get_cmdline_user_args().has("--worst"):
+			if crease > 0.45 and OS.get_cmdline_user_args().has("--worst"):
 				print("[worst] junction %.2f road %s at %.0f,%.0f" % [crease, r.get("id", ""), e.x, e.y])
 
 

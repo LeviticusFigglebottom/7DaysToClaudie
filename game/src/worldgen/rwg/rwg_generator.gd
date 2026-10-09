@@ -62,7 +62,9 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## placed last from its own stream, so every other place stays where it was.
 ## 14: a town lot's height stays within LOT_STREET_STEP of its street's profile where it meets it
 ## (TerrainComposer.town_street_profiles, composer 14): no lip between a yard and its street (TD-318).
-const VERSION: int = 14
+## 15: the world roads a town's lots and streets meet are the composer's pinned ones (composer 15);
+## world.json lists the places levelled from world data (`pads`), which the world roads pin to (TD-320).
+const VERSION: int = 15
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -2703,9 +2705,7 @@ func _finalize_town_heights() -> void:
 		var plan: Dictionary = tw["plan"]
 		var streets: Array = plan.get("roads", [])
 		# The world roads through or by it, as the composer will pick them (by its written points).
-		var world_roads: Array = []
-		for rd: Dictionary in roads:
-			world_roads.append({"id": rd["id"], "line": Polyline2.from_array(Terrain._arr(rd["points"])), "surface": rd["surface"]})
+		var world_roads: Array = _world_roads_profiled()
 		var cw: Array = Terrain._arr(PackedVector2Array([tw["center"]]))[0]
 		var fixed: Array = TerrainComposer.town_world_roads(world_roads, Vector2(float(cw[0]), float(cw[1])), float(tw["radius"]))
 		var profiles: Dictionary = TerrainComposer.town_street_profiles(streets, _ref.h, fixed)
@@ -2729,6 +2729,45 @@ func _finalize_town_heights() -> void:
 			l["y"] = y
 		if not (plan.get("plaza", {}) as Dictionary).is_empty():
 			plan["plaza"]["y"] = _frame_height(plan["plaza"]["frame"])
+
+
+## The places the composer levels from world data, as written ({id, origin, rotation, size}): every
+## place on a pad of its whole footprint (not a mine's part pad, not one over water), TD-320.
+func _world_pads() -> Array:
+	var out: Array = []
+	for pl: Dictionary in places:
+		if bool(pl["keep_water"]) or (pl.get("pad", Vector2.ZERO) as Vector2) != Vector2.ZERO:
+			continue
+		out.append({"id": pl["id"], "origin": Terrain._arr(PackedVector2Array([pl["origin"]]))[0], "rotation": pl["rot"],
+			"size": [(pl["size"] as Vector2).x, (pl["size"] as Vector2).y]})
+	return out
+
+
+## _world_pads as WorldDef reads them.
+func _world_pads_read() -> Array:
+	var out: Array = []
+	for pd: Dictionary in _world_pads():
+		out.append({"id": pd["id"], "origin": Vector2(float(pd["origin"][0]), float(pd["origin"][1])), "rot": deg_to_rad(float(pd["rotation"])),
+			"size": Vector2(float(pd["size"][0]), float(pd["size"][1]))})
+	return out
+
+
+## The world roads as the composer reads them (by their written points), each with its pinned
+## profile (TerrainComposer.world_road_profiles), built once.
+var _world_profiled: Array = []
+
+
+func _world_roads_profiled() -> Array:
+	if not _world_profiled.is_empty():
+		return _world_profiled
+	var rs: Array = []
+	for rd: Dictionary in roads:
+		rs.append({"id": rd["id"], "line": Polyline2.from_array(Terrain._arr(rd["points"])), "surface": rd["surface"], "width": float(rd["width"])})
+	var profs: Dictionary = TerrainComposer.world_road_profiles(rs, _ref.h, _world_pads_read())
+	for e: Dictionary in rs:
+		e["profile"] = profs[str(e["id"])]
+	_world_profiled = rs
+	return rs
 
 
 ## How far a lot's yard may stand above or below its street where it meets it (m, TD-318).
@@ -2849,7 +2888,7 @@ func world_json() -> Dictionary:
 			"drop_site": Terrain._arr(PackedVector2Array([drop.get("pos", Vector2.ZERO)]))[0], "timings_ms": timings, "warnings": Array(warnings)},
 		"macro": {"step": terrain.step, "corner_heights": rows, "noise": {"frequency": 0.001, "octaves": 1, "amplitude": 0.0, "ridged_amplitude": 0.0, "mountain_boost": 0.0}},
 		"biome_map": {"ids": Array(BIOMES), "step": biome_step, "cols": biome_cols, "rows": biome_cols, "rows_data": bm_rows},
-		"rivers": rivers, "lakes": lakes, "roads": road_out, "regions": reg, "towns": town_out,
+		"rivers": rivers, "lakes": lakes, "roads": road_out, "regions": reg, "towns": town_out, "pads": _world_pads(),
 	}
 
 

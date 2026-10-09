@@ -1,5 +1,10 @@
 {
   "_doc": "Shared weather rates and looks (ADR-0033). Each state's own numbers (rain, snow, wind, gust, lightning, ground_fog, haze) are in data/weather/weather.json. Times are game minutes unless named _s (real seconds) or _m (metres).",
+  "gentle_start": {
+    "_doc": "The gentle_start world setting (default on; off on the brutal presets): through `days` the weather never turns to these states, so a new player's first sleeps don't wake them into a storm or snow they have no gear for. One already blowing ends at its next change.",
+    "days": 3,
+    "barred": ["storm", "snow"]
+  },
   "wetness": {
     "_doc": "Surfaces soak through in wet_minutes of full rain and dry in dry_minutes of still, overcast air; sun (x sun_dry) and wind (x 1 + wind_dry * wind) dry them faster. Standing water starts once surfaces are soaked past puddle_after, fills in puddle_fill_minutes of full rain and drains or dries in puddle_dry_minutes.",
     "wet_minutes": 30.0,

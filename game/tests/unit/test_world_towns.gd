@@ -156,6 +156,13 @@ func test_lot_heights_come_from_the_composers_ground() -> void:
 		worst = maxf(worst, absf(float(ref.call(&"h", x, z)) - b._reference_ground(x, z)))
 	assert_eq(worst, 0.0, "the reference ground is the composer's to the bit")
 	var clamped: int = 0
+	# The world roads with their pinned profiles, as the composer reads them (VERSION 15).
+	var wprofs: Dictionary = TerrainComposer.world_road_profiles(world.roads, b._reference_ground)
+	var wroads: Array = []
+	for wr: Dictionary in world.roads:
+		var e: Dictionary = wr.duplicate()
+		e["profile"] = wprofs[str(wr["id"])]
+		wroads.append(e)
 	for tw: Dictionary in towns:
 		# The street profiles as the composer builds them (TD-318): the town's streets after the
 		# world roads by it, from the world as written.
@@ -164,7 +171,7 @@ func test_lot_heights_come_from_the_composers_ground() -> void:
 			if str(t2["id"]) == str(tw["id"]):
 				wt = t2
 		assert_false(wt.is_empty(), "%s is in world.json" % tw["id"])
-		var fixed: Array = TerrainComposer.town_world_roads(world.roads, wt["center"], float(wt["radius"]))
+		var fixed: Array = TerrainComposer.town_world_roads(wroads, wt["center"], float(wt["radius"]))
 		var streets: Array = tw["plan"].get("roads", [])
 		var profiles: Dictionary = TerrainComposer.town_street_profiles(streets, b._reference_ground, fixed)
 		var lines: Dictionary = {}
