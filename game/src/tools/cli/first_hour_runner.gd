@@ -30,6 +30,13 @@ func frames(n: int) -> void:
 		await get_tree().process_frame
 
 
+## The value after `key` on the command line (after `--`), else `default`.
+func _arg(key: String, default: String) -> String:
+	var a: PackedStringArray = OS.get_cmdline_user_args()
+	var i: int = a.find(key)
+	return a[i + 1] if i >= 0 and i + 1 < a.size() else default
+
+
 func seconds(s: float) -> void:
 	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
 	while Time.get_ticks_msec() < end:
@@ -155,7 +162,10 @@ func _run() -> void:
 	await seconds(2.0)
 	if ui != null:
 		await snap("loading_new_game")
-	if not await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), 900.0):
+	# --load-wait <s>: a rendered run of an exported pack (real assets, software Vulkan) raises
+	# its towns at about a second a frame and can need far longer than the default.
+	var load_wait: float = float(_arg("--load-wait", "900"))
+	if not await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), load_wait):
 		note("the world never became ready")
 		_finish()
 		return
