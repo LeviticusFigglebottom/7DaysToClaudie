@@ -53,20 +53,13 @@ var _mutex := Mutex.new()
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(1000, 700)
-	# Opaque: the default panel is translucent, and the menu's title read through it.
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.07, 0.08, 0.085, 0.98)
-	bg.set_content_margin_all(14)
-	bg.set_corner_radius_all(4)
-	add_theme_stylebox_override(&"panel", bg)
+	custom_minimum_size = Vector2(1100, 760)
+	# The kit theme (ADR-0063): an opaque dark canvas panel, like every other menu.
+	theme = UiStyle.kit_theme()
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override(&"separation", 10)
 	add_child(root)
-	var title := Label.new()
-	title.text = "NEW GAME — WORLD SETTINGS"
-	title.add_theme_font_size_override(&"font_size", 22)
-	root.add_child(title)
+	root.add_child(UiStyle.label("NEW GAME — WORLD SETTINGS", &"HeadingLabel"))
 	_tabs = TabContainer.new()
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(_tabs)
@@ -81,7 +74,8 @@ func _ready() -> void:
 	buttons.add_child(back)
 	var start := Button.new()
 	start.text = "Start"
-	start.custom_minimum_size = Vector2(160, 40)
+	start.custom_minimum_size = Vector2(200, 44)
+	start.theme_type_variation = &"PrimaryButton"
 	start.pressed.connect(_start)
 	buttons.add_child(start)
 	_reset_to_preset()
@@ -129,7 +123,7 @@ func _build_game_tab() -> void:
 	_add_pair(top, "Run seed", _seed)
 	_preset_info = Label.new()
 	_preset_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_preset_info.modulate = Color(0.8, 0.8, 0.75)
+	_preset_info.theme_type_variation = &"DimLabel"
 	tab.add_child(_preset_info)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -167,8 +161,7 @@ func _build_options() -> void:
 func _section(parent: Container, label: String) -> GridContainer:
 	var header := Label.new()
 	header.text = label.to_upper()
-	header.add_theme_font_size_override(&"font_size", 16)
-	header.modulate = Color(0.95, 0.75, 0.45)
+	header.theme_type_variation = &"SubheadingLabel"
 	parent.add_child(header)
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -285,7 +278,7 @@ func _build_world_tab() -> void:
 	_add_pair(wtop, "Map seed", seed_row)
 	_wpreset_info = Label.new()
 	_wpreset_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_wpreset_info.modulate = Color(0.8, 0.8, 0.75)
+	_wpreset_info.theme_type_variation = &"DimLabel"
 	_wbox.add_child(_wpreset_info)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -324,7 +317,7 @@ func _build_world_tab() -> void:
 	right.add_child(_preview_btn)
 	_preview_status = Label.new()
 	_preview_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_preview_status.modulate = Color(0.8, 0.8, 0.75)
+	_preview_status.theme_type_variation = &"DimLabel"
 	_preview_status.custom_minimum_size = Vector2(400, 0)
 	right.add_child(_preview_status)
 	_on_map_changed(0)

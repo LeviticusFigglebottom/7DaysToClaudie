@@ -55,4 +55,9 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0053](0053-forest-set-pieces.md) | Wilderness set pieces (rounds 4 and 5): ten dungeons outside towns, placed late from their own streams; compound prop collision | Accepted |
 | [0054](0054-forest-encounters.md) | Forest encounters: small finds scattered through the woods per region from data (campsites, wrecks, stands, caches, graves, a hermit's shack), a runtime vegetation mask, kinds other systems register | Accepted |
 | [0057](0057-hunting-and-ranged.md) | Hunting and ranged: a bow whose arrows stick and come back, distraction stones, molotovs and ground fire, a bolt-action rifle with aim and scope, climbing arms, hunting stands and ropes | Accepted |
+<<<<<<< HEAD
+| [0063](0063-ui-style-and-menu-backdrop.md) | One UI style (paper and kit themes, readable disabled states, a UI scale), the crafting sheet and item cards, a flight over the real valley behind the main menu that freezes if it costs too much | Accepted |
+| [0064](0064-new-game-intro.md) | The new-game intro: data-driven cards over the load, with the load's heavy steps held to the cards' quiet moments | Accepted |
+=======
 | [0062](0062-first-days-tutorial.md) | The first-days tutorial: Program cards on the tether, any order, then Ezra's distress call; Find the lineman counts in any chapter | Accepted |
+>>>>>>> origin/claude/amazing-davinci-60axfh

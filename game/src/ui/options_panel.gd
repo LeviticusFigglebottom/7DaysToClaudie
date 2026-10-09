@@ -18,7 +18,7 @@ const ACTIONS: Array = [
 	["sprint", "Sprint"], ["crouch", "Crouch"], ["jump", "Jump / vault"], ["interact", "Interact (hold to search)"],
 	["attack", "Use / attack / place"], ["block", "Block / consume"], ["aim", "Aim (guns)"], ["reload", "Reload"], ["light", "Light"], ["inspect", "Inspect held item"], ["drop", "Drop"],
 	["companion_order", "Companion: follow / stay"],
-	["inventory", "Salvage roll (inventory)"], ["guidebook", "Field manual"], ["tracker", "Tether"],
+	["inventory", "Salvage roll (inventory)"], ["guidebook", "Field manual"], ["tracker", "Tether"], ["map", "Map"],
 	["rotate_piece", "Rotate piece"], ["build_mode_toggle", "Log pose"], ["cancel", "Cancel"],
 	["toolbelt_1", "Toolbelt 1"], ["toolbelt_2", "Toolbelt 2"], ["toolbelt_3", "Toolbelt 3"],
 	["toolbelt_4", "Toolbelt 4"], ["toolbelt_5", "Toolbelt 5"], ["toolbelt_6", "Toolbelt 6"],
@@ -39,16 +39,14 @@ var _listening: String = ""
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	custom_minimum_size = Vector2(680, 0)
+	theme = UiStyle.kit_theme()
+	custom_minimum_size = Vector2(760, 0)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override(&"separation", 10)
 	add_child(box)
-	var title := Label.new()
-	title.text = "Options"
-	title.add_theme_font_size_override(&"font_size", 28)
-	box.add_child(title)
+	box.add_child(UiStyle.label("OPTIONS", &"HeadingLabel"))
 	_tabs = TabContainer.new()
-	_tabs.custom_minimum_size = Vector2(660, 540)
+	_tabs.custom_minimum_size = Vector2(720, 600)
 	box.add_child(_tabs)
 	_tabs.add_child(_page("General"))
 	_general()
@@ -134,6 +132,22 @@ func _general() -> void:
 	_slider("Brightness", 0.7, 1.5, 0.05, Settings.brightness, func(v: float) -> void:
 		Settings.brightness = v
 		Settings.save())
+	var ui := OptionButton.new()
+	ui.add_item("Auto (follows the window)", 0)
+	for i: int in UiStyle.SCALES.size():
+		ui.add_item("%d%%" % roundi(UiStyle.SCALES[i] * 100.0), i + 1)
+	ui.selected = 0 if Settings.ui_scale <= 0.0 else maxi(0, UiStyle.SCALES.find(Settings.ui_scale) + 1)
+	ui.item_selected.connect(func(i: int) -> void: Settings.set_ui_scale(0.0 if i == 0 else UiStyle.SCALES[i - 1]))
+	_row("Interface size", ui)
+	var bd := OptionButton.new()
+	var bd_modes: PackedStringArray = ["moving", "still", "off"]
+	for m: String in ["Moving (stops if the menu runs slow)", "Still", "Off"]:
+		bd.add_item(m)
+	bd.selected = maxi(0, bd_modes.find(Settings.menu_backdrop))
+	bd.item_selected.connect(func(i: int) -> void:
+		Settings.menu_backdrop = bd_modes[i]
+		Settings.save())
+	_row("Menu backdrop", bd)
 	_check("Fullscreen", Settings.fullscreen, func(on: bool) -> void: Settings.set_display(on, Settings.vsync))
 	_check("Vertical sync", Settings.vsync, func(on: bool) -> void: Settings.set_display(Settings.fullscreen, on))
 
@@ -168,7 +182,7 @@ func _build_graphics() -> void:
 	_gfx_slider("Grass distance", "grass_distance", 20.0, 90.0, 5.0)
 	var note := Label.new()
 	note.text = "Grass and tree changes show as the forest around you rebuilds."
-	note.add_theme_color_override(&"font_color", Color(0.6, 0.62, 0.58))
+	note.theme_type_variation = &"DimLabel"
 	_grid.add_child(note)
 	_grid.add_child(Control.new())
 

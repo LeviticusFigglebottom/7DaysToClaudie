@@ -10,7 +10,7 @@ const TradeIcons := preload("res://src/trade/trade_icons.gd")
 
 const PAPER := Color(0.83, 0.8, 0.7)
 const INK := Color(0.14, 0.12, 0.1)
-const INK_DIM := Color(0.42, 0.38, 0.32)
+const INK_DIM := UiStyle.INK_DIM
 const OK_INK := Color(0.16, 0.4, 0.18)
 const ICON_SIZE := 40
 
@@ -30,6 +30,8 @@ var _counts: Dictionary = {}
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The paper theme (ADR-0063): disabled entries stay in dim ink, never Godot's white.
+	theme = UiStyle.paper_theme()
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_icons = TradeIcons.new()
