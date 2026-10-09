@@ -93,3 +93,34 @@ func test_horde_walks_around_a_town_building() -> void:
 			entered = true
 	assert_false(entered, "the route goes round the house, not through its walls")
 	assert_lt(p.length(), 1.5, "and still reaches the base")
+
+
+class FakeCave:
+	extends RefCounted
+	var mouth := Transform3D(Basis.IDENTITY, Vector3(20.0, 5.0, 0.0))
+
+
+class FakeTerrain:
+	extends RefCounted
+	## A cave whose air fills x in [0, 10], y below 3.
+	func cave_at(p: Vector3) -> Object:
+		return FakeCave.new() if p.x >= 0.0 and p.x <= 10.0 and p.y < 3.0 else null
+
+
+func test_a_target_in_a_cave_is_reached_through_its_mouth() -> void:
+	# TD-279: the field is one layer over the surface; inside a cave the nav mesh takes over.
+	var t: Array[Vector3] = FlowField.surface_targets([Vector3(5.0, 0.0, 0.0), Vector3(-30.0, 10.0, 0.0)], FakeTerrain.new())
+	assert_eq(t.size(), 2)
+	assert_eq(t[0], Vector3(20.0, 5.0, 0.0), "the cave's mouth stands in for the target inside it")
+	assert_eq(t[1], Vector3(-30.0, 10.0, 0.0), "a target on the surface stays")
+	assert_eq(FlowField.surface_targets([Vector3(1, 0, 0)], null), [Vector3(1, 0, 0)] as Array[Vector3], "no terrain, no caves")
+
+
+func test_a_body_underground_gets_no_direction() -> void:
+	var f := FlowField.new()
+	f.setup(Vector3.ZERO, 20.0, 1.0)
+	f.build_terrain(func(_x: float, _z: float) -> float: return 10.0, Callable(), 45.0)
+	var tg: Array[Vector3] = [Vector3(10.0, 10.0, 0.0)]
+	f.integrate(tg)
+	assert_ne(f.direction_at(Vector3(-5.0, 10.0, 0.0)), Vector3.ZERO, "on the surface it points the way")
+	assert_eq(f.direction_at(Vector3(-5.0, 4.0, 0.0)), Vector3.ZERO, "6 m under the surface: a cave, the nav mesh's")
