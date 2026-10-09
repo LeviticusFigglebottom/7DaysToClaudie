@@ -301,7 +301,26 @@ func _hum_night() -> Dictionary:
 		var settle: int = Time.get_ticks_msec() + 20000
 		while Time.get_ticks_msec() < settle:
 			await get_tree().process_frame
+	Enemy.prof = {}
+	Enemy.prof_on = true
 	var m: Dictionary = await _measure(_frames)
+	Enemy.prof_on = false
+	# Where the bodies' physics step goes (ms a frame, summed over every body; phase 2 of TD-003).
+	var sections: Dictionary = {}
+	for k: Variant in Enemy.prof:
+		sections[str(k)] = snappedf(float(Enemy.prof[k]) / 1000.0 / float(_frames), 0.01)
+	m["enemy_ms"] = sections
+	print("[perf] hum enemy sections (ms a frame): %s" % JSON.stringify(sections))
+	# The physics span with the bodies' own steps off (30 frames): what the rest of the tick costs.
+	var bodies: Array = get_tree().get_nodes_in_group(&"enemies")
+	for b: Node in bodies:
+		b.set_physics_process(false)
+	var off: Dictionary = await _measure(30)
+	for b2: Node in bodies:
+		if is_instance_valid(b2):
+			b2.set_physics_process(true)
+	m["physics_ms_bodies_off"] = off["physics_ms"]
+	print("[perf] hum physics with the %d bodies' steps off: %.2f ms" % [bodies.size(), float(off["physics_ms"])])
 	m["members"] = (ai.hum.members as Dictionary).size()
 	m["alive"] = _alive(ai)
 	m["planned"] = int((ai.hum.plan as Dictionary).get("total", 0))

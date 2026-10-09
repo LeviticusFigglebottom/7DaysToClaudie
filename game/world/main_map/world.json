@@ -762,7 +762,7 @@
       "name": "Waystation 9",
       "biome": "meadow",
       "danger": 1,
-      "status": "planned",
+      "status": "built",
       "summary": "Program trader hub at the river culvert in the Cordon wall.",
       "frontier": "cordon"
     },

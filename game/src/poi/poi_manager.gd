@@ -105,7 +105,38 @@ func _place_region(rt: RegionTerrain) -> void:
 			"poi":
 				if buildings:
 					_place_poi(StringName(str(pl["def"])), StringName(str(pl["id"])), _placement_xf(pl), Vector2(pl.get("size", [0, 0])[0], pl.get("size", [0, 0])[1]))
+			"props":
+				_place_props(pl)
 	_region_now = ""
+
+
+## A region's `prop_line` / `props` pieces (TD-369; the composer set each one's height): batched
+## per 64 m cell like a town's plain fixtures (one MultiMesh per model, one body for every box).
+func _place_props(pl: Dictionary) -> void:
+	var cells: Dictionary = {}
+	for it: Variant in pl.get("items", []):
+		var d: Dictionary = it
+		var pdef: PropDef = Content.get_def(&"prop", StringName(str(d.get("prop", "")))) as PropDef
+		if pdef == null:
+			Log.warn("poi", "%s: prop %s not found" % [pl.get("id", ""), d.get("prop", "")])
+			continue
+		var p: Array = d["pos"]
+		var xf := Transform3D(Basis(Vector3.UP, deg_to_rad(float(d.get("rot", 0.0)))), Vector3(float(p[0]), float(p[1]), float(p[2])))
+		var k := Vector2i(floori(xf.origin.x / GRID_CELL), floori(xf.origin.z / GRID_CELL))
+		if not cells.has(k):
+			cells[k] = {"models": {}, "boxes": []}
+		var model: String = pdef.model_for(str(d.get("variant", "worn")))
+		var models: Dictionary = cells[k]["models"]
+		if not models.has(model):
+			models[model] = []
+		(models[model] as Array).append(xf)
+		if not pdef.boxes.is_empty():
+			for b: Array in pdef.collision_boxes():
+				(cells[k]["boxes"] as Array).append([xf * (b[1] as Transform3D), b[0]])
+		elif pdef.collision != "none":
+			(cells[k]["boxes"] as Array).append([xf * Transform3D(Basis(), Vector3(0, pdef.size.y * 0.5, 0)), pdef.size])
+	for k2: Vector2i in cells:
+		_keep_fixture(fixture_cell(cells[k2], "Props_%s_%d_%d" % [str(pl.get("id", "")).replace("/", "_"), k2.x, k2.y]))
 
 
 # --- Regions in and out (ADR-0038, RWG v2 Phase 2: buildings by region until Phase 3's rings) ---
@@ -136,6 +167,14 @@ func _on_region_attached(rid: String) -> void:
 		return
 	_placed_regions[rid] = true
 	if registry != null:
+		# Its prop lines and pieces (TD-369), a step each (without a registry _place_region does).
+		for ppl: Dictionary in rt.placements:
+			if str(ppl.get("kind", "")) == "props":
+				steps.add(["", func() -> void:
+					if _placed_regions.has(rid) and tm.regions.has(rid):
+						_region_now = rid
+						_place_props(ppl)
+						_region_now = "", "props %s" % rid])
 		# Its pads at 1 m heights; its fixtures in a step of their own (the buildings: _update_ring).
 		registry.refresh_region(rid, rt)
 		# A step per FIXTURE_STEP fixtures of each framework (a town's in one region were up to
