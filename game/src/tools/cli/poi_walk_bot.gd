@@ -64,6 +64,10 @@ const LADDER_FRAMES: int = 900
 const DETOUR_CELLS: int = 4
 const DETOUR_GRID: float = 0.25
 
+## Categories of blocked legs listed apart, which do not fail a building: the yard ring's fences and
+## wrecks, and a way an authored barricade (a barricade_* prop) closes on purpose.
+const APART: PackedStringArray = ["perimeter", "barricaded"]
+
 ## Print every leg as it is walked.
 var verbose: bool = false
 ## Climb ladders by walking into them even where the player has no is_climbing (tests).
@@ -147,6 +151,7 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 		"blocking": 0, "frames": 0}
 	_visited.clear()
 	_cluttered.clear()
+	_sills.clear()
 	_hits.clear()
 	_frames = 0
 	validator = PoiValidator.validate(pd)
@@ -158,8 +163,10 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 	_index_steps()
 	_check_corridor()
 	await _settle(3)
+	_exploring = false
 	await _walk_route()
 	await _explore()
+	_exploring = false
 	_rooms_report()
 	Input.action_release(&"move_forward")
 	_world.queue_free()
@@ -168,7 +175,7 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 	inst = null
 	player = null
 	# Perimeter legs (the yard's fences) are listed, but do not fail the building.
-	var real: Array = (_report["blocked"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("category", "")) != "perimeter")
+	var real: Array = (_report["blocked"] as Array).filter(func(l: Dictionary) -> bool: return not str(l.get("category", "")) in APART)
 	var blocking: int = real.size() + (_report["unreached"] as Array).size()
 	_report["blocking"] = blocking
 	_report["frames"] = _frames
@@ -520,6 +527,46 @@ func _lane(a: Array, b: Array, min_top: float = -INF) -> float:
 	return out
 
 
+## Whether the window `op` between neighbouring cells a and b has its sill past the vault from a's
+## floor with no prop to climb on under it on a's side (_step_prop). Cached.
+var _sills: Dictionary = {}
+
+
+func _sill_out_of_reach(a: Array, b: Array, op: Dictionary) -> bool:
+	var k: String = _nk(a) + ">" + _nk(b)
+	if _sills.has(k):
+		return bool(_sills[k])
+	var spec: Dictionary = PoiParts.OPENINGS[str(op["type"])]
+	var from: Vector3 = _cell_pos(a[0], a[1])
+	var sill_y: float = layout.level_y(int(op["level"])) + float(spec.get("sill", 0.9))
+	var out: bool = false
+	if sill_y - from.y > Player.VAULT_MAX - 0.02:
+		var mid: Vector3 = _helper._edge_xf(int(op["level"]), op["axis"], op["edge"], int(spec["len"])).origin
+		mid.y = from.y
+		var n := Vector3(mid.x - from.x, 0.0, mid.z - from.z)
+		n = Vector3(0, 0, signf(n.z)) if str(op["axis"]) == "h" else Vector3(signf(n.x), 0, 0)
+		out = _step_prop(mid, n, float(spec.get("w", 0.7)), from.y, sill_y, float(spec.get("h", 1.1))).is_empty()
+	_sills[k] = out
+	return out
+
+
+## Whether an authored barricade (a mattress shoved against a door, a furniture pile: props named
+## barricade_*) stands across the straight way between neighbouring cells. It is there to close
+## that way: a player goes round by another door, as the plan does.
+func _barricaded(a: Array, b: Array) -> bool:
+	if int(a[0]) != int(b[0]) or (a[1] as Vector2i).distance_squared_to(b[1]) != 1:
+		return false
+	var pa: Vector3 = _cell_pos(a[0], a[1])
+	var pb: Vector3 = _cell_pos(b[0], b[1])
+	var lo := Vector3(minf(pa.x, pb.x) - 0.1, maxf(pa.y, pb.y) + Player.STEP_HEIGHT, minf(pa.z, pb.z) - 0.1)
+	var hi := Vector3(maxf(pa.x, pb.x) + 0.1, maxf(pa.y, pb.y) + Player.STAND_HEIGHT, maxf(pa.z, pb.z) + 0.1)
+	var lane := AABB(lo, hi - lo)
+	for pr: Dictionary in _props:
+		if str(pr["prop"]).begins_with("barricade") and lane.intersects(pr["box"]):
+			return true
+	return false
+
+
 ## Whether props too tall to vault (a fence, a palisade, a berm, a wreck) close every lane of a
 ## step between neighbouring yard cells: the plan goes round through a gate or a gap when there is
 ## one. Yard only: indoors a wardrobe or a shelf costing as much as a stairwell sent the plan over
@@ -606,7 +653,7 @@ func _step_cost(a: Array, b: Array) -> float:
 			cost += 6.0
 	if _is_cluttered(b, a):
 		cost += CLUTTER_COST
-		if _walled(a, b):
+		if _walled(a, b) or _barricaded(a, b):
 			cost += BLOCKED_COST
 	# Through a window only when nothing else gets there (the route says when one is the way in).
 	if int(a[0]) == int(b[0]) and (a[1] as Vector2i).distance_squared_to(b[1]) == 1:
@@ -614,6 +661,10 @@ func _step_cost(a: Array, b: Array) -> float:
 		var w: Dictionary = layout.walls.get(PoiLayout.edge_key(int(a[0]), e[0], e[1]), {})
 		if not w.is_empty() and not (w["opening"] as Dictionary).is_empty() and PoiLayout.is_window(str(w["opening"]["type"])):
 			cost += WINDOW_COST
+			# A sill out of the vault's reach with nothing to climb on under it is no way at all
+			# (St. Ansel's 1.6 m lancets from the graveyard): a player goes round to a door.
+			if _sill_out_of_reach(a, b, w["opening"]):
+				cost += BLOCKED_COST
 	# The validator walks a stair flight's cells on the floor below it and the open well over it
 	# on the floor above; the body can do neither (the flight is in the way, there is no floor).
 	# A broken-floor hole too: the body falls through it (the chapel nave's), so a player walks
@@ -627,12 +678,13 @@ func _step_cost(a: Array, b: Array) -> float:
 	return cost
 
 
-## Whether a cell on level `li` is a broken-floor hole (a one-way drop).
+## Whether a cell on level `li` is a broken-floor hole (a one-way drop) or a weak floor (a trap that
+## gives way under the player: the motel's room 7, the sawmill's rotten patch).
 func _over_hole(li: int, c: Vector2i) -> bool:
 	for h: Dictionary in layout.holes:
 		if int(h["level"]) == li and h["cell"] == c:
 			return true
-	return false
+	return layout.weak_floor_cells().has("%d:%d:%d" % [li, c.x, c.y])
 
 
 ## Whether a step between neighbouring cells on level `li` crosses the edge a ladder's rails stand
@@ -1042,7 +1094,11 @@ func _leg(a: Array, b: Array) -> void:
 				ok = await _go(p, false, leg)
 				if not ok:
 					break
-			if ok:
+			if ok and kind == "stairs_down":
+				# The foot cell's middle is on the first step (0.4 m up the ramp, the capsule a little
+				# higher on the slope): there once over it, on the steps or the floor.
+				ok = await _go(end, false, leg) and absf(player.global_position.y - end.y) < 0.9
+			elif ok:
 				ok = await _go(end, true, leg)
 		"ladder_up", "ladder_down":
 			var l: Dictionary = cls["ladder"]
@@ -1441,6 +1497,11 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 			var pdef: PropDef = Content.get_def(&"prop", StringName(str(blk.get("prop", "")))) as PropDef if bk == "prop" else null
 			if (pdef != null and pdef.size.y > Player.VAULT_MAX) or bk.begins_with("no way from here"):
 				leg["category"] = "perimeter"
+		# Off the route, into a room a barricade closes on purpose (a dressing alternative's mattress
+		# shoved against the door from inside): no way in for a player either, by design.
+		var blk2: Dictionary = leg["blocker"]
+		if _exploring and str(blk2.get("kind", "")) == "prop" and str(blk2.get("prop", "")).begins_with("barricade"):
+			leg["category"] = "barricaded"
 		(_report["blocked"] as Array).append(leg)
 		# Restart from where the leg should have ended.
 		_place(end, -player.global_transform.basis.z)
@@ -1458,6 +1519,8 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 		print("[poi_walk]   %s %s -> %s %s%s%s" % ["ok  " if ok else "FAIL", leg["from"], leg["to"], kind,
 			(" needed " + ",".join(PackedStringArray(needed))) if not needed.is_empty() else "",
 			(" blocker " + str(leg["blocker"])) if leg.has("blocker") else ""])
+		if OS.has_environment("POI_WALK_DEBUG"):
+			print("[poi_walk]     body at %s" % player.global_position)
 	_hits.clear()
 	_shut.clear()
 
@@ -1510,9 +1573,22 @@ func _open_doors(op: Dictionary, leg: Dictionary) -> void:
 			d.interact(player)
 			opened = true
 	if opened:
+		# A bolt drawn stays drawn: the plan may come back in through it from outside (Pell's ranger
+		# station: out the back door the route unbolts, then in again to the rooms the route passed).
+		if str(op["state"]) == "locked_inside":
+			op["state"] = "open"
+			var lo: Dictionary = layout.opening(str(op["id"]))
+			if not lo.is_empty():
+				lo["state"] = "open"
 		(leg["needed"] as Array).append("open_door")
 		await _settle(30)
 		_track()
+		if OS.has_environment("POI_WALK_DEBUG"):
+			print("[poi_walk]     opened %s, body now %s" % [op["id"], player.global_position])
+			for n2: Node in inst.get_children():
+				if n2 is PoiPieces.Door and (n2 as PoiPieces.Door).opening_id == str(op["id"]):
+					var d2: PoiPieces.Door = n2
+					print("[poi_walk]       leaf %s pivot %s swing %s geom %s" % [d2.op_id, d2.pivot.global_position, d2.swing, _leaf_geom(d2)])
 
 
 ## Whether a body at `p` stands where the leaf swings (the door-local side Door.swing turns it to,
@@ -1665,7 +1741,12 @@ func _ladder_at(l: Dictionary) -> PoiPieces.Ladder:
 
 
 ## After the route: every room the layout reaches that the body has not stood in, nearest first.
+## True while _explore walks to the rooms the route left out.
+var _exploring: bool = false
+
+
 func _explore() -> void:
+	_exploring = true
 	var keys: Dictionary = _keys.duplicate()
 	var reach: Dictionary = validator._reach_all(keys)
 	var rooms: Array = _all_rooms()
@@ -1813,15 +1894,28 @@ func _close_leaf_in_way(needed: Array, own: String) -> bool:
 		if d.state != "open" or _shut.has(d.get_instance_id()) or d.opening_id == own:
 			continue
 		_shut[d.get_instance_id()] = true
-		# Out of the leaf's way first: swung shut through the body it would shove it about.
+		# Out of the leaf's way first: swung shut through the body it would shove it about. Only
+		# within the room the body stands in, on its floor: the way back from a leaf standing out
+		# beside a doorway ran out through the doorway behind (the Grange's stage door, the ranger
+		# station's cell block door) and the shut leaf shoved the body on out. With nowhere to stand
+		# clear it is left open, and the leg goes round it (a detour) as a player would.
 		if _in_sweep(d, player.global_position):
 			var hinge: Vector3 = d.global_transform * d.pivot.position
 			var away := Vector3(player.global_position.x - hinge.x, 0.0, player.global_position.z - hinge.z)
-			if away.length() > 0.05:
-				var reach: float = d.leaf_local.origin.x * 2.0 + Player.RADIUS + ASIDE_MARGIN
-				var to: Vector3 = hinge + away.normalized() * reach
-				to.y = player.global_position.y
-				await _go(to, false, {"needed": []}, false, 90)
+			if away.length() <= 0.05:
+				return false
+			var reach: float = d.leaf_local.origin.x * 2.0 + Player.RADIUS + ASIDE_MARGIN
+			var to: Vector3 = hinge + away.normalized() * reach
+			to.y = player.global_position.y
+			var here: Array = _locate(player.global_position + Vector3.UP * 0.1)
+			var there: Array = _locate(to + Vector3.UP * 0.1)
+			if here.is_empty() or there.is_empty() or layout.volume_of(here[0], here[1]) != layout.volume_of(there[0], there[1]):
+				return false
+			if validator._over_well(int(there[0]), there[1]) or _over_hole(int(there[0]), there[1]) or not _fits(to):
+				return false
+			await _go(to, false, {"needed": []}, false, 90)
+			if _in_sweep(d, player.global_position):
+				return false
 		d.interact(player)
 		needed.append("close_door:" + d.op_id)
 		_door_leaves.append({"opening": d.opening_id, "leaf": d.op_id})
@@ -1874,6 +1968,12 @@ func _jump(needed: Array) -> void:
 
 ## Steps back half a metre and a little sideways, then carries on (a capsule snagged on a jamb).
 func _back_off() -> void:
+	# Not off an edge: a player backing off a jamb on a deck (Tunnel 2 Trestle's, open at its
+	# sides) looks first. No floor within a step under where the back-off ends: stay put.
+	var to: Vector3 = player.global_position + (player.global_basis.z - player.global_basis.x).normalized() * 0.7
+	var q := PhysicsRayQueryParameters3D.create(to + Vector3.UP * 0.5, to + Vector3.DOWN * Player.STEP_HEIGHT, Player.WORLD_MASK, [player.get_rid()])
+	if player.get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+		return
 	Input.action_release(&"move_forward")
 	Input.action_press(&"move_back")
 	Input.action_press(&"move_left")

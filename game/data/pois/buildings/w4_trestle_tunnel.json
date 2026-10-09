@@ -566,7 +566,7 @@
       33
      ],
      "side": "W",
-     "type": "open",
+     "type": "half",
      "level": 1
     },
     {
@@ -576,7 +576,7 @@
       33
      ],
      "side": "E",
-     "type": "open",
+     "type": "half",
      "level": 1
     },
     {

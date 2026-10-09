@@ -14,7 +14,9 @@ extends Node
 ##   --plan           print each building's plan (levels, openings, stairs, ladders) first
 ## Exit code = buildings with blocking problems (a leg the body could not finish, or a room the
 ## layout reaches that the body never stood in). Legs stopped in the yard ring by a fence, a berm or
-## a wreck (category "perimeter") are listed and counted apart, and do not fail a building.
+## a wreck (category "perimeter"), and legs into a room only an authored barricade closes (category
+## "barricaded": the cannery's break room with a mattress against its door) are listed and counted
+## apart, and do not fail a building.
 
 const Bot := preload("res://src/tools/cli/poi_walk_bot.gd")
 
@@ -143,8 +145,8 @@ func _file_name(id: String) -> String:
 
 func _print_findings(rep: Dictionary) -> void:
 	var tag: String = "BLOCKED" if int(rep["blocking"]) > 0 else "ok"
-	var perim: int = (rep["blocked"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("category", "")) == "perimeter").size()
-	print("[poi_walk] %-7s %s: %d legs, %d blocked, %d perimeter, %d assisted, %d ladder climbs, %d unreached, %d sealed, %d corridor props (%.0f s walked)" % [
+	var perim: int = (rep["blocked"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("category", "")) in Bot.APART).size()
+	print("[poi_walk] %-7s %s: %d legs, %d blocked, %d perimeter/barricade, %d assisted, %d ladder climbs, %d unreached, %d sealed, %d corridor props (%.0f s walked)" % [
 		tag, rep["walk_id"], (rep["legs"] as Array).size(), (rep["blocked"] as Array).size() - perim, perim, (rep["assisted"] as Array).size(),
 		(rep["climbs"] as Array).size(), (rep["unreached"] as Array).size(), (rep["sealed"] as Array).size(),
 		(rep["corridor"] as Array).size(), float(rep["frames"]) / 60.0])
@@ -202,7 +204,7 @@ func _table(rows: Array[Dictionary]) -> void:
 		var crates: int = (r["assisted"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("assist", "")) == "crate").size()
 		# Assisted legs a detour round props or an open leaf finished.
 		var detours: int = (r["assisted"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("assist", "")) == "detour").size()
-		var perim: int = int(by.get("perimeter", 0))
+		var perim: int = int(by.get("perimeter", 0)) + int(by.get("barricaded", 0))
 		print("[poi_walk] %-34s %5d %7d %-26s %9d %8d %6d %6d %9d %6d %8d %5d %6d" % [str(r["walk_id"]).left(34), (r["legs"] as Array).size(), (r["blocked"] as Array).size() - perim,
 			split, perim, (r["assisted"] as Array).size(), (r["leaf_in_way"] as Array).size(), (r["climbs"] as Array).size(), (r["unreached"] as Array).size(),
 			(r["sealed"] as Array).size(), (r["corridor"] as Array).size(), crates, detours])

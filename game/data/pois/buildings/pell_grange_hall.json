@@ -116,7 +116,7 @@
         {"id": "cloak_door", "at": [7, 20], "side": "W", "type": "door", "state": "closed"},
         {"id": "main_stair_door", "at": [3, 17], "side": "N", "type": "door", "state": "barricaded", "barricade": "furniture"},
         {"id": "kitchen_door", "at": [15, 17], "side": "N", "type": "door", "state": "closed"},
-        {"id": "office_door", "at": [1, 3], "side": "N", "type": "door", "state": "open"},
+        {"id": "office_door", "at": [1, 3], "side": "N", "type": "door", "state": "open", "swing": "N"},
         {"id": "wing_opening", "at": [3, 4], "side": "E", "type": "open"},
         {"id": "props_door", "at": [16, 3], "side": "W", "type": "door", "state": "closed"},
         {"id": "props_hall_door", "at": [18, 5], "side": "S", "type": "door", "state": "closed"},
