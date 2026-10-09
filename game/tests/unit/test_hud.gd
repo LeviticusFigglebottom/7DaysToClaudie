@@ -134,3 +134,12 @@ func test_build_controls_and_drop_line() -> void:
 	assert_string_contains(GameUI.build_controls(false, true), "set the log")
 	assert_eq(GameUI.build_controls(false, false), "")
 	assert_eq(GameUI.drop_landed_line("north-west, 140 m"), "The canister is down, north-west, 140 m. Its smoke marks the spot.")
+
+
+func test_a_short_message_stays_on_one_line() -> void:
+	var ui := GameUI.new()
+	add_child_autofree(ui)
+	ui.message("Journal: Gather sticks, stones and fibre  [B]", &"level")
+	await get_tree().process_frame
+	var l: Label = ui.get(&"_messages").get_child(0) as Label
+	assert_eq(l.get_line_count(), 1)

@@ -692,6 +692,10 @@ func _week() -> void:
 	# --- The Hum ----------------------------------------------------------------------------------------------
 	p.global_position = base + Vector3(0, 0.5, 3)
 	w.terrain.update_streaming(p.global_position, true)
+	# The night before, outside with no fire, the cold kills (finding: the first run froze); the
+	# audit wants the Hum's screens, so the player is kept alive from here.
+	note("health %.0f, warmth %s before the night" % [ps.stats.health, str(ps.stats.get(&"body_temp")) if ps.stats.get(&"body_temp") != null else "?"])
+	p.god_mode = true
 	var hum_day: int = Game.session.clock.next_horde_day(Game.session.clock.day())
 	note("first Hum on day %d (now day %d)" % [hum_day, Game.session.clock.day()])
 	# Through the day before and the day itself on the clock, as play would: the warnings fire as
