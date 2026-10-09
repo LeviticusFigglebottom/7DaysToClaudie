@@ -583,6 +583,7 @@
      "rot": 270
     },
     {
+     "keep": true,
      "prop": "lantern_camping",
      "pos": [
       3.6,
@@ -625,10 +626,10 @@
     {
      "prop": "civic_folding_table",
      "pos": [
-      9.8,
-      1.2
+      7.0,
+      0.5
      ],
-     "rot": 90,
+     "rot": 0,
      "level": -1
     },
     {
@@ -1000,6 +1001,7 @@
    ],
    "lights": [
     {
+     "keep": true,
      "at": [
       3,
       3

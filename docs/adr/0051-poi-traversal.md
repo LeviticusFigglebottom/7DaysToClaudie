@@ -102,3 +102,76 @@ A ladder no longer has an interaction. `Player` climbs it:
   the deck doors (`route_ok`, 1.45 m).
 * Hollowed can't climb ladders (unchanged), and the climb has no hand animation (TD-232).
 * A bucket or lantern without collision is walked through: a clip, not a snag (TD-233).
+
+## Addendum (2026-10, round 4): "intuitively navigated"
+The owner's next report: interiors still need validating so the intended path can be walked
+fully and intuitively. Since round 3 many POIs were added (the forest set pieces of rounds 4 and
+5, the field lab, the Ashen camps, Ezra's camp, the mine). The audit as it stood passed all 54
+POIs and 3 generated buildings of every template, with no dressing and with seeds 1, 77, 4471 and
+9001: no errors at all. `poi_walk` (the real body) still stopped in 27 of the 54. The audit had
+five blind spots.
+
+### What the audit now checks
+* **A vault on the route is an error.** A table, cot or trough the route only gets past with
+  Jump is not an intuitive way (and the bot doesn't vault furniture either). The finding is still
+  named "(vault <m>)". An author's `route_ok` keeps it a warning (the quarantine camp's cots, the
+  radio station's rubble under its cable hole).
+* **Floor breaks.** Free samples join into areas only across a step the player takes (0.38 m).
+  The floor under a deck gap or a loft edge was free space too, and a 0.41 m blanket pile counted
+  as floor. A run broken that way is "floor step <m>", an error.
+* **Door leaves** (`_door_swings`). Every leaf is posed fully open
+  (`PoiPieces.Door.open_leaf_transform`) and tested for anything it stands in, past its first
+  0.25 m (the jamb):
+  * props, containers, trap rigs and walls from 0.3 m up: an error on a doorway the route
+    crosses, a warning elsewhere;
+  * floor clutter under 0.3 m: a warning ("(low)");
+  * a leaf standing out over a stair flight, its well or a ladder hatch ("stairs"): an error
+    wherever the door is. It closes the steps for whoever comes up them.
+* **Loot in reach** (`_loot_reach`). A loot-room container must be searchable from somewhere the
+  route's areas reach. That is a free spot whose eyes (1.55 m up) see the box within the 2.6 m
+  interaction reach, with nothing in between. If no container passes it's an error; if only some
+  fail it's a warning.
+* **Pitch dark** (`dark_route`, pure layout). A route room (with the rooms open to it) can be lit
+  in three ways: an outside opening; one doorway on from such a room (an arch, a hole, a door
+  standing open or the one the route opens); or a light within 1.5x its range. A dark route room
+  is a warning. A dark loot room is an error, and so is a loot room whose only light lacks
+  `"keep": true`, since `style.lights_on` puts it out in some runs.
+
+### Door leaves in the builder
+* **Hinge on the wall side.** A leaf hangs on the jamb a wall runs off, where it stops at 90°
+  (`PoiBuilder.DOORSTOP`). Its pivot moves 1.5 cm into the jamb (`_stop_hinge`), so the leaf lies
+  flat on the wall without entering the clear width. This replaces TD-023's rule, which hung it
+  on the other jamb. That put the open leaf across the room beside the doorway, closing the way
+  to it from that side.
+* **Exceptions.** The wall side is skipped when that wall has a doorway in its first metre (the
+  fire station's shop door lay across its stair-bay door). With no wall at either jamb, the leaf
+  avoids the jamb a stair flight or well runs along.
+* Other leaves still open 99° (`Door.OPEN_ANGLE`). A leaf stopped at 90° snagged the bot in
+  narrow corners. With the stop limited to walls and the pivot shift, `poi_walk` is no worse
+  anywhere.
+* **Shotgun rigs.** A shotgun's chair goes on the latch side of a door that opens into its room
+  (six leaves opened into their own rigs).
+* **Generated houses.** A generated wall prop keeps 7 cm off the edge of a cell beside a
+  doorway's cell, on the same wall: the open leaf leans 13 cm back past its hinge jamb.
+
+### Results
+* Audit errors on shipped POIs and generated buildings: 0. Base dressing and seeds 77 and 4471
+  checked, 3 per template.
+* Warnings: 21 dark route rooms (TD-366), 66 off-route or `route_ok` doorways, 5 leaves (4 over floor
+  clutter, 1 into a generated armchair: TD-367), 2 `route_ok` runs.
+* `poi_walk`: 22 of 54 buildings still have a blocked leg, against 27 before; the blocked legs
+  fell from 63 to 36. What is left is mostly ladders the bot can't grab, the thin ramp edge at
+  the side of a flight's foot, and cascades from those (TD-363, TD-364, TD-368).
+
+### Consequences
+* `test_traversal_audit` covers each new check:
+  * a leaf opening into milk cans (error) and over a rag pile (warning);
+  * a crate fenced off behind a stall partition;
+  * a loot room two doorways from daylight: unlit, lit but not kept, and kept;
+  * a barrel in a doorway: an error, or a warning when `route_ok`.
+* Vaults on the route are errors now, so a new POI that wants a climb on its route says so with
+  `route_ok`.
+* Doors next to walls look different in every building: open, they lie flat against the wall
+  instead of standing across the room.
+* Still blind (TD-365): a route path through furniture between a run's ends, and a window
+  vaulted from a prop whose top leaves the sill too low for the vault's ray.

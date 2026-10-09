@@ -79,7 +79,7 @@
         {"id": "parlour_side_window", "at": [11, 5], "side": "E", "type": "window2", "state": "broken", "cue": ["curtain", "crate", "scuffs"]},
         {"id": "parlour_arch", "at": [6, 5], "side": "E", "type": "door2", "state": "missing"},
         {"id": "papa_door", "at": [6, 4], "side": "N", "type": "door", "state": "barricaded"},
-        {"id": "dining_door", "at": [4, 4], "side": "W", "type": "door", "state": "open"},
+        {"id": "dining_door", "at": [4, 4], "side": "W", "type": "door", "state": "open", "swing": "W"},
         {"id": "kitchen_door", "at": [1, 4], "side": "N", "type": "door", "state": "barricaded", "barricade": "furniture"},
         {"id": "back_door", "at": [1, 0], "side": "N", "type": "door", "state": "closed"},
         {"id": "pantry_door", "at": [4, 1], "side": "S", "type": "door", "state": "locked_inside"},
@@ -104,7 +104,7 @@
         {"id": "ife_front_window", "at": [1, 8], "side": "S", "type": "window", "state": "boarded", "level": 1},
         {"id": "chidi_window", "at": [8, 8], "side": "S", "type": "window", "state": "closed", "level": 1},
         {"id": "chidi_side_window", "at": [11, 7], "side": "E", "type": "window", "state": "closed", "level": 1},
-        {"id": "cold_room_door", "at": [9, 0], "side": "W", "type": "door", "state": "locked", "key": "farm_storeroom_key", "level": -1},
+        {"id": "cold_room_door", "at": [9, 0], "side": "W", "type": "door", "state": "locked", "key": "farm_storeroom_key", "level": -1, "swing": "W"},
         {"id": "summer_kitchen_door", "at": [13, 3], "side": "S", "type": "door", "state": "closed"},
         {"id": "summer_kitchen_window", "at": [15, 3], "side": "S", "type": "window", "state": "closed"},
         {"id": "summer_kitchen_end_window", "at": [16, 1], "side": "E", "type": "window", "state": "broken"},
@@ -325,7 +325,7 @@
         {"pos": [2.1, 6.0], "height": 0.95, "color": "#ffb35c", "energy": 0.55, "range": 4.0, "flicker": 0.5},
         {"pos": [2.78, 3.35], "level": 1, "height": 1.05, "color": "#ffc27a", "energy": 0.5, "range": 4.5, "flicker": 0.15},
         {"pos": [9.0, 6.35], "level": 1, "height": 0.22, "color": "#ffb35c", "energy": 0.45, "range": 3.5, "flicker": 0.5},
-        {"pos": [8.7, 2.55], "level": -1, "height": 0.3, "color": "#ffb46e", "energy": 0.7, "range": 6.0, "flicker": 0.25}
+        {"keep": true, "pos": [8.7, 2.55], "level": -1, "height": 0.3, "color": "#ffb46e", "energy": 0.7, "range": 6.0, "flicker": 0.25}
       ],
       "decals": [
         {"decal": "blood_trail", "at": [8, 2], "side": "floor", "size": [1.0, 2.0], "rot": 100},

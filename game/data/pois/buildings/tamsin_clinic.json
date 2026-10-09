@@ -170,7 +170,7 @@
         {"id": "exam2_cabinet", "prop": "road_medical_cabinet", "pos": [17.7, 11.6], "rot": -90, "variant": "worn"},
         {"id": "exam2_body", "prop": "corpse_remains", "pos": [16.4, 11.6], "rot": 95},
         {"prop": "road_iv_stand", "pos": [15.5, 12.4]},
-        {"prop": "road_wheelchair", "pos": [13.4, 8.5], "rot": 70},
+        {"prop": "road_wheelchair", "pos": [14.5, 8.42], "rot": 0},
         {"prop": "road_plaque_staff", "pos": [11.5, 7.09], "height": 1.9},
         {"prop": "road_mop_bucket", "pos": [17.4, 7.5]},
         {"prop": "bloody_bandages", "pos": [6.6, 8.0], "rot": 10},
@@ -198,9 +198,9 @@
         {"prop": "rug_rect", "pos": [11.8, 2.2]},
         {"prop": "desk_lamp", "pos": [12.4, 0.4], "y": 0.78, "rot": 200},
         {"id": "staff_lockers", "prop": "road_staff_locker", "pos": [12.5, 4.3]},
-        {"prop": "kitchen_table", "pos": [11.6, 5.6], "rot": 90},
-        {"prop": "chair_wood", "pos": [10.8, 5.6], "rot": 90},
-        {"prop": "coffee_machine", "pos": [11.6, 5.4], "y": 0.76},
+        {"prop": "kitchen_table", "pos": [12.4, 5.6], "rot": 90},
+        {"prop": "chair_wood", "pos": [12.4, 6.45], "rot": 180},
+        {"prop": "coffee_machine", "pos": [12.4, 5.4], "y": 0.76},
         {"id": "staff_fridge", "prop": "fridge_old", "pos": [13.55, 5.8], "rot": -90},
         {"prop": "road_wheelchair", "pos": [14.6, 1.2], "rot": 160},
         {"id": "intake_stretcher", "prop": "bed_single", "pos": [16.2, 4.0], "rot": 90},
@@ -232,7 +232,8 @@
         {"id": "supply_box", "prop": "cardboard_box", "pos": [15.8, 5.6], "level": 1, "rot": 25},
         {"prop": "road_mop_bucket", "pos": [15.6, 0.6], "level": 1},
         {"prop": "bucket", "pos": [0.6, 0.5], "level": 1},
-        {"id": "closet_chair", "prop": "chair_wood", "pos": [9.2, 4.45], "rot": -15, "variant": "worn"}
+        {"id": "closet_chair", "prop": "chair_wood", "pos": [9.2, 4.45], "rot": -15, "variant": "worn"},
+        {"id": "closet_lantern", "prop": "lantern_camping", "pos": [8.5, 5.8], "lit": true, "keep": true}
       ],
       "pickups": [
         {"id": "closet_key", "item": "road_key_clinic_drugs", "pos": [5.7, 4.3], "y": 0.05, "level": 1, "rot": 50}

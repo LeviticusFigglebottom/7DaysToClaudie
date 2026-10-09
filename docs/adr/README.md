@@ -56,3 +56,4 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0054](0054-forest-encounters.md) | Forest encounters: small finds scattered through the woods per region from data (campsites, wrecks, stands, caches, graves, a hermit's shack), a runtime vegetation mask, kinds other systems register | Accepted |
 | [0057](0057-hunting-and-ranged.md) | Hunting and ranged: a bow whose arrows stick and come back, distraction stones, molotovs and ground fire, a bolt-action rifle with aim and scope, climbing arms, hunting stands and ropes | Accepted |
 | [0060](0060-relaxed-wrists.md) | Relaxed wrists: a comfort range the pose solver keeps hands at rest in, hold hands written against their own forearm, the lighter held obliquely in the fingers | Accepted |
+| [0062](0062-first-days-tutorial.md) | The first-days tutorial: Program cards on the tether, any order, then Ezra's distress call; Find the lineman counts in any chapter | Accepted |

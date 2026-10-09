@@ -180,7 +180,8 @@
      ],
      "side": "E",
      "type": "door",
-     "state": "locked_inside"
+     "state": "locked_inside",
+     "swing": "E"
     },
     {
      "id": "bedroom_door",
@@ -510,7 +511,7 @@
     {
      "prop": "bed_single",
      "pos": [
-      13.1,
+      13.88,
       38.4
      ],
      "rot": 90,

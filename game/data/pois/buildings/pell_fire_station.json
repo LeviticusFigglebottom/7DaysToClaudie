@@ -335,6 +335,7 @@
      "state": "closed"
     },
     {
+     "swing": "N",
      "id": "shop_door",
      "at": [
       14,
@@ -450,6 +451,7 @@
      "level": 1
     },
     {
+     "swing": "N",
      "id": "training_hall_door",
      "at": [
       14,
@@ -929,7 +931,7 @@
      "id": "chief_desk",
      "prop": "office_desk",
      "pos": [
-      15.6,
+      16.0,
       8.8
      ],
      "rot": 0,
@@ -938,7 +940,7 @@
     {
      "prop": "office_chair",
      "pos": [
-      15.6,
+      16.0,
       8.0
      ],
      "rot": 180
@@ -1384,6 +1386,16 @@
      ],
      "rot": 10,
      "id": "side_pickup"
+    },
+    {
+     "id": "chief_lantern",
+     "prop": "wild_oil_lantern",
+     "pos": [
+      16.7,
+      9.4
+     ],
+     "lit": true,
+     "keep": true
     }
    ],
    "sleepers": [

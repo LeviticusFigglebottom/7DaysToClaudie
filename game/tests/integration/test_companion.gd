@@ -473,6 +473,9 @@ func test_gathering_wood_he_fells_a_small_tree_for_half_the_credit() -> void:
 	tracker.world = _world
 	_world.add_child(tracker)
 	tracker.setup_world(_world)
+	# Recruited in chapter 1: the tracker credits his directive on setup (deferred; ADR-0062).
+	await _frames(1)
+	assert_true(_p.state.directives.done.has(&"find_lineman"), "recruited before his chapter: Find the lineman counts")
 	var tree_at := Vector3(22, 0, 14)
 	var vm: VegetationManager = _veg([["paper_birch", tree_at], ["hollow_larch", tree_at + Vector3(4, 0, 0)]])
 	_p.global_position = Vector3(0, 0, -6)
