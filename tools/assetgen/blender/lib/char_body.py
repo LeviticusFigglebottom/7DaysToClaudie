@@ -365,24 +365,24 @@ class BodyModel:
         R = self.hR
         Rl = R @ np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])  # radii order (left, front, up)
         hs = float(self.p.get("head_scale", 1.0))
-        brow = float(self.p.get("brow", 0.5))
+        brow = float(self.p.get("brow", 0.5)) + 0.45 * self.face("brow")
         # Face dials (TD-192), each [-1, 1]: skull length and width, cheekbones, nose length, width
         # and crook, ears, jaw width, face length.
         skl, skw, chk = self.face("skull_len"), self.face("skull_w"), self.face("cheek")
         nl, nw, nk = self.face("nose_len"), self.face("nose_w"), self.face("nose_crook")
         ear, jw, fl = self.face("ear"), self.face("jaw_w"), self.face("face_len")
         # cranium + occiput + forehead
-        prog.ellipsoid(HP(0, 0.035, -0.012), np.array([0.072 * (1 + 0.06 * skw), 0.095 * (1 + 0.07 * skl), 0.087]) * s * hs,
+        prog.ellipsoid(HP(0, 0.035, -0.012), np.array([0.072 * (1 + 0.11 * skw), 0.095 * (1 + 0.13 * skl), 0.087 * (1 - 0.05 * skl)]) * s * hs,
                        R=Rl, k=0.0, label=L_SKIN)
-        prog.ellipsoid(HP(0, 0.006, -0.058 * (1 + 0.10 * skl)), np.array([0.060 * (1 + 0.06 * skw), 0.050, 0.060]) * s * hs,
+        prog.ellipsoid(HP(0, 0.006, -0.058 * (1 + 0.18 * skl)), np.array([0.060 * (1 + 0.11 * skw), 0.050, 0.060]) * s * hs,
                        R=Rl, k=0.02 * s, label=L_SKIN)
         prog.ellipsoid(HP(0, 0.047, 0.038), np.array([0.062, 0.050, 0.050]) * s * hs, R=Rl, k=0.02 * s, label=L_SKIN)
         # face: a narrow maxilla, the cheekbones and their arches back to the ears
-        prog.ellipsoid(HP(0, -0.031 * (1 + 0.10 * fl), 0.054), np.array([0.047 - 0.005 * g, 0.044, 0.044 * (1 + 0.08 * fl)]) * s,
+        prog.ellipsoid(HP(0, -0.031 * (1 + 0.20 * fl), 0.054), np.array([(0.047 - 0.005 * g) * (1 + 0.08 * chk), 0.044, 0.044 * (1 + 0.16 * fl)]) * s,
                        R=Rl, k=0.016 * s, label=L_SKIN)
         for sx in (1.0, -1.0):
-            prog.ellipsoid(HP(sx * 0.046 * (1 + 0.10 * chk), -0.003 + 0.004 * chk, 0.060),
-                           np.array([0.020 * (1 + 0.22 * chk), 0.022, 0.012 * (1 + 0.25 * chk)]) * s, R=Rl, k=0.008 * s, label=L_SKIN)
+            prog.ellipsoid(HP(sx * 0.046 * (1 + 0.18 * chk), -0.003 + 0.007 * chk, 0.060),
+                           np.array([0.020 * (1 + 0.40 * chk), 0.022, 0.012 * (1 + 0.45 * chk)]) * s, R=Rl, k=0.008 * s, label=L_SKIN)
             prog.capsule(HP(sx * 0.054, -0.005, 0.046), HP(sx * 0.068, -0.002, 0.004), (0.0078 + 0.001 * g) * s,
                          k=0.007 * s, label=L_SKIN)
             # brow ridge
@@ -390,10 +390,10 @@ class BodyModel:
                          k=0.009 * s, label=L_SKIN)
         prog.sphere(HP(0, 0.024, 0.092), 0.0095 * s, k=0.008 * s, label=L_SKIN)          # glabella
         # nose: thin nasal bones, a sharp cartilage tip, pinched wings
-        tip = HP(0.004 * nk, -0.026 - 0.004 * nl, 0.108 + 0.006 * nl)
-        prog.capsule(HP(0, 0.012, 0.091), HP(0.003 * nk, -0.019 - 0.004 * nl, 0.108 + 0.006 * nl), 0.0056 * (1 + 0.15 * nw) * s,
+        tip = HP(0.007 * nk, -0.026 - 0.008 * nl, 0.108 + 0.011 * nl)
+        prog.capsule(HP(0, 0.012, 0.091), HP(0.005 * nk, -0.019 - 0.008 * nl, 0.108 + 0.011 * nl), 0.0056 * (1 + 0.3 * nw) * s,
                      k=0.007 * s, label=L_SKIN)
-        prog.sphere(tip, 0.0086 * (1 + 0.25 * nw) * s, k=0.006 * s, label=L_SKIN)
+        prog.sphere(tip, 0.0086 * (1 + 0.45 * nw) * s, k=0.006 * s, label=L_SKIN)
         for sx in (1.0, -1.0):
             prog.sphere(HP(sx * 0.0120 * (1 + 0.2 * nw) + 0.002 * nk, -0.034, 0.097), 0.0062 * (1 + 0.15 * nw) * s, k=0.005 * s,
                         label=L_SKIN)
@@ -417,7 +417,7 @@ class BodyModel:
         prog.ellipsoid(JP(0, jl * 0.97, 0.004), np.array([0.019, 0.014, 0.015]) * s, R=Rj, k=0.010 * s, label=L_SKIN)
         prog.sphere(JP(0, jl * 1.0, -0.005), 0.0095 * s, k=0.007 * s, label=L_SKIN)    # point of the chin
         for sx in (1.0, -1.0):
-            ang = JP(sx * 0.049 * (1 + 0.12 * jw), jl * 0.30, -0.027)
+            ang = JP(sx * 0.049 * (1 + 0.24 * jw), jl * 0.30, -0.027)
             front = JP(sx * 0.019, jl * 0.92, -0.002)
             prog.capsule(front, ang, (0.0082 + 0.002 * self.mass) * s, k=0.009 * s, label=L_SKIN)
             tmj = HP(sx * 0.055, -0.005, -0.004)
@@ -435,7 +435,7 @@ class BodyModel:
             # bigger ears stand out further from the skull, and turn forward
             eR = rot_axis(R[:, 2], sx * math.radians(6.0 * max(ear, 0.0))) @ rot_axis(R[:, 0], math.radians(-15)) @ Rl
             out = R[:, 0] * sx
-            es = 1.0 + 0.16 * ear
+            es = 1.0 + 0.32 * ear
             ec = ec + out * 0.003 * max(ear, 0.0) * s
             prog.ellipsoid(ec + out * 0.004 * s, np.array([0.0062, 0.018 * es, 0.029 * es]) * s, R=eR, k=0.004 * s, label=L_SKIN)
             prog.ellipsoid(ec + out * 0.0092 * s + eR[:, 1] * 0.002 * s, np.array([0.0040, 0.011 * es, 0.019 * es]) * s, R=eR,

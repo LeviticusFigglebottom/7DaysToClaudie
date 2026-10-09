@@ -174,8 +174,8 @@ def add_hair(model, spec: dict, rng):
             u = R @ np.array([math.sin(ang) * math.sqrt(1 - up_k * up_k), up_k, math.cos(ang) * math.sqrt(1 - up_k * up_k)])
             root = hc + u * (np.min(radii) + 0.002 * s)
             d = _n(u * 0.6 + R @ np.array([0.0, -0.3, -0.6]) + rng.normal(0, 0.25, 3))
-            ln = rng.uniform(0.018, 0.045) * s
-            prog.capsule(root, root + d * ln, rng.uniform(0.0022, 0.0034) * s, k=0.003 * s, label=B.L_HAIR)
+            ln = rng.uniform(0.010, 0.024) * s
+            prog.capsule(root, root + d * ln, rng.uniform(0.0016, 0.0024) * s, k=0.004 * s, label=B.L_HAIR)
     if style in ("long", "medium"):
         n = int(spec.get("locks", 12 if style == "long" else 7))
         length = float(spec.get("length", 0.16 if style == "long" else 0.08)) * s
