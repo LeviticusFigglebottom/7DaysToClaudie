@@ -220,10 +220,13 @@ func _refresh() -> void:
 		"notes":
 			if p == null or p.read_notes.is_empty():
 				_header("Nothing yet. People leave notes. Read them.")
-			for nid: Variant in (p.read_notes.keys() if p != null else []):
-				var n: NoteDef = Content.get_def(&"note", StringName(str(nid))) as NoteDef
-				if n != null:
-					_entry(n.title, n, true)
+			# By where they were found, the latest place first; never by what they reveal.
+			for g: Dictionary in notes_by_place(p.read_notes.keys() if p != null else [], p.notes_found if p != null else {}):
+				_header("%s  (%d)" % [g["where"], (g["notes"] as Array).size()])
+				for nid: StringName in g["notes"]:
+					var n: NoteDef = Content.get_def(&"note", nid) as NoteDef
+					if n != null:
+						_entry(n.title, n, true)
 		"record":
 			_record_list(p)
 		"tips":
@@ -282,6 +285,11 @@ func _select(payload: Variant) -> void:
 	elif payload is NoteDef:
 		var n: NoteDef = payload
 		_detail.text = "[b][font_size=22]%s[/font_size][/b]\n[i]%s[/i]\n\n%s" % [n.title, n.author, n.body]
+		# Read it on its own sheet, in its own hand (the NoteReader over the manual).
+		var ui: Node = get_parent()
+		if ui != null and ui.get(&"reader") != null and not (ui.get(&"reader") as NoteReader).is_open():
+			var p2: PlayerState = Game.local_player()
+			(ui.get(&"reader") as NoteReader).show_note(n, p2.notes_found.get(n.id, {}) if p2 != null else {})
 	elif payload is Array:
 		_detail.text = "[b][font_size=22]%s[/font_size][/b]\n\n%s" % [payload[0], payload[1]]
 	elif payload is AttributeDef:
@@ -315,6 +323,36 @@ func _on_action() -> void:
 			close()
 			Events.player_status_message.emit("Place the %s — [%s] place · [%s] rotate · [%s] cancel" % [(_selected as BlueprintDef).display_name,
 				PlayerInteraction.key_label(&"attack"), PlayerInteraction.key_label(&"rotate_piece"), PlayerInteraction.key_label(&"cancel")], &"info")
+
+
+## Notes grouped by where they were found: [{where, notes: [id]}], places in the order of their
+## latest find (newest first), notes newest first within a place; notes with no place (read
+## before places were kept) last, under "Earlier". Never ordered by story beat (no spoilers).
+static func notes_by_place(read: Array, found: Dictionary) -> Array[Dictionary]:
+	var groups: Dictionary = {}
+	var latest: Dictionary = {}
+	var order_of := func(id: StringName) -> int: return int((found.get(id, {}) as Dictionary).get("order", -1))
+	for v: Variant in read:
+		var id := StringName(str(v))
+		var where: String = str((found.get(id, {}) as Dictionary).get("where", ""))
+		if where == "":
+			where = "Earlier"
+		if not groups.has(where):
+			groups[where] = []
+			latest[where] = -1
+		(groups[where] as Array).append(id)
+		latest[where] = maxi(int(latest[where]), order_of.call(id))
+	var places: Array = groups.keys()
+	places.sort_custom(func(a: String, b: String) -> bool:
+		if (a == "Earlier") != (b == "Earlier"):
+			return b == "Earlier"
+		return int(latest[a]) > int(latest[b]))
+	var out: Array[Dictionary] = []
+	for w: String in places:
+		var ids: Array = groups[w]
+		ids.sort_custom(func(a: StringName, b: StringName) -> bool: return int(order_of.call(a)) > int(order_of.call(b)))
+		out.append({"where": w, "notes": ids})
+	return out
 
 
 # --- Journal tab (the first days' tutorial, hub contract) ------------------------------------------

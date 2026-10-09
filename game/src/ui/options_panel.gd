@@ -35,6 +35,8 @@ var _graphics_page: ScrollContainer
 var _controls_page: ScrollContainer
 ## The action waiting for a key on the controls tab ("" = none), and its button.
 var _listening: String = ""
+## Whether that wait is for a gamepad button (else a key or mouse button).
+var _listening_pad: bool = false
 
 
 func _ready() -> void:
@@ -72,14 +74,19 @@ func close() -> void:
 func _input(event: InputEvent) -> void:
 	if _listening == "" or not event.is_pressed() or event.is_echo():
 		return
-	if not (event is InputEventKey or event is InputEventMouseButton):
+	if not (event is InputEventKey or event is InputEventMouseButton or event is InputEventJoypadButton):
 		return
 	get_viewport().set_input_as_handled()
 	if event is InputEventKey and (event as InputEventKey).physical_keycode == KEY_ESCAPE:
 		_listening = ""
 		_build_controls()
 		return
-	Settings.bind_primary(_listening, event)
+	if _listening_pad:
+		# Only a pad button binds here; a key or click while waiting cancels.
+		if event is InputEventJoypadButton:
+			Settings.bind_pad(_listening, event)
+	elif not event is InputEventJoypadButton:
+		Settings.bind_primary(_listening, event)
 	_listening = ""
 	_build_controls.call_deferred()
 
@@ -193,12 +200,12 @@ func _build_graphics() -> void:
 	_gfx_choice("Shadow resolution", "directional_shadow_size", [[2048, "Low"], [4096, "High"], [8192, "Ultra"]],
 		func(v: Variant) -> void: Settings.set_graphics_override("positional_shadow_atlas", v))
 	_gfx_choice("Shadow softness", "shadow_filter", [[0, "Hard"], [1, "Very low"], [2, "Low"], [3, "Medium"], [4, "High"], [5, "Ultra"]])
-	_gfx_slider("Shadow distance", "shadow_distance", 40.0, 200.0, 10.0)
-	_gfx_slider("View distance", "view_distance", 500.0, 2500.0, 100.0)
-	_gfx_slider("Tree detail distance (under 50%: no full-detail trees)", "tree_lod_scale", 0.3, 1.5, 0.05)
+	_gfx_slider("Shadow distance", "shadow_distance", 40.0, 260.0, 10.0)
+	_gfx_slider("View distance (as the world streams)", "view_distance", 500.0, 2500.0, 100.0)
+	_gfx_slider("Tree detail (under 50%: no full-detail trees; as chunks rebuild)", "tree_lod_scale", 0.3, 2.0, 0.05)
 	_gfx_slider("Object draw distance", "object_distance", 50.0, 300.0, 10.0)
 	_gfx_slider("Grass density", "grass_density", 0.0, 1.0, 0.05)
-	_gfx_slider("Grass distance", "grass_distance", 20.0, 90.0, 5.0)
+	_gfx_slider("Grass distance (as you move)", "grass_distance", 20.0, 52.0, 2.0)
 	var note := Label.new()
 	note.text = "Grass and tree changes show as the forest around you rebuilds."
 	note.theme_type_variation = &"DimLabel"
@@ -208,28 +215,66 @@ func _build_graphics() -> void:
 
 func _build_controls() -> void:
 	_use(_controls_page)
+	var actions: PackedStringArray = []
+	for a0: Array in ACTIONS:
+		actions.append(str(a0[0]))
+	var head_l := UiStyle.label("Click a binding, then press the key, mouse button or pad button. Esc cancels.", &"DimLabel")
+	_grid.add_child(head_l)
+	_grid.add_child(Control.new())
 	for a: Array in ACTIONS:
 		var action: String = a[0]
 		if not InputMap.has_action(action):
 			continue
-		var b := Button.new()
 		var specs: Array = Settings.bindings(action)
-		var names: PackedStringArray = []
+		var keys: PackedStringArray = []
+		var pads: PackedStringArray = []
+		var clash: PackedStringArray = []
 		for sp: Variant in specs:
 			var d: Dictionary = sp if sp is Dictionary else {}
 			if d.has("key") or d.has("mouse"):
-				names.append(Settings.describe(d))
-		b.text = "Press a key…" if _listening == action else (" / ".join(names) if not names.is_empty() else "—")
-		b.pressed.connect(func() -> void:
+				keys.append(Settings.describe(d))
+			elif d.has("joy_button"):
+				pads.append(Settings.describe(d))
+			if not d.is_empty():
+				for other: String in Settings.conflicts(action, d, actions):
+					clash.append("%s (%s)" % [_action_name(other), Settings.describe(d)])
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override(&"separation", 6)
+		var kb := Button.new()
+		kb.custom_minimum_size = Vector2(170, 0)
+		kb.text = "Press a key…" if _listening == action and not _listening_pad else (" / ".join(keys) if not keys.is_empty() else "—")
+		kb.pressed.connect(func() -> void:
 			_listening = action
-			b.text = "Press a key…")
-		_row(str(a[1]), b)
+			_listening_pad = false
+			kb.text = "Press a key…")
+		h.add_child(kb)
+		var pb := Button.new()
+		pb.custom_minimum_size = Vector2(130, 0)
+		pb.text = "Press a button…" if _listening == action and _listening_pad else (" / ".join(pads) if not pads.is_empty() else "Pad —")
+		pb.pressed.connect(func() -> void:
+			_listening = action
+			_listening_pad = true
+			pb.text = "Press a button…")
+		h.add_child(pb)
+		var label: String = str(a[1])
+		if not clash.is_empty():
+			label += "   ! also " + ", ".join(clash)
+		_row(label, h)
+		if not clash.is_empty():
+			(_grid.get_child(_grid.get_child_count() - 2) as Label).add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
 	var reset := Button.new()
 	reset.text = "Reset all to defaults"
 	reset.pressed.connect(func() -> void:
 		Settings.reset_bindings()
 		_build_controls.call_deferred())
 	_row("", reset)
+
+
+func _action_name(action: String) -> String:
+	for a: Array in ACTIONS:
+		if str(a[0]) == action:
+			return str(a[1])
+	return action
 
 
 # --- Rows ----------------------------------------------------------------------------------

@@ -108,6 +108,80 @@ func bind_primary(action: String, ev: InputEvent) -> bool:
 	return true
 
 
+## Whether the player last used a gamepad (prompts then name pad buttons, not keys).
+var using_pad: bool = false
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadButton or (event is InputEventJoypadMotion and absf((event as InputEventJoypadMotion).axis_value) > 0.5):
+		using_pad = true
+	elif event is InputEventKey or event is InputEventMouseButton:
+		using_pad = false
+
+
+## How a prompt names an action's input now: its pad button while the pad is in use (when it has
+## one), else its key or mouse button (TD-119; rebinds show up here).
+func input_label(action: String) -> String:
+	var first_key: Variant = null
+	var first_pad: Variant = null
+	for spec: Variant in bindings(action):
+		if spec is Dictionary:
+			var d: Dictionary = spec
+			if first_key == null and (d.has("key") or d.has("mouse")):
+				first_key = d
+			if first_pad == null and d.has("joy_button"):
+				first_pad = d
+	if using_pad and first_pad != null:
+		return describe(first_pad).trim_prefix("Pad ")
+	return describe(first_key) if first_key != null else "?"
+
+
+## Binds a gamepad button as the action's main pad binding, keeping its keys and mouse buttons.
+func bind_pad(action: String, ev: InputEvent) -> bool:
+	var spec: Dictionary = spec_from_event(ev)
+	if not spec.has("joy_button"):
+		return false
+	var out: Array = []
+	var replaced: bool = false
+	for old: Variant in bindings(action):
+		var d: Dictionary = old if old is Dictionary else {}
+		if not replaced and d.has("joy_button"):
+			replaced = true
+			out.append(spec)
+			continue
+		if d != spec:
+			out.append(d)
+	if not replaced:
+		out.append(spec)
+	rebind(action, out)
+	return true
+
+
+## Actions that may share an input on purpose (the same key does different things in different
+## places): Esc both cancels and pauses, the toolbelt keys pick slots in the roll too.
+const SHARED_OK: Array = [["cancel", "pause"], ["attack", "ui_accept"]]
+
+
+## Other actions bound to the same input as `spec` (a conflict the controls screen warns about).
+func conflicts(action: String, spec: Dictionary, actions: PackedStringArray) -> PackedStringArray:
+	var out: PackedStringArray = []
+	for other: String in actions:
+		if other == action:
+			continue
+		var ok_pair: bool = false
+		for pair: Array in SHARED_OK:
+			if pair.has(action) and pair.has(other):
+				ok_pair = true
+		# Inputs the shipped defaults share are shared by design (block and aim on the right
+		# mouse, reload and rotate on R: each works in its own context); only new clashes warn.
+		if ok_pair or (_default_bindings.get(action, []) as Array).has(spec) and (_default_bindings.get(other, []) as Array).has(spec):
+			continue
+		for sp: Variant in bindings(other):
+			if sp is Dictionary and (sp as Dictionary) == spec:
+				out.append(other)
+	return out
+
+
 ## Every action back to input_bindings.json.
 func reset_bindings() -> void:
 	if _cfg.has_section("input"):
@@ -123,7 +197,15 @@ static func spec_from_event(ev: InputEvent) -> Dictionary:
 		return {} if code == KEY_NONE else {"key": OS.get_keycode_string(code)}
 	if ev is InputEventMouseButton:
 		return {"mouse": int((ev as InputEventMouseButton).button_index)}
+	if ev is InputEventJoypadButton:
+		return {"joy_button": int((ev as InputEventJoypadButton).button_index)}
 	return {}
+
+
+## Gamepad buttons by Godot's SDL index, as the controls screen and prompts name them.
+const PAD_NAMES: Dictionary = {0: "A", 1: "B", 2: "X", 3: "Y", 4: "Back", 5: "Guide", 6: "Start",
+	7: "Left stick", 8: "Right stick", 9: "LB", 10: "RB", 11: "D-pad up", 12: "D-pad down",
+	13: "D-pad left", 14: "D-pad right"}
 
 
 ## "E", "Mouse 1", "Pad 2"... for the controls screen.
@@ -134,7 +216,7 @@ static func describe(spec: Variant) -> String:
 	if d.has("mouse"):
 		return {1: "Left mouse", 2: "Right mouse", 3: "Middle mouse", 4: "Wheel up", 5: "Wheel down"}.get(int(d["mouse"]), "Mouse %d" % int(d["mouse"]))
 	if d.has("joy_button"):
-		return "Pad %d" % int(d["joy_button"])
+		return "Pad " + str(PAD_NAMES.get(int(d["joy_button"]), str(int(d["joy_button"]))))
 	if d.has("joy_axis"):
 		return "Stick %d%s" % [int(d["joy_axis"]), "+" if float(d.get("dir", 1.0)) > 0.0 else "-"]
 	return "?"

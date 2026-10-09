@@ -77,7 +77,7 @@ func _ready() -> void:
 	_status = UiStyle.label("", &"DimLabel")
 	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	foot.add_child(_status)
-	_skip_hint = UiStyle.label("Hold Esc to skip", &"DimLabel")
+	_skip_hint = UiStyle.label("Hold Esc (or B) to skip", &"DimLabel")
 	_skip_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	foot.add_child(_skip_hint)
 	_skip_ring = ProgressBar.new()
@@ -340,6 +340,8 @@ func _impact(dt: float) -> void:
 
 func _update_skip(delta: float) -> void:
 	var held: bool = Input.is_key_pressed(KEY_ESCAPE) or Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
+	for j: int in Input.get_connected_joypads():
+		held = held or Input.is_joy_button_pressed(j, JOY_BUTTON_B) or Input.is_joy_button_pressed(j, JOY_BUTTON_START)
 	_skip_t = _skip_t + delta if held else maxf(0.0, _skip_t - delta * 2.0)
 	_skip_ring.value = clampf(_skip_t / SKIP_HOLD, 0.0, 1.0)
 	if _skip_t >= SKIP_HOLD:

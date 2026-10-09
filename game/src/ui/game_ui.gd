@@ -28,6 +28,7 @@ var _wire_t: float = 0.0
 var _damage_flash: float = 0.0
 var roll: SalvageRoll
 var world_map: WorldMap
+var reader: NoteReader
 var manual: FieldManual
 var tether: Tether
 var _final_death: bool = false
@@ -63,6 +64,14 @@ func _ready() -> void:
 	world_map = WorldMap.new()
 	world_map.name = "WorldMap"
 	add_child(world_map)
+	reader = NoteReader.new()
+	reader.name = "NoteReader"
+	add_child(reader)
+	# Notes (the lore trail): where each was found, and the reader straight from picking one up.
+	if not Game.has_command(&"notes.mark_found"):
+		Game.register_command(&"notes.mark_found", _cmd_mark_found)
+	Events.note_found.connect(_on_note_found)
+	Events.item_picked_up.connect(_on_item_picked_up)
 	_build_overlay()
 	_build_pause()
 	_maybe_start_intro()
@@ -732,6 +741,49 @@ func toggle_pause() -> void:
 
 # --- Diegetic UIs --------------------------------------------------------------------------
 
+## A gamepad press with nothing focused focuses the first control of the screen on top (the
+## reader, the map, the roll's recipe sheet, the manual, the trader, pause, the death screen).
+func _input(event: InputEvent) -> void:
+	# The pad's B puts away whatever is on top (the screens' own keys are keyboard keys).
+	var jb := event as InputEventJoypadButton
+	if jb != null and jb.pressed and jb.button_index == JOY_BUTTON_B and close_top_screen():
+		get_viewport().set_input_as_handled()
+		return
+	if not UiStyle.is_pad_event(event) or get_viewport().gui_get_focus_owner() != null:
+		return
+	for i: int in range(get_child_count() - 1, -1, -1):
+		var c: Control = get_child(i) as Control
+		if c == null or not c.visible or c == _hud or c == _loading:
+			continue
+		# The roll steers its cloth with the pad itself; its recipe sheet takes focus on RB.
+		if c == roll:
+			return
+		if UiStyle.focus_first(c):
+			get_viewport().set_input_as_handled()
+			return
+
+
+## Closes the screen on top, if one is open (gamepad B). True when something closed.
+func close_top_screen() -> bool:
+	if reader.is_open():
+		reader.close_reader()
+	elif world_map.is_open():
+		world_map.close()
+	elif manual.is_open():
+		manual.close()
+	elif roll.is_open():
+		roll.close()
+	elif _pause.visible:
+		toggle_pause()
+	else:
+		for c: Node in get_children():
+			if c is TraderScreen and (c as TraderScreen).is_open():
+				(c as TraderScreen).close_screen()
+				return true
+		return false
+	return true
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	var w: Node = Game.world
 	if w == null or not bool(w.get(&"is_ready")) or is_intro_playing():
@@ -795,7 +847,62 @@ func open_container(node: Object) -> void:
 func show_note(note_id: StringName) -> void:
 	if roll.is_open():
 		roll.close()
-	manual.show_note(note_id)
+	var p: PlayerState = Game.local_player()
+	reader.show_note(Content.get_def(&"note", note_id) as NoteDef, p.notes_found.get(note_id, {}) if p != null else {})
+
+
+func _exit_tree() -> void:
+	if Game.has_command(&"notes.mark_found"):
+		Game.unregister_command(&"notes.mark_found")
+
+
+## notes.mark_found {note, where, day}: records where and when the local player found a note,
+## once (the first find stands).
+func _cmd_mark_found(args: Dictionary) -> Dictionary:
+	var p: PlayerState = Game.local_player()
+	var id := StringName(str(args.get("note", "")))
+	if p == null or id == &"":
+		return {"ok": false, "error": "no player or note"}
+	if not p.notes_found.has(id):
+		p.notes_found[id] = {"where": str(args.get("where", "")), "day": int(args.get("day", 1)), "order": p.notes_found.size()}
+	return {"ok": true}
+
+
+func _on_note_found(note_id: StringName) -> void:
+	var day: int = Game.session.clock.day() if Game.session != null and Game.session.clock != null else 1
+	Game.execute(&"notes.mark_found", {"note": String(note_id), "where": place_name(), "day": day})
+
+
+## Where the player stands, as a note's finding place: the building they're in, else the region.
+static func place_name() -> String:
+	var w: Node = Game.world
+	if w == null or w.get(&"player") == null:
+		return ""
+	var at: Vector3 = (w.player as Node3D).global_position
+	var pois: Node = w.get(&"pois")
+	if pois != null and pois.has_method(&"poi_at"):
+		var inst: Object = pois.call(&"poi_at", at)
+		if inst != null and inst.get(&"layout") != null and (inst.get(&"layout") as Object).get(&"def") != null:
+			return str(((inst.get(&"layout") as Object).get(&"def") as Object).get(&"display_name"))
+	var tm: Object = w.get(&"terrain")
+	var wd: WorldDef = tm.get(&"world") as WorldDef if tm != null else null
+	if wd != null:
+		var rid: String = wd.region_at(at.x, at.z)
+		var name_: String = str((wd.regions.get(rid, {}) as Dictionary).get("name", ""))
+		if name_ != "":
+			return "the woods of %s" % name_
+	return "the woods"
+
+
+## A note just picked up opens in the reader (it counts as read: inventory.read).
+func _on_item_picked_up(owner_id: StringName, item_id: StringName, _count: int) -> void:
+	var p: PlayerState = Game.local_player()
+	var d: ItemDef = Content.item(item_id)
+	if p == null or owner_id != p.id or d == null or d.category != "note" or d.note == &"":
+		return
+	var res: Dictionary = Game.execute(&"inventory.read", {"item": String(item_id)})
+	if bool(res.get("ok", false)):
+		show_note.call_deferred(d.note)
 
 
 func _build_overlay() -> void:
