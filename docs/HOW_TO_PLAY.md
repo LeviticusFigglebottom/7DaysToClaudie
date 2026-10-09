@@ -51,6 +51,7 @@ stops and holds a still frame). *Options… → Menu backdrop* picks moving, sti
 | Load… | Every saved run as a card, newest first: the frame it was saved on, the day and hour, where you were, the difficulty, the world and the time played. **Delete** asks once more before it deletes. The test runs' own saves (smoke, tour…) show only to developers |
 | Options… | Mouse sensitivity and invert, field of view, head bob, five volumes, brightness, interface size (Auto grows the text above 1080p; or 75–200%), the menu backdrop, sound captions, graphics preset (your GPU and the preset it suits, a **Recommended** button, a frame cap), fullscreen, V-sync; **Controls**: every key and pad button |
 | The Intro | Replays the new-game intro |
+| What's New | This build's changes in a few lines each (it also opens by itself, once, the first time a new build starts) |
 
 *Sound captions* (Options) put the sounds that carry meaning into words: the intro's radio and
 impacts, a distress call's crackle on the tether, the Hum rising through the ground, and the big
