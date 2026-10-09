@@ -195,6 +195,8 @@ var _glow: float = 0.0
 var _tier_burst: Dictionary = {}
 var _spit_cd: float = 0.0
 var _spit_done: bool = false
+## The Blister's pustules have burst (TD-027): once, on a heavy blow (`hit_burst`) or its death.
+var _popped: bool = false
 var _charge_cd: float = 0.0
 var _charge_dir := Vector3.ZERO
 var _charge_hit: bool = false
@@ -581,6 +583,10 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 		return
 	if state != State.CHARGE:
 		want = _detour(want, delta)
+		# TD-011: lean off the bodies crowding it (doorways, the pack on the player's heels).
+		var me: int = get_instance_id()
+		want = Crowd.steer(want, global_position, _cap_radius, me, Crowd.near(global_position))
+		Crowd.enter(me, global_position, _cap_radius)
 	var v: Vector3 = velocity
 	v.x = want.x
 	v.z = want.z
@@ -1426,6 +1432,26 @@ func _scaled_spores(params: Dictionary) -> Dictionary:
 	return out
 
 
+## A heavy blow to a Blister's body bursts its pustules (TD-027) in a small spore puff: `hit_burst`
+## {min_damage, radius, damage, infection}. Once only: the shader swaps every pustule for a crater.
+func _hit_burst(limb: String, amount: float) -> void:
+	var hb: Dictionary = def.beh("hit_burst", {})
+	if _popped or hb.is_empty() or limb != "torso" or amount < float(hb.get("min_damage", 22.0)):
+		return
+	_pop()
+	if get_parent() != null:
+		Spores.burst(get_parent(), global_position, _scaled_spores(hb), entity_id)
+		SoundCaptions.say("burst:%s" % entity_id, "a wet burst", global_position)
+
+
+func _pop() -> void:
+	if _popped:
+		return
+	_popped = true
+	if visual != null:
+		visual.burst()
+
+
 func _can_charge(dist: float) -> bool:
 	var ch: Dictionary = def.beh("charge", {})
 	return not ch.is_empty() and _charge_cd <= 0.0 and not crawling \
@@ -1507,6 +1533,8 @@ func take_damage(info: DamageInfo) -> void:
 		Audio.play_3d(&"sfx/blade_hit_flesh" if info.type in [&"slash", &"pierce"] else &"sfx/hit_flesh", info.hit_pos, {"volume_db": -3.0})
 	if health > 0.0 and _rng.randf() < 0.6:
 		Audio.play_3d(_vid(&"voice/zombie_pain", &"voice/hound_yelp"), _mouth(), {"volume_db": -3.0})
+	if health > 0.0:
+		_hit_burst(limb, amount)
 	if ally != null and health <= 0.0:
 		ally.go_down(info)  # downed, not dead (ADR-0058)
 		return
@@ -1753,6 +1781,8 @@ func _die(info: DamageInfo) -> void:
 	if not burst.is_empty() and get_parent() != null:
 		Spores.burst(get_parent(), global_position, _scaled_spores(burst), entity_id)
 		SoundCaptions.say("burst:%s" % entity_id, "a wet burst", global_position)
+	if not def.beh("hit_burst", {}).is_empty():
+		_pop()
 	Events.enemy_killed.emit(entity_id, def.id, global_position, killer)
 	died.emit(self)
 

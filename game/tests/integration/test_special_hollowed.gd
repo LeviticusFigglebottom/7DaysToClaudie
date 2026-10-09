@@ -1,6 +1,7 @@
 extends GutTest
 ## Special Hollowed abilities against real nodes: Husk armour (headshots only), the Rammer's wall
-## charge, and a Blister glob arcing onto its target and leaving a spore puddle.
+## charge, a Blister glob arcing onto its target and leaving a spore puddle, and its pustules
+## bursting on a heavy blow.
 
 
 class Wall:
@@ -86,6 +87,29 @@ func test_blister_glob_lands_on_target_and_leaves_a_puddle() -> void:
 	assert_not_null(puddle, "the glob splashed")
 	if puddle != null:
 		assert_lt(Vector2(puddle.global_position.x - target.x, puddle.global_position.z - target.z).length(), 1.5)
+
+
+func test_blister_pustules_burst_once_on_a_heavy_body_blow() -> void:
+	_floor()
+	var e: Enemy = _enemy(&"blister")
+	await get_tree().physics_frame
+	var hb: Dictionary = Content.enemy(&"blister").beh("hit_burst", {})
+	assert_false(hb.is_empty(), "the Blister has a hit burst")
+	_hit(e, _bone_pos(e, "chest"), float(hb["min_damage"]) * 0.5)
+	assert_false(e._popped, "a light blow leaves the pustules")
+	_hit(e, _bone_pos(e, "head"), float(hb["min_damage"]) * 0.5)
+	assert_false(e._popped, "a blow to the head is not a blow to the pustules")
+	_hit(e, _bone_pos(e, "chest"), float(hb["min_damage"]) + 1.0)
+	assert_true(e._popped, "a heavy body blow bursts them")
+	assert_gt(e.health, 0.0, "and it lives through it")
+
+
+func test_ordinary_hollowed_have_no_pustules_to_burst() -> void:
+	_floor()
+	var e: Enemy = _enemy(&"hollow")
+	await get_tree().physics_frame
+	_hit(e, _bone_pos(e, "chest"), 30.0)
+	assert_false(e._popped)
 
 
 func test_hit_zones_follow_bone_segments() -> void:
