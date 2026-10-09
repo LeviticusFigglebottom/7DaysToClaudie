@@ -143,7 +143,7 @@ static func audit(inst: PoiInstance, v: PoiValidator, space: PhysicsDirectSpaceS
 	return out
 
 
-## Ladders (TD-363): the player takes one walking at its rails from the foot, or from the landing
+## Ladders (ADR-0051 round 5): the player takes one walking at its rails from the foot, or from the landing
 ## upstairs walking across the hatch toward them (Player._grab_ladder). So the spot in front of the
 ## rails must hold the standing capsule, the landing must too, and a hatch ladder's landing must
 ## lie across the hatch from the rails: from a landing beside it, walking into the hatch is walking

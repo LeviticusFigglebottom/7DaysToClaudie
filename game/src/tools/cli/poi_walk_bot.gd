@@ -2047,7 +2047,7 @@ func _release() -> void:
 
 
 func _place(pos: Vector3, forward: Vector3) -> void:
-	# Off any ladder and out of any vault first (TD-368): a body left holding the rungs of a
+	# Off any ladder and out of any vault first (ADR-0051 round 5): a body left holding the rungs of a
 	# failed climb was pulled straight back to them, and every later leg failed with it.
 	if &"_ladder" in player:
 		player.set(&"_ladder", null)
