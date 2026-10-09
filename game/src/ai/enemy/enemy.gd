@@ -38,6 +38,8 @@ const KINEMATIC_BEYOND: float = 110.0
 ## own phase, with the time it skipped (so timers, cooldowns and speeds keep real time); one out of
 ## the player's view ticks less often. [distance, ticks in view, ticks out of view], nearest first.
 const LOD_FULL: float = 18.0
+## Within this many metres a body ticks every frame whether it is in view or not (it can reach you).
+const LOD_NEAR: float = 6.0
 const LOD_TIERS: Array = [[40.0, 1, 2], [80.0, 2, 3], [KINEMATIC_BEYOND, 3, 4], [INF, 6, 6]]
 const MEMORY_SECONDS: float = 9.0
 ## Plain Hollowed (not hounds, not the Ashen) also notice a moving player this many degrees past
@@ -383,7 +385,26 @@ func is_underground() -> bool:
 
 # --- Main loop -------------------------------------------------------------------------------
 
+## Section timers (perf_capture --hum-full; off in play): microseconds by section, summed over
+## every body, and how many bodies ticked.
+static var prof_on: bool = false
+static var prof: Dictionary = {}
+
+
+static func _prof_add(key: StringName, t0: int) -> void:
+	prof[key] = int(prof.get(key, 0)) + Time.get_ticks_usec() - t0
+
+
 func _physics_process(frame_delta: float) -> void:
+	if not prof_on:
+		_physics_body(frame_delta)
+		return
+	var t0: int = Time.get_ticks_usec()
+	_physics_body(frame_delta)
+	_prof_add(&"total", t0)
+
+
+func _physics_body(frame_delta: float) -> void:
 	if state == State.DEAD:
 		_corpse_t += frame_delta
 		return
@@ -423,7 +444,10 @@ func _physics_process(frame_delta: float) -> void:
 	_perc_t -= delta
 	if _perc_t <= 0.0:
 		_perc_t = PERCEPTION_INTERVAL * (1.0 if dist < 60.0 else 3.0)
+		var tp: int = Time.get_ticks_usec()
 		_perceive(p, dist)
+		if prof_on:
+			_prof_add(&"perceive", tp)
 	var want := Vector3.ZERO
 	if tribe != null:
 		tribe.tick(delta, p)
@@ -553,7 +577,10 @@ func _physics_process(frame_delta: float) -> void:
 		_perch_step()
 		return
 	_move(want, delta, dist)
+	var ta: int = Time.get_ticks_usec()
 	_update_anim(want)
+	if prof_on:
+		_prof_add(&"anim", ta)
 
 
 ## The ground a far (collision-less) body glides on at `p` (y = where it is now): the surface, or
@@ -589,6 +616,7 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 	velocity = v
 	# A LOD tick covers the frames it skipped: one move as long as all of them (the body steps
 	# 2-6 frames' worth at once, 20-30 Hz past LOD_FULL m, where it isn't looked at closely).
+	var tm: int = Time.get_ticks_usec()
 	if _lod_span > 1.001:
 		# Falling too (Creatures' review): gravity built v.y over the whole span, so the drop covers it;
 		# on the floor v.y stays as is, so the floor snap behaves.
@@ -598,6 +626,8 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 		velocity = Vector3(velocity.x / _lod_span, velocity.y / vy_k, velocity.z / _lod_span)
 	else:
 		move_and_slide()
+	if prof_on:
+		_prof_add(&"move_and_slide", tm)
 	if state == State.CHARGE:
 		var wall: Node3D = _blocking_structure()
 		if wall != null:
@@ -634,7 +664,7 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 ## the companion and in the states whose timing the player feels (a strike, a charge, a spit, a
 ## stagger, tearing at a wall); otherwise by distance, less often out of the player's view.
 func _lod_every(p: Player, dist: float) -> int:
-	if p == null or ally != null or dist < LOD_FULL:
+	if p == null or ally != null or dist < LOD_NEAR:
 		return 1
 	if state in [State.ATTACK, State.CHARGE, State.SPIT, State.STAGGER, State.BREAK, State.SCREAM, State.WAKING]:
 		return 1
@@ -654,6 +684,10 @@ func _lod_every(p: Player, dist: float) -> int:
 	if cam != null:
 		var to: Vector3 = global_position - cam.global_position
 		seen = (-cam.global_transform.basis.z).dot(to) > to.length() * 0.35
+	# The near tier (TD-003 phase 2): every frame in view; behind the camera from LOD_NEAR m, every
+	# other (a Hum's crowd round the player was most of its physics step).
+	if dist < LOD_FULL:
+		return 1 if seen else 2
 	for tier: Array in LOD_TIERS:
 		if dist < float(tier[0]):
 			return int(tier[1]) if seen else int(tier[2])
@@ -739,7 +773,10 @@ func _way_clear(dir: Vector3) -> bool:
 	var from: Vector3 = global_position + Vector3.UP * 0.45
 	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 3.0, DETOUR_MASK)
 	q.exclude = [get_rid()]
+	var tw: int = Time.get_ticks_usec()
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(q)
+	if prof_on:
+		_prof_add(&"way_clear", tw)
 	return hit.is_empty() or (hit["normal"] as Vector3).y > 0.6
 
 
@@ -747,6 +784,15 @@ func _way_clear(dir: Vector3) -> bool:
 ## re-requested when the goal moves a metre or every half second (a query per enemy per frame
 ## would be wasteful). Off the baked tiles, far away or once the path is done: straight line.
 func _move_dir(to: Vector3) -> Vector3:
+	if not prof_on:
+		return _move_dir_body(to)
+	var t0: int = Time.get_ticks_usec()
+	var r: Vector3 = _move_dir_body(to)
+	_prof_add(&"move_dir", t0)
+	return r
+
+
+func _move_dir_body(to: Vector3) -> Vector3:
 	var d: Vector3 = to - global_position
 	if not _far and agent != null and agent.is_inside_tree():
 		_nav_t -= get_physics_process_delta_time()
@@ -1023,7 +1069,11 @@ func _line_of_sight(p: Player) -> bool:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var q := PhysicsRayQueryParameters3D.create(_eye(), p.eye_position(), SIGHT_MASK)
 	q.exclude = [get_rid()]
-	return space.intersect_ray(q).is_empty()
+	var tl: int = Time.get_ticks_usec()
+	var clear: bool = space.intersect_ray(q).is_empty()
+	if prof_on:
+		_prof_add(&"line_of_sight", tl)
+	return clear
 
 
 func _wake(toward: Vector3, saw: bool) -> void:
