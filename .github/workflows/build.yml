@@ -8,7 +8,7 @@ name: Build
 on:
   workflow_dispatch:
   push:
-    branches: [ccr-24ba8b7d-fttoi8, claude/compassionate-dirac-8mtvxi]
+    branches: [claude/amazing-davinci-60axfh, ccr-24ba8b7d-fttoi8, claude/compassionate-dirac-8mtvxi]
     # Docs-only pushes (the workboard, ADRs, playtest notes) change nothing that ships.
     paths-ignore: ['docs/**', '**/*.md']
 
