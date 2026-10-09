@@ -160,6 +160,10 @@ static func blob_key(file_name: String) -> String:
 	return file_name.get_basename().replace("~", ":")
 
 
+## Files other systems keep in a slot that a save carries over (the Load screen's thumbnail and card).
+const SLOT_EXTRAS: PackedStringArray = ["thumb.webp", "card.json"]
+
+
 static func save_session(session: GameSession, slot: String) -> Error:
 	var final_dir: String = slot_dir(slot)
 	var tmp_dir: String = final_dir + ".tmp"
@@ -189,6 +193,11 @@ static func save_session(session: GameSession, slot: String) -> Error:
 	err = _write_json(tmp_dir.path_join("session.json"), {"save_version": CURRENT_VERSION, "session": session.to_dict()})
 	if err != OK:
 		return err
+	# The Load screen's card (Presentation's GameUI writes them after each save): carried over, so a
+	# slot never shows without its picture between the swap and the next write.
+	for extra: String in SLOT_EXTRAS:
+		if FileAccess.file_exists(final_dir.path_join(extra)):
+			DirAccess.copy_absolute(final_dir.path_join(extra), tmp_dir.path_join(extra))
 	err = _carry_world_bundle(session, final_dir, tmp_dir)
 	if err != OK:
 		Log.warn(&"save", "could not bundle world %s into slot '%s' (%s); the save itself is fine" % [session.world_id, slot, error_string(err)])
@@ -257,8 +266,9 @@ const TOWN_PAINT_COMPOSER: int = 12
 ## random run composed before TOWN_PAINT_COMPOSER loses its felled-tree and harvested-plant
 ## records in the 64 m vegetation chunks touching a town (they are addressed by scatter index,
 ## which now names other instances; the trees there simply stand again). Records the current
-## version. Returns how many chunks were dropped. `world_def`: the WorldDef being played (its
-## `towns`). Main-map runs only get the version recorded.
+## version. Then, crossing BANKS_COMPOSER, any run loses those records by the roads, pads and towns
+## whose ground and plants that composer changed (_drop_bank_chunks). Returns how many chunks were
+## dropped. `world_def`: the WorldDef being played (its `towns`, `roads` and regions).
 static func fix_composer_changes(session: GameSession, world_def: Object, current: int) -> int:
 	var dropped: int = 0
 	if session.is_random_world() and session.composer_version < TOWN_PAINT_COMPOSER and current >= TOWN_PAINT_COMPOSER and world_def != null:
@@ -275,7 +285,76 @@ static func fix_composer_changes(session: GameSession, world_def: Object, curren
 					break
 		if dropped > 0:
 			Log.info(&"save", "composer %d -> %d: dropped vegetation records in %d town chunks (TD-182)" % [session.composer_version, current, dropped])
+	if session.composer_version < BANKS_COMPOSER and current >= BANKS_COMPOSER and world_def != null:
+		dropped += _drop_bank_chunks(session, world_def)
 	session.composer_version = current
+	return dropped
+
+
+## Composer version from which a generated world's roads and every pad meet the land in natural
+## banks, and towns' yards and frameworks grow plants (player report 4): the ground and the
+## vegetation scatter changed beside those roads, round those pads and over those towns.
+const BANKS_COMPOSER: int = 13
+## How far round a changed road (its centre line) and a changed pad (its bounding circle) a
+## 64 m chunk's records are dropped (the bank reaches 26-30 m past the road's edge, 18 m past a pad).
+const BANKS_ROAD_REACH: float = 40.0
+const BANKS_PAD_REACH: float = 30.0
+
+
+## Drops the vegetation records of the chunks the VERSION 13 banks and yards changed: near a
+## generated world's roads (the main map's are graded as before), round every pad but those that
+## keep their water, and over every organic town. Returns how many chunks were dropped.
+static func _drop_bank_chunks(session: GameSession, world_def: Object) -> int:
+	# Circles (Vector3: x, z, radius) and polylines with their reach, in world metres.
+	var circles: Array[Vector3] = []
+	var lines: Array = []
+	if "towns" in world_def:
+		for tw: Dictionary in world_def.get(&"towns"):
+			var b: Rect2 = tw["bounds"]
+			circles.append(Vector3(b.get_center().x, b.get_center().y, b.size.length() * 0.5 + BANKS_PAD_REACH))
+	if session.is_random_world() and "roads" in world_def:
+		for rd: Dictionary in world_def.get(&"roads"):
+			lines.append(rd["line"])
+	if "regions" in world_def and world_def.has_method(&"region_data"):
+		var db: Node = ContentDB.instance
+		for rid: Variant in (world_def.get(&"regions") as Dictionary).keys():
+			for f: Variant in (world_def.call(&"region_data", str(rid)) as Dictionary).get("features", []):
+				var fd: Dictionary = f
+				var kind: String = str(fd.get("type", ""))
+				if not kind in ["framework", "poi"] or bool(fd.get("keep_water", false)) or not fd.has("origin"):
+					continue
+				var size := Vector2(40, 40)
+				var def: Object = null
+				if db != null:
+					def = db.call(&"get_def", StringName(kind), StringName(str(fd.get(kind, ""))))
+				if def is FrameworkDef:
+					size = Vector2((def as FrameworkDef).size)
+				elif def is PoiDef:
+					size = Vector2((def as PoiDef).footprint)
+				var o := Vector2(float(fd["origin"][0]), float(fd["origin"][1]))
+				var half: Vector2 = (size * 0.5).rotated(deg_to_rad(float(fd.get("rotation", 0.0))))
+				circles.append(Vector3(o.x + half.x, o.y + half.y, size.length() * 0.5 + float(fd.get("skirt", 10.0)) + BANKS_PAD_REACH))
+	var dropped: int = 0
+	var chunk_r: float = 32.0 * sqrt(2.0)
+	for key: String in session.world.trees.keys():
+		var c: Vector2i = Ids.parse_chunk_key(key)
+		var mid := Vector2(c.x * 64.0 + 32.0, c.y * 64.0 + 32.0)
+		var hit: bool = false
+		for cv: Vector3 in circles:
+			if mid.distance_to(Vector2(cv.x, cv.y)) < cv.z + chunk_r:
+				hit = true
+				break
+		if not hit:
+			for ln: Variant in lines:
+				var line: Polyline2 = ln
+				if line.bounds.grow(BANKS_ROAD_REACH + chunk_r).has_point(mid) and line.closest(mid).x < BANKS_ROAD_REACH + chunk_r:
+					hit = true
+					break
+		if hit:
+			session.world.trees.erase(key)
+			dropped += 1
+	if dropped > 0:
+		Log.info(&"save", "composer %d -> %d: dropped vegetation records in %d chunks by roads, pads and towns (TD-182)" % [session.composer_version, BANKS_COMPOSER, dropped])
 	return dropped
 
 

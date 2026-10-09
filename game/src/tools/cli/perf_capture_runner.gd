@@ -7,7 +7,11 @@ const VIEWS: Array[Dictionary] = [
 	{"name": "town_street", "pos": Vector3(-45, 1.7, 2068), "look": Vector3(-95, 2, 2064)},
 	{"name": "town_road", "pos": Vector3(-30, 6.0, 2170), "look": Vector3(-60, 0, 2070)},
 	{"name": "river", "pos": Vector3(150, 1.7, 2075), "look": Vector3(118, 0.0, 2100)},
+	# Caves WS-F: deep conifer forest away from every place (the scatter at its densest).
+	{"name": "dense_forest", "pos": Vector3(300, 1.7, 1650), "look": Vector3(340, 3.0, 1610)},
 ]
+## Caves WS-F: Larch Hollow's grotto, from its mouth and from its chamber (ADR-0056).
+const CAVE_VIEW: StringName = &"larch_hollow_grotto"
 
 var _out: String = "res://../build/perf"
 var _frames: int = 120
@@ -16,6 +20,10 @@ var _ablate: bool = true
 var _load_only: bool = false
 ## Also measure a Hum night at the town (--hum): the horde's waves on the main thread (TD-003).
 var _hum: bool = false
+## --hum-full: the night's plan is a late game's (gamestage HUM_FULL_STAGE), every wave is due at
+## once and the alive cap is the rule's maximum, so a whole horde is measured, not the first few.
+var _hum_full: bool = false
+const HUM_FULL_STAGE: int = 60
 ## Headless triangle census per view (what each layer submits within its visibility range).
 var _census: bool = false
 var _model_of: Dictionary = {}
@@ -65,12 +73,16 @@ func _ready() -> void:
 				_census = true
 			"--hum":
 				_hum = true
+			"--hum-full":
+				_hum = true
+				_hum_full = true
 	_run.call_deferred()
 
 
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
-	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "perf"})
+	var rules: Dictionary = {"hum_max_alive": 64, "hum_size": 2.0} if _hum_full else {}
+	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "perf", "rules": rules})
 	while game.get(&"world") == null or not bool(game.world.is_ready):
 		await get_tree().process_frame
 	w = game.world
@@ -96,6 +108,26 @@ func _run() -> void:
 			m["modules"] = await _ablate_modules()
 		_report["views"][v["name"]] = m
 		print("[perf] %s %s" % [v["name"], _brief(m)])
+	var ridge: Dictionary = _ridge_view()
+	if not ridge.is_empty():
+		await _goto(ridge["pos"], ridge["look"])
+		await _coarse_settle()
+		var mr: Dictionary = await _measure(_frames)
+		mr["coarse_quads"] = int(w.vegetation.call(&"coarse_count"))
+		if _census:
+			mr["census"] = _triangle_census(p.global_position + Vector3.UP * 1.65)
+		# The same view without the coarse forest (TD-006): its cost is the difference.
+		w.vegetation.set(&"coarse_enabled", false)
+		await get_tree().process_frame
+		mr["without_coarse"] = await _measure(_frames)
+		w.vegetation.set(&"coarse_enabled", true)
+		_report["views"]["ridge"] = mr
+		print("[perf] ridge %s coarse_quads=%d | without coarse: %s" % [_brief(mr), mr["coarse_quads"], _brief(mr["without_coarse"])])
+	for cv: Dictionary in _cave_views():
+		await _goto_at(cv["pos"], cv["look"])
+		var mc: Dictionary = await _measure(_frames)
+		_report["views"][cv["name"]] = mc
+		print("[perf] %s %s" % [cv["name"], _brief(mc)])
 	if _hum:
 		_report["hum"] = await _hum_night()
 		print("[perf] hum %s" % _brief(_report["hum"]))
@@ -124,6 +156,79 @@ func _goto(pos: Vector3, look: Vector3) -> void:
 		if veg != null and veg.call(&"is_settled") and w.terrain.is_ready_around(p.global_position, 1):
 			break
 	for i: int in 30:
+		await get_tree().process_frame
+
+
+## The cave views: 8 m out from CAVE_VIEW's mouth looking in, and on its spine's last point (the
+## chamber) looking back out. Empty when the world has no such cave.
+func _cave_views() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var caves: Object = w.terrain.get(&"caves")
+	if caves == null:
+		return out
+	for plan: Variant in caves.get(&"plans"):
+		if StringName(str((plan as Object).get(&"id"))) != CAVE_VIEW:
+			continue
+		var mouth: Transform3D = (plan as Object).get(&"mouth")
+		var spine: PackedVector3Array = (plan as Object).get(&"spine")
+		var outside: Vector3 = mouth.origin + mouth.basis.z * 8.0
+		out.append({"name": "cave_mouth", "pos": outside, "look": mouth.origin - mouth.basis.z * 4.0})
+		if spine.size() > 2:
+			out.append({"name": "cave_chamber", "pos": spine[spine.size() - 1], "look": mouth.origin})
+	return out
+
+
+## The ridge view (TD-006): the highest ground of the player's region within 160 m of its edge,
+## looking out over the next regions (coarse on the main map: the far forest's cluster layer).
+func _ridge_view() -> Dictionary:
+	var rt: RegionTerrain = w.terrain.region_terrain_at(p.global_position.x, p.global_position.z)
+	if rt == null:
+		return {}
+	var r: Rect2 = rt.rect
+	var best := Vector3(0, -INF, 0)
+	for z: float in range(int(r.position.y) + 16, int(r.end.y) - 16, 32):
+		for x: float in range(int(r.position.x) + 16, int(r.end.x) - 16, 32):
+			var edge: float = minf(minf(x - r.position.x, r.end.x - x), minf(z - r.position.y, r.end.y - z))
+			var h: float = w.height_at(x, z)
+			if edge < 160.0 and h > best.y:
+				best = Vector3(x, h, z)
+	if best.y == -INF:
+		return {}
+	var out_dir := Vector2(best.x, best.z) - r.get_center()
+	out_dir = out_dir.normalized() if out_dir.length() > 1.0 else Vector2(1, 0)
+	# _goto pitches by look.y + ground - 3.4 over the distance: about 2 degrees down.
+	var look := Vector3(best.x + out_dir.x * 800.0, 3.4 - best.y - 30.0, best.z + out_dir.y * 800.0)
+	return {"pos": Vector3(best.x, 1.7, best.z), "look": look}
+
+
+## Waits (up to 60 s) for the coarse regions in view to be built.
+func _coarse_settle() -> void:
+	var veg: Node = w.vegetation
+	if veg == null or not veg.has_method(&"coarse_pending"):
+		return
+	var end: int = Time.get_ticks_msec() + 60000
+	while Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+		if int(veg.call(&"coarse_pending")) == 0 and int(veg.call(&"coarse_count")) > 0:
+			break
+	for i: int in 30:
+		await get_tree().process_frame
+
+
+## As _goto, standing on the ground below `pos` (a cave's floor) rather than on the surface.
+func _goto_at(pos: Vector3, look: Vector3) -> void:
+	var g: float = float(w.call(&"ground_below", pos + Vector3.UP * 1.0))
+	p.global_position = Vector3(pos.x, (g if not is_nan(g) else w.height_at(pos.x, pos.z)) + 0.1, pos.z)
+	var d: Vector3 = look - pos
+	p.rotation.y = atan2(-d.x, -d.z)
+	w.terrain.update_streaming(p.global_position, true)
+	var end: int = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+		var veg: Node = w.vegetation
+		if veg != null and veg.call(&"is_settled") and w.terrain.is_ready_around(p.global_position, 1):
+			break
+	for i: int in 60:
 		await get_tree().process_frame
 
 
@@ -162,15 +267,60 @@ func _hum_night() -> Dictionary:
 	var ai: Node = w.get(&"ai")
 	var day: int = game.session.clock.next_horde_day(1)
 	game.session.clock.set_time(day, 21.8)
-	var end: int = Time.get_ticks_msec() + 60000
-	while Time.get_ticks_msec() < end and (ai.hum.members as Dictionary).size() < 20:
+	var want: int = 20
+	if _hum_full:
+		# Wait for the night to start, then hand it a late game's plan with every wave due now.
+		var t_start: int = Time.get_ticks_msec() + 120000
+		while not bool(ai.hum.active) and Time.get_ticks_msec() < t_start:
+			await get_tree().process_frame
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 7
+		# A seventh Hum's plan at a late gamestage (the horde grows by Hums survived as well).
+		game.session.horde.horde_index = 6
+		var big: Dictionary = game.session.horde.plan(HUM_FULL_STAGE, rng)
+		ai.hum.set(&"_wave_i", 0)
+		for wv: Dictionary in big.get("waves", []):
+			wv["start_min"] = 0.0
+		ai.hum.plan = big
+		want = mini(GameRules.current().integer("hum_max_alive"), int(big.get("total", 0)))
+	if _hum_full:
+		print("[perf] hum: forced plan of %d, waiting for %d alive (cap %d)" % [int((ai.hum.plan as Dictionary).get("total", 0)), want, GameRules.current().integer("hum_max_alive")])
+	var end: int = Time.get_ticks_msec() + (120000 if _hum_full else 60000)
+	var next_log: int = 0
+	while Time.get_ticks_msec() < end and _alive(ai) < want:
 		await get_tree().process_frame
+		if _hum_full and Time.get_ticks_msec() > next_log:
+			next_log = Time.get_ticks_msec() + 10000
+			print("[perf] hum: active %s, wave %d/%d, queued %d, spawned %d, alive %d, hour %.2f" % [ai.hum.active, int(ai.hum.get(&"_wave_i")),
+				((ai.hum.plan as Dictionary).get("waves", []) as Array).size(), (ai.hum.get(&"_queue") as Array).size(), int(ai.hum.get(&"_spawned_total")),
+				_alive(ai), float(game.session.clock.hour())])
+	if _hum_full:
+		print("[perf] hum: waited until %d ms left, alive %d, spawned %d, queued %d" % [end - Time.get_ticks_msec(), _alive(ai), int(ai.hum.get(&"_spawned_total")), (ai.hum.get(&"_queue") as Array).size()])
+	if _hum_full:
+		# Let them run in and path round the town before measuring (spawned 55-85 m out).
+		var settle: int = Time.get_ticks_msec() + 20000
+		while Time.get_ticks_msec() < settle:
+			await get_tree().process_frame
 	var m: Dictionary = await _measure(_frames)
 	m["members"] = (ai.hum.members as Dictionary).size()
+	m["alive"] = _alive(ai)
+	m["planned"] = int((ai.hum.plan as Dictionary).get("total", 0))
+	m["spawned"] = int(ai.hum.get(&"_spawned_total"))
+	m["queued"] = (ai.hum.get(&"_queue") as Array).size()
 	if _ablate:
 		m["modules"] = await _ablate_modules()
 	game.session.clock.set_time(day + 1, 7.0)
 	return m
+
+
+## Hum members still standing.
+func _alive(ai: Node) -> int:
+	var n: int = 0
+	for e: Dictionary in (ai.hum.members as Dictionary).values():
+		var node: Variant = e.get("node")
+		if node != null and is_instance_valid(node) and (node as Enemy).is_alive():
+			n += 1
+	return n
 
 
 ## Each world module's cost: process + physics time with it on minus with it off.

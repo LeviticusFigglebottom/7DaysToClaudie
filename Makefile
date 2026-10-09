@@ -117,6 +117,14 @@ screenshots: ## Capture the screenshot suite into build/screenshots (software Vu
 	@# The watchdog ends a run whose engine shutdown hangs after "SHOT done" (it would hold the lock).
 	@$(LOCK) $(ROOT)/tools/qa_watchdog.sh "SHOT done" $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution 1600x900 -s res://src/tools/cli/screenshots.gd -- --out $(ROOT)/build/screenshots $(SHOTS_ARGS)
 
+ui-shots: ## Screenshots of the menus and UI screens without a world (software Vulkan, ~1 min) -> build/ui_shots
+	@mkdir -p $(ROOT)/build/ui_shots
+	@$(LOCK) $(ROOT)/tools/qa_watchdog.sh "UI_SHOT done" $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution $(or $(UI_RES),1920x1080) -s res://src/tools/cli/ui_shots.gd -- --out $(ROOT)/build/ui_shots $(if $(UI_SHOTS),--only $(UI_SHOTS),)
+
+first-hour: ## The first-hour UX audit: a new game driven through its first hour, a frame and the screen's words per step (software Vulkan, ~20 min) -> build/first_hour
+	@mkdir -p $(ROOT)/build/first_hour
+	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution $(or $(UI_RES),1280x720) -s res://src/tools/cli/first_hour.gd -- --out $(ROOT)/build/first_hour
+
 ci: ## Everything CI runs: setup, assets, import, validate (strict), tests
 	@$(MAKE) --no-print-directory setup
 	@$(MAKE) --no-print-directory assets

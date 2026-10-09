@@ -10,7 +10,7 @@ const TradeIcons := preload("res://src/trade/trade_icons.gd")
 
 const PAPER := Color(0.83, 0.8, 0.7)
 const INK := Color(0.14, 0.12, 0.1)
-const INK_DIM := Color(0.42, 0.38, 0.32)
+const INK_DIM := UiStyle.INK_DIM
 const OK_INK := Color(0.16, 0.4, 0.18)
 const ICON_SIZE := 40
 
@@ -30,6 +30,8 @@ var _counts: Dictionary = {}
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The paper theme (ADR-0063): disabled entries stay in dim ink, never Godot's white.
+	theme = UiStyle.paper_theme()
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_icons = TradeIcons.new()
@@ -44,27 +46,23 @@ func _ready() -> void:
 	panel.anchor_right = 0.8
 	panel.anchor_top = 0.1
 	panel.anchor_bottom = 0.9
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = PAPER
-	sb.border_color = Color(0.3, 0.28, 0.22)
-	sb.set_border_width_all(3)
+	# The paper theme's panel (ADR-0063), with the clipboard's wider margins.
+	var sb: StyleBoxFlat = UiStyle.panel_box(true)
 	sb.content_margin_left = 30
 	sb.content_margin_right = 30
 	sb.content_margin_top = 22
 	sb.content_margin_bottom = 22
-	sb.shadow_size = 12
-	sb.shadow_color = Color(0, 0, 0, 0.5)
 	panel.add_theme_stylebox_override(&"panel", sb)
 	add_child(panel)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override(&"separation", 10)
 	panel.add_child(v)
-	_title = _label("", 24, INK)
+	_title = UiStyle.label("", &"HeadingLabel")
 	v.add_child(_title)
 	_status = _label("", 16, INK_DIM)
 	v.add_child(_status)
 	_tabs = HBoxContainer.new()
-	_tabs.add_theme_constant_override(&"separation", 18)
+	_tabs.add_theme_constant_override(&"separation", 4)
 	v.add_child(_tabs)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -78,6 +76,8 @@ func _ready() -> void:
 	v.add_child(_msg)
 	var close := Button.new()
 	close.text = "Done"
+	close.theme_type_variation = &"PrimaryButton"
+	close.custom_minimum_size = Vector2(0, 44)
 	close.pressed.connect(close_screen)
 	v.add_child(close)
 	Events.ui_modal_closed.connect(func(id: StringName) -> void:
@@ -143,10 +143,12 @@ func _refresh() -> void:
 		td.rep_tier_name(tier), p.contracts.reputation(key), p.contracts.count_for(key), td.max_active]
 	for t: Array in [["buy", "Buy"], ["sell", "Sell"], ["offers", "Contracts board"], ["mine", "Your contracts"]]:
 		var b := Button.new()
-		b.text = ("> %s" % t[1]) if _tab == t[0] else str(t[1])
-		b.flat = true
-		b.add_theme_color_override(&"font_color", INK)
-		b.add_theme_font_size_override(&"font_size", 18)
+		b.text = str(t[1])
+		b.theme_type_variation = &"ListButton"
+		b.toggle_mode = true
+		b.button_pressed = _tab == t[0]
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override(&"font_size", 19)
 		b.pressed.connect(func() -> void:
 			_tab = str(t[0])
 			_msg.text = ""
@@ -176,7 +178,9 @@ func _buy_rows(td: TraderDef, p: PlayerState, tier: int) -> void:
 		var need: int = int(e.get("rep_tier", 0))
 		if need > tier:
 			var locked: HBoxContainer = _icon_row(idef, "%s\n\nNeeds %s standing." % [idef.description, td.rep_tier_name(need)])
-			locked.modulate = Color(1, 1, 1, 0.6)
+			# Dim ink says "locked" (ADR-0063); fading the whole row made it hard to read.
+			if locked.get_child_count() > 0:
+				(locked.get_child(0) as CanvasItem).modulate = Color(1, 1, 1, 0.5)
 			locked.add_child(_label("%s — needs %s standing" % [idef.display_name, td.rep_tier_name(need)], 16, INK_DIM))
 			_list.add_child(locked)
 			continue

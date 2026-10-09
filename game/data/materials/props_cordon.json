@@ -1,0 +1,13 @@
+{
+  "_doc": "The Cordon wall (wall panels, the Route 9 gate, the river gate bays and abutments, the Program notice board). Models: tools/assetgen/blender/generators/props_cordon_wall.py. Textures: tools/assetgen/textures/gen/cordon.py: cordon_print is an atlas (UV rects in the generator's ATLAS: primer patches with sprayed stencils, so a band reads on the bare concrete), cordon_concrete tiles precast concrete at 2 m per tile (the generator maps concrete at uv_scale 0.5 per metre). cw_concrete_wet is the same concrete darkened under the waterline. Shared ids reused: ws_* (the Waystation kit's paints, hazard, sandbags, flood glow), farm_corrugated_galv / _rust, road_concrete, road_steel, road_plywood, wood_weathered, lens_clear, rubber_black, plastic_black, trap_chain, trap_brass, cardboard, w3_log_bark.",
+  "materials": {
+    "cw_print": {"shader": "std_surface", "textures": "cordon_print",
+      "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "grime_amount": 0.45, "grime_color": "#3a362e"}},
+    "cw_concrete": {"shader": "std_surface", "textures": "cordon_concrete",
+      "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "grime_amount": 0.55, "grime_color": "#3a362e", "macro_variation": 0.3}},
+    "cw_concrete_wet": {"shader": "std_surface", "textures": "cordon_concrete",
+      "params": {"uv_scale": 1.0, "vertex_ao_strength": 1.0, "tint": "#6f7466", "roughness_add": -0.25, "grime_amount": 0.7, "grime_color": "#262a20"}},
+    "cw_steel_dark": {"shader": "std_surface", "textures": "pi_paint_steel", "layers": {"wear": "pi_rust"},
+      "params": {"uv_scale": 1.5, "vertex_ao_strength": 1.0, "tint": "#2e2f2b", "wear_amount": 0.75, "wear_uv_scale": 2.0, "grime_amount": 0.5}}
+  }
+}

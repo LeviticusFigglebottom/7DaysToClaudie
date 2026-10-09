@@ -90,7 +90,7 @@
         {"id": "papa_back_window", "at": [9, 0], "side": "N", "type": "window", "state": "boarded"},
         {"id": "papa_side_window", "at": [7, 0], "side": "N", "type": "window", "state": "boarded"},
         {"id": "sewing_door", "at": [4, 2], "side": "W", "type": "door", "state": "closed", "level": 1},
-        {"id": "linen_door", "at": [4, 2], "side": "N", "type": "door", "state": "open", "level": 1},
+        {"id": "linen_door", "at": [4, 2], "side": "N", "type": "door", "state": "missing", "level": 1},
         {"id": "spare_door", "at": [5, 3], "side": "E", "type": "door", "state": "broken", "level": 1},
         {"id": "ife_door", "at": [4, 3], "side": "W", "type": "door", "state": "closed", "level": 1},
         {"id": "bath_door", "at": [5, 4], "side": "E", "type": "door", "state": "open", "level": 1},
@@ -278,7 +278,7 @@
         {"prop": "cardboard_box", "id": "junk_box_stacked", "pos": [0.35, 1.45], "y": 0.34, "rot": 95, "level": 1, "alt": "sewing_room:junk"},
         {"prop": "crate_wood", "id": "junk_crate", "pos": [3.4, 0.4], "rot": 20, "level": 1, "alt": "sewing_room:junk"},
         {"prop": "cardboard_box_open", "pos": [2.7, 2.1], "rot": 40, "level": 1, "alt": "sewing_room:junk"},
-        {"prop": "farm_milk_can", "pos": [3.55, 2.35], "level": 1, "alt": "sewing_room:junk"}
+        {"prop": "farm_milk_can", "pos": [3.6, 1.15], "level": 1, "alt": "sewing_room:junk"}
       ],
       "pickups": [
         {"id": "storeroom_key", "item": "farm_storeroom_key", "pos": [7.5, 7.48], "y": 0.62},

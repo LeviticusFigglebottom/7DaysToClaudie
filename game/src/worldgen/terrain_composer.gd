@@ -24,7 +24,8 @@ extends RefCounted
 ## map, v1 worlds) compose exactly as before.
 ## VERSION 12 (ADR-0047): a world town paints `town` only on its streets (TOWN_VERGE past their
 ## shoulders) and square, no longer over its whole disc, and a yard's grass keeps off the largest
-## authored footprint its lot may hold. The main map's output did not change.
+## authored footprint its lot may hold (VERSION 13: the yard grows over its whole frame and the
+## house clears its own box at runtime). The main map's output did not change.
 ##
 ## Streaming (ADR-0038): the per-sample passes (macro and noise, water, roads, surface) can run in
 ## row bands, each on a Thread of its own writing its own arrays, merged in row order after the join
@@ -34,7 +35,32 @@ extends RefCounted
 ## (test_composer_golden.gd): saves keep digs, felled trees and POI state against composed regions,
 ## and the cache key hashes the inputs and VERSION, not this code.
 
-const VERSION: int = 12
+## VERSION 13 (player report 4): every road (a generated world's and the main map's) keeps its grade
+## under a cap by surface (ROAD_MAX_GRADE: a profile steeper than the land allows is cut and filled
+## evenly round it) and meet the land in banks no steeper than a natural slope (BANK_*): the ground
+## beside the road is pulled only as far as it stands steeper than the bank's slope, which varies
+## along the road (rocky cuts steeper, fills gentler), with a rounded crest and toe and a little
+## relief on the face, out to BANK_REACH m. They had a fixed 8 m blend: every cut and fill was one
+## uniform plane as long as the road. A region's own roads still fade out at its border.
+const VERSION: int = 13
+## The steepest grade (rise over run) a generated world's road profile keeps, by surface.
+const ROAD_MAX_GRADE: Dictionary = {"asphalt": 0.12, "gravel": 0.14, "dirt": 0.16}
+## Banks beside a generated world's roads: the slope (rise over run) of a cut and of a fill, between
+## the two values by a value noise along the road (BANK_CELL m across), a flat verge of up to
+## BANK_VERGE m before the bank, the radius (m) of the rounding where the bank meets the land, the
+## relief (m) on the face (BANK_BUMP_CELL m across) and how far from the shoulder a bank may reach.
+const BANK_CUT: Vector2 = Vector2(0.6, 1.6)
+const BANK_FILL: Vector2 = Vector2(0.45, 0.8)
+const BANK_CELL: float = 23.0
+const BANK_VERGE: float = 2.0
+const BANK_ROUND: float = 1.5
+## A low bank is gentler: below BANK_LOW m of height the slope eases towards BANK_SOFT, so a road or a
+## pad a metre off the land blends in over a few metres instead of standing on a curb.
+const BANK_SOFT: float = 0.3
+const BANK_LOW: Vector2 = Vector2(1.0, 6.0)
+const BANK_BUMP: float = 0.7
+const BANK_BUMP_CELL: float = 6.5
+const BANK_REACH: float = 26.0
 ## A water edge's profile: the ground falls EDGE_DROP below the water within EDGE_IN metres inside
 ## the edge and rises EDGE_RISE above it within EDGE_OUT outside. A slope through the water line
 ## keeps the shore off the 1 m sample grid; a step (VERSION 10: bed 0.35 m under, bank 0.22 m over,
@@ -56,11 +82,18 @@ const BUCKET: float = 32.0
 ## (half width + shoulder) a lot pad's skirt eases in (m): on the corridor it grades nothing, and the
 ## bank between a street and a yard spreads over the verge.
 const LOT_SKIRT: float = 5.0
-const YARD_VEG: float = 0.6
+## VERSION 13: a world town's lot meets the land in a bank like a road's (BANK_*), its slope between
+## these two by a value noise, out to LOT_BANK_REACH m from the frame, instead of a 5 m ramp.
+const LOT_BANK: Vector2 = Vector2(0.4, 0.75)
+const LOT_BANK_REACH: float = 14.0
+## How far a framework's or a POI's pad banks reach (m; its `skirt` when that is longer).
+const PAD_BANK_REACH: float = 18.0
+## The vegetation a v1 framework's pad keeps (a main-map town such as Pell's Crossing: overgrown
+## lots between its buildings, which clear their own boxes at runtime; VERSION 13, it was bare).
+const FRAMEWORK_VEG: float = 0.75
+const YARD_VEG: float = 0.85
 const TOWN_REACH: float = 40.0
 const LOT_ROAD_YIELD: float = 2.0
-## A yard's grass grows within this much of its frame's edge (m), and none a metre further in.
-const YARD_EDGE: float = 2.0
 ## A world town's streets paint `town` this far past their shoulders (m, plus up to 2 m of noise);
 ## the ground between the streets and the lots keeps the world's biome (ADR-0047).
 const TOWN_VERGE: float = 3.0
@@ -309,8 +342,6 @@ class _Build:
 	## paved with (-1: none; a world town's square).
 	var _pad_veg := PackedFloat64Array()
 	var _pad_surf := PackedInt32Array()
-	## Per pad: the footprint centred in it that a town yard's grass keeps off (ZERO: none).
-	var _pad_core := PackedVector2Array()
 	## Per road: 1 for a world town's street, 2 for a world road through a town's disc (both paint
 	## `town` round them, the second only inside a disc); the biome index of `town`; the discs.
 	var _r_town := PackedByteArray()
@@ -638,11 +669,9 @@ class _Build:
 			for lv: Variant in fw.lots:
 				var l: Dictionary = lv
 				if l.has("frame"):
-					var lp: Dictionary = _frame_pad(l["frame"], float(l.get("y", 0.0)), "lot", String(fw.id), "%s/%s" % [tid, l.get("id", "")], "yard", YARD_VEG, "")
-					# The largest authored footprint the lot may hold, centred in the frame: no
-					# yard grass under it, whichever building the run's seed stands there.
-					lp["core"] = Vector2(Lots.max_authored_footprint(fw, l))
-					pads.append(lp)
+					# A yard over the whole frame: the house the run stands there clears its own box
+					# at runtime (VegetationManager._footprints, VERSION 13).
+					pads.append(_frame_pad(l["frame"], float(l.get("y", 0.0)), "lot", String(fw.id), "%s/%s" % [tid, l.get("id", "")], "yard", YARD_VEG, ""))
 			if fw.plaza.has("frame"):
 				pads.append(_frame_pad(fw.plaza["frame"], float(fw.plaza.get("y", 0.0)), "plaza", String(fw.id), "%s/plaza" % tid, "town", 0.0, "asphalt"))
 
@@ -674,6 +703,7 @@ class _Build:
 		return {"kind": str(f["type"]), "def": def_id, "id": str(f.get("id", def_id)), "origin": _v2(f["origin"]),
 			"rot": deg_to_rad(float(f.get("rotation", 0.0))), "size": size, "skirt": float(f.get("skirt", 10.0)),
 			"biome": str(f.get("biome", "town" if str(f["type"]) == "framework" else "meadow")),
+			"veg": FRAMEWORK_VEG if str(f["type"]) == "framework" else 0.0,
 			"keep_water": bool(f.get("keep_water", false)), "freeboard": float(f.get("freeboard", 0.6))}
 
 	func _content() -> Node:
@@ -1045,7 +1075,7 @@ class _Build:
 		for ri: int in road_list.size():
 			var r: Dictionary = road_list[ri]
 			var line: Polyline2 = r["line"]
-			var reach: float = float(r["width"]) * 0.5 + float(r["shoulder"]) + 10.0
+			var reach: float = float(r["width"]) * 0.5 + float(r["shoulder"]) + BANK_REACH + 2.0
 			max_band = maxf(max_band, reach)
 			if not line.bounds.grow(reach).intersects(rect):
 				continue
@@ -1157,6 +1187,7 @@ class _Build:
 					acc += cp[j]
 					wsum += 1.0
 				prof[k] = acc / wsum
+		_limit_grade(prof, step, float(ROAD_MAX_GRADE.get(str(r.get("surface", "")), 0.14)))
 		var spans: Array = []
 		for bdef: Variant in r["bridges"]:
 			var bd: Dictionary = bdef
@@ -1185,6 +1216,25 @@ class _Build:
 					prof[k] = lerpf(deck, prof[k], smoothstep(s1, s1 + 40.0, s))
 		return {"profile": prof, "step": step, "spans": spans}
 
+	## Keeps a profile's grade under `g` (rise over run), cutting and filling evenly: the mean of the
+	## highest profile under the ground and the lowest over it whose grades stay under g (each is
+	## g-Lipschitz, so their mean is too). Where the land is gentler than g it is the land itself.
+	static func _limit_grade(prof: PackedFloat32Array, step: float, g: float) -> void:
+		var count: int = prof.size()
+		if count < 2:
+			return
+		var rise: float = g * step
+		var lo: PackedFloat32Array = prof.duplicate()
+		var hi: PackedFloat32Array = prof.duplicate()
+		for k: int in range(1, count):
+			lo[k] = minf(lo[k], lo[k - 1] + rise)
+			hi[k] = maxf(hi[k], hi[k - 1] - rise)
+		for k2: int in range(count - 2, -1, -1):
+			lo[k2] = minf(lo[k2], lo[k2 + 1] + rise)
+			hi[k2] = maxf(hi[k2], hi[k2 + 1] - rise)
+		for k3: int in count:
+			prof[k3] = (lo[k3] + hi[k3]) * 0.5
+
 	func _water_level_near(p: Vector2) -> float:
 		var best: float = -1.0e9
 		for r: Dictionary in world.rivers:
@@ -1207,6 +1257,7 @@ class _Build:
 		var rsh: PackedFloat64Array = _r_sh
 		var rhas: PackedByteArray = _r_has
 		var rworld: PackedByteArray = _r_world
+		var bank_seed: int = world.seed & 0xffffff
 		var rstep: PackedFloat64Array = _r_step
 		var rprof: PackedFloat32Array = _r_prof
 		var rpoff: PackedInt32Array = _r_prof_off
@@ -1267,14 +1318,35 @@ class _Build:
 						var stop: float = sa + (sb - sa) * fx
 						s = stop + ((sc + (sd - sc) * fx) - stop) * fz
 				else:
+					# The corners belong to different roads. The road is the nearest corner's; the
+					# distance to the nearest road is continuous across the line where two roads'
+					# cells meet, so it stays bilinear; the arc is interpolated over that road's own
+					# corners. (VERSION 13: both were the nearest corner's, constant over a 4 m cell,
+					# which drew stairs along the wide banks where two streets' fields meet.)
 					var nci: int = ci + (1 if fx > 0.5 else 0) + (cnn if fz > 0.5 else 0)
 					if ridx[nci] >= 0:
 						ri = ridx[nci]
-					d = rdd[nci]
-					s = rss[nci]
+					var ma: float = rdd[ci]
+					var mb: float = rdd[ci + 1]
+					var mc: float = rdd[ci + cnn]
+					var md: float = rdd[ci + cnn + 1]
+					if ma > 1.0e8 or mb > 1.0e8 or mc > 1.0e8 or md > 1.0e8:
+						d = rdd[nci]
+					else:
+						var mtop: float = ma + (mb - ma) * fx
+						d = mtop + ((mc + (md - mc) * fx) - mtop) * fz
+					var w00: float = (1.0 - fx) * (1.0 - fz) if ridx[ci] == ri else 0.0
+					var w10: float = fx * (1.0 - fz) if ridx[ci + 1] == ri else 0.0
+					var w01: float = (1.0 - fx) * fz if ridx[ci + cnn] == ri else 0.0
+					var w11: float = fx * fz if ridx[ci + cnn + 1] == ri else 0.0
+					var wsum: float = w00 + w10 + w01 + w11
+					if wsum > 1e-6:
+						s = (rss[ci] * w00 + rss[ci + 1] * w10 + rss[ci + cnn] * w01 + rss[ci + cnn + 1] * w11) / wsum
+					else:
+						s = rss[nci]
 				var half: float = rhalf[ri]
 				var sh: float = rsh[ri]
-				var outer: float = half + sh + 8.0
+				var outer: float = half + sh + BANK_REACH
 				if d > outer or rhas[ri] == 0:
 					continue
 				var skip: bool = false
@@ -1293,11 +1365,64 @@ class _Build:
 				var target: float = lerpf(rprof[po + k0], rprof[po + k1], k - k0)
 				target -= 0.06 * minf(1.0, (d / maxf(half, 0.5)) * (d / maxf(half, 0.5)))
 				var inner: float = half + sh
-				var wgt: float = 1.0 - smoothstep(inner, outer, d)
+				var hv: float = hb[lrow + ix]
+				if d <= inner:
+					var wb: float = 1.0
+					if rworld[ri] == 0:
+						wb = clampf(minf(minf(x_0 + ix * spc - bx0, bx1 - (x_0 + ix * spc)), dz) / BORDER_FADE, 0.0, 1.0)
+					hb[lrow + ix] = lerpf(hv, target, wb)
+					continue
+				var bx2: float = x_0 + ix * spc
+				# Value noise (inlined: no calls in a band's loop), BANK_CELL m across, for the
+				# bank's slope, and BANK_BUMP_CELL m across for the verge and the face's relief.
+				var gx2: float = bx2 / BANK_CELL
+				var gz2: float = bz / BANK_CELL
+				var vi: int = floori(gx2)
+				var vj: int = floori(gz2)
+				var vfx: float = gx2 - vi
+				var vfz: float = gz2 - vj
+				vfx = vfx * vfx * (3.0 - 2.0 * vfx)
+				vfz = vfz * vfz * (3.0 - 2.0 * vfz)
+				var v00: float = float(((vi * 73856093) ^ (vj * 19349663) ^ bank_seed) & 0xffff) / 65535.0
+				var v10: float = float((((vi + 1) * 73856093) ^ (vj * 19349663) ^ bank_seed) & 0xffff) / 65535.0
+				var v01: float = float(((vi * 73856093) ^ ((vj + 1) * 19349663) ^ bank_seed) & 0xffff) / 65535.0
+				var v11: float = float((((vi + 1) * 73856093) ^ ((vj + 1) * 19349663) ^ bank_seed) & 0xffff) / 65535.0
+				var nk: float = lerpf(lerpf(v00, v10, vfx), lerpf(v01, v11, vfx), vfz)
+				var gx3: float = bx2 / BANK_BUMP_CELL
+				var gz3: float = bz / BANK_BUMP_CELL
+				var wi: int = floori(gx3)
+				var wj: int = floori(gz3)
+				var wfx: float = gx3 - wi
+				var wfz: float = gz3 - wj
+				wfx = wfx * wfx * (3.0 - 2.0 * wfx)
+				wfz = wfz * wfz * (3.0 - 2.0 * wfz)
+				var bs2: int = bank_seed ^ 0x5bd1e9
+				var u00: float = float(((wi * 73856093) ^ (wj * 19349663) ^ bs2) & 0xffff) / 65535.0
+				var u10: float = float((((wi + 1) * 73856093) ^ (wj * 19349663) ^ bs2) & 0xffff) / 65535.0
+				var u01: float = float(((wi * 73856093) ^ ((wj + 1) * 19349663) ^ bs2) & 0xffff) / 65535.0
+				var u11: float = float((((wi + 1) * 73856093) ^ ((wj + 1) * 19349663) ^ bs2) & 0xffff) / 65535.0
+				var nb: float = lerpf(lerpf(u00, u10, wfx), lerpf(u01, u11, wfx), wfz)
+				var dh: float = hv - target
+				# A flat verge of at least 0.8 m before the bank: on the 4 m far LOD the bench then
+				# keeps a vertex or two, and the road does not read as tilted into its bank.
+				var e: float = maxf(0.0, d - inner - 0.8 - nb * BANK_VERGE)
+				var k_s: float = lerpf(BANK_CUT.x, BANK_CUT.y, nk) if dh > 0.0 else lerpf(BANK_FILL.x, BANK_FILL.y, nk)
+				var adh: float = absf(dh)
+				k_s = lerpf(BANK_SOFT, k_s, smoothstep(BANK_LOW.x, BANK_LOW.y, adh))
+				var allow: float = k_s * e
+				# A smooth min of |dh| and the bank's allowance: the crest and toe round off over
+				# BANK_ROUND m instead of meeting in a crease.
+				var hk: float = maxf(BANK_ROUND - absf(adh - allow), 0.0) / BANK_ROUND
+				var lim: float = minf(adh, allow) - hk * hk * BANK_ROUND * 0.25
+				lim = maxf(lim, 0.0)
+				# Relief on the face only, where the bank moved the land.
+				var moved: float = clampf((adh - lim) / 1.5, 0.0, 1.0)
+				var face: float = target + signf(dh) * lim + (nb - 0.5) * BANK_BUMP * moved
+				var reach_w: float = 1.0 - smoothstep(BANK_REACH * 0.75, BANK_REACH, d - inner)
 				if rworld[ri] == 0:
-					var bx: float = x_0 + ix * spc
-					wgt *= clampf(minf(minf(bx - bx0, bx1 - bx), dz) / BORDER_FADE, 0.0, 1.0)
-				hb[lrow + ix] = lerpf(hb[lrow + ix], target, wgt)
+					# A region's own road fades out at its border, as before.
+					reach_w *= clampf(minf(minf(bx2 - bx0, bx1 - bx2), dz) / BORDER_FADE, 0.0, 1.0)
+				hb[lrow + ix] = lerpf(hv, face, reach_w)
 		return [hb]
 
 	# --- 5. Pads ----------------------------------------------------------------------------
@@ -1339,24 +1464,48 @@ class _Build:
 			var bb := Rect2(corners[0], Vector2.ZERO)
 			for c: Vector2 in corners:
 				bb = bb.expand(c)
-			bb = bb.grow(skirt)
+			bb = bb.grow(LOT_BANK_REACH if world_pad else (skirt if keep_water else maxf(skirt, PAD_BANK_REACH)))
+			var bank_seed: int = (world.seed & 0xffffff) ^ 0x3c6ef3
 			_for_box(bb, func(i: int, x: float, z: float) -> void:
 				var lp: Vector2 = (Vector2(x, z) - o).rotated(-rot)
 				var dx: float = maxf(maxf(-lp.x, lp.x - size.x), 0.0)
 				var dz: float = maxf(maxf(-lp.y, lp.y - size.y), 0.0)
 				var d: float = sqrt(dx * dx + dz * dz)
+				if world_pad:
+					# Only the bank here: the frames are graded last (below).
+					if d > 0.0 and d < LOT_BANK_REACH:
+						var dh: float = h[i] - target
+						var adh: float = absf(dh)
+						var k_s: float = lerpf(BANK_SOFT, lerpf(LOT_BANK.x, LOT_BANK.y, _vnoise(x, z, BANK_CELL, bank_seed)), smoothstep(BANK_LOW.x, BANK_LOW.y, adh))
+						var allow: float = k_s * d
+						var hk: float = maxf(BANK_ROUND - absf(adh - allow), 0.0) / BANK_ROUND
+						var lim: float = maxf(minf(adh, allow) - hk * hk * BANK_ROUND * 0.25, 0.0)
+						var fade: float = 1.0 - smoothstep(LOT_BANK_REACH * 0.7, LOT_BANK_REACH, d)
+						h[i] = lerpf(h[i], target + signf(dh) * lim, fade * _yield_to_roads(x, z))
+					return
+				if not keep_water:
+					# VERSION 13: a pad meets the land in a bank like a road's (on the main map too: Pell's
+					# Crossing stood on one flat plate with 10 m planar ramps round it), out to
+					# PAD_BANK_REACH m, and the pad itself is level to its edges as before.
+					if d < PAD_BANK_REACH:
+						var dh2: float = h[i] - target
+						var adh2: float = absf(dh2)
+						var allow2: float = lerpf(BANK_SOFT, lerpf(LOT_BANK.x, LOT_BANK.y, _vnoise(x, z, BANK_CELL, bank_seed)), smoothstep(BANK_LOW.x, BANK_LOW.y, adh2)) * d
+						var hk2: float = maxf(BANK_ROUND - absf(adh2 - allow2), 0.0) / BANK_ROUND
+						var lim2: float = maxf(minf(adh2, allow2) - hk2 * hk2 * BANK_ROUND * 0.25, 0.0)
+						var fade2: float = 1.0 - smoothstep(PAD_BANK_REACH * 0.7, PAD_BANK_REACH, d)
+						# Like a lot's, its bank gives way to the roads' level corridors (the roads are
+						# graded first, and a bank across one tilted it: Pell's Crossing's corner); the
+						# pad itself stays level over a road inside it (a campground's loop).
+						h[i] = lerpf(h[i], target + signf(dh2) * lim2, fade2 * _border_weight(x, z) * (_yield_to_roads(x, z) if d > 0.0 else 1.0))
+					return
 				if d < skirt:
 					var wgt: float = 1.0 - smoothstep(0.0, skirt, d)
 					if keep_water:
 						# Nothing in the water; the dry ground eases down to the bank over its last 2 m
 						# rather than standing over the water as a step.
 						wgt *= smoothstep(0.0, 2.0, _water_d(x, z))
-					if world_pad:
-						# Only the skirt here: the frames are graded last (below).
-						if d > 0.0:
-							h[i] = lerpf(h[i], target, wgt * _yield_to_roads(x, z))
-					else:
-						h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
+					h[i] = lerpf(h[i], target, wgt * _border_weight(x, z)))
 		# A world town's lots stand 1 m apart and their skirts reach over each other: each frame is
 		# graded last, all of it at its own height (frames never overlap, so their order is moot; the
 		# planner keeps every frame clear of the street corridors), and a building on it stands on
@@ -1376,6 +1525,22 @@ class _Build:
 				if lp.x >= 0.0 and lp.y >= 0.0 and lp.x <= size2.x and lp.y <= size2.y:
 					h[i] = target2)
 
+	## Smooth value noise in [0, 1], `cell` m across (the banks' variation; _band_roads inlines it).
+	static func _vnoise(x: float, z: float, cell: float, sd: int) -> float:
+		var gx: float = x / cell
+		var gz: float = z / cell
+		var i: int = floori(gx)
+		var j: int = floori(gz)
+		var fx: float = gx - i
+		var fz: float = gz - j
+		fx = fx * fx * (3.0 - 2.0 * fx)
+		fz = fz * fz * (3.0 - 2.0 * fz)
+		var v00: float = float(((i * 73856093) ^ (j * 19349663) ^ sd) & 0xffff) / 65535.0
+		var v10: float = float((((i + 1) * 73856093) ^ (j * 19349663) ^ sd) & 0xffff) / 65535.0
+		var v01: float = float(((i * 73856093) ^ ((j + 1) * 19349663) ^ sd) & 0xffff) / 65535.0
+		var v11: float = float((((i + 1) * 73856093) ^ ((j + 1) * 19349663) ^ sd) & 0xffff) / 65535.0
+		return lerpf(lerpf(v00, v10, fx), lerpf(v01, v11, fx), fz)
+
 	## How much a world town's pad skirt may grade a sample (ADR-0040): nothing on a road's paved
 	## corridor (half width + shoulder), easing to all of it LOT_ROAD_YIELD m beyond, so a yard never
 	## bumps a street. The road and its distance are read from the road fields as _band_roads reads them.
@@ -1392,15 +1557,14 @@ class _Build:
 				return 1.0
 		var fx: float = gx - cx
 		var fz: float = gz - cz
-		var d: float
+		# The distance to the nearest road is continuous even where the corners belong to different
+		# roads: bilinear either way (VERSION 13; the nearest corner's stepped every 4 m).
+		var d: float = _bl(r_d, ci, fx, fz)
 		var i00: int = r_idx[ci]
-		if i00 == r_idx[ci + 1] and i00 == r_idx[ci + cn] and i00 == r_idx[ci + cn + 1]:
-			d = _bl(r_d, ci, fx, fz)
-		else:
+		if not (i00 == r_idx[ci + 1] and i00 == r_idx[ci + cn] and i00 == r_idx[ci + cn + 1]):
 			var nci: int = ci + (1 if fx > 0.5 else 0) + (cn if fz > 0.5 else 0)
 			if r_idx[nci] >= 0:
 				ri = r_idx[nci]
-			d = r_d[nci]
 		var inner: float = _r_half[ri] + _r_sh[ri]
 		return smoothstep(inner, inner + LOT_ROAD_YIELD, d)
 
@@ -1471,7 +1635,6 @@ class _Build:
 			_pad_size.append(s0)
 			_pad_bi.append(biomes.find(pad0["biome"]))
 			_pad_veg.append(float(pad0.get("veg", 0.0)))
-			_pad_core.append(pad0.get("core", Vector2.ZERO))
 		var clear_boxes: Array[Rect2] = []
 		for cl0: Dictionary in clearings:
 			var cr: float = float(cl0["r"]) + 6.0
@@ -1705,7 +1868,6 @@ class _Build:
 		var town_bi: int = _s_town_bi
 		var town_c: PackedVector2Array = _town_c
 		var town_r: PackedFloat64Array = _town_r
-		var dcore: PackedVector2Array = _pad_core
 		var col_c: PackedInt32Array = _s_col_c
 		var col_f: PackedFloat64Array = _s_col_f
 		var col_b: PackedInt32Array = _s_col_b
@@ -1854,8 +2016,6 @@ class _Build:
 				if wd < 14.0 + n2 * 10.0 and kind[bi] != K_FEN:
 					bi = 1
 				var pad_hit: int = -1
-				var pad_in: float = 0.0
-				var pad_out: float = 1.0e9
 				for j2: int in range(dst[cell], dst[cell + 1]):
 					var pi: int = dit[j2]
 					if not dboxes[pi].has_point(Vector2(x, z)):
@@ -1864,12 +2024,6 @@ class _Build:
 					var size: Vector2 = dsize[pi]
 					if lp.x >= -1.0 and lp.y >= -1.0 and lp.x <= size.x + 1.0 and lp.y <= size.y + 1.0:
 						pad_hit = pi
-						# How far inside the pad's edge (a yard's grass keeps to its edges).
-						pad_in = minf(minf(lp.x, size.x - lp.x), minf(lp.y, size.y - lp.y))
-						# How far outside the footprint its yard's grass keeps off (ADR-0047).
-						var core: Vector2 = dcore[pi]
-						if core.x > 0.0:
-							pad_out = maxf(absf(lp.x - size.x * 0.5) - core.x * 0.5, absf(lp.y - size.y * 0.5) - core.y * 0.5)
 						break
 				if pad_hit >= 0:
 					bi = dbi[pad_hit]
@@ -2055,13 +2209,10 @@ class _Build:
 					# Bare under a building's pad; a world town's yard keeps grass round its edges, where
 					# no building stands (a generated one keeps 3 m from its lot's sides and back and its
 					# setback from the front; a floor 0.15 m up hid no grass).
-					var keep: float = dveg[pad_hit]
-					if keep > 0.0:
-						keep *= 1.0 - smoothstep(YARD_EDGE, YARD_EDGE + 1.0, pad_in)
-						# And none under the largest building its lot may hold, fading in over a metre
-						# past its walls (a frame it fills keeps no yard).
-						keep *= smoothstep(0.0, 1.0, pad_out)
-					veg = minf(veg, keep)
+					# VERSION 13: a world town's yard keeps its plants over the whole frame; the house
+					# that stands there (known only to the run) clears its own box at runtime
+					# (VegetationManager._footprints), so the yard grows up to its walls.
+					veg = minf(veg, dveg[pad_hit])
 				for j3: int in range(cst[cell], cst[cell + 1]):
 					var ck: int = cit[j3]
 					var dc: float = Vector2(x, z).distance_to(clpos[ck])

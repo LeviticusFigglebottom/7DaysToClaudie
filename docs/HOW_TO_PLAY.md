@@ -38,14 +38,25 @@ confirm the first run. The game opens in a 1280 × 720 window (Options has Fulls
 * The developer tools (F1–F7, §3) work only in these debug runs.
 
 ### The main menu
+Behind the menu the camera flies slowly up the Tamsin through Larch Hollow at dusk (the real
+valley, built in the background the first time; if your machine runs the menu below 40 fps it
+stops and holds a still frame). *Options… → Menu backdrop* picks moving, still or off.
+
 | Button | What it does |
 |---|---|
 | Continue (Day N) | Loads your most recent save |
 | New Game… | The world settings screen (§2) |
-| New Game — Vertical Slice demo (seed 4471, Hum on night 3) | Starts the slice's curated demo run at once: Survivor difficulty, 30-minute days, the first Hum on day 3, always run seed 4471 (New Game… rolls a fresh seed) |
+| Vertical Slice demo (dev) | Developers only (the editor, or `-- --dev`): starts the slice's curated demo run at once: Survivor difficulty, 30-minute days, the first Hum on day 3, always run seed 4471 (New Game… rolls a fresh seed) |
 | Random World… | The world settings screen, open on its World tab with a random world chosen |
-| Load RunN — Day N · Preset | Each saved run, newest first ("· Random world" marks those) |
-| Options… | Mouse sensitivity and invert, field of view, head bob, five volumes, brightness, graphics preset, fullscreen, V-sync |
+| Load… | Every saved run as a card, newest first: the frame it was saved on, the day and hour, where you were, the difficulty, the world and the time played. **Delete** asks once more before it deletes. The test runs' own saves (smoke, tour…) show only to developers |
+| Options… | Mouse sensitivity and invert, field of view, head bob, five volumes, brightness, interface size (Auto grows the text above 1080p; or 75–200%), the menu backdrop, graphics preset, fullscreen, V-sync |
+| The Intro | Replays the new-game intro |
+
+**The intro.** A new game opens with a short intro (the Cordon, the Remand Program and how your
+drop went wrong) while the world loads. Hold **Esc** (or Space, Enter) or click **Skip** to skip
+it. If the world is ready before it ends, the world waits, paused, until it does. Skipped (or
+when you load a save), the loading screen turns through the Field Manual's Survival pages while
+the world comes up.
 
 A boxed **notice** on the menu means something is off with your copy (the packaged build shows
 none):
@@ -164,14 +175,19 @@ keys below are the defaults.
 | V | Carried log pose: flat, upright post, pitched (roof) |
 | X | Cancel placement; close the salvage roll, field manual or options. Hold it (1 s) on a placed blueprint ghost to take it down |
 | Tab or I | Salvage roll: inventory and crafting |
-| B | Remand Field Manual: blueprints, your Record, notes found, survival pages |
+| B | Remand Field Manual: blueprints, the Journal (the first days' steps), your Record, notes found, survival pages |
 | T | Raise or lower the tether on your wrist (Left mouse also lowers it) |
+| M | The map: the whole valley on a survey sheet, you, where you wake, buildings, waystations and drops (wheel zooms, drag pans) |
 | Esc | Close what's open, else pause. Only the pause menu stops the world: it keeps running while the roll, manual or tether is up |
 | F5 / F9 / F12 | Quicksave / quickload this run / screenshot |
 
 **In the salvage roll:** Left mouse uses, equips or reads an item (at a container: takes or stores
 it); Right mouse drops one, Shift + Right mouse the stack; 1–6 over an item puts it on the toolbelt;
-the wheel turns pages or scrolls recipes; click a recipe to make it.
+the wheel over the cloth turns pages. Hovering an item shows its card (damage, food, condition,
+bulk, worth). **Drag** an item onto a toolbelt slot (under the cloth), onto the recipe sheet (it
+lists what uses it), into an open container, or off the cloth to drop it. *Sort* and *Show* above
+the cloth order and filter what you see. On the recipe sheet: click a recipe to see it, **Make**
+(or double-click, or Enter) makes one, Shift + Make as many as you can.
 
 **Developer tools** (the editor and other debug builds only, not the packaged game):
 
@@ -205,10 +221,12 @@ have a bed; pinned to the map's edge when it's elsewhere), supply drops (red dia
 (grey squares, orange once you've been inside, green once cleared).
 
 **The first-days tutorial** (on unless the world setting *First days tutorial* is off; you can
-turn it off yourself in the tether's journal): eight Program cards on the tether that say how to
+turn it off yourself on the Field Manual's **Journal** tab, B): eight Program cards in the Journal that say how to
 gather, make a stone axe, fell a tree, build a campfire, fill and boil water, make a cloth bandage,
-raise a shelter and sleep, in any order. Each pays 10 XP. A while after the last one your tether
-picks up a distress call from Ezra Vane (§9), hurt in his line truck, and marks where he is: bring
+raise a shelter and sleep, in any order. Each pays 10 XP, and a line at the top of the screen names
+the next. A while after the last one your tether picks up a distress call from Ezra Vane (§9), hurt
+in his line truck: a red ring pulses on the tether's minimap and the map (M) with its bearing, and
+the Journal keeps the call. Bring
 him a cloth bandage (the one the cards had you make), or a first aid kit or painkillers if you've
 found any in medicine cabinets and nightstands.
 
@@ -323,8 +341,10 @@ permadeath the button returns you to the menu.
 
 ### Crafting
 Open the salvage roll (Tab): your pack on the left (bulk out of 40 to start, plus your shoulder
-logs), and on the right flap what you know how to make, makeable ones first, each line showing what
-you have against what it needs and any tool in brackets. Click to make it at once. At a station, E
+logs), and on the right the recipe sheet: what you know how to make here, ready ones first (✓), the
+rest in grey with what they lack in red (× *need 2 Stick, a knife*). Filter by *Ready* or a
+category. Click a recipe for its card (each ingredient as have / need, tools, time, what it makes)
+and press **Make**. At a station, E
 (*Use Campfire*, *Use Workbench*) opens the roll with its recipes. Crafted tools and weapons come out
 at quality 1 until Wits and the Handy perk raise it. *Knife* means a Kitchen Knife or Machete in your
 pack; *axe*, a Stone Axe or Hatchet.

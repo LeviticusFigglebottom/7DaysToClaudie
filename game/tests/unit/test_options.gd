@@ -92,3 +92,60 @@ func test_the_panel_builds_every_tab() -> void:
 		assert_eq(panel._tabs.current_tab, OptionsPanel.TABS.find(tab))
 		assert_gt((panel._graphics_page.get_child(0) as GridContainer).get_child_count(), 20, "graphics rows")
 		assert_gt((panel._controls_page.get_child(0) as GridContainer).get_child_count(), 40, "a row per action")
+
+
+func test_discrete_gpus_by_name() -> void:
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "AMD Radeon RX 9070 XT"), "ultra", "the owner's card")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "NVIDIA GeForce RTX 4070 SUPER"), "ultra")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "NVIDIA GeForce RTX 3060"), "high")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "NVIDIA GeForce GTX 1060 6GB"), "medium")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "Radeon RX 580 Series"), "medium")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_DISCRETE_GPU, "Something New 9000"), "high", "unknown names default to High")
+	assert_eq(Settings.preset_for_adapter(RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU, "AMD Radeon RX 9070 XT"), "low")
+
+
+func test_numeric_choices_match_json_floats() -> void:
+	assert_true(OptionsPanel.same_choice(4096, 4096.0), "a preset's 4096.0 is the 4096 choice")
+	assert_true(OptionsPanel.same_choice(3, 3.0))
+	assert_false(OptionsPanel.same_choice(2048, 4096.0))
+	assert_true(OptionsPanel.same_choice("fsr2", "fsr2"))
+	assert_false(OptionsPanel.same_choice("fsr", "fsr2"))
+
+
+func test_pad_names_and_device_aware_labels() -> void:
+	assert_eq(Settings.describe({"joy_button": 0}), "Pad A")
+	assert_eq(Settings.describe({"joy_button": 10}), "Pad RB")
+	var was: bool = Settings.using_pad
+	Settings.using_pad = false
+	assert_eq(Settings.input_label("jump"), "Space")
+	Settings.using_pad = true
+	assert_eq(Settings.input_label("jump"), "A", "a pad player sees the pad button")
+	assert_eq(Settings.input_label("light"), Settings.input_label("light"), "an action with no pad button keeps its key")
+	Settings.using_pad = was
+
+
+func test_conflicts_name_other_actions_on_the_same_input() -> void:
+	var actions: PackedStringArray = ["jump", "sprint", "cancel", "pause"]
+	assert_true(Settings.conflicts("jump", {"key": "Shift"}, actions).has("sprint"))
+	assert_eq(Settings.conflicts("jump", {"key": "F13"}, actions).size(), 0)
+	var esc: Dictionary = {}
+	for sp: Variant in Settings.bindings("pause"):
+		if sp is Dictionary and (sp as Dictionary).has("key"):
+			esc = sp
+	if not esc.is_empty():
+		assert_false(Settings.conflicts("cancel", esc, actions).has("pause"), "cancel and pause may share Esc")
+
+
+func test_bind_pad_keeps_keys() -> void:
+	var before: Array = Settings.bindings("interact").duplicate(true)
+	var ev := InputEventJoypadButton.new()
+	ev.button_index = JOY_BUTTON_Y
+	assert_true(Settings.bind_pad("interact", ev))
+	var after: Array = Settings.bindings("interact")
+	assert_true(after.has({"joy_button": 3}))
+	var keys: int = 0
+	for sp: Variant in after:
+		if sp is Dictionary and (sp as Dictionary).has("key"):
+			keys += 1
+	assert_gt(keys, 0, "the key binding stays")
+	Settings.rebind("interact", before)

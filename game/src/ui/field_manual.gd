@@ -8,7 +8,7 @@ extends Control
 
 const PAPER := Color(0.86, 0.82, 0.71)
 const INK := Color(0.15, 0.12, 0.09)
-const INK_DIM := Color(0.45, 0.4, 0.34)
+const INK_DIM := UiStyle.INK_DIM
 const TIPS: Array[Array] = [
 	["The Remand Program", "You signed the waiver. You are inside the Cordon to find out what the Bloom did to Hollowmere and whether anyone is left. The canister drop is your only resupply. Your tether keeps time, vitals and the Hum forecast."],
 	["Hollowed", "By day they are slow and half blind. After dark they see without light and they run. Anything you carry that glows tells them where you are. Crouch, keep your lights off, and let the wind carry your scent away from them."],
@@ -20,9 +20,23 @@ const TIPS: Array[Array] = [
 	["Hammer", "A claw hammer repairs what the Hollowed break (sticks for a log, sticks and nails for a reinforced one, a quarter of its cost for anything else), and reinforces logs once they are whole (cordage and nails)."],
 	["Waystation 9", "The Program's relay post on Route 9, south by the river. Its guards shoot any Hollowed that come inside the wire, and nothing rises there. The quartermaster buys what you carry and sells what the drones bring, for Program scrip. The board posts contracts: clear a building and search its stores, bring back a cache the survey teams left, or hold a relay cache while it uploads. Report back to be paid; standing with the post opens better stock and harder work."],
 	["The Ashen", "Tribes of the high timber, painted in lichen-ash so the Hollowed can't smell them. They burn their dead and kill outsiders who might carry the Bloom. First they watch: a still figure on a ridge, gone when you look again. Let a scout get away and the camp learns where you sleep. Anger them enough and they come at dusk, with drums: raiders who break what is in their way. Hold a torch up at them and keep your fires burning; fire in an outsider's hand frightens them, and a band that loses its nerve runs. They never come on a Hum night. At home in their camps they fight to the last."],
-	["Ezra Vane", "A convict from two drops before yours, a lineman before the Program got him. He is holed up in his line truck by the power line, out in the timber, with a broken leg: bring him a first aid kit or painkillers and he walks with you. Talk to him (E) to give orders: follow, stay here, guard here, gather, fetch, give me what you carry, store at base; [H] whistles him to follow or to stay. Look at the spot or the thing first: he gathers round what you last looked at (wood, stone or fibre, into his own pack: twelve slots and two logs on his shoulder) and fetches it. His trees count half for your XP and directives. Following, he fights whatever comes at you or at him, and carries a lantern at night (his light, not yours: it doesn't give you away). Guarding, he holds the ground round his spot. If he goes down, get to him with a bandage or a first aid kit and hold E: he bleeds out in three minutes, and then he's gone till the next dawn, when he limps back to your bed. Under one-life rules he doesn't come back."],
+	["Ezra Vane", "A convict from two drops before yours, a lineman before the Program got him. He is holed up in his line truck by the power line, out in the timber, with a broken leg: bring him a bandage, a first aid kit or painkillers and he walks with you. Talk to him (E) to give orders: follow, stay here, guard here, gather, fetch, give me what you carry, store at base; [H] whistles him to follow or to stay. Look at the spot or the thing first: he gathers round what you last looked at (wood, stone or fibre, into his own pack: twelve slots and two logs on his shoulder) and fetches it. His trees count half for your XP and directives. Following, he fights whatever comes at you or at him, and carries a lantern at night (his light, not yours: it doesn't give you away). Guarding, he holds the ground round his spot. If he goes down, get to him with a bandage or a first aid kit and hold E: he bleeds out in three minutes, and then he's gone till the next dawn, when he limps back to your bed. Under one-life rules he doesn't come back."],
 	["Your record", "Everything you survive teaches you something: Hollowed put down, places searched, logs set, things made, buildings cleared, a Hum lived through. Each level is a point to spend in the Record — on an attribute, or on a perk once its attribute is high enough. The Cordon notices too: the longer you last and the more you learn, the worse the Hollowed that come for you, and the better what you find."],
 ]
+## Survival pages the loading screen never shows: they give away a find (a person, a people) that
+## the player should meet in the world first. The manual still has them.
+const TIPS_NOT_WHILE_LOADING: PackedStringArray = ["Ezra Vane", "The Ashen"]
+
+
+## The Survival pages the loading screen rotates through ([title, text]).
+static func loading_tips() -> Array[Array]:
+	var out: Array[Array] = []
+	for t: Array in TIPS:
+		if not TIPS_NOT_WHILE_LOADING.has(str(t[0])):
+			out.append(t)
+	return out
+
+
 ## Attribute display order (the data is sorted by id).
 const ATTR_ORDER: PackedStringArray = ["sinew", "grit", "keen", "quiet", "wits"]
 ## Perk/attribute effect keys -> [format, scale] for the Record tab.
@@ -53,6 +67,8 @@ var _selected: Variant = null
 func _ready() -> void:
 	# In the tree already: plain set_anchors_preset() would keep the 0x0 rect (offsets follow).
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# The paper theme (ADR-0063): disabled entries stay in dim ink, never Godot's white.
+	theme = UiStyle.paper_theme()
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	var dim := ColorRect.new()
@@ -87,20 +103,21 @@ func _ready() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override(&"separation", 12)
 	book.add_child(v)
-	var title := Label.new()
-	title.text = "REMAND PROGRAM — FIELD MANUAL  (rev. 3)"
-	title.add_theme_font_size_override(&"font_size", 24)
-	title.add_theme_color_override(&"font_color", INK)
+	var title := UiStyle.label("REMAND PROGRAM — FIELD MANUAL  (rev. 3)", &"HeadingLabel")
 	v.add_child(title)
 	_tabs = HBoxContainer.new()
-	_tabs.add_theme_constant_override(&"separation", 18)
+	_tabs.add_theme_constant_override(&"separation", 4)
 	v.add_child(_tabs)
-	for t: Array in [["build", "Blueprints"], ["record", "Record"], ["notes", "Notes found"], ["tips", "Survival"]]:
+	var group := ButtonGroup.new()
+	for t: Array in [["build", "Blueprints"], ["journal", "Journal"], ["record", "Record"], ["notes", "Notes found"], ["tips", "Survival"]]:
 		var b := Button.new()
 		b.text = t[1]
-		b.flat = true
-		b.add_theme_color_override(&"font_color", INK)
-		b.add_theme_font_size_override(&"font_size", 18)
+		b.name = "Tab_" + str(t[0])
+		b.toggle_mode = true
+		b.button_group = group
+		b.focus_mode = Control.FOCUS_NONE
+		b.theme_type_variation = &"ListButton"
+		b.add_theme_font_size_override(&"font_size", 19)
 		b.pressed.connect(_set_tab.bind(str(t[0])))
 		_tabs.add_child(b)
 	var h := HBoxContainer.new()
@@ -122,11 +139,13 @@ func _ready() -> void:
 	_detail.bbcode_enabled = true
 	_detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_detail.add_theme_color_override(&"default_color", INK)
-	_detail.add_theme_font_size_override(&"normal_font_size", 17)
+	_detail.add_theme_font_size_override(&"normal_font_size", 18)
+	_detail.add_theme_font_override(&"bold_font", UiStyle.bold_font())
 	right.add_child(_detail)
 	_action = Button.new()
 	_action.text = "Lay it out"
-	_action.custom_minimum_size = Vector2(200, 40)
+	_action.theme_type_variation = &"PrimaryButton"
+	_action.custom_minimum_size = Vector2(240, 44)
 	_action.pressed.connect(_on_action)
 	right.add_child(_action)
 	Events.ui_modal_closed.connect(func(id: StringName) -> void:
@@ -136,24 +155,60 @@ func _ready() -> void:
 	Events.player_progressed.connect(func(_pid: StringName) -> void:
 		if _open and _tab == "record":
 			_refresh())
+	# The tutorial backend's signal (hub contract); connected only once it exists.
+	if Events.has_signal(&"tutorial_changed"):
+		Events.connect(&"tutorial_changed", func() -> void:
+			if _open and _tab == "journal":
+				_refresh())
 
 
 func _set_tab(t: String) -> void:
 	_tab = t
+	_mark_tab(t)
 	_selected = null
 	_refresh()
+	_select_first()
+
+
+## Lights one tab. set_pressed_no_signal() doesn't release the group's other buttons, so a manual
+## opened on Blueprints after the Journal showed both lit.
+func _mark_tab(t: String) -> void:
+	for c: Node in _tabs.get_children():
+		(c as Button).set_pressed_no_signal(c.name == "Tab_" + t)
+
+
+## A list tab opens on its first page, not on an empty right-hand side.
+func _select_first() -> void:
+	if _selected != null or not (_tab in ["build", "tips", "notes"]):
+		return
+	for c: Node in _list.get_children():
+		var b: Button = c as Button
+		if b != null and b.visible:
+			b.pressed.emit()
+			return
+
+
+## The tab lit now (tests).
+func lit_tabs() -> PackedStringArray:
+	var out: PackedStringArray = []
+	for c: Node in _tabs.get_children():
+		if (c as Button).button_pressed:
+			out.append(String(c.name).trim_prefix("Tab_"))
+	return out
 
 
 func open(tab: String = "build") -> void:
 	_tab = tab
+	_mark_tab(tab)
 	_open = true
 	visible = true
 	_selected = null
 	_refresh()
+	_select_first()
 	var ui: Node = get_parent()
 	if ui != null and ui.has_method(&"push_modal"):
 		ui.call(&"push_modal", &"field_manual")
-	Audio.play_2d(&"ui/page_turn", -6.0)
+	Audio.play_2d(&"ui/page_turn", UiStyle.level("page_turn", -6.0))
 
 
 func close() -> void:
@@ -204,19 +259,26 @@ func _refresh() -> void:
 		"notes":
 			if p == null or p.read_notes.is_empty():
 				_header("Nothing yet. People leave notes. Read them.")
-			for nid: Variant in (p.read_notes.keys() if p != null else []):
-				var n: NoteDef = Content.get_def(&"note", StringName(str(nid))) as NoteDef
-				if n != null:
-					_entry(n.title, n, true)
+			# By where they were found, the latest place first; never by what they reveal.
+			for g: Dictionary in notes_by_place(p.read_notes.keys() if p != null else [], p.notes_found if p != null else {}):
+				_header("%s  (%d)" % [g["where"], (g["notes"] as Array).size()])
+				for nid: StringName in g["notes"]:
+					var n: NoteDef = Content.get_def(&"note", nid) as NoteDef
+					if n != null:
+						_entry(n.title, n, true)
 		"record":
 			_record_list(p)
 		"tips":
 			for t: Array in TIPS:
 				_entry(t[0], t, true)
+		"journal":
+			_journal_list()
 	if _selected != null:
 		_select(_selected)
 	elif _tab == "record":
 		_select("record")
+	elif _tab == "journal":
+		_select("journal")
 
 
 func _header(text: String) -> void:
@@ -232,9 +294,9 @@ func _entry(text: String, payload: Variant, enabled: bool) -> void:
 	b.text = "  " + text
 	b.flat = true
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.theme_type_variation = &"ListButton"
 	b.add_theme_color_override(&"font_color", INK if enabled else INK_DIM)
-	b.add_theme_color_override(&"font_hover_color", Color(0.5, 0.15, 0.08))
-	b.add_theme_font_size_override(&"font_size", 17)
+	b.add_theme_font_size_override(&"font_size", 18)
 	b.pressed.connect(_select.bind(payload))
 	_list.add_child(b)
 
@@ -262,6 +324,11 @@ func _select(payload: Variant) -> void:
 	elif payload is NoteDef:
 		var n: NoteDef = payload
 		_detail.text = "[b][font_size=22]%s[/font_size][/b]\n[i]%s[/i]\n\n%s" % [n.title, n.author, n.body]
+		# Read it on its own sheet, in its own hand (the NoteReader over the manual).
+		var ui: Node = get_parent()
+		if ui != null and ui.get(&"reader") != null and not (ui.get(&"reader") as NoteReader).is_open():
+			var p2: PlayerState = Game.local_player()
+			(ui.get(&"reader") as NoteReader).show_note(n, p2.notes_found.get(n.id, {}) if p2 != null else {})
 	elif payload is Array:
 		_detail.text = "[b][font_size=22]%s[/font_size][/b]\n\n%s" % [payload[0], payload[1]]
 	elif payload is AttributeDef:
@@ -270,9 +337,19 @@ func _select(payload: Variant) -> void:
 		_perk_detail(payload as PerkDef)
 	elif payload is String and payload == "record":
 		_record_detail()
+	elif payload is String and payload == "journal":
+		_journal_detail({})
+	elif payload is Dictionary and (payload as Dictionary).has("journal"):
+		_journal_detail(payload)
 
 
 func _on_action() -> void:
+	if _tab == "journal":
+		var t: Object = tutorial()
+		if t != null:
+			Game.execute(&"tutorial.set_enabled", {"enabled": not bool(t.call(&"is_enabled"))})
+			_refresh()
+		return
 	if _selected is AttributeDef:
 		Game.execute(&"progression.raise_attribute", {"attribute": String((_selected as AttributeDef).id)})
 		return
@@ -285,6 +362,144 @@ func _on_action() -> void:
 			close()
 			Events.player_status_message.emit("Place the %s — [%s] place · [%s] rotate · [%s] cancel" % [(_selected as BlueprintDef).display_name,
 				PlayerInteraction.key_label(&"attack"), PlayerInteraction.key_label(&"rotate_piece"), PlayerInteraction.key_label(&"cancel")], &"info")
+
+
+## Notes grouped by where they were found: [{where, notes: [id]}], places in the order of their
+## latest find (newest first), notes newest first within a place; notes with no place (read
+## before places were kept) last, under "Earlier". Never ordered by story beat (no spoilers).
+static func notes_by_place(read: Array, found: Dictionary) -> Array[Dictionary]:
+	var groups: Dictionary = {}
+	var latest: Dictionary = {}
+	var order_of := func(id: StringName) -> int: return int((found.get(id, {}) as Dictionary).get("order", -1))
+	for v: Variant in read:
+		var id := StringName(str(v))
+		var where: String = str((found.get(id, {}) as Dictionary).get("where", ""))
+		if where == "":
+			where = "Earlier"
+		if not groups.has(where):
+			groups[where] = []
+			latest[where] = -1
+		(groups[where] as Array).append(id)
+		latest[where] = maxi(int(latest[where]), order_of.call(id))
+	var places: Array = groups.keys()
+	places.sort_custom(func(a: String, b: String) -> bool:
+		if (a == "Earlier") != (b == "Earlier"):
+			return b == "Earlier"
+		return int(latest[a]) > int(latest[b]))
+	var out: Array[Dictionary] = []
+	for w: String in places:
+		var ids: Array = groups[w]
+		ids.sort_custom(func(a: StringName, b: StringName) -> bool: return int(order_of.call(a)) > int(order_of.call(b)))
+		out.append({"where": w, "notes": ids})
+	return out
+
+
+# --- Journal tab (the first days' tutorial, hub contract) ------------------------------------------
+
+## The world's TutorialTracker (world.tutorial), or null in a world without one.
+static func tutorial() -> Object:
+	var w: Node = Game.world
+	if w == null or w.get(&"tutorial") == null:
+		return null
+	return w.get(&"tutorial")
+
+
+## A step's body with its key placeholders named ({key:interact} -> [E]), the prompts' way.
+static func render_body(_t: Object, text: String) -> String:
+	return TutorialTracker.render_body(text)
+
+
+## Whether the world setting allows the tutorial at all (the toggle is greyed out when not).
+static func tutorial_allowed() -> bool:
+	return GameRules.current() == null or GameRules.current().flag("tutorial")
+
+
+## Where the distress call came from, while it still matters: received, not skipped (it has
+## text), and Ezra not yet with you. Empty otherwise.
+static func live_distress() -> Dictionary:
+	var t: Object = tutorial()
+	if t == null:
+		return {}
+	var d: Dictionary = t.call(&"distress") as Dictionary
+	if not bool(d.get("received", false)) or str(d.get("text", "")) == "":
+		return {}
+	var comp: Node = Game.world.get(&"companion") if Game.world != null else null
+	if comp != null and comp.has_method(&"recruited") and bool(comp.call(&"recruited")):
+		return {}
+	return d
+
+
+func _journal_list() -> void:
+	var t: Object = tutorial()
+	if t == null:
+		_header("No journal in this world.")
+		return
+	var on: bool = bool(t.call(&"is_enabled"))
+	_header("The first days" if on else "The first days (guidance off)")
+	for st: Dictionary in (t.call(&"steps") as Array):
+		var done: bool = bool(st.get("done", false))
+		var current: bool = bool(st.get("current", false))
+		var mark: String = "✓ " if done else ("> " if current else "· ")
+		var label: String = mark + str(st.get("title", ""))
+		if current and int(st.get("count", 1)) > 1:
+			label += "  (%d / %d)" % [int(st.get("progress", 0)), int(st.get("count", 1))]
+		var payload: Dictionary = st.duplicate()
+		payload["journal"] = true
+		_entry(label, payload, not done)
+		if current:
+			var b: Button = _list.get_child(_list.get_child_count() - 1) as Button
+			b.add_theme_color_override(&"font_color", UiStyle.INK_MISSING)
+	if not live_distress().is_empty():
+		_header("On the tether")
+		_entry("A distress call", {"journal": true, "distress": true}, true)
+
+
+func _journal_detail(st: Dictionary) -> void:
+	var t: Object = tutorial()
+	_action.visible = t != null
+	_action.text = "Turn guidance off" if t != null and bool(t.call(&"is_enabled")) else "Turn guidance on"
+	_action.disabled = not tutorial_allowed()
+	if not tutorial_allowed():
+		_action.text = "Guidance is off for this world"
+	if t == null:
+		_detail.text = ""
+		return
+	if bool(st.get("distress", false)):
+		var d: Dictionary = t.call(&"distress") as Dictionary
+		_detail.text = "[b][font_size=22]A distress call[/font_size][/b]\n[i]%s[/i]\n\n%s" % [distress_bearing(d.get("position", Vector3.ZERO)), str(d.get("text", ""))]
+		return
+	if st.is_empty():
+		for s2: Dictionary in (t.call(&"steps") as Array):
+			if bool(s2.get("current", false)):
+				st = s2
+		if st.is_empty():
+			_detail.text = "[b][font_size=22]The first days[/font_size][/b]\n\nEvery step is done. The rest is yours."
+			return
+	var state: String = "Done." if bool(st.get("done", false)) else ("%d / %d" % [int(st.get("progress", 0)), int(st.get("count", 1))])
+	_detail.text = "[b][font_size=22]%s[/font_size][/b]   [color=%s]%s[/color]\n\n%s" % [str(st.get("title", "")), UiStyle.hex(UiStyle.INK_DIM),
+		state, render_body(t, str(st.get("body", "")))]
+
+
+## Where a point is from the player, in words: "north-west, 420 m".
+static func distress_bearing(at: Vector3) -> String:
+	var w: Node = Game.world
+	if w == null or w.get(&"player") == null:
+		return ""
+	return bearing_words((w.player as Node3D).global_position, at)
+
+
+const COMPASS: PackedStringArray = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"]
+
+
+## Compass words and distance from `from` to `to` (-Z is north, +X east).
+static func bearing_words(from: Vector3, to: Vector3) -> String:
+	var d := Vector2(to.x - from.x, to.z - from.z)
+	if d.length() < 15.0:
+		return "here"
+	var ang: float = fposmod(atan2(d.x, -d.y), TAU)
+	var i: int = int(round(ang / (TAU / 8.0))) % 8
+	var m: float = d.length()
+	return "%s, %s" % [COMPASS[i], ("%d m" % int(round(m / 10.0) * 10)) if m < 1000.0 else ("%.1f km" % (m / 1000.0))]
 
 
 # --- Record tab ---------------------------------------------------------------------------------

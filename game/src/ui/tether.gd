@@ -124,6 +124,9 @@ func _build_screen() -> void:
 	_hum = _lcd_label(Vector2(16, 290), 16)
 	_hum.size = Vector2(340, 100)
 	_hum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# The full map (WorldMap) is a key away: say which.
+	var hint: Label = _lcd_label(Vector2(370, 38), 13)
+	hint.text = "[%s] FULL MAP" % PlayerInteraction.key_label(&"map")
 	_map = TextureRect.new()
 	_map.position = Vector2(370, 60)
 	_map.size = Vector2(256, 256)
@@ -157,7 +160,7 @@ func toggle() -> void:
 		visible = true
 		_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 		_refresh()
-		Audio.play_2d(&"ui/tether_beep", -10.0)
+		Audio.play_2d(&"ui/tether_beep", UiStyle.level("tether_beep", -10.0))
 	elif _on_arms:
 		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 
@@ -453,6 +456,13 @@ func _draw_markers() -> void:
 				_markers.draw_circle(mp, 5.0, Color(0.5, 1.0, 0.55))
 			else:
 				_markers.draw_arc(mp, 5.5, 0.0, TAU, 18, Color(1.0, 0.85, 0.3), 2.0)
+	# The distress call (the first days' tutorial): a pulsing ring, pinned to the edge off the map.
+	var d: Dictionary = FieldManual.live_distress()
+	if not d.is_empty():
+		var dp: Vector2 = _to_map(rt, d.get("position", Vector3.ZERO)).clamp(lim.position, lim.end)
+		var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.006)
+		_markers.draw_arc(dp, 5.0 + 3.0 * pulse, 0.0, TAU, 20, Color(1.0, 0.3, 0.25), 2.0)
+		_markers.draw_circle(dp, 2.5, Color(1.0, 0.3, 0.25))
 	var me: Vector2 = _to_map(rt, pl.global_position)
 	var yaw: float = pl.global_rotation.y
 	var fwd := Vector2(-sin(yaw), -cos(yaw))

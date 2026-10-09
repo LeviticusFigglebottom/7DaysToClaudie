@@ -54,7 +54,13 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## 10: (session 3's caves.)
 ## 11: round 5 of the wilderness set pieces (ADR-0053): more `late` entries (the treehouse holdout,
 ## the fish hatchery, the hot springs bathhouse); the places before them stay where they were.
-const VERSION: int = 11
+## 12: the lake and river valley caps are cut into the macro grid (RwgTerrain._valley_caps), so
+## roads, streets and lots are graded from the ground the composer makes (player report 4); only a
+## town's core turns meadow in the biome map (birch round it, the forest past its lots).
+## 13: the lift's crash site (`crash` site, the hub's lift3_crash_site): once, 600-1600 m out from
+## the drop site toward the nearest map edge (where the lift came in over), its nose to the drop;
+## placed last from its own stream, so every other place stays where it was.
+const VERSION: int = 13
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -84,6 +90,8 @@ var paths: Array[Dictionary] = []
 var drop: Dictionary = {}
 ## {id, at: Vector2, radius, strength, edge, cell}
 var blooms: Array[Dictionary] = []
+## Forest caves (ADR-0056): {id, cell, style, mouth: Vector2}, region `cave` features.
+var caves: Array[Dictionary] = []
 ## cell -> {cell, id, name, biome, danger, rect}
 var regions: Dictionary = {}
 var biome_cols: int = 0
@@ -289,6 +297,8 @@ func run() -> void:
 	_name_regions()
 	_finalize_town_heights()
 	_mark("town_heights")
+	_caves()
+	_mark("caves")
 	_assign_authored()
 	_mark("authored")
 	_stage("Mapping", 1.0)
@@ -492,7 +502,10 @@ func _town_sites() -> void:
 		kinds.clear()
 		for ts: Variant in test_sites:
 			kinds.append(str(ts["kind"]))
-	for ki: int in kinds.size():
+	# A while loop: a class with no room on this land retries one class smaller at the end.
+	var ki: int = -1
+	while ki + 1 < kinds.size():
+		ki += 1
 		var kind: String = kinds[ki]
 		_sub("Choosing town sites", 0.3, 0.34, float(ki) / kinds.size())
 		if not test_sites.is_empty():
@@ -573,6 +586,10 @@ func _town_sites() -> void:
 					best = {"center": c}
 		if best.is_empty():
 			warnings.append("no room for a %s" % kind)
+			# Bigger towns (VERSION 12) need wider level land; rather than lose the town, try one
+			# class smaller once the others are placed.
+			if KINDS.find(kind) > 0 and test_sites.is_empty():
+				kinds.append(KINDS[KINDS.find(kind) - 1])
 			continue
 		var ti: int = towns.size()
 		var name: String = str(pool.pop_at(r.randi() % pool.size())) if not pool.is_empty() else "Town %d" % (ti + 1)
@@ -1529,20 +1546,28 @@ func _biome_map() -> void:
 			var s: float = terrain.slope(p.x, p.y)
 			var wd: float = water_at(p)
 			var wet: float = 1.0 - smoothstep(0.0, 260.0, wd)
+			# town_ring: a town's disc and its fringe (no fen there). Only the core is cleared to meadow
+			# (the square, the shops); round it second-growth birch, and past the lots the world's own
+			# forest, so the trees come up to the yards (player report 4: a town read as a cleared
+			# patch in the forest when its whole disc and 90 m round it turned meadow).
 			var town_ring: float = 0.0
+			var town_core: float = 0.0
+			var town_edge: float = 0.0
 			for tw: Dictionary in towns:
 				var d: float = (tw["center"] as Vector2).distance_to(p)
 				var tr: float = float(tw["radius"])
-				# Cleared ground over a town's disc (yards, pasture), then the trees close in again.
+				var core: float = float(tw.get("core", tr * 0.4))
 				town_ring = maxf(town_ring, 1.0 - smoothstep(tr * 0.7, tr + 90.0, d))
+				town_core = maxf(town_core, 1.0 - smoothstep(core * 0.5, core * 1.1, d))
+				town_edge = maxf(town_edge, (1.0 - smoothstep(tr * 0.8, tr + 40.0, d)) * smoothstep(core * 0.6, core * 1.2, d))
 			var nc: float = noises[0].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nbr: float = noises[1].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nm: float = noises[2].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var nr: float = noises[3].get_noise_2d(p.x, p.y) * 0.5 + 0.5
 			var sc: Array[float] = [
 				w[0] * (0.55 + 0.6 * nc),
-				w[1] * (0.3 + 0.85 * nbr) * (0.8 + 0.6 * wet),
-				w[2] * (0.25 + 0.95 * nm) * (1.25 - 0.9 * smoothstep(0.05, 0.22, s)) * (1.0 - 0.6 * e) + town_ring * (0.6 + w[2]),
+				w[1] * (0.3 + 0.85 * nbr) * (0.8 + 0.6 * wet) + town_edge * (0.35 + w[1]) * nbr,
+				w[2] * (0.25 + 0.95 * nm) * (1.25 - 0.9 * smoothstep(0.05, 0.22, s)) * (1.0 - 0.6 * e) + town_core * (0.6 + w[2]),
 				# Bare rock on the heights and the steepest ground only: the composer already turns
 				# slopes past ~35 degrees to rock, and highlands should keep their forested sides.
 				w[3] * (smoothstep(0.62, 0.97, e) * 1.5 + smoothstep(0.32, 0.65, s) * 0.8 + 0.1 * nr),
@@ -1947,6 +1972,18 @@ func _places() -> void:
 		for k4: int in _pool_count(ce, rc, density, area16):
 			if not _place_one(ce, Vector2(cpd.footprint), rc, wcfg):
 				warnings.append("no spot for %s" % cpd.id)
+	# The lift's crash site (VERSION 13) last of all, from its own stream.
+	for e5: Variant in pool:
+		var xe: Dictionary = e5
+		if str(xe.get("site", "")) != "crash" or int(xe.get("min_danger", 1)) > max_danger:
+			continue
+		var xpd: PoiDef = db.call(&"get_def", &"poi", StringName(str(xe.get("poi", "")))) as PoiDef if db != null else null
+		if xpd == null:
+			continue
+		var rx := rng("places:crash:%s" % xpd.id)
+		for k5: int in _pool_count(xe, rx, density, area16):
+			if not _place_one(xe, Vector2(xpd.footprint), rx, wcfg):
+				warnings.append("no spot for %s" % xpd.id)
 
 
 ## How many of a pool entry a world gets: its density per region times the map's regions (one more
@@ -2044,6 +2081,24 @@ func _candidate(site: String, fp: Vector2, r: RandomNumberGenerator, pad_len: fl
 				return {}
 			var rot5: float = 15.0 * float(r.randi() % 24)
 			return {"origin": at - (fp * 0.5).rotated(deg_to_rad(rot5)), "rot": rot5}
+		"crash":
+			# The lift came in over the nearest map edge and went down short of the drop: a point
+			# `ring` m out from the drop site toward that edge (a little either side), its nose (the
+			# plan's -Z) to the drop and its swath trailing back the way it came.
+			var dp6: Vector2 = drop.get("pos", Vector2.ZERO)
+			var half6: float = size * 512.0
+			var edges: Array[Vector2] = [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1)]
+			var dists: Array[float] = [dp6.x + half6, half6 - dp6.x, dp6.y + half6, half6 - dp6.y]
+			var out6: Vector2 = edges[dists.find(dists.min())]
+			# Most tries toward that edge; the rest from anywhere round (a drop site hard by the edge
+			# leaves no room out that way).
+			var spread6: float = 35.0 if r.randf() < 0.6 else 180.0
+			var at6: Vector2 = dp6 + out6.rotated(deg_to_rad(r.randf_range(-spread6, spread6))) * r.randf_range(ring.x, ring.y)
+			if absf(at6.x) > lim or absf(at6.y) > lim or water_at(at6) < 40.0:
+				return {}
+			var to_drop: Vector2 = (dp6 - at6).normalized()
+			var rot6: float = snappedf(rad_to_deg(to_drop.angle()) + 90.0, 0.1)
+			return {"origin": at6 - (fp * 0.5).rotated(deg_to_rad(rot6)), "rot": rot6}
 		"mine":
 			# A hillside: of a few dry points steep enough, the one where the ground rises most from
 			# the pad's middle to 20 m into the hill. Local +X runs uphill (the plan's levels run on
@@ -2329,7 +2384,8 @@ func _trader_posts() -> void:
 		var best: Dictionary = {}
 		# Just outside the town, farther out where a bend, a slope, water or the town's outer lots
 		# leave no room at the first ring.
-		for extra: float in [30.0, 70.0, 120.0, 190.0]:
+		# (Bigger towns, VERSION 12, farm out further along their roads: up to past the outskirts.)
+		for extra: float in [30.0, 70.0, 120.0, 190.0, 280.0, 380.0, 480.0]:
 			var ring: float = float(tw["radius"]) + safe + extra
 			for i: int in roads.size():
 				if not str(roads[i]["class"]) in ["highway", "county"]:
@@ -2350,6 +2406,28 @@ func _trader_posts() -> void:
 					prev = d
 			if not best.is_empty():
 				break
+		if best.is_empty():
+			# No crossing of those rings fits (a bigger town's farms along its roads, a bend, the
+			# map's edge): anywhere along a highway, county road or track out to 900 m past the
+			# town, nearest and on the bigger roads best.
+			var lo: float = float(tw["radius"]) + safe + 30.0
+			for i2: int in roads.size():
+				var cls2: String = str(roads[i2]["class"])
+				if not cls2 in ["highway", "county", "track"]:
+					continue
+				var line2: Polyline2 = roads[i2]["line"]
+				var s2: float = 0.0
+				while s2 + 12.0 <= line2.total_length:
+					s2 += 12.0
+					var d2: float = c.distance_to(line2.point_at(s2))
+					if d2 < lo or d2 > lo + 900.0:
+						continue
+					for side2: float in [1.0, -1.0]:
+						var cand2: Dictionary = _post_candidate(i2, s2, side2, safe)
+						if not cand2.is_empty():
+							cand2["score"] = float(cand2["score"]) + (d2 - lo) * 0.02 + (8.0 if cls2 == "track" else 0.0) + r.randf()
+							if best.is_empty() or float(cand2["score"]) < float(best["score"]):
+								best = cand2
 		if best.is_empty():
 			warnings.append("no trader post by %s" % tw["name"])
 			continue
@@ -2487,6 +2565,104 @@ func _bloom() -> void:
 				blooms.append({"id": "bloom_%s_%d" % [cell.to_lower(), k], "at": p, "radius": snappedf(r.randf_range(float(rr[0]), float(rr[1])), 1.0),
 					"strength": snappedf(clampf(0.45 + 0.15 * (dg - 3) + r.randf() * 0.25, 0.3, 1.0), 0.01), "edge": snappedf(r.randf_range(0.45, 0.75), 0.01), "cell": cell})
 				break
+
+
+# --- Caves -----------------------------------------------------------------------------------------
+
+## Forest caves (ADR-0056, docs/CAVES_PLAN.md WS-E): a few grottos and rock shelters per region in
+## its steep forest and rocky ground, off roads, towns, places and the drop site. Last, from its own
+## stream, and they change nothing else (a cave is carved into the volume at load; the heights
+## stay), so every other place stays where it was. Each is checked here with the real planner over
+## the composer's reference ground. The game plans it again from the composed region (the mouth
+## settles within `search` m, the shape from CaveSites.shape_seed(world id, cave id)) and leaves out
+## one that no longer fits.
+func _caves() -> void:
+	var ccfg: Dictionary = tun.get("caves", {})
+	var per: float = float(ccfg.get("per_region", 0.0)) * settings.num("wilderness")
+	if per <= 0.0:
+		return
+	var r := rng("caves")
+	var ground: RefGround = _ref if _ref != null else RefGround.new(terrain, settings.seed & 0x7fffffff, size)
+	var height_fn: Callable = ground.h
+	var db: Node = ContentDB.instance
+	var cfg: Dictionary = db.call(&"config", &"caves") if db != null else CavePlan.DEFAULTS
+	var styles: Dictionary = ccfg.get("styles", {"grotto": 1.0})
+	var biomes: Array = ccfg.get("biomes", ["conifer_forest", "birch_grove", "rocky_slope", "burnt_forest"])
+	var clear: Dictionary = ccfg.get("clearance", {})
+	var cmax: int = int(ccfg.get("max_per_region", 2))
+	var inset: float = float(ccfg.get("inset", 96.0))
+	var tries: int = int(ccfg.get("tries", 24))
+	var search: float = float(ccfg.get("search", 12.0))
+	var style_cfg: Dictionary = cfg.get("styles", {})
+	var cells: Array = regions.keys()
+	cells.sort()
+	for cell: String in cells:
+		var want: int = mini(cmax, int(floor(per + r.randf())))
+		var rect: Rect2 = (regions[cell]["rect"] as Rect2).grow(-inset)
+		var made: int = 0
+		for attempt: int in tries:
+			if made >= want:
+				break
+			# Drawn every attempt whatever happens next, so one try's luck never shifts the next's.
+			var near := Vector2(r.randf_range(rect.position.x, rect.end.x), r.randf_range(rect.position.y, rect.end.y))
+			var pick: float = r.randf()
+			var style: String = _pick_style(styles, pick)
+			if not biomes.has(biome_at(near)) or not _cave_clear(near, clear):
+				continue
+			var slope: float = float((style_cfg.get(style, {}) as Dictionary).get("min_slope_deg", cfg.get("min_slope_deg", 18.0)))
+			var got: Dictionary = CaveSites.settle_mouth(height_fn, near, NAN, search, {"min_slope_deg": slope})
+			if got.is_empty():
+				continue
+			var mp: Vector3 = got["pos"]
+			# Snapped as region.json will hold it, so the plan checked is the one the game makes.
+			var m := Vector2(snappedf(mp.x, 0.1), snappedf(mp.z, 0.1))
+			if not biomes.has(biome_at(m)) or not _cave_clear(m, clear):
+				continue
+			var id: String = "cave_%s_%d" % [cell.to_lower(), made]
+			var spec: Dictionary = {"id": id, "style": style, "mouth": [m.x, m.y], "heading": "uphill", "search": search,
+				"region_id": str(regions[cell]["id"]), "region_rect": regions[cell]["rect"]}
+			# The shape the game will give it (CaveSites.from_region: per world and cave id).
+			if not CavePlan.build(spec, CaveSites.shape_seed(world_id, id), height_fn, cfg).ok:
+				continue
+			caves.append({"id": id, "cell": cell, "style": style, "mouth": m})
+			made += 1
+
+
+## A style by weight (tuning.caves.styles), `pick` in 0..1; keys in sorted order so the draw is stable.
+static func _pick_style(styles: Dictionary, pick: float) -> String:
+	var keys: Array = styles.keys()
+	keys.sort()
+	var total: float = 0.0
+	for k: String in keys:
+		total += float(styles[k])
+	var acc: float = 0.0
+	for k2: String in keys:
+		acc += float(styles[k2]) / maxf(total, 1e-6)
+		if pick <= acc:
+			return k2
+	return str(keys[keys.size() - 1]) if not keys.is_empty() else "grotto"
+
+
+## Whether a cave mouth at p keeps off what it must (tuning.caves.clearance, m): water, towns and
+## their lots, roads, the drop site, places, trader posts and the other caves.
+func _cave_clear(p: Vector2, c: Dictionary) -> bool:
+	if water_at(p) < float(c.get("water", 30.0)) or _town_distance(p) < float(c.get("town", 150.0)) or _near_lots(p, float(c.get("lots", 60.0))):
+		return false
+	if not roads.is_empty() and float(nearest_road(p)[0]) < float(c.get("road", 40.0)):
+		return false
+	if not drop.is_empty() and (drop["pos"] as Vector2).distance_to(p) < float(c.get("drop", 200.0)):
+		return false
+	var place_gap: float = float(c.get("place", 80.0))
+	for pl: Dictionary in places:
+		if (pl["center"] as Vector2).distance_to(p) < place_gap:
+			return false
+	for pt: Dictionary in posts:
+		if (pt["pos"] as Vector2).distance_to(p) < place_gap:
+			return false
+	for cv: Dictionary in caves:
+		if (cv["mouth"] as Vector2).distance_to(p) < float(c.get("cave", 200.0)):
+			return false
+	return true
 
 
 # --- Names -----------------------------------------------------------------------------------------
@@ -2716,6 +2892,10 @@ func region_json(cell: String) -> Dictionary:
 		if str(bl["cell"]) == cell:
 			feats.append({"type": "bloom", "id": bl["id"], "at": Terrain._arr(PackedVector2Array([bl["at"]]))[0], "radius": bl["radius"],
 				"strength": bl["strength"], "edge": bl["edge"]})
+	for cv: Dictionary in caves:
+		if str(cv["cell"]) == cell:
+			feats.append({"type": "cave", "id": cv["id"], "style": cv["style"], "mouth": Terrain._arr(PackedVector2Array([cv["mouth"]]))[0],
+				"heading": "uphill", "search": float((tun.get("caves", {}) as Dictionary).get("search", 12.0))})
 	# The fen's pools, and the splat layers burnt forest and fen need (ADR-0041).
 	feats.append_array(fen_pools(cell))
 	var out: Dictionary = {

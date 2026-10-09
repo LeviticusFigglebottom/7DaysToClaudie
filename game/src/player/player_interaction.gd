@@ -101,10 +101,8 @@ func _placing() -> bool:
 ## The key or mouse button an input action is bound to now (rebinds included), named as the
 ## Controls screen names it ("X", "Middle mouse"; "?" when it has neither), for prompts.
 static func key_label(action: StringName) -> String:
-	for spec: Variant in Settings.bindings(String(action)):
-		if spec is Dictionary and ((spec as Dictionary).has("key") or (spec as Dictionary).has("mouse")):
-			return Settings.describe(spec)
-	return "?"
+	# The pad's button while a pad is in use (Settings.input_label, Presentation round 4).
+	return Settings.input_label(String(action))
 
 
 func _scan() -> void:

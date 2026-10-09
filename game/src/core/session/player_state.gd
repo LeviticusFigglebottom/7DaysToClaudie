@@ -21,7 +21,12 @@ var contracts: ContractLog
 var tutorial: TutorialProgress
 var spawn_point: Vector3 = Vector3.ZERO
 var has_spawn_point: bool = false
+## Where this player has been, for the map's fog of war (TD-014; an optional save field).
+var explored: ExploredMap = ExploredMap.new()
 var read_notes: Dictionary = {}
+## Where and when each note was found: note id -> {"where": String, "day": int, "order": int}
+## (the Field Manual groups them by place; an optional save field, round 4).
+var notes_found: Dictionary = {}
 var deaths: int = 0
 var kills: Dictionary = {}
 
@@ -68,6 +73,7 @@ func to_dict() -> Dictionary:
 		"progression": progression.to_dict(), "spawn": [spawn_point.x, spawn_point.y, spawn_point.z],
 		"has_spawn": has_spawn_point, "notes": read_notes.keys(), "deaths": deaths, "kills": kills,
 		"directives": directives.to_dict(), "contracts": contracts.to_dict(), "tutorial": tutorial.to_dict(),
+		"explored": explored.to_dict(), "notes_found": notes_found,
 	}
 
 
@@ -103,4 +109,12 @@ func from_dict(d: Dictionary) -> void:
 		tutorial.from_dict(d["tutorial"])
 	else:
 		tutorial.legacy = true
+	# Optional (round 4): a note read before has no place (the manual lists it under "Earlier").
+	notes_found = {}
+	var nf: Variant = d.get("notes_found", {})
+	if nf is Dictionary:
+		for k: Variant in (nf as Dictionary):
+			notes_found[StringName(str(k))] = nf[k]
+	# Optional (round 4): an older save has none, and the map reveals round the bed or drop site.
+	explored.from_dict(d.get("explored", {}))
 	refresh_derived()

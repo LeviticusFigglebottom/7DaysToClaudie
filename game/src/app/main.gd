@@ -25,8 +25,16 @@ func _ready() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if _handle_cli(args):
 		return
+	_style_menu()
 	_build_menu()
 	_show_notices()
+
+
+## A gamepad press with nothing focused focuses the first entry of what is open (the menu, New
+## Game, Options), so the menu can be driven by the pad alone.
+func _input(event: InputEvent) -> void:
+	if UiStyle.is_pad_event(event) and UiStyle.focus_first(self):
+		get_viewport().set_input_as_handled()
 
 
 func _handle_cli(args: PackedStringArray) -> bool:
@@ -87,30 +95,111 @@ static func _arg_value(args: PackedStringArray, key: String, default: String) ->
 	return args[i + 1] if i >= 0 and i + 1 < args.size() else default
 
 
+## The menu in the game's own style (ADR-0063): the kit theme, the title in the typewriter face,
+## the line under it in the margin hand, entries down the left over a dark wash so they read on
+## whatever the backdrop shows.
+func _style_menu() -> void:
+	theme = UiStyle.kit_theme()
+	# The flight over Larch Hollow behind the menu (it builds on a worker and fades in).
+	if Settings.menu_backdrop != "off":
+		var backdrop := MenuBackdrop.new()
+		backdrop.name = "Backdrop"
+		backdrop.mode = Settings.menu_backdrop
+		add_child(backdrop)
+		move_child(backdrop, 1)
+		backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var wash := TextureRect.new()
+	wash.name = "Wash"
+	var g := Gradient.new()
+	g.set_color(0, Color(0.02, 0.022, 0.02, 0.92))
+	g.set_color(1, Color(0.02, 0.022, 0.02, 0.0))
+	g.add_point(0.55, Color(0.02, 0.022, 0.02, 0.6))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.width = 256
+	gt.height = 4
+	wash.texture = gt
+	wash.stretch_mode = TextureRect.STRETCH_SCALE
+	wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(wash)
+	move_child(wash, 2 if has_node("Backdrop") else 1)
+	wash.anchor_right = 0.62
+	wash.anchor_bottom = 1.0
+	wash.offset_right = 0
+	wash.offset_bottom = 0
+	var title: Label = $Title
+	title.add_theme_font_override(&"font", UiStyle.heading_font())
+	title.add_theme_font_size_override(&"font_size", 104)
+	title.add_theme_color_override(&"font_color", UiStyle.KIT_TEXT)
+	title.add_theme_color_override(&"font_shadow_color", Color(0, 0, 0, 0.6))
+	title.add_theme_constant_override(&"shadow_offset_y", 3)
+	title.offset_top = 64
+	title.offset_bottom = 190
+	var sub: Label = $Subtitle
+	sub.add_theme_font_override(&"font", UiStyle.hand_font())
+	sub.add_theme_font_size_override(&"font_size", 34)
+	sub.add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
+	sub.offset_top = 182
+	sub.offset_bottom = 230
+	_list.offset_top = 290
+	_list.offset_right = 640
+	_list.add_theme_constant_override(&"separation", 2)
+	_status.theme_type_variation = &"DimLabel"
+	# The menu's own score (generated, music/menu), faded in.
+	var tune: AudioStream = Audio.stream(&"music/menu")
+	if tune != null:
+		var music := AudioStreamPlayer.new()
+		music.name = "Music"
+		music.stream = tune
+		music.bus = &"Music"
+		music.volume_db = -40.0
+		add_child(music)
+		music.play()
+		create_tween().tween_property(music, "volume_db", UiStyle.level("menu_music", -10.0), 4.0)
+
+
+## Save slots the QA runners write (smoke, tour, screenshots, probes); "qa_" marks any new one.
+## Players never see them on the menu; a developer does (the editor, or `--dev`).
+const QA_SLOTS: PackedStringArray = ["smoke", "tour", "screens", "perf", "intro_probe", "continue_check",
+	"rwg_shots", "exterior_qa", "aggro_probe", "stream_walk"]
+
+
+## Whether this run shows developer entries (QA saves, the slice demo): the editor's binary or
+## `-- --dev`. A packaged build shows a player's menu only.
+static func dev_menu(args: PackedStringArray) -> bool:
+	return OS.has_feature("editor") or args.has("--dev")
+
+
+## The slots the menu lists: everything for a developer, the player's own runs otherwise.
+static func menu_slots(slots: Array[Dictionary], dev: bool) -> Array[Dictionary]:
+	if dev:
+		return slots
+	var out: Array[Dictionary] = []
+	for s: Dictionary in slots:
+		var name: String = str(s.get("slot", ""))
+		if not QA_SLOTS.has(name) and not name.begins_with("qa_"):
+			out.append(s)
+	return out
+
+
 func _build_menu() -> void:
 	for c: Node in _list.get_children():
 		c.queue_free()
-	var slots: Array[Dictionary] = SaveSystem.list_slots()
+	var dev: bool = dev_menu(OS.get_cmdline_user_args())
+	var slots: Array[Dictionary] = menu_slots(SaveSystem.list_slots(), dev)
 	if not slots.is_empty():
 		_add_button("Continue (Day %d)" % int(slots[0].get("day", 1)), _load.bind(str(slots[0]["slot"])))
 	_add_button("New Game…", _open_new_game)
-	var demo: Button = _add_button("New Game — Vertical Slice demo (seed %d, Hum on night 3)" % SLICE_DEMO_SEED,
-		func() -> void: Game.start_new_game({"game_mode": "slice", "seed": SLICE_DEMO_SEED}))
-	demo.tooltip_text = "The curated demo run: the same run seed every time, so the same buildings, loot and Hum as the QA screenshots. New Game… rolls a fresh run."
+	var demo: Button = null
+	if dev:
+		demo = _add_button("Vertical Slice demo (dev)",
+			func() -> void: Game.start_new_game({"game_mode": "slice", "seed": SLICE_DEMO_SEED}))
+		demo.tooltip_text = ("The curated demo run (seed %d, the Hum on night 3): the same run seed every time," % SLICE_DEMO_SEED) + " so the same buildings, loot and Hum as the QA screenshots. New Game… rolls a fresh run."
 	_add_button("Random World…", _open_new_game.bind(true))
-	for s: Dictionary in slots:
-		var label: String = "Load %s — Day %d" % [str(s.get("slot", "?")).capitalize(), int(s.get("day", 1))]
-		if str(s.get("preset", "")) != "":
-			label += " · %s" % str(s["preset"]).capitalize()
-		if str(s.get("world_mode", "")) == "random":
-			label += " · Random world"
-		var b: Button = _add_button(label, _load.bind(str(s["slot"])))
-		# Save v7: a run whose world is neither on disk nor bundled in its slot gets a new world.
-		var warn: String = SaveSystem.world_warning(s)
-		if warn != "":
-			b.text += " · world missing"
-			b.tooltip_text = warn
+	if not slots.is_empty():
+		_add_button("Load…", _open_load.bind(slots))
 	_add_button("Options…", _open_options)
+	_add_button("The Intro", _play_intro)
 	_add_button("Quit", func() -> void: get_tree().quit())
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
 
@@ -153,16 +242,15 @@ func _show_notices() -> void:
 		return
 	var panel := PanelContainer.new()
 	panel.name = "Notices"
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.16, 0.1, 0.06, 0.92)
-	sb.border_color = Color(0.85, 0.6, 0.25)
-	sb.set_border_width_all(2)
-	sb.set_content_margin_all(16)
+	var sb: StyleBoxFlat = UiStyle.panel_box(false)
+	sb.border_color = UiStyle.RUST_BRIGHT
+	sb.set_content_margin_all(18)
 	panel.add_theme_stylebox_override(&"panel", sb)
 	var label := Label.new()
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size = Vector2(520, 0)
-	label.add_theme_color_override(&"font_color", Color(0.95, 0.85, 0.65))
+	label.add_theme_color_override(&"font_color", Color(0.95, 0.86, 0.68))
+	label.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE - 2)
 	label.text = "\n\n".join(notices)
 	panel.add_child(label)
 	add_child(panel)
@@ -188,6 +276,24 @@ func _open_new_game(random: bool = false) -> void:
 		_set_title_visible(true))
 
 
+## Every run as a card (thumbnail, day, place, play time, world; delete with confirm).
+func _open_load(slots: Array[Dictionary]) -> void:
+	var panel := LoadPanel.new()
+	panel.slots = slots
+	add_child(panel)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5
+	_list.visible = false
+	_set_title_visible(false)
+	panel.load_requested.connect(_load)
+	panel.closed.connect(func() -> void:
+		panel.queue_free()
+		_list.visible = true
+		_set_title_visible(true)
+		# A run deleted there leaves Continue and Load… pointing at it.
+		_build_menu())
+
+
 ## The big title would show beside (and under) the wide New Game panel.
 func _set_title_visible(on: bool) -> void:
 	for n: String in ["Title", "Subtitle", "Notices"]:
@@ -202,6 +308,24 @@ func _load(slot: String) -> void:
 		_status.text = "Could not load %s: %s." % [slot, SaveSystem.last_error]
 
 
+## Replays the new-game intro over the menu (ADR-0064).
+func _play_intro() -> void:
+	var intro := IntroPlayer.new()
+	add_child(intro)
+	_list.visible = false
+	var music: AudioStreamPlayer = get_node_or_null("Music") as AudioStreamPlayer
+	if music != null:
+		music.stream_paused = true
+	intro.finished.connect(func() -> void:
+		var tw := intro.create_tween()
+		tw.tween_property(intro, "modulate:a", 0.0, 0.8)
+		tw.tween_callback(intro.queue_free)
+		_list.visible = true
+		if music != null:
+			music.stream_paused = false)
+	intro.play({}, IntroPlayer.vars_for(null))
+
+
 func _open_options() -> void:
 	var panel := OptionsPanel.new()
 	add_child(panel)
@@ -214,7 +338,9 @@ func _open_options() -> void:
 func _add_button(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(420, 44)
+	b.theme_type_variation = &"MenuEntry"
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.custom_minimum_size = Vector2(520, 50)
 	b.pressed.connect(cb)
 	_list.add_child(b)
 	return b

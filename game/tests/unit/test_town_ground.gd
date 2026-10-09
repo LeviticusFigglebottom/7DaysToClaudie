@@ -2,7 +2,7 @@ extends GutTest
 ## A world town's ground (ADR-0047, TerrainComposer VERSION 12): `town` is painted on its streets (and
 ## the highway through it) and its square only, not over its whole disc; the ground between streets
 ## and yards keeps the world's biome; town ambience and spawns key on WorldDef.town_at instead; and a
-## yard's grass keeps off the largest authored building its lot may hold.
+## yard grows over its whole frame (VERSION 13; the house clears its own box at runtime).
 
 const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Generator := preload("res://src/worldgen/rwg/rwg_generator.gd")
@@ -117,7 +117,10 @@ func test_town_is_painted_on_streets_not_the_whole_disc() -> void:
 	assert_lt(float(disc_town) / maxf(1.0, disc), 0.6, "the disc is not one brown town paint")
 
 
-func test_yard_grass_keeps_off_the_largest_authored_footprint() -> void:
+## VERSION 13 (ADR-0059): a yard keeps its plants over its whole frame; the house the run stands there
+## clears its own box at runtime (VegetationManager._footprints, test_town_yards), so the composed
+## mask has plants under where a building may stand, and in every yard.
+func test_yards_grow_over_the_whole_frame() -> void:
 	assert_not_null(_rt)
 	if _rt == null:
 		return
@@ -150,7 +153,7 @@ func test_yard_grass_keeps_off_the_largest_authored_footprint() -> void:
 					grass += 1
 	gut.p("%d lots may hold an authored building; %d grass samples in yards" % [clipped, grass])
 	assert_gt(clipped, 0, "some lot may hold an authored building")
-	assert_eq(under, 0, "no yard grass under a footprint")
+	assert_gt(under, 0, "the yard grows where a building may stand (the house clears it at runtime)")
 	assert_gt(grass, 0, "yards keep their grass round the buildings")
 
 

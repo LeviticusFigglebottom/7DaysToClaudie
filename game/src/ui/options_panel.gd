@@ -18,7 +18,7 @@ const ACTIONS: Array = [
 	["sprint", "Sprint"], ["crouch", "Crouch"], ["jump", "Jump / vault"], ["interact", "Interact (hold to search)"],
 	["attack", "Use / attack / place"], ["block", "Block / consume"], ["aim", "Aim (guns)"], ["reload", "Reload"], ["light", "Light"], ["inspect", "Inspect held item"], ["drop", "Drop"],
 	["companion_order", "Companion: follow / stay"],
-	["inventory", "Salvage roll (inventory)"], ["guidebook", "Field manual"], ["tracker", "Tether"],
+	["inventory", "Salvage roll (inventory)"], ["guidebook", "Field manual"], ["tracker", "Tether"], ["map", "Map"],
 	["rotate_piece", "Rotate piece"], ["build_mode_toggle", "Log pose"], ["cancel", "Cancel"],
 	["toolbelt_1", "Toolbelt 1"], ["toolbelt_2", "Toolbelt 2"], ["toolbelt_3", "Toolbelt 3"],
 	["toolbelt_4", "Toolbelt 4"], ["toolbelt_5", "Toolbelt 5"], ["toolbelt_6", "Toolbelt 6"],
@@ -35,20 +35,20 @@ var _graphics_page: ScrollContainer
 var _controls_page: ScrollContainer
 ## The action waiting for a key on the controls tab ("" = none), and its button.
 var _listening: String = ""
+## Whether that wait is for a gamepad button (else a key or mouse button).
+var _listening_pad: bool = false
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	custom_minimum_size = Vector2(680, 0)
+	theme = UiStyle.kit_theme()
+	custom_minimum_size = Vector2(760, 0)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override(&"separation", 10)
 	add_child(box)
-	var title := Label.new()
-	title.text = "Options"
-	title.add_theme_font_size_override(&"font_size", 28)
-	box.add_child(title)
+	box.add_child(UiStyle.label("OPTIONS", &"HeadingLabel"))
 	_tabs = TabContainer.new()
-	_tabs.custom_minimum_size = Vector2(660, 540)
+	_tabs.custom_minimum_size = Vector2(720, 600)
 	box.add_child(_tabs)
 	_tabs.add_child(_page("General"))
 	_general()
@@ -74,14 +74,19 @@ func close() -> void:
 func _input(event: InputEvent) -> void:
 	if _listening == "" or not event.is_pressed() or event.is_echo():
 		return
-	if not (event is InputEventKey or event is InputEventMouseButton):
+	if not (event is InputEventKey or event is InputEventMouseButton or event is InputEventJoypadButton):
 		return
 	get_viewport().set_input_as_handled()
 	if event is InputEventKey and (event as InputEventKey).physical_keycode == KEY_ESCAPE:
 		_listening = ""
 		_build_controls()
 		return
-	Settings.bind_primary(_listening, event)
+	if _listening_pad:
+		# Only a pad button binds here; a key or click while waiting cancels.
+		if event is InputEventJoypadButton:
+			Settings.bind_pad(_listening, event)
+	elif not event is InputEventJoypadButton:
+		Settings.bind_primary(_listening, event)
 	_listening = ""
 	_build_controls.call_deferred()
 
@@ -134,6 +139,25 @@ func _general() -> void:
 	_slider("Brightness", 0.7, 1.5, 0.05, Settings.brightness, func(v: float) -> void:
 		Settings.brightness = v
 		Settings.save())
+	var ui := OptionButton.new()
+	ui.add_item("Auto (follows the window)", 0)
+	for i: int in UiStyle.SCALES.size():
+		ui.add_item("%d%%" % roundi(UiStyle.SCALES[i] * 100.0), i + 1)
+	ui.selected = 0 if Settings.ui_scale <= 0.0 else maxi(0, UiStyle.SCALES.find(Settings.ui_scale) + 1)
+	ui.item_selected.connect(func(i: int) -> void: Settings.set_ui_scale(0.0 if i == 0 else UiStyle.SCALES[i - 1]))
+	_row("Interface size", ui)
+	var bd := OptionButton.new()
+	var bd_modes: PackedStringArray = ["moving", "still", "off"]
+	for m: String in ["Moving (stops if the menu runs slow)", "Still", "Off"]:
+		bd.add_item(m)
+	bd.selected = maxi(0, bd_modes.find(Settings.menu_backdrop))
+	bd.item_selected.connect(func(i: int) -> void:
+		Settings.menu_backdrop = bd_modes[i]
+		Settings.save())
+	_row("Menu backdrop", bd)
+	_check("Sound captions ([radio crackle], [a low hum])", Settings.sound_captions, func(on: bool) -> void:
+		Settings.sound_captions = on
+		Settings.save())
 	_check("Fullscreen", Settings.fullscreen, func(on: bool) -> void: Settings.set_display(on, Settings.vsync))
 	_check("Vertical sync", Settings.vsync, func(on: bool) -> void: Settings.set_display(Settings.fullscreen, on))
 
@@ -149,6 +173,22 @@ func _build_graphics() -> void:
 		_build_graphics.call_deferred())
 	var custom: int = Settings.graphics_overrides().size()
 	_row("Preset" + (" (%d changed)" % custom if custom > 0 else ""), preset)
+	# What this machine was given on its first run, and a way back to it.
+	var rec: String = Settings.recommended_preset()
+	var gpu: String = RenderingServer.get_video_adapter_name() if DisplayServer.get_name() != "headless" else "headless"
+	var back := Button.new()
+	back.text = "Use %s (recommended)" % rec.capitalize()
+	back.disabled = rec == Settings.graphics_preset and custom == 0
+	back.pressed.connect(func() -> void:
+		Settings.set_graphics_preset(rec)
+		_build_graphics.call_deferred())
+	_row("Detected: %s" % gpu, back)
+	var cap := OptionButton.new()
+	for f: int in Settings.FPS_CAPS:
+		cap.add_item("No cap" if f == 0 else "%d fps" % f)
+	cap.selected = maxi(0, Settings.FPS_CAPS.find(Settings.max_fps))
+	cap.item_selected.connect(func(i: int) -> void: Settings.set_max_fps(Settings.FPS_CAPS[i]))
+	_row("Frame rate cap", cap)
 	_gfx_slider("Render scale", "render_scale", 0.5, 1.0, 0.05)
 	_gfx_choice("Upscaler", "upscaler", [["bilinear", "Bilinear"], ["fsr", "FSR 1"], ["fsr2", "FSR 2 (sharper, own AA)"]])
 	_gfx_check("Temporal anti-aliasing", "taa")
@@ -160,43 +200,81 @@ func _build_graphics() -> void:
 	_gfx_choice("Shadow resolution", "directional_shadow_size", [[2048, "Low"], [4096, "High"], [8192, "Ultra"]],
 		func(v: Variant) -> void: Settings.set_graphics_override("positional_shadow_atlas", v))
 	_gfx_choice("Shadow softness", "shadow_filter", [[0, "Hard"], [1, "Very low"], [2, "Low"], [3, "Medium"], [4, "High"], [5, "Ultra"]])
-	_gfx_slider("Shadow distance", "shadow_distance", 40.0, 200.0, 10.0)
-	_gfx_slider("View distance", "view_distance", 500.0, 2500.0, 100.0)
-	_gfx_slider("Tree detail distance (under 50%: no full-detail trees)", "tree_lod_scale", 0.3, 1.5, 0.05)
+	_gfx_slider("Shadow distance", "shadow_distance", 40.0, 260.0, 10.0)
+	_gfx_slider("View distance (as the world streams)", "view_distance", 500.0, 2500.0, 100.0)
+	_gfx_slider("Tree detail (under 50%: no full-detail trees; as chunks rebuild)", "tree_lod_scale", 0.3, 2.0, 0.05)
 	_gfx_slider("Object draw distance", "object_distance", 50.0, 300.0, 10.0)
 	_gfx_slider("Grass density", "grass_density", 0.0, 1.0, 0.05)
-	_gfx_slider("Grass distance", "grass_distance", 20.0, 90.0, 5.0)
+	_gfx_slider("Grass distance (as you move)", "grass_distance", 20.0, 52.0, 2.0)
 	var note := Label.new()
 	note.text = "Grass and tree changes show as the forest around you rebuilds."
-	note.add_theme_color_override(&"font_color", Color(0.6, 0.62, 0.58))
+	note.theme_type_variation = &"DimLabel"
 	_grid.add_child(note)
 	_grid.add_child(Control.new())
 
 
 func _build_controls() -> void:
 	_use(_controls_page)
+	var actions: PackedStringArray = []
+	for a0: Array in ACTIONS:
+		actions.append(str(a0[0]))
+	var head_l := UiStyle.label("Click a binding, then press the key, mouse button or pad button. Esc cancels.", &"DimLabel")
+	_grid.add_child(head_l)
+	_grid.add_child(Control.new())
 	for a: Array in ACTIONS:
 		var action: String = a[0]
 		if not InputMap.has_action(action):
 			continue
-		var b := Button.new()
 		var specs: Array = Settings.bindings(action)
-		var names: PackedStringArray = []
+		var keys: PackedStringArray = []
+		var pads: PackedStringArray = []
+		var clash: PackedStringArray = []
 		for sp: Variant in specs:
 			var d: Dictionary = sp if sp is Dictionary else {}
 			if d.has("key") or d.has("mouse"):
-				names.append(Settings.describe(d))
-		b.text = "Press a key…" if _listening == action else (" / ".join(names) if not names.is_empty() else "—")
-		b.pressed.connect(func() -> void:
+				keys.append(Settings.describe(d))
+			elif d.has("joy_button"):
+				pads.append(Settings.describe(d))
+			if not d.is_empty():
+				for other: String in Settings.conflicts(action, d, actions):
+					clash.append("%s (%s)" % [_action_name(other), Settings.describe(d)])
+		var h := HBoxContainer.new()
+		h.add_theme_constant_override(&"separation", 6)
+		var kb := Button.new()
+		kb.custom_minimum_size = Vector2(170, 0)
+		kb.text = "Press a key…" if _listening == action and not _listening_pad else (" / ".join(keys) if not keys.is_empty() else "—")
+		kb.pressed.connect(func() -> void:
 			_listening = action
-			b.text = "Press a key…")
-		_row(str(a[1]), b)
+			_listening_pad = false
+			kb.text = "Press a key…")
+		h.add_child(kb)
+		var pb := Button.new()
+		pb.custom_minimum_size = Vector2(130, 0)
+		pb.text = "Press a button…" if _listening == action and _listening_pad else (" / ".join(pads) if not pads.is_empty() else "Pad —")
+		pb.pressed.connect(func() -> void:
+			_listening = action
+			_listening_pad = true
+			pb.text = "Press a button…")
+		h.add_child(pb)
+		var label: String = str(a[1])
+		if not clash.is_empty():
+			label += "   ! also " + ", ".join(clash)
+		_row(label, h)
+		if not clash.is_empty():
+			(_grid.get_child(_grid.get_child_count() - 2) as Label).add_theme_color_override(&"font_color", UiStyle.RUST_BRIGHT)
 	var reset := Button.new()
 	reset.text = "Reset all to defaults"
 	reset.pressed.connect(func() -> void:
 		Settings.reset_bindings()
 		_build_controls.call_deferred())
 	_row("", reset)
+
+
+func _action_name(action: String) -> String:
+	for a: Array in ACTIONS:
+		if str(a[0]) == action:
+			return str(a[1])
+	return action
 
 
 # --- Rows ----------------------------------------------------------------------------------
@@ -215,13 +293,23 @@ func _gfx_choice(label: String, key: String, choices: Array, also_set: Callable 
 	var cur: Variant = Settings.gfx(key, choices[0][0])
 	for i: int in choices.size():
 		ob.add_item(str(choices[i][1]), i)
-		if str(choices[i][0]) == str(cur):
+		if same_choice(choices[i][0], cur):
 			ob.selected = i
 	ob.item_selected.connect(func(i: int) -> void:
 		Settings.set_graphics_override(key, choices[i][0])
 		if also_set.is_valid():
 			also_set.call(choices[i][0]))
 	_row(label, ob)
+
+
+## Whether a choice is the current value: numbers by value (presets come from JSON as floats, so
+## 4096.0 is the 4096 choice; str() made them differ and showed every shadow choice as its first).
+static func same_choice(a: Variant, b: Variant) -> bool:
+	var na: bool = a is int or a is float
+	var nb: bool = b is int or b is float
+	if na and nb:
+		return is_equal_approx(float(a), float(b))
+	return str(a) == str(b)
 
 
 func _row(label: String, control: Control) -> void:

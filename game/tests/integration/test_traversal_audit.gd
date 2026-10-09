@@ -7,6 +7,7 @@ extends GutTest
 ## * a door leaf that opens into a prop on the route is an error, a rag pile under it a warning;
 ## * a loot room whose containers the player can't stand within reach of is an error;
 ## * a loot room in pitch dark (no outside opening, no light kept burning) is an error;
+## * a ladder's landing must hold the climber and lie across the hatch from its rails;
 ## * no shipped POI has anything of the kind on its route or the doorways the route crosses.
 
 const Runner := preload("res://src/tools/cli/traversal_audit_runner.gd")
@@ -188,6 +189,46 @@ func test_a_dark_loot_room_is_an_error() -> void:
 			assert_eq(dark.size(), 0, "a kept lamp lights it: %s" % [dark])
 		else:
 			assert_eq(sev, [c[1]], "lights %s: %s" % [c[0], dark])
+
+
+## A two-storey box with a hatch ladder `ladder`, the given props and route.
+func _ladder_def(ladder: Dictionary, props: Array, route: Array) -> PoiDef:
+	var raw: Dictionary = {"id": "t_audit_ladder", "name": "T", "tier": 1, "footprint": [12, 12],
+		"style": {"floor_height": 0.0},
+		"levels": [{"level": 0, "plan": ["AAA", "AAA", "AAA"], "rooms": {"A": {}}},
+			{"level": 1, "plan": ["BBB", "BBB", "BBB"], "rooms": {"B": {}}}],
+		"openings": [{"id": "front", "at": [1, 2], "side": "S", "type": "door", "state": "open"}],
+		"ladders": [ladder], "route": route, "props": props}
+	var d := PoiDef.new()
+	assert_eq(d.parse(raw, &"poi", "test"), PackedStringArray(), "def parses")
+	return d
+
+
+func _ladder_findings(ladder: Dictionary, props: Array, route: Array, iid: String) -> Array:
+	var found: Array[Dictionary] = await Runner.audit_one(self, _ladder_def(ladder, props, route), iid)
+	return found.filter(func(f: Dictionary) -> bool: return str(f["kind"]) == "ladder")
+
+
+func test_a_ladder_landing_needs_room_and_to_face_the_rails() -> void:
+	var route: Array = [{"at": [1, 4]}, {"at": [1, 1]}, {"at": [1, 2], "level": 1}, {"at": [0, 0]}]
+	var lad: Dictionary = {"level": 0, "at": [1, 1], "side": "N", "hatch": true}
+	# Clear: the landing (1, 2) is across the hatch from the rails on (1, 1)'s north edge.
+	var clear: Array = await _ladder_findings(lad, [], route, "t_ladder_a")
+	assert_eq(clear.size(), 0, "a clear ladder: %s" % [clear])
+	# A wardrobe on the landing: the climber comes up into it (the relay tower's radio).
+	var crate: Array = await _ladder_findings(lad, [{"prop": "wardrobe", "pos": [1.5, 2.5], "level": 1}], route, "t_ladder_b")
+	assert_eq(crate.size(), 1, "the wardrobe on the landing: %s" % [crate])
+	if crate.size() == 1:
+		assert_eq(str(crate[0]["severity"]), "error", "the route climbs it")
+		assert_string_contains(str(crate[0]["what"]), "landing")
+	# Rails on (0, 0)'s south edge, toward the room: no room across the hatch (north, outside), so
+	# the landing is beside it, and the way back down is a hole (the hatchery catwalk's).
+	var route2: Array = [{"at": [1, 4]}, {"at": [0, 0]}, {"at": [1, 0], "level": 1}, {"at": [2, 2]}]
+	var beside: Array = await _ladder_findings({"level": 0, "at": [0, 0], "side": "S", "hatch": true}, [], route2, "t_ladder_c")
+	assert_eq(beside.size(), 1, "the landing beside the hatch: %s" % [beside])
+	if beside.size() == 1:
+		assert_string_contains(str(beside[0]["what"]), "beside the hatch")
+		assert_eq(str(beside[0]["severity"]), "error", "the route climbs down it")
 
 
 func test_shipped_pois_keep_their_routes_and_doorways_clear() -> void:

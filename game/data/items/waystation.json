@@ -1,0 +1,7 @@
+{
+ "_doc": "Readable notes of Waystation 9 (waystation_9_post). Note items are note_<note id> (notes/waystation.json), on the generic note models (TD-374: no bespoke Cordon letterhead model yet).",
+ "defs": [
+  {"id": "note_ws9_salvager_notice", "name": "Notice to Salvagers, Waystation 9", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "ws9_salvager_notice", "model": "items/note_pharmacy_ledger"},
+  {"id": "note_ws9_standing_orders", "name": "Standing Orders, Waystation 9 Guard", "category": "note", "stack_max": 1, "bulk": 0.0, "value": 0, "note": "ws9_standing_orders", "model": "items/note_pharmacy_ledger"}
+ ]
+}

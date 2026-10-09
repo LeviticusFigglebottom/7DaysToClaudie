@@ -533,6 +533,31 @@ func test_shops_nearest_the_centre_then_civic_then_houses() -> void:
 	assert_eq(bad.size(), 0, _report(bad))
 
 
+## Player report 4: towns read as one road with a comb of dead ends. Cross streets join the side
+## streets a block back, so the streets close blocks: a hamlet a loop or a crossroads at least, a
+## village several, a town many (before the cross streets: villages 3-4, towns 7-10), fewer on the
+## steepest synthetic land.
+func test_streets_close_blocks() -> void:
+	var least: Dictionary = {"hamlet": 1, "village": 4, "town": 12}
+	var mean_least: Dictionary = {"hamlet": 1.0, "village": 8.0, "town": 22.0}
+	var sums: Dictionary = {}
+	var counts: Dictionary = {}
+	var bad: PackedStringArray = []
+	for c: Dictionary in cases:
+		var kind: String = c["kind"]
+		var n: int = (c["plan"]["blocks"] as Array).size()
+		sums[kind] = int(sums.get(kind, 0)) + n
+		counts[kind] = int(counts.get(kind, 0)) + 1
+		if n < int(least[kind]) and not (kind == "hamlet" and int(c["plan"]["stats"]["side_streets"]) >= 2):
+			bad.append("%s: %d blocks" % [_label(c), n])
+	for kind2: String in sums:
+		var mean: float = float(sums[kind2]) / int(counts[kind2])
+		gut.p("%s: %.1f blocks on average" % [kind2, mean])
+		if mean < float(mean_least[kind2]):
+			bad.append("%s: %.1f blocks on average" % [kind2, mean])
+	assert_eq(bad.size(), 0, _report(bad))
+
+
 func test_towns_have_culdesacs() -> void:
 	for c: Dictionary in cases:
 		if str(c["kind"]) != "town":

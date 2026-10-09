@@ -58,6 +58,16 @@ func touching(box: AABB) -> Array[CavePlan]:
 	return out
 
 
+## Whether any cave's footprint (its air and mouth apron) meets the XZ rect `r`: lets a caller skip
+## per-point keep_out tests for a chunk no cave reaches (the vegetation's keep-out).
+func any_in_rect(r: Rect2) -> bool:
+	for c: Vector2i in _cells(AABB(Vector3(r.position.x, 0.0, r.position.y), Vector3(r.size.x, 0.0, r.size.y))):
+		for p: CavePlan in _grid.get(c, []):
+			if p.footprint().intersects(r):
+				return true
+	return false
+
+
 func _at(x: float, z: float) -> Array:
 	return _grid.get(Vector2i(int(floor(x / CELL)), int(floor(z / CELL))), [])
 

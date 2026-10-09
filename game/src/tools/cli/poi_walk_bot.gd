@@ -64,6 +64,10 @@ const LADDER_FRAMES: int = 900
 const DETOUR_CELLS: int = 4
 const DETOUR_GRID: float = 0.25
 
+## Categories of blocked legs listed apart, which do not fail a building: the yard ring's fences and
+## wrecks, and a way an authored barricade (a barricade_* prop) closes on purpose.
+const APART: PackedStringArray = ["perimeter", "barricaded"]
+
 ## Print every leg as it is walked.
 var verbose: bool = false
 ## Climb ladders by walking into them even where the player has no is_climbing (tests).
@@ -84,6 +88,8 @@ var _hits: Array[Dictionary] = []
 var _keys: Dictionary = {}
 ## Door leaves shut on the current leg (instance ids), so one is not toggled back and forth.
 var _shut: Dictionary = {}
+## An open leaf in the way that _close_leaf_in_way left open (no clear step back out of its sweep).
+var _leaf_pending: PoiPieces.Door = null
 ## Open leaves the walk had to shut to get past: {opening, leaf}.
 var _door_leaves: Array = []
 var _frames: int = 0
@@ -147,6 +153,7 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 		"blocking": 0, "frames": 0}
 	_visited.clear()
 	_cluttered.clear()
+	_sills.clear()
 	_hits.clear()
 	_frames = 0
 	validator = PoiValidator.validate(pd)
@@ -158,8 +165,10 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 	_index_steps()
 	_check_corridor()
 	await _settle(3)
+	_exploring = false
 	await _walk_route()
 	await _explore()
+	_exploring = false
 	_rooms_report()
 	Input.action_release(&"move_forward")
 	_world.queue_free()
@@ -168,7 +177,7 @@ func walk(pd: PoiDef, instance_id: String) -> Dictionary:
 	inst = null
 	player = null
 	# Perimeter legs (the yard's fences) are listed, but do not fail the building.
-	var real: Array = (_report["blocked"] as Array).filter(func(l: Dictionary) -> bool: return str(l.get("category", "")) != "perimeter")
+	var real: Array = (_report["blocked"] as Array).filter(func(l: Dictionary) -> bool: return not str(l.get("category", "")) in APART)
 	var blocking: int = real.size() + (_report["unreached"] as Array).size()
 	_report["blocking"] = blocking
 	_report["frames"] = _frames
@@ -520,6 +529,46 @@ func _lane(a: Array, b: Array, min_top: float = -INF) -> float:
 	return out
 
 
+## Whether the window `op` between neighbouring cells a and b has its sill past the vault from a's
+## floor with no prop to climb on under it on a's side (_step_prop). Cached.
+var _sills: Dictionary = {}
+
+
+func _sill_out_of_reach(a: Array, b: Array, op: Dictionary) -> bool:
+	var k: String = _nk(a) + ">" + _nk(b)
+	if _sills.has(k):
+		return bool(_sills[k])
+	var spec: Dictionary = PoiParts.OPENINGS[str(op["type"])]
+	var from: Vector3 = _cell_pos(a[0], a[1])
+	var sill_y: float = layout.level_y(int(op["level"])) + float(spec.get("sill", 0.9))
+	var out: bool = false
+	if sill_y - from.y > Player.VAULT_MAX - 0.02:
+		var mid: Vector3 = _helper._edge_xf(int(op["level"]), op["axis"], op["edge"], int(spec["len"])).origin
+		mid.y = from.y
+		var n := Vector3(mid.x - from.x, 0.0, mid.z - from.z)
+		n = Vector3(0, 0, signf(n.z)) if str(op["axis"]) == "h" else Vector3(signf(n.x), 0, 0)
+		out = _step_prop(mid, n, float(spec.get("w", 0.7)), from.y, sill_y, float(spec.get("h", 1.1))).is_empty()
+	_sills[k] = out
+	return out
+
+
+## Whether an authored barricade (a mattress shoved against a door, a furniture pile: props named
+## barricade_*) stands across the straight way between neighbouring cells. It is there to close
+## that way: a player goes round by another door, as the plan does.
+func _barricaded(a: Array, b: Array) -> bool:
+	if int(a[0]) != int(b[0]) or (a[1] as Vector2i).distance_squared_to(b[1]) != 1:
+		return false
+	var pa: Vector3 = _cell_pos(a[0], a[1])
+	var pb: Vector3 = _cell_pos(b[0], b[1])
+	var lo := Vector3(minf(pa.x, pb.x) - 0.1, maxf(pa.y, pb.y) + Player.STEP_HEIGHT, minf(pa.z, pb.z) - 0.1)
+	var hi := Vector3(maxf(pa.x, pb.x) + 0.1, maxf(pa.y, pb.y) + Player.STAND_HEIGHT, maxf(pa.z, pb.z) + 0.1)
+	var lane := AABB(lo, hi - lo)
+	for pr: Dictionary in _props:
+		if str(pr["prop"]).begins_with("barricade") and lane.intersects(pr["box"]):
+			return true
+	return false
+
+
 ## Whether props too tall to vault (a fence, a palisade, a berm, a wreck) close every lane of a
 ## step between neighbouring yard cells: the plan goes round through a gate or a gap when there is
 ## one. Yard only: indoors a wardrobe or a shelf costing as much as a stairwell sent the plan over
@@ -606,7 +655,7 @@ func _step_cost(a: Array, b: Array) -> float:
 			cost += 6.0
 	if _is_cluttered(b, a):
 		cost += CLUTTER_COST
-		if _walled(a, b):
+		if _walled(a, b) or _barricaded(a, b):
 			cost += BLOCKED_COST
 	# Through a window only when nothing else gets there (the route says when one is the way in).
 	if int(a[0]) == int(b[0]) and (a[1] as Vector2i).distance_squared_to(b[1]) == 1:
@@ -614,11 +663,45 @@ func _step_cost(a: Array, b: Array) -> float:
 		var w: Dictionary = layout.walls.get(PoiLayout.edge_key(int(a[0]), e[0], e[1]), {})
 		if not w.is_empty() and not (w["opening"] as Dictionary).is_empty() and PoiLayout.is_window(str(w["opening"]["type"])):
 			cost += WINDOW_COST
+			# A sill out of the vault's reach with nothing to climb on under it is no way at all
+			# (St. Ansel's 1.6 m lancets from the graveyard): a player goes round to a door.
+			if _sill_out_of_reach(a, b, w["opening"]):
+				cost += BLOCKED_COST
 	# The validator walks a stair flight's cells on the floor below it and the open well over it
 	# on the floor above; the body can do neither (the flight is in the way, there is no floor).
-	if int(a[0]) == int(b[0]) and (_under_flight(b) or validator._over_well(int(b[0]), b[1])):
+	# A broken-floor hole too: the body falls through it (the chapel nave's), so a player walks
+	# round it unless the drop is the way on (that step is the hole's own drop, not this one).
+	if int(a[0]) == int(b[0]) and (_under_flight(b) or validator._over_well(int(b[0]), b[1]) or _over_hole(int(b[0]), b[1])):
+		cost += BLOCKED_COST
+	# Across the edge a ladder stands on (a deck ladder with no wall behind it): walking at its rails
+	# takes hold of it and climbs, so a player walks round it.
+	if int(a[0]) == int(b[0]) and _across_ladder(int(a[0]), a[1], b[1]):
 		cost += BLOCKED_COST
 	return cost
+
+
+## Whether a cell on level `li` is a broken-floor hole (a one-way drop) or a weak floor (a trap that
+## gives way under the player: the motel's room 7, the sawmill's rotten patch).
+func _over_hole(li: int, c: Vector2i) -> bool:
+	for h: Dictionary in layout.holes:
+		if int(h["level"]) == li and h["cell"] == c:
+			return true
+	return layout.weak_floor_cells().has("%d:%d:%d" % [li, c.x, c.y])
+
+
+## Whether a step between neighbouring cells on level `li` crosses the edge a ladder's rails stand
+## on (the ladder's cell's `side` edge).
+func _across_ladder(li: int, ca: Vector2i, cb: Vector2i) -> bool:
+	if ca.distance_squared_to(cb) != 1:
+		return false
+	for l: Dictionary in layout.ladders:
+		if int(l["level"]) != li:
+			continue
+		var c: Vector2i = l["cell"]
+		var d: Vector2i = PoiLayout.DIRS[int(l["side"])]
+		if (ca == c and cb == c + d) or (cb == c and ca == c + d):
+			return true
+	return false
 
 
 ## A cell a stair flight rises over on its base level (all but its foot, where the climb starts).
@@ -873,7 +956,23 @@ func _detour_after_fail(a: Array, b: Array, end: Vector3, leg: Dictionary) -> bo
 	var blk: Dictionary = leg.get("blocker", _blocker())
 	_hits.clear()
 	if await _detour(a, b, end, leg):
+		_leaf_pending = null
 		return true
+	# An open leaf left open for want of a clear step back (_close_leaf_in_way), with no way round
+	# it either: shut it from where the body stands, as a player squeezed against it would, and try
+	# again.
+	if _leaf_pending != null and is_instance_valid(_leaf_pending) and _leaf_pending.state == "open":
+		var d: PoiPieces.Door = _leaf_pending
+		_leaf_pending = null
+		d.interact(player)
+		(leg["needed"] as Array).append("close_door:" + d.op_id)
+		_door_leaves.append({"opening": d.opening_id, "leaf": d.op_id})
+		await _settle(30)
+		_hits.clear()
+		if await _go(end, true, leg) or await _detour(_locate_node(a), b, end, leg):
+			leg.erase("blocker")
+			return true
+	_leaf_pending = null
 	leg["blocker"] = blk
 	leg["detour"] = "no free path for the capsule joins the leg's ends"
 	# The leg's own door leaf, swung open beside its doorway (not in its clear width), yet with no
@@ -884,6 +983,14 @@ func _detour_after_fail(a: Array, b: Array, end: Vector3, leg: Dictionary) -> bo
 		leg["note"] = "own leaf open beside the doorway (%.2f m into its %.2f m clear width) shuts off the way to it" % [
 			float(blk["leaf_in_clear_m"]), float(blk.get("clear_w", 0.0))]
 	return false
+
+
+## The node the body stands on now ([level, cell] on `fallback`'s level when it is built there),
+## for a detour from wherever a shove left it.
+func _locate_node(fallback: Array) -> Array:
+	var p: Vector3 = player.global_position
+	var c := Vector2i(floori(p.x - layout.origin.x), floori(p.z - layout.origin.y))
+	return [int(fallback[0]), c] if validator._walkable(int(fallback[0]), c) else fallback
 
 
 ## Walks a list of nodes, leg by leg.
@@ -985,10 +1092,31 @@ func _leg(a: Array, b: Array) -> void:
 		leg["opening"] = str((cls["opening"] as Dictionary)["id"])
 	var ok: bool = true
 	var end: Vector3 = _free_point(b[0], b[1])
+	# Onto a flight's first step from its side: a player steps on at its low end (a quarter metre
+	# from the foot edge, 0.2 m up), not where the ramp is already 0.4 m up mid-cell.
+	if int(a[0]) == int(b[0]) and (b[1] as Vector2i).distance_squared_to(a[1]) == 1:
+		for s0: Dictionary in layout.stairs:
+			if int(s0["level"]) == int(b[0]) and s0["cell"] == b[1]:
+				var fd: Vector2i = PoiLayout.DIRS[int(s0["dir"])]
+				if (b[1] as Vector2i) - (a[1] as Vector2i) != fd:
+					end = _cell_pos(b[0], b[1]) - Vector3(fd.x, 0, fd.y) * 0.25
 	match kind:
 		"stairs_up", "stairs_down":
 			var s: Dictionary = cls["stairs"]
 			var cells: Array = s["cells"]
+			# A door or gate at the head, between the landing and the flight's top step (TD-274):
+			# opened like any door on the way (Tunnel 2 Trestle's deck gate, bolted on the deck side).
+			var head: Vector2i = cells.back()
+			var landing: Vector2i = s["landing"]
+			var he: Array = PoiLayout.side_edge(landing, PoiLayout.DIRS.find(head - landing))
+			var hw: Dictionary = layout.walls.get(PoiLayout.edge_key(int(s["level"]) + 1, he[0], he[1]), {})
+			if not hw.is_empty() and not (hw["opening"] as Dictionary).is_empty():
+				leg["opening"] = str(hw["opening"]["id"])
+				if kind == "stairs_up":
+					# Up the steps to just under the head first, then open it.
+					for k0: int in range(1, cells.size()):
+						await _go(_cell_pos(int(s["level"]), cells[k0]), false, leg)
+				await _open_doors(hw["opening"], leg)
 			var pts: Array[Vector3] = []
 			if kind == "stairs_up":
 				for k: int in range(1, cells.size()):
@@ -1000,7 +1128,11 @@ func _leg(a: Array, b: Array) -> void:
 				ok = await _go(p, false, leg)
 				if not ok:
 					break
-			if ok:
+			if ok and kind == "stairs_down":
+				# The foot cell's middle is on the first step (0.4 m up the ramp, the capsule a little
+				# higher on the slope): there once over it, on the steps or the floor.
+				ok = await _go(end, false, leg) and absf(player.global_position.y - end.y) < 0.9
+			elif ok:
 				ok = await _go(end, true, leg)
 		"ladder_up", "ladder_down":
 			var l: Dictionary = cls["ladder"]
@@ -1023,7 +1155,18 @@ func _leg(a: Array, b: Array) -> void:
 				if not ok:
 					ok = await _go(end, true, leg)
 			(_report["climbs"] as Array).append({"ladder": "%s L%d" % [_v2(l["cell"]), int(l["level"])], "dir": kind, "ok": ok, "how": how})
-		"drop_hole", "drop":
+		"drop_hole":
+			# Down through the hole and onto whatever is under it: the sawmill's dust chute drops
+			# onto the waste conveyor, and a player steps off it with the next step. Done once the
+			# body is over the cell and a storey down, whatever it stands on.
+			ok = await _go(end, false, leg)
+			for f: int in 60:
+				if player.is_on_floor() and player.global_position.y < layout.level_y(int(a[0])) - 1.0:
+					break
+				await get_tree().physics_frame
+				_frames += 1
+			ok = ok and player.global_position.y < layout.level_y(int(a[0])) - 1.0
+		"drop":
 			ok = await _go(end, true, leg)
 		"jump":
 			ok = false
@@ -1058,8 +1201,19 @@ func _leg(a: Array, b: Array) -> void:
 						if step.is_empty() and high and not leg.has("note"):
 							leg["note"] = "sill %.2f m over the ground, past the %.1f m vault; no prop to climb within %.1f m of the window" % [
 								sill_y - from.y, Player.VAULT_MAX, CUE_REACH]
+				# A hole lower than the standing body over the step up into it (a breach, 1.7 m from
+				# the floor of a cabin on a raised floor): through it crouched, as a player ducks, not
+				# by stalling at its header first (Trapper's Cabin's lean-to breach).
+				var low: bool = category(kind) == "doorway" and float(spec.get("h", 2.8)) + layout.level_y(int(op["level"])) - maxf(from.y, layout.level_y(int(op["level"]))) < Player.STAND_HEIGHT + 0.05
 				if not step.is_empty():
 					ok = await _climb_in(step, mid, n, leg)
+				elif low:
+					ok = await _go(mid - n * 0.55, false, leg)
+					_crouch(true)
+					if player.crouching and not (leg["needed"] as Array).has("crouch"):
+						(leg["needed"] as Array).append("crouch")
+					ok = ok and await _go(mid + n * (Player.RADIUS + 0.15), false, leg)
+					_crouch(false)
 				else:
 					ok = await _go(mid - n * 0.55, false, leg)
 					# Past the wall line will do: a vault lands deeper than 0.1 m in, and steering back
@@ -1355,6 +1509,7 @@ func _mount(box: AABB, top: float, stand: Vector3, needed: Array) -> bool:
 
 func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {}) -> void:
 	_release()
+	_leaf_pending = null
 	leg["ok"] = ok
 	leg["frames"] = _frames - int(leg["_t0"])
 	leg.erase("_t0")
@@ -1377,6 +1532,11 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 			var pdef: PropDef = Content.get_def(&"prop", StringName(str(blk.get("prop", "")))) as PropDef if bk == "prop" else null
 			if (pdef != null and pdef.size.y > Player.VAULT_MAX) or bk.begins_with("no way from here"):
 				leg["category"] = "perimeter"
+		# Off the route, into a room a barricade closes on purpose (a dressing alternative's mattress
+		# shoved against the door from inside): no way in for a player either, by design.
+		var blk2: Dictionary = leg["blocker"]
+		if _exploring and str(blk2.get("kind", "")) == "prop" and str(blk2.get("prop", "")).begins_with("barricade"):
+			leg["category"] = "barricaded"
 		(_report["blocked"] as Array).append(leg)
 		# Restart from where the leg should have ended.
 		_place(end, -player.global_transform.basis.z)
@@ -1394,6 +1554,8 @@ func _end_leg(leg: Dictionary, ok: bool, end: Vector3, blocker: Dictionary = {})
 		print("[poi_walk]   %s %s -> %s %s%s%s" % ["ok  " if ok else "FAIL", leg["from"], leg["to"], kind,
 			(" needed " + ",".join(PackedStringArray(needed))) if not needed.is_empty() else "",
 			(" blocker " + str(leg["blocker"])) if leg.has("blocker") else ""])
+		if OS.has_environment("POI_WALK_DEBUG"):
+			print("[poi_walk]     body at %s" % player.global_position)
 	_hits.clear()
 	_shut.clear()
 
@@ -1446,9 +1608,22 @@ func _open_doors(op: Dictionary, leg: Dictionary) -> void:
 			d.interact(player)
 			opened = true
 	if opened:
+		# A bolt drawn stays drawn: the plan may come back in through it from outside (Pell's ranger
+		# station: out the back door the route unbolts, then in again to the rooms the route passed).
+		if str(op["state"]) == "locked_inside":
+			op["state"] = "open"
+			var lo: Dictionary = layout.opening(str(op["id"]))
+			if not lo.is_empty():
+				lo["state"] = "open"
 		(leg["needed"] as Array).append("open_door")
 		await _settle(30)
 		_track()
+		if OS.has_environment("POI_WALK_DEBUG"):
+			print("[poi_walk]     opened %s, body now %s" % [op["id"], player.global_position])
+			for n2: Node in inst.get_children():
+				if n2 is PoiPieces.Door and (n2 as PoiPieces.Door).opening_id == str(op["id"]):
+					var d2: PoiPieces.Door = n2
+					print("[poi_walk]       leaf %s pivot %s swing %s geom %s" % [d2.op_id, d2.pivot.global_position, d2.swing, _leaf_geom(d2)])
 
 
 ## Whether a body at `p` stands where the leaf swings (the door-local side Door.swing turns it to,
@@ -1480,6 +1655,10 @@ func _stand_clear(d: PoiPieces.Door, leg: Dictionary) -> void:
 		# Only somewhere in the room the body is in (never round through another doorway).
 		var wl: Array = _locate(wp + Vector3.UP * 0.1)
 		if room.is_empty() or wl.is_empty() or layout.volume_of(wl[0], wl[1]) != room:
+			continue
+		# Never over a stairwell or a ladder hatch: a player steps aside onto floor (Cedar Ridge's
+		# cab door sent the body down the hatch beside it, and on down the tower).
+		if validator._over_well(int(wl[0]), wl[1]) or _over_hole(int(wl[0]), wl[1]):
 			continue
 		var reached: bool = await _go(wp, false, leg, false, 150)
 		if OS.has_environment("POI_WALK_DEBUG"):
@@ -1572,6 +1751,10 @@ func _climb_ladder(lad: PoiPieces.Ladder, l: Dictionary, up: bool, end: Vector3,
 			break
 		elif not grabbed and frames > LADDER_GRAB_FRAMES:
 			break
+		if OS.has_environment("POI_WALK_DEBUG") and not grabbed and frames % 15 == 1:
+			var rel: Vector3 = player.global_position - lad.global_position
+			print("[poi_walk]     ladder grab? feet %s foot %s face %s out %.2f side %.2f fwd %s floor %s vel %s" % [player.global_position, lad.global_position, lad.face(),
+				rel.dot(lad.face()), rel.dot(lad.face().cross(Vector3.UP)), -player.global_basis.z, player.is_on_floor(), player.velocity])
 	Input.action_release(&"move_forward")
 	await _settle(4)
 	_frames += 4
@@ -1593,7 +1776,12 @@ func _ladder_at(l: Dictionary) -> PoiPieces.Ladder:
 
 
 ## After the route: every room the layout reaches that the body has not stood in, nearest first.
+## True while _explore walks to the rooms the route left out.
+var _exploring: bool = false
+
+
 func _explore() -> void:
+	_exploring = true
 	var keys: Dictionary = _keys.duplicate()
 	var reach: Dictionary = validator._reach_all(keys)
 	var rooms: Array = _all_rooms()
@@ -1741,7 +1929,11 @@ func _close_leaf_in_way(needed: Array, own: String) -> bool:
 		if d.state != "open" or _shut.has(d.get_instance_id()) or d.opening_id == own:
 			continue
 		_shut[d.get_instance_id()] = true
-		# Out of the leaf's way first: swung shut through the body it would shove it about.
+		# Out of the leaf's way first: swung shut through the body it would shove it about. Only
+		# straight back onto clear floor: the way back from a leaf standing out beside a doorway ran
+		# out through the doorway behind (the Grange's stage door, the ranger station's cell block
+		# door) or into a stairwell (Cedar Ridge's stair head), and the leaf swung shut shoved the body
+		# on. With no such step back the leg first goes round the open leaf.
 		if _in_sweep(d, player.global_position):
 			var hinge: Vector3 = d.global_transform * d.pivot.position
 			var away := Vector3(player.global_position.x - hinge.x, 0.0, player.global_position.z - hinge.z)
@@ -1749,6 +1941,11 @@ func _close_leaf_in_way(needed: Array, own: String) -> bool:
 				var reach: float = d.leaf_local.origin.x * 2.0 + Player.RADIUS + ASIDE_MARGIN
 				var to: Vector3 = hinge + away.normalized() * reach
 				to.y = player.global_position.y
+				if not _clear_step(to):
+					# Left open for now: the leg goes round it, and only when there is no way round
+					# is it shut from where the body stands (_detour_after_fail).
+					_leaf_pending = d
+					return false
 				await _go(to, false, {"needed": []}, false, 90)
 		d.interact(player)
 		needed.append("close_door:" + d.op_id)
@@ -1757,6 +1954,24 @@ func _close_leaf_in_way(needed: Array, own: String) -> bool:
 		_hits.clear()
 		return true
 	return false
+
+
+## Whether the body can step straight to `to` (world) on the floor it stands on: the capsule fits
+## there, nothing is in the way, the floor there is level with the feet (within a step) and is not
+## a stairwell, a hatch or a hole.
+func _clear_step(to: Vector3) -> bool:
+	var loc: Array = _locate(to + Vector3.UP * 0.1)
+	if not loc.is_empty() and (validator._over_well(int(loc[0]), loc[1]) or _over_hole(int(loc[0]), loc[1])):
+		return false
+	var space: PhysicsDirectSpaceState3D = player.get_world_3d().direct_space_state
+	var ex: Array[RID] = [player.get_rid()]
+	var inv: Transform3D = inst.global_transform.affine_inverse()
+	var a: Vector3 = inv * player.global_position
+	var b: Vector3 = inv * to
+	b.y = TraversalAudit.floor_at(space, inst, Vector3(b.x, a.y, b.z), ex)
+	if absf(b.y - a.y) > Player.STEP_HEIGHT:
+		return false
+	return _fits(to) and TraversalAudit.sweep(space, inst, a, b, ex).is_empty()
 
 
 ## A closed leaf of this leg's own doorway within reach: open it (as the player would).
@@ -1802,6 +2017,12 @@ func _jump(needed: Array) -> void:
 
 ## Steps back half a metre and a little sideways, then carries on (a capsule snagged on a jamb).
 func _back_off() -> void:
+	# Not off an edge: a player backing off a jamb on a deck (Tunnel 2 Trestle's, open at its
+	# sides) looks first. No floor within a step under where the back-off ends: stay put.
+	var to: Vector3 = player.global_position + (player.global_basis.z - player.global_basis.x).normalized() * 0.7
+	var q := PhysicsRayQueryParameters3D.create(to + Vector3.UP * 0.5, to + Vector3.DOWN * Player.STEP_HEIGHT, Player.WORLD_MASK, [player.get_rid()])
+	if player.get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+		return
 	Input.action_release(&"move_forward")
 	Input.action_press(&"move_back")
 	Input.action_press(&"move_left")
@@ -1826,6 +2047,13 @@ func _release() -> void:
 
 
 func _place(pos: Vector3, forward: Vector3) -> void:
+	# Off any ladder and out of any vault first (ADR-0051 round 5): a body left holding the rungs of a
+	# failed climb was pulled straight back to them, and every later leg failed with it.
+	if &"_ladder" in player:
+		player.set(&"_ladder", null)
+		player.set(&"_climb_down_hold", false)
+	if &"_vault_t" in player:
+		player.set(&"_vault_t", -1.0)
 	player.global_position = pos + Vector3.UP * 0.05
 	if Vector2(forward.x, forward.z).length() > 0.01:
 		player.rotation.y = atan2(-forward.x, -forward.z)

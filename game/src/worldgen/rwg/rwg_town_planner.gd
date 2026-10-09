@@ -114,7 +114,7 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 	counts["industrial"] += _frontage_quota(net, lots, rl, "industrial", int(quota["industrial"]), radius * 0.72, radius + 140.0, radius * 0.92, false)
 	counts["rural"] += _rural(net, lots, rl, int(quota["rural"]), radius, outskirts, lcfg)
 	var fixed: int = lots.lots.size() - (1 if plaza != null else 0)
-	_residential(net, lots, rl, radius)
+	_residential(net, lots, rl, radius, float(kd.get("arterial_reach", 1.0)))
 	var lr: Array = kd.get("lots", [10, 20])
 	var span: int = int(lr[1]) - int(lr[0])
 	var target: int = rl.randi_range(int(lr[0]) + span / 6, int(lr[1]) - span / 8)
@@ -130,6 +130,8 @@ static func plan(site: Dictionary, world: Dictionary, arterials: Array, tuning: 
 	var t_end: int = Time.get_ticks_usec()
 	stats = _stats(net, lots, quota, target, candidates)
 	stats["ground_calls"] = ground.calls
+	stats["blocks"] = blocks.size()
+	stats["why"] = net.why
 	stats["ms"] = (t_end - t0) / 1000.0
 	stats["ms_parts"] = {"setup": (t_net - t0) / 1000.0, "streets": (t_lots - t_net) / 1000.0, "lots": (t_parcels - t_lots) / 1000.0,
 		"parcels": (t_fix - t_parcels) / 1000.0, "fixtures": (t_blocks - t_fix) / 1000.0, "blocks": (t_end - t_blocks) / 1000.0}
@@ -352,12 +354,16 @@ static func _rural(net: Streets, lots: Lots, r: RandomNumberGenerator, quota: in
 
 
 ## Houses on every street side inside the town (inner sizes within 0.6 r, outer beyond), the
-## turning circles' head lots first.
-static func _residential(net: Streets, lots: Lots, r: RandomNumberGenerator, radius: float) -> void:
+## turning circles' head lots first. Along the arterials only out to `arterial_reach` of the radius:
+## past it the town is the streets off them, not a ribbon of houses down the highway (player
+## report 4: towns wider than they are long).
+static func _residential(net: Streets, lots: Lots, r: RandomNumberGenerator, radius: float, arterial_reach: float = 1.0) -> void:
 	var center: Vector2 = net.center
 	var zone_at := func(p: Vector2, _si: int) -> String:
 		var d: float = p.distance_to(center)
 		return "stop" if d > radius else ("inner_residential" if d < radius * 0.6 else "outer_residential")
+	var art_zone_at := func(p: Vector2, si: int) -> String:
+		return "stop" if p.distance_to(center) > radius * arterial_reach else zone_at.call(p, si)
 	for si: int in net.streets.size():
 		var st: Streets.Street = net.streets[si]
 		if st.bulb >= 0:
@@ -369,8 +375,8 @@ static func _residential(net: Streets, lots: Lots, r: RandomNumberGenerator, rad
 			"arterial":
 				var sc: float = st2.line.closest(center).y
 				for side: int in [1, -1]:
-					lots.walk(si2, side, sc + 0.5, st2.length(), zone_at, r, true)
-					lots.walk(si2, side, sc - 0.5, 0.0, zone_at, r, true)
+					lots.walk(si2, side, sc + 0.5, st2.length(), art_zone_at, r, true)
+					lots.walk(si2, side, sc - 0.5, 0.0, art_zone_at, r, true)
 			"street", "lane":
 				for side2: int in [1, -1]:
 					lots.walk(si2, side2, 0.0, st2.length(), zone_at, r, true)
@@ -647,8 +653,25 @@ static func _stats(net: Streets, lots: Lots, quota: Dictionary, target: int, can
 			back += 1
 		if st.gen >= 1 and st.cls != "bulb":
 			length += st.length()
-	return {"lots": n, "zones": zones, "rings": rings, "quota": quota, "lot_target": target, "lot_candidates": candidates, "plaza": lots.lots.any(func(l: Lots.Lot) -> bool: return l.zone == "plaza"),
-		"side_streets": net.side_count, "loops": net.loops, "culdesacs": cul, "back_lanes": back, "street_length": snappedf(length, 1.0),
+	# How far the lots reach along the main street and across it (the 90th percentiles, m): a town
+	# should be wider than one stretch of road.
+	var along := PackedFloat32Array()
+	var across := PackedFloat32Array()
+	for st2: Streets.Street in net.streets:
+		if st2.cls != "arterial":
+			continue
+		var q: Vector3 = st2.line.closest(net.center)
+		var t: Vector2 = st2.line.tangent_at(q.y)
+		for l2: Lots.Lot in lots.lots:
+			if l2.zone != "plaza" and l2.zone != "rural":
+				along.append(absf((l2.c - net.center).dot(t)))
+				across.append(absf((l2.c - net.center).cross(t)))
+		break
+	along.sort()
+	across.sort()
+	var extent: Array = [0, 0] if along.is_empty() else [snappedf(along[int(along.size() * 0.9)], 1.0), snappedf(across[int(across.size() * 0.9)], 1.0)]
+	return {"lots": n, "extent": extent, "zones": zones, "rings": rings, "quota": quota, "lot_target": target, "lot_candidates": candidates, "plaza": lots.lots.any(func(l: Lots.Lot) -> bool: return l.zone == "plaza"),
+		"side_streets": net.side_count, "cross_streets": net.cross_count, "loops": net.loops, "culdesacs": cul, "back_lanes": back, "street_length": snappedf(length, 1.0),
 		"junctions": net.junctions.size()}
 
 
