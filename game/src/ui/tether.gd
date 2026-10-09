@@ -124,6 +124,9 @@ func _build_screen() -> void:
 	_hum = _lcd_label(Vector2(16, 290), 16)
 	_hum.size = Vector2(340, 100)
 	_hum.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# The full map (WorldMap) is a key away: say which.
+	var hint: Label = _lcd_label(Vector2(370, 38), 13)
+	hint.text = "[%s] FULL MAP" % PlayerInteraction.key_label(&"map")
 	_map = TextureRect.new()
 	_map.position = Vector2(370, 60)
 	_map.size = Vector2(256, 256)
