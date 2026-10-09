@@ -38,8 +38,9 @@ wrist.
 instead of `dir`/`back`: the hand is placed so the arm, reaching the grip with its elbow at the
 hint, has exactly that wrist (`char_fp._wrist_frame`; resolved once into an absolute frame, so keyed
 channels such as `R.rot` work on it unchanged). A hand with no tool to point should say what its
-wrist does, not which way its knuckles face; the empty hands are now `[-12, 6, ±40]` with
-progressive finger curls (index least).
+wrist does, not which way its knuckles face; the empty hands are now `[12, 8, ∓38]` (roll − pronates the
+right hand), low in the bottom corners with the backs of the hands to the camera and progressive
+finger curls (index least).
 
 **3. Grips as hands hold small things.** A fist's handle axis is square to the forearm, so with the
 elbow down (where it rests) an upright lighter needs a broken wrist, and with the elbow raised the
@@ -47,7 +48,11 @@ forearm's neutral roll turns the thumb to the chest. The lighter now sits obliqu
 (item `rot` 40° toward the knuckles), forearm rising, wrist straight, fingers closed round its thin
 body (curls 1.0..1.2), the thumb across its top with the end joint bent onto the wheel.
 
-**4. Tools.** `fp_dev_render.py` poses and renders the arms from the player's camera in Blender
+**4. Bare hands at rest** (`viewmodel.json` `motion.rest`): standing still with nothing in hand
+for 4 s, the arms ease 9 cm down mostly out of the frame and come straight back on moving, looking
+round or acting (`ViewModelMotion.rest_ok`, set by the view model).
+
+**5. Tools.** `fp_dev_render.py` poses and renders the arms from the player's camera in Blender
 alone (cached mesh: ~15 s a shot) for iterating on holds; the solver's rest-pose FK is computed once
 (a full FK per candidate was most of the bake time, now ~10x faster). test_viewmodel_holds checks
 every hold's resting wrists against `wrist.comfort`; ViewModelHolds validates it.

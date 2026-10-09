@@ -1337,8 +1337,8 @@ _REST_RIG = []
 
 def _wrist_frame(sd: str, spec: dict) -> np.ndarray:
     """The hand frame of a spec written against its own forearm (ADR-0060): `wrist` = [flexion,
-    ulnar deviation, roll] in degrees (wrist_angles' terms; roll + pronates the right hand, - the
-    left), the arm reaching the grip with its elbow at the hint. A hand at rest has no tool to
+    ulnar deviation, roll] in degrees (wrist_angles' terms; roll - pronates the right hand, turning
+    the back of the hand up, + the left), the arm reaching the grip with its elbow at the hint. A hand at rest has no tool to
     point; what makes it look relaxed is the wrist, so the wrist is what it says."""
     if not _REST_RIG:
         sk = FPSkeleton(fp_joints({}), {}, bones=FP_BONES)
