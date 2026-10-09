@@ -1249,7 +1249,7 @@ FINGER_SCALE = {"ix": 1.0, "md": 1.0, "rg": 1.05, "pk": 1.12}
 FINGER_CONVERGE = {"ix": -5.0, "md": 0.0, "rg": 4.0, "pk": 9.0}
 # How far each finger swings toward the middle one at `together` 1 (degrees, + towards the thumb):
 # the rest pose's splay closed, the fingers touching.
-FINGER_TOGETHER = {"ix": -6.0, "md": 0.0, "rg": 5.0, "pk": 10.0}
+FINGER_TOGETHER = {"ix": -9.0, "md": 0.0, "rg": 7.0, "pk": 14.0}
 # Thumb at curl 1: metacarpal flexion across the palm, swing toward the fingers, opposition about
 # its own axis; then MCP and IP flexion (degrees).
 THUMB_CURL = (30.0, 30.0, 25.0, 38.0, 48.0)

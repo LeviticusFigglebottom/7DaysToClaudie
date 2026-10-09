@@ -105,3 +105,51 @@ func test_tether_ui_rides_the_wrist() -> void:
 	assert_false(vm.tether_raised(), "a swing lowers the wrist")
 	t._process(0.016)
 	assert_false(t.raised, "and the tether UI follows, so T raises it again")
+
+
+func test_a_second_press_mid_swing_does_not_restart_it() -> void:
+	# First-hour audit: pressing again before the contact frame restarted the swing's clock, so
+	# its hit never landed (one swing in four reached the trunk) and stamina went anyway.
+	_equip(&"stone_axe")
+	var eq: PlayerEquipment = _player.equipment
+	eq.primary()
+	var spent: float = _player.state.stats.stamina
+	eq.set(&"_swing_t", 0.2)
+	eq.primary()
+	assert_almost_eq(float(eq.get(&"_swing_t")), 0.2, 1e-6, "the swing in progress keeps its clock")
+	assert_eq(_player.state.stats.stamina, spent, "and no second stamina cost")
+
+
+func test_a_swing_lands_with_input_off() -> void:
+	_equip(&"stone_axe")
+	var eq: PlayerEquipment = _player.equipment
+	eq.primary()
+	assert_gte(float(eq.get(&"_swing_t")), 0.0)
+	for i: int in 90:
+		await get_tree().physics_frame
+	assert_lt(float(eq.get(&"_swing_t")), 0.0, "the swing reached its contact frame though input is off")
+
+
+func test_too_winded_to_swing_says_so() -> void:
+	_equip(&"stone_axe")
+	_player.state.stats.stamina = 2.0
+	watch_signals(Events)
+	_player.equipment.primary()
+	assert_lt(float(_player.equipment.get(&"_swing_t")), 0.0, "no swing")
+	assert_signal_emitted(Events, "player_status_message", "the screen says why")
+
+
+func test_steady_chopping_regains_stamina_between_swings() -> void:
+	# survival.json regen_delay_melee: swung at its attack_time, a stone axe regains part of each
+	# swing's cost, so a fir (7-11 hits) doesn't empty the bar.
+	_equip(&"stone_axe")
+	var def: ItemDef = Content.item(&"stone_axe")
+	var stats: SurvivalStats = _player.state.stats
+	var start: float = stats.stamina
+	for i: int in 8:
+		_player.equipment.set(&"_cooldown", 0.0)
+		_player.equipment.set(&"_swing_t", -1.0)
+		_player.equipment.primary()
+		stats.tick_realtime(def.equip_num("attack_time"))
+	assert_gt(stats.stamina, start - 8.0 * def.equip_num("stamina") * 0.75, "regained a share of every swing's cost")
+	assert_gt(stats.stamina, 20.0, "eight swings leave stamina to spare")

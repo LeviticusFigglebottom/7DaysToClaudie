@@ -17,6 +17,8 @@ var player: Player
 var current: StringName = &""
 var _cooldown: float = 0.0
 var _swing_t: float = -1.0
+## When "too winded to swing" was last said (s, ticks clock), so it is said once, not every press.
+var _tired_said: float = -1000.0
 var _light: Light3D = null
 var _light_on: bool = false
 var viewmodel: ViewModel
@@ -53,6 +55,12 @@ func _physics_process(delta: float) -> void:
 	_cooldown = maxf(0.0, _cooldown - delta)
 	_sync_equipped()
 	_update_bow(delta)
+	# A swing under way lands on time even if input goes away mid-swing (a menu, a driven run).
+	if _swing_t >= 0.0:
+		_swing_t += delta
+		if _swing_t >= _swing_len * _hit_frac:
+			_swing_t = -1.0
+			_resolve_hit()
 	if not player.input_enabled:
 		return
 	for i: int in player.state.toolbelt.size():
@@ -89,11 +97,6 @@ func _physics_process(delta: float) -> void:
 		_reload_left -= delta
 		if _reload_left < 0.0:
 			_finish_reload()
-	if _swing_t >= 0.0:
-		_swing_t += delta
-		if _swing_t >= _swing_len * _hit_frac:
-			_swing_t = -1.0
-			_resolve_hit()
 
 
 ## Hold Attack to draw, let go to loose, Block to let down (BowHandler). Input off or the mouse
@@ -163,6 +166,11 @@ func primary() -> void:
 		if viewmodel != null:
 			viewmodel.play_use(&"place", 0.35)
 		return
+	# A swing in progress lands before the next begins: restarting its clock lost the pending hit
+	# (the first-hour audit's felling: one swing in four connected) and still cost the stamina.
+	var melee: bool = def == null or (str(def.equip.get("kind", "")) in ["melee", "light"] and def.equip.has("damage"))
+	if melee and _swing_t >= 0.0:
+		return
 	if def == null:
 		_punch()
 		return
@@ -206,7 +214,8 @@ func secondary() -> void:
 
 
 func _punch() -> void:
-	if not player.state.stats.spend_stamina(5.0):
+	if not player.state.stats.spend_stamina(5.0, _melee_regen_delay()):
+		_too_tired()
 		return
 	_cooldown = 0.6
 	_begin_swing(&"punch", 0.6)
@@ -215,13 +224,32 @@ func _punch() -> void:
 
 func _start_swing(def: ItemDef) -> void:
 	var cost: float = def.equip_num("stamina", 10.0)
-	if not player.state.stats.spend_stamina(cost):
+	if not player.state.stats.spend_stamina(cost, _melee_regen_delay()):
+		_too_tired()
 		return
 	_cooldown = def.equip_num("attack_time", 0.8)
 	var style: StringName = ViewModelHolds.attack_style(def, ViewModelHolds.hold_class(def))
 	_begin_swing(style if style != &"" else &"punch", _cooldown)
 	Audio.play_3d(&"sfx/swing_whoosh", player.global_position + Vector3.UP * 1.4, {"volume_db": -8.0, "occlusion": false})
 	swung.emit()
+
+
+## Stamina comes back this soon after a swing (survival.json stamina.regen_delay_melee): with the
+## sprint's delay, a swing every 0.85 s never regained any and a fir emptied the bar in 8 swings.
+func _melee_regen_delay() -> float:
+	return float((Content.config(&"survival").get("stamina", {}) as Dictionary).get("regen_delay_melee", -1.0))
+
+
+## Too winded to swing: the arms sag through a weak, short motion and the screen says so (at most
+## every few seconds), instead of the press doing nothing at all.
+func _too_tired() -> void:
+	_cooldown = 0.5
+	if viewmodel != null:
+		viewmodel.motion.landed(4.0)
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if now - _tired_said >= 3.0:
+		_tired_said = now
+		Events.player_status_message.emit("Too winded to swing. Catch your breath.", &"warning")
 
 
 ## Starts the swing's clock (it connects at its style's contact frame) and its arms action.
