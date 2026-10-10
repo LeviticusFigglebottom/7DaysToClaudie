@@ -44,6 +44,9 @@ var _held_hand: String = "R"
 var _manual: Node3D = null
 var _log: Node3D = null
 var _flame: Node3D = null
+## An item shown for a moment in the other hand (the lighter while a molotov's rag is lit; TD-291).
+var _offhand: Node3D = null
+var _offhand_left: float = -1.0
 ## The held flame's current lean (camera frame), springing towards what the turn and walk ask.
 var _flame_lean := Vector3.ZERO
 var _lit: bool = false
@@ -366,6 +369,44 @@ func play_use(use: StringName, duration: float = 0.0) -> bool:
 	if _play_once(StringName("fp_%s" % use), duration):
 		return true
 	return _play_once(&"fp_use", duration) if use in [&"eat", &"drink", &"apply"] else false
+
+
+## Shows `item_id` in the hand the held item isn't in (viewmodel.json `offhand.<item>`: pos and
+## rot in that hand's socket) for `seconds` (TD-291: the lighter that lights a molotov's rag).
+func show_offhand(item_id: StringName, seconds: float) -> void:
+	_drop_offhand()
+	var def: ItemDef = Content.item(item_id)
+	var spec: Dictionary = (cfg.get("offhand", {}) as Dictionary).get(String(item_id), {})
+	var hand: String = "R" if _held_hand == "L" else "L"
+	var sock: Node3D = _sock.get(hand, null)
+	if def == null or sock == null or not has_arms():
+		return
+	_offhand = _make_item(def)
+	sock.add_child(_offhand)
+	_offhand.transform = offhand_transform(spec)
+	_set_layers(_offhand)
+	_offhand_left = maxf(0.05, seconds)
+
+
+## A hand socket's placement for an offhand item from its viewmodel.json spec. Pure.
+static func offhand_transform(spec: Dictionary) -> Transform3D:
+	var p: Array = spec.get("pos", [0.0, 0.0, 0.0])
+	var r: Array = spec.get("rot", [0.0, 0.0, 0.0])
+	var b := Basis.from_euler(Vector3(deg_to_rad(float(r[0])), deg_to_rad(float(r[1])), deg_to_rad(float(r[2]))))
+	return Transform3D(b.scaled(Vector3.ONE * float(spec.get("scale", 1.0))), Vector3(float(p[0]), float(p[1]), float(p[2])))
+
+
+func _drop_offhand() -> void:
+	if _offhand != null and is_instance_valid(_offhand):
+		_offhand.queue_free()
+	_offhand = null
+	_offhand_left = -1.0
+
+
+## Seconds of the `use` action (fp_<use>), 0 without it.
+func use_length(use: StringName) -> float:
+	var a := StringName("fp_%s" % use)
+	return _anim.get_animation(a).length if has_action(a) else 0.0
 
 
 ## Turns the held item over to look at it (viewmodel.json `uses.inspect_<hold class>`): false when
@@ -878,6 +919,10 @@ func _show_log(on: bool) -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	tether.update(delta)
+	if _offhand_left >= 0.0:
+		_offhand_left -= delta
+		if _offhand_left < 0.0:
+			_drop_offhand()
 	var cam: Camera3D = get_parent() as Camera3D
 	if cam != null:
 		visible = cam.current and not _aim_hidden
@@ -961,7 +1006,9 @@ func _climb_step(delta: float, cam: Camera3D) -> void:
 		_action = cyc
 		_action_end = INF
 	if cam != null and climb.anchor > 0.0:
-		_rig.transform = Transform3D(climb.rig_basis(cam.global_transform.basis), Vector3.ZERO) * _rig.transform
+		# Square to the ladder, then scaled across the screen for the player's FOV (TD-296).
+		var k: float = climb.rig_scale(cam.fov)
+		_rig.transform = Transform3D(Basis.from_scale(Vector3(k, k, 1.0)) * climb.rig_basis(cam.global_transform.basis), Vector3.ZERO) * _rig.transform
 
 
 ## Whether the item in hand is put away (climbing).

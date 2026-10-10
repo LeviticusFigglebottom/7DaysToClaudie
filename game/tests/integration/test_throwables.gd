@@ -235,3 +235,24 @@ func test_a_ground_fire_burns_what_stands_in_it_and_goes_out() -> void:
 	assert_eq(_stimuli.lights.size(), 0, "its light is gone")
 	fire.advance(100.0)
 	assert_true(fire.is_queued_for_deletion(), "and once the smoke clears it is gone")
+
+
+func test_lighting_a_molotov_wears_the_lighter_and_its_flame_flies_upright() -> void:
+	# TD-291: a lit bottle's flame spun with it; the lighter was never shown or worn.
+	var p := PlayerState.new()
+	p.inventory.add_item(&"lighter", 1)
+	var lighter: ItemStack = p.inventory.find_tool("lighter")
+	assert_not_null(lighter)
+	var before: float = lighter.durability
+	ThrowHand.wear_lighter(p, lighter)
+	assert_almost_eq(lighter.durability, before - 1.0, 0.001, "one flick")
+	lighter.durability = 1.0
+	ThrowHand.wear_lighter(p, lighter)
+	assert_false(p.inventory.has(&"lighter"), "spent, it is gone")
+	var tumbling := Basis(Vector3(1, 0.3, 0.2).normalized(), 2.1).scaled(Vector3.ONE * 0.8)
+	var up: Basis = ThrownItem.upright(tumbling)
+	assert_true(up.y.normalized().is_equal_approx(Vector3.UP), "the flame burns up")
+	assert_almost_eq(up.get_scale().x, 0.8, 0.001, "its size kept")
+	var xf: Transform3D = ViewModel.offhand_transform({"pos": [0.01, 0.02, 0.03], "rot": [0, 90, 0]})
+	assert_true(xf.origin.is_equal_approx(Vector3(0.01, 0.02, 0.03)))
+	assert_true((xf.basis * Vector3.FORWARD).is_equal_approx(Vector3.LEFT), "turned in the hand")

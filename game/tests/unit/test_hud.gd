@@ -247,3 +247,10 @@ func test_lines_wait_under_the_death_and_sleep_screens() -> void:
 	assert_false(GameUI.feed_held(false, false))
 	assert_true(GameUI.feed_held(true, false))
 	assert_true(GameUI.feed_held(false, false, true), "not over a note being read")
+
+
+func test_the_bow_draw_meter_reads_the_string() -> void:
+	# TD-291: no cue for how far the bow is drawn.
+	assert_eq(GameUI.draw_meter_color(0.5, 0.0), Color(UiStyle.KIT_TEXT, 0.8), "drawing")
+	assert_eq(GameUI.draw_meter_color(1.0, 0.5), UiStyle.RUST_BRIGHT, "full draw")
+	assert_almost_eq(GameUI.draw_meter_color(1.0, 3.0).r, 0.95, 0.01, "the arms shaking")

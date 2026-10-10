@@ -8665,12 +8665,13 @@
     "block_deg": 4.0
   },
   "climb": {
-    "_doc": "Climbing arms (ViewModelClimb, ADR-0057): the hand-over-hand cycle advances by the metres climbed over cycle_m (a gripping hand rides down 0.89 m of view per metre climbed at the hold's depth, so it stays on the rail), backwards climbing down, still holding on. grab_time / release_time: seconds of the grab-on and let-go. anchor: the arms stay level and square to the ladder, not the view (1 = fully).",
+    "_doc": "Climbing arms (ViewModelClimb, ADR-0057): the hand-over-hand cycle advances by the metres climbed over cycle_m (a gripping hand rides down 0.89 m of view per metre climbed at the hold's depth, so it stays on the rail), backwards climbing down, still holding on. grab_time / release_time: seconds of the grab-on and let-go. anchor: the arms stay level and square to the ladder, not the view (1 = fully). bake_fov: the world FOV the climb poses were baked for; at another FOV the rig is scaled across the screen by tan(bake/2)/tan(fov/2) so the hands stay on the rails (TD-296).",
     "cycle_m": {
       "climb": 0.578,
       "climb_rope": 0.482
     },
     "grab_time": 0.3,
+    "bake_fov": 75.0,
     "release_time": 0.35,
     "anchor": 1.0
   },

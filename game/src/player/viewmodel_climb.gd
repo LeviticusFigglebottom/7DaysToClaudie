@@ -36,6 +36,10 @@ var cycle_m: Dictionary = {LADDER: 0.58, ROPE: 0.48}
 var grab_time: float = 0.3
 var release_time: float = 0.35
 var anchor_max: float = 1.0
+## The world camera's vertical FOV the climb poses were baked for (Settings.fov's default): the
+## arms draw at the viewmodel's own FOV, the rails at the player's, so at any other FOV the rig is
+## scaled across the screen to put the hands back on the rails (TD-296).
+var bake_fov: float = 75.0
 
 
 func setup(cfg: Dictionary) -> void:
@@ -46,6 +50,7 @@ func setup(cfg: Dictionary) -> void:
 	grab_time = maxf(0.05, float(c.get("grab_time", grab_time)))
 	release_time = maxf(0.05, float(c.get("release_time", release_time)))
 	anchor_max = clampf(float(c.get("anchor", anchor_max)), 0.0, 1.0)
+	bake_fov = clampf(float(c.get("bake_fov", bake_fov)), 30.0, 120.0)
 
 
 # --- The player's climbing, duck-typed -------------------------------------------------------
@@ -158,6 +163,19 @@ func release_action() -> StringName:
 ## Seconds into the cycle action of `length` seconds for the current phase.
 func cycle_time(length: float) -> float:
 	return phase * length
+
+
+## How much to scale the arms across the screen (x and y in camera space) so hands baked for
+## `bake` degrees of world FOV land on rails seen at `world` degrees: 1 at the bake FOV, under 1
+## wider (the rails crowd toward the middle). Pure.
+static func fov_scale(world: float, bake: float) -> float:
+	var w: float = tan(deg_to_rad(clampf(world, 20.0, 150.0)) * 0.5)
+	return tan(deg_to_rad(bake) * 0.5) / maxf(w, 0.001)
+
+
+## The rig's screen scale now: fov_scale blended in with `anchor` (only on the rails).
+func rig_scale(world_fov: float) -> float:
+	return lerpf(1.0, fov_scale(world_fov, bake_fov), anchor)
 
 
 ## The arms' turn under the camera that keeps them level and facing the ladder (`face` points from

@@ -10,6 +10,9 @@ var _loading_map: LoadingMap
 var _loading_bar: ProgressBar
 var _hud: Control
 var _crosshair: Control
+## The bow's draw under the crosshair (TD-291): fills as the string comes back, rust at full draw.
+var _draw_meter: ColorRect
+var _draw_fill: ColorRect
 var _prompt: Label
 var _tool_hint: Label
 ## Toolbelt strip: shown for a moment whenever the held item or the belt changes.
@@ -507,6 +510,21 @@ func _build_hud() -> void:
 	_crosshair.position = Vector2(-1.5, -1.5)
 	_crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud.add_child(_crosshair)
+	_draw_meter = ColorRect.new()
+	_draw_meter.color = Color(0.05, 0.05, 0.04, 0.45)
+	_draw_meter.anchor_left = 0.5
+	_draw_meter.anchor_right = 0.5
+	_draw_meter.anchor_top = 0.5
+	_draw_meter.anchor_bottom = 0.5
+	_draw_meter.position = Vector2(-DRAW_METER_W * 0.5, 16)
+	_draw_meter.size = Vector2(DRAW_METER_W, 3)
+	_draw_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_draw_meter.visible = false
+	_draw_fill = ColorRect.new()
+	_draw_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_draw_fill.size = Vector2(0, 3)
+	_draw_meter.add_child(_draw_fill)
+	_hud.add_child(_draw_meter)
 	_prompt = Label.new()
 	_prompt.anchor_left = 0.5
 	_prompt.anchor_right = 0.5
@@ -748,6 +766,7 @@ func _process(delta: float) -> void:
 	if w == null or w.get("player") == null or w.player == null:
 		return
 	var p: Player = w.player
+	_update_draw_meter(p.equipment.bow if p.equipment != null else null)
 	if p.interaction != null:
 		# Nothing to act on through the death or sleep screen.
 		_prompt.text = PlayerInteraction.prompt_line(PlayerInteraction.key_label(&"interact"), p.interaction.prompt, p.interaction.prompt_hold) if not _overlay.visible else ""
@@ -804,6 +823,28 @@ func _process(delta: float) -> void:
 	else:
 		_hum_label.text = ""
 	_crosshair.visible = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+
+
+const DRAW_METER_W: float = 44.0
+
+
+func _update_draw_meter(bow: BowHandler) -> void:
+	var f: float = bow.frac if bow != null and bow.drawing else 0.0
+	_draw_meter.visible = f > 0.0 and not _overlay.visible
+	if not _draw_meter.visible:
+		return
+	_draw_fill.size.x = DRAW_METER_W * f
+	_draw_fill.color = draw_meter_color(f, bow.full_t)
+
+
+## The meter's fill: pale while drawing, rust at full draw, flickering once the arms begin to shake
+## (past the free hold, stamina spent each second). Pure.
+static func draw_meter_color(frac: float, full_t: float, free_hold: float = 2.5) -> Color:
+	if frac < 1.0:
+		return Color(UiStyle.KIT_TEXT, 0.8)
+	if full_t > free_hold:
+		return Color(0.95, 0.35, 0.3, 0.9 if fmod(full_t * 6.0, 1.0) < 0.5 else 0.5)
+	return UiStyle.RUST_BRIGHT
 
 
 func _update_belt(ps: PlayerState, delta: float) -> void:
