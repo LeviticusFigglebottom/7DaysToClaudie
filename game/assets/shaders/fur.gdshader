@@ -34,7 +34,13 @@ uniform bool wing_flap = false;
 // Shoulder line of the wings (object space, metres out from the midline) and the flap's reach.
 uniform float shoulder_x = 0.02;
 uniform float flap_degrees = 55.0;
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float instance_variation = 0.5;
+#else
 instance uniform float instance_variation : instance_index(1) = 0.5;
+#endif
 global uniform float hm_wetness;
 
 varying float v_tip;
