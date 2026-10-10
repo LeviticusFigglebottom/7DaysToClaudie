@@ -9,7 +9,8 @@ extends Node3D
 ## `build()` makes it all at once (seconds: D6 composed at 2 m, its mesh, the water and a tree
 ## scatter from the region's biome and vegetation masks); `place_still(i)` puts the camera on still i,
 ## grows the game's own ground cover and undergrowth (VegetationScatter's medium and ground layers)
-## in front of it, and sets the still's light (STILL_MOODS: three at dusk, one at a misty dawn).
+## in front of it, and sets the still's light (STILL_MOODS: dusk, a misty dawn, a rainstorm). The
+## region's buildings along the river are built whole (SHELL_REACH).
 
 const MAIN_WORLD_DIR: String = "res://world/main_map"
 const REGION: String = "d6_larch_hollow"
@@ -19,10 +20,10 @@ const SPACING: float = 2.0
 ## Metres per second along the river (the old live flight's pace; tests keep the path long enough).
 const SPEED: float = 2.4
 ## Where the stills are taken, as shares of the river path's usable length.
-const STILLS: PackedFloat32Array = [0.14, 0.38, 0.62, 0.86]
-## The light of each still: MenuBackdrop dissolves from one to the next, so a dawn among the dusks
-## reads as the valley's day turning over (TD-378).
-const STILL_MOODS: PackedStringArray = ["dusk", "dusk", "dawn_mist", "dusk"]
+const STILLS: PackedFloat32Array = [0.1, 0.3, 0.5, 0.7, 0.9]
+## The light of each still: MenuBackdrop dissolves from one to the next, so the valley's weather
+## turns over as the menu drifts: dusk, a misty dawn, a rainstorm passing, dusk again (TD-378).
+const STILL_MOODS: PackedStringArray = ["dusk", "dusk", "dawn_mist", "storm", "dusk"]
 ## Per mood: the sun (direction towards it, colour, energy), the sky shader's colours and amounts,
 ## and the fog. mist > 0 lays height fog that far over the river below the camera.
 const MOODS: Dictionary = {
@@ -38,6 +39,13 @@ const MOODS: Dictionary = {
 		"horizon": Color(0.74, 0.68, 0.68), "sunset": Color(1.0, 0.62, 0.45), "sunset_amount": 0.55,
 		"night": 0.04, "cloud": 0.3, "stars": 0.04, "ambient": 0.85,
 		"fog_color": Color(0.7, 0.7, 0.74), "fog_density": 0.0028, "mist": 6.0},
+	# A rainstorm: low cloud over the whole sky, the light flat and cold, the far bank lost in
+	# the rain's haze, streaks of rain in front of the lens (rain > 0: that many).
+	"storm": {"sun_dir": Vector3(0.25, 0.6, -0.45), "sun_color": Color(0.72, 0.78, 0.88), "sun_energy": 0.3,
+		"sky_sun": Vector3(0.7, 0.75, 0.85), "sky_sun_energy": 0.15, "zenith": Color(0.15, 0.17, 0.2),
+		"horizon": Color(0.36, 0.39, 0.42), "sunset": Color(0.4, 0.42, 0.45), "sunset_amount": 0.0,
+		"night": 0.18, "cloud": 0.97, "stars": 0.0, "ambient": 0.75,
+		"fog_color": Color(0.33, 0.36, 0.4), "fog_density": 0.0065, "mist": 0.0, "saturation": 0.68, "rain": 9000},
 }
 ## The real scatter (VegetationScatter, the game's seed for the main map's look) is grown per still
 ## over chunks within these metres of the camera and in front of it: undergrowth (bushes, rocks,
@@ -47,6 +55,10 @@ const MOODS: Dictionary = {
 const MEDIUM_REACH: float = 320.0
 const GROUND_REACH: float = 150.0
 const SCATTER_SEED: int = 4471
+## The region's own buildings (its `poi` placements, built whole by PoiBuilder as the game builds
+## them) within this many metres of the river path: the clinic, the gas garage, the motel and the
+## lookout on its ridge stand along the Tamsin (TD-378). Town lots (Pell's Crossing) are left out.
+const SHELL_REACH: float = 260.0
 ## Tree scatter: one candidate per CELL metres, kept by the region's vegetation mask and biome.
 const CELL: float = 7.0
 const TILE: float = 128.0
@@ -96,6 +108,7 @@ func build() -> bool:
 	_build_trees((_data["trees"] as Dictionary).keys())
 	_rt = _data["rt"]
 	_water_grid = water_grid(_rt.water)
+	_build_shells(shells_near(_rt.placements, _path, SHELL_REACH))
 	_data.clear()
 	return not _path.is_empty()
 
@@ -103,8 +116,12 @@ func build() -> bool:
 ## Puts the camera on still `i` (of STILLS), with its light and the plants in front of it.
 func place_still(i: int) -> void:
 	_place_camera(still_distance(STILLS[i], _path_len))
-	apply_mood(STILL_MOODS[i] if i < STILL_MOODS.size() else "dusk")
+	var mood: String = STILL_MOODS[i] if i < STILL_MOODS.size() else "dusk"
+	apply_mood(mood)
 	grow_near()
+	var rain: int = int((MOODS.get(mood, {}) as Dictionary).get("rain", 0))
+	if rain > 0:
+		_near.add_child(rain_streaks(_cam.global_transform, rain, SCATTER_SEED + i))
 
 
 ## The still's light (a key of MOODS).
@@ -124,6 +141,7 @@ func apply_mood(mood: String) -> void:
 	_env.ambient_light_energy = m["ambient"]
 	_env.fog_light_color = m["fog_color"]
 	_env.fog_density = m["fog_density"]
+	_env.adjustment_saturation = float(m.get("saturation", 0.88))
 	var mist: float = float(m["mist"])
 	# Height fog: thick below the river's level plus `mist`, thinning above (Godot's height fog).
 	_env.fog_height = _water_below(_cam.global_position) + mist if mist > 0.0 else 0.0
@@ -173,6 +191,86 @@ func grow_near() -> void:
 		var model: String = sp.models[int(parts[2]) % sp.models.size()]
 		var mesh: Mesh = ModelLibrary.mesh(model, "rock" if sp.veg_kind == "rock" else "plant")
 		_near.add_child(_plants(mesh, groups[gk], GROUND_REACH if ground else 0.0, not ground))
+
+
+## The `poi` placements within `reach` m (horizontally) of any point of `path`.
+static func shells_near(placements: Array, path: PackedVector3Array, reach: float) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for pl: Variant in placements:
+		var d: Dictionary = pl
+		if str(d.get("kind", "")) != "poi" or not d.has("origin"):
+			continue
+		var o: Array = d["origin"]
+		var at := Vector2(float(o[0]), float(o[2]))
+		for p: Vector3 in path:
+			if at.distance_to(Vector2(p.x, p.z)) <= reach:
+				out.append(d)
+				break
+	return out
+
+
+func _build_shells(list: Array[Dictionary]) -> void:
+	for pl: Dictionary in list:
+		var pd: PoiDef = Content.get_def(&"poi", StringName(str(pl.get("def", "")))) as PoiDef
+		if pd == null:
+			continue
+		var inst: PoiInstance = PoiBuilder.build(PoiLayout.compile(pd), StringName("menu/%s" % pl.get("id", pd.id)))
+		if inst == null:
+			continue
+		_root.add_child(inst)
+		var o: Array = pl["origin"]
+		# As PoiManager places a building (its _placement_xf).
+		inst.global_transform = Transform3D(Basis(Vector3.UP, -deg_to_rad(float(pl.get("rotation", 0.0)))), Vector3(float(o[0]), float(o[1]), float(o[2])))
+
+
+## Rain in front of the lens: `count` thin streaks, 4-70 m out and spread over the view, each
+## turned to face the camera and slanted a little by the wind (a still: no motion, so the streaks
+## carry the motion blur a shutter would). Unshaded and faint, so it reads as rain, not snow.
+static func rain_streaks(cam: Transform3D, count: int, seed_v: int) -> MultiMeshInstance3D:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.018, 1.1)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.albedo_color = Color(0.78, 0.81, 0.86, 0.2)
+	quad.material = mat
+	var xf: Array[Transform3D] = rain_transforms(cam, count, seed_v)
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = quad
+	mm.instance_count = xf.size()
+	for k: int in xf.size():
+		mm.set_instance_transform(k, xf[k])
+	var mmi := MultiMeshInstance3D.new()
+	mmi.name = "Rain"
+	mmi.multimesh = mm
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mmi
+
+
+## Where rain_streaks puts its streaks (deterministic per seed).
+static func rain_transforms(cam: Transform3D, count: int, seed_v: int) -> Array[Transform3D]:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_v
+	var out: Array[Transform3D] = []
+	var fwd: Vector3 = -cam.basis.z
+	var right: Vector3 = cam.basis.x
+	var slant: float = deg_to_rad(9.0)
+	for k: int in count:
+		# Nearer streaks are fewer per metre of depth than far ones cover per pixel: sqrt spreads them.
+		var d: float = lerpf(4.0, 70.0, sqrt(rng.randf()))
+		var side: float = rng.randf_range(-0.85, 0.85) * d
+		var up: float = rng.randf_range(-0.55, 0.45) * d
+		var pos: Vector3 = cam.origin + fwd * d + right * side + Vector3.UP * up
+		# Face the camera around the vertical, then lean with the wind.
+		var to_cam: Vector3 = cam.origin - pos
+		to_cam.y = 0.0
+		var b := Basis.looking_at(-to_cam.normalized() if to_cam.length() > 0.01 else fwd, Vector3.UP)
+		b = b * Basis(Vector3.BACK, slant * rng.randf_range(0.7, 1.3))
+		var len_s: float = rng.randf_range(0.7, 1.3) * (1.0 + d / 40.0)
+		out.append(Transform3D(b.scaled_local(Vector3(1.0 + d / 30.0, len_s, 1.0)), pos))
+	return out
 
 
 ## Chunks (VegetationScatter's 64 m) of `rect` within `reach` of `at` and in front of the camera
