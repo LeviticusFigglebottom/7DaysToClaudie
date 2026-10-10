@@ -643,7 +643,8 @@ static func action(piece: StructurePiece, player: Player) -> Array:
 			if not on:
 				return [&"power.toggle", args, "Start the generator · fuel %s" % BaseTech.hours_text(fuel)]
 			var load: float = float(current.loads.get(String(piece.piece_id), 0.0)) if current != null else 0.0
-			return [&"power.toggle", args, "Stop the generator · fuel %s · load %d%%" % [BaseTech.hours_text(fuel), int(load * 100.0)]]
+			return [&"power.toggle", args, "Stop the generator · fuel %s · load %d%%%s" % [BaseTech.hours_text(fuel), int(load * 100.0),
+				_tuned_text(piece.global_position)]]
 		"turret":
 			var t: Dictionary = BaseTech.power_cfg("turret")
 			var ammo: int = int(st.get("ammo", 0))
@@ -666,6 +667,18 @@ static func _no_power(on: bool, live: bool, grid: bool) -> String:
 	if on:
 		return " (it's on, but the generator can't carry it too)" if grid else " (it's on, but there's no power: wire it to a running generator)"
 	return "" if grid else " (no power: wire it to a running generator)"
+
+
+## " · Ezra keeps it tuned" while his Lineman perk cuts this running generator's fuel (TD-310):
+## the saving shows where the player reads the fuel.
+static func _tuned_text(at: Vector3) -> String:
+	var w: Node = current.world if current != null else null
+	var crew: Node = w.get(&"companion") if w != null else null
+	if crew == null or not crew.has_method(&"fuel_factor") or float(crew.call(&"fuel_factor", at)) >= 1.0:
+		return ""
+	var cd: Variant = crew.get(&"cdef")
+	var nm: String = (cd as ContentDef).display_name.split(" ")[0] if cd is ContentDef and (cd as ContentDef).display_name != "" else "Ezra"
+	return " · %s keeps it tuned" % nm
 
 
 static func prompt(piece: StructurePiece, player: Player) -> String:

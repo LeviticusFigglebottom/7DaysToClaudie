@@ -47,11 +47,12 @@
         "gap": 2.0, "repeat": 6.0,
         "lines": {
           "spotted": "voice/ezra_spotted:line", "hurt": "voice/ezra_hurt:line", "full": "voice/ezra_full:line",
-          "store_full": "voice/ezra_full:2", "cant_reach": "voice/ezra_cant_reach", "downed": "voice/ezra_downed",
+          "store_full": "voice/ezra_store_full:line", "cant_reach": "voice/ezra_cant_reach", "downed": "voice/ezra_downed",
           "revived": "voice/ezra_revived", "recruited": "voice/ezra_recruited",
-          "follow": "voice/ezra_ack:3", "stay": "voice/ezra_ack:4", "guard": "voice/ezra_ack:2", "gather": "voice/ezra_ack:1",
-          "fetch": "voice/ezra_ack:1", "store": "voice/ezra_ack:2", "fetched": "voice/ezra_ack:2", "stored": "voice/ezra_ack:2",
-          "given": "voice/ezra_ack:2", "done": "voice/ezra_ack:2"
+          "follow": "voice/ezra_follow:line", "stay": "voice/ezra_stay:line", "guard": "voice/ezra_guard:line",
+          "gather": "voice/ezra_gather:line", "fetch": "voice/ezra_fetch:line", "store": "voice/ezra_store:line",
+          "fetched": "voice/ezra_fetched:line", "stored": "voice/ezra_stored:line", "given": "voice/ezra_given:line",
+          "done": "voice/ezra_done:line", "refused": "voice/ezra_refused:line"
         }
       },
       "perks": [

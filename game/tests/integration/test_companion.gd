@@ -660,13 +660,14 @@ func test_his_barks_are_voiced_and_rate_limited() -> void:
 	assert_eq(m.last_voice, "voice/ezra_spotted", "but not voiced within voice.gap of the last")
 	m._voice_t = -1000.0
 	m.bark("stay")
-	assert_eq(m.last_voice, "voice/ezra_ack")
-	assert_eq(m.last_voice_variant, 4, "id:N picks variant N")
+	assert_eq(m.last_voice, "voice/ezra_stay", "every order answer has its own line (TD-309)")
+	var stay_shown: int = (m.cdef.barks["stay"] as Array).find(lines[2])
+	assert_eq(m.last_voice_variant, stay_shown + 1, "spoken as shown")
 	m.bark("downed")
 	assert_eq(m.last_voice, "voice/ezra_downed", "urgent barks cut in")
 	Events.player_status_message.disconnect(on_msg)
 	var voice: Node = e.get_node_or_null(^"Voice")
-	if Audio.variants(&"voice/ezra_ack").is_empty():
+	if Audio.variants(&"voice/ezra_stay").is_empty():
 		assert_null(voice, "no sounds generated: silent, no player made")
 	else:
 		assert_true(voice is Sound3D and (voice as Sound3D).playing, "played from his body")
@@ -864,6 +865,15 @@ func test_his_perks_come_with_the_days() -> void:
 	assert_almost_eq(e.ally.perk("chop_power", 1.0), 1.25, 0.001)
 	assert_almost_eq(_dir.fuel_factor(gen_at), 0.75, 0.001, "a generator near him burns a quarter less")
 	assert_eq(_dir.fuel_factor(e.global_position + Vector3(80, 0, 0)), 1.0, "not one far off")
+	# The generator's prompt says so where the fuel is read (TD-310).
+	var btm := BaseTechManager.new()
+	btm.world = _world
+	var prev_btm: BaseTechManager = BaseTechManager.current
+	BaseTechManager.current = btm
+	assert_string_contains(BaseTechManager._tuned_text(gen_at), "Ezra keeps it tuned")
+	assert_eq(BaseTechManager._tuned_text(e.global_position + Vector3(80, 0, 0)), "", "not one far off")
+	BaseTechManager.current = prev_btm
+	btm.free()
 	e.ally.go_down(null, 60.0)
 	assert_eq(_dir.fuel_factor(gen_at), 1.0, "nor while he is down")
 	# The card lists his knacks.
