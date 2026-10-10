@@ -122,7 +122,8 @@ FINGER_SHAPE = {"ix": ((0.0098, 0.0086, 0.0080, 0.0070), 0.0068),
                 "md": ((0.0100, 0.0088, 0.0082, 0.0072), 0.0071),
                 "rg": ((0.0095, 0.0086, 0.0079, 0.0069), 0.0067),
                 "pk": ((0.0084, 0.0075, 0.0069, 0.0061), 0.0059)}
-THUMB_RADII = (0.0125, 0.0113, 0.0103, 0.0089)    # CMC, MCP, IP, tip
+# The thumb tapers to its tip (a round 9 mm end read as a bulb on the lighter's wheel).
+THUMB_RADII = (0.0125, 0.0113, 0.0099, 0.0080)    # CMC, MCP, IP, tip
 THUMB_NAIL_HL = 0.0075
 THUMB_DISTAL = 0.026
 # A digit's cross-section: its half-depth on the back and on the palm side, in radii (the width is

@@ -222,12 +222,12 @@
       "no_tether": true
     },
     "empty": {
-      "_doc": "Bare hands at the lower edge, ready: relaxed, the fingers lightly and evenly curled (the little finger a little further) and lying together, the end joints nearly straight (player report 5: hooked further, they read as crooked claws).",
+      "_doc": "Bare hands low at the lower edge, mostly below the frame (only the backs and the knuckle line show): relaxed and nearly straight, the fingers together in a gentle even curve, the end joints barely bent (player report 5: curled further, from above they read as claws).",
       "pose": {
         "R": {
           "grip": [
             0.2,
-            -0.175,
+            -0.22,
             -0.36
           ],
           "wrist": [
@@ -238,10 +238,10 @@
           "fist": 0.55,
           "thumb": 0.15,
           "curls": {
-            "index": 0.28,
-            "middle": 0.34,
-            "ring": 0.4,
-            "pinky": 0.46
+            "index": 0.12,
+            "middle": 0.15,
+            "ring": 0.19,
+            "pinky": 0.24
           },
           "elbow": [
             0.5,
@@ -253,7 +253,7 @@
         "L": {
           "grip": [
             -0.2,
-            -0.175,
+            -0.22,
             -0.36
           ],
           "wrist": [
@@ -264,10 +264,10 @@
           "fist": 0.55,
           "thumb": 0.15,
           "curls": {
-            "index": 0.28,
-            "middle": 0.34,
-            "ring": 0.4,
-            "pinky": 0.46
+            "index": 0.12,
+            "middle": 0.15,
+            "ring": 0.19,
+            "pinky": 0.24
           },
           "elbow": [
             -0.5,
@@ -1718,9 +1718,9 @@
       "pose": {
         "L": {
           "grip": [
-            -0.09,
             -0.1,
-            -0.34
+            -0.13,
+            -0.42
           ],
           "wrist": [
             -15,

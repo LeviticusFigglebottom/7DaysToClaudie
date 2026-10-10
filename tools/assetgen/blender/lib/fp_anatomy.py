@@ -41,6 +41,13 @@ VIEW_ASPECT = 16.0 / 9.0
 # The thumb may be drawn at most this many times the index finger's width (end joints, as seen
 # from the eye). Side by side an adult's is ~1.3; nearer the lens it grows. Report 5's lighter: 1.6.
 LOOM_MAX = 1.5
+# The thumb's end segment in view at least this far (degrees) off the line to the eye: nearer
+# along it, the pad or tip is seen end-on (report 5's lighter thumb, aimed ~20 degrees off).
+AIM_MIN = 35.0
+# Until the tether-reading hand and the punch are re-posed, a thumb aimed at the eye is reported
+# (prefixed WARN), not failed: see is_failure().
+AIM_STRICT = False
+WARN = "warn: "
 # Neighbouring fingers may press together this far (m: skin gives), no further.
 CROSS_MAX = 0.002
 # A sliver past a limit is rounding, not a pose.
@@ -139,6 +146,14 @@ def measure(sk, Q: dict) -> dict:
         out[f"{sd}.tip.thumb"] = _seen(tip)
         # How much wider than the index finger the thumb is drawn: its end joint's width over its
         # distance from the eye, against the index finger's (the mesh and the pose together).
+        # How square to the view ray the thumb's end segment lies (degrees, 90 = side-on): a
+        # thumb aimed along the ray shows its round pad or tip head-on and foreshortening makes it
+        # read huge whatever its width (the hub on report 5's lighter). 90 when out of view.
+        ip3, tip3 = pos[f"thumb_3.{sd}"], tip
+        seg3 = tip3 - ip3
+        ray = tip3 / max(1e-9, float(np.linalg.norm(tip3)))
+        c = abs(float(seg3 @ ray)) / max(1e-9, float(np.linalg.norm(seg3)))
+        out[f"{sd}.aim.thumb"] = 90.0 if _seen(tip3) > 8.0 else math.degrees(math.acos(min(1.0, c)))
         # (A thumb out of view looms over nothing.)
         th_ip = _seen(pos[f"thumb_3.{sd}"])
         ix_dip = float(np.linalg.norm(pos[f"index_3.{sd}"]))
@@ -155,6 +170,10 @@ def violations(name: str, frame: int, m: dict) -> list[str]:
         if part == "cross":
             if v > CROSS_MAX:
                 bad.append(f"{name}@{frame} {sd} {joint.replace('_', ' and ')} {v * 1000:.0f} mm into each other")
+            continue
+        if part == "aim":
+            if v < AIM_MIN:
+                bad.append(f"{'' if AIM_STRICT else WARN}{name}@{frame} {sd} thumb aimed {v:.0f} deg off the view ray (min {AIM_MIN:.0f})")
             continue
         if part == "loom":
             if v > LOOM_MAX:
@@ -206,7 +225,7 @@ def summarize(bad: list[str], limit: int = 40) -> list[str]:
     (the worst-looking first frame of each group kept), at most `limit` lines."""
     groups: dict = {}
     for b in bad:
-        head, rest = b.split(" ", 1)
+        head, rest = b[len(WARN):].split(" ", 1) if b.startswith(WARN) else b.split(" ", 1)
         action = head.split("@")[0]
         what = " ".join(rest.split(" ")[:2])
         key = (action, what)
@@ -215,3 +234,8 @@ def summarize(bad: list[str], limit: int = 40) -> list[str]:
         groups[key][1] += 1
     lines = [f"{first} (x{n} frames)" for first, n in groups.values()]
     return lines[:limit] + ([f"... {len(lines) - limit} more"] if len(lines) > limit else [])
+
+
+def is_failure(v: str) -> bool:
+    """A violation that fails the bake (not a warning)."""
+    return not v.startswith(WARN)

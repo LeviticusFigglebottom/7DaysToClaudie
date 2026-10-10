@@ -401,6 +401,10 @@ def build(params: dict, outputs: list[str]) -> None:
         # how far the wrist limits turned each hand from what the pose asked for
         turned.append(f"{name} " + "/".join(f"{sd}{solver.clamped.get(sd, 0.0):.0f}deg {solver.moved.get(sd, 0.0) * 100:.0f}cm"
                                             for sd in ("R", "L")))
+    warned = [v for v in anatomy if not fp_anatomy.is_failure(v)]
+    if warned:
+        print("[character_fp_arms] anatomy warnings:\n  " + "\n  ".join(fp_anatomy.summarize(warned)))
+    anatomy = [v for v in anatomy if fp_anatomy.is_failure(v)]
     if anatomy:
         raise ValueError(f"[character_fp_arms] {len(anatomy)} frame(s) outside a hand's range "
                          "(lib/fp_anatomy.py; tools/fp_hands_check.py lists them per action):\n  " +

@@ -47,7 +47,7 @@ def main() -> int:
     for line in A.summarize(bad, limit=400):
         print(line)
     print(f"[fp_hands_check] {len(summary)} actions, {len(bad)} frame violation(s)")
-    return 1 if bad else 0
+    return 1 if any(A.is_failure(b) for b in bad) else 0
 
 
 if __name__ == "__main__":
