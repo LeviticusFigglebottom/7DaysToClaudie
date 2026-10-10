@@ -52,6 +52,9 @@ var _instance: String = ""
 ## --game-env: the game hour to light the scene at with the game's EnvironmentController (-1 = the
 ## preview's own flat sky light).
 var _game_hour: float = -1.0
+## --room: the room letters to look across with --inside (each level's first that it has), in
+## place of its largest room.
+var _rooms: PackedStringArray = []
 var _world: Node3D
 var _sun: DirectionalLight3D
 var _ground: MeshInstance3D
@@ -103,6 +106,9 @@ func _parse_args() -> void:
 			"--game-env":
 				i += 1
 				_game_hour = float(a[i])
+			"--room":
+				i += 1
+				_rooms = a[i].split(",", false)
 			"--views":
 				i += 1
 				_views = a[i].split(",", false)
@@ -275,6 +281,13 @@ func _resolve_def(id: String) -> PoiDef:
 func _interiors(id: String, layout: PoiLayout) -> void:
 	_ground.visible = true
 	_sun.rotation_degrees = Vector3(-38.0, -35.0, 0.0)
+	# Each interior probe's daylight (PoiBuilder.daylight_ratio) and the share of the day fill it gets.
+	var cfg: Dictionary = Content.config(&"interior_light")
+	for probe: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+		var rp := probe as ReflectionProbe
+		var ratio: float = float(rp.get_meta(&"daylight")) if rp.has_meta(&"daylight") else -1.0
+		print("POI_PREVIEW %s probe at %s size %s: daylight %.3f, share %.2f" % [id, rp.position, rp.size, ratio,
+			EnvironmentController.daylight_share(cfg, ratio)])
 	for li: int in layout.level_ids:
 		var by_room: Dictionary = {}
 		for c: Vector2i in layout.room_cells(li):
@@ -283,9 +296,13 @@ func _interiors(id: String, layout: PoiLayout) -> void:
 				by_room[ch] = []
 			(by_room[ch] as Array).append(c)
 		var best: String = ""
-		for ch: String in by_room:
-			if best == "" or (by_room[ch] as Array).size() > (by_room[best] as Array).size():
-				best = ch
+		for want: String in _rooms:
+			if best == "" and by_room.has(want):
+				best = want
+		if _rooms.is_empty():
+			for ch: String in by_room:
+				if best == "" or (by_room[ch] as Array).size() > (by_room[best] as Array).size():
+					best = ch
 		if best == "":
 			continue
 		var cells: Array = by_room[best]
@@ -750,7 +767,7 @@ func _shoot(file_stem: String, settle: int = 8) -> void:
 	var img: Image = get_viewport().get_texture().get_image()
 	var out: String = _out_dir.path_join(file_stem + ".png")
 	img.save_png(out)
-	print("POI_PREVIEW wrote ", out)
+	print("POI_PREVIEW wrote %s (mean luma %.3f)" % [out, ImageStats.mean_luma(img)])
 
 
 func _frames(n: int) -> void:
