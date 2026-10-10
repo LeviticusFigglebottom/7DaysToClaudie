@@ -61,6 +61,9 @@ var last_voice_variant: int = 0
 var _voice: Sound3D = null
 ## Downed, the Hollowed that were on him keep at him until this time (downed.linger, TD-300).
 var _linger_until: float = -1000.0
+## The bodies (instance ids) that had him as their foe when he went down: only they keep at him
+## while he lies there (TD-312: a Hollow arriving in the linger window used to take him up).
+var _maulers: Dictionary = {}
 ## His errands (gather, fetch, store).
 var work: CompanionWork = null
 ## His own pack (CompanionDirector.inventory; set when the body is spawned).
@@ -281,6 +284,10 @@ func shrugs(info: DamageInfo) -> bool:
 		# Mauled where he lies: no health to lose, but he bleeds out the faster (TD-300).
 		downed_t = maxf(0.5, downed_t - CompanionDef.fnum(cdef.downed, "mauled", 6.0))
 		Audio.play_3d(&"sfx/hit_flesh", enemy.global_position + Vector3.UP * 0.3, {"volume_db": -4.0})
+		# Seen as well as heard (TD-312): blood where he lies, toward whoever is at him.
+		if enemy.get_parent() != null:
+			var at: Vector3 = info.hit_pos if info.hit_pos != Vector3.ZERO else enemy.global_position + Vector3.UP * 0.3
+			FxLibrary.burst(enemy.get_parent(), "blood", at, -info.direction if info.direction != Vector3.ZERO else Vector3.UP, 0.6)
 		return true
 	if not recruited or downed or rising_t > 0.0:
 		return true
@@ -300,6 +307,7 @@ func shrugs(info: DamageInfo) -> bool:
 func go_down(_info: DamageInfo = null, seconds: float = -1.0) -> void:
 	downed = true
 	_linger_until = enemy._now() + CompanionDef.fnum(cdef.downed, "linger", 8.0) if seconds < 0.0 else -1000.0
+	_maulers = _bodies_on_him()
 	downed_t = seconds if seconds >= 0.0 else CompanionDef.fnum(cdef.downed, "seconds", 180.0)
 	enemy.health = 0.0
 	enemy.foe = null
@@ -323,6 +331,23 @@ func get_up(fraction: float) -> void:
 	enemy._set_state(Enemy.State.STAGGER)
 	rising_t = enemy.visual.play_once(&"revive", 1.0, [&"wake_lie", &"wake_sit", &"idle"] as Array[StringName])
 	enemy.visual.animate_placeholder(0.0, 0.0, false)
+
+
+## Whether `who` may take him up as a new foe: anyone while he stands; downed, only the bodies
+## that were already on him (they linger; nobody new joins in).
+func open_to(who: Enemy) -> bool:
+	return not downed or _maulers.has(who.get_instance_id())
+
+
+## Instance ids of the live bodies whose foe he is now.
+func _bodies_on_him() -> Dictionary:
+	var out: Dictionary = {}
+	var all: Variant = enemy.director.get(&"enemies") if enemy.director != null else null
+	if all is Dictionary:
+		for o: Variant in (all as Dictionary).values():
+			if o is Enemy and is_instance_valid(o) and (o as Enemy).foe == enemy:
+				out[(o as Enemy).get_instance_id()] = true
+	return out
 
 
 ## Out of play (not recruited yet, or down past downed.linger): nobody's foe.

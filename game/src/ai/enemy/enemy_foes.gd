@@ -55,6 +55,8 @@ static func scan(e: Enemy, pdist: float) -> void:
 	for o: Enemy in e.director.call(&"enemies_in_radius", e.global_position, sight):
 		if o == e or not o.is_alive() or not FactionDef.hostile(e.def.faction, o.def.faction):
 			continue
+		if o.ally != null and not o.ally.open_to(e):
+			continue  # TD-312: downed, Ezra is kept only by those already on him
 		var d: float = e.global_position.distance_to(o.global_position)
 		if d < best_d and sees(e, o):
 			best = o

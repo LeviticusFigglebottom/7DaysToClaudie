@@ -694,6 +694,29 @@ func test_downed_the_hollowed_keep_at_him_a_while() -> void:
 	assert_false(e.is_alive())
 
 
+func test_downed_only_those_already_on_him_keep_him() -> void:
+	var e: Enemy = await _recruited()
+	var a: Enemy = _spawn(&"hollow", e.global_position + Vector3(1.2, 0, 0))
+	await get_tree().physics_frame
+	a.set_physics_process(false)
+	a.foe = e
+	a._foe_seen = a._now()
+	assert_true(e.ally.open_to(a), "standing, anyone may take him up")
+	var info := DamageInfo.make(e.health + 50.0, &"zombie", &"zombie", a.entity_id)
+	info.hit_pos = e.global_position + Vector3.UP
+	e.take_damage(info)
+	assert_true(e.ally.downed)
+	assert_true(e.ally.open_to(a), "the one on him when he fell keeps him")
+	var b: Enemy = _spawn(&"hollow", e.global_position + Vector3(-3.0, 0, 0))
+	await get_tree().physics_frame
+	b.set_physics_process(false)
+	assert_false(e.ally.open_to(b), "a newcomer doesn't join in")
+	EnemyFoes.scan(b, 5.0)
+	assert_ne(b.foe, e, "its scan passes him by while he lies there")
+	e.ally.get_up(0.5)
+	assert_true(e.ally.open_to(b), "on his feet again, he is anyone's foe")
+
+
 func test_companion_strength_scales_him() -> void:
 	var e: Enemy = await _recruited()
 	assert_almost_eq(e.max_health, e.def.health, 0.01, "1 by default: the enemy settings never apply")
