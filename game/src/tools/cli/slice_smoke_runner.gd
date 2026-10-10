@@ -338,7 +338,13 @@ func _companion(game: Node, w: GameWorld, p: Player) -> void:
 			comp.inventory.count_of(&"stick"), (Time.get_ticks_msec() - tg) / 1000.0])
 	# Fetch a log the player looked at.
 	game.execute(&"companion.order", {"order": "follow"})
-	# On open ground he can walk to (the camp's tent and fence are round the player here).
+	# Out on open ground past the camp's fence: its yard isn't joined to the navmesh round it
+	# (TD-340), and a fetch carried back into it went the long way round and stalled at the fence.
+	var out: Vector3 = comp.safe_spot(at + Vector3(0.0, 0.0, 16.0))
+	p.global_position = Vector3(out.x, w.height_at(out.x, out.z) + 0.1, out.z)
+	p.velocity = Vector3.ZERO
+	await wait_until(func() -> bool: return comp.body.global_position.distance_to(p.global_position) < 5.0, 40.0)
+	# On open ground he can walk to.
 	var lat: Vector3 = comp.safe_spot(p.global_position, p.global_position + Vector3(8.0, 0.0, 3.0))
 	var lg: LogEntity = w.loose.spawn_log(lat + Vector3.UP * 0.3, Basis(), &"")
 	await frames(10)
