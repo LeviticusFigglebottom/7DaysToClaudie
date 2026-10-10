@@ -16,7 +16,8 @@ const LIT_PARAM := &"light_lit"
 
 ## Turns the glow materials of one drawn instance on or off.
 static func set_lit(gi: GeometryInstance3D, on: bool) -> void:
-	gi.set_instance_shader_parameter(LIT_PARAM, 1.0 if on else 0.0)
+	if RenderCaps.instance_uniforms():
+		gi.set_instance_shader_parameter(LIT_PARAM, 1.0 if on else 0.0)
 
 
 ## A burning prop's mesh, drawn on its own (batched props share one instance-uniform value) so its
@@ -27,7 +28,7 @@ static func lit_mesh(model: String, xf: Transform3D, indoor: bool) -> MeshInstan
 	mi.mesh = ModelLibrary.mesh(model, "box")
 	mi.transform = xf
 	set_lit(mi, true)
-	if indoor:
+	if indoor and RenderCaps.instance_uniforms():
 		mi.set_instance_shader_parameter(&"weather_exposure", 0.0)
 	return mi
 

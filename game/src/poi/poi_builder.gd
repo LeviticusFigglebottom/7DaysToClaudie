@@ -238,7 +238,7 @@ func _emit_batch(key: String) -> void:
 	var mmi := MultiMeshInstance3D.new()
 	mmi.name = "MM_" + key.replace("/", "_").replace("@", "").replace("|", "_").replace("#", "_").replace(":", "_")
 	mmi.multimesh = mm
-	if base.ends_with("|in"):
+	if base.ends_with("|in") and RenderCaps.instance_uniforms():
 		mmi.set_instance_shader_parameter(&"weather_exposure", 0.0)
 	root.add_child(mmi)
 	if tag != "":

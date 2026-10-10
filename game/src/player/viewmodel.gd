@@ -521,7 +521,7 @@ func _update_flame() -> void:
 ## The torch's burnt top glows like coals while it burns (item_torch_ember is a light_source 1
 ## material: it reads the instance's light_lit).
 func _set_ember(on: bool) -> void:
-	if _held == null:
+	if _held == null or not RenderCaps.instance_uniforms():
 		return
 	for n: Node in _held.find_children("*", "GeometryInstance3D", true, false):
 		(n as GeometryInstance3D).set_instance_shader_parameter(&"light_lit", 1.0 if on else 0.0)
@@ -1090,7 +1090,7 @@ func set_exposure(value: float) -> void:
 
 
 func _apply_exposure(n: Node) -> void:
-	if n is GeometryInstance3D and not n is GPUParticles3D:
+	if n is GeometryInstance3D and not n is GPUParticles3D and RenderCaps.instance_uniforms():
 		(n as GeometryInstance3D).set_instance_shader_parameter(&"weather_exposure", exposure)
 	for c: Node in n.get_children():
 		_apply_exposure(c)
