@@ -77,6 +77,24 @@ static func model_mesh(model_id: String, size: Vector3, color: Color) -> Mesh:
 	return am
 
 
+## One BoxShape3D per size for every building's colliders (nothing resizes them): the main map's
+## 76 buildings made 25,000 boxes of their own, one Resource and one physics shape each (TD-324).
+## Builders run on workers, so the table is shared under a mutex.
+static var _boxes: Dictionary = {}
+static var _boxes_lock := Mutex.new()
+
+
+static func shared_box(size: Vector3) -> BoxShape3D:
+	_boxes_lock.lock()
+	var b: BoxShape3D = _boxes.get(size)
+	if b == null:
+		b = BoxShape3D.new()
+		b.size = size
+		_boxes[size] = b
+	_boxes_lock.unlock()
+	return b
+
+
 ## Size of a trap/lock model from its PropDef (data/props/traps.json), for fallbacks and shapes.
 static func model_size(prop_id: String, default: Vector3) -> Vector3:
 	var pd: PropDef = Content.get_def(&"prop", StringName(prop_id)) as PropDef
@@ -85,9 +103,7 @@ static func model_size(prop_id: String, default: Vector3) -> Vector3:
 
 static func _box_shape(body: CollisionObject3D, size: Vector3, xf: Transform3D) -> CollisionShape3D:
 	var cs := CollisionShape3D.new()
-	var b := BoxShape3D.new()
-	b.size = size
-	cs.shape = b
+	cs.shape = shared_box(size)
 	cs.transform = xf
 	body.add_child(cs)
 	return cs

@@ -414,7 +414,7 @@ func _veg(list: Array) -> VegetationManager:
 		var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
 		(layers["tree" if sp.veg_kind == "tree" else "ground"] as Array).append(inst)
 	vm._data[key] = layers
-	vm._pickable[key] = vm._harvestables(layers)
+	vm._pickable[key] = vm._bin_pickables(vm._harvestables(layers))
 	for inst2: VegetationScatter.Instance in layers["tree"]:
 		var id: StringName = VegetationScatter.instance_id(key, inst2.index)
 		vm._bodies[id] = vm._make_body(id, key, inst2, Content.get_def(&"species", inst2.species) as SpeciesDef)

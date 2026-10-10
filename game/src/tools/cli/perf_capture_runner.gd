@@ -103,6 +103,7 @@ func _run() -> void:
 		if pm != null:
 			var t0: int = Time.get_ticks_msec()
 			var worst: float = 0.0
+			var mem0: Dictionary = _mem()
 			# The ring's steps run in each frame (a world built whole runs its own StepRunner).
 			var ran: Array = []
 			var own: Variant = pm.get(&"_own_steps")
@@ -121,8 +122,11 @@ func _run() -> void:
 				ran.clear()
 				meter._frame_kinds.clear()
 				await get_tree().process_frame
-				for k: String in meter._frame_kinds:
-					ran.append("%s %.1f" % [k, float(meter._frame_kinds[k])])
+				var ks: Array = meter._frame_kinds.keys()
+				ks.sort_custom(func(a: String, b: String) -> bool: return float(meter._frame_kinds[a]) > float(meter._frame_kinds[b]))
+				for k: String in ks.slice(0, 9):
+					if float(meter._frame_kinds[k]) >= 1.0:
+						ran.append("%s %.1f" % [k, float(meter._frame_kinds[k])])
 				var ms: float = float(Time.get_ticks_usec() - t1) / 1000.0
 				worst = maxf(worst, ms)
 				if ms > 33.0:
@@ -139,6 +143,12 @@ func _run() -> void:
 				print("[perf]   %s" % sl[1])
 			print("[perf] buildings settled %.1f s after the spawn: %d built, %d in the registry; longest frame meanwhile %.0f ms" % [
 				float(Time.get_ticks_msec() - t0) / 1000.0, (pm.get(&"instances") as Dictionary).size(), (pm.get(&"registry") as PoiRegistry).entries.size(), worst])
+			# What the buildings rising added (TD-324: RSS grew ~165 MB over the window).
+			var mem1: Dictionary = _mem()
+			var grew: PackedStringArray = []
+			for k: String in mem1:
+				grew.append("%s %s -> %s" % [k, mem0[k], mem1[k]])
+			print("[perf] memory at the spawn -> settled: %s" % ", ".join(grew))
 		get_tree().quit(0)
 		return
 	_stamps()
@@ -556,3 +566,21 @@ func _brief(m: Dictionary) -> String:
 			top.append("%s %.2f" % [k2, float(m["modules"][k2])])
 		parts.append("top: " + ", ".join(top))
 	return " ".join(parts)
+
+
+## Process and engine memory now: RSS and static memory in MB, live objects, resources, nodes,
+## and the rendering server's buffer and texture memory in MB.
+static func _mem() -> Dictionary:
+	var rss: int = 0
+	# /proc files report no length: read them a line at a time.
+	var f := FileAccess.open("/proc/self/status", FileAccess.READ)
+	while f != null and not f.eof_reached():
+		var line: String = f.get_line()
+		if line.begins_with("VmRSS:"):
+			rss = int(line.split(":")[1].strip_edges().split(" ")[0]) / 1024
+	return {"rss MB": rss, "static MB": int(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0),
+		"objects": int(Performance.get_monitor(Performance.OBJECT_COUNT)),
+		"resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),
+		"nodes": int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		"buffers MB": int(Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0),
+		"textures MB": int(Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0)}

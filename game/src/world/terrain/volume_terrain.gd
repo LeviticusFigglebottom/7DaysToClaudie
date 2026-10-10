@@ -542,7 +542,7 @@ func _queue(key: Vector3i, build: bool) -> void:
 	if terrain != null and terrain.has_method(&"queue_volume_job"):
 		terrain.call(&"queue_volume_job", job, fn)
 	else:
-		job["task"] = WorkerThreadPool.add_task(fn, true, "volume chunk")
+		job["task"] = WorkerThreadPool.add_task(fn, false, "volume chunk")
 
 
 ## Forgets a chunk's job: one already running is joined later.

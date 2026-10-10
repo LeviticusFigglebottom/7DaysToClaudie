@@ -114,6 +114,10 @@ func _process(delta: float) -> void:
 	if not enabled or world == null or world.player == null or not world.is_ready:
 		return
 	_t += delta
+	for k0: Vector2i in _tiles.keys():
+		var a0: Variant = (_tiles[k0] as Dictionary).get("assembly")
+		if a0 != null and WorkerThreadPool.is_task_completed((a0 as Dictionary)["task"]):
+			_finish_assembly(k0)
 	for k: Vector2i in _dirty.keys():
 		_dirty[k] = float(_dirty[k]) - delta
 		if float(_dirty[k]) <= 0.0 and _busy < 2:
@@ -146,6 +150,11 @@ func _process(delta: float) -> void:
 
 func _free_tile(k: Vector2i) -> void:
 	var t: Dictionary = _tiles[k]
+	# Its terrain still on a worker: joined, and its bake never starts (_on_baked won't come).
+	if t.has("assembly"):
+		WorkerThreadPool.wait_for_task_completion((t["assembly"] as Dictionary)["task"])
+		t.erase("assembly")
+		_busy -= 1
 	if (t["region"] as RID).is_valid():
 		NavigationServer3D.free_rid(t["region"])
 	_tiles.erase(k)
@@ -155,16 +164,89 @@ func _free_tile(k: Vector2i) -> void:
 func _bake(k: Vector2i) -> void:
 	if not _tiles.has(k):
 		return
-	var inputs: Array = bake_inputs(k)
-	var nm: NavigationMesh = inputs[0]
 	_busy += 1
-	(_tiles[k] as Dictionary)["baking"] = true
-	NavigationServer3D.bake_from_source_geometry_data_async(nm, inputs[1], _on_baked.bind(k, nm))
+	var t: Dictionary = _tiles[k]
+	t["baking"] = true
+	# The terrain's faces (a few thousand height samples: 30-45 ms a tile in GDScript, two tiles a
+	# frame after the spawn: TD-324) are made on a worker; the rest of the source (bridges,
+	# obstructions, buildings: scene data) here. A tile over dug volume keeps it all here.
+	var x0: float = k.x * TILE - BORDER - TERRAIN_STEP
+	var z0: float = k.y * TILE - BORDER - TERRAIN_STEP
+	var count: int = int((TILE + BORDER * 2.0) / TERRAIN_STEP) + 2
+	var area := Rect2(x0, z0, count * TERRAIN_STEP, count * TERRAIN_STEP)
+	var terrain: TerrainManager = world.get(&"terrain") as TerrainManager
+	if terrain == null or _volume_in(terrain, area):
+		var inputs: Array = bake_inputs(k)
+		NavigationServer3D.bake_from_source_geometry_data_async(inputs[0], inputs[1], _on_baked.bind(k, inputs[0]))
+		return
+	var inputs2: Array = bake_inputs(k, false)
+	var cut: Array[PackedVector2Array] = terrain.holes.pieces_in(area) if terrain.holes != null else []
+	var out: Array = [PackedVector3Array()]
+	var hfn: Callable = terrain.height_at
+	t["assembly"] = {"nm": inputs2[0], "src": inputs2[1], "out": out, "origin": Vector2(x0, z0), "cut": not cut.is_empty(),
+		"task": WorkerThreadPool.add_task(func() -> void: out[0] = terrain_faces(Vector2(x0, z0), count, hfn, cut), false, "nav tile terrain")}
+
+
+## Whether any column of the SDF volume over `area` is committed (dug or a cave's): its faces come
+## from the volume, which only the main thread reads (_add_terrain).
+static func _volume_in(terrain: TerrainManager, area: Rect2) -> bool:
+	if terrain.volume == null or terrain.volume.committed.is_empty():
+		return false
+	var lo: Vector2i = VolumeTerrain.column_of(area.position.x, area.position.y)
+	var hi: Vector2i = VolumeTerrain.column_of(area.end.x, area.end.y)
+	for cz: int in range(lo.y, hi.y + 1):
+		for cx: int in range(lo.x, hi.x + 1):
+			if terrain.volume.committed.has(Vector2i(cx, cz)):
+				return true
+	return false
+
+
+## A tile's terrain assembled on its worker: its source gets the faces and the bake starts.
+func _finish_assembly(k: Vector2i) -> void:
+	var t: Dictionary = _tiles[k]
+	var a: Dictionary = t["assembly"]
+	WorkerThreadPool.wait_for_task_completion(a["task"])
+	t.erase("assembly")
+	var src: NavigationMeshSourceGeometryData3D = a["src"]
+	var o: Vector2 = a["origin"]
+	src.add_faces(a["out"][0], Transform3D(Basis.IDENTITY, Vector3(o.x, 0.0, o.y)) if bool(a["cut"]) else Transform3D.IDENTITY)
+	NavigationServer3D.bake_from_source_geometry_data_async(a["nm"], src, _on_baked.bind(k, a["nm"]))
+
+
+## A tile's terrain faces (`count` cells of TERRAIN_STEP from `origin`), the cellars in `cut` cut
+## out (TerrainMesher, in the origin's frame) or a plain grid in world space. Thread-safe with a
+## thread-safe `height_fn` (TerrainManager.height_at).
+static func terrain_faces(origin: Vector2, count: int, height_fn: Callable, cut: Array[PackedVector2Array]) -> PackedVector3Array:
+	if not cut.is_empty():
+		return TerrainMesher.surface_faces(origin, count * TERRAIN_STEP, TERRAIN_STEP, height_fn, Callable(), cut)
+	var h := PackedFloat32Array()
+	h.resize((count + 1) * (count + 1))
+	for j: int in count + 1:
+		for i: int in count + 1:
+			h[j * (count + 1) + i] = height_fn.call(origin.x + i * TERRAIN_STEP, origin.y + j * TERRAIN_STEP)
+	var faces := PackedVector3Array()
+	faces.resize(count * count * 6)
+	var f: int = 0
+	for j2: int in count:
+		for i2: int in count:
+			var a := Vector3(origin.x + i2 * TERRAIN_STEP, h[j2 * (count + 1) + i2], origin.y + j2 * TERRAIN_STEP)
+			var b := Vector3(a.x + TERRAIN_STEP, h[j2 * (count + 1) + i2 + 1], a.z)
+			var c := Vector3(a.x, h[(j2 + 1) * (count + 1) + i2], a.z + TERRAIN_STEP)
+			var d := Vector3(a.x + TERRAIN_STEP, h[(j2 + 1) * (count + 1) + i2 + 1], a.z + TERRAIN_STEP)
+			faces[f] = a
+			faces[f + 1] = b
+			faces[f + 2] = c
+			faces[f + 3] = b
+			faces[f + 4] = d
+			faces[f + 5] = c
+			f += 6
+	return faces
 
 
 ## [NavigationMesh, NavigationMeshSourceGeometryData3D]: a tile's bake settings and its source
-## geometry, assembled on this thread (tests bake them synchronously).
-func bake_inputs(k: Vector2i) -> Array:
+## geometry, assembled on this thread (tests bake them synchronously); `with_terrain` false leaves
+## the terrain out (_bake makes it on a worker).
+func bake_inputs(k: Vector2i, with_terrain: bool = true) -> Array:
 	var nm := NavigationMesh.new()
 	nm.agent_radius = 0.5
 	nm.agent_height = 1.75
@@ -181,7 +263,8 @@ func bake_inputs(k: Vector2i) -> Array:
 	var r: Rect2 = tile_rect(k)
 	nm.filter_baking_aabb = AABB(Vector3(r.position.x, -1000.0, r.position.y), Vector3(r.size.x, 3000.0, r.size.y))
 	var src := NavigationMeshSourceGeometryData3D.new()
-	_add_terrain(src, k)
+	if with_terrain:
+		_add_terrain(src, k)
 	_add_bridges(src, k)
 	_add_obstructions(src, k)
 	_add_pois(nm, src, k)

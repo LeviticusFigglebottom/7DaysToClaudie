@@ -247,9 +247,7 @@ func _emit_batch(key: String) -> void:
 
 func _box(size: Vector3, xf: Transform3D, body: CollisionObject3D = null) -> CollisionShape3D:
 	var cs := CollisionShape3D.new()
-	var b := BoxShape3D.new()
-	b.size = size
-	cs.shape = b
+	cs.shape = PoiPieces.shared_box(size)
 	cs.transform = xf
 	(body if body != null else shell).add_child(cs)
 	return cs
