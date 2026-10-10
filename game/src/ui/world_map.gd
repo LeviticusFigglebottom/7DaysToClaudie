@@ -367,9 +367,7 @@ func _process(delta: float) -> void:
 ## Gamepad: the left stick pans, the triggers zoom (right in, left out).
 func _pad_steer(delta: float) -> void:
 	var pads: Array[int] = Input.get_connected_joypads()
-	if pads.is_empty():
-		return
-	var j: int = pads[0]
+	var j: int = pads[0] if not pads.is_empty() else 0
 	var stick := Vector2(Input.get_joy_axis(j, JOY_AXIS_LEFT_X), Input.get_joy_axis(j, JOY_AXIS_LEFT_Y))
 	if stick.length() > 0.2:
 		_pan -= stick * 600.0 * delta

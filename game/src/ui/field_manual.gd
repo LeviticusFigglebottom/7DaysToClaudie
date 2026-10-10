@@ -187,6 +187,29 @@ func _fit_book() -> void:
 	_list_scroll.custom_minimum_size.x = float(fit["list"])
 
 
+## The tabs in their order on the page (LB / RB step through them on a pad).
+const TAB_ORDER: PackedStringArray = ["build", "journal", "record", "notes", "tips"]
+
+
+## The tab `step` away from `current` (wrapping). Pure.
+static func tab_after(current: String, step: int) -> String:
+	var i: int = maxi(0, TAB_ORDER.find(current))
+	return TAB_ORDER[posmod(i + step, TAB_ORDER.size())]
+
+
+## LB / RB turn the tabs: they take no focus, so a pad could open the manual but never leave
+## Blueprints for the Journal. Consumed here, so the toolbelt doesn't step behind the page.
+func _input(event: InputEvent) -> void:
+	if not _open:
+		return
+	var jb := event as InputEventJoypadButton
+	if jb == null or not jb.pressed:
+		return
+	if jb.button_index == JOY_BUTTON_LEFT_SHOULDER or jb.button_index == JOY_BUTTON_RIGHT_SHOULDER:
+		_set_tab(tab_after(_tab, -1 if jb.button_index == JOY_BUTTON_LEFT_SHOULDER else 1))
+		get_viewport().set_input_as_handled()
+
+
 func _set_tab(t: String) -> void:
 	_tab = t
 	_mark_tab(t)

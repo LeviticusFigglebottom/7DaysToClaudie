@@ -121,10 +121,15 @@ you found them.
 **Still broken if:** the map shows places you haven't been, or a note runs off its page.
 
 ## 11. Gamepad and rebinding
-**Changed:** every screen works by pad (focus, **B** backs out, the roll by stick).
-**Options → Controls** rebinds keys and pad buttons and warns about conflicts.
-**Try:** play ten minutes on the pad alone; rebind one key to another's and read the warning.
-**Still broken if:** a screen has no way out on the pad.
+**Changed:** the game plays on a pad alone: the right stick looks, RT attacks, Y opens the roll,
+d-pad up the field manual (LB / RB turn its tabs), Back the map, Start pauses, and **A** presses
+whatever has the focus in every menu (it didn't: a pad could walk the menu but press nothing).
+Hold B to skip the intro. **Options → Controls** rebinds keys and pad buttons and warns about
+conflicts. The full layout is in HOW_TO_PLAY §3.
+**Try:** from the main menu, start a new game and play ten minutes on the pad alone: the journal,
+crafting in the roll (up / down choose a recipe), the map, pause. Rebind one key to another's and
+read the warning.
+**Still broken if:** any screen can't be opened, used or left with the pad.
 
 ## 12. Graphics options (Ultra on the RX 9070 XT)
 **Changed:** the first run picks a preset from your GPU's name; a 9070 XT gets Ultra (shadows to

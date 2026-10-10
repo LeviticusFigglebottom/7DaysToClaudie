@@ -149,3 +149,34 @@ func test_bind_pad_keeps_keys() -> void:
 			keys += 1
 	assert_gt(keys, 0, "the key binding stays")
 	Settings.rebind("interact", before)
+
+
+func test_a_pad_alone_reaches_every_screen_and_the_fight() -> void:
+	# A pad-only pass: by default the pad could move, jump and interact, but not look, attack, open
+	# the roll, the field manual, the tether or pause.
+	var cfg: Dictionary = Content.config(&"input_bindings").get("actions", {})
+	for action: String in ["attack", "block", "inventory", "guidebook", "tracker", "pause", "map", "interact", "jump", "cancel", "toolbelt_next", "toolbelt_prev", "drop", "light"]:
+		var pad: bool = false
+		for spec: Variant in cfg.get(action, []):
+			if spec is Dictionary and ((spec as Dictionary).has("joy_button") or (spec as Dictionary).has("joy_axis")):
+				pad = true
+		assert_true(pad, "%s has a pad default" % action)
+	# No two actions share a pad input, except block and aim on LT (each in its own context).
+	var seen: Dictionary = {}
+	for action2: String in cfg:
+		for spec2: Variant in cfg[action2]:
+			if spec2 is Dictionary and (spec2 as Dictionary).has("joy_button"):
+				var key: String = str((spec2 as Dictionary)["joy_button"])
+				assert_false(seen.has(key), "pad button %s on %s and %s" % [key, seen.get(key, ""), action2])
+				seen[key] = action2
+	assert_eq(Settings.describe({"joy_axis": JOY_AXIS_TRIGGER_RIGHT, "dir": 1}), "Pad RT")
+	assert_eq(Settings.describe({"joy_axis": JOY_AXIS_TRIGGER_LEFT, "dir": 1}), "Pad LT")
+
+
+func test_the_right_stick_looks() -> void:
+	const PlayerScript := preload("res://src/player/player.gd")
+	assert_eq(PlayerScript.pad_look(Vector2(0.1, 0.05), 0.016), Vector2.ZERO, "the dead zone")
+	var full: Vector2 = PlayerScript.pad_look(Vector2(1, 0), 1.0)
+	assert_almost_eq(full.x, PlayerScript.PAD_LOOK_SPEED.x, 0.001, "full tilt turns at the look speed")
+	var half: Vector2 = PlayerScript.pad_look(Vector2(0.575, 0), 1.0)
+	assert_lt(half.x, full.x * 0.5, "eased: fine aim near the centre")

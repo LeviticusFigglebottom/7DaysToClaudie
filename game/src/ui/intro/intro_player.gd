@@ -508,7 +508,10 @@ func _impact(dt: float) -> void:
 
 
 func _update_skip(delta: float) -> void:
-	var held: bool = Input.is_key_pressed(KEY_ESCAPE) or Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER)
+	# By action as well as by device: ui_cancel holds the pad's B (Settings.add_pad_ui_buttons) and
+	# pause its Start, whichever pad sent them.
+	var held: bool = Input.is_key_pressed(KEY_ESCAPE) or Input.is_key_pressed(KEY_SPACE) or Input.is_key_pressed(KEY_ENTER) \
+		or Input.is_action_pressed(&"ui_cancel") or (InputMap.has_action(&"pause") and Input.is_action_pressed(&"pause"))
 	for j: int in Input.get_connected_joypads():
 		held = held or Input.is_joy_button_pressed(j, JOY_BUTTON_B) or Input.is_joy_button_pressed(j, JOY_BUTTON_START)
 	_skip_t = _skip_t + delta if held else maxf(0.0, _skip_t - delta * 2.0)

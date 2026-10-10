@@ -143,6 +143,39 @@ func _unhandled_input(event: InputEvent) -> void:
 		head.rotation.x = _pitch
 
 
+## Right-stick look (the camera read only the mouse: a player on a pad couldn't turn). Radians a
+## second at full tilt, the stick's dead zone, and the response curve's power.
+const PAD_LOOK_SPEED: Vector2 = Vector2(2.6, 1.8)
+const PAD_DEADZONE: float = 0.15
+const PAD_LOOK_CURVE: float = 2.0
+## The mouse sensitivity the pad's look speed is set for (the Options slider scales both).
+const PAD_SENS_REF: float = 0.0022
+
+
+## The look turn for a right stick at `stick` over `dt`: nothing inside the dead zone, then eased
+## (fine aim near the centre, a quick turn at the edge). Pure.
+static func pad_look(stick: Vector2, dt: float) -> Vector2:
+	var m: float = stick.length()
+	if m <= PAD_DEADZONE:
+		return Vector2.ZERO
+	var k: float = pow(clampf((m - PAD_DEADZONE) / (1.0 - PAD_DEADZONE), 0.0, 1.0), PAD_LOOK_CURVE)
+	return stick / m * k * PAD_LOOK_SPEED * dt
+
+
+func _process(delta: float) -> void:
+	if not look_enabled or Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	var pads: Array[int] = Input.get_connected_joypads()
+	var j: int = pads[0] if not pads.is_empty() else 0
+	var turn: Vector2 = pad_look(Vector2(Input.get_joy_axis(j, JOY_AXIS_RIGHT_X), Input.get_joy_axis(j, JOY_AXIS_RIGHT_Y)), delta)
+	if turn == Vector2.ZERO:
+		return
+	turn *= (Settings.mouse_sensitivity / PAD_SENS_REF) * (aim.look_mult() if aim != null else 1.0)
+	rotation.y -= turn.x
+	_pitch = clampf(_pitch - turn.y * (-1.0 if Settings.invert_y else 1.0), deg_to_rad(-88.0), deg_to_rad(88.0))
+	head.rotation.x = _pitch
+
+
 func _physics_process(delta: float) -> void:
 	if state == null:
 		return
