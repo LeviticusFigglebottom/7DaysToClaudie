@@ -1,21 +1,30 @@
 class_name ImpostorLibrary
 extends RefCounted
 ## Far-tree impostors: per species, an atlas of FRAMES side views taken around the trunk axis
-## (frame i = camera at local direction (sin a, 0, cos a), a = i * TAU / FRAMES), used by
-## assets/shaders/impostor.gdshader on camera-facing quads.
+## (frame i = camera at local direction (sin a, 0, cos a), a = i * TAU / FRAMES), one row per model
+## variant (row v = the species' models[v], top row first), used by assets/shaders/impostor.gdshader
+## on camera-facing quads; each far tree shows its own variant's row (MultiMesh custom data).
 ##
 ## Baked from the generated tree models by `make bake` (src/tools/cli/bake.gd) into
-## assets/generated/impostors/<species>.png (+ _n.png normals, .json quad size). Until then a
-## procedural silhouette per species stands in, so the far forest never disappears.
+## assets/generated/impostors/<species>.png (+ _n.png normals, _winter.png bare branches for a
+## deciduous species, .json: quad size, frame width, variant rows). A frame is FRAME_H pixels high
+## and as wide as the species' crown needs (frame_w, TD-005: a fixed 1:2 frame left a broad crown
+## half its texels). Until it is baked a procedural silhouette per species stands in, one row, so
+## the far forest never disappears.
 
 const FRAMES: int = 8
 const DIR: String = "res://assets/generated/impostors"
+## The stand-in's frame width; a baked species' own is in its .json (frame_w, FRAME_W_MIN..MAX).
 const FRAME_W: int = 128
 const FRAME_H: int = 256
+const FRAME_W_MIN: int = 64
+const FRAME_W_MAX: int = 256
 
 static var _atlases: Dictionary = {}
 static var _normals: Dictionary = {}
 static var _sizes: Dictionary = {}
+static var _meta: Dictionary = {}
+static var _winter: Dictionary = {}
 static var _mutex := Mutex.new()
 
 
@@ -54,18 +63,70 @@ static func normal_atlas_for(sp: SpeciesDef) -> Texture2D:
 	return tex
 
 
+## Bare-branch atlas of a deciduous species (same layout, baked in winter), or null.
+static func winter_atlas_for(sp: SpeciesDef) -> Texture2D:
+	_mutex.lock()
+	var known: bool = _winter.has(sp.id)
+	var tex: Texture2D = _winter.get(sp.id)
+	_mutex.unlock()
+	if known:
+		return tex
+	var path: String = "%s/%s_winter.png" % [DIR, sp.id]
+	tex = load(path) as Texture2D if sp.deciduous and ResourceLoader.exists(path) else null
+	_mutex.lock()
+	_winter[sp.id] = tex
+	_mutex.unlock()
+	return tex
+
+
+## A frame's pixel width for a crown `width` m across in a frame `height` m high (FRAME_H pixels):
+## the crown's own aspect, in steps of 16 pixels.
+static func frame_width(width: float, height: float) -> int:
+	var px: float = float(FRAME_H) * width / maxf(height, 0.01)
+	return clampi(int(ceil(px / 16.0)) * 16, FRAME_W_MIN, FRAME_W_MAX)
+
+
 ## Quad (width, height) in metres for an instance scale of 1 (instance scale multiplies it).
 static func size_for(sp: SpeciesDef) -> Vector2:
-	if _sizes.has(sp.id):
-		return _sizes[sp.id]
+	_mutex.lock()
+	var known: bool = _sizes.has(sp.id)
+	var cached: Vector2 = _sizes.get(sp.id, Vector2.ZERO)
+	_mutex.unlock()
+	if known:
+		return cached
 	var dims := Vector2(6.4, 21.0) if not _is_broadleaf(sp) else Vector2(6.4, 14.5)
-	var meta_path: String = "%s/%s.json" % [DIR, sp.id]
-	if FileAccess.file_exists(meta_path):
-		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(meta_path))
-		if d is Dictionary:
-			dims = Vector2(float(d.get("width", dims.x)), float(d.get("height", dims.y)))
+	var d: Dictionary = _meta_of(sp)
+	if not d.is_empty():
+		dims = Vector2(float(d.get("width", dims.x)), float(d.get("height", dims.y)))
+	_mutex.lock()
 	_sizes[sp.id] = dims
+	_mutex.unlock()
 	return dims
+
+
+## Variant rows in the species' atlas: 1 for an atlas baked before rows (the first model only) or
+## the stand-in. A tree whose variant has no row shows the first.
+static func variants_for(sp: SpeciesDef) -> int:
+	return maxi(1, int(_meta_of(sp).get("variants", 1)))
+
+
+## The bake's .json for a species ({} if not baked), read once.
+static func _meta_of(sp: SpeciesDef) -> Dictionary:
+	_mutex.lock()
+	var known: bool = _meta.has(sp.id)
+	var out: Dictionary = _meta.get(sp.id, {})
+	_mutex.unlock()
+	if known:
+		return out
+	var meta_path: String = "%s/%s.json" % [DIR, sp.id]
+	if FileAccess.file_exists(meta_path) and is_baked(sp):
+		var j := JSON.new()
+		if j.parse(FileAccess.get_file_as_string(meta_path)) == OK and j.data is Dictionary:
+			out = j.data
+	_mutex.lock()
+	_meta[sp.id] = out
+	_mutex.unlock()
+	return out
 
 
 ## Seasonal foliage tints of a species ({"spring_tint": Color, ...}), read from the first

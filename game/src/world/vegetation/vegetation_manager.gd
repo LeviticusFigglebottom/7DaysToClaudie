@@ -743,8 +743,9 @@ func _far_free(rid: String) -> void:
 
 
 ## A chunk's far trees as MultiMesh transform buffers per species ({species: [count,
-## PackedFloat32Array of 12 floats each]}), built on the worker (ADR-0038): the main thread only
-## joins them, where setting ~50k transforms one by one took ~0.5 s of one frame.
+## PackedFloat32Array of 16 floats each: the 12 of the transform, then the custom data
+## (its model variant, the impostor atlas row, TD-005; 0, 0, 0)]}), built on the worker (ADR-0038):
+## the main thread only joins them, where setting ~50k transforms one by one took ~0.5 s of one frame.
 static func _far_buffers(insts: Array, dims: Dictionary) -> Dictionary:
 	var out: Dictionary = {}
 	for inst: VegetationScatter.Instance in insts:
@@ -754,7 +755,8 @@ static func _far_buffers(insts: Array, dims: Dictionary) -> Dictionary:
 			out[inst.species] = [0, PackedFloat32Array()]
 		var e: Array = out[inst.species]
 		var buf: PackedFloat32Array = e[1]
-		buf.append_array([b.x.x, b.y.x, b.z.x, inst.pos.x, b.x.y, b.y.y, b.z.y, inst.pos.y, b.x.z, b.y.z, b.z.z, inst.pos.z])
+		buf.append_array([b.x.x, b.y.x, b.z.x, inst.pos.x, b.x.y, b.y.y, b.z.y, inst.pos.y, b.x.z, b.y.z, b.z.z, inst.pos.z,
+			float(inst.variant), 0.0, 0.0, 0.0])
 		e[1] = buf
 		e[0] = int(e[0]) + 1
 	return out
@@ -920,6 +922,11 @@ func _impostor_mat(sp: SpeciesDef) -> ShaderMaterial:
 	if nrm != null:
 		mat.set_shader_parameter("normal_atlas", nrm)
 	mat.set_shader_parameter("frames", ImpostorLibrary.FRAMES)
+	mat.set_shader_parameter("variants", ImpostorLibrary.variants_for(sp))
+	var winter: Texture2D = ImpostorLibrary.winter_atlas_for(sp)
+	mat.set_shader_parameter("has_winter", winter != null)
+	if winter != null:
+		mat.set_shader_parameter("winter_atlas", winter)
 	mat.set_shader_parameter("discard_rect", _near_rect())
 	if ImpostorLibrary.is_baked(sp):
 		var tints: Dictionary = ImpostorLibrary.season_tints(sp)
@@ -936,6 +943,7 @@ func _impostor_mmi(node_name: String, mat: ShaderMaterial, e2: Array) -> MultiMe
 	quad.material = mat
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_custom_data = true
 	mm.mesh = quad
 	mm.instance_count = int(e2[0])
 	if int(e2[0]) > 0:
@@ -1062,7 +1070,9 @@ static func _coarse_block(rt: RegionTerrain, block: Rect2, seed_v: int, fps: Dic
 					out[sp_id] = [0, PackedFloat32Array()]
 				var e: Array = out[sp_id]
 				var buf: PackedFloat32Array = e[1]
-				buf.append_array([b.x.x, b.y.x, b.z.x, x, b.x.y, b.y.y, b.z.y, y, b.x.z, b.y.z, b.z.z, z])
+				# A cluster shows some variant of its species (rows past the atlas's show row 0).
+				buf.append_array([b.x.x, b.y.x, b.z.x, x, b.x.y, b.y.y, b.z.y, y, b.x.z, b.y.z, b.z.z, z,
+					floorf(draws[k * 4 + 2] * 4096.0) - floorf(draws[k * 4 + 2] * 1024.0) * 4.0, 0.0, 0.0, 0.0])
 				e[1] = buf
 				e[0] = int(e[0]) + 1
 	return _coarse_fold(out)
