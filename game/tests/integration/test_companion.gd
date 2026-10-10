@@ -33,8 +33,11 @@ class FakeWorld:
 	var loose: Node = null
 	var water: Node = null
 
-	func height_at(_x: float, _z: float) -> float:
-		return 0.0
+	## Terrain for a test (x, z) -> height; flat when unset.
+	var terrain: Callable = Callable()
+
+	func height_at(x: float, z: float) -> float:
+		return float(terrain.call(x, z)) if terrain.is_valid() else 0.0
 
 	func ground_below(_p: Vector3) -> float:
 		return 0.0
@@ -776,6 +779,31 @@ func test_he_fells_a_tree_away_from_the_player_with_no_collision_body() -> void:
 	await _until(func() -> bool: return e.ally.order == "follow", 3000)
 	assert_true(vm._is_removed(Vector2i(0, 0), 0), "felled all the same (TD-304)")
 	assert_between(_dir.inventory.count_of(&"log"), 1, 2, "and its logs brought in")
+
+
+func test_a_far_target_is_reached_round_a_cliff_not_through_it() -> void:
+	await _recruited()
+	# A 30 m high wall of rock across x = 60 from z = -200 to z = 40, with open ground round its
+	# north end (z > 40): from (0, 0) to (120, 0) the straight line runs into it.
+	_world.terrain = func(x: float, z: float) -> float:
+		return 30.0 if absf(x - 60.0) < 8.0 and z > -200.0 and z < 40.0 else 0.0
+	var f: FlowField = CompanionWork.route(Vector3(0, 0, 0), Vector3(120, 0, 0))
+	assert_not_null(f, "a route is built")
+	var dir: Vector3 = f.direction_at(Vector3(0, 0, 0))
+	assert_gt(dir.z, 0.3, "it heads round the open end, not at the cliff (%s)" % dir)
+	# Walk the route: it gets there without crossing the rock.
+	var at := Vector3(0, 0, 0)
+	var crossed: bool = false
+	for i: int in 400:
+		var d: Vector3 = f.direction_at(at)
+		if d == Vector3.ZERO:
+			break
+		at += d * 3.0
+		if absf(at.x - 60.0) < 8.0 and at.z > -200.0 and at.z < 40.0:
+			crossed = true
+	assert_false(crossed, "never across the rock")
+	assert_lt(Vector2(at.x - 120.0, at.z).length(), 8.0, "and arrives (%s)" % at)
+	_world.terrain = Callable()
 
 
 func test_companion_strength_scales_him() -> void:
