@@ -45,9 +45,28 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_load_user_settings()
 	register_input_actions()
+	add_pad_ui_buttons()
 	_resolve_graphics()
 	get_tree().root.size_changed.connect(apply_ui_scale)
 	apply_ui_scale.call_deferred()
+
+
+## The pad's A presses the focused button and B backs out, in every screen. Godot's built-in
+## ui_accept and ui_cancel have keys only: a pad could walk the menu's focus but not press anything.
+func add_pad_ui_buttons() -> void:
+	for pair: Array in [[&"ui_accept", JOY_BUTTON_A], [&"ui_cancel", JOY_BUTTON_B]]:
+		var action: StringName = pair[0]
+		if not InputMap.has_action(action):
+			continue
+		var has_it: bool = false
+		for e: InputEvent in InputMap.action_get_events(action):
+			var jb := e as InputEventJoypadButton
+			has_it = has_it or (jb != null and jb.button_index == pair[1])
+		if not has_it:
+			var ev := InputEventJoypadButton.new()
+			ev.button_index = pair[1]
+			ev.device = -1
+			InputMap.action_add_event(action, ev)
 
 
 ## Scales the 2D interface to the window (or the player's fixed choice).
@@ -131,7 +150,7 @@ func input_label(action: String) -> String:
 			var d: Dictionary = spec
 			if first_key == null and (d.has("key") or d.has("mouse")):
 				first_key = d
-			if first_pad == null and d.has("joy_button"):
+			if first_pad == null and (d.has("joy_button") or (d.has("joy_axis") and int(d["joy_axis"]) in [JOY_AXIS_TRIGGER_LEFT, JOY_AXIS_TRIGGER_RIGHT])):
 				first_pad = d
 	if using_pad and first_pad != null:
 		return describe(first_pad).trim_prefix("Pad ")
@@ -220,7 +239,11 @@ static func describe(spec: Variant) -> String:
 	if d.has("joy_button"):
 		return "Pad " + str(PAD_NAMES.get(int(d["joy_button"]), str(int(d["joy_button"]))))
 	if d.has("joy_axis"):
-		return "Stick %d%s" % [int(d["joy_axis"]), "+" if float(d.get("dir", 1.0)) > 0.0 else "-"]
+		# The triggers are axes, named as on the pad.
+		var ax: int = int(d["joy_axis"])
+		if ax == JOY_AXIS_TRIGGER_LEFT or ax == JOY_AXIS_TRIGGER_RIGHT:
+			return "Pad " + ("LT" if ax == JOY_AXIS_TRIGGER_LEFT else "RT")
+		return "Stick %d%s" % [ax, "+" if float(d.get("dir", 1.0)) > 0.0 else "-"]
 	return "?"
 
 
