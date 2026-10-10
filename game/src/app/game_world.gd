@@ -572,6 +572,7 @@ func _finish_spawn() -> void:
 	_load_meter.spawned()
 	player.input_enabled = true
 	is_ready = true
+	_warn_settle_minutes = WARN_SETTLE
 	ui.hide_loading()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	Events.session_started.emit(bool(Game.pending_options.get("is_new_game", false)))
@@ -635,11 +636,18 @@ func _on_game_minutes(minutes: float) -> void:
 	# pass: "Find shelter" greeted a player waking in their own lean-to).
 	if _survival_warnings == null:
 		_survival_warnings = SurvivalWarnings.new()
-	for warn: Dictionary in _survival_warnings.update(p.stats, minutes, sleeping, bool(env.get("sheltered", false))):
+	# Quiet for the first minutes in the world (a load, a respawn): the first tick after a load ran
+	# before the player's own lean-to was rebuilt, so "Find shelter" greeted them under its roof.
+	var settling: bool = _warn_settle_minutes > 0.0
+	_warn_settle_minutes = maxf(0.0, _warn_settle_minutes - minutes)
+	for warn: Dictionary in _survival_warnings.update(p.stats, minutes, sleeping or settling, bool(env.get("sheltered", false))):
 		Events.status_message_queued.emit(str(warn["text"]), warn["kind"], StatusFeed.PRIORITY_WARNING)
 
 
 var _survival_warnings: SurvivalWarnings = null
+## Game minutes the survival warnings keep quiet for after the player arrives (WARN_SETTLE).
+var _warn_settle_minutes: float = 0.0
+const WARN_SETTLE: float = 10.0
 
 
 ## Environment the body feels at a position (SurvivalStats.tick_game env contract).
@@ -813,6 +821,7 @@ func respawn() -> void:
 		terrain.update_streaming(player.global_position, true)
 		player.input_enabled = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_warn_settle_minutes = WARN_SETTLE
 		Events.player_spawned.emit(p.id))
 
 
