@@ -239,6 +239,10 @@ func _restore(p: Player) -> void:
 	var pos: Vector3 = _vec(st.get("position"))
 	if pos == Vector3.INF:
 		pos = beside(p)
+	else:
+		# Where he was saved, made safe (TD-311): the world may have changed round it since (a wall
+		# built there, a different floor streamed in).
+		pos = safe_spot(pos, pos)
 	body = _spawn(pos, float(st.get("yaw", 0.0)))
 	if body == null:
 		return
@@ -292,6 +296,10 @@ func safe_spot(anchor: Vector3, prefer: Vector3 = Vector3.INF) -> Vector3:
 		for i: int in 10:
 			var a: float = TAU * (float(i) + (0.5 if int(r) % 2 == 1 else 0.0)) / 10.0
 			cands.append(anchor + Vector3(cos(a), 0.0, sin(a)) * r)
+	# Further out (a narrow ledge, a crowded room): points on the navmesh round the anchor, where it
+	# is baked (TD-311), tried after the near rings.
+	for c2: Vector3 in _nav_candidates(anchor):
+		cands.append(c2)
 	if prefer != Vector3.INF:
 		cands.sort_custom(func(x: Vector3, y: Vector3) -> bool: return _flat(x, prefer) < _flat(y, prefer))
 		cands.push_front(prefer)
@@ -302,6 +310,27 @@ func safe_spot(anchor: Vector3, prefer: Vector3 = Vector3.INF) -> Vector3:
 		if at != Vector3.INF:
 			return at + Vector3.UP * 0.1
 	return base + Vector3.UP * 0.1
+
+
+## Points 12 and 16 m round `anchor` snapped onto the navmesh (none where it isn't baked or the
+## anchor is off it).
+func _nav_candidates(anchor: Vector3) -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	var w3: World3D = _world3d()
+	if w3 == null:
+		return out
+	var nav: RID = w3.navigation_map
+	if NavigationServer3D.map_get_iteration_id(nav) <= 0 or NavigationServer3D.map_get_regions(nav).is_empty():
+		return out
+	if _flat(NavigationServer3D.map_get_closest_point(nav, anchor), anchor) > 1.0:
+		return out
+	for r: float in [12.0, 16.0]:
+		for i: int in 12:
+			var a: float = TAU * (float(i) + 0.25) / 12.0
+			var on: Vector3 = NavigationServer3D.map_get_closest_point(nav, anchor + Vector3(cos(a), 0.0, sin(a)) * r)
+			if _flat(on, anchor) > 1.5:
+				out.append(on)
+	return out
 
 
 ## `c` stood on, or INF where he can't stand (safe_spot).
@@ -332,9 +361,13 @@ func _stand_at(c: Vector3, anchor: Vector3) -> Vector3:
 		var col: Object = hit.get("collider")
 		if col != null and not col.has_meta(&"terrain"):
 			return Vector3.INF
+	# A clear line from the anchor at chest or head height: a wall blocks both, a terrain crest
+	# between them only the lower (TD-311).
 	var ray := PhysicsRayQueryParameters3D.create(anchor + Vector3.UP * 1.2, at + Vector3.UP * 1.2, WALL_MASK)
 	if not space.intersect_ray(ray).is_empty():
-		return Vector3.INF
+		var high := PhysicsRayQueryParameters3D.create(anchor + Vector3.UP * 1.75, at + Vector3.UP * 1.75, WALL_MASK)
+		if not space.intersect_ray(high).is_empty():
+			return Vector3.INF
 	var nav: RID = w3.navigation_map
 	if NavigationServer3D.map_get_iteration_id(nav) > 0 and not NavigationServer3D.map_get_regions(nav).is_empty():
 		var on: Vector3 = NavigationServer3D.map_get_closest_point(nav, anchor)

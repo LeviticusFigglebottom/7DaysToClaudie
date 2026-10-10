@@ -293,3 +293,42 @@ ACK = [
 def ezra_ack(seed, variant, sr):
     """An order taken: short and easy."""
     return _line(seed, variant, sr, ACK)
+
+
+# ------------------------------------------------------------------------------- effort and pain (TD-303)
+
+@sound("voice/ezra_grunt", variants=4, seed=9811, peak_db=-5.0)
+def ezra_grunt(seed, variant, sr):
+    """A swing or a chop: a short pushed "hup" / "hnh" / "huh" from the chest, lower and drier than the
+    Ashen's, the breath let go after."""
+    r = dsp.rng(seed, "ezra_grunt", variant)
+    d = dsp.vary(r, 0.18, 0.12)
+    f0 = dsp.vary(r, 112.0, 0.05)
+    vowel = [[(0, "uh"), (d, "schwa")], [(0, "ng"), (d, "uh")], [(0, "uh"), (d * 0.8, "uh"), (d, "m")],
+             [(0, "a"), (d, "uh")]][variant % 4]
+    amp = [(0, 0), (0.01, 1.0), (d * 0.45, 0.7), (d, 0)]
+    v = dsp.voice(sr, d, [(0, f0 * 0.92), (0.02, f0 * 1.12), (d * 0.6, f0), (d, f0 * 0.82)], vowel, amp, r,
+                  oq=[(0, 0.36), (d, 0.6)], sq=3.0, jitter=0.02, shimmer=0.06, breath=[(0, 0.18), (0.03, 0.06), (d, 0.35)],
+                  asp=0.45, tract=0.96, rough=0.28, rough_rate=dsp.vary(r, 30.0, 0.2), tilt_db=3.5)
+    y = np.zeros(dsp.ns(0.42, sr))
+    h = dsp.breath(sr, 0.03, "h", [(0, 0.0), (0.01, 1.0), (0.03, 0.4)], r, hiss=0.1)
+    dsp.place(y, dsp.normalize(h) * 0.35, 0)
+    dsp.place(y, dsp.normalize(v), dsp.ns(0.02, sr))
+    b = dsp.breath(sr, 0.12, "h", [(0, 0.0), (0.02, 1.0), (0.12, 0.0)], r, hiss=0.15)
+    dsp.place(y, dsp.normalize(b) * 0.25, dsp.ns(0.02 + d - 0.03, sr))
+    return _master(y, sr, seed + variant, mix=0.05)
+
+
+@sound("voice/ezra_pain", variants=4, seed=9812, peak_db=-4.0)
+def ezra_pain(seed, variant, sr):
+    """Hit: a pressed "agh" / "ah" / "nngh" through the teeth, breaking at the top and falling into
+    fry; a man who has been hurt before and swallows most of it."""
+    r = dsp.rng(seed, "ezra_pain", variant)
+    vowel = [[(0, "ae"), (0.07, "a"), (0.4, "uh")], [(0, "a"), (0.4, "uh")], [(0, "ng"), (0.15, "ng"), (0.4, "uh")],
+             [(0, "uh"), (0.4, "schwa")]][variant % 4]
+    g = _grunt(sr, r, dsp.vary(r, 142.0, 0.06), dsp.vary(r, 0.32, 0.12), vowel, rough=0.38 + 0.04 * (variant % 3),
+               fall=0.55)
+    y = np.concatenate([g, np.zeros(dsp.ns(0.18, sr))])
+    b = dsp.breath(sr, 0.16, "h", [(0, 0.0), (0.03, 1.0), (0.16, 0.0)], r, hiss=0.18)
+    dsp.place(y, dsp.normalize(b) * 0.18, len(g) - dsp.ns(0.04, sr))
+    return _master(y, sr, seed + variant)

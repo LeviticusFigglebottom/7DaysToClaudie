@@ -84,6 +84,19 @@ func test_round_trip() -> void:
 	assert_eq(ps2.directives.count_of(&"arrival_fell"), 1, "saved with the player")
 
 
+func test_part_credit_is_saved() -> void:
+	var dr := Directives.new()
+	dr.shares["fell_tree"] = 0.5
+	var back := Directives.new()
+	back.from_dict(dr.to_dict())
+	assert_almost_eq(float(back.shares.get("fell_tree", 0.0)), 0.5, 0.0001, "half a tree survives a reload (TD-306)")
+	var old := Directives.new()
+	old.shares["x"] = 0.3
+	old.from_dict({"chapter": 1, "progress": {}, "done": []})
+	assert_true(old.shares.is_empty(), "an older save has none")
+	assert_false(Directives.new().to_dict().has("shares"), "nothing written when there is none")
+
+
 func test_all_done_after_the_last_chapter() -> void:
 	var dr := Directives.new()
 	for ch: int in Directives.chapters():
