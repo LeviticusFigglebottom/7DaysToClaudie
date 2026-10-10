@@ -660,13 +660,14 @@ func test_his_barks_are_voiced_and_rate_limited() -> void:
 	assert_eq(m.last_voice, "voice/ezra_spotted", "but not voiced within voice.gap of the last")
 	m._voice_t = -1000.0
 	m.bark("stay")
-	assert_eq(m.last_voice, "voice/ezra_ack")
-	assert_eq(m.last_voice_variant, 4, "id:N picks variant N")
+	assert_eq(m.last_voice, "voice/ezra_stay", "every order answer has its own line (TD-309)")
+	var stay_shown: int = (m.cdef.barks["stay"] as Array).find(lines[2])
+	assert_eq(m.last_voice_variant, stay_shown + 1, "spoken as shown")
 	m.bark("downed")
 	assert_eq(m.last_voice, "voice/ezra_downed", "urgent barks cut in")
 	Events.player_status_message.disconnect(on_msg)
 	var voice: Node = e.get_node_or_null(^"Voice")
-	if Audio.variants(&"voice/ezra_ack").is_empty():
+	if Audio.variants(&"voice/ezra_stay").is_empty():
 		assert_null(voice, "no sounds generated: silent, no player made")
 	else:
 		assert_true(voice is Sound3D and (voice as Sound3D).playing, "played from his body")

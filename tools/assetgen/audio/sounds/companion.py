@@ -279,20 +279,67 @@ def ezra_recruited(seed, variant, sr):
     return _line(seed, variant, sr, RECRUITED)
 
 
-# The order acknowledgements: one sound for every order (CompanionDef.VOICES maps follow, stay,
-# guard, gather, fetch, store, fetched, stored, given, done to it).
-ACK = [
-    (["*o n", "i t"], {"rate": 1.1, "f0": 112.0}),
-    (["*r ai t"], {"rate": 1.0, "f0": 110.0}),
-    (["l i d", "*o n"], {"rate": 1.05, "f0": 112.0}),
-    (["*h o l", "d i ng"], {"rate": 1.0, "f0": 108.0}),
-]
+# The answers to orders and what he says about them (TD-309): a sound per bark event, a variant per
+# line of its bark list in ezra.json (CompanionMind plays the one matching the line shown). Once four
+# short lines served every order ("Right." for done, fetched, stored and given). Unhurried, easy.
+ORDERS = {
+    "gather": [
+        (["ai l", "*b r ih ng", "i n", "w o t", "ai", "k ae n", "*f ai n d", "r au n d", "*h i r"], {"rate": 1.1, "f0": 110.0}),
+        (["*o n", "i t"], {"rate": 1.1, "f0": 112.0}),
+    ],
+    "fetch": [
+        (["ai l", "*g e t", "i t"], {"rate": 1.05, "f0": 112.0}),
+        (["*b ae k", "i n", "uh", "*m ih", "n i t"], {"rate": 1.05, "f0": 110.0}),
+    ],
+    "store": [
+        (["ai l", "*p u t", "i t", "uh", "*w ei"], {"rate": 1.05, "f0": 110.0}),
+    ],
+    "done": [
+        (["*n uh", "th i ng", "*m o r", "w er th", "*t ei", "k i ng", "r au n d", "h i r"], {"rate": 1.0, "f0": 106.0, "end": "flat"}),
+    ],
+    "fetched": [
+        (["*h i r"], {"rate": 1.0, "f0": 112.0}),
+        (["*th i s", "w o t", "y u", "*w o n", "t i d"], {"rate": 1.05, "f0": 112.0, "end": "rise"}),
+    ],
+    "refused": [
+        (["*sh ou", "m i", "w o t", "y u", "*m i n", "f er s t"], {"rate": 1.0, "f0": 108.0}),
+        (["*k ae n t", "d u", "th ae t", "*w uh n"], {"rate": 1.0, "f0": 106.0, "end": "flat"}),
+    ],
+    "stored": [
+        (["*s t ou d"], {"rate": 1.0, "f0": 110.0}),
+    ],
+    "store_full": [
+        (["th uh", "*k r ei t s", "*f u l", ",", "ai", "*k e p t", "th uh", "r e s t"], {"rate": 1.0, "f0": 108.0}),
+    ],
+    "given": [
+        (["*o l", "y o r z"], {"rate": 1.0, "f0": 110.0}),
+    ],
+    "follow": [
+        (["*r ai t", "b i", "*h ai n d", "y u"], {"rate": 1.1, "f0": 112.0}),
+        (["l i d", "*o n"], {"rate": 1.05, "f0": 112.0}),
+    ],
+    "stay": [
+        (["ai l", "b i", "*h i r"], {"rate": 1.0, "f0": 108.0}),
+        (["*h o l", "d i ng"], {"rate": 1.0, "f0": 108.0}),
+    ],
+    "guard": [
+        (["*n uh", "th i ng", "g e t s", "*p ae s t", "th i s", "*s p o t"], {"rate": 1.05, "f0": 110.0}),
+        (["ai l", "*w o t sh", "i t"], {"rate": 1.05, "f0": 110.0}),
+    ],
+}
 
 
-@sound("voice/ezra_ack", variants=4, seed=9808, peak_db=-4.5)
-def ezra_ack(seed, variant, sr):
-    """An order taken: short and easy."""
-    return _line(seed, variant, sr, ACK)
+def _order_sound(event: str, lines: list, seed: int) -> None:
+    def gen(seed, variant, sr, lines=lines):
+        return _line(seed, variant, sr, lines)
+
+    gen.__doc__ = f"His answer for '{event}': the line shown, spoken."
+    gen.__name__ = f"ezra_{event}"
+    sound(f"voice/ezra_{event}", variants=len(lines), seed=seed, peak_db=-4.5)(gen)
+
+
+for _k, (_ev, _lines) in enumerate(ORDERS.items()):
+    _order_sound(_ev, _lines, 9820 + _k)
 
 
 # ------------------------------------------------------------------------------- effort and pain (TD-303)
