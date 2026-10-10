@@ -1,7 +1,14 @@
 extends Node
-## Runner for fp_measure.gd: freezes each key, then measures the right hand against its target.
+## Runner for fp_measure.gd: freezes each key, then measures the right hand against its target,
+## and for a hand on the bolt knob how the key reads from the camera (TD-294: a hand measured on the
+## knob still read as a hand on the scope when the knob sat behind the ocular bell from the eye).
 
 const VM_JSON: String = "res://data/config/viewmodel.json"
+## The viewmodel's frame in tan units (58 deg vertical FOV at 16:9).
+const VIEW_TAN := Vector2(0.985, 0.554)
+## A hand on the knob reads as on the knob with this much screen gap (m at the knob's depth) to the
+## scope's footprint: about the fist's half-width round the knob.
+const KNOB_GAP_MIN: float = 0.02
 
 var _vm: ViewModel
 ## The misses measured, for --fix: [{use, frame, miss} or {hold, miss}].
@@ -30,6 +37,7 @@ func _run() -> void:
 	var text: String = FileAccess.get_file_as_string(VM_JSON)
 	var data: Dictionary = JSON.parse_string(text)
 	var worst: float = 0.0
+	var read_fails: int = 0
 	# The hold's own idle first: its right hand is meant on the stock's wrist (holds.<class>.pose.R).
 	var hold_name: String = _arg(args, "--hold", "")
 	if hold_name != "":
@@ -73,11 +81,19 @@ func _run() -> void:
 			var miss: Vector3 = _miss(target)
 			worst = maxf(worst, miss.length())
 			print("FP_MEASURE %s f%d %s %.1f cm  [%.3f, %.3f, %.3f] (item in %s)" % [use, int(key[0]), target, miss.length() * 100.0, miss.x, miss.y, miss.z, _item_hand()])
+			if target == "knob":
+				var rd: Dictionary = _read()
+				var ok: bool = rd["gap"] >= KNOB_GAP_MIN and rd["l_in"] and rd["r_low"]
+				read_fails += 0 if ok else 1
+				print("FP_READ %s f%d knob gap %.1f cm | L screen (%.2f, %.2f) %s | R elbow %.1f cm below the wrist, %.2f m deep | %s" % [
+					use, int(key[0]), rd["gap"] * 100.0, rd["l"].x, rd["l"].y, "in" if rd["l_in"] else "OUT",
+					rd["drop"] * 100.0, rd["depth"], "ok" if ok else "FAIL"])
 			var tgt: Vector3 = _target_pos(target)
 			_fixes.append({"use": use, "frame": int(key[0]), "miss": [miss.x, miss.y, miss.z], "target": [tgt.x, tgt.y, tgt.z]})
 		_vm.release_action()
 		await _frames(2)
 	print("FP_MEASURE worst %.1f cm" % (worst * 100.0))
+	print("FP_READ %d knob key(s) failing" % read_fails)
 	if fix:
 		# Only the misses are written: tools/fp_fix_grips.py adds them to viewmodel.json keeping its
 		# formatting (Godot's JSON writer would rewrite every number in the file).
@@ -127,6 +143,73 @@ func _miss(target: String) -> Vector3:
 		var s: Node3D = held.find_child("socket_grip_r", true, false) as Node3D
 		at = s.global_position if s != null else Vector3.ZERO
 	return inv * at - inv * hand.global_position
+
+
+## How the frozen knob key reads from the camera: the knob's gap to the scope's screen footprint
+## ("gap", m at the knob's depth, < 0 inside it), the left hand's screen point ("l", tan units) and
+## whether it is in the frame ("l_in"), and the right forearm's way in ("drop": how far the elbow is
+## below the wrist, "depth": the elbow's distance in front of the lens; "r_low" when it comes in low
+## from below, not down from the top corner past the lens).
+func _read() -> Dictionary:
+	var inv: Transform3D = _cam.global_transform.affine_inverse()
+	var held: Node3D = _vm.held_item()
+	var kn: Vector3 = inv * knob(held)
+	var out: Dictionary = {"gap": scope_gap(inv, held.find_child("scope", true, false) as Node3D, kn)}
+	var lh: Node3D = (_vm.get(&"_sock") as Dictionary).get("L", null)
+	var l: Vector2 = to_screen(inv * lh.global_position) if lh != null else Vector2(9.0, 9.0)
+	out["l"] = l
+	out["l_in"] = absf(l.x) <= VIEW_TAN.x * 0.92 and l.y >= -VIEW_TAN.y * 0.9 and l.y <= VIEW_TAN.y
+	var el: Vector3 = inv * _bone_pos("forearm.R")
+	var wr: Vector3 = inv * _bone_pos("hand.R")
+	out["drop"] = wr.y - el.y
+	out["depth"] = -el.z
+	out["r_low"] = wr.y - el.y >= 0.05 and -el.z >= 0.12
+	return out
+
+
+## A camera-space point on the screen, in tan units (x right, y up).
+static func to_screen(v: Vector3) -> Vector2:
+	return Vector2(v.x, v.y) / maxf(-v.z, 0.001)
+
+
+## The gap (m at p's depth) between camera-space point p and the screen footprint (convex hull) of
+## the scope's mesh; negative inside it.
+static func scope_gap(inv: Transform3D, scope: Node3D, p: Vector3) -> float:
+	if scope == null:
+		return 9.0
+	var pts := PackedVector2Array()
+	for mi: Node in scope.find_children("*", "MeshInstance3D", true, true) + ([scope] if scope is MeshInstance3D else []):
+		var m: MeshInstance3D = mi as MeshInstance3D
+		if m == null or m.mesh == null:
+			continue
+		var xf: Transform3D = inv * m.global_transform
+		for v: Vector3 in m.mesh.get_faces():
+			var c: Vector3 = xf * v
+			if -c.z > 0.02:
+				pts.append(to_screen(c))
+	var hull: PackedVector2Array = Geometry2D.convex_hull(pts)
+	if hull.size() < 3:
+		return 9.0
+	var sp: Vector2 = to_screen(p)
+	var d: float = INF
+	for i: int in hull.size() - 1:
+		d = minf(d, sp.distance_to(Geometry2D.get_closest_point_to_segment(sp, hull[i], hull[i + 1])))
+	return (-d if Geometry2D.is_point_in_polygon(sp, hull) else d) * -p.z
+
+
+## A bone's head in world space on the arms ("forearm.R" heads at the elbow, "hand.R" at the wrist).
+func _bone_pos(bone: String) -> Vector3:
+	var arms: Node3D = _vm.get(&"_arms") as Node3D
+	if arms == null:
+		return Vector3.ZERO
+	for n: Node in arms.find_children("*", "Skeleton3D", true, false):
+		var sk: Skeleton3D = n as Skeleton3D
+		var i: int = sk.find_bone(bone)
+		if i < 0:
+			i = sk.find_bone(bone.replace(".", "_"))
+		if i >= 0:
+			return sk.global_transform * sk.get_bone_global_pose(i).origin
+	return Vector3.ZERO
 
 
 ## The bolt handle's knob: the bolt's vertex farthest from the bore (its local Z axis).

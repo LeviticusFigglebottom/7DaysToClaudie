@@ -140,6 +140,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "rifle_idle", "item": "hunting_rifle"},
 	{"name": "rifle_fire", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 2},
 	{"name": "rifle_bolt_up", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 15},
+	{"name": "rifle_bolt_mid", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 18},
 	{"name": "rifle_bolt_back", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 21},
 	{"name": "rifle_reload_open", "item": "hunting_rifle", "action": "fp_reload_rifle_open", "frame": 12},
 	{"name": "rifle_reload_round", "item": "hunting_rifle", "action": "fp_reload_rifle", "frame": 16},

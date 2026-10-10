@@ -32,6 +32,9 @@ SUPPORT = (0.30, -0.032)
 BOLT_F = 0.0
 # Scope axis height over the bore.
 SCOPE_Z = 0.043
+# How far the bolt handle is bent down about the bore (deg, TD-294): enough that the lifted knob
+# shows clear of the ocular bell from the first-person camera (fp_measure FP_READ, >= 2 cm).
+BOLT_BEND = 35.0
 
 
 def _side(mb, outline, thick, mat, *, x=0.0, chamfer=0.0, uv_scale=1.0):
@@ -108,13 +111,16 @@ def _bolt():
     # bolt shroud (cocking piece) out the back
     _lathe_y(mb, [(0.0, 0.0), (0.0070, 0.002), (0.0102, 0.012), (0.0105, 0.026), (0.0, 0.027)], (0, -0.137, 0.001),
              segments=14, mat="item_steel_blued")
-    # handle: root on the body at the rear, out to the right and swept down past the stock's edge
+    # handle: root on the body at the rear, out to the right over the stock's edge, then bent down
+    # (BOLT_BEND about the bore) as a sporter's is to clear a low scope: lifted straight, its knob
+    # came up beside the ocular bell, and a hand on it read as a hand on the scope (TD-294)
     root = Vector((0.006, -0.082, 0.002))
-    arm = K.bezier(root, root + Vector((0.020, -0.002, 0.000)), root + Vector((0.040, -0.010, -0.010)),
-                   root + Vector((0.050, -0.016, -0.024)), 10)
+    bend = Matrix.Rotation(math.radians(BOLT_BEND), 4, "Y")
+    arm = K.bezier(root, root + Vector((0.020, -0.002, 0.000)), bend @ (root + Vector((0.040, -0.010, -0.010))),
+                   bend @ (root + Vector((0.050, -0.016, -0.024))), 10)
     K.tube(mb, arm, [(0.0042, 0.0042)] * 4 + [(0.0036, 0.0036)] * 6, sides=10, mat="item_steel_blued")
     knob = arm[-1]
-    mb.push(Matrix.Translation(knob) @ Matrix.Rotation(math.radians(70), 4, "Y"))
+    mb.push(Matrix.Translation(knob) @ bend @ Matrix.Rotation(math.radians(70), 4, "Y"))
     K.lathe(mb, [(0.0, -0.010), (0.0060, -0.008), (0.0085, -0.002), (0.0085, 0.003), (0.0055, 0.008), (0.0, 0.010)],
             segments=14, mat="item_steel_blued")
     mb.pop()
