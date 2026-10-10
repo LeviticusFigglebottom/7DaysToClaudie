@@ -30,7 +30,8 @@ list of cards:
   in.
 * **radio**: a transcript, line by line, `SPEAKER|text`.
 * **impact**: the crash. It cuts in with no fade, the frame shakes, a fire-white flash decays and
-  several sounds play at once.
+  its sound plays (`sfx/lift3_crash`, synthesized for it: the rotor striking the trees, the hull
+  tearing, the turbine winding down; TD-379).
 * **title**: the game's name and the tagline.
 
 Each card has `hold` seconds and an optional `sound` (or `sounds`). `music` names the intro's

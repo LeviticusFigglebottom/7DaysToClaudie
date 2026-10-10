@@ -35,7 +35,9 @@ asset pipeline.
   only when its stamp changes: a hash of the code, data, world, shaders and generated-asset hashes
   it is drawn from.
   * **The menu:** four stills of `MenuFlight` (the old live flight, moved to `src/tools/stills/`)
-    along the Tamsin at dusk.
+    along the Tamsin: three at dusk and one at a misty dawn (`STILL_MOODS`). Each still grows the
+    game's own undergrowth and ground cover in front of the lens (`VegetationScatter`'s medium and
+    ground layers, further out than the game draws them: the render is offline).
   * **The intro:** `intro_wreck.png`. The world card's framing (`IntroPlayer.shot_pose`) is taken
     from the loaded main map at first light (`SHOT_HOUR`).
 * **The menu (`MenuBackdrop`)** loads the stills on worker threads (`load_threaded_request`). It
@@ -58,7 +60,7 @@ GPU.
 ## Consequences
 * The menu's first frame and every frame after it cost the same on every machine. Nothing is
   composed, built or compiled behind it.
-* There is no motion parallax: the pan is 2D. The four stills share the dusk light.
+* There is no motion parallax: the pan is 2D. The dissolve into and out of the dawn still is the same crossfade as between the dusks.
 * The pictures need the generated assets. A source tree without `make assets` shows a plain menu
   and a caption on black for the world card.
 * The menu stills take about a minute each on lavapipe. The wreck needs a full main-map load, so
