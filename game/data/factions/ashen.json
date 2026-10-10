@@ -57,7 +57,13 @@
         "decay_per_day": 4,
         "max": 100,
         "lead": 5,
-        "spread": 30.0
+        "spread": 30.0,
+        "_reach": "TD-190: how much a camp counts by its distance from the player: fully within near (m), falling to floor at far and beyond. The leading camp is the one with the most effective anger (anger x reach).",
+        "reach": {"near": 300, "far": 1500, "floor": 0.25},
+        "_chance_per_anger": "TD-190: the leading camp's effective anger raises the day's scout and raid chance by this share per point (at most chance_max times), and a raid gains one raider per size_per_anger points (raids.max_size still caps it).",
+        "chance_per_anger": 0.008,
+        "chance_max": 1.8,
+        "size_per_anger": 30
       },
       "relations": {"hollowed": "hostile", "wildlife": "neutral", "remand": "hostile"},
       "fire": {"radius": 9.0, "keep_off": 4.0, "morale_per_s": 0.06, "behind_angle": 100.0, "station_radius": 7.0, "_doc_shy": "The tell when a held flame turns one (AshenMind._shy): it flinches back (recoil m/s, at most every `every` s a body), one of them shouts a bark when the player is within `hear` m (at most every say_every s), and the first time the hint shows.", "shy": {"every": 8.0, "recoil": 2.5, "hear": 25.0, "say_every": 6.0, "barks": ["Ashen: \"Fire! Back!\"", "Ashen: \"Keep from the flame!\"", "Ashen: \"He carries fire. Wait.\""], "hint": "The Ashen shy from your fire."}}
