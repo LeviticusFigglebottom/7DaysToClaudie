@@ -51,6 +51,10 @@ func _run() -> void:
 					if sk != null:
 						print("FP_MEASURE hold %s %s %s" % [hold_name, sn, inv1 * sk.global_position])
 				print("FP_MEASURE hold %s knob %s" % [hold_name, inv1 * knob(held1)])
+				var bolt1: Node3D = held1.find_child("bolt", true, false) as Node3D
+				if bolt1 != null:
+					var bx: Transform3D = inv1 * bolt1.global_transform
+					print("FP_MEASURE hold %s bolt origin %s axis %s" % [hold_name, bx.origin, bx.basis.z.normalized()])
 				print("FP_MEASURE hold %s L basis %s" % [hold_name, (inv1 * lh.global_transform).basis.orthonormalized()])
 			worst = maxf(worst, m0.length())
 			print("FP_MEASURE hold %s grip %.1f cm  [%.3f, %.3f, %.3f]" % [hold_name, m0.length() * 100.0, m0.x, m0.y, m0.z])
