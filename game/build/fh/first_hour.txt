@@ -1,0 +1,183 @@
+## 00_loading_new_game  (t=2s, day 1 )
+    loading: Planning the towns
+    on screen: HOLLOWMERE  |  Planning the towns  |  Hollowed  |  By day they are slow and half blind. After dark they see without light and they run. Anything you carry that glows tells them where you are. Crouch, keep your lights off, and let the wind carry your scent away from them.
+## 01_wake  (t=50s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre  [B]  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: start kit: lighter x1, ration_bar x2, water_bottle_clean x1, cloth x2, field_manual x1, tether x1
+## 02_tether  (t=52s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre  [B]  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 03_journal  (t=52s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre  [B]  |  REMAND PROGRAM — FIELD MANUAL  (rev. 3)  |  THE FIRST DAYS  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —  |  Gather sticks, stones and fibre   0 / 6 /  / REMAND PROGRAM · FIRST DAYS. You were issued nothing that cuts. Make it. Hold [E] on ferns and huckleberry bushes under the trees for plant fibre (fireweed in the clearings and sedge by the water give more), on deadfall for sticks, on loose stones for stones (thickest by the water). Bring in six. You need at least 3 plant fibre, 1 stick and 1 stone for the next card.
+    note: nearest sword_fern: 17 m from the drop
+## 04_gather_sword_fern_aim  (t=52s, day 1 )
+    prompt: Hold [E] Harvest Sword Fern
+    on screen: Hold [E] Harvest Sword Fern  |  Journal: Gather sticks, stones and fibre  [B]  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 05_gather_sword_fern_done  (t=52s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre  [B]  |  +1 Plant Fibre  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: nearest fireweed: 125 m from the drop
+## 06_gather_fireweed_aim  (t=54s, day 1 )
+    prompt: Hold [E] Harvest Fireweed
+    on screen: Hold [E] Harvest Fireweed  |  +1 Plant Fibre  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 07_gather_fireweed_done  (t=54s, day 1 )
+    on screen: +4 Plant Fibre  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: nearest deadfall_branches: 18 m from the drop
+## 08_gather_deadfall_branches_aim  (t=56s, day 1 )
+    prompt: Hold [E] Gather sticks
+    on screen: Hold [E] Gather sticks  |  +4 Plant Fibre  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 09_gather_deadfall_branches_done  (t=56s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  +4 Plant Fibre  |  +3 Stick  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: nearest loose_stone: 22 m from the drop
+## 10_gather_loose_stone_aim  (t=56s, day 1 )
+    prompt: Hold [E] Gather Loose Stones
+    on screen: Hold [E] Gather Loose Stones  |  Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  +4 Plant Fibre  |  +3 Stick  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 11_gather_loose_stone_done  (t=57s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  +4 Plant Fibre  |  +3 Stick  |  +1 Stone  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: nearest huckleberry_bush: 17 m from the drop
+## 12_gather_huckleberry_bush_aim  (t=57s, day 1 )
+    prompt: Hold [E] Harvest Huckleberry Bush
+    on screen: Hold [E] Harvest Huckleberry Bush  |  Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  +3 Stick  |  +1 Stone  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 13_gather_huckleberry_bush_done  (t=57s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  +3 Stick  |  +1 Stone  |  +5 Huckleberries  |  +1 Plant Fibre  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: nearest forest_sorrel: 17 m from the drop
+## 14_gather_forest_sorrel_aim  (t=57s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  +3 Stick  |  +1 Stone  |  +5 Huckleberries  |  +1 Plant Fibre  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: nothing to use aiming at forest_sorrel
+## 15_gather_forest_sorrel_done  (t=57s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  +3 Stick  |  +1 Stone  |  +5 Huckleberries  |  +1 Plant Fibre  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: nearest granite_boulder: 19 m from the drop
+## 16_gather_granite_boulder_aim  (t=58s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  +3 Stick  |  +1 Stone  |  +5 Huckleberries  |  +1 Plant Fibre  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: nothing to use aiming at granite_boulder
+## 17_gather_granite_boulder_done  (t=58s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  +3 Stick  |  +1 Stone  |  +5 Huckleberries  |  +1 Plant Fibre  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 18_roll_open  (t=58s, day 1 )
+    on screen: +3 Stick  |  +1 Stone  |  +5 Huckleberries  |  +1 Plant Fibre  |  SALVAGE ROLL  |  Pack 5.1 / 40   ·   Shoulder: 0 logs  |  100%  |  x2  |  x2  |  x6  |  x4  |  x3  |  x5  |  Sort  |  Show  |  1  Lighter  |  2  —  |  3  —  |  4  —  |  5  —  |  6  —  |  MAKE BY HAND  |  6 of 19 ready  |  ✓  |  Arrow Stone ×3  |  ready ×3  |  ✓  |  Bough Bundle  |  ready ×4  |  ✓  |  Cloth Bandage  |  ready  |  ✓  |  Cordage  |  ready ×2  |  ✓  |  Huckleberry Seeds ×2  |  ready  |  ✓  |  Torch  |  ready ×2  |  ×  |  Crude Spear  |  need 1 Cordage  |  ×  |  Molotov Rotgut  |  need 1 Bottle of Rotgut  |  ×  |  Stone Axe  |  need 1 Cordage  |  ×  |  Stone Club  |  need 1 Cordage  |  ×  |  Hide Wrap Bandage ×2  |  need 1 Hare Pelt, a knife  |  ×  |  Molotov  |  need 1 Glass Bottle, 1 Tin of Kerosene  |  ×  |  Rawhide Strips ×4  |  need 1 Deer Hide, a knife  |  ×  |  Sinew Cordage ×2  |  need 2 Sinew  |  ×  |  Wolf Rawhide Strips ×3  |  need 1 Wolf Pelt, a knife  |  ×  |  Yarrow Poultice  |  need 2 Yarrow  |  ×  |  Arrow Bone ×3  |  need 1 Bone, 1 Sinew, a knife  |  ×  |  Hunting Bow  |  need 4 Sinew, 1 Rawhide Strips, a knife  |  ×  |  Climbing Rope  |  need 8 Cordage  |  –  |  Bake Potato  |  at a Campfire  |  –  |  Boil Water  |  at a Campfire  |  –  |  Harden Spear  |  at a Campfire  |  –  |  Heat Stew  |  at a Campfire  |  –  |  Roast Hare  |  at a Campfire  |  –  |  Roast Mushroom  |  at a Campfire  |  –  |  Roast Venison  |  at a Campfire  |  –  |  Roast Wolf  |  at a Campfire  |  –  |  Saw Planks ×6  |  at a Workbench  |  –  |  Strip Wire  |  at a Workbench  |  –  |  Repair Kit  |  at a Workbench  |  –  |  Garden Stew  |  at a Campfire  |  –  |  Bucket  |  at a Workbench  |  –  |  Small Engine  |  at a Workbench  |  1 Lighter    ·    2 —    ·    3 —    ·    4 —    ·    5 —    ·    6 —  |  Cordage   Materials · 2 s / Hand-twisted fibre cord. Binds blades to handles and logs to logs. /  / ✓  Plant Fibre   3 / 3
+## 19_roll_axe_made  (t=58s, day 1 )
+    on screen: +3 Stick  |  +1 Stone  |  +5 Huckleberries  |  +1 Plant Fibre  |  SALVAGE ROLL  |  Pack 5.0 / 40   ·   Shoulder: 0 logs  |  100%  |  x2  |  x2  |  x3  |  x3  |  x2  |  x5  |  Q1 100%  |  Sort  |  Show  |  1  Lighter  |  2  Stone Axe  |  3  —  |  4  —  |  5  —  |  6  —  |  MAKE BY HAND  |  6 of 19 ready  |  ✓  |  Arrow Stone ×3  |  ready  |  ✓  |  Bough Bundle  |  ready ×3  |  ✓  |  Cloth Bandage  |  ready  |  ✓  |  Cordage  |  ready  |  ✓  |  Huckleberry Seeds ×2  |  ready  |  ✓  |  Torch  |  ready ×2  |  ×  |  Crude Spear  |  need 1 Cordage  |  ×  |  Molotov Rotgut  |  need 1 Bottle of Rotgut  |  ×  |  Stone Axe  |  need 1 Cordage  |  ×  |  Stone Club  |  need 1 Cordage  |  ×  |  Hide Wrap Bandage ×2  |  need 1 Hare Pelt, a knife  |  ×  |  Molotov  |  need 1 Glass Bottle, 1 Tin of Kerosene  |  ×  |  Rawhide Strips ×4  |  need 1 Deer Hide, a knife  |  ×  |  Sinew Cordage ×2  |  need 2 Sinew  |  ×  |  Wolf Rawhide Strips ×3  |  need 1 Wolf Pelt, a knife  |  ×  |  Yarrow Poultice  |  need 2 Yarrow  |  ×  |  Arrow Bone ×3  |  need 1 Bone, 1 Sinew, a knife  |  ×  |  Hunting Bow  |  need 4 Sinew, 1 Rawhide Strips, a knife  |  ×  |  Climbing Rope  |  need 8 Cordage  |  –  |  Bake Potato  |  at a Campfire  |  –  |  Boil Water  |  at a Campfire  |  –  |  Harden Spear  |  at a Campfire  |  –  |  Heat Stew  |  at a Campfire  |  –  |  Roast Hare  |  at a Campfire  |  –  |  Roast Mushroom  |  at a Campfire  |  –  |  Roast Venison  |  at a Campfire  |  –  |  Roast Wolf  |  at a Campfire  |  –  |  Saw Planks ×6  |  at a Workbench  |  –  |  Strip Wire  |  at a Workbench  |  –  |  Repair Kit  |  at a Workbench  |  –  |  Garden Stew  |  at a Campfire  |  –  |  Bucket  |  at a Workbench  |  –  |  Small Engine  |  at a Workbench  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —  |  Cordage   Materials · 2 s / Hand-twisted fibre cord. Binds blades to handles and logs to logs. /  / ✓  Plant Fibre   3 / 3
+    note: the axe went to toolbelt slot 1
+## 20_tree_aim  (t=59s, day 1 )
+    on screen: Journal: Gather sticks, stones and fibre ✓   Next: Make a stone axe  [B]  |  Journal: Make a stone axe ✓  +40 XP   Next: Fell a tree  [B]  |  +3 Stick  |  +1 Stone  |  +5 Huckleberries  |  +1 Plant Fibre  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: swing 0: hp [], stamina 100, ray hits <null>
+    note: swing 8: hp [26.9924564361572], stamina 73, ray hits <null>
+    note: felled after 10 swings: true (tree hp now [], stamina 67)
+## 21_tree_felled  (t=71s, day 1 )
+    on screen: Journal: Fell a tree ✓   Next: Build a campfire  [B]  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 22_log_aim  (t=71s, day 1 )
+    prompt: [E] Pick up log
+    on screen: [E] Pick up log  |  Journal: Fell a tree ✓   Next: Build a campfire  [B]  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 23_log_shouldered  (t=71s, day 1 )
+    hint: [Left mouse] set the log  ·  [R] turn  ·  [V] stand / pitch  ·  [G] drop
+    on screen: [Left mouse] set the log  ·  [R] turn  ·  [V] stand / pitch  ·  [G] drop  |  Journal: Fell a tree ✓   Next: Build a campfire  [B]  |  +1 Log  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 24_manual_blueprints  (t=71s, day 1 )
+    on screen: Journal: Fell a tree ✓   Next: Build a campfire  [B]  |  +1 Log  |  REMAND PROGRAM — FIELD MANUAL  (rev. 3)  |  SURVIVAL  |  SHELTER  |  CRAFTING  |  STORAGE  |  FARMING  |  DEFENSE  |  POWER  |  WALLS  |  FLOORS  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —  |  Campfire /  / Ring of stones, stick tinder. Cook, boil water, stay warm. /  / Materials /   Stone 6  (carrying 2) /   Stick 4  (carrying 3) /  / Place the ghost, then bring the materials to it.
+## 25_campfire_ghost_aim  (t=71s, day 1 )
+    prompt: [E] Campfire — Add materials: Stone 0/6, Stick 0/4
+    hint: hold [X] to take down the Campfire blueprint
+    on screen: [E] Campfire — Add materials: Stone 0/6, Stick 0/4  |  hold [X] to take down the Campfire blueprint  |  Journal: Fell a tree ✓   Next: Build a campfire  [B]  |  +1 Log  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 26_campfire_delivered  (t=71s, day 1 )
+    prompt: [E] Light fire · fuel 1h 00m
+    on screen: [E] Light fire · fuel 1h 00m  |  Journal: Fell a tree ✓   Next: Build a campfire  [B]  |  Journal: Build a campfire ✓  +60 XP, and a Bottle of Boiled Water   Next: Fill and boil water  [B]  |  +1 Log  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 27_campfire_unlit_aim  (t=71s, day 1 )
+    prompt: [E] Light fire · fuel 1h 00m
+    on screen: [E] Light fire · fuel 1h 00m  |  Journal: Fell a tree ✓   Next: Build a campfire  [B]  |  Journal: Build a campfire ✓  +60 XP, and a Bottle of Boiled Water   Next: Fill and boil water  [B]  |  +1 Log  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 28_campfire_lit  (t=73s, day 1 )
+    prompt: [E] Use Campfire · burns 59m · [G] add fuel
+    on screen: [E] Use Campfire · burns 59m · [G] add fuel  |  Journal: Fell a tree ✓   Next: Build a campfire  [B]  |  Journal: Build a campfire ✓  +60 XP, and a Bottle of Boiled Water   Next: Fill and boil water  [B]  |  +1 Log  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: campfire lit by interacting: true (blueprint true)
+## 29_drank_issued_water  (t=73s, day 1 )
+    message: [info] You drink. (Water +21)
+    prompt: [E] Use Campfire · burns 59m · [G] add fuel
+    on screen: [E] Use Campfire · burns 59m · [G] add fuel  |  Journal: Fell a tree ✓   Next: Build a campfire  [B]  |  Journal: Build a campfire ✓  +60 XP, and a Bottle of Boiled Water   Next: Fill and boil water  [B]  |  You drink. (Water +21)  |  +1 Log  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: water offered at 2.4 m (bottles: true)
+## 30_pond_aim  (t=74s, day 1 )
+    prompt: Hold [E] Fill bottles with stream water
+    on screen: Hold [E] Fill bottles with stream water  |  Journal: Build a campfire ✓  +60 XP, and a Bottle of Boiled Water   Next: Fill and boil water  [B]  |  You drink. (Water +21)  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: pressing it filled 1 bottle(s)
+## 31_pond_used  (t=75s, day 1 )
+    message: [info] Filled 1 bottle. Boil it before you drink it.
+    prompt: Hold [E] Drink stream water
+    on screen: Hold [E] Drink stream water  |  Journal: Build a campfire ✓  +60 XP, and a Bottle of Boiled Water   Next: Fill and boil water  [B]  |  You drink. (Water +21)  |  Filled 1 bottle. Boil it before you drink it.  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 32_campfire_aim_with_stream_water  (t=76s, day 1 )
+    prompt: [E] Use Campfire · burns 58m · [G] add fuel
+    on screen: [E] Use Campfire · burns 58m · [G] add fuel  |  Journal: Build a campfire ✓  +60 XP, and a Bottle of Boiled Water   Next: Fill and boil water  [B]  |  You drink. (Water +21)  |  Filled 1 bottle. Boil it before you drink it.  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 33_campfire_station  (t=76s, day 1 )
+    prompt: [E] Use Campfire · burns 58m · [G] add fuel
+    on screen: [E] Use Campfire · burns 58m · [G] add fuel  |  SALVAGE ROLL  |  Pack 5.5 / 40   ·   Shoulder: 0 logs  |  100%  |  x2  |  x2  |  x3  |  x3  |  x2  |  x5  |  Q1 94%  |  Sort  |  Show  |  1  Lighter  |  2  Stone Axe  |  3  —  |  4  —  |  5  —  |  6  —  |  CAMPFIRE  |  1 of 9 ready  |  ✓  |  Boil Water  |  ready  |  ×  |  Bake Potato  |  need 1 Potato  |  ×  |  Harden Spear  |  need 1 Cordage  |  ×  |  Heat Stew  |  need 1 Canned Stew  |  ×  |  Roast Hare  |  need 1 Raw Hare  |  ×  |  Roast Mushroom  |  need 1 Shelf Mushroom  |  ×  |  Roast Venison  |  need 1 Raw Venison  |  ×  |  Roast Wolf  |  need 1 Raw Wolf Meat  |  ×  |  Garden Stew  |  need 1 Potato, 1 Carrot, 1 Green Beans, 1 Empty Can  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —  |  Boil Water   Cooking · 20 s / Safe to drink. / Water +35 /  / ✓  Bottle of Stream Water   1 / 1
+## 34_water_boiled  (t=76s, day 1 )
+    prompt: [E] Use Campfire · burns 58m · [G] add fuel
+    on screen: [E] Use Campfire · burns 58m · [G] add fuel  |  SALVAGE ROLL  |  Pack 5.5 / 40   ·   Shoulder: 0 logs  |  100%  |  x2  |  x2  |  x2  |  x3  |  x3  |  x2  |  x5  |  Q1 94%  |  Sort  |  Show  |  1  Lighter  |  2  Stone Axe  |  3  —  |  4  —  |  5  —  |  6  —  |  CAMPFIRE  |  0 of 9 ready  |  ×  |  Bake Potato  |  need 1 Potato  |  ×  |  Boil Water  |  need 1 Bottle of Stream Water  |  ×  |  Harden Spear  |  need 1 Cordage  |  ×  |  Heat Stew  |  need 1 Canned Stew  |  ×  |  Roast Hare  |  need 1 Raw Hare  |  ×  |  Roast Mushroom  |  need 1 Shelf Mushroom  |  ×  |  Roast Venison  |  need 1 Raw Venison  |  ×  |  Roast Wolf  |  need 1 Raw Wolf Meat  |  ×  |  Garden Stew  |  need 1 Potato, 1 Carrot, 1 Green Beans, 1 Empty Can  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —  |  Boil Water   Cooking · 20 s / Safe to drink. / Water +35 /  / ×  Bottle of Stream Water   0 / 1 — need 1 more
+## 35_bandage  (t=76s, day 1 )
+    prompt: [E] Use Campfire · burns 58m · [G] add fuel
+    on screen: [E] Use Campfire · burns 58m · [G] add fuel  |  Journal: Build a campfire ✓  +60 XP, and a Bottle of Boiled Water   Next: Fill and boil water  [B]  |  You drink. (Water +21)  |  Filled 1 bottle. Boil it before you drink it.  |  Journal: Fill and boil water ✓   Next: Make a cloth bandage  [B]  |  Journal: Make a cloth bandage ✓   Next: Raise a shelter  [B]  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: 6 bough bundles into the pack: 0 left over, pack -1.0 / 40
+## 36_bed_aim  (t=77s, day 1 )
+    prompt: [E] Sleep
+    on screen: [E] Sleep  |  Journal: Build a campfire ✓  +60 XP, and a Bottle of Boiled Water   Next: Fill and boil water  [B]  |  You drink. (Water +21)  |  Filled 1 bottle. Boil it before you drink it.  |  Journal: Fill and boil water ✓   Next: Make a cloth bandage  [B]  |  Journal: Make a cloth bandage ✓   Next: Raise a shelter  [B]  |  Journal: Raise a shelter ✓  +80 XP, and 2 Cordage   Next: Sleep in your bed  [B]  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: asleep under the lean-to: sheltered true, sleeping true
+## 37_sleeping  (t=78s, day 1 )
+    message: [info] The campfire has burned out.
+    on screen: You sleep.  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: awake: sheltered true at (-295.0, 78.0, 2301.0) (the lean-to at (-295.0, 78.0, 2300.0))
+## 38_woke  (t=82s, day 2 )
+    message: [info] Rested. Progress saved.
+    on screen: 1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: tutorial step gather_basics done=true
+    note: tutorial step stone_axe done=true
+    note: tutorial step fell_tree done=true
+    note: tutorial step campfire done=true
+    note: tutorial step boil_water done=true
+    note: tutorial step bandage done=true
+    note: tutorial step shelter done=true
+    note: tutorial step sleep done=true
+    note: distress due at 1845, clock 1800 (game minutes)
+    note: distress received: true
+## 39_distress  (t=84s, day 2 )
+    on screen: Journal: Raise a shelter ✓  +80 XP, and 2 Cordage   Next: Sleep in your bed  [B]  |  The campfire has burned out.  |  Rested. Progress saved.  |  Journal: Sleep in your bed ✓  +40 XP   The journal is done. Keep an ear on your tether.  |  Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 40_tether_after_distress  (t=85s, day 2 )
+    on screen: The campfire has burned out.  |  Rested. Progress saved.  |  Journal: Sleep in your bed ✓  +40 XP   The journal is done. Keep an ear on your tether.  |  Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 41_wreck  (t=88s, day 2 )
+    on screen: Journal: Sleep in your bed ✓  +40 XP   The journal is done. Keep an ear on your tether.  |  Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: Ezra's camp at (-464.6, 78.45926, 1947.1), 389 m from the drop
+    note: aiming at Ezra the ray finds companion_ezra:<CharacterBody3D#7790584201172>
+## 42_ezra_aim  (t=92s, day 2 )
+    prompt: [E] Talk to the lineman
+    on screen: [E] Talk to the lineman  |  Journal: Sleep in your bed ✓  +40 XP   The journal is done. Keep an ear on your tether.  |  Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 43_ezra_talk  (t=92s, day 2 )
+    prompt: [E] Talk to the lineman
+    on screen: [E] Talk to the lineman  |  Journal: Sleep in your bed ✓  +40 XP   The journal is done. Keep an ear on your tether.  |  Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  THE LINEMAN  |  Hurt, barricaded in, short of everything.  |  "Leg's broke. Splinted it myself, it won't take weight for a while. I was Remand too, two drops before yours. I know the lines in this valley, and I know what's out in the dark. Get me something for this and I'll walk with you."  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 44_ezra_recruited  (t=92s, day 2 )
+    message: [info] Ezra: "That'll hold the leg. All right. I'm with you."
+    message: [level] Directive complete: Find the lineman.  +150 XP
+    on screen: Journal: Sleep in your bed ✓  +40 XP   The journal is done. Keep an ear on your tether.  |  Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  Ezra: "That'll hold the leg. All right. I'm with you."  |  Directive complete: Find the lineman.  +150 XP  |  EZRA VANE  |  Following you   ·   Health 60%  |  Carrying nothing. / Knacks: Pack mule.  |  [H] whistles him to follow or to stay without the card.  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: Esc/B through GameUI closes Ezra's card: true
+    note: house: pell_crossing_merrow
+    note: 14 containers in it
+## 45_container_aim  (t=94s, day 2 )
+    prompt: Hold [E] Search Refrigerator
+    on screen: Hold [E] Search Refrigerator  |  Journal: Sleep in your bed ✓  +40 XP   The journal is done. Keep an ear on your tether.  |  Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  Ezra: "That'll hold the leg. All right. I'm with you."  |  Directive complete: Find the lineman.  +150 XP  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: container holds ["soda_can x1"]; roll mode container, flap empty line false
+## 46_container_open  (t=94s, day 2 )
+    prompt: [E] Open Refrigerator
+    on screen: [E] Open Refrigerator  |  SALVAGE ROLL  |  REFRIGERATOR  |  Pack 6.8 / 40   ·   Shoulder: 0 logs  |  100%  |  x2  |  x2  |  x3  |  x7  |  x2  |  x5  |  Q1 94%  |  x2  |  Sort  |  Show  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 47_note  (t=94s, day 2 )
+    message: [level] Level 2. 2 points to spend — field manual [B], Record.
+    prompt: [E] Open Refrigerator
+    on screen: [E] Open Refrigerator  |  Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  Ezra: "That'll hold the leg. All right. I'm with you."  |  Directive complete: Find the lineman.  +150 XP  |  Level 2. 2 points to spend — field manual [B], Record.  |  Kneeboard Card, Lift 3  |  Capt. N. Whitlock  |  (A route card clipped to a pilot's kneeboard, one corner burned away. Grease pencil, written fast, the last lines across the printed boxes.) /  / ROUTE: Waystation 9 - the wall - FIREBREAK - drop. 14 min. / WIND light, west. VIS good at first light. FUEL: no second pass.  |  page 1 of 3  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 48_map  (t=95s, day 2 )
+    prompt: [E] Open Refrigerator
+    on screen: [E] Open Refrigerator  |  Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  Ezra: "That'll hold the leg. All right. I'm with you."  |  Directive complete: Find the lineman.  +150 XP  |  Level 2. 2 points to spend — field manual [B], Record.  |  HOLLOWMERE VALLEY  ·  SURVEY SHEET  |  Wheel: zoom   ·   drag: pan   ·   M / Esc: close  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 49_death  (t=97s, day 2 )
+    on screen: SIGNAL LOST  |  You died.  |  TETHER 4471  ·  DAY 2  ·  VITALS FLAT / Your pack lies where you fell. The Program will wake you at your bed.  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+    note: respawned: sheltered true at (-293.0, 78.0, 2301.0)
+## 50_respawned  (t=101s, day 2 )
+    on screen: Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  Level 2. 2 points to spend — field manual [B], Record.  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 51_pause  (t=101s, day 2 )
+    on screen: Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  Level 2. 2 points to spend — field manual [B], Record.  |  PAUSED  |  The valley waits. It is good at that.  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 52_saved  (t=101s, day 2 )
+    on screen: Tether: a distress call crackles in, north-west, 390 m. Static on the tether, then a man's voice, low: "...anyone on the Remand band. This is Ezra Vane. Remand, two drops before yours. Leg's broken. I'm holed up in my line truck by the powe …  |  Level 2. 2 points to spend — field manual [B], Record.  |  Saved.  |  1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
+## 53_continue_loading  (t=103s, day 2 )
+    loading: Planning the towns
+    on screen: HOLLOWMERE  |  Planning the towns  |  Shelter  |  A lean-to and a bough bed mark your place in the world: sleep there to rest, save, and wake there if the worst happens. Fire keeps you warm and dries you — but within twenty metres of it you stand in its light, and the Hollowed see you from much farther off.
+    note: continued: sheltered true at (-293.0, 78.0, 2301.0)
+## 54_continued  (t=151s, day 2 )
+    on screen: 1 Lighter    ·    2 Stone Axe    ·    3 —    ·    4 —    ·    5 —    ·    6 —
