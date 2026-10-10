@@ -161,6 +161,10 @@ static func alt_text(found: Object, p: Player) -> String:
 
 
 func _tool_hint(hit: Dictionary) -> String:
+	# Running a wire: its length and spools, live, wherever you look (TD-246).
+	var run: String = BaseTechManager.run_hint(player)
+	if run != "":
+		return run
 	if hit.is_empty() or Game.world == null:
 		return ""
 	var held: ItemDef = Content.item(player.state.equipped_item())

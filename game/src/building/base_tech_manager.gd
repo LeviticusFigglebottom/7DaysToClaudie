@@ -39,6 +39,9 @@ var _noise_t: float = 0.0
 ## A wire being run: player id -> the piece it starts at (presentation; the command validates).
 var _wire_from: Dictionary = {}
 var _wires: MeshInstance3D = null
+## The wire being run, drawn from its start to where the local player aims (TD-246).
+var _preview: MeshInstance3D = null
+var _preview_mat: StandardMaterial3D = null
 
 
 func _enter_tree() -> void:
@@ -254,6 +257,77 @@ func _draw_wires() -> void:
 	_wires.mesh = st.commit()
 
 
+# --- The wire being run (TD-246) -----------------------------------------------------------------
+
+## The local player's run: [start piece, where the free end is] or [] when no wire is being run.
+func running_wire(player: Player) -> Array:
+	if player == null or player.state == null:
+		return []
+	var from: String = str(_wire_from.get(String(player.state.id), ""))
+	var from_piece: StructurePiece = _pieces().get(StringName(from)) if from != "" else null
+	if from_piece == null or not is_instance_valid(from_piece) or not from_piece.is_inside_tree():
+		return []
+	var target: StructurePiece = player.interaction.target as StructurePiece if player.interaction != null else null
+	var aim_piece: Variant = anchor(target) if target != null and is_instance_valid(target) and target != from_piece and BaseTech.is_power(target.def) else null
+	var hit: Variant = player.interaction.last_hit.get("position") if player.interaction != null else null
+	var cam: Camera3D = player.camera
+	return [from_piece, run_end(aim_piece, hit, cam.global_position, -cam.global_transform.basis.z)]
+
+
+## Where the free end of a run hangs: on the power piece aimed at, else where the look ray hits
+## (within reach), else in the hand, an arm's length ahead and a little low. Pure.
+static func run_end(aim_piece: Variant, hit: Variant, cam_pos: Vector3, cam_fwd: Vector3) -> Vector3:
+	if aim_piece is Vector3:
+		return aim_piece
+	if hit is Vector3:
+		return hit
+	return cam_pos + cam_fwd.normalized() * 0.9 + Vector3.DOWN * 0.35
+
+
+## The line under the prompt while running a wire: "Wire 8 m · 1 spool" (or too long). Pure.
+static func run_label(length: float, spools: int, max_length: float) -> String:
+	if spools <= 0:
+		return "Wire %d m · too long (%d m at most)" % [roundi(length), roundi(max_length)]
+	return "Wire %d m · %d spool%s" % [roundi(length), spools, "" if spools == 1 else "s"]
+
+
+## The run's line for `player`, "" when no wire is being run.
+static func run_hint(player: Player) -> String:
+	if current == null:
+		return ""
+	var run: Array = current.running_wire(player)
+	if run.is_empty():
+		return ""
+	var length: float = anchor(run[0]).distance_to(run[1])
+	return run_label(length, BaseTech.wire_spools(length), float(BaseTech.power_cfg("wire").get("max_length", 14.0)))
+
+
+func _update_preview() -> void:
+	var p: Player = Game.world.get(&"player") as Player if Game.world != null else null
+	var run: Array = running_wire(p)
+	if run.is_empty():
+		if _preview != null:
+			_preview.visible = false
+		return
+	if _preview == null:
+		_preview = MeshInstance3D.new()
+		_preview.name = "WirePreview"
+		_preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_preview_mat = StandardMaterial3D.new()
+		_preview_mat.roughness = 0.6
+		add_child(_preview)
+	var a: Vector3 = anchor(run[0])
+	var b: Vector3 = run[1]
+	# Too long for one run: the wire shows it, rust red, before the prompt says so.
+	_preview_mat.albedo_color = Color(0.08, 0.08, 0.07) if BaseTech.wire_spools(a.distance_to(b)) > 0 else Color(0.55, 0.12, 0.08)
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_wire_tube(st, a, b)
+	st.set_material(_preview_mat)
+	_preview.mesh = st.commit()
+	_preview.visible = true
+
+
 ## A sagging wire from a to b as a thin square tube.
 static func _wire_tube(st: SurfaceTool, a: Vector3, b: Vector3) -> void:
 	const SEGS: int = 10
@@ -332,6 +406,7 @@ func tick(minutes: float) -> void:
 
 ## Running generators are heard (Stimuli): the Hollowed come to see what is making the noise.
 func _process(delta: float) -> void:
+	_update_preview()
 	_noise_t += delta
 	var g: Dictionary = BaseTech.power_cfg("generator")
 	if _noise_t < float(g.get("noise_interval", 3.0)) or Stimuli.current == null or building == null:
