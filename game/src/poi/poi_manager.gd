@@ -1063,6 +1063,12 @@ func _exit_tree() -> void:
 		WorkerThreadPool.wait_for_task_completion(t)
 	_tasks.clear()
 	_orphans.clear()
+	# Buildings half built when the world goes (a reload or quit mid-stream): their roots never
+	# entered the tree, so nothing frees them with it (the random smoke leaked their bodies at exit).
+	for job: Dictionary in _jobs.values():
+		if job.has("builder"):
+			(job["builder"] as PoiBuilder).discard()
+	_jobs.clear()
 	if world != null:
 		Game.unregister_command(&"poi.disarm_trap")
 
