@@ -43,7 +43,7 @@ stamp() {
     if [ "$shot" = menu ]; then
       cat "$GAME/src/tools/stills/menu_flight.gd" "$GAME/world/main_map/world.json"
       find "$GAME/world/main_map/regions/d6_larch_hollow" -type f | sort | xargs cat
-      git -C "$ROOT" ls-files -s -- game/src/worldgen game/src/world game/src/poi game/data/pois game/data/props | sha256sum
+      git -C "$ROOT" ls-files -s -- game/src/worldgen game/src/world | sha256sum
     else
       cat "$GAME/src/ui/intro/intro_player.gd" "$GAME/data/intro/intro.json"
       git -C "$ROOT" ls-files -s -- game/src game/data game/world | grep -v -e 'game/src/ui/' -e 'game/src/tools/' | sha256sum

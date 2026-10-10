@@ -38,8 +38,7 @@ asset pipeline.
     along the Tamsin, the weather turning over between them (`STILL_MOODS`: dusk, a misty dawn, a
     rainstorm with frozen rain streaks). Each still grows the game's own undergrowth and ground
     cover in front of the lens (`VegetationScatter`'s medium and ground layers, further out than
-    the game draws them: the render is offline), and the region's buildings within 260 m of the
-    river are built whole by `PoiBuilder`, as the game builds them.
+    the game draws them: the render is offline).
   * **The intro:** `intro_wreck.png`. The world card's framing (`IntroPlayer.shot_pose`) is taken
     from the loaded main map at first light (`SHOT_HOUR`).
 * **The menu (`MenuBackdrop`)** loads the stills on worker threads (`load_threaded_request`). It

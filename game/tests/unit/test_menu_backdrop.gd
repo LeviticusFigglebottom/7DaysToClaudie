@@ -120,13 +120,3 @@ func test_a_storm_passes_with_rain_in_front_of_the_lens() -> void:
 	assert_eq(MenuFlight.rain_transforms(cam, 50, 7)[9], MenuFlight.rain_transforms(cam, 50, 7)[9], "deterministic")
 	mmi.free()
 
-
-func test_the_buildings_along_the_river_are_built() -> void:
-	var path := PackedVector3Array([Vector3(0, 30, 0), Vector3(0, 30, 100)])
-	var pls: Array = [
-		{"kind": "poi", "def": "a", "id": "near", "origin": [200.0, 5.0, 50.0], "rotation": 90.0},
-		{"kind": "poi", "def": "b", "id": "far", "origin": [600.0, 5.0, 50.0], "rotation": 0.0},
-		{"kind": "lot", "def": "town", "id": "lot", "origin": [10.0, 5.0, 10.0], "rotation": 0.0}]
-	var near: Array[Dictionary] = MenuFlight.shells_near(pls, path, MenuFlight.SHELL_REACH)
-	assert_eq(near.size(), 1, "the near building only; town lots are left out")
-	assert_eq(str(near[0]["id"]), "near")
