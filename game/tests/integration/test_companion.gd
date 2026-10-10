@@ -717,6 +717,15 @@ func test_downed_only_those_already_on_him_keep_him() -> void:
 	assert_true(e.ally.open_to(b), "on his feet again, he is anyone's foe")
 
 
+func test_his_blows_and_hurts_have_his_own_voice() -> void:
+	var own: bool = not Audio.variants(&"voice/ezra_grunt").is_empty()
+	assert_eq(CompanionMind.voice(&"voice/zombie_attack"), &"voice/ezra_grunt" if own else &"voice/ashen_grunt",
+		"his own grunt when it is generated (TD-303)")
+	var pain: bool = not Audio.variants(&"voice/ezra_pain").is_empty()
+	assert_eq(CompanionMind.voice(&"voice/zombie_pain"), &"voice/ezra_pain" if pain else &"voice/ashen_pain")
+	assert_eq(CompanionMind.voice(&"voice/zombie_death"), &"voice/ashen_death", "he has no death cry of his own")
+
+
 func test_companion_strength_scales_him() -> void:
 	var e: Enemy = await _recruited()
 	assert_almost_eq(e.max_health, e.def.health, 0.01, "1 by default: the enemy settings never apply")

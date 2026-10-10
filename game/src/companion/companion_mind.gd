@@ -538,12 +538,13 @@ func _footsteps(delta: float) -> void:
 
 
 ## His voice for the Hollowed's voice ids (Enemy._vid): a living man's grunts and pain, no cries.
+## His own (TD-303) when generated, else the Ashen's.
 static func voice(hollowed: StringName) -> StringName:
 	match hollowed:
 		&"voice/zombie_attack":
-			return &"voice/ashen_grunt"
+			return &"voice/ezra_grunt" if not Audio.variants(&"voice/ezra_grunt").is_empty() else &"voice/ashen_grunt"
 		&"voice/zombie_pain":
-			return &"voice/ashen_pain"
+			return &"voice/ezra_pain" if not Audio.variants(&"voice/ezra_pain").is_empty() else &"voice/ashen_pain"
 		&"voice/zombie_death":
 			return &"voice/ashen_death"
 	return &""
