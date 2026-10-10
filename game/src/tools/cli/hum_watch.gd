@@ -4,7 +4,7 @@ extends SceneTree
 ## 30 m it saves a strip of frames from above and behind the player and logs, for the bodies within
 ## 30 m, how much their headings turn a tick (jitter) and how often two stand closer than 0.5 m.
 ##   xvfb-run godot --path game --rendering-driver opengl3 -s res://src/tools/cli/hum_watch.gd -- \
-##       --out DIR [--frames 16] [--every 0.5] [--start 6] [--height 18] [--no-crowd]
+##       --out DIR [--frames 16] [--every 0.5] [--start 6] [--height 18] [--crowd | --no-crowd]
 ## The work lives in hum_watch_runner.gd (autoload classes are only usable after a frame).
 
 

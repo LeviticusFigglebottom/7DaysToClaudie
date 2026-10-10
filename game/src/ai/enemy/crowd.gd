@@ -23,8 +23,11 @@ const EASE: float = 0.25
 ## Only bodies this near the player (m) take part: a jam out of sight costs nothing to leave.
 const RANGE: float = 30.0
 
-## Off: bodies steer alone (perf_capture --no-crowd measures the difference).
-static var enabled: bool = true
+## Off by default: hum_watch on a real Hum (40 alive, Pell's Crossing) found it no help there:
+## headings turned 2.5-2.7 degrees a tick against 1.8-2.0 without, and bodies came within 0.5 m
+## of each other no less often, for ~4% of the bodies' step (perf_capture --hum-full). In a
+## doorway (test_crowd_doorway) it is a little smoother. The capsules already keep bodies apart.
+static var enabled: bool = false
 static var _cur: Dictionary = {}
 static var _prev: Dictionary = {}
 static var _frame: int = -1

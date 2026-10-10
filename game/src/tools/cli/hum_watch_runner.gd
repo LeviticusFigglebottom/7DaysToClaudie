@@ -37,6 +37,8 @@ func _ready() -> void:
 				_height = float(args[i])
 			"--no-crowd":
 				Crowd.enabled = false
+			"--crowd":
+				Crowd.enabled = true
 		i += 1
 	DirAccess.make_dir_recursive_absolute(_out)
 	_run.call_deferred()
