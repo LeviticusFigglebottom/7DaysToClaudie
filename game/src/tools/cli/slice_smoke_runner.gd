@@ -298,11 +298,17 @@ func _finish() -> void:
 ## the generated models (the owner's first playtest ran on stand-ins without anyone noticing).
 func _companion(game: Node, w: GameWorld, p: Player) -> void:
 	var comp: CompanionDirector = w.companion as CompanionDirector
+	var back: Vector3 = p.global_position
 	var camp: Dictionary = comp.camp_spot() if comp != null else {}
+	if camp.is_empty() and comp != null:
+		# A random world's camp stands 300-750 m from the drop (generator 20), past the ring built
+		# so far: walk there (teleport) and let the streaming build it, as it would for a player.
+		camp = await _reach_camp(comp, w, p)
 	if not ok(not camp.is_empty(), "the lineman's camp is in the world"):
+		p.global_position = back
+		w.terrain.update_streaming(p.global_position, true)
 		return
 	var ps: PlayerState = p.state
-	var back: Vector3 = p.global_position
 	var at: Vector3 = camp["pos"]
 	p.global_position = Vector3(at.x, w.height_at(at.x, at.z + 2.5) + 0.1, at.z + 2.5)
 	p.velocity = Vector3.ZERO
@@ -412,6 +418,39 @@ func _companion(game: Node, w: GameWorld, p: Player) -> void:
 	p.velocity = Vector3.ZERO
 	w.terrain.update_streaming(p.global_position, true)
 	await seconds(0.5)
+
+
+## Takes the player to the camp's building while it is placed but not built, until it is built
+## ({} if it never is, saying what held it back).
+func _reach_camp(comp: CompanionDirector, w: GameWorld, p: Player) -> Dictionary:
+	var poi: String = str(comp.cdef.camp.get("poi", ""))
+	var entry: Dictionary = {}
+	for v: Variant in w.pois.all_buildings():
+		if str((v as Dictionary).get("def", "")) == poi:
+			entry = v
+			break
+	if entry.is_empty():
+		print("[smoke] no %s in the world's buildings" % poi)
+		return {}
+	var at: Vector3 = entry["pos"]
+	print("[smoke] camp %s placed at (%.0f, %.0f), %.0f m from the player: walking there" % [entry.get("id", ""), at.x, at.z,
+		Vector2(at.x - p.global_position.x, at.z - p.global_position.z).length()])
+	p.global_position = Vector3(at.x, w.height_at(at.x, at.z + 12.0) + 0.5, at.z + 12.0)
+	p.velocity = Vector3.ZERO
+	w.terrain.update_streaming(p.global_position, true)
+	var id: StringName = StringName(str(entry.get("id", "")))
+	var next_t: Array[int] = [0]
+	var found: Array = [{}]
+	await wait_until(func() -> bool:
+		found[0] = comp.camp_spot()
+		if Time.get_ticks_msec() > next_t[0]:
+			next_t[0] = Time.get_ticks_msec() + 5000
+			var e: Dictionary = w.pois.registry.entries.get(id, {}) if w.pois.registry != null else {}
+			print("[smoke] camp: region %s attached %s, queued %s, built %s; %d built + %d on the way (max %d)" % [
+				e.get("region", "?"), w.terrain.regions.has(str(e.get("region", ""))), w.pois._jobs.has(id), w.pois.instances.has(id),
+				w.pois.instances.size(), w.pois._jobs.size(), w.pois._max_built])
+		return not (found[0] as Dictionary).is_empty(), 180.0)
+	return found[0]
 
 
 func _check_real_models(w: GameWorld, p: Player) -> void:
