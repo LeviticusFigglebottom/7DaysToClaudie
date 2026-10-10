@@ -806,6 +806,34 @@ func test_a_far_target_is_reached_round_a_cliff_not_through_it() -> void:
 	_world.terrain = Callable()
 
 
+func test_his_gear_shows_as_he_uses_it() -> void:
+	var e: Enemy = await _seated()
+	if not e.visual.has_part("prop_splint"):
+		pending("no generated body with the props (make assets)")
+		return
+	var shown := func(part: String) -> bool: return (e.visual._segments[part] as MeshInstance3D).visible
+	await _frames(2)
+	assert_true(shown.call("prop_splint"), "splinted at his camp")
+	assert_true(shown.call("prop_hatchet_belt") and not shown.call("prop_hatchet_hand"), "the hatchet on his belt while he sits")
+	_p.global_position = CAMP_AT + Vector3(0, 0, 2.5)
+	_give(&"first_aid_kit")
+	Game.execute(&"companion.recruit", {})
+	await _frames(int(e.ally.rising_t * 60.0) + 4)
+	assert_false(shown.call("prop_splint"), "off once he is up and with the player")
+	assert_false(shown.call("prop_lantern"), "no lantern by day")
+	var h: Enemy = _spawn(&"hollow", e.global_position + Vector3(2.0, 0, 0))
+	e.foe = h
+	await _frames(2)
+	assert_true(shown.call("prop_hatchet_hand") and not shown.call("prop_hatchet_belt"), "in his fist to fight")
+	e.foe = null
+	e._set_state(Enemy.State.IDLE)
+	Game.session.clock.set_time(Game.session.clock.day(), 23.0)
+	await _frames(3)
+	assert_true(e.ally.lantern_on(), "his light at night, following")
+	assert_true(shown.call("prop_lantern"), "the lantern in his hand while its light is on")
+	assert_true(e.ally.lantern.get_parent() is BoneAttachment3D, "the light rides his hand")
+
+
 func test_companion_strength_scales_him() -> void:
 	var e: Enemy = await _recruited()
 	assert_almost_eq(e.max_health, e.def.health, 0.01, "1 by default: the enemy settings never apply")

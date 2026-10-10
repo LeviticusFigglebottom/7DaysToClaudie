@@ -200,6 +200,11 @@ func _go(p: Player) -> Vector3:
 	return _way(to) * enemy._speed(d > 10.0 and not carrying_logs())
 
 
+## Swinging at a tree (his hatchet in hand: CompanionMind._props).
+func chopping() -> bool:
+	return acting and str(target.get("what", "")) == "tree"
+
+
 ## The way toward `to`: the coarse route while it is far, else the body's own (nav mesh, straight).
 func _way(to: Vector3) -> Vector3:
 	if enemy._flat_dist(to) <= ROUTE_BEYOND:

@@ -141,6 +141,19 @@ static func population_of(e: Enemy) -> StringName:
 	return &""
 
 
+## Shows or hides a separate prop mesh of the body by name (prop_*: the companion's hatchet in hand
+## or on the belt, lantern, splint; TD-302). No-op for a body without it (a stand-in, an older
+## model).
+func set_part(part: String, on: bool) -> void:
+	var mi: Variant = _segments.get(part)
+	if mi is MeshInstance3D and is_instance_valid(mi) and (mi as MeshInstance3D).visible != on:
+		(mi as MeshInstance3D).visible = on
+
+
+func has_part(part: String) -> bool:
+	return _segments.get(part) is MeshInstance3D
+
+
 ## The Blister's pustules burst (the skin shader swaps them for torn craters, ADR-0028).
 func burst() -> void:
 	if _placeholder or _root == null:
