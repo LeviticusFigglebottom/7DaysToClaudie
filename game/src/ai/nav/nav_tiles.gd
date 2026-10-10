@@ -424,4 +424,10 @@ func _add_pois(nm: NavigationMesh, src: NavigationMeshSourceGeometryData3D, k: V
 	# into `src`, a tile with a building lost its terrain and trees and baked empty, the building
 	# sitting at the origin (TD-340: no tile with a POI on it had any navmesh).
 	for root: Node in pois.call(&"nav_roots_in_rect", rect):
-		NavigationServer3D.parse_source_geometry_data(nm, src, root)
+		var part := NavigationMeshSourceGeometryData3D.new()
+		NavigationServer3D.parse_source_geometry_data(nm, part, root)
+		if not part.has_data():
+			continue
+		var xf: Transform3D = (root as Node3D).global_transform
+		var verts: PackedVector3Array = xf * part.get_vertices().to_byte_array().to_vector3_array()
+		src.append_arrays(verts.to_byte_array().to_float32_array(), part.get_indices())
