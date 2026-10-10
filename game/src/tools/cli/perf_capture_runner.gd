@@ -92,6 +92,21 @@ func _run() -> void:
 	if _load_only:
 		for i: int in 40:
 			await get_tree().process_frame
+		# How long the building ring takes to raise everything in range after the spawn (a world
+		# that builds by distance: the main map's background builds, a streamed world's ring).
+		var pm: Node = w.get(&"pois")
+		if pm != null and pm.get(&"registry") != null:
+			var t0: int = Time.get_ticks_msec()
+			var worst: float = 0.0
+			while Time.get_ticks_msec() - t0 < 600000:
+				var t1: int = Time.get_ticks_usec()
+				await get_tree().process_frame
+				worst = maxf(worst, float(Time.get_ticks_usec() - t1) / 1000.0)
+				var steps: Variant = pm.get(&"_own_steps")
+				if (pm.get(&"_jobs") as Dictionary).is_empty() and (steps == null or (steps as StepRunner).is_idle()):
+					break
+			print("[perf] buildings settled %.1f s after the spawn: %d built, %d in the registry; longest frame meanwhile %.0f ms" % [
+				float(Time.get_ticks_msec() - t0) / 1000.0, (pm.get(&"instances") as Dictionary).size(), (pm.get(&"registry") as PoiRegistry).entries.size(), worst])
 		get_tree().quit(0)
 		return
 	_stamps()

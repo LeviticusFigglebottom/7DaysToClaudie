@@ -94,7 +94,9 @@ func _wreck() -> bool:
 	# The world draws only into the still's viewport, once, at the end: under software rendering
 	# every frame of the load and the streaming wait would otherwise cost seconds.
 	get_viewport().disable_3d = true
-	Game.start_new_game({"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_stills"})
+	# Built whole (GameWorld.poi_ring off): the wreck card frames lift3_crash_site's built instance
+	# (IntroPlayer.shot_target/shot_frame), ~0.7 km from the drop site.
+	Game.start_new_game({"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_stills", "poi_ring": false})
 	var t0: int = Time.get_ticks_msec()
 	while (Game.world == null or not bool(Game.world.is_ready)) and Time.get_ticks_msec() - t0 < 900000:
 		await get_tree().process_frame

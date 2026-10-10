@@ -64,6 +64,10 @@ static func wants_streaming() -> bool:
 var poi_lots: Dictionary = {}
 ## Every building of the world as data (WorldLoader.registry, RWG v2 Phase 3).
 var poi_registry: PoiRegistry = null
+## Buildings come and go by distance (PoiManager's ring over poi_registry): a streamed world, and
+## the main map, built whole, whose boot raised every building of its built regions (owner report
+## 4). Off with the new-game option "poi_ring": false (tools that want every building at once).
+var poi_ring: bool = false
 ## Where the player will stand when the boot ends (the warm-up camera's spot): a streamed world
 ## builds the buildings around it during the boot.
 var boot_focus := Vector3.ZERO
@@ -117,8 +121,12 @@ func _ready() -> void:
 		Log.info("world", "random world %s: %s" % [saved_id if saved_id != "" else "(new)", "streamed (ADR-0038)" if streaming else "built whole (streaming off)"])
 		if streaming and not bool(Game.pending_options.get("is_new_game", false)):
 			_loader.spawn_hint = session.local_player().position
+		poi_ring = streaming
+		_loader.poi_ring = poi_ring
 		_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_random_world(gen, saved_id), true, "world load")
 		return
+	poi_ring = bool(Game.pending_options.get("poi_ring", true))
+	_loader.poi_ring = poi_ring
 	_load_task = WorkerThreadPool.add_task(func() -> void: _loader.load_world(dir), true, "world load")
 
 
@@ -297,7 +305,7 @@ func _boot_terrain() -> void:
 	_loader.terrain_textures = null
 	terrain.prebuilt_bloom = _loader.bloom_tiles
 	# Buildings come by distance (ADR-0038 §8): a cellar is cut once its building stands.
-	terrain.gate_holes = streaming and _loader.registry != null
+	terrain.gate_holes = poi_ring and _loader.registry != null
 	terrain.remesh_far_tiles = streaming
 	add_child(terrain)
 	terrain.setup(world_def, _loader.detailed.duplicate(), _loader.coarse)
@@ -564,6 +572,7 @@ func _finish_spawn() -> void:
 	_load_meter.spawned()
 	player.input_enabled = true
 	is_ready = true
+	_warn_settle_minutes = WARN_SETTLE
 	ui.hide_loading()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	Events.session_started.emit(bool(Game.pending_options.get("is_new_game", false)))
@@ -627,11 +636,18 @@ func _on_game_minutes(minutes: float) -> void:
 	# pass: "Find shelter" greeted a player waking in their own lean-to).
 	if _survival_warnings == null:
 		_survival_warnings = SurvivalWarnings.new()
-	for warn: Dictionary in _survival_warnings.update(p.stats, minutes, sleeping, bool(env.get("sheltered", false))):
+	# Quiet for the first minutes in the world (a load, a respawn): the first tick after a load ran
+	# before the player's own lean-to was rebuilt, so "Find shelter" greeted them under its roof.
+	var settling: bool = _warn_settle_minutes > 0.0
+	_warn_settle_minutes = maxf(0.0, _warn_settle_minutes - minutes)
+	for warn: Dictionary in _survival_warnings.update(p.stats, minutes, sleeping or settling, bool(env.get("sheltered", false))):
 		Events.status_message_queued.emit(str(warn["text"]), warn["kind"], StatusFeed.PRIORITY_WARNING)
 
 
 var _survival_warnings: SurvivalWarnings = null
+## Game minutes the survival warnings keep quiet for after the player arrives (WARN_SETTLE).
+var _warn_settle_minutes: float = 0.0
+const WARN_SETTLE: float = 10.0
 
 
 ## Environment the body feels at a position (SurvivalStats.tick_game env contract).
@@ -805,6 +821,7 @@ func respawn() -> void:
 		terrain.update_streaming(player.global_position, true)
 		player.input_enabled = true
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_warn_settle_minutes = WARN_SETTLE
 		Events.player_spawned.emit(p.id))
 
 
