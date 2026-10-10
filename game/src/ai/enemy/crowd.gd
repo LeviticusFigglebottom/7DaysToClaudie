@@ -17,6 +17,9 @@ const STRENGTH: float = 0.8
 ## A body rescans its neighbours every EVERY physics ticks (staggered by id; perf_capture --hum-full:
 ## scanning every tick cost ~9% of the bodies' step at 64 alive).
 const EVERY: int = 3
+## Share of the way a body's lean moves toward its latest push each tick (hum_watch: the raw push
+## stepped every EVERY ticks and turned headings 2.8 degrees a tick against 2.0 without separation).
+const EASE: float = 0.25
 ## Only bodies this near the player (m) take part: a jam out of sight costs nothing to leave.
 const RANGE: float = 30.0
 
