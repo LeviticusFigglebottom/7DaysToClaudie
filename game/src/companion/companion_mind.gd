@@ -46,6 +46,8 @@ var lantern: OmniLight3D = null
 var _scan_t: float = 0.0
 var _fight_end_t: float = -1000.0
 var _bark_n: int = 0
+## His jaw while he speaks (TD-309), made the first time he does.
+var _jaw_flap: JawFlap = null
 var _step_t: float = 0.0
 var _anim_fixed: bool = false
 var _hurt_bark_t: float = -1000.0
@@ -91,6 +93,7 @@ func setup(e: Enemy) -> void:
 func step(delta: float, p: Player, dist: float) -> bool:
 	_fix_anims()
 	_props()
+	_jaw()
 	if enemy.state != Enemy.State.STAGGER or downed:
 		enemy._state_t += delta  # (Enemy's own frame, which counts it, doesn't run for him)
 	if downed:
@@ -458,6 +461,26 @@ func speak(event: String, n: int = 0) -> void:
 	# Far off, he's heard and not seen: say so (G4); near, the status line carries his words.
 	if _far_from_player(25.0):
 		SoundCaptions.say("ezra", "ezra calling out", enemy.global_position, 10.0)
+
+
+## Moves his jaw with the line he is saying (TD-309): the voice's loudness at its playback position
+## opens a JawFlap on his skeleton, made the first time he speaks.
+func _jaw() -> void:
+	if _voice == null:
+		return
+	var talking: bool = _voice.playing and _voice.stream != null
+	if _jaw_flap == null:
+		if not talking:
+			return
+		var sk: Skeleton3D = enemy.visual.skeleton if enemy.visual != null else null
+		if sk == null or sk.find_bone("jaw") < 0:
+			return
+		_jaw_flap = JawFlap.new()
+		_jaw_flap.name = "JawFlap"
+		sk.add_child(_jaw_flap)
+	var target: float = JawFlap.at(JawFlap.envelope(_voice.stream), _voice.get_playback_position()) if talking else 0.0
+	# Eased, so a syllable opens and closes rather than snapping.
+	_jaw_flap.open = lerpf(_jaw_flap.open, target, 0.6)
 
 
 ## His gear as he is using it (TD-302): the hatchet in his fist when he fights or chops, on his
