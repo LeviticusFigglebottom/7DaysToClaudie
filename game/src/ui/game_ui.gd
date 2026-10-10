@@ -644,6 +644,15 @@ static func caption_line(text: String, bearing: String) -> String:
 	return "[%s]" % text if dir == "" or dir == "here" else "[%s, %s]" % [text, dir]
 
 
+## The line under the prompt: the target's hint (a hammer's, a bed's growth and soil) and what
+## holding the cancel key does, both when there are both (a bed's status once hid "hold [X] to
+## water the bed").
+static func hint_line(hint: String, alt: String) -> String:
+	if hint == "" or alt == "":
+		return hint + alt
+	return "%s  ·  %s" % [hint, alt]
+
+
 ## The keys while laying out a blueprint ("[Left mouse] place  ·  [R] turn  ·  [Esc] cancel") or
 ## carrying logs; "" otherwise.
 static func build_controls(placing: bool, carrying_logs: bool) -> String:
@@ -749,7 +758,7 @@ func _process(delta: float) -> void:
 		var place_why: String = str(b.call(&"placement_hint")) if b != null else ""
 		# Under the prompt: why a placement can't go, else the held tool's hint, else what holding
 		# the cancel key on the target does (take a blueprint ghost down).
-		_tool_hint.text = place_why if place_why != "" else (p.interaction.tool_hint if p.interaction.tool_hint != "" else p.interaction.alt_prompt)
+		_tool_hint.text = place_why if place_why != "" else hint_line(p.interaction.tool_hint, p.interaction.alt_prompt)
 		# Laying out a blueprint or carrying logs: the keys, which nothing else on screen names.
 		if place_why == "" and b != null and b.has_method(&"is_placing"):
 			var ctl: String = build_controls(bool(b.call(&"is_placing")), p.state.inventory.count_of(&"log") > 0)
