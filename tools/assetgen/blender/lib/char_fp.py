@@ -1497,6 +1497,7 @@ class PoseSolver:
         self.relax(0.0)
         self.prev = {}                  # side -> (swing, spin) of the last frame
         self.prev_F = {}                # side -> the hand frame the last frame asked for
+        self.prev_shift = {}            # side -> how far the last frame's grip gave way (m)
         self.clamped = {}               # side -> worst degrees a hand was turned back by
         self.moved = {}                 # side -> furthest (m) a grip was moved to spare the wrist
 
@@ -1541,7 +1542,8 @@ class PoseSolver:
         c = sh + f * l2
         return c + _n(np.asarray(wrist) - c) * l1, c
 
-    def _fit(self, sd: str, g, F, elbow, movable: bool = True, item=None, fixed_roll: bool = False):
+    def _fit(self, sd: str, g, F, elbow, movable: bool = True, item=None, fixed_roll: bool = False,
+             steady: bool = False):
         """(wrist, Rh, pole) for a grip at g with its handle along F's z: the elbow and the roll
         round the handle that bend the wrist least; then, if the wrist is still past its range,
         the hand moved (tool direction kept) just far enough toward where a straight wrist would
@@ -1589,39 +1591,54 @@ class PoseSolver:
             return min((c for c in near if abs(c[0]) <= self.SWINGS[-1] and abs(c[1]) <= self.SPINS[-1]),
                        key=lambda c: cost(gg, *c))
 
-        sw, sp = search(g, self.prev.get(sd))
-        if sd in self.prev and over(g, sw, sp) > 0.5:
-            # A fast swing can outrun the local search: look wide again and take a better answer
-            # (the arm may change its elbow between two frames of a strike, never in an idle).
-            wide = search(g, None)
-            # Mid-strike the hand already turns fast and a new elbow is lost in it; in a slow
-            # move it reads as the hand spinning in one frame.
-            pf = self.prev_F.get(sd)
-            pace = math.degrees(float(np.linalg.norm(_rotvec(F @ pf.T)))) if pf is not None else 0.0
-            if cost(g, *wide) + self.JUMP_COST * max(0.0, 1.0 - pace / self.FAST) < cost(g, sw, sp):
-                sw, sp = wide
-        moved = 0.0
-        if movable and over(g, sw, sp) > 0.5:
-            # Bisect how far toward the straight-wrist grip the hand must go.
-            wrist, Rh, _ = place(g, sw, sp)
-            ws, _c = self._straight_wrist(sd, wrist, Rh)
-            shift = ws - wrist
-            n = float(np.linalg.norm(shift))
-            reach = self.MOVE_MAX + (self.MOVE_RELAXED - self.MOVE_MAX) * self.w
-            if n > reach:
-                shift *= reach / n
-            lo, hi = 0.0, 1.0
-            fit = search(g + shift, (sw, sp))
-            for _ in range(7):
-                mid = 0.5 * (lo + hi)
-                cand = search(g + shift * mid, (sw, sp))
-                if over(g + shift * mid, *cand) <= 0.5:
-                    hi, fit = mid, cand
-                else:
-                    lo = mid
-            g = g + shift * hi
-            sw, sp = fit
-            moved = float(np.linalg.norm(shift)) * hi
+        held = self.prev_shift.get(sd) if steady and sd in self.prev else None
+        if held is not None:
+            # A held loop (idle, guard, reading the tether) keeps its first frame's answer whole:
+            # the elbow, the roll and how far the grip gave way. Re-solved each frame, the local
+            # search moves in 3-degree steps, so the loop's slight drift snapped the hand 3-6
+            # degrees once a cycle and again at the seam (player report 5: a twitch every other
+            # second while the wrist was raised). The drift now passes through smoothly; the
+            # clamp below still keeps the wrist in its range.
+            sw, sp = self.prev[sd]
+            g = g + held
+            moved = float(np.linalg.norm(held))
+        else:
+            sw, sp = search(g, self.prev.get(sd))
+            if sd in self.prev and over(g, sw, sp) > 0.5:
+                # A fast swing can outrun the local search: look wide again and take a better answer
+                # (the arm may change its elbow between two frames of a strike, never in an idle).
+                wide = search(g, None)
+                # Mid-strike the hand already turns fast and a new elbow is lost in it; in a slow
+                # move it reads as the hand spinning in one frame.
+                pf = self.prev_F.get(sd)
+                pace = math.degrees(float(np.linalg.norm(_rotvec(F @ pf.T)))) if pf is not None else 0.0
+                if cost(g, *wide) + self.JUMP_COST * max(0.0, 1.0 - pace / self.FAST) < cost(g, sw, sp):
+                    sw, sp = wide
+            moved = 0.0
+            gave = np.zeros(3)
+            if movable and over(g, sw, sp) > 0.5:
+                # Bisect how far toward the straight-wrist grip the hand must go.
+                wrist, Rh, _ = place(g, sw, sp)
+                ws, _c = self._straight_wrist(sd, wrist, Rh)
+                shift = ws - wrist
+                n = float(np.linalg.norm(shift))
+                reach = self.MOVE_MAX + (self.MOVE_RELAXED - self.MOVE_MAX) * self.w
+                if n > reach:
+                    shift *= reach / n
+                lo, hi = 0.0, 1.0
+                fit = search(g + shift, (sw, sp))
+                for _ in range(7):
+                    mid = 0.5 * (lo + hi)
+                    cand = search(g + shift * mid, (sw, sp))
+                    if over(g + shift * mid, *cand) <= 0.5:
+                        hi, fit = mid, cand
+                    else:
+                        lo = mid
+                g = g + shift * hi
+                gave = shift * hi
+                sw, sp = fit
+                moved = float(np.linalg.norm(shift)) * hi
+            self.prev_shift[sd] = gave
         self.prev[sd] = (sw, sp)
         self.prev_F[sd] = F
         wrist, Rh, pole = place(g, sw, sp)
@@ -1663,7 +1680,8 @@ class PoseSolver:
             # full range (the comfort cost still picks its straightest elbow and roll).
             self.relax(0.0 if h.on is not None else relax)
             g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None, item=h.item,
-                                           fixed_roll=sd in hands.get("_fixed_roll", ()))
+                                           fixed_roll=sd in hands.get("_fixed_roll", ()),
+                                           steady=bool(hands.get("_steady", False)))
             # What the hand really ended up gripping (the other hand follows this handle).
             placed[sd] = Hand(g, Rh @ self.rig.S0[sd], h.elbow, h.sc, item=h.item)
             prm[f"{sd}.wrist"], prm[f"{sd}.Rh"] = wrist, Rh
@@ -1733,6 +1751,7 @@ def _idle(pose: dict, n: int = 60) -> list[dict]:
               "L.move": [0.0, 0.0016 * math.sin(w + 1.3), 0.0], "L.rot": [0.5 * math.sin(w + 2.0), 0.0, 0.0]}
         fr = _key_hands(hold, ch)
         fr["_relax"] = 1.0
+        fr["_steady"] = True
         frames.append(fr)
     return frames
 
