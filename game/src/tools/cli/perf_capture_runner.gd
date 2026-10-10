@@ -18,6 +18,9 @@ var _frames: int = 120
 var _ablate: bool = true
 ## Quit once the load's report and its first frames in the world are logged (LoadMeter).
 var _load_only: bool = false
+## Start the main map built whole (GameWorld.poi_ring off): the after-spawn window then shows what
+## isn't the ring's background builds.
+var _poi_whole: bool = false
 ## Also measure a Hum night at the town (--hum): the horde's waves on the main thread (TD-003).
 var _hum: bool = false
 ## --hum-full: the night's plan is a late game's (gamestage HUM_FULL_STAGE), every wave is due at
@@ -69,6 +72,8 @@ func _ready() -> void:
 				_ablate = false
 			"--load-only":
 				_load_only = true
+			"--poi-whole":
+				_poi_whole = true
 			"--census":
 				_census = true
 			"--hum":
@@ -78,13 +83,15 @@ func _ready() -> void:
 				_hum_full = true
 			"--no-crowd":
 				Crowd.enabled = false  # TD-011: the Hum without separation steering, to compare
+			"--crowd":
+				Crowd.enabled = true  # TD-011: with it (off by default)
 	_run.call_deferred()
 
 
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
 	var rules: Dictionary = {"hum_max_alive": 64, "hum_size": 2.0} if _hum_full else {}
-	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "perf", "rules": rules})
+	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "perf", "rules": rules, "poi_ring": not _poi_whole})
 	while game.get(&"world") == null or not bool(game.world.is_ready):
 		await get_tree().process_frame
 	w = game.world
@@ -95,18 +102,55 @@ func _run() -> void:
 		# How long the building ring takes to raise everything in range after the spawn (a world
 		# that builds by distance: the main map's background builds, a streamed world's ring).
 		var pm: Node = w.get(&"pois")
-		if pm != null and pm.get(&"registry") != null:
+		if pm != null:
 			var t0: int = Time.get_ticks_msec()
 			var worst: float = 0.0
+			var mem0: Dictionary = _mem()
+			# The ring's steps run in each frame (a world built whole runs its own StepRunner).
+			var ran: Array = []
+			var own: Variant = pm.get(&"_own_steps")
+			if own == null and pm.has_method(&"_ring_steps"):
+				own = pm.call(&"_ring_steps")
+			if own is StepRunner:
+				(own as StepRunner).step_ran.connect(func(n: String, us: int, _f: bool) -> void: ran.append("%s %.1f" % [n, us / 1000.0]))
+			var slow: Array = []
+			# Each module's own _process time (StreamMeter.note, over 2 ms) in the slow frames.
+			if StreamMeter.current == null:
+				StreamMeter.current = StreamMeter.new()
+				StreamMeter.current.log_windows = false
+			var meter: StreamMeter = StreamMeter.current
 			while Time.get_ticks_msec() - t0 < 600000:
 				var t1: int = Time.get_ticks_usec()
+				ran.clear()
+				meter._frame_kinds.clear()
 				await get_tree().process_frame
-				worst = maxf(worst, float(Time.get_ticks_usec() - t1) / 1000.0)
+				var ks: Array = meter._frame_kinds.keys()
+				ks.sort_custom(func(a: String, b: String) -> bool: return float(meter._frame_kinds[a]) > float(meter._frame_kinds[b]))
+				for k: String in ks.slice(0, 9):
+					if float(meter._frame_kinds[k]) >= 1.0:
+						ran.append("%s %.1f" % [k, float(meter._frame_kinds[k])])
+				var ms: float = float(Time.get_ticks_usec() - t1) / 1000.0
+				worst = maxf(worst, ms)
+				if ms > 33.0:
+					slow.append([ms, "%.0f ms (process %.0f, physics %.0f): %s" % [ms, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+						Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, ", ".join(ran) if not ran.is_empty() else "no ring steps"]])
 				var steps: Variant = pm.get(&"_own_steps")
-				if (pm.get(&"_jobs") as Dictionary).is_empty() and (steps == null or (steps as StepRunner).is_idle()):
+				var idle: bool = (pm.get(&"_jobs") as Dictionary).is_empty() and (steps == null or (steps as StepRunner).is_idle())
+				# Built whole: the same 40 s window, for comparison.
+				if (pm.get(&"registry") != null and idle) or (pm.get(&"registry") == null and Time.get_ticks_msec() - t0 > 40000):
 					break
+			slow.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) > float(b[0]))
+			print("[perf] frames over 33 ms while they rose: %d" % slow.size())
+			for sl: Array in slow.slice(0, 12):
+				print("[perf]   %s" % sl[1])
 			print("[perf] buildings settled %.1f s after the spawn: %d built, %d in the registry; longest frame meanwhile %.0f ms" % [
 				float(Time.get_ticks_msec() - t0) / 1000.0, (pm.get(&"instances") as Dictionary).size(), (pm.get(&"registry") as PoiRegistry).entries.size(), worst])
+			# What the buildings rising added (TD-324: RSS grew ~165 MB over the window).
+			var mem1: Dictionary = _mem()
+			var grew: PackedStringArray = []
+			for k: String in mem1:
+				grew.append("%s %s -> %s" % [k, mem0[k], mem1[k]])
+			print("[perf] memory at the spawn -> settled: %s" % ", ".join(grew))
 		get_tree().quit(0)
 		return
 	_stamps()
@@ -524,3 +568,21 @@ func _brief(m: Dictionary) -> String:
 			top.append("%s %.2f" % [k2, float(m["modules"][k2])])
 		parts.append("top: " + ", ".join(top))
 	return " ".join(parts)
+
+
+## Process and engine memory now: RSS and static memory in MB, live objects, resources, nodes,
+## and the rendering server's buffer and texture memory in MB.
+static func _mem() -> Dictionary:
+	var rss: int = 0
+	# /proc files report no length: read them a line at a time.
+	var f := FileAccess.open("/proc/self/status", FileAccess.READ)
+	while f != null and not f.eof_reached():
+		var line: String = f.get_line()
+		if line.begins_with("VmRSS:"):
+			rss = int(line.split(":")[1].strip_edges().split(" ")[0]) / 1024
+	return {"rss MB": rss, "static MB": int(Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0),
+		"objects": int(Performance.get_monitor(Performance.OBJECT_COUNT)),
+		"resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),
+		"nodes": int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		"buffers MB": int(Performance.get_monitor(Performance.RENDER_BUFFER_MEM_USED) / 1048576.0),
+		"textures MB": int(Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0)}

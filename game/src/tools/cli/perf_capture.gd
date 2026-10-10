@@ -1,6 +1,6 @@
 extends SceneTree
 ## Performance capture (TD-003, ADR-0036):
-##   godot --path game -s res://src/tools/cli/perf_capture.gd -- [--out DIR] [--frames N] [--no-ablate] [--load-only] [--hum | --hum-full] [--no-crowd]
+##   godot --path game -s res://src/tools/cli/perf_capture.gd -- [--out DIR] [--frames N] [--no-ablate] [--load-only] [--hum | --hum-full] [--crowd | --no-crowd]
 ## Headless it measures CPU: each world module's share of the main thread's process and physics time
 ## (measured by switching the module off for a while) and the hitches of sprinting through
 ## streaming terrain. Rendered (Xvfb + Vulkan) it adds draw calls, primitives and objects per view;

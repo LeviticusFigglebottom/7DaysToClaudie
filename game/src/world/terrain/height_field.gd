@@ -46,6 +46,13 @@ func set_h(ix: int, iz: int, h: float) -> void:
 
 ## Bilinear height at world (x, z); clamps at the edges.
 func sample(x: float, z: float) -> float:
+	return sample_in(heights, x, z)
+
+
+## sample() over a given heights array of this field's shape: TerrainManager.height_at takes the
+## array under its lock and samples it outside, so a dig (which writes in place under the lock,
+## copying on write while a reader holds the old buffer) never changes a sample half way.
+func sample_in(hs: PackedFloat32Array, x: float, z: float) -> float:
 	var gx: float = (x - origin.x) / spacing
 	var gz: float = (z - origin.y) / spacing
 	var ix: int = clampi(int(floor(gx)), 0, width - 2)
@@ -53,10 +60,10 @@ func sample(x: float, z: float) -> float:
 	var fx: float = clampf(gx - ix, 0.0, 1.0)
 	var fz: float = clampf(gz - iz, 0.0, 1.0)
 	var i: int = iz * width + ix
-	var h00: float = heights[i]
-	var h10: float = heights[i + 1]
-	var h01: float = heights[i + width]
-	var h11: float = heights[i + width + 1]
+	var h00: float = hs[i]
+	var h10: float = hs[i + 1]
+	var h01: float = hs[i + width]
+	var h11: float = hs[i + width + 1]
 	return lerpf(lerpf(h00, h10, fx), lerpf(h01, h11, fx), fz)
 
 
