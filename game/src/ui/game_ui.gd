@@ -649,10 +649,17 @@ static func caption_line(text: String, bearing: String) -> String:
 static func build_controls(placing: bool, carrying_logs: bool) -> String:
 	var k: Callable = func(a: StringName) -> String: return "[%s]" % PlayerInteraction.key_label(a)
 	if placing:
-		return "%s place  ·  %s turn  ·  %s cancel" % [k.call(&"attack"), k.call(&"rotate_piece"), k.call(&"cancel")]
+		return "%s place  ·  %s turn  ·  %s cancel" % [k.call(&"attack"), "[%s]" % turn_keys(), k.call(&"cancel")]
 	if carrying_logs:
 		return "%s set the log  ·  %s turn  ·  %s stand / pitch  ·  %s drop" % [k.call(&"attack"), k.call(&"rotate_piece"), k.call(&"build_mode_toggle"), k.call(&"drop")]
 	return ""
+
+
+## The keys that turn a blueprint: Rotate on a keyboard, LB/RB (the toolbelt pair) on a pad.
+static func turn_keys() -> String:
+	if Settings.using_pad:
+		return "%s/%s" % [PlayerInteraction.key_label(&"toolbelt_prev"), PlayerInteraction.key_label(&"toolbelt_next")]
+	return PlayerInteraction.key_label(&"rotate_piece")
 
 
 ## A quiet dark plate behind a prompt line, so it reads over a lit fire, snow or a pale ghost.
