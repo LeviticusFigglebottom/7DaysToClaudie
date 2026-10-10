@@ -15,6 +15,11 @@ Blender (numpy only, seconds per action).
       at the least change to where the tool points. Rewrites the hands' grip / dir / knuckles in
       viewmodel.json; check the renders (fp_dev_render.py, fp_preview.gd) before keeping it.
 
+  .tools/venv/bin/python tools/fp_poses.py loops [action,...]
+      every held loop (a hold's idle, guard and tether-reading loop): the largest frame-to-frame
+      turn of each hand, the seam included. A held loop should only drift; a snap of more than
+      LOOP_MAX_DEG reads as a twitch once a cycle (player report 5). Exits 1 on one.
+
 A hold whose idle needs much correction is asking for a wrist nobody has: rewrite it toward what
 the solver reaches (the report says which) rather than widening `wrist`.
 """
@@ -65,6 +70,36 @@ def report(only: list[str]) -> None:
             moved[sd] = sol.moved.get(sd, 0.0) * 100
         print(f"{name:24s} R {worst['R']:4.0f}deg {moved['R']:3.0f}cm   L {worst['L']:4.0f}deg {moved['L']:3.0f}cm"
               + (f"   frames {' '.join(bad)}" if bad else ""))
+
+
+LOOP_MAX_DEG = 1.0
+
+
+def loops(only: list[str]) -> int:
+    cfg, _rig_, sol = _rig()
+    held = {k: v for k, v in cfg.items() if k not in ("attacks", "uses")}
+    bad = 0
+    for name, _n, loop, frames in F.fp_actions(held):
+        if not loop or (only and name not in only):
+            continue
+        sol.reset()
+        turns = []
+        for hands in frames:
+            prm = sol.solve(hands)
+            turns.append({sd: prm[f"{sd}.Rh"] for sd in ("R", "L")})
+        turns.append(turns[0])           # the seam: the last frame back to the first
+        worst = {}
+        for sd in ("R", "L"):
+            steps = [float(np.degrees(np.arccos(np.clip((np.trace(turns[i][sd].T @ turns[i + 1][sd]) - 1) / 2, -1, 1))))
+                     for i in range(len(turns) - 1)]
+            i = int(np.argmax(steps))
+            worst[sd] = (steps[i], i)
+        snap = max(w[0] for w in worst.values()) > LOOP_MAX_DEG
+        bad += 1 if snap else 0
+        print(f"{name:24s} R {worst['R'][0]:4.1f}deg @{worst['R'][1]:<3d} L {worst['L'][0]:4.1f}deg @{worst['L'][1]:<3d}"
+              + ("   SNAP" if snap else ""))
+    print(f"{bad} held loop(s) with a snap over {LOOP_MAX_DEG} deg")
+    return bad
 
 
 def tune(names: list[str]) -> None:
@@ -205,11 +240,13 @@ def relax(names: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2 or sys.argv[1] not in ("report", "tune", "relax"):
+    if len(sys.argv) < 2 or sys.argv[1] not in ("report", "tune", "relax", "loops"):
         raise SystemExit(__doc__)
     arg = sys.argv[2].split(",") if len(sys.argv) > 2 else []
     if sys.argv[1] == "report":
         report(arg)
+    elif sys.argv[1] == "loops":
+        sys.exit(1 if loops(arg) else 0)
     elif sys.argv[1] == "relax":
         relax(arg)
     else:
