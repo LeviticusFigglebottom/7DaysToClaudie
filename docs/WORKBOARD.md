@@ -107,6 +107,22 @@ until it lands.
 3. **Hands: looks and animations with every tool and weapon.** Round 3 landed oblique grips, joint
    helper bones and per-finger curls (TD-173..175). Creatures.
 
+## Player report 5 (2026-10-10, the owner, on Builds #127/#128)
+"Pretty great so far, but still some definite errors." The owner asked that these **and every
+adjacent case** be evaluated and fixed systematically, by an audit across the whole family rather than
+the one instance shown. Screenshots: `docs/playtest/2026-10-10_report5_{wrist,idle_hands,lighter}.webp`.
+1. **The hand twitches every other second while the wrist device is raised.** (Presentation.)
+2. **The wrist device can't be seen while running.** (Presentation.)
+3. **The device screen has clutter**: scattered white specks over the text and the minimap (see
+   the wrist shot). (Presentation.)
+4. **Random world, custom settings**: the only change from the defaults was "10 towns per 16 km".
+   No towns showed on the map, and no water was visible for the boil-water objective. Towns and
+   places seem far too spread out. The custom defaults and the presets need logical parameters, and
+   the settings must do what their labels say. (World.)
+5. **Placed shelters need map markers / icons that can be toggled.** (Presentation, with the map.)
+6. **Hands, mostly fingers, still look off in almost every form**: crooked fingers in the empty
+   idle, and a massive thumb holding the lighter. (Presentation: every pose, not just these two.)
+
 ## Player report 4 (2026-10-08, the owner, round 4's start)
 Two screenshots (described here; they came in chat): a forest walk with both hands idle, and the
 lighter held up.

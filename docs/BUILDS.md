@@ -58,6 +58,17 @@ must fit 1280x720, every entry above the version line, or the guard fails. `--sh
 the menu's frame. CI passes `--expect-pictures --player --with-continue`. Run it on a pack yourself:
 `make menu-guard MENU_PACK=/abs/Hollowmere.pck MENU_GUARD_ARGS="--expect-pictures --player --with-continue"`.
 
+### The pad pass
+`make pad-pass` plays the game on a gamepad alone: buttons, sticks and triggers sent through
+`Input` as a pad would, no mouse or keyboard. It walks the menu to New Game, starts a run, skips
+the intro with B, looks with the right stick, opens the field manual (d-pad up) and turns its
+tabs (LB/RB), opens the salvage roll (Y) and steps the recipe sheet, opens the map (Back) and
+pause (Start), steps the toolbelt (RB), attacks (RT), reloads a rifle (X held, nothing in reach)
+and turns a blueprint while placing it (LB/RB), cancelling with B. One `PAD OK/FAIL` line per
+step; the exit code is the number of failures. The 3D is off: the screens are what is under test.
+The Build workflow runs it on the exported Linux pack after the menu guard; a failed step or an
+error in its log fails the build. On a pack: `make pad-pass PAD_PACK=/abs/Hollowmere.pck`.
+
 ## Stand-in mode
 What a fresh clone runs before `make assets`: `ModelLibrary.make_placeholder` shapes and the
 other procedural fallbacks. CI keeps it working (the **Stand-ins** workflow: import, check, tests,

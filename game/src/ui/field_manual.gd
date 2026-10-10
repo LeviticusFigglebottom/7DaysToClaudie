@@ -410,7 +410,7 @@ func _on_action() -> void:
 		if building != null and bool(building.call(&"begin_placement", (_selected as BlueprintDef).id)):
 			close()
 			Events.player_status_message.emit("Place the %s — [%s] place · [%s] rotate · [%s] cancel" % [(_selected as BlueprintDef).display_name,
-				PlayerInteraction.key_label(&"attack"), PlayerInteraction.key_label(&"rotate_piece"), PlayerInteraction.key_label(&"cancel")], &"info")
+				PlayerInteraction.key_label(&"attack"), GameUI.turn_keys(), PlayerInteraction.key_label(&"cancel")], &"info")
 
 
 ## Notes grouped by where they were found: [{where, notes: [id]}], places in the order of their

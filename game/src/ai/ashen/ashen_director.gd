@@ -241,13 +241,35 @@ func anger_camp(cid: String, event: String, times: float = 1.0) -> void:
 func source_camp() -> Dictionary:
 	var list: Array = camps()
 	var ids: Array = []
+	var dists: Dictionary = _camp_dists(list)
 	for c: Dictionary in list:
 		ids.append(c["id"])
-	var best: String = AshenBrain.angriest(fd, state().get("camps", {}), ids)
+	var best: String = AshenBrain.angriest(fd, state().get("camps", {}), ids, dists)
 	for c2: Dictionary in list:
 		if c2["id"] == best:
 			return c2
 	return {}
+
+
+## The leading camp's effective anger (its anger x reach from the player), 0 for none: it feeds
+## the day's scout and raid rolls (TD-190).
+func lead_anger() -> float:
+	var c: Dictionary = source_camp()
+	if c.is_empty():
+		return 0.0
+	return camp_anger(str(c["id"])) * AshenBrain.reach(fd, float(_camp_dists([c]).get(str(c["id"]), -1.0)))
+
+
+## id -> flat distance (m) from the player to each camp in `list` (empty without a player).
+func _camp_dists(list: Array) -> Dictionary:
+	var out: Dictionary = {}
+	var p: Node3D = world.get(&"player") as Node3D if world != null else null
+	if p == null:
+		return out
+	for c: Dictionary in list:
+		if c.has("pos"):
+			out[str(c["id"])] = _flat(p.global_position, c["pos"] as Vector3)
+	return out
 
 
 ## The bearing (radians, as _ring_point measures it) from `center` toward a camp.
@@ -299,15 +321,19 @@ func _height(at: Vector3) -> float:
 
 # --- Scouts and raids --------------------------------------------------------------------------------
 
-## Today's rolls, made once a day (and again after a load: they are pure functions of the seed).
+## Today's rolls, made once a day (and again after a load: pure functions of the seed and the leading
+## camp's anger).
 func today() -> Dictionary:
 	var day: int = Game.session.clock.day()
 	if int(_today.get("day", -1)) != day:
 		var clock: WorldClock = Game.session.clock
 		var hum_day: bool = clock.hordes_enabled() and clock.is_horde_day(day)
+		# The leading camp's anger as it stands at the first roll of the day (a load re-rolls with
+		# the anger saved, so a camp provoked since then can change that day's roll).
+		var anger: float = lead_anger()
 		_today = {"day": day,
-			"scout": AshenBrain.scout_roll(fd, Game.session.world_seed, day, level(), aggression()),
-			"raid": AshenBrain.raid_roll(fd, Game.session.world_seed, day, level(), _gamestage(), hum_day, aggression())}
+			"scout": AshenBrain.scout_roll(fd, Game.session.world_seed, day, level(), aggression(), anger),
+			"raid": AshenBrain.raid_roll(fd, Game.session.world_seed, day, level(), _gamestage(), hum_day, aggression(), anger)}
 	return _today
 
 

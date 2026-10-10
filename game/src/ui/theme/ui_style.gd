@@ -367,6 +367,15 @@ static func hex(c: Color) -> String:
 
 
 ## A UI or music sound's level in dB (data/config/audio.json `ui_levels`), `fallback` when unset.
+## A caption's or message's font size: `base` times the player's caption size (Options). The
+## Settings autoload is looked up, not named: CLI scripts compile UiStyle before autoloads exist.
+static func caption_size(base: int) -> int:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	var st: Node = tree.root.get_node_or_null(^"Settings") if tree != null else null
+	var k: float = float(st.get(&"caption_scale")) if st != null else 1.0
+	return roundi(base * clampf(k, 1.0, 2.0))
+
+
 static func level(key: String, fallback: float) -> float:
 	var db: Object = ContentDB.instance
 	if db == null:

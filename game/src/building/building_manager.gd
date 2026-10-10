@@ -157,6 +157,12 @@ func stability_of(id: StringName) -> float:
 
 # --- Input & previews --------------------------------------------------------------------------
 
+## Steps to turn a blueprint this frame: Rotate (R) or Next tool (RB, the wheel) one way,
+## Previous tool (LB) back; the toolbelt is moot while placing, and a pad has no spare button.
+static func placement_turn(next: bool, prev: bool) -> int:
+	return int(next) - int(prev)
+
+
 func is_placing() -> bool:
 	return placing != null
 
@@ -254,8 +260,9 @@ func _physics_process(_delta: float) -> void:
 			Game.execute(&"build.add_fuel", {"player": player.state.id, "piece": String(focus.piece_id)})
 			return
 	if placing != null:
-		if captured and Input.is_action_just_pressed(&"rotate_piece"):
-			_place_yaw += deg_to_rad(15.0)
+		if captured:
+			_place_yaw += deg_to_rad(15.0) * placement_turn(Input.is_action_just_pressed(&"rotate_piece") or Input.is_action_just_pressed(&"toolbelt_next"),
+				Input.is_action_just_pressed(&"toolbelt_prev"))
 		if captured and (Input.is_action_just_pressed(&"cancel") or Input.is_action_just_pressed(&"block")):
 			cancel_placement()
 			return

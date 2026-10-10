@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Renders the pre-rendered backdrops (ADR-0065) into game/assets/generated/stills/:
-#   menu_0.png .. menu_3.png   the main menu's valley at dusk (MenuBackdrop pans across them)
+#   menu_0.png .. menu_4.png   the main menu's valley: dusk, a misty dawn, a storm (MenuBackdrop pans across them)
 #   intro_wreck.png            the intro's world card: the Lift 3 wreck at first light
 # The game draws them (src/tools/cli/stills.gd; software Vulkan under Xvfb is fine, about a minute
 # a picture) and this writes their import sidecars (lossy, mipmapped). A shot is skipped while its

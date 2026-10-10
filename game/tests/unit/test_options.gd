@@ -180,3 +180,40 @@ func test_the_right_stick_looks() -> void:
 	assert_almost_eq(full.x, PlayerScript.PAD_LOOK_SPEED.x, 0.001, "full tilt turns at the look speed")
 	var half: Vector2 = PlayerScript.pad_look(Vector2(0.575, 0), 1.0)
 	assert_lt(half.x, full.x * 0.5, "eased: fine aim near the centre")
+
+
+func test_pad_actions_that_go_by_context() -> void:
+	# Holding the pad's Interact reloads only with a gun in hand and nothing in reach.
+	var rifle: ItemDef = Content.item(&"hunting_rifle")
+	var axe: ItemDef = Content.item(&"stone_axe")
+	assert_not_null(rifle)
+	assert_true(PlayerEquipment.pad_reload_starts(rifle, false))
+	assert_false(PlayerEquipment.pad_reload_starts(rifle, true), "a door in reach: X uses it")
+	assert_false(PlayerEquipment.pad_reload_starts(axe, false), "an axe has nothing to reload")
+	assert_false(PlayerEquipment.pad_reload_starts(null, false))
+	# While placing, Rotate or Next tool (RB) turns one step, Previous tool (LB) one back.
+	assert_eq(BuildingManager.placement_turn(true, false), 1)
+	assert_eq(BuildingManager.placement_turn(false, true), -1)
+	assert_eq(BuildingManager.placement_turn(false, false), 0)
+	# The turn hint names LB/RB on a pad and the Rotate key otherwise.
+	var was: bool = Settings.using_pad
+	Settings.using_pad = true
+	assert_eq(GameUI.turn_keys(), "LB/RB")
+	Settings.using_pad = false
+	assert_eq(GameUI.turn_keys(), Settings.input_label("rotate_piece"))
+	Settings.using_pad = was
+
+
+func test_caption_size_scales_the_words_that_stand_in_for_sound() -> void:
+	var was: float = Settings.caption_scale
+	assert_eq(OptionsPanel.caption_scale_index(1.0), 0)
+	assert_eq(OptionsPanel.caption_scale_index(1.5), Settings.CAPTION_SCALES.find(1.5))
+	assert_eq(OptionsPanel.caption_scale_index(9.0), Settings.CAPTION_SCALES.size() - 1, "out of range: the nearest")
+	assert_eq(Settings.CAPTION_SCALES.size(), Settings.CAPTION_SCALE_NAMES.size())
+	Settings.caption_scale = 1.0
+	assert_eq(UiStyle.caption_size(20), 20)
+	Settings.caption_scale = 1.5
+	assert_eq(UiStyle.caption_size(20), 30)
+	Settings.caption_scale = 5.0
+	assert_eq(UiStyle.caption_size(20), 40, "capped at twice")
+	Settings.caption_scale = was

@@ -174,3 +174,17 @@ func test_state_saves_and_older_saves_load_without_it() -> void:
 	d.erase("base_tech")
 	old.from_dict(d)
 	assert_eq(old.base_tech, {}, "a save from before base tech loads with none")
+
+
+func test_a_wire_being_run_shows_where_it_goes_and_what_it_takes() -> void:
+	# TD-246: the free end follows the aim; the line under the prompt reads it live.
+	var cam := Vector3(0, 1.6, 0)
+	var fwd := Vector3(0, 0, -1)
+	assert_eq(BaseTechManager.run_end(Vector3(3, 1, 3), Vector3(9, 0, 9), cam, fwd), Vector3(3, 1, 3), "on the power piece aimed at")
+	assert_eq(BaseTechManager.run_end(null, Vector3(1, 0, -2), cam, fwd), Vector3(1, 0, -2), "where the look ray hits")
+	var hand: Vector3 = BaseTechManager.run_end(null, null, cam, fwd)
+	assert_lt(hand.z, -0.5, "else in the hand, ahead")
+	assert_lt(hand.y, cam.y, "and a little low")
+	assert_eq(BaseTechManager.run_label(7.6, 1, 14.0), "Wire 8 m · 1 spool")
+	assert_eq(BaseTechManager.run_label(12.0, 2, 14.0), "Wire 12 m · 2 spools")
+	assert_eq(BaseTechManager.run_label(16.2, 0, 14.0), "Wire 16 m · too long (14 m at most)")

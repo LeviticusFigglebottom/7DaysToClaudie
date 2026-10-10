@@ -126,15 +126,17 @@ func _physics_process(delta: float) -> void:
 	_present(eq)
 
 
-## What keeps the gun down: a reload, building, the tether up, sprinting.
+## What keeps the gun down: a reload, building, the tether up, sprinting, both hands on a ladder
+## (ADR-0057; TD-298: the scope once came up mid-climb).
 func _blocked(eq: PlayerEquipment) -> bool:
 	if eq == null:
 		return true
-	if eq.is_reloading() or eq.call(&"_building_busy"):
-		return true
-	if eq.viewmodel != null and eq.viewmodel.tether_raised():
-		return true
-	return player.sprinting
+	return blocked_by(eq.is_reloading(), bool(eq.call(&"_building_busy")), eq.viewmodel != null and eq.viewmodel.tether_raised(),
+		player.sprinting, player.is_climbing())
+
+
+static func blocked_by(reloading: bool, building: bool, tether_up: bool, sprinting: bool, climbing: bool) -> bool:
+	return reloading or building or tether_up or sprinting or climbing
 
 
 func _present(eq: PlayerEquipment) -> void:

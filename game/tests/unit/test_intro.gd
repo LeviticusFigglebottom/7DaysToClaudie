@@ -82,3 +82,25 @@ func test_the_world_card_keeps_its_words_off_the_wreck() -> void:
 	var g: Gradient = IntroPlayer.world_shade().gradient
 	assert_almost_eq(g.sample(0.0).a, 0.0, 0.01, "clear where it starts")
 	assert_gt(g.sample(0.7).a, 0.6, "dark behind the words")
+
+
+func test_the_engines_fail_under_the_last_radio_call() -> void:
+	# The bed starts as its line types (two labels a radio line: speaker, words) and the impact
+	# card after it cuts it.
+	var script: Dictionary = IntroPlayer.load_script()
+	var cards: Array = script.get("cards", [])
+	var bed_card: int = -1
+	for i: int in cards.size():
+		if (cards[i] as Dictionary).has("bed"):
+			bed_card = i
+	assert_gt(bed_card, -1, "a card has a bed")
+	assert_eq(str((cards[bed_card] as Dictionary)["kind"]), "radio")
+	assert_eq(str((cards[bed_card + 1] as Dictionary)["kind"]), "impact", "the crash cuts it")
+	assert_eq(IntroPlayer.bed_label_index({"kind": "radio", "bed": {"sound": "x", "line": 3}}), 6)
+	assert_eq(IntroPlayer.bed_label_index({"kind": "caption", "bed": {"sound": "x", "line": 1}}), 1)
+	assert_eq(IntroPlayer.bed_label_index({"kind": "radio"}), -1)
+	var bad: Dictionary = {"cards": [{"kind": "radio", "lines": ["A|b"], "bed": {"sound": "x", "line": 4}},
+		{"kind": "radio", "lines": ["A|b"], "bed": {"line": 0, "when": 2}}]}
+	var problems: PackedStringArray = IntroPlayer.validate(bad)
+	assert_eq(problems.size(), 3, "a line past the card, no sound, an unknown key: %s" % str(problems))
+	assert_eq(IntroPlayer.validate(script).size(), 0, "the shipped script is clean")

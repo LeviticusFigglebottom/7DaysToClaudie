@@ -6,7 +6,8 @@ extends Control
 ## (companion.order), Gather wood / stone / fibre round what the player last looked at, Fetch what
 ## they last looked at (companion.order), Give me what you carry (companion.give) and Store at base
 ## (companion.store), with what he carries and his knacks (perks, ADR-0058 phase 3). Everything
-## goes through the commands (ADR-0003); the card only shows state.
+## goes through the commands (ADR-0003); the card only shows state, and marks what Fetch would
+## bring in the world while it is open (TD-307).
 
 const PAPER := Color(0.83, 0.8, 0.7)
 const INK := Color(0.14, 0.12, 0.1)
@@ -16,6 +17,8 @@ const ORDER_NAMES: Dictionary = {"follow": "Following you", "stay": "Holding his
 
 var director: Node
 var _open: bool = false
+## A marker on what Fetch would bring (TD-307), in the world while the card is open.
+var _marker: Node3D = null
 var _title: Label
 var _status: Label
 var _body: Label
@@ -97,9 +100,63 @@ func close_screen() -> void:
 		return
 	_open = false
 	visible = false
+	_mark({})
 	var ui: Node = get_parent()
 	if ui != null and ui.has_method(&"pop_modal"):
 		ui.call(&"pop_modal", &"companion")
+
+
+## Shows the marker at a resolved target's position ({} hides it): a thin amber beam standing on
+## it and a ring round its foot, drawn through foliage, so the player sees what "Fetch ..." means.
+func _mark(t: Dictionary) -> void:
+	var w: Node = Game.world
+	if t.is_empty() or not t.has("pos") or w == null or not (w is Node3D):
+		if _marker != null:
+			_marker.visible = false
+		return
+	if _marker == null or not is_instance_valid(_marker):
+		_marker = _make_marker()
+		w.add_child(_marker)
+	_marker.global_position = t["pos"] as Vector3
+	_marker.visible = true
+
+
+static func _make_marker() -> Node3D:
+	var root := Node3D.new()
+	root.name = "FetchMarker"
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.no_depth_test = true
+	mat.albedo_color = Color(1.0, 0.72, 0.3, 0.55)
+	var beam := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.025
+	cyl.bottom_radius = 0.04
+	cyl.height = 2.2
+	cyl.radial_segments = 8
+	beam.mesh = cyl
+	beam.position = Vector3(0, 1.1, 0)
+	beam.material_override = mat
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(beam)
+	var ring := MeshInstance3D.new()
+	var tor := TorusMesh.new()
+	tor.inner_radius = 0.42
+	tor.outer_radius = 0.5
+	tor.rings = 24
+	tor.ring_segments = 6
+	ring.mesh = tor
+	ring.position = Vector3(0, 0.08, 0)
+	ring.material_override = mat
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(ring)
+	return root
+
+
+func _exit_tree() -> void:
+	if _marker != null and is_instance_valid(_marker):
+		_marker.queue_free()
 
 
 func is_open() -> bool:
@@ -155,6 +212,7 @@ func _refresh() -> void:
 		_button("gather_%s" % gk, "Gather %s" % gk, true, func() -> void: _do(&"companion.order", {"order": "gather", "kind": gk}))
 	var looked: Dictionary = director.get(&"looked")
 	var ft: Dictionary = director.call(&"fetch_target")
+	_mark(CompanionWork.resolve(looked) if not looked.is_empty() else {})
 	var what: String = str(director.call(&"describe", looked))
 	var fb: Button = _button("fetch", "Fetch %s" % what if what != "" else "Fetch (look at something first)", bool(ft.get("ok", false)),
 		func() -> void: _do(&"companion.order", {"order": "fetch", "target": looked}))

@@ -17,11 +17,17 @@ const STRENGTH: float = 0.8
 ## A body rescans its neighbours every EVERY physics ticks (staggered by id; perf_capture --hum-full:
 ## scanning every tick cost ~9% of the bodies' step at 64 alive).
 const EVERY: int = 3
+## Share of the way a body's lean moves toward its latest push each tick (hum_watch: the raw push
+## stepped every EVERY ticks and turned headings 2.8 degrees a tick against 2.0 without separation).
+const EASE: float = 0.25
 ## Only bodies this near the player (m) take part: a jam out of sight costs nothing to leave.
 const RANGE: float = 30.0
 
-## Off: bodies steer alone (perf_capture --no-crowd measures the difference).
-static var enabled: bool = true
+## Off by default: hum_watch on a real Hum (40 alive, Pell's Crossing) found it no help there:
+## headings turned 2.5-2.7 degrees a tick against 1.8-2.0 without, and bodies came within 0.5 m
+## of each other no less often, for ~4% of the bodies' step (perf_capture --hum-full). In a
+## doorway (test_crowd_doorway) it is a little smoother. The capsules already keep bodies apart.
+static var enabled: bool = false
 static var _cur: Dictionary = {}
 static var _prev: Dictionary = {}
 static var _frame: int = -1

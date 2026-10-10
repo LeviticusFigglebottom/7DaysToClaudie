@@ -161,12 +161,20 @@ static func alt_text(found: Object, p: Player) -> String:
 
 
 func _tool_hint(hit: Dictionary) -> String:
+	# Running a wire: its length and spools, live, wherever you look (TD-246).
+	var run: String = BaseTechManager.run_hint(player)
+	if run != "":
+		return run
 	if hit.is_empty() or Game.world == null:
 		return ""
 	var held: ItemDef = Content.item(player.state.equipped_item())
-	if held == null or not held.provides_tool("hammer"):
-		return ""
 	var piece: StructurePiece = hit["collider"] as StructurePiece
+	var hammer: bool = held != null and held.provides_tool("hammer")
+	# A garden bed's growth and soil under its prompt while the prompt offers an action (TD-217).
+	if not hammer and piece != null and is_instance_valid(piece) and Farming.is_farm(piece.def):
+		return FarmManager.status_hint(piece, player)
+	if not hammer:
+		return ""
 	var building: Node = Game.world.get(&"building")
 	if piece == null or building == null or not is_instance_valid(piece):
 		return ""

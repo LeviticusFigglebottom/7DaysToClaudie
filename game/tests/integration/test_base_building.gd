@@ -121,7 +121,9 @@ func test_a_lean_to_shelters_its_sleeper_off_centre_too() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	# The player wakes about 1 m off the shelter's centre (the final first-hour pass): under the
-	# sloped roof's low side and in its open mouth they are still sheltered.
-	for p: Vector3 in [Vector3.ZERO, Vector3(0, 0, 1), Vector3(0, 0, -1), Vector3(0.8, 0, 0), Vector3(-0.8, 0, 0)]:
+	# sloped roof's low side and in its open mouth they are still sheltered. The low side is -0.6, not
+	# -1: the generated model's roof meets the ground at the back, and 1 m back its slab is ~0.15 m up
+	# (no room to lie, and below the rays' start), which only the stand-in's box roof left open.
+	for p: Vector3 in [Vector3.ZERO, Vector3(0, 0, 1), Vector3(0, 0, -0.6), Vector3(0.8, 0, 0), Vector3(-0.8, 0, 0)]:
 		assert_true(_bm.is_sheltered(p), "sheltered at %s" % p)
 	assert_false(_bm.is_sheltered(Vector3(9, 0, 9)), "out in the open")

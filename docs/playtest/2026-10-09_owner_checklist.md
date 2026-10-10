@@ -124,10 +124,12 @@ you found them.
 **Changed:** the game plays on a pad alone: the right stick looks, RT attacks, Y opens the roll,
 d-pad up the field manual (LB / RB turn its tabs), Back the map, Start pauses, and **A** presses
 whatever has the focus in every menu (it didn't: a pad could walk the menu but press nothing).
-Hold B to skip the intro. **Options → Controls** rebinds keys and pad buttons and warns about
+Hold B to skip the intro. With a gun in hand, hold X (nothing in reach) to reload; LB / RB turn a
+blueprint while you place it. **Options → Controls** rebinds keys and pad buttons and warns about
 conflicts. The full layout is in HOW_TO_PLAY §3.
 **Try:** from the main menu, start a new game and play ten minutes on the pad alone: the journal,
-crafting in the roll (up / down choose a recipe), the map, pause. Rebind one key to another's and
+crafting in the roll (up / down choose a recipe), the map, pause; place a campfire and turn it with
+LB / RB; reload a rifle by holding X while looking at the sky. Rebind one key to another's and
 read the warning.
 **Still broken if:** any screen can't be opened, used or left with the pad.
 

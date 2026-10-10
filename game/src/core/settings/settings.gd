@@ -33,6 +33,11 @@ var menu_backdrop: String = "moving"
 var whats_new_seen: String = ""
 ## Bracketed captions for sounds that carry meaning (the intro's cues, the tether's radio).
 var sound_captions: bool = false
+## Size of the words that stand in for sound and speech: the HUD's message feed (captions, the
+## tether's radio, pickups and warnings) and the intro's captions, on top of the UI scale.
+var caption_scale: float = 1.0
+const CAPTION_SCALES: PackedFloat32Array = [1.0, 1.25, 1.5, 1.75]
+const CAPTION_SCALE_NAMES: PackedStringArray = ["Normal", "Large", "Larger", "Largest"]
 ## Frames a second the game may draw (0 = no cap): saves power and heat on a fast GPU.
 var max_fps: int = 0
 const FPS_CAPS: PackedInt32Array = [0, 30, 60, 90, 120, 144, 165, 240]
@@ -432,6 +437,7 @@ func save() -> void:
 	_cfg.set_value("display", "menu_backdrop", menu_backdrop)
 	_cfg.set_value("display", "whats_new_seen", whats_new_seen)
 	_cfg.set_value("audio", "sound_captions", sound_captions)
+	_cfg.set_value("audio", "caption_scale", caption_scale)
 	_cfg.set_value("display", "max_fps", max_fps)
 	_cfg.save(SETTINGS_PATH)
 	settings_changed.emit()
@@ -457,6 +463,7 @@ func _load_user_settings() -> void:
 	menu_backdrop = str(_cfg.get_value("display", "menu_backdrop", menu_backdrop))
 	whats_new_seen = str(_cfg.get_value("display", "whats_new_seen", whats_new_seen))
 	sound_captions = bool(_cfg.get_value("audio", "sound_captions", sound_captions))
+	caption_scale = clampf(float(_cfg.get_value("audio", "caption_scale", caption_scale)), 1.0, 2.0)
 	max_fps = int(_cfg.get_value("display", "max_fps", max_fps))
 	Engine.max_fps = max_fps
 	var v: Variant = _cfg.get_value("audio", "volumes", volumes)

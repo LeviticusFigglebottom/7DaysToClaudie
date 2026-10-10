@@ -1924,19 +1924,19 @@
       "block": 0.3
     },
     "rifle": {
-      "_doc": "Bolt-action rifle (ADR-0057): a two-handed long gun at the low ready, the stock in the right shoulder's line, the barrel forward and a touch in. The gun lies in the LEFT fist under the fore-end (hand: L; item rot turns its pointing frame onto the palm, scaled to 0.85 so it fits the arms' reach), so the right hand is free to leave the wrist of the stock and work the bolt; every right-hand key is placed on the gun where it is at that key (tools: scratchpad rifle_vm.py). No tether reading with it up (both hands busy). aim: the scope's ocular (socket_sight) comes up onto the line of sight 7 cm before the eye; the scope picture takes over from there.",
+      "_doc": "Bolt-action rifle (ADR-0057): a two-handed long gun at the low ready, the stock in the right shoulder's line, the barrel forward and a touch in. The gun lies in the LEFT fist under the fore-end (hand: L; item rot turns its pointing frame onto the palm, scaled to 0.85 so it fits the arms' reach), so the right hand is free to leave the wrist of the stock and work the bolt; both hands are where the pose solver keeps them (TD-294: the left was authored past its reach and the solver moved it 10 cm, turning the gun so its stock sat by the right ear and the right hand hung 20 cm off it), the right on the stock's wrist; every right-hand key is placed on the gun where the solver puts it at that key, checked in the baked arms with fp_measure.gd. The bolt work stays close to the rest pose (the rifle low across the frame, the left hand on the fore-end in view, the right forearm in from the bottom-right); the bolt handle is bent down (item_firearms BOLT_BEND) so its knob shows clear of the scope's ocular bell on screen (fp_measure FP_READ). No tether reading with it up (both hands busy). aim: the scope's ocular (socket_sight) comes up onto the line of sight 7 cm before the eye; the scope picture takes over from there.",
       "hand": "L",
       "pose": {
         "R": {
           "grip": [
-            0.101,
-            -0.19,
-            -0.158
+            0.251,
+            -0.14,
+            -0.266
           ],
           "dir": [
-            0.036,
-            0.693,
-            0.72
+            0.413,
+            0.818,
+            0.4
           ],
           "fist": 0.95,
           "thumb": 0.8,
@@ -1947,21 +1947,21 @@
           ],
           "index": -0.9,
           "knuckles": [
-            -0.035,
-            0.721,
-            -0.692
+            -0.515,
+            0.572,
+            -0.638
           ]
         },
         "L": {
           "grip": [
-            0.085,
-            -0.155,
-            -0.47
+            0.042,
+            -0.166,
+            -0.501
           ],
           "dir": [
-            -0.05,
-            0.03,
-            -0.998
+            -0.657,
+            -0.163,
+            -0.736
           ],
           "fist": 0.8,
           "thumb": 0.55,
@@ -1971,9 +1971,9 @@
             0.3
           ],
           "knuckles": [
-            0.866,
-            0.5,
-            -0.028
+            0.618,
+            0.442,
+            -0.65
           ]
         }
       },
@@ -2878,7 +2878,7 @@
   },
   "uses": {
     "draw_bow": {
-      "_doc": "Draw (attack held; frozen at the draw fraction by BowHandler, so a let-down plays it backwards): the bow comes up and out while the string hand starts back, then the long pull to the anchor under the jaw.",
+      "_doc": "Draw (attack held; frozen at the draw fraction by BowHandler, so a let-down plays it backwards): the bow comes up and out while the string hand starts back, then the long pull to the anchor under the jaw. Mid-draw the string hand passes low and to the right of the bow's grip, not over it (TD-291: it covered the grip from the view).",
       "hold": "bow",
       "frames": 24,
       "keys": [
@@ -2916,9 +2916,9 @@
             },
             "R": {
               "grip": [
-                -0.05,
-                -0.1,
-                -0.27
+                0.01,
+                -0.135,
+                -0.25
               ],
               "dir": [
                 0.2,
@@ -3130,9 +3130,9 @@
             },
             "R": {
               "grip": [
-                -0.05,
-                -0.1,
-                -0.27
+                0.01,
+                -0.135,
+                -0.25
               ],
               "dir": [
                 0.2,
@@ -7108,7 +7108,7 @@
       ]
     },
     "fire_rifle": {
-      "_doc": "A shot and the bolt (played over equip.attack_time + bolt_time): the rifle bucks up and back into the shoulder, then rolls a little onto its left side and comes up while the right hand goes from the wrist to the bolt knob: up, back (the empty flies), forward, down, and back to the wrist. parts: the rifle's `bolt` node, turned about the bore (deg) and slid along it (m).",
+      "_doc": "A shot and the bolt (played over equip.attack_time + bolt_time): the rifle bucks up and back into the shoulder, then comes down a little and turns its right side to the eye (the action low in the frame's right half, the bent-down knob clear of the scope) while the right hand, its forearm in from the bottom-right, goes from the wrist to the bolt knob: up, back (the empty flies), forward, down, and back to the wrist. parts: the rifle's `bolt` node, turned about the bore (deg) and slid along it (m).",
       "hold": "rifle",
       "frames": 40,
       "keys": [
@@ -7134,19 +7134,14 @@
             ],
             "R": {
               "grip": [
-                0.103,
-                -0.227,
-                -0.133
+                0.254,
+                -0.172,
+                -0.233
               ],
               "dir": [
-                0.07,
-                0.57,
-                0.819
-              ],
-              "back": [
-                0.997,
-                -0.027,
-                -0.067
+                0.448,
+                0.73,
+                0.516
               ],
               "fist": 0.95,
               "thumb": 0.8,
@@ -7155,7 +7150,12 @@
                 -0.55,
                 0.35
               ],
-              "index": -0.25
+              "index": -0.25,
+              "knuckles": [
+                -0.5,
+                0.683,
+                -0.532
+              ]
             }
           },
           "out"
@@ -7175,19 +7175,14 @@
             ],
             "R": {
               "grip": [
-                0.102,
-                -0.202,
-                -0.149
+                0.253,
+                -0.152,
+                -0.254
               ],
               "dir": [
-                0.054,
-                0.654,
-                0.755
-              ],
-              "back": [
-                0.998,
-                -0.015,
-                -0.059
+                0.431,
+                0.789,
+                0.439
               ],
               "fist": 0.95,
               "thumb": 0.8,
@@ -7196,7 +7191,12 @@
                 -0.55,
                 0.35
               ],
-              "index": -0.5
+              "index": -0.5,
+              "knuckles": [
+                -0.509,
+                0.614,
+                -0.603
+              ]
             }
           },
           "inout"
@@ -7204,40 +7204,54 @@
         [
           11,
           {
-            "L.move": [
-              -0.012,
-              0.025,
-              0.01
-            ],
-            "L.rot": [
-              -3.0,
-              2.0,
-              6.0
-            ],
             "R": {
               "grip": [
-                0.173,
-                -0.114,
-                -0.129
+                0.16,
+                -0.089,
+                -0.304
               ],
               "dir": [
-                -0.139,
-                0.558,
-                0.818
-              ],
-              "back": [
-                0.832,
-                0.514,
-                -0.209
+                0.408,
+                0.912,
+                0.051
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.1,
+                -1.0,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.56,
+                0.294,
+                -0.775
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7245,40 +7259,54 @@
         [
           15,
           {
-            "L.move": [
-              -0.012,
-              0.025,
-              0.01
-            ],
-            "L.rot": [
-              -3.0,
-              2.0,
-              6.0
-            ],
             "R": {
               "grip": [
-                0.159,
-                -0.063,
-                -0.13
+                0.177,
+                -0.041,
+                -0.338
               ],
               "dir": [
-                -0.139,
-                0.558,
-                0.818
-              ],
-              "back": [
-                0.832,
-                0.514,
-                -0.209
+                -0.318,
+                0.792,
+                0.521
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.1,
+                -1.4,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.743,
+                0.133,
+                -0.656
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7286,40 +7314,54 @@
         [
           21,
           {
-            "L.move": [
-              -0.012,
-              0.025,
-              0.01
-            ],
-            "L.rot": [
-              -3.0,
-              2.0,
-              6.0
-            ],
             "R": {
               "grip": [
-                0.164,
-                -0.061,
-                -0.066
+                0.217,
+                -0.022,
+                -0.292
               ],
               "dir": [
-                -0.139,
-                0.558,
-                0.818
-              ],
-              "back": [
-                0.832,
-                0.514,
-                -0.209
+                -0.206,
+                0.744,
+                0.636
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.3,
+                -1.4,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.722,
+                0.324,
+                -0.612
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7327,40 +7369,54 @@
         [
           27,
           {
-            "L.move": [
-              -0.012,
-              0.025,
-              0.01
-            ],
-            "L.rot": [
-              -3.0,
-              2.0,
-              6.0
-            ],
             "R": {
               "grip": [
-                0.159,
-                -0.063,
-                -0.13
+                0.177,
+                -0.041,
+                -0.338
               ],
               "dir": [
-                -0.139,
-                0.558,
-                0.818
-              ],
-              "back": [
-                0.832,
-                0.514,
-                -0.209
+                -0.318,
+                0.792,
+                0.521
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.1,
+                -1.4,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.743,
+                0.133,
+                -0.656
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7368,40 +7424,54 @@
         [
           31,
           {
-            "L.move": [
-              -0.012,
-              0.025,
-              0.01
-            ],
-            "L.rot": [
-              -3.0,
-              2.0,
-              6.0
-            ],
             "R": {
               "grip": [
-                0.173,
-                -0.114,
-                -0.129
+                0.16,
+                -0.089,
+                -0.304
               ],
               "dir": [
-                -0.139,
-                0.558,
-                0.818
-              ],
-              "back": [
-                0.832,
-                0.514,
-                -0.209
+                0.408,
+                0.912,
+                0.051
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.1,
+                -1.0,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.56,
+                0.294,
+                -0.775
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7421,19 +7491,14 @@
             ],
             "R": {
               "grip": [
-                0.101,
-                -0.177,
-                -0.155
+                0.248,
+                -0.122,
+                -0.265
               ],
               "dir": [
-                0.021,
-                0.705,
-                0.709
-              ],
-              "back": [
-                0.998,
-                0.031,
-                -0.06
+                0.391,
+                0.837,
+                0.383
               ],
               "fist": 0.95,
               "thumb": 0.8,
@@ -7442,7 +7507,12 @@
                 -0.55,
                 0.35
               ],
-              "index": -0.9
+              "index": -0.9,
+              "knuckles": [
+                -0.539,
+                0.546,
+                -0.642
+              ]
             }
           },
           "inout"
@@ -7524,7 +7594,7 @@
       }
     },
     "reload_rifle_open": {
-      "_doc": "Reload, first: the rifle rolls onto its left side and comes up, the right hand lifts the bolt and draws it back (equip.reload_open_time).",
+      "_doc": "Reload, first: the rifle comes down a little, its right side to the eye, the action in view, the right hand lifts the bolt and draws it back (equip.reload_open_time).",
       "hold": "rifle",
       "frames": 12,
       "keys": [
@@ -7538,40 +7608,54 @@
         [
           4,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.174,
-                -0.099,
-                -0.131
+                0.16,
+                -0.089,
+                -0.304
               ],
               "dir": [
-                -0.146,
-                0.569,
-                0.809
-              ],
-              "back": [
-                0.81,
-                0.539,
-                -0.232
+                0.408,
+                0.912,
+                0.051
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.1,
+                -1.0,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.56,
+                0.294,
+                -0.775
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7579,40 +7663,54 @@
         [
           7,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.158,
-                -0.048,
-                -0.132
+                0.177,
+                -0.041,
+                -0.338
               ],
               "dir": [
-                -0.146,
-                0.569,
-                0.809
-              ],
-              "back": [
-                0.81,
-                0.539,
-                -0.232
+                -0.318,
+                0.792,
+                0.521
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.1,
+                -1.4,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.743,
+                0.133,
+                -0.656
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7620,40 +7718,54 @@
         [
           12,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.164,
-                -0.045,
-                -0.069
+                0.217,
+                -0.022,
+                -0.292
               ],
               "dir": [
-                -0.146,
-                0.569,
-                0.809
-              ],
-              "back": [
-                0.81,
-                0.539,
-                -0.232
+                -0.206,
+                0.744,
+                0.636
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.3,
+                -1.4,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.722,
+                0.324,
+                -0.612
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7711,40 +7823,54 @@
         [
           0,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.164,
-                -0.045,
-                -0.069
+                0.217,
+                -0.022,
+                -0.292
               ],
               "dir": [
-                -0.146,
-                0.569,
-                0.809
-              ],
-              "back": [
-                0.81,
-                0.539,
-                -0.232
+                -0.206,
+                0.744,
+                0.636
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.3,
+                -1.4,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.722,
+                0.324,
+                -0.612
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7752,16 +7878,6 @@
         [
           5,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
                 0.143,
@@ -7783,6 +7899,30 @@
               "elbow": [
                 0.4,
                 -0.6,
+                0.3
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
                 0.3
               ]
             }
@@ -7792,16 +7932,6 @@
         [
           9,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
                 0.143,
@@ -7825,6 +7955,30 @@
                 -0.6,
                 0.3
               ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7832,40 +7986,54 @@
         [
           13,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.124,
-                -0.02,
-                -0.248
+                0.066,
+                -0.021,
+                -0.386
               ],
               "dir": [
                 -0.033,
                 0.744,
                 0.667
               ],
-              "back": [
-                0.986,
-                0.135,
-                -0.102
-              ],
               "fist": 0.6,
               "thumb": 0.35,
               "elbow": [
-                0.45,
-                -0.5,
+                0.3,
+                -1.4,
                 0.3
               ],
-              "index": 0.15
+              "index": 0.15,
+              "knuckles": [
+                -0.166,
+                0.654,
+                -0.738
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7873,40 +8041,54 @@
         [
           16,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.129,
-                -0.058,
-                -0.247
+                0.066,
+                -0.041,
+                -0.381
               ],
               "dir": [
                 -0.033,
                 0.744,
                 0.667
               ],
-              "back": [
-                0.986,
-                0.135,
-                -0.102
-              ],
               "fist": 0.6,
               "thumb": 0.3,
               "elbow": [
-                0.45,
-                -0.5,
+                0.3,
+                -1.4,
                 0.3
               ],
-              "index": 0.15
+              "index": 0.15,
+              "knuckles": [
+                -0.166,
+                0.654,
+                -0.738
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "out"
@@ -7914,40 +8096,54 @@
         [
           18,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.131,
-                -0.07,
-                -0.247
+                0.066,
+                -0.026,
+                -0.385
               ],
               "dir": [
                 -0.033,
                 0.744,
                 0.667
               ],
-              "back": [
-                0.986,
-                0.135,
-                -0.102
-              ],
               "fist": 0.6,
               "thumb": 0.15,
               "elbow": [
-                0.45,
-                -0.5,
+                0.3,
+                -1.4,
                 0.3
               ],
-              "index": 0.15
+              "index": 0.15,
+              "knuckles": [
+                -0.166,
+                0.654,
+                -0.738
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -7955,40 +8151,54 @@
         [
           20,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.164,
-                -0.045,
-                -0.069
+                0.217,
+                -0.022,
+                -0.292
               ],
               "dir": [
-                -0.146,
-                0.569,
-                0.809
-              ],
-              "back": [
-                0.81,
-                0.539,
-                -0.232
+                -0.206,
+                0.744,
+                0.636
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.3,
+                -1.4,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.722,
+                0.324,
+                -0.612
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -8033,40 +8243,54 @@
         [
           0,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.164,
-                -0.045,
-                -0.069
+                0.217,
+                -0.022,
+                -0.292
               ],
               "dir": [
-                -0.146,
-                0.569,
-                0.809
-              ],
-              "back": [
-                0.81,
-                0.539,
-                -0.232
+                -0.206,
+                0.744,
+                0.636
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.3,
+                -1.4,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.722,
+                0.324,
+                -0.612
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -8074,40 +8298,54 @@
         [
           4,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.158,
-                -0.048,
-                -0.132
+                0.177,
+                -0.041,
+                -0.338
               ],
               "dir": [
-                -0.146,
-                0.569,
-                0.809
-              ],
-              "back": [
-                0.81,
-                0.539,
-                -0.232
+                -0.318,
+                0.792,
+                0.521
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.1,
+                -1.4,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.743,
+                0.133,
+                -0.656
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -8115,40 +8353,54 @@
         [
           7,
           {
-            "L.move": [
-              -0.015,
-              0.03,
-              0.01
-            ],
-            "L.rot": [
-              -4.0,
-              3.0,
-              8.0
-            ],
             "R": {
               "grip": [
-                0.174,
-                -0.099,
-                -0.131
+                0.16,
+                -0.089,
+                -0.304
               ],
               "dir": [
-                -0.146,
-                0.569,
-                0.809
-              ],
-              "back": [
-                0.81,
-                0.539,
-                -0.232
+                0.408,
+                0.912,
+                0.051
               ],
               "fist": 0.72,
               "thumb": 0.65,
               "elbow": [
-                0.5,
-                -0.4,
+                0.1,
+                -1.0,
                 0.3
               ],
-              "index": 0.0
+              "index": 0.0,
+              "knuckles": [
+                -0.56,
+                0.294,
+                -0.775
+              ]
+            },
+            "L": {
+              "grip": [
+                -0.082,
+                -0.159,
+                -0.533
+              ],
+              "dir": [
+                -0.635,
+                -0.286,
+                -0.718
+              ],
+              "knuckles": [
+                0.644,
+                0.318,
+                -0.696
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -8168,19 +8420,14 @@
             ],
             "R": {
               "grip": [
-                0.102,
-                -0.173,
-                -0.155
+                0.248,
+                -0.117,
+                -0.266
               ],
               "dir": [
-                0.017,
-                0.709,
-                0.705
-              ],
-              "back": [
-                0.997,
-                0.041,
-                -0.066
+                0.384,
+                0.843,
+                0.376
               ],
               "fist": 0.95,
               "thumb": 0.8,
@@ -8189,7 +8436,12 @@
                 -0.55,
                 0.35
               ],
-              "index": -0.9
+              "index": -0.9,
+              "knuckles": [
+                -0.548,
+                0.536,
+                -0.642
+              ]
             }
           },
           "inout"
@@ -8257,16 +8509,6 @@
         [
           16,
           {
-            "L.move": [
-              -0.06,
-              0.07,
-              0.04
-            ],
-            "L.rot": [
-              6.0,
-              28.0,
-              30.0
-            ],
             "R": {
               "grip": [
                 0.195,
@@ -8291,6 +8533,30 @@
                 0.35
               ],
               "index": -0.9
+            },
+            "L": {
+              "grip": [
+                0.025,
+                -0.085,
+                -0.43
+              ],
+              "dir": [
+                -0.508,
+                -0.138,
+                -0.85
+              ],
+              "knuckles": [
+                0.422,
+                0.821,
+                -0.385
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -8298,16 +8564,6 @@
         [
           32,
           {
-            "L.move": [
-              -0.06,
-              0.075,
-              0.04
-            ],
-            "L.rot": [
-              8.0,
-              30.0,
-              34.0
-            ],
             "R": {
               "grip": [
                 0.206,
@@ -8332,6 +8588,30 @@
                 0.35
               ],
               "index": -0.9
+            },
+            "L": {
+              "grip": [
+                0.025,
+                -0.08,
+                -0.43
+              ],
+              "dir": [
+                -0.538,
+                -0.16,
+                -0.828
+              ],
+              "knuckles": [
+                0.36,
+                0.844,
+                -0.397
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -8339,31 +8619,16 @@
         [
           48,
           {
-            "L.move": [
-              -0.07,
-              0.06,
-              0.05
-            ],
-            "L.rot": [
-              16.0,
-              8.0,
-              -8.0
-            ],
             "R": {
               "grip": [
-                0.054,
-                -0.221,
-                -0.135
+                0.187,
+                -0.177,
+                -0.101
               ],
               "dir": [
-                0.222,
-                0.441,
-                0.87
-              ],
-              "back": [
-                0.975,
-                -0.123,
-                -0.187
+                0.381,
+                0.53,
+                0.757
               ],
               "fist": 0.95,
               "thumb": 0.8,
@@ -8372,7 +8637,36 @@
                 -0.55,
                 0.35
               ],
-              "index": -0.9
+              "index": -0.9,
+              "knuckles": [
+                -0.365,
+                0.84,
+                -0.403
+              ]
+            },
+            "L": {
+              "grip": [
+                0.021,
+                -0.08,
+                -0.352
+              ],
+              "dir": [
+                -0.528,
+                0.229,
+                -0.818
+              ],
+              "knuckles": [
+                0.744,
+                0.589,
+                -0.315
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -8380,31 +8674,16 @@
         [
           62,
           {
-            "L.move": [
-              -0.065,
-              0.055,
-              0.05
-            ],
-            "L.rot": [
-              20.0,
-              10.0,
-              -10.0
-            ],
             "R": {
               "grip": [
-                0.059,
-                -0.248,
-                -0.146
+                0.203,
+                -0.193,
+                -0.108
               ],
               "dir": [
-                0.261,
-                0.365,
-                0.893
-              ],
-              "back": [
-                0.964,
-                -0.153,
-                -0.22
+                0.37,
+                0.498,
+                0.784
               ],
               "fist": 0.95,
               "thumb": 0.8,
@@ -8413,7 +8692,36 @@
                 -0.55,
                 0.35
               ],
-              "index": -0.9
+              "index": -0.9,
+              "knuckles": [
+                -0.406,
+                0.847,
+                -0.346
+              ]
+            },
+            "L": {
+              "grip": [
+                0.03,
+                -0.088,
+                -0.35
+              ],
+              "dir": [
+                -0.549,
+                0.257,
+                -0.796
+              ],
+              "knuckles": [
+                0.714,
+                0.638,
+                -0.287
+              ],
+              "fist": 0.8,
+              "thumb": 0.55,
+              "elbow": [
+                -0.35,
+                -0.55,
+                0.3
+              ]
             }
           },
           "inout"
@@ -8665,14 +8973,30 @@
     "block_deg": 4.0
   },
   "climb": {
-    "_doc": "Climbing arms (ViewModelClimb, ADR-0057): the hand-over-hand cycle advances by the metres climbed over cycle_m (a gripping hand rides down 0.89 m of view per metre climbed at the hold's depth, so it stays on the rail), backwards climbing down, still holding on. grab_time / release_time: seconds of the grab-on and let-go. anchor: the arms stay level and square to the ladder, not the view (1 = fully).",
+    "_doc": "Climbing arms (ViewModelClimb, ADR-0057): the hand-over-hand cycle advances by the metres climbed over cycle_m (a gripping hand rides down 0.89 m of view per metre climbed at the hold's depth, so it stays on the rail), backwards climbing down, still holding on. grab_time / release_time: seconds of the grab-on and let-go. anchor: the arms stay level and square to the ladder, not the view (1 = fully). bake_fov: the world FOV the climb poses were baked for; at another FOV the rig is scaled across the screen by tan(bake/2)/tan(fov/2) so the hands stay on the rails (TD-296).",
     "cycle_m": {
       "climb": 0.578,
       "climb_rope": 0.482
     },
     "grab_time": 0.3,
+    "bake_fov": 75.0,
     "release_time": 0.35,
     "anchor": 1.0
   },
-  "_doc_off_hand": "Holds that use one hand drop the other below the view (it comes up to guard or read the tether): the owner's playtest found an open hand floating palm-down in the lower corner distracting."
+  "_doc_off_hand": "Holds that use one hand drop the other below the view (it comes up to guard or read the tether): the owner's playtest found an open hand floating palm-down in the lower corner distracting.",
+  "offhand": {
+    "_doc": "Items shown for a moment in the other hand (ViewModel.show_offhand): pos (m) and rot (deg) in that hand's socket. The lighter that lights a molotov's rag (TD-291).",
+    "lighter": {
+      "pos": [
+        0.0,
+        0.035,
+        0.0
+      ],
+      "rot": [
+        -100.0,
+        0.0,
+        0.0
+      ]
+    }
+  }
 }

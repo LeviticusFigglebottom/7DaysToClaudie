@@ -71,3 +71,52 @@ func test_path_follows_the_river_above_its_banks() -> void:
 	for p: Vector3 in path:
 		assert_true(rt.rect.has_point(Vector2(p.x, p.z)))
 		assert_gt(p.y, rt.height.sample(p.x, p.z) + 10.0, "the camera clears the ground")
+
+
+func test_one_still_is_a_misty_dawn() -> void:
+	assert_eq(MenuFlight.STILL_MOODS.size(), MenuFlight.STILLS.size(), "a light for every still")
+	assert_eq(MenuFlight.STILL_MOODS.count("dawn_mist"), 1)
+	for mood: String in MenuFlight.STILL_MOODS:
+		assert_true(MenuFlight.MOODS.has(mood))
+	assert_gt(float(MenuFlight.MOODS["dawn_mist"]["mist"]), 0.0)
+	# Dawn's sun stands in the east, dusk's in the west.
+	assert_gt((MenuFlight.MOODS["dawn_mist"]["sun_dir"] as Vector3).x, 0.0)
+	assert_lt((MenuFlight.MOODS["dusk"]["sun_dir"] as Vector3).x, 0.0)
+
+
+func test_ground_cover_grows_in_front_of_the_camera() -> void:
+	var rect := Rect2(0, 0, 1024, 1024)
+	var chunks: Array[Vector2i] = MenuFlight.chunks_in_view(Vector2(512, 512), Vector2(0, -1), 300.0, rect)
+	assert_gt(chunks.size(), 4)
+	var ahead: bool = false
+	for k: Vector2i in chunks:
+		var c := Vector2((k.x + 0.5) * 64.0, (k.y + 0.5) * 64.0)
+		assert_true(rect.has_point(c))
+		ahead = ahead or c.y < 300.0
+		assert_false(c.y > 512.0 + 128.0, "nothing far behind the lens")
+	assert_true(ahead, "chunks well ahead")
+
+
+func test_the_scatter_keeps_out_of_the_water() -> void:
+	var grid: Dictionary = MenuFlight.water_grid([
+		{"kind": "river", "points": [[0.0, 0.0], [0.0, 100.0]], "levels": [10.0, 6.0], "widths": [20.0, 20.0]},
+		{"kind": "lake", "level": 3.0, "polygon": [[200.0, 200.0], [260.0, 200.0], [260.0, 260.0], [200.0, 260.0]]}])
+	assert_almost_eq(MenuFlight.water_level(grid, 5.0, 50.0), 8.0, 0.01, "mid-river, between its levels")
+	assert_eq(MenuFlight.water_level(grid, 15.0, 50.0), -INF, "past its half width")
+	assert_eq(MenuFlight.water_level(grid, 230.0, 230.0), 3.0, "in the lake")
+	assert_eq(MenuFlight.water_level(grid, 400.0, 400.0), -INF)
+
+
+func test_a_storm_passes_with_rain_in_front_of_the_lens() -> void:
+	assert_eq(MenuFlight.STILL_MOODS.count("storm"), 1)
+	assert_gt(int(MenuFlight.MOODS["storm"].get("rain", 0)), 0)
+	var cam := Transform3D(Basis.IDENTITY, Vector3(0, 30, 0))
+	var mmi: MultiMeshInstance3D = MenuFlight.rain_streaks(cam, 400, 7)
+	assert_eq(mmi.multimesh.instance_count, 400)
+	var xf: Array[Transform3D] = MenuFlight.rain_transforms(cam, 400, 7)
+	for t: Transform3D in xf:
+		assert_lt(t.origin.z, -3.9, "in front of the lens (it looks down -Z)")
+		assert_gt(t.basis.y.normalized().y, 0.9, "streaks fall near vertical")
+	assert_eq(MenuFlight.rain_transforms(cam, 50, 7)[9], MenuFlight.rain_transforms(cam, 50, 7)[9], "deterministic")
+	mmi.free()
+

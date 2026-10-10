@@ -172,7 +172,7 @@ func build(p_model_id: String, height_scale: float, body_scale := Vector3.ONE) -
 		if anim != null:
 			for a: StringName in anim.get_animation_list():
 				var res: Animation = anim.get_animation(a)
-				if String(a).begins_with("idle") or a in [&"walk", &"walk_b", &"walk_limp", &"run", &"crawl", &"attack_structure", &"eat", &"track"]:
+				if String(a).begins_with("idle") or a in [&"walk", &"walk_b", &"walk_limp", &"run", &"charge", &"crawl", &"attack_structure", &"eat", &"track"]:
 					res.loop_mode = Animation.LOOP_LINEAR
 			_pick_variants()
 	else:
