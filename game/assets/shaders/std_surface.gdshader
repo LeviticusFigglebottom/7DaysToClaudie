@@ -31,7 +31,13 @@ uniform float wear_amount : hint_range(0.0, 1.0) = 0.0;
 uniform float wear_uv_scale = 1.0;
 // Instance uniforms pin their slots: kit_wall shares weather_exposure, and materials batched on one
 // instance must agree on each name's index (Godot reads one slot per index per instance).
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float instance_wear = -1.0;
+#else
 instance uniform float instance_wear : instance_index(0) = -1.0;
+#endif
 
 // Moss / lichen on up-facing surfaces (mask: vertex B * up-facing).
 uniform sampler2D moss_albedo_tex : source_color, hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;
@@ -66,18 +72,42 @@ uniform float emission_energy = 0.0;
 // per instance (PropLights) in a slot of its own after the four shared ones.
 uniform int light_source : hint_range(0, 2) = 0;
 uniform float emission_flicker : hint_range(0.0, 1.0) = 0.0;
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float light_lit = 1.0;
+#else
 instance uniform float light_lit : instance_index(4) = 0.0;
+#endif
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float instance_variation = 0.5;
+#else
 instance uniform float instance_variation : instance_index(1) = 0.5;
+#endif
 // Infected tiers (Seeded/Bloomed Hollowed, InfectedTiers): pale Bloom filaments glowing under the
 // skin, patterned in object space. The instance sets how far the Bloom has gone (bloom_glow); the
 // material says where it can show (bloom_skin: Hollowed skin 1, fungal growths 0.8, cloth 0).
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float bloom_glow = 0.0;
+#else
 instance uniform float bloom_glow : instance_index(2) = 0.0;
+#endif
 uniform float bloom_skin : hint_range(0.0, 1.0) = 0.0;
 
 #include "res://assets/shaders/weather.gdshaderinc"
 global uniform float hm_snow;
 // 0 for things under a roof (POI furniture batched as indoor): no rain gloss or snow on them.
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float weather_exposure = 1.0;
+#else
 instance uniform float weather_exposure : instance_index(3) = 1.0;
+#endif
 
 varying vec3 v_world_normal;
 varying vec3 v_world_pos;
