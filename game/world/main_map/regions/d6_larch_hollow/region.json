@@ -199,14 +199,25 @@
       "blend": 40
     },
     {
+      "_doc": "Second-growth birch round Pell's Crossing (owner report 4: bare town edges): under the meadow below, so young trees come up to ~50 m of the town's west edge.",
+      "type": "biome",
+      "biome": "birch_grove",
+      "circle": [
+        -60,
+        2140
+      ],
+      "radius": 215,
+      "blend": 50
+    },
+    {
       "type": "biome",
       "biome": "meadow",
       "circle": [
         -60,
         2100
       ],
-      "radius": 175,
-      "blend": 50
+      "radius": 120,
+      "blend": 40
     },
     {
       "type": "biome",

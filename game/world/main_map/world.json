@@ -686,7 +686,7 @@
       "name": "Larkspur Ridge",
       "biome": "rocky_slope",
       "danger": 2,
-      "status": "planned",
+      "status": "built",
       "summary": "Cliffs; sealed cave passage.",
       "frontier": "cave"
     },

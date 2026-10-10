@@ -26,6 +26,9 @@ var lots: Dictionary = {}
 ## Every building of the world as data (RWG v2 Phase 3), made with the lots: a streamed world
 ## builds its buildings from it by distance.
 var registry: PoiRegistry = null
+## Buildings are built by distance (PoiManager's ring): lot buildings are generated when they come
+## near, not all at load (set with `stream`, and for the main map: GameWorld.poi_ring).
+var poi_ring: bool = false
 ## The Bloom field over the detailed regions, built here too when resolve_lots is set (about a
 ## second of the main thread on a 3x3 random world, ADR-0036); null otherwise.
 var bloom_tiles: BloomTiles = null
@@ -148,7 +151,7 @@ func _resolve_lots() -> void:
 			for res: Dictionary in Lots.resolve(fw, str(pl["id"]), world_seed):
 				# A streamed world generates a lot's building on a worker when it enters the
 				# build ring (PoiManager); only a world built whole at load needs them all now.
-				var placed: bool = not stream and not str(res["kind"]) in ["reserved", "empty"]
+				var placed: bool = not (stream or poi_ring) and not str(res["kind"]) in ["reserved", "empty"]
 				var pair: Array = [res, null]
 				if placed:
 					to_make.append(pair)

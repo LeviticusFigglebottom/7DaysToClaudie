@@ -53,12 +53,25 @@ func setup_world(w: Node) -> void:
 	Settings.graphics_changed.connect(_on_graphics_changed)
 	# A streamed world (RWG v2 Phase 3) builds its buildings by distance from the PoiRegistry:
 	# its regions bring only their fixtures, and the boot builds the buildings around the spawn.
-	if bool(w.get(&"streaming")) and w.get(&"poi_registry") is PoiRegistry:
+	# So does a world built whole with `poi_ring` (the main map): it raised every building of its
+	# built regions at boot (39 s of a 63 s load with C6's west end), and its open sightlines want
+	# a ring past the view distance, so its boot builds only round the spawn and the rest rise in
+	# the background, nearest first, long before they could come into view (streaming.json
+	# "poi" "built_whole").
+	var whole: bool = not bool(w.get(&"streaming")) and bool(w.get(&"poi_ring"))
+	if (bool(w.get(&"streaming")) or whole) and w.get(&"poi_registry") is PoiRegistry:
 		registry = w.get(&"poi_registry")
 		var cfg: Dictionary = (Content.config(&"streaming") as Dictionary).get("poi", {})
+		if whole:
+			cfg = cfg.get("built_whole", {})
+			_boot_r = float(cfg.get("boot", BOOT_RADIUS))
 		_build_r = float(cfg.get("build", 450.0))
 		_free_r = float(cfg.get("free", 560.0))
 		_max_built = int(cfg.get("max_built", 90))
+		if whole:
+			# Past the view distance whatever the preset (big shells draw to it: no visibility range).
+			_build_r = maxf(_build_r, float(Settings.gfx("view_distance", 1400.0)) + 100.0)
+			_free_r = maxf(_free_r, _build_r + 200.0)
 		# Cellars are cut per built building (TD-107), not for every lot of an attached region.
 		var tm0: TerrainManager = w.get(&"terrain") as TerrainManager
 		if tm0 != null:
@@ -68,7 +81,7 @@ func setup_world(w: Node) -> void:
 	_place_all(w)
 	if registry != null:
 		var focus: Vector3 = w.get(&"boot_focus") if w.get(&"boot_focus") is Vector3 else Vector3.ZERO
-		_update_ring(focus, BOOT_RADIUS)
+		_update_ring(focus, _boot_r)
 	_queueing = false
 	# Streamed worlds (ADR-0038): a region's buildings come and go with its 1 m terrain.
 	var tm: TerrainManager = w.get(&"terrain") as TerrainManager
@@ -256,6 +269,10 @@ var _free_r: float = 560.0
 var _max_built: int = 90
 ## Built during the boot around the spawn, so the player doesn't arrive in a town of empty lots.
 const BOOT_RADIUS: float = 200.0
+var _boot_r: float = BOOT_RADIUS
+## The ring's own steps where no RegionStreamer runs them (a world built whole): within the
+## streamer's runtime budget a frame, nearest first.
+var _own_steps: StepRunner = null
 const RING_INTERVAL: float = 0.5
 var _ring_t: float = 0.0
 ## Instance id -> a building on its way (resolving, planning or building in steps).
@@ -271,7 +288,7 @@ func _update_ring(pos: Vector3, radius: float) -> void:
 	if tm == null:
 		return
 	var p := Vector2(pos.x, pos.z)
-	var steps: StepRunner = tm.streamer.steps if tm.streamer != null else null
+	var steps: StepRunner = tm.streamer.steps if tm.streamer != null else _ring_steps()
 	var ai: Node = world.get(&"ai")
 	for id: StringName in instances.keys() + _jobs.keys():
 		if registry.entries.has(id) and registry.distance_to(id, p) > _free_r:
@@ -341,6 +358,15 @@ func _queue_stream_build(id: StringName, e: Dictionary, dist: float, steps: Step
 	else:
 		steps.add(["", resolve, "poi plan %s" % id], 100.0 + dist)
 		steps.add(["", build, "poi %s" % id], 100.0 + dist)
+
+
+## The StepRunner the ring's builds go to when no RegionStreamer runs one (made on first use).
+func _ring_steps() -> StepRunner:
+	if _own_steps == null:
+		_own_steps = StepRunner.new()
+		var cfg: Dictionary = Content.config(&"streaming") as Dictionary
+		_own_steps.budget_ms = float((cfg.get("budget_ms", {}) as Dictionary).get("runtime", 4.0))
+	return _own_steps
 
 
 ## Takes a building out of the world (built or on its way): its steps dropped, sleepers despawned,
@@ -798,6 +824,8 @@ func _process(delta: float) -> void:
 
 
 func _process_body(delta: float) -> void:
+	if _own_steps != null and world != null and world.is_ready:
+		_own_steps.run_frame()
 	_ring_t += delta
 	if registry != null and _ring_t >= RING_INTERVAL and world != null and world.player != null and world.is_ready:
 		_ring_t = 0.0
