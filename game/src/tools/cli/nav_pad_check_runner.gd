@@ -6,6 +6,11 @@ const DETOUR: float = 2.5
 ## Directions round each building, and how far outside its footprint's edge the far ends stand.
 const DIRS: int = 16
 const OUT: float = 8.0
+## How far off a building's last built cell (along a direction) a path starts: clear of the wall and
+## a 0.5 m agent's radius.
+const PAD_CLEAR: float = 1.25
+## A path that stops short within this far of the footprint never got off the pad.
+const PAD_MARGIN: float = 2.0
 
 var _findings: int = 0
 
@@ -99,31 +104,67 @@ func _check(w: Node, inst: PoiInstance, id: StringName) -> void:
 	var xf: Transform3D = inst.global_transform * Transform3D(Basis.IDENTITY, Vector3(inst.layout.origin.x, 0, inst.layout.origin.y))
 	var mid: Vector3 = xf * Vector3(fp.x * 0.5, 0, fp.y * 0.5)
 	var bad: PackedStringArray = []
+	var notes: PackedStringArray = []
 	for k: int in DIRS:
 		var d := Vector3.FORWARD.rotated(Vector3.UP, TAU * k / DIRS)
-		var inside: Vector3 = mid + d * minf(fp.x, fp.y) * 0.3
 		# The far end: along d past the footprint's edge (its local box), OUT m out.
 		var local_d: Vector3 = xf.basis.inverse() * d
 		var t: float = minf(fp.x * 0.5 / maxf(absf(local_d.x), 0.001), fp.y * 0.5 / maxf(absf(local_d.z), 0.001))
 		var outside: Vector3 = mid + d * (t + OUT)
-		for q: Vector3 in [inside, outside]:
-			q.y = float(w.call(&"height_at", q.x, q.z))
+		# The near end: on the pad, not in a room (a shut door rightly keeps a path in). Along d,
+		# PAD_CLEAR m past the last built cell (a yard inside the footprint, or the ground off the
+		# wall), so the yard and the pad round the walls are what joins the ground beyond.
+		var last_built: float = -1.0
+		var step: float = 0.0
+		while step < t:
+			var lp: Vector3 = xf.affine_inverse() * (mid + d * step)
+			if inst.layout.is_built(0, Vector2i(floori(lp.x), floori(lp.z))):
+				last_built = step
+			step += 0.25
+		var inside: Vector3 = mid + d * (minf(last_built + PAD_CLEAR, t + PAD_CLEAR) if last_built >= 0.0 else minf(fp.x, fp.y) * 0.3)
 		inside.y = float(w.call(&"height_at", inside.x, inside.z))
-		outside.y = float(w.call(&"height_at", outside.x, outside.z))
+		# Both ends on tiles the ring around the player has baked (a big building's far side can lie
+		# past it): no mesh there is the check's reach, not a gap.
+		if not _live(w, inside) or not _live(w, mid + d * (t + OUT + 8.0)):
+			notes.append("dir %d: an end lies past the baked tiles" % k)
+			continue
 		var ci: Vector3 = NavigationServer3D.map_get_closest_point(map, inside)
-		var co: Vector3 = NavigationServer3D.map_get_closest_point(map, outside)
-		if ci.distance_to(inside) > 2.0 or co.distance_to(outside) > 2.0:
-			bad.append("dir %d: off the mesh (inside %.1f m, outside %.1f m; %s)" % [k, ci.distance_to(inside), co.distance_to(outside), _ground_note(w, mid, outside)])
+		if ci.distance_to(inside) > 2.0:
+			bad.append("dir %d: the pad is off the mesh (%.1f m; %s)" % [k, ci.distance_to(inside), _ground_note(w, mid, inside)])
+			continue
+		# The far end on the mesh: a tree, a fence or a neighbour's wall can stand on the first try.
+		var co := Vector3.INF
+		for extra: float in [0.0, 4.0, 8.0]:
+			var o: Vector3 = mid + d * (t + OUT + extra)
+			o.y = float(w.call(&"height_at", o.x, o.z))
+			var c: Vector3 = NavigationServer3D.map_get_closest_point(map, o)
+			if c.distance_to(o) <= 2.0:
+				co = c
+				break
+		if co == Vector3.INF:
+			notes.append("dir %d: no ground on the mesh 8-16 m out (%s)" % [k, _ground_note(w, mid, outside)])
 			continue
 		var path: PackedVector3Array = NavigationServer3D.map_get_path(map, ci, co, true)
 		var length: float = 0.0
 		for j: int in range(1, path.size()):
 			length += path[j - 1].distance_to(path[j])
 		var straight: float = Vector2(ci.x, ci.z).distance_to(Vector2(co.x, co.z))
-		if path.size() < 2 or path[path.size() - 1].distance_to(co) > 1.5:
-			bad.append("dir %d: no path out (ends %.1f m short)" % [k, (path[path.size() - 1].distance_to(co) if path.size() > 0 else INF)])
+		if path.size() < 2:
+			bad.append("dir %d: no path at all from the pad" % k)
+			continue
+		var end: Vector3 = path[path.size() - 1]
+		if end.distance_to(co) > 1.5:
+			# It stopped short. Past the footprint's margin something further out stopped it (a fence, a
+			# neighbour's house: notes); within it, the pad isn't joined to the ground.
+			var le: Vector3 = xf.affine_inverse() * end
+			if Rect2(Vector2.ZERO, fp).grow(PAD_MARGIN).has_point(Vector2(le.x, le.z)):
+				bad.append("dir %d: the pad is cut off (the path ends %.1f m short, on the pad)" % [k, end.distance_to(co)])
+			else:
+				notes.append("dir %d: blocked past the pad (%.1f m short)" % [k, end.distance_to(co)])
 		elif length > straight * DETOUR + 4.0:
-			bad.append("dir %d: %.0f m for %.0f m" % [k, length, straight])
+			notes.append("dir %d: %.0f m for %.0f m" % [k, length, straight])
+	for n: String in notes:
+		print("[navpad]   note %s: %s" % [id, n])
 	if OS.has_environment("NAVPAD_DEBUG"):
 		# A map of the ground around the building: '#' on the mesh, '.' off it (the closest mesh point
 		# more than 0.6 m away), every 2 m, north up.
@@ -139,6 +180,17 @@ func _check(w: Node, inst: PoiInstance, id: StringName) -> void:
 		# The camp's tile baked again here, whole and piece by piece: which source empties it.
 		var navn: Node = (w.get(&"ai") as Node).get(&"nav")
 		var tk: Vector2i = NavTiles.tile_of(mid)
+		print("[navpad]   player at %s (tile %s), building tile %s" % [(w.get(&"player") as Node3D).global_position, NavTiles.tile_of((w.get(&"player") as Node3D).global_position), tk])
+		var live: Dictionary = navn.get(&"_tiles")
+		for dz: int in range(-1, 2):
+			for dx: int in range(-1, 2):
+				var kk := Vector2i(tk.x + dx, tk.y + dz)
+				var inp: Array = navn.call(&"bake_inputs", kk)
+				NavigationServer3D.bake_from_source_geometry_data(inp[0], inp[1])
+				var lt: Dictionary = live.get(kk, {})
+				var has_region: bool = lt.has("region") and (lt["region"] as RID).is_valid()
+				print("[navpad]   tile %s: rebaked %d polygons; live %s, region %s, dirty %s" % [kk, (inp[0] as NavigationMesh).get_polygon_count(),
+					"yes" if not lt.is_empty() else "no", has_region, (navn.get(&"_dirty") as Dictionary).has(kk)])
 		var full: Array = navn.call(&"bake_inputs", tk)
 		var srcf: NavigationMeshSourceGeometryData3D = full[1]
 		print("[navpad]   tile %s source: %d verts, %d obstructions, bounds %s" % [tk, srcf.get_vertices().size(), srcf.get_projected_obstructions().size(), srcf.get_bounds()])
@@ -157,6 +209,12 @@ func _check(w: Node, inst: PoiInstance, id: StringName) -> void:
 			print("[navpad]   %s: %d polygons (%d verts)" % [part, nm2.get_polygon_count(), s2.get_vertices().size()])
 	_findings += bad.size()
 	print("[navpad] %s (%s): %s" % [id, inst.layout.def.id, "ok" if bad.is_empty() else "%d of %d directions: %s" % [bad.size(), DIRS, "; ".join(bad)]])
+
+
+func _live(w: Node, p: Vector3) -> bool:
+	var nav: Node = (w.get(&"ai") as Node).get(&"nav")
+	var t: Dictionary = (nav.get(&"_tiles") as Dictionary).get(NavTiles.tile_of(p), {})
+	return t.has("region") and (t["region"] as RID).is_valid()
 
 
 ## What stands between the building and a point: the steepest 1 m rise on the line from its middle
