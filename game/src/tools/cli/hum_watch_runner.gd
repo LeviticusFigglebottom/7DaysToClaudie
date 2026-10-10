@@ -46,7 +46,7 @@ func _ready() -> void:
 
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
-	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "humwatch",
+	game.call(&"start_new_game", {"game_mode": "survival", "skip_intro": true, "slot": "qa_humwatch",
 		"rules": {"hum_max_alive": 40, "hum_size": 1.5}})
 	while game.get(&"world") == null or not bool(game.world.is_ready):
 		await get_tree().process_frame

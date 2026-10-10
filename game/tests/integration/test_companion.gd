@@ -300,7 +300,9 @@ func test_bled_out_he_is_back_at_the_spawn_point_next_dawn() -> void:
 	_p.state.has_spawn_point = true
 	e.ally.go_down(null, 0.05)
 	await _frames(10)
-	assert_true(e.ally.gone)
+	# Under load the director's own tick may already have taken the body out in those frames.
+	if is_instance_valid(e):
+		assert_true(e.ally.gone)
 	_dir.tick()
 	assert_null(_dir.body, "taken out of the world")
 	assert_true(_dir.is_out())
@@ -694,6 +696,74 @@ func test_downed_the_hollowed_keep_at_him_a_while() -> void:
 	assert_false(e.is_alive())
 
 
+func test_downed_only_those_already_on_him_keep_him() -> void:
+	var e: Enemy = await _recruited()
+	var a: Enemy = _spawn(&"hollow", e.global_position + Vector3(1.2, 0, 0))
+	await get_tree().physics_frame
+	a.set_physics_process(false)
+	a.foe = e
+	a._foe_seen = a._now()
+	assert_true(e.ally.open_to(a), "standing, anyone may take him up")
+	var info := DamageInfo.make(e.health + 50.0, &"zombie", &"zombie", a.entity_id)
+	info.hit_pos = e.global_position + Vector3.UP
+	e.take_damage(info)
+	assert_true(e.ally.downed)
+	assert_true(e.ally.open_to(a), "the one on him when he fell keeps him")
+	var b: Enemy = _spawn(&"hollow", e.global_position + Vector3(-3.0, 0, 0))
+	await get_tree().physics_frame
+	b.set_physics_process(false)
+	assert_false(e.ally.open_to(b), "a newcomer doesn't join in")
+	EnemyFoes.scan(b, 5.0)
+	assert_ne(b.foe, e, "its scan passes him by while he lies there")
+	e.ally.get_up(0.5)
+	assert_true(e.ally.open_to(b), "on his feet again, he is anyone's foe")
+
+
+func test_his_blows_and_hurts_have_his_own_voice() -> void:
+	var own: bool = not Audio.variants(&"voice/ezra_grunt").is_empty()
+	assert_eq(CompanionMind.voice(&"voice/zombie_attack"), &"voice/ezra_grunt" if own else &"voice/ashen_grunt",
+		"his own grunt when it is generated (TD-303)")
+	var pain: bool = not Audio.variants(&"voice/ezra_pain").is_empty()
+	assert_eq(CompanionMind.voice(&"voice/zombie_pain"), &"voice/ezra_pain" if pain else &"voice/ashen_pain")
+	assert_eq(CompanionMind.voice(&"voice/zombie_death"), &"voice/ashen_death", "he has no death cry of his own")
+
+
+func test_the_logs_ride_his_shoulder_bone() -> void:
+	var e: Enemy = await _recruited()
+	_dir.inventory.add_item(&"log", 2)
+	e.ally._shoulder_logs()
+	var node: Node3D = e.ally._shoulder
+	assert_not_null(node, "logs on his shoulder")
+	assert_eq(node.get_child_count(), 2, "one per log")
+	if e.visual.skeleton != null:
+		assert_true(node.get_parent() is BoneAttachment3D, "on a bone, so they follow his clips (TD-305)")
+	await _frames(2)
+	var want: Vector3 = e.global_transform * CompanionMind.SHOULDER_AT
+	assert_lt(node.global_position.distance_to(want), 0.4, "over his right shoulder (%s vs %s)" % [node.global_position, want])
+
+
+func test_the_card_marks_what_fetch_would_bring() -> void:
+	await _recruited()
+	var lg: LogEntity = _world.loose.spawn_log(_p.global_position + Vector3(6, 0.3, 2), Basis(), &"")
+	await _frames(10)
+	_dir.looked = {"entity": String(lg.entity_id)}
+	var card := CompanionScreen.new()
+	card.director = _dir
+	add_child_autofree(card)
+	card.open()
+	var mk: Node3D = card._marker
+	assert_not_null(mk, "a marker in the world (TD-307)")
+	assert_true(mk.visible)
+	assert_lt(mk.global_position.distance_to(lg.global_position), 0.05, "on the log")
+	card.close_screen()
+	assert_false(mk.visible, "gone with the card")
+	card.open()
+	_dir.looked = {}
+	card._refresh()
+	assert_false(mk.visible, "nothing looked at, nothing marked")
+	card.close_screen()
+
+
 func test_companion_strength_scales_him() -> void:
 	var e: Enemy = await _recruited()
 	assert_almost_eq(e.max_health, e.def.health, 0.01, "1 by default: the enemy settings never apply")
@@ -755,6 +825,33 @@ func test_placed_beside_the_player_he_keeps_out_of_walls_and_water() -> void:
 	assert_lte(absf(at.x), 1.0)
 	_world.water = null
 	water.free()
+
+
+func test_a_crest_below_head_height_doesnt_block_a_spot_but_a_wall_does() -> void:
+	await _recruited()
+	await get_tree().physics_frame
+	var anchor := Vector3(40, 0, 40)
+	# A 1.4 m crest across the line to the spot 4 m off: above chest height, below the head.
+	_box(anchor + Vector3(0, 0.7, 2.0), Vector3(30, 1.4, 0.4))
+	await get_tree().physics_frame
+	var spot: Vector3 = anchor + Vector3(0, 0, 4.0)
+	var at: Vector3 = _dir.safe_spot(anchor, spot)
+	assert_almost_eq(at.z, spot.z, 0.3, "over the crest, where it was wanted (%s)" % at)
+	# A full wall: the spot behind it is refused.
+	_box(anchor + Vector3(0, 1.5, -2.0), Vector3(30, 3.0, 0.4))
+	await get_tree().physics_frame
+	var at2: Vector3 = _dir.safe_spot(anchor, anchor + Vector3(0, 0, -4.0))
+	assert_gt(at2.z, anchor.z - 2.0, "not behind the wall (%s)" % at2)
+
+
+func test_a_saved_spot_inside_a_wall_is_moved_out() -> void:
+	await _recruited()
+	var inside := Vector3(-40, 0, 40)
+	_box(inside + Vector3.UP * 1.5, Vector3(2.0, 3.0, 2.0))
+	await get_tree().physics_frame
+	var at: Vector3 = _dir.safe_spot(inside, inside)
+	assert_gt(maxf(absf(at.x - inside.x), absf(at.z - inside.z)), 1.0 + CompanionDirector.BODY_RADIUS - 0.01,
+		"out of the block it was saved in (%s)" % at)
 
 
 func test_at_dawn_he_comes_back_inside_the_room_with_the_bed() -> void:

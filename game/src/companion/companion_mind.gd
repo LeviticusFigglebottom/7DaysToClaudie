@@ -61,6 +61,9 @@ var last_voice_variant: int = 0
 var _voice: Sound3D = null
 ## Downed, the Hollowed that were on him keep at him until this time (downed.linger, TD-300).
 var _linger_until: float = -1000.0
+## The bodies (instance ids) that had him as their foe when he went down: only they keep at him
+## while he lies there (TD-312: a Hollow arriving in the linger window used to take him up).
+var _maulers: Dictionary = {}
 ## His errands (gather, fetch, store).
 var work: CompanionWork = null
 ## His own pack (CompanionDirector.inventory; set when the body is spawned).
@@ -281,6 +284,10 @@ func shrugs(info: DamageInfo) -> bool:
 		# Mauled where he lies: no health to lose, but he bleeds out the faster (TD-300).
 		downed_t = maxf(0.5, downed_t - CompanionDef.fnum(cdef.downed, "mauled", 6.0))
 		Audio.play_3d(&"sfx/hit_flesh", enemy.global_position + Vector3.UP * 0.3, {"volume_db": -4.0})
+		# Seen as well as heard (TD-312): blood where he lies, toward whoever is at him.
+		if enemy.get_parent() != null:
+			var at: Vector3 = info.hit_pos if info.hit_pos != Vector3.ZERO else enemy.global_position + Vector3.UP * 0.3
+			FxLibrary.burst(enemy.get_parent(), "blood", at, -info.direction if info.direction != Vector3.ZERO else Vector3.UP, 0.6)
 		return true
 	if not recruited or downed or rising_t > 0.0:
 		return true
@@ -300,6 +307,7 @@ func shrugs(info: DamageInfo) -> bool:
 func go_down(_info: DamageInfo = null, seconds: float = -1.0) -> void:
 	downed = true
 	_linger_until = enemy._now() + CompanionDef.fnum(cdef.downed, "linger", 8.0) if seconds < 0.0 else -1000.0
+	_maulers = _bodies_on_him()
 	downed_t = seconds if seconds >= 0.0 else CompanionDef.fnum(cdef.downed, "seconds", 180.0)
 	enemy.health = 0.0
 	enemy.foe = null
@@ -323,6 +331,23 @@ func get_up(fraction: float) -> void:
 	enemy._set_state(Enemy.State.STAGGER)
 	rising_t = enemy.visual.play_once(&"revive", 1.0, [&"wake_lie", &"wake_sit", &"idle"] as Array[StringName])
 	enemy.visual.animate_placeholder(0.0, 0.0, false)
+
+
+## Whether `who` may take him up as a new foe: anyone while he stands; downed, only the bodies
+## that were already on him (they linger; nobody new joins in).
+func open_to(who: Enemy) -> bool:
+	return not downed or _maulers.has(who.get_instance_id())
+
+
+## Instance ids of the live bodies whose foe he is now.
+func _bodies_on_him() -> Dictionary:
+	var out: Dictionary = {}
+	var all: Variant = enemy.director.get(&"enemies") if enemy.director != null else null
+	if all is Dictionary:
+		for o: Variant in (all as Dictionary).values():
+			if o is Enemy and is_instance_valid(o) and (o as Enemy).foe == enemy:
+				out[(o as Enemy).get_instance_id()] = true
+	return out
 
 
 ## Out of play (not recruited yet, or down past downed.linger): nobody's foe.
@@ -463,8 +488,13 @@ func body_id() -> StringName:
 	return enemy.entity_id
 
 
-## The logs on his right shoulder, one per log in his pack (like the player's two). A plain node
-## at shoulder height, not on a bone: it doesn't follow the clips (TD-305).
+## Where the logs sit on his body at rest (enemy space): over the right shoulder.
+const SHOULDER_AT := Vector3(-0.2, 1.55, -0.05)
+
+
+## The logs on his right shoulder, one per log in his pack (like the player's two), on his
+## shoulder bone so they ride the clips (TD-305: on a plain node they hung in the air through a
+## pickup, a chop or a run); on a node at shoulder height for a body without a skeleton.
 func _shoulder_logs() -> void:
 	var n: int = inventory.count_of(&"log") if inventory != null else 0
 	if n == _shoulder_n:
@@ -473,8 +503,13 @@ func _shoulder_logs() -> void:
 	if _shoulder == null:
 		_shoulder = Node3D.new()
 		_shoulder.name = "ShoulderLogs"
-		_shoulder.position = Vector3(-0.2, 1.55, -0.05)
-		enemy.add_child(_shoulder)
+		var bone: BoneAttachment3D = _shoulder_bone()
+		if bone != null:
+			bone.add_child(_shoulder)
+			_shoulder.transform = _bone_rest(bone).affine_inverse() * Transform3D(Basis(), SHOULDER_AT)
+		else:
+			_shoulder.position = SHOULDER_AT
+			enemy.add_child(_shoulder)
 	for c: Node in _shoulder.get_children():
 		c.queue_free()
 	for i: int in n:
@@ -483,6 +518,29 @@ func _shoulder_logs() -> void:
 		# along his facing (the mesh lies along +X), the far end dipping a little, stacked outward
 		mi.transform = Transform3D(Basis(Vector3.UP, PI * 0.5) * Basis(Vector3.BACK, -0.12), Vector3(-0.17 * i, 0.12 * i, 0.0))
 		_shoulder.add_child(mi)
+
+
+## A bone attachment on his right shoulder (or chest) bone, or null without a skeleton.
+func _shoulder_bone() -> BoneAttachment3D:
+	var sk: Skeleton3D = enemy.visual.skeleton if enemy.visual != null else null
+	if sk == null:
+		return null
+	for b: String in ["shoulder.R", "chest"]:
+		if sk.find_bone(b) >= 0:
+			var at := BoneAttachment3D.new()
+			at.name = "ShoulderBone"
+			at.bone_name = b
+			sk.add_child(at)
+			return at
+	return null
+
+
+## The attachment's bone at rest, in enemy space (so a point given in enemy space at rest can be
+## put in the bone's frame).
+func _bone_rest(at: BoneAttachment3D) -> Transform3D:
+	var sk: Skeleton3D = at.get_parent() as Skeleton3D
+	var sk_in_enemy: Transform3D = enemy.global_transform.affine_inverse() * sk.global_transform
+	return sk_in_enemy * sk.get_bone_global_rest(sk.find_bone(at.bone_name))
 
 
 func lantern_on() -> bool:
@@ -513,12 +571,13 @@ func _footsteps(delta: float) -> void:
 
 
 ## His voice for the Hollowed's voice ids (Enemy._vid): a living man's grunts and pain, no cries.
+## His own (TD-303) when generated, else the Ashen's.
 static func voice(hollowed: StringName) -> StringName:
 	match hollowed:
 		&"voice/zombie_attack":
-			return &"voice/ashen_grunt"
+			return &"voice/ezra_grunt" if not Audio.variants(&"voice/ezra_grunt").is_empty() else &"voice/ashen_grunt"
 		&"voice/zombie_pain":
-			return &"voice/ashen_pain"
+			return &"voice/ezra_pain" if not Audio.variants(&"voice/ezra_pain").is_empty() else &"voice/ashen_pain"
 		&"voice/zombie_death":
 			return &"voice/ashen_death"
 	return &""
