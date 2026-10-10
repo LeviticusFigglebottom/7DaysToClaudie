@@ -449,6 +449,12 @@ func _draw_markers() -> void:
 			if not on_map(mp):
 				continue
 			_markers.draw_rect(Rect2(mp - Vector2(3, 3), Vector2(6, 6)), col)
+	# What you built (MapMarkers): shelters you can sleep, save or wake at, while their layer is on.
+	if Game.session != null:
+		for bm: Dictionary in MapMarkers.marks(MapMarkers.placed(), MapMarkers.layers()):
+			var bp: Vector2 = _to_map(rt, bm["pos"])
+			if on_map(bp):
+				MapMarkers.draw_mark(_markers, bp, bm["layer"], 0.9)
 	var drops: Node = w.get(&"supply_drops")
 	if drops != null:
 		for at: Vector3 in (drops.call(&"markers") as Array[Vector3]):

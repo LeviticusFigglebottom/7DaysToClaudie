@@ -1,0 +1,6 @@
+{
+  "_doc": "Markers for what the player built (player report 5), on the full map and the tether's minimap. Each layer marks the placed structures that provide any of its `provides` tags (an entry ending in ':' matches by prefix, e.g. 'station:'); a structure joins the first layer that matches. The legend on the full map toggles a layer (Settings.map_layers, saved); `default` is its state before the player touches it. Add a layer here, no code change: label (legend text), color (hex), default (bool).",
+  "layers": [
+    {"id": "shelter", "label": "Shelters", "provides": ["shelter", "sleep", "save_point", "spawn_point"], "color": "#e8a33a", "default": true}
+  ]
+}
