@@ -115,13 +115,16 @@ FINGERS = {"ix": (0.0245, 0.089, (0.041, 0.025, 0.020), 0.0096),
 
 # Mesh-only hand shape (the joints above stay the skeleton's): radii (m) at the MCP, PIP, DIP and
 # tip of each finger (middle longest and thickest, little finger slimmest) and the nail half-length
-# (the plate, its root under the fold included: ~65% of the distal phalanx).
-FINGER_SHAPE = {"ix": ((0.0090, 0.0079, 0.0073, 0.0064), 0.0066),
-                "md": ((0.0092, 0.0081, 0.0075, 0.0066), 0.0069),
-                "rg": ((0.0087, 0.0079, 0.0072, 0.0063), 0.0065),
-                "pk": ((0.0077, 0.0069, 0.0063, 0.0056), 0.0057)}
-THUMB_RADII = (0.0125, 0.0113, 0.0105, 0.0091)    # CMC, MCP, IP, tip
-THUMB_NAIL_HL = 0.0080
+# (the plate, its root under the fold included: ~65% of the distal phalanx). An adult's thumb is
+# about 1.3 times as wide as the index finger at the end joint; at 1.45 (fingers ~9% slimmer than
+# these) the thumb of player report 5's lighter hold read as massive beside the fingers.
+FINGER_SHAPE = {"ix": ((0.0098, 0.0086, 0.0080, 0.0070), 0.0068),
+                "md": ((0.0100, 0.0088, 0.0082, 0.0072), 0.0071),
+                "rg": ((0.0095, 0.0086, 0.0079, 0.0069), 0.0067),
+                "pk": ((0.0084, 0.0075, 0.0069, 0.0061), 0.0059)}
+THUMB_RADII = (0.0125, 0.0113, 0.0103, 0.0089)    # CMC, MCP, IP, tip
+THUMB_NAIL_HL = 0.0075
+THUMB_DISTAL = 0.026
 # A digit's cross-section: its half-depth on the back and on the palm side, in radii (the width is
 # the radius): flat-backed and full on the palm side.
 FINGER_BACK_SQ, FINGER_PALM_SQ = 0.80, 0.93
@@ -389,7 +392,8 @@ def fp_joints(p: dict):
         tb = _n(np.cross(tdir, back))
         mcp = cmc + tdir * 0.046 * s
         ip = mcp + _n(rot_axis(tb, -0.25) @ tdir) * 0.034 * s
-        tip = ip + _n(rot_axis(tb, -0.5) @ tdir) * 0.029 * s
+        # An adult's thumb tip is ~26 mm past the IP crease (29 made the thumb long and blunt).
+        tip = ip + _n(rot_axis(tb, -0.5) @ tdir) * THUMB_DISTAL * s
         j[f"th_cmc.{sd}"], j[f"th_mcp.{sd}"], j[f"th_ip.{sd}"], j[f"th_tip.{sd}"] = cmc, mcp, ip, tip
         j[f"th_up.{sd}"] = mcp + back * 0.03
         j[f"grip.{sd}"] = wr + ax * 0.085 * s - back * 0.033 * s + lat * 0.004 * s
@@ -1170,7 +1174,8 @@ class FPRig:
                     c = max(-0.15, min(float(own[name]), FIST_MAX))
                 for i, deg in enumerate(FINGER_CURL):
                     bn = f"{name}_{i + 1}.{sd}"
-                    Q[bn] = _R(sk.rest[bn][:, 0], -deg * c * FINGER_SCALE[k])
+                    ci = c ** CURL_LAG[i] if 0.0 < c < 1.0 else c
+                    Q[bn] = _R(sk.rest[bn][:, 0], -joint_bend(REST_CURL[i], deg * ci * FINGER_SCALE[k], FINGER_MAX[i]))
                 # Closing fingers converge on the middle finger (splayed at rest, they would
                 # close into gaps): swing each knuckle sideways, about its back-of-hand axis.
                 bn = f"{name}_1.{sd}"
@@ -1186,8 +1191,9 @@ class FPRig:
             t1 = sk.rest[f"thumb_1.{sd}"]
             Q[f"thumb_1.{sd}"] = _R(t1[:, 0], THUMB_CURL[0] * thumb) @ _R(t1[:, 2], THUMB_CURL[1] * thumb * sx) @ \
                 _R(t1[:, 1], THUMB_CURL[2] * thumb * sx)
-            Q[f"thumb_2.{sd}"] = _R(sk.rest[f"thumb_2.{sd}"][:, 0], -THUMB_CURL[3] * thumb)
-            Q[f"thumb_3.{sd}"] = _R(sk.rest[f"thumb_3.{sd}"][:, 0], -THUMB_CURL[4] * thumb - float(prm.get(f"{sd}.flick", 0.0)))
+            Q[f"thumb_2.{sd}"] = _R(sk.rest[f"thumb_2.{sd}"][:, 0], -joint_bend(THUMB_REST[0], THUMB_CURL[3] * thumb, THUMB_MAX[0]))
+            Q[f"thumb_3.{sd}"] = _R(sk.rest[f"thumb_3.{sd}"][:, 0], -joint_bend(
+                THUMB_REST[1], THUMB_CURL[4] * thumb + float(prm.get(f"{sd}.flick", 0.0)), THUMB_MAX[1]))
             # Joint helpers: half the turn of the bone each one halves. The wrist's takes half the
             # hand's bend and a roll between the twist bone's share and the hand's.
             sw = Qh @ rot_axis(axis, -tw)
@@ -1244,15 +1250,32 @@ FIST_MAX = 1.3
 # the end joint following the middle one), scaled per finger: the ring and little fingers close
 # a little further, as they do round a handle.
 FINGER_CURL = (68.0, 92.0, 58.0)
+# How each joint follows a curl below 1 (curl ** lag): the end joint lags. Linear, a loose hand's
+# fingertips were hooked as far as a fist's in proportion (DIP 85% of the MCP), the crooked claw of
+# player report 5; a relaxed hand's end joints are nearly straight (~15-25 degrees) and only
+# catch up as it closes. A full grip (curl 1 and past) is unchanged.
+CURL_LAG = (1.0, 1.0, 1.6)
 FINGER_SCALE = {"ix": 1.0, "md": 1.0, "rg": 1.05, "pk": 1.12}
 # How far each finger swings toward the thumb side (degrees, + towards it) at curl 1.
 FINGER_CONVERGE = {"ix": -5.0, "md": 0.0, "rg": 4.0, "pk": 9.0}
 # How far each finger swings toward the middle one at `together` 1 (degrees, + towards the thumb):
-# the rest pose's splay closed, the fingers touching.
-FINGER_TOGETHER = {"ix": -9.0, "md": 0.0, "rg": 7.0, "pk": 14.0}
+# the rest pose's splay closed, the fingers touching. The rest pose's fingers already lie side by
+# side (17-19 mm apart at the knuckles, as wide as they are), so this only closes the last of the
+# fan: at -9 / 7 / 14 degrees the fingers of a relaxed hand swung into each other and crossed
+# (player report 5's crooked idle; fp_anatomy's `cross` check).
+FINGER_TOGETHER = {"ix": -3.0, "md": 0.0, "rg": 2.5, "pk": 5.0}
 # Thumb at curl 1: metacarpal flexion across the palm, swing toward the fingers, opposition about
 # its own axis; then MCP and IP flexion (degrees).
 THUMB_CURL = (30.0, 30.0, 25.0, 38.0, 48.0)
+# How far a real joint bends (degrees of flexion counted from straight, the rest pose's own curl
+# included): a finger's MCP, PIP and DIP, and the thumb's MCP and IP (player report 5). The curls
+# above are linear and scaled per finger, so a hard fist (FIST_MAX, the little finger's 1.12) once
+# asked a little-finger PIP for 144 degrees: folded flat on itself, it read as a crooked claw and
+# sank into the palm. Each joint now eases into its limit over JOINT_KNEE degrees instead
+# (below the knee nothing changes). fp_anatomy checks every baked frame against the same ranges.
+FINGER_MAX = (88.0, 102.0, 75.0)
+THUMB_MAX = (58.0, 78.0)
+JOINT_KNEE = 15.0
 
 # A working wrist's range (degrees): flexion and extension, radial and ulnar deviation (an
 # ellipse between them), and the forearm's roll either way of the thumb-up rest. viewmodel.json
@@ -1269,6 +1292,21 @@ WRIST_COMFORT = {"flex": 18.0, "extend": 30.0, "radial": 10.0, "ulnar": 20.0, "r
 # tie-break between configurations that are all in range (the elbow and roll that keep the wrist
 # straightest win), never a reason to break range.
 COMFORT_COST = 0.25
+
+# The rest pose's own bend at each joint (fp_joints: 0.35 rad shared 0.7 / 1.0 / 0.6 along a
+# finger; the thumb's two joints 0.25 rad each), which the limits above count in.
+REST_CURL = tuple(math.degrees(0.35 * w) for w in (0.7, 1.0, 0.6))
+THUMB_REST = (math.degrees(0.25), math.degrees(0.25))
+
+
+def joint_bend(rest: float, bend: float, hi: float, knee: float = JOINT_KNEE) -> float:
+    """`bend` degrees more at a joint already at `rest`, eased so rest + bend never passes `hi`."""
+    x = rest + bend
+    k0 = hi - knee
+    if x > k0:
+        x = k0 + knee * (1.0 - math.exp(-(x - k0) / knee))
+    return x - rest
+
 
 SCALARS = ("fist", "thumb", "index", "flick", "together")
 DEFAULT_SCALARS = {"fist": 0.4, "thumb": 0.4, "index": 0.0, "flick": 0.0, "together": 0.0}

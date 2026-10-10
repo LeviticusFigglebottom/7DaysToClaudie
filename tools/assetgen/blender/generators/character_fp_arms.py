@@ -15,7 +15,7 @@ import bpy
 import numpy as np
 from mathutils import Matrix, Vector
 
-from lib import char_anim, char_fp as F, char_mesh as M, char_uv as U, common, export, vcolor
+from lib import char_anim, char_fp as F, char_mesh as M, char_uv as U, common, export, fp_anatomy, vcolor
 from lib.char_body import normalize_weights, smoothstep
 from lib.char_skel import create_armature
 
@@ -390,13 +390,21 @@ def build(params: dict, outputs: list[str]) -> None:
     rig = F.FPRig(sk)
     solver = F.PoseSolver(rig, cfg.get("wrist"))
     turned = []
+    anatomy = []
     for name, n, loop, frames in F.fp_actions(cfg):
         solver.reset()
         baked = [rig.evaluate(solver.solve(hands)) for hands in frames]
+        # Every frame inside what a hand can do (player report 5, ADR-0061).
+        for i, (Q, _off) in enumerate(baked):
+            anatomy += fp_anatomy.violations(name, i, fp_anatomy.measure(sk, Q))
         char_anim.write_action(arm, sk, name, baked)
         # how far the wrist limits turned each hand from what the pose asked for
         turned.append(f"{name} " + "/".join(f"{sd}{solver.clamped.get(sd, 0.0):.0f}deg {solver.moved.get(sd, 0.0) * 100:.0f}cm"
                                             for sd in ("R", "L")))
+    if anatomy:
+        raise ValueError(f"[character_fp_arms] {len(anatomy)} frame(s) outside a hand's range "
+                         "(lib/fp_anatomy.py; tools/fp_hands_check.py lists them per action):\n  " +
+                         "\n  ".join(fp_anatomy.summarize(anatomy)))
     arm.animation_data.action = None
     for pb in arm.pose.bones:
         pb.rotation_quaternion = (1, 0, 0, 0)
