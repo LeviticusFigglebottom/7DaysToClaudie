@@ -901,9 +901,11 @@ func _main_streets() -> void:
 			var away := Vector2.ZERO
 			for e2: Array in ends:
 				away += e2[2]
-			var stub: PackedVector2Array = _stub(ground, c, -(away.normalized() if away.length() > 0.01 else (e[2] as Vector2)), reach, 70.0)
-			if stub.size() >= 2:
-				_extend_through(e, stub)
+			var d: Vector2 = -(away.normalized() if away.length() > 0.01 else (e[2] as Vector2))
+			if not _straight_extend(e, ground, c, float(tw["radius"]), reach, d):
+				var stub: PackedVector2Array = _stub(ground, c, d, reach, 70.0)
+				if stub.size() >= 2:
+					_extend_through(e, stub)
 		elif _roads_near(c, float(tw["radius"]) * 0.3) == 0:
 			var axis: PackedVector2Array = _through_road(ground, c, reach, Vector2.ZERO)
 			if axis.size() >= 2:
@@ -1190,6 +1192,36 @@ func _extend_through(e: Array, stub: PackedVector2Array) -> void:
 	pa.append_array(stub.slice(1))
 	roads[a]["points"] = pa
 	roads[a]["line"] = Polyline2.from_array(Terrain._arr(pa))
+
+
+## _extend_through straight through the centre, as _straight_through for a merge: the road's leg
+## routed again inside the disc to MERGE_STRAIGHT m out on the axis between it and the stub's way
+## `d`, the stub starting as far out the other side. False (nothing changed) where either won't go.
+func _straight_extend(e: Array, g: Streets.Ground, c: Vector2, radius: float, reach: float, d: Vector2) -> bool:
+	var u: Vector2 = e[2]
+	var axis: Vector2 = (u - d).normalized()
+	if axis == Vector2.ZERO:
+		return false
+	var a: int = int(e[0])
+	var from_c: PackedVector2Array = (roads[a]["points"] as PackedVector2Array).duplicate()
+	if not bool(e[1]):
+		from_c.reverse()
+	var cut: Array = _cut_out(from_c, radius * 0.8)
+	if cut.is_empty():
+		return false
+	var opts: Dictionary = {"grade_ok": 0.06, "grade_max": 0.13, "water": 14.0, "margin": 100.0, "tol": 10.0}
+	var leg: PackedVector2Array = _despike(Streets.route_fine(g, cut[0], c + axis * MERGE_STRAIGHT, opts))
+	var stub: PackedVector2Array = _stub(g, c - axis * MERGE_STRAIGHT, -axis, reach - MERGE_STRAIGHT, 70.0)
+	if leg.size() < 2 or stub.size() < 2:
+		return false
+	var out: PackedVector2Array = cut[1]
+	out.reverse()
+	out.append_array(leg.slice(1))
+	out.append(c)
+	out.append_array(stub)
+	roads[a]["points"] = out
+	roads[a]["line"] = Polyline2.from_array(Terrain._arr(out))
+	return true
 
 
 func _set_class(i: int, cls: String) -> void:
