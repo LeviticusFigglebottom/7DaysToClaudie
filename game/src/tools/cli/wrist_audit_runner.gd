@@ -19,6 +19,8 @@ var w: GameWorld
 var p: Player
 var ui: GameUI
 var _fails: int = 0
+## The QA ladder room, removed after the climb.
+var _ladder_room: Node3D = null
 
 
 func _ready() -> void:
@@ -34,12 +36,16 @@ func _frames(n: int) -> void:
 		await get_tree().process_frame
 
 
-## A frame of what the player sees.
+## A frame of what the player sees: the world drawn again for it (see _cheap).
 func _snap(name_: String) -> void:
 	if DisplayServer.get_name() == "headless":
 		return
-	await _frames(2)
+	_cheap(false)
+	await _frames(3)
 	var img: Image = get_viewport().get_texture().get_image()
+	_cheap(true)
+	# Tagged by the frame's own pixels (the viewport's visible rect is the 1920x1080 stretch base).
+	_tag = "%dx%d" % [img.get_width(), img.get_height()]
 	img.save_png(ProjectSettings.globalize_path(_out).path_join("%s_%s.png" % [_tag, name_]))
 	print("WRIST_AUDIT frame %s_%s" % [_tag, name_])
 
@@ -52,7 +58,9 @@ func _run() -> void:
 	# min to raise the main map's towns and ~40 s to draw a frame of its forest; the wrist and its
 	# screen draw the same either way. --main-map for the real one.
 	if not OS.get_cmdline_user_args().has("--main-map"):
-		var wa := PackedStringArray(["--world-seed", "7", "--world-set", "size=2", "--world-set", "town_density=0",
+		# --towns: the default towns, whose buildings off the minimap once heaped up over the readouts.
+		var towns: String = "town_density=%s" % ("2" if OS.get_cmdline_user_args().has("--towns") else "0")
+		var wa := PackedStringArray(["--world-seed", "7", "--world-set", "size=2", "--world-set", towns,
 			"--world-set", "wilderness=0", "--world-set", "lakes=many", "--world-set", "conifer=0", "--world-set", "birch=0",
 			"--world-set", "burn=0", "--world-set", "fen=0"])
 		opts["world_gen"] = (load("res://src/app/main.gd") as GDScript).call(&"world_gen_from_args", wa, 7)
@@ -73,16 +81,42 @@ func _run() -> void:
 	ui = w.ui
 	p.god_mode = true
 	p.state.tutorial.finish_all()
+	_cheap(true)
 	await _frames(15)
 	if OS.get_cmdline_user_args().has("--steady"):
 		await _steady_all()
 	elif OS.get_cmdline_user_args().has("--markers"):
 		await _markers()
 	else:
-		await _moves()
-		await _classes()
+		# --moves / --classes: one half of the run (both by default).
+		var only_c: bool = OS.get_cmdline_user_args().has("--classes")
+		var only_m: bool = OS.get_cmdline_user_args().has("--moves")
+		if not only_c:
+			await _moves()
+		if not only_m:
+			await _classes()
 	print("WRIST_AUDIT done: %d failing" % _fails)
 	get_tree().quit(1 if _fails > 0 else 0)
+
+
+## Between frames only the arms are drawn, without the sun's shadows: the game steps the same
+## (physics, animation, the tether), but software Vulkan drawing the world takes ~12 s a frame
+## and the waits between frames ran to hours.
+var _cam_mask: int = -1
+
+
+func _cheap(on: bool) -> void:
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam == null or DisplayServer.get_name() == "headless":
+		return
+	if on:
+		if _cam_mask < 0:
+			_cam_mask = cam.cull_mask
+		cam.cull_mask = FpMaterials.LAYER
+	elif _cam_mask >= 0:
+		cam.cull_mask = _cam_mask
+	if w != null and w.env != null and w.env.sun != null:
+		w.env.sun.shadow_enabled = not on
 
 
 # --- The tether up, the way T raises it -------------------------------------------------------
@@ -165,14 +199,25 @@ func _moves() -> void:
 			_:
 				await _frames(15)
 		var vm: ViewModel = p.equipment.viewmodel
-		print("WRIST_AUDIT move %s: raised %s reading %.2f sprinting %s crouching %s on_floor %s water %.2f climbing %s" % [m,
+		print("WRIST_AUDIT move %s: raised %s reading %.2f sprinting %s crouching %s on_floor %s water %.2f climbing %s | rig %s m %s deg" % [m,
 			vm != null and vm.tether_raised(), vm.tether.progress() if vm != null else 0.0, p.sprinting, p.crouching,
-			p.is_on_floor(), p.in_water_depth, p.is_climbing()])
-		if vm == null or not vm.tether_raised():
+			p.is_on_floor(), p.in_water_depth, p.is_climbing(), vm.motion.rig_position() if vm != null else Vector3.ZERO,
+			vm.motion.rig_rotation_deg() if vm != null else Vector3.ZERO])
+		if m == "climb":
+			# By design: both hands are on the rails (T says so; ADR-0051 climbing).
+			print("WRIST_AUDIT move climb: the wrist is down on the ladder (both hands on the rails), as designed")
+		elif vm == null or not vm.tether_raised():
 			_fails += 1
 			print("WRIST_AUDIT FAIL move %s: the wrist went down" % m)
 		await _snap("move_" + m)
 		_release_all()
+		if p.is_climbing():
+			# Jump lets go of the ladder (a teleport alone left the player holding it).
+			await _tap(&"jump")
+			await _frames(10)
+		if _ladder_room != null:
+			_ladder_room.queue_free()
+			_ladder_room = null
 		if p.crouching:
 			await _tap(&"crouch")
 		await _raise(false)
@@ -222,6 +267,7 @@ func _ladder_foot(at: Vector3) -> Vector3:
 	d.parse(raw, &"poi", "qa")
 	var inst: PoiInstance = PoiBuilder.build(PoiLayout.compile(d), &"qa_ladder")
 	w.add_child(inst)
+	_ladder_room = inst
 	at.y = w.height_at(at.x, at.z)
 	inst.global_position = at
 	var lad: Node3D = null
@@ -270,11 +316,15 @@ func _markers() -> void:
 		var d: Dictionary = Game.execute(&"build.deliver", {"site": r.get("site", "")}) if r.has("site") else r
 		print("WRIST_AUDIT built %s: %s" % [b[0], str(d)])
 		await _frames(5)
-	var marks: Array[Dictionary] = MapMarkers.marks(Game.session.world, MapMarkers.layers())
+	var marks: Array[Dictionary] = MapMarkers.marks(MapMarkers.placed(), MapMarkers.layers())
 	print("WRIST_AUDIT shelter marks: %d" % marks.size())
 	if marks.size() < 2:
 		_fails += 1
 		print("WRIST_AUDIT FAIL the lean-to and the bed should both be marked")
+	# Walk off ~110 m so the marks don't sit under the player's arrow.
+	var away: Vector3 = base + Vector3(90.0, 0.0, 60.0)
+	p.global_position = Vector3(away.x, w.height_at(away.x, away.z) + 0.05, away.z)
+	await _frames(15)
 	await _raise(true)
 	await _frames(20)
 	await _snap("markers_minimap")

@@ -45,7 +45,7 @@
   },
   "holds": {
     "bow": {
-      "_doc": "Bow (ADR-0057): the bow upright in the left fist, canted top-right and low left of centre, an arrow nocked; the right hand rests on the string at the nock, three fingers hooked. The string and the nocked arrow are not baked: BowRig strings them to the right hand's socket each frame, so they follow any draw. item rot turns the bow's face to the target in the left fist (fixed_roll keeps the solver from spinning the bow about its grip).",
+      "_doc": "Bow (ADR-0057): the bow upright in the left fist, canted top-right and low left of centre, an arrow nocked; the right hand rests on the string at the nock, three fingers hooked. The string and the nocked arrow are not baked: BowRig strings them to the right hand's socket each frame, so they follow any draw. item rot turns the bow's face to the target in the left fist (fixed_roll keeps the solver from spinning the bow about its grip). Reading the tether puts the bow away for the moment (tether_stow: its grip is the left hand, so the raised wrist held it into the screen's view and the device sat cut off at the frame's foot; player report 5).",
       "pose": {
         "L": {
           "grip": [
@@ -142,7 +142,8 @@
       "attack": "",
       "fixed_roll": [
         "L"
-      ]
+      ],
+      "tether_stow": true
     },
     "bow_drawn": {
       "_doc": "The bow at full draw (its idle loop is the held draw, a slight tremble): bow arm out straight, the string hand anchored under the jaw. Not an item's hold: draw_bow ends here and release_bow starts here.",
