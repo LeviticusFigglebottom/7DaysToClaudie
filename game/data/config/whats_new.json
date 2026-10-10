@@ -2,13 +2,13 @@
   "_doc": "The main menu's What's new panel (WhatsNewPanel). entries: newest first; each {id, title, date, items: [{head, text}]}. The panel opens by itself once when the newest entry's id differs from the last one the player closed (Settings.whats_new_seen), and from the menu's What's New any time. Keep each item to a line or two and in the player's words; no lore-trail spoilers (docs/LORE_TRAIL.md).",
   "entries": [
     {
-      "id": "round-4b",
+      "id": "round-4c",
       "title": "What's new in this build",
       "date": "2026-10-09",
       "items": [
         {"head": "Hands", "text": "Relaxed hands that rest low, natural wrists in every grip, a real lighter grip, and knuckles and nails you can see."},
-        {"head": "An intro", "text": "A new game opens with how you got here, played while the world loads. Hold Esc (or B) to skip it; skipping costs you no load time."},
-        {"head": "Menus", "text": "One style for every screen, a slow drift over the valley at dusk, and a Load screen with a picture of each run. Everything fits a 720p window and scales up on big screens."},
+        {"head": "An intro", "text": "A new game opens with how you got here, played while the world loads, and you hear the lift go into the trees. Hold Esc (or B) to skip it; skipping costs you no load time."},
+        {"head": "Menus", "text": "One style for every screen, a slow drift over the valley from dusk to a misty dawn, and a Load screen with a picture of each run. Everything fits a 720p window and scales up on big screens."},
         {"head": "Roads and towns", "text": "Level roads with natural banks and gentle ramps onto bridges, overgrown town edges, and towns that grow streets and blocks. Pell's Crossing has a west end."},
         {"head": "Buildings", "text": "Ladders you can see, and every building's way through walked and cleared of blocking doors and furniture."},
         {"head": "Crafting", "text": "A readable recipe sheet: what you can make first, what is missing, and where the rest is made (at a campfire or a workbench). Drag and drop, sorting, filters; new tools go on your belt."},

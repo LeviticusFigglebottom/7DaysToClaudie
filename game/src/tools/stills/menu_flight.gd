@@ -7,7 +7,9 @@ extends Node3D
 ## the menu froze the packaged build's menu on the owner's machine (Build #94).
 ##
 ## `build()` makes it all at once (seconds: D6 composed at 2 m, its mesh, the water and a tree
-## scatter from the region's biome and vegetation masks); `place_still(i)` puts the camera on still i.
+## scatter from the region's biome and vegetation masks); `place_still(i)` puts the camera on still i,
+## grows the game's own ground cover and undergrowth (VegetationScatter's medium and ground layers)
+## in front of it, and sets the still's light (STILL_MOODS: three at dusk, one at a misty dawn).
 
 const MAIN_WORLD_DIR: String = "res://world/main_map"
 const REGION: String = "d6_larch_hollow"
@@ -18,6 +20,33 @@ const SPACING: float = 2.0
 const SPEED: float = 2.4
 ## Where the stills are taken, as shares of the river path's usable length.
 const STILLS: PackedFloat32Array = [0.14, 0.38, 0.62, 0.86]
+## The light of each still: MenuBackdrop dissolves from one to the next, so a dawn among the dusks
+## reads as the valley's day turning over (TD-378).
+const STILL_MOODS: PackedStringArray = ["dusk", "dusk", "dawn_mist", "dusk"]
+## Per mood: the sun (direction towards it, colour, energy), the sky shader's colours and amounts,
+## and the fog. mist > 0 lays height fog that far over the river below the camera.
+const MOODS: Dictionary = {
+	# The sun low in the west behind thin cloud, the first stars over the ridge.
+	"dusk": {"sun_dir": Vector3(-0.78, 0.09, -0.62), "sun_color": Color(1.0, 0.66, 0.42), "sun_energy": 1.2,
+		"sky_sun": Vector3(1.0, 0.62, 0.36), "sky_sun_energy": 1.4, "zenith": Color(0.12, 0.17, 0.3),
+		"horizon": Color(0.62, 0.5, 0.45), "sunset": Color(1.0, 0.45, 0.2), "sunset_amount": 0.85,
+		"night": 0.12, "cloud": 0.42, "stars": 0.25, "ambient": 0.7,
+		"fog_color": Color(0.5, 0.44, 0.45), "fog_density": 0.0022, "mist": 0.0},
+	# First light from the east over the far ridge, cold air and mist lying on the river.
+	"dawn_mist": {"sun_dir": Vector3(0.82, 0.06, -0.57), "sun_color": Color(1.0, 0.76, 0.56), "sun_energy": 0.95,
+		"sky_sun": Vector3(1.0, 0.74, 0.52), "sky_sun_energy": 1.1, "zenith": Color(0.24, 0.32, 0.46),
+		"horizon": Color(0.74, 0.68, 0.68), "sunset": Color(1.0, 0.62, 0.45), "sunset_amount": 0.55,
+		"night": 0.04, "cloud": 0.3, "stars": 0.04, "ambient": 0.85,
+		"fog_color": Color(0.7, 0.7, 0.74), "fog_density": 0.0028, "mist": 6.0},
+}
+## The real scatter (VegetationScatter, the game's seed for the main map's look) is grown per still
+## over chunks within these metres of the camera and in front of it: undergrowth (bushes, rocks,
+## deadfall) out to MEDIUM_REACH, ground cover (grass, ferns, flowers, moss, litter) out to
+## GROUND_REACH, shrinking away plant by plant over its last fifth as the game's does. Offline, so
+## further than the game draws them (GROUND_END 52 m).
+const MEDIUM_REACH: float = 320.0
+const GROUND_REACH: float = 150.0
+const SCATTER_SEED: int = 4471
 ## Tree scatter: one candidate per CELL metres, kept by the region's vegetation mask and biome.
 const CELL: float = 7.0
 const TILE: float = 128.0
@@ -38,6 +67,14 @@ var _root: Node3D
 var _cam: Camera3D
 var _path: PackedVector3Array = []
 var _path_len: float = 0.0
+var _rt: RegionTerrain = null
+var _env: Environment
+var _sky_mat: ShaderMaterial
+var _sun: DirectionalLight3D
+## The current still's undergrowth and ground cover (freed when the camera moves on).
+var _near: Node3D = null
+## Rivers and lakes as a 64 m grid of segments, so the scatter keeps plants out of the water.
+var _water_grid: Dictionary = {}
 
 
 ## Builds the whole flight under this node (blocking). False without the region or its river.
@@ -57,13 +94,187 @@ func build() -> bool:
 	_build_terrain(_data["rt"])
 	_build_water()
 	_build_trees((_data["trees"] as Dictionary).keys())
+	_rt = _data["rt"]
+	_water_grid = water_grid(_rt.water)
 	_data.clear()
 	return not _path.is_empty()
 
 
-## Puts the camera on still `i` (of STILLS).
+## Puts the camera on still `i` (of STILLS), with its light and the plants in front of it.
 func place_still(i: int) -> void:
 	_place_camera(still_distance(STILLS[i], _path_len))
+	apply_mood(STILL_MOODS[i] if i < STILL_MOODS.size() else "dusk")
+	grow_near()
+
+
+## The still's light (a key of MOODS).
+func apply_mood(mood: String) -> void:
+	var m: Dictionary = MOODS.get(mood, MOODS["dusk"])
+	var sun_dir: Vector3 = (m["sun_dir"] as Vector3).normalized()
+	_sky_mat.set_shader_parameter("sun_dir", sun_dir)
+	_sky_mat.set_shader_parameter("sun_color", m["sky_sun"])
+	_sky_mat.set_shader_parameter("sun_energy", m["sky_sun_energy"])
+	_sky_mat.set_shader_parameter("zenith_color", m["zenith"])
+	_sky_mat.set_shader_parameter("horizon_color", m["horizon"])
+	_sky_mat.set_shader_parameter("sunset_color", m["sunset"])
+	_sky_mat.set_shader_parameter("sunset_amount", m["sunset_amount"])
+	_sky_mat.set_shader_parameter("night_amount", m["night"])
+	_sky_mat.set_shader_parameter("cloud_cover", m["cloud"])
+	_sky_mat.set_shader_parameter("star_visibility", m["stars"])
+	_env.ambient_light_energy = m["ambient"]
+	_env.fog_light_color = m["fog_color"]
+	_env.fog_density = m["fog_density"]
+	var mist: float = float(m["mist"])
+	# Height fog: thick below the river's level plus `mist`, thinning above (Godot's height fog).
+	_env.fog_height = _water_below(_cam.global_position) + mist if mist > 0.0 else 0.0
+	# Godot's height fog thickens with depth below fog_height: ~0.012 more at the river's surface,
+	# a thin bank the banks and the water show through (0.12 buried the whole valley).
+	_env.fog_height_density = 0.002 if mist > 0.0 else 0.0
+	_sun.light_color = m["sun_color"]
+	_sun.light_energy = m["sun_energy"]
+	_sun.look_at_from_position(Vector3.ZERO, -sun_dir, Vector3.UP)
+	# The water reflects the sky gradient EnvironmentController publishes in game; publish this
+	# light's (the game's environment overwrites them when a world loads).
+	var hz: Color = (m["horizon"] as Color) * 0.55
+	var zn: Color = (m["zenith"] as Color) * 0.55
+	RenderingServer.global_shader_parameter_set(&"hm_sky_zenith", Vector4(zn.r, zn.g, zn.b, 1.0))
+	RenderingServer.global_shader_parameter_set(&"hm_sky_horizon", Vector4(hz.r, hz.g, hz.b, 1.0))
+
+
+## Grows the game's undergrowth and ground cover over the chunks the camera looks at.
+func grow_near() -> void:
+	if _near != null:
+		_near.queue_free()
+	_near = Node3D.new()
+	_near.name = "Near"
+	_root.add_child(_near)
+	if _rt == null:
+		return
+	var at := Vector2(_cam.global_position.x, _cam.global_position.z)
+	var fwd3: Vector3 = -_cam.global_transform.basis.z
+	var fwd := Vector2(fwd3.x, fwd3.z).normalized()
+	var height_fn: Callable = _rt.height.sample
+	var water_fn: Callable = func(x: float, z: float) -> float: return water_level(_water_grid, x, z)
+	var groups: Dictionary = {}
+	for key: Vector2i in chunks_in_view(at, fwd, MEDIUM_REACH, _rt.rect):
+		var layers: Dictionary = VegetationScatter.scatter_chunk(key, _rt, SCATTER_SEED, height_fn, water_fn, 3)
+		var centre := Vector2((key.x + 0.5) * VegetationScatter.CHUNK, (key.y + 0.5) * VegetationScatter.CHUNK)
+		var with_ground: bool = centre.distance_to(at) < GROUND_REACH + VegetationScatter.CHUNK * 0.71
+		for layer: String in (["medium", "ground"] if with_ground else ["medium"]):
+			for inst: VegetationScatter.Instance in layers.get(layer, []):
+				var gk: String = "%s|%s|%d" % [layer, inst.species, inst.variant]
+				if not groups.has(gk):
+					groups[gk] = []
+				(groups[gk] as Array).append(inst)
+	for gk: String in groups:
+		var parts: PackedStringArray = gk.split("|")
+		var sp: SpeciesDef = Content.get_def(&"species", StringName(parts[1])) as SpeciesDef
+		var ground: bool = parts[0] == "ground"
+		var model: String = sp.models[int(parts[2]) % sp.models.size()]
+		var mesh: Mesh = ModelLibrary.mesh(model, "rock" if sp.veg_kind == "rock" else "plant")
+		_near.add_child(_plants(mesh, groups[gk], GROUND_REACH if ground else 0.0, not ground))
+
+
+## Chunks (VegetationScatter's 64 m) of `rect` within `reach` of `at` and in front of the camera
+## (within 70° of `fwd`, or under 90 m away: the banks below the lens).
+static func chunks_in_view(at: Vector2, fwd: Vector2, reach: float, rect: Rect2) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var c: float = VegetationScatter.CHUNK
+	var lo := Vector2i(floori(maxf(at.x - reach, rect.position.x) / c), floori(maxf(at.y - reach, rect.position.y) / c))
+	var hi := Vector2i(floori(minf(at.x + reach, rect.end.x - 0.01) / c), floori(minf(at.y + reach, rect.end.y - 0.01) / c))
+	for z: int in range(lo.y, hi.y + 1):
+		for x: int in range(lo.x, hi.x + 1):
+			var centre := Vector2((x + 0.5) * c, (z + 0.5) * c)
+			var d: float = centre.distance_to(at)
+			if d > reach + c * 0.71:
+				continue
+			if d > 90.0 and fwd.dot((centre - at) / d) < cos(deg_to_rad(70.0)):
+				continue
+			out.append(Vector2i(x, z))
+	return out
+
+
+## A MultiMesh of plants; shrink > 0 shrinks each away over the last fifth of that distance
+## (foliage.gdshader reads it from a negative INSTANCE_CUSTOM.a, as VegetationManager sets it).
+func _plants(mesh: Mesh, insts: Array, shrink: float, shadows: bool) -> MultiMeshInstance3D:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_custom_data = shrink > 0.0
+	mm.mesh = mesh
+	mm.instance_count = insts.size()
+	for i: int in insts.size():
+		var inst: VegetationScatter.Instance = insts[i]
+		var b := Basis.from_euler(Vector3(inst.tilt.x, inst.yaw, inst.tilt.y)).scaled(Vector3.ONE * inst.scale)
+		mm.set_instance_transform(i, Transform3D(b, inst.pos))
+		if shrink > 0.0:
+			mm.set_instance_custom_data(i, Color(0.0, 0.0, 0.0, -shrink))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if shadows else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mmi
+
+
+## Rivers (segments with their levels and half widths) and lakes (polygons) on a 64 m grid:
+## {Vector2i: [[a, b, level_a, level_b, half_a, half_b] or [polygon, level]]}.
+static func water_grid(water: Array) -> Dictionary:
+	var grid: Dictionary = {}
+	for w: Variant in water:
+		var d: Dictionary = w
+		if str(d.get("kind", "")) == "river":
+			var pts: Array = d.get("points", [])
+			var levels: Array = d.get("levels", [])
+			var widths: Array = d.get("widths", [])
+			for i: int in range(1, pts.size()):
+				var a := Vector2(float(pts[i - 1][0]), float(pts[i - 1][1]))
+				var b := Vector2(float(pts[i][0]), float(pts[i][1]))
+				var ha: float = float(widths[i - 1] if i - 1 < widths.size() else 12.0) * 0.5
+				var hb: float = float(widths[i] if i < widths.size() else 12.0) * 0.5
+				var seg: Array = [a, b, float(levels[i - 1] if i - 1 < levels.size() else 0.0), float(levels[i] if i < levels.size() else 0.0), ha, hb]
+				var box: Rect2 = Rect2(a, Vector2.ZERO).expand(b).grow(maxf(ha, hb))
+				_grid_add(grid, box, seg)
+		elif d.has("polygon"):
+			var poly := PackedVector2Array()
+			for p: Variant in d.get("polygon", []):
+				poly.append(Vector2(float(p[0]), float(p[1])))
+			if poly.size() >= 3:
+				var box2 := Rect2(poly[0], Vector2.ZERO)
+				for q: Vector2 in poly:
+					box2 = box2.expand(q)
+				_grid_add(grid, box2, [poly, float(d.get("level", 0.0))])
+	return grid
+
+
+static func _grid_add(grid: Dictionary, box: Rect2, entry: Array) -> void:
+	for z: int in range(floori(box.position.y / 64.0), floori(box.end.y / 64.0) + 1):
+		for x: int in range(floori(box.position.x / 64.0), floori(box.end.x / 64.0) + 1):
+			var k := Vector2i(x, z)
+			if not grid.has(k):
+				grid[k] = []
+			(grid[k] as Array).append(entry)
+
+
+## The water's level at (x, z), or -INF where there is no water.
+static func water_level(grid: Dictionary, x: float, z: float) -> float:
+	var p := Vector2(x, z)
+	var best: float = -INF
+	for e: Array in grid.get(Vector2i(floori(x / 64.0), floori(z / 64.0)), []):
+		if e.size() == 2:
+			if Geometry2D.is_point_in_polygon(p, e[0]):
+				best = maxf(best, float(e[1]))
+			continue
+		var a: Vector2 = e[0]
+		var b: Vector2 = e[1]
+		var ab: Vector2 = b - a
+		var t: float = clampf((p - a).dot(ab) / maxf(ab.length_squared(), 0.0001), 0.0, 1.0)
+		if p.distance_to(a + ab * t) <= lerpf(float(e[4]), float(e[5]), t):
+			best = maxf(best, lerpf(float(e[2]), float(e[3]), t))
+	return best
+
+
+## The river's level nearest below `at` (the path flies over it), for the mist's height.
+func _water_below(at: Vector3) -> float:
+	var lvl: float = water_level(_water_grid, at.x, at.z)
+	return lvl if lvl > -INF else (_rt.height.sample(at.x, at.z) if _rt != null else at.y - 24.0)
 
 
 ## Metres along a path of `path_len` m for a still at `share` of its usable length (the last
@@ -253,6 +464,7 @@ func _build_environment() -> void:
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
 	var sky_mat := ShaderMaterial.new()
+	_sky_mat = sky_mat
 	sky_mat.shader = load("res://assets/shaders/sky.gdshader")
 	var base: String = "res://assets/generated/textures/"
 	if ResourceLoader.exists(base + "sky_cloud_noise.png"):
@@ -289,10 +501,12 @@ func _build_environment() -> void:
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 0.88
 	env.adjustment_contrast = 1.06
+	_env = env
 	var we := WorldEnvironment.new()
 	we.environment = env
 	_root.add_child(we)
 	var sun := DirectionalLight3D.new()
+	_sun = sun
 	sun.light_color = Color(1.0, 0.66, 0.42)
 	sun.light_energy = 1.2
 	sun.shadow_enabled = true

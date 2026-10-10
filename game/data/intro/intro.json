@@ -83,15 +83,13 @@
     {
       "kind": "impact",
       "sounds": [
-        "sfx/tree_fall_crash",
-        "sfx/metal_clang",
-        "sfx/structure_break_wood"
+        "sfx/lift3_crash"
       ],
       "lines": [
         ""
       ],
       "hold": 2.5,
-      "caption": "[an engine screams; trees break; metal tears]"
+      "caption": "[rotor blades strike the trees; metal tears; an engine winds down]"
     },
     {
       "kind": "radio",
