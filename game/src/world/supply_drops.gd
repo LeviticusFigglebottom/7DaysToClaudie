@@ -15,6 +15,8 @@ const RELEASE_HEIGHT: float = 110.0
 const FALL_SPEED: float = 5.5
 const MIN_DIST: float = 110.0
 const MAX_DIST: float = 300.0
+## The nearest a fallback landing comes to the player (pick_spot).
+const MIN_FALLBACK: float = 60.0
 ## Hour of day the scheduled (non-Hum) drops arrive.
 const DROP_HOUR: int = 12
 ## How far the landing is heard (Stimuli loudness, metres).
@@ -102,21 +104,86 @@ func _cfg() -> Dictionary:
 
 ## A dry, fairly flat spot MIN..MAX_DIST from `center`, inside the detailed map and clear of
 ## buildings, chosen deterministically from the world seed and `key` (later attempts move closer).
+## In close forest (a random world's drop among grey fir) no random spot keeps landing_tree_clearance
+## of every trunk, and the canister came down on the player's head (smoke, random seed 21): then a
+## spot on a road or track nearby (their corridors grow no trees), then the random spots again with
+## half the tree clearance, then the clearest dry, flat one tried at least MIN_FALLBACK m away.
 func pick_spot(center: Vector3, key: String) -> Vector3:
 	_tree_cache.clear()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = Ids.hash64("drop:%d:%s" % [Game.session.world_seed, key])
+	var tried: Array[Vector3] = []
 	for attempt: int in 40:
 		var ang: float = rng.randf() * TAU
 		var dist: float = rng.randf_range(MIN_DIST, MAX_DIST) * (1.0 - 0.6 * float(attempt) / 40.0)
 		var p := Vector3(center.x + cos(ang) * dist, 0.0, center.z + sin(ang) * dist)
+		tried.append(p)
 		if spot_ok(p):
 			p.y = world.height_at(p.x, p.z)
 			return p
+	for p2: Vector3 in _road_spots(center, rng):
+		if spot_ok(p2):
+			p2.y = world.height_at(p2.x, p2.z)
+			return p2
+	var best := Vector3.INF
+	var best_gap: float = -INF
+	for p3: Vector3 in tried:
+		if spot_ok(p3, 0.5):
+			p3.y = world.height_at(p3.x, p3.z)
+			return p3
+		var gap: float = _tree_gap(p3)
+		if gap > best_gap and Vector2(p3.x - center.x, p3.z - center.z).length() >= MIN_FALLBACK and spot_ok(p3, 0.0):
+			best_gap = gap
+			best = p3
+	if best != Vector3.INF:
+		best.y = world.height_at(best.x, best.z)
+		return best
 	return Vector3(center.x, world.height_at(center.x, center.z), center.z)
 
 
-func spot_ok(p: Vector3) -> bool:
+## Points along the attached regions' roads MIN..MAX_DIST from `center`, every 12 m, in a
+## deterministic shuffled order (`rng`).
+func _road_spots(center: Vector3, rng: RandomNumberGenerator) -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	var terrain: Node = world.get(&"terrain")
+	if terrain == null or not terrain.get(&"regions") is Dictionary:
+		return out
+	var c := Vector2(center.x, center.z)
+	var ids: Array = (terrain.get(&"regions") as Dictionary).keys()
+	ids.sort()
+	for rid: Variant in ids:
+		var rt: RegionTerrain = (terrain.get(&"regions") as Dictionary)[rid] as RegionTerrain
+		if rt == null:
+			continue
+		for r: Dictionary in rt.roads:
+			var pts: Array = r.get("points", [])
+			for k: int in pts.size() - 1:
+				var a := Vector2(float(pts[k][0]), float(pts[k][pts[k].size() - 1]))
+				var b := Vector2(float(pts[k + 1][0]), float(pts[k + 1][pts[k + 1].size() - 1]))
+				var n: int = maxi(1, int(a.distance_to(b) / 12.0))
+				for st: int in n:
+					var q: Vector2 = a.lerp(b, float(st) / n)
+					var d: float = q.distance_to(c)
+					if d >= MIN_FALLBACK and d <= MAX_DIST:
+						out.append(Vector3(q.x, 0.0, q.y))
+	for i: int in range(out.size() - 1, 0, -1):
+		var j: int = rng.randi_range(0, i)
+		var tmp: Vector3 = out[i]
+		out[i] = out[j]
+		out[j] = tmp
+	return out.slice(0, 60)
+
+
+## The distance from p to the nearest tree trunk's edge (INF when none within 12 m).
+func _tree_gap(p: Vector3) -> float:
+	var gap: float = INF
+	for t: Dictionary in trees_near(p, 12.0):
+		gap = minf(gap, Vector2(t["pos"].x - p.x, t["pos"].z - p.z).length() - float(t["radius"]))
+	return gap
+
+
+## `tree_share`: of landing_tree_clearance to keep (1 normally; the fallbacks relax it).
+func spot_ok(p: Vector3, tree_share: float = 1.0) -> bool:
 	var terrain: Node = world.get(&"terrain")
 	if terrain == null or terrain.call(&"region_terrain_at", p.x, p.z) == null:
 		return false
@@ -136,15 +203,15 @@ func spot_ok(p: Vector3) -> bool:
 		# Streamed worlds: nor by a building not built yet (RWG v2 Phase 3).
 		if pois.has_method(&"footprint_at") and pois.call(&"footprint_at", p, 12.0) != &"":
 			return false
-	return _clear_of_obstacles(Vector3(p.x, h, p.z))
+	return _clear_of_obstacles(Vector3(p.x, h, p.z), tree_share)
 
 
 ## Trees and anything solid around a landing spot (TD-029). Trees come from the deterministic
 ## scatter (felled ones excluded), so a spot far beyond the trees' pooled colliders is checked
 ## too; player structures from the building manager; and whatever else collides (rocks, props,
 ## structures near the player) from a physics query over the canister's footprint.
-func _clear_of_obstacles(p: Vector3) -> bool:
-	var tree_clear: float = float(_cfg().get("landing_tree_clearance", 4.5))
+func _clear_of_obstacles(p: Vector3, tree_share: float = 1.0) -> bool:
+	var tree_clear: float = float(_cfg().get("landing_tree_clearance", 4.5)) * tree_share
 	for t: Dictionary in trees_near(p, tree_clear + 1.0):
 		if Vector2(t["pos"].x - p.x, t["pos"].z - p.z).length() < tree_clear + float(t["radius"]):
 			return false
