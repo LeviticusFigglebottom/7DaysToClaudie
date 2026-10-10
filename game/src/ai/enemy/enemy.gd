@@ -147,6 +147,8 @@ var _detour_wedged: float = 0.0
 ## Navigation: the goal the agent's current path leads to, and time until a forced re-path.
 var _nav_goal := Vector3.INF
 var _nav_t: float = 0.0
+## Walking straight at the goal: the nav path ended short of it (the goal is off the mesh).
+var _nav_straight: bool = false
 ## Beyond collision range the body glides on the heightfield; no path queries out there.
 var _far: bool = false
 ## LOD tick (see LOD_TIERS): time skipped since the last tick, this body's phase, and how many
@@ -816,11 +818,20 @@ func _move_dir_body(to: Vector3) -> Vector3:
 	var d: Vector3 = to - global_position
 	if not _far and agent != null and agent.is_inside_tree():
 		_nav_t -= get_physics_process_delta_time()
+		if _nav_goal == Vector3.INF or _nav_goal.distance_to(to) > 1.0:
+			_nav_straight = false
 		if _nav_goal == Vector3.INF or _nav_goal.distance_to(to) > 1.0 or _nav_t <= 0.0:
 			_nav_goal = to
 			_nav_t = 0.5
 			agent.target_position = to
-		if not agent.is_navigation_finished():
+		# A goal off the mesh (a POI yard the tiles don't cover, a roof): the path ends at the nearest
+		# point of the mesh, which can lie behind the body. Walking to it, finishing, heading
+		# straight for the goal and being sent back on the next query held Ezra flip-flopping in
+		# place (slice smoke, TD-308). Once the mesh takes it no closer, the body walks the rest in
+		# a straight line (detours still handle walls) until the goal moves.
+		if not _nav_straight and agent.is_navigation_finished() and Vector2(d.x, d.z).length() > 1.5:
+			_nav_straight = true
+		if not _nav_straight and not agent.is_navigation_finished():
 			var step: Vector3 = agent.get_next_path_position() - global_position
 			if Vector2(step.x, step.z).length() > 0.05:
 				d = step

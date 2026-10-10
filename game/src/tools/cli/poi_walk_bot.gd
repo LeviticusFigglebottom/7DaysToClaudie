@@ -1997,6 +1997,12 @@ func _open_near(leg: Dictionary) -> bool:
 ## frame (Input.action_press inside a physics frame registers for the next one), so it is held for
 ## two frames. Notes whether the player's vault took it or it was a plain jump.
 func _jump(needed: Array) -> void:
+	if OS.has_environment("POI_WALK_DEBUG"):
+		print("[poi_walk]     stalled at %s floor=%s vel=%s" % [player.global_position, player.is_on_floor(), player.velocity])
+		for ci: int in player.get_slide_collision_count():
+			var col: KinematicCollision3D = player.get_slide_collision(ci)
+			var co: Object = col.get_collider()
+			print("[poi_walk]       hit %s at %s normal %s" % [(co as Node).get_path() if co is Node else co, col.get_position(), col.get_normal()])
 	Input.action_press(&"jump")
 	var vaulted: bool = false
 	var jumped: bool = false

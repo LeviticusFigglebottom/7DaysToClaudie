@@ -236,6 +236,13 @@ idles and gaits). 14,764 body triangles; 1.81 m. The face is still the shared Ho
   finger named at either key eases between what it closes to at each. A hold's
   `item.rot` turns the item in the fist (an oblique grip: the spear's shaft lies 60° across the
   palm); a hand `on` the other grips along the item's axis and the fist rolls about it. `fixed_roll` (on a hold, or an attack/use) pins a fist's authored roll instead (a gun's barrel stays on aim, an inspect's turn-over shows).
+  Every joint eases into a real hand's limit (`FINGER_MAX` 88 / 102 / 75°, `THUMB_MAX` 58 / 78°,
+  rest bend included) whatever the curl asks, and the end joint lags a light curl (`CURL_LAG`),
+  so a relaxed hand's fingertips stay nearly straight (ADR-0061). The fp_arms bake checks every
+  frame (`lib/fp_anatomy.py`: joint ranges, neighbouring fingers through each other, a fingertip
+  in view nearer than 20 cm to the eye, the thumb drawn over 1.5 times the index finger's width)
+  and fails on a violation; `tools/fp_hands_check.py --only fp_<action>` runs the same check
+  without Blender before a bake.
 * Arms enter from the lower corners: the Remand jumpsuit sleeves are rolled to just below the
   elbow (`M_fp_sleeve`, cloth shader), bare forearms and hands (`M_fp_skin`, skin shader), nails
   (`M_fp_nail`). The **tether** is bolted over the back of the left wrist, rigid on

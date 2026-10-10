@@ -352,3 +352,49 @@ func test_stoop_piece_by_finish_rise_and_width() -> void:
 					var aabb: AABB = m.get_aabb()
 					assert_almost_eq(aabb.size.x, float(w), 0.12, "%s %d %dm: width" % [k, n, w])
 					assert_true(aabb.position.z > -0.06 and aabb.end.z > 0.25, "%s %d %dm: runs out along +Z from the wall" % [k, n, w])
+
+
+## Owner report 4, item 8: a flight whose foot stood off a wall reached the landing's height 8 cm
+## past its head, 6 cm under the slab's edge there, and the capsule stopped dead a step short of
+## the top (four buildings needed a jump). Every flight of every authored building, and of a sample
+## of generated ones, meets its landing's floor at the head.
+func test_every_flight_meets_its_landing() -> void:
+	var defs: Array = []
+	for v: Variant in Content.all(&"poi"):
+		defs.append(v)
+	for t: Variant in Content.all(&"building_template"):
+		for i: int in 2:
+			var g: PoiDef = Generator.generate(t, Ids.hash64("ramp:%s:%d" % [(t as Resource).get("id"), i]))
+			if g != null:
+				defs.append(g)
+	var bad: PackedStringArray = []
+	var flights: int = 0
+	for pd: PoiDef in defs:
+		var lay: PoiLayout = PoiLayout.compile(pd)
+		if not lay.errors.is_empty() or lay.stairs.is_empty():
+			continue
+		var inst: PoiInstance = PoiBuilder.build(lay, StringName("test/ramp/" + String(pd.id)))
+		add_child(inst)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		var space: PhysicsDirectSpaceState3D = inst.get_world_3d().direct_space_state
+		for s: Dictionary in lay.stairs:
+			flights += 1
+			var li: int = int(s["level"])
+			var cells: Array = s["cells"]
+			var d := Vector3(PoiLayout.DIRS[int(s["dir"])].x, 0, PoiLayout.DIRS[int(s["dir"])].y)
+			var head_edge: Vector3 = lay.cell_center(li, cells.back()) + d * 0.5
+			var top: float = lay.level_y(li + 1)
+			for back: float in [0.04, 0.12]:
+				var at: Vector3 = inst.global_transform * (head_edge - d * back)
+				var q := PhysicsRayQueryParameters3D.create(at + Vector3.UP * (top + 1.0 - at.y), at + Vector3.UP * (top - 0.5 - at.y))
+				var hit: Dictionary = space.intersect_ray(q)
+				var y: float = (inst.global_transform.affine_inverse() * (hit["position"] as Vector3)).y if not hit.is_empty() else -INF
+				# The ramp's slope (3 m over 4) a little short of the edge, never a lip under it.
+				if absf(y - (top - back * 0.75)) > 0.03:
+					bad.append("%s flight from %s (level %d): %.2f m short of its head the ramp is at %.3f, %.3f expected" % [
+						pd.id, s["cell"], li, back, y, top - back * 0.75])
+		remove_child(inst)
+		inst.free()
+	assert_gt(flights, 10, "flights checked")
+	assert_eq(bad, PackedStringArray(), "every flight reaches its landing's height at its head")

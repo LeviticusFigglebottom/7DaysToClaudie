@@ -33,8 +33,11 @@ class FakeWorld:
 	var loose: Node = null
 	var water: Node = null
 
-	func height_at(_x: float, _z: float) -> float:
-		return 0.0
+	## Terrain for a test (x, z) -> height; flat when unset.
+	var terrain: Callable = Callable()
+
+	func height_at(x: float, z: float) -> float:
+		return float(terrain.call(x, z)) if terrain.is_valid() else 0.0
 
 	func ground_below(_p: Vector3) -> float:
 		return 0.0
@@ -399,8 +402,9 @@ func test_the_ai_director_never_culls_him() -> void:
 # --- Phase 2: gather, fetch, give, store ------------------------------------------------------------
 
 ## A vegetation manager with these instances ([species, position]) in chunk (0, 0): trees get their
-## collision bodies (as near the player), the rest are harvestable.
-func _veg(list: Array) -> VegetationManager:
+## collision bodies (as near the player) unless `bodies` is false (as far from them), the rest are
+## harvestable.
+func _veg(list: Array, bodies: bool = true) -> VegetationManager:
 	var vm := VegetationManager.new()
 	_world.add_child(vm)
 	_world.vegetation = vm
@@ -417,7 +421,7 @@ func _veg(list: Array) -> VegetationManager:
 		(layers["tree" if sp.veg_kind == "tree" else "ground"] as Array).append(inst)
 	vm._data[key] = layers
 	vm._pickable[key] = vm._bin_pickables(vm._harvestables(layers))
-	for inst2: VegetationScatter.Instance in layers["tree"]:
+	for inst2: VegetationScatter.Instance in layers["tree"] if bodies else []:
 		var id: StringName = VegetationScatter.instance_id(key, inst2.index)
 		vm._bodies[id] = vm._make_body(id, key, inst2, Content.get_def(&"species", inst2.species) as SpeciesDef)
 	return vm
@@ -762,6 +766,72 @@ func test_the_card_marks_what_fetch_would_bring() -> void:
 	card._refresh()
 	assert_false(mk.visible, "nothing looked at, nothing marked")
 	card.close_screen()
+
+
+func test_he_fells_a_tree_away_from_the_player_with_no_collision_body() -> void:
+	var e: Enemy = await _recruited()
+	var tree_at := Vector3(22, 0, 14)
+	var vm: VegetationManager = _veg([["paper_birch", tree_at]], false)
+	assert_null(vm.body_for(Vector2i(0, 0), vm._data[Vector2i(0, 0)]["tree"][0]), "no body, as far from the player")
+	_p.global_position = Vector3(0, 0, -6)
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "gather", "kind": "wood", "spot": [tree_at.x, 0.0, tree_at.z]})
+	assert_true(bool(r.get("ok", false)), str(r))
+	await _until(func() -> bool: return e.ally.order == "follow", 3000)
+	assert_true(vm._is_removed(Vector2i(0, 0), 0), "felled all the same (TD-304)")
+	assert_between(_dir.inventory.count_of(&"log"), 1, 2, "and its logs brought in")
+
+
+func test_a_far_target_is_reached_round_a_cliff_not_through_it() -> void:
+	await _recruited()
+	# A 30 m high wall of rock across x = 60 from z = -200 to z = 40, with open ground round its
+	# north end (z > 40): from (0, 0) to (120, 0) the straight line runs into it.
+	_world.terrain = func(x: float, z: float) -> float:
+		return 30.0 if absf(x - 60.0) < 8.0 and z > -200.0 and z < 40.0 else 0.0
+	var f: FlowField = CompanionWork.route(Vector3(0, 0, 0), Vector3(120, 0, 0))
+	assert_not_null(f, "a route is built")
+	var dir: Vector3 = f.direction_at(Vector3(0, 0, 0))
+	assert_gt(dir.z, 0.3, "it heads round the open end, not at the cliff (%s)" % dir)
+	# Walk the route: it gets there without crossing the rock.
+	var at := Vector3(0, 0, 0)
+	var crossed: bool = false
+	for i: int in 400:
+		var d: Vector3 = f.direction_at(at)
+		if d == Vector3.ZERO:
+			break
+		at += d * 3.0
+		if absf(at.x - 60.0) < 8.0 and at.z > -200.0 and at.z < 40.0:
+			crossed = true
+	assert_false(crossed, "never across the rock")
+	assert_lt(Vector2(at.x - 120.0, at.z).length(), 8.0, "and arrives (%s)" % at)
+	_world.terrain = Callable()
+
+
+func test_his_gear_shows_as_he_uses_it() -> void:
+	var e: Enemy = await _seated()
+	if not e.visual.has_part("prop_splint"):
+		pending("no generated body with the props (make assets)")
+		return
+	var shown := func(part: String) -> bool: return (e.visual._segments[part] as MeshInstance3D).visible
+	await _frames(2)
+	assert_true(shown.call("prop_splint"), "splinted at his camp")
+	assert_true(shown.call("prop_hatchet_belt") and not shown.call("prop_hatchet_hand"), "the hatchet on his belt while he sits")
+	_p.global_position = CAMP_AT + Vector3(0, 0, 2.5)
+	_give(&"first_aid_kit")
+	Game.execute(&"companion.recruit", {})
+	await _frames(int(e.ally.rising_t * 60.0) + 4)
+	assert_false(shown.call("prop_splint"), "off once he is up and with the player")
+	assert_false(shown.call("prop_lantern"), "no lantern by day")
+	var h: Enemy = _spawn(&"hollow", e.global_position + Vector3(2.0, 0, 0))
+	e.foe = h
+	await _frames(2)
+	assert_true(shown.call("prop_hatchet_hand") and not shown.call("prop_hatchet_belt"), "in his fist to fight")
+	e.foe = null
+	e._set_state(Enemy.State.IDLE)
+	Game.session.clock.set_time(Game.session.clock.day(), 23.0)
+	await _frames(3)
+	assert_true(e.ally.lantern_on(), "his light at night, following")
+	assert_true(shown.call("prop_lantern"), "the lantern in his hand while its light is on")
+	assert_true(e.ally.lantern.get_parent() is BoneAttachment3D, "the light rides his hand")
 
 
 func test_companion_strength_scales_him() -> void:

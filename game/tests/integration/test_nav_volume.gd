@@ -78,15 +78,16 @@ func _bake_map() -> void:
 	for i: int in 3:
 		await get_tree().physics_frame
 	# On a loaded machine the map can still answer from before the regions joined (closest point at
-	# the origin): wait until a polygon vertex of the first mesh is found where it is.
-	var probe := Vector3.ZERO
+	# the origin), and the regions join over several syncs: wait until a polygon vertex of every
+	# mesh is found where it is. Probing only the first mesh let a full Stand-ins run ask for the
+	# path while the mouth's tile was still missing (it started 16 m off and never went under).
+	var probes: Array[Vector3] = []
 	for k0: Vector2i in _meshes:
 		var vs: PackedVector3Array = (_meshes[k0] as NavigationMesh).get_vertices()
 		if not vs.is_empty():
-			probe = vs[0]
-			break
-	until = Time.get_ticks_msec() + 15000
-	while NavigationServer3D.map_get_closest_point(_map, probe).distance_to(probe) > 0.5 and Time.get_ticks_msec() < until:
+			probes.append(vs[vs.size() / 2])
+	until = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < until and probes.any(func(q: Vector3) -> bool: return NavigationServer3D.map_get_closest_point(_map, q).distance_to(q) > 0.5):
 		await get_tree().physics_frame
 	var polys: int = 0
 	for k: Vector2i in _meshes:

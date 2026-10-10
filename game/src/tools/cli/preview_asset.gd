@@ -13,6 +13,7 @@ extends SceneTree
 ## <model>_<TAG>.png so views of one model don't overwrite each other, --focus-bone NAME,R frames a
 ## radius R round a bone of the posed skeleton (a face close-up whatever the body's height), --elev
 ## E the camera's rise per unit of distance (default 0.42; 0 looks a hanging face in the eye).
+## --hide A,B hides the meshes whose names contain A or B (a character's props by state).
 ## --global NAME=VALUE (repeatable) sets a float global shader uniform (hm_bloom_night=1 shows the
 ## Bloom's night glow on fungus and nest props).
 
@@ -28,6 +29,8 @@ var _models: PackedStringArray = []
 var _anim: String = ""
 var _instance_params: Dictionary = {}
 var _tag: String = ""
+## Mesh names to hide (--hide a,b: a character's props it shows by state, TD-302).
+var _hide: PackedStringArray = []
 var _focus_bone: String = ""
 var _focus_bone_r: float = 0.25
 var _elev: float = 0.42
@@ -91,6 +94,9 @@ func _parse_args() -> void:
 			"--tag":
 				i += 1
 				_tag = a[i]
+			"--hide":
+				i += 1
+				_hide = a[i].split(",")
 			"--elev":
 				i += 1
 				_elev = float(a[i])
@@ -153,6 +159,9 @@ func _load_model(model_id: String) -> Node3D:
 		return null
 	var ps: PackedScene = load(path)
 	var inst: Node3D = ps.instantiate() as Node3D
+	for h: String in _hide:
+		for g2: Node in inst.find_children("*%s*" % h, "GeometryInstance3D", true, false):
+			(g2 as GeometryInstance3D).visible = false
 	for g: Node in inst.find_children("*", "GeometryInstance3D", true, false):
 		for k: StringName in _instance_params:
 			(g as GeometryInstance3D).set_instance_shader_parameter(k, _instance_params[k])

@@ -33,7 +33,7 @@ func _count(out: Dictionary) -> int:
 	var n: int = 0
 	for k: Variant in out:
 		n += int(out[k][0])
-		assert_eq((out[k][1] as PackedFloat32Array).size(), int(out[k][0]) * 12, "12 floats a quad")
+		assert_eq((out[k][1] as PackedFloat32Array).size(), int(out[k][0]) * 16, "16 floats a quad (transform + variant row, TD-005)")
 	return n
 
 

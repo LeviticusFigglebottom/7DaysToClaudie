@@ -10,6 +10,13 @@ character_living joins the Ashen's axe):
   * a canvas pack on his back (body_torso, `chest`), a white hard hat clipped to its flap;
   * climbing spurs (gaffs) on the inside of both boots: a steel shank up the inside of the shin
     with the gaff at the instep, two leather straps round the calf (body_shin.*, `shin.*`).
+Props the game shows or hides by what he is doing (TD-302), separate skinned meshes named prop_*
+(EnemyVisual.set_part), each weighted wholly to one bone:
+  * prop_hatchet_hand: the hatchet in his right fist (fighting, chopping);
+  * prop_hatchet_belt: the same hatchet hung head-up from his belt on the right hip (the rest of
+    the time);
+  * prop_lantern: a hurricane lantern in his left fist (at night, following);
+  * prop_splint: two slats bound to his left shin with strips of cloth (at his camp, unrecruited).
 The harness is dressing params (leather straps over the shoulders, the belt on the trousers).
 
 params: the character_npc params (height, sex, build, outfit, boots, hair, beard, remap, ...)
@@ -26,7 +33,7 @@ from mathutils import Matrix, Vector
 
 from generators import character_living as CL
 from generators import item_tools
-from lib import companion_anim, export, item_kit as IK, living_anim, npc_anim, npc_build, vcolor
+from lib import char_build as CB, companion_anim, export, item_kit as IK, living_anim, npc_anim, npc_build, vcolor
 from lib.char_dress import surface_hit
 
 
@@ -141,11 +148,134 @@ def _spur(model, skel, side: str, seed: int) -> bpy.types.Object:
     return obj
 
 
+def _frame(origin, x, y, z) -> Matrix:
+    m = Matrix.Identity(4)
+    for i in range(3):
+        m[i][0], m[i][1], m[i][2], m[i][3] = float(x[i]), float(y[i]), float(z[i]), float(origin[i])
+    return m
+
+
+def _fist_l(skel) -> Matrix:
+    """The rest-pose left fist, as character_living._fist is the right: item frame -> body (item +Z
+    out of the thumb side, -Y along the hand, the grip in the palm)."""
+    j = skel.j
+    wr, tip, back = (np.array(j[k]) for k in ("wrist.L", "hand_tip.L", "palm_back.L"))
+    f = tip - wr
+    hl = float(np.linalg.norm(f))
+    f /= hl
+    b = back - wr
+    b -= f * float(np.dot(b, f))
+    b /= np.linalg.norm(b)
+    t = np.cross(f, b)            # the left thumb's side (mirrored)
+    x = np.cross(-f, t)
+    grip = wr + f * hl * 0.42 - b * 0.024
+    return _frame(grip, x, -f, t)
+
+
+def _hatchet_belt(model, skel, seed: int) -> bpy.types.Object:
+    """The hatchet hung from his belt on the right hip: through a leather loop, head up at the belt,
+    haft down the outside of the thigh, the bit to the back."""
+    s = model.s
+    j = skel.j
+    h = _hatchet(seed)
+    hip = np.array(j["hip.R"])
+    belt_z = float(np.array(j["pelvis"])[2]) + 0.04 * s
+    at = np.array([hip[0], hip[1], belt_z])
+    side, _n = surface_hit(model, at + np.array([0.0, 0.0, 0.0]), np.array([-1.0, 0.0, 0.0]), max_dist=0.4)
+    side = np.array(side) + np.array([-0.022 * s, 0.01 * s, 0.0])
+    # the item's grip is its origin and the haft runs +Z to the head: hang it head up with the head
+    # at the belt, so the grip sits a haft's length below it
+    head = max(v.co.z for v in h.data.vertices)
+    m = Matrix.Translation(Vector(side.tolist()) + Vector((0.0, 0.0, -head + 0.03 * s))) @ Matrix.Rotation(math.radians(180.0), 4, "Z")
+    h.data.transform(m)
+    loop = IK.MB()
+    IK.box(loop, (0.012 * s, 0.05 * s, 0.07 * s), (float(side[0]) + 0.006 * s, float(side[1]), belt_z - 0.02 * s), mat="item_leather")
+    lo = _built(loop, "belt_loop", seed + 5)
+    return IK.join([h, lo], "prop_hatchet_belt")
+
+
+def _lantern(seed: int) -> bpy.types.Object:
+    """A hurricane lantern hanging from its bail: a tin fount, a clear glass globe in a wire guard,
+    a vented chimney cap; item frame as a held tool (the bail's grip at the origin, up +Z), so the
+    lantern hangs below the fist."""
+    mb = IK.MB()
+    # the body hangs 0.07 m under the grip
+    top = -0.07
+    IK.lathe(mb, [(0.068, top - 0.24), (0.072, top - 0.225), (0.07, top - 0.19), (0.05, top - 0.18), (0.0, top - 0.18)],
+             segments=16, mat="item_paint_red")
+    IK.lathe(mb, [(0.048, top - 0.18), (0.062, top - 0.14), (0.064, top - 0.1), (0.05, top - 0.065), (0.03, top - 0.055)],
+             segments=16, mat="item_glass_clear")
+    for k in range(4):
+        a = k * math.pi / 2 + math.pi / 4
+        IK.tube(mb, [Vector((math.cos(a) * 0.07, math.sin(a) * 0.07, top - 0.19)),
+                     Vector((math.cos(a) * 0.07, math.sin(a) * 0.07, top - 0.05))], 0.0025, sides=4, mat="item_steel_dark")
+    IK.lathe(mb, [(0.0, top), (0.035, top - 0.01), (0.055, top - 0.04), (0.04, top - 0.055), (0.0, top - 0.055)],
+             segments=16, mat="item_paint_red")
+    # the wire bail up to the grip
+    bail = [Vector((math.sin(a) * 0.075, 0.0, top - 0.06 + math.cos(a) * 0.06 + 0.0)) for a in np.linspace(-math.pi / 2, math.pi / 2, 9)]
+    IK.tube(mb, bail, 0.003, sides=4, mat="item_steel_dark")
+    return _built(mb, "prop_lantern", seed)
+
+
+def _splint(model, skel, seed: int) -> bpy.types.Object:
+    """Two straight branches bound either side of his left shin with three strips of cloth: the leg
+    he hurt, splinted where he sits at his camp."""
+    s = model.s
+    j = skel.j
+    ankle = np.array(j["ankle.L"])
+    knee = np.array(j["knee.L"])
+    up = (knee - ankle) / float(np.linalg.norm(knee - ankle))
+    length = float(np.linalg.norm(knee - ankle))
+    mb = IK.MB()
+    for sx in (-1.0, 1.0):
+        IK.box(mb, (0.022 * s, 0.03 * s, length * 0.95), (sx * 0.062 * s, 0.0, length * 0.5), mat="item_wood_raw", bevel=0.004 * s)
+    for z in (0.18, 0.5, 0.82):
+        ring = [Vector((math.cos(a) * 0.068 * s, math.sin(a) * 0.058 * s, length * z))
+                for a in np.linspace(0.0, 2.0 * math.pi, 14, endpoint=False)]
+        IK.tube(mb, ring, 0.012 * s, sides=4, mat="item_cloth_bandage", closed=True)
+    obj = _built(mb, "prop_splint", seed + 31)
+    x = np.array([1.0, 0.0, 0.0])
+    x -= up * float(np.dot(x, up))
+    x /= np.linalg.norm(x)
+    y = np.cross(up, x)
+    obj.data.transform(_frame(ankle + up * 0.03 * s, x, y, up))
+    return obj
+
+
+def _prop(obj: bpy.types.Object, name: str, bone: str, arm) -> bpy.types.Object:
+    """A separate skinned mesh weighted wholly to `bone` (the game shows or hides it by name)."""
+    obj.name = name
+    obj.data.name = name
+    vcolor.ensure_layer(obj)
+    vg = obj.vertex_groups.new(name=bone)
+    vg.add(list(range(len(obj.data.vertices))), 1.0, "REPLACE")
+    CB._bind(obj, arm)
+    return obj
+
+
+def _props(model, skel, arm, seed: int, weapon: str) -> list:
+    out = []
+    if weapon:
+        fn, tilt = CL.WEAPONS[weapon]
+        hand = fn(seed)
+        hand.data.transform(CL._fist(skel) @ Matrix.Rotation(math.radians(tilt), 4, "X"))
+        out.append(_prop(hand, "prop_hatchet_hand", "hand.R", arm))
+        out.append(_prop(_hatchet_belt(model, skel, seed + 41), "prop_hatchet_belt", "hips", arm))
+    lan = _lantern(seed + 43)
+    # the lantern's up (+Z) along the item's +Y, toward the wrist: it hangs from the fist
+    lan.data.transform(_fist_l(skel) @ Matrix.Rotation(math.radians(-90.0), 4, "X"))
+    out.append(_prop(lan, "prop_lantern", "hand.L", arm))
+    out.append(_prop(_splint(model, skel, seed), "prop_splint", "shin.L", arm))
+    return out
+
+
 def build(params: dict, outputs: list[str]) -> None:
     arm, objs, caps, skel, model, stats = npc_build.build_npc_body(params)
     seed = int(params.get("seed", 1))
     gear = params.get("gear", {})
-    if params.get("weapon"):
+    # TD-302: his hatchet, belt hatchet, lantern and splint are separate meshes the game toggles
+    props = _props(model, skel, arm, seed, str(params.get("weapon", ""))) if params.get("props", True) else []
+    if params.get("weapon") and not props:
         CL.add_weapon(str(params["weapon"]), skel, objs, seed)
     if gear.get("pack", True):
         _attach(_pack(model, skel, seed + 21, bool(gear.get("hard_hat", True))), "body_torso", "chest", objs)
@@ -159,7 +289,8 @@ def build(params: dict, outputs: list[str]) -> None:
         lengths.update(npc_anim.build_all(arm, skel, params, only=talk))
     lengths.update(companion_anim.build_all(arm, skel, params, only=only))
     bpy.context.scene.frame_set(0)
-    export.export_glb(outputs[0], [arm] + objs + caps, animations=True, skins=True)
+    export.export_glb(outputs[0], [arm] + objs + caps + props, animations=True, skins=True)
     cap_tris = sum(sum(len(p.vertices) - 2 for p in c.data.polygons) for c in caps)
+    print(f"[character_companion] props {[o.name for o in props]}")
     print(f"[character_companion] {params.get('name')}: height {npc_build.height_of(objs):.3f} m, segments {stats} "
           f"(total {sum(stats.values())}) caps {cap_tris} actions {len(lengths)} {sorted(lengths)}")

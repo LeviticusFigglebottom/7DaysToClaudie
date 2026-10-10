@@ -1104,6 +1104,17 @@ func _check_stair_doors() -> void:
 					if on.has(into):
 						_e("door '%s' at %s (level %d) swings open into the stair flight from %s: its leaf stands in the steps" % [op["id"], op["cell"], ol, s["cell"]])
 						break
+			# A door at the head swinging back over the well: its leaf comes down to meet whoever
+			# climbs, who pushes against it from the steps below (owner report 4, item 8).
+			if ol == li + 1 and str(op["type"]).begins_with("door") and str(op["state"]) != "missing":
+				var swing2: float = layout.door_swing(op)
+				for pair3: Array in PoiLayout.opening_edges(op):
+					var at_head: bool = (pair3[0] == head and pair3[1] == s["landing"]) or (pair3[1] == head and pair3[0] == s["landing"])
+					var into2: Vector2i = pair3[0] if swing2 > 0.0 else pair3[1]
+					if at_head and into2 == head:
+						_e("door '%s' at %s (level %d) at the head of the stair flight from %s swings out over the stairs: it meets the climber, who pushes against it; hinge it to swing onto the landing (%s)" % [
+							op["id"], op["cell"], ol, s["cell"], s["landing"]])
+						break
 		# Walls across the climb: between its cells on its level; on the level above, where the
 		# wall's foot (3 m over the flight's) comes lower than a head (1.75 m) on the steps, past the
 		# second step; and between its head and its landing.

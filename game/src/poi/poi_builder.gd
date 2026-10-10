@@ -705,7 +705,13 @@ func _stairs_and_ladders() -> void:
 		for k: int in 2:
 			if not walled[k]:
 				_add("stairs_railing", Transform3D(basis, edge + side_x * (0.48 if k == 0 else -0.48)), rail_c)
-		_ramp(edge, edge + d3 * 4.0 + Vector3.UP * PoiLayout.STOREY, width)
+		# The ramp ends at the head's far edge at the landing's floor height, wherever its foot was
+		# moved off a wall: carried the whole 4 m from a foot moved 8 cm on, it reached that height
+		# 8 cm into the landing and stood 6 cm under the slab's edge at the head, where the capsule's
+		# round bottom stopped dead (owner report 4, item 8: four buildings' flights needed a jump).
+		var head_edge: Vector3 = center + d3 * (float((s["cells"] as Array).size()) - 0.5)
+		head_edge += side_x * (edge - center).dot(side_x)
+		_ramp(edge, head_edge + Vector3.UP * PoiLayout.STOREY, width)
 	for l: Dictionary in layout.ladders:
 		var li2: int = l["level"]
 		var cell: Vector2i = l["cell"]

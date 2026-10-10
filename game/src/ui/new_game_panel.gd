@@ -380,14 +380,24 @@ static func _set_enabled(node: Node, on: bool) -> void:
 func _reset_world_to_preset() -> void:
 	_woverrides.clear()
 	var id: String = _wpresets[maxi(0, _wpreset.selected)]
-	_wpreset_info.text = str((GenSettings.presets().get(id, {}) as Dictionary).get("description", ""))
 	var base: RefCounted = GenSettings.resolve(StringName(id), {}, 0)
 	var vals: Dictionary = base.get(&"values")
+	_wpreset_info.text = str((GenSettings.presets().get(id, {}) as Dictionary).get("description", "")) + "\n" + world_summary(vals)
 	_syncing = true
 	for key: String in _wcontrols:
 		_set_control(_wcontrols[key], GenSettings.options()[key], vals.get(key))
 	_syncing = false
 	_mark_stale()
+
+
+## What the settings make, in words a player can check on the map: "4 x 4 km · about 2 towns"
+## (owner report 5: "10 towns per the 16km" and no town to be seen; the density reads per 16 km²,
+## not per map, and maxes at 6).
+static func world_summary(vals: Dictionary) -> String:
+	var size: int = int(vals.get("size", 4))
+	var towns: float = float(vals.get("town_density", 2.0)) * float(size * size) / 16.0
+	var n: int = maxi(1, roundi(towns)) if towns > 0.0 else 0
+	return "%d x %d km map  ·  about %d town%s" % [size, size, n, "" if n == 1 else "s"]
 
 
 func _world_changed(v: Variant, key: String) -> void:
@@ -398,6 +408,10 @@ func _world_changed(v: Variant, key: String) -> void:
 		_woverrides.erase(key)
 	else:
 		_woverrides[key] = v
+	var vals: Dictionary = base.duplicate()
+	vals.merge(_woverrides, true)
+	var id: String = _wpresets[maxi(0, _wpreset.selected)]
+	_wpreset_info.text = str((GenSettings.presets().get(id, {}) as Dictionary).get("description", "")) + "\n" + world_summary(vals)
 	_mark_stale()
 
 
