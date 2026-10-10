@@ -438,6 +438,25 @@ func _layout() -> void:
 	_fog.size = px
 
 
+## Every town by name over the fog, as a printed survey sheet names them (owner report 5: a new
+## world's map showed no towns until you had walked into one). A ring the size of the town (at
+## least 6 px), its name beside it; a kind's letter size follows how big it is.
+func _draw_towns(w: Node, s: float) -> void:
+	var tm: Object = w.get(&"terrain")
+	var world: WorldDef = tm.get(&"world") as WorldDef if tm != null else null
+	if world == null:
+		return
+	for t: Dictionary in world.towns:
+		var c: Vector2 = t["center"]
+		var at: Vector2 = _world_to_sheet(Vector3(c.x, 0.0, c.y))
+		var r: float = maxf(6.0 * s, float(t["radius"]) / _rect.size.x * _tex.size.x * 0.6)
+		_markers.draw_arc(at, r, 0.0, TAU, 32, Color(UiStyle.INK, 0.55), 1.5)
+		var size: int = {"town": 20, "village": 17}.get(str(t["kind"]), 15)
+		var name: String = str(t["name"]) if str(t["name"]) != "" else str(t["id"])
+		_markers.draw_string_outline(UiStyle.body_font(), at + Vector2(r + 4.0, 5.0), name.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, size, 4, Color(0.93, 0.9, 0.82, 0.9))
+		_markers.draw_string(UiStyle.body_font(), at + Vector2(r + 4.0, 5.0), name.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, size, UiStyle.INK)
+
+
 func _world_to_sheet(p: Vector3) -> Vector2:
 	return (Vector2(p.x, p.z) - _rect.position) / _rect.size * _tex.size
 
@@ -496,6 +515,7 @@ func _draw_markers() -> void:
 				continue
 			var mp: Vector2 = _world_to_sheet(m["pos"])
 			_markers.draw_rect(Rect2(mp - Vector2(3, 3) * s, Vector2(6, 6) * s), col)
+	_draw_towns(w, s)
 	var traders: Node = w.get(&"traders")
 	if traders != null and traders.has_method(&"markers"):
 		for m2: Dictionary in (traders.call(&"markers") as Array[Dictionary]):

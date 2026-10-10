@@ -18,7 +18,7 @@
     "fen": {"category": "land", "type": "float", "min": 0.0, "max": 1.0, "step": 0.1, "default": 0.35, "label": "Fens"},
     "rivers": {"category": "water", "type": "enum", "values": ["none", "few", "some", "many"], "default": "some", "label": "Rivers"},
     "lakes": {"category": "water", "type": "enum", "values": ["none", "few", "some", "many"], "default": "some", "label": "Lakes"},
-    "town_density": {"category": "places", "type": "float", "min": 0.0, "max": 6.0, "step": 0.25, "default": 2.0, "label": "Towns per 16 km²"},
+    "town_density": {"category": "places", "type": "float", "min": 0.0, "max": 6.0, "step": 0.25, "default": 2.0, "label": "Towns per 4 x 4 km"},
     "town_size": {"category": "places", "type": "enum", "values": ["hamlets", "villages", "mixed", "towns"], "default": "mixed", "label": "Town size"},
     "wilderness": {"category": "places", "type": "float", "min": 0.0, "max": 2.0, "step": 0.25, "default": 1.0, "label": "Wilderness places"},
     "roads": {"category": "places", "type": "enum", "values": ["sparse", "normal", "dense"], "default": "normal", "label": "Road density"}

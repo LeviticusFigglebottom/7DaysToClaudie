@@ -215,7 +215,9 @@ func _refresh() -> void:
 		flags.append("WET")
 	_status.text = "  ".join(flags) if not flags.is_empty() else "NOMINAL"
 	_record.text = _record_text(p)
-	_drops.text = _drops_text()
+	var town: String = _town_text()
+	var drops_t: String = _drops_text()
+	_drops.text = town + ("\n" + drops_t if drops_t != "" and town != "" else drops_t)
 	_hum.position.y = maxf(290.0, 254.0 + 17.0 * float(_drops.text.count("\n") + 1) + 6.0) if _drops.text != "" else 290.0
 	_directives.text = _directives_text(p)
 	_hum.text = _hum_text()
@@ -242,6 +244,33 @@ func _record_text(p: PlayerState) -> String:
 
 ## Every supply drop: distance, compass sector and whether it is still coming down, down or
 ## searched, one to a line; past four drops they pair up on a line in short form (eight fit).
+## The nearest town by name, distance and bearing ("NEAREST TOWN  CEDAR GAP  1.3 km north-east"),
+## or the one you're in: the minimap shows only your region, and a new world's first town can lie
+## kilometres off (owner report 5).
+func _town_text() -> String:
+	var w: Node = Game.world
+	if w == null or w.get(&"terrain") == null or w.get(&"player") == null:
+		return ""
+	return town_line((w.terrain as TerrainManager).world, (w.player as Node3D).global_position)
+
+
+static func town_line(world: WorldDef, pp: Vector3) -> String:
+	if world == null or world.towns.is_empty():
+		return ""
+	var best: Dictionary = {}
+	var best_d: float = INF
+	for t: Dictionary in world.towns:
+		var d: float = (t["center"] as Vector2).distance_to(Vector2(pp.x, pp.z))
+		if d < best_d:
+			best_d = d
+			best = t
+	var name: String = (str(best["name"]) if str(best["name"]) != "" else str(best["id"])).to_upper()
+	if best_d <= float(best["radius"]):
+		return "IN %s" % name
+	var c: Vector2 = best["center"]
+	return "NEAREST TOWN  %s  %s" % [name, FieldManual.bearing_words(pp, Vector3(c.x, pp.y, c.y))]
+
+
 func _drops_text() -> String:
 	var w: Node = Game.world
 	var drops: Node = w.get(&"supply_drops") if w != null else null
