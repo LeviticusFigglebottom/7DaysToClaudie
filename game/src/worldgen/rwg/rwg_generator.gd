@@ -1211,7 +1211,9 @@ func _straight_extend(e: Array, g: Streets.Ground, c: Vector2, radius: float, re
 		return false
 	var opts: Dictionary = {"grade_ok": 0.06, "grade_max": 0.13, "water": 14.0, "margin": 100.0, "tol": 10.0}
 	var leg: PackedVector2Array = _despike(Streets.route_fine(g, cut[0], c + axis * MERGE_STRAIGHT, opts))
-	var stub: PackedVector2Array = _stub(g, c - axis * MERGE_STRAIGHT, -axis, reach - MERGE_STRAIGHT, 70.0)
+	# Its full reach from there: the stub ends MERGE_STRAIGHT m farther out than one from the centre,
+	# room for a trader post past the lots the straight street gathers (seed 7's Marrow Creek).
+	var stub: PackedVector2Array = _stub(g, c - axis * MERGE_STRAIGHT, -axis, reach, 70.0)
 	if leg.size() < 2 or stub.size() < 2:
 		return false
 	var out: PackedVector2Array = cut[1]
