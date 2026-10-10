@@ -7,7 +7,7 @@ const GOAL := Vector3(0, 0, -6)
 
 
 func after_each() -> void:
-	Crowd.enabled = true
+	Crowd.enabled = false
 	Crowd.reset()
 
 
@@ -75,6 +75,7 @@ func _run(seconds: float) -> Dictionary:
 
 
 func test_six_get_through_a_doorway_without_jitter() -> void:
+	Crowd.enabled = true
 	var r: Dictionary = await _run(10.0)
 	gut.p("crowd: %s" % r)
 	assert_eq(int(r["through"]), 6, "all six through the doorway")

@@ -201,6 +201,8 @@ var _spit_done: bool = false
 var _popped: bool = false
 ## The crowd's push on this body (Crowd.push), rescanned every Crowd.EVERY ticks.
 var _crowd_push := Vector3.ZERO
+## The push actually leaned on, eased toward _crowd_push each tick.
+var _crowd_lean := Vector3.ZERO
 var _charge_cd: float = 0.0
 var _charge_dir := Vector3.ZERO
 var _charge_hit: bool = false
@@ -618,7 +620,9 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 			var me: int = get_instance_id()
 			if (Engine.get_physics_frames() + me) % Crowd.EVERY == 0:
 				_crowd_push = Crowd.push(global_position, _cap_radius, me, Crowd.near(global_position))
-			want = Crowd.apply(want, _crowd_push)
+			# Eased toward the latest scan: applied as a step every few ticks, it jerked the heading.
+			_crowd_lean = _crowd_lean.lerp(_crowd_push, Crowd.EASE)
+			want = Crowd.apply(want, _crowd_lean)
 			Crowd.enter(me, global_position, _cap_radius)
 			if prof_on:
 				_prof_add(&"crowd", tc)
@@ -1464,7 +1468,8 @@ func _start_spit() -> void:
 		return
 	_spit_cd = float((def.beh("spit", {}) as Dictionary).get("cooldown", 6.0)) * _rng.randf_range(0.85, 1.2)
 	_set_state(State.SPIT)
-	visual.play_once(&"scream", 1.2, [&"attack_a"] as Array[StringName])
+	# Its own clip (TD-027: the glob leaves on the thrust at 0.55 s); bodies built before it scream.
+	visual.play_once(&"spit", 1.0, [&"scream", &"attack_a"] as Array[StringName])
 	Audio.play_3d(&"voice/zombie_alert", global_position + Vector3.UP * 1.5, {"volume_db": -1.0, "pitch": 1.35})
 	SoundCaptions.say("spit:%s" % entity_id, "a wet retching", global_position)
 
@@ -1977,7 +1982,8 @@ func _update_anim(want: Vector3) -> void:
 		if _fx_rng.randf() < 0.5:
 			_gait_b = not _gait_b
 	if state == State.CHARGE:
-		visual.play(&"run", 1.5, 0.15, [&"walk"] as Array[StringName])
+		# Its own clip (TD-027); a body built before it runs, faster.
+		visual.play(&"charge", 1.25 if visual.has_anim(&"charge") else 1.5, 0.15, [&"run", &"walk"] as Array[StringName])
 		return
 	var sp: float = Vector2(velocity.x, velocity.z).length()
 	if not quad.is_empty() and state == State.INVESTIGATE and sp > 0.15 and sp <= 2.4 and bool(def.beh("tracker", false)):
