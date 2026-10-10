@@ -799,38 +799,15 @@ func _snap_to_road(p: Vector2) -> Vector2:
 ## not after running beside it on the road's cheap cells (_leave_road; TD-139).
 func _leave_roads(pts: PackedVector2Array, start_exact: bool, end_exact: bool) -> PackedVector2Array:
 	if not start_exact:
-		pts = _leave_end(pts)
+		var nr: Array = nearest_road(pts[0])
+		if float(nr[0]) < 1.0:
+			pts = _leave_road(pts, int(nr[2]))
 	if not end_exact and pts.size() >= 2:
-		pts.reverse()
-		pts = _leave_end(pts)
-		pts.reverse()
-	return pts
-
-
-## _leave_road at a piece's start, snapped onto a road: against that road, then against each other
-## road within LEAVE_ROAD of the new start, nearest first. A junction holds two or more roads, and
-## a piece snapped onto one could run on beside another (TD-139: settled seed 11, Whitlow's exit
-## highway ran 40 m+ beside the road it had not snapped to).
-func _leave_end(pts: PackedVector2Array) -> PackedVector2Array:
-	var nr: Array = nearest_road(pts[0])
-	if float(nr[0]) >= 1.0:
-		return pts
-	pts = _leave_road(pts, int(nr[2]))
-	var done: Dictionary = {int(nr[2]): true}
-	for _pass: int in 3:
-		var near: Array = []
-		for i: int in roads.size():
-			if done.has(i):
-				continue
-			var d: float = (roads[i]["line"] as Polyline2).closest(pts[0]).x
-			if d < LEAVE_ROAD:
-				near.append([d, i])
-		if near.is_empty():
-			break
-		near.sort()
-		var i2: int = int(near[0][1])
-		done[i2] = true
-		pts = _leave_road(pts, i2)
+		var nr2: Array = nearest_road(pts[pts.size() - 1])
+		if float(nr2[0]) < 1.0:
+			pts.reverse()
+			pts = _leave_road(pts, int(nr2[2]))
+			pts.reverse()
 	return pts
 
 
@@ -932,6 +909,7 @@ func _main_streets() -> void:
 			if cross.size() >= 2:
 				_add_road(cross, "county", "%s cross road" % tw["name"], false)
 		_leave_through(c)
+	_leave_beside()
 	_reindex_roads()
 
 
@@ -995,6 +973,51 @@ func _leave_through(c: Vector2) -> void:
 		roads.remove_at(gone[k2])
 	if not gone.is_empty():
 		_reindex_roads()
+
+
+## A road whose end runs beside another road once the main streets are through the centres: a
+## road's start, on another road when it was laid, was left beside it when that road was merged
+## through a centre and moved (TD-139: settled seed 11, Fenwick's exit highway ran 40-70 m beside
+## Whitlow's main street, 13 m off it). Each end off a town centre starts where it leaves the
+## nearest road it runs beside instead (_leave_road), unless another road meets the stretch cut.
+func _leave_beside() -> void:
+	var centres: Array[Vector2] = []
+	for tw: Dictionary in towns:
+		centres.append(tw["center"])
+	for ri: int in roads.size():
+		for at_start: bool in [true, false]:
+			var pts: PackedVector2Array = (roads[ri]["points"] as PackedVector2Array).duplicate()
+			if not at_start:
+				pts.reverse()
+			if pts.size() < 2 or centres.any(func(c: Vector2) -> bool: return c.distance_to(pts[0]) < 1.0):
+				continue
+			var near: Array = []
+			for rj: int in roads.size():
+				if rj != ri:
+					var d: float = (roads[rj]["line"] as Polyline2).closest(pts[0]).x
+					if d < LEAVE_ROAD:
+						near.append([d, rj])
+			near.sort()
+			for n: Array in near:
+				var left: PackedVector2Array = _leave_road(pts, int(n[1]))
+				if left.size() == pts.size() and left[0] == pts[0] and left[1] == pts[1]:
+					continue
+				if not at_start:
+					left.reverse()
+				var old_line: Polyline2 = roads[ri]["line"]
+				var line := Polyline2.from_array(Terrain._arr(left))
+				var met: bool = false
+				for rk: int in roads.size():
+					if rk == ri:
+						continue
+					var pk: PackedVector2Array = roads[rk]["points"]
+					for k: int in [0, pk.size() - 1]:
+						if old_line.closest(pk[k]).x < 1.5 and line.closest(pk[k]).x > 1.5:
+							met = true
+				if not met:
+					roads[ri]["points"] = left
+					roads[ri]["line"] = line
+				break
 
 
 ## True when every point along pts (every 4 m) lies within `reach` of `line`.
