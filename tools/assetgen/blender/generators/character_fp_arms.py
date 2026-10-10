@@ -393,10 +393,11 @@ def build(params: dict, outputs: list[str]) -> None:
     anatomy = []
     for name, n, loop, frames in F.fp_actions(cfg):
         solver.reset()
-        baked = [rig.evaluate(solver.solve(hands)) for hands in frames]
+        prms = [solver.solve(hands) for hands in frames]
+        baked = [rig.evaluate(prm) for prm in prms]
         # Every frame inside what a hand can do (player report 5, ADR-0061).
         for i, (Q, _off) in enumerate(baked):
-            anatomy += fp_anatomy.violations(name, i, fp_anatomy.measure(sk, Q))
+            anatomy += fp_anatomy.violations(name, i, fp_anatomy.measure(sk, Q), prms[i])
         char_anim.write_action(arm, sk, name, baked)
         # how far the wrist limits turned each hand from what the pose asked for
         turned.append(f"{name} " + "/".join(f"{sd}{solver.clamped.get(sd, 0.0):.0f}deg {solver.moved.get(sd, 0.0) * 100:.0f}cm"

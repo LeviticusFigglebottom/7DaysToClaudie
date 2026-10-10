@@ -44,9 +44,12 @@ LOOM_MAX = 1.5
 # The thumb's end segment in view at least this far (degrees) off the line to the eye: nearer
 # along it, the pad or tip is seen end-on (report 5's lighter thumb, aimed ~20 degrees off).
 AIM_MIN = 35.0
-# Until the tether-reading hand and the punch are re-posed, a thumb aimed at the eye is reported
-# (prefixed WARN), not failed: see is_failure().
-AIM_STRICT = False
+# A thumb tucked into a fist (curl at least this) lies across the knuckles and may face the eye:
+# aimed, it is only reported (prefixed WARN, see is_failure()); an open or working thumb fails.
+AIM_TUCKED = 0.5
+# Poses being re-posed by their owner, reported until they land (action suffix -> hands): the
+# tether-reading left hand (Presentation, report 5) aims its thumb 20-23 degrees off the ray.
+AIM_PENDING = {"_tether": "L"}
 WARN = "warn: "
 # Neighbouring fingers may press together this far (m: skin gives), no further.
 CROSS_MAX = 0.002
@@ -162,8 +165,9 @@ def measure(sk, Q: dict) -> dict:
     return out
 
 
-def violations(name: str, frame: int, m: dict) -> list[str]:
-    """What in one measured pose is outside a hand's range."""
+def violations(name: str, frame: int, m: dict, prm: dict | None = None) -> list[str]:
+    """What in one measured pose is outside a hand's range (`prm`, the solved pose, tells a
+    tucked thumb: without it every thumb counts as open)."""
     bad = []
     for k, v in m.items():
         sd, part, joint = k.split(".")
@@ -173,7 +177,9 @@ def violations(name: str, frame: int, m: dict) -> list[str]:
             continue
         if part == "aim":
             if v < AIM_MIN:
-                bad.append(f"{'' if AIM_STRICT else WARN}{name}@{frame} {sd} thumb aimed {v:.0f} deg off the view ray (min {AIM_MIN:.0f})")
+                tucked = prm is not None and float(prm.get(f"{sd}.thumb", 0.0)) >= AIM_TUCKED
+                tucked = tucked or any(name.endswith(a) and sd in sides for a, sides in AIM_PENDING.items())
+                bad.append(f"{WARN if tucked else ''}{name}@{frame} {sd} thumb aimed {v:.0f} deg off the view ray (min {AIM_MIN:.0f})")
             continue
         if part == "loom":
             if v > LOOM_MAX:
@@ -212,7 +218,7 @@ def check(cfg: dict | None = None, params: dict | None = None, every: int = 1, o
             if i % every and i != len(frames) - 1:
                 continue
             m = measure(sk, rig.evaluate(prm)[0])
-            bad += violations(name, i, m)
+            bad += violations(name, i, m, prm)
             for k, v in m.items():
                 lo, hi = worst.get(k, (v, v))
                 worst[k] = (min(lo, v), max(hi, v))
