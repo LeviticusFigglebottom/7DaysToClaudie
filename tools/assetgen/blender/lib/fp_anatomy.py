@@ -221,13 +221,12 @@ def check(cfg: dict | None = None, params: dict | None = None, every: int = 1, o
     bad: list[str] = []
     summary: dict = {}
     held = held_actions(cfg)
-    for name, n, _loop, frames in F.fp_actions(cfg):
+    for name, n, loop, frames in F.fp_actions(cfg):
         if only and not name.startswith(only):
             continue
-        solver.reset()
+        prms = F.solve_frames(solver, name, frames, loop, held)
         worst: dict = {}
-        for i, hands in enumerate(frames):
-            prm = solver.solve(hands)
+        for i, prm in enumerate(prms):
             if i % every and i != len(frames) - 1:
                 continue
             m = measure(sk, rig.evaluate(prm)[0])
