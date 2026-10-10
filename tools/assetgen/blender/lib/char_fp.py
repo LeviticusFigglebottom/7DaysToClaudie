@@ -1338,8 +1338,24 @@ def _curls(v, where: str) -> dict:
     return {k: float(x) for k, x in v.items()}
 
 
+_PRESETS: list = []
+
+
+def hand_preset(name: str, where: str = "hand spec") -> dict:
+    """A named hand shape from viewmodel.json `hand_presets` (TD-341): scalars and curls a hand
+    spec (`"hand": "open"`) or a key channel (`"R.hand": "open"`) starts from; its own values win."""
+    if not _PRESETS:
+        _PRESETS.append({k: v for k, v in (load_config().get("hand_presets") or {}).items() if not k.startswith("_")})
+    if name not in _PRESETS[0]:
+        raise ValueError(f"{where}: unknown hand preset '{name}' (viewmodel.json hand_presets: {', '.join(_PRESETS[0])})")
+    return _PRESETS[0][name]
+
+
 def _scalars(spec: dict, base: dict | None = None) -> dict:
     out = dict(base) if base else dict(DEFAULT_SCALARS)
+    if "hand" in spec:
+        pre = hand_preset(str(spec["hand"]))
+        out = _scalars(pre, out)
     for c in SCALARS:
         if c in spec:
             out[c] = float(spec[c])
@@ -1411,11 +1427,15 @@ def _relative(h: Hand, ch: dict, sd: str) -> Hand:
     rot = ch.get(f"{sd}.rot", [0.0, 0.0, 0.0])
     el = h.elbow + g2b(ch.get(f"{sd}.elbow", [0.0, 0.0, 0.0]))
     sc = dict(h.sc)
+    sc["curls"] = dict(h.sc.get("curls") or {})
+    # S.hand: a named hand shape for this key (TD-341), under the key's own channels.
+    if f"{sd}.hand" in ch:
+        pre = _scalars(hand_preset(str(ch[f"{sd}.hand"]), f"key channel {sd}.hand"), sc)
+        sc = dict(pre)
     for c in SCALARS:
         if f"{sd}.{c}" in ch:
             sc[c] = float(ch[f"{sd}.{c}"])
     # S.curls overrides those fingers for this key; the others keep the hold's own curls.
-    sc["curls"] = dict(h.sc.get("curls") or {})
     if f"{sd}.curls" in ch:
         sc["curls"].update(_curls(ch[f"{sd}.curls"], f"key channel {sd}.curls"))
     if h.on is not None:
