@@ -53,6 +53,12 @@ var fetched: Dictionary = {}
 ## A pickup or chop clip is playing: the mind leaves the animation alone.
 var acting: bool = false
 var _t: float = 0.0
+## Going to a target: where he last made headway (2 m on) and the time on the way in all; give_up
+## counts from the last headway, so a long way round is walked, a dead end is not (TD-308).
+var _headway_at := Vector3.INF
+var _go_total: float = 0.0
+const HEADWAY: float = 2.0
+const GO_MAX: float = 120.0
 var _cycle: float = 0.0
 var _blow_at: float = -1.0
 var _scan_t: float = 0.0
@@ -174,7 +180,12 @@ func _go(p: Player) -> Vector3:
 	if d <= _reach():
 		_begin_act()
 		return Vector3.ZERO
-	if _t > CompanionDef.fnum(cdef.gather, "give_up", 25.0):
+	_go_total += enemy.get_physics_process_delta_time()
+	var here: Vector3 = enemy.global_position
+	if _headway_at == Vector3.INF or Vector2(here.x - _headway_at.x, here.z - _headway_at.z).length() > HEADWAY:
+		_headway_at = here
+		_t = 0.0
+	if _t > CompanionDef.fnum(cdef.gather, "give_up", 25.0) or _go_total > GO_MAX:
 		_fail()
 		return Vector3.ZERO
 	return enemy._move_dir(to) * enemy._speed(d > 10.0 and not carrying_logs())
@@ -195,6 +206,8 @@ func _begin(ph: String) -> void:
 	phase = ph
 	_t = 0.0
 	acting = false
+	_headway_at = Vector3.INF
+	_go_total = 0.0
 
 
 func _begin_act() -> void:
