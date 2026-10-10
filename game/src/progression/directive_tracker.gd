@@ -7,8 +7,6 @@ extends Node
 
 var world: Node
 var _announced: int = 0
-## Part-credit per event not yet a whole one (the companion's trees count half, ADR-0058).
-var _shares: Dictionary = {}
 ## Directives paid this frame and not yet announced ({text, reward, event, target}), and a chapter
 ## opened ({text}). They are
 ## said at the frame's end, unless the first-days tutorial finished a journal step on the same
@@ -164,9 +162,14 @@ func record_share(event: String, share: float, target: StringName = &"") -> void
 	if share >= 1.0:
 		record(event, target)
 		return
-	_shares[event] = float(_shares.get(event, 0.0)) + share
-	while float(_shares[event]) >= 0.999:
-		_shares[event] = float(_shares[event]) - 1.0
+	# Kept with the player's directives, so it is saved (TD-306).
+	var p: PlayerState = Game.local_player()
+	if p == null:
+		return
+	var sh: Dictionary = p.directives.shares
+	sh[event] = float(sh.get(event, 0.0)) + share
+	while float(sh[event]) >= 0.999:
+		sh[event] = float(sh[event]) - 1.0
 		record(event, target)
 
 

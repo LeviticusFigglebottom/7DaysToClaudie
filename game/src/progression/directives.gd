@@ -16,6 +16,9 @@ const ONCE_EVENTS: PackedStringArray = ["recruit"]
 var progress: Dictionary = {}
 var done: Dictionary = {}
 var chapter: int = 1
+## Part-credit per event not yet a whole one (the companion's trees count half, ADR-0058): saved, so
+## half a tree is not lost on a reload (TD-306). DirectiveTracker.record_share adds to it.
+var shares: Dictionary = {}
 ## How this world plays the directives aimed at particular buildings (DirectiveTracker sets them
 ## from for_world(); not saved: the same world always fits the same way). stand_ins: directive id
 ## -> {"targets": PackedStringArray of POI def ids that count instead, "name": the building's name}
@@ -190,11 +193,23 @@ func to_dict() -> Dictionary:
 	for k: Variant in done.keys():
 		d.append(String(k))
 	d.sort()
-	return {"chapter": chapter, "progress": p, "done": d}
+	var out: Dictionary = {"chapter": chapter, "progress": p, "done": d}
+	var sh: Dictionary = {}
+	for k2: Variant in shares.keys():
+		if float(shares[k2]) > 0.0001:
+			sh[str(k2)] = snappedf(float(shares[k2]), 0.0001)
+	if not sh.is_empty():
+		out["shares"] = sh
+	return out
 
 
 func from_dict(d: Dictionary) -> void:
 	chapter = maxi(1, int(d.get("chapter", 1)))
+	shares.clear()
+	var sh: Variant = d.get("shares", {})
+	if sh is Dictionary:
+		for k3: Variant in (sh as Dictionary).keys():
+			shares[str(k3)] = clampf(float(sh[k3]), 0.0, 0.999)
 	progress.clear()
 	for k: Variant in (d.get("progress", {}) as Dictionary).keys():
 		progress[StringName(str(k))] = int(d["progress"][k])
