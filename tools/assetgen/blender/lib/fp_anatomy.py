@@ -52,7 +52,7 @@ AIM_MIN = 35.0
 AIM_TUCKED = 0.5
 # Poses being re-posed by their owner, reported until they land (action suffix -> hands): the
 # tether-reading left hand (Presentation, report 5) aims its thumb 20-23 degrees off the ray.
-AIM_PENDING = {"_tether": "L"}
+AIM_PENDING = {}
 WARN = "warn: "
 # Neighbouring fingers may press together this far (m: skin gives), no further.
 CROSS_MAX = 0.002
