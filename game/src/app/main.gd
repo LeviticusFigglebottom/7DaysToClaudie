@@ -165,7 +165,7 @@ func _style_menu() -> void:
 ## Save slots the QA runners write (smoke, tour, screenshots, probes); "qa_" marks any new one.
 ## Players never see them on the menu; a developer does (the editor, or `--dev`).
 const QA_SLOTS: PackedStringArray = ["smoke", "tour", "screens", "perf", "intro_probe", "continue_check",
-	"rwg_shots", "exterior_qa", "aggro_probe", "stream_walk"]
+	"rwg_shots", "exterior_qa", "aggro_probe", "stream_walk", "humwatch"]
 
 
 ## Whether this run shows developer entries (QA saves, the slice demo): the editor's binary or
