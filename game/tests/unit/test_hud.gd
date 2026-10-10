@@ -246,3 +246,4 @@ func test_lines_wait_under_the_death_and_sleep_screens() -> void:
 	assert_true(GameUI.feed_held(false, true), "not over SIGNAL LOST or You sleep.")
 	assert_false(GameUI.feed_held(false, false))
 	assert_true(GameUI.feed_held(true, false))
+	assert_true(GameUI.feed_held(false, false, true), "not over a note being read")

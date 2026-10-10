@@ -877,7 +877,7 @@ func _flash_damage(amount: float) -> void:
 
 
 func message(text: String, kind: StringName = &"info") -> void:
-	if feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible):
+	if feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible, reader != null and reader.is_open()):
 		_held_messages.append([text, kind])
 		return
 	# The same line again (a full pack, a locked door) refreshes the one on screen with a count
@@ -912,16 +912,17 @@ func message(text: String, kind: StringName = &"info") -> void:
 		_messages.remove_child(_messages.get_child(0))
 
 
-## Whether the message feed waits: while the salvage roll is open, and under the death or sleep
-## screen (a level-up said itself over "SIGNAL LOST"). Pure.
-static func feed_held(roll_open: bool, overlay_up: bool = false) -> bool:
-	return roll_open or overlay_up
+## Whether the message feed waits: while the salvage roll is open, under the death or sleep
+## screen (a level-up said itself over "SIGNAL LOST"), and while a note is read (at 720p the feed
+## ran over the note's card). Pure.
+static func feed_held(roll_open: bool, overlay_up: bool = false, reading: bool = false) -> bool:
+	return roll_open or overlay_up or reading
 
 
 ## Hides the feed under the roll and, once it closes, plays what came meanwhile in order (a
 ## repeat still collapses into one line with a count).
 func _update_feed() -> void:
-	var held: bool = feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible)
+	var held: bool = feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible, reader != null and reader.is_open())
 	_messages.visible = not held
 	if not held and not _held_messages.is_empty():
 		var lines: Array = _held_messages
