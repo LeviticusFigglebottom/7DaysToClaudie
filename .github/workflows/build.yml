@@ -106,6 +106,24 @@ jobs:
           sed '/^MENU_GUARD done/q' ../menu_guard.log > ../menu_guard_run.log
           python3 "$GITHUB_WORKSPACE/tools/qa/check_log_errors.py" ../menu_guard_run.log
 
+      - name: Pad pass (the exported Linux pack played on a gamepad alone, 3D off)
+        run: |
+          set -o pipefail
+          mkdir -p build/run && cd build/run
+          # Round 4 found screens a pad couldn't open or leave (A did nothing on New Game, no stick
+          # look, the manual's tabs and the recipe list out of reach). This drives the shipped pack
+          # with gamepad events only: menu -> New Game -> intro skip -> look -> field manual ->
+          # salvage roll and crafting -> map -> pause -> toolbelt, attack, reload (X held), turning
+          # a blueprint (LB/RB). The 3D is off (the screens are under test, and lavapipe would starve
+          # the world's threads). Any step that fails, or an error on the way, fails the build.
+          timeout 600 xvfb-run -a -s "-screen 0 1280x720x24" ../../.tools/godot/godot \
+            --main-pack "$GITHUB_WORKSPACE/build/export/linux/Hollowmere.pck" \
+            --rendering-driver vulkan --audio-driver Dummy --resolution 1280x720 \
+            -s "$GITHUB_WORKSPACE/game/src/tools/cli/pad_pass.gd" 2>&1 | tee ../pad_pass.log
+          grep -q "^PAD done: PASS" ../pad_pass.log
+          sed '/^PAD done/q' ../pad_pass.log > ../pad_pass_run.log
+          python3 "$GITHUB_WORKSPACE/tools/qa/check_log_errors.py" ../pad_pass_run.log
+
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:

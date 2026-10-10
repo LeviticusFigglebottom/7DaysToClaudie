@@ -165,8 +165,9 @@ whatever is open; **RT** attack, **LT** aim and guard, **LB / RB** the toolbelt;
 **R3** crouch; **Start** pause, **Back** the map; the d-pad: up the field manual, down the tether,
 left drop (feed a fire), right light. In every screen the d-pad and stick move the focus and **A**
 presses; in the field manual LB / RB turn the tabs; in the salvage roll the stick walks the cloth,
-RB goes to the recipe sheet and up / down choose a recipe. Reload, companion orders, rotating a
-building piece and the log pose have no pad button by default. Every key, mouse button and pad
+RB goes to the recipe sheet and up / down choose a recipe. With a gun in hand, **hold X** with
+nothing in reach to reload (a tap still uses what you look at); while placing a blueprint **LB / RB**
+turn it. Companion orders, turning a carried log and the log pose have no pad button by default. Every key, mouse button and pad
 button can be rebound under **Options → Controls**, also reachable from the pause menu; a binding
 another action already uses is flagged. The keys below are the defaults.
 

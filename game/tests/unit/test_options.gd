@@ -180,3 +180,25 @@ func test_the_right_stick_looks() -> void:
 	assert_almost_eq(full.x, PlayerScript.PAD_LOOK_SPEED.x, 0.001, "full tilt turns at the look speed")
 	var half: Vector2 = PlayerScript.pad_look(Vector2(0.575, 0), 1.0)
 	assert_lt(half.x, full.x * 0.5, "eased: fine aim near the centre")
+
+
+func test_pad_actions_that_go_by_context() -> void:
+	# Holding the pad's Interact reloads only with a gun in hand and nothing in reach.
+	var rifle: ItemDef = Content.item(&"hunting_rifle")
+	var axe: ItemDef = Content.item(&"stone_axe")
+	assert_not_null(rifle)
+	assert_true(PlayerEquipment.pad_reload_starts(rifle, false))
+	assert_false(PlayerEquipment.pad_reload_starts(rifle, true), "a door in reach: X uses it")
+	assert_false(PlayerEquipment.pad_reload_starts(axe, false), "an axe has nothing to reload")
+	assert_false(PlayerEquipment.pad_reload_starts(null, false))
+	# While placing, Rotate or Next tool (RB) turns one step, Previous tool (LB) one back.
+	assert_eq(BuildingManager.placement_turn(true, false), 1)
+	assert_eq(BuildingManager.placement_turn(false, true), -1)
+	assert_eq(BuildingManager.placement_turn(false, false), 0)
+	# The turn hint names LB/RB on a pad and the Rotate key otherwise.
+	var was: bool = Settings.using_pad
+	Settings.using_pad = true
+	assert_eq(GameUI.turn_keys(), "LB/RB")
+	Settings.using_pad = false
+	assert_eq(GameUI.turn_keys(), Settings.input_label("rotate_piece"))
+	Settings.using_pad = was
