@@ -121,9 +121,28 @@ func light(def: ItemDef) -> bool:
 	fuse_left = def.equip_num("fuse", 25.0)
 	Audio.play_3d(&"sfx/lighter_flick", p.global_position, {"volume_db": -8.0, "occlusion": false})
 	Audio.play_3d(&"sfx/torch_ignite", p.global_position, {"volume_db": -6.0, "occlusion": false})
+	# A lighter does it when there is one (a torch otherwise): it shows in the other hand and wears.
+	var lighter: ItemStack = p.state.inventory.find_tool("lighter")
+	if lighter != null:
+		wear_lighter(p.state, lighter)
 	if equipment.viewmodel != null:
-		equipment.viewmodel.play_use(StringName("light_%s" % equipment.viewmodel.hold_class))
+		var use := StringName("light_%s" % equipment.viewmodel.hold_class)
+		equipment.viewmodel.play_use(use)
+		if lighter != null:
+			equipment.viewmodel.show_offhand(lighter.item_id, equipment.viewmodel.use_length(use))
 	return true
+
+
+## One flick's wear on a lighter (its durability, in uses); spent, it is gone.
+static func wear_lighter(p: PlayerState, lighter: ItemStack) -> void:
+	var d: ItemDef = lighter.def()
+	if d == null or d.durability <= 0.0:
+		return
+	lighter.durability -= 1.0
+	if lighter.durability <= 0.0:
+		p.inventory.take_from(lighter, 1)
+		Events.player_status_message.emit("The %s is spent." % d.display_name.to_lower(), &"warning")
+	Events.inventory_changed.emit(p.id)
 
 
 ## A lit rag burns down; snuffed (light key) or put away it stops; burnt down, it bursts.

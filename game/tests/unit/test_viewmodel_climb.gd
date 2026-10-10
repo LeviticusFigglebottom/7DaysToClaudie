@@ -190,3 +190,22 @@ func test_rope_finds_the_ledge_and_hangs_a_ladder() -> void:
 	assert_almost_eq(top.y, 10.0, 0.001, "the landing on top")
 	assert_lt(top.z, 0.0 + 0.5, "behind the edge")
 	assert_gt(top.z, -0.1)
+
+
+func test_hands_stay_on_the_rails_at_any_fov() -> void:
+	# TD-296: the poses were baked at the default world FOV; elsewhere the rig scales across the screen.
+	assert_almost_eq(ViewModelClimb.fov_scale(75.0, 75.0), 1.0, 0.0001)
+	assert_lt(ViewModelClimb.fov_scale(100.0, 75.0), 1.0, "wider: the rails crowd to the middle")
+	assert_gt(ViewModelClimb.fov_scale(60.0, 75.0), 1.0, "narrower: they spread out")
+	# A rail at screen x = X/tan(fov/2) stays under the hand: scaled hand / bake projection = rail.
+	var rail_x: float = 0.2
+	for fov: float in [60.0, 90.0, 110.0]:
+		var rail_screen: float = rail_x / tan(deg_to_rad(fov) * 0.5)
+		var hand_screen: float = rail_x * ViewModelClimb.fov_scale(fov, 75.0) / tan(deg_to_rad(75.0) * 0.5)
+		assert_almost_eq(hand_screen, rail_screen, 0.0001)
+	var c := ViewModelClimb.new()
+	c.setup({"climb": {"bake_fov": 75.0}})
+	c.anchor = 0.0
+	assert_eq(c.rig_scale(100.0), 1.0, "off the rails: no scale")
+	c.anchor = 1.0
+	assert_almost_eq(c.rig_scale(100.0), ViewModelClimb.fov_scale(100.0, 75.0), 0.0001)

@@ -21,6 +21,8 @@ var damage: float = 10.0
 var origin := Vector3.ZERO
 ## A molotov's rag is burning: it bursts into flames where it breaks.
 var lit: bool = false
+## The rag's flame while it flies (kept upright).
+var _flame: Node3D = null
 var _armed: bool = true
 var _life: float = 0.0
 
@@ -45,6 +47,9 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_life += delta
+	# The bottle tumbles; its flame burns up (TD-291: it spun with the bottle).
+	if _flame != null and is_instance_valid(_flame):
+		_flame.global_basis = upright(_flame.global_basis)
 	if _life > 3.0 and linear_velocity.length() < 0.3:
 		ItemDrop.spawn(get_tree().current_scene, stack if stack != null else ItemStack.make(item_id, 1), global_position)
 		queue_free()
@@ -118,12 +123,18 @@ func _flight_model() -> Node3D:
 	return ItemVisuals.make_model(item_id)
 
 
+## `b` stood up: no turn, the same scale. Pure.
+static func upright(b: Basis) -> Basis:
+	return Basis.from_scale(b.get_scale())
+
+
 ## A lit molotov flies with its rag burning (and lighting the ground under it at night).
 func _light_rag(model: Node3D) -> void:
 	var sock: Node3D = model.find_child("socket_flame", true, false) as Node3D
 	var at: Node3D = sock if sock != null else model
 	if DisplayServer.get_name() != "headless":
-		at.add_child(ViewModel.build_flame(item_id))
+		_flame = ViewModel.build_flame(item_id)
+		at.add_child(_flame)
 	var l := FlickerLight.new()
 	l.light_color = Color(1.0, 0.6, 0.28)
 	l.light_energy = 1.2
