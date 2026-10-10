@@ -9,6 +9,13 @@ uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D normal_atlas : hint_normal, filter_linear_mipmap, repeat_disable;
 uniform bool has_normals = false;
 uniform int frames = 8;
+// Variant rows (TD-005): row r is the species' models[r]; an instance's row is INSTANCE_CUSTOM.r
+// (one past the last shows row 0, as an atlas baked before rows has a single one).
+uniform int variants = 1;
+// A deciduous species' bare branches (same layout, baked in winter colours), shown by the winter
+// weight in place of the re-tinted summer canopy.
+uniform sampler2D winter_atlas : source_color, filter_linear_mipmap, repeat_disable;
+uniform bool has_winter = false;
 // World-space XZ rectangle (x0, z0, x1, z1) whose instances are hidden.
 uniform vec4 discard_rect = vec4(0.0);
 // Coarse far forest (TD-006): instances shrink away over the last fade_band metres before
@@ -31,6 +38,7 @@ uniform vec4 winter_tint : source_color = vec4(1.0);
 global uniform vec4 hm_season;
 global uniform float hm_snow;
 
+varying flat float v_row;
 varying flat float v_frame0;
 varying flat float v_blend;
 varying vec3 v_right;
@@ -63,6 +71,8 @@ void vertex() {
 	float a = atan(dot(to_cam, ax), dot(to_cam, az));
 	float f = a / (6.2831853 / float(frames));
 	f = mod(f + float(frames), float(frames));
+	float row = floor(INSTANCE_CUSTOM.r + 0.5);
+	v_row = row < float(variants) && row >= 0.0 ? row : 0.0;
 	v_frame0 = floor(f);
 	v_blend = fract(f);
 	v_right = (VIEW_MATRIX * vec4(right, 0.0)).xyz;
@@ -78,11 +88,11 @@ void vertex() {
 
 vec4 frame_sample(sampler2D tex, float frame, vec2 uv) {
 	float fr = mod(frame, float(frames));
-	return texture(tex, vec2((fr + uv.x) / float(frames), uv.y));
+	return texture(tex, vec2((fr + uv.x) / float(frames), (v_row + uv.y) / float(variants)));
 }
 
 void fragment() {
-	vec2 uv = vec2(clamp(UV.x, 0.002, 0.998), UV.y);
+	vec2 uv = vec2(clamp(UV.x, 0.002, 0.998), clamp(UV.y, 0.002, 0.998));
 	vec4 c0 = frame_sample(atlas, v_frame0, uv);
 	vec4 c1 = frame_sample(atlas, v_frame0 + 1.0, uv);
 	vec4 c = mix(c0, c1, v_blend);
@@ -101,6 +111,17 @@ void fragment() {
 	vec4 season = hm_season.x * spring_tint + hm_season.y * summer_tint + hm_season.z * autumn_tint + hm_season.w * winter_tint;
 	float wsum = max(0.001, hm_season.x + hm_season.y + hm_season.z + hm_season.w);
 	albedo *= clamp(season.rgb / wsum / max(summer_tint.rgb, vec3(0.05)), vec3(0.0), vec3(2.5));
+	float wsum2 = max(0.001, hm_season.x + hm_season.y + hm_season.z + hm_season.w);
+	if (has_winter) {
+		// Bare branches by the winter weight: the summer canopy fades out as the near trees drop
+		// their leaves (foliage.gdshader winter_leaf_loss).
+		vec4 w0 = frame_sample(winter_atlas, v_frame0, uv);
+		vec4 w1 = frame_sample(winter_atlas, v_frame0 + 1.0, uv);
+		vec4 wc = mix(w0, w1, v_blend);
+		float ww = hm_season.w / wsum2;
+		albedo = mix(albedo, wc.rgb, ww);
+		c.a = mix(c.a, wc.a, ww);
+	}
 	// Snow on upward-facing parts of the canopy.
 	float snow = clamp(hm_snow * (n_frame.y * 1.6 + 0.2), 0.0, 1.0);
 	albedo = mix(albedo, vec3(0.86, 0.88, 0.9), snow * 0.8);

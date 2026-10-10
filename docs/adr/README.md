@@ -58,6 +58,7 @@ One file per decision: context → decision → consequences. Supersede rather t
 | [0057](0057-hunting-and-ranged.md) | Hunting and ranged: a bow whose arrows stick and come back, distraction stones, molotovs and ground fire, a bolt-action rifle with aim and scope, climbing arms, hunting stands and ropes | Accepted |
 | [0059](0059-roads-banks-and-towns.md) | Roads graded to the land, natural banks, towns that grow, and street networks | Accepted |
 | [0060](0060-relaxed-wrists.md) | Relaxed wrists: a comfort range the pose solver keeps hands at rest in, hold hands written against their own forearm, the lighter held obliquely in the fingers | Accepted |
+| [0061](0061-hand-anatomy.md) | Hands inside anatomy: finger and thumb joints ease into real limits, the end joint lags a light curl, adult proportions, and a check on every baked frame (joint ranges, crossed fingers, digits at the lens, a looming thumb) that fails the fp_arms bake | Accepted |
 | [0062](0062-first-days-tutorial.md) | The first-days tutorial: Program cards on the tether, any order, then Ezra's distress call; Find the lineman counts in any chapter | Accepted |
 | [0063](0063-ui-style-and-menu-backdrop.md) | One UI style (paper and kit themes, readable disabled states, a UI scale), the crafting sheet and item cards, a flight over the real valley behind the main menu that freezes if it costs too much | Accepted |
 | [0064](0064-new-game-intro.md) | The new-game intro: data-driven cards over the load, with the load's heavy steps held to the cards' quiet moments | Accepted |

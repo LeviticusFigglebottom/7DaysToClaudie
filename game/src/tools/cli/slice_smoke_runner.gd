@@ -3,10 +3,12 @@ extends Node
 ##   godot --headless --path game -s res://src/tools/cli/slice_smoke.gd      (make smoke)
 ## New game -> world ready -> fell a tree -> carry a log -> place logs (freeform) -> lay out and
 ## complete a campfire -> craft a stone axe -> survival ticks -> night wanderers -> a Hum night
-## with waves and a memory report -> save -> load -> state restored. Exit code = failures.
+## with waves and a memory report -> save -> load -> state restored. Exit code = failures. Ezra is
+## recruited at his camp and gathers wood, fetches a log and hands it over on the way (TD-308).
 ## `-- --world random --world-seed N --world-set size=3` runs it on a generated world (ADR-0031).
 
 var _fails: int = 0
+var _ezra_recruited: bool = false
 var _t0: int = 0
 
 
@@ -170,6 +172,10 @@ func _run() -> void:
 	ok(ps.directives.done.has(&"arrival_axe") and ps.directives.done.has(&"arrival_fire") and ps.directives.count_of(&"arrival_fell") >= 1,
 		"directives track play (axe, campfire, felling)")
 
+	# --- Ezra (TD-308): recruited at his camp, he gathers from a real region's trees and bushes,
+	# fetches a log the player points him at and hands over what he carries -----------------------
+	await _companion(game, w, p)
+
 	# --- Survival over time -------------------------------------------------------------------------
 	var full0: float = ps.stats.fullness
 	w.clock_driver.advance(120.0)
@@ -276,6 +282,9 @@ func _run() -> void:
 			"the player stands where they saved (%.2f m off)" % at_load.distance_to(at_save))
 		ok(absf(angle_difference(w2.player.rotation.y, yaw_save)) < 0.01, "the player faces the saved way")
 		ok(ps2.stats.alive and ps2.deaths == deaths_save, "the player survives arriving (deaths %d)" % ps2.deaths)
+		var comp2: CompanionDirector = w2.companion as CompanionDirector
+		if comp2 != null and _ezra_recruited:
+			ok(comp2.recruited(), "Ezra is still with the player after the load")
 	_finish()
 
 
@@ -287,6 +296,169 @@ func _finish() -> void:
 ## Fails the run when a build that should carry the generated assets shows stand-ins: every
 ## vegetation model, every building kit piece built so far and a Hollowed's body must come from
 ## the generated models (the owner's first playtest ran on stand-ins without anyone noticing).
+func _companion(game: Node, w: GameWorld, p: Player) -> void:
+	var comp: CompanionDirector = w.companion as CompanionDirector
+	var back: Vector3 = p.global_position
+	var camp: Dictionary = comp.camp_spot() if comp != null else {}
+	if camp.is_empty() and comp != null:
+		# A random world's camp stands 300-750 m from the drop (generator 20), past the ring built
+		# so far: walk there (teleport) and let the streaming build it, as it would for a player.
+		camp = await _reach_camp(comp, w, p)
+	if not ok(not camp.is_empty(), "the lineman's camp is in the world"):
+		p.global_position = back
+		w.terrain.update_streaming(p.global_position, true)
+		return
+	var ps: PlayerState = p.state
+	var at: Vector3 = camp["pos"]
+	p.global_position = Vector3(at.x, w.height_at(at.x, at.z + 2.5) + 0.1, at.z + 2.5)
+	p.velocity = Vector3.ZERO
+	w.terrain.update_streaming(p.global_position, true)
+	await wait_until(func() -> bool:
+		comp.tick()
+		return comp.body != null and is_instance_valid(comp.body), 30.0)
+	if not ok(comp.body != null, "Ezra waits at his camp"):
+		p.global_position = back
+		return
+	ps.inventory.add_item(&"first_aid_kit", 1)
+	var rr: Dictionary = game.execute(&"companion.recruit", {})
+	if not ok(bool(rr.get("ok", false)), "recruited Ezra (%s)" % rr.get("error", "")):
+		p.global_position = back
+		return
+	_ezra_recruited = true
+	var m: CompanionMind = comp.mind()
+	await wait_until(func() -> bool: return m.rising_t <= 0.0, 6.0)
+	# Gather wood round the camp: he picks a tree or deadfall of the region's scatter, works it and
+	# carries in what it gives.
+	var rg: Dictionary = game.execute(&"companion.order", {"order": "gather", "kind": "wood", "spot": [at.x, at.y, at.z]})
+	if ok(bool(rg.get("ok", false)), "ordered to gather wood (%s)" % rg.get("error", "")):
+		var tg: int = Time.get_ticks_msec()
+		var got: bool = await wait_until(func() -> bool:
+			return comp.inventory.count_of(&"log") + comp.inventory.count_of(&"stick") > 0, 150.0)
+		ok(got, "he brings in wood from the region (%d logs, %d sticks, %.0f s)" % [comp.inventory.count_of(&"log"),
+			comp.inventory.count_of(&"stick"), (Time.get_ticks_msec() - tg) / 1000.0])
+	# Fetch a log the player looked at.
+	game.execute(&"companion.order", {"order": "follow"})
+	# Out on open ground past the camp's fence: its yard isn't joined to the navmesh round it
+	# (TD-340), and a fetch carried back into it went the long way round and stalled at the fence.
+	var out: Vector3 = comp.safe_spot(at + Vector3(0.0, 0.0, 16.0))
+	p.global_position = Vector3(out.x, w.height_at(out.x, out.z) + 0.1, out.z)
+	p.velocity = Vector3.ZERO
+	await wait_until(func() -> bool: return comp.body.global_position.distance_to(p.global_position) < 5.0, 40.0)
+	# On open ground he can walk to.
+	var lat: Vector3 = comp.safe_spot(p.global_position, p.global_position + Vector3(8.0, 0.0, 3.0))
+	var lg: LogEntity = w.loose.spawn_log(lat + Vector3.UP * 0.3, Basis(), &"")
+	await frames(10)
+	var rf: Dictionary = game.execute(&"companion.order", {"order": "fetch", "target": {"entity": String(lg.entity_id)}})
+	if ok(bool(rf.get("ok", false)), "ordered to fetch a log (%s)" % rf.get("error", "")):
+		var lpos: Vector3 = lg.global_position
+		# Held weakly: he picks it up, and a freed capture is an engine error in the lambda.
+		var lref: WeakRef = weakref(lg)
+		var track: PackedStringArray = []
+		var next_t: Array[int] = [0]
+		var fetched: bool = await wait_until(func() -> bool:
+			if Time.get_ticks_msec() > next_t[0]:
+				next_t[0] = Time.get_ticks_msec() + 5000
+				var bp: Vector3 = comp.body.global_position
+				var cols: PackedStringArray = []
+				for ci: int in comp.body.get_slide_collision_count():
+					var kc: KinematicCollision3D = comp.body.get_slide_collision(ci)
+					cols.append("%s n(%.2f,%.2f,%.2f)" % [(kc.get_collider() as Node).name if kc.get_collider() is Node else "?", kc.get_normal().x, kc.get_normal().y, kc.get_normal().z])
+				var nx: Vector3 = comp.body.agent.get_next_path_position() - bp
+				track.append("(%.1f,%.1f,%.1f %s/%s v(%.1f,%.1f) next(%.1f,%.1f,%.1f) fin %s far %s)" % [bp.x - at.x, bp.y, bp.z - at.z, m.order, m.work.phase,
+					comp.body.velocity.x, comp.body.velocity.z, nx.x, nx.y, nx.z, comp.body.agent.is_navigation_finished(), comp.body._far])
+			var l: Object = lref.get_ref()
+			return l == null or (l as Node).is_queued_for_deletion(), 130.0)
+		if not fetched:
+			print("[smoke] fetch track (camp-relative): log at (%.1f,%.1f) player at (%.1f,%.1f): %s" % [lpos.x - at.x, lpos.z - at.z,
+				p.global_position.x - at.x, p.global_position.z - at.z, " ".join(track)])
+			var from: Vector3 = comp.body.global_position + Vector3.UP * 0.6
+			var dir: Vector3 = Vector3(lpos.x - from.x, 0.0, lpos.z - from.z).normalized()
+			for h: float in [0.3, 0.6, 1.2]:
+				var q := PhysicsRayQueryParameters3D.create(comp.body.global_position + Vector3.UP * h, comp.body.global_position + Vector3.UP * h + dir * 2.0)
+				q.exclude = [comp.body.get_rid()]
+				var hit: Dictionary = comp.body.get_world_3d().direct_space_state.intersect_ray(q)
+				print("[smoke] blocked at %.1f m: %s" % [h, "nothing" if hit.is_empty() else "%s (layer %d) at %.2f m" % [
+					(hit["collider"] as Node).get_path(), (hit["collider"] as CollisionObject3D).collision_layer, comp.body.global_position.distance_to(hit["position"])]])
+			var prof: PackedStringArray = []
+			var bp0: Vector3 = comp.body.global_position
+			for k: int in 17:
+				var q2: Vector3 = bp0.lerp(Vector3(lpos.x, bp0.y, lpos.z), float(k) / 16.0)
+				var down := PhysicsRayQueryParameters3D.create(q2 + Vector3.UP * 4.0, q2 + Vector3.DOWN * 4.0)
+				down.exclude = [comp.body.get_rid()]
+				var hh: Dictionary = comp.body.get_world_3d().direct_space_state.intersect_ray(down)
+				prof.append("%.2f%s" % [(hh["position"] as Vector3).y - bp0.y if not hh.is_empty() else -99.0,
+					"" if hh.is_empty() or (hh["collider"] as Node).name.begins_with("Col_") else "*"])
+			print("[smoke] ground along the way (m above him, * not terrain): %s" % " ".join(prof))
+			print("[smoke] nav next: %s, finished %s, target %s" % [comp.body.agent.get_next_path_position(), comp.body.agent.is_navigation_finished(), comp.body.agent.target_position])
+		ok(fetched, "he fetches the log (he is %.1f m from it, %.1f m from the player, order %s, %s)" % [comp.body.global_position.distance_to(lpos),
+			comp.body.global_position.distance_to(p.global_position), m.order, m.work.to_dict()])
+		var rtrack: PackedStringArray = []
+		var rnext: Array[int] = [0]
+		await wait_until(func() -> bool:
+			if Time.get_ticks_msec() > rnext[0]:
+				rnext[0] = Time.get_ticks_msec() + 3000
+				var bp: Vector3 = comp.body.global_position
+				var nx: Vector3 = comp.body.agent.get_next_path_position() - bp
+				var cols: PackedStringArray = []
+				for ci: int in comp.body.get_slide_collision_count():
+					var kc: KinematicCollision3D = comp.body.get_slide_collision(ci)
+					if kc.get_normal().y < 0.7:
+						cols.append("%s" % ((kc.get_collider() as Node).get_path() if kc.get_collider() is Node else "?"))
+				rtrack.append("(%.1f,%.1f %s v(%.1f,%.1f) next(%.1f,%.1f) straight %s detour %.1f [%s])" % [bp.x - at.x, bp.z - at.z, m.work.phase,
+					comp.body.velocity.x, comp.body.velocity.z, nx.x, nx.z, comp.body._nav_straight, comp.body._detour_t, ", ".join(cols)])
+			return m.order == "follow", 90.0)
+		# The camp's yard joins the mesh round it only far off (TD-340): on the way back he walks the
+		# long way round at a carrying pace.
+		if m.order != "follow":
+			print("[smoke] return track: %s" % " ".join(rtrack))
+	var before: int = ps.inventory.count_of(&"stick") + ps.inventory.count_of(&"log")
+	# Give is a hand-over within reach: he comes back to the player first.
+	await wait_until(func() -> bool: return comp.body.global_position.distance_to(p.global_position) < 5.0, 30.0)
+	var rgv: Dictionary = game.execute(&"companion.give", {})
+	var bpg: Vector3 = comp.body.global_position
+	ok(bool(rgv.get("ok", false)) or comp.inventory.is_empty(), "he hands over what he carries (%s; %.1f m off at (%.1f,%.1f), order %s/%s, carrying %s)" % [
+		rgv.get("error", ""), bpg.distance_to(p.global_position), bpg.x - at.x, bpg.z - at.z, m.order, m.work.phase, comp.inventory.to_dict() if comp.inventory.has_method(&"to_dict") else ""])
+	ok(ps.inventory.count_of(&"stick") + ps.inventory.count_of(&"log") >= before, "the player has it")
+	game.execute(&"companion.order", {"order": "follow"})
+	p.global_position = back
+	p.velocity = Vector3.ZERO
+	w.terrain.update_streaming(p.global_position, true)
+	await seconds(0.5)
+
+
+## Takes the player to the camp's building while it is placed but not built, until it is built
+## ({} if it never is, saying what held it back).
+func _reach_camp(comp: CompanionDirector, w: GameWorld, p: Player) -> Dictionary:
+	var poi: String = str(comp.cdef.camp.get("poi", ""))
+	var entry: Dictionary = {}
+	for v: Variant in w.pois.all_buildings():
+		if str((v as Dictionary).get("def", "")) == poi:
+			entry = v
+			break
+	if entry.is_empty():
+		print("[smoke] no %s in the world's buildings" % poi)
+		return {}
+	var at: Vector3 = entry["pos"]
+	print("[smoke] camp %s placed at (%.0f, %.0f), %.0f m from the player: walking there" % [entry.get("id", ""), at.x, at.z,
+		Vector2(at.x - p.global_position.x, at.z - p.global_position.z).length()])
+	p.global_position = Vector3(at.x, w.height_at(at.x, at.z + 12.0) + 0.5, at.z + 12.0)
+	p.velocity = Vector3.ZERO
+	w.terrain.update_streaming(p.global_position, true)
+	var id: StringName = StringName(str(entry.get("id", "")))
+	var next_t: Array[int] = [0]
+	var found: Array = [{}]
+	await wait_until(func() -> bool:
+		found[0] = comp.camp_spot()
+		if Time.get_ticks_msec() > next_t[0]:
+			next_t[0] = Time.get_ticks_msec() + 5000
+			var e: Dictionary = w.pois.registry.entries.get(id, {}) if w.pois.registry != null else {}
+			print("[smoke] camp: region %s attached %s, queued %s, built %s; %d built + %d on the way (max %d)" % [
+				e.get("region", "?"), w.terrain.regions.has(str(e.get("region", ""))), w.pois._jobs.has(id), w.pois.instances.has(id),
+				w.pois.instances.size(), w.pois._jobs.size(), w.pois._max_built])
+		return not (found[0] as Dictionary).is_empty(), 180.0)
+	return found[0]
+
+
 func _check_real_models(w: GameWorld, p: Player) -> void:
 	var share: float = ModelLibrary.generated_share(get_node("/root/Content"))
 	ok(share >= 1.0, "every vegetation model is generated (%.0f%%)" % (share * 100.0))

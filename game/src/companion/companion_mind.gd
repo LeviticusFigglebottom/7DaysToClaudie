@@ -90,6 +90,7 @@ func setup(e: Enemy) -> void:
 ## The body's frame (Enemy._physics_process hands it over). True: nothing else runs this frame.
 func step(delta: float, p: Player, dist: float) -> bool:
 	_fix_anims()
+	_props()
 	if enemy.state != Enemy.State.STAGGER or downed:
 		enemy._state_t += delta  # (Enemy's own frame, which counts it, doesn't run for him)
 	if downed:
@@ -459,6 +460,21 @@ func speak(event: String, n: int = 0) -> void:
 		SoundCaptions.say("ezra", "ezra calling out", enemy.global_position, 10.0)
 
 
+## His gear as he is using it (TD-302): the hatchet in his fist when he fights or chops, on his
+## belt the rest of the time (talking, sitting, downed, carrying); the lantern in his left hand
+## while its light is on; the splint on his leg at his camp, until he is recruited.
+func _props() -> void:
+	var v: EnemyVisual = enemy.visual
+	if v == null:
+		return
+	var in_hand: bool = recruited and not downed and rising_t <= 0.0 and (enemy.foe != null
+		or enemy.state in [Enemy.State.ATTACK, Enemy.State.CHASE] or (work != null and work.chopping()))
+	v.set_part("prop_hatchet_hand", in_hand)
+	v.set_part("prop_hatchet_belt", not in_hand)
+	v.set_part("prop_lantern", lantern_on())
+	v.set_part("prop_splint", not recruited)
+
+
 ## The lantern he carries at night while following: his own light (not a stimulus-field light, so
 ## it never shows the Hollowed the player).
 func _light(on: bool) -> void:
@@ -474,6 +490,14 @@ func _light(on: bool) -> void:
 		lantern.shadow_enabled = false
 		lantern.position = Vector3(-0.3, 1.0, 0.15)
 		enemy.add_child(lantern)
+		# In his left fist when his body has the lantern (TD-302): the light rides the hand.
+		var sk: Skeleton3D = enemy.visual.skeleton
+		if enemy.visual.has_part("prop_lantern") and sk != null and sk.find_bone("hand.L") >= 0:
+			var at := BoneAttachment3D.new()
+			at.bone_name = "hand.L"
+			sk.add_child(at)
+			lantern.reparent(at, false)
+			lantern.position = Vector3(0.0, 0.18, 0.0)
 	lantern.visible = on
 
 

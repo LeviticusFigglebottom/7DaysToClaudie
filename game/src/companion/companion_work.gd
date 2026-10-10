@@ -53,6 +53,21 @@ var fetched: Dictionary = {}
 ## A pickup or chop clip is playing: the mind leaves the animation alone.
 var acting: bool = false
 var _t: float = 0.0
+## Going to a target: where he last made headway (2 m on) and the time on the way in all; give_up
+## counts from the last headway, so a long way round is walked, a dead end is not (TD-308).
+var _headway_at := Vector3.INF
+var _go_total: float = 0.0
+const HEADWAY: float = 2.0
+const GO_MAX: float = 120.0
+## A target this far off (m) is walked to on a coarse route (TD-299): past the NavTiles round the
+## player he walked straight lines, into lakes and up cliffs. The route is a FlowField over the
+## terrain (slope and water costs, as the Hum's) in ROUTE_CELL m cells covering him and the
+## target, built once per target; within ROUTE_BEYOND the nav mesh (or the straight line) takes over.
+const ROUTE_BEYOND: float = 45.0
+const ROUTE_CELL: float = 6.0
+const ROUTE_MAX_RADIUS: float = 320.0
+var _route: FlowField = null
+var _route_goal := Vector3.INF
 var _cycle: float = 0.0
 var _blow_at: float = -1.0
 var _scan_t: float = 0.0
@@ -174,10 +189,48 @@ func _go(p: Player) -> Vector3:
 	if d <= _reach():
 		_begin_act()
 		return Vector3.ZERO
-	if _t > CompanionDef.fnum(cdef.gather, "give_up", 25.0):
+	_go_total += enemy.get_physics_process_delta_time()
+	var here: Vector3 = enemy.global_position
+	if _headway_at == Vector3.INF or Vector2(here.x - _headway_at.x, here.z - _headway_at.z).length() > HEADWAY:
+		_headway_at = here
+		_t = 0.0
+	if _t > CompanionDef.fnum(cdef.gather, "give_up", 25.0) or _go_total > GO_MAX:
 		_fail()
 		return Vector3.ZERO
-	return enemy._move_dir(to) * enemy._speed(d > 10.0 and not carrying_logs())
+	return _way(to) * enemy._speed(d > 10.0 and not carrying_logs())
+
+
+## Swinging at a tree (his hatchet in hand: CompanionMind._props).
+func chopping() -> bool:
+	return acting and str(target.get("what", "")) == "tree"
+
+
+## The way toward `to`: the coarse route while it is far, else the body's own (nav mesh, straight).
+func _way(to: Vector3) -> Vector3:
+	if enemy._flat_dist(to) <= ROUTE_BEYOND:
+		return enemy._move_dir(to)
+	if _route == null or Vector2(_route_goal.x - to.x, _route_goal.z - to.z).length() > 3.0:
+		_route = route(enemy.global_position, to)
+		_route_goal = to
+	var dir: Vector3 = _route.direction_at(enemy.global_position) if _route != null else Vector3.ZERO
+	return dir if dir != Vector3.ZERO else enemy._move_dir(to)
+
+
+## A coarse route from `from` to `to` over the world's terrain and water (null without a world).
+static func route(from: Vector3, to: Vector3) -> FlowField:
+	var w: Node = Game.world
+	if w == null or not w.has_method(&"height_at"):
+		return null
+	var mid: Vector3 = (from + to) * 0.5
+	var half: float = Vector2(to.x - from.x, to.z - from.z).length() * 0.5
+	var f := FlowField.new()
+	f.setup(mid, minf(half + 40.0, ROUTE_MAX_RADIUS), ROUTE_CELL)
+	var wsys: Variant = w.get(&"water")
+	var water_fn: Callable = Callable(wsys, &"water_level_at") if wsys is Object and (wsys as Object).has_method(&"water_level_at") else Callable()
+	f.build_terrain(Callable(w, &"height_at"), water_fn, 40.0)
+	var targets: Array[Vector3] = [to]
+	f.integrate(targets)
+	return f
 
 
 func _return(p: Player) -> Vector3:
@@ -188,13 +241,17 @@ func _return(p: Player) -> Vector3:
 	if d <= (HAND_OVER if task == "fetch" else CompanionDef.fnum(cdef.follow, "max", 6.0)):
 		_finish(p)
 		return Vector3.ZERO
-	return enemy._move_dir(p.global_position) * enemy._speed(d > CompanionDef.fnum(cdef.follow, "run_beyond", 9.0) and not carrying_logs())
+	return _way(p.global_position) * enemy._speed(d > CompanionDef.fnum(cdef.follow, "run_beyond", 9.0) and not carrying_logs())
 
 
 func _begin(ph: String) -> void:
 	phase = ph
 	_t = 0.0
 	acting = false
+	_headway_at = Vector3.INF
+	_go_total = 0.0
+	_route = null
+	_route_goal = Vector3.INF
 
 
 func _begin_act() -> void:
@@ -285,14 +342,15 @@ func _after_act() -> void:
 			mind.set_order("follow")
 
 
-## One chop at the trunk: the vegetation's own damage path (TD-304: its collision stands only
-## near the player). Felled, he waits for it to land.
+## One chop at the trunk: the vegetation's own damage path, through its collision body near the
+## player and straight to the instance away from them (TD-304: bodies stand only near the
+## player). Felled, he waits for it to land.
 func _blow() -> void:
 	var veg: Node = _veg()
-	var body: Node = veg.call(&"body_for", target["key"], target["inst"]) if veg != null else null
-	if body == null:
+	if veg == null:
 		_felled()
 		return
+	var body: Node = veg.call(&"body_for", target["key"], target["inst"])
 	var inst: VegetationScatter.Instance = target["inst"]
 	var info := DamageInfo.make(0.0, &"slash", &"melee", mind.body_id())
 	info.collider = body
@@ -301,8 +359,14 @@ func _blow() -> void:
 	var dir: Vector3 = (inst.pos - enemy.global_position) * Vector3(1, 0, 1)
 	info.direction = dir.normalized() if dir.length() > 0.05 else Vector3.FORWARD
 	info.tool_power = {"chop": CompanionDef.fnum(cdef.gather, "chop", 16.0) * mind.perk("chop_power", 1.0)}
-	veg.call(&"take_damage", info)
-	if veg.call(&"body_for", target["key"], target["inst"]) == null:
+	if body != null:
+		veg.call(&"take_damage", info)
+	elif veg.has_method(&"damage_instance"):
+		veg.call(&"damage_instance", target["key"], inst, info)
+	else:
+		_felled()
+		return
+	if bool(veg.call(&"_is_removed", target["key"], inst.index)):
 		_felled()
 
 
@@ -428,7 +492,7 @@ func _gather_target() -> Dictionary:
 			continue
 		var tree: bool = sp.veg_kind == "tree"
 		if tree:
-			if not items.has("log") or not room(&"log") or sp.hp > max_hp or veg.call(&"body_for", key, inst) == null:
+			if not items.has("log") or not room(&"log") or sp.hp > max_hp:
 				continue
 		elif sp.hp > PLANT_HP or not _yields_room(sp, items):
 			continue
