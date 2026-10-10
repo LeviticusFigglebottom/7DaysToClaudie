@@ -31,6 +31,8 @@
         "cant_reach": ["Ezra: \"Can't get to that.\""], "refused": ["Ezra: \"Show me what you mean first.\"", "Ezra: \"Can't do that one.\""],
         "stored": ["Ezra: \"Stowed.\""],
         "store_full": ["Ezra: \"The crate's full. I kept the rest.\""],
+        "fueled": ["Ezra: \"Topped up the tank.\""],
+        "mended": ["Ezra: \"That'll hold now.\""],
         "given": ["Ezra: \"All yours.\""],
         "recruited": ["Ezra: \"That'll hold the leg. All right. I'm with you.\""],
         "follow": ["Ezra: \"Right behind you.\"", "Ezra: \"Lead on.\""],
@@ -52,7 +54,8 @@
           "follow": "voice/ezra_follow:line", "stay": "voice/ezra_stay:line", "guard": "voice/ezra_guard:line",
           "gather": "voice/ezra_gather:line", "fetch": "voice/ezra_fetch:line", "store": "voice/ezra_store:line",
           "fetched": "voice/ezra_fetched:line", "stored": "voice/ezra_stored:line", "given": "voice/ezra_given:line",
-          "done": "voice/ezra_done:line", "refused": "voice/ezra_refused:line"
+          "done": "voice/ezra_done:line", "refused": "voice/ezra_refused:line",
+          "fueled": "voice/ezra_fueled:line", "mended": "voice/ezra_mended:line"
         }
       },
       "perks": [
@@ -61,7 +64,7 @@
         {"id": "faller", "name": "Faller", "after_days": 1, "effects": {"chop_speed": 1.3, "chop_power": 1.25},
          "text": "He cleared line corridors for a living: he fells a tree faster and harder."},
         {"id": "lineman", "name": "Lineman", "after_days": 2, "effects": {"fuel_use": 0.75, "tune_range": 30},
-         "text": "He keeps a running generator within 30 m of him tuned: it burns a quarter less fuel."}
+         "text": "He keeps a running generator within 30 m of him tuned (it burns a quarter less fuel), tops it up when it runs low and mends your power pieces, from what is in his pack."}
       ]
     }
   ]

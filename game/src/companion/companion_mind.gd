@@ -17,7 +17,7 @@ extends RefCounted
 
 const ORDERS: PackedStringArray = ["follow", "stay", "guard", "gather", "fetch", "store"]
 ## Orders that are errands (CompanionWork, ADR-0058 phase 2).
-const ERRANDS: PackedStringArray = ["gather", "fetch", "store"]
+const ERRANDS: PackedStringArray = ["gather", "fetch", "store", "tend"]
 ## Enemy states the fight runs in (EnemyFoes._fight drives CHASE / ATTACK).
 const FIGHT_STATES: Array = [Enemy.State.CHASE, Enemy.State.ATTACK, Enemy.State.SPIT]
 const SCAN_INTERVAL: float = 0.4
@@ -25,7 +25,7 @@ const SCAN_INTERVAL: float = 0.4
 const SPOTTED_QUIET: float = 45.0
 ## Barks he says on his own (not answering an order): an event repeated within voice.repeat s is
 ## dropped, line and voice (ADR-0058 phase 3, TD-303).
-const AUTO_BARKS: PackedStringArray = ["spotted", "hurt", "full", "done", "cant_reach", "store_full"]
+const AUTO_BARKS: PackedStringArray = ["spotted", "hurt", "full", "done", "cant_reach", "store_full", "fueled", "mended"]
 ## Barks voiced even right after another one.
 const URGENT_BARKS: PackedStringArray = ["downed", "recruited", "revived"]
 

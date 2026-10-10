@@ -155,6 +155,65 @@ func tick() -> void:
 	if d > CompanionDef.fnum(cdef.follow, "teleport_beyond", 120.0) or (_rejoin and d > REJOIN):
 		place_beside(p)
 	_rejoin = false
+	_tend_check(m)
+
+
+# --- Tending the player's power (TD-310, his Lineman perk) ---------------------------------------
+
+## Seconds between his looks round for a power piece to tend, and after each trip.
+const TEND_EVERY: float = 6.0
+## He tops up a running generator at or under this share of its tank.
+const TEND_FUEL: float = 0.25
+## He mends a power piece at or under this share of its health.
+const TEND_HP: float = 0.7
+var _tend_t: float = 0.0
+
+
+## Following (or holding a spot) with nothing to fight, a lineman looks after the player's power
+## within his tune_range: a running generator low on fuel gets a gas can from his pack, a damaged
+## power piece gets mended with what he carries (BuildingManager.repair_cost). Nothing to do, or
+## nothing to do it with, he leaves it.
+func _tend_check(m: CompanionMind) -> void:
+	_tend_t -= TICK
+	if _tend_t > 0.0:
+		return
+	_tend_t = TEND_EVERY
+	if m.order != "follow" or m.work.active() or body.foe != null:
+		return
+	var job: Array = tend_job(body.global_position)
+	if job.is_empty():
+		return
+	m.set_order("tend")
+	m.work.start_tend(job[0], job[1])
+
+
+## [piece, "fuel" | "repair"] he would tend from `at` now, or [] (pure but for the world's pieces).
+func tend_job(at: Vector3) -> Array:
+	var r: float = perk("tune_range", 0.0)
+	var bld: Node = world.get(&"building") if world != null else null
+	if r <= 0.0 or bld == null:
+		return []
+	var fuel_item := StringName(str(BaseTech.power_cfg("generator").get("fuel_item", "gas_can")))
+	var best: Array = []
+	var best_d: float = r
+	for pc: Variant in (bld.get(&"pieces") as Dictionary).values():
+		var piece: StructurePiece = pc as StructurePiece
+		if piece == null or not is_instance_valid(piece) or not BaseTech.is_power(piece.def):
+			continue
+		var dd: float = at.distance_to(piece.global_position)
+		if dd > best_d:
+			continue
+		var job: String = ""
+		if piece.hp <= piece.max_hp() * TEND_HP and inventory.has_all(BuildingManager.repair_cost(piece.def)):
+			job = "repair"
+		elif BaseTech.power_kind(piece.def) == "generator" and inventory.has(fuel_item):
+			var st: Dictionary = BaseTechManager.peek(piece)
+			if BaseTech.running(piece.def, st) and float(st.get("fuel", 0.0)) <= BaseTech.tank_hours() * TEND_FUEL:
+				job = "fuel"
+		if job != "":
+			best = [piece, job]
+			best_d = dd
+	return best
 
 
 ## Seats him at his camp while the player is within its wake range; out past its sleep range.
@@ -853,7 +912,9 @@ func _on_game_saving(_slot: String) -> void:
 	st["yaw"] = body.rotation.y
 	st["health"] = body.health / maxf(1.0, body.max_health)
 	st["downed_t"] = m.downed_t if m.downed else -1.0
-	st["order"] = m.order
+	# A tending trip is a moment's errand: saved as following (its target is the player's piece,
+	# not a world entity a load resolves).
+	st["order"] = "follow" if m.order == "tend" else m.order
 	st["spot"] = _arr(m.spot) if m.spot != Vector3.INF else []
 	st["work"] = m.work.to_dict()
 	if not st.has("out_until_day"):

@@ -126,6 +126,17 @@ func start_store(piece: Node3D) -> void:
 		target = {"what": "storage", "node": piece, "id": String(piece.get(&"piece_id")), "pos": piece.global_position}
 
 
+## Tending one of the player's power pieces (TD-310, his Lineman perk): `job` "fuel" pours a gas
+## can from his pack into a running generator, "repair" mends a damaged piece with what he carries.
+## Done (or not possible), he goes back to following.
+func start_tend(piece: Node3D, job: String) -> void:
+	clear()
+	task = "tend"
+	phase = "go"
+	if piece != null:
+		target = {"what": "power", "job": job, "node": piece, "id": String(piece.get(&"piece_id")), "pos": piece.global_position}
+
+
 ## A fight cut in: whatever he was doing with his hands starts over when it is done.
 func interrupt() -> void:
 	if phase == "act":
@@ -329,6 +340,8 @@ func _do(_p: Player) -> void:
 			_blow()
 		"storage":
 			_put_away()
+		"power":
+			_tend()
 
 
 func _after_act() -> void:
@@ -338,8 +351,20 @@ func _after_act() -> void:
 			_begin("seek")
 		"fetch":
 			_head_back("fetched")
-		"store":
+		"store", "tend":
 			mind.set_order("follow")
+
+
+## The tending at its moment: the power command, as him (`owner`), from his pack.
+func _tend() -> void:
+	var piece: Node = target["node"]
+	var job: String = str(target.get("job", ""))
+	var cmd: StringName = &"power.fuel" if job == "fuel" else &"build.repair"
+	var r: Dictionary = Game.execute(cmd, {"owner": String(mind.body_id()), "piece": String(piece.get(&"piece_id"))})
+	if bool(r.get("ok", false)):
+		mind.bark("fueled" if job == "fuel" else "mended")
+	else:
+		mind.bark("cant_reach")
 
 
 ## One chop at the trunk: the vegetation's own damage path, through its collision body near the
