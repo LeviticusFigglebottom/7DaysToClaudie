@@ -488,8 +488,13 @@ func body_id() -> StringName:
 	return enemy.entity_id
 
 
-## The logs on his right shoulder, one per log in his pack (like the player's two). A plain node
-## at shoulder height, not on a bone: it doesn't follow the clips (TD-305).
+## Where the logs sit on his body at rest (enemy space): over the right shoulder.
+const SHOULDER_AT := Vector3(-0.2, 1.55, -0.05)
+
+
+## The logs on his right shoulder, one per log in his pack (like the player's two), on his
+## shoulder bone so they ride the clips (TD-305: on a plain node they hung in the air through a
+## pickup, a chop or a run); on a node at shoulder height for a body without a skeleton.
 func _shoulder_logs() -> void:
 	var n: int = inventory.count_of(&"log") if inventory != null else 0
 	if n == _shoulder_n:
@@ -498,8 +503,13 @@ func _shoulder_logs() -> void:
 	if _shoulder == null:
 		_shoulder = Node3D.new()
 		_shoulder.name = "ShoulderLogs"
-		_shoulder.position = Vector3(-0.2, 1.55, -0.05)
-		enemy.add_child(_shoulder)
+		var bone: BoneAttachment3D = _shoulder_bone()
+		if bone != null:
+			bone.add_child(_shoulder)
+			_shoulder.transform = _bone_rest(bone).affine_inverse() * Transform3D(Basis(), SHOULDER_AT)
+		else:
+			_shoulder.position = SHOULDER_AT
+			enemy.add_child(_shoulder)
 	for c: Node in _shoulder.get_children():
 		c.queue_free()
 	for i: int in n:
@@ -508,6 +518,29 @@ func _shoulder_logs() -> void:
 		# along his facing (the mesh lies along +X), the far end dipping a little, stacked outward
 		mi.transform = Transform3D(Basis(Vector3.UP, PI * 0.5) * Basis(Vector3.BACK, -0.12), Vector3(-0.17 * i, 0.12 * i, 0.0))
 		_shoulder.add_child(mi)
+
+
+## A bone attachment on his right shoulder (or chest) bone, or null without a skeleton.
+func _shoulder_bone() -> BoneAttachment3D:
+	var sk: Skeleton3D = enemy.visual.skeleton if enemy.visual != null else null
+	if sk == null:
+		return null
+	for b: String in ["shoulder.R", "chest"]:
+		if sk.find_bone(b) >= 0:
+			var at := BoneAttachment3D.new()
+			at.name = "ShoulderBone"
+			at.bone_name = b
+			sk.add_child(at)
+			return at
+	return null
+
+
+## The attachment's bone at rest, in enemy space (so a point given in enemy space at rest can be
+## put in the bone's frame).
+func _bone_rest(at: BoneAttachment3D) -> Transform3D:
+	var sk: Skeleton3D = at.get_parent() as Skeleton3D
+	var sk_in_enemy: Transform3D = enemy.global_transform.affine_inverse() * sk.global_transform
+	return sk_in_enemy * sk.get_bone_global_rest(sk.find_bone(at.bone_name))
 
 
 func lantern_on() -> bool:

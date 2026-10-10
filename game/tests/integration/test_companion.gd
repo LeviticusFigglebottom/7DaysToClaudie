@@ -726,6 +726,20 @@ func test_his_blows_and_hurts_have_his_own_voice() -> void:
 	assert_eq(CompanionMind.voice(&"voice/zombie_death"), &"voice/ashen_death", "he has no death cry of his own")
 
 
+func test_the_logs_ride_his_shoulder_bone() -> void:
+	var e: Enemy = await _recruited()
+	_dir.inventory.add_item(&"log", 2)
+	e.ally._shoulder_logs()
+	var node: Node3D = e.ally._shoulder
+	assert_not_null(node, "logs on his shoulder")
+	assert_eq(node.get_child_count(), 2, "one per log")
+	if e.visual.skeleton != null:
+		assert_true(node.get_parent() is BoneAttachment3D, "on a bone, so they follow his clips (TD-305)")
+	await _frames(2)
+	var want: Vector3 = e.global_transform * CompanionMind.SHOULDER_AT
+	assert_lt(node.global_position.distance_to(want), 0.4, "over his right shoulder (%s vs %s)" % [node.global_position, want])
+
+
 func test_companion_strength_scales_him() -> void:
 	var e: Enemy = await _recruited()
 	assert_almost_eq(e.max_health, e.def.health, 0.01, "1 by default: the enemy settings never apply")
