@@ -63,6 +63,6 @@ GPU.
 * There is no motion parallax: the pan is 2D. The dissolve into and out of the dawn still is the same crossfade as between the dusks.
 * The pictures need the generated assets. A source tree without `make assets` shows a plain menu
   and a caption on black for the world card.
-* The menu stills take about a minute each on lavapipe. The wreck needs a full main-map load, so
+* The four menu stills take about ten minutes together on lavapipe (570 s: building D6 and each still's undergrowth, then about two minutes a picture). The wreck needs a full main-map load, so
   the first CI build after a world change spends 10-20 minutes more in `make bake`. A failed stills
   run doesn't fail the bake: the menu and the intro simply show no pictures.
