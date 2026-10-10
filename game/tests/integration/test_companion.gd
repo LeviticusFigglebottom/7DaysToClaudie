@@ -780,6 +780,33 @@ func test_placed_beside_the_player_he_keeps_out_of_walls_and_water() -> void:
 	water.free()
 
 
+func test_a_crest_below_head_height_doesnt_block_a_spot_but_a_wall_does() -> void:
+	await _recruited()
+	await get_tree().physics_frame
+	var anchor := Vector3(40, 0, 40)
+	# A 1.4 m crest across the line to the spot 4 m off: above chest height, below the head.
+	_box(anchor + Vector3(0, 0.7, 2.0), Vector3(30, 1.4, 0.4))
+	await get_tree().physics_frame
+	var spot: Vector3 = anchor + Vector3(0, 0, 4.0)
+	var at: Vector3 = _dir.safe_spot(anchor, spot)
+	assert_almost_eq(at.z, spot.z, 0.3, "over the crest, where it was wanted (%s)" % at)
+	# A full wall: the spot behind it is refused.
+	_box(anchor + Vector3(0, 1.5, -2.0), Vector3(30, 3.0, 0.4))
+	await get_tree().physics_frame
+	var at2: Vector3 = _dir.safe_spot(anchor, anchor + Vector3(0, 0, -4.0))
+	assert_gt(at2.z, anchor.z - 2.0, "not behind the wall (%s)" % at2)
+
+
+func test_a_saved_spot_inside_a_wall_is_moved_out() -> void:
+	await _recruited()
+	var inside := Vector3(-40, 0, 40)
+	_box(inside + Vector3.UP * 1.5, Vector3(2.0, 3.0, 2.0))
+	await get_tree().physics_frame
+	var at: Vector3 = _dir.safe_spot(inside, inside)
+	assert_gt(maxf(absf(at.x - inside.x), absf(at.z - inside.z)), 1.0 + CompanionDirector.BODY_RADIUS - 0.01,
+		"out of the block it was saved in (%s)" % at)
+
+
 func test_at_dawn_he_comes_back_inside_the_room_with_the_bed() -> void:
 	var e: Enemy = await _recruited()
 	var bed := Vector3(30, 0, 30)
