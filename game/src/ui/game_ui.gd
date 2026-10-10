@@ -877,7 +877,7 @@ func _flash_damage(amount: float) -> void:
 
 
 func message(text: String, kind: StringName = &"info") -> void:
-	if feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible):
+	if feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible, reader != null and reader.is_open()):
 		_held_messages.append([text, kind])
 		return
 	# The same line again (a full pack, a locked door) refreshes the one on screen with a count
@@ -899,29 +899,30 @@ func message(text: String, kind: StringName = &"info") -> void:
 	l.add_theme_color_override(&"font_color", {&"info": UiStyle.KIT_TEXT, &"warning": Color(0.95, 0.8, 0.45), &"danger": Color(0.95, 0.35, 0.3), &"error": Color(1, 0.4, 0.4), &"level": UiStyle.RUST_BRIGHT}.get(kind, UiStyle.KIT_TEXT))
 	l.add_theme_color_override(&"font_outline_color", Color(0.03, 0.03, 0.02, 0.9))
 	l.add_theme_constant_override(&"outline_size", 6)
-	l.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE + 1)
+	l.add_theme_font_size_override(&"font_size", UiStyle.caption_size(UiStyle.BODY_SIZE + 1))
 	_messages.add_child(l)
 	# A long line (the distress call) wraps at 820 px instead of running off the screen; a short
 	# one never wraps (a guessed width once put "[B]" on its own line).
 	if text.length() > 80:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size = Vector2(820, 0)
+		l.custom_minimum_size = Vector2(820 * Settings.caption_scale, 0)
 	_fade_message(l)
 	while _messages.get_child_count() > 6:
 		_messages.get_child(0).queue_free()
 		_messages.remove_child(_messages.get_child(0))
 
 
-## Whether the message feed waits: while the salvage roll is open, and under the death or sleep
-## screen (a level-up said itself over "SIGNAL LOST"). Pure.
-static func feed_held(roll_open: bool, overlay_up: bool = false) -> bool:
-	return roll_open or overlay_up
+## Whether the message feed waits: while the salvage roll is open, under the death or sleep
+## screen (a level-up said itself over "SIGNAL LOST"), and while a note is read (at 720p the feed
+## ran over the note's card). Pure.
+static func feed_held(roll_open: bool, overlay_up: bool = false, reading: bool = false) -> bool:
+	return roll_open or overlay_up or reading
 
 
 ## Hides the feed under the roll and, once it closes, plays what came meanwhile in order (a
 ## repeat still collapses into one line with a count).
 func _update_feed() -> void:
-	var held: bool = feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible)
+	var held: bool = feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible, reader != null and reader.is_open())
 	_messages.visible = not held
 	if not held and not _held_messages.is_empty():
 		var lines: Array = _held_messages
