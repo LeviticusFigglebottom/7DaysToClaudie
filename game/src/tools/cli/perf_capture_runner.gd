@@ -76,6 +76,8 @@ func _ready() -> void:
 			"--hum-full":
 				_hum = true
 				_hum_full = true
+			"--no-crowd":
+				Crowd.enabled = false  # TD-011: the Hum without separation steering, to compare
 	_run.call_deferred()
 
 

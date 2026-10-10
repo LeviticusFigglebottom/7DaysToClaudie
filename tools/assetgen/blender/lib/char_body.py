@@ -7,6 +7,7 @@ propagate to the whole body. Units: metres, Blender Z-up, front = -Y, left = +X.
 from __future__ import annotations
 
 import math
+import zlib
 
 import numpy as np
 
@@ -339,6 +340,35 @@ class BodyModel:
         if self.fem < 0.5:
             prog.ellipsoid(self.T("neck", 0.0, 0.050, 0.060), np.array([0.009, 0.011, 0.012]) * s, k=0.008 * s, label=L_SKIN)
 
+    def face(self, name: str) -> float:
+        """A face dial in [-1, 1] (TD-192: the crowd read as one face): the body's `face` entry, else,
+        for a Hollowed (`face_vary`), drawn from its seed so every body differs, else 0 (the living
+        keep the faces they were tuned with)."""
+        f = self.p.get("face", {}) or {}
+        if name in f:
+            return float(np.clip(float(f[name]), -1.0, 1.0))
+        if not self.p.get("face_vary"):
+            return 0.0
+        rng = np.random.default_rng(int(self.p.get("seed", 1)) * 7919 + zlib.crc32(name.encode()))
+        return float(rng.uniform(-1.0, 1.0))
+
+    def damage(self, name: str, chance: float) -> bool:
+        """A seeded facial injury for a Hollowed (TD-192): present with `chance` unless the body
+        names it (`face_damage`: {name: bool}); never on the living."""
+        fd = self.p.get("face_damage", {}) or {}
+        if name in fd:
+            return bool(fd[name])
+        if not self.p.get("face_vary"):
+            return False
+        rng = np.random.default_rng(int(self.p.get("seed", 1)) * 104729 + zlib.crc32(name.encode()))
+        return bool(rng.random() < chance)
+
+    def eye(self, sx: float):
+        """(centre, eyeball radius) of an eye: a Hollowed's sit smaller and deeper in their orbits
+        (TD-192: bulging milky spheres ringed by thick lids)."""
+        sunk = bool(self.p.get("face_vary"))
+        return self.HP(sx * 0.032, 0.012, 0.073 - (0.0025 if sunk else 0.0)), (0.0106 if sunk else 0.0116) * self.s
+
     def _head(self, prog: S.Program):
         """The skull under tight, wasted skin: heavy brow over deep sockets, standing cheekbones,
         sunken temples and cheeks, a bony jaw hanging slack, thin receded lips."""
@@ -346,15 +376,24 @@ class BodyModel:
         R = self.hR
         Rl = R @ np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])  # radii order (left, front, up)
         hs = float(self.p.get("head_scale", 1.0))
-        brow = float(self.p.get("brow", 0.5))
+        brow = float(self.p.get("brow", 0.5)) + 0.45 * self.face("brow")
+        # Face dials (TD-192), each [-1, 1]: skull length and width, cheekbones, nose length, width
+        # and crook, ears, jaw width, face length.
+        skl, skw, chk = self.face("skull_len"), self.face("skull_w"), self.face("cheek")
+        nl, nw, nk = self.face("nose_len"), self.face("nose_w"), self.face("nose_crook")
+        ear, jw, fl = self.face("ear"), self.face("jaw_w"), self.face("face_len")
         # cranium + occiput + forehead
-        prog.ellipsoid(HP(0, 0.035, -0.012), np.array([0.072, 0.095, 0.087]) * s * hs, R=Rl, k=0.0, label=L_SKIN)
-        prog.ellipsoid(HP(0, 0.006, -0.058), np.array([0.060, 0.050, 0.060]) * s * hs, R=Rl, k=0.02 * s, label=L_SKIN)
+        prog.ellipsoid(HP(0, 0.035, -0.012), np.array([0.072 * (1 + 0.11 * skw), 0.095 * (1 + 0.13 * skl), 0.087 * (1 - 0.05 * skl)]) * s * hs,
+                       R=Rl, k=0.0, label=L_SKIN)
+        prog.ellipsoid(HP(0, 0.006, -0.058 * (1 + 0.18 * skl)), np.array([0.060 * (1 + 0.11 * skw), 0.050, 0.060]) * s * hs,
+                       R=Rl, k=0.02 * s, label=L_SKIN)
         prog.ellipsoid(HP(0, 0.047, 0.038), np.array([0.062, 0.050, 0.050]) * s * hs, R=Rl, k=0.02 * s, label=L_SKIN)
         # face: a narrow maxilla, the cheekbones and their arches back to the ears
-        prog.ellipsoid(HP(0, -0.031, 0.054), np.array([0.047 - 0.005 * g, 0.044, 0.044]) * s, R=Rl, k=0.016 * s, label=L_SKIN)
+        prog.ellipsoid(HP(0, -0.031 * (1 + 0.20 * fl), 0.054), np.array([(0.047 - 0.005 * g) * (1 + 0.08 * chk), 0.044, 0.044 * (1 + 0.16 * fl)]) * s,
+                       R=Rl, k=0.016 * s, label=L_SKIN)
         for sx in (1.0, -1.0):
-            prog.ellipsoid(HP(sx * 0.046, -0.003, 0.060), np.array([0.020, 0.022, 0.012]) * s, R=Rl, k=0.008 * s, label=L_SKIN)
+            prog.ellipsoid(HP(sx * 0.046 * (1 + 0.18 * chk), -0.003 + 0.007 * chk, 0.060),
+                           np.array([0.020 * (1 + 0.40 * chk), 0.022, 0.012 * (1 + 0.45 * chk)]) * s, R=Rl, k=0.008 * s, label=L_SKIN)
             prog.capsule(HP(sx * 0.054, -0.005, 0.046), HP(sx * 0.068, -0.002, 0.004), (0.0078 + 0.001 * g) * s,
                          k=0.007 * s, label=L_SKIN)
             # brow ridge
@@ -362,10 +401,13 @@ class BodyModel:
                          k=0.009 * s, label=L_SKIN)
         prog.sphere(HP(0, 0.024, 0.092), 0.0095 * s, k=0.008 * s, label=L_SKIN)          # glabella
         # nose: thin nasal bones, a sharp cartilage tip, pinched wings
-        prog.capsule(HP(0, 0.012, 0.091), HP(0, -0.019, 0.108), 0.0056 * s, k=0.007 * s, label=L_SKIN)
-        prog.sphere(HP(0, -0.026, 0.108), 0.0086 * s, k=0.006 * s, label=L_SKIN)
+        tip = HP(0.007 * nk, -0.026 - 0.008 * nl, 0.108 + 0.011 * nl)
+        prog.capsule(HP(0, 0.012, 0.091), HP(0.005 * nk, -0.019 - 0.008 * nl, 0.108 + 0.011 * nl), 0.0056 * (1 + 0.3 * nw) * s,
+                     k=0.007 * s, label=L_SKIN)
+        prog.sphere(tip, 0.0086 * (1 + 0.45 * nw) * s, k=0.006 * s, label=L_SKIN)
         for sx in (1.0, -1.0):
-            prog.sphere(HP(sx * 0.0120, -0.034, 0.097), 0.0062 * s, k=0.005 * s, label=L_SKIN)
+            prog.sphere(HP(sx * 0.0120 * (1 + 0.2 * nw) + 0.002 * nk, -0.034, 0.097), 0.0062 * (1 + 0.15 * nw) * s, k=0.005 * s,
+                        label=L_SKIN)
         # upper lip / philtrum: thin, drawn back off the teeth
         prog.ellipsoid(HP(0, -0.049, 0.085), np.array([0.024, 0.014, 0.013]) * s, R=Rl, k=0.010 * s, label=L_SKIN)
         prog.capsule(HP(-0.021, -0.0585, 0.0905), HP(0.021, -0.0585, 0.0905), (0.0046 - 0.0010 * g) * s, k=0.004 * s,
@@ -386,7 +428,7 @@ class BodyModel:
         prog.ellipsoid(JP(0, jl * 0.97, 0.004), np.array([0.019, 0.014, 0.015]) * s, R=Rj, k=0.010 * s, label=L_SKIN)
         prog.sphere(JP(0, jl * 1.0, -0.005), 0.0095 * s, k=0.007 * s, label=L_SKIN)    # point of the chin
         for sx in (1.0, -1.0):
-            ang = JP(sx * 0.049, jl * 0.30, -0.027)
+            ang = JP(sx * 0.049 * (1 + 0.24 * jw), jl * 0.30, -0.027)
             front = JP(sx * 0.019, jl * 0.92, -0.002)
             prog.capsule(front, ang, (0.0082 + 0.002 * self.mass) * s, k=0.009 * s, label=L_SKIN)
             tmj = HP(sx * 0.055, -0.005, -0.004)
@@ -398,21 +440,26 @@ class BodyModel:
                      label=L_SKIN)
         # ears: a rim (helix) round a hollow bowl (concha), and a lobe
         for sx in (1.0, -1.0):
-            if self.p.get("missing_ear") == ("L" if sx > 0 else "R"):
+            gone = self.p.get("missing_ear", "R" if self.damage("ear", 0.2) else None)
+            if gone == ("L" if sx > 0 else "R"):
                 continue
             ec = HP(sx * 0.072, 0.004, -0.008)
-            eR = rot_axis(R[:, 0], math.radians(-15)) @ Rl
+            # bigger ears stand out further from the skull, and turn forward
+            eR = rot_axis(R[:, 2], sx * math.radians(6.0 * max(ear, 0.0))) @ rot_axis(R[:, 0], math.radians(-15)) @ Rl
             out = R[:, 0] * sx
-            prog.ellipsoid(ec + out * 0.004 * s, np.array([0.0062, 0.018, 0.029]) * s, R=eR, k=0.004 * s, label=L_SKIN)
-            prog.ellipsoid(ec + out * 0.0092 * s + eR[:, 1] * 0.002 * s, np.array([0.0040, 0.011, 0.019]) * s, R=eR,
+            es = 1.0 + 0.32 * ear
+            ec = ec + out * 0.003 * max(ear, 0.0) * s
+            prog.ellipsoid(ec + out * 0.004 * s, np.array([0.0062, 0.018 * es, 0.029 * es]) * s, R=eR, k=0.004 * s, label=L_SKIN)
+            prog.ellipsoid(ec + out * 0.0092 * s + eR[:, 1] * 0.002 * s, np.array([0.0040, 0.011 * es, 0.019 * es]) * s, R=eR,
                            k=0.003 * s, label=None, mode="sub")
-            prog.sphere(ec + out * 0.0135 * s + R[:, 2] * 0.004 * s - R[:, 1] * 0.002 * s, 0.0068 * s, k=0.003 * s,
+            prog.sphere(ec + out * 0.0135 * s + R[:, 2] * 0.004 * s - R[:, 1] * 0.002 * s, 0.0068 * es * s, k=0.003 * s,
                         label=None, mode="sub")
-            prog.ellipsoid(ec + out * 0.003 * s - eR[:, 2] * 0.024 * s, np.array([0.0045, 0.008, 0.009]) * s, R=eR,
+            prog.ellipsoid(ec + out * 0.003 * s - eR[:, 2] * 0.024 * es * s, np.array([0.0045, 0.008, 0.009]) * es * s, R=eR,
                            k=0.004 * s, label=L_SKIN)
         # --- carving: eye sockets, temples, hollow cheeks, tear troughs, mouth ----------------
         for sx in (1.0, -1.0):
-            prog.sphere(HP(sx * 0.032, 0.013, 0.083), (0.0178 + 0.0016 * g) * s, k=0.006 * s, label=None, mode="sub")
+            deep = 0.0012 if self.p.get("face_vary") else 0.0
+            prog.sphere(HP(sx * 0.032, 0.013, 0.083 - deep), (0.0178 + 0.0016 * g + deep) * s, k=0.006 * s, label=None, mode="sub")
             if g > 0.05:
                 prog.ellipsoid(HP(sx * 0.070, 0.034, 0.030), np.array([0.010, 0.022, 0.024]) * s * (0.6 + 0.7 * g), R=Rl,
                                k=0.011 * s, label=None, mode="sub")
@@ -421,19 +468,20 @@ class BodyModel:
                 prog.ellipsoid(HP(sx * 0.030, -0.009, 0.083), np.array([0.013, 0.006, 0.006]) * s * (0.6 + 0.6 * g), R=Rl,
                                k=0.004 * s, label=None, mode="sub")
         # nose rot: the cartilage eaten away to a dark hole
-        rot = float(self.p.get("nose_rot", 0.0))
+        rot = float(self.p.get("nose_rot", 0.55 if self.damage("nose", 0.25) else 0.0))
         if rot > 0.0:
             prog.sphere(HP(0, -0.028, 0.110), (0.006 + 0.010 * rot) * s, k=0.003 * s, label=L_GORE, mode="sub")
         # eyelid shells around the eyeballs, with the palpebral slit cut out: heavy, half-closed lids
         open_ = float(self.p.get("eye_open", 0.6))
         droop = float(self.p.get("lid_droop", 0.3))
         for sx in (1.0, -1.0):
-            ecen = HP(sx * 0.032, 0.012, 0.073)
-            prog.sphere(ecen, 0.0150 * s, k=0.004 * s, label=L_SKIN)
-            slit = HP(sx * 0.032, 0.0115 - 0.0025 * droop, 0.086)
+            ecen, er = self.eye(sx)
+            sink = float((ecen - HP(sx * 0.032, 0.012, 0.073)) @ R[:, 2]) / s       # <= 0: how far it sits back
+            prog.sphere(ecen, er + 0.0034 * s, k=0.004 * s, label=L_SKIN)
+            slit = HP(sx * 0.032, 0.0115 - 0.0025 * droop, 0.086 + sink)
             sR = rot_axis(R[:, 2], sx * math.radians(6)) @ Rl
             prog.ellipsoid(slit, np.array([0.0135, 0.016, 0.0028 + 0.0055 * open_]) * s, R=sR, k=0.0015 * s, label=None, mode="sub")
-            prog.sphere(ecen, 0.0118 * s, k=0.0, label=None, mode="sub")
+            prog.sphere(ecen, er + 0.0002 * s, k=0.0, label=None, mode="sub")
         # mouth: slit between the lips + dark oral cavity
         mo = float(self.p.get("mouth_open", 0.3))
         up_lip = HP(0, -0.0585, 0.090)
@@ -445,6 +493,11 @@ class BodyModel:
         cav = mc + R[:, 2] * (-0.028 * s)
         prog.ellipsoid(cav, np.array([0.022, 0.030, max(0.013 + 0.012 * mo, half + 0.008)]) * s, R=Rl, k=0.006 * s,
                        label=L_GORE, mode="sub")
+        # a cheek torn open back from the mouth's corner onto the teeth (a bite that healed wrong)
+        if self.damage("cheek", 0.35):
+            sx = 1.0 if self.face("tear_side") >= 0.0 else -1.0
+            prog.ellipsoid(mc + R[:, 0] * sx * 0.026 * s - R[:, 2] * 0.006 * s, np.array([0.016, 0.012, 0.010]) * s, R=Rl,
+                           k=0.003 * s, label=L_GORE, mode="sub")
 
     def _arm(self, prog: S.Program, side: str, sx: float, detail: bool):
         s, t, g = self.s, self.t, self.gaunt
@@ -684,7 +737,10 @@ class BodyModel:
         out["head"] = self.head_region(P, P2)
         for side, sx in (("L", 1.0), ("R", -1.0)):
             ap = self.arm_poly[side]
-            tube = np.maximum(0.095 * s - polyline_dist(P, ap[:3], P2), 0.135 * s - polyline_dist(P, ap[2:], P2))
+            # the tube holds the arm's whole girth: a Rammer's deltoid and slab arm stand ~0.12 s off
+            # the bone, and a 0.095 s tube cut through them into a curved gore cap (TD-192)
+            tube = np.maximum(0.095 * s * (1.0 + 0.45 * self.mass) - polyline_dist(P, ap[:3], P2),
+                              0.135 * s - polyline_dist(P, ap[2:], P2))
             arm = np.minimum(self._plane(P, f"shoulder.{side}"), tube)
             out[f"arm.{side}"] = arm
             out[f"forearm.{side}"] = np.minimum(arm, self._plane(P, f"elbow.{side}"))

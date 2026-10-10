@@ -686,7 +686,12 @@ func try_sleep(p: Player, bed: Node3D) -> void:
 	var until_hum: float = session.clock.hours_until_horde()
 	if until_hum > 0.0 and until_hum < hours + 1.0:
 		hours = maxf(0.25, until_hum - 1.0)
-	p.state.spawn_point = bed.global_position + Vector3.UP * 0.6
+	# Where the player lay down, not over the bed: a point 0.6 m over a lean-to (and the respawn's
+	# 0.5 m drop on top) stood them in its low sloped roof after a death, out of its shelter (the
+	# final first-hour pass). They stood here, so it is clear ground under the same roof; a sleep
+	# started from further than reach (a script, a test) falls back to the bed.
+	var lay: Vector3 = p.global_position
+	p.state.spawn_point = lay if lay.distance_to(bed.global_position) < 3.0 else bed.global_position + Vector3.UP * 0.6
 	p.state.has_spawn_point = true
 	sleeping = true
 	p.input_enabled = false

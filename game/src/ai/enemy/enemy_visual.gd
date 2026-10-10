@@ -52,6 +52,16 @@ static func canonical_name(nm: String) -> String:
 	return nm
 
 
+## This body's own variation (0..1, the `instance_variation` instance uniform): its skin's tone and
+## brightness (skin.gdshader tone_strength) and its clothes' wear, so a crowd built from a few
+## bodies isn't a crowd of twins (TD-192).
+func set_variation(v: float) -> void:
+	if _placeholder or _root == null:
+		return
+	for g: Node in _root.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).set_instance_shader_parameter(&"instance_variation", v)
+
+
 ## Infected-tier glow (std_surface `bloom_glow` instance uniform) on every part of the body.
 func set_bloom(glow: float) -> void:
 	if _placeholder or _root == null:

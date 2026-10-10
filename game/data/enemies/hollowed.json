@@ -43,6 +43,7 @@
      "behavior": {"special": true, "keeps_distance": 6, "sleeper_poses": ["sit", "stand"], "stagger_threshold": 22,
                   "body_scale": [1.15, 1.0, 1.2], "radius": 0.36,
                   "spit": {"range": 16, "min_range": 4, "cooldown": 6.5, "speed": 13, "damage": 6, "infection": 6, "puddle_radius": 2.2, "puddle_seconds": 9, "puddle_dps": 4, "puddle_infection": 2.5},
+                  "hit_burst": {"min_damage": 22, "radius": 1.8, "damage": 4, "infection": 5},
                   "death_burst": {"radius": 3.5, "damage": 14, "infection": 12}},
      "xp": 110, "loot_table": "zombie_corpse", "heat_value": 2.0, "gamestage_min": 12, "scale": [0.95, 1.05]},
     {"id": "husk", "name": "Husk", "description": "Grown over with plates of hard shelf fungus. Blades and bullets glance off its body; its head is still soft.", "archetype": "armored",

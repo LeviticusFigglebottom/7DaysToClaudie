@@ -143,8 +143,13 @@ func plan(gamestage: int, rng: RandomNumberGenerator) -> Dictionary:
 	var window_min: float = float(pc.get("window_minutes", 300.0))
 	var waves: Array[Dictionary] = []
 	var remaining: int = total
+	# The first wave carries a bigger share (first_wave_share): spread evenly, a first Hum of a dozen
+	# opened with three Hollowed at the wall, which read as a skirmish, not the Hum.
+	var first_share: float = clampf(float(pc.get("first_wave_share", 1.0 / float(wave_count))), 1.0 / float(wave_count), 0.9)
 	for wi: int in wave_count:
 		var n: int = int(ceil(float(remaining) / float(wave_count - wi)))
+		if wi == 0:
+			n = clampi(int(round(total * first_share)), 1, maxi(1, total - (wave_count - 1)))
 		remaining -= n
 		var role: String = "assault"
 		var sector: int = Weighted.pick_index(weights, rng)

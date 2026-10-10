@@ -114,3 +114,14 @@ func test_furniture_finds_the_log_floor_under_it() -> void:
 	assert_eq(_bm._structure_floor(fire, on), -INF)
 	assert_eq(_bm._structure_floor(bed, Vector3(9, floor_y, 9)), -INF, "no log there: the ground")
 	assert_not_null(_bm.support_under(on))
+
+
+func test_a_lean_to_shelters_its_sleeper_off_centre_too() -> void:
+	_spawn(&"lean_to", &"s:lean")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	# The player wakes about 1 m off the shelter's centre (the final first-hour pass): under the
+	# sloped roof's low side and in its open mouth they are still sheltered.
+	for p: Vector3 in [Vector3.ZERO, Vector3(0, 0, 1), Vector3(0, 0, -1), Vector3(0.8, 0, 0), Vector3(-0.8, 0, 0)]:
+		assert_true(_bm.is_sheltered(p), "sheltered at %s" % p)
+	assert_false(_bm.is_sheltered(Vector3(9, 0, 9)), "out in the open")

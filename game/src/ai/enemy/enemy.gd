@@ -197,6 +197,10 @@ var _glow: float = 0.0
 var _tier_burst: Dictionary = {}
 var _spit_cd: float = 0.0
 var _spit_done: bool = false
+## The Blister's pustules have burst (TD-027): once, on a heavy blow (`hit_burst`) or its death.
+var _popped: bool = false
+## The crowd's push on this body (Crowd.push), rescanned every Crowd.EVERY ticks.
+var _crowd_push := Vector3.ZERO
 var _charge_cd: float = 0.0
 var _charge_dir := Vector3.ZERO
 var _charge_hit: bool = false
@@ -310,6 +314,8 @@ func _ready() -> void:
 	var bs: Array = def.beh("body_scale", [1.0, 1.0, 1.0])
 	var size: float = _rng.randf_range(def.scale_range.x, def.scale_range.y)
 	visual.build(body, size, Vector3(float(bs[0]), float(bs[1]), float(bs[2])))
+	# Its own skin tone and wear (TD-192): two of one body in a crowd don't look like twins.
+	visual.set_variation(float(Ids.hash64(String(entity_id) + ":tone") & 0xffff) / 65535.0)
 	# The capsule is also what weapons hit: as tall as this body really is (a tall Hollow's head
 	# stuck out of a fixed 1.75 m capsule), lying down for crawlers.
 	_shape = CollisionShape3D.new()
@@ -606,6 +612,16 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 		return
 	if state != State.CHARGE:
 		want = _detour(want, delta)
+		# TD-011: lean off the bodies crowding it (doorways, the pack on the player's heels).
+		if Crowd.enabled and dist < Crowd.RANGE:
+			var tc: int = Time.get_ticks_usec()
+			var me: int = get_instance_id()
+			if (Engine.get_physics_frames() + me) % Crowd.EVERY == 0:
+				_crowd_push = Crowd.push(global_position, _cap_radius, me, Crowd.near(global_position))
+			want = Crowd.apply(want, _crowd_push)
+			Crowd.enter(me, global_position, _cap_radius)
+			if prof_on:
+				_prof_add(&"crowd", tc)
 	var v: Vector3 = velocity
 	v.x = want.x
 	v.z = want.z
@@ -967,6 +983,7 @@ func _perceive(p: Player, dist: float) -> void:
 			if first:
 				Audio.play_3d(_vid(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", &"voice/hound_bark"),
 					_mouth(), {"volume_db": 0.0})
+				_caption_call()
 				Events.enemy_alerted.emit(entity_id, global_position)
 				_alert_nearby(p.global_position)
 		return
@@ -1119,6 +1136,7 @@ func ambush(target: Vector3) -> void:
 	_wake(target, true)
 	Audio.play_3d(_vid(&"voice/lurcher_screech" if def.archetype == "feral" else &"voice/zombie_alert", &"voice/hound_bark"), _mouth(),
 		{"volume_db": 2.0})
+	_caption_call()
 	Events.enemy_alerted.emit(entity_id, global_position)
 
 
@@ -1354,6 +1372,7 @@ func _howl() -> void:
 	_set_state(State.SCREAM)
 	visual.play_once(&"scream", 1.0, [&"idle"] as Array[StringName])
 	Audio.play_3d(&"voice/hound_howl", _mouth(), {"volume_db": 4.0, "max_distance": 260.0})
+	SoundCaptions.say(SoundCaptions.cell_key("hounds", global_position), "hounds howling", global_position)
 	if Stimuli.current != null and def.faction != "wildlife":  # a wolf's howl is no stimulus: no Hollowed, no heat (ADR-0055)
 		Stimuli.current.emit_sound(global_position, float(c.get("loudness", 70.0)), &"howl", entity_id)
 	Events.enemy_alerted.emit(entity_id, global_position)
@@ -1447,6 +1466,7 @@ func _start_spit() -> void:
 	_set_state(State.SPIT)
 	visual.play_once(&"scream", 1.2, [&"attack_a"] as Array[StringName])
 	Audio.play_3d(&"voice/zombie_alert", global_position + Vector3.UP * 1.5, {"volume_db": -1.0, "pitch": 1.35})
+	SoundCaptions.say("spit:%s" % entity_id, "a wet retching", global_position)
 
 
 func _fire_spit(p: Player) -> void:
@@ -1470,6 +1490,26 @@ func _scaled_spores(params: Dictionary) -> Dictionary:
 	return out
 
 
+## A heavy blow to a Blister's body bursts its pustules (TD-027) in a small spore puff: `hit_burst`
+## {min_damage, radius, damage, infection}. Once only: the shader swaps every pustule for a crater.
+func _hit_burst(limb: String, amount: float) -> void:
+	var hb: Dictionary = def.beh("hit_burst", {})
+	if _popped or hb.is_empty() or limb != "torso" or amount < float(hb.get("min_damage", 22.0)):
+		return
+	_pop()
+	if get_parent() != null:
+		Spores.burst(get_parent(), global_position, _scaled_spores(hb), entity_id)
+		SoundCaptions.say("burst:%s" % entity_id, "a wet burst", global_position)
+
+
+func _pop() -> void:
+	if _popped:
+		return
+	_popped = true
+	if visual != null:
+		visual.burst()
+
+
 func _can_charge(dist: float) -> bool:
 	var ch: Dictionary = def.beh("charge", {})
 	return not ch.is_empty() and _charge_cd <= 0.0 and not crawling \
@@ -1483,6 +1523,7 @@ func _start_charge(p: Player) -> void:
 	_charge_hit = false
 	_set_state(State.CHARGE)
 	Audio.play_3d(&"voice/zombie_alert", global_position + Vector3.UP * 2.0, {"volume_db": 4.0, "pitch": 0.6, "max_distance": 90.0})
+	SoundCaptions.say("charge:%s" % entity_id, "something heavy charging", global_position, 6.0)
 	if Stimuli.current != null:
 		Stimuli.current.emit_sound(global_position, 30.0, &"roar", entity_id)
 
@@ -1550,6 +1591,8 @@ func take_damage(info: DamageInfo) -> void:
 		Audio.play_3d(&"sfx/blade_hit_flesh" if info.type in [&"slash", &"pierce"] else &"sfx/hit_flesh", info.hit_pos, {"volume_db": -3.0})
 	if health > 0.0 and _rng.randf() < 0.6:
 		Audio.play_3d(_vid(&"voice/zombie_pain", &"voice/hound_yelp"), _mouth(), {"volume_db": -3.0})
+	if health > 0.0:
+		_hit_burst(limb, amount)
 	if ally != null and health <= 0.0:
 		ally.go_down(info)  # downed, not dead (ADR-0058)
 		return
@@ -1795,6 +1838,9 @@ func _die(info: DamageInfo) -> void:
 		burst = _tier_burst
 	if not burst.is_empty() and get_parent() != null:
 		Spores.burst(get_parent(), global_position, _scaled_spores(burst), entity_id)
+		SoundCaptions.say("burst:%s" % entity_id, "a wet burst", global_position)
+	if not def.beh("hit_burst", {}).is_empty():
+		_pop()
 	Events.enemy_killed.emit(entity_id, def.id, global_position, killer)
 	died.emit(self)
 
@@ -1951,3 +1997,12 @@ func _update_anim(want: Vector3) -> void:
 	else:
 		visual.play(&"idle", 1.0, 0.4)
 	visual.animate_placeholder(get_physics_process_delta_time(), want.length(), false)
+
+
+## Caption for a call the player may not see (G4): the Hollowed calling (a lurcher's screech, a
+## hound's bark, the Ashen's war cry), one caption per 40 m and kind every 10 s.
+func _caption_call() -> void:
+	var kind: String = "ashen" if def.faction == "ashen" else ("hounds" if def.archetype == "hound" else "hollowed")
+	var text: String = {"ashen": "ashen war cries", "hounds": "hounds baying"}.get(kind,
+		"a hollowed screeching" if def.archetype == "feral" else "hollowed calling")
+	SoundCaptions.say(SoundCaptions.cell_key(kind, global_position), text, global_position)
