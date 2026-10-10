@@ -45,7 +45,10 @@ LOOM_MAX = 1.5
 # along it, the pad or tip is seen end-on (report 5's lighter thumb, aimed ~20 degrees off).
 AIM_MIN = 35.0
 # A thumb tucked into a fist (curl at least this) lies across the knuckles and may face the eye:
-# aimed, it is only reported (prefixed WARN, see is_failure()); an open or working thumb fails.
+# aimed, it is only reported (prefixed WARN, see is_failure()). An open or working thumb fails in a
+# held pose (an idle, guard or tether loop: what the eye rests on); passing through a strike, a
+# reach or a reload for a few frames it is reported too (the rope grab, the bandage, the reload's
+# open hand dip 1-3 degrees under for 2-10 frames).
 AIM_TUCKED = 0.5
 # Poses being re-posed by their owner, reported until they land (action suffix -> hands): the
 # tether-reading left hand (Presentation, report 5) aims its thumb 20-23 degrees off the ray.
@@ -55,6 +58,15 @@ WARN = "warn: "
 CROSS_MAX = 0.002
 # A sliver past a limit is rounding, not a pose.
 SLACK = 0.5
+
+
+def held_actions(cfg: dict) -> set:
+    """The fp_* loops a hold rests in (its idle, guard and tether loops), as fp_actions names them."""
+    out = set()
+    for cls, h in cfg["holds"].items():
+        if not cls.startswith("_"):
+            out |= {f"fp_{cls}", f"fp_{cls}_guard", f"fp_{cls}_tether"}
+    return out
 
 
 def _seg_dist(p1, q1, p2, q2):
@@ -165,9 +177,9 @@ def measure(sk, Q: dict) -> dict:
     return out
 
 
-def violations(name: str, frame: int, m: dict, prm: dict | None = None) -> list[str]:
+def violations(name: str, frame: int, m: dict, prm: dict | None = None, held: bool = True) -> list[str]:
     """What in one measured pose is outside a hand's range (`prm`, the solved pose, tells a
-    tucked thumb: without it every thumb counts as open)."""
+    tucked thumb: without it every thumb counts as open; `held`: a hold's loop, not a keyed move)."""
     bad = []
     for k, v in m.items():
         sd, part, joint = k.split(".")
@@ -178,7 +190,7 @@ def violations(name: str, frame: int, m: dict, prm: dict | None = None) -> list[
         if part == "aim":
             if v < AIM_MIN:
                 tucked = prm is not None and float(prm.get(f"{sd}.thumb", 0.0)) >= AIM_TUCKED
-                tucked = tucked or any(name.endswith(a) and sd in sides for a, sides in AIM_PENDING.items())
+                tucked = tucked or not held or any(name.endswith(a) and sd in sides for a, sides in AIM_PENDING.items())
                 bad.append(f"{WARN if tucked else ''}{name}@{frame} {sd} thumb aimed {v:.0f} deg off the view ray (min {AIM_MIN:.0f})")
             continue
         if part == "loom":
@@ -208,6 +220,7 @@ def check(cfg: dict | None = None, params: dict | None = None, every: int = 1, o
     solver = F.PoseSolver(rig, cfg.get("wrist"))
     bad: list[str] = []
     summary: dict = {}
+    held = held_actions(cfg)
     for name, n, _loop, frames in F.fp_actions(cfg):
         if only and not name.startswith(only):
             continue
@@ -218,7 +231,7 @@ def check(cfg: dict | None = None, params: dict | None = None, every: int = 1, o
             if i % every and i != len(frames) - 1:
                 continue
             m = measure(sk, rig.evaluate(prm)[0])
-            bad += violations(name, i, m, prm)
+            bad += violations(name, i, m, prm, name in held)
             for k, v in m.items():
                 lo, hi = worst.get(k, (v, v))
                 worst[k] = (min(lo, v), max(hi, v))
