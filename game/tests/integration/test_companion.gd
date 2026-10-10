@@ -740,6 +740,28 @@ func test_the_logs_ride_his_shoulder_bone() -> void:
 	assert_lt(node.global_position.distance_to(want), 0.4, "over his right shoulder (%s vs %s)" % [node.global_position, want])
 
 
+func test_the_card_marks_what_fetch_would_bring() -> void:
+	await _recruited()
+	var lg: LogEntity = _world.loose.spawn_log(_p.global_position + Vector3(6, 0.3, 2), Basis(), &"")
+	await _frames(10)
+	_dir.looked = {"entity": String(lg.entity_id)}
+	var card := CompanionScreen.new()
+	card.director = _dir
+	add_child_autofree(card)
+	card.open()
+	var mk: Node3D = card._marker
+	assert_not_null(mk, "a marker in the world (TD-307)")
+	assert_true(mk.visible)
+	assert_lt(mk.global_position.distance_to(lg.global_position), 0.05, "on the log")
+	card.close_screen()
+	assert_false(mk.visible, "gone with the card")
+	card.open()
+	_dir.looked = {}
+	card._refresh()
+	assert_false(mk.visible, "nothing looked at, nothing marked")
+	card.close_screen()
+
+
 func test_companion_strength_scales_him() -> void:
 	var e: Enemy = await _recruited()
 	assert_almost_eq(e.max_health, e.def.health, 0.01, "1 by default: the enemy settings never apply")
