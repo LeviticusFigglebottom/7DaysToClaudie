@@ -85,10 +85,10 @@ def eyes(model) -> Part:
     R = model.hR
     wall = float(model.p.get("wall_eye", 4.0))
     for sx in (1.0, -1.0):
-        c = model.HP(sx * 0.032, 0.012, 0.073)
+        c, er = model.eye(sx) if hasattr(model, "eye") else (model.HP(sx * 0.032, 0.012, 0.073), 0.0116 * s)
         gaze = rot_axis(R[:, 1], sx * math.radians(wall)) @ R[:, 2]
         gaze = rot_axis(R[:, 0], math.radians(-3)) @ gaze
-        v, f, uv = uv_sphere(c, 0.0116 * s, gaze, seg=12, rings=8)
+        v, f, uv = uv_sphere(c, er, gaze, seg=12, rings=8)
         p.add(v, f, L_EYES, bone="head", uvs=uv)
     return p
 
@@ -498,29 +498,50 @@ def filament(root, direction, length, radius, rng, sag=0.6, segs=4):
 
 
 def shelf(center, normal, size, rng, up=(0, 0, 1)):
-    """Bracket-fungus plate: a lumpy half-disc sticking out of the surface along `normal`."""
+    """Bracket-fungus plate: a lobed half-disc sticking out of the surface along `normal`, domed on
+    top, its margin rolled down into a thick lip and its underside ribbed with radial gills (alternate
+    spokes lifted: the grooves take the baked AO, so the underside reads dark and ribbed rather than
+    as a pale card; TD-192). ~52 triangles: the body's budget pays for every one (a Rammer carries
+    ~25 of them)."""
     n = _n(normal)
     upv = np.asarray(up, dtype=np.float64)
     upv = _n(upv - n * float(upv @ n)) if abs(float(upv @ n)) < 0.95 else _n(np.cross(n, (1, 0, 0)))
     side = np.cross(upv, n)
-    k = 8
-    top, bot = [], []
-    thick = size * 0.30
-    for i in range(k + 1):
-        a = math.pi * i / k
-        rr = size * (0.75 + 0.25 * rng.random())
-        p = center + side * math.cos(a) * rr * 1.2 + n * math.sin(a) * rr - upv * size * 0.15 * math.sin(a)
-        top.append(p + upv * thick * 0.5)
-        bot.append(p - upv * thick * 0.5)
-    c_top = center + upv * thick * 0.6
-    c_bot = center - upv * thick * 0.4
-    verts = top + bot + [c_top, c_bot]
-    ct, cb = len(verts) - 2, len(verts) - 1
+    k = 8                                    # angular steps over the half-disc
+    thick = size * 0.28
+    # a lobed outline: two or three broad lobes rather than per-vertex noise
+    lobes = int(rng.integers(2, 4))
+    ph = rng.uniform(0, 2 * math.pi)
+    amp = rng.uniform(0.08, 0.16)
+    rad = [size * (1.0 + amp * math.sin(lobes * math.pi * i / k + ph) + 0.04 * rng.standard_normal())
+           for i in range(k + 1)]
+
+    def at(i, t, h):
+        """Point at spoke i, fraction t of the radius, height h along up (the shelf sags with t)."""
+        ang = math.pi * i / k
+        rr = rad[i] * t
+        return center + side * math.cos(ang) * rr * 1.2 + n * math.sin(ang) * rr + upv * (h - size * 0.15 * t * t)
+    verts = [center + upv * thick * 0.9, center - upv * thick * 0.4]   # dome top, underside centre
+    ct, cb = 0, 1
+    mid = [len(verts) + i for i in range(k + 1)]
+    verts += [at(i, 0.6, thick * 0.75) for i in range(k + 1)]
+    lip = [len(verts) + i for i in range(k + 1)]
+    verts += [at(i, 1.03, -thick * 0.25) for i in range(k + 1)]          # rolled down at the margin
+    under = [len(verts) + i for i in range(k + 1)]
+    verts += [at(i, 0.85, -thick * 0.45 + (thick * 0.5 if i % 2 else 0.0)) for i in range(k + 1)]
     faces = []
     for i in range(k):
-        faces.append((ct, i + 1, i))                       # top fan
-        faces.append((cb, k + 1 + i, k + 1 + i + 1))       # bottom fan
-        faces.append((i, i + 1, k + 1 + i + 1, k + 1 + i))  # rim
+        faces.append((ct, mid[i], mid[i + 1]))
+        faces.append((mid[i], lip[i], lip[i + 1], mid[i + 1]))
+        faces.append((lip[i], under[i], under[i + 1], lip[i + 1]))
+        faces.append((cb, under[i + 1], under[i]))
+    # the two ends where it meets the body
+    faces.append((ct, cb, under[0], lip[0], mid[0]))
+    faces.append((ct, mid[k], lip[k], under[k], cb))
+    # outward winding: the top must face up
+    va, vb, vc = verts[ct], verts[mid[k // 2]], verts[mid[k // 2 + 1]]
+    if float(np.cross(vb - va, vc - va) @ upv) < 0:
+        faces = [tuple(reversed(f)) for f in faces]
     return verts, faces
 
 

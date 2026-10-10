@@ -266,6 +266,7 @@ func _shy(p: Player) -> void:
 	if not lines.is_empty():
 		Events.player_status_message.emit(str(lines[enemy._rng.randi() % lines.size()]), &"warning")
 	Audio.play_3d(&"voice/ashen_call", enemy._mouth(), {"volume_db": -1.0})
+	SoundCaptions.say(SoundCaptions.cell_key("ashen", enemy.global_position), "ashen shouting", enemy.global_position)
 	var hint: String = str(sh.get("hint", ""))
 	if hint != "" and Game.session != null and not bool(Game.session.world.flags.get("ashen_fire_hint", false)):
 		Game.session.world.flags["ashen_fire_hint"] = true

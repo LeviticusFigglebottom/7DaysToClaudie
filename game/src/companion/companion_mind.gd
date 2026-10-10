@@ -429,6 +429,9 @@ func speak(event: String, n: int = 0) -> void:
 		enemy.add_child(_voice)
 	_voice.stream = vs[clampi(variant - 1, 0, vs.size() - 1)] if variant > 0 else vs[randi() % vs.size()]
 	_voice.play()
+	# Far off, he's heard and not seen: say so (G4); near, the status line carries his words.
+	if _far_from_player(25.0):
+		SoundCaptions.say("ezra", "ezra calling out", enemy.global_position, 10.0)
 
 
 ## The lantern he carries at night while following: his own light (not a stimulus-field light, so
@@ -519,3 +522,8 @@ static func voice(hollowed: StringName) -> StringName:
 		&"voice/zombie_death":
 			return &"voice/ashen_death"
 	return &""
+
+
+func _far_from_player(m: float) -> bool:
+	var p: Node3D = Game.world.get(&"player") as Node3D if Game.world != null else null
+	return p != null and p.global_position.distance_to(enemy.global_position) > m

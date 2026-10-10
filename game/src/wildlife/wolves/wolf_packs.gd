@@ -209,6 +209,7 @@ func play_howl(m: Enemy) -> void:
 		m.wolf.hold(m.visual.clip_length(&"scream", 2.0) if m.visual != null else 2.0)
 	Audio.play_3d(&"voice/wolf_howl", m._mouth(), {"volume_db": 6.0, "max_distance": float(WolfPack.section("howl").get("audible", 320.0)),
 		"occlusion": false})
+	SoundCaptions.say(SoundCaptions.cell_key("wolves", m.global_position), "wolves howling", m.global_position)
 
 
 func _height(p: Vector3) -> float:
