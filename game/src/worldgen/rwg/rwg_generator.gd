@@ -799,15 +799,38 @@ func _snap_to_road(p: Vector2) -> Vector2:
 ## not after running beside it on the road's cheap cells (_leave_road; TD-139).
 func _leave_roads(pts: PackedVector2Array, start_exact: bool, end_exact: bool) -> PackedVector2Array:
 	if not start_exact:
-		var nr: Array = nearest_road(pts[0])
-		if float(nr[0]) < 1.0:
-			pts = _leave_road(pts, int(nr[2]))
+		pts = _leave_end(pts)
 	if not end_exact and pts.size() >= 2:
-		var nr2: Array = nearest_road(pts[pts.size() - 1])
-		if float(nr2[0]) < 1.0:
-			pts.reverse()
-			pts = _leave_road(pts, int(nr2[2]))
-			pts.reverse()
+		pts.reverse()
+		pts = _leave_end(pts)
+		pts.reverse()
+	return pts
+
+
+## _leave_road at a piece's start, snapped onto a road: against that road, then against each other
+## road within LEAVE_ROAD of the new start, nearest first. A junction holds two or more roads, and
+## a piece snapped onto one could run on beside another (TD-139: settled seed 11, Whitlow's exit
+## highway ran 40 m+ beside the road it had not snapped to).
+func _leave_end(pts: PackedVector2Array) -> PackedVector2Array:
+	var nr: Array = nearest_road(pts[0])
+	if float(nr[0]) >= 1.0:
+		return pts
+	pts = _leave_road(pts, int(nr[2]))
+	var done: Dictionary = {int(nr[2]): true}
+	for _pass: int in 3:
+		var near: Array = []
+		for i: int in roads.size():
+			if done.has(i):
+				continue
+			var d: float = (roads[i]["line"] as Polyline2).closest(pts[0]).x
+			if d < LEAVE_ROAD:
+				near.append([d, i])
+		if near.is_empty():
+			break
+		near.sort()
+		var i2: int = int(near[0][1])
+		done[i2] = true
+		pts = _leave_road(pts, i2)
 	return pts
 
 
