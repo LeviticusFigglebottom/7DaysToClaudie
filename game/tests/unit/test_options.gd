@@ -202,3 +202,18 @@ func test_pad_actions_that_go_by_context() -> void:
 	Settings.using_pad = false
 	assert_eq(GameUI.turn_keys(), Settings.input_label("rotate_piece"))
 	Settings.using_pad = was
+
+
+func test_caption_size_scales_the_words_that_stand_in_for_sound() -> void:
+	var was: float = Settings.caption_scale
+	assert_eq(OptionsPanel.caption_scale_index(1.0), 0)
+	assert_eq(OptionsPanel.caption_scale_index(1.5), Settings.CAPTION_SCALES.find(1.5))
+	assert_eq(OptionsPanel.caption_scale_index(9.0), Settings.CAPTION_SCALES.size() - 1, "out of range: the nearest")
+	assert_eq(Settings.CAPTION_SCALES.size(), Settings.CAPTION_SCALE_NAMES.size())
+	Settings.caption_scale = 1.0
+	assert_eq(UiStyle.caption_size(20), 20)
+	Settings.caption_scale = 1.5
+	assert_eq(UiStyle.caption_size(20), 30)
+	Settings.caption_scale = 5.0
+	assert_eq(UiStyle.caption_size(20), 40, "capped at twice")
+	Settings.caption_scale = was

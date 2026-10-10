@@ -1,7 +1,7 @@
 extends Node
 ## Runner for ui_shots.gd: builds each screen on its own with a demo player and saves the frame.
 
-const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "roll_sorted", "roll_stations", "roll_drag", "menu", "options", "options_graphics", "options_controls", "new_game", "load", "whats_new", "manual",
+const ALL: PackedStringArray = ["roll", "roll_campfire", "roll_hover", "roll_sorted", "roll_stations", "roll_drag", "menu", "options", "options_graphics", "options_controls", "new_game", "load", "whats_new", "manual", "manual_journal",
 	"loading", "pause", "trader", "death", "hud", "vignette", "note_handwritten", "note_scrawl", "note_typed", "note_printed", "intro_0", "intro_1", "intro_2", "intro_3", "intro_4", "intro_5", "intro_6", "intro_7", "intro_8", "intro_9"]
 
 var _out: String = "res://../build/ui_shots"
@@ -317,6 +317,16 @@ func _shot_trader() -> Node:
 	return layer
 
 
+## The field manual on its Journal tab (the first-days walkthrough).
+func _shot_manual_journal() -> Node:
+	var layer: CanvasLayer = _ui_layer()
+	var m := FieldManual.new()
+	layer.add_child(m)
+	await _settle(1)
+	m.open("journal")
+	return layer
+
+
 func _shot_death() -> Node:
 	var ui := GameUI.new()
 	add_child(ui)
@@ -345,6 +355,7 @@ func _shot_hud() -> Node:
 	p.equipped_slot = 0
 	ui.message("Journal: Make a stone axe ✓   Next: Fell a tree ([B])", &"level")
 	ui.message("Picked up 3 Stick.", &"info")
+	ui.message(GameUI.caption_line("wolves howling", "north-east, 140 m"), &"info")
 	if ui.has_method(&"show_belt"):
 		ui.call(&"show_belt")
 	await _settle(4)

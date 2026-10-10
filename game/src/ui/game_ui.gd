@@ -899,13 +899,13 @@ func message(text: String, kind: StringName = &"info") -> void:
 	l.add_theme_color_override(&"font_color", {&"info": UiStyle.KIT_TEXT, &"warning": Color(0.95, 0.8, 0.45), &"danger": Color(0.95, 0.35, 0.3), &"error": Color(1, 0.4, 0.4), &"level": UiStyle.RUST_BRIGHT}.get(kind, UiStyle.KIT_TEXT))
 	l.add_theme_color_override(&"font_outline_color", Color(0.03, 0.03, 0.02, 0.9))
 	l.add_theme_constant_override(&"outline_size", 6)
-	l.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE + 1)
+	l.add_theme_font_size_override(&"font_size", UiStyle.caption_size(UiStyle.BODY_SIZE + 1))
 	_messages.add_child(l)
 	# A long line (the distress call) wraps at 820 px instead of running off the screen; a short
 	# one never wraps (a guessed width once put "[B]" on its own line).
 	if text.length() > 80:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size = Vector2(820, 0)
+		l.custom_minimum_size = Vector2(820 * Settings.caption_scale, 0)
 	_fade_message(l)
 	while _messages.get_child_count() > 6:
 		_messages.get_child(0).queue_free()

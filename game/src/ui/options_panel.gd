@@ -166,6 +166,14 @@ func _general() -> void:
 	_check("Sound captions ([radio crackle], [a low hum])", Settings.sound_captions, func(on: bool) -> void:
 		Settings.sound_captions = on
 		Settings.save())
+	var cs := OptionButton.new()
+	for n: String in Settings.CAPTION_SCALE_NAMES:
+		cs.add_item(n)
+	cs.selected = caption_scale_index(Settings.caption_scale)
+	cs.item_selected.connect(func(i: int) -> void:
+		Settings.caption_scale = Settings.CAPTION_SCALES[i]
+		Settings.save())
+	_row("Caption and message size", cs)
 	_check("Fullscreen", Settings.fullscreen, func(on: bool) -> void: Settings.set_display(on, Settings.vsync))
 	_check("Vertical sync", Settings.vsync, func(on: bool) -> void: Settings.set_display(Settings.fullscreen, on))
 
@@ -318,6 +326,15 @@ static func same_choice(a: Variant, b: Variant) -> bool:
 	if na and nb:
 		return is_equal_approx(float(a), float(b))
 	return str(a) == str(b)
+
+
+## The entry of Settings.CAPTION_SCALES nearest `v` (a hand-edited settings file can hold anything).
+static func caption_scale_index(v: float) -> int:
+	var best: int = 0
+	for i: int in Settings.CAPTION_SCALES.size():
+		if absf(Settings.CAPTION_SCALES[i] - v) < absf(Settings.CAPTION_SCALES[best] - v):
+			best = i
+	return best
 
 
 func _row(label: String, control: Control) -> void:

@@ -591,10 +591,11 @@ func _build_card(c: Dictionary) -> Control:
 	# Sound captions (Options): what the card's sound says, for players who can't hear it.
 	if captions_on() and str(c.get("caption", "")) != "":
 		var cap := UiStyle.label(str(c["caption"]), &"DimLabel")
-		cap.add_theme_font_size_override(&"font_size", 22)
+		cap.add_theme_font_size_override(&"font_size", UiStyle.caption_size(22))
 		cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cap.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-		cap.offset_top = -130
+		# Taller at a larger caption size (Options), growing up from the same bottom line.
+		cap.offset_top = -96 - 34 * Settings.caption_scale
 		cap.offset_bottom = -96
 		cap.offset_left = -500
 		cap.offset_right = 500
