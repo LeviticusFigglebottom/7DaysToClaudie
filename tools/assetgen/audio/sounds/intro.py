@@ -7,6 +7,11 @@ sfx/lift3_crash   the impact card's one sound, cut in on its white flash: the ai
                   through its whole range, coughing (compressor stalls) as it goes; then the
                   debris settles and the hull groans. About six seconds: the tail runs under the
                   next radio card ("Lift Three, Control.").
+sfx/lift3_engine_failure   the bed under the last radio call (IntroPlayer's card `bed`, from
+                  "Losing number two"): engine two stalls and runs down while engine one strains,
+                  the rotor droops, the caution chime and then the low-rotor horn sound, and the
+                  wind rises as the Lift sinks. Ten seconds with no end of its own: the impact
+                  card cuts it.
 Dry and mono: the intro plays it flat (Audio.play_2d)."""
 from __future__ import annotations
 
@@ -126,3 +131,69 @@ def lift3_crash(seed, variant, sr):
     # Heard through the drop bay's floor and a headset: the very top is dulled.
     y = dsp.lp(y, sr, 9000.0)
     return dsp.peq(y, sr, 60.0, 3.0, 0.9)
+
+
+BED_DUR = 10.0
+
+
+def _rotor_chop(n: int, sr: int, r: np.random.Generator, f_bp: np.ndarray) -> np.ndarray:
+    """The rotor heard from the cabin: air-wash noise chopped at the blade pass (f_bp per sample),
+    with the blade-pass tone itself under it."""
+    ph = 2.0 * np.pi * np.cumsum(f_bp) / sr
+    chop = np.abs(np.sin(0.5 * ph)) ** 8
+    wash = dsp.band_noise(n, sr, r, 70.0, 1800.0, slope_db_oct=-3.0)
+    tone = np.sin(ph) + 0.5 * np.sin(2.0 * ph + 0.4) + 0.25 * np.sin(3.0 * ph + 1.0)
+    return 0.6 * dsp.normalize(wash * (0.3 + chop)) + 0.4 * dsp.normalize(tone)
+
+
+@sound("sfx/lift3_engine_failure", seed=18102, peak_db=-2.0)
+def lift3_engine_failure(seed, variant, sr):
+    """Under the last radio call: engine two dies, engine one strains on, the rotor droops, the
+    caution tone and then the low-rotor horn sound, and the wind rises as the Lift sinks. No
+    natural end: the impact card cuts it (IntroPlayer's bed); its last seconds hold at full
+    distress in case the call types slowly."""
+    r = dsp.rng(seed)
+    n = dsp.ns(BED_DUR, sr)
+    t = np.arange(n) / sr
+    # Rotor: ~17 Hz blade pass at cruise, drooping to ~12.5 Hz as one engine can't hold it.
+    f_bp = 17.0 - 4.5 * dsp.smoothstep(np.clip(t / 6.0, 0.0, 1.0)) + 0.25 * dsp.smooth_noise(n, sr, r, 1.5)
+    rotor = _rotor_chop(n, sr, r, f_bp)
+    # Engine one: a steady turbine whine, straining higher and rougher as it takes the load.
+    f1 = 1650.0 + 140.0 * dsp.smoothstep(np.clip((t - 0.6) / 3.0, 0.0, 1.0)) + 18.0 * dsp.smooth_noise(n, sr, r, 5.0)
+    p1 = 2.0 * np.pi * np.cumsum(f1) / sr
+    eng1 = (np.sin(p1) + 0.3 * np.sin(2.0 * p1)) * (1.0 + 0.25 * dsp.smoothstep(np.clip((t - 0.6) / 3.0, 0.0, 1.0)) * dsp.smooth_noise(n, sr, r, 22.0))
+    # Engine two: in tune with one at first, then surging and running down (its stalls are pops).
+    fail_at = 0.35
+    k2 = np.clip((t - fail_at) / 3.2, 0.0, 1.0)
+    f2 = 1640.0 * (1.0 - 0.82 * k2 ** 0.7) * (1.0 + 0.05 * dsp.smooth_noise(n, sr, r, 3.0) * (k2 > 0))
+    p2 = 2.0 * np.pi * np.cumsum(f2) / sr
+    eng2 = (np.sin(p2) + 0.35 * np.sin(2.0 * p2 + 0.5)) * (1.0 - dsp.smoothstep(np.clip((t - 2.4) / 1.6, 0.0, 1.0)))
+    y = 0.55 * rotor + 0.16 * dsp.normalize(eng1) + 0.16 * dsp.normalize(eng2)
+    for at in (fail_at + 0.05, fail_at + 0.9 + r.uniform(-0.1, 0.1), fail_at + 1.7 + r.uniform(-0.1, 0.1)):
+        pop = dsp.thud(sr, r, f=dsp.vary(r, 75.0, 0.1), dur=0.45, contact_ms=2.5, t60=0.1, noise=1.0, noise_lp=2600.0)
+        dsp.place(y, pop, dsp.ns(at, sr), 0.55)
+    # Master caution: a two-tone chime every 0.9 s from just after the failure.
+    chime_n = dsp.ns(0.32, sr)
+    chime = np.zeros(chime_n)
+    half = chime_n // 2
+    tc = np.arange(chime_n) / sr
+    chime[:half] = np.sign(np.sin(2.0 * np.pi * 880.0 * tc[:half])) * 0.6 + np.sin(2.0 * np.pi * 880.0 * tc[:half])
+    chime[half:] = np.sign(np.sin(2.0 * np.pi * 660.0 * tc[half:])) * 0.6 + np.sin(2.0 * np.pi * 660.0 * tc[half:])
+    chime = dsp.lp(chime, sr, 3000.0) * dsp.env_ar(chime_n, sr, 0.004, 1.0)
+    at = fail_at + 0.4
+    while at < 4.2:
+        dsp.place(y, dsp.normalize(chime), dsp.ns(at, sr), 0.16)
+        at += 0.9
+    # Low rotor RPM: a continuous warbling horn once the rotor has drooped.
+    horn_f = 600.0 + 60.0 * np.sign(np.sin(2.0 * np.pi * 4.0 * t))
+    horn = np.sign(np.sin(2.0 * np.pi * np.cumsum(horn_f) / sr)) * 0.5 + np.sin(2.0 * np.pi * np.cumsum(horn_f) / sr)
+    horn = dsp.lp(horn, sr, 2500.0) * dsp.smoothstep(np.clip((t - 4.2) / 0.15, 0.0, 1.0))
+    y += 0.12 * dsp.normalize(horn)
+    # Sinking: the wind over the hull rises, and the airframe shudders at two per rev.
+    wind = dsp.band_noise(n, sr, r, 150.0, 5000.0, slope_db_oct=-2.0) * (0.15 + 0.85 * dsp.smoothstep(np.clip((t - 1.5) / 6.0, 0.0, 1.0)))
+    wind *= 1.0 + 0.3 * dsp.smooth_noise(n, sr, r, 2.0)
+    shudder = dsp.lp(dsp.brown(n, r, sr), sr, 90.0) * (1.0 + np.sin(2.0 * np.pi * np.cumsum(f_bp * 2.0) / sr)) * dsp.smoothstep(np.clip((t - 2.0) / 4.0, 0.0, 1.0))
+    y += 0.3 * dsp.normalize(wind) + 0.25 * dsp.normalize(shudder)
+    # Heard from inside the cabin: the top end dulled, the low end full.
+    y = dsp.lp(y, sr, 7000.0)
+    return dsp.lshelf(y, sr, 150.0, 3.0)

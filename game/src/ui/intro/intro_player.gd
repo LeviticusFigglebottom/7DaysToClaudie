@@ -17,7 +17,7 @@ signal finished()
 
 const SCRIPT_PATH: String = "res://data/intro/intro.json"
 const KINDS: PackedStringArray = ["caption", "document", "radio", "impact", "world", "title"]
-const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds", "caption", "poi", "at", "from", "to", "height"]
+const CARD_KEYS: PackedStringArray = ["kind", "stamp", "heading", "lines", "hold", "sound", "sounds", "bed", "caption", "poi", "at", "from", "to", "height"]
 ## The world card's picture, rendered offline (`make stills`, ADR-0065) and slowly zoomed in on over
 ## the card: the shot is never drawn live, so the load's work and a slow GPU can't stutter it, and
 ## it needs no world. SHOT_ZOOM is the zoom at the card's end (the old live shot's push in).
@@ -66,6 +66,13 @@ var _vars: Dictionary = {}
 var _grain: ColorRect
 ## A line under the cards with the load's progress (set by GameUI while the world loads).
 var _status: Label
+## The card's bed (`bed`: {sound, line}): a sound under the card that starts as its line `line`
+## begins to type and runs on until the next card cuts it (the Lift's engine failing under the
+## last radio card, cut by the impact). -1: none due, or already started.
+var _bed: AudioStreamPlayer
+var _bed_due: int = -1
+## The typed label the card is on (all typed: past the last).
+var _typing_at: int = 0
 ## Seconds into the current impact card (-1: none).
 var _impact_t: float = -1.0
 ## The world card's picture while it shows, and seconds into it.
@@ -159,6 +166,14 @@ static func validate(d: Dictionary) -> PackedStringArray:
 		var hold: float = float(c.get("hold", 3.0))
 		if hold < 1.0 or hold > 15.0:
 			out.append("intro card %d: hold %.1f s out of 1..15" % [i, hold])
+		if c.has("bed"):
+			var bed: Dictionary = c["bed"] if c["bed"] is Dictionary else {}
+			var line_n: int = (c.get("lines", []) as Array).size()
+			if str(bed.get("sound", "")) == "" or int(bed.get("line", 0)) < 0 or int(bed.get("line", 0)) >= maxi(line_n, 1):
+				out.append("intro card %d: bed needs {sound, line} with line 0..%d" % [i, maxi(line_n - 1, 0)])
+			for k3: String in bed:
+				if not k3 in ["sound", "line"]:
+					out.append("intro card %d: bed has unknown key '%s'" % [i, k3])
 		if str(c.get("kind", "")) == "radio":
 			for l: Variant in c.get("lines", []):
 				if not str(l).contains("|"):
@@ -261,6 +276,7 @@ func skip_intro() -> void:
 
 func _end() -> void:
 	_end_shot()
+	_stop_bed(1.2)
 	position = Vector2.ZERO
 	_impact_t = -1.0
 	_playing = false
@@ -281,6 +297,10 @@ func _next() -> void:
 		_end()
 		return
 	var c: Dictionary = _cards[_index]
+	# A bed runs until the next card: the crash cuts the engines off mid-scream.
+	_stop_bed(0.0)
+	_bed_due = bed_label_index(c)
+	_typing_at = 0
 	_typed.clear()
 	_stamp = null
 	_chars = 0.0
@@ -343,7 +363,10 @@ func _process(delta: float) -> void:
 				_t = 0.0
 		&"type":
 			_card.modulate.a = 1.0
-			if _type_step(dt, str(c.get("kind", ""))):
+			var typed: bool = _type_step(dt, str(c.get("kind", "")))
+			if _bed_due >= 0 and (typed or _typing_at >= _bed_due):
+				_start_bed(c)
+			if typed:
 				_phase = &"hold"
 				_t = 0.0
 		&"hold":
@@ -354,6 +377,41 @@ func _process(delta: float) -> void:
 			_card.modulate.a = 1.0 - clampf(_t / FADE, 0.0, 1.0)
 			if _t >= FADE:
 				_next()
+
+
+## The typed label at which a card's bed starts: its `line`, two labels a line on a radio card
+## (speaker, words); -1 without a bed.
+static func bed_label_index(c: Dictionary) -> int:
+	if not c.get("bed") is Dictionary:
+		return -1
+	var line: int = maxi(0, int((c["bed"] as Dictionary).get("line", 0)))
+	return line * 2 if str(c.get("kind", "")) == "radio" else line
+
+
+func _start_bed(c: Dictionary) -> void:
+	_bed_due = -1
+	var s: AudioStream = Audio.stream(StringName(str((c["bed"] as Dictionary).get("sound", ""))))
+	if s == null:
+		return
+	if _bed == null:
+		_bed = AudioStreamPlayer.new()
+		_bed.bus = &"SFX"
+		add_child(_bed)
+	_bed.stream = s
+	_bed.volume_db = UiStyle.level("intro_bed", -9.0)
+	_bed.play()
+
+
+## Stops the bed: at once (0 s, a cut) or faded over `fade` seconds.
+func _stop_bed(fade: float) -> void:
+	if _bed == null or not _bed.playing:
+		return
+	if fade <= 0.0:
+		_bed.stop()
+		return
+	var tw := create_tween()
+	tw.tween_property(_bed, "volume_db", -60.0, fade)
+	tw.tween_callback(_bed.stop)
 
 
 ## Reveals the card's labels in order; true once everything (and the stamp) is shown.
@@ -368,7 +426,9 @@ func _type_step(dt: float, kind: String) -> bool:
 			budget -= n + gap
 			continue
 		l.visible_characters = maxi(0, int(budget))
+		_typing_at = _typed.find(l)
 		return false
+	_typing_at = _typed.size()
 	if _stamp != null and not _stamp.visible:
 		_stamp.visible = true
 		Audio.play_2d(&"sfx/item_place_mat", UiStyle.level("intro_stamp", -2.0), &"SFX", 0.7)
