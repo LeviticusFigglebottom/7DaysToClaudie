@@ -455,3 +455,33 @@ func test_the_generator_warns_low_fuel_and_sputters_out() -> void:
 	_tm.tick(30.0)
 	assert_eq(_queued.size(), 3, "low again after a refill")
 	Events.status_message_queued.disconnect(_on_queued)
+
+
+func test_wires_are_cut_one_at_a_time() -> void:
+	# TD-246: cutting a piece's wires once cut them all.
+	var gen: StructurePiece = _spawn(&"generator", &"s:gen")
+	_spawn(&"work_light", &"s:a", Vector3(3, 0, 0))
+	_spawn(&"work_light", &"s:b", Vector3(-3, 0, 0))
+	_p.inventory.add_item(&"copper_wire", 2)
+	assert_true(bool(Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:a"})["ok"]))
+	assert_true(bool(Game.execute(&"power.wire", {"player": String(_p.id), "from": "s:gen", "to": "s:b"})["ok"]))
+	var pl := Player.new()
+	pl.state = _p
+	autofree(pl)
+	var alt: Array = BaseTechManager.alt_action(gen, pl)
+	assert_eq(alt[0], &"power.unwire")
+	assert_eq(str(alt[1]["to"]), "s:b", "the newest wire first")
+	assert_string_contains(str(alt[2]), "work light (2 wires)")
+	var cut: Dictionary = Game.execute(&"power.unwire", _args("s:gen", {"to": "s:a"}))
+	assert_eq(int(cut["cut"]), 1, "only the wire to s:a")
+	var left: Array = Game.session.world.base_tech["wires"]
+	assert_eq(left.size(), 1)
+	assert_eq(BaseTechManager.wire_other(left[0], "s:gen"), "s:b")
+	assert_eq(int(Game.execute(&"power.unwire", _args("s:gen"))["cut"]), 1, "then the newest left")
+	assert_true((Game.session.world.base_tech["wires"] as Array).is_empty())
+	# The pure picker.
+	var ws: Array = [["g", "a", 1], ["b", "g", 1]]
+	assert_eq(BaseTechManager.one_wire(ws, "g", ""), [["b", "g", 1]])
+	assert_eq(BaseTechManager.one_wire(ws, "g", "a"), [["g", "a", 1]])
+	assert_eq(BaseTechManager.one_wire(ws, "g", "x"), [])
+	assert_eq(BaseTechManager.one_wire([], "g", ""), [])
