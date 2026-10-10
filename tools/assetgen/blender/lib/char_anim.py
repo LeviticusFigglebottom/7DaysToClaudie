@@ -697,6 +697,23 @@ def act_sleep_kneel(rig, p, n=60):
     return _breathing(kneel_pose(rig, p), n, int(p.get("seed", 1)) + 5, head_sway=2.0)
 
 
+# A sleeping or waking body's slack jaw opens at most this far (degrees). The poses ask up to 24
+# (20 in the hunched sleep loop), and since the face skin follows the jaw (char_body's jaw mask,
+# TD-309) a beard parted at the cheek there; at 16 it holds.
+WAKE_JAW = 16.0
+
+
+def _wake_jaw(act):
+    """A sleep or wake action with its jaw capped at WAKE_JAW."""
+    def capped(rig, p, n=40, *a, **k):
+        frames = act(rig, p, n, *a, **k)
+        for prm in frames:
+            if "jaw.open" in prm:
+                prm["jaw.open"] = min(float(prm["jaw.open"]), WAKE_JAW)
+        return frames
+    return capped
+
+
 def act_wake_seat(rig, p, n=40, start=None):
     """Seated sleeper (feet planted on the origin) jerks its head up, leans forward over its knees,
     pushes off the seat and straightens: it ends standing where its feet were (no root motion).
@@ -1637,17 +1654,17 @@ def act_walk_limp(rig, p, n=44):
 def actions_table():
     return [
         ("idle", 90, True, act_idle),
-        ("idle_sleep_lie", 60, True, act_sleep_lie),
-        ("idle_sleep_sit", 60, True, act_sleep_sit),
-        ("idle_sleep_stand", 90, True, act_sleep_stand),
-        ("idle_sleep_seat", 60, True, act_sleep_seat),
-        ("idle_sleep_crouch", 60, True, act_sleep_crouch),
-        ("idle_sleep_kneel", 60, True, act_sleep_kneel),
-        ("wake_lie", 40, False, act_wake_lie),
-        ("wake_sit", 40, False, act_wake_sit),
-        ("wake_seat", 40, False, act_wake_seat),
-        ("idle_sleep_hunch", 60, True, act_sleep_hunch),
-        ("wake_hunch", 40, False, lambda r, p, n: act_wake_seat(r, p, n, hunch_pose(r, p))),
+        ("idle_sleep_lie", 60, True, _wake_jaw(act_sleep_lie)),
+        ("idle_sleep_sit", 60, True, _wake_jaw(act_sleep_sit)),
+        ("idle_sleep_stand", 90, True, _wake_jaw(act_sleep_stand)),
+        ("idle_sleep_seat", 60, True, _wake_jaw(act_sleep_seat)),
+        ("idle_sleep_crouch", 60, True, _wake_jaw(act_sleep_crouch)),
+        ("idle_sleep_kneel", 60, True, _wake_jaw(act_sleep_kneel)),
+        ("wake_lie", 40, False, _wake_jaw(act_wake_lie)),
+        ("wake_sit", 40, False, _wake_jaw(act_wake_sit)),
+        ("wake_seat", 40, False, _wake_jaw(act_wake_seat)),
+        ("idle_sleep_hunch", 60, True, _wake_jaw(act_sleep_hunch)),
+        ("wake_hunch", 40, False, _wake_jaw(lambda r, p, n: act_wake_seat(r, p, n, hunch_pose(r, p)))),
         ("walk", 72, True, lambda r, p, n: locomotion(r, p, n, 0.9, "walk", 2, 1.0)),
         ("walk_b", 80, True, lambda r, p, n: locomotion(r, p, n, 0.75, "walk_b", 2, 0.8)),
         ("run", 40, True, lambda r, p, n: locomotion(r, p, n, 4.5, "run", 2, 1.0)),
