@@ -113,3 +113,15 @@ func test_a_road_end_beside_another_stays_when_a_road_meets_the_stretch() -> voi
 	g.roads.append(_road([q, Vector2(80, 300)]))
 	g.call(&"_leave_beside")
 	assert_eq(g.roads[1]["points"][0], Vector2(10, 13), "kept: the track would be left hanging")
+
+
+## Generator 19: a main street's leg is cut where it enters the town's disc (_cut_out) and routed
+## again from there; a leg ending just past the disc keeps its corner.
+func test_a_leg_is_cut_where_it_enters_the_disc() -> void:
+	var leg := PackedVector2Array([Vector2(0, 0), Vector2(100, 0), Vector2(100, 300)])
+	var cut: Array = Generator._cut_out(leg, 150.0)
+	assert_eq(cut.size(), 2)
+	assert_eq(cut[0], Vector2(100, 50), "150 m along the leg")
+	assert_eq(cut[1], PackedVector2Array([Vector2(100, 50), Vector2(100, 300)]), "and the rest from there")
+	assert_eq(Generator._cut_out(leg, 370.0), [], "under 40 m left past the cut: no cut")
+	assert_eq(Generator._cut_out(leg, 500.0), [], "shorter than the cut")
