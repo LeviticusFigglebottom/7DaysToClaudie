@@ -399,8 +399,9 @@ func test_the_ai_director_never_culls_him() -> void:
 # --- Phase 2: gather, fetch, give, store ------------------------------------------------------------
 
 ## A vegetation manager with these instances ([species, position]) in chunk (0, 0): trees get their
-## collision bodies (as near the player), the rest are harvestable.
-func _veg(list: Array) -> VegetationManager:
+## collision bodies (as near the player) unless `bodies` is false (as far from them), the rest are
+## harvestable.
+func _veg(list: Array, bodies: bool = true) -> VegetationManager:
 	var vm := VegetationManager.new()
 	_world.add_child(vm)
 	_world.vegetation = vm
@@ -417,7 +418,7 @@ func _veg(list: Array) -> VegetationManager:
 		(layers["tree" if sp.veg_kind == "tree" else "ground"] as Array).append(inst)
 	vm._data[key] = layers
 	vm._pickable[key] = vm._harvestables(layers)
-	for inst2: VegetationScatter.Instance in layers["tree"]:
+	for inst2: VegetationScatter.Instance in layers["tree"] if bodies else []:
 		var id: StringName = VegetationScatter.instance_id(key, inst2.index)
 		vm._bodies[id] = vm._make_body(id, key, inst2, Content.get_def(&"species", inst2.species) as SpeciesDef)
 	return vm
@@ -762,6 +763,19 @@ func test_the_card_marks_what_fetch_would_bring() -> void:
 	card._refresh()
 	assert_false(mk.visible, "nothing looked at, nothing marked")
 	card.close_screen()
+
+
+func test_he_fells_a_tree_away_from_the_player_with_no_collision_body() -> void:
+	var e: Enemy = await _recruited()
+	var tree_at := Vector3(22, 0, 14)
+	var vm: VegetationManager = _veg([["paper_birch", tree_at]], false)
+	assert_null(vm.body_for(Vector2i(0, 0), vm._data[Vector2i(0, 0)]["tree"][0]), "no body, as far from the player")
+	_p.global_position = Vector3(0, 0, -6)
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "gather", "kind": "wood", "spot": [tree_at.x, 0.0, tree_at.z]})
+	assert_true(bool(r.get("ok", false)), str(r))
+	await _until(func() -> bool: return e.ally.order == "follow", 3000)
+	assert_true(vm._is_removed(Vector2i(0, 0), 0), "felled all the same (TD-304)")
+	assert_between(_dir.inventory.count_of(&"log"), 1, 2, "and its logs brought in")
 
 
 func test_companion_strength_scales_him() -> void:

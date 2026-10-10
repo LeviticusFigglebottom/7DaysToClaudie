@@ -1243,8 +1243,16 @@ func take_damage(info: DamageInfo) -> void:
 	var found: Array = _find_instance(id)
 	if found.is_empty():
 		return
-	var key: Vector2i = found[0]
-	var inst: VegetationScatter.Instance = found[1]
+	damage_instance(found[0], found[1], info)
+
+
+## take_damage on an instance named directly rather than by its collision body: a tree away from
+## the player has none (bodies stand only near them), and the companion fells such trees too
+## (TD-304). The fall is kinematic over height_at and the logs it leaves freeze out of range.
+func damage_instance(key: Vector2i, inst: VegetationScatter.Instance, info: DamageInfo) -> void:
+	if _is_removed(key, inst.index):
+		return
+	var id: StringName = VegetationScatter.instance_id(key, inst.index)
 	var sp: SpeciesDef = Content.get_def(&"species", inst.species) as SpeciesDef
 	var chop: float = float(info.tool_power.get("chop", 0.0))
 	Audio.play_3d(&"sfx/axe_chop_wood" if chop > 0.0 else &"sfx/hit_wood_structure", info.hit_pos, {"volume_db": -2.0})

@@ -298,14 +298,15 @@ func _after_act() -> void:
 			mind.set_order("follow")
 
 
-## One chop at the trunk: the vegetation's own damage path (TD-304: its collision stands only
-## near the player). Felled, he waits for it to land.
+## One chop at the trunk: the vegetation's own damage path, through its collision body near the
+## player and straight to the instance away from them (TD-304: bodies stand only near the
+## player). Felled, he waits for it to land.
 func _blow() -> void:
 	var veg: Node = _veg()
-	var body: Node = veg.call(&"body_for", target["key"], target["inst"]) if veg != null else null
-	if body == null:
+	if veg == null:
 		_felled()
 		return
+	var body: Node = veg.call(&"body_for", target["key"], target["inst"])
 	var inst: VegetationScatter.Instance = target["inst"]
 	var info := DamageInfo.make(0.0, &"slash", &"melee", mind.body_id())
 	info.collider = body
@@ -314,8 +315,14 @@ func _blow() -> void:
 	var dir: Vector3 = (inst.pos - enemy.global_position) * Vector3(1, 0, 1)
 	info.direction = dir.normalized() if dir.length() > 0.05 else Vector3.FORWARD
 	info.tool_power = {"chop": CompanionDef.fnum(cdef.gather, "chop", 16.0) * mind.perk("chop_power", 1.0)}
-	veg.call(&"take_damage", info)
-	if veg.call(&"body_for", target["key"], target["inst"]) == null:
+	if body != null:
+		veg.call(&"take_damage", info)
+	elif veg.has_method(&"damage_instance"):
+		veg.call(&"damage_instance", target["key"], inst, info)
+	else:
+		_felled()
+		return
+	if bool(veg.call(&"_is_removed", target["key"], inst.index)):
 		_felled()
 
 
@@ -441,7 +448,7 @@ func _gather_target() -> Dictionary:
 			continue
 		var tree: bool = sp.veg_kind == "tree"
 		if tree:
-			if not items.has("log") or not room(&"log") or sp.hp > max_hp or veg.call(&"body_for", key, inst) == null:
+			if not items.has("log") or not room(&"log") or sp.hp > max_hp:
 				continue
 		elif sp.hp > PLANT_HP or not _yields_room(sp, items):
 			continue
