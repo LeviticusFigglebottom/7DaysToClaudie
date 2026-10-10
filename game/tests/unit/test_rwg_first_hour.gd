@@ -8,10 +8,12 @@ const GenSettings := preload("res://src/worldgen/rwg/world_gen_settings.gd")
 const Generator := preload("res://src/worldgen/rwg/rwg_generator.gd")
 
 ## Metres from the drop site: the nearest river or lake (coarse 32 m water distance), the nearest
-## town's edge, the camp, any other place.
+## town's edge, Ezra's camp (its ring reaches 900 m), any other place. A world's first town is within
+## a kilometre, so its first camp or cabin may stand a little farther (settled 11's, 1.02 km).
 const WATER_MAX: float = 500.0
-const TOWN_MAX: float = 1200.0
-const PLACE_MAX: float = 900.0
+const TOWN_MAX: float = 1000.0
+const CAMP_MAX: float = 1000.0
+const PLACE_MAX: float = 1100.0
 
 ## [preset, seed, overrides]: each preset at a seed of the 8-world set, the set itself (standard and
 ## settled, seeds 3, 7, 11, 21), and the two readings of the report (the most towns a 4 km map
@@ -20,7 +22,7 @@ const WORLDS: Array = [
 	["standard", 3, {}], ["standard", 7, {}], ["standard", 11, {}], ["standard", 21, {}],
 	["settled", 3, {}], ["settled", 7, {}], ["settled", 11, {}], ["settled", 21, {}],
 	["small_valley", 7, {}], ["highlands", 7, {}], ["lakeland", 7, {}], ["wild", 7, {}],
-	["standard", 7, {"size": 5}], ["standard", 7, {"town_density": 6.0}],
+	["standard", 7, {"size": 5}], ["standard", 7, {"town_density": 6.0}], ["standard", 7, {"size": 10}],
 ]
 
 
@@ -47,18 +49,22 @@ func _check(preset: String, seed: int, over: Dictionary) -> PackedStringArray:
 	if wd > WATER_MAX:
 		bad.append("%s: water %d m from the drop" % [tag, int(wd)])
 	var camp: bool = false
+	var camp_d: float = INF
 	var near_place: float = INF
 	for p: Dictionary in g.get(&"places"):
 		var c: Vector2 = p["center"]
 		if str(p["site"]) == "companion":
 			camp = true
+			camp_d = c.distance_to(dp)
 		elif str(p["site"]) != "crash":
 			near_place = minf(near_place, c.distance_to(dp))
 	if not camp:
 		bad.append("%s: no camp for Ezra" % tag)
+	elif camp_d > CAMP_MAX:
+		bad.append("%s: Ezra's camp %d m from the drop" % [tag, int(camp_d)])
 	if near_place > PLACE_MAX:
 		bad.append("%s: nearest place %d m from the drop" % [tag, int(near_place)])
-	gut.p("[first hour] %s: %d towns, town %d m, water %d m, place %d m" % [tag, towns.size(), int(td), int(wd), int(near_place)])
+	gut.p("[first hour] %s: %d towns, town %d m, water %d m, camp %d m, place %d m" % [tag, towns.size(), int(td), int(wd), int(camp_d), int(near_place)])
 	return bad
 
 

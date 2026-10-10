@@ -1714,6 +1714,13 @@ func road_clearance(poly: PackedVector2Array, skip: int = -1) -> float:
 ## composes the land round the drop site first). Fallbacks, in tiers: 200 m from a border; then
 ## 120 m, the towns 0.8 as far and the road up to 1.8 as far; then 60 m, 0.65 and 2.3 (a small
 ## map's few roads mostly run through its towns, which are wide).
+## The drop site wants water within this many metres (a short walk; past it the score climbs).
+const WATER_NEAR: float = 350.0
+## A drop tier settles when its best spot has water and a town's edge this near (m).
+const WATER_MAX: float = 450.0
+const TOWN_MAX: float = 950.0
+
+
 func _drop_site() -> void:
 	var dcfg: Dictionary = tun.get("drop_site", {})
 	var r := rng("drop")
@@ -1721,6 +1728,7 @@ func _drop_site() -> void:
 	var rd: Array = dcfg.get("road_distance", [40, 220])
 	var margins: Array = dcfg.get("border", [300.0, 200.0, 120.0, 60.0])
 	var best: Dictionary = {}
+	var best_all: float = INF
 	for mi: int in margins.size():
 		var margin: float = float(margins[mi])
 		var town_k: float = [1.0, 1.0, 0.8, 0.65][mini(mi, 3)]
@@ -1742,15 +1750,29 @@ func _drop_site() -> void:
 				continue
 			if water_exact(p) < 50.0:
 				continue
-			# Close enough to walk to a town on the first day, central rather than at the edge.
-			var score: float = (absf(near_town - 750.0) / 100.0 if near_town < INF else 0.0) + p.length() / (size * 512.0) * 4.0 + terrain.slope(p.x, p.y) * 30.0 + jitter * 2.0
-			if score < best_score:
+			# Close enough to walk to a town on the first day, central rather than at the edge, and a
+			# river or lake within a short walk: the first day's step boils water (owner report 5:
+			# none to be seen; the drop stood up to 0.8 km from water). Past WATER_NEAR m each 40 m
+			# costs as much as 100 m off the town distance.
+			var wd: float = water_at(p)
+			# A town farther than 750 m costs more than one nearer (100 m past it as much as 40 m of
+			# water): the drop stood 1.1 km from the first town on two of the 27 surveyed worlds.
+			var town_term: float = (maxf(750.0 - near_town, 0.0) / 100.0 + maxf(near_town - 750.0, 0.0) / 40.0) if near_town < INF else 0.0
+			var score: float = town_term + p.length() / (size * 512.0) * 4.0 + terrain.slope(p.x, p.y) * 30.0 + jitter * 2.0 \
+				+ maxf(0.0, wd - WATER_NEAR) / 40.0
+			# A looser tier costs a little: it is taken only for water or a town the tighter ones lack.
+			score += float(mi) * 2.0
+			if score < best_score and score < best_all:
 				best_score = score
-				best = {"pos": p, "road": nr}
-		if not best.is_empty():
-			if mi > 0:
-				warnings.append("drop site %d m from a region border" % int(margin))
+				best_all = score
+				best = {"pos": p, "road": nr, "water": wd, "town": near_town, "tier": mi}
+		# A tier whose best has water and a town within a walk settles it; else the looser tiers are
+		# tried too and the best of all wins (owner report 5: tier one alone, the middle 400 m of
+		# each region, left some drops 0.9 km from water).
+		if not best.is_empty() and float(best["water"]) <= WATER_MAX and (towns.is_empty() or float(best["town"]) <= TOWN_MAX):
 			break
+	if not best.is_empty() and int(best["tier"]) > 0:
+		warnings.append("drop site %d m from a region border" % int(margins[int(best["tier"])]))
 	if best.is_empty():
 		# Fallback: the flattest dry spot near the middle.
 		var p2 := Vector2.ZERO
