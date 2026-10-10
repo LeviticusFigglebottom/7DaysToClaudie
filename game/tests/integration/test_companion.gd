@@ -865,6 +865,15 @@ func test_his_perks_come_with_the_days() -> void:
 	assert_almost_eq(e.ally.perk("chop_power", 1.0), 1.25, 0.001)
 	assert_almost_eq(_dir.fuel_factor(gen_at), 0.75, 0.001, "a generator near him burns a quarter less")
 	assert_eq(_dir.fuel_factor(e.global_position + Vector3(80, 0, 0)), 1.0, "not one far off")
+	# The generator's prompt says so where the fuel is read (TD-310).
+	var btm := BaseTechManager.new()
+	btm.world = _world
+	var prev_btm: BaseTechManager = BaseTechManager.current
+	BaseTechManager.current = btm
+	assert_string_contains(BaseTechManager._tuned_text(gen_at), "Ezra keeps it tuned")
+	assert_eq(BaseTechManager._tuned_text(e.global_position + Vector3(80, 0, 0)), "", "not one far off")
+	BaseTechManager.current = prev_btm
+	btm.free()
 	e.ally.go_down(null, 60.0)
 	assert_eq(_dir.fuel_factor(gen_at), 1.0, "nor while he is down")
 	# The card lists his knacks.
