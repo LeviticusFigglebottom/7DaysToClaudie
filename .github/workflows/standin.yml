@@ -54,6 +54,13 @@ jobs:
       - name: Smoke (random world)
         run: make smoke SMOKE_ARGS="--world random --world-seed 7 --world-set size=5" SMOKE_LOG=smoke_random
 
+      # Two more seeds (~45 s each): seed 21's drop stands in close forest, where the supply drop
+      # once found no landing and came down on the player.
+      - name: Smoke (random worlds, seeds 21 and 3)
+        run: |
+          make smoke SMOKE_ARGS="--world random --world-seed 21" SMOKE_LOG=smoke_random_21
+          make smoke SMOKE_ARGS="--world random --world-seed 3" SMOKE_LOG=smoke_random_3
+
       - name: Walk tour (run into, hit and use everything)
         run: make tour
 
