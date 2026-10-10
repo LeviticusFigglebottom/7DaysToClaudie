@@ -11,7 +11,7 @@ extends Node
 ##   power.fuel    {player, piece}        -> {ok, fuel}             a gas can into a generator
 ##   power.toggle  {player, piece}        -> {ok, on}               start / stop, switch on / off
 ##   power.wire    {player, from, to}     -> {ok, spools, length}   a wire between two power pieces
-##   power.unwire  {player, piece}        -> {ok, cut, spools}      cut every wire on a piece
+##   power.unwire  {player, piece, to?}   -> {ok, cut, spools}      cut one wire on a piece: the one to `to`, else its newest
 ##   power.load    {player, piece}        -> {ok, loaded, ammo}     nails into a sentry
 ##   trap.rearm    {player, piece}        -> {ok}                   lift a sprung deadfall's log
 
@@ -556,7 +556,8 @@ func _cmd_unwire(args: Dictionary) -> Dictionary:
 	if piece == null or not BaseTech.is_power(piece.def):
 		return _fail("no power piece")
 	var wires: Array = BaseTech.world_state()["wires"]
-	var cut: Array = BaseTech.wires_of(wires, String(piece.piece_id))
+	# One wire at a time (TD-246: cutting a piece's wires cut them all, a whole base's grid at once).
+	var cut: Array = one_wire(BaseTech.wires_of(wires, String(piece.piece_id)), String(piece.piece_id), str(args.get("to", "")))
 	if cut.is_empty():
 		return _fail("no wires")
 	var spools: int = 0
@@ -707,12 +708,34 @@ static func alt_action(piece: StructurePiece, player: Player) -> Array:
 		if fuel > 0.0 and p.inventory.has(can) and fuel <= BaseTech.tank_hours() - BaseTech.can_hours() * 0.5:
 			return [&"power.fuel", args, "pour in a gas can"]
 	if not wires.is_empty():
-		return [&"power.unwire", args, "cut its wires (%d)" % wires.size()]
+		var other: String = wire_other(wires.back(), String(piece.piece_id))
+		var other_piece: StructurePiece = current._pieces().get(StringName(other)) if current != null else null
+		var nm: String = other_piece.def.display_name.to_lower() if other_piece != null and is_instance_valid(other_piece) else "next piece"
+		var more: String = "" if wires.size() == 1 else " (%d wires)" % wires.size()
+		return [&"power.unwire", args.merged({"to": other}), "cut the wire to the %s%s" % [nm, more]]
 	return [&"", args, ""]
 
 
 static func alt_prompt(piece: StructurePiece, player: Player) -> String:
 	return str(alt_action(piece, player)[2])
+
+
+## The wire to cut from `piece_wires` (the wires on piece `id`): the one to `to`, else the newest.
+## [] or [wire]. Pure.
+static func one_wire(piece_wires: Array, id: String, to: String) -> Array:
+	if piece_wires.is_empty():
+		return []
+	if to == "":
+		return [piece_wires.back()]
+	for w: Array in piece_wires:
+		if wire_other(w, id) == to:
+			return [w]
+	return []
+
+
+## The piece at the other end of wire `w` from `id`.
+static func wire_other(w: Array, id: String) -> String:
+	return str(w[1]) if str(w[0]) == id else str(w[0])
 
 
 static func alt_act(piece: StructurePiece, player: Player) -> void:
