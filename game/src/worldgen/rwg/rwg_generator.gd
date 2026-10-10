@@ -72,7 +72,9 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## starts where it leaves that road (_leave_beside; TD-139).
 ## 19: a merged main street is routed again inside its town's disc on the 8 m ground, straight
 ## through the centre (_straight_through; TD-139).
-const VERSION: int = 19
+## 20: the companion's camp falls back to a wider ring and eased rules where the usual ones find no
+## spot (COMPANION_RELAX): every world has it (the tutorial ends with his distress call).
+const VERSION: int = 20
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -1712,6 +1714,13 @@ func road_clearance(poly: PackedVector2Array, skip: int = -1) -> float:
 ## composes the land round the drop site first). Fallbacks, in tiers: 200 m from a border; then
 ## 120 m, the towns 0.8 as far and the road up to 1.8 as far; then 60 m, 0.65 and 2.3 (a small
 ## map's few roads mostly run through its towns, which are wide).
+## The drop site wants water within this many metres (a short walk; past it the score climbs).
+const WATER_NEAR: float = 350.0
+## A drop tier settles when its best spot has water and a town's edge this near (m).
+const WATER_MAX: float = 450.0
+const TOWN_MAX: float = 950.0
+
+
 func _drop_site() -> void:
 	var dcfg: Dictionary = tun.get("drop_site", {})
 	var r := rng("drop")
@@ -1719,6 +1728,7 @@ func _drop_site() -> void:
 	var rd: Array = dcfg.get("road_distance", [40, 220])
 	var margins: Array = dcfg.get("border", [300.0, 200.0, 120.0, 60.0])
 	var best: Dictionary = {}
+	var best_all: float = INF
 	for mi: int in margins.size():
 		var margin: float = float(margins[mi])
 		var town_k: float = [1.0, 1.0, 0.8, 0.65][mini(mi, 3)]
@@ -1740,15 +1750,29 @@ func _drop_site() -> void:
 				continue
 			if water_exact(p) < 50.0:
 				continue
-			# Close enough to walk to a town on the first day, central rather than at the edge.
-			var score: float = (absf(near_town - 750.0) / 100.0 if near_town < INF else 0.0) + p.length() / (size * 512.0) * 4.0 + terrain.slope(p.x, p.y) * 30.0 + jitter * 2.0
-			if score < best_score:
+			# Close enough to walk to a town on the first day, central rather than at the edge, and a
+			# river or lake within a short walk: the first day's step boils water (owner report 5:
+			# none to be seen; the drop stood up to 0.8 km from water). Past WATER_NEAR m each 40 m
+			# costs as much as 100 m off the town distance.
+			var wd: float = water_at(p)
+			# A town farther than 750 m costs more than one nearer (100 m past it as much as 40 m of
+			# water): the drop stood 1.1 km from the first town on two of the 27 surveyed worlds.
+			var town_term: float = (maxf(750.0 - near_town, 0.0) / 100.0 + maxf(near_town - 750.0, 0.0) / 40.0) if near_town < INF else 0.0
+			var score: float = town_term + p.length() / (size * 512.0) * 4.0 + terrain.slope(p.x, p.y) * 30.0 + jitter * 2.0 \
+				+ maxf(0.0, wd - WATER_NEAR) / 40.0
+			# A looser tier costs a little: it is taken only for water or a town the tighter ones lack.
+			score += float(mi) * 2.0
+			if score < best_score and score < best_all:
 				best_score = score
-				best = {"pos": p, "road": nr}
-		if not best.is_empty():
-			if mi > 0:
-				warnings.append("drop site %d m from a region border" % int(margin))
+				best_all = score
+				best = {"pos": p, "road": nr, "water": wd, "town": near_town, "tier": mi}
+		# A tier whose best has water and a town within a walk settles it; else the looser tiers are
+		# tried too and the best of all wins (owner report 5: tier one alone, the middle 400 m of
+		# each region, left some drops 0.9 km from water).
+		if not best.is_empty() and float(best["water"]) <= WATER_MAX and (towns.is_empty() or float(best["town"]) <= TOWN_MAX):
 			break
+	if not best.is_empty() and int(best["tier"]) > 0:
+		warnings.append("drop site %d m from a region border" % int(margins[int(best["tier"])]))
 	if best.is_empty():
 		# Fallback: the flattest dry spot near the middle.
 		var p2 := Vector2.ZERO
@@ -2253,14 +2277,24 @@ func _places() -> void:
 	# site (the pool entry's `ring`, m), off the roads, nothing leading to it.
 	for e3: Variant in pool:
 		var ce: Dictionary = e3
-		if str(ce.get("site", "")) != "companion" or int(ce.get("min_danger", 1)) > max_danger:
+		if str(ce.get("site", "")) != "companion":
 			continue
 		var cpd: PoiDef = db.call(&"get_def", &"poi", StringName(str(ce.get("poi", "")))) as PoiDef if db != null else null
 		if cpd == null:
 			continue
 		var rc := rng("places:companion:%s" % cpd.id)
-		for k4: int in _pool_count(ce, rc, density, area16):
-			if not _place_one(ce, Vector2(cpd.footprint), rc, wcfg):
+		# Every world has the camp: the tutorial ends with his distress call. Where the ring holds no
+		# spot by the usual rules (seeds 7 at size 5 and 21: a calm ring round the drop site, roads,
+		# slopes or water), each COMPANION_RELAX step widens the search and eases a rule.
+		for k4: int in maxi(1, _pool_count(ce, rc, density, area16)):
+			var placed: bool = false
+			for relax: int in COMPANION_RELAX + 1:
+				if _place_one(ce, Vector2(cpd.footprint), rc, wcfg, relax):
+					placed = true
+					if relax > 0:
+						warnings.append("%s placed at relax %d" % [cpd.id, relax])
+					break
+			if not placed:
 				warnings.append("no spot for %s" % cpd.id)
 	# The lift's crash site (VERSION 13) last of all, from its own stream.
 	for e5: Variant in pool:
@@ -2274,6 +2308,12 @@ func _places() -> void:
 		for k5: int in _pool_count(xe, rx, density, area16):
 			if not _place_one(xe, Vector2(xpd.footprint), rx, wcfg):
 				warnings.append("no spot for %s" % xpd.id)
+
+
+## Fallback steps for the companion's camp (_place_one's `relax`): 1 any danger and a ring from half
+## to 1.6 times as wide, 2 twice the relief, roads 8 m off and half the spacing, 3 a ring 120 m to
+## 2.4 km and water 8 m off.
+const COMPANION_RELAX: int = 3
 
 
 ## How many of a pool entry a world gets: its density per region times the map's regions (one more
@@ -2290,7 +2330,7 @@ func _pool_count(pe: Dictionary, r: RandomNumberGenerator, density: float, area1
 
 ## Tries to place one place of a pool entry: candidates for its site, the first that fits (false:
 ## none did).
-func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dictionary) -> bool:
+func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dictionary, relax: int = 0) -> bool:
 	var site: String = str(pe.get("site", "forest"))
 	var is_fw: bool = pe.has("framework")
 	var def_id: String = str(pe.get("framework", pe.get("poi", "")))
@@ -2300,13 +2340,30 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 	var max_relief: float = float(wcfg.get("max_relief", 7.0))
 	var margin: float = float(tun.get("region_margin", 72.0)) - 8.0
 	var mcfg: Dictionary = wcfg.get("mine", {})
+	var ra: Array = pe.get("ring", [300.0, 900.0])
+	var ring := Vector2(float(ra[0]), float(ra[1]))
+	var road_min: float = 4.0 if site == "roadside" else 18.0
+	var water_min: float = 14.0
+	var attempts: int = 90
+	# The companion's fallbacks (_place_one's callers pass relax 0 but for the camp).
+	if relax >= 1:
+		min_danger = 0
+		ring = Vector2(ring.x * 0.5, ring.y * 1.6)
+		attempts = 150
+	if relax >= 2:
+		max_relief *= 2.0
+		road_min = 8.0
+		spacing *= 0.5
+	if relax >= 3:
+		ring = Vector2(120.0, maxf(ring.y, 2400.0))
+		water_min = 8.0
+		attempts = 300
 	var pad: Vector2 = Vector2.ZERO
 	if site == "mine":
 		var pa: Array = pe.get("pad", [fp.x, fp.y])
 		pad = Vector2(float(pa[0]), float(pa[1]))
-	for attempt: int in 90:
-		var ra: Array = pe.get("ring", [300.0, 900.0])
-		var cand: Dictionary = _candidate(site, fp, r, pad.x, mcfg, min_danger, Vector2(float(ra[0]), float(ra[1])))
+	for attempt: int in attempts:
+		var cand: Dictionary = _candidate(site, fp, r, pad.x, mcfg, min_danger, ring)
 		if cand.is_empty():
 			continue
 		var origin: Vector2 = cand["origin"]
@@ -2321,14 +2378,14 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 		if _hits_built(poly, spacing * 0.5):
 			continue
 		var road_gap: float = road_clearance(poly)
-		if road_gap < (4.0 if site == "roadside" else 18.0):
+		if road_gap < road_min:
 			continue
 		if site == "mine":
 			# Only the pad is levelled (by the composer); the hill over the levels stays as it is.
 			if water_clearance(poly) < 14.0 or is_nan(_mine_pad_height(def_id, origin, rot, pad, mcfg)):
 				continue
 		elif not keep_water:
-			if water_clearance(poly) < 14.0:
+			if water_clearance(poly) < water_min:
 				continue
 			var st: Dictionary = terrain.stats_in(poly)
 			if float(st["max"]) - float(st["min"]) > max_relief:
