@@ -33,6 +33,11 @@ var menu_backdrop: String = "moving"
 var whats_new_seen: String = ""
 ## Bracketed captions for sounds that carry meaning (the intro's cues, the tether's radio).
 var sound_captions: bool = false
+## Size of the words that stand in for sound and speech: the HUD's message feed (captions, the
+## tether's radio, pickups and warnings) and the intro's captions, on top of the UI scale.
+var caption_scale: float = 1.0
+const CAPTION_SCALES: PackedFloat32Array = [1.0, 1.25, 1.5, 1.75]
+const CAPTION_SCALE_NAMES: PackedStringArray = ["Normal", "Large", "Larger", "Largest"]
 ## Frames a second the game may draw (0 = no cap): saves power and heat on a fast GPU.
 var max_fps: int = 0
 const FPS_CAPS: PackedInt32Array = [0, 30, 60, 90, 120, 144, 165, 240]
@@ -45,9 +50,28 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_load_user_settings()
 	register_input_actions()
+	add_pad_ui_buttons()
 	_resolve_graphics()
 	get_tree().root.size_changed.connect(apply_ui_scale)
 	apply_ui_scale.call_deferred()
+
+
+## The pad's A presses the focused button and B backs out, in every screen. Godot's built-in
+## ui_accept and ui_cancel have keys only: a pad could walk the menu's focus but not press anything.
+func add_pad_ui_buttons() -> void:
+	for pair: Array in [[&"ui_accept", JOY_BUTTON_A], [&"ui_cancel", JOY_BUTTON_B]]:
+		var action: StringName = pair[0]
+		if not InputMap.has_action(action):
+			continue
+		var has_it: bool = false
+		for e: InputEvent in InputMap.action_get_events(action):
+			var jb := e as InputEventJoypadButton
+			has_it = has_it or (jb != null and jb.button_index == pair[1])
+		if not has_it:
+			var ev := InputEventJoypadButton.new()
+			ev.button_index = pair[1]
+			ev.device = -1
+			InputMap.action_add_event(action, ev)
 
 
 ## Scales the 2D interface to the window (or the player's fixed choice).
@@ -131,7 +155,7 @@ func input_label(action: String) -> String:
 			var d: Dictionary = spec
 			if first_key == null and (d.has("key") or d.has("mouse")):
 				first_key = d
-			if first_pad == null and d.has("joy_button"):
+			if first_pad == null and (d.has("joy_button") or (d.has("joy_axis") and int(d["joy_axis"]) in [JOY_AXIS_TRIGGER_LEFT, JOY_AXIS_TRIGGER_RIGHT])):
 				first_pad = d
 	if using_pad and first_pad != null:
 		return describe(first_pad).trim_prefix("Pad ")
@@ -220,7 +244,11 @@ static func describe(spec: Variant) -> String:
 	if d.has("joy_button"):
 		return "Pad " + str(PAD_NAMES.get(int(d["joy_button"]), str(int(d["joy_button"]))))
 	if d.has("joy_axis"):
-		return "Stick %d%s" % [int(d["joy_axis"]), "+" if float(d.get("dir", 1.0)) > 0.0 else "-"]
+		# The triggers are axes, named as on the pad.
+		var ax: int = int(d["joy_axis"])
+		if ax == JOY_AXIS_TRIGGER_LEFT or ax == JOY_AXIS_TRIGGER_RIGHT:
+			return "Pad " + ("LT" if ax == JOY_AXIS_TRIGGER_LEFT else "RT")
+		return "Stick %d%s" % [ax, "+" if float(d.get("dir", 1.0)) > 0.0 else "-"]
 	return "?"
 
 
@@ -409,6 +437,7 @@ func save() -> void:
 	_cfg.set_value("display", "menu_backdrop", menu_backdrop)
 	_cfg.set_value("display", "whats_new_seen", whats_new_seen)
 	_cfg.set_value("audio", "sound_captions", sound_captions)
+	_cfg.set_value("audio", "caption_scale", caption_scale)
 	_cfg.set_value("display", "max_fps", max_fps)
 	_cfg.save(SETTINGS_PATH)
 	settings_changed.emit()
@@ -434,6 +463,7 @@ func _load_user_settings() -> void:
 	menu_backdrop = str(_cfg.get_value("display", "menu_backdrop", menu_backdrop))
 	whats_new_seen = str(_cfg.get_value("display", "whats_new_seen", whats_new_seen))
 	sound_captions = bool(_cfg.get_value("audio", "sound_captions", sound_captions))
+	caption_scale = clampf(float(_cfg.get_value("audio", "caption_scale", caption_scale)), 1.0, 2.0)
 	max_fps = int(_cfg.get_value("display", "max_fps", max_fps))
 	Engine.max_fps = max_fps
 	var v: Variant = _cfg.get_value("audio", "volumes", volumes)

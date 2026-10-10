@@ -238,7 +238,7 @@ func _emit_batch(key: String) -> void:
 	var mmi := MultiMeshInstance3D.new()
 	mmi.name = "MM_" + key.replace("/", "_").replace("@", "").replace("|", "_").replace("#", "_").replace(":", "_")
 	mmi.multimesh = mm
-	if base.ends_with("|in"):
+	if base.ends_with("|in") and RenderCaps.instance_uniforms():
 		mmi.set_instance_shader_parameter(&"weather_exposure", 0.0)
 	root.add_child(mmi)
 	if tag != "":
@@ -247,9 +247,7 @@ func _emit_batch(key: String) -> void:
 
 func _box(size: Vector3, xf: Transform3D, body: CollisionObject3D = null) -> CollisionShape3D:
 	var cs := CollisionShape3D.new()
-	var b := BoxShape3D.new()
-	b.size = size
-	cs.shape = b
+	cs.shape = PoiPieces.shared_box(size)
 	cs.transform = xf
 	(body if body != null else shell).add_child(cs)
 	return cs

@@ -54,7 +54,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "stone_windup", "item": "stone", "action": "fp_throw_stone", "frame": 9},
 	{"name": "stone_release", "item": "stone", "action": "fp_throw_stone", "frame": 14},
 	{"name": "molotov_idle", "item": "molotov"},
-	{"name": "molotov_lighting", "item": "molotov", "action": "fp_light_molotov", "frame": 13},
+	{"name": "molotov_lighting", "item": "molotov", "action": "fp_light_molotov", "frame": 13, "offhand": "lighter"},
 	{"name": "molotov_lit", "item": "molotov", "lit": true},
 	{"name": "molotov_lit_night", "item": "molotov", "lit": true, "night": true},
 	{"name": "molotov_windup", "item": "molotov", "lit": true, "action": "fp_throw_molotov", "frame": 10},
@@ -128,6 +128,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "climb_ladder_a", "item": "", "action": "fp_climb_cycle", "frame": 21, "rails": "ladder"},
 	{"name": "climb_ladder_b", "item": "", "action": "fp_climb_cycle", "frame": 51, "rails": "ladder"},
 	{"name": "climb_ladder_grip", "item": "", "action": "fp_climb_cycle", "frame": 36, "rails": "ladder"},
+	{"name": "climb_ladder_grip_fov100", "item": "", "action": "fp_climb_cycle", "frame": 36, "rails": "ladder", "fov": 100.0},
 	{"name": "climb_grab", "item": "", "action": "fp_climb_grab", "frame": 6, "rails": "ladder"},
 	{"name": "climb_release", "item": "", "action": "fp_climb_release", "frame": 5, "rails": "ladder"},
 	{"name": "climb_rope_a", "item": "", "action": "fp_climb_rope_cycle", "frame": 21, "rails": "rope"},
@@ -277,7 +278,8 @@ func _aim_shot(shot: Dictionary) -> void:
 	var pa := PlayerAim.new()
 	pa.update(0.0, a > 0.0, StringName(str(shot.get("item", ""))))
 	pa.progress = a
-	_cam.fov = pa.fov(75.0)
+	# The world camera's field of view (Options, `fov`); the arms draw at their own (TD-296).
+	_cam.fov = pa.fov(float(shot.get("fov", 75.0)))
 	_vm.set_aim(pa.amount(), 1.0 - pa.sway_mult(), pa.scoped())
 	if _scope == null:
 		_scope = ScopeOverlay.new()
@@ -297,6 +299,7 @@ func _shoot(shot: Dictionary) -> void:
 	_vm.tether.t = 0.0
 	_vm.tether.state = TetherRaise.State.LOWERED
 	_vm.qa_base = StringName(str(shot.get("base", "")))
+	_vm.qa_climb_anchor = 1.0 if str(shot.get("rails", "")) != "" else -1.0
 	_vm.show_item(StringName(str(shot.get("item", ""))))
 	_show_rails(str(shot.get("rails", "")))
 	_vm.motion.equip = 1.0
@@ -314,6 +317,9 @@ func _shoot(shot: Dictionary) -> void:
 	if shot.has("action"):
 		if not _vm.freeze_action(StringName(str(shot["action"])), float(shot.get("frame", 0)) / 30.0):
 			print("FP_PREVIEW warning: no action %s" % shot["action"])
+	# The other hand's item for a moment (the lighter lighting a molotov's rag; ThrowHand.light).
+	if shot.has("offhand"):
+		_vm.show_offhand(StringName(str(shot["offhand"])), 999.0)
 	_torch_light.visible = lit and night
 	# A molotov's ground fire burning a few metres ahead (ADR-0057), to see its flames, smoke and light.
 	var fire: GroundFire = null

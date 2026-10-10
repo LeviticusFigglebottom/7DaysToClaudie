@@ -28,6 +28,11 @@ var _reload_left: float = -1.0
 var _reload_item: StringName = &""
 ## A round-by-round reload (the bolt-action rifle, ADR-0057).
 var _rounds := RoundReload.new()
+## How long the pad's Interact button has been held with a gun in hand and nothing in reach to
+## use; -1 when it is up or the press went to something else (pad reload, Presentation round 4).
+var _pad_hold_t: float = -1.0
+## A pad has no spare button for Reload: holding Interact this long with a gun and nothing to use reloads.
+const PAD_RELOAD_HOLD: float = 0.4
 ## The swing in progress: its length and the fraction of it at which it connects.
 var _swing_len: float = 0.6
 var _hit_frac: float = 0.45
@@ -66,10 +71,12 @@ func _physics_process(delta: float) -> void:
 	for i: int in player.state.toolbelt.size():
 		if Input.is_action_just_pressed(StringName("toolbelt_%d" % (i + 1))):
 			select_slot(i if player.state.equipped_slot != i else -1)
-	if Input.is_action_just_pressed(&"toolbelt_next"):
-		_cycle(1)
-	elif Input.is_action_just_pressed(&"toolbelt_prev"):
-		_cycle(-1)
+	# While a blueprint is being placed LB/RB (and the wheel) turn the piece instead (BuildingManager).
+	if not _placing_piece():
+		if Input.is_action_just_pressed(&"toolbelt_next"):
+			_cycle(1)
+		elif Input.is_action_just_pressed(&"toolbelt_prev"):
+			_cycle(-1)
 	if Input.is_action_just_pressed(&"light"):
 		toggle_light()
 	var captured: bool = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
@@ -86,9 +93,22 @@ func _physics_process(delta: float) -> void:
 			primary()
 	if Input.is_action_just_pressed(&"block") and captured and not _building_busy():
 		secondary()
+	# Grabbing a ladder needs both hands: a throw charged before it is lowered, never let fly
+	# (TD-298: releasing attack on the rungs threw it), as a drawn bow is let down.
+	if player.is_climbing() and throw_hand.charging:
+		throw_hand.cancel()
 	throw_hand.update(delta, captured and Input.is_action_pressed(&"attack"))
 	if Input.is_action_just_pressed(&"reload") and captured and not _building_busy():
 		reload()
+	if _pad_hold_t >= 0.0:
+		if not Input.is_action_pressed(&"interact") or not captured:
+			_pad_hold_t = -1.0
+		else:
+			_pad_hold_t += delta
+			if _pad_hold_t >= PAD_RELOAD_HOLD:
+				_pad_hold_t = -1.0
+				if not _building_busy():
+					reload()
 	_rounds.step(delta, self)
 	if _light_on:
 		_burn_light(delta)
@@ -111,6 +131,24 @@ func _update_bow(delta: float) -> void:
 	var tether_up: bool = viewmodel != null and viewmodel.tether_raised()
 	bow.update(delta, free and Input.is_action_pressed(&"attack"), free and _cooldown <= 0.0 and not guarding and not tether_up
 		and not _building_busy())
+
+
+## The pad's Interact press (whatever button it is bound to) starts the reload hold when a gun
+## is in hand and the press has nothing else to do; a tap still interacts, a key never reloads.
+func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadButton and event.is_action(&"interact"):
+		var has_target: bool = player != null and player.interaction != null and player.interaction.target != null
+		_pad_hold_t = 0.0 if event.is_pressed() and pad_reload_starts(Content.item(current), has_target) else -1.0
+
+
+## Whether holding the pad's Interact button should reload: a gun in hand and nothing to use.
+static func pad_reload_starts(def: ItemDef, has_target: bool) -> bool:
+	return def != null and str(def.equip.get("kind", "")) == "ranged" and not has_target
+
+
+func _placing_piece() -> bool:
+	var building: Node = Game.world.get(&"building") if Game.world != null else null
+	return building != null and bool(building.call(&"is_placing"))
 
 
 func _building_busy() -> bool:

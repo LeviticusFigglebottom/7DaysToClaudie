@@ -447,6 +447,40 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## The recipe `step` rows from `current` among `ids` (the list as shown), held at the ends;
+## the first when `current` isn't there. Pure.
+static func step_selection(ids: Array, current: StringName, step: int) -> StringName:
+	if ids.is_empty():
+		return &""
+	var i: int = ids.find(current)
+	if i < 0:
+		return ids[0]
+	return ids[clampi(i + step, 0, ids.size() - 1)]
+
+
+## Up / down (d-pad, stick or arrows) while the focus is on the sheet choose the recipe above or
+## below: the rows take no focus, so a pad on the Make button could only make the first recipe.
+func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+	var f: Control = get_viewport().gui_get_focus_owner()
+	if f == null or not is_ancestor_of(f):
+		return
+	var step: int = 1 if event.is_action_pressed(&"ui_down") else (-1 if event.is_action_pressed(&"ui_up") else 0)
+	if step == 0:
+		return
+	var ids: Array = []
+	for r: Dictionary in _rows:
+		if passes(r, _filter):
+			ids.append((r["recipe"] as RecipeDef).id)
+	var to: StringName = step_selection(ids, _selected, step)
+	if to != &"" and to != _selected:
+		select(to)
+		if _row_buttons.has(to):
+			_scroll.ensure_control_visible(_row_buttons[to])
+	get_viewport().set_input_as_handled()
+
+
 ## The id of the chosen recipe (tests, the roll's status line).
 func selected() -> StringName:
 	return _selected

@@ -48,7 +48,9 @@ func _ready() -> void:
 	add_child(box)
 	box.add_child(UiStyle.label("OPTIONS", &"HeadingLabel"))
 	_tabs = TabContainer.new()
-	_tabs.custom_minimum_size = Vector2(720, 600)
+	# 600 px of tab on a 720p window made the panel 731 tall, its Back under the window's edge
+	# (the menu guard caught it); every page scrolls, so a short window gets a shorter one.
+	_tabs.custom_minimum_size = Vector2(720, tab_height(get_viewport_rect().size.y))
 	box.add_child(_tabs)
 	_tabs.add_child(_page("General"))
 	_general()
@@ -64,6 +66,12 @@ func _ready() -> void:
 	back.custom_minimum_size = Vector2(160, 40)
 	back.pressed.connect(close)
 	box.add_child(back)
+
+
+## The tab area's height for a window `view_h` tall: 600 px where it fits, else what leaves the
+## heading, Back and the margins on screen (360 at least). Pure.
+static func tab_height(view_h: float) -> float:
+	return clampf(view_h - 210.0, 360.0, 600.0)
 
 
 func close() -> void:
@@ -158,6 +166,14 @@ func _general() -> void:
 	_check("Sound captions ([radio crackle], [a low hum])", Settings.sound_captions, func(on: bool) -> void:
 		Settings.sound_captions = on
 		Settings.save())
+	var cs := OptionButton.new()
+	for n: String in Settings.CAPTION_SCALE_NAMES:
+		cs.add_item(n)
+	cs.selected = caption_scale_index(Settings.caption_scale)
+	cs.item_selected.connect(func(i: int) -> void:
+		Settings.caption_scale = Settings.CAPTION_SCALES[i]
+		Settings.save())
+	_row("Caption and message size", cs)
 	_check("Fullscreen", Settings.fullscreen, func(on: bool) -> void: Settings.set_display(on, Settings.vsync))
 	_check("Vertical sync", Settings.vsync, func(on: bool) -> void: Settings.set_display(Settings.fullscreen, on))
 
@@ -310,6 +326,15 @@ static func same_choice(a: Variant, b: Variant) -> bool:
 	if na and nb:
 		return is_equal_approx(float(a), float(b))
 	return str(a) == str(b)
+
+
+## The entry of Settings.CAPTION_SCALES nearest `v` (a hand-edited settings file can hold anything).
+static func caption_scale_index(v: float) -> int:
+	var best: int = 0
+	for i: int in Settings.CAPTION_SCALES.size():
+		if absf(Settings.CAPTION_SCALES[i] - v) < absf(Settings.CAPTION_SCALES[best] - v):
+			best = i
+	return best
 
 
 func _row(label: String, control: Control) -> void:

@@ -1,0 +1,17 @@
+{
+  "_doc": "Region C6 Larkspur Ridge (x -1536..-512, z 1536..2560): built so Pell's Crossing's west end (the world town pell_outskirts, 32 of its 36 lots here) stands in play (owner report 4: bare town edges). It composes from world data as it did unbuilt: the macro ground, the Larkspur cliffs' world relief, Mill Street West and the west end's streets and lots, conifer forest round them (no detail noise: the lots' heights were fitted to this ground). See docs/REGIONS.md.",
+  "id": "c6_larkspur_ridge",
+  "cell": "C6",
+  "name": "Larkspur Ridge",
+  "default_biome": "conifer_forest",
+  "features": [
+    {
+      "type": "frontier",
+      "id": "larkspur_sealed_cave_west",
+      "pos": [-560, 2176],
+      "kind": "cave",
+      "leads_to": "d6_larch_hollow",
+      "note": "The far end of the collapsed Larkspur passage (D6's larkspur_sealed_cave): sealed until M2."
+    }
+  ]
+}

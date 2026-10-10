@@ -29,13 +29,16 @@ wreck shot while the load's last steps ran.
 asset pipeline.
 
 * **`make stills`** (also run by `make bake`, so by `make assets` and CI) runs
-  `src/tools/cli/stills.gd` under Xvfb. Each picture is drawn supersampled (3840×2160, MSAA 4×,
-  four shadow splits) and saved at 3200×1800, larger than a 1080p screen, so the slow pan never
-  magnifies it. `tools/stills.sh` writes lossy, mipmapped import sidecars. Each shot is redrawn
+  `src/tools/cli/stills.gd` under Xvfb. Each picture is drawn supersampled (4608×2592, MSAA 4×,
+  four shadow splits) and saved at 3840×2160, sharp on a 4K screen (3200×1800 at first: soft at
+  4K, Presentation's check). `tools/stills.sh` writes lossy, mipmapped import sidecars. Each shot is redrawn
   only when its stamp changes: a hash of the code, data, world, shaders and generated-asset hashes
   it is drawn from.
-  * **The menu:** four stills of `MenuFlight` (the old live flight, moved to `src/tools/stills/`)
-    along the Tamsin at dusk.
+  * **The menu:** five stills of `MenuFlight` (the old live flight, moved to `src/tools/stills/`)
+    along the Tamsin, the weather turning over between them (`STILL_MOODS`: dusk, a misty dawn, a
+    rainstorm with frozen rain streaks). Each still grows the game's own undergrowth and ground
+    cover in front of the lens (`VegetationScatter`'s medium and ground layers, further out than
+    the game draws them: the render is offline).
   * **The intro:** `intro_wreck.png`. The world card's framing (`IntroPlayer.shot_pose`) is taken
     from the loaded main map at first light (`SHOT_HOUR`).
 * **The menu (`MenuBackdrop`)** loads the stills on worker threads (`load_threaded_request`). It
@@ -58,9 +61,9 @@ GPU.
 ## Consequences
 * The menu's first frame and every frame after it cost the same on every machine. Nothing is
   composed, built or compiled behind it.
-* There is no motion parallax: the pan is 2D. The four stills share the dusk light.
+* There is no motion parallax: the pan is 2D. The dissolve into and out of the dawn still is the same crossfade as between the dusks.
 * The pictures need the generated assets. A source tree without `make assets` shows a plain menu
   and a caption on black for the world card.
-* The menu stills take about a minute each on lavapipe. The wreck needs a full main-map load, so
+* The five menu stills take about fourteen minutes together on lavapipe (842 s, about 2.8 minutes a still: building D6 and each still's undergrowth, then about two minutes a picture). The wreck needs a full main-map load, so
   the first CI build after a world change spends 10-20 minutes more in `make bake`. A failed stills
   run doesn't fail the bake: the menu and the intro simply show no pictures.

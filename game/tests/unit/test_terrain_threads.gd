@@ -99,13 +99,15 @@ func test_volume_columns_grow_while_workers_read() -> void:
 	var tm: TerrainManager = m[0]
 	var vol: VolumeTerrain = tm.volume
 	var stop: Array = [false]
-	var seen: Array = [0]
+	# A slot per reader: the readers run at once (low-priority tasks get most of the pool), and a
+	# read-modify-write of one shared slot from several threads can read it half-written.
+	var seen: Array = [0, 0, 0, 0]
 	var tasks: Array[int] = []
 	for r: int in 4:
 		tasks.append(WorkerThreadPool.add_task(func() -> void:
 			while not stop[0]:
 				if vol.is_volume_column(24.0, 24.0):
-					seen[0] += 1
+					seen[r] += 1
 		))
 	for i: int in 12:
 		vol.activate_column(Vector2i(i % 4, i / 4), PAD_Y - 6.0)

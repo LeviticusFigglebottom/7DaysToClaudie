@@ -145,6 +145,9 @@ func _run() -> void:
 				break
 			var panel: Control = _panel()
 			_phase = "in %s" % name
+			if rounds == 1:
+				await _frames_pass(2)
+				_check_panel_buttons(panel, name)
 			# Look around it for a moment (the backdrop keeps moving behind it).
 			if panel != null:
 				var r: Rect2 = panel.get_global_rect()
@@ -208,7 +211,19 @@ func _finish() -> void:
 	for f: String in _failures:
 		print("MENU_GUARD FAIL: %s" % f)
 	print("MENU_GUARD done: %s" % ("PASS" if _failures.is_empty() else "FAIL (%d)" % _failures.size()))
-	get_tree().quit(_failures.size())
+	# A clean exit (CI reads the log): the menu's music let go and the menu freed first, else the
+	# engine reports its stream "still in use at exit".
+	var code: int = _failures.size()
+	_watching = false
+	if is_instance_valid(_main):
+		var music: AudioStreamPlayer = _main.get_node_or_null("Music") as AudioStreamPlayer
+		if music != null:
+			music.stop()
+			music.stream = null
+		_main.queue_free()
+	for i: int in 4:
+		await get_tree().process_frame
+	get_tree().quit(code)
 
 
 ## The menu's entries, top to bottom (only ones on screen).
@@ -244,6 +259,25 @@ func _panel() -> Control:
 		if cls in ["NewGamePanel", "OptionsPanel", "WhatsNewPanel", "LoadPanel"]:
 			return c
 	return null
+
+
+## A panel's way out and its way on (Back, Close, Start) must lie inside the window: World's
+## longer map label once widened New Game past 1280 px and pushed Back off screen, and its
+## 760 px height put Back and Start under a 720p window's edge.
+func _check_panel_buttons(panel: Control, what: String) -> void:
+	if panel == null:
+		return
+	var view: Rect2 = get_viewport().get_visible_rect()
+	var out: PackedStringArray = []
+	for c: Node in panel.find_children("*", "Button", true, false):
+		var b := c as Button
+		if b != null and b.is_visible_in_tree() and b.text in ["Back", "Close", "Start"]:
+			var r: Rect2 = b.get_global_rect()
+			if not view.encloses(r):
+				out.append("%s at %s" % [b.text, str(r)])
+	print("MENU_GUARD panel %s: %s, %s" % [what, str(panel.get_global_rect()), "buttons inside the window" if out.is_empty() else "OUT: " + ", ".join(out)])
+	if not out.is_empty():
+		_failures.append("%s: %s outside the %s window" % [what, ", ".join(out), str(view.size)])
 
 
 ## Closes a panel by its own Back / Close button, clicked; Esc if it has none on screen.

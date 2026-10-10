@@ -2,7 +2,8 @@
   "_doc": "Streamed worlds (ADR-0038, docs/RWG_V2_PLAN.md §1.2). Distances in metres from the player to a region's rect (or a building's frame); budgets in milliseconds of main thread a frame. region: load/unload are the attach ring and its hysteresis, prefetch composes into the disk cache only (plus prefetch_ahead along the heading), heading_weight pulls regions ahead of the player forward in the queue, first_area is what the loading screen waits for, max_attached caps regions held in memory at 1 m. poi: plan/build/free rings, at most max_built buildings standing.",
   "region": {"load": 640, "unload": 1100, "prefetch": 1400, "prefetch_ahead": 400, "heading_weight": 300,
              "first_area": 300, "max_attached": 9, "threads_runtime": 2, "threads_loading": 4, "bands_first_area": 4},
-  "poi": {"plan": 600, "build": 450, "free": 560, "max_built": 90, "fixture_cell": 64},
+  "poi": {"plan": 600, "build": 450, "free": 560, "max_built": 90, "fixture_cell": 64,
+          "built_whole": {"_doc": "A world built whole that builds by distance (the main map, GameWorld.poi_ring): the boot raises the buildings within boot m of the spawn, the rest rise in the background nearest first out to build m, or the preset's view distance + 100 m if more (PoiManager), so none appears in sight.", "boot": 350, "build": 1500, "free": 1700, "max_built": 200}},
   "markings": {"chunks": 2},
   "budget_ms": {"runtime": 4.0, "overlay": 40.0, "step_target": 8.0},
   "cache": {"detail_max_mb": 2048}

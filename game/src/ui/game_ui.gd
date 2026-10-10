@@ -10,6 +10,9 @@ var _loading_map: LoadingMap
 var _loading_bar: ProgressBar
 var _hud: Control
 var _crosshair: Control
+## The bow's draw under the crosshair (TD-291): fills as the string comes back, rust at full draw.
+var _draw_meter: ColorRect
+var _draw_fill: ColorRect
 var _prompt: Label
 var _tool_hint: Label
 ## Toolbelt strip: shown for a moment whenever the held item or the belt changes.
@@ -18,6 +21,9 @@ var _belt_key: String = ""
 var _belt_t: float = 0.0
 var _hold: ProgressBar
 var _messages: VBoxContainer
+## Lines that came while the salvage roll was open ([text, kind]): the feed is hidden under the
+## roll (it ran behind the roll's title and sort row) and plays them once it closes.
+var _held_messages: Array = []
 var _vitals: HBoxContainer
 var _bars: Dictionary = {}
 var _hum_label: Label
@@ -370,6 +376,9 @@ static func journal_line(title: String, reward: String, next_title: String, key:
 		line += "  " + reward
 	if next_title != "":
 		line += "   Next: %s  [%s]" % [next_title, key]
+	else:
+		# The last card: nothing said the journal was over or that the tether is what comes next.
+		line += "   The journal is done. Keep an ear on your tether."
 	return line
 
 
@@ -501,6 +510,21 @@ func _build_hud() -> void:
 	_crosshair.position = Vector2(-1.5, -1.5)
 	_crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hud.add_child(_crosshair)
+	_draw_meter = ColorRect.new()
+	_draw_meter.color = Color(0.05, 0.05, 0.04, 0.45)
+	_draw_meter.anchor_left = 0.5
+	_draw_meter.anchor_right = 0.5
+	_draw_meter.anchor_top = 0.5
+	_draw_meter.anchor_bottom = 0.5
+	_draw_meter.position = Vector2(-DRAW_METER_W * 0.5, 16)
+	_draw_meter.size = Vector2(DRAW_METER_W, 3)
+	_draw_meter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_draw_meter.visible = false
+	_draw_fill = ColorRect.new()
+	_draw_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_draw_fill.size = Vector2(0, 3)
+	_draw_meter.add_child(_draw_fill)
+	_hud.add_child(_draw_meter)
 	_prompt = Label.new()
 	_prompt.anchor_left = 0.5
 	_prompt.anchor_right = 0.5
@@ -638,15 +662,31 @@ static func caption_line(text: String, bearing: String) -> String:
 	return "[%s]" % text if dir == "" or dir == "here" else "[%s, %s]" % [text, dir]
 
 
+## The line under the prompt: the target's hint (a hammer's, a bed's growth and soil) and what
+## holding the cancel key does, both when there are both (a bed's status once hid "hold [X] to
+## water the bed").
+static func hint_line(hint: String, alt: String) -> String:
+	if hint == "" or alt == "":
+		return hint + alt
+	return "%s  ·  %s" % [hint, alt]
+
+
 ## The keys while laying out a blueprint ("[Left mouse] place  ·  [R] turn  ·  [Esc] cancel") or
 ## carrying logs; "" otherwise.
 static func build_controls(placing: bool, carrying_logs: bool) -> String:
 	var k: Callable = func(a: StringName) -> String: return "[%s]" % PlayerInteraction.key_label(a)
 	if placing:
-		return "%s place  ·  %s turn  ·  %s cancel" % [k.call(&"attack"), k.call(&"rotate_piece"), k.call(&"cancel")]
+		return "%s place  ·  %s turn  ·  %s cancel" % [k.call(&"attack"), "[%s]" % turn_keys(), k.call(&"cancel")]
 	if carrying_logs:
 		return "%s set the log  ·  %s turn  ·  %s stand / pitch  ·  %s drop" % [k.call(&"attack"), k.call(&"rotate_piece"), k.call(&"build_mode_toggle"), k.call(&"drop")]
 	return ""
+
+
+## The keys that turn a blueprint: Rotate on a keyboard, LB/RB (the toolbelt pair) on a pad.
+static func turn_keys() -> String:
+	if Settings.using_pad:
+		return "%s/%s" % [PlayerInteraction.key_label(&"toolbelt_prev"), PlayerInteraction.key_label(&"toolbelt_next")]
+	return PlayerInteraction.key_label(&"rotate_piece")
 
 
 ## A quiet dark plate behind a prompt line, so it reads over a lit fire, snow or a pale ghost.
@@ -721,13 +761,15 @@ func _process(delta: float) -> void:
 		if _level_wait <= 0.0:
 			_announce_level()
 	_fade_pickups(delta)
+	_update_feed()
 	var w: Node = Game.world
 	if w == null or w.get("player") == null or w.player == null:
 		return
 	var p: Player = w.player
+	_update_draw_meter(p.equipment.bow if p.equipment != null else null)
 	if p.interaction != null:
 		# Nothing to act on through the death or sleep screen.
-		_prompt.text = ("[%s] %s" % [PlayerInteraction.key_label(&"interact"), p.interaction.prompt]) if p.interaction.prompt != "" and not _overlay.visible else ""
+		_prompt.text = PlayerInteraction.prompt_line(PlayerInteraction.key_label(&"interact"), p.interaction.prompt, p.interaction.prompt_hold) if not _overlay.visible else ""
 		var ht: float = p.interaction.hold_t / maxf(p.interaction.hold_needed, 0.001) if p.interaction.hold_needed > 0.0 else 0.0
 		_hold.visible = ht > 0.0
 		_hold.value = ht * 100.0
@@ -735,7 +777,7 @@ func _process(delta: float) -> void:
 		var place_why: String = str(b.call(&"placement_hint")) if b != null else ""
 		# Under the prompt: why a placement can't go, else the held tool's hint, else what holding
 		# the cancel key on the target does (take a blueprint ghost down).
-		_tool_hint.text = place_why if place_why != "" else (p.interaction.tool_hint if p.interaction.tool_hint != "" else p.interaction.alt_prompt)
+		_tool_hint.text = place_why if place_why != "" else hint_line(p.interaction.tool_hint, p.interaction.alt_prompt)
 		# Laying out a blueprint or carrying logs: the keys, which nothing else on screen names.
 		if place_why == "" and b != null and b.has_method(&"is_placing"):
 			var ctl: String = build_controls(bool(b.call(&"is_placing")), p.state.inventory.count_of(&"log") > 0)
@@ -781,6 +823,28 @@ func _process(delta: float) -> void:
 	else:
 		_hum_label.text = ""
 	_crosshair.visible = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+
+
+const DRAW_METER_W: float = 44.0
+
+
+func _update_draw_meter(bow: BowHandler) -> void:
+	var f: float = bow.frac if bow != null and bow.drawing else 0.0
+	_draw_meter.visible = f > 0.0 and not _overlay.visible
+	if not _draw_meter.visible:
+		return
+	_draw_fill.size.x = DRAW_METER_W * f
+	_draw_fill.color = draw_meter_color(f, bow.full_t)
+
+
+## The meter's fill: pale while drawing, rust at full draw, flickering once the arms begin to shake
+## (past the free hold, stamina spent each second). Pure.
+static func draw_meter_color(frac: float, full_t: float, free_hold: float = 2.5) -> Color:
+	if frac < 1.0:
+		return Color(UiStyle.KIT_TEXT, 0.8)
+	if full_t > free_hold:
+		return Color(0.95, 0.35, 0.3, 0.9 if fmod(full_t * 6.0, 1.0) < 0.5 else 0.5)
+	return UiStyle.RUST_BRIGHT
 
 
 func _update_belt(ps: PlayerState, delta: float) -> void:
@@ -863,6 +927,9 @@ func _flash_damage(amount: float) -> void:
 
 
 func message(text: String, kind: StringName = &"info") -> void:
+	if feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible, reader != null and reader.is_open()):
+		_held_messages.append([text, kind])
+		return
 	# The same line again (a full pack, a locked door) refreshes the one on screen with a count
 	# instead of stacking copies.
 	for c: Node in _messages.get_children():
@@ -882,17 +949,36 @@ func message(text: String, kind: StringName = &"info") -> void:
 	l.add_theme_color_override(&"font_color", {&"info": UiStyle.KIT_TEXT, &"warning": Color(0.95, 0.8, 0.45), &"danger": Color(0.95, 0.35, 0.3), &"error": Color(1, 0.4, 0.4), &"level": UiStyle.RUST_BRIGHT}.get(kind, UiStyle.KIT_TEXT))
 	l.add_theme_color_override(&"font_outline_color", Color(0.03, 0.03, 0.02, 0.9))
 	l.add_theme_constant_override(&"outline_size", 6)
-	l.add_theme_font_size_override(&"font_size", UiStyle.BODY_SIZE + 1)
+	l.add_theme_font_size_override(&"font_size", UiStyle.caption_size(UiStyle.BODY_SIZE + 1))
 	_messages.add_child(l)
 	# A long line (the distress call) wraps at 820 px instead of running off the screen; a short
 	# one never wraps (a guessed width once put "[B]" on its own line).
 	if text.length() > 80:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size = Vector2(820, 0)
+		l.custom_minimum_size = Vector2(820 * Settings.caption_scale, 0)
 	_fade_message(l)
 	while _messages.get_child_count() > 6:
 		_messages.get_child(0).queue_free()
 		_messages.remove_child(_messages.get_child(0))
+
+
+## Whether the message feed waits: while the salvage roll is open, under the death or sleep
+## screen (a level-up said itself over "SIGNAL LOST"), and while a note is read (at 720p the feed
+## ran over the note's card). Pure.
+static func feed_held(roll_open: bool, overlay_up: bool = false, reading: bool = false) -> bool:
+	return roll_open or overlay_up or reading
+
+
+## Hides the feed under the roll and, once it closes, plays what came meanwhile in order (a
+## repeat still collapses into one line with a count).
+func _update_feed() -> void:
+	var held: bool = feed_held(roll != null and roll.is_open(), _overlay != null and _overlay.visible, reader != null and reader.is_open())
+	_messages.visible = not held
+	if not held and not _held_messages.is_empty():
+		var lines: Array = _held_messages
+		_held_messages = []
+		for m: Array in lines:
+			message(str(m[0]), m[1])
 
 
 ## How long a message stays before it fades: 4 s, or its reading time when longer (a distress
@@ -1036,7 +1122,8 @@ func _open_options(tab: String = "General") -> void:
 	panel.open_tab = tab
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = (get_viewport().get_visible_rect().size - Vector2(680, 660)) * 0.5
+	# Centred by its laid-out size (1050 wide, not the 680 once assumed: it ran off a 1280 window).
+	panel.position = ((get_viewport().get_visible_rect().size - panel.get_combined_minimum_size()) * 0.5).max(Vector2.ZERO)
 	_pause.visible = false
 	panel.closed.connect(func() -> void: _pause.visible = true)
 

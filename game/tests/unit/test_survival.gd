@@ -312,3 +312,13 @@ func test_a_warning_repeats_when_it_gets_worse_or_after_a_long_while() -> void:
 	assert_true(w.update(s, 10.0).is_empty())
 	s.body_temp = 35.3 - worse - 0.01
 	assert_true(w.update(s, 10.0).is_empty(), "back down to about the mark: no news")
+
+
+func test_a_cold_warning_under_a_roof_asks_for_a_fire_not_shelter() -> void:
+	var w := SurvivalWarnings.new().ladder(&"cold")
+	var s := SurvivalStats.new()
+	s.body_temp = 36.0
+	var line: Dictionary = w.update(s, 1.0, false, true)
+	assert_eq(str(line.get("text", "")), "You're cold. Light a fire.", "in the lean-to: no \"find shelter\"")
+	var out := SurvivalWarnings.new().ladder(&"cold")
+	assert_eq(str(out.update(s, 1.0).get("text", "")), "You're cold. Find shelter or a fire.", "outside: unchanged")

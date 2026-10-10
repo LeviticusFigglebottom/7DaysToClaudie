@@ -367,17 +367,33 @@ func _run() -> void:
 	var bed_at: Vector3 = spawn + Vector3(-3, 0, 4)
 	bed_at.y = w.height_at(bed_at.x, bed_at.z)
 	await face(bed_at + Vector3.UP * 0.2, 2.2)
-	var bb: Dictionary = ex(&"build.place_blueprint", {"blueprint": "bough_bed", "pos": [bed_at.x, bed_at.y, bed_at.z], "yaw": 0.0})
+	# --lean-to: the roofed shelter instead of the open bough bed, slept in from under its roof
+	# (the cold line a player under a roof sees is its own: sheltered_text).
+	var lean_to: bool = OS.get_cmdline_user_args().has("--lean-to")
+	if lean_to:
+		ps.inventory.add_item(&"stick", 10)
+		ps.inventory.add_item(&"cordage", 2)
+	var bb: Dictionary = ex(&"build.place_blueprint", {"blueprint": "lean_to" if lean_to else "bough_bed", "pos": [bed_at.x, bed_at.y, bed_at.z], "yaw": 0.0})
 	if bb.has("site"):
 		ex(&"build.deliver", {"site": bb["site"]})
 	await face(bed_at + Vector3.UP * 0.2, 1.8)
 	await snap("bed_aim")
 	Game.session.clock.set_time(1, 20.5)
 	await use()
+	if lean_to:
+		# Asleep under its roof (it's slept in from outside, where the ray finds it).
+		p.global_position = bed_at + Vector3.UP * 0.1
+		p.velocity = Vector3.ZERO
+		await frames(4)
+		var env: Dictionary = w.call(&"survival_env", p.global_position) if w.has_method(&"survival_env") else {}
+		note("asleep under the lean-to: sheltered %s, sleeping %s" % [str(env.get("sheltered", "?")), str(w.sleeping)])
 	await seconds(1.0)
 	await snap("sleeping")
 	await wait_until(func() -> bool: return not w.sleeping, 60.0)
 	await seconds(1.0)
+	if lean_to:
+		var env2: Dictionary = w.call(&"survival_env", p.global_position) if w.has_method(&"survival_env") else {}
+		note("awake: sheltered %s at %s (the lean-to at %s)" % [str(env2.get("sheltered", "?")), str(p.global_position.round()), str(bed_at.round())])
 	await snap("woke")
 
 	# --- The distress call ----------------------------------------------------------------------------
@@ -487,6 +503,7 @@ func _run() -> void:
 	if btn != null and btn.visible:
 		btn.pressed.emit()
 	await seconds(3.0)
+	_note_shelter("respawned")
 	await snap("respawned")
 
 	# --- Save and continue ---------------------------------------------------------------------------
@@ -507,6 +524,7 @@ func _run() -> void:
 	p = w.player
 	ui = w.ui
 	await seconds(3.0)
+	_note_shelter("continued")
 	await snap("continued")
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if args.has("--through") and (args.has("hum") or args.has("day21")):
@@ -832,6 +850,13 @@ func _teleport(at: Vector3) -> void:
 	p.velocity = Vector3.ZERO
 	await _stream(at)
 	await seconds(3.0)
+
+
+## Where the player stands and whether survival_env counts it as under a roof (the cold line says
+## "Light a fire" there, "Find shelter or a fire" in the open).
+func _note_shelter(when: String) -> void:
+	var env: Dictionary = w.call(&"survival_env", p.global_position) if w.has_method(&"survival_env") else {}
+	note("%s: sheltered %s at %s" % [when, str(env.get("sheltered", "?")), str(p.global_position.round())])
 
 
 ## Streams the world in around a spot the player was just moved to and waits until the chunks

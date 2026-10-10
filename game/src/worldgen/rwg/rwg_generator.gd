@@ -68,7 +68,11 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## composer 16; TD-320).
 ## 17: road shape (TD-139): a routed road's hooks (turns back over 120 degrees) are cut even up a
 ## steep pitch, and a track or trail off a road starts where it leaves the road's cells, not beside it.
-const VERSION: int = 17
+## 18: a road end left beside another road once the main streets are through the town centres
+## starts where it leaves that road (_leave_beside; TD-139).
+## 19: a merged main street is routed again inside its town's disc on the 8 m ground, straight
+## through the centre (_straight_through; TD-139).
+const VERSION: int = 19
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -891,15 +895,17 @@ func _main_streets() -> void:
 		# Two roads leaving the same way would make a hairpin through the centre: the first carries on
 		# as a stub instead (the other meets it there).
 		if not best.is_empty() and best_dot < -0.3:
-			_merge_through(best[0], best[1])
+			_merge_through(best[0], best[1], ground, c, float(tw["radius"]))
 		elif not ends.is_empty():
 			var e: Array = ends[0]
 			var away := Vector2.ZERO
 			for e2: Array in ends:
 				away += e2[2]
-			var stub: PackedVector2Array = _stub(ground, c, -(away.normalized() if away.length() > 0.01 else (e[2] as Vector2)), reach, 70.0)
-			if stub.size() >= 2:
-				_extend_through(e, stub)
+			var d: Vector2 = -(away.normalized() if away.length() > 0.01 else (e[2] as Vector2))
+			if not _straight_extend(e, ground, c, float(tw["radius"]), reach, d):
+				var stub: PackedVector2Array = _stub(ground, c, d, reach, 70.0)
+				if stub.size() >= 2:
+					_extend_through(e, stub)
 		elif _roads_near(c, float(tw["radius"]) * 0.3) == 0:
 			var axis: PackedVector2Array = _through_road(ground, c, reach, Vector2.ZERO)
 			if axis.size() >= 2:
@@ -909,6 +915,7 @@ func _main_streets() -> void:
 			if cross.size() >= 2:
 				_add_road(cross, "county", "%s cross road" % tw["name"], false)
 		_leave_through(c)
+	_leave_beside()
 	_reindex_roads()
 
 
@@ -974,6 +981,57 @@ func _leave_through(c: Vector2) -> void:
 		_reindex_roads()
 
 
+## A road whose end runs beside another road once the main streets are through the centres: a
+## road's start, on another road when it was laid, was left beside it when that road was merged
+## through a centre and moved (TD-139: settled seed 11, Fenwick's exit highway ran 40-70 m beside
+## Whitlow's main street, 13 m off it). Each end off a town centre starts where it leaves the
+## nearest road it runs beside (past that road's ends) instead (_leave_road), unless another road
+## meets the stretch cut.
+func _leave_beside() -> void:
+	var centres: Array[Vector2] = []
+	for tw: Dictionary in towns:
+		centres.append(tw["center"])
+	for ri: int in roads.size():
+		for at_start: bool in [true, false]:
+			var pts: PackedVector2Array = (roads[ri]["points"] as PackedVector2Array).duplicate()
+			if not at_start:
+				pts.reverse()
+			if pts.size() < 2 or centres.any(func(c: Vector2) -> bool: return c.distance_to(pts[0]) < 1.0):
+				continue
+			var near: Array = []
+			for rj: int in roads.size():
+				if rj == ri:
+					continue
+				# Beside its middle only: two roads whose ends meet side by side would each cut the other.
+				var pj: PackedVector2Array = roads[rj]["points"]
+				if pj[0].distance_to(pts[0]) < LEAVE_ROAD or pj[pj.size() - 1].distance_to(pts[0]) < LEAVE_ROAD:
+					continue
+				var d: float = (roads[rj]["line"] as Polyline2).closest(pts[0]).x
+				if d < LEAVE_ROAD:
+					near.append([d, rj])
+			near.sort()
+			for n: Array in near:
+				var left: PackedVector2Array = _leave_road(pts, int(n[1]))
+				if left.size() == pts.size() and left[0] == pts[0] and left[1] == pts[1]:
+					continue
+				if not at_start:
+					left.reverse()
+				var old_line: Polyline2 = roads[ri]["line"]
+				var line := Polyline2.from_array(Terrain._arr(left))
+				var met: bool = false
+				for rk: int in roads.size():
+					if rk == ri:
+						continue
+					var pk: PackedVector2Array = roads[rk]["points"]
+					for k: int in [0, pk.size() - 1]:
+						if old_line.closest(pk[k]).x < 1.5 and line.closest(pk[k]).x > 1.5:
+							met = true
+				if not met:
+					roads[ri]["points"] = left
+					roads[ri]["line"] = line
+				break
+
+
 ## True when every point along pts (every 4 m) lies within `reach` of `line`.
 static func _within(pts: PackedVector2Array, line: Polyline2, reach: float) -> bool:
 	for k: int in pts.size() - 1:
@@ -1016,8 +1074,8 @@ func _roads_near(p: Vector2, r: float) -> int:
 
 
 ## The axis for a town's cross road: of 16 headings, the one whose two ends keep farthest from
-## every road leaving c (each leg's direction 40 m out). A perpendicular to the main street's
-## tangent ran back along one leg where the street bends at the centre (TD-139).
+## every road leaving c (each leg's direction 40 m and 150 m out). A perpendicular to the main
+## street's tangent ran back along one leg where the street bends at the centre (TD-139).
 func _cross_axis(c: Vector2) -> Vector2:
 	var legs: Array[Vector2] = []
 	for rd: Dictionary in roads:
@@ -1025,7 +1083,9 @@ func _cross_axis(c: Vector2) -> Vector2:
 		var q: Vector3 = line.closest(c)
 		if q.x > 30.0:
 			continue
-		for s: float in [q.y - 40.0, q.y + 40.0]:
+		# 150 m out too: a merged main street runs straight through the centre and turns past
+		# MERGE_STRAIGHT, and a cross road picked off its first 40 m alone ran beside the turn.
+		for s: float in [q.y - 40.0, q.y + 40.0, q.y - 150.0, q.y + 150.0]:
 			if s > 0.0 and s < line.total_length:
 				legs.append((line.point_at(s) - c).normalized())
 	var best := Vector2.RIGHT
@@ -1042,8 +1102,13 @@ func _cross_axis(c: Vector2) -> Vector2:
 
 
 ## Joins two roads that end at a town centre into one road through it (the first keeps its place
-## and takes the higher class; the second goes).
-func _merge_through(ea: Array, eb: Array) -> void:
+## and takes the higher class; the second goes). Inside the town's disc both legs are routed again
+## on the town's 8 m ground (`g`, RwgStreets.route_fine) to points MERGE_STRAIGHT m out from the
+## centre on one axis, so the main street runs straight through the centre and turns out by the
+## disc's edge: the macro route's legs met at the centre in one corner, which the road's spline
+## bowed up to ~30 m off the chord over 120 m (TD-139), on 32 m cells across the town. Either leg
+## that will not route keeps the old corner.
+func _merge_through(ea: Array, eb: Array, g: Streets.Ground = null, c := Vector2.INF, radius: float = 0.0) -> void:
 	var a: int = int(ea[0])
 	var b: int = int(eb[0])
 	var pa: PackedVector2Array = (roads[a]["points"] as PackedVector2Array).duplicate()
@@ -1052,13 +1117,70 @@ func _merge_through(ea: Array, eb: Array) -> void:
 	var pb: PackedVector2Array = (roads[b]["points"] as PackedVector2Array).duplicate()
 	if not bool(eb[1]):
 		pb.reverse()
-	pa.append_array(pb.slice(1))
+	var merged := PackedVector2Array()
+	if g != null and c != Vector2.INF:
+		merged = _straight_through(pa, pb, g, c, radius, ea[2], eb[2])
+	if merged.is_empty():
+		merged = pa.duplicate()
+		merged.append_array(pb.slice(1))
 	var cls: String = str(roads[a]["class"])
 	if str(roads[b]["class"]) == "highway" and cls != "highway":
 		_set_class(a, "highway")
-	roads[a]["points"] = pa
-	roads[a]["line"] = Polyline2.from_array(Terrain._arr(pa))
+	roads[a]["points"] = merged
+	roads[a]["line"] = Polyline2.from_array(Terrain._arr(merged))
 	roads.remove_at(b)
+
+
+## Metres each side of a town centre a merged main street runs straight (the kink's window, ±60 m).
+const MERGE_STRAIGHT: float = 60.0
+
+
+## `pa` (ending at c) and `pb` (starting at c) as one road straight through c: each leg from where
+## it enters the disc (0.8 x radius, or 40 m short of its far end) routed fine to MERGE_STRAIGHT m
+## out on the axis between the legs' directions out of c (`ua`, `ub`). Empty when a leg won't route.
+func _straight_through(pa: PackedVector2Array, pb: PackedVector2Array, g: Streets.Ground, c: Vector2, radius: float,
+		ua: Vector2, ub: Vector2) -> PackedVector2Array:
+	var axis: Vector2 = (ua - ub).normalized()
+	if axis == Vector2.ZERO or ua.dot(-ub) > 0.995:
+		return PackedVector2Array()
+	var rev_a: PackedVector2Array = pa.duplicate()
+	rev_a.reverse()
+	var cut_a: Array = _cut_out(rev_a, radius * 0.8)
+	var cut_b: Array = _cut_out(pb, radius * 0.8)
+	if cut_a.is_empty() or cut_b.is_empty():
+		return PackedVector2Array()
+	var opts: Dictionary = {"grade_ok": 0.06, "grade_max": 0.13, "water": 14.0, "margin": 100.0, "tol": 10.0}
+	var in_a: PackedVector2Array = _despike(Streets.route_fine(g, cut_a[0], c + axis * MERGE_STRAIGHT, opts))
+	var out_b: PackedVector2Array = _despike(Streets.route_fine(g, c - axis * MERGE_STRAIGHT, cut_b[0], opts))
+	if in_a.size() < 2 or out_b.size() < 2:
+		return PackedVector2Array()
+	# Far part of a (toward c, ending at the cut point), fine leg in, c, fine leg out, far part of b.
+	var far_a: PackedVector2Array = cut_a[1]
+	far_a.reverse()
+	var out := far_a
+	out.append_array(in_a.slice(1))
+	out.append(c)
+	out.append_array(out_b)
+	out.append_array((cut_b[1] as PackedVector2Array).slice(1))
+	return out
+
+
+## [the point `dist` m along `pts` from its start, the rest of `pts` from that point on] (polyline
+## distance), or [] when pts is shorter than dist + 40 m (a leg that ends just past the disc).
+static func _cut_out(pts: PackedVector2Array, dist: float) -> Array:
+	var walked: float = 0.0
+	for k: int in pts.size() - 1:
+		var seg: float = pts[k].distance_to(pts[k + 1])
+		if walked + seg >= dist:
+			var q: Vector2 = pts[k].lerp(pts[k + 1], (dist - walked) / seg)
+			var rest := PackedVector2Array([q])
+			rest.append_array(pts.slice(k + 1))
+			var left: float = q.distance_to(pts[k + 1])
+			for k2: int in range(k + 1, pts.size() - 1):
+				left += pts[k2].distance_to(pts[k2 + 1])
+			return [q, rest] if left >= 40.0 else []
+		walked += seg
+	return []
 
 
 ## Carries a road that ends at a town centre on through it with `stub` (which starts there).
@@ -1070,6 +1192,38 @@ func _extend_through(e: Array, stub: PackedVector2Array) -> void:
 	pa.append_array(stub.slice(1))
 	roads[a]["points"] = pa
 	roads[a]["line"] = Polyline2.from_array(Terrain._arr(pa))
+
+
+## _extend_through straight through the centre, as _straight_through for a merge: the road's leg
+## routed again inside the disc to MERGE_STRAIGHT m out on the axis between it and the stub's way
+## `d`, the stub starting as far out the other side. False (nothing changed) where either won't go.
+func _straight_extend(e: Array, g: Streets.Ground, c: Vector2, radius: float, reach: float, d: Vector2) -> bool:
+	var u: Vector2 = e[2]
+	var axis: Vector2 = (u - d).normalized()
+	if axis == Vector2.ZERO:
+		return false
+	var a: int = int(e[0])
+	var from_c: PackedVector2Array = (roads[a]["points"] as PackedVector2Array).duplicate()
+	if not bool(e[1]):
+		from_c.reverse()
+	var cut: Array = _cut_out(from_c, radius * 0.8)
+	if cut.is_empty():
+		return false
+	var opts: Dictionary = {"grade_ok": 0.06, "grade_max": 0.13, "water": 14.0, "margin": 100.0, "tol": 10.0}
+	var leg: PackedVector2Array = _despike(Streets.route_fine(g, cut[0], c + axis * MERGE_STRAIGHT, opts))
+	# Its full reach from there: the stub ends MERGE_STRAIGHT m farther out than one from the centre,
+	# room for a trader post past the lots the straight street gathers (seed 7's Marrow Creek).
+	var stub: PackedVector2Array = _stub(g, c - axis * MERGE_STRAIGHT, -axis, reach, 70.0)
+	if leg.size() < 2 or stub.size() < 2:
+		return false
+	var out: PackedVector2Array = cut[1]
+	out.reverse()
+	out.append_array(leg.slice(1))
+	out.append(c)
+	out.append_array(stub)
+	roads[a]["points"] = out
+	roads[a]["line"] = Polyline2.from_array(Terrain._arr(out))
+	return true
 
 
 func _set_class(i: int, cls: String) -> void:
@@ -1155,8 +1309,18 @@ func _through_road(g: Streets.Ground, c: Vector2, length: float, axis: Vector2, 
 			if s < best:
 				best = s
 				dir = u
-	var a: PackedVector2Array = _stub(g, c, dir, length, spread)
-	var b: PackedVector2Array = _stub(g, c, -dir, length, spread)
+	# Straight through the centre for MERGE_STRAIGHT m each way, then each half picks its heading:
+	# two halves picked from the centre met there in a corner (Wexford's cross road bowed 23 m off
+	# the chord, TD-139). Where a half can't start out there, both start at the centre as before.
+	var a: PackedVector2Array = _stub(g, c + dir * MERGE_STRAIGHT, dir, length - MERGE_STRAIGHT, spread)
+	var b: PackedVector2Array = _stub(g, c - dir * MERGE_STRAIGHT, -dir, length - MERGE_STRAIGHT, spread)
+	if a.size() >= 2 and b.size() >= 2:
+		a.reverse()
+		a.append(c)
+		a.append_array(b)
+		return a
+	a = _stub(g, c, dir, length, spread)
+	b = _stub(g, c, -dir, length, spread)
 	if a.size() < 2 or b.size() < 2:
 		return a if a.size() >= 2 else b
 	a.reverse()

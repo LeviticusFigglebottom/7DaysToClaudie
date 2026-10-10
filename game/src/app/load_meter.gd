@@ -24,6 +24,8 @@ var _t0_us: int = Time.get_ticks_usec()
 var _pipes: PackedInt64Array = []
 ## Pipelines compiled while the load was measured, by kind.
 var pipelines: Dictionary = {}
+## Wall time (ms) of the load by what the loading screen said (counts dropped: "(3 of 9)").
+var by_label: Dictionary = {}
 
 
 ## Call once per frame; `label` is what the loading screen shows.
@@ -32,6 +34,9 @@ func frame(label: String) -> void:
 	if _last_us >= 0:
 		var ms: float = float(now - _last_us) / 1000.0
 		frames += 1
+		if _trailing < 0:
+			var stage: String = _last_label.get_slice("(", 0).strip_edges()
+			by_label[stage] = float(by_label.get(stage, 0.0)) + ms
 		# The frame that just ended ran under the label shown when it began.
 		if ms > longest_ms:
 			longest_ms = ms
@@ -92,6 +97,12 @@ func spawned() -> void:
 		parts.append("%s %.0f ms" % [s["label"], s["ms"]])
 	Log.info("load", "world ready in %.1f s over %d frames; longest frame %.0f ms (%s); slowest steps: %s; pipelines compiled: %s" % [
 		float(Time.get_ticks_usec() - _t0_us) / 1e6, frames, longest_ms, longest_at, ", ".join(parts), pipelines])
+	var stages: Array = by_label.keys()
+	stages.sort_custom(func(a: String, b: String) -> bool: return float(by_label[a]) > float(by_label[b]))
+	var sp: PackedStringArray = []
+	for st: String in stages:
+		sp.append("%s %.1f s" % [st if st != "" else "(none)", float(by_label[st]) / 1000.0])
+	Log.info("load", "time by stage: %s" % ", ".join(sp))
 	longest_ms = 0.0
 	longest_at = "in the world"
 	_trailing = TRAILING_FRAMES

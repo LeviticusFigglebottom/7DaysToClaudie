@@ -473,6 +473,20 @@ static func alt_act(piece: StructurePiece, player: Player) -> void:
 		Game.execute(a[0], a[1])
 
 
+## The bed's status for the line under its prompt (TD-217): while the prompt offers an action
+## (harvest, clear, plant, water) the status would be hidden; when the prompt is the status there is
+## nothing to add. "" for anything but a bed.
+static func status_hint(piece: StructurePiece, player: Player) -> String:
+	if piece == null or Farming.plots_of(piece.def) <= 0:
+		return ""
+	return hint_for(action(piece, player)[0], peek(piece))
+
+
+## Pure: the status line for a bed in `st` when interact would run `command`.
+static func hint_for(command: StringName, st: Dictionary) -> String:
+	return bed_status(st) if command != &"" else ""
+
+
 ## "Garden bed · potatoes 40%, carrots wilting · soil dry".
 static func bed_status(st: Dictionary) -> String:
 	var parts: PackedStringArray = []

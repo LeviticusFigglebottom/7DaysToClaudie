@@ -21,6 +21,9 @@ const ALT_HOLD: float = 1.0
 var player: Player
 var target: Object = null
 var prompt: String = ""
+## Whether the target's interact is held to complete (its interact_hold_time > 0: harvesting,
+## filling, searching): the prompt then says "Hold [E]", as the journal's cards do.
+var prompt_hold: bool = false
 var hold_t: float = 0.0
 var hold_needed: float = 0.0
 var last_hit: Dictionary = {}
@@ -132,10 +135,20 @@ func _scan() -> void:
 		if text == "":
 			found = null
 	alt_prompt = alt_text(found, player)
-	if found != target or text != prompt:
+	var hold: bool = found != null and found.has_method(&"interact_hold_time") and float(found.call(&"interact_hold_time", player)) > 0.0
+	if found != target or text != prompt or hold != prompt_hold:
 		target = found
 		prompt = text
+		prompt_hold = hold
 		focus_changed.emit(target, prompt)
+
+
+## The prompt line for an interact `key` and `text`: "[E] Use Campfire", or "Hold [E] Harvest
+## Sword Fern" for an action held to complete (a tap does nothing visible there). Pure.
+static func prompt_line(key: String, text: String, hold: bool) -> String:
+	if text == "":
+		return ""
+	return ("Hold [%s] %s" if hold else "[%s] %s") % [key, text]
 
 
 ## "hold [X] to take down the Campfire blueprint (3 Stone back)" for a target with a second
@@ -148,12 +161,20 @@ static func alt_text(found: Object, p: Player) -> String:
 
 
 func _tool_hint(hit: Dictionary) -> String:
+	# Running a wire: its length and spools, live, wherever you look (TD-246).
+	var run: String = BaseTechManager.run_hint(player)
+	if run != "":
+		return run
 	if hit.is_empty() or Game.world == null:
 		return ""
 	var held: ItemDef = Content.item(player.state.equipped_item())
-	if held == null or not held.provides_tool("hammer"):
-		return ""
 	var piece: StructurePiece = hit["collider"] as StructurePiece
+	var hammer: bool = held != null and held.provides_tool("hammer")
+	# A garden bed's growth and soil under its prompt while the prompt offers an action (TD-217).
+	if not hammer and piece != null and is_instance_valid(piece) and Farming.is_farm(piece.def):
+		return FarmManager.status_hint(piece, player)
+	if not hammer:
+		return ""
 	var building: Node = Game.world.get(&"building")
 	if piece == null or building == null or not is_instance_valid(piece):
 		return ""

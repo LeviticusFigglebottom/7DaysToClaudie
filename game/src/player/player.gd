@@ -70,6 +70,8 @@ var _vault_t: float = -1.0
 var _vault_restand: bool = false
 ## The ladder being climbed (PoiPieces.Ladder), or null.
 var _ladder: StaticBody3D = null
+## When the "no climbing with a log" line was last said (s).
+var _log_climb_said: float = -100.0
 var _rung: float = 0.0
 ## Grabbed from the landing: forward means down until forward is let go.
 var _climb_down_hold: bool = false
@@ -141,6 +143,39 @@ func _unhandled_input(event: InputEvent) -> void:
 		rotation.y -= m.relative.x * sens
 		_pitch = clampf(_pitch - m.relative.y * sens * (-1.0 if Settings.invert_y else 1.0), deg_to_rad(-88.0), deg_to_rad(88.0))
 		head.rotation.x = _pitch
+
+
+## Right-stick look (the camera read only the mouse: a player on a pad couldn't turn). Radians a
+## second at full tilt, the stick's dead zone, and the response curve's power.
+const PAD_LOOK_SPEED: Vector2 = Vector2(2.6, 1.8)
+const PAD_DEADZONE: float = 0.15
+const PAD_LOOK_CURVE: float = 2.0
+## The mouse sensitivity the pad's look speed is set for (the Options slider scales both).
+const PAD_SENS_REF: float = 0.0022
+
+
+## The look turn for a right stick at `stick` over `dt`: nothing inside the dead zone, then eased
+## (fine aim near the centre, a quick turn at the edge). Pure.
+static func pad_look(stick: Vector2, dt: float) -> Vector2:
+	var m: float = stick.length()
+	if m <= PAD_DEADZONE:
+		return Vector2.ZERO
+	var k: float = pow(clampf((m - PAD_DEADZONE) / (1.0 - PAD_DEADZONE), 0.0, 1.0), PAD_LOOK_CURVE)
+	return stick / m * k * PAD_LOOK_SPEED * dt
+
+
+func _process(delta: float) -> void:
+	if not look_enabled or Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	var pads: Array[int] = Input.get_connected_joypads()
+	var j: int = pads[0] if not pads.is_empty() else 0
+	var turn: Vector2 = pad_look(Vector2(Input.get_joy_axis(j, JOY_AXIS_RIGHT_X), Input.get_joy_axis(j, JOY_AXIS_RIGHT_Y)), delta)
+	if turn == Vector2.ZERO:
+		return
+	turn *= (Settings.mouse_sensitivity / PAD_SENS_REF) * (aim.look_mult() if aim != null else 1.0)
+	rotation.y -= turn.x
+	_pitch = clampf(_pitch - turn.y * (-1.0 if Settings.invert_y else 1.0), deg_to_rad(-88.0), deg_to_rad(88.0))
+	head.rotation.x = _pitch
 
 
 func _physics_process(delta: float) -> void:
@@ -457,6 +492,8 @@ func _grab_ladder(wish: Vector3, dir: Vector2) -> bool:
 		var toward: float = wish.normalized().dot(-face)
 		var at_top: bool = absf(feet.y - top_y) < 0.35
 		if toward >= 0.5 and feet.y > foot.y - 0.3 and feet.y < top_y - 0.6 and out > -0.1 and out < LADDER_REACH:
+			if _logs_block_climb():
+				return false
 			_ladder = lad
 			# Up from the foot. The hold left over from the last climb down (forward held all the
 			# way, never let go on the rungs) turned this into a climb down, which lets go at once
@@ -465,6 +502,8 @@ func _grab_ladder(wish: Vector3, dir: Vector2) -> bool:
 		elif at_top and ((toward >= 0.5 and out > -0.1 and out < 1.25) or (toward <= -0.5 and out <= -0.1 and out > -1.25)):
 			# Down through the hatch, or over the top from the landing behind the rails (a stand's
 			# ladder, a rope): hang on the top rungs, just below the floor.
+			if _logs_block_climb():
+				return false
 			_ladder = lad
 			_climb_down_hold = true
 			global_position = foot + face * CLIMB_OFF + Vector3.UP * (lad.height - 0.25)
@@ -474,6 +513,22 @@ func _grab_ladder(wish: Vector3, dir: Vector2) -> bool:
 			_set_crouch(false)
 			return true
 	return false
+
+
+## A log on the shoulder takes a hand: no climbing with one (TD-232). Says so, now and then, while
+## the player walks into the rails.
+func _logs_block_climb() -> bool:
+	if not climb_blocked_by_logs(state.inventory.count_of(&"log") if state != null else 0):
+		return false
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if now - _log_climb_said > 3.0:
+		_log_climb_said = now
+		Events.player_status_message.emit("You can't climb with a log on your shoulder. Drop it first ([%s])." % PlayerInteraction.key_label(&"drop"), &"warning")
+	return true
+
+
+static func climb_blocked_by_logs(logs: int) -> bool:
+	return logs > 0
 
 
 ## One frame on the ladder: forward climbs (down while looking down), back climbs down; the body

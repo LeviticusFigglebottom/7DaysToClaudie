@@ -400,11 +400,12 @@ func _place_stacks(stacks: Array[ItemStack], origin: Vector3, parent: Node3D, ou
 			l.text = ("x%d" % s.count) if s.count > 1 else "%d%%" % int(100.0 * s.durability / maxf(1.0, s.def().durability * ItemStack.quality_durability_mult(s.quality)))
 			if s.quality > 0 and s.count <= 1:
 				l.text = "Q%d %s" % [s.quality, l.text]
-			l.add_theme_font_size_override(&"font_size", 16)
+			# 18 px with a 4 px outline: 16 under a 6 px outline read as smudges at 1440p and 4K.
+			l.add_theme_font_size_override(&"font_size", 18)
 			# Quality items wear their tier colour (Scrap grey ... Pristine violet).
 			l.add_theme_color_override(&"font_color", ItemStack.quality_color(s.quality) if s.quality > 0 else Color(0.95, 0.93, 0.86))
 			l.add_theme_color_override(&"font_outline_color", Color(0, 0, 0, 0.85))
-			l.add_theme_constant_override(&"outline_size", 6)
+			l.add_theme_constant_override(&"outline_size", 4)
 			l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			l.set_meta(&"anchor", center + Vector3(SLOT * 0.3, 0.0, SLOT * 0.38))
 			_overlay.add_child(l)

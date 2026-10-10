@@ -281,6 +281,21 @@ Measured (`stream_walk`, headless, size 4, seed 11, 2 km out and back twice): no
 longest frame 679 ms, static memory flat at 423 MiB, 6,244 nodes against 19,567 when regions
 built all their buildings. Deferred: TD-107.
 
+**The main map too** (owner report 4, round 4). The main map is built whole (its built regions at
+1 m at load, no region streaming), and PoiManager raised every building of them at boot: 39 s of
+a 63 s load once C6 was built for Pell's Crossing's west end. It now keeps the ring as well
+(`GameWorld.poi_ring`, independent of `streaming`): the loader generates no lot building at load,
+the boot raises the buildings within `poi.built_whole.boot` (350 m) of the spawn, and the rest rise
+in the background, nearest first, out to `poi.built_whole.build` (1500 m) or the graphics preset's
+view distance + 100 m if more (a building's big shells draw to it: no visibility range), from a
+StepRunner of PoiManager's own (no RegionStreamer runs one) at the streamer's runtime budget;
+cellar holes are gated to built buildings. Instance ids and defs are the whole build's, so a save
+made before keeps every building's state (`test_main_map_poi_ring`). Tools that frame particular
+buildings (screenshots, exterior QA, the intro stills' wreck) start it built whole
+(`"poi_ring": false`). Measured headless (`perf_capture --load-only`): warm boot 59.0 -> 34.6 s
+(52.6 s before C6), peak RSS 575 MB at the spawn, 740 MB once all 76 buildings stand 39.7 s
+later; longest frame during those background builds 157 ms (TD-324).
+
 ## Budgets and measurements
 Headless on this container (4 shared cores; other agents' processes were running throughout, so
 the load average is given with each run). "Before" is the code at the start of this phase, run

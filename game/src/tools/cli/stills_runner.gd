@@ -1,14 +1,14 @@
 extends Node
 ## Renders the stills the menu and the intro show instead of drawing 3D live (ADR-0065), into
 ## --out <dir> (tools/stills.sh moves them to assets/generated/stills/ with their import sidecars):
-##   --shot menu   menu_0.png ... : MenuFlight's stills along the Tamsin at dusk (MenuBackdrop pans
-##                 across them)
+##   --shot menu   menu_0.png ... : MenuFlight's stills along the Tamsin (dusk, a misty dawn, a
+##                 storm; MenuBackdrop pans across them)
 ##   --shot wreck  intro_wreck.png: the intro's world card, the Lift 3 wreck at first light, from the
 ##                 start of the card's framing (IntroPlayer zooms in on it, as the shot pushed in)
 ## Each is drawn supersampled (SUPER) into a SubViewport and scaled down to SIZE: larger than a
 ## 1080p screen, so the slow pan and zoom never magnify it.
 
-const SIZE: Vector2i = Vector2i(3200, 1800)
+const SIZE: Vector2i = Vector2i(3840, 2160)
 const SUPER: float = 1.2
 ## Frames drawn before the capture: the first after a cut fills shadows and the ubershader cache.
 const SETTLE: int = 2
@@ -94,7 +94,9 @@ func _wreck() -> bool:
 	# The world draws only into the still's viewport, once, at the end: under software rendering
 	# every frame of the load and the streaming wait would otherwise cost seconds.
 	get_viewport().disable_3d = true
-	Game.start_new_game({"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_stills"})
+	# Built whole (GameWorld.poi_ring off): the wreck card frames lift3_crash_site's built instance
+	# (IntroPlayer.shot_target/shot_frame), ~0.7 km from the drop site.
+	Game.start_new_game({"game_mode": "survival", "seed": 4471, "skip_intro": true, "slot": "qa_stills", "poi_ring": false})
 	var t0: int = Time.get_ticks_msec()
 	while (Game.world == null or not bool(Game.world.is_ready)) and Time.get_ticks_msec() - t0 < 900000:
 		await get_tree().process_frame

@@ -62,8 +62,11 @@ var _accum: float = 0.0
 var _col_accum: float = 0.0
 var _last_harvest: HarvestTarget = null
 ## Chunk key -> its harvestable small plants and stones (the only instances the interaction ray
-## can pick), filtered once when the chunk's scatter arrives.
+## can pick), filtered once when the chunk's scatter arrives, binned by PICK_CELL m cell
+## ({Vector2i cell: Array}): the ray, under 3 m long, asked every one of the nine chunks' thousands
+## each physics tick (8-38 ms a frame after the spawn, TD-324).
 var _pickable: Dictionary = {}
+const PICK_CELL: float = 4.0
 ## Far layer: one group task over every 64 m chunk of every detailed region (one element each).
 ## The far impostor layer per region (ADR-0038: regions attach and detach in a streamed world):
 ## rid -> {task (-1 once built), jobs: [[rid, chunk key]], chunks: [result per job], holder: Node3D,
@@ -345,6 +348,10 @@ func _update(pos: Vector3) -> void:
 			if absi(key.x - c.x) > NEAR_CHUNKS or absi(key.y - c.y) > NEAR_CHUNKS:
 				_free_nodes(key)
 	# Nearest chunks first; a few scatter jobs at a time so the ground under you fills in first.
+	# One build a call (a chunk's trees and rocks, or its ground cover: 10-25 ms each), and the next
+	# frame calls again while any is left (TD-324: after the spawn every chunk whose scatter had
+	# arrived was built in one frame, with its ground).
+	var built: bool = false
 	for off: Vector2i in _ring_order():
 		var key := Vector2i(c.x + off.x, c.y + off.y)
 		var want_ground: bool = absi(off.x) <= GROUND_CHUNKS and absi(off.y) <= GROUND_CHUNKS
@@ -354,14 +361,22 @@ func _update(pos: Vector3) -> void:
 				# started, and a dictionary written from two threads at once can corrupt itself.
 				var out: Array = [{}]
 				var job: Dictionary = {"key": key, "out": out}
-				job["task"] = WorkerThreadPool.add_task(func() -> void: out[0] = _scatter(key), true, "veg scatter")
+				job["task"] = WorkerThreadPool.add_task(func() -> void: out[0] = _scatter(key), false, "veg scatter")
 				_pending[key] = job
 			continue
 		var n: Dictionary = _nodes.get(key, {})
+		if built:
+			if n.is_empty() or bool(n.get("ground", false)) != want_ground:
+				_accum = 1.0
+			continue
 		if n.is_empty():
-			_build_chunk(key, want_ground)
+			_build_chunk(key, false)
+			built = true
+			if want_ground:
+				_accum = 1.0
 		elif bool(n.get("ground", false)) != want_ground:
 			_set_ground(key, want_ground)
+			built = true
 
 
 ## True once every chunk within NEAR_CHUNKS of the player has its instances built and no scatter
@@ -400,7 +415,7 @@ func _collect() -> void:
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 			_pending.erase(key)
 			_data[key] = job["out"][0]
-			_pickable[key] = _harvestables(job["out"][0])
+			_pickable[key] = _bin_pickables(_harvestables(job["out"][0]))
 			if _clearings_by_chunk.has(key) or _footprints.has(key) or _caves_over(key) != null:
 				_recompute_cleared(key)
 
@@ -420,6 +435,17 @@ func set_clearings(source: StringName, list: Array) -> void:
 		_source_clearings.erase(source)
 	else:
 		_source_clearings[source] = ids
+
+
+## `list` (instances) by PICK_CELL m cell of their position.
+static func _bin_pickables(list: Array) -> Dictionary:
+	var out: Dictionary = {}
+	for inst: VegetationScatter.Instance in list:
+		var c := Vector2i(floori(inst.pos.x / PICK_CELL), floori(inst.pos.z / PICK_CELL))
+		if not out.has(c):
+			out[c] = []
+		(out[c] as Array).append(inst)
+	return out
 
 
 ## Small plants and stones with yields, filtered once per chunk instead of on every physics
@@ -1393,14 +1419,18 @@ func obstacles_in_rect(r: Rect2) -> Array:
 
 ## Nearest harvestable plant/stone/deadfall within reach of a ray (for the interaction system).
 func pick_harvestable(from: Vector3, dir: Vector3, reach: float) -> Object:
-	var key: Vector2i = TerrainManager.chunk_of(from.x, from.z)
 	var best: VegetationScatter.Instance = null
 	var best_key := Vector2i.ZERO
 	var best_d: float = 0.9
-	for dz: int in range(-1, 2):
-		for dx: int in range(-1, 2):
-			var k := Vector2i(key.x + dx, key.y + dz)
-			for inst: VegetationScatter.Instance in _pickable.get(k, []):
+	# Only the cells the ray's box (grown past best_d) touches; a 4 m cell lies in one 64 m chunk.
+	var end: Vector3 = from + dir * reach
+	var lo := Vector2i(floori((minf(from.x, end.x) - 1.0) / PICK_CELL), floori((minf(from.z, end.z) - 1.0) / PICK_CELL))
+	var hi := Vector2i(floori((maxf(from.x, end.x) + 1.0) / PICK_CELL), floori((maxf(from.z, end.z) + 1.0) / PICK_CELL))
+	for cz: int in range(lo.y, hi.y + 1):
+		for cx: int in range(lo.x, hi.x + 1):
+			var k: Vector2i = TerrainManager.chunk_of((cx + 0.5) * PICK_CELL, (cz + 0.5) * PICK_CELL)
+			var bins: Dictionary = _pickable.get(k, {})
+			for inst: VegetationScatter.Instance in bins.get(Vector2i(cx, cz), []):
 				var to: Vector3 = inst.pos + Vector3.UP * 0.25 - from
 				var t: float = to.dot(dir)
 				if t < 0.0 or t > reach:

@@ -30,6 +30,9 @@ var climb := ViewModelClimb.new()
 var hold_class: StringName = ViewModelHolds.EMPTY
 ## QA (fp_preview): forces the base loop (fp_carry_log, fp_blueprint) without a player or building.
 var qa_base: StringName = &""
+## QA (fp_preview): pins the climb rig's anchor to the rails (-1: off), so a shot with rails and
+## no climbing player shows the hands as the rails hold them (TD-296: their FOV scale).
+var qa_climb_anchor: float = -1.0
 
 var _rig: Node3D
 var _item_root: Node3D
@@ -44,6 +47,9 @@ var _held_hand: String = "R"
 var _manual: Node3D = null
 var _log: Node3D = null
 var _flame: Node3D = null
+## An item shown for a moment in the other hand (the lighter while a molotov's rag is lit; TD-291).
+var _offhand: Node3D = null
+var _offhand_left: float = -1.0
 ## The held flame's current lean (camera frame), springing towards what the turn and walk ask.
 var _flame_lean := Vector3.ZERO
 var _lit: bool = false
@@ -141,6 +147,7 @@ func has_action(anim_name: StringName) -> bool:
 # --- Items ---------------------------------------------------------------------------------
 
 func show_item(item_id: StringName) -> void:
+	_drop_offhand()
 	if _held != null:
 		_held.queue_free()
 		_held = null
@@ -368,6 +375,46 @@ func play_use(use: StringName, duration: float = 0.0) -> bool:
 	return _play_once(&"fp_use", duration) if use in [&"eat", &"drink", &"apply"] else false
 
 
+## Shows `item_id` in the hand the held item isn't in (viewmodel.json `offhand.<item>`: pos and
+## rot in that hand's socket) for `seconds` (TD-291: the lighter that lights a molotov's rag).
+func show_offhand(item_id: StringName, seconds: float) -> void:
+	_drop_offhand()
+	var def: ItemDef = Content.item(item_id)
+	var spec: Dictionary = (cfg.get("offhand", {}) as Dictionary).get(String(item_id), {})
+	var hand: String = "R" if _held_hand == "L" else "L"
+	var sock: Node3D = _sock.get(hand, null)
+	if def == null or sock == null or not has_arms():
+		return
+	_offhand = _make_item(def)
+	sock.add_child(_offhand)
+	_offhand.transform = offhand_transform(spec)
+	# Drawn as the arms are, at the viewmodel's own field of view.
+	FpMaterials.apply(_offhand)
+	_set_layers(_offhand)
+	_offhand_left = maxf(0.05, seconds)
+
+
+## A hand socket's placement for an offhand item from its viewmodel.json spec. Pure.
+static func offhand_transform(spec: Dictionary) -> Transform3D:
+	var p: Array = spec.get("pos", [0.0, 0.0, 0.0])
+	var r: Array = spec.get("rot", [0.0, 0.0, 0.0])
+	var b := Basis.from_euler(Vector3(deg_to_rad(float(r[0])), deg_to_rad(float(r[1])), deg_to_rad(float(r[2]))))
+	return Transform3D(b.scaled(Vector3.ONE * float(spec.get("scale", 1.0))), Vector3(float(p[0]), float(p[1]), float(p[2])))
+
+
+func _drop_offhand() -> void:
+	if _offhand != null and is_instance_valid(_offhand):
+		_offhand.queue_free()
+	_offhand = null
+	_offhand_left = -1.0
+
+
+## Seconds of the `use` action (fp_<use>), 0 without it.
+func use_length(use: StringName) -> float:
+	var a := StringName("fp_%s" % use)
+	return _anim.get_animation(a).length if has_action(a) else 0.0
+
+
 ## Turns the held item over to look at it (viewmodel.json `uses.inspect_<hold class>`): false when
 ## the hold has no inspect.
 func play_inspect() -> bool:
@@ -521,7 +568,7 @@ func _update_flame() -> void:
 ## The torch's burnt top glows like coals while it burns (item_torch_ember is a light_source 1
 ## material: it reads the instance's light_lit).
 func _set_ember(on: bool) -> void:
-	if _held == null:
+	if _held == null or not RenderCaps.instance_uniforms():
 		return
 	for n: Node in _held.find_children("*", "GeometryInstance3D", true, false):
 		(n as GeometryInstance3D).set_instance_shader_parameter(&"light_lit", 1.0 if on else 0.0)
@@ -878,6 +925,10 @@ func _show_log(on: bool) -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	tether.update(delta)
+	if _offhand_left >= 0.0:
+		_offhand_left -= delta
+		if _offhand_left < 0.0:
+			_drop_offhand()
 	var cam: Camera3D = get_parent() as Camera3D
 	if cam != null:
 		visible = cam.current and not _aim_hidden
@@ -936,7 +987,10 @@ func _process(delta: float) -> void:
 ## rails, the hand-over-hand cycle is seeked to the phase the metres climbed give, the let-go
 ## drops the hands and the item comes back up. The arms stay level and square to the ladder.
 func _climb_step(delta: float, cam: Camera3D) -> void:
-	if climb.update(delta):
+	var changed: bool = climb.update(delta)
+	if qa_climb_anchor >= 0.0:
+		climb.anchor = qa_climb_anchor
+	if changed:
 		_action = &""
 		match climb.state:
 			ViewModelClimb.State.GRAB:
@@ -961,7 +1015,9 @@ func _climb_step(delta: float, cam: Camera3D) -> void:
 		_action = cyc
 		_action_end = INF
 	if cam != null and climb.anchor > 0.0:
-		_rig.transform = Transform3D(climb.rig_basis(cam.global_transform.basis), Vector3.ZERO) * _rig.transform
+		# Square to the ladder, then scaled across the screen for the player's FOV (TD-296).
+		var k: float = climb.rig_scale(cam.fov)
+		_rig.transform = Transform3D(Basis.from_scale(Vector3(k, k, 1.0)) * climb.rig_basis(cam.global_transform.basis), Vector3.ZERO) * _rig.transform
 
 
 ## Whether the item in hand is put away (climbing).
@@ -1090,7 +1146,7 @@ func set_exposure(value: float) -> void:
 
 
 func _apply_exposure(n: Node) -> void:
-	if n is GeometryInstance3D and not n is GPUParticles3D:
+	if n is GeometryInstance3D and not n is GPUParticles3D and RenderCaps.instance_uniforms():
 		(n as GeometryInstance3D).set_instance_shader_parameter(&"weather_exposure", exposure)
 	for c: Node in n.get_children():
 		_apply_exposure(c)

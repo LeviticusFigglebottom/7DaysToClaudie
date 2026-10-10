@@ -55,6 +55,11 @@ var _upgrade_armed: StringName = &""
 var _upgrade_armed_at: float = -100.0
 
 
+## is_sheltered(): the steep rays round the vertical one, and how far they reach (m).
+const SHELTER_RAYS: int = 8
+const SHELTER_REACH: float = 6.0
+
+
 func setup_world(w: Node) -> void:
 	world = w
 	preview = BuildPreview.new()
@@ -123,10 +128,27 @@ func warmth_at(pos: Vector3) -> float:
 
 
 ## Roof overhead (any structure within 6 m straight up).
+## Whether a roof of the player's building is over `pos`: straight up, or (a sloped roof seen from
+## under its low edge or its open mouth) up a steep 60° ray in any of eight directions that meets a
+## surface facing down. A single vertical ray missed the lean-to's sloped roof 1 m off its centre,
+## where the player wakes (the final first-hour pass); a wall beside the player faces sideways, so
+## it never counts.
 func is_sheltered(pos: Vector3) -> bool:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(pos + Vector3.UP * 1.0, pos + Vector3.UP * 7.0, StructurePiece.LAYER)
-	return not space.intersect_ray(q).is_empty()
+	# From just off the ground: a lean-to's roof comes down to knee height, and a ray from 1 m began
+	# inside its sloped slab (rays don't hit from inside) and never saw it.
+	var from: Vector3 = pos + Vector3.UP * 0.25
+	var q := PhysicsRayQueryParameters3D.create(from, from + Vector3.UP * 6.75, StructurePiece.LAYER)
+	if not space.intersect_ray(q).is_empty():
+		return true
+	for i: int in SHELTER_RAYS:
+		var a: float = TAU * float(i) / float(SHELTER_RAYS)
+		var dir: Vector3 = Vector3(cos(a) * 0.5, 0.866, sin(a) * 0.5)
+		q = PhysicsRayQueryParameters3D.create(from, from + dir * SHELTER_REACH, StructurePiece.LAYER)
+		var hit: Dictionary = space.intersect_ray(q)
+		if not hit.is_empty() and (hit["normal"] as Vector3).y < -0.3:
+			return true
+	return false
 
 
 func stability_of(id: StringName) -> float:
@@ -134,6 +156,12 @@ func stability_of(id: StringName) -> float:
 
 
 # --- Input & previews --------------------------------------------------------------------------
+
+## Steps to turn a blueprint this frame: Rotate (R) or Next tool (RB, the wheel) one way,
+## Previous tool (LB) back; the toolbelt is moot while placing, and a pad has no spare button.
+static func placement_turn(next: bool, prev: bool) -> int:
+	return int(next) - int(prev)
+
 
 func is_placing() -> bool:
 	return placing != null
@@ -232,8 +260,9 @@ func _physics_process(_delta: float) -> void:
 			Game.execute(&"build.add_fuel", {"player": player.state.id, "piece": String(focus.piece_id)})
 			return
 	if placing != null:
-		if captured and Input.is_action_just_pressed(&"rotate_piece"):
-			_place_yaw += deg_to_rad(15.0)
+		if captured:
+			_place_yaw += deg_to_rad(15.0) * placement_turn(Input.is_action_just_pressed(&"rotate_piece") or Input.is_action_just_pressed(&"toolbelt_next"),
+				Input.is_action_just_pressed(&"toolbelt_prev"))
 		if captured and (Input.is_action_just_pressed(&"cancel") or Input.is_action_just_pressed(&"block")):
 			cancel_placement()
 			return

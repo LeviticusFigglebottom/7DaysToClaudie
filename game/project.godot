@@ -18,6 +18,15 @@ boot_splash/show_image=false
 config/use_custom_user_dir=true
 config/custom_user_dir_name="hollowmere"
 
+[threading]
+
+; Background streaming (terrain, volume, scatter, nav, POI, water, far tiles) runs as low-priority
+; pool tasks, capped to this share of the pool's threads (Godot keeps at least one thread out of
+; it): a core stays free for the main thread and Jolt's high-priority jobs. With every thread
+; busy the OS preempted the main thread mid-frame while buildings rose (TD-324: 24 frames over
+; 33 ms in the settle window; 1 with one thread fewer, and the same settle time).
+worker_pool/low_priority_thread_ratio=0.75
+
 [autoload]
 
 Log="*res://src/core/log.gd"

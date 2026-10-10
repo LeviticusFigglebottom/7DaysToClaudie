@@ -86,7 +86,13 @@ const float FLOOR_PEEL[10] = float[](0.3, 0.35, 0.25, 0.4, 0.7, 0.8, 0.2, 0.0, 0
 #include "res://assets/shaders/weather.gdshaderinc"
 // 0 for pieces under a roof (PoiBuilder batches indoor floors separately): rain never reaches them.
 // Same slot as std_surface's (furniture and fixtures share the indoor batches' instances).
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float weather_exposure = 1.0;
+#else
 instance uniform float weather_exposure : instance_index(3) = 1.0;
+#endif
 
 varying vec3 v_world;
 varying vec3 v_wn;

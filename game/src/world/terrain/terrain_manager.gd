@@ -322,14 +322,21 @@ func ground_terrain_at(x: float, z: float) -> RegionTerrain:
 	return _terrain_for(x, z)
 
 
-## Terrain height at world (x, z). Thread-safe: the sample is taken under _lock, which edits of
-## the heights also hold (see modify()).
+## Terrain height at world (x, z). Thread-safe: the heights array is taken under _lock, which
+## edits of the heights also hold (see modify()), and sampled outside it. Worker threads (chunk
+## meshing, scatter, nav tiles, the flow field) call this in tight loops: sampling under the lock
+## kept it held nearly all the time, and the main thread's few calls queued behind them for
+## 0.1-0.2 ms each (TD-324: a wildlife plan of ~150 calls took 30-80 ms while buildings rose).
 func height_at(x: float, z: float) -> float:
+	var col: int = int(floor(x / world.region_size + world.cols * 0.5))
+	var row: int = int(floor(z / world.region_size + world.rows * 0.5))
+	if col < 0 or row < 0 or col >= world.cols or row >= world.rows:
+		return world.macro_height(x, z)
 	_lock.lock()
-	var rt: RegionTerrain = _terrain_for(x, z)
-	var h: float = rt.height.sample(x, z) if rt != null else (world.macro_height(x, z) if world != null else 0.0)
+	var rt: RegionTerrain = _grid[col + row * world.cols]
+	var hs: PackedFloat32Array = rt.height.heights if rt != null else PackedFloat32Array()
 	_lock.unlock()
-	return h
+	return rt.height.sample_in(hs, x, z) if rt != null else world.macro_height(x, z)
 
 
 func normal_at(x: float, z: float) -> Vector3:
@@ -701,7 +708,8 @@ var _task_queue: Array = []
 ## physics step (between SceneTree.physics_frame and process_frame) took 0.45-2.1 s, after
 ## Jolt's "exceeded the maximum number of jobs" warning ("Finding your feet…" frames). With a
 ## short queue there is a thread for Jolt within one task's time; one more is left for the
-## low-priority work (POI checks), which Godot already caps to a share of the pool.
+## low-priority work (POI checks, scatter). They are low-priority tasks themselves, so Godot's
+## low-priority cap (project.godot, TD-324) also keeps a core free for the main thread.
 var max_tasks: int = maxi(1, OS.get_processor_count() - 2)
 
 
@@ -764,7 +772,7 @@ func _start_queued() -> void:
 	var n: int = mini(max_tasks - running.size(), live.size())
 	for i: int in n:
 		var e: Array = live[i]
-		(e[0] as Dictionary)["task"] = WorkerThreadPool.add_task(e[1], true, e[2])
+		(e[0] as Dictionary)["task"] = WorkerThreadPool.add_task(e[1], false, e[2])
 	_task_queue = live.slice(n)
 
 

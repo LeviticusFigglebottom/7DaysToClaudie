@@ -35,7 +35,13 @@ uniform vec2 strand_cells = vec2(48.0, 16.0);
 uniform float strand_width : hint_range(0.05, 0.5) = 0.38;
 uniform float fade_end = 14.0;
 // Same slot as fur.gdshader's (the shells follow the animal's coat variation).
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float instance_variation = 0.5;
+#else
 instance uniform float instance_variation : instance_index(1) = 0.5;
+#endif
 global uniform float hm_wetness;
 
 varying float v_dist;

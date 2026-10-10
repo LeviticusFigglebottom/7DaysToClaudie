@@ -18,7 +18,7 @@
     "cold": {
       "stat": "body_temp", "repeat_minutes": 120.0, "worse_by": 1.0, "reset_above": 36.6,
       "levels": [
-        {"below": 36.2, "text": "You're cold. Find shelter or a fire.", "kind": "warning"},
+        {"below": 36.2, "text": "You're cold. Find shelter or a fire.", "sheltered_text": "You're cold. Light a fire.", "kind": "warning"},
         {"below": 35.5, "text": "You're freezing. Find a fire, now.", "kind": "danger", "repeat_minutes": 180.0}
       ]
     },

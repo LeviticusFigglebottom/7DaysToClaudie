@@ -165,7 +165,7 @@ func _style_menu() -> void:
 ## Save slots the QA runners write (smoke, tour, screenshots, probes); "qa_" marks any new one.
 ## Players never see them on the menu; a developer does (the editor, or `--dev`).
 const QA_SLOTS: PackedStringArray = ["smoke", "tour", "screens", "perf", "intro_probe", "continue_check",
-	"rwg_shots", "exterior_qa", "aggro_probe", "stream_walk"]
+	"rwg_shots", "exterior_qa", "aggro_probe", "stream_walk", "humwatch"]
 
 
 ## Whether this run shows developer entries (QA saves, the slice demo): the editor's binary or
@@ -240,7 +240,7 @@ func _build_menu() -> void:
 	_add_button("The Intro", _play_intro)
 	if not WhatsNewPanel.newest().is_empty():
 		_add_button("What's New", _open_whats_new)
-	_add_button("Quit", func() -> void: get_tree().quit())
+	_add_button("Quit", quit_cleanly)
 	_fit_menu.call_deferred()
 	_status.text = "Hollowmere %s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"), Engine.get_version_info()["string"]]
 
@@ -308,7 +308,7 @@ func _open_new_game(random: bool = false) -> void:
 	panel.start_random = random
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	add_child(panel)
-	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5
+	_centre(panel)
 	_list.visible = false
 	_set_title_visible(false)
 	panel.closed.connect(func() -> void:
@@ -322,7 +322,7 @@ func _open_whats_new() -> void:
 	var panel := WhatsNewPanel.new()
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5
+	_centre(panel)
 	_list.visible = false
 	_set_title_visible(false)
 	panel.closed.connect(func() -> void:
@@ -337,7 +337,7 @@ func _open_load(slots: Array[Dictionary]) -> void:
 	panel.slots = slots
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = (get_viewport_rect().size - panel.custom_minimum_size) * 0.5
+	_centre(panel)
 	_list.visible = false
 	_set_title_visible(false)
 	panel.load_requested.connect(_load)
@@ -347,6 +347,32 @@ func _open_load(slots: Array[Dictionary]) -> void:
 		_set_title_visible(true)
 		# A run deleted there leaves Continue and Load… pointing at it.
 		_build_menu())
+
+
+## Quits once the menu's music has let go of its stream: quitting while it plays left the
+## AudioServer holding the playback, and the engine reported the stream "still in use at exit".
+func quit_cleanly() -> void:
+	var music: AudioStreamPlayer = get_node_or_null("Music") as AudioStreamPlayer
+	if music != null:
+		music.stop()
+		music.stream = null
+	for i: int in 3:
+		await get_tree().process_frame
+	get_tree().quit()
+
+
+## Centres a panel over the menu by its laid-out size, once it has one: centred by its minimum
+## size, Options (laid out 1050 wide, not the 680 assumed) ran off a 1280 window's right edge.
+func _centre(panel: Control) -> void:
+	panel.position = centred(get_viewport_rect().size, panel.get_combined_minimum_size())
+	await get_tree().process_frame
+	if is_instance_valid(panel):
+		panel.position = centred(get_viewport_rect().size, panel.size)
+
+
+## Where a panel `s` big goes in a `view`-sized window: centred, never above or left of its edge.
+static func centred(view: Vector2, s: Vector2) -> Vector2:
+	return ((view - s) * 0.5).max(Vector2.ZERO)
 
 
 ## The big title would show beside (and under) the wide New Game panel.
@@ -385,7 +411,7 @@ func _open_options() -> void:
 	var panel := OptionsPanel.new()
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	panel.position = (get_viewport_rect().size - Vector2(680, 660)) * 0.5
+	_centre(panel)
 	_list.visible = false
 	panel.closed.connect(func() -> void: _list.visible = true)
 

@@ -73,7 +73,8 @@ func _wait_streamed(w: Node) -> void:
 func _run() -> void:
 	var game: Node = get_node("/root/Game")
 	# No Hum in these shots: its aurora and green fill would hide what the moon alone does.
-	game.call(&"start_new_game", {"game_mode": "slice", "skip_intro": true, "slot": "exterior_qa", "rules": {"hum_first_day": 28}})
+	# Built whole (GameWorld.poi_ring off): the shots stand by buildings anywhere on the map.
+	game.call(&"start_new_game", {"game_mode": "slice", "skip_intro": true, "slot": "exterior_qa", "rules": {"hum_first_day": 28}, "poi_ring": false})
 	var t0: int = Time.get_ticks_msec()
 	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < 300000:
 		await get_tree().process_frame

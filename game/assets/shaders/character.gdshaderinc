@@ -19,13 +19,43 @@
 // body mixes skin, cloth and std_surface (hair, teeth, boots). hollow_burst takes slot 8, clear of
 // std_surface's.
 
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float instance_wear = -1.0;
+#else
 instance uniform float instance_wear : instance_index(0) = -1.0;
+#endif
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float instance_variation = 0.5;
+#else
 instance uniform float instance_variation : instance_index(1) = 0.5;
+#endif
 // How far the Bloom has taken this body (InfectedTiers glow: normal 0, Seeded 0.35, Bloomed 1).
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float bloom_glow = 0.0;
+#else
 instance uniform float bloom_glow : instance_index(2) = 0.0;
+#endif
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float weather_exposure = 1.0;
+#else
 instance uniform float weather_exposure : instance_index(3) = 1.0;
+#endif
 // 1 once the Blister's pustules have burst (EnemyVisual.burst()).
+#if CURRENT_RENDERER == RENDERER_COMPATIBILITY
+// Compatibility: a material uniform (GL caps the instance-uniform buffer at 4096 slots, which a
+// streamed world overflows; TD-325). Per-instance values are ignored there.
+uniform float hollow_burst = 0.0;
+#else
 instance uniform float hollow_burst : instance_index(8) = 0.0;
+#endif
 
 global uniform float hm_wetness;
 global uniform float hm_snow;

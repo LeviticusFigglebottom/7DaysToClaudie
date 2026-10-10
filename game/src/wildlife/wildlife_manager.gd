@@ -55,37 +55,56 @@ func setup_world(w: Node) -> void:
 
 func _on_regions_changed(_rid: String) -> void:
 	_plan_cache.clear()
+	_plan_partial.clear()
 
 
 # --- Plans, cached per cell -------------------------------------------------------------------
 
 ## "cx:cz:day:period:density" -> the cell's plans (WildlifeSpawner.plan_cell is pure for a given
 ## world). Planning every cell round the player every tick sampled the terrain ~200 times a
-## second and spiked to 0.4 s in a streamed world; now a cell is planned once, a few a tick.
+## second and spiked to 0.4 s in a streamed world; now a cell is planned once, ahead of need.
 var _plan_cache: Dictionary = {}
-## New cells planned per tick at most (the ring is ~25 cells; it fills over a few seconds).
-const PLAN_CELLS_PER_TICK: int = 4
+## A cell being planned: key -> [index of the next def, the plans so far]. A whole cell (six
+## defs, ~12 terrain samples) took 10-30 ms while buildings rose (TD-324), so a call plans one
+## def at a time until PLAN_BUDGET_US is spent; plan_cell's plans are its defs' plans in order,
+## so planning a def at a time gives the same cell.
+var _plan_partial: Dictionary = {}
+const PLAN_BUDGET_US: int = 4000
+## The ring is planned ahead every PLAN_STEP s between the spawn ticks (~25 cells: a few seconds).
+const PLAN_STEP: float = 0.1
+var _plan_t: float = 0.0
 
 
 func _plans_near(center: Vector2, radius: float, day: int, period: String, defs: Array, density: float) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var c0: Vector2i = WildlifeSpawner.cell_of(center - Vector2(radius, radius))
 	var c1: Vector2i = WildlifeSpawner.cell_of(center + Vector2(radius, radius))
-	var budget: int = PLAN_CELLS_PER_TICK
+	var t0: int = Time.get_ticks_usec()
+	var spent: bool = false
 	var keep: Dictionary = {}
+	var keep_partial: Dictionary = {}
 	for cz: int in range(c0.y, c1.y + 1):
 		for cx: int in range(c0.x, c1.x + 1):
 			var key: String = "%d:%d:%d:%s:%s" % [cx, cz, day, period, density]
 			if not _plan_cache.has(key):
-				if budget <= 0:
+				var part: Array = _plan_partial.get(key, [0, []])
+				while not spent and int(part[0]) < defs.size():
+					(part[1] as Array).append_array(WildlifeSpawner.plan_cell(Game.session.world_seed, Vector2i(cx, cz), day,
+						period, defs.slice(int(part[0]), int(part[0]) + 1), sample, density))
+					part[0] = int(part[0]) + 1
+					spent = Time.get_ticks_usec() - t0 >= PLAN_BUDGET_US
+				if int(part[0]) < defs.size():
+					keep_partial[key] = part
 					continue
-				budget -= 1
-				_plan_cache[key] = WildlifeSpawner.plan_cell(Game.session.world_seed, Vector2i(cx, cz), day, period, defs, sample, density)
+				var plans: Array[Dictionary] = []
+				plans.assign(part[1])
+				_plan_cache[key] = plans
 			keep[key] = _plan_cache[key]
 			for p: Dictionary in _plan_cache[key]:
 				if (p["pos"] as Vector2).distance_to(center) <= radius:
 					out.append(p)
 	_plan_cache = keep
+	_plan_partial = keep_partial
 	return out
 
 
@@ -249,7 +268,15 @@ func _process_body(delta: float) -> void:
 		_flock_check_t = 0.25
 		_check_flocks()
 	_tick_t -= delta
+	_plan_t -= delta
 	if _tick_t > 0.0:
+		if _plan_t <= 0.0 and enabled() and not silent:
+			_plan_t = PLAN_STEP
+			var pp: Player = world.get(&"player") as Player
+			if pp != null:
+				var clk: WorldClock = Game.session.clock
+				_plans_near(Vector2(pp.global_position.x, pp.global_position.z), GRAZER_RING.y, clk.day(),
+					WildlifeSpawner.period_of(clk.hour_f(), clk.sunrise_hour, clk.sunset_hour), Content.all(&"wildlife"), GameRules.current().num("wildlife_density"))
 		return
 	_tick_t = TICK
 	var p: Player = world.get(&"player") as Player
@@ -288,6 +315,10 @@ func _process_body(delta: float) -> void:
 			spawn_band(d, plan, clock.is_night())
 		else:
 			spawn_flock(d, plan)
+		# One band, pack or flock a tick: after the spawn (or a long walk) a tick raised every plan
+		# in the ring at once (TD-324); the rest come on the next ticks, and the ring's inner edge
+		# (70 m, flocks 30 m) keeps it out of sight.
+		break
 
 
 ## The valley falls silent on a Hum night: from SILENCE_HOURS before it until it ends.
