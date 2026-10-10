@@ -30,6 +30,9 @@ var climb := ViewModelClimb.new()
 var hold_class: StringName = ViewModelHolds.EMPTY
 ## QA (fp_preview): forces the base loop (fp_carry_log, fp_blueprint) without a player or building.
 var qa_base: StringName = &""
+## QA (fp_preview): pins the climb rig's anchor to the rails (-1: off), so a shot with rails and
+## no climbing player shows the hands as the rails hold them (TD-296: their FOV scale).
+var qa_climb_anchor: float = -1.0
 
 var _rig: Node3D
 var _item_root: Node3D
@@ -984,7 +987,10 @@ func _process(delta: float) -> void:
 ## rails, the hand-over-hand cycle is seeked to the phase the metres climbed give, the let-go
 ## drops the hands and the item comes back up. The arms stay level and square to the ladder.
 func _climb_step(delta: float, cam: Camera3D) -> void:
-	if climb.update(delta):
+	var changed: bool = climb.update(delta)
+	if qa_climb_anchor >= 0.0:
+		climb.anchor = qa_climb_anchor
+	if changed:
 		_action = &""
 		match climb.state:
 			ViewModelClimb.State.GRAB:
