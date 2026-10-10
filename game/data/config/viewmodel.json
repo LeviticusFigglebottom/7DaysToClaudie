@@ -8749,7 +8749,7 @@
     }
   },
   "tether": {
-    "_doc": "Raising the left wrist to read the tether (T): the reading pose, how long the raise and lower take, the viewmodel's narrower field of view while reading (the screen fills more of the view), and the screen's glow lowered / raised.",
+    "_doc": "Raising the left wrist to read the tether (T): the reading pose, how long the raise and lower take, the viewmodel's narrower field of view while reading (the screen fills more of the view), and the screen's glow lowered / raised. The reading hand's thumb curls in (0.7, player report 5): looser, its end pointed nearly at the lens (20-23 deg off the view ray) and its pad read huge; now 40+ deg (fp_anatomy's thumb-aim rule).",
     "pose": {
       "L": {
         "grip": [
@@ -8768,7 +8768,7 @@
           1.0
         ],
         "fist": 0.55,
-        "thumb": 0.4,
+        "thumb": 0.7,
         "elbow": [
           -0.4,
           0.6,

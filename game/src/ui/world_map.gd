@@ -231,12 +231,22 @@ func _build_legend() -> void:
 		cb.toggled.connect(_on_layer_toggled.bind(l))
 		row.add_child(cb)
 		_legend.add_child(row)
+		_dim_row(row, cb.button_pressed)
 
 
 func _on_layer_toggled(on: bool, layer: Dictionary) -> void:
 	if MapMarkers.layer_on(layer) != on:
 		MapMarkers.toggle(layer)
+	for row: Node in _legend.get_children():
+		if row is HBoxContainer and ((row as HBoxContainer).get_child(1) as CheckButton).text == str(layer.get("label", layer.get("id", ""))):
+			_dim_row(row as HBoxContainer, on)
 	_markers.queue_redraw()
+
+
+## A layer turned off reads off at a glance: its swatch and name dim (the check box alone was
+## hard to tell on the dark sheet).
+func _dim_row(row: HBoxContainer, on: bool) -> void:
+	row.modulate = Color(1, 1, 1, 1.0 if on else 0.45)
 
 
 func close() -> void:

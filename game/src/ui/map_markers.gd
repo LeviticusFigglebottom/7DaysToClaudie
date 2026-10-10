@@ -82,15 +82,28 @@ static func color_of(layer: Dictionary) -> Color:
 	return Color.from_string(str(layer.get("color", "#e8a33a")), Color(0.91, 0.64, 0.23))
 
 
-## A shelter mark: a small house (a roof over a square), outlined so it reads on any ground.
+## A layer's mark (its `shape`: a house for shelters, a square, a diamond or a circle), outlined
+## so it reads on any ground.
 static func draw_mark(ci: CanvasItem, at: Vector2, layer: Dictionary, s: float = 1.0) -> void:
 	var col: Color = color_of(layer)
-	var pts := PackedVector2Array([at + Vector2(-5, 5) * s, at + Vector2(-5, -1) * s, at + Vector2(0, -6) * s,
-		at + Vector2(5, -1) * s, at + Vector2(5, 5) * s])
+	var ink := Color(0.08, 0.07, 0.05)
+	var pts: PackedVector2Array
+	match str(layer.get("shape", "house")):
+		"circle":
+			ci.draw_circle(at, 4.5 * s, col)
+			ci.draw_arc(at, 4.5 * s, 0.0, TAU, 16, ink, 1.2 * s)
+			return
+		"square":
+			pts = PackedVector2Array([at + Vector2(-4, -4) * s, at + Vector2(4, -4) * s, at + Vector2(4, 4) * s, at + Vector2(-4, 4) * s])
+		"diamond":
+			pts = PackedVector2Array([at + Vector2(0, -5.5) * s, at + Vector2(5.5, 0) * s, at + Vector2(0, 5.5) * s, at + Vector2(-5.5, 0) * s])
+		_:
+			pts = PackedVector2Array([at + Vector2(-5, 5) * s, at + Vector2(-5, -1) * s, at + Vector2(0, -6) * s,
+				at + Vector2(5, -1) * s, at + Vector2(5, 5) * s])
 	ci.draw_colored_polygon(pts, col)
 	var ring := pts.duplicate()
 	ring.append(pts[0])
-	ci.draw_polyline(ring, Color(0.08, 0.07, 0.05), 1.2 * s)
+	ci.draw_polyline(ring, ink, 1.2 * s)
 
 
 ## What's wrong with the config (validate/tests): unknown provides tags, missing ids or labels.
@@ -108,6 +121,8 @@ static func problems(cfg: Dictionary = {}) -> PackedStringArray:
 		ids[id] = true
 		if str(l.get("label", "")) == "":
 			out.append("map_markers: layer %s has no label" % id)
+		if not str(l.get("shape", "house")) in ["house", "square", "diamond", "circle"]:
+			out.append("map_markers: layer %s has an unknown shape '%s'" % [id, l.get("shape")])
 		for want: String in l.get("provides", []):
 			var hit: bool = known.has(want)
 			if want.ends_with(":"):

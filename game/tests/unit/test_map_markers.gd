@@ -55,3 +55,23 @@ func test_a_layer_matches_tags_exactly_or_by_prefix() -> void:
 func test_a_bad_layer_is_reported() -> void:
 	var bad: PackedStringArray = MapMarkers.problems({"layers": [{"id": "x", "label": "X", "provides": ["no_such_tag"]}, {"id": "", "provides": []}]})
 	assert_eq(bad.size(), 3, "an unknown tag, a missing id and a missing label: %s" % [bad])
+	assert_eq(MapMarkers.problems({"layers": [{"id": "y", "label": "Y", "provides": ["sleep"], "shape": "star"}]}).size(), 1, "an unknown shape")
+
+
+## The hub's set (report 5): workshops and storage marked by default, garden beds on request, and
+## the clutter (logs, campfires) never.
+func test_workshops_and_storage_are_marked_gardens_on_request() -> void:
+	var ws: WorldState = _ws(["workbench", "forge", "storage_crate", "log_rack", "rain_catcher", "garden_bed", "campfire", "log_piece", "spike_pit"])
+	var by: Dictionary = {}
+	for m: Dictionary in MapMarkers.marks(MapMarkers.placed(ws), MapMarkers.layers()):
+		by[m["def"]] = str((m["layer"] as Dictionary)["id"])
+	assert_eq(by.get(&"workbench"), "workshop")
+	assert_eq(by.get(&"forge"), "workshop")
+	assert_eq(by.get(&"storage_crate"), "storage")
+	assert_eq(by.get(&"log_rack"), "storage")
+	assert_eq(by.get(&"rain_catcher"), "storage")
+	assert_false(by.has(&"garden_bed"), "garden beds are off until the player turns them on")
+	for d: StringName in [&"campfire", &"log_piece", &"spike_pit"]:
+		assert_false(by.has(d), "%s is never marked" % d)
+	var all: Array[Dictionary] = MapMarkers.marks(MapMarkers.placed(ws), MapMarkers.layers(), ["garden"])
+	assert_eq(all.size(), 1, "the garden layer, once on")

@@ -307,22 +307,28 @@ func _markers() -> void:
 	var base: Vector3 = w.drop_site() + Vector3(6.0, 0.0, 6.0)
 	p.global_position = base + Vector3(0.0, w.height_at(base.x, base.z) - base.y + 0.05, 0.0)
 	await _frames(15)
-	for b: Array in [["lean_to", Vector3(3.0, 0.0, -3.0)], ["bough_bed", Vector3(-3.0, 0.0, -2.0)]]:
+	# One of each layer, 60 m apart so their marks read apart on both maps (the bed beside the
+	# lean-to); the garden bed's layer is off by default.
+	var builds: Array = [["lean_to", Vector3(3.0, 0.0, -3.0)], ["bough_bed", Vector3(-3.0, 0.0, -2.0)],
+		["workbench", Vector3(60.0, 0.0, 0.0)], ["storage_crate", Vector3(0.0, 0.0, 60.0)], ["garden_bed", Vector3(60.0, 0.0, 60.0)]]
+	for b: Array in builds:
 		var at: Vector3 = base + (b[1] as Vector3)
 		at.y = w.height_at(at.x, at.z)
-		for it: String in ["stick", "leaf_bundle", "cordage"]:
-			p.state.inventory.add_item(StringName(it), 12)
+		p.global_position = at + Vector3(2.5, 0.05, 2.5)
+		await _frames(5)
+		for it: String in ["stick", "leaf_bundle", "cordage", "log", "nails", "wood_plank"]:
+			p.state.inventory.add_item(StringName(it), 20)
 		var r: Dictionary = Game.execute(&"build.place_blueprint", {"blueprint": b[0], "pos": [at.x, at.y, at.z], "yaw": 0.0})
 		var d: Dictionary = Game.execute(&"build.deliver", {"site": r.get("site", "")}) if r.has("site") else r
 		print("WRIST_AUDIT built %s: %s" % [b[0], str(d)])
-		await _frames(5)
+		await _frames(10)
 	var marks: Array[Dictionary] = MapMarkers.marks(MapMarkers.placed(), MapMarkers.layers())
-	print("WRIST_AUDIT shelter marks: %d" % marks.size())
-	if marks.size() < 2:
+	print("WRIST_AUDIT marks: %d (%s)" % [marks.size(), ", ".join(marks.map(func(m: Dictionary) -> String: return str(m["def"])))])
+	if marks.size() < 4:
 		_fails += 1
-		print("WRIST_AUDIT FAIL the lean-to and the bed should both be marked")
+		print("WRIST_AUDIT FAIL the shelters, the workbench and the crate should be marked (the garden bed's layer is off)")
 	# Walk off ~110 m so the marks don't sit under the player's arrow.
-	var away: Vector3 = base + Vector3(90.0, 0.0, 60.0)
+	var away: Vector3 = base + Vector3(130.0, 0.0, -50.0)
 	p.global_position = Vector3(away.x, w.height_at(away.x, away.z) + 0.05, away.z)
 	await _frames(15)
 	await _raise(true)
