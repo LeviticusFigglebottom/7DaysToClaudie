@@ -23,6 +23,21 @@ here in idle, or this massive thumb when holding the lighter". Fixes and the che
   segment 26 mm, the lighter 12 mm higher in the fist with the thumb's pad on the wheel: 1.40x
   (1.44x in the inspect).
 
+## Round 2 (after the hub's review)
+
+`closeups_round2.webp` (before | round 1 | round 2) and `sheet_key_round2.webp` (before | round 2).
+
+* **Idle:** round 1's even curl still read as claws from above. Now the hands sit 4.5 cm lower,
+  mostly below the frame, with the fingers nearly straight in a gentle curve: **pass** (no hooked
+  tips, fingers together).
+* **Lighter:** the thumb was not aimed at the lens (65-71 degrees off the view ray). It was the
+  nearest digit and its tip was round. Now the hand is at 42 cm and 3 cm lower, and the thumb
+  tapers to an 8 mm tip: **pass** (the thumb no longer dominates, in the idle, the light or the
+  inspect).
+* **New check, thumb aim:** an open thumb in a held pose must lie at least 35 degrees off the view
+  ray. All holds pass except the tether-reading left hand (20-23 degrees, Presentation's, reported
+  until it is re-posed). Fists, and keyed moves for a few frames, are reported only.
+
 ## Checklist
 
 Criteria, per baked action (every frame, `tools/fp_hands_check.py`; ADR-0061 limits):

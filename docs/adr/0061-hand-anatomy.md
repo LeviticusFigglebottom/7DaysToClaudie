@@ -72,6 +72,18 @@ fp_* action, solved as the bake solves it, it measures from the posed bones:
 per action and joint; `tools/fp_hands_check.py` runs it without Blender (`--only` actions,
 `--table` for each action's ranges) to try a pose before baking.
 
+**6. Round 2** (the hub's review of the first renders: the image, not the numbers). The idle
+still read as claws from above: its hands now sit 4.5 cm lower, mostly below the frame, the
+fingers nearly straight in a gentle curve (curls 0.12 .. 0.24). The lighter's thumb, measured,
+was not aimed at the lens (its segments 65-71 degrees off the view ray, the pad seen at a
+grazing 72-79 degrees); it read big for being the nearest digit (31 cm) with a round 9 mm tip. The
+lighter hand is now out at 42 cm and 3 cm lower, and the thumb tapers to an 8 mm tip. The check
+gained **thumb aim**: a thumb's end segment in view at least 35 degrees off the line to the eye.
+It fails an open thumb (curl below 0.5) in a hold's own loops (idle, guard, tether: what the eye
+rests on); a thumb tucked across a fist, or one passing through a strike, reach or reload for a
+few frames, is reported, not failed. The tether-reading left hand (20-23 degrees, Presentation's
+pose) is reported by name (`AIM_PENDING`) until it is re-posed.
+
 ## Consequences
 
 * Every hold, attack and use now bakes inside a hand's range (0 violations in 91 actions; before,
