@@ -54,7 +54,7 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "stone_windup", "item": "stone", "action": "fp_throw_stone", "frame": 9},
 	{"name": "stone_release", "item": "stone", "action": "fp_throw_stone", "frame": 14},
 	{"name": "molotov_idle", "item": "molotov"},
-	{"name": "molotov_lighting", "item": "molotov", "action": "fp_light_molotov", "frame": 13},
+	{"name": "molotov_lighting", "item": "molotov", "action": "fp_light_molotov", "frame": 13, "offhand": "lighter"},
 	{"name": "molotov_lit", "item": "molotov", "lit": true},
 	{"name": "molotov_lit_night", "item": "molotov", "lit": true, "night": true},
 	{"name": "molotov_windup", "item": "molotov", "lit": true, "action": "fp_throw_molotov", "frame": 10},
@@ -314,6 +314,9 @@ func _shoot(shot: Dictionary) -> void:
 	if shot.has("action"):
 		if not _vm.freeze_action(StringName(str(shot["action"])), float(shot.get("frame", 0)) / 30.0):
 			print("FP_PREVIEW warning: no action %s" % shot["action"])
+	# The other hand's item for a moment (the lighter lighting a molotov's rag; ThrowHand.light).
+	if shot.has("offhand"):
+		_vm.show_offhand(StringName(str(shot["offhand"])), 999.0)
 	_torch_light.visible = lit and night
 	# A molotov's ground fire burning a few metres ahead (ADR-0057), to see its flames, smoke and light.
 	var fire: GroundFire = null

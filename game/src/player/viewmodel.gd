@@ -144,6 +144,7 @@ func has_action(anim_name: StringName) -> bool:
 # --- Items ---------------------------------------------------------------------------------
 
 func show_item(item_id: StringName) -> void:
+	_drop_offhand()
 	if _held != null:
 		_held.queue_free()
 		_held = null
@@ -384,6 +385,8 @@ func show_offhand(item_id: StringName, seconds: float) -> void:
 	_offhand = _make_item(def)
 	sock.add_child(_offhand)
 	_offhand.transform = offhand_transform(spec)
+	# Drawn as the arms are, at the viewmodel's own field of view.
+	FpMaterials.apply(_offhand)
 	_set_layers(_offhand)
 	_offhand_left = maxf(0.05, seconds)
 
