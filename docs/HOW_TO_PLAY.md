@@ -159,8 +159,14 @@ deletes the run. The tether and field manual are never dropped.
 
 ## 3. Controls
 
-Keyboard and mouse, or a gamepad: every screen takes the pad's focus, **B** backs out of whatever is
-open, and the salvage roll moves by stick (RB to the recipe sheet). Every key, mouse button and pad
+Keyboard and mouse, or a gamepad. On a pad: left stick moves, right stick looks; **A** jump, **X**
+interact (hold it where the prompt says *Hold*), **Y** the salvage roll, **B** cancel and back out of
+whatever is open; **RT** attack, **LT** aim and guard, **LB / RB** the toolbelt; **L3** sprint,
+**R3** crouch; **Start** pause, **Back** the map; the d-pad: up the field manual, down the tether,
+left drop (feed a fire), right light. In every screen the d-pad and stick move the focus and **A**
+presses; in the field manual LB / RB turn the tabs; in the salvage roll the stick walks the cloth,
+RB goes to the recipe sheet and up / down choose a recipe. Reload, companion orders, rotating a
+building piece and the log pose have no pad button by default. Every key, mouse button and pad
 button can be rebound under **Options → Controls**, also reachable from the pause menu; a binding
 another action already uses is flagged. The keys below are the defaults.
 

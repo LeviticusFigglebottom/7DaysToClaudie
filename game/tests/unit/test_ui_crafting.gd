@@ -292,3 +292,12 @@ func test_a_dragged_item_stays_on_screen_over_the_belt() -> void:
 func test_a_long_need_wraps_instead_of_being_cut() -> void:
 	assert_false(CraftSheet.status_wraps("need 1 Potato"))
 	assert_true(CraftSheet.status_wraps("need 1 Bottle of Stream Water"), "two lines, never cut mid-word")
+
+
+func test_the_pad_steps_through_the_recipes() -> void:
+	var ids: Array = [&"a", &"b", &"c"]
+	assert_eq(CraftSheet.step_selection(ids, &"a", 1), &"b")
+	assert_eq(CraftSheet.step_selection(ids, &"c", 1), &"c", "held at the end")
+	assert_eq(CraftSheet.step_selection(ids, &"a", -1), &"a", "and at the start")
+	assert_eq(CraftSheet.step_selection(ids, &"z", 1), &"a", "not shown: the first")
+	assert_eq(CraftSheet.step_selection([], &"a", 1), &"")
