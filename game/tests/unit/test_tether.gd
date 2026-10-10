@@ -19,3 +19,13 @@ func test_a_long_world_name_is_cut_short_but_the_sector_shows() -> void:
 	assert_lte(cap.length(), Tether.CAPTION_CHARS, "it fits beside the map")
 	assert_true(Tether.map_caption(rw, Vector3(-500.0, 0.0, -500.0)).ends_with("SECTOR A1"))
 	assert_eq(Tether.map_caption(null, Vector3.ZERO), "", "no world, no caption")
+
+
+## Player report 5: the buildings of the towns off the minimap were drawn where they fell, in grey
+## clumps over the readouts round the map. Only those on the map are drawn.
+func test_only_buildings_on_the_minimap_are_drawn() -> void:
+	assert_true(Tether.on_map(Vector2(10.0, 200.0)))
+	assert_true(Tether.on_map(Vector2(0.0, 0.0)), "the map's own corner")
+	assert_false(Tether.on_map(Vector2(-30.0, 120.0)), "left of the map: over the readouts")
+	assert_false(Tether.on_map(Vector2(120.0, Tether.MAP_PX + 40.0)), "below it: over the directives")
+	assert_false(Tether.on_map(Vector2(Tether.MAP_PX + 1.0, 5.0)))

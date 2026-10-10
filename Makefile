@@ -16,7 +16,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: smoke tour check-logs export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: smoke tour wrist-audit check-logs export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake stills \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview menu-guard pad-pass
 
@@ -131,6 +131,11 @@ ui-shots: ## Screenshots of the menus and UI screens without a world (software V
 first-hour: ## The first-hour UX audit: a new game driven through its first hour, a frame and the screen's words per step (software Vulkan, ~20 min) -> build/first_hour
 	@mkdir -p $(ROOT)/build/first_hour
 	@$(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution $(or $(UI_RES),1280x720) -s res://src/tools/cli/first_hour.gd -- --out $(ROOT)/build/first_hour $(FIRST_HOUR_ARGS)
+
+wrist-audit: ## The wrist (tether) audit, player report 5: the tether raised in every movement state and hold class, a frame each (software Vulkan) -> build/wrist_audit [WRIST_RES=3840x2160; WRIST_ARGS="--steady" headless: the hands' steadiness, fails on a snap]
+	@mkdir -p $(ROOT)/build/wrist_audit
+	@if echo "$(WRIST_ARGS)" | grep -q -- --steady; then $(GODOT_HEADLESS) --fixed-fps 60 -s res://src/tools/cli/wrist_audit.gd -- --out $(ROOT)/build/wrist_audit $(WRIST_ARGS); \
+	else $(LOCK) $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --fixed-fps 15 --resolution $(or $(WRIST_RES),1920x1080) -s res://src/tools/cli/wrist_audit.gd -- --out $(ROOT)/build/wrist_audit $(WRIST_ARGS); fi
 
 menu-guard: ## The menu freeze guard: the real main menu hovered and clicked for ~20 s under software Vulkan; fails on a frame over 1.5 s or input nothing answers [MENU_GUARD_ARGS="--expect-pictures"; MENU_PACK=/abs/Hollowmere.pck runs an exported pack]
 	@$(LOCK) $(XVFB) $(GODOT) $(if $(MENU_PACK),--main-pack $(MENU_PACK),--path $(GAME)) --rendering-driver vulkan --audio-driver Dummy --resolution 1280x720 -s $(if $(MENU_PACK),$(GAME)/src/tools/cli/menu_guard.gd,res://src/tools/cli/menu_guard.gd) $(if $(MENU_GUARD_ARGS),-- $(MENU_GUARD_ARGS))

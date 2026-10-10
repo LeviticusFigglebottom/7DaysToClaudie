@@ -135,6 +135,9 @@ func _build_screen() -> void:
 	_markers = Control.new()
 	_markers.position = _map.position
 	_markers.size = _map.size
+	# Nothing drawn for the map may spill onto the readouts round it (player report 5: the
+	# buildings of the towns off this map lay in grey clumps over the text).
+	_markers.clip_contents = true
 	_markers.draw.connect(_draw_markers)
 	_root.add_child(_markers)
 	_caption = _lcd_label(Vector2(370, 322), 14)
@@ -435,6 +438,11 @@ func _fill_poly(img: Image, rt: RegionTerrain, poly: Variant, col: Color) -> voi
 				img.set_pixel(x, y, col)
 
 
+## Whether a map point (pixels) is on the minimap.
+static func on_map(mp: Vector2) -> bool:
+	return Rect2(0.0, 0.0, MAP_PX, MAP_PX).has_point(mp)
+
+
 func _to_map(rt: RegionTerrain, p: Vector3) -> Vector2:
 	return Vector2((p.x - rt.rect.position.x) / rt.rect.size.x, (p.z - rt.rect.position.y) / rt.rect.size.y) * float(MAP_PX)
 
@@ -465,7 +473,17 @@ func _draw_markers() -> void:
 			elif bool(m["visited"]):
 				col = Color(0.9, 0.7, 0.4)
 			var mp: Vector2 = _to_map(rt, m["pos"])
+			# Only the buildings on this map: unlike a drop or a contract, one off it is not pinned
+			# to the border (every town round would heap up there).
+			if not on_map(mp):
+				continue
 			_markers.draw_rect(Rect2(mp - Vector2(3, 3), Vector2(6, 6)), col)
+	# What you built (MapMarkers): shelters you can sleep, save or wake at, while their layer is on.
+	if Game.session != null:
+		for bm: Dictionary in MapMarkers.marks(MapMarkers.placed(), MapMarkers.layers()):
+			var bp: Vector2 = _to_map(rt, bm["pos"])
+			if on_map(bp):
+				MapMarkers.draw_mark(_markers, bp, bm["layer"], 0.9)
 	var drops: Node = w.get(&"supply_drops")
 	if drops != null:
 		for at: Vector3 in (drops.call(&"markers") as Array[Vector3]):

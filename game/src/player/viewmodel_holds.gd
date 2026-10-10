@@ -80,6 +80,14 @@ static func tether_action(cls: StringName) -> StringName:
 	return StringName("fp_%s_tether" % cls)
 
 
+## Whether reading the tether puts the item away for the moment (player report 5): a hold whose
+## wrist can't come up with it in hand (`no_tether`: the rifle) or not into view (`tether_stow`:
+## the bow, whose grip is the left hand) reads with empty hands, as climbing does.
+static func reads_stowed(cls: StringName, cfg: Dictionary = {}) -> bool:
+	var h: Dictionary = hold(cls, cfg)
+	return bool(h.get("no_tether", false)) or bool(h.get("tether_stow", false))
+
+
 ## Share of a blocked blow's damage the guard takes: equip.block, else the hold's. 0 = no guard.
 static func block_share(def: ItemDef, cls: StringName, cfg: Dictionary = {}) -> float:
 	if def != null and def.equip.has("block"):
