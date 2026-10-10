@@ -596,6 +596,49 @@ func test_store_at_base_fills_the_nearest_crate() -> void:
 	assert_eq((Game.session.world.container_state(&"p:crate").get("items", []) as Array).size(), 2, "the crate's contents persist")
 
 
+func test_a_lineman_tops_up_a_generator_running_low() -> void:
+	var e: Enemy = await _recruited()
+	var b := FakeBuilding.new()
+	_world.add_child(b)
+	_world.building = b
+	var gen := StructurePiece.new()
+	gen.setup(&"p:gen", Content.structure(&"generator"), b)
+	b.add_child(gen)
+	gen.global_position = e.global_position + Vector3(8, 0, 4)
+	b.pieces[&"p:gen"] = gen
+	var btm := BaseTechManager.new()
+	btm.world = _world
+	btm.building = b
+	add_child_autofree(btm)
+	btm.register_commands()
+	var st: Dictionary = btm.state_of(gen)
+	st["on"] = true
+	st["fuel"] = BaseTech.tank_hours() * 0.1
+	_dir.inventory.add_item(&"gas_can", 1)
+	assert_eq(_dir.tend_job(e.global_position), [], "not a lineman yet: he leaves it")
+	Game.session.clock.set_time(4, 12.0)
+	_dir.tick()
+	var job: Array = _dir.tend_job(e.global_position)
+	assert_eq(job.size(), 2, "two days on, a lineman sees it running low")
+	assert_eq(job[1], "fuel")
+	# Taken off following by the check, he walks over, pours his can in and comes back.
+	_dir._tend_t = 0.0
+	_dir.tick()
+	assert_eq(e.ally.order, "tend")
+	await _until(func() -> bool: return e.ally.order == "follow", 1200)
+	assert_eq(e.ally.order, "follow", "tended, back to following")
+	assert_gt(float(btm.state_of(gen)["fuel"]), BaseTech.tank_hours() * 0.3, "he topped it up")
+	assert_false(_dir.inventory.has(&"gas_can"), "from his own pack")
+	assert_eq(_dir.tend_job(e.global_position), [], "nothing left to do with no can")
+	# A damaged power piece is mended when he carries what it takes.
+	gen.hp = gen.max_hp() * 0.4
+	assert_eq(_dir.tend_job(e.global_position), [], "nothing to mend it with")
+	var cost: Dictionary = BuildingManager.repair_cost(gen.def)
+	for k: Variant in cost:
+		_dir.inventory.add_item(StringName(str(k)), int(cost[k]))
+	assert_eq((_dir.tend_job(e.global_position) as Array)[1], "repair", "with the materials, he would")
+
+
 func test_his_pack_and_errand_round_trip_through_the_save() -> void:
 	var e: Enemy = await _recruited()
 	_dir.inventory.add_item(&"log", 2)
