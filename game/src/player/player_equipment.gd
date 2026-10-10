@@ -93,6 +93,10 @@ func _physics_process(delta: float) -> void:
 			primary()
 	if Input.is_action_just_pressed(&"block") and captured and not _building_busy():
 		secondary()
+	# Grabbing a ladder needs both hands: a throw charged before it is lowered, never let fly
+	# (TD-298: releasing attack on the rungs threw it), as a drawn bow is let down.
+	if player.is_climbing() and throw_hand.charging:
+		throw_hand.cancel()
 	throw_hand.update(delta, captured and Input.is_action_pressed(&"attack"))
 	if Input.is_action_just_pressed(&"reload") and captured and not _building_busy():
 		reload()

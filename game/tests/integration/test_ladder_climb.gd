@@ -180,3 +180,21 @@ func test_walk_off_a_landing_behind_the_rails_and_down() -> void:
 	assert_true(held[0], "walking off the landing toward the ladder takes hold of it")
 	assert_false(_player.is_climbing(), "off at the foot")
 	assert_almost_eq(_player.global_position.y, foot.y, 0.15, "down on the ground")
+
+
+func test_a_log_on_the_shoulder_keeps_you_off_the_ladder() -> void:
+	# TD-232: carrying a log takes a hand.
+	var lad: PoiPieces.Ladder = _ladder()
+	if lad == null:
+		return
+	_player.state.inventory.add_item(&"log", 1)
+	_player.global_position = (lad.ends()[1] as Vector3) + lad.face() * 0.3
+	_face(-lad.face())
+	await get_tree().physics_frame
+	var climbed: Array[bool] = [false]
+	await _walk(60, func() -> bool:
+		climbed[0] = climbed[0] or _player.is_climbing()
+		return climbed[0])
+	assert_false(climbed[0], "no climbing with a log")
+	assert_true(Player.climb_blocked_by_logs(1))
+	assert_false(Player.climb_blocked_by_logs(0))

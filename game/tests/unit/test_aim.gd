@@ -86,3 +86,10 @@ func test_sight_offset_puts_the_sight_on_the_line_of_sight() -> void:
 	assert_almost_eq(point.z, -0.3, 1e-5, "the sight comes up 0.3 m before the eye")
 	var fwd: Vector3 = -aimed.basis.z.normalized()
 	assert_almost_eq(fwd.dot(Vector3.FORWARD), 1.0, 1e-5, "looking straight down it")
+
+
+func test_climbing_keeps_the_gun_down() -> void:
+	# TD-298: both hands are on the ladder (ADR-0057).
+	assert_true(PlayerAim.blocked_by(false, false, false, false, true))
+	assert_false(PlayerAim.blocked_by(false, false, false, false, false))
+	assert_true(PlayerAim.blocked_by(true, false, false, false, false), "a reload still does")

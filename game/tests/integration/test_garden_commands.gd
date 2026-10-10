@@ -178,3 +178,16 @@ func test_farm_prompts_read_the_state() -> void:
 	st["water"] = 1.0
 	assert_string_contains(FarmManager.bed_status(st), "carrots 0%")
 	assert_string_contains(FarmManager.bed_status(st), "soil wet")
+
+
+func test_a_beds_status_shows_under_an_action_prompt() -> void:
+	# TD-217: harvest/plant/water prompts once hid growth and soil.
+	var st: Dictionary = Farming.new_state(Content.structure(&"garden_bed"))
+	Farming.plant(st["plots"][0], Farming.crop(&"carrot"))
+	assert_string_contains(FarmManager.hint_for(&"farm.water", st), "carrots 0%")
+	assert_string_contains(FarmManager.hint_for(&"farm.harvest", st), "soil dry")
+	assert_eq(FarmManager.hint_for(&"", st), "", "the prompt is already the status")
+	# The bed's status and "hold [X] to water the bed" share the line under the prompt.
+	assert_eq(GameUI.hint_line("Garden bed · soil dry", "hold [X] to water the bed"), "Garden bed · soil dry  ·  hold [X] to water the bed")
+	assert_eq(GameUI.hint_line("", "hold [X] to water the bed"), "hold [X] to water the bed")
+	assert_eq(GameUI.hint_line("a", ""), "a")
