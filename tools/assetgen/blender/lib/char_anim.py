@@ -1084,6 +1084,58 @@ def act_scream(rig, p, n=50):
     return frames
 
 
+def act_spit(rig, p, n=40):
+    """The Blister's spit (TD-027): it rears back drawing breath, shoulders up, then snaps its head
+    and neck out with the jaw wide (frame 16: the glob leaves at 0.55 s, Enemy.SPIT), and folds over
+    retching before it straightens."""
+    base = base_stand(p)
+    feet = _foot_ik_pose(base)
+    rear = merged(base, feet, {"chest.flex": -10.0, "spine.flex": -4.0, "neck.flex": -12.0, "head.flex": -18.0,
+                               "jaw.open": 12.0, "shoulder.L.shrug": 12.0, "shoulder.R.shrug": 12.0,
+                               "upper_arm.L.abd": -10.0, "upper_arm.R.abd": -10.0, "hips.z": -0.02})
+    thrust = merged(base, feet, {"chest.flex": 16.0, "spine.flex": 6.0, "neck.flex": 28.0, "head.flex": 4.0,
+                                 "jaw.open": 50.0, "shoulder.L.fwd": 12.0, "shoulder.R.fwd": 12.0,
+                                 "upper_arm.L.flex": -22.0, "upper_arm.R.flex": -18.0, "forearm.L.flex": 30.0,
+                                 "forearm.R.flex": 34.0, "hips.z": -0.06})
+    retch = merged(base, feet, {"chest.flex": 22.0, "spine.flex": 8.0, "neck.flex": 22.0, "head.flex": 14.0,
+                                "jaw.open": 34.0, "shoulder.L.shrug": 8.0, "shoulder.R.shrug": 8.0,
+                                "upper_arm.L.flex": 10.0, "upper_arm.R.flex": 14.0, "forearm.L.flex": 50.0,
+                                "forearm.R.flex": 46.0, "hips.z": -0.07})
+    settle = merged(base, feet, {"chest.flex": base.get("chest.flex", 0.0) + 6.0, "jaw.open": 14.0})
+    ks = Keys(base, [(0, merged(base, feet)), (12, rear), (16, thrust, "snap"), (22, retch), (32, settle),
+                     (n, merged(base, feet))])
+    seed = int(p.get("seed", 1))
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        heave = smooth_pulse(f, 18, 2, 8, 6)
+        for i, k in enumerate(("chest.flex", "neck.flex", "jaw.open")):
+            prm[k] = prm.get(k, 0.0) + heave * (4.0 if k != "jaw.open" else 6.0) * math.sin(f * 2.6 + seed + i)
+        frames.append(prm)
+    return frames
+
+
+def act_charge(rig, p, n=36):
+    """The Rammer's charge (TD-027): a run bent low behind its yoke, head down to butt, shoulders
+    driven forward, elbows out and fists pumping short; the feet keep the run's gait."""
+    frames = locomotion(rig, p, n, 6.5, "run", 2, 0.0)
+    out = []
+    for prm in frames:
+        prm = dict(prm)
+        for k, d in (("hips.flex", 8.0), ("spine.flex", 8.0), ("chest.flex", 10.0), ("neck.flex", 16.0),
+                     ("head.flex", -18.0), ("jaw.open", 8.0)):
+            prm[k] = prm.get(k, 0.0) + d
+        prm["hips.z"] = prm.get("hips.z", 0.0) - 0.03
+        for sd, _sx in SIDES:
+            prm[f"shoulder.{sd}.fwd"] = prm.get(f"shoulder.{sd}.fwd", 0.0) + 14.0
+            prm[f"shoulder.{sd}.shrug"] = prm.get(f"shoulder.{sd}.shrug", 0.0) + 8.0
+            prm[f"upper_arm.{sd}.flex"] = prm.get(f"upper_arm.{sd}.flex", 0.0) * 0.6 - 8.0
+            prm[f"upper_arm.{sd}.abd"] = prm.get(f"upper_arm.{sd}.abd", 0.0) + 16.0
+            prm[f"forearm.{sd}.flex"] = max(prm.get(f"forearm.{sd}.flex", 0.0), 70.0)
+        out.append(prm)
+    return out
+
+
 def _whip(f: float, at: float = 1.0, freq: float = 15.0, damp: float = 6.5) -> float:
     """Damped follow-through after an impulse at frame `at` (0 before; first swing positive)."""
     t = (f - at) / FPS
@@ -1681,6 +1733,8 @@ def hollowed_extras():
     return [
         ("stumble", 30, False, act_stumble),
         ("knockdown", 36, False, act_knockdown),
+        ("spit", 40, False, act_spit),
+        ("charge", 36, True, act_charge),
     ]
 
 
