@@ -68,7 +68,9 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## composer 16; TD-320).
 ## 17: road shape (TD-139): a routed road's hooks (turns back over 120 degrees) are cut even up a
 ## steep pitch, and a track or trail off a road starts where it leaves the road's cells, not beside it.
-const VERSION: int = 17
+## 18: a road end left beside another road once the main streets are through the town centres
+## starts where it leaves that road (_leave_beside; TD-139).
+const VERSION: int = 18
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -979,7 +981,8 @@ func _leave_through(c: Vector2) -> void:
 ## road's start, on another road when it was laid, was left beside it when that road was merged
 ## through a centre and moved (TD-139: settled seed 11, Fenwick's exit highway ran 40-70 m beside
 ## Whitlow's main street, 13 m off it). Each end off a town centre starts where it leaves the
-## nearest road it runs beside instead (_leave_road), unless another road meets the stretch cut.
+## nearest road it runs beside (past that road's ends) instead (_leave_road), unless another road
+## meets the stretch cut.
 func _leave_beside() -> void:
 	var centres: Array[Vector2] = []
 	for tw: Dictionary in towns:
@@ -993,10 +996,15 @@ func _leave_beside() -> void:
 				continue
 			var near: Array = []
 			for rj: int in roads.size():
-				if rj != ri:
-					var d: float = (roads[rj]["line"] as Polyline2).closest(pts[0]).x
-					if d < LEAVE_ROAD:
-						near.append([d, rj])
+				if rj == ri:
+					continue
+				# Beside its middle only: two roads whose ends meet side by side would each cut the other.
+				var pj: PackedVector2Array = roads[rj]["points"]
+				if pj[0].distance_to(pts[0]) < LEAVE_ROAD or pj[pj.size() - 1].distance_to(pts[0]) < LEAVE_ROAD:
+					continue
+				var d: float = (roads[rj]["line"] as Polyline2).closest(pts[0]).x
+				if d < LEAVE_ROAD:
+					near.append([d, rj])
 			near.sort()
 			for n: Array in near:
 				var left: PackedVector2Array = _leave_road(pts, int(n[1]))
