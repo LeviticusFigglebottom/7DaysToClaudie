@@ -40,10 +40,14 @@ static func dawn(fd: FactionDef, hostility: float) -> float:
 
 
 ## The day's scout visit, or {}: {hour: float} when one comes. Deterministic per world and day.
-static func scout_roll(fd: FactionDef, world_seed: int, day: int, level: int, aggression: String = "normal") -> Dictionary:
+## `anger` is the leading camp's effective anger (lead_anger): an angry camp near the player sends
+## them more often (standing.chance_per_anger).
+static func scout_roll(fd: FactionDef, world_seed: int, day: int, level: int, aggression: String = "normal",
+		anger: float = 0.0) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = Ids.hash64("ashen:scout:%d:%d" % [world_seed, day])
-	var chance: float = float(FactionDef.per_level(fd.scouts.get("chance", []), level, 0.0)) * float(AGGRESSION.get(aggression, 1.0))
+	var chance: float = float(FactionDef.per_level(fd.scouts.get("chance", []), level, 0.0)) * float(AGGRESSION.get(aggression, 1.0)) \
+		* anger_chance(fd, anger)
 	if rng.randf() >= chance:
 		return {}
 	var h: Array = fd.scouts.get("hour", [8, 17])
@@ -52,18 +56,22 @@ static func scout_roll(fd: FactionDef, world_seed: int, day: int, level: int, ag
 
 ## The day's raid, or {}: {hour, size, members: [enemy ids]}. Never in the grace days, never on a
 ## Hum day (`hum_day`). Deterministic per world and day.
+## `anger` (the leading camp's effective anger) raises the chance (standing.chance_per_anger) and
+## adds a raider per standing.size_per_anger.
 static func raid_roll(fd: FactionDef, world_seed: int, day: int, level: int, gamestage: int, hum_day: bool,
-		aggression: String = "normal") -> Dictionary:
+		aggression: String = "normal", anger: float = 0.0) -> Dictionary:
 	if hum_day or day <= int(fd.raids.get("grace_days", 4)):
 		return {}
 	var rng := RandomNumberGenerator.new()
 	rng.seed = Ids.hash64("ashen:raid:%d:%d" % [world_seed, day])
-	var chance: float = float(FactionDef.per_level(fd.raids.get("chance", []), level, 0.0)) * float(AGGRESSION.get(aggression, 1.0))
+	var chance: float = float(FactionDef.per_level(fd.raids.get("chance", []), level, 0.0)) * float(AGGRESSION.get(aggression, 1.0)) \
+		* anger_chance(fd, anger)
 	if rng.randf() >= chance:
 		return {}
 	var n: int = raid_size(fd, level, gamestage, rng)
 	if n <= 0:
 		return {}
+	n = mini(n + anger_size(fd, anger), int(fd.raids.get("max_size", 9)))
 	var h: Array = fd.raids.get("hour", [18, 20])
 	var table: Dictionary = FactionDef.per_level(fd.raids.get("enemies", []), level, {})
 	if table.is_empty():
@@ -106,10 +114,34 @@ static func anger_at_dawn(fd: FactionDef, current: float) -> float:
 	return maxf(0.0, current - float(fd.standing.get("decay_per_day", 0.0)))
 
 
+## How much a camp `dist` m from the player counts (standing.reach {near, far, floor}): fully
+## within `near`, falling to `floor` at `far` and beyond. A camp across the map is a rumour; the
+## one over the ridge is a threat.
+static func reach(fd: FactionDef, dist: float) -> float:
+	var r: Dictionary = fd.standing.get("reach", {})
+	if r.is_empty() or dist < 0.0:
+		return 1.0
+	var near: float = float(r.get("near", 300.0))
+	var far: float = maxf(near + 1.0, float(r.get("far", 1500.0)))
+	return lerpf(1.0, float(r.get("floor", 0.25)), clampf((dist - near) / (far - near), 0.0, 1.0))
+
+
+## The raid and scout chance multiplier for a leading camp's effective anger: 1 + anger x
+## standing.chance_per_anger, at most standing.chance_max.
+static func anger_chance(fd: FactionDef, anger: float) -> float:
+	return minf(1.0 + maxf(0.0, anger) * float(fd.standing.get("chance_per_anger", 0.0)), float(fd.standing.get("chance_max", 1.0)))
+
+
+## Extra raiders for a leading camp's effective anger: one per standing.size_per_anger (0: none).
+static func anger_size(fd: FactionDef, anger: float) -> int:
+	var per: float = float(fd.standing.get("size_per_anger", 0.0))
+	return int(floor(maxf(0.0, anger) / per)) if per > 0.0 else 0
+
+
 ## The camp a band comes from: of `ids` (the placed camps), the living one (not wiped) with the
-## most anger in `camp_states` (WorldState.ashen.camps), at least standing.lead; ties by id. "" for
-## none.
-static func angriest(fd: FactionDef, camp_states: Dictionary, ids: Array) -> String:
+## most effective anger (its anger x reach of its distance in `dists`, id -> m; missing = near) in
+## `camp_states` (WorldState.ashen.camps), at least standing.lead; ties by id. "" for none.
+static func angriest(fd: FactionDef, camp_states: Dictionary, ids: Array, dists: Dictionary = {}) -> String:
 	var lead: float = float(fd.standing.get("lead", 5.0))
 	var best: String = ""
 	var best_a: float = -1.0
@@ -117,7 +149,7 @@ static func angriest(fd: FactionDef, camp_states: Dictionary, ids: Array) -> Str
 	sorted.sort()
 	for id: Variant in sorted:
 		var cs: Dictionary = camp_states.get(str(id), {})
-		var a: float = float(cs.get("anger", 0.0))
+		var a: float = float(cs.get("anger", 0.0)) * reach(fd, float(dists.get(str(id), -1.0)))
 		if bool(cs.get("wiped", false)) or a < lead:
 			continue
 		if a > best_a:
