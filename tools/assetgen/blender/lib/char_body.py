@@ -1015,7 +1015,10 @@ class BodyModel:
         below = 1 - smoothstep(mouth_y - 0.006, mouth_y + 0.004, y)
         front = smoothstep(-0.020, 0.012, z)
         lateral = 1 - smoothstep(0.050, 0.075, np.abs(x))
-        under = 1 - smoothstep(-0.130, -0.105, y)  # neck below the jaw stays with the neck/head
+        # The neck below the jaw stays with the neck/head: 1 above the jaw's lower edge, 0 under it.
+        # (Once 1 - smoothstep: 0 for every point above it, so no face skin ever followed the jaw,
+        # only the teeth; a jaw that opened moved nothing you could see. TD-309.)
+        under = smoothstep(-0.130, -0.105, y)
         neckside = smoothstep(-0.115, -0.085, y) + smoothstep(0.02, 0.05, z)
         return np.clip(below * front * lateral * under * np.clip(neckside, 0, 1), 0, 1)
 
