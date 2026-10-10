@@ -37,7 +37,7 @@ const MOODS: Dictionary = {
 		"sky_sun": Vector3(1.0, 0.74, 0.52), "sky_sun_energy": 1.1, "zenith": Color(0.24, 0.32, 0.46),
 		"horizon": Color(0.74, 0.68, 0.68), "sunset": Color(1.0, 0.62, 0.45), "sunset_amount": 0.55,
 		"night": 0.04, "cloud": 0.3, "stars": 0.04, "ambient": 0.85,
-		"fog_color": Color(0.7, 0.7, 0.74), "fog_density": 0.0042, "mist": 16.0},
+		"fog_color": Color(0.7, 0.7, 0.74), "fog_density": 0.0028, "mist": 6.0},
 }
 ## The real scatter (VegetationScatter, the game's seed for the main map's look) is grown per still
 ## over chunks within these metres of the camera and in front of it: undergrowth (bushes, rocks,
@@ -127,7 +127,9 @@ func apply_mood(mood: String) -> void:
 	var mist: float = float(m["mist"])
 	# Height fog: thick below the river's level plus `mist`, thinning above (Godot's height fog).
 	_env.fog_height = _water_below(_cam.global_position) + mist if mist > 0.0 else 0.0
-	_env.fog_height_density = 0.12 if mist > 0.0 else 0.0
+	# Godot's height fog thickens with depth below fog_height: ~0.012 more at the river's surface,
+	# a thin bank the banks and the water show through (0.12 buried the whole valley).
+	_env.fog_height_density = 0.002 if mist > 0.0 else 0.0
 	_sun.light_color = m["sun_color"]
 	_sun.light_energy = m["sun_energy"]
 	_sun.look_at_from_position(Vector3.ZERO, -sun_dir, Vector3.UP)
