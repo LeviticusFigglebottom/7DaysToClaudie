@@ -72,7 +72,9 @@ const LotPicker := preload("res://src/poi/lot_picker.gd")
 ## starts where it leaves that road (_leave_beside; TD-139).
 ## 19: a merged main street is routed again inside its town's disc on the 8 m ground, straight
 ## through the centre (_straight_through; TD-139).
-const VERSION: int = 19
+## 20: the companion's camp falls back to a wider ring and eased rules where the usual ones find no
+## spot (COMPANION_RELAX): every world has it (the tutorial ends with his distress call).
+const VERSION: int = 20
 ## Biome map ids by cell value (world.json `biome_map.ids`); append only.
 const BIOMES: PackedStringArray = ["conifer_forest", "birch_grove", "meadow", "rocky_slope", "burnt_forest", "fen"]
 const KINDS: PackedStringArray = ["hamlet", "village", "town"]
@@ -2253,14 +2255,24 @@ func _places() -> void:
 	# site (the pool entry's `ring`, m), off the roads, nothing leading to it.
 	for e3: Variant in pool:
 		var ce: Dictionary = e3
-		if str(ce.get("site", "")) != "companion" or int(ce.get("min_danger", 1)) > max_danger:
+		if str(ce.get("site", "")) != "companion":
 			continue
 		var cpd: PoiDef = db.call(&"get_def", &"poi", StringName(str(ce.get("poi", "")))) as PoiDef if db != null else null
 		if cpd == null:
 			continue
 		var rc := rng("places:companion:%s" % cpd.id)
-		for k4: int in _pool_count(ce, rc, density, area16):
-			if not _place_one(ce, Vector2(cpd.footprint), rc, wcfg):
+		# Every world has the camp: the tutorial ends with his distress call. Where the ring holds no
+		# spot by the usual rules (seeds 7 at size 5 and 21: a calm ring round the drop site, roads,
+		# slopes or water), each COMPANION_RELAX step widens the search and eases a rule.
+		for k4: int in maxi(1, _pool_count(ce, rc, density, area16)):
+			var placed: bool = false
+			for relax: int in COMPANION_RELAX + 1:
+				if _place_one(ce, Vector2(cpd.footprint), rc, wcfg, relax):
+					placed = true
+					if relax > 0:
+						warnings.append("%s placed at relax %d" % [cpd.id, relax])
+					break
+			if not placed:
 				warnings.append("no spot for %s" % cpd.id)
 	# The lift's crash site (VERSION 13) last of all, from its own stream.
 	for e5: Variant in pool:
@@ -2274,6 +2286,12 @@ func _places() -> void:
 		for k5: int in _pool_count(xe, rx, density, area16):
 			if not _place_one(xe, Vector2(xpd.footprint), rx, wcfg):
 				warnings.append("no spot for %s" % xpd.id)
+
+
+## Fallback steps for the companion's camp (_place_one's `relax`): 1 any danger and a ring from half
+## to 1.6 times as wide, 2 twice the relief, roads 8 m off and half the spacing, 3 a ring 120 m to
+## 2.4 km and water 8 m off.
+const COMPANION_RELAX: int = 3
 
 
 ## How many of a pool entry a world gets: its density per region times the map's regions (one more
@@ -2290,7 +2308,7 @@ func _pool_count(pe: Dictionary, r: RandomNumberGenerator, density: float, area1
 
 ## Tries to place one place of a pool entry: candidates for its site, the first that fits (false:
 ## none did).
-func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dictionary) -> bool:
+func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dictionary, relax: int = 0) -> bool:
 	var site: String = str(pe.get("site", "forest"))
 	var is_fw: bool = pe.has("framework")
 	var def_id: String = str(pe.get("framework", pe.get("poi", "")))
@@ -2300,13 +2318,30 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 	var max_relief: float = float(wcfg.get("max_relief", 7.0))
 	var margin: float = float(tun.get("region_margin", 72.0)) - 8.0
 	var mcfg: Dictionary = wcfg.get("mine", {})
+	var ra: Array = pe.get("ring", [300.0, 900.0])
+	var ring := Vector2(float(ra[0]), float(ra[1]))
+	var road_min: float = 4.0 if site == "roadside" else 18.0
+	var water_min: float = 14.0
+	var attempts: int = 90
+	# The companion's fallbacks (_place_one's callers pass relax 0 but for the camp).
+	if relax >= 1:
+		min_danger = 0
+		ring = Vector2(ring.x * 0.5, ring.y * 1.6)
+		attempts = 150
+	if relax >= 2:
+		max_relief *= 2.0
+		road_min = 8.0
+		spacing *= 0.5
+	if relax >= 3:
+		ring = Vector2(120.0, maxf(ring.y, 2400.0))
+		water_min = 8.0
+		attempts = 300
 	var pad: Vector2 = Vector2.ZERO
 	if site == "mine":
 		var pa: Array = pe.get("pad", [fp.x, fp.y])
 		pad = Vector2(float(pa[0]), float(pa[1]))
-	for attempt: int in 90:
-		var ra: Array = pe.get("ring", [300.0, 900.0])
-		var cand: Dictionary = _candidate(site, fp, r, pad.x, mcfg, min_danger, Vector2(float(ra[0]), float(ra[1])))
+	for attempt: int in attempts:
+		var cand: Dictionary = _candidate(site, fp, r, pad.x, mcfg, min_danger, ring)
 		if cand.is_empty():
 			continue
 		var origin: Vector2 = cand["origin"]
@@ -2321,14 +2356,14 @@ func _place_one(pe: Dictionary, fp: Vector2, r: RandomNumberGenerator, wcfg: Dic
 		if _hits_built(poly, spacing * 0.5):
 			continue
 		var road_gap: float = road_clearance(poly)
-		if road_gap < (4.0 if site == "roadside" else 18.0):
+		if road_gap < road_min:
 			continue
 		if site == "mine":
 			# Only the pad is levelled (by the composer); the hill over the levels stays as it is.
 			if water_clearance(poly) < 14.0 or is_nan(_mine_pad_height(def_id, origin, rot, pad, mcfg)):
 				continue
 		elif not keep_water:
-			if water_clearance(poly) < 14.0:
+			if water_clearance(poly) < water_min:
 				continue
 			var st: Dictionary = terrain.stats_in(poly)
 			if float(st["max"]) - float(st["min"]) > max_relief:
