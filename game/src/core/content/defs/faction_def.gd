@@ -111,6 +111,13 @@ func _validate(db: Node, out: PackedStringArray) -> void:
 	if float(standing.get("decay_per_day", 0.0)) < 0.0 or float(standing.get("spread", 30.0)) < 0.0 \
 			or float(standing.get("spread", 30.0)) > 180.0 or float(standing.get("max", 100.0)) <= 0.0:
 		out.append("%s: standing needs decay_per_day >= 0, spread 0-180 and max > 0" % ctx())
+	var reach: Dictionary = standing.get("reach", {})
+	if not reach.is_empty() and (float(reach.get("near", 300.0)) < 0.0 or float(reach.get("far", 1500.0)) <= float(reach.get("near", 300.0))
+			or float(reach.get("floor", 0.25)) < 0.0 or float(reach.get("floor", 0.25)) > 1.0):
+		out.append("%s: standing.reach needs 0 <= near < far and floor 0-1" % ctx())
+	if float(standing.get("chance_per_anger", 0.0)) < 0.0 or float(standing.get("chance_max", 1.0)) < 1.0 \
+			or float(standing.get("size_per_anger", 0.0)) < 0.0:
+		out.append("%s: standing needs chance_per_anger >= 0, chance_max >= 1 and size_per_anger >= 0" % ctx())
 	for key: String in ["chance"]:
 		for src: Dictionary in [scouts, raids]:
 			if src.has(key) and (src[key] as Array).size() != levels.size():

@@ -115,3 +115,57 @@ func test_only_the_outsiders_fire_in_front_frightens_them() -> void:
 	assert_eq(AshenBrain.fire_to_avoid(_fd, Vector3(1, 0, 0), Vector3.INF, [Vector3.ZERO]), Vector3.ZERO)
 	assert_eq(AshenBrain.fire_to_avoid(_fd, Vector3(20, 0, 0), Vector3.INF, [Vector3.ZERO]), Vector3.INF)
 	assert_gt(AshenBrain.near_fire(_fd, 1.0, 0.0, 1.0, false), AshenBrain.near_fire(_fd, 1.0, 1.0, 1.0, false))
+
+
+# --- TD-190: anger feeds how often and how many; near camps count more ---------------------------
+
+func test_a_near_camp_counts_fully_and_a_far_one_fades() -> void:
+	var r: Dictionary = _fd.standing.get("reach", {})
+	assert_false(r.is_empty(), "standing.reach is set")
+	assert_eq(AshenBrain.reach(_fd, 0.0), 1.0)
+	assert_eq(AshenBrain.reach(_fd, float(r["near"])), 1.0, "fully within near")
+	assert_almost_eq(AshenBrain.reach(_fd, float(r["far"]) * 2.0), float(r["floor"]), 0.001, "the floor beyond far")
+	var mid: float = AshenBrain.reach(_fd, (float(r["near"]) + float(r["far"])) * 0.5)
+	assert_true(mid < 1.0 and mid > float(r["floor"]), "fades between")
+	assert_eq(AshenBrain.reach(_fd, -1.0), 1.0, "unknown distance counts fully")
+
+
+func test_anger_raises_the_chance_up_to_its_cap_and_adds_raiders() -> void:
+	assert_eq(AshenBrain.anger_chance(_fd, 0.0), 1.0, "no anger, no change")
+	assert_gt(AshenBrain.anger_chance(_fd, 40.0), 1.0)
+	assert_eq(AshenBrain.anger_chance(_fd, 1000.0), float(_fd.standing["chance_max"]), "capped")
+	var per: float = float(_fd.standing["size_per_anger"])
+	assert_eq(AshenBrain.anger_size(_fd, per - 1.0), 0)
+	assert_eq(AshenBrain.anger_size(_fd, per * 2.0), 2)
+
+
+func test_an_angry_camp_raids_more_days_and_bigger() -> void:
+	var calm_days: int = 0
+	var angry_days: int = 0
+	var calm_size: int = 0
+	var angry_size: int = 0
+	for day: int in range(10, 210):
+		var c: Dictionary = AshenBrain.raid_roll(_fd, 4471, day, 2, 10, false)
+		var a: Dictionary = AshenBrain.raid_roll(_fd, 4471, day, 2, 10, false, "normal", 60.0)
+		if not c.is_empty():
+			calm_days += 1
+			calm_size += int(c["size"])
+		if not a.is_empty():
+			angry_days += 1
+			angry_size += int(a["size"])
+		if not c.is_empty():
+			assert_false(a.is_empty(), "the same day's roll: anger only adds raids, never takes one away")
+	assert_gt(angry_days, calm_days, "an angry camp raids on more days")
+	assert_gt(float(angry_size) / maxf(1.0, float(angry_days)), float(calm_size) / maxf(1.0, float(calm_days)), "and bigger")
+	for day2: int in range(10, 210):
+		var a2: Dictionary = AshenBrain.raid_roll(_fd, 4471, day2, 3, 300, false, "normal", 100.0)
+		if not a2.is_empty():
+			assert_true(int(a2["size"]) <= int(_fd.raids.get("max_size", 9)), "max_size still caps it")
+
+
+func test_the_leading_camp_is_the_angriest_by_effective_anger() -> void:
+	var states: Dictionary = {"near": {"anger": 30.0}, "far": {"anger": 50.0}}
+	assert_eq(AshenBrain.angriest(_fd, states, ["near", "far"]), "far", "with no distances, raw anger")
+	var r: Dictionary = _fd.standing["reach"]
+	var dists: Dictionary = {"near": 100.0, "far": float(r["far"]) * 2.0}
+	assert_eq(AshenBrain.angriest(_fd, states, ["near", "far"], dists), "near", "50 far off counts less than 30 next door")
