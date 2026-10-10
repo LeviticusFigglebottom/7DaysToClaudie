@@ -222,7 +222,7 @@
       "no_tether": true
     },
     "empty": {
-      "_doc": "Bare hands at the lower edge, ready: relaxed, the fingers lightly curled in a cascade (index least, little finger most) and lying together, the end joints nearly straight (player report 5: hooked further, they read as crooked claws).",
+      "_doc": "Bare hands at the lower edge, ready: relaxed, the fingers lightly and evenly curled (the little finger a little further) and lying together, the end joints nearly straight (player report 5: hooked further, they read as crooked claws).",
       "pose": {
         "R": {
           "grip": [
@@ -238,10 +238,10 @@
           "fist": 0.55,
           "thumb": 0.15,
           "curls": {
-            "index": 0.32,
-            "middle": 0.42,
-            "ring": 0.5,
-            "pinky": 0.58
+            "index": 0.28,
+            "middle": 0.34,
+            "ring": 0.4,
+            "pinky": 0.46
           },
           "elbow": [
             0.5,
@@ -264,10 +264,10 @@
           "fist": 0.55,
           "thumb": 0.15,
           "curls": {
-            "index": 0.32,
-            "middle": 0.42,
-            "ring": 0.5,
-            "pinky": 0.58
+            "index": 0.28,
+            "middle": 0.34,
+            "ring": 0.4,
+            "pinky": 0.46
           },
           "elbow": [
             -0.5,
@@ -1714,7 +1714,7 @@
       ]
     },
     "lighter": {
-      "_doc": "Lighter: upright in the left hand in front of the chest, the forearm rising from the lower left, fingers round its body, the thumb up on the wheel and the flame up and a little forward; the right hand down out of view.",
+      "_doc": "Lighter: upright in the left hand in front of the chest, the forearm rising from the lower left, fingers round its body, the thumb's pad down on the wheel (the lighter sits high in the fist, so the thumb rests on it instead of reaching over it: report 5's long, massive thumb) and the flame up and a little forward; the right hand down out of view.",
       "pose": {
         "L": {
           "grip": [
@@ -1728,7 +1728,7 @@
             0
           ],
           "fist": 1.1,
-          "thumb": 0.05,
+          "thumb": 0.2,
           "curls": {
             "index": 1.0,
             "middle": 1.1,
@@ -1800,7 +1800,7 @@
         ],
         "pos": [
           0,
-          -0.008,
+          0.004,
           0
         ]
       },

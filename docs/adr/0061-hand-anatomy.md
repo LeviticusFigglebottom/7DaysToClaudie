@@ -28,7 +28,7 @@ The two reported looks had their own causes:
 * **The massive thumb.** Not the lens: the lighter's thumb is 30 cm from the eye against the
   fingers' 35-40 (the near plane is far closer). The mesh's fingers were ~9% slimmer than an
   adult's while the thumb was full size, and its end segment (29 mm) long, so the thumb was drawn
-  1.6 times as wide as the index finger (1.67 turned over in the inspect; after: 1.43) (an adult's is ~1.3 side by side). Its pose, nearly
+  1.6 times as wide as the index finger (1.67 turned over in the inspect; after: 1.40 and 1.44) (an adult's is ~1.3 side by side). Its pose, nearly
   straight across the top of the lighter with the nail toward the eye, showed all of it.
 
 ## Decision
@@ -47,8 +47,11 @@ past) are unchanged.
 (`THUMB_DISTAL`) with its IP and tip a little slimmer; `FINGER_TOGETHER` cut to -3 / 0 / 2.5 / 5°
 so fingers held together lie side by side instead of crossing.
 
-**4. The empty idle** is a relaxed cascade (index 0.32 .. little finger 0.58, `together` 0.8)
-instead of loose fists.
+**4. Two holds.** The empty idle is relaxed, lightly and evenly curled (index 0.28 .. little
+finger 0.46, `together` 0.8) instead of loose fists. The lighter sits 12 mm higher in the fist
+(`item.pos`) with the thumb tucked a little (0.2): its pad rests on the wheel instead of the
+thumb reaching straight over the top toward the eye (drawn 1.40x the index finger's width, from
+1.61x).
 
 **5. A check on every baked frame** (`lib/fp_anatomy.py`, pure numpy). For each frame of each
 fp_* action, solved as the bake solves it, it measures from the posed bones:
