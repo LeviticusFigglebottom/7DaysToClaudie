@@ -21,6 +21,9 @@ var _center := Vector2i(999999, 999999)
 var _t: float = 0.0
 var _busy: int = 0
 var enabled: bool = true
+## Bake costs since setup (perf_capture --load-only): tiles started, main-thread time assembling
+## their source (total and worst, µs), and time from a bake's start to its mesh (total and worst, ms).
+var stats: Dictionary = {"tiles": 0, "main_us": 0, "main_us_max": 0, "baked": 0, "bake_ms": 0.0, "bake_ms_max": 0.0}
 
 
 func setup(w: Node) -> void:
@@ -167,6 +170,9 @@ func _bake(k: Vector2i) -> void:
 	_busy += 1
 	var t: Dictionary = _tiles[k]
 	t["baking"] = true
+	var us0: int = Time.get_ticks_usec()
+	t["t0"] = us0
+	stats["tiles"] = int(stats["tiles"]) + 1
 	# The terrain's faces (a few thousand height samples: 30-45 ms a tile in GDScript, two tiles a
 	# frame after the spawn: TD-324) are made on a worker; the rest of the source (bridges,
 	# obstructions, buildings: scene data) here. A tile over dug volume keeps it all here.
@@ -177,6 +183,7 @@ func _bake(k: Vector2i) -> void:
 	var terrain: TerrainManager = world.get(&"terrain") as TerrainManager
 	if terrain == null or _volume_in(terrain, area):
 		var inputs: Array = bake_inputs(k)
+		_note_main(us0)
 		NavigationServer3D.bake_from_source_geometry_data_async(inputs[0], inputs[1], _on_baked.bind(k, inputs[0]))
 		return
 	var inputs2: Array = bake_inputs(k, false)
@@ -185,6 +192,13 @@ func _bake(k: Vector2i) -> void:
 	var hfn: Callable = terrain.height_at
 	t["assembly"] = {"nm": inputs2[0], "src": inputs2[1], "out": out, "origin": Vector2(x0, z0), "cut": not cut.is_empty(),
 		"task": WorkerThreadPool.add_task(func() -> void: out[0] = terrain_faces(Vector2(x0, z0), count, hfn, cut), false, "nav tile terrain")}
+	_note_main(us0)
+
+
+func _note_main(us0: int) -> void:
+	var us: int = Time.get_ticks_usec() - us0
+	stats["main_us"] = int(stats["main_us"]) + us
+	stats["main_us_max"] = maxi(int(stats["main_us_max"]), us)
 
 
 ## Whether any column of the SDF volume over `area` is committed (dug or a cave's): its faces come
@@ -203,6 +217,7 @@ static func _volume_in(terrain: TerrainManager, area: Rect2) -> bool:
 
 ## A tile's terrain assembled on its worker: its source gets the faces and the bake starts.
 func _finish_assembly(k: Vector2i) -> void:
+	var us0: int = Time.get_ticks_usec()
 	var t: Dictionary = _tiles[k]
 	var a: Dictionary = t["assembly"]
 	WorkerThreadPool.wait_for_task_completion(a["task"])
@@ -210,6 +225,7 @@ func _finish_assembly(k: Vector2i) -> void:
 	var src: NavigationMeshSourceGeometryData3D = a["src"]
 	var o: Vector2 = a["origin"]
 	src.add_faces(a["out"][0], Transform3D(Basis.IDENTITY, Vector3(o.x, 0.0, o.y)) if bool(a["cut"]) else Transform3D.IDENTITY)
+	_note_main(us0)
 	NavigationServer3D.bake_from_source_geometry_data_async(a["nm"], src, _on_baked.bind(k, a["nm"]))
 
 
@@ -277,6 +293,11 @@ func _on_baked(k: Vector2i, nm: NavigationMesh) -> void:
 		return
 	var t: Dictionary = _tiles[k]
 	t["baking"] = false
+	if t.has("t0"):
+		var ms: float = float(Time.get_ticks_usec() - int(t["t0"])) / 1000.0
+		stats["baked"] = int(stats["baked"]) + 1
+		stats["bake_ms"] = float(stats["bake_ms"]) + ms
+		stats["bake_ms_max"] = maxf(float(stats["bake_ms_max"]), ms)
 	if not (t["region"] as RID).is_valid():
 		var r: RID = NavigationServer3D.region_create()
 		NavigationServer3D.region_set_map(r, world.get_world_3d().navigation_map)
@@ -403,10 +424,4 @@ func _add_pois(nm: NavigationMesh, src: NavigationMeshSourceGeometryData3D, k: V
 	# into `src`, a tile with a building lost its terrain and trees and baked empty, the building
 	# sitting at the origin (TD-340: no tile with a POI on it had any navmesh).
 	for root: Node in pois.call(&"nav_roots_in_rect", rect):
-		var part := NavigationMeshSourceGeometryData3D.new()
-		NavigationServer3D.parse_source_geometry_data(nm, part, root)
-		if not part.has_data():
-			continue
-		var xf: Transform3D = (root as Node3D).global_transform
-		var verts: PackedVector3Array = xf * part.get_vertices().to_byte_array().to_vector3_array()
-		src.append_arrays(verts.to_byte_array().to_float32_array(), part.get_indices())
+		NavigationServer3D.parse_source_geometry_data(nm, src, root)
