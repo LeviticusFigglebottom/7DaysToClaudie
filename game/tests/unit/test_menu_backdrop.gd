@@ -105,3 +105,18 @@ func test_the_scatter_keeps_out_of_the_water() -> void:
 	assert_eq(MenuFlight.water_level(grid, 15.0, 50.0), -INF, "past its half width")
 	assert_eq(MenuFlight.water_level(grid, 230.0, 230.0), 3.0, "in the lake")
 	assert_eq(MenuFlight.water_level(grid, 400.0, 400.0), -INF)
+
+
+func test_a_storm_passes_with_rain_in_front_of_the_lens() -> void:
+	assert_eq(MenuFlight.STILL_MOODS.count("storm"), 1)
+	assert_gt(int(MenuFlight.MOODS["storm"].get("rain", 0)), 0)
+	var cam := Transform3D(Basis.IDENTITY, Vector3(0, 30, 0))
+	var mmi: MultiMeshInstance3D = MenuFlight.rain_streaks(cam, 400, 7)
+	assert_eq(mmi.multimesh.instance_count, 400)
+	var xf: Array[Transform3D] = MenuFlight.rain_transforms(cam, 400, 7)
+	for t: Transform3D in xf:
+		assert_lt(t.origin.z, -3.9, "in front of the lens (it looks down -Z)")
+		assert_gt(t.basis.y.normalized().y, 0.9, "streaks fall near vertical")
+	assert_eq(MenuFlight.rain_transforms(cam, 50, 7)[9], MenuFlight.rain_transforms(cam, 50, 7)[9], "deterministic")
+	mmi.free()
+

@@ -1,8 +1,8 @@
 extends Node
 ## Renders the stills the menu and the intro show instead of drawing 3D live (ADR-0065), into
 ## --out <dir> (tools/stills.sh moves them to assets/generated/stills/ with their import sidecars):
-##   --shot menu   menu_0.png ... : MenuFlight's stills along the Tamsin at dusk (MenuBackdrop pans
-##                 across them)
+##   --shot menu   menu_0.png ... : MenuFlight's stills along the Tamsin (dusk, a misty dawn, a
+##                 storm; MenuBackdrop pans across them)
 ##   --shot wreck  intro_wreck.png: the intro's world card, the Lift 3 wreck at first light, from the
 ##                 start of the card's framing (IntroPlayer zooms in on it, as the shot pushed in)
 ## Each is drawn supersampled (SUPER) into a SubViewport and scaled down to SIZE: larger than a

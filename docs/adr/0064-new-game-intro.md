@@ -34,7 +34,9 @@ list of cards:
   tearing, the turbine winding down; TD-379).
 * **title**: the game's name and the tagline.
 
-Each card has `hold` seconds and an optional `sound` (or `sounds`). `music` names the intro's
+Each card has `hold` seconds and an optional `sound` (or `sounds`), and may carry a `bed`
+({sound, line}: a sound under the card from its line `line` until the next card cuts it; the
+Lift's engines failing under the last radio call). `music` names the intro's
 score. The placeholders `{day}`, `{time}` and `{hum_in}` are filled from the session; `{hum_in}`
 is the days until the first Hum in words, following the world rules.
 

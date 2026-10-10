@@ -13,7 +13,7 @@ extends Control
 ## the generated assets (or headless) the menu stays plain.
 
 const DIR: String = "res://assets/generated/stills/"
-const COUNT: int = 4
+const COUNT: int = 5
 ## Seconds each picture shows (fade in to fade out), and the dissolve between two.
 const HOLD: float = 17.0
 const DISSOLVE: float = 3.5
