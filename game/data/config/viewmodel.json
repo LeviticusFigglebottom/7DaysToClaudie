@@ -222,12 +222,12 @@
       "no_tether": true
     },
     "empty": {
-      "_doc": "Bare hands: loose fists at the lower edge, ready.",
+      "_doc": "Bare hands low at the lower edge, mostly below the frame (only the backs and the knuckle line show): relaxed and nearly straight, the fingers together in a gentle even curve, the end joints barely bent (player report 5: curled further, from above they read as claws).",
       "pose": {
         "R": {
           "grip": [
             0.2,
-            -0.175,
+            -0.22,
             -0.36
           ],
           "wrist": [
@@ -238,22 +238,22 @@
           "fist": 0.55,
           "thumb": 0.15,
           "curls": {
-            "index": 0.45,
-            "middle": 0.6,
-            "ring": 0.72,
-            "pinky": 0.85
+            "index": 0.12,
+            "middle": 0.15,
+            "ring": 0.19,
+            "pinky": 0.24
           },
           "elbow": [
             0.5,
             -0.4,
             0.5
           ],
-          "together": 1.0
+          "together": 0.8
         },
         "L": {
           "grip": [
             -0.2,
-            -0.175,
+            -0.22,
             -0.36
           ],
           "wrist": [
@@ -264,17 +264,17 @@
           "fist": 0.55,
           "thumb": 0.15,
           "curls": {
-            "index": 0.45,
-            "middle": 0.6,
-            "ring": 0.72,
-            "pinky": 0.85
+            "index": 0.12,
+            "middle": 0.15,
+            "ring": 0.19,
+            "pinky": 0.24
           },
           "elbow": [
             -0.5,
             -0.4,
             0.5
           ],
-          "together": 1.0
+          "together": 0.8
         }
       },
       "guard": {
@@ -1714,13 +1714,13 @@
       ]
     },
     "lighter": {
-      "_doc": "Lighter: upright in the left hand in front of the chest, the forearm rising from the lower left, fingers round its body, the thumb up on the wheel and the flame up and a little forward; the right hand down out of view.",
+      "_doc": "Lighter: upright in the left hand in front of the chest, the forearm rising from the lower left, fingers round its body, the thumb's pad down on the wheel (the lighter sits high in the fist, so the thumb rests on it instead of reaching over it: report 5's long, massive thumb) and the flame up and a little forward; the right hand down out of view.",
       "pose": {
         "L": {
           "grip": [
-            -0.09,
             -0.1,
-            -0.34
+            -0.13,
+            -0.42
           ],
           "wrist": [
             -15,
@@ -1728,7 +1728,7 @@
             0
           ],
           "fist": 1.1,
-          "thumb": 0.05,
+          "thumb": 0.2,
           "curls": {
             "index": 1.0,
             "middle": 1.1,
@@ -1800,7 +1800,7 @@
         ],
         "pos": [
           0,
-          -0.008,
+          0.004,
           0
         ]
       },
@@ -3380,7 +3380,7 @@
             "R.move": [
               -0.12,
               0.07,
-              0.19
+              0.18
             ],
             "R.rot": [
               62,
@@ -3401,7 +3401,7 @@
             "R.move": [
               -0.12,
               0.09,
-              0.2
+              0.185
             ],
             "R.rot": [
               76,
@@ -5460,7 +5460,7 @@
             "L.move": [
               0.04,
               0.05,
-              0.03
+              0.01
             ],
             "L.rot": [
               25,
