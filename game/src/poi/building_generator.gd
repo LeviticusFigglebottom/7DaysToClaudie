@@ -791,6 +791,24 @@ func _pick_entry(back: Dictionary, ground: Array) -> void:
 		"label": "Round the side: something clawed through the wall" if breach else "Round the side: a window is smashed in"}
 	back["state"] = "barricaded"
 	back["barricade"] = "furniture" if rng.randf() < 0.5 else "boards"
+	# A furniture pile stands 0.8 m deep inside, up to 1.6 m wide: where another doorway opens off
+	# the cell behind the back door (or the cells beside it along the wall) the pile shut that room
+	# off (cape cod 3, two-storey 5: the bathroom's only door, poi_walk). Boards go outside instead.
+	if str(back["barricade"]) == "furniture" and not _pile_clear(Vector2i(int(back["at"][0]), int(back["at"][1])), PoiLayout.SIDES.get(str(back["side"]), 0)):
+		back["barricade"] = "boards"
+
+
+## Whether a furniture pile inside the door on `side` of ground cell `c` keeps clear of every other
+## opening: none on the other edges of `c` or of the cells either side of it along the wall.
+func _pile_clear(c: Vector2i, side: int) -> bool:
+	var along: Vector2i = Vector2i(1, 0) if side in [0, 2] else Vector2i(0, 1)
+	for cc: Vector2i in [c, c + along, c - along]:
+		for s: int in 4:
+			if cc == c and s == side:
+				continue
+			if not _edge_free(0, cc, s):
+				return false
+	return true
 
 
 # --- Windows ---------------------------------------------------------------------------------------
