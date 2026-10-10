@@ -1012,9 +1012,12 @@ class BodyModel:
         x, y, z = q[:, 0], q[:, 1], q[:, 2]
         # below the mouth line (which tilts down towards the back), in front of the ear/TMJ
         mouth_y = -0.060 + 0.25 * (0.085 - z) * 0.35
-        below = 1 - smoothstep(mouth_y - 0.006, mouth_y + 0.004, y)
-        front = smoothstep(-0.020, 0.012, z)
-        lateral = 1 - smoothstep(0.050, 0.075, np.abs(x))
+        # Sharp at the lips (the mouth parts there), soft out on the cheeks: with a 1 cm step all
+        # round, an open jaw dropped the chin and a beard as one block with a seam at the cheeks.
+        soft = smoothstep(0.012, 0.045, np.abs(x))
+        below = 1 - smoothstep(mouth_y - 0.006 - 0.022 * soft, mouth_y + 0.004 + 0.010 * soft, y)
+        front = smoothstep(-0.035, 0.015, z)
+        lateral = 1 - smoothstep(0.045, 0.085, np.abs(x))
         # The neck below the jaw stays with the neck/head: 1 above the jaw's lower edge, 0 under it.
         # (Once 1 - smoothstep: 0 for every point above it, so no face skin ever followed the jaw,
         # only the teeth; a jaw that opened moved nothing you could see. TD-309.)
