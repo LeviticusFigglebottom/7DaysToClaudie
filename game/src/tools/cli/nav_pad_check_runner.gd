@@ -113,7 +113,7 @@ func _check(w: Node, inst: PoiInstance, id: StringName) -> void:
 		var ci: Vector3 = NavigationServer3D.map_get_closest_point(map, inside)
 		var co: Vector3 = NavigationServer3D.map_get_closest_point(map, outside)
 		if ci.distance_to(inside) > 2.0 or co.distance_to(outside) > 2.0:
-			bad.append("dir %d: off the mesh (inside %.1f m, outside %.1f m)" % [k, ci.distance_to(inside), co.distance_to(outside)])
+			bad.append("dir %d: off the mesh (inside %.1f m, outside %.1f m; %s)" % [k, ci.distance_to(inside), co.distance_to(outside), _ground_note(w, mid, outside)])
 			continue
 		var path: PackedVector3Array = NavigationServer3D.map_get_path(map, ci, co, true)
 		var length: float = 0.0
@@ -124,5 +124,58 @@ func _check(w: Node, inst: PoiInstance, id: StringName) -> void:
 			bad.append("dir %d: no path out (ends %.1f m short)" % [k, (path[path.size() - 1].distance_to(co) if path.size() > 0 else INF)])
 		elif length > straight * DETOUR + 4.0:
 			bad.append("dir %d: %.0f m for %.0f m" % [k, length, straight])
+	if OS.has_environment("NAVPAD_DEBUG"):
+		# A map of the ground around the building: '#' on the mesh, '.' off it (the closest mesh point
+		# more than 0.6 m away), every 2 m, north up.
+		var map2: RID = w.get_world_3d().navigation_map
+		for zz: int in range(-14, 15):
+			var row: String = ""
+			for xx: int in range(-14, 15):
+				var q := Vector3(mid.x + xx * 2.0, 0.0, mid.z + zz * 2.0)
+				q.y = float(w.call(&"height_at", q.x, q.z))
+				var cp: Vector3 = NavigationServer3D.map_get_closest_point(map2, q)
+				row += "#" if Vector2(cp.x - q.x, cp.z - q.z).length() < 0.6 and absf(cp.y - q.y) < 1.5 else ("^" if Vector2(cp.x - q.x, cp.z - q.z).length() < 0.6 else ".")
+			print("[navpad]   %s" % row)
+		# The camp's tile baked again here, whole and piece by piece: which source empties it.
+		var navn: Node = (w.get(&"ai") as Node).get(&"nav")
+		var tk: Vector2i = NavTiles.tile_of(mid)
+		var full: Array = navn.call(&"bake_inputs", tk)
+		var srcf: NavigationMeshSourceGeometryData3D = full[1]
+		print("[navpad]   tile %s source: %d verts, %d obstructions, bounds %s" % [tk, srcf.get_vertices().size(), srcf.get_projected_obstructions().size(), srcf.get_bounds()])
+		NavigationServer3D.bake_from_source_geometry_data(full[0], srcf)
+		print("[navpad]   whole: %d polygons" % (full[0] as NavigationMesh).get_polygon_count())
+		for part: String in ["terrain", "terrain+obstructions", "terrain+pois"]:
+			var nm2: NavigationMesh = (full[0] as NavigationMesh).duplicate()
+			nm2.clear_polygons()
+			var s2 := NavigationMeshSourceGeometryData3D.new()
+			navn.call(&"_add_terrain", s2, tk)
+			if part.contains("obstructions"):
+				navn.call(&"_add_obstructions", s2, tk)
+			if part.contains("pois"):
+				navn.call(&"_add_pois", nm2, s2, tk)
+			NavigationServer3D.bake_from_source_geometry_data(nm2, s2)
+			print("[navpad]   %s: %d polygons (%d verts)" % [part, nm2.get_polygon_count(), s2.get_vertices().size()])
 	_findings += bad.size()
 	print("[navpad] %s (%s): %s" % [id, inst.layout.def.id, "ok" if bad.is_empty() else "%d of %d directions: %s" % [bad.size(), DIRS, "; ".join(bad)]])
+
+
+## What stands between the building and a point: the steepest 1 m rise on the line from its middle
+## to the point, and the trees (the navmesh's vegetation obstructions) within 3 m of the line.
+func _ground_note(w: Node, a: Vector3, b: Vector3) -> String:
+	var steep: float = 0.0
+	var n: int = maxi(1, int(Vector2(a.x, a.z).distance_to(Vector2(b.x, b.z))))
+	var prev: float = float(w.call(&"height_at", a.x, a.z))
+	for i: int in range(1, n + 1):
+		var q: Vector3 = a.lerp(b, float(i) / n)
+		var h: float = float(w.call(&"height_at", q.x, q.z))
+		steep = maxf(steep, absf(h - prev))
+		prev = h
+	var trees: int = 0
+	var veg: Node = w.get(&"vegetation")
+	if veg != null and veg.has_method(&"obstacles_in_rect"):
+		var r := Rect2(Vector2(minf(a.x, b.x), minf(a.z, b.z)), Vector2(absf(a.x - b.x), absf(a.z - b.z))).grow(3.0)
+		for o: Dictionary in veg.call(&"obstacles_in_rect", r):
+			var pos: Vector3 = o["pos"]
+			if Geometry2D.get_closest_point_to_segment(Vector2(pos.x, pos.z), Vector2(a.x, a.z), Vector2(b.x, b.z)).distance_to(Vector2(pos.x, pos.z)) < 3.0:
+				trees += 1
+	return "steepest %.2f m a metre, %d trees by the line" % [steep, trees]
