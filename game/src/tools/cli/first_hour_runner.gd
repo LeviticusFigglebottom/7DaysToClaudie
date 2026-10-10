@@ -503,6 +503,7 @@ func _run() -> void:
 	if btn != null and btn.visible:
 		btn.pressed.emit()
 	await seconds(3.0)
+	_note_shelter("respawned")
 	await snap("respawned")
 
 	# --- Save and continue ---------------------------------------------------------------------------
@@ -523,6 +524,7 @@ func _run() -> void:
 	p = w.player
 	ui = w.ui
 	await seconds(3.0)
+	_note_shelter("continued")
 	await snap("continued")
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if args.has("--through") and (args.has("hum") or args.has("day21")):
@@ -848,6 +850,13 @@ func _teleport(at: Vector3) -> void:
 	p.velocity = Vector3.ZERO
 	await _stream(at)
 	await seconds(3.0)
+
+
+## Where the player stands and whether survival_env counts it as under a roof (the cold line says
+## "Light a fire" there, "Find shelter or a fire" in the open).
+func _note_shelter(when: String) -> void:
+	var env: Dictionary = w.call(&"survival_env", p.global_position) if w.has_method(&"survival_env") else {}
+	note("%s: sheltered %s at %s" % [when, str(env.get("sheltered", "?")), str(p.global_position.round())])
 
 
 ## Streams the world in around a spot the player was just moved to and waits until the chunks
