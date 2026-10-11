@@ -56,9 +56,15 @@ const SHOW_PER_RANK: int = 2
 const RENDER_FRAMES: int = 9
 ## Metres the eye may move between rankings before it ranks at once (a teleport, a respawn).
 const JUMP: float = 24.0
+## Metres from a probe's box within which the eye counts as in its room or entering it: that probe
+## jumps the render queue (player report 3: a room entered before its probe rendered stayed SDFGI
+## black for seconds while the town's other probes went first).
+const ENTER: float = 2.5
 
 ## Probes put back per ranking (SHOW_PER_RANK; tests raise it to check the ranking alone).
 var show_per_rank: int = SHOW_PER_RANK
+## ENTER, or below 0 to rank without putting the eye's room first (entry_light's before run).
+var enter: float = ENTER
 ## The drawn-frame clock the render queue runs on (tests step a fake one).
 var frames: Callable = Callable(Engine, &"get_frames_drawn")
 var _t: float = 0.0
@@ -120,6 +126,7 @@ func update(eye: Vector3) -> int:
 	_last_eye = eye
 	var now: int = int(frames.call())
 	var ranked: Array = _ranked(eye)
+	var first: int = _put_first(ranked, now)
 	var room: bool = frames_to_render() < show_per_rank * RENDER_FRAMES
 	var start: int = maxi(_rendered_by, now)
 	var fresh: int = 0
@@ -128,7 +135,7 @@ func update(eye: Vector3) -> int:
 		var live: bool = not _homes.has(p)
 		var show: bool = i < MAX_VISIBLE or (i < KEEP_VISIBLE and live)
 		if show and not live:
-			if room and fresh < show_per_rank and _unpark(p):
+			if room and fresh + first < show_per_rank and _unpark(p):
 				fresh += 1
 				_due[p] = start + fresh * RENDER_FRAMES
 		elif not show and live and int(_due.get(p, 0)) <= now:
@@ -136,6 +143,83 @@ func update(eye: Vector3) -> int:
 	if fresh > 0:
 		_rendered_by = start + fresh * RENDER_FRAMES
 	return shown()
+
+
+## The probes of the room the eye is in or entering (box within ENTER) go to the front of the
+## render queue: parked ones are put back at once, and when one of them hasn't rendered yet, the
+## other probes still waiting for their turn are parked so it is next. Each of those leaves a stale
+## queue entry the renderer drops at a frame's cost (see above), a few frames against the seconds
+## the room would wait behind them. Returns how many it put back.
+func _put_first(ranked: Array, now: int) -> int:
+	var urgent: Array[ReflectionProbe] = []
+	for e: Array in ranked:
+		if float(e[0]) >= enter:
+			break
+		urgent.append(e[1] as ReflectionProbe)
+	if urgent.is_empty():
+		return 0
+	# Where the last of them stands in the queue: a parked one would go to its end.
+	var last: int = -1
+	for p: ReflectionProbe in urgent:
+		if _homes.has(p):
+			last = 1 << 30
+		elif int(_due.get(p, 0)) > now:
+			last = maxi(last, int(_due[p]))
+	if last < 0:
+		return 0
+	# Park the probes ahead of them (those behind don't hold them up, and parking them each ranking
+	# would only churn the queue).
+	var dropped: int = 0
+	for v: Variant in _due.keys():
+		var q := v as ReflectionProbe
+		if is_instance_valid(q) and not urgent.has(q) and int(_due[q]) > now and int(_due[q]) < last and not _homes.has(q):
+			_park(q)
+			dropped += 1
+	var at: int = now + dropped
+	var back: int = 0
+	for p: ReflectionProbe in urgent:
+		if _homes.has(p):
+			if not _unpark(p):
+				continue
+			back += 1
+			at += RENDER_FRAMES
+			_due[p] = at
+		elif int(_due.get(p, 0)) > now:
+			at += RENDER_FRAMES
+			_due[p] = mini(int(_due[p]), at)
+	# The queue now ends with the last of them or with a probe still waiting behind them.
+	var end: int = at
+	for v: Variant in _due:
+		end = maxi(end, int(_due[v]))
+	_rendered_by = end
+	return back
+
+
+## How far a probe's fill is in, 0..1: 0 parked, rising over its RENDER_FRAMES once its turn comes,
+## 1 rendered (the fallback fill fades out against it; EnvironmentController).
+func readiness(p: ReflectionProbe) -> float:
+	if not is_shown(p):
+		return 0.0
+	var left: int = int(_due.get(p, 0)) - int(frames.call())
+	return clampf(1.0 - float(left) / RENDER_FRAMES, 0.0, 1.0)
+
+
+## The managed probe whose box holds `eye` (the smallest, where boxes overlap), parked or live; null
+## outside every room.
+func room_probe(eye: Vector3) -> ReflectionProbe:
+	var best: ReflectionProbe = null
+	var best_v: float = INF
+	for v: Variant in _probes:
+		if not is_instance_valid(v):
+			continue
+		var p := v as ReflectionProbe
+		if not p.visible or box_distance(p, eye) > 0.0:
+			continue
+		var vol: float = p.size.x * p.size.y * p.size.z
+		if vol < best_v:
+			best_v = vol
+			best = p
+	return best
 
 
 ## Parks every probe but the `k` nearest `eye` and makes those live at once, so they are all the

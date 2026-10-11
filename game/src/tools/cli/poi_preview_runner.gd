@@ -55,6 +55,13 @@ var _game_hour: float = -1.0
 ## --room: the room letters to look across with --inside (each level's first that it has), in
 ## place of its largest room.
 var _rooms: PackedStringArray = []
+## --pending 0.6,1.0,1.4: after each --inside view (with --game-env), the room's probe is parked and
+## the view shot again lit by the stand-in fill alone (EnvironmentController.force_pending) at each
+## interior_light pending_fill value, then once with the probe back and the fill half faded (the
+## hand-over a player sees): to calibrate the fill against the room's settled light.
+var _pending_fills: PackedFloat32Array = []
+var _env: EnvironmentController = null
+const InteriorProbeBudgetRef := preload("res://src/poi/interior_probe_budget.gd")
 var _world: Node3D
 var _sun: DirectionalLight3D
 var _ground: MeshInstance3D
@@ -109,6 +116,10 @@ func _parse_args() -> void:
 			"--room":
 				i += 1
 				_rooms = a[i].split(",", false)
+			"--pending":
+				i += 1
+				for v: String in a[i].split(",", false):
+					_pending_fills.append(float(v))
 			"--views":
 				i += 1
 				_views = a[i].split(",", false)
@@ -133,6 +144,7 @@ func _setup_environment() -> void:
 		ec.name = "Environment"
 		ec.clock = clock
 		_world.add_child(ec)
+		_env = ec
 		_sun = ec.sun
 		print("POI_PREVIEW game light at %.2f h, preset %s" % [_game_hour, Settings.graphics_preset])
 	else:
@@ -345,7 +357,36 @@ func _interiors(id: String, layout: PoiLayout) -> void:
 			cam.make_current()
 			# The game's light needs SDFGI to converge and the probes to render (one at a time).
 			await _shoot("%s_inside_L%d_%s" % [id, li, view], 8 if _game_hour < 0.0 else 48)
+			if not _pending_fills.is_empty() and _env != null:
+				await _pending_shots("%s_inside_L%d_%s" % [id, li, view], cam.global_position)
 			cam.queue_free()
+
+
+## The --pending shots for the view just taken from `eye` (see _pending_fills).
+func _pending_shots(stem: String, eye: Vector3) -> void:
+	var room: ReflectionProbe = null
+	for n: Node in get_tree().get_nodes_in_group(&"interior_probe"):
+		var rp := n as ReflectionProbe
+		if rp != null and InteriorProbeBudgetRef.box_distance(rp, eye) <= 0.0:
+			room = rp
+	if room == null:
+		print("POI_PREVIEW %s: the eye is in no room's probe box" % stem)
+		return
+	var cfg: Dictionary = Content.config(&"interior_light")
+	var keep: float = float(cfg.get("pending_fill", 1.0))
+	var home: Node = room.get_parent()
+	room.set_meta(&"probe_xf", room.global_transform)
+	home.remove_child(room)
+	for f: float in _pending_fills:
+		cfg["pending_fill"] = f
+		_env.force_pending(room, 1.0)
+		await _shoot("%s_pending_%.1f" % [stem, f], 48)
+	# The hand-over: the probe back (rendered anew) with the fill half faded at the data's value.
+	cfg["pending_fill"] = keep
+	home.add_child(room)
+	_env.force_pending(room, 0.5)
+	await _shoot("%s_handover" % stem, 48)
+	_env.force_pending(null)
 
 
 ## Hides roofs and every piece/prop/node whose origin is above `cut` (rebuilding MultiMeshes);

@@ -166,18 +166,18 @@ func test_a_probe_waiting_to_render_is_not_parked_yet() -> void:
 	var probes: Array[ReflectionProbe] = _street(150)
 	_budget.update(Vector3(1001.0, 1.5, 0.0))
 	assert_eq(_shown_ids(probes), [100, 101])
-	# A jump across town, before either has rendered.
-	assert_eq(_budget.update(Vector3(-5.0, 1.5, 0.0)), 2, "both still wait their turn: neither is parked")
+	# A jump across town (not into a room: that one would jump the queue), before either has rendered.
+	assert_eq(_budget.update(Vector3(-15.0, 1.5, 0.0)), 2, "both still wait their turn: neither is parked")
 	assert_eq(_shown_ids(probes), [100, 101])
 	_frame += Budget.RENDER_FRAMES
-	_budget.update(Vector3(-5.0, 1.5, 0.0))
+	_budget.update(Vector3(-15.0, 1.5, 0.0))
 	assert_eq(_shown_ids(probes), [0, 1, 101], "100 had its turn and is parked; 101 waits; the new nearest come")
 	_frame += Budget.RENDER_FRAMES
-	_budget.update(Vector3(-5.0, 1.5, 0.0))
+	_budget.update(Vector3(-15.0, 1.5, 0.0))
 	assert_eq(_shown_ids(probes), [0, 1], "then 101 goes too")
 	for i: int in 15:
 		_frame += 2 * Budget.RENDER_FRAMES
-		_budget.update(Vector3(-5.0, 1.5, 0.0))
+		_budget.update(Vector3(-15.0, 1.5, 0.0))
 	assert_eq(_shown_ids(probes), _ids(0, 32))
 
 
@@ -256,3 +256,51 @@ func test_focus_leaves_only_the_nearest_few_live() -> void:
 	assert_eq(_shown_ids(probes), [49, 50, 51, 52], "the room the eye is in and its three nearest")
 	assert_eq(_budget.shown(), 4)
 	assert_eq(_budget.frames_to_render(), 4 * Budget.RENDER_FRAMES, "all four counted, rendered before or not")
+
+
+func test_the_room_the_eye_enters_jumps_the_render_queue() -> void:
+	# Player report 3: a block-walled room near black by day. Entered before its probe's turn, a room
+	# waited behind every probe already queued (a town's worth after a walk down the street).
+	_budget.show_per_rank = Budget.SHOW_PER_RANK
+	var probes: Array[ReflectionProbe] = _street(150)
+	_budget.update(Vector3(1001.0, 1.5, 0.0))
+	assert_eq(_shown_ids(probes), [100, 101], "100 and 101 wait their turns")
+	# Into room 0 before either has rendered: the two ahead are parked and 0 renders next.
+	_budget.update(Vector3(1.0, 1.5, 0.0))
+	assert_eq(_shown_ids(probes), [0, 1], "the room entered goes live (then its neighbour), the others waiting ahead are parked")
+	assert_lt(_budget.frames_to_render(), 2 * Budget.RENDER_FRAMES + 3, "0 renders next (after a frame per dropped entry)")
+	assert_eq(_budget.readiness(probes[0]), 0.0, "not rendered yet")
+	_frame += Budget.RENDER_FRAMES + 2
+	assert_almost_eq(_budget.readiness(probes[0]), 1.0, 1e-6, "rendered after its turn")
+
+
+func test_entering_a_room_whose_probe_is_queued_moves_it_ahead() -> void:
+	_budget.show_per_rank = Budget.SHOW_PER_RANK
+	var probes: Array[ReflectionProbe] = _street(150)
+	# 100 then 101 queued; the eye steps to 101's door (1.4 m from its box, 2.6 m from 100's).
+	_budget.update(Vector3(1001.0, 1.5, 0.0))
+	_budget.update(Vector3(1005.6, 1.5, 0.0))
+	_frame += Budget.RENDER_FRAMES + 1
+	assert_eq(_budget.readiness(probes[101]), 1.0, "101 rendered first (after the dropped entry)")
+	assert_lt(_budget.readiness(probes[100]), 1.0, "100, which was ahead of it, comes after")
+
+
+func test_readiness_rises_over_a_probe_s_turn_and_parked_is_zero() -> void:
+	_budget.show_per_rank = Budget.SHOW_PER_RANK
+	var probes: Array[ReflectionProbe] = _street(10)
+	assert_eq(_budget.readiness(probes[3]), 0.0, "parked")
+	_budget.update(Vector3(31.0, 1.5, 0.0))
+	assert_eq(_budget.readiness(probes[3]), 0.0, "its turn hasn't come")
+	_frame += Budget.RENDER_FRAMES / 2
+	var half: float = _budget.readiness(probes[3])
+	assert_true(half > 0.0 and half < 1.0, "part way through its turn: %f" % half)
+	_frame += Budget.RENDER_FRAMES
+	assert_eq(_budget.readiness(probes[3]), 1.0)
+
+
+func test_room_probe_finds_the_room_parked_or_live() -> void:
+	var probes: Array[ReflectionProbe] = _street(10)
+	assert_eq(_budget.room_probe(Vector3(51.0, 1.5, 1.0)), probes[5], "parked: by where it stood")
+	_update(Vector3(51.0, 1.5, 1.0))
+	assert_eq(_budget.room_probe(Vector3(51.0, 1.5, 1.0)), probes[5], "live")
+	assert_null(_budget.room_probe(Vector3(55.0, 1.5, 0.0)), "between rooms: outside")
