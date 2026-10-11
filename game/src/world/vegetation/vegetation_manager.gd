@@ -11,6 +11,8 @@ extends Node3D
 ##  * harvesting (pebbles, deadfall, plants) via HarvestTarget proxies for the interaction ray
 ## Changes are stored in WorldState.trees[chunk][index] = {state, day} (felled/harvested).
 
+## Main-thread time a streaming chunk build spends a frame (_build_some).
+const BUILD_BUDGET_US: int = 8000
 const CHUNK: float = 64.0
 const NEAR_CHUNKS: int = 3
 const GROUND_CHUNKS: int = 1
@@ -379,14 +381,18 @@ func _update(pos: Vector3) -> void:
 			continue
 		var n: Dictionary = _nodes.get(key, {})
 		if built:
-			if n.is_empty() or bool(n.get("ground", false)) != want_ground:
+			if n.is_empty() or n.has("todo") or bool(n.get("ground", false)) != want_ground:
 				_accum = 1.0
 			continue
 		if n.is_empty():
-			_build_chunk(key, false)
+			_build_chunk(key, false, BUILD_BUDGET_US)
 			built = true
-			if want_ground:
+			if want_ground or (_nodes[key] as Dictionary).has("todo"):
 				_accum = 1.0
+		elif n.has("todo"):
+			if not _build_some(key, BUILD_BUDGET_US) or want_ground:
+				_accum = 1.0
+			built = true
 		elif bool(n.get("ground", false)) != want_ground:
 			_set_ground(key, want_ground)
 			built = true
@@ -416,7 +422,7 @@ func settle_report(radius: int = NEAR_CHUNKS) -> String:
 		if absi(off.x) > radius or absi(off.y) > radius:
 			continue
 		var key := Vector2i(_center.x + off.x, _center.y + off.y)
-		if not _nodes.has(key) and _rt_for_chunk(key) != null:
+		if (not _nodes.has(key) or (_nodes[key] as Dictionary).has("todo")) and _rt_for_chunk(key) != null:
 			missing.append(key)
 	return "" if missing.is_empty() else "chunks not built: %s (data: %s)" % [missing, missing.map(func(k: Vector2i) -> bool: return _data.has(k))]
 
@@ -476,36 +482,63 @@ func _harvestables(layers: Dictionary) -> Array:
 	return out
 
 
-func _build_chunk(key: Vector2i, ground: bool) -> void:
+## A chunk's trees and rocks: its holder now, its MultiMesh groups `budget_us` at a time (-1: all at
+## once). A chunk with groups left keeps them in its entry's "todo" and _update carries on next frame.
+## All at once, a chunk of a few species (three LOD MultiMeshes a tree species, filled per instance)
+## was 29-32 ms of one frame (perf_capture "~veg update").
+func _build_chunk(key: Vector2i, ground: bool, budget_us: int = -1) -> void:
 	var holder := Node3D.new()
 	holder.name = "V_%d_%d" % [key.x, key.y]
 	add_child(holder)
-	var entry: Dictionary = {"holder": holder, "ground": false, "ground_nodes": []}
-	_nodes[key] = entry
+	var todo: Array = []
 	var layers: Dictionary = _data[key]
 	for layer: String in ["tree", "medium"]:
 		var groups: Dictionary = _group(key, layers.get(layer, []))
 		for gk: String in groups:
-			var parts: PackedStringArray = gk.split("|")
-			var sp: SpeciesDef = Content.get_def(&"species", StringName(parts[0])) as SpeciesDef
-			var variant: int = int(parts[1])
-			var insts: Array = groups[gk]
-			if sp.veg_kind == "tree":
-				for lod: int in 3:
-					if _lod_end(lod) <= 0.0:
-						continue
-					holder.add_child(_mmi(_lod_mesh(sp, variant, lod), insts, 0.0 if lod == 0 else _lod_end(lod - 1), _lod_end(lod), true))
-				continue
-			var end: float = minf(float(sp.lod_distances[1]) * 2.0, 220.0)
-			# Boulders cast shadows (they sit in the light like the trees); loose pebbles don't.
-			var shadows: bool = sp.veg_kind != "rock" or sp.collides
-			if sp.veg_kind == "rock" and end > ROCK_LOD_SPLIT and ModelLibrary.has_model(sp.models[variant % sp.models.size()] + "_lod1"):
-				holder.add_child(_mmi(_lod_mesh(sp, variant, 0), insts, 0.0, ROCK_LOD_SPLIT, shadows))
-				holder.add_child(_mmi(_lod_mesh(sp, variant, 1), insts, ROCK_LOD_SPLIT, end, shadows))
-			else:
-				holder.add_child(_mmi(_lod_mesh(sp, variant, 0), insts, 0.0, end, shadows))
-	if ground:
+			todo.append([gk, groups[gk]])
+	_nodes[key] = {"holder": holder, "ground": false, "ground_nodes": [], "todo": todo, "want_ground": ground}
+	_build_some(key, budget_us)
+
+
+## Builds `key`'s next groups until `budget_us` is spent (at least one; -1: all), then its ground if
+## it was asked for. True once nothing is left.
+func _build_some(key: Vector2i, budget_us: int) -> bool:
+	var entry: Dictionary = _nodes[key]
+	var todo: Array = entry.get("todo", [])
+	var holder: Node3D = entry["holder"]
+	var t0: int = Time.get_ticks_usec()
+	while not todo.is_empty():
+		var g: Array = todo.pop_front()
+		_build_group(holder, str(g[0]), g[1])
+		if budget_us >= 0 and Time.get_ticks_usec() - t0 >= budget_us:
+			break
+	if not todo.is_empty():
+		return false
+	entry.erase("todo")
+	if bool(entry.get("want_ground", false)):
 		_set_ground(key, true)
+	return true
+
+
+## One species and variant's MultiMeshes in a chunk (a tree's LODs, a rock's near and far).
+func _build_group(holder: Node3D, gk: String, insts: Array) -> void:
+	var parts: PackedStringArray = gk.split("|")
+	var sp: SpeciesDef = Content.get_def(&"species", StringName(parts[0])) as SpeciesDef
+	var variant: int = int(parts[1])
+	if sp.veg_kind == "tree":
+		for lod: int in 3:
+			if _lod_end(lod) <= 0.0:
+				continue
+			holder.add_child(_mmi(_lod_mesh(sp, variant, lod), insts, 0.0 if lod == 0 else _lod_end(lod - 1), _lod_end(lod), true))
+		return
+	var end: float = minf(float(sp.lod_distances[1]) * 2.0, 220.0)
+	# Boulders cast shadows (they sit in the light like the trees); loose pebbles don't.
+	var shadows: bool = sp.veg_kind != "rock" or sp.collides
+	if sp.veg_kind == "rock" and end > ROCK_LOD_SPLIT and ModelLibrary.has_model(sp.models[variant % sp.models.size()] + "_lod1"):
+		holder.add_child(_mmi(_lod_mesh(sp, variant, 0), insts, 0.0, ROCK_LOD_SPLIT, shadows))
+		holder.add_child(_mmi(_lod_mesh(sp, variant, 1), insts, ROCK_LOD_SPLIT, end, shadows))
+	else:
+		holder.add_child(_mmi(_lod_mesh(sp, variant, 0), insts, 0.0, end, shadows))
 
 
 func _set_ground(key: Vector2i, on: bool) -> void:
