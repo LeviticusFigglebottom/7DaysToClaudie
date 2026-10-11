@@ -143,6 +143,12 @@ func _run() -> void:
 			print("[perf] frames over 33 ms while they rose: %d" % slow.size())
 			for sl: Array in slow.slice(0, 12):
 				print("[perf]   %s" % sl[1])
+			var navn: Node = (w.get(&"ai") as Node).get(&"nav") if w.get(&"ai") != null else null
+			if navn != null:
+				var st: Dictionary = navn.get(&"stats")
+				print("[perf] nav tiles: %d started, %d baked; main thread %.1f ms a tile (worst %.1f); start to mesh %.0f ms a tile (worst %.0f)" % [
+					int(st["tiles"]), int(st["baked"]), float(st["main_us"]) / 1000.0 / maxf(1.0, float(st["tiles"])), float(st["main_us_max"]) / 1000.0,
+					float(st["bake_ms"]) / maxf(1.0, float(st["baked"])), float(st["bake_ms_max"])])
 			print("[perf] buildings settled %.1f s after the spawn: %d built, %d in the registry; longest frame meanwhile %.0f ms" % [
 				float(Time.get_ticks_msec() - t0) / 1000.0, (pm.get(&"instances") as Dictionary).size(), (pm.get(&"registry") as PoiRegistry).entries.size(), worst])
 			# What the buildings rising added (TD-324: RSS grew ~165 MB over the window).

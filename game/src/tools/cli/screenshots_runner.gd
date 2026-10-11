@@ -61,6 +61,16 @@ const SHOTS: Array[Dictionary] = [
 		"fov": 50.0, "cam_height": 1.5, "look_height": 1.1},
 	{"name": "clinic_waiting", "pos": Vector3(8, 1.6, 2106), "look": Vector3(4, 1.0, 2100), "hour": 11.0, "weather": "overcast", "fov": 80.0,
 		"poi_view": {"poi": "tamsin_clinic", "level": 0, "cam": [4.4, 1.5, 9.3], "look": [4.2, 0.75, 13.0], "sleepers": ["waiting_1", "waiting_2", "waiting_3"]}},
+	# Block-walled rooms by day (player report 3, ADR-0050): the Cordon garage's office and stock
+	# room (boarded windows, barricaded and locked doors) and its bay, and the pharmacy's stockroom.
+	{"name": "garage_office_day", "pos": Vector3(20, 1.6, 2005), "look": Vector3(16, 1.0, 2008), "hour": 13.0, "weather": "clear", "fov": 75.0,
+		"poi_view": {"poi": "cordon_gas", "level": 0, "cam": [12.6, 1.6, 0.5], "look": [9.4, 0.9, 3.6]}},
+	{"name": "garage_stock_day", "pos": Vector3(20, 1.6, 2005), "look": Vector3(16, 1.0, 2008), "hour": 13.0, "weather": "clear", "fov": 75.0,
+		"poi_view": {"poi": "cordon_gas", "level": 0, "cam": [19.6, 1.6, 0.5], "look": [15.4, 0.9, 3.6]}},
+	{"name": "garage_bay_day", "pos": Vector3(20, 1.6, 2005), "look": Vector3(16, 1.0, 2008), "hour": 13.0, "weather": "clear", "fov": 75.0,
+		"poi_view": {"poi": "cordon_gas", "level": 0, "cam": [8.5, 1.6, 0.5], "look": [1.0, 0.9, 6.0]}},
+	{"name": "pharmacy_stock_day", "pos": Vector3(-60, 1.6, 2240), "look": Vector3(-60, 1.0, 2235), "hour": 13.0, "weather": "clear", "fov": 75.0,
+		"poi_view": {"poi": "pell_crossing/pharmacy", "level": 0, "cam": [15.6, 1.6, 0.5], "look": [6.4, 0.9, 4.5]}},
 	{"name": "supply_drop", "pos": Vector3(-306, 1.7, 2312), "look": Vector3(-296, 4.0, 2302), "hour": 17.8, "weather": "clear", "drop": true, "settle": 10.0},
 	{"name": "record_tab", "pos": Vector3(-296, 2.2, 2302), "look": Vector3(-286, 0.5, 2294), "hour": 11.0, "weather": "clear", "ui": "record"},
 	{"name": "options_menu", "pos": Vector3(-296, 2.2, 2302), "look": Vector3(-286, 0.5, 2294), "hour": 11.0, "weather": "clear", "ui": "options"},
@@ -380,10 +390,12 @@ func _run() -> void:
 	start["poi_ring"] = false
 	game.call(&"start_new_game", start)
 	var t0: int = Time.get_ticks_msec()
-	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < (1200000 if random_world else 300000):
+	# 20 minutes either way: with every building raised at once (no ring), the main map takes over
+	# five on software Vulkan.
+	while (game.get(&"world") == null or not bool(game.world.is_ready)) and Time.get_ticks_msec() - t0 < 1200000:
 		await get_tree().process_frame
 	var w: Node = game.world
-	if w == null:
+	if w == null or not bool(w.is_ready):
 		printerr("SHOT world did not load")
 		get_tree().quit(1)
 		return
@@ -623,7 +635,7 @@ func _shoot(w: Node, cam: Camera3D, p: Player, shot: Dictionary) -> void:
 	var img: Image = get_viewport().get_texture().get_image()
 	var path: String = _out.path_join("%s.png" % shot["name"])
 	img.save_png(path)
-	print("SHOT %s" % path)
+	print("SHOT %s (mean luma %.3f)" % [path, ImageStats.mean_luma(img)])
 	_mem_report(str(shot["name"]))
 	_probe_report(str(shot["name"]), cam.global_position)
 	for pr: ReflectionProbe in refreshed:
