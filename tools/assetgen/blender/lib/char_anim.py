@@ -1744,6 +1744,52 @@ def write_action(arm_obj, skel: Skeleton, name: str, baked: list):
     return act
 
 
+def act_vault(rig, p, n=27):
+    """Over a window's sill (TD-011, Enemy's VAULT): the Enemy carries the body from one side of the
+    wall to the other on an arc over the sill in VAULT_TIME (0.9 s = 27 frames), so the clip is in
+    place on that moving root. It reaches for the sill, plants both hands and pushes, tucks the
+    knees up as the hips go over, swings the lead leg through and drops into a crouch on the far
+    side, then straightens back to the stance. Feet on IK relative to the root (-y forward)."""
+    base = base_stand(p)
+    a, b = _lead(p)
+    tracks = {
+        a: [(0, 0, 0, 0, 0), (4, 0, 0, -12, 1), (9, -0.10, 0.34, 18, 0), (14, -0.38, 0.26, 4, 0),
+            (19, -0.30, 0.0, 0, 0), (23, -0.12, 0.0, 0, 0), (27, 0, 0, 0, 0)],
+        b: [(0, 0, 0, 0, 0), (6, 0.02, 0.04, -24, 1), (11, 0.06, 0.40, 26, 0), (16, -0.16, 0.30, 8, 0),
+            (21, -0.06, 0.0, 0, 0), (27, 0, 0, 0, 0)],
+    }
+    reach = _rel(base, {"hips.flex": 18, "spine.flex": 10, "chest.flex": 8, "jaw.open": 16,
+                        "upper_arm.L.flex": 72, "upper_arm.R.flex": 70, "upper_arm.L.abd": 22, "upper_arm.R.abd": 24,
+                        "forearm.L.flex": 0, "forearm.R.flex": 2, "hand.L.flex": -36, "hand.R.flex": -34},
+                 {"hips.z": -0.07})
+    plant = _rel(base, {"hips.flex": 34, "spine.flex": 16, "chest.flex": 12, "jaw.open": 22,
+                        "upper_arm.L.flex": 46, "upper_arm.R.flex": 44, "upper_arm.L.abd": 26, "upper_arm.R.abd": 28,
+                        "forearm.L.flex": -10, "forearm.R.flex": -8, "hand.L.flex": -58, "hand.R.flex": -56,
+                        "shoulder.L.shrug": 10, "shoulder.R.shrug": 10},
+                 {"hips.z": -0.12})
+    over = _rel(base, {"hips.flex": 46, "spine.flex": 20, "chest.flex": 16, "jaw.open": 18,
+                       "upper_arm.L.flex": 14, "upper_arm.R.flex": 12, "upper_arm.L.abd": 30, "upper_arm.R.abd": 30,
+                       "forearm.L.flex": -6, "forearm.R.flex": -4, "hand.L.flex": -64, "hand.R.flex": -62,
+                       "shoulder.L.shrug": 14, "shoulder.R.shrug": 14},
+                {"hips.z": 0.02})
+    swing = _rel(base, {"hips.flex": 24, "spine.flex": 12, "chest.flex": 6, "jaw.open": 14,
+                        "upper_arm.L.flex": 52, "upper_arm.R.flex": 40, "upper_arm.L.abd": 40, "upper_arm.R.abd": 44,
+                        "forearm.L.flex": 20, "forearm.R.flex": 26, "hand.L.flex": -10, "hand.R.flex": -12},
+                 {"hips.z": -0.02})
+    land = _rel(base, {"hips.flex": 32, "spine.flex": 16, "chest.flex": 10, "jaw.open": 20,
+                       "upper_arm.L.flex": 58, "upper_arm.R.flex": 54, "upper_arm.L.abd": 30, "upper_arm.R.abd": 34,
+                       "forearm.L.flex": 24, "forearm.R.flex": 28, "hand.L.flex": 0, "hand.R.flex": 0},
+                {"hips.z": -0.16})
+    ks = Keys(base, [(0, reach), (6, plant, "in"), (11, over, "inout"), (16, swing, "inout"), (21, land, "in"),
+                     (27, base, "inout")])
+    frames = []
+    for f in range(n + 1):
+        prm = ks.at(f)
+        level_head(prm, p, 14.0, 0.7)
+        frames.append(_plant(rig, prm, f, tracks, 0.0))
+    return frames
+
+
 def hollowed_extras():
     """Clips only the Hollowed have, outside actions_table() so the living table (living_anim,
     which starts from it) does not inherit them. The Enemy falls back without them (old bodies)."""
@@ -1752,6 +1798,7 @@ def hollowed_extras():
         ("knockdown", 36, False, act_knockdown),
         ("spit", 40, False, act_spit),
         ("charge", 36, True, act_charge),
+        ("vault", 27, False, act_vault),
     ]
 
 
