@@ -34,7 +34,7 @@ BOLT_F = 0.0
 SCOPE_Z = 0.043
 # How far the bolt handle is bent down about the bore (deg, TD-294): enough that the lifted knob
 # shows clear of the ocular bell from the first-person camera (fp_measure FP_READ, >= 2 cm).
-BOLT_BEND = 35.0
+BOLT_BEND = 40.0
 
 
 def _side(mb, outline, thick, mat, *, x=0.0, chamfer=0.0, uv_scale=1.0):
