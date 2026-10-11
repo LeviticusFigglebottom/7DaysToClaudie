@@ -12,8 +12,12 @@ const HIDDEN := Vector3(-0.2, -0.42, -0.34)
 const RAISED := Vector3(-0.085, -0.075, -0.3)
 const SCREEN := Vector2i(640, 400)
 const MAP_PX: int = 256
-## Characters of the 14 px caption that fit beside the map's left edge on the screen.
-const CAPTION_CHARS: int = 32
+## Characters of the caption that fit beside the map's left edge at its smallest size
+## (CAPTION_SIZES): a longer name is cut short, anything shorter is shown whole.
+const CAPTION_CHARS: int = 40
+## The caption's font sizes, largest first: it takes the first one its text fits at (the hub's
+## nit: "THE UNMAPPED COUN… · SECTOR A1" was cut at a fixed 14 px).
+const CAPTION_SIZES: Array[int] = [14, 13, 12, 11]
 const WAKE_COLOR := Color(0.95, 0.85, 0.4)
 
 var raised: bool = false
@@ -226,7 +230,10 @@ func _refresh() -> void:
 	_hum.text = _hum_text()
 	var w: Node = Game.world
 	if w != null and w.get(&"terrain") != null and w.get(&"player") != null:
-		_caption.text = map_caption((w.terrain as TerrainManager).world, (w.player as Node3D).global_position)
+		var cap: String = map_caption((w.terrain as TerrainManager).world, (w.player as Node3D).global_position)
+		if cap != _caption.text:
+			_caption.text = cap
+			_caption.add_theme_font_size_override(&"font_size", caption_size(cap, _caption.get_theme_font(&"font"), _caption.size.x))
 	_ensure_map()
 	_markers.queue_redraw()
 
@@ -316,6 +323,14 @@ static func map_caption(wd: WorldDef, pos: Vector3) -> String:
 	if name_.length() + sector.length() > CAPTION_CHARS:
 		name_ = name_.left(maxi(1, CAPTION_CHARS - sector.length() - 1)).strip_edges() + "…"
 	return name_ + sector
+
+
+## The largest of CAPTION_SIZES the caption fits at in `width` px (the smallest if none).
+static func caption_size(text: String, font: Font, width: float) -> int:
+	for fs: int in CAPTION_SIZES:
+		if font == null or font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= width:
+			return fs
+	return CAPTION_SIZES[-1]
 
 
 ## The open chapter's next two Program directives with their progress.
