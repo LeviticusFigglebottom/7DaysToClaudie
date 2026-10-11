@@ -357,6 +357,9 @@ func _hands() -> void:
 		if shot.has("action") and not vm.freeze_action(StringName(str(shot["action"])), float(shot.get("frame", 0)) / 30.0):
 			print("WRIST_AUDIT FAIL no action %s" % shot["action"])
 			_fails += 1
+		# The other hand's item for a moment (the lighter lighting a molotov's rag), as ThrowHand shows it.
+		if shot.has("offhand"):
+			vm.show_offhand(StringName(str(shot["offhand"])), 999.0)
 		await _frames(6)
 		await _snap("hands_%s" % n)
 		vm.release_action()
