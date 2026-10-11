@@ -47,12 +47,36 @@ var _seats_done: bool = false
 
 ## Route cues on the entry windows (RouteCues, ADR-0022) go in once the building is in the tree.
 var _cues_built: bool = false
+## Navigation links through its ground-floor windows while it is in the tree (WindowLinks, TD-011).
+var _window_links: Array[RID] = []
 
 
 func _ready() -> void:
 	if not _cues_built and layout != null:
 		_cues_built = true
 		RouteCues.build(self)
+
+
+func _enter_tree() -> void:
+	if layout == null or not _window_links.is_empty():
+		return
+	# Deferred: the builder adds the pieces and the manager places the building before it settles.
+	_build_window_links.call_deferred()
+
+
+func _build_window_links() -> void:
+	if not is_inside_tree() or not _window_links.is_empty():
+		return
+	var ground := Callable()
+	if Game.world != null and Game.world.has_method(&"height_at"):
+		var w: Node = Game.world
+		ground = func(p: Vector3) -> float: return float(w.call(&"height_at", p.x, p.z))
+	_window_links = WindowLinks.build(self, get_world_3d().navigation_map, ground)
+
+
+func _exit_tree() -> void:
+	WindowLinks.free_links(_window_links)
+	_window_links.clear()
 
 
 func setup(p_layout: PoiLayout, p_id: StringName) -> void:
@@ -566,6 +590,9 @@ func check_player_at(world_pos: Vector3) -> void:
 ## alarms strung on it go off. `by_player`: false when a Hollowed (the Hum) broke it.
 func on_opening_event(op_id: String, at: Vector3, by_player: bool = true) -> void:
 	_fire_event("opening:" + op_id, at)
+	for rid: RID in _window_links:
+		if str(WindowLinks.info(rid).get("opening", "")) == op_id:
+			WindowLinks.refresh(rid)
 	for tid: String in _alarms_on.get(op_id, []):
 		var piece: Node = traps.get(tid)
 		if piece != null and is_instance_valid(piece) and piece.has_method(&"trip"):

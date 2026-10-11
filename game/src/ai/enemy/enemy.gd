@@ -22,7 +22,7 @@ extends CharacterBody3D
 ## outsider's fire and throw spears (through the SPIT state).
 
 enum State { SLEEP, WAKING, IDLE, WANDER, INVESTIGATE, CHASE, ATTACK, BREAK, SCREAM, STAGGER, HORDE, DEAD, SPIT, CHARGE,
-	OBSERVE, FLEE }
+	OBSERVE, FLEE, VAULT }
 
 const LAYER: int = 1 << 4
 const CORPSE_LAYER: int = 1 << 7
@@ -60,6 +60,9 @@ const NOTICE_DRAIN: float = 0.5
 ## against (world, structures, props, vegetation), and how long a detour holds after the last bump.
 const DETOUR_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 12)
 const DETOUR_HOLD: float = 1.2
+## Climbing through a window (TD-011): seconds over the sill, and how far the feet clear it.
+const VAULT_TIME: float = 0.9
+const VAULT_CLEAR: float = 0.1
 ## Root motion of the Hollowed's committed clips (char_anim "Root motion contract", keep in step):
 ## clip -> [metres, from, to] (fractions of the clip). The body travels that far while the clip
 ## plays, the clip's feet authored around it so they stay planted. Lunges go forward
@@ -161,6 +164,9 @@ var _stagger_lock: float = 0.0
 ## After the Hum: seconds until this survivor roots into the soil (despawns) when unobserved.
 var _root_t: float = -1.0
 var _resume_state: State = State.IDLE
+## A window being climbed through (TD-011, WindowLinks): {"info": the link's, "to": the far end,
+## "from" / "t0" once over the sill}; empty otherwise.
+var _vault: Dictionary = {}
 ## Root motion in progress (RECOIL / LUNGE): direction, speed and its window in _state_t.
 var _rm_dir := Vector3.ZERO
 var _rm_speed: float = 0.0
@@ -344,6 +350,7 @@ func _ready() -> void:
 	agent.radius = maxf(0.35, cap.radius)
 	agent.height = 1.7 if quad.is_empty() else 0.8
 	add_child(agent)
+	agent.link_reached.connect(_on_link_reached)
 	if not perch.is_empty():
 		# On its seat or bed, posed for this body's size (the animation offsets scale with it).
 		var place: Dictionary = SleeperAnchors.body_origin(perch, visual.scale)
@@ -575,6 +582,9 @@ func _physics_body(frame_delta: float) -> void:
 				if _attack_cd <= 0.0:
 					_attack_cd = def.atk("cooldown", 1.5) * 1.1
 					_strike_structure()
+		State.VAULT:
+			if _vault_step(p, dist):
+				return
 		State.OBSERVE, State.FLEE:
 			want = tribe.move(p, dist, delta) if tribe != null else Vector3.ZERO
 		State.HORDE:
@@ -688,7 +698,7 @@ func _move(want: Vector3, delta: float, dist: float) -> void:
 func _lod_every(p: Player, dist: float) -> int:
 	if p == null or ally != null or dist < LOD_NEAR:
 		return 1
-	if state in [State.ATTACK, State.CHARGE, State.SPIT, State.STAGGER, State.BREAK, State.SCREAM, State.WAKING]:
+	if state in [State.ATTACK, State.CHARGE, State.SPIT, State.STAGGER, State.BREAK, State.SCREAM, State.WAKING, State.VAULT]:
 		return 1
 	# Hunting something other than the player (a wolf pack's prey, a foe of a hostile faction):
 	# ticked by how close it is to that, so a chase away from the player still closes and kills.
@@ -837,6 +847,73 @@ func _move_dir_body(to: Vector3) -> Vector3:
 				d = step
 	d.y = 0.0
 	return d.normalized() if d.length() > 0.05 else Vector3.ZERO
+
+
+## Reached a window's link on its path (TD-011): tear out what's in it, then climb through.
+func _on_link_reached(details: Dictionary) -> void:
+	if state not in [State.CHASE, State.HORDE, State.INVESTIGATE] or ally != null or crawling or _far:
+		return
+	var rid: RID = details.get("rid", RID())
+	var info: Dictionary = WindowLinks.info(rid)
+	if info.is_empty():
+		return
+	# The far end from where it reached the link (the details carry only the near one).
+	var to: Vector3 = WindowLinks.far_end(rid, details.get("position", global_position))
+	_vault = {"info": info, "to": to}
+	_resume_state = state
+	_set_state(State.VAULT)
+
+
+## One tick of VAULT. Whole glass or boards in the window: torn at as in BREAK. Then over the sill
+## in VAULT_TIME s along an arc whose feet clear it, collision off (the frame is narrower than the
+## capsule is wide). Returns true while climbing (the body is placed, not moved).
+func _vault_step(p: Player, dist: float) -> bool:
+	var close: bool = p != null and _now() - last_seen_time < 1.0 and dist <= def.atk("range", 1.5) + 0.5
+	if _vault.is_empty() or (close and not _vault.has("t0")):
+		_set_state(State.ATTACK if close else _resume_state)
+		return false
+	if not _vault.has("t0"):
+		var blk: Node3D = WindowLinks.blocker(_vault["info"])
+		if blk != null:
+			if _state_t > 20.0:
+				_set_state(_resume_state)
+				return false
+			break_target = blk
+			_face(blk.global_position)
+			if _attack_cd <= 0.0:
+				_attack_cd = def.atk("cooldown", 1.5) * 1.1
+				_strike_structure()
+			return false
+		_vault["from"] = global_position
+		_vault["t0"] = _state_t
+		_shape.set_deferred(&"disabled", true)
+		_face(_vault["to"])
+		visual.play_once(&"vault", 1.0, [&"stumble", &"attack_structure"] as Array[StringName])
+	var from: Vector3 = _vault["from"]
+	var to: Vector3 = _vault["to"]
+	var u: float = clampf((_state_t - float(_vault["t0"])) / VAULT_TIME, 0.0, 1.0)
+	var pos: Vector3 = from.lerp(to, u)
+	var lift: float = maxf(0.0, float((_vault["info"] as Dictionary)["sill"]) + VAULT_CLEAR - maxf(from.y, to.y))
+	pos.y += lift * sin(PI * u)
+	global_position = pos
+	velocity = Vector3.ZERO
+	rotation.y = lerp_angle(rotation.y, _yaw_target, minf(1.0, get_physics_process_delta_time() * 6.0))
+	if u >= 1.0:
+		_set_state(_resume_state)
+	return true
+
+
+## Leaving VAULT (done, given up or knocked out of it): collision back on, and a climb cut short
+## puts the body at the nearer end, never in the wall.
+func _end_vault() -> void:
+	if _vault.has("t0"):
+		var from: Vector3 = _vault["from"]
+		var to: Vector3 = _vault["to"]
+		global_position = to if global_position.distance_to(to) < global_position.distance_to(from) else from
+		_shape.set_deferred(&"disabled", false)
+	_vault = {}
+	break_target = null
+	_nav_goal = Vector3.INF  # a fresh path from this side
 
 
 ## Whether a door/window/board/wall being torn at has already given way.
@@ -1946,6 +2023,8 @@ func _set_state(s: State) -> void:
 		# up off the ground (a knockdown cut short): standing capsule again
 		_down = false
 		_fit_shape()
+	if state == State.VAULT:
+		_end_vault()
 	_rise_at = -1.0
 	_rm_speed = 0.0
 	_stumble_t = 0.0
@@ -1981,7 +2060,7 @@ func _enter_anim() -> void:
 
 
 func _update_anim(want: Vector3) -> void:
-	if state in [State.SLEEP, State.WAKING, State.ATTACK, State.SCREAM, State.STAGGER, State.DEAD, State.BREAK, State.SPIT]:
+	if state in [State.SLEEP, State.WAKING, State.ATTACK, State.SCREAM, State.STAGGER, State.DEAD, State.BREAK, State.SPIT, State.VAULT]:
 		return
 	if _stumble_t > 0.0:
 		return  # the stumble one-shot plays out

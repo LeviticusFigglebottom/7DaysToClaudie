@@ -26,11 +26,13 @@ COMPANIONS = {
     # Program fatigues (shirt worn out over the trousers, sleeves rolled), a lineman's leather
     # harness over them (shoulder straps and a wide belt), tan work gloves, laced work boots with
     # climbing spurs strapped up the inside of the shins, a canvas pack with a white hard hat
-    # clipped to its flap, a hatchet in his right hand.
+    # hung by its chin strap off the pack, a hatchet in his right hand.
     "ezra_vane": {
         "seed": 1301, "height": 1.81, "sex": "m", "build": 0.55, "belly": 0.4, "gaunt": 0.35,
         "hunch": 0.04, "head_forward": 0.04, "head_tilt": 0.0, "brow": 0.75,
-        "claw": 0.08, "jaw_drop": 1.0, "mouth_open": 0.0, "eye_open": 0.3, "lid_droop": 0.8, "wall_eye": 1.0,
+        "claw": 0.08, "jaw_drop": 1.0, "mouth_open": 0.0, "eye_open": 0.55, "lid_droop": 0.45, "wall_eye": 0.0,
+        # A living man's eyes (TD-302): straight, set back under weathered lids, not the Hollowed's.
+        "eye_depth": 0.0035, "eye_radius": 0.0108,
         "teeth_missing": 0.0, "gum_recede": 0.2, "bruise": 0.0, "blood": 0.0, "grime": 0.3,
         "arm_hang": -31.0,
         "outfit": {"tops": [{"type": "shirt", "sleeve": 0.72, "hem": -0.08, "collar": True, "neck_front": 0.04,
