@@ -934,7 +934,10 @@
         ]
       },
       "attack": "torch",
-      "block": 0.3
+      "block": 0.3,
+      "fixed_roll": [
+        "L"
+      ]
     },
     "flashlight": {
       "_doc": "Flashlight: overhand in the left fist, the lens out of the little-finger side so the beam goes where you look; the forearm crosses the lower left. The right hand down out of view (it comes up to guard).",
@@ -2014,7 +2017,10 @@
           -0.4,
           0.4
         ]
-      }
+      },
+      "fixed_roll": [
+        "R"
+      ]
     },
     "rifle": {
       "_doc": "Bolt-action rifle (ADR-0057): a two-handed long gun at the low ready, the stock in the right shoulder's line, the barrel forward and a touch in. The gun lies in the LEFT fist under the fore-end (hand: L; item rot turns its pointing frame onto the palm, scaled to 0.85 so it fits the arms' reach), so the right hand is free to leave the wrist of the stock and work the bolt; both hands are where the pose solver keeps them (TD-294: the left was authored past its reach and the solver moved it 10 cm, turning the gun so its stock sat by the right ear and the right hand hung 20 cm off it), the right on the stock's wrist; every right-hand key is placed on the gun where the solver puts it at that key, checked in the baked arms with fp_measure.gd. The bolt work stays close to the rest pose (the rifle low across the frame, the left hand on the fore-end in view, the right forearm in from the bottom-right); the bolt handle is bent down (item_firearms BOLT_BEND) so its knob shows clear of the scope's ocular bell on screen (fp_measure FP_READ). No tether reading with it up (both hands busy). aim: the scope's ocular (socket_sight) comes up onto the line of sight 7 cm before the eye; the scope picture takes over from there.",
@@ -3009,8 +3015,8 @@
             },
             "R": {
               "grip": [
-                0.01,
-                -0.135,
+                -0.079,
+                -0.103,
                 -0.25
               ],
               "dir": [
@@ -7198,7 +7204,8 @@
           {},
           "inout"
         ]
-      ]
+      ],
+      "fixed_roll": []
     },
     "fire_rifle": {
       "_doc": "A shot and the bolt (played over equip.attack_time + bolt_time): the rifle bucks up and back into the shoulder, then comes down a little and turns its right side to the eye (the action low in the frame's right half, the bent-down knob clear of the scope) while the right hand, its forearm in from the bottom-right, goes from the wrist to the bolt knob: up, back (the empty flies), forward, down, and back to the wrist. parts: the rifle's `bolt` node, turned about the bore (deg) and slid along it (m).",
