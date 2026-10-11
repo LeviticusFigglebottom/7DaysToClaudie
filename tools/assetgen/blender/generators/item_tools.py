@@ -197,13 +197,13 @@ def crude_spear(p):
     r1, r2 = 0.0152, 0.0128
     lo = K.branch_path(1.16, seed, bend=0.01, n=14, start=(0, 0, -0.71))
     K.stick(mb, lo, r1, r1 * 0.9, sides=9, seed=seed, lumpy=0.04)
-    # upper stick: overlaps the lower one for ~0.15 m on its +X side, then bends onto the axis. A
+    # upper stick: overlaps the lower one for ~0.11 m on its +X side, then bends onto the axis. A
     # 0.24 m overlap held side by side read as two parallel shafts where the guard brings the spear
     # across the lens (hands review); the upper stick also starts 0.1 m higher to keep its length.
     up = []
     for i in range(16):
         t = i / 15
-        z = 0.30 + t * 0.71
+        z = 0.34 + t * 0.67
         x = (r1 + r2) * 0.96 * (1 - common.smoothstep(0.16, 0.38, t))
         up.append(Vector((x + lo[-1].x * common.smoothstep(0.16, 0.45, t), lo[-1].y * common.smoothstep(0.16, 0.45, t), z)))
     K.stick(mb, up, r2, r2 * 0.88, sides=9, seed=seed + 1, caps=(True, False), lumpy=0.04)
@@ -215,11 +215,12 @@ def crude_spear(p):
     K.tube(mb, carve, [rr * (1 - 0.72 * t) for t in (0.0, 0.25, 0.5, 0.72)], sides=7, mat="item_wood_raw", caps=(False, False), smooth=False, rot=0.3)
     K.tube(mb, char, [rr * (1 - 0.72) * (1 - (t - 0.72) / 0.28 * 0.97) for t in (0.72, 0.86, 0.96, 1.0)], sides=7, mat="item_wood_charred",
            caps=(False, True), smooth=False, rot=0.3)
-    # two lashings around both sticks (elliptical wraps)
-    for k, (za, zb) in enumerate(((0.315, 0.348), (0.400, 0.432))):
+    # one lashing round both sticks the length of their overlap (elliptical wraps): with two and
+    # bare wood between, the joint read as two shafts side by side across the lens
+    for k, (za, zb) in enumerate(((0.345, 0.448),)):
         cx = (r1 + r2) * 0.48
         pts = []
-        turns = 6
+        turns = 16
         for i in range(turns * 12 + 1):
             t = i / (turns * 12)
             th = 2 * math.pi * turns * t + seed
