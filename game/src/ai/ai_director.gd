@@ -25,6 +25,13 @@ var enemies: Dictionary = {}
 var _pop_t: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _ids: int = 0
+## Bodies waiting to be spawned, one a frame: {"do": a Callable that spawns one, "models": the
+## bodies it may wear}. The front one waits until ModelWarmup has its models (a body's first load
+## of its .glb on this thread was ~33 ms), and a group of three in one frame was a 60 ms hitch every
+## time the wanderers topped up (perf_capture: "~ai spawn enter").
+var _spawn_queue: Array[Dictionary] = []
+
+const ModelWarmup := preload("res://src/world/model_warmup.gd")
 
 
 func setup_world(w: Node) -> void:
@@ -65,14 +72,18 @@ func spawn(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Enemy:
 	if bool(opts.get("guardian", false)):
 		opts = opts.duplicate()
 		opts["tier"] = guardian_tier(StringName(str(opts["tier"])))
+	var t_setup: int = Time.get_ticks_usec()
 	var e := Enemy.new()
 	e.setup(id, def, self, opts)
+	StreamMeter.note("ai spawn setup", t_setup)
 	e.name = String(id).replace(":", "_")
 	# Placed before entering the tree: _ready() takes its home, wander anchor and facing from the
 	# transform it has then (placing afterwards left every body facing south, homed at the origin).
 	e.position = to_local(pos) if is_inside_tree() else pos
 	e.rotation.y = float(opts.get("yaw", _rng.randf() * TAU))
+	var t_enter: int = Time.get_ticks_usec()
 	add_child(e)
+	StreamMeter.note("ai spawn enter", t_enter)
 	if opts.has("target"):
 		e.notice(opts["target"])
 	enemies[id] = e
@@ -150,7 +161,7 @@ func _heat_response(t: Dictionary) -> void:
 		# the noise has drawn a hound pack: it comes in on the scent
 		var from: Vector3 = _offscreen_point(target, 60.0, 90.0)
 		if from != Vector3.INF and _roaming_count() < MAX_ROAMING:
-			spawn_pack(&"hollow_hound", from, {"target": target})
+			spawn_pack(&"hollow_hound", from, {"target": target}, true)
 			Log.info("ai", "heat response 'hounds' at %s (heat %.0f)" % [target, t["heat"]])
 		return
 	match str(t["kind"]):
@@ -167,14 +178,15 @@ func _heat_response(t: Dictionary) -> void:
 		var def: EnemyDef = Content.enemy(id)
 		if def != null and def.gamestage_min > _gamestage():
 			id = &"hollow"
-		spawn(id, _ground(origin + Vector3(_rng.randf_range(-3, 3), 0.0, _rng.randf_range(-3, 3))), {"target": target + Vector3(_rng.randf_range(-6, 6), 0, _rng.randf_range(-6, 6))})
+		spawn_later(id, _ground(origin + Vector3(_rng.randf_range(-3, 3), 0.0, _rng.randf_range(-3, 3))), {"target": target + Vector3(_rng.randf_range(-6, 6), 0, _rng.randf_range(-6, 6))})
 	Log.info("ai", "heat response '%s' at %s (heat %.0f)" % [t["kind"], target, t["heat"]])
 
 
 ## A hound pack (ADR-0034): `def.behavior.pack.size` hounds of `enemy_id` round `pos`, each knowing
 ## the others (Enemy.pack) and its place in their spread. opts are passed to every spawn (a
-## "target" sends the pack to look there). Returns the hounds.
-func spawn_pack(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Array[Enemy]:
+## "target" sends the pack to look there). Returns the hounds; with `later` they come a hound a
+## frame (_spawn_queue) and the array fills as they do.
+func spawn_pack(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}, later: bool = false) -> Array[Enemy]:
 	var out: Array[Enemy] = []
 	var def: EnemyDef = Content.enemy(enemy_id)
 	if def == null:
@@ -188,13 +200,21 @@ func spawn_pack(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Ar
 			o["id"] = "%s:%d" % [opts["id"], i]
 		if opts.has("target"):
 			o["target"] = (opts["target"] as Vector3) + Vector3(_rng.randf_range(-5, 5), 0, _rng.randf_range(-5, 5))
-		var e: Enemy = spawn(enemy_id, _ground(at) if world != null else at, o)
-		if e != null:
-			out.append(e)
-	for i: int in out.size():
-		out[i].pack = out
-		out[i].pack_slot = i
+		var where: Vector3 = _ground(at) if world != null else at
+		if later:
+			# A hound a frame (see _spawn_queue); each joins the pack's one shared array as it comes.
+			_queue_spawn(enemy_id, func() -> void: _join_pack(out, spawn(enemy_id, where, o)))
+		else:
+			_join_pack(out, spawn(enemy_id, where, o))
 	return out
+
+
+func _join_pack(pack: Array[Enemy], e: Enemy) -> void:
+	if e == null:
+		return
+	pack.append(e)
+	e.pack = pack
+	e.pack_slot = pack.size() - 1
 
 
 ## Whether hound packs may appear at this gamestage (the world setting, and the hound's own
@@ -245,8 +265,26 @@ func _gamestage() -> int:
 
 func _process(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
+	if not _spawn_queue.is_empty():
+		var next: Dictionary = _spawn_queue[0]
+		if ModelWarmup.want(next["models"]):
+			_spawn_queue.pop_front()
+			(next["do"] as Callable).call()
 	_process_body(delta)
 	StreamMeter.note("ai", t0)
+
+
+## Queues one body's spawn for a later frame (one a frame, once its models are loaded; see
+## _spawn_queue). Groups that come in out of sight (wanderers, heat responses, hound packs) arrive
+## a body a frame, which nobody can see; anything that wants its bodies now still calls spawn().
+func spawn_later(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> void:
+	_queue_spawn(enemy_id, func() -> void: spawn(enemy_id, pos, opts))
+
+
+func _queue_spawn(enemy_id: StringName, do: Callable) -> void:
+	var models: PackedStringArray = EnemyVisual.candidate_bodies(Content.enemy(enemy_id))
+	ModelWarmup.request(models)
+	_spawn_queue.append({"do": do, "models": models})
 
 
 func _process_body(delta: float) -> void:
@@ -285,8 +323,10 @@ func _process_body(delta: float) -> void:
 	if hum.active:
 		return
 	var want: int = _wanted_wanderers(ppos)
-	if wanderers < want:
+	if wanderers < want and _spawn_queue.is_empty():
+		var t_group: int = Time.get_ticks_usec()
 		_spawn_group(ppos)
+		StreamMeter.note("ai group", t_group)
 
 
 func _wanted_wanderers(ppos: Vector3) -> int:
@@ -318,7 +358,7 @@ func _spawn_group(ppos: Vector3) -> void:
 	var hc: Dictionary = Content.config(&"hounds").get("spawn", {})
 	var chance: float = float(hc.get("chance", 0.12)) * (float(hc.get("night_mult", 2.0)) if Game.session.clock.is_night() else 1.0)
 	if hounds_allowed(gs) and _rng.randf() < chance:
-		spawn_pack(&"hollow_hound", pos)
+		spawn_pack(&"hollow_hound", pos, {}, true)
 		return
 	var n: int = _rng.randi_range(1, 3)
 	for i: int in n:
@@ -326,7 +366,7 @@ func _spawn_group(ppos: Vector3) -> void:
 		var def: EnemyDef = Content.enemy(id)
 		if def == null or def.gamestage_min > gs:
 			id = &"hollow"
-		spawn(id, _ground(pos + Vector3(_rng.randf_range(-4, 4), 0.0, _rng.randf_range(-4, 4))))
+		spawn_later(id, _ground(pos + Vector3(_rng.randf_range(-4, 4), 0.0, _rng.randf_range(-4, 4))))
 
 
 ## The biome whose spawns apply at (x, z): an organic town's whole ground spawns as town, not only
@@ -414,3 +454,7 @@ func alive_count() -> int:
 		if is_instance_valid(e) and e.is_alive() and e.ally == null:
 			n += 1
 	return n
+
+
+func _exit_tree() -> void:
+	ModelWarmup.finish()

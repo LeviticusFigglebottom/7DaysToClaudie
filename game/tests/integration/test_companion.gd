@@ -602,6 +602,120 @@ func test_on_an_errand_he_gets_round_a_wall_section_too_high_to_climb() -> void:
 	assert_true(_taken(ref), "round the wall to it (at %s)" % e.global_position)
 
 
+## TD-310: ladders are on their own navigation layer, which only his agent adds; his path up to a
+## loft runs over the ladder's link and he climbs it (hand-made regions: a floor and a loft 3 m up,
+## joined only by the ladder).
+func _loft_with_ladder() -> Array:
+	_box(Vector3(25, 2.95, 0), Vector3(10, 0.1, 10))  # the loft floor, 3 m up
+	var lad := PoiPieces.Ladder.new()
+	lad.bottom_local = Vector3(19.0, 0, 0)
+	lad.top_local = Vector3(20.6, 3.0, 0)
+	lad.height = 3.0
+	_world.add_child(lad)
+	lad.position = Vector3(19.6, 0, 0)
+	var map: RID = _world.get_world_3d().navigation_map
+	var rids: Array[RID] = []
+	for r: Array in [[0.0, 19.5, 0.0], [20.2, 30.0, 3.0]]:
+		var nm := NavigationMesh.new()
+		var x0: float = r[0]
+		var x1: float = r[1]
+		var y: float = r[2]
+		nm.vertices = PackedVector3Array([Vector3(x0, y, -6), Vector3(x0, y, 6), Vector3(x1, y, 6), Vector3(x1, y, -6)])
+		nm.add_polygon(PackedInt32Array([0, 1, 2, 3]))
+		var rid: RID = NavigationServer3D.region_create()
+		NavigationServer3D.region_set_map(rid, map)
+		NavigationServer3D.region_set_navigation_mesh(rid, nm)
+		rids.append(rid)
+	rids.append(LadderLinks.make(map, lad.ends()[1], lad.ends()[0], {"ladder": lad}))
+	var until: int = Time.get_ticks_msec() + 5000
+	while NavigationServer3D.map_get_iteration_id(map) == 0 and Time.get_ticks_msec() < until:
+		await get_tree().physics_frame
+	while Time.get_ticks_msec() < until and [Vector3(5, 0, 0), Vector3(25, 3, 0)].any(func(q: Vector3) -> bool:
+			return NavigationServer3D.map_get_closest_point(map, q).distance_to(q) > 0.1):
+		await get_tree().physics_frame
+	return rids
+
+
+func test_he_follows_the_player_up_a_ladder_into_a_loft() -> void:
+	var e: Enemy = await _recruited()
+	var rids: Array = await _loft_with_ladder()
+	var map: RID = _world.get_world_3d().navigation_map
+	var walk_only: PackedVector3Array = NavigationServer3D.map_get_path(map, Vector3(5, 0, 0), Vector3(25, 3, 0), true, 1)
+	assert_true(walk_only.is_empty() or walk_only[walk_only.size() - 1].y < 1.0, "the Hollowed's layer has no way up")
+	_p.global_position = Vector3(26, 3.1, 0)
+	var climbed: Array[bool] = [false]
+	await _until(func() -> bool:
+		climbed[0] = climbed[0] or not e.ally._climb.is_empty()
+		return climbed[0] and e.global_position.y > 2.6 and e.ally._climb.is_empty(), 60 * 30)
+	assert_true(climbed[0], "he climbed the ladder")
+	assert_gt(e.global_position.y, 2.6, "and is up in the loft with the player (at %s)" % e.global_position)
+	assert_false(e._shape.disabled, "collision back on once off the ladder")
+	# and back down when the player goes down
+	_p.global_position = Vector3(8, 0.05, 0)
+	await _until(func() -> bool: return e.global_position.y < 0.5 and e.ally._climb.is_empty(), 60 * 30)
+	assert_lt(e.global_position.y, 0.5, "down again after the player (at %s)" % e.global_position)
+	for rid: RID in rids:
+		NavigationServer3D.free_rid(rid)
+
+
+## The loft probe (TD-310) on a real building: two rooms stacked, in by an open door, up a ladder
+## through a hatch; the mesh baked from its own colliders as NavTiles bakes (climb 0.25 m).
+func test_he_follows_the_player_up_a_built_houses_ladder() -> void:
+	var e: Enemy = await _recruited()
+	var raw: Dictionary = {"id": "loft_probe", "name": "Loft Probe", "tier": 1, "footprint": [12, 12],
+		"style": {"floor_height": 0.15, "scatter": {"density": 0.0}, "roof": {"type": "flat"}},
+		"levels": [
+			{"level": 0, "plan": ["AAAA", "AAAA"], "rooms": {"A": {}}},
+			{"level": 1, "plan": ["BBBB", "BBBB"], "rooms": {"B": {}}}],
+		"openings": [{"id": "door", "at": [3, 1], "side": "E", "type": "door", "state": "open"}],
+		"ladders": [{"level": 0, "at": [3, 0], "side": "E", "hatch": true}],
+		"route": [{"at": [5, 1]}, {"at": [1, 1]}, {"at": [0, 1], "level": 1}],
+		"loot_room": {"room": "B", "level": 1}}
+	var pd := PoiDef.new()
+	assert_eq(pd.parse(raw, &"poi", "test"), PackedStringArray())
+	var inst: PoiInstance = PoiBuilder.build(PoiLayout.compile(pd), &"test/loft_probe")
+	_world.add_child(inst)
+	inst.global_position = Vector3(16, 0, -8)
+	await _frames(3)
+	var nm := NavigationMesh.new()
+	nm.agent_radius = 0.5
+	nm.agent_height = 1.75
+	nm.agent_max_climb = 0.25
+	nm.cell_size = 0.25
+	nm.cell_height = 0.25
+	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
+	nm.geometry_collision_mask = (1 << 0) | (1 << 1) | (1 << 2)
+	nm.filter_baking_aabb = AABB(Vector3(-10, -5, -30), Vector3(60, 20, 60))
+	var src := NavigationMeshSourceGeometryData3D.new()
+	NavigationServer3D.parse_source_geometry_data(nm, src, _world)
+	NavigationServer3D.bake_from_source_geometry_data(nm, src)
+	var map: RID = _world.get_world_3d().navigation_map
+	var region: RID = NavigationServer3D.region_create()
+	NavigationServer3D.region_set_map(region, map)
+	NavigationServer3D.region_set_navigation_mesh(region, nm)
+	var lay: PoiLayout = inst.layout
+	var up: Vector3 = inst.to_global(Vector3(lay.origin.x + 0.5, lay.level_y(1), lay.origin.y + 1.5))
+	var until: int = Time.get_ticks_msec() + 5000
+	while Time.get_ticks_msec() < until and NavigationServer3D.map_get_closest_point(map, up).distance_to(up) > 0.6:
+		await get_tree().physics_frame
+	assert_lt(NavigationServer3D.map_get_closest_point(map, up).distance_to(up), 0.6, "the loft floor is on the mesh")
+	var links: Array = inst.get(&"_ladder_links")
+	assert_eq(links.size(), 1, "the house's ladder has its link")
+	# In the room below (a 1 m doorway erodes shut at the bake's 0.5 m agent radius: that is
+	# World's, and the ladder is what this checks).
+	var down: Vector3 = inst.to_global(Vector3(lay.origin.x + 0.5, lay.level_y(0), lay.origin.y + 1.5))
+	e.global_position = down + Vector3.UP * 0.05
+	await _frames(5)
+	_p.global_position = up + Vector3.UP * 0.1
+	var climbed: Array[bool] = [false]
+	await _until(func() -> bool:
+		climbed[0] = climbed[0] or not e.ally._climb.is_empty()
+		return climbed[0] and e.ally._climb.is_empty() and e.global_position.y > up.y - 0.3, 60 * 45)
+	assert_true(climbed[0], "he took the ladder")
+	assert_gt(e.global_position.y, up.y - 0.3, "and is up in the loft with the player (at %s, loft floor %.2f)" % [e.global_position, up.y])
+	NavigationServer3D.free_rid(region)
+
+
 static func _taken(ref: WeakRef) -> bool:
 	var o: Object = ref.get_ref()
 	return o == null or (o as Node).is_queued_for_deletion()

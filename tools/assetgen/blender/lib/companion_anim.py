@@ -16,6 +16,7 @@ Phase 2 (gather, fetch, store):
                the right shoulder, the hips and chest turn through and it lands in front at frame 16
                (45%, where CompanionWork deals the blow), the pull back out, the stance (36 frames,
                played once a blow)
+  climb        up a ladder in place, hand and opposite foot together (loops; TD-310)
   carry_walk   the living walk with a log on the right shoulder: the right hand up at the shoulder
                steadying it, that shoulder raised, the trunk leaning a little away from the weight,
                the left arm swinging (loops; 0.9 m/s at speed 1 like the walk)
@@ -210,6 +211,26 @@ def act_carry_walk(rig, p, n=LA.WALK_FRAMES):
     return frames
 
 
+def act_climb(rig, p, n=24):
+    """Up a ladder (TD-310), in place: CompanionMind moves him up (or down) the rails at 0.9 m/s
+    and plays this at a matching rate. Facing the rungs, a little in over them; hand and opposite
+    foot go up together: the left hand reaches a rung above the head while the right foot steps up
+    a rung, then the right hand and the left foot (loops)."""
+    st = merged(LA.base_living(p), {"hips.flex": 10.0, "spine.flex": 6.0, "chest.flex": 4.0, "hips.y": 0.04})
+
+    def reach(hi: str, lo: str) -> dict:
+        return merged(st, {f"foot.{lo}.z": 0.30, f"foot.{lo}.y": -0.16, f"foot.{hi}.z": 0.0, f"foot.{hi}.y": -0.08,
+                           "chest.twist": 4.0 if hi == "L" else -4.0},
+                      LA._arm(hi, 1.0, 0.0, -0.36, 0.46, (0.8, 0.2, -0.3)),     # on the rails (0.4 m apart)
+                      LA._arm(lo, 1.0, 0.02, -0.34, 0.10, (0.8, 0.2, -0.5)))
+    a, b = reach("L", "R"), reach("R", "L")
+    ks = Keys(st, [(0, a), (n // 2, b, "inout"), (n, a, "inout")])
+    frames = LA._arm_offsets(rig, [ks.at(f) for f in range(n + 1)])
+    for prm in frames:
+        A.level_head(prm, p, -12.0, 0.6)       # looking up the rungs
+    return frames
+
+
 def actions_table() -> list:
     return [
         ("downed", 90, act_downed),
@@ -218,6 +239,7 @@ def actions_table() -> list:
         ("pickup", 30, act_pickup),
         ("chop", 36, act_chop),
         ("carry_walk", LA.WALK_FRAMES, act_carry_walk),
+        ("climb", 24, act_climb),
     ]
 
 

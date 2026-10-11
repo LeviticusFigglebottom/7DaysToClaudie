@@ -15,6 +15,7 @@ extends Node3D
 ## Its ProbeBudget keeps the buildings' interior reflection probes within the renderer's atlas.
 
 ## New ADR-0030 scripts by path, so this compiles before the editor registers their class names.
+const ModelWarmup := preload("res://src/world/model_warmup.gd")
 const Dressing := preload("res://src/poi/poi_dressing.gd")
 const Lots := preload("res://src/poi/lot_picker.gd")
 const ProbeBudget := preload("res://src/poi/interior_probe_budget.gd")
@@ -726,6 +727,9 @@ func _place_built(inst: PoiInstance, instance_id: StringName, xf: Transform3D) -
 	inst.global_transform = xf
 	instances[instance_id] = inst
 	_grid_add(instance_id, inst)
+	# Its sleepers' bodies loaded off the main thread now: they spawn when the player comes within
+	# SLEEPER_SPAWN, and a body's first .glb load on this thread was ~33 ms of that frame.
+	ModelWarmup.request(inst.sleeper_models())
 	# Its sleepers still out hunting from before it was freed: not spawned again at their posts.
 	if _roamers.has(instance_id):
 		inst._roaming = _roamers[instance_id]
@@ -841,7 +845,7 @@ func _process_body(delta: float) -> void:
 		var inst: PoiInstance = instances[id]
 		var b: AABB = inst.world_bounds()
 		var d: float = b.get_center().distance_to(ppos) - b.size.length() * 0.4
-		if d < SLEEPER_SPAWN and not inst.sleepers_spawned:
+		if d < SLEEPER_SPAWN and not inst.sleepers_spawned and ModelWarmup.want(inst.sleeper_models()):
 			inst.spawn_sleepers(ai)
 		elif d > SLEEPER_DESPAWN and inst.sleepers_spawned:
 			inst.despawn_sleepers(ai)

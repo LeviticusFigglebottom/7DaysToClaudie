@@ -114,6 +114,9 @@ func _run() -> void:
 			if own is StepRunner:
 				(own as StepRunner).step_ran.connect(func(n: String, us: int, _f: bool) -> void: ran.append("%s %.1f" % [n, us / 1000.0]))
 			var slow: Array = []
+			# Each module's worst single frame (StreamMeter kinds, ms): CPU time inside the module, so
+			# it holds on software Vulkan too, where whole frames take seconds.
+			var worst_kind: Dictionary = {}
 			# Each module's own _process time (StreamMeter.note, over 2 ms) in the slow frames.
 			if StreamMeter.current == null:
 				StreamMeter.current = StreamMeter.new()
@@ -124,6 +127,8 @@ func _run() -> void:
 				ran.clear()
 				meter._frame_kinds.clear()
 				await get_tree().process_frame
+				for wk: String in meter._frame_kinds:
+					worst_kind[wk] = maxf(float(worst_kind.get(wk, 0.0)), float(meter._frame_kinds[wk]))
 				var ks: Array = meter._frame_kinds.keys()
 				ks.sort_custom(func(a: String, b: String) -> bool: return float(meter._frame_kinds[a]) > float(meter._frame_kinds[b]))
 				for k: String in ks.slice(0, 9):
@@ -141,6 +146,9 @@ func _run() -> void:
 					break
 			slow.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) > float(b[0]))
 			print("[perf] frames over 33 ms while they rose: %d" % slow.size())
+			var wks: Array = worst_kind.keys()
+			wks.sort_custom(func(a: String, b: String) -> bool: return float(worst_kind[a]) > float(worst_kind[b]))
+			print("[perf] worst frame by module (ms): %s" % ", ".join(wks.slice(0, 16).map(func(k: String) -> String: return "%s %.1f" % [k, float(worst_kind[k])])))
 			for sl: Array in slow.slice(0, 12):
 				print("[perf]   %s" % sl[1])
 			var navn: Node = (w.get(&"ai") as Node).get(&"nav") if w.get(&"ai") != null else null
