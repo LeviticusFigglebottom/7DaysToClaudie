@@ -355,13 +355,20 @@ func _world_seat(seat: Dictionary) -> Dictionary:
 		"exit": to_global(seat["exit"] as Vector3), "exit_yaw": global_rotation.y + float(seat["exit_yaw"])}
 
 
+## A spawned sleeper, or null once it was freed (killed and cleaned up, despawned by the director):
+## a freed body assigned straight to a typed var is a script error before any validity check.
+func _sleeper(sid: StringName) -> Enemy:
+	var v: Variant = _sleepers.get(sid)
+	return v as Enemy if is_instance_valid(v) else null
+
+
 ## Leaving the area puts dormant sleepers away. Awake ones that followed the player out are
 ## handed to the director as ordinary wanderers instead of vanishing mid-chase; a kill still
 ## counts for this building (the died hook stays), and the sleeper is not duplicated at its post
 ## until the director has despawned it.
 func despawn_sleepers(ai: Node) -> void:
 	for sid: StringName in _sleepers:
-		var e: Enemy = _sleepers[sid]
+		var e: Enemy = _sleeper(sid)
 		if not is_instance_valid(e) or not e.is_alive():
 			continue
 		if e.state == Enemy.State.SLEEP:
@@ -412,7 +419,7 @@ func alert_sleepers(world_pos: Vector3, radius: float = 16.0) -> void:
 				rouse(str(s["sid"]), at)
 		return
 	for sid: StringName in _sleepers:
-		var e: Enemy = _sleepers[sid]
+		var e: Enemy = _sleeper(sid)
 		if is_instance_valid(e) and e.is_alive() and e.global_position.distance_to(world_pos) < radius:
 			e.notice(world_pos)
 
@@ -434,7 +441,7 @@ func alarm(world_pos: Vector3, by_player: bool = true) -> void:
 			rouse(str(s["sid"]), to_local(world_pos))
 		return
 	for sid: StringName in _sleepers:
-		var e: Enemy = _sleepers[sid]
+		var e: Enemy = _sleeper(sid)
 		if is_instance_valid(e) and e.is_alive():
 			e.release_hold()
 			e.notice(world_pos)
@@ -556,7 +563,7 @@ func fire_trigger(tid: String, at: Vector3 = Vector3.INF) -> bool:
 	var target: Vector3 = _ambush_target(at)
 	var members: Array[Enemy] = []
 	for sid: StringName in _sleepers:
-		var e: Enemy = _sleepers[sid]
+		var e: Enemy = _sleeper(sid)
 		if is_instance_valid(e) and e.is_alive() and e.group == group and e.state == Enemy.State.SLEEP:
 			members.append(e)
 	members.sort_custom(func(a: Enemy, b: Enemy) -> bool: return a.global_position.distance_squared_to(target) < b.global_position.distance_squared_to(target))
