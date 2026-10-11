@@ -1185,7 +1185,7 @@ class FPRig:
                 # A relaxed hand also keeps its fingers together whatever their curl (`together`,
                 # ADR-0060): splayed at rest, a lightly curled hand read as hovering over keys.
                 tog = float(prm.get(f"{sd}.together", 0.0))
-                Q[bn] = _R(r[:, 2], (FINGER_CONVERGE[k] * max(0.0, c) + FINGER_TOGETHER[k] * tog) * toward_thumb) @ Q[bn]
+                Q[bn] = _R(r[:, 2], (FINGER_CONVERGE[k] * min(max(0.0, c), 1.0) + FINGER_TOGETHER[k] * tog) * toward_thumb) @ Q[bn]
             # The thumb opposes as it closes: its metacarpal swings across the palm and turns
             # about its own length so the pad, not the side, meets the index finger; then its
             # two joints wrap the handle.
@@ -1250,7 +1250,7 @@ FIST_MAX = 1.3
 # Finger curl at fist 1 (degrees at the MCP, PIP and DIP joints: a fist round a ~3.5 cm handle,
 # the end joint following the middle one), scaled per finger: the ring and little fingers close
 # a little further, as they do round a handle.
-FINGER_CURL = (68.0, 92.0, 58.0)
+FINGER_CURL = (68.0, 92.0, 48.0)
 # How each joint follows a curl below 1 (curl ** lag): the end joint lags. Linear, a loose hand's
 # fingertips were hooked as far as a fist's in proportion (DIP 85% of the MCP), the crooked claw of
 # player report 5; a relaxed hand's end joints are nearly straight (~15-25 degrees) and only
@@ -1258,7 +1258,7 @@ FINGER_CURL = (68.0, 92.0, 58.0)
 CURL_LAG = (1.0, 1.0, 1.6)
 FINGER_SCALE = {"ix": 1.0, "md": 1.0, "rg": 1.05, "pk": 1.12}
 # How far each finger swings toward the thumb side (degrees, + towards it) at curl 1.
-FINGER_CONVERGE = {"ix": -5.0, "md": 0.0, "rg": 4.0, "pk": 9.0}
+FINGER_CONVERGE = {"ix": -7.0, "md": 0.0, "rg": 7.0, "pk": 14.0}
 # How far each finger swings toward the middle one at `together` 1 (degrees, + towards the thumb):
 # the rest pose's splay closed, the fingers touching. The rest pose's fingers already lie side by
 # side (17-19 mm apart at the knuckles, as wide as they are), so this only closes the last of the
