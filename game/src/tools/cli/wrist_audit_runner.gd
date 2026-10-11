@@ -327,6 +327,8 @@ func _markers() -> void:
 	if marks.size() < 4:
 		_fails += 1
 		print("WRIST_AUDIT FAIL the shelters, the workbench and the crate should be marked (the garden bed's layer is off)")
+	# The logs left over from the builds go in the arms (carried), which keeps the tether down.
+	p.state.inventory.remove(&"log", p.state.inventory.count_of(&"log"))
 	# Walk off ~110 m so the marks don't sit under the player's arrow.
 	var away: Vector3 = base + Vector3(130.0, 0.0, -50.0)
 	p.global_position = Vector3(away.x, w.height_at(away.x, away.z) + 0.05, away.z)
