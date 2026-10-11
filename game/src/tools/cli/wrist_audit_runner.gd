@@ -87,6 +87,8 @@ func _run() -> void:
 		await _steady_all()
 	elif OS.get_cmdline_user_args().has("--markers"):
 		await _markers()
+	elif OS.get_cmdline_user_args().has("--hands"):
+		await _hands()
 	else:
 		# --moves / --classes: one half of the run (both by default).
 		var only_c: bool = OS.get_cmdline_user_args().has("--classes")
@@ -297,6 +299,64 @@ func _classes() -> void:
 		print("WRIST_AUDIT class %s (%s): raised %s" % [cls, items[cls], up])
 		await _snap("class_%s" % cls)
 		await _raise(false)
+
+
+# --- Hands in every hold (player report 5, item 6) ---------------------------------------------
+
+## fp_preview's shots worth judging the hands by, in the game's world and light (1080p, real
+## materials): each hold class at rest and the moments its fingers do the most (a grip closing on a
+## strike, a draw, a thumb on a lighter, the tether read). Climbing is left to its own audit.
+const HAND_SHOTS: PackedStringArray = ["empty_hands", "empty_guard", "punch",
+	"axe_idle", "axe_impact", "axe_guard", "axe_inspect", "hatchet_idle", "machete_idle", "machete_slash",
+	"knife_idle", "knife_slice", "knife_inspect", "hammer_idle", "spear_idle", "spear_stab", "spear_guard",
+	"club_idle", "club_bash", "pipe_idle", "shovel_idle", "shovel_dig",
+	"revolver_idle", "revolver_fire", "revolver_reload_load", "rifle_idle", "rifle_bolt_up", "rifle_inspect_a",
+	"torch_day", "torch_swing", "torch_inspect", "flashlight_idle", "flashlight_inspect_a",
+	"lighter_idle", "lighter_light", "lighter_inspect_a", "tether_raised",
+	"food_idle", "food_eat", "food_inspect_a", "bottle_idle", "bottle_drink", "bandage_idle", "bandage_apply",
+	"bow_idle", "bow_draw_mid", "bow_full_draw", "held_stone", "stone_windup", "molotov_idle", "molotov_lighting",
+	"carry_log", "blueprint", "chime_place"]
+
+
+func _hands() -> void:
+	p.global_position = w.drop_site() + Vector3(4.0, 0.0, 4.0)
+	p.global_position.y = w.height_at(p.global_position.x, p.global_position.z) + 0.05
+	await _frames(15)
+	var by_name: Dictionary = {}
+	for shot: Dictionary in (load("res://src/tools/cli/fp_preview_runner.gd") as GDScript).get_script_constant_map()["SHOTS"]:
+		by_name[str(shot["name"])] = shot
+	var only: PackedStringArray = []
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if args.find("--only") >= 0 and args.find("--only") + 1 < args.size():
+		only = args[args.find("--only") + 1].split(",")
+	for n: String in (only if not only.is_empty() else HAND_SHOTS):
+		if not by_name.has(n):
+			print("WRIST_AUDIT FAIL no fp_preview shot %s" % n)
+			_fails += 1
+			continue
+		var shot: Dictionary = by_name[n]
+		await _hold(StringName(str(shot.get("item", ""))))
+		var vm: ViewModel = p.equipment.viewmodel
+		vm.release_action()
+		vm.set_guard(bool(shot.get("guard", false)))
+		vm.qa_base = StringName(str(shot.get("base", "")))
+		var rig: BowRig = BowRig.of(vm.held_item())
+		if rig != null:
+			rig.nocked = bool(shot.get("nocked", true))
+		vm.set_lit(bool(shot.get("lit", false)))
+		if bool(shot.get("tether", false)):
+			await _raise(true)
+		await _frames(20)
+		if shot.has("action") and not vm.freeze_action(StringName(str(shot["action"])), float(shot.get("frame", 0)) / 30.0):
+			print("WRIST_AUDIT FAIL no action %s" % shot["action"])
+			_fails += 1
+		await _frames(6)
+		await _snap("hands_%s" % n)
+		vm.release_action()
+		vm.set_guard(false)
+		vm.qa_base = &""
+		if bool(shot.get("tether", false)):
+			await _raise(false)
 
 
 # --- Shelter markers (player report 5) ---------------------------------------------------------
