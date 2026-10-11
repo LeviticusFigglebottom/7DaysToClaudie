@@ -172,8 +172,12 @@ func build(p_model_id: String, height_scale: float, body_scale := Vector3.ONE) -
 	# rather than a Hollowed with no body at all.
 	var ps: PackedScene = load(path) as PackedScene if ResourceLoader.exists(path) else null
 	if ps != null:
+		var t_inst: int = Time.get_ticks_usec()
 		_root = ps.instantiate() as Node3D
+		StreamMeter.note("visual instantiate", t_inst)
+		var t_enter: int = Time.get_ticks_usec()
 		add_child(_root)
+		StreamMeter.note("visual enter", t_enter)
 		anim = _root.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		skeleton = _root.find_child("Skeleton3D", true, false) as Skeleton3D
 		for n: Node in _root.find_children("*", "MeshInstance3D", true, false):
