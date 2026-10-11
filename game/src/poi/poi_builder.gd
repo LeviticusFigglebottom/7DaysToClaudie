@@ -1220,7 +1220,7 @@ func _porch(porch: Dictionary, li0: int) -> void:
 				var yaw: float = [PI, PI * 0.5, 0.0, -PI * 0.5][side]
 				var edge_top := Vector3(p.x, top, p.z) + d4 * 0.5
 				_add("porch_step_1m", Transform3D(Basis(Vector3.UP, yaw), Vector3(edge_top.x, 0.0, edge_top.z)), Color(0, 0, _decay_v(), _seed()))
-				_ramp(edge_top, edge_top + d4 * 0.95 - Vector3.UP * top, 1.0)
+				_ramp(edge_top, edge_top + d4 * maxf(0.95, top / STEP_UNIT_RISE) - Vector3.UP * top, 1.0)
 
 
 ## Doorway rises above this (m) get steps up to them: a little more than a kerb, well short of
@@ -1228,8 +1228,11 @@ func _porch(porch: Dictionary, li0: int) -> void:
 const STOOP_MIN_RISE: float = 0.2
 ## The foundation's outer face (foundation_1m is 0.2 m deep, centred on the wall line).
 const STOOP_FACE: float = 0.1
-## The steepest a stoop climbs, rise over run (the porch step's 0.6 m in 1 m): stoops' `run` keeps to it.
-const STEP_UNIT_RISE: float = 0.6
+## The steepest a stoop's or porch step's walkable slope climbs, rise over run: tan 30 deg. The
+## nav bake takes up to 46 deg and a Hollow's capsule 45, but a 0.4 m concrete stoop came out at 53
+## deg and the Hollowed pressed into it at the door (nav_pad_check --walk); 30 is what the player,
+## the bodies and the mesh all walk alike. stoops' `run` keeps to it.
+const STEP_UNIT_RISE: float = 0.577
 
 
 ## Steps up to every exterior doorway of the ground floor whose sill stands more than STOOP_MIN_RISE
@@ -1284,20 +1287,26 @@ const STOOP_CONCRETE: PackedStringArray = ["brick_red", "concrete_block", "rock_
 
 
 ## The stoop model for a doorway: its kind by the exterior finish, 1-3 steps by the rise (the model is
-## scaled to the exact rise; past three steps' worth its run is lengthened as much, so the steps
-## stay as climbable as the model's). Pure: {piece, kind, steps, sy, sz, depth (m out from the face)}.
+## scaled to the exact rise, and its run lengthened until the line over its step nosings is no
+## steeper than STEP_UNIT_RISE). Pure: {piece, kind, steps, sy, sz, depth (m out from the face),
+## top (m of level top out from the face: the landing, or a wooden stoop's top tread), grade (the
+## nosing line's rise over run)}.
 static func stoop_piece(exterior: String, rise: float, width: int) -> Dictionary:
 	var kind: String = "concrete" if STOOP_CONCRETE.has(exterior) else "wood"
 	var n: int = clampi(roundi(rise / STOOP_RISE), 1, 3)
 	var sy: float = rise / (STOOP_RISE * float(n))
-	var sz: float = maxf(1.0, sy)
+	var sz: float = maxf(1.0, sy * STOOP_RISE / (STOOP_TREAD * STEP_UNIT_RISE))
 	var d: float = (STOOP_LANDING + STOOP_TREAD * float(n - 1)) if kind == "concrete" else STOOP_TREAD * float(n)
-	return {"piece": "stoop_%s_%d_%dm" % [kind, n, width], "kind": kind, "steps": n, "sy": sy, "sz": sz, "depth": d * sz}
+	var top: float = STOOP_LANDING if kind == "concrete" else STOOP_TREAD
+	return {"piece": "stoop_%s_%d_%dm" % [kind, n, width], "kind": kind, "steps": n, "sy": sy, "sz": sz, "depth": d * sz,
+		"top": top * sz, "grade": STOOP_RISE * sy / (STOOP_TREAD * sz)}
 
 
 ## Steps up to a doorway (see stoops), 1 or 2 m wide: a stoop model picked by the building's exterior
 ## and the rise (stoop_piece), from the foundation's face out into the yard, with walkable collision
-## for the player's feet (a concrete stoop's landing flat, then a ramp down its steps).
+## (the model has none): level from the wall line over its top (a concrete landing, a wooden top
+## tread), then a ramp over its step nosings down to the yard, a tread past its foot. The ramp ran
+## from the top to the foot before, under the nosings: 53 deg on a two-step concrete stoop.
 func _stoop(st: Dictionary, width: int = 1) -> void:
 	var side: int = st["side"]
 	var out_dir := Vector3(PoiLayout.DIRS[side].x, 0, PoiLayout.DIRS[side].y)
@@ -1312,17 +1321,10 @@ func _stoop(st: Dictionary, width: int = 1) -> void:
 	var seed_v: float = float(posmod(Ids.hash64("stoop:%s:%s" % [st["op"], st["outside"]]), 1000)) / 1000.0
 	_add(str(sp["piece"]), Transform3D(basis, face), Color(0, 0, clampf(_decay, 0.0, 1.0), seed_v))
 	var w: float = float(width)
-	var foot: Vector3 = face + out_dir * float(sp["depth"])
-	if sp["kind"] == "concrete" and int(sp["steps"]) > 1:
-		# The landing is level: a flat top from the wall line to its edge, then a ramp down the steps.
-		var edge: Vector3 = face + out_dir * (STOOP_LANDING * float(sp["sz"]))
-		var flat: Vector3 = edge - at
-		var xb := Basis(Vector3.UP, yaw)
-		_box(Vector3(w, 0.1, flat.length()), Transform3D(xb, (at + edge) * 0.5 + Vector3.UP * (rise - 0.05)))
-		_ramp(edge + Vector3.UP * rise, foot, w)
-	else:
-		# From the wall line (the floor slab ends there), over the foundation's top, down to the yard.
-		_ramp(at + Vector3.UP * rise, foot, w)
+	var edge: Vector3 = face + out_dir * float(sp["top"])
+	var flat: Vector3 = edge - at
+	_box(Vector3(w, 0.1, flat.length()), Transform3D(Basis(Vector3.UP, yaw), (at + edge) * 0.5 + Vector3.UP * (rise - 0.05)))
+	_ramp(edge + Vector3.UP * rise, edge + out_dir * (rise / float(sp["grade"])), w)
 
 
 ## Walkable ramp collision between two edge-centre points (its top surface on the line).

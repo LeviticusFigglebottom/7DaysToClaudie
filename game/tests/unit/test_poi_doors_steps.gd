@@ -196,6 +196,38 @@ func test_low_sills_get_no_steps_and_the_builder_lays_them() -> void:
 	add_child_autofree(b.root)
 
 
+## The --walk finding (Hollowed pressed into a bank's staff-door stoop): every slope a stoop or a
+## porch step lays for the feet is 30 deg or gentler, level at the top, and meets the yard.
+func test_stoop_collision_is_never_steeper_than_30_degrees() -> void:
+	for fin: String in ["brick_red", "siding_white"]:
+		for rise: float in [0.3, 0.45, 0.6, 0.9]:
+			var raw: Dictionary = _cottage("closed", rise)
+			(raw["style"] as Dictionary)["exterior"] = fin
+			var lay := PoiLayout.compile(_def(raw))
+			var b: PoiBuilder = PoiBuilder.start(lay, &"test/stoop_slope")
+			while b.next_phase() != "roof":
+				b.step()
+			var steepest: float = 0.0
+			var lowest: float = INF
+			for c: Node in b.shell.get_children():
+				var cs := c as CollisionShape3D
+				if cs == null or not (cs.shape is BoxShape3D):
+					continue
+				var up: Vector3 = cs.transform.basis.y.normalized()
+				var deg: float = rad_to_deg(acos(clampf(up.y, -1.0, 1.0)))
+				if deg > 1.0 and deg < 80.0:
+					steepest = maxf(steepest, deg)
+					var half: Vector3 = (cs.shape as BoxShape3D).size * 0.5
+					var tip: Vector3 = cs.transform * Vector3(0, half.y, half.z)
+					var tail: Vector3 = cs.transform * Vector3(0, half.y, -half.z)
+					lowest = minf(lowest, minf(tip.y, tail.y))
+			assert_lt(steepest, 30.5, "%s %.2f m: steepest walkable slope %.1f deg" % [fin, rise, steepest])
+			assert_lt(lowest, 0.05, "%s %.2f m: a ramp comes down to the yard" % [fin, rise])
+			while not b.step():
+				pass
+			add_child_autofree(b.root)
+
+
 # --- stairs, doors and walls -----------------------------------------------------------------------
 
 ## Two storeys: a hall (H, two columns) with a flight in its west column rising north from row 4,
@@ -342,7 +374,12 @@ func test_stoop_piece_by_finish_rise_and_width() -> void:
 	assert_eq(str(PoiBuilder.stoop_piece("log_chinked", 0.25, 1)["piece"]), "stoop_wood_1_1m", "a log wall: one wooden step")
 	var tall: Dictionary = PoiBuilder.stoop_piece("siding_white", 0.9, 1)
 	assert_eq(int(tall["steps"]), 3, "never more than three steps")
-	assert_almost_eq(float(tall["sz"]), float(tall["sy"]), 0.001, "a taller rise lengthens the run as much")
+	assert_true(float(tall["sz"]) >= float(tall["sy"]), "a taller rise lengthens the run at least as much")
+	for rise: float in [0.21, 0.3, 0.4, 0.45, 0.6, 0.75, 0.9, 1.2]:
+		for fin: String in ["brick_red", "siding_white"]:
+			var sp: Dictionary = PoiBuilder.stoop_piece(fin, rise, 1)
+			assert_true(float(sp["grade"]) <= PoiBuilder.STEP_UNIT_RISE + 0.001,
+				"%s %.2f m: its nosings climb no steeper than 30 deg (%.2f)" % [fin, rise, float(sp["grade"])])
 	for k: String in ["wood", "concrete"]:
 		for n: int in [1, 2, 3]:
 			for w: int in [1, 2]:
