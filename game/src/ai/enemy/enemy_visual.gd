@@ -170,7 +170,9 @@ func build(p_model_id: String, height_scale: float, body_scale := Vector3.ONE) -
 	var path: String = model_path(model_id)
 	# A model regenerated but not imported yet has a sidecar and no scene: the stand-in body then,
 	# rather than a Hollowed with no body at all.
+	var t_load: int = Time.get_ticks_usec()
 	var ps: PackedScene = load(path) as PackedScene if ResourceLoader.exists(path) else null
+	StreamMeter.note("visual load", t_load)
 	if ps != null:
 		var t_inst: int = Time.get_ticks_usec()
 		_root = ps.instantiate() as Node3D

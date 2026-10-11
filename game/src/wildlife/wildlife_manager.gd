@@ -46,6 +46,16 @@ func setup_world(w: Node) -> void:
 	add_child(wolves)
 	wolves.setup(self, w)
 	Game.register_command(&"wildlife.butcher", _butcher)
+	# The animals' models, loaded on the loader threads now (ModelWarmup): a band's or a flock's
+	# first load on the main thread was 25-33 ms of its spawn frame.
+	var models: PackedStringArray = []
+	for d: Resource in Content.all(&"wildlife"):
+		var wd := d as WildlifeDef
+		for m: Variant in wd.models.keys():
+			models.append(str(m))
+		if wd.model != "":
+			models.append(wd.model)
+	ModelWarmup.request(models)
 	# A region's 1 m terrain answers sample() differently from its coarse one: plan again.
 	var tm: Node = (w.get(&"terrain") as Node) if w != null else null
 	if tm != null and tm.has_signal(&"region_attached"):
@@ -73,6 +83,8 @@ const PLAN_BUDGET_US: int = 4000
 ## The ring is planned ahead every PLAN_STEP s between the spawn ticks (~25 cells: a few seconds).
 const PLAN_STEP: float = 0.1
 var _plan_t: float = 0.0
+
+const ModelWarmup := preload("res://src/world/model_warmup.gd")
 
 
 func _plans_near(center: Vector2, radius: float, day: int, period: String, defs: Array, density: float) -> Array[Dictionary]:

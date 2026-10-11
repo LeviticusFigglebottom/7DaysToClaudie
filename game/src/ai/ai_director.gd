@@ -30,6 +30,8 @@ var _ids: int = 0
 ## hitch every time the wanderers topped up (perf_capture: "~ai spawn enter").
 var _spawn_queue: Array[Callable] = []
 
+const ModelWarmup := preload("res://src/world/model_warmup.gd")
+
 
 func setup_world(w: Node) -> void:
 	world = w
@@ -45,6 +47,16 @@ func setup_world(w: Node) -> void:
 	if world.clock_driver != null:
 		world.clock_driver.game_minutes_passed.connect(_on_minutes)
 	Game.session.heat.configure(Content.config(&"heat"))
+	# Every body a Hollowed may wear, loaded on the loader threads now rather than on the main thread
+	# when the first wears it (ModelWarmup).
+	var bodies: PackedStringArray = []
+	for d: Resource in Content.all(&"enemy"):
+		bodies.append_array((d as EnemyDef).bodies)
+	for d: Resource in Content.all(&"population"):
+		for picks: Variant in (d as PopulationDef).bodies.values():
+			for b: Variant in (picks as Dictionary).keys():
+				bodies.append(str(b))
+	ModelWarmup.request(bodies)
 
 
 # --- Spawning --------------------------------------------------------------------------------
@@ -442,3 +454,7 @@ func alive_count() -> int:
 		if is_instance_valid(e) and e.is_alive() and e.ally == null:
 			n += 1
 	return n
+
+
+func _exit_tree() -> void:
+	ModelWarmup.finish()
