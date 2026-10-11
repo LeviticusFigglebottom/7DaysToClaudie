@@ -1,0 +1,9 @@
+{
+  "_doc": "Markers for what the player built (player report 5), on the full map and the tether's minimap. Each layer marks the placed structures that provide any of its `provides` tags (an entry ending in ':' matches by prefix, e.g. 'storage:'); a structure joins the first layer that matches. The legend on the full map toggles a layer (Settings.map_layers, saved); `default` is its state before the player touches it. Add a layer here, no code change: label (legend text), color (hex), shape (house | square | diamond | circle), default (bool). Left unmarked on purpose: logs, walls, stairs, doors, traps, lights and campfires (too many, or nothing to come back for).",
+  "layers": [
+    {"id": "shelter", "label": "Shelters", "provides": ["shelter", "sleep", "save_point", "spawn_point"], "color": "#e8a33a", "shape": "house", "default": true},
+    {"id": "workshop", "label": "Workshops", "provides": ["station:workbench", "station:forge", "station:chemistry_bench"], "color": "#6fa8dc", "shape": "square", "default": true},
+    {"id": "storage", "label": "Storage", "provides": ["storage:", "rack:", "rain_catcher:"], "color": "#b07ad8", "shape": "diamond", "default": true},
+    {"id": "garden", "label": "Garden beds", "provides": ["garden:"], "color": "#7cc46a", "shape": "circle", "default": false}
+  ]
+}

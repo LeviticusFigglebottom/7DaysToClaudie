@@ -534,6 +534,50 @@ func test_fetch_brings_back_what_the_player_looked_at() -> void:
 		"past fetch.range")
 
 
+## Pinned on an errand (TD-340's yard mesh, seeds 21 and 7): the player standing on his line held
+## him at a standstill (Enemy's detour ignores bodies), and a low ledge the mesh runs over turned
+## him back and forth short of it. He steps aside round a body and up onto a ledge.
+func test_on_an_errand_he_steps_round_the_player_in_his_way() -> void:
+	var e: Enemy = await _recruited()
+	await _until(func() -> bool: return e.velocity.length() < 0.05, 240)
+	var from: Vector3 = e.global_position
+	var to: Vector3 = from + Vector3(0, 0, 10)
+	var drop: ItemDrop = ItemDrop.spawn(_world, ItemStack.make(&"stone", 1), to + Vector3.UP * 0.3)
+	_p.global_position = from + Vector3(0, 0.05, 1.3)  # square on his line, and stays there
+	await _frames(10)
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "fetch", "target": {"entity": String(drop.entity_id)}})
+	assert_true(bool(r.get("ok", false)), str(r))
+	var ref: WeakRef = weakref(drop)  # he picks it up: a freed capture is an engine error
+	await _until(func() -> bool: return _taken(ref), 60 * 20)
+	assert_true(_taken(ref), "went round the player to it (at %s)" % e.global_position)
+
+
+func test_on_an_errand_he_steps_up_a_low_ledge() -> void:
+	var e: Enemy = await _recruited()
+	await _until(func() -> bool: return e.velocity.length() < 0.05, 240)
+	var from: Vector3 = e.global_position
+	# A 40 cm deck 60 m wide across his way: no going round it.
+	_box(Vector3(from.x, 0.2, from.z + 6.0), Vector3(60, 0.4, 8))
+	var to: Vector3 = from + Vector3(0, 0.4, 7.0)
+	var drop: ItemDrop = ItemDrop.spawn(_world, ItemStack.make(&"stone", 1), to + Vector3.UP * 0.3)
+	_p.global_position = from + Vector3(-3, 0.05, -3)
+	await _frames(10)
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "fetch", "target": {"entity": String(drop.entity_id)}})
+	assert_true(bool(r.get("ok", false)), str(r))
+	var up: Array[bool] = [false]
+	var ref: WeakRef = weakref(drop)
+	await _until(func() -> bool:
+		up[0] = up[0] or e.global_position.y > 0.3
+		return _taken(ref), 60 * 20)
+	assert_true(up[0], "stepped up onto the deck")
+	assert_true(_taken(ref), "and took it off the deck (at %s)" % e.global_position)
+
+
+static func _taken(ref: WeakRef) -> bool:
+	var o: Object = ref.get_ref()
+	return o == null or (o as Node).is_queued_for_deletion()
+
+
 func test_a_fetched_log_lands_at_the_feet_of_a_full_shoulder() -> void:
 	var e: Enemy = await _recruited()
 	_give(&"log", 2)
@@ -594,6 +638,49 @@ func test_store_at_base_fills_the_nearest_crate() -> void:
 	assert_eq(crate.inventory.count_of(&"stick"), 3)
 	assert_true(_dir.inventory.is_empty())
 	assert_eq((Game.session.world.container_state(&"p:crate").get("items", []) as Array).size(), 2, "the crate's contents persist")
+
+
+func test_a_lineman_tops_up_a_generator_running_low() -> void:
+	var e: Enemy = await _recruited()
+	var b := FakeBuilding.new()
+	_world.add_child(b)
+	_world.building = b
+	var gen := StructurePiece.new()
+	gen.setup(&"p:gen", Content.structure(&"generator"), b)
+	b.add_child(gen)
+	gen.global_position = e.global_position + Vector3(8, 0, 4)
+	b.pieces[&"p:gen"] = gen
+	var btm := BaseTechManager.new()
+	btm.world = _world
+	btm.building = b
+	add_child_autofree(btm)
+	btm.register_commands()
+	var st: Dictionary = btm.state_of(gen)
+	st["on"] = true
+	st["fuel"] = BaseTech.tank_hours() * 0.1
+	_dir.inventory.add_item(&"gas_can", 1)
+	assert_eq(_dir.tend_job(e.global_position), [], "not a lineman yet: he leaves it")
+	Game.session.clock.set_time(4, 12.0)
+	_dir.tick()
+	var job: Array = _dir.tend_job(e.global_position)
+	assert_eq(job.size(), 2, "two days on, a lineman sees it running low")
+	assert_eq(job[1], "fuel")
+	# Taken off following by the check, he walks over, pours his can in and comes back.
+	_dir._tend_t = 0.0
+	_dir.tick()
+	assert_eq(e.ally.order, "tend")
+	await _until(func() -> bool: return e.ally.order == "follow", 1200)
+	assert_eq(e.ally.order, "follow", "tended, back to following")
+	assert_gt(float(btm.state_of(gen)["fuel"]), BaseTech.tank_hours() * 0.3, "he topped it up")
+	assert_false(_dir.inventory.has(&"gas_can"), "from his own pack")
+	assert_eq(_dir.tend_job(e.global_position), [], "nothing left to do with no can")
+	# A damaged power piece is mended when he carries what it takes.
+	gen.hp = gen.max_hp() * 0.4
+	assert_eq(_dir.tend_job(e.global_position), [], "nothing to mend it with")
+	var cost: Dictionary = BuildingManager.repair_cost(gen.def)
+	for k: Variant in cost:
+		_dir.inventory.add_item(StringName(str(k)), int(cost[k]))
+	assert_eq((_dir.tend_job(e.global_position) as Array)[1], "repair", "with the materials, he would")
 
 
 func test_his_pack_and_errand_round_trip_through_the_save() -> void:
@@ -865,6 +952,15 @@ func test_his_perks_come_with_the_days() -> void:
 	assert_almost_eq(e.ally.perk("chop_power", 1.0), 1.25, 0.001)
 	assert_almost_eq(_dir.fuel_factor(gen_at), 0.75, 0.001, "a generator near him burns a quarter less")
 	assert_eq(_dir.fuel_factor(e.global_position + Vector3(80, 0, 0)), 1.0, "not one far off")
+	# The generator's prompt says so where the fuel is read (TD-310).
+	var btm := BaseTechManager.new()
+	btm.world = _world
+	var prev_btm: BaseTechManager = BaseTechManager.current
+	BaseTechManager.current = btm
+	assert_string_contains(BaseTechManager._tuned_text(gen_at), "Ezra keeps it tuned")
+	assert_eq(BaseTechManager._tuned_text(e.global_position + Vector3(80, 0, 0)), "", "not one far off")
+	BaseTechManager.current = prev_btm
+	btm.free()
 	e.ally.go_down(null, 60.0)
 	assert_eq(_dir.fuel_factor(gen_at), 1.0, "nor while he is down")
 	# The card lists his knacks.

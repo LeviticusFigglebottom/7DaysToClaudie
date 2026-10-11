@@ -136,8 +136,10 @@ func update(dt: float, look_rate: Vector2, vel: Vector3, speed: float, sprinting
 	var rk: Vector3 = _v3(mv.get("rot_per_mps"), Vector3(0.6, 0.0, 1.0))
 	move.step(Vector3(-vel.x * pk.x, -vel.y * pk.y, -vel.z * pk.z), float(mv.get("stiffness", 45.0)), float(mv.get("damping", 10.0)), dt)
 	move_rot.step(Vector3(vel.z * rk.x, 0.0, -vel.x * rk.z), float(mv.get("stiffness", 45.0)), float(mv.get("damping", 10.0)), dt)
-	pos += move.x
-	deg += move_rot.x
+	# Reading the tether, the eyes hold the wrist still against the stride: no trailing (below, the
+	# rest is damped; these two moved the screen half out of the frame at a sprint, report 5).
+	pos += move.x * (1.0 - reading)
+	deg += move_rot.x * (1.0 - reading)
 	# Footstep bob: lowest as each foot lands, swaying side to side every other step.
 	var bb: Dictionary = cfg.get("bob", {})
 	var want_bob: float = clampf(speed / maxf(0.1, walk_speed), 0.0, 1.5) if on_floor else 0.0
@@ -153,6 +155,7 @@ func update(dt: float, look_rate: Vector2, vel: Vector3, speed: float, sprinting
 	var sp: Dictionary = cfg.get("sprint", {})
 	sprint_w = move_toward(sprint_w, 1.0 if sprinting and speed > 2.5 else 0.0, dt * float(sp.get("blend", 6.0)))
 	var se: float = sprint_w * sprint_w * (3.0 - 2.0 * sprint_w)
+	se *= 1.0 - reading
 	pos += _v3(sp.get("pos"), Vector3(0.03, -0.07, 0.06)) * se
 	deg += _v3(sp.get("rot"), Vector3(-20, 26, 12)) * se
 	# Empty hands at rest (ADR-0060): after a few still seconds they sink mostly out of the frame,

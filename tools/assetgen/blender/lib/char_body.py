@@ -367,7 +367,10 @@ class BodyModel:
         """(centre, eyeball radius) of an eye: a Hollowed's sit smaller and deeper in their orbits
         (TD-192: bulging milky spheres ringed by thick lids)."""
         sunk = bool(self.p.get("face_vary"))
-        return self.HP(sx * 0.032, 0.012, 0.073 - (0.0025 if sunk else 0.0)), (0.0106 if sunk else 0.0116) * self.s
+        # A living face's eyes sit back in their sockets under the lids (`eye_depth`, m back;
+        # `eye_radius`): TD-302, Ezra's bulged with the shared head's defaults.
+        depth = float(self.p.get("eye_depth", 0.0025 if sunk else 0.0))
+        return self.HP(sx * 0.032, 0.012, 0.073 - depth), float(self.p.get("eye_radius", 0.0106 if sunk else 0.0116)) * self.s
 
     def _head(self, prog: S.Program):
         """The skull under tight, wasted skin: heavy brow over deep sockets, standing cheekbones,
@@ -1012,12 +1015,12 @@ class BodyModel:
         x, y, z = q[:, 0], q[:, 1], q[:, 2]
         # below the mouth line (which tilts down towards the back), in front of the ear/TMJ
         mouth_y = -0.060 + 0.25 * (0.085 - z) * 0.35
-        # Sharp at the lips (the mouth parts there), soft out on the cheeks: with a 1 cm step all
-        # round, an open jaw dropped the chin and a beard as one block with a seam at the cheeks.
-        soft = smoothstep(0.012, 0.045, np.abs(x))
-        below = 1 - smoothstep(mouth_y - 0.006 - 0.022 * soft, mouth_y + 0.004 + 0.010 * soft, y)
-        front = smoothstep(-0.035, 0.015, z)
-        lateral = 1 - smoothstep(0.045, 0.085, np.abs(x))
+        # Sharp at the lips (the mouth parts there), soft out on the cheeks (~5 cm): with a 1 cm step
+        # all round, an open jaw dropped the chin and a beard as one block, parting at the cheeks.
+        soft = smoothstep(0.012, 0.040, np.abs(x))
+        below = 1 - smoothstep(mouth_y - 0.006 - 0.045 * soft, mouth_y + 0.004 + 0.012 * soft, y)
+        front = smoothstep(-0.045, 0.015, z)
+        lateral = 1 - smoothstep(0.035, 0.095, np.abs(x))
         # The neck below the jaw stays with the neck/head: 1 above the jaw's lower edge, 0 under it.
         # (Once 1 - smoothstep: 0 for every point above it, so no face skin ever followed the jaw,
         # only the teeth; a jaw that opened moved nothing you could see. TD-309.)

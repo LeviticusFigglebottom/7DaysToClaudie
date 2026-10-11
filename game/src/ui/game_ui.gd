@@ -1223,12 +1223,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed(&"map") and not roll.is_open() and not manual.is_open():
 		world_map.toggle()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"tracker") and _on_ladder():
+		# Both hands are on the rails: say so, rather than raise it the moment you step off.
+		Events.player_status_message.emit("Both hands on the ladder: step off to read the tether.", &"info")
+		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(&"tracker"):
 		_ensure_tether()
 		if tether != null:
 			tether.toggle()
 			_raise_wrist(tether.raised)
 		get_viewport().set_input_as_handled()
+
+
+func _on_ladder() -> bool:
+	var w: Node = Game.world
+	return w != null and w.get(&"player") != null and (w.player as Player).is_climbing()
 
 
 ## The first-person arms lift the left wrist to read the tether (held until it is lowered).

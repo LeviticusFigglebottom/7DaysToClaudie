@@ -448,6 +448,33 @@ func _player(args: Dictionary) -> PlayerState:
 	return Game.session.players.get(StringName(str(args.get("player", Game.session.local_player_id)))) if Game.session != null else null
 
 
+## [his pack, his body] when `owner` names the companion (`companion:<id>`, TD-310: he tends the
+## player's power pieces through the same commands), else [].
+func _crew(args: Dictionary) -> Array:
+	var o: String = str(args.get("owner", ""))
+	if not o.begins_with("companion:") or world == null:
+		return []
+	var c: Node = world.get(&"companion")
+	if c == null or not c.has_method(&"inventory_of"):
+		return []
+	var inv: Inventory = c.call(&"inventory_of", StringName(o)) as Inventory
+	var b: Variant = c.get(&"body")
+	if inv == null or not (b is Node3D) or not is_instance_valid(b):
+		return []
+	return [inv, b]
+
+
+## The tech piece `key` names, if the companion stands close enough to work it.
+func _crew_piece(crew: Array, args: Dictionary, key: String = "piece") -> StructurePiece:
+	var piece: StructurePiece = _pieces().get(StringName(str(args.get(key, ""))))
+	if piece == null or not is_instance_valid(piece) or not BaseTech.handles(piece.def):
+		return null
+	var body: Node3D = crew[1]
+	if body.global_position.distance_to(piece.global_position) > REACH + maxf(piece.def.size.x, piece.def.size.z):
+		return null
+	return piece
+
+
 ## The tech piece `key` names, if the player is alive and close enough to work it.
 func _piece(p: PlayerState, args: Dictionary, key: String = "piece") -> StructurePiece:
 	if p == null or not p.stats.alive or building == null:
@@ -478,23 +505,28 @@ func _refresh(piece: StructurePiece) -> void:
 
 
 func _cmd_fuel(args: Dictionary) -> Dictionary:
+	# `owner`: the companion pours from his own pack, where he stands (TD-310); else the player.
+	var crew: Array = _crew(args)
 	var p: PlayerState = _player(args)
-	var piece: StructurePiece = _piece(p, args)
+	var piece: StructurePiece = _crew_piece(crew, args) if not crew.is_empty() else _piece(p, args)
 	if piece == null or BaseTech.power_kind(piece.def) != "generator":
 		return _fail("no generator")
+	var inv: Inventory = crew[0] if not crew.is_empty() else p.inventory
 	var item := StringName(str(BaseTech.power_cfg("generator").get("fuel_item", "gas_can")))
-	if not p.inventory.has(item):
-		return _fail("no fuel", "You need a gas can.", &"warning")
+	if not inv.has(item):
+		return _fail("no fuel", "You need a gas can." if crew.is_empty() else "", &"warning")
 	var st: Dictionary = state_of(piece)
 	var tank: float = BaseTech.tank_hours()
 	if float(st.get("fuel", 0.0)) > tank - BaseTech.can_hours() * 0.5:
 		return _fail("full", "The tank is full.")
-	p.inventory.remove(item, 1)
+	inv.remove(item, 1)
 	st["fuel"] = minf(tank, float(st.get("fuel", 0.0)) + BaseTech.can_hours())
 	var ret: String = str(BaseTech.power_cfg("generator").get("returns", ""))
-	if ret != "":
+	if ret != "" and crew.is_empty():
 		_give(p, StringName(ret), 1, piece.global_position)
-	Events.inventory_changed.emit(p.id)
+	elif ret != "":
+		inv.add_item(StringName(ret), 1)
+	Events.inventory_changed.emit(p.id if crew.is_empty() else inv.owner_id)
 	Audio.play_3d(&"sfx/footstep_water", piece.global_position, {"volume_db": -8.0, "pitch": 1.4})
 	refresh_grid()
 	return {"ok": true, "fuel": st["fuel"]}
@@ -643,7 +675,8 @@ static func action(piece: StructurePiece, player: Player) -> Array:
 			if not on:
 				return [&"power.toggle", args, "Start the generator · fuel %s" % BaseTech.hours_text(fuel)]
 			var load: float = float(current.loads.get(String(piece.piece_id), 0.0)) if current != null else 0.0
-			return [&"power.toggle", args, "Stop the generator · fuel %s · load %d%%" % [BaseTech.hours_text(fuel), int(load * 100.0)]]
+			return [&"power.toggle", args, "Stop the generator · fuel %s · load %d%%%s" % [BaseTech.hours_text(fuel), int(load * 100.0),
+				_tuned_text(piece.global_position)]]
 		"turret":
 			var t: Dictionary = BaseTech.power_cfg("turret")
 			var ammo: int = int(st.get("ammo", 0))
@@ -666,6 +699,18 @@ static func _no_power(on: bool, live: bool, grid: bool) -> String:
 	if on:
 		return " (it's on, but the generator can't carry it too)" if grid else " (it's on, but there's no power: wire it to a running generator)"
 	return "" if grid else " (no power: wire it to a running generator)"
+
+
+## " · Ezra keeps it tuned" while his Lineman perk cuts this running generator's fuel (TD-310):
+## the saving shows where the player reads the fuel.
+static func _tuned_text(at: Vector3) -> String:
+	var w: Node = current.world if current != null else null
+	var crew: Node = w.get(&"companion") if w != null else null
+	if crew == null or not crew.has_method(&"fuel_factor") or float(crew.call(&"fuel_factor", at)) >= 1.0:
+		return ""
+	var cd: Variant = crew.get(&"cdef")
+	var nm: String = (cd as ContentDef).display_name.split(" ")[0] if cd is ContentDef and (cd as ContentDef).display_name != "" else "Ezra"
+	return " · %s keeps it tuned" % nm
 
 
 static func prompt(piece: StructurePiece, player: Player) -> String:

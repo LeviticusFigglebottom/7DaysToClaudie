@@ -32,6 +32,8 @@ var _tex: TextureRect
 var _sheet: Control
 var _markers: Control
 var _status: Label
+## The marker legend (MapMarkers layers): a toggle per layer, saved in the settings.
+var _legend: VBoxContainer
 var _task: int = -1
 var _img: Image = null
 var _rect: Rect2
@@ -84,6 +86,15 @@ func _ready() -> void:
 	_status.offset_left = 48
 	_status.offset_top = -48
 	add_child(_status)
+	_legend = VBoxContainer.new()
+	_legend.name = "Legend"
+	_legend.add_theme_constant_override(&"separation", 6)
+	add_child(_legend)
+	_legend.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_legend.offset_left = -300
+	_legend.offset_right = -48
+	_legend.offset_top = 24
+	_build_legend()
 
 
 func _enter_tree() -> void:
@@ -130,6 +141,10 @@ func open() -> void:
 	_rect = world.world_rect()
 	(get_node("Head") as Label).text = "%s  ·  SURVEY SHEET" % (world.display_name if world.display_name != "" else "HOLLOWMERE").to_upper()
 	_status.text = "Wheel: zoom   ·   drag: pan   ·   M / Esc: close"
+	_build_legend()
+	# A pad reaches the legend's toggles with the D-pad (the stick pans the sheet).
+	if Settings.using_pad and _legend.get_child_count() > 1:
+		(_legend.get_child(1).get_child(1) as Control).grab_focus()
 	var key: String = cache_key(world)
 	if _cache_key == key and _cache_img != null:
 		_show(_cache_img)
@@ -187,6 +202,55 @@ func _start_shade(tm: TerrainManager) -> void:
 		DirAccess.make_dir_recursive_absolute(file.get_base_dir())
 		_img.save_webp(file, false, 0.85), false, "world map")
 	_pending_key = cache_key(world)
+
+
+## The legend: what each marker layer is, its colour, and a toggle that shows or hides it (player
+## report 5: the shelters you build are marked, and can be turned off).
+func _build_legend() -> void:
+	for c: Node in _legend.get_children():
+		c.queue_free()
+	var title := UiStyle.label("Built by you", &"DimLabel")
+	title.add_theme_color_override(&"font_color", UiStyle.KIT_TEXT_DIM)
+	_legend.add_child(title)
+	for l: Dictionary in MapMarkers.layers():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override(&"separation", 8)
+		var sw := ColorRect.new()
+		sw.color = MapMarkers.color_of(l)
+		sw.custom_minimum_size = Vector2(14, 14)
+		sw.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		sw.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(sw)
+		var cb := CheckButton.new()
+		cb.text = str(l.get("label", l.get("id", "")))
+		cb.button_pressed = MapMarkers.layer_on(l)
+		cb.add_theme_color_override(&"font_color", UiStyle.KIT_TEXT)
+		cb.add_theme_color_override(&"font_pressed_color", UiStyle.KIT_TEXT)
+		cb.add_theme_color_override(&"font_hover_color", UiStyle.KIT_TEXT)
+		cb.add_theme_color_override(&"font_focus_color", UiStyle.KIT_TEXT)
+		# The legend sits on the dark strip, not the paper: the paper theme's ink tick vanished
+		# there. On is the layer's own colour, off a light empty box.
+		cb.add_theme_icon_override(&"checked", UiStyle.check_icon(true, MapMarkers.color_of(l)))
+		cb.add_theme_icon_override(&"unchecked", UiStyle.check_icon(false, UiStyle.KIT_TEXT_DIM))
+		cb.toggled.connect(_on_layer_toggled.bind(l))
+		row.add_child(cb)
+		_legend.add_child(row)
+		_dim_row(row, cb.button_pressed)
+
+
+func _on_layer_toggled(on: bool, layer: Dictionary) -> void:
+	if MapMarkers.layer_on(layer) != on:
+		MapMarkers.toggle(layer)
+	for row: Node in _legend.get_children():
+		if row is HBoxContainer and ((row as HBoxContainer).get_child(1) as CheckButton).text == str(layer.get("label", layer.get("id", ""))):
+			_dim_row(row as HBoxContainer, on)
+	_markers.queue_redraw()
+
+
+## A layer turned off reads off at a glance: its swatch and name dim (the check box alone was
+## hard to tell on the dark sheet).
+func _dim_row(row: HBoxContainer, on: bool) -> void:
+	row.modulate = Color(1, 1, 1, 1.0 if on else 0.45)
 
 
 func close() -> void:
@@ -528,12 +592,18 @@ func _draw_markers() -> void:
 		for at: Vector3 in (drops.call(&"markers") as Array[Vector3]):
 			var dp: Vector2 = _world_to_sheet(at)
 			_markers.draw_colored_polygon(PackedVector2Array([dp + Vector2(0, -7) * s, dp + Vector2(7, 0) * s, dp + Vector2(0, 7) * s, dp + Vector2(-7, 0) * s]), Color(0.8, 0.2, 0.1))
+	# Where you wake (a filled dot once a bed is set, a ring at the arrival point before): under
+	# what you built, so the shelter you sleep in keeps its house mark.
 	if p != null and p.spawn_point != Vector3.ZERO:
 		var sp: Vector2 = _world_to_sheet(p.spawn_point)
 		if p.has_spawn_point:
 			_markers.draw_circle(sp, 5.0 * s, Color(0.85, 0.65, 0.1))
 		else:
 			_markers.draw_arc(sp, 6.0 * s, 0.0, TAU, 20, Color(0.85, 0.65, 0.1), 2.0)
+	# What you built (MapMarkers), fog or no fog: you know where you built it.
+	if Game.session != null:
+		for bm: Dictionary in MapMarkers.marks(MapMarkers.placed(), MapMarkers.layers()):
+			MapMarkers.draw_mark(_markers, _world_to_sheet(bm["pos"]), bm["layer"], s * 1.2)
 	# The distress call (the first days' tutorial): a red pulsing ring with its bearing.
 	var d: Dictionary = FieldManual.live_distress()
 	if not d.is_empty():

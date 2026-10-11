@@ -670,18 +670,28 @@ func _cmd_place_log(args: Dictionary) -> Dictionary:
 func _cmd_repair(args: Dictionary) -> Dictionary:
 	var p: PlayerState = _player_state(args)
 	var piece: StructurePiece = pieces.get(StringName(str(args.get("piece", ""))))
-	if p == null or piece == null:
+	# `owner`: the companion mends it from his own pack (TD-310); he must stand by it.
+	var inv: Inventory = p.inventory if p != null else null
+	var crew: bool = str(args.get("owner", "")).begins_with("companion:")
+	if crew:
+		var c: Node = world.get(&"companion") if world != null else null
+		inv = c.call(&"inventory_of", StringName(str(args["owner"]))) as Inventory if c != null and c.has_method(&"inventory_of") else null
+		var b: Variant = c.get(&"body") if c != null else null
+		if inv == null or not (b is Node3D) or piece == null or (b as Node3D).global_position.distance_to(piece.global_position) > 4.0 + maxf(piece.def.size.x, piece.def.size.z):
+			return _fail("out of reach")
+	if inv == null or piece == null:
 		return _fail("no piece")
 	if piece.hp >= piece.max_hp() - 0.5:
 		return _fail("not damaged")
 	var cost: Dictionary = repair_cost(piece.def)
-	if not p.inventory.has_all(cost):
-		Events.player_status_message.emit("Repair needs %s." % _cost_text(cost), &"warning")
+	if not inv.has_all(cost):
+		if not crew:
+			Events.player_status_message.emit("Repair needs %s." % _cost_text(cost), &"warning")
 		return _fail("missing materials")
 	for k: Variant in cost.keys():
-		p.inventory.remove(StringName(str(k)), int(cost[k]))
+		inv.remove(StringName(str(k)), int(cost[k]))
 	piece.hp = minf(piece.max_hp(), piece.hp + float(piece.def.repair.get("amount", piece.max_hp() * 0.3)))
-	Events.inventory_changed.emit(p.id)
+	Events.inventory_changed.emit(p.id if not crew else inv.owner_id)
 	Events.structure_damaged.emit(piece.piece_id, piece.hp, piece.max_hp())
 	Audio.play_3d(&"sfx/hammer_repair", piece.global_position, {"volume_db": -2.0})
 	return {"ok": true, "hp": piece.hp}

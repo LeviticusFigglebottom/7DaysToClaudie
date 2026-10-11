@@ -17,15 +17,25 @@ extends RefCounted
 
 const ORDERS: PackedStringArray = ["follow", "stay", "guard", "gather", "fetch", "store"]
 ## Orders that are errands (CompanionWork, ADR-0058 phase 2).
-const ERRANDS: PackedStringArray = ["gather", "fetch", "store"]
+const ERRANDS: PackedStringArray = ["gather", "fetch", "store", "tend"]
 ## Enemy states the fight runs in (EnemyFoes._fight drives CHASE / ATTACK).
 const FIGHT_STATES: Array = [Enemy.State.CHASE, Enemy.State.ATTACK, Enemy.State.SPIT]
 const SCAN_INTERVAL: float = 0.4
+## Pinned on his way (the player standing on his line, a prop the mesh runs through): after this
+## long making under a quarter of the headway he wants, he steps aside for SIDESTEP s before
+## taking his way again. Enemy's detour only slides along static walls; a body in the way (the
+## player, a Hollow) is pushed into head on and held him at a standstill (TD-340's yard mesh).
+const BLOCKED: float = 0.5
+const SIDESTEP: float = 0.9
+## A ledge he steps up onto when pinned against it (a deck's edge, a plinth, a low step in a camp
+## yard): the nav bake climbs 0.5 m, the capsule only rides over a few centimetres, so the mesh led
+## him into steps he could not take (seed 7, TD-340's yard mesh).
+const STEP_MAX: float = 0.55
 ## How long a spotted bark keeps quiet after the last fight (s).
 const SPOTTED_QUIET: float = 45.0
 ## Barks he says on his own (not answering an order): an event repeated within voice.repeat s is
 ## dropped, line and voice (ADR-0058 phase 3, TD-303).
-const AUTO_BARKS: PackedStringArray = ["spotted", "hurt", "full", "done", "cant_reach", "store_full"]
+const AUTO_BARKS: PackedStringArray = ["spotted", "hurt", "full", "done", "cant_reach", "store_full", "fueled", "mended"]
 ## Barks voiced even right after another one.
 const URGENT_BARKS: PackedStringArray = ["downed", "recruited", "revived"]
 
@@ -44,6 +54,12 @@ var gone: bool = false
 var rising_t: float = 0.0
 var lantern: OmniLight3D = null
 var _scan_t: float = 0.0
+var _blocked_t: float = 0.0
+var _side_t: float = 0.0
+var _side := Vector3.ZERO
+var _side_sign: float = 1.0
+## The last frame's wanted move (diagnostics: the smoke's errand tracks).
+var last_want := Vector3.ZERO
 var _fight_end_t: float = -1000.0
 var _bark_n: int = 0
 ## His jaw while he speaks (TD-309), made the first time he does.
@@ -136,9 +152,87 @@ func step(delta: float, p: Player, dist: float) -> bool:
 			_fight_end_t = enemy._now()
 		want = work.step(delta, p) if work.active() else _order_move(p)
 		enemy._set_state(Enemy.State.WANDER if want.length() > 0.05 else Enemy.State.IDLE)
+		want = _sidestep(want, delta)
+	last_want = want
+	if enemy.foe == null and not enemy._nav_straight and enemy.agent != null and not enemy.agent.is_navigation_finished():
+		# On a live mesh path the way is known: Enemy's wall detour (for walking off the mesh) only
+		# turned him back and forth in a pocket short of a step the path ran over (seed 7). Pinned,
+		# he steps up or aside instead (_check_blocked).
+		enemy._detour_t = 0.0
 	enemy._move(want, delta, dist)
+	if enemy.foe == null:
+		_check_blocked(want, delta)
 	_animate(want)
 	_footsteps(delta)
+	return true
+
+
+## While a sidestep is on: mostly sideways, a little on toward where he was going.
+func _sidestep(want: Vector3, delta: float) -> Vector3:
+	if _side_t <= 0.0 or want.length() < 0.05:
+		_side_t = 0.0
+		return want
+	_side_t -= delta
+	return (_side * 0.85 + want.normalized() * 0.3).normalized() * want.length()
+
+
+## After a move: no headway for BLOCKED s starts a sidestep, away from the body he walked into
+## (the player, a Hollow) or, against anything else, to alternate sides.
+func _check_blocked(want: Vector3, delta: float) -> void:
+	# Headway is progress where he wants to go: sliding sideways or turned back is no headway.
+	var flat_v := Vector3(enemy.velocity.x, 0.0, enemy.velocity.z)
+	var wdir := Vector3(want.x, 0.0, want.z).normalized()
+	if want.length() < 0.05 or _side_t > 0.0 or flat_v.dot(wdir) >= want.length() * 0.25:
+		_blocked_t = 0.0
+		return
+	_blocked_t += delta
+	if _blocked_t < BLOCKED:
+		return
+	_blocked_t = 0.0
+	if _step_up(Vector3(want.x, 0.0, want.z).normalized()):
+		return
+	var perp: Vector3 = Vector3(want.x, 0.0, want.z).normalized().cross(Vector3.UP)
+	var away: float = 0.0
+	for i: int in enemy.get_slide_collision_count():
+		var o: Object = enemy.get_slide_collision(i).get_collider()
+		if o is CharacterBody3D or o is RigidBody3D:
+			var to_o: Vector3 = (o as Node3D).global_position - enemy.global_position
+			away = -signf(perp.dot(to_o))
+			break
+	if away == 0.0:
+		_side_sign = -_side_sign
+		away = _side_sign
+	_side = perp * away
+	_side_t = SIDESTEP
+
+
+## Up onto a ledge in front (no higher than STEP_MAX, with room to stand on it): true if he took it.
+func _step_up(dir: Vector3) -> bool:
+	if not enemy.is_inside_tree() or dir == Vector3.ZERO:
+		return false
+	var space: PhysicsDirectSpaceState3D = enemy.get_world_3d().direct_space_state
+	var feet: Vector3 = enemy.global_position
+	var low := PhysicsRayQueryParameters3D.create(feet + Vector3.UP * 0.12, feet + Vector3.UP * 0.12 + dir * 0.9, Enemy.MOVE_MASK)
+	low.exclude = [enemy.get_rid()]
+	var wall: Dictionary = space.intersect_ray(low)
+	if wall.is_empty() or (wall["normal"] as Vector3).y > 0.5 or wall["collider"] is CharacterBody3D or wall["collider"] is RigidBody3D:
+		return false
+	var reach: float = feet.distance_to(wall["position"] as Vector3)
+	var over: Vector3 = feet + dir * (reach + 0.3)
+	var down := PhysicsRayQueryParameters3D.create(over + Vector3.UP * (STEP_MAX + 0.15), over, Enemy.MOVE_MASK)
+	down.exclude = [enemy.get_rid()]
+	var top: Dictionary = space.intersect_ray(down)
+	if top.is_empty() or (top["normal"] as Vector3).y < 0.7:
+		return false
+	var h: float = (top["position"] as Vector3).y - feet.y
+	if h < 0.04 or h > STEP_MAX:
+		return false
+	var head := PhysicsRayQueryParameters3D.create(feet + Vector3.UP * (h + 0.4), feet + Vector3.UP * (h + 0.4) + dir * (reach + 0.6), Enemy.MOVE_MASK)
+	head.exclude = [enemy.get_rid()]
+	if not space.intersect_ray(head).is_empty():
+		return false
+	enemy.global_position = Vector3(over.x, (top["position"] as Vector3).y + 0.02, over.z)
+	enemy.velocity = Vector3.ZERO
 	return true
 
 

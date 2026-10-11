@@ -1185,7 +1185,7 @@ class FPRig:
                 # A relaxed hand also keeps its fingers together whatever their curl (`together`,
                 # ADR-0060): splayed at rest, a lightly curled hand read as hovering over keys.
                 tog = float(prm.get(f"{sd}.together", 0.0))
-                Q[bn] = _R(r[:, 2], (FINGER_CONVERGE[k] * max(0.0, c) + FINGER_TOGETHER[k] * tog) * toward_thumb) @ Q[bn]
+                Q[bn] = _R(r[:, 2], (FINGER_CONVERGE[k] * min(max(0.0, c), 1.0) + FINGER_TOGETHER[k] * tog) * toward_thumb) @ Q[bn]
             # The thumb opposes as it closes: its metacarpal swings across the palm and turns
             # about its own length so the pad, not the side, meets the index finger; then its
             # two joints wrap the handle.
@@ -1250,7 +1250,7 @@ FIST_MAX = 1.3
 # Finger curl at fist 1 (degrees at the MCP, PIP and DIP joints: a fist round a ~3.5 cm handle,
 # the end joint following the middle one), scaled per finger: the ring and little fingers close
 # a little further, as they do round a handle.
-FINGER_CURL = (68.0, 92.0, 58.0)
+FINGER_CURL = (68.0, 92.0, 48.0)
 # How each joint follows a curl below 1 (curl ** lag): the end joint lags. Linear, a loose hand's
 # fingertips were hooked as far as a fist's in proportion (DIP 85% of the MCP), the crooked claw of
 # player report 5; a relaxed hand's end joints are nearly straight (~15-25 degrees) and only
@@ -1258,7 +1258,7 @@ FINGER_CURL = (68.0, 92.0, 58.0)
 CURL_LAG = (1.0, 1.0, 1.6)
 FINGER_SCALE = {"ix": 1.0, "md": 1.0, "rg": 1.05, "pk": 1.12}
 # How far each finger swings toward the thumb side (degrees, + towards it) at curl 1.
-FINGER_CONVERGE = {"ix": -5.0, "md": 0.0, "rg": 4.0, "pk": 9.0}
+FINGER_CONVERGE = {"ix": -7.0, "md": 0.0, "rg": 7.0, "pk": 14.0}
 # How far each finger swings toward the middle one at `together` 1 (degrees, + towards the thumb):
 # the rest pose's splay closed, the fingers touching. The rest pose's fingers already lie side by
 # side (17-19 mm apart at the knuckles, as wide as they are), so this only closes the last of the
@@ -1556,6 +1556,7 @@ class PoseSolver:
         self.relax(0.0)
         self.prev = {}                  # side -> (swing, spin) of the last frame
         self.prev_F = {}                # side -> the hand frame the last frame asked for
+        self.prev_shift = {}            # side -> how far the last frame's grip gave way (m)
         self.clamped = {}               # side -> worst degrees a hand was turned back by
         self.moved = {}                 # side -> furthest (m) a grip was moved to spare the wrist
 
@@ -1600,7 +1601,8 @@ class PoseSolver:
         c = sh + f * l2
         return c + _n(np.asarray(wrist) - c) * l1, c
 
-    def _fit(self, sd: str, g, F, elbow, movable: bool = True, item=None, fixed_roll: bool = False):
+    def _fit(self, sd: str, g, F, elbow, movable: bool = True, item=None, fixed_roll: bool = False,
+             steady: bool = False):
         """(wrist, Rh, pole) for a grip at g with its handle along F's z: the elbow and the roll
         round the handle that bend the wrist least; then, if the wrist is still past its range,
         the hand moved (tool direction kept) just far enough toward where a straight wrist would
@@ -1648,39 +1650,54 @@ class PoseSolver:
             return min((c for c in near if abs(c[0]) <= self.SWINGS[-1] and abs(c[1]) <= self.SPINS[-1]),
                        key=lambda c: cost(gg, *c))
 
-        sw, sp = search(g, self.prev.get(sd))
-        if sd in self.prev and over(g, sw, sp) > 0.5:
-            # A fast swing can outrun the local search: look wide again and take a better answer
-            # (the arm may change its elbow between two frames of a strike, never in an idle).
-            wide = search(g, None)
-            # Mid-strike the hand already turns fast and a new elbow is lost in it; in a slow
-            # move it reads as the hand spinning in one frame.
-            pf = self.prev_F.get(sd)
-            pace = math.degrees(float(np.linalg.norm(_rotvec(F @ pf.T)))) if pf is not None else 0.0
-            if cost(g, *wide) + self.JUMP_COST * max(0.0, 1.0 - pace / self.FAST) < cost(g, sw, sp):
-                sw, sp = wide
-        moved = 0.0
-        if movable and over(g, sw, sp) > 0.5:
-            # Bisect how far toward the straight-wrist grip the hand must go.
-            wrist, Rh, _ = place(g, sw, sp)
-            ws, _c = self._straight_wrist(sd, wrist, Rh)
-            shift = ws - wrist
-            n = float(np.linalg.norm(shift))
-            reach = self.MOVE_MAX + (self.MOVE_RELAXED - self.MOVE_MAX) * self.w
-            if n > reach:
-                shift *= reach / n
-            lo, hi = 0.0, 1.0
-            fit = search(g + shift, (sw, sp))
-            for _ in range(7):
-                mid = 0.5 * (lo + hi)
-                cand = search(g + shift * mid, (sw, sp))
-                if over(g + shift * mid, *cand) <= 0.5:
-                    hi, fit = mid, cand
-                else:
-                    lo = mid
-            g = g + shift * hi
-            sw, sp = fit
-            moved = float(np.linalg.norm(shift)) * hi
+        held = self.prev_shift.get(sd) if steady and sd in self.prev else None
+        if held is not None:
+            # A held loop (idle, guard, reading the tether) keeps its first frame's answer whole:
+            # the elbow, the roll and how far the grip gave way. Re-solved each frame, the local
+            # search moves in 3-degree steps, so the loop's slight drift snapped the hand 3-6
+            # degrees once a cycle and again at the seam (player report 5: a twitch every other
+            # second while the wrist was raised). The drift now passes through smoothly; the
+            # clamp below still keeps the wrist in its range.
+            sw, sp = self.prev[sd]
+            g = g + held
+            moved = float(np.linalg.norm(held))
+        else:
+            sw, sp = search(g, self.prev.get(sd))
+            if sd in self.prev and over(g, sw, sp) > 0.5:
+                # A fast swing can outrun the local search: look wide again and take a better answer
+                # (the arm may change its elbow between two frames of a strike, never in an idle).
+                wide = search(g, None)
+                # Mid-strike the hand already turns fast and a new elbow is lost in it; in a slow
+                # move it reads as the hand spinning in one frame.
+                pf = self.prev_F.get(sd)
+                pace = math.degrees(float(np.linalg.norm(_rotvec(F @ pf.T)))) if pf is not None else 0.0
+                if cost(g, *wide) + self.JUMP_COST * max(0.0, 1.0 - pace / self.FAST) < cost(g, sw, sp):
+                    sw, sp = wide
+            moved = 0.0
+            gave = np.zeros(3)
+            if movable and over(g, sw, sp) > 0.5:
+                # Bisect how far toward the straight-wrist grip the hand must go.
+                wrist, Rh, _ = place(g, sw, sp)
+                ws, _c = self._straight_wrist(sd, wrist, Rh)
+                shift = ws - wrist
+                n = float(np.linalg.norm(shift))
+                reach = self.MOVE_MAX + (self.MOVE_RELAXED - self.MOVE_MAX) * self.w
+                if n > reach:
+                    shift *= reach / n
+                lo, hi = 0.0, 1.0
+                fit = search(g + shift, (sw, sp))
+                for _ in range(7):
+                    mid = 0.5 * (lo + hi)
+                    cand = search(g + shift * mid, (sw, sp))
+                    if over(g + shift * mid, *cand) <= 0.5:
+                        hi, fit = mid, cand
+                    else:
+                        lo = mid
+                g = g + shift * hi
+                gave = shift * hi
+                sw, sp = fit
+                moved = float(np.linalg.norm(shift)) * hi
+            self.prev_shift[sd] = gave
         self.prev[sd] = (sw, sp)
         self.prev_F[sd] = F
         wrist, Rh, pole = place(g, sw, sp)
@@ -1722,7 +1739,8 @@ class PoseSolver:
             # full range (the comfort cost still picks its straightest elbow and roll).
             self.relax(0.0 if h.on is not None else relax)
             g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None, item=h.item,
-                                           fixed_roll=sd in hands.get("_fixed_roll", ()))
+                                           fixed_roll=sd in hands.get("_fixed_roll", ()),
+                                           steady=bool(hands.get("_steady", False)))
             # What the hand really ended up gripping (the other hand follows this handle).
             placed[sd] = Hand(g, Rh @ self.rig.S0[sd], h.elbow, h.sc, item=h.item)
             prm[f"{sd}.wrist"], prm[f"{sd}.Rh"] = wrist, Rh
@@ -1792,6 +1810,7 @@ def _idle(pose: dict, n: int = 60) -> list[dict]:
               "L.move": [0.0, 0.0016 * math.sin(w + 1.3), 0.0], "L.rot": [0.5 * math.sin(w + 2.0), 0.0, 0.0]}
         fr = _key_hands(hold, ch)
         fr["_relax"] = 1.0
+        fr["_steady"] = True
         frames.append(fr)
     return frames
 
@@ -1852,6 +1871,72 @@ def _pinned(frames: list[dict], sides: tuple) -> list[dict]:
         for fr in frames:
             fr["_fixed_roll"] = sides
     return frames
+
+
+# A keyed loop's solved hand may turn at most this much more than the authored hand in a frame
+# (degrees) before smooth_snaps spreads the change over SNAP_SPREAD frames either side.
+SNAP_LIMIT = 2.5
+SNAP_SPREAD = 3
+
+
+def _turn(a: np.ndarray, b: np.ndarray) -> float:
+    return math.degrees(float(np.linalg.norm(_rotvec(a @ b.T))))
+
+
+def smooth_snaps(frames: list, prms: list, loop: bool, grip_off: dict | None = None) -> list:
+    """A keyed loop's solved frames with its snaps eased out (TD-380). The solver keeps each
+    frame's elbow and fist roll near the last, but where the wrist runs past its range it looks
+    wide and may take another arm in one frame: the climb cycles' hands turned 6-9 degrees in a
+    frame at the loop's end while the authored hand barely moved. Where the solved hand turns more
+    than SNAP_LIMIT degrees past the authored hand's own turn, the hand's turn and the elbow's
+    pole are eased between the solve before and after over the frames round it, round the loop's
+    end for a loop (its last frame is its first); each frame keeps its own grip (the wrist follows
+    from it, `grip_off`: the rig's grip offsets), so a hand on a rung stays on it. Other frames are
+    untouched."""
+    n = len(prms)
+    if n < 4:
+        return prms
+    period = n - 1 if loop else n
+    out = [dict(p) for p in prms]
+
+    def idx(i):
+        return i % period if loop else max(0, min(n - 1, i))
+
+    for sd, _ in SIDES:
+        if f"{sd}.Rh" not in prms[0]:
+            continue
+        snaps = []
+        for i in range(1, period + (1 if loop else 0)):
+            a, b = out[idx(i - 1)], out[idx(i)]
+            ha, hb = frames[idx(i - 1)].get(sd), frames[idx(i)].get(sd)
+            pace = _turn(hb.F, ha.F) if ha is not None and hb is not None and ha.F is not None and hb.F is not None else 0.0
+            if _turn(b[f"{sd}.Rh"], a[f"{sd}.Rh"]) - pace > SNAP_LIMIT:
+                snaps.append(i)
+        for i in snaps:
+            lo, hi = i - 1 - SNAP_SPREAD, i + SNAP_SPREAD
+            A, B = out[idx(lo)], out[idx(hi)]
+            qa, qb = _quat(A[f"{sd}.Rh"]), _quat(B[f"{sd}.Rh"])
+            for k in range(lo + 1, hi):
+                t = (k - lo) / float(hi - lo)
+                f = out[idx(k)]
+                grip = f[f"{sd}.wrist"] + f[f"{sd}.Rh"] @ grip_off[sd] if grip_off is not None else None
+                f[f"{sd}.Rh"] = _qmat(_slerp(qa, qb, t))
+                if grip is not None:
+                    f[f"{sd}.wrist"] = grip - f[f"{sd}.Rh"] @ grip_off[sd]
+                f[f"{sd}.pole"] = _n(A[f"{sd}.pole"] + (B[f"{sd}.pole"] - A[f"{sd}.pole"]) * t)
+    if loop:
+        out[n - 1] = dict(out[0])
+    return out
+
+
+def solve_frames(solver, name: str, frames: list, loop: bool, held: set) -> list:
+    """An action's frames solved in order (solver.reset() first); a keyed loop's snaps eased
+    (smooth_snaps). The bake and fp_anatomy both solve through this."""
+    solver.reset()
+    prms = [solver.solve(h) for h in frames]
+    if loop and name not in held:
+        prms = smooth_snaps(frames, prms, loop, solver.rig.grip_off)
+    return prms
 
 
 def fp_actions(cfg: dict):

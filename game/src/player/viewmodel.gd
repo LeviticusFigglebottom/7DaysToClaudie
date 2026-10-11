@@ -835,8 +835,8 @@ func base_action() -> StringName:
 		want = &"fp_carry_log"
 	elif _placing_blueprint():
 		want = &"fp_blueprint"
-	elif tether.wants_up() and has_action(ViewModelHolds.tether_action(hold_class)):
-		want = ViewModelHolds.tether_action(hold_class)
+	elif tether.wants_up() and has_action(_tether_base()):
+		want = _tether_base()
 	elif _guard and has_action(ViewModelHolds.guard_action(hold_class)):
 		want = ViewModelHolds.guard_action(hold_class)
 	if not has_action(want):
@@ -846,6 +846,17 @@ func base_action() -> StringName:
 	return want
 
 
+## The loop for reading the tether: the hold's own, or empty hands when reading puts the item away
+## (ViewModelHolds.reads_stowed; a hold baked without one, too).
+func _tether_base() -> StringName:
+	return ViewModelHolds.tether_action(ViewModelHolds.EMPTY if _reads_stowed() else hold_class)
+
+
+func _reads_stowed() -> bool:
+	return hold_class != ViewModelHolds.EMPTY and (ViewModelHolds.reads_stowed(hold_class, cfg)
+		or not has_action(ViewModelHolds.tether_action(hold_class)))
+
+
 func _update_base(force: bool = false) -> void:
 	if _anim == null or _action != &"" or climb.busy():
 		return
@@ -853,9 +864,9 @@ func _update_base(force: bool = false) -> void:
 	if not has_action(want) or (want == _base and not force and _anim.current_animation == want):
 		return
 	var blend: float = 0.22
-	if want == ViewModelHolds.tether_action(hold_class):
+	if want == _tether_base():
 		blend = tether.raise_time
-	elif _base == ViewModelHolds.tether_action(hold_class):
+	elif _base == _tether_base():
 		blend = tether.lower_time
 	elif want == ViewModelHolds.guard_action(hold_class) or _base == ViewModelHolds.guard_action(hold_class):
 		blend = float((cfg.get("guard", {}) as Dictionary).get("raise_time", 0.12))
@@ -864,7 +875,7 @@ func _update_base(force: bool = false) -> void:
 	_anim.speed_scale = 1.0
 	_base = want
 	# Hands busy with the manual or a log put the item away for the moment.
-	var busy: bool = want == &"fp_carry_log" or want == &"fp_blueprint"
+	var busy: bool = want == &"fp_carry_log" or want == &"fp_blueprint" or (want == _tether_base() and _reads_stowed())
 	if _held != null:
 		_held.visible = not busy
 	_show_manual(want == &"fp_blueprint")
@@ -942,7 +953,8 @@ func _process(delta: float) -> void:
 		_have_basis = true
 	var vel := Vector3.ZERO
 	var speed: float = 0.0
-	motion.rest_ok = _held == null and _action == &"" and tether.progress() <= 0.0 and not _aim_hidden
+	# Not while guarding: bare fists raised to block sank out of view with the resting hands.
+	motion.rest_ok = _held == null and _action == &"" and not _guard and tether.progress() <= 0.0 and not _aim_hidden
 	if _player != null and cam != null:
 		motion.rest_ok = motion.rest_ok and not _player.is_climbing()
 		vel = cam.global_transform.basis.inverse() * _player.velocity

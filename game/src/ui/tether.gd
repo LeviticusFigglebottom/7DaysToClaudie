@@ -12,8 +12,12 @@ const HIDDEN := Vector3(-0.2, -0.42, -0.34)
 const RAISED := Vector3(-0.085, -0.075, -0.3)
 const SCREEN := Vector2i(640, 400)
 const MAP_PX: int = 256
-## Characters of the 14 px caption that fit beside the map's left edge on the screen.
-const CAPTION_CHARS: int = 32
+## Characters of the caption that fit beside the map's left edge at its smallest size
+## (CAPTION_SIZES): a longer name is cut short, anything shorter is shown whole.
+const CAPTION_CHARS: int = 40
+## The caption's font sizes, largest first: it takes the first one its text fits at (the hub's
+## nit: "THE UNMAPPED COUN… · SECTOR A1" was cut at a fixed 14 px).
+const CAPTION_SIZES: Array[int] = [14, 13, 12, 11]
 const WAKE_COLOR := Color(0.95, 0.85, 0.4)
 
 var raised: bool = false
@@ -135,6 +139,9 @@ func _build_screen() -> void:
 	_markers = Control.new()
 	_markers.position = _map.position
 	_markers.size = _map.size
+	# Nothing drawn for the map may spill onto the readouts round it (player report 5: the
+	# buildings of the towns off this map lay in grey clumps over the text).
+	_markers.clip_contents = true
 	_markers.draw.connect(_draw_markers)
 	_root.add_child(_markers)
 	_caption = _lcd_label(Vector2(370, 322), 14)
@@ -223,7 +230,10 @@ func _refresh() -> void:
 	_hum.text = _hum_text()
 	var w: Node = Game.world
 	if w != null and w.get(&"terrain") != null and w.get(&"player") != null:
-		_caption.text = map_caption((w.terrain as TerrainManager).world, (w.player as Node3D).global_position)
+		var cap: String = map_caption((w.terrain as TerrainManager).world, (w.player as Node3D).global_position)
+		if cap != _caption.text:
+			_caption.text = cap
+			_caption.add_theme_font_size_override(&"font_size", caption_size(cap, _caption.get_theme_font(&"font"), _caption.size.x))
 	_ensure_map()
 	_markers.queue_redraw()
 
@@ -313,6 +323,14 @@ static func map_caption(wd: WorldDef, pos: Vector3) -> String:
 	if name_.length() + sector.length() > CAPTION_CHARS:
 		name_ = name_.left(maxi(1, CAPTION_CHARS - sector.length() - 1)).strip_edges() + "…"
 	return name_ + sector
+
+
+## The largest of CAPTION_SIZES the caption fits at in `width` px (the smallest if none).
+static func caption_size(text: String, font: Font, width: float) -> int:
+	for fs: int in CAPTION_SIZES:
+		if font == null or font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= width:
+			return fs
+	return CAPTION_SIZES[-1]
 
 
 ## The open chapter's next two Program directives with their progress.
@@ -435,6 +453,11 @@ func _fill_poly(img: Image, rt: RegionTerrain, poly: Variant, col: Color) -> voi
 				img.set_pixel(x, y, col)
 
 
+## Whether a map point (pixels) is on the minimap.
+static func on_map(mp: Vector2) -> bool:
+	return Rect2(0.0, 0.0, MAP_PX, MAP_PX).has_point(mp)
+
+
 func _to_map(rt: RegionTerrain, p: Vector3) -> Vector2:
 	return Vector2((p.x - rt.rect.position.x) / rt.rect.size.x, (p.z - rt.rect.position.y) / rt.rect.size.y) * float(MAP_PX)
 
@@ -465,7 +488,17 @@ func _draw_markers() -> void:
 			elif bool(m["visited"]):
 				col = Color(0.9, 0.7, 0.4)
 			var mp: Vector2 = _to_map(rt, m["pos"])
+			# Only the buildings on this map: unlike a drop or a contract, one off it is not pinned
+			# to the border (every town round would heap up there).
+			if not on_map(mp):
+				continue
 			_markers.draw_rect(Rect2(mp - Vector2(3, 3), Vector2(6, 6)), col)
+	# What you built (MapMarkers): shelters you can sleep, save or wake at, while their layer is on.
+	if Game.session != null:
+		for bm: Dictionary in MapMarkers.marks(MapMarkers.placed(), MapMarkers.layers()):
+			var bp: Vector2 = _to_map(rt, bm["pos"])
+			if on_map(bp):
+				MapMarkers.draw_mark(_markers, bp, bm["layer"], 0.9)
 	var drops: Node = w.get(&"supply_drops")
 	if drops != null:
 		for at: Vector3 in (drops.call(&"markers") as Array[Vector3]):
