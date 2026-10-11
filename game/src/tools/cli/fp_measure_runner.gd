@@ -9,6 +9,9 @@ const VIEW_TAN := Vector2(0.985, 0.554)
 ## A hand on the knob reads as on the knob with this much screen gap (m at the knob's depth) to the
 ## scope's footprint: about the fist's half-width round the knob.
 const KNOB_GAP_MIN: float = 0.02
+## How far right (fraction of the half-width) the knob may sit on screen so the hand working it is
+## in the frame too (TD-294 remainder: at ~0.8 the right hand was mostly off the frame's right edge).
+const KNOB_X_MAX: float = 0.45
 
 var _vm: ViewModel
 ## The misses measured, for --fix: [{use, frame, miss} or {hold, miss}].
@@ -83,10 +86,11 @@ func _run() -> void:
 			print("FP_MEASURE %s f%d %s %.1f cm  [%.3f, %.3f, %.3f] (item in %s)" % [use, int(key[0]), target, miss.length() * 100.0, miss.x, miss.y, miss.z, _item_hand()])
 			if target == "knob":
 				var rd: Dictionary = _read()
-				var ok: bool = rd["gap"] >= KNOB_GAP_MIN and rd["l_in"] and rd["r_low"]
+				var ok: bool = rd["gap"] >= KNOB_GAP_MIN and rd["k_in"] and rd["l_in"] and rd["r_low"]
 				read_fails += 0 if ok else 1
-				print("FP_READ %s f%d knob gap %.1f cm | L screen (%.2f, %.2f) %s | R elbow %.1f cm below the wrist, %.2f m deep | %s" % [
-					use, int(key[0]), rd["gap"] * 100.0, rd["l"].x, rd["l"].y, "in" if rd["l_in"] else "OUT",
+				print("FP_READ %s f%d knob gap %.1f cm, screen (%.2f, %.2f) %s | L screen (%.2f, %.2f) %s | R elbow %.1f cm below the wrist, %.2f m deep | %s" % [
+					use, int(key[0]), rd["gap"] * 100.0, rd["k"].x / VIEW_TAN.x, rd["k"].y / VIEW_TAN.y, "in" if rd["k_in"] else "RIGHT",
+					rd["l"].x, rd["l"].y, "in" if rd["l_in"] else "OUT",
 					rd["drop"] * 100.0, rd["depth"], "ok" if ok else "FAIL"])
 			var tgt: Vector3 = _target_pos(target)
 			_fixes.append({"use": use, "frame": int(key[0]), "miss": [miss.x, miss.y, miss.z], "target": [tgt.x, tgt.y, tgt.z]})
@@ -158,6 +162,8 @@ func _read() -> Dictionary:
 	var lh: Node3D = (_vm.get(&"_sock") as Dictionary).get("L", null)
 	var l: Vector2 = to_screen(inv * lh.global_position) if lh != null else Vector2(9.0, 9.0)
 	out["l"] = l
+	out["k"] = to_screen(kn)
+	out["k_in"] = (out["k"] as Vector2).x <= VIEW_TAN.x * KNOB_X_MAX and absf((out["k"] as Vector2).y) <= VIEW_TAN.y * 0.9
 	out["l_in"] = absf(l.x) <= VIEW_TAN.x * 0.92 and l.y >= -VIEW_TAN.y * 0.9 and l.y <= VIEW_TAN.y
 	var el: Vector3 = inv * _bone_pos("forearm.R")
 	var wr: Vector3 = inv * _bone_pos("hand.R")
