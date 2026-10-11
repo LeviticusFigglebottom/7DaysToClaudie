@@ -264,7 +264,11 @@ static func terrain_faces(origin: Vector2, count: int, height_fn: Callable, cut:
 ## the terrain out (_bake makes it on a worker).
 func bake_inputs(k: Vector2i, with_terrain: bool = true) -> Array:
 	var nm := NavigationMesh.new()
-	nm.agent_radius = 0.5
+	# One 0.25 m cell off every wall: the bodies are 0.3 m capsules (Ezra, most Hollowed; the
+	# blister 0.36) and slide along a wall they brush. At 0.5 the erosion (two cells a side) shut
+	# 1 m interior doors and small rooms off the mesh, and a horde stood outside the grange's open
+	# stage door (nav_pad_check --doors / --walk, the hub's Hum siege probe).
+	nm.agent_radius = 0.25
 	nm.agent_height = 1.75
 	# What a body can step, not what Recast can (one 0.25 m cell: Recast floors the climb to whole
 	# cells, and 0.3 only warned and baked 0.25): the Hollowed have no step-up (capsule slide, 0.4 m
