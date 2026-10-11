@@ -70,6 +70,10 @@ var pending_fill: OmniLight3D
 var pending: float = 0.0
 ## The room probe the stand-in is lighting for, and its box (global) for placing it.
 var _pending_room: ReflectionProbe = null
+## QA (poi_preview --pending): a room held pending at `_forced` whatever the budget says, so the
+## stand-in can be measured against the same room's settled fill without a slow GPU queue.
+var _forced_room: ReflectionProbe = null
+var _forced: float = 0.0
 const BIOME_EASE: float = 3.0
 ## Rain, snow, splashes, eave drips and motes round the camera, and the weather map.
 var fx: WeatherFx
@@ -459,6 +463,10 @@ static func indoor_exposure(cfg: Dictionary, day: float, inside: float) -> float
 ## Follows the eye's room probe (PoiManager's budget, parked or live): `pending` goes up at once
 ## while it hasn't rendered and fades as it comes in.
 func _update_pending(cam: Camera3D, delta: float) -> void:
+	if _forced_room != null:
+		_pending_room = _forced_room if is_instance_valid(_forced_room) else null
+		pending = _forced
+		return
 	_pending_room = null
 	var want: float = 0.0
 	var budget: Node = _probe_budget()
@@ -470,6 +478,14 @@ func _update_pending(cam: Camera3D, delta: float) -> void:
 		pending = want
 	else:
 		pending = move_toward(pending, want, delta / maxf(0.05, float(_interior_cfg.get("pending_fade_seconds", 0.8))))
+
+
+## Holds `room` pending at `amount` (0..1) until called with null (QA: poi_preview --pending).
+func force_pending(room: ReflectionProbe, amount: float = 1.0) -> void:
+	_forced_room = room
+	_forced = amount
+	if room == null:
+		pending = 0.0
 
 
 func _probe_budget() -> Node:
