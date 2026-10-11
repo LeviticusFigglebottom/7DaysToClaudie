@@ -518,7 +518,7 @@
         "L": {
           "on": "R",
           "along": -0.095,
-          "spin": 0,
+          "spin": 180,
           "fist": 1.0,
           "thumb": 0.85,
           "elbow": [
@@ -556,7 +556,7 @@
         "L": {
           "on": "R",
           "along": 0.26,
-          "spin": 180,
+          "spin": 90,
           "fist": 1.0,
           "thumb": 0.85,
           "elbow": [
@@ -676,7 +676,7 @@
         "L": {
           "on": "R",
           "along": 0.26,
-          "spin": 180,
+          "spin": 90,
           "fist": 0.95,
           "thumb": 0.8,
           "elbow": [
