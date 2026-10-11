@@ -29,8 +29,9 @@ const BLOCKED: float = 0.5
 const SIDESTEP: float = 0.9
 ## A ledge he steps up onto when pinned against it (a deck's edge, a plinth, a low step in a camp
 ## yard): the nav bake climbs 0.5 m, the capsule only rides over a few centimetres, so the mesh led
-## him into steps he could not take (seed 7, TD-340's yard mesh).
-const STEP_MAX: float = 0.55
+## him into steps he could not take (seed 7, TD-340's yard mesh). Up to waist height: with the
+## mesh's cell rounding its waypoints sat 0.6 m up a 0.5 m step (the hub's seed 7 run).
+const STEP_MAX: float = 0.7
 ## How long a spotted bark keeps quiet after the last fight (s).
 const SPOTTED_QUIET: float = 45.0
 ## Barks he says on his own (not answering an order): an event repeated within voice.repeat s is
@@ -58,6 +59,9 @@ var _blocked_t: float = 0.0
 var _side_t: float = 0.0
 var _side := Vector3.ZERO
 var _side_sign: float = 1.0
+## Sidesteps in a row on one side (pinned again soon after the last one) and when the last ended.
+var _side_tries: int = 0
+var _side_end: float = -100.0
 ## The last frame's wanted move (diagnostics: the smoke's errand tracks).
 var last_want := Vector3.ZERO
 var _fight_end_t: float = -1000.0
@@ -159,9 +163,10 @@ func step(delta: float, p: Player, dist: float) -> bool:
 		# turned him back and forth in a pocket short of a step the path ran over (seed 7). Pinned,
 		# he steps up or aside instead (_check_blocked).
 		enemy._detour_t = 0.0
+	var before: Vector3 = enemy.global_position
 	enemy._move(want, delta, dist)
 	if enemy.foe == null:
-		_check_blocked(want, delta)
+		_check_blocked(want, delta, before)
 	_animate(want)
 	_footsteps(delta)
 	return true
@@ -173,16 +178,21 @@ func _sidestep(want: Vector3, delta: float) -> Vector3:
 		_side_t = 0.0
 		return want
 	_side_t -= delta
+	if _side_t <= 0.0:
+		_side_end = enemy._now()
 	return (_side * 0.85 + want.normalized() * 0.3).normalized() * want.length()
 
 
 ## After a move: no headway for BLOCKED s starts a sidestep, away from the body he walked into
 ## (the player, a Hollow) or, against anything else, to alternate sides.
-func _check_blocked(want: Vector3, delta: float) -> void:
-	# Headway is progress where he wants to go: sliding sideways or turned back is no headway.
-	var flat_v := Vector3(enemy.velocity.x, 0.0, enemy.velocity.z)
+func _check_blocked(want: Vector3, delta: float, before: Vector3) -> void:
+	# Headway is how far he actually got where he wants to go: sliding sideways or turned back is
+	# none, and so is a body held in place while its velocity still reads 4 m/s (pressed into a
+	# waist-high edge on the hub's slower runs: the velocity said moving, the position didn't).
+	var moved: Vector3 = enemy.global_position - before
+	moved.y = 0.0
 	var wdir := Vector3(want.x, 0.0, want.z).normalized()
-	if want.length() < 0.05 or _side_t > 0.0 or flat_v.dot(wdir) >= want.length() * 0.25:
+	if want.length() < 0.05 or _side_t > 0.0 or moved.dot(wdir) >= want.length() * 0.25 * delta:
 		_blocked_t = 0.0
 		return
 	_blocked_t += delta
@@ -200,10 +210,19 @@ func _check_blocked(want: Vector3, delta: float) -> void:
 			away = -signf(perp.dot(to_o))
 			break
 	if away == 0.0:
-		_side_sign = -_side_sign
+		# Against a wall or a prop: keep to one side, each try longer, until it clears its end;
+		# after three tries that side is given up for the other (alternating every try only
+		# stepped out and back along a 4 m wall).
+		var again: bool = enemy._now() - _side_end < 2.0
+		_side_tries = _side_tries + 1 if again else 0
+		if _side_tries >= 3:
+			_side_tries = 0
+			_side_sign = -_side_sign
 		away = _side_sign
+	else:
+		_side_tries = 0
 	_side = perp * away
-	_side_t = SIDESTEP
+	_side_t = SIDESTEP * (1.0 + 0.6 * _side_tries)
 
 
 ## Up onto a ledge in front (no higher than STEP_MAX, with room to stand on it): true if he took it.
