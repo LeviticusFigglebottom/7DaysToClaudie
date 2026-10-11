@@ -50,6 +50,20 @@ func wait_until(cond: Callable, timeout_s: float) -> bool:
 	return false
 
 
+## wait_until on the simulation's clock: `sim_s` seconds of physics, however slowly the frames
+## come (a loaded box ran the smoke at half speed and Ezra's errands ran out of wall-clock time,
+## TD-340). A wall-clock cap of four times that keeps a stalled run from hanging.
+func wait_until_sim(cond: Callable, sim_s: float) -> bool:
+	var sim: float = 0.0
+	var cap: int = Time.get_ticks_msec() + int(sim_s * 4000.0)
+	while sim < sim_s and Time.get_ticks_msec() < cap:
+		if cond.call():
+			return true
+		await get_tree().physics_frame
+		sim += get_physics_process_delta_time()
+	return cond.call()
+
+
 func _game() -> Node:
 	return get_node("/root/Game")
 
@@ -332,8 +346,37 @@ func _companion(game: Node, w: GameWorld, p: Player) -> void:
 	var rg: Dictionary = game.execute(&"companion.order", {"order": "gather", "kind": "wood", "spot": [at.x, at.y, at.z]})
 	if ok(bool(rg.get("ok", false)), "ordered to gather wood (%s)" % rg.get("error", "")):
 		var tg: int = Time.get_ticks_msec()
-		var got: bool = await wait_until(func() -> bool:
+		var gtrack: PackedStringArray = []
+		var gnext: Array[int] = [0]
+		var got: bool = await wait_until_sim(func() -> bool:
+			if Time.get_ticks_msec() > gnext[0]:
+				gnext[0] = Time.get_ticks_msec() + 5000
+				var bp: Vector3 = comp.body.global_position
+				var tp: Vector3 = m.work._target_pos() if not m.work.target.is_empty() else Vector3.ZERO
+				var gcols: PackedStringArray = []
+				for ci: int in comp.body.get_slide_collision_count():
+					var kc: KinematicCollision3D = comp.body.get_slide_collision(ci)
+					if kc.get_normal().y < 0.7:
+						gcols.append("%s n(%.1f,%.1f)" % [(kc.get_collider() as Node).name if kc.get_collider() is Node else "?", kc.get_normal().x, kc.get_normal().z])
+				var gnx: Vector3 = comp.body.agent.get_next_path_position() - bp
+				gtrack.append("(%.1f,%.1f %s/%s t%.0f %s at(%.1f,%.1f) d%.1f v(%.1f,%.1f) want(%.1f,%.1f) side %.1f next(%.1f,%.1f) fin %s straight %s detour %.1f [%s])" % [
+					bp.x - at.x, bp.z - at.z, m.order, m.work.phase,
+					m.work._t, str(m.work.target.get("what", "")), tp.x - at.x, tp.z - at.z, Vector2(tp.x - bp.x, tp.z - bp.z).length(),
+					comp.body.velocity.x, comp.body.velocity.z, m.last_want.x, m.last_want.z, m._side_t, gnx.x, gnx.z,
+					comp.body.agent.is_navigation_finished(), comp.body._nav_straight, comp.body._detour_t, ", ".join(gcols)])
 			return comp.inventory.count_of(&"log") + comp.inventory.count_of(&"stick") > 0, 150.0)
+		if not got:
+			print("[smoke] gather track (camp-relative): %s" % " ".join(gtrack))
+			var gb: Vector3 = comp.body.global_position
+			for gdir: Vector3 in [comp.body.agent.get_next_path_position() - gb, Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(-1, 0, 0), Vector3(0, 0, 1)]:
+				gdir.y = 0.0
+				gdir = gdir.normalized()
+				for h: float in [0.3, 1.0]:
+					var q := PhysicsRayQueryParameters3D.create(gb + Vector3.UP * h, gb + Vector3.UP * h + gdir * 2.0, Enemy.MOVE_MASK)
+					q.exclude = [comp.body.get_rid()]
+					var hit: Dictionary = comp.body.get_world_3d().direct_space_state.intersect_ray(q)
+					print("[smoke] gather ray (%.1f,%.1f) at %.1f m: %s" % [gdir.x, gdir.z, h, "nothing" if hit.is_empty() else "%s (layer %d) at %.2f m" % [
+						(hit["collider"] as Node).get_path(), (hit["collider"] as CollisionObject3D).collision_layer, gb.distance_to(hit["position"])]])
 		ok(got, "he brings in wood from the region (%d logs, %d sticks, %.0f s)" % [comp.inventory.count_of(&"log"),
 			comp.inventory.count_of(&"stick"), (Time.get_ticks_msec() - tg) / 1000.0])
 	# Fetch a log the player looked at.
@@ -343,7 +386,7 @@ func _companion(game: Node, w: GameWorld, p: Player) -> void:
 	var out: Vector3 = comp.safe_spot(at + Vector3(0.0, 0.0, 16.0))
 	p.global_position = Vector3(out.x, w.height_at(out.x, out.z) + 0.1, out.z)
 	p.velocity = Vector3.ZERO
-	await wait_until(func() -> bool: return comp.body.global_position.distance_to(p.global_position) < 5.0, 40.0)
+	await wait_until_sim(func() -> bool: return comp.body.global_position.distance_to(p.global_position) < 5.0, 40.0)
 	# On open ground he can walk to.
 	var lat: Vector3 = comp.safe_spot(p.global_position, p.global_position + Vector3(8.0, 0.0, 3.0))
 	var lg: LogEntity = w.loose.spawn_log(lat + Vector3.UP * 0.3, Basis(), &"")
@@ -355,7 +398,7 @@ func _companion(game: Node, w: GameWorld, p: Player) -> void:
 		var lref: WeakRef = weakref(lg)
 		var track: PackedStringArray = []
 		var next_t: Array[int] = [0]
-		var fetched: bool = await wait_until(func() -> bool:
+		var fetched: bool = await wait_until_sim(func() -> bool:
 			if Time.get_ticks_msec() > next_t[0]:
 				next_t[0] = Time.get_ticks_msec() + 5000
 				var bp: Vector3 = comp.body.global_position
@@ -364,8 +407,9 @@ func _companion(game: Node, w: GameWorld, p: Player) -> void:
 					var kc: KinematicCollision3D = comp.body.get_slide_collision(ci)
 					cols.append("%s n(%.2f,%.2f,%.2f)" % [(kc.get_collider() as Node).name if kc.get_collider() is Node else "?", kc.get_normal().x, kc.get_normal().y, kc.get_normal().z])
 				var nx: Vector3 = comp.body.agent.get_next_path_position() - bp
-				track.append("(%.1f,%.1f,%.1f %s/%s v(%.1f,%.1f) next(%.1f,%.1f,%.1f) fin %s far %s)" % [bp.x - at.x, bp.y, bp.z - at.z, m.order, m.work.phase,
-					comp.body.velocity.x, comp.body.velocity.z, nx.x, nx.y, nx.z, comp.body.agent.is_navigation_finished(), comp.body._far])
+				track.append("(%.1f,%.1f,%.1f %s/%s v(%.1f,%.1f) want(%.1f,%.1f) side %.1f %s next(%.1f,%.1f,%.1f) fin %s far %s)" % [bp.x - at.x, bp.y, bp.z - at.z,
+					m.order, m.work.phase, comp.body.velocity.x, comp.body.velocity.z, m.last_want.x, m.last_want.z, m._side_t,
+					Enemy.State.keys()[comp.body.state], nx.x, nx.y, nx.z, comp.body.agent.is_navigation_finished(), comp.body._far])
 			var l: Object = lref.get_ref()
 			return l == null or (l as Node).is_queued_for_deletion(), 130.0)
 		if not fetched:
@@ -394,7 +438,7 @@ func _companion(game: Node, w: GameWorld, p: Player) -> void:
 			comp.body.global_position.distance_to(p.global_position), m.order, m.work.to_dict()])
 		var rtrack: PackedStringArray = []
 		var rnext: Array[int] = [0]
-		await wait_until(func() -> bool:
+		await wait_until_sim(func() -> bool:
 			if Time.get_ticks_msec() > rnext[0]:
 				rnext[0] = Time.get_ticks_msec() + 3000
 				var bp: Vector3 = comp.body.global_position
@@ -412,8 +456,17 @@ func _companion(game: Node, w: GameWorld, p: Player) -> void:
 		if m.order != "follow":
 			print("[smoke] return track: %s" % " ".join(rtrack))
 	var before: int = ps.inventory.count_of(&"stick") + ps.inventory.count_of(&"log")
-	# Give is a hand-over within reach: he comes back to the player first.
-	await wait_until(func() -> bool: return comp.body.global_position.distance_to(p.global_position) < 5.0, 30.0)
+	# Give is a hand-over within reach: he comes back to the player first (and has finished any
+	# errand: a fetch still on its way back hands over when it arrives).
+	await wait_until_sim(func() -> bool: return m.order == "follow" and comp.body.global_position.distance_to(p.global_position) < 5.0, 30.0)
+	# Following, he settles anywhere 3-6 m off and give reaches 6 m: the player steps up to him as a
+	# player would, rather than the run hanging on where he happened to stop (6.0 m on a slow box).
+	var to_him: Vector3 = comp.body.global_position - p.global_position
+	if Vector2(to_him.x, to_him.z).length() > 4.0:
+		var stand: Vector3 = comp.body.global_position - Vector3(to_him.x, 0.0, to_him.z).normalized() * 2.5
+		p.global_position = Vector3(stand.x, w.height_at(stand.x, stand.z) + 0.1, stand.z)
+		p.velocity = Vector3.ZERO
+		await frames(2)
 	var rgv: Dictionary = game.execute(&"companion.give", {})
 	var bpg: Vector3 = comp.body.global_position
 	ok(bool(rgv.get("ok", false)) or comp.inventory.is_empty(), "he hands over what he carries (%s; %.1f m off at (%.1f,%.1f), order %s/%s, carrying %s)" % [
