@@ -89,6 +89,8 @@ func _run() -> void:
 		await _markers()
 	elif OS.get_cmdline_user_args().has("--hands"):
 		await _hands()
+	elif OS.get_cmdline_user_args().has("--run-classes"):
+		await _run_classes()
 	else:
 		# --moves / --classes: one half of the run (both by default).
 		var only_c: bool = OS.get_cmdline_user_args().has("--classes")
@@ -305,6 +307,33 @@ func _classes() -> void:
 		var up: bool = vm != null and vm.tether_raised()
 		print("WRIST_AUDIT class %s (%s): raised %s" % [cls, items[cls], up])
 		await _snap("class_%s" % cls)
+		await _raise(false)
+
+
+# --- The wrist glanced at while running, every hold (owner: "can't see wrist device when running")
+
+## Sprinting first, then T, as a player glances at it on the move: each hold class's wrist must
+## come up (or, for a hold that can't read, say so) and be framed.
+func _run_classes() -> void:
+	var items: Dictionary = _class_items()
+	var start: Vector3 = w.drop_site() + Vector3(4.0, 0.0, 4.0)
+	for cls: StringName in items:
+		await _hold(items[cls])
+		await _place_for("sprint", start)
+		Input.action_press(&"move_forward")
+		Input.action_press(&"sprint")
+		await _frames(20)
+		await _raise(true)
+		await _frames(20)
+		var vm: ViewModel = p.equipment.viewmodel
+		var up: bool = vm != null and vm.tether_raised()
+		var reading: float = vm.tether.progress() if vm != null else 0.0
+		print("WRIST_AUDIT run %s (%s): sprinting %s raised %s reading %.2f" % [cls, items[cls], p.sprinting, up, reading])
+		if not up or reading < 0.9:
+			_fails += 1
+			print("WRIST_AUDIT FAIL run %s: the wrist isn't up while running" % cls)
+		await _snap("run_%s" % cls)
+		_release_all()
 		await _raise(false)
 
 
