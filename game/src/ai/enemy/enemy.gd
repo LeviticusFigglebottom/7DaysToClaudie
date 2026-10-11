@@ -317,6 +317,7 @@ func _ready() -> void:
 	floor_max_angle = deg_to_rad(50.0)
 	floor_snap_length = 0.4
 	add_to_group(&"enemies")
+	var t_vis: int = Time.get_ticks_usec()
 	visual = EnemyVisual.new()
 	visual.name = "Visual"
 	add_child(visual)
@@ -324,6 +325,7 @@ func _ready() -> void:
 	var bs: Array = def.beh("body_scale", [1.0, 1.0, 1.0])
 	var size: float = _rng.randf_range(def.scale_range.x, def.scale_range.y)
 	visual.build(body, size, Vector3(float(bs[0]), float(bs[1]), float(bs[2])))
+	StreamMeter.note("enemy visual", t_vis)
 	# Its own skin tone and wear (TD-192): two of one body in a crowd don't look like twins.
 	visual.set_variation(float(Ids.hash64(String(entity_id) + ":tone") & 0xffff) / 65535.0)
 	# The capsule is also what weapons hit: as tall as this body really is (a tall Hollow's head
@@ -343,6 +345,7 @@ func _ready() -> void:
 	_fit_shape()
 	if _glow > 0.0:
 		visual.set_bloom(_glow)
+	var t_agent: int = Time.get_ticks_usec()
 	agent = NavigationAgent3D.new()
 	agent.path_desired_distance = 0.8
 	agent.target_desired_distance = 1.0
@@ -351,6 +354,7 @@ func _ready() -> void:
 	agent.height = 1.7 if quad.is_empty() else 0.8
 	add_child(agent)
 	agent.link_reached.connect(_on_link_reached)
+	StreamMeter.note("enemy agent", t_agent)
 	if not perch.is_empty():
 		# On its seat or bed, posed for this body's size (the animation offsets scale with it).
 		var place: Dictionary = SleeperAnchors.body_origin(perch, visual.scale)

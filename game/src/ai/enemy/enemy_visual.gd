@@ -99,6 +99,27 @@ static func model_path(id: String) -> String:
 	return "res://assets/generated/models/%s.glb" % id
 
 
+## Every body a Hollowed of this type may wear: its own, and every population's for it (or for "*").
+## What ModelWarmup loads before one spawns (population_body picks among them when it does).
+static var _candidates: Dictionary = {}
+
+
+static func candidate_bodies(def: EnemyDef) -> PackedStringArray:
+	if def == null:
+		return PackedStringArray()
+	if _candidates.has(def.id):
+		return _candidates[def.id]
+	var out: PackedStringArray = def.bodies.duplicate()
+	for d: Resource in Content.all(&"population"):
+		var bodies: Dictionary = (d as PopulationDef).bodies
+		for key: String in [String(def.id), "*"]:
+			for b: Variant in (bodies.get(key, {}) as Dictionary).keys():
+				if not out.has(str(b)):
+					out.append(str(b))
+	_candidates[def.id] = out
+	return out
+
+
 ## Population looks (ADR-0028): the body a Hollowed wears comes from the population its sleeper
 ## post, its building or its region asks for (PopulationDef); `fallback`, the type's own pick,
 ## otherwise, and while that body's model is not generated yet.
@@ -170,10 +191,16 @@ func build(p_model_id: String, height_scale: float, body_scale := Vector3.ONE) -
 	var path: String = model_path(model_id)
 	# A model regenerated but not imported yet has a sidecar and no scene: the stand-in body then,
 	# rather than a Hollowed with no body at all.
+	var t_load: int = Time.get_ticks_usec()
 	var ps: PackedScene = load(path) as PackedScene if ResourceLoader.exists(path) else null
+	StreamMeter.note("visual load", t_load)
 	if ps != null:
+		var t_inst: int = Time.get_ticks_usec()
 		_root = ps.instantiate() as Node3D
+		StreamMeter.note("visual instantiate", t_inst)
+		var t_enter: int = Time.get_ticks_usec()
 		add_child(_root)
+		StreamMeter.note("visual enter", t_enter)
 		anim = _root.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		skeleton = _root.find_child("Skeleton3D", true, false) as Skeleton3D
 		for n: Node in _root.find_children("*", "MeshInstance3D", true, false):
