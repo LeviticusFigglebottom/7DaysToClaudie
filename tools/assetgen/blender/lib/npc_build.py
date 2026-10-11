@@ -217,7 +217,12 @@ def close_mouth(model) -> None:
     lo_lip = model.jaw_point(0.0, 0.80, 0.030)
     mc = 0.5 * (up_lip + lo_lip)
     model.skin.ellipsoid(mc - R[:, 2] * 0.006 * s, np.array([0.022, 0.008, 0.0085]) * s, R=Rl, k=0.004 * s, label=B.L_SKIN)
-    model.skin.ellipsoid(mc, np.array([0.020, 0.006, 0.0009]) * s, R=Rl, k=0.0006 * s, label=B.L_GORE, mode="sub")
+    # The parting is far finer than the face's triangles: labelled dark (the mouth's L_GORE), whole
+    # triangles along it went black in a zig-zag through the beard (TD-302, Ezra). `lip_parting`
+    # False cuts it unlabelled: the lips meet, skin-coloured.
+    dark = bool(model.p.get("lip_parting", True))
+    model.skin.ellipsoid(mc, np.array([0.020, 0.006, 0.0009]) * s, R=Rl, k=0.0006 * s, label=B.L_GORE if dark else None,
+                         mode="sub")
 
 
 def dress_npc(model, params: dict, rng) -> None:
