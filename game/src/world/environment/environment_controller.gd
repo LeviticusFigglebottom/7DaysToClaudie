@@ -495,15 +495,22 @@ func _probe_budget() -> Node:
 
 
 ## The stand-in fill (pending_fill): the room fill a rendered probe would give (`energy`, `col`),
-## times `pending_fill`, from the middle of the room's box and reaching its corners.
+## times `pending_fill`, from just under the ceiling over the eye (kept inside the room's box) and
+## reaching its far corners. Over the eye, every surface in view faces it: from the box's middle, a
+## box spanning a whole storey (the Cordon garage's: 20 x 10 m) lit its far walls and left the
+## office the eye stood in near black on the side facing away.
 func _place_pending_fill(col: Color, energy: float) -> void:
 	var p: ReflectionProbe = _pending_room
-	if p == null or not is_instance_valid(p) or pending <= 0.001:
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	if p == null or not is_instance_valid(p) or pending <= 0.001 or cam == null:
 		pending_fill.visible = false
 		return
 	var xf: Transform3D = p.global_transform if p.is_inside_tree() else p.get_meta(&"probe_xf", p.transform)
-	pending_fill.global_position = xf.origin
-	pending_fill.omni_range = p.size.length() * 0.5 + 1.5
+	var h: Vector3 = p.size * 0.5
+	var local: Vector3 = xf.affine_inverse() * cam.global_position
+	local = Vector3(clampf(local.x, -h.x + 0.3, h.x - 0.3), h.y - 0.4, clampf(local.z, -h.z + 0.3, h.z - 0.3))
+	pending_fill.global_position = xf * local
+	pending_fill.omni_range = p.size.length() + 1.0
 	pending_fill.light_color = col
 	pending_fill.light_energy = energy * pending * float(_interior_cfg.get("pending_fill", 1.0))
 	pending_fill.visible = pending_fill.light_energy > 0.0005
