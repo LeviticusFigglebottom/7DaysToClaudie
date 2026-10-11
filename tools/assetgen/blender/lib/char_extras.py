@@ -139,6 +139,8 @@ def teeth(model, rng) -> Part:
     missing = float(model.p.get("teeth_missing", 0.2))
     recede = float(model.p.get("gum_recede", 0.5))
     jaw0 = model.skel.head["jaw"]
+    # Behind a living face's closed lips (TD-302): set back so the front crowns stay inside them.
+    back = 0.004 * float(np.clip(model.p.get("living_face", 0.0), 0.0, 1.0)) * s
     for row in ("upper", "lower"):
         if row == "upper":
             cen = model.HP(0, -0.0605, 0.064)
@@ -157,7 +159,7 @@ def teeth(model, rng) -> Part:
         gum_pts = []
         for i in range(n):
             phi = (i + 0.5) / n * math.radians(160) - math.radians(80)
-            pos = cen + left * math.sin(phi) * ar * 1.05 + front * math.cos(phi) * ar
+            pos = cen + left * math.sin(phi) * ar * 1.05 + front * (math.cos(phi) * ar - back)
             tang = _n(left * math.cos(phi) - front * math.sin(phi) * 1.0)
             outn = _n(np.cross(down, tang) * (1 if row == "upper" else -1))
             gum_pts.append((pos, tang, outn))

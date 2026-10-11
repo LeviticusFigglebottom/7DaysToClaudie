@@ -175,6 +175,11 @@ def add_beard(model, spec: dict) -> None:
     thick = float(spec.get("thickness", 0.0045)) * s
     line = float(spec.get("line", -0.030))
     moustache = bool(spec.get("moustache", True))
+    # How far the beard keeps off the lips (reference metres). Ezra's 0 lets moustache and beard
+    # cover the lip line (TD-302 round 2: the 6.5 mm clearing left bald holes round his mouth).
+    lip_clear = float(spec.get("lip_clear", 0.0065))
+    # How high the sideburns rise in front of the ear over the cheek line (reference metres).
+    sideburn = float(spec.get("sideburn", 0.030))
     nz = model.noise
     up_a, up_b = model.HP(-0.021, -0.0585, 0.0905), model.HP(0.021, -0.0585, 0.0905)
     lo_a, lo_b = model.jaw_point(-0.018, 0.80, 0.030), model.jaw_point(0.018, 0.80, 0.030)
@@ -185,15 +190,20 @@ def add_beard(model, spec: dict) -> None:
         ax_ = np.abs(x)
         # the cheek line: low on the cheek, rising to the sideburns just in front of the ear
         side = smoothstep(0.052, 0.068, ax_) * (1 - smoothstep(-0.005, 0.020, z))
-        top = line - 0.008 * (1 - smoothstep(0.030, 0.055, ax_)) + 0.030 * side
+        top = line - 0.008 * (1 - smoothstep(0.030, 0.055, ax_)) + sideburn * side
         reg = y - (top + nz.noise(P, 60.0) * 0.002)
+        if line > -0.020:
+            # a beard line raised over the cheeks (Ezra's) keeps off the nose; the default line
+            # stays below it, and those beards build exactly as before
+            reg = np.maximum(reg, np.minimum(0.0165 - ax_, y + 0.0365))
         reg = np.maximum(reg, -0.035 - z)                                    # nothing behind the ear
         reg = np.maximum(reg, -0.106 - y)                                    # ends under the jaw
         if moustache:
             mo = np.maximum(np.maximum(np.abs(y + 0.0495) - 0.0070, ax_ - 0.027), 0.072 - z)
             reg = np.minimum(reg, mo)
         d_lip = np.minimum(B.seg_dist(P, up_a, up_b)[0], B.seg_dist(P, lo_a, lo_b)[0]) / s
-        reg = np.maximum(reg, 0.0065 - d_lip)                               # lips clear
+        if lip_clear > 0.0:
+            reg = np.maximum(reg, lip_clear - d_lip)                        # lips clear
         # The edges taper into the skin (no step): full thickness 8 mm inside the line. Outside
         # the line the shell is cut off (the head's segment skirt at the neck cut lies outside
         # the skin, and an unbounded shell took it over: a beard down the throat).
@@ -217,7 +227,12 @@ def close_mouth(model) -> None:
     lo_lip = model.jaw_point(0.0, 0.80, 0.030)
     mc = 0.5 * (up_lip + lo_lip)
     model.skin.ellipsoid(mc - R[:, 2] * 0.006 * s, np.array([0.022, 0.008, 0.0085]) * s, R=Rl, k=0.004 * s, label=B.L_SKIN)
-    model.skin.ellipsoid(mc, np.array([0.020, 0.006, 0.0009]) * s, R=Rl, k=0.0006 * s, label=B.L_GORE, mode="sub")
+    # The parting is far finer than the face's triangles: labelled dark (the mouth's L_GORE), whole
+    # triangles along it went black in a zig-zag through the beard (TD-302, Ezra). `lip_parting`
+    # False cuts it unlabelled: the lips meet, skin-coloured.
+    dark = bool(model.p.get("lip_parting", True))
+    model.skin.ellipsoid(mc, np.array([0.020, 0.006, 0.0009]) * s, R=Rl, k=0.0006 * s, label=B.L_GORE if dark else None,
+                         mode="sub")
 
 
 def dress_npc(model, params: dict, rng) -> None:
