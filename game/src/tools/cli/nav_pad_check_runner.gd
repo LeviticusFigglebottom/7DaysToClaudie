@@ -19,6 +19,18 @@ var _doors: bool = false
 var _door_total: int = 0
 var _door_joined: int = 0
 const DOOR_REACH: float = 1.5
+## --walk N: then N Hollowed (hunting the player, who stands inside) and Ezra (ordered to a spot
+## inside) walk through each of those doors from outside; it counts who gets in, and the frames a
+## body stood still while it meant to move (stuck) or rubbed a wall (slid).
+var _walk: int = 0
+var _walk_jobs: Array[Dictionary] = []
+var _walk_failed: int = 0
+var _walk_tot: Dictionary = {"hollow": 0, "hollow_in": 0, "ezra": 0, "ezra_in": 0, "stuck": 0, "slid": 0}
+const WALK_LIMIT: float = 30.0
+## A body this slow (m/s) while it means to move is stuck that frame.
+const STUCK_SPEED: float = 0.15
+## States a body stands still in on purpose.
+const STILL_STATES: Array = [Enemy.State.ATTACK, Enemy.State.BREAK, Enemy.State.STAGGER, Enemy.State.SCREAM, Enemy.State.VAULT]
 
 
 func _ready() -> void:
@@ -47,6 +59,9 @@ func _run() -> void:
 		only = args[args.find("--poi") + 1].split(",")
 	var max_n: int = int(args[args.find("--max") + 1]) if args.find("--max") >= 0 else 12
 	_doors = args.has("--doors")
+	if args.find("--walk") >= 0:
+		_doors = true
+		_walk = int(args[args.find("--walk") + 1])
 	game.call(&"start_new_game", opts)
 	if not await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), 600.0):
 		print("[navpad] world never got ready")
@@ -92,12 +107,19 @@ func _run() -> void:
 			await get_tree().physics_frame
 		_check(w, inst, id2)
 		if _doors:
+			_walk_jobs.clear()
 			_check_doors(w, inst, id2)
+			if _walk > 0:
+				await _walk_doors(w, inst, id2)
 		done += 1
 	print("[navpad] %d buildings checked, %d findings" % [done, _findings])
 	if _doors:
 		print("[navpad] doors: %d of %d open or broken ground-floor doors to the outside join the inside" % [_door_joined, _door_total])
-	get_tree().quit(0 if _findings == 0 and _door_joined == _door_total else 1)
+	if _walk > 0:
+		var t: Dictionary = _walk_tot
+		print("[navpad] walk: %d of %d Hollowed and %d of %d Ezra got in; %d stuck and %d slid frames; %d doors with someone left out" % [
+			t["hollow_in"], t["hollow"], t["ezra_in"], t["ezra"], t["stuck"], t["slid"], _walk_failed])
+	get_tree().quit(0 if _findings == 0 and _door_joined == _door_total and _walk_failed == 0 else 1)
 
 
 func _tiles_ready(nav: Node) -> bool:
@@ -280,6 +302,7 @@ func _check_doors(w: Node, inst: PoiInstance, id: StringName) -> void:
 		var co: Vector3 = NavigationServer3D.map_get_closest_point(map, outside)
 		n += 1
 		_door_total += 1
+		_walk_jobs.append({"door": str(op["id"]), "inside": ci, "outside": co, "out_dir": inst.global_transform.basis * Vector3(-in_dir.x, 0, -in_dir.y)})
 		if ci.distance_to(inside) > 1.0 or co.distance_to(outside) > 1.0:
 			bad.append("%s: an end off the mesh (inside %.1f m, outside %.1f m; floor y %.2f)" % [op["id"], ci.distance_to(inside), co.distance_to(outside), floor_y])
 			continue
@@ -296,3 +319,93 @@ func _check_doors(w: Node, inst: PoiInstance, id: StringName) -> void:
 			_door_joined += 1
 	if n > 0:
 		print("[navpad] doors %s: %d of %d joined%s" % [id, n - bad.size(), n, "" if bad.is_empty() else ": " + "; ".join(bad)])
+
+
+## --walk: each door's bodies, one group at a time (N Hollowed, then Ezra on his own so he has no
+## foe to turn on).
+func _walk_doors(w: Node, inst: PoiInstance, id: StringName) -> void:
+	var p: Player = w.get(&"player")
+	var ai: Node = w.get(&"ai")
+	Game.session.clock.set_time(Game.session.clock.day(), 23.0)  # night: they run
+	for job: Dictionary in _walk_jobs:
+		var inside: Vector3 = job["inside"]
+		var out_dir: Vector3 = (job["out_dir"] as Vector3).normalized()
+		var side: Vector3 = out_dir.cross(Vector3.UP)
+		var hollows: Array[Enemy] = []
+		for i: int in _walk:
+			var at: Vector3 = (job["outside"] as Vector3) + out_dir * (2.0 + 1.0 * i) + side * (0.7 if i % 2 == 0 else -0.7)
+			at.y = float(w.call(&"height_at", at.x, at.z)) + 0.1
+			var e: Enemy = ai.call(&"spawn", &"hollow", at, {"authored": true, "id": "navwalk_%d" % i, "tier": "normal"}) as Enemy
+			if e != null:
+				hollows.append(e)
+		var hr: Dictionary = await _walk_group(inst, p, hollows, inside, false)
+		for e: Enemy in hollows:
+			if is_instance_valid(e):
+				ai.call(&"despawn", e)
+		var ez_at: Vector3 = (job["outside"] as Vector3) + out_dir * 2.5
+		ez_at.y = float(w.call(&"height_at", ez_at.x, ez_at.z)) + 0.1
+		var cdef: CompanionDef = Content.get_def(&"companion", &"ezra") as CompanionDef
+		var ez: Enemy = ai.call(&"spawn", cdef.enemy, ez_at, {"authored": true, "id": "navwalk_ezra", "tier": "normal"}) as Enemy
+		var er: Dictionary = {"n": 0, "in": 0, "stuck": 0, "slid": 0, "t": PackedFloat32Array()}
+		if ez != null and ez.ally != null:
+			ez.ally.recruited = true
+			ez.ally.set_order("stay", inside)
+			er = await _walk_group(inst, p, [ez], inside, true)
+			ai.call(&"despawn", ez)
+		_walk_tot["hollow"] += hr["n"]
+		_walk_tot["hollow_in"] += hr["in"]
+		_walk_tot["ezra"] += er["n"]
+		_walk_tot["ezra_in"] += er["in"]
+		_walk_tot["stuck"] += int(hr["stuck"]) + int(er["stuck"])
+		_walk_tot["slid"] += int(hr["slid"]) + int(er["slid"])
+		if hr["in"] < hr["n"] or er["in"] < er["n"]:
+			_walk_failed += 1
+		print("[navpad] walk %s %s: Hollowed %d of %d in (%s s), stuck %d, slid %d; Ezra %d of %d in (%s s), stuck %d, slid %d" % [
+			id, job["door"], hr["in"], hr["n"], _times(hr["t"]), hr["stuck"], hr["slid"],
+			er["in"], er["n"], _times(er["t"]), er["stuck"], er["slid"]])
+
+
+## Runs bodies at `inside` (the Hollowed hunt the player standing there; Ezra walks to his spot)
+## for up to WALK_LIMIT s: {n, in, stuck, slid, t (each one's time in)}.
+func _walk_group(inst: PoiInstance, p: Player, bodies: Array, inside: Vector3, ezra: bool) -> Dictionary:
+	var r: Dictionary = {"n": bodies.size(), "in": 0, "stuck": 0, "slid": 0, "t": PackedFloat32Array()}
+	var done: Dictionary = {}
+	var t: float = 0.0
+	var dt: float = 1.0 / float(Engine.physics_ticks_per_second)
+	await get_tree().physics_frame
+	while t < WALK_LIMIT and done.size() < bodies.size():
+		p.global_position = inside + Vector3.UP * 0.1
+		p.velocity = Vector3.ZERO
+		for b: Variant in bodies:
+			var e: Enemy = b as Enemy
+			if not ezra and is_instance_valid(e) and not done.has(e):
+				e.last_seen_time = e._now() + 5.0
+				e.target_pos = p.global_position
+				if e.state in [Enemy.State.IDLE, Enemy.State.WANDER, Enemy.State.INVESTIGATE, Enemy.State.SLEEP]:
+					e._set_state(Enemy.State.CHASE)
+		await get_tree().physics_frame
+		t += dt
+		for b: Variant in bodies:
+			var e: Enemy = b as Enemy
+			if not is_instance_valid(e) or done.has(e):
+				continue
+			if inst.is_indoors(e.global_position) and e._flat_dist(inside) < (1.6 if ezra else 2.2):
+				done[e] = true
+				r["in"] += 1
+				(r["t"] as PackedFloat32Array).append(t)
+				continue
+			if Vector2(e.velocity.x, e.velocity.z).length() < STUCK_SPEED and not (e.state in STILL_STATES):
+				r["stuck"] += 1
+			for c: int in e.get_slide_collision_count():
+				var col: KinematicCollision3D = e.get_slide_collision(c)
+				if col.get_normal().y < 0.5 and not (col.get_collider() is CharacterBody3D):
+					r["slid"] += 1
+					break
+	return r
+
+
+func _times(ts: PackedFloat32Array) -> String:
+	var out: PackedStringArray = []
+	for x: float in ts:
+		out.append("%.1f" % x)
+	return ",".join(out) if not out.is_empty() else "-"

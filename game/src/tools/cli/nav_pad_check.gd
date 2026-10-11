@@ -1,10 +1,12 @@
 extends SceneTree
 ## POI pads on the navmesh (TD-340): whether each building's yard is joined to the ground round it.
-##   godot --headless --path game -s res://src/tools/cli/nav_pad_check.gd -- [--world random --world-seed N] [--poi id,id] [--max N]
+##   godot --headless --path game -s res://src/tools/cli/nav_pad_check.gd -- [--world random --world-seed N] [--poi id,id] [--max N] [--doors] [--walk N]
 ## For each building (nearest the drop first): the player stands beside it, its tiles bake, and paths
 ## run in 16 directions from its pad (1.25 m off its last built cell that way: a yard, or the ground
 ## off the wall; never a room, where a shut door rightly holds a path) to points 8 m outside its edge. A path over 2.5 times the
-## straight line, none at all, or an end the navmesh doesn't reach is a finding. The work lives in
+## straight line, none at all, or an end the navmesh doesn't reach is a finding. --doors also checks
+## each open or broken ground-floor door joins outside to inside; --walk N (implies --doors) then walks
+## N Hollowed and Ezra through each (in, stuck and slid frames). The work lives in
 ## nav_pad_check_runner.gd.
 
 
