@@ -7,7 +7,7 @@ const DETOUR: float = 2.5
 const DIRS: int = 16
 const OUT: float = 8.0
 ## How far off a building's last built cell (along a direction) a path starts: clear of the wall and
-## a 0.5 m agent's radius.
+## the nav agent's radius.
 const PAD_CLEAR: float = 1.25
 ## A path that stops short within this far of the footprint never got off the pad.
 const PAD_MARGIN: float = 2.0
@@ -399,7 +399,10 @@ func _walk_group(inst: PoiInstance, p: Player, bodies: Array, job: Dictionary, e
 			var e: Enemy = b as Enemy
 			if not is_instance_valid(e) or done.has(e):
 				continue
-			if inst.is_indoors(e.global_position) and (e.global_position - mid).dot(in_dir) > WALK_PAST:
+			var past: float = (e.global_position - mid).dot(in_dir)
+			# Ezra is sent 3 m in and settles within 1.5 m of it; a room the layout calls no room
+			# (a hall, a shed) still counts him once he is well past the door.
+			if (inst.is_indoors(e.global_position) and past > WALK_PAST) or (ezra and past >= 1.0):
 				done[e] = true
 				r["in"] += 1
 				times.append(t)
