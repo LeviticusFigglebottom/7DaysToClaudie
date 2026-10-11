@@ -1185,7 +1185,13 @@ class FPRig:
                 # A relaxed hand also keeps its fingers together whatever their curl (`together`,
                 # ADR-0060): splayed at rest, a lightly curled hand read as hovering over keys.
                 tog = float(prm.get(f"{sd}.together", 0.0))
-                Q[bn] = _R(r[:, 2], (FINGER_CONVERGE[k] * min(max(0.0, c), 1.0) + FINGER_TOGETHER[k] * tog) * toward_thumb) @ Q[bn]
+                Q[bn] = _R(r[:, 2], FINGER_TOGETHER[k] * tog * toward_thumb) @ Q[bn] @ \
+                    _R(r[:, 2], FINGER_CONVERGE[k] * min(max(0.0, c), 1.0) * toward_thumb)
+                # The swing at the knuckle alone left each finger curling in its own plane, fanning
+                # apart as it closed: 4-6 mm between the end phalanges of a grip, four lumps with gaps
+                # (hands review A2). The middle joint turns them in after it.
+                bn2 = f"{name}_2.{sd}"
+                Q[bn2] = Q[bn2] @ _R(sk.rest[bn2][:, 2], FINGER_TIP_CONVERGE[k] * min(max(0.0, c), 1.0) * toward_thumb)
             # The thumb opposes as it closes: its metacarpal swings across the palm and turns
             # about its own length so the pad, not the side, meets the index finger; then its
             # two joints wrap the handle.
@@ -1258,7 +1264,9 @@ FINGER_CURL = (68.0, 92.0, 48.0)
 CURL_LAG = (1.0, 1.0, 1.6)
 FINGER_SCALE = {"ix": 1.0, "md": 1.0, "rg": 1.05, "pk": 1.12}
 # How far each finger swings toward the thumb side (degrees, + towards it) at curl 1.
-FINGER_CONVERGE = {"ix": -7.0, "md": 0.0, "rg": 7.0, "pk": 14.0}
+FINGER_CONVERGE = {"ix": -1.0, "md": 0.0, "rg": 3.0, "pk": 10.0}
+# And again at the middle joint (degrees at curl 1): the end phalanges close together round a handle.
+FINGER_TIP_CONVERGE = {"ix": -2.0, "md": 0.0, "rg": 2.0, "pk": 2.0}
 # How far each finger swings toward the middle one at `together` 1 (degrees, + towards the thumb):
 # the rest pose's splay closed, the fingers touching. The rest pose's fingers already lie side by
 # side (17-19 mm apart at the knuckles, as wide as they are), so this only closes the last of the
