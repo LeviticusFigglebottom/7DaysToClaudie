@@ -13,6 +13,12 @@ const PAD_CLEAR: float = 1.25
 const PAD_MARGIN: float = 2.0
 
 var _findings: int = 0
+## --doors: also check every open or broken ground-floor door to the outside joins the ground
+## outside to the floor inside (a path between points DOOR_REACH m either side of it).
+var _doors: bool = false
+var _door_total: int = 0
+var _door_joined: int = 0
+const DOOR_REACH: float = 1.5
 
 
 func _ready() -> void:
@@ -40,6 +46,7 @@ func _run() -> void:
 	if args.find("--poi") >= 0:
 		only = args[args.find("--poi") + 1].split(",")
 	var max_n: int = int(args[args.find("--max") + 1]) if args.find("--max") >= 0 else 12
+	_doors = args.has("--doors")
 	game.call(&"start_new_game", opts)
 	if not await wait_until(func() -> bool: return game.get(&"world") != null and bool(game.world.is_ready), 600.0):
 		print("[navpad] world never got ready")
@@ -84,9 +91,13 @@ func _run() -> void:
 		for i: int in 20:
 			await get_tree().physics_frame
 		_check(w, inst, id2)
+		if _doors:
+			_check_doors(w, inst, id2)
 		done += 1
 	print("[navpad] %d buildings checked, %d findings" % [done, _findings])
-	get_tree().quit(0 if _findings == 0 else 1)
+	if _doors:
+		print("[navpad] doors: %d of %d open or broken ground-floor doors to the outside join the inside" % [_door_joined, _door_total])
+	get_tree().quit(0 if _findings == 0 and _door_joined == _door_total else 1)
 
 
 func _tiles_ready(nav: Node) -> bool:
@@ -237,3 +248,51 @@ func _ground_note(w: Node, a: Vector3, b: Vector3) -> String:
 			if Geometry2D.get_closest_point_to_segment(Vector2(pos.x, pos.z), Vector2(a.x, a.z), Vector2(b.x, b.z)).distance_to(Vector2(pos.x, pos.z)) < 3.0:
 				trees += 1
 	return "steepest %.2f m a metre, %d trees by the line" % [steep, trees]
+
+
+## Every open or broken door on the ground floor with the outside on one side: a path from
+## DOOR_REACH m outside it to DOOR_REACH m inside. Joined when the path reaches the inside point
+## (within 0.6 m) no longer than 3x the straight line (round by another door is not this one).
+func _check_doors(w: Node, inst: PoiInstance, id: StringName) -> void:
+	var map: RID = (w as Node3D).get_world_3d().navigation_map
+	var lay: PoiLayout = inst.layout
+	var bad: PackedStringArray = []
+	var n: int = 0
+	for op: Dictionary in lay.openings:
+		if int(op["level"]) != 0 or PoiLayout.is_window(str(op["type"])) or not (str(op["state"]) in ["open", "broken"]):
+			continue
+		var cells: Array = PoiLayout.edge_cells(str(op["axis"]), op["edge"])
+		var built_a: bool = lay.is_built(0, cells[0])
+		var built_b: bool = lay.is_built(0, cells[1])
+		if built_a == built_b:
+			continue  # inside-to-inside, or a door in no wall
+		var e: Vector2i = op["edge"]
+		var wdt: int = int(op["width"])
+		var mid: Vector2 = Vector2(e.x + wdt * 0.5, e.y) if str(op["axis"]) == "h" else Vector2(e.x, e.y + wdt * 0.5)
+		# cells[0] lies on the + side of the edge (edge_cells: c, then the cell before it).
+		var normal: Vector2 = Vector2(0, 1) if str(op["axis"]) == "h" else Vector2(1, 0)
+		var in_dir: Vector2 = normal if built_a else -normal
+		var floor_y: float = lay.level_y(0)
+		var inside: Vector3 = inst.to_global(lay.local_pos(0, mid + in_dir * DOOR_REACH))
+		var outside: Vector3 = inst.to_global(lay.local_pos(0, mid - in_dir * DOOR_REACH))
+		outside.y = float(w.call(&"height_at", outside.x, outside.z))
+		var ci: Vector3 = NavigationServer3D.map_get_closest_point(map, inside)
+		var co: Vector3 = NavigationServer3D.map_get_closest_point(map, outside)
+		n += 1
+		_door_total += 1
+		if ci.distance_to(inside) > 1.0 or co.distance_to(outside) > 1.0:
+			bad.append("%s: an end off the mesh (inside %.1f m, outside %.1f m; floor y %.2f)" % [op["id"], ci.distance_to(inside), co.distance_to(outside), floor_y])
+			continue
+		var path: PackedVector3Array = NavigationServer3D.map_get_path(map, co, ci, true)
+		var length: float = 0.0
+		for j: int in range(1, path.size()):
+			length += path[j - 1].distance_to(path[j])
+		var end: Vector3 = path[path.size() - 1] if path.size() > 0 else co
+		if end.distance_to(ci) > 0.6:
+			bad.append("%s (%s): not joined, the path ends %.1f m short" % [op["id"], op["type"], end.distance_to(ci)])
+		elif length > co.distance_to(ci) * 3.0 + 2.0:
+			bad.append("%s (%s): only round about (%.0f m for %.0f m)" % [op["id"], op["type"], length, co.distance_to(ci)])
+		else:
+			_door_joined += 1
+	if n > 0:
+		print("[navpad] doors %s: %d of %d joined%s" % [id, n - bad.size(), n, "" if bad.is_empty() else ": " + "; ".join(bad)])
