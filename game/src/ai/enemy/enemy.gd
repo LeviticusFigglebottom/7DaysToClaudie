@@ -60,6 +60,8 @@ const NOTICE_DRAIN: float = 0.5
 ## against (world, structures, props, vegetation), and how long a detour holds after the last bump.
 const DETOUR_MASK: int = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 12)
 const DETOUR_HOLD: float = 1.2
+## A horde body this close to the player takes its own nav path in, not the flow field (hum_siege).
+const HORDE_NAV: float = 30.0
 ## Climbing through a window (TD-011): seconds over the sill, and how far the feet clear it.
 const VAULT_TIME: float = 0.9
 const VAULT_CLEAR: float = 0.1
@@ -542,7 +544,8 @@ func _physics_body(frame_delta: float) -> void:
 			else:
 				want = _stumble_step(_move_dir(tgt) * _speed(true), get_physics_process_delta_time())
 			if p != null and dist <= def.atk("range", 1.5) + 0.2 and _now() - last_seen_time < 1.0 and _may_close(p):
-				_set_state(State.ATTACK)
+				if not _break_wall_between(p):
+					_set_state(State.ATTACK)
 			elif _now() - last_seen_time > MEMORY_SECONDS:
 				_set_state(State.HORDE if horde else State.INVESTIGATE)
 		State.ATTACK:
@@ -568,10 +571,11 @@ func _physics_body(frame_delta: float) -> void:
 			if _hit_at < 0.0 and _attack_cd <= 0.0:
 				if p == null or dist > def.atk("range", 1.5) + 0.5:
 					_set_state(State.CHASE)
-				else:
+				elif not _break_wall_between(p):
 					_start_attack()
 		State.BREAK:
-			var close: bool = p != null and _now() - last_seen_time < 1.0 and dist <= def.atk("range", 1.5) + 1.0
+			var close: bool = p != null and _now() - last_seen_time < 1.0 and dist <= def.atk("range", 1.5) + 1.0 \
+					and _wall_between(p) == null
 			if break_target == null or not is_instance_valid(break_target) or break_target.is_queued_for_deletion() \
 					or _target_broken(break_target) or _state_t > 20.0 or close:
 				# Broken through (or given up, or the player is right here): back to the hunt.
@@ -588,7 +592,15 @@ func _physics_body(frame_delta: float) -> void:
 		State.OBSERVE, State.FLEE:
 			want = tribe.move(p, dist, delta) if tribe != null else Vector3.ZERO
 		State.HORDE:
-			var flow: Vector3 = director.call(&"horde_direction", global_position) if director != null else Vector3.ZERO
+			var flow: Vector3 = Vector3.ZERO
+			if p != null and dist < HORDE_NAV:
+				# Close in on its own nav path: the flow field crosses houses at a soft cost and,
+				# with the player holed up indoors, led the whole horde into a shell wall it can't
+				# break (hum_siege: 38 of 40 piled at the grange's wall for 200 s, none in). The
+				# path takes the window links (VAULT) and the doors (BREAK).
+				flow = _move_dir(p.global_position)
+			elif director != null:
+				flow = director.call(&"horde_direction", global_position)
 			if flow == Vector3.ZERO and p != null:
 				flow = _move_dir(p.global_position)
 			want = flow * _speed(true) * 0.9
@@ -1172,6 +1184,32 @@ func _eye() -> Vector3:
 		var local: Vector3 = POSE_EYES.get(_pose_key(), Vector3(0, 1.6, 0))
 		return global_transform * Vector3(local.x * s.x, local.y * s.y, local.z * s.z)
 	return global_position + Vector3.UP * 1.6
+
+
+## Within reach of the player but a wall of theirs between (a log hut's courses: seen through the
+## gaps, out of reach): tear at it instead of swinging at air (hum_siege's shelter: the horde stood
+## at the walls in ATTACK, landing nothing, and only a few ever broke in). True if it went to BREAK.
+func _break_wall_between(p: Player) -> bool:
+	var c: Node3D = _wall_between(p)
+	if c == null:
+		return false
+	break_target = c
+	_resume_state = State.CHASE
+	_set_state(State.BREAK)
+	return true
+
+
+## A wall the player built (or a breakable) between this body's chest and theirs, still standing.
+func _wall_between(p: Player) -> Node3D:
+	if not is_inside_tree():
+		return null
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * 1.1, p.global_position + Vector3.UP * 1.1, MOVE_MASK)
+	q.exclude = [get_rid()]
+	var c: Object = space.intersect_ray(q).get("collider")
+	if c == null or not (c is StructurePiece or (c is Node and (c as Node).has_meta(&"breakable"))) or _target_broken(c as Node):
+		return null
+	return c as Node3D
 
 
 func _line_of_sight(p: Player) -> bool:
