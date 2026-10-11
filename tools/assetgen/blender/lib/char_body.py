@@ -367,7 +367,10 @@ class BodyModel:
         """(centre, eyeball radius) of an eye: a Hollowed's sit smaller and deeper in their orbits
         (TD-192: bulging milky spheres ringed by thick lids)."""
         sunk = bool(self.p.get("face_vary"))
-        return self.HP(sx * 0.032, 0.012, 0.073 - (0.0025 if sunk else 0.0)), (0.0106 if sunk else 0.0116) * self.s
+        # A living face's eyes sit back in their sockets under the lids (`eye_depth`, m back;
+        # `eye_radius`): TD-302, Ezra's bulged with the shared head's defaults.
+        depth = float(self.p.get("eye_depth", 0.0025 if sunk else 0.0))
+        return self.HP(sx * 0.032, 0.012, 0.073 - depth), float(self.p.get("eye_radius", 0.0106 if sunk else 0.0116)) * self.s
 
     def _head(self, prog: S.Program):
         """The skull under tight, wasted skin: heavy brow over deep sockets, standing cheekbones,

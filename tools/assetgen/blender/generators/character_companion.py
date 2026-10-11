@@ -70,7 +70,8 @@ def _built(mb: IK.MB, name: str, seed: int) -> bpy.types.Object:
 
 def _pack(model, skel, seed: int, hard_hat: bool) -> bpy.types.Object:
     """A canvas rucksack high on his back (the body's back is +Y), its flap buckled down, a rolled
-    groundsheet strapped under it, and a white hard hat clipped to the flap by its brim."""
+    groundsheet strapped under it, and a white hard hat hung by its chin strap off a D-ring at the
+    top corner."""
     s = model.s
     j = skel.j
     mid = (np.array(j["chest0"]) * 0.45 + np.array(j["neck0"]) * 0.55)
@@ -102,9 +103,26 @@ def _pack(model, skel, seed: int, hard_hat: bool) -> bpy.types.Object:
         # the ridge along the crown
         IK.box(hb, (0.016 * s, 0.17 * s, 0.014 * s), (0, 0, 0.128 * s), mat="item_plastic_white", bevel=0.005 * s)
         hat = _built(hb, "hard_hat", seed + 3)
-        # crown outward, brim clipped over the flap: tipped back against the pack's face, lower half
-        hat.data.transform(Matrix.Translation((0.0, d * 0.5 + 0.004 * s, -h * 0.12)) @ Matrix.Rotation(math.radians(-80.0), 4, "X"))
+        # Hung by its chin strap off a D-ring at the pack's top corner (TD-302: once clipped flat to
+        # the flap), on his right side, crown out and tipped down the way a hat hangs from its
+        # strap, the brim's rear edge resting against the side pocket.
+        ring = Vector((-w * 0.46, 0.0, h * 0.47))
+        hc = Vector((-(w * 0.5 + 0.072 * s + 0.012 * s), 0.0, -h * 0.02))
+        hat.data.transform(Matrix.Translation(hc) @ Matrix.Rotation(math.radians(-110.0), 4, "Y"))
         parts.append(hat)
+        sb = IK.MB()
+        # the D-ring, and the strap's two sides from the brim's front and back up to it
+        ring_pts = [ring + Vector((0.0, 0.016 * s * math.cos(a), 0.016 * s * math.sin(a))) for a in
+                    np.linspace(0.0, 2.0 * math.pi, 13)[:-1]]
+        IK.tube(sb, ring_pts, 0.0028 * s, sides=6, mat="item_steel_dark", closed=True)
+        hat_axis = Vector((-math.sin(math.radians(110.0)), 0.0, math.cos(math.radians(110.0))))
+        rim = hc + hat_axis * 0.012 * s
+        for sy in (-1.0, 1.0):
+            a = rim + Vector((0.0, sy * 0.112 * s, 0.0))
+            mid = (a + ring) * 0.5 + Vector((-0.018 * s, sy * 0.01 * s, 0.0))
+            IK.tube(sb, [a, mid, ring + Vector((0.0, sy * 0.004 * s, -0.012 * s))], (0.0045 * s, 0.0012 * s),
+                    sides=6, mat="item_webbing")
+        parts.append(_built(sb, "hat_strap", seed + 4))
     obj = IK.join(parts, "pack") if len(parts) > 1 else parts[0]
     obj.data.transform(Matrix.Translation(c) @ Matrix.Rotation(-lean, 4, "X"))
     return obj
