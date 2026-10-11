@@ -573,6 +573,35 @@ func test_on_an_errand_he_steps_up_a_low_ledge() -> void:
 	assert_true(_taken(ref), "and took it off the deck (at %s)" % e.global_position)
 
 
+func test_on_an_errand_he_steps_up_a_waist_high_step() -> void:
+	# The hub's seed 7: the mesh's next waypoint 0.6 m up a step (a 0.5 m climb and cell rounding).
+	var e: Enemy = await _recruited()
+	await _until(func() -> bool: return e.velocity.length() < 0.05, 240)
+	var from: Vector3 = e.global_position
+	_box(Vector3(from.x, 0.3, from.z + 6.0), Vector3(60, 0.6, 8))
+	var drop: ItemDrop = ItemDrop.spawn(_world, ItemStack.make(&"stone", 1), from + Vector3(0, 0.9, 7.0))
+	_p.global_position = from + Vector3(-3, 0.05, -3)
+	await _frames(10)
+	assert_true(bool(Game.execute(&"companion.order", {"order": "fetch", "target": {"entity": String(drop.entity_id)}}).get("ok", false)))
+	var ref: WeakRef = weakref(drop)
+	await _until(func() -> bool: return _taken(ref), 60 * 20)
+	assert_true(_taken(ref), "up the step and took it (at %s)" % e.global_position)
+
+
+func test_on_an_errand_he_gets_round_a_wall_section_too_high_to_climb() -> void:
+	var e: Enemy = await _recruited()
+	await _until(func() -> bool: return e.velocity.length() < 0.05, 240)
+	var from: Vector3 = e.global_position
+	_box(Vector3(from.x, 0.6, from.z + 3.0), Vector3(4, 1.2, 0.3))
+	var drop: ItemDrop = ItemDrop.spawn(_world, ItemStack.make(&"stone", 1), from + Vector3(0, 0.3, 7.0))
+	_p.global_position = from + Vector3(-3, 0.05, -3)
+	await _frames(10)
+	assert_true(bool(Game.execute(&"companion.order", {"order": "fetch", "target": {"entity": String(drop.entity_id)}}).get("ok", false)))
+	var ref: WeakRef = weakref(drop)
+	await _until(func() -> bool: return _taken(ref), 60 * 20)
+	assert_true(_taken(ref), "round the wall to it (at %s)" % e.global_position)
+
+
 static func _taken(ref: WeakRef) -> bool:
 	var o: Object = ref.get_ref()
 	return o == null or (o as Node).is_queued_for_deletion()

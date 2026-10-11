@@ -432,8 +432,8 @@
             0.989,
             0.114
           ],
-          "fist": 0.85,
-          "thumb": 0.7,
+          "fist": 1.25,
+          "thumb": 0.9,
           "elbow": [
             -0.4,
             -0.7,
@@ -462,7 +462,31 @@
       "block": 0.45,
       "fixed_roll": [
         "R"
-      ]
+      ],
+      "tether_right": {
+        "grip": [
+          0.27,
+          -0.3,
+          -0.4
+        ],
+        "dir": [
+          0.249,
+          0.549,
+          -0.798
+        ],
+        "knuckles": [
+          -0.752,
+          -0.41,
+          -0.517
+        ],
+        "fist": 1.15,
+        "thumb": 0.95,
+        "elbow": [
+          0.5,
+          -0.4,
+          0.4
+        ]
+      }
     },
     "club": {
       "_doc": "Stone club, steel pipe: both hands on the haft (the left below the right), carried low in front with the head up and in; the haft crosses the right palm obliquely (item rot) so the wrists can bring the head down onto the target.",
@@ -532,7 +556,7 @@
         "L": {
           "on": "R",
           "along": 0.26,
-          "spin": 0,
+          "spin": 180,
           "fist": 1.0,
           "thumb": 0.85,
           "elbow": [
@@ -558,7 +582,31 @@
       "block": 0.6,
       "fixed_roll": [
         "R"
-      ]
+      ],
+      "tether_right": {
+        "grip": [
+          0.27,
+          -0.3,
+          -0.4
+        ],
+        "dir": [
+          0.249,
+          0.549,
+          -0.798
+        ],
+        "knuckles": [
+          -0.864,
+          -0.247,
+          -0.44
+        ],
+        "fist": 1.15,
+        "thumb": 0.9,
+        "elbow": [
+          0.5,
+          -0.5,
+          0.3
+        ]
+      }
     },
     "spear": {
       "_doc": "Spear: low at the right hip, point forward to the centre. The shaft lies diagonally across the rear palm (item rot: 60 degrees about the palm's normal, an oblique grip), so the wrist can hold it forward; the front hand under the shaft follows the shaft, not the socket (ADR-0045).",
@@ -604,7 +652,7 @@
         "R": {
           "grip": [
             0.22,
-            -0.12,
+            -0.18,
             -0.32
           ],
           "fist": 1.0,
@@ -627,8 +675,8 @@
         },
         "L": {
           "on": "R",
-          "along": 0.34,
-          "spin": 0,
+          "along": 0.26,
+          "spin": 180,
           "fist": 0.95,
           "thumb": 0.8,
           "elbow": [
@@ -886,16 +934,19 @@
         ]
       },
       "attack": "torch",
-      "block": 0.3
+      "block": 0.3,
+      "fixed_roll": [
+        "L"
+      ]
     },
     "flashlight": {
       "_doc": "Flashlight: overhand in the left fist, the lens out of the little-finger side so the beam goes where you look; the forearm crosses the lower left. The right hand down out of view (it comes up to guard).",
       "pose": {
         "L": {
           "grip": [
-            -0.08,
-            -0.13,
-            -0.29
+            -0.11,
+            -0.15,
+            -0.42
           ],
           "dir": [
             -0.05,
@@ -1035,8 +1086,8 @@
       "pose": {
         "R": {
           "grip": [
-            0.18,
-            -0.22,
+            0.16,
+            -0.16,
             -0.42
           ],
           "dir": [
@@ -1340,8 +1391,8 @@
             0.992,
             0.002
           ],
-          "fist": 0.75,
-          "thumb": 0.6,
+          "fist": 0.45,
+          "thumb": 0.3,
           "elbow": [
             0.5,
             -0.5,
@@ -1391,7 +1442,7 @@
         ],
         "center": [
           0.5,
-          0.5,
+          0.62,
           0.5
         ],
         "upright": true
@@ -1413,8 +1464,8 @@
             0.997,
             -0.065
           ],
-          "fist": 0.7,
-          "thumb": 0.55,
+          "fist": 0.45,
+          "thumb": 0.3,
           "elbow": [
             0.5,
             -0.5,
@@ -1486,8 +1537,8 @@
             0.161,
             -0.376
           ],
-          "fist": 0.3,
-          "thumb": 0.25,
+          "fist": 0.05,
+          "thumb": 0.15,
           "elbow": [
             -0.5,
             -0.6,
@@ -1497,7 +1548,8 @@
             0.365,
             -0.093,
             -0.926
-          ]
+          ],
+          "together": 0.9
         },
         "R": {
           "grip": [
@@ -1941,7 +1993,34 @@
         ]
       },
       "attack": "slice",
-      "block": 0.3
+      "block": 0.3,
+      "tether_right": {
+        "grip": [
+          0.27,
+          -0.3,
+          -0.4
+        ],
+        "dir": [
+          0.249,
+          0.549,
+          -0.798
+        ],
+        "knuckles": [
+          -0.565,
+          -0.587,
+          -0.58
+        ],
+        "fist": 1.15,
+        "thumb": 0.95,
+        "elbow": [
+          0.5,
+          -0.4,
+          0.4
+        ]
+      },
+      "fixed_roll": [
+        "R"
+      ]
     },
     "rifle": {
       "_doc": "Bolt-action rifle (ADR-0057): a two-handed long gun at the low ready, the stock in the right shoulder's line, the barrel forward and a touch in. The gun lies in the LEFT fist under the fore-end (hand: L; item rot turns its pointing frame onto the palm, scaled to 0.85 so it fits the arms' reach), so the right hand is free to leave the wrist of the stock and work the bolt; both hands are where the pose solver keeps them (TD-294: the left was authored past its reach and the solver moved it 10 cm, turning the gun so its stock sat by the right ear and the right hand hung 20 cm off it), the right on the stock's wrist; every right-hand key is placed on the gun where the solver puts it at that key, checked in the baked arms with fp_measure.gd. The bolt work stays close to the rest pose (the rifle low across the frame, the left hand on the fore-end in view, the right forearm in from the bottom-right); the bolt handle is bent down (item_firearms BOLT_BEND) so its knob shows clear of the scope's ocular bell on screen (fp_measure FP_READ). No tether reading with it up (both hands busy). aim: the scope's ocular (socket_sight) comes up onto the line of sight 7 cm before the eye; the scope picture takes over from there.",
@@ -2562,7 +2641,7 @@
               -4,
               0
             ],
-            "L.along": 0.24
+            "L.along": 0.06
           },
           "out"
         ],
@@ -2579,7 +2658,7 @@
               5,
               0
             ],
-            "L.along": 0.1
+            "L.along": -0.12
           },
           "in"
         ],
@@ -2596,7 +2675,7 @@
               5,
               0
             ],
-            "L.along": 0.1
+            "L.along": -0.12
           },
           "out"
         ],
@@ -2936,8 +3015,8 @@
             },
             "R": {
               "grip": [
-                0.01,
-                -0.135,
+                -0.079,
+                -0.103,
                 -0.25
               ],
               "dir": [
@@ -3400,7 +3479,7 @@
             "R.move": [
               -0.12,
               0.07,
-              0.18
+              0.16
             ],
             "R.rot": [
               62,
@@ -3421,7 +3500,7 @@
             "R.move": [
               -0.12,
               0.09,
-              0.185
+              0.165
             ],
             "R.rot": [
               76,
@@ -7125,7 +7204,8 @@
           {},
           "inout"
         ]
-      ]
+      ],
+      "fixed_roll": []
     },
     "fire_rifle": {
       "_doc": "A shot and the bolt (played over equip.attack_time + bolt_time): the rifle bucks up and back into the shoulder, then comes down a little and turns its right side to the eye (the action low in the frame's right half, the bent-down knob clear of the scope) while the right hand, its forearm in from the bottom-right, goes from the wrist to the bolt knob: up, back (the empty flies), forward, down, and back to the wrist. parts: the rifle's `bolt` node, turned about the bore (deg) and slid along it (m).",
