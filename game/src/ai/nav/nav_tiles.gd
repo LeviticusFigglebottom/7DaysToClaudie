@@ -266,11 +266,12 @@ func bake_inputs(k: Vector2i, with_terrain: bool = true) -> Array:
 	var nm := NavigationMesh.new()
 	nm.agent_radius = 0.5
 	nm.agent_height = 1.75
-	# What a body can step, not what Recast can: the Hollowed have no step-up (capsule slide, 0.4 m
+	# What a body can step, not what Recast can (one 0.25 m cell: Recast floors the climb to whole
+	# cells, and 0.3 only warned and baked 0.25): the Hollowed have no step-up (capsule slide, 0.4 m
 	# floor snap) and the player steps 0.38 m. At 0.5 the mesh ran over POI-shell ledges no body
 	# could take, and a path through them held Ezra and the Hollowed against the edge (TD-342). Stair
 	# risers (~0.18 m) and kerbs stay walkable; taller ledges are mesh edges, gone round by a stoop.
-	nm.agent_max_climb = 0.3
+	nm.agent_max_climb = 0.25
 	nm.agent_max_slope = 46.0
 	nm.cell_size = 0.25
 	nm.cell_height = 0.25
