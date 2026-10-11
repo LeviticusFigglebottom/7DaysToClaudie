@@ -32,7 +32,7 @@ COMPANIONS = {
         "hunch": 0.04, "head_forward": 0.04, "head_tilt": 0.0, "brow": 0.3,
         # A living man's face (TD-302): flesh over the skull, lips together at rest.
         "living_face": 1.0, "lip_parting": False,
-        "claw": 0.08, "jaw_drop": 1.0, "mouth_open": 0.0, "eye_open": 0.55, "lid_droop": 0.45, "wall_eye": 0.0,
+        "claw": 0.08, "jaw_drop": 1.0, "mouth_open": 0.0, "eye_open": 0.45, "lid_droop": 0.55, "wall_eye": 0.0,
         # A living man's eyes (TD-302): straight, set back under weathered lids, not the Hollowed's.
         "eye_depth": 0.0035, "eye_radius": 0.0108,
         "teeth_missing": 0.0, "gum_recede": 0.2, "bruise": 0.0, "blood": 0.0, "grime": 0.3,
@@ -42,7 +42,7 @@ COMPANIONS = {
                    "pants": {"type": "canvas", "belt": True, "length": 0.97, "thickness": 0.011}},
         "straps": [{"type": "leather", "x": 0.075, "width": 0.042, "waist": 0.05}],
         "gloves": {"cuff": 0.035},
-        "beard": {"thickness": 0.0042, "line": -0.024, "moustache": True},
+        "beard": {"thickness": 0.0042, "line": -0.016, "moustache": True, "lip_clear": 0.0, "sideburn": 0.045},
         "boots": {"L": True, "R": True, "height": 0.24},
         "hair": {"style": "short", "hairline": 0.03, "patchy": 0.05},
         "remap": EZRA_REMAP,
