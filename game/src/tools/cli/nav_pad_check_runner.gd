@@ -350,8 +350,12 @@ func _walk_doors(w: Node, inst: PoiInstance, id: StringName) -> void:
 		var er: Dictionary = {"n": 0, "in": 0, "stuck": 0, "slid": 0, "t": PackedFloat32Array()}
 		if ez != null and ez.ally != null:
 			ez.ally.recruited = true
-			ez.ally.set_order("stay", inside)
+			# He settles within 1.5 m of his spot: 3 m in (on the mesh), so settling means he is through.
+			var deep: Vector3 = inside - out_dir * 1.5
+			var map: RID = (w as Node3D).get_world_3d().navigation_map
+			ez.ally.set_order("stay", NavigationServer3D.map_get_closest_point(map, deep))
 			er = await _walk_group(inst, p, [ez], job, true)
+			er["end"] = "%.1f m past the door" % (ez.global_position - (inside + (job["outside"] as Vector3)) * 0.5).dot(-out_dir)
 			ai.call(&"despawn", ez)
 		_walk_tot["hollow"] += hr["n"]
 		_walk_tot["hollow_in"] += hr["in"]
@@ -361,9 +365,9 @@ func _walk_doors(w: Node, inst: PoiInstance, id: StringName) -> void:
 		_walk_tot["slid"] += int(hr["slid"]) + int(er["slid"])
 		if hr["in"] < hr["n"] or er["in"] < er["n"]:
 			_walk_failed += 1
-		print("[navpad] walk %s %s: Hollowed %d of %d in (%s s), stuck %d, slid %d; Ezra %d of %d in (%s s), stuck %d, slid %d" % [
+		print("[navpad] walk %s %s: Hollowed %d of %d in (%s s), stuck %d, slid %d; Ezra %d of %d in (%s s, %s), stuck %d, slid %d" % [
 			id, job["door"], hr["in"], hr["n"], _times(hr["t"]), hr["stuck"], hr["slid"],
-			er["in"], er["n"], _times(er["t"]), er["stuck"], er["slid"]])
+			er["in"], er["n"], _times(er["t"]), er.get("end", "-"), er["stuck"], er["slid"]])
 
 
 ## Runs bodies at the door's inside end (the Hollowed hunt the player standing there; Ezra walks
