@@ -16,6 +16,10 @@ const SECONDS: float = 5.0
 var _out: String = "res://../build/entry_light"
 var _before: bool = false
 var _only: PackedStringArray = []
+## --cold: wait COLD_AWAY m off first, then jump to the doorway and walk in at once, so the room's
+## probe is still parked or queued as the camera enters (a fast arrival; the case report 3 saw).
+var _cold: bool = false
+const COLD_AWAY: float = 220.0
 
 
 func _ready() -> void:
@@ -32,6 +36,8 @@ func _run() -> void:
 				_only = args[i + 1].split(",")
 			"--before":
 				_before = true
+			"--cold":
+				_cold = true
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(_out) if _out.begins_with("res://") else _out)
 	var cfg: Dictionary = Content.config(&"interior_light")
 	if _before:
@@ -102,10 +108,20 @@ func _entry(w: Node, p: Player, cam: Camera3D, pois: Node, budget: Node, env: En
 	var lv: Vector3 = e["look"]
 	var look_end: Vector3 = inst.to_global(inst.layout.local_pos(0, Vector2(lv.x, lv.z)) + Vector3.UP * lv.y)
 	start_pt = pts[0]
+	if _cold:
+		# Away long enough for the budget to park the building's probes, then straight to the door.
+		var away: Vector3 = start_pt + (start_pt - pts[1]).normalized() * COLD_AWAY
+		away.y = float(w.call(&"height_at", away.x, away.z)) + EYE
+		p.global_position = away - Vector3.UP * (EYE - 0.1)
+		cam.global_position = away
+		for i: int in 240:
+			await get_tree().process_frame
+		var room0: ReflectionProbe = budget.call(&"room_probe", pts[pts.size() - 1]) as ReflectionProbe
+		print("ENTRY %s: away %d m, the room's probe %s" % [e["name"], int(COLD_AWAY), "none" if room0 == null else ("parked" if not bool(budget.call(&"is_shown", room0)) else "live")])
 	p.global_position = start_pt - Vector3.UP * (EYE - 0.1)
 	cam.global_position = start_pt
 	cam.look_at(pts[1], Vector3.UP)
-	for i: int in 240:
+	for i: int in (2 if _cold else 240):
 		await get_tree().process_frame
 	# Walk in, sampling.
 	var total: float = 0.0
@@ -136,8 +152,8 @@ func _entry(w: Node, p: Player, cam: Camera3D, pois: Node, budget: Node, env: En
 				state = "parked" if not bool(budget.call(&"is_shown", room)) else ("ready %.2f" % float(budget.call(&"readiness", room)))
 			print("ENTRY %s t=%.2f luma %.3f room %s fill %.2f%s" % [e["name"], t, luma, state, env.pending, " (walking)" if walking else ""])
 			if f % 60 == 0:
-				img.save_png(_out.path_join("%s_%s_t%d.png" % [e["name"], "before" if _before else "after", f / 60]))
-	print("ENTRY %s %s: lowest luma once inside a room %.3f; curve %s" % [e["name"], "before" if _before else "after", low, ", ".join(Array(curve).map(func(v: float) -> String: return "%.2f" % v))])
+				img.save_png(_out.path_join("%s_%s%s_t%d.png" % [e["name"], "before" if _before else "after", "_cold" if _cold else "", f / 60]))
+	print("ENTRY %s %s%s: lowest luma once inside a room %.3f; curve %s" % [e["name"], "before" if _before else "after", " cold" if _cold else "", low, ", ".join(Array(curve).map(func(v: float) -> String: return "%.2f" % v))])
 
 
 ## The point `d` metres along the polyline.
