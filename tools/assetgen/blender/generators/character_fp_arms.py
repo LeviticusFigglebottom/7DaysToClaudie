@@ -393,8 +393,7 @@ def build(params: dict, outputs: list[str]) -> None:
     anatomy = []
     held = fp_anatomy.held_actions(cfg)
     for name, n, loop, frames in F.fp_actions(cfg):
-        solver.reset()
-        prms = [solver.solve(hands) for hands in frames]
+        prms = F.solve_frames(solver, name, frames, loop, held)
         baked = [rig.evaluate(prm) for prm in prms]
         # Every frame inside what a hand can do (player report 5, ADR-0061).
         for i, (Q, _off) in enumerate(baked):

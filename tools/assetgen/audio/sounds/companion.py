@@ -322,6 +322,12 @@ ORDERS = {
         (["ai l", "b i", "*h i r"], {"rate": 1.0, "f0": 108.0}),
         (["*h o l", "d i ng"], {"rate": 1.0, "f0": 108.0}),
     ],
+    "fueled": [
+        (["*t o p t", "uh p", "th uh", "*t ae ng k"], {"rate": 1.0, "f0": 110.0}),
+    ],
+    "mended": [
+        (["*th ae", "t l", "*h o l d", "n au"], {"rate": 1.0, "f0": 108.0, "end": "flat"}),
+    ],
     "guard": [
         (["*n uh", "th i ng", "g e t s", "*p ae s t", "th i s", "*s p o t"], {"rate": 1.05, "f0": 110.0}),
         (["ai l", "*w o t sh", "i t"], {"rate": 1.05, "f0": 110.0}),

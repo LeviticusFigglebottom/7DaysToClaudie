@@ -1873,6 +1873,72 @@ def _pinned(frames: list[dict], sides: tuple) -> list[dict]:
     return frames
 
 
+# A keyed loop's solved hand may turn at most this much more than the authored hand in a frame
+# (degrees) before smooth_snaps spreads the change over SNAP_SPREAD frames either side.
+SNAP_LIMIT = 2.5
+SNAP_SPREAD = 3
+
+
+def _turn(a: np.ndarray, b: np.ndarray) -> float:
+    return math.degrees(float(np.linalg.norm(_rotvec(a @ b.T))))
+
+
+def smooth_snaps(frames: list, prms: list, loop: bool, grip_off: dict | None = None) -> list:
+    """A keyed loop's solved frames with its snaps eased out (TD-380). The solver keeps each
+    frame's elbow and fist roll near the last, but where the wrist runs past its range it looks
+    wide and may take another arm in one frame: the climb cycles' hands turned 6-9 degrees in a
+    frame at the loop's end while the authored hand barely moved. Where the solved hand turns more
+    than SNAP_LIMIT degrees past the authored hand's own turn, the hand's turn and the elbow's
+    pole are eased between the solve before and after over the frames round it, round the loop's
+    end for a loop (its last frame is its first); each frame keeps its own grip (the wrist follows
+    from it, `grip_off`: the rig's grip offsets), so a hand on a rung stays on it. Other frames are
+    untouched."""
+    n = len(prms)
+    if n < 4:
+        return prms
+    period = n - 1 if loop else n
+    out = [dict(p) for p in prms]
+
+    def idx(i):
+        return i % period if loop else max(0, min(n - 1, i))
+
+    for sd, _ in SIDES:
+        if f"{sd}.Rh" not in prms[0]:
+            continue
+        snaps = []
+        for i in range(1, period + (1 if loop else 0)):
+            a, b = out[idx(i - 1)], out[idx(i)]
+            ha, hb = frames[idx(i - 1)].get(sd), frames[idx(i)].get(sd)
+            pace = _turn(hb.F, ha.F) if ha is not None and hb is not None and ha.F is not None and hb.F is not None else 0.0
+            if _turn(b[f"{sd}.Rh"], a[f"{sd}.Rh"]) - pace > SNAP_LIMIT:
+                snaps.append(i)
+        for i in snaps:
+            lo, hi = i - 1 - SNAP_SPREAD, i + SNAP_SPREAD
+            A, B = out[idx(lo)], out[idx(hi)]
+            qa, qb = _quat(A[f"{sd}.Rh"]), _quat(B[f"{sd}.Rh"])
+            for k in range(lo + 1, hi):
+                t = (k - lo) / float(hi - lo)
+                f = out[idx(k)]
+                grip = f[f"{sd}.wrist"] + f[f"{sd}.Rh"] @ grip_off[sd] if grip_off is not None else None
+                f[f"{sd}.Rh"] = _qmat(_slerp(qa, qb, t))
+                if grip is not None:
+                    f[f"{sd}.wrist"] = grip - f[f"{sd}.Rh"] @ grip_off[sd]
+                f[f"{sd}.pole"] = _n(A[f"{sd}.pole"] + (B[f"{sd}.pole"] - A[f"{sd}.pole"]) * t)
+    if loop:
+        out[n - 1] = dict(out[0])
+    return out
+
+
+def solve_frames(solver, name: str, frames: list, loop: bool, held: set) -> list:
+    """An action's frames solved in order (solver.reset() first); a keyed loop's snaps eased
+    (smooth_snaps). The bake and fp_anatomy both solve through this."""
+    solver.reset()
+    prms = [solver.solve(h) for h in frames]
+    if loop and name not in held:
+        prms = smooth_snaps(frames, prms, loop, solver.rig.grip_off)
+    return prms
+
+
 def fp_actions(cfg: dict):
     """[(name, frames, loop, per-frame hands)] for every action the data asks for: per hold class
     its idle (fp_<class>), guard (fp_<class>_guard) and tether-reading (fp_<class>_tether) loops;
