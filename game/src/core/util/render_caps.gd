@@ -8,3 +8,9 @@ class_name RenderCaps
 ## slots, so callers skip it.
 static func instance_uniforms() -> bool:
 	return RenderingServer.get_current_rendering_method() != "gl_compatibility"
+
+
+## False on the Compatibility renderer: it has no volumetric fog, and compiling a `fog` shader there
+## is an engine error, so the ground-fog volume is never made (the depth fog still carries it).
+static func fog_volumes() -> bool:
+	return RenderingServer.get_current_rendering_method() != "gl_compatibility"

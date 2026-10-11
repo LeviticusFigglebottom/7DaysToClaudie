@@ -160,7 +160,7 @@ func _ready() -> void:
 	add_child(pending_fill)
 	_load_sky_textures()
 	_publish_surface_tables()
-	if DisplayServer.get_name() != "headless":
+	if DisplayServer.get_name() != "headless" and RenderCaps.fog_volumes():
 		_make_fog_volume()
 	fx = WeatherFx.new()
 	fx.name = "WeatherFx"
@@ -246,7 +246,8 @@ func apply_graphics() -> void:
 	env.ssao_intensity = 2.2
 	env.ssil_enabled = bool(Settings.gfx("ssil", false))
 	env.ssr_enabled = bool(Settings.gfx("ssr", false))
-	env.volumetric_fog_enabled = bool(Settings.gfx("volumetric_fog", true))
+	# Compatibility has no froxel fog: off there, the mist rides the depth fog like the Low preset.
+	env.volumetric_fog_enabled = bool(Settings.gfx("volumetric_fog", true)) and RenderCaps.fog_volumes()
 	env.glow_enabled = bool(Settings.gfx("glow", true))
 	sun.directional_shadow_max_distance = float(Settings.gfx("shadow_distance", 130.0))
 
