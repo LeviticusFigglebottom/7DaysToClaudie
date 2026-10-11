@@ -192,7 +192,10 @@ def add_beard(model, spec: dict) -> None:
         side = smoothstep(0.052, 0.068, ax_) * (1 - smoothstep(-0.005, 0.020, z))
         top = line - 0.008 * (1 - smoothstep(0.030, 0.055, ax_)) + sideburn * side
         reg = y - (top + nz.noise(P, 60.0) * 0.002)
-        reg = np.maximum(reg, np.minimum(0.0165 - ax_, y + 0.0365))         # never over the nose
+        if line > -0.020:
+            # a beard line raised over the cheeks (Ezra's) keeps off the nose; the default line
+            # stays below it, and those beards build exactly as before
+            reg = np.maximum(reg, np.minimum(0.0165 - ax_, y + 0.0365))
         reg = np.maximum(reg, -0.035 - z)                                    # nothing behind the ear
         reg = np.maximum(reg, -0.106 - y)                                    # ends under the jaw
         if moustache:
