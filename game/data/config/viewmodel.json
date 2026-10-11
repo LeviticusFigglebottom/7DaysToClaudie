@@ -459,7 +459,10 @@
         ]
       },
       "attack": "chop",
-      "block": 0.45
+      "block": 0.45,
+      "fixed_roll": [
+        "R"
+      ]
     },
     "club": {
       "_doc": "Stone club, steel pipe: both hands on the haft (the left below the right), carried low in front with the head up and in; the haft crosses the right palm obliquely (item rot) so the wrists can bring the head down onto the target.",
@@ -552,7 +555,10 @@
         ]
       },
       "attack": "bash",
-      "block": 0.6
+      "block": 0.6,
+      "fixed_roll": [
+        "R"
+      ]
     },
     "spear": {
       "_doc": "Spear: low at the right hip, point forward to the centre. The shaft lies diagonally across the rear palm (item rot: 60 degrees about the palm's normal, an oblique grip), so the wrist can hold it forward; the front hand under the shaft follows the shaft, not the socket (ADR-0045).",
@@ -1935,7 +1941,10 @@
         ]
       },
       "attack": "slice",
-      "block": 0.3
+      "block": 0.3,
+      "fixed_roll": [
+        "R"
+      ]
     },
     "rifle": {
       "_doc": "Bolt-action rifle (ADR-0057): a two-handed long gun at the low ready, the stock in the right shoulder's line, the barrel forward and a touch in. The gun lies in the LEFT fist under the fore-end (hand: L; item rot turns its pointing frame onto the palm, scaled to 0.85 so it fits the arms' reach), so the right hand is free to leave the wrist of the stock and work the bolt; both hands are where the pose solver keeps them (TD-294: the left was authored past its reach and the solver moved it 10 cm, turning the gun so its stock sat by the right ear and the right hand hung 20 cm off it), the right on the stock's wrist; every right-hand key is placed on the gun where the solver puts it at that key, checked in the baked arms with fp_measure.gd. The bolt work stays close to the rest pose (the rifle low across the frame, the left hand on the fore-end in view, the right forearm in from the bottom-right); the bolt handle is bent down (item_firearms BOLT_BEND) so its knob shows clear of the scope's ocular bell on screen (fp_measure FP_READ). No tether reading with it up (both hands busy). aim: the scope's ocular (socket_sight) comes up onto the line of sight 7 cm before the eye; the scope picture takes over from there.",
