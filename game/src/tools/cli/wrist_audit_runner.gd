@@ -327,6 +327,8 @@ func _markers() -> void:
 	if marks.size() < 4:
 		_fails += 1
 		print("WRIST_AUDIT FAIL the shelters, the workbench and the crate should be marked (the garden bed's layer is off)")
+	# The logs left over from the builds go in the arms (carried), which keeps the tether down.
+	p.state.inventory.remove(&"log", p.state.inventory.count_of(&"log"))
 	# Walk off ~110 m so the marks don't sit under the player's arrow.
 	var away: Vector3 = base + Vector3(130.0, 0.0, -50.0)
 	p.global_position = Vector3(away.x, w.height_at(away.x, away.z) + 0.05, away.z)
@@ -339,13 +341,21 @@ func _markers() -> void:
 	map.call(&"open")
 	await _frames(30)
 	await _snap("markers_map_on")
+	# Through the legend's own toggle, as the player turns it off (the box shows it too).
 	var layer: Dictionary = MapMarkers.layers()[0]
-	var was: bool = MapMarkers.layer_on(layer)
-	Settings.map_layers[str(layer["id"])] = false
-	(map.get(&"_markers") as CanvasItem).queue_redraw()
+	var was: Variant = Settings.map_layers.get(str(layer["id"]))
+	var toggle: CheckButton = null
+	for row: Node in (map.get(&"_legend") as Node).get_children():
+		if row is HBoxContainer and ((row as HBoxContainer).get_child(1) as CheckButton).text == str(layer["label"]):
+			toggle = (row as HBoxContainer).get_child(1) as CheckButton
+	toggle.button_pressed = false
 	await _frames(4)
 	await _snap("markers_map_off")
-	Settings.map_layers[str(layer["id"])] = was
+	if was == null:
+		Settings.map_layers.erase(str(layer["id"]))
+	else:
+		Settings.map_layers[str(layer["id"])] = was
+	Settings.save()
 	map.call(&"close")
 
 
