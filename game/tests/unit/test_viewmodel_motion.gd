@@ -156,3 +156,16 @@ func test_empty_hands_sink_when_still_and_come_back() -> void:
 	held.rest_ok = false
 	_run(held, delay + 3.0, false, 0.0)
 	assert_eq(held.rest_w, 0.0, "a held item stays up")
+
+
+## Bare fists raised to guard stay up: the resting sink (nothing held, standing still) left an
+## empty-handed guard out of view (hands review, report 5).
+func test_an_empty_handed_guard_does_not_sink() -> void:
+	var vm := ViewModel.new()
+	add_child_autofree(vm)
+	vm.set_guard(true)
+	vm._process(0.016)
+	assert_false(vm.motion.rest_ok, "guarding keeps the fists up")
+	vm.set_guard(false)
+	vm._process(0.016)
+	assert_true(vm.motion.rest_ok, "lowered, empty hands may rest again")

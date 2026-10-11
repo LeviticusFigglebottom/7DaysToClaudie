@@ -2233,6 +2233,17 @@ func _cell_pos(li: int, c: Vector2i) -> Vector3:
 	var p: Vector3 = layout.cell_center(li, c)
 	if li == 0 and not layout.is_built(0, c):
 		p.y = layout.floor_height if _helper._porch_cells.has(c) else 0.0
+		# A yard cell a stoop stands on is its step's height: a concrete stoop's landing holds the
+		# sill's 0.6 m right out to the cell's middle, and a target at the yard's 0 m left the body
+		# "not there" on the landing (it jumped into the door's header: the generated houses'
+		# blocked back and front doors in poi_walk).
+		if player != null and player.is_inside_tree():
+			var xf: Transform3D = inst.global_transform if inst != null else Transform3D.IDENTITY
+			var at: Vector3 = xf * p
+			var q := PhysicsRayQueryParameters3D.create(at + Vector3.UP * (layout.floor_height + 0.5), at + Vector3.DOWN * 0.5, Player.WORLD_MASK, [player.get_rid()])
+			var hit: Dictionary = player.get_world_3d().direct_space_state.intersect_ray(q)
+			if not hit.is_empty():
+				p.y = (xf.affine_inverse() * (hit["position"] as Vector3)).y
 	return p
 
 
