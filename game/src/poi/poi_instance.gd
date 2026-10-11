@@ -49,6 +49,8 @@ var _seats_done: bool = false
 var _cues_built: bool = false
 ## Navigation links through its ground-floor windows while it is in the tree (WindowLinks, TD-011).
 var _window_links: Array[RID] = []
+## Ezra's ladder links (LadderLinks, TD-310), on their own navigation layer.
+var _ladder_links: Array[RID] = []
 
 
 func _ready() -> void:
@@ -58,25 +60,28 @@ func _ready() -> void:
 
 
 func _enter_tree() -> void:
-	if layout == null or not _window_links.is_empty():
+	if layout == null or not _window_links.is_empty() or not _ladder_links.is_empty():
 		return
 	# Deferred: the builder adds the pieces and the manager places the building before it settles.
 	_build_window_links.call_deferred()
 
 
 func _build_window_links() -> void:
-	if not is_inside_tree() or not _window_links.is_empty():
+	if not is_inside_tree() or not _window_links.is_empty() or not _ladder_links.is_empty():
 		return
 	var ground := Callable()
 	if Game.world != null and Game.world.has_method(&"height_at"):
 		var w: Node = Game.world
 		ground = func(p: Vector3) -> float: return float(w.call(&"height_at", p.x, p.z))
 	_window_links = WindowLinks.build(self, get_world_3d().navigation_map, ground)
+	_ladder_links = LadderLinks.build(self, get_world_3d().navigation_map)
 
 
 func _exit_tree() -> void:
 	WindowLinks.free_links(_window_links)
 	_window_links.clear()
+	LadderLinks.free_links(_ladder_links)
+	_ladder_links.clear()
 
 
 func setup(p_layout: PoiLayout, p_id: StringName) -> void:

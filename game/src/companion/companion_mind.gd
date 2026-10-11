@@ -32,6 +32,9 @@ const SIDESTEP: float = 0.9
 ## him into steps he could not take (seed 7, TD-340's yard mesh). Up to waist height: with the
 ## mesh's cell rounding its waypoints sat 0.6 m up a 0.5 m step (the hub's seed 7 run).
 const STEP_MAX: float = 0.7
+## Up or down a ladder (TD-310): metres a second on the rungs, and on and off them.
+const CLIMB_SPEED: float = 0.9
+const CLIMB_WALK: float = 1.2
 ## How long a spotted bark keeps quiet after the last fight (s).
 const SPOTTED_QUIET: float = 45.0
 ## Barks he says on his own (not answering an order): an event repeated within voice.repeat s is
@@ -56,6 +59,10 @@ var rising_t: float = 0.0
 var lantern: OmniLight3D = null
 var _scan_t: float = 0.0
 var _blocked_t: float = 0.0
+## A ladder being climbed (LadderLinks): {"pts": [from, rails foot or top, other rails end, far
+## end], "i": the leg he is on}; empty otherwise.
+var _climb: Dictionary = {}
+var _nav_ready: bool = false
 var _side_t: float = 0.0
 var _side := Vector3.ZERO
 var _side_sign: float = 1.0
@@ -133,6 +140,10 @@ func step(delta: float, p: Player, dist: float) -> bool:
 	if not recruited:
 		_sit(p, dist)
 		return true
+	_nav_setup()
+	if not _climb.is_empty():
+		_climb_step(delta)
+		return true
 	if enemy.state == Enemy.State.STAGGER:
 		return false  # Enemy plays the recoil out (and resumes the fight)
 	if enemy.state == Enemy.State.BREAK:
@@ -170,6 +181,75 @@ func step(delta: float, p: Player, dist: float) -> bool:
 	_animate(want)
 	_footsteps(delta)
 	return true
+
+
+## His agent takes the ladder links (their own navigation layer: the Hollowed's agents don't) and
+## tells him when his path reaches one.
+func _nav_setup() -> void:
+	if _nav_ready or enemy.agent == null:
+		return
+	_nav_ready = true
+	enemy.agent.navigation_layers |= LadderLinks.LAYER
+	enemy.agent.link_reached.connect(_on_link_reached)
+
+
+func _on_link_reached(details: Dictionary) -> void:
+	if downed or not recruited or not _climb.is_empty():
+		return
+	var info: Dictionary = LadderLinks.info(details.get("rid", RID()) as RID)
+	var lad: PoiPieces.Ladder = info.get("ladder") as PoiPieces.Ladder
+	if lad == null or not is_instance_valid(lad):
+		return
+	var pts: Array[Vector3] = [enemy.global_position]
+	pts.append_array(LadderLinks.climb_path(lad, enemy.global_position))
+	_climb = {"pts": pts, "i": 0, "face": -lad.face()}
+	enemy._shape.set_deferred(&"disabled", true)
+	enemy.velocity = Vector3.ZERO
+	enemy.visual.play(&"climb", 1.0, 0.2, [&"walk"] as Array[StringName])
+
+
+## One frame on a ladder: along the leg he is on (to the rails, up or down them, off onto the far
+## floor), facing the rungs while on them.
+func _climb_step(delta: float) -> void:
+	var pts: Array = _climb["pts"]
+	var i: int = int(_climb["i"])
+	var to: Vector3 = pts[i + 1]
+	var on_rungs: bool = i == 1
+	var seg: Vector3 = Geometry3D.get_closest_point_to_segment(enemy.global_position, pts[i], to)
+	if seg.distance_to(enemy.global_position) > 1.5:
+		_end_climb(false)  # placed elsewhere meanwhile (beside the player, at his spot)
+		return
+	var step: float = (CLIMB_SPEED if on_rungs else CLIMB_WALK) * delta
+	var d: Vector3 = to - enemy.global_position
+	if d.length() <= step:
+		enemy.global_position = to
+		if i + 2 >= pts.size():
+			_end_climb(false)
+			return
+		_climb["i"] = i + 1
+	else:
+		enemy.global_position += d.normalized() * step
+	var look: Vector3 = _climb["face"] if on_rungs or int(_climb["i"]) == 1 else Vector3(d.x, 0.0, d.z)
+	if look.length() > 0.01:
+		enemy.rotation.y = lerp_angle(enemy.rotation.y, atan2(look.x, look.z), minf(1.0, delta * 8.0))
+	enemy.velocity = Vector3.ZERO
+	if not enemy.visual.has_anim(&"climb") and Vector2(d.x, d.z).length() < 0.05:
+		enemy.visual.play(&"idle", 1.0, 0.2)
+
+
+## Off the ladder: collision back on; cut short (he went down on it), he is put at the nearer of
+## the floors it joins.
+func _end_climb(cut: bool) -> void:
+	if _climb.is_empty():
+		return
+	if cut:
+		var pts: Array = _climb["pts"]
+		var a: Vector3 = pts[0]
+		var b: Vector3 = pts[pts.size() - 1]
+		enemy.global_position = a if enemy.global_position.distance_to(a) < enemy.global_position.distance_to(b) else b
+	_climb = {}
+	enemy._shape.set_deferred(&"disabled", false)
+	enemy._nav_goal = Vector3.INF
 
 
 ## While a sidestep is on: mostly sideways, a little on toward where he was going.
@@ -289,6 +369,10 @@ func _order_move(p: Player) -> Vector3:
 		var mn: float = CompanionDef.fnum(cdef.follow, "min", 3.0)
 		var mx: float = CompanionDef.fnum(cdef.follow, "max", 6.0)
 		var d: float = enemy._flat_dist(p.global_position)
+		if absf(p.global_position.y - enemy.global_position.y) > 1.6:
+			# A floor apart (the player up a ladder in the loft above him, TD-310): not beside them
+			# however near on the plan; he paths to the follow spot up there.
+			d = maxf(d, mx + 0.5)
 		if d <= mx and d >= mn * 0.6:
 			enemy._face(p.global_position)
 			return Vector3.ZERO
@@ -422,6 +506,7 @@ func shrugs(info: DamageInfo) -> bool:
 ## downed.linger s (in_play), then lose interest (is_alive() is false); a downed body restored from
 ## a save is out of play at once.
 func go_down(_info: DamageInfo = null, seconds: float = -1.0) -> void:
+	_end_climb(true)
 	downed = true
 	_linger_until = enemy._now() + CompanionDef.fnum(cdef.downed, "linger", 8.0) if seconds < 0.0 else -1000.0
 	_maulers = _bodies_on_him()
@@ -715,7 +800,7 @@ func _fix_anims() -> void:
 	var ap: AnimationPlayer = enemy.visual.anim
 	if ap == null:
 		return
-	for n: StringName in [&"downed", &"sit_injured", &"talk", &"look", &"carry_walk"]:
+	for n: StringName in [&"downed", &"sit_injured", &"talk", &"look", &"carry_walk", &"climb"]:
 		if ap.has_animation(n):
 			ap.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 
