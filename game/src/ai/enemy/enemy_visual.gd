@@ -99,6 +99,27 @@ static func model_path(id: String) -> String:
 	return "res://assets/generated/models/%s.glb" % id
 
 
+## Every body a Hollowed of this type may wear: its own, and every population's for it (or for "*").
+## What ModelWarmup loads before one spawns (population_body picks among them when it does).
+static var _candidates: Dictionary = {}
+
+
+static func candidate_bodies(def: EnemyDef) -> PackedStringArray:
+	if def == null:
+		return PackedStringArray()
+	if _candidates.has(def.id):
+		return _candidates[def.id]
+	var out: PackedStringArray = def.bodies.duplicate()
+	for d: Resource in Content.all(&"population"):
+		var bodies: Dictionary = (d as PopulationDef).bodies
+		for key: String in [String(def.id), "*"]:
+			for b: Variant in (bodies.get(key, {}) as Dictionary).keys():
+				if not out.has(str(b)):
+					out.append(str(b))
+	_candidates[def.id] = out
+	return out
+
+
 ## Population looks (ADR-0028): the body a Hollowed wears comes from the population its sleeper
 ## post, its building or its region asks for (PopulationDef); `fallback`, the type's own pick,
 ## otherwise, and while that body's model is not generated yet.

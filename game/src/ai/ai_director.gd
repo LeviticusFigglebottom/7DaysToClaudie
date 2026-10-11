@@ -25,10 +25,11 @@ var enemies: Dictionary = {}
 var _pop_t: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _ids: int = 0
-## Bodies waiting to be spawned, one a frame (Callables that spawn one each). A body's _ready
-## builds its visual, capsule and nav agent (~20-30 ms); a group of three in one frame was a 60 ms
-## hitch every time the wanderers topped up (perf_capture: "~ai spawn enter").
-var _spawn_queue: Array[Callable] = []
+## Bodies waiting to be spawned, one a frame: {"do": a Callable that spawns one, "models": the
+## bodies it may wear}. The front one waits until ModelWarmup has its models (a body's first load
+## of its .glb on this thread was ~33 ms), and a group of three in one frame was a 60 ms hitch every
+## time the wanderers topped up (perf_capture: "~ai spawn enter").
+var _spawn_queue: Array[Dictionary] = []
 
 const ModelWarmup := preload("res://src/world/model_warmup.gd")
 
@@ -47,16 +48,6 @@ func setup_world(w: Node) -> void:
 	if world.clock_driver != null:
 		world.clock_driver.game_minutes_passed.connect(_on_minutes)
 	Game.session.heat.configure(Content.config(&"heat"))
-	# Every body a Hollowed may wear, loaded on the loader threads now rather than on the main thread
-	# when the first wears it (ModelWarmup).
-	var bodies: PackedStringArray = []
-	for d: Resource in Content.all(&"enemy"):
-		bodies.append_array((d as EnemyDef).bodies)
-	for d: Resource in Content.all(&"population"):
-		for picks: Variant in (d as PopulationDef).bodies.values():
-			for b: Variant in (picks as Dictionary).keys():
-				bodies.append(str(b))
-	ModelWarmup.request(bodies)
 
 
 # --- Spawning --------------------------------------------------------------------------------
@@ -212,7 +203,7 @@ func spawn_pack(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}, later
 		var where: Vector3 = _ground(at) if world != null else at
 		if later:
 			# A hound a frame (see _spawn_queue); each joins the pack's one shared array as it comes.
-			_spawn_queue.append(func() -> void: _join_pack(out, spawn(enemy_id, where, o)))
+			_queue_spawn(enemy_id, func() -> void: _join_pack(out, spawn(enemy_id, where, o)))
 		else:
 			_join_pack(out, spawn(enemy_id, where, o))
 	return out
@@ -275,16 +266,25 @@ func _gamestage() -> int:
 func _process(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
 	if not _spawn_queue.is_empty():
-		(_spawn_queue.pop_front() as Callable).call()
+		var next: Dictionary = _spawn_queue[0]
+		if ModelWarmup.want(next["models"]):
+			_spawn_queue.pop_front()
+			(next["do"] as Callable).call()
 	_process_body(delta)
 	StreamMeter.note("ai", t0)
 
 
-## Queues one body's spawn for a later frame (one a frame; see _spawn_queue). Groups that come
-## in out of sight (wanderers, heat responses, hound packs) arrive a body a frame, which nobody
-## can see; sleepers and anything that wants its bodies now still call spawn().
+## Queues one body's spawn for a later frame (one a frame, once its models are loaded; see
+## _spawn_queue). Groups that come in out of sight (wanderers, heat responses, hound packs) arrive
+## a body a frame, which nobody can see; anything that wants its bodies now still calls spawn().
 func spawn_later(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> void:
-	_spawn_queue.append(func() -> void: spawn(enemy_id, pos, opts))
+	_queue_spawn(enemy_id, func() -> void: spawn(enemy_id, pos, opts))
+
+
+func _queue_spawn(enemy_id: StringName, do: Callable) -> void:
+	var models: PackedStringArray = EnemyVisual.candidate_bodies(Content.enemy(enemy_id))
+	ModelWarmup.request(models)
+	_spawn_queue.append({"do": do, "models": models})
 
 
 func _process_body(delta: float) -> void:

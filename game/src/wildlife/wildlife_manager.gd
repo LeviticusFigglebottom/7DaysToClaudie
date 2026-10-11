@@ -46,16 +46,6 @@ func setup_world(w: Node) -> void:
 	add_child(wolves)
 	wolves.setup(self, w)
 	Game.register_command(&"wildlife.butcher", _butcher)
-	# The animals' models, loaded on the loader threads now (ModelWarmup): a band's or a flock's
-	# first load on the main thread was 25-33 ms of its spawn frame.
-	var models: PackedStringArray = []
-	for d: Resource in Content.all(&"wildlife"):
-		var wd := d as WildlifeDef
-		for m: Variant in wd.models.keys():
-			models.append(str(m))
-		if wd.model != "":
-			models.append(wd.model)
-	ModelWarmup.request(models)
 	# A region's 1 m terrain answers sample() differently from its coarse one: plan again.
 	var tm: Node = (w.get(&"terrain") as Node) if w != null else null
 	if tm != null and tm.has_signal(&"region_attached"):
@@ -326,6 +316,10 @@ func _process_body(delta: float) -> void:
 		var ring: Vector2 = FLOCK_RING if d.wkind == "flock" else GRAZER_RING
 		if dist < ring.x or dist > ring.y:
 			continue
+		# Its models loaded off this thread first (ModelWarmup): a band's or a flock's first load here
+		# was 25-33 ms of its spawn frame. Not yet: a later tick raises it.
+		if not ModelWarmup.want(models_of(d)):
+			break
 		var t_spawn: int = Time.get_ticks_usec()
 		if d.wkind == "pack":
 			if wolves != null:
@@ -339,6 +333,16 @@ func _process_body(delta: float) -> void:
 		# in the ring at once (TD-324); the rest come on the next ticks, and the ring's inner edge
 		# (70 m, flocks 30 m) keeps it out of sight.
 		break
+
+
+## The models a plan of this def spawns: a band's (by weight) or a flock's.
+static func models_of(d: WildlifeDef) -> PackedStringArray:
+	var out: PackedStringArray = []
+	for m: Variant in d.models.keys():
+		out.append(str(m))
+	if d.model != "":
+		out.append(d.model)
+	return out
 
 
 ## The valley falls silent on a Hum night: from SILENCE_HOURS before it until it ends.

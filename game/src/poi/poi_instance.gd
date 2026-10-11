@@ -25,6 +25,7 @@ var tier: int = 1
 var state: Dictionary = {}
 var shell: StaticBody3D
 var sleepers_spawned: bool = false
+var _sleeper_models: PackedStringArray = []
 ## Trap pieces by trap id (registered by PoiBuilder).
 var traps: Dictionary = {}
 var _sleepers: Dictionary = {}
@@ -314,6 +315,22 @@ func spawn_sleepers(ai: Node) -> void:
 		if e != null:
 			_sleepers[StringName(sid)] = e
 			e.died.connect(_on_sleeper_died.bind(sid))
+
+
+## Every body this building's sleepers may wear (EnemyVisual.candidate_bodies of each one's type):
+## what PoiManager has ModelWarmup load when the building is placed, before they spawn.
+func sleeper_models() -> PackedStringArray:
+	if _sleeper_models.is_empty():
+		var seen: Dictionary = {}
+		for s: Dictionary in layout.sleepers:
+			var id := StringName(str(s.get("enemy", "hollow")))
+			if seen.has(id):
+				continue
+			seen[id] = true
+			for b: String in EnemyVisual.candidate_bodies(Content.enemy(id)):
+				if not _sleeper_models.has(b):
+					_sleeper_models.append(b)
+	return _sleeper_models
 
 
 ## Which sit/lie sleepers land on which seat or bed (SleeperAnchors.assign; POI-local). A pure
