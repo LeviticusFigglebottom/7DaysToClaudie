@@ -142,6 +142,10 @@ const SHOTS: Array[Dictionary] = [
 	{"name": "rifle_bolt_up", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 15},
 	{"name": "rifle_bolt_mid", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 18},
 	{"name": "rifle_bolt_back", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 21},
+	# The other lifted-knob keys (TD-294: the knob's gap to the bell has a 1 cm floor there).
+	{"name": "rifle_bolt_down", "item": "hunting_rifle", "action": "fp_fire_rifle", "frame": 27},
+	{"name": "rifle_reload_lift", "item": "hunting_rifle", "action": "fp_reload_rifle_open", "frame": 7},
+	{"name": "rifle_reload_turn_down", "item": "hunting_rifle", "action": "fp_reload_rifle_close", "frame": 4},
 	{"name": "rifle_reload_open", "item": "hunting_rifle", "action": "fp_reload_rifle_open", "frame": 12},
 	{"name": "rifle_reload_round", "item": "hunting_rifle", "action": "fp_reload_rifle", "frame": 16},
 	{"name": "rifle_inspect_a", "item": "hunting_rifle", "action": "fp_inspect_rifle", "frame": 32},
