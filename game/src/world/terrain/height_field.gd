@@ -50,8 +50,8 @@ func sample(x: float, z: float) -> float:
 
 
 ## sample() over a given heights array of this field's shape: TerrainManager.height_at takes the
-## array under its lock and samples it outside, so a dig (which writes in place under the lock,
-## copying on write while a reader holds the old buffer) never changes a sample half way.
+## array under its lock and samples it outside, so a dig (which swaps a whole new array in under
+## the lock) never changes a sample half way.
 func sample_in(hs: PackedFloat32Array, x: float, z: float) -> float:
 	var gx: float = (x - origin.x) / spacing
 	var gz: float = (z - origin.y) / spacing
