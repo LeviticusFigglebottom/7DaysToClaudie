@@ -228,6 +228,10 @@ func _build_legend() -> void:
 		cb.add_theme_color_override(&"font_pressed_color", UiStyle.KIT_TEXT)
 		cb.add_theme_color_override(&"font_hover_color", UiStyle.KIT_TEXT)
 		cb.add_theme_color_override(&"font_focus_color", UiStyle.KIT_TEXT)
+		# The legend sits on the dark strip, not the paper: the paper theme's ink tick vanished
+		# there. On is the layer's own colour, off a light empty box.
+		cb.add_theme_icon_override(&"checked", UiStyle.check_icon(true, MapMarkers.color_of(l)))
+		cb.add_theme_icon_override(&"unchecked", UiStyle.check_icon(false, UiStyle.KIT_TEXT_DIM))
 		cb.toggled.connect(_on_layer_toggled.bind(l))
 		row.add_child(cb)
 		_legend.add_child(row)
@@ -588,16 +592,18 @@ func _draw_markers() -> void:
 		for at: Vector3 in (drops.call(&"markers") as Array[Vector3]):
 			var dp: Vector2 = _world_to_sheet(at)
 			_markers.draw_colored_polygon(PackedVector2Array([dp + Vector2(0, -7) * s, dp + Vector2(7, 0) * s, dp + Vector2(0, 7) * s, dp + Vector2(-7, 0) * s]), Color(0.8, 0.2, 0.1))
-	# What you built (MapMarkers), fog or no fog: you know where you built it.
-	if Game.session != null:
-		for bm: Dictionary in MapMarkers.marks(MapMarkers.placed(), MapMarkers.layers()):
-			MapMarkers.draw_mark(_markers, _world_to_sheet(bm["pos"]), bm["layer"], s * 1.2)
+	# Where you wake (a filled dot once a bed is set, a ring at the arrival point before): under
+	# what you built, so the shelter you sleep in keeps its house mark.
 	if p != null and p.spawn_point != Vector3.ZERO:
 		var sp: Vector2 = _world_to_sheet(p.spawn_point)
 		if p.has_spawn_point:
 			_markers.draw_circle(sp, 5.0 * s, Color(0.85, 0.65, 0.1))
 		else:
 			_markers.draw_arc(sp, 6.0 * s, 0.0, TAU, 20, Color(0.85, 0.65, 0.1), 2.0)
+	# What you built (MapMarkers), fog or no fog: you know where you built it.
+	if Game.session != null:
+		for bm: Dictionary in MapMarkers.marks(MapMarkers.placed(), MapMarkers.layers()):
+			MapMarkers.draw_mark(_markers, _world_to_sheet(bm["pos"]), bm["layer"], s * 1.2)
 	# The distress call (the first days' tutorial): a red pulsing ring with its bearing.
 	var d: Dictionary = FieldManual.live_distress()
 	if not d.is_empty():
