@@ -191,3 +191,39 @@ func test_a_built_house_links_its_ground_floor_window_across_the_wall() -> void:
 	_root.remove_child(inst)
 	assert_eq(WindowLinks.info(links[0]), {}, "the links go with the building")
 	inst.free()
+
+
+func test_a_built_house_links_its_ladder_on_ezras_layer_only() -> void:
+	# TD-310: two rooms stacked, a ladder on the east wall of (3, 0) up through a hatch.
+	var raw: Dictionary = {"id": "ladder_links_test", "name": "Ladder Links Test", "tier": 1, "footprint": [12, 12],
+		"style": {"floor_height": 0.15, "scatter": {"density": 0.0}, "roof": {"type": "flat"}},
+		"levels": [
+			{"level": 0, "plan": ["AAAA", "AAAA"], "rooms": {"A": {}}},
+			{"level": 1, "plan": ["BBBB", "BBBB"], "rooms": {"B": {}}}],
+		"openings": [{"id": "door", "at": [3, 1], "side": "E", "type": "door"}],
+		"ladders": [{"level": 0, "at": [3, 0], "side": "E", "hatch": true}],
+		"route": [{"at": [5, 1]}, {"at": [1, 1]}, {"at": [0, 1], "level": 1}],
+		"loot_room": {"room": "B", "level": 1}}
+	var pd := PoiDef.new()
+	assert_eq(pd.parse(raw, &"poi", "test"), PackedStringArray())
+	Game.world = null
+	var inst: PoiInstance = PoiBuilder.build(PoiLayout.compile(pd), &"test/ladder_links")
+	_root.add_child(inst)
+	await get_tree().process_frame
+	await get_tree().physics_frame
+	var links: Array[RID] = (inst.get(&"_ladder_links") as Array[RID]).duplicate()
+	assert_eq(links.size(), 1, "one ladder, one link")
+	if links.size() != 1:
+		return
+	assert_eq(NavigationServer3D.link_get_navigation_layers(links[0]), LadderLinks.LAYER, "on the ladder layer alone")
+	var foot: Vector3 = NavigationServer3D.link_get_start_position(links[0])
+	var top: Vector3 = NavigationServer3D.link_get_end_position(links[0])
+	assert_almost_eq(foot.y, inst.layout.level_y(0), 0.01, "from the ground floor")
+	assert_almost_eq(top.y, inst.layout.level_y(1), 0.01, "to the storey above")
+	var lad: PoiPieces.Ladder = LadderLinks.info(links[0])["ladder"]
+	var path: Array[Vector3] = LadderLinks.climb_path(lad, foot)
+	assert_almost_eq(path[1].y - path[0].y, top.y - foot.y, 0.01, "up the rails a storey")
+	assert_almost_eq(path[2].distance_to(top), 0.0, 0.01, "and off at the landing")
+	_root.remove_child(inst)
+	assert_eq(LadderLinks.info(links[0]), {}, "the links go with the building")
+	inst.free()

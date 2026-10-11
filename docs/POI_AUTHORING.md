@@ -185,7 +185,7 @@ linoleum_beige, tile_white_small, concrete, rock_floor, cave_mud`.
   library fire escape). Keep the landing and the metre in front of the rails clear of solid props
   (the relay tower's radio stood on its top landing: an audit error now). A ladder whose rails
   stand on an open edge between two floor cells is grabbed by anyone walking at it there: lean it
-  on a wall or a rail where you can. Hollowed do not climb ladders: lofts are refuges.
+  on a wall or a rail where you can. Hollowed do not climb ladders: lofts are refuges (Ezra does: LadderLinks, TD-310).
 * `{"level": 1, "at": [4, 3]}` — broken floor: a one-way drop to the level below.
 
 ### props
