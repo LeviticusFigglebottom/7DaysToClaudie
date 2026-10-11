@@ -135,8 +135,15 @@ func _raise(up: bool) -> void:
 func _hold(item: StringName) -> void:
 	_release_all()
 	var ps: PlayerState = p.state
+	# The last one back out first: one of everything in turn filled the bag past its bulk, and an
+	# item that didn't fit left the hands empty (the molotov and chime frames of the hands sheet).
+	var last: StringName = ps.toolbelt[0]
+	if last != &"" and last != item:
+		ps.inventory.remove(last, ps.inventory.count_of(last))
 	if item != &"":
-		ps.inventory.add_item(item, 1)
+		if ps.inventory.add_item(item, 1) > 0 and not ps.inventory.has(item):
+			print("WRIST_AUDIT FAIL %s didn't fit in the bag" % item)
+			_fails += 1
 	ps.toolbelt[0] = item
 	p.equipment.select_slot(0)
 	await _frames(10)
