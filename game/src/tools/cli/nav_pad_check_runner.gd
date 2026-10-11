@@ -27,6 +27,7 @@ var _walk_jobs: Array[Dictionary] = []
 var _walk_failed: int = 0
 var _walk_tot: Dictionary = {"hollow": 0, "hollow_in": 0, "ezra": 0, "ezra_in": 0, "stuck": 0, "slid": 0}
 const WALK_LIMIT: float = 30.0
+const WALK_PAST: float = 0.4
 ## A body this slow (m/s) while it means to move is stuck that frame.
 const STUCK_SPEED: float = 0.15
 ## States a body stands still in on purpose.
@@ -338,7 +339,7 @@ func _walk_doors(w: Node, inst: PoiInstance, id: StringName) -> void:
 			var e: Enemy = ai.call(&"spawn", &"hollow", at, {"authored": true, "id": "navwalk_%d" % i, "tier": "normal"}) as Enemy
 			if e != null:
 				hollows.append(e)
-		var hr: Dictionary = await _walk_group(inst, p, hollows, inside, false)
+		var hr: Dictionary = await _walk_group(inst, p, hollows, job, false)
 		for e: Enemy in hollows:
 			if is_instance_valid(e):
 				ai.call(&"despawn", e)
@@ -350,7 +351,7 @@ func _walk_doors(w: Node, inst: PoiInstance, id: StringName) -> void:
 		if ez != null and ez.ally != null:
 			ez.ally.recruited = true
 			ez.ally.set_order("stay", inside)
-			er = await _walk_group(inst, p, [ez], inside, true)
+			er = await _walk_group(inst, p, [ez], job, true)
 			ai.call(&"despawn", ez)
 		_walk_tot["hollow"] += hr["n"]
 		_walk_tot["hollow_in"] += hr["in"]
@@ -365,10 +366,15 @@ func _walk_doors(w: Node, inst: PoiInstance, id: StringName) -> void:
 			er["in"], er["n"], _times(er["t"]), er["stuck"], er["slid"]])
 
 
-## Runs bodies at `inside` (the Hollowed hunt the player standing there; Ezra walks to his spot)
-## for up to WALK_LIMIT s: {n, in, stuck, slid, t (each one's time in)}.
-func _walk_group(inst: PoiInstance, p: Player, bodies: Array, inside: Vector3, ezra: bool) -> Dictionary:
+## Runs bodies at the door's inside end (the Hollowed hunt the player standing there; Ezra walks
+## to his spot) for up to WALK_LIMIT s: {n, in, stuck, slid, t (each one's time in)}. In: indoors and
+## WALK_PAST m past the doorway (Ezra stops 1.5 m short of his spot, which can be the doorway).
+func _walk_group(inst: PoiInstance, p: Player, bodies: Array, job: Dictionary, ezra: bool) -> Dictionary:
 	var r: Dictionary = {"n": bodies.size(), "in": 0, "stuck": 0, "slid": 0, "t": PackedFloat32Array()}
+	var inside: Vector3 = job["inside"]
+	var mid: Vector3 = (inside + (job["outside"] as Vector3)) * 0.5
+	var in_dir: Vector3 = -(job["out_dir"] as Vector3).normalized()
+	var times := PackedFloat32Array()
 	var done: Dictionary = {}
 	var t: float = 0.0
 	var dt: float = 1.0 / float(Engine.physics_ticks_per_second)
@@ -389,10 +395,10 @@ func _walk_group(inst: PoiInstance, p: Player, bodies: Array, inside: Vector3, e
 			var e: Enemy = b as Enemy
 			if not is_instance_valid(e) or done.has(e):
 				continue
-			if inst.is_indoors(e.global_position) and e._flat_dist(inside) < (1.6 if ezra else 2.2):
+			if inst.is_indoors(e.global_position) and (e.global_position - mid).dot(in_dir) > WALK_PAST:
 				done[e] = true
 				r["in"] += 1
-				(r["t"] as PackedFloat32Array).append(t)
+				times.append(t)
 				continue
 			if Vector2(e.velocity.x, e.velocity.z).length() < STUCK_SPEED and not (e.state in STILL_STATES):
 				r["stuck"] += 1
@@ -401,6 +407,7 @@ func _walk_group(inst: PoiInstance, p: Player, bodies: Array, inside: Vector3, e
 				if col.get_normal().y < 0.5 and not (col.get_collider() is CharacterBody3D):
 					r["slid"] += 1
 					break
+	r["t"] = times
 	return r
 
 
