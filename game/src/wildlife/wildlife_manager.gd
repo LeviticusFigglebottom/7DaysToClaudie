@@ -266,7 +266,9 @@ func _process_body(delta: float) -> void:
 	_flock_check_t -= delta
 	if _flock_check_t <= 0.0:
 		_flock_check_t = 0.25
+		var t_fl: int = Time.get_ticks_usec()
 		_check_flocks()
+		StreamMeter.note("wildlife flocks", t_fl)
 	_tick_t -= delta
 	_plan_t -= delta
 	if _tick_t > 0.0:
@@ -275,8 +277,10 @@ func _process_body(delta: float) -> void:
 			var pp: Player = world.get(&"player") as Player
 			if pp != null:
 				var clk: WorldClock = Game.session.clock
+				var t_pre: int = Time.get_ticks_usec()
 				_plans_near(Vector2(pp.global_position.x, pp.global_position.z), GRAZER_RING.y, clk.day(),
 					WildlifeSpawner.period_of(clk.hour_f(), clk.sunrise_hour, clk.sunset_hour), Content.all(&"wildlife"), GameRules.current().num("wildlife_density"))
+				StreamMeter.note("wildlife plans", t_pre)
 		return
 	_tick_t = TICK
 	var p: Player = world.get(&"player") as Player
@@ -298,7 +302,9 @@ func _process_body(delta: float) -> void:
 	var period: String = WildlifeSpawner.period_of(clock.hour_f(), clock.sunrise_hour, clock.sunset_hour)
 	var defs: Array = Content.all(&"wildlife")
 	var center := Vector2(p.global_position.x, p.global_position.z)
+	var t_plans: int = Time.get_ticks_usec()
 	var plans: Array[Dictionary] = _plans_near(center, GRAZER_RING.y, clock.day(), period, defs, GameRules.current().num("wildlife_density"))
+	StreamMeter.note("wildlife plans", t_plans)
 	for plan: Dictionary in plans:
 		var id: StringName = plan["id"]
 		if animals_of(id) > 0 or flocks.has(id) or (wolves != null and wolves.has_plan(id)):
@@ -308,6 +314,7 @@ func _process_body(delta: float) -> void:
 		var ring: Vector2 = FLOCK_RING if d.wkind == "flock" else GRAZER_RING
 		if dist < ring.x or dist > ring.y:
 			continue
+		var t_spawn: int = Time.get_ticks_usec()
 		if d.wkind == "pack":
 			if wolves != null:
 				wolves.spawn_plan(d, plan)
@@ -315,6 +322,7 @@ func _process_body(delta: float) -> void:
 			spawn_band(d, plan, clock.is_night())
 		else:
 			spawn_flock(d, plan)
+		StreamMeter.note("wildlife spawn " + d.wkind, t_spawn)
 		# One band, pack or flock a tick: after the spawn (or a long walk) a tick raised every plan
 		# in the ring at once (TD-324); the rest come on the next ticks, and the ring's inner edge
 		# (70 m, flocks 30 m) keeps it out of sight.

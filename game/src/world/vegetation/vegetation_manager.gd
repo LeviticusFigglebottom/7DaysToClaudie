@@ -318,24 +318,37 @@ func _process(delta: float) -> void:
 
 
 func _process_body(delta: float) -> void:
+	# Each step metered on its own (perf_capture's slow frames name the part: "~veg far", ...).
+	var t: int = Time.get_ticks_usec()
 	_collect_far()
+	StreamMeter.note("veg far", t)
+	t = Time.get_ticks_usec()
 	_collect_coarse()
+	StreamMeter.note("veg coarse", t)
 	if world == null or world.player == null:
 		return
+	t = Time.get_ticks_usec()
 	_collect()
+	StreamMeter.note("veg collect", t)
 	_accum += delta
 	_col_accum += delta
 	_coarse_accum += delta
 	var pos: Vector3 = world.player.global_position
 	if _coarse_accum > 1.0:
 		_coarse_accum = 0.0
+		t = Time.get_ticks_usec()
 		_coarse_update(pos)
+		StreamMeter.note("veg coarse update", t)
 	if _accum > 0.25:
 		_accum = 0.0
+		t = Time.get_ticks_usec()
 		_update(pos)
+		StreamMeter.note("veg update", t)
 	if _col_accum > 0.5:
 		_col_accum = 0.0
+		t = Time.get_ticks_usec()
 		_update_collision(pos)
+		StreamMeter.note("veg collision", t)
 
 
 func _update(pos: Vector3) -> void:

@@ -65,14 +65,18 @@ func spawn(enemy_id: StringName, pos: Vector3, opts: Dictionary = {}) -> Enemy:
 	if bool(opts.get("guardian", false)):
 		opts = opts.duplicate()
 		opts["tier"] = guardian_tier(StringName(str(opts["tier"])))
+	var t_setup: int = Time.get_ticks_usec()
 	var e := Enemy.new()
 	e.setup(id, def, self, opts)
+	StreamMeter.note("ai spawn setup", t_setup)
 	e.name = String(id).replace(":", "_")
 	# Placed before entering the tree: _ready() takes its home, wander anchor and facing from the
 	# transform it has then (placing afterwards left every body facing south, homed at the origin).
 	e.position = to_local(pos) if is_inside_tree() else pos
 	e.rotation.y = float(opts.get("yaw", _rng.randf() * TAU))
+	var t_enter: int = Time.get_ticks_usec()
 	add_child(e)
+	StreamMeter.note("ai spawn enter", t_enter)
 	if opts.has("target"):
 		e.notice(opts["target"])
 	enemies[id] = e
@@ -286,7 +290,9 @@ func _process_body(delta: float) -> void:
 		return
 	var want: int = _wanted_wanderers(ppos)
 	if wanderers < want:
+		var t_group: int = Time.get_ticks_usec()
 		_spawn_group(ppos)
+		StreamMeter.note("ai group", t_group)
 
 
 func _wanted_wanderers(ppos: Vector3) -> int:
