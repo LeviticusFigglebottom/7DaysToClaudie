@@ -934,7 +934,10 @@
         ]
       },
       "attack": "torch",
-      "block": 0.3
+      "block": 0.3,
+      "fixed_roll": [
+        "L"
+      ]
     },
     "flashlight": {
       "_doc": "Flashlight: overhand in the left fist, the lens out of the little-finger side so the beam goes where you look; the forearm crosses the lower left. The right hand down out of view (it comes up to guard).",
