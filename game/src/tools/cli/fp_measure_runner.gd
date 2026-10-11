@@ -9,6 +9,10 @@ const VIEW_TAN := Vector2(0.985, 0.554)
 ## A hand on the knob reads as on the knob with this much screen gap (m at the knob's depth) to the
 ## scope's footprint: about the fist's half-width round the knob.
 const KNOB_GAP_MIN: float = 0.02
+## The floor for a lifted knob (the bolt turned up, not yet drawn): the hand closes over it beside
+## the ocular bell and reads as working the bolt, and more gap cost a steeper handle or a pose of its
+## own (hub, TD-294 remainder).
+const KNOB_GAP_LIFTED_MIN: float = 0.01
 ## How far right (fraction of the half-width) the knob may sit on screen so the hand working it is
 ## in the frame too (TD-294 remainder: at ~0.8 the right hand was mostly off the frame's right edge).
 const KNOB_X_MAX: float = 0.45
@@ -17,6 +21,9 @@ var _vm: ViewModel
 ## The misses measured, for --fix: [{use, frame, miss} or {hold, miss}].
 var _fixes: Array = []
 var _cam: Camera3D
+## The bolt's rest transform (local), from the hold: a key whose bolt is turned but not drawn is
+## the lifted knob.
+var _bolt_rest: Transform3D
 
 
 func _ready() -> void:
@@ -64,6 +71,7 @@ func _run() -> void:
 				print("FP_MEASURE hold %s knob %s" % [hold_name, inv1 * knob(held1)])
 				var bolt1: Node3D = held1.find_child("bolt", true, false) as Node3D
 				if bolt1 != null:
+					_bolt_rest = bolt1.transform
 					var bx: Transform3D = inv1 * bolt1.global_transform
 					print("FP_MEASURE hold %s bolt origin %s axis %s" % [hold_name, bx.origin, bx.basis.z.normalized()])
 				print("FP_MEASURE hold %s L basis %s" % [hold_name, (inv1 * lh.global_transform).basis.orthonormalized()])
@@ -86,10 +94,10 @@ func _run() -> void:
 			print("FP_MEASURE %s f%d %s %.1f cm  [%.3f, %.3f, %.3f] (item in %s)" % [use, int(key[0]), target, miss.length() * 100.0, miss.x, miss.y, miss.z, _item_hand()])
 			if target == "knob":
 				var rd: Dictionary = _read()
-				var ok: bool = rd["gap"] >= KNOB_GAP_MIN and rd["k_in"] and rd["l_in"] and rd["r_low"]
+				var ok: bool = rd["gap"] >= (KNOB_GAP_LIFTED_MIN if rd["lifted"] else KNOB_GAP_MIN) and rd["k_in"] and rd["l_in"] and rd["r_low"]
 				read_fails += 0 if ok else 1
-				print("FP_READ %s f%d knob gap %.1f cm, screen (%.2f, %.2f) %s | L screen (%.2f, %.2f) %s | R elbow %.1f cm below the wrist, %.2f m deep | %s" % [
-					use, int(key[0]), rd["gap"] * 100.0, rd["k"].x / VIEW_TAN.x, rd["k"].y / VIEW_TAN.y, "in" if rd["k_in"] else "RIGHT",
+				print("FP_READ %s f%d %sknob gap %.1f cm, screen (%.2f, %.2f) %s | L screen (%.2f, %.2f) %s | R elbow %.1f cm below the wrist, %.2f m deep | %s" % [
+					use, int(key[0]), "lifted " if rd["lifted"] else "", rd["gap"] * 100.0, rd["k"].x / VIEW_TAN.x, rd["k"].y / VIEW_TAN.y, "in" if rd["k_in"] else "RIGHT",
 					rd["l"].x, rd["l"].y, "in" if rd["l_in"] else "OUT",
 					rd["drop"] * 100.0, rd["depth"], "ok" if ok else "FAIL"])
 			var tgt: Vector3 = _target_pos(target)
@@ -162,6 +170,9 @@ func _read() -> Dictionary:
 	var lh: Node3D = (_vm.get(&"_sock") as Dictionary).get("L", null)
 	var l: Vector2 = to_screen(inv * lh.global_position) if lh != null else Vector2(9.0, 9.0)
 	out["l"] = l
+	var bolt: Node3D = held.find_child("bolt", true, false) as Node3D
+	out["lifted"] = bolt != null and bolt.transform.origin.distance_to(_bolt_rest.origin) < 0.005 \
+			and not bolt.transform.basis.is_equal_approx(_bolt_rest.basis)
 	out["k"] = to_screen(kn)
 	out["k_in"] = (out["k"] as Vector2).x <= VIEW_TAN.x * KNOB_X_MAX and absf((out["k"] as Vector2).y) <= VIEW_TAN.y * 0.9
 	out["l_in"] = absf(l.x) <= VIEW_TAN.x * 0.92 and l.y >= -VIEW_TAN.y * 0.9 and l.y <= VIEW_TAN.y
