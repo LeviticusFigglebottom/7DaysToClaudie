@@ -62,6 +62,18 @@ const BIOME_CHECK: float = 0.5
 ## exposure indoors (data/config/interior_light.json).
 var indoors: float = 0.0
 var _interior_cfg: Dictionary = {}
+## The room fill's stand-in while the eye's room probe hasn't rendered (parked or waiting its turn):
+## a light with no shadow at the room's middle, faded out as the probe comes in, so a room entered
+## early is never SDFGI black (player report 3; interior_light.json pending_fill).
+var pending_fill: OmniLight3D
+## How much of the stand-in is on, 0..1 (up at once, down over pending_fade_seconds).
+var pending: float = 0.0
+## The room probe the stand-in is lighting for, and its box (global) for placing it.
+var _pending_room: ReflectionProbe = null
+## QA (poi_preview --pending): a room held pending at `_forced` whatever the budget says, so the
+## stand-in can be measured against the same room's settled fill without a slow GPU queue.
+var _forced_room: ReflectionProbe = null
+var _forced: float = 0.0
 const BIOME_EASE: float = 3.0
 ## Rain, snow, splashes, eave drips and motes round the camera, and the weather map.
 var fx: WeatherFx
@@ -137,6 +149,15 @@ func _ready() -> void:
 	flash_light.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY
 	flash_light.visible = false
 	add_child(flash_light)
+	pending_fill = OmniLight3D.new()
+	pending_fill.name = "PendingRoomFill"
+	pending_fill.shadow_enabled = false
+	pending_fill.light_specular = 0.0
+	# No falloff inside its range: a flat fill like the probe's ambient, not a bulb.
+	pending_fill.omni_attenuation = 0.0
+	pending_fill.light_volumetric_fog_energy = 0.0
+	pending_fill.visible = false
+	add_child(pending_fill)
 	_load_sky_textures()
 	_publish_surface_tables()
 	if DisplayServer.get_name() != "headless":
@@ -247,7 +268,8 @@ func _process(delta: float) -> void:
 	fen_weight = lerpf(fen_weight, _fen_target, eased)
 	_update_lightning()
 	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
-	var inside: float = 1.0 if cam != null and in_interior(cam.global_position) else 0.0
+	_update_pending(cam, delta)
+	var inside: float = 1.0 if cam != null and (in_interior(cam.global_position) or _pending_room != null) else 0.0
 	indoors = move_toward(indoors, inside, delta / maxf(0.05, float(_interior_cfg.get("adapt_seconds", 1.2))))
 	update_now()
 
@@ -339,6 +361,12 @@ func update_now() -> void:
 		var fc: Color = Color(room_fill.r, room_fill.g, room_fill.b).lerp(Color(0.72, 0.78, 1.0), clampf(ff / (ff + room_fill.a), 0.0, 1.0))
 		room_fill = Color(fc.r, fc.g, fc.b, room_fill.a + ff)
 	var floor_e: float = float(_interior_cfg.get("night_floor", 0.012))
+	if pending_fill != null:
+		var ps: float = 1.0
+		if _pending_room != null and is_instance_valid(_pending_room):
+			ps = daylight_share(_interior_cfg, float(_pending_room.get_meta(&"daylight")) if _pending_room.has_meta(&"daylight") else -1.0,
+				float(_pending_room.get_meta(&"min_share")) if _pending_room.has_meta(&"min_share") else -1.0)
+		_place_pending_fill(Color(room_fill.r, room_fill.g, room_fill.b), maxf(floor_e, room_fill.a * ps))
 	for probe: Node in get_tree().get_nodes_in_group(&"interior_probe"):
 		var share: float = daylight_share(_interior_cfg, float(probe.get_meta(&"daylight")) if probe.has_meta(&"daylight") else -1.0,
 			float(probe.get_meta(&"min_share")) if probe.has_meta(&"min_share") else -1.0)
@@ -430,6 +458,62 @@ static func daylight_share(cfg: Dictionary, ratio: float, min_share: float = -1.
 static func indoor_exposure(cfg: Dictionary, day: float, inside: float) -> float:
 	var open: float = lerpf(float(cfg.get("exposure_night", 1.1)), float(cfg.get("exposure_day", 1.3)), day)
 	return lerpf(1.0, open, clampf(inside, 0.0, 1.0))
+
+
+## Follows the eye's room probe (PoiManager's budget, parked or live): `pending` goes up at once
+## while it hasn't rendered and fades as it comes in.
+func _update_pending(cam: Camera3D, delta: float) -> void:
+	if _forced_room != null:
+		_pending_room = _forced_room if is_instance_valid(_forced_room) else null
+		pending = _forced
+		return
+	_pending_room = null
+	var want: float = 0.0
+	var budget: Node = _probe_budget()
+	if cam != null and budget != null:
+		_pending_room = budget.call(&"room_probe", cam.global_position) as ReflectionProbe
+		if _pending_room != null:
+			want = 1.0 - float(budget.call(&"readiness", _pending_room))
+	if want > pending:
+		pending = want
+	else:
+		pending = move_toward(pending, want, delta / maxf(0.05, float(_interior_cfg.get("pending_fade_seconds", 0.8))))
+
+
+## Holds `room` pending at `amount` (0..1) until called with null (QA: poi_preview --pending).
+func force_pending(room: ReflectionProbe, amount: float = 1.0) -> void:
+	_forced_room = room
+	_forced = amount
+	if room == null:
+		pending = 0.0
+
+
+func _probe_budget() -> Node:
+	var w: Node = Game.world if Game != null else null
+	var pois: Node = w.get(&"pois") as Node if w != null else null
+	return pois.get(&"probes") as Node if pois != null else null
+
+
+## The stand-in fill (pending_fill): the room fill a rendered probe would give (`energy`, `col`),
+## times `pending_fill`, from just under the ceiling over the eye (kept inside the room's box) and
+## reaching its far corners. Over the eye, every surface in view faces it: from the box's middle, a
+## box spanning a whole storey (the Cordon garage's: 20 x 10 m) lit its far walls and left the
+## office the eye stood in near black on the side facing away.
+func _place_pending_fill(col: Color, energy: float) -> void:
+	var p: ReflectionProbe = _pending_room
+	var cam: Camera3D = get_viewport().get_camera_3d() if is_inside_tree() else null
+	if p == null or not is_instance_valid(p) or pending <= 0.001 or cam == null:
+		pending_fill.visible = false
+		return
+	var xf: Transform3D = p.global_transform if p.is_inside_tree() else p.get_meta(&"probe_xf", p.transform)
+	var h: Vector3 = p.size * 0.5
+	var local: Vector3 = xf.affine_inverse() * cam.global_position
+	local = Vector3(clampf(local.x, -h.x + 0.3, h.x - 0.3), h.y - 0.4, clampf(local.z, -h.z + 0.3, h.z - 0.3))
+	pending_fill.global_position = xf * local
+	pending_fill.omni_range = p.size.length() + 1.0
+	pending_fill.light_color = col
+	pending_fill.light_energy = energy * pending * float(_interior_cfg.get("pending_fill", 1.0))
+	pending_fill.visible = pending_fill.light_energy > 0.0005
 
 
 ## Whether `eye` is inside a live interior probe's box: in one of the buildings' rooms.

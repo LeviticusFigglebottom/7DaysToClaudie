@@ -1475,15 +1475,14 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 	var cj: int = int(round((center.z - hf.origin.y) / hf.spacing))
 	var moved: float = 0.0
 	var touched: Dictionary = {}
-	# Written in place under _lock: worker threads read these heights all the time through
-	# height_at (chunk meshing, scatter, weather, the Hum's flow field), which takes the lock too.
-	# Neither alternative is safe without it: replacing the array releases the old one and leaves
-	# the member null for a moment, and writing a packed array that a reader's temporary also
-	# references copies it on write, swapping the buffer under that reader (TD-104).
-	var original := PackedFloat32Array()
-	if mode == "smooth":
-		original = hf.heights.duplicate()
-	_lock.lock()
+	# Edited in a private copy and swapped in whole under _lock (height_at takes the array under the
+	# same lock), so a worker sampling meanwhile holds either the old array or the new one, always
+	# whole. Written element by element into the member, every write was a get, a copy on write of
+	# the whole array and a set back of the member (GDScript has no in-place index on another
+	# object's property), and a worker read the region's heights out of bounds while a dig ran
+	# (test_digging_while_workers_mesh_and_sample, about one run in several under load).
+	var work: PackedFloat32Array = hf.heights.duplicate()
+	var original: PackedFloat32Array = hf.heights
 	for j: int in range(cj - r_cells, cj + r_cells + 1):
 		for i: int in range(ci - r_cells, ci + r_cells + 1):
 			if i < 0 or j < 0 or i >= hf.width or j >= hf.depth:
@@ -1495,7 +1494,7 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 				continue
 			var k: float = 0.5 + 0.5 * cos(d * PI)
 			var idx: int = j * hf.width + i
-			var h0: float = hf.heights[idx]
+			var h0: float = work[idx]
 			var nh: float = h0
 			match mode:
 				"dig":
@@ -1510,11 +1509,13 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 						for oi: int in range(-1, 2):
 							acc += original[clampi(j + oj, 0, hf.depth - 1) * hf.width + clampi(i + oi, 0, hf.width - 1)]
 					nh = lerpf(h0, acc / 9.0, amount * k)
-			hf.heights[idx] = nh
+			work[idx] = nh
 			moved += (h0 - nh) * hf.spacing * hf.spacing
 			touched[chunk_of(x, z)] = true
 			# Samples on chunk borders belong to neighbours too.
 			touched[chunk_of(x - 0.01, z - 0.01)] = true
+	_lock.lock()
+	hf.heights = work
 	_lock.unlock()
 	for key: Vector2i in touched:
 		_record_delta(rt, key)
@@ -1529,14 +1530,14 @@ func modify(center: Vector3, radius: float, amount: float, mode: String = "dig",
 	return moved
 
 
-## Applies the saved digs that fall in a region onto its heights (in place, see modify()). The
+## Applies the saved digs that fall in a region onto its heights (a copy swapped in, see modify()). The
 ## pristine heights come from _base_cache when the region was dug before (kept across a detach),
 ## so a re-attached object that still carries its digs gets them once, not twice.
 func _apply_deltas(rt: RegionTerrain) -> void:
 	var vc: int = int(CHUNK) + 1
 	var hf: HeightField = rt.height
 	var base: HeightField = null
-	_lock.lock()
+	var work: PackedFloat32Array = PackedFloat32Array()
 	for key_s: String in _deltas:
 		var key: Vector2i = Ids.parse_chunk_key(key_s.substr(2))
 		if not rt.rect.has_point(Vector2(key.x * CHUNK + 1.0, key.y * CHUNK + 1.0)):
@@ -1549,8 +1550,14 @@ func _apply_deltas(rt: RegionTerrain) -> void:
 				var gx: int = int(round((key.x * CHUNK + i - hf.origin.x) / hf.spacing))
 				var gz: int = int(round((key.y * CHUNK + j - hf.origin.y) / hf.spacing))
 				if gx >= 0 and gz >= 0 and gx < hf.width and gz < hf.depth:
-					hf.heights[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
-	_lock.unlock()
+					if work.is_empty():
+						work = hf.heights.duplicate()
+					work[gz * hf.width + gx] = base.heights[gz * hf.width + gx] + delta[j * vc + i]
+	if not work.is_empty():
+		# Swapped in whole under _lock, as modify() does.
+		_lock.lock()
+		hf.heights = work
+		_lock.unlock()
 
 
 ## Composed (unedited) heights per region, kept to clamp digging depth and compute deltas.

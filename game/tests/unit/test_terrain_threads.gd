@@ -1,7 +1,7 @@
 extends GutTest
-## Terrain edits while worker threads read the terrain (TD-104, ADR-0036): digging writes heights
-## in place (one float at a time: a reader sees each sample either before or after the edit, never
-## a released array), and the containers that are replaced or grown (the region grid, `regions`,
+## Terrain edits while worker threads read the terrain (TD-104, ADR-0036): a dig edits a copy of
+## the heights and swaps it in whole under the terrain's mutex (a reader holds the old array or
+## the new one, never a half-written or released one), and the containers that are replaced or grown (the region grid, `regions`,
 ## volume columns) are read and written under a mutex. Swapping a new array into a member is not
 ## safe on its own: the old one is released before the new one is stored. The stress tests dig on
 ## the main thread while workers mesh chunks and sample heights; a race here crashed the engine
