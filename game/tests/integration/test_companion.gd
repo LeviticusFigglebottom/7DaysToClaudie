@@ -534,6 +534,50 @@ func test_fetch_brings_back_what_the_player_looked_at() -> void:
 		"past fetch.range")
 
 
+## Pinned on an errand (TD-340's yard mesh, seeds 21 and 7): the player standing on his line held
+## him at a standstill (Enemy's detour ignores bodies), and a low ledge the mesh runs over turned
+## him back and forth short of it. He steps aside round a body and up onto a ledge.
+func test_on_an_errand_he_steps_round_the_player_in_his_way() -> void:
+	var e: Enemy = await _recruited()
+	await _until(func() -> bool: return e.velocity.length() < 0.05, 240)
+	var from: Vector3 = e.global_position
+	var to: Vector3 = from + Vector3(0, 0, 10)
+	var drop: ItemDrop = ItemDrop.spawn(_world, ItemStack.make(&"stone", 1), to + Vector3.UP * 0.3)
+	_p.global_position = from + Vector3(0, 0.05, 1.3)  # square on his line, and stays there
+	await _frames(10)
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "fetch", "target": {"entity": String(drop.entity_id)}})
+	assert_true(bool(r.get("ok", false)), str(r))
+	var ref: WeakRef = weakref(drop)  # he picks it up: a freed capture is an engine error
+	await _until(func() -> bool: return _taken(ref), 60 * 20)
+	assert_true(_taken(ref), "went round the player to it (at %s)" % e.global_position)
+
+
+func test_on_an_errand_he_steps_up_a_low_ledge() -> void:
+	var e: Enemy = await _recruited()
+	await _until(func() -> bool: return e.velocity.length() < 0.05, 240)
+	var from: Vector3 = e.global_position
+	# A 40 cm deck 60 m wide across his way: no going round it.
+	_box(Vector3(from.x, 0.2, from.z + 6.0), Vector3(60, 0.4, 8))
+	var to: Vector3 = from + Vector3(0, 0.4, 7.0)
+	var drop: ItemDrop = ItemDrop.spawn(_world, ItemStack.make(&"stone", 1), to + Vector3.UP * 0.3)
+	_p.global_position = from + Vector3(-3, 0.05, -3)
+	await _frames(10)
+	var r: Dictionary = Game.execute(&"companion.order", {"order": "fetch", "target": {"entity": String(drop.entity_id)}})
+	assert_true(bool(r.get("ok", false)), str(r))
+	var up: Array[bool] = [false]
+	var ref: WeakRef = weakref(drop)
+	await _until(func() -> bool:
+		up[0] = up[0] or e.global_position.y > 0.3
+		return _taken(ref), 60 * 20)
+	assert_true(up[0], "stepped up onto the deck")
+	assert_true(_taken(ref), "and took it off the deck (at %s)" % e.global_position)
+
+
+static func _taken(ref: WeakRef) -> bool:
+	var o: Object = ref.get_ref()
+	return o == null or (o as Node).is_queued_for_deletion()
+
+
 func test_a_fetched_log_lands_at_the_feet_of_a_full_shoulder() -> void:
 	var e: Enemy = await _recruited()
 	_give(&"log", 2)
