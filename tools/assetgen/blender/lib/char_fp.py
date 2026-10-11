@@ -1745,10 +1745,16 @@ class PoseSolver:
             # A hand on the other's handle stays on it: it can turn, not move. Turned back into the
             # comfort range about its wrist, its grip would slide off the shaft, so it keeps the
             # full range (the comfort cost still picks its straightest elbow and roll).
+            base_comfort = self.comfort
+            own = (hands.get("_comfort") or {}).get(sd) or {}
+            if own:
+                self.comfort = dict(base_comfort)
+                self.comfort.update({k: float(v) for k, v in own.items() if k in WRIST_COMFORT})
             self.relax(0.0 if h.on is not None else relax)
             g, wrist, Rh, pole = self._fit(sd, g, F, h.elbow, movable=h.on is None, item=h.item,
                                            fixed_roll=sd in hands.get("_fixed_roll", ()),
                                            steady=bool(hands.get("_steady", False)))
+            self.comfort = base_comfort
             # What the hand really ended up gripping (the other hand follows this handle).
             placed[sd] = Hand(g, Rh @ self.rig.S0[sd], h.elbow, h.sc, item=h.item)
             prm[f"{sd}.wrist"], prm[f"{sd}.Rh"] = wrist, Rh
@@ -1872,6 +1878,16 @@ def _keyed_hands(pose: dict, keys: list, n: int) -> list[dict]:
     return frames
 
 
+def _comforted(frames: list[dict], comfort: dict | None) -> list[dict]:
+    """Frames whose hands keep a hold's own comfort range (`comfort` {side: {limit: deg}} on the
+    hold): a rifle's supporting hand under the fore-end rests supinated past the global ellipse,
+    which every other rest hold keeps (hands review C)."""
+    if comfort:
+        for fr in frames:
+            fr["_comfort"] = comfort
+    return frames
+
+
 def _pinned(frames: list[dict], sides: tuple) -> list[dict]:
     """Frames whose hands on `sides` keep their authored roll about what they hold (`fixed_roll`
     on a hold or an action): PoseSolver won't spin those fists to spare the wrist."""
@@ -1959,9 +1975,11 @@ def fp_actions(cfg: dict):
             continue
         pose = h["pose"]
         fixed = tuple(h.get("fixed_roll", ()))
-        out.append((f"fp_{cls}", 60, True, _pinned(_idle(with_item(pose, h)), fixed)))
+        comfort = h.get("comfort")
+        out.append((f"fp_{cls}", 60, True, _comforted(_pinned(_idle(with_item(pose, h)), fixed), comfort)))
         if "guard" in h:
-            out.append((f"fp_{cls}_guard", 60, True, _pinned(_idle(with_item(merge_pose(pose, h["guard"]), h)), fixed)))
+            out.append((f"fp_{cls}_guard", 60, True,
+                        _comforted(_pinned(_idle(with_item(merge_pose(pose, h["guard"]), h)), fixed), comfort)))
         if "pose" in tether and not h.get("no_tether", False):
             over = {"L": tether["pose"]["L"]}
             if "tether_right" in h:
@@ -1980,5 +1998,6 @@ def fp_actions(cfg: dict):
             # half relaxed throughout; a strike may use the whole range once under way.
             relax = float(a.get("relax", USE_RELAX if group == "uses" else 0.0))
             out.append((f"fp_{name}", n, bool(a.get("loop", False)),
-                        _pinned(_keyed(with_item(pose, holds[a["hold"]]), a["keys"], n, relax), fixed)))
+                        _comforted(_pinned(_keyed(with_item(pose, holds[a["hold"]]), a["keys"], n, relax), fixed),
+                                   holds[a["hold"]].get("comfort"))))
     return out
