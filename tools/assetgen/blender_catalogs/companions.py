@@ -29,7 +29,9 @@ COMPANIONS = {
     # hung by its chin strap off the pack, a hatchet in his right hand.
     "ezra_vane": {
         "seed": 1301, "height": 1.81, "sex": "m", "build": 0.55, "belly": 0.4, "gaunt": 0.35,
-        "hunch": 0.04, "head_forward": 0.04, "head_tilt": 0.0, "brow": 0.75,
+        "hunch": 0.04, "head_forward": 0.04, "head_tilt": 0.0, "brow": 0.3,
+        # A living man's face (TD-302): flesh over the skull, lips together at rest.
+        "living_face": 1.0, "lip_parting": False,
         "claw": 0.08, "jaw_drop": 1.0, "mouth_open": 0.0, "eye_open": 0.55, "lid_droop": 0.45, "wall_eye": 0.0,
         # A living man's eyes (TD-302): straight, set back under weathered lids, not the Hollowed's.
         "eye_depth": 0.0035, "eye_radius": 0.0108,

@@ -379,6 +379,11 @@ class BodyModel:
         R = self.hR
         Rl = R @ np.array([[1, 0, 0], [0, 0, 1], [0, 1, 0]])  # radii order (left, front, up)
         hs = float(self.p.get("head_scale", 1.0))
+        # A living face (`living_face` 0..1, TD-302: Ezra read as one of the Hollowed): flesh over
+        # the skull. The hollows fill (the face's own gauntness, not the body's), the brow ridge and
+        # the cheekbone arches sink in, fat pads round out the cheeks and the lips are full.
+        lf = float(np.clip(self.p.get("living_face", 0.0), 0.0, 1.0))
+        g = g * (1.0 - 0.85 * lf)
         brow = float(self.p.get("brow", 0.5)) + 0.45 * self.face("brow")
         # Face dials (TD-192), each [-1, 1]: skull length and width, cheekbones, nose length, width
         # and crook, ears, jaw width, face length.
@@ -395,13 +400,20 @@ class BodyModel:
         prog.ellipsoid(HP(0, -0.031 * (1 + 0.20 * fl), 0.054), np.array([(0.047 - 0.005 * g) * (1 + 0.08 * chk), 0.044, 0.044 * (1 + 0.16 * fl)]) * s,
                        R=Rl, k=0.016 * s, label=L_SKIN)
         for sx in (1.0, -1.0):
-            prog.ellipsoid(HP(sx * 0.046 * (1 + 0.18 * chk), -0.003 + 0.007 * chk, 0.060),
-                           np.array([0.020 * (1 + 0.40 * chk), 0.022, 0.012 * (1 + 0.45 * chk)]) * s, R=Rl, k=0.008 * s, label=L_SKIN)
-            prog.capsule(HP(sx * 0.054, -0.005, 0.046), HP(sx * 0.068, -0.002, 0.004), (0.0078 + 0.001 * g) * s,
-                         k=0.007 * s, label=L_SKIN)
+            prog.ellipsoid(HP(sx * 0.046 * (1 + 0.18 * chk) * (1 - 0.06 * lf), -0.003 + 0.007 * chk, 0.060),
+                           np.array([0.020 * (1 + 0.40 * chk), 0.022, 0.012 * (1 + 0.45 * chk)]) * s, R=Rl,
+                           k=(0.008 + 0.010 * lf) * s, label=L_SKIN)
+            prog.capsule(HP(sx * 0.054, -0.005, 0.046), HP(sx * 0.068, -0.002, 0.004), (0.0078 + 0.001 * g) * (1 - 0.55 * lf) * s,
+                         k=(0.007 + 0.012 * lf) * s, label=L_SKIN)
             # brow ridge
-            prog.capsule(HP(sx * 0.010, 0.027, 0.091), HP(sx * 0.047, 0.025, 0.078), (0.0092 + 0.003 * brow + 0.0015 * g) * s,
-                         k=0.009 * s, label=L_SKIN)
+            prog.capsule(HP(sx * 0.010, 0.027, 0.091 - 0.003 * lf), HP(sx * 0.047, 0.025, 0.078 - 0.003 * lf),
+                         (0.0092 + 0.003 * brow + 0.0015 * g - 0.0022 * lf) * s, k=(0.009 + 0.008 * lf) * s, label=L_SKIN)
+            if lf > 0.0:
+                # cheek fat pads under the cheekbones, and the temples filled
+                prog.ellipsoid(HP(sx * 0.041, -0.032, 0.062), np.array([0.021, 0.024, 0.017]) * s * (0.6 + 0.4 * lf), R=Rl,
+                               k=0.020 * s, label=L_SKIN)
+                prog.ellipsoid(HP(sx * 0.064, 0.034, 0.026), np.array([0.010, 0.020, 0.022]) * s * lf, R=Rl, k=0.016 * s,
+                               label=L_SKIN)
         prog.sphere(HP(0, 0.024, 0.092), 0.0095 * s, k=0.008 * s, label=L_SKIN)          # glabella
         # nose: thin nasal bones, a sharp cartilage tip, pinched wings
         tip = HP(0.007 * nk, -0.026 - 0.008 * nl, 0.108 + 0.011 * nl)
@@ -413,8 +425,8 @@ class BodyModel:
                         label=L_SKIN)
         # upper lip / philtrum: thin, drawn back off the teeth
         prog.ellipsoid(HP(0, -0.049, 0.085), np.array([0.024, 0.014, 0.013]) * s, R=Rl, k=0.010 * s, label=L_SKIN)
-        prog.capsule(HP(-0.021, -0.0585, 0.0905), HP(0.021, -0.0585, 0.0905), (0.0046 - 0.0010 * g) * s, k=0.004 * s,
-                     label=L_SKIN)
+        prog.capsule(HP(-0.021, -0.0585, 0.0905), HP(0.021, -0.0585, 0.0905), (0.0046 - 0.0010 * g + 0.0016 * lf) * s,
+                     k=0.004 * s, label=L_SKIN)
         # mandible in jaw space: a bony chin, the jaw's lower edge, the angle and the ramus
         j0 = self.skel.head["jaw"]
         jt = self.skel.tail["jaw"]
@@ -439,8 +451,8 @@ class BodyModel:
             prog.sphere(ang, 0.0102 * s, k=0.006 * s, label=L_SKIN)                # the jaw's angle
         # lower face mass + lower lip
         prog.ellipsoid(JP(0, jl * 0.60, 0.014), np.array([0.034, 0.024, 0.030]) * s, R=Rj, k=0.015 * s, label=L_SKIN)
-        prog.capsule(JP(-0.017, jl * 0.80, 0.029), JP(0.017, jl * 0.80, 0.029), (0.0052 - 0.0010 * g) * s, k=0.004 * s,
-                     label=L_SKIN)
+        prog.capsule(JP(-0.017, jl * 0.80, 0.029), JP(0.017, jl * 0.80, 0.029), (0.0052 - 0.0010 * g + 0.0016 * lf) * s,
+                     k=0.004 * s, label=L_SKIN)
         # ears: a rim (helix) round a hollow bowl (concha), and a lobe
         for sx in (1.0, -1.0):
             gone = self.p.get("missing_ear", "R" if self.damage("ear", 0.2) else None)
