@@ -19,9 +19,11 @@ make tour         # headless walk tour (~5 min): sprint into, hit and use one of
 make export       # packaged Windows + Linux builds with the generated assets (docs/BUILDS.md, ADR-0036)
 make run-slice    # play the vertical slice (Hum on night 3)
 make screenshots  # visual QA suite under Xvfb + software Vulkan (slow) -> build/screenshots
+make trailer-cut  # cut the showcase trailer (tools/trailer/edit.json) from build/trailer/shots
 ```
 CI (`.github/workflows/ci.yml`) runs setup → assets → validate → test; `standin.yml` runs import,
-check, test, smoke and tour with no generated assets; `build.yml` exports the playable builds.
+check, test, smoke and tour with no generated assets; `build.yml` exports the playable builds;
+`trailer.yml` (manual) renders every trailer shot in parallel and cuts the MP4.
 
 ## Repository map
 | Path | What |

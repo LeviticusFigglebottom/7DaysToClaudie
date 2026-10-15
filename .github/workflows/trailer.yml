@@ -1,0 +1,188 @@
+name: Trailer
+
+# The showcase trailer, rendered by the game itself (tools/trailer/edit.json is the cut). Every shot
+# is drawn by Godot's Movie Maker at a fixed 30 fps on software Vulkan, so however slow a frame is
+# to draw, the video plays perfectly smoothly. Shots render in parallel, one job each; the cut job
+# joins them with the cards and the score into one MP4. A shot that fails or isn't written yet
+# becomes a labelled slate, so a run always produces a watchable cut.
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Shot ids to render, comma-separated (empty: every shot). The rest are slates."
+        required: false
+        default: ""
+
+concurrency:
+  group: trailer-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APT_PACKAGES: xvfb mesa-vulkan-drivers libvulkan1 libxi6 libxxf86vm1 libxfixes3 libxrender1 libgl1 libegl1 libxkbcommon0 libsm6 libxcursor1 libxinerama1 libxrandr2 ffmpeg
+
+jobs:
+  prepare:
+    name: Assets and import
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    outputs:
+      shots: ${{ steps.list.outputs.shots }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q $APT_PACKAGES
+
+      # The same caches as build.yml and ci.yml.
+      - name: Cache pinned toolchain (.tools)
+        uses: actions/cache@v4
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('tools/versions.env', 'tools/requirements.txt') }}
+
+      - name: Cache generated assets (incremental via manifest)
+        uses: actions/cache@v4
+        with:
+          path: game/assets/generated
+          key: assets-${{ runner.os }}-${{ hashFiles('tools/assetgen/**', 'game/data/**', 'tools/versions.env') }}
+          restore-keys: assets-${{ runner.os }}-
+
+      - name: Setup, assets, import
+        run: |
+          make setup
+          make assets
+          make import
+
+      - name: Keep the import for the render jobs
+        uses: actions/cache/save@v4
+        with:
+          path: game/.godot
+          key: trailer-import-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Shots to render
+        id: list
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          python3 tools/trailer/assemble.py --check
+          shots=$(python3 - <<'EOF'
+          import json, os, subprocess
+          ids = json.loads(subprocess.check_output(["python3", "tools/trailer/assemble.py", "--list-shots"]))
+          only = [s.strip() for s in os.environ.get("ONLY", "").split(",") if s.strip()]
+          unknown = [s for s in only if s not in ids]
+          if unknown:
+              raise SystemExit(f"unknown shot ids: {unknown}")
+          print(json.dumps([s for s in ids if not only or s in only]))
+          EOF
+          )
+          echo "shots=$shots" >> "$GITHUB_OUTPUT"
+          echo "Rendering: $shots"
+
+  render:
+    name: Shot ${{ matrix.shot }}
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        shot: ${{ fromJSON(needs.prepare.outputs.shots) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q $APT_PACKAGES
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('tools/versions.env', 'tools/requirements.txt') }}
+          fail-on-cache-miss: true
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: game/assets/generated
+          key: assets-${{ runner.os }}-${{ hashFiles('tools/assetgen/**', 'game/data/**', 'tools/versions.env') }}
+          fail-on-cache-miss: true
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: game/.godot
+          key: trailer-import-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Render ${{ matrix.shot }} (Movie Maker, 1920x1080 at 30 fps, software Vulkan)
+        run: |
+          set -o pipefail
+          make setup
+          mkdir -p build/trailer/shots
+          make trailer-shot SHOT=${{ matrix.shot }} 2>&1 | tee build/trailer/${{ matrix.shot }}.log
+
+      - name: Pack the frames
+        run: python3 tools/trailer/assemble.py --pack build/trailer/shots/${{ matrix.shot }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trailer-shot-${{ matrix.shot }}
+          path: build/trailer/shots/${{ matrix.shot }}
+          compression-level: 0
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trailer-log-${{ matrix.shot }}
+          path: build/trailer/${{ matrix.shot }}.log
+          retention-days: 7
+
+  cut:
+    name: Cut the trailer
+    needs: [prepare, render]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('tools/versions.env', 'tools/requirements.txt') }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: trailer-shot-*
+          path: build/trailer/dl
+
+      - name: Cut (slates stand in for any shot that didn't render)
+        run: |
+          set -o pipefail
+          make setup-python
+          mkdir -p build/trailer/shots
+          for d in build/trailer/dl/trailer-shot-*; do
+            if [ -d "$d" ]; then mv "$d" "build/trailer/shots/${d##*/trailer-shot-}"; fi
+          done
+          make trailer-cut | tee build/trailer/cut.log
+          echo "### Trailer" >> "$GITHUB_STEP_SUMMARY"
+          tail -1 build/trailer/cut.log >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hollowmere-trailer
+          path: |
+            build/trailer/hollowmere_trailer.mp4
+            build/trailer/hollowmere_trailer.jpg
+            build/trailer/hollowmere_trailer_sheet.jpg
+          compression-level: 0
+          retention-days: 30

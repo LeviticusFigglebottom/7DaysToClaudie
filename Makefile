@@ -16,7 +16,7 @@ JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 LOCK := flock $(ROOT)/build/.godot.lock
 GODOT_HEADLESS := $(LOCK) $(GODOT) --headless --path $(GAME)
 
-.PHONY: smoke tour wrist-audit check-logs export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
+.PHONY: trailer-score trailer-cut smoke tour wrist-audit check-logs export render-check probe-lab stream-check check preview help setup setup-godot setup-blender setup-python fonts vendor-gut \
         assets assets-force assets-list assets-clean assets-determinism bake stills \
         import validate test test-unit test-integration run run-slice editor screenshots ci clean poi-preview menu-guard pad-pass
 
@@ -123,6 +123,12 @@ screenshots: ## Capture the screenshot suite into build/screenshots (software Vu
 	@mkdir -p $(ROOT)/build/screenshots
 	@# The watchdog ends a run whose engine shutdown hangs after "SHOT done" (it would hold the lock).
 	@$(LOCK) $(ROOT)/tools/qa_watchdog.sh "SHOT done" $(XVFB) $(GODOT) --path $(GAME) --rendering-driver vulkan --audio-driver Dummy --resolution 1600x900 -s res://src/tools/cli/screenshots.gd -- --out $(ROOT)/build/screenshots $(SHOTS_ARGS)
+
+trailer-score: ## The trailer's score from the game's own cues, timed by tools/trailer/edit.json -> build/trailer/score.wav
+	@$(PYTHON) $(ROOT)/tools/trailer/score.py
+
+trailer-cut: trailer-score ## Cut the trailer from build/trailer/shots (slates for shots not rendered yet) -> build/trailer/hollowmere_trailer.mp4
+	@$(PYTHON) $(ROOT)/tools/trailer/assemble.py
 
 ui-shots: ## Screenshots of the menus and UI screens without a world (software Vulkan, ~1 min) -> build/ui_shots
 	@mkdir -p $(ROOT)/build/ui_shots
