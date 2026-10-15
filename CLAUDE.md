@@ -95,6 +95,11 @@ check, test, smoke and tour with no generated assets; `build.yml` exports the pl
   `data/config/encounters.json` x the `encounter_density` world setting; list a region's with
   `list_encounters.gd`, see them with F8. A kind with its own behaviour (nests, dens):
   `Encounters.register_kind(kind, on_place, on_unplace)` (ADR-0054).
+* **A trailer shot**: a TrailerShotDef in `game/data/trailer/shots.json` (id = the cut's clip id;
+  anchor + offsets, hour/weather/exposure, an eased camera path, timed actions); frame it with
+  `TRAILER_PREVIEW=1 make trailer-shot SHOT=<id>` (3 frames, prints each key's height above the
+  ground), then `make trailer-shot SHOT=<id>` (Movie Maker, ~19 s a frame in software Vulkan) ->
+  `build/trailer/shots/<id>/`. A night shot needs a high moon and an exposure lift.
 * **A command**: register in the owning system's setup (`Game.register_command`), unregister in
   `_exit_tree`, validate everything from session state + args.
 
