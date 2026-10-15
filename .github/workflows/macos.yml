@@ -7,6 +7,11 @@ name: macOS
 # "READ ME FIRST" walks a player through the one-time Open Anyway.
 
 on:
+  # A change to the packaging runs it once (that also registers the workflow, which GitHub
+  # otherwise only learns of from the default branch, so it can be dispatched from here).
+  push:
+    branches: [claude/amazing-davinci-60axfh]
+    paths: ['.github/workflows/macos.yml', 'tools/export/macos_dmg.sh']
   workflow_dispatch:
     inputs:
       build_run:
