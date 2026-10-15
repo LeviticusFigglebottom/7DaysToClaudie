@@ -1,0 +1,89 @@
+name: macOS
+
+# A Mac build (Apple Silicon + Intel) of an existing Build run, on demand. The game's pack is
+# platform-independent, so this re-wraps the Linux artifact's Hollowmere.pck in Godot's universal
+# macOS template as Hollowmere.app, signs it ad hoc and packs a .dmg (tools/export/macos_dmg.sh).
+# No assets or export are rebuilt: it takes a few minutes. Unsigned by Apple: the DMG's
+# "READ ME FIRST" walks a player through the one-time Open Anyway.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_run:
+        description: "Build run id to package (empty: the latest successful Build on this branch)"
+        required: false
+        default: ""
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  dmg:
+    name: Package the .dmg
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: System packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q genisoimage unzip
+
+      - name: Pick the Build run
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ inputs.build_run }}
+        run: |
+          if [ -z "$RUN" ]; then
+            RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow build.yml --branch "$GITHUB_REF_NAME" \
+              --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          fi
+          [ -n "$RUN" ] || { echo "::error::no successful Build run found"; exit 1; }
+          echo "id=$RUN" >> "$GITHUB_OUTPUT"
+          echo "Packaging Build run $RUN"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: hollowmere-linux
+          run-id: ${{ steps.run.outputs.id }}
+          github-token: ${{ github.token }}
+          path: build/linux-artifact
+
+      # Godot (SVG icon) and the venv (Pillow) when ci/build have cached them; without them the
+      # app keeps Godot's icon.
+      - uses: actions/cache/restore@v4
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('tools/versions.env', 'tools/requirements.txt') }}
+
+      - name: Templates and rcodesign
+        run: |
+          source tools/versions.env
+          mkdir -p build/mac
+          curl -fsSL --retry 4 --retry-delay 2 -o build/mac/templates.tpz "$GODOT_TEMPLATES_URL"
+          echo "$GODOT_TEMPLATES_SHA512  build/mac/templates.tpz" | sha512sum -c -
+          unzip -q -j build/mac/templates.tpz templates/macos.zip -d build/mac
+          rm build/mac/templates.tpz
+          curl -fsSL --retry 4 -o build/mac/rcodesign.tgz \
+            "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F0.29.0/apple-codesign-0.29.0-x86_64-unknown-linux-musl.tar.gz"
+          tar xzf build/mac/rcodesign.tgz -C build/mac --strip-components=1
+
+      - name: Build the .dmg
+        run: |
+          mkdir -p build/linux
+          unzip -q build/linux-artifact/hollowmere-linux-*.zip -d build/linux
+          zipname=$(basename build/linux-artifact/hollowmere-linux-*.zip .zip)
+          label=${zipname##*-}
+          version=${zipname#hollowmere-linux-}
+          RCODESIGN=build/mac/rcodesign tools/export/macos_dmg.sh build/linux build/mac/macos.zip \
+            "build/export/hollowmere-macos-${version}.dmg" "($label)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hollowmere-macos
+          path: build/export/hollowmere-macos-*.dmg
+          compression-level: 0
+          retention-days: 7
